@@ -230,45 +230,6 @@ is_inside(RECT r, RECT o)
 	return true;
 }
 
-/*
- * Send an AES message to a client application.
- * generalized version, which now can be used by appl_write. :-)
- */
-void
-send_a_message(enum locks lock, struct xa_client *dest_client, union msg_buf *msg)
-{
-	struct xa_client *rc = lookup_extension(NULL, XAAES_MAGIC);
-	union msg_buf *m;
-
-	if (dest_client == NULL)
-	{
-		DIAG((D_appl, NULL, "WARNING: Invalid target for send_a_message()"));
-		return;
-	}
-
-	/* XaAES has left its main loop, so no point queuing messages. */
-//	if (C.shutdown & QUIT_NOW)
-//		return;	
-
-	if (rc == dest_client) //(!rc || rc == dest_client)
-	{
-		deliver_message(lock, dest_client, msg);
-	}
-	else
-	{
-		m = (union msg_buf *)kmalloc(sizeof(m));
-
-		if (m)
-		{
-			if (dest_client)
-			{
-				*m = *msg;
-				post_cevent(dest_client, cXA_deliver_msg, m, 0, 0, 0, 0, 0);
-			}
-		}
-	}
-}
-
 /* Ozk:
  * deliver_message is guaranteed to run in the dest_client's context
 */
@@ -318,7 +279,11 @@ deliver_message(enum locks lock, struct xa_client *dest_client, union msg_buf *m
 		DIAG((D_m, NULL, "Send message %s to %s", pmsg(msg->s.msg), c_owner(dest_client)));
 		/* Write success to client's reply pipe to unblock the process */
 		dest_client->usr_evnt = 1;
-		//Unblock(dest_client, XA_OK, 22);
+		if (dest_client->p->pid != p_getpid())
+		{
+			Unblock(dest_client, XA_OK, 22);
+			yield();
+		}
 	}
 	else /* Create a new entry in the destination client's pending messages list */
 	{
@@ -477,7 +442,44 @@ deliver_message(enum locks lock, struct xa_client *dest_client, union msg_buf *m
 
 	//Sema_Dn(clients);
 }
+/*
+ * Send an AES message to a client application.
+ * generalized version, which now can be used by appl_write. :-)
+ */
+void
+send_a_message(enum locks lock, struct xa_client *dest_client, union msg_buf *msg)
+{
+	struct xa_client *rc = lookup_extension(NULL, XAAES_MAGIC);
+	union msg_buf *m;
 
+	if (dest_client == NULL)
+	{
+		DIAG((D_appl, NULL, "WARNING: Invalid target for send_a_message()"));
+		return;
+	}
+
+	/* XaAES has left its main loop, so no point queuing messages. */
+//	if (C.shutdown & QUIT_NOW)
+//		return;	
+
+	if (rc == dest_client) //(!rc || rc == dest_client)
+	{
+		deliver_message(lock, dest_client, msg);
+	}
+	else
+	{
+		m = (union msg_buf *)kmalloc(sizeof(m));
+
+		if (m)
+		{
+			if (dest_client)
+			{
+				*m = *msg;
+				post_cevent(dest_client, cXA_deliver_msg, m, 0, 0, 0, 0, 0);
+			}
+		}
+	}
+}
 /* AES internal msgs (All standard) */
 
 void

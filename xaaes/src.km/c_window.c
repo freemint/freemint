@@ -625,6 +625,7 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 		wind->background = form_save(0, wind->r, NULL);
 		/* This is enough, it is only for TOOLBAR windows. */
 		draw_window(lock|winlist, wind);
+		redraw_menu(lock);
 	}
 	else
 	{
@@ -646,6 +647,7 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 
 		/* Display the window using clipping rectangles from the rectangle list */
 		display_window(lock|winlist, 10, wind, NULL);
+		redraw_menu(lock);
 
 		if (wind->send_message)
 			wind->send_message(lock|winlist, wind, NULL,
@@ -667,6 +669,7 @@ if_bar(short pnt[4])
 
 
 static void
+//draw_window(enum locks lock, struct xa_window *wind)
 Ddraw_window(enum locks lock, struct xa_window *wind)
 {
 	//struct xa_window *wind = (struct xa_window *)ce->ptr1;
@@ -808,18 +811,30 @@ Ddraw_window(enum locks lock, struct xa_window *wind)
 	else
 	{
 		int f;
+		XA_WIDGET *mwidg = get_widget(root_window, XAW_MENU);
 
+		/*
+		 * Ozk: Check for the root-window menuline widget (applications menuline)
+		 * and skip redrawing it here. Call redraw_menu() where appropriate instead. 
+		*/
 		for (f = 0; f < XA_MAX_WIDGETS; f++)
 		{
 			XA_WIDGET *widg;
 
 			widg = get_widget(wind, f);
-			if (widg->display)
+			if (widg != mwidg)
 			{
-				DIAG((D_wind, wind->owner, "draw_window %d: display widget %d",
-					wind->handle, f));
-
-				widg->display(lock, wind, widg);
+				if (widg->display)
+				{
+					DIAG((D_wind, wind->owner, "draw_window %d: display widget %d (func: %lx)",
+						wind->handle, f, widg->display));
+					widg->display(lock, wind, widg);
+				}
+			}
+			else
+			{
+				DIAG((D_wind, wind->owner, "draw_window %d: (%d) draw menu", wind->handle, f));
+				//redraw_menu(lock);
 			}
 		}
 	}
@@ -829,6 +844,7 @@ Ddraw_window(enum locks lock, struct xa_window *wind)
 	DIAG((D_wind, wind->owner, "draw_window %d for %s exit ok",
 		wind->handle, w_owner(wind)));
 }
+
 static void
 Pdraw_window( void *_parm)
 {
@@ -865,7 +881,6 @@ draw_window(enum locks lock, struct xa_window *wind)
 		p[1] = (long)wo;
 		DIAG((D_wind, rc, "kthreaded draw_window %d for %s by %s", wind->handle, wo->name, rc->name));
 		r = kthread_create(wo->p, Pdraw_window, p, &np, "k%s", wo->name);
-		//p_waitpid(np->pid, 0, NULL);
 		sleep(IO_Q, (long)p);
 		if (wo->usr_evnt && wo->sleeplock)
 			Unblock(wo, 1, 9000);

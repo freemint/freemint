@@ -248,8 +248,8 @@ rp_2_ap(struct xa_window *wind, XA_WIDGET *widg, RECT *r)
 	return NULL;
 }
 
-static void
-Display_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg)
+void
+display_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg)
 {
 	/* if removed or lost */
 	if (widg->display)
@@ -280,7 +280,7 @@ Pdisplay_widget(void *_parm)
 {
 	long *parm = _parm;
 
-	Display_widget(0, (struct xa_window *)parm[0], (struct xa_widget *)parm[1]);
+	display_widget(0, (struct xa_window *)parm[0], (struct xa_widget *)parm[1]);
 	wake(IO_Q, (long)parm);
 	kfree(parm);
 	kthread_exit(0);
@@ -293,7 +293,7 @@ display_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg)
 	Display_widget(lock, wind, widg);
 }
 #endif
-
+#if 0
 void
 display_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg)
 {
@@ -316,14 +316,16 @@ display_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg)
 			p[1] = (long)widg;
 			p[2] = (long)rc;
 			kthread_create(wind->owner->p, Pdisplay_widget, p, NULL, "k%s", wind->owner->name);
-			//addonprocwakeup(wind->owner->p, Pdisplay_widget, p);
-			//if (wind->owner->sleeplock)
-			//	wake(wind->owner->sleepqueue, wind->owner->sleeplock);
 			sleep(IO_Q, (long)p);
 		}
 	}
 }
+#endif
 
+/*
+ * Ozk: redraw menu need to check the owner of the menu object tree
+ * and draw it in the right context. 
+*/
 void
 redraw_menu(enum locks lock)
 {
@@ -337,7 +339,8 @@ redraw_menu(enum locks lock)
 	if (!rc || mc == rc || rc == C.Aes)
 	{
 		DIAGS(("Display MENU (same client) for %s", rc->name));
-		Display_widget(lock, root_window, widg);
+		//Display_widget(lock, root_window, widg);
+		display_widget(lock, root_window, widg);
 	}
 	else
 	{
@@ -352,9 +355,6 @@ redraw_menu(enum locks lock)
 			p[1] = (long)widg;
 			p[2] = (long)rc;
 			kthread_create(mc->p, Pdisplay_widget, p, NULL, "k%S", mc->name);
-			//addonprocwakeup(mc->p, Pdisplay_widget, p);
-			//if (mc->sleeplock)
-			//	wake(mc->sleepqueue, mc->sleeplock);
 			sleep(IO_Q, (long)p);
 		}
 	}
@@ -2151,8 +2151,8 @@ set_toolbar_widget(enum locks lock, struct xa_window *wind, OBJECT *form, int it
 	XA_WIDGET *widg;
 	XA_WIDGET_LOCATION loc;
 
-	DIAG((D_wind, wind->owner, "set_toolbar_widget for %d: form %lx, %d",
-		wind->handle, form, item));
+	DIAG((D_wind, wind->owner, "set_toolbar_widget for %d (%s): form %lx, %d",
+		wind->handle, wind->owner->name, form, item));
 
 	wt = &wind->toolbar;
 	widg = get_widget(wind, XAW_TOOLBAR);
