@@ -350,11 +350,7 @@ kern_get_loadavg (SIZEBUF **buffer)
 	PROC *p;
 	short tasks = 0;
 	short running = 0;
-# if 0
-	extern int last_pid; /* in util.c */
-# else
 	int last_pid = 0; /* ??? */
-# endif 
 	
 	DEBUG (("kern_get_loadavg"));
 	
@@ -403,6 +399,7 @@ kern_get_meminfo (SIZEBUF **buffer)
 {
 	SIZEBUF *info;
 	ulong len = 512;
+	ulong i;
 	char *crs;
 
 	ulong core_total = tot_rsize( core, 1);
@@ -417,35 +414,54 @@ kern_get_meminfo (SIZEBUF **buffer)
 		return ENOMEM;
 	
 	crs = info->buf;
-	crs += ksprintf( crs, len,
+	
+	i = ksprintf( crs, len,
 			 "\t  total:  \t  used:   \t  free:\n");
-	crs += ksprintf( crs, len,
+	len -= i;
+	crs += i;
+	
+	i = ksprintf( crs, len,
 			 "Mem:\t%10lu\t%10lu\t%10lu\n",
 			 core_total + alt_total,
 			 mem_total - mem_free,
 			 mem_free);
-	crs += ksprintf( crs, len,
+	crs += i; len -= i;
+	
+	i = ksprintf( crs, len,
 			 "Swap:\t%10lu\t%10lu\t%10lu\n",
-			 0, 0, 0);
-	crs += ksprintf( crs, len,
+			 0ul, 0ul, 0ul);
+	crs += i; len -= i;
+	
+	i = ksprintf( crs, len,
 			 "\nMemTotal:\t%7lu kB\n",
 			 mem_total / ONE_K);
-	crs += ksprintf( crs, len,
+	crs += i; len -= i;
+	
+	i = ksprintf( crs, len,
 			 "MemFree:\t%7lu kB\n",
 			 mem_free / ONE_K);
-	crs += ksprintf( crs, len,
+	crs += i; len -= i;
+	
+	i = ksprintf( crs, len,
 			 "FastTotal:\t%7lu kB\n",
 			 alt_total / ONE_K);
-	crs += ksprintf( crs, len,
+	crs += i; len -= i;
+	
+	i = ksprintf( crs, len,
 			 "FastFree:\t%7lu kB\n",
-			 alt_free);
-	crs += ksprintf( crs, len,
+			 alt_free / ONE_K);
+	crs += i; len -= i;
+	
+	i = ksprintf( crs, len,
 			 "CoreTotal:\t%7lu kB\n",
 			 core_total / ONE_K);
-	crs += ksprintf( crs, len,
+	crs += i; len -= i;
+	
+	i = ksprintf( crs, len,
 			 "CoreFree:\t%7lu kB\n",
 			 core_free / ONE_K);
-
+	crs += i; len -= i;
+	
 	info->len = crs - info->buf;
 	
 	*buffer = info;
@@ -677,9 +693,11 @@ kern_procdir_get_environ (SIZEBUF **buffer, PROC *p)
 	if (!baseregion)
 	{
 		baseregion = addr2region ((long) p->base);
-		assert (baseregion);
 		
-		attach_region (curproc, baseregion);
+		if (baseregion)
+			attach_region (curproc, baseregion);
+		else
+			DEBUG (("kern_procdir_get_environ: no baseregion found, pid %i", p->pid));
 	}
 	else
 		/* already attached, don't detach */
@@ -1001,9 +1019,11 @@ kern_procdir_get_stat (SIZEBUF **buffer, PROC *p)
 	if (!baseregion)
 	{
 		baseregion = addr2region ((long) p->base);
-		assert (baseregion);
 		
-		attach_region (curproc, baseregion);
+		if (baseregion)
+			attach_region (curproc, baseregion);
+		else
+			DEBUG (("kern_procdir_get_stat: no baseregion found, pid %i", p->pid));
 	}
 	else
 		/* already attached, don't detach */
