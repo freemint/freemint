@@ -8,6 +8,10 @@
  * Copyright 2000 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
  * 
+ * Please send suggestions, patches or bug reports to me or
+ * the MiNT mailing list.
+ * 
+ * 
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
@@ -22,13 +26,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
- * 
- * Author: Frank Naumann <fnaumann@freemint.de>
- * Started: 2001-04-30
- * 
- * Please send suggestions, patches or bug reports to me or
- * the MiNT mailing list.
- * 
  */
 
 # ifndef _k_prot_h
@@ -37,6 +34,9 @@
 # include "mint/mint.h"
 # include "mint/credentials.h"
 
+
+long _cdecl proc_setuid		(struct proc *p, unsigned int uid);
+long _cdecl proc_setgid		(struct proc *p, unsigned int gid);
 
 long _cdecl sys_pgetuid		(void);
 long _cdecl sys_pgetgid		(void);
@@ -69,6 +69,5 @@ suser (struct ucred *cred)
 
 struct ucred *copy_cred (struct ucred *ucr);
 void free_cred (struct ucred *ucr);
-
 
 # endif /* _k_prot_h */

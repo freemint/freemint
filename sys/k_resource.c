@@ -8,6 +8,10 @@
  * Copyright 1998 Guido Flohr <guido@freemint.de>
  * All rights reserved.
  * 
+ * Please send suggestions, patches or bug reports to me or
+ * the MiNT mailing list.
+ * 
+ * 
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
@@ -22,22 +26,15 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
- * 
- * Author: Guido Flohr <guido@freemint.de>
- * Started: 1998-03-30
- * 
- * Please send suggestions, patches or bug reports to me or
- * the MiNT mailing list.
- * 
- * 
+ */ 
+
+/* 
  * Kernel resource administration functions
- * 
  */
 
 # include "k_resource.h"
 
 # include "libkern/libkern.h"
-
 # include "mint/resource.h"
 
 # include "k_prot.h"
@@ -471,9 +468,8 @@ sys_prusage (long *r)
  *    3:  max. amount of malloc'd memory allowed
  */
 long _cdecl
-sys_psetlimit (int i, long v)
+proc_setlimit (struct proc *p, int i, long v)
 {
-	PROC *p = curproc;
 	long oldlimit;
 
 	switch(i)
@@ -515,41 +511,8 @@ sys_psetlimit (int i, long v)
 	return oldlimit;
 }
 
-
-struct plimit *
-copy_limit (struct plimit *p_limit)
+long _cdecl
+sys_psetlimit (int i, long v)
 {
-	struct plimit *n;
-	
-	TRACE (("copy_limit: %lx links %li", p_limit, p_limit->links));
-	assert (p_limit->links > 0);
-	
-	if (p_limit->links == 1)
-		return p_limit;
-	
-	n = kmalloc (sizeof (*n));
-	if (n)
-	{
-		/* copy */
-		memcpy (n->limits, p_limit->limits, sizeof (n->limits));
-		
-		/* reset flags */
-		n->flags = 0;
-		
-		/* adjust link counters */
-		p_limit->links--;
-		n->links = 1;
-	}
-		DEBUG(("copy_limit: kmalloc failed -> NULL"));
-	
-	return n;
-}
-
-void
-free_limit (struct plimit *p_limit)
-{
-	assert (p_limit->links > 0);
-	
-	if (--p_limit->links == 0)
-		kfree (p_limit);
+	return proc_setlimit(curproc, i, v);
 }
