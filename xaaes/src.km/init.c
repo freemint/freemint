@@ -321,7 +321,7 @@ init(struct kentry *k)
 	{
 		long r;
 
-		r = kthread_create(k_main, NULL, &(C.Aes->p), "AESSYS");
+		r = kthread_create(NULL, k_main, NULL, &(C.Aes->p), "AESSYS");
 		if (r == 0)
 			/* this blocks SIGKILL */
 			C.Aes->p->p_flag |= P_FLAG_SYS;
