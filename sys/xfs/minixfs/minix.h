@@ -17,7 +17,6 @@
 
 # define DOM_TOS	0
 # define DOM_MINT	1
-# define NUM_DRIVES	32
 
 
 /* Useful macro, is non zero only if 'x' is not a power of two
@@ -91,7 +90,10 @@
 # define MINIX_VALID_FS	0x0001	/* Clean fs */
 # define MINIX_ERROR_FS	0x0002	/* fs has errors */
 
-# define MINIX_LINK_MAX	65530
+# define SYMLINK_NAME_MAX	1023	/* Maximum size of symlink name */
+
+# define MINIX_LINK_MAX		250	/* Max links to an inode *MUST* be < 256 */
+# define MINIX2_LINK_MAX	65530	/* Max links to an inode *MUST* be < 65536 */
 
 
 # define FIND		0	/* tells search_dir to search for file */
