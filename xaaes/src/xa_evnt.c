@@ -263,15 +263,7 @@ add_pending_button(LOCK lock, XA_CLIENT *client, struct moose_data *md)
 
 	if (!(pending_button[pending_button_head].client == client))
 		reset_pending_button();
-#if 0
-	{
-		pending_button_tail = 0;
-		pending_button_head = 0;
-		pending_button[1].client = 0;
-		pending_button[2].client = 0;
-		pending_button[3].client = 0;
-	}
-#endif
+
 	pending_button[pending_button_tail].client	= client;
 	pending_button[pending_button_tail].x		= mu_button.x;		/* md->x; */
 	pending_button[pending_button_tail].y		= mu_button.y;		/* md->y; */
