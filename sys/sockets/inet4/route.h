@@ -10,8 +10,6 @@
 # define RT_HASH_SIZE		256
 # define RT_TTL			100
 
-# define route_deref(_r) { if ((_r) && --(_r)->refcnt <= 0) kfree (_r); }
-
 struct route
 {
 	ulong		net;
@@ -25,6 +23,13 @@ struct route
 	long		usecnt;
 	short		refcnt;
 };
+
+INLINE void
+route_deref (struct route *rt)
+{
+	if (rt && --rt->refcnt <= 0)
+		kfree (rt);
+}
 
 # define RTF_UP		0x0001
 # define RTF_GATEWAY	0x0002
