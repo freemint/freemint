@@ -28,8 +28,8 @@
 # include "arch/context.h"
 
 
-/* XXX */
-# define MAXLOGNAME	32
+# define LOGIN_NAME_MAX	32
+# define MAXLOGNAME	LOGIN_NAME_MAX
 
 /*
  * One structure allocated per session

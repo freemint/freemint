@@ -430,7 +430,7 @@ opcode	class name	args */
 0x15b	f writev	(short fd, const struct iovec *iov, long niov)	/* 1.16 */
 0x15c	f readv		(short fd, const struct iovec *iov, long niov)	/* 1.16 */
 0x15d	f fstat		(short fd, struct stat *st)			/* 1.16 */
-0x15e	  RESERVED
+0x15e	p sysctl	(long *name, ulong namelen, void *old, ulong *oldlenp, const void *new, ulong newlen)
 0x15f	s emulation	(ushort which, ushort op,
 			 long a1, long a2, long a3, long a4,
 			 long a5, long a6, long a7)			/* 1.15.8  */

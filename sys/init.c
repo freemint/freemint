@@ -23,23 +23,23 @@
 # include "mint/xbra.h"
 
 # include "arch/cpu.h"		/* init_cache, cpush, setstack */
-# include "arch/detect.h"
 # include "arch/intr.h"		/* new_mediach, new_rwabs, new_getbpb, same for old_ */
+# include "arch/init_mach.h"	/* */
 # include "arch/kernel.h"	/* enter_gemdos */
 # include "arch/mmu.h"		/* save_mmu */
-# include "arch/mprot.h"
+# include "arch/mprot.h"	/* */
 # include "arch/startup.h"	/* _base */
 # include "arch/syscall.h"	/* call_aes */
 
-# include "bios.h"	
+# include "bios.h"	/* */
 # include "block_IO.h"	/* init_block_IO */
 # include "cnf.h"	/* load_config, some variables */
-# include "console.h"	
-# include "cookie.h"	
+# include "console.h"	/* */
+# include "cookie.h"	/* restr_cookie */
 # include "crypt_IO.h"	/* init_crypt_IO */
 # include "delay.h"	/* calibrate_delay */
-# include "dos.h"	
-# include "dosdir.h"	
+# include "dos.h"	/* */
+# include "dosdir.h"	/* */
 # include "filesys.h"	/* init_filesys, s_ync, close_filesys */
 # include "gmon.h"	/* monstartup */
 # include "info.h"	/* welcome messages */
@@ -54,10 +54,10 @@
 # include "proc.h"	/* init_proc, add_q, rm_q */
 # include "signal.h"	/* post_sig */
 # include "syscall_vectors.h"
-# include "time.h"	
-# include "timeout.h"	
+# include "time.h"	/* */
+# include "timeout.h"	/* */
 # include "update.h"	/* start_sysupdate */
-# include "util.h"	
+# include "util.h"	/* */
 # include "fatfs.h"	/* fatfs_config() */
 # include "tosfs.h"	/* tos_filesys */
 # include "xbios.h"	/* has_bconmap, curbconmap */
@@ -69,7 +69,6 @@
 /* magic number to show that we have captured the reset vector */
 # define RES_MAGIC	0x31415926L
 
-static long getmch (void);
 static long _cdecl mint_criticerr (long);
 static void _cdecl do_exec_os (register long basepage);
 
@@ -1079,13 +1078,10 @@ init (void)
 	/* initialize delay */
 	{
 		char buf[128];
-		// ushort sr;
 		
 		c_conws ("Calibrating delay loop... ");
 		
-		// sr = splhigh ();
 		calibrate_delay ();
-		// spl (sr);
 		
 		/* Round the value and print it */
 		ksprintf (buf, sizeof (buf), "%lu.%02lu BogoMIPS\r\n\r\n",
@@ -1246,141 +1242,6 @@ init (void)
 # endif
 	
 	/* Never returns */	
-}
-
-
-/*
- * Get the value of the _MCH cookie, if one exists; also set no_mem_prot if
- * there's a _CPU cookie and you're not on an '030, or if there is none.
- * This must be done in a separate routine because the machine type and CPU
- * type are needed when initializing the system, whereas install_cookies is
- * not called until everything is practically up.
- * In fact, getmch() should be called before *anything* else is
- * initialized, so that if we find a MiNT cookie already in the
- * jar we can bail out early and painlessly.
- */
-
-static long
-getmch (void)
-{
-	COOKIE *jar = *CJAR;
-	extern short gl_kbd;
-	
-	/* own CPU test */
-	mcpu = detect_cpu ();
-	
-	/* own FPU test; this must be done after the CPU detection */
-	fputype = detect_fpu ();
-	
-	if ((fputype >> 16) > 1)
-		fpu = 1;
-	
-	DEBUG (("detecting hardware ... "));
-	/* at the moment only detection of ST-ESCC */
-	if (mcpu < 40 && detect_hardware ())
-		boot_print ("ST-ESCC extension detected\r\n");
-	DEBUG (("ok!\r\n"));
-	
-	if (jar)
-	{
-		while (jar->tag != 0)
-		{
-			/* check for machine type */
-			if (jar->tag == COOKIE__MCH)
-			{
-				mch = jar->value;
-# ifdef MILAN
-				if (mch != MILAN_C)
-				{
-					boot_print ("This MiNT version requires a Milan!\r\n");
-					boot_print ("Hit any key to continue.\r\n");
-					(void) Cconin ();
-					Pterm0 ();
-				}
-# else
-				if (mch == MILAN_C)
-				{
-					boot_print ("This MiNT version doesn't run on a Milan!\r\n");
-					boot_print ("Hit any key to continue.\r\n");
-					(void) Cconin ();
-					Pterm0 ();
-				}
-# endif
-			}
-			else if (jar->tag == COOKIE__VDO)
-			{
-				FalconVideo = (jar->value == 0x00030000L);
-				ste_video = (jar->value == 0x00010000L);
-				if (jar->value & 0xffff0000L)
-					screen_boundary = 15;
-			}
-			else if (jar->tag == COOKIE_MiNT)
-			{
-				boot_print ("MiNT is already installed!!\r\n");
-				Pterm (2);
-			}
-			else if (jar->tag == COOKIE__AKP)
-			{
-				gl_lang = (int) ((jar->value >> 8) & 0x00ff);
-				gl_kbd = (short)(jar->value & 0x00ffL);
-			}
-			else if (jar->tag == COOKIE_PMMU)
-			{
-				/* jr: if PMMU cookie exists, someone else is
-				 * already using the PMMU
-				 */
-				boot_print ("WARNING: PMMU is already in use!\r\n");
-				no_mem_prot = 1;
-			}
-			
-			jar++;
-		}
-	}
-	
-# ifndef MMU040
-	if (mcpu != 30)
-		no_mem_prot = 1;
-# endif
-	
-	/*
-	 * if no preference found, look at the country code to decide
-	 */
-	if (gl_lang < 0)
-	{
-		long *sysbase;
-		int i;
-		
-		sysbase = *((long **)(0x4f2L)); /* gets the RAM OS header */
-		sysbase = (long *)sysbase[2];	/* gets the ROM one */
-		
-		i = (int) ((sysbase[7] & 0x7ffe0000L) >> 17L);
-		
-		switch (i)
-		{
-			case 1:		/* Germany */
-			case 8:		/* Swiss German */
-				gl_lang = 1;
-				break;
-			case 2:		/* France */
-			case 7:		/* Swiss French */
-				gl_lang = 2;
-				break;
-			case 4:		/* Spain */
-				gl_lang = 4;
-				break;
-			case 5:		/* Italy */
-				gl_lang = 5;
-				break;
-			default:
-				gl_lang = 0;
-				break;
-		}
-	}
-	
-	if (gl_lang >= MAXLANG || gl_lang < 0)
-		gl_lang = 0;
-	
-	return 0L;
 }
 
 /*

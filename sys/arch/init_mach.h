@@ -3,7 +3,8 @@
  * distribution. See the file CHANGES for a detailed log of changes.
  * 
  * 
- * Copyright 2000 Frank Naumann <fnaumann@freemint.de>
+ * Copyright 2000, 2001 Frank Naumann <fnaumann@freemint.de>
+ * Copyright 1993, 1994, 1995, 1996 Kay Roemer
  * All rights reserved.
  * 
  * This file is free software; you can redistribute it and/or modify
@@ -21,8 +22,8 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  * 
  * 
- * begin:	2000-10-30
- * last change:	2000-10-30
+ * begin:	2001-05-08
+ * last change:	2001-05-08
  * 
  * Author:	Frank Naumann <fnaumann@freemint.de>
  * 
@@ -31,38 +32,13 @@
  * 
  */
 
-# ifndef _mint_credentials_h
-# define _mint_credentials_h
+# ifndef _init_mach_h
+# define _init_mach_h
+
+# include "mint/mint.h"
 
 
-# define NGROUPS_MAX	8
-# define NGROUPS	NGROUPS_MAX
-
-# ifdef __KERNEL__
-
-struct ucred
-{
-	short		euid;			/* effective user id */
-	short		egid;			/* effective group id */
-	short		groups [NGROUPS_MAX];	/* groups */
-	unsigned short	ngroups;		/* number of groups */
-	
-	short		links;			/* number of references */
-};
+long getmch (void);
 
 
-struct pcred
-{
-	struct ucred	*ucr;			/*  */
-	short		ruid;			/* real user id */
-	short		rgid;			/* real group id */
-	short		suid;			/* saved effective user id */
-	short		sgid;			/* saved effective group id */
-	
-	short		links;			/* number of references */
-	short		pad;
-};
-
-# endif
-
-# endif /* _mint_credentials_h */
+# endif	/* _init_mach_h  */
