@@ -72,9 +72,6 @@
 
 # define MAXAKP		8	/* maximum _AKP code supported */
 
-/* Functions exported */
-short ikbd_scan(ushort scancode);
-void init_keytbl(void);
 
 /* Keyboard definition tables (taken off TOS 4.04, with fixes) */
 
@@ -1061,5 +1058,3 @@ load_keytbl(void)
 		do_close(rootproc, fp);
 	}
 }
-
-/* EOF */
