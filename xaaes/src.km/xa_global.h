@@ -226,6 +226,7 @@ struct config
 	short last_wind;		/* 0 = Put owner of window ontop of window_list infront. */
 					/* 1 = Keep client whose last window was closed infront. */
 
+	bool lrmb_swap;			/* Swap left and right mouse-button status bits */
 	bool no_xa_fsel;
 	bool auto_program;
 	bool point_to_type;

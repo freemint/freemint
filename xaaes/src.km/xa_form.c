@@ -859,9 +859,10 @@ XA_form_do(enum locks lock, struct xa_client *client, AESPB *pb)
 		struct xa_window *wind;
 		short nextobj;
 
+		nextobj = pb->intin[0] == 0 ? -2 : pb->intin[0];
 		client->waiting_pb = pb;
 
-		if (Setup_form_do(client, obtree, pb->intin[0], &wind, &nextobj))
+		if (Setup_form_do(client, obtree, nextobj/*pb->intin[0]*/, &wind, &nextobj))
 		{
 			if (wind)
 			{

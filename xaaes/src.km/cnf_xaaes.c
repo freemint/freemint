@@ -85,6 +85,7 @@ static struct parser_item parser_tab[] =
 	{ "WIDGETS",        PI_R_T,     cfg.widg_name           , sizeof(cfg.widg_name)  },
 	{ "RESOURCE",       PI_R_T,     cfg.rsc_name            , sizeof(cfg.rsc_name)   },
 	{ "USEHOME",        PI_R_B,   & cfg.usehome		},
+	{ "LRMB_SWAP",	    PI_R_B,   & cfg.lrmb_swap		},
 	{ "FONT_ID",        PI_R_S,   & cfg.font_id		},
 	{ "STANDARD_POINT", PI_R_S,   & cfg.standard_font_point	},
 	{ "MEDIUM_POINT",   PI_R_S,   & cfg.medium_font_point	},
@@ -516,6 +517,8 @@ pCB_app_options(char *line)
 				get_boolarg(s + 9, &opts->xa_nohide);
 			else if (!strnicmp(s, "xa_nomove", 9))
 				get_boolarg(s + 9, &opts->xa_nomove);
+		//	else if (!strnicmp(s, "xa_objced", 9))
+		//		get_boolarg(s + 9, &opts->xa_objced);
 			else if (!strnicmp(s, "xa_none", 7))
 				get_boolarg(s + 7, &opts->xa_none);
 			else if (!strnicmp(s, "noleft", 6))

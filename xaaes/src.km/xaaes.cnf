@@ -105,7 +105,15 @@ usehome = yes
 # example), and the "extra-click" fires some unwanted action.
 #
 #mp_timegap (default is 3)
- 
+
+#
+# lrmb_swap = <bool>            (default is 'no')
+#
+# Swap left and right mouse buttons. Setting 'lrmb_swap = yes' will make
+# XaAES swap the left and right mouse buttons.
+#
+#lrmb_swap = yes
+
 #
 # redraw_timeout. This is the time in ms XaAES will wait for clients to
 # service WM_REDRAW messages between actions that generate redraws,
