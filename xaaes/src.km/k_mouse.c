@@ -590,114 +590,210 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 }
 
 /* XXX Fixme !! */
-static XA_WIDGET *
-wheel_arrow(struct xa_window *wind, const struct moose_data *md)
+static void
+wheel_arrow(struct xa_window *wind, const struct moose_data *md, XA_WIDGET **wr, short *r)
 {
 	XA_WIDGETS which;
 	XA_WIDGET  *widg;
+	short orient;
 	int fac = wind->owner->options.wheel_page;
+	bool rev = wind->owner->options.wheel_reverse ? true : false;
+
+	if (wr)
+		*wr = NULL;
+	if (r)
+		*r = -1;
 
 	if (md->state == 0)
 	{
 		if (md->clicks < 0)
-			which = XAW_UPLN;
+		{
+			which = rev ? XAW_DNLN : XAW_UPLN;
+			orient = rev ? 1 : 0;
+		}
 		else
-			which = XAW_DNLN;
+		{
+			which = rev ? XAW_UPLN : XAW_DNLN;
+			orient = rev ? 0 : 1;
+		}
 	}
 	else if (md->state == 1)
 	{
 		if (md->clicks < 0)
-			which = XAW_LFLN;
-		else
-			which = XAW_RTLN;
-	}
-	else
-		return NULL;
-
-	if (fac && abs(md->clicks) > abs(fac))
-	{
-		switch (which)
 		{
-		case XAW_UPLN: which = XAW_UPPAGE; break;
-		case XAW_DNLN: which = XAW_DNPAGE; break;
-		case XAW_LFLN: which = XAW_LFPAGE; break;
-		case XAW_RTLN: which = XAW_RTPAGE; break;
-		default: /* make gcc happy */ break;
+			which = rev ? XAW_RTLN : XAW_LFLN;
+			orient = rev ? 3 : 2;
+		}
+		else
+		{
+			which = rev ? XAW_LFLN : XAW_RTLN;
+			orient = rev ? 2 : 3;
 		}
 	}
+	else
+		return;
 
-	widg = get_widget(wind, which);
-	if (widg)
+	if (r)
+		*r = orient;
+
+	if (wind)
 	{
-		if (widg->type)
-			return widg;
-	}
+		if (fac && abs(md->clicks) > abs(fac))
+		{
+			switch (which)
+			{
+			case XAW_UPLN: which = XAW_UPPAGE; break;
+			case XAW_DNLN: which = XAW_DNPAGE; break;
+			case XAW_LFLN: which = XAW_LFPAGE; break;
+			case XAW_RTLN: which = XAW_RTPAGE; break;
+			default: /* make gcc happy */ break;
+			}
+		}
 
-	return NULL;
+		widg = get_widget(wind, which);
+		if (widg)
+		{
+			if (widg->type && wr)
+				*wr = widg;
+		}
+	}
 }
 
 void
 XA_wheel_event(enum locks lock, const struct moose_data *md)
 {
-	struct xa_window *wind = window_list;
+	struct xa_window *wind;
 	struct xa_client *client = NULL, *locker = NULL;
-	XA_WIDGET *widg = wheel_arrow(wind, md);
+	XA_WIDGET *widg;
 	int n,c;
 
 	DIAGS(("mouse wheel %d has wheeled %d (x=%d, y=%d)", md->state, md->clicks, md->x, md->y));
+	//display("mouse wheel %d has wheeled %d (x=%d, y=%d)", md->state, md->clicks, md->x, md->y);
 
 	locker = C.mouse_lock;
 	if (!locker)
 		locker = C.update_lock;
+	
 	/*
-	 * If a client has mouselock and it owns the window ontop...
+	 * Ozk: For now we send wheel events to the owner of the window underneath the mouse
+	 * in all cases except when owner of mouse_lock() is waiting for MU_WHEEL.
 	 */
-	if (!locker)
-	{
-		wind = find_window(lock, md->x, md->y);
-		if (wind)
-			client = wind == root_window ? get_desktop()->owner : wind->owner;
-	}
-
-	else if (wind && wind->owner == locker && widg && wind->send_message)
-	{
+	wind = find_window(lock, md->x, md->y);
+	
+	if (locker && locker->waiting_for & MU_WHEEL)
 		client = locker;
-	}
-	/*
-	 * By now we should have a client to which the wheel event should go...
-	 */
+	else if (wind)
+		client = wind == root_window ? get_desktop()->owner : wind->owner;
+
 	if (client)
 	{
 		if (client->waiting_for & MU_WHEEL)
 		{
 			struct moose_data *nmd = client->wheel_md;
-			
+			short amount = 0;
+
 			if (!nmd)
 				nmd = kmalloc(sizeof(*nmd));
+			else
+				amount = nmd->clicks;
 			if (nmd)
 			{
 				*nmd = *md;
+				nmd->clicks += amount;
 				client->wheel_md = nmd;
 			}
 		}
 		else if (wind)
 		{
-			if (client->wa_wheel || wind->wa_wheel)
+			short orient, WA = WA_UPPAGE;
+			
+			wheel_arrow(wind, md, &widg, &orient);
+			
+			if ((md->kstate & K_ALT))
+				orient ^= 2;
+
+			if (orient & 2)
+				WA = WA_LFPAGE;
+			
+			if (!(md->kstate & (K_RSHIFT|K_LSHIFT)))
+				WA += WA_UPLINE;
+
+			WA += orient & 1;
+
+			if (wind->opts & XAWO_WHEEL)
 			{
-				wind->send_message(lock, wind, NULL, AMQ_NORM,
-						   WM_ARROWED, 0,0, wind->handle,
-						   WA_WHEEL, 0, md->state, md->clicks);
-			}
-			else if ((widg = wheel_arrow(wind, md)))
-			{
-				n = c = abs(md->clicks);
-				while (c)
+				switch (wind->wheel_mode)
 				{
-					wind->send_message(lock, wind, NULL, AMQ_NORM,
-							   WM_ARROWED, 0,0, wind->handle,
-							   client->options.wheel_reverse ? widg->xarrow : widg->arrowx,
-							   c == n ? 0x4d57 : 0x4d77, 0, c);
-					c--;
+					case XWHL_REALWHEEL:
+					{
+						wind->send_message(lock, wind, NULL, AMQ_NORM,
+								   WM_WHEEL, 0,0, wind->handle,
+								   orient, md->state, md->clicks, 0);
+						break;
+					}
+					case XWHL_AROWWHEEL:
+					{
+arrow:						wind->send_message(lock, wind, NULL, AMQ_NORM,
+								   WM_ARROWED, 0,0, wind->handle,
+								   WA, 0, 0, 0);
+						break;
+					}
+					case XWHL_SLDRWHEEL:
+					{
+						short w = -1, s = 0;
+
+						if (orient & 2)
+						{
+							if (wind->active_widgets & HSLIDE)
+								w = XAW_HSLIDE, s = WM_HSLID;
+						}
+						else if (wind->active_widgets & VSLIDE)
+							w = XAW_VSLIDE, s = WM_VSLID;
+
+						if (w == -1)
+							goto arrow;
+
+						widg = get_widget(wind, w);
+
+						if (widg)
+						{
+							XA_SLIDER_WIDGET *sl = widg->stuff;
+							short unit, wh;
+
+							if (s == WM_VSLID)
+								wh = widg->r.h - sl->r.h;
+							else
+								wh = widg->r.w - sl->r.w;
+					
+							unit = pix_to_sl(2L, wh) - pix_to_sl(1L, wh);
+
+							if (md->clicks < 0)
+								sl->rpos = bound_sl(sl->rpos - (unit * -md->clicks));
+							else
+								sl->rpos = bound_sl(sl->rpos + (unit * md->clicks));
+					
+							{
+								wind->send_message(lock, wind, NULL, AMQ_NORM,
+										   s, 0,0, wind->handle,
+										   sl->rpos, 0,0,0);
+							}
+						}
+						break;
+					}
+				}
+			}
+			else
+			{
+				if (widg)
+				{
+					n = c = abs(md->clicks);
+					while (c)
+					{
+						wind->send_message(lock, wind, NULL, AMQ_NORM,
+								   WM_ARROWED, 0,0, wind->handle,
+								   WA, 0,0,0);
+						c--;
+					}
 				}
 			}
 		}

@@ -30,6 +30,7 @@
 #include "global.h"
 #include "xa_types.h"
 
+struct xa_window * get_topwind(enum locks lock, struct xa_client *client, struct xa_window *startw);
 struct xa_window * next_wind(enum locks lock);
 struct xa_client * next_app(enum locks lock, bool with_window_or_menu);
 struct xa_client * previous_client(enum locks lock);
