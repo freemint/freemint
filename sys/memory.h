@@ -60,6 +60,11 @@ long _cdecl s_realloc (long);
 # ifdef DEBUG_INFO
 void DUMP_ALL_MEM (void);
 void DUMPMEM (MMAP map);
+
+# if WITH_KERNFS
+long  kern_get_memdebug (SIZEBUF **buffer);
+# endif
+
 # endif
 
 

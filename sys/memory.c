@@ -2462,6 +2462,71 @@ DUMPMEM (MMAP map)
 		m = m->next;
 	}
 }
+
+# if WITH_KERNFS
+
+static long 
+kern_get_memdebug_1 (MMAP map, char *crs, ulong len)
+{
+	MEMREGION *m = *map;
+	ulong size = len;
+	ulong i;
+	
+	i = ksprintf (crs, len,
+		      "%s memory dump: starting at region %lx\n",
+		      (map == core ? "core" : "alt"), m);
+	crs += i; len -= i;
+	
+	while (m)
+	{
+		i = ksprintf (crs, len,
+			      "%9ld bytes at %8lx: next %8lx [%d links, mflags %4x]\n",
+			      m->len, m->loc, m->next, m->links, m->mflags);
+		crs += i; len -= i;
+		
+		if (m->shadow)
+		{
+			i = ksprintf (crs, len, "\t\tshadow %lx, save %lx\n",
+				      m->shadow, m->save);
+			crs += i; len -= i;
+		}
+		
+		m = m->next;
+	}
+	
+	return (size - len);
+}
+
+long 
+kern_get_memdebug (SIZEBUF **buffer)
+{
+	SIZEBUF *info;
+	ulong len = 128ul * 1024ul;
+	ulong i;
+	char *crs;
+	
+	info = kmalloc (sizeof (*info) + len);
+	if (!info)
+		return ENOMEM;
+	
+	crs = info->buf;
+	
+	i = kern_get_memdebug_1 (core, crs, len);
+	crs += i; len -= i;
+	
+	i = ksprintf (crs, len, "\n");
+	crs += i; len -= i;
+	
+	i = kern_get_memdebug_1 (alt, crs, len);
+	crs += i; len -= i;
+	
+	info->len = crs - info->buf;
+	
+	*buffer = info;
+	return 0;
+}
+
+# endif
 # endif
 
 # ifdef SANITY_CHECKING
