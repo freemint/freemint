@@ -1,7 +1,5 @@
 /* Keyboard handling stuff
- */
-
-/*
+ *
  * This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
  * distribution.
  *
@@ -24,28 +22,52 @@
  */
 
 # include "mint/mint.h"
+# include "mint/signal.h"	/* SIGQUIT */
 
-# include "bios.h"	/* kbshft, kintr, ...  */
-# include "debug.h"	/* do_func_key() */
-# include "dev-mouse.h"	/* mshift */
-# include "dos.h"	/* s_hutdown() */
-# include "init.h"	/* boot_printf() */
-# include "k_fds.h"	/* fp_alloc() */
-# include "kmemory.h"	/* kmalloc() */
-# include "proc.h"	/* rootproc */
-# include "random.h"	/* add_keyboard_randomness() */
-# include "timeout.h"	/* addroottimeout() */
+# include "bios.h"		/* kbshft, kintr, ...  */
+# include "biosfs.h"		/* struct tty */
+# include "debug.h"		/* do_func_key() */
+# include "dev-mouse.h"		/* mshift */
+# include "dos.h"		/* s_hutdown() */
+# include "init.h"		/* boot_printf() */
+# include "k_fds.h"		/* fp_alloc() */
+# include "kmemory.h"		/* kmalloc() */
+# include "proc.h"		/* rootproc */
+# include "random.h"		/* add_keyboard_randomness() */
+# include "signal.h"		/* killgroup() */
+# include "timeout.h"		/* addroottimeout() */
+
+# include <osbind.h>
+
+/* modifier masks for the kbshift() */
+# define MM_RSHIFT	0x01
+# define MM_LSHIFT	0x02
+# define MM_CTRL	0x04
+# define MM_ALTERNATE	0x08
+# define MM_CAPS	0x10
+# define MM_CLRHOME	0x20
+# define MM_INSERT	0x40
+
+/* masks for key combinations */
+# define MM_ESHIFT	0x03	/* either shift */
+# define MM_CTRLALT	0x0c
 
 /* some key definitions */
-# define RSHIFT		0x01
-# define CTRLALT	0x0c
+# define CONTROL	0x1d	/* scan code for control key */
+# define LSHIFT		0x2a	/* scan code for left shift */
+# define RSHIFT		0x36	/* scan code for right shift */
+# define ALTERNATE	0x38	/* scan code for alternate key */
+# define CAPS		0x3a	/* scan code of caps lock key */
+# define CLRHOME	0x47	/* scan code for clr/home key */
+# define INSERT		0x52	/* scan code for insert key */
 # define DEL		0x53	/* scan code of delete key */
 # define UNDO		0x61	/* scan code of undo key */
+# define HELP		0x62	/* scan code of help key */
 
-# define MAXKBD		8	/* maximum keyboard code supported */
+# define MAXAKP		8	/* maximum _AKP code supported */
 
 /* Functions exported */
-short ikbd_scan(short scancode);
+short ikbd_scan(ushort scancode);
 void load_keytbl(void);
 
 /* Keyboard definition tables (taken off TOS 4.04, with fixes) */
@@ -340,7 +362,7 @@ static const char british_kbd[] =
 	0x00
 };
 
-/* Spanish, (4) */
+/* Spanish (4) */
 
 /* Unshifted */
 
@@ -644,9 +666,9 @@ static const char sw_german_kbd[] =
 	'+' ,'~' ,0x00
 };
 
-/* Keyboard scancode interrupt routine.
+/* Keyboard interrupt routine.
  *
- * TOS goes through here with the freshly baked and
+ * TOS goes through here with the freshly baked and still
  * warm key scancode in hands. If there are any keys or
  * key combinations we want to handle (e.g. Ctrl/Alt/Del)
  * then we intercept it now.
@@ -663,6 +685,10 @@ static const char sw_german_kbd[] =
  *
  */
 
+/* Define the routine producing the keyclick
+ */
+typedef void (*KEYCLK)(void);
+
 static	short cad_lock;	/* semaphore to avoid scheduling shutdown() twice */
 short 	gl_kbd;		/* keyboard layout, set by getmch() in init.c */
 
@@ -673,28 +699,20 @@ const char *keyboards[] =
 	0
 };
 
-/* Routines called after the user hit Ctrl/Alt/Del
- * and Ctrl/Alt/RShift/Del respectively.
+/* Routine called after the user hit Ctrl/Alt/Del
  */
-
 static void
-ctrl_alt_del(PROC *p)
+ctrl_alt_del(PROC *p, long arg)
 {
-	s_hutdown(1);
-}
-
-static void
-ctrl_alt_rshift_del(PROC *p)
-{
-	s_hutdown(2);
+	s_hutdown(arg);
 }
 
 /* The handler
  */
 short
-ikbd_scan(short scancode)
+ikbd_scan(ushort scancode)
 {
-	ushort mod = 0, shift = *kbshft;
+	ushort mod = 0, clk = 0, shift = *kbshft;
 
 	scancode &= 0x00ff;		/* better safe than sorry */
 
@@ -702,98 +720,172 @@ ikbd_scan(short scancode)
 	add_keyboard_randomness((ushort)((scancode << 8) | shift));
 # endif
 
-	/* The Ctrl/Alt/Fx, Ctrl/Alt/Del and Ctrl/Alt/Undo
-	 * we do internally and don't pass away to TOS
-	 */
-	if ((shift & CTRLALT) == CTRLALT)
-	{
-		if (scancode == DEL)
-		{
-			if (!cad_lock)
-			{
-				cad_lock = 1;
-
-				if (shift & RSHIFT)	
-					addroottimeout(0L, ctrl_alt_rshift_del, 1);
-				else
-					addroottimeout(0L, ctrl_alt_del, 1);
-			}
-			return -1;
-		}
-		else if (((scancode >= 0x003b) && \
-				(scancode <= 0x0044)) || \
-					((scancode >= 0x0054) && \
-						(scancode <= 0x005d)))
-		{
-			do_func_key(scancode);
-			return -1;
-		}
-	}
-
-	/* Also we handle modifiers here
+	/* We handle modifiers first
 	 */
 	switch(scancode)
 	{
-		case	0x001d:		/* Control */
+		case	CONTROL:
 		{
-			shift |= 0x04;
+			shift |= MM_CTRL;
 			mod++;
 			break;
 		}
-		case	0x002a:		/* Left shift */
+		case	LSHIFT:
 		{
-			shift |= 0x02;
+			shift |= MM_LSHIFT;
 			mod++;
 			break;
 		}
-		case	0x0036:		/* Right shift */
+		case	RSHIFT:
 		{
-			shift |= 0x01;
+			shift |= MM_RSHIFT;
 			mod++;
 			break;
 		}
-		case	0x0038:		/* Alternate */
+		case	ALTERNATE:
 		{
-			shift |= 0x08;
+			shift |= MM_ALTERNATE;
 			mod++;
 			break;
 		}
-		case	0x009d:		/* Control (release) */
+		case	CAPS:		/* Caps acts differently */
 		{
-			shift &= ~0x04;
+			shift ^= MM_CAPS;
+			mod++;
+			clk++;
+			break;
+		}
+		case	CLRHOME:
+		{
+			shift |= MM_CLRHOME;
 			mod++;
 			break;
 		}
-		case	0x00aa:		/* Left shift (release) */
+		case	INSERT:
 		{
-			shift &= ~0x02;
+			shift |= MM_INSERT;
 			mod++;
 			break;
 		}
-		case	0x00B6:		/* Right shift (release) */
+		case	CONTROL+0x80:
 		{
-			shift &= ~0x01;
+			shift &= ~MM_CTRL;
 			mod++;
 			break;
 		}
-		case	0x00B8:		/* Alternate (release) */
+		case	LSHIFT+0x80:
 		{
-			shift &= ~0x08;
+			shift &= ~MM_LSHIFT;
+			mod++;
+			break;
+		}
+		case	RSHIFT+0x80:
+		{
+			shift &= ~MM_RSHIFT;
+			mod++;
+			break;
+		}
+		case	ALTERNATE+0x80:
+		{
+			shift &= ~MM_ALTERNATE;
+			mod++;
+			break;
+		}
+		case	CLRHOME+0x80:
+		{
+			shift &= ~MM_CLRHOME;
+			mod++;
+			break;
+		}
+		case	INSERT+0x80:
+		{
+			shift &= ~MM_INSERT;
 			mod++;
 			break;
 		}
 	}
 	if (mod)
-	{					
-		mshift = shift;
-		*kbshft = (char)shift;
-	
-		return -1;
+	{
+		ushort sc = scancode;
+
+		*kbshft = mshift = (char)shift;
+		if (clk)
+			(*(KEYCLK *)0x05b0L)();		/* produce keyclick */
+		sc &= 0x7f;
+		if ((sc != CLRHOME) && (sc != INSERT))
+			return -1;
 	}
 
-	kintr = 1;		/* keyboard event occurred */
-	
-	return scancode;	/* give the scancode away to TOS */
+	/* Here we handle keys of `system wide' meaning. These are:
+	 *
+	 * Ctrl/Alt/Del		-> warm start
+	 * Ctrl/Alt/RShift/Del	-> cold start
+	 * Ctrl/Alt/LShift/Del	-> halt
+	 * Ctrl/Alt/Undo	-> SIGQUIT to the group
+	 * Ctrl/Alt/Fx		-> debug information
+	 * Ctrl/Alt/Shift/Fx	-> debug information
+	 *
+	 */
+	if ((shift & MM_CTRLALT) == MM_CTRLALT)
+	{
+		if (scancode == DEL)
+		{
+			if (!cad_lock)
+			{
+				TIMEOUT *t;
+
+				t = addroottimeout(0L, (void _cdecl (*)(PROC *))ctrl_alt_del, 1);
+				if (t)
+				{
+					t->arg = 1;
+					if ((shift & MM_ESHIFT) == MM_RSHIFT)
+						t->arg++;
+					else if ((shift & MM_ESHIFT) == MM_LSHIFT)
+						t->arg--;
+					cad_lock++;
+				}
+			}
+			goto key_handled;
+		}
+		else if (scancode == UNDO)
+		{
+			killgroup(con_tty.pgrp, SIGQUIT, 1);
+			goto key_handled;
+		}
+		else if ((scancode >= 0x003b) && (scancode <= 0x0044))
+		{
+			if (shift & MM_ESHIFT)
+				scancode += 0x0019;	/* emulate F11-F20 */
+			do_func_key(scancode);
+			goto key_handled;
+		}
+		/* This is in case the keyboard has real F11-F20 keys on it */
+		else if ((scancode >= 0x0054) && (scancode <= 0x005d))
+		{
+			do_func_key(scancode);
+			goto key_handled;
+		}
+	}
+
+	/* Add Alt/Help here ... block it for now, until a better idea.
+	 * What about firing up the /c/multitos/althelp.sys ?
+	 */
+	if ((shift & MM_ALTERNATE) == MM_ALTERNATE)
+	{
+		if (scancode == HELP)
+			goto key_handled;
+	}
+
+	/* Ordinary keyboard add here ...
+	 */
+
+	kintr = 1;
+
+	return scancode;	/* for now, give the scancode away to TOS */
+
+key_handled:
+	(*(KEYCLK *)0x05b0L)();		/* produce keyclick */
+	return -1;
 }
 
 static void
@@ -805,11 +897,11 @@ load_table(FILEPTR *fp, char *name, long size)
 	 * tables respectively; plus 3 bytes for three alt ones,
 	 * plus two bytes magic header, gives 389 bytes minimum.
 	 */
-	if (size < 389L)
-		return;
+	if (size < 389L) return;
+
 	kbuf = kmalloc(size);
-	if (!kbuf)
-		return;
+	if (!kbuf) return;
+
 	if ((*fp->dev->read)(fp, kbuf, size) != size)
 	{
 		kfree(kbuf);
@@ -823,7 +915,7 @@ load_table(FILEPTR *fp, char *name, long size)
 
 	/* Success */
 	gl_kbd = 6;
-	keyboards[6] = kbuf + 2;
+	keyboards[6] = kbuf + sizeof(short);
 
 	boot_printf("Loaded keyboard table %s\r\n", name);
 }
@@ -836,27 +928,27 @@ load_keytbl(void)
 	long ret;
 	char *name;
 
-	ret = fp_alloc (rootproc, &fp);
+	ret = fp_alloc(rootproc, &fp);
 	if (ret) return;
-	
+
 	/* `keybd.tbl' is already used by GEM.SYS, we can't conflict
 	 */
 	name = "\\keybd.sys";
-	ret = do_open (&fp, name, O_RDONLY, 0, &xattr);
+	ret = do_open(&fp, name, O_RDONLY, 0, &xattr);
 	if (ret)
 	{
 		name = "\\multitos\\keybd.sys";
-		ret = do_open (&fp, name, O_RDONLY, 0, &xattr);
+		ret = do_open(&fp, name, O_RDONLY, 0, &xattr);
 	}
 	if (ret)
 	{
 		name = "\\mint\\keybd.sys";
-		ret = do_open (&fp, name, O_RDONLY, 0, &xattr);
-	}	
+		ret = do_open(&fp, name, O_RDONLY, 0, &xattr);
+	}
 	if (!ret)
 	{
-		load_table(fp, name, xattr.size); 
-		do_close (rootproc, fp);
+		load_table(fp, name, xattr.size);
+		do_close(rootproc, fp);
 	}
 }
 
