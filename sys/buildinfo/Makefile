@@ -19,7 +19,7 @@ all-here: mkbuild
 
 # default overwrites
 CC = $(NATIVECC)
-CFLAGS = $(NATIVECFLAGS) -mshort
+CFLAGS = $(NATIVECFLAGS)
 
 # default definitions
 OBJS = mkbuild.o
