@@ -1,9 +1,9 @@
 /*
  * Filename:     mkfatfs.c
- * Version:      0.22b
+ * Version:      0.23
  * Author:       Frank Naumann
  * Started:      1998-08-01
- * Last Updated: 1999-03-03
+ * Last Updated: 2000-06-14
  * Target O/S:   TOS
  * Description:  Utility to allow an FAT filesystem to be created.
  * 
@@ -13,7 +13,7 @@
  * This program is a mostly rewritten version of
  * David Hudson's "mkdosfs".
  * 
- * Copying:      Copyright 1998 Frank Naumann (fnaumann@cs.uni-magdeburg.de)
+ * Copying:      Copyright 1998 Frank Naumann <fnaumann@freemint.de>
  * 
  * Portions copyright 1993, 1994 David Hudson (dave@humbug.demon.co.uk)
  * Portions copyright 1992, 1993 Remy Card (card@masi.ibp.fr)
@@ -35,6 +35,13 @@
  * 
  * 
  * last changes:
+ * 
+ * 2000-06-14:	(v0.23)
+ * 
+ * - new: replaced old XHDI wrapper with new 32bit clean version
+ *        -> removed mshort compile time switch
+ * - fix: for DOS partition type detection, added more supported types
+ * - new: adaptions for new MiNTLib
  * 
  * 1999-03-03:	(v0.22b)
  * 
@@ -81,14 +88,14 @@ extern int optind;
 
 # include <mintbind.h>
 
-# include <mint/types.h>
-# include <mint/default.h>
-
 # include "xhdi.h"
+# include "mytypes.h"
+# include "bswap.h"
 
 
-# define VERSION	"0.22b"
-# define DEBUG(x)	printf x; fflush (stdout);
+# define VERSION	"0.23"
+# define DEBUG(x)	printf x
+# define INLINE		static inline
 
 # define NO		0
 # define YES		1
@@ -266,9 +273,9 @@ static char dummy_boot_code[450] =
 
 /* tools */
 
-FASTFN long	C2S	(long cluster);
-FASTFN long	S2C	(long sector);
-FASTFN long	cdiv	(long a, long b);
+INLINE long	C2S	(long cluster);
+INLINE long	S2C	(long sector);
+INLINE long	cdiv	(long a, long b);
 
 
 /* low level FAT access */
@@ -405,20 +412,20 @@ static long	chunks	= 32;
 /****************************************************************************/
 /* BEGIN tools */
 
-FASTFN long
+INLINE long
 C2S (long cluster)
 {
 	return ((cluster * CLSIZE) + DOFFSET);
 }
 
-FASTFN long
+INLINE long
 S2C (long sector)
 {
 	return ((sector - DOFFSET) / CLSIZE);
 }
 
 /* Compute ceil (a/b) */
-FASTFN long
+INLINE long
 cdiv (long a, long b)
 {
 	return (a + b - 1) / b;
@@ -564,7 +571,7 @@ alarm_intr (long alnum)
 	if (CURRENT >= SECS)
 		return;
 	
-	signal (SIGALRM, (__Sigfunc) alarm_intr);
+	signal (SIGALRM, (__sighandler_t) alarm_intr);
 	alarm (3);
 	
 	if (!CURRENT)
@@ -589,7 +596,7 @@ check_blocks (void)
 	
 	CURRENT = 0;
 	
-	signal (SIGALRM, (__Sigfunc) alarm_intr);
+	signal (SIGALRM, (__sighandler_t) alarm_intr);
 	alarm (3);
 	
 	try = CHUNKS;
@@ -669,6 +676,7 @@ get_geometry (void)
 	}
 	if (r != 0)
 	{
+		perror ("get_geometry");
 		fatal ("unable to get geometry for '%c'");
 	}
 	
@@ -702,18 +710,28 @@ get_geometry (void)
 	}
 	else if (ID [1] == 'D')
 	{
-		printf ("partition type       : DOS\n");
-		printf ("partition ID         : 0x%x\n", (int) ID [2]);
+		int sys_type = ID [2];
 		
-		if (ID [2] == 0x6)
+		printf ("partition type       : DOS\n");
+		printf ("partition ID         : 0x%x\n", sys_type);
+		
+		switch (sys_type)
 		{
-			MODE |= MODE_DOS;
-			if (!FTYPE) FTYPE = 16;
-		}
-		else if (ID [2] == 0xb)
-		{
-			MODE |= MODE_DOS_F32;
-			if (!FTYPE) FTYPE = 32;
+			case 0x4:
+			case 0x6:
+			case 0xe:
+			{
+				MODE |= MODE_DOS;
+				if (!FTYPE) FTYPE = 16;
+				break;
+			}
+			case 0xb:
+			case 0xc:
+			{
+				MODE |= MODE_DOS_F32;
+				if (!FTYPE) FTYPE = 32;
+				break;
+			}
 		}
 	}
 	else
@@ -1123,7 +1141,7 @@ setup_tables (void)
 		}
 		else
 		{
-			if (!((MODE & MODE_BGM) || (MODE & MODE_F32)))
+			if (!((MODE & MODE_BGM) || (MODE & MODE_DOS)))
 			{
 				printf ("Can't create FAT filesystem - wrong partition ID!\n");
 				printf ("Please change first partition ID to 'BGM' (TOS) or '0x6' (DOS).\n");
@@ -1150,21 +1168,21 @@ write_tables (void)
 	
 	/* byte order correction */
 	
-	BOOT.reserved		= SWAP68_W (BOOT.reserved);
-	BOOT.fat_length		= SWAP68_W (BOOT.fat_length);
-	BOOT.secs_track		= SWAP68_W (BOOT.secs_track);
-	BOOT.heads		= SWAP68_W (BOOT.heads);
-	BOOT.hidden		= SWAP68_L (BOOT.hidden);
-	BOOT.total_sect		= SWAP68_L (BOOT.total_sect);
+	BOOT.reserved		= BSWAP16 (BOOT.reserved);
+	BOOT.fat_length		= BSWAP16 (BOOT.fat_length);
+	BOOT.secs_track		= BSWAP16 (BOOT.secs_track);
+	BOOT.heads		= BSWAP16 (BOOT.heads);
+	BOOT.hidden		= BSWAP32 (BOOT.hidden);
+	BOOT.total_sect		= BSWAP32 (BOOT.total_sect);
 	
-	BOOT32.fat32_length	= SWAP68_L (BOOT32.fat32_length);
-	BOOT32.flags		= SWAP68_W (BOOT32.flags);
-	BOOT32.root_cluster	= SWAP68_L (BOOT32.root_cluster);
-	BOOT32.info_sector	= SWAP68_W (BOOT32.info_sector);
-	BOOT32.backup_boot	= SWAP68_W (BOOT32.backup_boot);
+	BOOT32.fat32_length	= BSWAP32 (BOOT32.fat32_length);
+	BOOT32.flags		= BSWAP16 (BOOT32.flags);
+	BOOT32.root_cluster	= BSWAP32 (BOOT32.root_cluster);
+	BOOT32.info_sector	= BSWAP16 (BOOT32.info_sector);
+	BOOT32.backup_boot	= BSWAP16 (BOOT32.backup_boot);
 	
-	ROOT[0].time		= SWAP68_W (ROOT[0].time);
-	ROOT[0].date		= SWAP68_W (ROOT[0].date);
+	ROOT[0].time		= BSWAP16 (ROOT[0].time);
+	ROOT[0].date		= BSWAP16 (ROOT[0].date);
 	
 	
 	/* build boot and blank sector */
@@ -1173,9 +1191,7 @@ write_tables (void)
 	blank = malloc (SECSIZE);
 	
 	if (!boot || !blank)
-	{
 		fatal ("out of memory");
-	}
 	
 	memset (boot, 0, SECSIZE);
 	memset (blank, 0, SECSIZE);
@@ -1193,13 +1209,24 @@ write_tables (void)
 	
 	memcpy (boot + i, dummy_boot_code, j);
 	
+# if 1
+# define FEEDBACK(x)	printf ("."); fflush (stdout)
+# define FEEDBACKSTART	printf ("Writing tables ")
+# define FEEDBACKEND	printf (" done\n")
+# else
+# define FEEDBACK(x)	printf x; fflush (stdout)
+# define FEEDBACKSTART	printf ("Initialising partition ...\n")
+# define FEEDBACKEND	printf ("done\n")
+# endif
 	
 	/* write out the bootsector (and backup if FAT32) */
+	
+	FEEDBACKSTART;
 	
 	actual = 0;
 	for (i = 0; i < ((FTYPE == 32) ? 2 : 1); i++)
 	{
-		DEBUG (("Write bootblock: sector = %ld, count = %ld\n", actual, 1L));
+		FEEDBACK (("Write bootblock: sector = %ld, count = %ld\n", actual, 1L));
 		r = rwabs_xhdi (1, boot, SECSIZE, actual++);
 		if (r) fatal ("failed whilst writing boot sector");
 		
@@ -1207,29 +1234,29 @@ write_tables (void)
 		{
 			long max;
 			
-			DEBUG (("Write boot backup: sector = %ld, count = %ld\n", actual, 1L));
+			FEEDBACK (("Write boot backup: sector = %ld, count = %ld\n", actual, 1L));
 			r = rwabs_xhdi (1, F32_INFO, SECSIZE, actual++);
 			if (r) fatal ("failed whilst writing boot sector");
 			
 			/* So far, two sectors have gone out. Write out blanks */
-			max = SWAP68_W (BOOT32.backup_boot);
+			max = BSWAP16 (BOOT32.backup_boot);
 			for (j = 2; j < max; j++)
 			{
-				DEBUG (("Write blank: sector = %ld, count = %ld\n", actual, 1L));
+				FEEDBACK (("Write blank: sector = %ld, count = %ld\n", actual, 1L));
 				r = rwabs_xhdi (1, blank, SECSIZE, actual++);
 				if (r) fatal ("failed whilst writing boot sector");
 			}
 		}
 	}
 	
-	actual = SWAP68_W (BOOT.reserved);
+	actual = BSWAP16 (BOOT.reserved);
 	
 	
 	/* write out FATs */
 	
 	for (i = 0; i < FATS; i++)
 	{
-		DEBUG (("Write FATs: sector = %ld, count = %ld\n", actual, FATSIZE));
+		FEEDBACK (("Write FATs: sector = %ld, count = %ld\n", actual, FATSIZE));
 		r = rwabs_xhdi (1, FAT, FATSIZE * SECSIZE, actual);
 		if (r) fatal ("failed whilst writing FAT");
 		actual += FATSIZE;
@@ -1238,9 +1265,11 @@ write_tables (void)
 	
 	/* write out root directory */
 	
-	DEBUG (("Write rootdir: sector = %ld, count = %ld\n", actual, ROOTBYTES / SECSIZE));
+	FEEDBACK (("Write rootdir: sector = %ld, count = %ld\n", actual, ROOTBYTES / SECSIZE));
 	r = rwabs_xhdi (1, ROOT, ROOTBYTES, actual);
 	if (r) fatal ("failed whilst writing root directory");
+	
+	FEEDBACKEND;
 }
 
 /* END  */
@@ -1296,18 +1325,14 @@ main (int argc, char **argv)
 	
 	/* What's the program name? */
 	if (argc && *argv)
-	{
 		PROGRAM = *argv;
-	}
 	else
-	{
 		PROGRAM = "mkdosfs";
-	}
 	
-	printf ("%s " VERSION ", 1998-08-01 for TOS and DOS FAT/FAT32-FS\n", PROGRAM);
+	printf ("%s " VERSION ", 2000-06-14 for TOS and DOS FAT/FAT32-FS\n", PROGRAM);
 	
 	/* check and initalize XHDI */
-	if (XHDI_init ())
+	if (init_XHDI ())
 		fatal ("No XHDI installed (or to old)");
 	
 	printf ("Found XHDI level %x.%x.\n\n", (XHDI_installed >> 8), (XHDI_installed & 0x00ff));
