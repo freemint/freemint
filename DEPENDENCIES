@@ -11,6 +11,10 @@ $(DEFS-$(<F)) $(DEFS-$(DIRSTEM)))
 	@echo "$(COMPILE) -c $< -o $@"; \
 	$(COMPILE) -Wp,-MD,.deps/$(@:.o=.P) -c $< -o $@
 
+%.o: %.S
+	@echo '$(COMPILE) -c $< -o $@'; \
+	$(COMPILE) -Wp,-MD,.deps/$(@:.o=.P) -c $< -o $@
+
 %.o: %.s
 	@echo "$(COMPILE) -c $< -o $@"; \
 	$(COMPILE) -Wp,-MD,.deps/$(@:.o=.P) -c $< -o $@
