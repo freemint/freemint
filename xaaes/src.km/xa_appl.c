@@ -823,8 +823,10 @@ XA_appl_write(enum locks lock, struct xa_client *client, AESPB *pb)
 				}
 			}
 			if (m)
-				send_a_message(lock, dest_clnt, amq, QMF_CHKDUP, m);
-			yield();
+				send_a_message(lock, dest_clnt, amq, qmf/*QMF_CHKDUP*/, m);
+			
+			if (dest_clnt != client)
+				yield();
 		}
 	}
 
@@ -1119,7 +1121,7 @@ init_apgi_infotab(void)
 	s = mcs(s, BCOMPILER);
 	*s++ = 0;
 
-	DIAGS(("Build status-string '%s'", status));
+	DIAGS(("Build status-string '%s'", info_string));
 }
 
 

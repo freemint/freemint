@@ -1238,7 +1238,7 @@ XA_shel_envrn(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		*p = NULL;
 
-		DIAGS(("shell_env for %s: '%s' :: '%s'", c_owner(client), name, pf ? pf : "~~~"));	
+		DIAGS(("shell_env for %s: '%s' :: '%s'", client ? c_owner(client) : "non-aes process", name, pf ? pf : "~~~"));	
 		if (pf)
 		{
 			*p = umalloc(strlen(pf) + 1);
@@ -1248,6 +1248,7 @@ XA_shel_envrn(enum locks lock, struct xa_client *client, AESPB *pb)
 	}
 
 	pb->intout[0] = 1;
+	
 	return XAC_DONE;
 }
 
