@@ -70,7 +70,10 @@ k_shutdown(void)
 		while (client)
 		{
 			if (client != C.Aes)
+			{
 				flag = 1;
+				DIAGS(("client '%s' still running", client->name));
+			}
 
 			client = client->next;
 		}
