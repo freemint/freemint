@@ -43,6 +43,9 @@
 # include "dos.h"	/* */
 # include "dosdir.h"	/* */
 # include "filesys.h"	/* init_filesys, s_ync, close_filesys */
+#ifdef FLOPPY_ROUTINES
+# include "floppy.h"	/* init_floppy */
+#endif
 # include "gmon.h"	/* monstartup */
 # include "info.h"	/* welcome messages */
 # include "ipc_socketutil.h" /* domaininit() */
@@ -925,6 +928,12 @@ init (void)
 	/* initialize buffered block I/O */
 	init_block_IO ();
 	DEBUG (("init_block_IO() ok!"));
+
+	/* initialiye floppy */
+#ifdef FLOPPY_ROUTINES
+	init_floppy ();
+	DEBUG (("init_floppy() ok!"));
+#endif
 	
 	/* initialize crypto I/O layer */
 	init_crypt_IO ();
