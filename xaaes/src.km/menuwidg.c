@@ -819,7 +819,7 @@ display_popup(Tab *tab, XA_TREE *wt, int item, short rdx, short rdy)
 	{
 		if (r.h < wash)
 		{
-			int mg = MONO ? 2 : 1;
+			//int mg = MONO ? 2 : 1;
 			XA_WIND_ATTR tp = TOOLBAR|VSLIDE|UPARROW|DNARROW|STORE_BACK;
 
 			tab->scroll = true;
