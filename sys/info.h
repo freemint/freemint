@@ -57,6 +57,10 @@ extern char COMPILER_VERS [];
 extern const char *random_greet;
 #endif
 
+#ifdef CRYPTO_CODE
+extern const char *crypto_greet;
+#endif
+
 extern const char *memprot_notice;
 extern const char *memprot_warning;
 
