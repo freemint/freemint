@@ -56,8 +56,6 @@
 #include "vaproto.h"
 #include "wlib.h"
 
-#define	DEBUG 0
-
 /* XXX from mintlib */
 extern short _app;
 
@@ -287,9 +285,7 @@ cpx_open_window(CPX_DESC *cpx_desc)
 {
 	OBJECT *tree;
 
-#if DEBUG
-	printf("cpx_open_window\r\n");
-#endif
+	DEBUG(("cpx_open_window\n"));
 
 	cpx_desc->tree = 0L;
 	cpx_desc->empty_tree[0] = tree_addr[EMPTY_TREE][0];	/* leere IBOX fuer anfaenglichen Objektbaum */
@@ -340,9 +336,7 @@ cpx_open_window(CPX_DESC *cpx_desc)
 static short
 cpx_close_window(CPX_DESC *cpx_desc)
 {
-#if DEBUG
-	printf("cpx_close_window\r\n");
-#endif
+	DEBUG(("cpx_close_window\n"));
 
 	/* Fenster offen? */
 	if (cpx_desc->dialog)
@@ -433,9 +427,7 @@ init_cpx(char *file_path, char *file_name, short inactive)
 		strncpy(cpx_desc->old.f_name, file_name, 13); /* aus Kompatibilitaetsgruenden */
 		cpx_desc->old.segm = &cpx_desc->segm;						
 
-#if DEBUG
-		printf("load_cpx(%s)\r\n", cpx_desc->file_name);
-#endif
+		DEBUG(("load_cpx(%s)\n", cpx_desc->file_name));
 
 		/* CPX laden */
 		addr = load_cpx(cpx_desc, file_path, &size, 1);
@@ -1572,13 +1564,9 @@ void
 open_cpx_context(CPX_DESC *cpx_desc)
 {
 	long size;
-	short err;
-	
-#if DEBUG
-	printf("open_cpx_context\r\n");
-#endif
+	short err = 1;
 
-	err = 1;
+	DEBUG(("open_cpx_context\n"));
 
 	/* ist das CPX resident? */
 	if (cpx_desc->start_of_cpx)
@@ -2075,10 +2063,8 @@ static short
 handle_keyboard(short kstate, short key)
 {
 	short handle;
-	
-#if DEBUG
-	printf("handle_keyboard 0x%x 0x%x\n", kstate, key);
-#endif
+
+	DEBUG(("handle_keyboard 0x%x 0x%x\n", kstate, key));
 
 	handle = top_whdl();
 
