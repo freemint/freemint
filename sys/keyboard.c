@@ -808,10 +808,10 @@ load_keytbl(void)
 		char msg[64];
 
 		ksprintf(msg, sizeof(msg), MSG_keytable_loaded, gl_kbd);
-		c_conws(msg);
+		sys_c_conws(msg);
 	}
 	else
-		c_conws(MSG_keytable_faulty);
+		sys_c_conws(MSG_keytable_faulty);
 }
 
 /* Initialize the built-in keyboard tables.
