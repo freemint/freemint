@@ -757,7 +757,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				w->send_message(lock, w, NULL, AMQ_NORM, QMF_CHKDUP, msg, 0, 0, w->handle, 0,0,0,0);
 		}
 
-		if (pb->control[2] >= 5)
+		if (pb->control[N_INTOUT] >= 5)
 		{
 			if (!ir)
 				ir = (RECT *)&w->rc;
@@ -1119,10 +1119,9 @@ unsigned long
 XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	struct xa_window *w;
-	struct xa_rect_list *rl;
 	XA_SLIDER_WIDGET *slw;
 	short *o = pb->intout;
-	RECT d, *ro = (RECT *)&pb->intout[1];
+	RECT *ro = (RECT *)&pb->intout[1];
 	int wind = pb->intin[0];
 	int cmd = pb->intin[1];
 
@@ -1206,57 +1205,53 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 	case WF_FTOOLBAR:	/* suboptimal, but for the moment it is more important that it van be used. */
 	case WF_FIRSTXYWH:	/* Generate a rectangle list and return the first entry */
 	{
-		rl = rect_get_user_first(w);
-		/* HR: Oh, Oh  Leaving a intersect unchecked!! And forcing me to use a goto :-( */
-		if (rl)
+		RECT *clp;
+		
+		if (pb->control[N_INTIN] >= 6)
 		{
-			d = w->wa;
-			if (!xa_rc_intersect(rl->r, &d))
-				goto next;		
-			/* Return the first rectangle coords */
-			*ro = d;
-		} 
+			struct xa_rect_list *rl;
+
+			w->rl_clip = *(const RECT *)(pb->intin + 2);
+			w->use_rlc = true;
+			make_rect_list(w, true, RECT_OPT);
+			rl = rect_get_optimal_first(w);
+			if (rl)
+				*ro = rl->r;
+			else
+				ro->x = ro->y = ro->w = ro->h = 0;
+		}
 		else
 		{
-			/* Totally obscured window, return w & h as 0 */
-			ro->x = w->r.x;
-			ro->y = w->r.y;
-			ro->w = 0;
-			ro->h = 0;
+			clp = &w->wa;
+			w->use_rlc = false;
+
+			if (!get_rect(w, &w->wa, true, ro))
+			{
+				ro->x = w->r.x;
+				ro->y = w->r.y;
+				ro->w = ro->h = 0;
+			}
 		}
-		DIAG((D_wind, client, "first for %s %d/%d,%d/%d", client->name, o[1], o[2], o[3], o[4]));
 		break;
 	}
 	case WF_NTOOLBAR:		/* suboptimal, but for the moment it is more
 					   important that it van be used. */
 	case WF_NEXTXYWH:		/* Get next entry from a rectangle list */
 	{
-next:
-		do {
-			rl = rect_get_user_next(w);
+		if (w->use_rlc)
+		{
+			struct xa_rect_list *rl = rect_get_optimal_next(w);
 			if (rl)
-			{
-				d = w->wa;
-				if (xa_rc_intersect(rl->r, &d))
-				{
-					/* Return the next rectangle coords */
-					*ro = d;
-					break;
-				}
-			}
+				*ro = rl->r;
 			else
-			{
-				/* Totally obscured window, return w & h as 0 */
-				ro->x = w->r.x;
-				ro->y = w->r.y;
-				ro->w = 0;
-				ro->h = 0;
-				break;
-			}
+				ro->x = ro->y = ro->w = ro->h = 0;
 		}
-		while (1);
-		DIAG((D_wind, client, "next for %s %d/%d,%d/%d",
-			client->name, o[1], o[2], o[3], o[4]));
+		else if (!get_rect(w, &w->wa, false, ro))
+		{
+			ro->x = w->r.x;
+			ro->y = w->r.y;
+			ro->w = ro->h = 0;
+		}
 		break;
 	}
 	case WF_TOOLBAR:

@@ -221,7 +221,7 @@ set_slist_object(enum locks lock,
 		/* recalc for aligned work area */
 		list->wi->rc = list->wi->r;
 		calc_work_area(list->wi);
-		make_rect_list(list->wi, true);
+		make_rect_list(list->wi, true, RECT_SYS);
 	}
 	return list;
 }
