@@ -862,9 +862,6 @@ new_moose_pkt(enum locks lock, int internal, struct moose_data *md /*imd*/)
 	return true;
 }
 
-/* XXX */
-//extern long redraws;
-
 static short last_x = 0;
 static short last_y = 0;
 static TIMEOUT *b_to = NULL;

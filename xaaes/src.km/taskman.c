@@ -473,6 +473,21 @@ sysalerts_form_exit(struct xa_client *Client,
 
 	switch (item)
 	{
+		case SYSALERT_LIST:
+		{
+			short obj = fr->obj;
+			OBJECT *obtree = wt->tree;
+
+			DIAGS(("taskmanager_form_exit: Moved the shit out of form_do() to here!"));
+			if ( fr->md && ((obtree[obj].ob_type & 0xff) == G_SLIST))
+			{
+				if (fr->md->clicks > 1)
+					dclick_scroll_list(lock, obtree, obj, fr->md);
+				else
+					click_scroll_list(lock, obtree, obj, fr->md);
+			}
+			break;
+		}
 		/* Empty the task list */
 		case SALERT_CLEAR:
 		{
