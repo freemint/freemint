@@ -2,8 +2,8 @@
  * it is not a part of the original MiNT distribution.
  */
 
-# ifndef _mmu_h
-# define _mmu_h
+# ifndef _m68k_mmu_h
+# define _m68k_mmu_h
 
 # include "mint/mint.h"
 
@@ -18,4 +18,4 @@ void _cdecl	restr_mmu	(void);
 void _cdecl	flush_mmu	(void);
 
 
-# endif /* _mmu_h */
+# endif /* _m68k_mmu_h */

@@ -2,8 +2,8 @@
  * it is not a part of the original MiNT distribution.
  */
 
-# ifndef _cpu_h
-# define _cpu_h
+# ifndef _m68k_cpu_h
+# define _m68k_cpu_h
 
 # include "mint/mint.h"
 
@@ -23,4 +23,4 @@ void _cdecl	cpush060	(const void *base, long size);
 void _cdecl	setstack	(long);
 
 
-# endif /* _cpu_h */
+# endif /* _m68k_cpu_h */
