@@ -100,6 +100,13 @@ struct mutimbuf
 
 
 /*
+ * kernel module
+ */
+
+# define KM_RUN		(('K'<< 8) | 1)		/* 1.16 */
+
+
+/*
  * shared memory
  */
 

@@ -1,6 +1,6 @@
 /*
  * $Id$
- *
+ * 
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
  *                                        2004 F.Naumann & O.Skancke
@@ -24,17 +24,22 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef _init_h
-#define _init_h
+/*
+ * _setstack - changes the stack pointer
+ *
+ * Prototype:
+ * void _setstack(void *newsp);
+ *
+ * WARNING: after this local variables may no longer be valid!
+ *          destroys a0 and a7 too
+ */
 
-#include "global.h"
+	.globl	__setstack
 
-extern short my_global_aes[];
+	.text
 
-extern char version[];
-extern Path Aes_home_path;
-extern long loader_pid;
-
-long init(struct kentry *k);
-
-#endif /* _init_h */
+__setstack:
+	movel	sp@+,a0		// save return
+	movel	sp@,sp		// new stack pointer
+	subql	#4,sp		// fixup
+	jmp	a0@		// and jump back
