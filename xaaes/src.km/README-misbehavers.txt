@@ -57,5 +57,16 @@ Thomas Binder, you know better than this? ;-)
  appl_find()
  appl_getinfo()
  appl_init()
+
+------------------------------------------------------------------------------
+ Jinnee Versions prior 2.5
+
+ It has the value of -1 (0xffffffff) by each CICON blk resolution list instead
+ of valid NULL value.
+
+ Interesting thing is that it uses (I haven't met another app) legal(?)
+ requirement that the resolution fixed CICON bitmap planes field should be
+ updated to reflect the bitmap acutal format.
+
 ------------------------------------------------------------------------------
  Papyrus
