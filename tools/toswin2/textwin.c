@@ -146,6 +146,7 @@ draw_acs_text(TEXTWIN* t, short textcolor, short x, short y, char* buf)
 	short cwidth = t->cmaxwidth;
 	short cheight = t->cheight;
 	short pxy[8];
+	short box = cwidth > cheight ? cheight - 1 : cwidth - 1;
 	unsigned char letter[2] = { '\0', '\0' };
 
 	while (*crs && x < max_x) {
@@ -252,12 +253,12 @@ draw_acs_text(TEXTWIN* t, short textcolor, short x, short y, char* buf)
 
 			case '`': /* ACS_DIAMOND */
 				pxy[0] = x + (cwidth >> 1);
-				pxy[1] = y + (cheight >> 2);
-				pxy[2] = pxy[0] + (cwidth >> 2);
+				pxy[1] = y + (cheight >> 1) - (box >> 1);
+				pxy[2] = pxy[0] + (box >> 1);
 				pxy[3] = y + (cheight >> 1);
 				pxy[4] = pxy[0];
-				pxy[5] = pxy[1] + (cheight >> 2);
-				pxy[6] = pxy[0] - (cwidth >> 2);
+				pxy[5] = pxy[3] + (box >> 1);
+				pxy[6] = pxy[0] - (box >> 1);
 				pxy[7] = pxy[3];
 				set_fillcolor (textcolor);
 				set_fillstyle (1, 1);
@@ -1678,7 +1679,11 @@ TEXTWIN *create_textwin(char *title, WINCFG *cfg)
 	t->vdi_colors = cfg->vdi_colors;
 	t->fg_effects = cfg->fg_effects;
 	t->bg_effects = cfg->bg_effects;
-	t->curr_tflags = (TCSGS | TWRAPAROUND | TCURS_ON);
+	t->curr_tflags = (TWRAPAROUND | TCURS_ON);
+	t->gsets[0] = 'B';
+	t->gsets[1] = '0';
+	t->gsets[2] = 'B';
+	t->gsets[3] = 'B';
 	t->wintop = 0;
 
 	t->cfg = cfg;
@@ -1766,6 +1771,7 @@ TEXTWIN *create_textwin(char *title, WINCFG *cfg)
 
 	t->saved_x = t->saved_y = -1;
 	t->saved_cattr = t->curr_cattr;
+	t->saved_tflags = t->curr_tflags;
 	t->last_cx = t->last_cy = -1;
 
 	t->curs_height = t->cheight >> 3;
