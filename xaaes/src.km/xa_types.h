@@ -91,7 +91,7 @@ struct xa_colour_scheme
 
 struct options
 {
-	int windowner;			/* display window owner in title. */
+	bool windowner;			/* display window owner in title. */
 	bool nohide;
 	bool xa_nohide;
 	bool xa_nomove;
@@ -104,9 +104,9 @@ struct options
 	bool naes;			/* N.Aes 3d compatability */
 	bool naes12;
 
-	int thinframe;			/* -1: keep colour frame thin
+	short thinframe;		/* -1: keep colour frame thin
 					 * +1: make a thicker frame for wasier border grabbing and sizing. */
-	int wheel_page;			/* how many wheel clicks for a page */
+	short wheel_page;		/* how many wheel clicks for a page */
 
 	long half_screen;
 	IFDIAG(enum debug_item point[D_max];)
