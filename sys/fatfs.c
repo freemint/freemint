@@ -504,8 +504,8 @@ fatfs_kfree (void *ptr, const char *func)
 # undef kmalloc
 # undef kfree
 
-# define kmalloc(size)	fatfs_kmalloc (size, __FUNCTION__)
-# define kfree(place)	fatfs_kfree (place, __FUNCTION__)
+# define kmalloc(size)	fatfs_kmalloc (size, FUNCTION)
+# define kfree(place)	fatfs_kfree (place, FUNCTION)
 
 # endif
 

@@ -57,14 +57,14 @@
 
 /* wrapper for the kerinterface */
 
-static void   _cdecl m_changedrv (ushort drv)  { return _changedrv (drv, "ext"); }
-static void * _cdecl m_kmalloc   (ulong size)  { return _kmalloc (size, "ext"); }
-static void   _cdecl m_kfree     (void *place) { _kfree (place, "ext"); }
-static void * _cdecl m_umalloc   (ulong size)  { return _umalloc (size, "ext"); }
-static void   _cdecl m_ufree     (void *place) { _ufree (place, "ext"); }
+static void   _cdecl m_changedrv (ushort drv)  { return _changedrv (drv, "xfs/xdd"); }
+static void * _cdecl m_kmalloc   (ulong size)  { return _kmalloc (size, "xfs/xdd"); }
+static void   _cdecl m_kfree     (void *place) { _kfree (place, "xfs/xdd"); }
+static void * _cdecl m_umalloc   (ulong size)  { return _umalloc (size, "xfs/xdd"); }
+static void   _cdecl m_ufree     (void *place) { _ufree (place, "xfs/xdd"); }
 
 static void * _cdecl m_dmabuf_alloc(ulong size, short cm)
-{ return _dmabuf_alloc (size, cm, "ext"); }
+{ return _dmabuf_alloc (size, cm, "xfs/xdd"); }
 
 /*
  * kernel info that is passed to loaded file systems and device drivers

@@ -533,6 +533,23 @@ do_func_key(int scan)
 			break;
 		}
 		
+		/* shift+F4: enable/disable very depth fatfs/bio debugging (placed in /ram) */
+		case 0x57:
+		{
+			static long mode = DISABLE;
+			
+			if (mode == ENABLE)
+				mode = DISABLE;
+			else
+				mode = ENABLE;
+			
+			fatfs_config(0, FATFS_DEBUG, mode);
+			fatfs_config(0, FATFS_DEBUG_T, mode);
+			
+			bio.config(0, BIO_DEBUG_T, mode);
+			break;
+		}
+		
 		/* F5: dump memory */
 		case 0x3f:
 		{
@@ -540,25 +557,11 @@ do_func_key(int scan)
 			break;
 		}
 		
-		/* shift+F5: dump kernel allocated memory */
+		/* shift+F5: dump kernel allocated memory (placed in /ram) */
 		case 0x58:
 		{
 			km_config(KM_STAT_DUMP, 0);
-			
-			{
-				static long mode = DISABLE;
-				
-				if (mode == ENABLE)
-					mode = DISABLE;
-				else
-					mode = ENABLE;
-				
-				fatfs_config(0, FATFS_DEBUG, mode);
-				fatfs_config(0, FATFS_DEBUG_T, mode);
-				
-				bio.config(0, BIO_DEBUG_T, mode);
-			}
-			
+			km_config(KM_TRACE_DUMP, 0);
 			break;
 		}
 		
