@@ -83,8 +83,8 @@ unix2xbios (long tv_sec)
 		unsigned sec2: 5;
 	};
 	
-	DOSTIME dostime;
-	DOSTIME *xtm = &dostime;
+	DOSTIME xtm_struct;
+	DOSTIME *xtm = &xtm_struct;
 	long days, rem, y;
 	
 	
