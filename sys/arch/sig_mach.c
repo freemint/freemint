@@ -32,11 +32,10 @@
 # include "syscall.h"
 # include "user_things.h"
 
-void (*sig_routine)();	/* used in intr.spp */
-short sig_exc;		/* used in intr.spp */
+void (*sig_routine)();	/* used in intr.S */
+short sig_exc = 0;	/* used in intr.S */
 
-
-long unwound_stack = 0;
+long unwound_stack = 0;	/* used in syscall.S */
 
 struct sigcontext
 {
@@ -262,7 +261,6 @@ sendsig(ushort sig)
  * system call stack -- see handle_sig).
  * The syscall pc is "pc_valid_return" in the second case.
  */
-
 long _cdecl
 sys_psigreturn (void)
 {
@@ -317,146 +315,10 @@ top:
 	}
 }
 
-# if 0
 /*
- * Psigintr: Set an exception vector to send us the specified signal.
- *
- * BUG:
- *	does not link vectors using XBRA.
- * CONSOLATION:
- *	XBRA is not so useful in this case anyways... :)
+ * exception numbers corresponding to signals
  */
-
-typedef struct usig
-{
-	ushort vec;		/* exception vector number */
-	ushort sig;		/* signal to send */
-	PROC *proc;		/* process to get signal */
-	long oldv;		/* old exception vector value */
-	struct usig *next;	/* next entry ... */
-} usig;
-
-static usig *usiglst;
-
-long _cdecl
-sys_psigintr (ushort vec, ushort sig)
-{
-	extern void new_intr();		/* in intr.spp */
-	extern long intr_shadow;
-	long vec2;
-	usig *new;
-	
-	/* This function needs long stack frames,
-	 * hence it only works on 68020+, sorry.
-	 */
-	
-	if (*(ushort *) 0x0000059e == 0 || !intr_shadow)
-		return ENOSYS;
-	
-	if (sig >= NSIG)
-		return EBADARG;
-	
-	if (vec && !sig)		/* ignore signal 0 */
-		return E_OK;
-	
-	if (!sig)			/* remove handlers on Psigintr(0,0) */
-	{
-		cancelsigintrs ();
-		return E_OK;
-	}
-	
-	/* only autovectors ($60-$7c), traps ($80-$bc) and user defined
-	 * interrupts ($0100-$03fc) are allowed, others already generate
-         * signals anyway, no? :)
-	 */
-
-	if (vec < 0x0018 || vec > 0x00ff)
-		return EBADARG;
-
-	if (vec > 0x002f && vec < 0x0040)
-		return EBADARG;
-
-	/* Filter out uninitialized interrupts and odd garbage */
-
-	vec2 = vec<<2;
-	vec2 = *(long *)vec2;
-
-	if (!vec2 || (vec2 & 1L))
-		return ENXIO;
-
-	/* okay, okay, will install, if you wanna so much... */
-
-	vec2 = (long) new_intr;
-
-	new = kmalloc (sizeof (*new));
-	if (!new)			/* hope this never happens...! */
-		return ENOMEM;
-	new->vec = vec;
-	new->sig = sig;
-	new->proc = curproc;
-	new->next = usiglst;		/* simple unsorted list... */
-	usiglst = new;
-
-	new->oldv = setexc(vec, vec2);
-	return E_OK;
-}
-
-/*
- * Find the process that requested this interrupt, and send it a signal.
- * Called at interrupt time by new_intr() from intr.spp, with interrupt
- * vector number on the stack.
- */
-void
-sig_user (ushort vec)
-{
-	usig *ptr;
-
-	for (ptr = usiglst; ptr; ptr = ptr->next)
-	{
-		if (vec == ptr->vec)
-		{
-			if (ptr->proc->wait_q != ZOMBIE_Q
-				&& ptr->proc->wait_q != TSR_Q)
-			{
-				post_sig (ptr->proc, ptr->sig);
-			}
-		}
-	}
-}
-
-/*
- * cancelsigintrs: remove any interrupts requested by this process,
- * called at process termination.
- */
-void
-cancelsigintrs (void)
-{
-	usig *ptr, **old, *nxt;
-	ushort s;
-	
-	s = splhigh ();
-	for (old = &usiglst, ptr = usiglst; ptr; )
-	{
-		nxt = ptr->next;
-		if (ptr->proc == curproc)
-		{
-			setexc (ptr->vec, ptr->oldv);
-			*old = nxt;
-			kfree (ptr);
-		}
-		else
-			old = &(ptr->next);
-		
-		ptr = nxt;
-	}
-	spl (s);
-}
-
-# endif
-
-/* exception numbers corresponding to signals
- */
-char excep_num [NSIG] =
+static char excep_num[NSIG] =
 {
 	0,
 	0,
@@ -474,10 +336,11 @@ char excep_num [NSIG] =
 	/* everything else gets zeros */
 };
 
-/* a "0" means we don't print a message when it happens -- typically the
+/*
+ * a "0" means we don't print a message when it happens -- typically the
  * user is expecting a synchronous signal, so we don't need to report it
  */
-const char *signames [NSIG] =
+static const char *signames[NSIG] =
 {
 	0,
 	0,
@@ -522,17 +385,16 @@ const char *signames [NSIG] =
  * interrupt on the console, and save info on the crash in the appropriate
  * system area
  */
-
 void
-bombs (ushort sig)
+bombs(ushort sig)
 {
-	long *procinfo = (long *) 0x380L;
+	long *procinfo = (long *)0x380L;
 	int i;
 	CONTEXT *crash;
 	
 	if (sig >= NSIG)
 	{
-		ALERT ("bombs(%d): sig out of range", sig);
+		ALERT("bombs(%d): sig out of range", sig);
 	}
 	else if (signames[sig])
 	{
@@ -560,14 +422,14 @@ bombs (ushort sig)
 			
 			if (sig == SIGSEGV || sig == SIGBUS)
 			{
-				ALERT ("%s: User PC=%lx, Address: %lx (basepage=%lx, text=%lx, data=%lx, bss=%lx)",
+				ALERT("%s: User PC=%lx, Address: %lx (basepage=%lx, text=%lx, data=%lx, bss=%lx)",
 					signames[sig],
 					curproc->exception_pc, curproc->exception_addr,
 					base, ptext, pdata, pbss);
 			}
 			else
 			{
-				ALERT ("%s: User PC=%lx (basepage=%lx, text=%lx, data=%lx, bss=%lx)",
+				ALERT("%s: User PC=%lx (basepage=%lx, text=%lx, data=%lx, bss=%lx)",
 					signames[sig],
 					curproc->exception_pc,
 					base, ptext, pdata, pbss);
@@ -583,11 +445,13 @@ bombs (ushort sig)
 		 * in the latter case, the crash context wasn't saved anywhere.
 		 */
 		crash = &curproc->ctxt[SYSCALL];
-		*procinfo++ = 0x12345678L;	/* magic flag for valid info */
+		*procinfo++ = 0x12345678L; /* magic flag for valid info */
+		
 		for (i = 0; i < 15; i++)
 			*procinfo++ = crash->regs[i];
+		
 		*procinfo++ = curproc->exception_ssp;
-		*procinfo++ = ((long) excep_num[sig]) << 24L;
+		*procinfo++ = ((long)excep_num[sig]) << 24L;
 		*procinfo = crash->usp;
 		
 		/* we're also supposed to save some info from the supervisor
@@ -600,7 +464,7 @@ bombs (ushort sig)
 	}
 	else
 	{
-		TRACE (("bombs(%d)", sig));
+		TRACE(("bombs(%d)", sig));
 	}
 }
 
@@ -610,60 +474,63 @@ bombs (ushort sig)
  * a second such error kills us
  */
 
-void
-exception (ushort sig)
+static void
+exception(ushort sig)
 {
-	assert (curproc->stack_magic == STACK_MAGIC);
+	assert(curproc->stack_magic == STACK_MAGIC);
+	assert(curproc->p_sigacts);
 	
-	/* just to be sure */
-	assert (sig < NSIG);
-	assert (curproc->p_sigacts);
-	
-	DEBUG (("exception #%d raised [pc 0x%lx, proc pc 0x%lx]", sig, curproc->ctxt[SYSCALL].pc, curproc->exception_pc));
+	DEBUG(("signal #%d raised [syscall_pc 0x%lx, exception_pc 0x%lx]",
+		sig, curproc->ctxt[SYSCALL].pc, curproc->exception_pc));
 	
 	SIGACTION(curproc, sig).sa_flags |= SA_RESET;
-	raise (sig);
+	raise(sig);
 }
 
 void
-sigbus (void)
+sigbus(void)
 {
-	assert (curproc->stack_magic == STACK_MAGIC);
-	assert (curproc->p_sigacts);
-	
-	DEBUG (("sigbus [pc 0x%lx, proc pc 0x%lx]", curproc->ctxt[SYSCALL].pc, curproc->exception_pc));
+	assert(curproc->stack_magic == STACK_MAGIC);
+	assert(curproc->p_sigacts);
 	
 	if (SIGACTION(curproc, SIGBUS).sa_handler == SIG_DFL)
-		report_buserr ();
+		report_buserr();
 	
-	exception (SIGBUS);
+	exception(SIGBUS);
 }
 
 void
-sigaddr (void)
+sigaddr(void)
 {
-	assert (curproc->stack_magic == STACK_MAGIC);
-	exception (SIGSEGV);
+	assert(curproc->stack_magic == STACK_MAGIC);
+	exception(SIGSEGV);
 }
 
 void
-sigill (void)
+sigill(void)
 {
-	assert (curproc->stack_magic == STACK_MAGIC);
-	exception (SIGILL);
+	assert(curproc->stack_magic == STACK_MAGIC);
+	exception(SIGILL);
 }
 
 void
-sigpriv (void)
+sigpriv(void)
 {
-	assert (curproc->stack_magic == STACK_MAGIC);
-	raise (SIGPRIV);
+	assert(curproc->stack_magic == STACK_MAGIC);
+	
+	DEBUG(("signal SIGPRIV raised [syscall_pc 0x%lx, exception_pc 0x%lx]",
+		curproc->ctxt[SYSCALL].pc, curproc->exception_pc));
+	
+	raise(SIGPRIV);
 }
 
 void
-sigfpe (void)
+sigfpe(void)
 {
-	assert (curproc->stack_magic == STACK_MAGIC);
+	assert(curproc->stack_magic == STACK_MAGIC);
+	
+	DEBUG(("signal SIGFPE raised [syscall_pc 0x%lx, exception_pc 0x%lx]",
+		curproc->ctxt[SYSCALL].pc, curproc->exception_pc));
 	
 	if (fpu)
 	{
@@ -683,24 +550,28 @@ sigfpe (void)
 		}
 	}
 	
-	raise (SIGFPE);
+	raise(SIGFPE);
 }
 
 void
-sigtrap (void)
+sigtrap(void)
 {
-	assert (curproc->stack_magic == STACK_MAGIC);
-	raise (SIGTRAP);
+	assert(curproc->stack_magic == STACK_MAGIC);
+	
+	DEBUG(("signal SIGTRAP raised [syscall_pc 0x%lx, exception_pc 0x%lx]",
+		curproc->ctxt[SYSCALL].pc, curproc->exception_pc));
+	
+	raise(SIGTRAP);
 }
 
 void
-haltformat (void)
+haltformat(void)
 {
-	FATAL ("halt: invalid stack frame format");
+	FATAL("halt: invalid stack frame format");
 }
 
 void
-haltcpv (void)
+haltcpv(void)
 {
-	FATAL ("halt: coprocessor protocol violation");
+	FATAL("halt: coprocessor protocol violation");
 }
