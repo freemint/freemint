@@ -61,6 +61,17 @@ rect_dist(struct xa_client *client, RECT *r, RECT *d)
 	return d;
 }
 
+const RECT *
+rect_dist_xy(struct xa_client *client, short x, short y, RECT *r, RECT *d)
+{
+	d->x = r->x - x;
+	d->y = r->y - y;
+	d->w = r->x + r->w - x;
+	d->h = r->y + r->h - y;
+
+	return d;
+}
+	
 void
 check_wh_cp(RECT *c, COMPASS cp, short minw, short minh, short maxw, short maxh)
 {

@@ -679,7 +679,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	/* Extension, send window to the bottom */
 	case WF_BOTTOM:
 	{
-		if (w != root_window && (w->window_status & XAWS_OPEN) && !is_hidden(w))
+		if (w != root_window && (w->window_status & (XAWS_OPEN|XAWS_HIDDEN)) == XAWS_OPEN) //&& !is_hidden(w))
 			bottom_window(lock, w);
 		break;
 	}
@@ -702,7 +702,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				DIAG((D_wind, NULL, "-1,WF_TOP: Focus to %s", c_owner(target)));
 			}
 		}
-		else if (w != root_window && (w->window_status & XAWS_OPEN) && !is_hidden(w))
+		else if (w != root_window && (w->window_status & (XAWS_OPEN|XAWS_HIDDEN)) == XAWS_OPEN) // && !is_hidden(w))
 		{
 			if ( !is_topped(w))
 			{

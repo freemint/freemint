@@ -294,13 +294,20 @@ get_top(void)
 	return S.open_windows.first;
 }
 
-bool
+inline bool
 is_hidden(struct xa_window *wind)
 {
-	return ( wind->rc.x > (root_window->rc.x + root_window->rc.w) && wind->rc.y > (root_window->rc.y + root_window->rc.h)) ? true : false;
-	//return ( wind->rc.x == (root_window->rc.x + root_window->rc.w + 16) && wind->rc.y == (root_window->rc.y + root_window->rc.h + 16)) ? true : false;
+	return (wind->window_status & XAWS_HIDDEN);
+	//return ( wind->rc.x > (root_window->rc.x + root_window->rc.w) && wind->rc.y > (root_window->rc.y + root_window->rc.h)) ? true : false;
 }
 
+/*
+ * XXX - Ozk:
+ *	Note that the window is not actually hidden until client calls
+ *	wind_set(WF_CURRXYWH), but we mark it hidden internally right now,
+ *	and it will be skipped in various other places, like rectangle
+ *	building, immediately.
+ */
 void
 hide_window(enum locks lock, struct xa_window *wind)
 {
@@ -312,9 +319,9 @@ hide_window(enum locks lock, struct xa_window *wind)
 		wind->hx = wind->rc.x;
 		wind->hy = wind->rc.y;
 		send_moved(lock, wind, AMQ_NORM, &r);
+		wind->window_status |= XAWS_HIDDEN;
 	}
 }
-
 void
 unhide_window(enum locks lock, struct xa_window *wind, bool check)
 {
@@ -326,6 +333,7 @@ unhide_window(enum locks lock, struct xa_window *wind, bool check)
 		r.y = wind->hy;
 		send_moved(lock, wind, AMQ_NORM, &r);
 		wind->t = r;
+		wind->window_status &= ~XAWS_HIDDEN;
 		if (any_hidden(lock, wind->owner, wind))
 			set_unhidden(lock, wind->owner);
 	}
@@ -1645,6 +1653,8 @@ delete_window1(enum locks lock, struct xa_window *wind)
 		C.hover_widg = NULL;
 		graf_mouse(ARROW, NULL, NULL, false);
 	}
+
+	cancel_do_winmesag(lock, wind);
 
 	if (!wind->nolist)
 	{

@@ -93,22 +93,43 @@ object_deselect(OBJECT *ob)
 bool
 object_is_transparent(OBJECT *ob)
 {
+	bool ret = false;
+
 	switch (ob->ob_type & 0xff)
 	{
-	case G_STRING:
-	case G_SHORTCUT:
-	case G_TITLE:
-	case G_IBOX:
-#if 0
-	case G_TEXT:		need more evaluation, not urgent
-	case G_FTEXT:
-#endif
-		/* transparent */
-		return true;
+		case G_BOX:
+		case G_BOXCHAR:
+		{
+			if (!(*(BFOBSPEC *)object_get_spec(ob)).fillpattern)
+				ret = true;
+			break;
+		}	
+		case G_STRING:
+		case G_SHORTCUT:
+		case G_IBOX:
+		case G_TITLE:
+		{
+			ret = true;
+			break;
+		}
+		case G_TEXT:
+		case G_FTEXT:
+		{
+			if (!(*(BFOBSPEC *)&object_get_tedinfo(ob)->te_just).textmode)
+				ret = true;
+			break;
+		}
+		case G_BOXTEXT:
+		case G_FBOXTEXT:
+		{
+			if (!(*(BFOBSPEC *)&object_get_tedinfo(ob)->te_just).fillpattern)
+				ret = true;
+			break;
+		}
 	}
 
 	/* opaque */
-	return false;
+	return ret;
 }
 
 #if 0
