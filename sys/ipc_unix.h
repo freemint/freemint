@@ -106,9 +106,6 @@ un_read_header (struct un_data *un, struct dgram_hdr *hdr, short modify)
 		un->head = head;
 }
 
-# define UN_MINBUF	4096
-# define UN_MAXBUF	32000
-
 INLINE short
 UN_USED (struct un_data *un)
 {
