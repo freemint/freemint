@@ -5,17 +5,14 @@
 #include <string.h>
 #include <limits.h>
 
-#include "global.h"
-#include "av.h"
-#include "clipbrd.h"
-#include "config.h"
-#include "console.h"
-#include "drag.h"
-#include "proc.h"
 #include "textwin.h"
-#include "vt.h"
-#include "window.h"
+#include "console.h"
 #include "ansicol.h"
+#include "vt.h"
+#include "clipbrd.h"
+#include "proc.h"
+#include "av.h"
+#include "drag.h"
 
 #ifdef DEBUG
 extern int do_debug;
@@ -84,7 +81,7 @@ void char2pixel(TEXTWIN *t, short col, short row, short *xp, short *yp)
 		{
 			x = t->win->work.g_x;
 			while(--col >= 0)
-				x += WIDE[t->data[row][col]];
+				x += WIDE[t->cdata[row][col]];
 			*xp = x;
 		}
 	}
@@ -108,9 +105,9 @@ char2grect (TEXTWIN* t, short col, short row, GRECT* g)
 		} else {
 			short x = t->win->work.g_x;
 			while(--col >= 0)
-				x += WIDE[t->data[row][col]];
+				x += WIDE[t->cdata[row][col]];
 			g->g_x = x;
-			g->g_w = WIDE[t->data[row][col]];
+			g->g_w = WIDE[t->cdata[row][col]];
 		}
 	}
 }
@@ -130,7 +127,7 @@ void pixel2char(TEXTWIN *t, short x, short y, short *colp, short *rowp)
 		count = 0;
 		for (col = 0; col <= NCOLS (t); col++)
 		{
-			nextcount = count + WIDE[t->data[row][col]];
+			nextcount = count + WIDE[t->cdata[row][col]];
 			if (count <= x && x < nextcount)
 				break;
 			count = nextcount;
@@ -586,7 +583,7 @@ static void draw_buf(TEXTWIN *t, char *buf, short x, short y, ulong flag, short 
 	int texteffects;
 	short *WIDE = t->cwidths;
 	short temp[4];
-	int acs = flag & CACS;
+	int acs = flag & CLINEDRAW;
 
 	use_ansi_colors (t, flag, &textcolor, &fillcolor, &texteffects);
 	x2 = x;
@@ -711,20 +708,20 @@ update_chars (TEXTWIN *t, short firstcol, short lastcol, short firstline,
 			lineforce = 1;
 		while (cnt < lastcol)
 		{
-		 	c = t->data[firstline][cnt];
-		 	if (lineforce || (t->cflag[firstline][cnt] & (CDIRTY|CTOUCHED)))
+		 	c = t->cdata[firstline][cnt];
+		 	if (lineforce || (t->cflags[firstline][cnt] & (CDIRTY)))
 		 	{
 				/* yes, this character needs drawing */
 				/* if the font is proportional and the character has really changed,
 				 * then all remaining characters will have to be redrawn, too
 				 */
-				if (WIDE && (lineforce == 0) && (t->cflag[firstline][cnt] & CDIRTY))
+				if (WIDE && (lineforce == 0) && (t->cflags[firstline][cnt] & CDIRTY))
 					lineforce = 1;
 
-				curflag = t->cflag[firstline][cnt] & ~(CDIRTY|CTOUCHED);
+				curflag = t->cflags[firstline][cnt] & ~(CDIRTY);
 
 				/* watch out for characters that can't be drawn in this font */
-				if (!(curflag & CACS) && (c < t->minADE || c > t->maxADE))
+				if (!(curflag & CLINEDRAW) && (c < t->minADE || c > t->maxADE))
 					c = '?';
 
 				if (flag == curflag)
@@ -764,13 +761,13 @@ update_chars (TEXTWIN *t, short firstcol, short lastcol, short firstline,
 		if (WIDE)
 		{
 			/* the line's 'tail' */
-			draw_buf(t, "", px, py, t->cflag[firstline][NCOLS (t) - 1], lineforce);
+			draw_buf(t, "", px, py, t->cflags[firstline][NCOLS (t) - 1], lineforce);
 		}
 		py += t->cheight;
 		firstline++;
 	}
 	t->curs_drawn = 0;
-	if (t->curs_on)
+	if (t->curr_tflags & TCURS_ON)
 		update_cursor (t->win, -1);
 }
 
@@ -800,7 +797,7 @@ update_cursor (WINDOW* win, int top)
 	/* Exits if window isn't visible or was iconified/shaded */
 	if (win->handle < 0 || (win->flags & WICONIFIED) ||
 	    (win->flags & WSHADED) ||
-	    (!tw->curs_on && !tw->curs_drawn)) {
+	    (!(tw->curr_tflags & TCURS_ON) && !tw->curs_drawn)) {
 	    	tw->last_cx = tw->last_cy = -1;
 		return;
 	}
@@ -821,10 +818,10 @@ update_cursor (WINDOW* win, int top)
 	if ((tw->last_cx != tw->cx || tw->last_cy != tw->cy) &&
 	    (tw->last_cx >= 0 && tw->last_cy >= tw->miny) &&
 	     tw->last_cx < tw->maxx && tw->last_cy < tw->maxy) {
-		old_flag = tw->cflag[tw->last_cy][tw->last_cx];
+		old_flag = tw->cflags[tw->last_cy][tw->last_cx];
 
 		char2grect (tw, tw->last_cx, tw->last_cy, &old_curs);
-		if (tw->curs_vvis) {
+		if (tw->curr_tflags & TCURS_VVIS) {
 			int selected = old_flag & CINVERSE;
 
 			if (!selected)
@@ -837,7 +834,7 @@ update_cursor (WINDOW* win, int top)
 
 	if (tw->cx >= 0 && tw->cx < tw->maxx &&
 	    tw->cy >= tw->miny && tw->cy < tw->maxy)
-		new_flag = tw->cflag[tw->cy][tw->cx];
+		new_flag = tw->cflags[tw->cy][tw->cx];
 	else
 		new_curs.g_w = 0;
 
@@ -846,7 +843,7 @@ update_cursor (WINDOW* win, int top)
 	else
 		tw->curs_drawn = 0;
 
-	if (tw->curs_vvis) {
+	if (tw->curr_tflags & TCURS_VVIS) {
 		int selected = new_flag & CINVERSE;
 
 		if (selected ^ tw->curs_drawn)
@@ -859,8 +856,8 @@ update_cursor (WINDOW* win, int top)
 		new_curs.g_h = tw->curs_height;
 	}
 
-	tw->dirty[tw->cy] = SOMEDIRTY;
-	tw->cflag[tw->cy][tw->cx] |= CDIRTY;
+	tw->dirty[tw->cy] |= SOMEDIRTY;
+	tw->cflags[tw->cy][tw->cx] |= CDIRTY;
 
 	wind_update(TRUE);
 	wind_get_grect (win->handle, WF_FIRSTXYWH, &curr);
@@ -883,7 +880,7 @@ update_cursor (WINDOW* win, int top)
 						   		  curr2.g_h,
 						   		  TRUE);
 
-					buf[0]= tw->data[tw->last_cy][tw->last_cx];
+					buf[0]= tw->cdata[tw->last_cy][tw->last_cx];
 					buf[1] = '\000';
 					draw_buf (tw, buf, curr2.g_x, curr2.g_y,
 							old_flag, 0);
@@ -894,9 +891,10 @@ update_cursor (WINDOW* win, int top)
 				if (!off)
 					off = hide_mouse_if_needed (&curr);
 
-				if (tw->curs_vvis || !tw->curs_drawn) {
+				if ((tw->curr_tflags & TCURS_VVIS) 
+				    || !tw->curs_drawn) {
 					char buf[2] = {
-						tw->data[tw->cy][tw->cx],
+						tw->cdata[tw->cy][tw->cx],
 						'\000'};
 
 					set_clipping (vdi_handle, curr.g_x, curr.g_y,
@@ -911,7 +909,7 @@ update_cursor (WINDOW* win, int top)
 						curr.g_x + curr.g_w - 1,
 						curr.g_y + curr.g_h - 1
 					};
-					use_ansi_colors (tw, tw->term_cattr,
+					use_ansi_colors (tw, tw->curr_cattr,
 							 &textcolor,
 							 &fillcolor,
 							 &texteffects);
@@ -948,7 +946,7 @@ void mark_clean(TEXTWIN *t)
 		if (t->dirty[line] == 0)
 			continue;
 		for (col = 0; col < NCOLS (t); col++)
-			t->cflag[line][col] &= ~(CDIRTY|CTOUCHED);
+			t->cflags[line][col] &= ~(CDIRTY);
 		t->dirty[line] = 0;
 	}
 }
@@ -1589,7 +1587,7 @@ static bool text_click(WINDOW *w, short clicks, short x, short y, short kshift, 
 			graf_mkstate(&d, &d, &button, &kshift);
 			if (button == 1)							/* hold down -> mark region */
 			{
-				if (t->cflag[y1][x1] & CSELECTED)
+				if (t->cflags[y1][x1] & CSELECTED)
 					drag_selection(t);
 				else
 				{
@@ -1599,7 +1597,7 @@ static bool text_click(WINDOW *w, short clicks, short x, short y, short kshift, 
 			}
 			else
 			{
-				if (t->cflag[y1][x1] & CSELECTED)	/* clicked on selected text */
+				if (t->cflags[y1][x1] & CSELECTED)	/* clicked on selected text */
 				{
 					char	sel[80];
 
@@ -1670,42 +1668,40 @@ TEXTWIN *create_textwin(char *title, WINCFG *cfg)
 	t->alloc_width = (NCOLS (t) + 15) & 0xfffffff0;
 	t->alloc_height = (t->maxy + 15) & 0xfffffff0;
 
-	t->data = malloc(sizeof(char *) * t->alloc_height);
-	t->cflag = malloc(sizeof(void *) * t->alloc_height);
+	t->cdata = malloc(sizeof(char *) * t->alloc_height);
+	t->cflags = malloc(sizeof(void *) * t->alloc_height);
 	t->dirty = malloc((size_t)t->alloc_height);
 
-	if (!t->dirty || !t->cflag || !t->data)
+	if (!t->dirty || !t->cflags || !t->cdata)
 		goto bail_out;
 
 	t->vdi_colors = cfg->vdi_colors;
 	t->fg_effects = cfg->fg_effects;
 	t->bg_effects = cfg->bg_effects;
-	t->curs_on = 1;
-	t->curs_vvis = 0;
-	t->curs_drawn = 0;
+	t->curr_tflags = (TCSGS | TWRAPAROUND | TCURS_ON);
 	t->wintop = 0;
 
 	t->cfg = cfg;
 	original_colors (t);
-	flag = t->term_cattr;
+	flag = t->curr_cattr;
 
 	memset (t->dirty, 0, (sizeof t->dirty[0]) * t->maxy);
 
 	for (i = 0; i < t->alloc_height; ++i)
 	{
-		t->data[i] = malloc ((size_t) t->alloc_width);
-		t->cflag[i] = malloc(sizeof (long) *
+		t->cdata[i] = malloc ((size_t) t->alloc_width);
+		t->cflags[i] = malloc(sizeof (long) *
 				((size_t) (t->alloc_width)));
-		if (!t->cflag[i] || !t->data[i])
+		if (!t->cflags[i] || !t->cdata[i])
 			goto bail_out;
 
-		memset (t->data[i], ' ', t->alloc_width);
+		memset (t->cdata[i], ' ', t->alloc_width);
 
 		if (i == 0)
-			memulset (t->cflag[i], flag, t->alloc_width);
+			memulset (t->cflags[i], flag, t->alloc_width);
 		else
-			memcpy (t->cflag[i], t->cflag[0],
-				t->alloc_width * sizeof t->cflag[0][0]);
+			memcpy (t->cflags[i], t->cflags[0],
+				t->alloc_width * sizeof t->cflags[0][0]);
 	}
 
 	t->scrolled = t->nbytes = t->draw_time = 0;
@@ -1768,8 +1764,8 @@ TEXTWIN *create_textwin(char *title, WINCFG *cfg)
 	t->block_y1 = 0;
 	t->block_y2 = 0;
 
-	t->savex = t->savey = 0;
-	t->save_cattr = t->term_cattr;
+	t->saved_x = t->saved_y = -1;
+	t->saved_cattr = t->curr_cattr;
 	t->last_cx = t->last_cy = -1;
 
 	t->curs_height = t->cheight >> 3;
@@ -1783,21 +1779,21 @@ TEXTWIN *create_textwin(char *title, WINCFG *cfg)
 
 bail_out:
 #if 0
-	if (t->data && t->dirty && t->cflag) {
+	if (t->cdata && t->dirty && t->cflags) {
 		for (i = 0; i < t->maxy; ++i) {
-			if (t->data[i])
-				free (t->data[i]);
-			if (t->cflag[i])
-				free (t->cflag[i]);
+			if (t->cdata[i])
+				free (t->cdata[i]);
+			if (t->cflags[i])
+				free (t->cflags[i]);
 		}
 	}
 #endif
-	if (t->data)
-		free (t->data);
+	if (t->cdata)
+		free (t->cdata);
 	if (t->dirty)
 		free (t->dirty);
-	if (t->cflag)
-		free (t->cflag);
+	if (t->cflags)
+		free (t->cflags);
 	return NULL;
 }
 
@@ -1811,8 +1807,8 @@ void destroy_textwin(TEXTWIN *t)
 	destroy_window(t->win);
 	for (i = 0; i < t->maxy; i++)
 	{
-		free(t->data[i]);
-		free(t->cflag[i]);
+		free(t->cdata[i]);
+		free(t->cflags[i]);
 	}
 	if (t->prog)
 		free(t->prog);
@@ -1821,8 +1817,8 @@ void destroy_textwin(TEXTWIN *t)
 	if (t->progdir)
 		free(t->progdir);
 
-	free(t->cflag);
-	free(t->data);
+	free(t->cflags);
+	free(t->cdata);
 	free(t->dirty);
 	if (t->cwidths)
 		free(t->cwidths);
@@ -1928,19 +1924,19 @@ change_scrollback (TEXTWIN* tw, short scrollback)
 		memmove (tw->dirty, tw->dirty - diff,
 			 (sizeof *tw->dirty) * (tw->maxy + diff));
 
-		memcpy (tmp_data, tw->data + tw->maxy + diff,
+		memcpy (tmp_data, tw->cdata + tw->maxy + diff,
 			(sizeof tmp_data) * (-diff));
-		memcpy (tmp_cflag, tw->cflag + tw->maxy + diff,
+		memcpy (tmp_cflag, tw->cflags + tw->maxy + diff,
 			(sizeof tmp_cflag) * (-diff));
 
-		memmove (tw->data, tw->data - diff,
+		memmove (tw->cdata, tw->cdata - diff,
 			 (sizeof tmp_data) * (tw->maxy + diff));
-		memmove (tw->cflag, tw->cflag - diff,
+		memmove (tw->cflags, tw->cflags - diff,
 			 (sizeof tmp_cflag) * (tw->maxy + diff));
 
-		memcpy (tw->data + tw->maxy + diff, tmp_data,
+		memcpy (tw->cdata + tw->maxy + diff, tmp_data,
 			(sizeof tmp_data) * (-diff));
-		memcpy (tw->cflag + tw->maxy + diff, tmp_cflag,
+		memcpy (tw->cflags + tw->maxy + diff, tmp_cflag,
 			(sizeof tmp_cflag) * (-diff));
 	} else {
 		int i;
@@ -1952,29 +1948,29 @@ change_scrollback (TEXTWIN* tw, short scrollback)
 			size_t cflag_chunk;
 
 			tw->alloc_height = (tw->maxy + diff + 15) & 0xfffffff0;
-			data_chunk = (sizeof tw->data[0][0]) *
+			data_chunk = (sizeof tw->cdata[0][0]) *
 					 tw->alloc_width;
-			cflag_chunk = (sizeof tw->cflag[0][0]) *
+			cflag_chunk = (sizeof tw->cflags[0][0]) *
 					  tw->alloc_width;
 
 			tw->dirty = realloc (tw->dirty, (sizeof *tw->dirty) *
 						  tw->alloc_height);
 			if (tw->dirty == NULL)
 				goto bail_out;
-			tw->data = realloc (tw->data, (sizeof *tw->data) *
+			tw->cdata = realloc (tw->cdata, (sizeof *tw->cdata) *
 						 tw->alloc_height);
-			if (tw->data == NULL)
+			if (tw->cdata == NULL)
 				goto bail_out;
-			tw->cflag = realloc (tw->cflag, (sizeof *tw->cflag) *
+			tw->cflags = realloc (tw->cflags, (sizeof *tw->cflags) *
 						  tw->alloc_height);
-			if (tw->cflag == NULL)
+			if (tw->cflags == NULL)
 				goto bail_out;
 
 			for (i = saved_height; i < tw->alloc_height; ++i) {
-				tw->data[i] = malloc (data_chunk);
-				tw->cflag[i] = malloc (cflag_chunk);
+				tw->cdata[i] = malloc (data_chunk);
+				tw->cflags[i] = malloc (cflag_chunk);
 
-				if (tw->data[i] == NULL || tw->cflag[i] == NULL)
+				if (tw->cdata[i] == NULL || tw->cflags[i] == NULL)
 					goto bail_out;
 			}
 		}
@@ -1985,20 +1981,20 @@ change_scrollback (TEXTWIN* tw, short scrollback)
 		memset (tw->dirty, 0,
 			  (sizeof tw->dirty[0]) * tw->maxy);
 
-		memmove (tw->data + diff, tw->data,
-			 (sizeof *tw->data) * tw->maxy);
-		memmove (tw->cflag + diff, tw->cflag,
-			 (sizeof *tw->cflag) * tw->maxy);
+		memmove (tw->cdata + diff, tw->cdata,
+			 (sizeof *tw->cdata) * tw->maxy);
+		memmove (tw->cflags + diff, tw->cflags,
+			 (sizeof *tw->cflags) * tw->maxy);
 
 		for (i = 0; i < diff; ++i) {
-			memset (tw->data[i], ' ', (sizeof tw->data[0][0]) * NCOLS (tw));
+			memset (tw->cdata[i], ' ', (sizeof tw->cdata[0][0]) * NCOLS (tw));
 
 			if (i == 0)
-				memulset (tw->cflag[i], tw->term_cattr,
+				memulset (tw->cflags[i], tw->curr_cattr,
 					  NCOLS (tw));
 			else
-				memcpy (tw->cflag[i], tw->cflag[0],
-					(sizeof tw->cflag[0][0]) *
+				memcpy (tw->cflags[i], tw->cflags[0],
+					(sizeof tw->cflags[0][0]) *
 					 NCOLS (tw));
 		}
 
@@ -2041,42 +2037,42 @@ change_height (TEXTWIN* tw, short rows)
 			size_t cflag_chunk;
 
 			tw->alloc_height = (tw->maxy + diff + 15) & 0xfffffff0;
-			data_chunk = (sizeof tw->data[0][0]) *
+			data_chunk = (sizeof tw->cdata[0][0]) *
 					tw->alloc_width;
-			cflag_chunk = (sizeof tw->cflag[0][0]) *
+			cflag_chunk = (sizeof tw->cflags[0][0]) *
 					  tw->alloc_width;
 
 			tw->dirty = realloc (tw->dirty, (sizeof *tw->dirty) *
 						  tw->alloc_height);
 			if (tw->dirty == NULL)
 				goto bail_out;
-			tw->data = realloc (tw->data, (sizeof *tw->data) *
+			tw->cdata = realloc (tw->cdata, (sizeof *tw->cdata) *
 						 tw->alloc_height);
-			if (tw->data == NULL)
+			if (tw->cdata == NULL)
 				goto bail_out;
-			tw->cflag = realloc (tw->cflag, (sizeof *tw->cflag) *
+			tw->cflags = realloc (tw->cflags, (sizeof *tw->cflags) *
 						  tw->alloc_height);
-			if (tw->cflag == NULL)
+			if (tw->cflags == NULL)
 				goto bail_out;
 
 			for (i = saved_height; i < tw->alloc_height; ++i) {
-				tw->data[i] = malloc (data_chunk);
-				tw->cflag[i] = malloc (cflag_chunk);
+				tw->cdata[i] = malloc (data_chunk);
+				tw->cflags[i] = malloc (cflag_chunk);
 
-				if (tw->data[i] == NULL || tw->cflag[i] == NULL)
+				if (tw->cdata[i] == NULL || tw->cflags[i] == NULL)
 					goto bail_out;
 			}
 		}
 
 		for (i = tw->maxy; i < tw->maxy + diff; ++i) {
-			memset (tw->data[i], ' ', (sizeof tw->data[0][0]) * NCOLS (tw));
+			memset (tw->cdata[i], ' ', (sizeof tw->cdata[0][0]) * NCOLS (tw));
 
 			if (i == tw->maxy)
-				memulset (tw->cflag[i], tw->term_cattr,
+				memulset (tw->cflags[i], tw->curr_cattr,
 					  NCOLS (tw));
 			else
-				memcpy (tw->cflag[i], tw->cflag[tw->maxy],
-					(sizeof tw->cflag[tw->maxy][0]) *
+				memcpy (tw->cflags[i], tw->cflags[tw->maxy],
+					(sizeof tw->cflags[tw->maxy][0]) *
 					 NCOLS (tw));
 		}
 
@@ -2089,8 +2085,8 @@ change_height (TEXTWIN* tw, short rows)
 
 	tw->scroll_bottom = tw->maxy;
 	tw->scroll_top = tw->miny;
-	tw->origin = 0;
-
+	tw->curr_tflags &= ~TORIGIN;
+	
 	/* Dunno why this is necessary.  */
 	tw->offy += diff * tw->cheight;
 
@@ -2112,7 +2108,7 @@ change_width (TEXTWIN* tw, short cols)
 		return;
 	else if (diff > 0) {
 		int i;
-		unsigned long flag = tw->term_cattr | CDIRTY | CTOUCHED;
+		unsigned long flag = tw->curr_cattr | CDIRTY;
 		int old_cols = NCOLS (tw);
 		int new_cols = old_cols + diff;
 
@@ -2122,32 +2118,32 @@ change_width (TEXTWIN* tw, short cols)
 			size_t cflag_chunk;
 
 			tw->alloc_width = (tw->maxx + diff + 15) & 0xfffffff0;
-			data_chunk = (sizeof tw->data[0][0]) * tw->alloc_width;
-			cflag_chunk = (sizeof tw->cflag[0][0]) * tw->alloc_width;
+			data_chunk = (sizeof tw->cdata[0][0]) * tw->alloc_width;
+			cflag_chunk = (sizeof tw->cflags[0][0]) * tw->alloc_width;
 
 			for (i = 0; i < tw->alloc_height; ++i) {
-				tw->data[i] = realloc (tw->data[i], data_chunk);
-				tw->cflag[i] = realloc (tw->cflag[i], cflag_chunk);
+				tw->cdata[i] = realloc (tw->cdata[i], data_chunk);
+				tw->cflags[i] = realloc (tw->cflags[i], cflag_chunk);
 
-				if (tw->data[i] == NULL || tw->cflag[i] == NULL)
+				if (tw->cdata[i] == NULL || tw->cflags[i] == NULL)
 					goto bail_out;
 			}
 		}
 
 		/* Initialize the freshly exposed columns.  */
 		for (i = 0; i < tw->maxy; ++i) {
-			memset (tw->data[i] + old_cols, ' ', diff);
+			memset (tw->cdata[i] + old_cols, ' ', diff);
 
 			if (i == 0)
-				memulset (tw->cflag[i] + old_cols,
+				memulset (tw->cflags[i] + old_cols,
 					  flag, diff);
 			else
-				memcpy (tw->cflag[i] + old_cols,
-					tw->cflag[0] + old_cols,
-					(sizeof tw->cflag[0][0]) *
+				memcpy (tw->cflags[i] + old_cols,
+					tw->cflags[0] + old_cols,
+					(sizeof tw->cflags[0][0]) *
 					 diff);
 		}
-		 memset (tw->dirty, SOMEDIRTY, tw->maxy);
+		memset (tw->dirty, ALLDIRTY, tw->maxy);
 	}
 
 	tw->maxx += diff;
