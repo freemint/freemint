@@ -76,7 +76,7 @@ void char2pixel(TEXTWIN *t, short col, short row, short *xp, short *yp)
 	}
 	else 
 	{	
-		if (col >= t->maxx) 
+		if (col >= NCOLS (t)) 
 			*xp = t->win->work.g_x + t->win->work.g_w;
 		else 
 		{
@@ -101,7 +101,7 @@ void pixel2char(TEXTWIN *t, short x, short y, short *colp, short *rowp)
 	else 
 	{
 		count = 0;
-		for (col = 0; col < t->maxx - 1; col++) 
+		for (col = 0; col <= NCOLS (t); col++) 
 		{
 			nextcount = count + WIDE[t->data[row][col]];
 			if (count <= x && x < nextcount) 
@@ -736,7 +736,7 @@ static void update_chars(TEXTWIN *t, short firstcol, short lastcol, short firstl
 		if (WIDE)
 		{
 			/* the line's 'tail' */
-			draw_buf(t, "", px, py, t->cflag[firstline][t->maxx-1], lineforce);
+			draw_buf(t, "", px, py, t->cflag[firstline][NCOLS (t) - 1], lineforce);
 		}
 		py += t->cheight;
 		firstline++;
@@ -754,7 +754,7 @@ void mark_clean(TEXTWIN *t)
 	{
 		if (t->dirty[line] == 0)
 			continue;
-		for (col = 0; col < t->maxx; col++) 
+		for (col = 0; col < NCOLS (t); col++) 
 			t->cflag[line][col] &= ~(CDIRTY|CTOUCHED);
 		t->dirty[line] = 0;
 	}
@@ -805,6 +805,7 @@ static void update_screen(TEXTWIN *t, short xc, short yc, short wc, short hc, sh
 		vro_cpyfm(vdi_handle, S_ONLY, pxy, &scr_mfdb, &scr_mfdb);
 	}
 
+#if 0
 	/* if `force' is set, clear the area to be redrawn -- it looks better */
 	if (force == CLEARED) 
 	{
@@ -826,6 +827,7 @@ static void update_screen(TEXTWIN *t, short xc, short yc, short wc, short hc, sh
 		pxy[3] = yc + hc - 1;
 		vr_recfl(vdi_handle, pxy);
 	}
+#endif
 
 	/* convert from on-screen coordinates to window rows & columns */
 	pixel2char(t, xc, yc, &firstcol, &firstline);
@@ -836,6 +838,17 @@ static void update_screen(TEXTWIN *t, short xc, short yc, short wc, short hc, sh
 		firstline = t->maxy - 1;
 
 	lastline = 1 + firstline + (hc + t->cheight - 1) / t->cheight;
+
+	/* The following if-clause preventd from drawing beyond
+	   the lower limit of the window.  */
+	if (lastline * t->cheight > t->offy + hc - t->cheight)
+		lastline = (t->offy + hc - t->cheight) / t->cheight;
+	/* And this one from forgetting the last line if it is partly
+	   covered by another object.  */
+	if (xc != t->win->work.g_x || yc == t->win->work.g_y ||
+	    wc == t->win->work.g_w || hc == t->win->work.g_h)
+		++lastline;
+	/* And this one from crashes.  */
 	if (lastline > t->maxy) 
 		lastline = t->maxy;
 
@@ -843,7 +856,7 @@ static void update_screen(TEXTWIN *t, short xc, short yc, short wc, short hc, sh
 	if (t->cwidths) 
 	{
 		firstcol = 0;
-		lastcol = t->maxx;
+		lastcol = NCOLS (t);
 	}
 	else
 		pixel2char(t, xc+wc+t->cmaxwidth-1, yc, &lastcol, &firstline);
@@ -1032,9 +1045,15 @@ static void scrollupdn(TEXTWIN *t, short off, short direction)
 		{
 			if (!m_off)
 				m_off = hide_mouse_if_needed(&t1);
-			set_clipping(vdi_handle, t1.g_x, t1.g_y, t1.g_w, t1.g_h, TRUE);
+			if (memcmp (&t1, &t2, sizeof t1))
+				set_clipping(vdi_handle, t1.g_x, t1.g_y, 
+							 t1.g_w, t1.g_h, TRUE);
+			else
+				set_clipping (vdi_handle, 0, 0, 0, 0, FALSE);
+				
 			if (off >= t1.g_h) 
-				update_screen(t, t1.g_x, t1.g_y, t1.g_w, t1.g_h, TRUE);
+				update_screen(t, t1.g_x, t1.g_y, 
+						 t1.g_w, t1.g_h, TRUE);
 			else 
 			{
 				if (direction  == UP) 
@@ -1061,9 +1080,11 @@ static void scrollupdn(TEXTWIN *t, short off, short direction)
 				}
 				vro_cpyfm(vdi_handle, S_ONLY, pxy, &scr_mfdb, &scr_mfdb);
 				if (direction == UP)
-					update_screen(t, t1.g_x, pxy[7], t1.g_w, off, TRUE);
+					update_screen(t, t1.g_x, pxy[7], 
+						      t1.g_w, off, TRUE);
 				else
-					update_screen(t, t1.g_x, t1.g_y, t1.g_w, off, TRUE);
+					update_screen(t, t1.g_x, t1.g_y, 
+						      t1.g_w, off, TRUE);
 			}
 			}
 		wind_get_grect(v->handle, WF_NEXTXYWH, &t1);
@@ -1131,7 +1152,7 @@ static void set_scroll_bars(TEXTWIN *t)
 	short vpos;
 	long width, height;
 
-	width = t->cmaxwidth * t->maxx;
+	width = t->cmaxwidth * NCOLS (t);
 	height = t->cheight * t->maxy;
 
 	/* see if the new offset is too big for the window */
@@ -1472,7 +1493,7 @@ TEXTWIN *create_textwin(char *title, WINCFG *cfg)
 	set_cwidths(t);
 
 	/* initialize the window data */
-	t->alloc_width = t->maxx + 1;
+	t->alloc_width = NCOLS (t);
 	t->alloc_height = t->maxy;
 		
 	t->data = malloc(sizeof(char *) * t->alloc_height);
@@ -1498,12 +1519,12 @@ TEXTWIN *create_textwin(char *title, WINCFG *cfg)
 			flag = COLORS (cfg->fg_color, cfg->bg_color);
 		
 		t->data[i] = malloc ((size_t) t->alloc_width);
-		t->cflag[i] = malloc(sizeof (long) * ((size_t) (t->alloc_width)));
+		t->cflag[i] = malloc(sizeof (long) * 
+		              ((size_t) (t->alloc_width)));
 		if (!t->cflag[i] || !t->data[i]) 
 			goto bail_out;
 		
-		memset (t->data[i], ' ', t->alloc_width - 1);
-		t->data[i][t->alloc_width - 1] = '\000';
+		memset (t->data[i], ' ', t->alloc_width);
 		
 		if (i == 0)
 			memulset (t->cflag[i], flag, t->alloc_width);
@@ -1747,8 +1768,10 @@ change_scrollback (TEXTWIN* tw, short scrollback)
 			size_t cflag_chunk;		
 
 			tw->alloc_height = tw->maxy + diff;
-			data_chunk = (sizeof tw->data[0][0]) * tw->alloc_width;
-			cflag_chunk = (sizeof tw->cflag[0][0]) * tw->alloc_width;
+			data_chunk = (sizeof tw->data[0][0]) * 
+			              tw->alloc_width;
+			cflag_chunk = (sizeof tw->cflag[0][0]) * 
+				      tw->alloc_width;
 	
 			tw->dirty = realloc (tw->dirty, (sizeof *tw->dirty) * 
 					     tw->alloc_height);
@@ -1785,7 +1808,6 @@ change_scrollback (TEXTWIN* tw, short scrollback)
 
 		for (i = 0; i < diff; ++i) {
 			memset (tw->data[i], ' ', (sizeof tw->data[0][0]) * NCOLS (tw));
-			tw->data[i][NCOLS (tw)] = '\000';
 			
 			if (i == 0)
 				memulset (tw->cflag[i], tw->term_cattr, 
@@ -1835,8 +1857,10 @@ change_height (TEXTWIN* tw, short rows)
 			size_t cflag_chunk;		
 
 			tw->alloc_height = tw->maxy + diff;
-			data_chunk = (sizeof tw->data[0][0]) * tw->alloc_width;
-			cflag_chunk = (sizeof tw->cflag[0][0]) * tw->alloc_width;
+			data_chunk = (sizeof tw->data[0][0]) * 
+			             tw->alloc_width;
+			cflag_chunk = (sizeof tw->cflag[0][0]) * 
+				      tw->alloc_width;
 			
 			tw->dirty = realloc (tw->dirty, (sizeof *tw->dirty) * 
 					     tw->alloc_height);
@@ -1862,7 +1886,6 @@ change_height (TEXTWIN* tw, short rows)
 		
 		for (i = tw->maxy; i < tw->maxy + diff; ++i) {
 			memset (tw->data[i], ' ', (sizeof tw->data[0][0]) * NCOLS (tw));
-			tw->data[i][NCOLS (tw)] = '\000';
 			
 			if (i == tw->maxy)
 				memulset (tw->cflag[i], tw->term_cattr, 
@@ -1916,7 +1939,7 @@ change_width (TEXTWIN* tw, short cols)
 			size_t data_chunk;
 			size_t cflag_chunk;		
 
-			tw->alloc_width = tw->maxx + diff + 1;
+			tw->alloc_width = tw->maxx + diff;
 			data_chunk = (sizeof tw->data[0][0]) * tw->alloc_width;
 			cflag_chunk = (sizeof tw->cflag[0][0]) * tw->alloc_width;
 			
@@ -1932,7 +1955,6 @@ change_width (TEXTWIN* tw, short cols)
 		/* Initialize the freshly exposed columns.  */
 		for (i = 0; i < tw->maxy; ++i) {
 			memset (tw->data[i] + old_cols, ' ', diff);
-			tw->data[i][new_cols] = '\000';
 			
 			if (i == 0)
 				memulset (tw->cflag[i] + old_cols, 
@@ -1944,20 +1966,11 @@ change_width (TEXTWIN* tw, short cols)
 					 diff);
 		}
 	        memset (tw->dirty, SOMEDIRTY, tw->maxy);
-	} else {
-		/* We only need to erase the part of the line that
-		   is now unexposed.  */
-		int i;
-		int new_cols = NCOLS (tw) + diff;
-		
-		for (i = 0; i < tw->maxy; ++i) {
-			tw->data[i][new_cols] = '\000';
-		}
 	}
 
 	tw->maxx += diff;
-	if (tw->cx > NCOLS (tw))
-		tw->cx = NCOLS (tw);
+	if (tw->cx >= NCOLS (tw))
+		tw->cx = NCOLS (tw) - 1;
 	
 	return;
 	
@@ -1975,7 +1988,7 @@ resize_textwin (TEXTWIN* tw, short cols, short rows, short scrollback)
 {
 	int changed = 0;
 	
-	if (tw->maxx == cols && tw->miny == scrollback && 
+	if (NCOLS (tw) == cols && SCROLLBACK (tw) == scrollback && 
 	    tw->maxy == rows + scrollback)
 		return;		/* no change */
 
@@ -2048,7 +2061,7 @@ notify_winch (TEXTWIN* tw)
 void 
 reconfig_textwin(TEXTWIN *t, WINCFG *cfg)
 {
-	int i, j;
+	int i;
 
 	curs_off(t);
 	change_window_gadgets(t->win, cfg->kind);
@@ -2062,8 +2075,8 @@ reconfig_textwin(TEXTWIN *t, WINCFG *cfg)
 	for (i = 0; i < t->maxy; i++) 
 	{
 		t->dirty[i] = ALLDIRTY;
-		for (j = 0; j < t->maxx; j++) 
-			t->cflag[i][j] = COLORS(cfg->fg_color, cfg->bg_color);
+		memulset (t->cflag[i], COLORS (cfg->fg_color, cfg->bg_color),
+			  NCOLS (t));
 	}
 	curs_on(t);
 
