@@ -46,7 +46,7 @@
 #define	ABS(a)		((a) < 0 ? -(a) : (a))
 
 #if 1
-#define DEBUG(x) printf x
+#define DEBUG(x) printf x, fflush(stdout)
 #else
 #define DEBUG(x)
 #endif

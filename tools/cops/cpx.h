@@ -26,6 +26,7 @@
 #ifndef _cpx_h
 #define _cpx_h
 
+#include <setjmp.h>
 #include <gemx.h>
 #include "global.h"
 
@@ -160,7 +161,7 @@ struct Sl_dragxy_args
 };
 struct Xform_do_args
 {
-	OBJECT *tree; short eobj; short *msg;
+	OBJECT *tree; short edit_obj; short *msg;
 };
 struct Set_Evnt_Mask_args
 {
@@ -259,10 +260,15 @@ typedef	struct cpx_desc
 	void	*start_of_cpx;	/* Startadresse des CPX im Speicher */
 	void	*end_of_cpx;	/* Endadresse des CPX im Speicher */
 
+#if 0
 	void	*sp_memory;	/* Start des Stackspeichers fuer den CPX-Kontext waehrend cpx_call() */
 
 	void	*context[16];	/* gesicherter Registerkontext */
 	void	*return_addr;	/* temporaere Ruecksprungadresse */
+#else
+	jmp_buf jb;
+	char *stack;
+#endif
 
 	CPXINFO	*info;		/* Zeiger auf CPXINFO-Struktur die bei cpx_call() zurueckgeliefert wird */
 
