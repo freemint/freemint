@@ -427,6 +427,7 @@ queue_message(enum locks lock, struct xa_client *dest_client, union msg_buf *msg
 		}
 
 		new_msg = kmalloc(sizeof(*new_msg));
+		DIAG((D_m, NULL, "new WM_REDRAW message %lx", new_msg));
 		if (new_msg)
 		{
 			*next = new_msg;
