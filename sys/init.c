@@ -972,19 +972,13 @@ init (void)
 	DEBUG (("init_bios() ok!"));
 	init_xbios ();
 	DEBUG (("init_xbios() ok!"));
-
-	boot_print ("After init_xbios()\n");
-
 	
 	/* Disable all CPU caches */
 	ccw_set(0x00000000L, 0x0000c57fL);
-
+	
 	/* initialize interrupt vectors */
 	init_intr ();
 	DEBUG (("init_intr() ok!"));
-
-	boot_print ("After init_intr()\n");
-
 	
 	/* Enable superscalar dispatch on 68060 */
 	get_superscalar();
@@ -994,10 +988,6 @@ init (void)
 	 */
 	ccw_set(0x0000c567L, 0x0000c57fL);
 	
-
-	boot_print ("Before init_cookies()\n");
-
-
 # ifdef _xx_KMEMDEBUG
 	/* XXX */
 	{
