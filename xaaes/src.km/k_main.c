@@ -192,7 +192,61 @@ check_cevents(struct xa_client *client)
 	else
 		return 0;
 }
+#if 0
+void
+post_tpevent(struct xa_client *client,
+	void (*func)(enum locks, struct c_event *, bool cancel),
+	void *ptr1, void *ptr2,
+	int d0, int d1, RECT *r,
+	const struct moose_data *md)
+{
+	struct c_event *c;
 
+	c = kmalloc(sizeof(*c));
+	if (c)
+	{
+		c->next		= NULL;
+		c->funct	= func;
+		c->client	= client;
+		c->ptr1		= ptr1;
+		c->ptr2		= ptr2;
+		c->d0		= d0;
+		c->d1		= d1;
+
+		if (r)
+			c->r = *r;
+		if (md)
+			c->md = *md;
+
+		if (!client->cevnt_head)
+		{
+			client->cevnt_head = c;
+			client->cevnt_tail = c;
+		}
+		else
+		{
+			client->cevnt_tail->next = c;
+			client->cevnt_tail = c;
+		}
+		client->cevnt_count++;
+
+		DIAG((D_mouse, client, "added cevnt %lx(%d) (head %lx, tail %lx) for %s",
+			c, client->cevnt_count, client->cevnt_head, client->cevnt_tail,
+			client->name));
+	}
+	else
+	{
+		DIAGS(("kmalloc(%i) failed, out of memory?", sizeof(*c)));
+	}
+
+	if (client != C.Aes)
+		Unblock(client, 1, 5000);
+	else
+	{
+		dispatch_cevent(client);
+	}
+}
+#endif
 void
 Block(struct xa_client *client, int which)
 {
@@ -274,7 +328,21 @@ Unblock(struct xa_client *client, unsigned long value, int which)
 	wake(IO_Q, (long)client);
 	DIAG((D_kern,client,"[%d]Unblocked %s 0x%lx", which, c_owner(client), value));
 }
+#if 0
+void
+KT_entry(struct xa_client *client)
+{
+	bool term = false;
 
+	while (!term)
+	{
+		while(
+	}
+
+	client->tp = NULL;
+	kthread_exit(0);
+}
+#endif
 
 static vdi_vec *svmotv = NULL;
 static vdi_vec *svbutv = NULL;

@@ -257,6 +257,14 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	app_in_front(lock, client);
 
+#if 0
+	{
+		long tpc;
+
+		tpc = kthread_create(client->p, KT_idle, NULL, &client->tp, "kt-%s", client->proc_name);
+	}
+#endif
+			
 clean_out:
 	/* Reset the AES messages pending list for our new application */
 	client->msg = NULL;
@@ -1049,18 +1057,16 @@ XA_appl_getinfo(enum locks lock, struct xa_client *client, AESPB *pb)
 		{
 			gi_type = (gi_type & 0xff) + XA_AGI;
 			if (gi_type > XA_MAGI)
-			{
-				pb->intout[0] = 0;
-				return XAC_DONE;
-			}
+				gi_type == -1;
 		}
 		else
-		{
-			/* "error" - unimplemented info type */
+			gi_type == -1;
+	}
 
-			pb->intout[0] = 0;
-			return XAC_DONE;
-		}
+	if (gi_type == -1)
+	{
+		pb->intout[0] = 0;
+		return XAC_DONE;
 	}
 
 	info_tab[0][0] = screen.standard_font_height;
