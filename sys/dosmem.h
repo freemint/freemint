@@ -15,10 +15,10 @@
 long _cdecl m_addalt (long start, long size);
 long _cdecl m_xalloc (long size, int mode);
 long _cdecl m_alloc (long size);
-long _cdecl m_free (virtaddr block);
-long _cdecl m_shrink (int dummy, virtaddr block, long size);
-long _cdecl sys_m_validate (int pid, void *addr, long size, long *flags);
-long _cdecl sys_m_access (void *addr, long size, int mode);
+long _cdecl m_free (long block);
+long _cdecl m_shrink (int dummy, long block, long size);
+long _cdecl sys_m_validate (int pid, long addr, long size, long *flags);
+long _cdecl sys_m_access (long addr, long size, int mode);
 
 
 # endif /* _dosmem_h */

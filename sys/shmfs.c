@@ -674,7 +674,7 @@ shm_ioctl (FILEPTR *f, int mode, void *buf)
 			}
 			
 			/* find the memory region to be attached */
-			m = addr2mem (curproc, (virtaddr) buf);
+			m = addr2mem (curproc, (long) buf);
 			if (!m || !buf)
 			{
 				DEBUG(("Fcntl: SHMSETBLK: bad address %lx", buf));
