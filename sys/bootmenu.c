@@ -56,7 +56,7 @@ short load_xdd_f = 1;		/* Flag: load XDD modules (if 1) */
 short load_auto = 1;		/* Flag: load AUTO programs appearing after us (if 1) */
 short save_ini = 1;		/* Flag: write new ini file while exiting bootmenu (if 1) */
 
-static short boot_delay = 4;	/* boot delay in milliseconds */
+static short boot_delay = 4;	/* boot delay in seconds */
 
 int boot_kernel_p(void);
 void read_ini(void);
