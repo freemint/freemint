@@ -250,15 +250,13 @@ terminate (PROC *curproc, int code, int que)
 long
 kernel_pterm (PROC *p, int code)
 {
-	CONTEXT *syscall;
+	long term_vec = p->ctxt[SYSCALL].term_vec;
 
 	TRACE(("Pterm(%d)", code));
 
-	/* call the process termination vector */
-	syscall = &p->ctxt[SYSCALL];
-
-	if (syscall->term_vec != (long) rts)
+	if (term_vec != (long)rts)
 	{
+		/* call the process termination vector */
 		TRACE(("term_vec: user has something to do"));
 
 		/* we handle the termination vector just like Supexec(), by
@@ -268,7 +266,7 @@ kernel_pterm (PROC *p, int code)
 		 * handle_sig to do that -- see signal.c.
 		 */
 		p->p_sigmask |= 1L;
-		(void) sys_b_supexec ((Func) syscall->term_vec, 0L, 0L, 0L, 0L, (long) code);
+		sys_b_supexec ((Func)term_vec, 0L, 0L, 0L, 0L, code);
 		/*
 		 * if we arrive here, continue with the termination...
 		 */
