@@ -1187,7 +1187,7 @@ proc_ioctl (FILEPTR *f, int mode, void *buf)
 			struct pmeminfo *mi = buf;
 			int i;
 			
-			if (!mem)
+			if (!mem || !mem->mem)
 			{
 				DEBUG (("ioctl(PMEMINFO): no memspace struct"));
 				return EBADARG;

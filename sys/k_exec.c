@@ -354,6 +354,7 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 			}
 			else
 			{
+				assert (curproc->p_cwd);
 				tmp[0] = curproc->p_cwd->curdrv + ((curproc->p_cwd->curdrv < 26) ? 'A' : '1'-26);
 			}
 			
@@ -413,6 +414,8 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		{	
 			struct pcred *cred = p->p_cred;
 			
+			assert (cred && cred->ucr);
+			
 			aes_hack = 1;
 			
 			cred->ucr = copy_cred (cred->ucr);
@@ -430,6 +433,8 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		if (mkload && mkgo && !p->ptracer)	/* setuid/setgid is OK */
 		{
 			struct pcred *cred = p->p_cred;
+			
+			assert (cred && cred->ucr);
 			
 			if (!aes_hack && (xattr.mode & S_ISUID))
 			{
@@ -613,6 +618,8 @@ exec_region (PROC *p, MEMREGION *mem, int thread)
 	
 	TRACE (("exec_region: enter (PROC %lx, mem = %lx)", p, mem));
 	assert (p && mem && fd);
+	assert (p->p_cwd);
+	assert (p->p_mem);
 	
 	b = (BASEPAGE *) mem->loc;
 	
@@ -651,6 +658,8 @@ exec_region (PROC *p, MEMREGION *mem, int thread)
 	
 	if (!thread)
 	{
+		assert (p->p_mem && p->p_mem->mem);
+		
 		for (i = 0; i < p->p_mem->num_reg; i++)
 		{
 			m = p->p_mem->mem[i];

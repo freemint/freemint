@@ -360,6 +360,8 @@ swap_in_curproc (void)
 	MEMREGION *m, *shdw, *save;
 	int i;
 	
+	assert (mem && mem->mem);
+	
 	for (i = 0; i < mem->num_reg; i++)
 	{
 		m = mem->mem[i];
