@@ -287,15 +287,15 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 			}
 			else	r = set_cookie (NULL, arg1, arg2);
 # else
-			if (arg1 == 0x5354694BL && isroot)
+			/* Gluestik kludges, part I */
+			if (arg1 == COOKIE_STiK && isroot)
 			{
 				USER_THINGS *ut;
 				PROC *p;
 
 				for (p = proclist; p; p = p->gl_next)
 				{
-					/* Skip MiNT itself */
-					if (p->pid && p->wait_q != ZOMBIE_Q && p->wait_q != TSR_Q)
+					if (p->wait_q != ZOMBIE_Q && p->wait_q != TSR_Q)
 					{
 						if (p->p_mem->tp_reg)
 						{
@@ -304,6 +304,8 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 							set_cookie((COOKIE *)ut->user_jar_p, arg1, arg2);
 							detach_region(curproc, p->p_mem->tp_reg);
 						}
+						else
+							set_cookie((COOKIE *)kernel_things.user_jar_p, arg1, arg2);
 					}
 				}
 			}
@@ -322,15 +324,15 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 			}
 			else	r = del_cookie (NULL, arg1);
 # else
-			if (arg1 == 0x5354694BL && isroot)
+			/* Gluestik kludges, part II */
+			if (arg1 == COOKIE_STiK && isroot)
 			{
 				USER_THINGS *ut;
 				PROC *p;
 
 				for (p = proclist; p; p = p->gl_next)
 				{
-					/* Skip MiNT itself */
-					if (p->pid && p->wait_q != ZOMBIE_Q && p->wait_q != TSR_Q)
+					if (p->wait_q != ZOMBIE_Q && p->wait_q != TSR_Q)
 					{
 						if (p->p_mem->tp_reg)
 						{
@@ -339,6 +341,8 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 							del_cookie((COOKIE *)ut->user_jar_p, arg1);
 							detach_region(curproc, p->p_mem->tp_reg);
 						}
+						else
+							del_cookie((COOKIE *)kernel_things.user_jar_p, arg1);
 					}
 				}
 			}
