@@ -60,7 +60,7 @@ m_addalt (long start, long size)
 static long
 _do_malloc (MMAP map, long size, int mode)
 {
-	virtaddr v;
+	long v;
 	MEMREGION *m;
 	long maxsize, mleft;
 
@@ -293,7 +293,7 @@ m_alloc (long size)
 }
 
 long _cdecl
-m_free (virtaddr block)
+m_free (long block)
 {
 	struct memspace *mem;
 	long r;
@@ -351,7 +351,7 @@ m_free (virtaddr block)
 }
 
 long _cdecl
-m_shrink (int dummy, virtaddr block, long size)
+m_shrink (int dummy, long block, long size)
 {
 	struct proc *p = curproc;
 	struct memspace *mem = p->p_mem;
@@ -388,7 +388,7 @@ error:
 }
 
 long _cdecl
-sys_m_validate (int pid, void *addr, long size, long *flags)
+sys_m_validate (int pid, long addr, long size, long *flags)
 {
 	struct proc *p = NULL;
 	MEMREGION *m;
@@ -412,8 +412,8 @@ sys_m_validate (int pid, void *addr, long size, long *flags)
 		return EPERM;
 	}
 	
-	m = proc_addr2region (p, (long) addr);
-	if (m && ((long) addr + size) <= (m->loc + m->len))
+	m = proc_addr2region (p, addr);
+	if (m && (addr + size) <= (m->loc + m->len))
 	{
 		if (flags)
 		{
@@ -432,7 +432,7 @@ sys_m_validate (int pid, void *addr, long size, long *flags)
 }
 
 long _cdecl
-sys_m_access (void *addr, long size, int mode)
+sys_m_access (long addr, long size, int mode)
 {
 	struct proc *p = curproc;
 	MEMREGION *m;
@@ -446,14 +446,14 @@ sys_m_access (void *addr, long size, int mode)
 	}
 	
 	/* search in the process memory regions */
-	m = proc_addr2region (p, (long) addr);
-	if (m && ((long) addr + size) <= (m->loc + m->len))
+	m = proc_addr2region (p, addr);
+	if (m && (addr + size) <= (m->loc + m->len))
 		/* always accessible */
 		return 0;
 	
 	/* search in all memory reagions */
-	m = addr2region ((long) addr);
-	if (m && ((long) addr + size) <= (m->loc + m->len))
+	m = addr2region (addr);
+	if (m && (addr + size) <= (m->loc + m->len))
 	{
 		long mflags;
 		

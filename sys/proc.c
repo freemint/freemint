@@ -143,14 +143,14 @@ init_proc (void)
 	/* get some memory */
 	curproc->p_mem->num_reg = NUM_REGIONS;
 	curproc->p_mem->mem = kmalloc (curproc->p_mem->num_reg * sizeof (MEMREGION *));
-	curproc->p_mem->addr = kmalloc (curproc->p_mem->num_reg * sizeof (virtaddr));
+	curproc->p_mem->addr = kmalloc (curproc->p_mem->num_reg * sizeof (long));
 	
 	/* make sure kmalloc was successful */
 	assert (curproc->p_mem->mem && curproc->p_mem->addr);
 	
 	/* make sure it's filled with zeros */
 	bzero (curproc->p_mem->mem, curproc->p_mem->num_reg * sizeof (MEMREGION *));
-	bzero (curproc->p_mem->addr, curproc->p_mem->num_reg * sizeof (virtaddr));
+	bzero (curproc->p_mem->addr, curproc->p_mem->num_reg * sizeof (long));
 	
 	/* get root and current directories for all drives */
 	{

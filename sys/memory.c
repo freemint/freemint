@@ -59,14 +59,14 @@ MEMREGION *	_get_region	(MMAP map, ulong size, int mode, MEMREGION *descr, int k
 void		free_region	(MEMREGION *reg);
 long		shrink_region	(MEMREGION *reg, ulong newsize);
 
-virtaddr	attach_region	(PROC *proc, MEMREGION *reg);
+long		attach_region	(PROC *proc, MEMREGION *reg);
 void		detach_region	(PROC *proc, MEMREGION *reg);
-int		detach_region_by_addr (PROC *p, virtaddr block);
+int		detach_region_by_addr (PROC *p, long block);
 
 long		max_rsize	(MMAP map, long needed);
 long		tot_rsize	(MMAP map, int flag);
 
-virtaddr	alloc_region	(MMAP map, ulong size, int mode);
+long		alloc_region	(MMAP map, ulong size, int mode);
 
 MEMREGION *	fork_region	(MEMREGION *reg, long txtsize);
 MEMREGION *	create_env	(const char *env, ulong flags);
@@ -80,7 +80,7 @@ long		memused		(PROC *p);
 void		recalc_maxmem	(PROC *p);
 
 int		valid_address	(long addr);
-MEMREGION *	addr2mem	(PROC *p, virtaddr a);
+MEMREGION *	addr2mem	(PROC *p, long addr);
 MEMREGION *	addr2region	(long addr);
 MEMREGION *	proc_addr2region(PROC *p, long addr);
 
@@ -555,19 +555,19 @@ found:
 # endif
 
 /*
- * virtaddr
+ * long
  * attach_region(proc, reg): attach the region to the given process:
  * returns the address at which it was attached, or NULL if the process
  * cannot attach more regions. The region link count is incremented if
  * the attachment is successful.
  */
 
-virtaddr
+long
 attach_region (PROC *p, MEMREGION *reg)
 {
 	struct memspace *mem = p->p_mem;
 	MEMREGION **newmem;
-	virtaddr *newaddr;
+	long *newaddr;
 	int i;
 	
 	TRACELOW(("attach_region %lx (%s) len %lx to pid %d",
@@ -594,7 +594,7 @@ again:
 			assert (mem->addr[i] == 0);
 			
 			mem->mem[i] = reg;
-			mem->addr[i] = (virtaddr) reg->loc;
+			mem->addr[i] = reg->loc;
 			
 			reg->links++;
 			mark_proc_region (p, reg, PROT_P);
@@ -608,7 +608,7 @@ again:
 	i = mem->num_reg + NUM_REGIONS;
 	
 	newmem = kmalloc (i * sizeof (MEMREGION *));
-	newaddr = kmalloc (i * sizeof (virtaddr));
+	newaddr = kmalloc (i * sizeof (long));
 	
 	if (newmem && newaddr)
 	{
@@ -711,7 +711,7 @@ detach_region (PROC *p, MEMREGION *reg)
 }
 
 int
-detach_region_by_addr (PROC *p, virtaddr block)
+detach_region_by_addr (PROC *p, long block)
 {
 	struct memspace *mem = p->p_mem;
 	int i;
@@ -1300,12 +1300,12 @@ freephysmem (void)
  * @param mode The memory protection mode to pass get_region(), and in turn to mark_region().
  * @return the address at which the region was attached, or NULL.
  */
-virtaddr
+long
 alloc_region (MMAP map, ulong size, int mode)
 {
 	MEMREGION *m;
 	PROC *proc = curproc;
-	virtaddr v;
+	long v;
 
 	TRACELOW(("alloc_region(map,size: %lx,mode: %x)",size,mode));
 	
@@ -1432,7 +1432,7 @@ create_env (const char *env, ulong flags)
 {
 	long size;
 	MEMREGION *m;
-	virtaddr v;
+	long v;
 	const char *old;
 	char *new;
 	short protmode;
@@ -2052,7 +2052,7 @@ error:
  * memory map
  */
 MEMREGION *
-addr2mem (PROC *p, virtaddr a)
+addr2mem (PROC *p, long addr)
 {
 	struct memspace *mem = p->p_mem;
 	register int i;
@@ -2061,7 +2061,7 @@ addr2mem (PROC *p, virtaddr a)
 		goto error;
 	
 	for (i = 0; i < mem->num_reg; i++)
-		if (a == mem->addr[i])
+		if (addr == mem->addr[i])
 			return mem->mem[i];
 	
 error:

@@ -304,8 +304,8 @@ load_and_init_slb(char *name, char *path, long min_ver, SHARED_LIB **sl)
 		DEBUG(("Slbopen: SLB with shared text bit?!"));
 		r = ENOEXEC;
 slb_error:
-		m_free((virtaddr)b->p_env);
-		m_free((virtaddr)b);
+		m_free((long) b->p_env);
+		m_free((long) b);
 		if (--mr->links == 0)
 			free_region(mr);
 		return(r);
@@ -355,7 +355,7 @@ slb_error:
 	if (hitpa < b->p_hitpa)
 	{
 		b->p_hitpa = hitpa;
-		r = m_shrink(0, (virtaddr)b, b->p_hitpa - (long)b);
+		r = m_shrink(0, (long) b, b->p_hitpa - (long)b);
 		if (r)
 		{
 			DEBUG(("Slbopen: Couldn't shrink basepage"));
