@@ -76,13 +76,11 @@
 
 /* magic number to show that we have captured the reset vector */
 # define RES_MAGIC	0x31415926L
+# define EXEC_OS 0x4feL
 
 static long _cdecl mint_criticerr (long);
 static void _cdecl do_exec_os (register long basepage);
 
-# define EXEC_OS 0x4feL
-static int	check_for_gem (void);
-static void	run_auto_prgs (void);
 static int	boot_kernel_p (void);
 
 void mint_thread(void *arg);
@@ -524,10 +522,10 @@ static const char *ini_keywords[] =
  * menu defaults, is located at same place as mint.cnf is
  */
 
-static short
-find_ini (char *outp)
+INLINE short
+find_ini (char *outp, long outsize)
 {
-	ksprintf(outp, 32, "%smint.ini", sysdir);
+	ksprintf(outp, outsize, "%smint.ini", sysdir);
 
 	if (Fsfirst(outp, 0) == 0)
 		return 1;
@@ -548,7 +546,7 @@ find_char (char *s, char c)
 	return NULL;
 }
 
-static short
+INLINE short
 whether_yes (char *s)
 {
 	s = find_char(s, '=');
@@ -568,7 +566,7 @@ read_ini (void)
 	long r, x, len;
 	short inihandle, options[MENU_OPTIONS-1] = { 1, 1, 1, 1, 0, 1 };
 
-	if (!find_ini(ini_file))
+	if (!find_ini(ini_file, sizeof(ini_file)))
 		goto initialize;
 
 	/* Figure out the file's length. Wish I had Fstat() here :-( */
@@ -612,7 +610,7 @@ initialize:
 	save_ini = options[5];
 }
 
-static void
+INLINE void
 write_ini (short *options)
 {
 	short inihandle;
@@ -710,6 +708,29 @@ wait:
 	return 1;	/* not reached */
 }
 
+/*
+ * some global variables used to see if GEM is active
+ */
+
+static short aes_intout[64];
+static short aes_dummy[64];
+static short aes_globl[15];
+static short aes_cntrl[6] = { 10, 0, 1, 0, 0 };
+
+short *aes_pb[6] = { aes_cntrl, aes_globl, aes_dummy, aes_intout,
+		     aes_dummy, aes_dummy };
+
+/*
+ * check for whether GEM is active; remember, this *must* be done in
+ * user mode
+ */
+
+INLINE int
+check_for_gem (void)
+{
+	call_aes(aes_pb);	/* does an appl_init */
+	return aes_globl[0];
+}
 
 static long GEM_memflags = F_FASTLOAD | F_ALTLOAD | F_ALTALLOC | F_PROT_S;
 
@@ -1126,18 +1147,6 @@ init (void)
 
 	stop_and_ask();
 
-	/* Load the keyboard table */
-	load_keytbl();
-
-	stop_and_ask();
-
-	/* Load the unicode table */
-# ifdef SOFT_UNITABLE
-	init_unicode();
-# endif
-
-	stop_and_ask();
-
 	/* start system update daemon */
 # ifdef VERBOSE_BOOT
 	boot_print(MSG_init_starting_sysupdate);
@@ -1258,31 +1267,7 @@ init (void)
  * (2) make sure there really is a MINT.PRG in the auto folder
  */
 
-/*
- * some global variables used to see if GEM is active
- */
-
-static short aes_intout[64];
-static short aes_dummy[64];
-static short aes_globl[15];
-static short aes_cntrl[6] = { 10, 0, 1, 0, 0 };
-
-short *aes_pb[6] = { aes_cntrl, aes_globl, aes_dummy, aes_intout,
-		     aes_dummy, aes_dummy };
-
-/*
- * check for whether GEM is active; remember, this *must* be done in
- * user mode
- */
-
-static int
-check_for_gem (void)
-{
-	call_aes(aes_pb);	/* does an appl_init */
-	return aes_globl[0];
-}
-
-static void
+INLINE void
 run_auto_prgs (void)
 {
 	DTABUF *dta;
@@ -1327,6 +1312,14 @@ mint_thread(void *arg)
 
 # ifdef VERBOSE_BOOT
 	boot_print(MSG_init_done);
+# endif
+
+	/* Load the keyboard table */
+	load_keytbl();
+
+	/* Load the unicode table */
+# ifdef SOFT_UNITABLE
+	init_unicode();
 # endif
 
 	/* run any programs appearing after us in the AUTO folder */
