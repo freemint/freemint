@@ -577,6 +577,7 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 			break;
 		}
 
+# ifndef NO_AKP_KEYBOARD
 		case S_LOADKBD:
 		{
 			if (isroot == 0)
@@ -614,6 +615,7 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 			}
 			break;
 		}
+# endif
 
 		/* experimental section
 		 */
