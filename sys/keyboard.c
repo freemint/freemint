@@ -522,10 +522,10 @@ sys_b_bioskeys(void)
 
 	/* Fix the _AKP cookie, gl_kbd may get changed in load_table()
 	 */
-	get_cookie(COOKIE__AKP, &akp_val);
+	get_cookie(NULL, COOKIE__AKP, &akp_val);
 	akp_val &= 0xffffff00L;
 	akp_val |= gl_kbd;
-	set_cookie(COOKIE__AKP, akp_val);
+	set_cookie(NULL, COOKIE__AKP, akp_val);
 
 	/* Done! */
 	kbd_lock = 0;
@@ -802,17 +802,13 @@ load_keytbl(void)
 	 */
 	ksprintf(name, sizeof(name), "%skeyboard.tbl", sysdir);
 
-# ifdef VERBOSE_BOOT
 	boot_printf(MSG_keytable_loading, name);
-# endif
 
 	r = load_keyboard_table(name, 0);
-# ifdef VERBOSE_BOOT
 	if (r == 0)
 		boot_printf(MSG_keytable_loaded, gl_kbd);
 	else
 		boot_printf(MSG_init_error, r);
-# endif
 }
 
 /* Initialize the built-in keyboard tables.
@@ -841,7 +837,7 @@ init_keybd(void)
 	if (mch == MILAN_C)
 		keytable_vecs.altgr = syskeytab->altgr;
 
-	get_cookie(COOKIE__AKP, &akp_val);
+	get_cookie(NULL, COOKIE__AKP, &akp_val);
 	gl_kbd = (akp_val & 0xffL);
 # endif
 }
