@@ -193,12 +193,19 @@ static struct parser_item parser_tab[] =
 	{ NULL }
 };
 
+struct cnfdata
+{
+	char *env_ptr;		/* temporary pointer into that environment for setenv */
+	long env_len;		/* length of the environment */
+};
 
 /*----------------------------------------------------------------------------*/
 void
 load_config(void)
 {
-	parse_cnf("mint.cnf", parser_tab);
+	struct cnfdata mydata = { NULL, 0 };
+	
+	parse_cnf("mint.cnf", parser_tab, &mydata);
 }
 
 /*============================================================================*/
@@ -386,7 +393,7 @@ pCB_hide_b(bool onNoff)
 
 /*----------------------------------------------------------------------------*/
 static void
-pCL_securelevel (long level)
+pCL_securelevel(long level)
 {
 	secure_mode = level;
 	fatfs_config(0, FATFS_SECURE, secure_mode);
@@ -409,7 +416,7 @@ pCB_maxmem(long size)
 
 /*----------------------------------------------------------------------------*/
 static void
-pCB_newfatfs (unsigned long list, struct parsinf *inf)
+pCB_newfatfs(unsigned long list, struct parsinf *inf)
 {
 # ifdef OLDTOSFS
 	bool flag = false;
@@ -423,7 +430,7 @@ pCB_newfatfs (unsigned long list, struct parsinf *inf)
 			{
 				if (!flag)
 				{
-					boot_printf (MSG_cnf_newfatfs);
+					boot_printf(MSG_cnf_newfatfs);
 					flag = true;
 				}
 				boot_printf("%c", drv_list[drv]);
@@ -467,30 +474,32 @@ pCB_prn(const char *path)
 static void
 pCB_setenv(const char *var, const char *arg, struct parsinf *inf)
 {
-	long env_used = inf->env_ptr - init_env;
+	struct cnfdata *mydata = inf->data;
+	
+	long env_used = mydata->env_ptr - init_env;
 	long var_len  = strlen(var);
 	long arg_len  = strlen(arg)       +1;   /* + '\0' */
 	long env_plus = var_len + arg_len +1;   /* + '='  */
 
-	if (env_used + env_plus + 1 > inf->env_len)
+	if (env_used + env_plus + 1 > mydata->env_len)
 	{
-		char *new_env = (char *)sys_m_xalloc (inf->env_len += 1024, 0x13);
+		char *new_env = (char *)sys_m_xalloc(mydata->env_len += 1024, 0x13);
 		if (init_env)
 		{
 			memcpy(new_env, init_env, env_used);
 			sys_m_free((long) init_env);
 		}
 		init_env     = new_env;
-		inf->env_ptr = new_env + env_used;
+		mydata->env_ptr = new_env + env_used;
 	}
 	
-	memcpy( inf->env_ptr,            var, var_len);
-	        inf->env_ptr[var_len]  = '=';
+	memcpy( mydata->env_ptr,            var, var_len);
+	        mydata->env_ptr[var_len]  = '=';
 	
-	memcpy(&inf->env_ptr[var_len+1], arg, arg_len);
-	        inf->env_ptr[env_plus] = '\0';
+	memcpy(&mydata->env_ptr[var_len+1], arg, arg_len);
+	        mydata->env_ptr[env_plus] = '\0';
 	
-	inf->env_ptr += env_plus;
+	mydata->env_ptr += env_plus;
 }
 
 /*----------------------------------------------------------------------------*/

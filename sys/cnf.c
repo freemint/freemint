@@ -52,14 +52,6 @@ union genarg
 
 const char *drv_list = "ABCDEFGHIJKLMNOPQRSTUVWXYZ123456";
 
-/*----------------------------------------------------------------------------*/
-static void
-p_REFF (enum pitype type, void *reff, union genarg arg)
-{
-	if (type == PI_R_L)  *(long *) reff = arg.l;
-	else                *(short *) reff = arg.s;
-}
-
 
 /*============================================================================*/
 /* The parser itself and its functions ...
@@ -185,13 +177,13 @@ parse_line(struct parsinf *inf)
 		parse_spaces(inf);
 
 		if (*(inf->src))
-			*(inf->dst -1) = ' ';
+			*(inf->dst - 1) = ' ';
 	}
 
 	if (inf->dst == ret.c)
-		inf->dst = ret.c +1;
+		inf->dst = ret.c + 1;
 
-	*(inf->dst -1) = NUL;
+	*(inf->dst - 1) = NUL;
 
 	return ret;
 }
@@ -206,12 +198,12 @@ parse_drvlst(struct parsinf *inf)
 
 	while (*(inf->src))
 	{
-		long drv = strchr (drv_list, toupper((int)*(inf->src) & 0xff)) - drv_list;
+		long drv = strchr(drv_list, toupper((int)*(inf->src) & 0xff)) - drv_list;
 
 		if (drv < 0)
 			break;
 
-		if (drv >= NUM_DRIVES )
+		if (drv >= NUM_DRIVES)
 		{
 			ret._err = ARG_RANG;
 			break;
@@ -490,7 +482,7 @@ parser(FILEPTR *f, long f_size,
 					case ARG_QUOT: msg = MSG_cnf_missing_quotation;		break;
 				}
 				parser_msg(inf, NULL);
-				boot_printf(MSG_cnf_argument_for, arg_num +1, item->key);
+				boot_printf(MSG_cnf_argument_for, arg_num + 1, item->key);
 				boot_print(msg);
 				parser_msg(NULL,NULL);
 				state = 0;
@@ -524,11 +516,11 @@ parser(FILEPTR *f, long f_size,
 				 * information and put it always on stack. If it is not necessary
 				 * it will simply ignored.
 				 */
-					#define A0L arg[0].l
-					#define A0B arg[0].b
-					#define A0U arg[0].u
-					#define A0C arg[0].c
-					#define A1C arg[1].c
+				#define A0L arg[0].l
+				#define A0B arg[0].b
+				#define A0U arg[0].u
+				#define A0C arg[0].c
+				#define A1C arg[1].c
 				case PI_C_L: case PI_V_L: (*cb.l  )(  A0L,             inf); break;
 				case PI_C_B: case PI_V_B: (*cb.b  )(  A0B,             inf); break;
 				case PI_C_D: case PI_V_D: (*cb.u  )(  A0U,             inf); break;
@@ -538,8 +530,11 @@ parser(FILEPTR *f, long f_size,
 				case PI_C_TA:             (*cb.cc )(  A0C,A1C,         inf); break;
 				case PI_C_0TT:            (*cb._cc)(0,A0C,A1C             ); break;
 				case PI_V_ATK:            (*cb.ccl)(  A0C,A1C,item->dat   ); break;
-				case PI_R_S: case PI_R_L: case PI_R_B:
-				                           p_REFF (item->type,cb._v,arg[0]); break;
+				/* references */
+				case PI_R_S: *(short *)(cb._v) = arg[0].s;  break;
+				case PI_R_L: *(long  *)(cb._v) = arg[0].l;  break;
+				case PI_R_B: *(bool  *)(cb._v) = arg[0].b;  break;
+				case PI_R_T: *(char **)(cb._v) = arg[0].c;  break;
 
 				default: ALERT(MSG_cnf_unknown_tag,
 					            (int)item->type, item->key);
@@ -586,17 +581,17 @@ parse_include(const char *path, struct parsinf *inf, struct parser_item *parser_
 			1,
 			inf->dst,
 			inf->src,
-			inf->env_ptr,
-			inf->env_len
+			inf->data
 		};
 
 		parser(fp, xattr.size, &include, parser_tab);
-		inf->env_ptr = include.env_ptr;
-		inf->env_len = include.env_len;
 		do_close(rootproc, fp);
 	}
 	else
 	{
+		fp->links = 0;
+		FP_FREE(fp);
+		
 		parser_msg(inf, NULL);
 		boot_printf(MSG_cnf_cannot_include, path);
 		parser_msg(NULL, NULL);
@@ -604,9 +599,9 @@ parse_include(const char *path, struct parsinf *inf, struct parser_item *parser_
 }
 
 void
-parse_cnf(const char *name, struct parser_item *parser_tab)
+parse_cnf(const char *name, struct parser_item *parser_tab, void *data)
 {
-	struct parsinf inf  = { 0ul, NULL, 1, NULL, NULL, NULL, 0ul };
+	struct parsinf inf  = { 0ul, NULL, 1, NULL, NULL, data };
 	XATTR xattr;
 	FILEPTR *fp;
 	long ret;
