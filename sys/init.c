@@ -26,6 +26,7 @@
 # include "arch/kernel.h"	/* enter_gemdos */
 # include "arch/mmu.h"		/* save_mmu */
 # include "arch/mprot.h"
+# include "arch/startup.h"	/* _base */
 # include "arch/syscall.h"	/* call_aes */
 
 # include "bios.h"	
