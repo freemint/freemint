@@ -31,7 +31,7 @@
 ulong
 ext2_count_free (char *map, ulong numchars)
 {
-	static int nibblemap [] = { 4, 3, 3, 2, 3, 2, 2, 1, 3, 2, 2, 1, 2, 1, 1, 0 };
+	static long nibblemap [] = { 4, 3, 3, 2, 3, 2, 2, 1, 3, 2, 2, 1, 2, 1, 1, 0 };
 	
 	register ulong i;
 	register ulong sum = 0;

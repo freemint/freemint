@@ -137,7 +137,7 @@ ext2_find_first_zero_bit (const void *vaddr, ulong size)
 	if (!size)
 		return 0;
 	
-	size = (size >> 5) + ((size & 31) > 0);
+	size = (size >> 5) + ((size & 31UL) > 0);
 	while (*p++ == ~0UL)
 	{
 		if (--size == 0)
@@ -145,11 +145,11 @@ ext2_find_first_zero_bit (const void *vaddr, ulong size)
 	}
 	
 	--p;
-	for (res = 0; res < 32; res++)
+	for (res = 0; res < 32L; res++)
 		if (!ext2_test_bit (res, p))
 			break;
 	
-	return (p - addr) * 32UL + res;
+	return (p - addr) * 32L + res;
 }
 
 INLINE long
@@ -157,7 +157,7 @@ ext2_find_next_zero_bit (const void *vaddr, ulong size, ulong offset)
 {
 	const ulong long *addr = vaddr;
 	const ulong long *p = addr + (offset >> 5);
-	long bit = offset & 31UL, res;
+	long bit = offset & 31L, res;
 	
 	if (offset >= size)
 		return size;
@@ -165,16 +165,16 @@ ext2_find_next_zero_bit (const void *vaddr, ulong size, ulong offset)
 	if (bit)
 	{
 		/* Look for zero in first longword */
-		for (res = bit; res < 32; res++)
+		for (res = bit; res < 32L; res++)
 			if (!ext2_test_bit (res, p))
-				return (p - addr) * 32 + res;
+				return (p - addr) * 32L + res;
 		p++;
 	}
 	
 	/* No zero yet, search remaining full bytes for a zero */
-	res = ext2_find_first_zero_bit (p, size - 32 * (p - addr));
+	res = ext2_find_first_zero_bit (p, size - 32UL * (p - addr));
 	
-	return (p - addr) * 32 + res;
+	return (p - addr) * 32L + res;
 }
 
 
