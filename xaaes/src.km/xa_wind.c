@@ -57,8 +57,8 @@ XA_wind_create(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	CONTROL(5,1,0)
 	
-	if (pb->intin[0] < 0 && pb->control[1] == 6)
-		kind |= (long) pb->intin[5] << 16;
+	if (pb->intin[0] < 0 && pb->control[1] >= 6)
+		kind |= (long)pb->intin[5] << 16;
 
 	if (!client->options.nohide)
 		kind |= HIDE;
@@ -310,7 +310,8 @@ setget(int i)
 	"WF_NTOOLBAR(32)",
 	"WF_MENU(33)",
 	"34","35","36","37","38","39",
-	"WF_WHEEL",
+	"WF_WHEEL(40)",
+	"WF_BEHAVE(41)",
 	"      "
 	};
 
@@ -527,7 +528,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	/* set window name line */
 	case WF_NAME:
-	{
+	{		
 		const char *src = *(const char **)(pb->intin+2);
 		char *dst = w->wname;
 		XA_WIDGET *widg;
