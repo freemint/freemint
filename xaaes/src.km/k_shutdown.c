@@ -160,8 +160,27 @@ k_shutdown(void)
 	free_wtlist(C.Aes);
 	kfree(C.Aes);
 
-
 	C.Aes = NULL;
+
+	DIAGS(("Freeing cnf stuff"));
+	{
+		int i;
+
+		if (cfg.cnf_shell)
+			kfree(cfg.cnf_shell);
+
+		if (cfg.cnf_shell_arg)
+			kfree(cfg.cnf_shell_arg);
+
+		for (i = 0; i < sizeof(cfg.cnf_run)/sizeof(cfg.cnf_run[0]); i++)
+		{
+			if (cfg.cnf_run[i])
+				kfree(cfg.cnf_run[i]);
+
+			if (cfg.cnf_run_arg[i])
+				kfree(cfg.cnf_run_arg[i]);
+		}
+	}
 
 	DIAGS(("Freeing Options"));
 	{

@@ -29,6 +29,6 @@
 
 #include "global.h"
 
-void load_config(const char *name);
+void load_config(void);
 
 #endif /* _cnf_xaaes_h */

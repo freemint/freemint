@@ -276,10 +276,6 @@ load_modules(const char *extension, long (*loader)(struct basepage *, const char
 
 	strcpy(buf, sysdir);
 	len = strlen(buf);
-# if 0
-	buf[len++] = '\\';
-	buf[len] = '\0';
-# endif
 	name = buf + len;
 	len = sizeof(buf) - len;
 
@@ -524,12 +520,12 @@ run_km(const char *path)
 	bp = load_module(path, &err);
 	if (bp)
 	{
-		long (*run)(struct kentry *);
+		long (*run)(struct kentry *, const char *path);
 		
 		FORCE("run_km(%s) ok (bp 0x%lx)!", path, bp);
 		
-		run = (long (*)(struct kentry *))bp->p_tbase;
-		err = (*run)(&kentry);
+		run = (long (*)(struct kentry *, const char *))bp->p_tbase;
+		err = (*run)(&kentry, path);
 		
 		kfree(bp);
 	}

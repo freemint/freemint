@@ -760,6 +760,7 @@ check_kentry_version(void)
 		c_conws("Wrong FreeMiNT version!\r\n");
 		c_conws("This module is compiled against " MINT_NAME);
 		c_conws(MINT_VERS_STRING);
+		c_conws("\r\n");
 		return -1;
 	}
 	return 0;

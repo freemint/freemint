@@ -67,6 +67,7 @@ int
 loader_init(int argc, char **argv, char **env)
 {
 	char path[384];
+	char *name;
 	long fh, r;
 
 	/*
@@ -100,10 +101,15 @@ loader_init(int argc, char **argv, char **env)
 	/* null terminate */
 	path[r] = '\0';
 
+	/* append XaAES subdir */
+	my_strlcat(path, "xaaes\\", sizeof(path));
+
 	if (argc > 1)
 	{
-		char *s = argv[1], *name = NULL;
+		char *s = argv[1];
 		char c;
+
+		name = NULL;
 
 		do {
 			c = *s++;
@@ -115,38 +121,39 @@ loader_init(int argc, char **argv, char **env)
 		if (name)
 		{
 			*name++ = '\0';
+
 			my_strlcpy(path, argv[1], sizeof(path));
-
-			r = Dsetpath(path);
-			if (r)
-			{
-				Cconws("XaAES loader: No such directory: \"");
-				Cconws(path);
-				Cconws("\"\r\n");
-				goto error;
-			}
-
 			my_strlcat(path, "/", sizeof(path));
 		}
 		else
 			name = argv[1];
-
-		my_strlcat(path, name, sizeof(path));
 	}
 	else
-	{
-		r = Dsetpath(path);
-		if (r)
-		{
-			Cconws("XaAES loader: No such directory: \"");
-			Cconws(path);
-			Cconws("\"\r\n");
-			goto error;
-		}
+		name = DEFAULT;
 
-		my_strlcat(path, DEFAULT, sizeof(path));
+	/* change to the XaAES module directory */
+	r = Dsetpath(path);
+	if (r)
+	{
+		Cconws("XaAES loader: No such directory: \"");
+		Cconws(path);
+		Cconws("\"\r\n");
+		goto error;
 	}
 
+	/* get absolute path to this directory */
+	r = Dgetpath(path, 0);
+	if (r)
+	{
+		Cconws("XaAES loader: Dgetpath() failed???\r\n");
+		goto error;
+	}
+
+	/* append module name */
+	my_strlcat(path, "\\", sizeof(path));
+	my_strlcat(path, name, sizeof(path));
+
+	/* check if file exist */
 	fh = Fopen(path, O_RDONLY);
 	if (fh < 0)
 	{

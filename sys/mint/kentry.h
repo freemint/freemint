@@ -101,7 +101,7 @@ struct timeval;
  * versions are enough :-)
  */
 #define KENTRY_MAJ_VERSION	0
-#define KENTRY_MIN_VERSION	9
+#define KENTRY_MIN_VERSION	10
 
 
 /* hardware dependant vector
@@ -497,7 +497,7 @@ struct kentry_module
  */
 struct kentry_cnf
 {
-	void _cdecl (*parse_cnf)(const char *name, struct parser_item *, void *);
+	void _cdecl (*parse_cnf)(const char *path, struct parser_item *, void *);
 	void _cdecl (*parse_include)(const char *path, struct parsinf *, struct parser_item *);
 	void _cdecl (*parser_msg)(struct parsinf *, const char *msg);
 };
