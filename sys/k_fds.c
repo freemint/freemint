@@ -240,8 +240,8 @@ do_open (FILEPTR **f, const char *name, int rwmode, int attr, XATTR *x)
 	char temp1[PATH_MAX];
 	short cur_gid, cur_egid;
 	
+	
 	TRACE (("do_open(%s)", name));
-	assert (p->p_cred && p->p_fd && p->p_cwd && f);
 	
 	
 	/*
@@ -303,6 +303,8 @@ do_open (FILEPTR **f, const char *name, int rwmode, int attr, XATTR *x)
 			return r;
 		}
 		
+		assert (p->p_cred);
+		
 		/* fake gid if directories setgid bit set */
 		cur_gid = p->p_cred->rgid;
 		cur_egid = p->p_cred->ucr->egid;
@@ -314,6 +316,8 @@ do_open (FILEPTR **f, const char *name, int rwmode, int attr, XATTR *x)
 			p->p_cred->ucr = copy_cred (p->p_cred->ucr);
 			p->p_cred->ucr->egid = xattr.gid;
 		}
+		
+		assert (p->p_cwd);
 		
 		r = xfs_creat (dir.fs, &dir, temp1,
 			(S_IFREG|DEFAULT_MODE) & (~p->p_cwd->cmask), attr, &fc);
@@ -379,6 +383,9 @@ do_open (FILEPTR **f, const char *name, int rwmode, int attr, XATTR *x)
 			else
 			{
 				perm = S_IXOTH;
+				
+				assert (p->p_cred);
+				
 				if (p->p_cred->ucr->euid == 0)
 					exec_check = 1;	/* superuser needs 1 x bit */
 			}
@@ -449,6 +456,8 @@ do_open (FILEPTR **f, const char *name, int rwmode, int attr, XATTR *x)
 	{
 		/* fake BIOS devices */
 		FILEPTR *fp;
+		
+		assert (p->p_fd);
 		
 		fp = p->p_fd->ofiles[devsp];
 		if (!fp || fp == (FILEPTR *) 1)
