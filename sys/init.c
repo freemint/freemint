@@ -959,6 +959,9 @@ init (void)
 	boot_printf(MSG_init_kbd_desktop_nationality, gl_kbd, gl_lang);
 # endif
 
+	/* Delete the TOS environment */
+	_base->p_env = NULL;
+
 # ifdef VERBOSE_BOOT
 	boot_print(MSG_init_supermode);
 # endif
