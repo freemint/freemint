@@ -579,6 +579,8 @@ xaaes_init(int argc, char **argv, char **env)
 	short work_out[58];
 	short f;
 	char *resource_name, *full;
+	long old_sp = 0;
+	long screenblaster = 0;
 
 	XA_set_base(0, 32768, -1, 0);
 
@@ -804,6 +806,9 @@ BTRACE(21);
 				{
 					/* '_VDO' */
 					Ssystem(S_GETCOOKIE, 0x5f56444fL, (long)&lcfg.falcon);
+					/* ´SCPN´ - Screenblaster present? */
+					screenblaster = Ssystem(S_GETCOOKIE, 0x5343504e, 0L);
+					screenblaster = (screenblaster == -1) ? 0 : 1;
 
 					if (lcfg.falcon == 0x00030000L)
 					{
@@ -822,7 +827,7 @@ BTRACE(21);
 				{
 					/* Video mode switch */
 					if (stricmp("-video", argv[1]) == 0)
-					{
+[A					{
 						work_in[0] = lcfg.modecode;
 						DIAGS(("Standard: mode %d(%x)\n", lcfg.modecode, lcfg.modecode));
 					}
@@ -852,7 +857,16 @@ BTRACE(21);
 			}
 #endif
 
+
+			/* switch to supervisor-mode                    */
+			/* this is done because screenblaster-software  */
+			/* tries to write the new screen-adress to $44E */
+
+			if (screenblaster) old_sp = Super(0L);
+			
 			v_opnwk(work_in, &C.P_handle, work_out);
+
+			if (screenblaster) Super(old_sp);
 
 			fdisplay(loghandle, true, "\033HPhysical work station opened: %d\n",C.P_handle);
 		}
