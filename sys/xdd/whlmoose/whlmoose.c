@@ -320,7 +320,7 @@ timer_handler(void)
 						do_button_packet();
 				}
 			
-				if (s != last_state)
+				if (s != last_state) /* We skip identical button state events */
 				{
 					last_state = s;
 
@@ -345,12 +345,17 @@ timer_handler(void)
 						click_y		= pak_head->y;
 
 						if (s & 3)
+						/* Ozk 180603: Starting a new event... */
 						{
 							last_time	= tm;
 							timeout		= dc_time;
 							click_count	= 1;
 						}
 						else
+						/* Ozk 180603: A new event, but with a initial button-released state
+						*  makes us send it immediately. This is because the previous event
+						*  most likely was sent while button(s) were still pressed (click-hold).
+						*/
 						{
 							click_count	= 0;
 							do_button_packet();
@@ -585,7 +590,7 @@ write (FILEPTR *f, const char *buf, long bytes)
 		{
 			case MOOSE_INIT_PREFIX:
 			{
-				struct moose_vecs_com *mb = (struct moose_vecs_com *)moose_buffer;
+				struct moose_vecs_com *mb = (struct moose_vecs_com *)&moose_buffer;
 
 				mb->vecs_prefix = MOOSE_VECS_PREFIX;
 				mb->motv = (vdi_vec *) motv;
