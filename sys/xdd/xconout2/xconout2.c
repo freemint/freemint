@@ -88,7 +88,7 @@
 	"½ " MSG_BUILDDATE " by Frank Naumann.\r\n\r\n"
 
 # define MSG_MINT	\
-	"\033pMiNT to old!\033q\r\n"
+	"\033pMiNT too old!\033q\r\n"
 
 # define MSG_FAILURE	\
 	"\7\r\nSorry, xconout2 NOT installed (Dcntl(...) failed)!\r\n\r\n"

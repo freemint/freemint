@@ -37,7 +37,7 @@
 	"\033p WARNING: This is a test version - BETA! \033q\7\r\n"
 
 # define MSG_OLDMINT	\
-	"\033pMiNT to old, this xfs requires at least a FreeMiNT 1.16!\033q\r\n"
+	"\033pMiNT too old, this xfs requires at least a FreeMiNT 1.16!\033q\r\n"
 
 # define MSG_BIOVERSION	\
 	"\033pIncompatible FreeMiNT buffer cache version!\033q\r\n"
@@ -77,7 +77,7 @@ init (struct kerinfo *k)
 	    || (!so_create))
 	{
 		c_conws (MSG_OLDMINT);
-		c_conws (MSG_FAILURE ("MiNT to old"));
+		c_conws (MSG_FAILURE ("MiNT too old"));
 		
 		return NULL;
 	}
