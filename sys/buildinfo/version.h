@@ -9,11 +9,11 @@
 
 # define MAJ_VERSION	1
 # define MIN_VERSION	15
-# define PATCH_LEVEL	12
+# define PATCH_LEVEL	13
 
 # define THIRD_PARTY	"FreeMiNT"
 
-# if 0
+# if 1
 # define BETA		"-BETA"
 # define BETA_IDENT	'b'
 # else
