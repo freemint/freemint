@@ -138,7 +138,7 @@ udelay(ulong ticks)				/* Minimum delay of `ticks' ticks */
 static inline long _cdecl
 dsp_lock(void)
 {
-	return	Dsp_Lock();
+	return Dsp_Lock();
 }
 
 static inline void _cdecl
@@ -159,7 +159,7 @@ dsp_unlock(void)
 			for (t = 0; t < timeout && !ENABLE; t++) \
 				wait_some(2); \
 			if (!ENABLE) \
-				return -EIO; \
+				return EIO; \
 			f; \
 		} \
 		count -= m; \
@@ -173,7 +173,7 @@ dsp_unlock(void)
 	for (t = 0; t < n && !DSP56K_TRANSMIT; t++) \
 		wait_some(1); \
 	if (!DSP56K_TRANSMIT) { \
-		return -EIO; \
+		return EIO; \
 	} \
 }
 
@@ -183,7 +183,7 @@ dsp_unlock(void)
 	for (t = 0; t < n && !DSP56K_RECEIVE; t++) \
 		wait_some(1); \
 	if (!DSP56K_RECEIVE) { \
-		return -EIO; \
+		return EIO; \
 	} \
 }
 
@@ -351,12 +351,12 @@ dsp56k_read(FILEPTR *f, char *buf, long count)
 			return 4*n;
 		}
 		}
-		return -EFAULT;
+		return EFAULT;
 	}
 
 	default:
 		ALERT("DSP56k driver: Unknown minor device: %d\n", dev);
-		return -ENXIO;
+		return ENXIO;
 	}
 }
 
@@ -414,11 +414,11 @@ dsp56k_write(FILEPTR *f, const char *buf, long count)
 		}
 		}
 
-		return -EFAULT;
+		return EFAULT;
 	}
 	default:
 		ALERT("DSP56k driver: Unknown minor device: %d\n",dev);
-		return -ENXIO;
+		return ENXIO;
 	}
 }
 
@@ -451,10 +451,10 @@ dsp56k_ioctl(FILEPTR *f, int cmd, void *buf)
 			len = binary->len;
 			bin = binary->bin;
 			if (len == 0)
-				return -EINVAL;	 /* nothing to upload?!? */
+				return EINVAL;	 /* nothing to upload?!? */
 			
 			if (len > DSP56K_MAX_BINARY_LENGTH)
-				return -EINVAL;
+				return EINVAL;
 			
 
 			r = dsp56k_upload(bin, len);
@@ -465,12 +465,12 @@ dsp56k_ioctl(FILEPTR *f, int cmd, void *buf)
 		}
 		case DSP56K_SET_TX_WSIZE:
 			if (arg > 4 || arg < 1)
-				return -EINVAL;
+				return EINVAL;
 			dsp56k.tx_wsize = (short) arg;
 			break;
 		case DSP56K_SET_RX_WSIZE:
 			if (arg > 4 || arg < 1)
-				return -EINVAL;
+				return EINVAL;
 			dsp56k.rx_wsize = (short) arg;
 			break;
 		case DSP56K_HOST_FLAGS:
@@ -500,18 +500,18 @@ dsp56k_ioctl(FILEPTR *f, int cmd, void *buf)
 		}
 		case DSP56K_HOST_CMD:
 			if (arg > 31 || arg < 0)
-				return -EINVAL;
+				return EINVAL;
 			dsp56k_host_interface.cvr = (uchar)((arg & DSP56K_CVR_HV_MASK) |
 							     DSP56K_CVR_HC);
 			break;
 		default:
-			return -EINVAL;
+			return EINVAL;
 		}
 		return 0;
 
 	default:
 		ALERT("DSP56k driver: Unknown minor device: %d\n", dev);
-		return -ENXIO;
+		return ENXIO;
 	}
 }
 
@@ -525,10 +525,10 @@ dsp56k_open(FILEPTR *f)
 	case DSP56K_DEV_56001:
 
 		if (dsp56k.in_use)
-			return -EBUSY;
+			return EBUSY;
 		
 		if (dsp_lock())
-			return -EBUSY;
+			return EBUSY;
 		
 		dsp56k.in_use = 1;
 		dsp56k.timeout = TIMEOUT;
@@ -546,7 +546,7 @@ dsp56k_open(FILEPTR *f)
 
 	default:
 		ALERT("DSP56k driver: Unknown minor device: %d\n", dev);
-		return -ENXIO;
+		return ENXIO;
 	}
 
 	return 0;
@@ -572,7 +572,7 @@ dsp56k_close(FILEPTR *f, int pid)
 		default:
 		{
 			ALERT("DSP56k driver: Unknown minor device: %d\n", dev);
-			return -ENXIO;
+			return ENXIO;
 		}
 	}
 
@@ -597,7 +597,7 @@ dsp56k_datime(FILEPTR *f, ushort *timeptr, int wrflag)
 	}
 
 	/* rather than ENOSYS */
-	return -EINVAL;
+	return EINVAL;
 }
 
 static long _cdecl
