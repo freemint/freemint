@@ -103,6 +103,9 @@ find_focus(bool withlocks, bool *waiting, struct xa_client **locked_client, stru
 	if (keywind)
 		*keywind = NULL;
 
+	if (locked_client)
+		*locked_client = NULL;
+
 	if (withlocks)
 	{
 		if (update_locked())
@@ -140,12 +143,7 @@ find_focus(bool withlocks, bool *waiting, struct xa_client **locked_client, stru
 				return client;
 			}
 		}
-		else if (locked_client)
-			*locked_client = NULL;
-	}
-	else if (locked_client)
-		*locked_client = NULL;
-	
+	}	
 
 	if (is_topped(top))
 	{

@@ -345,6 +345,7 @@ exit_client(enum locks lock, struct xa_client *client, int code)
 	cancel_aesmsgs(&client->rdrw_msg);
 	cancel_aesmsgs(&client->msg);
 	cancel_cevents(client);
+	cancel_keyqueue(client);
 
 	remove_wind_refs(window_list, client);
 	remove_wind_refs(S.closed_windows.first, client);
