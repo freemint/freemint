@@ -26,6 +26,7 @@
 #include "xa_types.h"
 #include "xa_global.h"
 
+#include "global.h"
 #include "xalloc.h"
 #include "objects.h"
 #include "desktop.h"
