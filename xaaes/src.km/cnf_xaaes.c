@@ -62,6 +62,8 @@ static PCB_T	pCB_toppage;
 static PCB_T	pCB_next_active;
 static PCB_T	pCB_close_lastwind;
 static PCB_A	pCB_app_options;
+static PCB_A	pCB_topwind_widget;
+static PCB_A	pCB_botwind_widget;
 static PCB_A    pCB_cancel;
 static PCB_A    pCB_filters;
 static PCB_A	pCB_ctlalta_survivors;
@@ -111,6 +113,8 @@ static struct parser_item parser_tab[] =
 	{ "CLOSE_LASTWIND",        PI_V_T,   pCB_close_lastwind		},
 	{ "FOCUS",                 PI_V_T,   pCB_point_to_type		},
 	{ "APP_OPTIONS",           PI_V_A,   pCB_app_options		},
+	{ "TWW",                   PI_V_A,   pCB_topwind_widget		},
+	{ "BWW",                   PI_V_A,   pCB_botwind_widget		},
 	{ "CANCEL",                PI_V_A,   pCB_cancel			},
 	{ "FILTERS",               PI_V_A,   pCB_filters		},
 	{ "CTLALTA_SURVIVORS",	   PI_V_A,   pCB_ctlalta_survivors	},
@@ -131,7 +135,14 @@ static struct parser_item parser_tab[] =
 	
 	{ NULL }
 };
-
+#if 0
+struct cnf_listargs
+{
+	char keyword[];
+	void (*get_arg)(char *s, void *ret);
+	void *r;
+};
+#endif
 
 /*============================================================================*/
 /* Miscellaneous support routines
@@ -230,22 +241,10 @@ get_string(char **line)
  * Ozk: Very rough implementation -- clean and make this safer later..
  */
 static short
-get_argument(char *wfarg, short *result)
+get_argval(char *wfarg, short *result)
 {
 	bool negative = false;
 	char *end;
-
-	DIAGS(("get_argument: string = '%s'", wfarg));
-
-	wfarg = skip(wfarg);
-
-	if (*wfarg == '=')
-		wfarg++;
-	else
-	{
-		DIAGS(("get_argument: equation expected"));
-		return -1;
-	}
 
 	wfarg = skip(wfarg);
 
@@ -262,7 +261,7 @@ get_argument(char *wfarg, short *result)
 
 	if (end == wfarg)
 	{
-		DIAGS(("get_argument: no argument!"));
+		DIAGS(("get_argval: no argument!"));
 		return -1;
 	}
 	else
@@ -276,6 +275,23 @@ get_argument(char *wfarg, short *result)
 			*result = negative ? -r : r;
 	}
 	return 0;
+}
+
+static short
+get_argument(char *wfarg, short *result)
+{
+	DIAGS(("get_argument: string = '%s'", wfarg));
+
+	wfarg = skip(wfarg);
+
+	if (*wfarg == '=')
+		wfarg++;
+	else
+	{
+		DIAGS(("get_argument: equation expected"));
+		return -1;
+	}
+	return get_argval(wfarg, result);
 }
 
 static short
@@ -463,7 +479,25 @@ pCB_cancel(char *line)
 		}
 	}
 }
-
+#if 0
+static struct cnf_listargs app_opts[] =
+{
+ {"windowner",		get_boolarg,	&opts->windowner},
+ {"nohide",		get_boolarg,	&opts->nohide},
+ {"xa_nohide"		get_boolarg,	&opts->xa_nohide},
+ {"xa_nomove"		get_boolarg,	&opts->xa_nomove},
+ {"xa_none",		get_boolarg,	&opts->xa_none},
+ {"noleft",		get_boolarg,	&opts->noleft},
+ {"thinwork",		get_boolarg,	&opts->thinwork},
+ {"nolive",		get_boolarg,	&opts->nolive},
+ {"wheel_reverse",	get_boolarg,	&opts->wheel_reverse},
+ {"naesff",		get_boolarg,	&opts->naes_ff},
+ {"naes12",		get_boolarg,	&opts->naes12},
+ {"naes",		get_boolarg,	&opts->naes},
+ {"winframe_size",	get_argument,	&opts->thinframe},
+ {"inhibit_hide",	get_boolarg,	&opts->inhibit_hide},
+};
+#endif
 static void
 pCB_app_options(char *line)
 {
@@ -561,6 +595,141 @@ pCB_app_options(char *line)
 		}
 	}
 }
+static void
+set_wind_widg(char *line, struct xa_window_colours *wc)
+{
+	struct xa_wcol_inf *wci = NULL;
+	struct xa_wtxt_inf *wti = NULL;
+	struct xa_wcol_inf def_wci;
+	struct xa_wtxt_inf def_wti;
+	char *s;
+	bool all = false;
+
+	if ((s = get_string(&line)))
+	{
+		DIAGS(("set_wind_widg %s", s));
+
+		if (!strnicmp(s, "tdefault", 8))
+		{
+			wti = &def_wti;
+			all = true;
+		}
+		else if (!strnicmp(s, "default", 7))
+		{
+			wci = &def_wci;
+			all = true;
+		}
+		else if (!strnicmp(s, "frame", 5))
+		{
+			if ((s = get_commadelim_string(&line)))
+				get_argval(s, &wc->frame_col);
+		}
+		else if (!strnicmp(s, "win", 3))
+			wci = &wc->win;
+		else if (!strnicmp(s, "slider", 6))
+			wci = &wc->slider;
+		else if (!strnicmp(s, "slide", 5))
+			wci = &wc->slide;
+		else if (!strnicmp(s, "ttitle", 6))
+			wti = &wc->title_txt;
+		else if (!strnicmp(s, "title", 5))
+			wci = &wc->title;
+		else if (!strnicmp(s, "tinfo", 5))
+			wti = &wc->info_txt;
+		else if (!strnicmp(s, "info", 4))
+			wci = &wc->info;
+		else if (!strnicmp(s, "closer", 6))
+			wci = &wc->closer;
+		else if (!strnicmp(s, "hider", 5))
+			wci = &wc->hider;
+		else if (!strnicmp(s, "iconifier", 9))
+			wci = &wc->iconifier;
+		else if (!strnicmp(s, "fuller", 6))
+			wci = &wc->fuller;
+		else if (!strnicmp(s, "sizer", 5))
+			wci = &wc->sizer;
+		else if (!strnicmp(s, "uparrow", 7))
+			wci = &wc->uparrow;
+		else if (!strnicmp(s, "dnarrow", 7))
+			wci = &wc->dnarrow;
+		else if (!strnicmp(s, "lfarrow", 7))
+			wci = &wc->lfarrow;
+		else if (!strnicmp(s, "rtarrow", 7))
+			wci = &wc->rtarrow;
+
+		if (wci)
+		{
+			if ((s = get_commadelim_string(&line)))
+				get_argval(s, &wci->flags);
+			if (s && (s = get_commadelim_string(&line)))
+				get_argval(s, &wci->wrm);
+			if (s && (s = get_commadelim_string(&line)))
+				get_argval(s, &wci->n.c);
+			if (s && (s = get_commadelim_string(&line)))
+				get_argval(s, &wci->n.i);
+			if (s && (s = get_commadelim_string(&line)))
+				get_argval(s, &wci->n.f);
+			if (s && (s = get_commadelim_string(&line)))
+				get_argval(s, &wci->n.box_c);
+			if (s && (s = get_commadelim_string(&line)))
+				get_argval(s, &wci->n.box_th);
+			if (s && (s = get_commadelim_string(&line)))
+				get_argval(s, &wci->n.tlc);
+			if (s && (s = get_commadelim_string(&line)))
+				get_argval(s, &wci->n.brc);
+			wci->s = wci->n;
+			wci->h = wci->n;
+			if (all)
+			{
+				wc->win = *wci;
+				wc->title = *wci;
+				wc->info = *wci;
+				wc->closer = *wci;
+				wc->hider = *wci;
+				wc->iconifier = *wci;
+				wc->fuller = *wci;
+				wc->sizer = *wci;
+				wc->uparrow = wc->dnarrow = wc->lfarrow = wc->rtarrow = *wci;
+			}
+		}
+		else if (wti)
+		{
+			if ((s = get_commadelim_string(&line)))
+				get_argval(s, &wti->flags);
+			if (s && (s = get_commadelim_string(&line)))
+				get_argval(s, &wti->n.f);
+			if (s && (s = get_commadelim_string(&line)))
+				get_argval(s, &wti->n.p);
+			if (s && (s = get_commadelim_string(&line)))
+				get_argval(s, &wti->n.e);
+			if (s && (s = get_commadelim_string(&line)))
+				get_argval(s, &wti->n.fgc);
+			if (s && (s = get_commadelim_string(&line)))
+				get_argval(s, &wti->n.bgc);
+			wti->s = wti->n;
+			wti->h = wti->n;
+			if (all)
+			{
+				wc->title_txt = *wti;
+				wc->info_txt = *wti;
+			}
+		}
+	}
+}
+extern struct xa_window_colours def_otop_wc;
+extern struct xa_window_colours def_utop_wc;
+
+static void
+pCB_topwind_widget(char *line)
+{
+	set_wind_widg(line, &def_otop_wc);
+}
+static void
+pCB_botwind_widget(char *line)
+{
+	set_wind_widg(line, &def_utop_wc);
+}
+
 /*----------------------------------------------------------------------------*/
 static void
 pCB_filters(char *line)
