@@ -424,7 +424,7 @@ opcode	class name	args */
 0x154	s system	(short mode, ulong arg1, ulong arg2)
 0x155	t gettimeofday	(struct timeval *tv, struct timezone *tz)
 0x156	t settimeofday	(struct timeval *tv, struct timezone *tz)
-0x157	  RESERVED	/* tadjtime */
+0x157	t adjtime	(const struct timeval *delta, struct timeval *olddelta)
 0x158	p getpriority	(short which, short who)
 0x159	p setpriority	(short which, short who, short prio)
 0x15a	f poll		(POLLFD *fds, ulong nfds, ulong timeout)	/* 1.15.10 */
