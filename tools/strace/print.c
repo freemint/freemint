@@ -273,3 +273,15 @@ print_struct_msqid_ds(pid_t pid, const void *data)
 {
 	print_pointer(pid, data);
 }
+
+void
+print_SHARED_LIB(pid_t pid, const void *data)
+{
+	print_pointer(pid, data);
+}
+
+void
+print_SLB_EXEC(pid_t pid, const void *data)
+{
+	print_pointer(pid, data);
+}
