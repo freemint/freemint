@@ -22,8 +22,8 @@ void _cdecl	setstack	(long);
 
 # ifdef DEBUG_INFO
 long _cdecl	get_ssp		(void);
-long _cdecl	get_usp		(void);
 # endif
+long _cdecl	get_usp		(void);
 
 void _cdecl	get_superscalar	(void);
 short _cdecl	is_superscalar	(void);
