@@ -228,15 +228,11 @@ a_call_return:
 static jmp_buf alpha_context;
 static long kernel_stack;
 
-static void
-a_call_return(void)
-{
-	DEBUG(("a_call_return\n"));
-	longjmp(alpha_context, 1);
-}
 void
 a_call_main(void)
 {
+	jmp_buf jb;
+
 	DEBUG(("a_call_main: enter\n"));
 
 	if (setjmp(alpha_context))
@@ -245,14 +241,23 @@ a_call_main(void)
 		return;
 	}
 
+	/* remember current stack */
 	kernel_stack = alpha_context[12];
-	DEBUG(("a_call_main: kernelstack 0x%lx\n", kernel_stack));
+	DEBUG(("a_call_main: kernel_stack 0x%lx\n", kernel_stack));
 
-	DEBUG(("a_call_main: main loop\n"));
-	cpx_main_loop();
+	jb[0] = (long)cpx_main_loop;
+	jb[12] = kernel_stack;
 
-	DEBUG(("a_call_main: -> a_call_return\n"));
-	a_call_return();
+	longjmp(jb, 1);
+
+	/* never reached */
+	assert(0);
+}
+void
+a_call_return(void)
+{
+	DEBUG(("a_call_return\n"));
+	longjmp(alpha_context, 1);
 
 	/* never reached */
 	assert(0);
@@ -300,31 +305,20 @@ static struct Xform_do_args call_cpx_form_do_args;
 static void
 call_cpx_form_do(void)
 {
-	CPX_DESC *cpx;
-
 	DEBUG(("call_cpx_form_do\n"));
 
-	cpx = cpx_form_do(call_cpx_form_do_cpx,
-			  call_cpx_form_do_args.tree,
-			  call_cpx_form_do_args.edit_obj,
-			  call_cpx_form_do_args.msg);
+	cpx_form_do(call_cpx_form_do_cpx,
+		    call_cpx_form_do_args.tree,
+		    call_cpx_form_do_args.edit_obj,
+		    call_cpx_form_do_args.msg);
 
-	if (cpx)
-	{
-		/* don't return */
-		a_call_return();
-
-		/* never reached */
-		assert(0);
-	}
-
-	/* should never happen */
+	/* never reached */
 	assert(0);
 }
 short _cdecl
 Xform_do(const long *sp)
 {
-	CPX_DESC *cpx;
+	register CPX_DESC *cpx;
 
 	cpx = find_cpx_by_addr(sp);
 	DEBUG_CALLBACK(cpx);
@@ -341,7 +335,10 @@ Xform_do(const long *sp)
 
 		/* save for later return */
 		if (setjmp(cpx->jb))
+		{
+			DEBUG(("Xform_do: return %i\n", cpx->button));
 			return cpx->button;
+		}
 
 		/*
 		 * switch stack and call out form_do
@@ -404,8 +401,8 @@ new_context_done(void)
 
 	DEBUG(("new_context_done\n"));
 
-//	free(call_open_cpx_context_desc->stack);
-//	call_open_cpx_context_desc->stack = NULL;
+	free(call_open_cpx_context_desc->stack);
+	call_open_cpx_context_desc->stack = NULL;
 
 	jb[0] = (long)cpx_main_loop;
 	jb[12] = kernel_stack;

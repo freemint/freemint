@@ -69,6 +69,6 @@ extern struct cpxlist *cpxlist;
 extern CPX_DESC *cpx_desc_list;
 
 void open_cpx_context(CPX_DESC *cpx_desc);
-CPX_DESC *cpx_main_loop(void);
+void cpx_main_loop(void);
 
 #endif /* _cops_h */
