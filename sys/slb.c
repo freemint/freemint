@@ -96,7 +96,6 @@ slb_init_and_exit (BASEPAGE *b)
 	Fclose (2);
 	Fclose (3);
 	Fclose (4);
-	P_sigsetmask (-1L);
 	P_setpgrp (0, 0);
 
 	/*
@@ -342,8 +341,7 @@ slb_error:
 	}
 
 	/* Shrink the TPA to the minimum, including stack for init */
-	hitpa = (long)b + 256 + b->p_tlen + b->p_dlen + b->p_blen +
-		SLB_INIT_STACK;
+	hitpa = (long)b + 256 + b->p_tlen + b->p_dlen + b->p_blen + SLB_INIT_STACK;
 	if (hitpa < b->p_hitpa)
 	{
 		b->p_hitpa = hitpa;
@@ -351,10 +349,7 @@ slb_error:
 		if (r)
 		{
 			DEBUG(("Slbopen: Couldn't shrink basepage"));
-			/* XXX: why not `goto slb_error'? */
-			if (--mr->links == 0)
-				free_region(mr);
-			return(r);
+			goto slb_error;
 		}
 	}
 	else if (hitpa > b->p_hitpa)
@@ -372,9 +367,7 @@ slb_error:
 	if (r < 0L)
 	{
 		DEBUG(("Slbopen: Pexec() returned: %ld", r));
-		if (--mr->links == 0)
-			free_region(mr);
-		return(r);
+		goto slb_error;
 	}
 
 	/* Wait for the init routine to finish */
@@ -396,6 +389,9 @@ slb_error:
 	if (r < 0)
 	{
 		p_kill(newpid, SIGKILL);
+		/* Not `goto slb_error' because Pexec(106)
+		 * releases the basepage and env
+		 */
 		if (--mr->links == 0)
 			free_region(mr);
 		return(EINTERNAL);
