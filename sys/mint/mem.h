@@ -52,13 +52,6 @@ struct memregion
                      /* 0x1000  unused */
 # define M_KMALLOC	0x4000	/* used by kmalloc */
 # define M_SEEN		0x8000	/* for memused() to find links */
-
-/**
- * Dummy type for virtual addresses.
- */
-typedef struct vaddr {
-	char dummy;
-} *virtaddr;
  
 /*
  * Here's the deal with memory bits:

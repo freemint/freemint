@@ -277,7 +277,7 @@ sys_pexec (int mode, const void *ptr1, const void *ptr2, const void *ptr3)
 	{
 		/* mode == 4, 6, 104, 106, 204, or 206 -- just go */
 		
-		base = addr2mem (curproc, (virtaddr)ptr2);
+		base = addr2mem (curproc, (long) ptr2);
 		if (base)
 			env = addr2mem(curproc, *(void **)(base->loc + 0x2c));
 		else
@@ -728,7 +728,7 @@ exec_region (PROC *p, MEMREGION *mem, int thread)
 			kfree (paddr);
 			
 			pmem = kmalloc (NUM_REGIONS * sizeof (MEMREGION *));
-			paddr = kmalloc (NUM_REGIONS * sizeof (virtaddr));
+			paddr = kmalloc (NUM_REGIONS * sizeof (long));
 			
 			assert (pmem && paddr);
 			
@@ -738,7 +738,7 @@ exec_region (PROC *p, MEMREGION *mem, int thread)
 		}
 		
 		bzero (p->p_mem->mem, (p->p_mem->num_reg) * sizeof (MEMREGION *));
-		bzero (p->p_mem->addr, (p->p_mem->num_reg) * sizeof (virtaddr));
+		bzero (p->p_mem->addr, (p->p_mem->num_reg) * sizeof (long));
 	}
 	
 	assert (p->p_sigacts);

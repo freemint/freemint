@@ -64,7 +64,7 @@ struct memspace
 	ushort	num_reg;		/* number of allocated memory	*
 					 * regions			*/
 	MEMREGION **mem;		/* allocated memory regions	*/
-	virtaddr *addr;			/* addresses of regions		*/
+	long	*addr;			/* addresses of regions		*/
 	
 	void	*page_table;		/* rounded page table pointer	*/
 	void	*pt_mem;		/* original kmalloc'd block for	*
