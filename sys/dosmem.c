@@ -153,18 +153,8 @@ m_xalloc (long size, int mode)
 		&& (curproc->ctxt[SYSCALL].pc > 0x00e00000L)
 		&& (curproc->ctxt[SYSCALL].pc < 0x00efffffL))
 	{
-# ifndef MULTITOS
-		if (gem_start && curproc->ctxt[SYSCALL].pc >= gem_start)
-		{
-			mode |= F_PROT_G + 0x10;
-			TRACE (("m_xalloc: AES special (call from ROM)"));
-		}
-		else
-# endif
-		{
-			mode |= (F_PROT_S + 0x10) | F_KEEP;
-			TRACE(("m_xalloc: VDI special (call from ROM)"));
-		}
+		mode |= (F_PROT_S + 0x10) | F_KEEP;
+		TRACE(("m_xalloc: VDI special (call from ROM)"));
 	}
 	
 	/* If the mode argument comes in a zero, then set it to the default

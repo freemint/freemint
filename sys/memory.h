@@ -13,6 +13,53 @@
 # include "mint/proc.h"
 
 
+#define ALT_1 0x780000L		/* moved from fasttext.h */
+#define ALT_2 0x790000L
+#define ALT_0 0x810000L
+
+typedef struct screen SCREEN;
+struct screen
+{
+	short	hidecnt;	/* cursor hide count */
+	short	mcurx, mcury;	/* current mouse x, y position */
+	char	mdraw;
+	char	mouseflag;
+	long	junk1;
+	short	savex, savey;	/* saved x, y position */
+	short	msavelen;	/* mouse save stuff */
+	long	msaveaddr;
+	short	msavestat;
+	long	msavearea[64];
+	long	user_tim;
+	long	next_tim;	/* time vector stuff */
+	long	user_but;
+	long	user_cur;
+	long	user_mot;	/* more user vectors */
+	short	cheight;	/* character height */
+	short	maxx;		/* number of characters across - 1 */
+	short	maxy;		/* number of characters high - 1 */
+	short	linelen;	/* length (in bytes) of a line of characters */
+	short	bgcol;		/* background color */
+	short	fgcol;		/* foreground color */
+	char	*cursaddr;	/* cursor address */
+	short	v_cur_of;	/* offset from physical screen address */
+	short	cx, cy;		/* current (x,y) position of cursor */
+	char	period;		/* cursor flash period (in frames) */
+	char	curstimer;	/* cursor flash timer */
+	char	*fontdata;	/* pointer to font data */
+	short	firstcode;	/* first ASCII code in font */
+	short	lastcode;	/* last ASCII code in font */
+	short	form_width;	/* # bytes/scanline in font data */
+	short	xpixel;
+	char	*fontoff;	/* pointer to font offset table */
+	char	flags;		/* e.g. cursor on/off */
+	char	v_delay;	/* delay before cursor flash; undocumented! */
+	short	ypixel;
+	short	width;		/* length of a screen scan line */
+	short	planes;		/* number of planes on screen */
+	short	planesiz;	/* length of a screen scan line */
+};
+
 extern MMAP core, alt, swap;
 
 extern short forcefastload;

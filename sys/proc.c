@@ -34,7 +34,6 @@
 # include "bios.h"
 # include "dosfile.h"
 # include "dosmem.h"
-# include "fasttext.h"
 # include "filesys.h"
 # include "k_exit.h"
 # include "kmemory.h"
@@ -584,6 +583,7 @@ sleep (int _que, long cond)
 	 *		}
 	 *	}
 	 */
+
 	sr = splhigh ();
 	p = 0;
 	while (!p)
@@ -599,18 +599,12 @@ sleep (int _que, long cond)
 	/* p is our victim */
 	rm_q (READY_Q, p);
 	spl (sr);
-	
+
 	if (save_context(&(curproc->ctxt[CURRENT])))
 	{
 		/*
 		 * restore per-process variables here
 		 */
-# ifndef MULTITOS
-# ifdef FASTTEXT
-		if (!hardscroll)
-			*((void **) 0x44eL) = curproc->logbase;
-# endif
-# endif
 		swap_in_curproc ();
 		do_wakeup_things (sr, 1, cond);
 		
@@ -620,13 +614,6 @@ sleep (int _que, long cond)
 	/*
 	 * save per-process variables here
 	 */
-# ifndef MULTITOS
-# ifdef FASTTEXT
-	if (!hardscroll)
-		curproc->logbase = *((void **) 0x44eL);
-# endif
-# endif
-	
 	curproc->ctxt[CURRENT].regs[0] = 1;
 	curproc = p;
 	
