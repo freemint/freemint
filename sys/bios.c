@@ -38,6 +38,7 @@
 # include "dosdir.h"
 # include "dosmem.h"
 # include "filesys.h"
+# include "info.h"
 # include "k_prot.h"
 # include "memory.h"
 # include "proc.h"
@@ -235,10 +236,7 @@ setexc (int number, long vector)
 				if (((p->memflags & F_PROTMODE) == F_PROT_P) ||
 					((p->memflags & F_PROTMODE) == F_PROT_PR))
 				{
-					ALERT  ("KILLED. INVALID PROTECTION MODE. "
-						"Please change the protection mode "
-						"to \'Super\' in the program header.");
-
+					ALERT  (MSG_bios_kill);
 					/* Avoid an additional alert,
 					 * be f**cking efficient.
 					 */
