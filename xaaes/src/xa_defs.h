@@ -132,6 +132,39 @@
 /*----------------------------------------------------------------- */
 /* Define the semaphores used in various places... */
 
+#if 1
+#define APPL_INIT_SEMA			0x58410001	/* 'XA:I' Semaphore id for appl_init() routine access */
+#if 0
+#define TRAP_HANDLER_SEMA		0x58410002 	/* 'XA:H' Semaphore for access to part of the trap handler routine */
+#endif
+#define WIN_LIST_SEMA			0x58410004	/* 'XA:W' Semaphore for order modify / entry delete access to the window list */
+#define ROOT_SEMA			0x58410008	/* 'XA:R' Semaphore for access to the root window */
+#define CLIENTS_SEMA			0x58410010	/* 'XA:C' Semaphore for access to the clients structure */
+#define FSELECT_SEMA			0x58410020	/* 'XA:F' Semaphore for access to the file selector */
+#define ENV_SEMA			0x58410040	/* 'XA:E' Semaphore for access to the environment strings */
+
+#define UPDATE_LOCK			0x58510080	/* 'XA:U' Semaphore id for BEG_UPDATE */
+#define MOUSE_LOCK			0x58410100	/* 'XA:M' Semaphore id for BEG_MCTRL */
+
+#define PENDING_SEMA			0x58410200	/* 'XA:P' Semaphore id to guard pending button&keybd events */
+
+
+#define appl_SEMA			APPL_INIT_SEMA
+/*#define trap_SEMA			TRAP_HANDLER_SEMA */
+#define winlist_SEMA			WIN_LIST_SEMA
+#define desk_SEMA			ROOT_SEMA
+#define clients_SEMA			CLIENTS_SEMA
+#define fsel_SEMA			FSELECT_SEMA
+#define envstr_SEMA			ENV_SEMA
+
+#define update_SEMA			UPDATE_LOCK
+#define mouse_SEMA			MOUSE_LOCK
+
+#define pending_SEMA			PENDING_SEMA
+#endif
+
+
+#if 0
 #define APPL_INIT_SEMA			0x58413A49	/* 'XA:I' Semaphore id for appl_init() routine access */
 #if 0
 #define TRAP_HANDLER_SEMA		0x58413A48 	/* 'XA:H' Semaphore for access to part of the trap handler routine */
@@ -142,8 +175,8 @@
 #define FSELECT_SEMA			0x58413A46	/* 'XA:F' Semaphore for access to the file selector */
 #define ENV_SEMA			0x58413A45	/* 'XA:E' Semaphore for access to the environment strings */
 
-#define UPDATE_LOCK			0x58413A55	/* 'XA:U' Semaphore id for BEG_UPDATE */
-#define MOUSE_LOCK			0x58413A4D	/* 'XA:M' Semaphore id for BEG_MCTRL */
+#define UPDATE_LOCK			0x01020304 /*0x58413A55*/	/* 'XA:U' Semaphore id for BEG_UPDATE */
+#define MOUSE_LOCK			0x02030405 /*0x58413A4D*/	/* 'XA:M' Semaphore id for BEG_MCTRL */
 
 #define PENDING_SEMA			0x58413A50	/* 'XA:P' Semaphore id to guard pending button&keybd events */
 
@@ -160,7 +193,7 @@
 #define mouse_SEMA			MOUSE_LOCK
 
 #define pending_SEMA			PENDING_SEMA
-
+#endif
 /*----------------------------------------------------------------- */
 /* Diagnostics */
 #if GENERATE_DIAGS

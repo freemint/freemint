@@ -50,22 +50,22 @@
  * more than MAX_WINDOWS windows concurrently :-)
  */
 
-static int
-btst(unsigned long word, long bit)
+static unsigned long
+btst(unsigned long word, unsigned int bit)
 {
 	unsigned long mask = 1UL << bit;
 
 	return (word & mask);
 }
 static void
-bclr(unsigned long *word, long bit)
+bclr(unsigned long *word, unsigned int bit)
 {
 	unsigned long mask = 1UL << bit;
 
 	*word &= ~mask;
 }
 static void
-bset(unsigned long *word, long bit)
+bset(unsigned long *word, unsigned int bit)
 {
 	unsigned long mask = 1UL << bit;
 
@@ -82,7 +82,7 @@ new_wind_handle(void)
 	unsigned int l;
 
 	for (word = 0; word < words; word++)
-		if (wind_handle[word] != LFULL)
+		if (wind_handle[word] != 0xffffffffUL)
 			break;
 
 #if XXX
