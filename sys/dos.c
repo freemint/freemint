@@ -659,6 +659,7 @@ shutdown (void)
 	{
 		if (p->pid == 0) continue;
 		if (p == curproc) continue;  /* curproc is trapped in this code */
+		if (p->memflags & F_OS_SPECIAL) continue;	/* AES :< */
 		
 		if (p->wait_q != ZOMBIE_Q && p->wait_q != TSR_Q)
 		{
@@ -697,7 +698,7 @@ shutdown (void)
 		DEBUG (("Killing all processes..."));
 		for (p = proclist; p; p = p->gl_next)
 		{
-			if ((p->pid == 0) || (p == curproc))
+			if ((p->pid == 0) || (p == curproc) || (p->memflags & F_OS_SPECIAL))
 				continue;
 
 			DEBUG (("Posting SIGKILL for pid %d", p->pid));
