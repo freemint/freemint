@@ -276,7 +276,7 @@ ACHTUNG:  Um den Speicherschutz zu deaktivieren, muss man Shift gedrÅckt
 3.3.1 EasyMiNT Upgraden
 -----------------------
 Um eine EasyMiNT-Installation upzugraden, folge man einfach den Schritten aus 
-dem Abschnitt '3.1 Einfache Installation'.
+dem Abschnitt '3.2 Einfache Installation'.
 Der einzige Unterschied besteht darin, dass man seine MINT.CNF von der EasyMiNT-
 Installation vorher sichern und hinterher wieder ins <sysdir> zurÅckkopieren 
 muss.
