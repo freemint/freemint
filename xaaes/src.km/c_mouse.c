@@ -111,14 +111,15 @@ cXA_button_event(enum locks lock, struct c_event *ce, bool cancel)
 		return;
 	}
 	
-	if (wind == window_list || (wind != window_list && wind->active_widgets & NO_TOPPED) )
+	if (wind == window_list || wind == root_window || (wind != window_list && wind->active_widgets & NO_TOPPED) )
 	{
 		DIAG((D_button, client, "cXA_button_event: Topped win"));
 		if (do_widgets(lock, wind, 0, md))
 		{
+			client->md.clicks = 0;
 			return;
 		}
-		else if (client->waiting_for & MU_BUTTON)
+		if (client->waiting_for & MU_BUTTON)
 		{
 			button_event(lock, client, md);
 			return;
@@ -126,6 +127,7 @@ cXA_button_event(enum locks lock, struct c_event *ce, bool cancel)
 		else
 		{
 			add_pending_button(lock, client);
+			client->md.clicks = 0;
 			return;
 		}
 	}
@@ -134,14 +136,20 @@ cXA_button_event(enum locks lock, struct c_event *ce, bool cancel)
 	{
 		DIAG((D_button, client, "cXA_button_event: wind not on top"));
 		if (do_widgets(lock, wind, 0, md))
+		{
+			client->md.clicks = 0;
 			return;
-	}	
+		}
+	}
 
 	if (md->state)
 	{
 		DIAG((D_button, client, "cXA_button_event: send click"));
 		if (wind->send_message)
+		{
 			wind->send_message(lock, wind, NULL, WM_TOPPED, 0, 0, wind->handle, 0, 0, 0, 0);
+		}
+		client->md.clicks = 0;
 		return;
 	}
 }

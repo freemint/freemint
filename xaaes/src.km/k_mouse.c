@@ -251,7 +251,6 @@ button_event(enum locks lock, struct xa_client *client, const struct moose_data 
 		}
 	}
 }
-
 static void
 reset_pending_button(void)
 {
@@ -297,7 +296,7 @@ add_pending_button(enum locks lock, struct xa_client *client)
  * not used by the AES for menu or window gadgets.
 */
 static inline void
-deliver_button_event(struct xa_client *target, const struct moose_data *md)
+deliver_button_event(struct xa_window *wind, struct xa_client *target, const struct moose_data *md)
 {
 	/*
 	 * If this is a click-hold event, moose.adi will send a
@@ -311,11 +310,20 @@ deliver_button_event(struct xa_client *target, const struct moose_data *md)
 	 * Copy the event into the clients private parts
 	 */
 	target->md = *md;
-	/*
-	 * And post a "deliver this button event" client event
-	 */
-	DIAG((D_mouse, target, "deliver_button_event: Send cXA_deliver_button_event to %s", target->name));
-	post_cevent(target, cXA_deliver_button_event, 0,0, 0,0, 0,md);
+
+	if (wind && wind->owner != target)
+	{
+		DIAG((D_mouse, target, "deliver_button_event: Send cXA_button_event (rootwind) to %s", target->name));
+		post_cevent(target, cXA_button_event, wind,0, 0,0, 0,md);
+	}
+	else
+	{
+		/*
+		 * And post a "deliver this button event" client event
+		 */
+		DIAG((D_mouse, target, "deliver_button_event: Send cXA_deliver_button_event to %s", target->name));
+		post_cevent(target, cXA_deliver_button_event, 0,0, 0,0, 0,md);
+	}
 }
 
 static void
@@ -331,7 +339,7 @@ dispatch_button_event(enum locks lock, struct xa_window *wind, const struct moos
 			post_cevent(target, cXA_do_widgets, wind, 0, 0,0, 0,md);
 		}
 		else
-			deliver_button_event(target, md);
+			deliver_button_event(NULL, target, md);
 	}
 	else if (wind != window_list && checkif_do_widgets(lock, wind, 0, md))
 	{
@@ -419,7 +427,12 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 		 */
 		if (wind->owner != client)
 		{
-			deliver_button_event(client, md);
+			/*
+			 * Ozk: When root-window is clicked, and owned by someone other
+			 * than AESSYS, we to let both do_widget(), and possibly send the
+			 * click to owner.
+			*/
+			deliver_button_event(wind, client, md);
 		}
 		else
 		{
@@ -435,7 +448,7 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 		}
 		else
 		{
-			deliver_button_event(locker, md);
+			deliver_button_event(NULL, locker, md);
 		}
 	}
 }
