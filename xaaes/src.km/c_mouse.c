@@ -1,11 +1,11 @@
 /*
- * $Id: c_mouse.c
+ * $Id$
  *
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
- *                                        2004 F.Naumann
+ *                                        2004 F.Naumann & O.Skancke
  *
- * A multitasking AES replacement for MiNT
+ * A multitasking AES replacement for FreeMiNT
  *
  * This file is part of XaAES.
  *
@@ -23,10 +23,10 @@
  * along with XaAES; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-
+ 
 /*
  * This file contains the client side of mouse event processing
-*/
+ */
 
 #include "c_mouse.h"
 #include "xa_global.h"
@@ -46,10 +46,10 @@
 #include "widgets.h"
 #include "xalloc.h"
 
-
 #include "mint/dcntl.h"
 #include "mint/fcntl.h"
 #include "mint/signal.h"
+
 
 void
 cXA_button_event(enum locks lock, struct c_event *ce)
@@ -238,7 +238,7 @@ cXA_active_widget(enum locks lock, struct c_event *ce)
 
 /*
  * Also used to open a menu
-*/
+ */
 void
 cXA_widget_click(enum locks lock, struct c_event *ce)
 {
