@@ -356,6 +356,13 @@ XA_menu_register(LOCK lock, XA_CLIENT *client, AESPB *pb)
 /*
  * Display and handle a popup menu.  HR: march 2000
  */
+
+/* Ozk 180603: Absolutely hair-raising usage of Psemaphore across
+ * different PIDs! I removed the LOCKSCREEN from the Ktab flags,
+ * since the lock_screen() call from XA_handler was done under the
+ * clients pid, while the unlock_screen() happens under the kernel
+ * pid. Guess the results - total LOCKUP until offending client killed!
+*/ 
 unsigned long
 XA_menu_popup(LOCK lock, XA_CLIENT *client, AESPB *pb)
 {
@@ -365,12 +372,16 @@ XA_menu_popup(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
 	if (   pb->addrin[0]
 	    && pb->addrin[1]
-	    && lock_screen(client, 0, NULL, 6))
+	    /*&& lock_screen(client, 0, NULL, 6)*/)
 	{
 		Tab *tab = C.active_menu;
 		MENU *mn = pb->addrin[0], *md = pb->addrin[1];
 		short x, y;
 		OBJECT *ob = mn->mn_tree;
+
+		if (cfg.menu_locking)
+			lock_screen(C.Aes, -1, NULL, 0);
+
 
 		if (tab->ty == NO_TASK)		/* else already locked */
 		{	
@@ -380,7 +391,7 @@ XA_menu_popup(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
 			C.menu_base = tab;
 			tab->pb = pb;
-			tab->locker = client->pid;
+			tab->locker = C.Aes->pid; /*client->pid;*/
 			tab->client = client;
 			tab->lock = lock;
 			ob->r.x = 0;
@@ -399,8 +410,9 @@ XA_menu_popup(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
 			return XAC_BLOCK;
 		}
+		if (cfg.menu_locking)
+			unlock_screen(C.Aes, 0);
 	}
-
  	return XAC_DONE;
 }
 
@@ -416,9 +428,12 @@ XA_form_popup(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
 	pb->intout[0] = -1;
 
-	if (ob && lock_screen(client, 0, NULL,7) )
+	if (ob) /* && lock_screen(client, 0, NULL,7) ) */
 	{
 		Tab *tab = C.active_menu;
+
+		if (cfg.menu_locking)
+			lock_screen(C.Aes, -1, 0, 0);
 
 		if (tab->ty == NO_TASK)		/* else already locked */
 		{
@@ -426,7 +441,7 @@ XA_form_popup(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
 			C.menu_base = tab;
 			tab->pb = pb;
-			tab->locker = client->pid;
+			tab->locker = C.Aes->pid;	/*client->pid;*/
 			tab->client = client;
 			tab->lock = lock;
 			tab->wind = NULL;
@@ -462,6 +477,8 @@ XA_form_popup(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
 			return XAC_BLOCK;
 		}
+		if (cfg.menu_locking)
+			unlock_screen(C.Aes, 0);
 	}
 
 	return XAC_DONE;
