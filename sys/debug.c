@@ -201,6 +201,8 @@ debug_ws(const char *s)
 					key = safe_Bconin(out_device);
 					if (key < '0' || key > '9')
 					{
+						if (key == 'R')
+							hw_warmboot();
 ptoggle:
 						/* not a func key */
 						if (stopped) break;
