@@ -45,7 +45,7 @@
  */
 
 # define VER_MAJOR	0
-# define VER_MINOR	31
+# define VER_MINOR	32
 # define VER_STATUS	b
 
 
@@ -116,25 +116,11 @@ install_cookie (void)
 static void
 uninstall_cookie (void)
 {
-	long old_stk = Super (0L);
-	long *jar;
-	
-	jar = *(long **) JAR;
-	if (jar)
-	{
-		while (*jar)
-		{
-			if (*jar == TCPCOOKIE)
-			{
-				*jar++ = FREECOOKIE;
-				*jar++ = 0L;
-			}
-			
-			jar += 2;
-		}
-	}
-	
-	Super ((void *) old_stk);
+# ifndef S_DELCOOKIE
+# define S_DELCOOKIE	26
+# endif
+
+	Ssystem(S_DELCOOKIE, TCPCOOKIE, 0L);
 }
 
 
