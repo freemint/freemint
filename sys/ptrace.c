@@ -65,7 +65,7 @@
  *      #include <sys/ptrace.h>
  *
  *      int
- *      ptrace(int request, pid_t pid, caddr_t addr, int data);
+ *      ptrace(int request, pid_t pid, caddr_t addr, long data);
  *
  * DESCRIPTION
  *      ptrace() provides tracing and debugging facilities.  It allows one pro-
@@ -148,6 +148,8 @@
  *                    allow specifying an alternative place to continue execu-
  *                    tion, and after it succeeds, the traced process is no
  *                    longer traced and continues execution normally.
+ *
+ *      PT_SYSCALL    Continue and stop at next return from syscall.
  *
  *      Additionally, machine-specific requests can exist.  On the SPARC, these
  *      are:
