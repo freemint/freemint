@@ -57,4 +57,10 @@ void print_union___semun(pid_t pid, const void *data);
 void print_struct_sembuf(pid_t pid, const void *data);
 void print_struct_msqid_ds(pid_t pid, const void *data);
 
+typedef void SHARED_LIB;
+typedef void SLB_EXEC;
+
+void print_SHARED_LIB(pid_t pid, const void *data);
+void print_SLB_EXEC(pid_t pid, const void *data);
+
 #endif /* _print_h */
