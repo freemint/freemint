@@ -603,7 +603,7 @@ display_title(LOCK lock, struct xa_window *wind, struct xa_widget *widg)
 	char tn[256];
 	RECT r;
 	int effect = 0;
-	bool dial = (wind->dial&(created_for_FORM_DO|created_for_FMD_START)) != 0;
+	bool dial = (wind->dial & (created_for_FORM_DO|created_for_FMD_START)) != 0;
 
 	/* Convert relative coords and window location to absolute screen location */
 	rp_2_ap(wind, widg, &r);
@@ -1980,7 +1980,7 @@ standard_widgets(XA_WINDOW *wind, XA_WIND_ATTR tp, bool keep_stuff)
 			/* Give the window a default title if not already set */
 			widg->stuff = "XaAES Window";
 
-		if (tp&CLOSER)
+		if (tp & CLOSER)
 			widg->loc.r.x += cfg.widg_w + 1;
 
 		shift_from_top(wind, widg, tp & (~(XaMENU|INFO|NAME|CLOSER|FULLER|ICONIFIER|HIDE)), (tp & INFO) ? 0 : 2);
