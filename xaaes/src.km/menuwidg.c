@@ -1528,7 +1528,7 @@ click_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *wid
 	/*
 	 * Make sure we're in the right context
 	*/
-#if 0
+#if 1
 	if (!rc)
 		rc = C.Aes;
 

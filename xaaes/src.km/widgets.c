@@ -360,7 +360,6 @@ rp_2_ap_cs(struct xa_window *wind, XA_WIDGET *widg, RECT *r)
 XA_TREE *
 obtree_to_wt(struct xa_client *client, OBJECT *obtree)
 {
-	struct xa_window *wind = client->fmd.wind;
 	XA_TREE *wt = NULL;
 
 	DIAGS(("obtree_to_wt: look for wt with obtree=%lx for %s",
@@ -371,18 +370,32 @@ obtree_to_wt(struct xa_client *client, OBJECT *obtree)
 		DIAGS((" -- found in client->wt"));
 		wt = client->fmd.wt;
 	}
-	else if (wind)
+
+	if (!wt && client->fmd.wind)
 	{
-		XA_WIDGET *widg = get_widget(wind, XAW_TOOLBAR);
+		XA_WIDGET *widg = get_widget(client->fmd.wind, XAW_TOOLBAR);
 
 		if (obtree == ((XA_TREE *)widg->stuff)->tree)
 		{
 			DIAGS((" -- found in XAW_TOOLBAR fmd wind %d - %s",
-				wind->handle, client->name));
+				client->fmd.wind->handle, client->name));
 			wt = widg->stuff;
 		}
 	}
-	else
+
+	if (!wt && client->alert)
+	{
+		XA_WIDGET *widg = get_widget(client->alert, XAW_TOOLBAR);
+
+		if (obtree == ((XA_TREE *)widg->stuff)->tree)
+		{
+			DIAGS((" -- found in XAW_TOOLBAR fmd wind %d - %s",
+				client->alert->handle, client->name));
+			wt = widg->stuff;
+		}
+	}
+
+	if (!wt)
 	{
 		wt = client->wtlist;
 		DIAGS((" -- lookup in wtlist for %s", client->name));
@@ -893,8 +906,8 @@ calc_work_area(struct xa_window *wi)
 		}
 	}
 
-	if (wi->wa.w < 0 || wi->wa.h < 0)
-		wi->wa.w = wi->wa.h = 0;
+//	if (wi->wa.w < 0 || wi->wa.h < 0)
+//		wi->wa.w = wi->wa.h = 0;
 	
 	/* border displacement */
 	wi->bd.x = wi->rc.x - wi->wa.x;

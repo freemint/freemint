@@ -1070,7 +1070,7 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 	{
 		rl = rect_get_user_first(w);
 		/* HR: Oh, Oh  Leaving a intersect unchecked!! And forcing me to use a goto :-( */
-		if (rl && w->wa.w && w->wa.h)
+		if (rl)
 		{
 			d = w->wa;
 			if (!xa_rc_intersect(rl->r, &d))

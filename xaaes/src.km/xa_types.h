@@ -112,6 +112,7 @@ struct options
 	bool nohide;
 	bool xa_nohide;
 	bool xa_nomove;
+	bool xa_objced;
 	bool xa_none;			/* No xa_windows at all; classic dialogue handling. */
 	bool noleft;			/* Dont move window out left side of screen. */
 	bool thinwork;			/* workarea frame a single line. */

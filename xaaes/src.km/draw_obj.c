@@ -1198,6 +1198,24 @@ set_text(OBJECT *ob,
 	*gr = cur;
 }
 
+static void
+rl_xor(RECT *r, struct xa_rect_list *rl)
+{
+	if (rl)
+	{
+		short c[4];
+		while (rl)
+		{
+			rtopxy(c, &rl->r);
+			vs_clip(C.vh, 1, c);
+			write_selection(0, r);
+			rl = rl->next;
+		}
+		vs_clip(C.vh, 1, C.global_clip);
+	}
+	else
+		write_selection(0, r);
+}
 void
 enable_objcursor(struct widget_tree *wt)
 {
@@ -1209,14 +1227,30 @@ enable_objcursor(struct widget_tree *wt)
 }
 
 void
-disable_objcursor(struct widget_tree *wt)
+disable_objcursor(struct widget_tree *wt, struct xa_rect_list *rl)
 {
-	undraw_objcursor(wt);
+	undraw_objcursor(wt, rl);
 	wt->e.c_state &= ~OB_CURS_ENABLED;
 }
 
 void
-draw_objcursor(struct widget_tree *wt)
+eor_objcursor(struct widget_tree *wt, struct xa_rect_list *rl)
+{
+	RECT r;
+
+	if (wt->e.obj != -1)
+	{
+		set_objcursor(wt);
+		r = wt->e.cr;
+		r.x += wt->tree->ob_x;
+		r.y += wt->tree->ob_y;
+
+		rl_xor(&r, rl);
+	}
+}
+	
+void
+draw_objcursor(struct widget_tree *wt, struct xa_rect_list *rl)
 {
 	if ( (wt->e.c_state & (OB_CURS_ENABLED | OB_CURS_DRAWN)) == OB_CURS_ENABLED )
 	{
@@ -1224,12 +1258,12 @@ draw_objcursor(struct widget_tree *wt)
 
 		r.x += wt->tree->ob_x;
 		r.y += wt->tree->ob_y;
-		write_selection(0, &r);
+		rl_xor(&r, rl); //write_selection(0, &r);
 		wt->e.c_state |= OB_CURS_DRAWN;
 	}
 }
 void
-undraw_objcursor(struct widget_tree *wt)
+undraw_objcursor(struct widget_tree *wt, struct xa_rect_list *rl)
 {
 	if ( (wt->e.c_state & (OB_CURS_ENABLED | OB_CURS_DRAWN)) == (OB_CURS_ENABLED | OB_CURS_DRAWN) )
 	{
@@ -1237,7 +1271,7 @@ undraw_objcursor(struct widget_tree *wt)
 
 		r.x += wt->tree->ob_x;
 		r.y += wt->tree->ob_y;
-		write_selection(0, &r);
+		rl_xor(&r, rl); //write_selection(0, &r);
 		wt->e.c_state &= ~OB_CURS_DRAWN;
 	}
 }
@@ -2513,8 +2547,8 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, short item, short d
 
 	depth++;
 
-	if (curson)
-		undraw_objcursor(wt);
+	if (wt->owner->options.xa_objced && curson)
+		undraw_objcursor(wt, NULL);
 
 	do {
 
@@ -2570,8 +2604,8 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, short item, short d
 	}
 	while (current != -1 && !(start_drawing && rel_depth < 1));
 
-	if (curson)
-		draw_objcursor(wt);
+	if (wt->owner->options.xa_objced && curson)
+		draw_objcursor(wt, NULL);
 
 	wr_mode(MD_TRANS);
 	f_interior(FIS_SOLID);
