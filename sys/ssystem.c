@@ -29,9 +29,13 @@
 # include "arch/cpu.h"
 # include "arch/mprot.h"
 
+# include "mint/signal.h"
+
 # include "block_IO.h"
 # include "cookie.h"
 # include "info.h"
+# include "keyboard.h"
+# include "kmemory.h"
 # include "memory.h"
 # include "k_prot.h"
 # include "proc.h"
@@ -384,18 +388,119 @@ s_system (int mode, ulong arg1, ulong arg2)
 			
 			break;
 		}
-		/* Arg1 == signal number to be sent on C/A/D
-		 * Arg2 == pid of the signal receiver
-		 *
-		 * If arg1 == 0, then revert to the default behaviour
-		 *
-		 * XXX: any better idea?
-		 */
-# if 0
+
 		case S_CAD:
 		{
+			if (!isroot)		r = EPERM;
+
+			/* Arguments:
+			 *
+			 * if arg1 == 100, then revert to defaults;
+			 * arg2 provides information which keys to reset (0, 1, 2)
+			 *
+			 * if arg1 == 101, then it is setting a signal;
+			 * arg2 is bitfield:
+			 * 31-16: pid to be signalled
+			 * 8-15: signal number
+			 * 7-0 : which keys to redefine (0, 1, 2)
+			 *
+			 * if arg1 == 102, then it is setting an exec;
+			 * arg2 is a pointer to the following:
+			 * short key, which keys to redefine
+			 * char *exe, to the executable file
+			 * char *cmd, to the command line
+			 * char *env, to the environment
+			 */
+			/* XXX: I don't understand what to do with the definition in
+			 * unix/reboot.c (in the mintlib, that is), so arg1 values
+			 * used in there are reserved for now.
+			 */
+			else if (arg1 == 100)
+			{
+				ushort which = (ushort)arg2;
+
+				if (which > 2)
+					r = EBADARG;
+				else
+				{
+					if ((cad[which].action == 2) && cad[which].par.path)
+						kfree(cad[which].par.path);
+					cad[which].action = 0;
+					cad[which].par.pid = 0;
+					cad[which].aux.arg = 0;
+					cad[which].env = NULL;
+				}
+			}
+			else if (arg1 == 101)
+			{
+				ushort which, sig, pid;
+
+				pid = (ushort)(arg2 >> 16);
+				sig = (ushort)(arg2 >> 8);
+				sig &= 0x00ff;
+				which = (ushort)(arg2);
+				which &= 0x00ff;
+
+				/* XXX: Perhaps SIGKILL etc should also be filtered out?
+				 * What about pid verification?
+				 */
+				if (which > 2 || pid > MAXPID || sig >= NSIG)
+					r = EBADARG;
+				else
+				{
+					if ((cad[which].action == 2) && cad[which].par.path)
+						kfree(cad[which].par.path);
+					cad[which].action = 1;
+					cad[which].par.pid = pid;
+					cad[which].aux.arg = sig;
+				}
+			}
+			else if (arg1 == 102)
+			{
+				typedef struct
+				{
+					ushort key;
+					char *exe;
+					char *cmd;
+					char *env;
+				} CADPROC;
+
+				CADPROC *cp;
+				char *bbuf;
+				long exel, cmdl, envl;
+
+				cp = (CADPROC *)arg2;
+				if (cp->key > 2)
+					r = EBADARG;
+				else
+				{
+					/* If any of the pointers is not valid,
+					 * a bus error will kill the caller now
+					 */
+					exel = strlen(cp->exe) + 1;
+					cmdl = strlen(cp->cmd) + 1;
+					envl = strlen(cp->env) + 1;
+					bbuf = kmalloc(exel + cmdl + envl);
+					if (!bbuf)
+						r = ENOMEM;
+					else
+					{
+						if ((cad[cp->key].action == 2) && cad[cp->key].par.path)
+							kfree(cad[cp->key].par.path);
+						cad[cp->key].action = 2;
+						cad[cp->key].par.path = bbuf;
+						strcpy(bbuf, cp->exe);
+						bbuf += exel;
+						cad[cp->key].aux.cmd = bbuf;
+						strcpy(bbuf, cp->cmd);
+						bbuf += cmdl;
+						cad[cp->key].env = bbuf;
+						strcpy(bbuf, cp->env);
+					}
+				}
+			}
+			break;
 		}
-# endif
 		
 		/* experimental section
 		 */
