@@ -32,17 +32,17 @@ struct context
 {
 	long	regs[15];	/* registers d0-d7, a0-a6 */
 	long	usp;		/* user stack pointer (a7) */
-	short	sr;		/* status register */
+	ushort	sr;		/* status register */
 	long	pc;		/* program counter */
 	long	ssp;		/* supervisor stack pointer */
 	long	term_vec;	/* GEMDOS terminate vector (0x102) */
-/*
- * AGK: if running on a TT and the user is playing with the FPU then we
- * must save and restore the context. We should also consider this for
- * I/O based co-processors, although this may be difficult due to
- * possibility of a context switch in the middle of an I/O handshaking
- * exchange.
- */
+	
+	/* AGK: if running on a TT and the user is playing with the FPU then we
+	 * must save and restore the context. We should also consider this for
+	 * I/O based co-processors, although this may be difficult due to
+	 * possibility of a context switch in the middle of an I/O handshaking
+	 * exchange.
+	 */
 	uchar	fstate[216];	/* FPU internal state */
 	long	fregs[3*8];	/* registers fp0-fp7 */
 	long	fctrl[3];	/* FPCR/FPSR/FPIAR */
@@ -50,27 +50,27 @@ struct context
 	char	pad1;		/* junk */
 	long	iar;		/* unused */
 	long	res[2];		/* unused, reserved */
-/*
- * Saved CRP and TC values. These are necessary for memory protection.
- */
+	
+	/* Saved CRP and TC values. These are necessary for memory protection.
+	 */
 	crp_reg	crp;		/* 64 bits */
 	tc_reg	tc;		/* 32 bits */
-/*
- * AGK: for long (time-wise) co-processor instructions (FMUL etc.), the
- * FPU returns NULL, come-again with interrupts allowed primitives. It
- * is highly likely that a context switch will occur in one of these if
- * running a mathematically intensive application, hence we must handle
- * the mid-instruction interrupt stack. We do this by saving the extra
- * 3 long words and the stack format word here.
- */
+	
+	/* AGK: for long (time-wise) co-processor instructions (FMUL etc.), the
+	 * FPU returns NULL, come-again with interrupts allowed primitives. It
+	 * is highly likely that a context switch will occur in one of these if
+	 * running a mathematically intensive application, hence we must handle
+	 * the mid-instruction interrupt stack. We do this by saving the extra
+	 * 3 long words and the stack format word here.
+	 */
 	ushort	sfmt;		/* stack frame format identifier */
-	short	internal[42];	/* internal state -- see framesizes[] for size */
-/*
- * jw: The following 3 longs are used to save the content of a register in
- * syscall handler.This is needed to get a reentrant workaround for bugs 
- * (relying on unmodified registers a0 or a1) in MiNT lib < 0.51 :-<
- * The affected functions are Pvfork(), Psigblock() and Psigsetmask()
- */
+	ushort	internal[42];	/* internal state -- see framesizes[] for size */
+	
+	/* jw: The following 3 longs are used to save the content of a register in
+	 * syscall handler.This is needed to get a reentrant workaround for bugs 
+	 * (relying on unmodified registers a0 or a1) in MiNT lib < 0.51 :-<
+	 * The affected functions are Pvfork(), Psigblock() and Psigsetmask()
+	 */
 	long	wa_vfork;	/* space to save a1 over Pvfork() */
 	long	wa_sigblock;	/* space to save a0 over Psigblock() */
 	long	wa_sigsetmask;	/* space to save a0 over Psigsetmask() */
@@ -96,7 +96,7 @@ struct timeout
 	PROC	*proc;
 	long	when;
 	to_func	*func;	/* function to call at timeout */
-	short	flags;
+	ushort	flags;
 	long	arg;
 };
 
@@ -203,7 +203,6 @@ struct proc
 	FILEPTR *aux;			/* auxiliary tty		*/
 	FILEPTR	*control;		/* control tty			*/
 	FILEPTR	*handle[MAX_OPEN];	/* file handles			*/
-	
 	uchar	fdflags[MAX_OPEN];	/* file descriptor flags	*/
 	
 	ushort	num_reg;		/* number of allocated memory regions */
@@ -318,9 +317,13 @@ struct proc
 
 
 # ifdef __KERNEL__
+# if __KERNEL__ == 1
+
 extern PROC *proclist;			/* list of all active processes */
 extern PROC *curproc;			/* current process		*/
 extern PROC *rootproc;			/* pid 0 -- MiNT itself		*/
+
+# endif
 # endif
 
 
