@@ -5,7 +5,6 @@ COBJS = \
 	bios.c \
 	biosfs.c \
 	block_IO.c \
-	blowfish.c \
 	cnf_mint.c \
 	cnf.c \
 	cmdline.c \
@@ -51,7 +50,6 @@ COBJS = \
 	keyboard.c \
 	kmemory.c \
 	mcount.c \
-	md5.c \
 	memory.c \
 	mis.c \
 	module.c \
