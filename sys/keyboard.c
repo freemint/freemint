@@ -120,6 +120,8 @@ static const uchar mmasks[] =
 };
 
 /* Exported variables */
+long	iso_8859_code;	/* this is 2 for ISO-8859-2, 3 for ISO-8859-3 etc., or 0 for default/undefined */
+
 short	kbd_pc_style_caps = 0;	/* PC-style vs. Atari-style for Caps operation */
 short	kbd_mpixels = 8;	/* mouse pixel steps */
 short	kbd_mpixels_fine = 1;	/* mouse pixel steps in 'fine' mode */
@@ -1048,10 +1050,15 @@ sys_b_bioskeys(void)
 	 *
 	 * XXX must be changed for -DJAR_PRIVATE (forward to all processes).
 	 */
+
+	/* _AKP specifies the hardware keyboard layout */
 	get_cookie(NULL, COOKIE__AKP, &akp_val);
 	akp_val &= 0xffffff00L;
 	akp_val |= (gl_kbd & 0x000000ff);
 	set_cookie(NULL, COOKIE__AKP, akp_val);
+
+	/* _ISO specifies the real keyboard/font nationality */
+	set_cookie(NULL, COOKIE__ISO, iso_8859_code);
 
 	user_keytab = pointers;
 
@@ -1103,7 +1110,7 @@ load_external_table(FILEPTR *fp, const char *name, long size)
 	 */
 	if (size < 389L)
 	{
-		DEBUG(("%s(): failure (size %ld)", __FUNCTION__, size));
+		DEBUG(("%s(): invalid size %ld", __FUNCTION__, size));
 		return EFTYPE;
 	}
 
@@ -1132,12 +1139,40 @@ load_external_table(FILEPTR *fp, const char *name, long size)
 				 * contains the AKP code for the keyboard table
 				 * loaded.
 				 */
-				ushort *sbuf = (ushort *)kbuf;
+				short *sbuf = (short *)kbuf;
 
-				if (sbuf[1] <= MAXAKP)
+				/* -1 for the AKP field means "ignore" */
+				if ((sbuf[1] >= 0) && (sbuf[1] <= MAXAKP))
 					gl_kbd = sbuf[1];
 
 				quickmove(kbuf, kbuf + sizeof(long), size - sizeof(long) + 1);
+				break;
+			}
+			case 0x2773:		/* the ISO format (as of 30.VII.2004) */
+			{
+				/* The ISO format header consists of:
+				 * 0x2773, the AKP code as above, and the longword containing
+				 * ISO-8859 code for the keyboard (0 - undefined).
+				 */
+				short *sbuf = (short *)kbuf;
+
+				/* -1 for the AKP field means "ignore" */
+				if ((sbuf[1] >= 0) && (sbuf[1] <= MAXAKP))
+					gl_kbd = sbuf[1];
+
+				if ((sbuf[3] > 0) && (sbuf[3] <= 10))
+				{
+					iso_8859_code = (long)sbuf[3];
+					quickmove(kbuf, kbuf + (sizeof(long)*2), \
+							size - (sizeof(long)*2) + 1);
+				}
+				else
+				{
+					DEBUG(("%s(): invalid ISO header", __FUNCTION__));
+
+					ret = EFTYPE;	/* wrong format */
+				}
+
 				break;
 			}
 			default:
@@ -1334,8 +1369,13 @@ load_keyboard_table(const char *path, short flag)
 # endif
 			ret = load_external_table(fp, name, xattr.size);
 # ifdef VERBOSE_BOOT
-			if (ret == 0 && (flag & 0x1))
-				boot_printf(MSG_keytable_loaded, gl_kbd);
+			if (flag & 0x01)
+			{
+				if (ret == 0)
+					boot_printf(MSG_keytable_loaded, gl_kbd, iso_8859_code);
+				else
+					boot_printf(MSG_init_error, ret);
+			}
 # endif
 			do_close(rootproc, fp);
 		}
