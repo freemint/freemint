@@ -565,11 +565,11 @@ map_size(MFDB *m, int i)
 }
 
 bool
-transform_gem_bitmap(short vdih, MFDB msrc, MFDB mdest, struct rgb_1000 *src_pal, struct rgb_1000 *sys_pal)
+transform_gem_bitmap(short vdih, MFDB msrc, MFDB mdest, short planes, struct rgb_1000 *src_pal, struct rgb_1000 *sys_pal)
 {
 	short src_planes, dst_planes;
 
-	src_planes = msrc.fd_nplanes;
+	src_planes = planes; //msrc.fd_nplanes;
 	dst_planes = mdest.fd_nplanes;
 
 	if (src_planes <= 8 && dst_planes <= 8)

@@ -1701,18 +1701,23 @@ add_scroll_entry(SCROLL_INFO *list,
 	return 0;
 }
 
+/*
+ * Delete scroll entry
+ */
 static SCROLL_ENTRY *
 free_scroll_entry(struct scroll_info *list, struct scroll_entry *this)
 {
 	struct scroll_entry *stop = this, *next;
-	
+	short level = 1;
+
 	this = this->down;
-	
-	while (this && this != stop)
+
+	while (this && level) //this != stop)
 	{
 		if (this->down)
 		{
 			this = this->down;
+			level++;
 		}
 		else
 		{
@@ -1731,6 +1736,7 @@ free_scroll_entry(struct scroll_info *list, struct scroll_entry *this)
 			if (!next)
 			{
 				next = this->up;
+				level--;
 			}
 
 			if (this == list->cur)
@@ -1776,10 +1782,20 @@ free_scroll_entry(struct scroll_info *list, struct scroll_entry *this)
 	if (!next)
 	{
 		next = this->up;
-		if (next)
-			next = next->next;
+		level--;
+		while (next)
+		{
+			if (next->next)
+			{
+				next = next->next;
+				break;
+			}
+			this = this->up;
+			level--;
+		}
+	//	if (next)
+	//		next = next->next;
 	}
-
 	if (this == list->cur)
 		list->cur = NULL;
 	if (this == list->top)
