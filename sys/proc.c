@@ -136,7 +136,7 @@ init_proc(void)
 	strcpy(curproc->cmdlin, "MiNT");
 
 	/* get some memory */
-	curproc->p_mem->memflags = F_PROT_S | F_OS_SPECIAL; /* default prot mode: super-only */
+	curproc->p_mem->memflags = F_PROT_S; /* default prot mode: super-only */
 	curproc->p_mem->num_reg = NUM_REGIONS;
 	{
 		const unsigned long size = curproc->p_mem->num_reg * sizeof(void *);
