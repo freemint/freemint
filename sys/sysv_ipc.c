@@ -33,7 +33,7 @@
 
 # include "sysv_ipc.h"
 
-# include "mint/file.h"
+# include "mint/stat.h"
 
 # include "k_prot.h"
 
