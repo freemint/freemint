@@ -19,8 +19,7 @@ include $(top_srcdir)/PHONY
 all-here: generator $(TARGET)
 
 # default overwrites
-NATIVECFLAGS += -D_GNU_SOURCE
-NATIVECFLAGS += -I$(top_srcdir)/../shared
+NATIVECFLAGS = -I$(top_srcdir)/../shared
 NATIVE_LIBS_DEP += $(top_srcdir)/../shared/libsyscall/libsyscall.a
 NATIVE_LIBS += -L$(top_srcdir)/../shared/libsyscall -lsyscall
 NATIVE_LIBS += -lfl
