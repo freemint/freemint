@@ -58,13 +58,15 @@ typedef unsigned long long		__u64;
 
 typedef long _cdecl (*Func)();
 
-/* forward declarations: sockets
+/* forward declarations
  */
 struct dom_ops;
 struct iovec;
 struct module_callback;
 struct proc_ext;
+struct sigaction;
 struct socket;
+
 
 /* forward declarations: file.h
  */

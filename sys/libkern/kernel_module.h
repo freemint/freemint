@@ -653,6 +653,9 @@ INLINE long p_semaphore(int mode, long id, long timeout)
 INLINE long d_lock(int mode, int drv)
 { return ((long _cdecl (*)(int, int)) _d_lock)(mode, drv); }
 
+INLINE long p_sigaction(short sig, const struct sigaction *act, struct sigaction *oact)
+{ return ((long _cdecl (*)(short, const struct sigaction *, struct sigaction *)) _p_sigaction)(sig, act, oact); }
+
 INLINE long p_geteuid(void)
 { return ((long _cdecl (*)(void)) _p_geteuid)(); }
 
