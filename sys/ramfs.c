@@ -140,6 +140,8 @@
  *
  */
 
+# ifndef NO_RAMFS
+
 # include "ramfs.h"
 # include "global.h"
 
@@ -2675,3 +2677,5 @@ ram_close (FILEPTR *f, int pid)
 
 /* END device driver */
 /****************************************************************************/
+
+# endif
