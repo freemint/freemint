@@ -45,6 +45,7 @@ typedef struct scsicmd	SCSICMD;
 typedef struct businfo	BUSINFO;
 typedef struct scsidrv	SCSIDRV;
 typedef struct target	TARGET;
+typedef struct dlong	DLONG;
 typedef struct devinfo	DEVINFO;
 
 
@@ -60,16 +61,34 @@ extern ushort scsidrv_installed;
 long	scsidrv_init		(void);
 
 long	_cdecl sys_scsidrv	(ushort op,
-					long a1, long a2, long a3, long a4,
-					long a5, long a6, long a7);
+				 long a1, long a2, long a3, long a4,
+				 long a5, long a6, long a7);
 
 long	scsidrv_In		(SCSICMD *par);
 long	scsidrv_Out		(SCSICMD *par);
+
+/* error codes ffor In and Out */
+
+# define NOSCSIERROR		  0L /* no error */
+# define SELECTERROR		 -1L /* selection error */
+# define STATUSERROR		 -2L /* default error */
+# define PHASEERROR		 -3L /* invalid phase */
+# define BSYERROR		 -4L /* BSY lost */
+# define BUSERROR		 -5L /* bus failure by DMA transfer */
+# define TRANSERROR		 -6L /* error during DMA transfer */
+# define FREEERROR		 -7L /* bus isn't free */
+# define TIMEOUTERROR		 -8L /* timeout */
+# define DATATOOLONG		 -9L /* data to long for ACSI softtransfer */
+# define LINKERROR		-10L /* error during linked-command (ACSI) sending */
+# define TIMEOUTARBIT		-11L /* arbitration timeout */
+# define PENDINGERROR		-12L /* pending error on this handle */
+# define PARITYERROR		-13L /* parity error during transfer */
+
 long	scsidrv_InquireSCSI	(short what, BUSINFO *info);
 long	scsidrv_InquireBus	(short what, short BusNo, DEVINFO *dev);
-long	scsidrv_CheckDev	(short BusNo, const llong *SCSIId, char *Name, ushort *Features);
+long	scsidrv_CheckDev	(short BusNo, const DLONG *SCSIId, char *Name, ushort *Features);
 long	scsidrv_RescanBus	(short BusNo);
-long	scsidrv_Open		(short BusNo, const llong *SCSIId, ulong *MaxLen);
+long	scsidrv_Open		(short BusNo, const DLONG *SCSIId, ulong *MaxLen);
 long	scsidrv_Close		(short *handle);
 long	scsidrv_Error		(short *handle, short rwflag, short ErrNo);
 long	scsidrv_Install		(ushort bus, TARGET *handler);
@@ -130,10 +149,16 @@ struct businfo
 	ulong	MaxLen;
 };
 
+struct dlong
+{
+	ulong hi;
+	ulong lo;
+};
+
 struct devinfo
 {
-	char	priv [32];
-	llong	SCSIId;
+	char priv [32];
+	DLONG SCSIId;
 };
 
 struct target
@@ -164,9 +189,9 @@ struct scsidrv
 # define cInqFirst	0
 # define cInqNext	1
 	long _cdecl (*InquireBus)	(short what, short busno, DEVINFO *dev);
-	long _cdecl (*CheckDev)		(short busno, const llong *SCSIId, char *name, ushort *features);
+	long _cdecl (*CheckDev)		(short busno, const DLONG *SCSIId, char *name, ushort *features);
 	long _cdecl (*RescanBus)	(short busno);
-	long _cdecl (*Open)		(short busno, const llong *SCSIId, ulong *maxlen);
+	long _cdecl (*Open)		(short busno, const DLONG *SCSIId, ulong *maxlen);
 	long _cdecl (*Close)		(short *handle);
 	long _cdecl (*Error)		(short *handle, short rwflag, short ErrNo);
 # define cErrRead	0
