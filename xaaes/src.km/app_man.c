@@ -302,7 +302,7 @@ hide_app(enum locks lock, struct xa_client *client)
 	DIAG((D_appl, NULL, "   focus now %s", c_owner(focus)));
 
 	if (client == focus)
-		app_in_front(lock, next_app(lock));
+		app_in_front(lock, next_app(lock, true));
 }
 
 void
@@ -424,26 +424,38 @@ next_wind(enum locks lock)
 	return wind;
 }
 
+/*
+ * wwom true == find a client "with window or menu", else any client
+ */
 struct xa_client *
-next_app(enum locks lock)
+next_app(enum locks lock, bool wwom)
 {
-	struct xa_client *client, *fc;
+	struct xa_client *client;
 
-#if 0
-	client = focus_owner();
-	if (client)
+	client = S.client_list;
+
+	while (client->next)
+		client = client->next;
+
+	if (wwom)
 	{
-		bool anywin = any_window(lock, client);
-
-		if (client->std_menu || anywin)
+		while (client)
 		{
-			DIAG((D_appl, NULL, "  --  return %s", c_owner(client)));
-			return client;
+			if (client->std_menu || any_window(lock, client))
+				break;
+
+			client = client->prior;
 		}
 	}
 	else
-		DIAGS(("No focus_owner()"));
-#endif
+	{	
+		if (client == S.client_list)
+			client = NULL;
+	}
+	return client;
+}
+
+#if 0
 	fc = focus_owner();
 	client = NULL;
 
@@ -475,6 +487,7 @@ next_app(enum locks lock)
 	DIAG((D_appl, NULL, "  --  fail"));
 	return NULL;
 }
+#endif
 
 struct xa_client *
 previous_client(enum locks lock)

@@ -907,6 +907,24 @@ do_formwind_msg(
 			}
 			break;
 		}
+		case WM_TOPPED:
+		{
+			if (wind != root_window && wind->is_open && !is_topped(wind))
+			{
+				if (is_hidden(wind))
+					unhide_window(0, wind);
+				top_window(0, wind, 0);
+				swap_menu(0, wind->owner, true, 0);
+				after_top(0, true);
+			}
+			break;
+		}
+		case WM_BOTTOMED:
+		{
+			if (wind != root_window && wind->is_open)
+				bottom_window(0, wind);
+			break;
+		}
 		case WM_ARROWED:
 		{
 			if (msg[4] < WA_LFPAGE)
