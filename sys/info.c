@@ -366,10 +366,8 @@ const char *MSG_init_error = " error %ld.\r\n";
 
 /* ---------- keyboard.c ---------- */
 
-# ifdef VERBOSE_BOOT
 const char *MSG_keytable_loading = "Loading keyboard table `%s' ...";
 const char *MSG_keytable_loaded = " AKP code %d.\r\n";
-# endif
 
 /* ---------- memory.c ------------- */
 
