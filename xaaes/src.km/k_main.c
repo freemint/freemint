@@ -233,7 +233,7 @@ dispatch_cevent(struct xa_client *client)
 		
 		kfree(ce);
 
-		ret = 1;
+		ret = client->cevnt_count + 1;
 	}
 	return ret;
 }
@@ -595,7 +595,7 @@ alert_input(enum locks lock)
 			sc.n_strings = 1;
 			p.arg.typ.txt = "Alerts";
 			list->get(list, NULL, SEGET_ENTRYBYTEXT, &p);
-			list->add(list, p.e, NULL, &sc, p.e ? SEADD_CHILD: 0, FLAG_MAL, true); //add_scroll_entry(form, SYSALERT_LIST, icon, data->buf, FLAG_MAL, NULL);
+			list->add(list, p.e, NULL, &sc, p.e ? SEADD_CHILD: 0, FLAG_MAL, true);
 		}
 
 		 /* Now you can always lookup the error in the log. */

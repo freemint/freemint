@@ -138,7 +138,7 @@ transform_icon_bitmap(struct xa_client *client, struct xa_rscs *rscs, CICONBLK *
 	src.fd_wdwidth = (src.fd_w + 15) / 16; /* round up */
 	src.fd_stand = 1;
 	src.fd_r1 = src.fd_r2 = src.fd_r3 = 0;
-	src.fd_nplanes = screen.planes;	
+	src.fd_nplanes = screen.planes;
 	dst = src;
 
 	dst.fd_addr = new_data;
@@ -152,7 +152,7 @@ transform_icon_bitmap(struct xa_client *client, struct xa_rscs *rscs, CICONBLK *
 		memcpy(tmp, new_data, new_len);
 		src.fd_addr = tmp;
 		//transform_gem_bitmap_data(vdih, src, dst, planes, screen.planes);
-		transform_gem_bitmap(vdih, src, dst, cfg.remap_cicons ? rscs->palette : NULL, screen.palette);
+		transform_gem_bitmap(vdih, src, dst, planes, cfg.remap_cicons ? rscs->palette : NULL, screen.palette);
 		kfree(tmp);
 	}
 	return new_data;
