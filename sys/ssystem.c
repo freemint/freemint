@@ -439,11 +439,19 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 		case S_CTRLCACHE:
 		{
 			if (arg1 == -1 && arg2 == -1)	r = E_OK;
+# ifndef NO_CPU_CACHES
 			else if (arg1 == -1)		r = ccw_get ();
 			else if (arg2 == -1)		r = ccw_getdmask ();
+# else
+			else if (arg1 == -1)		r = 0;
+			else if (arg2 == -1)		r = 0;
+# endif
 			else if (isroot == 0)		r = EPERM;
+# ifndef NO_CPU_CACHES
 			else				r = ccw_set (arg1, arg2);
-
+# else
+			else				r = 0;
+# endif
 			break;
 		}
 		case S_INITIALTPA:
