@@ -1170,18 +1170,24 @@ close_window(enum locks lock, struct xa_window *wind)
 	if (wind->is_open == false || wind->nolist)
 		return false;
 
-	if (C.focus == wind)
-		C.focus = NULL;
-
 	is_top = (wind == window_list);
+
+	wi_remove(&S.open_windows, wind);
+	wi_put_first(&S.closed_windows, wind);
+
+	if (C.focus == wind)
+	{
+		C.focus = window_list;
+		if (!C.focus)
+			DIAGS(("no focus owner, no windows open???"));
+	}
+
 	r = wind->r;
 
 	if (wind->rect_start)
 		free(wind->rect_start);
 
 	wind->rect_user = wind->rect_list = wind->rect_start = NULL;
-	wi_remove(&S.open_windows, wind);
-	wi_put_first(&S.closed_windows, wind);
 
 	/* Tag window as closed */
 	wind->is_open = false;
