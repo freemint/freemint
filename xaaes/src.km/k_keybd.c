@@ -303,10 +303,15 @@ kernel_key(enum locks lock, struct rawkey *key)
 			forcem();
 			return true;
 		}
-		case 'Q':
 		case 'A':
 		{
-			DIAGS(("shutdown by CtlAlt Q/A"));
+			DIAGS(("Quit all apps by CtlAlt A"));
+			quit_all_apps(lock, NULL);
+			return true;
+		}
+		case 'Q':
+		{
+			DIAGS(("shutdown by CtlAlt Q"));
 			dispatch_shutdown(0);
 			return true;
 		}
