@@ -126,20 +126,24 @@ static void quote_putch(TEXTWIN *v, int c)
 	v->output = vt52_putch;
 }
 
-static void fgcol_putch(TEXTWIN *v, int c)
+/* Legacy functions for color support.  */
+static 
+void fgcol_putch (TEXTWIN *v, int c)
 {
 	v->term_cattr = (v->term_cattr & ~CFGCOL) | 
 			 ((c & 0xff) << 4);
 	v->output = vt52_putch;
 }
 
-static void bgcol_putch(TEXTWIN *v, int c)
+static 
+void bgcol_putch (TEXTWIN *v, int c)
 {
 	v->term_cattr = (v->term_cattr & ~CBGCOL) | 
 			 (c & 0xff);
 	v->output = vt52_putch;
 }
 
+/* ANSI color functions.  */
 static 
 void ansi_fgcol_putch (TEXTWIN *v, int c)
 {
@@ -240,6 +244,20 @@ static void putesc(TEXTWIN *v, int c)
 #endif
 			gotoxy(v, cx-1, cy);
 			break;
+		case 'F':		/* smacs, start alternate character set.  */
+#ifdef DEBUG
+			if (do_debug) syslog (LOG_ERR, "is smacs");
+#endif
+			v->term_cattr |= CACS;
+			break;
+			
+		case 'G':		/* rmacs, end alternate character set.  */
+#ifdef DEBUG
+			if (do_debug) syslog (LOG_ERR, "is rmacs");
+#endif
+			v->term_cattr &= ~CACS;
+			break;
+				
 		case 'E':		/* clear home */
 #ifdef DEBUG
 			if (do_debug) syslog (LOG_ERR, "is clear");
@@ -531,14 +549,6 @@ void vt52_putch(TEXTWIN *v, int c)
 				gotoxy(v, (v->cx +8) & ~7, v->cy);
 				break;
 
-			case '\016':		/* smacs, start alternate character set.  */
-				v->term_cattr |= CACS;
-				break;
-				
-			case '\017':		/* rmacs, end alternate character set.  */
-				v->term_cattr &= ~CACS;
-				break;
-				
 			default:
 				break;
 		}
