@@ -119,7 +119,7 @@ void clrfrom(TEXTWIN *v, int x1, int y1, int x2, int y2)
 {
 	int i;
 
-	for (i = x1; i < v->maxx; i++)
+	for (i = x1; i <= x2; i++)
 		clrchar(v, i, y1);
 	if (y2 > y1) 
 	{
