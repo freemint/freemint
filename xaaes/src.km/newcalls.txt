@@ -1,0 +1,136 @@
+
+   This text is NOT, that is _NOT_, official yet, as it is more a collection 
+ of notes for myself to remember right now. Consider everything in this 
+ textfile unusable/unimplemented unless clearly noted otherwise!
+
+  Intention is that this file will contain documentation on new calls/things 
+ added to XaAES. This file will also contain known differences between XaAES 
+ and other AES's.
+
+===============================================================================
+                            -= Detecting XaAES =-
+
+ XaAES is detected using appl_getinfo(XAAES_GETVERSION); which will return
+ in ap_gout1-4 the following;
+
+ ap_gout1 = Major version number
+ ap_gout2 = Minor version number
+ ap_gout3 = Target platform this XaAES was compiled for
+ ap_gout4 = Status (Beta, alpha, etc.)
+
+Add to your header file
+
+#define XA_AGI_VERSION  0x5800
+
+===============================================================================
+
+                            -= Shading windows =-
+
+   XaAES now supports shading like N.AES and MagiC supports it, except from
+ one important point; ALL window status'es remains across
+ close_wind()/open_wind() calls, INCLUDING shaded. That means one should
+ not rely on the fact that SHADED status will be cleared when one closes
+ the window, like other AES's do. Instead, if you want to control SHADE
+ status of a window, use the documented;
+
+     wind_set(wh, WF_SHADE, mode, p2, p3, p4)
+
+     'mode' selects wether to SHADE (mode = 1) or UNSHADE (mode = 0) the
+     window in question. p2, p3 and p4 are usused at the moment and
+     must be set to 0.
+
+===============================================================================
+=                            wind_set() extensions                            =
+-------------------------------------------------------------------------------
+
+ short wind_set(short handle, short mode,
+                short p1, short p2, short p3, short p4);
+ {
+ 	intin[0] = handle;
+ 	intin[1] = mode;
+ 	intin[2] = p1;
+ 	intin[3] = p1;
+ 	intin[4] = p1;
+ 	intin[5] = p1;
+ }
+
+ GEM arrays as follows:
+
+	Address     Element    meaning 
+        ------------------------------------------------------
+        control    control[0]   105        # Opcode
+        control+2  control[1]   6          # Entries in intin
+        control+4  control[2]   1 (or 5)   # Entries in intout (XaAES only)
+        control+6  control[3]   0          # Entries in addrin 
+        control+8  control[4]   0          # entries in addrout 
+        intin      intin[0]    handle
+        intin+2    intin[1]    mode
+        intin+4    intin[2]    p1
+        intin+6    intin[3]    p2
+        intin+8    intin[4]    p3
+        intin+10   intin[5]    p4
+        intout     intout[0]   Return value (1 = OK, 0 = error)
+
+      XaAES uses the following extra output elements if control[2]
+      indicates the application wants it:
+
+        intout+2   intout[1]
+        intout+4   intout[2]
+        intout+6   intout[3]
+        intout+8   intout[4]
+
+ XaAES wind_set() extensions;
+...............................................................................
+ wind_set(handle, WF_CURRXYWH, x, y, w, h);
+
+   Compatible with all other AES's, except from the following points;
+
+   1. If x, y, w and h all have a value of -1, XaAES ignores the call,
+      but fills in any return values when needed (see below).
+   2. x and y values of -1 are 'legal', i.e, one cannot use -1 to use
+      any old x value. Ofcourse, x and y coordinates are checked to be
+      inside the rootwindow (not X when noleft = false).
+   3. When h have a value of 0, the window is infact shaded. This is a thing
+      N.AES does with MiNTSetter, altho I'm not sure this is correct.
+      The application is sent a WM_SHADED. On the next
+      wind_set(handle, WF_CURRXYWH,...) where the h coordinate is not equal
+      to the window's shaded height, the window is unshaded. While the
+      window is shaded via this method
+
+   Placing a value of 5 in control[2]:
+   1. XaAES returns the CURRXYWH of the new position the window was moved to,
+      removing the need for a wind_get(handle, WF_CURRXYWH,...) call.
+
+  Note: wind_set(handle, WF_CURRXYWH, -1, -1, -1, -1); will return exactly
+        the same as wind_get(handle, WF_CURRXYWH);
+...............................................................................
+ wind_set(handle, WF_PREVXYWH, x, y, w, h);
+
+   If either x, y, w or h have a value of -1, that coordinate is not changed.
+   If ALL coordinates have a value of -1, the window is actually moved to the
+   current PREVXYWH coordinates, making the current window position the new
+   PREVXYWH position.
+
+   Placing a value of 5 (or more) in control[2]:
+     1. XaAES returns the resulting PREVXYWH, which the window will be moved to
+        on the next use of the FULLED gadget or...
+     2. When all coordinates passed have a value of -1, XaAES return the
+        CURRXYWH of the new position the window was moved to, removing the
+        need for a wind_get(handle, WF_CURRXYWH,...) call.
+ 
+-------------------------------------------------------------------------------
+ wind_set(handle, WF_FULLXYWH, x, y, w, h);
+
+   If either x, y, w or h have a value of -1, that coordinate is not changed.
+   If ALL coordinates have a value of -1, the window is actually moved to the
+   current FULLXYWH coordinates, making the current window position the new
+   PREVXYWH position.
+
+   Placing a value of 5 (or more) in control[2]:
+     1. XaAES returns the resulting FULLXYWH, which the window will be moved to
+        on the next use of the FULLED gadget or...
+     2. When all coordinates passed have a value of -1, XaAES return the
+        CURRXYWH of the new position the window was moved to, removing the
+        need for a wind_get(handle, WF_CURRXYWH,...) call.
+ 
+-------------------------------------------------------------------------------
