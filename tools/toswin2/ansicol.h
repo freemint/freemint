@@ -21,6 +21,10 @@
 extern const int ansi2vdi[8];
 extern const int vdi2ansi[8];
 
+extern char* tw52_env;
+extern char* tw100_env;
+extern char* colorterm_env;
+
 void init_ansi_colors (const short* __work_out);
 void set_ansi_fg_color  (TEXTWIN* __textwin, int __color);
 void set_ansi_bg_color  (TEXTWIN* __textwin, int __color);
