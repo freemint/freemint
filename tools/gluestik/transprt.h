@@ -24,12 +24,12 @@ typedef BASEPAGE BASPAG;
  *   Data types used throughout STinG
  */
 
-typedef          char  int8;          /*   Signed  8 bit (char)             */
-typedef unsigned char uint8;          /* Unsigned  8 bit (byte, octet)      */
-typedef          int   int16;         /*   Signed 16 bit (int)              */
-typedef unsigned int  uint16;         /* Unsigned 16 bit (word)             */
-typedef          long  int32;         /*   Signed 32 bit                    */
-typedef unsigned long uint32;         /* Unsigned 32 bit (longword)         */
+typedef          char    int8;        /*   Signed  8 bit (char)             */
+typedef unsigned char   uint8;        /* Unsigned  8 bit (byte, octet)      */
+typedef          short  int16;        /*   Signed 16 bit (int)              */
+typedef unsigned short uint16;        /* Unsigned 16 bit (word)             */
+typedef          long   int32;        /*   Signed 32 bit                    */
+typedef unsigned long  uint32;        /* Unsigned 32 bit (longword)         */
 
 
 #ifndef TRUE
@@ -147,15 +147,15 @@ extern DRV_LIST *drivers;
  */
 
 typedef  struct ip_header {
-    unsigned  version   : 4;    /* IP Version                               */
-    unsigned  hd_len    : 4;    /* Internet Header Length                   */
-    unsigned  tos       : 8;    /* Type of Service                          */
+    uint16    version   : 4;    /* IP Version                               */
+    uint16    hd_len    : 4;    /* Internet Header Length                   */
+    uint16    tos       : 8;    /* Type of Service                          */
     uint16    length;           /* Total of all header, options and data    */
     uint16    ident;            /* Identification for fragmentation         */
-    unsigned  reserved  : 1;    /* Reserved : Must be zero                  */
-    unsigned  dont_frg  : 1;    /* Don't fragment flag                      */
-    unsigned  more_frg  : 1;    /* More fragments flag                      */
-    unsigned  frag_ofst : 13;   /* Fragment offset                          */
+    uint16    reserved  : 1;    /* Reserved : Must be zero                  */
+    uint16    dont_frg  : 1;    /* Don't fragment flag                      */
+    uint16    more_frg  : 1;    /* More fragments flag                      */
+    uint16    frag_ofst : 13;   /* Fragment offset                          */
     uint8     ttl;              /* Time to live                             */
     uint8     protocol;         /* Protocol                                 */
     uint16    hdr_chksum;       /* Header checksum                          */
@@ -227,9 +227,9 @@ typedef struct cib {        /* Connection Information Block                 */
 
 struct KRmalloc_param { int32 size; };
 struct KRfree_param { void *mem; };
-struct KRgetfree_param { int16 flag; };
+struct KRgetfree_param { int16 flag; void *dummy; };
 struct KRrealloc_param { void *mem; int32 newsize; };
-struct get_err_text_param { int16 code; };
+struct get_err_text_param { int16 code; void *dummy; };
 struct getvstr_param { char *var; };
 struct TCP_open_param { uint32 rhost; int16 rport; int16 tos; uint16 obsize; };
 struct TCP_close_param { int16 fd; int16 timeout; };
@@ -237,17 +237,17 @@ struct TCP_send_param { int16 fd; void *buf; int16 len; };
 struct TCP_wait_state_param { int16 fd; int16 state; int16 timeout; };
 struct TCP_ack_wait_param { int16 fd; int16 timeout; };
 struct UDP_open_param { uint32 rhost; int16 rport; };
-struct UDP_close_param { int16 fd; };
+struct UDP_close_param { int16 fd; void *dummy; };
 struct UDP_send_param { int16 fd; void *buf; int16 len; };
-struct CNkick_param { int16 fd; };
-struct CNbyte_count_param { int16 fd; };
-struct CNget_char_param { int16 fd; };
-struct CNget_NDB_param { int16 fd; };
+struct CNkick_param { int16 fd; void *dummy; };
+struct CNbyte_count_param { int16 fd; void *dummy; };
+struct CNget_char_param { int16 fd; void *dummy; };
+struct CNget_NDB_param { int16 fd; void *dummy; };
 struct CNget_block_param { int16 fd; void *buf; int16 len; };
 struct resolve_param { char *dn; char **rdn; uint32 *alist; int16 lsize; };
-struct set_flag_param { int16 flag; };
-struct clear_flag_param { int16 flag; };
-struct CNgetinfo_param { int16 fd; };
+struct set_flag_param { int16 flag; void *dummy; };
+struct clear_flag_param { int16 flag; void *dummy; };
+struct CNgetinfo_param { int16 fd; void *dummy; };
 struct on_port_param { char *port; };
 struct off_port_param { char *port; };
 struct setvstr_param { char *vs; char *value; };
