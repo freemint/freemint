@@ -499,6 +499,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 					mh = w->max.h;
 			}
 			move_window(lock, w, -1, pb->intin[2], pb->intin[3], mw, mh);
+			yield();
 		}
 		break;
 	}
