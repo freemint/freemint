@@ -653,7 +653,7 @@ XA_handler(ushort c, AESPB *pb)
 	XA_CLIENT *client;
 	unsigned long cmd_rtn;
 	unsigned long reply_s;
-	int cmd;
+	short cmd;
 
 	DIAGS(("XA_handler (c=0x%x, pb=%lx)\n", c, pb));
 
