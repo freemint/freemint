@@ -1,0 +1,358 @@
+Specification for GEMDOS File Sharing & Record Locking
+------------------------------------------------------
+
+The following information describes the methods that will be used
+when GEMDOS is extended to allow file sharing and record locking.
+Please note that at this time, despite the fact that this document
+discusses how certain aspects of these extensions relate to
+networking, this is not a full-fledged network specification.
+Developers are encouraged to write software with multiuser
+capabilities in mind when at all possible.
+
+
+Detecting The Extensions
+------------------------
+
+An application can determine if the extensions are available by
+checking the Cookie Jar for the presence of an "_FLK" cookie.  See
+the STE TOS RELEASE NOTES for more information on the Cookie Jar.
+
+
+_FLK cookie
+-----------
+
+The cookie "_FLK" indicates the presence of file and record locking
+extensions to GEMDOS.  If this cookie is not found, then the
+application should assume that file and record locking extensions are
+not installed and make no GEMDOS calls that rely on them, or pass
+parameters to GEMDOS functions other than those given in the standard
+GEMDOS documentation.  The value field of the "_FLK" cookie should
+contain a version number.
+
+If the _FLK cookie is found, then the following extensions and
+changes to GEMDOS should be observed:
+
+
+New GEMDOS call:
+----------------
+
+LONG Flock( handle, mode, start, length );
+
+WORD handle;
+WORD mode;
+LONG start;
+LONG length;
+
+GEMDOS Function code = $5C,
+(92 decimal)
+
+The Flock() function is designed to lock a specified portion of an
+open file to prevent other processes from accessing and/or modifying
+that part of the file.
+
+The handle parameter is the GEMDOS file handle of the open file.
+
+The mode parameter specifies if the portion of the file is being
+locked or unlocked.  Valid values are:
+
+0 = Create a lock, starting at start and extending for length bytes.
+
+1 = Remove a previously set lock.  Parameters start and length must
+match a previous lock.
+
+The start parameter is the offset from the start of the file, in
+bytes, where the lock will begin.
+
+The length parameter is the length of the locked area, in bytes.  Once
+a lock has been set using a certain handle, other file handles will
+not be able to read or write the locked area of the file.  If there
+are outstanding locks when a file handle is closed, the behavior is
+undefined.
+
+If you duplicate a file handle, any existing locks are inherited by
+the duplicate file handle.  If you use Fforce() to redirect a
+standard handle to a file with locks, the locks are inherited.
+
+Flock() returns an error code in d0.L, see the section below on
+GEMDOS Extensions Error Codes for details.
+
+NOTE: File locks should be used as though they are strictly advisory.
+Do not rely on getting back error codes from Fread() and/or Fwrite().
+A program which is aware of record locking should set a lock on the
+file immediately before accessing it and clear the lock immediately
+afterwards.
+
+
+Changed GEMDOS call:
+--------------------
+
+WORD Fopen( filename, mode );
+
+CHAR *filename;
+WORD mode;
+
+GEMDOS Function $3D,
+(61 decimal)
+																
+The Fopen() call is designed to open an existing file and return a
+file handle that can be used for accessing that file.  Additional
+information relating to file sharing can now be included in the mode
+parameter.
+
+The filename parameter is a pointer to a character array containing
+the filename of the file to be opened.  If only the filename is
+given, without a drive and/or path specification, the file is assumed
+to reside on the current default drive in the current default path.
+
+The mode parameter indicates how the file is to be used.  Previously
+only bits 0-2 were used with this parameter.  Bits 0-2 are still used
+to indicate the file access, which indicates what you want to do with
+the file.  Bits 4-6 are now used to specify the file sharing modes.
+The sharing mode you use indicates what sort of access you want to
+allow other processes which may want to use the file.
+
+	Bit #	7 6 5 4 3 2 1 0
+			---------------
+			I . . . . . . .  Inheritance Flag
+			. S S S . . . .  Sharing Mode
+			. . . . R . . .  Reserved
+			. . . . . A A A  Access code
+
+Bits 0-2 of mode are used for the file access mode.  This is the same
+as the original version of GEMDOS without the extensions.  The bits
+have the following meanings:
+
+	File Access Modes
+
+	Bit #	2 1 0
+			-----
+			0 0 0 = Read only access
+			0 0 1 = Write only access
+			0 1 0 = Read/Write access
+
+Bit 3 of mode is reserved and should always be set to zero.
+
+Bits 4-6 of mode are the sharing mode bits and define what will
+happen when more than one program attempts to open the same file.
+The sharing mode is set by the first process to open a file, and
+subsequent Fopen() calls to the same file will fail if they attempt to
+set a conflicting mode.  You can open the file again in a more
+restrictive mode.  There are five sharing modes, as shown in the table
+below.
+
+	File Sharing Modes
+
+	Bit #	6 5 4 of mode parameter
+			-----
+			0 0 0 = Compatibility mode
+			0 0 1 = Deny Read/Writes, file may not be re-opened
+			0 1 0 = Deny Writes, file may be re-opened for read only
+			0 1 1 = Deny Reads, file may be re-opened for write only
+			1 0 0 = Deny None, file may be re-opened for read/write
+
+When a second attempt is made to open a file which is already open,
+GEMDOS tests the sharing mode the file was originally opened with
+against the access requested in the second operation, and allows the
+second open to succeed only if the two modes are compatible.  For
+example, if the file is originally opened with the Deny Writes flag
+set, then you can open the file again only for reading, not for write
+or read/write.
+
+An open will fail if its share mode denies something which another
+handle already has.  For example, an open for read access with Deny
+Writes will fail if the file is already open for Write access.
+
+Compatibility mode is designed to allow existing programs to
+function, and it is assumed that programs using compatibility mode
+are not aware of file sharing and the related specialized error
+messages.
+
+A compatibility mode open call for read access can be mutated into
+another mode if the file's read-only flag is set.  In this case, the
+mode is mutated into the Deny Writes sharing mode.  From that moment
+on, it isn't a compatibility mode open attempt any more, and you
+should refer to the rules for opens with Read Access and Deny Writes
+sharing mode instead.
+
+Otherwise, the access and sharing modes work pretty much as expected.
+An attempt to open in a "deny" mode will fail if someone already has
+the file open with the access you want to deny.  If it succeeds, then
+the file cannot be reopened with the access you deny.
+
+If you attempt to open a file in compatibility mode and the mutation
+described above does not occur, it will succeed only if the file isn't
+open at all already, or if it is opened by the same process in
+compatibility mode.  Once open in compatibility mode, the file can't
+be opened by any other process in any mode, and cannot be opened by
+the same process in anything but compatibility mode.
+
+Bit 7 of mode indicates if a child process can inherit the use of this
+file.  When a child process inherits a file handle, it inherits the
+file's access and sharing codes.  If bit 7 = 0, a child process can
+use the same handle as the parent to access the file.  If bit 7 = 1,
+the child process must open the file itself to obtain a new handle,
+and existing file sharing restrictions must be observed.  However,
+regions of the file locked by the parent are not accessible to the
+child.
+
+Standard GEMDOS error messages apply as before, as well as the new
+error codes described below.
+
+
+Changed GEMDOS call:
+--------------------
+WORD Fcreate( filename, attribs );
+
+CHAR *filename;
+WORD attribs;
+
+GEMDOS Function $3C,
+(60 decimal)
+																
+When a file is created using the Fcreate() call, the sharing mode is
+set as though the file already existed and you opened it for
+read/write access with Compatibility Mode specified.
+
+If a file already exists and is already open when you try to create
+it, then you should get an access denied error (without the extensions
+the behavior is undefined).
+
+Otherwise, Fcreate() functions as before.
+
+
+
+GEMDOS Extensions Error Codes:
+------------------------------
+
+EOK        (0)  Operation was successful, no error.
+
+ELOCKED  (-58)  Record is locked.  Returned if requested portion of
+                file is already locked, or if it overlaps a locked
+                portion.  This error will also be returned from
+                Fread() and Fwrite() calls when a ccessing portions of
+                the file which have been locked to different file
+                handles.
+
+ENSLOCK (-59)   Matching Lock not found.  Returned if the values
+                specified for a lock removal operation do not match a
+                lock set operation for the same handle.
+
+All other standard GEMDOS error messages also apply.
+
+
+
+Networking
+----------
+																
+Since one of the primary reasons for needing file sharing and record
+locking is to allow multiple nodes on a network to share files, we
+will discuss a few things about networks.
+
+
+_NET cookie
+-----------
+
+The cookie "_NET" indicates the presence of networking software.  It
+does not imply anything about file and record locking.  It is the
+responsibility of the networking software to install the "_NET" cookie
+and initialize the pointer to the structure.  If the "_FLK" cookie is
+not available, it is the responsibility of the networking software to
+install the GEMDOS extensions and the "_FLK" cookie as well.
+
+The value field of the cookie is a pointer to a structure of the
+format shown below.  Additional network-specific information should be
+stored immediately following this structure.
+
+	struct netinfo {
+		long	publisher_id;	/* Special code for publisher, */
+								/* to be assigned by ATARI (USA) */
+								/* Usually a four-byte ASCII string */
+								/* such as "ATRI" */
+
+		long	version;		/* Version number of the network, */
+								/* to be assigned by the publisher */
+	}
+
+
+Publisher ID's assigned as of May 29, 1991
+------------------------------------------
+The following Publisher ID codes have been assigned as of the above
+date.  These are the values contained in the publisher_id field of the
+structure pointed to by the _NET cookie.
+
+	Application Design Software  =  "A&D\0"
+	Pams Software  = "PAMS"
+	Itos Software  =  "ITOS"
+
+
+Installing & Checking For The Cookies
+-------------------------------------
+
+An application should only check the cookie that covers the resources
+it needs.  In other words, an application should not be checking the
+"_NET" cookie if all it is worried about is file locking.
+Accordingly, a program that sends EMAIL across a network probably only
+wants to know about the network and won't care about file and record
+locking.
+
+It is also the responsibility of the networking software to create a
+cookie jar if no existing one is found.  See the STE TOS RELEASE
+NOTES for more information on the cookie jar.
+
+
+
+
+Comments and Suggestions, Anyone?
+---------------------------------
+
+I am at this time soliciting comments and suggestions regarding
+certain aspects of this specification.
+
+First, we're interested in standardizing at least part of the
+information following the structure pointed to by the "_NET" cookie.
+What sort of information should go here that an application should
+know before making calls to the network software?  What calls, if any,
+can an application assume are available if it finds a generic _NET
+cookie?  What calls should be common to all networks?  We would like
+to specify as much of this as possible, as quickly as possible, so
+that products from different publishers of networking software can
+store this information in the same place and conform to the standard.
+
+Secondly, as stated before, this specification currently covers only
+file sharing and record locking.  Aspects of what the "_NET" cookie
+should indicate are still mostly undefined.  However, we would also
+like to solicit opinions and ideas about other aspects of a network
+implementation.  However, please keep in mind that the specification
+so far conforms very closely to MSDOS, and we would like to stick with
+that as much as possible.
+
+Finally, there have been a couple of other networking extension
+outlines distributed by various developers throughout the world.
+However, compatibility with these protocols is not a primary concern,
+as these developers are willing to modify their software as needed to
+conform with an official Atari specification.   This is mentioned
+because at least one of these outlines contains a much wider range of
+functions than this specification, and some people may feel that this
+specification gives up a lot of functionality.  However, careful
+examination will reveal that there is a lot of redundancy to the
+functions detailed in that outline.  For example, a separate file
+locking function is not required, because you can simply do an Fopen()
+call with the sharing mode set to Deny Read/Write, and the file will
+be untouchable by any other process.  Also, separate functions for
+locking and unlocking are unnecessary, as the flag in the Flock()
+function detailed above allow it to both lock and unlock records.
+
+Please address any questions or comments to:
+
+Mike Fulton
+Atari Developer Support
+1196 Borregas Ave.
+Sunnyvale, CA  94089
+U.S.A.
+
+(408) 745-8821 - voice
+(408) 745-2094 - fax
+
+GEnie = Mike-Fulton
+CIS = 75300,1141
+Internet = 75300.1141@compuserve.com
