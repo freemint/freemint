@@ -40,5 +40,6 @@ void cXA_menu_move(enum locks lock, struct c_event *ce, bool cancel);
 void cXA_do_widgets(enum locks lock, struct c_event *ce, bool cancel);
 void cXA_active_widget(enum locks lock, struct c_event *ce, bool cancel);
 void cXA_widget_click(enum locks lock, struct c_event *ce, bool cancel);
+void cXA_wheel_event(enum locks lock, struct c_event *ce, bool cancel);
 
 #endif /* _c_mouse_h */
