@@ -45,8 +45,25 @@
 
 # include "check_exc.h"
 
+/* This module provides code, that allows old programs to run,
+ * even if the Super() system call is modified so that it does
+ * not have any real effect, i.e. the CPU remains in the user
+ * mode after Super().
+ *
+ * 1) programs that look into GEMDOS variables ($0-$7ff) should
+ *    still work.
+ * 2) programs, that directly access hardware, won't.
+ * 3) the trick with changing bus error vector temporarily to
+ *    check the presence of a hardware register should still work
+ *    (indicating that the register does not exist).
+ *
+ * WARNING: the XHDI vector MUST MUST MUST point to the caller's
+ *          memory area - i.e. to its trampoline. This is to be
+ *	    done yet.
+ */
+
 /* Tables that provide information about addresses the user is allowed
- * to access. Size == 0 signalizes the end of the table.
+ * to access. 0 signalizes the end of the table.
  *
  * CAUTION: DO NOT ADD addresses here, which may or may not exist
  * (like e.g. memory mapped FPU CIR $fffffa40)!
@@ -91,6 +108,187 @@ handle_68010_bus_frame(MC68010_BUS_FRAME *frame)
 static long
 handle_68030_short_frame(MC68030_SHORT_FRAME *frame)
 {
+	/* We only handle data faults, instruction
+	 * stream faults will cause bus error to be signalled.
+	 */
+	if (frame->ssw.df == 0)
+		return 0;
+
+	/* Read and read-modify-write cycles generate long
+	 * frames only. So we only deal here with write cycles (I hope).
+	 */
+
+	/* Writes are a problem because programs can do the following:
+	 *
+	 * 	clr.l	-(sp)
+	 *	move.w	#Super,-(sp)
+	 *	trap	#1
+	 *	addq.l	#6,sp
+	 *
+	 *	move.l	8.w,a0		; record bus error vector (access 1)
+	 *	move.l	sp,a1		; record stack pointer
+	 *	move.l	#berr,8.w	; replace the vector (access 2)
+	 *	clr.l	d1
+	 *	tst.l	address		; check if 'address' exists
+	 *	moveq	#$01,d1
+	 *
+	 * berr:
+	 *	move.l	a0,8.w		; restore bus error vector (access 3)
+	 *	move.l	a1,sp		; restore stack pointer
+	 *
+	 *	move.l	d1,_var		; save the result
+	 *
+	 *	move.l	d0,-(sp)
+	 *	move.w	#Super,-(sp)
+	 *	trap	#1
+	 *	addq.l	#6,sp
+	 *
+	 * This is less or more what Pure C library does to detect
+	 * if there's a memory mapped FPU present. And does this always,
+	 * without a regard whether the FPU library is linked or not.
+	 * Very funny...
+	 *
+	 * Obviously, we cannot allow programs to change the REAL
+	 * bus error vector, but we can try to emulate things so that
+	 * such a practice (above) at least won't kill the program.
+	 */
+
+	/* We only allow long transfers */
+	if ((frame->fault_address == 0x00000008L) && (frame->ssw.size == 0x02))
+	{
+		/* Check if program wants to restore the vector
+		 * to the original (i.e. present, in fact) state.
+		 * We always "allow" this. We understand that this
+		 * is the "access 3" as on the listing above.
+		 */
+		if (frame->data_output_buffer.one_long == *(long *)0x0008L)
+		{
+			/* Reset flags in proc */
+			curproc->p_flag &= ~P_FLAG_BER;
+			curproc->berr = 0L;
+
+			frame->ssw.df = 0;	/* do not rerun the bus cycle */
+
+			return -1;		/* resume */
+		}
+		else
+		{
+			/* The program wants to overwrite the bus error
+			 * vector with the new value. So this is hopefully
+			 * the "access 2" on the above listing, and the
+			 * original value of the vector is likely to be
+			 * restored soon (if not, we can reset things once
+			 * the program leaves the supervisor mode).
+			 */
+			curproc->berr = frame->data_output_buffer.one_long;
+
+			frame->ssw.df = 0;	/* do not rerun the bus cycle */
+
+			return -1;
+		}
+	}
+
+	/* If the fault address is 'proved', we can complete
+	 * the write cycle requested by program. Or we fall back
+	 * to bus error otherwise.
+	 *
+	 * BUG: we loose, if the accessed location really doesn't
+	 * exist (this is bus error handler, and this means double
+	 * bus fault then, i.e. CPU halt).
+	 *
+	 */
+	if (prove_fault_address(allow_write, frame->fault_address))
+	{
+		switch (frame->ssw.size)
+		{
+			case 0x01:	/* byte */
+			{
+				*(ulong *)frame->fault_address = frame->data_output_buffer.byte[3];
+
+				frame->ssw.df = 0;	/* do not rerun the faulted bus cycle */
+
+				return -1L;		/* resume */
+			}
+			case 0x02:	/* long */
+			{
+				*(ulong *)frame->fault_address = frame->data_output_buffer.word[1];
+
+				frame->ssw.df = 0;	/* do not rerun the faulted bus cycle */
+
+				return -1L;		/* resume */
+			}
+			case 0x03:	/* word */
+			{
+				*(ulong *)frame->fault_address = frame->data_output_buffer.one_long;
+
+				frame->ssw.df = 0;	/* do not rerun the faulted bus cycle */
+
+				return -1L;		/* resume */
+			}
+			default:
+			{
+				return 0;	/* huh?! */
+			}
+		}
+	}
+	else
+	{
+		/* The write access is not allowed, we must generate
+		 * bus error, but it is to be decided, whether this
+		 * has to be real bus error (which kills the process)
+		 * or simulated bus error (which should cause a jump
+		 * inside the program).
+		 */
+		 if (curproc->berr && (curproc->p_flag & P_FLAG_BER))
+		 {
+		 	/* If the fault address is in the hw register
+		 	 * area, we pretend that nothing exists there.
+		 	 */
+		 	if ((frame->fault_address >= 0xfff00000L) || \
+		 		((frame->fault_address >= 0x00f00000L) && \
+		 			(frame->fault_address <= 0x00ffffffL)))
+		 	{
+		 		/* Emulate the bus error for the user */
+		 		frame->pc = (ushort *)curproc->berr;
+
+				frame->ssw.df = 0;	/* do not rerun */
+
+				return -1L;		/* resume */
+		 	}
+
+			/* Non existent ST RAM address */
+			if ((frame->fault_address >= *(long *)0x42eL /* phystop */) && \
+				(frame->fault_address < 0x00e00000L))
+			{
+		 		/* Emulate the bus error for the user */
+		 		frame->pc = (ushort *)curproc->berr;
+
+				frame->ssw.df = 0;	/* do not rerun */
+
+				return -1L;		/* resume */
+			}
+
+			/* Non existent TT RAM address */
+			if (*(long *)0x05a8L == 0x1357bd13L)	/* ramvalid */
+			{
+				if (frame->fault_address > *(long *)0x05a4L)
+				{
+			 		/* Emulate the bus error for the user */
+			 		frame->pc = (ushort *)curproc->berr;
+
+					frame->ssw.df = 0;	/* do not rerun */
+
+					return -1L;		/* resume */
+				}
+			}
+
+			/* Pretend success otherwise (writing nothing) */
+			frame->ssw.df = 0;	/* do not rerun the faulted bus cycle */
+
+			return -1L;		/* resume */
+		 }
+	}
+
 	return 0;
 }
 
@@ -215,181 +413,15 @@ handle_68030_long_frame(MC68030_LONG_FRAME *frame)
 						return -1L;		/* resume */
 					}
 				}
-			 }
+			}
 		}
 	}
 	else	/* write cycle */
 	{
-		/* This is a problem because programs can do the following:
-		 *
-		 * 	clr.l	-(sp)
-		 *	move.w	#Super,-(sp)
-		 *	trap	#1
-		 *	addq.l	#6,sp
-		 *
-		 *	move.l	8.w,a0		; record bus error vector (access 1)
-		 *	move.l	sp,a1		; record stack pointer
-		 *	move.l	#berr,8.w	; replace the vector (access 2)
-		 *	clr.l	d1
-		 *	tst.l	address		; check if 'address' exists
-		 *	moveq	#$01,d1
-		 *
-		 * berr:
-		 *	move.l	a0,8.w		; restore bus error vector (access 3)
-		 *	move.l	a1,sp		; restore stack pointer
-		 *
-		 *	move.l	d1,_var		; save the result
-		 *
-		 *	move.l	d0,-(sp)
-		 *	move.w	#Super,-(sp)
-		 *	trap	#1
-		 *	addq.l	#6,sp
-		 *
-		 * This is less or more what Pure C library does to detect
-		 * if there's a memory mapped FPU present. And does this always,
-		 * without a regard whether the FPU libraryis linked or not.
-		 * Very funny...
-		 *
-		 * Obviously, we cannot allow programs to change the REAL
-		 * bus error vector, but we can try to emulate things so that
-		 * such a practice (above) at least won't kill the program.
+		/* The top part of the long frame is identical with
+		 * short frame, so we can handle them both with one routine.
 		 */
-
-		/* We only allow long transfers */
-		if ((frame->fault_address == 0x00000008L) && (frame->ssw.size == 0x02))
-		{
-			/* Check if program wants to restore the vector
-			 * to the original (i.e. present, in fact) state.
-			 * We always "allow" this. We understand that this
-			 * is the "access 3" as on the listing above.
-			 */
-			if (frame->data_output_buffer.one_long == *(long *)0x00000008L)
-			{
-				/* Reset flags in proc */
-				curproc->p_flag &= ~P_FLAG_BER;
-				curproc->berr = 0L;
-
-				frame->ssw.df = 0;	/* do not rerun the bus cycle */
-
-				return -1;		/* resume */
-			}
-			else
-			{
-				/* The program wants to overwrite the bus error
-				 * vector with the new value. So this is hopefully
-				 * the "access 2" on the above listing, and the
-				 * original value of the vector is likely to be
-				 * restored soon (if not, we can reset things once
-				 * the program leaves the supervisor mode).
-				 */
-				curproc->berr = frame->data_output_buffer.one_long;
-
-				frame->ssw.df = 0;	/* do not rerun the bus cycle */
-
-				return -1;
-			}
-		}
-
-		/* If the fault address is 'proved', we can complete
-		 * the write cycle requested by program. Or we fall back
-		 * to bus error otherwise.
-		 *
-		 * BUG: we loose, if the accessed location really doesn't
-		 * exist (this is bus error handler, and this means double
-		 * bus fault then, i.e. CPU halt).
-		 *
-		 */
-		if (prove_fault_address(allow_write, frame->fault_address))
-		{
-			switch (frame->ssw.size)
-			{
-				case 0x01:	/* byte */
-				{
-					*(ulong *)frame->fault_address = frame->data_output_buffer.byte[3];
-
-					frame->ssw.df = 0;	/* do not rerun the faulted bus cycle */
-
-					return -1L;		/* resume */
-				}
-				case 0x02:	/* long */
-				{
-					*(ulong *)frame->fault_address = frame->data_output_buffer.word[1];
-
-					frame->ssw.df = 0;	/* do not rerun the faulted bus cycle */
-
-					return -1L;		/* resume */
-				}
-				case 0x03:	/* word */
-				{
-					*(ulong *)frame->fault_address = frame->data_output_buffer.one_long;
-
-					frame->ssw.df = 0;	/* do not rerun the faulted bus cycle */
-
-					return -1L;		/* resume */
-				}
-				default:
-				{
-					return 0;	/* huh?! */
-				}
-			}
-		}
-		else
-		{
-			/* The write access is not allowed, we must generate
-			 * bus error, but it is to be decided, whether this
-			 * has to be real bus error (which kills the process)
-			 * or simulated bus error (which should cause a jump
-			 * inside the program).
-			 */
-			 if (curproc->berr && (curproc->p_flag & P_FLAG_BER))
-			 {
-			 	/* If the fault address is in the hw register
-			 	 * area, we pretend that nothing exists there.
-			 	 */
-			 	if ((frame->fault_address >= 0xfff00000L) || \
-			 		((frame->fault_address >= 0x00f00000L) && \
-			 			(frame->fault_address <= 0x00ffffffL)))
-			 	{
-			 		/* Emulate the bus error for the user */
-			 		frame->pc = (ushort *)curproc->berr;
-
-					frame->ssw.df = 0;	/* do not rerun */
-
-					return -1L;		/* resume */
-			 	}
-
-				/* Non existent ST RAM address */
-				if ((frame->fault_address >= *(long *)0x42eL /* phystop */) && \
-					(frame->fault_address < 0x00e00000L))
-				{
-			 		/* Emulate the bus error for the user */
-			 		frame->pc = (ushort *)curproc->berr;
-
-					frame->ssw.df = 0;	/* do not rerun */
-
-					return -1L;		/* resume */
-				}
-
-				/* Non existent TT RAM address */
-				if (*(long *)0x05a8L == 0x1357bd13L)	/* ramvalid */
-				{
-					if (frame->fault_address > *(long *)0x05a4L)
-					{
-				 		/* Emulate the bus error for the user */
-				 		frame->pc = (ushort *)curproc->berr;
-
-						frame->ssw.df = 0;	/* do not rerun */
-
-						return -1L;		/* resume */
-					}
-				}
-
-				/* Pretend success otherwise (writing nothing) */
-				frame->ssw.df = 0;	/* do not rerun the faulted bus cycle */
-
-				return -1L;		/* resume */
-			 }
-		}
+		return handle_68030_short_frame((MC68030_SHORT_FRAME *)frame);
 	}
 
 	/* All other cases: raise bus error signal */
