@@ -110,7 +110,6 @@ init_cookies (void)
 	struct cookie *cookie;
 	unsigned short i = 0;
 	unsigned short ncookies = 0;
-
 	long ncsize;
 
 	cookie = oldcookie = *CJAR;
@@ -162,6 +161,25 @@ init_cookies (void)
 	newcookie[i].tag = COOKIE__FPU;
 	newcookie[i].value = fputype;
 	i++;
+
+	/* If there was no cookie jar, we install basic
+	 * Atari cookies, assuming we're on an old ST.
+	 */
+	if (!cookie)
+	{
+		newcookie[i].tag = COOKIE__MCH;
+		newcookie[i].value = 0x00000000L;
+		i++;
+		newcookie[i].tag = COOKIE__VDO;
+		newcookie[i].value = 0x00000000L;
+		i++;
+		newcookie[i].tag = COOKIE__SND;
+		newcookie[i].value = 0x00000000L;
+		i++;
+		newcookie[i].tag = COOKIE__FDC;
+		newcookie[i].value = 0x00415443L;	/* 720k Atari drive */
+		i++;
+	}
 
 	/* copy the old cookies to the new jar */
 	cookie = oldcookie;
