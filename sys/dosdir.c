@@ -1281,6 +1281,7 @@ sys_d_opendir (const char *name, int flag)
 	dirh->next = p->p_fd->searches;
 	p->p_fd->searches = dirh;
 
+	assert(((long) dirh) > 0);
 	return (long) dirh;
 }
 

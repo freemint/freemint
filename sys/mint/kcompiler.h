@@ -98,18 +98,19 @@
 # undef ENABLE
 # endif
 
-# define ASK		(-1)
-# define DISABLE	( 0)
-# define ENABLE		( 1)
+# define ASK		-1
+# define DISABLE	 0
+# define ENABLE		 1
 
 
 /*
  * useful makros
  */
 
-# define MAX(a,b)	(a > b ? a : b)
-# define MIN(a,b)	(a > b ? b : a)
-# define ABS(val)	(val < 0 ? -val : val)
+# define MAX(a,b)	(((a) > (b)) ? (a) : (b))
+# define MIN(a,b)	(((a) > (b)) ? (b) : (a))
+
+# define ABS(val)	(((val) < 0) ? -val : val)
 
 
 # endif /* _mint_misc_h */
