@@ -1194,34 +1194,51 @@ e_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newname)
 	
 	if (EXT2_ISDIR (le2cpu16 (inode->in.i_mode)))
 	{
-		COOKIE *itemp = newdirc;
-		_DIR *tmp;
+		COOKIE *check;
+		
+		retval = get_cookie (s, newdirc->inode, &check);
+		if (retval)
+			goto end_rename;
+		
+		ASSERT ((check == newdirc));
 		
 		for(;;)
 		{
-			if (itemp->inode == inode->inode)
+			_DIR *tmp;
+			
+			if (check->inode == inode->inode)
 			{
-				DEBUG (("Ext2-FS [%c]: invalid directory move", itemp->dev+'A'));
+				DEBUG (("Ext2-FS [%c]: invalid directory move", check->dev+'A'));
+				
+				rel_cookie (check);
 				
 				retval = EACCES;
 				goto end_rename;
 			}
 			
-			if (itemp->inode == EXT2_ROOT_INO)
+			if (check->inode == EXT2_ROOT_INO)
+			{
+				rel_cookie (check);
 				break;
+			}
 			
-			tmp = ext2_search_entry (itemp, "..", 2);
+			tmp = ext2_search_entry (check, "..", 2);
 			if (!tmp)
 			{
-				DEBUG (("Ext2-FS [%c]: ext2_search_entry fail in e_rename", itemp->dev+'A'));
+				DEBUG (("Ext2-FS [%c]: ext2_search_entry fail in e_rename", check->dev+'A'));
 				
+				rel_cookie (check);
+				
+				retval = EACCES;
 				goto end_rename;
 			}
 			
-			retval = get_cookie (s, tmp->inode, &itemp);
+			rel_cookie (check);
+			
+			retval = get_cookie (s, tmp->inode, &check);
 			if (retval)
 			{
-				DEBUG (("Ext2-FS [%c]: get_cookie fail in e_rename", itemp->dev+'A'));
+				DEBUG (("Ext2-FS [%c]: get_cookie fail in e_rename", check->dev+'A'));
 				
 				goto end_rename;
 			}
