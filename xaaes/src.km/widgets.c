@@ -2136,7 +2136,7 @@ click_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 			}
 		}
 	}
-	else if (md->state == MBS_RIGHT)
+	else if (md->state == MBS_RIGHT && !(wind->dial & created_for_SLIST))
 	{
 		if (!(wind->window_status & XAWS_ZWSHADED))
 		{
