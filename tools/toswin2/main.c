@@ -102,7 +102,7 @@ int main(int argc, char *argv[])
 			TEXTWIN	*t;
 			
 			cfg = get_wincfg("C:\\TMP\\DUM.TOS");
-			t = new_proc("C:\\TMP\\DUM.TOS", "", NULL, "C:\\TMP", cfg, -1);
+			t = new_proc("C:\\TMP\\DUM.TOS", "", NULL, "C:\\TMP", cfg, -1, NULL);
 			if (t)
 				open_window(t->win, FALSE);
 		}	
@@ -140,7 +140,7 @@ int main(int argc, char *argv[])
 			}
 			arg[0] = strlen(arg);
 			env = normal_env(cfg->col, cfg->row, cfg->vt_mode);
-			t = new_proc(filename, arg, env, path, cfg, -1);
+			t = new_proc(filename, arg, env, path, cfg, -1, NULL);
 			if (t)
 				open_window(t->win, cfg->iconified);
 			free(env);
