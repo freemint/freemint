@@ -23,21 +23,24 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include <stdlib.h>
+#include "callback.h"
 #include "cpx_bind.h"
+#include "cops.h"
 
 
 void
-cpx_userdef(void (*cpx_userdef)(void))
+cpx_userdef(void (*userdef)(void))
 {
-	if (cpx_userdef)
-		(*cpx_userdef)();
+	if (userdef)
+		(*userdef)();
 }
 
 
 CPXINFO	*
-cpx_init(CPX_DESC *cpx_desc, XCPB *xcpb)
+cpx_init(CPX_DESC *cpx_desc, struct xcpb *xcpb)
 {
-	CPXINFO *_cdecl (*init)(XCPB *, long, long);
+	CPXINFO *_cdecl (*init)(struct xcpb *, long, long);
 
 	init = cpx_desc->start_of_cpx;
 
@@ -73,10 +76,12 @@ cpx_wmove(CPX_DESC *cpx_desc, GRECT *work)
 short
 cpx_timer(CPX_DESC *cpx_desc)
 {
-	short ret = 0;
+	short ret;
 
 	if (cpx_desc->info->cpx_timer)
 		(*cpx_desc->info->cpx_timer)(&ret);
+	else
+		ret = 0;
 
 	return ret;	
 }
@@ -84,13 +89,15 @@ cpx_timer(CPX_DESC *cpx_desc)
 short
 cpx_key(CPX_DESC *cpx_desc, short kstate, short key)
 {
-	short ret = 0;
+	short ret;
 
 	if (cpx_desc->info->cpx_key)
 	{
 		struct cpx_key_args args = { kstate, key, &ret };
 		(*cpx_desc->info->cpx_key)(args);
 	}
+	else
+		ret = 0;
 
 	return ret;
 }
@@ -98,13 +105,15 @@ cpx_key(CPX_DESC *cpx_desc, short kstate, short key)
 short
 cpx_button(CPX_DESC *cpx_desc, MRETS *mrets, short nclicks)
 {
-	short ret = 0;
+	short ret;
 
 	if (cpx_desc->info->cpx_button)
 	{
 		struct cpx_button_args args = { mrets, nclicks, &ret };
 		(*cpx_desc->info->cpx_button)(args);
 	}
+	else
+		ret = 0;
 
 	return ret;
 }
@@ -112,10 +121,12 @@ cpx_button(CPX_DESC *cpx_desc, MRETS *mrets, short nclicks)
 short
 cpx_m1(CPX_DESC *cpx_desc, MRETS *mrets)
 {
-	short ret = 0;
+	short ret;
 
 	if (cpx_desc->info->cpx_m1)
 		(*cpx_desc->info->cpx_m1)(mrets, &ret);
+	else
+		ret = 0;
 
 	return ret;
 }
@@ -123,10 +134,12 @@ cpx_m1(CPX_DESC *cpx_desc, MRETS *mrets)
 short
 cpx_m2(CPX_DESC *cpx_desc, MRETS *mrets)
 {
-	short ret = 0;
+	short ret;
 
 	if (cpx_desc->info->cpx_m2)
 		(*cpx_desc->info->cpx_m2)(mrets, &ret);
+	else
+		ret = 0;
 
 	return ret;
 }
@@ -134,14 +147,16 @@ cpx_m2(CPX_DESC *cpx_desc, MRETS *mrets)
 short
 cpx_hook(CPX_DESC *cpx_desc, short event, short *msg, MRETS *mrets, short *key, short *nclicks)
 {
-	short ret = 0;
-	
+	short ret;
+
 	if (cpx_desc->info->cpx_hook)
 	{
 		struct cpx_hook_args args = { event, msg, mrets, key, nclicks };
-		(*cpx_desc->info->cpx_hook)(args);
+		ret = (*cpx_desc->info->cpx_hook)(args);
 	}
-	
+	else
+		ret = 0;
+
 	return ret;
 }
 

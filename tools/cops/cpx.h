@@ -31,7 +31,7 @@
 
 #define	PH_MAGIC 0x601a		/* Magic des Programmheaders */
 
-typedef struct
+struct program_header
 {
 	short ph_branch;
 	long  ph_tlen;
@@ -41,7 +41,7 @@ typedef struct
 	long  ph_res1;
 	long  ph_prgflags;
 	short ph_absflag;
-} PH;
+};
 
 struct foobar
 {
@@ -59,9 +59,9 @@ struct cl_segm
 	long	len_bss;
 };
 
-typedef struct
+struct cpxhead
 {
-	unsigned short   magic;
+	unsigned short magic;
 
 	struct
 	{
@@ -71,10 +71,10 @@ typedef struct
 		unsigned set_only:	1;
 	} flags;
 
-	long	cpx_id;
-	unsigned short	cpx_version;
-	char	i_text[14];
-	unsigned short	icon[48];
+	long cpx_id;
+	unsigned short cpx_version;
+	char i_text[14];
+	unsigned short icon[48];
 
 	struct
 	{
@@ -83,7 +83,7 @@ typedef struct
 		unsigned i_char:	8;
 	} i_info;
 
-	char	text[18];
+	char text[18];
 
 	struct
 	{
@@ -93,79 +93,120 @@ typedef struct
 		unsigned c_back:	4;
 	} t_info;
 
-	char	buffer[64];
-	char	reserved[306];
-} CPXHEAD;
+	char buffer[64];
+	char reserved[306];
+};
 
 /* Mausparameter */
 typedef struct
 {
-	short	x;
-	short	y;
-	short	buttons;
-	short	kstate;
+	short x;
+	short y;
+	short buttons;
+	short kstate;
 } MRETS;
 
 /* Struktur zur Verwaltung von CPX-Modulen */
-typedef struct cpxlist
+struct cpxlist
 {
-	char	f_name[14];
-	short	head_ok;
-	short	segm_ok;
-	struct cl_segm	*segm;
-	struct cpxlist	*next;
-	CPXHEAD	header;
-} CPX_LIST;
+	char f_name[14];
+	short head_ok;
+	short segm_ok;
+	struct cl_segm *segm;
+	struct cpxlist *next;
+	struct cpxhead header;
+};
 
-/* Funktionen und Flags die von XControl zur Verfuegung  */
-/* gestellt werden.                                     */
-typedef struct
+/*
+ * exported functions to cpx (xcontrol parameter block)
+ * 
+ * 32bit clean
+ */
+
+/* helper structs for 16bit argument alignment */
+struct rsh_fix_args
+{
+	short num_objs; short num_frstr; short num_frimg; short num_tree;
+	OBJECT *rs_object; TEDINFO *rs_tedinfo; char **rs_strings; ICONBLK *rs_iconblk;
+	BITBLK *rs_bitblk; long *rs_frstr; long *rs_frimg; long *rs_trindex; struct foobar *rs_imdope;
+};
+struct rsh_obfix_args
+{
+	OBJECT *tree; short ob;
+};
+struct Popup_args
+{
+	char **items; short no_items; short slct; short font; GRECT *up; GRECT *world;
+};
+struct Sl_size_args
+{
+	OBJECT *tree; short base; short slider;
+	short num_items; short visible; short direction; short min_size;
+};
+struct Sl_xy_args
+{
+	OBJECT *tree; short base; short slider; short value;
+	short min; short max; void (*userdef)(void);
+};
+struct Sl_arrow_args
+{
+	OBJECT *tree; short base; short slider; short obj; short inc;
+	short min; short max; short *value; short direction; void (*userdef)(void);
+};
+struct Sl_dragxy_args
+{
+	OBJECT *tree; short base; short slider;
+	short min; short max; short *value; void (*userdef)(void);
+};
+struct Xform_do_args
+{
+	OBJECT *tree; short eobj; short *msg;
+};
+struct Set_Evnt_Mask_args
+{
+	short mask; MOBLK *m1; MOBLK *m2; long evtime;
+};
+struct XGen_Alert_args
+{
+	short alert_id;
+};
+struct MFsave_args
+{
+	short flag; MFORM *mf;
+};
+
+struct xcpb
 {
 	short handle;
 	short booting;
 	short reserved;
 	short SkipRshFix;
-	
-	CPX_LIST * _cdecl (*get_cpx_list)(void);
-	short _cdecl (*save_header)(CPX_LIST *header);
-	
-	void  _cdecl (*rsh_fix)(short num_objs,short num_frstr, short num_frimg, short num_tree,
-				OBJECT *rs_object, TEDINFO *rs_tedinfo, char *rs_strings[],
-				ICONBLK *rs_iconblk, BITBLK *rs_bitblk,
-				long *rs_frstr, long *rs_frimg, long *rs_trindex, struct foobar *rs_imdope);
-	
-	void  _cdecl (*rsh_obfix)(OBJECT *tree, short ob);
-	
-	short _cdecl (*Popup)(char *items[], short no_items, short slct, short font, GRECT *up, GRECT *world);
 
-	void  _cdecl (*Sl_size)(OBJECT *tree, short base, short slider,
-				short entrys, short vis_ent, short hvflag, short min_pix);
-	void  _cdecl (*Sl_x)(OBJECT *tree, short base, short slider, short value,
-			     short min, short max, void (*foo)(void));
-	void  _cdecl (*Sl_y)(OBJECT *tree, short base, short slider, short value,
-			     short min, short max, void (*foo)(void));
-	void  _cdecl (*Sl_arrow)(OBJECT *tree, short base, short slider, short obj,
-				 short inc, short min, short max, short *value, short hvflag, void (*foo)(void));
-	void  _cdecl (*Sl_dragx)(OBJECT *tree, short base, short slider,
-				 short min, short max, short *value, void (*foo)(void));
-	void  _cdecl (*Sl_dragy)(OBJECT *tree, short base, short slider,
-				 short min, short max, short *value, void (*foo)(void));
-	
-	short _cdecl (*Xform_do)(OBJECT *tree, short eobj, short *msg);
-	
+	struct cpxlist *_cdecl (*get_cpx_list)(void);
+
+	short   _cdecl (*save_header)(struct cpxlist *header);
+	void    _cdecl (*rsh_fix)(struct rsh_fix_args);
+	void    _cdecl (*rsh_obfix)(struct rsh_obfix_args);
+	short   _cdecl (*Popup)(struct Popup_args);
+	void    _cdecl (*Sl_size)(struct Sl_size_args);
+	void    _cdecl (*Sl_x)(struct Sl_xy_args);
+	void    _cdecl (*Sl_y)(struct Sl_xy_args);
+	void    _cdecl (*Sl_arrow)(struct Sl_arrow_args);
+	void    _cdecl (*Sl_dragx)(struct Sl_dragxy_args);
+	void    _cdecl (*Sl_dragy)(struct Sl_dragxy_args);
+	short   _cdecl (*Xform_do)(struct Xform_do_args);
 	GRECT * _cdecl (*GetFirstRect)(GRECT *prect);
 	GRECT * _cdecl (*GetNextRect)(void);
-	
-	void _cdecl (*Set_Evnt_Mask)(short mask, MOBLK *m1, MOBLK *m2, long evtime);
-	
-	short _cdecl (*XGen_Alert)(short al);
-	short _cdecl (*CPX_Save)(void *ptr, long bytes);
-	void *_cdecl (*Get_Buffer)(void);
-	short _cdecl (*getcookie)(long cookie, long *p_value);
-	short Country_Code;
-	void _cdecl (*MFsave)(short flag, MFORM *mf);
+	void    _cdecl (*Set_Evnt_Mask)(struct Set_Evnt_Mask_args);
+	short   _cdecl (*XGen_Alert)(struct XGen_Alert_args);
+	short   _cdecl (*CPX_Save)(void *ptr, long bytes);
+	void *  _cdecl (*Get_Buffer)(void);
+	short   _cdecl (*getcookie)(long cookie, long *p_value);
 
-} XCPB;
+	short Country_Code;
+
+	void _cdecl (*MFsave)(struct MFsave_args);
+};
 
 /*
  * CPX interface entry points
@@ -217,8 +258,9 @@ typedef	struct cpx_desc
 
 	void	*start_of_cpx;	/* Startadresse des CPX im Speicher */
 	void	*end_of_cpx;	/* Endadresse des CPX im Speicher */
+
 	void	*sp_memory;	/* Start des Stackspeichers fuer den CPX-Kontext waehrend cpx_call() */
-	
+
 	void	*context[16];	/* gesicherter Registerkontext */
 	void	*return_addr;	/* temporaere Ruecksprungadresse */
 
@@ -258,10 +300,11 @@ typedef	struct cpx_desc
 	MOBLK	m2;		/* Mausrechteck fuer evnt_multi() */
 	long	time;		/* Timerintervall fuer evnt_multi() */
 
-	CPX_LIST old;		/* Beschreibung fuer get_cpx_list */
-	XCPB	xctrl_pb;	/* Parameterblock fuer das CPX */
-	
+	struct cpxlist old;	/* Beschreibung fuer get_cpx_list */
+	struct xcpb xctrl_pb;	/* Parameterblock fuer das CPX */
+
 	char	file_name[0];
+
 } CPX_DESC;
 
 #endif /* _cpx_h */

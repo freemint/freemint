@@ -39,7 +39,7 @@
 /*----------------------------------------------------------------------------------------*/ 
 
 static void *
-load_and_reloc(CPX_DESC *cpx_desc, long handle, long fsize, PH *phead, long *cmplt_size)
+load_and_reloc(CPX_DESC *cpx_desc, long handle, long fsize, struct program_header *phead, long *cmplt_size)
 {
 	void *addr = NULL;
 	long TD_len, TDB_len;
@@ -64,7 +64,7 @@ load_and_reloc(CPX_DESC *cpx_desc, long handle, long fsize, PH *phead, long *cmp
 		cpx_desc->segm.len_bss = phead->ph_blen;
 
 		/* Laenge der Relokationsdaten */
-		relo_len = fsize - sizeof(PH) - TD_len - phead->ph_slen;
+		relo_len = fsize - sizeof(struct program_header) - TD_len - phead->ph_slen;
 
 		/* Text- und Data-Segment laden */
 		if (Fread((short)handle, TD_len, addr) == TD_len)
@@ -167,18 +167,18 @@ load_cpx(CPX_DESC *cpx_desc, char *cpx_path, long *cmplt_size, short load_header
 		handle = Fopen(name, O_RDONLY);
 		if (handle > 0)
 		{
-			PH phead;
+			struct program_header phead;
 
 			if (load_header)
 				/* load CPX header */
-				Fread((short)handle, sizeof(CPXHEAD), &cpx_desc->old.header);
+				Fread((short)handle, sizeof(struct cpxhead), &(cpx_desc->old.header));
 			else
-				Fseek(sizeof(CPXHEAD), (short)handle, 0);
+				Fseek(sizeof(struct cpxhead), (short)handle, 0);
 
-			xattr.size -= sizeof(CPXHEAD);
+			xattr.size -= sizeof(struct cpxhead);
 
 			/* load program header */
-			if (Fread((short)handle, sizeof(PH), &phead) == sizeof(PH))
+			if (Fread((short)handle, sizeof(phead), &phead) == sizeof(phead))
 			{
 				/* bra.s am Anfang? */
 				if (phead.ph_branch == PH_MAGIC)
