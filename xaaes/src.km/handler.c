@@ -341,7 +341,7 @@ setup_handler_table(void)
 	aes_tab[ 31].flags |= DO_LOCKSCREEN; /* XA_MENU_ICHECK */
 	aes_tab[ 32].flags |= DO_LOCKSCREEN; /* XA_MENU_IENABLE */
 	aes_tab[ 33].flags |= DO_LOCKSCREEN; /* XA_MENU_TNORMAL */
-	aes_tab[ 36].flags |= DO_LOCKSCREEN; /* XA_MENU_POPUP */
+	//aes_tab[ 36].flags |= DO_LOCKSCREEN; /* XA_MENU_POPUP */
 
 	//aes_tab[ 50].flags |= DO_LOCKSCREEN; /* XA_FORM_DO */
 	aes_tab[ 51].flags |= DO_LOCKSCREEN; /* XA_FORM_DIAL */
@@ -361,7 +361,7 @@ setup_handler_table(void)
 	aes_tab[105].flags |= DO_LOCKSCREEN; /* XA_WIND_SET */
 	aes_tab[109].flags |= DO_LOCKSCREEN; /* XA_WIND_NEW */
 
-	aes_tab[135].flags |= DO_LOCKSCREEN; /* XA_FORM_POPUP */
+	//aes_tab[135].flags |= DO_LOCKSCREEN; /* XA_FORM_POPUP */
 
 
 #ifndef WDIALOG_WDLG

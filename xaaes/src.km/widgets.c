@@ -695,11 +695,13 @@ CE_redraw_menu(enum locks lock, struct c_event *ce, bool cancel)
 		mc = ((XA_TREE *)widg->stuff)->owner;
 		if (ce->client == mc)
 		{
+		#if 0
 			DIAGS(("CE_redraw_menu: for %s", ce->client->name));
 			hidem();
 			widg->display(lock|winlist, root_window, widg);
 			showm();
-			//display_widget(lock, root_window, widg);
+		#endif
+			display_widget(lock, root_window, widg);
 		}
 		else
 		{
@@ -740,12 +742,13 @@ redraw_menu(enum locks lock)
 	{
 		if (C.update_lock && C.update_lock != rc->p)
 			return;
-
+	#if 0
 		DIAGS(("Display MENU (same client) for %s", rc->name));
 		hidem();
 		widg->display(lock|winlist, root_window, widg);
 		showm();
-		//display_widget(lock, root_window, widg);
+	#endif
+		display_widget(lock, root_window, widg);
 	}
 	else
 	{
@@ -2386,11 +2389,11 @@ display_object_widget(enum locks lock, struct xa_window *wind, struct xa_widget 
 	{
 		/* clip work area */
 		set_clip(&wind->wa);
-		draw_object_tree(lock, wt, NULL, widg->start, 100, 123);
+		draw_object_tree(lock, wt, NULL, widg->start, 100, NULL);
 		clear_clip();
 	}
 	else
-		draw_object_tree(lock, wt, NULL, widg->start, 100, 3);
+		draw_object_tree(lock, wt, NULL, widg->start, 100, NULL);
 
 	return true;
 }
@@ -3094,8 +3097,8 @@ set_toolbar_widget(enum locks lock,
 	if (edobj == -2)
 		edobj = ob_find_any_flst(obtree, OF_EDITABLE, 0, 0, OS_DISABLED, OF_LASTOB, 0);
 
-	if (!obj_edit(wt, ED_INIT, edobj, 0, -1, false, NULL, NULL, &edobj))
-		obj_edit(wt, ED_INIT, edobj, 0, -1, false, NULL, NULL, NULL);
+	if (!obj_edit(wt, ED_INIT, edobj, 0, -1, false, NULL, NULL, NULL, &edobj))
+		obj_edit(wt, ED_INIT, edobj, 0, -1, false, NULL, NULL, NULL, NULL);
 
 	set_toolbar_handlers(th, wind, widg, wt);
 	widg->properties = properties;

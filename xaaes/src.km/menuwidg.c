@@ -108,6 +108,7 @@ change_title(Tab *tab, int state)
 		   state,
 		   obtree[t].ob_flags,
 		   true,
+		   NULL,
 		   k->rl_bar);
 }
 
@@ -135,23 +136,27 @@ change_entry(Tab *tab, int state)
 
 	if (k->popw)
 	{
-		struct xa_rect_list rl;
-
+		struct xa_rect_list *rl = k->popw->rect_start;
+		
 		DIAGS(("change_entry: got popw"));
-		rl.next = NULL;
-		rl.r = k->popw->wa;
-
-		obj_change(wt,
-			   t,
-			   state,
-			   obtree[t].ob_flags,
-			   true,
-			   &rl);
+		
+		while (rl)
+		{
+			obj_change(wt,
+				   t,
+				   state,
+				   obtree[t].ob_flags,
+				   true,
+				   &k->popw->wa,
+				   rl);
+			
+			rl = rl->next;
+		}
 	}
 	else
 	{
 		DIAGS(("change_entry: no popw"));
-		obj_change(wt, t, state, obtree[t].ob_flags, true, k->rl_drop);
+		obj_change(wt, t, state, obtree[t].ob_flags, true, NULL, k->rl_drop);
 	}
 }
 
@@ -910,15 +915,21 @@ popup_inside(Tab *tab, RECT r)
 }
 
 static int
-find_menu_object(Tab *tab, int start, short dx, short dy, RECT *c)
+find_menu_object(Tab *tab, short start, short dx, short dy, RECT *c)
 {
 	MENU_TASK *k = &tab->task_data.menu;
 	OBJECT *obtree = k->wt->tree;
+	short found;
 
 	obtree->ob_x = dx;
 	obtree->ob_y = dy;
 
-	return obj_find(k->wt, start, MAX_DEPTH, k->x, k->y, c);
+	if (c && !m_inside(k->x, k->y, c))
+		found = -1;
+	else
+		found = obj_find(k->wt, start, MAX_DEPTH, k->x, k->y, c);
+		
+	return found;
 }
 
 
@@ -946,7 +957,7 @@ nextdrop_rect(struct build_rl_parms *p)
 
 	if (tab)
 	{
-		p->next_r = &tab->task_data.menu.drop;
+		p->next_r = &tab->task_data.menu.popw->rc; //tab->task_data.menu.drop;
 		p->ptr1 = PREV_TAB(tab);
 		ret = 1;
 	}
@@ -958,7 +969,22 @@ make_drop_rectlist(Tab *tab)
 {
 	struct build_rl_parms p;
 	MENU_TASK *k = &tab->task_data.menu;
-	
+	struct xa_window *wind = k->popw;
+
+	if (wind)
+	{
+		clear_wind_rectlist(wind);
+		p.getnxtrect = nextdrop_rect;
+		p.area		= &k->popw->rc;
+		p.ptr1		= PREV_TAB(tab);
+		wind->rect_start = build_rect_list(&p);
+
+		p.area		= &k->popw->wa;
+		p.ptr1		= PREV_TAB(tab);
+		wind->rect_wastart = build_rect_list(&p);
+	}
+
+#if 0	
 	if (k->rl_drop)
 	{
 		free_rect_list(k->rl_drop);
@@ -969,6 +995,7 @@ make_drop_rectlist(Tab *tab)
 	p.area = &tab->task_data.menu.drop;
 	p.ptr1 = PREV_TAB(tab);
 	k->rl_drop = build_rect_list(&p);
+#endif
 }
 
 static void
@@ -1020,55 +1047,65 @@ display_popup(Tab *tab, XA_TREE *wt, int item, short rdx, short rdy)
 	if (cfg.popscroll && r.h > cfg.popscroll * screen.c_max_h)
 		r.h = cfg.popscroll * screen.c_max_h;
 
-	if (!cfg.menu_locking || r.h < wash)
-	{
+	//if (!cfg.menu_locking || r.h < wash)
+	//{
 		if (r.h < wash)
 		{
 			//int mg = MONO ? 2 : 1;
-			XA_WIND_ATTR tp = TOOLBAR|VSLIDE|UPARROW|DNARROW|STORE_BACK;
+			XA_WIND_ATTR tp = TOOLBAR|VSLIDE|UPARROW|DNARROW/*|STORE_BACK*/;
 
 			tab->scroll = true;
 
-			r = calc_window(tab->lock, C.Aes, WC_BORDER, tp, 1, 0, r);
+			r = calc_window(tab->lock, C.Aes, WC_BORDER, tp, 1, true, r);
 
 			wind = create_window(	tab->lock,
 						do_winmesag,
 						do_formwind_msg,
 						tab->client,
-						cfg.menu_locking,	/* yields nolist if locking. */
+						true, //cfg.menu_locking,	/* yields nolist if locking. */
 						tp,
 						created_for_AES|created_for_POPUP,
-						1,0,
+						1, true,
 						r,
 						&r, NULL);
 		}
 		else
 		{
 			int mg = MONO ? 2 : 1;
-			XA_WIND_ATTR tp = TOOLBAR; //|STORE_BACK;
+			XA_WIND_ATTR tp = TOOLBAR /*|STORE_BACK*/;
 
-			r = calc_window(tab->lock, C.Aes, WC_BORDER, tp, mg, 1, r);
+			r = calc_window(tab->lock, C.Aes, WC_BORDER, tp, mg, true, r);
 
 			wind = create_window(	tab->lock,
 						do_winmesag, //NULL,
 						do_formwind_msg, //NULL,
 						tab->client,
-						cfg.menu_locking,	/* yields nolist if locking. */
+						true, //cfg.menu_locking,	/* yields nolist if locking. */
 						tp, //TOOLBAR|STORE_BACK,
 						created_for_AES|created_for_POPUP,
-						mg,1,
+						mg, true,
 						r,
 						NULL, NULL);
 		}
-	}
-	else
-		wind = NULL;
+//	}
+//	else
+//		wind = NULL;
 
 	if (wind)
 	{
-		k->popw = wind;
+		RECT or;
+		obj_rectangle(wt, item, &or);
 		k->drop = wind->wa;
-		k->drop.w = r.w;
+		
+		k->pdx = obtree->ob_x + (k->drop.x - or.x);
+		k->pdy = obtree->ob_y + (k->drop.y - or.y);
+		wt->pdx = k->drop.x; //k->pdx;
+		wt->pdy = k->drop.y; //k->pdy;
+		wt->puobj = item;
+
+		k->popw = wind;
+		//k->drop.w = r.w;
+
 		DIAG((D_menu, tab->client, "drop: %d/%d,%d/%d", r));
 		set_popup_widget(tab, wind, item);
 		if (!cfg.menu_locking)
@@ -1082,6 +1119,7 @@ display_popup(Tab *tab, XA_TREE *wt, int item, short rdx, short rdy)
 			open_window(tab->lock, wind, r);
 		}
 	}
+#if 0
 	else
 	{
 		DIAGS(("display_popup: tab=%lx, wt=%lx, obtree=%lx, item=%d", tab, wt, wt->tree, item));
@@ -1094,14 +1132,16 @@ display_popup(Tab *tab, XA_TREE *wt, int item, short rdx, short rdy)
 		obtree->ob_x = k->pdx;
 		obtree->ob_y = k->pdy;
 		wt->is_menu = true;
-		draw_object_tree(tab->lock, wt, obtree, item, 1, 5);
+		draw_object_tree(tab->lock, wt, obtree, item, 1, NULL);
 		showm();
 	}
-
+#endif
+#if 0
 	FOREACH_TAB(tab)
 	{
 		make_drop_rectlist(tab);
-	}	
+	}
+#endif	
 }
 static void
 do_popup(Tab *tab, XA_TREE *wt, int item, TASK *click, short rdx, short rdy)
@@ -1595,6 +1635,8 @@ popup(struct task_administration_block *tab)
 		
 			menu_area(&r, tab, m, k->pdx, k->pdy);
 			xa_rect_clip(&k->drop, &r, &k->em.m2);
+			//display("popup: k->drop %d/%d/%d/%d", k->drop.x, k->drop.y, k->drop.x + k->drop.w, k->drop.y + k->drop.h);
+			//display("em2:           %d/%d/%d/%d", k->em.m2.x, k->em.m2.y, k->em.m2.x + k->em.m2.w, k->em.m2.y + k->em.m2.h);
 			k->em.flags |= MU_M2;
 			k->em.m2_flag = 1;
 			k->em.t2 = popup;
@@ -1646,7 +1688,7 @@ click_menu_entry(struct task_administration_block *tab)
 		int about, kc, ks;
 		bool a = false;
 
-		if ((m = find_menu_object(tab, k->pop_item, k->rdx, k->rdy, &k->drop)) < 0)
+		if ((m = find_menu_object(tab, k->pop_item, k->pdx, k->pdy, &k->drop)) < 0)
 		{
 			popout(TAB_LIST_START);
 			return NULL;
@@ -1798,17 +1840,33 @@ Display_menu_widg(enum locks lock, struct xa_window *wind, struct xa_widget *wid
 	XA_TREE *wt = widg->stuff;
 	OBJECT *obtree = rp_2_ap(wind, widg, NULL);
 
-	if (wind->nolist && (wind->dial & created_for_POPUP))
+	if (wind->dial & created_for_POPUP)
 	{
-		set_clip(&wind->wa);
-		draw_object_tree(0, wt, NULL, widg->start, MAX_DEPTH, 6);
-		clear_clip();
-	}
-	else
-		draw_object_tree(0, wt, NULL, widg->start, MAX_DEPTH, 6);
+		RECT r;
+		short dx = wt->dx, dy = wt->dy;
+		
+		wt->dx = wt->dy = 0;
+		obj_rectangle(wt, widg->start, &r);
+		wt->dx = dx;
+		wt->dy = dy;
 
-	if (wt->menu_line)	/* HR 090501  menu in user window.*/
+		obtree->ob_x = obtree->ob_x + (wt->pdx - r.x);
+		obtree->ob_y = obtree->ob_y + (wt->pdy - r.y);
+		
+		//if (wind->nolist && (wind->dial & created_for_POPUP))
+		//{
+			//set_clip(&wind->wa);
+			draw_object_tree(0, wt, NULL, widg->start, MAX_DEPTH, NULL);
+			//clear_clip();
+		//}
+		//else
+		//	draw_object_tree(0, wt, NULL, widg->start, MAX_DEPTH, NULL);
+	}
+	else //if (wt->menu_line)	/* HR 090501  menu in user window.*/
 	{
+		obtree->ob_x = widg->ar.x; //wt->rdx;
+		obtree->ob_y = widg->ar.y; //wt->rdy;
+		draw_object_tree(0, wt, NULL, 0, MAX_DEPTH, NULL);
 		write_menu_line((RECT*)&obtree->ob_x);	/* HR: not in standard menu's object tree */
 	}
 }
