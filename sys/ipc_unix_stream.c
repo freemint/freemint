@@ -57,7 +57,7 @@ unix_stream_connect (struct socket *so, struct sockaddr *addr, short addrlen, sh
 }
 
 long
-unix_stream_send (struct socket *so, struct iovec *iov, short niov, short nonblock,
+unix_stream_send (struct socket *so, const struct iovec *iov, short niov, short nonblock,
 			short flags, struct sockaddr *addr, short addrlen)
 {
 	struct un_data *undata;
@@ -192,7 +192,7 @@ unix_stream_send (struct socket *so, struct iovec *iov, short niov, short nonblo
 }
 
 long
-unix_stream_recv (struct socket *so, struct iovec *iov, short niov, short nonblock,
+unix_stream_recv (struct socket *so, const struct iovec *iov, short niov, short nonblock,
 			short flags, struct sockaddr *addr, short *addrlen)
 {
 	struct un_data *undata = so->data;

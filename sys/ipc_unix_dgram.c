@@ -51,7 +51,7 @@ unix_dgram_connect (struct socket *so, struct sockaddr *addr, short addrlen, sho
 }
 
 long
-unix_dgram_send (struct socket *so, struct iovec *iov, short niov, short nonblock,
+unix_dgram_send (struct socket *so, const struct iovec *iov, short niov, short nonblock,
 			short flags, struct sockaddr *addr, short addrlen)
 {
 	struct un_data *dstdata, *srcdata = so->data;
@@ -180,7 +180,7 @@ check:
 }
 
 long
-unix_dgram_recv (struct socket *so, struct iovec *iov, short niov, short nonblock,
+unix_dgram_recv (struct socket *so, const struct iovec *iov, short niov, short nonblock,
 			short flags, struct sockaddr *addr, short *addrlen)
 {
 	struct un_data *undata = so->data;

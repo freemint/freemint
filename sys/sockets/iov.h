@@ -10,8 +10,8 @@
 # include "mint/iov.h"
 
 
-long iov2buf_cpy (char *, long, struct iovec *, short, long);
-long buf2iov_cpy (char *, long, struct iovec *, short, long);
+long iov2buf_cpy (char *, long, const struct iovec *, short, long);
+long buf2iov_cpy (char *, long, const struct iovec *, short, long);
 
 
 # endif /* _sockets_iov_h */

@@ -7,6 +7,7 @@
 
 # include "tcpout.h"
 
+# include "iov.h"
 # include "tcputil.h"
 
 
@@ -1016,7 +1017,7 @@ mss_opt =
  * the flags in `flags'.
  */
 long
-tcp_output (struct tcb *tcb, struct iovec *iov, short niov, long len,
+tcp_output (struct tcb *tcb, const struct iovec *iov, short niov, long len,
 		long offset, short flags)
 {
 	struct tcp_dgram *tcph = NULL;

@@ -14,6 +14,8 @@
 # include "mint/signal.h"
 # include "mint/sockio.h"
 
+# include "iov.h"
+
 # include "icmp.h"
 # include "inetutil.h"
 # include "tcpin.h"
@@ -36,8 +38,8 @@ static long	tcp_listen	(struct in_data *);
 static long	tcp_accept	(struct in_data *, struct in_data *, short);
 static long	tcp_ioctl	(struct in_data *, short, void *);
 static long	tcp_select	(struct in_data *, short, long);
-static long	tcp_send	(struct in_data *, struct iovec *, short, short, short, struct sockaddr_in *, short);
-static long	tcp_recv	(struct in_data *, struct iovec *, short, short, short, struct sockaddr_in *, short *);
+static long	tcp_send	(struct in_data *, const struct iovec *, short, short, short, struct sockaddr_in *, short);
+static long	tcp_recv	(struct in_data *, const struct iovec *, short, short, short, struct sockaddr_in *, short *);
 static long	tcp_shutdown	(struct in_data *, short);
 static long	tcp_setsockopt	(struct in_data *, short, short, char *, long);
 static long	tcp_getsockopt	(struct in_data *, short, short, char *, long *);
@@ -440,7 +442,7 @@ tcp_select (struct in_data *data, short mode, long proc)
 	((tcb)->state == TCBS_ESTABLISHED || (tcb)->state == TCBS_CLOSEWAIT)
 
 static long
-tcp_send (struct in_data *data, struct iovec *iov, short niov, short nonblock,
+tcp_send (struct in_data *data, const struct iovec *iov, short niov, short nonblock,
 		short flags, struct sockaddr_in *addr, short addrlen)
 {
 	struct tcb *tcb = data->pcb;
@@ -581,7 +583,7 @@ tcp_dropsegs (struct tcb *tcb)
 }
 
 static long
-tcp_recv (struct in_data *data, struct iovec *iov, short niov, short nonblock,
+tcp_recv (struct in_data *data, const struct iovec *iov, short niov, short nonblock,
 		short flags, struct sockaddr_in *addr, short *addrlen)
 {
 	struct tcb *tcb = data->pcb;

@@ -33,8 +33,8 @@ static long	inet_getname	(struct socket *, struct sockaddr *, short *, short);
 static long	inet_select	(struct socket *, short, long);
 static long	inet_ioctl	(struct socket *, short, void *);
 static long	inet_listen	(struct socket *, short);
-static long	inet_send	(struct socket *, struct iovec *, short, short, short, struct sockaddr *, short);
-static long	inet_recv	(struct socket *, struct iovec *, short, short, short, struct sockaddr *, short *);
+static long	inet_send	(struct socket *, const struct iovec *, short, short, short, struct sockaddr *, short);
+static long	inet_recv	(struct socket *, const struct iovec *, short, short, short, struct sockaddr *, short *);
 static long	inet_shutdown	(struct socket *, short);
 static long	inet_setsockopt	(struct socket *, short, short, char *, long);
 static long	inet_getsockopt	(struct socket *, short, short, char *, long *);
@@ -432,7 +432,7 @@ inet_listen (struct socket *so, short backlog)
 }
 
 static long
-inet_send (struct socket *so, struct iovec *iov, short niov, short nonblock,
+inet_send (struct socket *so, const struct iovec *iov, short niov, short nonblock,
 		short flags, struct sockaddr *addr, short addrlen)
 {
 	struct in_data *data = so->data;
@@ -479,7 +479,7 @@ inet_send (struct socket *so, struct iovec *iov, short niov, short nonblock,
 }
 
 static long
-inet_recv (struct socket *so, struct iovec *iov, short niov, short nonblock,
+inet_recv (struct socket *so, const struct iovec *iov, short niov, short nonblock,
 		short flags, struct sockaddr *addr, short *addrlen)
 {
 	struct in_data *data = so->data;
