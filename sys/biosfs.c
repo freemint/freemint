@@ -15,6 +15,7 @@
 # include "global.h"
 
 # include "libkern/libkern.h"
+# include "mint/arch/mfp.h"
 # include "mint/asm.h"
 
 # include "arch/detect.h"
@@ -29,7 +30,6 @@
 # include "fasttext.h"
 # include "filesys.h"
 # include "kmemory.h"
-# include "mfp.h"
 # include "nullfs.h"
 # include "proc.h"
 # include "random.h"
