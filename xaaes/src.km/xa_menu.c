@@ -441,7 +441,7 @@ XA_menu_popup(enum locks lock, struct xa_client *client, AESPB *pb)
 			tab->ty = POP_UP;
 			tab->scroll = mn->mn_scroll != 0;
 			
-			do_popup(tab, wt, mn->mn_menu,
+			start_popup_session(tab, wt, mn->mn_menu,
 				 click_popup_entry,
 				 pb->intin[0] - x,
 				 pb->intin[1] - y);
@@ -509,7 +509,7 @@ XA_form_popup(enum locks lock, struct xa_client *client, AESPB *pb)
 			ob->ob_x = 0;
 			ob->ob_y = 0;
 
-			do_popup(tab, wt, 0,
+			start_popup_session(tab, wt, 0,
 				 click_form_popup_entry,
 				 x,
 				 y);

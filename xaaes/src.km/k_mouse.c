@@ -492,6 +492,25 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 {
 	struct xa_client *client;
 
+	DIAG((D_mouse, NULL, "XA_move_event: menulocker = %s, ce_open_menu = %s, tablist = %lx, actwidg = %lx",
+		menustruct_locked() ? menustruct_locked()->name : "NONE",
+		C.ce_open_menu ? C.ce_open_menu->name : "NONE",
+		TAB_LIST_START, widget_active.widg));
+	
+
+	if (TAB_LIST_START)
+	{
+		if (!C.ce_menu_move)
+		{
+			client = TAB_LIST_START->client;
+			C.ce_menu_move = client;
+
+			DIAG((D_mouse, client, "post menumove to %s", client->name));
+			post_cevent(client, cXA_menu_move, NULL,NULL, 0,0, NULL, md);
+			//post_tpcevent(client, cXA_menu_move, NULL,NULL, 0,0, NULL, md);
+		}
+		return false;
+	}
 	/* Ozk 040503: Moved the continuing handling of widgets actions here
 	 * so we dont have to msg the client to make real-time stuff
 	 * work. Having it here saves time, since it only needs to be
@@ -507,17 +526,9 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 		return false;
 	}
 
-	if (TAB_LIST_START)
-	{
-		client = TAB_LIST_START->client;
-		DIAG((D_mouse, client, "post menumove to %s", client->name));
-		post_cevent(client, cXA_menu_move, NULL,NULL, 0,0, NULL, md);
-		//post_tpcevent(client, cXA_menu_move, NULL,NULL, 0,0, NULL, md);
-		return false;
-	}
-
 	Sema_Up(clients);
 
+	
 	/* Moving the mouse into the menu bar is outside
 	 * Tab handling, because the bar itself is not for popping.
 	 */
@@ -525,6 +536,8 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 	{
 		/* HR: watch the menu bar as a whole */
 		struct xa_client *aesp = C.Aes;
+
+		DIAG((D_mouse, NULL, "xa_move_event: aes wating for %lx", aesp->waiting_for));
 
 		if (   (aesp->waiting_for & XAWAIT_MENU)
 		    && (aesp->em.flags & MU_M1))
