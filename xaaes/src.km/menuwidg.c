@@ -1687,6 +1687,7 @@ click_menu_entry(struct task_administration_block *tab)
 					/* If it's a client program menu, send it a little message to say hi.... */
 					if (wt->owner != C.Aes)
 					{
+
 						OBJECT *rs = obtree;
 
 						DIAG((D_menu, NULL, "Calling send_app_message()"));
