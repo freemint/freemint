@@ -172,12 +172,13 @@ void
 multi_intout(struct xa_client *client, short *o, int evnt)
 {
 	//get_mouse(1);
-	exclusive_mouse_input(client, 1, 0,0,0);
+	short b, x, y;
+	exclusive_mouse_input(client, 1, &b,&x,&y);
 
 	*o++ = evnt;
-	*o++ = mu_button.x;
-	*o++ = mu_button.y;
-	*o++ = mu_button.cb;	/*button.b;*/
+	*o++ = x; //mu_button.x;
+	*o++ = y; //mu_button.y;
+	*o++ = b; //mu_button.cb;	/*button.b;*/
 	*o++ = mu_button.ks;
 
 	if (evnt)
