@@ -1,0 +1,19 @@
+#!/bin/sh
+
+# /etc/ppp/ip-up und ip-down werden von pppd ausgefuehrt.
+
+PATH=/usr/local/bin:/bin:/usr/ucb:/usr/etc
+
+PROG=$0
+IFACE=$1
+DEVICE=$2
+SPEED=$3
+LOCALIP=$4
+REMOTEIP=$5
+
+# Uhrzeit vom Server abholen.
+
+# rdate $5 > /dev/null
+
+u:/m_tos/mgw.prg --dns1=$DNS1 --dns2=$DNS2 --disable-system-resolve
+
