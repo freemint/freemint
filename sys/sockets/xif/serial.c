@@ -47,18 +47,6 @@ _recv (void)
  * wrapper functions instead ...
  */
 
-static long
-SafeFcntl (short fd, void *arg, short cmd)
-{
-	return Fcntl (fd, arg, cmd);
-}
-
-static long
-SafeSupexec (void *arg)
-{
-	return Supexec (arg);
-}
-
 static void
 _sld (void)
 {
@@ -70,7 +58,11 @@ _sld (void)
 	pipefd = Fopen (pname, O_RDONLY|O_NDELAY);
 	if (pipefd < 0)
 	{
-		Cconws ("sld: PANIC: Cannot open pipe\r\n");
+		char buf[128];
+		
+		ksprintf (buf, "sld: PANIC: Cannot open pipe (-> %i)\r\n", pipefd);
+		Cconws (buf);
+		
 		return;
 	}
 	
@@ -142,7 +134,7 @@ _sld (void)
 			 * 2) no more input arrived in the last SL_VTIME msecs.
 			 */
 			nr = 0;
-			SafeFcntl (sl->fd, &nr, FIONREAD);
+			Fcntl (sl->fd, &nr, FIONREAD);
 			if (FDISSET (sl->fd, rready) || (nr && nr <= sl->nread))
 			{
 				p = sl->ihead;
@@ -196,7 +188,7 @@ _sld (void)
 			 * 4) can send at least SL_VMIN
 			 */
 			nr = 0;
-			SafeFcntl (sl->fd, &nr, FIONWRITE);
+			Fcntl (sl->fd, &nr, FIONWRITE);
 			if (FDISSET (sl->fd, wready) || (nr && nr <= sl->nwrite) ||
 			nr >= SL_VMIN || nr >= SL_OUSED (sl))
 			{
@@ -244,7 +236,7 @@ _sld (void)
 						FDCLR (sl->fd, wset);
 					}
 					currsl = sl;
-					SafeSupexec (_send);
+					Supexec (_send);
 					if (sl->ohead != sl->otail)
 					{
 						sl->flags |= SL_SENDING;

@@ -39,7 +39,7 @@ struct plip_private	plip_priv[PLIP_CHANNELS] =
 
 static long	plip_open	(struct netif *);
 static long	plip_close	(struct netif *);
-static long	plip_output	(struct netif *, BUF *, char *, short, short);
+static long	plip_output	(struct netif *, BUF *, const char *, short, short);
 static long	plip_ioctl	(struct netif *, short, long);
 
 static void	plip_send_pkt	(struct plip_private *);
@@ -70,7 +70,7 @@ plip_close (struct netif *nif)
 }
 
 static long
-plip_output (struct netif *nif, BUF *buf, char *hwaddr, short hwlen, short pktype)
+plip_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, short pktype)
 {
 	long r;
 	
