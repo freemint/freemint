@@ -566,6 +566,9 @@ INLINE long f_cntl(int fh, long arg, int cmd)
 INLINE long f_instat(int fh)
 { return ((long _cdecl (*)(int)) _f_instat)(fh); }
 
+INLINE long f_getchar(int fh, int mode)
+{ return ((long _cdecl (*)(int, int)) _f_getchar)(fh, mode); }
+
 INLINE long p_nice(int increment)
 { return ((long _cdecl (*)(int)) _p_nice)(increment); }
 
