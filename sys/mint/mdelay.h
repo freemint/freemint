@@ -36,6 +36,9 @@
 
 # include "arch/delay.h"
 
+
+# ifndef NO_DELAY
+
 /*
  * Using udelay() for intervals greater than a few milliseconds can
  * risk overflow for high loops_per_sec (high bogomips) machines. The
@@ -60,6 +63,8 @@ __mdelay (register ulong msecs)
 # define mdelay(n) (\
 	(__builtin_constant_p (n) && (n) <= MAX_UDELAY_MS) ? \
 	udelay ((n) * 1000) : __mdelay (n))
+
+# endif
 
 
 # endif /* _mint_mdelay_h */

@@ -84,8 +84,7 @@ udelay (register ulong usecs)
 
 # else
 
-# error Mikrodelays are not supported for 68000 architecture!
-# error 68000 is to slow for that.
+# define NO_DELAY
 
 # endif
 
