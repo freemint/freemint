@@ -329,18 +329,17 @@ void open_window(WINDOW *v, bool as_icon)
 	send_avwinopen(v->handle);
 }
 
-
 static void unlink_window(WINDOW *v)
 {
 	WINDOW **ptr, *w;
 	short i, dummy;
-				
+
 	/* find v in the window list, and unlink it */
 	ptr = &gl_winlist;
 	w = *ptr;
-	while (w) 
+	while (w)
 	{
-		if (w == v) 
+		if (w == v)
 		{
 			*ptr = v->next;
 			break;
@@ -399,7 +398,7 @@ void redraw_window(WINDOW *v, short xc, short yc, short wc, short hc)
 		if (rc_intersect(&t2, &t1)) 
 		{
 			if (!off)
-				off = hide_mouse_if_needed(&t1);
+				off = mouse_hide_if_needed(&t1);
 			set_clipping(vdi_handle, t1.g_x, t1.g_y, 
 				     t1.g_w, t1.g_h, TRUE);
 			(*v->draw)(v, t1.g_x, t1.g_y, t1.g_w, t1.g_h);
@@ -408,7 +407,7 @@ void redraw_window(WINDOW *v, short xc, short yc, short wc, short hc)
 	}
 	
 	if (off)
-		show_mouse();
+		mouse_show();
 	
 	// XXX wind_update (FALSE);
 	v->redraw = 0;
@@ -792,11 +791,31 @@ void draw_winicon(WINDOW *win)
 		if (rc_intersect(&t2, &t1)) 
 		{
 			if (!off)
-				off = hide_mouse_if_needed(&t1);
+				off = mouse_hide_if_needed(&t1);
 			objc_draw(icon, ROOT, MAX_DEPTH, t1.g_x, t1.g_y, t1.g_w, t1.g_h);
 		}
 		wind_get_grect(win->handle, WF_NEXTXYWH, &t1);
 	}
 	if (off)
-		show_mouse();
+		mouse_show();
+}
+
+void update_window_lock(void) {
+	wind_update( TRUE );
+}
+
+void update_window_unlock(void) {
+	wind_update( FALSE );
+}
+
+void get_window_rect(WINDOW *win, short kind, GRECT *rect) {
+	wind_get_grect( win->handle, kind, rect );
+}
+
+void mouse_show(void) {
+	show_mouse();
+}
+
+short mouse_hide_if_needed(GRECT *rect) {
+	return hide_mouse_if_needed(rect);
 }

@@ -8,10 +8,10 @@
 #include <string.h>
 #include <gem.h>
 
-#include "event.h"
 #include "version.h"
 #include "av.h"
 #include "textwin.h"
+#include "event.h"
 #include "config.h"
 #include "proc.h"
 #include "drag.h"
@@ -277,6 +277,23 @@ static void handle_msg(short *msgbuff)
 		}
 		update_menu();
 	}
+}
+
+/******************************************************************************/
+/*
+ * After this many bytes have been written to a window, it's time to
+ * update it. Note that we must also keep a timer and update all windows
+ * when the timer expires, or else small writes will never be shown!
+ */
+#define THRESHOLD 400
+
+short needs_redraw(TEXTWIN *t)
+{
+	int limit = NROWS(t) - 1;
+
+	return ((draw_ticks > MAX_DRAW_TICKS &&
+		t->nbytes >= THRESHOLD)
+		|| (0 && t->scrolled >= limit));
 }
 
 /******************************************************************************/

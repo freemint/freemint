@@ -8,6 +8,8 @@
 
 extern bool gl_done;	/* TRUE: Programm beendet sich gerade */
 
+short	needs_redraw	(TEXTWIN *t);
+
 void	event_init	(void);
 void	event_loop	(void);
 void	menu_help	(int title, int item);
