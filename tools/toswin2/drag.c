@@ -5,13 +5,9 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include "global.h"
-#include "clipbrd.h"
-#include "textwin.h"
-#include "toswin2.h"
-#include "window.h"
 #include "drag.h"
-
+#include "clipbrd.h"
+#include "toswin2.h"
 
 /*-- D&D Empfang ------------------------------------------------------------- */
 

@@ -1,7 +1,10 @@
 
-#ifndef _tw_environ_h_
-#define _tw_environ_h_
+#ifndef tw_environ_h
+# define tw_environ_h 1
 
+#ifndef tw_global_h
+# include "global.h"
+#endif
 
 char *normal_env(int cols, int rows, int term);
 char *shell_env	(int cols, int rows, int term, 

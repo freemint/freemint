@@ -2,22 +2,19 @@
 #include <string.h>
 #include <support.h>
 
-#include "global.h"
 #include "config.h"
-#include "console.h"
-#include "event.h"
-#include "textwin.h"
-#include "toswin2.h"
-#include "version.h"
-#include "window.h"
 #include "ansicol.h"
+#include "toswin2.h"
+#include "av.h"
+#include "event.h"
+#include "console.h"
+#include "version.h"
 
 #define COLOR_BITS 4
 
 /*
  * exportierte Variablen
  */
-bool	gl_avcycle = FALSE;
 bool	gl_shortcut = TRUE;
 bool	gl_allogin = FALSE;
 
