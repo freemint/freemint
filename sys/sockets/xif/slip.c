@@ -15,7 +15,6 @@
 # include "buf.h"
 # include "inet4/if.h"
 # include "inet4/in.h"
-# include "util.h"
 
 # include <mint/config.h>
 # include <mint/dcntl.h>
