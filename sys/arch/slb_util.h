@@ -24,8 +24,8 @@
  * 99/08/17: - Creation, with pauses (Gryf)
  */
 
-# ifndef _slb_util_h
-# define _slb_util_h
+# ifndef _m68k_slb_util_h
+# define _m68k_slb_util_h
 
 # include "mint/mint.h"
 
@@ -42,4 +42,4 @@ long _cdecl P_domain (short);
 char * _cdecl getslbpath(BASEPAGE *base);
 
 
-# endif /* _slb_util_h */
+# endif /* _m68k_slb_util_h */

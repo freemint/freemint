@@ -19,8 +19,8 @@
  * pass through the "beginning" of the trap chain (this is it's intention!)
  */
 
-# ifndef _syscall_h
-# define _syscall_h
+# ifndef _m68k_syscall_h
+# define _m68k_syscall_h
 
 
 /* values for original system vectors */
@@ -122,4 +122,4 @@ extern long trap_1_emu(int fnum, ...);
 # endif
 
 
-# endif /* _syscall_h */
+# endif /* _m68k_syscall_h */

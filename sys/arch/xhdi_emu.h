@@ -31,8 +31,8 @@
  * 
  */
 
-# ifndef _xhdi_emu_h
-# define _xhdi_emu_h
+# ifndef _m68k_xhdi_emu_h
+# define _m68k_xhdi_emu_h
 
 # include "mint/mint.h"
 
@@ -40,4 +40,4 @@
 long emu_xhdi (ushort opcode, ...);
 
 
-# endif /* _xhdi_emu_h */
+# endif /* _m68k_xhdi_emu_h */
