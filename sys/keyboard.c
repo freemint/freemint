@@ -151,6 +151,8 @@ static	short key_pressed;	/* flag for keys pressed/released (0 = no key is press
 static	ushort keydel;		/* keybard delay rate and keyboard repeat rate, respectively */
 static	ushort krpdel;
 static	ushort kdel, krep;	/* actual counters */
+static	TIMEOUT *m_to;
+static	ushort mouse_step;
 
 /* keyboard table pointers */
 # ifdef WITHOUT_TOS
@@ -184,7 +186,8 @@ static char mouse_packet[6];
 static void
 mouse_up(PROC *p, long pixels)
 {
-	TIMEOUT *t;
+	//TIMEOUT *t;
+	long to;
 
 	mouse_packet[0] = 0xf8;		/* header */
 	mouse_packet[1] = 0;		/* X axis */
@@ -194,15 +197,26 @@ mouse_up(PROC *p, long pixels)
 
 	if (keep_sending)
 	{
-		t = addroottimeout(MOUSE_TIMEOUT, (void _cdecl (*)(PROC *))mouse_up, 0);
-		if (t) t->arg = pixels;
+		if (!mouse_step)
+		{
+			to = 500;
+			mouse_step++;
+		}
+		else
+			to = 10;
+
+		m_to = addroottimeout(to/*MOUSE_TIMEOUT*/, (void _cdecl (*)(PROC *))mouse_up, 0);
+		if (m_to) m_to->arg = pixels;
 	}
+	else
+		mouse_step = 0, m_to = NULL;
 }
 
 static void
 mouse_down(PROC *p, long pixels)
 {
-	TIMEOUT *t;
+	//TIMEOUT *t;
+	long to;
 
 	mouse_packet[0] = 0xf8;		/* header */
 	mouse_packet[1] = 0;		/* X axis */
@@ -212,15 +226,26 @@ mouse_down(PROC *p, long pixels)
 
 	if (keep_sending)
 	{
-		t = addroottimeout(MOUSE_TIMEOUT, (void _cdecl (*)(PROC *))mouse_down, 0);
-		if (t) t->arg = pixels;
+		if (!mouse_step)
+		{
+			to = 500; //keydel;
+			mouse_step++;
+		}
+		else
+			to = 10; //krpdel;
+
+		m_to = addroottimeout(to, (void _cdecl (*)(PROC *))mouse_down, 0);
+		if (m_to) m_to->arg = pixels;
 	}
+	else
+		mouse_step = 0, m_to = NULL;
 }
 
 static void
 mouse_left(PROC *p, long pixels)
 {
-	TIMEOUT *t;
+	//TIMEOUT *t;
+	long to;
 
 	mouse_packet[0] = 0xf8;		/* header */
 	mouse_packet[1] = -pixels;	/* X axis */
@@ -230,15 +255,27 @@ mouse_left(PROC *p, long pixels)
 
 	if (keep_sending)
 	{
-		t = addroottimeout(MOUSE_TIMEOUT, (void _cdecl (*)(PROC *))mouse_left, 0);
-		if (t) t->arg = pixels;
+		if (!mouse_step)
+		{
+			to = 500; //keydel;
+			mouse_step++;
+		}
+		else
+			to = 10; //krpdel;
+
+		m_to = addroottimeout(to, (void _cdecl (*)(PROC *))mouse_left, 0);
+		if (m_to) m_to->arg = pixels;
 	}
+	else
+		mouse_step = 0, m_to = NULL;
+
 }
 
 static void
 mouse_right(PROC *p, long pixels)
 {
-	TIMEOUT *t;
+	//TIMEOUT *t;
+	long to;
 
 	mouse_packet[0] = 0xf8;		/* header */
 	mouse_packet[1] = pixels;	/* X axis */
@@ -248,9 +285,19 @@ mouse_right(PROC *p, long pixels)
 
 	if (keep_sending)
 	{
-		t = addroottimeout(MOUSE_TIMEOUT, (void _cdecl (*)(PROC *))mouse_right, 0);
-		if (t) t->arg = pixels;
+		if (!mouse_step)
+		{
+			to = 500; //keydel;
+			mouse_step++;
+		}
+		else
+			to = 10; //krpdel;
+
+		m_to = addroottimeout(to, (void _cdecl (*)(PROC *))mouse_right, 0);
+		if (m_to) m_to->arg = pixels;
 	}
+	else
+		mouse_step = 0, m_to = NULL;
 }
 
 /* Generate "no button" packet, simulating the mouse key release */
@@ -308,6 +355,26 @@ mouse_dclick(PROC *p, long arg)
 	addroottimeout(MOUSE_TIMEOUT+20, (void _cdecl (*)(PROC *))mouse_lclick, 0);
 }
 
+static void
+set_mouse_timeout( void _cdecl (*f)(PROC *), short make, short delta, long to)
+{
+	if (make)
+	{
+		if (!m_to)
+		{
+			m_to = addroottimeout(to, f, 1);
+			if (m_to)
+				m_to->arg = delta;
+		}
+	}
+	else if (m_to)
+	{
+		cancelroottimeout(m_to);
+		m_to = NULL;
+		mouse_step = 0;
+	}
+}
+
 INLINE short
 generate_mouse_event(uchar shift, ushort scan, ushort make)
 {
@@ -318,6 +385,10 @@ generate_mouse_event(uchar shift, ushort scan, ushort make)
 	{
 		case UP_ARROW:
 		{
+			set_mouse_timeout((void _cdecl (*)(PROC *))mouse_up, make, delta, ROOT_TIMEOUT);
+			if ((keep_sending = make))
+				kbdclick(scan);
+#if 0
 			if (make)
 			{
 				t = addroottimeout(ROOT_TIMEOUT, (void _cdecl (*)(PROC *))mouse_up, 1);
@@ -327,11 +398,16 @@ generate_mouse_event(uchar shift, ushort scan, ushort make)
 			}
 
 			keep_sending = make;
+#endif
 
 			return -1;
 		}
 		case DOWN_ARROW:
 		{
+			set_mouse_timeout((void _cdecl (*)(PROC *))mouse_down, make, delta, ROOT_TIMEOUT);
+			if ((keep_sending = make))
+				kbdclick(scan);
+#if 0
 			if (make)
 			{
 				t = addroottimeout(ROOT_TIMEOUT, (void _cdecl (*)(PROC *))mouse_down, 1);
@@ -341,11 +417,15 @@ generate_mouse_event(uchar shift, ushort scan, ushort make)
 			}
 
 			keep_sending = make;
-
+#endif
 			return -1;
 		}
 		case RIGHT_ARROW:
 		{
+			set_mouse_timeout((void _cdecl (*)(PROC *))mouse_right, make, delta, ROOT_TIMEOUT);
+			if ((keep_sending = make))
+				kbdclick(scan);
+#if 0
 			if (make)
 			{
 				t = addroottimeout(ROOT_TIMEOUT, (void _cdecl (*)(PROC *))mouse_right, 1);
@@ -355,11 +435,15 @@ generate_mouse_event(uchar shift, ushort scan, ushort make)
 			}
 
 			keep_sending = make;
-
+#endif
 			return -1;
 		}
 		case LEFT_ARROW:
 		{
+			set_mouse_timeout((void _cdecl (*)(PROC *))mouse_left, make, delta, ROOT_TIMEOUT);
+			if ((keep_sending = make))
+				kbdclick(scan);
+#if 0
 			if (make)
 			{
 				t = addroottimeout(ROOT_TIMEOUT, (void _cdecl (*)(PROC *))mouse_left, 1);
@@ -369,7 +453,7 @@ generate_mouse_event(uchar shift, ushort scan, ushort make)
 			}
 
 			keep_sending = make;
-
+#endif
 			return -1;
 		}
 		case INSERT:
@@ -1048,7 +1132,7 @@ ikbd_scan (ushort scancode, IOREC_T *rec)
 	}
 
 	/* Alt/arrow, alt/insert and alt/clrhome emulate the mouse events */
-	if ((shift & MM_ALTERNATE) == MM_ALTERNATE)
+	if (!(shift & MM_CTRL) && (shift & MM_ALTERNATE) == MM_ALTERNATE)
 	{
 		if (generate_mouse_event(shift, scan, make) == -1)
 			return;
