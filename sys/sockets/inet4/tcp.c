@@ -112,8 +112,13 @@ tcp_abort (struct in_data *data, short ostate)
 {
 	if (ostate == SS_ISCONNECTING)
 	{
+		struct socket *so;
+		
 		DEBUG (("tcp_abort: freeing connecting socket"));
-		so_free (data->sock);
+		
+		so = data->sock;
+		so_release (so);
+		kfree (so);
 	}
 	
 	return 0;
