@@ -186,10 +186,7 @@ overflow:
 	return;
 }
 
-/* The asm symbols for C functions are `_function'.
- * The canonical name for the counter function is `mcount', no _. 
- */
-void _mcount (void) asm ("mcount");
+void _mcount (void);
 
 void
 _mcount (void)
