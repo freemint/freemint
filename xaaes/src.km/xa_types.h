@@ -129,6 +129,7 @@ struct options
 	bool naes;			/* N.Aes 3d compatability */
 	bool naes12;
 	bool naes_ff;			/**/
+	bool inhibit_hide;
 
 	short thinframe;		/* -1: keep colour frame thin
 					 * +1: make a thicker frame for wasier border grabbing and sizing. */
@@ -543,7 +544,9 @@ struct xa_client
 	struct xa_user_things *ut;	/* trampoline code for user callbacks */
 	struct proc *tp;		/* Thread */
 
-	bool apterm;			/* true if application understands AP_TERM. */
+	short	swm_newmsg;
+
+	//bool apterm;			/* true if application understands AP_TERM. */
 	bool forced_init_client;
 	bool pexit;
 

@@ -205,6 +205,8 @@ init_client(enum locks lock)
 
 	/* Individual option settings. */
 	get_app_options(client);
+	if (client->options.inhibit_hide)
+		client->swm_newmsg |= NM_INHIBIT_HIDE;
 
 	/* awaiting menu_register */
 	sprintf(client->name, sizeof(client->name), "  %s", client->proc_name);
@@ -769,15 +771,19 @@ XA_appl_search(enum locks lock, struct xa_client *client, AESPB *pb)
 			o[1] = APP_SYSTEM;
 		else if (cpid == C.DSKpid)
 			o[1] = APP_APPLICATION | APP_SHELL;
-		else if (next->type == APP_ACCESSORY)
+		else
+			o[1] = next->type;
+#if 0
+		else if (next->type & APP_ACCESSORY)
 			o[1] = APP_ACCESSORY;
 		else
 			o[1] = next->type; //APP_APPLICATION;
+#endif
 
 		/* XaAES extensions. */
 		if (spec)
 		{
-			if (any_hidden(lock, next))
+			if (any_hidden(lock, next, NULL))
 				o[1] |= APP_HIDDEN;
 			if (focus_owner() == next)
 				o[1] |= APP_FOCUS;
@@ -1445,7 +1451,7 @@ XA_appl_control(enum locks lock, struct xa_client *client, AESPB *pb)
 		}
 		case APC_HIDE:
 		{
-			if (cl)
+			if (cl && !(cl->swm_newmsg & NM_INHIBIT_HIDE))
 			{
 				hide_app(lock, cl);
 			}
@@ -1465,12 +1471,12 @@ XA_appl_control(enum locks lock, struct xa_client *client, AESPB *pb)
 		{
 			if (cl)
 			{
-				if (any_hidden(lock, cl))
+				if (any_hidden(lock, cl, NULL))
 					unhide_app(lock, cl);
 				else
 					app_in_front(lock, cl);
 
-				if (cl->type == APP_ACCESSORY)
+				if (cl->type & APP_ACCESSORY)
 					send_app_message(lock, NULL, cl, AMQ_NORM, QMF_CHKDUP,
 							 AC_OPEN, 0, 0, 0,
 							 cl->p->pid, 0, 0, 0);
@@ -1483,7 +1489,7 @@ XA_appl_control(enum locks lock, struct xa_client *client, AESPB *pb)
 		{
 			if (cl)
 			{
-				if (any_hidden(lock, cl))
+				if (any_hidden(lock, cl, NULL))
 					unhide_app(lock, cl);
 				hide_other(lock, cl);
 			}
@@ -1500,7 +1506,7 @@ XA_appl_control(enum locks lock, struct xa_client *client, AESPB *pb)
 				if (ii)
 				{
 					*ii = 0;
-					if (any_hidden(lock, cl))
+					if (any_hidden(lock, cl, NULL))
 						*ii |= APCI_HIDDEN;
 					if (cl->std_menu)
 						*ii |= APCI_HASMBAR;

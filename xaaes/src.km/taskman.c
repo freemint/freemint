@@ -76,7 +76,7 @@ refresh_tasklist(enum locks lock)
 		/* default icon */
 		icon = form + TM_ICN_XAAES;
 
-		if (client->type == APP_ACCESSORY)
+		if (client->type & APP_ACCESSORY)
 			icon = form + TM_ICN_MENU;
 
 		tx = kmalloc(tx_len);
@@ -270,7 +270,7 @@ cur_client(SCROLL_INFO *list)
 static void
 send_terminate(enum locks lock, struct xa_client *client)
 {
-	if (client->type == APP_ACCESSORY)
+	if (client->type & APP_ACCESSORY)
 	{
 		DIAGS(("send AC_CLOSE to %s", c_owner(client)));
 
@@ -283,7 +283,7 @@ send_terminate(enum locks lock, struct xa_client *client)
 	}
 
 	/* XXX
-	 * should we only send if client->apterm is true???
+	 * should we only send if client->swm_newmsg & NM_APTERM is true???
 	 */
 	DIAGS(("send AP_TERM to %s", c_owner(client)));
 	send_app_message(lock, NULL, client, AMQ_CRITICAL, QMF_CHKDUP,

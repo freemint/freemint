@@ -194,7 +194,7 @@ XA_keyboard_event(enum locks lock, const struct rawkey *key)
 			else
 			{
 				if (keywind && is_hidden(keywind))
-					unhide_window(lock, keywind);
+					unhide_window(lock, keywind, true);
 				if (keywind && keywind->keypress)
 					post_cevent(client, cXA_keypress, rk, keywind, 0,0, NULL,NULL);
 				else if (client->waiting_pb)
@@ -279,7 +279,7 @@ kernel_key(enum locks lock, struct rawkey *key)
 			{
 				DIAGS(("next_app() :: %s", c_owner(client)));
 				app_in_front(lock, client);
-				if (client->type == APP_ACCESSORY)
+				if (client->type & APP_ACCESSORY)
 				{
 					send_app_message(lock, NULL, client, AMQ_NORM, QMF_CHKDUP,
 							 AC_OPEN, 0, 0, 0,

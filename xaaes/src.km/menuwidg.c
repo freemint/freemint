@@ -573,7 +573,7 @@ built_desk_popup(enum locks lock, short x, short y)
 
 	FOREACH_CLIENT(client)
 	{
-		if (client->type == APP_ACCESSORY || client == C.Aes)
+		if ((client->type & APP_ACCESSORY) || client == C.Aes)
 		{
 			if (n < appmenusize)
 			{
@@ -609,7 +609,7 @@ built_desk_popup(enum locks lock, short x, short y)
 
 	FOREACH_CLIENT(client)
 	{
-		if (client->type != APP_ACCESSORY && client != C.Aes)
+		if (!(client->type & APP_ACCESSORY) && client != C.Aes)
 		{
 			if (n < appmenusize)
 			{
@@ -674,7 +674,7 @@ built_desk_popup(enum locks lock, short x, short y)
 			else
 				ob[j].ob_state &= ~OS_CHECKED;
 
-			if (any_hidden(lock, appmenu[i].client))
+			if (any_hidden(lock, appmenu[i].client, NULL))
 				*(txt + 1) = '*';
 			else
 				*(txt + 1) = ' ';
@@ -1425,6 +1425,22 @@ click_desk_popup(struct task_administration_block *tab)
 		{
 			unhide_app(lock, client);
 
+			if (client->type & APP_ACCESSORY)
+			{
+				DIAG((D_menu, NULL, "is an accessory"));
+				/* found the reason some acc's wouldnt wake up: msgbuf[4] must receive
+				 * the meu_register reply, which in our case is the pid.
+				 */
+				send_app_message(lock, wind, client, AMQ_NORM, QMF_CHKDUP,
+							AC_OPEN,        0, 0, 0,
+							client->p->pid, 0, 0, 0);
+			}
+			else if (client->type & APP_APPLICATION)
+			{
+				DIAG((D_menu, NULL, "is a real GEM client"));
+				app_in_front(lock, client);
+			}
+#if 0			
 			switch (client->type)
 			{
 			/* Accessory - send AC_OPEN */
@@ -1447,6 +1463,7 @@ click_desk_popup(struct task_administration_block *tab)
 				break;
 			}
 			}
+#endif
 		}
 	}
 }

@@ -250,7 +250,7 @@ wdlg_mesag(enum locks lock, struct xa_window *wind, XA_TREE *wt, EVNT *ev)
 			if (wh != mh)
 				return -1;
 			if (is_hidden(wind))
-				unhide_window(wlock, wind);
+				unhide_window(wlock, wind, true);
 			top_window(wlock, true, wind, (void *)-1L, NULL);
 			break;
 		}
@@ -980,7 +980,7 @@ XA_wdlg_event(enum locks lock, struct xa_client *client, AESPB *pb)
 							wind->handle, client->name));
 
 						if (is_hidden(wind))
-							unhide_window(wlock, wind);
+							unhide_window(wlock, wind, true);
 						top_window(wlock, true, wind, (void *)-1L, NULL);
 						ret = 1;
 						cont = 0;

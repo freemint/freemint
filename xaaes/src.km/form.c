@@ -902,7 +902,8 @@ do_formwind_msg(
 			if (wind != root_window && (wind->window_status & XAWS_OPEN) && !is_topped(wind))
 			{
 				if (is_hidden(wind))
-					unhide_window(0, wind);
+					unhide_window(0, wind, true);
+					
 				top_window(0, true, wind, (void *)-1L, NULL);
 			}
 			break;

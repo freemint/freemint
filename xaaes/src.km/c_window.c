@@ -316,7 +316,7 @@ hide_window(enum locks lock, struct xa_window *wind)
 }
 
 void
-unhide_window(enum locks lock, struct xa_window *wind)
+unhide_window(enum locks lock, struct xa_window *wind, bool check)
 {
 	if (is_hidden(wind))
 	{
@@ -326,6 +326,8 @@ unhide_window(enum locks lock, struct xa_window *wind)
 		r.y = wind->hy;
 		send_moved(lock, wind, AMQ_NORM, &r);
 		wind->t = r;
+		if (any_hidden(lock, wind->owner, wind))
+			set_unhidden(lock, wind->owner);
 	}
 }
 
