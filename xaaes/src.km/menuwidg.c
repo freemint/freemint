@@ -678,7 +678,10 @@ built_desk_popup(enum locks lock, short x, short y)
 				*(txt + 1) = '*';
 			else
 				*(txt + 1) = ' ';
-
+			
+			if (appmenu[i].client->type == APP_SYSTEM)
+				*(txt + 1) = '+';
+			
 			ob[j].ob_spec.free_string = txt;
 		}
 

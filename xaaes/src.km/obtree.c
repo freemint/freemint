@@ -111,6 +111,18 @@ object_is_transparent(OBJECT *ob)
 	return false;
 }
 
+#if 0
+OBJECT *
+duplicate_object(OBJECT *obtree, short start)
+{
+	long size;
+	short curr = start;
+
+	while (obtree[start].ob_head
+	
+}
+#endif
+
 short
 object_thickness(OBJECT *ob)
 {

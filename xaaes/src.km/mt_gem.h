@@ -61,6 +61,7 @@ __BEGIN_DECLS
 #define DESK			 	DESKTOP_HANDLE
 
 /* appl_control mode */
+#define APC_SYSTEM			 2
 #define APC_HIDE			10
 #define APC_SHOW			11
 #define APC_TOP 			12
@@ -71,8 +72,8 @@ __BEGIN_DECLS
 
 /* APC_INFO bits */
 #define APCI_HIDDEN			0x01
-#define APCI_HASMBAR		0x02
-#define APCI_HASDESK		0x04
+#define APCI_HASMBAR			0x02
+#define APCI_HASDESK			0x04
 
 /* appl_getinfo modes */
 #define AES_LARGEFONT		0
@@ -119,10 +120,10 @@ __BEGIN_DECLS
 #define APP_DESK			2
 
 /* appl_search return values*/
-#define APP_SYSTEM			0x01
+#define APP_SYSTEM		0x01
 #define APP_APPLICATION		0x02
 #define APP_ACCESSORY		0x04
-#define APP_SHELL 			0x08
+#define APP_SHELL 		0x08
 
 /* appl_trecord types */
 #define APPEVNT_TIMER	 	0

@@ -227,6 +227,7 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 	case MENU_INQUIRE:
 	{
 		DIAG((D_menu, NULL, "MENU_INQUIRE := %d", menu_bar->owner->p->pid));
+		
 		pb->intout[0] = menu_bar->owner->p->pid;
 		break;
 	}

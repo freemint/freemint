@@ -41,11 +41,26 @@
 
 #if WDIALOG_FNTS
 
+static struct xa_fnts_info *
+new_fnts(void)
+{
+	struct xa_fnts_info *new;
+
+	new = kmalloc(sizeof(*new));
+	if (new)
+	{
+		bzero(new, sizeof(*new));
+	}
+	return new;
+}
+
 unsigned long
 XA_fnts_create(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	DIAG((D_fnts, client, "XA_fnts_create"));
 
+	
+	
 	pb->intout[0] = 0;
 	return XAC_DONE;
 }
