@@ -341,6 +341,7 @@ k_init(void)
 	root_window = create_window(
 				NOLOCKING,
 				0,			/* No messages */
+				0,			/* No 'doer' */
 				C.Aes,
 				false,
 				XaMENU,			/* menu standard widget */

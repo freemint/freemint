@@ -684,6 +684,7 @@ struct xa_window
 	/* Pointer to the internal message handler for this window
 	 * (to be handled by the creator) */
 	SendMessage	*send_message;
+	DoWinMesag	*do_message;
 
 #if 0
 	void (*send_message)(

@@ -82,7 +82,7 @@ XA_wdlg_create(enum locks lock, struct xa_client *client, AESPB *pb)
 				false, false,
 				*(RECT*)&tree->ob_x);
 
-		wind = create_window(lock, send_app_message, client, false,
+		wind = create_window(lock, send_app_message, NULL, client, false,
 				     tp,
 				     created_for_WDIAL,
 				     MG,

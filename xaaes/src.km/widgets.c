@@ -279,6 +279,78 @@ rp_2_ap(struct xa_window *wind, XA_WIDGET *widg, RECT *r)
 	return NULL;
 }
 
+/* Ozk:
+ * Context safe rp_2_ap - does not return an object tree
+ * Used by AESSYS, checkif_do_widgets(), when determining
+ * which widget is under the mouse.
+ */
+static void
+rp_2_ap_cs(struct xa_window *wind, XA_WIDGET *widg, RECT *r)
+{
+	RECT dr;
+	short rtx, rty, ww, wh;
+	int frame = wind->frame;
+
+	DIAG((D_form, NULL, "rp_2_ap: type=%s, widg=%lx, wt=%lx, obtree=%lx",
+		t_widg[widg->type], widg, widg->stuff,
+		widg->type == XAW_TOOLBAR ? ((XA_TREE *)widg->stuff)->tree : -1 ));
+
+	if (frame < 0)
+		frame = 0;
+
+	if (r == NULL)
+		r = &dr;
+
+	/* HR: window frame size dynamic
+	 *     thanks to the good design these 2 additions are all there is :-)
+	 */
+	rtx = widg->r.x + frame;
+	rty = widg->r.y + frame;
+
+	r->w = widg->r.w;
+	r->h = widg->r.h;
+	r->x = wind->r.x;
+	r->y = wind->r.y;
+
+	ww = wind->r.w - SHADOW_OFFSET;
+	wh = wind->r.h - SHADOW_OFFSET;
+
+	switch (widg->loc.relative_type)
+	{
+	case LT:
+		r->x += rtx;
+		r->y += rty;
+		break;
+	case LB:
+		r->x += rtx;
+		r->y += (wh - r->h - rty);
+		break;
+	case RT:
+		r->x += (ww - r->w - rtx);
+		r->y += rty;
+		break;
+	case RB:
+		r->x += (ww - r->w - rtx);
+		r->y += (wh - r->h - rty);
+		break;
+	case CT:
+		r->x += (ww - r->w) / 2;
+		r->y += rty;
+		break;
+	case CR:
+		r->x += (ww - r->w - rtx);
+		r->y += (wh - r->h) / 2;
+	case CB:
+		r->x += (ww - r->w) / 2;
+		r->y += (wh - r->h - rty);
+		break;
+	case CL:
+		r->x += rtx;
+		r->y += (wh - r->h - rty);
+		break;
+	}
+}
+
 XA_TREE *
 check_widget_tree(enum locks lock, struct xa_client *client, OBJECT *tree)
 {
@@ -2723,7 +2795,7 @@ checkif_do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, cons
 
 				if (f != XAW_BORDER)			/* HR 280102: implement border sizing. */
 				{					/* Normal widgets */
-					rp_2_ap(w, widg, &r);		/* Convert relative coords and window location to absolute screen location */
+					rp_2_ap_cs(w, widg, &r);	/* Convert relative coords and window location to absolute screen location */
 					inside = m_inside(md->x, md->y, &r);
 				}
 				else
