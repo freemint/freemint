@@ -227,7 +227,6 @@ button_event(enum locks lock, struct xa_client *client, const struct moose_data 
 				mu_button.newc = 0;
 
 				client->usr_evnt = 1;
-				//Unblock(client, XA_OK, 3);
 				
 				DIAG((D_button, NULL, " - written"));
 			}
@@ -248,7 +247,6 @@ button_event(enum locks lock, struct xa_client *client, const struct moose_data 
 				mu_button.newc = 0;
 
 				client->usr_evnt = 1;
-				//Unblock(client, XA_OK, 4);
 				DIAG((D_button, NULL, " - written"));
 			}
 		}
@@ -291,23 +289,6 @@ add_pending_button(enum locks lock, struct xa_client *client)
 
 	Sema_Dn(pending);
 }
-#if 0
-static bool
-do_fmd(enum locks lock, struct xa_client *client, const struct moose_data *md)
-{
-	if (client && md->state == 1)
-	{
-		DIAGS(("Classic?  fmd.lock %d, via %lx", client->fmd.lock, client->fmd.mousepress));
-		if (client->fmd.lock && client->fmd.mousepress)
-		{
-			client->fmd.mousepress(lock, client, md);		/* Dead simple (ClassicClick) */
-			return true;
-		}
-	}
-
-	return false;
-}
-#endif
 
 /*
  * at the moment widgets is always true.
@@ -610,7 +591,7 @@ find_focus(bool *waiting, struct xa_client **locked_client)
 	return client;
 }
 
-
+/* XXX Fixme !! */
 static XA_WIDGET *
 wheel_arrow(struct xa_window *wind, const struct moose_data *md)
 {
@@ -747,8 +728,6 @@ new_moose_pkt(enum locks lock, int internal, struct moose_data *md /*imd*/)
 		*/
 		if (md->ty == MOOSE_BUTTON_PREFIX)
 			new_mu_mouse(md), mu_button.newc = 0;
-		//else
-			//x_mouse = md->x, y_mouse = md->y;
 
 		/*
 		 * Check if a client is actually waiting. If not, buffer the packet.
@@ -788,18 +767,14 @@ new_moose_pkt(enum locks lock, int internal, struct moose_data *md /*imd*/)
 		DIAG((D_button, NULL, "Button %d, cstate %d on: %d/%d",
 			md->state, md->cstate, md->x, md->y));
 
-		/*
-		 * Ozk: Moved the checks for fake button-released elsewhere,
-		 * new_moose_pkt unconditionally sends only received packet.
-		 */
 		new_mu_mouse(md);
 		new_active_widget_mouse(md);
 		XA_button_event(lock, md, true);
 
-		/* Ozk: button.got is now used as a flag indicating
-		 * whether or not a mouse-event packet has been
-		 * delivered, queued as pending or not.
-		 */
+		/*
+		 * Ozk: mu_button.newc indicates a NEWClick
+		 * and mu_button.newr indicates an unprocessed NEWRelease
+		*/
 		mu_button.newc = 0;
 
 		break;
@@ -809,9 +784,9 @@ new_moose_pkt(enum locks lock, int internal, struct moose_data *md /*imd*/)
 		/* mouse rectangle events */
 		/* DIAG((D_v, NULL,"mouse move to: %d/%d", mdata.x, mdata.y)); */
 
-		/* Call the mouse movement event handler (doesnt use md->state) */
-		//x_mouse = md->x;
-		//y_mouse = md->y;
+		/*
+		 * Call the mouse movement event handler
+		*/
 		new_active_widget_mouse(md);
 		XA_move_event(lock, md);
 
@@ -838,6 +813,7 @@ new_moose_pkt(enum locks lock, int internal, struct moose_data *md /*imd*/)
 	return true;
 }
 
+/* XXX */
 extern long redraws;
 
 static short last_x = 0;
@@ -849,6 +825,14 @@ static TIMEOUT *m_rto = 0;
 
 static void move_timeout(struct proc *, long arg);
 
+/*
+ * Ozk: We get here when we've waited some time for WM_REDRAW
+ * messages to be processed by clients. If we get here,
+ * its either because clients didnt have enough time to
+ * process all WM_REDRAWS, or a client (or more) does not
+ * respond to AES messages. Clients may be "lagging" due to
+ * heavy work or the a client may have crashed. 
+*/
 static void
 move_rtimeout(struct proc *p, long arg)
 {
@@ -865,38 +849,68 @@ move_rtimeout(struct proc *p, long arg)
 		m_to = addroottimeout(0L, move_timeout, 1);
 }
 
+/*
+ * Ozk: move_timeout - added by the adi_move() function whenever
+ * the mouse moves.
+*/
 static void
 move_timeout(struct proc *p, long arg)
 {
 	struct moose_data md;
 
+	/*
+	 * Did mouse move since last time?
+	*/
 	if (last_x != x_mouse || last_y != y_mouse)
 	{
 		last_x = x_mouse;
 		last_y = y_mouse;
 
+		/*
+		 * Construct a moose_data using the the latest
+		 * button-event data, only changing the mouse coords.
+		*/
 		md = mainmd;
 		md.x = last_x;
 		md.y = last_y;
 		md.ty = MOOSE_MOVEMENT_PREFIX;
 		vq_key_s(C.vh, &md.kstate);
+		/*
+		 * Deliver move event
+		*/
 		new_moose_pkt(0, 0, &md);
 
+		/*
+		 * Did the mouse move while processing last coords?
+		 * If so, add a timeout on ourselves.
+		*/
 		if (last_x != x_mouse || last_y != y_mouse)
 		{
 			if (redraws)
 			{
+				/*
+				 * If redraw messages are still pending,
+				 * start a timeout which will handle clients
+				 * not responding/too busy to react to WM_REDRAWS
+				*/
 				if (!m_rto)
 					m_rto = addroottimeout(400L, move_rtimeout, 1);
 				m_to = 0;
 			}
 			else
 			{
+				/*
+				 * no redraws; if a pending timeout to handle locked/busy
+				 * clients was issued earlier, cancel it
+				*/
 				if (m_rto)
 				{
 					cancelroottimeout(m_rto);
 					m_rto = 0;
 				}
+				/*
+				 * new movement...
+				*/
 				m_to = addroottimeout(0L, move_timeout, 1);
 			}
 		}
@@ -907,17 +921,31 @@ move_timeout(struct proc *p, long arg)
 		m_to = 0;
 }
 
+/*
+ * adi_move() AES Device Interface entry point,
+ * taken whenever mouse moves.
+*/
 void
 adi_move(struct adif *a, short x, short y)
 {
+	/*
+	 * Don't process move events when button timeout pending
+	*/
 	if (b_to)
 		return;
 
+	/*
+	 * Always update these..
+	*/
 	x_mouse = x;
 	y_mouse = y;
 
 	if (redraws)
 	{
+		/*
+		 * If WM_REDRAW messages pending, add timeout
+		 * to handle locked/busy clients.
+		*/
 		if (!m_rto)
 			m_rto = addroottimeout(400L, move_rtimeout, 1);
 	}
@@ -933,6 +961,10 @@ adi_move(struct adif *a, short x, short y)
 	}
 }
 
+/*
+ * WM_REDRAW event dispatchers calls kick_mousemove_timeout
+ * when all WM_REDRAW messages have been processed.
+*/
 void
 kick_mousemove_timeout(void)
 {
@@ -948,6 +980,10 @@ kick_mousemove_timeout(void)
 	}
 }
 
+/*
+ * button_timeout() - issued by the AES Device Interface
+ * entry point for mouse button changes.
+*/
 static void
 button_timeout(struct proc *p, long arg)
 {
@@ -960,6 +996,10 @@ button_timeout(struct proc *p, long arg)
 	b_to = 0;
 }
 
+/*
+ * adi_button() - the entry point taken by moose.adi whenever
+ * mouse button packet is ready for delivery.
+*/
 void
 adi_button(struct adif *a, struct moose_data *md)
 {
@@ -981,51 +1021,15 @@ adi_button(struct adif *a, struct moose_data *md)
 		kfree(md);
 }
 
+/* XXX */
+/*
+ * adi_wheel() - Not done!
+*/
 void
 adi_wheel(struct adif *a, struct moose_data *md)
 {
 }
 
-int
-mouse_input(enum locks lock, int internal)
-{
-	struct moose_data md;
-	long n;
-
-	/* Read always whole packets, otherwise loose
-	 * sync. For now ALL packets are same size,
-	 * faster anyhow.
-	 * BTW. The record length can still be used
-	 * to decide on the amount to read.
-	 * 
-	 * Ozk:
-	 * Added 'cstate', in addition to 'state' to the moose_data structure.
-	 *'state' indicates which button(s) triggered the event,
-	 *'cstate' contains the button state at the time when
-	 * double-click timer expires.
-	 * Makes it much easier, yah know ;-)
-	 *
-	 * Ozk: The moose structure lives in global space now because the
-	 * wait_mouse/check_mouse needs to know if a fake button-released
-	 * packet is in the works.
-	 *
-	 * Ozk: If we get a button packet in which the button
-	 * state at the time moose sent it is 'released', we
-	 * need to fake a 'button-released' event.
-	 * If state == cstate != 0, moose will send a 'button-released'
-	 * packet.
-	 */ 
-	n = f_read(C.MOUSE_dev, sizeof(md), &md);
-	if (n == sizeof(md))
-	{
-		vq_key_s(C.vh, &md.kstate);
-		return new_moose_pkt(lock, internal, &md);
-	}
-
-	/* DIAG((D_mouse, NULL, "Moose channel yielded %ld", n)); */
-	return false;
-}
-	
 /*
  * blocks until mouse input
  * context safe; scheduler called 
@@ -1036,86 +1040,39 @@ wait_mouse(struct xa_client *client, short *br, short *xr, short *yr)
 	short data[3];
 	struct moose_data md;
 
-	/*
-	 * Ozk: Make absolutely sure wether we're the AES kernel or a user
-	 * application.
-	 */
-#if 0
-	if (C.Aes->p == get_curproc())
+	/* wait for input from AESSYS */	
+	DIAGS(("wait_mouse for %s", client->name));
+
+	if (unbuffer_moose_pkt(&md))
 	{
-		/* AESSYS internal -> poll mouse */
-
-		DIAGS(("wait_mouse for XaAES"));
-
-		/*
-		 * Ozk: since new_moose_pkt() buffers packets if S.wk_count is nonzero
-		 * and no client waiting, we must check the queue first. This way we
-		 * dont loose events.
-		*/
-		if (unbuffer_moose_pkt(&md))
-		{
-			DIAGS(("wait_mouse XaAES - return buffered"));
-			data[0] = md.cstate;
-			data[1] = md.x;
-			data[2] = md.y;
-		}
-		else
-		{	
-			client->waiting_for |= XAWAIT_MOUSE;
-			client->waiting_short = data;
-
-			/* only one client can exclusivly wait for the mouse */
-			assert(S.wait_mouse == NULL);
-
-			S.wait_mouse = client;
-
-			while (!mouse_input(NOLOCKS/*XXX*/, true))
-				yield();
-
-			S.wait_mouse = NULL;
-
-			client->waiting_for &= ~XAWAIT_MOUSE;
-			client->waiting_short = NULL;
-		}
+		DIAGS(("wait_mouse - return buffered"));
+		data[0] = md.cstate;
+		data[1] = md.x;
+		data[2] = md.y;
 	}
 	else
-#endif
-	{
-		/* wait for input from AESSYS */	
-		DIAGS(("wait_mouse for %s", client->name));
-
-		if (unbuffer_moose_pkt(&md))
-		{
-			DIAGS(("wait_mouse - return buffered"));
-			data[0] = md.cstate;
-			data[1] = md.x;
-			data[2] = md.y;
-		}
-		else
-		{	
-			client->waiting_for |= XAWAIT_MOUSE;
-			client->waiting_short = data;
+	{	
+		client->waiting_for |= XAWAIT_MOUSE;
+		client->waiting_short = data;
 		
-			/* only one client can exclusivly wait for the mouse */
-			assert(S.wait_mouse == NULL);
+		/* only one client can exclusivly wait for the mouse */
+		assert(S.wait_mouse == NULL);
 
-			S.wait_mouse = client;
+		S.wait_mouse = client;
 
-			/* XXX
-			 * Ozk: A hack to make wait_mouse() not return unless wake
-			 * really happened because of new mouse data... how else to do this?
-			*/
-			data[0] = 0xffff;
-			while (data[0] == 0xffff)
-			{
-				sleep(IO_Q, (long)client);
-			}
-
-			S.wait_mouse = NULL;
-
-			client->waiting_for &= ~XAWAIT_MOUSE;
-			client->waiting_short = NULL;
+		/* XXX
+		 * Ozk: A hack to make wait_mouse() not return unless wake
+		 * really happened because of new mouse data... how else to do this?
+		*/
+		data[0] = 0xffff;
+		while (data[0] == 0xffff)
+		{
+			sleep(IO_Q, (long)client);
 		}
+		S.wait_mouse = NULL;
+
+		client->waiting_for &= ~XAWAIT_MOUSE;
+		client->waiting_short = NULL;
 	}
 
 	DIAG((D_mouse, NULL, "wait_mouse - return %d, %d.%d for %s",
