@@ -1,17 +1,17 @@
 /*
  * $Id$
- * 
+ *
  * This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
  * distribution.  See the file Changes.MH for a detailed log of changes.
- * 
- * 
+ *
+ *
  * Author: Thomas Binder <gryf@hrzpub.tu-darmstadt.de>
  * Started: 1998-01-29
- * 
+ *
  * please send suggestions, patches or bug reports to me or
  * the MiNT mailing list
- * 
- * 
+ *
+ *
  * Zweck:
  * Enthaelt die Tabellen zur Wandlung von Unicode in den Atari-ST-Zeichensatz,
  * und Atari-ST-Zeichensatz nach Unicode.
@@ -30,12 +30,24 @@
  *
  * 1998-07-16
  * (rainer) some name corrections
- * 
- * 
+ *
+ *
  */
 
+# include "mint/stat.h"		/* struct xattr */
+
+# include "libkern/libkern.h"	/* strcpy(), strcat() */
+
+# include "console.h"		/* c_conws() */
+# include "info.h"		/* messages */
+# include "init.h"		/* *sysdir */
+# include "k_fds.h"		/* FP_ALLOC() */
+# include "kmemory.h"		/* kmalloc(), kfree() */
+# include "proc.h"		/* rootproc */
 # include "unicode.h"
 
+#undef POLISH_EXTENSION_POLONICA
+#undef POLISH_EXTENSION_ISO
 
 static uchar
 cp00[256] =
@@ -727,5 +739,98 @@ t_atari2uni[256] =
 	0x20, 0x7f, 0x00, 0xb2, 0x00, 0xb3, 0x00, 0xaf
 };
 
+# if 1
+
+# define CP_SIZE 256
+
+static long
+load_unicode_table(FILEPTR *fp, char *name, long len)
+{
+	uchar *buf, *s;
+	char msg[64];
+
+	if (len % 3) return 0;		/* file length other than n*3 */
+
+	buf = (uchar *)kmalloc(len);
+	if (!buf) return 0;		/* Out of memory */
+
+	if ((*fp->dev->read)(fp, buf, len) == len)
+	{
+		ushort a;
+
+		/* *s points to entries loaded from the disk.
+		 * s[0] is the elder byte of the unicode entry,
+		 *	i.e. the codepage number.
+		 * s[1] is the younger byte, i.e. the codepage offset
+		 * s[2] is the ASCII code for the character to put into
+		 */
+
+		s = buf;
+		for (a = 0; a < (len/3); a++)
+		{
+			uchar *codepage = t_uni2atari[s[0]];
+			ushort offset;
+
+			if (codepage == NULL)
+			{
+				ushort b;
+
+				codepage = (uchar *)kmalloc(CP_SIZE);
+
+				if (!codepage)
+				{
+					kfree(buf);
+					return 0;	/* Out of memory */
+				}
+
+				t_uni2atari[s[0]] = codepage;
+
+				for (b = 0; b < CP_SIZE; b++)
+					codepage[b] = '?';
+			}
+			offset = s[2];
+			codepage[s[1]] = offset;
+			offset <<= 1;
+			t_atari2uni[offset] = s[0];
+			t_atari2uni[offset+1] = s[1];
+
+			s += 3;		/* moving to the next entry */
+		}
+	}
+	kfree(buf);
+
+	ksprintf(msg, sizeof(msg), MSG_unitable_loaded, name);
+	c_conws(msg);
+
+	return 1;
+}
+
+void
+init_unicode(void)
+{
+	FILEPTR *fp;
+	XATTR xa;
+	long ret;
+	char name[32];
+
+	ret = FP_ALLOC(rootproc, &fp);
+	if (ret) return;
+
+	strcpy(name, sysdir);
+	strcat(name, "unicode.tbl");
+
+	if(!do_open(&fp, name, O_RDONLY, 0, &xa))
+	{
+		ret = load_unicode_table(fp, name, xa.size);
+		do_close(rootproc, fp);
+	}
+	else
+	{
+		fp->links = 0;		/* suppress complaints */
+		FP_FREE(fp);
+	}
+}
+
+# endif
 
 /* EOF */
