@@ -1,20 +1,37 @@
 /*
- *	Load AES device drivers (*.adi) from /mint/ and /multitos/.
+ * $Id$
  *
- *	06/22/94, Kay Roemer.
+ * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
+ *                                 1999 - 2003 H.Robbers
+ *                                        2004 F.Naumann & O.Skancke
+ *
+ * A multitasking AES replacement for MiNT
+ *
+ * This file is part of XaAES.
+ *
+ * XaAES is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * XaAES is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with XaAES; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "mint/mint.h"
-#include "adi.h"
 #include "adiload.h"
 #include "xa_global.h"
+
+#include "adi.h"
 #include "k_mouse.h"
 
 #include "mint/basepage.h"
-//#include "mint/config.h"
-//#include "mint/emu_tos.h"
 
-extern struct kentry *kentry;
 
 static struct adiinfo ai =
 {
@@ -27,31 +44,9 @@ static struct adiinfo ai =
 };
 
 static long
-callout_init (void *initfunction, struct kerinfo *k, struct adiinfo *a)
+load_adi(struct basepage *b, const char *name)
 {
-	register long ret __asm__("d0");
-	
-	__asm__ volatile
-	(
-		"moveml d3-d7/a3-a6,sp@-;"
-		"movl	%3,sp@-;"
-		"movl	%2,sp@-;"
-		"movl   %1,a0;"
-		"jsr    a0@;"
-		"addqw  #8,sp;"
-		"moveml sp@+,d3-d7/a3-a6;"
-		: "=r"(ret)				/* outputs */
-		: "g"(initfunction), "r"(k), "r"(a)	/* inputs  */
-		: "d0", "d1", "d2", "a0", "a1", "a2",   /* clobbered regs */
-		  "memory"
-	);
-	
-	return ret;
-}
-
-static long
-load_adi (struct basepage *b, const char *name)
-{
+	long (*init)(struct kentry *, struct adiinfo *);
 	long r;
 	
 	DIAGS(("load_adi: enter (0x%lx, %s)", b, name));
@@ -62,7 +57,8 @@ load_adi (struct basepage *b, const char *name)
 	 */
 	ai.fname = name;
 	
-	r = callout_init ((void *) b->p_tbase, kentry, &ai);
+	init = (long (*)(struct kentry *, struct adiinfo *))b->p_tbase;
+	r = (*init)(KENTRY, &ai);
 	
 	ai.fname = NULL;
 	
@@ -70,16 +66,16 @@ load_adi (struct basepage *b, const char *name)
 }
 
 void
-adi_load (void)
+adi_load(void)
 {
-	c_conws ("Loading AES Device Drivers:\r\n");
+	c_conws("Loading AES Device Drivers:\r\n");
 	DIAGS(("Loading AES Device Drivers:"));
 	
 	if (!load_modules)
 	{
-		ALERT (("AESSYS: Loading adi's require an uptodate 1.16 kernel!"));
+		ALERT(("AESSYS: Loading adi's require an uptodate 1.16 kernel!"));
 		return;
 	}
 	
-	load_modules (".adi", load_adi);
+	load_modules(".adi", load_adi);
 }
