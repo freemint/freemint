@@ -24,6 +24,8 @@
 # include "arch/timer.h"
 # include "mint/ioctl.h"
 # include "mint/net.h"
+# include "mint/sysctl.h"
+# include "sys/param.h"
 
 # include "rpc_xdr.h"
 
@@ -103,8 +105,7 @@ ulong rpc_progversion;
  * For efficiency reasons, we operate only on the xdred structure,
  * so we set up some pointers for the changing parts of it.
  */
-# define MAX_NAME  256
-char hostname[MAX_NAME] = "FreeMiNT";  /* the default hostname */
+char hostname[MAXHOSTNAMELEN] = "FreeMiNT";  /* the default hostname */
 int do_auth_init = 2;  /* retry count to read \etc\hostname */
 
 
@@ -136,36 +137,58 @@ opaque_auth unix_auth =
 static int
 init_auth (void)
 {
-	char buf[MAX_NAME];
 	long res, r;
-	int fd;
 	char *p;
-
-	/* read hostname */
-	res = f_open ("\\etc\\hostname", O_RDONLY);
-	if (res >= 0)
+	
+	/* try first the new syscall */
 	{
-		fd = res;
-		res = f_read (fd, MAX_NAME-1, buf);
-		(void) f_close (fd);
-		if (res > 0)
+		char buf[MAXHOSTNAMELEN];
+		long mib[2];
+		long size;
+		
+		mib[0] = CTL_KERN;
+		mib[1] = KERN_HOSTNAME;
+		size = sizeof(buf);
+		
+		r = p_sysctl(mib, 2, buf, &size, NULL, 0);
+		if (r == 0)
 		{
-			buf[res] = '\0';
-			p = buf;
-			while (*p)
-			{
-				if ((*p == '\r') || (*p == '\n'))
-					break;
-				p += 1;
-			}
-			*p = '\0';
-			if (buf [0])
+			if (strcmp (buf, "(none)"))
 				strcpy (hostname, buf);
+			else
+				r = -1;
 		}
-		r = 0;
+		
+		/* try /etc/hostname */
+		if (r)
+		{
+			res = f_open ("\\etc\\hostname", O_RDONLY);
+			if (res >= 0)
+			{
+				int fd = res;
+				res = f_read (fd, MAXHOSTNAMELEN-1, buf);
+				(void) f_close (fd);
+				if (res > 0)
+				{
+					buf[res] = '\0';
+					p = buf;
+					while (*p)
+					{
+						if ((*p == '\r') || (*p == '\n'))
+							break;
+						p += 1;
+					}
+					*p = '\0';
+					
+					if (buf[0])
+					{
+						strcpy (hostname, buf);
+						r = 0;
+					}
+				}
+			}
+		}
 	}
-	else
-		r = -1;
 	
 	/* set up xdred auth_unix structure */
 	bzero (&the_xdr_auth [0], AUTH_UNIX_MAX);

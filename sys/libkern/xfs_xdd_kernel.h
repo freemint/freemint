@@ -403,9 +403,9 @@ extern struct kerinfo *KERNEL;
 # define _p_setgroups		(*KERNEL->dos_tab[0x148])
 # define _t_setitimer		(*KERNEL->dos_tab[0x149])
 # define _d_chroot		(*KERNEL->dos_tab[0x14a])	/* 1.15.3 */
-# define _0x14b			(*KERNEL->dos_tab[0x14b])	/* f_stat */
-# define _0x14c			(*KERNEL->dos_tab[0x14c])
-# define _0x14d			(*KERNEL->dos_tab[0x14d])
+# define _f_stat64		(*KERNEL->dos_tab[0x14b])	/* f_stat */
+# define _f_seek64		(*KERNEL->dos_tab[0x14c])
+# define _d_setkey		(*KERNEL->dos_tab[0x14d])
 # define _p_setreuid		(*KERNEL->dos_tab[0x14e])
 # define _p_setregid		(*KERNEL->dos_tab[0x14f])
 
@@ -419,14 +419,65 @@ extern struct kerinfo *KERNEL;
 # define _0x157			(*KERNEL->dos_tab[0x157])	/* t_adjtime */
 # define _p_getpriority		(*KERNEL->dos_tab[0x158])
 # define _p_setpriority		(*KERNEL->dos_tab[0x159])
-# define _0x15a			(*KERNEL->dos_tab[0x15a])
-# define _0x15b			(*KERNEL->dos_tab[0x15b])
-# define _0x15c			(*KERNEL->dos_tab[0x15c])
-# define _0x15d			(*KERNEL->dos_tab[0x15d])
-# define _0x15e			(*KERNEL->dos_tab[0x15e])
-# define _0x15f			(*KERNEL->dos_tab[0x15f])
+# define _f_poll		(*KERNEL->dos_tab[0x15a])
+# define _f_writev		(*KERNEL->dos_tab[0x15b])
+# define _f_readv		(*KERNEL->dos_tab[0x15c])
+# define _f_fstat		(*KERNEL->dos_tab[0x15d])
+# define _p_sysctl		(*KERNEL->dos_tab[0x15e])
+# define _s_emulation		(*KERNEL->dos_tab[0x15f])
 
-	/* 0x160 */		/* DOS_MAX */
+# define _f_socket		(*KERNEL->dos_tab[0x160])
+# define _f_socketpair		(*KERNEL->dos_tab[0x161])
+# define _f_accept		(*KERNEL->dos_tab[0x162])
+# define _f_connect		(*KERNEL->dos_tab[0x163])
+# define _f_bind		(*KERNEL->dos_tab[0x164])
+# define _f_listen		(*KERNEL->dos_tab[0x165])
+# define _f_recvmsg		(*KERNEL->dos_tab[0x166])
+# define _f_sendmsg		(*KERNEL->dos_tab[0x167])
+# define _f_recvfrom		(*KERNEL->dos_tab[0x168])
+# define _f_sendto		(*KERNEL->dos_tab[0x169])
+# define _f_setsockopt		(*KERNEL->dos_tab[0x16a])
+# define _f_getsockopt		(*KERNEL->dos_tab[0x16b])
+# define _f_getpeername		(*KERNEL->dos_tab[0x16c])
+# define _f_getsockname		(*KERNEL->dos_tab[0x16d])
+# define _f_shutdown		(*KERNEL->dos_tab[0x16e])
+# define _0x16f			(*KERNEL->dos_tab[0x16f])
+
+# define _p_shmget		(*KERNEL->dos_tab[0x170])
+# define _p_shmctl		(*KERNEL->dos_tab[0x171])
+# define _p_shmat		(*KERNEL->dos_tab[0x172])
+# define _p_shmdt		(*KERNEL->dos_tab[0x173])
+# define _p_semget		(*KERNEL->dos_tab[0x174])
+# define _p_semctl		(*KERNEL->dos_tab[0x175])
+# define _p_semop		(*KERNEL->dos_tab[0x176])
+# define _p_semconfig		(*KERNEL->dos_tab[0x177])
+# define _p_msgget		(*KERNEL->dos_tab[0x178])
+# define _p_msgctl		(*KERNEL->dos_tab[0x179])
+# define _p_msgsnd		(*KERNEL->dos_tab[0x17a])
+# define _p_msgrcv		(*KERNEL->dos_tab[0x17b])
+# define _0x17c			(*KERNEL->dos_tab[0x17c])
+# define _m_access		(*KERNEL->dos_tab[0x17d])
+# define _0x17e			(*KERNEL->dos_tab[0x17e])
+# define _0x17f			(*KERNEL->dos_tab[0x17f])
+
+# define _0x180			(*KERNEL->dos_tab[0x180])
+# define _0x181			(*KERNEL->dos_tab[0x181])
+# define _0x182			(*KERNEL->dos_tab[0x182])
+# define _0x183			(*KERNEL->dos_tab[0x183])
+# define _0x184			(*KERNEL->dos_tab[0x184])
+# define _0x185			(*KERNEL->dos_tab[0x185])
+# define _0x186			(*KERNEL->dos_tab[0x186])
+# define _0x187			(*KERNEL->dos_tab[0x187])
+# define _0x188			(*KERNEL->dos_tab[0x188])
+# define _0x189			(*KERNEL->dos_tab[0x189])
+# define _0x18a			(*KERNEL->dos_tab[0x18a])
+# define _0x18b			(*KERNEL->dos_tab[0x18b])
+# define _0x18c			(*KERNEL->dos_tab[0x18c])
+# define _0x18d			(*KERNEL->dos_tab[0x18d])
+# define _0x18e			(*KERNEL->dos_tab[0x18e])
+# define _0x18f			(*KERNEL->dos_tab[0x18f])
+
+	/* 0x190 */		/* DOS_MAX */
 
 INLINE long c_conws (const char *str)
 { return ((long _cdecl (*)(const char *)) _c_conws) (str); }
@@ -606,6 +657,9 @@ INLINE long t_gettimeofday (struct timeval *tv, struct timezone *tz)
 INLINE long t_settimeofday (struct timeval *tv, struct timezone *tz)
 { return ((long _cdecl (*)(struct timeval *, struct timezone *)) _t_settimeofday) (tv, tz); }
 # endif
+
+INLINE long p_sysctl (long *name, ulong namelen, void *old, ulong *oldlenp, const void *new, ulong newlen)
+{ return ((long _cdecl (*)(long *, ulong, void *, ulong *, const void *, ulong)) _p_sysctl) (name, namelen, old, oldlenp, new, newlen); }
 
 
 # define datestamp		t_getdate ()
