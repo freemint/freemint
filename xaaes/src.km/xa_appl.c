@@ -1051,9 +1051,8 @@ static short info_tab[][4] =
 		0
 	},
 
-	/* 18 <-- 96 */
+	/* 18 <-- 96 AES_VERSION */
 	/* AES version information */
-	/* Frank, I need correct data here .. could you fix this for me? */
 	{
 		VER_MAJOR,	/* Major */
 		VER_MINOR,	/* Minor */
@@ -1108,6 +1107,8 @@ init_apgi_infotab(void)
 
 	if (DEV_STATUS & AES_FDEVSTATUS_STABLE)
 		s = mcs(s, "Stable ");
+	else
+		s = mcs(s, "Unstable ");
 		
 	s = mcs(s, ASCII_DEV_STATUS);
 	*s++ = 0x7c;
@@ -1137,51 +1138,59 @@ XA_appl_getinfo(enum locks lock, struct xa_client *client, AESPB *pb)
 	else
 		DIAG((D_appl, client, "appl_getinfo %d for non AES process (pid %ld)", gi_type, p_getpid()));
 #endif	
-
 	if (gi_type > 14)
 	{
-		/* N.AES extensions */
-		if (gi_type == 64 || gi_type == 65)
+		switch (gi_type)
 		{
-			gi_type -= (64 - 15);
-		}
-		else if (gi_type == AGI_WINX)
-		{
-			gi_type = 17;
-		}
-		else if (gi_type == AES_VERSION)
-		{
-			if (pb->control[N_ADDRIN] >= 3)
+			case 64:
+			case 65:
 			{
-				char *d = (char *)pb->addrin[0];
-				
-				if (d)
-				{
-					for (i = 0; i < 8; i++)
-						*d++ = aes_id[i];
-				}
-				if (pb->addrin[1])
-					strcpy((char *)pb->addrin[1], long_name);
-				if (pb->addrin[2])
-					strcpy((char *)pb->addrin[2], info_string);
+				gi_type -= (64 - 15);
+				break;
 			}
-			n_intout = pb->control[N_INTOUT];
-			gi_type = XA_VERSION_INFO;
+			case AGI_WINX:
+			{
+				gi_type = 17;
+				break;
+			}
+			case AES_VERSION:
+			{
+				if (pb->control[N_ADDRIN] >= 3)
+				{
+					char *d = (char *)pb->addrin[0];
+				
+					if (d)
+					{
+						for (i = 0; i < 8; i++)
+							*d++ = aes_id[i];
+					}
+					if (pb->addrin[1])
+						strcpy((char *)pb->addrin[1], long_name);
+					if (pb->addrin[2])
+						strcpy((char *)pb->addrin[2], info_string);
+				}
+				n_intout = pb->control[N_INTOUT];
+				gi_type = XA_VERSION_INFO;
+				break;
+			}
+			default:
+			{
+				gi_type = -1;
+				break;
+			}
 		}
-		else
-			gi_type = -1;
 	}
 
-	if (gi_type == -1)
+	if (gi_type != -1)
 	{
-		pb->intout[0] = 0;
-		return XAC_DONE;
+		for (i = 1; i < n_intout; i++)
+			pb->intout[i] = info_tab[gi_type][i-1];
+		gi_type = 1;
 	}
+	else
+		gi_type = 0;
 
-	pb->intout[0] = 1;
-
-	for (i = 1; i < n_intout; i++)
-		pb->intout[i] = info_tab[gi_type][i-1];
+	pb->intout[0] = gi_type;
 
 	return XAC_DONE;
 }
