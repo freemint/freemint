@@ -1434,7 +1434,7 @@ fullname (const COOKIE *c, const char *name)
 	}
 	else
 	{
-		FAT_ALERT (("FATFS: kmalloc fail in: fullname (%s, %s)", c->name, name));
+		FAT_ALERT (("FATFS: kmalloc failed on: fullname (%s, %s)", c->name, name));
 	}
 	
 	return full;
@@ -1691,10 +1691,10 @@ c_del_cookie (register COOKIE *c)
 	c_hash_remove (c);
 	
 	if (c->open)
-		FAT_ALERT (("FATFS [%c]: open FILEPTR detect in: c_del_cookie (%s)", c->name, c->dev));
+		FAT_ALERT (("FATFS [%c]: open FILEPTR detected in: c_del_cookie (%s)", c->name, c->dev));
 	
 	if (c->locks)
-		FAT_ALERT (("FATFS [%c]: open LOCKS detect in: c_del_cookie (%s)", c->name, c->dev));
+		FAT_ALERT (("FATFS [%c]: open LOCKS detected in: c_del_cookie (%s)", c->name, c->dev));
 	
 	if (c->lastlookup)
 		kfree (c->lastlookup);
@@ -5266,7 +5266,7 @@ get_devinfo (const ushort drv, long *err)
 		bio.free_di (di);
 		*err = ENOMEM;
 		
-		FAT_ALERT (("fatfs.c: kmalloc fail in: get_devinfo for BPB (%i)", drv));
+		FAT_ALERT (("fatfs.c: kmalloc failed in: get_devinfo for BPB (%i)", drv));
 		return NULL;
 	}
 	
@@ -7781,7 +7781,7 @@ fatfs_open (FILEPTR *f)
 	ptr = kmalloc (sizeof (*ptr));
 	if (!ptr)
 	{
-		FAT_ALERT (("fatfs.c: kmalloc fail in: fatfs_open (%s)", c->name));
+		FAT_ALERT (("fatfs.c: kmalloc failed in: fatfs_open (%s)", c->name));
 		FAT_DEBUG (("fatfs_open: leave failure, out of memory for FILE struct"));
 		return ENOMEM;
 	}
@@ -8124,7 +8124,7 @@ fatfs_ioctl (FILEPTR *f, int mode, void *buf)
 				lck = kmalloc (sizeof (*lck));
 				if (!lck)
 				{
-					FAT_ALERT (("fatfs.c: kmalloc fail in: fatfs_ioctl (%s)", c->name));
+					FAT_ALERT (("fatfs.c: kmalloc failed in: fatfs_ioctl (%s)", c->name));
 					return ENOMEM;
 				}
 				
@@ -8265,7 +8265,7 @@ fatfs_close (FILEPTR *f, int pid)
 		
 		if (flag)
 		{
-			FAT_ALERT (("fatfs.c: remove open FILEPTR fail in: fatfs_close (%s)", c->name));
+			FAT_ALERT (("fatfs.c: open FILEPTR removal failed in: fatfs_close (%s)", c->name));
 		}
 		
 		/* free the extra info */
