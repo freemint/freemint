@@ -119,8 +119,10 @@ make_argv(char *p_tail, long tailsize, char *command, char *argvtail)
 		parse_tail(last + argvl + 1 + i + 1, p_tail + 1);
 		C.strings[j++] = last;
 		C.strings[j] = 0;
+#if XXX
 		// XXX raise with initialization in bootup
 		// free(C.env);
+#endif
 		C.env = argtail;
 		argvtail[0] = 0x7f;
 		DIAGS(("ARGV constructed\n"));
@@ -421,7 +423,7 @@ launch(LOCK lock, short mode, short wisgr, short wiscr, char *parm, char *p_tail
 				DIAG((D_shel, 0, "Pexec(106) '%s'\n",cmd));
 				child = Pexec(106, cmd, b, *C.strings);		/* HR 104 --> 106 */
 				if (child < 0)
-					; // XXX failure
+					; /* XXX failure */
 				DIAG((D_shel, 0, "child = %d\n", child));
 
 				(void) Prenice(child, -4);
@@ -920,8 +922,10 @@ put_env(LOCK lock, short wisgr, short wiscr, char *cmd)
 
 			if (newenv)
 			{
+#if XXX
 				// XXX raise with initialization in bootup
 				// free(C.env);
+#endif
 				C.env = newenv;
 			}
 
