@@ -4,12 +4,9 @@
 
 #include <osbind.h>
 
-#include "global.h"
-#include "console.h"
-#include "textwin.h"
 #include "vt.h"
-#include "window.h"
 #include "ansicol.h"
+#include "console.h"
 
 #ifdef DEBUG
 extern int do_debug;
@@ -48,7 +45,7 @@ static void capture(TEXTWIN *v, unsigned int c)
 static
 void fgcol_putch (TEXTWIN *v, unsigned int c)
 {
-	v->term_cattr = (v->term_cattr & ~CFGCOL) |
+	v->curr_cattr = (v->curr_cattr & ~CFGCOL) |
 			 ((c & 0xff) << 4);
 	v->output = vt52_putch;
 }
@@ -56,7 +53,7 @@ void fgcol_putch (TEXTWIN *v, unsigned int c)
 static
 void bgcol_putch (TEXTWIN *v, unsigned int c)
 {
-	v->term_cattr = (v->term_cattr & ~CBGCOL) |
+	v->curr_cattr = (v->curr_cattr & ~CBGCOL) |
 			 (c & 0xff);
 	v->output = vt52_putch;
 }
@@ -79,9 +76,9 @@ ansi_bgcol_putch (TEXTWIN *v, unsigned int c)
 /* set special effects */
 static void seffect_putch(TEXTWIN *v, unsigned int c)
 {
-	v->term_cattr |= ((c & 0x1f) << 8);
+	v->curr_cattr |= ((c & 0x1f) << 8);
 	if (!v->vdi_colors)
-		v->term_cattr &= ~CE_ANSI_EFFECTS;
+		v->curr_cattr &= ~CE_ANSI_EFFECTS;
 	v->output = vt52_putch;
 }
 
@@ -89,9 +86,9 @@ static void seffect_putch(TEXTWIN *v, unsigned int c)
 static void ceffect_putch(TEXTWIN *v, unsigned int c)
 {
 	if (c == '_' && !v->vdi_colors)
-		v->term_cattr &= ~CE_ANSI_EFFECTS;
+		v->curr_cattr &= ~CE_ANSI_EFFECTS;
 
-	v->term_cattr &= ~((c & 0x1f) << 8);
+	v->curr_cattr &= ~((c & 0x1f) << 8);
 	v->output = vt52_putch;
 }
 
@@ -165,14 +162,14 @@ static void putesc(TEXTWIN *v, unsigned int c)
 #ifdef DEBUG
 			if (do_debug) syslog (LOG_ERR, "is smacs");
 #endif
-			v->term_cattr |= CACS;
+			v->curr_cattr |= CLINEDRAW;
 			break;
 
 		case 'G':		/* rmacs, end alternate character set.  */
 #ifdef DEBUG
 			if (do_debug) syslog (LOG_ERR, "is rmacs");
 #endif
-			v->term_cattr &= ~CACS;
+			v->curr_cattr &= ~CLINEDRAW;
 			break;
 
 		case 'E':		/* clear home */
@@ -267,39 +264,39 @@ static void putesc(TEXTWIN *v, unsigned int c)
 #ifdef DEBUG
 			if (do_debug) syslog (LOG_ERR, "is cursor on");
 #endif
-			v->curs_on = 1;
+			v->curr_tflags |= TCURS_ON;
 			break;
 		case 'f':		/* cursor off */
 #ifdef DEBUG
 			if (do_debug) syslog (LOG_ERR, "is cursor off");
 #endif
-			v->curs_on = 0;
+			v->curr_tflags &= ~TCURS_ON;
 			break;
 		case 'h':		/* MW extension: enter insert mode */
 #ifdef DEBUG
 			if (do_debug) syslog (LOG_ERR, "is enter insert mode");
 #endif
-			v->term_flags |= FINSERT;
+			v->curr_tflags |= TINSERT;
 			break;
 		case 'i':		/* MW extension: leave insert mode */
 #ifdef DEBUG
 			if (do_debug) syslog (LOG_ERR, "is leave insert mode");
 #endif
-			v->term_flags &= ~FINSERT;
+			v->curr_tflags &= ~TINSERT;
 			break;
 		case 'j':		/* save cursor position */
 #ifdef DEBUG
 			if (do_debug) syslog (LOG_ERR, "is save cursor position");
 #endif
-			v->savex = v->cx;
-			v->savey = v->cy;
+			v->saved_x = v->cx;
+			v->saved_y = v->cy;
 			break;
 		case 'k':		/* restore saved position */
 #ifdef DEBUG
 			if (do_debug) syslog (LOG_ERR, "is restore cursor position");
 #endif
 			/* FIXME: origin mode!!! */
-			gotoxy (v, v->savex, v->savey);
+			gotoxy (v, v->saved_x, v->saved_y);
 			break;
 		case 'l':		/* clear line */
 #ifdef DEBUG
@@ -318,13 +315,13 @@ static void putesc(TEXTWIN *v, unsigned int c)
 #ifdef DEBUG
 			if (do_debug) syslog (LOG_ERR, "is reverse video on");
 #endif
-			v->term_cattr |= CINVERSE;
+			v->curr_cattr |= CINVERSE;
 			break;
 		case 'q':		/* reverse video off */
 #ifdef DEBUG
 			if (do_debug) syslog (LOG_ERR, "is reverse video off");
 #endif
-			v->term_cattr &= ~CINVERSE;
+			v->curr_cattr &= ~CINVERSE;
 			break;
 		case 't':		/* backward compatibility for TW 1.x: set cursor timer */
 #ifdef DEBUG
@@ -341,13 +338,13 @@ static void putesc(TEXTWIN *v, unsigned int c)
 #ifdef DEBUG
 			if (do_debug) syslog (LOG_ERR, "is linewrap on");
 #endif
-			v->term_flags &= ~FNOAM;
+			v->curr_tflags |= TWRAPAROUND;
 			break;
 		case 'w':
 #ifdef DEBUG
 			if (do_debug) syslog (LOG_ERR, "is linewrap off");
 #endif
-			v->term_flags |= ~FNOAM;
+			v->curr_tflags &= ~TWRAPAROUND;
 			break;
 		case 'y':		/* TW extension: set special effects */
 #ifdef DEBUG
