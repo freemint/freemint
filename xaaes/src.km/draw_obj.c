@@ -1078,19 +1078,25 @@ set_text(OBJECT *ob,
 	case TE_GDOS_PROP:		/* Use a proportional SPEEDOGDOS font (AES4.1 style) */
 	case TE_GDOS_MONO:		/* Use a monospaced SPEEDOGDOS font (AES4.1 style) */
 	case TE_GDOS_BITM:		/* Use a GDOS bitmap font (AES4.1 style) */
+	{
 		t_font(ted->te_fontsize, ted->te_fontid);
 		cur.w = screen.c_max_w;
 		cur.h = screen.c_max_h;
 		break;
+	}
 	case TE_STANDARD:		/* Use the standard system font (probably 10 point) */
+	{
 		cur.w = screen.c_max_w;
 		cur.h = screen.c_max_h;
 		break;
+	}
 	case TE_SMALL:			/* Use the small system font (probably 8 point) */
+	{
 		t_font(screen.small_font_point, screen.small_font_id);
 		cur.w = screen.c_min_w;
 		cur.h = screen.c_min_h;
 		break;
+	}
 	}
 
 	/* HR: use vqt_extent to obtain x, because it is almost impossible, or
@@ -1109,9 +1115,10 @@ set_text(OBJECT *ob,
 	/* HR 290301 & 070202: Dont let a text violate its object space! (Twoinone packer shell!! :-) */
 	if (w > r.w)
 	{
-		short rw  = r.w/cur.w,
-		    dif = (w - r.w + cur.w - 1)/cur.w,
-		    h1dif,h2dif;
+		short	rw  = r.w / cur.w,
+			dif = (w - r.w + cur.w - 1)/cur.w,
+			h1dif,h2dif;
+
 		switch(ted->te_just)
 		{
 		case TE_LEFT:
@@ -1151,6 +1158,7 @@ set_text(OBJECT *ob,
 	{
 		*cr = cur;
 		cr->x += cur_x * cur.w;	/* non prop font only */
+		cr->w = 1;
 	}
 
 	cur.w = w;
@@ -1423,8 +1431,10 @@ d_g_fboxtext(enum locks lock, struct widget_tree *wt)
 
 
 	if (is_edit)
+	{
 		/* write cursor */
 		write_selection(0, &cr);
+	}
 
 	t_font(screen.standard_font_point, screen.standard_font_id);
 	done(OS_SELECTED);
