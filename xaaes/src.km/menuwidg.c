@@ -155,6 +155,95 @@ change_entry(Tab *tab, int state)
 	}
 }
 
+static void
+CE_set_rootmenu(enum locks lock, struct c_event *ce, bool cancel)
+{
+	struct xa_client *client = ce->client;
+	XA_WIDGET *widg = get_menu_widg();
+
+	if (!cancel)
+	{	/* menu widget.tree */
+		if (client->std_menu && client->std_menu != widg->stuff) /* Different menu? */
+		{
+			XA_TREE *wt;
+			struct xa_window *top = NULL;
+			bool wastop = false, do_topwind = ce->d0;
+
+			DIAG((D_appl, NULL, "swapped to %s",c_owner(new)));
+
+			if (do_topwind && ((top = window_list) != root_window ? root_window : NULL))
+				wastop = is_topped(top) ? true : false;
+			
+			client->status |= CS_WAIT_MENU;
+			lock_menustruct(client, false);
+			if ((wt = widg->stuff))
+			{
+				wt->widg = NULL;
+				wt->flags &= ~WTF_STATIC;
+			}
+			widg->stuff = wt = client->std_menu;
+			wt->flags |= WTF_STATIC;
+			wt->widg = widg;
+			set_menu_rectangle(root_window, widg);
+			unlock_menustruct(client);
+			client->status &= ~CS_WAIT_MENU;
+
+
+			DIAG((D_appl, NULL, "top: %s", w_owner(top)));
+
+			if (do_topwind && top)
+			{
+				if ((wastop && !is_topped(top)) || (!wastop && is_topped(top)))
+				{
+					if (wastop)
+						send_untop(lock, top);
+					else
+						send_ontop(lock);
+				
+					send_iredraw(lock, top, 0, NULL);
+				}
+			}
+		}
+#if GENERATE_DIAGS
+		else
+		{
+			DIAG((D_appl, NULL, "Same menu %s", c_owner(new)));
+		}
+#endif
+		if (client->std_menu)
+			redraw_menu(lock);
+	}
+}
+
+void
+set_rootmenu(struct xa_client *client, bool do_topwind)
+{
+	post_cevent(client, CE_set_rootmenu, NULL, NULL, do_topwind,0, NULL,NULL);
+}
+
+void
+set_menu_rectangle(struct xa_window *wind, XA_WIDGET *widg)
+{
+	OBJECT *obtree;
+	XA_TREE *wt;
+	short titles;
+
+	if (widg->type == XAW_MENU && (wt = widg->stuff) && (obtree = wt->tree))
+	{
+		RECT r;
+
+		titles = obtree[obtree[0].ob_head].ob_head;
+		obj_area(wt, titles, &r); //C.Aes->em.m1);
+		
+		if (wind == root_window)
+		{
+			C.Aes->em.flags = MU_M1;	/* into menu bar */
+			C.Aes->em.m1 = r;
+		}
+	}
+}
+
+
 bool
 is_attach(struct xa_client *client, XA_TREE *wt, int item, XA_MENU_ATTACHMENT **pat)
 {
@@ -755,7 +844,7 @@ menu_finish(struct task_administration_block *tab)
 		OBJECT *obtree = k->wt->tree;
 
 		is_bar = barred(tab);
-		client = pid2client(tab->locker);
+		client = tab->client; //pid2client(tab->locker);
 
 		DIAG((D_menu, NULL, "[%d]menu_finish, ty:%d", tab->dbg2, tab->ty));
 
@@ -766,8 +855,10 @@ menu_finish(struct task_administration_block *tab)
 			tab->widg->start = 0;
 
 		k->stage = NO_MENU;
-		
+
 		free_menutask(tab);
+		client->status &= ~CS_MENU_NAV;
+		Unblock(client, 1, 0);
 	}
 	else
 	{
@@ -777,8 +868,9 @@ menu_finish(struct task_administration_block *tab)
 	C.Aes->waiting_for = XAWAIT_MENU; /* ready for next menu choice */
 	C.Aes->em.flags = MU_M1;
 
-	if (menustruct_locked())
+	if ((client = menustruct_locked()))
 		unlock_menustruct(menustruct_locked());
+
 }
 
 Tab *
@@ -811,6 +903,7 @@ popout(struct task_administration_block *tab)
 		t = collapse(tab, NULL);
 
 		IFDIAG(tab->dbg2 = 1;)
+		
 		menu_finish(t);
 	}
 }
@@ -1069,18 +1162,19 @@ display_popup(Tab *tab, XA_TREE *wt, int item, short rdx, short rdy)
 		make_drop_rectlist(tab);
 	}	
 }
-
-void
+static void
 do_popup(Tab *tab, XA_TREE *wt, int item, TASK *click, short rdx, short rdy)
 {
 	OBJECT *root = wt->tree;
 	MENU_TASK *k = &tab->task_data.menu;
 
+	tab->client->status |= CS_MENU_NAV;
+
 	DIAG((D_menu, NULL, "do_popup: tab=%lx"));
 	menu_spec(root,item);
 	k->stage = IN_DESK;
 	k->point_at_menu = -1;
-	k->entry = menuclick; //click;
+	k->entry = menuclick;
 	k->select = click;
 
 	display_popup(tab, wt, item, rdx, rdy);
@@ -1103,6 +1197,13 @@ do_popup(Tab *tab, XA_TREE *wt, int item, TASK *click, short rdx, short rdy)
 	}
 }
 
+void
+start_popup_session(Tab *tab, XA_TREE *wt, int item, TASK *click, short rdx, short rdy)
+{
+	tab->client->status |= CS_MENU_NAV;
+	do_popup(tab, wt, item, click, rdx, rdy);
+}
+	
 static struct xa_client *
 menu_client(Tab *tab)
 {
@@ -1373,7 +1474,7 @@ menu_bar(struct task_administration_block *tab)
 	
 		tab = menu_pop(tab);
 		if (!menu_title(tab->lock, tab, tab->wind, tab->widg, tab->locker))
-			menu_finish(NULL);
+			menu_finish(tab);
 	}
 }
 
@@ -1555,6 +1656,7 @@ click_menu_entry(struct task_administration_block *tab)
 	{
 		DIAG((D_menu, NULL, "[3]collapse"));
 		tab = collapse(TAB_LIST_START, NULL);
+		menu_finish(tab);
 	}
 	else
 	{
@@ -1663,6 +1765,7 @@ click_popup_entry(struct task_administration_block *tab)
 	DIAG((D_menu, NULL, "click_popup_entry %lx + %d", md->mn_tree, md->mn_item));
 
 	IFDIAG(tab->dbg = 6;)
+	
 	popout(TAB_LIST_START);			/* incl. screen unlock */
 
 	assert(pb);
@@ -1687,6 +1790,7 @@ click_form_popup_entry(struct task_administration_block *tab)
 	DIAG((D_menu, NULL, "click_form_popup_entry %lx + %d", k->wt->tree, m));
 
 	IFDIAG(tab->dbg = 7;)
+	
 	popout(TAB_LIST_START);			/* incl. screen unlock */
 
 	assert(pb);
@@ -1718,15 +1822,17 @@ Display_menu_widg(enum locks lock, struct xa_window *wind, struct xa_widget *wid
 
 	if (wt->menu_line)	/* HR 090501  menu in user window.*/
 	{
-		short titles;
+		//short titles;
 
 		write_menu_line((RECT*)&obtree->ob_x);	/* HR: not in standard menu's object tree */
 
+#if 0
 		/* HR: Use the AES's client structure to register the rectangle for the current menu bar. */
 		titles = obtree[obtree[0].ob_head].ob_head;
 		C.Aes->waiting_for = XAWAIT_MENU;
 		obj_area(wt, titles, &C.Aes->em.m1);
 		C.Aes->em.flags = MU_M1;	/* into menu bar */
+#endif
 	}
 }
 
@@ -1802,6 +1908,8 @@ click_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *wid
 			return false;
 	}
 #endif
+	((XA_TREE *)widg->stuff)->owner->status |= CS_MENU_NAV;
+	
 	if (!menu_title(lock, NULL, wind, widg, client->p->pid))
 	{
 		menu_finish(NULL);
@@ -1916,7 +2024,8 @@ menu_title(enum locks lock, Tab *tab, struct xa_window *wind, XA_WIDGET *widg, i
 	}
 	else
 	{
-		free_menutask(tab);
+		menu_finish(tab);
+		//free_menutask(tab);
 		return false;
 	}
 }

@@ -331,9 +331,45 @@ dispatch_tpcevent(struct xa_client *client)
 	return ret;
 }
 #endif
+static void
+do_block(struct xa_client *client)
+{
+	if ((client->i_xevmask.ev_0 & XMU_FSELECT))
+	{
+		client->fselect.inuse = true;
+		client->blocktype = XABT_SELECT;
+		client->sleepqueue = SELECT_Q;
+		client->fselect.ret = f_select(0L, (long *)&client->fselect.rfds, (long *)&client->fselect.wfds, (long *)&client->fselect.xfds);
+	}
+	else
+	{
+		client->blocktype = XABT_SLEEP;
+		client->sleepqueue = IO_Q;
+		client->sleeplock = (long)client;
+		sleep(IO_Q, (long)client);
+	}
+	client->blocktype = XABT_NONE;
+	client->sleeplock = 0;
+}
+
 void
 Block(struct xa_client *client, int which)
 {
+	while ((client->status & CS_MENU_NAV))
+	{
+		while (client->irdrw_msg || client->cevnt_count)
+		{
+			if (client->irdrw_msg)
+				exec_iredraw_queue(0, client);
+			
+			dispatch_cevent(client);
+		}
+		if (!(client->status & CS_MENU_NAV))
+			break;
+		do_block(client);
+	}
+	
+	
 	while (!client->usr_evnt && (client->irdrw_msg || client->cevnt_count))
 	{
 		if (client->irdrw_msg)
@@ -341,6 +377,7 @@ Block(struct xa_client *client, int which)
 
 		dispatch_cevent(client);
 	}
+
 	if (client->usr_evnt)
 	{
 		cancel_evnt_multi(client, 1);
@@ -362,23 +399,20 @@ Block(struct xa_client *client, int which)
 	while (!client->usr_evnt)
 	{
 		DIAG((D_kern, client, "[%d]Blocked %s", which, c_owner(client)));
-
-		if ((client->i_xevmask.ev_0 & XMU_FSELECT))
+		do_block(client);
+		while ((client->status & CS_MENU_NAV))
 		{
-			client->fselect.inuse = true;
-			client->blocktype = XABT_SELECT;
-			client->sleepqueue = SELECT_Q;
-			client->fselect.ret = f_select(0L, (long *)&client->fselect.rfds, (long *)&client->fselect.wfds, (long *)&client->fselect.xfds);
+			while (client->irdrw_msg || client->cevnt_count)
+			{
+				if (client->irdrw_msg)
+					exec_iredraw_queue(0, client);
+				dispatch_cevent(client);
+			}
+			if (!(client->status & CS_MENU_NAV))
+				break;
+			
+			do_block(client);
 		}
-		else
-		{
-			client->blocktype = XABT_SLEEP;
-			client->sleepqueue = IO_Q;
-			client->sleeplock = (long)client;
-			sleep(IO_Q, (long)client);
-		}
-		client->blocktype = XABT_NONE;
-		client->sleeplock = 0;
 
 		/*
 		 * Ozk: This is gonna be the new style of delivering events;
@@ -387,7 +421,6 @@ Block(struct xa_client *client, int which)
 		 * Then the sender will wake up the receiver, which will call
 		 * check_queued_events() and handle the event.
 		*/
-
 		while (!client->usr_evnt && (client->irdrw_msg || client->cevnt_count))
 		{
 			if (client->irdrw_msg)
@@ -395,6 +428,7 @@ Block(struct xa_client *client, int which)
 
 			dispatch_cevent(client);
 		}
+
 		if (client->usr_evnt)
 		{
 			if (client->timeout)
@@ -913,6 +947,7 @@ k_main(void *dummy)
 	}
 	DIAGS(("loading shell and autorun done!"));
 
+	C.Aes->waiting_for |= XAWAIT_MENU;
 
 	/*
 	 * Main kernel loop

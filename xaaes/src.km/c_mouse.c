@@ -254,72 +254,73 @@ cXA_open_menu(enum locks lock, struct c_event *ce, bool cancel)
 void
 cXA_menu_move(enum locks lock, struct c_event *ce, bool cancel)
 {
-	if (cancel)
-		return;
-
-	if (TAB_LIST_START->client == ce->client && !C.move_block)
+	if (!cancel)
 	{
-		Tab *tab = TAB_LIST_START; // = C.menu_base;
-		MENU_TASK *k; // = &C.menu_base->task_data.menu;
-		int x = ce->md.x;
-		int y = ce->md.y;
-
-		DIAG((D_mouse, ce->client, "cXA_menu_move for %s", ce->client->name));
-		
-		/*
-		 * Ozk: Cannot use FOREACH_TAB() here, since there may be additions to the top (start)
-		 *      of the list during our wander down towards the bottom of it.
-		 */
-		while(tab) //FOREACH_TAB(tab) //while (tab)
+		if (TAB_LIST_START->client == ce->client && !C.move_block)
 		{
-			k = &tab->task_data.menu;
+			Tab *tab = TAB_LIST_START; // = C.menu_base;
+			MENU_TASK *k; // = &C.menu_base->task_data.menu;
+			int x = ce->md.x;
+			int y = ce->md.y;
 
-			if (k->em.flags & MU_MX)
+			DIAG((D_mouse, ce->client, "cXA_menu_move for %s", ce->client->name));
+		
+			/*
+			 * Ozk: Cannot use FOREACH_TAB() here, since there may be additions to the top (start)
+			 *      of the list during our wander down towards the bottom of it.
+			 */
+			while(tab) //FOREACH_TAB(tab) //while (tab)
 			{
-				/* XaAES internal flag: report any mouse movement. */
+				k = &tab->task_data.menu;
 
-				k->em.flags &= ~MU_MX; //0;
-				k->x = x;
-				k->y = y;
-				k->em.t1(tab); //&C.menu_base);	/* call the function */
-				break;
-			}
-			if (k->em.flags & MU_M1)
-			{
-				if (is_rect(x, y, k->em.m1_flag & 1, &k->em.m1))
+				if (k->em.flags & MU_MX)
 				{
-					k->em.flags &= ~MU_M1; //0;
+					/* XaAES internal flag: report any mouse movement. */
+
+					k->em.flags &= ~MU_MX; //0;
 					k->x = x;
 					k->y = y;
-					k->em.t1(tab); //C.menu_base);	/* call the function */
+					k->em.t1(tab);	/* call the function */
 					break;
 				}
-			}
-			if (k->em.flags & MU_M2)
-			{
-				if (is_rect(x, y, k->em.m2_flag & 1, &k->em.m2))
+				if (k->em.flags & MU_M1)
 				{
-					k->em.flags &= ~MU_M2; //0;
-					k->x = x;
-					k->y = y;
-					k->em.t2(tab);
-					break;
+					if (is_rect(x, y, k->em.m1_flag & 1, &k->em.m1))
+					{
+						k->em.flags &= ~MU_M1; //0;
+						k->x = x;
+						k->y = y;
+						k->em.t1(tab);	/* call the function */
+						break;
+					}
 				}
+				if (k->em.flags & MU_M2)
+				{
+					if (is_rect(x, y, k->em.m2_flag & 1, &k->em.m2))
+					{
+						k->em.flags &= ~MU_M2;
+						k->x = x;
+						k->y = y;
+						k->em.t2(tab);
+						break;
+					}
+				}
+				tab = tab->tab_entry.next;
 			}
-			tab = tab->tab_entry.next;
-		}
 
-		if (tab)
-			tab = tab->tab_entry.next;
+			if (tab)
+				tab = tab->tab_entry.next;
 		
-		while (tab)
-		{
-			k = &tab->task_data.menu;
-			if (k->outof)
-				k->outof(tab);
-			tab = tab->tab_entry.next;
+			while (tab)
+			{
+				k = &tab->task_data.menu;
+				if (k->outof)
+					k->outof(tab);
+				tab = tab->tab_entry.next;
+			}
 		}
 	}
+	C.ce_menu_move = NULL;
 }
 
 void

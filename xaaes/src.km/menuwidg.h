@@ -30,11 +30,14 @@
 #include "global.h"
 #include "xa_types.h"
 
+void set_rootmenu(struct xa_client *client, bool do_topwind);
+
+void set_menu_rectangle(struct xa_window *wind, XA_WIDGET *widg);
 
 TASK click_form_popup_entry, click_popup_entry, do_scroll_menu;
 Tab *	nest_menutask(Tab *tab);
 void	popout(Tab *tab);
-void	do_popup(Tab *tab, XA_TREE *wt, int item, TASK *click, short rdx, short rdy);
+void	start_popup_session(Tab *tab, XA_TREE *wt, int item, TASK *click, short rdx, short rdy);
 bool	is_attach(struct xa_client *client, XA_TREE *wt, int item, XA_MENU_ATTACHMENT **pat);
 int	inquire_menu(enum locks lock, struct xa_client *client, XA_TREE *wt, int item, XAMENU *mn);
 int	attach_menu(enum locks lock, struct xa_client *client, XA_TREE *wt, int item, XAMENU *mn);

@@ -499,9 +499,12 @@ form_keyboard(XA_TREE *wt,
 			next_key = keycode;
 	}
 
+	/* Ozk: Looks like we need to return a 0 for next object when 
+	 *	the key as not processed by form_keyboard()...
+	 */
 	if (next_obj < 0)
-		next_obj = obj;
-
+		next_obj = 0;
+	
 	if (nxtobj)
 		*nxtobj = next_obj;
 	if (newstate)
@@ -509,10 +512,10 @@ form_keyboard(XA_TREE *wt,
 	if (nxtkey)
 		*nxtkey = next_key;
 
-	DIAG((D_keybd, NULL, "form_keyboard: no_exit=%s, nxtobj=%d, nxtkey=%x, obstate=%x, for %s",
-		fr.no_exit ? "true" : "false", next_obj, next_key, wt->tree[next_obj].ob_state, client->name));
+	DIAG((D_keybd, NULL, "form_keyboard: no_exit=%s(%d), nxtobj=%d, nxtkey=%x, obstate=%x, for %s",
+		fr.no_exit ? "true" : "false", fr.no_exit, next_obj, next_key, wt->tree[next_obj].ob_state, client->name));
 
-	return fr.no_exit;
+	return fr.no_exit ? 1 : 0;
 }
 	
 /*
@@ -780,7 +783,7 @@ Key_form_do(enum locks lock,
 				DIAGS(("Key_form_do: obj_edit - edobj=%d, edpos=%d",
 					wt->e.obj, wt->e.pos));
 			}
-			else if (wt->e.obj != fr.obj)
+			else if (fr.obj && wt->e.obj != fr.obj)
 			{
 				obj_edit(wt, ED_END, 0, 0, 0, true, rl, NULL, NULL);
 				obj_edit(wt, ED_INIT, fr.obj, 0, -1, true, rl, NULL, NULL);

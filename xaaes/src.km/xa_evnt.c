@@ -148,7 +148,7 @@ pending_iredraw_msgs(enum locks lock, struct xa_client *client, union msg_buf *b
 		/* write to client */
 		*buf = msg->message;
 
-		DIAG((D_m, NULL, "Got pending WM_REDRAW (%lx (wind=%d, %d/%d/%d/%d)) for %s",
+		DIAG((D_m, NULL, "Got pending WM_iREDRAW (%lx (wind=%d, %d/%d/%d/%d)) for %s",
 			msg, buf->m[3], *(RECT *)&buf->m[4], c_owner(client) ));
 
 		kfree(msg);
@@ -755,9 +755,12 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 void
 cancel_evnt_multi(struct xa_client *client, int which)
 {
-	client->waiting_for = 0;
-	client->em.flags = 0;
-	client->waiting_pb = NULL;
+	if (client != C.Aes)
+	{
+		client->waiting_for = 0;
+		client->em.flags = 0;
+		client->waiting_pb = NULL;
+	}
 	DIAG((D_kern,NULL,"[%d]cancel_evnt_multi for %s", which, c_owner(client)));
 }
 
