@@ -168,7 +168,7 @@ setenv PATH /boot/mint/bin;/sbin;/bin;/usr/sbin;/usr/bin
 # libraries').
 setenv SLBPATH ./;/c/mint
 
-# checking filesystem if necassar
+# checking filesystem if necessary
 # Note: you need a correct /etc/fstab
 #exec u:/c/mint/bin/sh u:/c/mint/bin/fscheck.sh
 #echo
@@ -218,6 +218,12 @@ setenv THINGDIR u:/boot/mint/aes/desktop
 # path and filename like that:
 
 #GEM=u:/boot/mint/aes/xaaes.prg
+
+# You can also request MiNT to execute the TOS AES residing in ROM.
+# WARNING: this is not recommended, you should use a GEM version
+# instead, that is multitasking friendly.
+
+#GEM=ROM
 
 # Otherwise, if your init program is not GEM, you should use INIT= as
 # follows:
