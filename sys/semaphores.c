@@ -3,8 +3,12 @@
  * distribution. See the file CHANGES for a detailed log of changes.
  * 
  * 
- * Copyright 2003 Frank Naumann <fnaumann@freemint.de>
+ * Copyright 2004 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
+ * 
+ * Please send suggestions, patches or bug reports to me or
+ * the MiNT mailing list
+ * 
  * 
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,6 +23,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ * 
  */
 
 # include "semaphores.h"
@@ -27,14 +32,19 @@
 
 
 void
-__semaphore_init(struct semaphore *s)
+_semaphore_init(struct semaphore *s, const char *file)
 {
+	DEBUG(("semaphore_init((0x%lx) from %s", s, file));
+	
+	s->lock = 0;
 	s->count = 0;
 }
 
 void
-__semaphore_p(struct semaphore *s)
+_semaphore_lock(struct semaphore *s, const char *file)
 {
+	DEBUG(("want semaphore(0x%lx) from %s", s, file));
+	
 	s->count++;
 	
 	while (s->lock)
@@ -42,11 +52,15 @@ __semaphore_p(struct semaphore *s)
 	
 	/* enter semaphore */
 	s->lock = 1;
+	
+	DEBUG(("semaphore(0x%lx) aquired for %s", s, file));
 }
 
 void
-__semaphore_v(struct semaphore *s)
+_semaphore_rel(struct semaphore *s, const char *file)
 {
+	DEBUG(("semaphore(0x%lx) released from %s", s, file));
+	
 	s->count--;
 	
 	if (s->count)
@@ -55,33 +69,3 @@ __semaphore_v(struct semaphore *s)
 	/* exit semaphore */
 	s->lock = 0;
 }
-
-# ifdef SEMAPHOREDEBUG
-
-void
-_semaphore_init(struct semaphore *s, const char *file, long line)
-{
-	DEBUG(("semaphore_init((0x%lx) from %s, %li", s, file, line));
-	
-	__semaphore_init(s);
-}
-
-void
-_semaphore_p(struct semaphore *s, const char *file, long line)
-{
-	DEBUG(("want semaphore(0x%lx) from %s, %li", s, file, line));
-	
-	__semaphore_p(s);
-	
-	DEBUG(("semaphore(0x%lx) aquired", s));
-}
-
-void
-_semaphore_v(struct semaphore *s, const char *file, long line)
-{
-	DEBUG(("semaphore(0x%lx) released from %s, %li", s, file, line));
-	
-	__semaphore_v(s);
-}
-
-# endif /* SEMAPHOREDEBUG */
