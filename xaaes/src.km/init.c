@@ -434,8 +434,18 @@ init(struct kentry *k, const char *path)
 
 	}
 
-	while (!(C.shutdown & QUIT_NOW))
-		sleep(WAIT_Q, (long)&loader_pid);
+	{
+		struct proc *p = get_curproc();
+		ulong oldmask;
+
+		oldmask = p->p_sigmask;
+		p->p_sigmask = 0xffffffffUL;
+
+		while (!(C.shutdown & QUIT_NOW))
+			sleep(WAIT_Q, (long)&loader_pid);
+
+		p->p_sigmask = oldmask;
+	}
 
 	/* succeeded */
 	return 0;
