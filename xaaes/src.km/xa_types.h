@@ -303,10 +303,18 @@ typedef short _cdecl wdlg_exit  (void *dialog,
 				short clicks,
 				void *data);
 
+struct xa_data_hdr;
+struct xa_data_hdr
+{
+	unsigned long		datatype;
+	struct xa_data_hdr	*next;
+	void			(*destruct)(void *data);
+};
+
 /* Object Tree based widget descriptor */
 struct wdlg_info
 {
-	unsigned long datatype;
+	struct xa_data_hdr	h;
 
 	void *handle;			/* For use as 'wdialog structure' */
 	struct xa_window *wind;		/* cross reference to parent window. */
@@ -362,7 +370,8 @@ struct lbox_slide
 	
 struct xa_lbox_info
 {
-	unsigned long datatype;
+	struct xa_data_hdr	h;
+
 	struct xa_lbox_info *next;	/* Next lbox attached to this widget tree */
 	void  *wdlg_handle;		/* wdlg handle */
 	void  *lbox_handle;		/* lbox handle */
@@ -394,7 +403,8 @@ struct xa_fnts_item
 
 struct xa_fnts_info
 {
-	unsigned long datatype;
+	struct xa_data_hdr h;
+
 	void	*handle;
 	struct	xa_window *wind;
 	struct	widget_tree *wt;
@@ -441,10 +451,11 @@ struct objc_edit_info
 	short c_state;	/* Cursor state */
 	RECT cr;	/* Cursor coordinates, relative */
 };
-
+	
 struct widget_tree
 {
 	struct widget_tree *next;	/* Next widget tree */
+	short	links;
 
 #define WTF_ALLOC	0x0001
 #define WTF_XTRA_ALLOC	0x0002
@@ -494,6 +505,7 @@ struct widget_tree
 					 * or anything the like ;-) */
 	void *extra;			/* Extra info if needed (texts for alert) */
 	struct xa_lbox_info *lbox;
+
 };
 typedef struct widget_tree XA_TREE;
 
@@ -600,7 +612,6 @@ struct xa_client
 
 	short	swm_newmsg;
 
-	//bool apterm;			/* true if application understands AP_TERM. */
 	bool forced_init_client;
 	bool pexit;
 
@@ -625,22 +636,6 @@ struct xa_client
 	AESPB *waiting_pb;		/* Parameter block for whatever the client is waiting for */
 	short *waiting_short;		/* */
 
-	struct xevnt_mask i_xevmask;
-	struct xevnt_mask c_xevmask;
-	struct xevnt_mask *o_xevmask;
-	struct xevnts *out_xevnts;
-
-	struct evnt_mu_keyboard	xev_kbd;
-	struct evnt_mu_button	xev_button;
-	struct evnt_mu_mr	xev_m1;
-	struct evnt_mu_mr	xev_m2;
-	struct evnt_mu_mx	xev_mx;
-	struct evnt_mu_fselect  xev_fselect;
-	struct evnt_mu_pmsg	xev_pmsg;
-
-	bool fselect_timeout;
-	struct fselect_result fselect;
-		
 	short mouse;			/* The cursor to use when this is top application */
 	short save_mouse;		/* The cursor saved by M_SAVE */
 	short prev_mouse;		/* The cursor previous to any change - used by M_LAST/M_PREVIOUS */
@@ -676,7 +671,6 @@ struct xa_client
 	struct xa_window *alert;
 
 	struct fmd fmd;			/* Data needed by the XaAES windowing of dialogues. */
-	void *temp;			/* Temporary storage */
 	struct xa_client *nextclient;	/* Use for appl_find(APP_FIRST/APP_NEXT) */
 	int  type;			/* What type of client is this? */
 
@@ -691,7 +685,6 @@ struct xa_client
 					 * this also solves the problem that memory allocated for colour icon data
 					 * was left orphaned. */
 
-	struct xa_client *srchn;	/* first/next for appl_search */
 #if GENERATE_DIAGS
 	char zen_name[NICE_NAME + 2 + 16];
 #endif
@@ -734,6 +727,9 @@ struct xa_client
 	short	tpcevnt_count;
 	struct	c_event *tpcevnt_head;
 	struct	c_event *tpcevnt_tail;
+
+	struct	xa_data_hdr *xa_data;
+
 };
 
 typedef unsigned long AES_function(enum locks lock, struct xa_client *client, AESPB *pb);
@@ -817,6 +813,27 @@ struct xa_widget_location
 };
 typedef struct xa_widget_location XA_WIDGET_LOCATION;
 
+/*
+ * Parameter block used to communicate parameters to set_toolbar_widget();
+ * A pointer value of NULL (0L) means "Use standard handler".
+ * A pointer value of -1L makes the corresponding handler pointer to be disabled, (a NULL pointer is filled in)
+ * Any other pointer values are considered pointers to a function.
+ */
+struct toolbar_handlers
+{	
+	FormExit	*exitform;
+	FormKeyInput	*keypress;
+
+	DisplayWidget	*display;
+	WidgetBehaviour	*click;
+	WidgetBehaviour	*dclick;
+	WidgetBehaviour	*drag;
+	WidgetBehaviour	*release;
+
+	void (*destruct)(struct xa_widget *w);
+
+};
+
 /* Window Widget */
 struct xa_widget
 {
@@ -828,7 +845,7 @@ struct xa_widget
 	RECT r;
 	RECT ar;			/**/
 
-	DisplayWidget *display;		/* Function pointers to the behaviours of the widget */
+	DisplayWidget	*display;		/* Function pointers to the behaviours of the widget */
 	WidgetBehaviour *click;
 	WidgetBehaviour *dclick;
 	WidgetBehaviour *drag;
@@ -837,6 +854,7 @@ struct xa_widget
 #define XAWF_ALLOC		1
 #define XAWF_STUFFKMALLOC	2
 	short flags;
+
 #define WIDG_NOTEXT	1
 	short properties;
 
@@ -1026,9 +1044,10 @@ struct xa_window
 	char winfo[MAX_WINDOW_INFO];	/* window info line (copy) */
 
 	struct wdlg_info *wdlg;
-	
-	void		*data;
-	void		(*data_destruct)(struct xa_window *wind);
+
+	//void xa_data_hdr *data;			/* All structures attached here are headed with 'struct xa_data_hdr' */
+//	void		*data;
+//	void		(*data_destruct)(struct xa_window *wind);
 };
 
 struct xa_window *get_top(void);

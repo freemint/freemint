@@ -159,7 +159,7 @@ open_about(enum locks lock)
 		(form + ABOUT_INFOSTR)->ob_spec.free_string = info_string;
 #endif
 
-		wt = set_toolbar_widget(lock, dialog_window, dialog_window->owner, form, -1, WIDG_NOTEXT);
+		wt = set_toolbar_widget(lock, dialog_window, dialog_window->owner, form, -1, WIDG_NOTEXT, NULL);
 		wt->exit_form = about_form_exit;
 
 		/* set a scroll list widget */

@@ -548,7 +548,7 @@ wakeme_timeout(struct proc *p, struct xa_client *client)
 		wake(IO_Q, (long)client);
 
 }
-
+#if 0
 unsigned long
 XA_xevnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 {
@@ -665,6 +665,7 @@ XA_xevnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	return XAC_DONE;	
 }
+#endif
 
 void
 cancel_mutimeout(struct xa_client *client)

@@ -423,4 +423,11 @@ static inline void forcem(void) { v_show_c(C.vh, 0); }
 struct xa_client *pid2client(short pid);
 struct xa_client *proc2client(struct proc *p);
 
+void *	lookup_xa_data		(struct xa_data_hdr **l,    void *_data);
+void	add_xa_data		(struct xa_data_hdr **list, void *_data, void (*destruct)(void *d));
+void	remove_xa_data		(struct xa_data_hdr **list, void *_data);
+void	delete_xa_data		(struct xa_data_hdr **list, void *_data);
+void	free_xa_data_list	(struct xa_data_hdr **list);
+
+
 #endif /* _xa_global_h */
