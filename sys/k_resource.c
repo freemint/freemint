@@ -466,10 +466,13 @@ sys_prusage (long *r)
  *    1:  max. cpu time	(milliseconds)
  *    2:  max. core memory allowed
  *    3:  max. amount of malloc'd memory allowed
+ *
+ * Attention: recalc_maxmem() only work correctly for curproc!
  */
 long _cdecl
-proc_setlimit (struct proc *p, int i, long v)
+sys_psetlimit (int i, long v)
 {
+	struct proc *p = curproc;
 	long oldlimit;
 
 	switch(i)
@@ -509,10 +512,4 @@ proc_setlimit (struct proc *p, int i, long v)
 	
 	TRACE (("p_setlimit(%d, %ld): oldlimit = %ld", i, v, oldlimit));
 	return oldlimit;
-}
-
-long _cdecl
-sys_psetlimit (int i, long v)
-{
-	return proc_setlimit(curproc, i, v);
 }
