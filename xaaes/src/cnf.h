@@ -8,6 +8,8 @@
 # ifndef _cnf_h
 # define _cnf_h
 
+#ifdef MINT_CNF_PARSER
+
 #include "global.h"
 
 
@@ -124,5 +126,7 @@ void parser_msg(struct parsinf *, const char *msg);
 
 void parse_include(const char *path, struct parsinf *, struct parser_item *);
 void parse_cnf(const char *name, struct parser_item *, void *);
+
+#endif /* MINT_CNF_PARSER */
 
 # endif /* _cnf_h */
