@@ -2843,6 +2843,7 @@ set_toolbar_widget(enum locks lock, struct xa_window *wind, OBJECT *obtree, shor
 	{
 		((XA_TREE *)widg->stuff)->widg = NULL;
 		((XA_TREE *)widg->stuff)->wind = NULL;
+		((XA_TREE *)widg->stuff)->zen  = false;
 	}
 
 	wt = obtree_to_wt(wind->owner, obtree);
@@ -2853,6 +2854,7 @@ set_toolbar_widget(enum locks lock, struct xa_window *wind, OBJECT *obtree, shor
 
 	wt->widg = widg;
 	wt->wind = wind;
+	wt->zen  = true;
 
 	if (!obj_edit(wt, ED_INIT, edobj, 0, -1, false, NULL, NULL, &edobj))
 		obj_edit(wt, ED_INIT, edobj, 0, -1, false, NULL, NULL, NULL);
@@ -2872,7 +2874,7 @@ set_toolbar_widget(enum locks lock, struct xa_window *wind, OBJECT *obtree, shor
 		if (wt->e.obj >= 0 || obtree_has_default(obtree))
 			wind->keypress = Key_form_do;
 
-		wt->exit_form = Exit_form_do;
+		wt->exit_form	= Exit_form_do;
 		widg->click	= Click_windowed_form_do;
 		widg->dclick	= Click_windowed_form_do;
 		widg->drag	= Click_windowed_form_do;
@@ -2881,6 +2883,7 @@ set_toolbar_widget(enum locks lock, struct xa_window *wind, OBJECT *obtree, shor
 #else
 	if (wt->e.obj >= 0 || obtree_has_default(obtree))
 		wind->keypress = Key_form_do;
+
 	wt->exit_form	= Exit_form_do;
 	widg->click	= Click_windowed_form_do;
 	widg->dclick	= Click_windowed_form_do;

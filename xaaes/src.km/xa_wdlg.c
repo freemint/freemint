@@ -313,21 +313,23 @@ XA_wdlg_create(enum locks lock, struct xa_client *client, AESPB *pb)
 	if (pb->addrin[0] && pb->addrin[1] && pb->addrout)
 	{
 		XA_WIND_ATTR tp = MOVER|NAME;
-		RECT r;
-		OBJECT *tree = (OBJECT*)pb->addrin[1];
+		RECT r, or;
+		OBJECT *obtree = (OBJECT*)pb->addrin[1];
 
 		pb->addrout[0] = 0;
 
-		tree->ob_state &= ~OS_OUTLINED;
+		obtree->ob_state &= ~OS_OUTLINED;
 
-		if (tree->ob_x <= 0 && tree->ob_y <= 0)
-			form_center(tree, ICON_H);
+		if (obtree->ob_x <= 0 && obtree->ob_y <= 0)
+			form_center(obtree, ICON_H);
+
+		ob_area(obtree, 0, &or);
 
 		r = calc_window(lock, client, WC_BORDER,
 				tp,
 				MG,
 				false, false,
-				*(RECT*)&tree->ob_x);
+				*(RECT *)&or);		// *(RECT*)&tree->ob_x);
 
 		wind = create_window(lock, send_app_message, NULL, client, false,
 				     tp,
@@ -347,7 +349,7 @@ XA_wdlg_create(enum locks lock, struct xa_client *client, AESPB *pb)
 
 				wind->wdlg = wdlg;
 
-				wt = set_toolbar_widget(lock, wind, tree, 0);
+				wt = set_toolbar_widget(lock, wind, obtree, 0);
 				wt->exit_form = NULL; //exit_wdial;
 
 				wdlg->handle = (void*)(long)wind->handle;
@@ -413,11 +415,14 @@ XA_wdlg_open(enum locks lock, struct xa_client *client, AESPB *pb)
 		/* recreate window with final widget set. */
 		if ((short)tp != (short)wind->active_widgets)
 		{
-			OBJECT *tree = wdlg->std_wt->tree;
+			OBJECT *obtree = wdlg->std_wt->tree;
+			RECT or;
+
+			ob_area(obtree, 0, &or);
 
 			r = calc_window(lock, client, WC_BORDER,
 					tp, MG, false, false,
-					*(RECT *)&tree->ob_x);
+					*(RECT *)&or); //*(RECT *)&tree->ob_x);
 
 			change_window_attribs(lock, client, wind, tp, r, &r);
 		}
@@ -664,7 +669,7 @@ XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			
 				if ( obtree != wdlg->std_wt->tree)
 				{
-					RECT r;
+					RECT r, or;
 
 					wt = obtree_to_wt(client, obtree);
 					if (!wt)
@@ -680,11 +685,17 @@ XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 					{
 						wt = set_toolbar_widget(lock, wind, obtree, 0);
 						wt->exit_form = NULL;
-						r.x = obtree->ob_x = wind->wa.x;
-						r.y = obtree->ob_y = wind->wa.y;
-						r.w = obtree->ob_width;
-						r.h = obtree->ob_height;
+						ob_area(obtree, 0, &or);
+
+						r = calc_window(lock, client, WC_BORDER,
+							wind->active_widgets, MG, false, false,
+							*(RECT *)&or);
+
+						r.x = wind->r.x;
+						r.y = wind->r.y;
 						move_window(lock, wind, -1, r.x, r.y, r.w, r.h);
+						obtree->ob_x = wind->wa.x;
+						obtree->ob_y = wind->wa.y;
 					}
 				}
 				else

@@ -108,7 +108,7 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	if (client)
 	{
-		ALERT(("Double appl_init for %s, ignored!", client->proc_name));
+		//ALERT(("Double appl_init for %s, ignored!", client->proc_name));
 		goto clean_out;
 	}
 
