@@ -20,6 +20,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#ifndef MINT_CNF_PARSER
+
 #include <mint/mintbind.h>
 
 #include "xa_types.h"
@@ -1098,3 +1100,5 @@ SCL(LOCK lock, int co, char *name, char *full, char *txt)
 	if (txt == 0)
 		free(cnf);
 }
+
+#endif /* MINT_CNF_PARSER */
