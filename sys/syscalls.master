@@ -610,22 +610,24 @@ opcode	class name	args */
 0x02e	  null
 0x02f	  null
 
-0x030	  null
-0x031	  null
-0x032	  null
-0x033	  null
-0x034	  null
-0x035	  null
-0x036	  null
-0x037	  null
-0x038	  null
-0x039	  null
-0x03a	  null
-0x03b	  null
-0x03c	  null
-0x03d	  null
-0x03e	  null
-0x03f	  null
+	/* MetaDOS XBIOS extensions (0x30 - 0x3f) */
+
+0x030	m etainit	(void *metainit) unsupported
+0x031	m etaopen	(short drive, void *metaopen) unsupported
+0x032	m etaclose	(short drive)
+0x033	m etaread	(short drive, void *buffer, ulong first, ushort count) unsupported
+0x034	m etawrite	(short drive, void *buffer, ulong first, ushort count) unsupported
+0x035	m etaseek	(short drive, ulong offset) unsupported
+0x036	m etastatus	(short drive, void *extended) unsupported
+0x037	m etaioctl	(short drive, long magic, short opcode, void *buffer) unsupported
+0x038	  undefined
+0x039	  undefined
+0x03a	  undefined
+0x03b	m etastartaudio	(short drive, ushort dummy, void *tracks) unsupported
+0x03c	m etastopaudio	(short drive) unsupported
+0x03d	m etasetsongtime(short drive, ushort dummy, ulong start, ulong end) unsupported
+0x03e	m etagettoc	(short drive, ushort dummy, void *tocentry) unsupported
+0x03f	m etadiscinfo	(short drive, void *discinfo) unsupported
 
 0x040	  null
 0x041	  null
