@@ -26,6 +26,7 @@
 #include "xa_types.h"
 #include "xa_global.h"
 
+#include "util.h"
 #include "rectlist.h"
 #include "objects.h"
 #include "c_window.h"
