@@ -268,9 +268,21 @@ make_rect_list(struct xa_window *wind, bool swap, short which)
 	if (swap)
 	{
 		DIAGS(("Freeing old rect_list for %d", wind->handle));
-		free_rect_list(wind->rect_start);
-		free_rect_list(wind->rect_opt_start);
-		wind->rect_list = wind->rect_user = wind->rect_start = wind->rect_opt_start = wind->rect_opt = NULL;
+		switch (which)
+		{
+			case RECT_SYS:
+			{
+				free_rect_list(wind->rect_start);
+				wind->rect_list = wind->rect_user = wind->rect_start = NULL;
+				/* Fall through */
+			}
+			case RECT_OPT:
+			{
+				free_rect_list(wind->rect_opt_start);
+				wind->rect_opt = wind->rect_opt_start = NULL;
+				break;
+			}
+		}
 	}
 
 	if (wind->owner->status & CS_EXITING)
