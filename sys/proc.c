@@ -857,7 +857,8 @@ DUMPPROC (void)
 	{
 		FORCE ("state %s PC: %lx BP: %lx (pgrp %i)",
 			qname(curproc->wait_q),
-			curproc->ctxt[SYSCALL].pc,
+			curproc->p_flag & P_FLAG_SYS ?
+			curproc->ctxt[CURRENT].pc : curproc->ctxt[SYSCALL].pc,
 			curproc->base,
 			curproc->pgrp);
 	}
