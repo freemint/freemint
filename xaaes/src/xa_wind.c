@@ -464,8 +464,6 @@ XA_wind_set(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
 	/* Top the window */
 	case WF_TOP:
-		IFWL(Sema_Up(winlist);)
-
 		if (w == 0)
 		{
 			if (wind == -1)
@@ -492,7 +490,6 @@ XA_wind_set(LOCK lock, XA_CLIENT *client, AESPB *pb)
 				after_top(lock|winlist, true);
 			}
 		}
-		IFWL(Sema_Dn(winlist);)
 
 		break;
 
@@ -733,8 +730,6 @@ XA_wind_get(LOCK lock, XA_CLIENT *client, AESPB *pb)
 
 	case WF_FTOOLBAR:	/* suboptimal, but for the moment it is more important that it van be used. */
 	case WF_FIRSTXYWH:	/* Generate a rectangle list and return the first entry */
-		IFWL(Sema_Up(winlist);)
-
 		rl = rect_get_user_first(w);
 		/* HR: Oh, Oh  Leaving a intersect unchecked!! And forcing me to use a goto :-( */
 		if (rl)
@@ -754,13 +749,11 @@ XA_wind_get(LOCK lock, XA_CLIENT *client, AESPB *pb)
 			ro->h = 0;
 		}
 		DIAG((D_wind, client, "first for %s %d/%d,%d/%d\n", client->name, o[1], o[2], o[3], o[4]));
-		IFWL(Sema_Dn(winlist);)
 		break;
 			
 	case WF_NTOOLBAR:		/* suboptimal, but for the moment it is more
 					   important that it van be used. */
 	case WF_NEXTXYWH:		/* Get next entry from a rectangle list */
-		IFWL(Sema_Up(winlist);)
 next:
 		do {
 			rl = rect_get_user_next(w);
@@ -787,7 +780,6 @@ next:
 		while (1);
 		DIAG((D_wind, client, "next for %s %d/%d,%d/%d\n",
 			client->name, o[1], o[2], o[3], o[4]));
-		IFWL(Sema_Dn(winlist);)
 		break;
 
 	case WF_TOOLBAR:
@@ -866,7 +858,6 @@ next:
 
 	/* Extension, gets the bottom window */
 	case WF_BOTTOM:
-		IFWL(Sema_Up(winlist);)
 #if 0
 		for (w = window_list; w->next; w = w->next)
 			;
@@ -875,13 +866,11 @@ next:
 		if (w->prev)
 			w = w->prev;
 #endif
-		IFWL(Sema_Dn(winlist);)
 		o[1] = w->handle;	/* Return the window handle of the bottom window */
 		o[2] = w->owner->pid;	/* Return the owner of the bottom window */
 		break;
 			
 	case WF_TOP:
-		IFWL(Sema_Up(winlist);)
 		w = window_list;
 
 		while (is_hidden(w))
@@ -920,13 +909,10 @@ next:
 			o[1] = 0;		/* No windows open - return an error */
 			o[0] = 0;
 		}
-		IFWL(Sema_Dn(winlist);)
 		break;
 
 	/* AES4 compatible stuff */
 	case WF_OWNER:
-		IFWL(Sema_Up(winlist);)
-
 		if (wind == 0)				/* If it is the root window, things arent that easy. */
 			o[1] = get_desktop()->owner->pid;
 		else
@@ -947,7 +933,6 @@ next:
 			o[4] = -1;
 
 		DIAG((D_wind, client, "  --  owner: %d(%d), above: %d, below: %d\n", o[1], o[2], o[3], o[4]));
-		IFWL(Sema_Dn(winlist);)
 		break;
 
 	case WF_VSLIDE:
@@ -1138,8 +1123,6 @@ remove_windows(LOCK lock, XA_CLIENT *client)
 
 	DIAG((D_wind,client,"remove_windows for %s\n", c_owner(client)));
 
-	IFWL(Sema_Up(winlist);)
-
 	wl = window_list;
 	while (wl)
 	{
@@ -1164,8 +1147,6 @@ remove_windows(LOCK lock, XA_CLIENT *client)
 			delete_window(lock|winlist, wl);
 		wl = nwl;
 	}
-
-	IFWL(Sema_Dn(winlist);)
 }
 
 unsigned long

@@ -48,12 +48,6 @@
 #include "scrlobjc.h"
 #include "xa_clnt.h"
 
-/* Direct call interface enable */
-#if USE_CALL_DIRECT
-#define CALL_DIRECT(x) Ktab[(x)].d = true
-#else
-#define CALL_DIRECT(x)		/* HR make empty define */
-#endif
 
 XA_FTAB Ktab[KtableSize];	/* The main AES kernel command jump table */
 
@@ -251,54 +245,6 @@ pending_client_exit(XA_CLIENT *client)
 	}
 }
 
-#if USE_CALL_DIRECT	/* HR: This is really not necessary anymore.
-			       Good engineered C is the obvious solution. */
-static void
-enable_call_direct(void)
-{
-	/* HR 230501: event functions are NEVER called direct!!!
-	 * They are part of the event queuing subsystem.
-	 * This subsystem is a integral part of the main kernel loop.
-	 */
-
-	CALL_DIRECT(XA_GRAF_HANDLE);
-	CALL_DIRECT(XA_GRAF_MOUSE);
-	CALL_DIRECT(XA_GRAF_MKSTATE);
-	CALL_DIRECT(XA_GRAF_MOVEBOX);
-	CALL_DIRECT(XA_GRAF_GROWBOX);
-	CALL_DIRECT(XA_GRAF_SHRINKBOX);
-	CALL_DIRECT(XA_WIND_FIND);
-#if 1
-	CALL_DIRECT(XA_WIND_GET);
-	CALL_DIRECT(XA_WIND_SET);
-#endif
-#if 1
-	CALL_DIRECT(XA_WIND_CREATE);
-	CALL_DIRECT(XA_WIND_DELETE);
-	CALL_DIRECT(XA_WIND_OPEN);
-	CALL_DIRECT(XA_WIND_CLOSE);
-#endif
-	CALL_DIRECT(XA_OBJC_ADD);
-	CALL_DIRECT(XA_OBJC_DELETE);
-	CALL_DIRECT(XA_OBJC_FIND);
-	CALL_DIRECT(XA_OBJC_OFFSET);
-	CALL_DIRECT(XA_OBJC_ORDER);
-#if 1
-	CALL_DIRECT(XA_OBJC_CHANGE);
-	CALL_DIRECT(XA_OBJC_DRAW);
-#endif	
-	CALL_DIRECT(XA_RSRC_LOAD);
-	CALL_DIRECT(XA_RSRC_FREE);
-	CALL_DIRECT(XA_RSRC_GADDR);
-	CALL_DIRECT(XA_RSRC_OBFIX);
-#if 1
-	CALL_DIRECT(XA_MENU_TNORMAL);
-	CALL_DIRECT(XA_MENU_ICHECK);
-	CALL_DIRECT(XA_MENU_IENABLE);
-#endif
-}
-#endif
-
 void
 close_client(LOCK lock, XA_CLIENT *client)
 {
@@ -435,11 +381,6 @@ XaAES(void)
 	unsigned long input_channels;
 	int fs_rtn, r, evnt_count = 0;
 
-#if USE_CALL_DIRECT
-	if (cfg.direct_call)
-		enable_call_direct();
-#endif
-
 	/* Main kernel loop */
 
 	DIAGS(("Handles: MOUSE %ld, KBD %ld, AES %ld, ALERT %ld\n",
@@ -466,21 +407,10 @@ XaAES(void)
 
 	do {
 		/* HR: The root of all locking under AES pid. */
-#if USE_CALL_DIRECT
-		LOCK lock = cfg.direct_call ? NOLOCKS : (winlist|envstr);
-
-		/* The pending sema is only needed if the evnt_... functions
-		 * are called direct.
-		 */
-		if (!Ktab[XA_EVNT_MULTI].d)
-			lock |= pending;
-#else
-
 		/* HR: how about this? It means that these
 	         *     semaphores are not needed and are effectively skipped.
 		 */
 		LOCK lock = winlist|envstr|pending;
-#endif
 #if GENERATE_DIAGS
 		/* For if no keys can be received anymore. */
 		{

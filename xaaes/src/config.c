@@ -713,7 +713,7 @@ SCL(LOCK lock, int co, char *name, char *full, char *txt)
 					else
 					{
 						Path nm, pattern;
-						char *pat, *pbt, fslash[4];
+						char *pat, *pbt;
 						long i,rep;				
 						
 						pattern[0] = '*';
@@ -924,16 +924,6 @@ SCL(LOCK lock, int co, char *name, char *full, char *txt)
 				 || strcmp(rstr, "debug_lines") == 0)
 			{
 				/* Do nothing with this line */
-			}
-#endif
-#if USE_CALL_DIRECT
-			else if (strcmp(rstr, "direct") == 0)
-			{
-				ide(rstr);
-				if (strcmp(rstr, "on") == 0)
-					cfg.direct_call = true;
-				else
-					cfg.direct_call = false;
 			}
 #endif
 			else if (strncmp(rstr, "half_scr",8) == 0)
