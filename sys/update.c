@@ -13,9 +13,7 @@
 
 # include "update.h"
 
-
 long sync_time = 5;
-
 
 # ifdef SYSUPDATE_DAEMON
 
@@ -25,7 +23,6 @@ long sync_time = 5;
 # include "dossig.h"
 # include "filesys.h"
 # include "k_kthread.h"
-
 
 static void
 do_sync (long sig)
@@ -98,6 +95,6 @@ start_sysupdate (void)
 		FATAL ("can't create \"update\" kernel thread");
 
 	/* this blocks SIGKILL for the update process */
-	p->p_flag |= 1;
+	p->p_flag |= P_FLAG_SYS;
 # endif
 }

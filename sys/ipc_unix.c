@@ -15,7 +15,6 @@
 
 # include "libkern/libkern.h"
 # include "mint/file.h"
-# include "mint/proc.h"
 # include "mint/signal.h"
 # include "mint/stat.h"
 

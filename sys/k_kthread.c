@@ -34,7 +34,6 @@
 # include "k_kthread.h"
 
 # include "libkern/libkern.h"
-# include "mint/proc.h"
 
 # include "k_exec.h"
 # include "k_exit.h"
