@@ -2260,15 +2260,19 @@ set_and_update_window(struct xa_window *wind, bool blit, RECT *new)
 		} /* if (brl) */
 		else
 		{
+			newrl = wind->rect_start;
 			while (newrl)
 			{
 				display_window(wlock, 12, wind, &newrl->r);
-				wind->send_message(wlock, wind, NULL,
-					WM_REDRAW, 0, 0, wind->handle,
-					newrl->r.x,
-					newrl->r.y,
-					newrl->r.w,
-					newrl->r.h);
+				if (xa_rect_clip(&wind->wa, &newrl->r, &bs))
+				{
+					wind->send_message(wlock, wind, NULL,
+						WM_REDRAW, 0, 0, wind->handle,
+						bs.x,
+						bs.y,
+						bs.w,
+						bs.h);
+				}
 				newrl = newrl->next;
 			}
 		}
@@ -2278,12 +2282,15 @@ set_and_update_window(struct xa_window *wind, bool blit, RECT *new)
 		while (newrl)
 		{
 			display_window(wlock, 12, wind, &newrl->r);
-			wind->send_message(wlock, wind, NULL,
-				WM_REDRAW, 0, 0, wind->handle,
-				newrl->r.x,
-				newrl->r.y,
-				newrl->r.w,
-				newrl->r.h);
+			if (xa_rect_clip(&wind->wa, &newrl->r, &bs))
+			{
+				wind->send_message(wlock, wind, NULL,
+					WM_REDRAW, 0, 0, wind->handle,
+					bs.x,
+					bs.y,
+					bs.w,
+					bs.h);
+			}
 			newrl = newrl->next;
 		}
 
