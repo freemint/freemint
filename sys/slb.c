@@ -84,6 +84,9 @@ SHARED_LIB *slb_list = NULL;
  * Input:
  * b: Pointer to the basepage
  */
+/* Moved to arch/slb_util.S
+ */
+# if 0
 static void _cdecl
 slb_init_and_exit (BASEPAGE *b)
 {
@@ -125,6 +128,7 @@ slb_init_and_exit (BASEPAGE *b)
 	head->slh_slb_exit ();
 	Pterm0 ();
 }
+# endif
 
 /*
  * mark_users

@@ -46,6 +46,64 @@
 
 	.text
 
+	.globl	_slb_init_and_exit
+
+_slb_init_and_exit:
+
+	pea	0x01190001.l		// Pdomain(1)
+	trap	#1
+
+	move.w	#0x0004,d7
+
+loop:	move.w	d7,-(sp)		// Fclose(x)
+	move.w	#0x003e,-(sp)
+	trap	#1
+
+	dbra.w	d7,loop
+
+	clr.l	-(sp)			// Psetpgrp(0,0)
+	move.w	#0x010e,-(sp)
+	trap	#1
+
+// 30 bytes of junk on the stack here
+
+	move.l	34(sp),a0		// basepage pointer
+	lea	256(a0),a0		// begin of the TEXT segment
+	cmp.l	#0x283a001a,(a0)
+	bne.s	oldfmt
+	cmp.l	#0x4efb48fa,4(a0)
+	bne.s	oldfmt
+
+	lea	228.w(a0),a0		// the header is a bit bigger (new format)
+
+oldfmt:	move.l	a0,-(sp)
+
+	cmp.l	#0x70004afc,(a0)	// a0 = SLB header address
+	beq.s	exec
+
+	move.l	38(sp),a0
+	move.l	#-1,128(a0)		// put -1 on the bp->p_cmdlin
+	bra.s	halt
+
+exec:	move.l	16(a0),a0
+	jsr	(a0)
+
+	move.l	38(sp),a0
+	move.l	d0,128(a0)		// return value
+
+halt:	move.w	#0x0011,-(sp)
+	clr.w	-(sp)
+	move.w	#0x0111,-(sp)
+	trap	#1
+	addq.l	#6,sp
+
+	move.l	(sp)+,a0		// header address
+	move.l	20(a0),a0
+	jsr	(a0)
+
+	clr.w	-(sp)
+	trap	#1
+
 // slb_open
 //
 // Fake routine for returning from Slbopen(). Calls the library's open()
@@ -189,33 +247,4 @@ einvfn:
 	moveq	#-32,d0
 	rts
 
-//
-// Following are some MiNT-GEMDOS-calls
-//
-
-	.globl	_P_kill
-
-_P_kill:
-	move.l	4(sp),-(sp)
-	move.w	#0x0111,-(sp)
-	trap	#1
-	addq.l	#6,sp
-	rts
-
-	.globl	_P_setpgrp
-
-_P_setpgrp:
-	move.l	4(sp),-(sp)
-	move.w	#0x010e,-(sp)
-	trap	#1
-	addq.l	#6,sp
-	rts
-
-	.globl	_P_domain
-
-_P_domain:
-	move.w	4(sp),-(sp)
-	move.w	#0x0119,-(sp)
-	trap	#1
-	addq.l	#4,sp
-	rts
+// EOF
