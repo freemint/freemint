@@ -74,9 +74,8 @@ unix_init (void)
 	
 	TRACE (("unix: unix_init: initiliazing"));
 	unixdev_init ();
-# ifdef USE_UN_LOOKUP_CACHE
 	un_cache_init ();
-# endif
+	
 	for (i = 0; i < UN_HASH_SIZE; ++i)
 		allundatas[i] = 0;
 	
@@ -210,10 +209,8 @@ unix_bind (struct socket *so, struct sockaddr *addr, short addrlen)
 	r = f_xattr (0, undata->addr.sun_path, &attrib);
 	if (!r) return EADDRINUSE;
 	
-# ifdef USE_UN_LOOKUP_CACHE
 	/* Invalidate cache entries referring to the same file. */
 	un_cache_remove (undata->addr.sun_path);
-# endif
 	
 	/* To do the creat(), the user must have write access for the
 	 * directory containing the file.
@@ -696,38 +693,5 @@ un_namei (struct sockaddr *addr, short addrlen, long *index)
 		return EINVAL;
 	}
 	
-# ifdef USE_UN_LOOKUP_CACHE
 	return un_cache_lookup (un.sun_path, index);
-# else	
-	{
-		/* Note that Fopen() follows symlinks. This allows for
-		 * addresses like /dev/log, that cannot be created as a
-		 * regular file under MiNT. Instead you do a bind() with
-		 * sun_path = "/tmp/log" and then symlink() it to "/dev/log".
-		 */
-		long r, fd;	
-		
-		fd = f_open (un.sun_path, O_RDONLY);
-		if (fd < 0)
-		{
-			DEBUG (("unix: un_namei: Fopen failed for %s", un.sun_path));
-			return fd;
-		}
-		
-		r = f_read (fd, sizeof (*index), index);
-		f_close (fd);
-		
-		if (r >= 0 && r != sizeof (*index))
-			r = EACCES;
-		
-		if (r < 0)
-		{
-			DEBUG (("unix: un_namei: Could not read idx from %s",
-				un.sun_path));
-			return r;
-		}
-	}
-	
-	return 0;
-# endif
 }
