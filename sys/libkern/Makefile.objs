@@ -7,7 +7,7 @@ SUBDIRS =
 
 srcdir = ..
 top_srcdir = ../..
-subdir = .$(CPU)
+subdir = .cpu_$(CPU)
 
 default: all
 
