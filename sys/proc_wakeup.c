@@ -35,7 +35,7 @@
 
 
 void _cdecl
-addprocwakeup(struct proc *p, void _cdecl (*func)(struct proc *, void *), void *arg)
+addonprocwakeup(struct proc *p, void _cdecl (*func)(struct proc *, void *), void *arg)
 {
 	struct procwakeup *w;
 
