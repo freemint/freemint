@@ -7200,29 +7200,30 @@ fatfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 			long r;
 			
 			r = bio.config (dir->dev, BIO_WP, arg);
-			if (!r)
+			if (r || (arg == ASK))
+				return r;
+			
+			r = EINVAL;
+			if (BIO_WP_CHECK (DI (dir->dev)) && !RDONLY (dir->dev))
 			{
-				if (BIO_WP_CHECK (DI (dir->dev)) && !RDONLY (dir->dev))
-				{
-					if (CLEAN (dir->dev))
-						clean_flag (dir->dev, CLEANFLAG_SET);
-					
-					bio.sync_drv (DI (dir->dev));
-					
-					RDONLY (dir->dev) = 1;
-					FAT_ALERT (("FAT-FS [%c]: remounted read-only!", dir->dev+'A'));
-				}
-				else if (RDONLY (dir->dev))
-				{
-					RDONLY (dir->dev) = 0;
-					
-					if (CLEAN (dir->dev))
-						clean_flag (dir->dev, CLEANFLAG_CLEAR);
-					
-					bio.sync_drv (DI (dir->dev));
-					
-					FAT_ALERT (("FAT-FS [%c]: remounted read/write!", dir->dev+'A'));
-				}
+				if (CLEAN (dir->dev))
+					clean_flag (dir->dev, CLEANFLAG_SET);
+				
+				bio.sync_drv (DI (dir->dev));
+				
+				RDONLY (dir->dev) = 1;
+				FAT_ALERT (("FAT-FS [%c]: remounted read-only!", dir->dev+'A'));
+			}
+			else if (RDONLY (dir->dev))
+			{
+				RDONLY (dir->dev) = 0;
+				
+				if (CLEAN (dir->dev))
+					clean_flag (dir->dev, CLEANFLAG_CLEAR);
+				
+				bio.sync_drv (DI (dir->dev));
+				
+				FAT_ALERT (("FAT-FS [%c]: remounted read/write!", dir->dev+'A'));
 			}
 			
 			return r;
