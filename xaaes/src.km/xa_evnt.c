@@ -36,7 +36,7 @@
 #include "menuwidg.h"
 #include "messages.h"
 #include "nkcc.h"
-#include "objects.h"
+//#include "objects.h"
 #include "rectlist.h"
 #include "widgets.h"
 
@@ -279,8 +279,9 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 	pb->intout[0] = 0;
 	pb->intout[5] = 0;
 	pb->intout[6] = 0;
-	client->waiting_for = 0;
-	client->waiting_pb = NULL;
+
+	//client->waiting_for = 0;
+	//client->waiting_pb = NULL;
 
 #if GENERATE_DIAGS
 	{
@@ -298,7 +299,7 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 		client->status &= ~CS_LAGGING;
 		DIAG((D_multi, client, "evnt_multi: %s flagged as lagging! - cleared", client->name));
 	}
-
+	
 	/*
 	 * Ozk: We absolutely prioritize WM_REDRAW messages, which are
 	 * queued in a separate message queue.
@@ -325,6 +326,13 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 	*/
 	if (C.redraws)
 		yield();
+
+	client->waiting_for = events | XAWAIT_MULTI;
+	client->waiting_pb = pb;
+	if (check_cevents(client))
+		return XAC_DONE;
+	client->waiting_for = 0;
+	client->waiting_pb = NULL;
 
 /*
 	Excerpt from nkcc.doc, courtesy Harald Siegmund:
@@ -501,7 +509,8 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 	{
 		/* The Intel ligent format */
 		client->timer_val = ((long)pb->intin[15] << 16) | pb->intin[14];
-		DIAG((D_i,client,"Timer val: %ld", client->timer_val));
+		DIAG((D_i,client,"Timer val: %ld(hi=%d,lo=%d)",
+			client->timer_val, pb->intin[15], pb->intin[14]));
 		if (client->timer_val)
 		{
 			new_waiting_for |= MU_TIMER;	/* Flag the app as waiting for a timer */
@@ -511,6 +520,8 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 		{
 			/* Is this the cause of loosing the key's at regular intervals? */
 			DIAG((D_i,client, "Done timer for %d", client->p->pid));
+
+			yield();
 			fall_through |= MU_TIMER;
 			/* HR 190601: to be able to combine fall thru events. */
 			ret = XAC_DONE;

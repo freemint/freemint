@@ -31,6 +31,8 @@
 
 bool was_visible(struct xa_window *w);
 bool xa_rc_intersect(RECT s, RECT *d);
+bool xa_rect_clip(RECT *s, RECT *d, RECT *r);
+
 struct xa_rect_list *generate_rect_list(enum locks lock, struct xa_window *w, short which);
 void dispose_rect_list(struct xa_window *w);
 

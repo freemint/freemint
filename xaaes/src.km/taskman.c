@@ -37,8 +37,10 @@
 
 #include "about.h"
 #include "c_window.h"
+#include "form.h"
 #include "k_main.h"
-#include "objects.h"
+#include "draw_obj.h"
+#include "obtree.h"
 #include "scrlobjc.h"
 #include "taskman.h"
 #include "widgets.h"
@@ -203,17 +205,39 @@ quit_all_apps(enum locks lock, struct xa_client *except)
 	Sema_Dn(clients);
 }
 
-/* double click now also available for internal handlers. */
 static void
-handle_taskmanager(enum locks lock, struct widget_tree *wt)
+taskmanager_form_exit(struct xa_client *Client,
+		      struct xa_window *wind,
+		      struct widget_tree *wt,
+		      struct fmd_result *fr)
 {
-	wt->current &= 0xff;
-
+	enum locks lock = 0;
 	Sema_Up(clients);
 	lock |= clients;
 	
-	switch (wt->current)
+	/* Ozk:
+	 * Still dont know exactly what these two does...
+	 */
+	wt->current = fr->obj;
+	wt->which = 0;
+
+	switch (fr->obj)
 	{
+		case TM_LIST:
+		{
+			short obj = fr->obj;
+			OBJECT *obtree = wt->tree;
+
+			DIAGS(("taskmanager_form_exit: Moved the shit out of form_do() to here!"));
+			if ( fr->md && ((obtree[obj].ob_type & 0xff) == G_SLIST))
+			{
+				if (fr->md->clicks > 1)
+					dclick_scroll_list(lock, obtree, obj, fr->md);
+				else
+					click_scroll_list(lock, obtree, obj, fr->md);
+			}
+			break;
+		}
 		case TM_KILL:
 		{
 			OBJECT *ob = wt->tree + TM_LIST;
@@ -225,7 +249,7 @@ handle_taskmanager(enum locks lock, struct widget_tree *wt)
 			if (is_client(client))
 				ikill(client->p->pid, SIGKILL);
 
-			deselect(wt->tree, TM_KILL);
+			object_deselect(wt->tree + TM_KILL);
 			display_toolbar(lock, task_man_win, TM_KILL);
 			break;
 		}
@@ -240,7 +264,7 @@ handle_taskmanager(enum locks lock, struct widget_tree *wt)
 			if (is_client(client))
 				send_terminate(lock, client);
 
-			deselect(wt->tree, TM_TERM);
+			object_deselect(wt->tree + TM_TERM);
 			display_toolbar(lock, task_man_win, TM_TERM);
 			break;
 		}
@@ -256,7 +280,7 @@ handle_taskmanager(enum locks lock, struct widget_tree *wt)
 			{
 			}
 
-			deselect(wt->tree, TM_SLEEP);
+			object_deselect(wt->tree + TM_SLEEP);
 			display_toolbar(lock, task_man_win, TM_SLEEP);
 			break;
 		}
@@ -272,7 +296,7 @@ handle_taskmanager(enum locks lock, struct widget_tree *wt)
 			{
 			}
 
-			deselect(wt->tree, TM_WAKE);
+			object_deselect(wt->tree + TM_WAKE);
 			display_toolbar(lock, task_man_win, TM_WAKE);
 			break;
 		}
@@ -283,7 +307,7 @@ handle_taskmanager(enum locks lock, struct widget_tree *wt)
 			DIAGS(("taskmanager: quit all apps"));
 			quit_all_apps(lock, NULL);
 
-			deselect(wt->tree, TM_QUITAPPS);
+			object_deselect(wt->tree + TM_QUITAPPS);
 			display_toolbar(lock, task_man_win, TM_QUITAPPS);
 			break;
 		}
@@ -292,7 +316,7 @@ handle_taskmanager(enum locks lock, struct widget_tree *wt)
 			DIAGS(("taskmanager: quit XaAES"));
 			dispatch_shutdown(0);
 
-			deselect(wt->tree, TM_QUIT);
+			object_deselect(wt->tree + TM_QUIT);
 			display_toolbar(lock, task_man_win, TM_QUIT);
 			break;
 		}
@@ -301,7 +325,7 @@ handle_taskmanager(enum locks lock, struct widget_tree *wt)
 			DIAGS(("taskmanager: reboot system"));
 			dispatch_shutdown(REBOOT_SYSTEM);
 
-			deselect(wt->tree, TM_REBOOT);
+			object_deselect(wt->tree + TM_REBOOT);
 			display_toolbar(lock, task_man_win, TM_REBOOT);
 			break;
 		}
@@ -310,18 +334,18 @@ handle_taskmanager(enum locks lock, struct widget_tree *wt)
 			DIAGS(("taskmanager: halt system"));
 			dispatch_shutdown(HALT_SYSTEM);
 
-			deselect(wt->tree, TM_HALT);
+			object_deselect(wt->tree + TM_HALT);
 			display_toolbar(lock, task_man_win, TM_HALT);
 			break;
 		}
 		case TM_OK:
 		{
-			deselect(wt->tree, TM_OK);
+			object_deselect(wt->tree + TM_OK);
 			display_toolbar(lock, task_man_win, TM_OK);
 
 			/* and release */
 			close_window(lock, task_man_win);
-			delete_window(lock, task_man_win);
+			delayed_delete_window(lock, task_man_win);
 			break;
 		}
 		default:
@@ -351,7 +375,7 @@ open_taskmanager(enum locks lock)
 		/* Work out sizing */
 		if (!remember.w)
 		{
-			center_form(form, ICON_H);
+			form_center(form, ICON_H);
 			remember = calc_window(lock, C.Aes, WC_BORDER,
 						CLOSER|NAME,
 						MG,
@@ -375,8 +399,8 @@ open_taskmanager(enum locks lock)
 		get_widget(dialog_window, XAW_TITLE)->stuff = " Task Manager";
 
 		wt = set_toolbar_widget(lock, dialog_window, form, -1);
-		wt->exit_form = XA_form_exit;
-		wt->exit_handler = handle_taskmanager;
+		wt->exit_form = taskmanager_form_exit; //XA_form_exit;
+		//wt->exit_handler = handle_taskmanager;
 
 		/* set a scroll list widget */
 		set_slist_object(lock, wt, form, TM_LIST, NULL, NULL, NULL, NULL, "Client Applications", NULL, NICE_NAME);
@@ -443,10 +467,14 @@ static struct xa_window *systemalerts_win = NULL;
 
 /* double click now also available for internal handlers. */
 static void
-handle_systemalerts(enum locks lock, struct widget_tree *wt)
+sysalerts_form_exit(struct xa_client *Client,
+		    struct xa_window *wind,
+		    struct widget_tree *wt,
+		    struct fmd_result *fr)
 {
+	enum locks lock = 0;
 	OBJECT *form = wt->tree;
-	int item = wt->current & 0xff;
+	short item = fr->obj; //wt->current & 0xff;
 
 	switch (item)
 	{
@@ -454,14 +482,14 @@ handle_systemalerts(enum locks lock, struct widget_tree *wt)
 		case SALERT_CLEAR:
 		{
 			empty_scroll_list(form, SYSALERT_LIST, -1);
-			deselect(wt->tree, item);
+			object_deselect(wt->tree + item);
 			display_toolbar(lock, systemalerts_win, SYSALERT_LIST);
 			display_toolbar(lock, systemalerts_win, item);
 			break;
 		}
 		case SALERT_OK:
 		{
-			deselect(wt->tree, item);
+			object_deselect(wt->tree + item);
 			display_toolbar(lock, systemalerts_win, item);
 			close_window(lock, systemalerts_win);
 			delayed_delete_window(lock, systemalerts_win);	
@@ -507,7 +535,7 @@ open_systemalerts(enum locks lock)
 		/* Work out sizing */
 		if (!remember.w)
 		{
-			center_form(form, ICON_H);
+			form_center(form, ICON_H);
 			remember = calc_window(lock, C.Aes, WC_BORDER,
 						CLOSER|NAME,
 						MG,
@@ -530,8 +558,9 @@ open_systemalerts(enum locks lock)
 		/* Set the window title */
 		get_widget(dialog_window, XAW_TITLE)->stuff = " System window & Alerts Log";
 		wt = set_toolbar_widget(lock, dialog_window, form, -1);
-		wt->exit_form = XA_form_exit;
-		wt->exit_handler = handle_systemalerts;
+		wt->exit_form = sysalerts_form_exit;
+		//wt->exit_form = XA_form_exit;
+		//wt->exit_handler = handle_systemalerts;
 
 		/* HR: set a scroll list widget */
 		set_slist_object(lock, wt, form, SYSALERT_LIST, NULL, NULL, NULL, NULL, NULL, NULL, 256);

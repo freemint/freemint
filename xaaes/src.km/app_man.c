@@ -37,7 +37,7 @@
 #include "c_window.h"
 #include "desktop.h"
 #include "menuwidg.h"
-#include "objects.h"
+//#include "objects.h"
 #include "widgets.h"
 
 #include "mint/signal.h"
@@ -140,7 +140,7 @@ swap_menu(enum locks lock, struct xa_client *new, bool do_desk, int which)
 				C.focus = root_window;
 				DIAG((D_appl, NULL, "Focus to root_window."));
 				display_window(lock, 110, top, NULL);   /* Redisplay titles */
-				redraw_menu(lock);
+				//redraw_menu(lock);
 				send_untop(lock, top);
 			}
 			else if (C.focus == root_window && top->owner == new)
@@ -148,7 +148,7 @@ swap_menu(enum locks lock, struct xa_client *new, bool do_desk, int which)
 				C.focus = top;
 				DIAG((D_appl, NULL, "Focus to top_window %s", w_owner(top)));
 				display_window(lock, 111, top, NULL);   /* Redisplay titles */
-				redraw_menu(lock);
+				//redraw_menu(lock);
 				send_ontop(lock);
 			}
 			else if (top->owner != new)

@@ -33,7 +33,7 @@
 #include "c_window.h"
 #include "init.h"
 #include "nkcc.h"
-#include "objects.h"
+#include "draw_obj.h"
 #include "scrlobjc.h"
 #include "taskman.h"
 #include "xa_rsrc.h"

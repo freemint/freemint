@@ -681,7 +681,10 @@ XA_appl_write(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		dest_clnt = pid2client(dest_id);
 		if (dest_clnt)
+		{
 			send_a_message(lock, dest_clnt, m);
+			yield();
+		}
 	}
 
 	pb->intout[0] = rep;

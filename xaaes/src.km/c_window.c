@@ -31,7 +31,7 @@
 #include "desktop.h"
 #include "k_main.h"
 #include "menuwidg.h"
-#include "objects.h"
+#include "draw_obj.h"
 #include "rectlist.h"
 #include "scrlobjc.h"
 #include "widgets.h"
@@ -482,6 +482,18 @@ create_window(
 		/* Unable to allocate memory for window? */
 		return NULL;
 
+	bzero(w, sizeof(*w));
+
+	/*
+	 * Initialize the widget types values
+	 */
+	{
+		int i;
+
+		for (i = 0; i < XA_MAX_WIDGETS; i++)
+			w->widgets[i].type = i;
+	}
+
 	/* avoid confusion: if only 1 specified, give both (fail safe!) */
 	if ((tp & UPARROW) || (tp & DNARROW))
 		tp |= UPARROW|DNARROW;
@@ -563,6 +575,69 @@ create_window(
 	return w;
 }
 
+void
+change_window_attribs(enum locks lock,
+		struct xa_client *client,
+		struct xa_window *w,
+		XA_WIND_ATTR tp,
+		RECT r, RECT *remember)
+{
+	//struct xa_window *w;
+	XA_WIND_ATTR old_tp = w->active_widgets;
+
+	DIAG((D_wind, client, "create_window for %s: r:%d,%d/%d,%d  no max",
+		c_owner(client), r.x,r.y,r.w,r.h));
+
+	/* avoid confusion: if only 1 specified, give both (fail safe!) */
+	if ((tp & UPARROW) || (tp & DNARROW))
+		tp |= UPARROW|DNARROW;
+	if ((tp & LFARROW) || (tp & RTARROW))
+		tp |= LFARROW|RTARROW;
+	/* cant hide a window that cannot be moved. */
+	if ((tp & MOVER) == 0)
+		tp &= ~HIDE;
+	/* temporary until solved. */
+	if (tp & MENUBAR)
+		tp |= XaMENU;
+
+	w->r = r;
+
+	w->rect_user = w->rect_list = w->rect_start = NULL;
+
+	/* Attach the appropriate widgets to the window */
+	standard_widgets(w, tp, false);
+
+	/* If STORE_BACK extended attribute is used, window preserves its own background */
+	if ((tp & STORE_BACK) && !(old_tp & STORE_BACK))
+	{
+		DIAG((D_wind,client," allocating background storage buffer"));
+		w->background = kmalloc(calc_back(&r, screen.planes));
+	}
+	else if (!(old_tp & STORE_BACK))
+	{
+		kfree(w->background);
+		w->background = NULL;
+	}
+	else
+		w->background = NULL;
+
+	calc_work_area(w);
+
+	/*
+	 * Now standard widgets are set and workarea of window
+	 * is recalculated.
+	 * Its time to do non-standard things depending on correct
+	 * workarea coordinates now.
+	 */
+
+	if (w->toolbar.tree)
+	{
+		set_toolbar_coords(w);
+	}
+
+	if (remember)
+		*remember = w->r;
+}
 int
 open_window(enum locks lock, struct xa_window *wind, RECT r)
 {
@@ -805,16 +880,21 @@ Ddraw_window(enum locks lock, struct xa_window *wind)
 	{
 		XA_WIDGET *widg;
 
+			
 		widg = get_widget(wind, XAW_TITLE);
+		DIAG((D_wind, wind->owner, "draw_window %d: display widget %d (func: %lx)",
+			wind->handle, XAW_TITLE, widg->display));
 		widg->display(lock, wind, widg);
 
 		widg = get_widget(wind, XAW_ICONIFY);
+		DIAG((D_wind, wind->owner, "draw_window %d: display widget %d (func: %lx)",
+			wind->handle, XAW_ICONIFY, widg->display));
 		widg->display(lock, wind, widg);
 	}
 	else
 	{
 		int f;
-		XA_WIDGET *mwidg = get_widget(root_window, XAW_MENU);
+		XA_WIDGET *mwidg = get_menu_widg();
 
 		/*
 		 * Ozk: Check for the root-window menuline widget (applications menuline)
@@ -1348,6 +1428,7 @@ close_window(enum locks lock, struct xa_window *wind)
 	return true;
 }
 
+#if 0
 static void
 free_widg(struct xa_window *wind, int n)
 {
@@ -1360,12 +1441,26 @@ free_widg(struct xa_window *wind, int n)
 		widg->stuff = NULL;
 	}
 }
+#endif
 
 static void
 free_standard_widgets(struct xa_window *wind)
 {
-	free_widg(wind, XAW_HSLIDE);
-	free_widg(wind, XAW_VSLIDE);
+	int i;
+	struct xa_widget *widg;
+	
+	DIAGS(("free_standard_widgets for window %d, owner %s", wind->handle, wind->owner->name));
+	for (i = 0; i < XA_MAX_WIDGETS; i++)
+	{
+		widg = wind->widgets + i;
+		if (widg->destruct)
+		{
+			DIAGS(("call widget destruct for widget %d", i));
+			(*widg->destruct)(widg);
+		}
+	}
+	//free_widg(wind, XAW_HSLIDE);
+	//free_widg(wind, XAW_VSLIDE);
 }
 
 static void

@@ -82,3 +82,9 @@ debug it was that it enters the AES with a NULL pb pointer when I click on the
 mailbox icon to check for new mail. I have no idea why, but it is promptly 
 killed by XaAES because of it.
 
+ Weird as he.. ehm .. weird! When testing and reporting the above, I was using 
+ Nova VDI with NVDI 5.01. Just now I tested with oVDI, and MyMail did not have 
+ this problem! Hmmm... If anyone tests MyMail I'd be interested in feedback!
+
+
+

@@ -27,7 +27,7 @@
 #include "xa_types.h"
 #include "xa_global.h"
 
-#include "objects.h"
+#include "draw_obj.h"
 #include "trnfm.h"
 #include "xa_rsrc.h"
 #include "xa_shel.h"
@@ -493,6 +493,9 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 			 *	means certain it is filled with valid RGB data. Most of the time, only the first
 			 *	16 colors are set. So we just check if the 16 - 255 colours conatin anything.
 			*/
+			/* Ozk: This is driving me insane, disabled it
+			 */
+#if 0
 			col = 0;
 			for (rc = 16; rc < 256; rc++)
 			{
@@ -507,6 +510,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 				/* the last one mapped to 15 seee tos_colours */
 				vs_color(vdih, 255, &rsrc_colour_lut[15*4]);
 			}
+#endif
 		}
 #if 0
 		/* ozk: Enable this when (if) more extensions are added ... */

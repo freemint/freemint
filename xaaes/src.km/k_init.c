@@ -49,7 +49,8 @@
 #include "mint/fcntl.h"
 #include "mint/signal.h"
 
-#include "objects.h"
+#include "obtree.h"
+#include "draw_obj.h"
 #include "menuwidg.h"
 #include "xa_graf.h"
 
@@ -318,7 +319,8 @@ k_init(void)
 	{
 		RECT c;
 		OBJECT *tree = ResourceTree(widget_resources, 0);
-		object_area(&c, tree, 1, 0, 0);
+		ob_area(tree, 1, &c);
+		//object_area(&c, tree, 1, 0, 0);
 		cfg.widg_w = c.w;
 		cfg.widg_h = c.h;
 		cfg.widg_dw = (tree[1].ob_width - c.w)/2;
@@ -358,7 +360,7 @@ k_init(void)
 	fix_menu(C.Aes, C.Aes->std_menu.tree, true);
 	set_menu_widget(root_window, &C.Aes->std_menu);
 	{
-		char *vs = get_ob_spec(C.Aes->std_menu.tree + SYS_DESK)->free_string;
+		char *vs = object_get_spec(C.Aes->std_menu.tree + SYS_DESK)->free_string;
 		strcpy(vs + strlen(vs) - 3, version + 3);
 	}
 	DIAGS(("menu widget set"));

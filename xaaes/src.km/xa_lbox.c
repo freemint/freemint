@@ -27,13 +27,13 @@
 #include "xa_lbox.h"
 #include "xa_form.h"
 
-#include "objects.h"
+//#include "objects.h"
 #include "c_window.h"
 #include "widgets.h"
 #include "xa_graf.h"
 #include "xa_rsrc.h"
 #include "xa_form.h"
-#include "objects.h"
+//#include "objects.h"
 #include "scrlobjc.h"
 
 #include "nkcc.h"
