@@ -34,7 +34,7 @@
 # define S_FLUSHCACHE	22
 # define S_CTRLCACHE	23
 # define S_INITIALTPA	24
-# define S_CAD		25	/* ctraltdel behavoiur */
+# define S_CTRLALTDEL		25	/* ctraltdel behavoiur */
 # define S_DELCOOKIE	26
 # define S_LOADKBD	27	/* reload the keyboard table */
 # define S_CLOCKUTC	100
