@@ -399,7 +399,7 @@ refresh_filelist(enum locks lock, int which)
 	/* Clear out current file list contents */
 	free_scrollist(list);
 
-	graf_mouse(HOURGLASS, NULL, false);
+	graf_mouse(HOURGLASS, NULL, NULL, false);
 
 	i = d_opendir(fs.path,0);
 	DIAG((D_fsel, NULL, "Dopendir -> %lx", i));
@@ -478,7 +478,7 @@ refresh_filelist(enum locks lock, int which)
 	
 	list->top = list->cur = list->start;
 	list->n = n;
-	graf_mouse(ARROW, NULL, false);
+	graf_mouse(ARROW, NULL, NULL, false);
 	list->slider(list);
 	if (!fs_prompt_refresh(list))
 		display_toolbar(lock, fs.wind, FS_LIST);
@@ -969,7 +969,16 @@ fs_destructor(enum locks lock, struct xa_window *wind)
 	OBJECT *sl = form + FS_LIST;
 	SCROLL_INFO *list = (SCROLL_INFO *)sl->ob_spec.index;
 
-	delayed_delete_window(lock, list->wi);
+	if (list->wi)
+	{
+		DIAG((D_fsel, NULL, "fs_destructor: wi=%lx, status=%x", list->wi, list->wi->window_status));
+
+		if ((list->wi->window_status & XAWS_OPEN))
+			close_window(lock, list->wi);
+		
+		delayed_delete_window(lock, list->wi);
+		list->wi = NULL;
+	}
 
 	free_scrollist(list);
 
@@ -1067,7 +1076,7 @@ open_fileselector1(enum locks lock, struct xa_client *client,
 	}
 
 	kind = (XaMENU|NAME|TOOLBAR);
-	if (C.update_lock == client)
+	if (C.update_lock == client->p)
 	{
 		nolist = true;
 		kind |= STORE_BACK;

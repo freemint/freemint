@@ -175,7 +175,7 @@ cancel_widget_active(struct xa_window *wind, int i)
 	widget_active.cont = false;
 
 	/* Restore the mouse now we've finished the action */
-	graf_mouse(wind->owner->mouse, wind->owner->mouse_form, false);
+	graf_mouse(wind->owner->mouse, wind->owner->mouse_form, wind->owner, false);
 }
 
 void
@@ -696,7 +696,7 @@ redraw_menu(enum locks lock)
 
 	if (mc == rc || mc == C.Aes)
 	{
-		if (C.update_lock && C.update_lock != rc)
+		if (C.update_lock && C.update_lock != rc->p)
 			return;
 
 		DIAGS(("Display MENU (same client) for %s", rc->name));
@@ -1250,7 +1250,7 @@ drag_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, cons
 		{
 			widget_active.cont = true;
 			/* Always have a nice consistent MOVER when dragging a box */
-			graf_mouse(XACRS_MOVER, NULL, false);
+			graf_mouse(XACRS_MOVER, NULL, NULL, false);
 		}
 
 		/* If right button is used, do a classic outline drag. */
@@ -1266,9 +1266,9 @@ drag_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, cons
 			bound.w = root_window->r.w*3;
 			bound.h = root_window->r.h*2;
 
-			lock_screen(wind->owner, 0, 0, 1234);
+			lock_screen(wind->owner->p, 0, 0, 1234);
 			drag_box(wind->owner, r, &bound, rect_dist(wind->owner, &r, &d), &r);
-			unlock_screen(wind->owner, 1235);
+			unlock_screen(wind->owner->p, 1235);
 
 			if (r.x != wind->rc.x || r.y != wind->rc.y)
 			{
@@ -1655,9 +1655,9 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 		int xy = sizer ? SE : compass(16, widg->mx, widg->my, r);
 
 		/* Always have a nice consistent SIZER when resizing a window */
-		graf_mouse(border_mouse[xy], NULL, false);
+		graf_mouse(border_mouse[xy], NULL, NULL, false);
 
-		lock_screen(wind->owner, 0, 0, 1234);
+		lock_screen(wind->owner->p, 0, 0, 1234);
 		rubber_box(wind->owner, xy,
 		           r,
 			   rect_dist(wind->owner, &r, &d),
@@ -1666,7 +1666,7 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 			   wind->max.w,
 			   wind->max.h,
 			   &r);
-		unlock_screen(wind->owner, 1234);
+		unlock_screen(wind->owner->p, 1234);
 
 		move = r.x != wind->r.x || r.y != wind->r.y,
 		size = r.w != wind->r.w || r.h != wind->r.h;
@@ -1720,7 +1720,7 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 			{
 				widget_active.cont = true;
 				/* Always have a nice consistent SIZER when resizing a window */
-				graf_mouse(border_mouse[xy], NULL, false);
+				graf_mouse(border_mouse[xy], NULL, NULL, false);
 			}
 
 			/* Has the mouse moved? */
@@ -1856,7 +1856,7 @@ click_scroll(enum locks lock, struct xa_window *wind, struct xa_widget *widg, co
 			 */
 			if (mb == md->cstate)
 			{
-				graf_mouse(XACRS_POINTSLIDE, NULL, false);
+				graf_mouse(XACRS_POINTSLIDE, NULL, NULL, false);
 				check_mouse(wind->owner, &mb, 0, 0);
 
 				S.wm_count++;
@@ -2178,7 +2178,7 @@ drag_vslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 		{
 			widget_active.cont = true;
 			/* Always have a nice consistent sizer when dragging a box */
-			graf_mouse(XACRS_VERTSIZER, NULL, false);
+			graf_mouse(XACRS_VERTSIZER, NULL, NULL, false);
 			rp_2_ap(wind, widg, &widg->ar);
 			widget_active.offs = md->y - (widg->ar.y + sl->r.y);
 			widget_active.y = md->y;
@@ -2216,7 +2216,7 @@ drag_hslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 		{
 			widget_active.cont = true;
 			/* Always have a nice consistent sizer when dragging a box */
-			graf_mouse(XACRS_HORSIZER, NULL, false);
+			graf_mouse(XACRS_HORSIZER, NULL, NULL, false);
 			rp_2_ap(wind, widg, &widg->ar);
 			widget_active.offs = md->x - (widg->ar.x + sl->r.x);
 			widget_active.x = md->x;
@@ -3347,71 +3347,80 @@ wind_mshape(struct xa_window *wind, short x, short y)
 
 	if (wind)
 	{
-		if (cfg.widg_auto_highlight)
+		if (!(wo->status & CS_EXITING))
 		{
-			struct xa_window *rwind = NULL;
-			struct xa_widget *hwidg, *rwidg = NULL;
+			if (cfg.widg_auto_highlight)
+			{
+				struct xa_window *rwind = NULL;
+				struct xa_widget *hwidg, *rwidg = NULL;
 
-			checkif_do_widgets(0, wind, 0, x, y, &hwidg);
+				checkif_do_widgets(0, wind, 0, x, y, &hwidg);
 		
-			if (hwidg && !hwidg->owner && hwidg->display)
-			{
-				if (wind != C.hover_wind || hwidg != C.hover_widg)
+				if (hwidg && !hwidg->owner && hwidg->display)
 				{
-					rwind = C.hover_wind;
-					rwidg = C.hover_widg;
-					redisplay_widget(0, wind, hwidg, OS_SELECTED);
-					C.hover_wind = wind;
-					C.hover_widg = hwidg;
+					if (wind != C.hover_wind || hwidg != C.hover_widg)
+					{
+						rwind = C.hover_wind;
+						rwidg = C.hover_widg;
+						redisplay_widget(0, wind, hwidg, OS_SELECTED);
+						C.hover_wind = wind;
+						C.hover_widg = hwidg;
+					}
 				}
-			}
-			else if ((rwind = C.hover_wind))
-			{
-				rwidg = C.hover_widg;
-				C.hover_wind = NULL, C.hover_widg = NULL;
+				else if ((rwind = C.hover_wind))
+				{
+					rwidg = C.hover_widg;
+					C.hover_wind = NULL, C.hover_widg = NULL;
+				}
+		
+				if (rwind)
+					redisplay_widget(0, rwind, rwidg, OS_NORMAL);
 			}
 		
-			if (rwind)
-				redisplay_widget(0, rwind, rwidg, OS_NORMAL);
-		}
-		
-		if (wind->active_widgets & (SIZER|BORDER))
-		{
-			widg = wind->widgets + XAW_RESIZE;
-			if ( wind->frame > 0 &&
-			    (wind->active_widgets & BORDER) &&
-			   !(wind->widgets[XAW_BORDER].loc.statusmask & status) &&
-			    (!m_inside(x, y, &wind->ba)))
-			{
-				r = wind->r;
-				shape = border_mouse[compass(16, x, y, r)];
-			}
-			else if (wind->active_widgets & SIZER)
+			if (wind->active_widgets & (SIZER|BORDER))
 			{
 				widg = wind->widgets + XAW_RESIZE;
-				if (!(widg->loc.statusmask & status))
+				if ( wind->frame > 0 &&
+				    (wind->active_widgets & BORDER) &&
+				   !(wind->widgets[XAW_BORDER].loc.statusmask & status) &&
+				    (!m_inside(x, y, &wind->ba)))
 				{
-					rp_2_ap_cs(wind, widg, &r);
-					if (m_inside(x, y, &r))
-						shape = border_mouse[SE];
+					r = wind->r;
+					shape = border_mouse[compass(16, x, y, r)];
+				}
+				else if (wind->active_widgets & SIZER)
+				{
+					widg = wind->widgets + XAW_RESIZE;
+					if (!(widg->loc.statusmask & status))
+					{
+						rp_2_ap_cs(wind, widg, &r);
+						if (m_inside(x, y, &r))
+							shape = border_mouse[SE];
+					}
 				}
 			}
-		}
-		if (shape != -1)
-		{
-			if (C.aesmouse == -1 || (C.aesmouse != -1 && C.aesmouse != shape))
-				graf_mouse(shape, NULL, true);
+			if (shape != -1)
+			{
+				if (C.aesmouse == -1 || (C.aesmouse != -1 && C.aesmouse != shape))
+					graf_mouse(shape, NULL, NULL, true);
+			}
+			else
+			{
+				if (C.aesmouse != -1)
+					graf_mouse(-1, NULL, NULL, true);
+				if (C.mouse_form != wind->owner->mouse_form)
+					graf_mouse(wo->mouse, wo->mouse_form, wo, false);
+			}
 		}
 		else
 		{
-			if (C.aesmouse != -1)
-				graf_mouse(-1, NULL, true);
-			if (C.mouse_form != wind->owner->mouse_form)
-				graf_mouse(wo->mouse, wo->mouse_form, false);
-		}
+			C.hover_wind = NULL;
+			C.hover_widg = NULL;
+			graf_mouse(ARROW, NULL, NULL, false);
+		}	
 	}
 	else if (C.aesmouse != -1)
-		graf_mouse(-1, NULL, true);
+		graf_mouse(-1, NULL, NULL, true);
 
 	return shape;
 }

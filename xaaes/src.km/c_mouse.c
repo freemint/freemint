@@ -60,7 +60,12 @@ cXA_button_event(enum locks lock, struct c_event *ce, bool cancel)
 	struct moose_data *md = &ce->md;
 
 	if (cancel)
+	{
+		if (C.ce_menu_click == client)
+			C.ce_menu_click = NULL;
+		
 		return;
+	}
 
 	DIAG((D_button, client, "cXA_button_event for %s - %d/%d, state=%d, clicks=%d - ptr1=%lx, ptr2=%lx, %lx/%lx",
 		client->name, md->x, md->y, md->state, md->clicks,
@@ -94,14 +99,14 @@ cXA_button_event(enum locks lock, struct c_event *ce, bool cancel)
 					if (wind->owner != client)
 					{
 						DIAG((D_button, client, "cXA_button_event: Wrong client %s, should be %s", wind->owner->name, client->name));
-						return;
+						goto endmenu;
 					}
 					if (   (wind->dial & created_for_POPUP) != 0
 					    && (wind->active_widgets & V_WIDG) != 0
 					   )
 					{
 						if (do_widgets(lock, wind, XaMENU, md))
-							return;
+							goto endmenu;
 					}
 				}
 
@@ -110,16 +115,17 @@ cXA_button_event(enum locks lock, struct c_event *ce, bool cancel)
 					if (tab->client != client)
 					{
 						DIAG((D_button, client, "cXA_button_event: Wrong owner of Tab %s, should be %s", tab->client->name, client->name));
-						return;
+						goto endmenu;
 					}
 					k->clicks = md->clicks;
 					k->x = md->x;
 					k->y = md->y;
 					k->entry(tab);
-					return;
+					goto endmenu;
 				}
 			}
 		}
+endmenu:	C.ce_menu_click = NULL;
 		return;
 	}
 	
@@ -155,30 +161,30 @@ cXA_deliver_button_event(enum locks lock, struct c_event *ce, bool cancel)
 {
 	struct xa_window *wind;
 	struct xa_widget *widg = NULL;
-	if (cancel)
-		return;
-
-
-	wind = ce->ptr1;
-	if (wind)
-		widg = get_widget(wind, XAW_ICONIFY);
-
-	DIAG((D_button, ce->client, "cXA_deliver_button_event: to %s (wind=%lx, widg=%lx)",
-		ce->client->name, wind, widg));
-
-	/*
-	 * Double click on a iconified window will uniconify
-	 */
-	if (wind && (wind->window_status & XAWS_ICONIFIED) && widg && widg->click)
+	
+	if (!cancel)
 	{
-		if (ce->md.clicks > 1)
-			widg->click(lock, wind, widg, &ce->md);
-		else if (wind->send_message && !is_topped(wind))
-			wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP, WM_TOPPED, 0, 0, wind->handle, 0, 0, 0, 0);
-	}
-	else
-	{
-		button_event(lock, ce->client, &ce->md);
+		wind = ce->ptr1;
+		if (wind)
+			widg = get_widget(wind, XAW_ICONIFY);
+
+		DIAG((D_button, ce->client, "cXA_deliver_button_event: to %s (wind=%lx, widg=%lx)",
+			ce->client->name, wind, widg));
+
+		/*
+		 * Double click on a iconified window will uniconify
+		 */
+		if (wind && (wind->window_status & XAWS_ICONIFIED) && widg && widg->click)
+		{
+			if (ce->md.clicks > 1)
+				widg->click(lock, wind, widg, &ce->md);
+			else if (wind->send_message && !is_topped(wind))
+				wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP, WM_TOPPED, 0, 0, wind->handle, 0, 0, 0, 0);
+		}
+		else
+		{
+			button_event(lock, ce->client, &ce->md);
+		}
 	}
 }
 
@@ -189,35 +195,36 @@ cXA_deliver_rect_event(enum locks lock, struct c_event *ce, bool cancel)
 	AESPB *pb = client->waiting_pb;
 	int events = ce->d0;
 
-	if (cancel)
-		return;
-	if (pb)
+	if (!cancel)
 	{
-		short *out = pb->intout;
-		struct mbs mbs;
-
-		get_mbstate(client, &mbs);
-
-		if (client->waiting_for & XAWAIT_MULTI)
+		if (pb)
 		{
-			*out++ = events;
-			*out++ = mbs.x;
-			*out++ = mbs.y;
-			*out++ = mbs.b;
-			*out++ = mbs.ks;
-			*out++ = 0;
-			*out   = 0;
+			short *out = pb->intout;
+			struct mbs mbs;
+
+			get_mbstate(client, &mbs);
+
+			if (client->waiting_for & XAWAIT_MULTI)
+			{
+				*out++ = events;
+				*out++ = mbs.x;
+				*out++ = mbs.y;
+				*out++ = mbs.b;
+				*out++ = mbs.ks;
+				*out++ = 0;
+				*out   = 0;
+			}
+			else
+			{
+				*out++ = 1;
+				*out++ = mbs.x;
+				*out++ = mbs.y;
+				*out++ = mbs.b;
+				*out   = mbs.ks;
+			}
 		}
-		else
-		{
-			*out++ = 1;
-			*out++ = mbs.x;
-			*out++ = mbs.y;
-			*out++ = mbs.b;
-			*out   = mbs.ks;
-		}
+		client->usr_evnt = 1;
 	}
-	client->usr_evnt = 1;
 }
 
 void
@@ -225,11 +232,11 @@ cXA_form_do(enum locks lock, struct c_event *ce, bool cancel)
 {
 	struct xa_client *client = ce->client;
 
-	if (cancel)
-		return;
-
-	DIAG((D_mouse, client, "cXA_form_do for %s", client->name));
-	client->fmd.mousepress(lock, client, NULL, NULL, &ce->md);
+	if (!cancel)
+	{
+		DIAG((D_mouse, client, "cXA_form_do for %s", client->name));
+		client->fmd.mousepress(lock, client, NULL, NULL, &ce->md);
+	}
 }
 
 void
@@ -241,7 +248,7 @@ cXA_open_menu(enum locks lock, struct c_event *ce, bool cancel)
 	if (!cancel)
 	{
 		DIAG((D_mouse, ce->client, "cXA_open_menu for %s", ce->client->name));
-		if ( menu == get_menu() ) // && lock_menustruct(ce->client, true) )
+		if ( menu == get_menu() )
 			widg->click(lock, root_window, widg, &ce->md);
 #if GENERATE_DIAGS
 		else
@@ -326,25 +333,25 @@ cXA_menu_move(enum locks lock, struct c_event *ce, bool cancel)
 void
 cXA_do_widgets(enum locks lock, struct c_event *ce, bool cancel)
 {
-	if (cancel)
-		return;
-
-	DIAG((D_mouse, ce->client, "cXA_do_widgets for %s", ce->client->name));
-	do_widgets(lock, (struct xa_window *)ce->ptr1, 0, &ce->md);
+	if (!cancel)
+	{
+		DIAG((D_mouse, ce->client, "cXA_do_widgets for %s", ce->client->name));
+		do_widgets(lock, (struct xa_window *)ce->ptr1, 0, &ce->md);
+	}
 }
  
 void
 cXA_active_widget(enum locks lock, struct c_event *ce, bool cancel)
 {
-	if (cancel)
-		return;
+	if (!cancel)
+	{
+		DIAG((D_mouse, ce->client, "cXA_active_widget for %s", ce->client->name));
+		do_active_widget(lock, ce->client);
 
-	DIAG((D_mouse, ce->client, "cXA_active_widget for %s", ce->client->name));
-	do_active_widget(lock, ce->client);
-
-	/* If active widget action did not generate any WM_MOVED or other WM_REDRAW generating
-	 * actions, move_block is still 1 in which case we can release the move_block here
-	 */
+		/* If active widget action did not generate any WM_MOVED or other WM_REDRAW generating
+		 * actions, move_block is still 1 in which case we can release the move_block here
+		 */
+	}
 	if (C.move_block == 1)
 		C.move_block = 0;
 }
@@ -354,9 +361,9 @@ cXA_widget_click(enum locks lock, struct c_event *ce, bool cancel)
 {
 	XA_WIDGET *widg = ce->ptr1;
 
-	if (cancel)
-		return;
-
-	DIAG((D_mouse, ce->client, "cXA_widget_click for %s", ce->client->name));
-	widg->click(lock, root_window, widg, &ce->md);
+	if (!cancel)
+	{
+		DIAG((D_mouse, ce->client, "cXA_widget_click for %s", ce->client->name));
+		widg->click(lock, root_window, widg, &ce->md);
+	}
 }

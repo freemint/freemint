@@ -375,10 +375,14 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 	 */
 	if (TAB_LIST_START && md->state)
 	{
-		client = TAB_LIST_START->client;
-		DIAG((D_mouse, client, "post button event (menu) to %s", client->name));
-		post_cevent(client, cXA_button_event, NULL,NULL, 0, 0, NULL, md);
-		//post_tpcevent(client, cXA_button_event, NULL,NULL, 0, 0, NULL, md);
+		if (!C.ce_menu_click)
+		{
+			client = TAB_LIST_START->client;
+			C.ce_menu_click = client;
+			DIAG((D_mouse, client, "post button event (menu) to %s", client->name));
+			post_cevent(client, cXA_button_event, NULL,NULL, 0, 0, NULL, md);
+			//post_tpcevent(client, cXA_button_event, NULL,NULL, 0, 0, NULL, md);
+		}
 		return;
 	}
 
@@ -394,7 +398,7 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 		return;
 	}
 	{
-		if ( (locker = C.mouse_lock) )
+		if ( C.mouse_lock && (locker = get_mouse_locker()))
 		{
 			DIAG((D_mouse, locker, "XA_button_event - mouse locked by %s", locker->name));
 
@@ -410,7 +414,7 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 				return;
 			}
 		}
-		if ( (locker = C.update_lock) )
+		if ( C.update_lock && (locker = get_update_locker()))
 		{
 			DIAG((D_mouse, locker, "XA_button_event - screen locked by %s", locker->name));
 
@@ -428,8 +432,12 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 		}
 	}
 
-	if (!(locker = C.mouse_lock))
-		locker = C.update_lock;
+	locker = NULL;
+	if (!(C.mouse_lock && (locker = get_mouse_locker())))
+	{
+		if (C.update_lock)
+			locker = get_update_locker();
+	}
 
 	wind = find_window(lock, md->x, md->y);
 
@@ -500,7 +508,7 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 
 	if (TAB_LIST_START)
 	{
-		if (!C.ce_menu_move)
+		if (!C.ce_menu_move && !C.ce_menu_click)
 		{
 			client = TAB_LIST_START->client;
 			C.ce_menu_move = client;
@@ -550,7 +558,7 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 				XA_TREE *menu;
 
 				if (C.aesmouse != -1)
-					graf_mouse(-1, NULL, true);
+					graf_mouse(-1, NULL, NULL, true);
 
 				menu = (XA_TREE *)widg->stuff;
 				client = menu->owner;
@@ -563,8 +571,12 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 		}
 	}
 
-	if (!(client = C.mouse_lock))
-		client = C.update_lock;
+	client = NULL;	
+	if (!(C.mouse_lock && (client = get_mouse_locker())))
+	{
+		if (C.update_lock)
+			client = get_update_locker();
+	}
 	
 	if (client)
 	{
@@ -697,9 +709,11 @@ XA_wheel_event(enum locks lock, const struct moose_data *md)
 
 	DIAGS(("mouse wheel %d has wheeled %d (x=%d, y=%d)", md->state, md->clicks, md->x, md->y));
 
-	locker = C.mouse_lock;
-	if (!locker)
-		locker = C.update_lock;
+	if (!(C.mouse_lock && (locker = get_mouse_locker())))
+	{
+		if (C.update_lock)
+			locker = get_update_locker();
+	}
 	
 	/*
 	 * Ozk: For now we send wheel events to the owner of the window underneath the mouse

@@ -35,7 +35,7 @@
 
 void check_wh_cp(RECT *c, COMPASS cp, short minw, short minh, short maxw, short maxh);
 
-void graf_mouse(int m_shape, MFORM *mf, bool aesm);
+void graf_mouse(int m_shape, MFORM *mf, struct xa_client *client, bool aesm);
 
 bool rect_changed(const RECT *n, const RECT *o);
 

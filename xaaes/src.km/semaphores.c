@@ -32,37 +32,34 @@
 
 struct ressource_semaphore
 {
-	struct xa_client *client;
+	struct proc *proc;
 	unsigned short counter;
 	unsigned short sleepers;
 };
 
 static void
-ressource_semaphore_lock(struct ressource_semaphore *s, struct xa_client *client)
+ressource_semaphore_lock(struct ressource_semaphore *s, struct proc *proc)
 {
-	if (s->client && s->client != client)
+
+	if (s->proc && s->proc != proc)
 	{
 		s->sleepers++;
 
-		client->sleeplock = (long)s;
-		client->sleepqueue = WAIT_Q;
-		while (s->client)
+		while (s->proc)
 			sleep(WAIT_Q, (long)s);
-
-		client->sleeplock = 0;
 
 		s->sleepers--;
 	}
 
 	/* enter semaphore */
-	s->client = client;
+	s->proc = proc;
 
 	/* increment */
 	s->counter++;
 }
 
 static int
-ressource_semaphore_rel(struct ressource_semaphore *s, struct xa_client *client)
+ressource_semaphore_rel(struct ressource_semaphore *s, struct proc *proc)
 {
 	/*
 	 * Ozk: It seems that applications sometimes call wind_update() with
@@ -73,14 +70,14 @@ ressource_semaphore_rel(struct ressource_semaphore *s, struct xa_client *client)
 	*/
 	/* check for correct usage */
 	//assert(s->client && s->client == client);
-	if (!s->client)
+	if (!s->proc)
 	{
-		DIAG((D_sema, client, "Releasing unused lock %s", client->name));
+		DIAG((D_sema, NULL, "Releasing unused lock %s", proc->name));
 		return 1;
 	}
-	if (s->client != client)
+	if (s->proc != proc)
 	{
-		DIAG((D_sema, client, "%s try releasing lock owned by %s", client->name, s->client->name));
+		DIAG((D_sema, NULL, "%s try releasing lock owned by %s", proc->name, s->proc->name));
 		return 0;
 	}
 
@@ -93,7 +90,7 @@ ressource_semaphore_rel(struct ressource_semaphore *s, struct xa_client *client)
 		if (s->sleepers)
 			wake(WAIT_Q, (long)s);
 
-		s->client = NULL;
+		s->proc = NULL;
 
 		/* completed, semaphore free */
 		return 1;
@@ -106,7 +103,7 @@ ressource_semaphore_rel(struct ressource_semaphore *s, struct xa_client *client)
 static void
 ressource_semaphore_free(struct ressource_semaphore *s)
 {
-	s->client = NULL;
+	s->proc = NULL;
 	s->counter = 0;
 
 	if (s->sleepers)
@@ -114,16 +111,16 @@ ressource_semaphore_free(struct ressource_semaphore *s)
 }
 
 static int
-ressource_semaphore_try(struct ressource_semaphore *s, struct xa_client *client)
+ressource_semaphore_try(struct ressource_semaphore *s, struct proc *proc)
 {
-	if (s->client && s->client != client)
+	if (s->proc && s->proc != proc)
 	{
 		/* semaphore locked */
 		return 0;
 	}
 
 	/* enter semaphore */
-	s->client = client;
+	s->proc = proc;
 
 	/* increment */
 	s->counter++;
@@ -134,22 +131,52 @@ ressource_semaphore_try(struct ressource_semaphore *s, struct xa_client *client)
 static struct ressource_semaphore update_lock;	/* wind_update() locks */
 static struct ressource_semaphore mouse_lock;
 static struct ressource_semaphore ms_lock;
-struct xa_client *
+struct proc *
 update_locked(void)
 {
-	return update_lock.client;
+	return update_lock.proc;
 }
 
-struct xa_client *
+struct proc *
 mouse_locked(void)
 {
-	return mouse_lock.client;
+	return mouse_lock.proc;
 }
-struct xa_client *
+struct proc *
 menustruct_locked(void)
 {
-	return ms_lock.client;
+	return ms_lock.proc;
 }
+
+static struct xa_client *
+get_lock_client(struct ressource_semaphore *s)
+{
+	struct xa_client *ret = CLIENT_LIST_START;
+
+	while (ret)
+	{
+		if (ret->p == s->proc)
+			break;
+		ret =  NEXT_CLIENT(ret);
+	}
+	return ret;
+}
+struct xa_client *
+get_update_locker(void)
+{
+	return get_lock_client(&update_lock);
+}
+struct xa_client *
+get_mouse_locker(void)
+{
+	return get_lock_client(&mouse_lock);
+}
+struct xa_client *
+get_menustruct_locker(void)
+{
+	return get_lock_client(&ms_lock);
+}
+
 void
 free_update_lock(void)
 {
@@ -171,18 +198,18 @@ free_menustruct_lock(void)
 }
 
 bool
-lock_screen(struct xa_client *client, bool try, short *ret, int which)
+lock_screen(struct proc *proc, bool try, short *ret, int which)
 {
 	DIAG((D_sema, NULL, "[%d]lock_screen for (%d)%s state: %d for (%d)%s, try: %d",
-		which, client->p->pid, c_owner(client), update_lock.counter,
-		update_lock.client ? update_lock.client->p->pid : -1,
-		update_lock.client ? update_lock.client->name : "", try));
+		which, proc->pid, proc->name, update_lock.counter,
+		update_lock.proc ? update_lock.proc->pid : -1,
+		update_lock.proc ? update_lock.proc->name : "", try));
 
 	if (try)
 	{
-		if (ressource_semaphore_try(&mouse_lock, client))
+		if (ressource_semaphore_try(&mouse_lock, proc))
 		{
-			if (ressource_semaphore_try(&update_lock, client))
+			if (ressource_semaphore_try(&update_lock, proc))
 				return true;
 			else
 				ressource_semaphore_free(&mouse_lock);
@@ -194,45 +221,45 @@ lock_screen(struct xa_client *client, bool try, short *ret, int which)
 		return false;
 	}
 
-	ressource_semaphore_lock(&mouse_lock, client);
-	ressource_semaphore_lock(&update_lock, client);
+	ressource_semaphore_lock(&mouse_lock, proc);
+	ressource_semaphore_lock(&update_lock, proc);
 	return true;
 }
 
 bool
-unlock_screen(struct xa_client *client, int which)
+unlock_screen(struct proc *proc, int which)
 {
 	bool r = false;
 
 	DIAG((D_sema, NULL, "[%d]unlock_screen for (%d)%s state: %d for (%d)%s",
-		which, client->p->pid, c_owner(client), update_lock.counter,
-		update_lock.client ? update_lock.client->p->pid : -1,
-		update_lock.client ? update_lock.client->name : ""));
+		which, proc->pid, proc->name, update_lock.counter,
+		update_lock.proc ? update_lock.proc->pid : -1,
+		update_lock.proc ? update_lock.proc->name : ""));
 
-	if (update_lock.client == client)
+	if (update_lock.proc == proc)
 	{
-		r = ressource_semaphore_rel(&mouse_lock, client);
-		r = ressource_semaphore_rel(&update_lock, client);
+		r = ressource_semaphore_rel(&mouse_lock, proc);
+		r = ressource_semaphore_rel(&update_lock, proc);
 	}
 	else
 	{
-		DIAG((D_sema, NULL, "unlock_screen from %d without lock_screen!", client->p->pid));
+		DIAG((D_sema, NULL, "unlock_screen from %d without lock_screen!", proc->pid));
 	}
 
 	return r;
 }
 
 bool
-lock_mouse(struct xa_client *client, bool try, short *ret, int which)
+lock_mouse(struct proc *proc, bool try, short *ret, int which)
 {
 	DIAG((D_sema, NULL, "[%d]lock_mouse for (%d)%s state: %d for (%d)%s, try: %d",
-		which, client->p->pid, c_owner(client), mouse_lock.counter,
-		mouse_lock.client ? mouse_lock.client->p->pid : -1,
-		mouse_lock.client ? mouse_lock.client->name : "", try));
+		which, proc->pid, proc->name, mouse_lock.counter,
+		mouse_lock.proc ? mouse_lock.proc->pid : -1,
+		mouse_lock.proc ? mouse_lock.proc->name : "", try));
 
 	if (try)
 	{
-		if (ressource_semaphore_try(&mouse_lock, client))
+		if (ressource_semaphore_try(&mouse_lock, proc))
 			return true;
 
 		if (ret)
@@ -241,77 +268,77 @@ lock_mouse(struct xa_client *client, bool try, short *ret, int which)
 		return false;
 	}
 
-	ressource_semaphore_lock(&mouse_lock, client);
+	ressource_semaphore_lock(&mouse_lock, proc);
 	return true;
 }
 
 bool
-unlock_mouse(struct xa_client *client, int which)
+unlock_mouse(struct proc *proc, int which)
 {
 	bool r = false;
 
 	DIAG((D_sema, NULL, "[%d]unlock_mouse for (%d)%s state: %d for (%d)%s",
-		which, client->p->pid, c_owner(client), mouse_lock.counter,
-		mouse_lock.client ? mouse_lock.client->p->pid : -1,
-		mouse_lock.client ? mouse_lock.client->name : ""));
+		which, proc->pid, proc->name, mouse_lock.counter,
+		mouse_lock.proc ? mouse_lock.proc->pid : -1,
+		mouse_lock.proc ? mouse_lock.proc->name : ""));
 
 
 
-	if (!update_lock.client || update_lock.client == client)
-		r = ressource_semaphore_rel(&mouse_lock, client);
+	if (!update_lock.proc || update_lock.proc == proc)
+		r = ressource_semaphore_rel(&mouse_lock, proc);
 	else
 	{
-		DIAG((D_sema, NULL, "unlock_mouse from %d without lock_screen!", client->p->pid));
-		r = ressource_semaphore_rel(&mouse_lock, client);
+		DIAG((D_sema, NULL, "unlock_mouse from %d without lock_screen!", proc->pid));
+		r = ressource_semaphore_rel(&mouse_lock, proc);
 	}
 
 	return r;
 }
 
 bool
-lock_menustruct(struct xa_client *client, bool try)
+lock_menustruct(struct proc *proc, bool try)
 {
 	DIAG((D_sema, NULL, "lock_menustruct for (%d)%s state: %d for (%d)%s, try: %d",
-		client->p->pid, c_owner(client), ms_lock.counter,
-		ms_lock.client ? ms_lock.client->p->pid : -1,
-		ms_lock.client ? ms_lock.client->name : "", try));
+		proc->pid, proc->name, ms_lock.counter,
+		ms_lock.proc ? ms_lock.proc->pid : -1,
+		ms_lock.proc ? ms_lock.proc->name : "", try));
 
 	if (try)
 	{
-		if (lock_screen(client, true, NULL, 1))
+		if (lock_screen(proc, true, NULL, 1))
 		{
-			if (ressource_semaphore_try(&ms_lock, client))
+			if (ressource_semaphore_try(&ms_lock, proc))
 				return true;
 			else
-				unlock_screen(client, 1);
+				unlock_screen(proc, 1);
 		}
 		return false;
 	}
 
-	lock_screen(client, false, NULL, 2);
-	ressource_semaphore_lock(&ms_lock, client);
+	lock_screen(proc, false, NULL, 2);
+	ressource_semaphore_lock(&ms_lock, proc);
 	return true;
 }
 
 bool
-unlock_menustruct(struct xa_client *client)
+unlock_menustruct(struct proc *proc)
 {
 	bool r = false;
 
 	DIAG((D_sema, NULL, "unlock_menustruct for (%d)%s state: %d for (%d)%s",
-		client->p->pid, c_owner(client), ms_lock.counter,
-		ms_lock.client ? ms_lock.client->p->pid : -1,
-		ms_lock.client ? ms_lock.client->name : ""));
+		proc->pid, proc->name, ms_lock.counter,
+		ms_lock.proc ? ms_lock.proc->pid : -1,
+		ms_lock.proc ? ms_lock.proc->name : ""));
 
 
-	if (ms_lock.client == client)
+	if (ms_lock.proc == proc)
 	{
-		r = ressource_semaphore_rel(&ms_lock, client);
-		unlock_screen(client, 3);
+		r = ressource_semaphore_rel(&ms_lock, proc);
+		unlock_screen(proc, 3);
 	}
 	else
 	{
-		DIAG((D_sema, NULL, "unlock_menustruct from (%d)%s without ownership!", client->p->pid, client->name));
+		DIAG((D_sema, NULL, "unlock_menustruct from (%d)%s without ownership!", proc->pid, proc->name));
 	}
 
 	return r;
