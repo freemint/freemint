@@ -343,7 +343,7 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 	/* - otherwise forget it, 'coz we don't want delayed clicks (they are confusing to the user [ie. me] ) */
 
 	DIAG((D_button,NULL,"  -- client %s", c_owner(client)));
-	
+
 	/* HR: Very annoying not getting WM_TOPPED if you click a workarea	*/
 	if (   md->state == 1
 	    && wind != window_list

@@ -123,35 +123,15 @@ new_client(enum locks lock, struct xa_client *client)
 
 	DIAGS(("new_client: checking shel info (pid %i)", client->p->pid));
 	{
-		struct shel_write_info **list = &(C.info);
-		struct shel_write_info *info = NULL;
+		struct shel_info *info;
 
-		while (*list)
-		{
-			DIAGS(("new_client: found shel info for pid %i", (*list)->pid));
-
-			if ((*list)->pid == client->p->pid)
-			{
-				/* started via shel_write */
-
-				/* remove from list */
-				info = *list;
-				*list = (*list)->next;
-			}
-
-			list = &((*list)->next);
-		}
-
+		info = lookup_extension(client->p, XAAES_MAGIC_SH);
 		if (info)
 		{
 			DIAGS(("new_client: shel_write started"));
 			DIAGS(("new_client: type %i", info->type));
 			DIAGS(("new_client: cmd_name '%s'", info->cmd_name));
 			DIAGS(("new_client: home_path '%s'", info->home_path));
-
-			if (info->ppid != client->p->ppid)
-				DIAGS(("new_client: ppid don't match (is %i, exp: %i)",
-					client->p->ppid, info->ppid));
 
 			client->type = info->type;
 
@@ -161,7 +141,7 @@ new_client(enum locks lock, struct xa_client *client)
 			strcpy(client->cmd_name, info->cmd_name);
 			strcpy(client->home_path, info->home_path);
 
-			free(info);
+			detach_extension(client->p, XAAES_MAGIC_SH);
 		}
 	}
 
@@ -241,11 +221,13 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 		client->home_path[1] = ':';
 		d_getcwd(client->home_path + 2, drv + 1, sizeof(client->home_path) - 3);
 
-		DIAG((D_appl, client, "[1]Client %d home path = '%s'", client->p->pid, client->home_path));
+		DIAG((D_appl, client, "[1]Client %d home path = '%s'",
+			client->p->pid, client->home_path));
 	}
 	else /* already filled out by launch() */
 	{
-		DIAG((D_appl,client,"[2]Client %d home path = '%s'", client->p->pid, client->home_path));
+		DIAG((D_appl, client, "[2]Client %d home path = '%s'",
+			client->p->pid, client->home_path));
 	}
 
 clean_out:
