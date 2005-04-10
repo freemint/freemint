@@ -44,6 +44,7 @@ SCROLL_INFO *set_slist_object(
 		scrl_widget *fuller,
 		scrl_click *dclick,
 		scrl_click *click,
+		scrl_click *click_nesticon,
 
 		scrl_add	*add,
 		scrl_del	*del,

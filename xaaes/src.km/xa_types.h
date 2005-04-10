@@ -1331,6 +1331,7 @@ struct se_text
 {
 	struct se_text *next;
 	short flags;
+	unsigned short tblen;
 	char *text;
 	short w;
 	short h;
@@ -1376,7 +1377,7 @@ struct scroll_entry_content
 };
 
 typedef	bool	scrl_compare	(struct scroll_entry *new_ent, struct scroll_entry *cur_ent);
-typedef int 	scrl_click	(enum locks lock, struct scroll_info *list, OBJECT *form, int objc);
+typedef int 	scrl_click	(struct scroll_info *list, struct scroll_entry *e, const struct moose_data *md);
 typedef void	scrl_list	(struct scroll_info *list);
 typedef void	scrl_widget	(struct scroll_info *list, bool rdrw);
 typedef void	scrl_empty	(struct scroll_info *list, struct scroll_entry *s, SCROLL_ENTRY_TYPE flags);
@@ -1534,6 +1535,9 @@ struct scroll_info
 	
 	char *title;			/* Title of the list */
 
+	short nesticn_w;
+	short nesticn_h;
+
 	short indent;
 	short icon_w, icon_h;
 	short widest, highest;		/* Width and hight of the widgest and highest element; */
@@ -1548,6 +1552,7 @@ struct scroll_info
 
 	scrl_click *dclick;		/* Callback function for double click behaviour */
 	scrl_click *click;		/* Callback function for single click behaviour */
+	scrl_click *click_nesticon;
 
 	scrl_widget *slider;		/* slider calc function */
 	scrl_widget *closer;		/* closer function */
