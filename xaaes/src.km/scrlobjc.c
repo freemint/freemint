@@ -210,6 +210,20 @@ prev_entry(SCROLL_ENTRY *this, short flags)
 	return this;
 }
 
+static bool
+is_in_list(SCROLL_INFO *list, SCROLL_ENTRY *this)
+{
+	SCROLL_ENTRY *e = list->start;
+
+	while (e)
+	{
+		if (e == this)
+			return true;
+		e = next_entry(e, 0, -1, NULL);
+	}
+	return false;
+}
+
 static void
 change_entry(SCROLL_INFO *list, SCROLL_ENTRY *entry, bool select, bool rdrw)
 {
@@ -428,6 +442,7 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this, REC
 
 		if (list->flags & SIF_TREEVIEW)
 		{
+			draw_nesticon(xy, this);
 			x = draw_nesticon(xy, this);
 			xy->x += x;
 			indent += x;
@@ -1172,7 +1187,7 @@ get(SCROLL_INFO *list, SCROLL_ENTRY *entry, short what, void *arg)
 		{
 			case SEGET_STATE:
 			{
-				*(short *)arg = entry->state;
+				*(long *)arg = (long)((long)entry->xstate << 16) | entry->state;
 				break;
 			}
 			case SEGET_NFNT:
@@ -1433,7 +1448,7 @@ add_scroll_entry(SCROLL_INFO *list,
 	struct scroll_entry *here, *new;
 	LRECT r;
 
-	if (!parent || get_entry_lrect(list, parent, 0, &r))
+	if (!parent || is_in_list(list, parent))
 	{
 		bool fullredraw = false;
 		int i;
@@ -1450,7 +1465,7 @@ add_scroll_entry(SCROLL_INFO *list,
 			return 0;
 
 		bzero(new, sizeof(*new));
-		
+
 		{
 			char *s = sc->text;
 			struct se_text *setext, **prev;
@@ -1485,6 +1500,7 @@ add_scroll_entry(SCROLL_INFO *list,
 						*prev = NULL;
 					}
 				}
+				setext->tblen = strlen(setext->text);
 				s += strlen(s) + 1;
 			}
 		}
@@ -1507,7 +1523,7 @@ add_scroll_entry(SCROLL_INFO *list,
 			new->c.col = &default_col;
 
 		new->type = type;
-	
+
 		if (new->c.icon)
 		{
 			object_spec_wh(new->c.icon, &new->r.w, &new->r.h);
@@ -1520,26 +1536,19 @@ add_scroll_entry(SCROLL_INFO *list,
 			if (new->r.h > list->icon_h)
 				list->icon_h = new->r.h;
 		}
+
 		if (new->c.td.text.text)
 			fullredraw = entry_text_wh(list, new);
 
 		new->indent = list->indent;
 		new->r.w += new->indent;
-
+		
 		if (parent)
 		{
-			if (get_entry_lrect(list, parent, 0, &r))
-			{
-				if ((addmode & SEADD_CHILD))
-					here = parent->down;
-				else
-					here = parent;
-			}
+			if ((addmode & SEADD_CHILD))
+				here = parent->down;
 			else
-			{
-				kfree(new);
-				return 0;
-			}
+				here = parent;
 		}
 		else
 			here = list->start;
@@ -1552,8 +1561,7 @@ add_scroll_entry(SCROLL_INFO *list,
 				new->up = parent;
 			}
 			else
-				list->start = list->top = new;
-			
+				list->start = list->top = new;	
 		}
 		else
 		{
@@ -1623,8 +1631,15 @@ add_scroll_entry(SCROLL_INFO *list,
 		if (new->up)
 		{
 			new->level = new->up->level + 1;
-			new->indent += (new->level * 16);
-			new->r.w += (new->level * 16);
+			new->indent += (new->level * list->nesticn_w);
+			if (list->flags & SIF_TREEVIEW)
+			{
+				if (new->r.h < list->nesticn_h)
+					new->r.h = list->nesticn_h;
+				if (new->r.w < list->nesticn_w)
+					new->r.w = list->nesticn_w;
+			}
+			//new->r.w += (new->level * 16);
 		}
 
 		get_entry_lrect(list, new, 0, &r);
@@ -2379,27 +2394,35 @@ click_scroll_list(enum locks lock, OBJECT *form, int item, const struct moose_da
 		
 		if (this)
 		{
+			short ni_x = (list->wi->wa.x + this->indent) - list->off_x;
 			LRECT r;
-			
-			list->cur = this;
-			
-			if ((this->xflags & OF_AUTO_OPEN))
+
+			if ((list->flags & SIF_TREEVIEW) && md->x > ni_x && md->x < (ni_x + list->nesticn_w))
 			{
-				if (this->xstate & OS_OPENED)
-					list->set(list, this, SESET_OPEN, 0, NORMREDRAW);
-				else
-					list->set(list, this, SESET_OPEN, 1, NORMREDRAW);
+				if ((this->xflags & OF_AUTO_OPEN))
+				{
+					if (this->xstate & OS_OPENED)
+						list->set(list, this, SESET_OPEN, 0, NORMREDRAW);
+					else
+						list->set(list, this, SESET_OPEN, 1, NORMREDRAW);
+				}
+				if (list->click_nesticon)
+					list->click_nesticon(list, this, md);
 			}
-			if (list->flags & SIF_AUTOSELECT)
+			else
 			{
-				if (!(list->flags & SIF_MULTISELECT))
-					list->set(list, NULL, SESET_UNSELECTED, UNSELECT_ALL, NORMREDRAW);
-				list->set(list, this, SESET_SELECTED, 0, NOREDRAW); //NORMREDRAW);
-				get_entry_lrect(list, this, 0, &r);
-				list->vis(list, this, NORMREDRAW);
+				list->cur = this;
+				if (list->flags & SIF_AUTOSELECT)
+				{
+					if (!(list->flags & SIF_MULTISELECT))
+						list->set(list, NULL, SESET_UNSELECTED, UNSELECT_ALL, NORMREDRAW);
+					list->set(list, this, SESET_SELECTED, 0, NOREDRAW); //NORMREDRAW);
+					get_entry_lrect(list, this, 0, &r);
+					list->vis(list, this, NORMREDRAW);
+				}
+				if (list->click)			/* Call the new object selected function */
+					(*list->click)(list, this, md);
 			}
-			if (list->click)			/* Call the new object selected function */
-				(*list->click)(lock, list, form, item);
 		}
 	}
 }
@@ -2436,7 +2459,7 @@ dclick_scroll_list(enum locks lock, OBJECT *form, int item, const struct moose_d
 			list->cur = this;
 		
 		if (list->dclick)
-			(*list->dclick)(lock, list, form, item);
+			(*list->dclick)(list, this, md);
 	}
 }
 
@@ -2661,6 +2684,7 @@ set_slist_object(enum locks lock,
 		 scrl_widget *fuller,
 		 scrl_click *dclick,
 		 scrl_click *click,
+		 scrl_click *click_nesticon,
 
 		 scrl_add	*add,
 		 scrl_del	*del,
@@ -2733,6 +2757,7 @@ set_slist_object(enum locks lock,
 
 	list->dclick = dclick;			/* Pass the scroll list's double click function */
 	list->click = click;			/* Pass the scroll list's click function */
+	list->click_nesticon = click_nesticon;
 
 	list->title = title;
 	obj_area(wt, item, &r);
@@ -2801,6 +2826,9 @@ set_slist_object(enum locks lock,
 		list->lock	= lock;
 
 		list->indent = 2;
+		list->nesticn_w = 16;
+		list->nesticn_h = 16;
+
 		open_window(lock, list->wi, list->wi->r);
 	}
 	DIAGS((" -- return new slist %lx", list));

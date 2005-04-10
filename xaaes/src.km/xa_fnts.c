@@ -955,14 +955,14 @@ update_slists(struct xa_fnts_info *fnts)
  * Called by scroll_object handlers when SLIST object is clicked
  */
 static int
-click_name(enum locks lock, SCROLL_INFO *list, OBJECT *obtree, int obj)
+click_name(SCROLL_INFO *list, SCROLL_ENTRY *this, const struct moose_data *md)
 {
 	set_name_list(list->data, NULL);
 	return 0;
 }
 
 static int
-click_style(enum locks lock, SCROLL_INFO *list, OBJECT *obtree, int obj)
+click_style(SCROLL_INFO *list, SCROLL_ENTRY *this, const struct moose_data *md)
 {
 	struct xa_fnts_item *f;
 
@@ -985,10 +985,11 @@ get_edpoint(struct xa_fnts_info *fnts)
 
 	
 static int
-click_size(enum locks lock, SCROLL_INFO *list, OBJECT *obtree, int obj)
+click_size(SCROLL_INFO *list, SCROLL_ENTRY *this, const struct moose_data *md)
 {
 	if (list->cur)
 	{
+		OBJECT *obtree = list->wt->tree;
 		struct xa_fnts_info *fnts = list->data;
 		TEDINFO *ted = object_get_tedinfo(obtree + FNTS_EDSIZE);
 		struct seget_entrybyarg p;
@@ -1097,8 +1098,8 @@ create_new_fnts(enum locks lock,
 				 wind,
 				 FNTS_FNTLIST,
 				 SIF_SELECTABLE|SIF_AUTOSELECT,
-				 NULL, NULL,		/* scrl_widget closer, fuller*/
-				 NULL, click_name,	/* scrl_click dclick, click */
+				 NULL, NULL,			/* scrl_widget closer, fuller*/
+				 NULL, click_name, NULL,	/* scrl_click dclick, click, click_nesticon */
 				 NULL, NULL, NULL, NULL,
 				 NULL, NULL, fnts, 1);
 
@@ -1108,7 +1109,7 @@ create_new_fnts(enum locks lock,
 				 FNTS_TYPE,
 				 SIF_SELECTABLE|SIF_AUTOSELECT,
 				 NULL, NULL,
-				 NULL, click_style,
+				 NULL, click_style, NULL,
 				 NULL, NULL, NULL, NULL,
 				 NULL, NULL, fnts, 1);
 		
@@ -1118,7 +1119,7 @@ create_new_fnts(enum locks lock,
 				 FNTS_POINTS,
 				 SIF_SELECTABLE|SIF_AUTOSELECT,
 				 NULL, NULL,
-				 NULL, click_size,
+				 NULL, click_size, NULL,
 				 NULL, NULL, NULL, NULL,
 				 NULL, NULL, fnts, 1);
 
