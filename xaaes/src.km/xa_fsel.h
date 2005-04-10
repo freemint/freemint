@@ -41,7 +41,8 @@ struct fsel_data
 	XA_TREE *form;
 	XA_TREE *menu;
 	struct xa_client *owner;
-	struct scroll_entry *selected_entry;
+	struct scroll_entry *selected_dir;
+	struct scroll_entry *selected_file;
 	fsel_handler	*selected;
 	fsel_handler	*canceled;
 	Path root;
@@ -55,6 +56,7 @@ struct fsel_data
 	int clear_on_folder_change;
 	int ok;
 	int done;
+	bool tfile;
 	bool treeview;	
 };
 
