@@ -497,7 +497,6 @@ static const OBJECT drop_choice =	/* Object 1 to n */
 	0, 1, 12, 1
 };
 
-
 static OBJECT *
 built_desk_popup(enum locks lock, short x, short y)
 {

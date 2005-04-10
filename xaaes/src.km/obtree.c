@@ -1599,6 +1599,7 @@ obj_find(XA_TREE *wt, short object, short depth, short mx, short my, RECT *c)
 
 	return pos_object;
 }
+
 short
 ob_find(OBJECT *obtree, short object, short depth, short mx, short my)
 {
