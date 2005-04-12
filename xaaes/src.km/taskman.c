@@ -101,7 +101,7 @@ refresh_tasklist(enum locks lock)
 			sc.icon = icon;
 			sc.text = tx;
 			sc.n_strings = 1;
-			list->add(list, NULL, NULL, &sc, false, FLAG_MAL, true);
+			list->add(list, NULL, NULL, &sc, false, SETYP_MAL, true);
 		}
 		else
 		{
@@ -897,7 +897,7 @@ do_system_menu(enum locks lock, int clicked_title, int menu_item)
 			sc.n_strings = 1;
 			for (i = 0; strings[i]; i++)
 			{	sc.text = strings[i];
-				list->add(list, this, NULL, &sc, this ? (SEADD_CHILD|SEADD_PRIOR) : SEADD_PRIOR, FLAG_AMAL, true);
+				list->add(list, this, NULL, &sc, this ? (SEADD_CHILD|SEADD_PRIOR) : SEADD_PRIOR, SETYP_AMAL, true);
 			}
 
 			open_systemalerts(lock);

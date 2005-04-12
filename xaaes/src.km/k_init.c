@@ -467,10 +467,10 @@ k_init(void)
 		sc.usr_flags = 1;
 		sc.xflags = OF_AUTO_OPEN;
 		DIAGS(("Add Alerts entry..."));
-		list->add(list, NULL, NULL, &sc, 0, FLAG_AMAL, NOREDRAW);
+		list->add(list, NULL, NULL, &sc, 0, (SETYP_AMAL|SETYP_STATIC), NOREDRAW);
 		sc.text = e;
 		DIAGS(("Add Environment entry..."));
-		list->add(list, NULL, NULL, &sc, 0, FLAG_AMAL, NOREDRAW);
+		list->add(list, NULL, NULL, &sc, 0, (SETYP_AMAL|SETYP_STATIC), NOREDRAW);
 	}
 
 	DIAGS(("setting up About text list"));
