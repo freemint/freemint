@@ -812,7 +812,7 @@ create_window(
 	}
 #endif
 
-	w = kmalloc(sizeof(*w) + (sizeof(struct xa_window_colours) << 1));
+	w = kmalloc(sizeof(*w) + (long)(sizeof(struct xa_window_colours) << 1));
 	if (!w)
 		/* Unable to allocate memory for window? */
 		return NULL;
@@ -1296,7 +1296,6 @@ draw_window(enum locks lock, struct xa_window *wind, const RECT *clip)
 			{
 				if (wind->thinwork)
 				{
-				
 					if (wind->wa_borders & WAB_LEFT)
 						left_line(1, &wa, wind->colours->frame_col);
 					if (wind->wa_borders & WAB_RIGHT)

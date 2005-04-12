@@ -181,6 +181,12 @@ diags(const char *fmt, ...)
 	char buf[512];
 	va_list args;
 	long l;
+#if 0
+	struct proc *p = get_curproc();
+
+	if ((strnicmp(p->name, "highwire", 8)))
+		return;
+#endif
 
 	va_start(args, fmt);
 	l = vsprintf(buf, sizeof(buf), fmt, args);
@@ -213,6 +219,12 @@ diag(enum debug_item item, struct xa_client *client, char *t, ...)
 {
 	enum debug_item *point = client ? client->options.point : D.point;
 	short b, x, y;
+#if 0
+	struct proc *p = get_curproc();
+
+	if ((strnicmp(p->name, "highwire", 8)))
+		return;
+#endif
 
 	if (D.debug_level == 4
 	    || (    (D.debug_level >= 2 && point[item])

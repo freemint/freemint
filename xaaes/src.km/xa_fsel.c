@@ -473,10 +473,14 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 
 				if (!dir)
 					match = match_pattern(nam, fs->fs_pattern, false);
-				else if (dir_ent)
+				else // if (dir_ent)
 				{
 					if (!strcmp(nam, ".") || !strcmp(nam, ".."))
-						continue;
+					{
+						if (dir_ent)
+							continue;
+					}
+					sc.xstate |= OS_NESTICON;
 				}
 
 				if (match)
@@ -489,7 +493,7 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 					{
 						sc.usr_flags |= FLAG_DIR;
 						icon = obtree + FS_ICN_DIR;
-						sc.xstate |= OS_NESTICON;
+						//sc.xstate |= OS_NESTICON;
 					}
 					else if (executable(nam))
 						icon = obtree + FS_ICN_PRG;
@@ -510,7 +514,7 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 
 					sc.icon = icon;
 					sc.n_strings = 2;
-					list->add(list, dir_ent, dirflag_name, &sc, dir_ent ? SEADD_PRIOR|SEADD_CHILD : SEADD_PRIOR, FLAG_AMAL, NORMREDRAW);
+					list->add(list, dir_ent, dirflag_name, &sc, dir_ent ? SEADD_PRIOR|SEADD_CHILD : SEADD_PRIOR, SETYP_AMAL, NORMREDRAW);
 				}
 			}
 			d_closedir(i);
@@ -728,7 +732,7 @@ fs_enter_dir(struct fsel_data *fs, struct scroll_info *list, struct scroll_entry
 {
 	struct seget_entrybyarg p;
 	int drv;
-	
+
 	add_slash(fs->root, fs->fslash);
 	if (!fs->treeview)
 	{
