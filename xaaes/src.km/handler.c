@@ -592,7 +592,6 @@ XA_handler(void *_pb)
 			return -1;
 		}
 #endif
-
 #if GENERATE_DIAGS
 		if (client)
 		{

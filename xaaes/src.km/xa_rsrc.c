@@ -315,12 +315,12 @@ fix_bblarray(void *b, BITBLK *bb, unsigned long n)
 	DIAG((D_rsrc, NULL, "fixed up %ld bitblk's", n));
 }
 
-static void
+static short
 fix_cicons(void *base, CICONBLK **cibh)
 {
 	unsigned long *addr;
 	long isize;
-	short *pdata, numRez;
+	short *pdata, numRez, maxplanes = 1;
 	int i, j, numCibs = 0;
 	CICONBLK *cib, **cp = cibh;
 
@@ -389,6 +389,9 @@ fix_cicons(void *base, CICONBLK **cibh)
 		{
 			short planes = cicn->num_planes;
 			unsigned long psize = isize * planes;
+
+			if (planes > maxplanes)
+				maxplanes = planes;
 			
 			(unsigned long)pdata += sizeof(CICON);
 			cicn->col_data = pdata;
@@ -420,6 +423,7 @@ fix_cicons(void *base, CICONBLK **cibh)
 		cib = (CICONBLK *)cicn;
 	}
 	DIAG((D_rsrc, NULL, "fixed up %d color icons", numCibs));
+	return maxplanes;
 }
 
 static void
@@ -599,7 +603,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 	RSHDR *hdr = NULL;
 	CICONBLK **cibh = NULL;
 	unsigned long osize = 0, size = 0;
-	char *base = NULL;
+	char *base = NULL, *end = NULL;
 	struct xa_rscs *rscs = NULL; 
 	short vdih = C.vh;
 
@@ -641,8 +645,9 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 
 		if (hdr->rsh_vrsn & 4)
 		{
-			size = (unsigned long)((short *)((long)base + osize));
+			size = *(unsigned long *)(base + osize);
 		}
+		end = base + size;
 		/*
 		 * Ozk: Added 'flags' to xa_rscs structure, so we know
 		 * if the resource associated with it was allocated by
@@ -668,8 +673,11 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 			(RSHDR *)base = rshdr;
 			size = (unsigned long)hdr->rsh_rssize;
 			osize = (size + 1UL) & 0xfffffffeUL;
+			if (hdr->rsh_vrsn & 4)
+				size = *(unsigned long *)(base + osize);
 			client->rsct++;
 			rscs = list_resource(client, base, 0);
+			end = base + size;
 		}
 	}
 
@@ -685,6 +693,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 	if (hdr->rsh_vrsn & 4)
 	{
 		/* It's an enhanced RSC file */
+		short maxplanes = 0;
 		unsigned long *earray; //, *addr;
 
 		DIAG((D_rsrc, client, "Enhanced resource file"));
@@ -696,18 +705,31 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 		if (*earray && *earray != -1L) /* Get colour icons */
 		{
 			cibh = (CICONBLK **)(*earray + (long)base);
-			fix_cicons(base, cibh);
+			maxplanes = fix_cicons(base, cibh);
 		}
 
 		if (*earray)
 			earray++;
 
-		if (*earray && *earray != -1L)
+		/* Ozk: I need help here! Need a foolproof way of checking if the palette
+		 *	present in the resource file is a valid one. The criterias I've
+		 *	implemented here is;
+		 *	1. The resource must have 256 color cicons - else the palette is
+		 *	   not considered at all.
+		 *	2. The first 16 palette entries are checked and only valid if
+		 *	   there are 16 unique pen indexes.
+		 *	3. If check 2 passes, check if there are valid RGB data in the
+		 *	   remaining palette entries. This simply means the check fails
+		 *	   if there is only 0 for r, g and b levels .. not a very reliable
+		 *	   test.
+		 */
+		if (maxplanes >= 8 && *earray && *earray != -1L)
 		{
 			short work_in[15] = { 1,1,1,1,1, 1,1,1,1,1, 2,0,0,0,0 };
 			short work_out[58];
 			struct xa_rsc_rgb *p;
 			int i;
+			unsigned short mask;
 			bool pal = false;
 
 			vdih = C.P_handle;
@@ -715,19 +737,45 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 
 			DIAG((D_rsrc, client, "Color palette present"));
 			(long)p = (long)(*earray + (long)base);
-			p += 16;
-			for (i = 16; i < 256; i++, p++)
+
+			/* Ozk:	First we check if the first 16 pens have valid data
+			 *	Valid data means two palette entries can not index
+			 *	the same pen index
+			 */
+			mask = 0;
+			for (i = 0; i < 16; i++)
 			{
-				if ((p->red | p->green | p->blue))
+				short pen = p[i].pen;
+				if (pen >= 0 && pen < 256)
+				{
+					if (pen == 255)
+						pen = 1;
+					if ((mask & (1 << pen)))
+						break;
+					else
+						mask |= 1 << pen;
+				}
+				else
+					break;
+			}
+			/*
+			 * then we check if the remaining palette have valid RGB data...
+			 * I dont know if this check is good enough, but...
+			 */
+			for (i = 16; i < 256; i++)
+			{
+				if ((p[i].red | p[i].green | p[i].blue))
 				{
 					pal = true;
 					break;
 				}
 			}
-			if (pal)
+			
+			if (pal && mask == 0xffff)
 			{
 				DIAG((D_rsrc, client, "%s got palette", fname ? fname : "noname"));
 				(long)rscs->palette = (long)(*earray + (long)base);
+								
 				fix_rsc_palette((struct xa_rsc_rgb *)rscs->palette);
 				if (set_pal && cfg.set_rscpalette)
 				{

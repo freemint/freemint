@@ -842,28 +842,25 @@ transform_gem_bitmap_data(short vdih, MFDB msrc, MFDB mdest, int src_planes, int
 void
 fix_rsc_palette(struct xa_rsc_rgb *palette)
 {
-	int i, pens;
-	short *d2v;
+	int i;
+	long palen;
 	struct rgb_1000 *new;
 
-	new = kmalloc(3 * 2 * 256);
+	palen = sizeof(*new) * 256;
+	new = kmalloc(palen);
 	assert(new);
 
-	switch (screen.planes)
+	for (i = 0; i < 256; i++)
 	{
-		case 1: d2v = devtovdi1; pens =  2; break;
-		case 2: d2v = devtovdi2; pens =  4; break;
-		case 4: d2v = devtovdi4; pens = 16; break;
-		default: d2v = devtovdi8; pens = 256; break;
+		short p = palette[i].pen;
+		if (p >= 0 && p < 256)
+		{
+			new[p].red	= palette[i].red;
+			new[p].green	= palette[i].green;
+			new[p].blue	= palette[i].blue;
+		}
 	}
-
-	for (i = 0; i < pens; i++)
-	{
-		new[palette[i].pen].red		= palette[i].red;
-		new[palette[i].pen].green	= palette[i].green;
-		new[palette[i].pen].blue	= palette[i].blue;
-	}
-	memcpy(palette, new, (2 * 3 * 256));
+	memcpy(palette, new, palen);
 	kfree(new);
 }
 
