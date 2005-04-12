@@ -941,9 +941,7 @@ calc_work_area(struct xa_window *wind)
 			wind->wa.x += 2, wind->wa.y += 2;
 			wind->wa.w -= 4, wind->wa.h -= 4;
 		}
-
 		wind->wa_borders = wa_borders;
-
 	}
 
 	/* border displacement */
@@ -3037,7 +3035,7 @@ create_widg_layout(struct xa_window *wind, struct wdglo_desc *wld)
 	while (w->tp != -1)
 		w++, nrows++;
 
-	if (nrows && (rows = kmalloc(sizeof(*rows) * nrows)))
+	if (nrows && (rows = kmalloc( (long)sizeof(*rows) * nrows)))
 	{
 		int rownr = 0;
 		struct widget_row *p = NULL;

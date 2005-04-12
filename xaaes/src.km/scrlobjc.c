@@ -1456,7 +1456,7 @@ add_scroll_entry(SCROLL_INFO *list,
 		/*
 		 * mem for the new entry...
 		 */
-		if (type & FLAG_AMAL)
+		if (type & SETYP_AMAL)
 			new = kmalloc(sizeof(*new));
 		else
 			new = kmalloc(sizeof(*new));
@@ -1471,11 +1471,11 @@ add_scroll_entry(SCROLL_INFO *list,
 			struct se_text *setext, **prev;
 
 			prev = &new->c.td.text.text;
-			new->c.type = SETYPE_TEXT;
+			new->c.type = SECONTENT_TEXT;
 
 			for (i = 0; i < ns; i++)
 			{
-				if (type & FLAG_AMAL)
+				if (type & SETYP_AMAL)
 				{
 					setext = kmalloc(sizeof(*setext) + strlen(s) + 1);
 					if (setext)
@@ -1498,6 +1498,8 @@ add_scroll_entry(SCROLL_INFO *list,
 						*prev = setext;
 						prev = &((*prev)->next);
 						*prev = NULL;
+						if (type & SETYP_MAL)
+							setext->flags |= SETEXT_ALLOC;
 					}
 				}
 				setext->tblen = strlen(setext->text);
@@ -1720,10 +1722,11 @@ add_scroll_entry(SCROLL_INFO *list,
  * Delete scroll entry
  */
 static SCROLL_ENTRY *
-free_scroll_entry(struct scroll_info *list, struct scroll_entry *this)
+free_scroll_entry(struct scroll_info *list, struct scroll_entry *this, long *height)
 {
 	struct scroll_entry *stop = this, *next;
 	short level = 1;
+	long h = 0;
 
 	this = this->down;
 
@@ -1737,62 +1740,89 @@ free_scroll_entry(struct scroll_info *list, struct scroll_entry *this)
 		else
 		{
 			next = this->next;
-			if (next)
-				next->prev = this->prev;
-			if (this->prev)
-				this->prev->next = next;
+			if ((this->type & SETYP_STATIC))
+			{
+				if (!next)
+				{
+					next = this->up;
+					level--;
+					while (next && level)
+					{
+						if (next->next)
+						{
+							next = next->next;
+							break;
+						}
+						next = next->up;
+						level--;
+					}
+				}
+			}
 			else
 			{
-				if (this->up)
-					this->up->down = next;
+				if (next)
+					next->prev = this->prev;
+				if (this->prev)
+					this->prev->next = next;
 				else
-					list->start = next;
-			}
-			if (!next)
-			{
-				next = this->up;
-				level--;
-			}
-
-			if (this == list->cur)
-			{
-				list->cur = NULL;
-			}
-			if (this == list->top)
-			{
-				list->top = NULL;
-			}
-			if (this->c.type == SETYPE_TEXT)
-			{
-				struct se_text *setext = this->c.td.text.text;
-				while (setext)
 				{
-					if (setext->flags & SETEXT_ALLOC)
-						kfree(setext->text);
-					setext = setext->next;
+					if (this->up)
+						this->up->down = next;
+					else
+						list->start = next;
 				}
-				if ((this->iflags & SEF_WTXTALLOC))
-					kfree(this->c.td.text.fnt);
-			}
+				if (!next)
+				{
+					next = this->up;
+					level--;
+				}
+
+				if (this == list->cur)
+				{
+					list->cur = NULL;
+				}
+				if (this == list->top)
+				{
+					list->top = NULL;
+				}
+
+				if (this->c.type == SECONTENT_TEXT)
+				{
+					struct se_text *setext = this->c.td.text.text, *n;
+					while (setext)
+					{
+						n = setext->next;
+						if (setext->flags & SETEXT_ALLOC)
+							kfree(setext->text);
+						kfree(setext);
+						setext = n;
+					}
+					if ((this->iflags & SEF_WTXTALLOC))
+						kfree(this->c.td.text.fnt);
+				}
+				h += this->r.h;
+				kfree(this);
 			
-			kfree(this);
-			
+			}			
 			this = next;
 		}
 	}
 
 	this = stop;
 	next = this->next;
-	if (next)
-		next->prev = this->prev;
-	if (this->prev)
-		this->prev->next = next;
-	else
+	if (!(this->type & SETYP_STATIC))
 	{
-		if (this->up)
-			this->up->down = next;
+		if (next)
+			next->prev = this->prev;
+		if (this->prev)
+			this->prev->next = next;
 		else
-			list->start = next;
+		{
+			if (this->up)
+				this->up->down = next;
+			else
+				list->start = next;
+		}
 	}
 	if (!next)
 	{
@@ -1805,32 +1835,40 @@ free_scroll_entry(struct scroll_info *list, struct scroll_entry *this)
 				next = next->next;
 				break;
 			}
-			this = this->up;
+			next = next->up; //this = this->up;
 			level--;
 		}
 	//	if (next)
 	//		next = next->next;
 	}
-	if (this == list->cur)
-		list->cur = NULL;
-	if (this == list->top)
-		list->top = NULL;
 
-	if (this->c.type == SETYPE_TEXT)
+	if (!(this->type & SETYP_STATIC))
 	{
-		struct se_text *setext = this->c.td.text.text;
-		while (setext)
-		{
-			if (setext->flags & SETEXT_ALLOC)
-				kfree(setext->text);
-			setext = setext->next;
-		}
-		if ((this->iflags & SEF_WTXTALLOC))
-			kfree(this->c.td.text.fnt);
-	}
+		if (this == list->cur)
+			list->cur = NULL;
+		if (this == list->top)
+			list->top = NULL;
 
-	kfree(this);
-		
+		if (this->c.type == SECONTENT_TEXT)
+		{
+			struct se_text *setext = this->c.td.text.text, *n;
+			while (setext)
+			{
+				n = setext->next;
+				if (setext->flags & SETEXT_ALLOC)
+					kfree(setext->text);
+				kfree(setext);
+				setext = n;
+			}
+			if ((this->iflags & SEF_WTXTALLOC))
+				kfree(this->c.td.text.fnt);
+		}
+		h += this->r.h;
+		kfree(this);
+	}
+	if (height)
+		*height = h;
+
 	return next;
 }
 
@@ -1840,6 +1878,7 @@ del_scroll_entry(struct scroll_info *list, struct scroll_entry *e, short redraw)
 
 	struct scroll_entry *next, *prev;
 	short sy = 0, dy = 0;
+	long del_h;
 	LRECT lr, r;
 
 	get_entry_lrect(list, e, 1, &lr);
@@ -1847,7 +1886,7 @@ del_scroll_entry(struct scroll_info *list, struct scroll_entry *e, short redraw)
 	if (!(prev = e->prev))
 		prev = e->up;
 	
-	next = free_scroll_entry(list, e);
+	next = free_scroll_entry(list, e, &del_h);
 
 	if (lr.y < (list->start_y - list->off_y))
 	{
@@ -1991,6 +2030,7 @@ del_scroll_entry(struct scroll_info *list, struct scroll_entry *e, short redraw)
 		}
 		showm();
 	}
+
 	list->slider(list, redraw);
 	return next;
 }
@@ -1999,16 +2039,22 @@ del_scroll_entry(struct scroll_info *list, struct scroll_entry *e, short redraw)
 static void
 empty_scroll_list(SCROLL_INFO *list, SCROLL_ENTRY *this, SCROLL_ENTRY_TYPE type)
 {
-	short level = 0;
+	//short level = 0;
 	if (!this)
 	{
 		this = list->start;
 		while (this)
 		{
+			if (type == -2)
+				this->type &= ~SETYP_STATIC;
+
+			this = del_scroll_entry(list, this, false);
+#if 0
 			if (type == -2 || ((this->type & type) || type == -1))
 				this = del_scroll_entry(list, this, false);
 			else
 				this = next_entry(this, ENT_ISROOT, -1, &level);
+#endif
 		}
 	}
 	else
@@ -2643,8 +2689,10 @@ unset_G_SLIST(struct scroll_info *list)
 
 	this = list->start;
 	while (this)
-		this = free_scroll_entry(list, this);
-	
+	{
+		this->type &= ~SETYP_STATIC;
+		this = free_scroll_entry(list, this, NULL);
+	}
 	//list->empty(list, -2);
 
 	if (list->wi)

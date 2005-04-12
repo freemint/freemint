@@ -1270,8 +1270,10 @@ struct scroll_info;
 /* Directory entry flags */
 enum scroll_entry_type
 {
-	FLAG_AMAL	= 0x001,
-	FLAG_MAL	= 0x002,
+	SETYP_AMAL	= 0x0001,
+	SETYP_MAL	= 0x0002,
+
+	SETYP_STATIC	= 0x8000,
 
 #if 0
 	FLAG_DIR        = 0x001,
@@ -1362,7 +1364,7 @@ struct scroll_content_text
 	struct xa_wtxt_inf *fnt;
 };
 
-#define SETYPE_TEXT	0
+#define SECONTENT_TEXT	0
 struct scroll_entry_content
 {
 	short type;

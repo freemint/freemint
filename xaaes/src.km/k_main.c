@@ -595,7 +595,7 @@ alert_input(enum locks lock)
 			sc.n_strings = 1;
 			p.arg.typ.txt = "Alerts";
 			list->get(list, NULL, SEGET_ENTRYBYTEXT, &p);
-			list->add(list, p.e, NULL, &sc, p.e ? SEADD_CHILD: 0, FLAG_MAL, true);
+			list->add(list, p.e, NULL, &sc, p.e ? SEADD_CHILD: 0, SETYP_MAL, true);
 		}
 
 		 /* Now you can always lookup the error in the log. */
