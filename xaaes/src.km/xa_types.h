@@ -223,6 +223,7 @@ struct xa_window_colours
 	short frame_col;
 
 	struct xa_wcol_inf	win;
+	struct xa_wcol_inf	borders;
 
 	struct xa_wcol_inf	slider;
 	struct xa_wcol_inf	slide;
@@ -1435,11 +1436,12 @@ struct seset_txttab
 
 /* scrl_get modes */
 #define SEGET_STATE		 0
-#define SEGET_NFNT		 1
-#define SEGET_SFNT		 2
-#define SEGET_HFNT		 3
-#define SEGET_WTXT		 4
-#define SEGET_SELECTED		 5
+#define SEGET_XSTATE		 1
+#define SEGET_NFNT		 2
+#define SEGET_SFNT		 3
+#define SEGET_HFNT		 4
+#define SEGET_WTXT		 5
+#define SEGET_SELECTED		 6
 #define SEGET_ENTRYBYIDX	 7
 #define SEGET_ENTRYBYTEXT	 8
 #define SEGET_ENTRYBYDATA	 9

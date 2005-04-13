@@ -98,8 +98,7 @@ void form_copy(const RECT *fr, const RECT *to);
 void strip_name(char *to, const char *fro);
 void cramped_name(const void *s, char *t, short w);
 const char *clipped_name(const void *s, char *t, short w);
-const char *prop_clipped_name(const char *s, char *d, int w, short *ret_w, short *ret_h);
-const char *gdprop_clipped_name(const char *s, char *d, int w);
+const char *prop_clipped_name(const char *s, char *d, int w, short *ret_w, short *ret_h, short method);
 
 //int thickness(OBJECT *ob);
 //bool is_menu(OBJECT *tree);

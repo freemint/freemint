@@ -1787,6 +1787,57 @@ draw_widg_icon(struct xa_widget *widg, XA_TREE *wt, short ind)
 	display_object(0, wt, (const RECT *)&C.global_clip, ind, x, y, 0);
 }
 
+void
+draw_window_borders(struct xa_window *wind)
+{
+	struct xa_wcol_inf *wci = &wind->colours->borders;
+	short size = wind->frame;
+	RECT r;
+
+	/* top-left box */
+	r.x = wind->r.x;
+	r.y = wind->r.y;
+	r.w = size;
+	r.h = size;
+	draw_widg_box(0, wci, 0, &r, &wind->r);
+
+	/* Left border */
+	r.y += size;
+	r.h = wind->r.h - (size + size + 2);
+	draw_widg_box(0, wci, 0, &r, &wind->r);
+
+	/* bottom-left box */
+	r.y = wind->r.y + wind->r.h - (size + 2);
+	r.h = size;
+	draw_widg_box(0, wci, 0, &r, &wind->r);
+
+	/* Bottom border */
+	r.x += size;
+	r.w = wind->r.w - (size + size + 2);
+	draw_widg_box(0, wci, 0, &r, &wind->r);
+
+	/* right-bottom box */
+	r.x = wind->r.x + wind->r.w - (size + 2);
+	r.w = size;
+	draw_widg_box(0, wci, 0, &r, &wind->r);
+
+	/* right border */
+	r.y = wind->r.y + size;
+	r.h = wind->r.h - (size + size + 2);
+	draw_widg_box(0, wci, 0, &r, &wind->r);
+
+	/* top-right box */
+	r.y = wind->r.y;
+	r.h = size;
+	draw_widg_box(0, wci, 0, &r, &wind->r);
+
+	/* Top border*/
+	r.x = wind->r.x + size;
+	r.w = wind->r.w - (size + size + 2);
+	draw_widg_box(0, wci, 0, &r, &wind->r);
+
+}
+
 static bool
 display_closer(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 {

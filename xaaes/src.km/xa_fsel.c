@@ -755,24 +755,37 @@ fs_item_action(struct scroll_info *list, struct scroll_entry *this, const struct
 	struct fsel_data *fs = list->data;
 	struct seget_entrybyarg p;
 	long uf;
+	short state;
 
 	DIAG((D_fsel, NULL, "fs_item_action %lx, fs=%lx", list->cur, fs));
 	if (this)
 	{
 		list->get(list, this, SEGET_USRFLAGS, &uf);
+		list->get(list, this, SEGET_STATE, &state);
 
 		if (!(uf & FLAG_DIR))
 		{
 			DIAG((D_fsel, NULL, " --- nodir '%s'", this->c.td.text.text->text));
 			/* file entry action */
-			p.idx = 0;
-			p.e = this;
-			p.arg.typ.txt = fs->file;
-			list->get(list, this, SEGET_TEXTCPY, &p);
-			fs->selected_file = this;
-			fs->selected_dir = this->up;
-			fs->tfile = false;
-			set_dir(list);
+			if (!(state & OS_SELECTED))
+			{
+				p.idx = 0;
+				p.e = this;
+				p.arg.typ.txt = fs->file;
+				list->get(list, this, SEGET_TEXTCPY, &p);
+				fs->selected_file = this;
+				fs->selected_dir = this->up;
+				fs->tfile = false;
+				list->set(list, this, SESET_SELECTED, 0, NORMREDRAW);
+				set_dir(list);
+			}
+			else
+			{
+				list->set(list, this, SESET_UNSELECTED, UNSELECT_ONE, NORMREDRAW);
+				fs->selected_file = NULL;
+				fs->tfile = false;
+				set_file(fs, "");
+			}
 		}
 		else
 		{			
@@ -793,14 +806,26 @@ fs_item_action(struct scroll_info *list, struct scroll_entry *this, const struct
 			p.arg.typ.txt = ".";
 			if (list->get(list, this, SEGET_TEXTCMP, &p) && p.ret.ret)
 			{
-				fs->selected_dir = this;
-				set_dir(list);
 				if (!md || (md->state & MBS_RIGHT))
 				{
+					fs->selected_dir = this;
+					set_dir(list);
 					fs_enter_dir(fs, list, this);
 				}
 				else
 				{
+					if ((state & OS_SELECTED))
+					{
+						fs->selected_dir = this->up;
+						list->set(list, this, SESET_UNSELECTED, UNSELECT_ONE, NORMREDRAW);
+					}
+					else
+					{
+						list->set(list, this, SESET_SELECTED, 0, NORMREDRAW);
+						fs->selected_dir = this;
+					}
+					set_dir(list);
+						
 					if (!fs->tfile) set_file(fs, "");
 				}
 				return true;
@@ -873,18 +898,30 @@ fs_click(struct scroll_info *list, struct scroll_entry *this, const struct moose
 	{
 		struct seget_entrybyarg p;
 		long uf;
+		short state;
 		
 		list->get(list, list->cur, SEGET_USRFLAGS, &uf);
 		p.idx = 0;
 		list->get(list, list->cur, SEGET_TEXTPTR, &p);
+		list->get(list, list->cur, SEGET_STATE, &state);
 		
 		if (!(uf & FLAG_DIR))
 		{
-			fs->tfile = false;
-			set_file(fs, p.ret.ptr);
-			fs->selected_file = list->cur;
-			fs->selected_dir = list->cur->up;
-			set_dir(list);
+			if (!(state & OS_SELECTED))
+			{
+				fs->tfile = false;
+				set_file(fs, p.ret.ptr);
+				fs->selected_file = list->cur;
+				fs->selected_dir = list->cur->up;
+				list->set(list, list->cur, SESET_SELECTED, 0, NORMREDRAW);
+				set_dir(list);
+			}
+			else
+			{
+				set_file(fs, "");
+				list->set(list, list->cur, SESET_UNSELECTED, UNSELECT_ONE, NORMREDRAW);
+				fs->selected_file = NULL;
+			}
 		}
 		else if (strcmp(p.ret.ptr, ".") == 0)
 		{
@@ -1376,7 +1413,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 				 wt,
 				 dialog_window,
 				 FS_LIST,
-				 SIF_SELECTABLE|SIF_ICONINDENT|SIF_AUTOSELECT|SIF_TREEVIEW,
+				 SIF_SELECTABLE|SIF_ICONINDENT|/*SIF_AUTOSELECT|*/SIF_TREEVIEW,
 				 fs_closer, NULL,
 				 fs_dclick, fs_click, fs_click_nesticon,
 				 NULL, NULL, NULL, NULL/*free_scrollist*/,
