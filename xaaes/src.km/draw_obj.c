@@ -693,7 +693,7 @@ wtxt_output(struct xa_wtxt_inf *wtxti, char *txt, short state, const RECT *r, sh
 	if (f & WTXT_NOCLIP)
 		strncpy(t, txt, sizeof(t));
 	else
-		prop_clipped_name(txt, t, r->w - (xoff << 1), &x, &y);
+		prop_clipped_name(txt, t, r->w - (xoff << 1), &x, &y, 1);
 	
 	t_extent(t, &x, &y);
 	y = yoff + r->y + ((r->h - y) >> 1);
@@ -868,55 +868,103 @@ const char *clipped_name(const void *s, char *t, short w)
 }
 
 const char *
-prop_clipped_name(const char *s, char *d, int w, short *ret_w, short *ret_h)
+prop_clipped_name(const char *s, char *d, int w, short *ret_w, short *ret_h, short method)
 {
 	int swidth = 0;
 	short cw, tmp;
 	char *dst = d;
+	char end[256];
 
-	while (*s)
+	switch (method)
 	{
-		vqt_width(C.vh, *s, &cw, &tmp, &tmp);
-		if (cw != -1)
+		/*
+		 * cramp string. "This is a long string, yeah?" becomes "This is...tring, yeah?"
+		 */
+		case 1:
 		{
-			swidth += cw;
+			const char *e = s + strlen(s);
 
-			if (swidth >= w)
+			if (s + 8 < e)
+			{
+				int i, chars = 0;
+				char c;
+				bool tog = false;
+
+				i = sizeof(end) - 1;
+				end[i--] = '\0';
+				while (s != e)
+				{
+					if (tog) c = *--e;
+					else	 c = *s++;
+
+					vqt_width(C.vh, c, &cw, &tmp, &tmp);
+					if (cw != -1)
+					{
+						swidth += cw;
+						if (swidth >= w)
+						{
+							if (tog) e++;
+							else     s--;
+							break;
+						}
+						if (tog)
+							end[i--] = c, tog = false;
+						else
+							*dst++ = c, tog = true;
+						chars++;
+					}
+				}
+				*dst = '\0';
+				i++;
+				if (e != s)
+				{
+					if (chars > 6)
+					{
+						*(dst - 2) = '.';
+						*(dst - 1) = '.';
+						end[i] = '.';
+					}
+				}
+				strcat(d, &end[i]);
 				break;
-			*dst++ = *s++;
+			}
+			/* fall through */
 		}
-	}
-	*dst = '\0';
-	if (*s)
-	{
-		int i;
-		for (i = 3; i > 0 && dst != d; i--)
-			*--dst = '.';
-	}
+		/*
+		 * Clip string. "This is a long string, yeah?" becomes "This is a long..."
+		 */
+		case 0:
+		{
+			while (*s)
+			{
+				vqt_width(C.vh, *s, &cw, &tmp, &tmp);
+				if (cw != -1)
+				{
+					swidth += cw;
+
+					if (swidth >= w)
+						break;
+					*dst++ = *s++;
+				}
+			}
+			*dst = '\0';		
+			if (*s)
+			{
+				int i = strlen(d);
+				if (i > 8)
+				{
+					for (i = 3; i > 0 && dst != d; i--)
+						*--dst = '.';
+				}
+			}
+			break;
+		}
+	}			
 	
 	if (ret_w && ret_h)
 		t_extent(d, ret_w, ret_h);
 
 	return d;	
-}
-
-const char *
-gdprop_clipped_name(const char *s, char *d, int width)
-{
-	long w = (long)width << 16;
-	long ax, ay, swidth = 0;
-	char *dst = d;
-
-	while (*s)
-	{
-		vqt_advance32(C.vh, *s, &ax, &ay);
-		swidth += ax;
-		if (swidth > w)
-			break;
-		*dst++ = *s++;
-	}
-	*dst = '\0';
-	return d;
 }
 		
 /* HR: 1 (good) set of routines for screen saving */

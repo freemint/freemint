@@ -665,7 +665,6 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			*(RECT *)(pb->intout + 1) = *ir;
 			DIAGS(("wind_set: WF_CURRXYWH return %d/%d/%d/%d", *ir)); 
 		}
-
 		break;
 	}
 	/* */
