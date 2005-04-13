@@ -617,11 +617,16 @@ struct xa_window_colours def_otop_wc =
                                                     {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},
                                                     {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},
                                                     {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* window areas not covered by a widget/ unused widgets*/
- /* Slider */
+ 
+  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_CYAN,   FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_CYAN, NULL},	/* Normal */
+                                                    {G_CYAN,   FIS_SOLID,   0,   G_BLACK,     1,    G_CYAN, G_WHITE, NULL},		/* Selected */
+                                                    {G_BLUE,   FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}},	/* Highlighted */
+/* Slider */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
                                                     {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
+                                                    {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL},	/* Selected */
+                                                    {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL}}, /* Highlighted */
  /* Slide */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
                                                     {G_LBLACK, FIS_SOLID,   0,   G_LBLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
@@ -704,11 +709,16 @@ struct xa_window_colours def_utop_wc =
  { WCOL_DRAWBKG|WCOL_BOXED,                         MD_REPLACE,
                                                     {G_LWHITE, FIS_SOLID,   0,   G_LBLACK,     1,    G_WHITE, G_LBLACK, NULL},
                                                     {G_LWHITE, FIS_SOLID,   0,   G_LBLACK,     1,    G_WHITE, G_LBLACK, NULL},
-                                                    {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* window areas not covered by a widget/ unused widgets*/
+                                                    {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}},	/* window areas not covered by a widget/ unused widgets*/
+ 
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_LWHITE, NULL},	/* Normal */
+                                                    {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_LWHITE, G_WHITE,  NULL},		/* Selected */
+                                                    {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL}},	/* Highlighted */
  /* Slider */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_BLACK, G_WHITE},	/* Selected */
-                                                    {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
+                                                    {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL},		/* Selected */
+                                                    {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL}},	/* Highlighted */
  /* Slide */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LBLACK, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
                                                     {G_LBLACK, FIS_SOLID,   0,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
@@ -1273,15 +1283,20 @@ draw_window(enum locks lock, struct xa_window *wind, const RECT *clip)
 			tcl = cl;
 			if (wind->frame > 0)
 			{
-				int i;
-				l_color(wind->colours->frame_col);
-				for (i = 0; i < wind->frame; i++)
+				if (wind->frame >= 4)
+					draw_window_borders(wind);
+				else
 				{
-					gbox(0, &tcl);
-					tcl.x++;
-					tcl.y++;
-					tcl.w -= 2;
-					tcl.h -= 2;
+					int i;
+					l_color(wind->colours->frame_col);
+					for (i = 0; i < wind->frame; i++)
+					{
+						gbox(0, &tcl);
+						tcl.x++;
+						tcl.y++;
+						tcl.w -= 2;
+						tcl.h -= 2;
+					}
 				}
 			}
 			/* Display the work area */

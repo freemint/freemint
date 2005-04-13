@@ -183,7 +183,7 @@ static short devtovdi1[] = { 0,1 };
 static long
 get_coldist(struct rgb_1000 *src, struct rgb_1000 *dst)
 {
-	long r, g, b;
+	register long r, g, b;
 
 	r = (long)dst->red - src->red;
 	r = r * r;

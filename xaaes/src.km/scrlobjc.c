@@ -481,7 +481,7 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this, REC
 			x = x2;
 			y = y2;
 			
-			prop_clipped_name(tetext->text, t, tabs->r.w - indent, &w, &h);
+			prop_clipped_name(tetext->text, t, tabs->r.w - indent, &w, &h, 0);
 			indent = 0;
 			
 			if (tabs->flags & SETAB_RJUST)
@@ -1187,7 +1187,12 @@ get(SCROLL_INFO *list, SCROLL_ENTRY *entry, short what, void *arg)
 		{
 			case SEGET_STATE:
 			{
-				*(long *)arg = (long)((long)entry->xstate << 16) | entry->state;
+				*(short *)arg = entry->state;
+				break;
+			}
+			case SEGET_XSTATE:
+			{
+				*(short *)arg = entry->xstate;
 				break;
 			}
 			case SEGET_NFNT:

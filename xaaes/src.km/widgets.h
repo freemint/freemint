@@ -31,6 +31,7 @@
 #include "xa_types.h"
 
 COMPASS compass(short d, short x, short y, RECT r);
+void	draw_window_borders(struct xa_window *wind);
 
 void	fix_default_widgets(void *);
 OBJECT *get_widgets(void);
