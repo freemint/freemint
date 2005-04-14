@@ -1053,7 +1053,7 @@ display_popup(Tab *tab, XA_TREE *wt, int item, short rdx, short rdy)
 
 			tab->scroll = true;
 
-			r = calc_window(tab->lock, C.Aes, WC_BORDER, tp, 1, true, r);
+			r = calc_window(tab->lock, C.Aes, WC_BORDER, tp, created_for_AES|created_for_POPUP, 1, true, r);
 
 			wind = create_window(	tab->lock,
 						do_winmesag,
@@ -1071,7 +1071,7 @@ display_popup(Tab *tab, XA_TREE *wt, int item, short rdx, short rdy)
 			int mg = MONO ? 2 : 1;
 			XA_WIND_ATTR tp = TOOLBAR /*|STORE_BACK*/;
 
-			r = calc_window(tab->lock, C.Aes, WC_BORDER, tp, mg, true, r);
+			r = calc_window(tab->lock, C.Aes, WC_BORDER, tp, created_for_AES|created_for_POPUP, mg, true, r);
 
 			wind = create_window(	tab->lock,
 						do_winmesag, //NULL,

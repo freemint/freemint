@@ -1637,8 +1637,9 @@ XA_wind_calc(enum locks lock, struct xa_client *client, AESPB *pb)
 	*(RECT *) &pb->intout[1] =
 		calc_window(lock,
 			    client,
-			    pb->intin[0],		/* request */
+			    pb->intin[0],				/* request */
 			    (unsigned short)pb->intin[1],		/* widget mask */
+			    created_for_CLIENT,
 			    client->options.thinframe,
 			    client->options.thinwork,
 			    *(const RECT *)&pb->intin[2]);
