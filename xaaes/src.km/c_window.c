@@ -1816,7 +1816,7 @@ delete_window1(enum locks lock, struct xa_window *wind)
 		graf_mouse(ARROW, NULL, NULL, false);
 	}
 
-	cancel_do_winmesag(lock, wind);
+//	cancel_do_winmesag(lock, wind);
 
 	if (!wind->nolist)
 	{
@@ -1860,7 +1860,11 @@ delete_window1(enum locks lock, struct xa_window *wind)
 static void
 CE_delete_window(enum locks lock, struct c_event *ce, bool cancel)
 {
-	if (!cancel)
+	/*
+	 * Since the window in this event already have been removed from
+	 * all stacks, we perform  this deletion even when cancel flag is set
+	 */
+	//if (!cancel)
 		delete_window1(lock, ce->ptr1);
 }
 
@@ -1883,6 +1887,7 @@ delete_window(enum locks lock, struct xa_window *wind)
 		wi_remove(&S.closed_windows, wind);
 	
 	remove_from_iredraw_queue(lock, wind);
+	cancel_do_winmesag(lock, wind);
 
 	post_cevent(wind->owner, CE_delete_window, wind, NULL, 0,0, NULL, NULL);
 	//delete_window1(lock, wind);
@@ -1911,6 +1916,7 @@ delayed_delete_window(enum locks lock, struct xa_window *wind)
 		wi_remove(&S.closed_windows, wind);
 
 	remove_from_iredraw_queue(lock, wind);
+	cancel_do_winmesag(lock, wind);
 	
 	post_cevent(wind->owner, CE_delete_window, wind, NULL, 0,0, NULL, NULL);
 	//wi_put_first(&S.deleted_windows, wind);

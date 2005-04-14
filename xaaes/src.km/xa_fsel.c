@@ -200,7 +200,6 @@ fs_cwd(struct scroll_info *list, char *cwd)
 			}
 		}
 	}
-	//display("cwd %lx - '%s'", dir_ent, dir_ent ? dir_ent->c.td.text.text->text : fs->root);
 	return dir_ent;
 }
 
@@ -209,7 +208,6 @@ set_dir(struct scroll_info *list)
 {
 	struct fsel_data *fs = list->data;
 	fs_cwd(list, fs->path);
-	//display("set dir to '%s'", fs->path);
 	display_widget(list->lock, list->wi, get_widget(list->wi, XAW_TITLE), list->pw ? list->pw->rect_start : NULL);
 }
 
@@ -220,7 +218,7 @@ fs_prompt(SCROLL_INFO *list)
 	SCROLL_ENTRY *s;
 	bool ret = false;
 
-	if (!(s = fs_cwd(list, NULL))) //list->start;
+	if (!(s = fs_cwd(list, NULL)))
 		s = list->start;
 	else
 		s = s->down;
@@ -229,7 +227,6 @@ fs_prompt(SCROLL_INFO *list)
 	if (*fs->file && s)
 	{
 		struct seget_entrybyarg seget, p;
-		//SCROLL_ENTRY *old = list->cur;
 
 		seget.e = s;
 		seget.arg.flags = ENT_VISIBLE|ENT_ISROOT;
@@ -263,8 +260,6 @@ fs_prompt(SCROLL_INFO *list)
 				ret = true;
 			}
 		}
-		/* prompt changed the selection... */
-		//fs->clear_on_folder_change |= old == list->cur;
 	}
 	else
 	{
@@ -404,6 +399,7 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 		fs->selected_dir = dir_ent->up;
 		set_dir(list);
 		dir_ent = NULL;
+		return;
 	} 
 	else
 	{
@@ -475,7 +471,7 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 
 				if (!dir)
 					match = match_pattern(nam, fs->fs_pattern, false);
-				else // if (dir_ent)
+				else
 				{
 					if (!strcmp(nam, ".") || !strcmp(nam, ".."))
 					{
@@ -495,7 +491,6 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 					{
 						sc.usr_flags |= FLAG_DIR;
 						icon = obtree + FS_ICN_DIR;
-						//sc.xstate |= OS_NESTICON;
 					}
 					else if (executable(nam))
 						icon = obtree + FS_ICN_PRG;
@@ -535,7 +530,10 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 	/* If realtime directory building, disable this */
 	if (!fs->rtbuild)
 	{
-		list->redraw(list, NULL);
+		if (dir_ent)
+			list->set(list, dir_ent, SESET_OPEN, 1, NORMREDRAW);
+		else
+			list->redraw(list, NULL);
 	}
 	else if (dir_ent)
 	{
@@ -589,14 +587,9 @@ refresh_filelist(enum locks lock, struct fsel_data *fs, SCROLL_ENTRY *dir_ent)
 		list->redraw(list, NULL);
 	}
 	
-	//display_widget(lock, list->wi, get_widget(list->wi, XAW_TITLE), list->pw ? list->pw->rect_start : NULL);
-	
 	graf_mouse(HOURGLASS, NULL, NULL, false);
-
 	read_directory(fs, list, dir_ent);
-
 	graf_mouse(ARROW, NULL, NULL, false);
-
 	fs_prompt_refresh(list);
 }
 
@@ -759,7 +752,7 @@ fs_enter_dir(struct fsel_data *fs, struct scroll_info *list, struct scroll_entry
 }
 
 static int
-fs_item_action(struct scroll_info *list, struct scroll_entry *this, const struct moose_data *md) //OBJECT *form, int objc)
+fs_item_action(struct scroll_info *list, struct scroll_entry *this, const struct moose_data *md)
 {
 	bool fs_done = this ? false : true;
 	struct fsel_data *fs = list->data;
@@ -860,30 +853,12 @@ fs_item_action(struct scroll_info *list, struct scroll_entry *this, const struct
 
 		if (fs->selected)
 		{
-			//display("fs_selected path '%s', file '%s'", fs->path, fs->file);	
 			fs->selected(list->lock, fs, fs->path, fs->file);
 		}
 	}
 
 	return true;
 }
-#if 0
-static int
-fs_dclick(struct scroll_info *list, struct scroll_entry *this, const struct moose_data *md)
-{
-	struct fsel_data *fs = list->data;
-	
-	if (this)
-	{
-		/* since mouse click we should _not_ clear the file field */
-		fs->clear_on_folder_change = 0;
-
-		return fs_item_action(list, this, md); //list->wt->tree, list->item);
-	}
-	return true;
-}
-#endif
-/* converted */
 static int
 fs_click(struct scroll_info *list, struct scroll_entry *this, const struct moose_data *md)
 {
@@ -891,59 +866,8 @@ fs_click(struct scroll_info *list, struct scroll_entry *this, const struct moose
 
 	/* since mouse click we should _not_ clear the file field */
 	fs->clear_on_folder_change = 0;
-
 	if (this)
-	{
 		fs_item_action(list, this, md);
-#if 0
-		struct seget_entrybyarg p;
-		long uf;
-		short state;
-		
-		list->get(list, this, SEGET_USRFLAGS, &uf);
-		p.idx = 0;
-		list->get(list, this, SEGET_TEXTPTR, &p);
-		list->get(list, this, SEGET_STATE, &state);
-		
-		if (!(uf & FLAG_DIR))
-		{
-			if (!(state & OS_SELECTED))
-			{
-				fs->tfile = false;
-				set_file(fs, p.ret.ptr);
-				fs->selected_file = this;
-				fs->selected_dir = this->up;
-				list->set(list, this, SESET_SELECTED, 0, NORMREDRAW);
-				set_dir(list);
-			}
-			else
-			{
-				set_file(fs, "");
-				list->set(list, this, SESET_UNSELECTED, UNSELECT_ONE, NORMREDRAW);
-				fs->selected_file = NULL;
-			}
-		}
-		else if (strcmp(p.ret.ptr, ".") == 0)
-		{
-			set_file(fs, "");
-			fs->selected_file = NULL;
-		}
-		else
-		{
-			fs_item_action(list, this, md); //list->wt->tree, list->item);
-		}
-#endif
-	}
-#if 0
-	{
-		char t[256];
-
-		fs_cwd(list, t);
-	
-		display("selected file '%s', selected dir '%s'",
-			fs->selected_file ? fs->selected_file->c.td.text.text->text : "No file", t);
-	}
-#endif
 	return true;
 }
 static int
@@ -981,10 +905,6 @@ fileselector_form_exit(struct xa_client *client,
 	TEDINFO *filter = object_get_tedinfo(obtree + FS_FILTER);
 #endif
 	
-	/* Ozk:
-	 * Dont know exactly what 'which' and 'current' does yet...
-	 * ... now I do ;-)
-	 */
 	wt->which = 0;
 	wt->current = fr->obj;
 	
@@ -1190,8 +1110,6 @@ fs_key_form_do(enum locks lock,
 					fs_prompt(list);
 				}
 			}
-			else
-				display("fs disappeared!");
 		}
 	}
 	return true;
@@ -1214,7 +1132,28 @@ fs_msg_handler(
 	{
 	case MN_SELECTED:
 	{
-		if (msg[3] == FSEL_FILTER)
+		if (msg[3] == FSEL_OPTS)
+		{
+			OBJECT *obtree = fs->menu->tree;
+			short obj = msg[4];
+			if (obj == FSM_RTBUILD)
+			{
+				if (obtree[FSM_RTBUILD].ob_state & OS_CHECKED)
+					fs->rtbuild = false;
+				else
+					fs->rtbuild = true;
+				obtree[FSM_RTBUILD].ob_state ^= OS_CHECKED;
+			}
+			else if (obj == FSM_TREEVIEW)
+			{
+				if (obtree[FSM_TREEVIEW].ob_state & OS_CHECKED)
+					fs->treeview = false;
+				else
+					fs->treeview = true;
+				obtree[FSM_TREEVIEW].ob_state ^= OS_CHECKED;
+			}
+		}
+		else if (msg[3] == FSEL_FILTER)
 			fs_change(lock, fs, fs->menu->tree, msg[4], FSEL_FILTER, FSEL_PATA, fs->fs_pattern);
 		else if (msg[3] == FSEL_DRV)
 		{
@@ -1487,7 +1426,6 @@ close_fileselector(enum locks lock, struct fsel_data *fs)
 {
 	close_window(lock, fs->wind);
 	delete_window(lock, fs->wind);
-	//delayed_delete_window(lock, fs->wind);
 	fs->wind = NULL;
 	fs->menu = NULL;
 	fs->form = NULL;
