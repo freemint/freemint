@@ -1181,12 +1181,17 @@ fs_key_form_do(enum locks lock,
 		/* HR 290501: if !discontinue */
 		if (Key_form_do(lock, client, wind, wt, key))
 		{
-			/* something typed in there? */
-			if (strcmp(old, fs->file) != 0)
+			if (fs->wind)
 			{
-				fs->tfile = true;
-				fs_prompt(list);
+				/* something typed in there? */
+				if (strcmp(old, fs->file) != 0)
+				{
+					fs->tfile = true;
+					fs_prompt(list);
+				}
 			}
+			else
+				display("fs disappeared!");
 		}
 	}
 	return true;
@@ -1481,7 +1486,8 @@ void
 close_fileselector(enum locks lock, struct fsel_data *fs)
 {
 	close_window(lock, fs->wind);
-	delayed_delete_window(lock, fs->wind);
+	delete_window(lock, fs->wind);
+	//delayed_delete_window(lock, fs->wind);
 	fs->wind = NULL;
 	fs->menu = NULL;
 	fs->form = NULL;

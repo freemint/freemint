@@ -1857,6 +1857,13 @@ delete_window1(enum locks lock, struct xa_window *wind)
 	kfree(wind);
 }
 
+static void
+CE_delete_window(enum locks lock, struct c_event *ce, bool cancel)
+{
+	if (!cancel)
+		delete_window1(lock, ce->ptr1);
+}
+
 void
 delete_window(enum locks lock, struct xa_window *wind)
 {
@@ -1876,7 +1883,9 @@ delete_window(enum locks lock, struct xa_window *wind)
 		wi_remove(&S.closed_windows, wind);
 	
 	remove_from_iredraw_queue(lock, wind);
-	delete_window1(lock, wind);
+
+	post_cevent(wind->owner, CE_delete_window, wind, NULL, 0,0, NULL, NULL);
+	//delete_window1(lock, wind);
 }
 
 void
@@ -1901,7 +1910,10 @@ delayed_delete_window(enum locks lock, struct xa_window *wind)
 	else
 		wi_remove(&S.closed_windows, wind);
 
-	wi_put_first(&S.deleted_windows, wind);
+	remove_from_iredraw_queue(lock, wind);
+	
+	post_cevent(wind->owner, CE_delete_window, wind, NULL, 0,0, NULL, NULL);
+	//wi_put_first(&S.deleted_windows, wind);
 }
 
 void
