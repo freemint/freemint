@@ -1152,6 +1152,8 @@ fs_msg_handler(
 					fs->treeview = true;
 				obtree[FSM_TREEVIEW].ob_state ^= OS_CHECKED;
 			}
+			obtree[FSEL_OPTS].ob_state &= ~OS_SELECTED;
+			display_widget(lock, fs->wind, get_widget(fs->wind, XAW_MENU), NULL);
 		}
 		else if (msg[3] == FSEL_FILTER)
 			fs_change(lock, fs, fs->menu->tree, msg[4], FSEL_FILTER, FSEL_PATA, fs->fs_pattern);
@@ -1384,8 +1386,8 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 
 		strcpy(fs->filter, fs->fs_pattern);
 		fs->wind = dialog_window;
-		fs->treeview = true;
-		fs->rtbuild = true;
+		fs->treeview = false;
+		fs->rtbuild = false;
 		open_window(lock, dialog_window, dialog_window->r);
 
 		/* HR: after set_slist_object() & opwn_window */
