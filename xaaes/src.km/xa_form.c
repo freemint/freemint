@@ -477,7 +477,7 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 		//	kind |= STORE_BACK;
 
 		r = calc_window(lock, client, WC_BORDER,
-				kind,
+				kind, created_for_AES,
 				C.Aes->options.thinframe,
 				C.Aes->options.thinwork,
 				*(RECT *)&alert_form->ob_x);

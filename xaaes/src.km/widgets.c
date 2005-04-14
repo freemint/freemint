@@ -907,7 +907,7 @@ calc_work_area(struct xa_window *wind)
 			wind->wa.h -= (rows->r.y + rows->r.h);
 			
 		}
-		else if (wind->frame >= 0 && wind->thinwork)
+		else if (wind->frame >= 0 && wind->thinwork && wind->wa_frame)
 		{
 			wind->wa.y += t_margin;
 			wind->wa.h -= t_margin;
@@ -919,7 +919,7 @@ calc_work_area(struct xa_window *wind)
 			wind->wa.x += (rows->r.x + rows->r.w);
 			wind->wa.w -= (rows->r.x + rows->r.w);
 		}
-		else if (wind->frame >= 0 && wind->thinwork)
+		else if (wind->frame >= 0 && wind->thinwork && wind->wa_frame)
 		{
 			wind->wa.x += l_margin;
 			wind->wa.w -= l_margin;
@@ -928,12 +928,12 @@ calc_work_area(struct xa_window *wind)
 
 		if ((rows = get_last_row(wind->widg_rows, (XAR_VERT | XAR_PM), XAR_END, false)))
 			wind->wa.h -= rows->r.y;
-		else if (wind->frame >= 0 && wind->thinwork)
+		else if (wind->frame >= 0 && wind->thinwork && wind->wa_frame)
 			wind->wa.h -= b_margin, wa_borders |= WAB_BOTTOM;
 
 		if ((rows = get_last_row(wind->widg_rows, (XAR_VERT | XAR_PM), (XAR_VERT | XAR_END), false)))
 			wind->wa.w -= rows->r.x;
-		else if (wind->frame >= 0 && wind->thinwork)
+		else if (wind->frame >= 0 && wind->thinwork && wind->wa_frame)
 			wind->wa.w -= r_margin, wa_borders |= WAB_RIGHT;
 
 		if (wind->frame >= 0 && !wind->thinwork)

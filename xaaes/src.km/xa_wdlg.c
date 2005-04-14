@@ -391,7 +391,7 @@ XA_wdlg_create(enum locks lock, struct xa_client *client, AESPB *pb)
 		ob_area(obtree, 0, &or);
 
 		r = calc_window(lock, client, WC_BORDER,
-				tp,
+				tp, created_for_WDIAL,
 				client->options.thinframe,
 				client->options.thinwork,
 				*(RECT *)&or);
@@ -750,7 +750,7 @@ XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 						obj_area(wt, 0, &or);
 
 						r = calc_window(lock, client, WC_BORDER,
-							wind->active_widgets,
+							wind->active_widgets, wind->dial,
 							client->options.thinframe,
 							client->options.thinwork,
 							*(RECT *)&or);

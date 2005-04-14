@@ -1169,7 +1169,7 @@ XA_fnts_create(enum locks lock, struct xa_client *client, AESPB *pb)
 		ob_area(obtree, 0, &or);
 		
 		r = calc_window(lock, client, WC_BORDER,
-				tp,
+				tp, created_for_WDIAL,
 				client->options.thinframe,
 				client->options.thinwork,
 				*(RECT *)&or);
@@ -1955,60 +1955,6 @@ XA_fnts_do(enum locks lock, struct xa_client *client, AESPB *pb)
 		*(long *)&pb->intout[2] = fnts->fnts_selected->f.id;
 		*(long *)&pb->intout[4] = fnts->fnt_pt;
 		*(long *)&pb->intout[6] = fnts->fnt_ratio;
-
-#if 0
-		
-		r = calc_window(lock, client, WC_BORDER,
-				tp,
-				client->options.thinframe,
-				client->options.thinwork,
-				*(RECT *)&or);
-
-		if ((fwind = create_window(lock,
-				     do_winmesag,
-				     do_formwind_msg,
-				     client,
-				     false,
-				     tp,
-				     created_for_AES,
-				     client->options.thinframe,
-				     client->options.thinwork,
-				     r, NULL, NULL)))
-		{
-			wt = set_toolbar_widget(lock, fwind, client, obtree, -2, WIP_NOTEXT, &fnts_th);
-			wt->zen = false;
-			
-			fnts->wind = fwind;
-
-			fnts->button_flags = pb->intin[0];
-			update(fnts, fnts->button_flags);
-
-			fnts->fnt_id	= *(const long *)&pb->intin[1];
-			fnts->fnt_pt	= *(const long *)&pb->intin[3];
-			fnts->fnt_ratio	= *(const long *)&pb->intin[5];
-
-			init_fnts(fnts);
-			
-			open_window(lock, fwind, fwind->rc);
-
-			client->status |= CS_FORM_DO;
-			Block(client, 0);
-			client->status &= ~CS_FORM_DO;
-
-			fnts->wind = wind;
-			close_window(lock, fwind);
-			delete_window(lock, fwind);
-		
-			pb->intout[0] = fnts->exit_button;
-			pb->intout[1] = get_cbstatus(fnts->wt->tree);
-			*(long *)&pb->intout[2] = fnts->fnts_selected->f.id;
-			*(long *)&pb->intout[4] = fnts->fnt_pt;
-			*(long *)&pb->intout[6] = fnts->fnt_ratio;
-			
-			DIAG((D_fnts, client, " --- return %d, cbstat=%x, id=%ld, pt=%ld, ratio=%ld",
-				pb->intout[0], pb->intout[1], *(long *)&pb->intout[2], *(long *)&pb->intout[4], *(long *)&pb->intout[6]));
-		}
-#endif
 	}
 	return XAC_DONE;
 }

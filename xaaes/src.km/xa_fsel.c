@@ -1262,7 +1262,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 			form_center(form, 2*ICON_H);
 			remember =
 			calc_window(lock, client, WC_BORDER,
-				    XaMENU|NAME,
+				    XaMENU|NAME, created_for_AES,
 				    C.Aes->options.thinframe,
 				    C.Aes->options.thinwork,
 				    *(RECT*)&form->ob_x);
