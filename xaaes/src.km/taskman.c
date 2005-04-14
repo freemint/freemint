@@ -516,7 +516,7 @@ open_taskmanager(enum locks lock)
 		{
 			form_center(obtree, ICON_H);
 			remember = calc_window(lock, C.Aes, WC_BORDER,
-						CLOSER|NAME,
+						CLOSER|NAME, created_for_AES,
 						C.Aes->options.thinframe,
 						C.Aes->options.thinwork,
 						*(RECT*)&obtree->ob_x);
@@ -799,7 +799,7 @@ open_systemalerts(enum locks lock)
 		{
 			form_center(obtree, ICON_H);
 			remember = calc_window(lock, C.Aes, WC_BORDER,
-						CLOSER|NAME,
+						CLOSER|NAME, created_for_AES,
 						C.Aes->options.thinframe,
 						C.Aes->options.thinwork,
 						*(RECT*)&obtree->ob_x);

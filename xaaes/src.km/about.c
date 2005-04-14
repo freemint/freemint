@@ -132,7 +132,7 @@ open_about(enum locks lock)
 		if (!remember.w)
 		{
 			form_center(wt->tree, ICON_H);
-			remember = calc_window(lock, C.Aes, WC_BORDER, CLOSER|NAME,
+			remember = calc_window(lock, C.Aes, WC_BORDER, CLOSER|NAME, created_for_AES,
 						C.Aes->options.thinframe,
 						C.Aes->options.thinwork, *(RECT*)&obtree->ob_x);
 		}

@@ -119,7 +119,7 @@ create_fmd_wind(enum locks lock, struct xa_client *client, XA_WIND_ATTR kind, WI
 }
 
 static void
-calc_fmd_wind(struct xa_client *client, OBJECT *obtree, XA_WIND_ATTR kind, RECT *r)
+calc_fmd_wind(struct xa_client *client, OBJECT *obtree, XA_WIND_ATTR kind, WINDOW_TYPE dial, RECT *r)
 {
 	DIAG((D_form, client, "Setup_form_do: Create window for %s", client->name));
 
@@ -128,7 +128,7 @@ calc_fmd_wind(struct xa_client *client, OBJECT *obtree, XA_WIND_ATTR kind, RECT 
 	*r = calc_window(0,
 			 client,
 			 WC_BORDER,
-			 kind,
+			 kind, dial,
 			 0,
 			 C.Aes->options.thinwork,
 			 *r);
@@ -160,7 +160,7 @@ Setup_form_do(struct xa_client *client,
 	{
 		DIAG((D_form, client, "Setup_form_do: wind %d for %s", client->fmd.wind->handle, client->name));
 		wind = client->fmd.wind;
-		calc_fmd_wind(client, obtree, kind, (RECT *)&client->fmd.r);
+		calc_fmd_wind(client, obtree, kind, wind->dial, (RECT *)&client->fmd.r);
 		wt = set_toolbar_widget(lock, wind, client, obtree, edobj, WIP_NOTEXT, NULL);
 		wt->zen = false;
 		move_window(lock, wind, true, -1, client->fmd.r.x, client->fmd.r.y, client->fmd.r.w, client->fmd.r.h);
@@ -180,7 +180,7 @@ Setup_form_do(struct xa_client *client,
 	 */
 	else
 	{
-		calc_fmd_wind(client, obtree, kind, (RECT *)&client->fmd.r);
+		calc_fmd_wind(client, obtree, kind, client->fmd.state ? created_for_FMD_START : created_for_FORM_DO, (RECT *)&client->fmd.r);
 
 		if (!client->options.xa_nomove)
 			kind |= MOVER;
