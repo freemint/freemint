@@ -14,10 +14,13 @@
 #define FSEL_MENU        1   /* Menuebaum */
 #define FSEL_DRV         3   /* TITLE in Baum FSEL_MENU */
 #define FSEL_FILTER      4   /* TITLE in Baum FSEL_MENU */
-#define FSEL_DRVBOX      6   /* BOX in Baum FSEL_MENU */
-#define FSEL_DRVA        7   /* STRING in Baum FSEL_MENU */
-#define FSEL_PATBOX      43  /* BOX in Baum FSEL_MENU */
-#define FSEL_PATA        44  /* STRING in Baum FSEL_MENU */
+#define FSEL_OPTS        5   /* TITLE in Baum FSEL_MENU */
+#define FSEL_DRVBOX      7   /* BOX in Baum FSEL_MENU */
+#define FSEL_DRVA        8   /* STRING in Baum FSEL_MENU */
+#define FSEL_PATBOX      44  /* BOX in Baum FSEL_MENU */
+#define FSEL_PATA        45  /* STRING in Baum FSEL_MENU */
+#define FSM_RTBUILD      69  /* STRING in Baum FSEL_MENU */
+#define FSM_TREEVIEW     70  /* STRING in Baum FSEL_MENU */
 
 #define ALERT_ICONS      2   /* Formular/Dialog */
 #define ALR_IC_DRIVE     1   /* USERDEF in Baum ALERT_ICONS */
