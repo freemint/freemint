@@ -2475,6 +2475,8 @@ click_scroll_list(enum locks lock, OBJECT *form, int item, const struct moose_da
 					(*list->click)(list, this, md);
 			}
 		}
+		else
+			list->click(list, this, md);
 	}
 }
 
