@@ -1182,7 +1182,8 @@ struct xa_window
 	bool outline_adjust;		/* For outlined root object put ny XaAES in a window:
 					 * let the window draw the 3 pixel space that emanates from construction. */
 	bool dial_followed;		/* false immediate after opening a dial window.
-	                        	 * true after first objc_draw. */
+	                	       	 * true after first objc_draw. */
+	bool wa_frame;
 #define WAB_LEFT	1
 #define WAB_RIGHT	2
 #define WAB_TOP		4

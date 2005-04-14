@@ -76,7 +76,7 @@ void	redraw_client_windows(enum locks lock, struct xa_client *client);
 
 RECT	free_icon_pos(enum locks lock, struct xa_window *ignore);
 RECT	calc_window(enum locks lock, struct xa_client *client, int request,
-		    unsigned long tp, int thinframe, bool thinwork,
+		    unsigned long tp, WINDOW_TYPE dial, int thinframe, bool thinwork,
 		    RECT r);
 
 void	top_window(enum locks lock, bool domsg, struct xa_window *w, struct xa_window *oldtop, struct xa_client *desk_menu_owner);
