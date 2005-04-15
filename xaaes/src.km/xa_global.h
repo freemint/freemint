@@ -77,7 +77,6 @@ struct shared
 	short clients_exiting;		/* Increased by exit_client() upon enry and decreased upon exit
 					 * used to prevent interrupt-handling during shutdown of a client
 					 */
-	
 };
 
 /* Area's shared between server and client, subject to locking. */

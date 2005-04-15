@@ -231,6 +231,7 @@ set_next_menu(struct xa_client *new, bool do_topwind)
 {
 	if (new)
 	{
+		struct xa_client *infront = get_app_infront();
 		enum locks lock = 0;
 		struct xa_widget *widg = get_menu_widg();
 		struct xa_window *top = NULL;
@@ -245,7 +246,7 @@ set_next_menu(struct xa_client *new, bool do_topwind)
 		}
 		
 		/* menu widget.tree */
-		if (new->std_menu && new->std_menu != widg->stuff) /* Different menu? */
+		if ((is_infront(new) || (!infront->std_menu && !infront->nxt_menu)) && new->std_menu && new->std_menu != widg->stuff) /* Different menu? */
 		{
 			XA_TREE *wt;
 			bool wastop = false;
