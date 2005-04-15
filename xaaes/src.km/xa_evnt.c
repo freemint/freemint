@@ -77,7 +77,6 @@ pending_redraw_msgs(enum locks lock, struct xa_client *client, union msg_buf *bu
 	int rtn = 0;
 
 	Sema_Up(clients);
-
 	msg = client->rdrw_msg;
 	if (msg)
 	{

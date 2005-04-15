@@ -1146,6 +1146,16 @@ set(SCROLL_INFO *list,
 				entry->c.data	= (void *)arg;
 			break;
 		}
+		case SESET_TREEVIEW:
+		{
+			if (arg)
+				list->flags |= SIF_TREEVIEW;
+			else
+				list->flags &= ~SIF_TREEVIEW;
+			if (rdrw)
+				list->redraw(list, NULL);
+			break;
+		}
 	}
 
 	if (redrw)

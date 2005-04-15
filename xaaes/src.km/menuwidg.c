@@ -37,7 +37,7 @@
 #include "rectlist.h"
 #include "taskman.h"
 #include "widgets.h"
-
+#include "messages.h"
 #include "xa_rsrc.h"
 #include "form.h"
 
@@ -1003,7 +1003,7 @@ display_popup(Tab *tab, XA_TREE *wt, int item, short rdx, short rdy)
 	struct xa_window *wind;
 	RECT r;
 	int wash;
-
+	
 	k->pop_item = item;
 	k->border = 0;
 	k->wt = wt;
@@ -1140,6 +1140,7 @@ display_popup(Tab *tab, XA_TREE *wt, int item, short rdx, short rdy)
 	}
 #endif	
 }
+
 static void
 do_popup(Tab *tab, XA_TREE *wt, int item, TASK *click, short rdx, short rdy)
 {

@@ -1423,6 +1423,7 @@ typedef struct scroll_entry * scrl_search(struct scroll_info *list, struct scrol
 #define SESET_USRFLAGS		10
 #define SESET_USRDATA		11
 #define SESET_TEXT		12
+#define SESET_TREEVIEW		13
 
 /* SESET_UNSELECTED arguments */
 #define UNSELECT_ONE	0
