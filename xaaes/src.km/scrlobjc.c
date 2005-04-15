@@ -878,7 +878,33 @@ slist_redraw(SCROLL_INFO *list, SCROLL_ENTRY *entry)
 		showm();
 	}
 }
-	
+
+static bool
+canblit(SCROLL_INFO *list)
+{
+	bool ret = false;
+	struct xa_window *wind = list->pw;
+	struct xa_rect_list *rl = NULL;
+
+	if (!wind)
+		wind = list->wt->wind;
+	if (wind)
+	{
+		RECT r;
+		rl = wind->rect_start;
+		while (rl)
+		{
+			if (xa_rect_chk(&rl->r, &list->wi->wa, &r) == 2)
+			{
+				ret = true;
+				break;
+			}
+			rl = rl->next;
+		}
+	}
+	return ret;
+}
+
 /*
  * Check if entry has its own wtxt structure or if its using the global
  * default one. If using default, allocate mem for and copy the default
@@ -1025,26 +1051,31 @@ set(SCROLL_INFO *list,
 									list->start_y += (r.h - entry->r.h);
 								else if (rdrw && canredraw(list) && (r.y < (list->start_y + list->wi->wa.h)))
 								{
-									s = d = list->wi->wa;
-									s.y += ((r.y + entry->r.h) - list->start_y);
-									d.y += ((r.y + r.h) - list->start_y);
-									d.h -= ((r.y + r.h) - list->start_y);
-									s.h = d.h;
-									hidem();
-									if (d.h > 4)
+									if (canblit(list))
 									{
-										//display("form copy");
-										form_copy(&s, &d);
-										s.h = d.y - s.y;
+										s = d = list->wi->wa;
+										s.y += ((r.y + entry->r.h) - list->start_y);
+										d.y += ((r.y + r.h) - list->start_y);
+										d.h -= ((r.y + r.h) - list->start_y);
+										s.h = d.h;
+										hidem();
+										if (d.h > 4)
+										{
+											//display("form copy");
+											form_copy(&s, &d);
+											s.h = d.y - s.y;
+										}
+										else
+										{
+											//display("all redraw");
+											s.h += (d.y - s.y);
+										}
+										draw_slist(0, list, NULL, &s);
+										showm();
+										clear_clip();
 									}
 									else
-									{
-										//display("all redraw");
-										s.h += (d.y - s.y);
-									}
-									draw_slist(0, list, NULL, &s);
-									showm();
-									clear_clip();
+										list->redraw(list, NULL);
 								}
 							}
 						}
@@ -1071,33 +1102,34 @@ set(SCROLL_INFO *list,
 									list->start_y -= (r.h - entry->r.h);
 								else if (rdrw && canredraw(list) && r.y < (list->start_y + list->wi->wa.h))
 								{
-									s = d = list->wi->wa;
-									s.y += ((r.y + r.h) - list->start_y);
-									s.h -= ((r.y + r.h) - list->start_y);
-									hidem();
-									if (s.h > 4)
+									if (canblit(list))
 									{
-										//display("form copy");
-										d.y += ((r.y + entry->r.h) - list->start_y);
-										d.h = s.h;
-										//display("%d/%d/%d/%d - s %d/%d/%d/%d - d %d/%d/%d/%d", list->wi->wa, s, d);
-										form_copy(&s, &d);
-										d.h = s.y - d.y;
-										d.y += s.h;
-										//display("%d/%d/%d/%d - s %d/%d/%d/%d - d %d/%d/%d/%d", list->wi->wa, s, d);
+										s = d = list->wi->wa;
+										s.y += ((r.y + r.h) - list->start_y);
+										s.h -= ((r.y + r.h) - list->start_y);
+										hidem();
+										if (s.h > 4)
+										{
+											d.y += ((r.y + entry->r.h) - list->start_y);
+											d.h = s.h;
+											form_copy(&s, &d);
+											d.h = s.y - d.y;
+											d.y += s.h;
+										}
+										else
+										{
+											d.y += ((r.y + entry->r.h) - list->start_y);
+											d.h -= ((r.y + entry->r.h) - list->start_y); //(s.y - d.y);
+										}
+									
+										if (d.h > 0)
+											draw_slist(0, list, NULL, &d);
+									
+										showm();
+										clear_clip();
 									}
 									else
-									{
-										//display("all redraw");
-										d.y += ((r.y + entry->r.h) - list->start_y);
-										d.h -= ((r.y + entry->r.h) - list->start_y); //(s.y - d.y);
-									}
-									
-									if (d.h > 0)
-										draw_slist(0, list, NULL, &d);
-									
-									showm();
-									clear_clip();
+										list->redraw(list, NULL);
 								}
 							}
 						}
@@ -1689,7 +1721,7 @@ add_scroll_entry(SCROLL_INFO *list,
 				{
 					if (canredraw(list))
 					{
-						if (fullredraw)
+						if (!canblit(list) || fullredraw)
 						{
 							list->redraw(list, NULL);
 							fullredraw = false;
@@ -1718,7 +1750,7 @@ add_scroll_entry(SCROLL_INFO *list,
 						}
 					}
 					else
-					redraw = 0;
+						redraw = 0;
 				}
 			}
 			if (fullredraw)
@@ -2017,8 +2049,9 @@ del_scroll_entry(struct scroll_info *list, struct scroll_entry *e, short redraw)
 	{
 		short h;
 		RECT s, d;
+
 		hidem();
-		if (sy == -1L)
+		if (!canblit(list) || sy == -1L)
 			list->redraw(list, NULL);
 		else
 		{			
@@ -2124,7 +2157,7 @@ scroll_up(SCROLL_INFO *list, long num, bool rdrw)
 
 	if (rdrw)
 	{
-		if (max > (list->wi->wa.h - 8))
+		if (!canblit(list) || max > (list->wi->wa.h - 8))
 			list->redraw(list, NULL);
 		else
 		{
@@ -2202,7 +2235,7 @@ scroll_down(SCROLL_INFO *list, long num, bool rdrw)
 	}
 	if (rdrw)
 	{
-		if (max > (list->wi->wa.h - 8))
+		if (!canblit(list) || max > (list->wi->wa.h - 8))
 			list->redraw(list, NULL);
 		else
 		{
@@ -2245,7 +2278,7 @@ scroll_left(SCROLL_INFO *list, long num, bool rdrw)
 
 	if (rdrw)
 	{
-		if (max > list->wi->wa.w - 8)
+		if (!canblit(list) || max > list->wi->wa.w - 8)
 			list->redraw(list, NULL);
 		else
 		{
@@ -2283,7 +2316,7 @@ scroll_right(SCROLL_INFO *list, long num, bool rdrw)
 
 	if (rdrw)
 	{
-		if (max > list->wi->wa.w - 8)
+		if (!canblit(list) || max > list->wi->wa.w - 8)
 			list->redraw(list, NULL);
 		else
 		{
