@@ -341,7 +341,7 @@ swap_menu(enum locks lock, struct xa_client *new, struct widget_tree *new_menu, 
 	{
 		DIAG((D_appl, NULL, "  --   with desktop=%lx", new->desktop));
 		set_desktop(new->desktop);
-		redraw_menu(lock);
+		//redraw_menu(lock);
 	}
 	DIAG((D_appl, NULL, "exit ok"));
 }
