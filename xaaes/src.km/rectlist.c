@@ -463,10 +463,14 @@ xa_rect_clip(const RECT *s, RECT *d, RECT *r)
 	else
 		return false;
 }
-#if 0
-bool
-xa_rect_exlude(const RECT *s, RECT *d, RECT *r)
+/*
+ * return 0 if
+ */
+int
+xa_rect_chk(const RECT *s, const RECT *d, RECT *r)
 {
+	int ret = 0;
+
 	if (s->w > 0 && s->h > 0 && d->w > 0 && d->h > 0)
 	{
 		const short sw = s->x + s->w;
@@ -479,9 +483,10 @@ xa_rect_exlude(const RECT *s, RECT *d, RECT *r)
 		r->w = (sw < dw ? sw : dw) - r->x;
 		r->h = (sh < dh ? sh : dh) - r->y;
 
-		return (r->w > 0) && (r->h > 0);
+		if (r->x == d->x && r->y == d->y && r->w == d->w && r->h == d->h)
+			ret = 2;
+		else if ((r->w > 0) && (r->h > 0))
+			ret = 1;
 	}
-	else
-		return false;
+	return ret;
 }
-#endif

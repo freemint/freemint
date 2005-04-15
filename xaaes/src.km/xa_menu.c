@@ -114,8 +114,9 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 			}
 			else if (mwt && swap)
 			{
-				wt_menu_area(mwt);
-				swap_menu(lock|winlist, client, NULL, false, true, 7);
+				app_in_front(lock, client);
+				//wt_menu_area(mwt);
+				//swap_menu(lock|winlist, client, NULL, false, true, 7);
 			}
 		}
 		break;

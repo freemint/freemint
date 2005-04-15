@@ -45,6 +45,7 @@ struct build_rl_parms
 bool was_visible(struct xa_window *w);
 bool xa_rc_intersect(const RECT s, RECT *d);
 bool xa_rect_clip(const RECT *s, RECT *d, RECT *r);
+int xa_rect_chk(const RECT *s, const RECT *d, RECT *r);
 
 struct xa_rect_list *build_rect_list(struct build_rl_parms *p);
 struct xa_rect_list *make_rect_list(struct xa_window *w, bool swap, short which);
