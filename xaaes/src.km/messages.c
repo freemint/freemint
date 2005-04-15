@@ -35,6 +35,7 @@
 #include "xa_types.h"
 #include "xa_global.h"
 #include "xa_evnt.h"
+#include "rectlist.h"
 
 
 static void queue_message(enum locks lock, struct xa_client *dest_client, short amq, short qmf, union msg_buf *msg);
@@ -370,6 +371,30 @@ is_inside(const RECT *r, const RECT *o)
 
 	return true;
 }
+
+void
+clip_all_wm_redraws(RECT *r)
+{
+	struct xa_client *client;
+	struct xa_aesmsg_list *msg, **m;
+
+	FOREACH_CLIENT(client)
+	{
+		m = &client->rdrw_msg;
+		while ((msg = *m))
+		{
+			if (!xa_rect_clip(r, (RECT *)&msg->message.m[4], (RECT *)&msg->message.m[4]))
+			{
+				*m = msg->next;
+				kick_mousemove_timeout();
+				kfree(msg);
+			}
+			else
+				m = &msg->next;
+		}
+	}
+}
+		
 static void
 #if GENERATE_DIAGS
 add_msg_2_queue(struct xa_client *client, struct xa_aesmsg_list **queue, union msg_buf *msg, short qmflags)
