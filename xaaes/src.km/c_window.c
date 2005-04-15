@@ -294,6 +294,9 @@ is_topped(struct xa_window *wind)
 	if (wind != window_list)
 		return false;
 
+	if (wind->owner->std_menu && wind->owner->std_menu != get_menu_widg()->stuff)
+		return false;
+
 	return true;
 }
 
