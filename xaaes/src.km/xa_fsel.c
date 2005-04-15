@@ -478,7 +478,8 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 						if (dir_ent)
 							continue;
 					}
-					sc.xstate |= OS_NESTICON;
+					if (fs->treeview)
+						sc.xstate |= OS_NESTICON;
 				}
 
 				if (match)
@@ -1147,13 +1148,23 @@ fs_msg_handler(
 			else if (obj == FSM_TREEVIEW)
 			{
 				if (obtree[FSM_TREEVIEW].ob_state & OS_CHECKED)
+				{
+					list->set(list, NULL, SESET_TREEVIEW, 0, NOREDRAW);
 					fs->treeview = false;
+				}
 				else
+				{
+					list->set(list, NULL, SESET_TREEVIEW, 1, NOREDRAW);
 					fs->treeview = true;
+				}
 				obtree[FSM_TREEVIEW].ob_state ^= OS_CHECKED;
 			}
 			obtree[FSEL_OPTS].ob_state &= ~OS_SELECTED;
 			display_widget(lock, fs->wind, get_widget(fs->wind, XAW_MENU), NULL);
+			fs->selected_dir = NULL;
+			fs->selected_file = NULL;
+			if (fs->tfile)
+				set_file(fs, "");
 		}
 		else if (msg[3] == FSEL_FILTER)
 			fs_change(lock, fs, fs->menu->tree, msg[4], FSEL_FILTER, FSEL_PATA, fs->fs_pattern);
@@ -1353,7 +1364,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 				 wt,
 				 dialog_window,
 				 FS_LIST,
-				 SIF_SELECTABLE|SIF_ICONINDENT|/*SIF_AUTOSELECT|*/SIF_TREEVIEW,
+				 SIF_SELECTABLE|SIF_ICONINDENT/*|SIF_AUTOSELECT*/  /*|SIF_TREEVIEW*/,
 				 fs_closer, NULL,
 				 fs_click/*was dclick*/, fs_click, fs_click_nesticon,
 				 NULL, NULL, NULL, NULL/*free_scrollist*/,

@@ -463,3 +463,25 @@ xa_rect_clip(const RECT *s, RECT *d, RECT *r)
 	else
 		return false;
 }
+#if 0
+bool
+xa_rect_exlude(const RECT *s, RECT *d, RECT *r)
+{
+	if (s->w > 0 && s->h > 0 && d->w > 0 && d->h > 0)
+	{
+		const short sw = s->x + s->w;
+		const short dw = d->x + d->w;
+		const short sh = s->y + s->h;
+		const short dh = d->y + d->h;
+
+		r->x = s->x < d->x ? d->x : s->x;
+		r->y = s->y < d->y ? d->y : s->y;
+		r->w = (sw < dw ? sw : dw) - r->x;
+		r->h = (sh < dh ? sh : dh) - r->y;
+
+		return (r->w > 0) && (r->h > 0);
+	}
+	else
+		return false;
+}
+#endif
