@@ -281,7 +281,7 @@ kernel_key(enum locks lock, struct rawkey *key)
 			if (client)
 			{
 				DIAGS(("next_app() :: %s", c_owner(client)));
-				app_in_front(lock, client);
+				app_in_front(lock, client, true, true);
 				if (client->type & APP_ACCESSORY)
 				{
 					send_app_message(lock, NULL, client, AMQ_NORM, QMF_CHKDUP,
@@ -358,7 +358,7 @@ kernel_key(enum locks lock, struct rawkey *key)
 			wind = next_wind(lock);
 			if (wind)
 			{
-				top_window(lock, true, wind, (void *)-1L, NULL);
+				top_window(lock, true, true, wind, (void *)-1L);
 			}
 			return true;
 		}

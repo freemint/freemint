@@ -170,12 +170,9 @@ XA_wind_find(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 void
-top_window(enum locks lock, bool domsg, struct xa_window *w, struct xa_window *old_focus, struct xa_client *desk_menu_owner)
+top_window(enum locks lock, bool snd_untopped, bool snd_ontop, struct xa_window *w, struct xa_window *old_focus)
 {
 	struct xa_client *client = w->owner;
-
-	if (!desk_menu_owner)
-		desk_menu_owner = w->owner;
 
 	DIAG((D_wind, client, "top_window %d for %s",  w->handle, c_owner(client)));
 	/* Ozk: if -1L passed as old_focus pointer, determine here which is ontop
@@ -183,6 +180,9 @@ top_window(enum locks lock, bool domsg, struct xa_window *w, struct xa_window *o
 	 *	This is for redrawing the window exterior to indicate now topped
 	 *	is being 'de-topped' :)
 	 */
+	if (w == root_window)
+		return;
+
 	if (old_focus == (void *)-1L)
 		old_focus = is_topped(window_list) ? window_list : NULL;
 	else if (old_focus && !is_topped(old_focus))
@@ -208,20 +208,18 @@ top_window(enum locks lock, bool domsg, struct xa_window *w, struct xa_window *o
 	 */
 	if (old_focus && !is_topped(old_focus))
 	{
-		if (domsg)	send_untop(lock, old_focus);
-		else		old_focus->colours = old_focus->untop_cols;
+		setwin_untopped(lock, old_focus, snd_untopped);
 		send_iredraw(lock, old_focus, 0, NULL);
 	}
 	/* Ozk: Make sure the window we should top is not the same as
 	 *	the window that was ontop entering here, in wich case
 	 *	we dont redraw its exterior (already is ontop)
 	 */
-	if (!old_focus || (old_focus && old_focus != w))
+	if (!old_focus || old_focus != w)
 	{
 		if (is_topped(w) && w != root_window)
 		{
-			if (domsg) send_ontop(lock);
-			else w->colours = w->ontop_cols;
+			setwin_ontop(lock, snd_ontop);
 			send_iredraw(lock, w, 0, NULL);
 		}
 	}
@@ -232,14 +230,14 @@ top_window(enum locks lock, bool domsg, struct xa_window *w, struct xa_window *o
 }
 
 void
-bottom_window(enum locks lock, struct xa_window *w)
+bottom_window(enum locks lock, bool snd_untopped, bool snd_ontop, struct xa_window *w)
 {
 	bool was_top = (is_topped(w) ? true : false);
 	struct xa_window *wl = w->next;
 
 	DIAG((D_wind, w->owner, "bottom_window %d", w->handle));
 
-	if (wl == root_window)
+	if (w == root_window || wl == root_window)
 		/* Don't do anything if already bottom */
 		return;
 
@@ -258,7 +256,7 @@ bottom_window(enum locks lock, struct xa_window *w)
 	if (was_top)
 	{
 		/*  send WM_ONTOP to just topped window. */
-		send_untop(lock, w);
+		setwin_untopped(lock, w, snd_untopped);
 		send_iredraw(lock, w, 0, NULL);
 		if (!is_infront(window_list->owner))
 		{
@@ -267,11 +265,10 @@ bottom_window(enum locks lock, struct xa_window *w)
 		}
 		if (is_topped(window_list))
 		{
-			send_ontop(lock);
+			setwin_ontop(lock, snd_ontop);
 			send_iredraw(lock, window_list, 0, NULL);
 		}
 	}
-	
 	update_windows_below(lock, &w->r, NULL, wl, w);
 }
 
@@ -681,7 +678,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	case WF_BOTTOM:
 	{
 		if (w != root_window && (w->window_status & (XAWS_OPEN|XAWS_HIDDEN)) == XAWS_OPEN)
-			bottom_window(lock, w);
+			bottom_window(lock, false, true, w);
 		break;
 	}
 
@@ -699,7 +696,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				else
 					target = focus_owner();
 
-				app_in_front(lock|winlist, target);
+				app_in_front(lock|winlist, target, true, false);
 				DIAG((D_wind, NULL, "-1,WF_TOP: Focus to %s", c_owner(target)));
 			}
 		}
@@ -707,7 +704,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		{
 			if ( !is_topped(w))
 			{
-				top_window(lock|winlist, true, w, (void *)-1L, NULL);
+				top_window(lock|winlist, true, false, w, (void *)-1L);
 			}
 		}
 		else

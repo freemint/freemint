@@ -105,7 +105,7 @@ click_alert_widget(enum locks lock, struct xa_window *wind, struct xa_widget *wi
 
 	if (!wind->nolist && window_list != wind && !(wind->active_widgets & NO_TOPPED))
 	{	
-		top_window(lock, true, wind, (void *)-1L, NULL);
+		top_window(lock, true, false, wind, (void *)-1L);
 		return false;
 	}
 
@@ -873,7 +873,7 @@ XA_form_do(enum locks lock, struct xa_client *client, AESPB *pb)
 				if (!(wind->window_status & XAWS_OPEN))
 					open_window(lock, wind, wind->r);
 				else if (!wind->nolist && !is_topped(wind))
-					top_window(lock, true, wind, (void *)-1L, client);
+					top_window(lock, true, false, wind, (void *)-1L);
 				else
 					display_window(lock, 4, wind, NULL);
 

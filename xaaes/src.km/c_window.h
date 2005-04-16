@@ -79,8 +79,8 @@ RECT	calc_window(enum locks lock, struct xa_client *client, int request,
 		    unsigned long tp, WINDOW_TYPE dial, int thinframe, bool thinwork,
 		    RECT r);
 
-void	top_window(enum locks lock, bool domsg, struct xa_window *w, struct xa_window *oldtop, struct xa_client *desk_menu_owner);
-void	bottom_window(enum locks lock, struct xa_window *w);
+void	top_window(enum locks lock, bool snd_untopped, bool snd_ontop, struct xa_window *w, struct xa_window *oldtop);
+void	bottom_window(enum locks lock, bool snd_untopped, bool snd_ontop, struct xa_window *w);
 void	after_top(enum locks lock, bool untop);
 void	remove_windows(enum locks lock, struct xa_client *client);
 void	remove_all_windows(enum locks lock, struct xa_client *client);
@@ -104,7 +104,11 @@ void	send_iredraw	(enum locks lock, struct xa_window *wind, short xaw, RECT *r);
 void	generate_redraws(enum locks lock, struct xa_window *wind, RECT *r, short flags);
 
 void	send_ontop(enum locks lock);
-void	send_untop(enum locks lock, struct xa_window *wind);
+//void	send_untop(enum locks lock, struct xa_window *wind);
+void	send_topped(enum locks lock, struct xa_window *wind);
+void	send_bottomed(enum locks lock, struct xa_window *wind);
+void	setwin_untopped(enum locks lock, struct xa_window *wind, bool snd_untopped);
+void	setwin_ontop(enum locks lock, bool snd_ontop);
 
 bool	is_topped(struct xa_window *wind);
 bool	is_hidden(struct xa_window *wind);

@@ -278,9 +278,9 @@ set_next_menu(struct xa_client *new, bool do_topwind)
 					if ((wastop && !is_topped(top)) || (!wastop && is_topped(top)))
 					{
 						if (wastop)
-							send_untop(lock, top);
+							setwin_untopped(lock, top, true); //snd_untopped);
 						else
-							send_ontop(lock);
+							setwin_ontop(lock, true); //snd_ontop);
 				
 						send_iredraw(lock, top, 0, NULL);
 					}
@@ -392,7 +392,7 @@ unhide_app(enum locks lock, struct xa_client *client)
 	
 	client->name[1] = ' ';
 	
-	app_in_front(lock, client);
+	app_in_front(lock, client, true, true);
 }
 
 static TIMEOUT *rpi_to = NULL;
@@ -455,7 +455,7 @@ hide_app(enum locks lock, struct xa_client *client)
 	DIAG((D_appl, NULL, "   focus now %s", c_owner(focus)));
 	
 	if (client == focus)
-		app_in_front(lock, nxtclient);
+		app_in_front(lock, nxtclient, true, true);
 
 	if (reify && !rpi_to)
 		rpi_to = addroottimeout(1000L, repos_iconified, (long)lock);
@@ -471,7 +471,7 @@ hide_other(enum locks lock, struct xa_client *client)
 		if (cl != client)
 			hide_app(lock, cl);
 	}
-	app_in_front(lock, client);
+	app_in_front(lock, client, true, true);
 }
 
 void
@@ -484,7 +484,7 @@ unhide_all(enum locks lock, struct xa_client *client)
 		unhide_app(lock, cl);
 	}
 
-	app_in_front(lock, client);
+	app_in_front(lock, client, true, true);
 }
 
 void
@@ -675,7 +675,7 @@ previous_client(enum locks lock)
 }
 
 void
-app_in_front(enum locks lock, struct xa_client *client)
+app_in_front(enum locks lock, struct xa_client *client, bool snd_untopped, bool snd_ontop)
 {
 	struct xa_window *wl,*wf,*wp;
 
@@ -684,6 +684,7 @@ app_in_front(enum locks lock, struct xa_client *client)
 		bool was_hidden = false;
 		struct xa_client *infront;
 		struct xa_window *topped = NULL, *wastop;
+		
 		DIAG((D_appl, client, "app_in_front: %s", c_owner(client)));
 
 		if (window_list != root_window)
@@ -740,18 +741,18 @@ app_in_front(enum locks lock, struct xa_client *client)
 		{
 			if (!is_topped(wastop))
 			{
-				send_untop(lock, wastop);
+				setwin_untopped(lock, wastop, snd_untopped);
 				send_iredraw(lock, wastop, 0, NULL);
 			}
 			if (wastop != window_list && window_list != root_window && is_topped(window_list))
 			{
-				send_ontop(lock);
+				setwin_ontop(lock, snd_ontop);
 				send_iredraw(lock, window_list, 0, NULL);
 			}
 		}
 		else if (window_list != root_window && is_topped(window_list))
 		{
-			send_ontop(lock);
+			setwin_ontop(lock, snd_ontop);
 			send_iredraw(lock, window_list, 0, NULL);
 		}
 	}

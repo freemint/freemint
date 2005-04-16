@@ -1414,7 +1414,7 @@ click_desk_popup(struct task_administration_block *tab)
 
 		if (client == C.Aes)
 		{
-			app_in_front(lock, client);
+			app_in_front(lock, client, true, true);
 		}
 		else
 		{
@@ -1433,7 +1433,7 @@ click_desk_popup(struct task_administration_block *tab)
 			else if (client->type & APP_APPLICATION)
 			{
 				DIAG((D_menu, NULL, "is a real GEM client"));
-				app_in_front(lock, client);
+				app_in_front(lock, client, true, true);
 			}
 		}
 	}

@@ -189,6 +189,6 @@ open_about(enum locks lock)
 	}
 	else if (about_window != window_list)
 	{
-		top_window(lock, true, about_window, (void *)-1L, NULL);
+		top_window(lock, true, false, about_window, (void *)-1L);
 	}
 }
