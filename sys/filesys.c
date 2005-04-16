@@ -1035,7 +1035,7 @@ restart_mount:
 			}
 			else if (r == 0)
 			{
-				release_cookie (&mounteddir);
+				*res = mounteddir;
 			}
 			else
 			{
