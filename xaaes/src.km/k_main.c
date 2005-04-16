@@ -75,25 +75,45 @@ cancel_cevents(struct xa_client *client)
 	struct c_event *ce;
 
 	ce = client->cevnt_head;
-	while (ce)
+	while ((ce = client->cevnt_head))
 	{
-		struct c_event *nxt = ce->next;
+		struct c_event *nxt;
 
 		DIAG((D_kern, client, "Cancel evnt %lx (next %lx) for %s",
-			ce, nxt, client->name));
+			ce, ce->next, client->name));
+		
+		(*ce->funct)(0, ce, true);
+
+		if (!(nxt = ce->next))
+			client->cevnt_tail = nxt;
+		client->cevnt_head = nxt;
+		client->cevnt_count--;
+		kfree(ce);
+#if 0
+		struct c_event *nxt = ce->next;
+
+		if (!nxt)
+			client->cevnt_tail = nxt;
+		client->cevnt_head = nxt;
+		client->cevnt_count--;
+
 
 		/* callout as cancel event
 		 * handler can cleanup and free allocated ressources
 		 */
 		(*ce->funct)(0, ce, true);
+
 		kfree(ce);
 
-		ce = nxt;
+		//ce = nxt;
+#endif
 	}
-
+#if 0
 	client->cevnt_head = NULL;
 	client->cevnt_tail = NULL;
 	client->cevnt_count = 0;
+#endif
+	DIAG((D_kern, client, " --- cancelled events for %s! (count %d)", client->name, client->cevnt_count));
 
 	if (C.ce_open_menu == client)
 		C.ce_open_menu = NULL;
@@ -218,9 +238,11 @@ dispatch_cevent(struct xa_client *client)
 	ce = client->cevnt_head;
 	if (ce)
 	{
-		struct c_event *nxt = ce->next;
+		struct c_event *nxt; // = ce->next;
 
-		if (!nxt)
+		(*ce->funct)(0, ce, false);
+
+		if (!(nxt = ce->next))
 			client->cevnt_tail = nxt;
 
 		client->cevnt_head = nxt;
@@ -229,7 +251,7 @@ dispatch_cevent(struct xa_client *client)
 		DIAG((D_kern, client, "Dispatch evnt %lx (head %lx, tail %lx, count %d) for %s",
 			ce, client->cevnt_head, client->cevnt_tail, client->cevnt_count, client->name));
 
-		(*ce->funct)(0, ce, false);
+		//(*ce->funct)(0, ce, false);
 		
 		kfree(ce);
 
