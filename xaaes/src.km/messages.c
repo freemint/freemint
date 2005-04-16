@@ -371,7 +371,7 @@ is_inside(const RECT *r, const RECT *o)
 
 	return true;
 }
-
+#if 0
 void
 clip_all_wm_redraws(RECT *r)
 {
@@ -394,7 +394,8 @@ clip_all_wm_redraws(RECT *r)
 		}
 	}
 }
-		
+#endif
+	
 static void
 #if GENERATE_DIAGS
 add_msg_2_queue(struct xa_client *client, struct xa_aesmsg_list **queue, union msg_buf *msg, short qmflags)

@@ -550,7 +550,7 @@ open_taskmanager(enum locks lock)
 	}
 	else if (task_man_win != window_list)
 	{
-		top_window(lock, true, task_man_win, (void *)-1L, NULL);
+		top_window(lock, true, false, task_man_win, (void *)-1L);
 	}
 }
 
@@ -832,7 +832,7 @@ open_systemalerts(enum locks lock)
 	}
 	else if (systemalerts_win != window_list)
 	{
-		top_window(lock, true, systemalerts_win, (void *)-1L, NULL);
+		top_window(lock, true, false, systemalerts_win, (void *)-1L);
 	}
 }
 
