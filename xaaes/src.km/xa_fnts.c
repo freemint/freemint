@@ -1828,7 +1828,7 @@ fntsClick_form_do(enum locks lock,
 		if (!wind->nolist && wind != window_list && !(wind->active_widgets & NO_TOPPED) )
 		{
 			DIAGS(("Click_form_do: topping window"));
-			top_window(lock, true, wind, (void *)-1L, NULL);
+			top_window(lock, true, false, wind, (void *)-1L);
 			return false;
 		}
 		

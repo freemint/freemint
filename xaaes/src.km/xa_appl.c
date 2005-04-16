@@ -259,7 +259,7 @@ init_client(enum locks lock)
 
 	proc_is_now_client(client);
 	
-	app_in_front(lock, client);
+	app_in_front(lock, client, true, false);
 
 	/* Reset the AES messages pending list for our new application */
 	client->msg = NULL;
@@ -575,7 +575,7 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit)
 		client->desktop = NULL;
 	}
 
-	app_in_front(lock, top_owner);
+	app_in_front(lock, top_owner, true, true);
 
 	/*
 	 * remove from client list
@@ -1471,7 +1471,7 @@ XA_appl_control(enum locks lock, struct xa_client *client, AESPB *pb)
 				if (any_hidden(lock, cl, NULL))
 					unhide_app(lock, cl);
 				else
-					app_in_front(lock, cl);
+					app_in_front(lock, cl, true, true);
 
 				if (cl->type & APP_ACCESSORY)
 					send_app_message(lock, NULL, cl, AMQ_NORM, QMF_CHKDUP,

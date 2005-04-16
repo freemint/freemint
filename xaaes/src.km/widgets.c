@@ -2144,17 +2144,22 @@ click_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 	{
 		if ((widg->k & 3) && (wind->active_widgets & (STORE_BACK|BACKDROP)) == BACKDROP)
 		{
+			send_bottomed(lock, wind);
+#if 0
 			if (wind->send_message)
 				wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 						   WM_BOTTOMED, 0, 0, wind->handle, 0, 0, 0, 0);
 			else
 				bottom_window(lock, wind);
+#endif
 		}
 		else
 		{
 			/* if not on top or on top and not focus */
 			if (!is_topped(wind))
 			{
+				send_topped(lock, wind);
+#if 0
 				if (wind->send_message)
 					wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 							   WM_TOPPED, 0, 0, wind->handle,
@@ -2162,19 +2167,25 @@ click_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 				else
 					/* Just top these windows, they can handle it... */
 					/* Top the window */
-					top_window(lock, false, wind, (void *)-1L, NULL);
+					top_window(lock, true, false, wind, (void *)-1L);
+#endif
 			}
 			/* If window is already top, then send it to the back */
 
 			/* Ozk: Always bottom iconified windows... */
 			else if ((wind->window_status & XAWS_ICONIFIED))
 			{
+				send_bottomed(lock, wind);
+#if 0
 				if (wind->send_message)
 					wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 							   WM_BOTTOMED, 0, 0, wind->handle, 0,0,0,0);
+#endif
 			}
 			else if ((wind->active_widgets & (STORE_BACK|BACKDROP)) == BACKDROP)
 			{
+				send_bottomed(lock, wind);
+#if 0
 					if (wind->send_message)
 						wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 								   WM_BOTTOMED, 0, 0, wind->handle,
@@ -2182,6 +2193,7 @@ click_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 					else
 						/* Just bottom these windows, they can handle it... */
 						bottom_window(lock, wind);
+#endif
 			}
 		}
 	}

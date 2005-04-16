@@ -77,7 +77,7 @@ click_desktop_widget(enum locks lock, struct xa_window *wind, struct xa_widget *
 		if (md->cstate == 0 && item == 0)
 		{
 			/* Also unhides the windows. */
-			app_in_front(lock, client);
+			app_in_front(lock, client, true, true);
 
 			DIAG((D_button, NULL, "click_desktop_widget done"));
 

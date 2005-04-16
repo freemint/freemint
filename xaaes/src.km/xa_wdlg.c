@@ -257,7 +257,7 @@ wdialog_message(enum locks lock, struct xa_client *client, struct wdlg_evnt_parm
 				return -1;
 			if (is_hidden(wind))
 				unhide_window(wlock, wind, true);
-			top_window(wlock, true, wind, (void *)-1L, NULL);
+			top_window(wlock, true, false, wind, (void *)-1L);
 			break;
 		}
 		case WM_CLOSED:
@@ -334,7 +334,7 @@ wdialog_message(enum locks lock, struct xa_client *client, struct wdlg_evnt_parm
 		{
 			if (wh != mh)
 				return -1;
-			bottom_window(wlock, wind);
+			bottom_window(wlock, false, true, wind);
 			break;
 		}
 		case AP_TERM:
@@ -996,7 +996,7 @@ wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms 
 
 						if (is_hidden(wind))
 							unhide_window(lock, wind, true);
-						top_window(lock, true, wind, (void *)-1L, NULL);
+						top_window(lock, true, true, wind, (void *)-1L);
 						ret = 1;
 						cont = 0;
 					}
