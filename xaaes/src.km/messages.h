@@ -60,7 +60,7 @@ void cancel_do_winmesag(enum locks lock, struct xa_window *wind);
 
 
 void send_a_message(enum locks lock, struct xa_client *dest_client, short amq, short qmf, union msg_buf *msg);
-void clip_all_wm_redraws(RECT *r);
+//void clip_all_wm_redraws(RECT *r);
 //void deliver_message(enum locks lock, struct xa_client *dest_client, union msg_buf *msg);
 //void queue_message(enum locks lock, struct xa_client *dest_client, union msg_buf *msg);
 

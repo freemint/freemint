@@ -661,7 +661,7 @@ Click_form_do(enum locks lock,
 		if (!wind->nolist && wind != window_list && !(wind->active_widgets & NO_TOPPED) )
 		{
 			DIAGS(("Click_form_do: topping window"));
-			top_window(lock, true, wind, (void *)-1L, NULL);
+			top_window(lock, true, false, wind, (void *)-1L);
 			return false;
 		}
 		
@@ -923,14 +923,14 @@ do_formwind_msg(
 				if (is_hidden(wind))
 					unhide_window(0, wind, true);
 					
-				top_window(0, true, wind, (void *)-1L, NULL);
+				top_window(0, true, false, wind, (void *)-1L);
 			}
 			break;
 		}
 		case WM_BOTTOMED:
 		{
 			if (wind != root_window && (wind->window_status & XAWS_OPEN))
-				bottom_window(0, wind);
+				bottom_window(0, false, true, wind);
 			break;
 		}
 		case WM_ARROWED:

@@ -432,21 +432,21 @@ get_window_info(struct xa_window *wind, char *dst)
 		strcpy(dst, src);
 	}
 }
-
+#if 0
 /* SendMessage */
 void
 send_untop(enum locks lock, struct xa_window *wind)
 {
 	struct xa_client *client = wind->owner;
 	
-	wind->colours = wind->untop_cols;
+	//wind->colours = wind->untop_cols;
 	
 	if (wind->send_message && !client->fmd.wind)
 		wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 				   WM_UNTOPPED, 0, 0, wind->handle,
 				   0, 0, 0, 0);
 }
-
+#endif
 void
 send_ontop(enum locks lock)
 {
@@ -455,13 +455,32 @@ send_ontop(enum locks lock)
 
 	if (!client->fmd.wind)
 	{
-		top->colours = top->ontop_cols;
-		
 		if (top->send_message)
 			top->send_message(lock, top, NULL, AMQ_NORM, QMF_CHKDUP,
 					  WM_ONTOP, 0, 0, top->handle,
 					  0, 0, 0, 0);
 	}
+}
+
+void
+send_topped(enum locks lock, struct xa_window *wind)
+{
+	struct xa_client *client = wind->owner;
+
+	if (wind->send_message && !client->fmd.wind)
+		wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
+				   WM_TOPPED, 0, 0, wind->handle,
+				   0, 0, 0, 0);
+}
+void
+send_bottomed(enum locks lock, struct xa_window *wind)
+{
+	struct xa_client *client = wind->owner;
+
+	if (wind->send_message && !client->fmd.wind)
+		wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
+				   WM_BOTTOMED, 0, 0, wind->handle,
+				   0, 0, 0, 0);
 }
 
 void
@@ -530,6 +549,36 @@ send_hslid(enum locks lock, struct xa_window *wind, short offs)
 		wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 			WM_HSLID, 0,0, wind->handle,
 			offs, 0,0,0);
+	}
+}
+
+void
+setwin_untopped(enum locks lock, struct xa_window *wind, bool snd_untopped)
+{
+	struct xa_client *client = wind->owner;
+	
+	wind->colours = wind->untop_cols;
+
+	if (snd_untopped && wind->send_message && !client->fmd.wind)
+		wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
+				   WM_UNTOPPED, 0, 0, wind->handle,
+				   0, 0, 0, 0);
+}
+
+void
+setwin_ontop(enum locks lock, bool snd_ontop)
+{
+	struct xa_window *top = window_list;
+	struct xa_client *client = top->owner;
+
+	if (!client->fmd.wind)
+	{
+		top->colours = top->ontop_cols;
+		
+		if (snd_ontop && top->send_message)
+			top->send_message(lock, top, NULL, AMQ_NORM, QMF_CHKDUP,
+					  WM_ONTOP, 0, 0, top->handle,
+					  0, 0, 0, 0);
 	}
 }
 
@@ -1452,15 +1501,16 @@ after_top(enum locks lock, bool untop)
 	/* Refresh the previous top window as being 'non-topped' */
 	if (below && below != root_window)
 	{
-		below->colours = below->untop_cols;
-
+		setwin_untopped(lock, below, untop);
+		//below->colours = below->untop_cols;
 		send_iredraw(lock, below, 0, NULL);
-
+#if 0
 		if (untop)
 			send_untop(lock, below);
+#endif
 	}
 }
-
+	
 /*
  * Pull this window to the head of the window list
  */
@@ -1755,12 +1805,13 @@ close_window(enum locks lock, struct xa_window *wind)
 			if (w->owner == client)
 			{
 				if (w != window_list)
-					top_window(lock|winlist, true, w, NULL, NULL);
+					top_window(lock|winlist, true, true, w, NULL);
 				else
 				{
+					setwin_ontop(lock, true);
 					send_iredraw(lock, w, 0, NULL);
 					set_and_update_window(w, true, true, NULL);
-					send_ontop(lock);
+					//send_ontop(lock);
 				}
 				wl = w->next;
 				break;
@@ -1785,7 +1836,7 @@ close_window(enum locks lock, struct xa_window *wind)
 			{
 				if (!(window_list->owner->status & CS_EXITING) && window_list != root_window)
 				{
-					top_window(lock, true, window_list, NULL, NULL);
+					top_window(lock, true, true, window_list, NULL);
 				}
 				break;
 			}

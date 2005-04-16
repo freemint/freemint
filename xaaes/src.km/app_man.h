@@ -37,7 +37,7 @@ struct xa_client * previous_client(enum locks lock);
 
 void set_next_menu(struct xa_client *new, bool do_topwind);
 void swap_menu(enum locks lock, struct xa_client *, struct widget_tree *, bool, bool, int);
-void app_in_front(enum locks lock, struct xa_client *client);
+void app_in_front(enum locks lock, struct xa_client *client, bool snd_untopped, bool snd_ontop);
 bool is_infront(struct xa_client *client);
 struct xa_client * get_app_infront(void);
 void set_active_client(enum locks lock, struct xa_client *client);
