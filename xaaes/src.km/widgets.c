@@ -3208,7 +3208,7 @@ set_menu_size(struct xa_window *wind, struct xa_widget *widg)
 	vst_effects(C.vh, 0);
 	t_extent("A", &w, &h);
 	
-	widg->r.h = h + 1; //screen.standard_font_height + 1;
+	widg->r.h = h + 1 + 1; //screen.standard_font_height + 1;
 	widg->r.w = wind->r.w;
 #else
 	widg->r.h = MENU_H + 1;
