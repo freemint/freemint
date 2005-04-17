@@ -924,8 +924,16 @@ prop_clipped_name(const char *s, char *d, int w, short *ret_w, short *ret_h, sho
 						*(dst - 1) = '.';
 						end[i] = '.';
 					}
+					else
+					{
+						while (end[i++])
+							*dst++ = *s++;
+						*dst = '\0';
+						i--;
+					}
 				}
-				strcat(d, &end[i]);
+				if (end[i])
+					strcat(d, &end[i]);
 				break;
 			}
 			/* fall through */
