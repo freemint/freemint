@@ -113,8 +113,8 @@ set_desktop_widget(struct xa_window *wind, XA_TREE *desktop)
 	bzero(&loc, sizeof(loc));
 	loc.relative_type = LT;
 	loc.r = wind->r;
-	loc.r.y += MENU_H + 1;
-	loc.r.w -= MENU_H + 1;
+	loc.r.y += get_menu_widg()->r.h; //MENU_H + 1;
+	loc.r.w -= get_menu_widg()->r.h; //MENU_H + 1;
 	loc.n = XAW_TOOLBAR;
 	loc.mask = TOOLBAR;
 

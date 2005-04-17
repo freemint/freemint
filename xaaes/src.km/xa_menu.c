@@ -85,12 +85,14 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 			{
 				if (!mwt)
 					mwt = new_widget_tree(client, mnu);
-
+				
+				assert(mwt);
+				
 				/* Do a special fix on the menu  */
-				fix_menu(client, mnu,true);
+				fix_menu(client, mwt/*mnu*/, root_window, true);
 				DIAG((D_menu,NULL,"fixed menu"));
 
-				mnu->ob_width = mnu[mnu->ob_tail].ob_width = mnu[mnu->ob_head].ob_width = screen.r.w;
+				//mnu->ob_width = mnu[mnu->ob_tail].ob_width = mnu[mnu->ob_head].ob_width = screen.r.w;
 	
 #if GENERATE_DIAGS
 				{
@@ -104,7 +106,7 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 				mwt->is_menu = true;
 				mwt->menu_line = true;
 
-				wt_menu_area(mwt);
+				//wt_menu_area(mwt);
 
 				if (swap)
 				{
@@ -527,8 +529,8 @@ XA_form_popup(enum locks lock, struct xa_client *client, AESPB *pb)
 			}
 			if (x < 4)
 				x = 4;
-			if (y < MENU_H)
-				y = MENU_H;
+			if (y < get_menu_widg()->r.h) //MENU_H)
+				y = get_menu_widg()->r.h; //MENU_H;
 			ob->ob_x = 0;
 			ob->ob_y = 0;
 

@@ -778,6 +778,8 @@ struct xa_client
 #define CS_BLOCK_MENU_NAV	0x00000100
 
 #define CS_EXITING		0x00000200
+#define CS_BLOCK_CE		0x00000400
+
 
 	long status;
 
