@@ -409,7 +409,7 @@ k_init(void)
 	C.Aes->mnu_clientlistname = kmalloc(strlen(mnu_clientlistname)+1);
 	assert(C.Aes->mnu_clientlistname);
 	strcpy(C.Aes->mnu_clientlistname, mnu_clientlistname);
-	fix_menu(C.Aes, C.Aes->std_menu->tree, true);
+	fix_menu(C.Aes, C.Aes->std_menu, root_window, true);
 	set_menu_widget(root_window, C.Aes, C.Aes->std_menu);
 #if 0
 	{
@@ -420,7 +420,7 @@ k_init(void)
 	DIAGS(("menu widget set"));
 
 	/* Fix up the file selector menu */
-	fix_menu(C.Aes, ResourceTree(C.Aes_rsc, FSEL_MENU), false);
+	//fix_menu(C.Aes, ResourceTree(C.Aes_rsc, FSEL_MENU), false);
 
 	/* Fix up the window widget bitmaps and any others we might be using
    	 * (Calls vr_trnfm() for all the bitmaps)

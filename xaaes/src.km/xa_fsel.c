@@ -1334,6 +1334,8 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 		if (!dialog_window)
 			goto memerr;
 
+		fix_menu(client, fs->menu, dialog_window, false);
+
 		/* Set the window title */
 		/* XXX - pointer into user space, correct here? */
 		/*   ozk: no, absolutely not right here! */

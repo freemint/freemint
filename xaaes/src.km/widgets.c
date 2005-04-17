@@ -222,6 +222,33 @@ bound_sl(int p)
 }
 #endif
 
+static OBJECT *
+rp2ap_obtree(struct xa_window *wind, struct xa_widget *widg, RECT *r)
+{
+	XA_TREE *wt;
+	OBJECT *obtree = NULL;
+
+	if (widg->type == XAW_TOOLBAR || widg->type == XAW_MENU)
+	{
+		wt = widg->stuff;
+		obtree = wt->tree;
+
+		if (wind != root_window)
+		{
+			obtree->ob_x = r->x;
+			obtree->ob_y = r->y;
+			if (!wt->zen)
+			{
+				obtree->ob_x += wt->ox;
+				obtree->ob_y += wt->oy;
+			}
+		}
+	}
+	/* If want to get informed */
+	return obtree;
+}
+
+
 /*
  * Convert window relative widget coords to absolute screen coords
  */
@@ -236,11 +263,11 @@ rp_2_ap(struct xa_window *wind, XA_WIDGET *widg, RECT *r)
 		t_widg[widg->type], widg, widg->stuff,
 		widg->type == XAW_TOOLBAR ? (long)((XA_TREE *)widg->stuff)->tree : -1 ));
 
-	if (widg->type != XAW_TOOLBAR)
+	if (widg->type != XAW_TOOLBAR )
 	{
 		if (r && (long)r != (long)&widg->ar)
 			*r = widg->ar;
-		return NULL;
+		return rp2ap_obtree(wind, widg, &widg->ar);
 	}
 
 	if (frame < 0)
@@ -299,6 +326,8 @@ rp_2_ap(struct xa_window *wind, XA_WIDGET *widg, RECT *r)
 	default:;
 	}
 
+	return rp2ap_obtree(wind, widg, r);
+#if 0	
 	/* HR: for after moving: set form's x & y, otherwise find_object
 	 *     fails.
 	 */
@@ -325,6 +354,7 @@ rp_2_ap(struct xa_window *wind, XA_WIDGET *widg, RECT *r)
 		return form;
 	}
 	return NULL;
+#endif
 }
 
 /* Ozk:
@@ -3172,7 +3202,7 @@ set_info_size(struct xa_window *wind, struct xa_widget *widg)
 static void
 set_menu_size(struct xa_window *wind, struct xa_widget *widg)
 {
-#if 0
+#if 1
 	short w, h;
 	t_font(screen.standard_font_point, screen.standard_font_id);
 	vst_effects(C.vh, 0);
