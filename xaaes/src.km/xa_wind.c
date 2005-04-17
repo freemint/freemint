@@ -884,9 +884,11 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				if (!wt || (wt && wt != widg->stuff))
 				{
 					DIAGS(("  --- install new menu"));
-					fix_menu(client, ob, false);
+					//fix_menu(client, ob, false);
 					if (!wt)
 						wt = new_widget_tree(client, ob);
+					assert(wt);
+					fix_menu(client, wt, w, false);
 					set_menu_widget(w, client, wt);
 					rp_2_ap_cs(w, widg, NULL);
 					if (wt && wt->tree)
