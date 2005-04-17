@@ -168,6 +168,8 @@ wt_menu_area(XA_TREE *wt)
 
 	if ((obtree = wt->tree))
 	{
+	/* additional fix to fit in window */
+		//obtree->ob_height = obtree[obtree->ob_head].ob_height = obtree[obtree->ob_tail].ob_height = get_menu_widg()->r.h; //wind->wa.w;
 		titles = obtree[obtree[0].ob_head].ob_head;
 		obj_area(wt, titles, &wt->area);
 		
@@ -894,7 +896,7 @@ static RECT
 popup_inside(Tab *tab, RECT r)
 {
 	MENU_TASK *k = &tab->task_data.menu;
-	RECT ir = (tab->ty == ROOT_MENU) ? screen.r : root_window->wa;
+	RECT ir = root_window->wa; //(tab->ty == ROOT_MENU) ? screen.r : root_window->wa;
 	RECT rc = rc_inside(r, ir);
 
 	if (rc.x != r.x)
@@ -1001,8 +1003,9 @@ display_popup(Tab *tab, XA_TREE *wt, int item, short rdx, short rdy)
 	OBJECT *obtree = wt->tree;
 	MENU_TASK *k = &tab->task_data.menu;
 	struct xa_window *wind;
+	XA_WIND_ATTR tp = TOOLBAR /*|STORE_BACK*/;
 	RECT r;
-	int wash;
+	int wash, mg = MONO ? 2 : 1;
 	
 	k->pop_item = item;
 	k->border = 0;
@@ -1017,6 +1020,9 @@ display_popup(Tab *tab, XA_TREE *wt, int item, short rdx, short rdy)
 	obj_rectangle(wt, item, &r);
 	//obj_area(wt, item, &r);
 	DIAG((D_menu, tab->client, "display_popup: tab=%lx, %d/%d/%d/%d", tab, r));
+	
+	r = calc_window(tab->lock, C.Aes, WC_BORDER, tp, created_for_AES|created_for_POPUP, mg, true, r);
+	
 	r = popup_inside(tab, r);
 	wash = r.h;
 	obtree->ob_x = k->pdx;
@@ -1048,12 +1054,15 @@ display_popup(Tab *tab, XA_TREE *wt, int item, short rdx, short rdy)
 	//{
 		if (r.h < wash)
 		{
-			//int mg = MONO ? 2 : 1;
-			XA_WIND_ATTR tp = TOOLBAR|VSLIDE|UPARROW|DNARROW/*|STORE_BACK*/;
 
 			tab->scroll = true;
 
+			r = calc_window(tab->lock, C.Aes, WC_WORK, tp, created_for_AES|created_for_POPUP, 1, true, r);
+			tp |= TOOLBAR|VSLIDE|UPARROW|DNARROW/*|STORE_BACK*/;
 			r = calc_window(tab->lock, C.Aes, WC_BORDER, tp, created_for_AES|created_for_POPUP, 1, true, r);
+			
+			//if (r.y < root_window->wa.y)
+			//	r.y = root_window->wa.y;
 
 			wind = create_window(	tab->lock,
 						do_winmesag,
@@ -1068,10 +1077,10 @@ display_popup(Tab *tab, XA_TREE *wt, int item, short rdx, short rdy)
 		}
 		else
 		{
-			int mg = MONO ? 2 : 1;
-			XA_WIND_ATTR tp = TOOLBAR /*|STORE_BACK*/;
-
-			r = calc_window(tab->lock, C.Aes, WC_BORDER, tp, created_for_AES|created_for_POPUP, mg, true, r);
+			//r = calc_window(tab->lock, C.Aes, WC_BORDER, tp, created_for_AES|created_for_POPUP, mg, true, r);
+			
+			//if (r.y < root_window->wa.y)
+			//	r.y = root_window->wa.y;
 
 			wind = create_window(	tab->lock,
 						do_winmesag, //NULL,
@@ -1864,6 +1873,7 @@ Display_menu_widg(enum locks lock, struct xa_window *wind, struct xa_widget *wid
 	{
 		obtree->ob_x = widg->ar.x; //wt->rdx;
 		obtree->ob_y = widg->ar.y; //wt->rdy;
+		//obtree->ob_height = widg->r.h - 1;
 		obtree->ob_width = obtree[obtree[0].ob_head].ob_width = widg->ar.w;
 		draw_object_tree(0, wt, NULL, 0, MAX_DEPTH, NULL);
 		write_menu_line((RECT*)&widg->ar); //obtree->ob_x);	/* HR: not in standard menu's object tree */
@@ -2050,7 +2060,7 @@ menu_title(enum locks lock, Tab *tab, struct xa_window *wind, XA_WIDGET *widg, i
 			
 			attach_menu(tab->lock, C.Aes, wt, k->about + 2, &desk_popup);
 		}
-	 	display_popup(tab, wt, item, r.x, r.y);
+		display_popup(tab, wt, item, r.x, r.y);
 
 		k->em.flags = MU_M1;
 		k->em.m1_flag = 1;		/* fill out rect event data; out of title */
@@ -2107,8 +2117,10 @@ set_menu_widget(struct xa_window *wind, struct xa_client *owner, XA_TREE *menu)
 	menu->links++;
 
 	/* additional fix to fit in window */
-	obtree->ob_width = obtree[obtree->ob_head].ob_width = obtree[obtree->ob_tail].ob_width = wind->wa.w;
-
+	obtree->ob_width  = obtree[obtree->ob_head].ob_width  = obtree[obtree->ob_tail].ob_width  = wind->wa.w;
+	obtree->ob_height = obtree[obtree->ob_head].ob_height = obtree[obtree->ob_tail].ob_height = widg->r.h - 1; //wind->wa.w;
+	obtree[obtree->ob_tail].ob_y = widg->r.h;
+	
 	widg->display = display_menu_widget;
 	widg->click = click_menu_widget;
 	widg->dclick = NULL;
@@ -2207,9 +2219,11 @@ set_popup_widget(Tab *tab, struct xa_window *wind, int obj)
  */
 
 void
-fix_menu(struct xa_client *client, OBJECT *root, bool do_desk)
+fix_menu(struct xa_client *client, XA_TREE *menu, struct xa_window *wind, bool do_desk)
 {
 	int titles, menus, tbar, s_ob, t_ob;
+	short h;
+	OBJECT *root = menu->tree;
 
 	DIAG((D_menu, NULL, "fixing menu 0x%lx", root));
 	
@@ -2217,7 +2231,13 @@ fix_menu(struct xa_client *client, OBJECT *root, bool do_desk)
 	titles = root[tbar].ob_head;
 	menus = root[0].ob_tail;
 
-	root->ob_width = root[tbar].ob_width = root[menus].ob_width = screen.r.w;
+	h = (wind ? get_widget(wind, XAW_MENU)->r.h : get_menu_widg()->r.h) - 1;
+
+	root->ob_width  = root[tbar].ob_width  = root[menus].ob_width = wind ? get_widget(wind, XAW_MENU)->r.w : get_menu_widg()->r.w; //screen.r.w;
+	root->ob_height = root[titles].ob_height = root[tbar].ob_height = h;
+	root[menus].ob_y = h + 1;
+	wt_menu_area(menu);
+	
 	object_set_spec(root + tbar, menu_colors());
 
 	/* Hide the actual menus (The big ibox) */
@@ -2231,6 +2251,8 @@ fix_menu(struct xa_client *client, OBJECT *root, bool do_desk)
 		/* Hide the actual menu */
 		root[s_ob].ob_flags |= OF_HIDETREE;
 		menu_spec(root, s_ob);
+		root[t_ob].ob_height = h;
+		root[s_ob].ob_y = 0;
 		t_ob = root[t_ob].ob_next;
 		s_ob = root[s_ob].ob_next;
 	}

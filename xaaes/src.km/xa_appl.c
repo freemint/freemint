@@ -529,8 +529,21 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit)
 	 */
 	remove_all_windows(lock, client);
 
+	/*
+	 * Cancel, and count, all redraw messages that this
+	 * client may have received
+	 */
 	redraws = cancel_app_aesmsgs(client);
+	/*
+	 * Cancel all client events waiting for this client, then
+	 * set CS_BLOCK_CE to stop any new client events from being
+	 * queued..
+	 */
 	cancel_cevents(client);
+	client->status |= CS_BLOCK_CE;
+	/*
+	 * Clear any queued key events
+	 */
 	cancel_keyqueue(client);
 
 	client->rsrc = NULL;
