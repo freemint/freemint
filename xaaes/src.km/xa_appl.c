@@ -111,6 +111,15 @@ proc_is_now_client(struct xa_client *client)
 
 }
 
+void
+init_client_mdbuff(struct xa_client *client)
+{
+	client->md_head = client->mdb;
+	client->md_tail = client->mdb;
+	client->md_end = client->mdb + CLIENT_MD_BUFFERS;
+	client->md_head->clicks = -1;
+}
+
 /*
  * Ozk: New scheme; We keep the shel_info extension throughout the processes
  * lifetime. Reason for this is that applications may call appl_init()/appl_exit()
@@ -137,10 +146,7 @@ init_client(enum locks lock)
 
 	bzero(client, sizeof(*client));
 
-	client->md_head = client->mdb;
-	client->md_tail = client->mdb;
-	client->md_end = client->mdb + CLIENT_MD_BUFFERS;
-	client->md_head->clicks = -1;
+	init_client_mdbuff(client);
 
 	client->ut = umalloc(xa_user_things.len);
 	client->mnu_clientlistname = umalloc(strlen(mnu_clientlistname)+1);
@@ -457,7 +463,7 @@ remove_client_crossrefs(struct xa_client *client)
  * cleanup related to this client.
  */
 void
-exit_client(enum locks lock, struct xa_client *client, int code, bool pexit)
+exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, bool detach)
 {
 	struct xa_client *top_owner;
 	long redraws;
@@ -651,10 +657,13 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit)
 	}
 	
 	/* zero out; just to be sure */
-	bzero(client, sizeof(*client));
+	//bzero(client, sizeof(*client));
 
 	remove_client_crossrefs(client);
-	
+
+	if (detach)
+		detach_extension(NULL, XAAES_MAGIC);
+		
 	S.clients_exiting--;
 
 	DIAG((D_appl, NULL, "client exit done"));
@@ -688,10 +697,10 @@ XA_appl_exit(enum locks lock, struct xa_client *client, AESPB *pb)
 	}
 
 	/* we assume correct termination */
-	exit_client(lock, client, 0, false);
+	exit_client(lock, client, 0, false, true);
 
 	/* and decouple from process context */
-	detach_extension(NULL, XAAES_MAGIC);
+	//detach_extension(NULL, XAAES_MAGIC);
 
 	return XAC_DONE;
 }

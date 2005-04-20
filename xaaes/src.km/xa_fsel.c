@@ -356,7 +356,7 @@ set_file(struct fsel_data *fs, const char *fn)
 {
 	XA_TREE *wt = get_widget(fs->wind, XAW_TOOLBAR)->stuff;
 
-	DIAG((D_fsel, NULL, "set_file: fs.file='%s', wh=%d", fn, fs->wind->handle));
+	DIAG((D_fsel, NULL, "set_file: fs.file='%s', wh=%d", fn ? fn : fs->file, fs->wind->handle));
 
 	/* fixup the cursor edit position */
 #if 0
@@ -373,10 +373,10 @@ set_file(struct fsel_data *fs, const char *fn)
 		edit_object(lock, wt->owner, ED_INIT, wt, wt->tree, FS_FILE, 0, &newpos);
 	}
 #else
-	strcpy(fs->file, fn); /* set the edit field text */
-	wt->e.pos = strlen(fn);
+	if (fn)
+		strcpy(fs->file, fn); /* set the edit field text */
+	wt->e.pos = strlen(fs->file);
 #endif
-
 	/* redraw the toolbar file object */
 	redraw_toolbar(0, fs->wind, FS_FILE);
 }
@@ -784,6 +784,7 @@ fs_item_action(struct scroll_info *list, struct scroll_entry *this, const struct
 				fs->tfile = false;
 				list->set(list, this, SESET_SELECTED, 0, NORMREDRAW);
 				set_dir(list);
+				set_file(fs, NULL);
 				if (md->clicks > 1)
 					fs_done = true;
 			}

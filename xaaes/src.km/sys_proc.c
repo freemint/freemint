@@ -80,7 +80,7 @@ xaaes_on_exit(void *_client, struct proc *p, int code)
 		enum locks lock = NOLOCKS;
 
 		DIAGS(("xaaes_on_exit event for %u (%i)", p->pid, code));
-		exit_client(lock, _client, code, true);
+		exit_client(lock, _client, code, true, false);
 	}
 	else
 		DIAGS(("xaaes_on_exit - thread terminate"));
