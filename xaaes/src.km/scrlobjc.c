@@ -1775,6 +1775,12 @@ free_scroll_entry(struct scroll_info *list, struct scroll_entry *this, long *hei
 	short level = 1;
 	long h = 0;
 
+	if (!this)
+	{
+		//display("keh farsken");
+		return this;
+	}
+
 	this = this->down;
 
 	while (this && level) //this != stop)
@@ -1849,8 +1855,7 @@ free_scroll_entry(struct scroll_info *list, struct scroll_entry *this, long *hei
 				}
 				h += this->r.h;
 				kfree(this);
-			
-			}			
+			}
 			this = next;
 		}
 	}

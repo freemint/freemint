@@ -1148,8 +1148,9 @@ XA_rsrc_load(enum locks lock, struct xa_client *client, AESPB *pb)
 	{
 		/* inform user what's going on */
 		ALERT(("XaAES: rsrc_load: %s, client with no globl_ptr, killing it", client->name));
-		exit_client(lock, client, -1, true);
+		//exit_client(lock, client, -1, true, true);
 		raise(SIGKILL);
+		yield();
 		return 0;
 	}
 
@@ -1383,8 +1384,9 @@ XA_rsrc_rcfix(enum locks lock, struct xa_client *client, AESPB *pb)
 	{
 		/* inform user what's going on */
 		ALERT(("XaAES: rsrc_rcfix: %s, client with no globl_ptr, killing it", client->name));
-		exit_client(lock, client, -1, true); //get_curproc());
+		//exit_client(lock, client, -1, true, true); //get_curproc());
 		raise(SIGKILL);
+		yield();
 		return 0;
 	}
 

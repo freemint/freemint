@@ -133,6 +133,8 @@ init(struct kentry *k, const char *path)
 	/* setup kernel entry */
 	kentry = k;
 
+	//old_fpu = *(volatile long *)0x2cL;
+
 	/* zero anything out */
 	bzero(&default_options, sizeof(default_options));
 	bzero(&cfg, sizeof(cfg));

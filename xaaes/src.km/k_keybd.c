@@ -220,6 +220,43 @@ XA_keyboard_event(enum locks lock, const struct rawkey *key)
 			cancel_keyqueue(client);
 	}
 }
+#if 0
+static char *vecnames[] =
+{
+	"Stack after reset ",
+	"PC after reset    ",
+	"Bus               ",
+	"Address           ",
+	"Illegal           ",
+	"Div by Zero       ",
+	"CHK inst          ",
+	"TRAPV             ",
+	"Privilege         ",
+	"Trace             ",
+	"Line-A            ",
+	"Line-F            ",
+	"reserved          ",
+	"FPU prot violation",
+	"Format error      ",
+	"Uninitialized int ",
+	"Reserved          ",
+	"Reserved          ",
+	"Reserved          ",
+	"Reserved          ",
+	"Reserved          ",
+	"Reserved          ",
+	"Reserved          ",
+	"Reserved          ",
+	"Spurious int      ",
+	"Lev 1             ",
+	"Lev 2 (HBL)       ",
+	"Lev 3             ",
+	"Lev 4 (VBL)       ",
+	"Lev 5             ",
+	"lev 6 (MFP)       ",
+	"lev 7 (NMI)       ",
+};
+#endif
 
 static bool
 kernel_key(enum locks lock, struct rawkey *key)
@@ -362,7 +399,17 @@ kernel_key(enum locks lock, struct rawkey *key)
 			}
 			return true;
 		}
-	
+	#if 0
+		case 'P':
+		{
+			int i;
+			volatile long *vec = NULL;
+			display("Vecors...");
+			for (i = 0; i < 32; i++)
+				display("%s %lx (%d)", vecnames[i], *vec++, i);
+			return true;
+		}
+	#endif		
 	#if 0
 		case 'P':
 		{
