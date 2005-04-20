@@ -284,20 +284,23 @@ void
 get_mbstate(struct xa_client *client, struct mbs *d)
 {
 	short mbutts, clicks, x, y, ks;
+	struct moose_data *md;
 
 	DIAG((D_button, NULL, " -=- md: clicks=%d, head=%lx, tail=%lx, end=%lx",
 		client->md_head->clicks, client->md_head, client->md_tail, client->md_end));
 
-	clicks = client->md_head->clicks;
-				
+	md = client->md_head;
+	clicks = md->clicks;
+			
 	if (clicks == -1)
 	{
-		if (client->md_head != client->md_tail)
+		if (md != client->md_tail)
 		{
-			client->md_head++;
-			if (client->md_head > client->md_end)
-				client->md_head = client->mdb;
-			clicks = client->md_head->clicks;
+			md++;
+			if (md > client->md_end)
+				md = client->mdb;
+			client->md_head = md;
+			clicks = md->clicks;
 		}
 		else
 		{
@@ -307,18 +310,18 @@ get_mbstate(struct xa_client *client, struct mbs *d)
 
 	if (clicks)
 	{
-		mbutts = client->md_head->state;
-		client->md_head->clicks = 0;
-		x = client->md_head->x;
-		y = client->md_head->y;
-		ks = client->md_head->kstate;
+		mbutts = md->state;
+		md->clicks = 0;
+		x = md->x;
+		y = md->y;
+		ks = md->kstate;
 		if (d)
 			d->empty = false;
 	}
 	else
 	{
-		mbutts = client->md_head->cstate;
-		client->md_head->clicks = -1;
+		mbutts = md->cstate;
+		md->clicks = -1;
 		check_mouse(client, NULL, &x, &y);
 		vq_key_s(C.vh, &ks);
 		if (d)

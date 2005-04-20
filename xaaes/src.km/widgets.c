@@ -230,17 +230,18 @@ rp2ap_obtree(struct xa_window *wind, struct xa_widget *widg, RECT *r)
 
 	if (widg->type == XAW_TOOLBAR || widg->type == XAW_MENU)
 	{
-		wt = widg->stuff;
-		obtree = wt->tree;
-
-		if (wind != root_window)
+		if ((wt = widg->stuff))
 		{
-			obtree->ob_x = r->x;
-			obtree->ob_y = r->y;
-			if (!wt->zen)
+			obtree = wt->tree;
+			if (obtree && wind != root_window)
 			{
-				obtree->ob_x += wt->ox;
-				obtree->ob_y += wt->oy;
+				obtree->ob_x = r->x;
+				obtree->ob_y = r->y;
+				if (!wt->zen)
+				{
+					obtree->ob_x += wt->ox;
+					obtree->ob_y += wt->oy;
+				}
 			}
 		}
 	}
@@ -1005,8 +1006,8 @@ free_xawidget_resources(struct xa_widget *widg)
 					wt, widg));
 
 				wt->links--;
-			//	display(" free_xawidget_re: stuff is wt=%lx (links=%d) in widg=%lx",
-			//		wt, wt->links, widg);
+				//display(" free_xawidget_re: stuff is wt=%lx (links=%d) in widg=%lx",
+				//	wt, wt->links, widg);
 				
 				if (!remove_wt(wt, false))
 				{
@@ -3902,6 +3903,7 @@ remove_widget(enum locks lock, struct xa_window *wind, int tool)
 	XA_WIDGET *widg = get_widget(wind, tool);
 
 	DIAG((D_form, NULL, "remove_widget %d: 0x%lx", tool, widg->stuff));
+	//if (wind->dial & created_for_SLIST) display("remove_widget %d: 0x%lx", tool, widg->stuff);
 
 	if (widg->destruct)
 		widg->destruct(widg);

@@ -503,6 +503,13 @@ XA_handler(void *_pb)
 	struct xa_client *client;
 	short cmd;
 
+#if 0
+	if (old_fpu != *(volatile long *)0x2cL)
+	{
+		ALERT(("XaAES2: fpu vector changed from %lx to %lx!!", old_fpu, *(volatile long *)0x2cL));
+		old_fpu = *(volatile long *)0x2cL;
+	}
+#endif
 	if (!pb)
 	{
 		DIAGS(("XaAES: No AES Parameter Block (pid %ld)\n", p_getpid()));
@@ -757,6 +764,13 @@ XA_handler(void *_pb)
 				DIAG((D_kern, NULL, "Leaving AES non AES process (pid %ld)", p_getpid()));
 			
 #endif
+#if 0
+			if (old_fpu != *(volatile long *)0x2cL)
+			{
+				ALERT(("XaAES1: fpu vector changed from %lx to %lx!!", old_fpu, *(volatile long *)0x2cL));
+				old_fpu = *(volatile long *)0x2cL;
+			}
+#endif
 			return 0;
 		}
 		else
@@ -773,6 +787,13 @@ XA_handler(void *_pb)
 	{
 		DIAGS(("Unimplemented AES trap: %d", cmd));
 	}
+#if 0
+	if (old_fpu != *(volatile long *)0x2cL)
+	{
+		ALERT(("XaAES2: fpu vector changed from %lx to %lx!!", old_fpu, *(volatile long *)0x2cL));
+		old_fpu = *(volatile long *)0x2cL;
+	}
+#endif
 	/* error exit */
 	pb->intout[0] = 0;
 	return 0;

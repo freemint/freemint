@@ -30,6 +30,9 @@
 #include "global.h"
 #include "xa_types.h"
 
+long old_fpu;
+
+
 extern char version[32];
 extern char vversion[128];
 
