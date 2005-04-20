@@ -529,8 +529,8 @@ XA_form_popup(enum locks lock, struct xa_client *client, AESPB *pb)
 			}
 			if (x < 4)
 				x = 4;
-			if (y < get_menu_widg()->r.h) //MENU_H)
-				y = get_menu_widg()->r.h; //MENU_H;
+			if (y < get_menu_widg()->r.h)
+				y = get_menu_widg()->r.h;
 			ob->ob_x = 0;
 			ob->ob_y = 0;
 

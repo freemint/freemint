@@ -736,6 +736,7 @@ menu_pop(Tab *tab)
 	if (w)		/* Windowed popup's */
 	{	
 		close_window(tab->lock, w);
+		//display(" wt = %lx", k->wt);
 		delete_window(tab->lock, w);
 		k->popw = NULL;
 	}
@@ -1845,7 +1846,11 @@ static void
 Display_menu_widg(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 {
 	XA_TREE *wt = widg->stuff;
-	OBJECT *obtree = rp_2_ap(wind, widg, &widg->ar);
+	OBJECT *obtree;
+	 
+	assert(wt);
+	obtree = rp_2_ap(wind, widg, &widg->ar);
+	assert(obtree);
 
 	if (wind->dial & created_for_POPUP)
 	{
@@ -1961,7 +1966,7 @@ click_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *wid
 	}
 #endif
 	((XA_TREE *)widg->stuff)->owner->status |= CS_MENU_NAV;
-	
+
 	if (!menu_title(lock, NULL, wind, widg, client->p->pid))
 	{
 		//menu_finish(NULL);
@@ -2004,6 +2009,8 @@ menu_title(enum locks lock, Tab *tab, struct xa_window *wind, XA_WIDGET *widg, i
 	wt = widg->stuff;
 	tab->client = wt->owner;
 
+	//display("menu_title: wt = %lx (obtree = %lx, links %d)", wt, wt->tree, wt->links);
+	
 	/* Convert relative coords and window location to absolute screen location */
 	rp_2_ap(wind, widg, &r);
 
@@ -2116,6 +2123,8 @@ set_menu_widget(struct xa_window *wind, struct xa_client *owner, XA_TREE *menu)
 	menu->widg = widg;
 	menu->links++;
 
+	//display("set_menu_widget: wt = %lx (obtree=%lx, links %d)", menu, menu->tree, menu->links);
+	
 	/* additional fix to fit in window */
 	obtree->ob_width  = obtree[obtree->ob_head].ob_width  = obtree[obtree->ob_tail].ob_width  = wind->wa.w;
 	obtree->ob_height = obtree[obtree->ob_head].ob_height = obtree[obtree->ob_tail].ob_height = widg->r.h - 1; //wind->wa.w;
@@ -2157,10 +2166,13 @@ set_popup_widget(Tab *tab, struct xa_window *wind, int obj)
 		((XA_TREE *)widg->stuff)->widg = NULL;
 		((XA_TREE *)widg->stuff)->links--;
 	}
-
+	
+	
 	wt->is_menu = true;
 	wt->widg = widg;
 	wt->links++;
+	
+	//display("set_popup_widget: wt = %lx (obtree = %lx, links %d)", wt, wt->tree, wt->links);
 
 	if (frame < 0)
 		frame = 0;

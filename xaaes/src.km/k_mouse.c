@@ -266,7 +266,7 @@ static bool
 add_client_md(struct xa_client *client, const struct moose_data *md)
 {
 	struct moose_data *mdt = client->md_tail;
-	
+
 	mdt++;
 	if (mdt > client->md_end)
 		mdt = client->mdb;

@@ -382,6 +382,7 @@ k_init(void)
 	/* Do some itialisation */
 	init_fsel();
 #endif
+	init_client_mdbuff(C.Aes);		/* In xa_appl.c */
 
 	/* Create the root (desktop) window
 	 * - We don't want messages from it, so make it a NO_MESSAGES window
