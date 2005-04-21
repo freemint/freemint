@@ -601,6 +601,8 @@ open_launcher(enum locks lock)
 }
 #endif
 
+
+#if 0
 static struct xa_wtexture test_texture =
 {
 	0, 0, NULL,
@@ -710,7 +712,7 @@ open_imgload(enum locks lock)
 			  handle_imgload, NULL);
 	
 }
-
+#endif
 
 static struct xa_window *systemalerts_win = NULL;
 

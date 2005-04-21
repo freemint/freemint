@@ -236,9 +236,6 @@ set_next_menu(struct xa_client *new, bool do_topwind)
 		struct xa_widget *widg = get_menu_widg();
 		struct xa_window *top = NULL;
 
-		//display("set_next_menu: std=%lx, nxt=%lx for %s",
-		//	new->std_menu, new->nxt_menu, new->name);
-
 		if (new->nxt_menu)
 		{
 			new->std_menu = new->nxt_menu;
@@ -246,7 +243,7 @@ set_next_menu(struct xa_client *new, bool do_topwind)
 		}
 		
 		/* menu widget.tree */
-		if ((is_infront(new) || (!infront->std_menu && !infront->nxt_menu))) // && new->std_menu && new->std_menu != widg->stuff) /* Different menu? */
+		if ((is_infront(new) || (!infront->std_menu && !infront->nxt_menu)))
 		{
 			if (new->std_menu && new->std_menu != widg->stuff)
 			{
@@ -308,8 +305,8 @@ swap_menu(enum locks lock, struct xa_client *new, struct widget_tree *new_menu, 
 	{
 		if (lock_menustruct(p, true))
 		{
-		//	display("swap_menu: now. std=%lx, new_menu=%lx, nxt_menu = %lx for %s",
-		//		new->std_menu, new_menu, new->nxt_menu, new->name);
+			DIAG((D_appl, NULL, "swap_menu: now. std=%lx, new_menu=%lx, nxt_menu = %lx for %s",
+				new->std_menu, new_menu, new->nxt_menu, new->name));
 			
 			if (new_menu)
 				new->nxt_menu = new_menu;
@@ -324,8 +321,8 @@ swap_menu(enum locks lock, struct xa_client *new, struct widget_tree *new_menu, 
 			 * holder of menustruct lock is done, it checks this variable
 			 * and does a "delayed menu swap"
 			 */
-		//	display("swap_menu: later. std=%lx, new_menu=%lx, nxt_menu = %lx for %s",
-		//		new->std_menu, new_menu, new->nxt_menu, new->name);
+			DIAG((D_appl, NULL, "swap_menu: later. std=%lx, new_menu=%lx, nxt_menu = %lx for %s",
+				new->std_menu, new_menu, new->nxt_menu, new->name));
 			
 			if (new_menu)
 				new->nxt_menu = new_menu;
@@ -341,7 +338,6 @@ swap_menu(enum locks lock, struct xa_client *new, struct widget_tree *new_menu, 
 	{
 		DIAG((D_appl, NULL, "  --   with desktop=%lx", new->desktop));
 		set_desktop(new->desktop);
-		//redraw_menu(lock);
 	}
 	DIAG((D_appl, NULL, "exit ok"));
 }

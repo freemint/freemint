@@ -202,13 +202,11 @@ k_init(void)
 			DIAGS(("Default screenmode"));
 		}
 		DIAGS(("Screenmode is: %d", mode));
-		display("Screenmode is: %d", mode);
 		
 		work_in[0] = mode;
 
 		v_opnwk(work_in, &(C.P_handle), work_out);
 		DIAGS(("Physical work station opened: %d", C.P_handle));
-		display("Physical work station opened: %d", C.P_handle);
 
 		if (C.P_handle == 0)
 		{
@@ -236,7 +234,6 @@ k_init(void)
 	/* Open us a virtual workstation for XaAES to play with */
 	C.vh = C.P_handle;
 	v_opnvwk(work_in, &C.vh, work_out);
-	display("AES virtual vdi handle = %d", C.vh);
 
 	if (C.vh == 0)
 	{
