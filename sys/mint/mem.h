@@ -162,7 +162,6 @@ typedef MEMREGION **MMAP;
 /* For 68000 machines (always short of RAM) we may try to decrease
  * the page size. This should save some memory per process.
  */
-
 # define QUANTUM	0x0800L
 # define TOS_MEM	(QUANTUM*4)
 # define KEEP_MEM	(QUANTUM*4)
