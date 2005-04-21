@@ -2600,7 +2600,7 @@ d_g_title(enum locks lock, struct widget_tree *wt, const RECT *clip)
 
 	if (ob->ob_state & OS_SELECTED && wt->menu_line)
 		/* very special!!! */
-		write_selection(-1, &r);
+		write_selection(0, &r);
 
 	done(OS_SELECTED);
 }

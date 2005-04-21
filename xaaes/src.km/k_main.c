@@ -437,12 +437,12 @@ init_moose(void)
 				{
 					vex_wheelv(C.P_handle, vecs.whlv, (void **)(&svwhlv));
 					DIAGS(("Wheel support present"));
-					display("Wheel support present");
+					//display("Wheel support present");
 				}
 				else
 				{
 					DIAGS(("No wheel support"));
-					display("No wheel support present");
+					//display("No wheel support present");
 				}
 
 				if (adi_ioctl(C.adi_mouse, MOOSE_DCLICK, (long)cfg.double_click_time))
@@ -790,6 +790,11 @@ k_main(void *dummy)
 	 */
 
 	C.AESpid = p_getpid();
+
+	/*
+	 * Set MiNT domain, else keyboard stuff dont work correctly
+	 */
+	p_domain(1);
 	
 	setup_common();
 	
