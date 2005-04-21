@@ -393,7 +393,7 @@ module_init(void *initfunc, struct kerinfo *k)
 		: "d0", "d1", "d2", "a0", "a1", "a2",	/* clobbered regs */	 
 		"memory"	 
 	);	 
-
+	
 	return ret;	 
 }
 #endif
@@ -586,6 +586,8 @@ run_km(const char *path)
 		long _cdecl (*run)(struct kentry *, const char *path);
 		
 		FORCE("run_km(%s) ok (bp 0x%lx)!", path, bp);
+		
+		//sys_c_conin();
 		
 		run = (long _cdecl (*)(struct kentry *, const char *))bp->p_tbase;
 		err = (*run)(&kentry, path);

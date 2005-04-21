@@ -841,8 +841,9 @@ scan2asc(uchar scancode)
 	}
 
 	/* I think that Ctrl key works as this:
+	 * Ozk: Yes, but only when _ONLY_ Ctrl is pressed? .. not sure, but.
 	 */
-	if (shift & MM_CTRL)
+	if ((shift & MM_CTRL) && !(shift & (MM_ALTERNATE|MM_ALTGR)))
 	{
 		if (asc == 0x0d)
 			asc = 0x0a;		/* God bless great ideas */
@@ -850,7 +851,6 @@ scan2asc(uchar scancode)
 		if ((asc & 0x80) == 0)
 			asc &= 0x1f;
 	}
-
 	return asc;
 }
 
@@ -1176,7 +1176,6 @@ ikbd_scan (ushort scancode, IOREC_T *rec)
 	if (make)
 	{
 		ascii = scan2asc((uchar)scan);
-
 		put_key_into_buf(shift, (uchar)scan, 0, ascii);
 	}
 }
