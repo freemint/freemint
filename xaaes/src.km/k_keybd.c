@@ -460,6 +460,7 @@ keyboard_input(enum locks lock)
 		key.norm = 0;
 
 		DIAGS(("f_getchar: 0x%08lx, AES=%x, NORM=%x", key.raw.bcon, key.aes, key.norm));
+		//display("f_getchar: 0x%08lx, AES=%x, NORM=%x", key.raw.bcon, key.aes, key.norm);
 
 		if (!kernel_key(lock, &key))
 			XA_keyboard_event(lock, &key);

@@ -1061,13 +1061,11 @@ set(SCROLL_INFO *list,
 										hidem();
 										if (d.h > 4)
 										{
-											//display("form copy");
 											form_copy(&s, &d);
 											s.h = d.y - s.y;
 										}
 										else
 										{
-											//display("all redraw");
 											s.h += (d.y - s.y);
 										}
 										draw_slist(0, list, NULL, &s);
@@ -1777,7 +1775,6 @@ free_scroll_entry(struct scroll_info *list, struct scroll_entry *this, long *hei
 
 	if (!this)
 	{
-		//display("keh farsken");
 		return this;
 	}
 
@@ -2957,11 +2954,10 @@ slist_msg_handler(
 	short amount, msgt;
 
 	ob = wind->winob + wind->winitem;
-	list = object_get_slist(ob); //(SCROLL_INFO *)object_get_spec(ob)->index;
+	list = object_get_slist(ob);
 	top = list->top;
 	oldp = list->start_y;
 	check_movement(list);
-	//display("msg...");	
 	switch (msg[0])		/* message number */
 	{
 	case WM_ARROWED:
