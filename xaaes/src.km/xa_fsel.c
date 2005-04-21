@@ -742,6 +742,7 @@ fs_enter_dir(struct fsel_data *fs, struct scroll_info *list, struct scroll_entry
 		p.idx = 0;
 		list->get(list, dir_ent, SEGET_TEXTPTR, &p);
 		strcat(fs->root, p.ret.ptr);
+		fs->selected_dir = NULL;
 	}
 	if ((drv = get_drv(fs->root)) >= 0)
 		strcpy(fs_paths[drv], fs->root);
