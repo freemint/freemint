@@ -1655,12 +1655,12 @@ scc_intrwrap (void)
 	
 	asm volatile
 	(
-		"_scca_txempty:
-		 movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)
-		 move.l  _iovar_scca,%%a0
-		 bsr     _scc_txempty
-		 movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2
-		 rte"
+		"_scca_txempty:\n\t" \
+		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
+		 "move.l  _iovar_scca,%%a0\n\t" \
+		 "bsr     _scc_txempty\n\t" \
+		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
+		 "rte"
 		: 			/* output register */
 		:  			/* input registers */
 		 			/* clobbered */
@@ -1668,12 +1668,12 @@ scc_intrwrap (void)
 	
 	asm volatile
 	(
-		"_scca_rxavail:
-		 movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)
-		 move.l  _iovar_scca,%%a0
-		 bsr     _scc_rxavail
-		 movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2
-		 rte"
+		"_scca_rxavail:\n\t" \
+		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
+		 "move.l  _iovar_scca,%%a0\n\t" \
+		 "bsr     _scc_rxavail\n\t" \
+		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
+		 "rte"
 		: 			/* output register */
 		:  			/* input registers */
 		 			/* clobbered */
@@ -1681,12 +1681,12 @@ scc_intrwrap (void)
 	
 	asm volatile
 	(
-		"_scca_stchange:
-		 movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)
-		 move.l  _iovar_scca,%%a0
-		 bsr     _scc_stchange
-		 movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2
-		 rte"
+		"_scca_stchange:\n\t" \
+		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
+		 "move.l  _iovar_scca,%%a0\n\t" \
+		 "bsr     _scc_stchange\n\t" \
+		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
+		 "rte"
 		: 			/* output register */
 		:  			/* input registers */
 		 			/* clobbered */
@@ -1694,12 +1694,12 @@ scc_intrwrap (void)
 	
 	asm volatile
 	(
-		"_scca_special:
-		 movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)
-		 move.l  _iovar_scca,%%a0
-		 bsr     _scc_special
-		 movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2
-		 rte"
+		"_scca_special:\n\t" \
+		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
+		 "move.l  _iovar_scca,%%a0\n\t" \
+		 "bsr     _scc_special\n\t" \
+		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
+		 "rte"
 		: 			/* output register */
 		:  			/* input registers */
 		 			/* clobbered */
@@ -1712,12 +1712,12 @@ scc_intrwrap (void)
 	
 	asm volatile
 	(
-		"_sccb_txempty:
-		 movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)
-		 move.l  _iovar_sccb,%%a0
-		 bsr     _scc_txempty
-		 movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2
-		 rte"
+		"_sccb_txempty:\n\t" \
+		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
+		 "move.l  _iovar_sccb,%%a0\n\t" \
+		 "bsr     _scc_txempty\n\t" \
+		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
+		 "rte"
 		: 			/* output register */
 		:  			/* input registers */
 		 			/* clobbered */
@@ -1725,12 +1725,12 @@ scc_intrwrap (void)
 	
 	asm volatile
 	(
-		"_sccb_rxavail:
-		 movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)
-		 move.l  _iovar_sccb,%%a0
-		 bsr     _scc_rxavail
-		 movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2
-		 rte"
+		"_sccb_rxavail:\n\t" \
+		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
+		 "move.l  _iovar_sccb,%%a0\n\t" \
+		 "bsr     _scc_rxavail\n\t" \
+		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
+		 "rte"
 		: 			/* output register */
 		:  			/* input registers */
 		 			/* clobbered */
@@ -1738,12 +1738,12 @@ scc_intrwrap (void)
 	
 	asm volatile
 	(
-		"_sccb_stchange:
-		 movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)
-		 move.l  _iovar_sccb,%%a0
-		 bsr     _scc_stchange
-		 movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2
-		 rte"
+		"_sccb_stchange:\n\t" \
+		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
+		 "move.l  _iovar_sccb,%%a0\n\t" \
+		 "bsr     _scc_stchange\n\t" \
+		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
+		 "rte"
 		: 			/* output register */
 		:  			/* input registers */
 		 			/* clobbered */
@@ -1751,12 +1751,12 @@ scc_intrwrap (void)
 	
 	asm volatile
 	(
-		"_sccb_special:
-		 movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)
-		 move.l  _iovar_sccb,%%a0
-		 bsr     _scc_special
-		 movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2
-		 rte"
+		"_sccb_special:\n\t" \
+		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
+		 "move.l  _iovar_sccb,%%a0\n\t" \
+		 "bsr     _scc_special\n\t" \
+		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
+		 "rte"
 		: 			/* output register */
 		:  			/* input registers */
 		 			/* clobbered */
