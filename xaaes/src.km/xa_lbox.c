@@ -1085,7 +1085,7 @@ XA_lbox_create(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	obtree = (OBJECT *)pb->addrin[0];
 
-	if (obtree)
+	if (validate_obtree(client, obtree, "XA_lbox_create:"))
 	{
 		XA_TREE *wt;
 		struct xa_lbox_info *lbox;

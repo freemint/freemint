@@ -248,7 +248,6 @@ wdialog_message(enum locks lock, struct xa_client *client, struct wdlg_evnt_parm
 			if (wh != mh)
 				return -1;
 			(*wep->redraw)(wlock, wind, 0, 10, (RECT *)&msg[4]);
-			//wdlg_redraw(wlock, wind, 0, 10, (RECT *)&msg[4]);
 			break;
 		}
 		case WM_TOPPED:
@@ -360,7 +359,6 @@ struct toolbar_handlers wdlg_th =
 	click_wdlg_widget,		/* WidgetBehaviour	*drag;		*/
 	(void *)-1L,			/* WidgetBehaviour	*release;	*/
 	NULL,				/* void (*destruct)(struct xa_widget *w); */
-
 };
 
 unsigned long
@@ -375,7 +373,7 @@ XA_wdlg_create(enum locks lock, struct xa_client *client, AESPB *pb)
 	DIAG((D_wdlg, client, "  --  exit %lx, tree %lx, user_data %lx, data %lx",
 		pb->addrin[0], pb->addrin[1], pb->addrin[2], pb->addrin[3]));
 
-	if (pb->addrin[0] && pb->addrin[1] && pb->addrout)
+	if (pb->addrin[0] && validate_obtree(client, (OBJECT *)pb->addrin[1], "XA_wdlg_create:") && pb->addrout)
 	{
 		XA_WIND_ATTR tp = MOVER|NAME;
 		RECT r, or;
@@ -415,7 +413,6 @@ XA_wdlg_create(enum locks lock, struct xa_client *client, AESPB *pb)
 				wind->wdlg = wdlg;
 
 				wt = set_toolbar_widget(lock, wind, client, obtree, -2, WIP_NOTEXT, &wdlg_th);
-				//wt->exit_form = NULL; //exit_wdial;
 				
 				wdlg->handle = (void *)((long)0xae000000 + wind->handle);
 				wdlg->wind = wind;
@@ -466,11 +463,11 @@ XA_wdlg_open(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	if (wind && (wdlg = wind->wdlg))
 	{
-		RECT r = wind->wa; //r;
+		RECT r = wind->wa;
 		XA_WIND_ATTR tp = (unsigned short)pb->intin[0];
 		char *s;
 
-		tp &= ~STD_WIDGETS; //CLOSER|MOVER|NAME;
+		tp &= ~STD_WIDGETS;
 		tp |= MOVER|NAME;
 
 		/* The following if is a result of the clumsiness of the
@@ -725,7 +722,7 @@ XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				pb->intout[0] = 0;
 				obtree = (OBJECT *)pb->addrin[1];
 
-				if (!obtree)
+				if (!validate_obtree(client, obtree, "XA_wdlg_set_tree:"))
 					return XAC_DONE;
 			
 				if ( obtree != wdlg->std_wt->tree)
@@ -901,214 +898,211 @@ wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms 
 	short ret = 1, cont = 1;
 	struct widget_tree *wt;
 	
-//	{
-		if ((wt = wep->wt))
+	if ((wt = wep->wt))
+	{
+		EVNT *ev = wep->ev;
+		if (ev)
 		{
-			EVNT *ev = wep->ev;
-			if (ev)
+			struct xa_window *top, *wind = wep->wind;
+			OBJECT *obtree;
+			struct moose_data md;
+			short events, obj, nxtobj, dc;
+
+			events = ev->mwhich;
+
+			if (ev->mwhich & MU_MESAG)
 			{
-				struct xa_window *top, *wind = wep->wind;
-				OBJECT *obtree;
-				struct moose_data md;
-				short events, obj, nxtobj, dc;
+				if ((ret = wdialog_message(lock, client, wep)) > 0)
+					ev->mwhich &= ~MU_MESAG;
+			}
 
-				events = ev->mwhich;
+			top = window_list;
 
-				if (ev->mwhich & MU_MESAG)
+			if (ev->mwhich & MU_BUTTON)
+				cpy_ev2md(ev, &md);
+
+			if (ret && (ev->mwhich & MU_BUTTON))
+			{
+				struct xa_window *cwind;
+					cwind = find_window(lock, ev->mx, ev->my);
+
+					if (cwind && wep->wind == cwind && (wind == top || (wind->active_widgets & NO_TOPPED)) )
 				{
-					if ((ret = wdialog_message(lock, client, wep)) > 0) //wdlg_mesag(lock, wind, wt, ev)) > 0)
-						ev->mwhich &= ~MU_MESAG;
-				}
-
-				top = window_list;
-
-				if (ev->mwhich & MU_BUTTON)
-					cpy_ev2md(ev, &md);
-
-				if (ret && (ev->mwhich & MU_BUTTON))
-				{
-					struct xa_window *cwind;
- 					cwind = find_window(lock, ev->mx, ev->my);
-
- 					if (cwind && wep->wind == cwind && (wind == top || (wind->active_widgets & NO_TOPPED)) )
+					if ( (obj = obj_find(wt, 0,7, ev->mx, ev->my, NULL)) >= 0)
 					{
-						if ( (obj = obj_find(wt, 0,7, ev->mx, ev->my, NULL)) >= 0)
+						ev->mwhich &= ~MU_BUTTON;
+						if (!(wind->window_status & XAWS_ICONIFIED))
 						{
-							ev->mwhich &= ~MU_BUTTON;
-							if (!(wind->window_status & XAWS_ICONIFIED))
+							DIAG((D_wdlg, NULL, "wdialog_event(MU_BUTTON): doing form_do on obj=%d for %s",
+								obj, client->name));
+							if ( !form_button(wt,			/* widget tree	*/
+									  obj,			/* Object	*/
+									  &md,			/* moose data	*/
+									  FBF_REDRAW|FBF_DO_SLIST,/* redraw flag	*/
+									  wind->rect_start,	/* rect list	*/
+									  NULL,			/* new state	*/
+									  &nxtobj,		/* next obj	*/
+									  &dc))			/* dc mask	*/
 							{
-								DIAG((D_wdlg, NULL, "wdialog_event(MU_BUTTON): doing form_do on obj=%d for %s",
-									obj, client->name));
-								if ( !form_button(wt,			/* widget tree	*/
-										  obj,			/* Object	*/
-										  &md,			/* moose data	*/
-										  FBF_REDRAW|FBF_DO_SLIST,/* redraw flag	*/
-										  wind->rect_start,	/* rect list	*/
-										  NULL,			/* new state	*/
-										  &nxtobj,		/* next obj	*/
-										  &dc))			/* dc mask	*/
-								{
-									DIAG((D_wdlg, NULL, "wdialog_event(MU_BUTTON): call wdlg->exit(%lx) with exitobj=%d for %s",
-										wep->wdlg ? wep->wdlg->exit : NULL, nxtobj, client->name));
-									wep->obj = nxtobj;
-									if (wep->callout)
-										ret = (*wep->callout)(client, wep->wdlg, ev, nxtobj, ev->mclicks, wep->wdlg->user_data, NULL);
-									else
-										ret = 0;
-								}
-								else
-								{
-									if ( object_is_editable(wt->tree + nxtobj) && nxtobj != wt->e.obj)
-									{
-										if (wt->e.obj >= 0)
-											obj_edit(wt, ED_END, 0, 0, 0, true, &wind->wa, wind->rect_start, NULL, NULL);
-										obj_edit(wt, ED_INIT, nxtobj, 0, -1, true, &wind->wa, wind->rect_start, NULL, &nxtobj);
-										DIAG((D_wdlg, NULL, "wdlg_event(MU_BUTTON): Call wdlg->exit(%lx) with new editobj=%d for %s",
-											wep->wdlg ? wep->wdlg->exit : NULL, nxtobj, client->name));
-										if (wep->callout)
-											ret = (*wep->callout)(client, wep->wdlg, ev, HNDL_EDCH, ev->mclicks, NULL, &nxtobj);
-									}
-								}							
-							}
-							else if (ev->mclicks == 2)
-							{
-								DIAG((D_wdlg, NULL, "wdlg_event(MU_BUTTON): Generate WM_UNICONIFY for %s",
-									client->name));
-								ev->mclicks = 0;
-								ev->mwhich |= MU_MESAG;
-								ev->msg[0] = WM_UNICONIFY;
-								ev->msg[3] = wind->handle;
-								ev->msg[4] = -1;
-								ev->msg[5] = -1;
-								ev->msg[6] = -1;
-								ev->msg[7] = -1;
-								ret = wdialog_message(lock, client, wep);
-							}
-						}
-					}
-					/* Ozk:
-					 * Window needs to be topped
-					 */
-					else if (cwind && wind == cwind)
-					{
-						DIAG((D_wdlg, NULL, "wdlg_event(MU_BUTTON): topping window %d for %s",
-							wind->handle, client->name));
-
-						if (is_hidden(wind))
-							unhide_window(lock, wind, true);
-						top_window(lock, true, true, wind, (void *)-1L);
-						ret = 1;
-						cont = 0;
-					}
-					DIAG((D_wdlg, NULL, "wdlg_event(MU_BUTTON) done! (ret=%d, cont=%d)", ret, cont));
-				}
-
-				if ( ret && cont && wind == top && (ev->mwhich & MU_KEYBD) )
-				{
-					unsigned short key = ev->key;
-
-					obtree = wt->tree;
-					nxtobj = form_cursor(wt, ev->key, wt->e.obj, true, wind->rect_start);
-					
-					if (nxtobj >= 0)
-					{
-						DIAG((D_wdlg, NULL, "wdlg_event(MU_KEYBD): call HNDL_EDCH exit(%lx) with new edobj=%d for %s",
-							nxtobj, client->name));
-						
-						if (nxtobj != wt->e.obj)
-						{
-							obj_edit(wt, ED_END, 0, 0, 0, true, &wind->wa, wind->rect_start, NULL, NULL);
-							obj_edit(wt, ED_INIT, nxtobj, 0, -1, true, &wind->wa, wind->rect_start, NULL, NULL);
-							if (wep->callout)
-								ret = (*wep->callout)(client, wep->wdlg, ev, HNDL_EDCH, 0, NULL, &nxtobj);
-						}
-					}
-					else 
-					{
-						if (key == 0x1c0d || key == 0x720d)
-						{
-							nxtobj = ob_find_flst(obtree, OF_DEFAULT, 0, 0, OS_DISABLED, OF_LASTOB, 0);
-							DIAG((D_wdlg, NULL, "wdlg_event(MU_KEYBD): Got RETURN key - default obj=%d for %s",
-								nxtobj, client->name));
-						}
-						else if (key == 0x6100)
-						{
-							nxtobj = ob_find_cancel(obtree);
-							DIAG((D_wdlg, NULL, "wdlg_event(MU_KEYBD): Got TAB - cancel obj=%d for %s",
-								nxtobj, client->name));
-						}
-						else
-						{
-							short ks = ev->kstate;
-							short nk = normkey(ks, key);
-							
-							if ( (ks & (K_CTRL|K_ALT)) == K_ALT )
-								nxtobj = ob_find_shortcut(obtree, nk);
-							DIAG((D_wdlg, NULL, "wdlg_event(MU_KEYBD): shortcut %d for %s",
-								nxtobj, client->name));
-						}
-						if (nxtobj >= 0)
-						{
-							if (!(events & MU_BUTTON))
-							{
-								check_mouse(client, &md.cstate, &md.x, &md.y);
-								md.state = MBS_LEFT;
-							}
-							DIAG((D_wdlg, NULL, "wdlg_event(MU_KEYBD): doing form_button on obj=%d for %s",
-								nxtobj, client->name));
-							if ( !form_button(wt,
-									  nxtobj,
-									  &md,
-									  FBF_REDRAW,
-									  wind->rect_start,
-									  NULL,
-									  &nxtobj,
-									  &dc))
-							{
-								DIAG((D_wdlg, NULL, "wdlg_event(MU_KEYBD): call exit(%lx) with exitobj=%d for %s",
+								DIAG((D_wdlg, NULL, "wdialog_event(MU_BUTTON): call wdlg->exit(%lx) with exitobj=%d for %s",
 									wep->wdlg ? wep->wdlg->exit : NULL, nxtobj, client->name));
 								wep->obj = nxtobj;
 								if (wep->callout)
-									ret = (*wep->callout)(client, wep->wdlg, ev, nxtobj, 0, wep->wdlg->user_data, NULL);
+									ret = (*wep->callout)(client, wep->wdlg, ev, nxtobj, ev->mclicks, wep->wdlg->user_data, NULL);
 								else
 									ret = 0;
 							}
+							else
+							{
+								if ( object_is_editable(wt->tree + nxtobj) && nxtobj != wt->e.obj)
+								{
+									if (wt->e.obj >= 0)
+										obj_edit(wt, ED_END, 0, 0, 0, true, &wind->wa, wind->rect_start, NULL, NULL);
+									obj_edit(wt, ED_INIT, nxtobj, 0, -1, true, &wind->wa, wind->rect_start, NULL, &nxtobj);
+									DIAG((D_wdlg, NULL, "wdlg_event(MU_BUTTON): Call wdlg->exit(%lx) with new editobj=%d for %s",
+										wep->wdlg ? wep->wdlg->exit : NULL, nxtobj, client->name));
+									if (wep->callout)
+										ret = (*wep->callout)(client, wep->wdlg, ev, HNDL_EDCH, ev->mclicks, NULL, &nxtobj);
+								}
+							}							
 						}
-						else if (key != 0x1c0d && key != 0x720d)
+						else if (ev->mclicks == 2)
 						{
-							DIAG((D_wdlg, NULL, "wdlg_event(MU_KEYBD): HNDL_EDIT exit(%lx) with key=%x for %s",
-								wep->wdlg ? wep->wdlg->exit : NULL, key, client->name));
-							obj_edit(wt,
-								 ED_CHAR,
-								 wt->e.obj,
-								 key,
-								 0,
-								 true,
-								 &wind->wa, wind->rect_start,
-								 NULL,
-								 NULL);
-							if (wep->callout)
-								ret = (*wep->callout)(client, wep->wdlg, ev, HNDL_EDIT, 0, NULL, &key);
-							ev->mwhich &= ~MU_KEYBD;
+							DIAG((D_wdlg, NULL, "wdlg_event(MU_BUTTON): Generate WM_UNICONIFY for %s",
+								client->name));
+							ev->mclicks = 0;
+							ev->mwhich |= MU_MESAG;
+							ev->msg[0] = WM_UNICONIFY;
+							ev->msg[3] = wind->handle;
+							ev->msg[4] = -1;
+							ev->msg[5] = -1;
+							ev->msg[6] = -1;
+							ev->msg[7] = -1;
+							ret = wdialog_message(lock, client, wep);
 						}
 					}
+				}
+				/* Ozk:
+				 * Window needs to be topped
+				 */
+				else if (cwind && wind == cwind)
+				{
+					DIAG((D_wdlg, NULL, "wdlg_event(MU_BUTTON): topping window %d for %s",
+						wind->handle, client->name));
+
+					if (is_hidden(wind))
+						unhide_window(lock, wind, true);
+					top_window(lock, true, true, wind, (void *)-1L);
+					ret = 1;
+					cont = 0;
+				}
+				DIAG((D_wdlg, NULL, "wdlg_event(MU_BUTTON) done! (ret=%d, cont=%d)", ret, cont));
+			}
+
+			if ( ret && cont && wind == top && (ev->mwhich & MU_KEYBD) )
+			{
+				unsigned short key = ev->key;
+
+				obtree = wt->tree;
+				nxtobj = form_cursor(wt, ev->key, wt->e.obj, true, wind->rect_start);
+				
+				if (nxtobj >= 0)
+				{
+					DIAG((D_wdlg, NULL, "wdlg_event(MU_KEYBD): call HNDL_EDCH exit(%lx) with new edobj=%d for %s",
+						nxtobj, client->name));
+					
+					if (nxtobj != wt->e.obj)
+					{
+						obj_edit(wt, ED_END, 0, 0, 0, true, &wind->wa, wind->rect_start, NULL, NULL);
+						obj_edit(wt, ED_INIT, nxtobj, 0, -1, true, &wind->wa, wind->rect_start, NULL, NULL);
+						if (wep->callout)
+							ret = (*wep->callout)(client, wep->wdlg, ev, HNDL_EDCH, 0, NULL, &nxtobj);
+					}
+				}
+				else 
+				{
+					if (key == 0x1c0d || key == 0x720d)
+					{
+						nxtobj = ob_find_flst(obtree, OF_DEFAULT, 0, 0, OS_DISABLED, OF_LASTOB, 0);
+						DIAG((D_wdlg, NULL, "wdlg_event(MU_KEYBD): Got RETURN key - default obj=%d for %s",
+							nxtobj, client->name));
+					}
+					else if (key == 0x6100)
+					{
+						nxtobj = ob_find_cancel(obtree);
+						DIAG((D_wdlg, NULL, "wdlg_event(MU_KEYBD): Got TAB - cancel obj=%d for %s",
+							nxtobj, client->name));
+					}
+					else
+					{
+						short ks = ev->kstate;
+						short nk = normkey(ks, key);
+						
+						if ( (ks & (K_CTRL|K_ALT)) == K_ALT )
+							nxtobj = ob_find_shortcut(obtree, nk);
+						DIAG((D_wdlg, NULL, "wdlg_event(MU_KEYBD): shortcut %d for %s",
+							nxtobj, client->name));
+					}
 					if (nxtobj >= 0)
+					{
+						if (!(events & MU_BUTTON))
+						{
+							check_mouse(client, &md.cstate, &md.x, &md.y);
+							md.state = MBS_LEFT;
+						}
+						DIAG((D_wdlg, NULL, "wdlg_event(MU_KEYBD): doing form_button on obj=%d for %s",
+							nxtobj, client->name));
+						if ( !form_button(wt,
+								  nxtobj,
+								  &md,
+								  FBF_REDRAW,
+								  wind->rect_start,
+								  NULL,
+								  &nxtobj,
+								  &dc))
+						{
+							DIAG((D_wdlg, NULL, "wdlg_event(MU_KEYBD): call exit(%lx) with exitobj=%d for %s",
+								wep->wdlg ? wep->wdlg->exit : NULL, nxtobj, client->name));
+							wep->obj = nxtobj;
+							if (wep->callout)
+								ret = (*wep->callout)(client, wep->wdlg, ev, nxtobj, 0, wep->wdlg->user_data, NULL);
+							else
+								ret = 0;
+						}
+					}
+					else if (key != 0x1c0d && key != 0x720d)
+					{
+						DIAG((D_wdlg, NULL, "wdlg_event(MU_KEYBD): HNDL_EDIT exit(%lx) with key=%x for %s",
+							wep->wdlg ? wep->wdlg->exit : NULL, key, client->name));
+						obj_edit(wt,
+							 ED_CHAR,
+							 wt->e.obj,
+							 key,
+							 0,
+							 true,
+							 &wind->wa, wind->rect_start,
+							 NULL,
+							 NULL);
+						if (wep->callout)
+							ret = (*wep->callout)(client, wep->wdlg, ev, HNDL_EDIT, 0, NULL, &key);
 						ev->mwhich &= ~MU_KEYBD;
-				} /* end if ( wind == top && (ev->mwhich & MU_KEYBD) ) */
-			} /* end if (ev) */
-		} /* end if (wt) */
-//	}
+					}
+				}
+				if (nxtobj >= 0)
+					ev->mwhich &= ~MU_KEYBD;
+			} /* end if ( wind == top && (ev->mwhich & MU_KEYBD) ) */
+		} /* end if (ev) */
+	} /* end if (wt) */
 	return ret;
 }
 		
 unsigned long
 XA_wdlg_event(enum locks lock, struct xa_client *client, AESPB *pb)
 {
-	//enum locks wlock = lock|winlist;
-	struct xa_window *wind;//, *top;
+	struct xa_window *wind;
 	struct wdlg_info *wdlg;
 	short handle;
-	short ret = 1; //, cont = 1;
+	short ret = 1;
 
 	CONTROL(0,1,0)
 

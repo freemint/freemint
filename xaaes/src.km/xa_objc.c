@@ -52,7 +52,7 @@ XA_objc_draw(enum locks lock, struct xa_client *client, AESPB *pb)
 	DIAG((D_objc, client, "objc_draw (%d %d %d %d)",
 		pb->intin[0], pb->intin[1], pb->intin[2], pb->intin[3]));
 
-	if (obtree)
+	if (validate_obtree(client, obtree, "XA_objc_draw:"))
 	{
 		XA_TREE *wt;
 #if 0
@@ -106,7 +106,7 @@ XA_objc_offset(enum locks lock, struct xa_client *client, AESPB *pb)
 	OBJECT *obtree = (OBJECT*)pb->addrin[0];
 	CONTROL(1,3,1)
 
-	if (obtree)
+	if (validate_obtree(client, obtree, "XA_objc_offset:"))
 	{
 		pb->intout[0] = ob_offset(obtree,
 					  pb->intin[0],
@@ -125,7 +125,7 @@ XA_objc_find(enum locks lock, struct xa_client *client, AESPB *pb)
 	OBJECT *obtree = (OBJECT *)pb->addrin[0];
 	CONTROL(4,1,1)
 
-	if (obtree)
+	if (validate_obtree(client, obtree, "XA_objc_find:"))
 	{
 		struct widget_tree *wt;
 
@@ -164,7 +164,7 @@ XA_objc_change(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	CONTROL(8,1,1)
 
-	if (obtree)
+	if (validate_obtree(client, obtree, "XA_objc_change:"))
 	{
 		short obj = pb->intin[0];
 		XA_TREE *wt;
@@ -207,7 +207,7 @@ XA_objc_add(enum locks lock, struct xa_client *client, AESPB *pb)
 	DIAG((D_form, client, "xa_objc_add: obtree=%lx, parent=%d, child=%d",
 		obtree, pb->intin[0], pb->intin[1]));
 
-	if (obtree)
+	if (validate_obtree(client, obtree, "XA_objc_add:"))
 		pb->intout[0] = ob_add(obtree, pb->intin[0], pb->intin[1]);
 	else
 		pb->intout[0] = 0;
@@ -223,7 +223,7 @@ XA_objc_delete(enum locks lock, struct xa_client *client, AESPB *pb)
 	OBJECT *obtree = (OBJECT *)pb->addrin[0];
 	CONTROL(1,1,1)
 
-	if (obtree)
+	if (validate_obtree(client, obtree, "XA_objc_delete:"))
 	{
 		ob_remove(obtree, pb->intin[0]);
 		pb->intout[0] = 1;
@@ -240,7 +240,7 @@ XA_objc_order(enum locks lock, struct xa_client *client, AESPB *pb)
 	OBJECT *obtree = (OBJECT *)pb->addrin[0];
 	CONTROL(2,1,1)
 
-	if (obtree)
+	if (validate_obtree(client, obtree, "XA_objc_order:"))
 	{
 		ob_order((OBJECT *)pb->addrin[0], pb->intin[0], pb->intin[1]);
 		pb->intout[0] = 1;
@@ -260,7 +260,7 @@ XA_objc_edit(enum locks lock, struct xa_client *client, AESPB *pb)
 	DIAG((D_form, client, "objc_edit (%d %d %d %d)",
 		pb->intin[0], pb->intin[1], pb->intin[2], pb->intin[3]));
 
-	if (obtree)
+	if (validate_obtree(client, obtree, "XA_objc_edit:"))
 	{
 		XA_TREE *wt;
 

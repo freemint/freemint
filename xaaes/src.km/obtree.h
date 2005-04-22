@@ -29,7 +29,7 @@
 
 #include "xa_types.h"
 #include "mt_gem.h"
-
+bool			validate_obtree(struct xa_client *c, OBJECT *o, char *f);
 bool			object_have_spec(OBJECT *ob);
 OBSPEC *		object_get_spec(OBJECT *ob);
 void			object_set_spec(OBJECT *ob, unsigned long cl);

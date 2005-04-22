@@ -1339,7 +1339,7 @@ XA_rsrc_obfix(enum locks lock, struct xa_client *client, AESPB *pb)
 	DIAG((D_rsrc, client, "rsrc_obfix for %s: tree %lx + %d",
 		c_owner(client), ob, item));
 
-	if (ob)
+	if (validate_obtree(client, ob, "XA_rsrc_fix:"))
 	{
 		obfix(ob, item);
 		pb->intout[0] = 1;
