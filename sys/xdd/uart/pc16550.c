@@ -1847,12 +1847,12 @@ pc16550_intx (void)
 	
 	asm volatile
 	(
-		"_pc16550_int0:
-		 movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)
-		 move.l  _intr_iovar,%%a0
-		 bsr     _pc16550_int
-		 movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2
-		 rte"
+		"_pc16550_int0:\n\t" \
+		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
+		 "move.l  _intr_iovar,%%a0\n\t" \
+		 "bsr     _pc16550_int\n\t" \
+		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
+		 "rte"
 		: 			/* output register */
 		:  			/* input registers */
 		 			/* clobbered */
@@ -1860,12 +1860,12 @@ pc16550_intx (void)
 	
 	asm volatile
 	(
-		"_pc16550_int1:
-		 movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)
-		 move.l  _intr_iovar+4,%%a0
-		 bsr     _pc16550_int
-		 movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2
-		 rte"
+		"_pc16550_int1:\n\t" \
+		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
+		 "move.l  _intr_iovar+4,%%a0\n\t" \
+		 "bsr     _pc16550_int\n\t" \
+		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
+		 "rte"
 		: 			/* output register */
 		:  			/* input registers */
 		 			/* clobbered */
@@ -1873,12 +1873,12 @@ pc16550_intx (void)
 	
 	asm volatile
 	(
-		"_pc16550_int2:
-		 movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)
-		 move.l  _intr_iovar+8,%%a0
-		 bsr     _pc16550_int
-		 movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2
-		 rte"
+		"_pc16550_int2:\n\t" \
+		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
+		 "move.l  _intr_iovar+8,%%a0\n\t" \
+		 "bsr     _pc16550_int\n\t" \
+		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
+		 "rte"
 		: 			/* output register */
 		:  			/* input registers */
 		 			/* clobbered */
@@ -1886,12 +1886,12 @@ pc16550_intx (void)
 	
 	asm volatile
 	(
-		"_pc16550_int3:
-		 movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)
-		 move.l  _intr_iovar+12,%%a0
-		 bsr     _pc16550_int
-		 movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2
-		 rte"
+		"_pc16550_int3:\n\t" \
+		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
+		 "move.l  _intr_iovar+12,%%a0\n\t" \
+		 "bsr     _pc16550_int\n\t" \
+		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
+		 "rte"
 		: 			/* output register */
 		:  			/* input registers */
 		 			/* clobbered */
@@ -1899,12 +1899,12 @@ pc16550_intx (void)
 	
 	asm volatile
 	(
-		"_pc16550_int4:
-		 movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)
-		 move.l  _intr_iovar+16,%%a0
-		 bsr     _pc16550_int
-		 movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2
-		 rte"
+		"_pc16550_int4:\n\t" \
+		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
+		 "move.l  _intr_iovar+16,%%a0\n\t" \
+		 "bsr     _pc16550_int\n\t" \
+		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
+		 "rte"
 		: 			/* output register */
 		:  			/* input registers */
 		 			/* clobbered */
