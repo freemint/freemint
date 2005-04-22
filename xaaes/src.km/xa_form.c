@@ -550,7 +550,7 @@ XA_form_center(enum locks lock, struct xa_client *client, AESPB *pb)
 	DIAG((D_form, client, "XA_form_center for %s ob=%lx o=%lx",
 		c_owner(client), obtree, o));
 
-	if (obtree && o)
+	if (validate_obtree(client, obtree, "XA_form_center:") && o)
 	{
 		RECT r;
 
@@ -587,7 +587,7 @@ XA_form_keybd(enum locks lock, struct xa_client *client, AESPB *pb)
 	DIAG((D_keybd, client, "XA_form_keybd for %s %lx: obj:%d, k:%x, nob:%d",
 		c_owner(client), obtree, pb->intin[0], pb->intin[1], pb->intin[2]));
 
-	if (obtree)
+	if (validate_obtree(client, obtree, "XA_form_keybd:"))
 	{
 		XA_TREE *wt;
 		short ks;
@@ -857,7 +857,7 @@ XA_form_do(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	DIAG((D_form, client, "XA_form_do() for %s. obtree %lx", client->name, obtree));
 	
-	if (obtree)
+	if (validate_obtree(client, obtree, "XA_form_do:"))
 	{
 		struct xa_window *wind;
 		short nextobj;
@@ -968,7 +968,7 @@ XA_form_button(enum locks lock, struct xa_client *client, AESPB *pb)
 	DIAG((D_form, client, "XA_form_button %lx: obj:%d, clks:%d",
 		obtree, obj, pb->intin[1]));
 
-	if (obtree)
+	if (validate_obtree(client, obtree, "XA_form_button:"))
 	{
 		short newstate, nextobj, clickmask;
 

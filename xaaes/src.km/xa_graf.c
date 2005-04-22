@@ -375,22 +375,24 @@ XA_graf_watchbox(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	CONTROL(4,1,1)
 
-	DIAG((D_graf, client, "graf_watchbox"));
+	if (validate_obtree(client, obtree, "XA_graf_watchbox:"))
+	{
+		DIAG((D_graf, client, "graf_watchbox"));
 
-	if (!(wt = obtree_to_wt(client, obtree)))
-		wt = new_widget_tree(client, obtree);
-	if (!wt)
-		wt = set_client_wt(client, obtree);
+		if (!(wt = obtree_to_wt(client, obtree)))
+			wt = new_widget_tree(client, obtree);
+		if (!wt)
+			wt = set_client_wt(client, obtree);
 
-	pb->intout[0] = obj_watch( wt,
-				   pb->intin[1],
-				   pb->intin[2],
-				   pb->intin[3],
-				   NULL,
-				   NULL);
+		pb->intout[0] = obj_watch( wt,
+					   pb->intin[1],
+					   pb->intin[2],
+					   pb->intin[3],
+					   NULL,
+					   NULL);
 
-	DIAG((D_graf,client,"_watchbox"));
-
+		DIAG((D_graf,client,"_watchbox"));
+	}
 	return XAC_DONE;
 }
 
@@ -405,29 +407,30 @@ XA_graf_slidebox(enum locks lock, struct xa_client *client, AESPB *pb)
 	      ci = pb->intin[1];
 
 	CONTROL(3,1,1)
+	if (validate_obtree(client, tree, "XA_graf_slidebox:"))
+	{
+		p = *(RECT *)&tree[pi].ob_x;
+		ob_offset(tree, pi, &p.x, &p.y);
+		c = *(RECT *)&tree[ci].ob_x;
+		ob_offset(tree, ci, &c.x, &c.y);
 
-	p = *(RECT *)&tree[pi].ob_x;
-	ob_offset(tree, pi, &p.x, &p.y);
-	c = *(RECT *)&tree[ci].ob_x;
-	ob_offset(tree, ci, &c.x, &c.y);
+		rect_dist(client, &c, &dist);		/* relative position of mouse in child rectangle */
 
-	rect_dist(client, &c, &dist);		/* relative position of mouse in child rectangle */
+		DIAG((D_graf,client,"XA_graf_slidebox dx:%d, dy:%d, p:%d/%d,%d/%d c:%d/%d,%d/%d",
+			dist.x, dist.y, p, c));
 
-	DIAG((D_graf,client,"XA_graf_slidebox dx:%d, dy:%d, p:%d/%d,%d/%d c:%d/%d,%d/%d",
-		dist.x, dist.y, p, c));
+		drag_box(client, c, &p, &dist, &last);
 
-	drag_box(client, c, &p, &dist, &last);
+		if (pb->intin[2])
+			d = pix_to_sl(last.y - p.y, p.h - c.h);
+		else
+			d = pix_to_sl(last.x - p.x, p.w - c.w);
 
-	if (pb->intin[2])
-		d = pix_to_sl(last.y - p.y, p.h - c.h);
-	else
-		d = pix_to_sl(last.x - p.x, p.w - c.w);
+		pb->intout[0] = d < 0 ? 0 : (d > SL_RANGE ? SL_RANGE : d);
 
-	pb->intout[0] = d < 0 ? 0 : (d > SL_RANGE ? SL_RANGE : d);
-
-	DIAG((D_graf,client,"    --     d:%d last.x%d, last.y%d  p:%d/%d,%d/%d c:%d/%d,%d/%d",
-		d, last.x, last.y, p, c));
-
+		DIAG((D_graf,client,"    --     d:%d last.x%d, last.y%d  p:%d/%d,%d/%d c:%d/%d,%d/%d",
+			d, last.x, last.y, p, c));
+	}
 	return XAC_DONE;
 }
 
