@@ -77,7 +77,7 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 	{
 		DIAG((D_menu,NULL,"MENU_INSTALL"));
 
-		if (mnu)
+		if (validate_obtree(client, mnu, "XA_menu_bar:"))
 		{
 			XA_TREE *mwt = obtree_to_wt(client, mnu);
 
@@ -222,6 +222,9 @@ XA_menu_tnormal(enum locks lock, struct xa_client *client, AESPB *pb)
 	
 	CONTROL(2,1,1)
 
+	if (!validate_obtree(client, tree, "XA_menu_tnormal:"))
+		return XAC_DONE;
+
 	obj = i & ~0x8000;
 	
 	state = tree[obj].ob_state;
@@ -262,6 +265,9 @@ XA_menu_ienable(enum locks lock, struct xa_client *client, AESPB *pb)
 	
 	CONTROL(2,1,1)
 	
+	if (!validate_obtree(client, tree, "XA_menu_ienable:"))
+		return XAC_DONE;
+	
 	redraw = i & 0x8000 ? true : false;
 	obj = i & ~0x8000;
 	state = tree[obj].ob_state;
@@ -296,6 +302,9 @@ XA_menu_icheck(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	CONTROL(2,1,1)
 
+	if (!validate_obtree(client, tree, "XA_menu_icheck:"))
+		return XAC_DONE;
+
 	obj = i & ~0x8000;
 	state = tree[obj].ob_state;
 	
@@ -329,6 +338,9 @@ XA_menu_text(enum locks lock, struct xa_client *client, AESPB *pb)
 	short i = pb->intin[0], obj;
 
 	CONTROL(1,1,2)
+
+	if (!validate_obtree(client, tree, "XA_menu_text:"))
+		return XAC_DONE;
 	
 	obj = i & ~0x8000;
 	
@@ -483,8 +495,8 @@ XA_form_popup(enum locks lock, struct xa_client *client, AESPB *pb)
 	CONTROL(2,1,1)
 
 	pb->intout[0] = -1;
-
-	if (ob)
+	
+	if (validate_obtree(client, ob, "XA_form_popup:"))
 	{
 		Tab *tab;
 
@@ -560,7 +572,7 @@ XA_menu_attach(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	pb->intout[0] = 0;
 
-	if (pb->addrin[0] && pb->addrin[1])
+	if (validate_obtree(client, (OBJECT *)pb->addrin[0], "XA_menu_attach:") && pb->addrin[1])
 	{
 		XA_TREE *wt;
 		MENU *mn;
