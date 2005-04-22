@@ -31,6 +31,9 @@
 #include "xa_global.h"
 #include "k_mouse.h"
 
+#include "mint/signal.h"
+
+
 static inline int max(int a, int b) { return a > b ? a : b; }
 static inline int min(int a, int b) { return a < b ? a : b; }
 
@@ -58,6 +61,19 @@ object_have_spec(OBJECT *ob)
 		return true;
 	}
 	return false;
+}
+
+bool
+validate_obtree(struct xa_client *client, OBJECT *obtree, char *fdesc)
+{
+	if ((long)obtree <= 0x1000L)
+	{
+			/* inform user what's going on */
+		ALERT(("%s: validate OBTREE for %s failed, object ptr = %lx, killing it!", fdesc, client->proc_name, obtree));
+		raise(SIGKILL);
+		return false;
+	}
+	return true;
 }
 
 /*

@@ -528,13 +528,15 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 			list->set(list, dir_ent, SESET_USRFLAGS, uf, 0);
 		}
 	}
-	/* If realtime directory building, disable this */
 	if (!fs->rtbuild)
 	{
 		if (dir_ent)
 			list->set(list, dir_ent, SESET_OPEN, 1, NORMREDRAW);
 		else
+		{
+			list->slider(list, NORMREDRAW);
 			list->redraw(list, NULL);
+		}
 	}
 	else if (dir_ent)
 	{
@@ -585,7 +587,7 @@ refresh_filelist(enum locks lock, struct fsel_data *fs, SCROLL_ENTRY *dir_ent)
 		{
 			list->start = list->del(list, list->start, false);
 		}
-		list->redraw(list, NULL);
+		//list->redraw(list, NULL);
 	}
 	
 	graf_mouse(HOURGLASS, NULL, NULL, false);
