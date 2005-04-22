@@ -1719,12 +1719,12 @@ mfp_intrwrap (void)
 
 	asm volatile
 	(
-		"_mfp1_dcdint:
-		 movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)
-		 move.l  _iovar_mfp,%%a0
-		 bsr     _mfp_dcdint
-		 movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2
-		 rte"
+		"_mfp1_dcdint:\n\t" \
+		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
+		 "move.l  _iovar_mfp,%%a0\n\t" \
+		 "bsr     _mfp_dcdint\n\t" \
+		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
+		 "rte"
 		: 			/* output register */
 		:  			/* input registers */
 		 			/* clobbered */
@@ -1732,12 +1732,12 @@ mfp_intrwrap (void)
 
 	asm volatile
 	(
-		"_mfp1_ctsint:
-		 movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)
-		 move.l  _iovar_mfp,%%a0
-		 bsr     _mfp_ctsint
-		 movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2
-		 rte"
+		"_mfp1_ctsint:\n\t" \
+		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
+		 "move.l  _iovar_mfp,%%a0\n\t" \
+		 "bsr     _mfp_ctsint\n\t" \
+		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
+		 "rte"
 		: 			/* output register */
 		:  			/* input registers */
 		 			/* clobbered */
@@ -1745,12 +1745,12 @@ mfp_intrwrap (void)
 
 	asm volatile
 	(
-		"_mfp1_txerror:
-		 movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)
-		 move.l  _iovar_mfp,%%a0
-		 bsr     _mfp_txerror
-		 movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2
-		 rte"
+		"_mfp1_txerror:\n\t" \
+		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
+		 "move.l  _iovar_mfp,%%a0\n\t" \
+		 "bsr     _mfp_txerror\n\t" \
+		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
+		 "rte"
 		: 			/* output register */
 		:  			/* input registers */
 		 			/* clobbered */
@@ -1758,12 +1758,12 @@ mfp_intrwrap (void)
 
 	asm volatile
 	(
-		"_mfp1_txempty:
-		 movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)
-		 move.l  _iovar_mfp,%%a0
-		 bsr     _mfp_txempty
-		 movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2
-		 rte"
+		"_mfp1_txempty:\n\t" \
+		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
+		 "move.l  _iovar_mfp,%%a0\n\t" \
+		 "bsr     _mfp_txempty\n\t" \
+		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
+		 "rte"
 		: 			/* output register */
 		:  			/* input registers */
 		 			/* clobbered */
@@ -1771,12 +1771,12 @@ mfp_intrwrap (void)
 
 	asm volatile
 	(
-		"_mfp1_rxerror:
-		 movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)
-		 move.l  _iovar_mfp,%%a0
-		 bsr     _mfp_rxerror
-		 movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2
-		 rte"
+		"_mfp1_rxerror:\n\t" \
+		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
+		 "move.l  _iovar_mfp,%%a0\n\t" \
+		 "bsr     _mfp_rxerror\n\t" \
+		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
+		 "rte"
 		: 			/* output register */
 		:  			/* input registers */
 		 			/* clobbered */
@@ -1784,12 +1784,12 @@ mfp_intrwrap (void)
 
 	asm volatile
 	(
-		"_mfp1_rxavail:
-		 movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)
-		 move.l  _iovar_mfp,%%a0
-		 bsr     _mfp_rxavail
-		 movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2
-		 rte"
+		"_mfp1_rxavail:\n\t" \
+		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
+		 "move.l  _iovar_mfp,%%a0\n\t" \
+		 "bsr     _mfp_rxavail\n\t" \
+		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
+		 "rte"
 		: 			/* output register */
 		:  			/* input registers */
 		 			/* clobbered */
@@ -1802,12 +1802,12 @@ mfp_intrwrap (void)
 
 	asm volatile
 	(
-		"_ttmfp1_txerror:
-		 movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)
-		 move.l  _iovar_mfp_tt,%%a0
-		 bsr     _mfp_txerror
-		 movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2
-		 rte"
+		"_ttmfp1_txerror:\n\t" \
+		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
+		 "move.l  _iovar_mfp_tt,%%a0\n\t" \
+		 "bsr     _mfp_txerror\n\t" \
+		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
+		 "rte"
 		: 			/* output register */
 		:  			/* input registers */
 		 			/* clobbered */
@@ -1815,12 +1815,12 @@ mfp_intrwrap (void)
 
 	asm volatile
 	(
-		"_ttmfp1_txempty:
-		 movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)
-		 move.l  _iovar_mfp_tt,%%a0
-		 bsr     _mfp_txempty
-		 movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2
-		 rte"
+		"_ttmfp1_txempty:\n\t" \
+		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
+		 "move.l  _iovar_mfp_tt,%%a0\n\t" \
+		 "bsr     _mfp_txempty\n\t" \
+		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
+		 "rte"
 		: 			/* output register */
 		:  			/* input registers */
 		 			/* clobbered */
@@ -1828,12 +1828,12 @@ mfp_intrwrap (void)
 
 	asm volatile
 	(
-		"_ttmfp1_rxerror:
-		 movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)
-		 move.l  _iovar_mfp_tt,%%a0
-		 bsr     _mfp_rxerror
-		 movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2
-		 rte"
+		"_ttmfp1_rxerror:\n\t" \
+		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
+		 "move.l  _iovar_mfp_tt,%%a0\n\t" \
+		 "bsr     _mfp_rxerror\n\t" \
+		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
+		 "rte"
 		: 			/* output register */
 		:  			/* input registers */
 		 			/* clobbered */
@@ -1841,12 +1841,12 @@ mfp_intrwrap (void)
 
 	asm volatile
 	(
-		"_ttmfp1_rxavail:
-		 movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)
-		 move.l  _iovar_mfp_tt,%%a0
-		 bsr     _mfp_rxavail
-		 movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2
-		 rte"
+		"_ttmfp1_rxavail:\n\t" \
+		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
+		 "move.l  _iovar_mfp_tt,%%a0\n\t" \
+		 "bsr     _mfp_rxavail\n\t" \
+		 "movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2\n\t" \
+		 "rte"
 		: 			/* output register */
 		:  			/* input registers */
 		 			/* clobbered */
