@@ -500,7 +500,7 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 
 	if (!C.next_menu || (C.next_menu && C.next_menu == client))
 		C.next_menu = top_owner;
-	
+
 	if ((client->p == menustruct_locked()) ||
 	    (TAB_LIST_START && (TAB_LIST_START)->client == client))
 	{
@@ -567,15 +567,19 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 	 * sending CH_EXIT is done by proc_exit()
 	 */
 	 
+	app_in_front(lock, top_owner, true, true);
+
 	/*
 	 * remove any references
 	 */
-	
+
 	if (client->desktop)
 	{
 		struct xa_client *newdt;
 		if (get_desktop() == client->desktop)
 		{
+			set_desktop(C.Aes->desktop);
+
 			if (top_owner->desktop && !(top_owner->status & CS_EXITING))
 			{
 				newdt = top_owner;
@@ -594,7 +598,7 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 		client->desktop = NULL;
 	}
 
-	app_in_front(lock, top_owner, true, true);
+	//app_in_front(lock, top_owner, true, true);
 
 	/*
 	 * remove from client list

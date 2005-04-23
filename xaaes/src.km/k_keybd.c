@@ -409,7 +409,7 @@ kernel_key(enum locks lock, struct rawkey *key)
 				display("%s %lx (%d)", vecnames[i], *vec++, i);
 			return true;
 		}
-	#endif		
+	#endif
 	#if 0
 		case 'P':
 		{

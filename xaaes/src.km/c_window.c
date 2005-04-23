@@ -1858,6 +1858,7 @@ free_standard_widgets(struct xa_window *wind)
 	int i;
 	
 	DIAGS(("free_standard_widgets for window %d, owner %s", wind->handle, wind->owner->name));
+	
 	for (i = 0; i < XA_MAX_WIDGETS; i++)
 	{
 		//DIAGS(("call remove_widget for widget %d", i));
@@ -2180,6 +2181,8 @@ calc_window(enum locks lock, struct xa_client *client, int request, ulong tp, WI
 	RECT o;
 
 	DIAG((D_wind,client,"calc %s from %d/%d,%d/%d", request ? "work" : "border", r));
+
+	dial |= created_for_CALC;
 
 	/* Create a temporary window with the required widgets */
 	w_temp = create_window(lock, NULL, NULL, client, true, tp, dial, thinframe, thinwork, r, 0, 0);
