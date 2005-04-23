@@ -1036,7 +1036,6 @@ display_env(char **env, int which)
 		}
 		else
 		{
-			//display("Environment as row of pointers:\n");
 			DIAGS(("Environment as row of pointers:"));
 			while (*env)
 			{

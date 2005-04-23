@@ -956,7 +956,7 @@ fileselector_form_exit(struct xa_client *client,
 #endif
 		{
 			/* Just return with current selection */
-			fs_item_action(list, NULL, NULL);
+			fs_item_action(list, fs->selected_dir, NULL);
 		}
 		break;
 	}
@@ -1457,7 +1457,6 @@ handle_fsel(enum locks lock, struct fsel_data *fs, const char *path, const char 
 {
 	DIAG((D_fsel, NULL, "fsel OK: path=%s, file=%s", path, file));
 
-	//display("hfsel '%s' '%s'", path, file);
 	close_fileselector(lock, fs);
 	fs->ok = 1;
 	fs->done = 1;

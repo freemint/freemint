@@ -956,13 +956,13 @@ enum xa_widgets
 	XAW_MOVER,			/* Not actually used like the others */
 	XAW_INFO,
 	XAW_RESIZE,
-	XAW_UPLN,			/* 6 */
-	XAW_DNLN,			/* 7 */
+	XAW_UPLN,			/* 7 */
+	XAW_DNLN,			/* 8 */
 	XAW_VSLIDE,
 	XAW_UPPAGE,
 	XAW_DNPAGE,
-	XAW_LFLN,			/* 11 */
-	XAW_RTLN,			/* 12 */
+	XAW_LFLN,			/* 12 */
+	XAW_RTLN,			/* 13 */
 	XAW_HSLIDE,
 	XAW_LFPAGE,
 	XAW_RTPAGE,
@@ -976,8 +976,8 @@ enum xa_widgets
   * Furthermore, remember to change XA_MAX_CF_WIDGETS below if you
   * put insert a new context dependant widget before XAW_TOOLBAR!
  */
-	XAW_TOOLBAR,			/* Extended XaAES widget */
-	XAW_MENU,			/* Extended XaAES widget, must be drawn last. */
+	XAW_TOOLBAR,			/* 19 Extended XaAES widget */
+	XAW_MENU,			/* 20 Extended XaAES widget, must be drawn last. */
 	/* Number of available XA_WIDGET slots in a the window for default/standard widgets */
 	XA_MAX_WIDGETS
 };
@@ -1131,16 +1131,17 @@ struct xa_rect_list
 
 enum window_type
 {
-	created_for_CLIENT    = 0x0000,
+	created_for_CLIENT	= 0x0000,
 /* All of the following flags indicate at least that a windows workarea is compleyely
    occupied by (part of) the dialoge root object. */
-	created_for_FMD_START = 0x0001,
-	created_for_FORM_DO   = 0x0002,
-	created_for_POPUP     = 0x0004,
-	created_for_WDIAL     = 0x0008,
-	created_for_TOOLBAR   = 0x0010,
-	created_for_SLIST     = 0x0020,
-	created_for_AES       = 0x0100
+	created_for_FMD_START	= 0x0001,
+	created_for_FORM_DO	= 0x0002,
+	created_for_POPUP	= 0x0004,
+	created_for_WDIAL	= 0x0008,
+	created_for_TOOLBAR	= 0x0010,
+	created_for_SLIST	= 0x0020,
+	created_for_AES		= 0x0100,
+	created_for_CALC	= 0x0200,
 };
 typedef enum window_type WINDOW_TYPE;
 

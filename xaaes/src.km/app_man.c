@@ -251,7 +251,8 @@ set_next_menu(struct xa_client *new, bool do_topwind)
 				bool wastop = false;
 
 				DIAG((D_appl, NULL, "swapped to %s",c_owner(new)));
-
+				
+					
 				if (do_topwind && (top = window_list != root_window ? root_window : NULL))
 					wastop = is_topped(top) ? true : false;
 			

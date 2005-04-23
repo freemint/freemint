@@ -1159,7 +1159,6 @@ XA_fnts_create(enum locks lock, struct xa_client *client, AESPB *pb)
 	RECT r, or;
 
 	DIAG((D_fnts, client, "XA_fnts_create"));
-
 	pb->intout[0] = 0;
 	pb->addrout[0] = 0L;
 
