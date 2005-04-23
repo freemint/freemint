@@ -3112,6 +3112,24 @@ scrl_cursor(SCROLL_INFO *list, ushort keycode)
 {
 	switch (keycode)
 	{
+	case 0x5200:			/* Insert */
+	{
+		if (!list->cur)
+		{
+			SCROLL_ENTRY *this = list->start;
+
+			list->set(list, NULL, SESET_UNSELECTED, UNSELECT_ALL, NORMREDRAW);
+			list->cur = this;
+			list->set(list, this, SESET_SELECTED, 0, NOREDRAW);
+			list->vis(list, this, NORMREDRAW);
+		}
+		else
+		{
+			list->set(list, NULL, SESET_UNSELECTED, UNSELECT_ALL, NORMREDRAW);
+			list->cur = NULL;
+		}
+		break;
+	}
 	case 0x4800:			/* up arrow */
 	{
 		if (!list->cur)
