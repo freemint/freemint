@@ -1006,8 +1006,8 @@ free_xawidget_resources(struct xa_widget *widg)
 					wt, widg));
 
 				wt->links--;
-				//display(" free_xawidget_re: stuff is wt=%lx (links=%d) in widg=%lx",
-				//	wt, wt->links, widg);
+			//	display(" free_xawidget_re: stuff is wt=%lx (links=%d) in widg=%lx",
+			//		wt, wt->links, widg);
 				
 				if (!remove_wt(wt, false))
 				{
