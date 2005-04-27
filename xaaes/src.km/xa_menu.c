@@ -92,8 +92,6 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 				fix_menu(client, mwt/*mnu*/, root_window, true);
 				DIAG((D_menu,NULL,"fixed menu"));
 
-				//mnu->ob_width = mnu[mnu->ob_tail].ob_width = mnu[mnu->ob_head].ob_width = screen.r.w;
-	
 #if GENERATE_DIAGS
 				{
 					int i = 0;
@@ -105,8 +103,6 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 				/* HR: std_menu is now a complete widget_tree :-) */
 				mwt->is_menu = true;
 				mwt->menu_line = true;
-
-				//wt_menu_area(mwt);
 
 				if (swap)
 				{

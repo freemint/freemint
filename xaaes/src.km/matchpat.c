@@ -59,6 +59,9 @@ match_pattern(char *t, char *pat, bool auto_wc)
 	int len = 0;
 	char *p = pat;
 
+	if (!stricmp(t, pat))
+		return 2;
+
 	if (auto_wc)
 	{
 		len = strlen(p);
