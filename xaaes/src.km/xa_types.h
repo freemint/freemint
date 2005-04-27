@@ -1304,10 +1304,11 @@ enum scroll_info_flags
 	SIF_SELECTABLE	= 0x0002,
 	SIF_ICONINDENT	= 0x0004,
 	SIF_MULTISELECT = 0x0008,
-	SIF_AUTOSLIDERS = 0x0010,
-	SIF_AUTOSELECT  = 0x0020,
-	SIF_TREEVIEW	= 0x0040,
-	SIF_AUTOOPEN	= 0x0080,
+	SIF_MULTIBOXED  = 0x0010,
+	SIF_AUTOSLIDERS = 0x0020,
+	SIF_AUTOSELECT  = 0x0040,
+	SIF_TREEVIEW	= 0x0080,
+	SIF_AUTOOPEN	= 0x0100,
 
 };
 typedef enum scroll_info_flags SCROLL_INFO_FLAGS;
@@ -1451,18 +1452,26 @@ struct seset_txttab
 #define SEGET_ENTRYBYTEXT	 8
 #define SEGET_ENTRYBYDATA	 9
 #define SEGET_ENTRYBYUSRFLG	10
-#define SEGET_LISTXYWH		11
-#define SEGET_TEXTTAB		12
-#define SEGET_USRFLAGS		13
-#define SEGET_USRDATA		14
-#define SEGET_NEXTENT		15
-#define SEGET_PREVENT		16
-#define SEGET_TEXTCPY		17
-#define SEGET_TEXTCMP		18
-#define SEGET_TEXTPTR		19
+#define SEGET_ENTRYBYSTATE	11
+#define SEGET_ENTRYBYXSTATE	12
+#define SEGET_LISTXYWH		13
+#define SEGET_TEXTTAB		14
+#define SEGET_USRFLAGS		15
+#define SEGET_USRDATA		16
+#define SEGET_NEXTENT		17
+#define SEGET_PREVENT		18
+#define SEGET_TEXTCPY		19
+#define SEGET_TEXTCMP		20
+#define SEGET_TEXTPTR		21
 
 /*
- * structure used to pass parameters with get(SEGET_ENTRYBYIDX
+ * arg.typ.state/xstate.method parameters
+ */
+#define ANYBITS		0
+#define EXACTBITS	1
+
+/*
+ * structure used to pass parameters with get(SEGET_ENTRYBYxxx)
  */
 
 struct seget_entrybyarg
@@ -1474,6 +1483,20 @@ struct seget_entrybyarg
 	{
 		union
 		{
+			struct
+			{
+				short method;
+				short bits;
+				short mask;
+			}state;
+			
+			struct
+			{
+				short method;
+				short bits;
+				short mask;
+			}xstate;
+
 			char *txt;
 			void *data;
 			long usr_flag;
@@ -1494,6 +1517,8 @@ struct seget_entrybyarg
 
 #define OS_OPENED	1
 #define OS_NESTICON	2
+
+#define OS_BOXED	OS_STATE08
 
 #define OF_AUTO_OPEN	1
 

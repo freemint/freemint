@@ -332,6 +332,8 @@ draw_nesticon(RECT *xy, SCROLL_ENTRY *this)
 	r.w = 9;
 	r.h = 9;
 
+	wr_mode(MD_REPLACE);
+
 	if (this->down || (this->xstate & OS_NESTICON))
 	{
 		f_interior(FIS_SOLID);
@@ -438,6 +440,13 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this, REC
 		f_color(sel ? G_BLACK : G_WHITE);
 		bar(0, xy->x, xy->y, xy->w, this->r.h);
 		
+		if (this->state & OS_BOXED)
+		{
+			l_color(G_BLACK);
+			wr_mode(MD_XOR);
+			box(0, xy->x, xy->y, xy->w, this->r.h);
+		}
+
 		xy->x += indent;
 
 		if (list->flags & SIF_TREEVIEW)
@@ -723,6 +732,33 @@ get_last_entry(SCROLL_INFO *list)
 }
 
 static struct scroll_entry *
+get_next_state(struct scroll_info *list, struct scroll_entry *this, short bits)
+{
+	this = next_entry(this, 0, -1, NULL);
+	while (this)
+	{
+		if (this->state & bits)
+			break;
+		this = next_entry(this, 0, -1, NULL);
+	}
+	return this;
+}
+
+static struct scroll_entry *
+get_first_state(SCROLL_INFO *list, short bits)
+{
+	struct scroll_entry *this = list->start;
+
+	while (this)
+	{
+		if (this->state & bits)
+			break;
+		this = next_entry(this, 0, -1, NULL);
+	}
+	return this;
+}
+#if 0
+static struct scroll_entry *
 get_next_selected(struct scroll_info *list, struct scroll_entry *this)
 {
 	this = next_entry(this, 0, -1, NULL);
@@ -748,6 +784,7 @@ get_first_selected(SCROLL_INFO *list)
 	}
 	return this;
 }
+#endif
 
 static bool
 hidden_entry(SCROLL_ENTRY *this)
@@ -771,11 +808,11 @@ static void
 unselect_all(SCROLL_INFO *list, short redraw)
 {
 	SCROLL_ENTRY *this;
-	this = get_first_selected(list);
+	this = get_first_state(list, OS_SELECTED);
 	while (this)
 	{
 		change_entry(list, this, false, redraw ? !hidden_entry(this) : redraw);
-		this = get_next_selected(list, this);
+		this = get_next_state(list, this, OS_SELECTED);
 	}
 }
 
@@ -938,7 +975,56 @@ alloc_entry_wtxt(struct scroll_entry *entry, struct xa_wtxt_inf *newwtxt)
 	else if (newwtxt)
 		*entry->c.td.text.fnt = *newwtxt;
 }
+
+/*
+ * Look for entrys that have any of 'bits' statebits set,
+ * use mask and newbits to set new state
+ */ 
+static void
+changestate_all(SCROLL_INFO *list, short bits, short mask, short newbits, bool rdrw)
+{
+	SCROLL_ENTRY *this;
+	this = get_first_state(list, bits);
+	while (this)
+	{
+		short state = this->state & ~mask;
+		state |= newbits;
+		if (this->state != state)
+		{
+			this->state = state;
+			if (rdrw && !hidden_entry(this))
+				list->redraw(list, this);
+		}
+		this = get_next_state(list, this, bits);
+	}
+}
+
+static void
+seset_state(SCROLL_INFO *list, SCROLL_ENTRY *this, short newstate, short mask, bool rdrw)
+{
+	short chs = 0;
+	short state = this->state;
 	
+	if (!(list->flags & SIF_MULTISELECT) && (mask & OS_SELECTED) && (newstate & OS_SELECTED) && !(state & OS_SELECTED))
+		chs |= OS_SELECTED;
+	if (!(list->flags & SIF_MULTIBOXED) && (mask & OS_BOXED) && (newstate & OS_BOXED) && !(state & OS_BOXED))
+		chs |= OS_BOXED;
+
+	state &= ~mask;
+	state |= newstate;
+	
+	if (chs)
+	{
+		changestate_all(list, chs, chs, 0, rdrw);
+	}
+	
+	if (this->state != state)
+	{
+		this->state = state;
+		if (rdrw && !hidden_entry(this)) list->redraw(list, this);
+	}
+}
+
 static int
 set(SCROLL_INFO *list,
     SCROLL_ENTRY *entry,
@@ -953,16 +1039,18 @@ set(SCROLL_INFO *list,
 	{
 		case SESET_STATE:
 		{
-			short state = entry->state, newstate = arg, mask = arg >> 16;
+			short newstate = arg, mask = arg >> 16;
 			
-			state &= mask;
-			state |= newstate;
-			
-			if (entry->state != state)
+			if (entry)
+				seset_state(list, entry, newstate, mask, rdrw);
+			else
 			{
-				entry->state = state;
-				redrw = true;
-				ret = 1;
+				entry = list->start;
+				while (entry)
+				{
+					seset_state(list, entry, newstate, mask, rdrw);
+					entry = next_entry(entry, 0, -1, NULL);
+				}
 			}
 			break;
 		}
@@ -1217,7 +1305,7 @@ get_entry_setext(struct scroll_entry *this, short idx)
 static int
 get(SCROLL_INFO *list, SCROLL_ENTRY *entry, short what, void *arg)
 {
-	int ret = 0;
+	long ret = 0;
 
 	if (arg)
 	{
@@ -1291,6 +1379,23 @@ get(SCROLL_INFO *list, SCROLL_ENTRY *entry, short what, void *arg)
 				p->e = this;
 				break;
 			}
+			case SEGET_ENTRYBYDATA:
+			{
+				struct seget_entrybyarg *p = arg;
+				struct scroll_entry *this = entry;
+
+				if (!this)
+					this = list->start;
+				while (this)
+				{
+					if (this->c.data == p->arg.typ.data)
+						break;
+					this = next_entry(this, p->arg.flags, p->arg.maxlevel, &p->arg.curlevel);
+				}
+				if (!(p->e = this))
+					ret = 0L;
+				break;
+			}
 			case SEGET_ENTRYBYTEXT:
 			{
 				struct seget_entrybyarg *p = arg;
@@ -1309,12 +1414,52 @@ get(SCROLL_INFO *list, SCROLL_ENTRY *entry, short what, void *arg)
 					}
 					this = next_entry(this, p->arg.flags, p->arg.maxlevel, &p->arg.curlevel);
 				}
-				if (this)
-					p->e = this;
-				else
-					ret = 0;
+				if (!(p->e = this))
+					ret = 0L;
 				break;
 			}
+			case SEGET_ENTRYBYSTATE:
+			{
+				struct seget_entrybyarg *p = arg;
+				struct scroll_entry *this = entry;
+				short state, bits, mask;
+
+				if (!this)
+					this = list->start;
+				mask = p->arg.typ.state.mask;
+				bits = p->arg.typ.state.bits;
+				switch (p->arg.typ.state.method)
+				{
+					case ANYBITS:
+					{
+						while (this)
+						{
+							state = this->state & mask;
+							if ((state & bits))
+								break;
+							this = next_entry(this, p->arg.flags, p->arg.maxlevel, &p->arg.curlevel);
+						}
+						break;
+					}
+					case EXACTBITS:
+					{
+						while (this)
+						{
+							state = this->state & mask;
+							if (state == bits)
+								break;
+							this = next_entry(this, p->arg.flags, p->arg.maxlevel, &p->arg.curlevel);
+						}
+						break;
+					}
+					default:
+						this = NULL;
+				}
+				if (!(p->e = this))
+					ret = 0L;
+				break;
+			}
+			
 			case SEGET_LISTXYWH:
 			{
 				check_movement(list);
@@ -1348,9 +1493,9 @@ get(SCROLL_INFO *list, SCROLL_ENTRY *entry, short what, void *arg)
 			case SEGET_SELECTED:
 			{
 				if (entry)
-					*(struct scroll_entry **)arg = get_next_selected(list, entry);
+					*(struct scroll_entry **)arg = get_next_state(list, entry, OS_SELECTED);
 				else
-					*(struct scroll_entry **)arg = get_first_selected(list);
+					*(struct scroll_entry **)arg = get_first_state(list, OS_SELECTED);
 				break;
 			}
 			case SEGET_USRFLAGS:

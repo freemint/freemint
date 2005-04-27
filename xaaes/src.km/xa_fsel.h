@@ -57,6 +57,7 @@ struct fsel_data
 	int ok;
 	int done;
 	bool tfile;
+	bool kbdnav;
 	bool treeview;
 	bool rtbuild;
 };
