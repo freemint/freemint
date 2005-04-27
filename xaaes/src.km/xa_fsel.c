@@ -321,7 +321,7 @@ fs_prompt(SCROLL_INFO *list, bool typed)
 		if (!*fs->file)
 			fs->tfile = false;
 
-		if (typed)
+		if (!fs->tfile || typed)
 		{
 			fs->selected_file = NULL;
 			if (parent)
