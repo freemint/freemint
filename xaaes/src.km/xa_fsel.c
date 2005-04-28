@@ -210,6 +210,23 @@ set_dir(struct scroll_info *list)
 	display_widget(list->lock, list->wi, get_widget(list->wi, XAW_TITLE), list->pw ? list->pw->rect_start : NULL);
 }
 
+static struct scroll_entry *
+get_selorboxed(struct scroll_info *list)
+{
+	struct seget_entrybyarg p;
+
+	p.idx = 0;
+	p.arg.typ.state.method = ANYBITS;
+	p.arg.typ.state.bits = OS_SELECTED | OS_BOXED;
+	p.arg.typ.state.mask = OS_SELECTED | OS_BOXED;
+	p.arg.flags = 0;
+	p.arg.maxlevel = -1;
+	p.arg.curlevel = 0;
+
+	list->get(list, NULL, SEGET_ENTRYBYSTATE, &p);
+	return p.e;
+}
+
 static bool
 fs_prompt(SCROLL_INFO *list, bool typed)
 {
@@ -243,7 +260,6 @@ fs_prompt(SCROLL_INFO *list, bool typed)
 				break;
 			list->get(list, seget.e, SEGET_NEXTENT, &seget);
 		}
-		//display("match %d", match);
 		s = seget.e;
 		if (s)
 		{
@@ -265,7 +281,7 @@ fs_prompt(SCROLL_INFO *list, bool typed)
 			list->set(list, NULL, SESET_MULTISEL, 0, NOREDRAW);
 
 			list->set(list, NULL, SESET_STATE, ((long)(OS_BOXED|OS_SELECTED) << 16), NORMREDRAW);
-
+			
 			if (match == 1)
 				list->set(list, s, SESET_STATE, ((long)(OS_BOXED|OS_SELECTED) << 16) | OS_BOXED, NORMREDRAW);
 			else if (match == 2)
@@ -285,29 +301,17 @@ fs_prompt(SCROLL_INFO *list, bool typed)
 					list->cur = parent;
 					fs->selected_dir = parent;
 					set_dir(list);
-					//list->set(list, parent, SESET_SELECTED, 0, NORMREDRAW);
 					list->set(list, parent, SESET_STATE, ((long)(OS_BOXED|OS_SELECTED) << 16) | OS_SELECTED, NORMREDRAW);
 					list->vis(list, parent, NORMREDRAW);
 					fs->kbdnav = true;
 				}
 				else
 				{
-					p.idx = 0;
-					p.arg.typ.state.method = ANYBITS;
-					p.arg.typ.state.mask = OS_SELECTED | OS_BOXED;
-					p.arg.typ.state.bits = OS_SELECTED | OS_BOXED;
-					p.arg.flags = 0;
-					p.arg.maxlevel = -1;
-					p.arg.curlevel = 0;
-					list->get(list, NULL, SEGET_ENTRYBYSTATE, &p);
-					
-					//list->get(list, NULL, SEGET_SELECTED, &s);
-					if ((s = p.e)) //s)
+					if ((s = get_selorboxed(list)))
 					{
 						fs->selected_dir = s->up;
 						set_dir(list);
 						list->set(list, s, SESET_STATE, ((long)(OS_BOXED|OS_SELECTED) << 16), NORMREDRAW);
-						//list->set(list, s, SESET_UNSELECTED, 0, NORMREDRAW);
 						ret = true;
 					}
 					list->cur = NULL;
@@ -329,19 +333,14 @@ fs_prompt(SCROLL_INFO *list, bool typed)
 				list->cur = parent;
 				fs->selected_dir = parent;
 				set_dir(list);
+				list->set(list, NULL, SESET_STATE, ((long)OS_BOXED << 16), NORMREDRAW);
 				list->set(list, parent, SESET_STATE, ((long)(OS_BOXED|OS_SELECTED) << 16) | OS_SELECTED, NORMREDRAW);
 				list->vis(list, parent, NORMREDRAW);
 				fs->kbdnav = true;
 			}
 			else
 			{
-				p.idx = 0;
-				p.arg.typ.state.method = ANYBITS;
-				p.arg.typ.state.bits = OS_SELECTED|OS_BOXED;
-				p.arg.typ.state.mask = OS_SELECTED|OS_BOXED;
-				list->get(list, NULL, SEGET_ENTRYBYSTATE, &p);
-				//list->get(list, NULL, SEGET_SELECTED, &s);
-				if ((s = p.e))
+				if ((s = get_selorboxed(list)))
 				{
 					fs->selected_dir = s->up;
 					set_dir(list);
@@ -356,19 +355,8 @@ fs_prompt(SCROLL_INFO *list, bool typed)
 	}
 	return ret;
 }
-#if 0
-static bool
-fs_prompt_refresh(SCROLL_INFO *list)
-{
-	struct fsel_data *fs = list->data;
-	int clear = fs->clear_on_folder_change;
-	bool res = fs_prompt(list, false);
-	fs->clear_on_folder_change = clear;
-	return res;
-}
-#endif
-typedef bool sort_compare(SCROLL_ENTRY *s1, SCROLL_ENTRY *s2);
 
+typedef bool sort_compare(SCROLL_ENTRY *s1, SCROLL_ENTRY *s2);
 /*
  * This is called by the slist functions
  */
@@ -483,7 +471,6 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 		 * If this directory is already opened, just close it
 		 */
 		list->set(list, dir_ent, SESET_OPEN, 0, NORMREDRAW);
-	//	fs->selected_dir = dir_ent->up;
 		fs->selected_file = NULL;
 		set_dir(list);
 		dir_ent = NULL;
@@ -685,7 +672,7 @@ refresh_filelist(enum locks lock, struct fsel_data *fs, SCROLL_ENTRY *dir_ent)
 	graf_mouse(HOURGLASS, NULL, NULL, false);
 	read_directory(fs, list, dir_ent);
 	graf_mouse(ARROW, NULL, NULL, false);
-	fs_prompt(list, false); //fs_prompt_refresh(list);
+	//fs_prompt(list, false); //fs_prompt_refresh(list);
 }
 
 static void
@@ -694,6 +681,7 @@ CE_refresh_filelist(enum locks lock, struct c_event *ce, bool cancel)
 	if (!cancel)
 	{
 		refresh_filelist(lock, ce->ptr1, NULL);
+		fs_prompt(ce->ptr2, false);	//fs_prompt_refresh(list);
 	}
 }
 
@@ -811,6 +799,7 @@ fs_updir(struct scroll_info *list)
 	fs->selected_file = fs->selected_dir = NULL;
 	set_dir(list);
 	refresh_filelist(fsel, fs, NULL);
+	fs_prompt(list, false); //fs_prompt_refresh(list);
 }
 
 static void
@@ -841,7 +830,7 @@ fs_enter_dir(struct fsel_data *fs, struct scroll_info *list, struct scroll_entry
 	if ((drv = get_drv(fs->root)) >= 0)
 		strcpy(fs_paths[drv], fs->root);
 	
-	if (/*fs->clear_on_folder_change &&*/ !fs->tfile)
+	if (!fs->tfile)
 	{
 		set_file(fs, "");
 	}
@@ -882,13 +871,13 @@ fs_item_action(struct scroll_info *list, struct scroll_entry *this, const struct
 					list->get(list, this, SEGET_TEXTCPY, &p);
 					fs->selected_file = this;
 					fs->selected_dir = this->up;
-					fs->tfile = false;
-					//list->set(list, this, SESET_SELECTED, 0, NORMREDRAW);
 					list->set(list, this, SESET_STATE, ((long)(OS_BOXED|OS_SELECTED) << 16) | OS_SELECTED, NORMREDRAW);
 					set_dir(list);
 					set_file(fs, NULL);
 					if (md->clicks > 1)
 						fs_done = true;
+					else
+						fs->tfile = true;
 				}
 				else
 					fs_done = true;
@@ -923,7 +912,8 @@ fs_item_action(struct scroll_info *list, struct scroll_entry *this, const struct
 			
 			if (list->get(list, this, SEGET_TEXTCMP, &p) && !p.ret.ret)
 			{
-				fs->tfile = false;
+			//	if (!md)
+			//		fs->tfile = false;
 			#if 0
 				if ( /*fs->clear_on_folder_change &&*/ !fs->tfile)
 					set_file(fs, "");
@@ -942,11 +932,17 @@ fs_item_action(struct scroll_info *list, struct scroll_entry *this, const struct
 						fs->selected_dir = this;
 						if (!md)
 						{
-							if (xstate & OS_OPENED)
+							/*
+							 * If return pressed and there is something in input-field
+							 * we return, else we close the directory.
+							 */ 
+							if (xstate & OS_OPENED && *fs->file)
+							{
 								fs_done = true;
+							}
 							else
 							{
-								fs->tfile = false;
+								//fs->tfile = false;
 								fs_enter_dir(fs, list, this);
 								set_dir(list);
 							}
@@ -955,7 +951,7 @@ fs_item_action(struct scroll_info *list, struct scroll_entry *this, const struct
 						{
 							if (xstate & OS_OPENED)
 							{
-								if (fs->tfile)
+								if (md->state & MBS_LEFT && fs->tfile)
 									fs_done = true;
 							}
 							
@@ -990,14 +986,14 @@ fs_item_action(struct scroll_info *list, struct scroll_entry *this, const struct
 
 	if (fs_done)
 	{
-		if (!fs->selected_file && !fs->tfile)
-			fs->file[0] = '\0';
+	//	if (!fs->selected_file && !fs->tfile)
+	//		fs->file[0] = '\0';
 		
 		fs_cwd(list, fs->path, 2);
 
 		if (fs->selected)
 		{
-			//display("select path '%s', file '%s'", fs->path, fs->file);
+		//	display("select path '%s', file '%s'", fs->path, fs->file);
 			fs->selected(list->lock, fs, fs->path, fs->file);
 		}
 	}
@@ -1092,6 +1088,7 @@ fileselector_form_exit(struct xa_client *client,
 			/* changed filter */
 			strcpy(fs->fs_pattern, filter->te_ptext);
 			refresh_filelist(fsel, fs, NULL);
+			fs_prompt(list, false); //fs_prompt_refresh(list);
 		}
 		else
 #endif
@@ -1214,6 +1211,7 @@ fs_key_form_do(enum locks lock,
 					FSEL_PATA, FSEL_FILTER, FSEL_PATA, fs->fs_pattern);
 			/* apply the change to the filelist */
 			refresh_filelist(fsel, fs, NULL);
+			fs_prompt(list, false); //fs_prompt_refresh(list);
 		}
 	}
 	else
@@ -1256,9 +1254,8 @@ fs_key_form_do(enum locks lock,
 			}
 		}
 	/*  If anything in the list and it is a cursor key */
-		else if ((kk = scrl_cursor(list, keycode)) != -1)
+		else if ((kk = scrl_cursor(list, ((!list->cur && (keycode == 0x5000 || keycode == 0x4800)) ? 0x5200 : keycode))) != -1)
 		{
-			fs->tfile = false;
 			if (list->cur)
 			{
 				{
@@ -1266,6 +1263,9 @@ fs_key_form_do(enum locks lock,
 					p.idx = 0;
 					p.arg.typ.state.method = ANYBITS;
 					p.arg.typ.state.mask = p.arg.typ.state.bits = OS_BOXED;
+					p.arg.flags = 0;
+					p.arg.maxlevel = -1;
+					p.arg.curlevel = 0;
 					list->get(list, NULL, SEGET_ENTRYBYSTATE, &p);
 					if (p.e)
 						list->set(list, p.e, SESET_STATE, ((long)OS_BOXED << 16), NORMREDRAW);
@@ -1283,19 +1283,23 @@ fs_key_form_do(enum locks lock,
 						fs->selected_file = list->cur;
 						set_dir(list);
 					}
-					if (!fs->tfile)
-					{
+					//if (!fs->tfile)
+					//{
 						p.idx = 0;
 						list->get(list, list->cur, SEGET_TEXTPTR, &p);
 						set_file(fs, p.ret.ptr);
-					}
+						fs->tfile = false;
+					//}
 				}
-				else if (list->cur != fs->selected_dir)
+				else
 				{
-					fs->selected_dir = list->cur;
-					fs->selected_file = NULL;
-					set_dir(list);
-					set_file(fs, "");
+					if (list->cur != fs->selected_dir)
+					{
+						fs->selected_dir = list->cur;
+						fs->selected_file = NULL;
+						set_dir(list);
+					}
+					if (!fs->tfile) set_file(fs, "");
 				}
 				if (kk == 0x5200)
 					fs->kbdnav = true;
@@ -1410,6 +1414,7 @@ fs_msg_handler(
 		}
 		set_dir(list);
 		refresh_filelist(lock, fs, NULL);
+		fs_prompt(list, false); //fs_prompt_refresh(list);
 		break;
 	}
 	case WM_MOVED:
@@ -1597,6 +1602,8 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 		fs->clear_on_folder_change = 0;
 		fs->tfile = false;
 		strcpy(fs->file, file); /* fill in the file edit field */
+		if (*fs->file)
+			fs->tfile = true;
 
 		wt = set_toolbar_widget(lock, dialog_window, client, form, FS_FILE, WIP_NOTEXT, NULL);
 		/* This can be of use for drawing. (keep off border & outline :-) */
@@ -1653,7 +1660,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 		/* HR: after set_slist_object() & opwn_window */
 		//refresh_filelist(lock, fs, 5);
 		/* we post this as a client event, so it does not happend before the fsel is drawn... */
-		post_cevent(client, CE_refresh_filelist, fs, NULL, 0, 0, NULL, NULL);
+		post_cevent(client, CE_refresh_filelist, fs, list, 0, 0, NULL, NULL);
 
 		DIAG((D_fsel,NULL,"done."));
 
