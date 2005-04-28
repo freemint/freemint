@@ -3261,7 +3261,7 @@ scrl_cursor(SCROLL_INFO *list, ushort keycode)
 	{
 		if (!list->cur)
 		{
-			SCROLL_ENTRY *this = list->start;
+			SCROLL_ENTRY *this = list->top; //list->start;
 
 			list->set(list, NULL, SESET_UNSELECTED, UNSELECT_ALL, NORMREDRAW);
 			list->cur = this;
