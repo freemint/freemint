@@ -65,6 +65,7 @@
 #include "xa_fslx.h"
 #include "xa_lbox.h"
 #include "xa_wdlg.h"
+#include "xa_pdlg.h"
 
 struct xa_ftab
 {

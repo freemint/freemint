@@ -561,7 +561,6 @@ struct _prn_settings
 	} mac_settings;             /**< Settings of the Mac printer driver */
 };
 
-
 /* <dialog_flags> for mt_pdlg_create() */
 #define PDLG_3D			0x0001      /**< Use 3D-look */
 

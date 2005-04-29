@@ -51,7 +51,7 @@
 
 
 /*
- * WDIALOG FUNCTIONS (fnts)
+ * WDIALOG FUNCTIONS (pdlg)
  *
  * documentation about this can be found in:
  *
@@ -63,45 +63,164 @@
  */
 
 #if WDIALOG_PDLG
+extern struct toolbar_handlers wdlg_th;
+
+static XA_TREE *
+duplicate_pdlg_obtree(struct xa_client *client)
+{
+	OBJECT *obtree = NULL;
+	XA_TREE *wt = NULL;
+
+	if ((obtree = duplicate_obtree(C.Aes, ResourceTree(C.Aes_rsc, WDLG_PDLG), 0)))
+	{
+		wt = new_widget_tree(client, obtree);
+		if (wt)
+		{
+			/*
+			 * We let delete_fnts_info free the widget_tree
+			 */
+			wt->flags |= WTF_AUTOFREE | WTF_TREE_ALLOC;
+			obtree->ob_state &= ~OS_OUTLINED;
+			form_center(obtree, ICON_H);
+		}
+		else
+			free_object_tree(C.Aes, obtree);
+	}
+	return wt;
+}
+
+static struct xa_pdlg_info *
+create_new_pdlg(struct xa_client *client)
+{
+	return NULL;
+}
 
 unsigned long
 XA_pdlg_create(enum locks lock, struct xa_client *client, AESPB *pb)
 {
+	struct xa_pdlg_info *pdlg = NULL;
+	struct xa_window *wind = NULL;
+	OBJECT *obtree = NULL;
+	XA_TREE *wt = NULL;
+	XA_WIND_ATTR tp = MOVER|NAME;
+	RECT r, or;
+
+	DIAG((D_pdlg, client, "XA_pdlg_create"));
+	pb->intout[0] = 0;
+	pb->addrout[0] = 0L;
+
+	if ((wt = duplicate_pdlg_obtree(client)))
+	{
+		obtree = wt->tree;
+		ob_area(obtree, 0, &or);
+		
+		r = calc_window(lock, client, WC_BORDER,
+				tp, created_for_WDIAL,
+				client->options.thinframe,
+				client->options.thinwork,
+				*(RECT *)&or);
+
+		if (!(wind = create_window(lock,
+				     send_app_message,
+				     NULL,
+				     client,
+				     false,
+				     tp,
+				     created_for_WDIAL,
+				     client->options.thinframe,
+				     client->options.thinwork,
+				     r, NULL, NULL)))
+			goto memerr;
+
+		if (!(pdlg = create_new_pdlg(client)))
+			goto memerr;
+
+		wt = set_toolbar_widget(lock, wind, client, obtree, -2, 0, &wdlg_th);
+		wt->zen = false;
+
+		pb->addrout[0] = (long)pdlg->handle;
+
+		pb->intout[0] = 1;
+	}
+	else
+	{
+memerr:
+		if (wt)
+			remove_wt(wt, true);
+		else if (obtree)
+			free_object_tree(C.Aes, obtree);
+
+		if (wind)
+			delete_window(lock, wind);
+		
+		if (pdlg)
+			kfree(pdlg);
+	}
+	return XAC_DONE;
+
 }
 
 unsigned long
 XA_pdlg_delete(enum locks lock, struct xa_client *client, AESPB *pb)
 {
+	DIAG((D_pdlg, client, "XA_pdlg_delete"));
+	
+	pb->intout[0] = 0;
+	return XAC_DONE;
 }
 
 unsigned long
 XA_pdlg_open(enum locks lock, struct xa_client *client, AESPB *pb)
 {
+	DIAG((D_pdlg, client, "XA_pdlg_open"));
+
+	pb->intout[0] = 0;
+	return XAC_DONE;
 }
 
 unsigned long
 XA_pdlg_close(enum locks lock, struct xa_client *client, AESPB *pb)
 {
+	DIAG((D_pdlg, client, "XA_pdlg_close"));
+
+	pb->intout[0] = 0;
+	return XAC_DONE;
 }
 
 unsigned long
 XA_pdlg_get(enum locks lock, struct xa_client *client, AESPB *pb)
 {
+	DIAG((D_pdlg, client, "XA_pdlg_get"));
+
+	pb->intout[0] = 0;
+	return XAC_DONE;
 }
 
 unsigned long
 XA_pdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 {
+	DIAG((D_pdlg, client, "XA_pdlg_set"));
+
+	pb->intout[0] = 0;
+	return XAC_DONE;
 }
 
 unsigned long
 XA_pdlg_evnt(enum locks lock, struct xa_client *client, AESPB *pb)
 {
+	DIAG((D_pdlg, client, "XA_pdlg_evnt"));
+
+	pb->intout[0] = 0;
+	return XAC_DONE;
 }
 
 unsigned long
 XA_pdlg_do(enum locks lock, struct xa_client *client, AESPB *pb)
 {
+	DIAG((D_pdlg, client, "XA_pdlg_do"));
+
+	pb->intout[0] = 0;
+	return XAC_DONE;
 }
 
 #endif

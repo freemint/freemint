@@ -751,7 +751,7 @@ get_font_items(struct xa_fnts_info *fnts)
 	vpb = create_vdipb();
 	DIAGS(("get_font_items: create vdipb=%lx", vpb));
 	
-	if (vpb) dump_devstuff(vpb, C.vh);
+	//if (vpb) dump_devstuff(vpb, C.vh);
 	
 	if (fnts->vdi_handle && !fnts->fnts_loaded)
 	{
