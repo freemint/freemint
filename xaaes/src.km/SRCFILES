@@ -54,6 +54,7 @@ HEADER = \
 	xa_list.h \
 	xa_menu.h \
 	xa_objc.h \
+	xa_pdlg.h \
 	xa_rsrc.h \
 	xa_scrp.h \
 	xa_shel.h \
@@ -109,6 +110,7 @@ COBJS = \
 	xa_lbox.c \
 	xa_menu.c \
 	xa_objc.c \
+	xa_pdlg.c \
 	xa_rsrc.c \
 	xa_scrp.c \
 	xa_shel.c \
