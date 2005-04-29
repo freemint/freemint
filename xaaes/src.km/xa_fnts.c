@@ -377,7 +377,7 @@ create_vdipb(void)
 	short **e;
 	int i;
 	
-	v = kmalloc(sizeof(XVDIPB) + ((12 + 50 + 50 + 50 + 50) << 1) );
+	v = kmalloc(sizeof(XVDIPB) + ((12 + 500 + 500 + 500 + 500) << 1) );
 
 	p = (short *)((long)v + sizeof(XVDIPB));
 	v->control = p;
@@ -387,7 +387,7 @@ create_vdipb(void)
 	for (i = 0; i < 4; i++)
 	{
 		*e++ = p;
-		p += 50;
+		p += 500;
 	}
 	return v;
 }
@@ -480,6 +480,40 @@ xvst_point(XVDIPB *vpb, short handle, short point)
 	VDI(vpb, 107, 0, 1, 0, handle);
 	return vpb->intout[0];
 }
+#if 0
+/* ***************************************************** */
+static short
+xvq_devinfo(XVDIPB *vpb, short handle, short dev_id)
+{
+	vpb->intin[0] = dev_id;
+	VDI(vpb, 248, 0, 1, 0, handle);
+	return vpb->intout[0];
+}
+
+static void
+dump_devstuff(XVDIPB *vpb, short handle)
+{
+	int i, j;
+	char rn[200], fn[100];
+
+	for (i = 0; i < 100; i++)
+	{
+		xvq_devinfo(vpb, handle, i);
+		if (vpb->control[4])
+		{
+			for (j = 0; j < ((vpb->control[2] - 1) << 1) && j < 200; j++)
+				rn[j] = *(char *)((long)vpb->ptsout + j + 2), rn[j+1] = '\0';
+			for (j = 0; j < vpb->control[4] && j < 200 && vpb->intout[j]; j++)
+				fn[j] = (char)vpb->intout[j], fn[j + 1] = '\0';
+		
+			display("driver %d is %s, name %s, file %s", i, vpb->ptsout[0] ? "Open" : "Closed", rn, fn);
+		}
+		else
+			display("No driver at ID %d", i);
+	}
+}
+/* ***************************************************** */
+#endif
 
 static short pt_sizes[] = 
 {
@@ -716,7 +750,9 @@ get_font_items(struct xa_fnts_info *fnts)
 	DIAGS(("get_font_items:"));
 	vpb = create_vdipb();
 	DIAGS(("get_font_items: create vdipb=%lx", vpb));
-
+	
+	if (vpb) dump_devstuff(vpb, C.vh);
+	
 	if (fnts->vdi_handle && !fnts->fnts_loaded)
 	{
 		fnts->fnts_loaded = 1 + vst_load_fonts(fnts->vdi_handle, 0);
