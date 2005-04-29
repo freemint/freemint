@@ -55,6 +55,22 @@ my_strlcat(char *dst, const char *src, size_t n)
 	if (n == 0)
 		*dst = '\0';
 }
+static void
+my_pdomain(int dom)
+{
+	__asm__ volatile
+	(
+		"movem.l	d2-d7/a2-a6,-(sp)\n\t"	\
+		"move.w		%0,-(sp)\n\t"		\
+		"move.w		#0x119,-(sp)\n\t"	\
+		"trap		#1\n\t"		\
+		"addq.w		#4,sp\n\t"		\
+		"movem.l	(sp)+,d2-d7/a2-a6\n\t"	\
+		:
+		: "d"(dom)
+		: "memory"
+	);
+}
 
 /*
  * - without an argument try to load xaaes.km from sysdir
@@ -73,11 +89,14 @@ loader_init(int argc, char **argv, char **env)
 	char *name;
 	long fh, r;
 
+
 	/*
 	 * first make sure we are on FreeMiNT's '/'
 	 */
 	Dsetdrv('u' - 'a');
 	Dsetpath("/");
+
+	my_pdomain( 1 );
 
 	/*
 	 * now lookup FreeMiNT's sysdir
