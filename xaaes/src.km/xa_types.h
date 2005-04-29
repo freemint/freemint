@@ -584,6 +584,22 @@ struct wdlg_evnt_parms
 	short obj;
 };
 
+struct xa_pdlg_info
+{
+	struct xa_data_hdr h;
+
+	void	*handle;
+	struct	xa_window *wind;
+	struct	widget_tree *wt;
+	
+	short	dialog_flags;
+	short	option_flags;
+
+	PRN_SETTINGS *settings;
+	char document_name[256];
+
+};
+
 #define OB_CURS_ENABLED	1
 #define OB_CURS_DRAWN	2
 struct objc_edit_info
