@@ -67,12 +67,12 @@ vcheckmode(short mode)
 	__asm__ volatile
 	(
 		"movem.l	d1-d7/a0-a6,-(sp)\n\t"	\
-		"move.w		%0,-(sp)\n\t"
-		"move.w		#0x5f,-(sp)\n\t"
-		"trap		#14\n\t"
-		"addq.w		#4,sp\n\t"
-//		"move.w		d0,%0\n\t"
-		"movem.l	(sp)+,d1-d7/a0-a6\n\t"
+		"move.w		%0,-(sp)\n\t"		\
+		"move.w		#0x5f,-(sp)\n\t"	\
+		"trap		#14\n\t"		\
+		"addq.w		#4,sp\n\t"		\
+	/*	"move.w		d0,%0\n\t"		\ */
+		"movem.l	(sp)+,d1-d7/a0-a6\n\t"	\
 		:
 		: "d"(mode), "r"(mode)
 		: "memory"
