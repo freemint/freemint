@@ -36,6 +36,7 @@ void			object_set_spec(OBJECT *ob, unsigned long cl);
 bool			object_is_editable(OBJECT *ob);
 TEDINFO *		object_get_tedinfo(OBJECT *ob);
 struct scroll_info *	object_get_slist(OBJECT *ob);
+POPINFO *		object_get_popinfo(OBJECT *ob);
 void			object_deselect(OBJECT *ob);
 bool			object_is_transparent(OBJECT *ob);
 short			object_thickness(OBJECT *ob);

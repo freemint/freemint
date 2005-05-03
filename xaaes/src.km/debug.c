@@ -184,7 +184,7 @@ diags(const char *fmt, ...)
 #if 0
 	struct proc *p = get_curproc();
 
-	if ((strnicmp(p->name, "highwire", 8)))
+	if ((strnicmp(p->name, "rsm", 3)))
 		return;
 #endif
 
@@ -222,7 +222,7 @@ diag(enum debug_item item, struct xa_client *client, char *t, ...)
 #if 0
 	struct proc *p = get_curproc();
 
-	if ((strnicmp(p->name, "highwire", 8)))
+	if ((strnicmp(p->name, "rsm", 3)))
 		return;
 #endif
 

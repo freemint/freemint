@@ -245,44 +245,45 @@ set_next_menu(struct xa_client *new, bool do_topwind)
 		/* menu widget.tree */
 		if ((is_infront(new) || (!infront->std_menu && !infront->nxt_menu)))
 		{
-			if (new->std_menu && new->std_menu != widg->stuff)
+			if (new->std_menu) // && new->std_menu != widg->stuff)
 			{
 				XA_TREE *wt;
 				bool wastop = false;
 
 				DIAG((D_appl, NULL, "swapped to %s",c_owner(new)));
 				
-					
-				if (do_topwind && (top = window_list != root_window ? root_window : NULL))
-					wastop = is_topped(top) ? true : false;
-			
-				if ((wt = widg->stuff))
+				if (new->std_menu != widg->stuff)
 				{
-					wt->widg = NULL;
-					wt->flags &= ~WTF_STATIC;
-					wt->links--;
-				}
-				widg->stuff = wt = new->std_menu;
-				wt->flags |= WTF_STATIC;
-				wt->widg = widg;
-				wt->links++;
-
-				set_rootmenu_area(new);
-
-				DIAG((D_appl, NULL, "top: %s", w_owner(top)));
+					if (do_topwind && (top = window_list != root_window ? root_window : NULL))
+						wastop = is_topped(top) ? true : false;
 			
-				if (do_topwind && top)
-				{
-					if ((wastop && !is_topped(top)) || (!wastop && is_topped(top)))
+					if ((wt = widg->stuff))
 					{
-						if (wastop)
-							setwin_untopped(lock, top, true); //snd_untopped);
-						else
-							setwin_ontop(lock, true); //snd_ontop);
+						wt->widg = NULL;
+						wt->flags &= ~WTF_STATIC;
+						wt->links--;
+					}
+					widg->stuff = wt = new->std_menu;
+					wt->flags |= WTF_STATIC;
+					wt->widg = widg;
+					wt->links++;
+
+					DIAG((D_appl, NULL, "top: %s", w_owner(top)));
+			
+					if (do_topwind && top)
+					{
+						if ((wastop && !is_topped(top)) || (!wastop && is_topped(top)))
+						{
+							if (wastop)
+								setwin_untopped(lock, top, true);
+							else
+								setwin_ontop(lock, true);
 				
-						send_iredraw(lock, top, 0, NULL);
+							send_iredraw(lock, top, 0, NULL);
+						}
 					}
 				}
+				set_rootmenu_area(new);
 			}
 			redraw_menu(lock);
 		}

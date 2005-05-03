@@ -592,6 +592,7 @@ struct xa_pdlg_info
 	struct	xa_window *wind;
 	struct	widget_tree *wt;
 	
+	short	flags;
 	short	dialog_flags;
 	short	option_flags;
 
@@ -1701,9 +1702,12 @@ struct task_administration_block
 	XA_WIDGET *widg;
 
 	TASK *task;	/* general task pointer */
-	AESPB *pb;
+//	AESPB *pb;
 
 	bool scroll;
+	
+	int usr_evnt;
+	void *data;
 
 	union
 	{

@@ -106,6 +106,12 @@ object_get_slist(OBJECT *ob)
 	return (struct scroll_info *)object_get_spec(ob)->index;
 }
 
+inline POPINFO *
+object_get_popinfo(OBJECT *ob)
+{
+	return	(POPINFO *)object_get_spec(ob)->popinfo;
+}
+
 inline void
 object_deselect(OBJECT *ob)
 {
