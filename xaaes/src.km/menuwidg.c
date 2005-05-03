@@ -172,7 +172,7 @@ wt_menu_area(XA_TREE *wt)
 		//obtree->ob_height = obtree[obtree->ob_head].ob_height = obtree[obtree->ob_tail].ob_height = get_menu_widg()->r.h; //wind->wa.w;
 		titles = obtree[obtree[0].ob_head].ob_head;
 		obj_area(wt, titles, &wt->area);
-		
+
 		DIAG((D_menu, wt->owner, "wt_menu_area: %d/%d/%d/%d for %s",
 			wt->area, wt->owner->name));
 	}
@@ -447,11 +447,14 @@ nest_menutask(Tab *tab)
 		new_mt = &new_tab->task_data.menu;
 		if (tab)
 		{
+			new_tab->usr_evnt = tab->usr_evnt;
+			new_tab->data	 = tab->data;
+
 			mt	= &tab->task_data.menu;
 
 			new_tab->ty	= tab->ty;
 			new_tab->client	= tab->client;
-			new_tab->pb	= tab->pb;
+		//	new_tab->pb	= tab->pb;
 			new_tab->lock	= tab->lock;
 			new_tab->wind	= tab->wind;
 			new_tab->widg	= tab->widg;
@@ -1779,6 +1782,35 @@ Tab *
 click_popup_entry(struct task_administration_block *tab)
 {
 	MENU_TASK *k = &tab->task_data.menu;
+	struct xa_client *client = tab->client;
+	MENU *md = tab->data;
+	short m;
+
+	m = find_menu_object(tab, k->pop_item, k->pdx, k->pdy, &k->drop);
+
+	if (md)
+	{	
+		md->mn_tree = k->wt->tree;
+		md->mn_scroll = 0;
+		vq_key_s(C.vh, &md->mn_keystate);
+
+		md->mn_item = m;
+		if (md->mn_item >= 0 && (k->wt->tree[md->mn_item].ob_state & OS_DISABLED) != 0)
+			md->mn_item = -1;
+
+		DIAG((D_menu, NULL, "click_popup_entry %lx + %d", md->mn_tree, md->mn_item));
+
+		IFDIAG(tab->dbg = 6;)
+	}
+	popout(TAB_LIST_START);			/* incl. screen unlock */
+
+	//assert(pb);
+	//pb->intout[0] = md->mn_item < 0 ? 0 : 1;
+
+	client->usr_evnt |= tab->usr_evnt;
+
+#if 0
+	MENU_TASK *k = &tab->task_data.menu;
 	AESPB *pb = tab->pb;
 	struct xa_client *client = tab->client;
 	MENU *md = (MENU*)pb->addrin[1];
@@ -1804,7 +1836,7 @@ click_popup_entry(struct task_administration_block *tab)
 	pb->intout[0] = md->mn_item < 0 ? 0 : 1;
 
 	client->usr_evnt = 1;
-
+#endif
 	return NULL;
 }
 
@@ -1812,7 +1844,7 @@ Tab *
 click_form_popup_entry(struct task_administration_block *tab)
 {
 	MENU_TASK *k = &tab->task_data.menu;
-	AESPB *pb = tab->pb;
+	//AESPB *pb = tab->pb;
 	struct xa_client *client = tab->client;
 	short m;
 
@@ -1826,9 +1858,14 @@ click_form_popup_entry(struct task_administration_block *tab)
 
 	popout(TAB_LIST_START);			/* incl. screen unlock */
 
+	if (tab->data)
+		*(short *)tab->data = m;
+#if 0
 	assert(pb);
 	pb->intout[0] = m;
-	client->usr_evnt = 1;
+#endif
+	client->usr_evnt |= tab->usr_evnt;
+
 	return NULL;
 }
 

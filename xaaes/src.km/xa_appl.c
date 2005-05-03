@@ -1124,13 +1124,21 @@ static short info_tab[][4] =
 		,		/* WM_ICONIFY gives coordinates */
 		0
 	},
+
+#define AGI_G_SWBUTTON	0x0001
+#define AGI_G_POPUP	0x0002
+#define AGI_OS_WHITEBAK	0x0004
+#define AGI_G_SHORTCUT	0x0008
 	/*13 objects */
 	{
 		1,		/* 3D objects */
 		1,		/* objc_sysvar */
 		0,		/* GDOS fonts */
-		014		/* extended objects (0x8 G_SHORTCUT, 0x4 WHITEBAK objects)
-				                     0x2 G_POPUP,    0x1 G_SWBUTTON */
+		0		/* Extended objects */
+	//|	AGI_G_SWBUTTON
+	|	AGI_G_POPUP
+	|	AGI_OS_WHITEBAK
+	|	AGI_G_SHORTCUT
 	},
 	/*14 form support (form_xdo, form_xdial) */
 	{

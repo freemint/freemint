@@ -941,6 +941,13 @@ typedef struct
 	 unsigned	interiorcol :  4;			/**< TODO */
 } BFOBSPEC;
 
+struct object;
+typedef struct
+{
+	struct object	*tree;
+	short		obnum;
+} POPINFO;
+
 /** TODO */
 struct user_block;	/* forward declaration */
 
@@ -956,6 +963,7 @@ typedef union obspecptr
 	CICONBLK 	*ciconblk;			/**< TODO */
 	struct user_block *userblk;		/**< TODO */
 	char		*free_string;		/**< TODO */
+	POPINFO		*popinfo;
 } OBSPEC;
 
 /** TODO */

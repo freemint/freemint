@@ -89,10 +89,33 @@ duplicate_pdlg_obtree(struct xa_client *client)
 	return wt;
 }
 
+static void
+delete_pdlg_info(void *_pdlg)
+{
+	struct xa_pdlg_info *pdlg = _pdlg;
+
+	if (pdlg)
+	{
+		
+		kfree(pdlg);
+	}
+}
+
 static struct xa_pdlg_info *
 create_new_pdlg(struct xa_client *client)
 {
-	return NULL;
+	struct xa_pdlg_info *pdlg;
+
+	pdlg = kmalloc(sizeof(*pdlg));
+	if (pdlg)
+	{
+		bzero(pdlg, sizeof(*pdlg));
+
+		add_xa_data(&client->xa_data, pdlg, delete_pdlg_info);
+
+		
+	}
+	return pdlg;
 }
 
 unsigned long
@@ -132,7 +155,7 @@ XA_pdlg_create(enum locks lock, struct xa_client *client, AESPB *pb)
 				     r, NULL, NULL)))
 			goto memerr;
 
-		if (!(pdlg = create_new_pdlg(client)))
+		if (!(pdlg = create_new_pdlg(client, )))
 			goto memerr;
 
 		wt = set_toolbar_widget(lock, wind, client, obtree, -2, 0, &wdlg_th);
