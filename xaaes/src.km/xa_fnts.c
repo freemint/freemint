@@ -480,6 +480,7 @@ xvst_point(XVDIPB *vpb, short handle, short point)
 	VDI(vpb, 107, 0, 1, 0, handle);
 	return vpb->intout[0];
 }
+
 #if 0
 /* ***************************************************** */
 static short
@@ -751,7 +752,7 @@ get_font_items(struct xa_fnts_info *fnts)
 	vpb = create_vdipb();
 	DIAGS(("get_font_items: create vdipb=%lx", vpb));
 	
-	//if (vpb) dump_devstuff(vpb, C.vh);
+//	if (vpb) dump_devstuff(vpb, C.vh);
 	
 	if (fnts->vdi_handle && !fnts->fnts_loaded)
 	{
