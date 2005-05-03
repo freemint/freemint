@@ -102,12 +102,12 @@ static char *ob_types[] =
 	"icon",
 	"title",
 	"cicon",
-	"xaaes slist",
-	"popup",
-	"resv",
-	"edit",
-	"shortcut",
-	"39",
+	"Magic swbutton",	/* 34 */
+	"Magic popup",	/* 35 */
+	"Magic wintitle",	/* 36 */
+	"Magic edit",		/* 37 */
+	"Magic shortcut",	/* 38 */
+	"xaaes slist",	/* 39 */
 	"40"
 };
 
@@ -159,6 +159,31 @@ object_type(OBJECT *tree, short t)
 
 	return other;
 }
+#else
+static char *ob_types[] =
+{
+	"box",
+	"text",
+	"boxtext",
+	"image",
+	"progdef",
+	"ibox",
+	"button",
+	"boxchar",
+	"string",
+	"ftext",
+	"fboxtext",
+	"icon",
+	"title",
+	"cicon",
+	"Magic swbutton",	/* 34 */
+	"Magic popup",	/* 35 */
+	"Magic wintitle",	/* 36 */
+	"Magic edit",		/* 37 */
+	"Magic shortcut",	/* 38 */
+	"xaaes slist",	/* 39 */
+	"40"
+};
 #endif
 
 bool inline d3_any(OBJECT *ob)        { return (ob->ob_flags & OF_FL3DACT) != 0;	}
@@ -1185,7 +1210,7 @@ ob_text(XA_TREE *wt, RECT *r, RECT *o, BFOBSPEC *c, const char *t, short state, 
 				wr_mode(c->textmode ? MD_REPLACE : MD_TRANS);
 		}
 
-		if (!MONO && (state&OS_DISABLED) != 0)
+		if (!MONO && (state & OS_DISABLED))
 		{
 			done(OS_DISABLED);
 			if (fits)
@@ -1205,7 +1230,7 @@ ob_text(XA_TREE *wt, RECT *r, RECT *o, BFOBSPEC *c, const char *t, short state, 
 			short l = strlen(t);
 			if (und < l)
 			{
-				short x = r->x + und*screen.c_max_w,
+				short x = r->x + und * screen.c_max_w,
 				    y = r->y + screen.c_max_h - 1;
 				line(x, y, x + screen.c_max_w - 1, y, G_RED);
 			}
@@ -1218,7 +1243,7 @@ g_text(XA_TREE *wt, RECT r, RECT *o, const char *text, short state)
 {
 	/* only center the text. ;-) */
 	r.y += (r.h-screen.c_max_h) / 2;
-	if (!MONO && (state&OS_DISABLED))
+	if (!MONO && (state & OS_DISABLED))
 	{
 		t_color(screen.dial_colours.lit_col);
 		v_gtext(C.vh, r.x+1, r.y+1, text);
@@ -1930,10 +1955,18 @@ d_g_button(enum locks lock, struct widget_tree *wt, const RECT *clip)
 	BFOBSPEC colours;
 	short thick = object_thickness(ob); 
 	ushort selected = ob->ob_state & OS_SELECTED;
-	char *text = object_get_spec(ob)->free_string;
+	char *text = NULL; // = object_get_spec(ob)->free_string;
+	
+	if (ob->ob_type == G_POPUP)
+	{
+		POPINFO *pi = object_get_popinfo(ob);
+		if (pi->obnum > 0)
+			text = object_get_spec(pi->tree + pi->obnum)->free_string;
+	}
+	else
+		text = object_get_spec(ob)->free_string;
 
 	colours = button_colours();
-
 	t_color(G_BLACK);
 
 	if ((ob->ob_state & OS_WHITEBAK) && (ob->ob_state & 0x8000))
@@ -1953,28 +1986,35 @@ d_g_button(enum locks lock, struct widget_tree *wt, const RECT *clip)
 			}
 			else
 				chiseled_gbox(0, &rr);
-			gr.x = r.x + screen.c_max_w;
-			gr.y = r.y;
-			t_font(screen.standard_font_point, screen.standard_font_id);
-			t_extent(text, &gr.w, &gr.h);
-			ob_text(wt, &gr, NULL, &colours, text, 0, -1);
+
+			if (text)
+			{
+				gr.x = r.x + screen.c_max_w;
+				gr.y = r.y;
+				t_font(screen.standard_font_point, screen.standard_font_id);
+				t_extent(text, &gr.w, &gr.h);
+				ob_text(wt, &gr, NULL, &colours, text, 0, -1);
+			}
 		}
 		else
 		{
 			XA_TREE b;
 
-			b.owner = wt->owner; //C.Aes;
+			b.owner = wt->owner;
 			b.tree = get_widgets();
 			display_object(	lock, &b, clip,
 					  (ob->ob_flags & OF_RBUTTON)
 					? (selected ? RADIO_SLCT : RADIO_DESLCT )
 					: (selected ? BUT_SLCT   : BUT_DESLCT   ),
 					gr.x, gr.y, 11);
-			gr.x += ICON_W;
-			gr.x += screen.c_max_w;
-			wr_mode(MD_TRANS);
-			t_font(screen.standard_font_point, screen.standard_font_id);
-			ob_text(wt, &gr, &r, NULL, text, 0, und & 0x7f);
+			if (text)
+			{
+				gr.x += ICON_W;
+				gr.x += screen.c_max_w;
+				wr_mode(MD_TRANS);
+				t_font(screen.standard_font_point, screen.standard_font_id);
+				ob_text(wt, &gr, &r, NULL, text, 0, und & 0x7f);
+			}
 		}
 	}
 	else
@@ -1987,10 +2027,13 @@ d_g_button(enum locks lock, struct widget_tree *wt, const RECT *clip)
 		 * real values that can be used for other stuff (like shortcut
 		 * underlines :-)
 		 */
-		t_font(screen.standard_font_point, screen.standard_font_id);
-		t_extent(text, &tw, &th);
-		gr.y += (r.h - th) / 2;
-		gr.x += (r.w - tw) / 2;
+		if (text)
+		{
+			t_font(screen.standard_font_point, screen.standard_font_id);
+			t_extent(text, &tw, &th);
+			gr.y += (r.h - th) / 2;
+			gr.x += (r.w - tw) / 2;
+		}
 
 		if (d3_foreground(ob))
 		{
@@ -2000,9 +2043,11 @@ d_g_button(enum locks lock, struct widget_tree *wt, const RECT *clip)
 				gr.x += PUSH3D_DISTANCE;
 				gr.y += PUSH3D_DISTANCE;
 			}
-	
-			wr_mode(MD_TRANS);
-			ob_text(wt, &gr, &r, NULL, text, 0, und);
+			if (text)
+			{
+				wr_mode(MD_TRANS);
+				ob_text(wt, &gr, &r, NULL, text, 0, und);
+			}
 		}
 		else
 		{
@@ -2015,7 +2060,7 @@ d_g_button(enum locks lock, struct widget_tree *wt, const RECT *clip)
 
 			wr_mode(MD_TRANS);
 			t_color(selected ? G_WHITE : G_BLACK);
-			ob_text(wt, &gr, &r, NULL, text, 0, und);
+			if (text) ob_text(wt, &gr, &r, NULL, text, 0, und);
 
 			/* Display a border? */
 			if (thick)
@@ -2634,10 +2679,41 @@ init_objects(void)
 	objc_jump_table[G_ICON    ] = d_g_icon;
 	objc_jump_table[G_TITLE   ] = d_g_title;
 	objc_jump_table[G_CICON   ] = d_g_cicon;
-	objc_jump_table[G_SLIST   ] = d_g_slist;
+
+#if 0
+	objc_jump_table[G_SWBUTTON] = d_g_swbutton;
+	objc_jump_table[G_POPUP   ] = d_g_button;
+	objc_jump_table[G_WINTITLE] = d_g_wintitle;
+	objc_jump_table[G_EDIT    ] = d_g_edit;
+#endif
+
 	objc_jump_table[G_SHORTCUT] = d_g_string;
+	objc_jump_table[G_SLIST   ] = d_g_slist;
 	objc_jump_table[G_EXTBOX  ] = d_g_box;
 }
+/* object types */
+#define G_BOX			20
+#define G_TEXT			21
+#define G_BOXTEXT		22
+#define G_IMAGE			23
+#define G_USERDEF		24
+#define G_PROGDEF		G_USERDEF
+#define G_IBOX			25
+#define G_BUTTON		26
+#define G_BOXCHAR		27
+#define G_STRING		28
+#define G_FTEXT			29
+#define G_FBOXTEXT		30
+#define G_ICON			31
+#define G_TITLE			32
+#define G_CICON			33
+
+/* extended object types, MagiC only */
+#define G_SWBUTTON		34
+#define G_POPUP			35
+#define G_WINTITLE		36
+#define G_EDIT			37
+#define G_SHORTCUT		38
 
 /*
  * Display a primitive object
@@ -2679,6 +2755,9 @@ display_object(enum locks lock, XA_TREE *wt, const RECT *clip, short item, short
 	if (t <= G_UNKNOWN)
 		/* Get display routine for this type of object from jump table */
 		display_routine = objc_jump_table[t];
+
+//	if (t >= G_SWBUTTON && t <= G_SHORTCUT)
+//		display("display %s(%d) for %s", ob_types[t], t, wt->owner->name);
 
 	if (display_routine == NULL)
 	{

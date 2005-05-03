@@ -271,8 +271,9 @@ form_button(XA_TREE *wt,
 	
 	if ( (obtree[obj].ob_flags & OF_SELECTABLE) && !(obtree[obj].ob_state & OS_DISABLED) )
 	{
+		short type = obtree[obj].ob_type & 0xff;
 
-		if ((obtree[obj].ob_type & 0xff) == G_SLIST)
+		if (type == G_SLIST)
 		{
 			if (fbflags & FBF_DO_SLIST)
 			{
@@ -281,6 +282,30 @@ form_button(XA_TREE *wt,
 			}
 			else
 				no_exit = false;
+		}
+		else if (type == G_POPUP)
+		{
+			MENU mn, result;
+			POPINFO *pinf;
+			short x, y, obnum;
+
+			pinf = object_get_popinfo(obtree + obj);
+			if ((obnum = pinf->obnum) > 0)
+				pinf->tree[obnum].ob_state |= OS_CHECKED;
+			else
+				obnum = 0;
+
+			mn.mn_tree = pinf->tree;
+			mn.mn_menu = ROOT;
+			mn.mn_item = obnum;
+			mn.mn_scroll = 1;
+
+			obj_offset(wt, obj, &x, &y);
+			if (menu_popup(0, wt->owner, &mn, &result, x, y, 2) && result.mn_tree == mn.mn_tree)
+				pinf->obnum = result.mn_item;
+			if (obnum > 0)
+				obtree[obnum].ob_state &= ~OS_CHECKED;
+			obj_change(wt, obj, state & ~OS_SELECTED, flags, redraw, clip, rl);
 		}
 		else if (flags & OF_RBUTTON)
 		{
