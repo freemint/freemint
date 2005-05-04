@@ -160,6 +160,7 @@ object_type(OBJECT *tree, short t)
 	return other;
 }
 #else
+#if 0
 static char *ob_types[] =
 {
 	"box",
@@ -184,6 +185,7 @@ static char *ob_types[] =
 	"xaaes slist",	/* 39 */
 	"40"
 };
+#endif
 #endif
 
 bool inline d3_any(OBJECT *ob)        { return (ob->ob_flags & OF_FL3DACT) != 0;	}

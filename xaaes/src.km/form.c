@@ -26,6 +26,7 @@
 
 #include "xa_types.h"
 #include "xa_global.h"
+#include "xa_menu.h"
 
 #include "app_man.h"
 #include "form.h"
@@ -275,7 +276,7 @@ form_button(XA_TREE *wt,
 
 		if (type == G_SLIST)
 		{
-			if (fbflags & FBF_DO_SLIST)
+			if ((wt->flags & WTF_FBDO_SLIST) || (fbflags & FBF_DO_SLIST))
 			{
 				click_scroll_list(0, obtree, obj, md);
 				no_exit = true;

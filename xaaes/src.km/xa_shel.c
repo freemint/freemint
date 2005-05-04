@@ -206,7 +206,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 	char *tail = argvtail;
 	int ret = 0;
 	int drv = 0;
-	Path path,name;
+	Path path, name, defdir;
 	struct proc *p = NULL;
 	int type = 0;
 
@@ -441,7 +441,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 				{
 					char *new_tail;
 					long new_tailsize;
-
+					
 					new_tail = kmalloc(tailsize + 1 + strlen(cmd) + 1);
 					if (!new_tail)
 					{
@@ -475,6 +475,20 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 						DIAGS(("tosrun nn: '%s', nt: %ld'%s'", cmd, tailsize, tail+1));
 					}
 				}
+				/*
+				 * Ozk:
+				 * I think this mimics the normal behaviour of other AES's,
+				 * set the default directory of the started process to the current
+				 * directory of the caller of shel_write().
+				 */
+				if (wisgr != 0 && !(cpopts.mode & CREATE_PROCESS_OPTS_DEFDIR))
+				{
+					defdir[0] = d_getdrv() + 'A';
+					defdir[1] = ':';
+					d_getpath(defdir + 2, 0);
+					cpopts.mode |= CREATE_PROCESS_OPTS_DEFDIR;
+					cpopts.defdir = defdir;
+				}
 			}
 
 			drv = drive_and_path(cmd, path, name, true, true);
@@ -489,7 +503,6 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 				ret = create_process(cmd, *argvtail ? argvtail : tail,
 						     (x_mode & SW_ENVIRON) ? x_shell.env : *strings,
 						     &p, 0, cpopts.mode ? &cpopts : NULL);
-
 				if (ret == 0)
 				{
 					assert(p);
@@ -670,7 +683,6 @@ XA_shel_write(enum locks lock, struct xa_client *client, AESPB *pb)
 			wdoex, wisgr, wiscr, p_getpid()));
 	}
 #endif	
-
 	if ((wdoex & 0xff) < 4)
 	{
 		Sema_Up(envstr);
