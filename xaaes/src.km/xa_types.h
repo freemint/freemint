@@ -592,6 +592,8 @@ struct xa_pdlg_info
 	struct	xa_window *wind;
 	struct	widget_tree *wt;
 	
+	short	exit_button;
+
 	short	flags;
 	short	dialog_flags;
 	short	option_flags;
@@ -616,14 +618,15 @@ struct widget_tree
 	struct widget_tree *next;	/* Next widget tree */
 	short	links;
 
-#define WTF_ALLOC	0x0001
-#define WTF_XTRA_ALLOC	0x0002
-#define WTF_TREE_ALLOC	0x0004
-#define WTF_TREE_CALLOC 0x0008
-#define WTF_STATIC	0x0010
-#define WTF_AUTOFREE	0x0020
+#define WTF_ALLOC	0x00000001
+#define WTF_XTRA_ALLOC	0x00000002
+#define WTF_TREE_ALLOC	0x00000004
+#define WTF_TREE_CALLOC 0x00000008
+#define WTF_STATIC	0x00000010
+#define WTF_AUTOFREE	0x00000020
+#define WTF_FBDO_SLIST	0x00000040	/* form_button() handles SLIST objects */
 
-	ulong	flags;
+	unsigned long	flags;
 
 	struct xa_window *wind;		/* Not of any specific use just yet...*/
 	struct xa_client *owner;	/* The tree widget would be owned by a different app to

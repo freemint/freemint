@@ -239,7 +239,7 @@ fnts_extb_callout(struct extbox_parms *p)
 		callout_display(f, fnts->vdi_handle, fnts->fnt_pt, fnts->fnt_ratio, &p->clip, &p->r, fnts->sample_text);
 	}
 }
-
+#if 0
 static void
 fnts_redraw(enum locks lock, struct xa_window *wind, short start, short depth, RECT *r)
 {
@@ -289,7 +289,7 @@ fnts_redraw(enum locks lock, struct xa_window *wind, short start, short depth, R
 		unlock_screen(wind->owner->p, 0);
 	}
 }
-
+#endif
 
 static struct xa_fnts_info *
 new_fnts(void)
@@ -822,8 +822,6 @@ select_edsize(struct xa_fnts_info *fnts)
 		list->slider(list, true);
 		list->redraw(list, NULL);
 	}
-
-	//fnts_redraw(0, fnts->wind, FNTS_POINTS, 1, NULL);
 }
 
 static void
@@ -855,7 +853,8 @@ set_points_list(struct xa_fnts_info *fnts, struct xa_fnts_item *f)
 
 	//list->redraw(list, NULL);
 
-	fnts_redraw(0, fnts->wind, FNTS_SHOW, 1, NULL);
+	//fnts_redraw(0, fnts->wind, FNTS_SHOW, 1, NULL);
+	wdialog_redraw(0, fnts->wind, FNTS_SHOW, 1, NULL);
 }
 
 static void
@@ -921,7 +920,6 @@ set_name_list(struct xa_fnts_info *fnts, struct xa_fnts_item *selstyle)
 
 	list_type->slider(list_type, true);
 	list_type->redraw(list_type, NULL);	
-	//fnts_redraw(0, fnts->wind, FNTS_TYPE, 1, NULL);
 }	
 static bool
 sort_names(struct scroll_entry *new, struct scroll_entry *this)
@@ -985,7 +983,6 @@ update_slists(struct xa_fnts_info *fnts)
 
 	set_name_list(fnts, NULL);
 
-	//fnts_redraw(0, ((struct xa_fnts_info *)list_name->data)->wind, FNTS_FNTLIST, 1, NULL);
 }
 
 /*
@@ -1047,8 +1044,10 @@ click_size(SCROLL_INFO *list, SCROLL_ENTRY *this, const struct moose_data *md)
 
 		fnts->fnt_pt = get_edpoint(fnts);
 		
-		fnts_redraw(0, ((struct xa_fnts_info *)list->data)->wind, FNTS_EDSIZE, 1, NULL);
-		fnts_redraw(0, ((struct xa_fnts_info *)list->data)->wind, FNTS_SHOW, 1, NULL);
+		//fnts_redraw(0, ((struct xa_fnts_info *)list->data)->wind, FNTS_EDSIZE, 1, NULL);
+		wdialog_redraw(0, ((struct xa_fnts_info *)list->data)->wind, FNTS_EDSIZE, 1, NULL);
+		//fnts_redraw(0, ((struct xa_fnts_info *)list->data)->wind, FNTS_SHOW, 1, NULL);
+		wdialog_redraw(0, ((struct xa_fnts_info *)list->data)->wind, FNTS_SHOW, 1, NULL);
 	}
 	return 0;
 }
@@ -1317,7 +1316,8 @@ update(struct xa_fnts_info *fnts, short bf)
 	set_but(obtree, FNTS_XSET, (bf & FNTS_BSET));
 	set_but(obtree, FNTS_XMARK, (bf & FNTS_BMARK));
 
-	fnts_redraw(0, fnts->wind, 0, 10, NULL);
+	//fnts_redraw(0, fnts->wind, 0, 10, NULL);
+	wdialog_redraw(0, fnts->wind, 0, 10, NULL);
 }
 
 static void
@@ -1434,8 +1434,6 @@ XA_fnts_open(enum locks lock, struct xa_client *client, AESPB *pb)
 	fnts = (struct xa_fnts_info *)((unsigned long)pb->addrin[0] >> 16 | (unsigned long)pb->addrin[0] << 16);
 	if (fnts && (wind = get_fnts_wind(client, fnts)))
 	{
-		
-		
 		if (!(wind->window_status & XAWS_OPEN))
 		{
 			struct widget_tree *wt = fnts->wt;
@@ -1747,7 +1745,7 @@ XA_fnts_evnt(enum locks lock, struct xa_client *client, AESPB *pb)
 		wep.ev		= (EVNT *)pb->addrin[1];
 		wep.wdlg	= NULL;
 		wep.callout	= NULL;
-		wep.redraw	= fnts_redraw;
+		wep.redraw	= wdialog_redraw; //fnts_redraw;
 		wep.obj		= 0;
 
 		ret = wdialog_event(lock, client, &wep);
@@ -1766,7 +1764,8 @@ XA_fnts_evnt(enum locks lock, struct xa_client *client, AESPB *pb)
 			if (val != fnts->fnt_pt)
 			{
 				fnts->fnt_pt = val;
-				fnts_redraw(0, wind, FNTS_SHOW, 1, NULL);
+				//fnts_redraw(0, wind, FNTS_SHOW, 1, NULL);
+				wdialog_redraw(0, wind, FNTS_SHOW, 1, NULL);
 				select_edsize(fnts);
 			}
 			fnts->fnt_pt = val;
@@ -1790,13 +1789,13 @@ XA_fnts_evnt(enum locks lock, struct xa_client *client, AESPB *pb)
  * Return is used by do_widgets() to check if state of obj is
  * to be reset or not
  */
-static WidgetBehaviour fnts_th_click;
-static FormMouseInput	fntsClick_form_do;
-static FormKeyInput	fntsKeypress;
-static FormExit		fntsFormexit;
+//static WidgetBehaviour fnts_th_click;
+//static FormMouseInput	fntsClick_form_do;
+static FormKeyInput	Keypress;
+static FormExit		Formexit;
 
 static bool
-fntsKeypress(enum locks lock,
+Keypress(enum locks lock,
 	    struct xa_client *client,
 	    struct xa_window *wind,
 	    struct widget_tree *wt,
@@ -1818,14 +1817,15 @@ fntsKeypress(enum locks lock,
 		if (val != fnts->fnt_pt)
 		{
 			fnts->fnt_pt = val;
-			fnts_redraw(0, wind, FNTS_SHOW, 1, NULL);
+			//fnts_redraw(0, wind, FNTS_SHOW, 1, NULL);
+			wdialog_redraw(0, wind, FNTS_SHOW, 1, NULL);
 
 			select_edsize(fnts);
 		}
 	}
 	return no_exit;	
 }
-
+#if 0
 static bool
 fnts_th_click(	enum locks lock,
 			struct xa_window *wind,
@@ -1915,9 +1915,10 @@ fntsClick_form_do(enum locks lock,
 	}
 	return false;
 }
+#endif
 
 static void
-fntsFormexit( struct xa_client *client,
+Formexit( struct xa_client *client,
 	      struct xa_window *wind,
 	      XA_TREE *wt,
 	      struct fmd_result *fr)
@@ -1933,13 +1934,13 @@ fntsFormexit( struct xa_client *client,
 
 static struct toolbar_handlers fnts_th =
 {
-	fntsFormexit,		/* FormExit		*exitform;	*/
-	fntsKeypress,		/* FormKeyInput		*keypress;	*/
+	Formexit,		/* FormExit		*exitform;	*/
+	Keypress,		/* FormKeyInput		*keypress;	*/
 
 	NULL,			/* DisplayWidget	*display;	*/
-	fnts_th_click,		/* WidgetBehaviour	*click;		*/
-	fnts_th_click,		/* WidgetBehaviour	*dclick;	*/
-	fnts_th_click,		/* WidgetBehaviour	*drag;		*/
+	NULL, /*fnts_th_click,*/		/* WidgetBehaviour	*click;		*/
+	NULL, /*fnts_th_click,*/		/* WidgetBehaviour	*dclick;	*/
+	NULL, /*fnts_th_click,*/		/* WidgetBehaviour	*drag;		*/
 	NULL,			/* WidgetBehaviour	*release;	*/
 	NULL,			/* void (*destruct)(struct xa_widget *w); */
 };
@@ -1969,7 +1970,8 @@ XA_fnts_do(enum locks lock, struct xa_client *client, AESPB *pb)
 		change_window_attribs(lock, client, wind, tp, true, or, NULL);
 		
 		set_toolbar_handlers(&fnts_th, wind, get_widget(wind, XAW_TOOLBAR), get_widget(wind, XAW_TOOLBAR)->stuff);
-		
+		wt->flags |= WTF_FBDO_SLIST;
+
 		fnts->button_flags = pb->intin[0];
 		update(fnts, fnts->button_flags);
 
@@ -1984,6 +1986,7 @@ XA_fnts_do(enum locks lock, struct xa_client *client, AESPB *pb)
 		client->status |= CS_FORM_DO;
 		Block(client, 0);
 		client->status &= ~CS_FORM_DO;
+		wt->flags &= ~WTF_FBDO_SLIST;
 		close_window(lock, wind);
 		
 		pb->intout[0] = fnts->exit_button;
