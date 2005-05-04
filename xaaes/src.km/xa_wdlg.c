@@ -141,6 +141,56 @@ cpy_ev2md(EVNT *e, struct moose_data *m)
 	m->kstate = e->kstate;
 }
 
+void
+wdialog_redraw(enum locks lock, struct xa_window *wind, short start, short depth, RECT *r)
+{
+	struct xa_rect_list *rl;
+	struct widget_tree *wt;
+
+	if (wind && (wt = get_widget(wind, XAW_TOOLBAR)->stuff) && (rl = wind->rect_start))
+	{
+		OBJECT *obtree;
+		RECT dr;
+
+		obtree = wt->tree;
+
+		lock_screen(wind->owner->p, false, NULL, 0);
+		hidem();
+				
+		if (wt->e.obj != -1)
+			obj_edit(wt, ED_END, 0, 0, 0, true, &wind->wa, wind->rect_start, NULL, NULL);
+		
+		if (r)
+		{
+			while (rl)
+			{
+				if (xa_rect_clip(&rl->r, r, &dr))
+				{
+					set_clip(&dr);
+					draw_object_tree(0, wt, wt->tree, start, depth, NULL);
+				}
+				rl = rl->next;
+			}
+		}
+		else
+		{
+			while (rl)
+			{
+				set_clip(&rl->r);
+				draw_object_tree(0, wt, wt->tree, start, depth, NULL);
+				rl = rl->next;
+			}
+		}
+		
+		if (wt->e.obj != -1)
+			obj_edit(wt, ED_END, 0, 0, 0, true, &wind->wa, wind->rect_start, NULL, NULL);
+		
+		showm();
+		clear_clip();
+		unlock_screen(wind->owner->p, 0);
+	}
+}
+
 /* Called from draw_window via wind->redraw, so clipping
  * is handled elsewhere
  */
@@ -924,9 +974,9 @@ wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms 
 			if (ret && (ev->mwhich & MU_BUTTON))
 			{
 				struct xa_window *cwind;
-					cwind = find_window(lock, ev->mx, ev->my);
+				cwind = find_window(lock, ev->mx, ev->my);
 
-					if (cwind && wep->wind == cwind && (wind == top || (wind->active_widgets & NO_TOPPED)) )
+				if (cwind && wep->wind == cwind && (wind == top || (wind->active_widgets & NO_TOPPED)) )
 				{
 					if ( (obj = obj_find(wt, 0,7, ev->mx, ev->my, NULL)) >= 0)
 					{
