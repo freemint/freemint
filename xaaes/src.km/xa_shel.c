@@ -475,23 +475,23 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 						DIAGS(("tosrun nn: '%s', nt: %ld'%s'", cmd, tailsize, tail+1));
 					}
 				}
-				/*
-				 * Ozk:
-				 * I think this mimics the normal behaviour of other AES's,
-				 * set the default directory of the started process to the current
-				 * directory of the caller of shel_write().
-				 */
-				if (wisgr != 0 && !(cpopts.mode & CREATE_PROCESS_OPTS_DEFDIR))
-				{
-					defdir[0] = d_getdrv() + 'A';
-					defdir[1] = ':';
-					d_getpath(defdir + 2, 0);
-					cpopts.mode |= CREATE_PROCESS_OPTS_DEFDIR;
-					cpopts.defdir = defdir;
-				}
 			}
-
-			drv = drive_and_path(cmd, path, name, true, true);
+			/*
+			 * Ozk:
+			 * I think this mimics the normal behaviour of other AES's,
+			 * set the default directory of the started process to the current
+			 * directory of the caller of shel_write().
+			 */
+			if (!(cpopts.mode & CREATE_PROCESS_OPTS_DEFDIR))
+			{
+				defdir[0] = d_getdrv() + 'a';
+				defdir[1] = ':';
+				d_getpath(defdir + 2, 0);
+				cpopts.mode |= CREATE_PROCESS_OPTS_DEFDIR;
+				cpopts.defdir = defdir;
+			}
+			
+			drv = drive_and_path(cmd, path, name, true, caller == C.Aes ? true : false);
 
 			DIAG((D_shel, 0, "[2]drive_and_path %d,'%s','%s'", drv, path,name));
 
@@ -500,6 +500,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 
 			if (wisgr != 0)
 			{
+				
 				ret = create_process(cmd, *argvtail ? argvtail : tail,
 						     (x_mode & SW_ENVIRON) ? x_shell.env : *strings,
 						     &p, 0, cpopts.mode ? &cpopts : NULL);
@@ -519,11 +520,21 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 			struct memregion *m;
 			struct basepage *b;
 			long size;
-
-			drv = drive_and_path(save_cmd, path, name, true, true);
+			
+			if (!(cpopts.mode & CREATE_PROCESS_OPTS_DEFDIR))
+			{			
+				defdir[0] = d_getdrv() + 'A';
+				defdir[1] = ':';
+				d_getpath(defdir + 2, 0);
+				cpopts.mode |= CREATE_PROCESS_OPTS_DEFDIR;
+				cpopts.defdir = defdir;
+			}
+			
+			drv = drive_and_path(save_cmd, path, name, true, caller == C.Aes ? true : false);
 
 			DIAG((D_shel, 0, "[3]drive_and_path %d,'%s','%s'", drv, path, name));
 
+			
 			ret = create_process(cmd, *argvtail ? argvtail : tail,
 					     (x_mode & SW_ENVIRON) ? x_shell.env : *strings,
 					     &p, 256, cpopts.mode ? &cpopts : NULL);
