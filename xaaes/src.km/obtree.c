@@ -1236,7 +1236,7 @@ ob_find_shortcut(OBJECT *tree, ushort nk)
 
 	do {
 		OBJECT *ob = tree + i;
-		if ((ob->ob_state & OS_WHITEBAK) && ((ob->ob_state & OS_DISABLED) == 0))
+		if ((ob->ob_state & (OS_WHITEBAK | OS_DISABLED)) == OS_WHITEBAK)
 		{
 			int ty = ob->ob_type & 0xff;
 			if (ty == G_BUTTON || ty == G_STRING)
@@ -1247,9 +1247,12 @@ ob_find_shortcut(OBJECT *tree, ushort nk)
 					char *s = object_get_spec(ob)->free_string;
 					if (s)
 					{
-						DIAG((D_keybd,NULL,"  -  in '%s' find '%c' on %d :: %c",s,nk,j, *(s+j)));
-						if (j < strlen(s) && toupper(*(s+j)) == nk)
-							return i;
+						if (j < strlen(s))
+						{
+							DIAG((D_keybd,NULL,"  -  in '%s' find '%c' on %d :: %c",s,nk,j, *(s+j)));
+							if (toupper(*(s + j)) == nk)
+								return i;
+						}
 					}
 				}
 			}
