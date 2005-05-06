@@ -524,7 +524,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 			drv = drive_and_path(save_cmd, path, name, true, caller == C.Aes ? true : false);
 			if (!(cpopts.mode & CREATE_PROCESS_OPTS_DEFDIR))
 			{			
-				defdir[0] = d_getdrv() + 'A';
+				defdir[0] = d_getdrv() + 'a';
 				defdir[1] = ':';
 				d_getpath(defdir + 2, 0);
 				cpopts.mode |= CREATE_PROCESS_OPTS_DEFDIR;

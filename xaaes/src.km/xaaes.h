@@ -122,7 +122,42 @@
 #define FNTS_XDISPLAY    18  /* BUTTON in Baum WDLG_FNTS */
 
 #define WDLG_PDLG        11  /* Formular/Dialog */
+#define XPDLG_PRINT      1   /* BUTTON in Baum WDLG_PDLG */
+#define XPDLG_CANCEL     2   /* BUTTON in Baum WDLG_PDLG */
+#define XPDLG_LIST       3   /* BOX in Baum WDLG_PDLG */
+#define XPDLG_DIALOG     4   /* IBOX in Baum WDLG_PDLG */
+#define XPDLG_DRIVER     5   /* BUTTON in Baum WDLG_PDLG */
 
-#define RSC_CONTROL      12  /* Formular/Dialog */
+#define PDLG_DIALOGS     12  /* Formular/Dialog */
+#define PDLG_GENERAL     1   /* BOX in Baum PDLG_DIALOGS */
+#define PDLG_G_QUALITY   2   /* BUTTON in Baum PDLG_DIALOGS */
+#define PDLG_G_COLOR     3   /* BUTTON in Baum PDLG_DIALOGS */
+#define PDLG_G_SELALL    4   /* BUTTON in Baum PDLG_DIALOGS */
+#define PDLG_G_SELFROM   5   /* BUTTON in Baum PDLG_DIALOGS */
+#define PDLG_G_FROM      6   /* FBOXTEXT in Baum PDLG_DIALOGS */
+#define PDLG_G_TO        7   /* FBOXTEXT in Baum PDLG_DIALOGS */
+#define PDLG_G_EVEN      8   /* BUTTON in Baum PDLG_DIALOGS */
+#define PDLG_G_ODD       9   /* BUTTON in Baum PDLG_DIALOGS */
+#define PDLG_G_COPIES    10  /* FBOXTEXT in Baum PDLG_DIALOGS */
+#define PDLG_PAPER       16  /* BOX in Baum PDLG_DIALOGS */
+#define PDLG_P_FORMAT    17  /* BUTTON in Baum PDLG_DIALOGS */
+#define PDLG_P_TYPE      18  /* BUTTON in Baum PDLG_DIALOGS */
+#define PDLG_P_INTRAY    19  /* BUTTON in Baum PDLG_DIALOGS */
+#define PDLG_P_OUTTRAY   20  /* BUTTON in Baum PDLG_DIALOGS */
+#define PDLG_P_LETTER    21  /* USERDEF in Baum PDLG_DIALOGS */
+#define PDLG_G_LAND      22  /* USERDEF in Baum PDLG_DIALOGS */
+#define PDLG_P_SCALE     23  /* FBOXTEXT in Baum PDLG_DIALOGS */
+#define PDLG_RASTER      28  /* BOX in Baum PDLG_DIALOGS */
+#define PDLG_R_RASTER    29  /* BUTTON in Baum PDLG_DIALOGS */
+#define PDLG_R_C         30  /* BUTTON in Baum PDLG_DIALOGS */
+#define PDLG_R_M         31  /* BUTTON in Baum PDLG_DIALOGS */
+#define PDLG_R_Y         32  /* BUTTON in Baum PDLG_DIALOGS */
+#define PDLG_R_K         33  /* BUTTON in Baum PDLG_DIALOGS */
+#define PDLG_PORT        35  /* BOX in Baum PDLG_DIALOGS */
+#define PDLG_I_PORT      36  /* BUTTON in Baum PDLG_DIALOGS */
+#define PDLG_I_BG        38  /* BUTTON in Baum PDLG_DIALOGS */
+#define PDLG_R_FG        39  /* BUTTON in Baum PDLG_DIALOGS */
+
+#define RSC_CONTROL      13  /* Formular/Dialog */
 #define CTRL_SLIST       1   /* BOX in Baum RSC_CONTROL */
 #define CTRL_CTRLITEM    2   /* IBOX in Baum RSC_CONTROL */
