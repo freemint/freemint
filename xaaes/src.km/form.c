@@ -1016,7 +1016,7 @@ do_formwind_msg(
 		{
 			close_window(0, wind);
 			delayed_delete_window(0, wind);
-			break;
+			return;
 		}
 		case WM_VSLID:
 		{

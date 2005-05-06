@@ -292,8 +292,16 @@ CE_do_winmesag(enum locks lock, struct c_event *ce, bool cancel)
 	struct CE_do_winmesag_data *args = ce->ptr1;
 	
 	if (!cancel)
-		args->wind->do_message(args->wind, args->client, args->amq, args->qmf, args->msg);
-	
+	{
+		struct xa_window *wind = args->wind;
+		/*
+		 * Clear args->wind before calling do_message, incase
+		 * a call to cancel_do_winmesag is done and the 'args'
+		 * is freed there, causing havoc when freed again here!!
+		 */
+		args->wind = NULL;
+		wind->do_message(wind, args->client, args->amq, args->qmf, args->msg);
+	}
 	kfree(args);
 }
 
