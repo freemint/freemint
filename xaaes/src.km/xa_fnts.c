@@ -26,9 +26,9 @@
 
 #include RSCHNAME
 
-#include "xa_global.h"
 #include "xa_fnts.h"
 #include "xa_wdlg.h"
+#include "xa_global.h"
 
 #include "k_main.h"
 #include "k_mouse.h"
@@ -63,16 +63,6 @@
  */
 
 #if WDIALOG_FNTS
-
-typedef struct
-{
-	short	*control;	/**< TODO */
-	short	*intin;		/**< TODO */
-	short	*ptsin;		/**< TODO */
-	short	*intout;	/**< TODO */
-	short	*ptsout;	/**< TODO */
-} XVDIPB;
-
 
 struct spd_trnfmd
 {
@@ -290,6 +280,19 @@ fnts_redraw(enum locks lock, struct xa_window *wind, short start, short depth, R
 	}
 }
 #endif
+static struct speedo_header *
+xvqt_fontheader(XVDIPB *vpb, short handle)
+{
+	struct speedo_header *hdr;
+
+	hdr = kmalloc(sizeof (*hdr));
+	if (hdr)
+	{
+		*(struct speedo_header **)&vpb->intin[0] = hdr;
+		VDI(vpb, 232, 0, 2, 0, handle);
+	}
+	return hdr;
+}
 
 static struct xa_fnts_info *
 new_fnts(void)
@@ -366,155 +369,6 @@ get_fnts_wind(struct xa_client *client, void *fnts_ptr)
 		return NULL;
 }
 
-/*
- * Setup a new VDI parameter block
- */
-static XVDIPB *
-create_vdipb(void)
-{
-	XVDIPB *v;
-	short *p;
-	short **e;
-	int i;
-	
-	v = kmalloc(sizeof(XVDIPB) + ((12 + 500 + 500 + 500 + 500) << 1) );
-
-	p = (short *)((long)v + sizeof(XVDIPB));
-	v->control = p;
-	p += 12;
-
-	e = &v->intin;
-	for (i = 0; i < 4; i++)
-	{
-		*e++ = p;
-		p += 500;
-	}
-	return v;
-}
-
-/*
- * callout the VDI
- */
-static void
-do_vdi_trap (XVDIPB * vpb)
-{
-	__asm__ volatile
-	(
-		"movea.l	%0,a0\n\t"	/* &vdipb */
-		"move.l		a0,d1\n\t"
-		"move.w		#115,d0\n\t"	/* 0x0073 */
-		"trap		#2"
-		:
-		: "a"(vpb)
-		: "a0", "d0", "d1", "memory"
-	);
-}
-
-inline static void
-VDI(XVDIPB *vpb, short c0, short c1, short c3, short c5, short c6)
-{
-	vpb->control[0] = c0;
-	vpb->control[1] = c1;
-	vpb->control[3] = c3;
-	vpb->control[5] = c5;
-	vpb->control[6] = c6;
-
-	do_vdi_trap(vpb);
-}
-
-static void
-get_vdistr(char *d, short *s, short len)
-{
-	for (;len >= 0; len--)
-	{
-		if (!(*d++ = *s++))
-			break;
-	}
-	*d = '\0';
-}
-
-/*
- * our private VDI calls
- */
-static void
-xvst_font(XVDIPB *vpb, short handle, short id)
-{
-	vpb->intin[0] = id;
-	VDI(vpb, 21, 0, 1, 0, handle);
-}
-
-static XFNT_INFO *
-xvqt_xfntinfo(XVDIPB *vpb, short handle, short flags, short id, short index)
-{
-	XFNT_INFO *x;
-
-	if ((x = kmalloc(sizeof(*x))))
-	{
-		x->size = sizeof(*x);
-		vpb->intin[0] = flags;
-		vpb->intin[1] = id;
-		vpb->intin[2] = index;
-		*(XFNT_INFO **)&vpb->intin[3] = x;
-		VDI(vpb, 229, 0, 5, 0, handle);
-	}
-	return x;
-}
-static struct speedo_header *
-xvqt_fontheader(XVDIPB *vpb, short handle)
-{
-	struct speedo_header *hdr;
-
-	hdr = kmalloc(sizeof (*hdr));
-	if (hdr)
-	{
-		*(struct speedo_header **)&vpb->intin[0] = hdr;
-		VDI(vpb, 232, 0, 2, 0, handle);
-	}
-	return hdr;
-}
-
-static short
-xvst_point(XVDIPB *vpb, short handle, short point)
-{
-	vpb->intin[0] = point;
-	VDI(vpb, 107, 0, 1, 0, handle);
-	return vpb->intout[0];
-}
-
-#if 0
-/* ***************************************************** */
-static short
-xvq_devinfo(XVDIPB *vpb, short handle, short dev_id)
-{
-	vpb->intin[0] = dev_id;
-	VDI(vpb, 248, 0, 1, 0, handle);
-	return vpb->intout[0];
-}
-
-static void
-dump_devstuff(XVDIPB *vpb, short handle)
-{
-	int i, j;
-	char rn[200], fn[100];
-
-	for (i = 0; i < 100; i++)
-	{
-		xvq_devinfo(vpb, handle, i);
-		if (vpb->control[4])
-		{
-			for (j = 0; j < ((vpb->control[2] - 1) << 1) && j < 200; j++)
-				rn[j] = *(char *)((long)vpb->ptsout + j + 2), rn[j+1] = '\0';
-			for (j = 0; j < vpb->control[4] && j < 200 && vpb->intout[j]; j++)
-				fn[j] = (char)vpb->intout[j], fn[j + 1] = '\0';
-		
-			display("driver %d is %s, name %s, file %s", i, vpb->ptsout[0] ? "Open" : "Closed", rn, fn);
-		}
-		else
-			display("No driver at ID %d", i);
-	}
-}
-/* ***************************************************** */
-#endif
 
 static short pt_sizes[] = 
 {

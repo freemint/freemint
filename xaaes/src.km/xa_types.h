@@ -584,21 +584,32 @@ struct wdlg_evnt_parms
 	short obj;
 };
 
+struct xa_pdlg_drv_info;
+struct xa_pdlg_drv_info
+{
+	struct xa_pdlg_drv_info *next;
+	DRV_INFO		drv_info;
+};
+
 struct xa_pdlg_info
 {
 	struct xa_data_hdr h;
 
 	void	*handle;
 	struct	xa_window *wind;
-	struct	widget_tree *wt;
-	
-	short	exit_button;
+	struct	widget_tree *mwt;
+	struct	widget_tree *dwt;
+	struct	scroll_info *list;
 
+	short	exit_button;
 	short	flags;
 	short	dialog_flags;
 	short	option_flags;
 
+	struct xa_pdrv_info *priv_drivers;
+	
 	PRN_SETTINGS *settings;
+	PRN_SETTINGS current_settings;
 	char document_name[256];
 
 };

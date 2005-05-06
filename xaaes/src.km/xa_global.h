@@ -406,6 +406,15 @@ struct xa_screen
 
 	struct rgb_1000 palette[256];
 };
+typedef struct
+{
+	short	*control;	/**< TODO */
+	short	*intin;		/**< TODO */
+	short	*ptsin;		/**< TODO */
+	short	*intout;	/**< TODO */
+	short	*ptsout;	/**< TODO */
+} XVDIPB;
+
 
 /* The screen descriptor */
 extern struct xa_screen screen;
@@ -438,5 +447,13 @@ void	remove_xa_data		(struct xa_data_hdr **list, void *_data);
 void	delete_xa_data		(struct xa_data_hdr **list, void *_data);
 void	free_xa_data_list	(struct xa_data_hdr **list);
 
+/* Global VDI calls */
+XVDIPB *	create_vdipb(void);
+void		do_vdi_trap (XVDIPB * vpb);
+void		VDI(XVDIPB *vpb, short c0, short c1, short c3, short c5, short c6);
+void		get_vdistr(char *d, short *s, short len);
+void		xvst_font(XVDIPB *vpb, short handle, short id);
+XFNT_INFO *	xvqt_xfntinfo(XVDIPB *vpb, short handle, short flags, short id, short index);
+short		xvst_point(XVDIPB *vpb, short handle, short point);
 
 #endif /* _xa_global_h */

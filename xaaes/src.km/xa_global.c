@@ -155,3 +155,140 @@ free_xa_data_list(struct xa_data_hdr **list)
 		l = n;
 	}
 }
+
+/*
+ * Setup a new VDI parameter block
+ */
+XVDIPB *
+create_vdipb(void)
+{
+	XVDIPB *v;
+	short *p;
+	short **e;
+	int i;
+	
+	v = kmalloc(sizeof(XVDIPB) + ((12 + 500 + 500 + 500 + 500) << 1) );
+
+	p = (short *)((long)v + sizeof(XVDIPB));
+	v->control = p;
+	p += 12;
+
+	e = &v->intin;
+	for (i = 0; i < 4; i++)
+	{
+		*e++ = p;
+		p += 500;
+	}
+	return v;
+}
+
+/*
+ * callout the VDI
+ */
+void
+do_vdi_trap (XVDIPB * vpb)
+{
+	__asm__ volatile
+	(
+		"movea.l	%0,a0\n\t"	/* &vdipb */
+		"move.l		a0,d1\n\t"
+		"move.w		#115,d0\n\t"	/* 0x0073 */
+		"trap		#2"
+		:
+		: "a"(vpb)
+		: "a0", "d0", "d1", "memory"
+	);
+}
+
+void
+VDI(XVDIPB *vpb, short c0, short c1, short c3, short c5, short c6)
+{
+	vpb->control[0] = c0;
+	vpb->control[1] = c1;
+	vpb->control[3] = c3;
+	vpb->control[5] = c5;
+	vpb->control[6] = c6;
+
+	do_vdi_trap(vpb);
+}
+
+void
+get_vdistr(char *d, short *s, short len)
+{
+	for (;len >= 0; len--)
+	{
+		if (!(*d++ = *s++))
+			break;
+	}
+	*d = '\0';
+}
+
+/*
+ * our private VDI calls
+ */
+void
+xvst_font(XVDIPB *vpb, short handle, short id)
+{
+	vpb->intin[0] = id;
+	VDI(vpb, 21, 0, 1, 0, handle);
+}
+
+XFNT_INFO *
+xvqt_xfntinfo(XVDIPB *vpb, short handle, short flags, short id, short index)
+{
+	XFNT_INFO *x;
+
+	if ((x = kmalloc(sizeof(*x))))
+	{
+		x->size = sizeof(*x);
+		vpb->intin[0] = flags;
+		vpb->intin[1] = id;
+		vpb->intin[2] = index;
+		*(XFNT_INFO **)&vpb->intin[3] = x;
+		VDI(vpb, 229, 0, 5, 0, handle);
+	}
+	return x;
+}
+
+short
+xvst_point(XVDIPB *vpb, short handle, short point)
+{
+	vpb->intin[0] = point;
+	VDI(vpb, 107, 0, 1, 0, handle);
+	return vpb->intout[0];
+}
+
+#if 0
+/* ***************************************************** */
+static short
+xvq_devinfo(XVDIPB *vpb, short handle, short dev_id)
+{
+	vpb->intin[0] = dev_id;
+	VDI(vpb, 248, 0, 1, 0, handle);
+	return vpb->intout[0];
+}
+
+static void
+dump_devstuff(XVDIPB *vpb, short handle)
+{
+	int i, j;
+	char rn[200], fn[100];
+
+	for (i = 0; i < 100; i++)
+	{
+		xvq_devinfo(vpb, handle, i);
+		if (vpb->control[4])
+		{
+			for (j = 0; j < ((vpb->control[2] - 1) << 1) && j < 200; j++)
+				rn[j] = *(char *)((long)vpb->ptsout + j + 2), rn[j+1] = '\0';
+			for (j = 0; j < vpb->control[4] && j < 200 && vpb->intout[j]; j++)
+				fn[j] = (char)vpb->intout[j], fn[j + 1] = '\0';
+		
+			display("driver %d is %s, name %s, file %s", i, vpb->ptsout[0] ? "Open" : "Closed", rn, fn);
+		}
+		else
+			display("No driver at ID %d", i);
+	}
+}
+/* ***************************************************** */
+#endif

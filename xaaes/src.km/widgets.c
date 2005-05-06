@@ -1006,8 +1006,8 @@ free_xawidget_resources(struct xa_widget *widg)
 					wt, widg));
 
 				wt->links--;
-			//	display(" free_xawidget_re: stuff is wt=%lx (links=%d) in widg=%lx",
-			//		wt, wt->links, widg);
+				//display(" free_xawidget_re: stuff is wt=%lx (links=%d) in widg=%lx",
+				//	wt, wt->links, widg);
 				
 				if (!remove_wt(wt, false))
 				{
@@ -2326,9 +2326,11 @@ click_close(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 		wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 				   WM_CLOSED, 0, 0, wind->handle,
 				   0, 0, 0, 0);
+		return false;
 
-		/* Redisplay.... */
-		return true;
+		if ((wind->window_status & XAWS_OPEN))
+			return true;	/* redisplay */
+		return false;
 	}
 
 	/* Just close these windows, they can handle it... */
@@ -3903,7 +3905,7 @@ remove_widget(enum locks lock, struct xa_window *wind, int tool)
 	XA_WIDGET *widg = get_widget(wind, tool);
 
 	DIAG((D_form, NULL, "remove_widget %d: 0x%lx", tool, widg->stuff));
-	//if (wind->dial & created_for_SLIST) display("remove_widget %d: 0x%lx", tool, widg->stuff);
+	//display("remove_widget %d: 0x%lx", tool, widg->stuff);
 
 	if (widg->destruct)
 		widg->destruct(widg);
