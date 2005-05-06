@@ -179,8 +179,8 @@ XA_keyboard_event(enum locks lock, const struct rawkey *key)
 
 	DIAG((D_keybd,client,"XA_keyboard_event: %s; update_lock:%d, focus: %s, window_list: %s",
 		waiting ? "waiting" : "", update_locked() ? update_locked()->pid : 0,
-		c_owner(client), w_owner(keywind)));
-
+		c_owner(client), keywind ? w_owner(keywind) : "no keywind"));
+	
 	/* Found either (MU_KEYBD|MU_NORM_KEYBD) or keypress handler. */
 	if (waiting)
 	{
@@ -188,6 +188,8 @@ XA_keyboard_event(enum locks lock, const struct rawkey *key)
 		if (rk)
 		{
 			*rk = *key;
+			rk->norm = nkc_tconv(key->raw.bcon);
+
 			if (keywind && keywind == client->alert)
 				post_cevent(client, cXA_keypress, rk, keywind, 0,0, NULL,NULL);
 			else if (client->fmd.keypress)

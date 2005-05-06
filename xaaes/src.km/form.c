@@ -512,9 +512,10 @@ form_keyboard(XA_TREE *wt,
 		else 
 		{
 			short ks;
+			
 			vq_key_s(C.vh, &ks);
 			if ( (ks & (K_CTRL|K_ALT)) == K_ALT )
-				next_obj = ob_find_shortcut(obtree, key->norm);
+				next_obj = ob_find_shortcut(obtree, key->norm & 0x00ff);
 
 			DIAG((D_keybd, NULL, "form_keyboard: shortcut %d for %s",
 				next_obj, client->name));
@@ -753,6 +754,7 @@ Click_form_do(enum locks lock,
  * If wind is not NULL, this is a windowed form_dialog session and XA_TREE
  * to use is wind->toolbar.
  */
+ #include "xaaes.h"
 bool
 Key_form_do(enum locks lock,
 	    struct xa_client *client,
@@ -770,6 +772,7 @@ Key_form_do(enum locks lock,
 
 	DIAG((D_form, client, "Key_form_do: %s formdo for %s",
 		wind ? "windowed":"classic", client->name));
+
 	/*
 	 * If window is not NULL, the form_do is a windowed one,
 	 * else it is a classic blocking form_do
