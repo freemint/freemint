@@ -122,8 +122,6 @@
  * 
  */
 
-# ifndef NO_MMU
-
 # include "mprot.h"
 
 # include "libkern/libkern.h"
@@ -134,7 +132,7 @@
 # include "mmu.h"
 
 
-#ifdef MMU040
+#if defined(M68040) || defined(M68060)
 
 #if 0
 #define MP_DEBUG(x) DEBUG(x)
@@ -1758,6 +1756,4 @@ BIG_MEM_DUMP (int bigone, PROC *proc)
 # endif /* DEBUG_INFO */
 }
 
-# endif /* MMU040 */
-
-# endif /* ONLY68000 */
+# endif /* M68040 || M68060 */

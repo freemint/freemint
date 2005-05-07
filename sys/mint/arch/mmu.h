@@ -34,7 +34,7 @@
 # ifndef _mint_m68k_mmu_h
 # define _mint_m68k_mmu_h
 
-# ifndef MMU040
+# if !defined(M68040) && !defined(M68060)
 
 /* macro for turning a curproc->base_table pointer into a 16-byte boundary */
 # define ROUND16(ld)	((long_desc *)(((ulong)(ld) + 15) & ~15))
@@ -84,7 +84,7 @@ typedef struct {
 	unsigned tid:4;
 } tc_reg;
 
-# else /* MMU040 */
+# else /* !(M68040 || M68060) */
 
 /* macro for turning a curproc->base_table pointer into a 512-byte boundary */
 # define ROUND512(ld)	((ulong *)(((ulong)(ld) + 511) & ~511))
@@ -92,7 +92,7 @@ typedef struct {
 typedef ulong crp_reg[2];
 typedef ulong tc_reg;
 
-# endif /* MMU040 */
+# endif /* !(M68040 || M68060) */
 
 
 # endif /* _mint_m68k_mmu_h */

@@ -115,7 +115,7 @@ fork_proc1 (struct proc *p1, long flags, long *err)
 
 
 	/* Duplicate command line */
-# ifdef ONLY030
+# ifndef M68000
 	if (p2->real_cmdline != NULL \
 		&& (*(long *)p2->real_cmdline))
 # else

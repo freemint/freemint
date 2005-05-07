@@ -11,10 +11,10 @@
 #
 # machine flags
 #  
-# -DONLY030		build for 68020+
-# -DCPU030		build for 68030
-# -DCPU040		build for 040/060
-# -DMMU040		add 040/060 MMU support instead 030 MMU
+# -DM68000		build for 68000 (no mmu, no caches)
+# -DM68030		build for 68030
+# -DM68040		build for 68040-060
+# -DM68060		build for 68060 (same as M68040, currently)
 # -DMILAN		build Milan kernel
 # -DARANYM		build Aranym kernel
 
@@ -28,9 +28,6 @@
 #
 # Flags for building a minimal 68000 kernel
 #
-# -DONLY68000		disables various code for 68020-60
-# -DNO_MMU		disables MMU routines
-# -DNO_CPU_CACHES	disables all CPU cache handling
 # -DNO_RAMFS		disables the internal ramdisk (/ram)
 # -DNO_FAKE_SUPER	disables the extended bus error handler
 # -DNO_AKP_KEYBOARD	disables the extended keyboard routines
@@ -59,7 +56,7 @@ endif
 ifeq ($(kernel),000)
 MINT = mint000.prg
 CPU  = 000
-KERNELDEFS = -DONLY68000 -DNO_MMU -DNO_CPU_CACHE -DNO_RAMFS -DNO_FAKE_SUPER 
+KERNELDEFS = -DM68000 -DNO_RAMFS -DNO_FAKE_SUPER 
 KERNELDEFS += #-DDEBUG_INFO
 OPTS += -fstrength-reduce
 endif
@@ -67,43 +64,43 @@ endif
 ifeq ($(kernel),030)
 MINT = mint030.prg
 CPU  = 030
-KERNELDEFS = -DONLY030 -DCPU030
+KERNELDEFS = -DM68030
 endif
 
 ifeq ($(kernel),040)
 MINT = mint040.prg
 CPU  = 020-60
-KERNELDEFS = -DONLY030 -DMMU040 -DCPU040
+KERNELDEFS = -DM68040
 endif
 
 ifeq ($(kernel),deb)
 MINT = mintnp.prg
 CPU  = 020-60
-KERNELDEFS = -DDEBUG_INFO -DONLY030 -DMMU040 -DCPU040
+KERNELDEFS = -DDEBUG_INFO -DM68040
 endif
 
 ifeq ($(kernel),mil)
 MINT = mintmil.prg
 CPU  = 020-60
-KERNELDEFS = -DONLY030 -DMMU040 -DMILAN -DCPU040
+KERNELDEFS = -DMILAN -DM68040
 endif
 
 ifeq ($(kernel),ara)
 MINT = mintara.prg
 CPU  = 020-60
-KERNELDEFS = -DONLY030 -DMMU040 -DARANYM -DCPU040 -DDEBUG_INFO
+KERNELDEFS = -DARANYM -DM68040 -DDEBUG_INFO
 endif
 
 ifeq ($(kernel),my1)
 MINT = mintnp.prg
 CPU  = 020-60
-KERNELDEFS = -DDEBUG_INFO -DONLY030 -DMMU040 -DCPU040
+KERNELDEFS = -DDEBUG_INFO -DM68040
 endif
 
 ifeq ($(kernel),my2)
 MINT = mint040.prg
 CPU  = 020-60
-KERNELDEFS = -DONLY030 -DMMU040 -DDEBUG_INFO -DCPU040 -DMILAN
+KERNELDEFS = -DDEBUG_INFO -DM68040 -DMILAN
 KERNELDEFS += -DMFP_DEBUG_DIRECT
 #KERNELDEFS += -DPROFILING
 #kernel_cflags = -pg
@@ -113,13 +110,13 @@ endif
 ifeq ($(kernel),my3)
 MINT = mint030.prg
 CPU  = 030
-KERNELDEFS = -DDEBUG_INFO -DONLY030 -DCPU030
+KERNELDEFS = -DDEBUG_INFO -DM68030
 endif
 
 ifeq ($(kernel),my4)
 MINT = mintmdbg.prg
 CPU = 020-60
-KERNELDEFS = -DONLY030 -DMMU040 -DDEBUG_INFO -DCPU040 -DMILAN
+KERNELDEFS = -DDEBUG_INFO -DM68040 -DMILAN
 endif
 
 #
