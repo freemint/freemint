@@ -119,6 +119,7 @@ cancel_keyqueue(struct xa_client *client)
 		kfree(kq);
 	}
 	client->kq_tail = client->kq_head = NULL;
+	client->kq_count = 0;
 }
 
 void
