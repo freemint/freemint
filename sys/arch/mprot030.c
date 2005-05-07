@@ -84,8 +84,6 @@
  * 
  */
 
-# ifndef NO_MMU
-
 # include "mprot.h"
 # include "global.h"
 
@@ -98,7 +96,7 @@
 # include "cookie.h"
 
 
-#ifndef MMU040
+#ifdef M68030
 
 #if 0
 #define MP_DEBUG(x) DEBUG(x)
@@ -1248,6 +1246,4 @@ win_and_mark:
 	return prot_temp(start, nbytes, -1);
 }
 
-#endif /* !MMU040 */
-
-# endif /* ONLY68000 */
+#endif /* M68030 */

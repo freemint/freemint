@@ -73,7 +73,7 @@ new_xbra_install (long *xv, long addr, long _cdecl (*func)())
 	*(long *) addr = (long) func;
 
 	/* better to be safe... */
-# ifndef NO_CPU_CACHES
+# ifndef M68000
 	cpush ((long *) addr, sizeof (addr));
 	cpush (xv, sizeof (xv));
 # endif
@@ -106,7 +106,7 @@ init_intr (void)
 		if (tosvers < 0x0200)
 		{
 			syskey->ikbdsys = (long)ikbdsys_handler;
-# ifndef NO_CPU_CACHES
+# ifndef M68000
 			cpush(&syskey->ikbdsys, sizeof(long));
 # endif
 			new_xbra_install(&old_acia, 0x0118L, new_acia);

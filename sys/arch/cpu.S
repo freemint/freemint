@@ -15,7 +15,7 @@
 //
 // this below is only called from init.c on 68060 or newer
 
-#ifndef NO_CPU_CACHES
+#ifndef M68000
 
 	.globl	_get_superscalar
 	.globl	_mcpu
@@ -343,7 +343,7 @@ s61:	addq.l	#0x02,a0
 	.globl	_cpush
 
 _cpush:
-#ifndef NO_CPU_CACHES
+#ifndef M68000
 	move.l	4(sp),a0
 	move.l	8(sp),d0
 //	movem.l	4(sp),d0/a0		// get parameters
@@ -383,7 +383,7 @@ _cache000:				// 68000 cache (i.e. no cache)
 //	cpush(addr, size) dont work as expected. Gotta check this
 //	later. For now, "cpusha bc" is done on every cpush() call
 
-#ifndef NO_CPU_CACHES
+#ifndef M68000
 _cache040:
 #ifdef never				// 68040 cache
 	addq.l	#1,d0			// if was -1

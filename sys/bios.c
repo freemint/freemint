@@ -233,7 +233,7 @@ sys_b_setexc (int number, long vector)
 			raise (SIGSYS);
 			return EPERM;
 		}
-# ifndef NO_MMU
+# ifndef M68000
 		else
 		{
 			/* What about this: a program can only change an

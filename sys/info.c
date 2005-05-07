@@ -154,7 +154,7 @@ const char *greet2 =
 
 # ifdef LANG_ENGLISH
 
-# ifndef ONLY68000
+# ifndef M68000
 const char *memprot_warning =
 	"\007\033p"
 	"             *** WARNING ***              \033q\r\n"
@@ -206,7 +206,7 @@ const char *months_abbr_3[] =
 /* Notice that this is an ALERT(), so compose the message so that
  * it could be formatted nicely
  */
-# ifndef NO_MMU
+# ifndef M68000
 const char *MSG_bios_kill =
 	"KILLED. INVALID PROTECTION MODE. "
 	"Please change the protection mode "
@@ -242,7 +242,7 @@ const char *MSG_init_bootmenu =
 	"<2> Load external XFS: %s"
 	"<3> Load external XDD: %s"
 	"<4> Execute AUTO PRGs: %s"
-# ifndef NO_MMU
+# ifndef M68000
 	"<5> Memory protection: %s"
 # endif
 	"<6> Init step by step: %s"
@@ -364,7 +364,7 @@ const char *MSG_init_no_mint_folder = "No <boot>/mint or <boot>/mint/%s folder f
 const char *MSG_init_hitanykey = "Hit a key to continue.\r\n";
 const char *MSG_init_delay_loop = "Calibrating delay loop ... ";
 # ifdef VERBOSE_BOOT
-# ifndef NO_MMU
+# ifndef M68000
 const char *MSG_init_mp = "Memory protection %s\r\n";
 const char *MSG_init_mp_enabled = "enabled";
 const char *MSG_init_mp_disabled = "disabled";

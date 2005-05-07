@@ -53,7 +53,7 @@
 void
 init_page_table_ptr (struct memspace *m)
 {
-# ifdef NO_MMU
+# ifdef M68000
 	m->page_table = NULL;
 	m->pt_mem = NULL;
 # else
@@ -64,7 +64,7 @@ init_page_table_ptr (struct memspace *m)
 	}
 	else
 	{
-# ifdef MMU040
+# if defined(M68040) || defined(M68060)
 		extern int page_ram_type;	/* mprot040.c */
 		MEMREGION *pt;
 		
@@ -77,7 +77,7 @@ init_page_table_ptr (struct memspace *m)
 		/* For the 040, the page tables must be on 512 byte boundaries */
 		m->page_table = pt ? ROUND512 (pt->loc) : NULL;
 		m->pt_mem = pt;
-# else
+# else /* M68040 || M68060 */
 		void *pt;
 		
 		pt = kmalloc (page_table_size + 16);
@@ -89,7 +89,7 @@ init_page_table_ptr (struct memspace *m)
 		 */
 		m->page_table = pt ? ROUND16 (pt) : NULL;
 		m->pt_mem = pt;
-# endif
+# endif /* M68040 || M68060 */
 		
 		if (!pt) DEBUG(("init_page_table_ptr: no mem for page table"));
 	}
@@ -99,10 +99,10 @@ init_page_table_ptr (struct memspace *m)
 static void
 free_page_table_ptr (struct memspace *m)
 {
-# ifndef NO_MMU
+# ifndef M68000
 	if (!no_mem_prot)
 	{
-# ifdef MMU040
+# if defined(M68040) || defined(M68060)
 		MEMREGION *pt;
 		
 		pt = m->pt_mem;

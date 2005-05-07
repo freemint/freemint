@@ -69,16 +69,6 @@
 # define DEV_RANDOM
 
 /*
- * Ensure that MMU040 is always set together with ONLY030. This must be an
- * #error, as we can't influence the defines passed to asmtrans from here.
- */
-# ifdef MMU040
-# ifndef ONLY030
-# error MMU040 requires ONLY030
-# endif
-# endif
-
-/*
  * MAXPID is the maxium PID MiNT will generate
  * 
  * ATTENTION: Do not change at the moment!

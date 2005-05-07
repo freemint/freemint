@@ -280,7 +280,7 @@ init (void)
 
 	get_my_name();
 
-# ifndef NO_MMU
+# ifndef M68000
 # ifdef VERBOSE_BOOT
 	boot_printf(MSG_init_mp, no_mem_prot ? MSG_init_mp_disabled : MSG_init_mp_enabled);
 # endif
@@ -324,7 +324,7 @@ init (void)
 	boot_printf(MSG_init_sysdrv_is, sysdrv + 'a');
 # endif
 
-# ifndef NO_MMU
+# ifndef M68000
 # ifdef VERBOSE_BOOT
 	boot_print(MSG_init_saving_mmu);
 # endif
@@ -399,7 +399,7 @@ init (void)
 # endif
 
 	/* initialize cache */
-# ifndef NO_CPU_CACHES
+# ifndef M68000
 	init_cache ();
 	DEBUG (("init_cache() ok!"));
 # endif
@@ -447,7 +447,7 @@ init (void)
 # endif
 
 	/* Disable all CPU caches */
-# ifndef NO_CPU_CACHES
+# ifndef M68000
 	ccw_set(0x00000000L, 0x0000c57fL);
 	DEBUG (("ccw_set() ok!"));
 # endif
@@ -463,14 +463,14 @@ init (void)
 	intr_done = 1;
 
 	/* Enable superscalar dispatch on 68060 */
-# ifndef ONLY68000
+# ifndef M68000
 	get_superscalar();
 # endif
 
 	/* Init done, now enable/unfreeze all caches.
 	 * Don't touch the write/allocate bits, though.
 	 */
-# ifndef NO_CPU_CACHES
+# ifndef M68000
 	ccw_set(0x0000c567L, 0x0000c57fL);
 # endif
 
@@ -576,7 +576,7 @@ init (void)
 	}
 
 	/* print the warning message if MP is turned off */
-# ifndef NO_MMU
+# ifndef M68000
 	if (no_mem_prot && mcpu > 20)
 		boot_print(memprot_warning);
 

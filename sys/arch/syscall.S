@@ -222,7 +222,7 @@ norm_xbios:
 
 	btst	#5,(sp) 		// test for user/super mode
 	beq.s	LX_usr
-#ifdef ONLY030
+#ifndef M68000
 	lea	8(sp),a1
 #else
 	lea	6(sp),a1		// supervisor mode: args on stack
@@ -446,7 +446,7 @@ pt_ende:
 	move.w	(sp),d1
 	cmp.w	d5,d1
 	bcc	error
-#ifdef ONLY030
+#ifndef M68000
 #ifdef NEW_SYSCALL
 	move.l	0(a5,d1.w*8),d1
 #else
@@ -706,7 +706,7 @@ rom_trap2:
 	.text
 
 _trap_1_emu:
-#ifndef ONLY030
+#ifdef M68000
 	tst.w	(0x059e).w		// test longframe
 	beq.s	TE_D
 #endif
@@ -717,7 +717,7 @@ _trap_1_emu:
 //	clr.w	-(sp)			// frame format word
 //	move.l	d0,-(sp)		// return address
 TE_D:	move.w	sr,-(sp)
-#ifdef	ONLY030
+#ifndef	M68000
 	jmp	([_old_dos])
 #else
 	move.l	_old_dos.w(pc),-(sp)
@@ -727,7 +727,7 @@ TE_D:	move.w	sr,-(sp)
 	// Ozk: we cannot use D0/D1 becaues the ugly VDI and AES
 	// passes paremters in these registers.
 _trap_2_emu:
-#ifndef	ONLY030
+#ifdef	M68000
 	tst.w	(0x059e).w
 	beq.s	TE_AV
 #endif
@@ -735,7 +735,7 @@ _trap_2_emu:
 	move.w	4(sp),2(sp)
 	clr.w	4(sp)
 TE_AV:	move.w	sr,-(sp)
-#ifdef	ONLY030
+#ifndef	M68000
 	jmp	([_old_trap2])
 #else
 	move.l	_old_trap2.w(pc),-(sp)
@@ -743,7 +743,7 @@ TE_AV:	move.w	sr,-(sp)
 #endif
 	
 _trap_13_emu:
-#ifndef ONLY030
+#ifdef M68000
 	tst.w	(0x059e).w		// test longframe
 	beq.s	TE_B
 #endif
@@ -754,7 +754,7 @@ _trap_13_emu:
 //	clr.w	-(sp)			// frame format word
 //	move.l	d0,-(sp)		// return address
 TE_B:	move.w	sr,-(sp)
-#ifdef	ONLY030
+#ifndef	M68000
 	jmp	([_old_bios])
 #else
 	move.l	_old_bios.w(pc),-(sp)
@@ -762,7 +762,7 @@ TE_B:	move.w	sr,-(sp)
 #endif
 
 _trap_14_emu:
-#ifndef ONLY030
+#ifdef M68000
 	tst.w	(0x059e).w		// test longframe
 	beq.s	TE_X
 #endif
@@ -773,7 +773,7 @@ _trap_14_emu:
 //	clr.w	-(sp)			// frame format word
 //	move.l	d0,-(sp)		// return address
 TE_X:	move.w	sr,-(sp)
-#ifdef	ONLY030
+#ifndef	M68000
 	jmp	([_old_xbios])
 #else
 	move.l	_old_xbios.w(pc),-(sp)
@@ -953,10 +953,10 @@ ucret:	lea	24(sp),sp		// fix up stack
 // reenter the kernel through the trap handler.
 //
 // This piece of code needs more testing, NEW_SYSCALL not tested,
-// 68000 not tested (without ONLY030)
+// 68000 not tested (with M68000)
 //
 reentrant_trap:
-#ifndef ONLY030
+#ifdef M68000
 	addq.w	#2+4,a0
 	tst.w	(0x59e).w
 	beq.s	reent_shortframe
@@ -1001,7 +1001,7 @@ reent_fpu_saved:
 #ifndef NEW_SYSCALL
 	// Fetch address of function, and copy 24 bytes of the parameters
 	// (or 32 bytes if function table == gemdos) from the original place.
- #ifdef ONLY030
+ #ifndef M68000
 	move.l	(a5,d1.l*4),d2
  #else
 	add.w	d1,d1
@@ -1023,7 +1023,7 @@ reent_24:
 //	the function number. If not, this code needs
 //	to be modified to reflect that, it now thinks
 //	param size includes function number!
- #ifdef ONLY030
+ #ifndef M68000
 	move.l	(a5,d1.l*8),d2
  #else
 	add.w	d1,d1
@@ -1032,7 +1032,7 @@ reent_24:
 	move.l	(a5,d1.l),d2
  #endif
 	beq.s	reent_nofunc
- #ifdef	ONLY030
+ #ifndef M68000
 	move.w	6(a5,d1.l*8),d5
  #else
  	move.w	6(a5,d1.l),d5
@@ -1109,7 +1109,7 @@ reentrant_trap2:
 	// Since we're not interested in the stack now,
 	// we wont bother with it. VDI/AES passes args in D0/D1.
 #ifdef	TRAP2_STACK_PARAMS
-#ifndef ONLY030
+#ifdef M68000
 	addq.w	#2+4,a0
 	tst.w	(0x59e).w
 	beq.s	reent2_shortframe

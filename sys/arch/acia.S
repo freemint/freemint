@@ -51,7 +51,7 @@ again:	move.l	_syskey,a3
 	beq.s	again
 	move.b	#0xbf,(0xfa11).w
 	movem.l	(sp)+,d0-d3/a0-a3
-#ifndef ONLY030
+#ifdef M68000
 	nop				// see intr.S and syscall.S
 #endif
 	rte

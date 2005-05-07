@@ -138,7 +138,7 @@ typedef struct fileheader FILEHEAD;
 
 typedef MEMREGION **MMAP;
 
-# ifndef NO_MMU
+# ifndef M68000
 
 /* QUANTUM: the page size for the mmu: 8K.  This is hard-coded elsewhere. */
 # define QUANTUM	0x2000L

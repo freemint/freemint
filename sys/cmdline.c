@@ -137,7 +137,7 @@ make_real_cmdline(struct proc *p)
 
 		for (;;)
 		{
-# ifdef ONLY030
+# ifndef M68000
 			if (*(ushort *)from == 0)
 				break;
 # else

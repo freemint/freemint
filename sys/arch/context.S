@@ -73,7 +73,7 @@ _build_context:
 
 	tst.w	_no_mem_prot		// is there memory protection?
 	bne.s	noprot1
-#ifdef MMU040
+#if defined(M68040) || defined(M68060)
 	dc.w	0x4e7a,0x0806		// movec urp,d0
 	move.l	d0,C_CRP(a0)
 #else
@@ -85,7 +85,7 @@ noprot1:
 	lea	12(sp),a1		// start of the interesting stack area
 	move.w	(a1)+,d0		// 68000 fake frame format
 
-#ifndef ONLY030
+#ifdef M68000
 	move.w	(0x59e).w,d7		// get process frame flag
 	bne.s	nojunk			// we have some junk on the stack
 	move.w	d0,C_SFMT(a0)		// save fake frame format
@@ -101,7 +101,7 @@ nojunk:
 	move.w	(a1)+,d0		// get SR of context
 	move.w	d0,C_SR(a0)		// save it
 	move.l	(a1)+,C_PC(a0)		// save PC of context
-#ifndef ONLY030
+#ifdef M68000
 	tst.w	d7			// test longframe (AKP)
 	beq.s	short1			// short
 #endif
@@ -157,7 +157,7 @@ _save_context:	move.l	a0,-(sp)	// save a0
 	tst.w	_no_mem_prot
 	bne.s	noprot2
 	move.w	sr,d1
-#ifdef MMU040
+#if defined(M68040) || defined(M68060)
 	dc.w	0x4e7a,0x0806		// movec urp,d0
 	move.l	d0,C_CRP(a0)
 #else
@@ -230,7 +230,7 @@ _restore_context:
 //	pmove	C_TC(a0),tc		// restore MMU control register
 noprot3:
 
-#ifndef ONLY030
+#ifdef M68000
 	tst.w	(0x59e).w		// test longframe (AKP)
 	beq.s	short3
 #endif
@@ -298,7 +298,7 @@ _change_context:
 	tst.w	_no_mem_prot
 	bne.s	noprot4
 	move.w	sr,d1
-#ifdef MMU040
+#if defined(M68040) || defined(M68060)
 	move.l	C_CRP(a0),d0
 	dc.w	0xf518			// pflusha
 	dc.w	0x4e7b,0x0806		// movec d0,urp
@@ -310,7 +310,7 @@ _change_context:
 #endif
 	move.w	d1,sr
 noprot4:
-#ifndef ONLY030
+#ifdef M68000
 	tst.w	(0x59e).w		// test longframe (AKP)
 	beq.s	short6
 #endif

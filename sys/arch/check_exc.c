@@ -129,7 +129,7 @@ real_fault(ulong address)
 	return 0L;
 }
 
-# ifndef ONLY030
+# ifdef M68000
 static long
 handle_68000_bus_frame(MC68000_BUS_FRAME *frame)
 {
@@ -461,7 +461,7 @@ check_bus(struct frame_zero frame)
 	if ((curproc->p_flag & P_FLAG_SUPER) == 0)
 		return 0;
 
-# ifndef ONLY030
+# ifdef M68000
 	if (mcpu == 0)
 		return handle_68000_bus_frame((MC68000_BUS_FRAME *)&frame);
 	else if (mcpu >= 10)
@@ -527,7 +527,7 @@ check_priv(struct privilege_violation_stackframe frame)
 
 	opcode = *frame.pc;
 
-# ifndef ONLY68000
+# ifndef M68000
 
 	/* Emulate the "move from sr" instruction,
 	 * which is not privileged on 68000, and privileged later.
@@ -620,7 +620,7 @@ check_priv(struct privilege_violation_stackframe frame)
 		}
 	}
 
-# endif /* ONLY68000 */
+# endif /* M68000 */
 
 # ifndef NO_FAKE_SUPER
 

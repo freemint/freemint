@@ -12,7 +12,7 @@
 # include "mint/arch/mmu.h"
 
 
-#ifndef MMU040
+#if !defined(M68040) && !defined(M68060)
 void _cdecl	set_mmu		(crp_reg, tc_reg);
 #else
 void _cdecl	set_mmu		(ulong *);

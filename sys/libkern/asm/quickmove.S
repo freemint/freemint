@@ -29,7 +29,7 @@ _quickmovb1:
 	move.l	12(sp),d0		| get nbytes
 	beq	Ldone
 	roxr.w	#1,d1			| bit 0 == both odd, msb == unaligned
-#ifndef ONLY030
+#ifdef M680000
 	bmi	bytecopy		| unaligned, do the slow thing...
 #else
 	bmi	quickmov1		| alignment doesnt matter on 030
@@ -103,7 +103,7 @@ L2:
 Ldone:
 	rts				| return
 
-#ifndef ONLY030
+#ifdef M68000
 bytecopy:
 	subq.l	#1,d0			| prepare for dbra loop
 	move.l	d0,d1
