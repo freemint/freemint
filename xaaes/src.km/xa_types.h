@@ -879,6 +879,8 @@ struct xa_client
 /*
  * This part is for Client event dispatching
 */
+#define MAX_KEYQUEUE	4
+	int	kq_count;
 	struct keyqueue *kq_head;
 	struct keyqueue	*kq_tail;
 

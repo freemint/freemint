@@ -155,11 +155,13 @@ find_focus(bool withlocks, bool *waiting, struct xa_client **locked_client, stru
 	else
 	{
 		struct xa_client *c;
+		
 		c = get_app_infront();
-		if (c->waiting_for & (MU_KEYBD | MU_NORM_KEYBD))
+		
+		if (c->blocktype == XABT_NONE || (c->waiting_for & (MU_KEYBD | MU_NORM_KEYBD)))
 		{
 			client = c;
-			if (waiting)
+			if (c->blocktype != XABT_NONE && waiting)
 				*waiting = true;
 		}
 		else if (c == C.Aes)
