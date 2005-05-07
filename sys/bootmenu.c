@@ -545,7 +545,7 @@ boot_kernel_p (void)
 # ifndef NO_MMU
 			option[4] ? MSG_init_menu_yesrn : MSG_init_menu_norn,
 # endif
-			option[5] ? MSG_init_menu_yesrn : MSG_init_menu_norn,
+			( option[5] == -1 ) ? MSG_init_menu_yesrn : MSG_init_menu_norn,
 			option[6], debug_levels[option[6]],
 			option[7], debug_devices[option[7]],
 			option[8] ? MSG_init_menu_yesrn : MSG_init_menu_norn );
