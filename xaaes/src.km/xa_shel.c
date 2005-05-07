@@ -190,6 +190,44 @@ print_x_shell(short x_mode, struct xshelw *x_shell)
 }
 #endif
 
+static int
+default_path(struct xa_client *caller, char *cmd, char *path, char *name, char *defdir, struct create_process_opts *cpopts)
+{
+	int drv;
+	/*
+	 * Ozk:
+	 * I am absolutely NOT SURE about this, but this is what I implemented;
+	 *
+	 * 1.	If x_shel is used to set default dir, we use that defaultdir,
+	 *	ofcourse.
+	 * 2.	If the caller's current working directory equeals its home-
+	 *	directory, we take the defaultpath for the new process out of
+	 *	the 'cmd', which is the path to process callers wants started.
+	 * 3.	If the callers current working directory is NOT the same as
+	 *	its homepath, we set the new processes default path to, yes,
+	 *	the current working directory
+	 * 4.	If caller is AESSYS, we always take defaultdir out of cmd.
+	 * 5.	IF ANYONE KNOWS BETTER, I'M EXTREMELY INTERESTED IN KNOWING!!!
+	 */
+	drv = drive_and_path(cmd, path, name, true, caller == C.Aes ? true : false);
+	if (!(cpopts->mode & CREATE_PROCESS_OPTS_DEFDIR))
+	{
+		if (caller == C.Aes || (drv >= 0 && !strcmp(caller->home_path, defdir)))
+		{
+			defdir[0] = drv + 'a';
+			defdir[1] = ':';
+			strcpy(defdir + 2, path);
+	//		display("use path in cmd as defdir '%s'", defdir);
+		}
+		
+		cpopts->mode |= CREATE_PROCESS_OPTS_DEFDIR;
+		cpopts->defdir = defdir;
+	//	display("Set defdir to '%s' for %s", defdir, caller ? caller->name : "no caller");
+	//	display("defdir caller '%s'", caller ? caller->home_path : "no caller");
+	}
+	return drv;
+}
+
 int
 launch(enum locks lock, short mode, short wisgr, short wiscr,
        const char *parm, char *p_tail, struct xa_client *caller)
@@ -226,6 +264,9 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 			p_getpid(), mode, wisgr, wiscr, parm, p_tail));
 	}
 #endif
+//	display("launch for %s: 0x%x,%d,%d,%lx,%lx",
+//		caller ? caller->name : "no caller", mode, wisgr, wiscr, parm, p_tail);
+//	display(" --- parm=%lx, tail=%lx", parm, tail);
 
 	if (!parm)
 		return -1;
@@ -262,6 +303,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 		}
 		if (x_mode & SW_DEFDIR)
 		{
+		//	display("x_modedefdir '%s' for %s", x_shell.defdir, caller ? caller->name : "no caller");
 			cpopts.mode |= CREATE_PROCESS_OPTS_DEFDIR;
 			cpopts.defdir = x_shell.defdir;
 		}
@@ -279,6 +321,10 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 	else
 		pcmd = parm;
 
+	defdir[0] = d_getdrv() + 'a';
+	defdir[1] = ':';
+	d_getpath(defdir + 2, 0);
+	
 	argvtail[0] = 0;
 	argvtail[1] = 0;
 
@@ -476,22 +522,8 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 					}
 				}
 			}
-			/*
-			 * Ozk:
-			 * I think this mimics the normal behaviour of other AES's,
-			 * set the default directory of the started process to the current
-			 * directory of the caller of shel_write().
-			 */
-			drv = drive_and_path(cmd, path, name, true, caller == C.Aes ? true : false);
-			if (!(cpopts.mode & CREATE_PROCESS_OPTS_DEFDIR))
-			{
-				defdir[0] = d_getdrv() + 'a';
-				defdir[1] = ':';
-				d_getpath(defdir + 2, 0);
-				cpopts.mode |= CREATE_PROCESS_OPTS_DEFDIR;
-				cpopts.defdir = defdir;
-			}
-			
+
+			drv = default_path(caller, cmd, path, name, defdir, &cpopts);
 
 			DIAG((D_shel, 0, "[2]drive_and_path %d,'%s','%s'", drv, path,name));
 
@@ -520,18 +552,9 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 			struct memregion *m;
 			struct basepage *b;
 			long size;
-			
-			drv = drive_and_path(save_cmd, path, name, true, caller == C.Aes ? true : false);
-			if (!(cpopts.mode & CREATE_PROCESS_OPTS_DEFDIR))
-			{			
-				defdir[0] = d_getdrv() + 'a';
-				defdir[1] = ':';
-				d_getpath(defdir + 2, 0);
-				cpopts.mode |= CREATE_PROCESS_OPTS_DEFDIR;
-				cpopts.defdir = defdir;
-			}
-			
 
+			drv = default_path(caller, cmd, path, name, defdir, &cpopts)
+			
 			DIAG((D_shel, 0, "[3]drive_and_path %d,'%s','%s'", drv, path, name));
 
 			
@@ -694,6 +717,9 @@ XA_shel_write(enum locks lock, struct xa_client *client, AESPB *pb)
 			wdoex, wisgr, wiscr, p_getpid()));
 	}
 #endif	
+//	display("shel_write(0x%x,%d,%d) for %s",
+//		wdoex, wisgr, wiscr, client ? client->name : "no client");
+	
 	if ((wdoex & 0xff) < 4)
 	{
 		Sema_Up(envstr);
