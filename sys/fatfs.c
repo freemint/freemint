@@ -2883,7 +2883,7 @@ INLINE long
 is_exec (register const char *src)
 {
 	register ulong i;
-# ifndef ONLY030
+# ifdef M68000
 	/* on 68000 cause an unaligned access
 	 * a bus error
 	 */
@@ -7283,7 +7283,7 @@ fatfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 					info->type = _MAJOR_FAT;
 				}
 
-# ifndef ONLY030
+# ifdef M68000
 				*dst++ = 'f';
 				*dst++ = 'a';
 				*dst++ = 't';

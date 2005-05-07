@@ -12,8 +12,7 @@
  *
  */
 
-#ifndef NO_MMU
-#ifndef MMU040
+#ifdef M68030
 
 	.data
 nulltc:
@@ -134,5 +133,4 @@ _restr_mmu:
 _flush_mmu:
 	pflusha
 	rts
-#endif
 #endif

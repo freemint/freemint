@@ -283,7 +283,7 @@ slb_exec:
 	move.l	SL_HEAD(a0),a0
 	cmp.l	SH_NO_FUNCS(a0),d0
 	bcc.s	einvfn
-#ifdef ONLY030
+#ifndef M68000
 	move.l	SH_FUNCTIONS(a0,d0.l*4),d0
 #else
 	lsl.l	#2,d0

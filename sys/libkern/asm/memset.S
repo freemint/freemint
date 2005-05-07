@@ -19,7 +19,7 @@ _memset:
 	beq.s	L_exit
 	move.l	a1,a0
 	move.w	8(sp),d1
-#ifdef ONLY030
+#ifndef M68000
 	move.b	d1,d0		| expand d1 to longword
 	lsl.w	#0x8,d1
 	move.b	d0,d1

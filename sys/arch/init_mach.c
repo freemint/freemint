@@ -183,26 +183,21 @@ _getmch (void)
 	if ((fputype >> 16) > 1)
 		fpu = 1;
 	
-# ifndef MMU040
-	if (mcpu != 30)
-		no_mem_prot = 1;
-# endif
-	
-# ifdef ONLY030
-# ifndef MMU040
-	if (mcpu < 20)
-# else
-	if (mcpu < 40)
-# endif
+# ifndef M68000
+
+# ifdef M68030
+	if( mcpu > 30 )	// we can't use 030 kernel on 040/060 anymore
 	{
-# ifndef MMU040
-		boot_print ("\r\nThis version of MiNT requires a 68020-68060.\r\n");
-# else
+		boot_print ("\r\nThis version of MiNT requires a 68020-68030.\r\n");
+# else /* M68030 */
+	if( mcpu < 40 )
+	{
 		boot_print ("\r\nThis version of MiNT requires a 68040-68060.\r\n");
-# endif
+# endif /* M68030 */
+
 		return -1;
 	}
-# endif
+# endif /* !M68000 */
 	
 	/* initialize the info strings */
 	identify (add_info);

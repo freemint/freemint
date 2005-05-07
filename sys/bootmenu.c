@@ -183,7 +183,7 @@ emit_exe_auto(short fd)
 static void
 do_mem_prot(char *arg)
 {
-# ifndef NO_MMU
+# ifndef M68000
 	no_mem_prot = (strncmp(arg, "YES", 3) == 0) ? 0 : 1;	/* reversed */
 # endif
 }
@@ -191,7 +191,7 @@ do_mem_prot(char *arg)
 static long
 emit_mem_prot(short fd)
 {
-# ifndef NO_MMU
+# ifndef M68000
 	char line[MAX_CMD_LEN];
 
 	ksprintf(line, sizeof(line), "MEM_PROT=%s\n", no_mem_prot ? "NO" : "YES");
@@ -542,7 +542,7 @@ boot_kernel_p (void)
 			option[1] ? MSG_init_menu_yesrn : MSG_init_menu_norn,
 			option[2] ? MSG_init_menu_yesrn : MSG_init_menu_norn,
 			option[3] ? MSG_init_menu_yesrn : MSG_init_menu_norn,
-# ifndef NO_MMU
+# ifndef M68000
 			option[4] ? MSG_init_menu_yesrn : MSG_init_menu_norn,
 # endif
 			( option[5] == -1 ) ? MSG_init_menu_yesrn : MSG_init_menu_norn,

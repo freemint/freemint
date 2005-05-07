@@ -139,13 +139,13 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 		}
 		case S_OSCOMPILE:
 		{
-# ifdef CPU060
+# ifdef M68060
 			r = 0x0000003cL;	/* 060 kernel */
 # endif
-# ifdef CPU040
+# ifdef M68040
 			r = 0x00000028L;	/* 040 kernel */
 # endif
-# ifdef CPU030
+# ifdef M68030
 			r = 0x0000001eL;	/* 030 kernel */
 # endif
 			break;			/* generic 68000 */
@@ -439,7 +439,7 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 		case S_CTRLCACHE:
 		{
 			if (arg1 == -1 && arg2 == -1)	r = E_OK;
-# ifndef NO_CPU_CACHES
+# ifndef M68000
 			else if (arg1 == -1)		r = ccw_get ();
 			else if (arg2 == -1)		r = ccw_getdmask ();
 # else
@@ -447,7 +447,7 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 			else if (arg2 == -1)		r = 0;
 # endif
 			else if (isroot == 0)		r = EPERM;
-# ifndef NO_CPU_CACHES
+# ifndef M68000
 			else				r = ccw_set (arg1, arg2);
 # else
 			else				r = 0;

@@ -127,7 +127,7 @@ cbc_decipher (BF_KEY *bfk, ulong *lr, ulong *feedback)
 	lr[1] ^= fb[1];
 }
 
-# ifndef ONLY030
+# ifdef M68000
 INLINE void _cdecl
 byte_copy (char *to, char *from, short bytes)
 {
@@ -174,7 +174,7 @@ crypt_block (BF_KEY *bfk, void (*crypt)(BF_KEY *, ulong *, ulong *), char *buf, 
 	count = 0;
 	blocksize = di->pssize;
 
-# ifndef ONLY030	/* No, bez jaj... */
+# ifdef M68000	/* No, bez jaj... */
 	if (((ulong) buf & 1L) && (mcpu < 20))
 	{
 		/* Unfortunately, the block isn't word aligned ...
@@ -203,7 +203,7 @@ crypt_block (BF_KEY *bfk, void (*crypt)(BF_KEY *, ulong *, ulong *), char *buf, 
 		}
 	}
 	else
-# endif	/* ONLY030 */
+# endif	/* M68000 */
 	{
 		/* The block is word aligned, or the CPU can handle misaligned
 		 * long accesses

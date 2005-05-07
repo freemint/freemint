@@ -35,7 +35,7 @@
 
 # include "memory.h"
 
-# ifdef NO_MMU
+#ifdef M68000
 
 int no_mem_prot = 0;
 ulong mem_prot_flags = 0L; /* Bitvector, currently only bit 0 is used */
@@ -110,4 +110,4 @@ mem_access_for(PROC *p, ulong start, long nbytes)
 	return -1;
 }
 
-# endif /* NO_MMU */
+#endif /* M68000 */
