@@ -2176,13 +2176,6 @@ click_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 		if ((widg->k & 3) && (wind->active_widgets & (STORE_BACK|BACKDROP)) == BACKDROP)
 		{
 			send_bottomed(lock, wind);
-#if 0
-			if (wind->send_message)
-				wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
-						   WM_BOTTOMED, 0, 0, wind->handle, 0, 0, 0, 0);
-			else
-				bottom_window(lock, wind);
-#endif
 		}
 		else
 		{
@@ -2190,41 +2183,16 @@ click_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 			if (!is_topped(wind))
 			{
 				send_topped(lock, wind);
-#if 0
-				if (wind->send_message)
-					wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
-							   WM_TOPPED, 0, 0, wind->handle,
-							   0, 0, 0, 0);
-				else
-					/* Just top these windows, they can handle it... */
-					/* Top the window */
-					top_window(lock, true, false, wind, (void *)-1L);
-#endif
 			}
 			/* If window is already top, then send it to the back */
-
 			/* Ozk: Always bottom iconified windows... */
 			else if ((wind->window_status & XAWS_ICONIFIED))
 			{
 				send_bottomed(lock, wind);
-#if 0
-				if (wind->send_message)
-					wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
-							   WM_BOTTOMED, 0, 0, wind->handle, 0,0,0,0);
-#endif
 			}
 			else if ((wind->active_widgets & (STORE_BACK|BACKDROP)) == BACKDROP)
 			{
 				send_bottomed(lock, wind);
-#if 0
-					if (wind->send_message)
-						wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
-								   WM_BOTTOMED, 0, 0, wind->handle,
-								   0, 0, 0, 0);
-					else
-						/* Just bottom these windows, they can handle it... */
-						bottom_window(lock, wind);
-#endif
 			}
 		}
 	}
@@ -2321,25 +2289,18 @@ display_info(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 static bool
 click_close(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
+	bool ret = false;
+
 	if (wind->send_message)
 	{
 		wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 				   WM_CLOSED, 0, 0, wind->handle,
 				   0, 0, 0, 0);
-		return false;
-
 		if ((wind->window_status & XAWS_OPEN))
-			return true;	/* redisplay */
-		return false;
+			ret = true;	/* redisplay */
 	}
-
-	/* Just close these windows, they can handle it... */
-	close_window (lock, wind);
-	/* delete on the next possible time */
-	delayed_delete_window(lock, wind);
-
 	/* Don't redisplay in the do_widgets() routine */
-	return false;
+	return ret;
 }
 
 /*======================================================
@@ -2372,7 +2333,7 @@ click_iconify(enum locks lock, struct xa_window *wind, struct xa_widget *widg, c
 {
 	DIAGS(("click_iconify:"));
 	
-	if (wind->send_message == NULL)
+	if (!wind->send_message)
 		return false;
 
 	if ((wind->window_status & XAWS_OPEN))
