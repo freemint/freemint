@@ -1096,7 +1096,7 @@ proc_ioctl (FILEPTR *f, int mode, void *buf)
 		}
 		case PTRACEFLOW:
 		{
-# ifndef ONLY030
+# ifdef M68000
 			if (mcpu < 20)
 			{
 				DEBUG( ("proc_ioctl: wrong processor"));

@@ -253,7 +253,7 @@ do_ulookup (fcookie *dir, const char *name, fcookie *fc, UNIFILE **up)
 	/* special case: an empty name in a directory means that directory
 	 * so do "." and ".."
 	 */
-# ifdef ONLY030
+# ifndef M68000
 # define ___DOTNUL	0x2e00
 # define ___DOTDOT	0x2e2e
 

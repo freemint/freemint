@@ -368,7 +368,7 @@ INLINE int
 is_exec (register const char *src)
 {
 	register ulong i;
-# ifndef ONLY030
+# ifdef M68000
 	/* on 68000 cause an unaligned access
 	 * a bus error
 	 */

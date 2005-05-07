@@ -52,7 +52,7 @@
 _old_5ms:
 	dc.l	0
 
-#ifdef ONLY030
+#ifndef M68000
 _mint_5ms:
 #ifdef PROFILING
 	tst.w	_profil_on
@@ -226,7 +226,7 @@ L_no_uptime:
 L_out:	rte			// no -- just return
 
 L_popnout:	movem.l	(sp)+,d0-d2/a0-a2
-#ifndef ONLY030
+#ifdef M68000
 	nop
 #endif
 	rte
@@ -358,7 +358,7 @@ _newmvec:	move.l	a0,-(sp)
 _newjvec:	move.l	a0,-(sp)		// save a0 on the stack
 	move.b	2(a0),d0		// joystick direction
 	and.b	#1,d0		// middle mouse button in lowest bit
-#ifdef ONLY030
+#ifndef M68000
 	lsl.b	#0x02,d0
 #else
 	add.b	d0,d0		// times 4
@@ -475,26 +475,26 @@ _new_bus:
 	jsr	_check_bus
 	tst.l	d0
 	movem.l	(sp)+,d0-a6
-#ifdef ONLY030
+#ifndef M68000
 	bne.s	Return_now
 #else
 	bne	Return_now
 #endif
 #endif
-#ifndef ONLY030
+#ifdef M68000
 	move.w	#0x8,_sig_exc
 	cmp.l	#30,_mcpu
 	bmi.s	noMMU
 #endif
 	move.l	#_mmu_sigbus,_sig_routine
-#ifndef ONLY030
+#ifdef M68000
 	bra.s	Do_sig
 noMMU:
 	move.l	#_nommu_sigbus,_sig_routine
 #endif
 
 Do_sig:
-#ifdef ONLY030
+#ifndef M68000
 	nop			// flush pipes (better safe than sorry)
 #endif
 	move.l	a0,-(sp)		// save a0
@@ -528,7 +528,7 @@ Kernel:	movem.l	d0-d2/a0-a2,-(sp)	// save reggies
 	jsr	(a1)		// go do it
 	movem.l (sp)+,d0-d2/a0-a2
 // 68000 processor bug: rte right after movem can eat interrupts...
-#ifndef ONLY030
+#ifdef M68000
 	nop
 #endif
 Return_now:
@@ -542,7 +542,7 @@ _mmu_sigbus:
 	move.l	a2,-(sp)
 	move.l	_curproc,a0
 	move.l	P_EXCSSP(a0),a1 	// a1 is now exception_ssp
-#ifndef MMU040
+#if !defined(M68040) && !defined(M68060)
 	move.w	0xA(a1),d0		// d0 is SSW
 	btst	#6,d0		// read or write?
 	beq.s	ms_w030
@@ -586,7 +586,7 @@ ms_060:
 ms_goon:
 	move.l	(sp)+,a2
 	jmp	_sigbus 		// chain to bus-error handler
-#ifndef ONLY030
+#ifdef M68000
 //
 // _nommu_sigbus: handler for bus errors on machines without MMU
 
@@ -609,7 +609,7 @@ NOMMU1:
 _old_addr:
 	dc.l	0
 _new_addr:
-#ifndef ONLY030
+#ifdef M68000
 	move.w	#0xc,_sig_exc
 #endif
 	move.l	#_sigaddr,_sig_routine
@@ -622,7 +622,7 @@ _new_addr:
 _old_ill:
 	dc.l	0
 _new_ill:
-#ifndef ONLY030
+#ifdef M68000
 	move.w	#0x10,_sig_exc
 #endif
 	move.l	#_sigill,_sig_routine
@@ -635,7 +635,7 @@ _new_ill:
 _old_divzero:
 	dc.l	0
 _new_divzero:
-#ifndef ONLY030
+#ifdef M68000
 	move.w	#0x14,_sig_exc
 #endif
 	move.l	#_sigfpe,_sig_routine
@@ -648,7 +648,7 @@ _new_divzero:
 _old_linef:
 	dc.l	0
 _new_linef:
-#ifndef ONLY030
+#ifdef M68000
 	move.w	#0x2c,_sig_exc
 #endif
 	move.l	#_sigill,_sig_routine
@@ -661,7 +661,7 @@ _new_linef:
 _old_chk:
 	dc.l	0
 _new_chk:
-#ifndef ONLY030
+#ifdef M68000
 	move.w	#0x18,_sig_exc
 #endif
 	move.l	#_sigfpe,_sig_routine
@@ -674,7 +674,7 @@ _new_chk:
 _old_trapv:
 	dc.l	0
 _new_trapv:
-#ifndef ONLY030
+#ifdef M68000
 	move.w	#0x1c,_sig_exc
 #endif
 	move.l	#_sigfpe,_sig_routine
@@ -769,7 +769,7 @@ _new_pmmuacc:
 _old_uninit:
 	dc.l	0
 _new_uninit:
-#ifndef ONLY030
+#ifdef M68000
 	move.w	#0x3c,_sig_exc
 #endif
 	move.l	#_sigbus,_sig_routine
@@ -782,7 +782,7 @@ _new_uninit:
 _old_spurious:
 	dc.l	0
 _new_spurious:
-#ifndef ONLY030
+#ifdef M68000
 	move.w	#0x60,_sig_exc
 #endif
 	move.l	#_sigbus,_sig_routine
@@ -815,15 +815,15 @@ _new_cpv:
 _old_priv:
 	dc.l	0
 _new_priv:
-#ifndef ONLY030
+#ifdef M68000
 	move.w	#0x20,_sig_exc
 #endif
 	move.l	#_sigpriv,_sig_routine
-#ifndef ONLY030
+#ifdef M68000
 	tst.w	(0x59e).w		// 68000s always get SIGPRIV
 	beq	Do_sig
 #endif
-#ifndef ONLY68000
+#ifndef M68000
 	movem.l	d0-a6,-(sp)		// check_priv() relies on this!
 	jsr	_check_priv
 	tst.l	d0

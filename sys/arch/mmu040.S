@@ -42,8 +42,7 @@
  * 
  */
 
-#ifndef NO_MMU
-#ifdef MMU040
+#if defined(M68040) || defined(M68060)
 
 // set_mmu
 //
@@ -213,5 +212,4 @@ _read_phys:
 	move	d1,sr			// restore interrupts
 	rts
 
-#endif
 #endif
