@@ -185,7 +185,7 @@ check_menu_desktop(enum locks lock, struct xa_window *old_top, struct xa_window 
 			old_top->owner->name, new_top->owner->name));
 
 		set_active_client(lock, new_top->owner);
-		swap_menu(lock|desk, new_top->owner, NULL, true, true, 2);
+		swap_menu(lock|desk, new_top->owner, NULL, SWAPM_DESK | SWAPM_TOPW); //true, true, 2);
 
 		Sema_Dn(desk);
 	}

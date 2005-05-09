@@ -184,7 +184,7 @@ recover(void)
 
 	DIAG((D_appl, NULL, "Attempting to recover control....."));
 
-	swap_menu(0, C.Aes, NULL, true, false, 0);
+	swap_menu(0, C.Aes, NULL, SWAPM_DESK); //true, false, 0);
 
 	if ((proc = C.update_lock))
 	{
@@ -244,10 +244,9 @@ set_next_menu(struct xa_client *new, bool do_topwind, bool force)
 			new->nxt_menu = NULL;
 		}
 		
-		/* menu widget.tree */
 		if (force || (is_infront(new) || (!infront->std_menu && !infront->nxt_menu)))
 		{
-			if (new->std_menu) // && new->std_menu != widg->stuff)
+			if (new->std_menu)
 			{
 				XA_TREE *wt;
 				bool wastop = false;
@@ -297,8 +296,9 @@ set_next_menu(struct xa_client *new, bool do_topwind, bool force)
  *
  * See also click_menu_widget() for APP's
  */
+
 void
-swap_menu(enum locks lock, struct xa_client *new, struct widget_tree *new_menu, bool do_desk, bool do_topwind, int which)
+swap_menu(enum locks lock, struct xa_client *new, struct widget_tree *new_menu, short flags) //bool do_desk, bool do_topwind, int which)
 {
 	struct proc *p = get_curproc();
 
@@ -307,7 +307,34 @@ swap_menu(enum locks lock, struct xa_client *new, struct widget_tree *new_menu, 
 	/* If the new client has no menu bar, no need for a change */
 	if (new->std_menu || new_menu || new->nxt_menu)
 	{
-		if (lock_menustruct(p, true))
+		if (flags & SWAPM_REMOVE)
+		{
+			/* Ozk:
+			 * Here we mean business!! If SWAPM_REMOVE bit is set,
+			 * we make sure here that this clients menu is inaccessible
+			 * and freeable when we leave.
+			 */
+			if (get_menu() == new->std_menu)
+			{
+				struct xa_client *nm_client;
+
+				if (!new_menu || new_menu->owner == new)
+					nm_client = find_menu(lock, new, 3);
+				else
+					nm_client = new_menu->owner;
+
+				if (menustruct_locked() == new->p)
+					popout(TAB_LIST_START);
+
+				set_next_menu(nm_client, ((flags & SWAPM_TOPW) ? true : false), true);
+			}
+
+			if (C.next_menu == new)
+				C.next_menu = NULL;
+			
+			new->std_menu = new->nxt_menu = NULL;
+		}
+		else if (lock_menustruct(p, true))
 		{
 			DIAG((D_appl, NULL, "swap_menu: now. std=%lx, new_menu=%lx, nxt_menu = %lx for %s",
 				new->std_menu, new_menu, new->nxt_menu, new->name));
@@ -317,7 +344,7 @@ swap_menu(enum locks lock, struct xa_client *new, struct widget_tree *new_menu, 
 			
 			if (new_menu)
 				new->nxt_menu = new_menu;
-			set_next_menu(new, do_topwind, false);
+			set_next_menu(new, ((flags & SWAPM_TOPW) ? true : false), false);
 			unlock_menustruct(p);
 		}
 		else
@@ -338,7 +365,7 @@ swap_menu(enum locks lock, struct xa_client *new, struct widget_tree *new_menu, 
 	}
 
 	/* Change desktops? */
-	if (   do_desk
+	if (  (flags & SWAPM_DESK) /* do_desk */
 	    && new->desktop
 	    && new->desktop->tree != get_desktop()->tree
 	    && new->desktop->tree != get_xa_desktop())
@@ -381,6 +408,26 @@ find_desktop(enum locks lock, struct xa_client *client, short exclude)
 
 	Sema_Dn(clients);
 	return rtn;
+}
+/*
+ * Guaranteed to return a client iwth menu
+ */
+struct xa_client *
+find_menu(enum locks lock, struct xa_client *client, short exclude)
+{
+	struct xa_client *mclient = APP_LIST_START;
+
+	while (mclient)
+	{
+		if (!(mclient->status & CS_EXITING) && mclient->std_menu)
+		{
+			if ( !((exclude & 1) && client == mclient)
+			  && !((exclude & 2) && client == C.Aes))
+			  	return mclient;
+		}
+		mclient = NEXT_APP(mclient);
+	}
+	return C.Aes;
 }
 
 void
@@ -716,7 +763,7 @@ app_in_front(enum locks lock, struct xa_client *client, bool snd_untopped, bool 
 		if (infront != client)
 		{
 			set_active_client(lock, client);
-			swap_menu(lock, client, NULL, true, false, 1);
+			swap_menu(lock, client, NULL, SWAPM_DESK); //true, false, 1);
 		}
 
 		wl = root_window->prev;
