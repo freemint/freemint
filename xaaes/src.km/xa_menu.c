@@ -55,7 +55,6 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 	XA_TREE *menu = client->std_menu;
 
 	OBJECT *mnu = (OBJECT*)pb->addrin[0];
-	struct xa_window *wl;
 	struct xa_client *top_owner;
 
 	CONTROL(1,1,1)
@@ -108,7 +107,7 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 				{
 					top_owner = get_app_infront();
 					if (client == top_owner || !top_owner->std_menu)
-						swap_menu(lock|winlist, client, mwt, false, true, 6);
+						swap_menu(lock|winlist, client, mwt, SWAPM_TOPW);
 					else
 					{
 						client->nxt_menu = mwt;
@@ -124,7 +123,7 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 				top_owner = get_app_infront();
 				wt_menu_area(mwt);
 				if (client == top_owner || !top_owner->std_menu)
-					swap_menu(lock|winlist, client, NULL, false, true, 7);
+					swap_menu(lock|winlist, client, NULL, SWAPM_TOPW);
 				else
 				{
 					client->nxt_menu = mwt;
@@ -138,47 +137,13 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 	{
 		DIAG((D_menu,NULL,"MENU_REMOVE"));
 		
-	//	display("menu_remove for %s, menu=%lx, menubar=%lx", client->name, menu, menu_bar);
-
 		if (!menu)
 			menu = client->nxt_menu;
 
 		if (menu)
 		{
-			if (menustruct_locked() == client->p)
-				popout(TAB_LIST_START);
-
-			if (menu == menu_bar)
-			{
-				top_owner = C.Aes;
-				wl = window_list;
-				while (wl)
-				{
-					if (   wl->owner != client
-					    && wl->owner != C.Aes
-					    && wl->owner->std_menu)
-					{
-						top_owner = wl->owner;
-						break;
-					}
-					wl = wl->next;
-				}
-				if (!top_owner)
-				{
-				//	display("force to aes menu");
-					set_next_menu(C.Aes, false, true);
-				}
-				else
-				{
-				//	display("Normal menuswap to %s", top_owner->name);
-					client->std_menu = client->nxt_menu = NULL;
-					swap_menu(lock|winlist, top_owner, NULL, false, true, 7);
-					yield();
-				}
-			}
-			client->std_menu = client->nxt_menu = NULL;
+			swap_menu(lock, client, NULL, SWAPM_REMOVE);
 			remove_attachments(lock|winlist, client, menu);
-			
 			pb->intout[0] = 1;
 		}
 		break;

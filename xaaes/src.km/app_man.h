@@ -36,7 +36,12 @@ struct xa_client * next_app(enum locks lock, bool with_window_or_menu, bool no_a
 struct xa_client * previous_client(enum locks lock, short exlude);
 
 void set_next_menu(struct xa_client *new, bool do_topwind, bool force);
-void swap_menu(enum locks lock, struct xa_client *, struct widget_tree *, bool, bool, int);
+
+/* Definition of bits in 'flags' for swap_menu */
+#define SWAPM_DESK	0x0001
+#define SWAPM_TOPW	0x0002
+#define SWAPM_REMOVE	0x0004
+void swap_menu(enum locks lock, struct xa_client *, struct widget_tree *, short); // bool, bool, int);
 void app_in_front(enum locks lock, struct xa_client *client, bool snd_untopped, bool snd_ontop);
 bool is_infront(struct xa_client *client);
 struct xa_client * get_app_infront(void);
@@ -49,8 +54,9 @@ void set_unhidden(enum locks lock, struct xa_client *client);
 void recover(void);
 
 //XA_TREE *find_menu_bar(enum locks lock);
-struct xa_client *find_desktop (enum locks lock, struct xa_client *client, short exlude);
-struct xa_client *focus_owner  (void);
+struct xa_client *	find_desktop (enum locks lock, struct xa_client *client, short exlude);
+struct xa_client *	find_menu(enum locks lock, struct xa_client *client, short exclude);
+struct xa_client *	focus_owner  (void);
 bool wind_has_focus(struct xa_window *wind);
 struct xa_client *find_focus(bool withlocks, bool *waiting, struct xa_client **locked_client, struct xa_window **keywind);
 

@@ -144,7 +144,7 @@ init_client(enum locks lock)
 		return NULL;
 	}
 
-	bzero(client, sizeof(*client));
+	//bzero(client, sizeof(*client));
 
 	init_client_mdbuff(client);
 
@@ -265,7 +265,7 @@ init_client(enum locks lock)
 
 	proc_is_now_client(client);
 	
-	app_in_front(lock, client, true, false);
+//	app_in_front(lock, client, true, false);
 
 	/* Reset the AES messages pending list for our new application */
 	client->msg = NULL;
@@ -467,6 +467,7 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 {
 	struct xa_client *top_owner;
 	long redraws;
+	bool was_infront = false;
 
 	DIAG((D_appl, NULL, "XA_client_exit: %s", c_owner(client)));
 
@@ -487,36 +488,30 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 	 * Figure out which client to make active
 	 */
 	top_owner = C.Aes;
-	if (cfg.next_active == 1)
+	
+	if (is_infront(client))
 	{
-		top_owner = APP_LIST_START;
+		was_infront = true;
 
-		if (top_owner == client)
-			top_owner = previous_client(lock, 1);
-	}
-	else if (cfg.next_active == 0)
-	{
-		struct xa_window *tw = get_topwind(lock, client, window_list, true, XAWS_OPEN|XAWS_HIDDEN, XAWS_OPEN);
-		if (!tw)
-			tw = get_topwind(lock, client, window_list, true, XAWS_OPEN, XAWS_OPEN);
-		if (tw)
-			top_owner = tw->owner;
-	}
+		if (cfg.next_active == 1)
+		{
+			top_owner = APP_LIST_START;
 
-	if (!C.next_menu || (C.next_menu && C.next_menu == client))
-		C.next_menu = top_owner ? top_owner : C.Aes;
-
-	if ((client->p == menustruct_locked()) ||
-	    (TAB_LIST_START && (TAB_LIST_START)->client == client))
-	{
-		popout(TAB_LIST_START);
+			if (top_owner == client)
+				top_owner = previous_client(lock, 1);
+		}
+		else if (cfg.next_active == 0)
+		{
+			struct xa_window *tw = get_topwind(lock, client, window_list, true, XAWS_OPEN|XAWS_HIDDEN, XAWS_OPEN);
+			if (!tw)
+				tw = get_topwind(lock, client, window_list, true, XAWS_OPEN, XAWS_OPEN);
+			if (tw)
+				top_owner = tw->owner;
+		}
 	}
 
-	if (get_menu() == client->std_menu)
-	{
-	//	display("exit_client: %s: Crashed? or just not called menu_bar(MENU_REMOVE)??", client->name);
-		set_next_menu(C.Aes, false, true);
-	}
+
+	swap_menu(lock, client, NULL, SWAPM_REMOVE);
 	
 	exit_proc(lock, client->p, code);
 	
@@ -605,7 +600,9 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 		}
 		client->desktop = NULL;
 	}
-	app_in_front(lock, top_owner, true, true);
+
+	if (was_infront)
+		app_in_front(lock, top_owner, true, true);
 
 	/*
 	 * remove from client list
