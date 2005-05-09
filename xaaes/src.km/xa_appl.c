@@ -512,6 +512,12 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 		popout(TAB_LIST_START);
 	}
 
+	if (get_menu() == client->std_menu)
+	{
+	//	display("exit_client: %s: Crashed? or just not called menu_bar(MENU_REMOVE)??", client->name);
+		set_next_menu(C.Aes, false, true);
+	}
+	
 	exit_proc(lock, client->p, code);
 	
 	/*

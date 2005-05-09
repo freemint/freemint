@@ -138,6 +138,8 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 	{
 		DIAG((D_menu,NULL,"MENU_REMOVE"));
 		
+	//	display("menu_remove for %s, menu=%lx, menubar=%lx", client->name, menu, menu_bar);
+
 		if (!menu)
 			menu = client->nxt_menu;
 
@@ -146,21 +148,35 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 			if (menustruct_locked() == client->p)
 				popout(TAB_LIST_START);
 
-			client->std_menu = client->nxt_menu = NULL;
-			
-			top_owner = C.Aes;
-			wl = window_list;
-			while (wl)
+			if (menu == menu_bar)
 			{
-				if (   wl->owner != client
-				    && wl->owner->std_menu)
+				top_owner = C.Aes;
+				wl = window_list;
+				while (wl)
 				{
-					top_owner = wl->owner;
-					break;
+					if (   wl->owner != client
+					    && wl->owner != C.Aes
+					    && wl->owner->std_menu)
+					{
+						top_owner = wl->owner;
+						break;
+					}
+					wl = wl->next;
 				}
-				wl = wl->next;
+				if (!top_owner)
+				{
+				//	display("force to aes menu");
+					set_next_menu(C.Aes, false, true);
+				}
+				else
+				{
+				//	display("Normal menuswap to %s", top_owner->name);
+					client->std_menu = client->nxt_menu = NULL;
+					swap_menu(lock|winlist, top_owner, NULL, false, true, 7);
+					yield();
+				}
 			}
-			swap_menu(lock|winlist, top_owner, NULL, false, true, 7);
+			client->std_menu = client->nxt_menu = NULL;
 			remove_attachments(lock|winlist, client, menu);
 			
 			pb->intout[0] = 1;
