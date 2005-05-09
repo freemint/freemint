@@ -73,7 +73,7 @@ struct xa_ftab
 	int flags;
 #define DO_LOCKSCREEN	0x1	/* if set syscall is enclosed with lock/unclock_screen */
 #define NOCLIENT	0x2	/* if set syscall is callable without appl_init() */
-#if GENERATE_DIAGS
+#if 1	/*GENERATE_DIAGS*/
 	const char *descr;
 #define DESCR(x) x
 #else
@@ -504,13 +504,6 @@ XA_handler(void *_pb)
 	struct xa_client *client;
 	short cmd;
 
-#if 0
-	if (old_fpu != *(volatile long *)0x2cL)
-	{
-		ALERT(("XaAES2: fpu vector changed from %lx to %lx!!", old_fpu, *(volatile long *)0x2cL));
-		old_fpu = *(volatile long *)0x2cL;
-	}
-#endif
 	if (!pb)
 	{
 		DIAGS(("XaAES: No AES Parameter Block (pid %ld)\n", p_getpid()));
@@ -532,7 +525,6 @@ XA_handler(void *_pb)
 	DIAGS((" -- pb=%lx, control=%lx, intin=%lx, intout=%lx, addrin=%lx, addrout=%lx",
 		pb, pb->control, pb->intin, pb->intout, pb->addrin, pb->addrout));
 #endif
-
 	cmd = pb->control[0];
 
 	if ((cmd >= 0) && (cmd < aes_tab_size))
@@ -546,9 +538,24 @@ XA_handler(void *_pb)
 		 */
 		if (!(client = lookup_extension(NULL, XAAES_MAGIC)) && cmd != 10)
 		{
-			client = init_client(0);
-			if (client)
-				client->forced_init_client = true;
+			if (!(aes_tab[cmd].flags & NOCLIENT))
+			{
+				client = init_client(0);
+				if (client)
+				{
+//					ALERT(("XaAES: client %s calls (%d)%s without appl_init()!!",
+//						client->proc_name, cmd, aes_tab[cmd].descr));
+					client->forced_init_client = true;
+				}
+			}
+#if 0
+			else
+			{
+				struct proc *p = get_curproc();
+				ALERT(("XaAES: process %d(%s) calls AES function (%d)%s without appl_init()!",
+					p->pid, p->name, cmd, aes_tab[cmd].descr));
+			}
+#endif
 		}
 
 		/*
@@ -765,13 +772,6 @@ XA_handler(void *_pb)
 				DIAG((D_kern, NULL, "Leaving AES non AES process (pid %ld)", p_getpid()));
 			
 #endif
-#if 0
-			if (old_fpu != *(volatile long *)0x2cL)
-			{
-				ALERT(("XaAES1: fpu vector changed from %lx to %lx!!", old_fpu, *(volatile long *)0x2cL));
-				old_fpu = *(volatile long *)0x2cL;
-			}
-#endif
 			return 0;
 		}
 		else
@@ -788,13 +788,6 @@ XA_handler(void *_pb)
 	{
 		DIAGS(("Unimplemented AES trap: %d", cmd));
 	}
-#if 0
-	if (old_fpu != *(volatile long *)0x2cL)
-	{
-		ALERT(("XaAES2: fpu vector changed from %lx to %lx!!", old_fpu, *(volatile long *)0x2cL));
-		old_fpu = *(volatile long *)0x2cL;
-	}
-#endif
 	/* error exit */
 	pb->intout[0] = 0;
 	return 0;

@@ -242,6 +242,28 @@ sizeof_cicon(ICONBLK *ib, CICON *i)
 	return size;
 }
 
+short
+ob_count_objs(OBJECT *obtree, short start)
+{
+	short parent, curr = start, objs = 0;
+
+	parent = ob_get_parent(obtree, start);
+
+	do
+	{
+		OBJECT *ob = obtree + curr;
+
+		objs++;
+		
+		if (ob->ob_head != -1)
+		{
+			objs += ob_count_objs(obtree, ob->ob_head);
+		}
+	} while ((curr = obtree[curr].ob_next) != parent);
+	
+	return objs;
+}
+
 static long
 obtree_len(OBJECT *obtree, short start, short *num_objs)
 {
@@ -335,6 +357,7 @@ obtree_len(OBJECT *obtree, short start, short *num_objs)
 				break;
 			}
 		}
+
 		if (ob->ob_head != -1)
 		{
 			short no;

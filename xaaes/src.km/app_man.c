@@ -347,7 +347,7 @@ swap_menu(enum locks lock, struct xa_client *new, struct widget_tree *new_menu, 
 }
 
 struct xa_client *
-find_desktop(enum locks lock)
+find_desktop(enum locks lock, struct xa_client *client, short exclude)
 {
 	struct xa_client *last, *rtn = C.Aes;
 
@@ -361,13 +361,20 @@ find_desktop(enum locks lock)
 	{
 		if (last->desktop)
 		{
-			rtn = last;
-			DIAGS(("found desktop %lx", rtn));
-			break;
+			if ( !((exclude & 2) && (last == client)) &&
+			     !((exclude & 1) && (last == C.Aes)) )
+			{
+				rtn = last;
+				DIAGS(("found desktop %lx", rtn));
+				break;
+			}
 		}
 
 		last = PREV_APP(last);
 	}
+
+	if (!last)
+		last = C.Aes;
 
 	Sema_Dn(clients);
 	return rtn;
@@ -663,13 +670,23 @@ next_app(enum locks lock, bool wwom, bool no_acc)
 	return client;
 }
 
+/*
+ * If bit 0 in exlude set, only return AES if thats the only
+ * process left
+ */
 struct xa_client *
-previous_client(enum locks lock)
+previous_client(enum locks lock, short exlude)
 {
 	struct xa_client *client = APP_LIST_START;
 
 	if (client)
 		client = NEXT_APP(client);
+	
+	if (client == C.Aes && (exlude & 1))
+	{
+		if (!(client = NEXT_APP(client)))
+			client = C.Aes;
+	}
 
 	return client;
 }
