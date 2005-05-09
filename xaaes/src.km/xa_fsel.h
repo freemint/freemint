@@ -49,6 +49,7 @@ struct fsel_data
 	Path path;
 	char fslash[2];
 	char fs_pattern[NAME_MAX * 2];
+	char fs_origpattern[NAME_MAX];
 	char filter[NAME_MAX * 2];
 	char file  [NAME_MAX + 2];		/* Is the tedindo->te_ptext of FS_FILE */
 	long fcase,trunc;

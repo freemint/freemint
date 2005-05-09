@@ -212,6 +212,8 @@ default_path(struct xa_client *caller, char *cmd, char *path, char *name, char *
 	drv = drive_and_path(cmd, path, name, true, caller == C.Aes ? true : false);
 	if (!(cpopts->mode & CREATE_PROCESS_OPTS_DEFDIR))
 	{
+	//	display("defdir '%s'", defdir);
+	//	display("apphom '%s'", caller->home_path);
 		if (caller == C.Aes || (drv >= 0 && !strcmp(caller->home_path, defdir)))
 		{
 			defdir[0] = drv + 'a';
@@ -645,7 +647,6 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 			DIAGS((" -- proc_setgid"));
 			proc_setgid(p, x_shell.gid);
 		}
-
 		/*
 		 * remember shel_write info for appl_init
 		 */
@@ -967,7 +968,6 @@ shell_find(enum locks lock, struct xa_client *client, char *fn)
 
 	const char *kp, *kh;
 	int f = 0, l, n;
-
 
 	kp = get_env(lock, "PATH=");
 	kh = get_env(lock, "HOME=");

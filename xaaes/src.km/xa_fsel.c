@@ -667,6 +667,8 @@ refresh_filelist(enum locks lock, struct fsel_data *fs, SCROLL_ENTRY *dir_ent)
 		{
 			list->start = list->del(list, list->start, false);
 		}
+		if (fs->rtbuild)
+			list->redraw(list, NULL);
 	}
 	
 	graf_mouse(HOURGLASS, NULL, NULL, false);
@@ -1541,6 +1543,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 		if (pat)
 		{
 			strcpy(fs->fs_pattern, pat + 1);
+			strcpy(fs->fs_origpattern, fs->fs_pattern);
 			*(pat + 1) = 0;
 			if (strcmp(fs->fs_pattern, "*.*") == 0)
 				*(fs->fs_pattern + 1) = 0;
@@ -1754,8 +1757,11 @@ do_fsel_exinput(enum locks lock, struct xa_client *client, AESPB *pb, const char
 	
 	if (fs)
 	{
+
 		DIAG((D_fsel, NULL, "fsel_(ex)input: title=%s, path=%s, file=%s, fs=%lx",
 			text, path, file, fs));
+	//	display("fsel_(ex)input: title=(%lx)%s, path=(%lx)%s, file=(%lx)%s, fs=%lx",
+	//		text, text, path, path, file, file, fs);
 			
 		if (open_fileselector1( lock|fsel,
 					client,
@@ -1773,8 +1779,9 @@ do_fsel_exinput(enum locks lock, struct xa_client *client, AESPB *pb, const char
 			if ((pb->intout[1] = fs->ok))
 			{
 				strcpy(path, fs->path);
-				strcat(path, fs->fs_pattern);
+				strcat(path, fs->fs_origpattern);
 				strcpy(file, fs->file);
+			//	display("return file '%s', path '%s'", file, path);
 			}
 		}
 		kfree(fs);
@@ -1798,7 +1805,7 @@ XA_fsel_exinput(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	CONTROL(0,2,3)
 
-	if (pb->control[3] <= 2 || t == NULL)
+	if (pb->control[N_ADDRIN] <= 2 || t == NULL)
 		t = "";
 
 	do_fsel_exinput(lock, client, pb, t);
