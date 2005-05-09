@@ -758,7 +758,11 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				/* find a prev app's desktop. */
 				if (get_desktop() == client->desktop)
 				{
-					if (!(new = pid2client(C.DSKpid)) || !new->desktop)
+					/* Ozk:
+					 * If caller aint the desktop, we try to set the desktop's dektop (uhm.. yes)
+					 */
+					new = pid2client(C.DSKpid);
+					if (!new || client == new || !new->desktop)
 						new = find_desktop(lock, client, 3);
 					set_desktop(new->desktop);
 					yield();

@@ -229,7 +229,7 @@ recover(void)
 }
 
 void
-set_next_menu(struct xa_client *new, bool do_topwind)
+set_next_menu(struct xa_client *new, bool do_topwind, bool force)
 {
 	if (new)
 	{
@@ -245,7 +245,7 @@ set_next_menu(struct xa_client *new, bool do_topwind)
 		}
 		
 		/* menu widget.tree */
-		if ((is_infront(new) || (!infront->std_menu && !infront->nxt_menu)))
+		if (force || (is_infront(new) || (!infront->std_menu && !infront->nxt_menu)))
 		{
 			if (new->std_menu) // && new->std_menu != widg->stuff)
 			{
@@ -312,9 +312,12 @@ swap_menu(enum locks lock, struct xa_client *new, struct widget_tree *new_menu, 
 			DIAG((D_appl, NULL, "swap_menu: now. std=%lx, new_menu=%lx, nxt_menu = %lx for %s",
 				new->std_menu, new_menu, new->nxt_menu, new->name));
 			
+		//	display("swap_menu: now. std=%lx, new_menu=%lx, nxt_menu = %lx for %s",
+		//		new->std_menu, new_menu, new->nxt_menu, new->name);
+			
 			if (new_menu)
 				new->nxt_menu = new_menu;
-			set_next_menu(new, do_topwind);
+			set_next_menu(new, do_topwind, false);
 			unlock_menustruct(p);
 		}
 		else
