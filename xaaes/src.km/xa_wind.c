@@ -738,10 +738,14 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				}
 				else
 				{
-					struct xa_client *new = find_desktop(lock);
-					DIAGS(("  desktop for %s failed!", client->name)); 
-					set_desktop(new->desktop);
-					client->desktop = NULL;
+					if (client->desktop && get_desktop() == client->desktop)
+					{
+						struct xa_client *new = find_desktop(lock, client, 3);
+						DIAGS(("  desktop for %s failed!", client->name)); 
+						set_desktop(new->desktop);
+						yield();
+						client->desktop = NULL;
+					}
 				}
 			}
 		}
@@ -750,10 +754,16 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			if (client->desktop)
 			{
 				struct xa_client *new;
+
 				/* find a prev app's desktop. */
+				if (get_desktop() == client->desktop)
+				{
+					if (!(new = pid2client(C.DSKpid)) || !new->desktop)
+						new = find_desktop(lock, client, 3);
+					set_desktop(new->desktop);
+					yield();
+				}
 				client->desktop = NULL;
-				new = find_desktop(lock);
-				set_desktop(new->desktop);
 				DIAGS(("  desktop for %s removed", c_owner(client)));
 			}
 		}

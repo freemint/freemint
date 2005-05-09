@@ -33,7 +33,7 @@
 struct xa_window * get_topwind(enum locks lock, struct xa_client *client, struct xa_window *startw, bool not, short wsmask, short wsvalue);
 struct xa_window * next_wind(enum locks lock);
 struct xa_client * next_app(enum locks lock, bool with_window_or_menu, bool no_accessories);
-struct xa_client * previous_client(enum locks lock);
+struct xa_client * previous_client(enum locks lock, short exlude);
 
 void set_next_menu(struct xa_client *new, bool do_topwind);
 void swap_menu(enum locks lock, struct xa_client *, struct widget_tree *, bool, bool, int);
@@ -49,7 +49,7 @@ void set_unhidden(enum locks lock, struct xa_client *client);
 void recover(void);
 
 //XA_TREE *find_menu_bar(enum locks lock);
-struct xa_client *find_desktop (enum locks lock);
+struct xa_client *find_desktop (enum locks lock, struct xa_client *client, short exlude);
 struct xa_client *focus_owner  (void);
 bool wind_has_focus(struct xa_window *wind);
 struct xa_client *find_focus(bool withlocks, bool *waiting, struct xa_client **locked_client, struct xa_window **keywind);

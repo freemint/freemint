@@ -476,6 +476,11 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 	 * Clear if client was exclusively waiting for mouse input
 	 */
 	client->status |= CS_EXITING;
+	if (S.wait_mouse == client)
+	{
+		S.wm_count = 0;
+		S.wait_mouse = NULL;
+	}
 
 	cancel_mutimeout(client);
 	/*
@@ -487,7 +492,7 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 		top_owner = APP_LIST_START;
 
 		if (top_owner == client)
-			top_owner = previous_client(lock);
+			top_owner = previous_client(lock, 1);
 	}
 	else if (cfg.next_active == 0)
 	{
@@ -499,7 +504,7 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 	}
 
 	if (!C.next_menu || (C.next_menu && C.next_menu == client))
-		C.next_menu = top_owner;
+		C.next_menu = top_owner ? top_owner : C.Aes;
 
 	if ((client->p == menustruct_locked()) ||
 	    (TAB_LIST_START && (TAB_LIST_START)->client == client))
@@ -508,12 +513,6 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 	}
 
 	exit_proc(lock, client->p, code);
-
-	if (S.wait_mouse == client)
-	{
-		S.wm_count = 0;
-		S.wait_mouse = NULL;
-	}
 	
 	/*
 	 * It is no longer interested in button released packet
@@ -567,7 +566,7 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 	 * sending CH_EXIT is done by proc_exit()
 	 */
 	 
-	app_in_front(lock, top_owner, true, true);
+//	app_in_front(lock, top_owner, true, true);
 
 	/*
 	 * remove any references
@@ -580,25 +579,27 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 		{
 			set_desktop(C.Aes->desktop);
 
-			if (top_owner->desktop && !(top_owner->status & CS_EXITING))
-			{
-				newdt = top_owner;
-			}
-			else
-			{
-				newdt = pid2client(C.DSKpid);
-				if (!(newdt && newdt != client && !(newdt->status & CS_EXITING) && newdt->desktop))
-					newdt = NULL;
-			}
-			if (!newdt)
-				newdt = C.Aes;
+			if (top_owner != C.Aes)
+			{			
+				if (top_owner->desktop && !(top_owner->status & CS_EXITING))
+				{
+					newdt = top_owner;
+				}
+				else
+				{
+					newdt = pid2client(C.DSKpid);
+					if (!(newdt && newdt != client && !(newdt->status & CS_EXITING) && newdt->desktop))
+						newdt = NULL;
+				}
+				if (!newdt)
+					newdt = C.Aes;
 			
-			set_desktop(newdt->desktop);
+				set_desktop(newdt->desktop);
+			}
 		}
 		client->desktop = NULL;
 	}
-
-	//app_in_front(lock, top_owner, true, true);
+	app_in_front(lock, top_owner, true, true);
 
 	/*
 	 * remove from client list
