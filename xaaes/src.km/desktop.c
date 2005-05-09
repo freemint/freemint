@@ -163,6 +163,7 @@ Set_desktop(XA_TREE *new_desktop)
 
 
 	ob = new_desktop->tree;
+	*(RECT *)&ob->ob_x = root_window->wa;	
 	r = *(RECT*)&ob->ob_x;
 
 	/* Now use the root window's auto-redraw function to redraw it
@@ -173,6 +174,7 @@ Set_desktop(XA_TREE *new_desktop)
 
 	DIAGS(("desktop: %d/%d,%d/%d",r.x,r.y,r.w,r.h));
 
+
 	/* HR 010501: general fix */
 	if (root_window->r.h > r.h)
 		wi->loc.r.y = ob->ob_y = root_window->r.h - r.h;
@@ -180,7 +182,7 @@ Set_desktop(XA_TREE *new_desktop)
 	wi->stuff = new_desktop;
 	wi->stufftype = STUFF_IS_WT;
 	wi->destruct = free_xawidget_resources;
-
+	
 	send_iredraw(0, root_window, 0, NULL);
 }
 static void
