@@ -834,7 +834,7 @@ menu_finish(struct task_administration_block *tab)
 		 */
 		if (C.next_menu)
 		{
-			set_next_menu(C.next_menu, true);
+			set_next_menu(C.next_menu, true, false);
 			C.next_menu = NULL;
 		}
 		unlock_menustruct(proc);
