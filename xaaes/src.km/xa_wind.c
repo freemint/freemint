@@ -197,7 +197,7 @@ top_window(enum locks lock, bool snd_untopped, bool snd_ontop, struct xa_window 
 	if (!is_infront(w->owner))
 	{
 		set_active_client(lock, w->owner);
-		swap_menu(lock, w->owner, NULL, true, false, 0);
+		swap_menu(lock, w->owner, NULL, SWAPM_DESK); //true, false, 0);
 	}
 	/* Ozk: Now pull the new topped window to top of list..
 	 */
@@ -261,7 +261,7 @@ bottom_window(enum locks lock, bool snd_untopped, bool snd_ontop, struct xa_wind
 		if (!is_infront(window_list->owner))
 		{
 			set_active_client(lock, window_list->owner);
-			swap_menu(lock, window_list->owner, NULL, true, false, 0);
+			swap_menu(lock, window_list->owner, NULL, SWAPM_DESK); //true, false, 0);
 		}
 		if (is_topped(window_list))
 		{
