@@ -645,7 +645,11 @@ free_wt(XA_TREE *wt)
 	if (wt->links)
 	{
 		display("free_wt: links not NULL!!!!!");
-		display("free_wt: wt=%lx, links=%d, flags=%lx, owner=%s", wt, wt->links, wt->flags, wt->owner->name);
+		display("free_wt: wt=%lx, links=%d, flags=%lx, ismenu=%s, menuline=%s, owner=%s",
+			wt, wt->links, wt->flags,
+			wt->is_menu ? "Yes" : "No",
+			wt->menu_line ? "Yes" : "No",
+			wt->owner->name);
 	}
 #endif
 	if (wt->flags & WTF_STATIC)
