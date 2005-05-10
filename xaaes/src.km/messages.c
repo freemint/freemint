@@ -43,7 +43,7 @@ static void queue_message(enum locks lock, struct xa_client *dest_client, short 
 #if GENERATE_DIAGS
 static const char *xmsgs[] =
 {
-	"WM_REDRAW",
+	"WM_REDRAW",		/* 0x0014    20	*/
 	"WM_TOPPED",
 	"WM_CLOSED",
 	"WM_FULLED",
@@ -53,17 +53,17 @@ static const char *xmsgs[] =
 	"WM_SIZED",
 	"WM_MOVED",
 	"WM_NEWTOP",
-	"WM_UNTOPPED",
+	"WM_UNTOPPED",		/* 30	*/
 	"WM_ONTOP",
 	"WM_OFFTOP",
 	"WM_BOTTOMED",
 	"WM_ICONIFY	",
 	"WM_UNICONIFY",
 	"WM_ALLICONIFY",
-	"37",
+	"WM_TOOLBAR",
 	"38",
 	"39",
-	"AC_OPEN",
+	"AC_OPEN",		/* 40 */
 	"AC_CLOSE",
 	"42",
 	"43",
@@ -73,7 +73,7 @@ static const char *xmsgs[] =
 	"47",
 	"48",
 	"49",
-	"AP_TERM",
+	"AP_TERM",		/* 50 */
 	"AP_TFAIL",
 	"52",
 	"53",
@@ -83,7 +83,7 @@ static const char *xmsgs[] =
 	"AP_RESCHG",
 	"58",
 	"59",
-	"SHUT_COMPLETED",
+	"SHUT_COMPLETED",	/* 60 */
 	"RESCH_COMPLETED",
 	"62",
 	"AP_DRAGDROP",

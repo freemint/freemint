@@ -473,70 +473,6 @@ XA_menu_popup(enum locks lock, struct xa_client *client, AESPB *pb)
 		pb->intout[0] = -1;
 
 	return XAC_DONE;
-#if 0		
-	pb->intout[0] = -1;
-
-	if (pb->addrin[0] && pb->addrin[1])
-	{
-		Tab *tab;
-		MENU *mn, *md;
-		short x, y;
-		OBJECT *ob;
-
-		if (TAB_LIST_START)
-			popout(TAB_LIST_START);
-
-		tab = nest_menutask(NULL);
-		mn = (MENU*)pb->addrin[0];
-		md = (MENU*)pb->addrin[1];
-		ob = mn->mn_tree;
-		
-		if (tab)		/* else already locked */
-		{	
-			XA_TREE *wt;
-			short old_x, old_y;
-
-			wt = obtree_to_wt(client, ob);
-			if (!wt)
-				wt = new_widget_tree(client, ob);
-			if (!wt)
-				return XAC_DONE;
-
-			*md = *mn;
-
-			DIAG((D_menu,NULL,"menu_popup %lx + %d",ob, mn->mn_menu));
-
-			tab->pb = pb;
-			tab->locker = client->p->pid;
-			tab->client = client;
-			tab->lock = lock;
-			
-			old_x = ob->ob_x;
-			old_y = ob->ob_y;
-
-			ob->ob_x = ob->ob_y = wt->dx = wt->dy = 0;
-			obj_offset(wt, mn->mn_menu, &x, &y);
-			tab->wind = NULL;
-			tab->widg = NULL;
-			tab->ty = POP_UP;
-			tab->scroll = mn->mn_scroll != 0;
-			
-			start_popup_session(tab, wt, mn->mn_menu,
-				 click_popup_entry,
-				 pb->intin[0] - x,
-				 pb->intin[1] - y);
-
-			client->status |= CS_BLOCK_MENU_NAV;
-			Block(client, 1);
-			client->status &= ~CS_BLOCK_MENU_NAV;
-			
-			ob->ob_x = old_x;
-			ob->ob_y = old_y;
-			return XAC_DONE;
-		}
-	}
- 	return XAC_DONE;
-#endif
 }
 
 /*
@@ -572,7 +508,6 @@ XA_form_popup(enum locks lock, struct xa_client *client, AESPB *pb)
 
 			DIAG((D_menu,NULL,"form_popup %lx",ob));
 
-		//	tab->pb = pb;
 			tab->locker = client->p->pid;
 			tab->client = client;
 			tab->lock = lock;
