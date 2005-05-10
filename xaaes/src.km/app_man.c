@@ -302,7 +302,7 @@ swap_menu(enum locks lock, struct xa_client *new, struct widget_tree *new_menu, 
 {
 	struct proc *p = get_curproc();
 
-	DIAG((D_appl, NULL, "[%d]swap_menu", which));
+	DIAG((D_appl, NULL, "[%d]swap_menu: %s, flags=%lx", new->name, flags));
 
 	/* If the new client has no menu bar, no need for a change */
 	if (new->std_menu || new_menu || new->nxt_menu)
