@@ -555,7 +555,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 			struct basepage *b;
 			long size;
 
-			drv = default_path(caller, cmd, path, name, defdir, &cpopts)
+			drv = default_path(caller, cmd, path, name, defdir, &cpopts);
 			
 			DIAG((D_shel, 0, "[3]drive_and_path %d,'%s','%s'", drv, path, name));
 
