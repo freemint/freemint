@@ -1162,10 +1162,12 @@ XA_graf_mkstate(enum locks lock, struct xa_client *client, AESPB *pb)
 		struct mbs mbs;
 
 		get_mbstate(client, &mbs);
+	#if 0
 		if (TAB_LIST_START && TAB_LIST_START->client == client)
 		{
 			mbs.x = mbs.y = 0;
 		}
+	#endif
 		pb->intout[1] = mbs.x;
 		pb->intout[2] = mbs.y;
 		pb->intout[3] = mbs.b;
