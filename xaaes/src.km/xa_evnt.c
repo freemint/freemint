@@ -412,6 +412,10 @@ check_queued_events(struct xa_client *client)
 			else
 			{
 				*out++ = mbs.c;
+			#if 1
+				*out++ = mbs.x;
+				*out++ = mbs.y;
+			#else
 				if (!TAB_LIST_START)
 				{
 					*out++ = mbs.x;
@@ -422,6 +426,7 @@ check_queued_events(struct xa_client *client)
 					*out++ = 0;
 					*out++ = 0;
 				}
+			#endif
 				*out++ = mbs.b;
 				*out++ = mbs.ks;
 				goto got_evnt;
@@ -535,7 +540,10 @@ check_queued_events(struct xa_client *client)
 		}
 
 		*out++ = events;
-		
+	#if 1
+		*out++ = mbs.x;
+		*out++ = mbs.y;
+	#else
 		if (!TAB_LIST_START)
 		{
 			*out++ = mbs.x;
@@ -546,6 +554,7 @@ check_queued_events(struct xa_client *client)
 			*out++ = 0;
 			*out++ = 0;
 		}
+	#endif
 		*out++ = mbs.b;
 		*out++ = mbs.ks;
 		*out++ = key;
