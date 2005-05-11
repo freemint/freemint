@@ -922,7 +922,13 @@ fs_item_action(struct scroll_info *list, struct scroll_entry *this, const struct
 
 				/* cur on double dot folder line */
 			#endif
+			
 				fs_updir(list);
+				if (!fs->kbdnav)
+				{
+					fs->tfile = false;
+					set_file(fs, "");
+				}
 			}
 			else
 			{
@@ -944,7 +950,8 @@ fs_item_action(struct scroll_info *list, struct scroll_entry *this, const struct
 							}
 							else
 							{
-								//fs->tfile = false;
+								if (!fs->kbdnav)
+									fs->tfile = false;
 								fs_enter_dir(fs, list, this);
 								set_dir(list);
 							}
@@ -1337,6 +1344,7 @@ fs_key_form_do(enum locks lock,
 					if (strcmp(old, fs->file) != 0)
 					{
 						fs->tfile = true;
+						fs->kbdnav = false;
 						fs_prompt(list, true);
 					}
 				}

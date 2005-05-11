@@ -194,6 +194,7 @@ next_entry(SCROLL_ENTRY *this, short flags, short maxlevel, short *level)
 static SCROLL_ENTRY *
 prev_entry(SCROLL_ENTRY *this, short flags)
 {
+
 	if (this->prev)
 	{
 		this = this->prev;
@@ -206,6 +207,8 @@ prev_entry(SCROLL_ENTRY *this, short flags)
 	}
 	else if (this->up)
 		this = this->up;
+	else
+		this = NULL;
 
 	return this;
 }
@@ -721,14 +724,17 @@ sliders(struct scroll_info *list, bool rdrw)
 }
 
 static struct scroll_entry *
-get_last_entry(SCROLL_INFO *list)
+get_last_entry(SCROLL_INFO *list, short flags, short maxlevel, short *level)
 {
 	struct scroll_entry *this = list->start;
+	struct scroll_entry *last = NULL;
 
 	while (this)
-		this = next_entry(this, 0, -1, NULL);
-	
-	return this;
+	{
+		last = this;
+		this = next_entry(this, flags, maxlevel, level);
+	}
+	return last;
 }
 
 static struct scroll_entry *
@@ -2596,7 +2602,7 @@ search(SCROLL_INFO *list, SCROLL_ENTRY *start, short mode, void *data)
 		}
 		case SEFM_LAST:
 		{
-			ret = get_last_entry(list);
+			ret = get_last_entry(list, 0, -1, NULL);
 			break;
 		}
 	}
@@ -3285,6 +3291,10 @@ scrl_cursor(SCROLL_INFO *list, ushort keycode)
 		else
 		{
 			SCROLL_ENTRY *n = prev_entry(list->cur, ENT_VISIBLE);
+			if (!n)
+			{
+				n = get_last_entry(list, ENT_VISIBLE, -1, NULL);
+			}
 			if (n)
 			{
 				list->set(list, NULL, SESET_UNSELECTED, UNSELECT_ALL, NORMREDRAW);
@@ -3305,6 +3315,8 @@ scrl_cursor(SCROLL_INFO *list, ushort keycode)
 		else
 		{
 			SCROLL_ENTRY *n = next_entry(list->cur, ENT_VISIBLE, -1, NULL);
+			if (!n)
+				n = list->start;
 			if (n)
 			{
 				list->set(list, NULL, SESET_UNSELECTED, UNSELECT_ALL, NORMREDRAW);
