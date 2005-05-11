@@ -924,7 +924,7 @@ fs_item_action(struct scroll_info *list, struct scroll_entry *this, const struct
 			#endif
 			
 				fs_updir(list);
-				if (!fs->kbdnav)
+				if (!md && !fs->kbdnav)
 				{
 					fs->tfile = false;
 					set_file(fs, "");
