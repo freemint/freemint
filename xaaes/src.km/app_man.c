@@ -121,7 +121,12 @@ find_focus(bool withlocks, bool *waiting, struct xa_client **locked_client, stru
 				*locked_client = client;
 
 			if (client->fmd.keypress ||				/* classic (blocked) form_do */
-			    (nlwind && nlwind->owner == client) ||
+			/* XXX - Ozk:
+			 * Find a better solution here! nolist windows that are created for popups (menu's and popups)
+			 * should not be taken into account when client wants top_window via wind_get(WF_TOP)!
+			 * But the AES may perhaps need to direct some keypresses to those later on..
+			 */
+			    (nlwind && nlwind->owner == client && !(nlwind->dial & created_for_POPUP)) ||
 			    client->waiting_for & (MU_KEYBD | MU_NORM_KEYBD) ||
 			    (top->owner == client && top->keypress))		/* Windowed form_do() */
 			{
@@ -130,7 +135,7 @@ find_focus(bool withlocks, bool *waiting, struct xa_client **locked_client, stru
 
 				if (keywind)
 				{
-					if (nlwind && nlwind->owner == client)
+					if (nlwind && nlwind->owner == client && !(nlwind->dial & created_for_POPUP))
 						*keywind = nlwind;
 					else if (top->owner == client && top->keypress)
 						*keywind = top;
