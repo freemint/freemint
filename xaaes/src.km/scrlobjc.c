@@ -2352,7 +2352,7 @@ scroll_down(SCROLL_INFO *list, long num, bool rdrw)
 
 	if (list->top)
 	{
-		while (n > 0 && ((prev = prev_entry(list->top, ENT_VISIBLE))/*list->top->prev*/ || list->off_y))
+		while (n > 0 && ((prev = prev_entry(list->top, ENT_VISIBLE)) || list->off_y))
 		{
 			if (list->off_y)
 			{
@@ -2371,7 +2371,7 @@ scroll_down(SCROLL_INFO *list, long num, bool rdrw)
 			}
 			else
 			{
-				list->top = prev; //list->top->prev;
+				list->top = prev;
 				h = (list->top->r.h - list->off_y);
 
 				n -= h;
