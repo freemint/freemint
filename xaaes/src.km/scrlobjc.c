@@ -194,21 +194,23 @@ next_entry(SCROLL_ENTRY *this, short flags, short maxlevel, short *level)
 static SCROLL_ENTRY *
 prev_entry(SCROLL_ENTRY *this, short flags)
 {
-
-	if (this->prev)
+	if (this)
 	{
-		this = this->prev;
-		while (this->down && (this->xstate & OS_OPENED))
+		if (this->prev)
 		{
-			this = this->down;
-			while (this->next)
-				this = this->next;
+			this = this->prev;
+			while (this->down && (this->xstate & OS_OPENED))
+			{
+				this = this->down;
+				while (this->next)
+					this = this->next;
+			}
 		}
+		else if (this->up)
+			this = this->up;
+		else
+			this = NULL;
 	}
-	else if (this->up)
-		this = this->up;
-	else
-		this = NULL;
 
 	return this;
 }
