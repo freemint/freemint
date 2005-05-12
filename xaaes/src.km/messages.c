@@ -379,30 +379,6 @@ is_inside(const RECT *r, const RECT *o)
 
 	return true;
 }
-#if 0
-void
-clip_all_wm_redraws(RECT *r)
-{
-	struct xa_client *client;
-	struct xa_aesmsg_list *msg, **m;
-
-	FOREACH_CLIENT(client)
-	{
-		m = &client->rdrw_msg;
-		while ((msg = *m))
-		{
-			if (!xa_rect_clip(r, (RECT *)&msg->message.m[4], (RECT *)&msg->message.m[4]))
-			{
-				*m = msg->next;
-				kick_mousemove_timeout();
-				kfree(msg);
-			}
-			else
-				m = &msg->next;
-		}
-	}
-}
-#endif
 	
 static void
 #if GENERATE_DIAGS

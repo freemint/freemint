@@ -74,7 +74,7 @@ cancel_cevents(struct xa_client *client)
 {
 	struct c_event *ce;
 
-	ce = client->cevnt_head;
+	//ce = client->cevnt_head;
 	while ((ce = client->cevnt_head))
 	{
 		struct c_event *nxt;
