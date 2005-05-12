@@ -179,7 +179,10 @@ FixColourIconData(struct xa_client *client, CICONBLK *icon, struct xa_rscs *rscs
 	while (c)
 	{
 		DIAG((D_rsrc,client,"[1]probe cicon 0x%lx", c));
-
+#if 0		
+		if (!strnicmp(client->proc_name, "zbench", 6))
+			display("current best %d, this %d", best_cicon ? best_cicon->num_planes : -1, c->num_planes);
+#endif		
 		if (    c->num_planes <= screen.planes
 		    && (!best_cicon || (best_cicon && c->num_planes > best_cicon->num_planes)))
 		{
@@ -187,7 +190,10 @@ FixColourIconData(struct xa_client *client, CICONBLK *icon, struct xa_rscs *rscs
 		}
 		c = c->next_res;
 	}
-
+#if 0
+	if (!strnicmp(client->proc_name, "zbench", 6))
+		display("best found %d", best_cicon ? best_cicon->num_planes : -1);
+#endif	
 	if (best_cicon)
 	{
 		/* DIAG((D_rsrc,client,"[1]best_cicon planes: %d", best_cicon->num_planes)); */
@@ -341,7 +347,7 @@ fix_cicons(void *base, CICONBLK **cibh)
 	/* Fix up all the CICONBLK's */
 	for (i = 0; i < numCibs; i++)
 	{
-		CICON *cicn;
+		CICON *cicn, *prev_cicn;
 		ICONBLK *ib = &cib->monoblk;
 
 		cibh[i] = cib;						/* Put absolute address of this ciconblk into array */
@@ -381,6 +387,7 @@ fix_cicons(void *base, CICONBLK **cibh)
 		(unsigned long)pdata += 12;
 
 		cicn = (CICON *)pdata;
+		prev_cicn = NULL;
 		/* There can be color icons with NO color icons,
 		 * only the mono icon block. */
 		cib->mainlist = NULL;
@@ -413,13 +420,18 @@ fix_cicons(void *base, CICONBLK **cibh)
 			if (cib->mainlist == NULL)
 				cib->mainlist = cicn;
 
+		#if 0
 			if ((long)cicn->next_res == 1)
 				cicn->next_res = (CICON *)pdata;
 			else
 				cicn->next_res = NULL;
-
+		#endif
+			cicn->next_res = (CICON *)pdata;
+			prev_cicn = cicn;
 			cicn = (CICON *)pdata;
 		}
+		if (prev_cicn)
+			prev_cicn->next_res = NULL;
 		cib = (CICONBLK *)cicn;
 	}
 	DIAG((D_rsrc, NULL, "fixed up %d color icons", numCibs));
