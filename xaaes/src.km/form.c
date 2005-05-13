@@ -290,6 +290,8 @@ form_button(XA_TREE *wt,
 			POPINFO *pinf;
 			short x, y, obnum;
 
+			display("form_button: G_POPUP! %s", wt->owner->name);
+
 			pinf = object_get_popinfo(obtree + obj);
 			if ((obnum = pinf->obnum) > 0)
 				pinf->tree[obnum].ob_state |= OS_CHECKED;
@@ -612,10 +614,17 @@ Exit_form_do( struct xa_client *client,
 
 			if (wind->send_message && fr->obj >= 0)
 			{
-				struct xa_widget *widg = wt->widg;
+				//struct xa_widget *widg = wt->widg;
+				short keystate;
+
+				if (fr->md)
+					keystate = fr->md->kstate;
+				else
+					vq_key_s(C.vh, &keystate);
+
 				wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_NORM,
 						WM_TOOLBAR, 0, 0, wind->handle,
-						fr->obj, fr->dblmask ? 2 : 1, widg->k, 0);
+						fr->obj, fr->dblmask ? 2 : 1, keystate, 0);
 			}
 			return;
 		}

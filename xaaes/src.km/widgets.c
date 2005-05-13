@@ -813,6 +813,7 @@ CE_redraw_menu(enum locks lock, struct c_event *ce, bool cancel)
 		#endif
 			display_widget(lock, root_window, widg, NULL);
 		}
+	#if 0
 		else
 		{
 			DIAGS(("CE_redraw_menu: ownership change, forwarding..."));
@@ -825,6 +826,7 @@ CE_redraw_menu(enum locks lock, struct c_event *ce, bool cancel)
 				    NULL);
 			Unblock(mc, 1, 1);
 		}
+	#endif
 	}
 }
 /*
@@ -2083,7 +2085,7 @@ drag_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, cons
 		}
 
 		/* If right button is used, do a classic outline drag. */
-		if (   widg->s == 2
+		if (   md->state == MBS_RIGHT /*widg->s == 2*/
 		    || wind->send_message == NULL
 		    || wind->owner->options.nolive)
 		{
@@ -2177,7 +2179,7 @@ click_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 	/* Ozk: If either shifts pressed, unconditionally send the window to bottom */
 	if (md->state == MBS_LEFT)
 	{
-		if ((widg->k & 3) && (wind->active_widgets & (STORE_BACK|BACKDROP)) == BACKDROP)
+		if ((md->kstate & 3)/*(widg->k & 3)*/ && (wind->active_widgets & (STORE_BACK|BACKDROP)) == BACKDROP)
 		{
 			send_bottomed(lock, wind);
 		}
@@ -2436,11 +2438,11 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 	bool move, size;
 	RECT r = wind->r, d;
 	
-	if (   widg->s == 2
+	if (   md->state == MBS_RIGHT /*widg->s == 2*/
 	    || wind->send_message == NULL
 	    || wind->owner->options.nolive)
 	{
-		int xy = sizer ? SE : compass(16, widg->mx, widg->my, r);
+		int xy = sizer ? SE : compass(16, md->x, md->y, r); //compass(16, widg->mx, widg->my, r);
 
 		/* Always have a nice consistent SIZER when resizing a window */
 		graf_mouse(border_mouse[xy], NULL, NULL, false);
@@ -2625,7 +2627,7 @@ static bool
 click_scroll(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
 	XA_WIDGET *slider = &(wind->widgets[widg->slider_type]);
-	bool reverse = (widg->s == 2);
+	bool reverse = md->state == MBS_RIGHT; //(widg->s == 2);
 	short mx = md->x;
 	short my = md->y;
 	short mb = md->state;
@@ -4077,12 +4079,12 @@ do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct
 		
 					widg->x = md->x - r.x; 		/* Mark where the click occurred (relative to the widget) */
 					widg->y = md->y - r.y;
-					widg->mx = md->x;
-					widg->my = md->y;
-					widg->s = md->state;		/* HR 280801: we need the state also some time (desktop widget) */
-					widg->cs = md->cstate;
-					widg->k = md->kstate;
-					widg->clicks = clicks;
+				//	widg->mx = md->x;
+				//	widg->my = md->y;
+				//	widg->s = md->state;		/* HR 280801: we need the state also some time (desktop widget) */
+				//	widg->cs = md->cstate;
+				//	widg->k = md->kstate;
+				//	widg->clicks = clicks;
 
 	/* In this version page arrows are separate widgets,
 		they are overlapped by the slider widget, hence this kind of a hack.
@@ -4106,12 +4108,12 @@ do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct
 						widg = w->widgets + f + ax;
 						widg->x = md->x - r.x; 			/* Mark where the click occurred (relative to the widget) */
 						widg->y = md->y - r.y;
-						widg->mx = md->x;
-						widg->my = md->y;
-						widg->s = md->state;			/* HR 280801: we need the state also some time (desktop widget) */
-						widg->cs = md->cstate;
-						widg->k = md->kstate;
-						widg->clicks = clicks;
+					//	widg->mx = md->x;
+					//	widg->my = md->y;
+					//	widg->s = md->state;			/* HR 280801: we need the state also some time (desktop widget) */
+					//	widg->cs = md->cstate;
+					//	widg->k = md->kstate;
+					//	widg->clicks = clicks;
 						rtn = widg->drag(lock, w, widg, md);	/* we know there is only 1 behaviour for these arrows */
 					}
 					else /* normal widget */
