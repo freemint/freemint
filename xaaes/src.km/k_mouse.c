@@ -700,7 +700,8 @@ chk_button_waiter(struct moose_data *md)
 		DIAGS(("new_moose_pkt: Got button_waiter %s", C.button_waiter->name));
 		add_client_md(C.button_waiter, md);
 		Unblock(C.button_waiter, 1, 1);
-		C.button_waiter = NULL;
+		if (!(md->state && md->cstate))
+			C.button_waiter = NULL;
 		return true;
 	}
 	return false;

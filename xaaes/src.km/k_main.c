@@ -406,7 +406,7 @@ init_moose(void)
 {
 	bool ret = false;
 
-	C.button_waiter = 0;
+	C.button_waiter = NULL;
 	C.redraws = 0;
 	C.move_block = 0;
 
