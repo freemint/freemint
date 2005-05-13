@@ -308,7 +308,7 @@ get_mbstate(struct xa_client *client, struct mbs *d)
 			if (md > client->md_end)
 				md = client->mdb;
 			client->md_head = md;
-			clicks = md->clicks;
+			clicks = 1; //md->clicks;
 		}
 		else
 		{
@@ -318,6 +318,7 @@ get_mbstate(struct xa_client *client, struct mbs *d)
 
 	if (clicks)
 	{
+		clicks = md->clicks;
 		mbutts = md->state;
 		md->clicks = -1;
 		x = md->x;
@@ -334,13 +335,12 @@ get_mbstate(struct xa_client *client, struct mbs *d)
 
 	if (d)
 	{
-		if (d)
-			d->empty = (client->md_head == client->md_tail) ? true : false;
 		d->b	= mbutts;
 		d->c	= clicks;
 		d->x	= x;
 		d->y	= y;
 		d->ks	= ks;
+		d->empty = (client->md_head == client->md_tail) ? true : false;
 	}
 }
 
