@@ -432,6 +432,7 @@ fix_cicons(void *base, CICONBLK **cibh)
 		}
 		if (prev_cicn)
 			prev_cicn->next_res = NULL;
+
 		cib = (CICONBLK *)cicn;
 	}
 	DIAG((D_rsrc, NULL, "fixed up %d color icons", numCibs));

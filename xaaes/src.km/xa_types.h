@@ -1087,11 +1087,11 @@ struct xa_widget
 	XA_WIDGETS type;		/* For convenience, makes it possible to disconnect type from index */
 	short x, y;			/* If we are activated because we've been clicked on, this is the
 					 * relative location of the click (click_object_widget)*/
-	short mx, my;			/* absolute mouse location. */
-	short s;			/* we must be able to use the original button and state. */
-	short cs;
-	short k;
-	short clicks;			/* Pass the number of clicks, might be usefull */
+//	short mx, my;			/* absolute mouse location. */
+//	short s;			/* we must be able to use the original button and state. */
+//	short cs;
+//	short k;
+//	short clicks;			/* Pass the number of clicks, might be usefull */
 	short arrowx;			/* WM_ARROWED msg type */
 	short xarrow;			/* reverse action when right clicked. */
 	short limit;			/* on which limit to stop */
@@ -1103,7 +1103,7 @@ struct xa_widget
 	short stufftype;		/* type of widget dependant pointer */
 	void *stuff;			/* Pointer to widget dependant context data, if any */
 
-	int  start;			/* If stuff is a OBJECT tree, we want start drawing here */
+	short  start;			/* If stuff is a OBJECT tree, we want start drawing here */
 };
 typedef struct xa_widget XA_WIDGET;
 
