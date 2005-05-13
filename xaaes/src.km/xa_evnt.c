@@ -289,6 +289,14 @@ get_mbstate(struct xa_client *client, struct mbs *d)
 	DIAG((D_button, NULL, " -=- md: clicks=%d, head=%lx, tail=%lx, end=%lx",
 		client->md_head->clicks, client->md_head, client->md_tail, client->md_end));
 
+#if 0
+	if (!strnicmp(client->proc_name, "wdlg_smp", 8))
+	{
+		display(" -=- md: clicks=%d, head=%lx, tail=%lx, end=%lx",
+			client->md_head->clicks, client->md_head, client->md_tail, client->md_end);
+	}
+#endif
+	
 	md = client->md_head;
 	clicks = md->clicks;
 			
@@ -311,12 +319,10 @@ get_mbstate(struct xa_client *client, struct mbs *d)
 	if (clicks)
 	{
 		mbutts = md->state;
-		md->clicks = 0;
+		md->clicks = -1;
 		x = md->x;
 		y = md->y;
 		ks = md->kstate;
-		if (d)
-			d->empty = false;
 	}
 	else
 	{
@@ -324,12 +330,12 @@ get_mbstate(struct xa_client *client, struct mbs *d)
 		md->clicks = -1;
 		check_mouse(client, NULL, &x, &y);
 		vq_key_s(C.vh, &ks);
-		if (d)
-			d->empty = true;
 	}
 
 	if (d)
 	{
+		if (d)
+			d->empty = (client->md_head == client->md_tail) ? true : false;
 		d->b	= mbutts;
 		d->c	= clicks;
 		d->x	= x;
