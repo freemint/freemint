@@ -420,7 +420,7 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 				return;
 			}
 		}
-	#if 0
+	#if 1
 		if ( C.update_lock && (locker = get_update_locker()))
 		{
 			DIAG((D_mouse, locker, "XA_button_event - screen locked by %s", locker->name));
@@ -651,7 +651,7 @@ XA_wheel_event(enum locks lock, const struct moose_data *md)
 			return;
 		}
 	}
-#if 0
+#if 1
 	if ( C.update_lock && (locker = get_update_locker()))
 	{
 		DIAG((D_mouse, locker, "XA_button_event - screen locked by %s", locker->name));
