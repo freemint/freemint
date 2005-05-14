@@ -1801,7 +1801,10 @@ XA_fsel_input(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	CONTROL(0,2,2)
 
+	graf_mouse(ARROW, NULL, NULL, false);
+	showm();
 	do_fsel_exinput(lock, client, pb, "");
+	graf_mouse(client->mouse, client->mouse_form, client, false);
 
 	return XAC_DONE;
 }
@@ -1816,7 +1819,10 @@ XA_fsel_exinput(enum locks lock, struct xa_client *client, AESPB *pb)
 	if (pb->control[N_ADDRIN] <= 2 || t == NULL)
 		t = "";
 
+	graf_mouse(ARROW, NULL, NULL, false);
+	showm();
 	do_fsel_exinput(lock, client, pb, t);
+	graf_mouse(client->mouse, client->mouse_form, client, false);
 
 	return XAC_DONE;
 }
