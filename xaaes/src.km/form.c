@@ -683,7 +683,7 @@ Click_form_do(enum locks lock,
 	      struct widget_tree *wt,
 	      const struct moose_data *md)
 {
-	OBJECT *obtree;
+	OBJECT *obtree = NULL;
 	RECT r;
 
 	DIAG((D_form, client, "Click_form_do: %s formdo for %s",
@@ -706,7 +706,8 @@ Click_form_do(enum locks lock,
 			DIAGS(("Click_form_do: using wind->toolbar"));
 			wt = get_widget(wind, XAW_TOOLBAR)->stuff;
 		}
-		obtree = rp_2_ap(wind, wt->widg, &r);
+		if (wt)
+			obtree = rp_2_ap(wind, wt->widg, &r);
 	}
 	/*
 	 * Not a windowed form session.
@@ -718,7 +719,8 @@ Click_form_do(enum locks lock,
 			DIAGS(("Click_form_do: using client->wt"));
 			wt = client->fmd.wt;
 		}
-		obtree = wt->tree;
+		if (wt)
+			obtree = wt->tree;
 	}
 
 	if (obtree)
