@@ -387,8 +387,8 @@ k_init(void)
 	DIAGS(("creating root window"));
 	root_window = create_window(
 				NOLOCKING,
-				do_winmesag, //0,			/* No messages */
-				do_rootwind_msg,			/* No 'doer' */
+				NULL, //do_winmesag, //0,			/* No messages */
+				NULL, //do_rootwind_msg,			/* No 'doer' */
 				C.Aes,
 				false,
 				XaMENU,			/* menu standard widget */

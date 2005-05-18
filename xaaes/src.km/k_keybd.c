@@ -329,7 +329,7 @@ kernel_key(enum locks lock, struct rawkey *key)
 			if (client)
 			{
 				DIAGS(("next_app() :: %s", c_owner(client)));
-				app_in_front(lock, client, true, true);
+				app_in_front(lock, client, true, true, true);
 				if (client->type & APP_ACCESSORY)
 				{
 					send_app_message(lock, NULL, client, AMQ_NORM, QMF_CHKDUP,
