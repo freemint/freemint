@@ -648,7 +648,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				mh = w->max.h;
 
 			DIAGS(("wind_set: WF_CURRXYWH %d/%d/%d/%d, status = %x", *(const RECT *)&pb->intin[2], status));
-		
+
 			move_window(lock, w, blit, status, pb->intin[2], pb->intin[3], mw, mh);
 
 			if (msg != -1 && w->send_message)
@@ -696,7 +696,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				else
 					target = focus_owner();
 
-				app_in_front(lock|winlist, target, true, false);
+				app_in_front(lock|winlist, target, true, false, true);
 				DIAG((D_wind, NULL, "-1,WF_TOP: Focus to %s", c_owner(target)));
 			}
 		}
@@ -1642,16 +1642,23 @@ XA_wind_new(enum locks lock, struct xa_client *client, AESPB *pb)
 unsigned long
 XA_wind_calc(enum locks lock, struct xa_client *client, AESPB *pb)
 {
+	XA_WIND_ATTR tp;
+
 	CONTROL(6,5,0)	
 	
 	DIAG((D_wind, client, "wind_calc: req=%d, kind=%d",
 		pb->intin[0], pb->intin[1]));
 
+	tp = (unsigned short)pb->intin[1];
+	
+	if (!client->options.nohide)
+		tp |= HIDE;
+
 	*(RECT *) &pb->intout[1] =
 		calc_window(lock,
 			    client,
 			    pb->intin[0],				/* request */
-			    (unsigned short)pb->intin[1],		/* widget mask */
+			    tp, /*(unsigned short)pb->intin[1],*/		/* widget mask */
 			    created_for_CLIENT,
 			    client->options.thinframe,
 			    client->options.thinwork,

@@ -454,7 +454,7 @@ unhide_app(enum locks lock, struct xa_client *client)
 	
 	client->name[1] = ' ';
 	
-	app_in_front(lock, client, true, true);
+	app_in_front(lock, client, true, true, true);
 }
 
 static TIMEOUT *rpi_to = NULL;
@@ -517,7 +517,7 @@ hide_app(enum locks lock, struct xa_client *client)
 	DIAG((D_appl, NULL, "   focus now %s", c_owner(focus)));
 	
 	if (client == focus)
-		app_in_front(lock, nxtclient, true, true);
+		app_in_front(lock, nxtclient, true, true, true);
 
 	if (reify && !rpi_to)
 		rpi_to = addroottimeout(1000L, repos_iconified, (long)lock);
@@ -533,7 +533,7 @@ hide_other(enum locks lock, struct xa_client *client)
 		if (cl != client)
 			hide_app(lock, cl);
 	}
-	app_in_front(lock, client, true, true);
+	app_in_front(lock, client, true, true, true);
 }
 
 void
@@ -546,7 +546,7 @@ unhide_all(enum locks lock, struct xa_client *client)
 		unhide_app(lock, cl);
 	}
 
-	app_in_front(lock, client, true, true);
+	app_in_front(lock, client, true, true, true);
 }
 
 void
@@ -631,7 +631,7 @@ get_topwind(enum locks lock, struct xa_client *client, struct xa_window *startw,
 	}
 	return w;
 }
-
+	
 struct xa_window *
 next_wind(enum locks lock)
 {
@@ -747,7 +747,7 @@ previous_client(enum locks lock, short exlude)
 }
 
 void
-app_in_front(enum locks lock, struct xa_client *client, bool snd_untopped, bool snd_ontop)
+app_in_front(enum locks lock, struct xa_client *client, bool snd_untopped, bool snd_ontop, bool allwinds)
 {
 	struct xa_window *wl,*wf,*wp;
 
@@ -771,33 +771,50 @@ app_in_front(enum locks lock, struct xa_client *client, bool snd_untopped, bool 
 			swap_menu(lock, client, NULL, SWAPM_DESK); //true, false, 1);
 		}
 
-		wl = root_window->prev;
-		wf = window_list;
-
-		while (wl)
+		if (allwinds)
 		{
-			wp = wl->prev;
+			wl = root_window->prev;
+			wf = window_list;
 
-			if (wl->owner == client && wl != root_window)
+			while (wl)
 			{
-				if ((wl->window_status & XAWS_OPEN))
+				wp = wl->prev;
+
+				if (wl->owner == client && wl != root_window)
 				{
-					if (is_hidden(wl))
+					if ((wl->window_status & XAWS_OPEN))
 					{
-						unhide_window(lock|winlist, wl, false);
-						was_hidden = true;
+						if (is_hidden(wl))
+						{
+							unhide_window(lock|winlist, wl, false);
+							was_hidden = true;
+						}
+
+						wi_remove(&S.open_windows, wl);
+						wi_put_first(&S.open_windows, wl);
+						topped = wl;
 					}
-
-					wi_remove(&S.open_windows, wl);
-					wi_put_first(&S.open_windows, wl);
-					topped = wl;
 				}
-			}
 
-			if (wl == wf)
-				break;
+				if (wl == wf)
+					break;
 			
-			wl = wp;
+				wl = wp;
+			}
+		}
+		else
+		{
+			if (!(topped = get_topwind(lock, client, window_list, false, (XAWS_OPEN|XAWS_HIDDEN), XAWS_OPEN)))
+			{
+				topped = get_topwind(lock, client, window_list, false, XAWS_OPEN, XAWS_OPEN);
+				if (topped && is_hidden(topped))
+					unhide_window(lock, topped, false);
+			}
+			if (topped && topped != window_list)
+			{
+				wi_remove(&S.open_windows, topped);
+				wi_put_first(&S.open_windows, topped);
+			}
 		}
 		
 		if (was_hidden)

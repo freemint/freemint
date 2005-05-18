@@ -111,7 +111,7 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 					else
 					{
 						client->nxt_menu = mwt;
-						app_in_front(lock, client, true, true);
+						app_in_front(lock, client, true, true, true);
 					}
 				}
 
@@ -127,7 +127,7 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 				else
 				{
 					client->nxt_menu = mwt;
-					app_in_front(lock, client, true, true);
+					app_in_front(lock, client, true, true, true);
 				}
 			}
 		}
