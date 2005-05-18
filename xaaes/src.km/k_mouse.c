@@ -441,14 +441,6 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 	}
 
 	locker = C.mouse_lock ? get_mouse_locker() : NULL;
-#if 0
-	locker = NULL;
-	if (!(C.mouse_lock && (locker = get_mouse_locker())))
-	{
-		if (C.update_lock)
-			locker = get_update_locker();
-	}
-#endif
 	wind = find_window(lock, md->x, md->y);
 
 	/*
@@ -588,13 +580,6 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 	}
 
 	client = C.mouse_lock ? get_mouse_locker() : NULL;
-#if 0	
-	if (!(C.mouse_lock && (client = get_mouse_locker())))
-	{
-		if (C.update_lock)
-			client = get_update_locker();
-	}
-#endif	
 	if (client)
 	{
 		if (client->waiting_for & (MU_M1|MU_M2|MU_MX))
@@ -671,14 +656,6 @@ XA_wheel_event(enum locks lock, const struct moose_data *md)
 	}
 #endif
 	locker = C.mouse_lock ? get_mouse_locker() : NULL;
-#if 0
-	locker = NULL;
-	if (!(C.mouse_lock && (locker = get_mouse_locker())))
-	{
-		if (C.update_lock)
-			locker = get_update_locker();
-	}
-#endif
 	wind = find_window(lock, md->x, md->y);
 
 	client = wind == root_window ? get_desktop()->owner : wind->owner;

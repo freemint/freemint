@@ -1061,27 +1061,28 @@ stdl_close   = {LT, { 0, 0, 1, 1 },  XAW_CLOSE,   CLOSER,    XAWS_ICONIFIED,			W
 stdl_full    = {RT, { 0, 0, 1, 1 },  XAW_FULL,    FULLER,    XAWS_ICONIFIED,			WIDG_FULL,    WIP_ACTIVE, free_xawidget_resources },
 stdl_iconify = {RT, { 0, 0, 1, 1 },  XAW_ICONIFY, ICONIFIER, 0,					WIDG_ICONIFY, WIP_ACTIVE, free_xawidget_resources },
 stdl_hide    = {RT, { 0, 0, 1, 1 },  XAW_HIDE,    HIDER,     XAWS_ICONIFIED,			WIDG_HIDE,    WIP_ACTIVE, free_xawidget_resources },
-stdl_title   = {LT | R_VARIABLE, { 0, 0, 1, 1 },  XAW_TITLE,   NAME,      0,					0,            WIP_ACTIVE, free_xawidget_resources },
-stdl_notitle = {LT | R_VARIABLE, { 0, 0, 1, 1 },  XAW_TITLE,   NAME,      0,					0,                     0, free_xawidget_resources },
+stdl_title   = {LT | R_VARIABLE, { 0, 0, 1, 1 },  XAW_TITLE,   NAME,      0,			0,            WIP_ACTIVE, free_xawidget_resources },
+stdl_notitle = {LT | R_VARIABLE, { 0, 0, 1, 1 },  XAW_TITLE,   NAME,      0,			0,                     0, free_xawidget_resources },
 //stdl_resize  = {RB, { 0, 0, 1, 1 },  XAW_RESIZE,  SIZER,     XAWS_SHADED|XAWS_ICONIFIED,	WIDG_SIZE,    WIP_ACTIVE, free_xawidget_resources },
 stdl_resize  = {RB, { 0, 0, 1, 1 },  XAW_RESIZE,  SIZER,     XAWS_SHADED|XAWS_ICONIFIED,	WIDG_SIZE,    WIP_ACTIVE, free_xawidget_resources },
 stdl_nresize = {RT/*RB*/, { 0, 0, 1, 1 },  XAW_RESIZE,  SIZER,     XAWS_SHADED|XAWS_ICONIFIED,	WIDG_SIZE,             0, free_xawidget_resources },
 stdl_uscroll = {LT/*RT*/, { 0, 0, 1, 1 },  XAW_UPLN,    UPARROW,   XAWS_SHADED|XAWS_ICONIFIED,	WIDG_UP,      WIP_ACTIVE, free_xawidget_resources },
 stdl_upage   = {NO, { 0, 1, 1, 1 },  XAW_UPPAGE,  UPARROW,   XAWS_SHADED|XAWS_ICONIFIED,	0,            WIP_ACTIVE, free_xawidget_resources },
-stdl_vslide  = {LT | R_VARIABLE/*RT*/, { 0, 1, 1, 1 },  XAW_VSLIDE,  VSLIDE,    XAWS_SHADED|XAWS_ICONIFIED,	0,            WIP_ACTIVE, free_xawidget_resources },
-stdl_nvslide = {LT | R_VARIABLE/*RT*/, { 0, 1, 1, 1 },  XAW_VSLIDE,  VSLIDE,    XAWS_SHADED|XAWS_ICONIFIED,	0,                     0, free_xawidget_resources },
+stdl_vslide  = {LT | R_VARIABLE/*RT*/, { 0, 1, 1, 1 },  XAW_VSLIDE,  VSLIDE,    XAWS_SHADED|XAWS_ICONIFIED, 0,WIP_ACTIVE, free_xawidget_resources },
+stdl_nvslide = {LT | R_VARIABLE/*RT*/, { 0, 1, 1, 1 },  XAW_VSLIDE,  VSLIDE,    XAWS_SHADED|XAWS_ICONIFIED, 0,         0, free_xawidget_resources },
 stdl_dpage   = {NO, { 0, 1, 1, 1 },  XAW_DNPAGE,  DNARROW,   XAWS_SHADED|XAWS_ICONIFIED,	0,            WIP_ACTIVE, free_xawidget_resources },
 stdl_dscroll = {RT/*RB*/, { 0, 1, 1, 1 },  XAW_DNLN,    DNARROW,   XAWS_SHADED|XAWS_ICONIFIED,	WIDG_DOWN,    WIP_ACTIVE, free_xawidget_resources },
 stdl_lscroll = {LB, { 0, 0, 1, 1 },  XAW_LFLN,    LFARROW,   XAWS_SHADED|XAWS_ICONIFIED,	WIDG_LEFT,    WIP_ACTIVE, free_xawidget_resources },
 stdl_lpage   = {NO, { 1, 0, 1, 1 },  XAW_LFPAGE,  LFARROW,   XAWS_SHADED|XAWS_ICONIFIED,	0,            WIP_ACTIVE, free_xawidget_resources },
-stdl_hslide  = {LB | R_VARIABLE, { 1, 0, 1, 1 },  XAW_HSLIDE,  HSLIDE,    XAWS_SHADED|XAWS_ICONIFIED,	0,            WIP_ACTIVE, free_xawidget_resources },
+stdl_hslide  = {LB | R_VARIABLE, { 1, 0, 1, 1 },  XAW_HSLIDE,  HSLIDE,    XAWS_SHADED|XAWS_ICONIFIED,	0,    WIP_ACTIVE, free_xawidget_resources },
 //stdl_nhslide = {LB | R_VARIABLE, { 1, 0, 1, 1 },  XAW_HSLIDE,  HSLIDE,    XAWS_SHADED|XAWS_ICONIFIED,	0,                     0, free_xawidget_resources },
 stdl_rpage   = {NO, { 1, 0, 1, 1 },  XAW_RTPAGE,  RTARROW,   XAWS_SHADED|XAWS_ICONIFIED,	0,            WIP_ACTIVE, free_xawidget_resources },
 stdl_rscroll = {RB, { 1, 0, 1, 1 },  XAW_RTLN,    RTARROW,   XAWS_SHADED|XAWS_ICONIFIED,	WIDG_RIGHT,   WIP_ACTIVE, free_xawidget_resources },
-stdl_info    = {LT | R_VARIABLE, { 0, 0, 1, 1 },  XAW_INFO,    INFO,      XAWS_SHADED|XAWS_ICONIFIED,	0,            WIP_ACTIVE, free_xawidget_resources },
-stdl_menu    = {LT | R_VARIABLE, { 0, 0, 0, 0 },  XAW_MENU,    XaMENU,    XAWS_SHADED|XAWS_ICONIFIED,	0,            WIP_ACTIVE, free_xawidget_resources },
+stdl_info    = {LT | R_VARIABLE, { 0, 0, 1, 1 },  XAW_INFO,    INFO,      XAWS_SHADED|XAWS_ICONIFIED,	0,    WIP_ACTIVE, free_xawidget_resources },
+stdl_menu    = {LT | R_VARIABLE, { 0, 0, 0, 0 },  XAW_MENU,    XaMENU,    XAWS_SHADED|XAWS_ICONIFIED,	0,    WIP_ACTIVE, free_xawidget_resources },
 stdl_pop     = {LT, { 0, 0, 0, 0 },  XAW_MENU,    XaPOP,     XAWS_SHADED|XAWS_ICONIFIED,	0,            WIP_ACTIVE, free_xawidget_resources },
-stdl_border  = {0,  { 0, 0, 0, 0 },  XAW_BORDER,  0,         XAWS_SHADED|XAWS_ICONIFIED,	0,            WIP_ACTIVE, free_xawidget_resources }
+stdl_border  = {0,  { 0, 0, 0, 0 },  XAW_BORDER,  0,         XAWS_SHADED|XAWS_ICONIFIED,	0,            WIP_ACTIVE, free_xawidget_resources },
+stdl_end     = {0,  { 0, 0, 0, 0 },  -1,  0,         0,	0,                     0, NULL }
 ;
 
 
@@ -3072,16 +3073,18 @@ struct wdglo_desc
 {
 	XA_RELATIVE rel;
 	XA_WIND_ATTR tp;
+	XA_WIND_ATTR if_used;		/* If any of these are used ... */
+	XA_WIND_ATTR then_unused;	/* .. then install unused for these */
 };
 
 static struct wdglo_desc widglayout[] =
 {
-	{(XAR_START),			(NAME | CLOSER | FULLER | ICONIFIER | HIDE)},
-	{(XAR_START),			INFO},
-	{(XAR_START),			XaMENU},
-	{(XAR_END | XAR_VERT),		(UPARROW | VSLIDE | DNARROW | SIZER)},
-	{(XAR_END),			(LFARROW | HSLIDE | RTARROW)},
-	{0, -1},
+	{(XAR_START),			(NAME | CLOSER | FULLER | ICONIFIER | HIDE), (CLOSER | FULLER | ICONIFIER | HIDE), NAME},
+	{(XAR_START),			INFO, 0, 0},
+	{(XAR_START),			XaMENU, 0, 0},
+	{(XAR_END | XAR_VERT),		(UPARROW | VSLIDE | DNARROW | SIZER), (UPARROW | DNARROW | SIZER), (VSLIDE)},
+	{(XAR_END),			(LFARROW | HSLIDE | RTARROW), (LFARROW | RTARROW), HSLIDE},
+	{0, -1, -1, -1},
 };
 
 static struct widget_row *
@@ -3109,6 +3112,8 @@ create_widg_layout(struct xa_window *wind, struct wdglo_desc *wld)
 		{
 			rows->start = NULL;
 			rows->tp_mask = tp;
+			rows->tp_if_used = wld->if_used;
+			rows->tp_then_unused = wld->then_unused;
 			rows->rel = wld->rel;
 			rows->rownr = rownr++;
 			rows->r = (RECT){0, 0, 0, 0};
@@ -3288,6 +3293,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 		}
 	}
 
+			
 	/* Fill in the active widgets summary */
 	wind->active_widgets = utp = tp;
 
@@ -3357,11 +3363,13 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 		DIAGS(("Make sizer"));
 		make_widget(wind, &stdl_resize, display_sizer, NULL, drag_resize, NULL, set_sizer_size);
 	}
+#if 0
 	else if (bottom && right)
 	{
 		DIAGS(("Unused sizer"));
 		make_widget(wind, &stdl_nresize, display_unused, NULL, NULL, NULL, set_sizer_size);
 	}
+#endif
 	else // if ((old_tp & SIZER) || ((old_tp & (LFARROW|RTARROW|HSLIDE)) && (old_tp & (UPARROW|DNARROW|VSLIDE))))
 	{
 		DIAGS(("clear sizer"));
@@ -3538,14 +3546,14 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 		DIAGS(("Clear VSLIDE"));
 		zwidg(wind, XAW_VSLIDE, keep_stuff);
 	}
-	
+#if 0	
 	if (!(tp & VSLIDE) && (tp & (SIZER|UPARROW|DNARROW)))
 	{
 		DIAGS(("Make unused VSLIDE"));
 		widg = make_widget(wind, &stdl_nvslide, display_unused, NULL, NULL, NULL, set_vslide_size);
 		utp |= VSLIDE;
 	}
-
+#endif
 	if (tp & HSLIDE)
 	{
 		DIAGS(("Make HSLIDE"));
@@ -3617,13 +3625,44 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 			DIAGS(("Clear NAME"));
 			zwidg(wind, XAW_TITLE, keep_stuff);
 		}
+	#if 0
 		if (tp & widglayout[0].tp)
 		{
 			DIAGS(("Make unused NAME"));
-			widg = make_widget(wind, &stdl_notitle, NULL, NULL, NULL, NULL, NULL);
+			widg = make_widget(wind, &stdl_notitle, display_unused, NULL, NULL, NULL, set_title_size);
+			utp |= NAME;
 		}
+	#endif
 	}
 
+	{
+		struct widget_row *rows = wind->widg_rows;
+		XA_WIDGET_LOCATION *wloc;
+		XA_WIND_ATTR xtp, ytp;
+
+		while (rows)
+		{
+			if (tp & rows->tp_if_used)
+			{
+				wloc = &stdl_close;
+				xtp = rows->tp_then_unused;
+				while (xtp && wloc != &stdl_end)
+				{
+					if (!(wloc->properties & WIP_ACTIVE) && (ytp = (wloc->mask & xtp)) && !(ytp & tp))
+					{
+						//display("exterior widget %lx", ytp);
+						make_widget(wind, wloc, display_unused, NULL, NULL, NULL, NULL);
+						xtp &= ~ytp;
+						wloc = &stdl_close;
+					}
+					else
+						wloc++;
+				}
+			}
+			rows = rows->next;
+		}
+	}
+	
 	old_tp &= ~STD_WIDGETS;
 	//tp &= STD_WIDGETS;
 	wind->active_widgets = (tp | old_tp);
@@ -4079,12 +4118,6 @@ do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct
 		
 					widg->x = md->x - r.x; 		/* Mark where the click occurred (relative to the widget) */
 					widg->y = md->y - r.y;
-				//	widg->mx = md->x;
-				//	widg->my = md->y;
-				//	widg->s = md->state;		/* HR 280801: we need the state also some time (desktop widget) */
-				//	widg->cs = md->cstate;
-				//	widg->k = md->kstate;
-				//	widg->clicks = clicks;
 
 	/* In this version page arrows are separate widgets,
 		they are overlapped by the slider widget, hence this kind of a hack.
@@ -4108,12 +4141,6 @@ do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct
 						widg = w->widgets + f + ax;
 						widg->x = md->x - r.x; 			/* Mark where the click occurred (relative to the widget) */
 						widg->y = md->y - r.y;
-					//	widg->mx = md->x;
-					//	widg->my = md->y;
-					//	widg->s = md->state;			/* HR 280801: we need the state also some time (desktop widget) */
-					//	widg->cs = md->cstate;
-					//	widg->k = md->kstate;
-					//	widg->clicks = clicks;
 						rtn = widg->drag(lock, w, widg, md);	/* we know there is only 1 behaviour for these arrows */
 					}
 					else /* normal widget */
@@ -4293,6 +4320,8 @@ wind_mshape(struct xa_window *wind, short x, short y)
 	XA_WIDGET *widg;
 	RECT r;
 
+	if (!update_locked())
+	{
 	if (wind)
 	{
 		if (!(wo->status & CS_EXITING))
@@ -4369,6 +4398,7 @@ wind_mshape(struct xa_window *wind, short x, short y)
 	}
 	else if (C.aesmouse != -1)
 		graf_mouse(-1, NULL, NULL, true);
+	}
 
 	return shape;
 }

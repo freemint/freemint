@@ -179,8 +179,8 @@ FixColourIconData(struct xa_client *client, CICONBLK *icon, struct xa_rscs *rscs
 	while (c)
 	{
 		DIAG((D_rsrc,client,"[1]probe cicon 0x%lx", c));
-#if 0		
-		if (!strnicmp(client->proc_name, "zbench", 6))
+#if 0
+		if (!strnicmp(client->proc_name, "papyrus", 7))
 			display("current best %d, this %d", best_cicon ? best_cicon->num_planes : -1, c->num_planes);
 #endif		
 		if (    c->num_planes <= screen.planes
@@ -191,7 +191,7 @@ FixColourIconData(struct xa_client *client, CICONBLK *icon, struct xa_rscs *rscs
 		c = c->next_res;
 	}
 #if 0
-	if (!strnicmp(client->proc_name, "zbench", 6))
+	if (!strnicmp(client->proc_name, "papyrus", 6))
 		display("best found %d", best_cicon ? best_cicon->num_planes : -1);
 #endif	
 	if (best_cicon)
@@ -339,6 +339,9 @@ fix_cicons(void *base, CICONBLK **cibh)
 		numCibs++;
 
 	DIAG((D_rsrc, NULL, "fix_cicons: got %d cicons at %lx(first=%lx)", numCibs, cibh, cibh[0]));
+	
+	//display("fix_cicons: got %d cicons at %lx(first=%lx)", numCibs, cibh, cibh[0]);
+	
 	/*
 	 * Pointer to the first CICONBLK (went past the -1L above)
 	 */
@@ -368,21 +371,29 @@ fix_cicons(void *base, CICONBLK **cibh)
 			i, cibh[i], isize, addr, numRez));
 		DIAG((D_rsrc, NULL, "ib = %lx, ib_pdata=%lx, ib_pmask=%lx",
 			ib, ib->ib_pdata, ib->ib_pmask));
-		
-		if (ib->ib_ptext)
+#if 0
+		display("cibh[%d]=%lx, isize=%ld, addr=%lx, numRez=%d",
+			i, cibh[i], isize, addr, numRez);
+		display("ib = %lx, ib_pdata=%lx, ib_pmask=%lx",
+			ib, ib->ib_pdata, ib->ib_pmask);
+#endif		
+		if (ib->ib_wtext && ib->ib_ptext)
 		{
 			short l = ib->ib_wtext/6;
 			/* fix some resources */
+//			display("cicon: wtext = %d, ib->ptext = %lx", ib->ib_wtext, ib->ib_ptext);
 			ib->ib_ptext += (unsigned long)base;
 			DIAG((D_rsrc, NULL, "cicon: ib->ptext = %lx", ib->ib_ptext));
+//			display("cicon: ib->ptext = %lx", ib->ib_ptext);
 			if (strlen(ib->ib_ptext) > l)
 				*(ib->ib_ptext + l) = 0;
 		}
 		else
 			/* The following word is no of planes which cannot
 			 * be larger than 32, so there is 1 zero byte there */
-			ib->ib_ptext = (char *)pdata; 
+			ib->ib_ptext = (char *)pdata;
 
+//		display("ib_ptext = %lx(%x)", (long)ib->ib_ptext, *ib->ib_ptext);
 		/* (unused) place for name */
 		(unsigned long)pdata += 12;
 
@@ -420,12 +431,6 @@ fix_cicons(void *base, CICONBLK **cibh)
 			if (cib->mainlist == NULL)
 				cib->mainlist = cicn;
 
-		#if 0
-			if ((long)cicn->next_res == 1)
-				cicn->next_res = (CICON *)pdata;
-			else
-				cicn->next_res = NULL;
-		#endif
 			cicn->next_res = (CICON *)pdata;
 			prev_cicn = cicn;
 			cicn = (CICON *)pdata;
@@ -454,19 +459,21 @@ fix_objects(struct xa_client *client,
 	DIAG((D_rsrc, client, "fix_objects: b=%lx, cibh=%lx, obj=%lx, num=%ld",
 		b, cibh, obj, n));
 
+//	display("fix_objects: b=%lx, cibh=%lx, obj=%lx, num=%ld",
+//		b, cibh, obj, n);
 	/* fixup all objects' ob_spec pointers */
 	for (i = 0; i < n; i++, obj++)
 	{
 		type = obj->ob_type & 255;
 
-		DIAG((D_rsrc, client, "obj = %lx, type = %d", obj, type));
+//		display("obj = %lx, type = %d", obj, type);
 #if 0
-		DIAG((D_s, client, "obj[%d]>%ld=%lx, %s;\t%d,%d,%d",
+		display("obj[%ld]>%ld=%lx, type=%d;\tnxt=%d,head=%d,tail=%d",
 			i,
-			(long)obj-(long)base,
-			obj,
-			object_type(tree,i),
-			obj->ob_next,obj->ob_head,obj->ob_tail));
+			(long)obj-(long)b,
+			(long)obj,
+			type,
+			obj->ob_next,obj->ob_head,obj->ob_tail);
 #endif
 
 		/* What kind of object is it? */
@@ -501,7 +508,7 @@ fix_objects(struct xa_client *client,
 			#if GENERATE_DIAGS
 					long idx = obj->ob_spec.index;
 			#endif
-				
+				//	display("got cicon...");
 					FixColourIconData(client, cibh[obj->ob_spec.index], rscs, vdih);
 					obj->ob_spec.ciconblk = cibh[obj->ob_spec.index];
 					DIAG((D_rsrc, client, "ciconobj: idx=%ld, ciconblk=%lx (%lx)",
@@ -626,7 +633,6 @@ fix_trees(struct xa_client *client, void *b, OBJECT **trees, unsigned long n, sh
 	OBJECT *obj;
 
 	DIAG((D_rsrc, NULL, "trees=%lx (%lx)", trees, trees[0]));
-	
 	for (i = 0; i < n; i++, trees++)
 	{
 		if (*trees != (OBJECT *)-1)
@@ -634,9 +640,11 @@ fix_trees(struct xa_client *client, void *b, OBJECT **trees, unsigned long n, sh
 			(unsigned long)*trees += (unsigned long)b;
 			
 			DIAG((D_s, NULL,"tree[%ld]>%ld = %lx", i, (unsigned long)*trees-(unsigned long)b, *trees));
+			
+		//	display("tree[%ld]>%ld = %lx", i, (unsigned long)*trees-(unsigned long)b, *trees);
 
 			obj = *trees;
-			
+
 			if ((obj[3].ob_type & 255) != G_TITLE)
 			{
 				/* Not a menu tree */
@@ -713,6 +721,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 		XATTR x;
 
 		DIAG((D_rsrc, client, "LoadResources(%s)", fname));
+	//	display("load resource %s for %s", fname, client->name);
 
 		f = kernel_open(fname, O_RDONLY, &err, &x);
 		if (!f)
@@ -779,6 +788,8 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 			end = base + size;
 		}
 	}
+	
+//	if (!strnicmp(client->proc_name, "gempanic", 8)) display("LoadResource: rscs = %lx", rscs);
 
 	if (!rscs)
 		return NULL;
@@ -788,6 +799,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 	fix_tedarray(base, (TEDINFO *)	(base + hdr->rsh_tedinfo), hdr->rsh_nted);
 	fix_icnarray(base, (ICONBLK *)	(base + hdr->rsh_iconblk), hdr->rsh_nib);
 	fix_bblarray(base, (BITBLK *)	(base + hdr->rsh_bitblk),  hdr->rsh_nbb);
+//	if (!strnicmp(client->proc_name, "gempanic", 8)) display("fixed stuff");
 	
 	if (hdr->rsh_vrsn & 4)
 	{
@@ -795,6 +807,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 		short maxplanes = 0;
 		unsigned long *earray; //, *addr;
 
+//		if (!strnicmp(client->proc_name, "gempanic", 8)) display("enhanced rsc file");
 		DIAG((D_rsrc, client, "Enhanced resource file"));
 
 		/* this the row of pointers to extensions */
@@ -804,7 +817,9 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 		if (*earray && *earray != -1L) /* Get colour icons */
 		{
 			cibh = (CICONBLK **)(*earray + (long)base);
+//			if (!strnicmp(client->proc_name, "gempanic", 8)) display("fixing cicons..");
 			maxplanes = fix_cicons(base, cibh);
+//			if (!strnicmp(client->proc_name, "gempanic", 8)) display("maxplanes = %d", maxplanes);
 		}
 
 		if (*earray)
@@ -835,6 +850,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 			v_opnvwk(work_in, &vdih, work_out);
 
 			DIAG((D_rsrc, client, "Color palette present"));
+//			if (!strnicmp(client->proc_name, "gempanic", 8)) display("color palette present");
 			(long)p = (long)(*earray + (long)base);
 
 			/* Ozk:	First we check if the first 16 pens have valid data
@@ -874,6 +890,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 			{
 				DIAG((D_rsrc, client, "%s got palette", fname ? fname : "noname"));
 				(long)rscs->palette = (long)(*earray + (long)base);
+//				if (!strnicmp(client->proc_name, "gempanic", 8)) display("got palette");
 								
 				fix_rsc_palette((struct xa_rsc_rgb *)rscs->palette);
 				if (set_pal && cfg.set_rscpalette)
@@ -889,7 +906,6 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 			earray++;
 #endif
 	}
-
 	fix_objects(client, rscs, cibh, vdih, base, (OBJECT *)(base + hdr->rsh_object), hdr->rsh_nobs);
 
 	/*
@@ -900,6 +916,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 		v_clsvwk(vdih);
 
 	fix_trees(client, base, (OBJECT **)(unsigned long)(base + hdr->rsh_trindex), hdr->rsh_ntree, designWidth, designHeight);
+	
 	return base;
 }
 
@@ -1190,6 +1207,7 @@ XA_rsrc_load(enum locks lock, struct xa_client *client, AESPB *pb)
 	char *path;
 
 	CONTROL(0,1,1)
+//	if (!strnicmp(client->proc_name, "gempanic", 8)) display("rsrc_load");
 
 	/* XXX	- ozk: Because of the hack at line 526 in handler.c, we
 	 * cannot allow applications with a NULL globl_ptr to use rsrc_load()
@@ -1209,11 +1227,12 @@ XA_rsrc_load(enum locks lock, struct xa_client *client, AESPB *pb)
 	    7/9/200   done.  As well as the memory allocated for colour icon data.
 */
 		path = shell_find(lock, client, (char*)pb->addrin[0]);
+//		if (!strnicmp(client->proc_name, "gempanic", 8)) display("rsrc_load %s for %s", path, client->name);
 		if (path)
 		{
 			RSHDR *rsc;
 			DIAG((D_rsrc, client, "rsrc_load('%s')", path));
-	
+
 			rsc = LoadResources(client, path, NULL, DU_RSX_CONV, DU_RSY_CONV, false);
 			if (rsc)
 			{

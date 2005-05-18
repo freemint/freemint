@@ -1029,11 +1029,12 @@ struct xa_widget_location
 	XA_WIND_ATTR mask;		/* disconnect NAME|SMALLER etc from emumerated type XA_WIDGETS */
 	short statusmask;
 	int rsc_index;			/* If a bitmap widget, index in rsc file */
-#define WIP_NOTEXT	1		/* Widget is NOT part of window exterior, will not be automatically redrawn */
-#define WIP_WACLIP	2		/* Widget is part of, and will be clipped by, windows work area */
-#define WIP_ACTIVE	4		/* If this bit is set, widget is clickable, else is just to draw the
+#define WIP_NOTEXT	0x0001		/* Widget is NOT part of window exterior, will not be automatically redrawn */
+#define WIP_WACLIP	0x0002		/* Widget is part of, and will be clipped by, windows work area */
+#define WIP_ACTIVE	0x0004		/* If this bit is set, widget is clickable, else is just to draw the
 					 * corresponding part of window exterior and clicks on it is ignored
 					 */
+
 	short properties;
 	void (*destruct)(struct xa_widget *widg);
 };
@@ -1115,6 +1116,8 @@ struct widget_row
 
 	XA_RELATIVE		rel;
 	XA_WIND_ATTR		tp_mask;
+	XA_WIND_ATTR		tp_if_used;
+	XA_WIND_ATTR		tp_then_unused;
 	struct xa_widget 	*start;
 	short	rownr;
 	RECT r;

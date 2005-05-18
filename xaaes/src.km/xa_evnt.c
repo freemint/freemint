@@ -169,6 +169,8 @@ exec_iredraw_queue(enum locks lock, struct xa_client *client)
 
 	while (pending_iredraw_msgs(lock, client, &ibuf))
 	{
+		lock_screen(client->p, false, NULL, 0);
+
 		wind = (struct xa_window *)ibuf.irdrw.ptr;
 
 		if (wind != root_window || (wind == root_window && get_desktop()->owner == client))
@@ -180,12 +182,12 @@ exec_iredraw_queue(enum locks lock, struct xa_client *client)
 		
 			display_window(lock, 0, wind, r);
 		}
+		unlock_screen(client->p, 0);
 		kick_mousemove_timeout();
 	}
 	if (!client->rdrw_msg && C.redraws)
 		yield();
 }
-
 
 #if GENERATE_DIAGS
 

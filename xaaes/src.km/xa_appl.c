@@ -602,7 +602,7 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 	}
 
 	if (was_infront)
-		app_in_front(lock, top_owner, true, true);
+		app_in_front(lock, top_owner, true, true, false);
 
 	/*
 	 * remove from client list
@@ -1518,7 +1518,7 @@ XA_appl_control(enum locks lock, struct xa_client *client, AESPB *pb)
 				if (any_hidden(lock, cl, NULL))
 					unhide_app(lock, cl);
 				else
-					app_in_front(lock, cl, true, true);
+					app_in_front(lock, cl, true, true, true);
 
 				if (cl->type & APP_ACCESSORY)
 					send_app_message(lock, NULL, cl, AMQ_NORM, QMF_CHKDUP,
