@@ -205,7 +205,22 @@ k_init(void)
 		
 		work_in[0] = mode;
 
-		v_opnwk(work_in, &(C.P_handle), work_out);
+		/*
+		 * Ozk: We switch off instruction, data and branch caches (where available)
+		 *	while the VDI accesses the hardware. This fixes 'black-screen'
+		 *	problems on Hades with Nova VDI.
+		 */
+		{
+			unsigned long sc, cm;
+			cm = s_system(S_CTRLCACHE, 0L, -1L);
+			sc = s_system(S_CTRLCACHE, -1L, 0L);
+			s_system(S_CTRLCACHE, sc & ~3, cm);
+			
+			v_opnwk(work_in, &(C.P_handle), work_out);
+
+			s_system(S_CTRLCACHE, sc, cm);
+		}
+		
 		DIAGS(("Physical work station opened: %d", C.P_handle));
 
 		if (C.P_handle == 0)
