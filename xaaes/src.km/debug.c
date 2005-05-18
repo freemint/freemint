@@ -57,11 +57,12 @@ display(const char *fmt, ...)
 		kernel_write(C.bootlog_file, buf, l+1);
 	}
 #endif
-
+#if 1
 	buf[l] = '\r';
 	buf[l+1] = '\n';
 	buf[l+2] = '\0';
 	c_conws(buf);
+#endif
 }
 
 void

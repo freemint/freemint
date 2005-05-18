@@ -726,7 +726,11 @@ wtxt_output(struct xa_wtxt_inf *wtxti, char *txt, short state, const RECT *r, sh
 	y = yoff + r->y + ((r->h - y) >> 1);
 	
 	if (f & WTXT_CENTER)
-		x = xoff + r->x + ((r->w - x) >> 1);
+	{
+		x = r->x + ((r->w - x) >> 1);
+		if (x < (r->x + xoff))
+			x += ((r->x + xoff) - x);
+	}
 	else
 		x = xoff + r->x;
 

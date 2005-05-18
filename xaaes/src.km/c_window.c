@@ -742,7 +742,8 @@ struct xa_window_colours def_otop_wc =
 /* flags	                     fontID	    size	   Effect      forground       background	*/
 /*								                  col	          col		*/
  /* Title text-info */
- { WTXT_DRAW3D|WTXT_ACT3D,            {1,            10,	        0,	G_BLACK,	G_WHITE },	/* Normal */
+ { WTXT_DRAW3D|WTXT_ACT3D|WTXT_CENTER,
+                                      {1,            10,	        0,	G_BLACK,	G_WHITE },	/* Normal */
                                       {1,            10,	        0,	G_BLACK,	G_WHITE },	/* Selected */
                                       {1,            10,	        0,	G_BLACK,	G_WHITE }},	/* Highlighted */
  /* Info text-info */
@@ -765,11 +766,11 @@ struct xa_window_colours def_utop_wc =
  
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
                                                     {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_LWHITE, NULL},	/* Normal */
-                                                    {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_LWHITE, G_WHITE,  NULL},		/* Selected */
+                                                    {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_LWHITE, G_WHITE,  NULL},	/* Selected */
                                                     {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL}},	/* Highlighted */
  /* Slider */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL},		/* Selected */
+                                                    {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL},	/* Selected */
                                                     {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL}},	/* Highlighted */
  /* Slide */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LBLACK, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
@@ -823,7 +824,8 @@ struct xa_window_colours def_utop_wc =
 /* flags	                     fontID	    size	   Effect      forground       background	*/
 /*								                  col	          col		*/
  /* Title text-info */
- { WTXT_DRAW3D|WTXT_ACT3D,            {1,            10,	        0,	G_LBLACK,	G_WHITE },	/* Normal */
+ { WTXT_DRAW3D|WTXT_ACT3D|WTXT_CENTER,
+                                      {1,            10,	        0,	G_LBLACK,	G_WHITE },	/* Normal */
                                       {1,            10,	        0,	G_LBLACK,	G_WHITE },	/* Selected */
                                       {1,            10,	        0,	G_BLACK,	G_WHITE }},	/* Highlighted */
  /* Info text-info */
@@ -898,7 +900,7 @@ create_window(
 		tp |= LFARROW|RTARROW;
 
 	/* cant hide a window that cannot be moved. */
-	if ((tp & MOVER) == 0)
+	if (!(tp & MOVER))
 		tp &= ~HIDE;
 	/* temporary until solved. */
 	if (tp & MENUBAR)
@@ -1151,24 +1153,27 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 		{
 			wi_remove(&S.closed_nlwindows, wind);
 			wi_put_first(&S.open_nlwindows, wind);
-		
-			our_win = wind->r;
 
-			wl = wind->next;
-			if (!wl)
-				wl = window_list;
-
-			while (wl)
+			if (!(wind->active_widgets & STORE_BACK))
 			{
-				clip = wl->r;
+				our_win = wind->r;
 
-				if (xa_rc_intersect(our_win, &clip))
-					make_rect_list(wl, true, RECT_SYS);
-
-				if (!wl->next && wl->nolist)
+				wl = wind->next;
+				if (!wl)
 					wl = window_list;
-				else
-					wl = wl->next;
+
+				while (wl)
+				{
+					clip = wl->r;
+
+					if (xa_rc_intersect(our_win, &clip))
+						make_rect_list(wl, true, RECT_SYS);
+
+					if (!wl->next && wl->nolist)
+						wl = window_list;
+					else
+						wl = wl->next;
+				}
 			}
 
 			generate_redraws(lock, wind, &wind->r, RDRW_ALL);
@@ -1263,41 +1268,6 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 	set_winmouse();
 
 	return 1;
-}
-
-/* 
- *About to remove this..
- */
-void
-do_rootwind_msg(
-	struct xa_window *wind,
-	struct xa_client *to,			/* if different from wind->owner */
-	short amq, short qmflags,
-	short *msg)
-{
-
-	DIAG((D_form, wind->owner, "do_rootwind_msg: wown %s, to %s, msg %d, %d, %d, %d, %d, %d, %d, %d",
-		wind->owner->name, to->name, msg[0], msg[1], msg[2], msg[3], msg[4], msg[5], msg[6], msg[7]));
-
-	return;
-
-	switch (msg[0])
-	{
-		case WM_REDRAW:
-		{
-			XA_WIDGET *widg = get_widget(root_window, XAW_TOOLBAR);
-			
-			if (get_desktop()->owner == to && widg->display)
-			{
-				hidem();
-				set_clip((RECT *)&msg[4]);
-				widg->display(0, root_window, widg);
-				clear_clip();
-				showm();
-			}
-			break;
-		}
-	}
 }
 
 void
@@ -2284,8 +2254,8 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 	newrl = make_rect_list(wind, false, RECT_SYS);
 	wind->rect_start = newrl;
 
-#if 0
-	if (wind->nolist)
+#if 1
+	if (wind->nolist && (wind->active_widgets & STORE_BACK))
 	{
 		if (xmove || ymove || resize)
 		{
