@@ -43,6 +43,7 @@
 #include "xa_rsrc.h"
 
 #include "mint/signal.h"
+#include "mint/ssystem.h"
 
 #if 0
 static const char stillrun[] = " is still running.|Wait again or Kill?][Wait|Kill]";
@@ -287,8 +288,26 @@ k_shutdown(void)
 		 * AFTER closing the debugfile.
 		 */
 		v_clsvwk(C.vh);
-		v_enter_cur(C.P_handle);	/* Ozk: Lets enter cursor mode */
-		v_clswk(C.P_handle);		/* Auto version must close the physical workstation */
+		
+		/*
+		 * Ozk: We switch off instruction, data and branch caches (where available)
+		 *	while the VDI accesses the hardware. This fixes 'black-screen'
+		 *	problems on Hades with Nova VDI.
+		 */
+		{
+			unsigned long sc, cm;
+			cm = s_system(S_CTRLCACHE, 0L, -1L);
+			sc = s_system(S_CTRLCACHE, -1L, 0L);
+			s_system(S_CTRLCACHE, sc & ~3, cm);
+			
+			v_enter_cur(C.P_handle);	/* Ozk: Lets enter cursor mode */
+			v_clswk(C.P_handle);		/* Auto version must close the physical workstation */
+
+			s_system(S_CTRLCACHE, sc, cm);
+		}
+
+	//	v_enter_cur(C.P_handle);	/* Ozk: Lets enter cursor mode */
+	//	v_clswk(C.P_handle);		/* Auto version must close the physical workstation */
 
 		display("\033e\033H");		/* Cursor enable, cursor home */
 	}

@@ -1081,10 +1081,39 @@ stdl_rscroll = {RB, { 1, 0, 1, 1 },  XAW_RTLN,    RTARROW,   XAWS_SHADED|XAWS_IC
 stdl_info    = {LT | R_VARIABLE, { 0, 0, 1, 1 },  XAW_INFO,    INFO,      XAWS_SHADED|XAWS_ICONIFIED,	0,    WIP_ACTIVE, free_xawidget_resources },
 stdl_menu    = {LT | R_VARIABLE, { 0, 0, 0, 0 },  XAW_MENU,    XaMENU,    XAWS_SHADED|XAWS_ICONIFIED,	0,    WIP_ACTIVE, free_xawidget_resources },
 stdl_pop     = {LT, { 0, 0, 0, 0 },  XAW_MENU,    XaPOP,     XAWS_SHADED|XAWS_ICONIFIED,	0,            WIP_ACTIVE, free_xawidget_resources },
-stdl_border  = {0,  { 0, 0, 0, 0 },  XAW_BORDER,  0,         XAWS_SHADED|XAWS_ICONIFIED,	0,            WIP_ACTIVE, free_xawidget_resources },
-stdl_end     = {0,  { 0, 0, 0, 0 },  -1,  0,         0,	0,                     0, NULL }
+stdl_border  = {0,  { 0, 0, 0, 0 },  XAW_BORDER,  0,         XAWS_SHADED|XAWS_ICONIFIED,	0,            WIP_ACTIVE, free_xawidget_resources }
+//stdl_end     = {0,  { 0, 0, 0, 0 },  -1,  0,         0,	0,                     0, NULL }
 ;
 
+static XA_WIDGET_LOCATION *stdl[] = 
+{
+	&stdl_close,
+	&stdl_full,
+	&stdl_iconify,
+	&stdl_hide,
+	&stdl_title,
+	&stdl_notitle,
+	//stdl_resize
+	&stdl_resize,
+	&stdl_nresize,
+	&stdl_uscroll,
+	&stdl_upage,
+	&stdl_vslide,
+	&stdl_nvslide,
+	&stdl_dpage,
+	&stdl_dscroll,
+	&stdl_lscroll,
+	&stdl_lpage,
+	&stdl_hslide,
+	//stdl_nhslid
+	&stdl_rpage,
+	&stdl_rscroll,
+	&stdl_info,
+	&stdl_menu,
+	&stdl_pop,
+	&stdl_border,
+	NULL
+};
 
 static struct widget_row *
 get_widget_row(struct xa_window *wind, struct xa_widget *widg)
@@ -3637,23 +3666,23 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 
 	{
 		struct widget_row *rows = wind->widg_rows;
-		XA_WIDGET_LOCATION *wloc;
+		XA_WIDGET_LOCATION **wloc;
 		XA_WIND_ATTR xtp, ytp;
 
 		while (rows)
 		{
 			if (tp & rows->tp_if_used)
 			{
-				wloc = &stdl_close;
+				wloc = stdl; //&stdl_close;
 				xtp = rows->tp_then_unused;
-				while (xtp && wloc != &stdl_end)
+				while (xtp && (*wloc)) //wloc != &stdl_end)
 				{
-					if (!(wloc->properties & WIP_ACTIVE) && (ytp = (wloc->mask & xtp)) && !(ytp & tp))
+					if (!((*wloc)->properties & WIP_ACTIVE) && (ytp = ((*wloc)->mask & xtp)) && !(ytp & tp))
 					{
 						//display("exterior widget %lx", ytp);
-						make_widget(wind, wloc, display_unused, NULL, NULL, NULL, NULL);
+						make_widget(wind, *wloc, display_unused, NULL, NULL, NULL, NULL);
 						xtp &= ~ytp;
-						wloc = &stdl_close;
+						wloc = stdl; //&stdl_close;
 					}
 					else
 						wloc++;
