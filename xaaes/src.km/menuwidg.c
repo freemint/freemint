@@ -104,7 +104,7 @@ change_title(Tab *tab, int state)
 	obtree->ob_y = k->rdy;
 
 	obj_change(wt,
-		   t,
+		   t, 2,
 		   state,
 		   obtree[t].ob_flags,
 		   true,
@@ -143,7 +143,7 @@ change_entry(Tab *tab, int state)
 		while (rl)
 		{
 			obj_change(wt,
-				   t,
+				   t, 1,
 				   state,
 				   obtree[t].ob_flags,
 				   true,
@@ -156,7 +156,7 @@ change_entry(Tab *tab, int state)
 	else
 	{
 		DIAGS(("change_entry: no popw"));
-		obj_change(wt, t, state, obtree[t].ob_flags, true, NULL, k->rl_drop);
+		obj_change(wt, t, 1, state, obtree[t].ob_flags, true, NULL, k->rl_drop);
 	}
 }
 
@@ -1060,9 +1060,9 @@ display_popup(Tab *tab, XA_TREE *wt, int item, short rdx, short rdy)
 
 			tab->scroll = true;
 
-			r = calc_window(tab->lock, C.Aes, WC_WORK, tp, created_for_AES|created_for_POPUP, 1, true, r);
+			r = calc_window(tab->lock, C.Aes, WC_WORK, tp, created_for_AES|created_for_POPUP, mg, true, r);
 			tp |= TOOLBAR|VSLIDE|UPARROW|DNARROW/*|STORE_BACK*/;
-			r = calc_window(tab->lock, C.Aes, WC_BORDER, tp, created_for_AES|created_for_POPUP, 1, true, r);
+			r = calc_window(tab->lock, C.Aes, WC_BORDER, tp, created_for_AES|created_for_POPUP, mg, true, r);
 			
 			//if (r.y < root_window->wa.y)
 			//	r.y = root_window->wa.y;
@@ -1074,7 +1074,7 @@ display_popup(Tab *tab, XA_TREE *wt, int item, short rdx, short rdy)
 						true, //cfg.menu_locking,	/* yields nolist if locking. */
 						tp,
 						created_for_AES|created_for_POPUP,
-						1, true,
+						mg, true,
 						r,
 						&r, NULL);
 		}
@@ -1877,7 +1877,7 @@ click_form_popup_entry(struct task_administration_block *tab)
  * The menu, however, can be owned by someone else .. we check that.
 */
 static void
-Display_menu_widg(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
+Display_menu_widg(struct xa_window *wind, struct xa_widget *widg)
 {
 	XA_TREE *wt = widg->stuff;
 	OBJECT *obtree;
@@ -1923,11 +1923,11 @@ static void
 CE_display_menu_widg(enum locks lock, struct c_event *ce, bool cancel)
 {
 	if (!cancel)
-		Display_menu_widg(lock, ce->ptr1, ce->ptr2);
+		Display_menu_widg(ce->ptr1, ce->ptr2);
 }
 	
 static bool
-display_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
+display_menu_widget(struct xa_window *wind, struct xa_widget *widg)
 {
 	struct xa_client *rc = lookup_extension(NULL, XAAES_MAGIC);
 	XA_TREE *wt = widg->stuff;
@@ -1942,7 +1942,7 @@ display_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *w
 	{
 		DIAG((D_menu, wt->owner, "normal display_menu_widget, wt->owner %s, rc %s",
 			wt->owner->name, rc->name));
-		Display_menu_widg(lock, wind, widg);
+		Display_menu_widg(wind, widg);
 	}
 	else
 	{
@@ -2160,7 +2160,7 @@ set_menu_widget(struct xa_window *wind, struct xa_client *owner, XA_TREE *menu)
 	obtree->ob_height = obtree[obtree->ob_head].ob_height = obtree[obtree->ob_tail].ob_height = widg->r.h - 1; //wind->wa.w;
 	obtree[obtree->ob_tail].ob_y = widg->r.h;
 	
-	widg->display = display_menu_widget;
+	widg->h.draw = display_menu_widget;
 	widg->click = click_menu_widget;
 	widg->dclick = NULL;
 	widg->drag = NULL /* drag_menu_widget */;
@@ -2188,7 +2188,8 @@ set_popup_widget(Tab *tab, struct xa_window *wind, int obj)
 	XA_WIDGET *widg = get_widget(wind, XAW_MENU);
 	XA_WIDGET_LOCATION loc;
 	//OBJECT *ob = wt->tree + obj;
-	DisplayWidget display_object_widget;
+	//DisplayWidget display_object_widget;
+	DrawWidg display_object_widget;
 	int frame = wind->frame;
 
 	if ( widg->stuff)
@@ -2224,7 +2225,7 @@ set_popup_widget(Tab *tab, struct xa_window *wind, int obj)
 	loc.mask = XaMENU;
 
 	widg->type = XAW_MENU;
- 	widg->display = display_menu_widget;
+ 	widg->h.draw = display_menu_widget;
 #if 0
 	/* handled by other means (Task administration Tab) */
 	widg->click = click_popup_widget;

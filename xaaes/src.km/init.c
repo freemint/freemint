@@ -42,7 +42,7 @@
 #include "xa_shel.h"
 #include "xa_appl.h"
 #include "taskman.h"
-
+#include "win_draw.h"
 #include "version.h"
 
 #include "mint/ssystem.h"
@@ -439,6 +439,8 @@ init(struct kentry *k, const char *path)
 	//default_options.xa_objced = true;
 	default_options.thinframe = 1;
 	default_options.wheel_mode = WHL_AROWWHEEL;
+
+	default_options.init_widget_theme = init_widget_theme;
 
 	C.Aes->options = default_options;
 

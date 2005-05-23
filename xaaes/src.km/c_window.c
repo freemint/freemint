@@ -432,21 +432,6 @@ get_window_info(struct xa_window *wind, char *dst)
 		strcpy(dst, src);
 	}
 }
-#if 0
-/* SendMessage */
-void
-send_untop(enum locks lock, struct xa_window *wind)
-{
-	struct xa_client *client = wind->owner;
-	
-	//wind->colours = wind->untop_cols;
-	
-	if (wind->send_message && !client->fmd.wind)
-		wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
-				   WM_UNTOPPED, 0, 0, wind->handle,
-				   0, 0, 0, 0);
-}
-#endif
 void
 send_ontop(enum locks lock)
 {
@@ -461,7 +446,6 @@ send_ontop(enum locks lock)
 					  0, 0, 0, 0);
 	}
 }
-
 void
 send_topped(enum locks lock, struct xa_window *wind)
 {
@@ -859,6 +843,7 @@ create_window(
 	RECT *remember)
 {
 	struct xa_window *w;
+	struct xa_widget_theme *wtheme;
 	RECT r;
 
 	r = R;
@@ -877,11 +862,23 @@ create_window(
 #endif
 
 	w = kmalloc(sizeof(*w) + (long)(sizeof(struct xa_window_colours) << 1));
-	if (!w)
-		/* Unable to allocate memory for window? */
+	if (!w)	/* Unable to allocate memory for window? */
 		return NULL;
 
+	if (!(wtheme = client->widget_theme))
+	{
+		wtheme = kmalloc(sizeof(*wtheme));
+		bzero(wtheme, sizeof(*wtheme));
+		setup_widget_theme(client, wtheme);
+		client->widget_theme = wtheme;
+	}
+	if (!wtheme)
+	{
+		kfree(w);
+		return NULL;
+	}
 	bzero(w, sizeof(*w));
+
 
 	/*
 	 * Initialize the widget types values
@@ -928,6 +925,11 @@ create_window(
 		w->opts = opts;
 	}
 
+	w->widget_theme = client->widget_theme;
+
+	w->x_shadow = 2;
+	w->y_shadow = 2;
+
 	w->vdi_handle = C.vh;
 	w->ontop_cols = (struct xa_window_colours *)((long)w + sizeof(*w));
 	w->untop_cols = (struct xa_window_colours *)((long)w->ontop_cols + sizeof(struct xa_window_colours));
@@ -952,6 +954,9 @@ create_window(
 		w->wa_frame = false;
 	else
 		w->wa_frame = true;
+
+	if (w->frame > 0)
+		tp |= BORDER;
 
 	if (nolist)
 	{
@@ -994,7 +999,7 @@ create_window(
 	if (tp & (CLOSER|NAME|MOVER|ICONIFIER|FULLER))
 	{
 		RECT t;
-		rp_2_ap_cs(w, w->widgets + XAW_TITLE, &t);
+		rp_2_ap(w, w->widgets + XAW_TITLE, &t); //rp_2_ap_cs(w, w->widgets + XAW_TITLE, &t);
 		w->sh = t.y + t.h - w->r.y + (w->frame > 0 ? w->frame : 0);
 	}
 
@@ -1099,6 +1104,7 @@ change_window_attribs(enum locks lock,
 	if (remember)
 		*remember = w->r;
 }
+
 int
 open_window(enum locks lock, struct xa_window *wind, RECT r)
 {
@@ -1270,6 +1276,8 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 	return 1;
 }
 
+void draw_window_borders(struct xa_window *wind);
+
 void
 draw_window(enum locks lock, struct xa_window *wind, const RECT *clip)
 {
@@ -1299,8 +1307,8 @@ draw_window(enum locks lock, struct xa_window *wind, const RECT *clip)
 
 		/* Display the window backdrop (borders only, GEM style) */
 
-		cl.w -= SHADOW_OFFSET;
-		cl.h -= SHADOW_OFFSET;
+		cl.w -= wind->x_shadow; //SHADOW_OFFSET;
+		cl.h -= wind->y_shadow; //SHADOW_OFFSET;
 		{
 			RECT tcl;
 
@@ -1308,6 +1316,7 @@ draw_window(enum locks lock, struct xa_window *wind, const RECT *clip)
 			f_interior(FIS_SOLID);
 
 			tcl = cl;
+		#if 0
 			if (wind->frame > 0)
 			{
 				if (wind->frame >= 4)
@@ -1326,6 +1335,7 @@ draw_window(enum locks lock, struct xa_window *wind, const RECT *clip)
 					}
 				}
 			}
+		#endif
 			/* Display the work area */
 
 			if (MONO)
@@ -1359,9 +1369,10 @@ draw_window(enum locks lock, struct xa_window *wind, const RECT *clip)
 				}
 			}
 		}
-		if (wind->frame >= 0)
+		if (wind->frame >= 0 && (wind->x_shadow | wind->y_shadow))
 		{
-			shadow_object(0, OS_SHADOWED, &cl, G_BLACK, SHADOW_OFFSET/2);
+			//shadow_object(0, OS_SHADOWED, &cl, G_BLACK, wind->shadow/2); //SHADOW_OFFSET/2);
+			shadow_area(0, OS_SHADOWED, &wind->r, G_BLACK, wind->x_shadow, wind->y_shadow);
 		}
 	}
 
@@ -1386,22 +1397,22 @@ draw_window(enum locks lock, struct xa_window *wind, const RECT *clip)
 			if ((widg->loc.properties & WIP_NOTEXT) || (f == XAW_MENU && wind == root_window))
 				continue;
 
-			if (!(status & widg->loc.statusmask) && widg->display)
+			if (!(status & widg->loc.statusmask) && widg->h.draw)
 			{
 				DIAG((D_wind, wind->owner, "draw_window %d: display widget %d (func=%lx)",
-					wind->handle, f, widg->display));
+					wind->handle, f, widg->h.draw));
 				
 				if (widg->loc.properties & WIP_WACLIP)
 				{
 					if (xa_rect_clip(clip, &wind->wa, &r))
 					{
 						set_clip(&r);
-						widg->display(lock, wind, widg);
+						widg->h.draw(wind, widg);
 						set_clip(clip);
 					}
 				}
 				else
-					widg->display(lock, wind, widg);
+					widg->h.draw(wind, widg);
 			}
 		}
 	}
