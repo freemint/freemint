@@ -27,17 +27,6 @@
 #ifndef _wind_draw_h
 #define _wind_draw_h
 
-struct xa_window;
-
-struct xawin_functions
-{
-	void	(*draw_border)(struct xa_window *wind);
-	void	(*draw_title)(struct xa_window *wind);
-	void	(*draw_info)(struct xa_window *wind);
-	void	(*draw_widgets)(struct xa_window *wind);
-	void	(*draw_hslide)(struct xa_window *wind);
-	void	(*draw_vslide)(struct xa_window *wind);
-	void	(*draw_sizer)(struct xa_window *wind);
-};
+void init_widget_theme(struct widget_theme *wd);
 
 #endif /* _wind_draw_h */

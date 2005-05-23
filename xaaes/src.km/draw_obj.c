@@ -1153,6 +1153,54 @@ shadow_object(short d, short state, RECT *rp, short colour, short thick)
 	}
 }
 
+void
+shadow_area(short d, short state, RECT *rp, short colour, short x_thick, short y_thick)
+{
+	RECT r;
+	short offset, inc;
+
+	/* Are we shadowing this object? (Borderless objects aren't shadowed!) */
+	if ((x_thick | y_thick) && (state & OS_SHADOWED))
+	{
+		short i;
+
+		if (x_thick)
+		{
+			r = *rp;
+		//	if	(x_thick < -4) x_thick = -4;
+		//	else if (x_thick > 4) x_thick = 4;
+			offset	= x_thick > 0 ? x_thick : 0;
+			inc	= -x_thick;
+
+			r.y += offset;
+			r.w += inc;
+
+			for (i = x_thick < 0 ? -x_thick : x_thick; i > 0; i--)
+			{
+				r.w++;
+				right_line(d, &r, colour);
+			}
+		}
+		if (y_thick)
+		{
+			r = *rp;
+		//	if	(y_thick < -4) y_thick = -4;
+		//	else if (y_thick > 4) y_thick = 4;
+			offset	= y_thick > 0 ? y_thick : 0;
+			inc	= -y_thick;
+
+			r.x += offset;
+			r.h += inc;
+
+			for (i = y_thick < 0 ? -y_thick : y_thick; i > 0; i--) //(i = 0; i < abs(y_thick); i++)
+			{
+				r.h++;
+				bottom_line(d, &r, colour);
+			}
+		}
+	}
+}
+
 static short menu_dis_col(XA_TREE *wt)		/* Get colours for disabled better. */
 {
 	short c = G_BLACK;
@@ -2882,11 +2930,12 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, short item, short d
 {
 	XA_TREE this;
 	short next;
-	short current = 0, rel_depth = 1, head;
+	short current = 0, stop = -1, rel_depth = 1, head;
 	short x, y;
 	bool start_drawing = false;
 	bool curson = (wt->e.c_state & (OB_CURS_ENABLED | OB_CURS_DRAWN)) == (OB_CURS_ENABLED | OB_CURS_DRAWN) ? true : false;
 	RECT clip = *(RECT *)&C.global_clip;
+//	bool d = (strnicmp(wt->owner->proc_name, "luna", 4)) ? false : true;
 	IFDIAG(short *cl = C.global_clip;)
 
 	clip.w -= (clip.x - 1);
@@ -2935,6 +2984,7 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, short item, short d
 
 		if (current == item)
 		{
+			stop = item;
 			start_drawing = true;
 			rel_depth = 0;
 		}
@@ -2949,10 +2999,8 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, short item, short d
 
 		/* Any non-hidden children? */
 		if (    head != -1
-		    && (tree[current].ob_flags & OF_HIDETREE) == 0
-		    && (start_drawing == 0
-			|| (start_drawing != 0
-			    && rel_depth < depth)))
+		    && !(tree[current].ob_flags & OF_HIDETREE)
+		    &&  (!start_drawing || (start_drawing && rel_depth < depth)))
 		{
 			x += tree[current].ob_x;
 			y += tree[current].ob_y;
@@ -2967,7 +3015,7 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, short item, short d
 			next = tree[current].ob_next;
 
 			/* Trace back up tree if no more siblings */
-			while (next != -1 && tree[next].ob_tail == current)
+			while (next != stop/*-1*/ && tree[next].ob_tail == current)
 			{
 				current = next;
 				x -= tree[current].ob_x;
@@ -2978,7 +3026,7 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, short item, short d
 			current = next;
 		}
 	}
-	while (current != -1 && !(start_drawing && rel_depth < 1));
+	while (current != stop/*-1*/ && rel_depth > 0); // !(start_drawing && rel_depth < 1));
 
 	if (wt->owner->options.xa_objced && curson)
 		draw_objcursor(wt, NULL);

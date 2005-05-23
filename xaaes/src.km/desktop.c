@@ -120,7 +120,7 @@ set_desktop_widget(struct xa_window *wind, XA_TREE *desktop)
 
 	wi->r = loc.r;
 
-	wi->display = display_object_widget;
+	wi->h.draw = display_object_widget;
 	wi->click = click_desktop_widget;
 	wi->dclick = click_desktop_widget;
 	wi->drag = click_desktop_widget;

@@ -250,6 +250,7 @@ struct xa_window_colours
 /*-----------------------------------------------------------------
  * Configuration and options structures
  *-----------------------------------------------------------------*/
+struct widget_theme;
 
 struct options
 {
@@ -276,6 +277,12 @@ struct options
 	long wind_opts;			/* Default window options - see struct xa_window.opts */
 	long app_opts;
 	long half_screen;
+
+	/*
+	 * Widget theme stuff...
+	 */
+	void (*init_widget_theme)(struct widget_theme *t);
+
 #if GENERATE_DIAGS
 	enum debug_item point[D_max];
 #endif
@@ -773,150 +780,6 @@ struct fselect_result
 #define XAPP_XT_WF_SLIDE	0x00000001	/**/
 
 
-/* Main client application descriptor */
-struct xa_client
-{
-	LIST_ENTRY(xa_client) client_entry;
-	LIST_ENTRY(xa_client) app_entry;
-
-#if GENERATE_DIAGS
-	short enter;
-#endif
-	short  rppid;			/* Pid of our 'real' parent, the client that called shel_write() to give birth*/
-
-	struct proc *p;			/* context back ptr */
-	struct xa_user_things *ut;	/* trampoline code for user callbacks */
-	struct proc *tp;		/* Thread */
-
-	short	swm_newmsg;
-
-	bool forced_init_client;
-	bool pexit;
-
-	struct xa_aesmsg_list *msg;		/* Pending AES messages */
-	struct xa_aesmsg_list *rdrw_msg;	/* WM_REDRAW messages */
-	struct xa_aesmsg_list *crit_msg;	/* Critical AES messages - these are prioritized */
-	struct xa_aesmsg_list *irdrw_msg;	/* Internal redraw messages */
-
-#define CS_LAGGING		0x00000001
-#define CS_CE_REDRAW_SENT 	0x00000002
-#define CS_FORM_ALERT		0x00000004
-#define CS_FORM_DO		0x00000008
-#define CS_WAIT_MENU		0x00000010
-#define CS_FSEL_INPUT		0x00000020
-#define CS_MISS_RDRW		0x00000040
-#define CS_MENU_NAV		0x00000080
-#define CS_BLOCK_MENU_NAV	0x00000100
-
-#define CS_EXITING		0x00000200
-#define CS_BLOCK_CE		0x00000400
-
-
-	long status;
-
-	enum waiting_for waiting_for;	/* What types of event(s) the client is waiting for */
-	AESPB *waiting_pb;		/* Parameter block for whatever the client is waiting for */
-	short *waiting_short;		/* */
-
-	short mouse;			/* The cursor to use when this is top application */
-	short save_mouse;		/* The cursor saved by M_SAVE */
-	short prev_mouse;		/* The cursor previous to any change - used by M_LAST/M_PREVIOUS */
-	MFORM *mouse_form;
-	MFORM *save_mouse_form;
-	MFORM *prev_mouse_form;
-	MFORM user_def;
-
-	struct aes_global *globl_ptr;	/* Pointer to the client's globl array (so we can fill in the resource
-					 * address field later). */
-
-	RSHDR *rsrc;			/* Pointer to the client's standard GEM-style single resource file */
-	RSHDR *rsrc_1;			/* For multiple resources. */
-	OBJECT **trees;
-	OBJECT **trees_1;
-	int rsct;			/* count up/down the loaded resources. Used by XA_alloc, XA_free */
-
-	XA_TREE *wtlist;
-
-	XA_TREE *std_menu;
-	XA_TREE *nxt_menu;
-	XA_TREE *desktop;
-
-	XA_MENU_ATTACHMENT *attach;	/* submenus */
-
-	Path home_path;			/* The directory that the client was started in */
-	Path cmd_name;			/* The full filename used when launching the process (if launched by shell_write) */
-	char *cmd_tail;			/* The command tail of the process (if launched by shell_write) */
-	bool tail_is_heap;		/* If true, cmd_tail is a malloc */
-
-	char name[NICE_NAME+2];		/* The clients 'pretty' name (possibly set by menu_register) */
-	char proc_name[10];		/* The clients 'official' (ie. used by appl_find) name. */
-
-	struct xa_window *alert;
-
-	struct fmd fmd;			/* Data needed by the XaAES windowing of dialogues. */
-	struct xa_client *nextclient;	/* Use for appl_find(APP_FIRST/APP_NEXT) */
-	int  type;			/* What type of client is this? */
-
-	char *half_screen_buffer;	/* for wind_get WF_SCREEN (people tend to use what is offered,
-					 * whether the idee is good or not) */
-	long half_screen_size;
-
-	struct xa_mouse_rect em;	/* Needed. whether threads or not */
-	long timer_val;			/* Pass it here, instead of awkward in the return value; */
-	struct timeout *timeout;	/* remember timeout magic */
-	struct xa_rscs *resources;	/* link loaded resoures' allocated memory, so it can be freeed.
-					 * this also solves the problem that memory allocated for colour icon data
-					 * was left orphaned. */
-
-#if GENERATE_DIAGS
-	char zen_name[NICE_NAME + 2 + 16];
-#endif
-	int xdrive;
-	Path xpath;
-	struct options options;		/* Individual AES options. */
-
-	char	*mnu_clientlistname;	/* This holds the text of the menu-entry for client-list */
-/*
- * This part is for Client event dispatching
-*/
-#define MAX_KEYQUEUE	4
-	int	kq_count;
-	struct keyqueue *kq_head;
-	struct keyqueue	*kq_tail;
-
-#define CLIENT_MD_BUFFERS	10
-
-	struct moose_data *md_head;
-	struct moose_data *md_tail;
-	struct moose_data *md_end;
-	struct moose_data mdb[CLIENT_MD_BUFFERS+1];
-
-	struct moose_data *wheel_md;
-
-#define MAX_CEVENTS 15	/* Also used to mask ce_head/ce_tail */
-
-#define XABT_NONE   0
-#define XABT_SLEEP  1
-#define XABT_SELECT 2
-	int	blocktype;
-	int	sleepqueue;
-	long	sleeplock;
-	
-	int	usr_evnt;
-
-	short	cevnt_count;
-	struct	c_event *cevnt_head;
-	struct	c_event *cevnt_tail;
-
-	short	tp_term;
-	short	tpcevnt_count;
-	struct	c_event *tpcevnt_head;
-	struct	c_event *tpcevnt_tail;
-
-	struct	xa_data_hdr *xa_data;
-
-};
-
 typedef unsigned long AES_function(enum locks lock, struct xa_client *client, AESPB *pb);
 
 /*-----------------------------------------------------------------
@@ -1040,6 +903,62 @@ struct xa_widget_location
 };
 typedef struct xa_widget_location XA_WIDGET_LOCATION;
 
+typedef bool DrawWidg (struct xa_window *wind, struct xa_widget *widg);
+typedef void SetWidgSize(struct xa_window *wind, struct xa_widget *widg);
+
+struct render_widget
+{
+	DrawWidg	*draw;
+	SetWidgSize	*setsize;
+	
+};
+
+struct widget_theme
+{
+	struct render_widget	exterior;
+	struct render_widget	border;
+	struct render_widget	title;
+	struct render_widget	closer;
+	struct render_widget	fuller;
+	struct render_widget	info;
+	struct render_widget	sizer;
+	struct render_widget	uparrow;
+	struct render_widget	dnarrow;
+	struct render_widget	vslide;
+	struct render_widget	lfarrow;
+	struct render_widget	rtarrow;
+	struct render_widget	hslide;
+	struct render_widget	iconifier;
+	struct render_widget	hider;
+	struct render_widget	toolbar;
+	struct render_widget	menu;
+};
+
+struct xa_widget_theme
+{
+	void *		(*rp2ap)	(struct xa_window *wind, struct xa_widget *widg, RECT *r);
+	void		(*rp2apcs)	(struct xa_window *wind, struct xa_widget *widg, RECT *r);
+
+	struct widget_theme w;
+};
+
+struct xa_externals
+{
+	void	(*init_widget_theme)(struct xa_widget_theme *xwd);
+};
+
+struct xa_widget_handlers
+{
+	DrawWidg	*draw;
+
+	WidgetBehaviour *click;
+	WidgetBehaviour *dclick;
+	WidgetBehaviour *drag;
+	WidgetBehaviour *release;
+	WidgetBehaviour *wheel;
+	WidgetBehaviour *key;
+};
+
 /*
  * Parameter block used to communicate parameters to set_toolbar_widget();
  * A pointer value of NULL (0L) means "Use standard handler".
@@ -1051,7 +970,8 @@ struct toolbar_handlers
 	FormExit	*exitform;
 	FormKeyInput	*keypress;
 
-	DisplayWidget	*display;
+	//DisplayWidget	*display;
+	DrawWidg	*draw;
 	WidgetBehaviour	*click;
 	WidgetBehaviour	*dclick;
 	WidgetBehaviour	*drag;
@@ -1072,7 +992,10 @@ struct xa_widget
 	RECT r;
 	RECT ar;			/* */
 
-	DisplayWidget	*display;		/* Function pointers to the behaviours of the widget */
+	struct xa_widget_handlers h;
+
+//	DisplayWidget	*display;		/* Function pointers to the behaviours of the widget */
+	//DrawWidg *display;
 	WidgetBehaviour *click;
 	WidgetBehaviour *dclick;
 	WidgetBehaviour *drag;
@@ -1208,7 +1131,9 @@ struct xa_window
 	struct xa_window_colours *colours;
 	struct xa_window_colours *ontop_cols;
 	struct xa_window_colours *untop_cols;
-		
+
+	struct xa_widget_theme *widget_theme;
+
 	short vdi_handle;
 
 	XA_WIND_ATTR active_widgets;	/* Summary of the current standard widgets for the window */
@@ -1228,7 +1153,8 @@ struct xa_window
 #define WAB_TOP		4
 #define WAB_BOTTOM	8
 	short wa_borders;
-
+	short x_shadow;
+	short y_shadow;
 	RECT max;			/* Creator dimension's, maximum for sizing */
 	RECT min;
 	RECT r;				/* Current dimensions */
@@ -1757,5 +1683,154 @@ struct alertxt
 	char button[ALERT_BUTTONS][MAX_X+1];	/* Text for buttons (note: use MAX_X to get coercible row type) */
 };
 typedef struct alertxt ALERTXT;
+
+
+/* Main client application descriptor */
+struct xa_client
+{
+	LIST_ENTRY(xa_client) client_entry;
+	LIST_ENTRY(xa_client) app_entry;
+
+//	struct xa_externals xa_ext;
+
+	struct xa_widget_theme *widget_theme;
+
+#if GENERATE_DIAGS
+	short enter;
+#endif
+	short  rppid;			/* Pid of our 'real' parent, the client that called shel_write() to give birth*/
+
+	struct proc *p;			/* context back ptr */
+	struct xa_user_things *ut;	/* trampoline code for user callbacks */
+	struct proc *tp;		/* Thread */
+
+	short	swm_newmsg;
+
+	bool forced_init_client;
+	bool pexit;
+
+	struct xa_aesmsg_list *msg;		/* Pending AES messages */
+	struct xa_aesmsg_list *rdrw_msg;	/* WM_REDRAW messages */
+	struct xa_aesmsg_list *crit_msg;	/* Critical AES messages - these are prioritized */
+	struct xa_aesmsg_list *irdrw_msg;	/* Internal redraw messages */
+
+#define CS_LAGGING		0x00000001
+#define CS_CE_REDRAW_SENT 	0x00000002
+#define CS_FORM_ALERT		0x00000004
+#define CS_FORM_DO		0x00000008
+#define CS_WAIT_MENU		0x00000010
+#define CS_FSEL_INPUT		0x00000020
+#define CS_MISS_RDRW		0x00000040
+#define CS_MENU_NAV		0x00000080
+#define CS_BLOCK_MENU_NAV	0x00000100
+
+#define CS_EXITING		0x00000200
+#define CS_BLOCK_CE		0x00000400
+
+
+	long status;
+
+	enum waiting_for waiting_for;	/* What types of event(s) the client is waiting for */
+	AESPB *waiting_pb;		/* Parameter block for whatever the client is waiting for */
+	short *waiting_short;		/* */
+
+	short mouse;			/* The cursor to use when this is top application */
+	short save_mouse;		/* The cursor saved by M_SAVE */
+	short prev_mouse;		/* The cursor previous to any change - used by M_LAST/M_PREVIOUS */
+	MFORM *mouse_form;
+	MFORM *save_mouse_form;
+	MFORM *prev_mouse_form;
+	MFORM user_def;
+
+	struct aes_global *globl_ptr;	/* Pointer to the client's globl array (so we can fill in the resource
+					 * address field later). */
+
+	RSHDR *rsrc;			/* Pointer to the client's standard GEM-style single resource file */
+	RSHDR *rsrc_1;			/* For multiple resources. */
+	OBJECT **trees;
+	OBJECT **trees_1;
+	int rsct;			/* count up/down the loaded resources. Used by XA_alloc, XA_free */
+
+	XA_TREE *wtlist;
+
+	XA_TREE *std_menu;
+	XA_TREE *nxt_menu;
+	XA_TREE *desktop;
+
+	XA_MENU_ATTACHMENT *attach;	/* submenus */
+
+	Path home_path;			/* The directory that the client was started in */
+	Path cmd_name;			/* The full filename used when launching the process (if launched by shell_write) */
+	char *cmd_tail;			/* The command tail of the process (if launched by shell_write) */
+	bool tail_is_heap;		/* If true, cmd_tail is a malloc */
+
+	char name[NICE_NAME+2];		/* The clients 'pretty' name (possibly set by menu_register) */
+	char proc_name[10];		/* The clients 'official' (ie. used by appl_find) name. */
+
+	struct xa_window *alert;
+
+	struct fmd fmd;			/* Data needed by the XaAES windowing of dialogues. */
+	struct xa_client *nextclient;	/* Use for appl_find(APP_FIRST/APP_NEXT) */
+	int  type;			/* What type of client is this? */
+
+	char *half_screen_buffer;	/* for wind_get WF_SCREEN (people tend to use what is offered,
+					 * whether the idee is good or not) */
+	long half_screen_size;
+
+	struct xa_mouse_rect em;	/* Needed. whether threads or not */
+	long timer_val;			/* Pass it here, instead of awkward in the return value; */
+	struct timeout *timeout;	/* remember timeout magic */
+	struct xa_rscs *resources;	/* link loaded resoures' allocated memory, so it can be freeed.
+					 * this also solves the problem that memory allocated for colour icon data
+					 * was left orphaned. */
+
+#if GENERATE_DIAGS
+	char zen_name[NICE_NAME + 2 + 16];
+#endif
+	int xdrive;
+	Path xpath;
+	struct options options;		/* Individual AES options. */
+
+	char	*mnu_clientlistname;	/* This holds the text of the menu-entry for client-list */
+/*
+ * This part is for Client event dispatching
+*/
+#define MAX_KEYQUEUE	4
+	int	kq_count;
+	struct keyqueue *kq_head;
+	struct keyqueue	*kq_tail;
+
+#define CLIENT_MD_BUFFERS	10
+
+	struct moose_data *md_head;
+	struct moose_data *md_tail;
+	struct moose_data *md_end;
+	struct moose_data mdb[CLIENT_MD_BUFFERS+1];
+
+	struct moose_data *wheel_md;
+
+#define MAX_CEVENTS 15	/* Also used to mask ce_head/ce_tail */
+
+#define XABT_NONE   0
+#define XABT_SLEEP  1
+#define XABT_SELECT 2
+	int	blocktype;
+	int	sleepqueue;
+	long	sleeplock;
+	
+	int	usr_evnt;
+
+	short	cevnt_count;
+	struct	c_event *cevnt_head;
+	struct	c_event *cevnt_tail;
+
+	short	tp_term;
+	short	tpcevnt_count;
+	struct	c_event *tpcevnt_head;
+	struct	c_event *tpcevnt_tail;
+
+	struct	xa_data_hdr *xa_data;
+
+};
 
 #endif /* _xa_types_h */

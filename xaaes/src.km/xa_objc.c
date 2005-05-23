@@ -181,7 +181,7 @@ XA_objc_change(enum locks lock, struct xa_client *client, AESPB *pb)
 		rl.r = *(RECT *)((long)&pb->intin[2]);
 
 		obj_change(wt,
-			    obj,
+			    obj, 0,
 			    pb->intin[6],
 			    obtree[obj].ob_flags,
 			    pb->intin[7],

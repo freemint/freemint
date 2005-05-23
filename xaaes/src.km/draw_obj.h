@@ -64,6 +64,7 @@ short	draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, short item, s
 
 /* Internal utility routines */
 void shadow_object(short d, short state, RECT *r, short colour, short border_thick);
+void shadow_area(short d, short state, RECT *r, short colour, short x, short y);
 void draw_2d_box(short x, short y, short w, short h, short border_thick, short colour);
 //void g2d_box(int b, RECT *r, int colour);
 
