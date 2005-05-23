@@ -139,9 +139,13 @@ object_is_transparent(OBJECT *ob)
 		case G_SHORTCUT:
 		case G_IBOX:
 		case G_TITLE:
-		case G_PROGDEF:
 		{
 			ret = true;
+			break;
+		}
+		case G_PROGDEF:
+		{
+			ret = false;
 			break;
 		}
 		case G_TEXT:
@@ -1572,7 +1576,7 @@ obj_find(XA_TREE *wt, short object, short depth, short mx, short my, RECT *c)
 {
 	OBJECT *obtree = wt->tree;
 	short next;
-	short current = 0, rel_depth = 1;
+	short current = 0, stop = -1, rel_depth = 1;
 	short x = -wt->dx, y = -wt->dy;
 	bool start_checking = false;
 	short pos_object = -1;
@@ -1582,15 +1586,17 @@ obj_find(XA_TREE *wt, short object, short depth, short mx, short my, RECT *c)
 		object, depth, obtree, obtree->ob_x, obtree->ob_y, obtree->ob_width, obtree->ob_height,
 		mx, my));
 	do {
+		
 		if (current == object)	/* We can start considering objects at this point */
 		{
+			stop = object;
 			start_checking = true;
 			rel_depth = 0;
 		}
 		
 		if (start_checking)
 		{
-			if (  (obtree[current].ob_flags & OF_HIDETREE) == 0
+			if (  !(obtree[current].ob_flags & OF_HIDETREE)
 			    && obtree[current].ob_x + x                     <= mx
 			    && obtree[current].ob_y + y                     <= my
 			    && obtree[current].ob_x + x + obtree[current].ob_width  >= mx
@@ -1609,8 +1615,8 @@ obj_find(XA_TREE *wt, short object, short depth, short mx, short my, RECT *c)
 		}
 
 		if ( ((!start_checking) || (rel_depth < depth))
-		    && (obtree[current].ob_head != -1)
-		    && (obtree[current].ob_flags & OF_HIDETREE) == 0)
+		    &&  (obtree[current].ob_head != -1)
+		    && !(obtree[current].ob_flags & OF_HIDETREE))
 		{
 			/* Any children? */
 			x += obtree[current].ob_x;
@@ -1624,7 +1630,7 @@ obj_find(XA_TREE *wt, short object, short depth, short mx, short my, RECT *c)
 			next = obtree[current].ob_next;
 
 			/* Trace back up tree if no more siblings */
-			while ((next != -1) && (obtree[next].ob_tail == current))
+			while ((next != stop/*-1*/) && (obtree[next].ob_tail == current))
 			{
 				current = next;
 				x -= obtree[current].ob_x;
@@ -1635,14 +1641,14 @@ obj_find(XA_TREE *wt, short object, short depth, short mx, short my, RECT *c)
 			current = next;
 		}	
 	}
-	while ((current != -1) && (rel_depth > 0));
+	while ((current != stop/*-1*/) && (rel_depth > 0));
 
 	if (c && pos_object >= 0)
 	{
 		if (!xa_rect_clip(c, &r, &r))
 			pos_object = -1;
 	}
-
+	
 	DIAG((D_objc, NULL, "obj_find: found %d", pos_object));
 
 	return pos_object;
@@ -1669,7 +1675,7 @@ ob_find(OBJECT *obtree, short object, short depth, short mx, short my)
 		
 		if (start_checking)
 		{
-			if (  (obtree[current].ob_flags & OF_HIDETREE) == 0
+			if ( !(obtree[current].ob_flags & OF_HIDETREE)
 			    && obtree[current].ob_x + x                     <= mx
 			    && obtree[current].ob_y + y                     <= my
 			    && obtree[current].ob_x + x + obtree[current].ob_width  >= mx
@@ -1681,8 +1687,8 @@ ob_find(OBJECT *obtree, short object, short depth, short mx, short my)
 		}
 
 		if ( ((!start_checking) || (rel_depth < depth))
-		    && (obtree[current].ob_head != -1)
-		    && (obtree[current].ob_flags & OF_HIDETREE) == 0)
+		    &&  (obtree[current].ob_head != -1)
+		    && !(obtree[current].ob_flags & OF_HIDETREE))
 		{
 			/* Any children? */
 			x += obtree[current].ob_x;
@@ -1763,6 +1769,7 @@ obtree_has_touchexit(OBJECT *obtree)
 void
 obj_change(XA_TREE *wt,
 	   short obj,
+	   int transdepth,
 	   short state,
 	   short flags,
 	   bool redraw,
@@ -1785,12 +1792,12 @@ obj_change(XA_TREE *wt,
 
 	if (draw && redraw)
 	{
-		obj_draw(wt, obj, clip, rl);
+		obj_draw(wt, obj, transdepth, clip, rl);
 	}
 }
 
 void
-obj_draw(XA_TREE *wt, short obj, const RECT *clip, struct xa_rect_list *rl)
+obj_draw(XA_TREE *wt, short obj, int transdepth, const RECT *clip, struct xa_rect_list *rl)
 {
 	short start = obj, i;
 	RECT or;
@@ -1805,7 +1812,7 @@ obj_draw(XA_TREE *wt, short obj, const RECT *clip, struct xa_rect_list *rl)
 			break;
 		start = i;
 	}
-
+	
 	if (rl)
 	{
 		RECT r;
@@ -2357,7 +2364,7 @@ obj_edit(XA_TREE *wt,
 						{
 							eor_objcursor(wt, rl);
 							if (obj_ed_char(wt, &wt->e, ted, keycode))
-								obj_draw(wt, wt->e.obj, clip, rl);
+								obj_draw(wt, wt->e.obj, -1, clip, rl);
 							eor_objcursor(wt, rl);
 						}
 						else
@@ -2380,7 +2387,7 @@ obj_edit(XA_TREE *wt,
 					{
 						eor_objcursor(wt, rl);
 						if (obj_ed_char(wt, ei, ted, keycode))
-							obj_draw(wt, obj, clip, rl);
+							obj_draw(wt, obj, -1, clip, rl);
 						eor_objcursor(wt, rl);
 					}
 					else
@@ -2492,7 +2499,7 @@ obj_edit(XA_TREE *wt,
 					if (obj_ED_INIT(wt, &lei, obj, -1, last, &ted, &old_ed_obj))
 					{
 						if (obj_ed_char(wt, &lei, ted, keycode))
-							obj_draw(wt, obj, clip, rl);
+							obj_draw(wt, obj, -1, clip, rl);
 
 						pos = lei.pos;
 					}
@@ -2509,7 +2516,7 @@ obj_edit(XA_TREE *wt,
 
 					undraw_objcursor(wt, rl);
 					if (obj_ed_char(wt, ei, ted, keycode))
-						obj_draw(wt, obj, clip, rl);
+						obj_draw(wt, obj, -1, clip, rl);
 					set_objcursor(wt);
 					draw_objcursor(wt, rl);
 					pos = ei->pos;
@@ -2578,7 +2585,7 @@ obj_set_radio_button(XA_TREE *wt,
 				if (o != obj)
 				{
 					obj_change(wt,
-						   o,
+						   o, 0,
 						   obtree[o].ob_state & ~OS_SELECTED,
 						   obtree[o].ob_flags,
 						   redraw,
@@ -2590,7 +2597,7 @@ obj_set_radio_button(XA_TREE *wt,
 		}
 		DIAGS(("radio: set obj %d", obj));
 		obj_change(wt,
-			   obj,
+			   obj, 0,
 			   obtree[obj].ob_state | OS_SELECTED,
 			   obtree[obj].ob_flags,
 			   redraw, clip,
@@ -2623,12 +2630,12 @@ obj_watch(XA_TREE *wt,
 		/* If mouse button is already released, assume that was just
 		 * a click, so select
 		 */
-		obj_change(wt, obj, in_state, flags, true, clip, rl);
+		obj_change(wt, obj, 0, in_state, flags, true, clip, rl);
 	}
 	else
 	{
 		S.wm_count++;
-		obj_change(wt, obj, in_state, flags, true, clip, rl);
+		obj_change(wt, obj, 0, in_state, flags, true, clip, rl);
 		while (mb)
 		{
 			short s;
@@ -2649,7 +2656,7 @@ obj_watch(XA_TREE *wt,
 				if (pobf != obf)
 				{
 					pobf = obf;
-					obj_change(wt, obj, s, flags, true, clip, rl);
+					obj_change(wt, obj, 0, s, flags, true, clip, rl);
 				}
 			}
 		}

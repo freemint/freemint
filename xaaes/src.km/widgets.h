@@ -30,8 +30,9 @@
 #include "global.h"
 #include "xa_types.h"
 
+void	setup_widget_theme(struct xa_client *client, struct xa_widget_theme *xwt);
+
 COMPASS compass(short d, short x, short y, RECT r);
-void	draw_window_borders(struct xa_window *wind);
 
 void	fix_default_widgets(void *);
 OBJECT *get_widgets(void);
@@ -73,8 +74,8 @@ void	free_xawidget_resources(struct xa_widget *widg);
 
 RECT	iconify_grid(int i);
 
-DisplayWidget display_vslide; /* For d_g_list, should go! */
-DisplayWidget display_object_widget; /* for desktop */
+DrawWidg display_vslide; /* For d_g_list, should go! */
+DrawWidg display_object_widget; /* for desktop */
 
 void	remove_widget_active(struct xa_client *client);
 

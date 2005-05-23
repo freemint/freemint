@@ -144,6 +144,7 @@ k_init(void)
 			DIAGS(("could not determine nvdi version"));
 #endif
 	}
+	
 	/*
 	 * setup work_in
 	 */
@@ -330,6 +331,12 @@ k_init(void)
 	 * Init certain things in the info_tab used by appl_getinfo()
 	 */
 	init_apgi_infotab();
+
+	/*
+	 * Setup default widget theme
+	 */
+	bzero(&default_widget_theme, sizeof(default_widget_theme));
+	setup_widget_theme(C.Aes, &default_widget_theme);
 
 	/*
 	 * Open a diagnostics file? All console output can be considered diagnostics,

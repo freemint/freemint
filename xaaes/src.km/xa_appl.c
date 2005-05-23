@@ -211,6 +211,7 @@ init_client(enum locks lock)
 
 	/* Individual option settings. */
 	get_app_options(client);
+
 	if (client->options.inhibit_hide)
 		client->swm_newmsg |= NM_INHIBIT_HIDE;
 
@@ -668,6 +669,12 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 	//bzero(client, sizeof(*client));
 
 	remove_client_crossrefs(client);
+
+	if (client->widget_theme)
+	{
+		kfree(client->widget_theme);
+		client->widget_theme = NULL;
+	}
 
 	if (detach)
 		detach_extension(NULL, XAAES_MAGIC);

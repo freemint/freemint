@@ -81,6 +81,15 @@ static char *t_widg[] =
 };
 #endif
 
+
+void
+setup_widget_theme(struct xa_client *client, struct xa_widget_theme *wtheme)
+{
+	wtheme->rp2ap	= rp_2_ap;
+	wtheme->rp2apcs	= rp_2_ap_cs;
+	(*client->options.init_widget_theme)(&wtheme->w);
+}
+
 /*
  * WINDOW WIDGET SET HANDLING ROUTINES
  * This module handles the behaviour of the window widgets.
@@ -288,8 +297,8 @@ rp_2_ap(struct xa_window *wind, XA_WIDGET *widg, RECT *r)
 	r->x = wind->r.x;
 	r->y = wind->r.y;
 
-	ww = wind->frame < 0 ? wind->r.w : wind->r.w - SHADOW_OFFSET;
-	wh = wind->frame < 0 ? wind->r.h : wind->r.h - SHADOW_OFFSET;
+	ww = wind->frame < 0 ? wind->r.w : wind->r.w - wind->x_shadow; //SHADOW_OFFSET;
+	wh = wind->frame < 0 ? wind->r.h : wind->r.h - wind->y_shadow; //SHADOW_OFFSET;
 
 	switch ((widg->loc.relative_type & (R_BOTTOM|R_RIGHT|R_CENTER)))
 	{
@@ -328,34 +337,6 @@ rp_2_ap(struct xa_window *wind, XA_WIDGET *widg, RECT *r)
 	}
 
 	return rp2ap_obtree(wind, widg, r);
-#if 0	
-	/* HR: for after moving: set form's x & y, otherwise find_object
-	 *     fails.
-	 */
-	if (widg->type == XAW_TOOLBAR || widg->type == XAW_MENU)
-	{
-		XA_TREE *wt;
-		OBJECT *form;
-
-		wt = widg->stuff;
-		form = wt->tree;
-
-		if (wind != root_window)
-		{
-			form->ob_x = r->x;
-			form->ob_y = r->y;
-			if (!wt->zen)
-			{
-				form->ob_x += wt->ox;
-				form->ob_y += wt->oy;
-			}
-		}
-
-		/* If want to get informed */
-		return form;
-	}
-	return NULL;
-#endif
 }
 
 /* Ozk:
@@ -397,8 +378,8 @@ rp_2_ap_cs(struct xa_window *wind, XA_WIDGET *widg, RECT *r)
 	r->x = wind->r.x;
 	r->y = wind->r.y;
 
-	ww = wind->frame < 0 ? wind->r.w : wind->r.w - SHADOW_OFFSET;
-	wh = wind->frame < 0 ? wind->r.h : wind->r.h - SHADOW_OFFSET;
+	ww = wind->frame < 0 ? wind->r.w : wind->r.w - wind->x_shadow; //SHADOW_OFFSET;
+	wh = wind->frame < 0 ? wind->r.h : wind->r.h - wind->y_shadow; //SHADOW_OFFSET;
 
 	switch ((widg->loc.relative_type & (R_BOTTOM|R_RIGHT|R_CENTER)))
 	{
@@ -738,10 +719,10 @@ display_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, struct 
 {
 	RECT r;
 
-	if (!(wind->window_status & widg->loc.statusmask) && widg->display)
+	if (!(wind->window_status & widg->loc.statusmask) && widg->h.draw)
 	{
 		DIAG((D_wind, wind->owner, "draw_window %d: display widget %d (func=%lx)",
-			wind->handle, widg->type, widg->display));
+			wind->handle, widg->type, widg->h.draw));
 
 		if (!rl)
 			rl = wind->rect_start;
@@ -754,44 +735,19 @@ display_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, struct 
 				if (xa_rect_clip(&rl->r, &wind->wa, &r))
 				{
 					set_clip(&r);
-					widg->display(lock, wind, widg);
+					widg->h.draw(wind, widg);
 				}
 			}
 			else
 			{
 				set_clip(&rl->r);
-				widg->display(lock, wind, widg);
+				widg->h.draw(wind, widg);
 			}
 			rl = rl->next;
 		}
 		clear_clip();
 		showm();
 	}
-#if 0	
-	/* if removed or lost */
-	if (!(wind->window_status & widg->loc.statusmask) && widg->display)
-	{
-		/* Some programs do this! */
-		if (!((wind->window_status & XAWS_ICONIFIED)
-		      && widg->type != XAW_TITLE
-		      && widg->type != XAW_ICONIFY))
-		{
-			struct xa_rect_list *rl;
-
-			hidem();
-			rl = rect_get_system_first(wind);
-			while (rl)
-			{
-				/* Walk the rectangle list */
-				set_clip(&rl->r);
-				widg->display(lock|winlist, wind, widg);
-				rl = rect_get_system_next(wind);
-			}
-			clear_clip();
-			showm();
-		}
-	}
-#endif
 }
 
 static void
@@ -805,15 +761,9 @@ CE_redraw_menu(enum locks lock, struct c_event *ce, bool cancel)
 		mc = ((XA_TREE *)widg->stuff)->owner;
 		if (ce->client == mc)
 		{
-		#if 0
-			DIAGS(("CE_redraw_menu: for %s", ce->client->name));
-			hidem();
-			widg->display(lock|winlist, root_window, widg);
-			showm();
-		#endif
 			display_widget(lock, root_window, widg, NULL);
 		}
-	#if 0
+	#if 1
 		else
 		{
 			DIAGS(("CE_redraw_menu: ownership change, forwarding..."));
@@ -854,12 +804,7 @@ redraw_menu(enum locks lock)
 	{
 		if (C.update_lock && C.update_lock != rc->p)
 			return;
-	#if 0
-		DIAGS(("Display MENU (same client) for %s", rc->name));
-		hidem();
-		widg->display(lock|winlist, root_window, widg);
-		showm();
-	#endif
+		
 		display_widget(lock, root_window, widg, NULL);
 	}
 	else
@@ -898,6 +843,7 @@ calc_work_area(struct xa_window *wind)
 	int frame = wind->frame;
 	int t_margin, b_margin, l_margin, r_margin;
 	short wa_borders = 0;
+	
 	wind->wa = r;
 
 	{
@@ -918,14 +864,11 @@ calc_work_area(struct xa_window *wind)
 		{
 			wind->wa.x += frame;
 			wind->wa.y += frame;
-			wind->wa.w -= frame << 1;
-			wind->wa.h -= frame << 1;
+			wind->wa.w -= (frame << 1);
+			wind->wa.h -= (frame << 1);
 			
-			wind->wa.w -= SHADOW_OFFSET;
-			wind->wa.h -= SHADOW_OFFSET;
-
-		//	if (frame < 4)
-		//		frame = 4;
+			wind->wa.w -= wind->x_shadow; //SHADOW_OFFSET;
+			wind->wa.h -= wind->y_shadow; //SHADOW_OFFSET;
 		}
 		if (frame < 0)
 			frame = 0;
@@ -941,8 +884,7 @@ calc_work_area(struct xa_window *wind)
 		if ((rows = get_last_row(wind->widg_rows, (XAR_VERT | XAR_PM), XAR_START, false)))
 		{
 			wind->wa.y += (rows->r.y + rows->r.h);
-			wind->wa.h -= (rows->r.y + rows->r.h);
-			
+			wind->wa.h -= (rows->r.y + rows->r.h);	
 		}
 		else if (wind->frame >= 0 && wind->thinwork && wind->wa_frame)
 		{
@@ -966,26 +908,34 @@ calc_work_area(struct xa_window *wind)
 		if ((rows = get_last_row(wind->widg_rows, (XAR_VERT | XAR_PM), XAR_END, false)))
 			wind->wa.h -= rows->r.y;
 		else if (wind->frame >= 0 && wind->thinwork && wind->wa_frame)
-			wind->wa.h -= b_margin, wa_borders |= WAB_BOTTOM;
+		{
+			wind->wa.h -= b_margin;
+			wa_borders |= WAB_BOTTOM;
+		}
 
 		if ((rows = get_last_row(wind->widg_rows, (XAR_VERT | XAR_PM), (XAR_VERT | XAR_END), false)))
 			wind->wa.w -= rows->r.x;
 		else if (wind->frame >= 0 && wind->thinwork && wind->wa_frame)
-			wind->wa.w -= r_margin, wa_borders |= WAB_RIGHT;
-
+		{
+			wind->wa.w -= r_margin;
+			wa_borders |= WAB_RIGHT;
+		}
+		
 		if (wind->frame >= 0 && !wind->thinwork)
 		{
 			wind->wa.x += 2, wind->wa.y += 2;
 			wind->wa.w -= 4, wind->wa.h -= 4;
 		}
+
 		wind->wa_borders = wa_borders;
+
 	}
 
 	/* border displacement */
-	wind->bd.x = wind->rc.x - wind->wa.x;
-	wind->bd.y = wind->rc.y - wind->wa.y;
-	wind->bd.w = wind->rc.w - wind->wa.w;
-	wind->bd.h = wind->rc.h - wind->wa.h;
+	wind->bd.x = wind->r.x - wind->wa.x;
+	wind->bd.y = wind->r.y - wind->wa.y;
+	wind->bd.w = wind->r.w - wind->wa.w;
+	wind->bd.h = wind->r.h - wind->wa.h;
 
 	/* Add bd to toolbar->r to get window rectangle for create_window
 	 * Anyhow, always convenient, especially when snapping the workarea.
@@ -1041,7 +991,7 @@ free_xawidget_resources(struct xa_widget *widg)
 #endif
 	widg->stufftype	= 0;
 	widg->stuff   = NULL;
- 	widg->display = NULL;
+ 	widg->h.draw  = NULL;
 	widg->click   = NULL;
 	widg->dclick  = NULL;
 	widg->drag    = NULL;
@@ -1260,8 +1210,8 @@ rp_2_ap_row(struct xa_window *wind)
 		r.x += frame;
 		r.y += frame;
 		frame <<= 1;
-		r.w -= (frame + SHADOW_OFFSET);
-		r.h -= (frame + SHADOW_OFFSET);
+		r.w -= (frame + wind->x_shadow); //SHADOW_OFFSET);
+		r.h -= (frame + wind->y_shadow); //SHADOW_OFFSET);
 	}
 	
 	x2 = r.x + r.w;
@@ -1651,23 +1601,23 @@ position_widget(struct xa_window *wind, struct xa_widget *widg, void(*widg_size)
 static XA_WIDGET *
 make_widget(struct xa_window *wind,
 	    const XA_WIDGET_LOCATION *loc,
-	    DisplayWidget *disp,
+	    struct render_widget *rend, //DrawWidg *draw,
 	    WidgetBehaviour *click,
 	    WidgetBehaviour *drag,
-	    struct xa_client *owner,
-	    void (*widg_size)(struct xa_window *wind, struct xa_widget *widg))
+	    struct xa_client *owner
+	    /*void (*widg_size)(struct xa_window *wind, struct xa_widget *widg)*/)
 {
 	XA_WIDGET *widg = get_widget(wind, loc->n);
 
 	widg->owner	= owner;
-	widg->display	= disp;
+	widg->h.draw	= rend ? rend->draw : NULL;
 	widg->click	= click;
 	widg->drag	= drag;
 	widg->loc	= *loc;
 	widg->type	= loc->n;
 	widg->destruct	= loc->destruct;
 
-	position_widget(wind, widg, widg_size);
+	position_widget(wind, widg, rend ? rend->setsize : NULL);
 
 	return widg;
 }
@@ -1689,395 +1639,6 @@ iconify_grid(int i)
 	ic.y -= j*ic.h;
 
 	return ic;
-}
-/*
- * Draw a window widget
- */
- 
-static void
-draw_widg_box(short d, struct xa_wcol_inf *wcoli, short state, RECT *wr, RECT *anch)
-{
-	struct xa_wcol *wcol;
-	struct xa_wtexture *wext;
-	bool sel = state & OS_SELECTED;
-	short f = wcoli->flags, o = 0;
-	RECT r = *wr;
-
-	wr_mode(wcoli->wrm);
-	
-	if (sel)
-		wcol = &wcoli->s;
-	else
-		wcol = &wcoli->n;
-
-	wext = wcol->texture;
-
-	if (d)
-	{
-		r.x -= d;
-		r.y -= d;
-		r.w += d+d;
-		r.h += d+d;
-	}
-
-	if (f & WCOL_BOXED)
-	{
-		int i = wcol->box_th;
-		l_color(wcol->box_c);
-		while (i > 0)
-			gbox(o, &r), o--, i--;
-	}
-		
-	if (f & WCOL_DRAW3D)
-	{
-		if (sel)
-		{
-			tl_hook(o, &r, wcol->tlc);
-			br_hook(o, &r, wcol->brc);
-		}
-		else
-		{
-			br_hook(o, &r, wcol->brc);
-			tl_hook(o, &r, wcol->tlc);
-		}
-		o -= 1;
-	}
-
-	if (f & WCOL_DRAWBKG)
-	{
-		f_interior(wcol->i);
-		if (wcol->i > 1)
-			f_style(wcol->f);
-	
-		f_color(wcol->c);
-		gbar(o, &r);
-	}
-	
-	if (wext)
-	{
-		short pnt[8];
-		short x, y, w, h, sy, sh, dy, dh, width, height;
-		MFDB mscreen, *msrc;
-
-		mscreen.fd_addr = NULL;
-		msrc = wext->mfdb;
-
-		r.x -= o;
-		r.y -= o;
-		r.w += o + o;
-		r.h += o + o;
-		
-		x = (long)(r.x - anch->x) % msrc->fd_w;
-		w = msrc->fd_w - x;
-		sy = (long)(r.y - anch->y) % msrc->fd_h;
-		sh = msrc->fd_h - sy;
-		dy = r.y;
-		dh = r.h;
-		
-		width = r.w;
-		while (width > 0)
-		{
-			pnt[0] = x;
-			pnt[4] = r.x;
-			
-			width -= w;
-			if (width <= 0)
-				w += width;
-			else
-			{
-				r.x += w;
-				x = 0;
-			}
-			pnt[2] = pnt[0] + w - 1;
-			pnt[6] = pnt[4] + w - 1;
-			
-			y = sy;
-			h = sh;
-			r.y = dy;
-			r.h = dh;
-			height = r.h;
-			while (height > 0)
-			{
-				//pnt[0] = x;
-				pnt[1] = y;
-				//pnt[4] = r.x;
-				pnt[5] = r.y;
-				
-				height -= h;
-				if (height <= 0)
-					h += height;
-				else
-				{
-					r.y += h;
-					y = 0;
-				}
-				
-				//pnt[2] = x + w - 1;
-				pnt[3] = pnt[1] + h - 1;
-				
-				//pnt[6] = r.x + w - 1;
-				pnt[7] = pnt[5] + h - 1;
-
-				vro_cpyfm(C.vh, S_ONLY, pnt, msrc, &mscreen);
-				
-				h = msrc->fd_h;	
-			}
-			w = msrc->fd_w;
-		}
-	}	
-}
-
-	
-	
-static void
-draw_widget_text(struct xa_widget *widg, struct xa_wtxt_inf *wtxti, char *txt, short xoff, short yoff)
-{
-	wtxt_output(wtxti, txt, widg->state, &widg->ar, xoff, yoff);
-}
-
-static void
-draw_widg_icon(struct xa_widget *widg, XA_TREE *wt, short ind)
-{
-	short x, y, w, h;
-	OBJECT *ob = wt->tree + ind;
-
-	if (widg->state & OS_SELECTED)
-		ob->ob_state |= OS_SELECTED;
-	else
-		ob->ob_state &= ~OS_SELECTED;
-
-	x = widg->ar.x, y = widg->ar.y;
-
-	object_spec_wh(ob, &w, &h);
-	x += (widg->ar.w - w) >> 1;
-	y += (widg->ar.h - h) >> 1;
-	display_object(0, wt, (const RECT *)&C.global_clip, ind, x, y, 0);
-}
-
-void
-draw_window_borders(struct xa_window *wind)
-{
-	struct xa_wcol_inf *wci = &wind->colours->borders;
-	short size = wind->frame;
-	RECT r;
-
-	/* top-left box */
-	r.x = wind->r.x;
-	r.y = wind->r.y;
-	r.w = size;
-	r.h = size;
-	draw_widg_box(0, wci, 0, &r, &wind->r);
-
-	/* Left border */
-	r.y += size;
-	r.h = wind->r.h - (size + size + 2);
-	draw_widg_box(0, wci, 0, &r, &wind->r);
-
-	/* bottom-left box */
-	r.y = wind->r.y + wind->r.h - (size + 2);
-	r.h = size;
-	draw_widg_box(0, wci, 0, &r, &wind->r);
-
-	/* Bottom border */
-	r.x += size;
-	r.w = wind->r.w - (size + size + 2);
-	draw_widg_box(0, wci, 0, &r, &wind->r);
-
-	/* right-bottom box */
-	r.x = wind->r.x + wind->r.w - (size + 2);
-	r.w = size;
-	draw_widg_box(0, wci, 0, &r, &wind->r);
-
-	/* right border */
-	r.y = wind->r.y + size;
-	r.h = wind->r.h - (size + size + 2);
-	draw_widg_box(0, wci, 0, &r, &wind->r);
-
-	/* top-right box */
-	r.y = wind->r.y;
-	r.h = size;
-	draw_widg_box(0, wci, 0, &r, &wind->r);
-
-	/* Top border*/
-	r.x = wind->r.x + size;
-	r.w = wind->r.w - (size + size + 2);
-	draw_widg_box(0, wci, 0, &r, &wind->r);
-
-}
-
-static bool
-display_closer(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
-{
-	struct xa_wcol_inf *wci = &wind->colours->closer;
-
-	rp_2_ap(wind, widg, &widg->ar);	
-	draw_widg_box(0, wci, widg->state, &widg->ar, &wind->r);
-	draw_widg_icon(widg, &wind->widg_info, widg->loc.rsc_index);
-	return true;
-}
-static bool
-display_hider(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
-{
-	struct xa_wcol_inf *wci = &wind->colours->hider;
-	
-	rp_2_ap(wind, widg, &widg->ar);	
-	draw_widg_box(0, wci, widg->state, &widg->ar, &wind->r);
-	draw_widg_icon(widg, &wind->widg_info, widg->loc.rsc_index);
-	return true;
-}
-static bool
-display_fuller(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
-{
-	struct xa_wcol_inf *wci = &wind->colours->fuller;
-	rp_2_ap(wind, widg, &widg->ar);	
-	draw_widg_box(0, wci, widg->state, &widg->ar, &wind->r);
-	draw_widg_icon(widg, &wind->widg_info, widg->loc.rsc_index);
-	return true;
-}
-
-static bool
-display_iconifier(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
-{
-	struct xa_wcol_inf *wci = &wind->colours->iconifier;
-
-	rp_2_ap(wind, widg, &widg->ar);	
-	draw_widg_box(0, wci, widg->state, &widg->ar, &wind->r);
-	draw_widg_icon(widg, &wind->widg_info, widg->loc.rsc_index);
-	return true;
-}
-static bool
-display_sizer(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
-{
-	struct xa_wcol_inf *wci = &wind->colours->sizer;
-
-	rp_2_ap(wind, widg, &widg->ar);	
-	draw_widg_box(0, wci, widg->state, &widg->ar, &wind->r);
-	draw_widg_icon(widg, &wind->widg_info, widg->loc.rsc_index);
-	return true;
-}
-
-static bool
-display_uparrow(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
-{
-	struct xa_wcol_inf *wci = &wind->colours->uparrow;
-
-	rp_2_ap(wind, widg, &widg->ar);	
-	draw_widg_box(0, wci, widg->state, &widg->ar, &wind->r);
-	draw_widg_icon(widg, &wind->widg_info, widg->loc.rsc_index);
-	return true;
-}
-static bool
-display_dnarrow(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
-{
-	struct xa_wcol_inf *wci = &wind->colours->dnarrow;
-
-	rp_2_ap(wind, widg, &widg->ar);	
-	draw_widg_box(0, wci, widg->state, &widg->ar, &wind->r);
-	draw_widg_icon(widg, &wind->widg_info, widg->loc.rsc_index);
-	return true;
-}
-static bool
-display_lfarrow(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
-{
-	struct xa_wcol_inf *wci = &wind->colours->lfarrow;
-
-	rp_2_ap(wind, widg, &widg->ar);	
-	draw_widg_box(0, wci, widg->state, &widg->ar, &wind->r);
-	draw_widg_icon(widg, &wind->widg_info, widg->loc.rsc_index);
-	return true;
-}
-static bool
-display_rtarrow(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
-{
-	struct xa_wcol_inf *wci = &wind->colours->rtarrow;
-
-	rp_2_ap(wind, widg, &widg->ar);	
-	draw_widg_box(0, wci, widg->state, &widg->ar, &wind->r);
-	draw_widg_icon(widg, &wind->widg_info, widg->loc.rsc_index);
-	return true;
-}
-
-/*======================================================
-	TITLE WIDGET BEHAVIOUR
-========================================================*/
-static bool
-display_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
-{
-	struct options *o = &wind->owner->options;
-	struct xa_wcol_inf *wci = &wind->colours->title;
-	struct xa_wtxt_inf *wti = &wind->colours->title_txt;
-	char tn[256];
-	bool dial = (wind->dial & (created_for_FORM_DO|created_for_FMD_START)) != 0;
-
-	/* Convert relative coords and window location to absolute screen location */
-	rp_2_ap(wind, widg, &widg->ar);
-
-	if (MONO)
-	{
-		f_color(G_WHITE);
-		t_color(G_BLACK);
-#if 0
-		if (wind->nolist || is_topped(wind))
-			/* Highlight the title bar of the top window */
-			effect = cfg.topname;
-		else
-			effect = cfg.backname;
-#endif
-		/* with inside border */
-		p_gbar(0, &widg->ar);
-	}
-	else
-	{
-		/* no move, no 3D */
-		if (wind->active_widgets & MOVER)
-		{
-			draw_widg_box(0, wci, widg->state, &widg->ar, &wind->r);
-		}
-		else
-		{
-			l_color(screen.dial_colours.shadow_col);
-			p_gbar(0, &widg->ar);
-			f_color(wci->n.c);
-			gbar(-1, &widg->ar);
-		}
-	}
-
-	wr_mode(MD_TRANS);
-	
-	if (o->windowner && wind->owner && !wind->winob && !dial)
-	{
-		char *ow = NULL;
-
-		if (o->windowner == true)
-			ow = wind->owner->proc_name;
-		/* XXX this can't happen
-		else if (o->windowner == 2)
-			ow = wind->owner->name; */
-
-		if  (ow)
-		{
-			char ns[32];
-			strip_name(ns, ow);
-			if (*ns)
-				sprintf(tn, sizeof(tn), "(%s) %s", ns, widg->stuff);
-			else
-				ow = NULL;
-		}
-
-		if (!ow)
-			sprintf(tn, sizeof(tn), "(%d) %s", wind->owner->p->pid, widg->stuff);
-	}
-	else
-		strcpy(tn, widg->stuff);
-
-	
-	//cramped_name(tn, temp, widg->ar.w/screen.c_max_w);
-#if 0
-	if (dial)
-		effect |= ITALIC;
-#endif
-	draw_widget_text(widg, wti, tn, 4, 0);
-	return true;
 }
 /*
  * Click & drag on the title bar - does a move window
@@ -2294,25 +1855,6 @@ dclick_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, co
 	}
 	return false;
 }
-
-/*======================================================
-	INFO BAR WIDGET BEHAVIOUR
-========================================================*/
-static bool
-display_info(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
-{
-	//char t[160];
-	//short x, y;
-	struct xa_wcol_inf *wci = &wind->colours->info;
-	struct xa_wtxt_inf *wti = &wind->colours->info_txt;
-
-	/* Convert relative coords and window location to absolute screen location */
-	rp_2_ap(wind, widg, &widg->ar);
-	draw_widg_box(0, wci, widg->state, &widg->ar, &wind->r);
-	draw_widget_text(widg, wti, widg->stuff, 4, 0); 
-	return true;
-}
-
 /*======================================================
 	CLOSE WIDGET BEHAVIOUR
 ========================================================*/
@@ -2421,17 +1963,6 @@ click_hide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, cons
 	/* Redisplay.... (Unselect basically.) */
 	return true;
 }
-
-/* 
- * helper functions for sizing.
- */
-static bool
-display_border(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
-{
-	/* Dummy; no draw, no selection status. */
-	return true;
-}
-
 COMPASS
 compass(short d, short x, short y, RECT r)
 {
@@ -2773,117 +2304,6 @@ click_scroll(enum locks lock, struct xa_window *wind, struct xa_widget *widg, co
 		  this was necessary since the introducion of a mimimum size.
 	Optimization of drawing.
 ========================================================*/
-static bool
-display_unused(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
-{
-	struct xa_wcol_inf *wc = &wind->colours->win;
-	rp_2_ap(wind, widg, &widg->ar);
-	draw_widg_box(0, wc, 0, &widg->ar, &wind->r);
-	return true;
-}
-
-/* Display now includes the background */
-bool
-display_vslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
-{
-	int len, offs;
-	XA_SLIDER_WIDGET *sl = widg->stuff;
-	RECT cl;
-	struct xa_window_colours *wc = wind->colours;
-
-	sl->flags &= ~SLIDER_UPDATE;
-
-	/* Convert relative coords and window location to absolute screen location */
-	rp_2_ap(wind, widg, &widg->ar);
-
-	if (sl->length >= SL_RANGE)
-	{
-		sl->r.x = sl->r.y = 0;
-		sl->r.w = widg->ar.w;
-		sl->r.h = widg->ar.h;
-		cl = widg->ar;
-		draw_widg_box(0, &wc->slider, 0, &widg->ar, &widg->ar/*&wind->r*/);
-		return true;
-	}
-	len = sl_to_pix(widg->ar.h, sl->length);
-	if (len < cfg.widg_h - 3)
-		len = cfg.widg_h - 3;
-	
-	offs = widg->ar.y + sl_to_pix(widg->ar.h - len, sl->position);
-
-	if (offs < widg->ar.y)
-		offs = widg->ar.y;
-	if (offs + len > widg->ar.y + widg->ar.h)
-		len = widg->ar.y + widg->ar.h - offs;
-
-	draw_widg_box(0, &wc->slide, 0, &widg->ar, &widg->ar/*&wind->r*/);	
-	
-	sl->r.y = offs - widg->ar.y;
-	sl->r.h = len;
-	sl->r.w = widg->ar.w;
-
-	cl.x = sl->r.x + widg->ar.x;
-	cl.y = sl->r.y + widg->ar.y;
-	cl.w = sl->r.w;
-	cl.h = sl->r.h;
-	
-	draw_widg_box(-1, &wc->slider, widg->state, &cl, &cl/*&wind->r*/);
-	wr_mode(MD_TRANS);
-	return true;
-}
-
-/*======================================================
-	HORIZONTAL SLIDER WIDGET BEHAVIOUR
-	same as vertical, except for x,w & y,h
-========================================================*/
-
-static bool
-display_hslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
-{
-	int len, offs;
-	XA_SLIDER_WIDGET *sl = widg->stuff;
-	struct xa_window_colours *wc = wind->colours;
-	RECT cl;
-
-	sl->flags &= ~SLIDER_UPDATE;
-
-	rp_2_ap(wind, widg, &widg->ar);
-
-	if (sl->length >= SL_RANGE)
-	{
-		sl->r.x = sl->r.y = 0;
-		sl->r.w = widg->ar.w;
-		sl->r.h = widg->ar.h;
-		draw_widg_box(0, &wc->slider, 0, &widg->ar, &widg->ar/*&wind->r*/);
-		return true;
-	}
-	len = sl_to_pix(widg->ar.w, sl->length);
-	if (len < cfg.widg_w - 3)
-		len = cfg.widg_w - 3;
-	
-	offs = widg->ar.x + sl_to_pix(widg->ar.w - len, sl->position);
-
-	if (offs < widg->ar.x)
-		offs = widg->ar.x;
-	if (offs + len > widg->ar.x + widg->ar.w)
-		len = widg->ar.x + widg->ar.w - offs;
-	
-	draw_widg_box(0, &wc->slide, 0, &widg->ar, &widg->ar/*&wind->r*/);	
-	
-	sl->r.x = offs - widg->ar.x;
-	sl->r.w = len;
-	sl->r.h = widg->ar.h;
-
-	cl.x = sl->r.x + widg->ar.x;
-	cl.y = sl->r.y + widg->ar.y;
-	cl.w = sl->r.w;
-	cl.h = sl->r.h;
-	
-	draw_widg_box(-1, &wc->slider, widg->state, &cl, &cl/*&wind->r*/);
-	wr_mode(MD_TRANS);
-	return true;
-}
-
 /*
  * HR 050601: Heavily cleaned up the code.
  * As a reward the sliders do NOT behave sticky at the edges.
@@ -3042,7 +2462,7 @@ drag_hslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
  * Generic Object Tree Widget display
  */
 bool
-display_object_widget(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
+display_object_widget(struct xa_window *wind, struct xa_widget *widg)
 {
 	XA_TREE *wt = widg->stuff;
 	OBJECT *root;
@@ -3057,21 +2477,14 @@ display_object_widget(enum locks lock, struct xa_window *wind, struct xa_widget 
 	{
 		/* clip work area */
 		set_clip(&wind->wa);
-		draw_object_tree(lock, wt, NULL, widg->start, 100, NULL);
+		draw_object_tree(0, wt, NULL, widg->start, 100, NULL);
 		clear_clip();
 	}
 	else
-		draw_object_tree(lock, wt, NULL, widg->start, 100, NULL);
+		draw_object_tree(0, wt, NULL, widg->start, 100, NULL);
 
 	return true;
 }
-
-static bool
-display_arrow(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
-{
-	return true;
-}
-
 static inline void
 zwidg(struct xa_window *wind, short n, bool keepstuff)
 {
@@ -3161,137 +2574,6 @@ create_widg_layout(struct xa_window *wind, struct wdglo_desc *wld)
 	return ret;
 }
 
-static void
-set_title_size(struct xa_window *wind, struct xa_widget *widg)
-{
-	struct xa_wcol_inf *wci = &wind->ontop_cols->title;
-	struct xa_wtxt_inf *wti = &wind->ontop_cols->title_txt;
-	short w, h;
-
-	widg->r.w = cfg.widg_w;
-
-	t_font(wti->n.p, wti->n.f);
-	vst_effects(C.vh, wti->n.e);
-	t_extent("A", &w, &h);
-	vst_effects(C.vh, 0);
-	
-	if ((wci->flags & WCOL_DRAW3D) || (wti->flags & WTXT_DRAW3D))
-		h += 4;
-	if ((wci->flags & WCOL_ACT3D) || (wti->flags & WTXT_ACT3D))
-		h++;
-
-	widg->r.h = h;
-};
-static void
-set_info_size(struct xa_window *wind, struct xa_widget *widg)
-{
-	struct xa_wcol_inf *wci = &wind->ontop_cols->info;
-	struct xa_wtxt_inf *wti = &wind->ontop_cols->info_txt;
-	short w, h;
-
-	widg->r.w = cfg.widg_w;
-		
-	t_font(wti->n.p, wti->n.f);
-	vst_effects(C.vh, wti->n.e);
-	t_extent("A", &w, &h);
-	vst_effects(C.vh, 0);
-	
-	if ((wci->flags & WCOL_DRAW3D) || (wti->flags & WTXT_DRAW3D))
-		h += 4;
-	if ((wci->flags & WCOL_ACT3D) || (wti->flags & WTXT_ACT3D))
-		h++;
-
-	widg->r.h = h;
-};
-static void
-set_menu_size(struct xa_window *wind, struct xa_widget *widg)
-{
-#if 1
-	short w, h;
-	t_font(screen.standard_font_point, screen.standard_font_id);
-	vst_effects(C.vh, 0);
-	t_extent("A", &w, &h);
-	
-	widg->r.h = h + 1 + 1; //screen.standard_font_height + 1;
-	widg->r.w = wind->r.w;
-#else
-	widg->r.h = MENU_H + 1;
-	widg->r.w = wind->r.w;
-#endif
-
-}
-
-static void
-set_widg_size(struct xa_window *wind, struct xa_widget *widg, struct xa_wcol_inf *wci, short rsc_ind)
-{
-	short w, h, f;
-	OBJECT *ob = wind->widg_info.tree + rsc_ind;
-
-	f = wci->flags;
-
-	object_spec_wh(ob, &w, &h);
-
-	if (f & WCOL_DRAW3D)
-		h += 2, w += 2;
-	if (f & WCOL_BOXED)
-		h += 2, w += 2;
-
-	widg->r.w = w;
-	widg->r.h = h;
-}
-static void
-set_closer_size(struct xa_window *wind, struct xa_widget *widg)
-{
-	set_widg_size(wind, widg, &wind->ontop_cols->closer, widg->loc.rsc_index);
-}
-static void
-set_hider_size(struct xa_window *wind, struct xa_widget *widg)
-{
-	set_widg_size(wind, widg, &wind->ontop_cols->hider, widg->loc.rsc_index);
-}
-static void
-set_iconifier_size(struct xa_window *wind, struct xa_widget *widg)
-{
-	set_widg_size(wind, widg, &wind->ontop_cols->iconifier, widg->loc.rsc_index);
-}
-static void
-set_fuller_size(struct xa_window *wind, struct xa_widget *widg)
-{
-	set_widg_size(wind, widg, &wind->ontop_cols->fuller, widg->loc.rsc_index);
-}
-static void
-set_uparrow_size(struct xa_window *wind, struct xa_widget *widg)
-{
-	set_widg_size(wind, widg, &wind->ontop_cols->uparrow, widg->loc.rsc_index);
-}
-static void
-set_dnarrow_size(struct xa_window *wind, struct xa_widget *widg)
-{
-	set_widg_size(wind, widg, &wind->ontop_cols->dnarrow, widg->loc.rsc_index);
-}
-static void
-set_lfarrow_size(struct xa_window *wind, struct xa_widget *widg)
-{
-	set_widg_size(wind, widg, &wind->ontop_cols->lfarrow, widg->loc.rsc_index);
-}
-static void
-set_rtarrow_size(struct xa_window *wind, struct xa_widget *widg)
-{
-	set_widg_size(wind, widg, &wind->ontop_cols->rtarrow, widg->loc.rsc_index);
-}
-static void
-set_sizer_size(struct xa_window *wind, struct xa_widget *widg)
-{
-	set_widg_size(wind, widg, &wind->ontop_cols->sizer, widg->loc.rsc_index);
-}
-/*
- * The vertical slider must get its dimentions from the arrows
- */
-static void
-set_vslide_size(struct xa_window *wind, struct xa_widget *widg)
-{
-	set_widg_size(wind, widg, &wind->ontop_cols->uparrow, WIDG_UP);
-}
 
 /* 
  * Setup the required 'standard' widgets for a window. These are the ordinary GEM
@@ -3302,6 +2584,7 @@ void
 standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 {
 	XA_WIDGET *widg;
+	struct xa_widget_theme *theme = wind->widget_theme;
 	int bottom = 0, right = 0;
 	XA_WIND_ATTR old_tp = wind->active_widgets;
 	XA_WIND_ATTR utp;
@@ -3349,7 +2632,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 	if (tp & CLOSER)
 	{
 		DIAGS(("Make CLOSER"));
-		make_widget(wind, &stdl_close, display_closer, click_close, NULL, NULL, set_closer_size);
+		make_widget(wind, &stdl_close, &theme->w.closer, click_close, NULL, NULL);
 	}
 	else if (old_tp & CLOSER)
 	{
@@ -3360,7 +2643,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 	if (tp & FULLER)
 	{
 		DIAGS(("Make fuller"));
-		make_widget(wind, &stdl_full, display_fuller, click_full, NULL, NULL, set_fuller_size);
+		make_widget(wind, &stdl_full, &theme->w.fuller, click_full, NULL, NULL);
 	}
 	else if (old_tp & FULLER)
 	{
@@ -3371,7 +2654,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 	if (tp & ICONIFIER)
 	{
 		DIAGS(("Make iconifier"));
-		widg = make_widget(wind, &stdl_iconify, display_iconifier, click_iconify, NULL, NULL, set_iconifier_size);
+		widg = make_widget(wind, &stdl_iconify, &theme->w.iconifier, click_iconify, NULL, NULL);
 	}
 	else if (old_tp & ICONIFIER)
 	{
@@ -3382,7 +2665,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 	if (tp & HIDE)
 	{
 		DIAGS(("Make hider"));
-		widg = make_widget(wind, &stdl_hide, display_hider, click_hide, NULL, NULL, set_hider_size);
+		widg = make_widget(wind, &stdl_hide, &theme->w.hider, click_hide, NULL, NULL);
 	}
 	else if (old_tp & HIDE)
 		zwidg(wind, XAW_HIDE, keep_stuff);
@@ -3390,7 +2673,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 	if (tp & SIZER)
 	{
 		DIAGS(("Make sizer"));
-		make_widget(wind, &stdl_resize, display_sizer, NULL, drag_resize, NULL, set_sizer_size);
+		make_widget(wind, &stdl_resize, &theme->w.sizer, NULL, drag_resize, NULL);
 	}
 #if 0
 	else if (bottom && right)
@@ -3411,7 +2694,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
  		if (!(old_tp & BORDER))
  		{
 			DIAGS(("Make border"));
-			make_widget(wind, &stdl_border, display_border, drag_border, drag_border, NULL, NULL);
+			make_widget(wind, &stdl_border, &theme->w.border, drag_border, drag_border, NULL);
  		}
 #if GENERATE_DIAGS
  		else
@@ -3427,7 +2710,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 	if (tp & UPARROW)
 	{
 		DIAGS(("Make uparrow"));
-		widg = make_widget(wind, &stdl_uscroll, display_uparrow, click_scroll, click_scroll, NULL, set_uparrow_size);
+		widg = make_widget(wind, &stdl_uscroll, &theme->w.uparrow, click_scroll, click_scroll, NULL);
 		widg->dclick = click_scroll;
 		widg->arrowx = WA_UPLINE;
 		widg->xarrow = WA_DNLINE;
@@ -3438,7 +2721,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 		{
 			struct xa_widget *w;
 			DIAGS(("Make uppage"));
-			w = make_widget(wind, &stdl_upage, display_arrow, click_scroll, click_scroll, NULL, NULL);
+			w = make_widget(wind, &stdl_upage, NULL, click_scroll, click_scroll, NULL);
 			w->arrowx = WA_UPPAGE;
 			w->xarrow = WA_DNPAGE;
 			w->xlimit = SL_RANGE;
@@ -3461,7 +2744,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 	if (tp & DNARROW)
 	{
 		DIAGS(("Make dnarrow"));
-		widg = make_widget(wind, &stdl_dscroll, display_dnarrow, click_scroll, click_scroll, NULL, set_dnarrow_size);
+		widg = make_widget(wind, &stdl_dscroll, &theme->w.dnarrow, click_scroll, click_scroll, NULL);
 		widg->dclick = click_scroll;
 		widg->arrowx = WA_DNLINE;
 		widg->xarrow = WA_UPLINE;
@@ -3471,7 +2754,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 		{
 			struct xa_widget *w;
 			DIAGS(("Make vslide"));
-			w = make_widget(wind, &stdl_dpage, display_arrow, click_scroll, click_scroll, NULL, NULL);
+			w = make_widget(wind, &stdl_dpage, NULL, click_scroll, click_scroll, NULL);
 			w->arrowx = WA_DNPAGE;
 			w->xarrow = WA_UPPAGE;
 			w->limit = SL_RANGE;
@@ -3494,7 +2777,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 	if (tp & LFARROW)
 	{
 		DIAGS(("Make lfarrow"));
-		widg = make_widget(wind, &stdl_lscroll, display_lfarrow, click_scroll, click_scroll, NULL, set_lfarrow_size);
+		widg = make_widget(wind, &stdl_lscroll, &theme->w.lfarrow, click_scroll, click_scroll, NULL);
 		widg->dclick = click_scroll;
 		widg->arrowx = WA_LFLINE;
 		widg->xarrow = WA_RTLINE;
@@ -3504,7 +2787,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 		{
 			struct xa_widget *w;
 			DIAGS(("Make hslide (lfarrow)"));
-			w = make_widget(wind, &stdl_lpage, display_arrow, click_scroll, click_scroll, NULL, NULL);
+			w = make_widget(wind, &stdl_lpage, NULL, click_scroll, click_scroll, NULL);
 			w->arrowx = WA_LFPAGE;
 			w->xarrow = WA_RTPAGE;
 			w->xlimit = SL_RANGE;
@@ -3527,7 +2810,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 	if (tp & RTARROW)
 	{
 		DIAGS(("Make rtarrow"));
-		widg = make_widget(wind, &stdl_rscroll, display_rtarrow, click_scroll, click_scroll, NULL, set_rtarrow_size);
+		widg = make_widget(wind, &stdl_rscroll, &theme->w.rtarrow, click_scroll, click_scroll, NULL);
 		widg->dclick = click_scroll;
 		widg->arrowx = WA_RTLINE;
 		widg->xarrow = WA_LFLINE;
@@ -3537,7 +2820,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 		{
 			struct xa_widget *w;
 			DIAGS(("Make hslide (rtarrow)"));
-			w = make_widget(wind, &stdl_rpage, display_arrow, click_scroll, click_scroll, NULL, NULL);
+			w = make_widget(wind, &stdl_rpage, NULL, click_scroll, click_scroll, NULL);
 			w->arrowx = WA_RTPAGE;
 			w->xarrow = WA_LFPAGE;
 			w->limit = SL_RANGE;
@@ -3560,7 +2843,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 	if (tp & VSLIDE)
 	{
 		DIAGS(("Make VSLIDE"));
-		widg = make_widget(wind, &stdl_vslide, display_vslide, NULL, drag_vslide, NULL, set_vslide_size);
+		widg = make_widget(wind, &stdl_vslide, &theme->w.vslide, NULL, drag_vslide, NULL);
 		if (!keep_stuff)
 		{
 			XA_SLIDER_WIDGET *sl = kmalloc(sizeof(*sl));
@@ -3586,7 +2869,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 	if (tp & HSLIDE)
 	{
 		DIAGS(("Make HSLIDE"));
-		widg = make_widget(wind, &stdl_hslide, display_hslide, NULL, drag_hslide, NULL, NULL);
+		widg = make_widget(wind, &stdl_hslide, &theme->w.hslide, NULL, drag_hslide, NULL);
 		if (!keep_stuff)
 		{
 			XA_SLIDER_WIDGET *sl = kmalloc(sizeof(*sl));
@@ -3605,7 +2888,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 	if (tp & XaPOP) /* popups in a window */
 	{
 		DIAGS(("Make XaPOP"));
-		make_widget(wind, &stdl_pop, NULL, NULL, NULL, NULL, NULL);
+		make_widget(wind, &stdl_pop, NULL, NULL, NULL, NULL);
 	}
 	else if (old_tp & XaPOP)
 	{
@@ -3616,7 +2899,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 	if (tp & XaMENU)
 	{
 		DIAGS(("Make XaMENU"));
-		widg = make_widget(wind, &stdl_menu, NULL, NULL, NULL, NULL, set_menu_size);
+		widg = make_widget(wind, &stdl_menu, &theme->w.menu, NULL, NULL, NULL);
 	}
 	else if (old_tp & XaMENU)
 	{
@@ -3627,7 +2910,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 	if (tp & INFO)
 	{
 		DIAGS(("Make INFO"));
-		widg = make_widget(wind, &stdl_info, display_info, click_title, NULL, NULL, set_info_size);
+		widg = make_widget(wind, &stdl_info, &theme->w.info, click_title, NULL, NULL);
 		if (!keep_stuff)
 			/* Give the window a default info line until the client changes it */
 			widg->stuff = "Info Bar";
@@ -3641,7 +2924,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 	if (tp & NAME)
 	{
 		DIAGS(("Make NAME"));
-		widg = make_widget(wind, &stdl_title, display_title, click_title, drag_title, NULL, set_title_size);
+		widg = make_widget(wind, &stdl_title, &theme->w.title, click_title, drag_title, NULL);
 		widg->dclick = dclick_title;
 		if (widg->stuff == NULL && !keep_stuff)
 			/* Give the window a default title if not already set */
@@ -3680,7 +2963,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 					if (!((*wloc)->properties & WIP_ACTIVE) && (ytp = ((*wloc)->mask & xtp)) && !(ytp & tp))
 					{
 						//display("exterior widget %lx", ytp);
-						make_widget(wind, *wloc, display_unused, NULL, NULL, NULL, NULL);
+						make_widget(wind, *wloc, &theme->w.exterior, NULL, NULL, NULL);
 						xtp &= ~ytp;
 						wloc = stdl; //&stdl_close;
 					}
@@ -3698,7 +2981,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 }
 
 static bool
-display_toolbar(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
+display_toolbar(struct xa_window *wind, struct xa_widget *widg)
 {
 	XA_TREE *wt = widg->stuff;
 
@@ -3708,7 +2991,7 @@ display_toolbar(enum locks lock, struct xa_window *wind, struct xa_widget *widg)
 	DIAG((D_form,wind->owner,"display_object_widget(wind=%d), wt=%lx, e.obj=%d, e.pos=%d",
 		wind->handle, wt, wt->e.obj, wt->e.pos));
 
-	draw_object_tree(lock, wt, NULL, widg->start, 100, NULL);
+	draw_object_tree(0, wt, NULL, widg->start, 100, NULL);
 
 	return true;
 }
@@ -3732,7 +3015,7 @@ redraw_toolbar(enum locks lock, struct xa_window *wind, short item)
 		if (xa_rect_clip(&rl->r, &wind->wa, &r))
 		{
 			set_clip(&r);
-			widg->display(lock, wind, widg);
+			widg->h.draw(wind, widg);
 		}
 		rl = rl->next;
 	}
@@ -3790,15 +3073,15 @@ set_toolbar_handlers(const struct toolbar_handlers *th, struct xa_window *wind, 
 		else
 			widg->drag	= Click_windowed_form_do;
 		
-		if (th && th->display)
+		if (th && th->draw)
 		{
-			if ((long)th->display == -1L)
-				widg->display	= NULL;
+			if ((long)th->draw == -1L)
+				widg->h.draw	= NULL;
 			else
-				widg->display	= th->display;
+				widg->h.draw	= th->draw;
 		}
 		else
-			widg->display	= display_toolbar; //display_object_widget;
+			widg->h.draw	= display_toolbar; //display_object_widget;
 		
 		if (th && th->destruct)
 		{
@@ -3948,7 +3231,7 @@ remove_widget(enum locks lock, struct xa_window *wind, int tool)
 	{
 		widg->stufftype	= 0;
 		widg->stuff   = NULL;
- 		widg->display = NULL;
+ 		widg->h.draw = NULL;
 		widg->click   = NULL;
 		widg->dclick  = NULL;
 		widg->drag    = NULL;
@@ -4054,38 +3337,38 @@ checkif_do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, shor
 	short winstatus = w->window_status;
 	bool inside = false;
 
-	/* Scan through widgets to find the one we clicked on */
-	for (f = 0; f < XA_MAX_WIDGETS; f++)
+	if (m_inside(x, y, &w->r))
 	{
-		RECT r;
-
-		while (is_page(f))
-			f++;
-
-		widg = w->widgets + f;
-
-		if (!(winstatus & widg->loc.statusmask) && widg->display)	/* Is the widget in use? */
+		/* Scan through widgets to find the one we clicked on */
+		for (f = 0; f < XA_MAX_WIDGETS; f++)
 		{
-			//if (    widg->loc.mask         == 0		/* not maskable */
-			//    || (widg->loc.mask & mask) == 0)		/* masked */
-			if (widg->loc.properties & WIP_ACTIVE)
-			{
+			RECT r;
 
-				if (f != XAW_BORDER)			/* HR 280102: implement border sizing. */
-				{					/* Normal widgets */
-					rp_2_ap_cs(w, widg, &r);	/* Convert relative coords and window location to absolute screen location */
-					inside = m_inside(x, y, &r);
-				}
-				else
+			while (is_page(f))
+				f++;
+
+			widg = w->widgets + f;
+
+			if (!(winstatus & widg->loc.statusmask) && widg->h.draw)	/* Is the widget in use? */
+			{
+				if (widg->loc.properties & WIP_ACTIVE)
 				{
-					r = w->r;			/* Inside window and outside border area = border. */
-					inside = !m_inside(x, y, &w->ba);
-				}
-				if (inside)
-				{
-					if (ret)
-						*ret = widg;
-					return true;
+					if (f != XAW_BORDER)			/* HR 280102: implement border sizing. */
+					{					/* Normal widgets */
+						rp_2_ap_cs(w, widg, &r);	/* Convert relative coords and window location to absolute screen location */
+						inside = m_inside(x, y, &r);
+					}
+					else
+					{
+						r = w->r;			/* Inside window and outside border area = border. */
+						inside = !m_inside(x, y, &w->ba);
+					}
+					if (inside)
+					{
+						if (ret)
+							*ret = widg;
+						return true;
+					}
 				}
 			}
 		}
@@ -4105,6 +3388,9 @@ do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct
 	int f, clicks;
 	short winstatus = w->window_status;
 
+	if (!(m_inside(md->x, md->y, &w->r)))
+		return false;
+
 	clicks = md->clicks;
 	if (clicks > 2)
 		clicks = 2;
@@ -4120,10 +3406,8 @@ do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct
 
 		widg = w->widgets + f;
 
-		if (!(winstatus & widg->loc.statusmask) && widg->display)					/* Is the widget in use? */
+		if (!(winstatus & widg->loc.statusmask) && widg->h.draw)					/* Is the widget in use? */
 		{
-			//if (    widg->loc.mask         == 0		/* not maskable */
-			//    || (widg->loc.mask & mask) == 0)		/* masked */
 			if (widg->loc.properties & WIP_ACTIVE)
 			{
 				bool inside;
@@ -4184,7 +3468,7 @@ do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct
 						/*
 						 * Check if the widget has a dragger function if button still pressed
 						*/
-						if (b && widg->drag) //(widget_active.cb) && widg->drag) 
+						if (b && widg->drag) 
 						{
 							/* If the mouse button is still down
 							 * do a drag (if the widget has a drag
@@ -4203,7 +3487,7 @@ do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct
 								 * waiting for button release. Animate the widget clicked as mouse
 								 * moves on/off...
 								*/
-								short tx = rx, ty = ry; //tx = widget_active.nx, ty = widget_active.ny;
+								short tx = rx, ty = ry;
 								bool ins = 1;
 								check_mouse(w->owner, &b, 0, 0);
 								S.wm_count++;
@@ -4283,7 +3567,7 @@ do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct
 void
 redisplay_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, int state)
 {
-	if (widg->display)
+	if (widg->h.draw)
 	{
 		widg->state = state;
 
@@ -4292,7 +3576,7 @@ redisplay_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, int s
 		{
 			hidem();
 			/* Not on top, but visible */
-			widg->display(lock, wind, widg);
+			widg->h.draw(wind, widg);
 			showm();
 		}
 		else
@@ -4362,7 +3646,7 @@ wind_mshape(struct xa_window *wind, short x, short y)
 
 				checkif_do_widgets(0, wind, 0, x, y, &hwidg);
 		
-				if (hwidg && !hwidg->owner && hwidg->display)
+				if (hwidg && !hwidg->owner && hwidg->h.draw)
 				{
 					if (wind != C.hover_wind || hwidg != C.hover_widg)
 					{

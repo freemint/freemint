@@ -41,6 +41,7 @@ struct common C;
 struct shared S;
 
 struct xa_screen screen; /* The screen descriptor */
+struct xa_widget_theme default_widget_theme;
 
 short border_mouse[CDV] =
 {
