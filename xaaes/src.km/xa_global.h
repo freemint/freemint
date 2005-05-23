@@ -420,6 +420,7 @@ typedef struct
 extern struct xa_screen screen;
 #define MONO (screen.colours < 16)
 
+extern struct xa_widget_theme default_widget_theme;
 extern struct options default_options;
 extern struct options local_options;
 

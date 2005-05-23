@@ -308,7 +308,7 @@ form_button(XA_TREE *wt,
 				pinf->obnum = result.mn_item;
 			if (obnum > 0)
 				obtree[obnum].ob_state &= ~OS_CHECKED;
-			obj_change(wt, obj, state & ~OS_SELECTED, flags, redraw, clip, rl);
+			obj_change(wt, obj, 1, state & ~OS_SELECTED, flags, redraw, clip, rl);
 		}
 		else if (flags & OF_RBUTTON)
 		{
@@ -325,7 +325,7 @@ form_button(XA_TREE *wt,
 			else
 			{
 				DIAGS(("form_button: switch state"));
-				obj_change(wt, obj, state^OS_SELECTED, flags, redraw, clip, rl);
+				obj_change(wt, obj, 0, state^OS_SELECTED, flags, redraw, clip, rl);
 			}
 		}
 		state = obtree[obj].ob_state;	
@@ -873,7 +873,7 @@ dfwm_redraw(struct xa_window *wind, struct xa_widget *widg, struct widget_tree *
 		
 		rl = wind->rect_start;
 
-		if (widg->display && rl)
+		if (widg->h.draw && rl)
 		{
 			hidem();
 			while (rl)
@@ -885,13 +885,13 @@ dfwm_redraw(struct xa_window *wind, struct xa_widget *widg, struct widget_tree *
 						if (xa_rect_clip(clip, &dr, &dr))
 						{
 							set_clip(&dr);
-							widg->display(0, wind, widg);
+							widg->h.draw(wind, widg);
 						}
 					}
 					else
 					{
 						set_clip(&dr);
-						widg->display(0, wind, widg);
+						widg->h.draw(wind, widg);
 					}
 				}
 				rl = rl->next;

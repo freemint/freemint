@@ -289,11 +289,23 @@ button_event(enum locks lock, struct xa_client *client, const struct moose_data 
 	DIAG((D_button, NULL, " -=- md: clicks=%d, head=%lx, tail=%lx, end=%lx",
 		client->md_head->clicks, client->md_head, client->md_tail, client->md_end));
 
-	if (md->state && md->cstate && !exiting)
-		C.button_waiter = client;
-
 	if (!exiting)
+	{
 		add_client_md(client, md);
+		
+		/*
+		 * If this is a click-hold event, moose.adi will send a
+		 * released event later, and this event belongs to the
+		 * receiver of the click-hold.
+		 */
+		/*
+		 * If buttons not released when this packet delivered,
+		 * we need to route all packets with any buttons down to
+		 * the 'event owner'
+		 */
+		if (md->state && md->cstate)
+			C.button_waiter = client;
+	}
 
 	DIAG((D_button, NULL, " -=- md: clicks=%d, head=%lx, tail=%lx, end=%lx",
 		client->md_head->clicks, client->md_head, client->md_tail, client->md_end));
@@ -308,11 +320,6 @@ button_event(enum locks lock, struct xa_client *client, const struct moose_data 
 static inline void
 deliver_button_event(struct xa_window *wind, struct xa_client *target, const struct moose_data *md)
 {
-	/*
-	 * If this is a click-hold event, moose.adi will send a
-	 * released event later, and this event belongs to the
-	 * receiver of the click-hold.
-	 */
 	
 	if (wind && wind->owner != target)
 	{
@@ -334,15 +341,20 @@ dispatch_button_event(enum locks lock, struct xa_window *wind, const struct moos
 {
 	struct xa_client *target = wind->owner;
 
-	
+	/*
+	 * Right-button clicks or clicks on no-list windows or topped windows...
+	 */
 	if ((md->state & MBS_RIGHT) || wind->nolist || is_topped(wind) || wind->active_widgets & NO_TOPPED)
 	{
+		/*
+		 * Check if click on any windows gadgets, which is AES's task to handle
+		 */
 		if (checkif_do_widgets(lock, wind, 0, md->x, md->y, NULL))
 		{
 			DIAG((D_mouse, target, "XA_button_event: Send cXA_do_widgets to %s", target->name));
 			post_cevent(target, cXA_do_widgets, wind,NULL, 0,0, NULL,md);
 		}
-		else
+		else /* Just deliver the event ... */
 			deliver_button_event(wind, target, md);
 	}
 	else if (!is_topped(wind) && checkif_do_widgets(lock, wind, 0, md->x, md->y, NULL))
@@ -380,11 +392,9 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 		client = TAB_LIST_START->client;
 		if (!C.ce_menu_click && !(client->status & CS_EXITING))
 		{
-			//client = TAB_LIST_START->client;
 			C.ce_menu_click = client;
 			DIAG((D_mouse, client, "post button event (menu) to %s", client->name));
 			post_cevent(client, cXA_button_event, NULL,NULL, 0, 0, NULL, md);
-			//post_tpcevent(client, cXA_button_event, NULL,NULL, 0, 0, NULL, md);
 		}
 		return;
 	}
@@ -611,7 +621,6 @@ XA_wheel_event(enum locks lock, const struct moose_data *md)
 {
 	struct xa_window *wind;
 	struct xa_client *client = NULL, *locker = NULL;
-	//XA_WIDGET *widg;
 
 	DIAGS(("mouse wheel %d has wheeled %d (x=%d, y=%d)", md->state, md->clicks, md->x, md->y));
 

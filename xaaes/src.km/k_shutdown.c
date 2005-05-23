@@ -306,9 +306,6 @@ k_shutdown(void)
 			s_system(S_CTRLCACHE, sc, cm);
 		}
 
-	//	v_enter_cur(C.P_handle);	/* Ozk: Lets enter cursor mode */
-	//	v_clswk(C.P_handle);		/* Auto version must close the physical workstation */
-
 		display("\033e\033H");		/* Cursor enable, cursor home */
 	}
 	else
