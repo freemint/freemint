@@ -656,7 +656,7 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 			if (!isroot)
 				r = EPERM;
 			else
-				r = register_trap2(arg1, 0, 1, arg2);
+				r = register_trap2((long _cdecl(*)(void *))arg1, 0, 1, arg2);
 			break;
 		}
 #endif

@@ -100,7 +100,7 @@ L_no_profile:
 	subq.w	#0x01,vblcnt		// each fourth interrupt makes a "VBL"
 	bne.s	L_novbl
 	move.w	#0x0004,vblcnt
-
+	
 	tst.w	(0x059e).w
 	beq.s	L_short_1
 	clr.w	-(sp)		// set up a jump to VBL emulation
@@ -183,12 +183,12 @@ skip:	move.w	(0x0442).w,d0
 	move.l	TM_WHEN(a0),a1
 	sub.w	d0,a1
 	move.l	a1,TM_WHEN(a0)
-
 // keyboard autorepeat
 
-#ifndef NO_AKP_KEYBOARD
-	jsr	_autorepeat_timer	// in keyboard.c
-#endif
+//#ifndef NO_AKP_KEYBOARD
+// Ozk: Now keyboard delay/repeat is done via roottimeouts - see keyboard.c
+//	jsr	_autorepeat_timer	// in keyboard.c
+//#endif
 
 // "VBL" things go here (50 times per second at IPL 3)
 
