@@ -5,7 +5,7 @@
  * distribution.  See the file Changes.MH for a detailed log of changes.
  *
  *
- * Author: J”rg Westheide <joerg_westheide@su.maus.de>
+ * Author: Jrg Westheide <joerg_westheide@su.maus.de>
  * Started: 1999-04-11
  *
  * please send suggestions, patches or bug reports to me or
@@ -123,5 +123,7 @@ long	_cdecl	trap_14_emu(short fnum, ...);
 # define ROM_Bconmap(dev)				trap_14_emu(0x2c,(short)(dev))
 
 # define ROM_VsetScreen(lscrn,pscrn,rez,mode)	(void)	trap_14_emu(0x05,(long)(lscrn),(long)(pscrn),(short)(rez),(short)(mode))
+
+# define ROM_Kbrate(delay, rate)		(short) trap_14_emu(0x23,(short)(delay),(short)(rate))
 
 # endif /* _m68k_syscall_h */
