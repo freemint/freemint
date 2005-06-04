@@ -114,10 +114,10 @@ void ikbd_scan(ushort scancode, IOREC_T *rec);
 void autorepeat_timer(void);
 
 /* keyboard related BIOS system calls */
-struct keytab *sys_b_keytbl(char *unshift, char *shift, char *caps);
-void sys_b_bioskeys(void);
-ushort sys_b_kbrate(ushort del, ushort rep);
-KBDVEC *sys_b_kbdvbase(void);
+struct keytab * _cdecl sys_b_keytbl(char *unshift, char *shift, char *caps);
+void _cdecl sys_b_bioskeys(void);
+ushort _cdecl sys_b_kbrate(short del, short rep);
+KBDVEC * _cdecl sys_b_kbdvbase(void);
 
 /* internal support routines */
 struct keytab *get_keytab(void);

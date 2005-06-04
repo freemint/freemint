@@ -29,6 +29,17 @@
  * - translation tables in text form (avoid mktbl)
  * - three phases of translation (scancode -> unicode -> ISO)?
  *
+ * CHANGES:
+ * - Ozk: 4 June 2005.
+ *        Moved handling of keyboard delay/repeat from VBL interrupt to
+ *        roottimeouts.
+ *
+ * UNRESOLVED:
+ * - Ozk: Since we cannot completely take over the keyboard interrupt when
+ *   running on Milan hardware, and that Milan TOS calls ikbdsys vector
+ *   for each repeated key, we cannot control those things by ourselves.
+ *   So, we need to pass calls to Kbrate() to the ROM.
+ *
  */
 
 # ifndef NO_AKP_KEYBOARD
@@ -44,6 +55,7 @@
 # include "arch/init_intr.h"	/* syskey */
 # include "arch/timer.h"	/* get_hz_200() */
 # include "arch/tosbind.h"
+# include "arch/syscall.h"
 
 # include "bios.h"		/* kbshft, kintr, *keyrec, ...  */
 # include "biosfs.h"		/* struct tty */
@@ -147,11 +159,17 @@ static	ushort numidx;		/* index for the buffer above (0 = empty, 3 = full) */
 
 /* Variables that deal with keyboard autorepeat */
 static	uchar last_key[4];	/* last pressed key */
-static	short key_pressed;	/* flag for keys pressed/released (0 = no key is pressed) */
-static	ushort keydel;		/* keybard delay rate and keyboard repeat rate, respectively */
-static	ushort krpdel;
-static	ushort kdel, krep;	/* actual counters */
+//static	short key_pressed;	/* flag for keys pressed/released (0 = no key is pressed) */
+//static	ushort keydel;		/* keybard delay rate and keyboard repeat rate, respectively */
+//static	ushort krpdel;
+//static	ushort kdel, krep;	/* actual counters */
+
+static	long keydel_time;
+static	long keyrep_time;
 static	TIMEOUT *m_to;
+#ifndef MILAN
+static	TIMEOUT *k_to;
+#endif
 static	ushort mouse_step;
 
 /* keyboard table pointers */
@@ -371,6 +389,33 @@ set_mouse_timeout( void _cdecl (*f)(PROC *), short make, short delta, long to)
 	}
 }
 
+# ifndef MILAN
+static void put_key_into_buf(uchar c0, uchar c1, uchar c2, uchar c3);
+static void
+kbd_repeat(PROC *p, long arg)
+{
+	put_key_into_buf(last_key[0], last_key[1], last_key[2], last_key[3]);
+	k_to = addroottimeout(keyrep_time, (void _cdecl (*)(PROC *))kbd_repeat, 1);
+}
+
+static void
+set_keyrepeat_timeout(short make)
+{
+	if (make)
+	{
+		if (k_to)
+			cancelroottimeout(k_to);
+
+		k_to = addroottimeout(keydel_time, (void _cdecl(*)(PROC *))kbd_repeat, 1);
+	}
+	else if (k_to)
+	{
+		cancelroottimeout(k_to);
+		k_to = NULL;
+	}
+}
+# endif
+
 INLINE short
 generate_mouse_event(uchar shift, ushort scan, ushort make)
 {
@@ -549,48 +594,6 @@ put_key_into_buf(uchar c0, uchar c1, uchar c2, uchar c3)
 	}
 
 	kintr = 1;
-}
-
-static void
-key_repeat(void)
-{
-	put_key_into_buf(last_key[0], last_key[1], last_key[2], last_key[3]);
-}
-
-/* Called every 20ms */
-void
-autorepeat_timer(void)
-{
-	if (kbd_lock)
-		return;
-
-	/* conterm */
-	if ((*(char *)0x0484L & 0x02) == 0)
-		return;
-
-	if (key_pressed)
-	{
-		if (kdel)
-		{
-			kdel--;
-			if (kdel == 0)
-				key_repeat();
-		}
-		else
-		{
-			krep--;
-			if (krep == 0)
-			{
-				key_repeat();
-				krep = krpdel;
-			}
-		}
-	}
-	else
-	{
-		kdel = keydel;
-		krep = krpdel;
-	}
 }
 
 /* Translate scancode into ASCII according to the keyboard
@@ -1169,7 +1172,6 @@ ikbd_scan (ushort scancode, IOREC_T *rec)
 
 	/* All keys below undergo user-defined translation and autorepetition
 	 */
-	key_pressed = make;
 
 	/* Ordinary keyboard here.
 	 */
@@ -1178,6 +1180,9 @@ ikbd_scan (ushort scancode, IOREC_T *rec)
 		ascii = scan2asc((uchar)scan);
 		put_key_into_buf(shift, (uchar)scan, 0, ascii);
 	}
+#ifndef MILAN
+	set_keyrepeat_timeout(make);
+#endif
 }
 
 /* The XBIOS' Keytbl() function
@@ -1204,7 +1209,7 @@ ikbd_scan (ushort scancode, IOREC_T *rec)
 
 struct keytab *get_keytab(void) { return user_keytab; }
 
-struct keytab *
+struct keytab * _cdecl
 sys_b_keytbl(char *unshifted, char *shifted, char *caps)
 {
 	if ((long)unshifted > 0 || (long)shifted > 0 || (long)caps > 0)
@@ -1215,21 +1220,43 @@ sys_b_keytbl(char *unshifted, char *shifted, char *caps)
 	return user_keytab;
 }
 
-/* The XBIOS' Kbrate() function
+static void
+set_kbrate_ms(short delay, short rate)
+{
+	if (delay >= 0)
+		keydel_time = delay ? ((long)((long)(delay & 0x00ff) * 1000) / 50) : 20;
+
+	if (rate >= 0)
+		keyrep_time = rate ? ((long)((long)(rate & 0x00ff) * 1000) / 50) : 20;
+}
+	
+/*
+ * The XBIOS' Kbrate() function
  */
-ushort
-sys_b_kbrate(ushort delay, ushort rate)
+ushort _cdecl
+sys_b_kbrate(short delay, short rate)
 {
 	ushort ret;
+#ifdef MILAN
+	ushort mdelay, mrate;
+#endif
 
-	ret = keydel & 0x00ff;
+#ifdef MILAN
+	ret = mdelay = (unsigned short)((keydel_time * 50) / 1000) & 0x00ff;
+#else
+	ret = (unsigned short)((keydel_time * 50) / 1000) & 0x00ff;
+#endif
 	ret <<= 8;
-	ret |= (krpdel & 0x00ff);
+#ifdef MILAN
+	ret |= (mrate = (unsigned short)((keyrep_time * 50) / 1000) & 0x00ff);
+#else
+	ret |= (unsigned short)((keyrep_time * 50) / 1000) & 0x00ff;
+#endif	
+	set_kbrate_ms(delay, rate);
 
-	if (delay >= 0)
-		keydel = delay & 0x00ff;
-	if (rate >= 0)
-		krpdel = rate & 0x00ff;
+#ifdef MILAN
+	(void) ROM_Kbrate(mdelay, mrate);
+#endif
 
 	return ret;
 }
@@ -1247,7 +1274,7 @@ tbl_scan_fwd(uchar *tmp)
 	return ++tmp;		/* skip the ending NULL */
 }
 
-void
+void _cdecl
 sys_b_bioskeys(void)
 {
 	long akp_val = 0;
@@ -1312,7 +1339,7 @@ sys_b_bioskeys(void)
 }
 
 /* Kbdvbase() */
-KBDVEC *
+KBDVEC * _cdecl
 sys_b_kbdvbase(void)
 {
 	return syskey;
@@ -1657,15 +1684,14 @@ init_keybd(void)
 	TRACE(("%s(): BIOS keyboard table at 0x%08lx", __FUNCTION__, tos_keytab));
 
 # ifndef WITHOUT_TOS
-	delayrate = TRAP_Kbrate(-1, -1);
+	delayrate = TRAP_Kbrate(-1, -1);	
 # else
 	delayrate = 0x0f02;	/* this is what TRAP_Kbrate() normally returns */
 # endif
+	
+	set_kbrate_ms(delayrate >> 8, delayrate & 0x00ff);
 
-	keydel = kdel = delayrate >> 8;
-	krpdel = krep = delayrate & 0x00ff;
-
-	TRACE(("%s(): delay 0x%02x, rate 0x%02x", __FUNCTION__, keydel, krpdel));
+	TRACE(("%s(): delay 0x%04ld, rate 0x%04ld", __FUNCTION__, keydel_time, keyrep_time));
 	TRACE(("%s(): conterm 0x%02x", __FUNCTION__, (short)(*(char *)0x0484L)));
 
 	/* initialize internal table */
