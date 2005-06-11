@@ -20,6 +20,7 @@
 #include <sys/ioctl.h>
 #include <string.h>
 #include <limits.h>
+#include <stdio.h>
 
 #include "textwin.h"
 #include "event.h"
@@ -1424,7 +1425,7 @@ static bool text_type(WINDOW *w, short code, short shift)
 	}
 
 	/* Window scrolling like in Linux's console */
-	if (shift == 2) {				/* Shift pressed */
+	if (shift == 1 || shift == 2) {				/* Shift pressed */
 		if (code == 0x4900 || code == 0x4838)	/* PageUp or ArrowUp */
 		{
 			/* XXX: Is the 0x4900 really a _shifted_ PageUp scancode? */
