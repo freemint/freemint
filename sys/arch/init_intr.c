@@ -111,8 +111,8 @@ init_intr (void)
 # endif
 			new_xbra_install(&old_acia, 0x0118L, new_acia);
 		}
-# endif
 	}
+# endif
 
 	old_term = (long) TRAP_Setexc (0x102, -1UL);
 
