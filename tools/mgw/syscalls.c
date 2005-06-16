@@ -568,8 +568,8 @@ st_recvmsg (struct st_recvmsg_param p)
 	msg.msg_namelen = p.msg->msg_namelen;
 	msg.msg_iov = p.msg->msg_iov;
 	msg.msg_iovlen = p.msg->msg_iovlen;
-	msg.msg_accrights = p.msg->msg_accrights;
-	msg.msg_accrightslen = p.msg->msg_accrightslen;
+	msg.msg_control = p.msg->msg_accrights;
+	msg.msg_controllen = p.msg->msg_accrightslen;
 	
 	r = Frecvmsg (map_sfd (p.sfd), &msg, p.flags);
 	
@@ -634,8 +634,8 @@ st_sendmsg (struct st_sendmsg_param p)
 	msg.msg_namelen = p.msg->msg_namelen;
 	msg.msg_iov = p.msg->msg_iov;
 	msg.msg_iovlen = p.msg->msg_iovlen;
-	msg.msg_accrights = p.msg->msg_accrights;
-	msg.msg_accrightslen = p.msg->msg_accrightslen;
+	msg.msg_control = p.msg->msg_accrights;
+	msg.msg_controllen = p.msg->msg_accrightslen;
 	
 	r = Fsendmsg (map_sfd (p.sfd), &msg, p.flags);
 	
