@@ -116,8 +116,8 @@ main (void)
 		msg.msg_namelen = 0;
 		msg.msg_iov = iov;
 		msg.msg_iovlen = 3;
-		msg.msg_accrights = 0;
-		msg.msg_accrightslen = 0;
+		msg.msg_control = 0;
+		msg.msg_controllen = 0;
 
 		for (i=0; i<1000; ++i)
 		{
