@@ -550,7 +550,7 @@ XA_pdlg_do(enum locks lock, struct xa_client *client, AESPB *pb)
 		RECT or;
 		XA_WIND_ATTR tp = wind->active_widgets & ~STD_WIDGETS;
 
-		ob_area(obtree, 0, &or);
+		ob_rectangle(obtree, 0, &or);
 		center_rect(&or);
 
 		change_window_attribs(lock, client, wind, tp, true, or, NULL);
