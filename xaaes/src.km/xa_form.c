@@ -103,7 +103,7 @@ click_alert_widget(enum locks lock, struct xa_window *wind, struct xa_widget *wi
 	OBJECT *alert_form;
 	int sel_b = -1, f, b;
 
-	if (!wind->nolist && window_list != wind && !(wind->active_widgets & NO_TOPPED))
+	if (!wind->nolist && !is_topped(wind)) // !wind->nolist && window_list != wind && !(wind->active_widgets & NO_TOPPED))
 	{	
 		top_window(lock, true, false, wind, (void *)-1L);
 		return false;
@@ -120,7 +120,7 @@ click_alert_widget(enum locks lock, struct xa_window *wind, struct xa_widget *wi
 	    && f <  ALERT_BUT1 + ALERT_BUTTONS
 	    && !(alert_form[f].ob_flags & OF_HIDETREE))
 	{
-		b = obj_watch(wt, f, OS_SELECTED, 0, &wind->wa, wind->rect_start);
+		b = obj_watch(wt, wind->vdi_settings, f, OS_SELECTED, 0, &wind->wa, wind->rect_start);
 
 		if (b)
 			sel_b = f + 1 - ALERT_BUT1;
@@ -324,6 +324,7 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 	OBJECT *alert_form;
 	OBJECT *alert_icons;
 	ALERTXT *alertxt;
+	RECT or;
 	short x, w;
 	int n_lines, n_buttons, icon = 0, m_butt_w;
 	int retv = 1, b, f;
@@ -389,7 +390,7 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 	alert_icons = ResourceTree(C.Aes_rsc, ALERT_ICONS);
 
 	alert_form->ob_width = w;
-	form_center(alert_form, ICON_H);
+// 	form_center(alert_form, ICON_H);
 
 	{	/* HR */
 		int icons[7] = {ALR_IC_SYSTEM, ALR_IC_WARNING, ALR_IC_QUESTION, ALR_IC_STOP,
@@ -467,6 +468,9 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 		bool nolist = false;
 		RECT r;
 
+		ob_rectangle(alert_form, 0, &or);
+		center_rect(&or);
+		
 		if (C.update_lock && C.update_lock == client->p)
 		{
 			kind |= STORE_BACK;
@@ -480,7 +484,7 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 				kind, created_for_AES,
 				C.Aes->options.thinframe,
 				C.Aes->options.thinwork,
-				*(RECT *)&alert_form->ob_x);
+				*(RECT *)&or); //*(RECT *)&alert_form->ob_x);
 
 		alert_window = create_window(lock,
 					     do_winmesag,
@@ -497,7 +501,7 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 		{
 			widg = get_widget(alert_window, XAW_TOOLBAR);
 
-			wt = set_toolbar_widget(lock, alert_window, client, alert_form, -1, WIP_NOTEXT, NULL);
+			wt = set_toolbar_widget(lock, alert_window, client, alert_form, -1, WIP_NOTEXT, true, NULL, &or); //(RECT *)&alert_form->ob_x);
 			wt->extra = alertxt;
 			wt->flags |= WTF_XTRA_ALLOC | WTF_TREE_ALLOC;
 
@@ -507,8 +511,8 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 			 * we also need a keypress handler for the default button (if there)
 			 */
 			alert_window->keypress = key_alert_widget;
-			widg->click = click_alert_widget;
-			widg->drag  = click_alert_widget;
+			widg->m.click = click_alert_widget;
+			widg->m.drag  = click_alert_widget;
 
 			/* We won't get any redraw messages
 			 * - The widget handler will take care of it.
@@ -599,7 +603,7 @@ XA_form_keybd(enum locks lock, struct xa_client *client, AESPB *pb)
 		if (!wt)
 			wt = set_client_wt(client, obtree);
 
-		vq_key_s(C.vh, &ks);
+		vq_key_s(C.P_handle, &ks);
 		key.norm = normkey(ks, pb->intin[1]);
 		key.aes = pb->intin[1];
 		
@@ -607,6 +611,7 @@ XA_form_keybd(enum locks lock, struct xa_client *client, AESPB *pb)
 			wt, wt->owner, wt->tree, wt->owner->name));
 
 		pb->intout[0] = form_keyboard(wt,		/* widget tree	*/
+					      client->vdi_settings,
 					      pb->intin[0],	/* obj		*/
 					      &key,		/* rawkey	*/
 					      true,		/* redraw flag	*/
@@ -758,16 +763,9 @@ unsigned long
 XA_form_dial(enum locks lock, struct xa_client *client, AESPB *pb)
 {	
 	struct xa_window *wind;
-#if 0
-	XA_WIND_ATTR kind = NAME
-#if TEST_DIAL_SIZE
-			|HSLIDE|LFARROW|VSLIDE|UPARROW|SIZE
-#endif
-			;
-#endif
 
 	CONTROL(9,1,0)
-
+	
 	switch(pb->intin[0])
 	{
 	case FMD_START:
@@ -776,37 +774,6 @@ XA_form_dial(enum locks lock, struct xa_client *client, AESPB *pb)
 			pb->intin[5], pb->intin[6], pb->intin[7], pb->intin[8], c_owner(client)));
 
 		client->fmd.state = 1;
-#if 0
-		/* If the client forgot to FMD_FINISH, we dont create a new window, but
-		 * simply move the window to the new coordinates.
-		 */
-		if (client->fmd.wind)
-		{
-			RECT r;
-			wind = client->fmd.wind;
-			DIAG((D_form, client, "Already fmd.wind %d", wind->handle));
-
-			r = calc_window(lock, client, WC_BORDER,
-					kind,
-					C.Aes->options.thinframe,
-					C.Aes->options.thinwork,
-					*(const RECT *)&pb->intin[5]);
-			move_window(lock, wind, true, -1, r.x, r.y, r.w, r.h);
-		}
-		else
-		{
-			/* Provisions made in the case form_do isnt used by the
-			 * client at all. So the window creation is actually
-			 * postponed until form_do is called. If the client doesnt
-			 * call form_do, it probably has locked the screen already
-			 * and XaAES will behave just like any other AES.
-		         * As a benefit all handling of the 3 pixel gap caused by
-			 * form_center on OUTLINED forms can be removed.
-			 */
-			client->fmd.state = 1;
-			client->fmd.kind = kind;
-		}
-#endif
 		break;
 	}
 	case FMD_GROW:
@@ -990,6 +957,7 @@ XA_form_button(enum locks lock, struct xa_client *client, AESPB *pb)
 		 * during updates of the window.
 		 */
 		retv = form_button(wt,		/* widget tree	*/
+				   client->vdi_settings,
 				   obj,		/* obj idx	*/
 				   &md,		/* moose data	*/
 				   FBF_REDRAW,	/* redraw flag	*/

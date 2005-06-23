@@ -243,21 +243,21 @@ menu = leave
 # should be set active upon client termination.
 # next_active = client
 
-#
-# close_lastwind = 'client' or 'window' (default is 'window')
-#
-# Selects what to do when the last window of a client is closed.
-#
-#   Setting to 'client' will keep the application whose
-#   last window is closed as the top application. This prevents
-#   XaAES from putting infront another application when the last
-#   window of the application currently infront is closed.
-#
-#   Setting to 'window' will make XaAES put the application
-#   who owns the foremost window infront, making it active.
-#   This is the normal behaviour done by other AES's we thinks.
-#
-# close_lastwind = client
+#-
+#- close_lastwind = 'client' or 'window' (default is 'window')
+#-
+#- Selects what to do when the last window of a client is closed.
+#-
+#-   Setting to 'client' will keep the application whose
+#-   last window is closed as the top application. This prevents
+#-   XaAES from putting infront another application when the last
+#-   window of the application currently infront is closed.
+#-
+#-   Setting to 'window' will make XaAES put the application
+#-   who owns the foremost window infront, making it active.
+#-   This is the normal behaviour done by other AES's we thinks.
+#-
+#- close_lastwind = client
 
 #
 # app_options = appname,option1,option2,...
@@ -330,6 +330,18 @@ menu = leave
 #     is very handy for applications like Taskbar, etc, that one
 #     regards like "system apps".
 #
+# clwtna = <bool>         default: true
+# (Close Last Window Tops Next App)
+#     Selects what to do when the last window of a client is closed.
+#     Setting to 'false' will keep the application whose
+#     last window is closed as the top application. This prevents
+#     XaAES from putting infront another application when the last
+#     window of the application currently infront is closed.
+#     Setting to 'true' will make XaAES put the application
+#     who owns the foremost window infront, making it active.
+#     This is the normal behaviour done by other AES's we thinks.
+#
+#
 #
 # This default setting will make XaAES look closer to n.aes, but
 # will require precision when grabbing the window border for
@@ -352,9 +364,10 @@ menu = leave
 #
 #app_options = ataricq, thinwork = true, winframe_size = 1
 #
-# Taskbar needs this to prevent it from being hidden.
+# Taskbar needs this to prevent it from being hidden, and it closing
+# its only window should always top the previously topped app.
 #
-#app_options = taskbar, inhibit_hide = yes
+#app_options = taskbar, inhibit_hide = yes, clwtna = yes
 
 #
 # ctlalta_survivors = <list of app-names>

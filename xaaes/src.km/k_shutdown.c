@@ -83,9 +83,12 @@ k_shutdown(void)
 	DIAGS(("Cleaning up ready to exit...."));
 
 	/* send all applications AP_TERM */
+//	display("quit all apps..");
 	quit_all_apps(NOLOCKING, NULL);
+//	display("done");
 
 	/* wait until the clients are gone */
+//	display("wait for all clients to exit...");
 	DIAGS(("Wait for all clients to exit ..."));
 	for (;;)
 	{
@@ -127,6 +130,7 @@ k_shutdown(void)
 		j++;
 	}
 	DIAGS(("all clients have exited"));
+//	display("done");
 #if 0
 	DIAGS(("Freeing open windows"));
 	{
@@ -156,9 +160,18 @@ k_shutdown(void)
 	}
 #endif
 	DIAGS(("Removing all remaining windows"));
+//	display("remove all remaining windows");
+	
+// 	display("rootwind = %lx, open_windows = %lx, closed_window = %lx, deleted_window = %lx",
+// 		S.open_windows, S.closed_windows, S.deleted_windows);
+// 	display("open_nlwinds = %lx, closed_nlwinds = %lx, calc_windows  = %lx",
+// 		S.open_nlwindows, S.closed_nlwindows, S.calc_windows);
+
 	remove_all_windows(NOLOCKING, NULL);
+// 	display("freeing delayed delete windows");
 	DIAGS(("Freeing delayed deleted windows"));
 	do_delayed_delete_window(NOLOCKING);
+// 	display("closing and deleting root window");
 	DIAGS(("Closing and deleting root window"));
 	if (root_window)
 	{
@@ -167,10 +180,14 @@ k_shutdown(void)
 		root_window = NULL;
 	}
 
+// 	display("shutting down aes thread ..");
 	post_cevent(C.Aes, CE_at_terminate, NULL,NULL, 0,0, NULL,NULL);
 	yield();
+// 	display("..done");
+
 	
 	DIAGS(("Freeing Aes environment"));
+// 	display("freeing AES env");
 	if (C.env)
 	{
 		kfree(C.env);
@@ -178,31 +195,59 @@ k_shutdown(void)
 	}
 
 	DIAGS(("Freeing Aes resources"));
+// 	display("exit widget theme module");
+	/*
+	 * Exit the widget theme module
+	 */
+// 	display("freeing aes resources");
 
 	/* To demonstrate the working on multiple resources. */
-	FreeResources(C.Aes, 0);/* first: widgets */
-	FreeResources(C.Aes, 0);/* then: big resource */
-
+	while (C.Aes->resources)
+		FreeResources(C.Aes, NULL, NULL);
+#if 0
+	FreeResources(C.Aes, NULL, NULL);/* first: widgets */
+	FreeResources(C.Aes, NULL, NULL);/* then: big resource */
+	FreeResources(C.Aes, NULL, NULL);
+#endif
 	/* just to be sure */
 	if (C.button_waiter == C.Aes)
 		C.button_waiter = NULL;
 
+// 	display("cancel aesmsgs");
 	cancel_app_aesmsgs(C.Aes);
+// 	display("cancel cevents");
 	cancel_cevents(C.Aes);
+// 	display("cancel keyqueue");
 	cancel_keyqueue(C.Aes);
 
+// 	display("freeing attachements");
 	if (C.Aes->attach)
 		kfree(C.Aes->attach);
 
+// 	display("free clientlistname");
 	if (C.Aes->mnu_clientlistname)
 		kfree(C.Aes->mnu_clientlistname);
 
+// 	display("free wtlist");
+#if 1
+	if (C.Aes->xmwt && C.Aes->wtheme_handle)
+	{
+		exit_client_widget_theme(C.Aes);
+		(*C.Aes->xmwt->exit_module)(C.Aes->wtheme_handle);
+		C.Aes->wtheme_handle = NULL;
+	}
+#endif
+	/*
+	 * Freeing the WT list is the last thing to do. Modules may attach
+	 * widget_tree's to C.Aes
+	 */
 	free_wtlist(C.Aes);
+// 	display("free C.Aes");
 	kfree(C.Aes);
-
 	C.Aes = NULL;
 
 	DIAGS(("Freeing cnf stuff"));
+// 	display("freeing cnf stuff");
 	{
 		int i;
 
@@ -224,6 +269,7 @@ k_shutdown(void)
 		}
 	}
 
+// 	display("freeming options");
 	DIAGS(("Freeing Options"));
 	{
 		struct opt_list *op;
@@ -238,6 +284,7 @@ k_shutdown(void)
 		}
 	}
 
+// 	display("nkc_exit");
 	xaaes_kmalloc_leaks();
 	nkc_exit();
 
@@ -255,6 +302,7 @@ k_shutdown(void)
 	if (C.shutdown & REBOOT_SYSTEM)
 		DIAGS(("REBOOT_SYSTEM flag is set"));
 #endif
+// 	display("Bye!");
 
 	DIAGS(("Bye!"));
 	DIAGS((""));
@@ -275,11 +323,12 @@ k_shutdown(void)
 	}
 #endif
 
-	t_color(G_BLACK);
-	wr_mode(MD_REPLACE);
+	vst_color(C.P_handle, G_BLACK);
+	vswr_mode(C.P_handle, MD_REPLACE);
 
 	/* Shut down the VDI */
-	v_clrwk(C.vh);
+// 	display("clrwk");
+	v_clrwk(C.P_handle);
 
 	if (cfg.auto_program)
 	{
@@ -287,8 +336,8 @@ k_shutdown(void)
 		 * so I moved this to the end of the xaaes_shutdown,
 		 * AFTER closing the debugfile.
 		 */
-		v_clsvwk(C.vh);
-		
+		v_clsvwk(global_vdi_settings.handle);
+
 		/*
 		 * Ozk: We switch off instruction, data and branch caches (where available)
 		 *	while the VDI accesses the hardware. This fixes 'black-screen'
@@ -310,9 +359,10 @@ k_shutdown(void)
 	}
 	else
 	{
-		v_clsvwk(C.vh);
+		v_clsvwk(global_vdi_settings.handle);
 		mt_appl_exit(my_global_aes);
 	}
+// 	display("leaving k_shutdown");
 
 	DIAGS(("leaving k_shutdown()"));
 }

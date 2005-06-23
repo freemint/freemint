@@ -24,13 +24,442 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "xa_global.h"
+// #include "xa_global.h"
 
 #include "xa_types.h"
 #include "draw_obj.h"
 #include "obtree.h"
 #include "xaaeswdg.h"
 #include "win_draw.h"
+
+#define MONO (scrninf->colours < 16)
+
+static const struct xa_module_api *api;
+static const struct xa_vdi_api *v_api;
+static const struct xa_screen *scrninf;
+
+static struct widget_theme *current_theme;
+static short widg_w;
+static short widg_h;
+
+
+struct module
+{
+	struct widget_tree wwt;
+	struct xa_data_hdr *allocs;
+};
+
+static	WidgGemColor	get_wcol, set_wcol;
+
+static	DrawWidg	d_unused, d_borders, d_title, d_closer, d_fuller, d_info,
+			d_sizer, d_uparrow, d_dnarrow, d_vslide,
+			d_lfarrow, d_rtarrow, d_hslide, d_iconifier, d_hider;
+
+static	SetWidgSize	s_title_size, s_closer_size, s_fuller_size, s_info_size,
+			s_sizer_size, s_uparrow_size, s_dnarrow_size, s_vslide_size,
+			s_lfarrow_size, s_rtarrow_size, s_hslide_size,
+			s_iconifier_size, s_hider_size, s_menu_size;
+
+
+
+struct nwidget_row def_layout[];
+
+static XA_WIND_ATTR name_dep[] =
+{
+	(CLOSER|FULLER|ICONIFIER|HIDE), -1,
+	0
+};
+static XA_WIND_ATTR sizer_dep[] =
+{
+	(UPARROW|DNARROW|VSLIDE), (LFARROW|RTARROW|HSLIDE),
+	0
+};
+static XA_WIND_ATTR vslide_dep[] =
+{
+	(UPARROW|DNARROW|SIZER), -1,
+	0
+};
+static XA_WIND_ATTR hslide_dep[] =
+{
+	(LFARROW|RTARROW), -1,
+	0
+};
+static struct widget_theme def_theme = 
+{
+	{ 0 },		/* xa_data_hdr */
+	0L,		/* Links */
+	
+	&def_layout[0],
+
+	get_wcol,
+	set_wcol,
+
+	{ 0,		NULL,		0,		0,			d_unused, NULL},			/* exterior		*/
+	{ 0,		NULL,		XAW_BORDER,	0,			d_borders, NULL},			/* border		*/
+	{ NAME,		name_dep,	XAW_TITLE,	LT | R_VARIABLE,	d_title, s_title_size},			/* title		*/
+	{ CLOSER,	NULL,		XAW_CLOSE,	LT,			d_closer, s_closer_size},		/* closer		*/
+	{ FULLER,	NULL,		XAW_FULL,	RT,			d_fuller, s_fuller_size},		/* fuller		*/
+	{ INFO,		NULL,		XAW_INFO,	LT | R_VARIABLE,	d_info, s_info_size},			/* info line		*/
+	{ SIZER,	sizer_dep,	XAW_RESIZE,	RB,			d_sizer, s_sizer_size},			/* resizer		*/
+	{ UPARROW,	NULL,		XAW_UPLN,	LT,			d_uparrow, s_uparrow_size},		/* up arrow		*/
+	{ DNARROW,	NULL,		XAW_DNLN,	RT,			d_dnarrow, s_dnarrow_size},		/* down arrow		*/
+	{ VSLIDE,	vslide_dep,	XAW_VSLIDE,	LT | R_VARIABLE,	d_vslide, s_vslide_size},		/* vertical slider	*/
+	{ LFARROW,	NULL,		XAW_LFLN,	LT,			d_lfarrow, s_lfarrow_size},		/* left arrow		*/
+	{ RTARROW,	NULL,		XAW_RTLN,	RT,			d_rtarrow, s_rtarrow_size},		/* right arrow		*/
+	{ HSLIDE,	hslide_dep,	XAW_HSLIDE,	LT | R_VARIABLE,	d_hslide, s_hslide_size},		/* horizontal slider	*/
+	{ ICONIFIER,	NULL,		XAW_ICONIFY,	RT,			d_iconifier, s_iconifier_size},		/* iconifier		*/
+	{ HIDER,	NULL,		XAW_HIDE,	RT,			d_hider, s_hider_size},			/* hider		*/
+	{ 0,		NULL,		XAW_TOOLBAR,	0,			NULL, NULL},				/* Toolbar		*/
+	{ XaMENU,	NULL,		XAW_MENU,	LT | R_VARIABLE,	NULL, s_menu_size },			/* menu bar		*/
+
+	NULL,								/* handle (module ptr)	*/
+};
+
+struct render_widget *row1[] =
+{
+	&def_theme.closer,
+	&def_theme.title,
+	&def_theme.hider,
+	&def_theme.iconifier,
+	&def_theme.fuller,
+	NULL,
+};
+struct render_widget *row2[] =
+{
+	&def_theme.info,
+	NULL,
+};
+struct render_widget *row3[] =
+{
+	&def_theme.menu,
+	NULL,
+};
+struct render_widget *row4[] =
+{
+	&def_theme.uparrow,
+	&def_theme.vslide,
+	&def_theme.dnarrow,
+	&def_theme.sizer,
+	NULL,
+};
+struct render_widget *row5[] =
+{
+	&def_theme.lfarrow,
+	&def_theme.hslide,
+	&def_theme.rtarrow,
+	NULL,
+};
+
+struct nwidget_row def_layout[] =
+{
+	{(XAR_START),			(NAME | CLOSER | FULLER | ICONIFIER | HIDE), row1},
+	{(XAR_START),			INFO, row2},
+	{(XAR_START),			XaMENU, row3},
+	{(XAR_END | XAR_VERT),		(UPARROW | VSLIDE | DNARROW | SIZER), row4},
+	{(XAR_END),			(LFARROW | HSLIDE | RTARROW), row5},
+	{0, -1, NULL},
+};
+
+static struct widget_theme *
+duplicate_theme(struct widget_theme *theme)
+{
+	struct widget_theme *new_theme;
+	struct nwidget_row *rows, *new_rows;
+	struct render_widget **wr, **new_wr;
+	long n_rows = 1, n_widgets = 0, len;
+
+	/*
+	 * Count rows and widgets
+	 */
+	rows = theme->layout;
+	
+	while (rows->tp_mask != -1)
+	{
+		if ((wr = rows->w))
+		{
+			while (*wr)
+			{
+				n_widgets++;
+				wr++;
+			}
+		}
+		n_rows++;
+		rows++;
+	}
+
+	n_widgets += n_rows;	/* Each array of render_widget's have a NULL terminator */
+
+	len = ((sizeof(wr) * n_widgets)) + sizeof(*new_theme) + ((sizeof(*rows) * n_rows));
+
+	new_theme = (*api->kmalloc)(len);
+	
+	if (new_theme)
+	{
+		*new_theme = *theme;
+		new_rows 	= (struct nwidget_row *)    ((long)new_theme + sizeof(struct widget_theme));
+		new_wr 		= (struct render_widget **) ((long)new_rows  + (sizeof(struct nwidget_row) * n_rows));
+
+		new_theme->layout = new_rows;
+		rows = theme->layout;
+		
+		while (rows->tp_mask != -1)
+		{
+			XA_WIND_ATTR utp, ntp;
+
+			*new_rows = *rows;
+
+			wr = rows->w;
+			new_rows->w = new_wr;
+			utp = rows->tp_mask;
+			ntp = 0;
+			while (utp && *wr)
+			{
+				if (utp & (*wr)->tp)
+				{
+					*new_wr = (struct render_widget *)((long)new_theme + ((long)*wr - (long)theme));
+					utp &= ~((*wr)->tp);
+					ntp |= (*wr)->tp;
+					new_wr++;
+				}
+				wr++;
+			}
+			new_rows->tp_mask = ntp;
+			*new_wr++ = NULL;
+			rows++;
+			new_rows++;
+		}
+		*new_rows = *rows;
+	}
+	return new_theme;
+}
+
+/*
+ * Called by delete_xa_data()
+ */
+static void _cdecl
+delete_theme(void *_theme)
+{
+	(*api->kfree)(_theme);
+}
+
+/*
+ * Private structure holding color information. This structure is accessible
+ * to the widget-drawer functions via the 'colours', 'ontop_cols' and 'untop_cols'
+ * elements of xa_window structure.
+ */
+struct window_colours
+{
+	struct xa_data_hdr	h;
+	long			links;
+	
+	short 			waframe_col;
+	short 			frame_col;
+
+	struct xa_wcol_inf	win;
+	struct xa_wcol_inf	borders;
+
+	struct xa_wcol_inf	slider;
+	struct xa_wcol_inf	slide;
+
+	struct xa_wcol_inf	title;
+
+	struct xa_wcol_inf	info;
+
+	struct xa_wcol_inf	closer;
+	struct xa_wcol_inf	hider;
+	struct xa_wcol_inf	iconifier;
+	struct xa_wcol_inf	fuller;	
+	struct xa_wcol_inf	sizer;
+	struct xa_wcol_inf	uparrow;
+	struct xa_wcol_inf	dnarrow;
+	struct xa_wcol_inf	lfarrow;
+	struct xa_wcol_inf	rtarrow;
+
+	struct xa_wtxt_inf	title_txt;
+	struct xa_wtxt_inf	info_txt;
+};
+
+struct window_colours def_otop_cols =
+{
+ { 0 },	0L,	/* data header, links */
+
+ G_LBLACK, /* window workarea frame color */
+ G_LBLACK, /* window frame color */
+/*          flags                        wrmode      color       fill    fill    box       box        tl      br		*/
+/*                                                             interior  style  color    thickness  colour  colour		*/
+ { WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},
+                                                    {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},
+                                                    {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* window areas not covered by a widget/ unused widgets*/
+ 
+  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_CYAN,   FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_CYAN, NULL},	/* Normal */
+                                                    {G_CYAN,   FIS_SOLID,   0,   G_BLACK,     1,    G_CYAN, G_WHITE, NULL},		/* Selected */
+                                                    {G_BLUE,   FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}},	/* Highlighted */
+/* Slider */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
+                                                    {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL},	/* Selected */
+                                                    {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL}}, /* Highlighted */
+ /* Slide */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_LBLACK, FIS_SOLID,   0,   G_LBLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LBLACK, FIS_SOLID,   0,   G_LBLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_LBLACK, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+ /* Title */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_LWHITE, FIS_SOLID,   0,   G_LBLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LWHITE, FIS_SOLID,   0,   G_LBLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+ /* Info */
+ { WCOL_DRAW3D|WCOL_DRAWBKG,		MD_REPLACE, {G_WHITE,  FIS_SOLID,   0,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL},	/* Normal */
+                                                    {G_WHITE,  FIS_SOLID,   0,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL},	/* Selected */
+                                                    {G_WHITE,  FIS_SOLID,   0,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL}}, /* Highlighted */
+ /* Closer */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+ /* Hider */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+ /* Iconifier */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+ /* Fuller */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+ /* Sizer */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+ /* UP Arrow */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE, 
+                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+ /* DN Arrow */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+ /* LF Arrow */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+ /* RT Arrow */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+
+/* flags	                     fontID	    size	   Effect      forground       background	*/
+/*								                  col	          col		*/
+ /* Title text-info */
+ { WTXT_DRAW3D|WTXT_ACT3D|WTXT_CENTER,
+                                      {1,            10,	        0,	G_BLACK,	G_WHITE },	/* Normal */
+                                      {1,            10,	        0,	G_BLACK,	G_WHITE },	/* Selected */
+                                      {1,            10,	        0,	G_BLACK,	G_WHITE }},	/* Highlighted */
+ /* Info text-info */
+ { 0,		      		      {1,	       9,		0,	G_BLACK,	G_WHITE },	/* Normal */
+                                      {1,	       9,		0,	G_BLACK,	G_WHITE },	/* Selected */
+                                      {1,	       9,		0,	G_BLACK,	G_WHITE }},	/* Highlighted */
+
+};
+
+struct window_colours def_utop_cols =
+{
+ { 0 },	0L,	/* data header */
+ 
+ G_LBLACK,	/* Window work area frame color */
+ G_LBLACK,	/* window frame color */
+/*          flags                        wrmode      color       fill    fill    box       box        tl      br		*/
+/*                                                             interior  style  color    thickness  colour  colour		*/
+ /* Window color (when unused window exterior is drawn) */
+ { WCOL_DRAWBKG|WCOL_BOXED,                         MD_REPLACE,
+                                                    {G_LWHITE, FIS_SOLID,   0,   G_LBLACK,     1,    G_WHITE, G_LBLACK, NULL},
+                                                    {G_LWHITE, FIS_SOLID,   0,   G_LBLACK,     1,    G_WHITE, G_LBLACK, NULL},
+                                                    {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}},	/* window areas not covered by a widget/ unused widgets*/
+ 
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_LWHITE, NULL},	/* Normal */
+                                                    {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_LWHITE, G_WHITE,  NULL},	/* Selected */
+                                                    {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL}},	/* Highlighted */
+ /* Slider */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL},	/* Selected */
+                                                    {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL}},	/* Highlighted */
+ /* Slide */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LBLACK, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LBLACK, FIS_SOLID,   0,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_LBLACK, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+ /* Title */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+ /* Info */
+ { WCOL_DRAWBKG,			MD_REPLACE, {G_LWHITE, FIS_SOLID,   0,   G_LBLACK,    1,    G_LBLACK,G_BLACK, NULL},	/* Normal */
+                                                    {G_LWHITE, FIS_SOLID,   0,   G_LBLACK,    1,    G_LBLACK,G_BLACK, NULL},	/* Selected */
+                                                    {G_WHITE,  FIS_SOLID,   0,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL}}, /* Highlighted */
+ /* Closer */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+ /* Hider */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+ /* Iconifier */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+ /* Fuller */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+ /* Sizer */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+ /* UP Arrow */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+ /* DN Arrow */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+ /* LF Arrow */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+ /* RT Arrow */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+
+/* flags	                     fontID	    size	   Effect      forground       background	*/
+/*								                  col	          col		*/
+ /* Title text-info */
+ { WTXT_DRAW3D|WTXT_ACT3D|WTXT_CENTER,
+                                      {1,            10,	        0,	G_LBLACK,	G_WHITE },	/* Normal */
+                                      {1,            10,	        0,	G_LBLACK,	G_WHITE },	/* Selected */
+                                      {1,            10,	        0,	G_BLACK,	G_WHITE }},	/* Highlighted */
+ /* Info text-info */
+ { 0,		      		      {1,	       9,		0,	G_LBLACK,	G_WHITE },	/* Normal */
+                                      {1,	       9,		0,	G_LBLACK,	G_WHITE },	/* Selected */
+                                      {1,	       9,		0,	G_BLACK,	G_WHITE }},	/* Highlighted */
+
+};
+
 /*
  * Draw a window widget
  */
@@ -55,7 +484,7 @@ sl_2_pix(long s, long p)
 }
 
 static void
-draw_widg_box(short d, struct xa_wcol_inf *wcoli, short state, RECT *wr, RECT *anch)
+draw_widg_box(struct xa_vdi_settings *v, short d, struct xa_wcol_inf *wcoli, short state, RECT *wr, RECT *anch)
 {
 	struct xa_wcol *wcol;
 	struct xa_wtexture *wext;
@@ -63,7 +492,7 @@ draw_widg_box(short d, struct xa_wcol_inf *wcoli, short state, RECT *wr, RECT *a
 	short f = wcoli->flags, o = 0;
 	RECT r = *wr;
 
-	wr_mode(wcoli->wrm);
+	(*v->api->wr_mode)(v, wcoli->wrm);
 	
 	if (sel)
 		wcol = &wcoli->s;
@@ -83,34 +512,34 @@ draw_widg_box(short d, struct xa_wcol_inf *wcoli, short state, RECT *wr, RECT *a
 	if (f & WCOL_BOXED)
 	{
 		int i = wcol->box_th;
-		l_color(wcol->box_c);
+		(*v->api->l_color)(v, wcol->box_c);
 		while (i > 0)
-			gbox(o, &r), o--, i--;
+			(*v->api->gbox)(v, o, &r), o--, i--;
 	}
 		
 	if (f & WCOL_DRAW3D)
 	{
 		if (sel)
 		{
-			tl_hook(o, &r, wcol->tlc);
-			br_hook(o, &r, wcol->brc);
+			(*v->api->tl_hook)(v, o, &r, wcol->tlc);
+			(*v->api->br_hook)(v, o, &r, wcol->brc);
 		}
 		else
 		{
-			br_hook(o, &r, wcol->brc);
-			tl_hook(o, &r, wcol->tlc);
+			(*v->api->br_hook)(v, o, &r, wcol->brc);
+			(*v->api->tl_hook)(v, o, &r, wcol->tlc);
 		}
 		o -= 1;
 	}
 
 	if (f & WCOL_DRAWBKG)
 	{
-		f_interior(wcol->i);
+		(*v->api->f_interior)(v, wcol->i);
 		if (wcol->i > 1)
-			f_style(wcol->f);
+			(*v->api->f_style)(v, wcol->f);
 	
-		f_color(wcol->c);
-		gbar(o, &r);
+		(*v->api->f_color)(v, wcol->c);
+		(*v->api->gbar)(v, o, &r);
 	}
 	
 	if (wext)
@@ -178,7 +607,7 @@ draw_widg_box(short d, struct xa_wcol_inf *wcoli, short state, RECT *wr, RECT *a
 				//pnt[6] = r.x + w - 1;
 				pnt[7] = pnt[5] + h - 1;
 
-				vro_cpyfm(C.vh, S_ONLY, pnt, msrc, &mscreen);
+				vro_cpyfm(v->handle, S_ONLY, pnt, msrc, &mscreen);
 				
 				h = msrc->fd_h;	
 			}
@@ -188,13 +617,13 @@ draw_widg_box(short d, struct xa_wcol_inf *wcoli, short state, RECT *wr, RECT *a
 }
 
 static void
-draw_widget_text(struct xa_widget *widg, struct xa_wtxt_inf *wtxti, char *txt, short xoff, short yoff)
+draw_widget_text(struct xa_vdi_settings *v, struct xa_widget *widg, struct xa_wtxt_inf *wtxti, char *txt, short xoff, short yoff)
 {
-	wtxt_output(wtxti, txt, widg->state, &widg->ar, xoff, yoff);
+	(*v->api->wtxt_output)(v, wtxti, txt, widg->state, &widg->ar, xoff, yoff);
 }
 
 static void
-draw_widg_icon(struct xa_widget *widg, XA_TREE *wt, short ind)
+draw_widg_icon(struct xa_vdi_settings *v, struct xa_widget *widg, XA_TREE *wt, short ind)
 {
 	short x, y, w, h;
 	OBJECT *ob = wt->tree + ind;
@@ -206,33 +635,26 @@ draw_widg_icon(struct xa_widget *widg, XA_TREE *wt, short ind)
 
 	x = widg->ar.x, y = widg->ar.y;
 
-	object_spec_wh(ob, &w, &h);
+	(*api->object_spec_wh)(ob, &w, &h);
 	x += (widg->ar.w - w) >> 1;
 	y += (widg->ar.h - h) >> 1;
-	display_object(0, wt, (const RECT *)&C.global_clip, ind, x, y, 0);
+	display_object(0, wt, v, ind, x, y, 0);
 }
 
-static bool
-d_unused(struct xa_window *wind, struct xa_widget *widg)
+static bool _cdecl
+d_unused(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 {
-	struct xa_wcol_inf *wc = &wind->colours->win;
-	(*wind->widget_theme->rp2ap)(wind, widg, &widg->ar);
-	//rp_2_ap(wind, widg, &widg->ar);
-	draw_widg_box(0, wc, 0, &widg->ar, &wind->r);
+	struct xa_wcol_inf *wc = &((struct window_colours *)wind->colours)->win;
+	(*api->rp2ap)(wind, widg, &widg->ar);
+	draw_widg_box(wind->vdi_settings, 0, wc, 0, &widg->ar, &wind->r);
 	return true;
 }
 
-static bool
-d_border(struct xa_window *wind, struct xa_widget *widg)
+static bool _cdecl
+d_borders(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 {
-	/* Dummy; no draw, no selection status. */
-	return true;
-}
-
-static bool
-draw_window_borders(struct xa_window *wind, struct xa_widget *widg)
-{
-	struct xa_wcol_inf *wci = &wind->colours->borders;
+	struct xa_wcol_inf *wci = &((struct window_colours *)wind->colours)->borders;
+	struct xa_vdi_settings *v = wind->vdi_settings;
 	short size = wind->frame;
 	RECT r;
 	
@@ -245,42 +667,42 @@ draw_window_borders(struct xa_window *wind, struct xa_widget *widg)
 			r.y = wind->r.y;
 			r.w = size;
 			r.h = size;
-			draw_widg_box(0, wci, 0, &r, &wind->r);
+			draw_widg_box(v, 0, wci, 0, &r, &wind->r);
 
 			/* Left border */
 			r.y += size;
 			r.h = wind->r.h - (size + size + wind->y_shadow);
-			draw_widg_box(0, wci, 0, &r, &wind->r);
+			draw_widg_box(v, 0, wci, 0, &r, &wind->r);
 
 			/* bottom-left box */
 			r.y = wind->r.y + wind->r.h - (size + wind->y_shadow);
 			r.h = size;
-			draw_widg_box(0, wci, 0, &r, &wind->r);
+			draw_widg_box(v, 0, wci, 0, &r, &wind->r);
 
 			/* Bottom border */
 			r.x += size;
 			r.w = wind->r.w - (size + size + wind->x_shadow);
-			draw_widg_box(0, wci, 0, &r, &wind->r);
+			draw_widg_box(v, 0, wci, 0, &r, &wind->r);
 
 			/* right-bottom box */
 			r.x = wind->r.x + wind->r.w - (size + wind->x_shadow);
 			r.w = size;
-			draw_widg_box(0, wci, 0, &r, &wind->r);
+			draw_widg_box(v, 0, wci, 0, &r, &wind->r);
 
 			/* right border */
 			r.y = wind->r.y + size;
 			r.h = wind->r.h - (size + size + wind->y_shadow);
-			draw_widg_box(0, wci, 0, &r, &wind->r);
+			draw_widg_box(v, 0, wci, 0, &r, &wind->r);
 
 			/* top-right box */
 			r.y = wind->r.y;
 			r.h = size;
-			draw_widg_box(0, wci, 0, &r, &wind->r);
+			draw_widg_box(v, 0, wci, 0, &r, &wind->r);
 
 			/* Top border*/
 			r.x = wind->r.x + size;
 			r.w = wind->r.w - (size + size + wind->x_shadow);
-			draw_widg_box(0, wci, 0, &r, &wind->r);
+			draw_widg_box(v, 0, wci, 0, &r, &wind->r);
 		}
 		else
 		{
@@ -288,10 +710,10 @@ draw_window_borders(struct xa_window *wind, struct xa_widget *widg)
 			r = wind->r;
 			r.w -= wind->x_shadow;
 			r.h -= wind->y_shadow;
-			l_color(wind->colours->frame_col);
+			(*v->api->l_color)(v, ((struct window_colours *)wind->colours)->frame_col);
 			for (i = 0; i < wind->frame; i++)
 			{
-				gbox(0, &r);
+				(*v->api->gbox)(v, 0, &r);
 				r.x++;
 				r.y++;
 				r.w -= 2;
@@ -302,43 +724,61 @@ draw_window_borders(struct xa_window *wind, struct xa_widget *widg)
 	return true;
 }
 
-static bool
-d_title(struct xa_window *wind, struct xa_widget *widg)
+/* strip leading and trailing spaces. */
+static void
+strip_name(char *to, const char *fro)
+{
+	const char *last = fro + strlen(fro) - 1;
+
+	while (*fro && *fro == ' ')
+		fro++;
+
+	if (*fro)
+	{
+		while (*last == ' ') last--;
+		while (*fro &&  fro != last + 1) *to++ = *fro++;
+	}
+
+	*to = '\0';
+}
+
+static bool _cdecl
+d_title(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 {
 	struct options *o = &wind->owner->options;
-	struct xa_wcol_inf *wci = &wind->colours->title;
-	struct xa_wtxt_inf *wti = &wind->colours->title_txt;
+	struct xa_wcol_inf *wci = &((struct window_colours *)wind->colours)->title;
+	struct xa_wtxt_inf *wti = &((struct window_colours *)wind->colours)->title_txt;
+	struct xa_vdi_settings *v = wind->vdi_settings;
 	char tn[256];
 	bool dial = (wind->dial & (created_for_FORM_DO|created_for_FMD_START)) != 0;
 
 	/* Convert relative coords and window location to absolute screen location */
-	(wind->widget_theme->rp2ap)(wind, widg, &widg->ar);
-	//rp_2_ap(wind, widg, &widg->ar);
+	(*api->rp2ap)(wind, widg, &widg->ar);
 
 	if (MONO)
 	{
-		f_color(G_WHITE);
-		t_color(G_BLACK);
+		(*v->api->f_color)(v, G_WHITE);
+		(*v->api->t_color)(v, G_BLACK);
 		/* with inside border */
-		p_gbar(0, &widg->ar);
+		(*v->api->p_gbar)(v, 0, &widg->ar);
 	}
 	else
 	{
 		/* no move, no 3D */
 		if (wind->active_widgets & MOVER)
 		{
-			draw_widg_box(0, wci, widg->state, &widg->ar, &wind->r);
+			draw_widg_box(v, 0, wci, widg->state, &widg->ar, &wind->r);
 		}
 		else
 		{
-			l_color(screen.dial_colours.shadow_col);
-			p_gbar(0, &widg->ar);
-			f_color(wci->n.c);
-			gbar(-1, &widg->ar);
+			(*v->api->l_color)(v, G_LBLACK);
+			(*v->api->p_gbar)(v, 0, &widg->ar);
+			(*v->api->f_color)(v, wci->n.c);
+			(*v->api->gbar)(v, -1, &widg->ar);
 		}
 	}
 
-	wr_mode(MD_TRANS);
+	(*v->api->wr_mode)(v, MD_TRANS);
 	
 	if (o->windowner && wind->owner && !wind->winob && !dial)
 	{
@@ -372,114 +812,108 @@ d_title(struct xa_window *wind, struct xa_widget *widg)
 	if (dial)
 		effect |= ITALIC;
 #endif
-	draw_widget_text(widg, wti, tn, 4, 0);
+	draw_widget_text(v, widg, wti, tn, 4, 0);
 	return true;
 }
 
-static bool
-d_closer(struct xa_window *wind, struct xa_widget *widg)
+static bool _cdecl
+d_closer(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 {
-	struct xa_wcol_inf *wci = &wind->colours->closer;
+	struct xa_wcol_inf *wci = &((struct window_colours *)wind->colours)->closer;
 
-	(wind->widget_theme->rp2ap)(wind, widg, &widg->ar);
-	draw_widg_box(0, wci, widg->state, &widg->ar, &wind->r);
-	draw_widg_icon(widg, &wind->widg_info, widg->loc.rsc_index);
+	(*api->rp2ap)(wind, widg, &widg->ar);
+	draw_widg_box(wind->vdi_settings, 0, wci, widg->state, &widg->ar, &wind->r);
+	draw_widg_icon(wind->vdi_settings, widg, &((struct module *)wind->widget_theme->w->module)->wwt, WIDG_CLOSER);
 	return true;
 }
 
-static bool
-d_fuller(struct xa_window *wind, struct xa_widget *widg)
+static bool _cdecl
+d_fuller(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 {
-	struct xa_wcol_inf *wci = &wind->colours->fuller;
-	(wind->widget_theme->rp2ap)(wind, widg, &widg->ar);
-	draw_widg_box(0, wci, widg->state, &widg->ar, &wind->r);
-	draw_widg_icon(widg, &wind->widg_info, widg->loc.rsc_index);
+	struct xa_wcol_inf *wci = &((struct window_colours *)wind->colours)->fuller;
+	(*api->rp2ap)(wind, widg, &widg->ar);
+	draw_widg_box(wind->vdi_settings, 0, wci, widg->state, &widg->ar, &wind->r);
+	draw_widg_icon(wind->vdi_settings, widg, &((struct module *)wind->widget_theme->w->module)->wwt, WIDG_FULL);
 	return true;
 }
 
-static bool
-d_info(struct xa_window *wind, struct xa_widget *widg)
+static bool _cdecl
+d_info(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 {
-	struct xa_wcol_inf *wci = &wind->colours->info;
-	struct xa_wtxt_inf *wti = &wind->colours->info_txt;
+	struct xa_wcol_inf *wci = &((struct window_colours *)wind->colours)->info;
+	struct xa_wtxt_inf *wti = &((struct window_colours *)wind->colours)->info_txt;
 
 	/* Convert relative coords and window location to absolute screen location */
-	(wind->widget_theme->rp2ap)(wind, widg, &widg->ar);
-	draw_widg_box(0, wci, widg->state, &widg->ar, &wind->r);
-	draw_widget_text(widg, wti, widg->stuff, 4, 0); 
+	(*api->rp2ap)(wind, widg, &widg->ar);
+	draw_widg_box(wind->vdi_settings, 0, wci, widg->state, &widg->ar, &wind->r);
+	draw_widget_text(wind->vdi_settings, widg, wti, widg->stuff, 4, 0); 
 	return true;
 }
 
-static bool
-d_sizer(struct xa_window *wind, struct xa_widget *widg)
+static bool _cdecl
+d_sizer(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 {
-	struct xa_wcol_inf *wci = &wind->colours->sizer;
+	struct xa_wcol_inf *wci = &((struct window_colours *)wind->colours)->sizer;
 
-	(wind->widget_theme->rp2ap)(wind, widg, &widg->ar);
-// 	rp_2_ap(wind, widg, &widg->ar);	
-	draw_widg_box(0, wci, widg->state, &widg->ar, &wind->r);
-	draw_widg_icon(widg, &wind->widg_info, widg->loc.rsc_index);
+	(*api->rp2ap)(wind, widg, &widg->ar);
+	draw_widg_box(wind->vdi_settings, 0, wci, widg->state, &widg->ar, &wind->r);
+	draw_widg_icon(wind->vdi_settings, widg, &((struct module *)wind->widget_theme->w->module)->wwt, WIDG_SIZE); //widg->loc.rsc_index);
 	return true;
 }
 
-static bool
-d_uparrow(struct xa_window *wind, struct xa_widget *widg)
+static bool _cdecl
+d_uparrow(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 {
-	struct xa_wcol_inf *wci = &wind->colours->uparrow;
+	struct xa_wcol_inf *wci = &((struct window_colours *)wind->colours)->uparrow;
 
-	(wind->widget_theme->rp2ap)(wind, widg, &widg->ar);
-// 	rp_2_ap(wind, widg, &widg->ar);	
-	draw_widg_box(0, wci, widg->state, &widg->ar, &wind->r);
-	draw_widg_icon(widg, &wind->widg_info, widg->loc.rsc_index);
+	(*api->rp2ap)(wind, widg, &widg->ar);
+	draw_widg_box(wind->vdi_settings, 0, wci, widg->state, &widg->ar, &wind->r);
+	draw_widg_icon(wind->vdi_settings, widg, &((struct module *)wind->widget_theme->w->module)->wwt, WIDG_UP); //widg->loc.rsc_index);
 	return true;
 }
-static bool
-d_dnarrow(struct xa_window *wind, struct xa_widget *widg)
+static bool _cdecl
+d_dnarrow(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 {
-	struct xa_wcol_inf *wci = &wind->colours->dnarrow;
+	struct xa_wcol_inf *wci = &((struct window_colours *)wind->colours)->dnarrow;
 
-	(wind->widget_theme->rp2ap)(wind, widg, &widg->ar);
-// 	rp_2_ap(wind, widg, &widg->ar);	
-	draw_widg_box(0, wci, widg->state, &widg->ar, &wind->r);
-	draw_widg_icon(widg, &wind->widg_info, widg->loc.rsc_index);
+	(*api->rp2ap)(wind, widg, &widg->ar);
+	draw_widg_box(wind->vdi_settings, 0, wci, widg->state, &widg->ar, &wind->r);
+	draw_widg_icon(wind->vdi_settings, widg, &((struct module *)wind->widget_theme->w->module)->wwt, WIDG_DOWN); //widg->loc.rsc_index);
 	return true;
 }
-static bool
-d_lfarrow(struct xa_window *wind, struct xa_widget *widg)
+static bool _cdecl
+d_lfarrow(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 {
-	struct xa_wcol_inf *wci = &wind->colours->lfarrow;
+	struct xa_wcol_inf *wci = &((struct window_colours *)wind->colours)->lfarrow;
 
-	(wind->widget_theme->rp2ap)(wind, widg, &widg->ar);
-// 	rp_2_ap(wind, widg, &widg->ar);	
-	draw_widg_box(0, wci, widg->state, &widg->ar, &wind->r);
-	draw_widg_icon(widg, &wind->widg_info, widg->loc.rsc_index);
+	(*api->rp2ap)(wind, widg, &widg->ar);
+	draw_widg_box(wind->vdi_settings, 0, wci, widg->state, &widg->ar, &wind->r);
+	draw_widg_icon(wind->vdi_settings, widg, &((struct module *)wind->widget_theme->w->module)->wwt, WIDG_LEFT); //widg->loc.rsc_index);
 	return true;
 }
-static bool
-d_rtarrow(struct xa_window *wind, struct xa_widget *widg)
+static bool _cdecl
+d_rtarrow(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 {
-	struct xa_wcol_inf *wci = &wind->colours->rtarrow;
+	struct xa_wcol_inf *wci = &((struct window_colours *)wind->colours)->rtarrow;
 
-	(wind->widget_theme->rp2ap)(wind, widg, &widg->ar);
-// 	rp_2_ap(wind, widg, &widg->ar);	
-	draw_widg_box(0, wci, widg->state, &widg->ar, &wind->r);
-	draw_widg_icon(widg, &wind->widg_info, widg->loc.rsc_index);
+	(*api->rp2ap)(wind, widg, &widg->ar);
+	draw_widg_box(wind->vdi_settings, 0, wci, widg->state, &widg->ar, &wind->r);
+	draw_widg_icon(wind->vdi_settings, widg, &((struct module *)wind->widget_theme->w->module)->wwt, WIDG_RIGHT); //widg->loc.rsc_index);
 	return true;
 }
 
-static bool
-d_vslide(struct xa_window *wind, struct xa_widget *widg)
+static bool _cdecl
+d_vslide(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 {
 	int len, offs;
 	XA_SLIDER_WIDGET *sl = widg->stuff;
 	RECT cl;
-	struct xa_window_colours *wc = wind->colours;
+	struct window_colours *wc = wind->colours;
 
 	sl->flags &= ~SLIDER_UPDATE;
 
 	/* Convert relative coords and window location to absolute screen location */
-	(wind->widget_theme->rp2ap)(wind, widg, &widg->ar);
-// 	rp_2_ap(wind, widg, &widg->ar);
+	(*api->rp2ap)(wind, widg, &widg->ar);
 
 	if (sl->length >= SL_RANGE)
 	{
@@ -487,12 +921,12 @@ d_vslide(struct xa_window *wind, struct xa_widget *widg)
 		sl->r.w = widg->ar.w;
 		sl->r.h = widg->ar.h;
 		cl = widg->ar;
-		draw_widg_box(0, &wc->slider, 0, &widg->ar, &widg->ar);
+		draw_widg_box(wind->vdi_settings, 0, &wc->slider, 0, &widg->ar, &widg->ar);
 		return true;
 	}
 	len = sl_2_pix(widg->ar.h, sl->length);
-	if (len < cfg.widg_h - 3)
-		len = cfg.widg_h - 3;
+	if (len < widg_h - 3)
+		len = widg_h - 3;
 	
 	offs = widg->ar.y + sl_2_pix(widg->ar.h - len, sl->position);
 
@@ -501,7 +935,7 @@ d_vslide(struct xa_window *wind, struct xa_widget *widg)
 	if (offs + len > widg->ar.y + widg->ar.h)
 		len = widg->ar.y + widg->ar.h - offs;
 
-	draw_widg_box(0, &wc->slide, 0, &widg->ar, &widg->ar);	
+	draw_widg_box(wind->vdi_settings, 0, &wc->slide, 0, &widg->ar, &widg->ar);	
 	
 	sl->r.y = offs - widg->ar.y;
 	sl->r.h = len;
@@ -512,35 +946,34 @@ d_vslide(struct xa_window *wind, struct xa_widget *widg)
 	cl.w = sl->r.w;
 	cl.h = sl->r.h;
 	
-	draw_widg_box(-1, &wc->slider, widg->state, &cl, &cl);
-	wr_mode(MD_TRANS);
+	draw_widg_box(wind->vdi_settings, -1, &wc->slider, widg->state, &cl, &cl);
+//	wr_mode(MD_TRANS);
 	return true;
 }
 
-static bool
-d_hslide(struct xa_window *wind, struct xa_widget *widg)
+static bool _cdecl
+d_hslide(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 {
 	int len, offs;
 	XA_SLIDER_WIDGET *sl = widg->stuff;
-	struct xa_window_colours *wc = wind->colours;
+	struct window_colours *wc = wind->colours;
 	RECT cl;
 
 	sl->flags &= ~SLIDER_UPDATE;
 
-	(wind->widget_theme->rp2ap)(wind, widg, &widg->ar);
-// 	rp_2_ap(wind, widg, &widg->ar);
+	(*api->rp2ap)(wind, widg, &widg->ar);
 
 	if (sl->length >= SL_RANGE)
 	{
 		sl->r.x = sl->r.y = 0;
 		sl->r.w = widg->ar.w;
 		sl->r.h = widg->ar.h;
-		draw_widg_box(0, &wc->slider, 0, &widg->ar, &widg->ar/*&wind->r*/);
+		draw_widg_box(wind->vdi_settings, 0, &wc->slider, 0, &widg->ar, &widg->ar/*&wind->r*/);
 		return true;
 	}
 	len = sl_2_pix(widg->ar.w, sl->length);
-	if (len < cfg.widg_w - 3)
-		len = cfg.widg_w - 3;
+	if (len < widg_w - 3)
+		len = widg_w - 3;
 	
 	offs = widg->ar.x + sl_2_pix(widg->ar.w - len, sl->position);
 
@@ -549,7 +982,7 @@ d_hslide(struct xa_window *wind, struct xa_widget *widg)
 	if (offs + len > widg->ar.x + widg->ar.w)
 		len = widg->ar.x + widg->ar.w - offs;
 	
-	draw_widg_box(0, &wc->slide, 0, &widg->ar, &widg->ar/*&wind->r*/);	
+	draw_widg_box(wind->vdi_settings, 0, &wc->slide, 0, &widg->ar, &widg->ar/*&wind->r*/);	
 	
 	sl->r.x = offs - widg->ar.x;
 	sl->r.w = len;
@@ -560,48 +993,48 @@ d_hslide(struct xa_window *wind, struct xa_widget *widg)
 	cl.w = sl->r.w;
 	cl.h = sl->r.h;
 	
-	draw_widg_box(-1, &wc->slider, widg->state, &cl, &cl/*&wind->r*/);
-	wr_mode(MD_TRANS);
+	draw_widg_box(wind->vdi_settings, -1, &wc->slider, widg->state, &cl, &cl/*&wind->r*/);
+//	wr_mode(MD_TRANS);
 	return true;
 }
 
-static bool
-d_iconifier(struct xa_window *wind, struct xa_widget *widg)
+static bool _cdecl
+d_iconifier(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 {
-	struct xa_wcol_inf *wci = &wind->colours->iconifier;
+	struct xa_wcol_inf *wci = &((struct window_colours *)wind->colours)->iconifier;
 
-	(wind->widget_theme->rp2ap)(wind, widg, &widg->ar);
+	(*api->rp2ap)(wind, widg, &widg->ar);
 // 	rp_2_ap(wind, widg, &widg->ar);	
-	draw_widg_box(0, wci, widg->state, &widg->ar, &wind->r);
-	draw_widg_icon(widg, &wind->widg_info, widg->loc.rsc_index);
+	draw_widg_box(wind->vdi_settings, 0, wci, widg->state, &widg->ar, &wind->r);
+	draw_widg_icon(wind->vdi_settings, widg, &((struct module *)wind->widget_theme->w->module)->wwt, WIDG_ICONIFY); //widg->loc.rsc_index);
 	return true;
 }
 
-static bool
-d_hider(struct xa_window *wind, struct xa_widget *widg)
+static bool _cdecl
+d_hider(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 {
-	struct xa_wcol_inf *wci = &wind->colours->hider;
+	struct xa_wcol_inf *wci = &((struct window_colours *)wind->colours)->hider;
 
-	(*wind->widget_theme->rp2ap)(wind, widg, &widg->ar);	
-	//rp_2_ap(wind, widg, &widg->ar);	
-	draw_widg_box(0, wci, widg->state, &widg->ar, &wind->r);
-	draw_widg_icon(widg, &wind->widg_info, widg->loc.rsc_index);
+	(*api->rp2ap)(wind, widg, &widg->ar);	
+	draw_widg_box(wind->vdi_settings, 0, wci, widg->state, &widg->ar, &wind->r);
+	draw_widg_icon(wind->vdi_settings, widg, &((struct module *)wind->widget_theme->w->module)->wwt, WIDG_HIDE); //widg->loc.rsc_index);
 	return true;
 }
 
-static void
+static void _cdecl
 s_title_size(struct xa_window *wind, struct xa_widget *widg)
 {
-	struct xa_wcol_inf *wci = &wind->ontop_cols->title;
-	struct xa_wtxt_inf *wti = &wind->ontop_cols->title_txt;
+	struct xa_wcol_inf *wci = &((struct window_colours *)wind->ontop_cols)->title;
+	struct xa_wtxt_inf *wti = &((struct window_colours *)wind->ontop_cols)->title_txt;
+	struct xa_vdi_settings *v = wind->vdi_settings;
 	short w, h;
 
-	widg->r.w = cfg.widg_w;
+	widg->r.w = widg_w;
 
-	t_font(wti->n.p, wti->n.f);
-	vst_effects(C.vh, wti->n.e);
-	t_extent("A", &w, &h);
-	vst_effects(C.vh, 0);
+	(*v->api->t_font)(v, wti->n.p, wti->n.f);
+	(*v->api->t_effects)(v, wti->n.e);
+	(*v->api->t_extent)(v, "A", &w, &h);
+	(*v->api->t_effects)(v, 0);
 	
 	if ((wci->flags & WCOL_DRAW3D) || (wti->flags & WTXT_DRAW3D))
 		h += 4;
@@ -610,19 +1043,20 @@ s_title_size(struct xa_window *wind, struct xa_widget *widg)
 
 	widg->r.h = h;
 };
-static void
+static void _cdecl
 s_info_size(struct xa_window *wind, struct xa_widget *widg)
 {
-	struct xa_wcol_inf *wci = &wind->ontop_cols->info;
-	struct xa_wtxt_inf *wti = &wind->ontop_cols->info_txt;
+	struct xa_wcol_inf *wci = &((struct window_colours *)wind->ontop_cols)->info;
+	struct xa_wtxt_inf *wti = &((struct window_colours *)wind->ontop_cols)->info_txt;
+	struct xa_vdi_settings *v = wind->vdi_settings;
 	short w, h;
 
-	widg->r.w = cfg.widg_w;
+	widg->r.w = widg_w;
 		
-	t_font(wti->n.p, wti->n.f);
-	vst_effects(C.vh, wti->n.e);
-	t_extent("A", &w, &h);
-	vst_effects(C.vh, 0);
+	(*v->api->t_font)(v, wti->n.p, wti->n.f);
+	(*v->api->t_effects)(v, wti->n.e);
+	(*v->api->t_extent)(v, "A", &w, &h);
+	(*v->api->t_effects)(v, 0);
 	
 	if ((wci->flags & WCOL_DRAW3D) || (wti->flags & WTXT_DRAW3D))
 		h += 4;
@@ -632,23 +1066,25 @@ s_info_size(struct xa_window *wind, struct xa_widget *widg)
 	widg->r.h = h;
 };
 
-static void
+static void _cdecl
 s_menu_size(struct xa_window *wind, struct xa_widget *widg)
 {
+	struct xa_vdi_settings *v = wind->vdi_settings;
 	short w, h;
-	t_font(screen.standard_font_point, screen.standard_font_id);
-	vst_effects(C.vh, 0);
-	t_extent("A", &w, &h);
+
+	(*v->api->t_font)(v, scrninf->standard_font_point, scrninf->standard_font_id);
+	(*v->api->t_effects)(v, 0);
+	(*v->api->t_extent)(v, "A", &w, &h);
 	
 	widg->r.h = h + 1 + 1; //screen.standard_font_height + 1;
 	widg->r.w = wind->r.w;
 }
 
-static void
+static void _cdecl
 set_widg_size(struct xa_window *wind, struct xa_widget *widg, struct xa_wcol_inf *wci, short rsc_ind)
 {
 	short w, h, f;
-	OBJECT *ob = wind->widg_info.tree + rsc_ind;
+	OBJECT *ob = ((struct module *)wind->widget_theme->w->module)->wwt.tree + rsc_ind; //wind->widg_info.tree + rsc_ind;
 
 	f = wci->flags;
 
@@ -662,171 +1098,446 @@ set_widg_size(struct xa_window *wind, struct xa_widget *widg, struct xa_wcol_inf
 	widg->r.w = w;
 	widg->r.h = h;
 }
-static void
+static void _cdecl
 s_closer_size(struct xa_window *wind, struct xa_widget *widg)
 {
-	set_widg_size(wind, widg, &wind->ontop_cols->closer, widg->loc.rsc_index);
+	set_widg_size(wind, widg, &((struct window_colours *)wind->ontop_cols)->closer, WIDG_CLOSER);
 }
-static void
+static void _cdecl
 s_hider_size(struct xa_window *wind, struct xa_widget *widg)
 {
-	set_widg_size(wind, widg, &wind->ontop_cols->hider, widg->loc.rsc_index);
+	set_widg_size(wind, widg, &((struct window_colours *)wind->ontop_cols)->hider, WIDG_SIZE);
 }
-static void
+static void _cdecl
 s_iconifier_size(struct xa_window *wind, struct xa_widget *widg)
 {
-	set_widg_size(wind, widg, &wind->ontop_cols->iconifier, widg->loc.rsc_index);
+	set_widg_size(wind, widg, &((struct window_colours *)wind->ontop_cols)->iconifier, WIDG_ICONIFY);
 }
-static void
+static void _cdecl
 s_fuller_size(struct xa_window *wind, struct xa_widget *widg)
 {
-	set_widg_size(wind, widg, &wind->ontop_cols->fuller, widg->loc.rsc_index);
+	set_widg_size(wind, widg, &((struct window_colours *)wind->ontop_cols)->fuller, WIDG_FULL);
 }
-static void
+static void _cdecl
 s_uparrow_size(struct xa_window *wind, struct xa_widget *widg)
 {
-	set_widg_size(wind, widg, &wind->ontop_cols->uparrow, widg->loc.rsc_index);
+	set_widg_size(wind, widg, &((struct window_colours *)wind->ontop_cols)->uparrow, WIDG_UP);
 }
-static void
+static void _cdecl
 s_dnarrow_size(struct xa_window *wind, struct xa_widget *widg)
 {
-	set_widg_size(wind, widg, &wind->ontop_cols->dnarrow, widg->loc.rsc_index);
+	set_widg_size(wind, widg, &((struct window_colours *)wind->ontop_cols)->dnarrow, WIDG_DOWN);
 }
-static void
+static void _cdecl
 s_lfarrow_size(struct xa_window *wind, struct xa_widget *widg)
 {
-	set_widg_size(wind, widg, &wind->ontop_cols->lfarrow, widg->loc.rsc_index);
+	set_widg_size(wind, widg, &((struct window_colours *)wind->ontop_cols)->lfarrow, WIDG_LEFT);
 }
-static void
+static void _cdecl
 s_rtarrow_size(struct xa_window *wind, struct xa_widget *widg)
 {
-	set_widg_size(wind, widg, &wind->ontop_cols->rtarrow, widg->loc.rsc_index);
+	set_widg_size(wind, widg, &((struct window_colours *)wind->ontop_cols)->rtarrow, WIDG_RIGHT);
 }
-static void
+static void _cdecl
 s_sizer_size(struct xa_window *wind, struct xa_widget *widg)
 {
-	set_widg_size(wind, widg, &wind->ontop_cols->sizer, widg->loc.rsc_index);
+	set_widg_size(wind, widg, &((struct window_colours *)wind->ontop_cols)->sizer, WIDG_SIZE);
 }
 /*
  * The vertical slider must get its dimentions from the arrows
  */
-static void
+static void _cdecl
 s_vslide_size(struct xa_window *wind, struct xa_widget *widg)
 {
-	set_widg_size(wind, widg, &wind->ontop_cols->uparrow, WIDG_UP);
+	set_widg_size(wind, widg, &((struct window_colours *)wind->ontop_cols)->uparrow, WIDG_UP);
 }
-static void
+static void _cdecl
 s_hslide_size(struct xa_window *wind, struct xa_widget *widg)
 {
-	set_widg_size(wind, widg, &wind->ontop_cols->rtarrow, WIDG_RIGHT);
+	set_widg_size(wind, widg, &((struct window_colours *)wind->ontop_cols)->rtarrow, WIDG_RIGHT);
 }
 
-void
-init_widget_theme(struct widget_theme *t)
+static void
+build_bfobspec(struct xa_wcol_inf *wci, struct xa_wtxt_inf *wti, BFOBSPEC *ret)
 {
-
-	t->exterior.draw	= d_unused;
-	t->exterior.setsize	= NULL; //s_unused_size;
+	BFOBSPEC n = (BFOBSPEC){0}, s;
 	
-	t->border.draw		= draw_window_borders;
-	t->border.setsize	= NULL; //s_border_size;
+	s = n;
 
-	t->title.draw		= d_title;
-	t->title.setsize	= s_title_size;
-
-	t->closer.draw		= d_closer;
-	t->closer.setsize	= s_closer_size;
+	if (wci)
+	{
+		n.framesize	= wci->n.box_th;
+		n.framecol	= wci->n.box_c;
+		n.fillpattern	= wci->n.i;
+		n.interiorcol	= wci->n.c;
 	
-	t->fuller.draw		= d_fuller;
-	t->fuller.setsize	= s_fuller_size;
+		s.framesize	= wci->s.box_th;
+		s.framecol	= wci->s.box_c;
+		s.fillpattern	= wci->s.i;
+		s.interiorcol	= wci->s.c;
+	}
 
-	t->info.draw		= d_info;
-	t->info.setsize		= s_info_size;
+	if (wti)
+	{
+		n.textcol = wti->n.fgc;
 
-	t->sizer.draw		= d_sizer;
-	t->sizer.setsize	= s_sizer_size;
+		s.textcol = wti->s.fgc;
+	}
+	else
+	{
+		n.textcol = s.textcol = G_BLACK;
+	}
+	n.textmode = s.textmode = MD_TRANS;
 
-	t->uparrow.draw		= d_uparrow;
-	t->uparrow.setsize	= s_uparrow_size;
-
-	t->dnarrow.draw		= d_dnarrow;
-	t->dnarrow.setsize	= s_dnarrow_size;
-
-	t->vslide.draw		= d_vslide;
-	t->vslide.setsize	= s_vslide_size;
-
-	t->lfarrow.draw		= d_lfarrow;
-	t->lfarrow.setsize	= s_lfarrow_size;
-
-	t->rtarrow.draw		= d_rtarrow;
-	t->rtarrow.setsize	= s_rtarrow_size;
-
-	t->hslide.draw		= d_hslide;
-	t->hslide.setsize	= s_hslide_size;
-
-	t->iconifier.draw	= d_iconifier;
-	t->iconifier.setsize	= s_iconifier_size;
-
-	t->hider.draw		= d_hider;
-	t->hider.setsize	= s_hider_size;
-
-	t->toolbar.draw		= NULL;
-	t->toolbar.setsize	= NULL;
-
-	t->menu.draw		= NULL;
-	t->menu.setsize		= s_menu_size;
-
+	*ret++ = n;
+	*ret = s;
 }
-#if 0
-void
-draw_window_borders(struct xa_window *wind)
+
+static void _cdecl
+get_wcol(struct xa_window *wind, short gem_widget, BFOBSPEC *ret)
 {
-	struct xa_wcol_inf *wci = &wind->colours->borders;
-	short size = wind->frame;
-	RECT r;
+	struct window_colours *ontop_cols = wind->ontop_cols;
+	struct window_colours *untop_cols = wind->untop_cols;
+	BFOBSPEC c[4];
+ 
+ 	c[0] = c[1] = c[2] = c[3] = (BFOBSPEC){0};
 
-	/* top-left box */
-	r.x = wind->r.x;
-	r.y = wind->r.y;
-	r.w = size;
-	r.h = size;
-	draw_widg_box(0, wci, 0, &r, &wind->r);
+	switch (gem_widget)
+	{
+		case W_BOX:
+		{
+			build_bfobspec(&ontop_cols->borders, NULL, (BFOBSPEC *)&c[0]);
+			build_bfobspec(&untop_cols->borders, NULL, (BFOBSPEC *)&c[2]);
+			break;
+		}
+		case W_TITLE:
+		{
+			build_bfobspec(&ontop_cols->title, NULL, (BFOBSPEC *)&c[0]);
+			build_bfobspec(&untop_cols->title, NULL, (BFOBSPEC *)&c[2]);
+			break;
+		}
+		case W_CLOSER:
+		{
+			build_bfobspec(&ontop_cols->closer, NULL, (BFOBSPEC *)&c[0]);
+			build_bfobspec(&untop_cols->closer, NULL, (BFOBSPEC *)&c[2]);
+			break;
+		}
+		case W_NAME:
+		{
+			build_bfobspec(&ontop_cols->title, &ontop_cols->title_txt, (BFOBSPEC *)&c[0]);
+			build_bfobspec(&untop_cols->title, &untop_cols->title_txt, (BFOBSPEC *)&c[2]);
+			break;
+		}
+		case W_FULLER:
+		{
+			build_bfobspec(&ontop_cols->fuller, NULL, (BFOBSPEC *)&c[0]);
+			build_bfobspec(&untop_cols->fuller, NULL, (BFOBSPEC *)&c[2]);
+			break;
+		}
+		case W_INFO:
+		{
+			build_bfobspec(&ontop_cols->info, &ontop_cols->info_txt, (BFOBSPEC *)&c[0]);
+			build_bfobspec(&untop_cols->info, &untop_cols->info_txt, (BFOBSPEC *)&c[2]);
+			break;
+		}
+		case W_DATA:
+		{
+			BFOBSPEC ot, ut;
+		 
+		 	ot = ut = (BFOBSPEC){0};
 
-	/* Left border */
-	r.y += size;
-	r.h = wind->r.h - (size + size + 2);
-	draw_widg_box(0, wci, 0, &r, &wind->r);
-
-	/* bottom-left box */
-	r.y = wind->r.y + wind->r.h - (size + 2);
-	r.h = size;
-	draw_widg_box(0, wci, 0, &r, &wind->r);
-
-	/* Bottom border */
-	r.x += size;
-	r.w = wind->r.w - (size + size + 2);
-	draw_widg_box(0, wci, 0, &r, &wind->r);
-
-	/* right-bottom box */
-	r.x = wind->r.x + wind->r.w - (size + 2);
-	r.w = size;
-	draw_widg_box(0, wci, 0, &r, &wind->r);
-
-	/* right border */
-	r.y = wind->r.y + size;
-	r.h = wind->r.h - (size + size + 2);
-	draw_widg_box(0, wci, 0, &r, &wind->r);
-
-	/* top-right box */
-	r.y = wind->r.y;
-	r.h = size;
-	draw_widg_box(0, wci, 0, &r, &wind->r);
-
-	/* Top border*/
-	r.x = wind->r.x + size;
-	r.w = wind->r.w - (size + size + 2);
-	draw_widg_box(0, wci, 0, &r, &wind->r);
-
+			ot.framesize = ut.framesize = wind->thinwork ? 1 : 2;
+			ot.framecol = ontop_cols->waframe_col;
+			ut.framecol = untop_cols->waframe_col;
+			break;
+		}
+		case W_WORK:
+		{
+			c[0] = c[1] = c[2] = c[3] = (BFOBSPEC){0};
+			break;
+		}
+		case W_SIZER:
+		{
+			build_bfobspec(&ontop_cols->sizer, NULL, (BFOBSPEC *)&c[0]);
+			build_bfobspec(&untop_cols->sizer, NULL, (BFOBSPEC *)&c[2]);
+			break;
+		}
+		case W_HBAR:
+		case W_VBAR:
+		{
+			build_bfobspec(&ontop_cols->slide, NULL, (BFOBSPEC *)&c[0]);
+			build_bfobspec(&untop_cols->slide, NULL, (BFOBSPEC *)&c[2]);
+			break;
+		}
+		case W_UPARROW:
+		{
+			build_bfobspec(&ontop_cols->uparrow, NULL, (BFOBSPEC *)&c[0]);
+			build_bfobspec(&untop_cols->uparrow, NULL, (BFOBSPEC *)&c[2]);
+			break;
+		}
+		case W_DNARROW:
+		{
+			build_bfobspec(&ontop_cols->dnarrow, NULL, (BFOBSPEC *)&c[0]);
+			build_bfobspec(&untop_cols->dnarrow, NULL, (BFOBSPEC *)&c[2]);
+			break;
+		}
+		case W_HSLIDE:
+		case W_VSLIDE:
+		{
+			build_bfobspec(&ontop_cols->slide, NULL, (BFOBSPEC *)&c[0]);
+			build_bfobspec(&untop_cols->slide, NULL, (BFOBSPEC *)&c[2]);
+			break;
+		}
+		case W_HELEV:
+		case W_VELEV:
+		{
+			build_bfobspec(&ontop_cols->slider, NULL, (BFOBSPEC *)&c[0]);
+			build_bfobspec(&untop_cols->slider, NULL, (BFOBSPEC *)&c[2]);
+			break;
+		}
+		case W_LFARROW:
+		{
+			build_bfobspec(&ontop_cols->lfarrow, NULL, (BFOBSPEC *)&c[0]);
+			build_bfobspec(&untop_cols->lfarrow, NULL, (BFOBSPEC *)&c[2]);
+			break;
+		}
+		case W_RTARROW:
+		{
+			build_bfobspec(&ontop_cols->rtarrow, NULL, (BFOBSPEC *)&c[0]);
+			build_bfobspec(&untop_cols->rtarrow, NULL, (BFOBSPEC *)&c[2]);
+			break;
+		}
+	}
+	if (ret)
+	{
+		*ret++ = c[0];
+		*ret++ = c[1];
+		*ret++ = c[2];
+		*ret   = c[3];
+	}
 }
-#endif
 
+static void _cdecl
+set_wcol(struct xa_window *wind, short gem_widget, BFOBSPEC *c)
+{
+	get_wcol(wind, gem_widget, c);
+}
+
+static inline void
+fix_widg(OBJECT *widg)
+{
+	widg->ob_x = 0;
+	widg->ob_y = 0;
+}
+
+/* Standard Widget Set from widget resource file */
+static void
+fix_default_widgets(void *rsc)
+{
+	OBJECT *def_widgets;
+	int i;
+
+	def_widgets = (*api->resource_tree)(rsc, WIDGETS);
+	DIAGS(("widget set at %lx", def_widgets));
+
+	for (i = 1; i < WIDG_CFG; i++)
+		fix_widg(def_widgets + i);
+}
+
+/*
+ * This function is called by XaAES to have the module initialize itself
+ */
+static void * _cdecl
+init_module(const struct xa_module_api *xmapi, const struct xa_screen *screen, char *widg_name)
+{
+	char *rscfile;
+	RSHDR *rsc;
+	struct module *m;
+
+// 	display("wind_draw: initmodule:");
+
+	api	= xmapi;
+	v_api	= xmapi->vdi;
+	scrninf	= screen;
+
+	current_theme = &def_theme;
+
+	m = (*api->kmalloc)(sizeof(*m));
+	if (m)
+	{
+		(*api->bclear)(m, sizeof(*m));
+
+		/* Load the widget resource files */
+		rscfile = (*api->sysfile)(widg_name); //(cfg.widg_name);
+
+		if (rscfile)
+		{
+			rsc = (*api->load_resource)(rscfile, NULL, screen->c_max_w, screen->c_max_h, false);
+			DIAGS(("widget_resources = %lx (%s)", rsc, widg_name));
+		}
+		if (!rscfile || !rsc)
+		{
+			display("ERROR: Can't find/load widget resource file '%s'", widg_name);
+			(*api->kfree)(m);
+			return NULL;
+		}
+
+		/* get widget object parameters. */
+		{
+			RECT c;
+			OBJECT *tree = (*api->resource_tree)(rsc, 0);
+			(*api->ob_spec_xywh)(tree, 1, &c);
+			(*api->init_wt)(&m->wwt, tree);
+			
+// 			display(" -- init widget_tree=%lx", (long)&m->wwt);
+			
+			widg_w = c.w;
+			widg_h = c.h;
+
+			DIAGS(("widg: %d/%d", widg_w, widg_h));
+		}
+		fix_default_widgets(rsc);
+	}
+	else
+		api = NULL;
+
+// 	display(" -- module init done!");
+	return m;
+}
+
+static void _cdecl
+exit_module(void *_module)
+{
+	struct module *m = _module;
+	
+	(*api->free_xa_data_list)(&m->allocs);
+	
+	/*
+	 * for now, the resource loaded is attached to AESSYS
+	 * and cannot be freed here..
+	 */
+	(*api->remove_wt)(&m->wwt);
+	(*api->kfree)(m);
+}
+	
+/*
+ * This is called by XaAES whenever a new widget_theme structure needs
+ * filling in
+ */
+static long _cdecl
+new_theme(void *_module, struct widget_theme **ret_theme)
+{
+	struct widget_theme *new;
+	struct module *m = _module;
+	long ret = 0L;
+
+	if ((new = duplicate_theme(current_theme)))
+	{
+		new->module = m;
+		(*api->add_xa_data)(&m->allocs, new, delete_theme);
+		*ret_theme = new;
+	}
+	else
+	{
+		*ret_theme = NULL;
+		ret = ENOMEM;
+	}
+
+	return ret;
+}
+
+static long _cdecl
+free_theme(void *_module, struct widget_theme **theme)
+{
+	struct module *m = _module;
+	struct widget_theme *t;
+	long ret = -1;
+
+	if ((t = (*api->lookup_xa_data)(&m->allocs, *theme)))
+	{
+		(*api->delete_xa_data)(&m->allocs, t);
+		ret = 0;
+	}
+	return ret;
+}
+
+static void _cdecl
+delete_color_theme(void *_ctheme)
+{
+	(*api->kfree)(_ctheme);
+}
+
+static long _cdecl
+new_color_theme(void *_module, void **ontop, void **untop)
+{
+	struct window_colours *new_ontop, *new_untop;
+	struct module *m = _module;
+	long ret;
+
+	new_ontop = (*api->kmalloc)(sizeof(*new_ontop));
+	new_untop = (*api->kmalloc)(sizeof(*new_untop));
+	
+	if (new_ontop && new_untop)
+	{
+		*new_ontop = def_otop_cols;
+		*new_untop = def_utop_cols;
+		
+		(*api->add_xa_data)(&m->allocs, new_ontop, delete_color_theme);
+		(*api->add_xa_data)(&m->allocs, new_untop, delete_color_theme);
+
+		ret = 1L;
+	}
+	else
+	{
+		if (new_ontop)
+			(*api->kfree)(new_ontop);
+		if (new_untop)
+			(*api->kfree)(new_untop);
+		new_ontop = new_untop = NULL;
+		ret = 0L;
+	}
+	*ontop = new_ontop;
+	*untop = new_untop;
+	return ret;
+}
+
+static void _cdecl
+free_color_theme(void *_module, void *ctheme)
+{
+	struct module *m = _module;
+	struct window_colours *wc;
+
+	if ((wc = (*api->lookup_xa_data)(&m->allocs, ctheme)))
+		(*api->delete_xa_data)(&m->allocs, wc);
+}
+
+/*
+ *
+ */
+static char short_name[] = "XaAES standard.";
+static char long_name[]  = "XaAES standard widget-module.";
+
+static struct xa_module_widget_theme module =
+{
+	short_name,
+	long_name,
+	
+	init_module,
+	exit_module,
+
+	new_theme,
+	free_theme,
+
+	new_color_theme,
+	free_color_theme,
+};
+
+/*
+ * The very first entry XaAES will do into the module is to its 'main'
+ * function, which should return the address of its module_theme api.
+ */
+void
+main_xa_theme(struct xa_module_widget_theme **ret)
+{
+	*ret = &module;
+}

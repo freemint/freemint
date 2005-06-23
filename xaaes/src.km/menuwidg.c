@@ -70,9 +70,9 @@ static inline unsigned long
 menu_colors(void)
 {
 	return
-	     (screen.dial_colours.fg_col << 12)		/* border */
-	   | (screen.dial_colours.fg_col << 8)		/* text */
-	   |  screen.dial_colours.bg_col		/* inside */
+	     (objc_rend.dial_colours.fg_col << 12)		/* border */
+	   | (objc_rend.dial_colours.fg_col << 8)		/* text */
+	   |  objc_rend.dial_colours.bg_col		/* inside */
 	   | (7 << 4)					/* solid fill */
 	   | (1 << 7);					/* transparent text */
 }
@@ -104,6 +104,7 @@ change_title(Tab *tab, int state)
 	obtree->ob_y = k->rdy;
 
 	obj_change(wt,
+		   C.Aes->vdi_settings,
 		   t, 2,
 		   state,
 		   obtree[t].ob_flags,
@@ -126,6 +127,13 @@ change_entry(Tab *tab, int state)
 	if (t < 0)
 		return;
 
+#if 0
+	if (!strnicmp(tab->client->proc_name, "direct", 6))
+	{
+		display("type=%x", obtree[t].ob_type);
+	}
+#endif
+
 	if (state)
 		state = obtree[t].ob_state | OS_SELECTED;
 	else
@@ -143,7 +151,8 @@ change_entry(Tab *tab, int state)
 		while (rl)
 		{
 			obj_change(wt,
-				   t, 1,
+				   k->popw->vdi_settings,
+				   t, 1 | 0x8000,
 				   state,
 				   obtree[t].ob_flags,
 				   true,
@@ -156,7 +165,7 @@ change_entry(Tab *tab, int state)
 	else
 	{
 		DIAGS(("change_entry: no popw"));
-		obj_change(wt, t, 1, state, obtree[t].ob_flags, true, NULL, k->rl_drop);
+		obj_change(wt, C.Aes->vdi_settings, t, 1 | 0x8000, state, obtree[t].ob_flags, true, NULL, k->rl_drop);
 	}
 }
 
@@ -1792,7 +1801,7 @@ click_popup_entry(struct task_administration_block *tab)
 	{	
 		md->mn_tree = k->wt->tree;
 		md->mn_scroll = 0;
-		vq_key_s(C.vh, &md->mn_keystate);
+		vq_key_s(C.P_handle, &md->mn_keystate);
 
 		md->mn_item = m;
 		if (md->mn_item >= 0 && (k->wt->tree[md->mn_item].ob_state & OS_DISABLED) != 0)
@@ -1877,7 +1886,7 @@ click_form_popup_entry(struct task_administration_block *tab)
  * The menu, however, can be owned by someone else .. we check that.
 */
 static void
-Display_menu_widg(struct xa_window *wind, struct xa_widget *widg)
+Display_menu_widg(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 {
 	XA_TREE *wt = widg->stuff;
 	OBJECT *obtree;
@@ -1902,7 +1911,7 @@ Display_menu_widg(struct xa_window *wind, struct xa_widget *widg)
 		//if (wind->nolist && (wind->dial & created_for_POPUP))
 		//{
 			//set_clip(&wind->wa);
-			draw_object_tree(0, wt, NULL, widg->start, MAX_DEPTH, NULL);
+			draw_object_tree(0, wt, NULL, wind->vdi_settings, widg->start, MAX_DEPTH, NULL);
 			//clear_clip();
 		//}
 		//else
@@ -1914,8 +1923,8 @@ Display_menu_widg(struct xa_window *wind, struct xa_widget *widg)
 		obtree->ob_y = widg->ar.y; //wt->rdy;
 		//obtree->ob_height = widg->r.h - 1;
 		obtree->ob_width = obtree[obtree[0].ob_head].ob_width = widg->ar.w;
-		draw_object_tree(0, wt, NULL, 0, MAX_DEPTH, NULL);
-		write_menu_line((RECT*)&widg->ar); //obtree->ob_x);	/* HR: not in standard menu's object tree */
+		draw_object_tree(0, wt, NULL, wind->vdi_settings, 0, MAX_DEPTH, NULL);
+		write_menu_line(wind->vdi_settings, (RECT*)&widg->ar); //obtree->ob_x);	/* HR: not in standard menu's object tree */
 	}
 }
 
@@ -1923,11 +1932,11 @@ static void
 CE_display_menu_widg(enum locks lock, struct c_event *ce, bool cancel)
 {
 	if (!cancel)
-		Display_menu_widg(ce->ptr1, ce->ptr2);
+		Display_menu_widg(ce->ptr1, ce->ptr2, (const RECT *)&ce->r);
 }
 	
 static bool
-display_menu_widget(struct xa_window *wind, struct xa_widget *widg)
+display_menu_widget(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 {
 	struct xa_client *rc = lookup_extension(NULL, XAAES_MAGIC);
 	XA_TREE *wt = widg->stuff;
@@ -1942,7 +1951,7 @@ display_menu_widget(struct xa_window *wind, struct xa_widget *widg)
 	{
 		DIAG((D_menu, wt->owner, "normal display_menu_widget, wt->owner %s, rc %s",
 			wt->owner->name, rc->name));
-		Display_menu_widg(wind, widg);
+		Display_menu_widg(wind, widg, clip);
 	}
 	else
 	{
@@ -1952,7 +1961,7 @@ display_menu_widget(struct xa_window *wind, struct xa_widget *widg)
 			    wind,
 			    widg,
 			    0, 0,
-			    NULL,
+			    clip,
 			    NULL);
 	}
 	return true;
@@ -1971,6 +1980,9 @@ click_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *wid
 	struct xa_client *client; //, *rc = lookup_extension(NULL, XAAES_MAGIC);
 	struct proc *p = get_curproc();
 	DIAG((D_menu, NULL, "click_menu_widget"));
+
+	if (md->clicks > 1)
+		return false;
 
 	client = ((XA_TREE *)widg->stuff)->owner;
 
@@ -2160,21 +2172,21 @@ set_menu_widget(struct xa_window *wind, struct xa_client *owner, XA_TREE *menu)
 	obtree->ob_height = obtree[obtree->ob_head].ob_height = obtree[obtree->ob_tail].ob_height = widg->r.h - 1; //wind->wa.w;
 	obtree[obtree->ob_tail].ob_y = widg->r.h;
 	
-	widg->h.draw = display_menu_widget;
-	widg->click = click_menu_widget;
-	widg->dclick = NULL;
-	widg->drag = NULL /* drag_menu_widget */;
+
+	widg->m.r.draw = display_menu_widget;
+	widg->m.click = click_menu_widget;
+	widg->m.drag = NULL /* drag_menu_widget */;
+	widg->m.properties |= WIP_INSTALLED|WIP_ACTIVE;
 	widg->state = OS_NORMAL;
 	widg->stuff = menu;
 	widg->stufftype = STUFF_IS_WT;
-	widg->destruct = free_xawidget_resources;
+	widg->m.destruct = free_xawidget_resources;
 	widg->start = 0;
 
 	wind->tool = widg;
 	wind->active_widgets |= XaMENU;
 
-	widg->loc.statusmask = XAWS_SHADED;
-
+	widg->m.statusmask = XAWS_SHADED;
 }
 
 /*
@@ -2186,9 +2198,6 @@ set_popup_widget(Tab *tab, struct xa_window *wind, int obj)
 	MENU_TASK *k = &tab->task_data.menu;
 	XA_TREE *wt = k->wt;
 	XA_WIDGET *widg = get_widget(wind, XAW_MENU);
-	XA_WIDGET_LOCATION loc;
-	//OBJECT *ob = wt->tree + obj;
-	//DisplayWidget display_object_widget;
 	DrawWidg display_object_widget;
 	int frame = wind->frame;
 
@@ -2206,40 +2215,26 @@ set_popup_widget(Tab *tab, struct xa_window *wind, int obj)
 	if (frame < 0)
 		frame = 0;
 
-	loc.relative_type = LT;
-
-/* HR The whole idee is: what to put in relative location to get the object I want too see (item) on the place I
-      have chosen (window work area) The popup may take any place inside a root object. */
-/* Derivation:
-              (window border compensation  )   - (target       root displacement).
-	loc.r.x = (wind->wa.x - wind->r.x - frame) - (wind->wa.x - k->rdx);
-	loc.r.y = (wind->wa.y - wind->r.y - frame) - (wind->wa.y - k->rdy);
-*/
-	loc.r.x = k->rdx - wind->r.x - frame;
-	loc.r.y = k->rdy - wind->r.y - frame;
+	widg->m.properties = WIP_NOTEXT | WIP_INSTALLED;
+	widg->m.r.pos_in_row = LT;
 	
-	DIAG((D_menu, tab->client, "loc %d/%d", loc.r.x, loc.r.y));
+	widg->m.r.tp = XaMENU;
 
-	loc.r.w = wt->tree->ob_width;
-	loc.r.h = wt->tree->ob_height;
-	loc.mask = XaMENU;
+	widg->m.r.xaw_idx = XAW_MENU;
+ 	widg->m.r.draw = display_menu_widget;
+	widg->r.x = k->rdx - wind->r.x - frame;
+	widg->r.y = k->rdy - wind->r.y - frame;
+	widg->r.w = wt->tree->ob_width;
+	widg->r.h = wt->tree->ob_height;
 
-	widg->type = XAW_MENU;
- 	widg->h.draw = display_menu_widget;
-#if 0
-	/* handled by other means (Task administration Tab) */
-	widg->click = click_popup_widget;
-#endif
-	widg->r = loc.r;
-	widg->loc = loc;
 	widg->state = OS_NORMAL;
 	widg->stuff = wt;
 	widg->stufftype = STUFF_IS_WT;
-	widg->destruct = free_xawidget_resources;
+	widg->m.destruct = free_xawidget_resources;
 	widg->start = obj;
 //	if (tab->nest)
 		/* HR testing: Use the window borders. */
-		wt->zen = true;
+// 		wt->zen = true;
 
 	wind->tool = widg;
 

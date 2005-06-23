@@ -1480,7 +1480,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 	XA_TREE *wt;
 	char *pat,*pbt;
 	struct scroll_info *list;
-	RECT remember = {0,0,0,0};
+	RECT remember = {0,0,0,0}, or;
 
 	DIAG((D_fsel,NULL,"open_fileselector for %s on '%s', fn '%s', '%s', %lx,%lx)",
 			c_owner(client), path, file, title, s, c));
@@ -1527,16 +1527,18 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 		form[FS_LIST ].ob_height += dh;
 		form[FS_UNDER].ob_y += dh;
 
+		ob_rectangle(form, 0, &or);
+
 		/* Work out sizing */
 		if (!remember.w)
 		{
-			form_center(form, 2*ICON_H);
+			center_rect(&or);
 			remember =
 			calc_window(lock, client, WC_BORDER,
 				    XaMENU|NAME, created_for_AES,
 				    C.Aes->options.thinframe,
 				    C.Aes->options.thinwork,
-				    *(RECT*)&form->ob_x);
+				    *(RECT*)&or); //form->ob_x);
 		}
 
 		strcpy(fs->root, path);
@@ -1616,7 +1618,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 		if (*fs->file)
 			fs->tfile = true;
 
-		wt = set_toolbar_widget(lock, dialog_window, client, form, FS_FILE, WIP_NOTEXT, NULL);
+		wt = set_toolbar_widget(lock, dialog_window, client, form, FS_FILE, 0/*WIP_NOTEXT*/, true, NULL, &or);
 		/* This can be of use for drawing. (keep off border & outline :-) */
 		wt->zen = true;
 		wt->exit_form = fileselector_form_exit;

@@ -120,7 +120,7 @@ object_deselect(OBJECT *ob)
 
 /* A quick hack to catch *most* of the problems with transparent objects */
 bool
-object_is_transparent(OBJECT *ob)
+object_is_transparent(OBJECT *ob, bool pdistrans)
 {
 	bool ret = false;
 
@@ -145,7 +145,7 @@ object_is_transparent(OBJECT *ob)
 		}
 		case G_PROGDEF:
 		{
-			ret = false;
+			ret = pdistrans ? true : false;
 			break;
 		}
 		case G_TEXT:
@@ -155,11 +155,11 @@ object_is_transparent(OBJECT *ob)
 				ret = true;
 			break;
 		}
-#if 0
+#if 1
 		case G_BOXTEXT:
 		case G_FBOXTEXT:
 		{
-			//if (!(*(BFOBSPEC *)&object_get_tedinfo(ob)->te_just).fillpattern)
+			if (!(*(BFOBSPEC *)&object_get_tedinfo(ob)->te_just).textmode) //fillpattern)
 				ret = true;
 			break;
 		}
@@ -790,7 +790,6 @@ free_object_tree(struct xa_client *client, OBJECT *obtree)
 			ufree(obtree);
 	}
 }
-
 short
 object_thickness(OBJECT *ob)
 {
@@ -1630,7 +1629,7 @@ obj_find(XA_TREE *wt, short object, short depth, short mx, short my, RECT *c)
 			next = obtree[current].ob_next;
 
 			/* Trace back up tree if no more siblings */
-			while ((next != stop/*-1*/) && (obtree[next].ob_tail == current))
+			while ((next != stop && next != -1) && (obtree[next].ob_tail == current))
 			{
 				current = next;
 				x -= obtree[current].ob_x;
@@ -1641,7 +1640,7 @@ obj_find(XA_TREE *wt, short object, short depth, short mx, short my, RECT *c)
 			current = next;
 		}	
 	}
-	while ((current != stop/*-1*/) && (rel_depth > 0));
+	while (current != stop && current != -1 && (rel_depth > 0));
 
 	if (c && pos_object >= 0)
 	{
@@ -1768,6 +1767,7 @@ obtree_has_touchexit(OBJECT *obtree)
  */
 void
 obj_change(XA_TREE *wt,
+	   struct xa_vdi_settings *v,
 	   short obj,
 	   int transdepth,
 	   short state,
@@ -1792,24 +1792,32 @@ obj_change(XA_TREE *wt,
 
 	if (draw && redraw)
 	{
-		obj_draw(wt, obj, transdepth, clip, rl);
+		obj_draw(wt, v, obj, transdepth, clip, rl);
 	}
 }
 
 void
-obj_draw(XA_TREE *wt, short obj, int transdepth, const RECT *clip, struct xa_rect_list *rl)
+obj_draw(XA_TREE *wt, struct xa_vdi_settings *v, short obj, int transdepth, const RECT *clip, struct xa_rect_list *rl)
 {
 	short start = obj, i;
 	RECT or;
+	bool pd = false;
 
 	hidem();
 
 	obj_area(wt, obj, &or);
 
-	while (object_is_transparent(wt->tree + start))
+	if (transdepth != -1 && (transdepth & 0x8000))
 	{
-		if ((i = ob_get_parent(wt->tree, start)) < 0)
+		transdepth &= ~0x8000;
+		pd = true;
+	}
+
+	while (object_is_transparent(wt->tree + start, pd))
+	{
+		if ((i = ob_get_parent(wt->tree, start)) < 0 || !transdepth)
 			break;
+		transdepth--;
 		start = i;
 	}
 	
@@ -1823,18 +1831,18 @@ obj_draw(XA_TREE *wt, short obj, int transdepth, const RECT *clip, struct xa_rec
 			{
 				if (xa_rect_clip(&or, &r, &r))
 				{
-					set_clip(&r);
-					draw_object_tree(0, wt, wt->tree, start, MAX_DEPTH, NULL);
+					(*v->api->set_clip)(v, &r);
+					draw_object_tree(0, wt, wt->tree, v, start, MAX_DEPTH, NULL);
 				}
 			}
 		} while ((rl = rl->next));
 	}
 	else
 	{
-		set_clip(&or);
-		draw_object_tree(0, wt, wt->tree, start, MAX_DEPTH, NULL);
+		(*v->api->set_clip)(v, &or);
+		draw_object_tree(0, wt, wt->tree, v, start, MAX_DEPTH, NULL);
 	}
-	clear_clip();
+	(*v->api->clear_clip)(v);
 
 	showm();
 }
@@ -2278,6 +2286,7 @@ obj_ED_INIT(struct widget_tree *wt,
  */
 short
 obj_edit(XA_TREE *wt,
+	 struct xa_vdi_settings *v,
 	 short func,
 	 short obj,
 	 short keycode,
@@ -2314,7 +2323,7 @@ obj_edit(XA_TREE *wt,
 				hidem();
 				obj_ED_INIT(wt, &wt->e, obj, -1, last, NULL, &old_ed_obj);
 				if (redraw)
-					eor_objcursor(wt, rl);
+					eor_objcursor(wt, v, rl);
 				showm();
 				pos = wt->e.pos;
 				break;
@@ -2330,7 +2339,7 @@ obj_edit(XA_TREE *wt,
 				if (redraw)
 				{
 					hidem();
-					eor_objcursor(wt, rl);
+					eor_objcursor(wt, v, rl);
 					showm();
 				}
 				break;
@@ -2362,10 +2371,10 @@ obj_edit(XA_TREE *wt,
 					{
 						if (redraw)
 						{
-							eor_objcursor(wt, rl);
+							eor_objcursor(wt, v, rl);
 							if (obj_ed_char(wt, &wt->e, ted, keycode))
-								obj_draw(wt, wt->e.obj, -1, clip, rl);
-							eor_objcursor(wt, rl);
+								obj_draw(wt, v, wt->e.obj, -1, clip, rl);
+							eor_objcursor(wt, v, rl);
 						}
 						else
 							obj_ed_char(wt, &wt->e, ted, keycode);
@@ -2385,10 +2394,10 @@ obj_edit(XA_TREE *wt,
 
 					if (redraw)
 					{
-						eor_objcursor(wt, rl);
+						eor_objcursor(wt, v, rl);
 						if (obj_ed_char(wt, ei, ted, keycode))
-							obj_draw(wt, obj, -1, clip, rl);
-						eor_objcursor(wt, rl);
+							obj_draw(wt, v, obj, -1, clip, rl);
+						eor_objcursor(wt, v, rl);
 					}
 					else
 						obj_ed_char(wt, ei, ted, keycode);
@@ -2428,15 +2437,15 @@ obj_edit(XA_TREE *wt,
 				ei = &wt->e;
 				hidem();
 				if (ei->obj >= 0 && redraw)
-					undraw_objcursor(wt, rl);
+					undraw_objcursor(wt, v, rl);
 
 				if (!obj_ED_INIT(wt, ei, obj, -1, last, NULL, &old_ed_obj))
-					disable_objcursor(wt, rl);
+					disable_objcursor(wt, v, rl);
 				else
 				{
-					enable_objcursor(wt);
+					enable_objcursor(wt, v);
 					if (redraw)
-						draw_objcursor(wt, rl);
+						draw_objcursor(wt, v, rl);
 				}
 				showm();
 				pos = ei->pos;
@@ -2451,23 +2460,23 @@ obj_edit(XA_TREE *wt,
 					pos = wt->e.pos;
 
 				hidem();
-				disable_objcursor(wt, rl);
+				disable_objcursor(wt, v, rl);
 				showm();
 				break;
 			}
 			case ED_ENABLE:
 			{
-				enable_objcursor(wt);
+				enable_objcursor(wt, v);
 				break;
 			}
 			case ED_CRSROFF:
 			{
-				undraw_objcursor(wt, rl);
+				undraw_objcursor(wt, v, rl);
 				break;
 			}
 			case ED_CRSRON:
 			{
-				draw_objcursor(wt, rl);
+				draw_objcursor(wt, v, rl);
 				break;
 			}
 			case ED_CHAR:
@@ -2499,7 +2508,7 @@ obj_edit(XA_TREE *wt,
 					if (obj_ED_INIT(wt, &lei, obj, -1, last, &ted, &old_ed_obj))
 					{
 						if (obj_ed_char(wt, &lei, ted, keycode))
-							obj_draw(wt, obj, -1, clip, rl);
+							obj_draw(wt, v, obj, -1, clip, rl);
 
 						pos = lei.pos;
 					}
@@ -2514,11 +2523,11 @@ obj_edit(XA_TREE *wt,
 
 					DIAGS((" -- obj_edit: ted=%lx", ted));
 
-					undraw_objcursor(wt, rl);
+					undraw_objcursor(wt, v, rl);
 					if (obj_ed_char(wt, ei, ted, keycode))
-						obj_draw(wt, obj, -1, clip, rl);
-					set_objcursor(wt);
-					draw_objcursor(wt, rl);
+						obj_draw(wt, v, obj, -1, clip, rl);
+					set_objcursor(wt, v);
+					draw_objcursor(wt, v, rl);
 					pos = ei->pos;
 				}
 				showm();
@@ -2560,6 +2569,7 @@ obj_edit(XA_TREE *wt,
 
 void
 obj_set_radio_button(XA_TREE *wt,
+		      struct xa_vdi_settings *v,
 		      short obj,
 		      bool redraw,
 		      const RECT *clip,
@@ -2585,7 +2595,8 @@ obj_set_radio_button(XA_TREE *wt,
 				if (o != obj)
 				{
 					obj_change(wt,
-						   o, 0,
+						   v,
+						   o, -1,
 						   obtree[o].ob_state & ~OS_SELECTED,
 						   obtree[o].ob_flags,
 						   redraw,
@@ -2597,7 +2608,8 @@ obj_set_radio_button(XA_TREE *wt,
 		}
 		DIAGS(("radio: set obj %d", obj));
 		obj_change(wt,
-			   obj, 0,
+			   v,
+			   obj, -1,
 			   obtree[obj].ob_state | OS_SELECTED,
 			   obtree[obj].ob_flags,
 			   redraw, clip,
@@ -2607,6 +2619,7 @@ obj_set_radio_button(XA_TREE *wt,
 
 short
 obj_watch(XA_TREE *wt,
+	   struct xa_vdi_settings *v,
 	   short obj,
 	   short in_state,
 	   short out_state,
@@ -2630,12 +2643,12 @@ obj_watch(XA_TREE *wt,
 		/* If mouse button is already released, assume that was just
 		 * a click, so select
 		 */
-		obj_change(wt, obj, 0, in_state, flags, true, clip, rl);
+		obj_change(wt, v, obj, -1, in_state, flags, true, clip, rl);
 	}
 	else
 	{
 		S.wm_count++;
-		obj_change(wt, obj, 0, in_state, flags, true, clip, rl);
+		obj_change(wt, v, obj, -1, in_state, flags, true, clip, rl);
 		while (mb)
 		{
 			short s;
@@ -2656,7 +2669,7 @@ obj_watch(XA_TREE *wt,
 				if (pobf != obf)
 				{
 					pobf = obf;
-					obj_change(wt, obj, 0, s, flags, true, clip, rl);
+					obj_change(wt, v, obj, -1, s, flags, true, clip, rl);
 				}
 			}
 		}

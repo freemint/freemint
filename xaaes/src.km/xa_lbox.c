@@ -204,7 +204,7 @@ get_lbox(struct xa_client *client, void *lbox_handle)
  * Get and attatch resources for a new LBOX to a widget tree
  */
 static struct xa_lbox_info *
-new_lbox(struct widget_tree *wt)
+new_lbox(struct widget_tree *wt, struct xa_vdi_settings *v)
 {
 	struct xa_lbox_info *lbox;
 
@@ -217,6 +217,7 @@ new_lbox(struct widget_tree *wt)
 		lbox->next = wt->lbox;
 		wt->lbox = lbox;
 		lbox->wt = wt;
+		lbox->vdi_settings = v;
 	}
 	return lbox;
 }
@@ -282,6 +283,7 @@ redraw_lbox(struct xa_lbox_info *lbox, short obj, short depth, RECT *r)
 {
 	struct xa_window *wind;
 	struct widget_tree *wt;
+	struct xa_vdi_settings *v = lbox->vdi_settings;
 	short i, start;
 	RECT or;
 
@@ -294,7 +296,7 @@ redraw_lbox(struct xa_lbox_info *lbox, short obj, short depth, RECT *r)
 	obj_area(wt, obj, &or);
 
 	start = obj;
-	while (object_is_transparent(wt->tree + start))
+	while (object_is_transparent(wt->tree + start, false))
 	{
 		if ((i = ob_get_parent(wt->tree, start)) < 0)
 			break;
@@ -319,8 +321,8 @@ redraw_lbox(struct xa_lbox_info *lbox, short obj, short depth, RECT *r)
 			{
 				if (xa_rect_clip(&rl->r, r, &dr))
 				{
-					set_clip(&dr);
-					draw_object_tree(0, wt, wt->tree, start, depth, NULL);
+					(*v->api->set_clip)(v, &dr);
+					draw_object_tree(0, wt, wt->tree, v, start, depth, NULL);
 				}
 				rl = rl->next;
 			}
@@ -330,16 +332,16 @@ redraw_lbox(struct xa_lbox_info *lbox, short obj, short depth, RECT *r)
 	{
 		if (xa_rect_clip(r, &or, &or))
 		{
-			set_clip(&or);
-			draw_object_tree(0, wt, wt->tree, start, depth, NULL);
+			(*v->api->set_clip)(v, &or);
+			draw_object_tree(0, wt, wt->tree, v, start, depth, NULL);
 		}
 	}
 	else
 	{
-		set_clip(&or);
-		draw_object_tree(0, wt, wt->tree, start, depth, NULL);
+		(*v->api->set_clip)(v, &or);
+		draw_object_tree(0, wt, wt->tree, v, start, depth, NULL);
 	}
-	clear_clip();
+	(*v->api->clear_clip)(v);
 	unlock_screen(wt->owner->p, 0);
 }
 
@@ -1095,7 +1097,7 @@ XA_lbox_create(enum locks lock, struct xa_client *client, AESPB *pb)
 			wt = new_widget_tree(client, obtree);
 		assert(wt);
 
-		lbox = new_lbox(wt);
+		lbox = new_lbox(wt, client->vdi_settings);
 		
 		if (lbox)
 		{
@@ -1255,7 +1257,7 @@ click_lbox_obj(struct xa_lbox_info *lbox, struct lbox_item *item, short obj, sho
 	
 
 	last_state = obtree[obj].ob_state;
-	vq_key_s(C.vh, &ks);
+	vq_key_s(C.P_handle, &ks);
 	
 	//hidem();
 
@@ -1313,7 +1315,7 @@ XA_lbox_do(enum locks lock, struct xa_client *client, AESPB *pb)
 		short ks, mb;
 		RECT r, asr, bsr;
 		
-		vq_key_s(C.vh, &ks);
+		vq_key_s(C.P_handle, &ks);
 		obj &= ~0x8000;
 		obj_area(lbox->wt, lbox->parent, &r);
 

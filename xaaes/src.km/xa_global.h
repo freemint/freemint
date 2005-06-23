@@ -30,8 +30,10 @@
 #include "global.h"
 #include "xa_types.h"
 
-long old_fpu;
-
+# define SHUT_POWER	0
+# define SHUT_BOOT	1
+# define SHUT_COLD	2
+# define SHUT_HALT	3
 
 extern char version[32];
 extern char vversion[128];
@@ -61,7 +63,7 @@ struct shared
 	
 	struct win_base open_nlwindows;
 	struct win_base closed_nlwindows;
-	//struct win_base nolist_windows;		/* list of open nolist windows - fmd, alerts, etc. */
+	struct win_base calc_windows;		/* list of open nolist windows - fmd, alerts, etc. */
 
 	LIST_HEAD(xa_client) client_list;
 	LIST_HEAD(xa_client) app_list;
@@ -205,7 +207,7 @@ struct common
 {
 	unsigned short nvdi_version;
 
-	short vh;			/* Virtual workstation handle used by the AES */
+// 	short vh;			/* Virtual workstation handle used by the AES */
 	short AESpid;			/* The AES's MiNT process ID */
 	short DSKpid;			/* The desktop programs pid, if any */
 
@@ -223,6 +225,7 @@ struct common
 					 *     in the queue. 'move_block' is then reset when all WM_REDRAWS
 					 *     are serviced
 					 */
+	short rect_lock;
 	long redraws;			/* Counting WM_REDRAWS being sent and dispatched */
 	struct xa_client *button_waiter;/* Client which is getting the next moose_data packet, */
 					/* most probably a button released one */
@@ -237,6 +240,7 @@ struct common
 #define QUIT_NOW	0x1		/* - enter shutdown the next possible time */
 #define HALT_SYSTEM	0x2		/* - halt system after xaaes shutdown */
 #define REBOOT_SYSTEM	0x4		/* - reboot system after xaaes shutdown */
+#define COLDSTART_SYSTEM 0x8		/* - cold reboot */
 
 	bool mvalidate;
 
@@ -313,6 +317,7 @@ struct config
 
 	Path widg_name;			/* Path to XaAES widget rsc */
 	Path rsc_name;			/* Path to XaAES rsc */
+	Path xobj_name;
 
 	/* display modes of window title */
 	short topname;
@@ -320,8 +325,8 @@ struct config
 	
 	short next_active;		/* 0 = set previous active client active upon client termination */
 					/* 1 = set owner of previous topped (or only) window upon client termination */
-	short last_wind;		/* 0 = Put owner of window ontop of window_list infront. */
-					/* 1 = Keep client whose last window was closed infront. */
+//	short last_wind;		/* 0 = Put owner of window ontop of window_list infront. */
+//					/* 1 = Keep client whose last window was closed infront. */
 
 	bool lrmb_swap;			/* Swap left and right mouse-button status bits */
 	bool widg_auto_highlight;	/* WIDGET Highligh when Mouse Hovers */
@@ -345,8 +350,8 @@ struct config
 
 	enum menu_behave menu_behave;	/* pull, push or leave */
 
-	short widg_w, widg_h;
-	short widg_dw, widg_dh;		/* flexible widget object types. */
+//	short widg_w, widg_h;
+//	short widg_dw, widg_dh;		/* flexible widget object types. */
 
 	short ted_filler;
 	short font_id;			/* Font id to use */
@@ -385,27 +390,6 @@ struct config
 /* Global config data */
 extern struct config cfg;
 
-struct xa_screen
-{
-	RECT r;				/* Screen dimensions */
-	XA_DISPLAY display_type;	/* The type of display we are using */
-	struct xa_colour_scheme dial_colours;
-					/* Colour scheme used for dialogs */
-
-	short colours;			/* Number of colours available */
-	short planes;			/* Number of planes in screen */
-	short standard_font_height;	/* Needed for appl_getinfo */
-	short standard_font_id;
-	short standard_font_point;
-	short small_font_id;
-	short small_font_point;
-	short small_font_height;	/* Needed for appl_getinfo */
-
-	short c_max_w, c_max_h;		/* Maximum character dimensions in pixels */
-	short c_min_w, c_min_h;		/* Minimum (small font) character dimensions in pixels */
-
-	struct rgb_1000 palette[256];
-};
 typedef struct
 {
 	short	*control;	/**< TODO */
@@ -418,9 +402,13 @@ typedef struct
 
 /* The screen descriptor */
 extern struct xa_screen screen;
+extern struct xa_objc_render objc_rend;
+extern struct xa_vdi_settings global_vdi_settings;
+extern struct xa_vdi_api *global_vdiapi;
+
 #define MONO (screen.colours < 16)
 
-extern struct xa_widget_theme default_widget_theme;
+//extern struct xa_widget_theme default_widget_theme;
 extern struct options default_options;
 extern struct options local_options;
 
@@ -435,15 +423,15 @@ extern const char mnu_clientlistname[];
 extern XA_TREE nil_tree;
 
 /* shortcuts */
-static inline void hidem(void)  { v_hide_c(C.vh);    }
-static inline void showm(void)  { v_show_c(C.vh, 1); }
-static inline void forcem(void) { v_show_c(C.vh, 0); }
+static inline void hidem(void)  { v_hide_c(C.P_handle);    }
+static inline void showm(void)  { v_show_c(C.P_handle, 1); }
+static inline void forcem(void) { v_show_c(C.P_handle, 0); }
 
 struct xa_client *pid2client(short pid);
 struct xa_client *proc2client(struct proc *p);
 
 void *	lookup_xa_data		(struct xa_data_hdr **l,    void *_data);
-void	add_xa_data		(struct xa_data_hdr **list, void *_data, void (*destruct)(void *d));
+void	add_xa_data		(struct xa_data_hdr **list, void *_data, void _cdecl(*destruct)(void *d));
 void	remove_xa_data		(struct xa_data_hdr **list, void *_data);
 void	delete_xa_data		(struct xa_data_hdr **list, void *_data);
 void	free_xa_data_list	(struct xa_data_hdr **list);

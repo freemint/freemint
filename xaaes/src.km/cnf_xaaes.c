@@ -60,7 +60,7 @@ static PCB_TTx	pCB_setenv;		/* setenv name val	*/
 
 static PCB_T	pCB_toppage;
 static PCB_T	pCB_next_active;
-static PCB_T	pCB_close_lastwind;
+//static PCB_T	pCB_close_lastwind;
 static PCB_A	pCB_app_options;
 static PCB_A    pCB_cancel;
 static PCB_A    pCB_filters;
@@ -110,7 +110,7 @@ static struct parser_item parser_tab[] =
 	
 	{ "TOPPAGE",               PI_V_T,   pCB_toppage		},
 	{ "NEXT_ACTIVE",           PI_V_T,   pCB_next_active		},
-	{ "CLOSE_LASTWIND",        PI_V_T,   pCB_close_lastwind		},
+//	{ "CLOSE_LASTWIND",        PI_V_T,   pCB_close_lastwind		},
 	{ "FOCUS",                 PI_V_T,   pCB_point_to_type		},
 	{ "APP_OPTIONS",           PI_V_A,   pCB_app_options		},
 	{ "CANCEL",                PI_V_A,   pCB_cancel			},
@@ -418,7 +418,7 @@ pCB_next_active(char *str)
 	DIAGS(("pCB_next_active: %s (next_active %i)",
 		str, cfg.next_active));
 }
-
+#if 0
 static void
 pCB_close_lastwind(char *str)
 {
@@ -437,6 +437,7 @@ pCB_close_lastwind(char *str)
 	DIAGS(("pCB_close_lastwind: %s (last_wind %i)",
 		str, cfg.last_wind));
 }
+#endif
 
 /*----------------------------------------------------------------------------*/
 #if POINT_TO_TYPE
@@ -558,6 +559,8 @@ pCB_app_options(char *line)
 				get_argument(s + 13, &opts->thinframe);
 			else if (!strnicmp(s, "inhibit_hide", 12))
 				get_boolarg(s + 12, &opts->inhibit_hide);
+			else if (!strnicmp(s, "clwtna", 6))
+				get_boolarg(s + 6, &opts->clwtna);
 
 #if GENERATE_DIAGS
 			else

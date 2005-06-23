@@ -50,11 +50,13 @@ bool	Setup_form_do	(struct xa_client *client,
 
 void	form_center	(OBJECT *obtree, short barsizes);
 void	form_center_r	(OBJECT *obtree, short barsizes, RECT *r);
+void	center_rect	(RECT *r);
 
 #define FBF_REDRAW	1
 #define FBF_DO_SLIST	2
 
 bool	form_button	(XA_TREE *wt,
+			 struct xa_vdi_settings *v,
 			 short obj,
 			 const struct moose_data *md,
 			 unsigned long flags, //bool redraw,
@@ -65,12 +67,14 @@ bool	form_button	(XA_TREE *wt,
 			 short *clickmsk);
 
 short	form_cursor	(XA_TREE *wt,
+			 struct xa_vdi_settings *v,
 			 ushort keycode,
 			 short obj,
 			 bool redraw,
 			 struct xa_rect_list *rl);
 
 bool	form_keyboard	(XA_TREE *wt,
+			 struct xa_vdi_settings *v,
 			 short obj,
 			 const struct rawkey *key,
 			 bool redraw,
