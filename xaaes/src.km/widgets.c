@@ -498,6 +498,7 @@ obtree_to_wt(struct xa_client *client, OBJECT *obtree)
 
 	return wt;
 }
+
 void
 init_widget_tree(struct xa_client *client, struct widget_tree *wt, OBJECT *obtree)
 {
@@ -2721,7 +2722,14 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 		dm = def_methods[XAW_BORDER + 1];
 		dm.r = theme->w->border;
 		dm.r.pos_in_row = NO;
-		dm.properties = WIP_INSTALLED;
+		if (wind->frame > 0)
+		{
+			dm.properties = WIP_INSTALLED|WIP_ACTIVE;
+			utp |= BORDER;
+		}
+		else
+			dm.properties = WIP_INSTALLED;
+
 		(void)make_widget(wind, &dm, NULL);
 
 		while ((rtp = rows->tp_mask) != -1)
@@ -2798,7 +2806,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 							struct render_widget *unused = &theme->w->exterior;
 							dm = def_methods[0];
 							dm.r = *(*rw);
-							dm.properties = WIP_INSTALLED; //WIP_ACTIVE;
+							dm.properties = WIP_INSTALLED;
 							dm.r.draw = unused->draw;
 							widg = make_widget(wind, &dm, NULL);
 							this_tp = 0;

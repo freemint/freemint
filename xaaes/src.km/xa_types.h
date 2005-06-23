@@ -276,38 +276,6 @@ struct xa_wtxt_inf
 	struct xa_fnt_info s;
 	struct xa_fnt_info h;
 };
-#if 0
-struct xa_window_colours
-{
-
-	short waframe_col;
-	short frame_col;
-
-	struct xa_wcol_inf	win;
-	struct xa_wcol_inf	borders;
-
-	struct xa_wcol_inf	slider;
-	struct xa_wcol_inf	slide;
-
-	struct xa_wcol_inf	title;
-
-	struct xa_wcol_inf	info;
-
-	struct xa_wcol_inf	closer;
-	struct xa_wcol_inf	hider;
-	struct xa_wcol_inf	iconifier;
-	struct xa_wcol_inf	fuller;	
-	struct xa_wcol_inf	sizer;
-	struct xa_wcol_inf	uparrow;
-	struct xa_wcol_inf	dnarrow;
-	struct xa_wcol_inf	lfarrow;
-	struct xa_wcol_inf	rtarrow;
-
-	struct xa_wtxt_inf	title_txt;
-	struct xa_wtxt_inf	info_txt;
-
-};
-#endif
 
 /*-----------------------------------------------------------------
  * Configuration and options structures
@@ -1000,26 +968,6 @@ typedef enum xa_widgets XA_WIDGETS;
 #define XA_MAX_CF_WIDGETS	XAW_TOOLBAR
 
 struct xa_widget;
-
-/* Widget positions are defined as relative locations */
-#if 0
-struct xa_widget_location
-{
-	XA_RELATIVE relative_type;	/* Where is the position relative to? */
-	XA_WIDGETS n;			/* index */
-//	XA_WIND_ATTR mask;		/* disconnect NAME|SMALLER etc from emumerated type XA_WIDGETS */
-	short statusmask;
-//	int rsc_index;			/* If a bitmap widget, index in rsc file */
-#define WIP_NOTEXT	0x0001		/* Widget is NOT part of window exterior, will not be automatically redrawn */
-#define WIP_WACLIP	0x0002		/* Widget is part of, and will be clipped by, windows work area */
-#define WIP_ACTIVE	0x0004		/* If this bit is set, widget is clickable, else is just to draw the
-					 * corresponding part of window exterior and clicks on it is ignored
-					 */
-//	short properties;
-//	void (*destruct)(struct xa_widget *widg);
-};
-typedef struct xa_widget_location XA_WIDGET_LOCATION;
-#endif
 
 typedef bool _cdecl DrawWidg (struct xa_window *wind, struct xa_widget *widg, const RECT *clip);
 typedef void _cdecl SetWidgSize(struct xa_window *wind, struct xa_widget *widg);
