@@ -30,7 +30,7 @@
 #include "global.h"
 #include "xa_types.h"
 
-void set_desktop(XA_TREE *);
+void set_desktop(struct xa_client *client, bool remove);
 XA_TREE *get_desktop(void);
 OBJECT *get_xa_desktop(void);
 void set_desktop_widget(struct xa_window *wind, XA_TREE *desktop);

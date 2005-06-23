@@ -430,7 +430,6 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 				return;
 			}
 		}
-	#if 1
 		if ( C.update_lock && (locker = get_update_locker()))
 		{
 			DIAG((D_mouse, locker, "XA_button_event - screen locked by %s", locker->name));
@@ -447,7 +446,6 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 				return;
 			}
 		}
-	#endif
 	}
 
 	locker = C.mouse_lock ? get_mouse_locker() : NULL;
@@ -645,7 +643,6 @@ XA_wheel_event(enum locks lock, const struct moose_data *md)
 			return;
 		}
 	}
-#if 1
 	if ( C.update_lock && (locker = get_update_locker()))
 	{
 		DIAG((D_mouse, locker, "XA_button_event - screen locked by %s", locker->name));
@@ -663,7 +660,6 @@ XA_wheel_event(enum locks lock, const struct moose_data *md)
 			return;
 		}
 	}
-#endif
 	locker = C.mouse_lock ? get_mouse_locker() : NULL;
 	wind = find_window(lock, md->x, md->y);
 
@@ -832,7 +828,7 @@ move_rtimeout(struct proc *p, long arg)
 			if (client->status & CS_LAGGING)
 			{
 				DIAGS(("%s lagging - cancelling all events", client->name));
-				//display("%s lagging - cancelling all events", client->name);
+// 				display("%s lagging - cancelling all events", client->name);
 				cancel_aesmsgs(&client->rdrw_msg);
 				cancel_aesmsgs(&client->msg);
 				cancel_aesmsgs(&client->irdrw_msg);
@@ -841,7 +837,7 @@ move_rtimeout(struct proc *p, long arg)
 			else
 			{
 				DIAGS(("%s flagged as lagging", client->name));
-				//display("%s flagged as lagging", client->name);
+// 				display("%s flagged as lagging", client->name);
 				client->status |= CS_LAGGING;
 			}
 		}
@@ -868,11 +864,12 @@ move_rtimeout(struct proc *p, long arg)
 static void
 move_timeout(struct proc *p, long arg)
 {
+// 	bool ur_lock = (C.updatelock_count); // || C.rect_lock);
 	struct moose_data md;
 	
 	m_to = NULL;
 	
-	if (!S.clients_exiting)
+	if (!S.clients_exiting) // && !ur_lock)
 	{
 		/*
 		 * Did mouse move since last time?
@@ -892,7 +889,7 @@ move_timeout(struct proc *p, long arg)
 			md.x = last_x;
 			md.y = last_y;
 			md.ty = MOOSE_MOVEMENT_PREFIX;
-			vq_key_s(C.vh, &md.kstate);
+			vq_key_s(C.P_handle, &md.kstate);
 			/*
 			 * Deliver move event
 			*/
@@ -904,18 +901,27 @@ move_timeout(struct proc *p, long arg)
 			*/
 			if (last_x != x_mouse || last_y != y_mouse)
 			{
-				if (C.move_block) //C.redraws)
+// 				ur_lock = (C.updatelock_count); // || C.rect_lock);
+				if (C.move_block) // || ur_lock) //C.redraws)
 				{
 					/*
 					 * If redraw messages are still pending,
 					 * start a timeout which will handle clients
 					 * not responding/too busy to react to WM_REDRAWS
 					*/
-					if (cfg.redraw_timeout)
-					{
-						if (!m_rto)
-							m_rto = addroottimeout(cfg.redraw_timeout/*400L*/, move_rtimeout, 1);
-					}
+// 					if (!ur_lock)
+// 					{
+						if (cfg.redraw_timeout)
+						{
+							if (!m_rto)
+								m_rto = addroottimeout(cfg.redraw_timeout/*400L*/, move_rtimeout, 1);
+						}
+// 					}
+// 					else if (m_rto && !C.move_block)
+// 					{
+// 						cancelroottimeout(m_rto);
+// 						m_rto = NULL;
+// 					}
 				}
 				else
 				{
@@ -994,8 +1000,12 @@ kick_mousemove_timeout(void)
 	}
 	else if (m_rto)
 	{
-		cancelroottimeout(m_rto);
-		m_rto = addroottimeout(cfg.redraw_timeout, move_rtimeout, 1);
+		long newtimeout = cfg.redraw_timeout >> 2;
+		if (newtimeout)
+		{
+			cancelroottimeout(m_rto);
+			m_rto = addroottimeout(cfg.redraw_timeout, move_rtimeout, 1);
+		}
 	}
 }
 
@@ -1023,7 +1033,7 @@ button_timeout(struct proc *p, long arg)
 				md.ty, md.x, md.y, md.sx, md.sy, md.state, md.cstate, md.clicks,
 				md.iclicks[0], md.iclicks[1], sizeof(struct moose_data) );
 #endif			
-			vq_key_s(C.vh, &md.kstate);
+			vq_key_s(C.P_handle, &md.kstate);
 
 			new_moose_pkt(0, 0, &md);
 

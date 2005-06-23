@@ -75,6 +75,7 @@
 #define TM_QUIT          16  /* BUTTON in Baum TASK_MANAGER */
 #define TM_HALT          17  /* BUTTON in Baum TASK_MANAGER */
 #define TM_OK            18  /* BUTTON in Baum TASK_MANAGER */
+#define TM_COLD          19  /* BUTTON in Baum TASK_MANAGER */
 
 #define SYS_ERROR        7   /* Formular/Dialog */
 #define SYSALERT_LIST    1   /* BOX in Baum SYS_ERROR */

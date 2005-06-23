@@ -24,8 +24,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include WIDGHNAME
-
 #include "xa_wind.h"
 #include "xa_global.h"
 
@@ -440,11 +438,27 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		widg = get_widget(w, XAW_HSLIDE);
 		if (widg->stuff)
 		{
+			short newpos = bound_sl(pb->intin[2]);
+			
 			XA_SLIDER_WIDGET *slw = widg->stuff;
-			slw->position = bound_sl(pb->intin[2]);
 			if (client->options.app_opts & XAPP_XT_WF_SLIDE)
-				slw->rpos = bound_sl(pb->intin[3]);
-			display_widget(lock, w, widg, NULL);
+			{
+				short newrpos = bound_sl(pb->intin[3]);
+				if (newpos != slw->position || newrpos != slw->rpos)
+				{
+					slw->position = newpos;
+					slw->rpos = newrpos;
+					display_widget(lock, w, widg, NULL);
+				}
+			}
+			else
+			{
+				if (slw->position != newpos)
+				{
+					slw->position = newpos;
+					display_widget(lock, w, widg, NULL);
+				}
+			}
 		}
 		break;
 	}
@@ -455,13 +469,30 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		XA_WIDGET *widg;
 
 		widg = get_widget(w, XAW_VSLIDE);
+		
 		if (widg->stuff)
 		{
+			short newpos = bound_sl(pb->intin[2]);
+			
 			XA_SLIDER_WIDGET *slw = widg->stuff;
-			slw->position = bound_sl(pb->intin[2]);
 			if (client->options.app_opts & XAPP_XT_WF_SLIDE)
-				slw->rpos = bound_sl(pb->intin[3]);
-			display_widget(lock, w, widg, NULL);
+			{
+				short newrpos = bound_sl(pb->intin[3]);
+				if (newpos != slw->position || newrpos != slw->rpos)
+				{
+					slw->position = newpos;
+					slw->rpos = newrpos;
+					display_widget(lock, w, widg, NULL);
+				}
+			}
+			else
+			{
+				if (slw->position != newpos)
+				{
+					slw->position = newpos;
+					display_widget(lock, w, widg, NULL);
+				}
+			}
 		}
 		break;
 	}
@@ -474,9 +505,14 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		widg = get_widget(w, XAW_HSLIDE);
 		if (widg->stuff)
 		{
+			short newlen;
 			XA_SLIDER_WIDGET *slw = widg->stuff;
-			slw->length = bound_sl(pb->intin[2]);
-			display_widget(lock, w, widg, NULL);
+			newlen = bound_sl(pb->intin[2]);
+			if (slw->length != newlen)
+			{
+				slw->length = newlen;
+				display_widget(lock, w, widg, NULL);
+			}
 		}
 		break;
 	}
@@ -489,9 +525,14 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		widg = get_widget(w, XAW_VSLIDE);
 		if (widg->stuff)
 		{
+			short newlen;
 			XA_SLIDER_WIDGET *slw = widg->stuff;
-			slw->length = bound_sl(pb->intin[2]);
-			display_widget(lock, w, widg, NULL);
+			newlen = bound_sl(pb->intin[2]);
+			if (slw->length != newlen)
+			{
+				slw->length = newlen;
+				display_widget(lock, w, widg, NULL);
+			}
 		}
 		break;
 	}
@@ -723,7 +764,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		{
 			XA_TREE *wt = obtree_to_wt(client, ob);
 
-			if (!wt || (wt && wt != client->desktop))
+			if (!wt || wt != client->desktop)
 			{
 				if (!wt)
 					wt = new_widget_tree(client, ob);
@@ -733,43 +774,22 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 					DIAGS(("  desktop for %s to (%d/%d,%d/%d)", 
 						c_owner(client), ob->ob_x, ob->ob_y, ob->ob_width, ob->ob_height));
 
+					/*
+					 * In case app dont remove a previously set desktop
+					 */
+					if (client->desktop && client->desktop != wt)
+						set_desktop(client, true);
+
 					client->desktop = wt;
-					set_desktop(wt);
+					set_desktop(client, false);
 				}
-				else
-				{
-					if (client->desktop && get_desktop() == client->desktop)
-					{
-						struct xa_client *new = find_desktop(lock, client, 3);
-						DIAGS(("  desktop for %s failed!", client->name)); 
-						set_desktop(new->desktop);
-						yield();
-						client->desktop = NULL;
-					}
-				}
+				else if (client->desktop) set_desktop(client, true);
 			}
 		}
-		else
+		else if (client->desktop)
 		{
-			if (client->desktop)
-			{
-				struct xa_client *new;
-
-				/* find a prev app's desktop. */
-				if (get_desktop() == client->desktop)
-				{
-					/* Ozk:
-					 * If caller aint the desktop, we try to set the desktop's dektop (uhm.. yes)
-					 */
-					new = pid2client(C.DSKpid);
-					if (!new || client == new || !new->desktop)
-						new = find_desktop(lock, client, 3);
-					set_desktop(new->desktop);
-					yield();
-				}
-				client->desktop = NULL;
-				DIAGS(("  desktop for %s removed", c_owner(client)));
-			}
+			set_desktop(client, true);
+			DIAGS(("  desktop for %s removed", c_owner(client)));
 		}
 		break;
 	}
@@ -836,14 +856,17 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				{
 					widg->start = pb->intin[4];
 					wt->e.obj = pb->intin[5];
-					redraw_toolbar(lock, w, pb->intin[4]); //widg); //display_widget(lock, w, widg);
+					redraw_toolbar(lock, w, pb->intin[4]);
 					widg->start = 0;
 				}
 			}
 			else if (!widg->stuff)
 			{
+				RECT or;
+
 				DIAGS(("  --- Set new toolbar"));
-				wt = set_toolbar_widget(lock, w, client, ob, pb->intin[5], 0, NULL);
+				ob_rectangle(ob, 0, &or);
+				wt = set_toolbar_widget(lock, w, client, ob, pb->intin[5], 0, true, NULL, &or);
 				rp_2_ap_cs(w, widg, NULL);
 				if (wt && wt->tree)
 				{
@@ -1005,7 +1028,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	}
 	return XAC_DONE;
 }
-
+#if 0
 /* Convert GEM widget numbers to XaAES widget indices. */
 /* -1 means it is not a GEM object. */
 static short GtoX[] =
@@ -1032,6 +1055,7 @@ static short GtoX[] =
 	WIDG_ICONIFY,	/* W_SMALLER,	*/
 	WIDG_HIDE	/* W_BOTTOMER(W_HIDER?) */
 };
+#endif
 
 /*
  * AES wind_get() function.
@@ -1136,7 +1160,12 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 			*ro = rl->r;
 		else
 			ro->x = ro->y = ro->w = ro->h = 0;
-		
+
+		if ((ro->w | ro->h) && !w->rect_lock)
+		{
+			w->rect_lock = 1;
+			C.rect_lock++;
+		}
 		break;
 	}		
 	case WF_FTOOLBAR:	/* suboptimal, but for the moment it is more important that it van be used. */
@@ -1150,26 +1179,43 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 			ro->y = w->r.y;
 			ro->w = ro->h = 0;
 		}
+		else if (!w->rect_lock)
+		{
+			w->rect_lock = 1;
+			C.rect_lock++;
+		}
 		break;
 	}
 	case WF_NTOOLBAR:		/* suboptimal, but for the moment it is more
 					   important that it van be used. */
 	case WF_NEXTXYWH:		/* Get next entry from a rectangle list */
 	{
-		if (w->use_rlc)
+		if (!w->rect_lock)
+			ro->x = ro->y = ro->w = ro->h = 0;
+		else
 		{
-			struct xa_rect_list *rl = rect_get_optimal_next(w);
+			if (w->use_rlc)
+			{
+				struct xa_rect_list *rl = rect_get_optimal_next(w);
 			
-			if (rl)
-				*ro = rl->r;
-			else
-				ro->x = ro->y = ro->w = ro->h = 0;
-		}
-		else if (!get_rect(w, &w->wa, false, ro))
-		{
-			ro->x = w->r.x;
-			ro->y = w->r.y;
-			ro->w = ro->h = 0;
+				if (rl)
+					*ro = rl->r;
+				else
+				{
+					ro->x = ro->y = ro->w = ro->h = 0;
+				}
+			}
+			else if (!get_rect(w, &w->wa, false, ro))
+			{
+				ro->x = w->r.x;
+				ro->y = w->r.y;
+				ro->w = ro->h = 0;
+			}
+			if (!(ro->w | ro->h))
+			{
+				w->rect_lock = 0L;
+				C.rect_lock--;
+			}
 		}
 		break;
 	}
@@ -1453,36 +1499,25 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 	{
 		DIAGS(("WF_COLOR %d for %s", o[1], c_owner(client)));
 	oeps:
-		if (o[1] <= W_BOTTOMER /*valid widget id*/)
+		if (w->widget_theme->w->get_widgcolor)
 		{
-			OBJECT *widg = get_widgets();
-			int i = GtoX[o[1]];
-			BFOBSPEC c;
-
-			if (i > 0 && (widg[i].ob_type & 0xff) == G_BOXCHAR)
+			if (o[1] <= W_BOTTOMER)
 			{
-				c = object_get_spec(widg + i)->obspec;
+				BFOBSPEC c[4];
+				(*w->widget_theme->w->get_widgcolor)(w, o[1], c);
+				o[2] = ((short *)&c)[1];
+				o[3] = ((short *)&c)[3];
 			}
 			else
 			{
-				c.framecol = screen.dial_colours.border_col;
-				c.textcol = G_BLACK;
-				c.fillpattern = IP_SOLID;
-				if (o[1] == W_VELEV || o[1] == W_HELEV)
-					c.interiorcol = screen.dial_colours.shadow_col;
-				else
-					c.interiorcol = screen.dial_colours.bg_col;
-				c.textmode = 0;	/* transparant */
+				o[2] = o[3] = 0x1178;	/* CAB hack */
 			}
-
-			o[2] = ((short *)&c)[1];
+			//o[3] = o[2];
+			o[4] = 0xf0f; 	/* HR 010402 mask and flags 3d */
 		}
 		else
-		{
-			o[2] = 0x1178;	/* CAB hack */
-		}
-		o[3] = o[2];
-		o[4] = 0xf0f; 	/* HR 010402 mask and flags 3d */
+			o[0] = 0;
+
 		DIAGS(("   --   %04x", o[2]));
 		break;
 	}
@@ -1584,7 +1619,7 @@ rw(enum locks lock, struct xa_window *wl, struct xa_client *client)
 		nwl = wl->next;
 		if (wl != root_window)
 		{
-			if (!client || (client && wl->owner == client))
+			if (!client || wl->owner == client)
 			{
 				if ((wl->window_status & XAWS_OPEN))
 				{
@@ -1622,6 +1657,7 @@ remove_all_windows(enum locks lock, struct xa_client *client)
 	rw(lock, S.open_nlwindows.first, client);
 	DIAG((D_wind, client, "remove_all_windows on closed_nlwindows for %s", c_owner(client)));
 	rw(lock, S.closed_nlwindows.first, client);
+	rw(lock, S.calc_windows.first, client);
 }
 
 unsigned long

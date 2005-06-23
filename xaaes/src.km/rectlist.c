@@ -33,6 +33,19 @@
 #define max(x,y) (((x)>(y))?(x):(y))
 #define min(x,y) (((x)<(y))?(x):(y))
 
+bool inline
+is_inside(const RECT *r, const RECT *o)
+{
+	if (   (r->x        < o->x       )
+	    || (r->y        < o->y       )
+	    || (r->x + r->w > o->x + o->w)
+	    || (r->y + r->h > o->y + o->h)
+	   )
+		return false;
+
+	return true;
+}
+
 struct xa_rect_list *
 build_rect_list(struct build_rl_parms *p)
 {
@@ -444,7 +457,7 @@ xa_rc_intersect(const RECT s, RECT *d)
  * rectangle structures.
  */
 bool
-xa_rect_clip(const RECT *s, RECT *d, RECT *r)
+xa_rect_clip(const RECT *s, const RECT *d, RECT *r)
 {
 	if (s->w > 0 && s->h > 0 && d->w > 0 && d->h > 0)
 	{
@@ -458,7 +471,7 @@ xa_rect_clip(const RECT *s, RECT *d, RECT *r)
 		r->w = (w1 < w2 ? w1 : w2) - r->x; 	//min(w1, w2) - d->x;
 		r->h = (h1 < h2 ? h1 : h2) - r->y;	//min(h1, h2) - d->y;
 
-		return (r->w > 0) && (r->h > 0);
+		return ((r->w > 0) && (r->h > 0));
 	}
 	else
 		return false;

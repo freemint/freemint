@@ -44,6 +44,7 @@ XA_objc_draw(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	const RECT *r = (const RECT *)&pb->intin[2];
 	OBJECT *obtree = (OBJECT*)pb->addrin[0];
+	struct xa_vdi_settings *v = client->vdi_settings;
 	int item = pb->intin[0];
 	CONTROL(6,1,1)
 
@@ -63,7 +64,7 @@ XA_objc_draw(enum locks lock, struct xa_client *client, AESPB *pb)
 		{
 			if (item != 0)
 			{
-				f_color(screen.dial_colours.bg_col);
+				f_color(objc_rend.dial_colours.bg_col);
 				gbar(0, &client->fmd.wind->wa);
 			}
 			wind->dial_followed = true;
@@ -78,15 +79,16 @@ XA_objc_draw(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		{
 			hidem();
-			set_clip(r);		/* HR 110601: checks for special case? w <= 0 or h <= 0 */
+			(*v->api->set_clip)(v, r);		/* HR 110601: checks for special case? w <= 0 or h <= 0 */
 	
 			pb->intout[0] = draw_object_tree(lock,
 							 wt,
 							 obtree,
+							 v,
 							 item,
 							 pb->intin[1],		/* depth */
 							 NULL);
-			clear_clip();
+			(*v->api->clear_clip)(v);
 			showm();
 		}
 	}
@@ -181,7 +183,8 @@ XA_objc_change(enum locks lock, struct xa_client *client, AESPB *pb)
 		rl.r = *(RECT *)((long)&pb->intin[2]);
 
 		obj_change(wt,
-			    obj, 0,
+			   C.Aes->vdi_settings,
+			    obj, -1,
 			    pb->intin[6],
 			    obtree[obj].ob_flags,
 			    pb->intin[7],
@@ -272,6 +275,7 @@ XA_objc_edit(enum locks lock, struct xa_client *client, AESPB *pb)
 		assert(wt);
 
 		pb->intout[0] = obj_edit(wt,
+					 C.Aes->vdi_settings,
 					 pb->intin[3],		/* function	*/
 					 pb->intin[0],		/* object	*/
 					 pb->intin[1],		/* key		*/
@@ -329,17 +333,17 @@ XA_objc_sysvar(enum locks lock, struct xa_client *client, AESPB *pb)
 		}
 		case INDBUTCOL:
 		{
-			pb->intout[1] = screen.dial_colours.bg_col;
+			pb->intout[1] = objc_rend.dial_colours.bg_col;
 			break;
 		}
 		case ACTBUTCOL:
 		{
-			pb->intout[1] = screen.dial_colours.bg_col;
+			pb->intout[1] = objc_rend.dial_colours.bg_col;
 			break;
 		}
 		case BACKGRCOL:
 		{
-			pb->intout[1] = screen.dial_colours.bg_col;
+			pb->intout[1] = objc_rend.dial_colours.bg_col;
 			break;
 		}
 		case AD3DVAL:

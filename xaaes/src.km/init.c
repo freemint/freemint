@@ -25,7 +25,6 @@
  */
 
 #include RSCHNAME
-#include WIDGHNAME
 
 #include "init.h"
 #include "xa_global.h"
@@ -63,6 +62,26 @@ long loader_pgrp = 0;
 //char version[] = ASCII_VERSION;
 
 static char Aes_display_name[32];
+
+static int
+imp_msg(void)
+{
+	long ci;
+	
+	display(" ---=== IMPORTNAT!! ===---");
+	display("");
+	display("If you have read the CHANGES.txt, you");
+	display("can proceed boot by pressing RETURN.");
+	display("If not, please press any other key to");
+	display("quit, becaues important changes needs");
+	display("your attention!");
+	display("");
+	display(" This warning will be removed after");
+	display(" some time!");
+	ci = _c_conin();
+
+	return ((ci & 0xff) == 13) ? 1 : 0;
+}
 
 static void
 bootmessage(void)
@@ -133,7 +152,8 @@ init(struct kentry *k, const char *path)
 	/* setup kernel entry */
 	kentry = k;
 
-	//old_fpu = *(volatile long *)0x2cL;
+	if (!imp_msg())
+		return ENOSYS;
 
 	/* zero anything out */
 	bzero(&default_options, sizeof(default_options));
@@ -251,6 +271,12 @@ init(struct kentry *k, const char *path)
 	strcpy(cfg.scrap_path, "c:\\clipbrd\\");
 	strcpy(cfg.acc_path, "c:\\");
 	strcpy(cfg.widg_name, WIDGNAME);
+	/*
+	 * XXX - REMOVE ME! It is the responsibility of the object renderer to provide
+	 *	the extended AES objects.
+	 */
+	strcpy(cfg.xobj_name, "xa_xtobj.rsc");
+
 	strcpy(cfg.rsc_name, RSCNAME);
 
 	cfg.font_id = STANDARD_AES_FONTID;		/* Font id to use */
@@ -264,8 +290,8 @@ init(struct kentry *k, const char *path)
 	cfg.menu_locking = true;
 	cfg.backname = FAINT;
 	cfg.next_active = 0;
-	cfg.widg_w = ICON_W;
-	cfg.widg_h = ICON_H;
+// 	cfg.widg_w = ICON_W;
+// 	cfg.widg_h = ICON_H;
 
 	cfg.ver_wheel_id = 0;
 	cfg.ver_wheel_amount = 1;
@@ -440,8 +466,6 @@ init(struct kentry *k, const char *path)
 	default_options.thinframe = 1;
 	default_options.wheel_mode = WHL_AROWWHEEL;
 
-	default_options.init_widget_theme = init_widget_theme;
-
 	C.Aes->options = default_options;
 
 //	addto_namelist(&cfg.ctlalta, "taskbar ");
@@ -482,9 +506,11 @@ init(struct kentry *k, const char *path)
 		
 		p->p_sigmask = oldmask;
 		if (C.shutdown & HALT_SYSTEM)
-			s_hutdown(0);  /* poweroff or halt if poweroff is not supported */
+			s_hutdown(SHUT_POWER);  /* poweroff or halt if poweroff is not supported */
 		else if (C.shutdown & REBOOT_SYSTEM)
-			s_hutdown(1);  /* warm start */
+			s_hutdown(SHUT_BOOT);  /* warm start */
+		else if (C.shutdown & COLDSTART_SYSTEM)
+			s_hutdown(SHUT_COLD);
 	
 	}
 

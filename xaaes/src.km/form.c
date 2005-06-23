@@ -38,6 +38,7 @@
 #include "widgets.h"
 #include "c_window.h"
 #include "k_mouse.h"
+#include "menuwidg.h"
 
 /*
  * Attatch a MODAL form_do session to a client.
@@ -71,8 +72,8 @@ Set_form_do(struct xa_client *client,
 	if (edobj == -2)
 		edobj = ob_find_any_flst(obtree, OF_EDITABLE, 0, 0, OS_DISABLED, OF_LASTOB, 0);
 
-	if (!obj_edit(wt, ED_INIT, edobj, 0, -1, false, NULL, NULL, NULL, &new_obj))
-		obj_edit(wt, ED_INIT, new_obj, 0, -1, false, NULL, NULL, NULL, NULL);
+	if (!obj_edit(wt, client->vdi_settings, ED_INIT, edobj, 0, -1, false, NULL, NULL, NULL, &new_obj))
+		obj_edit(wt, client->vdi_settings, ED_INIT, new_obj, 0, -1, false, NULL, NULL, NULL, NULL);
 
 	/* Ozk:
 	 * Check if this obtree needs a keypress handler..
@@ -124,7 +125,7 @@ calc_fmd_wind(struct xa_client *client, OBJECT *obtree, XA_WIND_ATTR kind, WINDO
 {
 	DIAG((D_form, client, "Setup_form_do: Create window for %s", client->name));
 
-	ob_area(obtree, 0, r);
+	ob_rectangle(obtree, 0, r);
 
 	*r = calc_window(0,
 			 client,
@@ -162,7 +163,7 @@ Setup_form_do(struct xa_client *client,
 		DIAG((D_form, client, "Setup_form_do: wind %d for %s", client->fmd.wind->handle, client->name));
 		wind = client->fmd.wind;
 		calc_fmd_wind(client, obtree, kind, wind->dial, (RECT *)&client->fmd.r);
-		wt = set_toolbar_widget(lock, wind, client, obtree, edobj, WIP_NOTEXT, NULL);
+		wt = set_toolbar_widget(lock, wind, client, obtree, edobj, WIP_NOTEXT, true, NULL, &client->fmd.r);
 		wt->zen = false;
 		move_window(lock, wind, true, -1, client->fmd.r.x, client->fmd.r.y, client->fmd.r.w, client->fmd.r.h);
 	}
@@ -198,7 +199,7 @@ Setup_form_do(struct xa_client *client,
 		if ((wind = create_fmd_wind(lock, client, kind, client->fmd.state ? created_for_FMD_START : created_for_FORM_DO, &client->fmd.r)))
 		{
 			client->fmd.wind = wind;
-			wt = set_toolbar_widget(lock, wind, client, obtree, edobj, WIP_NOTEXT, NULL);
+			wt = set_toolbar_widget(lock, wind, client, obtree, edobj, WIP_NOTEXT, true, NULL, &client->fmd.r);
 			wt->zen = false;
 		}
 		else
@@ -233,6 +234,15 @@ form_center_r(OBJECT *form, short barsizes, RECT *r)
 	r->h = form->ob_height;
 }
 
+void
+center_rect(RECT *r)
+{
+	struct xa_widget *widg = get_menu_widg();
+
+	r->x = root_window->wa.x + ((root_window->wa.w - r->w) >> 1);
+	r->y = root_window->wa.y + widg->ar.h + ((root_window->wa.h - r->h) >> 1);
+}
+
 /*
  * Ozk: Rewritten totally. Returns false if a TOUCHEXIT or EXIT button was selected.
  * puts a 0 in 'nxtob' if the object is not an [TOUCH]EXIT or EDITABLE. If object is
@@ -240,6 +250,7 @@ form_center_r(OBJECT *form, short barsizes, RECT *r)
  */
 bool
 form_button(XA_TREE *wt,
+	    struct xa_vdi_settings *v,
 	    short obj,
 	    const struct moose_data *md,
 	    unsigned long fbflags,
@@ -308,24 +319,24 @@ form_button(XA_TREE *wt,
 				pinf->obnum = result.mn_item;
 			if (obnum > 0)
 				obtree[obnum].ob_state &= ~OS_CHECKED;
-			obj_change(wt, obj, 1, state & ~OS_SELECTED, flags, redraw, clip, rl);
+			obj_change(wt, v, obj, 1, state & ~OS_SELECTED, flags, redraw, clip, rl);
 		}
 		else if (flags & OF_RBUTTON)
 		{
 			DIAGS(("form_button: call obj_set_radio_button"));
-			obj_set_radio_button(wt, obj, redraw, clip, rl);
+			obj_set_radio_button(wt, v, obj, redraw, clip, rl);
 		}
 		else
 		{
 			if (redraw)
 			{
 				DIAGS(("form_button: call obj_watch"));
-				obj_watch(wt, obj, state^OS_SELECTED, state, clip, rl);
+				obj_watch(wt, v, obj, state^OS_SELECTED, state, clip, rl);
 			}
 			else
 			{
 				DIAGS(("form_button: switch state"));
-				obj_change(wt, obj, 0, state^OS_SELECTED, flags, redraw, clip, rl);
+				obj_change(wt, v, obj, -1, state^OS_SELECTED, flags, redraw, clip, rl);
 			}
 		}
 		state = obtree[obj].ob_state;	
@@ -360,6 +371,7 @@ form_button(XA_TREE *wt,
  */
 short
 form_cursor(XA_TREE *wt,
+	    struct xa_vdi_settings *v,
 	    ushort keycode,
 	    short obj,
 	    bool redraw,
@@ -451,8 +463,8 @@ form_cursor(XA_TREE *wt,
 	if (o >= 0 && o != obj)
 	{	
 		/* If edit field has changed, update the screen */
-		obj_edit(wt, ED_END, 0, 0, 0, redraw, rl, NULL, NULL);
-		obj_edit(wt, ED_INIT, o, 0, -1, redraw, rl, NULL, NULL);
+		obj_edit(wt, v, ED_END, 0, 0, 0, redraw, rl, NULL, NULL);
+		obj_edit(wt, v, ED_INIT, o, 0, -1, redraw, rl, NULL, NULL);
 	}
 #endif
 	return o;
@@ -462,6 +474,7 @@ form_cursor(XA_TREE *wt,
  */
 bool
 form_keyboard(XA_TREE *wt,
+	      struct xa_vdi_settings *v,
 	      short obj,
 	      const struct rawkey *key,
 	      bool redraw,
@@ -491,7 +504,7 @@ form_keyboard(XA_TREE *wt,
 	else
 		next_obj = obj;
 	
-	next_obj = form_cursor(wt, keycode, next_obj, redraw, rl);
+	next_obj = form_cursor(wt, v, keycode, next_obj, redraw, rl);
 	
 	if (next_obj < 0)
 	{
@@ -515,7 +528,7 @@ form_keyboard(XA_TREE *wt,
 		{
 			short ks;
 			
-			vq_key_s(C.vh, &ks);
+			vq_key_s(C.P_handle, &ks);
 			if ( (ks & (K_CTRL|K_ALT)) == K_ALT )
 				next_obj = ob_find_shortcut(obtree, key->norm & 0x00ff);
 
@@ -530,7 +543,7 @@ form_keyboard(XA_TREE *wt,
 			check_mouse(wt->owner, &md.cstate, &md.x, &md.y);
 			md.state = MBS_LEFT;
 					
-			fr.no_exit = form_button(wt,
+			fr.no_exit = form_button(wt, v,
 					         next_obj,
 					         &md,
 					         FBF_REDRAW,
@@ -620,7 +633,7 @@ Exit_form_do( struct xa_client *client,
 				if (fr->md)
 					keystate = fr->md->kstate;
 				else
-					vq_key_s(C.vh, &keystate);
+					vq_key_s(C.P_handle, &keystate);
 
 				wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_NORM,
 						WM_TOOLBAR, 0, 0, wind->handle,
@@ -683,6 +696,7 @@ Click_form_do(enum locks lock,
 	      struct widget_tree *wt,
 	      const struct moose_data *md)
 {
+	struct xa_vdi_settings *v;
 	OBJECT *obtree = NULL;
 	RECT r;
 
@@ -694,7 +708,9 @@ Click_form_do(enum locks lock,
 	 */
 	if (wind)
 	{
-		if (!wind->nolist && wind != window_list && !(wind->active_widgets & NO_TOPPED) )
+		v = wind->vdi_settings;
+
+		if (!wind->nolist && !is_topped(wind)) // !wind->nolist && wind != window_list && !(wind->active_widgets & NO_TOPPED) )
 		{
 			DIAGS(("Click_form_do: topping window"));
 			top_window(lock, true, false, wind, (void *)-1L);
@@ -714,6 +730,8 @@ Click_form_do(enum locks lock,
 	 */
 	else
 	{
+		v = client->vdi_settings;
+
 		if (!wt)
 		{
 			DIAGS(("Click_form_do: using client->wt"));
@@ -730,7 +748,7 @@ Click_form_do(enum locks lock,
 		fr.obj = obj_find(wt, 0, 10, md->x, md->y, NULL);
 		
 		if (fr.obj >= 0 &&
-		    !form_button(wt,
+		    !form_button(wt, v,
 				 fr.obj,
 				 md,
 				 FBF_REDRAW,
@@ -741,7 +759,7 @@ Click_form_do(enum locks lock,
 		{
 			if (wt->exit_form)
 			{
-				DIAGS(("Click_form_do: calling exti_form"));
+				DIAGS(("Click_form_do: calling exit_form"));
 				fr.md = md;
 				fr.key = NULL;
 				wt->exit_form(client, wind, wt, &fr);
@@ -765,7 +783,6 @@ Click_form_do(enum locks lock,
  * If wind is not NULL, this is a windowed form_dialog session and XA_TREE
  * to use is wind->toolbar.
  */
- #include "xaaes.h"
 bool
 Key_form_do(enum locks lock,
 	    struct xa_client *client,
@@ -773,8 +790,9 @@ Key_form_do(enum locks lock,
 	    struct widget_tree *wt,
 	    const struct rawkey *key)
 {
+	struct xa_vdi_settings *v;
 	RECT *clip = NULL;
-	OBJECT *obtree;
+	OBJECT *obtree = NULL;
 	struct xa_rect_list *rl = wind ? wind->rect_start : NULL;
 	struct fmd_result fr;
 	RECT r;
@@ -793,6 +811,7 @@ Key_form_do(enum locks lock,
 		DIAGS(("Key_form_do: using wind->toolbar"));
 		wt = get_widget(wind, XAW_TOOLBAR)->stuff;
 		obtree = rp_2_ap(wind, wt->widg, &r);
+		v = wind->vdi_settings;
 	}
 	/*
 	 * Not a windowed form session.
@@ -805,6 +824,7 @@ Key_form_do(enum locks lock,
 			wt = client->fmd.wt;
 		}
 		obtree = wt->tree;
+		v = client->vdi_settings;
 	}
 
 	if (obtree)
@@ -812,6 +832,7 @@ Key_form_do(enum locks lock,
 		fr.dblmask = 0;
 
 		fr.no_exit = form_keyboard(wt,
+					   v,
 					   wt->e.obj,
 					   key,
 					   true,
@@ -828,6 +849,7 @@ Key_form_do(enum locks lock,
 			if (fr.aeskey)
 			{
 				obj_edit(wt,
+					  v,
 					  ED_CHAR,
 					  wt->e.obj,
 					  fr.aeskey,
@@ -843,8 +865,8 @@ Key_form_do(enum locks lock,
 			}
 			else if (fr.obj >= 0 && wt->e.obj != fr.obj)
 			{
-				obj_edit(wt, ED_END, 0, 0, 0, true, clip, rl, NULL, NULL);
-				obj_edit(wt, ED_INIT, fr.obj, 0, -1, true, clip, rl, NULL, NULL);
+				obj_edit(wt, v, ED_END, 0, 0, 0, true, clip, rl, NULL, NULL);
+				obj_edit(wt, v, ED_INIT, fr.obj, 0, -1, true, clip, rl, NULL, NULL);
 			}
 		}
 		else
@@ -866,6 +888,8 @@ Key_form_do(enum locks lock,
 static void
 dfwm_redraw(struct xa_window *wind, struct xa_widget *widg, struct widget_tree *wt, RECT *clip)
 {
+	struct xa_vdi_settings *v = wind->vdi_settings;
+
 	if (wt && wt->tree)
 	{
 		RECT dr;
@@ -873,7 +897,7 @@ dfwm_redraw(struct xa_window *wind, struct xa_widget *widg, struct widget_tree *
 		
 		rl = wind->rect_start;
 
-		if (widg->h.draw && rl)
+		if (wdg_is_inst(widg) && rl)
 		{
 			hidem();
 			while (rl)
@@ -884,19 +908,19 @@ dfwm_redraw(struct xa_window *wind, struct xa_widget *widg, struct widget_tree *
 					{
 						if (xa_rect_clip(clip, &dr, &dr))
 						{
-							set_clip(&dr);
-							widg->h.draw(wind, widg);
+							(*v->api->set_clip)(v, &dr);
+							widg->m.r.draw(wind, widg, &dr);
 						}
 					}
 					else
 					{
-						set_clip(&dr);
-						widg->h.draw(wind, widg);
+						(*v->api->set_clip)(v, &dr);
+						widg->m.r.draw(wind, widg, &dr);
 					}
 				}
 				rl = rl->next;
 			}
-			clear_clip();
+			(*v->api->clear_clip)(v);
 			showm();
 		}
 	}
@@ -912,6 +936,7 @@ do_formwind_msg(
 	short amq, short qmflags,
 	short *msg)
 {
+	struct xa_vdi_settings *v = wind->vdi_settings;
 	XA_WIDGET *widg = wind->tool;
 	bool draw = false;
 
@@ -938,12 +963,12 @@ do_formwind_msg(
 		{
 			if (!wt->owner->options.xa_objced && wt->e.obj > 0)
 			{
-				obj_edit(wt, ED_END, wt->e.obj, 0, 0, true, &wind->wa, wind->rect_start, NULL, NULL);
+				obj_edit(wt, v, ED_END, wt->e.obj, 0, 0, true, &wind->wa, wind->rect_start, NULL, NULL);
 			}
 			dfwm_redraw(wind, widg, wt, (RECT *)&msg[4]);
 			if (!wt->owner->options.xa_objced && wt->e.obj > 0)
 			{
-				obj_edit(wt, ED_END, wt->e.obj, 0, 0, true, &wind->wa, wind->rect_start, NULL, NULL);
+				obj_edit(wt, v, ED_END, wt->e.obj, 0, 0, true, &wind->wa, wind->rect_start, NULL, NULL);
 			}
 			kick_mousemove_timeout();
 			break;
@@ -958,7 +983,7 @@ do_formwind_msg(
 		}
 		case WM_TOPPED:
 		{
-			if (wind != root_window && (wind->window_status & XAWS_OPEN) && !is_topped(wind))
+			if (!wind->nolist && wind != root_window && (wind->window_status & XAWS_OPEN) && !is_topped(wind))
 			{
 				if (is_hidden(wind))
 					unhide_window(0, wind, true);
@@ -969,7 +994,7 @@ do_formwind_msg(
 		}
 		case WM_BOTTOMED:
 		{
-			if (wind != root_window && (wind->window_status & XAWS_OPEN))
+			if (!wind->nolist && wind != root_window && (wind->window_status & XAWS_OPEN))
 				bottom_window(0, false, true, wind);
 			break;
 		}
@@ -1088,10 +1113,10 @@ do_formwind_msg(
 			RECT sc;
 			wt->dx = dx;
 			wt->dy = dy;
-			save_clip(&sc);
+			(*v->api->save_clip)(v, &sc);
 			display_window(0, 120, wind, NULL);
 			dfwm_redraw(wind, widg, wt, NULL);
-			restore_clip(&sc);
+			(*v->api->restore_clip)(v, &sc);
 		}
 	}
 }

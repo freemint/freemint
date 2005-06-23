@@ -1,4 +1,4 @@
-/* Resource Datei Indizes fuer XAAESWDG */
+/* Resource Datei Indizes fÅr XAAESWDG */
 
 #define WIDGETS          0   /* Formular/Dialog */
 #define WIDG_CLOSER      1   /* USERDEF in Baum WIDGETS */
@@ -11,8 +11,4 @@
 #define WIDG_LEFT        8   /* USERDEF in Baum WIDGETS */
 #define WIDG_RIGHT       9   /* USERDEF in Baum WIDGETS */
 #define WIDG_SIZE        10  /* USERDEF in Baum WIDGETS */
-#define RADIO_DESLCT     11  /* USERDEF in Baum WIDGETS */
-#define RADIO_SLCT       12  /* USERDEF in Baum WIDGETS */
-#define BUT_DESLCT       13  /* USERDEF in Baum WIDGETS */
-#define BUT_SLCT         14  /* USERDEF in Baum WIDGETS */
-#define WIDG_CFG         15  /* STRING in Baum WIDGETS */
+#define WIDG_CFG         11  /* STRING in Baum WIDGETS */

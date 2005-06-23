@@ -144,9 +144,15 @@ init_client(enum locks lock)
 		return NULL;
 	}
 
-	//bzero(client, sizeof(*client));
-
 	init_client_mdbuff(client);
+
+	/*
+	 * Stuff the new client inherits from AESSYS
+	 */
+	client->vdi_settings = C.Aes->vdi_settings;
+
+	client->xmwt = C.Aes->xmwt;
+	client->wtheme_handle = C.Aes->wtheme_handle;
 
 	client->ut = umalloc(xa_user_things.len);
 	client->mnu_clientlistname = umalloc(strlen(mnu_clientlistname)+1);
@@ -554,7 +560,8 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 	cancel_keyqueue(client);
 
 	client->rsrc = NULL;
-	FreeResources(client, NULL);
+	while (client->resources)
+		FreeResources(client, NULL, NULL);
 
 	/* Free name *only if* it is malloced: */
 	if (client->tail_is_heap)
@@ -575,32 +582,7 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 	 */
 
 	if (client->desktop)
-	{
-		struct xa_client *newdt;
-		if (get_desktop() == client->desktop)
-		{
-			set_desktop(C.Aes->desktop);
-
-			if (top_owner != C.Aes)
-			{			
-				if (top_owner->desktop && !(top_owner->status & CS_EXITING))
-				{
-					newdt = top_owner;
-				}
-				else
-				{
-					newdt = pid2client(C.DSKpid);
-					if (!(newdt && newdt != client && !(newdt->status & CS_EXITING) && newdt->desktop))
-						newdt = NULL;
-				}
-				if (!newdt)
-					newdt = C.Aes;
-			
-				set_desktop(newdt->desktop);
-			}
-		}
-		client->desktop = NULL;
-	}
+		set_desktop(client, true);
 
 	if (was_infront)
 		app_in_front(lock, top_owner, true, true, false);
@@ -670,11 +652,7 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 
 	remove_client_crossrefs(client);
 
-	if (client->widget_theme)
-	{
-		kfree(client->widget_theme);
-		client->widget_theme = NULL;
-	}
+	exit_client_widget_theme(client);
 
 	if (detach)
 		detach_extension(NULL, XAAES_MAGIC);
@@ -929,9 +907,9 @@ XA_appl_write(enum locks lock, struct xa_client *client, AESPB *pb)
 			short qmf = QMF_NORM;
 
 #if 0
-			if (!strnicmp(client->proc_name,    "ataricq", 7) ||
-			    !strnicmp(dest_clnt->proc_name, "ataricq", 7) ||
-			    (m->m[0] >= 0x4700 && m->m[0] <= 0x4760) )
+			if (!strnicmp(client->proc_name,    "zview", 5)/* ||
+			     !strnicmp(dest_clnt->proc_name, "zview", 5)) &&
+			    m->m[0] == WM_REDRAW*/) //(m->m[0] >= 0x4700 && m->m[0] <= 0x4760) )
 			{
 				display("%s sends %s to %s", client->name, pmsg(m->m[0]), dest_clnt->name);
 				display(" %04x, %04x, %04x, %04x, %04x, %04x, %04x, %04x", m->m[1], m->m[2], m->m[3], m->m[4], m->m[5], m->m[6], m->m[7]);
@@ -1559,7 +1537,7 @@ XA_appl_control(enum locks lock, struct xa_client *client, AESPB *pb)
 					*ii = 0;
 					if (any_hidden(lock, cl, NULL))
 						*ii |= APCI_HIDDEN;
-					if (cl->std_menu)
+					if (cl->std_menu || cl->nxt_menu) 
 						*ii |= APCI_HASMBAR;
 					if (cl->desktop)
 						*ii |= APCI_HASDESK;
@@ -1574,7 +1552,7 @@ XA_appl_control(enum locks lock, struct xa_client *client, AESPB *pb)
 			OBJECT **m = (OBJECT **)pb->addrin[0];
 			
 			if (cl && m)
-				*m = cl->std_menu ? cl->std_menu->tree : NULL;
+				*m = cl->nxt_menu ? cl->nxt_menu->tree : (cl->std_menu ? cl->std_menu->tree : NULL);
 			else if (m)
 				*m = NULL;
 			break;
