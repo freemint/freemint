@@ -856,7 +856,6 @@ change_window_attribs(enum locks lock,
 	if (tp & MENUBAR)
 		tp |= XaMENU;
 
-	//w->rc = w->r = r;
 	standard_widgets(w, tp, false);
 	
 	if (r_is_wa)
@@ -919,6 +918,11 @@ change_window_attribs(enum locks lock,
 			{
 				wt->tree->ob_x = w->wa.x;
 				wt->tree->ob_y = w->wa.y;
+				if (!wt->zen)
+				{
+					wt->tree->ob_x += wt->ox;
+					wt->tree->ob_y += wt->oy;
+				}
 			}
 		}
 	}

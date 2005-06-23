@@ -60,8 +60,6 @@ static	SetWidgSize	s_title_size, s_closer_size, s_fuller_size, s_info_size,
 			s_lfarrow_size, s_rtarrow_size, s_hslide_size,
 			s_iconifier_size, s_hider_size, s_menu_size;
 
-
-
 struct nwidget_row def_layout[];
 
 static XA_WIND_ATTR name_dep[] =
@@ -84,6 +82,13 @@ static XA_WIND_ATTR hslide_dep[] =
 	(LFARROW|RTARROW), -1,
 	0
 };
+
+static XA_WIND_ATTR border_dep[] =
+{
+	(SIZER|MOVER), -1,
+	0
+};
+
 static struct widget_theme def_theme = 
 {
 	{ 0 },		/* xa_data_hdr */
@@ -95,7 +100,7 @@ static struct widget_theme def_theme =
 	set_wcol,
 
 	{ 0,		NULL,		0,		0,			d_unused, NULL},			/* exterior		*/
-	{ 0,		NULL,		XAW_BORDER,	0,			d_borders, NULL},			/* border		*/
+	{ BORDER,	border_dep,	XAW_BORDER,	NO,			d_borders, NULL},			/* border		*/
 	{ NAME,		name_dep,	XAW_TITLE,	LT | R_VARIABLE,	d_title, s_title_size},			/* title		*/
 	{ CLOSER,	NULL,		XAW_CLOSE,	LT,			d_closer, s_closer_size},		/* closer		*/
 	{ FULLER,	NULL,		XAW_FULL,	RT,			d_fuller, s_fuller_size},		/* fuller		*/
@@ -460,9 +465,6 @@ struct window_colours def_utop_cols =
 
 };
 
-/*
- * Draw a window widget
- */
 static inline long
 pix_2_sl(long p, long s)
 {
@@ -483,6 +485,9 @@ sl_2_pix(long s, long p)
 	return ((s * p) + (SL_RANGE >> 2)) / SL_RANGE;
 }
 
+/*
+ * Draw a window widget
+ */
 static void
 draw_widg_box(struct xa_vdi_settings *v, short d, struct xa_wcol_inf *wcoli, short state, RECT *wr, RECT *anch)
 {
@@ -857,7 +862,7 @@ d_sizer(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 
 	(*api->rp2ap)(wind, widg, &widg->ar);
 	draw_widg_box(wind->vdi_settings, 0, wci, widg->state, &widg->ar, &wind->r);
-	draw_widg_icon(wind->vdi_settings, widg, &((struct module *)wind->widget_theme->w->module)->wwt, WIDG_SIZE); //widg->loc.rsc_index);
+	draw_widg_icon(wind->vdi_settings, widg, &((struct module *)wind->widget_theme->w->module)->wwt, WIDG_SIZE);
 	return true;
 }
 
@@ -868,7 +873,7 @@ d_uparrow(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 
 	(*api->rp2ap)(wind, widg, &widg->ar);
 	draw_widg_box(wind->vdi_settings, 0, wci, widg->state, &widg->ar, &wind->r);
-	draw_widg_icon(wind->vdi_settings, widg, &((struct module *)wind->widget_theme->w->module)->wwt, WIDG_UP); //widg->loc.rsc_index);
+	draw_widg_icon(wind->vdi_settings, widg, &((struct module *)wind->widget_theme->w->module)->wwt, WIDG_UP);
 	return true;
 }
 static bool _cdecl
@@ -878,7 +883,7 @@ d_dnarrow(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 
 	(*api->rp2ap)(wind, widg, &widg->ar);
 	draw_widg_box(wind->vdi_settings, 0, wci, widg->state, &widg->ar, &wind->r);
-	draw_widg_icon(wind->vdi_settings, widg, &((struct module *)wind->widget_theme->w->module)->wwt, WIDG_DOWN); //widg->loc.rsc_index);
+	draw_widg_icon(wind->vdi_settings, widg, &((struct module *)wind->widget_theme->w->module)->wwt, WIDG_DOWN);
 	return true;
 }
 static bool _cdecl
@@ -888,7 +893,7 @@ d_lfarrow(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 
 	(*api->rp2ap)(wind, widg, &widg->ar);
 	draw_widg_box(wind->vdi_settings, 0, wci, widg->state, &widg->ar, &wind->r);
-	draw_widg_icon(wind->vdi_settings, widg, &((struct module *)wind->widget_theme->w->module)->wwt, WIDG_LEFT); //widg->loc.rsc_index);
+	draw_widg_icon(wind->vdi_settings, widg, &((struct module *)wind->widget_theme->w->module)->wwt, WIDG_LEFT);
 	return true;
 }
 static bool _cdecl
@@ -898,7 +903,7 @@ d_rtarrow(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 
 	(*api->rp2ap)(wind, widg, &widg->ar);
 	draw_widg_box(wind->vdi_settings, 0, wci, widg->state, &widg->ar, &wind->r);
-	draw_widg_icon(wind->vdi_settings, widg, &((struct module *)wind->widget_theme->w->module)->wwt, WIDG_RIGHT); //widg->loc.rsc_index);
+	draw_widg_icon(wind->vdi_settings, widg, &((struct module *)wind->widget_theme->w->module)->wwt, WIDG_RIGHT);
 	return true;
 }
 
@@ -947,7 +952,6 @@ d_vslide(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	cl.h = sl->r.h;
 	
 	draw_widg_box(wind->vdi_settings, -1, &wc->slider, widg->state, &cl, &cl);
-//	wr_mode(MD_TRANS);
 	return true;
 }
 
@@ -994,7 +998,6 @@ d_hslide(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	cl.h = sl->r.h;
 	
 	draw_widg_box(wind->vdi_settings, -1, &wc->slider, widg->state, &cl, &cl/*&wind->r*/);
-//	wr_mode(MD_TRANS);
 	return true;
 }
 
@@ -1004,7 +1007,6 @@ d_iconifier(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	struct xa_wcol_inf *wci = &((struct window_colours *)wind->colours)->iconifier;
 
 	(*api->rp2ap)(wind, widg, &widg->ar);
-// 	rp_2_ap(wind, widg, &widg->ar);	
 	draw_widg_box(wind->vdi_settings, 0, wci, widg->state, &widg->ar, &wind->r);
 	draw_widg_icon(wind->vdi_settings, widg, &((struct module *)wind->widget_theme->w->module)->wwt, WIDG_ICONIFY); //widg->loc.rsc_index);
 	return true;
@@ -1076,7 +1078,7 @@ s_menu_size(struct xa_window *wind, struct xa_widget *widg)
 	(*v->api->t_effects)(v, 0);
 	(*v->api->t_extent)(v, "A", &w, &h);
 	
-	widg->r.h = h + 1 + 1; //screen.standard_font_height + 1;
+	widg->r.h = h + 1 + 1;
 	widg->r.w = wind->r.w;
 }
 
@@ -1084,7 +1086,7 @@ static void _cdecl
 set_widg_size(struct xa_window *wind, struct xa_widget *widg, struct xa_wcol_inf *wci, short rsc_ind)
 {
 	short w, h, f;
-	OBJECT *ob = ((struct module *)wind->widget_theme->w->module)->wwt.tree + rsc_ind; //wind->widg_info.tree + rsc_ind;
+	OBJECT *ob = ((struct module *)wind->widget_theme->w->module)->wwt.tree + rsc_ind;
 
 	f = wci->flags;
 
@@ -1368,7 +1370,7 @@ init_module(const struct xa_module_api *xmapi, const struct xa_screen *screen, c
 		(*api->bclear)(m, sizeof(*m));
 
 		/* Load the widget resource files */
-		rscfile = (*api->sysfile)(widg_name); //(cfg.widg_name);
+		rscfile = (*api->sysfile)(widg_name);
 
 		if (rscfile)
 		{
@@ -1410,6 +1412,9 @@ exit_module(void *_module)
 {
 	struct module *m = _module;
 	
+	/*
+	 * This will free all allocs done by this module
+	 */
 	(*api->free_xa_data_list)(&m->allocs);
 	
 	/*

@@ -1262,7 +1262,7 @@ XA_fnts_open(enum locks lock, struct xa_client *client, AESPB *pb)
 			{
 				RECT or;
 
-				obj_area(wt, 0, &or);
+				obj_rectangle(wt, 0, &or);
 				or.x = r.x;
 				or.y = r.y;
 				change_window_attribs(lock, client, wind, tp, true, or, NULL);
@@ -1679,9 +1679,7 @@ XA_fnts_do(enum locks lock, struct xa_client *client, AESPB *pb)
 		RECT or;
 		XA_WIND_ATTR tp = wind->active_widgets & ~STD_WIDGETS;
 
-// 		form_center(obtree, ICON_H);
-		
-		ob_area(obtree, 0, &or);
+		ob_rectangle(obtree, 0, &or);
 		center_rect(&or);
 
 		change_window_attribs(lock, client, wind, tp, true, or, NULL);
