@@ -29,26 +29,28 @@
 
 #include "global.h"
 #include "xa_types.h"
+	
+//void	setup_widget_theme(struct xa_client *client, struct xa_widget_theme *xwt);
+void init_client_widget_theme(struct xa_client *client);
+void exit_client_widget_theme(struct xa_client *client);
 
-void	setup_widget_theme(struct xa_client *client, struct xa_widget_theme *xwt);
 
 COMPASS compass(short d, short x, short y, RECT r);
 
-void	fix_default_widgets(void *);
-OBJECT *get_widgets(void);
 void	display_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, struct xa_rect_list *rl);
 void	standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff);
 void	redraw_toolbar(enum locks lock, struct xa_window *wind, short item);
-void	set_toolbar_coords(struct xa_window *wind);
+void	set_toolbar_coords(struct xa_window *wind, const RECT *r);
 
 void	set_toolbar_handlers(const struct toolbar_handlers *th, struct xa_window *wind, struct xa_widget *widg, struct widget_tree *wt);
-XA_TREE *set_toolbar_widget(enum locks lock, struct xa_window *wind, struct xa_client *owner, OBJECT *obj, short item, short properties, const struct toolbar_handlers *th);
+XA_TREE *set_toolbar_widget(enum locks lock, struct xa_window *wind, struct xa_client *owner, OBJECT *obj, short item, short properties, bool zen, const struct toolbar_handlers *th, const RECT *r);
 
 void	remove_widget(enum locks lock, struct xa_window *wind, int tool);
 void	rp_2_ap_cs(struct xa_window *wind, XA_WIDGET *widg, RECT *r);
 void *	rp_2_ap(struct xa_window *wind, XA_WIDGET *widg, RECT *r);
 
 XA_TREE * obtree_to_wt(struct xa_client *client, OBJECT *obtree);
+void	  init_widget_tree(struct xa_client *client, struct widget_tree *wt, OBJECT *obtree);
 XA_TREE * new_widget_tree(struct xa_client *client, OBJECT *obtree);
 XA_TREE * set_client_wt(struct xa_client *client, OBJECT *obtree);
 void free_wtlist(struct xa_client *client);
@@ -74,7 +76,6 @@ void	free_xawidget_resources(struct xa_widget *widg);
 
 RECT	iconify_grid(int i);
 
-DrawWidg display_vslide; /* For d_g_list, should go! */
 DrawWidg display_object_widget; /* for desktop */
 
 void	remove_widget_active(struct xa_client *client);
@@ -99,5 +100,18 @@ is_rect(short x, short y, int fl, RECT *o)
 
 	return (f == in);
 }
+
+static inline bool
+wdg_is_inst(struct xa_widget *widg)
+{
+	return ((widg->m.properties & WIP_INSTALLED));
+}
+
+static inline bool
+wdg_is_act(struct xa_widget *widg)
+{
+	return ( (widg->m.properties & (WIP_ACTIVE|WIP_INSTALLED)) == (WIP_ACTIVE|WIP_INSTALLED) );
+};
+
 
 #endif /* _widgets_h */

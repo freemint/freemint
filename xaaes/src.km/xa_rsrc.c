@@ -119,7 +119,6 @@ transform_icon_bitmap(struct xa_client *client, struct xa_rscs *rscs, CICONBLK *
 				kfree(ra);
 				return map;
 			}
-
 			/*
 			 * setup and attach the new remember_alloc
 			 */
@@ -127,7 +126,7 @@ transform_icon_bitmap(struct xa_client *client, struct xa_rscs *rscs, CICONBLK *
 			ra->next = rscs->ra;
 			rscs->ra = ra;
 			
-			memcpy(new_data, map, icon_len);
+			memcpy(new_data, map, icon_len);	
 		}
 		else
 			return map;
@@ -212,45 +211,6 @@ FixColourIconData(struct xa_client *client, CICONBLK *icon, struct xa_rscs *rscs
 		DIAG((D_rsrc,client,"[1]No matching icon"));
 	}
 }
-
-static struct xa_rscs *
-list_resource(struct xa_client *client, void *resource, short flags)
-{
-	struct xa_rscs *new;
-
-	if (client == C.Aes)
-		new = kmalloc(sizeof(*new));
-	else
-		new = umalloc(sizeof(*new));
-
-	DIAG((D_x, client, "XA_alloc 2 %ld, at %lx", sizeof(*new), new));
-
-	if (new)
-	{
-		DIAG((D_rsrc, client, "list_resource %ld(%lx) for %s rsc:%ld(%lx) rscs %lx",
-			new, new, c_owner(client), resource, resource, client->resources));
-
-		/* hook it to the chain (double linked list) */
-		new->next = client->resources;
-		new->prior = NULL;
-		if (new->next)
-			new->next->prior = new;
-
-		client->resources = new;
-
-		/* set defaults up */
-		new->palette = NULL;
-
-		new->id = 2;
-		new->handle = client->rsct;
-		new->flags = flags;
-		new->rsc = resource;
-		new->ra = NULL;
-		new->globl = client->globl_ptr;
-	}
-	return new;
-}
-
 
 static void
 fix_chrarray(void *b, char **p, unsigned long n)
@@ -696,6 +656,45 @@ fix_trees(struct xa_client *client, void *b, OBJECT **trees, unsigned long n, sh
 }
 
 
+static struct xa_rscs *
+list_resource(struct xa_client *client, void *resource, short flags)
+{
+	struct xa_rscs *new;
+
+	if (client == C.Aes)
+		new = kmalloc(sizeof(*new));
+	else
+		new = umalloc(sizeof(*new));
+
+	DIAG((D_x, client, "XA_alloc 2 %ld, at %lx", sizeof(*new), new));
+
+	if (new)
+	{
+		DIAG((D_rsrc, client, "list_resource %ld(%lx) for %s rsc:%ld(%lx) rscs %lx",
+			new, new, c_owner(client), resource, resource, client->resources));
+
+		/* hook it to the chain (double linked list) */
+		new->next = client->resources;
+		new->prior = NULL;
+		if (new->next)
+			new->next->prior = new;
+
+		client->resources = new;
+
+		/* set defaults up */
+		new->palette = NULL;
+
+		new->id = 2;
+		new->handle = client->rsct;
+		new->flags = flags;
+		new->rsc = resource;
+		new->ra = NULL;
+		new->globl = client->globl_ptr;
+	}
+	return new;
+}
+
+
 /*
  * LoadResources: Load a GEM resource file
  * fname = name of file to load
@@ -712,7 +711,10 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 	unsigned long osize = 0, size = 0;
 	char *base = NULL, *end = NULL;
 	struct xa_rscs *rscs = NULL; 
-	short vdih = C.vh;
+	short vdih = client->vdi_settings->handle; //C.vh;
+
+	if (!client)
+		client = C.Aes;
 
 	if (fname)
 	{
@@ -895,8 +897,8 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 				fix_rsc_palette((struct xa_rsc_rgb *)rscs->palette);
 				if (set_pal && cfg.set_rscpalette)
 				{
-					set_syspalette(C.vh, rscs->palette);
-					get_syspalette(C.vh, screen.palette);
+					set_syspalette(client->vdi_settings->handle, rscs->palette);
+					get_syspalette(client->vdi_settings->handle, screen.palette);
 				}
 			}
 		}
@@ -912,7 +914,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 	 * Close the virtual workstation that handled the RSC
 	 * color palette (if present).
 	 */
-	if (vdih != C.vh)
+	if (vdih != client->vdi_settings->handle)
 		v_clsvwk(vdih);
 
 	fix_trees(client, base, (OBJECT **)(unsigned long)(base + hdr->rsh_trindex), hdr->rsh_ntree, designWidth, designHeight);
@@ -937,12 +939,31 @@ Rsrc_setglobal(RSHDR *h, struct aes_global *gl)
 		DIAGS(("      and %ld(%lx) in global[7,8]", h, h));
 	}
 }
+#if 0
+void
+dump_ra_list(struct xa_rscs *rscs)
+{
+	struct remember_alloc *ra;
+
+	while (rscs)
+	{
+		ra = rscs->ra;
+		display("\r\ndump ra-list for rscs=%lx, first ra=%lx", rscs, ra);
+		while (ra)
+		{
+			display("  ra=%lx, ra->next=%lx, ra->addr=%lx", ra, ra->next, ra->addr);
+			ra = ra->next;
+		}
+		rscs = rscs->next;
+	}
+}
+#endif
 
 /*
  * FreeResources: Dispose of a set of loaded resources
  */
 void
-FreeResources(struct xa_client *client, AESPB *pb)
+FreeResources(struct xa_client *client, AESPB *pb, struct xa_rscs *rsrc)
 {
 	struct xa_rscs *cur;
 	RSHDR *rsc = NULL;
@@ -951,6 +972,7 @@ FreeResources(struct xa_client *client, AESPB *pb)
 		rsc = ((struct aes_global *)pb->global)->rshdr;
 
 	cur = client->resources;
+	
 	DIAG((D_rsrc,client,"FreeResources: %lx for %d, ct=%d, pb->global->rsc=%lx",
 		cur, client->p->pid, client->rsct, rsc));
 
@@ -959,6 +981,135 @@ FreeResources(struct xa_client *client, AESPB *pb)
 		/* Put older rsrc back, and the pointer in global */
 		while (cur)
 		{
+			//bool have = rsc && (rsc == cur->rsc);
+			struct xa_rscs *nx = cur->next;
+
+			if (!rsrc || rsrc == cur)
+			{
+				DIAG((D_rsrc, client, "Free: test cur %lx", (long)cur));
+				DIAG((D_rsrc, client, "Free: test cur handle %d", cur->handle));
+
+				//if (have || (!rsc && cur->handle == client->rsct))
+				{
+					/* free the entry for the freed rsc. */
+					struct xa_rscs *nxt_active = NULL;
+					RSHDR *hdr = cur->rsc;
+					char *base = cur->rsc;
+					OBJECT **trees;
+					short i;
+
+					/* Free the memory allocated for scroll list objects. */
+					(unsigned long)trees = (unsigned long)(base + hdr->rsh_trindex);
+					for (i = 0; i < hdr->rsh_ntree; i++)
+					{
+						free_obtree_resources(client, trees[i]);
+					}
+
+					/* unhook the entry from the chain */
+					if (cur->prior)
+					{
+						cur->prior->next = cur->next;
+						nxt_active = cur->prior;
+					}
+					else
+						client->resources = cur->next;
+				
+					if (cur->next)
+					{
+						if (!nxt_active)
+							nxt_active = cur->next;
+						cur->next->prior = cur->prior;
+					}
+				
+					if (client->rsrc == hdr)
+					{
+						RSHDR *nxt_hdr = NULL;
+						OBJECT **o;
+
+						if (nxt_active)
+							nxt_hdr = nxt_active->rsc;
+
+						client->rsrc = nxt_hdr;
+						(unsigned long)o = nxt_hdr ? (unsigned long)nxt_hdr + nxt_hdr->rsh_trindex : 0L;
+						client->trees = o;
+						
+						Rsrc_setglobal(client->rsrc, client->globl_ptr);
+						if (pb && pb->global && (struct aes_global *)pb->global != client->globl_ptr)
+							Rsrc_setglobal(client->rsrc, (struct aes_global *)pb->global);
+					}
+					/*
+					 * Ozk: Here we fix and clean up a LOT of memory-leaks.
+					 * Now we remember each allocation done related to loading
+					 * a resource file, and we release the stuff here.
+					 */
+					if (client == C.Aes)
+					{
+						struct remember_alloc *ra;
+					
+						while (cur->ra)
+						{
+							ra = cur->ra;
+							cur->ra = ra->next;
+							DIAG((D_rsrc, client, "kFreeRa: addr=%lx, ra=%lx", ra->addr, ra));
+							kfree(ra->addr);
+							kfree(ra);
+						}
+					
+						if (cur->flags & RSRC_ALLOC)
+						{
+							DIAG((D_rsrc, client, "kFree: cur->rsc %lx", cur->rsc));
+							kfree(cur->rsc);
+						}
+						DIAG((D_rsrc, client, "kFree: cur %lx", cur));
+						
+						kfree(cur);
+					}
+					else
+					{
+						struct remember_alloc *ra;
+
+						while (cur->ra)
+						{
+							ra = cur->ra;
+							cur->ra = ra->next;
+							DIAG((D_rsrc, client, "uFreeRa: addr=%lx, ra=%lx", ra->addr, ra));
+							ufree(ra->addr);
+							kfree(ra);
+						}
+						if (cur->flags & RSRC_ALLOC)
+						{
+							DIAG((D_rsrc, client, "uFree: cur->rsc %lx", cur->rsc));
+							ufree(cur->rsc);
+						}
+						DIAG((D_rsrc, client, "uFree: cur %lx", cur));
+						
+						ufree(cur);
+					}
+					nx = NULL;
+					client->rsct--;
+				}
+			}
+			cur = nx;
+		}
+		#if 0
+			else if (cur->handle == client->rsct - 1)
+			{
+				DIAG((D_rsrc,client,"Free: Rsrc_setglobal %lx", cur->rsc));
+
+				/* Yeah, there is a resource left! */
+				client->rsrc = cur->rsc;
+				Rsrc_setglobal(cur->rsc, client->globl_ptr);
+			}
+
+			if (have)
+				break;
+			cur = nx;
+		}
+		client->rsct--;
+		#endif
+			
+			
+#if 0			
 			bool have = rsc && (rsc == cur->rsc);
 			struct xa_rscs *nx = cur->next;
 
@@ -984,11 +1135,11 @@ FreeResources(struct xa_client *client, AESPB *pb)
 				/* unhook the entry from the chain */
 				if (cur->prior)
 					cur->prior->next = cur->next;
+				else
+					client->resources = cur->next;
 				if (cur->next)
 					cur->next->prior = cur->prior;
-				if (!cur->prior)
-					client->resources = cur->next;
-
+				
 				/*
 				 * Ozk: Here we fix and clean up a LOT of memory-leaks.
 				 * Now we remember each allocation done related to loading
@@ -1052,8 +1203,8 @@ FreeResources(struct xa_client *client, AESPB *pb)
 
 			cur = nx;
 		}
-
 		client->rsct--;
+#endif
 	}
 }
 
@@ -1075,7 +1226,7 @@ FreeResources(struct xa_client *client, AESPB *pb)
  * fixing up the pointer array is now done in Loadresources, to make it usable via global[5]
  */
 OBJECT *
-ResourceTree(RSHDR *hdr, int num)
+ResourceTree(RSHDR *hdr, long num)
 {
 	OBJECT **index;
 
@@ -1292,7 +1443,7 @@ XA_rsrc_free(enum locks lock, struct xa_client *client, AESPB *pb)
 	{
 		if (client->rsrc)
 		{
-			FreeResources(client, pb);
+			FreeResources(client, pb, NULL);
 			pb->intout[0] = 1;
 		}
 		else
@@ -1348,12 +1499,12 @@ XA_rsrc_gaddr(enum locks lock, struct xa_client *client, AESPB *pb)
 		{
 			switch(type)
 			{
-			default:
-				pb->intout[0] = 0;
-				break;
-			case R_TREE:
-				*addr = trees[index];
-				break;
+				default:
+					pb->intout[0] = 0;
+					break;
+				case R_TREE:
+					*addr = trees[index];
+					break;
 			}
 			DIAG((D_s,client,"  from pb->global --> %ld",*addr));		
 			pb->intout[0] = 1;

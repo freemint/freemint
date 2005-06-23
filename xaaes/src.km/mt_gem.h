@@ -285,7 +285,7 @@ typedef struct pEvntrec
 
 /* menu_bar modes */
 #define MENU_INQUIRE	-1
-#define MENU_REMOVE		0
+#define MENU_REMOVE	0
 #define MENU_INSTALL	1
 #define MENU_GETMODE	3	   /**< Get the menu bar mode */
 #define MENU_SETMODE	4	   /**< Set the menu bar mode */

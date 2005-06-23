@@ -209,7 +209,7 @@ rect_changed(const RECT *n, const RECT *o)
 }
 
 static void
-new_box(const RECT *r, RECT *o)
+new_box(struct xa_vdi_settings *v, const RECT *r, RECT *o)
 {
 	if (o && !rect_changed(r, o))
 		return;
@@ -218,13 +218,13 @@ new_box(const RECT *r, RECT *o)
 
 	if (o)
 	{
-		gbox(-1, o);
-		gbox( 0, o);
+		(*v->api->gbox)(v, -1, o);
+		(*v->api->gbox)(v, 0, o);
 		*o = *r;
 	}
 
-	gbox(-1, r);
-	gbox( 0, r);
+	(*v->api->gbox)(v, -1, r);
+	(*v->api->gbox)(v, 0, r);
 
 	showm();
 }
@@ -250,13 +250,14 @@ rubber_box(struct xa_client *client, COMPASS cp,
 	   int maxw, int maxh,
 	   RECT *last)
 {
+	struct xa_vdi_settings *v = client->vdi_settings;
 	short x, y, mb;
 	RECT old = r;
 	
-	l_color(G_BLACK);
+	(*v->api->l_color)(v, G_BLACK);
 
-	wr_mode(MD_XOR);
-	new_box(&r, NULL);
+	(*v->api->wr_mode)(v, MD_XOR);
+	new_box(v, &r, NULL);
 
 	S.wm_count++;
 	check_mouse(client, &mb, &x, &y);
@@ -264,12 +265,12 @@ rubber_box(struct xa_client *client, COMPASS cp,
 	{
 		r = widen_rectangle(cp, x, y, r, dist);
 		check_wh_cp(&r, cp, minw, minh, maxw, maxh);
-		new_box(&r, &old);
+		new_box(v, &r, &old);
 		wait_mouse(client, &mb, &x, &y);
 	}
 	S.wm_count--;
-	new_box(&r, NULL);
-	wr_mode(MD_TRANS);
+	new_box(v, &r, NULL);
+	(*v->api->wr_mode)(v, MD_TRANS);
 
 	*last = r;
 }
@@ -280,13 +281,14 @@ drag_box(struct xa_client *client, RECT r,
 	 const RECT *dist,
 	 RECT *last)
 {
+	struct xa_vdi_settings *v = client->vdi_settings;
 	short mb, x, y;
 	RECT old = r;
 
-	l_color(G_BLACK);
+	(*v->api->l_color)(v, G_BLACK);
 
-	wr_mode(MD_XOR);
-	new_box(&r, NULL);
+	(*v->api->wr_mode)(v, MD_XOR);
+	new_box(v, &r, NULL);
 
 	S.wm_count++;
 	check_mouse(client, &mb, &x, &y);
@@ -294,13 +296,13 @@ drag_box(struct xa_client *client, RECT r,
 	{
 		r = move_rectangle(x, y, r, dist);
 		keep_inside(&r, bound);
-		new_box(&r, &old);
+		new_box(v, &r, &old);
 		wait_mouse(client, &mb, &x, &y);
 	}
 	S.wm_count--;
 
-	new_box(&r,NULL);
-	wr_mode(MD_TRANS);
+	new_box(v, &r,NULL);
+	(*v->api->wr_mode)(v, MD_TRANS);
 
 	*last = r;
 }
@@ -385,6 +387,7 @@ XA_graf_watchbox(enum locks lock, struct xa_client *client, AESPB *pb)
 			wt = set_client_wt(client, obtree);
 
 		pb->intout[0] = obj_watch( wt,
+					   C.Aes->vdi_settings,
 					   pb->intin[1],
 					   pb->intin[2],
 					   pb->intin[3],
@@ -932,7 +935,7 @@ set_mouse_shape(short m_shape, MFORM *m_form, struct xa_client *client, bool aes
 	if (chg)
 	{
 		hidem();
-		vsc_form(C.vh, (short *)C.realmouse_form);
+		vsc_form(C.P_handle, (short *)C.realmouse_form);
 		showm();
 	}
 }

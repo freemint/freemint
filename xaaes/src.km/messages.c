@@ -366,19 +366,6 @@ do_winmesag(enum locks lock,
 		DIAGS((" --==-- do_winmesag: no do_message!"));
 #endif
 }
-
-static bool inline
-is_inside(const RECT *r, const RECT *o)
-{
-	if (   (r->x        < o->x       )
-	    || (r->y        < o->y       )
-	    || (r->x + r->w > o->x + o->w)
-	    || (r->y + r->h > o->y + o->h)
-	   )
-		return false;
-
-	return true;
-}
 	
 static void
 #if GENERATE_DIAGS
@@ -389,14 +376,13 @@ add_msg_2_queue(struct xa_aesmsg_list **queue, union msg_buf *msg, short qmflags
 {
 	short *new = msg->m;
 	struct xa_aesmsg_list **next, *new_msg;
-
-		
+	
 	if (new[0] == WM_REDRAW)
 	{
 		short *old;
 
 		DIAG((D_m, NULL, "WM_REDRAW rect %d/%d,%d/%d", new[4], new[5], new[6], new[7]));
-
+		
 		if (!new[3])
 			display("WM_REDRAW on root-window???");
 		
@@ -427,8 +413,10 @@ add_msg_2_queue(struct xa_aesmsg_list **queue, union msg_buf *msg, short qmflags
 			}
 		}
 		else
+		{
 			while (*next)
 				next = &((*next)->next);
+		}
 
 		if (msg)
 		{
@@ -590,6 +578,7 @@ queue_message(enum locks lock, struct xa_client *client, short amq, short qmf, u
 		}
 		case AMQ_REDRAW:
 		{
+			
 #if GENERATE_DIAGS
 			add_msg_2_queue(client, &client->rdrw_msg, msg, qmf);
 #else
@@ -643,19 +632,21 @@ send_a_message(enum locks lock, struct xa_client *dest_client, short amq, short 
 		{
 			if (msg->m[0] == WM_REDRAW)
 			{
+				struct xa_vdi_settings *v = dest_client->vdi_settings;
+
 				RECT *r = (RECT *)&msg->m[4];
 
 				dest_client->status |= CS_MISS_RDRW;
 				
 				hidem();
-				set_clip(r);
+				(*v->api->set_clip)(v, r);
 			
-				f_color(9);
-				wr_mode(MD_REPLACE);
-				f_interior(FIS_SOLID);
-				bar(0, r->x, r->y, r->w, r->h);
+				(*v->api->f_color)(v, 9);
+				(*v->api->wr_mode)(v, MD_REPLACE);
+				(*v->api->f_interior)(v, FIS_SOLID);
+				(*v->api->bar)(v, 0, r->x, r->y, r->w, r->h);
 
-				clear_clip();
+				(*v->api->clear_clip)(v);
 				showm();
 				C.redraws++;
 				kick_mousemove_timeout();
@@ -698,7 +689,7 @@ send_app_message(
 		to = wind->owner;
 
 	*p++ = mp0;				/* message number */
-	*p++ = mp1 > 0 ? mp1 : C.AESpid;	/* source pid     */
+	*p++ = amq != AMQ_IREDRAW ? (mp1 > 0 ? mp1 : C.AESpid) : mp1;	/* source pid     */
 	*p++ = mp2;
 	*p++ = mp3;
 	*p++ = mp4;

@@ -229,57 +229,7 @@ fnts_extb_callout(struct extbox_parms *p)
 		callout_display(f, fnts->vdi_handle, fnts->fnt_pt, fnts->fnt_ratio, &p->clip, &p->r, fnts->sample_text);
 	}
 }
-#if 0
-static void
-fnts_redraw(enum locks lock, struct xa_window *wind, short start, short depth, RECT *r)
-{
-	struct xa_rect_list *rl;
-	struct widget_tree *wt;
 
-	if (wind && (wt = get_widget(wind, XAW_TOOLBAR)->stuff) && (rl = wind->rect_start))
-	{
-		OBJECT *obtree;
-		RECT dr;
-
-		obtree = wt->tree;
-
-		lock_screen(wind->owner->p, false, NULL, 0);
-		hidem();
-				
-		if (wt->e.obj != -1)
-			obj_edit(wt, ED_END, 0, 0, 0, true, &wind->wa, wind->rect_start, NULL, NULL);
-		
-		if (r)
-		{
-			while (rl)
-			{
-				if (xa_rect_clip(&rl->r, r, &dr))
-				{
-					set_clip(&dr);
-					draw_object_tree(0, wt, wt->tree, start, depth, NULL);
-				}
-				rl = rl->next;
-			}
-		}
-		else
-		{
-			while (rl)
-			{
-				set_clip(&rl->r);
-				draw_object_tree(0, wt, wt->tree, start, depth, NULL);
-				rl = rl->next;
-			}
-		}
-		
-		if (wt->e.obj != -1)
-			obj_edit(wt, ED_END, 0, 0, 0, true, &wind->wa, wind->rect_start, NULL, NULL);
-		
-		showm();
-		clear_clip();
-		unlock_screen(wind->owner->p, 0);
-	}
-}
-#endif
 static struct speedo_header *
 xvqt_fontheader(XVDIPB *vpb, short handle)
 {
@@ -310,7 +260,7 @@ new_fnts(void)
  * This function is pointed to by xa_data_hdr->destruct, and is called
  * by delete_xa_data() and free_xa_data_list() (in global.c).
  */
-static void
+static void _cdecl
 delete_fnts_info(void *_fnts)
 {
 	struct xa_fnts_info *fnts = _fnts;
@@ -887,6 +837,7 @@ click_size(SCROLL_INFO *list, SCROLL_ENTRY *this, const struct moose_data *md)
 		list->get(list, list->cur, SEGET_TEXTCPY, &p);
 		//strcpy(ted->te_ptext, list->cur->c.td.text.text->text);
 		obj_edit(fnts->wt,
+			 fnts->vdi_settings,
 			 ED_INIT,
 			 FNTS_EDSIZE,
 			 0,
@@ -953,8 +904,9 @@ create_new_fnts(enum locks lock,
 		 * as its first element for the xa_data_xx() functions to work on.
 		 */
 		add_xa_data(&client->xa_data, fnts, delete_fnts_info);
-		
+
 		fnts->wind		= wind;
+		fnts->vdi_settings	= wind->vdi_settings;
 		fnts->handle		= (void *)((unsigned long)fnts >> 16 | (unsigned long)fnts << 16);
 		fnts->wt		= wt;
 		wt->links++;
@@ -1055,7 +1007,7 @@ XA_fnts_create(enum locks lock, struct xa_client *client, AESPB *pb)
 	if ((wt = duplicate_fnts_obtree(client)))
 	{
 		obtree = wt->tree;
-		ob_area(obtree, 0, &or);
+		ob_rectangle(obtree, 0, &or);
 		
 		r = calc_window(lock, client, WC_BORDER,
 				tp, created_for_WDIAL,
@@ -1079,8 +1031,7 @@ XA_fnts_create(enum locks lock, struct xa_client *client, AESPB *pb)
 		if (!(fnts = create_new_fnts(lock, client, wind, wt, pb->intin[0], pb->intin[1], pb->intin[2], pb->intin[3], (char *)pb->addrin[0], (char *)pb->addrin[1])))
 			goto memerr;
 
-		wt = set_toolbar_widget(lock, wind, client, obtree, -2, 0, &wdlg_th);
-		wt->zen = false;
+		wt = set_toolbar_widget(lock, wind, client, obtree, -2, 0, true, &wdlg_th, &or);
 
 		update_slists(fnts);
 		
@@ -1224,7 +1175,7 @@ init_fnts(struct xa_fnts_info *fnts)
 		sprintf(pt, sizeof(pt), "%d", (unsigned short)(fnts->fnt_ratio >> 16));
 		sprintf(pt + strlen(pt), sizeof(pt) - strlen(pt), ".%d", (short)(fnts->fnt_ratio));
 		strcpy(ted->te_ptext, pt);
-		obj_edit(fnts->wt, ED_INIT, FNTS_EDRATIO, 0, -1, false, NULL, NULL, NULL, NULL);
+		obj_edit(fnts->wt, fnts->vdi_settings, ED_INIT, FNTS_EDRATIO, 0, -1, false, NULL, NULL, NULL, NULL);
 	
 		/*
 		 * Set sizes edit field...
@@ -1239,7 +1190,7 @@ init_fnts(struct xa_fnts_info *fnts)
 		else
 			strcpy(ted->te_ptext, "10");
 	
-		obj_edit(fnts->wt, ED_INIT, FNTS_EDSIZE, 0, -1, false, NULL, NULL, NULL, NULL);
+		obj_edit(fnts->wt, fnts->vdi_settings, ED_INIT, FNTS_EDSIZE, 0, -1, false, NULL, NULL, NULL, NULL);
 
 	}
 	DIAG((D_fnts, NULL, " --- fnt_id = %ld, fnt_pt = %lx, fnt_ratio = %lx",
@@ -1291,10 +1242,12 @@ XA_fnts_open(enum locks lock, struct xa_client *client, AESPB *pb)
 		if (!(wind->window_status & XAWS_OPEN))
 		{
 			struct widget_tree *wt = fnts->wt;
+			struct xa_widget *widg = get_widget(wind, XAW_TOOLBAR);
 			RECT r = wind->wa;
 			XA_WIND_ATTR tp = wind->active_widgets | MOVER|NAME;
 		
-			set_toolbar_handlers(&wdlg_th, wind, get_widget(wind, XAW_TOOLBAR), get_widget(wind, XAW_TOOLBAR)->stuff);
+			widg->m.properties |= WIP_NOTEXT;
+			set_toolbar_handlers(&wdlg_th, wind, widg, widg->stuff);
 			
 			if (pb->intin[1] == -1 || pb->intin[2] == -1)
 			{
@@ -1612,7 +1565,7 @@ XA_fnts_evnt(enum locks lock, struct xa_client *client, AESPB *pb)
 		else
 		{
 			if (wep.obj > 0 && (obtree[wep.obj].ob_state & OS_SELECTED))
-				obj_change(fnts->wt, wep.obj, -1, obtree[wep.obj].ob_state & ~OS_SELECTED, obtree[wep.obj].ob_flags, true, &wind->wa, wind->rect_start);
+				obj_change(fnts->wt, wind->vdi_settings, wep.obj, -1, obtree[wep.obj].ob_state & ~OS_SELECTED, obtree[wep.obj].ob_flags, true, &wind->wa, wind->rect_start);
 		
 			val = get_edpoint(fnts);
 			if (val != fnts->fnt_pt)
@@ -1679,97 +1632,6 @@ Keypress(enum locks lock,
 	}
 	return no_exit;	
 }
-#if 0
-static bool
-fnts_th_click(	enum locks lock,
-			struct xa_window *wind,
-			struct xa_widget *widg,
-			const struct moose_data *md)
-{
-	struct xa_client *client = wind->owner;
-	XA_TREE *wt;
-	
-	wt = widg->stuff;
-
-	DIAG((D_form, client, "fntsClick_windowed_form_do: client=%lx, wind=%lx, wt=%lx",
-		client, wind, wt));
-
-	fntsClick_form_do(lock, client, wind, wt, md);
-
-	return false;
-}
-
-static bool
-fntsClick_form_do(enum locks lock,
-	      struct xa_client *client,
-	      struct xa_window *wind,
-	      struct widget_tree *wt,
-	      const struct moose_data *md)
-{
-	OBJECT *obtree;
-	RECT r;
-
-	/*
-	 * If window is not NULL, the form_do is a windowed one,
-	 * else it is a classic blocking form_do
-	 */
-	if (wind)
-	{
-		if (!wind->nolist && wind != window_list && !(wind->active_widgets & NO_TOPPED) )
-		{
-			DIAGS(("Click_form_do: topping window"));
-			top_window(lock, true, false, wind, (void *)-1L);
-			return false;
-		}
-		
-		if (!wt)
-		{
-			DIAGS(("Click_form_do: using wind->toolbar"));
-			wt = get_widget(wind, XAW_TOOLBAR)->stuff;
-		}
-		obtree = rp_2_ap(wind, wt->widg, &r);
-	}
-	/*
-	 * Not a windowed form session.
-	 */
-	else
-	{
-		if (!wt)
-		{
-			DIAGS(("Click_form_do: using client->wt"));
-			wt = client->fmd.wt;
-		}
-		obtree = wt->tree;
-	}
-
-	if (obtree)
-	{
-		struct fmd_result fr;
-
-		fr.obj = obj_find(wt, 0, 10, md->x, md->y, NULL);
-		
-		if (fr.obj >= 0 &&
-		    !form_button(wt,
-				 fr.obj,
-				 md,
-				 FBF_REDRAW | FBF_DO_SLIST,
-				 wind ? wind->rect_start : NULL,
-				 &fr.obj_state,
-				 &fr.obj,
-				 &fr.dblmask))
-		{
-			if (wt->exit_form)
-			{
-				DIAGS(("Click_form_do: calling exti_form"));
-				fr.md = md;
-				fr.key = NULL;
-				wt->exit_form(client, wind, wt, &fr);
-			}
-		}
-	}
-	return false;
-}
-#endif
 
 static void
 Formexit( struct xa_client *client,
@@ -1792,9 +1654,8 @@ static struct toolbar_handlers fnts_th =
 	Keypress,		/* FormKeyInput		*keypress;	*/
 
 	NULL,			/* DisplayWidget	*display;	*/
-	NULL, /*fnts_th_click,*/		/* WidgetBehaviour	*click;		*/
-	NULL, /*fnts_th_click,*/		/* WidgetBehaviour	*dclick;	*/
-	NULL, /*fnts_th_click,*/		/* WidgetBehaviour	*drag;		*/
+	NULL, /*fnts_th_click,*/	/* WidgetBehaviour	*click;		*/
+	NULL, /*fnts_th_click,*/	/* WidgetBehaviour	*drag;		*/
 	NULL,			/* WidgetBehaviour	*release;	*/
 	NULL,			/* void (*destruct)(struct xa_widget *w); */
 };
@@ -1813,17 +1674,20 @@ XA_fnts_do(enum locks lock, struct xa_client *client, AESPB *pb)
 	if (fnts && (wind = get_fnts_wind(client, fnts)))
 	{
 		XA_TREE *wt = fnts->wt;
+		XA_WIDGET *widg = get_widget(wind, XAW_TOOLBAR);
 		OBJECT *obtree = wt->tree;
 		RECT or;
 		XA_WIND_ATTR tp = wind->active_widgets & ~STD_WIDGETS;
 
-		form_center(obtree, ICON_H);
+// 		form_center(obtree, ICON_H);
 		
 		ob_area(obtree, 0, &or);
+		center_rect(&or);
 
 		change_window_attribs(lock, client, wind, tp, true, or, NULL);
 		
-		set_toolbar_handlers(&fnts_th, wind, get_widget(wind, XAW_TOOLBAR), get_widget(wind, XAW_TOOLBAR)->stuff);
+		widg->m.properties &= ~WIP_NOTEXT;
+		set_toolbar_handlers(&fnts_th, wind, widg, widg->stuff);
 		wt->flags |= WTF_FBDO_SLIST;
 
 		fnts->button_flags = pb->intin[0];

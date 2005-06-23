@@ -159,7 +159,7 @@ void
 post_cevent(struct xa_client *client,
 	void (*func)(enum locks, struct c_event *, bool cancel),
 	void *ptr1, void *ptr2,
-	int d0, int d1, RECT *r,
+	int d0, int d1, const RECT *r,
 	const struct moose_data *md)
 {
 	struct c_event *c;
@@ -409,6 +409,7 @@ init_moose(void)
 	C.button_waiter = NULL;
 	C.redraws = 0;
 	C.move_block = 0;
+	C.rect_lock = 0;
 
 	C.adi_mouse = adi_name2adi("moose");
 	if (C.adi_mouse)
@@ -495,7 +496,7 @@ multi_intout(struct xa_client *client, short *o, int evnt)
 {
 	check_mouse(client, &o[3], &o[1], &o[2]);
 	o[0] = evnt;
-	vq_key_s(C.vh, &o[4]);
+	vq_key_s(C.P_handle, &o[4]);
 	if (evnt)
 	{
 		o[5] = o[6] = 0;
@@ -1149,11 +1150,13 @@ restore_sigs(void)
 static void
 k_exit(void)
 {
+//	display("k_exit");
 	C.shutdown |= QUIT_NOW;
 
 	restore_sigs();
 	post_cevent(C.Aes, CE_at_restoresigs, NULL, NULL, 0,0, NULL, NULL);
 	yield();
+// 	display("after yield");
 
 	if (svmotv)
 	{
@@ -1166,8 +1169,9 @@ k_exit(void)
 			vex_wheelv(C.P_handle, svwhlv, &h);
 	}
 
-	
+// 	display("k_shutdown..");
 	k_shutdown();
+// 	display("done");
 	
 	if (c_naes)
 	{
@@ -1183,12 +1187,13 @@ k_exit(void)
 		c_magx = NULL;
 	}
 #endif
-
+// 	display("unreg trap2");
 	/*
 	 * deinstall trap #2 handler
 	 */
 	register_trap2(XA_handler, 1, 0, 0);
 	DIAGS(("unregistered trap handler"));
+// 	display("done");
 
 	/*
 	 * close input devices
@@ -1217,5 +1222,6 @@ k_exit(void)
 	DIAGS(("-> kthread_exit"));
 
 	/* XXX todo -> module_exit */
+// 	display("kthread_exit...");
 	kthread_exit(0);
 }

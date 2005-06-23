@@ -41,7 +41,10 @@ struct common C;
 struct shared S;
 
 struct xa_screen screen; /* The screen descriptor */
-struct xa_widget_theme default_widget_theme;
+struct xa_objc_render objc_rend;
+
+struct xa_vdi_settings global_vdi_settings;
+struct xa_vdi_api *global_vdiapi;
 
 short border_mouse[CDV] =
 {
@@ -134,7 +137,7 @@ void
 delete_xa_data(struct xa_data_hdr **list, void *_data)
 {
 	struct xa_data_hdr *data = _data;
-	//display("delete_xa_data: %lx (destruct=%lx)", data, (long)data->destruct);
+// 	display("delete_xa_data: %lx (destruct=%lx)", data, (long)data->destruct);
 	
 	remove_xa_data(list, data);
 	
@@ -146,11 +149,11 @@ void
 free_xa_data_list(struct xa_data_hdr **list)
 {
 	struct xa_data_hdr *l = *list;
-	//display("free_xa_data_list:");
+// 	display("free_xa_data_list:");
 	while (l)
 	{
 		struct xa_data_hdr *n = l->next;
-		//display(" --- Calling xa_data_destruct: %lx (destruct=%lx)", l, (long)l->destruct);
+// 		display(" --- Calling xa_data_destruct: %lx (destruct=%lx)", l, (long)l->destruct);
 		if (l->destruct)
 			(*l->destruct)(l);
 		l = n;

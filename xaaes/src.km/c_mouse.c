@@ -175,10 +175,10 @@ cXA_deliver_button_event(enum locks lock, struct c_event *ce, bool cancel)
 		/*
 		 * Double click on a iconified window will uniconify
 		 */
-		if (wind && (wind->window_status & XAWS_ICONIFIED) && widg && widg->click)
+		if (wind && (wind->window_status & XAWS_ICONIFIED) && widg && widg->m.click)
 		{
 			if (ce->md.clicks > 1)
-				widg->click(lock, wind, widg, &ce->md);
+				widg->m.click(lock, wind, widg, &ce->md);
 			else if (wind->send_message && !is_topped(wind))
 				wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP, WM_TOPPED, 0, 0, wind->handle, 0, 0, 0, 0);
 		}
@@ -250,7 +250,7 @@ cXA_open_menu(enum locks lock, struct c_event *ce, bool cancel)
 	{
 		DIAG((D_mouse, ce->client, "cXA_open_menu for %s", ce->client->name));
 		if ( menu == get_menu() )
-			widg->click(lock, root_window, widg, &ce->md);
+			widg->m.click(lock, root_window, widg, &ce->md);
 #if GENERATE_DIAGS
 		else
 			DIAG((D_mouse, ce->client, "cXA_open_menu skipped for %s - menu changed before cevent.", ce->client->name));
@@ -368,7 +368,7 @@ cXA_widget_click(enum locks lock, struct c_event *ce, bool cancel)
 	if (!cancel)
 	{
 		DIAG((D_mouse, ce->client, "cXA_widget_click for %s", ce->client->name));
-		widg->click(lock, root_window, widg, &ce->md);
+		widg->m.click(lock, root_window, widg, &ce->md);
 	}
 }
 
@@ -442,7 +442,7 @@ wheel_arrow(struct xa_window *wind, const struct moose_data *md, XA_WIDGET **wr,
 		widg = get_widget(wind, which);
 		if (widg)
 		{
-			if (widg->type && wr)
+			if (widg->m.r.xaw_idx && wr)
 				*wr = widg;
 		}
 	}
@@ -453,20 +453,23 @@ wheel_arrow(struct xa_window *wind, const struct moose_data *md, XA_WIDGET **wr,
 static void
 whlarrowed(struct xa_window *wind, short WA, short amount, const struct moose_data *md)
 {
-	if (md)
+	if (wind->send_message)
 	{
-		wind->send_message(0, wind, NULL, AMQ_NORM, QMF_CHKDUP,
-				   WM_ARROWED, 0,0, wind->handle,
-				   (amount << 8)|(WA & 7), md->x, md->y, md->kstate);
-	}
-	else
-	{
-		while (amount)
+		if (md)
 		{
-			wind->send_message(0, wind, NULL, AMQ_NORM, 0,
+			wind->send_message(0, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 					   WM_ARROWED, 0,0, wind->handle,
-					   WA, 0, 0, 0);
-			amount--;
+					   (amount << 8)|(WA & 7), md->x, md->y, md->kstate);
+		}
+		else
+		{
+			while (amount)
+			{
+				wind->send_message(0, wind, NULL, AMQ_NORM, 0,
+						   WM_ARROWED, 0,0, wind->handle,
+						   WA, 0, 0, 0);
+				amount--;
+			}
 		}
 	}
 }

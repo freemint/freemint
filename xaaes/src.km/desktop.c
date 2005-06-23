@@ -95,47 +95,47 @@ click_desktop_widget(enum locks lock, struct xa_window *wind, struct xa_widget *
 void
 set_desktop_widget(struct xa_window *wind, XA_TREE *desktop)
 {
-	XA_WIDGET *wi = get_widget(wind, XAW_TOOLBAR);
-	XA_WIDGET_LOCATION loc;
+	XA_WIDGET *widg = get_widget(wind, XAW_TOOLBAR);
+	struct xa_widget_methods *m = &widg->m;
 
 	DIAG((D_widg, NULL, "set_desktop_widget(wind = %d):new@0x%lx",
 		wind->handle, desktop));
 
-	if (wi->stuff)
+	if (widg->stuff)
 	{
-		((XA_TREE *)wi->stuff)->widg = NULL;
-		((XA_TREE *)wi->stuff)->links--;
+		((XA_TREE *)widg->stuff)->widg = NULL;
+		((XA_TREE *)widg->stuff)->links--;
 	}
 
-	desktop->widg = wi;
+	desktop->widg = widg;
 	desktop->links++;
 
-	bzero(&loc, sizeof(loc));
-	loc.relative_type = LT;
-	loc.r = wind->r;
-	loc.r.y += get_menu_widg()->r.h; //MENU_H + 1;
-	loc.r.w -= get_menu_widg()->r.h; //MENU_H + 1;
-	loc.n = XAW_TOOLBAR;
-	loc.mask = TOOLBAR;
+	widg->r = wind->r;
+	widg->r.y += get_menu_widg()->r.h;
+	widg->r.h -= get_menu_widg()->r.h;
 
-	wi->r = loc.r;
+	bzero(&widg->m, sizeof(*m));
 
-	wi->h.draw = display_object_widget;
-	wi->click = click_desktop_widget;
-	wi->dclick = click_desktop_widget;
-	wi->drag = click_desktop_widget;
-	wi->loc = loc;
-	wi->state = OS_NORMAL;
+	m->r.xaw_idx = XAW_TOOLBAR;
+	m->r.pos_in_row = LT;
+	m->r.tp = TOOLBAR;
+	
+	m->r.draw = display_object_widget;
+	m->r.setsize = NULL;
+	m->properties = WIP_INSTALLED;
+	m->click = click_desktop_widget;
+	m->drag = click_desktop_widget;
+	widg->state = OS_NORMAL;
 
 	/* Ozk;
 	 * Set destruct, stufftype and XAWF_STUFFMALLOC and 'nt' is freed.
 	 * Set XAWF_STUFFMALLOC and nt is freed by free_xawidget()
 	 */
-	wi->stuff = desktop;
-	wi->stufftype = STUFF_IS_WT;
-	wi->destruct = free_xawidget_resources;
+	widg->stuff = desktop;
+	widg->stufftype = STUFF_IS_WT;
+	m->destruct = free_xawidget_resources;
 	
-	wi->start = 0;
+	widg->start = 0;
 }
 
 /*
@@ -161,7 +161,6 @@ Set_desktop(XA_TREE *new_desktop)
 	new_desktop->flags |= WTF_STATIC;
 	new_desktop->links++;
 
-
 	ob = new_desktop->tree;
 	*(RECT *)&ob->ob_x = root_window->wa;	
 	r = *(RECT*)&ob->ob_x;
@@ -177,13 +176,13 @@ Set_desktop(XA_TREE *new_desktop)
 
 	/* HR 010501: general fix */
 	if (root_window->r.h > r.h)
-		wi->loc.r.y = ob->ob_y = root_window->r.h - r.h;
+		ob->ob_y = root_window->r.h - r.h;
 
 	wi->stuff = new_desktop;
 	wi->stufftype = STUFF_IS_WT;
-	wi->destruct = free_xawidget_resources;
+	wi->m.destruct = free_xawidget_resources;
 	
-	send_iredraw(0, root_window, 0, NULL);
+	//send_iredraw(0, root_window, 0, NULL);
 }
 static void
 CE_set_desktop(enum locks lock, struct c_event *ce, bool cancel)
@@ -195,35 +194,63 @@ CE_set_desktop(enum locks lock, struct c_event *ce, bool cancel)
 			newdesk, newdesk->tree, newdesk->owner->name, ce->client->name));
 
 		Set_desktop(newdesk);
+		send_iredraw(0, root_window, 0, NULL);
 	}
 }
+
 void
-set_desktop(XA_TREE *new_desktop)
+set_desktop(struct xa_client *client, bool remove)
 {
 	struct xa_client *rc = lookup_extension(NULL, XAAES_MAGIC);
 
 	if (!rc)
 		rc = C.Aes;
 
-	if (rc == new_desktop->owner || new_desktop->owner == C.Aes)
+	if (remove)
 	{
-		DIAGS((" set_desktop: Direct from %s to %s",
-			rc->name, new_desktop->owner->name));
+		struct xa_client *new = NULL;
 
-		Set_desktop(new_desktop);
+		/* find a prev app's desktop. */
+		if (get_desktop() == client->desktop)
+		{
+			/*
+			 * Set to AES's desktop, this will unlink current desktop
+			 */
+			Set_desktop(C.Aes->desktop);
+			/* Ozk:
+			 * If caller aint the desktop, we try to set the desktop's dektop (uhm.. yes)
+			 */
+			new = pid2client(C.DSKpid);
+			if (!new || client == new || !new->desktop)
+				new = find_desktop(0, client, 3);
+		}
+		client->desktop = NULL;
+		client = new;
 	}
-	else
-	{
-		DIAGS((" set_desktop: posting cevent (%lx) to %s",
-			(long)CE_set_desktop, new_desktop->owner->name));
 
-		post_cevent(new_desktop->owner,
-			    CE_set_desktop,
-			    new_desktop,
-			    NULL,
-			    0, 0,
-			    NULL,
-			    NULL);
+	if (client && client->desktop)
+	{
+		if (rc == client || client == C.Aes)
+		{
+			DIAGS((" set_desktop: Direct from %s to %s",
+				rc->name, client->name));
+
+			Set_desktop(client->desktop);
+			send_iredraw(0, root_window, 0, NULL);
+		}
+		else
+		{
+			DIAGS((" set_desktop: posting cevent (%lx) to %s",
+				(long)CE_set_desktop, client->name));
+
+			post_cevent(client,
+				    CE_set_desktop,
+				    client->desktop,
+				    NULL,
+				    0, 0,
+				    NULL,
+				    NULL);
+		}
 	}
 }	
 struct xa_client *
