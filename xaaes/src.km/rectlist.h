@@ -32,6 +32,8 @@
 #define RECT_SYS	0
 #define RECT_OPT	1
 
+bool is_inside(const RECT *r, const RECT *o);
+
 struct build_rl_parms;
 struct build_rl_parms
 {
@@ -44,7 +46,7 @@ struct build_rl_parms
 
 bool was_visible(struct xa_window *w);
 bool xa_rc_intersect(const RECT s, RECT *d);
-bool xa_rect_clip(const RECT *s, RECT *d, RECT *r);
+bool xa_rect_clip(const RECT *s, const RECT *d, RECT *r);
 int xa_rect_chk(const RECT *s, const RECT *d, RECT *r);
 
 struct xa_rect_list *build_rect_list(struct build_rl_parms *p);

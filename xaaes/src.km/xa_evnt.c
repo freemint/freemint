@@ -163,26 +163,44 @@ void
 exec_iredraw_queue(enum locks lock, struct xa_client *client)
 {
 	struct xa_window *wind;
-	//struct xa_widget *widg;
 	RECT *r;
+	long rdrws = -1L;
 	union msg_buf ibuf;
-
-	while (pending_iredraw_msgs(lock, client, &ibuf))
+	
+	if (pending_iredraw_msgs(lock, client, &ibuf))
 	{
 		lock_screen(client->p, false, NULL, 0);
-
-		wind = (struct xa_window *)ibuf.irdrw.ptr;
-
-		if (wind != root_window || (wind == root_window && get_desktop()->owner == client))
-		{		
+		hidem();
+		do {
+			short xaw = ibuf.irdrw.xaw;
+			wind = (struct xa_window *)ibuf.irdrw.ptr;
 			r = (RECT *)&ibuf.irdrw.x;
 
-			if (!(r->w | r->h))
-				r = NULL;
+			if (!xaw && (wind != root_window || (wind == root_window && get_desktop()->owner == client)))
+			{
+				if (!(r->w | r->h))
+					r = NULL;
 		
-			display_window(lock, 0, wind, r);
-		}
-		unlock_screen(client->p, 0);
+				display_window(lock, 0, wind, r);
+			}
+			else
+			{
+				struct xa_widget *widg = get_widget(wind, xaw);
+				struct xa_vdi_settings *v = wind->vdi_settings;
+				if (widg->m.r.draw)
+				{
+					(*v->api->set_clip)(v, r);
+					(*widg->m.r.draw)(wind, widg, r);
+					(*v->api->clear_clip)(v);
+				}
+			}
+			rdrws++;
+		} while (pending_iredraw_msgs(lock, client, &ibuf));
+		
+		showm();
+		C.redraws -= rdrws;
+
+ 		unlock_screen(client->p, 0);
 		kick_mousemove_timeout();
 	}
 	if (!client->rdrw_msg && C.redraws)
@@ -332,7 +350,7 @@ get_mbstate(struct xa_client *client, struct mbs *d)
 		mbutts = md->cstate;
 		md->clicks = -1;
 		check_mouse(client, NULL, &x, &y);
-		vq_key_s(C.vh, &ks);
+		vq_key_s(C.P_handle, &ks);
 	}
 
 	if (d)
@@ -525,7 +543,6 @@ check_queued_events(struct xa_client *client)
 			kfree(md);
 		}
 	}
-				
 	if (events)
 	{
 

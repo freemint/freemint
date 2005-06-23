@@ -476,6 +476,14 @@ taskmanager_form_exit(struct xa_client *Client,
 			redraw_toolbar(lock, task_man_win, TM_HALT);
 			break;
 		}
+		case TM_COLD:
+		{
+			DIAGS(("taskmanager: coldstart system"));
+			dispatch_shutdown(COLDSTART_SYSTEM);
+			object_deselect(wt->tree + TM_COLD);
+			redraw_toolbar(lock, task_man_win, TM_COLD);
+			break;
+		}
 		case TM_OK:
 		{
 			object_deselect(wt->tree + TM_OK);
@@ -500,10 +508,12 @@ void
 open_taskmanager(enum locks lock)
 {
 	static RECT remember = { 0,0,0,0 };
-
 	struct xa_window *dialog_window;
 	XA_TREE *wt;
 	OBJECT *obtree = ResourceTree(C.Aes_rsc, TASK_MANAGER);
+	RECT or;
+
+	ob_rectangle(obtree, 0, &or);
 
 	wt = obtree_to_wt(C.Aes, obtree);
 
@@ -514,12 +524,12 @@ open_taskmanager(enum locks lock)
 		/* Work out sizing */
 		if (!remember.w)
 		{
-			form_center(obtree, ICON_H);
+			center_rect(&or); //form_center(obtree, ICON_H);
 			remember = calc_window(lock, C.Aes, WC_BORDER,
 						CLOSER|NAME, created_for_AES,
 						C.Aes->options.thinframe,
 						C.Aes->options.thinwork,
-						*(RECT*)&obtree->ob_x);
+						*(RECT *)&or); //*(RECT*)&obtree->ob_x);
 		}
 
 		/* Create the window */
@@ -536,9 +546,8 @@ open_taskmanager(enum locks lock)
 		/* Set the window title */
 		set_window_title(dialog_window, " Task Manager ", false);
 
-		wt = set_toolbar_widget(lock, dialog_window, C.Aes, obtree, -1, WIP_NOTEXT, NULL);
+		wt = set_toolbar_widget(lock, dialog_window, C.Aes, obtree, -1, 0/*WIP_NOTEXT*/, true, NULL, &or);
 		wt->exit_form = taskmanager_form_exit;
-
 
 		/* Set the window destructor */
 		dialog_window->destructor = taskmanager_destructor;
@@ -791,6 +800,9 @@ open_systemalerts(enum locks lock)
 		OBJECT *obtree = ResourceTree(C.Aes_rsc, SYS_ERROR);
 		struct xa_window *dialog_window;
 		XA_TREE *wt;
+		RECT or;
+
+		ob_rectangle(obtree, 0, &or);
 
 		wt = obtree_to_wt(C.Aes, obtree);
 
@@ -799,12 +811,12 @@ open_systemalerts(enum locks lock)
 		/* Work out sizing */
 		if (!remember.w)
 		{
-			form_center(obtree, ICON_H);
+			center_rect(&or);
 			remember = calc_window(lock, C.Aes, WC_BORDER,
 						CLOSER|NAME, created_for_AES,
 						C.Aes->options.thinframe,
 						C.Aes->options.thinwork,
-						*(RECT*)&obtree->ob_x);
+						*(RECT *)&or); //*(RECT*)&obtree->ob_x);
 		}
 
 		/* Create the window */
@@ -822,7 +834,7 @@ open_systemalerts(enum locks lock)
 		/* Set the window title */
 		set_window_title(dialog_window, " System window & Alerts log", false);
 
-		wt = set_toolbar_widget(lock, dialog_window, C.Aes, obtree, -1, WIP_NOTEXT, NULL);
+		wt = set_toolbar_widget(lock, dialog_window, C.Aes, obtree, -1, 0/*WIP_NOTEXT*/, true, NULL, &or);
 		wt->exit_form = sysalerts_form_exit;
 		/* Set the window destructor */
 		dialog_window->destructor = systemalerts_destructor;

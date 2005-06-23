@@ -56,10 +56,181 @@
 #include "xa_graf.h"
 #include "trnfm.h"
 
+#include "win_draw.h"
+
+#include "xa_xtobj.h"
+
 /* kernel header */
 #include "mint/ssystem.h"
 #include "cookie.h"
 
+
+static struct xa_module_api xam_api;
+
+static char *xaaes_sysfile(const char *);
+
+static char *_cdecl
+api_xaaes_sysfile(const char *f)
+{
+	return xaaes_sysfile(f);
+}
+
+static RSHDR * _cdecl
+api_load_resource(char *fname, RSHDR *rshdr, short designWidth, short designHeight, bool set_pal)
+{
+	return LoadResources(C.Aes, fname, rshdr, designWidth, designHeight, set_pal);
+}
+
+static OBJECT * _cdecl
+api_resourcetree(RSHDR *tree, long index)
+{
+	return ResourceTree(tree, index);
+}
+
+static struct widget_tree * _cdecl
+api_new_widget_tree(OBJECT *obtree)
+{
+	struct widget_tree *wt = new_widget_tree(C.Aes, obtree);
+
+	if (wt)
+	{
+		wt->flags |= WTF_AUTOFREE;
+	}
+	return wt;
+}
+
+static struct widget_tree * _cdecl
+api_obtree_to_wt(OBJECT *obtree)
+{
+	return obtree_to_wt(C.Aes, obtree);
+}
+
+static void _cdecl
+api_init_widget_tree(struct widget_tree *wt, OBJECT *obtree)
+{
+	init_widget_tree(C.Aes, wt, obtree);
+	wt->flags |= WTF_AUTOFREE;
+}
+
+static void _cdecl
+api_remove_wt(struct widget_tree *wt)
+{
+	remove_wt(wt, false);
+}
+
+static void _cdecl
+api_ob_spec_xywh(OBJECT *obtree, short obj, RECT *r)
+{
+	ob_spec_xywh(obtree, obj, r);
+}
+
+static void _cdecl 
+api_object_spec_wh(OBJECT *ob, short *w, short *h)
+{
+	object_spec_wh(ob, w, h);
+}
+
+static void * _cdecl
+api_rp2ap(struct xa_window *wind, struct xa_widget *widg, RECT *r)
+{
+	return rp_2_ap(wind, widg, r);
+}
+static void _cdecl
+api_rp2apcs(struct xa_window *wind, struct xa_widget *widg, RECT *r)
+{
+	rp_2_ap_cs(wind, widg, r);
+}
+
+static void * _cdecl
+api_kmalloc(long size)
+{
+	return kmalloc(size);
+}
+
+static void * _cdecl
+api_umalloc(long size)
+{
+	return umalloc(size);
+}
+
+static void _cdecl
+api_kfree(void *addr)
+{
+	kfree(addr);
+}
+
+static void _cdecl
+api_ufree(void *addr)
+{
+	ufree(addr);
+}
+
+static void _cdecl
+api_bzero(void *addr, unsigned long len)
+{
+	bzero(addr, len);
+}
+
+static void * _cdecl
+api_lookup_xa_data(struct xa_data_hdr **l, void *data)
+{
+	return lookup_xa_data(l, data);
+}
+
+static void _cdecl
+api_add_xa_data(struct xa_data_hdr **list, void *data, void _cdecl(*destruct)(void *d))
+{
+	add_xa_data(list, data, destruct);
+}
+static void _cdecl
+api_remove_xa_data(struct xa_data_hdr **list, void *data)
+{
+	remove_xa_data(list, data);
+}
+static void _cdecl
+api_delete_xa_data(struct xa_data_hdr **list, void *data)
+{
+	delete_xa_data(list, data);
+}
+
+static void _cdecl
+api_free_xa_data_list(struct xa_data_hdr **list)
+{
+	free_xa_data_list(list);
+}
+
+static void
+setup_xa_module_api(void)
+{
+	xam_api.sysfile		= api_xaaes_sysfile;
+	xam_api.load_resource	= api_load_resource;
+	xam_api.resource_tree	= api_resourcetree;
+
+	xam_api.init_wt		= api_init_widget_tree;
+	xam_api.new_wt		= api_new_widget_tree;
+	xam_api.obtree_to_wt	= api_obtree_to_wt;
+	xam_api.remove_wt	= api_remove_wt;
+
+	xam_api.ob_spec_xywh	= api_ob_spec_xywh;
+	xam_api.object_spec_wh	= api_object_spec_wh;
+
+	xam_api.rp2ap		= api_rp2ap;
+	xam_api.rp2apcs		= api_rp2apcs;
+
+	xam_api.kmalloc		= api_kmalloc;
+	xam_api.umalloc		= api_umalloc;
+	xam_api.kfree		= api_kfree;
+	xam_api.ufree		= api_ufree;
+	xam_api.bclear		= api_bzero;
+
+	xam_api.lookup_xa_data	= api_lookup_xa_data;
+	xam_api.add_xa_data	= api_add_xa_data;
+	xam_api.remove_xa_data	= api_remove_xa_data;
+	xam_api.delete_xa_data	= api_delete_xa_data;
+	xam_api.free_xa_data_list = api_free_xa_data_list;
+
+	xam_api.vdi		= init_xavdi_module();
+}
 
 static short
 vcheckmode(short mode)
@@ -118,7 +289,10 @@ struct xa_window *root_window;
  */
 
 /* Pointer to the widget resource (icons) */
-static void *widget_resources = NULL;
+//static void *widget_resources = NULL;
+//static void *xobj_rsc = NULL;
+extern void *xobj_rshdr;
+extern void *xobj_rsc;
 
 static struct xa_colour_scheme default_colours = { G_LWHITE, G_BLACK, G_LBLACK, G_WHITE, G_BLACK, G_CYAN };
 static struct xa_colour_scheme bw_default_colours = { G_WHITE, G_BLACK, G_BLACK, G_WHITE, G_BLACK, G_WHITE };
@@ -130,7 +304,15 @@ k_init(void)
 	short work_out[58];
 	short f;
 	char *resource_name;
+	struct xa_vdi_settings *v = &global_vdi_settings;
 
+	for (f = 0; f < (sizeof(*v) >> 1); f++)
+		((short *)v)[f] = -1;
+
+	setup_xa_module_api();
+	
+	global_vdiapi = v->api = init_xavdi_module();
+	
 	{
 		short *p;
 
@@ -248,38 +430,45 @@ k_init(void)
 	}
 
 	/* Open us a virtual workstation for XaAES to play with */
-	C.vh = C.P_handle;
-	v_opnvwk(work_in, &C.vh, work_out);
+// 	C.vh = C.P_handle;
+	v->handle = C.P_handle;
+	v_opnvwk(work_in, &v->handle, work_out);
 
-	if (C.vh == 0)
+	if (v->handle == 0)
 	{
-		DIAGS(("v_opnvwk failed (%i)!", C.vh));
+		DIAGS(("v_opnvwk failed (%i)!", v->handle));
 		return -1;
 	}
 
-	vsf_perimeter(C.vh, 0);		/* from set_colours; never set to 1 ever */
+	C.Aes->vdi_settings = v;
+	
+// 	v->handle = C.vh;
+	(*global_vdiapi->f_perimeter)(v, 0);	/* from set_colours; never set to 1 ever */
 
 	graf_mouse(ARROW, NULL, NULL, false);
-	v_hide_c(C.vh);
-	wr_mode(MD_TRANS); /* We run in TRANSPARENT mode for all AES ops (unless otherwise requested) */
-	vst_alignment(C.vh, 0, 5, &f, &f); /* YESss !!! */
-
-	DIAGS(("Virtual work station opened: %d", C.vh));
+	v_hide_c(v->handle);
+	(*global_vdiapi->wr_mode)(v, MD_TRANS);
+	
+	(*global_vdiapi->t_alignment)(v, 0, 5);
+	
+	DIAGS(("Virtual work station opened: %d", v->handle));
 
 	/*
 	 * Setup the screen parameters
 	 */
 	screen.r.x = screen.r.y = 0;
-	screen.r.w = work_out[0] + 1;	/* HR + 1 */
-	screen.r.h = work_out[1] + 1;	/* HR + 1 */
-	clear_clip();
+	screen.r.w = work_out[0] + 1;
+	screen.r.h = work_out[1] + 1;
+	v->screen = screen.r;
+	(*global_vdiapi->clear_clip)(v);
 	screen.colours = work_out[13];
 	screen.display_type = D_LOCAL;
 
-	screen.dial_colours =
+	objc_rend.dial_colours =
 		MONO ? bw_default_colours : default_colours;
 
-	vq_extnd(C.vh, 1, work_out);	/* Get extended information */
+	vq_extnd(v->handle, 1, work_out);
+	//vq_extnd(C.vh, 1, work_out);	/* Get extended information */
 	screen.planes = work_out[4];	/* number of planes in the screen */
 
 	DIAGS(("Video info: width(%d/%d), planes :%d, colours %d",
@@ -291,41 +480,29 @@ k_init(void)
 	 */
 	//if (cfg.font_id != 1)
 	//{
-		if (vq_gdos())	/* Yeah, I know, this is assuming the old-style vq_gdos() binding */
-			vst_load_fonts(C.vh, 0);
+		if (vq_gdos())
+			(*global_vdiapi->load_fonts)(v);
 		else
 			cfg.font_id = 1;
 	//}
 
-	/*
-	 * Set standard AES font
-	 */
-	screen.standard_font_id = screen.small_font_id =
-		vst_font(C.vh, cfg.font_id);
 
-	/*
-	 * Use the ability of vst_point to return the character cell measures.
-	 */
+	(*global_vdiapi->t_font)(v, cfg.small_font_point, cfg.font_id);
+	screen.standard_font_id  = screen.small_font_id = v->font_rid;
+	screen.small_font_height = v->font_h;
+	screen.small_font_point  = v->font_rsize;
+	screen.c_min_w = v->cell_w;
+	screen.c_min_h = v->cell_h;
+	(*global_vdiapi->t_font)(v, (screen.r.h <= 280) ? (cfg.standard_font_point = cfg.medium_font_point) : cfg.standard_font_point, -1);
+	screen.standard_font_height = v->font_h;
+	screen.standard_font_point  = v->font_rsize;
+	screen.c_max_w = v->cell_w;
+	screen.c_max_h = v->cell_h;
 
-	/*
-	 * Select Small font
-	 */
-	screen.small_font_point = vst_point(C.vh,
-					cfg.small_font_point,
-					&f,
-					&screen.small_font_height,
-					&screen.c_min_w,
-					&screen.c_min_h);
-
-	/*
-	 * Select standard font
-	 */
-	screen.standard_font_point = vst_point(C.vh,
- 		(screen.r.h <= 280) ? cfg.medium_font_point : cfg.standard_font_point,
-		&f,
-		&screen.standard_font_height,
-		&screen.c_max_w,
-		&screen.c_max_h);
+// 	display("stdfont: id = %d, size = %d, cw=%d, ch=%d",
+// 		screen.standard_font_id, screen.standard_font_point, screen.c_max_w, screen.c_max_h);
+// 	display("smlfont: id = %d, size = %d, cw=%d, ch=%d",
+// 		screen.small_font_id, screen.small_font_point, screen.c_min_w, screen.c_min_h);
 
 	/*
 	 * Init certain things in the info_tab used by appl_getinfo()
@@ -333,22 +510,17 @@ k_init(void)
 	init_apgi_infotab();
 
 	/*
-	 * Setup default widget theme
-	 */
-	bzero(&default_widget_theme, sizeof(default_widget_theme));
-	setup_widget_theme(C.Aes, &default_widget_theme);
-
-	/*
 	 * Open a diagnostics file? All console output can be considered diagnostics,
 	 * so I just redirect the console to the required file/device
 	 */
-	DIAGS(("Display Device: Phys_handle=%d, Virt_handle=%d", C.P_handle, C.vh));
+	DIAGS(("Display Device: Phys_handle=%d, Virt_handle=%d", C.P_handle, v->handle));
 	DIAGS((" size=[%d,%d], colours=%d, bitplanes=%d", screen.r.w, screen.r.h, screen.colours, screen.planes));
 
-	get_syspalette(C.vh, screen.palette);
+	get_syspalette(C.P_handle, screen.palette);
 
 	/* Load the system resource files */
 	resource_name = xaaes_sysfile(cfg.rsc_name);
+	
 	if (resource_name)
 	{
 		C.Aes_rsc = LoadResources(C.Aes,
@@ -365,36 +537,61 @@ k_init(void)
 		return -1;
 	}
 
-	/* Load the widget resource files */
-	resource_name = xaaes_sysfile(cfg.widg_name);
+	
+	/*
+	 *  ---------        prepare the window widgets renderer module  --------------
+	 */
+	 
+	main_xa_theme(&C.Aes->xmwt);
+
+	if (!(C.Aes->wtheme_handle = (*C.Aes->xmwt->init_module)(&xam_api, &screen, (char *)&cfg.widg_name)))
+	{
+		display("module returned NULL");
+		return -1;
+	}
+
+	/*
+	 * Setup default widget theme
+	 */
+	init_client_widget_theme(C.Aes);
+	
+	/*
+	 *  ---------        prepare the AES object renderer module  --------------
+	 */
+	/*
+	 * Now load and fix the resource containing the extended AES object icons
+	 * This will be done by the object renderer later on...
+	 */
+	resource_name = xaaes_sysfile(cfg.xobj_name);
 	if (resource_name)
 	{
-		widget_resources = LoadResources(C.Aes,
-						 resource_name,
-						 NULL,
-						 screen.c_max_w, // < 8 ? 8 : screen.c_max_w,
-						 screen.c_max_h, //< 16 ? 16 : screen.c_max_h); //DU_RSX_CONV, DU_RSY_CONV);
-						 false);
-		DIAGS(("widget_resources = %lx (%s)", widget_resources, cfg.widg_name));
+		xobj_rshdr = LoadResources(C.Aes,
+					 resource_name,
+					 NULL,
+					 screen.c_max_w, // < 8 ? 8 : screen.c_max_w,
+					 screen.c_max_h, //< 16 ? 16 : screen.c_max_h); //DU_RSX_CONV, DU_RSY_CONV);
+					 false);
+		DIAGS(("xobj_rsc = %lx (%s)", xobj_rsc, cfg.widg_name));
 	}
-	if (!resource_name || !widget_resources)
+	if (!resource_name || !xobj_rshdr)
 	{
-		display("ERROR: Can't find/load widget resource file '%s'", cfg.widg_name);
+		display("ERROR: Can't find/load extended AES objects resource file '%s'", cfg.xobj_name);
 		return -1;
 	}
 
 	/* get widget object parameters. */
 	{
+		int i;
 		RECT c;
-		OBJECT *tree = ResourceTree(widget_resources, 0);
-		ob_spec_xywh(tree, 1, &c);
+		OBJECT *tree = ResourceTree(xobj_rshdr, EXT_AESOBJ);
 		
-		cfg.widg_w = c.w;
-		cfg.widg_h = c.h;
-		cfg.widg_dw = (tree[1].ob_width - c.w)/2;
-		cfg.widg_dh = (tree[1].ob_height - c.h)/2;
+		ob_spec_xywh(tree, 1, &c);
 
-		DIAGS(("cfg.widg: %d/%d   %d/%d", cfg.widg_w, cfg.widg_h, cfg.widg_dw, cfg.widg_dh));
+		for (i = 1; i < EXTOBJ_NAME; i++)
+			tree[i].ob_x = tree[i].ob_y = 0;
+		
+		xobj_rsc = tree;
+
 	}
 
 #if FILESELECTOR
@@ -402,11 +599,12 @@ k_init(void)
 	init_fsel();
 #endif
 	init_client_mdbuff(C.Aes);		/* In xa_appl.c */
-
+	
 	/* Create the root (desktop) window
 	 * - We don't want messages from it, so make it a NO_MESSAGES window
 	 */
 	DIAGS(("creating root window"));
+// 	display("creating root window");
 	root_window = create_window(
 				NOLOCKING,
 				NULL, //do_winmesag, //0,			/* No messages */
@@ -420,6 +618,7 @@ k_init(void)
 				&screen.r,		/* maximum size (NB default would be rootwindow->wa) */
 				0);			/* need no remembrance */
 
+// 	display("Fixing up root menu");
 	/* Tack a menu onto the root_window widget */
 	C.Aes->std_menu = new_widget_tree(C.Aes, ResourceTree(C.Aes_rsc, SYSTEM_MENU));
 	assert(C.Aes->std_menu);
@@ -438,6 +637,7 @@ k_init(void)
 	}
 #endif
 	DIAGS(("menu widget set"));
+// 	display("menu widget set");
 
 	/* Fix up the file selector menu */
 	//fix_menu(C.Aes, ResourceTree(C.Aes_rsc, FSEL_MENU), false);
@@ -447,10 +647,11 @@ k_init(void)
    	 * HR: No, it doesnt! ;-)
    	 */
 	DIAGS(("fixing up widgets"));
-	fix_default_widgets(widget_resources);
+//	fix_default_widgets(widget_resources);
 
 	/* Set a default desktop */
 	DIAGS(("setting default desktop"));
+// 	display("setting default desktop");
 	{
 		OBJECT *ob = get_xa_desktop();
 		*(RECT*)&ob->ob_x = root_window->r;
@@ -459,10 +660,11 @@ k_init(void)
 		C.Aes->desktop = new_widget_tree(C.Aes, ob);
 		
 		set_desktop_widget(root_window, C.Aes->desktop);
-		set_desktop(C.Aes->desktop);
+		set_desktop(C.Aes, false);
 	}
 
 	DIAGS(("setting up task manager"));
+// 	display("setting up task manager");
 	set_slist_object(0, new_widget_tree(C.Aes, ResourceTree(C.Aes_rsc, TASK_MANAGER)), NULL, TM_LIST, SIF_SELECTABLE|SIF_AUTOSELECT,
 			 NULL, NULL, NULL, NULL, NULL,
 			 NULL, NULL, NULL, NULL,
@@ -472,6 +674,7 @@ k_init(void)
 	DIAGS(("setting up file selector"));
 
 	DIAGS(("setting up System Alert log"));
+// 	display("setting up System Alert log");
 	set_slist_object(0, new_widget_tree(C.Aes, ResourceTree(C.Aes_rsc, SYS_ERROR)), NULL, SYSALERT_LIST, SIF_SELECTABLE|SIF_AUTOSELECT|SIF_TREEVIEW|SIF_AUTOOPEN,
 			 NULL, NULL, NULL, NULL, NULL,
 			 NULL, NULL, NULL, NULL,
@@ -494,23 +697,28 @@ k_init(void)
 	}
 
 	DIAGS(("setting up About text list"));
+// 	display("setting up About text list");
 	set_slist_object(0, new_widget_tree(C.Aes, ResourceTree(C.Aes_rsc, ABOUT_XAAES)), NULL, ABOUT_LIST, 0,
 			 NULL, NULL, NULL, NULL, NULL,
 			 NULL, NULL, NULL, NULL,
 			 NULL, NULL, NULL, 255);
 
 	DIAGS(("display root window"));
+// 	display("display root window");
 	open_window(NOLOCKING, root_window, screen.r);
 
 	/* Initial iconified window coords */
 	C.iconify = iconify_grid(0);
 
-	v_show_c(C.vh, 0); /* 0 = reset */
+	v_show_c(v->handle, 0); /* 0 = reset */
 
+// 	display("Open taskman -- perhaps");
 	if (cfg.opentaskman)
 		open_taskmanager(NOLOCKING);
 
+// 	display("redrawing menu");
 	redraw_menu(NOLOCKING);
+// 	display("all fine - return 0");
 	return 0;
 }
 

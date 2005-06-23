@@ -270,7 +270,7 @@ entry_text_wh(SCROLL_INFO *list, SCROLL_ENTRY *this)
 	for (i = 0; i < this->c.td.text.n_strings; i++)
 	{
 		s = setext->text;
-		text_extent(s, &this->c.td.text.fnt->n, &setext->w, &setext->h);
+		(*list->vdi_settings->api->text_extent)(list->vdi_settings, s, &this->c.td.text.fnt->n, &setext->w, &setext->h);
 		
 		if (setext->h > h)
 			h = setext->h;
@@ -322,7 +322,7 @@ reset_tabs(SCROLL_INFO *list)
 }
 
 static short
-draw_nesticon(RECT *xy, SCROLL_ENTRY *this)
+draw_nesticon(struct xa_vdi_settings *v, RECT *xy, SCROLL_ENTRY *this)
 {
 	int i;
 	RECT r;
@@ -337,25 +337,25 @@ draw_nesticon(RECT *xy, SCROLL_ENTRY *this)
 	r.w = 9;
 	r.h = 9;
 
-	wr_mode(MD_REPLACE);
+	(*v->api->wr_mode)(v, MD_REPLACE);
 
 	if (this->down || (this->xstate & OS_NESTICON))
 	{
-		f_interior(FIS_SOLID);
-		f_color(G_WHITE);
-		gbar(0, &r);
+		(*v->api->f_interior)(v, FIS_SOLID);
+		(*v->api->f_color)(v, G_WHITE);
+		(*v->api->gbar)(v, 0, &r);
 
-		l_color(G_BLACK);
-		gbox(0, &r);
+		(*v->api->l_color)(v, G_BLACK);
+		(*v->api->gbox)(v, 0, &r);
 
 		//if (this->prev || this->up)
 		{
-			l_color(G_LBLACK);
+			(*v->api->l_color)(v, G_LBLACK);
 			pnt[0] = xy->x + x_center;
 			pnt[1] = xy->y;
 			pnt[2] = pnt[0];
 			pnt[3] = r.y;
-			v_pline(C.vh, 2, pnt);
+			v_pline(v->handle, 2, pnt);
 		}
 		//if (this->next || (this->xstate & OS_OPENED))
 		{
@@ -363,16 +363,16 @@ draw_nesticon(RECT *xy, SCROLL_ENTRY *this)
 			pnt[1] = r.y + 9;
 			pnt[2] = pnt[0];
 			pnt[3] = xy->y + xy->h - 1;
-			v_pline(C.vh, 2, pnt);
+			v_pline(v->handle, 2, pnt);
 		}
 
-		l_color(G_BLACK);
+		(*v->api->l_color)(v, G_BLACK);
 		pnt[0] = r.x + 2;
 		pnt[1] = r.y + 4;
 		pnt[2] = pnt[0] + 4;
 		pnt[3] = pnt[1];
 	
-		v_pline(C.vh, 2, pnt);
+		v_pline(v->handle, 2, pnt);
 	
 		if (!(this->xstate & OS_OPENED))
 		{
@@ -380,19 +380,19 @@ draw_nesticon(RECT *xy, SCROLL_ENTRY *this)
 			pnt[1] = r.y + 2;
 			pnt[2] = pnt[0];
 			pnt[3] = r.y + 6;
-			v_pline(C.vh, 2, pnt);
+			v_pline(v->handle, 2, pnt);
 		}
 	}
 	else
 	{
-		l_color(G_LBLACK);
+		(*v->api->l_color)(v, G_LBLACK);
 		//if (this->prev || this->up)
 		{
 			pnt[0] = xy->x + x_center;
 			pnt[1] = xy->y;
 			pnt[2] = pnt[0];
 			pnt[3] = xy->y + y_center;
-			v_pline(C.vh, 2, pnt);
+			v_pline(v->handle, 2, pnt);
 		}
 		//if (this->next)
 		{
@@ -400,20 +400,20 @@ draw_nesticon(RECT *xy, SCROLL_ENTRY *this)
 			pnt[1] = xy->y + y_center;
 			pnt[2] = pnt[0];
 			pnt[3] = xy->y + xy->h - 1;
-			v_pline(C.vh, 2, pnt);
+			v_pline(v->handle, 2, pnt);
 		}
 		
 		pnt[0] = xy->x + x_center;
 		pnt[1] = xy->y + y_center;
 		pnt[2] = xy->x + width;
 		pnt[3] = pnt[1];
-		v_pline(C.vh, 2, pnt);
+		v_pline(v->handle, 2, pnt);
 	}
 
 	if (this->level)
 	{
 		short x = xy->x;
-		l_color(G_LBLACK);
+		(*v->api->l_color)(v, G_LBLACK);
 		for (i = 0; i < this->level; i++)
 		{
 			x -= width;
@@ -421,14 +421,14 @@ draw_nesticon(RECT *xy, SCROLL_ENTRY *this)
 			pnt[1] = xy->y;
 			pnt[2] = pnt[0];
 			pnt[3] = xy->y + xy->h - 1;
-			v_pline(C.vh, 2, pnt);
+			v_pline(v->handle, 2, pnt);
 		}
 	}
 	return width;
 }
 
 static void
-display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this, RECT *xy, const RECT *clip)
+display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this, struct xa_vdi_settings *v, RECT *xy, const RECT *clip)
 {
 	bool sel = this->state & OS_SELECTED;
 	XA_TREE tr = nil_tree;
@@ -442,22 +442,22 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this, REC
 		struct xa_fnt_info *wtxt;
 		short x, y, w = 0, h = 0, f;
 		
-		f_color(sel ? G_BLACK : G_WHITE);
-		bar(0, xy->x, xy->y, xy->w, this->r.h);
+		(*v->api->f_color)(v, sel ? G_BLACK : G_WHITE);
+		(*v->api->bar)(v, 0, xy->x, xy->y, xy->w, this->r.h);
 		
 		if (this->state & OS_BOXED)
 		{
-			l_color(G_BLACK);
-			wr_mode(MD_XOR);
-			box(0, xy->x, xy->y, xy->w, this->r.h);
+			(*v->api->l_color)(v, G_BLACK);
+			(*v->api->wr_mode)(v, MD_XOR);
+			(*v->api->box)(v, 0, xy->x, xy->y, xy->w, this->r.h);
 		}
 
 		xy->x += indent;
 
 		if (list->flags & SIF_TREEVIEW)
 		{
-			draw_nesticon(xy, this);
-			x = draw_nesticon(xy, this);
+			//draw_nesticon(xy, this, v);
+			x = draw_nesticon(v, xy, this);
 			xy->x += x;
 			indent += x;
 		}
@@ -469,9 +469,9 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this, REC
 
 		f = this->c.td.text.fnt->flags;
 
-		wr_mode(MD_TRANS);
-		t_font(wtxt->p, wtxt->f);
-		vst_effects(C.vh, wtxt->e);
+		(*v->api->wr_mode)(v, MD_TRANS);
+		(*v->api->t_font)(v, wtxt->p, wtxt->f);
+		(*v->api->t_effects)(v, wtxt->e);
 		x = xy->x;
 		if (ii)
 		{
@@ -495,7 +495,7 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this, REC
 			x = x2;
 			y = y2;
 			
-			prop_clipped_name(tetext->text, t, tabs->r.w - indent, &w, &h, 0);
+			(*v->api->prop_clipped_name)(v, tetext->text, t, tabs->r.w - indent, &w, &h, 0);
 			indent = 0;
 			
 			if (tabs->flags & SETAB_RJUST)
@@ -514,15 +514,15 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this, REC
 				if (sel && (f & WTXT_ACT3D))
 					dx++, dy++;
 	
-				t_color(wtxt->bgc);
+				(*v->api->t_color)(v, wtxt->bgc);
 				dx++;
 				dy++;
-				v_gtext(C.vh, dx, dy, t);
+				v_gtext(v->handle, dx, dy, t);
 				dx--;
 				dy--;
 			}
-			t_color(wtxt->fgc);
-			v_gtext(C.vh, dx, dy, t);
+			(*v->api->t_color)(v, wtxt->fgc);
+			v_gtext(v->handle, dx, dy, t);
 
 			if (tabs->flags & SETAB_END)
 				tabs = NULL;
@@ -531,11 +531,11 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this, REC
 			tetext = tetext->next;
 		}
 		/* normal */
-		vst_effects(C.vh, 0);
+		(*v->api->t_effects)(v, 0);
 
 		//wtxt_output(this->c.fnt, this->c.text, this->state, xy, ii ? list->icon_w : 0, 0);
 		
-		f_color(G_WHITE);
+		(*v->api->f_color)(v, G_WHITE);
 		
 		if (ii && this->c.icon)
 		{
@@ -546,7 +546,7 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this, REC
 
 			tr.tree = this->c.icon;
 			tr.owner = list->wt->owner;
-			display_object(lock, &tr, clip, 0, xy->x + 1, xy->y + 1, 12);
+			display_object(lock, &tr, v, 0, xy->x + 1, xy->y + 1, 12);
 		}
 	}
 }
@@ -555,14 +555,15 @@ void
 draw_slist(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *entry, const RECT *clip)
 {
 	struct xa_window *wind = list->wi;
+	struct xa_vdi_settings *v = list->vdi_settings;
 	struct scroll_entry *this = list->top;
 	RECT r, xy;
 
 	if (xa_rect_clip(clip, &wind->wa, &r))
 	{
-		set_clip(&r);
+		(*v->api->set_clip)(v, &r);
 
-		wr_mode(MD_TRANS);
+		(*v->api->wr_mode)(v, MD_TRANS);
 
 		xy.x = wind->wa.x - list->start_x;
 		xy.y = wind->wa.y - list->off_y;
@@ -580,7 +581,7 @@ draw_slist(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *entry, const RECT *
 			
 			if (!entry || entry == this)
 			{
-				display_list_element(lock, list, this, &ar, &r);
+				display_list_element(lock, list, this, v, &ar, &r);
 			}
 			
 			xy.y += this->r.h;
@@ -590,10 +591,10 @@ draw_slist(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *entry, const RECT *
 		
 		if (!entry && xy.h > 0)
 		{
-			f_color(G_WHITE);
-			bar(0, xy.x, xy.y, xy.w, xy.h);
+			(*v->api->f_color)(v, G_WHITE);
+			(*v->api->bar)(v, 0, xy.x, xy.y, xy.w, xy.h);
 		}
-		set_clip(clip);
+		(*v->api->set_clip)(v, clip);
 	}
 }
 
@@ -919,7 +920,7 @@ slist_redraw(SCROLL_INFO *list, SCROLL_ENTRY *entry)
 			draw_slist(0, list, entry, &rl->r);
 			rl = rl->next;
 		}
-		clear_clip();
+		(*wind->vdi_settings->api->clear_clip)(wind->vdi_settings);
 		showm();
 	}
 }
@@ -1166,7 +1167,7 @@ set(SCROLL_INFO *list,
 										}
 										draw_slist(0, list, NULL, &s);
 										showm();
-										clear_clip();
+										(*list->vdi_settings->api->clear_clip)(list->vdi_settings);
 									}
 									else
 										list->redraw(list, NULL);
@@ -1220,7 +1221,7 @@ set(SCROLL_INFO *list,
 											draw_slist(0, list, NULL, &d);
 									
 										showm();
-										clear_clip();
+										(*list->vdi_settings->api->clear_clip)(list->vdi_settings);
 									}
 									else
 										list->redraw(list, NULL);
@@ -2229,7 +2230,7 @@ del_scroll_entry(struct scroll_info *list, struct scroll_entry *e, short redraw)
 				d.h = list->wi->wa.h - (d.y - list->wi->wa.y) + 1;
 				draw_slist(0, list, NULL, &d);
 			}
-			clear_clip();
+			(*list->vdi_settings->api->clear_clip)(list->vdi_settings);
 		}
 		showm();
 	}
@@ -2330,7 +2331,7 @@ scroll_up(SCROLL_INFO *list, long num, bool rdrw)
 			d.y += (d.h - 1);
 			d.h = max + 1;
 			draw_slist(0, list, NULL, &d);
-			clear_clip();
+			(*list->vdi_settings->api->clear_clip)(list->vdi_settings);
 			showm();
 		}
 		list->slider(list, true);
@@ -2405,7 +2406,7 @@ scroll_down(SCROLL_INFO *list, long num, bool rdrw)
 			form_copy(&s, &d);
 			s.h = max;
 			draw_slist(0, list, NULL, &s);
-			clear_clip();
+			(*list->vdi_settings->api->clear_clip)(list->vdi_settings);
 			showm();
 		}
 		list->slider(list, true);
@@ -2448,7 +2449,7 @@ scroll_left(SCROLL_INFO *list, long num, bool rdrw)
 			d.x += d.w;
 			d.w = max;
 			draw_slist(0, list, NULL, &d);
-			clear_clip();
+			(*list->vdi_settings->api->clear_clip)(list->vdi_settings);
 			showm();
 		}
 		list->slider(list, true);
@@ -2486,7 +2487,7 @@ scroll_right(SCROLL_INFO *list, long num, bool rdrw)
 			form_copy(&s, &d);
 			s.w = max;
 			draw_slist(0, list, NULL, &s);
-			clear_clip();
+			(*list->vdi_settings->api->clear_clip)(list->vdi_settings);
 			showm();
 		}
 		list->slider(list, true);
@@ -3043,13 +3044,15 @@ set_slist_object(enum locks lock,
 	{
 		int dh;
 
+		list->vdi_settings = list->wi->vdi_settings;
+
 		if (title)
 			set_window_title(list->wi, title, false);
 		if (info)
 			set_window_info(list->wi, info, false);
 		
-		get_widget(list->wi, XAW_VSLIDE)->drag = drag_vslide;
-		get_widget(list->wi, XAW_HSLIDE)->drag = drag_hslide;
+		get_widget(list->wi, XAW_VSLIDE)->m.drag = drag_vslide;
+		get_widget(list->wi, XAW_HSLIDE)->m.drag = drag_hslide;
 
 		list->wi->winob	= wt->tree;		/* The parent object of the windowed list box */
 		list->wi->winitem = item;

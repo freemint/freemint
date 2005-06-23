@@ -30,6 +30,7 @@
 #include "global.h"
 
 #include "xa_aes.h"
+#include "xa_vdi.h"
 #include "xa_defs.h"
 
 #include "debug.h"
@@ -64,7 +65,6 @@ struct lbox_slide;
 struct menu_attachements;
 
 struct keyqueue;
-
 
 #define XIMG      0x58494D47
 struct img_header
@@ -148,17 +148,76 @@ typedef enum
 /*-----------------------------------------------------------------
  * Display descriptions
  *-----------------------------------------------------------------*/
+struct xa_vdi_settings
+{
+	struct	xa_vdi_api *api;
+
+	short	handle;
+
+	short	wr_mode;
+	
+	RECT	clip;
+	RECT	screen;
+
+	short	line_color;
+	short	line_style;
+	short	line_udsty;
+	short	line_beg;
+	short	line_end;
+	short	line_width;
+
+	short	fill_color;
+	short	fill_interior;
+	short	fill_style;
+	short	fill_perimeter;
+
+	short	fonts_loaded;
+	short	text_color;
+	short	text_effects;
+	short	text_halign;
+	short	text_valign;
+	short	font_rid, font_sid;		/* Requested and real font ID */
+	short	font_rsize, font_ssize;		/* Requested and real font size */
+	short	halign, valign;
+	short	font_w, font_h;
+	short	cell_w, cell_h;
+};
 
 typedef enum { D_LOCAL = 0, D_TCP = 1 } XA_DISPLAY;
 
 struct xa_colour_scheme
 {
-	int bg_col;			/* Colour used for backgrounds */
-	int fg_col;			/* Colour used for foregrounds */
-	int shadow_col;			/* Colour used for shadowed 3d edge */
-	int lit_col;			/* Colour used for lit 3d edge */
-	int border_col;			/* Colour used for edging */
-	int highlight_col;		/* Colour used for highlighting */
+	short bg_col;			/* Colour used for backgrounds */
+	short fg_col;			/* Colour used for foregrounds */
+	short shadow_col;		/* Colour used for shadowed 3d edge */
+	short lit_col;			/* Colour used for lit 3d edge */
+	short border_col;		/* Colour used for edging */
+	short highlight_col;		/* Colour used for highlighting */
+};
+
+struct xa_screen
+{
+	RECT r;				/* Screen dimensions */
+	XA_DISPLAY display_type;	/* The type of display we are using */
+
+	short colours;			/* Number of colours available */
+	short planes;			/* Number of planes in screen */
+	short standard_font_height;	/* Needed for appl_getinfo */
+	short standard_font_id;
+	short standard_font_point;
+	short small_font_id;
+	short small_font_point;
+	short small_font_height;	/* Needed for appl_getinfo */
+
+	short c_max_w, c_max_h;		/* Maximum character dimensions in pixels */
+	short c_min_w, c_min_h;		/* Minimum (small font) character dimensions in pixels */
+
+	struct rgb_1000 palette[256];
+};
+
+struct xa_objc_render
+{
+	struct xa_colour_scheme dial_colours;
 };
 
 struct xa_wtexture
@@ -217,9 +276,11 @@ struct xa_wtxt_inf
 	struct xa_fnt_info s;
 	struct xa_fnt_info h;
 };
-	
+#if 0
 struct xa_window_colours
 {
+
+	short waframe_col;
 	short frame_col;
 
 	struct xa_wcol_inf	win;
@@ -246,6 +307,7 @@ struct xa_window_colours
 	struct xa_wtxt_inf	info_txt;
 
 };
+#endif
 
 /*-----------------------------------------------------------------
  * Configuration and options structures
@@ -254,6 +316,7 @@ struct widget_theme;
 
 struct options
 {
+	bool clwtna;			/* Close Last Window Tops Next App */
 	bool windowner;			/* display window owner in title. */
 	bool nohide;
 	bool xa_nohide;
@@ -277,11 +340,6 @@ struct options
 	long wind_opts;			/* Default window options - see struct xa_window.opts */
 	long app_opts;
 	long half_screen;
-
-	/*
-	 * Widget theme stuff...
-	 */
-	void (*init_widget_theme)(struct widget_theme *t);
 
 #if GENERATE_DIAGS
 	enum debug_item point[D_max];
@@ -384,6 +442,59 @@ typedef struct menu_attachments
 	int to_item;
 } XA_MENU_ATTACHMENT;
 
+/*************************************************************************** */
+/* The vdi api
+*/
+struct xa_vdi_api
+{
+	void _cdecl (*wr_mode)		(struct xa_vdi_settings *v, short m);
+	void _cdecl (*load_fonts)	(struct xa_vdi_settings *v);
+	void _cdecl (*unload_fonts)	(struct xa_vdi_settings *v);
+	
+	void _cdecl (*set_clip)		(struct xa_vdi_settings *v, const RECT *clip);
+	void _cdecl (*clear_clip)	(struct xa_vdi_settings *v);
+	void _cdecl (*restore_clip)	(struct xa_vdi_settings *v, const RECT *s);
+	void _cdecl (*save_clip)	(struct xa_vdi_settings *v, RECT *s);
+
+	void _cdecl (*line)		(struct xa_vdi_settings *v, short x1, short y1, short x2, short y2, short col);
+	void _cdecl (*l_color)		(struct xa_vdi_settings *v, short col);
+	void _cdecl (*l_type)		(struct xa_vdi_settings *v, short type);
+	void _cdecl (*l_udsty)		(struct xa_vdi_settings *v, unsigned short ty);
+	void _cdecl (*l_ends)		(struct xa_vdi_settings *v, short s, short e);
+	void _cdecl (*l_width)		(struct xa_vdi_settings *v, short w);
+	
+	void _cdecl (*t_color)		(struct xa_vdi_settings *v, short col);
+	void _cdecl (*t_effects)	(struct xa_vdi_settings *v, short efx);
+	void _cdecl (*t_font)		(struct xa_vdi_settings *v, short point, short id);
+	void _cdecl (*t_alignment)	(struct xa_vdi_settings *v, short halign, short valign);
+	void _cdecl (*t_extent)		(struct xa_vdi_settings *v, const char *t, short *w, short *h);
+	void _cdecl (*text_extent)	(struct xa_vdi_settings *v, const char *t, struct xa_fnt_info *f, short *w, short *h);
+
+	void _cdecl (*f_color)		(struct xa_vdi_settings *v, short col);
+	void _cdecl (*f_interior)	(struct xa_vdi_settings *v, short m);
+	void _cdecl (*f_style)		(struct xa_vdi_settings *v, short m);
+	void _cdecl (*f_perimeter)	(struct xa_vdi_settings *v, short m);
+
+	void _cdecl (*box)		(struct xa_vdi_settings *v, short d, short x, short y, short w, short h);	
+	void _cdecl (*gbox)		(struct xa_vdi_settings *v, short d, const RECT *r);
+	void _cdecl (*bar)		(struct xa_vdi_settings *v, short d, short x, short y, short w, short h);
+	void _cdecl (*gbar)		(struct xa_vdi_settings *v, short d, const RECT *r);
+	void _cdecl (*p_gbar)		(struct xa_vdi_settings *v, short d, const RECT *r);
+	
+	void _cdecl (*top_line)		(struct xa_vdi_settings *v, short d, const RECT *r, short col);
+	void _cdecl (*bottom_line)	(struct xa_vdi_settings *v, short d, const RECT *r, short col);
+	void _cdecl (*left_line)	(struct xa_vdi_settings *v, short d, const RECT *r, short col);
+	void _cdecl (*right_line)	(struct xa_vdi_settings *v, short d, const RECT *r, short col);
+	void _cdecl (*tl_hook)		(struct xa_vdi_settings *v, short d, const RECT *r, short col);
+	void _cdecl (*br_hook)		(struct xa_vdi_settings *v, short d, const RECT *r, short col);
+
+	void _cdecl (*write_disable)	(struct xa_vdi_settings *v, RECT *r, short colour);
+
+	const char * _cdecl	(*prop_clipped_name)	(struct xa_vdi_settings *v, const char *s, char *d, int w, short *ret_w, short *ret_h, short method);
+	void _cdecl		(*wtxt_output)		(struct xa_vdi_settings *v, struct xa_wtxt_inf *wtxti, char *txt, short state, const RECT *r, short xoff, short yoff);
+
+};
+
 /*-----------------------------------------------------------------
  * Object Handler Structures
  *-----------------------------------------------------------------*/
@@ -404,8 +515,13 @@ typedef bool WidgetBehaviour	(enum locks lock,
 				 struct xa_widget *widg,
 				 const struct moose_data *md);
 
+typedef bool WidgetKeyInput	(struct xa_window *wind,
+				 struct xa_widget *widg,
+				 const struct rawkey *key);
+#if 0
 typedef bool DisplayWidget(enum locks lock, struct xa_window *wind,
 			   struct xa_widget *widg);
+#endif
 
 typedef bool FormKeyInput(enum locks lock,
 			  struct xa_client *client,
@@ -430,17 +546,18 @@ typedef int WindowKeypress(enum locks lock, struct xa_window *wind,
 			   unsigned short keycode, unsigned short nkcode, struct rawkey key);
 
 /* Object display function type */
-typedef void ObjectDisplay(enum locks lock, struct widget_tree *wt, const RECT *clip);
+typedef void ObjectDisplay(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v);
 
 /* Object handler function type */
-typedef void ObjectHandler(enum locks lock, struct widget_tree *wt);
+// typedef void ObjectHandler(enum locks lock, struct widget_tree *wt);
 
+#if 0
 struct widget_behaviour
 {
 	WidgetBehaviour *click;
 	WidgetBehaviour *drag;
 };
-
+#endif
 
 typedef short _cdecl wdlg_exit  (void *dialog,
 				EVNT *evnt,
@@ -516,6 +633,7 @@ struct lbox_slide
 struct xa_lbox_info
 {
 	struct xa_data_hdr	h;
+	struct xa_vdi_settings	*vdi_settings;
 
 	struct xa_lbox_info *next;	/* Next lbox attached to this widget tree */
 	void  *wdlg_handle;		/* wdlg handle */
@@ -551,6 +669,7 @@ struct xa_fnts_item
 struct xa_fnts_info
 {
 	struct xa_data_hdr h;
+	struct xa_vdi_settings *vdi_settings;
 
 	void	*handle;
 	struct	xa_window *wind;
@@ -665,7 +784,6 @@ struct widget_tree
 
 	struct objc_edit_info e;
 
-
 	short lastob;			/* Can be used to validate item number */
 	short which;			/* kind of event for use by WDIAL exit handler. */
 
@@ -689,7 +807,6 @@ struct widget_tree
 					 * or anything the like ;-) */
 	void *extra;			/* Extra info if needed (texts for alert) */
 	struct xa_lbox_info *lbox;
-
 };
 typedef struct widget_tree XA_TREE;
 
@@ -849,22 +966,17 @@ enum xa_widgets
 	XAW_TITLE,
 	XAW_CLOSE,
 	XAW_FULL,
-	XAW_MOVER,			/* Not actually used like the others */
 	XAW_INFO,
 	XAW_RESIZE,
 	XAW_UPLN,			/* 7 */
 	XAW_DNLN,			/* 8 */
 	XAW_VSLIDE,
-	XAW_UPPAGE,
-	XAW_DNPAGE,
-	XAW_LFLN,			/* 12 */
-	XAW_RTLN,			/* 13 */
+	XAW_LFLN,			/* 10 */
+	XAW_RTLN,			/* 11 */
 	XAW_HSLIDE,
-	XAW_LFPAGE,
-	XAW_RTPAGE,
 	XAW_ICONIFY,
-	XAW_HIDE,
-
+	XAW_HIDE,			/* 14 */
+ 
  /*
   * The widget types above this comment MUST be context indipendant.
   * The widget types blow this comment are considered context-dependant
@@ -872,8 +984,14 @@ enum xa_widgets
   * Furthermore, remember to change XA_MAX_CF_WIDGETS below if you
   * put insert a new context dependant widget before XAW_TOOLBAR!
  */
-	XAW_TOOLBAR,			/* 19 Extended XaAES widget */
-	XAW_MENU,			/* 20 Extended XaAES widget, must be drawn last. */
+	XAW_TOOLBAR,			/* 15 Extended XaAES widget */
+	XAW_MENU,			/* 26 Extended XaAES widget, must be drawn last. */
+	
+	XAW_MOVER,			/* Not actually used like the others */
+	XAW_UPPAGE,
+	XAW_DNPAGE,
+	XAW_LFPAGE,
+	XAW_RTPAGE,
 	/* Number of available XA_WIDGET slots in a the window for default/standard widgets */
 	XA_MAX_WIDGETS
 };
@@ -884,38 +1002,73 @@ typedef enum xa_widgets XA_WIDGETS;
 struct xa_widget;
 
 /* Widget positions are defined as relative locations */
+#if 0
 struct xa_widget_location
 {
 	XA_RELATIVE relative_type;	/* Where is the position relative to? */
-	RECT r;				/* Position */
 	XA_WIDGETS n;			/* index */
-	XA_WIND_ATTR mask;		/* disconnect NAME|SMALLER etc from emumerated type XA_WIDGETS */
+//	XA_WIND_ATTR mask;		/* disconnect NAME|SMALLER etc from emumerated type XA_WIDGETS */
 	short statusmask;
-	int rsc_index;			/* If a bitmap widget, index in rsc file */
+//	int rsc_index;			/* If a bitmap widget, index in rsc file */
 #define WIP_NOTEXT	0x0001		/* Widget is NOT part of window exterior, will not be automatically redrawn */
 #define WIP_WACLIP	0x0002		/* Widget is part of, and will be clipped by, windows work area */
 #define WIP_ACTIVE	0x0004		/* If this bit is set, widget is clickable, else is just to draw the
 					 * corresponding part of window exterior and clicks on it is ignored
 					 */
-
-	short properties;
-	void (*destruct)(struct xa_widget *widg);
+//	short properties;
+//	void (*destruct)(struct xa_widget *widg);
 };
 typedef struct xa_widget_location XA_WIDGET_LOCATION;
+#endif
 
-typedef bool DrawWidg (struct xa_window *wind, struct xa_widget *widg);
-typedef void SetWidgSize(struct xa_window *wind, struct xa_widget *widg);
+typedef bool _cdecl DrawWidg (struct xa_window *wind, struct xa_widget *widg, const RECT *clip);
+typedef void _cdecl SetWidgSize(struct xa_window *wind, struct xa_widget *widg);
+typedef void _cdecl WidgGemColor(struct xa_window *wind, short gem_widget, BFOBSPEC *c);
 
 struct render_widget
 {
+	XA_WIND_ATTR	tp;
+	XA_WIND_ATTR	*tp_depends;
+	short		xaw_idx;
+	short		pos_in_row;
 	DrawWidg	*draw;
 	SetWidgSize	*setsize;
-	
+	void		*priv;
+};
+
+struct nwidget_row
+{
+	short		rel;
+	XA_WIND_ATTR	tp_mask;
+	struct render_widget **w;
+};
+
+struct xa_widget_row;
+struct xa_widget_row
+{
+	struct xa_widget_row	*prev;
+	struct xa_widget_row	*next;
+
+	XA_RELATIVE		rel;
+	XA_WIND_ATTR		tp_mask;
+	struct xa_widget 	*start;
+	short	rownr;
+	RECT r;
+	short rxy;
 };
 
 struct widget_theme
 {
+	struct xa_data_hdr	h;
+	long			links;
+	
+	struct nwidget_row	*layout;
+
+	WidgGemColor		*get_widgcolor;
+	WidgGemColor		*set_widgcolor;
+
 	struct render_widget	exterior;
+	
 	struct render_widget	border;
 	struct render_widget	title;
 	struct render_widget	closer;
@@ -932,31 +1085,86 @@ struct widget_theme
 	struct render_widget	hider;
 	struct render_widget	toolbar;
 	struct render_widget	menu;
+
+	void			*module;
 };
 
 struct xa_widget_theme
 {
-	void *		(*rp2ap)	(struct xa_window *wind, struct xa_widget *widg, RECT *r);
-	void		(*rp2apcs)	(struct xa_window *wind, struct xa_widget *widg, RECT *r);
-
-	struct widget_theme w;
+	struct widget_theme *w;
 };
 
-struct xa_externals
+struct xa_module_api
 {
-	void	(*init_widget_theme)(struct xa_widget_theme *xwd);
+	char * _cdecl	(*sysfile)		(const char *fname);
+	RSHDR * _cdecl	(*load_resource)	(char *fname, RSHDR *rshdr, short designWidth, short designHeight, bool set_pal);
+	OBJECT * _cdecl	(*resource_tree)	(RSHDR *rsc, long num);
+
+	void _cdecl			(*init_wt)	(struct widget_tree *wt, OBJECT *obtree);
+	struct widget_tree * _cdecl	(*new_wt)	(OBJECT *obtree);
+	struct widget_tree * _cdecl	(*obtree_to_wt)	(OBJECT *obtree);
+	void _cdecl			(*remove_wt)	(struct widget_tree *wt);
+
+	/* OBJECT specific functions */
+	void _cdecl	(*ob_spec_xywh)		(OBJECT *tree, short obj, RECT *r);
+	void _cdecl	(*object_spec_wh)	(OBJECT *ob, short *w, short *h);
+
+	void * _cdecl	(*rp2ap)	(struct xa_window *wind, struct xa_widget *widg, RECT *r);
+	void _cdecl	(*rp2apcs)	(struct xa_window *wind, struct xa_widget *widg, RECT *r);
+
+	void * _cdecl	(*kmalloc)		(long size);
+	void * _cdecl	(*umalloc)		(long size);
+	void _cdecl	(*kfree)		(void *addr);
+	void _cdecl	(*ufree)		(void *addr);
+
+	void _cdecl	(*bclear)		(void *addr, unsigned long len);
+
+	void * _cdecl	(*lookup_xa_data)	(struct xa_data_hdr **l,    void *_data);
+	void _cdecl	(*add_xa_data)		(struct xa_data_hdr **list, void *_data, void _cdecl(*destruct)(void *d));
+	void _cdecl	(*remove_xa_data)	(struct xa_data_hdr **list, void *_data);
+	void _cdecl	(*delete_xa_data)	(struct xa_data_hdr **list, void *_data);
+	void _cdecl	(*free_xa_data_list)	(struct xa_data_hdr **list);
+
+	struct xa_vdi_api *vdi;
 };
 
-struct xa_widget_handlers
+struct xa_module_widget_theme
 {
-	DrawWidg	*draw;
+	char		*sname;
+	char		*lname;
 
-	WidgetBehaviour *click;
-	WidgetBehaviour *dclick;
+	void * _cdecl	(*init_module)(const struct xa_module_api *, const struct xa_screen *screen, char *widg_name);
+	void _cdecl	(*exit_module)(void *module);
+
+	long _cdecl	(*new_theme)(void *module, struct widget_theme **);
+	long _cdecl	(*free_theme)(void *module, struct widget_theme **);
+
+	long _cdecl	(*new_color_theme)(void *module, void **ontop, void **untop);
+	void _cdecl	(*free_color_theme)(void *module, void *ctheme);
+};
+
+struct xa_widget_methods
+{
+	short		properties;
+	short		statusmask;
+	
+	struct render_widget	r;
+
+#define WIP_NOTEXT	0x0001		/* Widget is NOT part of window exterior, will not be automatically redrawn */
+#define WIP_WACLIP	0x0002		/* Widget is part of, and will be clipped by, windows work area */
+#define WIP_ACTIVE	0x0004		/* If this bit is set, widget is clickable, else is just to draw the
+					 * corresponding part of window exterior and clicks on it is ignored
+					 */
+#define WIP_INSTALLED	0x0008
+
+	WidgetBehaviour	*click;
 	WidgetBehaviour *drag;
 	WidgetBehaviour *release;
 	WidgetBehaviour *wheel;
-	WidgetBehaviour *key;
+	
+	WidgetKeyInput	*key;
+
+	void (*destruct)(struct xa_widget *w);
 };
 
 /*
@@ -965,57 +1173,39 @@ struct xa_widget_handlers
  * A pointer value of -1L makes the corresponding handler pointer to be disabled, (a NULL pointer is filled in)
  * Any other pointer values are considered pointers to a function.
  */
+
 struct toolbar_handlers
 {	
 	FormExit	*exitform;
 	FormKeyInput	*keypress;
 
-	//DisplayWidget	*display;
 	DrawWidg	*draw;
 	WidgetBehaviour	*click;
-	WidgetBehaviour	*dclick;
 	WidgetBehaviour	*drag;
 	WidgetBehaviour	*release;
-
 	void (*destruct)(struct xa_widget *w);
-
 };
 
 /* Window Widget */
 struct xa_widget
 {
-	struct xa_widget *next;		/* For future use. */
-	struct xa_window *wind;		/* Window to which this widget belongs */
-	struct xa_client *owner;
+	struct xa_widget	*next_in_row;
+
+	struct xa_window	*wind;		/* Window to which this widget belongs */
+	struct xa_client	*owner;
+	struct xa_widget_methods m;
+
+	short		state;		/* Current status (selected, etc) */
 	
-	XA_WIDGET_LOCATION loc;		/* Location of widget relative to window extents */
-	RECT r;
-	RECT ar;			/* */
-
-	struct xa_widget_handlers h;
-
-//	DisplayWidget	*display;		/* Function pointers to the behaviours of the widget */
-	//DrawWidg *display;
-	WidgetBehaviour *click;
-	WidgetBehaviour *dclick;
-	WidgetBehaviour *drag;
-	WidgetBehaviour *release;
+	RECT		r;		/* Relative position */
+	RECT		ar;		/* Absolute position */
 
 #define XAWF_ALLOC		1
 #define XAWF_STUFFKMALLOC	2
 	short flags;
 
-	void (*destruct)(struct xa_widget *w);
-
-	short state;			/* Current status (selected, etc) */
-	XA_WIDGETS type;		/* For convenience, makes it possible to disconnect type from index */
 	short x, y;			/* If we are activated because we've been clicked on, this is the
 					 * relative location of the click (click_object_widget)*/
-//	short mx, my;			/* absolute mouse location. */
-//	short s;			/* we must be able to use the original button and state. */
-//	short cs;
-//	short k;
-//	short clicks;			/* Pass the number of clicks, might be usefull */
 	short arrowx;			/* WM_ARROWED msg type */
 	short xarrow;			/* reverse action when right clicked. */
 	short limit;			/* on which limit to stop */
@@ -1030,23 +1220,6 @@ struct xa_widget
 	short  start;			/* If stuff is a OBJECT tree, we want start drawing here */
 };
 typedef struct xa_widget XA_WIDGET;
-
-struct widget_row;
-struct widget_row
-{
-	struct widget_row	*prev;
-	struct widget_row	*next;
-
-	XA_RELATIVE		rel;
-	XA_WIND_ATTR		tp_mask;
-	XA_WIND_ATTR		tp_if_used;
-	XA_WIND_ATTR		tp_then_unused;
-	struct xa_widget 	*start;
-	short	rownr;
-	RECT r;
-	short rxy;
-};
-
 
 /* Pending action from a widget */
 struct xa_pending_widget
@@ -1115,36 +1288,52 @@ typedef void DrawWinElement(struct xa_window *wind);
 #define XAWO_NOBLITH	WO0_NOBLITH
 #define XAWO_SENDREPOS	WO0_SENDREPOS
 
-#define XAWS_OPEN	0x0001
-#define XAWS_ICONIFIED	0x0002
-#define XAWS_SHADED	0x0004
-#define XAWS_ZWSHADED	0x0008
-#define XAWS_HIDDEN	0x0010
-#define XAWS_FULLED	0x0020
+enum window_status
+{
+	XAWS_OPEN	= 0x0001,
+	XAWS_ICONIFIED	= 0x0002,
+	XAWS_SHADED	= 0x0004,
+	XAWS_ZWSHADED	= 0x0008,
+	XAWS_HIDDEN	= 0x0010,
+	XAWS_FULLED	= 0x0020,
+};
+typedef enum window_status WINDOW_STATUS;
 
 /* Window Descriptor */
 struct xa_window
 {
-	struct xa_window *next;		/* Window list stuff - next is the window below */
-	struct xa_window *prev;		/*		     - prev is the window above (both NULL terminated) */
+	struct xa_window	*next;	/* Window list stuff - next is the window below */
+	struct xa_window	*prev;	/*		     - prev is the window above (both NULL terminated) */
+	struct xa_client	*owner;
+	
+	WINDOW_TYPE	dial;		/* Flag - 1 = this window was created by form_dial,
+					 *            so don't destroy it until the form_dial(FMD_FINISH)
+					 *      - 2 = created by form_do()
+					 *      - 4 = otherwise created on behalf of the AES
+					 *      - 8 = or created on behalf of wdlg_xxx extension. */
 
-	struct xa_window_colours *colours;
-	struct xa_window_colours *ontop_cols;
-	struct xa_window_colours *untop_cols;
-
+	WINDOW_STATUS window_status;	/* Window status */
+	
+	XA_WIND_ATTR	active_widgets;	/* Summary of the current standard widgets for the window */
+	XA_WIND_ATTR	save_widgets;	/* Remember active_widgets if iconified */
+	
+	/*
+	 * These are pointers to structures holding widget color information for the
+	 * widget theme module. XaAES will update the 'colors' member whenever the
+	 * window goes on/off top. Theme modules should then fetch its color data
+	 * from 'colours' when rendering widgets.
+	 */
+	void *colours;
+	void *ontop_cols;
+	void *untop_cols;
+	struct xa_vdi_settings *vdi_settings;
 	struct xa_widget_theme *widget_theme;
 
-	short vdi_handle;
-
-	XA_WIND_ATTR active_widgets;	/* Summary of the current standard widgets for the window */
-	XA_WIND_ATTR save_widgets;	/* Remember active_widgets if iconified */
-
+	long rect_lock;
 	long opts;			/* Window options. XAWO_xxx */
 	short wheel_mode;		/* mouse wheel mode */
 	bool nolist;			/* If true, dont put in the window_list. For embedded listboxes mainly. */
 	bool thinwork;			/* if true and colour then work := single line box */
-	bool outline_adjust;		/* For outlined root object put ny XaAES in a window:
-					 * let the window draw the 3 pixel space that emanates from construction. */
 	bool dial_followed;		/* false immediate after opening a dial window.
 	                	       	 * true after first objc_draw. */
 	bool wa_frame;
@@ -1161,6 +1350,7 @@ struct xa_window
 	RECT rc;			/* Real coordinates when shaded */
 	RECT ro;			/* Original dimemsions when iconified */
 	RECT wa;			/* user work area */
+	RECT rwa;			/* work area minus toolbar, if installed - else same as wa */
 	RECT bd;			/* border displacement */
 	RECT ba;			/* border area for use by border sizing facility. */
 	RECT pr;			/* previous dimensions */
@@ -1169,12 +1359,7 @@ struct xa_window
 	short sw, sh;			/* width(not used) and height to use when SHADED */
 	short hx, hy;
 
-	RECT *remember;			/* Where to store the current position for remembering. */
-
-	struct xa_client *owner;
-
 	short handle;			/* Window handle */
-	short window_status;		/* Window status */
 	short frame;			/* Size of the frame (0 for windowed listboxes) */
 
 	struct xa_rect_list *rect_list;	/* The rectangle list for redraws in this window */
@@ -1192,12 +1377,6 @@ struct xa_window
 	
 	void *background;		/* Pointer to a buffer containing the saved background */
 
-	WINDOW_TYPE dial;		/* Flag - 1 = this window was created by form_dial,
-					 *            so don't destroy it until the form_dial(FMD_FINISH)
-					 *      - 2 = created by form_do()
-					 *      - 4 = otherwise created on behalf of the AES
-					 *      - 8 = or created on behalf of wdlg_xxx extension. */
-
 	WindowDisplay *redraw;		/* Pointer to the window's auto-redraw function (if any) */
 	FormKeyInput *keypress;		/* Pointer to the window's keyboard handler function (if any) */
 	WindowDisplay *destructor;	/* Pointer to the window's destructor function (auto-called on
@@ -1205,26 +1384,23 @@ struct xa_window
 
 	/* Pointer to the internal message handler for this window
 	 * (to be handled by the creator) */
-	SendMessage	*send_message;
-	DoWinMesag	*do_message;
+	SendMessage		*send_message;
+	DoWinMesag		*do_message;
 
-	OBJECT *winob;			/* Tree and index of a sub window (The parent object of the window) */
-	int winitem;			/* currently used by list boxes */
+	OBJECT			*winob;		/* Tree and index of a sub window (The parent object of the window) */
+	int			winitem;	/* currently used by list boxes */
 
 #if USER_WIDGETS
-	XA_WIDGET_LIST *user_widgets;	/* Pointer to a list of user added widgets */
+	XA_WIDGET_LIST		*user_widgets;	/* Pointer to a list of user added widgets */
 #endif
-	XA_WIDGET *tool;		/* If dialogue or popup: which widget is used. */
-	struct widget_row	*widg_rows;	
-	XA_WIDGET widgets[XA_MAX_WIDGETS]; /* The windows standard widget set (array for speed) */
+	XA_WIDGET 		*tool;		/* If dialogue or popup: which widget is used. */
+	struct xa_widget_row	*widg_rows;	
+	XA_WIDGET		widgets[XA_MAX_WIDGETS]; /* The windows standard widget set (array for speed) */
 
-	XA_TREE widg_info;		/* Holds the object tree information for def_widgets. */
-
-	char wname[MAX_WINDOW_NAME];	/* window name line (copy) */
-	char winfo[MAX_WINDOW_INFO];	/* window info line (copy) */
+	char			wname[MAX_WINDOW_NAME];	/* window name line (copy) */
+	char			winfo[MAX_WINDOW_INFO];	/* window info line (copy) */
 
 	struct wdlg_info *wdlg;
-
 };
 
 struct xa_window *get_top(void);
@@ -1242,14 +1418,6 @@ enum scroll_entry_type
 
 	SETYP_STATIC	= 0x8000,
 
-#if 0
-	FLAG_DIR        = 0x001,
-	FLAG_EXECUTABLE = 0x002,
-	FLAG_LINK       = 0x004,
-	FLAG_MAL        = 0x100,	/* text part is malloc'd and must be freed. */
-	FLAG_ENV        = 0x200,
-	FLAG_AMAL	= 0x400
-#endif
 };
 typedef enum scroll_entry_type SCROLL_ENTRY_TYPE;
 
@@ -1517,6 +1685,8 @@ struct scroll_info
 	struct xa_window *wi;		/* make the scroll box a real window */
 	struct xa_window *pw;		/* If the listbox is part of a windowed dialogue, we must know that,
 					 * otherwise we couldnt move that window (rp_2_ap). */
+	struct xa_vdi_settings *vdi_settings;
+
 	SCROLL_INFO_FLAGS flags;
 	XA_TREE *wt;
 	short item;
@@ -1563,7 +1733,6 @@ struct scroll_info
 	scrl_del	*del;
 	scrl_empty	*empty;
 	scrl_list	*destroy;
-
 	
 	void	*data;
 
@@ -1691,7 +1860,9 @@ struct xa_client
 	LIST_ENTRY(xa_client) client_entry;
 	LIST_ENTRY(xa_client) app_entry;
 
-//	struct xa_externals xa_ext;
+	struct xa_vdi_settings *vdi_settings;
+	struct xa_module_widget_theme *xmwt;	/* Widget theme module */
+	void *wtheme_handle;			/* Widget theme handle */
 
 	struct xa_widget_theme *widget_theme;
 
@@ -1746,9 +1917,7 @@ struct xa_client
 					 * address field later). */
 
 	RSHDR *rsrc;			/* Pointer to the client's standard GEM-style single resource file */
-	RSHDR *rsrc_1;			/* For multiple resources. */
 	OBJECT **trees;
-	OBJECT **trees_1;
 	int rsct;			/* count up/down the loaded resources. Used by XA_alloc, XA_free */
 
 	XA_TREE *wtlist;

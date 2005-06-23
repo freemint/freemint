@@ -76,7 +76,7 @@ get_pdlg_wind(struct xa_client *client, void *pdlg_ptr)
 		return NULL;
 }
 
-static void
+static void _cdecl
 delete_pdlg_info(void *_pdlg)
 {
 	struct xa_pdlg_info *pdlg = _pdlg;
@@ -179,7 +179,8 @@ XA_pdlg_create(enum locks lock, struct xa_client *client, AESPB *pb)
 	pb->addrout[0] = 0L;
 
 	obtree = ResourceTree(C.Aes_rsc, WDLG_PDLG);
-	ob_area(obtree, 0, &or);
+	
+	ob_rectangle(obtree, 0, &or);
 	
 	r = calc_window(lock, client, WC_BORDER,
 			tp, created_for_WDIAL,
@@ -202,8 +203,7 @@ XA_pdlg_create(enum locks lock, struct xa_client *client, AESPB *pb)
 	if (!(pdlg = create_new_pdlg(client, wind)))
 		goto memerr;
 
-	set_toolbar_widget(lock, wind, client, pdlg->mwt->tree, -2, 0, &wdlg_th);
-	wt->zen = false;
+	set_toolbar_widget(lock, wind, client, pdlg->mwt->tree, -2, 0, true, &wdlg_th, &or);
 
 	pb->addrout[0] = (long)pdlg->handle;
 
@@ -467,7 +467,7 @@ XA_pdlg_evnt(enum locks lock, struct xa_client *client, AESPB *pb)
 		else
 		{
 			if (wep.obj > 0 && (obtree[wep.obj].ob_state & OS_SELECTED))
-				obj_change(pdlg->mwt, wep.obj, -1, obtree[wep.obj].ob_state & ~OS_SELECTED, obtree[wep.obj].ob_flags, true, &wind->wa, wind->rect_start);
+				obj_change(pdlg->mwt, wind->vdi_settings, wep.obj, -1, obtree[wep.obj].ob_state & ~OS_SELECTED, obtree[wep.obj].ob_flags, true, &wind->wa, wind->rect_start);
 
 			/* prepare return stuff here */
 		}
@@ -550,9 +550,8 @@ XA_pdlg_do(enum locks lock, struct xa_client *client, AESPB *pb)
 		RECT or;
 		XA_WIND_ATTR tp = wind->active_widgets & ~STD_WIDGETS;
 
-		form_center(obtree, ICON_H);
-		
 		ob_area(obtree, 0, &or);
+		center_rect(&or);
 
 		change_window_attribs(lock, client, wind, tp, true, or, NULL);
 		

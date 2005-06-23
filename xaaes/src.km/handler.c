@@ -576,7 +576,8 @@ XA_handler(void *_pb)
 			return 0;
 		}
 
-		/* default paths are kept per process by MiNT ??
+		/* 
+		 * default paths are kept per process by MiNT ??
 		 * so we need to get them here when we run under the process id.
 		 */
 		if (client)
@@ -735,7 +736,7 @@ XA_handler(void *_pb)
 								if (!(o[0] & MU_BUTTON))
 								{
 									check_mouse(client, o+3, o+1, o+2);
-									vq_key_s(C.vh, o+4);
+									vq_key_s(C.P_handle, o+4);
 								}
 
 								o[0] = MU_TIMER;

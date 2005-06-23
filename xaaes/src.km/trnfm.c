@@ -538,14 +538,14 @@ load_image(char *name, MFDB *mimg)
 		if ((mimg->fd_addr = kmalloc(bmsize)))
 		{
 			display(" transform into %lx", mimg->fd_addr);
-			vr_trnfm(C.vh, &msrc, mimg);
+			vr_trnfm(C.P_handle, &msrc, mimg);
 			kfree(xa_img.addr);
 		}
 		else
 		{
 			display(" -- inline transformation at %lx", msrc.fd_addr);
 			mimg->fd_addr = msrc.fd_addr;
-			vr_trnfm(C.vh, &msrc, mimg);
+			vr_trnfm(C.P_handle, &msrc, mimg);
 		}
 		mimg->fd_stand = 0;
 	}

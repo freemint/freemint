@@ -38,7 +38,7 @@ TEDINFO *		object_get_tedinfo(OBJECT *ob);
 struct scroll_info *	object_get_slist(OBJECT *ob);
 POPINFO *		object_get_popinfo(OBJECT *ob);
 void			object_deselect(OBJECT *ob);
-bool			object_is_transparent(OBJECT *ob);
+bool			object_is_transparent(OBJECT *ob, bool progdef_is_transparent);
 short			object_thickness(OBJECT *ob);
 void			object_offsets(OBJECT *ob, RECT *r);
 void			object_spec_wh(OBJECT *ob, short *w, short *h);
@@ -83,10 +83,10 @@ void	obj_rectangle(XA_TREE *wt, short object, RECT *c);
 void	obj_area(XA_TREE *wt, short object, RECT *c);
 short	obj_find(XA_TREE *wt, short object, short depth, short mx, short my, RECT *c);
 
-void	obj_change(XA_TREE *wt, short obj, int transdepth, short state, short flags, bool redraw, const RECT *clip, struct xa_rect_list *r);
-void	obj_draw(XA_TREE *wt, short obj, int transdepth, const RECT *clip, struct xa_rect_list *r);
-short	obj_edit(XA_TREE *wt, short func, short obj, short keycode, short pos, bool redraw, const RECT *clip, struct xa_rect_list *rl, short *ret_pos, short *ret_obj);
-void	obj_set_radio_button(XA_TREE *wt, short obj, bool redraw, const RECT *clip, struct xa_rect_list *rl);
-short	obj_watch(XA_TREE *wt, short obj, short in_state, short out_state, const RECT *clip, struct xa_rect_list *rl);
+void	obj_change(XA_TREE *wt, struct xa_vdi_settings *v, short obj, int transdepth, short state, short flags, bool redraw, const RECT *clip, struct xa_rect_list *r);
+void	obj_draw(XA_TREE *wt, struct xa_vdi_settings *v, short obj, int transdepth, const RECT *clip, struct xa_rect_list *r);
+short	obj_edit(XA_TREE *wt, struct xa_vdi_settings *v, short func, short obj, short keycode, short pos, bool redraw, const RECT *clip, struct xa_rect_list *rl, short *ret_pos, short *ret_obj);
+void	obj_set_radio_button(XA_TREE *wt, struct xa_vdi_settings *v, short obj, bool redraw, const RECT *clip, struct xa_rect_list *rl);
+short	obj_watch(XA_TREE *wt, struct xa_vdi_settings *v, short obj, short in_state, short out_state, const RECT *clip, struct xa_rect_list *rl);
 
 #endif /* _obtree_h */

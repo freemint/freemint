@@ -160,7 +160,7 @@ find_focus(bool withlocks, bool *waiting, struct xa_client **locked_client, stru
 	else
 	{
 		struct xa_client *c;
-		
+
 		c = get_app_infront();
 		
 		if (c->blocktype == XABT_NONE || (c->waiting_for & (MU_KEYBD | MU_NORM_KEYBD)))
@@ -376,7 +376,7 @@ swap_menu(enum locks lock, struct xa_client *new, struct widget_tree *new_menu, 
 	    && new->desktop->tree != get_xa_desktop())
 	{
 		DIAG((D_appl, NULL, "  --   with desktop=%lx", new->desktop));
-		set_desktop(new->desktop);
+		set_desktop(new, false);
 	}
 	DIAG((D_appl, NULL, "exit ok"));
 }
@@ -768,8 +768,11 @@ app_in_front(enum locks lock, struct xa_client *client, bool snd_untopped, bool 
 		if (infront != client)
 		{
 			set_active_client(lock, client);
-			swap_menu(lock, client, NULL, SWAPM_DESK); //true, false, 1);
+			//swap_menu(lock, client, NULL, SWAPM_DESK); //true, false, 1);
 		}
+
+		if (client->std_menu != get_menu() || client->nxt_menu)
+			swap_menu(lock, client, NULL, SWAPM_DESK);
 
 		if (allwinds)
 		{

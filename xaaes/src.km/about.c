@@ -125,16 +125,19 @@ open_about(enum locks lock)
 		XA_TREE *wt;
 		SCROLL_INFO *list;
 		OBJECT *obtree = ResourceTree(C.Aes_rsc, ABOUT_XAAES);
+		RECT or;
 
 		wt = obtree_to_wt(C.Aes, obtree);
+		
+		ob_rectangle(obtree, 0, &or);
 
 		/* Work out sizing */
 		if (!remember.w)
 		{
-			form_center(wt->tree, ICON_H);
+			center_rect(&or);
 			remember = calc_window(lock, C.Aes, WC_BORDER, CLOSER|NAME, created_for_AES,
 						C.Aes->options.thinframe,
-						C.Aes->options.thinwork, *(RECT*)&obtree->ob_x);
+						C.Aes->options.thinwork, *(RECT *)&or); //*(RECT*)&obtree->ob_x);
 		}
 
 		/* Create the window */
@@ -161,7 +164,7 @@ open_about(enum locks lock)
 		(obtree + ABOUT_INFOSTR)->ob_spec.free_string = info_string;
 #endif
 
-		wt = set_toolbar_widget(lock, dialog_window, dialog_window->owner, obtree, -1, WIP_NOTEXT, NULL);
+		wt = set_toolbar_widget(lock, dialog_window, dialog_window->owner, obtree, -1, 0/*WIP_NOTEXT*/, true, NULL, &or);
 		wt->exit_form = about_form_exit;
 		list = object_get_slist(obtree + ABOUT_LIST);
 
