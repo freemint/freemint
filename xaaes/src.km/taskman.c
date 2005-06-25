@@ -526,7 +526,7 @@ open_taskmanager(enum locks lock)
 		{
 			center_rect(&or); //form_center(obtree, ICON_H);
 			remember = calc_window(lock, C.Aes, WC_BORDER,
-						CLOSER|NAME, created_for_AES,
+						CLOSER|NAME, created_for_AES|created_for_POPUP,
 						C.Aes->options.thinframe,
 						C.Aes->options.thinwork,
 						*(RECT *)&or); //*(RECT*)&obtree->ob_x);
@@ -536,9 +536,9 @@ open_taskmanager(enum locks lock)
 		dialog_window = create_window(lock,
 						do_winmesag, do_formwind_msg,
 						C.Aes,
-						false,
+						true, /*false,*/
 						CLOSER|NAME|TOOLBAR|hide_move(&(C.Aes->options)),
-						created_for_AES,
+						created_for_AES|created_for_POPUP,
 						C.Aes->options.thinframe,
 						C.Aes->options.thinwork,
 						remember, NULL, NULL);

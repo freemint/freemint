@@ -69,7 +69,7 @@ long	sl_to_pix(long s, long p);
 int	XA_slider(struct xa_window *w, int which, long total, long visible, long start);
 bool	m_inside(short x, short y, RECT *o);
 void	redraw_menu(enum locks lock);
-void	redisplay_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, int state);
+short	redisplay_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, short state);
 void	done_widget_active(struct xa_window *wind, int i);
 
 void	free_xawidget_resources(struct xa_widget *widg);
@@ -111,7 +111,18 @@ static inline bool
 wdg_is_act(struct xa_widget *widg)
 {
 	return ( (widg->m.properties & (WIP_ACTIVE|WIP_INSTALLED)) == (WIP_ACTIVE|WIP_INSTALLED) );
-};
+}
 
+static inline struct xa_widget *
+usertoolbar_installed(struct xa_window *wind)
+{
+	struct xa_widget *widg = get_widget(wind, XAW_TOOLBAR);
+	if ( (wind->active_widgets & TOOLBAR) &&
+		 !(widg->m.properties & WIP_NOTEXT) &&
+		 wdg_is_inst(widg))
+		return widg;
+	else
+		return NULL;
+}
 
 #endif /* _widgets_h */

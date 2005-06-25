@@ -144,7 +144,7 @@ change_entry(Tab *tab, int state)
 
 	if (k->popw)
 	{
-		struct xa_rect_list *rl = k->popw->rect_start;
+		struct xa_rect_list *rl = k->popw->rect_list.start;
 		
 		DIAGS(("change_entry: got popw"));
 		
@@ -971,43 +971,6 @@ menu_area(RECT *c, Tab *tab, int item, short dx, short dy)
 	wt->tree->ob_x = sx;
 	wt->tree->ob_y = sy;
 }
-#if 0
-static int
-nextdrop_rect(struct build_rl_parms *p)
-{
-	int ret = 0;
-	Tab *tab = p->ptr1;
-
-	if (tab)
-	{
-		p->next_r = &tab->task_data.menu.popw->rc; //tab->task_data.menu.drop;
-		p->ptr1 = PREV_TAB(tab);
-		ret = 1;
-	}
-	return ret;
-}
-
-static void
-make_drop_rectlist(Tab *tab)
-{
-	struct build_rl_parms p;
-	MENU_TASK *k = &tab->task_data.menu;
-	struct xa_window *wind = k->popw;
-
-	if (wind)
-	{
-		clear_wind_rectlist(wind);
-		p.getnxtrect = nextdrop_rect;
-		p.area		= &k->popw->rc;
-		p.ptr1		= PREV_TAB(tab);
-		wind->rect_start = build_rect_list(&p);
-
-		p.area		= &k->popw->wa;
-		p.ptr1		= PREV_TAB(tab);
-		wind->rect_wastart = build_rect_list(&p);
-	}
-}
-#endif
 
 static void
 display_popup(Tab *tab, XA_TREE *wt, int item, short rdx, short rdy)

@@ -31,6 +31,7 @@
 
 #define RECT_SYS	0
 #define RECT_OPT	1
+#define RECT_TOOLBAR	2
 
 bool is_inside(const RECT *r, const RECT *o);
 
@@ -44,15 +45,16 @@ struct build_rl_parms
 	void *ptr1;
 };
 
-bool was_visible(struct xa_window *w);
+// bool was_visible(struct xa_window *w);
 bool xa_rc_intersect(const RECT s, RECT *d);
 bool xa_rect_clip(const RECT *s, const RECT *d, RECT *r);
 int xa_rect_chk(const RECT *s, const RECT *d, RECT *r);
 
 struct xa_rect_list *build_rect_list(struct build_rl_parms *p);
 struct xa_rect_list *make_rect_list(struct xa_window *w, bool swap, short which);
-int get_rect(struct xa_window *wind, RECT *clip, bool first, RECT *ret);
+int get_rect(struct xa_rectlist_entry *rle, RECT *clip, bool first, RECT *ret);
 void free_rect_list(struct xa_rect_list *first);
+void free_rectlist_entry(struct xa_rectlist_entry *rlent);
 
 struct xa_rect_list *rect_get_optimal_first(struct xa_window *w);
 struct xa_rect_list *rect_get_user_first(struct xa_window *w);
@@ -60,5 +62,7 @@ struct xa_rect_list *rect_get_optimal_next(struct xa_window *w);
 struct xa_rect_list *rect_get_user_next(struct xa_window *w);
 struct xa_rect_list *rect_get_system_first(struct xa_window *w);
 struct xa_rect_list *rect_get_system_next(struct xa_window *w);
+struct xa_rect_list *rect_get_toolbar_first(struct xa_window *w);
+struct xa_rect_list *rect_get_toolbar_next(struct xa_window *w);
 
 #endif /* _rectlist_h */
