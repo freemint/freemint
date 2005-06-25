@@ -1209,6 +1209,12 @@ struct xa_rect_list
 	RECT r;
 };
 
+struct xa_rectlist_entry
+{
+	struct xa_rect_list *start;
+	struct xa_rect_list *next;
+};
+
 enum window_type
 {
 	created_for_CLIENT	= 0x0000,
@@ -1230,11 +1236,11 @@ typedef int WindowDisplay (enum locks lock, struct xa_window *wind);
 
 typedef void DrawWinElement(struct xa_window *wind);
 
-#define XAWO_WHEEL	WO0_WHEEL
-#define XAWO_FULLREDRAW WO0_FULLREDRAW
-#define XAWO_NOBLITW	WO0_NOBLITW
-#define XAWO_NOBLITH	WO0_NOBLITH
-#define XAWO_SENDREPOS	WO0_SENDREPOS
+#define XAWO_WHEEL	((long)WO0_WHEEL << 16)
+#define XAWO_FULLREDRAW ((long)WO0_FULLREDRAW << 16)
+#define XAWO_NOBLITW	((long)WO0_NOBLITW << 16)
+#define XAWO_NOBLITH	((long)WO0_NOBLITH << 16)
+#define XAWO_SENDREPOS	((long)WO0_SENDREPOS << 16)
 
 enum window_status
 {
@@ -1310,19 +1316,26 @@ struct xa_window
 	short handle;			/* Window handle */
 	short frame;			/* Size of the frame (0 for windowed listboxes) */
 
-	struct xa_rect_list *rect_list;	/* The rectangle list for redraws in this window */
-	struct xa_rect_list *rect_user;	/* User (wind_get) rect list current pointer */
-	struct xa_rect_list *rect_start;/* Start of the rectangle list memory block */
-	struct xa_rect_list *rect_wastart;
-	struct xa_rect_list *rect_prev;	/* Remember the first rectangle */
-	struct xa_rect_list  prev_rect;
+	struct xa_rectlist_entry rect_list;
+	struct xa_rectlist_entry rect_user;
+	struct xa_rectlist_entry rect_opt;
+	struct xa_rectlist_entry rect_toolbar;
+
+	
+// 	struct xa_rect_list *rect_list;	/* The rectangle list for redraws in this window */
+// 	struct xa_rect_list *rect_user;	/* User (wind_get) rect list current pointer */
+// 	struct xa_rect_list *rect_start;/* Start of the rectangle list memory block */
+// 	struct xa_rect_list *rect_wastart;
+// 	struct xa_rect_list *rect_prev;	/* Remember the first rectangle */
+// 	struct xa_rect_list  prev_rect;
 	
 	bool use_rlc;
 	RECT rl_clip;
-	struct xa_rect_list *rect_opt_start;
-	struct xa_rect_list *rect_opt;
+// 	struct xa_rect_list *rect_opt_start;
+// 	struct xa_rect_list *rect_opt;
+// 	struct xa_rect_list *rect_tb_start;	/* TOOLBAR rectangle list start */
+// 	struct xa_rect_list *rect_tb;		/* TOOLBAR next rectangle */
 
-	
 	void *background;		/* Pointer to a buffer containing the saved background */
 
 	WindowDisplay *redraw;		/* Pointer to the window's auto-redraw function (if any) */

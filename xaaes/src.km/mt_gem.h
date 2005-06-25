@@ -515,6 +515,12 @@ typedef  struct
 #define WF_MENU			 33		 /* XaAEES */
 #define WF_WHEEL		 40		 /* XaAES */
 #define WF_OPTS			 41	/* XaAES */
+
+#define WF_CALCF2W		42
+#define WF_CALCW2F		43
+#define WF_CALCF2U		44
+#define WF_CALCU2F		45
+
 #define WF_M_BACKDROP	100      /* KAOS 1.4    */
 #define WF_M_OWNER		101      /* KAOS 1.4    */
 #define WF_M_WINDLIST	102      /* KAOS 1.4    */

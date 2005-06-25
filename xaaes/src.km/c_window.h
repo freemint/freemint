@@ -73,6 +73,11 @@ void	update_windows_below(enum locks lock, const RECT *old, RECT *new, struct xa
 void	redraw_client_windows(enum locks lock, struct xa_client *client);
 
 RECT	free_icon_pos(enum locks lock, struct xa_window *ignore);
+
+RECT	rwa2fa(struct xa_window *wind, const RECT *in);
+RECT	fa2rwa(struct xa_window *wind, const RECT *in);
+RECT	wa2fa(struct xa_window *wind, const RECT *in);
+RECT	fa2wa(struct xa_window *wind, const RECT *in);
 RECT	calc_window(enum locks lock, struct xa_client *client, int request,
 		    unsigned long tp, WINDOW_TYPE dial, int thinframe, bool thinwork,
 		    RECT r);
@@ -109,7 +114,8 @@ void	setwin_untopped(enum locks lock, struct xa_window *wind, bool snd_untopped)
 void	setwin_ontop(enum locks lock, bool snd_ontop);
 
 bool	is_topped(struct xa_window *wind);
-bool	is_hidden(struct xa_window *wind);
+static inline bool is_hidden(struct xa_window *wind){return (wind->window_status & XAWS_HIDDEN);}
+static inline bool is_shaded(struct xa_window *wind){return (wind->window_status & XAWS_SHADED);}
 bool	unhide(struct xa_window *w, short *x, short *y);
 
 void	set_window_title(struct xa_window *wind, const char *title, bool redraw);

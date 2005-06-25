@@ -149,7 +149,7 @@ wdialog_redraw(enum locks lock, struct xa_window *wind, short start, short depth
 	struct xa_rect_list *rl;
 	struct widget_tree *wt;
 
-	if (wind && (wt = get_widget(wind, XAW_TOOLBAR)->stuff) && (rl = wind->rect_start))
+	if (wind && (wt = get_widget(wind, XAW_TOOLBAR)->stuff) && (rl = wind->rect_list.start))
 	{
 		OBJECT *obtree;
 		RECT dr;
@@ -160,7 +160,7 @@ wdialog_redraw(enum locks lock, struct xa_window *wind, short start, short depth
 		hidem();
 				
 		if (wt->e.obj != -1)
-			obj_edit(wt, v, ED_END, 0, 0, 0, true, &wind->wa, wind->rect_start, NULL, NULL);
+			obj_edit(wt, v, ED_END, 0, 0, 0, true, &wind->wa, wind->rect_list.start, NULL, NULL);
 		
 		if (r)
 		{
@@ -185,7 +185,7 @@ wdialog_redraw(enum locks lock, struct xa_window *wind, short start, short depth
 		}
 		
 		if (wt->e.obj != -1)
-			obj_edit(wt, v, ED_END, 0, 0, 0, true, &wind->wa, wind->rect_start, NULL, NULL);
+			obj_edit(wt, v, ED_END, 0, 0, 0, true, &wind->wa, wind->rect_list.start, NULL, NULL);
 		
 		showm();
 		(*v->api->clear_clip)(v);
@@ -203,7 +203,7 @@ wdlg_redraw(enum locks lock, struct xa_window *wind, short start, short depth, R
 	struct wdlg_info *wdlg;
 	struct xa_rect_list *rl;
 
-	if ((wdlg = wind->wdlg) && (rl = wind->rect_start))
+	if ((wdlg = wind->wdlg) && (rl = wind->rect_list.start))
 	{
 		XA_TREE *wt;
 		OBJECT *obtree;
@@ -237,7 +237,7 @@ wdlg_redraw(enum locks lock, struct xa_window *wind, short start, short depth, R
 		hidem();
 				
 		if (wt->e.obj != -1)
-			obj_edit(wt, v, ED_END, 0, 0, 0, true, &wind->wa, wind->rect_start, NULL, NULL);
+			obj_edit(wt, v, ED_END, 0, 0, 0, true, &wind->wa, wind->rect_list.start, NULL, NULL);
 		
 		if (r)
 		{
@@ -262,7 +262,7 @@ wdlg_redraw(enum locks lock, struct xa_window *wind, short start, short depth, R
 		}
 		
 		if (wt->e.obj != -1)
-			obj_edit(wt, v, ED_END, 0, 0, 0, true, &wind->wa, wind->rect_start, NULL, NULL);
+			obj_edit(wt, v, ED_END, 0, 0, 0, true, &wind->wa, wind->rect_list.start, NULL, NULL);
 		
 		showm();
 		(*v->api->clear_clip)(v);
@@ -764,7 +764,7 @@ XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 					 -1,
 					 wt == wdlg->std_wt ? true : false,
 					 &wind->wa,
-					 wt == wdlg->std_wt ? wind->rect_start : NULL,
+					 wt == wdlg->std_wt ? wind->rect_list.start : NULL,
 					 NULL,
 					 &pb->intout[0]);
 				break;
@@ -999,7 +999,7 @@ wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms 
 									  obj,			/* Object	*/
 									  &md,			/* moose data	*/
 									  FBF_REDRAW|FBF_DO_SLIST,/* redraw flag	*/
-									  wind->rect_start,	/* rect list	*/
+									  wind->rect_list.start,	/* rect list	*/
 									  NULL,			/* new state	*/
 									  &nxtobj,		/* next obj	*/
 									  &dc))			/* dc mask	*/
@@ -1017,8 +1017,8 @@ wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms 
 								if ( object_is_editable(wt->tree + nxtobj) && nxtobj != wt->e.obj)
 								{
 									if (wt->e.obj >= 0)
-										obj_edit(wt, v, ED_END, 0, 0, 0, true, &wind->wa, wind->rect_start, NULL, NULL);
-									obj_edit(wt, v, ED_INIT, nxtobj, 0, -1, true, &wind->wa, wind->rect_start, NULL, &nxtobj);
+										obj_edit(wt, v, ED_END, 0, 0, 0, true, &wind->wa, wind->rect_list.start, NULL, NULL);
+									obj_edit(wt, v, ED_INIT, nxtobj, 0, -1, true, &wind->wa, wind->rect_list.start, NULL, &nxtobj);
 									DIAG((D_wdlg, NULL, "wdlg_event(MU_BUTTON): Call wdlg->exit(%lx) with new editobj=%d for %s",
 										wep->wdlg ? wep->wdlg->exit : NULL, nxtobj, client->name));
 									if (wep->callout)
@@ -1064,7 +1064,7 @@ wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms 
 				unsigned short key = ev->key;
 
 				obtree = wt->tree;
-				nxtobj = form_cursor(wt, v, ev->key, wt->e.obj, true, wind->rect_start);
+				nxtobj = form_cursor(wt, v, ev->key, wt->e.obj, true, wind->rect_list.start);
 				
 				if (nxtobj >= 0)
 				{
@@ -1073,8 +1073,8 @@ wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms 
 					
 					if (nxtobj != wt->e.obj)
 					{
-						obj_edit(wt, v, ED_END, 0, 0, 0, true, &wind->wa, wind->rect_start, NULL, NULL);
-						obj_edit(wt, v, ED_INIT, nxtobj, 0, -1, true, &wind->wa, wind->rect_start, NULL, NULL);
+						obj_edit(wt, v, ED_END, 0, 0, 0, true, &wind->wa, wind->rect_list.start, NULL, NULL);
+						obj_edit(wt, v, ED_INIT, nxtobj, 0, -1, true, &wind->wa, wind->rect_list.start, NULL, NULL);
 						if (wep->callout)
 							ret = (*wep->callout)(client, wep->wdlg, ev, HNDL_EDCH, 0, NULL, &nxtobj);
 					}
@@ -1117,7 +1117,7 @@ wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms 
 								  nxtobj,
 								  &md,
 								  FBF_REDRAW,
-								  wind->rect_start,
+								  wind->rect_list.start,
 								  NULL,
 								  &nxtobj,
 								  &dc))
@@ -1142,7 +1142,7 @@ wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms 
 							 key,
 							 0,
 							 true,
-							 &wind->wa, wind->rect_start,
+							 &wind->wa, wind->rect_list.start,
 							 NULL,
 							 NULL);
 						if (wep->callout)
