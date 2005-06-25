@@ -207,7 +207,7 @@ set_dir(struct scroll_info *list)
 {
 	struct fsel_data *fs = list->data;
 	fs_cwd(list, fs->path, 1);
-	display_widget(list->lock, list->wi, get_widget(list->wi, XAW_TITLE), list->pw ? list->pw->rect_start : NULL);
+	display_widget(list->lock, list->wi, get_widget(list->wi, XAW_TITLE), list->pw ? list->pw->rect_list.start : NULL);
 }
 
 static struct scroll_entry *
