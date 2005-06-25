@@ -121,10 +121,13 @@ clear_wind_handles(void)
 void
 clear_wind_rectlist(struct xa_window *wind)
 {
-	free_rect_list(wind->rect_start);
-	free_rect_list(wind->rect_opt_start);
-	free_rect_list(wind->rect_wastart);
-	wind->rect_user = wind->rect_list = wind->rect_start = wind->rect_wastart = wind->rect_opt = wind->rect_opt_start = NULL;
+	free_rectlist_entry(&wind->rect_list);
+	free_rectlist_entry(&wind->rect_opt);
+	free_rectlist_entry(&wind->rect_toolbar);
+// 	free_rect_list(wind->rect_start);
+// 	free_rect_list(wind->rect_opt_start);
+// 	free_rect_list(wind->rect_wastart);
+// 	wind->rect_user = wind->rect_list = wind->rect_start = wind->rect_wastart = wind->rect_opt = wind->rect_opt_start = NULL;
 }
 
 /*
@@ -305,13 +308,13 @@ get_top(void)
 {
 	return S.open_windows.first;
 }
-
+#if 0
 inline bool
 is_hidden(struct xa_window *wind)
 {
 	return (wind->window_status & XAWS_HIDDEN);
 }
-
+#endif
 /*
  * XXX - Ozk:
  *	Note that the window is not actually hidden until client calls
@@ -607,15 +610,16 @@ generate_redraws(enum locks lock, struct xa_window *wind, RECT *r, short flags)
 	{
 		if (wind != root_window && r && (flags & RDRW_WA))
 		{
-			struct xa_widget *widg = get_widget(wind, XAW_TOOLBAR);
+			struct xa_widget *widg; // = get_widget(wind, XAW_TOOLBAR);
 
 			if (xa_rect_clip(&wind->rwa, r, &b))
 				send_redraw(lock, wind, &b);
-			
-			if (!(widg->m.properties & WIP_NOTEXT) && wdg_is_inst(widg) && xa_rect_clip(&wind->wa, r, &b))
+
+// 			if (!(widg->m.properties & WIP_NOTEXT) && wdg_is_inst(widg) && xa_rect_clip(&wind->wa, r, &b))
+			if ((widg = usertoolbar_installed(wind)) && xa_rect_clip(&widg->ar, r, &b))
 			{
 				send_app_message(lock, wind, NULL, AMQ_IREDRAW, QMF_NORM,
-					WM_REDRAW, XAW_TOOLBAR, ((long)wind) >> 16, ((long)wind) & 0xffff,
+					WM_REDRAW, widg->m.r.xaw_idx, ((long)wind) >> 16, ((long)wind) & 0xffff,
 						b.x, b.y, b.w, b.h);
 			}
 		}
@@ -752,6 +756,7 @@ create_window(
 	}
 
 	w->widget_theme = client->widget_theme;
+	w->widget_theme->w->links++;
 
 	w->x_shadow = 2;
 	w->y_shadow = 2;
@@ -777,8 +782,8 @@ create_window(
 	else
 		w->wa_frame = true;
 
-	if (w->frame > 0)
-		tp |= BORDER;
+// 	if (w->frame > 0)
+// 		tp |= BORDER;
 
 	if (nolist)
 	{
@@ -1243,6 +1248,14 @@ find_window(enum locks lock, short x, short y)
 {
 	struct xa_window *w;
 
+	w = nolist_list;
+	while (w)
+	{
+		if (!(w->owner->status & CS_EXITING) & m_inside(x, y, &w->r))
+			return w;
+		w = w->next;
+	}
+
 	w = window_list;
 	while(w)
 	{
@@ -1480,7 +1493,8 @@ move_window(enum locks lock, struct xa_window *wind, bool blit, short newstate, 
 
 	if ((wind->window_status & XAWS_OPEN))
 	{
-		update_windows_below(lock, &old, &new, wind->next, NULL);
+		struct xa_window *nxt = wind->nolist ? (wind->next ? wind->next : window_list) : wind->next;
+		update_windows_below(lock, &old, &new, nxt, NULL);
 	}
 	
 	/*
@@ -1705,6 +1719,10 @@ delete_window1(enum locks lock, struct xa_window *wind)
 	{
 		(*client->xmwt->free_color_theme)(client->wtheme_handle, wind->untop_cols);
 	}
+	if (wind->widget_theme && wind->widget_theme->w)
+	{
+		wind->widget_theme->w->links--;
+	}
 
 	kfree(wind);
 }
@@ -1808,7 +1826,7 @@ display_window(enum locks lock, int which, struct xa_window *wind, RECT *clip)
 			struct xa_rect_list *rl;
 			RECT d;
 
-			rl = wind->rect_start;
+			rl = wind->rect_list.start;
 			while (rl)
 			{
 				if (clip)
@@ -1868,7 +1886,7 @@ update_windows_below(enum locks lock, const RECT *old, RECT *new, struct xa_wind
 
 				make_rect_list(wl, true, RECT_SYS);
 
-				rl = wl->rect_start;
+				rl = wl->rect_list.start;
 				while (rl)
 				{
 					if (xa_rect_clip(&rl->r, &clip, &d))
@@ -1913,7 +1931,7 @@ redraw_client_windows(enum locks lock, struct xa_client *client)
 	{
 		wl = root_window;
 		make_rect_list(wl, true, RECT_SYS);
-		rl = wl->rect_start;
+		rl = wl->rect_list.start;
 		while (rl)
 		{
 			generate_redraws(lock, wl, &rl->r, RDRW_ALL);
@@ -1931,7 +1949,7 @@ redraw_client_windows(enum locks lock, struct xa_client *client)
 			make_rect_list(wl, true, RECT_SYS);
 
 			{
-				rl = wl->rect_start;
+				rl = wl->rect_list.start;
 				while (rl)
 				{
 					generate_redraws(lock, wl, &rl->r, RDRW_ALL);
@@ -1941,6 +1959,47 @@ redraw_client_windows(enum locks lock, struct xa_client *client)
 		}
 		wl = wl->prev;
 	}
+}
+
+RECT
+rwa2fa(struct xa_window *wind, const RECT *in)
+{
+	RECT r;
+	r.x = in->x - (wind->rwa.x - wind->rc.x);
+	r.y = in->y - (wind->rwa.y - wind->rc.y);
+	r.w = in->w + (wind->rc.w - wind->rwa.w);
+	r.h = in->h + (wind->rc.h - wind->rwa.h);
+	return r;
+}
+RECT
+fa2rwa(struct xa_window *wind, const RECT *in)
+{
+	RECT r;
+	r.x = in->x + (wind->rwa.x - wind->rc.x);
+	r.y = in->y + (wind->rwa.y - wind->rc.y);
+	r.w = in->w - (wind->rc.w - wind->rwa.w);
+	r.h = in->h - (wind->rc.h - wind->rwa.h);
+	return r;
+}
+RECT
+wa2fa(struct xa_window *wind, const RECT *in)
+{
+	RECT r;
+	r.x = in->x - (wind->wa.x - wind->rc.x);
+	r.y = in->y - (wind->wa.y - wind->rc.y);
+	r.w = in->w + (wind->rc.w - wind->wa.w);
+	r.h = in->h + (wind->rc.h - wind->wa.h);
+	return r;
+}
+RECT
+fa2wa(struct xa_window *wind, const RECT *in)
+{
+	RECT r;
+	r.x = in->x + (wind->wa.x - wind->rc.x);
+	r.y = in->y + (wind->wa.y - wind->rc.y);
+	r.w = in->w - (wind->rc.w - wind->wa.w);
+	r.h = in->h - (wind->rc.h - wind->wa.h);
+	return r;
 }
 
 /*
@@ -1993,42 +2052,42 @@ calc_window(enum locks lock, struct xa_client *client, int request, ulong tp, WI
 			case WC_BORDER:
 			{
 				/* We have to work out the border size ourselves here */
-				Xpolate(&o, &w_temp->r, &w_temp->wa);
+				Xpolate(&o, &w_temp->r, &w_temp->rwa);
 				break;
 			}
 			case WC_WORK:
 			{
 				/* Work area was calculated when the window was created */
-				o = w_temp->wa;
+				o = w_temp->rwa;
 				break;
 			}
 			default:
 			{
 				DIAG((D_wind, client, "wind_calc request %d", request));
-				o = w_temp->wa;	/* HR: return something usefull*/
+				o = w_temp->rwa;	/* HR: return something usefull*/
 			}
 		}
 	}
 	else
 	{
-		short w = w_temp->wa.x - w_temp->r.x;
-		short h = w_temp->wa.y - w_temp->r.y;
+		short w = w_temp->rwa.x - w_temp->r.x;
+		short h = w_temp->rwa.y - w_temp->r.y;
 		switch (request)
 		{
 			case WC_BORDER:
 			{
 				o.x = r.x - w;
 				o.y = r.y - h;
-				o.w = r.w + (w_temp->r.w - w_temp->wa.w);
-				o.h = r.h + (w_temp->r.h - w_temp->wa.h);
+				o.w = r.w + (w_temp->r.w - w_temp->rwa.w);
+				o.h = r.h + (w_temp->r.h - w_temp->rwa.h);
 				break;
 			}
 			default: //case WC_WORK:
 			{
 				o.x = r.x + w;
 				o.y = r.y + h;
-				o.w = r.w - (w_temp->r.w - w_temp->wa.w);
-				o.h = r.h - (w_temp->r.h - w_temp->wa.h);
+				o.w = r.w - (w_temp->r.w - w_temp->rwa.w);
+				o.h = r.h - (w_temp->r.h - w_temp->rwa.h);
 				break;
 			}
 		}	
@@ -2106,10 +2165,10 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 	if (!(wind->window_status & XAWS_OPEN))
 		return;
 
-	oldrl = wind->rect_start;
-	wind->rect_start = NULL;
+	oldrl = wind->rect_list.start;
+	wind->rect_list.start = wind->rect_list.next = NULL;
 	newrl = make_rect_list(wind, false, RECT_SYS);
-	wind->rect_start = newrl;
+	wind->rect_list.start = newrl;
 
 #if 1
 	if (wind->nolist && (wind->active_widgets & STORE_BACK))
@@ -2418,7 +2477,7 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 			/*
 			 * Calculate rectangles that needs to be redrawn...
 			 */
-			newrl = wind->rect_start;
+			newrl = wind->rect_list.start;
 			while (newrl)
 			{
 				nrl = kmalloc(sizeof(*nrl));
@@ -2631,7 +2690,7 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 		} /* if (brl) */
 		else
 		{
-			newrl = wind->rect_start;
+			newrl = wind->rect_list.start;
 			while (newrl)
 			{
 				generate_redraws(wlock, wind, &newrl->r, !only_wa ? RDRW_ALL : RDRW_WA);

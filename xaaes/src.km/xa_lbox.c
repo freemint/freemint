@@ -316,7 +316,7 @@ redraw_lbox(struct xa_lbox_info *lbox, short obj, short depth, RECT *r)
 			if (!r)
 				r = &or;
 
-			rl = wind->rect_start;
+			rl = wind->rect_list.start;
 			while (rl)
 			{
 				if (xa_rect_clip(&rl->r, r, &dr))

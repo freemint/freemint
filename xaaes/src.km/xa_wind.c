@@ -557,11 +557,13 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	case WF_FULLXYWH:
 	case WF_PREVXYWH:
 	case WF_CURRXYWH:
+	case WF_WORKXYWH:
 	{
 		bool blit = false;
 		bool move = (pb->intin[2] == -1 && pb->intin[3] == -1 &&
 			     pb->intin[4] == -1 && pb->intin[5] == -1) ? true : false;
 		RECT *ir;
+		RECT r;
 		short mx, my, mw, mh;
 		short status = -1, msg = -1;
 
@@ -587,6 +589,18 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			{
 				(const RECT *)ir = (const RECT *)&pb->intin[2];
 				move = true;
+				if (cmd == WF_WORKXYWH)
+				{
+					r = rwa2fa(w, ir);
+				#if 0
+					r = *ir;
+					r.x -= (w->rwa.x - w->r.x);
+					r.y -= (w->rwa.y - w->r.y);
+					r.w += (w->r.w   - w->rwa.w);
+					r.h += (w->r.h   - w->rwa.h);
+				#endif
+					ir = &r;
+				}
 			}
 			DIAGS(("wind_set: WF_CURRXYWH - (%d/%d/%d/%d) blit=%s, ir=%lx",
 				*(const RECT *)(pb->intin + 2), blit ? "yes":"no", ir));
@@ -617,7 +631,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			my = ir->y;
 			mw = ir->w;
 			mh = ir->h;
-			ir = (RECT *)&w->rc;
+			ir = cmd == WF_WORKXYWH ? (RECT *)&w->rwa : (RECT *)&w->rc;
 
 			if ( (mw != w->rc.w && (w->opts & XAWO_NOBLITW)) ||
 			     (mh != w->rc.h && (w->opts & XAWO_NOBLITH)))
@@ -690,7 +704,8 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 
 			DIAGS(("wind_set: WF_CURRXYWH %d/%d/%d/%d, status = %x", *(const RECT *)&pb->intin[2], status));
 
-			move_window(lock, w, blit, status, pb->intin[2], pb->intin[3], mw, mh);
+// 			move_window(lock, w, blit, status, pb->intin[2], pb->intin[3], mw, mh);
+			move_window(lock, w, blit, status, mx, my, mw, mh);
 
 			if (msg != -1 && w->send_message)
 				w->send_message(lock, w, NULL, AMQ_NORM, QMF_CHKDUP, msg, 0, 0, w->handle, 0,0,0,0);
@@ -1167,13 +1182,41 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 			C.rect_lock++;
 		}
 		break;
-	}		
+	}
 	case WF_FTOOLBAR:	/* suboptimal, but for the moment it is more important that it van be used. */
+	case WF_NTOOLBAR:
+	{
+		struct xa_rect_list *rl = NULL;
+
+		if (!is_shaded(w))
+		{
+			if (cmd == WF_FTOOLBAR)
+			{
+				make_rect_list(w, true, RECT_TOOLBAR);
+				rl = rect_get_toolbar_first(w);
+			}
+			else
+				rl = rect_get_toolbar_next(w);
+		}
+		
+		if (rl)
+		{
+			*ro = rl->r;
+		}
+		else
+		{
+			ro->x = w->wa.x;
+			ro->y = w->wa.y;
+			ro->w = ro->h = 0;
+		}
+		break;
+		
+	}
 	case WF_FIRSTXYWH:	/* Generate a rectangle list and return the first entry */
 	{
 		w->use_rlc = false;
 
-		if (!get_rect(w, &w->wa, true, ro))
+		if (!get_rect(&w->rect_list, &w->rwa, true, ro))
 		{
 			ro->x = w->r.x;
 			ro->y = w->r.y;
@@ -1186,8 +1229,6 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 		}
 		break;
 	}
-	case WF_NTOOLBAR:		/* suboptimal, but for the moment it is more
-					   important that it van be used. */
 	case WF_NEXTXYWH:		/* Get next entry from a rectangle list */
 	{
 		if (!w->rect_lock)
@@ -1205,7 +1246,7 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 					ro->x = ro->y = ro->w = ro->h = 0;
 				}
 			}
-			else if (!get_rect(w, &w->wa, false, ro))
+			else if (!get_rect(&w->rect_list, &w->rwa, false, ro))
 			{
 				ro->x = w->r.x;
 				ro->y = w->r.y;
@@ -1262,6 +1303,8 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 	 */
 	case WF_WORKXYWH:
 	{
+		*ro = w->rwa;
+#if 0
 		*ro = w->wa;
 		if (w->dial & created_for_TOOLBAR)
 		{
@@ -1272,9 +1315,9 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 			if (ro->h <= 0)
 				ro->w = ro->h = 0;
 		}
-		
 		if (w == root_window && !taskbar(client))
 			ro->h -= 24;
+#endif		
 		
 		DIAG((D_w, w->owner, "get work for %d: %d/%d,%d/%d",
 			wind ,ro->x,ro->y,ro->w,ro->h));
@@ -1561,6 +1604,27 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 		
 		o[1] = *optr >> 16;
 		o[2] = *optr;
+		break;
+	}
+
+	case WF_CALCF2W:
+	{
+		*ro = fa2rwa(w, (const RECT *)&pb->intin[2]);
+		break;
+	}
+	case WF_CALCW2F:
+	{
+		*ro = rwa2fa(w, (const RECT *)&pb->intin[2]);
+		break;
+	}
+	case WF_CALCF2U:
+	{
+		*ro = fa2wa(w, (const RECT *)&pb->intin[2]);
+		break;
+	}
+	case WF_CALCU2F:
+	{
+		*ro = wa2fa(w, (const RECT *)&pb->intin[2]);
 		break;
 	}
 	default:

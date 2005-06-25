@@ -715,13 +715,13 @@ sliders(struct scroll_info *list, bool rdrw)
 		struct xa_window *wind = list->pw;
 		if (!wind)
 			wind = list->wt->wind;
-		if (wind && wind->rect_start)
+		if (wind && wind->rect_list.start)
 		{
 			check_movement(list);
 			if (rm & 1)
-				display_widget(0, list->wi, get_widget(list->wi, XAW_VSLIDE), wind->rect_start);
+				display_widget(0, list->wi, get_widget(list->wi, XAW_VSLIDE), wind->rect_list.start);
 			if (rm & 2)
-				display_widget(0, list->wi, get_widget(list->wi, XAW_HSLIDE), wind->rect_start);
+				display_widget(0, list->wi, get_widget(list->wi, XAW_HSLIDE), wind->rect_list.start);
 		}
 	}
 }
@@ -910,7 +910,7 @@ slist_redraw(SCROLL_INFO *list, SCROLL_ENTRY *entry)
 			return;
 		}
 	}
-	if (wind && ((wind->window_status & (XAWS_OPEN|XAWS_SHADED|XAWS_HIDDEN)) == XAWS_OPEN) && (rl = wind->rect_start))
+	if (wind && ((wind->window_status & (XAWS_OPEN|XAWS_SHADED|XAWS_HIDDEN)) == XAWS_OPEN) && (rl = wind->rect_list.start))
 	{
 		check_movement(list);
 		
@@ -937,7 +937,7 @@ canblit(SCROLL_INFO *list)
 	if (wind)
 	{
 		RECT r;
-		rl = wind->rect_start;
+		rl = wind->rect_list.start;
 		while (rl)
 		{
 			if (xa_rect_chk(&rl->r, &list->wi->wa, &r) == 2)

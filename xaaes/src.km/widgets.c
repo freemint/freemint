@@ -755,7 +755,7 @@ display_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, struct 
 			wind->handle, widg->m.r.xaw_idx, widg->m.r.draw));
 
 		if (!rl)
-			rl = wind->rect_start;
+			rl = wind->rect_list.start;
 
 		hidem();
 		while (rl)
@@ -2722,7 +2722,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 		dm = def_methods[XAW_BORDER + 1];
 		dm.r = theme->w->border;
 		dm.r.pos_in_row = NO;
-		if (wind->frame > 0)
+		if ((tp & BORDER) || (wind->frame > 0 && (tp & SIZER)))
 		{
 			dm.properties = WIP_INSTALLED|WIP_ACTIVE;
 			utp |= BORDER;
@@ -2738,7 +2738,6 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 			rtp &= THEME_WIDGETS;
 			while (rtp && *rw)
 			{
-
 				this_tp = (*rw)->tp;
 				xaw_idx = (*rw)->xaw_idx;
 
@@ -2861,7 +2860,7 @@ redraw_toolbar(enum locks lock, struct xa_window *wind, short item)
 	hidem();
 	widg->start = item;
 
-	rl = wind->rect_start;
+	rl = wind->rect_list.start;
 	while (rl)
 	{			
 		if (xa_rect_clip(&rl->r, &wind->wa, &r))
@@ -3290,6 +3289,7 @@ do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct
 
 					if (inside)
 					{
+						short oldstate = -1;
 						bool rtn = false;
 						int ax = 0;
 		
@@ -3327,7 +3327,7 @@ do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct
 							
 							/* We don't auto select & pre-display for a menu or toolbar widget */
 							if (f != XAW_MENU && f != XAW_TOOLBAR)
-								redisplay_widget(lock, w, widg, OS_SELECTED);
+								oldstate = redisplay_widget(lock, w, widg, OS_SELECTED);
 
 							/*
 							 * Check if the widget has a dragger function if button still pressed
@@ -3356,7 +3356,7 @@ do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct
 									check_mouse(w->owner, &b, NULL, NULL);
 									S.wm_count++;
 									while (b)
-									{
+									{										
 										/* Wait for the mouse to be released */
 										wait_mouse(w->owner, &b, &rx, &ry);
 
@@ -3372,7 +3372,7 @@ do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct
 											}
 											else if (ins)
 											{
-													redisplay_widget(lock, w, widg, OS_NORMAL);
+												redisplay_widget(lock, w, widg, OS_NORMAL);
 												ins = 0;
 											}
 											tx = rx;
@@ -3398,7 +3398,7 @@ do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct
 						{
 							DIAG((D_button, NULL, "Deselect widget"));
 							if (f != XAW_MENU && f != XAW_TOOLBAR)
-								redisplay_widget(lock, w, widg, OS_NORMAL);	/* Flag the widget as de-selected */
+								redisplay_widget(lock, w, widg, oldstate); //OS_NORMAL);	/* Flag the widget as de-selected */
 						}
 						else if (w == root_window && f == XAW_TOOLBAR)		/* HR: 280801 a little bit special. */
 							return false;		/* pass click to desktop owner */
@@ -3415,9 +3415,11 @@ do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct
 	return false;
 }
 
-void
-redisplay_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, int state)
+short
+redisplay_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, short state)
 {
+	short ret = widg->state;
+
 	if (wdg_is_inst(widg)) //widg->m.r.draw)
 	{
 		widg->state = state;
@@ -3434,6 +3436,7 @@ redisplay_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, int s
 			/* Display the selected widget */
 			display_widget(lock, wind, widg, NULL);
 	}
+	return ret;
 }
 
 void

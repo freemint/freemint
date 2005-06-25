@@ -29,6 +29,7 @@
 
 #include "c_window.h"
 #include "rectlist.h"
+#include "widgets.h"
 
 #define max(x,y) (((x)>(y))?(x):(y))
 #define min(x,y) (((x)<(y))?(x):(y))
@@ -245,87 +246,101 @@ struct xa_rect_list *
 make_rect_list(struct xa_window *wind, bool swap, short which)
 {
 	struct xa_rect_list *nrl = NULL;
+	struct xa_rectlist_entry *rle;
 	struct build_rl_parms p;
-
-	if (swap)
-	{
-		DIAGS(("Freeing old rect_list for %d", wind->handle));
-		switch (which)
-		{
-			case RECT_SYS:
-			{
-				free_rect_list(wind->rect_start);
-				wind->rect_list = wind->rect_user = wind->rect_start = NULL;
-				/* Fall through */
-			}
-			case RECT_OPT:
-			{
-				free_rect_list(wind->rect_opt_start);
-				wind->rect_opt = wind->rect_opt_start = NULL;
-				break;
-			}
-		}
-	}
+	RECT area;
 
 	if (wind->owner->status & CS_EXITING)
 		return NULL;
+	
+	DIAGS(("Freeing old rect_list for %d", wind->handle));
+	switch (which)
+	{
+		case RECT_SYS:
+		{
+			if (swap)
+			{
+				free_rectlist_entry(&wind->rect_list);
+				free_rectlist_entry(&wind->rect_user);
+				free_rectlist_entry(&wind->rect_opt);
+			}
+			area = wind->r;
+			rle = &wind->rect_list;
+			break;
+			/* Fall through */
+		}
+		case RECT_OPT:
+		{
+			if (swap)
+				free_rectlist_entry(&wind->rect_opt);
+			area = wind->rl_clip;
+			rle = &wind->rect_opt;
+			break;
+		}
+		case RECT_TOOLBAR:
+		{
+			if (swap)
+				free_rectlist_entry(&wind->rect_toolbar);
+			
+			if (!usertoolbar_installed(wind) || !xa_rect_clip(&wind->wa, &wind->widgets[XAW_TOOLBAR].ar, &area))
+				return NULL;
+			rle = &wind->rect_toolbar;
+			break;
+		}
+		default:;
+			return NULL;
+	}
 
 	DIAGS(("make_rect_list for wind %d", wind->handle));
 
 	if ((wind->window_status & XAWS_HIDDEN) ||
-	    wind->r.x > (screen.r.x + screen.r.w) ||
-	    wind->r.y > (screen.r.y + screen.r.h) ||
-	   (wind->r.x + wind->r.w) < screen.r.x  ||
-	   (wind->r.y + wind->r.h) < screen.r.y )
+	    area.x > (screen.r.x + screen.r.w) ||
+	    area.y > (screen.r.y + screen.r.h) ||
+	   (area.x + area.w) < screen.r.x  ||
+	   (area.y + area.h) < screen.r.y )
 	{
 		DIAGS(("make_rect_list: window is outside screen"));
 		return NULL;
 	}
 
-	switch (which)
-	{
-		case RECT_SYS:
-		{
-			p.getnxtrect = nextwind_rect;
-			p.area = &wind->r;
-			if (!wind->prev && !wind->nolist)
-				p.ptr1 = S.open_nlwindows.last;
-			else
-				p.ptr1 = wind->prev;
-			nrl = build_rect_list(&p);
-			if (nrl && swap)
-				wind->rect_list = wind->rect_user = wind->rect_start = nrl;
-
-			break;
-		}
-		case RECT_OPT:
-		{
-			p.getnxtrect = nextwind_rect;
-			p.area = &wind->rl_clip;
-			if (!wind->prev && !wind->nolist)
-				p.ptr1 = S.open_nlwindows.last;
-			else
-				p.ptr1 = wind->prev;
-			nrl = build_rect_list(&p);
-			if (nrl && swap)
-				wind->rect_opt_start = wind->rect_opt = nrl;
-			break;
-		}
-	}
+	p.getnxtrect = nextwind_rect;
+	p.area = &area;
+	if (!wind->prev && !wind->nolist)
+		p.ptr1 = S.open_nlwindows.last;
+	else
+		p.ptr1 = wind->prev;
+	nrl = build_rect_list(&p);
+	if (swap)
+		rle->start = rle->next = nrl;
+	
 	return nrl;
 }
 
+static struct xa_rect_list *
+get_rect_first(struct xa_rectlist_entry *rle)
+{
+	rle->next = rle->start;
+	return rle->next;
+}
+static struct xa_rect_list *
+get_rect_next(struct xa_rectlist_entry *rle)
+{
+	if (rle->next)
+		rle->next = rle->next->next;
+	return rle->next;
+}
+
 int
-get_rect(struct xa_window *wind, RECT *clip, bool first, RECT *ret)
+get_rect(struct xa_rectlist_entry *rle, RECT *clip, bool first, RECT *ret)
 {
 	struct xa_rect_list *rl;
 	int rtn = 0;
 	RECT r;
 
 	if (first)
-		rl = rect_get_user_first(wind);
+		rl = get_rect_first(rle);
 	else
-		rl = rect_get_user_next(wind);
+		rl = get_rect_next(rle);
 		
 	if (clip)
 	{
@@ -337,7 +352,7 @@ get_rect(struct xa_window *wind, RECT *clip, bool first, RECT *ret)
 				rtn = 1;
 				break;
 			}
-			rl = rect_get_user_next(wind);
+			rl = get_rect_next(rle);
 		}
 	}
 	else if (rl)
@@ -363,64 +378,76 @@ free_rect_list(struct xa_rect_list *first)
 	}
 }
 
+void
+free_rectlist_entry(struct xa_rectlist_entry *rle)
+{
+	struct xa_rect_list *rl;
+
+	while ((rl = rle->start))
+	{
+		rle->start = rl->next;
+		kfree(rl);
+	}
+	rle->next = NULL;
+}
+
 struct xa_rect_list *
 rect_get_user_first(struct xa_window *w)
 {
-	w->rect_user = w->rect_start;
-	return w->rect_user;
+	w->rect_user.next = w->rect_user.start;
+	return w->rect_user.next;
 }
 
 struct xa_rect_list *
 rect_get_optimal_first(struct xa_window *w)
 {
-	w->rect_opt = w->rect_opt_start;
-	return w->rect_opt;
+	w->rect_opt.next = w->rect_opt.start;
+	return w->rect_opt.next;
 }
 
 struct xa_rect_list *
 rect_get_system_first(struct xa_window *w)
 {
-	w->rect_list = w->rect_start;
-	return w->rect_list;
+	w->rect_list.next = w->rect_list.start;
+	return w->rect_list.next;
 }
 
 struct xa_rect_list *
 rect_get_optimal_next(struct xa_window *w)
 {
-	if (w->rect_opt)
-		w->rect_opt = w->rect_opt->next;
-	return w->rect_opt;
+	if (w->rect_opt.next)
+		w->rect_opt.next = w->rect_opt.next->next;
+	return w->rect_opt.next;
 }
 
 struct xa_rect_list *
 rect_get_user_next(struct xa_window *w)
 {
-	if (w->rect_user)
-		w->rect_user = w->rect_user->next;
-	return w->rect_user;
+	if (w->rect_user.next)
+		w->rect_user.next = w->rect_user.next->next;
+	return w->rect_user.next;
 }
 
 struct xa_rect_list *
 rect_get_system_next(struct xa_window *w)
 {
-	if (w->rect_list)
-		w->rect_list = w->rect_list->next;
-	return w->rect_list;
+	if (w->rect_list.next)
+		w->rect_list.next = w->rect_list.next->next;
+	return w->rect_list.next;
 }
 
-bool
-was_visible(struct xa_window *w)
+struct xa_rect_list *
+rect_get_toolbar_first(struct xa_window *w)
 {
-	RECT o, n;
-	if (w->rect_prev && w->rect_start)
-	{
-		o = w->rect_prev->r;
-		n = w->rect_start->r;
-		DIAG((D_r, w->owner, "was_visible? prev (%d/%d,%d/%d) start (%d/%d,%d/%d)", o, n));
-		if (o.x == n.x && o.y == n.y && o.w == n.w && o.h == n.h)
-			return true;
-	}
-	return false;
+	w->rect_toolbar.next = w->rect_toolbar.start;
+	return w->rect_toolbar.next;
+}
+struct xa_rect_list *
+rect_get_toolbar_next(struct xa_window *w)
+{
+	if (w->rect_toolbar.next)
+		w->rect_toolbar.next = w->rect_toolbar.next->next;
+	return w->rect_toolbar.next;
 }
 
 /*

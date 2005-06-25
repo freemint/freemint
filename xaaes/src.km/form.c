@@ -752,7 +752,7 @@ Click_form_do(enum locks lock,
 				 fr.obj,
 				 md,
 				 FBF_REDRAW,
-				 wind ? wind->rect_start : NULL,
+				 wind ? wind->rect_list.start : NULL,
 				 &fr.obj_state,
 				 &fr.obj,
 				 &fr.dblmask))
@@ -793,7 +793,7 @@ Key_form_do(enum locks lock,
 	struct xa_vdi_settings *v;
 	RECT *clip = NULL;
 	OBJECT *obtree = NULL;
-	struct xa_rect_list *rl = wind ? wind->rect_start : NULL;
+	struct xa_rect_list *rl = wind ? wind->rect_list.start : NULL;
 	struct fmd_result fr;
 	RECT r;
 
@@ -895,7 +895,7 @@ dfwm_redraw(struct xa_window *wind, struct xa_widget *widg, struct widget_tree *
 		RECT dr;
 		struct xa_rect_list *rl;
 		
-		rl = wind->rect_start;
+		rl = wind->rect_list.start;
 
 		if (wdg_is_inst(widg) && rl)
 		{
@@ -963,12 +963,12 @@ do_formwind_msg(
 		{
 			if (!wt->owner->options.xa_objced && wt->e.obj > 0)
 			{
-				obj_edit(wt, v, ED_END, wt->e.obj, 0, 0, true, &wind->wa, wind->rect_start, NULL, NULL);
+				obj_edit(wt, v, ED_END, wt->e.obj, 0, 0, true, &wind->wa, wind->rect_list.start, NULL, NULL);
 			}
 			dfwm_redraw(wind, widg, wt, (RECT *)&msg[4]);
 			if (!wt->owner->options.xa_objced && wt->e.obj > 0)
 			{
-				obj_edit(wt, v, ED_END, wt->e.obj, 0, 0, true, &wind->wa, wind->rect_start, NULL, NULL);
+				obj_edit(wt, v, ED_END, wt->e.obj, 0, 0, true, &wind->wa, wind->rect_list.start, NULL, NULL);
 			}
 			kick_mousemove_timeout();
 			break;
