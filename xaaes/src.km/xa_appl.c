@@ -217,6 +217,7 @@ init_client(enum locks lock)
 
 	/* Individual option settings. */
 	get_app_options(client);
+// 	client->options.wind_opts |= XAWO_WCOWORK;
 
 	if (client->options.inhibit_hide)
 		client->swm_newmsg |= NM_INHIBIT_HIDE;
@@ -1048,6 +1049,8 @@ static short info_tab[][4] =
 #define AGI_WF_FIRSTAREAXYWH	0x0400	/* wind_get(handle, WF_FIRSTAREAXYWH, clip_x, clip_y, clip_w, clip_h) available */
 #define AGI_WF_OPTS		0x0800	/* wind_set(handle, WF_OPTS, wopt0, wopt1, wopt2) available */
 #define AGI_WF_MENU		0x1000	/* wind_set(handle, WF_MENU) exists */
+#define AGI_WF_WORKXYWH		0x2000	/* wind_get/set(handle, WF_WORKXYWH, .. ) available (and bugfixed) */
+#define AGI_WF_CALC		0x4000	/* wind_get(handle, WF_CALCx2x, ... ) available */
 
 #define AGI_WF_WIDGETS		0x0001
 
@@ -1073,6 +1076,8 @@ static short info_tab[][4] =
 	|	AGI_WF_FIRSTAREAXYWH
 	|	AGI_WF_OPTS
 	|	AGI_WF_MENU
+	|	AGI_WF_WORKXYWH
+	|	AGI_WF_CALC
 		,
 		0
 		,

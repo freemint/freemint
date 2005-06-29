@@ -545,6 +545,7 @@ typedef  struct
 #define WO0_NOBLITW	0x0004
 #define WO0_NOBLITH	0x0008
 #define WO0_SENDREPOS	0x0010
+#define WO0_WCOWORK	0x0020
 
 /* wind_set(WF_WHEEL) */
 #define WHL_REALWHEEL	0	/* */

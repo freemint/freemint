@@ -332,6 +332,8 @@ hide_window(enum locks lock, struct xa_window *wind)
 		r.y = root_window->rc.y + root_window->rc.h + 16;
 		wind->hx = wind->rc.x;
 		wind->hy = wind->rc.y;
+		if (wind->opts & XAWO_WCOWORK)
+			r = fa2rwa(wind, &r);
 		send_moved(lock, wind, AMQ_NORM, &r);
 		wind->window_status |= XAWS_HIDDEN;
 	}
@@ -345,8 +347,10 @@ unhide_window(enum locks lock, struct xa_window *wind, bool check)
 
 		r.x = wind->hx;
 		r.y = wind->hy;
-		send_moved(lock, wind, AMQ_NORM, &r);
 		wind->t = r;
+		if (wind->opts & XAWO_WCOWORK)
+			r = fa2rwa(wind, &r);
+		send_moved(lock, wind, AMQ_NORM, &r);
 		wind->window_status &= ~XAWS_HIDDEN;
 		if (any_hidden(lock, wind->owner, wind))
 			set_unhidden(lock, wind->owner);
@@ -495,6 +499,7 @@ send_sized(enum locks lock, struct xa_window *wind, short amq, RECT *r)
 		}
 	}
 }
+
 void
 send_reposed(enum locks lock, struct xa_window *wind, short amq, RECT *r)
 {
@@ -1965,20 +1970,20 @@ RECT
 rwa2fa(struct xa_window *wind, const RECT *in)
 {
 	RECT r;
-	r.x = in->x - (wind->rwa.x - wind->rc.x);
-	r.y = in->y - (wind->rwa.y - wind->rc.y);
-	r.w = in->w + (wind->rc.w - wind->rwa.w);
-	r.h = in->h + (wind->rc.h - wind->rwa.h);
+	r.x = in->x - (wind->rwa.x - wind->r.x);
+	r.y = in->y - (wind->rwa.y - wind->r.y);
+	r.w = in->w + (wind->r.w - wind->rwa.w);
+	r.h = in->h + (wind->r.h - wind->rwa.h);
 	return r;
 }
 RECT
 fa2rwa(struct xa_window *wind, const RECT *in)
 {
 	RECT r;
-	r.x = in->x + (wind->rwa.x - wind->rc.x);
-	r.y = in->y + (wind->rwa.y - wind->rc.y);
-	r.w = in->w - (wind->rc.w - wind->rwa.w);
-	r.h = in->h - (wind->rc.h - wind->rwa.h);
+	r.x = in->x + (wind->rwa.x - wind->r.x);
+	r.y = in->y + (wind->rwa.y - wind->r.y);
+	r.w = in->w - (wind->r.w - wind->rwa.w);
+	r.h = in->h - (wind->r.h - wind->rwa.h);
 	return r;
 }
 RECT
