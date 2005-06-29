@@ -471,6 +471,8 @@ repos_iconified(struct proc *p, long arg)
 		if ((w->window_status & (XAWS_OPEN|XAWS_ICONIFIED|XAWS_HIDDEN)) == (XAWS_OPEN|XAWS_ICONIFIED))
 		{
 			r = free_icon_pos(lock, w);
+			if (w->opts & XAWO_WCOWORK)
+				r = fa2rwa(w, &r);
 			send_moved(lock, w, AMQ_NORM, &r);
 			w->t = r;
 		}

@@ -446,7 +446,7 @@ add_msg_2_queue(struct xa_aesmsg_list **queue, union msg_buf *msg, short qmflags
 			{
 				short *old = (*next)->message.m;
 
-				if (old[0] == WM_MOVED && old[3] == new[3])
+				if (old[0] == new[0] && old[3] == new[3])
 				{
 					old[4] = new[4];
 					old[5] = new[5];
@@ -464,7 +464,7 @@ add_msg_2_queue(struct xa_aesmsg_list **queue, union msg_buf *msg, short qmflags
 			{
 				short *old = (*next)->message.m;
 					
-				if (old[0] == WM_SIZED && old[3] == new[3])
+				if (old[0] == new[0] && old[3] == new[3])
 				{
 					old[4] = new[4];
 					old[5] = new[5];
@@ -482,7 +482,7 @@ add_msg_2_queue(struct xa_aesmsg_list **queue, union msg_buf *msg, short qmflags
 			{
 				short *old = (*next)->message.m;
 					
-				if (old[0] == WM_VSLID && old[3] == new[3])
+				if (old[0] == new[0] && old[3] == new[3])
 				{
 					old[4] = new[4];
 					msg = NULL;
@@ -497,7 +497,7 @@ add_msg_2_queue(struct xa_aesmsg_list **queue, union msg_buf *msg, short qmflags
 			{
 				short *old = (*next)->message.m;
 					
-				if (old[0] == WM_HSLID && old[3] == new[3])
+				if (old[0] == new[0] && old[3] == new[3])
 				{
 					old[4] = new[4];
 					msg = NULL;
@@ -512,7 +512,7 @@ add_msg_2_queue(struct xa_aesmsg_list **queue, union msg_buf *msg, short qmflags
 			{
 				short *old = (*next)->message.m;
 					
-				if (old[0] == WM_ARROWED && old[3] == new[3] && old[4] == new[4])
+				if (old[0] == new[0] && old[3] == new[3] && old[4] == new[4])
 				{
 					msg = NULL;
 					break;

@@ -1241,6 +1241,7 @@ typedef void DrawWinElement(struct xa_window *wind);
 #define XAWO_NOBLITW	((long)WO0_NOBLITW << 16)
 #define XAWO_NOBLITH	((long)WO0_NOBLITH << 16)
 #define XAWO_SENDREPOS	((long)WO0_SENDREPOS << 16)
+#define XAWO_WCOWORK	((long)WO0_WCOWORK << 16)
 
 enum window_status
 {

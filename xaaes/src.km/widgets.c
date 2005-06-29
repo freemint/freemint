@@ -924,6 +924,10 @@ drag_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, cons
 			if (r.x != wind->rc.x || r.y != wind->rc.y)
 			{
 				r.h = wind->rc.h;
+				
+				if (wind->opts & XAWO_WCOWORK)
+					r = fa2rwa(wind, &r);
+				
 				send_moved(lock, wind, AMQ_NORM, &r);
 			}
 		}
@@ -975,6 +979,10 @@ drag_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, cons
 				if (r.x != wind->r.x || r.y != wind->r.y)
 				{
 					r.h = wind->rc.h;
+					
+					if (wind->opts & XAWO_WCOWORK)
+						r = fa2rwa(wind, &r);
+					
 					send_moved(lock, wind, AMQ_NORM, &r);
 				}
 
@@ -1148,31 +1156,35 @@ click_iconify(enum locks lock, struct xa_window *wind, struct xa_widget *widg, c
 
 	if ((wind->window_status & XAWS_OPEN))
 	{
+		short msg = -1;
+		RECT r;
+
 		if ((wind->window_status & XAWS_ICONIFIED))
 		{
 			/* Window is already iconified - send request to restore it */
-
-			wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
-					   WM_UNICONIFY, 0, 0, wind->handle,
-					   wind->ro.x, wind->ro.y, wind->ro.w, wind->ro.h);
+			r = wind->ro;
+			msg = WM_UNICONIFY;
 		}
 		else
 		{
 			/* Window is open - send request to iconify it */
 
-			RECT ic = free_icon_pos(lock|winlist, NULL);
+			r = free_icon_pos(lock|winlist, NULL);
 
 			/* Could the whole screen be covered by iconified
 			 * windows? That would be an achievement, wont it?
 			 */
-			if (ic.y > root_window->wa.y)
-			{
-				short msg = (md->kstate & K_CTRL) ? WM_ALLICONIFY : WM_ICONIFY;
+			if (r.y > root_window->wa.y)
+				msg = (md->kstate & K_CTRL) ? WM_ALLICONIFY : WM_ICONIFY;
+		}
+		if (msg != -1)
+		{
+			if (wind->opts & XAWO_WCOWORK)
+				r = fa2rwa(wind, &r);
 
-				wind->send_message(lock|winlist, wind, NULL, AMQ_NORM, QMF_CHKDUP,
-					   msg, 0, 0, wind->handle,
-					   ic.x, ic.y, ic.w, ic.h);
-			}
+			wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
+				   msg, 0, 0, wind->handle,
+				   r.x, r.y, r.w, r.h);
 		}
 	}
 	/* Redisplay.... */
@@ -1256,6 +1268,9 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 
 		if (move || size)
 		{
+			if (wind->opts & XAWO_WCOWORK)
+				r = fa2rwa(wind, &r);
+
 			if (move && size && (wind->opts & XAWO_SENDREPOS))
 				send_reposed(lock, wind, AMQ_NORM, &r);
 			else
@@ -1325,6 +1340,8 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 			
 			if (move || size)
 			{
+				if (wind->opts & XAWO_WCOWORK)
+					r = fa2rwa(wind, &r);
 				if (move && size && (wind->opts & XAWO_SENDREPOS))
 					send_reposed(lock, wind, AMQ_NORM, &r);
 				else
