@@ -325,15 +325,27 @@ wdialog_message(enum locks lock, struct xa_client *client, struct wdlg_evnt_parm
 		}
 		case WM_SIZED:
 		{
+			RECT mr;
 			RECT r;
+			
 			if (wh != mh)
 				return -1;
 
+			if (wind->opts & XAWO_WCOWORK)
+			{
+				mr = rwa2fa(wind, (RECT *)(&msg + 4));
+			}
+			else
+				mr = *(RECT *)(&msg + 4);
+			
 			r.x = wind->r.x;
 			r.y = wind->r.y;
+			r.w = wind->max.w < mr.w ? wind->max.w : mr.w;
+			r.h = wind->max.h < mr.h ? wind->max.h : mr.h;
+		#if 0
 			r.w = wind->max.w < msg[6] ? wind->max.w : msg[6];
 			r.h = wind->max.h < msg[7] ? wind->max.h : msg[7];
-
+		#endif
 			if (wind->r.w != r.w || wind->r.h != r.h)
 			{
 				inside_root(&r, &wind->owner->options);
@@ -343,6 +355,7 @@ wdialog_message(enum locks lock, struct xa_client *client, struct wdlg_evnt_parm
 		}
 		case WM_MOVED:
 		{
+			RECT mr;
 			RECT r;
 
 			if (wh != mh)
@@ -353,8 +366,15 @@ wdialog_message(enum locks lock, struct xa_client *client, struct wdlg_evnt_parm
 				if ( !(*wep->callout)(wind->owner, wdlg, ev, HNDL_MOVE, ev->mclicks, wdlg->user_data, NULL))
 					return 0;
 			}
-
-			r.x = msg[4], r.y = msg[5];
+			if (wind->opts & XAWO_WCOWORK)
+			{
+				mr = rwa2fa(wind, (RECT *)(&msg + 4));
+			}
+			else
+				mr = *(RECT *)(&msg + 4);
+	
+			r.x = mr.x, r.y = mr.y;			
+// 			r.x = msg[4], r.y = msg[5];
 
 			if (wind->r.x != r.x || wind->r.y != r.y)
 			{

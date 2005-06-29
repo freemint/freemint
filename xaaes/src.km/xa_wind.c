@@ -93,7 +93,7 @@ XA_wind_create(enum locks lock, struct xa_client *client, AESPB *pb)
 unsigned long
 XA_wind_open(enum locks lock, struct xa_client *client, AESPB *pb)
 {
-	const RECT r = *((const RECT *)&pb->intin[1]);
+	RECT r = *((const RECT *)&pb->intin[1]);
 	struct xa_window *w;
 
 	CONTROL(5,1,0)
@@ -114,6 +114,8 @@ XA_wind_open(enum locks lock, struct xa_client *client, AESPB *pb)
 			if (r.h > w->max.h)
 				w->max.h = r.h;
 		}	
+		if (w->opts & XAWO_WCOWORK)
+			r = rwa2fa(w, &r);
 		pb->intout[0] = open_window(lock, w, r);
 	}
 
@@ -564,7 +566,8 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			     pb->intin[4] == -1 && pb->intin[5] == -1) ? true : false;
 		RECT *ir;
 		RECT r;
-		short mx, my, mw, mh;
+		RECT m;
+// 		short mx, my, mw, mh;
 		short status = -1, msg = -1;
 
 		if (cmd == WF_PREVXYWH)
@@ -589,16 +592,9 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			{
 				(const RECT *)ir = (const RECT *)&pb->intin[2];
 				move = true;
-				if (cmd == WF_WORKXYWH)
+				if (cmd == WF_WORKXYWH && !(w->opts & XAWO_WCOWORK))
 				{
 					r = rwa2fa(w, ir);
-				#if 0
-					r = *ir;
-					r.x -= (w->rwa.x - w->r.x);
-					r.y -= (w->rwa.y - w->r.y);
-					r.w += (w->r.w   - w->rwa.w);
-					r.h += (w->r.h   - w->rwa.h);
-				#endif
 					ir = &r;
 				}
 			}
@@ -627,20 +623,32 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		}
 		else if (ir)
 		{
+			if (status == -1 && (w->opts & XAWO_WCOWORK))
+			{
+				m = rwa2fa(w, ir);
+				ir = (RECT *)&w->rwa;
+			}
+			else
+			{
+				m = *ir;
+				ir = cmd == WF_WORKXYWH ? (RECT *)&w->rwa : (RECT *)&w->rc;
+			}
+		#if 0
 			mx = ir->x;
 			my = ir->y;
 			mw = ir->w;
 			mh = ir->h;
 			ir = cmd == WF_WORKXYWH ? (RECT *)&w->rwa : (RECT *)&w->rc;
+		#endif
 
-			if ( (mw != w->rc.w && (w->opts & XAWO_NOBLITW)) ||
-			     (mh != w->rc.h && (w->opts & XAWO_NOBLITH)))
+			if ( (m.w != w->rc.w && (w->opts & XAWO_NOBLITW)) ||
+			     (m.h != w->rc.h && (w->opts & XAWO_NOBLITH)))
 				blit = false;
 			
 			DIAGS(("wind_set: move to %d/%d/%d/%d for %s",
-				mx, my, mw, mh, client->name));
+				m.x, m.y, m.w, m.h, client->name));
 
-			if (!mh)
+			if (!m.h)
 			{
 				if (!(w->window_status & XAWS_SHADED))
 				{
@@ -655,17 +663,17 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 					DIAGS(("wind_set: zero heigh, window %d already shaded for %s",
 						w->handle, client->name));
 				}
-				mh = w->sh;
+				m.h = w->sh;
 			}
 			else
 			{
 				if (!(w->window_status & XAWS_SHADED) && status == -1)
 				{
 					if (w->max.w && w->max.h &&
-					    mx == w->max.x &&
-					    my == w->max.y &&
-					    mw == w->max.w &&
-					    mh == w->max.h)
+					    m.x == w->max.x &&
+					    m.y == w->max.y &&
+					    m.w == w->max.w &&
+					    m.h == w->max.h)
 					{
 						status = XAWS_FULLED;
 					}
@@ -682,13 +690,13 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 						 */
 						if (blit && w->opts & XAWO_FULLREDRAW)
 						{
-							if (mx != w->rc.x && my != w->rc.y &&
-							    mw != w->rc.w && mh != w->rc.h)
+							if (m.x != w->rc.x && m.y != w->rc.y &&
+							    m.w != w->rc.w && m.h != w->rc.h)
 								blit = false;
 						}
 					}
 				}
-				else if ((w->window_status & XAWS_ZWSHADED) && mh != w->sh)
+				else if ((w->window_status & XAWS_ZWSHADED) && m.h != w->sh)
 				{
 					DIAGS(("wind_set: window %d for %s shaded - unshade by different height",
 						w->handle, client->name));
@@ -697,15 +705,15 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 					msg = WM_UNSHADED;
 				}
 			}
-			if (w->max.w && mw > w->max.w)
-				mw = w->max.w;
-			if (w->max.w && mh > w->max.h)
-				mh = w->max.h;
+			if (w->max.w && m.w > w->max.w)
+				m.w = w->max.w;
+			if (w->max.w && m.h > w->max.h)
+				m.h = w->max.h;
 
 			DIAGS(("wind_set: WF_CURRXYWH %d/%d/%d/%d, status = %x", *(const RECT *)&pb->intin[2], status));
 
 // 			move_window(lock, w, blit, status, pb->intin[2], pb->intin[3], mw, mh);
-			move_window(lock, w, blit, status, mx, my, mw, mh);
+			move_window(lock, w, blit, status, m.x, m.y, m.w, m.h);
 
 			if (msg != -1 && w->send_message)
 				w->send_message(lock, w, NULL, AMQ_NORM, QMF_CHKDUP, msg, 0, 0, w->handle, 0,0,0,0);
@@ -819,7 +827,13 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			pb->intout[0] = 0;
 		else
 		{
-			RECT in = *((const RECT *)(pb->intin+2));
+			RECT in; // = *((const RECT *)(pb->intin+2));
+			
+			if (w->opts & XAWO_WCOWORK)
+				in = rwa2fa(w, (const RECT *)(pb->intin + 2));
+			else
+				in = *((const RECT *)(pb->intin+2));
+			
 			iconify_window(lock, w, &in);
 		}
 		break;
@@ -836,7 +850,12 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			if (pb->intin[4] == -1 || pb->intin[5] == -1 || !pb->intin[4] || !pb->intin[5])
 				in = w->ro;
 			else
-				in = *((const RECT *)(pb->intin+2));
+			{
+				if (w->opts & XAWO_WCOWORK)
+					in = rwa2fa(w, (const RECT *)(pb->intin + 2));
+				else
+					in = *((const RECT *)(pb->intin+2));
+			}
 			
 			uniconify_window(lock, w, &in);
 		}
@@ -845,7 +864,10 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	case WF_UNICONIFYXYWH:
 	{
-		w->ro = *((const RECT *)(pb->intin+2));
+		if (w->opts & XAWO_WCOWORK)
+			w->ro = rwa2fa(w, (const RECT *)(pb->intin + 2));
+		else
+			w->ro = *((const RECT *)(pb->intin+2));
 		break;
 	}
 	/* */
@@ -1293,7 +1315,10 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 	 */
 	case WF_CURRXYWH:
 	{
-		*ro = w->rc;
+		if (w->opts & XAWO_WCOWORK)
+			*ro = w->rwa;
+		else
+			*ro = w->rc;
 		DIAG((D_w, w->owner, "get curr for %d: %d/%d,%d/%d",
 			wind ,ro->x,ro->y,ro->w,ro->h));
 		break;
@@ -1328,7 +1353,10 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 	 */
 	case WF_PREVXYWH:
 	{
-		*ro = w->pr;
+		if (w->opts  & XAWO_WCOWORK)
+			*ro = fa2rwa(w, &w->pr);
+		else
+			*ro = w->pr;
 		DIAG((D_w, w->owner, "get prev for %d: %d/%d,%d/%d",
 			wind ,ro->x,ro->y,ro->w,ro->h));
 		break;			
@@ -1345,18 +1373,21 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 		if (!w || w == root_window)
 		{
 			/* Ensure the windows don't overlay the menu bar */
-			ro->x = root_window->r.x; 
+			ro->x = root_window->wa.x; 
 			ro->y = root_window->wa.y;
-			ro->w = root_window->r.w;
+			ro->w = root_window->wa.w;
 			ro->h = root_window->wa.h;
-			if (!taskbar(client))
-				ro->h -= 24;
+// 			if (!taskbar(client))
+// 				ro->h -= 24;
 			DIAG((D_w, NULL, "get max full: %d/%d,%d/%d",
 				ro->x,ro->y,ro->w,ro->h));
 		}
 		else
 		{
-			*ro = w->max;
+			if (w->opts & XAWO_WCOWORK)
+				*ro = fa2rwa(w, &w->max);
+			else
+				*ro = w->max;
 			DIAG((D_w, w->owner, "get full for %d: %d/%d,%d/%d",
 				wind ,ro->x,ro->y,ro->w,ro->h));
 		}
@@ -1582,7 +1613,11 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 	}
 	case WF_UNICONIFY:
 	{
-		*ro = (w->window_status & XAWS_ICONIFIED) ? w->ro : w->r;
+		RECT *sr = (w->window_status & XAWS_ICONIFIED) ? &w->ro : &w->r;
+		if (w->opts & XAWO_WCOWORK)
+			*ro = fa2rwa(w, sr);
+		else
+			*ro = *sr;
 		break;
 	}
 	case WF_SHADE:
@@ -1749,21 +1784,25 @@ XA_wind_calc(enum locks lock, struct xa_client *client, AESPB *pb)
 	DIAG((D_wind, client, "wind_calc: req=%d, kind=%d",
 		pb->intin[0], pb->intin[1]));
 
-	tp = (unsigned short)pb->intin[1];
+	if (client->options.wind_opts & XAWO_WCOWORK)
+		*(RECT *)&pb->intout[1] = *(const RECT *)&pb->intin[2];
+	else
+	{
+		tp = (unsigned short)pb->intin[1];
 	
-	if (!client->options.nohide)
-		tp |= HIDE;
+		if (!client->options.nohide)
+			tp |= HIDE;
 
-	*(RECT *) &pb->intout[1] =
-		calc_window(lock,
-			    client,
-			    pb->intin[0],				/* request */
-			    tp, /*(unsigned short)pb->intin[1],*/		/* widget mask */
-			    created_for_CLIENT,
-			    client->options.thinframe,
-			    client->options.thinwork,
-			    *(const RECT *)&pb->intin[2]);
-
+		*(RECT *) &pb->intout[1] =
+			calc_window(lock,
+				    client,
+				    pb->intin[0],				/* request */
+				    tp, /*(unsigned short)pb->intin[1],*/		/* widget mask */
+				    created_for_CLIENT,
+				    client->options.thinframe,
+				    client->options.thinwork,
+				    *(const RECT *)&pb->intin[2]);
+	}
 	pb->intout[0] = 1;
 	return XAC_DONE;
 }

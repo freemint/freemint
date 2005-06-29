@@ -80,7 +80,10 @@ anything else.
  'ap_gout1'     Bit  9 wind_get/set(WF_WHEEL)
                 Bit 10 wind_get(WF_FIRSTAREAXYWH)
                 Bit 11 wind_get/set(WF_OPTS)
-                Bit 12 wind_get/set(WF_MENU) 
+                Bit 12 wind_get/set(WF_MENU)
+		Bit 13 wind_get/set(WF_WORKXYWH)
+		Bit 14 support wind_get(WF_CALCW2F/WF_CALCF2W) and WO0_WCOWORK
+		       mode.
 
  AES_MESSAGES (12) - XaAES addes the following;
 
@@ -203,8 +206,59 @@ no definitions are made yet.
      p2, p3 and p4 are usused at the moment and must be set to 0.
 
 ===============================================================================
+
+                    -= Window Coordinate Orientation WORK =-
+
+  Normally, applications have had to cope with two defined areas in their
+ handling of windows, namely the WORK area and the FULL area. XaAES now offers
+ a new operating mode in which applications only work with one of the defined
+ window areas, the WORK area. The benefits of this, seen from application side,
+ are;
+ 
+  1. No need for wind_calc() anymore.
+  
+  2. No need to convert window coordinates carried by WM_SIZED/WM_MOVED/
+     WM_REPOSE, etc, to WORK coordinates. before doing modifications, like
+     snapping, before converting back to FULL for wind_set(WF_CURRXYWH).
+
+  Benefits seen from the AES side;
+
+  1. AES is free to modify the size of window borders without notifying
+     the application, unless the WORK area changes in which case a WM_REPOSED
+     or WM_SIZED is sent.
+
+     
+  The following changes happen when this mode is used;
+
+  1. wind_set(WF_CURRXYWH/WF_WORKXYWH) become the same call.
+  
+  2. wind_calc() will always return the same coordinates it is passed.
+     In other words, AES does not distinquish between BORDER and FULL
+     areas. For application that does not do gymnastics to place own
+     toolbars, etc., this makes the new mode work without any changes
+     to the application.
+
+  3. All AES messages carrying window coordinates will carry WORK area
+     coordinates only.
+  
+  4. All wind_get/set() calls (except WF_CALCx2x calls, see below) will
+     accept WORK area window coordinates only.
+  
+  5. For applications that need to know the FULL extent of windows
+     (for example to cascade windows, or position one window next to
+     another), there is wind_get(WF_CALCW2F) and wind_get(WF_CALCF2W). See
+     below for documentation.
+
+===============================================================================
 =                            wind_set() extensions                            =
+=                                   and                                       =
+=                                wind_xset()                                  =
 -------------------------------------------------------------------------------
+
+  wind_xset() differs from wind_set() in that wind_xset() returns an additional
+ 4 values compared to wind_set(). The XaAES differentiate between the two by
+ looking at the third element of the control array which indicates the size
+ of the intout array.
 
  short wind_set(short handle, short mode,
                 short p1, short p2, short p3, short p4);
@@ -212,9 +266,9 @@ no definitions are made yet.
  	intin[0] = handle;
  	intin[1] = mode;
  	intin[2] = p1;
- 	intin[3] = p1;
- 	intin[4] = p1;
- 	intin[5] = p1;
+ 	intin[3] = p2;
+ 	intin[4] = p3;
+ 	intin[5] = p4;
  }
 
  GEM arrays as follows:
@@ -223,7 +277,7 @@ no definitions are made yet.
         ------------------------------------------------------
         control    control[0]   105        # Opcode
         control+2  control[1]   6          # Entries in intin
-        control+4  control[2]   1 (or 5)   # Entries in intout (XaAES only)
+        control+4  control[2]   1 (or 5)   # Entries in intout (wind_xset())
         control+6  control[3]   0          # Entries in addrin 
         control+8  control[4]   0          # entries in addrout 
         intin      intin[0]    handle
@@ -234,8 +288,9 @@ no definitions are made yet.
         intin+10   intin[5]    p4
         intout     intout[0]   Return value (1 = OK, 0 = error)
 
-      XaAES uses the following extra output elements if control[2]
-      indicates the application wants it:
+      Additional output when wind_xset() is used as follows - 
+      XaAES checks control[2] to see if wind_xset()
+      is used:
 
         intout+2   intout[1]
         intout+4   intout[2]
@@ -244,7 +299,8 @@ no definitions are made yet.
 
  XaAES wind_set() extensions;
 ...............................................................................
- wind_set(handle, WF_CURRXYWH, x, y, w, h);
+  wind_set(handle, WF_CURRXYWH, x, y, w, h);
+ wind_xset(handle, WF_CURRXYWH, x, y, w, h);
 
    Compatible with all other AES's, except from the following points;
 
@@ -261,21 +317,22 @@ no definitions are made yet.
       window is shaded via this method, shift-clicks on the window title to 
       shade a window is ignored.
 
-   Placing a value of 5 in control[2]:
+   wind_xset() output:
    1. XaAES returns the CURRXYWH of the new position the window was moved to,
       removing the need for a wind_get(handle, WF_CURRXYWH,...) call.
 
   Note: wind_set(handle, WF_CURRXYWH, -1, -1, -1, -1); will return exactly
         the same as wind_get(handle, WF_CURRXYWH);
 ...............................................................................
- wind_set(handle, WF_PREVXYWH, x, y, w, h);
+  wind_set(handle, WF_PREVXYWH, x, y, w, h);
+ wind_xset(handle, WF_PREVXYWH, x, y, w, h);
 
    If either x, y, w or h have a value of -1, that coordinate is not changed.
    If ALL coordinates have a value of -1, the window is actually moved to the
    current PREVXYWH coordinates, making the current window position the new
    PREVXYWH position.
 
-   Placing a value of 5 (or more) in control[2]:
+   wind_xset() output:
      1. XaAES returns the resulting PREVXYWH, which the window will be moved to
         on the next use of the FULLED gadget or...
      2. When all coordinates passed have a value of -1, XaAES return the
@@ -284,13 +341,14 @@ no definitions are made yet.
  
 -------------------------------------------------------------------------------
  wind_set(handle, WF_FULLXYWH, x, y, w, h);
+ wind_xset(handle, WF_FULLXYWH, x, y, w, h);
 
    If either x, y, w or h have a value of -1, that coordinate is not changed.
    If ALL coordinates have a value of -1, the window is actually moved to the
    current FULLXYWH coordinates, making the current window position the new
    PREVXYWH position.
 
-   Placing a value of 5 (or more) in control[2]:
+   wind_xset() output:
      1. XaAES returns the resulting FULLXYWH, which the window will be moved to
         on the next use of the FULLED gadget or...
      2. When all coordinates passed have a value of -1, XaAES return the
@@ -344,12 +402,103 @@ no definitions are made yet.
               older apps dont evaluate the WIDTH/HEIGHT in WM_MOVED messages.
               So, dudes, set this bit and use WM_REPOSED! :)
 
+           #define WO0_WCOWORK         0x0020
+              Setting this bit will enable Window Coordinate Orientation WORK
+              mode. See above for more info.
+
  'wopt1'      Currently undefined and must be cleared.
  'wopt2'      Currently undefined and must be cleared.
 
  usage:
       wind_set(handle, 1, wopt0, wopt1, wopt2); to set selected bits
       wind_set(handle, 0, wopt0, wopt1, wopt2); to clear selected bits
+
+===============================================================================
+=                        wind_xget(), wind_get() extension                    =
+-------------------------------------------------------------------------------
+
+   wind_xget is an extension that was first seen in MyAES via the
+ wind_xget(WF_FIRSTAREAXYWH) function. The big difference between wind_get()
+ and this new wind_xget() is that wind_xget() accepts 4 more input values than
+ wind_get(). The AES looks at the second control element, which indicates the
+ size of the intout array, to differentiate between the two.
+
+
+ short wind_xget(short handle, short mode,
+                short p1, short p2, short p3, short p4);
+ {
+ 	intin[0] = handle;
+ 	intin[1] = mode;
+ 	intin[2] = p1;
+ 	intin[3] = p2;
+ 	intin[4] = p3;
+ 	intin[5] = p4;
+ }
+
+ GEM arrays as follows:
+
+	Address     Element    meaning 
+        ------------------------------------------------------
+        control    control[0]   104        # Opcode
+        control+2  control[1]   6          # Entries in intin
+        control+4  control[2]   5          # Entries in intout
+        control+6  control[3]   0          # Entries in addrin 
+        control+8  control[4]   0          # entries in addrout 
+        intin      intin[0]    handle
+        intin+2    intin[1]    mode
+
+        intin+4    intin[2]    p1
+        intin+6    intin[3]    p2
+        intin+8    intin[4]    p3
+        intin+10   intin[5]    p4
+        intout     intout[0]   Return value (1 = OK, 0 = error)
+
+      XaAES uses the following extra output elements if control[2]
+      indicates the application wants it:
+
+        intout+2   intout[1]
+        intout+4   intout[2]
+        intout+6   intout[3]
+        intout+8   intout[4]
+
+
+
+ XaAES wind_set() extensions;
+
+...............................................................................
+ wind_xget(handle, WF_FIRSTAREAXYWH, x, y, w, h);
+
+    This function will generate a rectangle list of a window portion, whose
+   coordinates are found in x, y, w and h. If, for example, one have an
+   animated icon that is updated reqularly, this function will generate a
+   rectangle list only for the area in which the icon resides.
+   wind_get(WF_NEXTXYWH) will get the next rectangle of the desired area
+   (if any).
+
+ Usage:
+  wind_xget(handle, WF_FIRSTAREAXYWH, x, y, w, h); Get first rectangle of area
+  wind_get(handle, WF_NEXTXYWH);                   Get next  rectangle of area
+
+...............................................................................
+ wind_xget(handle, WF_CALCW2F, x, y, w, h);
+ wind_xget(handle, WF_CALCF2W, x, y, w, h);
+
+   The intention of these two wind_xget() modes is to replace wind_calc() for
+   existing windows. wind_calc() does not have a window context, and thus its
+   calculations is based on current theme. The current theme may change, which
+   renders wind_calc() output useless for applications that need access to
+   window geometrics of windows not created by itself, like virtual desktop
+   managers, window cascaders, etc. For applications that want to support
+   dynamic theme changes, wind_calc() should be depreciated. Discussion is
+   going on wheter or not this is "needed", but a combination of XaAES's
+   WCOWORK mode (see wind_set(WF_WCOWORK) above) and these functions lift
+   any restrictions.
+ 
+  WF_CALCW2F: This mode will take an arbitrary WORK area, and return the
+              resulting FULL area of the window in question.
+  
+  WF_CALCF2W: This mode will take an arbitrary FULL area, and return the
+              corresponding WORK area.
 
 -------------------------------------------------------------------------------
 ===============================================================================
