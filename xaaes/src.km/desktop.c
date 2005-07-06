@@ -60,6 +60,7 @@ click_desktop_widget(enum locks lock, struct xa_window *wind, struct xa_widget *
 	DIAG((D_button, NULL, "click_desktop_widget, desktop owner: %s", c_owner(client) ));
 	DIAG((D_button, NULL, "                         menu owner: %s", c_owner(mowner) ));
 
+
 	/* HR 280801!!!! menu, desktop and rootwindow ownership are all different!!! */
 	/* Ozk:	Trying to get away from vq_mouse() usage. Initial mouse status to act
 	 *	upon is always found in mu_button structure.

@@ -39,6 +39,7 @@
 #include "k_main.h"
 #include "k_shutdown.h"
 #include "messages.h"
+#include "menuwidg.h"
 #include "nkcc.h"
 #include "scrlobjc.h"
 #include "taskman.h"
