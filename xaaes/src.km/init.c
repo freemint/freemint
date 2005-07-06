@@ -252,7 +252,7 @@ init(struct kentry *k, const char *path)
 #if GENERATE_DIAGS
 	bzero(&D, sizeof(D));
 	D.debug_level = 4;
-#if 0 /*LOGDEBUG*/
+#if 1 /*LOGDEBUG*/
 	/* Set the default debug file */
 	strcpy(D.debug_path, "xaaes.log");
 	D.debug_file = kernel_open(D.debug_path, O_WRONLY|O_CREAT|O_TRUNC, NULL, NULL);

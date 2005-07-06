@@ -877,11 +877,15 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		OBJECT *ob;
 		XA_WIDGET *widg = get_widget(w, XAW_TOOLBAR);
 		XA_TREE *wt;
+		bool d = (!strnicmp(client->proc_name, "ergo_hlp", 8));
 
 		ob = *(OBJECT **)&obptr;
 
 		DIAGS(("  wind_set(WF_TOOLBAR): obtree=%lx, current wt=%lx",
 			ob, widg->stuff));
+		if (d) display("  wind_set(WF_TOOLBAR): obtree=%lx, current wt=%lx",
+			ob, widg->stuff);
+		
 		if (ob)
 		{
 			wt = obtree_to_wt(client, ob);
@@ -937,6 +941,8 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	/* */
 	case WF_MENU:
 	{
+		bool d = (!strnicmp(client->proc_name, "ergo_hlp", 8));
+		
 		if (/*(w->window_status & XAWS_OPEN)*/
 		    w->handle != 0
 		    && (w->active_widgets & XaMENU) != 0)
@@ -951,12 +957,16 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			DIAGS(("  wind_set(WF_MENU) obtree=%lx, current wt=%lxfor %s",
 				ob, widg->stuff, client->name));
 
+			if (d) display("  wind_set(WF_MENU) obtree=%lx, current wt=%lxfor %s",
+				ob, widg->stuff, client->name);
+			
 			if (ob)
 			{
 				wt = obtree_to_wt(client, ob);
 
 				if (!wt || (wt && wt != widg->stuff))
 				{
+	
 					DIAGS(("  --- install new menu"));
 					//fix_menu(client, ob, false);
 					if (!wt)
