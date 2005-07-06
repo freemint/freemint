@@ -991,11 +991,23 @@ struct nwidget_row
 	struct render_widget **w;
 };
 
+struct xa_wind_element;
+struct xa_wind_element
+{
+	struct xa_wind_element *prev, *next;
+
+	struct render_widget w;
+	RECT min_size;
+
+	struct xa_widget_row *rows;
+};
+	
 struct xa_widget_row;
 struct xa_widget_row
 {
 	struct xa_widget_row	*prev;
 	struct xa_widget_row	*next;
+// 	struct xa_wind_element	*welm;
 
 	XA_RELATIVE		rel;
 	XA_WIND_ATTR		tp_mask;

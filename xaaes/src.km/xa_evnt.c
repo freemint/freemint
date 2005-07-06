@@ -328,7 +328,7 @@ get_mbstate(struct xa_client *client, struct mbs *d)
 			if (md > client->md_end)
 				md = client->mdb;
 			client->md_head = md;
-			clicks = 1; //md->clicks;
+			clicks = 1;
 		}
 		else
 		{
