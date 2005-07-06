@@ -1944,8 +1944,11 @@ click_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *wid
 	struct proc *p = get_curproc();
 	DIAG((D_menu, NULL, "click_menu_widget"));
 
-	if (md->clicks > 1)
+		
+	if (md->cstate && md->clicks > 1)
+	{
 		return false;
+	}
 
 	client = ((XA_TREE *)widg->stuff)->owner;
 

@@ -668,6 +668,25 @@ uniconify_window(enum locks lock, struct xa_window *wind, RECT *r)
 	move_window(lock, wind, true, ~XAWS_ICONIFIED, r->x, r->y, r->w, r->h);
 }
 
+XA_WIND_ATTR
+fix_wind_kind(XA_WIND_ATTR tp)
+{
+	/* avoid confusion: if only 1 specified, give both (fail safe!) */
+	if (tp & (UPARROW|DNARROW))
+		tp |= UPARROW|DNARROW;
+	if (tp & (LFARROW|RTARROW))
+		tp |= LFARROW|RTARROW;
+
+	/* cant hide a window that cannot be moved. */
+	if (!(tp & MOVER))
+		tp &= ~HIDE;
+	/* temporary until solved. */
+	if (tp & MENUBAR)
+		tp |= XaMENU;
+
+	return tp;
+}
+
 /*
  * Create a window
  *
@@ -721,22 +740,12 @@ create_window(
 		kfree(w);
 		return NULL;
 	}
+	
 	bzero(w, sizeof(*w));
 
 	w->vdi_settings = client->vdi_settings;
 
-	/* avoid confusion: if only 1 specified, give both (fail safe!) */
-	if (tp & (UPARROW|DNARROW))
-		tp |= UPARROW|DNARROW;
-	if (tp & (LFARROW|RTARROW))
-		tp |= LFARROW|RTARROW;
-
-	/* cant hide a window that cannot be moved. */
-	if (!(tp & MOVER))
-		tp &= ~HIDE;
-	/* temporary until solved. */
-	if (tp & MENUBAR)
-		tp |= XaMENU;
+	tp = fix_wind_kind(tp);
 
 	/* implement maximum rectangle (needed for at least TosWin2) */
 	w->max = max ? *max : root_window->wa;
@@ -765,8 +774,6 @@ create_window(
 
 	w->x_shadow = 2;
 	w->y_shadow = 2;
-
-//	w->vdi_handle = C.vh;
 
 	(*client->xmwt->new_color_theme)(client->wtheme_handle, &w->ontop_cols, &w->untop_cols);
 	w->colours = w->ontop_cols;
@@ -1209,17 +1216,20 @@ draw_window(enum locks lock, struct xa_window *wind, const RECT *clip)
 		{
 			widg = get_widget(wind, f);
 
-// 			if (f == XAW_TOOLBAR && wind != root_window && !(wind->dial & created_for_SLIST))
-// 				display("toolbar statusmask %x, properties %x, draw %lx",
-// 					widg->m.statusmask, widg->m.properties, widg->m.r.draw);
+//  			if (f == XAW_TOOLBAR && wind != root_window && !(wind->dial & created_for_SLIST))
+//  				display("toolbar statusmask %x, properties %x, draw %lx",
+//  					widg->m.statusmask, widg->m.properties, widg->m.r.draw);
 
 			
 			if ( (wind != root_window && f == XAW_TOOLBAR) || (widg->m.properties & WIP_NOTEXT) ||
 			    (f == XAW_MENU && wind == root_window))
 				continue;
 
-			if (!(status & widg->m.statusmask) && wdg_is_inst(widg)) //widg->m.r.draw && (widg->m.properties & WIP_INSTALLED))
+			if (!(status & widg->m.statusmask) && wdg_is_inst(widg))
 			{
+// 				if (f == XAW_TOOLBAR)
+// 					display("wdg_is_inst return %s", wdg_is_inst(widg) ? "true":"false");
+	
 				DIAG((D_wind, wind->owner, "draw_window %d: display widget %d (func=%lx)",
 					wind->handle, f, widg->m.r.draw));
 				
@@ -2028,13 +2038,14 @@ Xpolate(RECT *r, RECT *o, RECT *i)
 }
 
 RECT
-calc_window(enum locks lock, struct xa_client *client, int request, ulong tp, WINDOW_TYPE dial, int thinframe, bool thinwork, RECT r)
+calc_window(enum locks lock, struct xa_client *client, int request, XA_WIND_ATTR tp, WINDOW_TYPE dial, int thinframe, bool thinwork, RECT r)
 {
 	struct xa_window *w_temp;
 	RECT o;
 
 	DIAG((D_wind,client,"calc %s from %d/%d,%d/%d", request ? "work" : "border", r));
 
+	tp = fix_wind_kind(tp);
 	dial |= created_for_CALC;
 
 	w_temp = S.calc_windows.first;
