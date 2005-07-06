@@ -548,7 +548,7 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 		return false;
 	}
 
-	Sema_Up(clients);
+// 	Sema_Up(clients);
 
 	
 	/* Moving the mouse into the menu bar is outside
@@ -608,7 +608,7 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 			client = NEXT_CLIENT(client);
 		}
 	}
-	Sema_Dn(clients);
+// 	Sema_Dn(clients);
 
 	return false;
 }

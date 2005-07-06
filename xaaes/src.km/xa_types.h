@@ -936,14 +936,14 @@ enum xa_widgets
 	XAW_FULL,
 	XAW_INFO,
 	XAW_RESIZE,
-	XAW_UPLN,			/* 7 */
-	XAW_DNLN,			/* 8 */
+	XAW_UPLN,			/* 6 */
+	XAW_DNLN,			/* 7 */
 	XAW_VSLIDE,
-	XAW_LFLN,			/* 10 */
-	XAW_RTLN,			/* 11 */
+	XAW_LFLN,			/* 9 */
+	XAW_RTLN,			/* 10 */
 	XAW_HSLIDE,
 	XAW_ICONIFY,
-	XAW_HIDE,			/* 14 */
+	XAW_HIDE,			/* 13 */
  
  /*
   * The widget types above this comment MUST be context indipendant.
@@ -952,8 +952,8 @@ enum xa_widgets
   * Furthermore, remember to change XA_MAX_CF_WIDGETS below if you
   * put insert a new context dependant widget before XAW_TOOLBAR!
  */
-	XAW_TOOLBAR,			/* 15 Extended XaAES widget */
-	XAW_MENU,			/* 26 Extended XaAES widget, must be drawn last. */
+	XAW_TOOLBAR,			/* 14 Extended XaAES widget */
+	XAW_MENU,			/* 15 Extended XaAES widget, must be drawn last. */
 	
 	XAW_MOVER,			/* Not actually used like the others */
 	XAW_UPPAGE,
