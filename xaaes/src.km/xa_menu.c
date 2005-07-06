@@ -55,7 +55,7 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 	XA_TREE *menu = client->std_menu;
 	OBJECT *mnu = (OBJECT*)pb->addrin[0];
 	struct xa_client *top_owner;
-	//bool d = (!strnicmp(client->proc_name, "thing", 5)) ? true : false;
+// 	bool d = (!strnicmp(client->proc_name, "thing", 5)) ? true : false;
 
 	CONTROL(1,1,1)
 
@@ -65,7 +65,7 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	DIAG((D_menu, NULL, "menu_bar for %s, %lx", c_owner(client), mnu));
 	
-	//if (d) display("menu_bar mode %d for %s, %lx %lx(%lx (%lx(%lx))", pb->intin[0], client->name, mnu, menu, menu->tree, menu_bar, menu_bar->tree);
+// 	if (d) display("menu_bar mode %d for %s, %lx %lx(%lx (%lx(%lx))", pb->intin[0], client->name, mnu, menu, menu->tree, menu_bar, menu_bar->tree);
 
 	switch (pb->intin[0])
 	{
@@ -125,7 +125,7 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 			{
 				top_owner = get_app_infront();
 				wt_menu_area(mwt);
-				if (menu || client == top_owner || !top_owner->std_menu)
+				if (menu && (client == top_owner || !top_owner->std_menu))
 					swap_menu(lock|winlist, client, NULL, SWAPM_TOPW);
 				else
 				{
