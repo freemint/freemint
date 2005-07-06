@@ -58,22 +58,23 @@ static void rp_2_ap_row(struct xa_window *wind);
 #if GENERATE_DIAGS
 static char *t_widg[] =
 {
+	"XAW_BORDER",			/* Extended XaAES widget, used for border sizing. */
 	"XAW_TITLE",
 	"XAW_CLOSE",
 	"XAW_FULL",
 	"XAW_INFO",
-	"XAW_RESIZE",
+	"XAW_RESIZE",			/* 5 */
 	"XAW_UPLN",			/* 6 */
 	"XAW_DNLN",			/* 7 */
 	"XAW_VSLIDE",
-	"XAW_LFLN",			/* 11 */
-	"XAW_RTLN",			/* 12 */
+	"XAW_LFLN",			/* 9 */
+	"XAW_RTLN",			/* 10 */
 	"XAW_HSLIDE",
 	"XAW_ICONIFY",
-	"XAW_HIDE",
-	"XAW_TOOLBAR",			/* Extended XaAES widget */
-	"XAW_BORDER",			/* Extended XaAES widget, used for border sizing. */
-	"XAW_MENU"			/* Extended XaAES widget, must be drawn last. */
+	"XAW_HIDE",			/* 13 */
+	
+	"XAW_TOOLBAR",			/* 14 Extended XaAES widget */
+	"XAW_MENU",			/* 15 Extended XaAES widget, must be drawn last. */
 
 	"XAW_MOVER",			/* Not actually used like the others */
 	"XAW_UPPAGE",
@@ -2079,7 +2080,7 @@ get_first_row(struct xa_widget_row *row, short lmask, short lvalid, bool backwar
 #endif
 	
 static void
-reloc_widget_row(struct xa_widget_row *row)
+reloc_widgets_in_row(struct xa_widget_row *row)
 {
 	struct xa_widget *widg = row->start;
 	short lxy, rxy;
@@ -2323,6 +2324,7 @@ position_widget(struct xa_window *wind, struct xa_widget *widg)
 		short diff;
 		short orient = rows->rel & XAR_VERT;
 		short placement = rows->rel & XAR_PM;
+// 		bool d = (!strnicmp(wind->owner->proc_name, "ergo_hlp", 8) && !(wind->dial & created_for_CALC));
 
 		/*
 		 * See if this widget is already in this row
@@ -2332,6 +2334,8 @@ position_widget(struct xa_window *wind, struct xa_widget *widg)
 
 		if (nxt_w && (nxt_w != widg))
 		{
+// 			if (d) display("adding %lx to rownr %d", widg->m.r.tp, rows->rownr);
+
 			/*
 			 * Widget not in row, link it in
 			 */
@@ -2349,6 +2353,7 @@ position_widget(struct xa_window *wind, struct xa_widget *widg)
 		}
 		else if (!nxt_w)
 		{
+// 			if (d) display("row %d, tp = %lx", rows->rownr, widg->m.r.tp);
 			/*
 			 * This is the first widget in this row, and thus we also init its Y
 			 */
@@ -2381,7 +2386,6 @@ position_widget(struct xa_window *wind, struct xa_widget *widg)
 							rows->rxy = nxt_r->r.x;
 						break;
 					}
-					
 					default:;
 				}
 			}
@@ -2449,13 +2453,13 @@ position_widget(struct xa_window *wind, struct xa_widget *widg)
 						while ((nxt_r = get_next_row(nxt_r, (XAR_VERT|XAR_PM), XAR_START)))
 						{
 							nxt_r->r.y += diff;
-							reloc_widget_row(nxt_r);
+							reloc_widgets_in_row(nxt_r);
 						}
 						nxt_r = rows;
 						while ((nxt_r = get_next_row(nxt_r, XAR_VERT, XAR_VERT)))
 						{
 							nxt_r->r.y += diff;
-							reloc_widget_row(nxt_r);
+							reloc_widgets_in_row(nxt_r);
 						}
 						break;
 					}
@@ -2466,13 +2470,13 @@ position_widget(struct xa_window *wind, struct xa_widget *widg)
 						while ((nxt_r = get_next_row(nxt_r, (XAR_VERT | XAR_PM), XAR_END)))
 						{
 							nxt_r->r.y += diff;
-							reloc_widget_row(nxt_r);
+							reloc_widgets_in_row(nxt_r);
 						}
 						nxt_r = rows;
 						while ((nxt_r = get_next_row(nxt_r, XAR_VERT, XAR_VERT)))
 						{
 							nxt_r->rxy += diff;
-							reloc_widget_row(nxt_r);
+							reloc_widgets_in_row(nxt_r);
 						}	
 						break;
 					}
@@ -2480,6 +2484,8 @@ position_widget(struct xa_window *wind, struct xa_widget *widg)
 			}
 			else
 				widg->r.h = rows->r.h;
+			
+// 			if (d) display("rownr %d, %d/%d/%d/%d", rows->rownr, rows->r);
 		}
 		else
 		{
@@ -2503,13 +2509,13 @@ position_widget(struct xa_window *wind, struct xa_widget *widg)
 						while ((nxt_r = get_next_row(nxt_r, XAR_VERT, 0)))
 						{
 							nxt_r->r.x += diff;
-							reloc_widget_row(nxt_r);
+							reloc_widgets_in_row(nxt_r);
 						}
 						nxt_r = rows;
 						while ((nxt_r = get_next_row(nxt_r, (XAR_VERT | XAR_PM), (XAR_VERT | XAR_START))))
 						{
 							nxt_r->r.x += diff;
-							reloc_widget_row(nxt_r);
+							reloc_widgets_in_row(nxt_r);
 						}
 						break;
 					}
@@ -2520,13 +2526,13 @@ position_widget(struct xa_window *wind, struct xa_widget *widg)
 						while ((nxt_r = get_next_row(nxt_r, (XAR_VERT | XAR_PM), (XAR_VERT | XAR_END))))
 						{
 							nxt_r->r.x += diff;
-							reloc_widget_row(nxt_r);
+							reloc_widgets_in_row(nxt_r);
 						}
 						nxt_r = rows;
 						while ((nxt_r = get_next_row(nxt_r, (XAR_VERT), 0)))
 						{
 							nxt_r->rxy += diff;
-							reloc_widget_row(nxt_r);
+							reloc_widgets_in_row(nxt_r);
 						}
 						break;
 					}
@@ -2535,7 +2541,7 @@ position_widget(struct xa_window *wind, struct xa_widget *widg)
 			else
 				widg->r.w = rows->r.w;
 		}
-		reloc_widget_row(rows);
+		reloc_widgets_in_row(rows);
 	}
 }
 static XA_WIDGET *
@@ -2764,7 +2770,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 					utp |= this_tp;
 					dm = def_methods[xaw_idx + 1];
 					dm.r = *(*rw);
-					dm.properties = WIP_ACTIVE|WIP_INSTALLED;
+					dm.properties = dm.r.draw ? WIP_ACTIVE|WIP_INSTALLED : 0;
 					widg = make_widget(wind, &dm, NULL);
 
 					switch (xaw_idx)

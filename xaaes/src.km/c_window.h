@@ -58,6 +58,8 @@ struct xa_window *pull_wind_to_top(enum locks lock, struct xa_window *w);
 struct xa_window *top_w(enum locks lock);
 struct xa_window *root_w(enum locks lock);
 
+XA_WIND_ATTR fix_wind_kind(XA_WIND_ATTR tp);
+
 bool	close_window(enum locks lock, struct xa_window *wind);
 int	open_window(enum locks lock, struct xa_window *w, RECT r);
 void	send_wind_to_bottom(enum locks lock, struct xa_window *w);
@@ -79,7 +81,7 @@ RECT	fa2rwa(struct xa_window *wind, const RECT *in);
 RECT	wa2fa(struct xa_window *wind, const RECT *in);
 RECT	fa2wa(struct xa_window *wind, const RECT *in);
 RECT	calc_window(enum locks lock, struct xa_client *client, int request,
-		    unsigned long tp, WINDOW_TYPE dial, int thinframe, bool thinwork,
+		    XA_WIND_ATTR tp, WINDOW_TYPE dial, int thinframe, bool thinwork,
 		    RECT r);
 
 void	top_window(enum locks lock, bool snd_untopped, bool snd_ontop, struct xa_window *w, struct xa_window *oldtop);
