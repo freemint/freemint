@@ -373,7 +373,10 @@ check_queued_events(struct xa_client *client)
 	bool multi = wevents & XAWAIT_MULTI ? true : false;
 	AESPB *pb;
 	short *out;
+// 	bool d = (strnicmp(client->proc_name, "sprite", 6)) ? false : true;
 	
+// 	if (d) display("wevent %x", wevents);
+
 	if (!(pb = client->waiting_pb))
 	{
 		DIAG((D_appl, NULL, "WARNING: Invalid target message buffer for %s", client->name));
@@ -438,21 +441,8 @@ check_queued_events(struct xa_client *client)
 			else
 			{
 				*out++ = mbs.c;
-			#if 1
 				*out++ = mbs.x;
 				*out++ = mbs.y;
-			#else
-				if (!TAB_LIST_START)
-				{
-					*out++ = mbs.x;
-					*out++ = mbs.y;
-				}
-				else
-				{
-					*out++ = 0;
-					*out++ = 0;
-				}
-			#endif
 				*out++ = mbs.b;
 				*out++ = mbs.ks;
 				goto got_evnt;
@@ -475,7 +465,7 @@ check_queued_events(struct xa_client *client)
 			mbs.ks = keys.raw.conin.state;
 
 			if (multi)
-				events |= wevents & (MU_NORM_KEYBD|MU_KEYBD);
+				events |= (wevents & (MU_NORM_KEYBD|MU_KEYBD));
 			else
 			{
 				*out = key;
@@ -502,17 +492,16 @@ check_queued_events(struct xa_client *client)
 			}
 		}
 	}
-	if (wevents & MU_TIMER)
+	if ((wevents & MU_TIMER) && (client->status & CS_MUTIMER_PENDING) && !client->timeout)
 	{
-		if (!client->timeout)
+// 		if (d) display("mu_timer %lx (val=%ld", client->timeout, client->timer_val);
+		cancel_mutimeout(client);
+		if (multi)
+			events |= MU_TIMER;
+		else
 		{
-			if (multi)
-				events |= MU_TIMER;
-			else
-			{
-				*out = 1;
-				goto got_evnt;
-			}
+			*out = 1;
+			goto got_evnt;
 		}
 	}
 	/* AES 4.09 */
@@ -545,6 +534,7 @@ check_queued_events(struct xa_client *client)
 	}
 	if (events)
 	{
+// 		if (d) display("events %x - done", events);
 
 #if GENERATE_DIAGS
 		{
@@ -558,28 +548,17 @@ check_queued_events(struct xa_client *client)
 				events, mbs.x, mbs.y, mbs.b, mbs.ks, key, mbs.c));
 		}
 #endif
+#if 0
 		if (client->timeout)
 		{
 			canceltimeout(client->timeout);
 			client->timeout = NULL;
 		}
+#endif
 
 		*out++ = events;
-	#if 1
 		*out++ = mbs.x;
 		*out++ = mbs.y;
-	#else
-		if (!TAB_LIST_START)
-		{
-			*out++ = mbs.x;
-			*out++ = mbs.y;
-		}
-		else
-		{
-			*out++ = 0;
-			*out++ = 0;
-		}
-	#endif
 		*out++ = mbs.b;
 		*out++ = mbs.ks;
 		*out++ = key;
@@ -597,138 +576,27 @@ got_evnt:
 static void
 wakeme_timeout(struct proc *p, struct xa_client *client)
 {
+// 	if (!strnicmp(client->proc_name, "sprite", 6))
+// 		display("wake");
+
 	client->timeout = NULL;
 	
 	if (client->blocktype == XABT_SELECT)
 		wakeselect(client->p);
 	else if (client->blocktype == XABT_SLEEP)
 		wake(IO_Q, (long)client);
-
 }
-#if 0
-unsigned long
-XA_xevnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
-{
-	struct xevnt_mask *in_ev  = (struct xevnt_mask *)pb->addrin[0];
-	struct xevnt_mask *out_ev = (struct xevnt_mask *)pb->addrin[1];
-	struct xevnts *in  = (struct xevnts *)pb->addrin[2];
-	struct xevnts *out = (struct xevnts *)pb->addrin[3];
-	short mode = pb->intin[0];
-
-	if (in && in_ev && mode >= 0 && mode <= 1)
-	{
-		long ev0 = in_ev->ev_0;
-
-		pb->intout[0] = 1;
-
-		/* Copy data from the structures we need access to into safe space */		
-		if (ev0 & XMU_BUTTON)
-			client->xev_button = *in->e_but;
-		if (ev0 & XMU_FSELECT)
-			client->xev_fselect = *in->e_fselect;
-		if (ev0 & XMU_PMSG)
-			client->xev_pmsg = *in->e_pmsg;
-
-		client->em.flags = 0;
-		if (ev0 & XMU_M1)
-		{
-			const RECT *r = (const RECT *)&in->e_mu1->x;
-
-			client->em.m1 = *r;
-			client->em.flags |= (in->e_mu1->flag & 1) | MU_M1;
-		}
-		if (ev0 & XMU_MX)
-		{
-			/* XXX fix this */
-			client->em.flags |= MU_MX;
-		}
-		if (ev0 & XMU_M2)
-		{
-			const RECT *r = (const RECT *)&in->e_mu2->x;
-
-			client->em.m2 = *r;
-			client->em.flags |= ((in->e_mu2->flag & 1) << 1) | MU_M2;
-		}
-
-		if (ev0 & XMU_TIMER)
-		{
-			long timeout;
-			
-			if ((ev0 & XMU_FSELECT) && client->xev_fselect.timeout > 0)
-			{
-				timeout = client->xev_fselect.timeout;
-				if (timeout > in->e_timer->delta)
-				{
-					timeout = in->e_timer->delta;
-					client->fselect_timeout = false;
-				}
-				else
-					client->fselect_timeout = true;
-			}
-			else
-			{
-				timeout = in->e_timer->delta;
-				client->fselect_timeout = false;
-			}
-			/* The Intel ligent format */
-			client->timer_val = timeout;
-			DIAG((D_i,client,"Timer val: %ld(%ld)",
-				client->timer_val, in->e_timer->delta));
-			if (client->timer_val)
-			{
-				client->timeout = addtimeout(client->timer_val, wakeme_timeout);
-				if (client->timeout)
-					client->timeout->arg = (long)client;
-			}
-			else
-			{
-				/* Is this the cause of loosing the key's at regular intervals? */
-				DIAG((D_i,client, "Done timer for %d", client->p->pid));
-
-				/* If MU_TIMER and no timer (which means, return immediately),
-				 * we yield()
-				 */
-				yield();
-			}
-		}
-		else if (ev0 & XMU_FSELECT)
-		{
-			if ((client->timer_val = client->xev_fselect.timeout))
-			{
-				client->fselect_timeout = true;
-			}
-			else
-			{
-				client->fselect_timeout = false;
-			}
-		}
-		
-		client->out_xevnts = out;
-		client->i_xevmask  = *in_ev;
-		client->o_xevmask  = out_ev;
-		bzero((void *)&client->c_xevmask, sizeof(struct xevnt_mask));
-		
-		if (mode == 0)
-		{
-			//if (!(check_cevents(client) || check_queued_events(client)))
-				Block(client, 1);
-		}
-	}
-	else
-	{
-		client->out_xevnts = NULL;
-		pb->intout[0] = 0;
-	}
-
-	return XAC_DONE;	
-}
-#endif
 
 void
 cancel_mutimeout(struct xa_client *client)
 {
+	client->status &= ~CS_MUTIMER_PENDING;
+	
 	if (client->timeout)
 	{
+// 		if (!strnicmp(client->proc_name, "sprite", 6))
+// 			display("cancel mutimeout");
+
 		canceltimeout(client->timeout);
 		client->timeout = NULL;
 		client->timer_val = 0;
@@ -792,30 +660,43 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	if (events & MU_TIMER)
 	{
-		cancel_mutimeout(client);
+// 		cancel_mutimeout(client);
 		
-		/* The Intel ligent format */
-		client->timer_val = ((long)pb->intin[15] << 16) | pb->intin[14];
-		DIAG((D_i,client,"Timer val: %ld(hi=%d,lo=%d)",
-			client->timer_val, pb->intin[15], pb->intin[14]));
-		if (client->timer_val)
+		if (!(client->status & CS_MUTIMER_PENDING))
 		{
-			client->timeout = addtimeout(client->timer_val, wakeme_timeout);
-			if (client->timeout)
-				client->timeout->arg = (long)client;
-		}
-		else
-		{
-			/* Is this the cause of loosing the key's at regular intervals? */
-			DIAG((D_i,client, "Done timer for %d", client->p->pid));
+			/* The Intel ligent format */
+			client->timer_val = ((long)pb->intin[15] << 16) | pb->intin[14];
+// 			if (!strnicmp(client->proc_name, "sprite", 6))
+// 				display("Timer val: %ld(hi=%d,lo=%d)",
+// 					client->timer_val, pb->intin[15], pb->intin[14]);
+			
+			DIAG((D_i,client,"Timer val: %ld(hi=%d,lo=%d)",
+				client->timer_val, pb->intin[15], pb->intin[14]));
+			if (client->timer_val)
+			{
+				client->timeout = addtimeout(client->timer_val, wakeme_timeout);
+				if (client->timeout)
+				{
+					client->status |= CS_MUTIMER_PENDING;
+					client->timeout->arg = (long)client;
+				}
+			}
+			else
+			{
+				/* Is this the cause of loosing the key's at regular intervals? */
+				DIAG((D_i,client, "Done timer for %d", client->p->pid));
 
-			/* If MU_TIMER and no timer (which means, return immediately),
-			 * we yield()
-			 */
-			yield();
+				/* If MU_TIMER and no timer (which means, return immediately),
+				 * we yield()
+				 */
+				yield();
+				client->status |= CS_MUTIMER_PENDING;
+// 				cancel_mutimeout(client);
+			}
 		}
 	}
-	
+	else
+		cancel_mutimeout(client);
 
 	client->waiting_for = events | XAWAIT_MULTI;
 	client->waiting_pb = pb;
@@ -953,23 +834,32 @@ XA_evnt_timer(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	CONTROL(2,1,0)
 
-	cancel_mutimeout(client);
+// 	cancel_mutimeout(client);
 
-	if (!(client->timer_val = ((long)pb->intin[1] << 16) | pb->intin[0]))
+	if (!(client->status & CS_MUTIMER_PENDING))
 	{
-		yield();
+		if (!(client->timer_val = ((long)pb->intin[1] << 16) | pb->intin[0]))
+		{
+			yield();
+		}
+		else
+		{
+			/* Flag the app as waiting for messages */
+			client->waiting_pb = pb;
+			/* Store a pointer to the AESPB to fill when the event occurs */
+			client->waiting_for = MU_TIMER;
+			client->timeout = addtimeout(client->timer_val, wakeme_timeout);
+			if (client->timeout)
+			{
+				client->status |= CS_MUTIMER_PENDING;
+				client->timeout->arg = (long)client;
+			}
+
+			Block(client, 1);
+		}
 	}
 	else
-	{
-		/* Flag the app as waiting for messages */
-		client->waiting_pb = pb;
-		/* Store a pointer to the AESPB to fill when the event occurs */
-		client->waiting_for = MU_TIMER;
-		client->timeout = addtimeout(client->timer_val, wakeme_timeout);
-		if (client->timeout)
-			client->timeout->arg = (long)client;
+		cancel_mutimeout(client);
 
-		Block(client, 1);
-	}
 	return XAC_DONE;
 }
