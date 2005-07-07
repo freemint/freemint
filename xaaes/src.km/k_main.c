@@ -291,7 +291,7 @@ Block(struct xa_client *client, int which)
 		if (client->usr_evnt & 1)
 		{
 			cancel_evnt_multi(client, 1);
-			cancel_mutimeout(client);
+// 			cancel_mutimeout(client);
 		}
 		return;
 	}
@@ -301,7 +301,7 @@ Block(struct xa_client *client, int which)
 	 */
 	if (check_queued_events(client))
 	{
-		cancel_mutimeout(client);
+// 		cancel_mutimeout(client);
 		return;
 	}
 
@@ -351,21 +351,21 @@ Block(struct xa_client *client, int which)
 			if (client->usr_evnt & 1)
 			{
 				cancel_evnt_multi(client, 1);
-				cancel_mutimeout(client);
+// 				cancel_mutimeout(client);
 			}
 			return;
 		}
 
 		if (check_queued_events(client))
 		{
-			cancel_mutimeout(client);
+// 			cancel_mutimeout(client);
 			return;
 		}
 	}
 	if (client->usr_evnt & 1)
 	{
 		cancel_evnt_multi(client, 1);
-		cancel_mutimeout(client);
+// 		cancel_mutimeout(client);
 	}
 }
 
