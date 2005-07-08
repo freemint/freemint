@@ -492,10 +492,9 @@ check_queued_events(struct xa_client *client)
 			}
 		}
 	}
-	if ((wevents & MU_TIMER) && (client->status & CS_MUTIMER_PENDING) && !client->timeout)
+	if ((wevents & MU_TIMER) && !client->timeout)
 	{
 // 		if (d) display("mu_timer %lx (val=%ld", client->timeout, client->timer_val);
-		cancel_mutimeout(client);
 		if (multi)
 			events |= MU_TIMER;
 		else
@@ -534,6 +533,7 @@ check_queued_events(struct xa_client *client)
 	}
 	if (events)
 	{
+		cancel_mutimeout(client);
 // 		if (d) display("events %x - done", events);
 
 #if GENERATE_DIAGS
@@ -590,8 +590,6 @@ wakeme_timeout(struct proc *p, struct xa_client *client)
 void
 cancel_mutimeout(struct xa_client *client)
 {
-	client->status &= ~CS_MUTIMER_PENDING;
-	
 	if (client->timeout)
 	{
 // 		if (!strnicmp(client->proc_name, "sprite", 6))
@@ -660,43 +658,35 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	if (events & MU_TIMER)
 	{
-// 		cancel_mutimeout(client);
+//  		cancel_mutimeout(client);
 		
-		if (!(client->status & CS_MUTIMER_PENDING))
+		/* The Intel ligent format */
+		client->timer_val = ((long)pb->intin[15] << 16) | pb->intin[14];
+//		if (!strnicmp(client->proc_name, "sprite", 6))
+//			display("Timer val: %ld(hi=%d,lo=%d)",
+//				client->timer_val, pb->intin[15], pb->intin[14]);
+		
+		DIAG((D_i,client,"Timer val: %ld(hi=%d,lo=%d)",
+			client->timer_val, pb->intin[15], pb->intin[14]));
+		if (client->timer_val)
 		{
-			/* The Intel ligent format */
-			client->timer_val = ((long)pb->intin[15] << 16) | pb->intin[14];
-// 			if (!strnicmp(client->proc_name, "sprite", 6))
-// 				display("Timer val: %ld(hi=%d,lo=%d)",
-// 					client->timer_val, pb->intin[15], pb->intin[14]);
-			
-			DIAG((D_i,client,"Timer val: %ld(hi=%d,lo=%d)",
-				client->timer_val, pb->intin[15], pb->intin[14]));
-			if (client->timer_val)
+			client->timeout = addtimeout(client->timer_val, wakeme_timeout);
+			if (client->timeout)
 			{
-				client->timeout = addtimeout(client->timer_val, wakeme_timeout);
-				if (client->timeout)
-				{
-					client->status |= CS_MUTIMER_PENDING;
-					client->timeout->arg = (long)client;
-				}
-			}
-			else
-			{
-				/* Is this the cause of loosing the key's at regular intervals? */
-				DIAG((D_i,client, "Done timer for %d", client->p->pid));
-
-				/* If MU_TIMER and no timer (which means, return immediately),
-				 * we yield()
-				 */
-				yield();
-				client->status |= CS_MUTIMER_PENDING;
-// 				cancel_mutimeout(client);
+				client->timeout->arg = (long)client;
 			}
 		}
+		else
+		{
+			/* Is this the cause of loosing the key's at regular intervals? */
+			DIAG((D_i,client, "Done timer for %d", client->p->pid));
+
+			/* If MU_TIMER and no timer (which means, return immediately),
+			 * we yield()
+			 */
+			yield();
+		}
 	}
-	else
-		cancel_mutimeout(client);
 
 	client->waiting_for = events | XAWAIT_MULTI;
 	client->waiting_pb = pb;
@@ -834,32 +824,25 @@ XA_evnt_timer(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	CONTROL(2,1,0)
 
-// 	cancel_mutimeout(client);
+//  	cancel_mutimeout(client);
 
-	if (!(client->status & CS_MUTIMER_PENDING))
+	if (!(client->timer_val = ((long)pb->intin[1] << 16) | pb->intin[0]))
 	{
-		if (!(client->timer_val = ((long)pb->intin[1] << 16) | pb->intin[0]))
-		{
-			yield();
-		}
-		else
-		{
-			/* Flag the app as waiting for messages */
-			client->waiting_pb = pb;
-			/* Store a pointer to the AESPB to fill when the event occurs */
-			client->waiting_for = MU_TIMER;
-			client->timeout = addtimeout(client->timer_val, wakeme_timeout);
-			if (client->timeout)
-			{
-				client->status |= CS_MUTIMER_PENDING;
-				client->timeout->arg = (long)client;
-			}
-
-			Block(client, 1);
-		}
+		yield();
 	}
 	else
-		cancel_mutimeout(client);
+	{
+		/* Flag the app as waiting for messages */
+		client->waiting_pb = pb;
+		/* Store a pointer to the AESPB to fill when the event occurs */
+		client->waiting_for = MU_TIMER;
+		client->timeout = addtimeout(client->timer_val, wakeme_timeout);
+		if (client->timeout)
+		{
+			client->timeout->arg = (long)client;
+		}
+		Block(client, 1);
+	}
 
 	return XAC_DONE;
 }
