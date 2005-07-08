@@ -1872,8 +1872,6 @@ struct xa_client
 #define CS_EXITING		0x00000200
 #define CS_BLOCK_CE		0x00000400
 
-#define CS_MUTIMER_PENDING	0x00000800
-
 	long status;
 
 	enum waiting_for waiting_for;	/* What types of event(s) the client is waiting for */
