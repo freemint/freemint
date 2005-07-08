@@ -262,7 +262,8 @@ rp2ap_obtree(struct xa_window *wind, struct xa_widget *widg, RECT *r)
 
 	if (widg->m.r.xaw_idx == XAW_TOOLBAR || widg->m.r.xaw_idx == XAW_MENU)
 	{
-		widg->r.w = wind->wa.w;
+ 		if (!(widg->m.properties & WIP_NOTEXT))
+ 			widg->r.w = wind->wa.w;
 		if ((wt = widg->stuff))
 		{
 			obtree = wt->tree;
@@ -270,12 +271,12 @@ rp2ap_obtree(struct xa_window *wind, struct xa_widget *widg, RECT *r)
 			{
 				obtree->ob_x = r->x;
 				obtree->ob_y = r->y;
-				obtree->ob_width = widg->r.w;
+ 				obtree->ob_width = widg->r.w;
 				if (!wt->zen)
 				{
 					obtree->ob_x += wt->ox;
 					obtree->ob_y += wt->oy;
-					obtree->ob_width -= wt->ox;
+ 					obtree->ob_width -= wt->ox;
 				}
 			}
 		}

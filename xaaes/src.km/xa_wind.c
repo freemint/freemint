@@ -832,7 +832,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			if (w->opts & XAWO_WCOWORK)
 				in = rwa2fa(w, (const RECT *)(pb->intin + 2));
 			else
-				in = *((const RECT *)(pb->intin+2));
+				in = *((const RECT *)(pb->intin + 2));
 			
 			iconify_window(lock, w, &in);
 		}
@@ -854,7 +854,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				if (w->opts & XAWO_WCOWORK)
 					in = rwa2fa(w, (const RECT *)(pb->intin + 2));
 				else
-					in = *((const RECT *)(pb->intin+2));
+					in = *((const RECT *)(pb->intin + 2));
 			}
 			
 			uniconify_window(lock, w, &in);
