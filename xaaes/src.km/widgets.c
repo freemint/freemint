@@ -1855,10 +1855,10 @@ calc_work_area(struct xa_window *wind)
 		rp_2_ap(wind, widg, &widg->ar);
 
 		wind->rwa.h = (wind->wa.h - widg->ar.h) > 0 ? wind->wa.h - widg->ar.h : 0;
-		wind->rwa.w = (wind->wa.w - widg->ar.w) > 0 ? wind->wa.w - widg->ar.w : 0;
+ 		wind->rwa.w = wind->wa.w; //(wind->wa.w - widg->ar.w) > 0 ? wind->wa.w - widg->ar.w : 0;
 		if ((wind->rwa.w | wind->rwa.h))
 		{
-			wind->rwa.x = wind->wa.x + widg->ar.w;
+ 			wind->rwa.x = wind->wa.x; // + widg->ar.w;
 			wind->rwa.y = wind->wa.y + widg->ar.h;
 // 			if (!(wind->dial & (created_for_CALC|created_for_SLIST))) display("wa: %d/%d/%d/%d - rwa: %d/%d/%d/%d", wind->wa, wind->rwa);
 		}
