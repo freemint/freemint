@@ -333,10 +333,10 @@ wdialog_message(enum locks lock, struct xa_client *client, struct wdlg_evnt_parm
 
 			if (wind->opts & XAWO_WCOWORK)
 			{
-				mr = rwa2fa(wind, (RECT *)(&msg + 4));
+				mr = rwa2fa(wind, (RECT *)(msg + 4));
 			}
 			else
-				mr = *(RECT *)(&msg + 4);
+				mr = *(RECT *)(msg + 4);
 			
 			r.x = wind->r.x;
 			r.y = wind->r.y;
@@ -368,10 +368,10 @@ wdialog_message(enum locks lock, struct xa_client *client, struct wdlg_evnt_parm
 			}
 			if (wind->opts & XAWO_WCOWORK)
 			{
-				mr = rwa2fa(wind, (RECT *)(&msg + 4));
+				mr = rwa2fa(wind, (RECT *)(msg + 4));
 			}
 			else
-				mr = *(RECT *)(&msg + 4);
+				mr = *(RECT *)(msg + 4);
 	
 			r.x = mr.x, r.y = mr.y;			
 // 			r.x = msg[4], r.y = msg[5];
