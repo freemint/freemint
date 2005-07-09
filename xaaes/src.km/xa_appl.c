@@ -1050,7 +1050,7 @@ static short info_tab[][4] =
 #define AGI_WF_OPTS		0x0800	/* wind_set(handle, WF_OPTS, wopt0, wopt1, wopt2) available */
 #define AGI_WF_MENU		0x1000	/* wind_set(handle, WF_MENU) exists */
 #define AGI_WF_WORKXYWH		0x2000	/* wind_get/set(handle, WF_WORKXYWH, .. ) available (and bugfixed) */
-#define AGI_WF_CALC		0x4000	/* wind_get(handle, WF_CALCx2x, ... ) available - theme changes supported*/
+#define AGI_WF_CALC		0x4000	/* wind_get(handle, WF_CALCx2x, ... ) and WO0_WCOWORK available - theme changes supported*/
 
 #define AGI_WF_WIDGETS		0x0001
 
@@ -1180,6 +1180,13 @@ static short info_tab[][4] =
 		DEV_STATUS,	/* Status */ 
 		ARCH_TARGET	/* Target */
 	},
+	/* 19 <-- 97 AES_WOPTS */
+	{
+		(XAWO_SUPPORTED >> 16),
+		(XAWO_SUPPORTED & 0xffff),
+		0,
+		0
+	},
 };
 
 #define XA_VERSION_INFO	18
@@ -1293,6 +1300,11 @@ XA_appl_getinfo(enum locks lock, struct xa_client *client, AESPB *pb)
 				}
 				n_intout = pb->control[N_INTOUT];
 				gi_type = XA_VERSION_INFO;
+				break;
+			}
+			case AES_WOPTS:
+			{
+				gi_type = 19;
 				break;
 			}
 			default:

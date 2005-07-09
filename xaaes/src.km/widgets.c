@@ -1858,22 +1858,15 @@ calc_work_area(struct xa_window *wind)
 
 		rp_2_ap(wind, widg, &widg->ar);
 
-		wind->rwa.h = (wind->wa.h - widg->ar.h) > 0 ? wind->wa.h - widg->ar.h : 0;
- 		wind->rwa.w = wind->wa.w; //(wind->wa.w - widg->ar.w) > 0 ? wind->wa.w - widg->ar.w : 0;
-		if ((wind->rwa.w | wind->rwa.h))
+		wind->rwa.h = wind->wa.h - widg->ar.h;
+ 		wind->rwa.w = wind->wa.w;
+		if (wind->rwa.w > 0 && wind->rwa.h > 0)
 		{
- 			wind->rwa.x = wind->wa.x; // + widg->ar.w;
+ 			wind->rwa.x = wind->wa.x;
 			wind->rwa.y = wind->wa.y + widg->ar.h;
-			if (widg->stuff)
-			{
-				((XA_TREE *)widg->stuff)->tree->ob_width = wind->wa.w;
-			}
-// 			if (!(wind->dial & (created_for_CALC|created_for_SLIST))) display("wa: %d/%d/%d/%d - rwa: %d/%d/%d/%d", wind->wa, wind->rwa);
 		}
-// 		else
-// 		{
-// 			if (!(wind->dial & (created_for_CALC|created_for_SLIST))) display("nothing left of rwa");
-// 		}
+		else
+			wind->rwa.w = wind->rwa.h = 0;
 	}
 	else
 		wind->rwa = wind->wa;

@@ -30,13 +30,6 @@
 #include "xa_types.h"
 #include "xa_vdi.h"
 
-#if 0
-struct xa_fnt_info;
-struct xa_wtxt_inf;
-struct xa_vdi_api;
-struct xa_vdi_settings;
-#endif
-
 struct xa_vdi_api * init_xavdi_module(void);
 
 #endif /* _xa_vdi_h */
