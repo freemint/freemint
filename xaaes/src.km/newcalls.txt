@@ -101,6 +101,7 @@ anything else.
   ap_gout2 = Minor version number (decimal)
   ap_gout3 = Development Status (Beta, alpha, etc.)
   ap_gout4 = Target platform (m68k, etc.)
+ 
  'ap_gout1' &     Together, these two contain the decimal representation of
  'ap_gout2'       the AES's version number. For XaAES v0.992, 'ap_out1'
                   contains 0 (0x0000) and 'ap_out2' contains 992 (0x3e0).
@@ -146,6 +147,21 @@ anything else.
 
                 Example string returned might be;
                 "0.992|Alpha|m68k|Dec 17 2004 22:58:52|gcc 2.95.3",0
+............................................................................
+ 
+ AES_WOPTS (97)
+
+ This mode will return a bitmask of available WF_OPTS settings. This bitmask
+ is identical to that use by the actual wind_set/get(WF_OPTS).
+ 
+ ap_gout1 = available window options 0 - see wind_set/get(WF_OPTS, wopt0)
+ ap_gout2 = available window options 1 - see wind_set/get(WF_OPTS, wopt1)
+ ap_gout3 = available window options 2 - see wind_set/get(WF_OPTS, wopt2)
+ ap_gout4 = reserved - always cleared
+
+ See wind_set/get() WF_OPTS mode for a detailed description of the bitmasks
+ returned.
+............................................................................
  
  Here are new appl_info() constants to add to your header file;
 
@@ -153,6 +169,12 @@ anything else.
  * AES_VERSION mode for appl_init()
  */
 #define AES_VERSION  96
+
+/*
+ * AES_WOPTS mode for appl_init() - Return supported Window OPTionS
+ * available via wind_set/get(WF_OPTS)
+ */
+#define AES_WOPTS 97
 
 /*
  * Target architecture definitions, returned by

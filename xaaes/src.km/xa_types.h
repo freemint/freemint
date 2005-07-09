@@ -1255,6 +1255,8 @@ typedef void DrawWinElement(struct xa_window *wind);
 #define XAWO_SENDREPOS	((long)WO0_SENDREPOS << 16)
 #define XAWO_WCOWORK	((long)WO0_WCOWORK << 16)
 
+#define XAWO_SUPPORTED	(XAWO_WHEEL|XAWO_FULLREDRAW|XAWO_NOBLITW|XAWO_NOBLITH|XAWO_SENDREPOS|XAWO_WCOWORK)
+
 enum window_status
 {
 	XAWS_OPEN	= 0x0001,

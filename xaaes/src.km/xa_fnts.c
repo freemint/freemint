@@ -774,13 +774,6 @@ update_slists(struct xa_fnts_info *fnts)
 		list_name->add(list_name, NULL, sort_names, &sc, false, 0, NORMREDRAW);
 		f = f->nxt_family;
 	}
-#if 0
-	if (list_name->top)
-	{
-		list_name->cur = list_name->top;
-		list_name->set(list_name, list_name->cur, SESET_SELECTED, 0, true);
-	}
-#endif
 
 	list_name->slider(list_name, true);
 	list_name->redraw(list_name, NULL);

@@ -33,64 +33,25 @@
 
 void init_objects(void);
 
-#if 0
-/* Clipping stuff */
-void	set_clip(const RECT *r);
-void	save_clip(RECT *s);
-void	restore_clip(RECT *s);
-void	clear_clip(void);
-
-void	wr_mode(short);
-void	l_color(short m);
-void	f_color(short m);
-void	t_color(short m);
-void	t_effect(short m);
-void	t_font(short p, short f);
-void	f_interior(short m);
-void	f_style(short m);
-
-void	text_extent(const char *t, struct xa_fnt_info *f, short *w, short *h);
-void	wtxt_output(struct xa_wtxt_inf *wtxti, char *txt, short state, const RECT *r, short xoff, short yoff);
-#endif
-
 bool d3_any(OBJECT *ob);
 bool d3_indicator(OBJECT *ob);
 bool d3_foreground(OBJECT *ob);
 bool d3_background(OBJECT *ob);
 bool d3_activator(OBJECT *ob);
-// void d3_pushbutton(struct xa_vdi_settings *v, short d, RECT *r, BFOBSPEC *col, short state, short thick, short mode);
 
 void	display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, short object, short parent_x, short parent_y, short which);
 short	draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, struct xa_vdi_settings *v, short item, short depth, short *xy);
-//void	redraw_object(enum locks lock, XA_TREE *wt, int );
 
 /* Internal utility routines */
 void shadow_object(struct xa_vdi_settings *v, short d, short state, RECT *r, short colour, short border_thick);
 void shadow_area(struct xa_vdi_settings *v, short d, short state, RECT *r, short colour, short x, short y);
 void draw_2d_box(struct xa_vdi_settings *v, short x, short y, short w, short h, short border_thick, short colour);
-//void g2d_box(int b, RECT *r, int colour);
 
 void write_menu_line(struct xa_vdi_settings *v, RECT *cl);
-// void write_selection(struct xa_settings *v, short d, RECT *r);
 long calc_back(const RECT *r, short planes);
 
 /* intermediate level draw functions & misc. */
 void adjust_size(short d, RECT *r);
-// void p_gbar(short d, const RECT *r);
-// void bar(short d,  short x, short y, short w, short h);
-// void p_bar(short d, short x, short y, short w, short h);	/* for perimeter = 1 */
-// void gbar(short d, const RECT *r);
-// void gbox(short d, const RECT *r);
-// void box(short d, short x, short y, short w, short h);
-// void line(short x, short y, short x1,short y1, short col);
-// void top_line(short d, const RECT *r, short col);
-// void bottom_line(short d, const RECT *r, short col);
-// void left_line(short d, const RECT *r, short col);
-// void right_line(short d, const RECT *r, short col);
-// void tl_hook(short d, const RECT *r, short col);
-// void br_hook(short d, const RECT *r, short col);
-// void chiseled_gbox(short d, const RECT *r);
-// void t_extent(const char *t, short *w, short *h);
 void r2pxy(short *p, short d, const RECT *r);
 void rtopxy(short *p, const RECT *r);
 void ri2pxy(short *p, short d, short x, short y, short w, short h);
@@ -98,14 +59,6 @@ void ritopxy(short *p, short x, short y, short w, short h);
 void form_save(short d, RECT r, void **area);
 void form_restore(short d, RECT r, void **area);
 void form_copy(const RECT *fr, const RECT *to);
-// const char *prop_clipped_name(const char *s, char *d, int w, short *ret_w, short *ret_h, short method);
-
-//int thickness(OBJECT *ob);
-//bool is_menu(OBJECT *tree);
-//void deselect(OBJECT *tree, short item);
-//char *object_type(OBJECT *tree, short t);
-//bool is_spec(OBJECT *tree, int item);
-// void write_disable(RECT *r, short colour);
 
 void enable_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v);
 void disable_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_rect_list *rl);

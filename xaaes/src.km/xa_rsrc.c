@@ -178,10 +178,7 @@ FixColourIconData(struct xa_client *client, CICONBLK *icon, struct xa_rscs *rscs
 	while (c)
 	{
 		DIAG((D_rsrc,client,"[1]probe cicon 0x%lx", c));
-#if 0
-		if (!strnicmp(client->proc_name, "papyrus", 7))
-			display("current best %d, this %d", best_cicon ? best_cicon->num_planes : -1, c->num_planes);
-#endif		
+		
 		if (    c->num_planes <= screen.planes
 		    && (!best_cicon || (best_cicon && c->num_planes > best_cicon->num_planes)))
 		{
@@ -189,10 +186,7 @@ FixColourIconData(struct xa_client *client, CICONBLK *icon, struct xa_rscs *rscs
 		}
 		c = c->next_res;
 	}
-#if 0
-	if (!strnicmp(client->proc_name, "papyrus", 6))
-		display("best found %d", best_cicon ? best_cicon->num_planes : -1);
-#endif	
+	
 	if (best_cicon)
 	{
 		/* DIAG((D_rsrc,client,"[1]best_cicon planes: %d", best_cicon->num_planes)); */
@@ -300,8 +294,6 @@ fix_cicons(void *base, CICONBLK **cibh)
 
 	DIAG((D_rsrc, NULL, "fix_cicons: got %d cicons at %lx(first=%lx)", numCibs, cibh, cibh[0]));
 	
-	//display("fix_cicons: got %d cicons at %lx(first=%lx)", numCibs, cibh, cibh[0]);
-	
 	/*
 	 * Pointer to the first CICONBLK (went past the -1L above)
 	 */
@@ -331,20 +323,13 @@ fix_cicons(void *base, CICONBLK **cibh)
 			i, cibh[i], isize, addr, numRez));
 		DIAG((D_rsrc, NULL, "ib = %lx, ib_pdata=%lx, ib_pmask=%lx",
 			ib, ib->ib_pdata, ib->ib_pmask));
-#if 0
-		display("cibh[%d]=%lx, isize=%ld, addr=%lx, numRez=%d",
-			i, cibh[i], isize, addr, numRez);
-		display("ib = %lx, ib_pdata=%lx, ib_pmask=%lx",
-			ib, ib->ib_pdata, ib->ib_pmask);
-#endif		
+		
 		if (ib->ib_wtext && ib->ib_ptext)
 		{
 			short l = ib->ib_wtext/6;
 			/* fix some resources */
-//			display("cicon: wtext = %d, ib->ptext = %lx", ib->ib_wtext, ib->ib_ptext);
 			ib->ib_ptext += (unsigned long)base;
 			DIAG((D_rsrc, NULL, "cicon: ib->ptext = %lx", ib->ib_ptext));
-//			display("cicon: ib->ptext = %lx", ib->ib_ptext);
 			if (strlen(ib->ib_ptext) > l)
 				*(ib->ib_ptext + l) = 0;
 		}
@@ -353,7 +338,6 @@ fix_cicons(void *base, CICONBLK **cibh)
 			 * be larger than 32, so there is 1 zero byte there */
 			ib->ib_ptext = (char *)pdata;
 
-//		display("ib_ptext = %lx(%x)", (long)ib->ib_ptext, *ib->ib_ptext);
 		/* (unused) place for name */
 		(unsigned long)pdata += 12;
 
@@ -419,22 +403,10 @@ fix_objects(struct xa_client *client,
 	DIAG((D_rsrc, client, "fix_objects: b=%lx, cibh=%lx, obj=%lx, num=%ld",
 		b, cibh, obj, n));
 
-//	display("fix_objects: b=%lx, cibh=%lx, obj=%lx, num=%ld",
-//		b, cibh, obj, n);
 	/* fixup all objects' ob_spec pointers */
 	for (i = 0; i < n; i++, obj++)
 	{
 		type = obj->ob_type & 255;
-
-//		display("obj = %lx, type = %d", obj, type);
-#if 0
-		display("obj[%ld]>%ld=%lx, type=%d;\tnxt=%d,head=%d,tail=%d",
-			i,
-			(long)obj-(long)b,
-			(long)obj,
-			type,
-			obj->ob_next,obj->ob_head,obj->ob_tail);
-#endif
 
 		/* What kind of object is it? */
 		switch (type)
@@ -468,7 +440,6 @@ fix_objects(struct xa_client *client,
 			#if GENERATE_DIAGS
 					long idx = obj->ob_spec.index;
 			#endif
-				//	display("got cicon...");
 					FixColourIconData(client, cibh[obj->ob_spec.index], rscs, vdih);
 					obj->ob_spec.ciconblk = cibh[obj->ob_spec.index];
 					DIAG((D_rsrc, client, "ciconobj: idx=%ld, ciconblk=%lx (%lx)",
@@ -601,8 +572,6 @@ fix_trees(struct xa_client *client, void *b, OBJECT **trees, unsigned long n, sh
 			
 			DIAG((D_s, NULL,"tree[%ld]>%ld = %lx", i, (unsigned long)*trees-(unsigned long)b, *trees));
 			
-		//	display("tree[%ld]>%ld = %lx", i, (unsigned long)*trees-(unsigned long)b, *trees);
-
 			obj = *trees;
 
 			if ((obj[3].ob_type & 255) != G_TITLE)
@@ -723,7 +692,6 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 		XATTR x;
 
 		DIAG((D_rsrc, client, "LoadResources(%s)", fname));
-	//	display("load resource %s for %s", fname, client->name);
 
 		f = kernel_open(fname, O_RDONLY, &err, &x);
 		if (!f)
@@ -791,8 +759,6 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 		}
 	}
 	
-//	if (!strnicmp(client->proc_name, "gempanic", 8)) display("LoadResource: rscs = %lx", rscs);
-
 	if (!rscs)
 		return NULL;
 
@@ -801,7 +767,6 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 	fix_tedarray(base, (TEDINFO *)	(base + hdr->rsh_tedinfo), hdr->rsh_nted);
 	fix_icnarray(base, (ICONBLK *)	(base + hdr->rsh_iconblk), hdr->rsh_nib);
 	fix_bblarray(base, (BITBLK *)	(base + hdr->rsh_bitblk),  hdr->rsh_nbb);
-//	if (!strnicmp(client->proc_name, "gempanic", 8)) display("fixed stuff");
 	
 	if (hdr->rsh_vrsn & 4)
 	{
@@ -809,7 +774,6 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 		short maxplanes = 0;
 		unsigned long *earray; //, *addr;
 
-//		if (!strnicmp(client->proc_name, "gempanic", 8)) display("enhanced rsc file");
 		DIAG((D_rsrc, client, "Enhanced resource file"));
 
 		/* this the row of pointers to extensions */
@@ -819,9 +783,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 		if (*earray && *earray != -1L) /* Get colour icons */
 		{
 			cibh = (CICONBLK **)(*earray + (long)base);
-//			if (!strnicmp(client->proc_name, "gempanic", 8)) display("fixing cicons..");
 			maxplanes = fix_cicons(base, cibh);
-//			if (!strnicmp(client->proc_name, "gempanic", 8)) display("maxplanes = %d", maxplanes);
 		}
 
 		if (*earray)
@@ -852,7 +814,6 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 			v_opnvwk(work_in, &vdih, work_out);
 
 			DIAG((D_rsrc, client, "Color palette present"));
-//			if (!strnicmp(client->proc_name, "gempanic", 8)) display("color palette present");
 			(long)p = (long)(*earray + (long)base);
 
 			/* Ozk:	First we check if the first 16 pens have valid data
@@ -892,7 +853,6 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 			{
 				DIAG((D_rsrc, client, "%s got palette", fname ? fname : "noname"));
 				(long)rscs->palette = (long)(*earray + (long)base);
-//				if (!strnicmp(client->proc_name, "gempanic", 8)) display("got palette");
 								
 				fix_rsc_palette((struct xa_rsc_rgb *)rscs->palette);
 				if (set_pal && cfg.set_rscpalette)
@@ -939,6 +899,7 @@ Rsrc_setglobal(RSHDR *h, struct aes_global *gl)
 		DIAGS(("      and %ld(%lx) in global[7,8]", h, h));
 	}
 }
+
 #if 0
 void
 dump_ra_list(struct xa_rscs *rscs)
@@ -1090,121 +1051,7 @@ FreeResources(struct xa_client *client, AESPB *pb, struct xa_rscs *rsrc)
 				}
 			}
 			cur = nx;
-		}
-		#if 0
-			else if (cur->handle == client->rsct - 1)
-			{
-				DIAG((D_rsrc,client,"Free: Rsrc_setglobal %lx", cur->rsc));
-
-				/* Yeah, there is a resource left! */
-				client->rsrc = cur->rsc;
-				Rsrc_setglobal(cur->rsc, client->globl_ptr);
-			}
-
-			if (have)
-				break;
-			cur = nx;
-		}
-		client->rsct--;
-		#endif
-			
-			
-#if 0			
-			bool have = rsc && (rsc == cur->rsc);
-			struct xa_rscs *nx = cur->next;
-
-			DIAG((D_rsrc, client, "Free: test cur %lx", (long)cur));
-			DIAG((D_rsrc, client, "Free: test cur handle %d", cur->handle));
-
-			if (have || (!rsc && cur->handle == client->rsct))
-			{
-				/* free the entry for the freed rsc. */
-				RSHDR *hdr = cur->rsc;
-				char *base = cur->rsc;
-				OBJECT **trees;
-				short i;
-
-
-				/* Free the memory allocated for scroll list objects. */
-				(unsigned long)trees = (unsigned long)(base + hdr->rsh_trindex);
-				for (i = 0; i < hdr->rsh_ntree; i++)
-				{
-					free_obtree_resources(client, trees[i]);
-				}
-
-				/* unhook the entry from the chain */
-				if (cur->prior)
-					cur->prior->next = cur->next;
-				else
-					client->resources = cur->next;
-				if (cur->next)
-					cur->next->prior = cur->prior;
-				
-				/*
-				 * Ozk: Here we fix and clean up a LOT of memory-leaks.
-				 * Now we remember each allocation done related to loading
-				 * a resource file, and we release the stuff here.
-				 */
-				if (client == C.Aes)
-				{
-					struct remember_alloc *ra;
-					
-					while (cur->ra)
-					{
-						ra = cur->ra;
-						cur->ra = ra->next;
-						DIAG((D_rsrc, client, "kFreeRa: addr=%lx, ra=%lx", ra->addr, ra));
-						kfree(ra->addr);
-						kfree(ra);
-					}
-					
-					if (cur->flags & RSRC_ALLOC)
-					{
-						DIAG((D_rsrc, client, "kFree: cur->rsc %lx", cur->rsc));
-						kfree(cur->rsc);
-					}
-					DIAG((D_rsrc, client, "kFree: cur %lx", cur));
-					
-					kfree(cur);
-				}
-				else
-				{
-					struct remember_alloc *ra;
-
-					while (cur->ra)
-					{
-						ra = cur->ra;
-						cur->ra = ra->next;
-						DIAG((D_rsrc, client, "uFreeRa: addr=%lx, ra=%lx", ra->addr, ra));
-						ufree(ra->addr);
-						kfree(ra);
-					}
-					if (cur->flags & RSRC_ALLOC)
-					{
-						DIAG((D_rsrc, client, "uFree: cur->rsc %lx", cur->rsc));
-						ufree(cur->rsc);
-					}
-					DIAG((D_rsrc, client, "uFree: cur %lx", cur));
-					
-					ufree(cur);
-				}
-			}
-			else if (cur->handle == client->rsct - 1)
-			{
-				DIAG((D_rsrc,client,"Free: Rsrc_setglobal %lx", cur->rsc));
-
-				/* Yeah, there is a resource left! */
-				client->rsrc = cur->rsc;
-				Rsrc_setglobal(cur->rsc, client->globl_ptr);
-			}
-
-			if (have)
-				break;
-
-			cur = nx;
-		}
-		client->rsct--;
-#endif
+		}			
 	}
 }
 
@@ -1358,7 +1205,6 @@ XA_rsrc_load(enum locks lock, struct xa_client *client, AESPB *pb)
 	char *path;
 
 	CONTROL(0,1,1)
-//	if (!strnicmp(client->proc_name, "gempanic", 8)) display("rsrc_load");
 
 	/* XXX	- ozk: Because of the hack at line 526 in handler.c, we
 	 * cannot allow applications with a NULL globl_ptr to use rsrc_load()
@@ -1378,7 +1224,6 @@ XA_rsrc_load(enum locks lock, struct xa_client *client, AESPB *pb)
 	    7/9/200   done.  As well as the memory allocated for colour icon data.
 */
 		path = shell_find(lock, client, (char*)pb->addrin[0]);
-//		if (!strnicmp(client->proc_name, "gempanic", 8)) display("rsrc_load %s for %s", path, client->name);
 		if (path)
 		{
 			RSHDR *rsc;

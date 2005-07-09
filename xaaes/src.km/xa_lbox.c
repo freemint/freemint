@@ -412,15 +412,6 @@ setup_lbox_objects(struct xa_lbox_info *lbox)
 					    lbox->user_data,
 					    NULL,
 					    lbox->bslide.first_visible);
-			#if 0
-				lbox->set(lbox->lbox_handle,
-					  obtree,
-					  item,
-					  obj,
-					  lbox->user_data,
-					  NULL,
-					  lbox->bslide.first_visible);
-			#endif
 			
 				item->selected = obtree[obj].ob_state;
 				index++;
@@ -473,14 +464,6 @@ scroll_up(struct xa_lbox_info *lbox, struct lbox_slide *s, short num)
 							item,
 							lbox->user_data,
 							0,0);
-				#if 0
-					lbox->slct(lbox->lbox_handle,
-						   lbox->wt->tree,
-						   item,
-						   lbox->user_data,
-						   0,
-						   0);
-				#endif
 				}
 				item = item->next;
 			}
@@ -496,15 +479,6 @@ scroll_up(struct xa_lbox_info *lbox, struct lbox_slide *s, short num)
 					    lbox->user_data,
 					    NULL,
 					    lbox->bslide.first_visible);
-			#if 0
-				lbox->set(lbox->lbox_handle,
-					  lbox->wt->tree,
-					  item,
-					  lbox->objs[i],
-					  lbox->user_data,
-					  NULL,
-					  lbox->bslide.first_visible);
-			#endif
 			}
 
 			//setup_lbox_objects(lbox);
@@ -540,13 +514,6 @@ scroll_down(struct xa_lbox_info *lbox, struct lbox_slide *s, short num)
 					last,
 					lbox->user_data,
 					0, 0);
-		#if 0
-			lbox->slct(lbox->lbox_handle,
-				   lbox->wt->tree,
-				   last,
-				   lbox->user_data,
-				   0, 0);
-		#endif
 			last = last->next;
 		}
 		s->first_visible -= num;
@@ -561,15 +528,6 @@ scroll_down(struct xa_lbox_info *lbox, struct lbox_slide *s, short num)
 				    lbox->user_data,
 				    NULL,
 				    lbox->bslide.first_visible);
-		#if 0
-			lbox->set(lbox->lbox_handle,
-				  lbox->wt->tree,
-				  item,
-				  lbox->objs[i],
-				  lbox->user_data,
-				  NULL,
-				  lbox->bslide.first_visible);
-		#endif
 		}
 
 		//setup_lbox_objects(lbox);
@@ -605,15 +563,6 @@ scroll_right(struct xa_lbox_info *lbox, struct lbox_slide *s, short num)
 					    lbox->user_data,
 					    NULL,
 					    newfirst);
-			#if 0
-				lbox->set(lbox->lbox_handle,
-					  lbox->wt->tree,
-					  item,
-					  objs[i],
-					  lbox->user_data,
-					  NULL,
-					  newfirst);
-			#endif
 			}
 			return true;
 		}
@@ -652,15 +601,6 @@ scroll_left(struct xa_lbox_info *lbox, struct lbox_slide *s, short num)
 					    lbox->user_data,
 					    NULL,
 					    newfirst);
-			#if 0
-				lbox->set(lbox->lbox_handle,
-					  lbox->wt->tree,
-					  item,
-					  objs[i],
-					  lbox->user_data,
-					  NULL,
-					  newfirst);
-			#endif
 			}
 			return true;
 		}
@@ -940,15 +880,6 @@ clear_all_selected(struct xa_lbox_info *lbox, short skip, RECT *r)
 						lbox->user_data,
 						obj,
 						last_state);
-			#if 0
-				lbox->slct(lbox->lbox_handle,
-					   obtree,
-					   item,
-					   lbox->user_data,
-					   obj,
-					   last_state);
-			#endif
-
 				if (r)
 				{
 					redraw_lbox(lbox, obj, 2, r);
@@ -1159,14 +1090,9 @@ XA_lbox_create(enum locks lock, struct xa_client *client, AESPB *pb)
 			/*
 			 * lbox callback functions...
 			 */
-		#if 0
-			lbox->slct	= (lbox_select *)	pb->addrin[1];
-			lbox->set	= (lbox_set *)		pb->addrin[2];
-		#endif
 			lbox->slct	= pb->addrin[1];
 			lbox->set	= pb->addrin[2];
 			
-
 			/*
 			 * Address of initial items and the list of object indexes
 			 * making up the visible entries in the lbox.
@@ -1281,16 +1207,8 @@ click_lbox_obj(struct xa_lbox_info *lbox, struct lbox_item *item, short obj, sho
 			lbox->user_data,
 			obj | dc,
 			last_state);
-#if 0
-	lbox->slct(lbox->lbox_handle,
-		   obtree,
-		   item,
-		   lbox->user_data,
-		   obj | dc,
-		   last_state);
-#endif
 	if (r)
-		redraw_lbox(lbox, obj/*lbox->parent*/, 2, r);
+		redraw_lbox(lbox, obj, 2, r);
 	//showm();
 }
 
