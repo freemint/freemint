@@ -91,6 +91,8 @@ __BEGIN_DECLS
 #define AES_OBJECT			13
 #define AES_FORM			14
 #define AES_VERSION			96
+#define AES_WOPTS			97
+
 
 /* appl_getinfo return values */
 #define SYSTEM_FONT			0

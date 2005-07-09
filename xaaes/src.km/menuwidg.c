@@ -127,13 +127,6 @@ change_entry(Tab *tab, int state)
 	if (t < 0)
 		return;
 
-#if 0
-	if (!strnicmp(tab->client->proc_name, "direct", 6))
-	{
-		display("type=%x", obtree[t].ob_type);
-	}
-#endif
-
 	if (state)
 		state = obtree[t].ob_state | OS_SELECTED;
 	else
@@ -1117,12 +1110,6 @@ display_popup(Tab *tab, XA_TREE *wt, int item, short rdx, short rdy)
 		showm();
 	}
 #endif
-#if 0
-	FOREACH_TAB(tab)
-	{
-		make_drop_rectlist(tab);
-	}
-#endif	
 }
 
 static void
@@ -1776,39 +1763,8 @@ click_popup_entry(struct task_administration_block *tab)
 	}
 	popout(TAB_LIST_START);			/* incl. screen unlock */
 
-	//assert(pb);
-	//pb->intout[0] = md->mn_item < 0 ? 0 : 1;
-
 	client->usr_evnt |= tab->usr_evnt;
 
-#if 0
-	MENU_TASK *k = &tab->task_data.menu;
-	AESPB *pb = tab->pb;
-	struct xa_client *client = tab->client;
-	MENU *md = (MENU*)pb->addrin[1];
-	short m;
-	
-	m = find_menu_object(tab, k->pop_item, k->pdx, k->pdy, &k->drop);
-		
-	md->mn_tree = k->wt->tree;
-	md->mn_scroll = 0;
-	vq_key_s(C.vh, &md->mn_keystate);
-
-	md->mn_item = m;
-	if (md->mn_item >= 0 && (k->wt->tree[md->mn_item].ob_state & OS_DISABLED) != 0)
-		md->mn_item = -1;
-	
-	DIAG((D_menu, NULL, "click_popup_entry %lx + %d", md->mn_tree, md->mn_item));
-
-	IFDIAG(tab->dbg = 6;)
-	
-	popout(TAB_LIST_START);			/* incl. screen unlock */
-
-	assert(pb);
-	pb->intout[0] = md->mn_item < 0 ? 0 : 1;
-
-	client->usr_evnt = 1;
-#endif
 	return NULL;
 }
 
@@ -1832,10 +1788,6 @@ click_form_popup_entry(struct task_administration_block *tab)
 
 	if (tab->data)
 		*(short *)tab->data = m;
-#if 0
-	assert(pb);
-	pb->intout[0] = m;
-#endif
 	client->usr_evnt |= tab->usr_evnt;
 
 	return NULL;
@@ -1955,14 +1907,6 @@ click_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *wid
 	/*
 	 * Make sure we're in the right context
 	*/
-#if 1
-#if 0
-	if (!rc)
-		rc = C.Aes;
-
-	if (client != rc)
-		return false;
-#endif
 	if (client == C.Aes)
 	{
 		if (client->tp != p)
@@ -1976,7 +1920,6 @@ click_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *wid
 		if ( !lock_menustruct(client->p, true) )
 			return false;
 	}
-#endif
 	((XA_TREE *)widg->stuff)->owner->status |= CS_MENU_NAV;
 
 	if (!menu_title(lock, NULL, wind, widg, client->p->pid))

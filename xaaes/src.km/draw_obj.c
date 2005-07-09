@@ -1841,12 +1841,6 @@ d_g_progdef(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 	*(RECT *)&(p->pb_x) = wt->r;
 
 	*(RECT *)&(p->pb_xc) = save_clip = v->clip; //*clip;
-#if 0
-	p->pb_xc = clip->x; //C.global_clip[0];
-	p->pb_yc = clip->y; //C.global_clip[1];
-	p->pb_wc = clip->w - clip->x + 1; //C.global_clip[2] - C.global_clip[0] + 1;
-	p->pb_hc = clip->h - clip->y + 1; //C.global_clip[3] - C.global_clip[1] + 1;
-#endif
 	userblk(client->ut) = object_get_spec(ob)->userblk;
 	p->pb_parm = userblk(client->ut)->ub_parm;
 
