@@ -488,14 +488,6 @@ setup_handler_table(void)
 #endif
 }
 
-/* timeout callback */
-static void
-wakeme_timeout(struct proc *p, struct xa_client *client)
-{
-	client->timeout = NULL;
-	wake(IO_Q, (long)client);
-}
-
 /* the main AES trap handler */
 long _cdecl
 XA_handler(void *_pb)
@@ -697,61 +689,8 @@ XA_handler(void *_pb)
 						DIAG((D_trap, client, "XA_Hand: Block client %s", client->name));
 						Block(client, 1);
 						DIAG((D_trap, client, "XA_Hand: Unblocked %s", client->name));
-						break;
 					}
-				}
-
-				/* block with timeout */
-				case XAC_TIMER:
-				{
-					if (client)
-					{
-						if (client->timer_val)
-						{
-							client->timeout = addtimeout(client->timer_val,
-										     wakeme_timeout);
-
-							if (client->timeout)
-								client->timeout->arg = (long)client;
-						}
-
-						Block(client, 1);
-						
-						if (client->timeout)
-						{
-							canceltimeout(client->timeout);
-							client->timeout = NULL;
-						}
-						else
-						{
-							/* timeout */
-
-							if (client->waiting_for & XAWAIT_MULTI)
-							{
-								short *o;
-
-								/* fill out mouse data */
-
-								o = client->waiting_pb->intout;
-								if (!(o[0] & MU_BUTTON))
-								{
-									check_mouse(client, o+3, o+1, o+2);
-									vq_key_s(C.P_handle, o+4);
-								}
-
-								o[0] = MU_TIMER;
-								o[5] = 0;
-								o[6] = 0;
-							}
-							else
-								/* evnt_timer() always returns 1 */
-								client->waiting_pb->intout[0] = 1;
-
-							cancel_evnt_multi(client,3);
-							DIAG((D_kern, client, "[20]Unblocked timer for %s",
-								c_owner(client)));
-						}
-					}
+					break;
 				}
 			}
 #if GENERATE_DIAGS
