@@ -2681,7 +2681,8 @@ init_slider_widget(struct xa_window *wind, struct xa_widget *widg, short slider_
 		w = make_widget(wind, &def_methods[XAW_UPPAGE + 1], NULL);
 		w->arrowx = WA_UPPAGE;
 		w->xarrow = WA_DNPAGE;
-		w->limit = SL_RANGE;
+		w->limit = 0;
+		w->xlimit = SL_RANGE;
 		w->slider_type = XAW_VSLIDE;
 		
 		DIAGS(("Make vslide (dnarrow)"));
@@ -2689,6 +2690,7 @@ init_slider_widget(struct xa_window *wind, struct xa_widget *widg, short slider_
 		w->arrowx = WA_DNPAGE;
 		w->xarrow = WA_UPPAGE;
 		w->limit = SL_RANGE;
+		w->xlimit = 0;
 		w->slider_type = XAW_VSLIDE;
 	}
 	else
@@ -2697,7 +2699,8 @@ init_slider_widget(struct xa_window *wind, struct xa_widget *widg, short slider_
 		w = make_widget(wind, &def_methods[XAW_LFPAGE + 1], NULL);
 		w->arrowx = WA_LFPAGE;
 		w->xarrow = WA_RTPAGE;
-		w->limit = SL_RANGE;
+		w->limit = 0;
+		w->xlimit = SL_RANGE;
 		w->slider_type = XAW_HSLIDE;
 		
 		DIAGS(("Make hslide (rtarrow)"));
@@ -2705,6 +2708,7 @@ init_slider_widget(struct xa_window *wind, struct xa_widget *widg, short slider_
 		w->arrowx = WA_RTPAGE;
 		w->xarrow = WA_LFPAGE;
 		w->limit = SL_RANGE;
+		w->xlimit = 0;
 		w->slider_type = XAW_HSLIDE;	
 	}
 }
@@ -2785,34 +2789,40 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 						case XAW_UPLN:
 						case XAW_DNLN:
 						{
-							widg->xlimit = SL_RANGE;
 							widg->slider_type = XAW_VSLIDE;
 							if (xaw_idx == XAW_UPLN)
 							{
 								widg->arrowx = WA_UPLINE;
 								widg->xarrow = WA_DNLINE;
+								widg->limit = 0;
+								widg->xlimit = SL_RANGE;
 							}
 							else
 							{
 								widg->arrowx = WA_DNLINE;
 								widg->xarrow = WA_UPLINE;
+								widg->limit = SL_RANGE;
+								widg->xlimit = 0;
 							}
 							break;
 						}
 						case XAW_LFLN:
 						case XAW_RTLN:
 						{
-							widg->xlimit = SL_RANGE;
 							widg->slider_type = XAW_HSLIDE;
 							if (xaw_idx == XAW_LFLN)
 							{
 								widg->arrowx = WA_LFLINE;
 								widg->xarrow = WA_RTLINE;
+								widg->limit = 0;
+								widg->xlimit = SL_RANGE;
 							}
 							else
 							{
 								widg->arrowx = WA_RTLINE;
 								widg->xarrow = WA_LFLINE;
+								widg->limit = SL_RANGE;
+								widg->xlimit = 0;
 							}
 							break;
 						}
@@ -2903,10 +2913,7 @@ void
 set_toolbar_coords(struct xa_window *wind, const RECT *r)
 {
 	struct xa_widget *widg = get_widget(wind, XAW_TOOLBAR);
-// 	OBJECT *form = ((XA_TREE *)widg->stuff)->tree;
-// 	RECT r;
 
-//  	obj_area(widg->stuff, 0, &r);
 	widg->r.x = wind->wa.x - wind->r.x - (wind->frame <= 0 ? 0 : wind->frame);
 	widg->r.y = wind->wa.y - wind->r.y - (wind->frame <= 0 ? 0 : wind->frame);
 	if (r)
@@ -2914,12 +2921,6 @@ set_toolbar_coords(struct xa_window *wind, const RECT *r)
 		widg->r.w = r->w;
 		widg->r.h = r->h;
 	}
-#if 0
-	widg->r.x  = wind->wa.x - wind->r.x - (wind->frame <= 0 ? 0 : wind->frame);
-	widg->r.y  = wind->wa.y - wind->r.y - (wind->frame <= 0 ? 0 : wind->frame);
-	widg->r.w  = form->ob_width;
-	widg->r.h  = form->ob_height;
-#endif
 }
 
 void
@@ -3038,7 +3039,6 @@ set_toolbar_widget(enum locks lock,
 	struct xa_vdi_settings *v = wind->vdi_settings;
 	XA_TREE *wt;
 	XA_WIDGET *widg = get_widget(wind, XAW_TOOLBAR);
-	//XA_WIDGET_LOCATION loc;
 
 	DIAG((D_wind, wind->owner, "set_toolbar_widget for %d (%s): obtree %lx, %d",
 		wind->handle, wind->owner->name, obtree, edobj));
@@ -3068,7 +3068,7 @@ set_toolbar_widget(enum locks lock,
 
 	wt->widg = widg;
 	wt->wind = wind;
-	wt->zen  = zen; //true;
+	wt->zen  = zen;
 	wt->links++;
 	//display("set_toolbar_widg: link++ on %lx (links=%d)", wt, wt->links);
 
@@ -3235,28 +3235,24 @@ checkif_do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, shor
 
 				widg = w->widgets + f;
 				
-
-				if (!(winstatus & widg->m.statusmask) && wdg_is_act(widg)) //widg->m.r.draw)	/* Is the widget in use? */
+				if (!(winstatus & widg->m.statusmask) && wdg_is_act(widg))	/* Is the widget in use? */
 				{
-// 					if ((widg->m.properties & (WIP_ACTIVE|WIP_INSTALLED)) == (WIP_ACTIVE|WIP_INSTALLED))
-// 					{
-						if (f != XAW_BORDER)			/* HR 280102: implement border sizing. */
-						{					/* Normal widgets */
-							rp_2_ap_cs(w, widg, &r);	/* Convert relative coords and window location to absolute screen location */
-							inside = m_inside(x, y, &r);
-						}
-						else
-						{
-							r = w->r;			/* Inside window and outside border area = border. */
-							inside = !m_inside(x, y, &w->ba);
-						}
-						if (inside)
-						{
-							if (ret)
-								*ret = widg;
-							return true;
-						}
-// 					}
+					if (f != XAW_BORDER)			/* HR 280102: implement border sizing. */
+					{					/* Normal widgets */
+						rp_2_ap_cs(w, widg, &r);	/* Convert relative coords and window location to absolute screen location */
+						inside = m_inside(x, y, &r);
+					}
+					else
+					{
+						r = w->r;			/* Inside window and outside border area = border. */
+						inside = !m_inside(x, y, &w->ba);
+					}
+					if (inside)
+					{
+						if (ret)
+							*ret = widg;
+						return true;
+					}
 				}
 			}
 		}
@@ -3293,144 +3289,141 @@ do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct
 
 			widg = w->widgets + f;
 			
-			if (!(winstatus & widg->m.statusmask) && wdg_is_act(widg)) //widg->m.r.draw) /* Is the widget in use? */
+			if (!(winstatus & widg->m.statusmask) && wdg_is_act(widg))	/* Is the widget in use? */
 			{
-// 				if ((widg->m.properties & (WIP_ACTIVE|WIP_INSTALLED)) == (WIP_ACTIVE|WIP_INSTALLED))
-// 				{
-					bool inside;
+				bool inside;
 
-					if (f != XAW_BORDER)			/* HR 280102: implement border sizing. */
-					{					/* Normal widgets */
-						rp_2_ap(w, widg, &r);		/* Convert relative coords and window location to absolute screen location */
-						widg->ar = r;
-						inside = m_inside(md->x, md->y, &r);
-					}
-					else
-					{
-						r = w->r;			/* Inside window and outside border area = border. */
-						inside = !m_inside(md->x, md->y, &w->ba);
-					}
+				if (f != XAW_BORDER)			/* HR 280102: implement border sizing. */
+				{					/* Normal widgets */
+					rp_2_ap(w, widg, &r);		/* Convert relative coords and window location to absolute screen location */
+					widg->ar = r;
+					inside = m_inside(md->x, md->y, &r);
+				}
+				else
+				{
+					r = w->r;			/* Inside window and outside border area = border. */
+					inside = !m_inside(md->x, md->y, &w->ba);
+				}
 
-					if (inside)
-					{
-						short oldstate = -1;
-						bool rtn = false;
-						int ax = 0;
-		
-						widg->x = md->x - r.x; 		/* Mark where the click occurred (relative to the widget) */
-						widg->y = md->y - r.y;
-
-		/* In this version page arrows are separate widgets,
-			they are overlapped by the slider widget, hence this kind of a hack.
-			The real solution would be nested widgets and recursive handling. */
+				if (inside)
+				{
+					short oldstate = -1;
+					bool rtn = false;
+					int ax = 0;
 	
-						if (f == XAW_VSLIDE)
-							ax = is_V_arrow(w, widg, md->y);
-						else if (f == XAW_HSLIDE)
-							ax = is_H_arrow(w, widg, md->x);
+					widg->x = md->x - r.x; 		/* Mark where the click occurred (relative to the widget) */
+					widg->y = md->y - r.y;
+
+	/* In this version page arrows are separate widgets,
+		they are overlapped by the slider widget, hence this kind of a hack.
+		The real solution would be nested widgets and recursive handling. */
+
+					if (f == XAW_VSLIDE)
+						ax = is_V_arrow(w, widg, md->y);
+					else if (f == XAW_HSLIDE)
+						ax = is_H_arrow(w, widg, md->x);
+
+					/*
+					 * Ozk: If this is a button released click, we just return here..
+					 * same if inside a page arrow thats not active.
+					*/
+					if (ax < 0 || (!md->state && !md->cstate) )
+						/* inside a page arrow, but not active */
+						return true;
+
+					if (ax)
+					{
+						widg = w->widgets + ax;
+						widg->x = md->x - r.x; 			/* Mark where the click occurred (relative to the widget) */
+						widg->y = md->y - r.y;
+						if (widg->m.drag) rtn = widg->m.drag(lock, w, widg, md);	/* we know there is only 1 behaviour for these arrows */
+						else		  rtn = true;
+					}
+					else /* normal widget */
+					{
+						short b = md->cstate, rx = md->x, ry = md->y;
+						
+						/* We don't auto select & pre-display for a menu or toolbar widget */
+						if (f != XAW_MENU && f != XAW_TOOLBAR)
+							oldstate = redisplay_widget(lock, w, widg, OS_SELECTED);
 
 						/*
-						 * Ozk: If this is a button released click, we just return here..
-						 * same if inside a page arrow thats not active.
+						 * Check if the widget has a dragger function if button still pressed
 						*/
-						if (ax < 0 || (!md->state && !md->cstate) )
-							/* inside a page arrow, but not active */
-							return true;
-
-						if (ax)
+						if (b && widg->m.drag) 
 						{
-							widg = w->widgets + ax;
-							widg->x = md->x - r.x; 			/* Mark where the click occurred (relative to the widget) */
-							widg->y = md->y - r.y;
-							if (widg->m.drag) rtn = widg->m.drag(lock, w, widg, md);	/* we know there is only 1 behaviour for these arrows */
-							else		  rtn = true;
+							/* If the mouse button is still down
+							 * do a drag (if the widget has a drag
+							 * behaviour) */
+							rtn = widg->m.drag(lock, w, widg, md);
 						}
-						else /* normal widget */
+						else
 						{
-							short b = md->cstate, rx = md->x, ry = md->y;
-							
-							/* We don't auto select & pre-display for a menu or toolbar widget */
-							if (f != XAW_MENU && f != XAW_TOOLBAR)
-								oldstate = redisplay_widget(lock, w, widg, OS_SELECTED);
-
-							/*
-							 * Check if the widget has a dragger function if button still pressed
-							*/
-							if (b && widg->m.drag) 
+						/*
+						 * otherwise, process as a mouse click(s)
+						*/
+							if (b)
 							{
-								/* If the mouse button is still down
-								 * do a drag (if the widget has a drag
-								 * behaviour) */
-								rtn = widg->m.drag(lock, w, widg, md);
+								/*
+								 * If button is still being held down, hang around
+								 * waiting for button release. Animate the widget clicked as mouse
+								 * moves on/off...
+								*/
+								short tx = rx, ty = ry;
+								bool ins = 1;
+								check_mouse(w->owner, &b, NULL, NULL);
+								S.wm_count++;
+								while (b)
+								{										
+									/* Wait for the mouse to be released */
+									wait_mouse(w->owner, &b, &rx, &ry);
+
+									if (tx != rx || ty != ry)
+									{
+										if (m_inside(rx, ry, &r))
+										{
+											if (!ins)
+											{
+												redisplay_widget(lock, w, widg, OS_SELECTED);
+												ins = 1;
+											}
+										}
+										else if (ins)
+										{
+											redisplay_widget(lock, w, widg, OS_NORMAL);
+											ins = 0;
+										}
+										tx = rx;
+										ty = ry;
+									}
+								}
+								S.wm_count--;
+							}
+							if (m_inside(rx, ry, &r) && widg->m.click)
+							{
+								rtn = widg->m.click(lock, w, widg, md);
 							}
 							else
-							{
-							/*
-							 * otherwise, process as a mouse click(s)
-							*/
-								if (b)
-								{
-									/*
-									 * If button is still being held down, hang around
-									 * waiting for button release. Animate the widget clicked as mouse
-									 * moves on/off...
-									*/
-									short tx = rx, ty = ry;
-									bool ins = 1;
-									check_mouse(w->owner, &b, NULL, NULL);
-									S.wm_count++;
-									while (b)
-									{										
-										/* Wait for the mouse to be released */
-										wait_mouse(w->owner, &b, &rx, &ry);
+								rtn = true;		/* HR 060601: released outside widget: reset its state. */
 
-										if (tx != rx || ty != ry)
-										{
-											if (m_inside(rx, ry, &r))
-											{
-												if (!ins)
-												{
-													redisplay_widget(lock, w, widg, OS_SELECTED);
-													ins = 1;
-												}
-											}
-											else if (ins)
-											{
-												redisplay_widget(lock, w, widg, OS_NORMAL);
-												ins = 0;
-											}
-											tx = rx;
-											ty = ry;
-										}
-									}
-									S.wm_count--;
-								}
-								if (m_inside(rx, ry, &r) && widg->m.click)
-								{
-									rtn = widg->m.click(lock, w, widg, md);
-								}
-								else
-									rtn = true;		/* HR 060601: released outside widget: reset its state. */
-	
-								if (w->winob)		/* HR 060601: a little bit of hack, until checking widget_active
-											is moved from pending_msg() to the kernel. */
-									cancel_widget_active(w, 5);
-							}
+							if (w->winob)		/* HR 060601: a little bit of hack, until checking widget_active
+										is moved from pending_msg() to the kernel. */
+								cancel_widget_active(w, 5);
 						}
-	
-						if (rtn)	/* If the widget click/drag function returned true we reset the state of the widget */
-						{
-							DIAG((D_button, NULL, "Deselect widget"));
-							if (f != XAW_MENU && f != XAW_TOOLBAR)
-								redisplay_widget(lock, w, widg, oldstate); //OS_NORMAL);	/* Flag the widget as de-selected */
-						}
-						else if (w == root_window && f == XAW_TOOLBAR)		/* HR: 280801 a little bit special. */
-							return false;		/* pass click to desktop owner */
+					}
 
-						/* click devoured by widget */
-						return true;
-					} /*if m_inside */
-// 				} /* endif (WIP_ACTIVE) */
+					if (rtn)	/* If the widget click/drag function returned true we reset the state of the widget */
+					{
+						DIAG((D_button, NULL, "Deselect widget"));
+						if (f != XAW_MENU && f != XAW_TOOLBAR)
+							redisplay_widget(lock, w, widg, oldstate); //OS_NORMAL);	/* Flag the widget as de-selected */
+					}
+					else if (w == root_window && f == XAW_TOOLBAR)		/* HR: 280801 a little bit special. */
+						return false;		/* pass click to desktop owner */
+
+					/* click devoured by widget */
+					return true;
+				} /*if m_inside */
 			} /* endif (!(winstatus & widg->m.statusmask) && widg->m.r.draw) */
 		} /* endif (!is_page(f)) */
 	} /* for f */
@@ -3444,7 +3437,7 @@ redisplay_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, short
 {
 	short ret = widg->state;
 
-	if (wdg_is_inst(widg)) //widg->m.r.draw)
+	if (wdg_is_inst(widg))
 	{
 		widg->state = state;
 
@@ -3524,7 +3517,7 @@ wind_mshape(struct xa_window *wind, short x, short y)
 
 				checkif_do_widgets(0, wind, 0, x, y, &hwidg);
 		
-				if (hwidg && !hwidg->owner && wdg_is_inst(hwidg)) //hwidg->m.r.draw)
+				if (hwidg && !hwidg->owner && wdg_is_inst(hwidg))
 				{
 					if (wind != C.hover_wind || hwidg != C.hover_widg)
 					{
