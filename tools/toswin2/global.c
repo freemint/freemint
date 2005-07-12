@@ -22,6 +22,7 @@ int	exit_code;
 int	vdi_handle;
 int	font_anz;
 int	windirty = 0;
+short	wco;
 
 /*
  * Lokale Variablen

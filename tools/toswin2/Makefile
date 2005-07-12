@@ -25,6 +25,7 @@ INCLUDES += -I/usr/GEM/include
 CFLAGS += -D_GNU_SOURCE
 #CFLAGS += -DDEBUG
 CFLAGS += -g
+#CFLAGS += -DONLY_XAAES
 
 # default definitions
 OBJS = $(COBJS:.c=.o)

@@ -89,6 +89,7 @@ struct textwin
 {
 	WINDOW* win;				/* underlying WINDOW struct */
 	int	offy;				/* offset of window (0, 0) position */
+	short	x_limit;
 	short	maxx;				/* number of characters across */
 	short	miny;				/* first 'real' line (previous lines are scrollback */
 	short	maxy;				/* number of characters down */
@@ -171,7 +172,7 @@ struct textwin
 #define TAB_ATARI		0x0000	/* normal Atari */
 #define TAB_ISO			0x0001	/* ISO 8859-1 Latin1 */
 
-/* Gr”žen des Textfensters berechnen */
+/* Gren des Textfensters berechnen */
 #define SCROLLBACK(t)	((t)->miny)
 #define NROWS(t) 	((t)->maxy - (t)->miny)
 #define NCOLS(t) 	((t)->maxx)

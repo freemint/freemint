@@ -50,7 +50,8 @@ static void gototab(TEXTWIN* tw, int x, int y)
 {
 	TABLIST *tab;
 
-	if (tw->tabs) {
+	if (tw->tabs)
+	{
 		for (tab = tw->tabs; tab != NULL && tab->tabpos <= x;
 		     tab = tab->nexttab);
 		if (tab != NULL && tab->tabpos > x)
@@ -72,7 +73,8 @@ static void insert_char(TEXTWIN* tw, int x, int y)
 		return;
 
 	memmove (twdata + x, twdata + x - 1, NCOLS (tw) - x);
-	for (i = NCOLS (tw) - 1; i > x; --i) {
+	for (i = NCOLS (tw) - 1; i > x; --i)
+	{
 		twcflag[i] = twcflag[i - 1] | CDIRTY;
 	}
 	twdata[x] = ' ';
@@ -93,7 +95,8 @@ capture (TEXTWIN* tw, unsigned int c)
 	if (c == '\r')
 		c = 0;
 
-	if (i < CAPTURESIZE || c == 0) {
+	if (i < CAPTURESIZE || c == 0)
+	{
 		tw->captbuf[i++] = c;
 		tw->captsiz = i;
 		if (c == 0) {
@@ -250,7 +253,8 @@ static void vt100_esc_mode(TEXTWIN* tw, unsigned int c)
 	case 'K':		/* Erase in Line (DECSEL).  */
 		/* Not yet implemented.  */
 		count = 0;
-		do {
+		do
+		{
 			ei = popescbuf (tw, tw->escbuf);
 			++count;
 		} while (ei >= 0);
@@ -490,11 +494,13 @@ static void cleartab(TEXTWIN* tw, int x)
 	TABLIST *tab, *oldtab;
 
 	oldtab = tab = tw->tabs;
-	while (tab != NULL && tab->tabpos < x) {
+	while (tab != NULL && tab->tabpos < x)
+	{
 		oldtab = tab;
 		tab = tab->nexttab;
 	}
-	if (tab != NULL && tab->tabpos == x) {
+	if (tab != NULL && tab->tabpos == x)
+	{
 		if (tab == tw->tabs)
 			tw->tabs = tab->nexttab;
 		else

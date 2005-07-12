@@ -15,9 +15,16 @@ static bool	is_dirty = FALSE;
 
 static void uniconify_con(WINDOW *v, short x, short y, short w, short h)
 {
-	wind_calc(WC_BORDER, v->kind, v->prev.g_x, v->prev.g_y, v->prev.g_w, v->prev.g_h, &x, &y, &w, &h);
-  	wind_set(v->handle, WF_UNICONIFY, x, y, w, h);
-	wind_get_grect(v->handle, WF_WORKXYWH, &v->work);
+	if (v->wco)
+	{
+		wind_xset_grect(v->handle, WF_UNICONIFY, &v->prev, &v->work);
+	}
+	else
+	{
+		wind_calc(WC_BORDER, v->kind, v->prev.g_x, v->prev.g_y, v->prev.g_w, v->prev.g_h, &x, &y, &w, &h);
+  		wind_set(v->handle, WF_UNICONIFY, x, y, w, h);
+		wind_get_grect(v->handle, WF_WORKXYWH, &v->work);
+	}
 	v->mouseinp = v->oldmouse;
 	v->flags &= ~WICONIFIED;
 	(*v->topped)(v);
@@ -48,7 +55,7 @@ void open_console(void)
 				con_win->fd = con_fd;
 				add_fd(con_fd);
 
-				/* Cursor mu an, sonst kommt die Ausgabe durcheinander!! */
+				/* Cursor mu an, sonst kommt die Ausgabe durcheinander!! */
 				(*con_win->output)(con_win, '\033');
 				(*con_win->output)(con_win, 'e');
 
@@ -85,8 +92,8 @@ void handle_console(char *txt, long len)
 {
 	/*
 	 * Wenn das erste Zeichen ein Ping ist, wird auf weitere Pings
-	 * geprft. Werden nur Pings gefunden, wird die Funktion verlassen,
-	 * damit das Fenster nicht unn”tig aufgeht.
+	 * geprft. Werden nur Pings gefunden, wird die Funktion verlassen,
+	 * damit das Fenster nicht unntig aufgeht.
 	*/
 	if (txt[0] == 7)
 	{
