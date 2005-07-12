@@ -1,7 +1,7 @@
 /*
  * window.c
  *
- * Basisifunktionen fr Fensterverwaltung.
+ * Basisifunktionen fr Fensterverwaltung.
  *
  */
 
@@ -98,34 +98,73 @@ static void close_win(WINDOW *w)
 static void full_win(WINDOW *v)
 {
 	GRECT new;
+#ifndef ONLY_XAAES
+	if (v->wco)
+	{
+#endif
+		short g = v->flags & WFULLED ? WF_PREVXYWH : WF_FULLXYWH;
+		wind_get_grect(v->handle, g, &new);
+		wind_xset_grect(v->handle, WF_CURRXYWH, &new, &v->work);
+#ifndef ONLY_XAAES
+	}
+	else
+	{
+		if (v->flags & WFULLED) 
+			wind_get_grect(v->handle, WF_PREVXYWH, &new);
+		else 
+			wind_get_grect(v->handle, WF_FULLXYWH, &new);
 
-	if (v->flags & WFULLED) 
-		wind_get_grect(v->handle, WF_PREVXYWH, &new);
-	else 
-		wind_get_grect(v->handle, WF_FULLXYWH, &new);
-
-	wind_set_grect(v->handle, WF_CURRXYWH, &new);
-	wind_get_grect(v->handle, WF_WORKXYWH, &v->work);
-
+		wind_set_grect(v->handle, WF_CURRXYWH, &new);
+		wind_get_grect(v->handle, WF_WORKXYWH, &v->work);
+	}
+#endif
 	v->flags ^= WFULLED;
 }
 
 static void move_win(WINDOW *v, short x, short y, short w, short h)
 {
 	GRECT full;
-	
+	GRECT new = (GRECT){x, y, w, h};
+
 	wind_get_grect(v->handle, WF_FULLXYWH, &full);
 
-	if (w > full.g_w) 
-		w = full.g_w;
-	if (h > full.g_h) 
-		h = full.g_h;
+	if (new.g_w > full.g_w) 
+		new.g_w = full.g_w;
+	if (new.g_h > full.g_h) 
+		new.g_h = full.g_h;
 
-	if (w != full.g_w || h != full.g_h)
+	if (new.g_w != full.g_w || new.g_h != full.g_h)
 		v->flags &= ~WFULLED;
 
-	wind_set(v->handle, WF_CURRXYWH, x, y, w, h);
-	wind_get_grect(v->handle, WF_WORKXYWH, &v->work);
+#ifndef ONLY_XAAES
+	if (v->wco)
+#endif
+		wind_xset_grect(v->handle, WF_CURRXYWH, &new, &v->work);
+#ifndef ONLY_XAAES
+	else
+	{
+		wind_set_grect(v->handle, WF_CURRXYWH, &new);
+		wind_get_grect(v->handle, WF_WORKXYWH, &v->work);
+	}
+#endif
+}
+
+static void
+repos_win(WINDOW *v, short x, short y, short w, short h)
+{
+	GRECT new = (GRECT){x, y, w, h};
+
+#ifndef ONLY_XAAES
+	if (v->wco)
+#endif
+		wind_xset_grect(v->handle, WF_CURRXYWH, &new, &v->work);
+#ifndef ONLY_XAAES
+	else
+	{
+		wind_set_grect(v->handle, WF_CURRXYWH, &new);
+		wind_get_grect(v->handle, WF_WORKXYWH, &v->work);
+	}
+#endif
 }
 
 static void size_win(WINDOW *v, short x, short y, short w, short h)
@@ -135,18 +174,31 @@ static void size_win(WINDOW *v, short x, short y, short w, short h)
 
 static void iconify_win(WINDOW *v, short x, short y, short w, short h)
 {
-	if (w == -1 && h == -1)
+#ifndef ONLY_XAAES
+	if (v->wco)
 	{
-		wind_close(v->handle);
-		wind_set(v->handle, WF_ICONIFY, -1, -1, -1, -1);
-		wind_open(v->handle, -1, -1, -1, -1);
+#endif
+		GRECT i = (GRECT){x, y, w, h};
+		v->prev = v->work;
+		wind_xset_grect(v->handle, WF_ICONIFY, &i, &v->work);
+#ifndef ONLY_XAAES
 	}
 	else
-		wind_set(v->handle, WF_ICONIFY, x, y, w, h);
+	{
+		if (w == -1 && h == -1)
+		{
+			wind_close(v->handle);
+			wind_set(v->handle, WF_ICONIFY, -1, -1, -1, -1);
+			wind_open(v->handle, -1, -1, -1, -1);
+		}
+		else
+			wind_set(v->handle, WF_ICONIFY, x, y, w, h);
 
-  	v->old_wkind = v->kind;
-	v->prev = v->work;
-	wind_get_grect(v->handle, WF_WORKXYWH, &v->work);
+	  	v->old_wkind = v->kind;
+		v->prev = v->work;
+		wind_get_grect(v->handle, WF_WORKXYWH, &v->work);
+	}
+#endif
 	v->oldmouse = v->mouseinp;
 	v->mouseinp = nomouse;
 	v->flags |= WICONIFIED;
@@ -158,9 +210,20 @@ static void iconify_win(WINDOW *v, short x, short y, short w, short h)
 
 static void uniconify_win(WINDOW *v, short x, short y, short w, short h)
 {
-	wind_calc(WC_BORDER, v->kind, v->prev.g_x, v->prev.g_y, v->prev.g_w, v->prev.g_h, &x, &y, &w, &h);
-  	wind_set(v->handle, WF_UNICONIFY, x, y, w, h);
-	wind_get_grect(v->handle, WF_WORKXYWH, &v->work);
+#ifndef ONLY_XAAES
+	if (v->wco)
+	{
+#endif
+		wind_xset_grect(v->handle, WF_UNICONIFY, &v->prev, &v->work);
+#ifndef ONLY_XAAES
+	}
+	else
+	{
+		wind_calc(WC_BORDER, v->kind, v->prev.g_x, v->prev.g_y, v->prev.g_w, v->prev.g_h, &x, &y, &w, &h);
+  		wind_set(v->handle, WF_UNICONIFY, x, y, w, h);
+		wind_get_grect(v->handle, WF_WORKXYWH, &v->work);
+	}
+#endif
 	v->mouseinp = v->oldmouse;
 	v->flags &= ~WICONIFIED;
 	(*v->topped)(v);
@@ -206,65 +269,119 @@ static void shade_win(WINDOW *v, short flag)
 }
 
 WINDOW *create_window(char *title, short kind, 
-		      short wx, short wy, short ww, short wh, 	/* Gr”že zum ”ffnen */
-		      short max_w, short max_h)			/* max. Gr”že */
+		      short wx, short wy, short ww, short wh, 	/* Gre zum ffnen */
+		      short max_w, short max_h, long w_limit)	/* max. Gre */
 {
 	WINDOW *v;
 	GRECT full;
+#ifndef ONLY_XAAES
 	GRECT full_work;
 	int centerwin = 0;
+#endif
 
 	title = strdup(title);
 	v = malloc(sizeof(WINDOW));
 	if (!v) 
 		return v;
+#ifndef ONLY_XAAES
+	if (wco)
+	{
+#endif
+		v->kind = kind;
+		v->handle = wind_xcreate_grect(v->kind, &gl_desk, &full);
+		v->wco = 1;
+		
+		if (ww == -1 || wh == -1)
+		{
+			v->work.g_w = full.g_w;
+			v->work.g_h = full.g_h;
+		}
+		else
+		{
+			v->work.g_w = ww;
+			v->work.g_h = wh;
+		}
 
-	v->handle = -1;
-	v->kind = kind;
+		if (w_limit == -1L)
+			w_limit = max_w;
+		else if (max_w > w_limit)
+			max_w = w_limit;
+		
+		if (max_w > full.g_w)
+			max_w = full.g_w;
+		if (max_h > full.g_h)
+			max_h = full.g_h;
+		
+		v->max_w = max_w;
+		v->max_h = max_h;
+		v->w_limit = w_limit;
 
-	if (wx == -1 || wy == -1) 
-		centerwin = 1;
-	if (wx < gl_desk.g_x) 
-		wx = gl_desk.g_x;
-	if (wy < gl_desk.g_y) 
-		wy = gl_desk.g_y;
+		if (wx == -1 || wy == -1)
+		{
+			wx = (full.g_w - v->work.g_w) >> 1;
+			wy = (full.g_h - v->work.g_h) >> 1;
+		}
+		if (wx < full.g_x)
+			wx = full.g_x;
+		if (wy < full.g_y)
+			wy = full.g_y;
 
-	v->max_w = max_w;
-	v->max_h = max_h;
-
-	if (ww == -1 || wh == -1)
-		wind_calc(WC_WORK, v->kind, wx, wy, gl_desk.g_w, gl_desk.g_h, &v->work.g_x, &v->work.g_y, &v->work.g_w, &v->work.g_h);
+		v->work.g_x = wx;
+		v->work.g_y = wy;
+		v->full_work = v->full = full;
+		wind_set_grect(v->handle, WF_FULLXYWH, &full);
+#ifndef ONLY_XAAES
+	}
 	else
-		wind_calc(WC_WORK, v->kind, wx, wy, ww, wh, &v->work.g_x, &v->work.g_y, &v->work.g_w, &v->work.g_h);
+	{
+		v->handle = -1;
+		v->kind = kind;
+		v->wco = 0;
 
-	wind_calc(WC_BORDER, v->kind, v->work.g_x, v->work.g_y, max_w, max_h, &full.g_x, &full.g_y, &full.g_w, &full.g_h);
+		if (wx == -1 || wy == -1) 
+			centerwin = 1;
+		if (wx < gl_desk.g_x) 
+			wx = gl_desk.g_x;
+		if (wy < gl_desk.g_y) 
+			wy = gl_desk.g_y;
+
+		v->max_w = max_w;
+		v->max_h = max_h;
+
+		if (ww == -1 || wh == -1)
+			wind_calc(WC_WORK, v->kind, wx, wy, gl_desk.g_w, gl_desk.g_h, &v->work.g_x, &v->work.g_y, &v->work.g_w, &v->work.g_h);
+		else
+			wind_calc(WC_WORK, v->kind, wx, wy, ww, wh, &v->work.g_x, &v->work.g_y, &v->work.g_w, &v->work.g_h);
+
+		wind_calc(WC_BORDER, v->kind, v->work.g_x, v->work.g_y, max_w, max_h, &full.g_x, &full.g_y, &full.g_w, &full.g_h);
 	
-	if (full.g_w > gl_desk.g_w || full.g_w < 0)
-		full.g_w = gl_desk.g_w;
-	if (full.g_h > gl_desk.g_h || full.g_h < 0)
-		full.g_h = gl_desk.g_h;
-	wind_calc (WC_WORK, v->kind, 0, 0, full.g_w, full.g_h, 
-		   &full_work.g_x, &full_work.g_y, 
-		   &full_work.g_w, &full_work.g_h);
-	v->full_work = full_work;
+		if (full.g_w > gl_desk.g_w || full.g_w < 0)
+			full.g_w = gl_desk.g_w;
+		if (full.g_h > gl_desk.g_h || full.g_h < 0)
+			full.g_h = gl_desk.g_h;
+		wind_calc (WC_WORK, v->kind, 0, 0, full.g_w, full.g_h, 
+			   &full_work.g_x, &full_work.g_y, 
+			   &full_work.g_w, &full_work.g_h);
+		v->full_work = full_work;
 
-	if (0 || centerwin) 
-	{
-		full.g_x = gl_desk.g_x + (gl_desk.g_w - full.g_w) / 2;
-		full.g_y = gl_desk.g_y + (gl_desk.g_h - full.g_h) / 2;
+		if (0 || centerwin) 
+		{
+			full.g_x = gl_desk.g_x + (gl_desk.g_w - full.g_w) / 2;
+			full.g_y = gl_desk.g_y + (gl_desk.g_h - full.g_h) / 2;
+		}
+		else
+		{
+			if ((full.g_x + full.g_w) > (gl_desk.g_x + gl_desk.g_w))
+				full.g_x = gl_desk.g_x + gl_desk.g_w - full.g_w;
+			if ((full.g_y + full.g_h) > (gl_desk.g_y + gl_desk.g_h))
+				full.g_y = gl_desk.g_y + gl_desk.g_h - full.g_h;
+		}
+		v->full = full;
+
+		if (ww == -1 || wh == -1)
+			wind_calc_grect(WC_WORK, v->kind, &full, &v->work);
 	}
-	else
-	{
-		if ((full.g_x + full.g_w) > (gl_desk.g_x + gl_desk.g_w))
-			full.g_x = gl_desk.g_x + gl_desk.g_w - full.g_w;
-		if ((full.g_y + full.g_h) > (gl_desk.g_y + gl_desk.g_h))
-			full.g_y = gl_desk.g_y + gl_desk.g_h - full.g_h;
-	}
-	v->full = full;
-
-	if (ww == -1 || wh == -1)
-		wind_calc_grect(WC_WORK, v->kind, &full, &v->work);
-
+#endif
 	v->title = (char*) title;
 	v->extra = NULL;
 	v->flags = 0;
@@ -279,6 +396,7 @@ WINDOW *create_window(char *title, short kind,
 	v->fulled = full_win;
 	v->sized = size_win;
 	v->moved = move_win;
+	v->reposed = repos_win;
 	v->iconify = iconify_win;
 	v->uniconify = uniconify_win;
 	v->shaded = shade_win;
@@ -300,36 +418,66 @@ WINDOW *create_window(char *title, short kind,
 void open_window(WINDOW *v, bool as_icon)
 {
 	static char notitle[] = "Untitled";
+#ifndef ONLY_XAAES
 	GRECT r;
-	
-	if (v->handle >= 0)
-		return;
+#endif
 
-	v->handle = wind_create_grect(v->kind, &v->full);
-	if (v->handle < 0)
-		return;
-
-	if (v->kind & NAME) 
+#ifndef ONLY_XAAES
+	if (v->wco)
 	{
-		if (v->title)
-			wind_set_str(v->handle, WF_NAME, v->title);
+#endif
+		if (v->flags & WOPEN)
+			return;
+		if (v->kind & NAME)
+		{
+			char *t = v->title ? v->title : notitle;
+			wind_set_str(v->handle, WF_NAME, t);
+		}
+		(*v->sized)(v, v->work.g_x, v->work.g_y, v->work.g_w, v->work.g_h);
+		if (as_icon)
+		{
+			iconify_win(v, -1, -1, -1, -1);
+		}
 		else
-			wind_set_str(v->handle, WF_NAME, notitle);
-	}
-
-	wind_calc_grect(WC_BORDER, v->kind, &v->work, &r);
-	if (as_icon)
-	{
-		(*v->sized)(v, r.g_x, r.g_y, r.g_w, r.g_h);
-		iconify_win(v, -1, -1, -1, -1);
+		{
+			wind_open_grect(v->handle, &v->work);
+			gl_topwin = v;
+		}
+#ifndef ONLY_XAAES
 	}
 	else
 	{
-		(*v->sized)(v, r.g_x, r.g_y, r.g_w, r.g_h);	/* macht snapping! */
+		if (v->handle >= 0)
+			return;
+
+		v->handle = wind_create_grect(v->kind, &v->full);
+		
+		if (v->handle < 0)
+			return;
+
+		if (v->kind & NAME) 
+		{
+			if (v->title)
+				wind_set_str(v->handle, WF_NAME, v->title);
+			else
+				wind_set_str(v->handle, WF_NAME, notitle);
+		}
+
 		wind_calc_grect(WC_BORDER, v->kind, &v->work, &r);
-		wind_open_grect(v->handle, &r);
-		gl_topwin = v;
+		if (as_icon)
+		{
+			(*v->sized)(v, r.g_x, r.g_y, r.g_w, r.g_h);
+			iconify_win(v, -1, -1, -1, -1);
+		}
+		else
+		{
+			(*v->sized)(v, r.g_x, r.g_y, r.g_w, r.g_h);	/* macht snapping! */
+			wind_calc_grect(WC_BORDER, v->kind, &v->work, &r);
+			wind_open_grect(v->handle, &r);
+			gl_topwin = v;
+		}
 	}
+#endif
 	gl_winanz++;
 	send_avwinopen(v->handle);
 }
@@ -489,6 +637,9 @@ bool window_msg(short *msgbuff)
 		case WM_MOVED:
 			(*v->moved)(v, msgbuff[4], msgbuff[5], msgbuff[6], msgbuff[7]);
 			break;
+		case WM_REPOSED:
+			(*v->reposed)(v, msgbuff[4], msgbuff[5], msgbuff[6], msgbuff[7]);
+			break;
 		case WM_FULLED:
 			(*v->fulled)(v);
 			break;
@@ -549,54 +700,85 @@ void force_redraw(WINDOW *v)
 	redraw_window(v, v->work.g_x, v->work.g_y, v->work.g_w, v->work.g_h);
 }
 
-
 void change_window_gadgets(WINDOW *w, short newkind)
 {
+#ifndef ONLY_XAAES
 	bool reopen = FALSE;
+#endif
 	GRECT n;
 	
 	if (newkind == w->kind) 
 		return;
 
-	if (w->handle >= 0) 
+#ifndef ONLY_XAAES
+	if (w->wco)
 	{
-		wind_close(w->handle);
-		wind_delete(w->handle);
-		send_avwinclose(w->handle);
-		w->handle = -1;
-		gl_winanz--;
-		reopen = TRUE;
+#endif
+		if (w->handle >= 0)
+		{
+			wind_xget_grect(w->handle, WF_CALCW2F, &w->work, &n);
+			wind_close(w->handle);
+			wind_delete(w->handle);
+			send_avwinclose(w->handle);
+
+			w->kind = newkind;
+			w->handle = wind_create_grect(w->kind, &gl_desk);
+		
+			wind_xget_grect(w->handle, WF_CALCF2W, &n, &w->work);
+			
+			if (w->work.g_w > w->max_w)
+				w->work.g_w = w->max_w;
+			if (w->work.g_h > w->max_h)
+				w->work.g_h = w->max_h;
+			
+			open_window(w, FALSE);
+		}
+#ifndef ONLY_XAAES
 	}
+	else
+	{
+		if (w->handle >= 0) 
+		{
+			wind_close(w->handle);
+			wind_delete(w->handle);
+			send_avwinclose(w->handle);
+			w->handle = -1;
+			gl_winanz--;
+			reopen = TRUE;
+		}
 
-	wind_calc_grect(WC_WORK, w->kind, &w->full, &n);
-	if (n.g_w > w->max_w)
-		n.g_w = w->max_w;
-	if (n.g_h > w->max_h)
-		n.g_h = w->max_h;
-	wind_calc(WC_BORDER, newkind, n.g_x, n.g_y, n.g_w, n.g_h, &n.g_x, &n.g_y, &w->full.g_w, &w->full.g_h);
+	
+		wind_calc_grect(WC_WORK, w->kind, &w->full, &n);
+		if (n.g_w > w->max_w)
+			n.g_w = w->max_w;
+		if (n.g_h > w->max_h)
+			n.g_h = w->max_h;
+	
+		wind_calc(WC_BORDER, newkind, n.g_x, n.g_y, n.g_w, n.g_h, &n.g_x, &n.g_y, &w->full.g_w, &w->full.g_h);
 
-	if (w->full.g_w > gl_desk.g_w)
-		w->full.g_w = gl_desk.g_w;
-	if (w->full.g_h > gl_desk.g_h)
-		w->full.g_h = gl_desk.g_h;
+		if (w->full.g_w > gl_desk.g_w)
+			w->full.g_w = gl_desk.g_w;
+		if (w->full.g_h > gl_desk.g_h)
+			w->full.g_h = gl_desk.g_h;
 
-	if (w->full.g_x < gl_desk.g_x)
-		w->full.g_x = gl_desk.g_x;
-	if (w->full.g_y < gl_desk.g_y)
-		w->full.g_y = gl_desk.g_y;
+		if (w->full.g_x < gl_desk.g_x)
+			w->full.g_x = gl_desk.g_x;
+		if (w->full.g_y < gl_desk.g_y)
+			w->full.g_y = gl_desk.g_y;
 
-	wind_calc_grect(WC_BORDER, w->kind, &w->work, &n);
-	if (n.g_w > w->full.g_w)
-		n.g_w = w->full.g_w;
-	if (n.g_h > w->full.g_h)
-		n.g_h = w->full.g_h;
+		wind_calc_grect(WC_BORDER, w->kind, &w->work, &n);
+		if (n.g_w > w->full.g_w)
+			n.g_w = w->full.g_w;
+		if (n.g_h > w->full.g_h)
+			n.g_h = w->full.g_h;
 
-	wind_calc_grect(WC_WORK, newkind, &n, &w->work);
-
-	w->kind = newkind;
-
-	if (reopen)
-		open_window(w, FALSE);
+		wind_calc_grect(WC_WORK, newkind, &n, &w->work);
+	
+		w->kind = newkind;
+		if (reopen)
+			open_window(w, FALSE);
+	}
+#endif
 }
 
 
@@ -657,8 +839,8 @@ void cycle_window(void)
 }
 
 /*
- * Da die Fenster-Dialoge von der CF-Lib verwaltet werden, mssen wir
- * dafr sorgen, daž sie auch in unserer Fenster-Liste auftauchen (fr ^W)
+ * Da die Fenster-Dialoge von der CF-Lib verwaltet werden, mssen wir
+ * dafr sorgen, da sie auch in unserer Fenster-Liste auftauchen (fr ^W)
 */
 
 static void wdial_c(WINDOW *v)
@@ -685,7 +867,7 @@ void wdial_open(WDIALOG *dial)
 		/* Callbacks */
 		v->closed = wdial_c;
 
-		/* in Liste einh„ngen */
+		/* in Liste einhngen */
 		gl_winlist = v;
 		gl_winanz++;
 		send_avwinopen(v->handle);

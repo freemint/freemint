@@ -19,7 +19,7 @@ bool	gl_shortcut = TRUE;
 bool	gl_allogin = FALSE;
 
 bool	gl_con_auto = FALSE;		/* beim Start anlegen */
-bool	gl_con_output = FALSE;		/* bei Ausgaben îffnen */
+bool	gl_con_output = FALSE;		/* bei Ausgaben ffnen */
 bool	gl_con_log = FALSE;		/* Datei-Loggin */
 char	gl_con_logname[128] = "U:\\ram\\con.log";
 
@@ -30,7 +30,7 @@ WINCFG	*gl_wincfg = NULL;
 */
 static WDIALOG	*cfg_wd, *con_wd;
 static WINCFG	*p_cfg = NULL;
-static TEXTWIN	*cfg_win;		/* Fenster, fÅr die der Dialog offen ist */
+static TEXTWIN	*cfg_win;		/* Fenster, fr die der Dialog offen ist */
 static short	new_id, new_pts;	/* neuer Font von FONTSEL */
 static int	new_term, new_fg, new_bg, new_tab;
 static char	new_log[128];
@@ -96,19 +96,22 @@ WINCFG *get_wincfg(const char *prog)
 
 static void validate_cfg(WINCFG *cfg)
 {
-	if (cfg->kind < 0)		cfg->kind = 0x4FEF;
+	if (cfg->kind < 0)	cfg->kind = 0x4FEF;
 	if (cfg->font_id < 1)	cfg->font_id = 1;
 	if (cfg->font_pts < 1)	cfg->font_pts = 10;
-	if (cfg->col < 1)		cfg->col = 80;
-	if (cfg->row < 1)			cfg->row = 24;
-	if (cfg->scroll < 0)		cfg->scroll = 0;
+	if (cfg->col < 1)	cfg->col = 80;
+	if (cfg->row < 1)	cfg->row = 24;
+	if (cfg->scroll < 0)	cfg->scroll = 0;
 	if (cfg->vt_mode < MODE_VT52 || cfg->vt_mode > MODE_VT100)
 		cfg->vt_mode = MODE_VT52;
 
-	if (cfg->vdi_colors) {
+	if (cfg->vdi_colors)
+	{
 		cfg->fg_color &= 0xf;
 		cfg->bg_color &= 0xf;
-	} else {
+	}
+	else
+	{
 		cfg->fg_color = cfg->fg_color & 0x7;
 		cfg->bg_color = cfg->bg_color & 0x7;
 	}
@@ -175,7 +178,6 @@ static int exit_conwd(WDIALOG *wd, short exit_obj)
 			close = TRUE;
 			break;
 	}
-
 	if (close)
 		wdial_close(wd);
 
@@ -219,8 +221,8 @@ static void open_cfgwd(WDIALOG *wd)
 	if (cfg_wd->mode == 0)		/* nur beim ersten Mal */
 	{
 		if (gl_topwin && !(gl_topwin->flags & WISDIAL)
-						  && !(gl_topwin->flags & WICONIFIED)
-						  && !(gl_topwin->flags & WSHADED))
+		  && !(gl_topwin->flags & WICONIFIED)
+		  && !(gl_topwin->flags & WSHADED))
 		{
 			/* oberstes Fenster */
 			cfg_win = gl_topwin->extra;
@@ -331,8 +333,7 @@ static int exit_cfgwd(WDIALOG *wd, short exit_obj)
 	switch (exit_obj)
 	{
 		case WFSEL:
-			ok = do_fontsel((FS_M_ALL|FS_F_MONO), rsc_string(STRFONTSEL),
-								&new_id, &new_pts);
+			ok = do_fontsel((FS_M_ALL|FS_F_MONO), rsc_string(STRFONTSEL), &new_id, &new_pts);
 			if (ok)
 			{
 				_ltoa(new_pts, str, 10);
@@ -860,7 +861,7 @@ void config_init(void)
 	rsrc_gaddr(R_TREE, POPUPS, &popups);
 	fix_dial(popups);
 
-	/* Default-Cfg in die Liste, wird beim Laden ggf. Åberschrieben! */
+	/* Default-Cfg in die Liste, wird beim Laden ggf. berschrieben! */
 	crt_newcfg("default");
 }
 

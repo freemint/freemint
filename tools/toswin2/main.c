@@ -37,9 +37,9 @@ static void term_tw(int ret_code)
 	exit_app(ret_code);
 }
 
-
 int main(int argc, char *argv[])
 {
+	short gi_wind, gi_msgs, d;
 	char str[25];
 	OBJECT *tmp;
 
@@ -70,16 +70,47 @@ int main(int argc, char *argv[])
 		do_alert(1, 0, "[3][Falsche RSC-Version!|Wrong RSC version!][Exit]");
 		exit_app(1);
 	}
-	
+
+
 	global_init();
+	
 	if (!gl_mint || gl_gem <= 0x400)
 	{
 		if (alert(1, 0, NOAES41) == 2)
 			term_tw(1);
 	}
-	shel_write(9, 1, 1, 0L, 0L);	/* wir k”nnen AP_TERM */
+	
+	appl_xgetinfo(11, &gi_wind, &d, &d, &d);
+	appl_xgetinfo(12, &gi_msgs, &d, &d, &d);
 
-	menu_register(-1, TW2NAME);	/* damit tw-call immer fndig wird. */
+	wco = 0;
+	if (gi_wind & 0x0800)	/* WF_OPTS */
+	{
+		short wopts, new_wopts = 0;
+
+		appl_xgetinfo(97, &wopts, &d, &d, &d);
+		
+		if (gi_msgs & 0x0400) /* WM_REPOSED */
+			new_wopts |= WO0_SENDREPOS; //wind_set(-1, WF_OPTS, 1, WO0_SENDREPOS, 0, 0);
+		if (wopts & 0x0020) /* WCOWORK */
+		{
+			new_wopts |= 0x0020;  /* WO0_WCOWORK */
+			wco = 1;
+		}
+		wind_set(-1, WF_OPTS, 1, new_wopts, 0, 0);
+	}
+#ifdef ONLY_XAAES
+	if (!wco)
+	{
+		do_alert(1, 0, "[3][This version of TosWin2 needs WCOWORK,|only provided by XaAES atm!][Exit]");
+		return FALSE;
+	}
+#endif	
+	
+	if (gi_msgs & 0x0008) /* AP_TERM */
+		shel_write(9, 1, 1, 0L, 0L);
+	
+	menu_register(-1, TW2NAME);	/* damit tw-call immer fndig wird. */
 	if (gl_debug)
 		menu_register(gl_apid, "  TosWin2 (debug)");
 	else	
