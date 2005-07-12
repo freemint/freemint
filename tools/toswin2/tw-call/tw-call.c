@@ -1,28 +1,28 @@
 /*
  * tw-call.app
  *
- * TW-Call ist ein Zusatz fÅr TosWin 2.
- * Es wird beim AES angemeldet und Åbernimmt das Starten von TOS-Programmen.
- * Wird es ohne Parameter gestartet, lîst es bei TosWin2 die Funktion 'Loginshell'
- * aus, ansonsten wird das Åbergeben Programm getstartet.
- * LÑuft TosWin2 noch nicht, wird es gestartet.
+ * TW-Call ist ein Zusatz fr TosWin 2.
+ * Es wird beim AES angemeldet und bernimmt das Starten von TOS-Programmen.
+ * Wird es ohne Parameter gestartet, lst es bei TosWin2 die Funktion 'Loginshell'
+ * aus, ansonsten wird das bergeben Programm getstartet.
+ * Luft TosWin2 noch nicht, wird es gestartet.
  *
  * 15.04.97		Programm angelegt (Loginshell).
  * 19.04.97		TalkTW integriert.
- * 02.05.97		\n als Arg-Trenner und argc, envc eingefÅhrt.
- * 20.07.97		Name (toswin*2*) geÑndert.
- * 24.08.97		Option '-l' eingefÅhrt.
+ * 02.05.97		\n als Arg-Trenner und argc, envc eingefhrt.
+ * 20.07.97		Name (toswin*2*) gendert.
+ * 24.08.97		Option '-l' eingefhrt.
  *					Ohne Parms wird nur noch TW2 gestartet.
  * 25.11.98		Ab N.AES 1.20 ist shel_write() case-sensetiv, also kommt der
- *					Start-Pfad nicht mehr in Groûschrift und muû ge-lowert werden!
+ *					Start-Pfad nicht mehr in Groschrift und mu ge-lowert werden!
  * 11.04.99		Es wurde send_vastart() aus der CF-Lib benutzt, obwohl die Lib
- *					gar nicht initialisiert wurde. FÅhrte zu Problemem unter MP.
+ *					gar nicht initialisiert wurde. Fhrte zu Problemem unter MP.
  *					tw-call benutzt nun kein VA_START mehr, um eine neue Shell
  *					zu starten. Stattdessen wurde eine neue Nachricht definiert.
- * 23.05.99		ZusÑtzlich zum MenÅ-Namen, meldet tw-call den TOS-Namen
+ * 23.05.99		Zustzlich zum Men-Namen, meldet tw-call den TOS-Namen
  *					auch mit menu_register(-1) an, d.h. beim appl_find(TOS-Name)
  *					wird tw-call gefunden.
- * 20.08.00		Check fÅr N.AES < 1.20 (case-sensetiver shel_write()) korrigiert.
+ * 20.08.00		Check fr N.AES < 1.20 (case-sensetiver shel_write()) korrigiert.
  *
  */
 
@@ -102,7 +102,7 @@ static bool write_blk(int argc, char *argv[])
 				strcpy(blk->arg, argv[2]);
 				for (i = 3; i < argc; i++)
 				{
-					strcat(blk->arg, "\n");		/* LF als Trenner, damit ' ' nicht geklammert werden mÅssen! */
+					strcat(blk->arg, "\n");		/* LF als Trenner, damit ' ' nicht geklammert werden mssen! */
 					strcat(blk->arg, argv[i]);
 				}
 			}
@@ -111,10 +111,10 @@ static bool write_blk(int argc, char *argv[])
 
 			if (dbg)
 			{
-				printf("tw-call: argv[1]   : %s\n", argv[1]);
-				printf("tw-call: blk->name : %s\n", blk->name);
-				printf("tw-call: blk->pfad : %s\n", blk->pfad);
-				printf("tw-call: blk->arg  : %s\n", blk->arg);
+				printf("tw-call: argv[1]   : %s\r\n", argv[1]);
+				printf("tw-call: blk->name : %s\r\n", blk->name);
+				printf("tw-call: blk->pfad : %s\r\n", blk->pfad);
+				printf("tw-call: blk->arg  : %s\r\n", blk->arg);
 			}
 
 			Fclose(fd);
@@ -208,8 +208,8 @@ int main(int argc, char *argv[])
 			menu_register(-1, menu_str2);
 			
 			/*
-			 * Dummy-Fenster, damit wir mitbekommen, wenn TW-Call Åber das
-			 * Programm-MenÅ aktiviert wird.
+			 * Dummy-Fenster, damit wir mitbekommen, wenn TW-Call ber das
+			 * Programm-Men aktiviert wird.
 			*/
 			win = wind_create(0, 0, 0, 0, 0);
 			wind_open(win, 0, 0, 0, 0);
@@ -281,7 +281,7 @@ int main(int argc, char *argv[])
 		}
 	}
 	else
-		form_alert(1, "[3][TW-Call:|TosWin2 lÑuft nicht!][Abbruch]");
+		form_alert(1, "[3][TW-Call:|TosWin2 luft nicht!][Abbruch]");
 
 	if (dbg)
 		printf("tw-call: leaving tw-call(%d) with exit_code = %d.\n", gl_apid, (int) ret);

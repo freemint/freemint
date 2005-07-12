@@ -67,9 +67,11 @@ vt_quote_putch (TEXTWIN* tw, unsigned int c)
 	paint (tw, c);
 	++tw->cx;
 
-	if (tw->cx >= tw->maxx) {
+	if (tw->cx >= tw->maxx)
+	{
 		/* Character was drawn in last column.  */
-		if (tw->do_wrap && (tw->curr_tflags & TWRAPAROUND)) {
+		if (tw->do_wrap && (tw->curr_tflags & TWRAPAROUND))
+		{
 			new_line (tw);
 			tw->cx = 0;
 			tw->do_wrap = 0;

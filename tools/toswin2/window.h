@@ -11,6 +11,7 @@
 #define WICONIFIED 	2
 #define WSHADED 	4
 #define WISDIAL		8
+#define WOPEN		16
 
 typedef struct win WINDOW;
 struct win
@@ -18,11 +19,13 @@ struct win
 	WINDOW	*next;		/* next window in list */
 	int	handle;		/* AES window handle */
 	int	kind;		/* window gadgets */
+	bool	wco;		/* Window Coordinate Orientation */
 	char 	*title;
 	GRECT	work;		/* size of window working area */
 	GRECT	full;
 	GRECT	prev;
 	GRECT	full_work;
+	long	w_limit;
 	int	max_w, max_h;	/* max size of window working area */
 	int	icon_x, icon_y;	/* WINICON Position, da der Objektbaum mehrfach benutzt wird. */
 	int	flags;		/* various window flags */
@@ -39,6 +42,7 @@ struct win
 	void	(*fulled) 	(struct win *win);
 	void	(*sized) 	(struct win *win, short x, short y, short w, short h);
 	void	(*moved) 	(struct win *win, short x, short y, short w, short h);
+	void	(*reposed)	(struct win *win, short x, short y, short w, short h);
 	void	(*iconify) 	(struct win *win, short, short, short, short);
 	void	(*uniconify)	(struct win *win, short, short, short, short);
 	void	(*shaded) 	(struct win *win, short on);
@@ -51,7 +55,7 @@ struct win
 	void	(*timer) 	(struct win *win, int top);
 };
 
-/* Min/Maximale Fenstergr”že */
+/* Min/Maximale Fenstergre */
 #define MINROWS	1
 #define MINCOLS	10
 #define MAXROWS	128
@@ -63,7 +67,7 @@ extern int	 gl_winanz;	/* Anzahl der offenen Fenster */
 
 WINDOW	*create_window (char *title, short kind, 
 			short wx, short wy, short ww, short wh,
-			short max_w, short max_h);
+			short max_w, short max_h, long w_limit);
 
 void	open_window(WINDOW *v, bool as_icon);
 
