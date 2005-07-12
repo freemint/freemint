@@ -76,12 +76,28 @@ XA_wind_create(enum locks lock, struct xa_client *client, AESPB *pb)
 				   client->options.thinframe,
 				   client->options.thinwork,
 				   r,
-				   &root_window->wa, //&r,
+				   &r,
 				   NULL);	
 
 	if (new_window)
+	{
+		if (pb->control[N_INTOUT] >= 5)
+		{
+			display("create with max %d/%d/%d/%d", r);
+			if (new_window->opts & XAWO_WCOWORK)
+			{
+				display("return rwa %d/%d/%d/%d", new_window->rwa);
+				*(RECT *)(pb->intout + 1) = new_window->rwa;
+			}
+			else
+			{
+				display("return rc  %d/%d/%d/%d", new_window->rc);
+				*(RECT *)(pb->intout + 1) = new_window->rc;
+			}
+		}
 		/* Return the window handle in intout[0] */
 		pb->intout[0] = new_window->handle;
+	}
 	else
 		/* Fail to create window, return -ve number */
 		pb->intout[0] = -1;
@@ -573,14 +589,33 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		if (cmd == WF_PREVXYWH)
 		{
 			DIAGS(("wind_set: WF_PREVXYWH"));
-			ir = (RECT *)&w->pr;
-			status = ~XAWS_FULLED;
+			set_winrect(w, &w->pr, (const RECT *)(pb->intin + 2));
+			
+			if (pb->control[N_INTOUT] >= 5)
+			{
+				if (w->opts & XAWO_WCOWORK)
+					*(RECT *)(pb->intout + 1) = fa2rwa(w, &w->pr);
+				else
+					*(RECT *)(pb->intout + 1) = w->pr;
+				DIAGS(("wind_set: WF_PREVXYWH return %d/%d/%d/%d", *(RECT *)(pb->intout + 1))); 
+			}
+			break;
 		}
 		else if (cmd == WF_FULLXYWH)
 		{
 			DIAGS(("wind_set: WF_FULLXYWH"));
-			ir = (RECT *)&w->max;
-			status = XAWS_FULLED;
+			
+			set_winrect(w, &w->max, (const RECT *)(pb->intin + 2));
+
+			if (pb->control[N_INTOUT] >= 5)
+			{
+				if (w->opts & XAWO_WCOWORK)
+					*(RECT *)(pb->intout + 1) = fa2rwa(w, &w->max);
+				else
+					*(RECT *)(pb->intout + 1) = w->max;
+				DIAGS(("wind_set: WF_FULLXYWH return %d/%d/%d/%d", *(RECT *)(pb->intout + 1))); 
+			}
+			break;
 		}
 		else
 		{
@@ -836,6 +871,15 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			
 			iconify_window(lock, w, &in);
 		}
+		if (pb->control[N_INTOUT] >= 5)
+		{
+			if (w->opts & XAWO_WCOWORK)
+				*(RECT *)(pb->intout + 1) = w->rwa;
+			else
+				*(RECT *)(pb->intout + 1) = w->rc;
+
+			DIAGS(("wind_set: WF_ICONIFY return %d/%d/%d/%d", *(RECT *)(pb->intout + 1))); 
+		}
 		break;
 	}
 
@@ -847,7 +891,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		else
 		{
 			RECT in;
-			if (pb->intin[4] == -1 || pb->intin[5] == -1 || !pb->intin[4] || !pb->intin[5])
+			if (pb->intin[4] == -1 || pb->intin[5] == -1 || (pb->intin[4] | pb->intin[5]))
 				in = w->ro;
 			else
 			{
@@ -856,8 +900,16 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				else
 					in = *((const RECT *)(pb->intin + 2));
 			}
-			
 			uniconify_window(lock, w, &in);
+		}
+		if (pb->control[N_INTOUT] >= 5)
+		{
+			if (w->opts & XAWO_WCOWORK)
+				*(RECT *)(pb->intout + 1) = w->rwa;
+			else
+				*(RECT *)(pb->intout + 1) = w->rc;
+
+			DIAGS(("wind_set: WF_UNICONIFY return %d/%d/%d/%d", *(RECT *)(pb->intout + 1))); 
 		}
 		break;
 	}
@@ -1670,6 +1722,11 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 	case WF_CALCU2F:
 	{
 		*ro = wa2fa(w, (const RECT *)&pb->intin[2]);
+		break;
+	}
+	case WF_MAXWORKXYWH:
+	{
+		*ro = fa2rwa(w, (const RECT *)&root_window->wa);
 		break;
 	}
 	default:
