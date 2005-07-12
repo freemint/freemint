@@ -270,6 +270,23 @@ no definitions are made yet.
      (for example to cascade windows, or position one window next to
      another), there is wind_get(WF_CALCW2F) and wind_get(WF_CALCF2W). See
      below for documentation.
+     
+     
+   Programming Model:
+   
+ This mode makes life a little easier for applications authors.
+
+ Creating a window
+ 
+  Creating a window under normal conditions looked something like this;
+  
+   wind_get(dth, WF_WORKXYWH, &full_x, &full_y, &full_w, &full_h);
+   wind_calc(WC_WORK, max_x, max_y, max_w, max_h, &w_x, &w_y, &w_w, &w_h);
+   if (snapping)
+   {
+   	snap(work_coords);
+	
+   
 
 ===============================================================================
 =                            wind_set() extensions                            =

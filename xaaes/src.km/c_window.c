@@ -206,6 +206,20 @@ hide_move(struct options *o)
 
 	return kind;
 }
+void
+set_winrect(struct xa_window *wind, RECT *wr, const RECT *new)
+{
+	RECT r;
+	
+	if (wind->opts & XAWO_WCOWORK)
+		r = rwa2fa(wind, new);
+	else
+		r = *new;
+	
+	fitin_root(&r);
+
+	*wr = r;
+}
 
 void
 inside_root(RECT *r, struct options *o)
@@ -218,6 +232,21 @@ inside_root(RECT *r, struct options *o)
 			r->x = root_window->wa.x;
 }
 
+void
+fitin_root(RECT *r)
+{
+	RECT *w = &root_window->wa;
+
+	if (r->x < w->x)
+		r->x = w->x;
+	if (r->y < w->y)
+		r->y = w->y;
+	if (r->w > w->w)
+		r->w = w->w;
+	if (r->h > w->h)
+		r->h = w->h;
+}
+		
 static void
 inside_minmax(RECT *r, struct xa_window *wind)
 {
@@ -748,7 +777,7 @@ create_window(
 	tp = fix_wind_kind(tp);
 
 	/* implement maximum rectangle (needed for at least TosWin2) */
-	w->max = max ? *max : root_window->wa;
+// 	w->max = max ? *max : root_window->wa;
 
 	if (tp & (UPARROW|DNARROW|LFARROW|RTARROW))
 	{
@@ -835,6 +864,21 @@ create_window(
 
 	calc_work_area(w);
 
+	if (max)
+	{
+		if (w->opts & XAWO_WCOWORK)
+		{
+			w->max = rwa2fa(w, max);
+		}
+		else
+		{
+			w->max = *max;
+		}
+		xa_rect_clip(&root_window->wa, &w->max, &w->max);
+	}
+	else
+		w->max = root_window->wa;
+	
 	if (tp & (CLOSER|NAME|MOVER|ICONIFIER|FULLER))
 	{
 		RECT t;
