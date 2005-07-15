@@ -930,6 +930,38 @@ XA_appl_write(enum locks lock, struct xa_client *client, AESPB *pb)
 					qmf = QMF_CHKDUP;
 				}
 			}
+			else
+			{
+				if (client != dest_clnt)
+				{
+					/* message conversion */
+					switch (m->m[0])
+					{
+						case WM_SIZED:
+						case WM_MOVED:
+						case WM_ICONIFY ... WM_ALLICONIFY:
+						case WM_REPOSED:
+						{
+							struct xa_window *wind = get_wind_by_handle(lock, m->m[3]);
+
+							if (wind)
+							{
+								short t = (client->options.wind_opts & XAWO_WCOWORK) ? 1 : 0;
+						
+								if (dest_clnt->options.wind_opts & XAWO_WCOWORK)
+									t |= 2;
+
+								if (t == 1)		/* sender in WCOWORK, receiver in normal */
+									*(RECT *)(m->m + 4) = rwa2fa(wind, (const RECT *)(m->m + 4));
+								else if (t == 2)	/* sender in normal, receiver in WCOWORK */
+									*(RECT *)(m->m + 4) = fa2rwa(wind, (const RECT *)(m->m + 4));
+							}
+							break;
+						}
+						default:;
+					}
+				}
+			}
 			if (m)
 				send_a_message(lock, dest_clnt, amq, qmf, m);
 			

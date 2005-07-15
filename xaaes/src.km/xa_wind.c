@@ -83,15 +83,12 @@ XA_wind_create(enum locks lock, struct xa_client *client, AESPB *pb)
 	{
 		if (pb->control[N_INTOUT] >= 5)
 		{
-			display("create with max %d/%d/%d/%d", r);
 			if (new_window->opts & XAWO_WCOWORK)
 			{
-				display("return rwa %d/%d/%d/%d", new_window->rwa);
 				*(RECT *)(pb->intout + 1) = new_window->rwa;
 			}
 			else
 			{
-				display("return rc  %d/%d/%d/%d", new_window->rc);
 				*(RECT *)(pb->intout + 1) = new_window->rc;
 			}
 		}
@@ -416,10 +413,10 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	/* */
 	case WF_WHEEL:
 	{
-		long o = 0, om = ~(XAWO_WHEEL);
+		unsigned long o = 0, om = ~(XAWO_WHEEL);
 		short mode = -1;
 		
-		if (pb->intin[2])
+		if (pb->intin[2] == 1)	/* Enable */
 		{
 			o |= XAWO_WHEEL;
 			mode = pb->intin[3];
@@ -427,7 +424,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				mode = DEF_WHLMODE;
 		}
 		
-		if (wind == 0)
+		if (wind == -1)
 		{
 			client->options.wind_opts &= om;
 			client->options.wind_opts |= o;
