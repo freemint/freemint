@@ -163,17 +163,17 @@ typedef struct pEvntrec
 #define WM_ARROWED	 	24
 #define WM_HSLID		25
 #define WM_VSLID		26
-#define WM_SIZED		27
-#define WM_MOVED		28
+#define WM_SIZED		27	/* affected by WCOWORK mode */
+#define WM_MOVED		28	/* affected by WCOWORK mode */
 #define WM_NEWTOP		29
 #define WM_UNTOPPED		30
 #define WM_ONTOP		31
 #define WM_BOTTOM		33
-#define WM_ICONIFY		34
-#define WM_UNICONIFY	35
-#define WM_ALLICONIFY	36
+#define WM_ICONIFY		34	/* Affected by WCOWORK mode */
+#define WM_UNICONIFY		35	/* Affected by WCOWORK mode */
+#define WM_ALLICONIFY		36	/* Affected by WCOWORK mode */
 #define WM_TOOLBAR		37
-#define WM_REPOSED		38
+#define WM_REPOSED		38	/* Affected by WCOWORK mode */
 #define AC_OPEN			40
 #define AC_CLOSE		41
 #define AP_TERM			50
