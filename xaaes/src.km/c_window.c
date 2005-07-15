@@ -874,7 +874,7 @@ create_window(
 		{
 			w->max = *max;
 		}
-		xa_rect_clip(&root_window->wa, &w->max, &w->max);
+		fitin_root(&w->max);
 	}
 	else
 		w->max = root_window->wa;

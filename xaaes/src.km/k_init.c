@@ -445,7 +445,9 @@ k_init(void)
 // 	v->handle = C.vh;
 	(*global_vdiapi->f_perimeter)(v, 0);	/* from set_colours; never set to 1 ever */
 
+	hidem();
 	graf_mouse(ARROW, NULL, NULL, false);
+	showm();
 	v_hide_c(v->handle);
 	(*global_vdiapi->wr_mode)(v, MD_TRANS);
 	

@@ -374,7 +374,6 @@ wdialog_message(enum locks lock, struct xa_client *client, struct wdlg_evnt_parm
 				mr = *(RECT *)(msg + 4);
 	
 			r.x = mr.x, r.y = mr.y;			
-// 			r.x = msg[4], r.y = msg[5];
 
 			if (wind->r.x != r.x || wind->r.y != r.y)
 			{
