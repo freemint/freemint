@@ -1268,6 +1268,16 @@ enum window_status
 };
 typedef enum window_status WINDOW_STATUS;
 
+struct xa_wc_cache;
+struct xa_wc_cache
+{
+	struct xa_wc_cache *next;
+	void  *wtheme_handle;
+	XA_WIND_ATTR tp;
+	RECT delta;
+	RECT wadelta;
+};
+
 /* Window Descriptor */
 struct xa_window
 {
@@ -1283,9 +1293,15 @@ struct xa_window
 
 	WINDOW_STATUS window_status;	/* Window status */
 	
+	XA_WIND_ATTR	requested_widgets;
 	XA_WIND_ATTR	active_widgets;	/* Summary of the current standard widgets for the window */
 	XA_WIND_ATTR	save_widgets;	/* Remember active_widgets if iconified */
-	
+	XA_WIND_ATTR	save_requested_widgets;
+	RECT delta;
+	RECT wadelta;
+	RECT save_delta;
+	RECT save_wadelta;
+
 	/*
 	 * These are pointers to structures holding widget color information for the
 	 * widget theme module. XaAES will update the 'colors' member whenever the
@@ -1320,7 +1336,7 @@ struct xa_window
 	RECT ro;			/* Original dimemsions when iconified */
 	RECT wa;			/* user work area */
 	RECT rwa;			/* work area minus toolbar, if installed - else same as wa */
-	RECT bd;			/* border displacement */
+// 	RECT bd;			/* border displacement */
 	RECT ba;			/* border area for use by border sizing facility. */
 	RECT pr;			/* previous dimensions */
 	RECT t;				/* Temporary coordinates used internally */
@@ -1850,6 +1866,7 @@ struct xa_client
 	struct proc *p;			/* context back ptr */
 	struct xa_user_things *ut;	/* trampoline code for user callbacks */
 	struct proc *tp;		/* Thread */
+	struct xa_wc_cache *wcc;	/* window_calc cache */
 
 	short	swm_newmsg;
 

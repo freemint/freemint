@@ -655,6 +655,8 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 
 	exit_client_widget_theme(client);
 
+	delete_wc_cache(&client->wcc);
+
 	if (detach)
 		detach_extension(NULL, XAAES_MAGIC);
 		
@@ -952,9 +954,9 @@ XA_appl_write(enum locks lock, struct xa_client *client, AESPB *pb)
 									t |= 2;
 
 								if (t == 1)		/* sender in WCOWORK, receiver in normal */
-									*(RECT *)(m->m + 4) = rwa2fa(wind, (const RECT *)(m->m + 4));
+									*(RECT *)(m->m + 4) = w2f(&wind->delta, (const RECT *)(m->m + 4), true);
 								else if (t == 2)	/* sender in normal, receiver in WCOWORK */
-									*(RECT *)(m->m + 4) = fa2rwa(wind, (const RECT *)(m->m + 4));
+									*(RECT *)(m->m + 4) = f2w(&wind->delta, (const RECT *)(m->m + 4), true);
 							}
 							break;
 						}
