@@ -472,7 +472,7 @@ repos_iconified(struct proc *p, long arg)
 		{
 			r = free_icon_pos(lock, w);
 			if (w->opts & XAWO_WCOWORK)
-				r = fa2rwa(w, &r);
+				r = f2w(&w->delta, &r, true);
 			send_moved(lock, w, AMQ_NORM, &r);
 			w->t = r;
 		}

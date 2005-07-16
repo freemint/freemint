@@ -276,7 +276,7 @@ rp2ap_obtree(struct xa_window *wind, struct xa_widget *widg, RECT *r)
 				{
 					obtree->ob_x += wt->ox;
 					obtree->ob_y += wt->oy;
- 					obtree->ob_width -= wt->ox;
+					obtree->ob_width -= (wt->ox + wt->ox);
 				}
 			}
 		}
@@ -931,7 +931,7 @@ drag_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, cons
 				r.h = wind->rc.h;
 				
 				if (wind->opts & XAWO_WCOWORK)
-					r = fa2rwa(wind, &r);
+					r = f2w(&wind->delta, &r, true);
 				
 				send_moved(lock, wind, AMQ_NORM, &r);
 			}
@@ -986,7 +986,7 @@ drag_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, cons
 					r.h = wind->rc.h;
 					
 					if (wind->opts & XAWO_WCOWORK)
-						r = fa2rwa(wind, &r);
+						r = f2w(&wind->delta, &r, true);
 					
 					send_moved(lock, wind, AMQ_NORM, &r);
 				}
@@ -1168,6 +1168,7 @@ click_iconify(enum locks lock, struct xa_window *wind, struct xa_widget *widg, c
 		{
 			/* Window is already iconified - send request to restore it */
 			r = wind->ro;
+			
 			msg = WM_UNICONIFY;
 		}
 		else
@@ -1185,7 +1186,7 @@ click_iconify(enum locks lock, struct xa_window *wind, struct xa_widget *widg, c
 		if (msg != -1)
 		{
 			if (wind->opts & XAWO_WCOWORK)
-				r = fa2rwa(wind, &r);
+				r = f2w(msg == WM_UNICONIFY ? &wind->save_delta : &wind->delta, &r, true);
 
 			wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 				   msg, 0, 0, wind->handle,
@@ -1274,7 +1275,7 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 		if (move || size)
 		{
 			if (wind->opts & XAWO_WCOWORK)
-				r = fa2rwa(wind, &r);
+				r = f2w(&wind->delta, &r, true);
 
 			if (move && size && (wind->opts & XAWO_SENDREPOS))
 				send_reposed(lock, wind, AMQ_NORM, &r);
@@ -1346,7 +1347,7 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 			if (move || size)
 			{
 				if (wind->opts & XAWO_WCOWORK)
-					r = fa2rwa(wind, &r);
+					r = f2w(&wind->delta, &r, true);
 				if (move && size && (wind->opts & XAWO_SENDREPOS))
 					send_reposed(lock, wind, AMQ_NORM, &r);
 				else
@@ -1753,104 +1754,123 @@ void
 calc_work_area(struct xa_window *wind)
 {
 	struct xa_widget_row *rows = wind->widg_rows;
-
-	RECT r = wind->rc;
+// 	RECT r = wind->rc;
 	int thin = wind->thinwork;
 	int frame = wind->frame;
 	int t_margin, b_margin, l_margin, r_margin;
 	short wa_borders = 0;
 	
-	wind->wa = r;
+// 	wind->wa = r;
 
+	/* a colour work area frame is larger to allow for the
+	 * fancy borders :-) unless thinwork has been specified
+	 * a color work area frame consists of a grey, a light and
+	 * a dark line.
+	 */
+
+	/* in color aligning is on the top & left light line of tha wa */
+	t_margin = (MONO || thin) ? 1 : 2;
+	b_margin = (MONO || thin) ? 1 : 2;
+	l_margin = (MONO || thin) ? 1 : 2;
+	r_margin = (MONO || thin) ? 1 : 2;
+	
+	/* This is the largest work area possible */
+	if (frame >= 0)
 	{
-		/* a colour work area frame is larger to allow for the
-		 * fancy borders :-) unless thinwork has been specified
-		 * a color work area frame consists of a grey, a light and
-		 * a dark line.
-		 */
-
-		/* in color aligning is on the top & left light line of tha wa */
-		t_margin = (MONO || thin) ? 1 : 2;
-		b_margin = (MONO || thin) ? 1 : 2;
-		l_margin = (MONO || thin) ? 1 : 2;
-		r_margin = (MONO || thin) ? 1 : 2;
+		wind->wadelta.x = frame;
+		wind->wadelta.y = frame;
+		wind->wadelta.w = (frame << 1) + wind->x_shadow;
+		wind->wadelta.h = (frame << 1) + wind->y_shadow;
+	#if 0
+		wind->wa.x += frame;
+		wind->wa.y += frame;
+		wind->wa.w -= (frame << 1);
+		wind->wa.h -= (frame << 1);
 		
-		/* This is the largest work area possible */
-		if (frame >= 0)
-		{
-			wind->wa.x += frame;
-			wind->wa.y += frame;
-			wind->wa.w -= (frame << 1);
-			wind->wa.h -= (frame << 1);
-			
-			wind->wa.w -= wind->x_shadow;
-			wind->wa.h -= wind->y_shadow;
-		}
-		if (frame < 0)
-			frame = 0;
+		wind->wa.w -= wind->x_shadow;
+		wind->wa.h -= wind->y_shadow;
+	#endif
+	}
+	else
+		wind->wadelta.x = wind->wadelta.y = wind->wadelta.w = wind->wadelta.h = 0;
+	
+	if (frame < 0)
+		frame = 0;
 
-		wind->ba.x = wind->r.x + frame;
-		wind->ba.y = wind->r.y + frame;
-		frame <<= 1;
-		wind->ba.w = wind->r.w - frame;
-		wind->ba.h = wind->r.h - frame;
+	wind->ba.x = wind->r.x + frame;
+	wind->ba.y = wind->r.y + frame;
+	frame <<= 1;
+	wind->ba.w = wind->r.w - frame;
+	wind->ba.h = wind->r.h - frame;
 
-		rp_2_ap_row(wind);
+	rp_2_ap_row(wind);
 
-		if ((rows = get_last_row(wind->widg_rows, (XAR_VERT | XAR_PM), XAR_START, false)))
-		{
-			wind->wa.y += (rows->r.y + rows->r.h);
-			wind->wa.h -= (rows->r.y + rows->r.h);	
-		}
-		else if (wind->frame >= 0 && wind->thinwork && wind->wa_frame)
-		{
-			wind->wa.y += t_margin;
-			wind->wa.h -= t_margin;
-			wa_borders |= WAB_TOP;
-		}
-
-		if ((rows = get_last_row(wind->widg_rows, (XAR_VERT | XAR_PM), (XAR_VERT | XAR_START), false)))
-		{
-			wind->wa.x += (rows->r.x + rows->r.w);
-			wind->wa.w -= (rows->r.x + rows->r.w);
-		}
-		else if (wind->frame >= 0 && wind->thinwork && wind->wa_frame)
-		{
-			wind->wa.x += l_margin;
-			wind->wa.w -= l_margin;
-			wa_borders |= WAB_LEFT;
-		}
-
-		if ((rows = get_last_row(wind->widg_rows, (XAR_VERT | XAR_PM), XAR_END, false)))
-			wind->wa.h -= rows->r.y;
-		else if (wind->frame >= 0 && wind->thinwork && wind->wa_frame)
-		{
-			wind->wa.h -= b_margin;
-			wa_borders |= WAB_BOTTOM;
-		}
-
-		if ((rows = get_last_row(wind->widg_rows, (XAR_VERT | XAR_PM), (XAR_VERT | XAR_END), false)))
-			wind->wa.w -= rows->r.x;
-		else if (wind->frame >= 0 && wind->thinwork && wind->wa_frame)
-		{
-			wind->wa.w -= r_margin;
-			wa_borders |= WAB_RIGHT;
-		}
+	if ((rows = get_last_row(wind->widg_rows, (XAR_VERT | XAR_PM), XAR_START, false)))
+	{
+		wind->wadelta.y += (rows->r.y + rows->r.h);
+		wind->wadelta.h += (rows->r.y + rows->r.h);
+	
+// 		wind->wa.y += (rows->r.y + rows->r.h);
+// 		wind->wa.h -= (rows->r.y + rows->r.h);	
+	}
+	else if (wind->frame >= 0 && wind->thinwork && wind->wa_frame)
+	{
+		wind->wadelta.y += t_margin;
+		wind->wadelta.h += t_margin;
 		
-		if (wind->frame >= 0 && !wind->thinwork)
-		{
-			wind->wa.x += 2, wind->wa.y += 2;
-			wind->wa.w -= 4, wind->wa.h -= 4;
-		}
-
-		wind->wa_borders = wa_borders;
+// 		wind->wa.y += t_margin;
+// 		wind->wa.h -= t_margin;
+		wa_borders |= WAB_TOP;
 	}
 
+	if ((rows = get_last_row(wind->widg_rows, (XAR_VERT | XAR_PM), (XAR_VERT | XAR_START), false)))
+	{
+		wind->wadelta.x += (rows->r.x + rows->r.w);
+		wind->wadelta.w += (rows->r.x + rows->r.w);
+// 		wind->wa.x += (rows->r.x + rows->r.w);
+// 		wind->wa.w -= (rows->r.x + rows->r.w);
+	}
+	else if (wind->frame >= 0 && wind->thinwork && wind->wa_frame)
+	{
+		wind->wadelta.x += l_margin;
+		wind->wadelta.w += l_margin;
+		
+// 		wind->wa.x += l_margin;
+// 		wind->wa.w -= l_margin;
+		wa_borders |= WAB_LEFT;
+	}
+
+	if ((rows = get_last_row(wind->widg_rows, (XAR_VERT | XAR_PM), XAR_END, false)))
+		wind->wadelta.h += rows->r.y; //wind->wa.h -= rows->r.y;
+	else if (wind->frame >= 0 && wind->thinwork && wind->wa_frame)
+	{
+		wind->wadelta.h += b_margin; //wind->wa.h -= b_margin;
+		wa_borders |= WAB_BOTTOM;
+	}
+
+	if ((rows = get_last_row(wind->widg_rows, (XAR_VERT | XAR_PM), (XAR_VERT | XAR_END), false)))
+		wind->wadelta.w += rows->r.x; //wind->wa.w -= rows->r.x;
+	else if (wind->frame >= 0 && wind->thinwork && wind->wa_frame)
+	{
+		wind->wadelta.w += r_margin; //wind->wa.w -= r_margin;
+		wa_borders |= WAB_RIGHT;
+	}
+	
+	if (wind->frame >= 0 && !wind->thinwork)
+	{
+		wind->wadelta.x += 2, wind->wadelta.y += 2; //wind->wa.x += 2, wind->wa.y += 2;
+		wind->wadelta.w += 4, wind->wadelta.h += 4; //wind->wa.w -= 4, wind->wa.h -= 4;
+	}
+
+	wind->wa_borders = wa_borders;
+	wind->delta = wind->wadelta;
+	wind->wa = f2w(&wind->wadelta, &wind->rc, true);
+	
 	/* border displacement */
-	wind->bd.x = wind->r.x - wind->wa.x;
-	wind->bd.y = wind->r.y - wind->wa.y;
-	wind->bd.w = wind->r.w - wind->wa.w;
-	wind->bd.h = wind->r.h - wind->wa.h;
+// 	wind->bd.x = wind->r.x - wind->wa.x;
+// 	wind->bd.y = wind->r.y - wind->wa.y;
+// 	wind->bd.w = wind->r.w - wind->wa.w;
+// 	wind->bd.h = wind->r.h - wind->wa.h;
 
 	if ((wind->active_widgets & TOOLBAR) && !(get_widget(wind, XAW_TOOLBAR)->m.properties & WIP_NOTEXT))
 	{
@@ -1858,6 +1878,10 @@ calc_work_area(struct xa_window *wind)
 
 		rp_2_ap(wind, widg, &widg->ar);
 
+		wind->delta.y += widg->ar.h;
+		wind->delta.h += widg->ar.h;
+		wind->rwa = f2w(&wind->delta, &wind->rc, true);
+	#if 0
 		wind->rwa.h = wind->wa.h - widg->ar.h;
  		wind->rwa.w = wind->wa.w;
 		if (wind->rwa.w > 0 && wind->rwa.h > 0)
@@ -1867,9 +1891,13 @@ calc_work_area(struct xa_window *wind)
 		}
 		else
 			wind->rwa.w = wind->rwa.h = 0;
+	#endif
 	}
 	else
+	{
 		wind->rwa = wind->wa;
+	}
+
 
 	/* Add bd to toolbar->r to get window rectangle for create_window
 	 * Anyhow, always convenient, especially when snapping the workarea.
@@ -2920,6 +2948,11 @@ set_toolbar_coords(struct xa_window *wind, const RECT *r)
 	{
 		widg->r.w = r->w;
 		widg->r.h = r->h;
+	}
+	else
+	{
+		widg->r.w = wind->wa.w;
+		widg->r.h = wind->wa.h;
 	}
 }
 

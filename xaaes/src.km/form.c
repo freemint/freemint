@@ -125,7 +125,7 @@ calc_fmd_wind(struct xa_client *client, OBJECT *obtree, XA_WIND_ATTR kind, WINDO
 {
 	DIAG((D_form, client, "Setup_form_do: Create window for %s", client->name));
 
-	ob_rectangle(obtree, 0, r);
+	ob_area(obtree, 0, r); //ob_rectangle(obtree, 0, r);
 
 	*r = calc_window(0,
 			 client,
@@ -163,8 +163,8 @@ Setup_form_do(struct xa_client *client,
 		DIAG((D_form, client, "Setup_form_do: wind %d for %s", client->fmd.wind->handle, client->name));
 		wind = client->fmd.wind;
 		calc_fmd_wind(client, obtree, kind, wind->dial, (RECT *)&client->fmd.r);
-		wt = set_toolbar_widget(lock, wind, client, obtree, edobj, WIP_NOTEXT, true, NULL, &client->fmd.r);
-		wt->zen = false;
+		wt = set_toolbar_widget(lock, wind, client, obtree, edobj, WIP_NOTEXT, false, NULL, NULL); //&client->fmd.r);
+// 		wt->zen = false;
 		move_window(lock, wind, true, -1, client->fmd.r.x, client->fmd.r.y, client->fmd.r.w, client->fmd.r.h);
 	}
 	/*
@@ -199,8 +199,8 @@ Setup_form_do(struct xa_client *client,
 		if ((wind = create_fmd_wind(lock, client, kind, client->fmd.state ? created_for_FMD_START : created_for_FORM_DO, &client->fmd.r)))
 		{
 			client->fmd.wind = wind;
-			wt = set_toolbar_widget(lock, wind, client, obtree, edobj, WIP_NOTEXT, true, NULL, &client->fmd.r);
-			wt->zen = false;
+			wt = set_toolbar_widget(lock, wind, client, obtree, edobj, WIP_NOTEXT, false, NULL, NULL); //client->fmd.r);
+// 			wt->zen = false;
 		}
 		else
 		{
