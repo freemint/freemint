@@ -242,6 +242,8 @@ k_shutdown(void)
 	 * widget_tree's to C.Aes
 	 */
 	free_wtlist(C.Aes);
+	delete_wc_cache(&C.Aes->wcc);
+
 // 	display("free C.Aes");
 	kfree(C.Aes);
 	C.Aes = NULL;
