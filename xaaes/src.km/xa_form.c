@@ -819,6 +819,7 @@ XA_form_dial(enum locks lock, struct xa_client *client, AESPB *pb)
 unsigned long
 XA_form_do(enum locks lock, struct xa_client *client, AESPB *pb)
 {
+// 	bool d = (!strnicmp(client->proc_name, "stzip", 5)) ? true : false;
 	OBJECT *obtree = (OBJECT *)pb->addrin[0];
 	CONTROL(1,1,1)
 
@@ -832,13 +833,15 @@ XA_form_do(enum locks lock, struct xa_client *client, AESPB *pb)
 		nextobj = pb->intin[0] == 0 ? -2 : pb->intin[0];
 		client->waiting_pb = pb;
 
+// 		if (d) display("obtree rect = %d/%d/%d/%d", *(RECT *)&obtree->ob_x);
+	
 		if (Setup_form_do(client, obtree, nextobj/*pb->intin[0]*/, &wind, &nextobj))
 		{
 			client->status |= CS_FORM_DO;
 			if (wind)
 			{
 				if (!(wind->window_status & XAWS_OPEN))
-					open_window(lock, wind, wind->r);
+					open_window(lock, wind, wind->rc);
 				else if (!wind->nolist && !is_topped(wind))
 					top_window(lock, true, false, wind, (void *)-1L);
 				else

@@ -128,7 +128,7 @@ XA_wind_open(enum locks lock, struct xa_client *client, AESPB *pb)
 				w->max.h = r.h;
 		}	
 		if (w->opts & XAWO_WCOWORK)
-			r = rwa2fa(w, &r);
+			r = w2f(&w->delta, &r, true);
 		pb->intout[0] = open_window(lock, w, r);
 	}
 
@@ -591,7 +591,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			if (pb->control[N_INTOUT] >= 5)
 			{
 				if (w->opts & XAWO_WCOWORK)
-					*(RECT *)(pb->intout + 1) = fa2rwa(w, &w->pr);
+					*(RECT *)(pb->intout + 1) = f2w(&w->delta, &w->pr, true);
 				else
 					*(RECT *)(pb->intout + 1) = w->pr;
 				DIAGS(("wind_set: WF_PREVXYWH return %d/%d/%d/%d", *(RECT *)(pb->intout + 1))); 
@@ -607,7 +607,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			if (pb->control[N_INTOUT] >= 5)
 			{
 				if (w->opts & XAWO_WCOWORK)
-					*(RECT *)(pb->intout + 1) = fa2rwa(w, &w->max);
+					*(RECT *)(pb->intout + 1) = f2w(&w->delta, &w->max, true);
 				else
 					*(RECT *)(pb->intout + 1) = w->max;
 				DIAGS(("wind_set: WF_FULLXYWH return %d/%d/%d/%d", *(RECT *)(pb->intout + 1))); 
@@ -626,7 +626,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				move = true;
 				if (cmd == WF_WORKXYWH && !(w->opts & XAWO_WCOWORK))
 				{
-					r = rwa2fa(w, ir);
+					r = w2f(&w->delta, ir, true);
 					ir = &r;
 				}
 			}
@@ -657,7 +657,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		{
 			if (status == -1 && (w->opts & XAWO_WCOWORK))
 			{
-				m = rwa2fa(w, ir);
+				m = w2f(&w->delta, ir, true);
 				ir = (RECT *)&w->rwa;
 			}
 			else
@@ -862,7 +862,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			RECT in; // = *((const RECT *)(pb->intin+2));
 			
 			if (w->opts & XAWO_WCOWORK)
-				in = rwa2fa(w, (const RECT *)(pb->intin + 2));
+				in = w2f(&w->delta, (const RECT *)(pb->intin + 2), true);
 			else
 				in = *((const RECT *)(pb->intin + 2));
 			
@@ -888,16 +888,27 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		else
 		{
 			RECT in;
-			if (pb->intin[4] == -1 || pb->intin[5] == -1 || (pb->intin[4] | pb->intin[5]))
+// 			display("uniconify in %d/%d/%d/%d", *(const RECT *)(pb->intin + 2));
+			if (pb->intin[4] == -1 || pb->intin[5] == -1 || !(pb->intin[4] | pb->intin[5]))
+			{
+// 				display("uniconify using prev rect %d/%d/%d/%d", w->ro);
 				in = w->ro;
+			}
 			else
 			{
+// 				display("uniconify using passed rect %d/%d/%d/%d", *(const RECT *)(pb->intin + 2));
+
 				if (w->opts & XAWO_WCOWORK)
-					in = rwa2fa(w, (const RECT *)(pb->intin + 2));
+				{
+					in = w2f(&w->save_delta, (const RECT *)(pb->intin + 2), true);
+// 					display(" --- translated to  ----    %d/%d/%d/%d", in);
+				}
 				else
 					in = *((const RECT *)(pb->intin + 2));
 			}
 			uniconify_window(lock, w, &in);
+// 			display("uniconified to %d/%d/%d/%d", w->rwa);
+// 			display("               %d/%d/%d/%d\r\n", w->rc);
 		}
 		if (pb->control[N_INTOUT] >= 5)
 		{
@@ -906,6 +917,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			else
 				*(RECT *)(pb->intout + 1) = w->rc;
 
+// 			display("wind_set: WF_UNICONIFY return %d/%d/%d/%d", *(RECT *)(pb->intout + 1)); 
 			DIAGS(("wind_set: WF_UNICONIFY return %d/%d/%d/%d", *(RECT *)(pb->intout + 1))); 
 		}
 		break;
@@ -914,7 +926,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	case WF_UNICONIFYXYWH:
 	{
 		if (w->opts & XAWO_WCOWORK)
-			w->ro = rwa2fa(w, (const RECT *)(pb->intin + 2));
+			w->ro = w2f(&w->save_delta, (const RECT *)(pb->intin + 2), true);
 		else
 			w->ro = *((const RECT *)(pb->intin+2));
 		break;
@@ -1413,7 +1425,7 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 	case WF_PREVXYWH:
 	{
 		if (w->opts  & XAWO_WCOWORK)
-			*ro = fa2rwa(w, &w->pr);
+			*ro = f2w(&w->delta, &w->pr, true);
 		else
 			*ro = w->pr;
 		DIAG((D_w, w->owner, "get prev for %d: %d/%d,%d/%d",
@@ -1444,7 +1456,7 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 		else
 		{
 			if (w->opts & XAWO_WCOWORK)
-				*ro = fa2rwa(w, &w->max);
+				*ro = f2w(&w->delta, &w->max, true);
 			else
 				*ro = w->max;
 			DIAG((D_w, w->owner, "get full for %d: %d/%d,%d/%d",
@@ -1674,7 +1686,7 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 	{
 		RECT *sr = (w->window_status & XAWS_ICONIFIED) ? &w->ro : &w->r;
 		if (w->opts & XAWO_WCOWORK)
-			*ro = fa2rwa(w, sr);
+			*ro = f2w(&w->delta, sr, true);
 		else
 			*ro = *sr;
 		break;
@@ -1703,27 +1715,27 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	case WF_CALCF2W:
 	{
-		*ro = fa2rwa(w, (const RECT *)&pb->intin[2]);
+		*ro = f2w(&w->delta, (const RECT *)&pb->intin[2], true);
 		break;
 	}
 	case WF_CALCW2F:
 	{
-		*ro = rwa2fa(w, (const RECT *)&pb->intin[2]);
+		*ro = w2f(&w->delta, (const RECT *)&pb->intin[2], true);
 		break;
 	}
 	case WF_CALCF2U:
 	{
-		*ro = fa2wa(w, (const RECT *)&pb->intin[2]);
+		*ro = f2w(&w->wadelta, (const RECT *)&pb->intin[2], true);
 		break;
 	}
 	case WF_CALCU2F:
 	{
-		*ro = wa2fa(w, (const RECT *)&pb->intin[2]);
+		*ro = w2f(&w->wadelta, (const RECT *)&pb->intin[2], true);
 		break;
 	}
 	case WF_MAXWORKXYWH:
 	{
-		*ro = fa2rwa(w, (const RECT *)&root_window->wa);
+		*ro = f2w(&w->delta, (const RECT *)&root_window->wa, true);
 		break;
 	}
 	default:
@@ -1841,10 +1853,13 @@ XA_wind_new(enum locks lock, struct xa_client *client, AESPB *pb)
 unsigned long
 XA_wind_calc(enum locks lock, struct xa_client *client, AESPB *pb)
 {
+// 	bool d = (!strnicmp(client->proc_name, "stzip", 5)) ? true : false;
 	XA_WIND_ATTR tp;
 
 	CONTROL(6,5,0)	
-	
+
+// 	if (d) 	display("wind_calc: req=%d, kind=%d", pb->intin[0], pb->intin[1]);
+
 	DIAG((D_wind, client, "wind_calc: req=%d, kind=%d",
 		pb->intin[0], pb->intin[1]));
 
@@ -1868,6 +1883,7 @@ XA_wind_calc(enum locks lock, struct xa_client *client, AESPB *pb)
 				    *(const RECT *)&pb->intin[2]);
 	}
 	pb->intout[0] = 1;
+// 	if (d) display("return %d/%d/%d/%d", *(RECT *)(pb->intout + 1));
 	return XAC_DONE;
 }
 

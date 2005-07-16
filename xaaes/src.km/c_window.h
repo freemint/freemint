@@ -76,10 +76,9 @@ void	redraw_client_windows(enum locks lock, struct xa_client *client);
 
 RECT	free_icon_pos(enum locks lock, struct xa_window *ignore);
 
-RECT	rwa2fa(struct xa_window *wind, const RECT *in);
-RECT	fa2rwa(struct xa_window *wind, const RECT *in);
-RECT	wa2fa(struct xa_window *wind, const RECT *in);
-RECT	fa2wa(struct xa_window *wind, const RECT *in);
+RECT	w2f(RECT *delta, const RECT *in, bool chkwh);
+RECT	f2w(RECT *delta, const RECT *in, bool chkwh);
+void	delete_wc_cache(struct xa_wc_cache **wcc);
 RECT	calc_window(enum locks lock, struct xa_client *client, int request,
 		    XA_WIND_ATTR tp, WINDOW_TYPE dial, int thinframe, bool thinwork,
 		    RECT r);

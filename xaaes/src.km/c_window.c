@@ -212,7 +212,7 @@ set_winrect(struct xa_window *wind, RECT *wr, const RECT *new)
 	RECT r;
 	
 	if (wind->opts & XAWO_WCOWORK)
-		r = rwa2fa(wind, new);
+		r = w2f(&wind->delta, new, true);
 	else
 		r = *new;
 	
@@ -362,7 +362,7 @@ hide_window(enum locks lock, struct xa_window *wind)
 		wind->hx = wind->rc.x;
 		wind->hy = wind->rc.y;
 		if (wind->opts & XAWO_WCOWORK)
-			r = fa2rwa(wind, &r);
+			r = f2w(&wind->delta, &r, true);
 		send_moved(lock, wind, AMQ_NORM, &r);
 		wind->window_status |= XAWS_HIDDEN;
 	}
@@ -378,7 +378,7 @@ unhide_window(enum locks lock, struct xa_window *wind, bool check)
 		r.y = wind->hy;
 		wind->t = r;
 		if (wind->opts & XAWO_WCOWORK)
-			r = fa2rwa(wind, &r);
+			r = f2w(&wind->delta, &r, true);
 		send_moved(lock, wind, AMQ_NORM, &r);
 		wind->window_status &= ~XAWS_HIDDEN;
 		if (any_hidden(lock, wind->owner, wind))
@@ -775,6 +775,7 @@ create_window(
 	w->vdi_settings = client->vdi_settings;
 
 	tp = fix_wind_kind(tp);
+	w->requested_widgets = tp;
 
 	/* implement maximum rectangle (needed for at least TosWin2) */
 // 	w->max = max ? *max : root_window->wa;
@@ -868,7 +869,7 @@ create_window(
 	{
 		if (w->opts & XAWO_WCOWORK)
 		{
-			w->max = rwa2fa(w, max);
+			w->max = w2f(&w->delta, max, true);
 		}
 		else
 		{
@@ -1516,6 +1517,8 @@ move_window(enum locks lock, struct xa_window *wind, bool blit, short newstate, 
 				if (!(wind->window_status & XAWS_ICONIFIED))
 				{
 					wind->save_widgets = wind->active_widgets;
+					wind->save_delta = wind->delta;
+					wind->save_wadelta = wind->wadelta;
 					standard_widgets(wind, (wind->active_widgets & (NO_TOPPED)) | NAME|MOVER|ICONIFIER, true);
 					wind->ro = wind->rc;
 				}
@@ -2021,43 +2024,29 @@ redraw_client_windows(enum locks lock, struct xa_client *client)
 }
 
 RECT
-rwa2fa(struct xa_window *wind, const RECT *in)
+w2f(RECT *d, const RECT *in, bool chkwh)
 {
 	RECT r;
-	r.x = in->x - (wind->rwa.x - wind->r.x);
-	r.y = in->y - (wind->rwa.y - wind->r.y);
-	r.w = in->w + (wind->r.w - wind->rwa.w);
-	r.h = in->h + (wind->r.h - wind->rwa.h);
+	r.x = in->x - d->x; //(wind->rwa.x - wind->r.x);
+	r.y = in->y - d->y; //(wind->rwa.y - wind->r.y);
+	r.w = in->w + d->w; //(wind->r.w - wind->rwa.w);
+	r.h = in->h + d->h; //(wind->r.h - wind->rwa.h);
+	if (chkwh && (r.w <= 0 || r.h <= 0))
+		r.w = r.h = 0;
 	return r;
 }
+
 RECT
-fa2rwa(struct xa_window *wind, const RECT *in)
+f2w(RECT *d, const RECT *in, bool chkwh)
 {
 	RECT r;
-	r.x = in->x + (wind->rwa.x - wind->r.x);
-	r.y = in->y + (wind->rwa.y - wind->r.y);
-	r.w = in->w - (wind->r.w - wind->rwa.w);
-	r.h = in->h - (wind->r.h - wind->rwa.h);
-	return r;
-}
-RECT
-wa2fa(struct xa_window *wind, const RECT *in)
-{
-	RECT r;
-	r.x = in->x - (wind->wa.x - wind->rc.x);
-	r.y = in->y - (wind->wa.y - wind->rc.y);
-	r.w = in->w + (wind->rc.w - wind->wa.w);
-	r.h = in->h + (wind->rc.h - wind->wa.h);
-	return r;
-}
-RECT
-fa2wa(struct xa_window *wind, const RECT *in)
-{
-	RECT r;
-	r.x = in->x + (wind->wa.x - wind->rc.x);
-	r.y = in->y + (wind->wa.y - wind->rc.y);
-	r.w = in->w - (wind->rc.w - wind->wa.w);
-	r.h = in->h - (wind->rc.h - wind->wa.h);
+	r.x = in->x + d->x; //(wind->rwa.x - wind->r.x);
+	r.y = in->y + d->y; //(wind->rwa.y - wind->r.y);
+	r.w = in->w - d->w; //(wind->r.w - wind->rwa.w);
+	r.h = in->h - d->h; //(wind->r.h - wind->rwa.h);
+	if (chkwh && (r.w <= 0 || r.h <= 0))
+		r.w = r.h = 0;
+	
 	return r;
 }
 
@@ -2081,28 +2070,111 @@ Xpolate(RECT *r, RECT *o, RECT *i)
 	r->h = 2 * o->h - i->h;	
 }
 
+static struct xa_wc_cache *wc_cache = NULL;
+
+static struct xa_wc_cache *
+add_wcc_entry(struct xa_window *wind)
+{
+	struct xa_wc_cache *new;
+	struct xa_client *client = wind->owner;
+
+	new = kmalloc(sizeof(*new));
+	if (new)
+	{
+		new->next = client->wcc;
+		client->wcc = new;
+		new->wtheme_handle = client->wtheme_handle;
+		new->tp = wind->requested_widgets;
+		new->delta = wind->delta;
+		new->wadelta = wind->wadelta;
+	}
+	return new;
+}
+
+void
+delete_wc_cache(struct xa_wc_cache **wcc)
+{
+	while (*wcc)
+	{
+		struct xa_wc_cache *n = *wcc;
+		*wcc = n->next;
+		kfree(n);
+	}
+}
+
+static struct xa_wc_cache *
+lookup_wcc_entry(struct xa_client *client, XA_WIND_ATTR tp)
+{
+	struct xa_wc_cache *wcc = client->wcc;
+
+	while (wcc)
+	{
+		if (wcc->tp == tp && wcc->wtheme_handle == client->wtheme_handle)
+			break;
+		wcc = wcc->next;
+	}
+	return wcc;
+};
+
 RECT
 calc_window(enum locks lock, struct xa_client *client, int request, XA_WIND_ATTR tp, WINDOW_TYPE dial, int thinframe, bool thinwork, RECT r)
 {
 	struct xa_window *w_temp;
+	struct xa_wc_cache *wcc = wc_cache;
 	RECT o;
-
+// 	bool d = (!strnicmp(client->proc_name, "stzip", 5)) ? true : false;
 	DIAG((D_wind,client,"calc %s from %d/%d,%d/%d", request ? "work" : "border", r));
 
 	tp = fix_wind_kind(tp);
 	dial |= created_for_CALC;
 
+	if (!(wcc = lookup_wcc_entry(client, tp)))
+	{
+		w_temp = create_window(lock, NULL, NULL, client, true, tp, dial, thinframe, thinwork, r, 0,0);
+		wcc = add_wcc_entry(w_temp);
+		delete_window(lock, w_temp);
+	}
+
+	if (wcc)
+	{
+// 		if (d) display("wadela %d/%d/%d/%d", wcc->wadelta);
+// 		if (d) display("delta  %d/%d/%d/%d", wcc->delta);
+		switch (request)
+		{
+			case WC_BORDER:
+			{
+				o = w2f(&wcc->delta, &r, false);
+// 				if (d)	display("WC_BORDER: %d/%d/%d/%d from %d/%d/%d/%d", o, r);
+				break;
+			}
+			default:
+			{
+				o = f2w(&wcc->delta, &r, false);
+// 				if (d) display("WC_WORK: %d/%d/%d/%d from %d/%d/%d/%d", o, r);
+				break;
+			}
+		}
+	}
+	else
+	{
+// 		display("no wcc cache, not able to create temp wind!!!");
+		o = r;
+	}
+	return o;
+
+#if 0
 	w_temp = S.calc_windows.first;
 	
 	while (w_temp)
 	{
-		if (w_temp->owner == client && tp == w_temp->active_widgets)
+		if (w_temp->owner == client && tp == w_temp->requested_widgets)
 			break;
 		w_temp = w_temp->next;
 	}
 
 	if (!w_temp)
 	{
+// 		if (d) display("new");
 		/* Create a temporary window with the required widgets */
 		w_temp = create_window(lock, NULL, NULL, client, true, tp, dial, thinframe, thinwork, r, 0, 0);
 		wi_put_first(&S.calc_windows, w_temp);
@@ -2130,24 +2202,17 @@ calc_window(enum locks lock, struct xa_client *client, int request, XA_WIND_ATTR
 	}
 	else
 	{
-		short w = w_temp->rwa.x - w_temp->r.x;
-		short h = w_temp->rwa.y - w_temp->r.y;
+// 		if (d) display("lookup");
 		switch (request)
 		{
 			case WC_BORDER:
 			{
-				o.x = r.x - w;
-				o.y = r.y - h;
-				o.w = r.w + (w_temp->r.w - w_temp->rwa.w);
-				o.h = r.h + (w_temp->r.h - w_temp->rwa.h);
+				o = w2f(&w_temp->delta, &r);
 				break;
 			}
 			default: //case WC_WORK:
 			{
-				o.x = r.x + w;
-				o.y = r.y + h;
-				o.w = r.w - (w_temp->r.w - w_temp->rwa.w);
-				o.h = r.h - (w_temp->r.h - w_temp->rwa.h);
+				o = f2w(&w_temp->delta, &r);
 				break;
 			}
 		}	
@@ -2159,6 +2224,7 @@ calc_window(enum locks lock, struct xa_client *client, int request, XA_WIND_ATTR
 	//delete_window(lock, w_temp);
 
 	return o;
+#endif
 }
 
 void
