@@ -44,6 +44,48 @@ struct netinfo netinfo =
 	_bpf_input:		bpf_input
 };
 
+#if 0
+/*
+ * BUG??? this doesn't work?!
+ * why do the registers need to be preserved?
+ * all the modules are gcc compiled too ...
+ *
+ * Note: the same hack as for other kernel modules
+ *       module_init() in sys/module.c
+ */
+static long
+xif_module_init(void *initfunc, struct kerinfo *k, struct netinfo *n)
+{
+	long _cdecl (*init)(struct kerinfo *, struct netinfo *n);
+
+	init = initfunc;
+	return (*init)(k, n);
+}
+#else
+static long
+xif_module_init(void *initfunc, struct kerinfo *k, struct netinfo *n)
+{
+	register long ret __asm__("d0");	 
+
+	__asm__ volatile	 
+	(	 
+		"moveml	d3-d7/a3-a6,sp@-;"	 
+		"movl	%3,sp@-;" 
+		"movl	%2,sp@-;" 
+		"movl	%1,a0;"	 
+		"jsr	a0@;"	 
+		"addqw	#8,sp;"	 
+		"moveml	sp@+,d3-d7/a3-a6;"	 
+		: "=r"(ret)				/* outputs */	 
+		: "g"(initfunc), "g"(k), "g"(n)		/* inputs  */	 
+		: "d0", "d1", "d2", "a0", "a1", "a2",	/* clobbered regs */	 
+		"memory" 
+	);	 
+
+	return ret;	 
+}
+#endif
+
 static long
 load_xif (struct basepage *b, const char *name)
 {
@@ -58,8 +100,12 @@ load_xif (struct basepage *b, const char *name)
 	 */
 	netinfo.fname = name;
 	
+#if 0
 	init = (long (*)(struct kerinfo *, struct netinfo *))b->p_tbase;
 	r = (*init)(KERNEL, &netinfo);
+#else
+	r = xif_module_init((void*)b->p_tbase, KERNEL, &netinfo);
+#endif
 	
 	netinfo.fname = NULL;
 	
