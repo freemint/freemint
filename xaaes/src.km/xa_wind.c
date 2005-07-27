@@ -106,7 +106,7 @@ XA_wind_create(enum locks lock, struct xa_client *client, AESPB *pb)
 unsigned long
 XA_wind_open(enum locks lock, struct xa_client *client, AESPB *pb)
 {
-	RECT r = *((const RECT *)&pb->intin[1]);
+	RECT r; // = *((const RECT *)&pb->intin[1]);
 	struct xa_window *w;
 
 	CONTROL(5,1,0)
@@ -119,7 +119,16 @@ XA_wind_open(enum locks lock, struct xa_client *client, AESPB *pb)
 	}
 	else
 	{
-		if (w->active_widgets & USE_MAX)
+		if (w->opts & XAWO_WCOWORK)
+			r = w2f(&w->delta, (const RECT *)(pb->intin + 1), true); //&r, true);
+		else
+			r = *(const RECT *)(pb->intin + 1);
+
+		/* XXX - ozk:
+		 *	Is it correct to adjust the max size of windows here when they are
+		 *	opened? If so, why does wind_create() even take rectange as parameter?
+		 */
+// 		if (w->active_widgets & USE_MAX)
 		{
 			/* for convenience: adjust max */
 			if (r.w > w->max.w)
@@ -127,8 +136,8 @@ XA_wind_open(enum locks lock, struct xa_client *client, AESPB *pb)
 			if (r.h > w->max.h)
 				w->max.h = r.h;
 		}	
-		if (w->opts & XAWO_WCOWORK)
-			r = w2f(&w->delta, &r, true);
+// 		if (w->opts & XAWO_WCOWORK)
+// 			r = w2f(&w->delta, &r, true);
 		pb->intout[0] = open_window(lock, w, r);
 	}
 
@@ -630,6 +639,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 					ir = &r;
 				}
 			}
+			
 			DIAGS(("wind_set: WF_CURRXYWH - (%d/%d/%d/%d) blit=%s, ir=%lx",
 				*(const RECT *)(pb->intin + 2), blit ? "yes":"no", ir));
 
@@ -938,14 +948,14 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		OBJECT *ob;
 		XA_WIDGET *widg = get_widget(w, XAW_TOOLBAR);
 		XA_TREE *wt;
-		bool d = (!strnicmp(client->proc_name, "ergo_hlp", 8));
+// 		bool d = (!strnicmp(client->proc_name, "ergo_hlp", 8));
 
 		ob = *(OBJECT **)&obptr;
 
 		DIAGS(("  wind_set(WF_TOOLBAR): obtree=%lx, current wt=%lx",
 			ob, widg->stuff));
-		if (d) display("  wind_set(WF_TOOLBAR): obtree=%lx, current wt=%lx",
-			ob, widg->stuff);
+// 		if (d) display("  wind_set(WF_TOOLBAR): obtree=%lx, current wt=%lx",
+// 			ob, widg->stuff);
 		
 		if (ob)
 		{
@@ -1002,7 +1012,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	/* */
 	case WF_MENU:
 	{
-		bool d = (!strnicmp(client->proc_name, "ergo_hlp", 8));
+// 		bool d = (!strnicmp(client->proc_name, "ergo_hlp", 8));
 		
 		if (/*(w->window_status & XAWS_OPEN)*/
 		    w->handle != 0
@@ -1018,8 +1028,8 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			DIAGS(("  wind_set(WF_MENU) obtree=%lx, current wt=%lxfor %s",
 				ob, widg->stuff, client->name));
 
-			if (d) display("  wind_set(WF_MENU) obtree=%lx, current wt=%lxfor %s",
-				ob, widg->stuff, client->name);
+// 			if (d) display("  wind_set(WF_MENU) obtree=%lx, current wt=%lxfor %s",
+// 				ob, widg->stuff, client->name);
 			
 			if (ob)
 			{

@@ -627,8 +627,8 @@ xa_tl_hook(struct xa_vdi_settings *v, short d, const RECT *r, short col)
 	short pnt[6];
 	short x = r->x - d;
 	short y = r->y - d;
-	short w = r->w + d+d;
-	short h = r->h + d+d;
+	short w = r->w + (d+d);
+	short h = r->h + (d+d);
 	xa_l_color(v, col);
 	pnt[0] = x;
 	pnt[1] = y + h - 1; // - PW;
@@ -645,8 +645,8 @@ xa_br_hook(struct xa_vdi_settings *v, short d, const RECT *r, short col)
 	short pnt[6];
 	short x = r->x - d;
 	short y = r->y - d;
-	short w = r->w + d+d;
-	short h = r->h + d+d;
+	short w = r->w + (d+d);
+	short h = r->h + (d+d);
 	xa_l_color(v, col);
 	pnt[0] = x; // + PW;
 	pnt[1] = y + h - 1;

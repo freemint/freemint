@@ -1257,6 +1257,14 @@ draw_window(enum locks lock, struct xa_window *wind, const RECT *clip)
 		XA_WIDGET *widg;
 		RECT r;
 
+		if (wind->draw_canvas)
+		{
+// 			r = wind->r;
+// 			r.w -= wind->x_shadow;
+// 			r.h -= wind->y_shadow;
+			(*wind->draw_canvas)(wind, &wind->outer, &wind->inner, clip);
+		}
+
 		for (f = 0; f < XA_MAX_WIDGETS; f++)
 		{
 			widg = get_widget(wind, f);
@@ -2056,7 +2064,7 @@ f2w(RECT *d, const RECT *in, bool chkwh)
  *   HR: first intruduction of the use of a fake window (pid=-1) for calculations.
  *         (heavily used by multistrip, as an example.)
  */
-
+#if 0
 static void
 Xpolate(RECT *r, RECT *o, RECT *i)
 {
@@ -2069,8 +2077,7 @@ Xpolate(RECT *r, RECT *o, RECT *i)
 	r->w = 2 * o->w - i->w;
 	r->h = 2 * o->h - i->h;	
 }
-
-static struct xa_wc_cache *wc_cache = NULL;
+#endif
 
 static struct xa_wc_cache *
 add_wcc_entry(struct xa_window *wind)
@@ -2120,9 +2127,8 @@ RECT
 calc_window(enum locks lock, struct xa_client *client, int request, XA_WIND_ATTR tp, WINDOW_TYPE dial, int thinframe, bool thinwork, RECT r)
 {
 	struct xa_window *w_temp;
-	struct xa_wc_cache *wcc = wc_cache;
+	struct xa_wc_cache *wcc;
 	RECT o;
-// 	bool d = (!strnicmp(client->proc_name, "stzip", 5)) ? true : false;
 	DIAG((D_wind,client,"calc %s from %d/%d,%d/%d", request ? "work" : "border", r));
 
 	tp = fix_wind_kind(tp);
@@ -2137,94 +2143,25 @@ calc_window(enum locks lock, struct xa_client *client, int request, XA_WIND_ATTR
 
 	if (wcc)
 	{
-// 		if (d) display("wadela %d/%d/%d/%d", wcc->wadelta);
-// 		if (d) display("delta  %d/%d/%d/%d", wcc->delta);
 		switch (request)
 		{
 			case WC_BORDER:
 			{
 				o = w2f(&wcc->delta, &r, false);
-// 				if (d)	display("WC_BORDER: %d/%d/%d/%d from %d/%d/%d/%d", o, r);
 				break;
 			}
 			default:
 			{
 				o = f2w(&wcc->delta, &r, false);
-// 				if (d) display("WC_WORK: %d/%d/%d/%d from %d/%d/%d/%d", o, r);
 				break;
 			}
 		}
 	}
 	else
 	{
-// 		display("no wcc cache, not able to create temp wind!!!");
 		o = r;
 	}
 	return o;
-
-#if 0
-	w_temp = S.calc_windows.first;
-	
-	while (w_temp)
-	{
-		if (w_temp->owner == client && tp == w_temp->requested_widgets)
-			break;
-		w_temp = w_temp->next;
-	}
-
-	if (!w_temp)
-	{
-// 		if (d) display("new");
-		/* Create a temporary window with the required widgets */
-		w_temp = create_window(lock, NULL, NULL, client, true, tp, dial, thinframe, thinwork, r, 0, 0);
-		wi_put_first(&S.calc_windows, w_temp);
-	
-		switch(request)
-		{
-			case WC_BORDER:
-			{
-				/* We have to work out the border size ourselves here */
-				Xpolate(&o, &w_temp->r, &w_temp->rwa);
-				break;
-			}
-			case WC_WORK:
-			{
-				/* Work area was calculated when the window was created */
-				o = w_temp->rwa;
-				break;
-			}
-			default:
-			{
-				DIAG((D_wind, client, "wind_calc request %d", request));
-				o = w_temp->rwa;	/* HR: return something usefull*/
-			}
-		}
-	}
-	else
-	{
-// 		if (d) display("lookup");
-		switch (request)
-		{
-			case WC_BORDER:
-			{
-				o = w2f(&w_temp->delta, &r);
-				break;
-			}
-			default: //case WC_WORK:
-			{
-				o = f2w(&w_temp->delta, &r);
-				break;
-			}
-		}	
-	}
-
-	DIAG((D_wind,client,"calc returned: %d/%d,%d/%d", o));
-
-	/* Dispose of the temporary window we created */
-	//delete_window(lock, w_temp);
-
-	return o;
-#endif
 }
 
 void
