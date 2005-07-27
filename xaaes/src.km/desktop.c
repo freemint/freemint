@@ -111,9 +111,12 @@ set_desktop_widget(struct xa_window *wind, XA_TREE *desktop)
 	desktop->widg = widg;
 	desktop->links++;
 
+	widg->r = wind->wa;
+#if 0	
 	widg->r = wind->r;
 	widg->r.y += get_menu_widg()->r.h;
 	widg->r.h -= get_menu_widg()->r.h;
+#endif
 
 	bzero(&widg->m, sizeof(*m));
 
@@ -123,7 +126,7 @@ set_desktop_widget(struct xa_window *wind, XA_TREE *desktop)
 	
 	m->r.draw = display_object_widget;
 	m->r.setsize = NULL;
-	m->properties = WIP_INSTALLED;
+	m->properties = WIP_INSTALLED|WIP_WACLIP;
 	m->click = click_desktop_widget;
 	m->drag = click_desktop_widget;
 	widg->state = OS_NORMAL;
@@ -176,8 +179,8 @@ Set_desktop(XA_TREE *new_desktop)
 
 
 	/* HR 010501: general fix */
-	if (root_window->r.h > r.h)
-		ob->ob_y = root_window->r.h - r.h;
+// 	if (root_window->r.h > r.h)
+// 		ob->ob_y = root_window->r.h - r.h;
 
 	wi->stuff = new_desktop;
 	wi->stufftype = STUFF_IS_WT;
