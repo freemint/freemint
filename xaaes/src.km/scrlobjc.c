@@ -3039,7 +3039,7 @@ set_slist_object(enum locks lock,
 				 true,			/* nolist */
 				 wkind,
 				 created_for_AES | created_for_SLIST,
-				 0, false, r, NULL, NULL);
+				 0, true/*false*/, r, NULL, NULL);
 	if (list->wi)
 	{
 		int dh;

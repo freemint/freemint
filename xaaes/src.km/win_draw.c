@@ -60,6 +60,8 @@ static	SetWidgSize	s_title_size, s_closer_size, s_fuller_size, s_info_size,
 			s_lfarrow_size, s_rtarrow_size, s_hslide_size,
 			s_iconifier_size, s_hider_size, s_menu_size;
 
+static DrawCanvas	draw_canvas;
+
 struct nwidget_row def_layout[];
 
 static XA_WIND_ATTR name_dep[] =
@@ -98,6 +100,12 @@ static struct widget_theme def_theme =
 
 	get_wcol,
 	set_wcol,
+
+	{3, 3, 1, 1},	/* min */
+	{1, 1, 2, 2},
+// 	{0, 0, 0, 0},
+
+	draw_canvas,
 
 	{ 0,		NULL,		0,		0,			d_unused, NULL},			/* exterior		*/
 	{ BORDER,	border_dep,	XAW_BORDER,	NO,			d_borders, NULL},			/* border		*/
@@ -158,6 +166,7 @@ struct render_widget *row5[] =
 struct nwidget_row def_layout[] =
 {
 	{(XAR_START),			(NAME | CLOSER | FULLER | ICONIFIER | HIDE), row1},
+// 	{(XAR_END | XAR_VERT),		(UPARROW | VSLIDE | DNARROW | SIZER), row4},
 	{(XAR_START),			INFO, row2},
 	{(XAR_START),			XaMENU, row3},
 	{(XAR_END | XAR_VERT),		(UPARROW | VSLIDE | DNARROW | SIZER), row4},
@@ -292,7 +301,7 @@ struct window_colours def_otop_cols =
  G_LBLACK, /* window frame color */
 /*          flags                        wrmode      color       fill    fill    box       box        tl      br		*/
 /*                                                             interior  style  color    thickness  colour  colour		*/
- { WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+ { WCOL_DRAWBKG/*|WCOL_BOXED*/, MD_REPLACE,
                                                     {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},
                                                     {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},
                                                     {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* window areas not covered by a widget/ unused widgets*/
@@ -389,7 +398,7 @@ struct window_colours def_utop_cols =
 /*          flags                        wrmode      color       fill    fill    box       box        tl      br		*/
 /*                                                             interior  style  color    thickness  colour  colour		*/
  /* Window color (when unused window exterior is drawn) */
- { WCOL_DRAWBKG|WCOL_BOXED,                         MD_REPLACE,
+ { WCOL_DRAWBKG/*|WCOL_BOXED*/,                      MD_REPLACE,
                                                     {G_LWHITE, FIS_SOLID,   0,   G_LBLACK,     1,    G_WHITE, G_LBLACK, NULL},
                                                     {G_LWHITE, FIS_SOLID,   0,   G_LBLACK,     1,    G_WHITE, G_LBLACK, NULL},
                                                     {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}},	/* window areas not covered by a widget/ unused widgets*/
@@ -483,6 +492,88 @@ static inline long
 sl_2_pix(long s, long p)
 {
 	return ((s * p) + (SL_RANGE >> 2)) / SL_RANGE;
+}
+
+static void
+draw_canvas(struct xa_window *wind, RECT *outer, RECT *inner, const RECT *clip)
+{
+	struct xa_wcol_inf *wci = &((struct window_colours *)wind->colours)->borders;
+	struct xa_vdi_settings *v = wind->vdi_settings;
+	short size;
+	RECT r;
+
+	if ((outer->w | outer->h | inner->w | outer->h))
+	{
+		size = -3;
+
+		(*v->api->wr_mode)(v, MD_REPLACE);
+		
+		(*v->api->tl_hook)(v, 0, outer, G_BLACK);
+		(*v->api->tl_hook)(v, -1, outer, G_WHITE);
+		(*v->api->tl_hook)(v, -2, outer, G_LWHITE);
+// 		(*v->api->tl_hook)(v, -3, outer, G_LWHITE);
+// 		(*v->api->tl_hook)(v, -4, outer, G_LWHITE);
+// 		(*v->api->tl_hook)(v, -5, outer, G_LWHITE);
+		
+		(*v->api->br_hook)(v, 0, outer, G_LBLACK);
+// 		(*v->api->br_hook)(v, -1, outer, G_LWHITE);
+// 		(*v->api->br_hook)(v, -2, outer, G_LWHITE);
+// 		(*v->api->br_hook)(v, -3, outer, G_LWHITE);
+// 		(*v->api->br_hook)(v, -4, outer, G_LWHITE);
+// 		(*v->api->br_hook)(v, -5, outer, G_LWHITE);
+		
+		(*v->api->tl_hook)(v, 1, inner, G_LBLACK);
+// 		(*v->api->tl_hook)(v, 2, inner, G_LBLACK);
+// 		(*v->api->tl_hook)(v, 3, inner, G_LWHITE);
+// 		(*v->api->tl_hook)(v, 4, inner, G_LWHITE);
+// 		(*v->api->tl_hook)(v, 5, inner, G_LWHITE);
+// 		(*v->api->tl_hook)(v, 6, inner, G_LWHITE);
+		
+		(*v->api->br_hook)(v, 1, inner, G_WHITE);
+		(*v->api->br_hook)(v, 2, inner, G_LWHITE);
+// 		(*v->api->br_hook)(v, 3, inner, G_LWHITE);
+// 		(*v->api->br_hook)(v, 4, inner, G_LWHITE);
+// 		(*v->api->br_hook)(v, 5, inner, G_LWHITE);
+// 		(*v->api->br_hook)(v, 6, inner, G_LWHITE);
+
+#if 0		
+		(*v->api->top_line)(v, 0, outer, G_BLUE);
+		(*v->api->left_line)(v, 0, outer, G_BLUE);
+		(*v->api->bottom_line)(v, 0, outer, G_LBLUE);
+		(*v->api->right_line)(v, 0, outer, G_LBLUE);
+	
+		(*v->api->top_line)(v, 1, inner, G_GREEN);
+		(*v->api->left_line)(v, 1, inner, G_GREEN);
+		(*v->api->bottom_line)(v, 1, inner, G_LGREEN);
+		(*v->api->right_line)(v, 1, inner, G_LGREEN);
+		
+
+		(*v->api->f_color)(v, G_LBLACK);
+		r.x = outer->x;
+		r.y = outer->y;
+		r.w = outer->w;
+		r.h = inner->y - outer->y;
+		(*v->api->gbar)(v, size, &r);
+		
+		r.x = outer->x;
+		r.w = inner->x - outer->x;
+		r.y = inner->y - 2;
+		r.h = inner->h + 4;
+		(*v->api->gbar)(v, size, &r);
+
+		r.x = outer->x;
+		r.y = inner->y + inner->h;
+		r.w = outer->w;
+		r.h = (outer->y + outer->h) - r.y;
+		(*v->api->gbar)(v, size, &r);
+
+		r.x = inner->x + inner->w;
+		r.w = (outer->x + outer->w) - r.x;
+		r.y = inner->y - 2;
+		r.h = inner->h + 4;
+		(*v->api->gbar)(v, size, &r);
+#endif
+	}
 }
 
 /*

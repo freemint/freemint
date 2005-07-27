@@ -1753,7 +1753,7 @@ display_object_widget(struct xa_window *wind, struct xa_widget *widg, const RECT
 void
 calc_work_area(struct xa_window *wind)
 {
-	struct xa_widget_row *rows = wind->widg_rows;
+// 	struct xa_widget_row *rows = wind->widg_rows;
 // 	RECT r = wind->rc;
 	int thin = wind->thinwork;
 	int frame = wind->frame;
@@ -1773,29 +1773,30 @@ calc_work_area(struct xa_window *wind)
 	b_margin = (MONO || thin) ? 1 : 2;
 	l_margin = (MONO || thin) ? 1 : 2;
 	r_margin = (MONO || thin) ? 1 : 2;
-	
-	/* This is the largest work area possible */
+
+	wind->outer = wind->rc;
+
+	wind->wadelta /*= wind->inner*/ = wind->bd;
+// 	wind->inner.w += wind->x_shadow;
+// 	wind->inner.h += wind->y_shadow;
+// 	wind->inner = f2w(&wind->inner, &wind->rc, true);
+
 	if (frame >= 0)
 	{
-		wind->wadelta.x = frame;
-		wind->wadelta.y = frame;
-		wind->wadelta.w = (frame << 1) + wind->x_shadow;
-		wind->wadelta.h = (frame << 1) + wind->y_shadow;
-	#if 0
-		wind->wa.x += frame;
-		wind->wa.y += frame;
-		wind->wa.w -= (frame << 1);
-		wind->wa.h -= (frame << 1);
+		wind->wadelta.x += frame;
+		wind->wadelta.y += frame;
+		wind->wadelta.w += (frame << 1) + wind->x_shadow;
+		wind->wadelta.h += (frame << 1) + wind->y_shadow;
 		
-		wind->wa.w -= wind->x_shadow;
-		wind->wa.h -= wind->y_shadow;
-	#endif
+		wind->outer.x += frame;
+		wind->outer.y += frame;
+		wind->outer.w -= (frame << 1) + wind->x_shadow;
+		wind->outer.h -= (frame << 1) + wind->y_shadow;
 	}
-	else
-		wind->wadelta.x = wind->wadelta.y = wind->wadelta.w = wind->wadelta.h = 0;
-	
 	if (frame < 0)
 		frame = 0;
+
+	wind->inner = f2w(&wind->bd, &wind->outer, true);
 
 	wind->ba.x = wind->r.x + frame;
 	wind->ba.y = wind->r.y + frame;
@@ -1805,72 +1806,45 @@ calc_work_area(struct xa_window *wind)
 
 	rp_2_ap_row(wind);
 
-	if ((rows = get_last_row(wind->widg_rows, (XAR_VERT | XAR_PM), XAR_START, false)))
-	{
-		wind->wadelta.y += (rows->r.y + rows->r.h);
-		wind->wadelta.h += (rows->r.y + rows->r.h);
-	
-// 		wind->wa.y += (rows->r.y + rows->r.h);
-// 		wind->wa.h -= (rows->r.y + rows->r.h);	
-	}
-	else if (wind->frame >= 0 && wind->thinwork && wind->wa_frame)
+// 	if (!(wind->ext_borders & T_BORDER) && wind->frame >= 0 && wind->thinwork && wind->wa_frame)
+	if (wind->inner.y == wind->outer.y && wind->frame >= 0 && wind->thinwork && wind->wa_frame)
 	{
 		wind->wadelta.y += t_margin;
 		wind->wadelta.h += t_margin;
-		
-// 		wind->wa.y += t_margin;
-// 		wind->wa.h -= t_margin;
 		wa_borders |= WAB_TOP;
 	}
 
-	if ((rows = get_last_row(wind->widg_rows, (XAR_VERT | XAR_PM), (XAR_VERT | XAR_START), false)))
-	{
-		wind->wadelta.x += (rows->r.x + rows->r.w);
-		wind->wadelta.w += (rows->r.x + rows->r.w);
-// 		wind->wa.x += (rows->r.x + rows->r.w);
-// 		wind->wa.w -= (rows->r.x + rows->r.w);
-	}
-	else if (wind->frame >= 0 && wind->thinwork && wind->wa_frame)
+// 	if (!(wind->ext_borders & L_BORDER) && wind->frame >= 0 && wind->thinwork && wind->wa_frame)
+	if (wind->inner.x == wind->outer.x && wind->frame >= 0 && wind->thinwork && wind->wa_frame)
 	{
 		wind->wadelta.x += l_margin;
 		wind->wadelta.w += l_margin;
-		
-// 		wind->wa.x += l_margin;
-// 		wind->wa.w -= l_margin;
 		wa_borders |= WAB_LEFT;
 	}
 
-	if ((rows = get_last_row(wind->widg_rows, (XAR_VERT | XAR_PM), XAR_END, false)))
-		wind->wadelta.h += rows->r.y; //wind->wa.h -= rows->r.y;
-	else if (wind->frame >= 0 && wind->thinwork && wind->wa_frame)
+// 	if (!(wind->ext_borders & B_BORDER) && wind->frame >= 0 && wind->thinwork && wind->wa_frame)
+	if (wind->inner.h == wind->outer.h && wind->frame >= 0 && wind->thinwork && wind->wa_frame)
 	{
-		wind->wadelta.h += b_margin; //wind->wa.h -= b_margin;
+		wind->wadelta.h += b_margin;
 		wa_borders |= WAB_BOTTOM;
 	}
 
-	if ((rows = get_last_row(wind->widg_rows, (XAR_VERT | XAR_PM), (XAR_VERT | XAR_END), false)))
-		wind->wadelta.w += rows->r.x; //wind->wa.w -= rows->r.x;
-	else if (wind->frame >= 0 && wind->thinwork && wind->wa_frame)
+// 	if (!(wind->ext_borders & R_BORDER) && wind->frame >= 0 && wind->thinwork && wind->wa_frame)
+	if (wind->inner.w == wind->outer.w && wind->frame >= 0 && wind->thinwork && wind->wa_frame)
 	{
-		wind->wadelta.w += r_margin; //wind->wa.w -= r_margin;
+		wind->wadelta.w += r_margin;
 		wa_borders |= WAB_RIGHT;
 	}
-	
+
 	if (wind->frame >= 0 && !wind->thinwork)
 	{
-		wind->wadelta.x += 2, wind->wadelta.y += 2; //wind->wa.x += 2, wind->wa.y += 2;
-		wind->wadelta.w += 4, wind->wadelta.h += 4; //wind->wa.w -= 4, wind->wa.h -= 4;
+		wind->wadelta.x += 2, wind->wadelta.y += 2;
+		wind->wadelta.w += 4, wind->wadelta.h += 4;
 	}
 
 	wind->wa_borders = wa_borders;
 	wind->delta = wind->wadelta;
 	wind->wa = f2w(&wind->wadelta, &wind->rc, true);
-	
-	/* border displacement */
-// 	wind->bd.x = wind->r.x - wind->wa.x;
-// 	wind->bd.y = wind->r.y - wind->wa.y;
-// 	wind->bd.w = wind->r.w - wind->wa.w;
-// 	wind->bd.h = wind->r.h - wind->wa.h;
 
 	if ((wind->active_widgets & TOOLBAR) && !(get_widget(wind, XAW_TOOLBAR)->m.properties & WIP_NOTEXT))
 	{
@@ -1881,17 +1855,6 @@ calc_work_area(struct xa_window *wind)
 		wind->delta.y += widg->ar.h;
 		wind->delta.h += widg->ar.h;
 		wind->rwa = f2w(&wind->delta, &wind->rc, true);
-	#if 0
-		wind->rwa.h = wind->wa.h - widg->ar.h;
- 		wind->rwa.w = wind->wa.w;
-		if (wind->rwa.w > 0 && wind->rwa.h > 0)
-		{
- 			wind->rwa.x = wind->wa.x;
-			wind->rwa.y = wind->wa.y + widg->ar.h;
-		}
-		else
-			wind->rwa.w = wind->rwa.h = 0;
-	#endif
 	}
 	else
 	{
@@ -2334,7 +2297,7 @@ rp_2_ap_row(struct xa_window *wind)
 
 
 static void
-position_widget(struct xa_window *wind, struct xa_widget *widg)
+position_widget(struct xa_window *wind, struct xa_widget *widg, RECT *offsets)
 {
 	struct xa_widget_row *rows = wind->widg_rows;
 	struct xa_widget_methods *m = &widg->m;
@@ -2398,21 +2361,42 @@ position_widget(struct xa_window *wind, struct xa_widget *widg)
 					{
 						if ((nxt_r = get_prev_row(rows, (XAR_VERT|XAR_PM), (XAR_START))))
 							rows->r.y = nxt_r->r.y + nxt_r->r.h;
+						else
+						{
+							rows->r.y = offsets->y;
+// 							wind->bd.y -= offsets->y;
+// 							wind->bd.h -= offsets->h;
+						}
 						if ((nxt_r = get_prev_row(rows, (XAR_VERT|XAR_PM), (XAR_VERT | XAR_START))))
 							rows->r.x = nxt_r->r.x + nxt_r->r.w;
+						else
+							rows->r.x = offsets->x;
 						if ((nxt_r = get_prev_row(rows, (XAR_VERT|XAR_PM), (XAR_VERT | XAR_END))))
 							rows->rxy = nxt_r->r.x;
+						else
+							rows->rxy = offsets->w;
 						
+						wind->ext_borders |= T_BORDER;
 						break;
 					}
 					case XAR_END:
 					{
 						if ((nxt_r = get_prev_row(rows, (XAR_VERT|XAR_PM), (XAR_END))))
 							rows->r.y = nxt_r->r.y;
+						else
+						{
+							rows->r.y = offsets->h;
+// 							wind->bd.h -= offsets->h;
+						}
 						if ((nxt_r = get_prev_row(rows, (XAR_VERT|XAR_PM), (XAR_VERT | XAR_START))))
 							rows->r.x = nxt_r->r.x + nxt_r->r.w;
+						else
+							rows->r.x = offsets->w;
 						if ((nxt_r = get_prev_row(rows, (XAR_VERT|XAR_PM), (XAR_VERT|XAR_END))))
 							rows->rxy = nxt_r->r.x;
+						else
+							rows->rxy = offsets->w;
+						wind->ext_borders |= B_BORDER;
 						break;
 					}
 					default:;
@@ -2426,20 +2410,41 @@ position_widget(struct xa_window *wind, struct xa_widget *widg)
 					{
 						if ((nxt_r = get_prev_row(rows, (XAR_VERT|XAR_PM), (XAR_VERT | XAR_START))))
 							rows->r.x = nxt_r->r.x + nxt_r->r.w;
+						else
+						{
+							rows->r.x = offsets->x;
+// 							wind->bd.x -= offsets->x;
+// 							wind->bd.w -= offsets->w;
+						}
 						if ((nxt_r = get_prev_row(rows, (XAR_VERT|XAR_PM), (XAR_START))))
 							rows->r.y = nxt_r->r.y + nxt_r->r.h;
+						else
+							rows->r.y = offsets->y;
 						if ((nxt_r = get_prev_row(rows, (XAR_VERT|XAR_PM), XAR_END)))
 							rows->rxy = nxt_r->r.y;
+						else
+							rows->rxy = offsets->h;
+						wind->ext_borders |= L_BORDER;
 						break;
 					}
 					case XAR_END:
 					{
 						if ((nxt_r = get_prev_row(rows, (XAR_VERT|XAR_PM), (XAR_VERT | XAR_END))))
 							rows->r.x = nxt_r->r.x;
+						else
+						{
+							rows->r.x = offsets->w;
+// 							wind->bd.w -= offsets->w;
+						}
 						if ((nxt_r = get_prev_row(rows, (XAR_VERT|XAR_PM), (XAR_START))))
 							rows->r.y = nxt_r->r.y + nxt_r->r.h;
+						else
+							rows->r.y = offsets->y;
 						if ((nxt_r = get_prev_row(rows, (XAR_VERT|XAR_PM), XAR_END)))
 							rows->rxy = nxt_r->r.y;
+						else
+							rows->rxy = offsets->h;
+						wind->ext_borders |= R_BORDER;
 						break;
 					}
 				}
@@ -2490,6 +2495,8 @@ position_widget(struct xa_window *wind, struct xa_widget *widg)
 							nxt_r->r.y += diff;
 							reloc_widgets_in_row(nxt_r);
 						}
+						wind->bd.y += diff;
+						wind->bd.h += diff;
 						break;
 					}
 					case XAR_END:
@@ -2506,7 +2513,8 @@ position_widget(struct xa_window *wind, struct xa_widget *widg)
 						{
 							nxt_r->rxy += diff;
 							reloc_widgets_in_row(nxt_r);
-						}	
+						}
+						wind->bd.h += diff;	
 						break;
 					}
 				}
@@ -2546,6 +2554,8 @@ position_widget(struct xa_window *wind, struct xa_widget *widg)
 							nxt_r->r.x += diff;
 							reloc_widgets_in_row(nxt_r);
 						}
+						wind->bd.x += diff;
+						wind->bd.w += diff;
 						break;
 					}
 					case XAR_END:
@@ -2563,6 +2573,7 @@ position_widget(struct xa_window *wind, struct xa_widget *widg)
 							nxt_r->rxy += diff;
 							reloc_widgets_in_row(nxt_r);
 						}
+						wind->bd.w += diff;
 						break;
 					}
 				}
@@ -2576,14 +2587,14 @@ position_widget(struct xa_window *wind, struct xa_widget *widg)
 static XA_WIDGET *
 make_widget(struct xa_window *wind,
 	    struct xa_widget_methods *m,
-	    struct xa_client *owner)
+	    struct xa_client *owner, RECT *offsets)
 {
 	XA_WIDGET *widg = get_widget(wind, m->r.xaw_idx);
 
 	widg->m		= *m;
 	widg->owner	 = owner;
 
-	position_widget(wind, widg);
+	position_widget(wind, widg, offsets);
 
 	return widg;
 }
@@ -2693,7 +2704,7 @@ struct xa_widget_methods def_methods[] =
 };
 
 static void
-init_slider_widget(struct xa_window *wind, struct xa_widget *widg, short slider_idx)
+init_slider_widget(struct xa_window *wind, struct xa_widget *widg, short slider_idx, RECT *offsets)
 {
 	struct xa_widget *w;
 	XA_SLIDER_WIDGET *sl = kmalloc(sizeof(*sl));
@@ -2706,7 +2717,7 @@ init_slider_widget(struct xa_window *wind, struct xa_widget *widg, short slider_
 	if (slider_idx == XAW_VSLIDE)
 	{
 		DIAGS(("Make vslide (uparrow)"));
-		w = make_widget(wind, &def_methods[XAW_UPPAGE + 1], NULL);
+		w = make_widget(wind, &def_methods[XAW_UPPAGE + 1], NULL, offsets);
 		w->arrowx = WA_UPPAGE;
 		w->xarrow = WA_DNPAGE;
 		w->limit = 0;
@@ -2714,7 +2725,7 @@ init_slider_widget(struct xa_window *wind, struct xa_widget *widg, short slider_
 		w->slider_type = XAW_VSLIDE;
 		
 		DIAGS(("Make vslide (dnarrow)"));
-		w = make_widget(wind, &def_methods[XAW_DNPAGE + 1], NULL);
+		w = make_widget(wind, &def_methods[XAW_DNPAGE + 1], NULL, offsets);
 		w->arrowx = WA_DNPAGE;
 		w->xarrow = WA_UPPAGE;
 		w->limit = SL_RANGE;
@@ -2724,7 +2735,7 @@ init_slider_widget(struct xa_window *wind, struct xa_widget *widg, short slider_
 	else
 	{
 		DIAGS(("Make hslide (lfarrow)"));
-		w = make_widget(wind, &def_methods[XAW_LFPAGE + 1], NULL);
+		w = make_widget(wind, &def_methods[XAW_LFPAGE + 1], NULL, offsets);
 		w->arrowx = WA_LFPAGE;
 		w->xarrow = WA_RTPAGE;
 		w->limit = 0;
@@ -2732,7 +2743,7 @@ init_slider_widget(struct xa_window *wind, struct xa_widget *widg, short slider_
 		w->slider_type = XAW_HSLIDE;
 		
 		DIAGS(("Make hslide (rtarrow)"));
-		w = make_widget(wind, &def_methods[XAW_RTPAGE + 1], NULL);
+		w = make_widget(wind, &def_methods[XAW_RTPAGE + 1], NULL, offsets);
 		w->arrowx = WA_RTPAGE;
 		w->xarrow = WA_LFPAGE;
 		w->limit = SL_RANGE;
@@ -2774,6 +2785,23 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 		struct xa_widget *widg;
 		short xaw_idx;
 		struct xa_widget_methods dm;
+		RECT *offsets;
+
+		wind->ext_borders = 0;
+		if (wind->frame >= 0 && (wind->draw_canvas = theme->w->draw_canvas))
+		{
+			offsets = &theme->w->outer;
+			wind->bd.x = offsets->x + theme->w->inner.x;
+			wind->bd.y = offsets->y + theme->w->inner.y;
+			wind->bd.w = offsets->x + offsets->w + theme->w->inner.x + theme->w->inner.w;
+			wind->bd.h = offsets->y + offsets->h + theme->w->inner.y + theme->w->inner.h;
+		}
+		else
+		{
+			wind->bd = (RECT){0,0,0,0};
+			wind->draw_canvas = NULL;
+			offsets = &wind->bd;
+		}
 
 		dm = def_methods[XAW_BORDER + 1];
 		dm.r = theme->w->border;
@@ -2786,7 +2814,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 		else
 			dm.properties = WIP_INSTALLED;
 
-		(void)make_widget(wind, &dm, NULL);
+		(void)make_widget(wind, &dm, NULL, offsets);
 
 		while ((rtp = rows->tp_mask) != -1)
 		{
@@ -2804,14 +2832,14 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 					dm = def_methods[xaw_idx + 1];
 					dm.r = *(*rw);
 					dm.properties = dm.r.draw ? WIP_ACTIVE|WIP_INSTALLED : 0;
-					widg = make_widget(wind, &dm, NULL);
+					widg = make_widget(wind, &dm, NULL, offsets);
 
 					switch (xaw_idx)
 					{
 						case XAW_VSLIDE:
 						case XAW_HSLIDE:
 						{
-							init_slider_widget(wind, widg, xaw_idx);
+							init_slider_widget(wind, widg, xaw_idx, offsets);
 							break;
 						}
 						case XAW_UPLN:
@@ -2868,8 +2896,9 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 							dm = def_methods[0];
 							dm.r = *(*rw);
 							dm.properties = WIP_INSTALLED;
+							
 							dm.r.draw = unused->draw;
-							widg = make_widget(wind, &dm, NULL);
+							widg = make_widget(wind, &dm, NULL, offsets);
 							this_tp = 0;
 // 							if (!(wind->dial & created_for_CALC))
 // 								display("install notused widget-drawing for %lx", this_tp);

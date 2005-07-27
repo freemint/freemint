@@ -512,10 +512,37 @@ add_msg_2_queue(struct xa_aesmsg_list **queue, union msg_buf *msg, short qmflags
 			{
 				short *old = (*next)->message.m;
 					
-				if (old[0] == new[0] && old[3] == new[3] && old[4] == new[4])
+				if (old[0] == new[0] && old[3] == new[3])
 				{
-					msg = NULL;
-					break;
+					short old_t = old[4] & 0xf, new_t = new[4] & 0xf;
+
+					if (old_t == new_t)
+					{
+						short old_a = old[4] >> 8, new_a = new[4] >> 8;
+						
+						if ((old_a | new_a))
+						{
+							if (!old_a)
+								old_a++;
+							if (!new_a)
+								new_a++;
+							new_a += old_a;
+							old[4] = (old_t | (new_a << 8));
+							old[5] = new[5];
+							old[6] = new[6];
+							old[7] = new[7];
+// 							display("replace old WM_ARROWED old_a %d, new_a %d, sum %d", old_a, new_a-new_a, new_a);
+						}	
+						msg = NULL;
+						break;
+					}
+				#if 0					
+					if (old[4] == new[4])
+					{
+						msg = NULL;
+						break;
+					}
+				#endif
 				}
 				next = &((*next)->next);
 			}
