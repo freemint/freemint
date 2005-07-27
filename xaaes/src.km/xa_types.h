@@ -969,7 +969,8 @@ typedef enum xa_widgets XA_WIDGETS;
 
 struct xa_widget;
 
-typedef bool _cdecl DrawWidg (struct xa_window *wind, struct xa_widget *widg, const RECT *clip);
+typedef bool _cdecl DrawWidg(struct xa_window *wind, struct xa_widget *widg, const RECT *clip);
+typedef void _cdecl DrawCanvas(struct xa_window *wind, RECT *outer, RECT *inner, const RECT *clip);
 typedef void _cdecl SetWidgSize(struct xa_window *wind, struct xa_widget *widg);
 typedef void _cdecl WidgGemColor(struct xa_window *wind, short gem_widget, BFOBSPEC *c);
 
@@ -990,24 +991,12 @@ struct nwidget_row
 	XA_WIND_ATTR	tp_mask;
 	struct render_widget **w;
 };
-
-struct xa_wind_element;
-struct xa_wind_element
-{
-	struct xa_wind_element *prev, *next;
-
-	struct render_widget w;
-	RECT min_size;
-
-	struct xa_widget_row *rows;
-};
 	
 struct xa_widget_row;
 struct xa_widget_row
 {
 	struct xa_widget_row	*prev;
 	struct xa_widget_row	*next;
-// 	struct xa_wind_element	*welm;
 
 	XA_RELATIVE		rel;
 	XA_WIND_ATTR		tp_mask;
@@ -1021,12 +1010,17 @@ struct widget_theme
 {
 	struct xa_data_hdr	h;
 	long			links;
-	
+
+
 	struct nwidget_row	*layout;
 
 	WidgGemColor		*get_widgcolor;
 	WidgGemColor		*set_widgcolor;
 
+	RECT			outer;
+	RECT			inner;
+	DrawCanvas		*draw_canvas;
+	
 	struct render_widget	exterior;
 	
 	struct render_widget	border;
@@ -1322,11 +1316,19 @@ struct xa_window
 	bool dial_followed;		/* false immediate after opening a dial window.
 	                	       	 * true after first objc_draw. */
 	bool wa_frame;
+
 #define WAB_LEFT	1
 #define WAB_RIGHT	2
 #define WAB_TOP		4
 #define WAB_BOTTOM	8
+
+#define L_BORDER	1
+#define R_BORDER	2
+#define T_BORDER	4
+#define B_BORDER	8
+
 	short wa_borders;
+	short ext_borders;
 	short x_shadow;
 	short y_shadow;
 	RECT max;			/* Creator dimension's, maximum for sizing */
@@ -1336,10 +1338,13 @@ struct xa_window
 	RECT ro;			/* Original dimemsions when iconified */
 	RECT wa;			/* user work area */
 	RECT rwa;			/* work area minus toolbar, if installed - else same as wa */
-// 	RECT bd;			/* border displacement */
+	RECT bd;			/* border displacement */
 	RECT ba;			/* border area for use by border sizing facility. */
 	RECT pr;			/* previous dimensions */
 	RECT t;				/* Temporary coordinates used internally */
+	
+	RECT outer;
+	RECT inner;
 
 	short sw, sh;			/* width(not used) and height to use when SHADED */
 	short hx, hy;
@@ -1386,7 +1391,8 @@ struct xa_window
 	XA_WIDGET_LIST		*user_widgets;	/* Pointer to a list of user added widgets */
 #endif
 	XA_WIDGET 		*tool;		/* If dialogue or popup: which widget is used. */
-	struct xa_widget_row	*widg_rows;	
+	struct xa_widget_row	*widg_rows;
+	DrawCanvas		*draw_canvas;
 	XA_WIDGET		widgets[XA_MAX_WIDGETS]; /* The windows standard widget set (array for speed) */
 
 	char			wname[MAX_WINDOW_NAME];	/* window name line (copy) */

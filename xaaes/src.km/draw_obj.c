@@ -897,18 +897,18 @@ set_text(OBJECT *ob,
 
 		switch(ted->te_just)
 		{
-		case TE_LEFT:
-			*(temp_text + rw) = 0;
-			break;
-		case TE_RIGHT:
-			strcpy (temp_text, temp_text + dif);
-			break;
-		case TE_CNTR:
-			h1dif = dif/2;
-			h2dif = (dif+1)/2;
-			*(temp_text + strlen(temp_text) - h2dif) = 0;
-			strcpy (temp_text, temp_text + h1dif);
-			break;
+			case TE_LEFT:
+				*(temp_text + rw) = 0;
+				break;
+			case TE_RIGHT:
+				strcpy (temp_text, temp_text + dif);
+				break;
+			case TE_CNTR:
+				h1dif = dif/2;
+				h2dif = (dif+1)/2;
+				*(temp_text + strlen(temp_text) - h2dif) = 0;
+				strcpy (temp_text, temp_text + h1dif);
+				break;
 		}
 
 		(*v->api->t_extent)(v, temp_text, &w, &h);
@@ -916,16 +916,16 @@ set_text(OBJECT *ob,
 
 	switch (ted->te_just)		/* Set text alignment - why on earth did */
 	{
-					/* Atari use a different horizontal alignment */
-	case TE_LEFT:			/* code for GEM to the one the VDI uses? */
-		cur.x = r.x;
-		break;
-	case TE_RIGHT:
-		cur.x = r.x + r.w - w;
-		break;
-	case TE_CNTR:
-		cur.x = r.x + (r.w - w) / 2;
-		break;
+						/* Atari use a different horizontal alignment */
+		case TE_LEFT:			/* code for GEM to the one the VDI uses? */
+			cur.x = r.x;
+			break;
+		case TE_RIGHT:
+			cur.x = r.x + r.w - w;
+			break;
+		case TE_CNTR:
+			cur.x = r.x + (r.w - w) / 2;
+			break;
 	}
 
 	cur.y = r.y + (r.h - h) / 2;

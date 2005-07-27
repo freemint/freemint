@@ -973,7 +973,7 @@ display_popup(Tab *tab, XA_TREE *wt, int item, short rdx, short rdy)
 	struct xa_window *wind;
 	XA_WIND_ATTR tp = TOOLBAR /*|STORE_BACK*/;
 	RECT r;
-	int wash, mg = MONO ? 2 : 1;
+	int wash, mg = MONO ? 2 : 0;
 	
 	k->pop_item = item;
 	k->border = 0;
@@ -986,7 +986,7 @@ display_popup(Tab *tab, XA_TREE *wt, int item, short rdx, short rdy)
 	obtree->ob_y = k->rdy = rdy;
 
 	obj_rectangle(wt, item, &r);
-	//obj_area(wt, item, &r);
+// 	obj_area(wt, item, &r);
 	DIAG((D_menu, tab->client, "display_popup: tab=%lx, %d/%d/%d/%d", tab, r));
 	
 	r = calc_window(tab->lock, C.Aes, WC_BORDER, tp, created_for_AES|created_for_POPUP, mg, true, r);
@@ -1093,23 +1093,6 @@ display_popup(Tab *tab, XA_TREE *wt, int item, short rdx, short rdy)
 			open_window(tab->lock, wind, r);
 		}
 	}
-#if 0
-	else
-	{
-		DIAGS(("display_popup: tab=%lx, wt=%lx, obtree=%lx, item=%d", tab, wt, wt->tree, item));
-
-		obj_area(wt, item, &r);
-		r = popup_inside(tab, r);
-		hidem();
-		form_save(k->border, k->drop, &(k->Mpreserve));
-		DIAG((D_menu, tab->client, "pop draw %lx + %d", obtree, item));
-		obtree->ob_x = k->pdx;
-		obtree->ob_y = k->pdy;
-		wt->is_menu = true;
-		draw_object_tree(tab->lock, wt, obtree, item, 1, NULL);
-		showm();
-	}
-#endif
 }
 
 static void
@@ -2120,6 +2103,7 @@ set_popup_widget(Tab *tab, struct xa_window *wind, int obj)
 	wt->is_menu = true;
 	wt->widg = widg;
 	wt->links++;
+	wt->zen = true;
 	
 	if (frame < 0)
 		frame = 0;

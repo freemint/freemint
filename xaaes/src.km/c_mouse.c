@@ -540,7 +540,7 @@ cXA_wheel_event(enum locks lock, struct c_event *ce, bool cancel)
 				}
 			}
 			 
-			if (!slist && wind->opts & XAWO_WHEEL)
+			if (!slist && (wind->opts & XAWO_WHEEL))
 			{
 				switch (wind->wheel_mode)
 				{
