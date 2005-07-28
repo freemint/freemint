@@ -1339,6 +1339,7 @@ struct xa_window
 	RECT wa;			/* user work area */
 	RECT rwa;			/* work area minus toolbar, if installed - else same as wa */
 	RECT bd;			/* border displacement */
+	RECT rbd;
 	RECT ba;			/* border area for use by border sizing facility. */
 	RECT pr;			/* previous dimensions */
 	RECT t;				/* Temporary coordinates used internally */

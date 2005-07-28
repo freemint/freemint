@@ -1759,6 +1759,7 @@ calc_work_area(struct xa_window *wind)
 	int frame = wind->frame;
 	int t_margin, b_margin, l_margin, r_margin;
 	short wa_borders = 0;
+	bool shaded = wind->window_status & XAWS_SHADED;
 	
 // 	wind->wa = r;
 
@@ -1775,11 +1776,7 @@ calc_work_area(struct xa_window *wind)
 	r_margin = (MONO || thin) ? 1 : 2;
 
 	wind->outer = wind->rc;
-
-	wind->wadelta /*= wind->inner*/ = wind->bd;
-// 	wind->inner.w += wind->x_shadow;
-// 	wind->inner.h += wind->y_shadow;
-// 	wind->inner = f2w(&wind->inner, &wind->rc, true);
+	wind->wadelta = wind->bd;
 
 	if (frame >= 0)
 	{
@@ -1857,6 +1854,18 @@ calc_work_area(struct xa_window *wind)
 		wind->rwa = wind->wa;
 	}
 
+	if (shaded)
+	{
+		wind->outer = wind->r;
+		if ((frame = wind->frame) >= 0)
+		{
+			wind->outer.x += frame;
+			wind->outer.y += frame;
+			wind->outer.w -= (frame << 1) + wind->x_shadow;
+			wind->outer.h -= (frame << 1) + wind->y_shadow;
+		}
+		wind->inner = f2w(&wind->rbd, &wind->outer, true);
+	}
 
 	/* Add bd to toolbar->r to get window rectangle for create_window
 	 * Anyhow, always convenient, especially when snapping the workarea.
@@ -2791,10 +2800,11 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 			wind->bd.y = offsets->y + theme->w->inner.y;
 			wind->bd.w = offsets->x + offsets->w + theme->w->inner.x + theme->w->inner.w;
 			wind->bd.h = offsets->y + offsets->h + theme->w->inner.y + theme->w->inner.h;
+			wind->rbd = wind->bd;
 		}
 		else
 		{
-			wind->bd = r_ofs = (RECT){0,0,0,0};
+			wind->bd = wind->rbd = r_ofs = (RECT){0,0,0,0};
 			wind->draw_canvas = NULL;
 			offsets = &r_ofs;
 		}
@@ -2892,6 +2902,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 							dm = def_methods[0];
 							dm.r = *(*rw);
 							dm.properties = WIP_INSTALLED;
+							dm.statusmask = def_methods[xaw_idx + 1].statusmask;
 							
 							dm.r.draw = unused->draw;
 							widg = make_widget(wind, &dm, NULL, offsets);
