@@ -820,7 +820,7 @@ create_window(
 	get_widget(w, XAW_TITLE)->stuff = client->name;
 
 	if (dial & created_for_POPUP)
-		w->wa_frame = false;
+		w->wa_frame = true;
 	else
 		w->wa_frame = true;
 
