@@ -1268,21 +1268,26 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		DIAG((D_wind, client, "wind_xget: N_INTIN=%d, (%d/%d/%d/%d) on wind=%d for %s",
 			pb->control[N_INTIN], *(const RECT *)(pb->intin+2), w->handle, client->name));
-				
-		w->rl_clip = *(const RECT *)(pb->intin + 2);
-		w->use_rlc = true;
-		make_rect_list(w, true, RECT_OPT);
-		rl = rect_get_optimal_first(w);
-		
-		if (rl)
-			*ro = rl->r;
-		else
-			ro->x = ro->y = ro->w = ro->h = 0;
 
-		if ((ro->w | ro->h) && !w->rect_lock)
+		if (is_shaded(w))
+			ro->x = ro->y = ro->w = ro->h = 0;
+		else
 		{
-			w->rect_lock = 1;
-			C.rect_lock++;
+			w->rl_clip = *(const RECT *)(pb->intin + 2);
+			w->use_rlc = true;
+			make_rect_list(w, true, RECT_OPT);
+			rl = rect_get_optimal_first(w);
+		
+			if (rl)
+				*ro = rl->r;
+			else
+				ro->x = ro->y = ro->w = ro->h = 0;
+
+			if ((ro->w | ro->h) && !w->rect_lock)
+			{
+				w->rect_lock = 1;
+				C.rect_lock++;
+			}
 		}
 		break;
 	}
@@ -1318,8 +1323,7 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 	case WF_FIRSTXYWH:	/* Generate a rectangle list and return the first entry */
 	{
 		w->use_rlc = false;
-
-		if (!get_rect(&w->rect_list, &w->rwa, true, ro))
+		if (is_shaded(w) || !get_rect(&w->rect_list, &w->rwa, true, ro))
 		{
 			ro->x = w->r.x;
 			ro->y = w->r.y;
@@ -1334,7 +1338,7 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 	}
 	case WF_NEXTXYWH:		/* Get next entry from a rectangle list */
 	{
-		if (!w->rect_lock)
+		if (is_shaded(w) || !w->rect_lock)
 			ro->x = ro->y = ro->w = ro->h = 0;
 		else
 		{
