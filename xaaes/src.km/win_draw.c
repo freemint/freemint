@@ -101,11 +101,11 @@ static struct widget_theme def_theme =
 	get_wcol,
 	set_wcol,
 
-	{3, 3, 1, 1},	/* min */
-	{1, 1, 2, 2},
-// 	{0, 0, 0, 0},
+	{2, 2, 2, 2},	/* min */
+// 	{1, 1, 2, 2},
+	{0, 0, 0, 0},
 
-	NULL, //draw_canvas,
+	draw_canvas,
 
 	{ 0,		NULL,		0,		0,			d_unused, NULL},			/* exterior		*/
 	{ BORDER,	border_dep,	XAW_BORDER,	NO,			d_borders, NULL},			/* border		*/
@@ -508,29 +508,30 @@ draw_canvas(struct xa_window *wind, RECT *outer, RECT *inner, const RECT *clip)
 
 		(*v->api->wr_mode)(v, MD_REPLACE);
 		
-		(*v->api->tl_hook)(v, 0, outer, G_BLACK);
-		(*v->api->tl_hook)(v, -1, outer, G_WHITE);
-		(*v->api->tl_hook)(v, -2, outer, G_LWHITE);
-// 		(*v->api->tl_hook)(v, -3, outer, G_LWHITE);
-// 		(*v->api->tl_hook)(v, -4, outer, G_LWHITE);
-// 		(*v->api->tl_hook)(v, -5, outer, G_LWHITE);
-		
 		(*v->api->br_hook)(v, 0, outer, G_LBLACK);
-// 		(*v->api->br_hook)(v, -1, outer, G_LWHITE);
+		(*v->api->br_hook)(v, -1, outer, G_LWHITE);
 // 		(*v->api->br_hook)(v, -2, outer, G_LWHITE);
 // 		(*v->api->br_hook)(v, -3, outer, G_LWHITE);
 // 		(*v->api->br_hook)(v, -4, outer, G_LWHITE);
 // 		(*v->api->br_hook)(v, -5, outer, G_LWHITE);
 		
-		(*v->api->tl_hook)(v, 1, inner, G_LBLACK);
+		
+		(*v->api->tl_hook)(v, 0, outer, G_LBLACK);
+		(*v->api->tl_hook)(v, -1, outer, G_WHITE);
+// 		(*v->api->tl_hook)(v, -2, outer, G_LWHITE);
+// 		(*v->api->tl_hook)(v, -3, outer, G_LWHITE);
+// 		(*v->api->tl_hook)(v, -4, outer, G_LWHITE);
+// 		(*v->api->tl_hook)(v, -5, outer, G_LWHITE);
+		
+// 		(*v->api->tl_hook)(v, 1, inner, G_LBLACK);
 // 		(*v->api->tl_hook)(v, 2, inner, G_LBLACK);
 // 		(*v->api->tl_hook)(v, 3, inner, G_LWHITE);
 // 		(*v->api->tl_hook)(v, 4, inner, G_LWHITE);
 // 		(*v->api->tl_hook)(v, 5, inner, G_LWHITE);
 // 		(*v->api->tl_hook)(v, 6, inner, G_LWHITE);
 		
-		(*v->api->br_hook)(v, 1, inner, G_WHITE);
-		(*v->api->br_hook)(v, 2, inner, G_LWHITE);
+// 		(*v->api->br_hook)(v, 1, inner, G_WHITE);
+// 		(*v->api->br_hook)(v, 2, inner, G_LWHITE);
 // 		(*v->api->br_hook)(v, 3, inner, G_LWHITE);
 // 		(*v->api->br_hook)(v, 4, inner, G_LWHITE);
 // 		(*v->api->br_hook)(v, 5, inner, G_LWHITE);
