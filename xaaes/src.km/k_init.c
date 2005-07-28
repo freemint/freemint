@@ -311,8 +311,7 @@ k_init(void)
 
 	setup_xa_module_api();
 	
-	global_vdiapi = v->api = init_xavdi_module();
-	
+	global_vdiapi = v->api = init_xavdi_module();	
 	{
 		short *p;
 
@@ -429,8 +428,9 @@ k_init(void)
 		DIAGS(("graf_handle -> %d", C.P_handle));
 	}
 
-	/* Open us a virtual workstation for XaAES to play with */
-// 	C.vh = C.P_handle;
+	/*
+	 * Open us a virtual workstation for XaAES to play with
+	 */
 	v->handle = C.P_handle;
 	v_opnvwk(work_in, &v->handle, work_out);
 
@@ -442,7 +442,6 @@ k_init(void)
 
 	C.Aes->vdi_settings = v;
 	
-// 	v->handle = C.vh;
 	(*global_vdiapi->f_perimeter)(v, 0);	/* from set_colours; never set to 1 ever */
 
 	hidem();
@@ -469,9 +468,8 @@ k_init(void)
 	objc_rend.dial_colours =
 		MONO ? bw_default_colours : default_colours;
 
-	vq_extnd(v->handle, 1, work_out);
-	//vq_extnd(C.vh, 1, work_out);	/* Get extended information */
-	screen.planes = work_out[4];	/* number of planes in the screen */
+	vq_extnd(v->handle, 1, work_out);	/* Get extended information */
+	screen.planes = work_out[4];		/* number of planes in the screen */
 
 	DIAGS(("Video info: width(%d/%d), planes :%d, colours %d",
 		screen.r.w, screen.r.h, screen.planes, screen.colours));
@@ -480,13 +478,10 @@ k_init(void)
 	 * If we are using anything apart from the system font for windows,
 	 * better check for GDOS and load the fonts.
 	 */
-	//if (cfg.font_id != 1)
-	//{
-		if (vq_gdos())
-			(*global_vdiapi->load_fonts)(v);
-		else
-			cfg.font_id = 1;
-	//}
+	if (vq_gdos())
+		(*global_vdiapi->load_fonts)(v);
+	else
+		cfg.font_id = 1;
 
 
 	(*global_vdiapi->t_font)(v, cfg.small_font_point, cfg.font_id);

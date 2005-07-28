@@ -536,13 +536,6 @@ add_msg_2_queue(struct xa_aesmsg_list **queue, union msg_buf *msg, short qmflags
 						msg = NULL;
 						break;
 					}
-				#if 0					
-					if (old[4] == new[4])
-					{
-						msg = NULL;
-						break;
-					}
-				#endif
 				}
 				next = &((*next)->next);
 			}

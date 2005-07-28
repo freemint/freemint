@@ -105,7 +105,7 @@ static struct widget_theme def_theme =
 	{1, 1, 2, 2},
 // 	{0, 0, 0, 0},
 
-	draw_canvas,
+	NULL, //draw_canvas,
 
 	{ 0,		NULL,		0,		0,			d_unused, NULL},			/* exterior		*/
 	{ BORDER,	border_dep,	XAW_BORDER,	NO,			d_borders, NULL},			/* border		*/
@@ -497,10 +497,10 @@ sl_2_pix(long s, long p)
 static void
 draw_canvas(struct xa_window *wind, RECT *outer, RECT *inner, const RECT *clip)
 {
-	struct xa_wcol_inf *wci = &((struct window_colours *)wind->colours)->borders;
+// 	struct xa_wcol_inf *wci = &((struct window_colours *)wind->colours)->borders;
 	struct xa_vdi_settings *v = wind->vdi_settings;
 	short size;
-	RECT r;
+// 	RECT r;
 
 	if ((outer->w | outer->h | inner->w | outer->h))
 	{

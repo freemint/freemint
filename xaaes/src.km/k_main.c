@@ -970,6 +970,7 @@ k_main(void *dummy)
 		tpc = kthread_create(C.Aes->p, aesthread_entry, C.Aes, &C.Aes->tp, "%s", aesthread_name);
 		if (tpc < 0)
 		{
+			C.Aes->tp = NULL;
 			display("XaAES ERROR: start AES thread failed");
 			goto leave;
 		}
