@@ -1045,7 +1045,10 @@ struct widget_theme
 
 struct xa_widget_theme
 {
-	struct widget_theme *w;
+	struct widget_theme *active;
+	struct widget_theme *client;
+	struct widget_theme *popup;
+	struct widget_theme *alert;
 };
 
 struct xa_module_api
@@ -1090,7 +1093,7 @@ struct xa_module_widget_theme
 	void * _cdecl	(*init_module)(const struct xa_module_api *, const struct xa_screen *screen, char *widg_name);
 	void _cdecl	(*exit_module)(void *module);
 
-	long _cdecl	(*new_theme)(void *module, struct widget_theme **);
+	long _cdecl	(*new_theme)(void *module, short win_type, struct widget_theme **);
 	long _cdecl	(*free_theme)(void *module, struct widget_theme **);
 
 	long _cdecl	(*new_color_theme)(void *module, void **ontop, void **untop);
@@ -1233,9 +1236,19 @@ enum window_type
 	created_for_TOOLBAR	= 0x0010,
 	created_for_SLIST	= 0x0020,
 	created_for_AES		= 0x0100,
-	created_for_CALC	= 0x0200,
+	created_for_ALERT	= 0x0200,
+	created_for_CALC	= 0x0400,
 };
 typedef enum window_type WINDOW_TYPE;
+
+enum xa_window_class
+{
+	WINCLASS_CLIENT = 0,
+	WINCLASS_POPUP,
+	WINCLASS_ALERT,
+	WINCLASS_SLIST,
+};
+typedef enum xa_window_class WINDOW_CLASS;
 
 /* Callback for a window's auto-redraw function */
 typedef int WindowDisplay (enum locks lock, struct xa_window *wind);
@@ -1266,7 +1279,8 @@ struct xa_wc_cache;
 struct xa_wc_cache
 {
 	struct xa_wc_cache *next;
-	void  *wtheme_handle;
+// 	void  *wtheme_handle;
+	short	class;
 	XA_WIND_ATTR tp;
 	RECT delta;
 	RECT wadelta;
@@ -1284,6 +1298,8 @@ struct xa_window
 					 *      - 2 = created by form_do()
 					 *      - 4 = otherwise created on behalf of the AES
 					 *      - 8 = or created on behalf of wdlg_xxx extension. */
+
+	short	class;
 
 	WINDOW_STATUS window_status;	/* Window status */
 	
