@@ -118,16 +118,28 @@ clear_wind_handles(void)
 		wind_handle[f] = 0;
 }
 
+inline static void
+calc_shade_height(struct xa_window *wind)
+{
+	if (wind->active_widgets & (CLOSER|NAME|MOVER|ICONIFIER|FULLER))
+	{
+		RECT t;
+		t = w2f(&wind->rbd, &wind->widgets[XAW_TITLE].r, true);
+		wind->sh = t.h + wind->y_shadow;
+		if (wind->frame > 0)
+			wind->sh += (wind->frame << 1);
+// 		RECT t;
+// 		rp_2_ap_cs(w, w->widgets + XAW_TITLE, &t);
+// 		w->sh = t.y + t.h - w->r.y + (w->frame > 0 ? w->frame : 0);
+	}
+}
+
 void
 clear_wind_rectlist(struct xa_window *wind)
 {
 	free_rectlist_entry(&wind->rect_list);
 	free_rectlist_entry(&wind->rect_opt);
 	free_rectlist_entry(&wind->rect_toolbar);
-// 	free_rect_list(wind->rect_start);
-// 	free_rect_list(wind->rect_opt_start);
-// 	free_rect_list(wind->rect_wastart);
-// 	wind->rect_user = wind->rect_list = wind->rect_start = wind->rect_wastart = wind->rect_opt = wind->rect_opt_start = NULL;
 }
 
 /*
@@ -642,7 +654,7 @@ generate_redraws(enum locks lock, struct xa_window *wind, RECT *r, short flags)
 	
 	if ((wind->window_status & (XAWS_OPEN|XAWS_HIDDEN)) == XAWS_OPEN)
 	{
-		if (wind != root_window && r && (flags & RDRW_WA))
+		if (wind != root_window && r && (flags & RDRW_WA) && !is_shaded(wind))
 		{
 			struct xa_widget *widg; // = get_widget(wind, XAW_TOOLBAR);
 
@@ -802,8 +814,6 @@ create_window(
 	w->widget_theme = client->widget_theme;
 	w->widget_theme->w->links++;
 
-	w->x_shadow = 2;
-	w->y_shadow = 2;
 
 	(*client->xmwt->new_color_theme)(client->wtheme_handle, &w->ontop_cols, &w->untop_cols);
 	w->colours = w->ontop_cols;
@@ -820,9 +830,17 @@ create_window(
 	get_widget(w, XAW_TITLE)->stuff = client->name;
 
 	if (dial & created_for_POPUP)
+	{
+// 		w->x_shadow = 2;
+// 		w->y_shadow = 2;
 		w->wa_frame = true;
+	}
 	else
+	{
+		w->x_shadow = 2;
+		w->y_shadow = 2;
 		w->wa_frame = true;
+	}
 
 // 	if (w->frame > 0)
 // 		tp |= BORDER;
@@ -879,14 +897,16 @@ create_window(
 	}
 	else
 		w->max = root_window->wa;
-	
+
+	calc_shade_height(w);
+#if 0	
 	if (tp & (CLOSER|NAME|MOVER|ICONIFIER|FULLER))
 	{
 		RECT t;
-		rp_2_ap(w, w->widgets + XAW_TITLE, &t);
-		w->sh = t.y + t.h - w->r.y + (w->frame > 0 ? w->frame : 0);
+		t = w2f(&w->rbd, &w->widgets[XAW_TITLE].r, true);
+		w->sh = t.h + w->y_shadow;
 	}
-
+#endif
 	if (remember)
 		*remember = w->r;
 
@@ -958,12 +978,7 @@ change_window_attribs(enum locks lock,
 		assert(w->background);
 	}
 
-	if (tp & (CLOSER|NAME|MOVER|ICONIFIER|FULLER))
-	{
-		RECT t;
-		rp_2_ap_cs(w, w->widgets + XAW_TITLE, &t);
-		w->sh = t.y + t.h - w->r.y + (w->frame > 0 ? w->frame : 0);
-	}
+	calc_shade_height(w);
 
 	/*
 	 * Now standard widgets are set and workarea of window
