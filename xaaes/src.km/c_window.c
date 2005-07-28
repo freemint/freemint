@@ -776,6 +776,7 @@ create_window(
 		return NULL;
 
 	init_client_widget_theme(client);
+	
 	if (!(wtheme = client->widget_theme))
 	{
 		kfree(w);
@@ -812,7 +813,26 @@ create_window(
 	}
 
 	w->widget_theme = client->widget_theme;
-	w->widget_theme->w->links++;
+
+	if (dial & created_for_ALERT)
+	{
+		w->class = WINCLASS_ALERT;
+		w->widget_theme->active = w->widget_theme->alert;
+	}
+	else if (dial & created_for_POPUP)
+	{
+		w->class = WINCLASS_POPUP;
+		w->widget_theme->active = w->widget_theme->popup;
+	}
+	else
+	{
+		w->class = WINCLASS_CLIENT;
+		w->widget_theme->active = w->widget_theme->client;
+	}
+	
+	w->widget_theme->active->links++;
+
+// 	w->widget_theme->w->links++;
 
 
 	(*client->xmwt->new_color_theme)(client->wtheme_handle, &w->ontop_cols, &w->untop_cols);
@@ -1804,9 +1824,9 @@ delete_window1(enum locks lock, struct xa_window *wind)
 	{
 		(*client->xmwt->free_color_theme)(client->wtheme_handle, wind->untop_cols);
 	}
-	if (wind->widget_theme && wind->widget_theme->w)
+	if (wind->widget_theme && wind->widget_theme->active)
 	{
-		wind->widget_theme->w->links--;
+		wind->widget_theme->active->links--;
 	}
 
 	kfree(wind);
@@ -2105,7 +2125,8 @@ add_wcc_entry(struct xa_window *wind)
 	{
 		new->next = client->wcc;
 		client->wcc = new;
-		new->wtheme_handle = client->wtheme_handle;
+		new->class = wind->class;
+// 		new->wtheme_handle = themekey; //client->wtheme_handle;
 		new->tp = wind->requested_widgets;
 		new->delta = wind->delta;
 		new->wadelta = wind->wadelta;
@@ -2125,13 +2146,13 @@ delete_wc_cache(struct xa_wc_cache **wcc)
 }
 
 static struct xa_wc_cache *
-lookup_wcc_entry(struct xa_client *client, XA_WIND_ATTR tp)
+lookup_wcc_entry(struct xa_client *client, short class, XA_WIND_ATTR tp)
 {
 	struct xa_wc_cache *wcc = client->wcc;
 
 	while (wcc)
 	{
-		if (wcc->tp == tp && wcc->wtheme_handle == client->wtheme_handle)
+		if (wcc->tp == tp && wcc->class == class) //client->wtheme_handle)
 			break;
 		wcc = wcc->next;
 	}
@@ -2143,13 +2164,21 @@ calc_window(enum locks lock, struct xa_client *client, int request, XA_WIND_ATTR
 {
 	struct xa_window *w_temp;
 	struct xa_wc_cache *wcc;
+	short class;
 	RECT o;
 	DIAG((D_wind,client,"calc %s from %d/%d,%d/%d", request ? "work" : "border", r));
 
 	tp = fix_wind_kind(tp);
 	dial |= created_for_CALC;
 
-	if (!(wcc = lookup_wcc_entry(client, tp)))
+	if (dial & created_for_POPUP)
+		class = WINCLASS_POPUP;
+	else if (dial & created_for_ALERT)
+		class = WINCLASS_ALERT;
+	else
+		class = WINCLASS_CLIENT;
+
+	if (!(wcc = lookup_wcc_entry(client, class, tp)))
 	{
 		w_temp = create_window(lock, NULL, NULL, client, true, tp, dial, thinframe, thinwork, r, 0,0);
 		wcc = add_wcc_entry(w_temp);
