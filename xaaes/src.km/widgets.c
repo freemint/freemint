@@ -88,21 +88,44 @@ static char *t_widg[] =
 static void
 setup_widget_theme(struct xa_client *client, struct xa_widget_theme *wtheme)
 {
-	struct widget_theme *theme = C.Aes->widget_theme->w;
-
+	struct widget_theme *theme = C.Aes->widget_theme->client;
+	struct widget_theme *ptheme = C.Aes->widget_theme->popup;
+	struct widget_theme *atheme = C.Aes->widget_theme->alert;
+				
 	if (theme)
 	{
-		wtheme->w = theme;
+		wtheme->client = theme;
 		theme->links++;
 	}
 	else
 	{
-		(*client->xmwt->new_theme)(client->wtheme_handle, &theme);
-		if ((wtheme->w = theme))
-		{
-// 			display("Create new theme %lx", theme);
+		(*client->xmwt->new_theme)(client->wtheme_handle, WINCLASS_CLIENT, &theme);
+		if ((wtheme->client = theme))
 			theme->links++;
-		}
+	}
+
+	if (ptheme)
+	{
+		wtheme->popup = ptheme;
+		ptheme->links++;
+	}
+	else
+	{
+		(*client->xmwt->new_theme)(client->wtheme_handle, WINCLASS_POPUP, &ptheme);
+		if ((wtheme->popup = ptheme))
+			ptheme->links++;
+	}
+
+	if (atheme)
+	{
+		(*client->xmwt->new_theme)(client->wtheme_handle, WINCLASS_ALERT, &atheme);
+		if ((wtheme->alert = atheme))
+			atheme->links++;
+	}
+	else
+	{
+		wtheme->alert = atheme;
+		atheme->links++;
 	}
 }
 
@@ -127,15 +150,28 @@ exit_client_widget_theme(struct xa_client *client)
 	if (client->widget_theme)
 	{
 		struct widget_theme *theme;
-		if ((theme = client->widget_theme->w))
+		if ((theme = client->widget_theme->client))
 		{
 			theme->links--;
 			if (!theme->links)
 			{
 // 				display("free theme %lx", theme);
-				(*client->xmwt->free_theme)(client->wtheme_handle, &client->widget_theme->w);
+				(*client->xmwt->free_theme)(client->wtheme_handle, &client->widget_theme->client);
 			}
 		}
+		if ((theme = client->widget_theme->popup))
+		{
+			theme->links--;
+			if (!theme->links)
+				(*client->xmwt->free_theme)(client->wtheme_handle, &client->widget_theme->popup);
+		}
+		if ((theme = client->widget_theme->alert))
+		{
+			theme->links--;
+			if (!theme->links)
+				(*client->xmwt->free_theme)(client->wtheme_handle, &client->widget_theme->alert);
+		}
+		
 		kfree(client->widget_theme);
 		client->widget_theme = NULL;
 	}
@@ -2638,7 +2674,7 @@ create_widg_layout(struct xa_window *wind)
 	int nrows;
 	struct xa_widget_row *xa_rows, *ret = NULL;
 
-	rows = theme->w->layout;
+	rows = theme->active->layout;
 	nrows = 0;
 
 	while (rows->tp_mask != -1)
@@ -2649,7 +2685,7 @@ create_widg_layout(struct xa_window *wind)
 		int rownr = 0;
 		struct xa_widget_row *p = NULL;
 
-		rows = theme->w->layout;
+		rows = theme->active->layout;
 		ret = xa_rows;
 
 		while ((tp = rows->tp_mask) != -1)
@@ -2784,7 +2820,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 		}
 	}
 	{
-		struct nwidget_row *rows = theme->w->layout;
+		struct nwidget_row *rows = theme->active->layout;
 		XA_WIND_ATTR rtp, this_tp, *tp_deps;
 		struct xa_widget *widg;
 		short xaw_idx;
@@ -2793,13 +2829,13 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 		RECT r_ofs;
 
 		wind->ext_borders = 0;
-		if (wind->frame >= 0 && (wind->draw_canvas = theme->w->draw_canvas))
+		if (wind->frame >= 0 && (wind->draw_canvas = theme->active->draw_canvas))
 		{
-			offsets = &theme->w->outer;
-			wind->bd.x = offsets->x + theme->w->inner.x;
-			wind->bd.y = offsets->y + theme->w->inner.y;
-			wind->bd.w = offsets->x + offsets->w + theme->w->inner.x + theme->w->inner.w;
-			wind->bd.h = offsets->y + offsets->h + theme->w->inner.y + theme->w->inner.h;
+			offsets = &theme->active->outer;
+			wind->bd.x = offsets->x + theme->active->inner.x;
+			wind->bd.y = offsets->y + theme->active->inner.y;
+			wind->bd.w = offsets->x + offsets->w + theme->active->inner.x + theme->active->inner.w;
+			wind->bd.h = offsets->y + offsets->h + theme->active->inner.y + theme->active->inner.h;
 			wind->rbd = wind->bd;
 		}
 		else
@@ -2810,7 +2846,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 		}
 
 		dm = def_methods[XAW_BORDER + 1];
-		dm.r = theme->w->border;
+		dm.r = theme->active->border;
 		dm.r.pos_in_row = NO;
 		if ((tp & BORDER) || (wind->frame > 0 && (tp & SIZER)))
 		{
@@ -2898,7 +2934,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 					{
 						if ((tp & tp_deps[0]) && (tp & tp_deps[1]))
 						{
-							struct render_widget *unused = &theme->w->exterior;
+							struct render_widget *unused = &theme->active->exterior;
 							dm = def_methods[0];
 							dm.r = *(*rw);
 							dm.properties = WIP_INSTALLED;
