@@ -78,6 +78,7 @@ CE_at_terminate(enum locks lock, struct c_event *ce, bool cancel)
 void
 k_shutdown(void)
 {
+	struct xa_vdi_settings *v = C.Aes->vdi_settings;
 	long j = 0;
 
 	DIAGS(("Cleaning up ready to exit...."));
@@ -181,8 +182,11 @@ k_shutdown(void)
 	}
 
 // 	display("shutting down aes thread ..");
-	post_cevent(C.Aes, CE_at_terminate, NULL,NULL, 0,0, NULL,NULL);
-	yield();
+	if (C.Aes->tp)
+	{
+		post_cevent(C.Aes, CE_at_terminate, NULL,NULL, 0,0, NULL,NULL);
+		yield();
+	}
 // 	display("..done");
 
 	
@@ -238,11 +242,14 @@ k_shutdown(void)
 	}
 #endif
 	/*
+	 * Free the wind_calc() cache
+	 */
+	delete_wc_cache(&C.Aes->wcc);
+	/*
 	 * Freeing the WT list is the last thing to do. Modules may attach
 	 * widget_tree's to C.Aes
 	 */
 	free_wtlist(C.Aes);
-	delete_wc_cache(&C.Aes->wcc);
 
 // 	display("free C.Aes");
 	kfree(C.Aes);
@@ -325,44 +332,55 @@ k_shutdown(void)
 	}
 #endif
 
-	vst_color(C.P_handle, G_BLACK);
-	vswr_mode(C.P_handle, MD_REPLACE);
-
-	/* Shut down the VDI */
-// 	display("clrwk");
-	v_clrwk(C.P_handle);
-
-	if (cfg.auto_program)
+	/*
+	 * Close the virtual used by XaAES
+	 */
+	if (v && v->handle)
+		v_clsvwk(v->handle);
+	/*
+	 * Close the physical
+	 */
+	if (C.P_handle)
 	{
-		/* v_clswk bombs with NOVA VDI 2.67 & Memory Protection.
-		 * so I moved this to the end of the xaaes_shutdown,
-		 * AFTER closing the debugfile.
-		 */
-		v_clsvwk(global_vdi_settings.handle);
+		vst_color(C.P_handle, G_BLACK);
+		vswr_mode(C.P_handle, MD_REPLACE);
 
-		/*
-		 * Ozk: We switch off instruction, data and branch caches (where available)
-		 *	while the VDI accesses the hardware. This fixes 'black-screen'
-		 *	problems on Hades with Nova VDI.
-		 */
+		/* Shut down the VDI */
+// 		display("clrwk");
+		v_clrwk(C.P_handle);
+
+		if (cfg.auto_program)
 		{
-			unsigned long sc, cm;
-			cm = s_system(S_CTRLCACHE, 0L, -1L);
-			sc = s_system(S_CTRLCACHE, -1L, 0L);
-			s_system(S_CTRLCACHE, sc & ~3, cm);
+			/* v_clswk bombs with NOVA VDI 2.67 & Memory Protection.
+			 * so I moved this to the end of the xaaes_shutdown,
+			 * AFTER closing the debugfile.
+			 */
+// 			v_clsvwk(global_vdi_settings.handle);
+
+			/*
+			 * Ozk: We switch off instruction, data and branch caches (where available)
+			 *	while the VDI accesses the hardware. This fixes 'black-screen'
+			 *	problems on Hades with Nova VDI.
+			 */
+			{
+				unsigned long sc, cm;
+				cm = s_system(S_CTRLCACHE, 0L, -1L);
+				sc = s_system(S_CTRLCACHE, -1L, 0L);
+				s_system(S_CTRLCACHE, sc & ~3, cm);
 			
-			v_enter_cur(C.P_handle);	/* Ozk: Lets enter cursor mode */
-			v_clswk(C.P_handle);		/* Auto version must close the physical workstation */
+				v_enter_cur(C.P_handle);	/* Ozk: Lets enter cursor mode */
+				v_clswk(C.P_handle);		/* Auto version must close the physical workstation */
 
-			s_system(S_CTRLCACHE, sc, cm);
+				s_system(S_CTRLCACHE, sc, cm);
+			}
+
+			display("\033e\033H");		/* Cursor enable, cursor home */
 		}
-
-		display("\033e\033H");		/* Cursor enable, cursor home */
-	}
-	else
-	{
-		v_clsvwk(global_vdi_settings.handle);
-		mt_appl_exit(my_global_aes);
+		else
+		{
+			v_clsvwk(global_vdi_settings.handle);
+			mt_appl_exit(my_global_aes);
+		}
 	}
 // 	display("leaving k_shutdown");
 

@@ -63,6 +63,7 @@ long loader_pgrp = 0;
 
 static char Aes_display_name[32];
 
+#if 0
 static int
 imp_msg(void)
 {
@@ -82,6 +83,7 @@ imp_msg(void)
 
 	return ((ci & 0xff) == 13) ? 1 : 0;
 }
+#endif
 
 static void
 bootmessage(void)
@@ -151,10 +153,10 @@ init(struct kentry *k, const char *path)
 {
 	/* setup kernel entry */
 	kentry = k;
-
+#if 0
 	if (!imp_msg())
 		return ENOSYS;
-
+#endif
 	/* zero anything out */
 	bzero(&default_options, sizeof(default_options));
 	bzero(&cfg, sizeof(cfg));

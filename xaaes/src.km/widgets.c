@@ -1806,7 +1806,6 @@ calc_work_area(struct xa_window *wind)
 
 	rp_2_ap_row(wind);
 
-// 	if (!(wind->ext_borders & T_BORDER) && wind->frame >= 0 && wind->thinwork && wind->wa_frame)
 	if (wind->inner.y == wind->outer.y && wind->frame >= 0 && wind->thinwork && wind->wa_frame)
 	{
 		wind->wadelta.y += t_margin;
@@ -1814,7 +1813,6 @@ calc_work_area(struct xa_window *wind)
 		wa_borders |= WAB_TOP;
 	}
 
-// 	if (!(wind->ext_borders & L_BORDER) && wind->frame >= 0 && wind->thinwork && wind->wa_frame)
 	if (wind->inner.x == wind->outer.x && wind->frame >= 0 && wind->thinwork && wind->wa_frame)
 	{
 		wind->wadelta.x += l_margin;
@@ -1822,15 +1820,13 @@ calc_work_area(struct xa_window *wind)
 		wa_borders |= WAB_LEFT;
 	}
 
-// 	if (!(wind->ext_borders & B_BORDER) && wind->frame >= 0 && wind->thinwork && wind->wa_frame)
-	if (wind->inner.h == wind->outer.h && wind->frame >= 0 && wind->thinwork && wind->wa_frame)
+	if ((wind->inner.y + wind->inner.h) == (wind->outer.y + wind->outer.h) && wind->frame >= 0 && wind->thinwork && wind->wa_frame)
 	{
 		wind->wadelta.h += b_margin;
 		wa_borders |= WAB_BOTTOM;
 	}
 
-// 	if (!(wind->ext_borders & R_BORDER) && wind->frame >= 0 && wind->thinwork && wind->wa_frame)
-	if (wind->inner.w == wind->outer.w && wind->frame >= 0 && wind->thinwork && wind->wa_frame)
+	if ((wind->inner.x + wind->inner.w) == (wind->outer.x + wind->outer.w) && wind->frame >= 0 && wind->thinwork && wind->wa_frame)
 	{
 		wind->wadelta.w += r_margin;
 		wa_borders |= WAB_RIGHT;
@@ -1865,7 +1861,6 @@ calc_work_area(struct xa_window *wind)
 	/* Add bd to toolbar->r to get window rectangle for create_window
 	 * Anyhow, always convenient, especially when snapping the workarea.
 	 */
-
 	DIAG((D_widg, wind->owner, "workarea %d: %d/%d,%d/%d", wind->handle, wind->wa));
 }
 
@@ -2786,6 +2781,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 		short xaw_idx;
 		struct xa_widget_methods dm;
 		RECT *offsets;
+		RECT r_ofs;
 
 		wind->ext_borders = 0;
 		if (wind->frame >= 0 && (wind->draw_canvas = theme->w->draw_canvas))
@@ -2798,9 +2794,9 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 		}
 		else
 		{
-			wind->bd = (RECT){0,0,0,0};
+			wind->bd = r_ofs = (RECT){0,0,0,0};
 			wind->draw_canvas = NULL;
-			offsets = &wind->bd;
+			offsets = &r_ofs;
 		}
 
 		dm = def_methods[XAW_BORDER + 1];
