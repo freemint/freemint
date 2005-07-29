@@ -1330,7 +1330,7 @@ XA_appl_getinfo(enum locks lock, struct xa_client *client, AESPB *pb)
 					if ((d = (char *)pb->addrin[1]))
 						strcpy(d, long_name);
 					if ((d = (char *)pb->addrin[2]))
-						strcpy(d, info_string);
+						strcpy(d, info_string);					
 				}
 				n_intout = pb->control[N_INTOUT];
 				gi_type = XA_VERSION_INFO;
@@ -1351,6 +1351,8 @@ XA_appl_getinfo(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	if (gi_type != -1)
 	{
+		if (n_intout > 5) n_intout = 5;
+
 		for (i = 1; i < n_intout; i++)
 			pb->intout[i] = info_tab[gi_type][i-1];
 		
