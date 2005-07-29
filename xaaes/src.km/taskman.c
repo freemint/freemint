@@ -536,9 +536,9 @@ open_taskmanager(enum locks lock)
 		dialog_window = create_window(lock,
 						do_winmesag, do_formwind_msg,
 						C.Aes,
-						true, /*false,*/
+						false, /*false,*/
 						CLOSER|NAME|TOOLBAR|hide_move(&(C.Aes->options)),
-						created_for_AES|created_for_POPUP,
+						created_for_AES/*|created_for_POPUP*/,
 						C.Aes->options.thinframe,
 						C.Aes->options.thinwork,
 						remember, NULL, NULL);
