@@ -118,14 +118,14 @@ setup_widget_theme(struct xa_client *client, struct xa_widget_theme *wtheme)
 
 	if (atheme)
 	{
-		(*client->xmwt->new_theme)(client->wtheme_handle, WINCLASS_ALERT, &atheme);
-		if ((wtheme->alert = atheme))
-			atheme->links++;
+		wtheme->alert = atheme;
+		atheme->links++;
 	}
 	else
 	{
-		wtheme->alert = atheme;
-		atheme->links++;
+		(*client->xmwt->new_theme)(client->wtheme_handle, WINCLASS_ALERT, &atheme);
+		if ((wtheme->alert = atheme))
+			atheme->links++;
 	}
 }
 
@@ -2670,11 +2670,12 @@ create_widg_layout(struct xa_window *wind)
 {
 	XA_WIND_ATTR tp;
 	struct nwidget_row *rows;
-	struct xa_widget_theme *theme = wind->widget_theme;
+// 	struct xa_widget_theme *theme = wind->widget_theme;
+	struct widget_theme *theme = wind->active_theme;
 	int nrows;
 	struct xa_widget_row *xa_rows, *ret = NULL;
 
-	rows = theme->active->layout;
+	rows = theme->layout;
 	nrows = 0;
 
 	while (rows->tp_mask != -1)
@@ -2685,7 +2686,7 @@ create_widg_layout(struct xa_window *wind)
 		int rownr = 0;
 		struct xa_widget_row *p = NULL;
 
-		rows = theme->active->layout;
+		rows = theme->layout;
 		ret = xa_rows;
 
 		while ((tp = rows->tp_mask) != -1)
@@ -2801,7 +2802,7 @@ init_slider_widget(struct xa_window *wind, struct xa_widget *widg, short slider_
 void
 standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 {
-	struct xa_widget_theme *theme = wind->widget_theme;
+	struct widget_theme *theme = wind->active_theme;
 	XA_WIND_ATTR utp = 0;
 
 	DIAGS(("standard_widgets: new(%lx), prev(%lx) on wind %d for %s",
@@ -2820,7 +2821,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 		}
 	}
 	{
-		struct nwidget_row *rows = theme->active->layout;
+		struct nwidget_row *rows = theme->layout;
 		XA_WIND_ATTR rtp, this_tp, *tp_deps;
 		struct xa_widget *widg;
 		short xaw_idx;
@@ -2828,14 +2829,17 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 		RECT *offsets;
 		RECT r_ofs;
 
+		if (!(wind->dial & created_for_POPUP) && theme == wind->owner->widget_theme->popup)
+			display("what the hell!!?");
+
 		wind->ext_borders = 0;
-		if (wind->frame >= 0 && (wind->draw_canvas = theme->active->draw_canvas))
+		if (wind->frame >= 0 && (wind->draw_canvas = theme->draw_canvas))
 		{
-			offsets = &theme->active->outer;
-			wind->bd.x = offsets->x + theme->active->inner.x;
-			wind->bd.y = offsets->y + theme->active->inner.y;
-			wind->bd.w = offsets->x + offsets->w + theme->active->inner.x + theme->active->inner.w;
-			wind->bd.h = offsets->y + offsets->h + theme->active->inner.y + theme->active->inner.h;
+			offsets = &theme->outer;
+			wind->bd.x = offsets->x + theme->inner.x;
+			wind->bd.y = offsets->y + theme->inner.y;
+			wind->bd.w = offsets->x + offsets->w + theme->inner.x + theme->inner.w;
+			wind->bd.h = offsets->y + offsets->h + theme->inner.y + theme->inner.h;
 			wind->rbd = wind->bd;
 		}
 		else
@@ -2846,7 +2850,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 		}
 
 		dm = def_methods[XAW_BORDER + 1];
-		dm.r = theme->active->border;
+		dm.r = theme->border;
 		dm.r.pos_in_row = NO;
 		if ((tp & BORDER) || (wind->frame > 0 && (tp & SIZER)))
 		{
@@ -2934,7 +2938,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 					{
 						if ((tp & tp_deps[0]) && (tp & tp_deps[1]))
 						{
-							struct render_widget *unused = &theme->active->exterior;
+							struct render_widget *unused = &theme->exterior;
 							dm = def_methods[0];
 							dm.r = *(*rw);
 							dm.properties = WIP_INSTALLED;

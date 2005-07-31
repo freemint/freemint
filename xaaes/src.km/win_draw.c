@@ -497,17 +497,18 @@ struct window_colours def_otop_cols =
                                                     {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
                                                     {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
 
-/* flags	                     fontID	    size	   Effect      forground       background	*/
-/*								                  col	          col		*/
+/* flags	                     fontId  size wrmode    Effect      forground       background	*/
+/*								           col	          col		*/
  /* Title text-info */
  { WTXT_DRAW3D|WTXT_ACT3D|WTXT_CENTER,
-                                      {1,            10,	        0,	G_BLACK,	G_WHITE },	/* Normal */
-                                      {1,            10,	        0,	G_BLACK,	G_WHITE },	/* Selected */
-                                      {1,            10,	        0,	G_BLACK,	G_WHITE }},	/* Highlighted */
+                                      {1,     10, MD_TRANS, 0,        G_BLACK,	G_WHITE },	/* Normal */
+                                      {1,     10, MD_TRANS, 0,        G_BLACK,	G_WHITE },	/* Selected */
+                                      {1,     10, MD_TRANS, 0,        G_BLACK,	G_WHITE }},	/* Highlighted */
  /* Info text-info */
- { 0,		      		      {1,	       9,		0,	G_BLACK,	G_WHITE },	/* Normal */
-                                      {1,	       9,		0,	G_BLACK,	G_WHITE },	/* Selected */
-                                      {1,	       9,		0,	G_BLACK,	G_WHITE }},	/* Highlighted */
+ { 0,
+                                      {1,     9,  MD_TRANS, 0,        G_BLACK,	G_WHITE },	/* Normal */
+                                      {1,     9,  MD_TRANS, 0,        G_BLACK,	G_WHITE },	/* Selected */
+                                      {1,     9,  MD_TRANS, 0,        G_BLACK,	G_WHITE }},	/* Highlighted */
 
 };
 
@@ -582,18 +583,213 @@ struct window_colours def_utop_cols =
                                                     {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
                                                     {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
 
-/* flags	                     fontID	    size	   Effect      forground       background	*/
+/* flags	                     fontId  size wrmode    Effect      forground       background	*/
+/*								           col	          col		*/
+ /* Title text-info */
+ { WTXT_DRAW3D|WTXT_ACT3D|WTXT_CENTER,
+                                      {1,     10, MD_TRANS, 0,        G_LBLACK,	G_WHITE },	/* Normal */
+                                      {1,     10, MD_TRANS, 0,        G_LBLACK,	G_WHITE },	/* Selected */
+                                      {1,     10, MD_TRANS, 0,        G_BLACK,	G_WHITE }},	/* Highlighted */
+ /* Info text-info */
+ { 0,		      		      {1,     9,  MD_TRANS, 0,        G_LBLACK,	G_WHITE },	/* Normal */
+                                      {1,     9,  MD_TRANS, 0,        G_LBLACK,	G_WHITE },	/* Selected */
+                                      {1,     9,  MD_TRANS, 0,        G_BLACK,	G_WHITE }},	/* Highlighted */
+};
+/* ---------------------------------------------------------------------------------- */
+/* ---------------------------------------------------------------------------------- */
+/* ---------------------------------------------------------------------------------- */
+struct window_colours mono_def_otop_cols =
+{
+ { 0 },	0L,	/* data header, links */
+
+ G_BLACK, /* window workarea frame color */
+ G_BLACK, /* window frame color */
+/*          flags                        wrmode      color       fill    fill    box       box        tl      br		*/
+/*                                                             interior  style  color    thickness  colour  colour		*/
+ { WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_WHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},
+                                                    {G_WHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},
+                                                    {G_WHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* window areas not covered by a widget/ unused widgets*/
+ 
+  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_WHITE,   FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
+                                                    {G_WHITE,   FIS_SOLID,   0,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_WHITE,   FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}},	/* Highlighted */
+/* Slider */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_WHITE, FIS_SOLID,    0,  G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
+                                                    {G_WHITE, FIS_SOLID,    0,  G_BLACK,     1,    G_BLACK, G_WHITE,  NULL},	/* Selected */
+                                                    {G_WHITE, FIS_SOLID,    0,  G_BLACK,     1,    G_WHITE, G_BLACK,  NULL}}, /* Highlighted */
+ /* Slide */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_BLACK, FIS_PATTERN,  4,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
+                                                    {G_BLACK, FIS_PATTERN,  4,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_BLACK, FIS_PATTERN,  4,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
+ /* Title */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_BLACK, FIS_PATTERN,   2,  G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
+                                                    {G_BLACK, FIS_PATTERN,   2,  G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_BLACK, FIS_PATTERN,   2,  G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
+ /* Info */
+ { /*WCOL_DRAW3D|*/WCOL_DRAWBKG|WCOL_BOXED,	MD_REPLACE,
+                                                    {G_WHITE,  FIS_SOLID,   0,   G_BLACK,     1,    G_BLACK,G_BLACK, NULL},	/* Normal */
+                                                    {G_WHITE,  FIS_SOLID,   0,   G_BLACK,     1,    G_BLACK,G_BLACK, NULL},	/* Selected */
+                                                    {G_WHITE,  FIS_SOLID,   0,   G_BLACK,     1,    G_BLACK,G_BLACK, NULL}}, /* Highlighted */
+ /* Closer */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
+ /* Hider */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
+ /* Iconifier */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
+ /* Fuller */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
+ /* Sizer */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
+ /* UP Arrow */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE, 
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
+ /* DN Arrow */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
+ /* LF Arrow */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
+ /* RT Arrow */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
+
+/* flags	                     fontId  size wrmode    Effect      forground       background	*/
+/*								           col	          col		*/
+ /* Title text-info */
+ { WTXT_DRAW3D|WTXT_ACT3D|WTXT_CENTER,
+                                      {1,     10, MD_REPLACE, 0,        G_BLACK,	G_WHITE },	/* Normal */
+                                      {1,     10, MD_REPLACE, 0,        G_BLACK,	G_WHITE },	/* Selected */
+                                      {1,     10, MD_REPLACE, 0,        G_BLACK,	G_WHITE }},	/* Highlighted */
+ /* Info text-info */
+ { 0,		      		      {1,     9,  MD_REPLACE, 0,        G_BLACK,	G_WHITE },	/* Normal */
+                                      {1,     9,  MD_REPLACE, 0,        G_BLACK,	G_WHITE },	/* Selected */
+                                      {1,     9,  MD_REPLACE, 0,        G_BLACK,	G_WHITE }},	/* Highlighted */
+
+};
+
+struct window_colours mono_def_utop_cols =
+{
+ { 0 },	0L,	/* data header, links */
+
+ G_BLACK, /* window workarea frame color */
+ G_BLACK, /* window frame color */
+/*          flags                        wrmode      color       fill    fill    box       box        tl      br		*/
+/*                                                             interior  style  color    thickness  colour  colour		*/
+ { WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_WHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},
+                                                    {G_WHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},
+                                                    {G_WHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* window areas not covered by a widget/ unused widgets*/
+ 
+  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_BLACK,   FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
+                                                    {G_BLACK,   FIS_SOLID,   0,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_BLACK,   FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}},	/* Highlighted */
+/* Slider */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_WHITE, FIS_SOLID,    0,  G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
+                                                    {G_WHITE, FIS_SOLID,    0,  G_BLACK,     1,    G_BLACK, G_WHITE,  NULL},	/* Selected */
+                                                    {G_WHITE, FIS_SOLID,    0,  G_BLACK,     1,    G_WHITE, G_BLACK,  NULL}}, /* Highlighted */
+ /* Slide */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_BLACK, FIS_PATTERN,  4,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
+                                                    {G_BLACK, FIS_PATTERN,  4,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_BLACK, FIS_PATTERN,  4,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
+ /* Title */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_BLACK, FIS_PATTERN,   2,  G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
+                                                    {G_BLACK, FIS_PATTERN,   2,  G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_BLACK, FIS_PATTERN,   2,  G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
+ /* Info */
+ { /*WCOL_DRAW3D|*/WCOL_DRAWBKG|WCOL_BOXED,	MD_REPLACE,
+                                                    {G_WHITE,  FIS_SOLID,   0,   G_BLACK,     1,    G_BLACK,G_BLACK, NULL},	/* Normal */
+                                                    {G_WHITE,  FIS_SOLID,   0,   G_BLACK,     1,    G_BLACK,G_BLACK, NULL},	/* Selected */
+                                                    {G_WHITE,  FIS_SOLID,   0,   G_BLACK,     1,    G_BLACK,G_BLACK, NULL}}, /* Highlighted */
+ /* Closer */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
+ /* Hider */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
+ /* Iconifier */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
+ /* Fuller */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
+ /* Sizer */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
+ /* UP Arrow */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE, 
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
+ /* DN Arrow */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
+ /* LF Arrow */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
+ /* RT Arrow */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
+
+/* struct xa_wtxt_inf */
+/* flags	                     fontId  size   wrmode    Effect           forground       background	*/
 /*								                  col	          col		*/
  /* Title text-info */
  { WTXT_DRAW3D|WTXT_ACT3D|WTXT_CENTER,
-                                      {1,            10,	        0,	G_LBLACK,	G_WHITE },	/* Normal */
-                                      {1,            10,	        0,	G_LBLACK,	G_WHITE },	/* Selected */
-                                      {1,            10,	        0,	G_BLACK,	G_WHITE }},	/* Highlighted */
+                                      {1,     10, MD_REPLACE, TXT_LIGHT,        G_BLACK,	G_WHITE },	/* Normal */
+                                      {1,     10, MD_REPLACE, TXT_LIGHT,        G_BLACK,	G_WHITE },	/* Selected */
+                                      {1,     10, MD_REPLACE, TXT_LIGHT,        G_BLACK,	G_WHITE }},	/* Highlighted */
  /* Info text-info */
- { 0,		      		      {1,	       9,		0,	G_LBLACK,	G_WHITE },	/* Normal */
-                                      {1,	       9,		0,	G_LBLACK,	G_WHITE },	/* Selected */
-                                      {1,	       9,		0,	G_BLACK,	G_WHITE }},	/* Highlighted */
-
+ { 0,		      		      {1,     9,  MD_REPLACE, TXT_LIGHT,        G_BLACK,	G_WHITE },	/* Normal */
+                                      {1,     9,  MD_REPLACE, TXT_LIGHT,        G_BLACK,	G_WHITE },	/* Selected */
+                                      {1,     9,  MD_REPLACE, TXT_LIGHT,        G_BLACK,	G_WHITE }},	/* Highlighted */
 };
 
 static inline long
@@ -708,15 +904,27 @@ draw_pu_canvas(struct xa_window *wind, RECT *outer, RECT *inner, const RECT *cli
 
 	if ((outer->w | outer->h | inner->w | outer->h))
 	{
-		size = -3;
-
 		(*v->api->wr_mode)(v, MD_REPLACE);
+		if (MONO)
+		{
+			(*v->api->br_hook)(v, 0, outer, G_BLACK);
+			(*v->api->br_hook)(v, -1, outer, G_WHITE);
 		
-		(*v->api->br_hook)(v, 0, outer, G_BLACK);
-		(*v->api->br_hook)(v, -1, outer, G_LBLACK);
+			(*v->api->tl_hook)(v, 0, outer, G_BLACK);
+			(*v->api->tl_hook)(v, -1, outer, G_WHITE);
+		}
+		else
+		{
 		
-		(*v->api->tl_hook)(v, 0, outer, G_BLACK);
-		(*v->api->tl_hook)(v, -1, outer, G_WHITE);
+			size = -3;
+
+		
+			(*v->api->br_hook)(v, 0, outer, G_BLACK);
+			(*v->api->br_hook)(v, -1, outer, G_LBLACK);
+		
+			(*v->api->tl_hook)(v, 0, outer, G_BLACK);
+			(*v->api->tl_hook)(v, -1, outer, G_WHITE);
+		}
 	}
 }
 /*
@@ -993,7 +1201,7 @@ d_title(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 
 	/* Convert relative coords and window location to absolute screen location */
 	(*api->rp2ap)(wind, widg, &widg->ar);
-
+#if 0
 	if (MONO)
 	{
 		(*v->api->f_color)(v, G_WHITE);
@@ -1002,6 +1210,7 @@ d_title(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 		(*v->api->p_gbar)(v, 0, &widg->ar);
 	}
 	else
+#endif
 	{
 		/* no move, no 3D */
 		if (wind->active_widgets & MOVER)
@@ -1010,14 +1219,25 @@ d_title(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 		}
 		else
 		{
-			(*v->api->l_color)(v, G_LBLACK);
-			(*v->api->p_gbar)(v, 0, &widg->ar);
-			(*v->api->f_color)(v, wci->n.c);
-			(*v->api->gbar)(v, -1, &widg->ar);
+			/* XXX - ozk: hack to make mono look ok! */
+			if (MONO)
+			{
+				(*v->api->l_color)(v, G_BLACK);
+				(*v->api->p_gbar)(v, 0, &widg->ar);
+				(*v->api->f_color)(v, G_WHITE);
+				(*v->api->gbar)(v, -1, &widg->ar);
+			}
+			else
+			{
+				(*v->api->l_color)(v, G_BLACK);
+				(*v->api->p_gbar)(v, 0, &widg->ar);
+				(*v->api->f_color)(v, wci->n.c);
+				(*v->api->gbar)(v, -1, &widg->ar);
+			}
 		}
 	}
 
-	(*v->api->wr_mode)(v, MD_TRANS);
+// 	(*v->api->wr_mode)(v, MD_TRANS);
 	
 	if (o->windowner && wind->owner && !wind->winob && !dial)
 	{
@@ -1045,12 +1265,6 @@ d_title(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	else
 		strcpy(tn, widg->stuff);
 
-	
-	//cramped_name(tn, temp, widg->ar.w/screen.c_max_w);
-#if 0
-	if (dial)
-		effect |= ITALIC;
-#endif
 	draw_widget_text(v, widg, wti, tn, 4, 0);
 	return true;
 }
@@ -1062,7 +1276,7 @@ d_closer(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 
 	(*api->rp2ap)(wind, widg, &widg->ar);
 	draw_widg_box(wind->vdi_settings, 0, wci, widg->state, &widg->ar, &wind->r);
-	draw_widg_icon(wind->vdi_settings, widg, &((struct module *)wind->widget_theme->active->module)->wwt, WIDG_CLOSER);
+	draw_widg_icon(wind->vdi_settings, widg, &((struct module *)wind->active_theme->module)->wwt, WIDG_CLOSER);
 	return true;
 }
 
@@ -1072,7 +1286,7 @@ d_fuller(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	struct xa_wcol_inf *wci = &((struct window_colours *)wind->colours)->fuller;
 	(*api->rp2ap)(wind, widg, &widg->ar);
 	draw_widg_box(wind->vdi_settings, 0, wci, widg->state, &widg->ar, &wind->r);
-	draw_widg_icon(wind->vdi_settings, widg, &((struct module *)wind->widget_theme->active->module)->wwt, WIDG_FULL);
+	draw_widg_icon(wind->vdi_settings, widg, &((struct module *)wind->active_theme->module)->wwt, WIDG_FULL);
 	return true;
 }
 
@@ -1096,7 +1310,7 @@ d_sizer(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 
 	(*api->rp2ap)(wind, widg, &widg->ar);
 	draw_widg_box(wind->vdi_settings, 0, wci, widg->state, &widg->ar, &wind->r);
-	draw_widg_icon(wind->vdi_settings, widg, &((struct module *)wind->widget_theme->active->module)->wwt, WIDG_SIZE);
+	draw_widg_icon(wind->vdi_settings, widg, &((struct module *)wind->active_theme->module)->wwt, WIDG_SIZE);
 	return true;
 }
 
@@ -1107,7 +1321,7 @@ d_uparrow(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 
 	(*api->rp2ap)(wind, widg, &widg->ar);
 	draw_widg_box(wind->vdi_settings, 0, wci, widg->state, &widg->ar, &wind->r);
-	draw_widg_icon(wind->vdi_settings, widg, &((struct module *)wind->widget_theme->active->module)->wwt, WIDG_UP);
+	draw_widg_icon(wind->vdi_settings, widg, &((struct module *)wind->active_theme->module)->wwt, WIDG_UP);
 	return true;
 }
 static bool _cdecl
@@ -1117,7 +1331,7 @@ d_dnarrow(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 
 	(*api->rp2ap)(wind, widg, &widg->ar);
 	draw_widg_box(wind->vdi_settings, 0, wci, widg->state, &widg->ar, &wind->r);
-	draw_widg_icon(wind->vdi_settings, widg, &((struct module *)wind->widget_theme->active->module)->wwt, WIDG_DOWN);
+	draw_widg_icon(wind->vdi_settings, widg, &((struct module *)wind->active_theme->module)->wwt, WIDG_DOWN);
 	return true;
 }
 static bool _cdecl
@@ -1127,7 +1341,7 @@ d_lfarrow(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 
 	(*api->rp2ap)(wind, widg, &widg->ar);
 	draw_widg_box(wind->vdi_settings, 0, wci, widg->state, &widg->ar, &wind->r);
-	draw_widg_icon(wind->vdi_settings, widg, &((struct module *)wind->widget_theme->active->module)->wwt, WIDG_LEFT);
+	draw_widg_icon(wind->vdi_settings, widg, &((struct module *)wind->active_theme->module)->wwt, WIDG_LEFT);
 	return true;
 }
 static bool _cdecl
@@ -1137,7 +1351,7 @@ d_rtarrow(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 
 	(*api->rp2ap)(wind, widg, &widg->ar);
 	draw_widg_box(wind->vdi_settings, 0, wci, widg->state, &widg->ar, &wind->r);
-	draw_widg_icon(wind->vdi_settings, widg, &((struct module *)wind->widget_theme->active->module)->wwt, WIDG_RIGHT);
+	draw_widg_icon(wind->vdi_settings, widg, &((struct module *)wind->active_theme->module)->wwt, WIDG_RIGHT);
 	return true;
 }
 
@@ -1242,7 +1456,7 @@ d_iconifier(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 
 	(*api->rp2ap)(wind, widg, &widg->ar);
 	draw_widg_box(wind->vdi_settings, 0, wci, widg->state, &widg->ar, &wind->r);
-	draw_widg_icon(wind->vdi_settings, widg, &((struct module *)wind->widget_theme->active->module)->wwt, WIDG_ICONIFY); //widg->loc.rsc_index);
+	draw_widg_icon(wind->vdi_settings, widg, &((struct module *)wind->active_theme->module)->wwt, WIDG_ICONIFY); //widg->loc.rsc_index);
 	return true;
 }
 
@@ -1253,7 +1467,7 @@ d_hider(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 
 	(*api->rp2ap)(wind, widg, &widg->ar);	
 	draw_widg_box(wind->vdi_settings, 0, wci, widg->state, &widg->ar, &wind->r);
-	draw_widg_icon(wind->vdi_settings, widg, &((struct module *)wind->widget_theme->active->module)->wwt, WIDG_HIDE); //widg->loc.rsc_index);
+	draw_widg_icon(wind->vdi_settings, widg, &((struct module *)wind->active_theme->module)->wwt, WIDG_HIDE); //widg->loc.rsc_index);
 	return true;
 }
 
@@ -1293,7 +1507,7 @@ s_info_size(struct xa_window *wind, struct xa_widget *widg)
 	(*v->api->t_effects)(v, wti->n.e);
 	(*v->api->t_extent)(v, "A", &w, &h);
 	(*v->api->t_effects)(v, 0);
-	
+	h += 4;
 	if ((wci->flags & WCOL_DRAW3D) || (wti->flags & WTXT_DRAW3D))
 		h += 4;
 	if ((wci->flags & WCOL_ACT3D) || (wti->flags & WTXT_ACT3D))
@@ -1320,7 +1534,7 @@ static void _cdecl
 set_widg_size(struct xa_window *wind, struct xa_widget *widg, struct xa_wcol_inf *wci, short rsc_ind)
 {
 	short w, h, f;
-	OBJECT *ob = ((struct module *)wind->widget_theme->active->module)->wwt.tree + rsc_ind;
+	OBJECT *ob = ((struct module *)wind->active_theme->module)->wwt.tree + rsc_ind;
 
 	f = wci->flags;
 
@@ -1682,7 +1896,11 @@ new_theme(void *_module, short win_type, struct widget_theme **ret_theme)
 		case WINCLASS_ALERT:
 			new = duplicate_theme(current_theme);
 			break;
-		default:;
+		default:
+		{
+			new = duplicate_theme(current_theme);
+			break;
+		}
 	}
 
 	if (new)
@@ -1732,8 +1950,8 @@ new_color_theme(void *_module, void **ontop, void **untop)
 	
 	if (new_ontop && new_untop)
 	{
-		*new_ontop = def_otop_cols;
-		*new_untop = def_utop_cols;
+		*new_ontop = MONO ? mono_def_otop_cols : def_otop_cols;
+		*new_untop = MONO ? mono_def_utop_cols : def_utop_cols;
 		
 		(*api->add_xa_data)(&m->allocs, new_ontop, delete_color_theme);
 		(*api->add_xa_data)(&m->allocs, new_untop, delete_color_theme);
