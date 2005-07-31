@@ -52,9 +52,9 @@ static struct xa_wtxt_inf default_fnt =
 {
  WTXT_NOCLIP,
 /* id  pnts efx   fgc      bgc */
- {  1,  10,   0, G_BLACK, G_WHITE },	/* Normal */
- {  1,  10,   0, G_WHITE, G_BLACK },	/* Selected */
- {  1,  10,   0, G_BLACK, G_WHITE },	/* Highlighted */
+ {  1,  10,   MD_TRANS, 0, G_BLACK, G_WHITE },	/* Normal */
+ {  1,  10,   MD_TRANS, 0, G_WHITE, G_BLACK },	/* Selected */
+ {  1,  10,   MD_TRANS, 0, G_BLACK, G_WHITE },	/* Highlighted */
 
 };
 static struct xa_wcol_inf default_col =
@@ -469,7 +469,7 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this, str
 
 		f = this->c.td.text.fnt->flags;
 
-		(*v->api->wr_mode)(v, MD_TRANS);
+		(*v->api->wr_mode)(v, wtxt->wrm); //MD_TRANS);
 		(*v->api->t_font)(v, wtxt->p, wtxt->f);
 		(*v->api->t_effects)(v, wtxt->e);
 		x = xy->x;
