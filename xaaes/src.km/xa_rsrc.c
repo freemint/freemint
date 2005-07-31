@@ -134,7 +134,7 @@ transform_icon_bitmap(struct xa_client *client, struct xa_rscs *rscs, CICONBLK *
 
 	src.fd_w = icon->monoblk.ib_wicon; /* Transform MFDB's */
 	src.fd_h = icon->monoblk.ib_hicon;
-	src.fd_wdwidth = (src.fd_w + 15) / 16; /* round up */
+	src.fd_wdwidth = (src.fd_w + 15) >> 4; // / 16; /* round up */
 	src.fd_stand = 1;
 	src.fd_r1 = src.fd_r2 = src.fd_r3 = 0;
 	src.fd_nplanes = screen.planes;
@@ -342,7 +342,7 @@ fix_cicons(void *base, CICONBLK **cibh)
 		(unsigned long)pdata += 12;
 
 		cicn = (CICON *)pdata;
-		prev_cicn = NULL;
+		prev_cicn = cicn; //NULL;
 		/* There can be color icons with NO color icons,
 		 * only the mono icon block. */
 		cib->mainlist = NULL;

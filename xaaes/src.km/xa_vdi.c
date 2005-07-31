@@ -393,10 +393,10 @@ xa_wtxt_output(struct xa_vdi_settings *v, struct xa_wtxt_inf *wtxti, char *txt, 
 	else
 		wtxt = &wtxti->n;
 
-	xa_wr_mode(v, MD_TRANS);
+	xa_wr_mode(v, wtxt->wrm); //MD_TRANS);
 	xa_t_font(v, wtxt->p, wtxt->f);
 
-	vst_effects(v->handle, wtxt->e);
+	xa_t_effects(v, wtxt->e); //vst_effects(v->handle, wtxt->e);
 
 	if (f & WTXT_NOCLIP)
 		strncpy(t, txt, sizeof(t));

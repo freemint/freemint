@@ -812,27 +812,25 @@ create_window(
 		w->opts = opts;
 	}
 
-	w->widget_theme = client->widget_theme;
+// 	w->widget_theme = client->widget_theme;
 
 	if (dial & created_for_ALERT)
 	{
 		w->class = WINCLASS_ALERT;
-		w->widget_theme->active = w->widget_theme->alert;
+		w->active_theme = client->widget_theme->alert; //w->widget_theme->alert;
 	}
 	else if (dial & created_for_POPUP)
 	{
 		w->class = WINCLASS_POPUP;
-		w->widget_theme->active = w->widget_theme->popup;
+		w->active_theme = client->widget_theme->popup; //w->widget_theme->popup;
 	}
 	else
 	{
 		w->class = WINCLASS_CLIENT;
-		w->widget_theme->active = w->widget_theme->client;
+		w->active_theme = client->widget_theme->client; //w->widget_theme->client;
 	}
 	
-	w->widget_theme->active->links++;
-
-// 	w->widget_theme->w->links++;
+	w->active_theme->links++;
 
 
 	(*client->xmwt->new_color_theme)(client->wtheme_handle, &w->ontop_cols, &w->untop_cols);
@@ -840,7 +838,7 @@ create_window(
 
 	w->wheel_mode = client->options.wheel_mode;
 	w->frame = frame;
-	w->thinwork = thinwork;
+	w->thinwork = MONO ? true : thinwork;
 	w->owner = client;
 	w->handle = -1;
 	w->nolist = nolist;
@@ -1239,7 +1237,7 @@ draw_window(enum locks lock, struct xa_window *wind, const RECT *clip)
 
 			tcl = cl;
 			/* Display the work area */
-
+#if 0
 			if (MONO)
 			{
 				if (wind->frame > 0)
@@ -1247,6 +1245,7 @@ draw_window(enum locks lock, struct xa_window *wind, const RECT *clip)
 				//gbox(1, &wa);
 			}
 			else
+#endif
 			{
 				if (wind->thinwork)
 				{
@@ -1824,9 +1823,9 @@ delete_window1(enum locks lock, struct xa_window *wind)
 	{
 		(*client->xmwt->free_color_theme)(client->wtheme_handle, wind->untop_cols);
 	}
-	if (wind->widget_theme && wind->widget_theme->active)
+	if (wind->active_theme) //wind->widget_theme && wind->widget_theme->active)
 	{
-		wind->widget_theme->active->links--;
+		wind->active_theme->links--;
 	}
 
 	kfree(wind);

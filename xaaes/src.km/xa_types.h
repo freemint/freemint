@@ -258,6 +258,7 @@ struct xa_fnt_info
 {
 	long	f;	/* Font ID */
 	short	p;	/* Point size */
+	short	wrm;
 	short	e;	/* Effects */
 	short	fgc;	/* Foreground colour */
 	short	bgc;	/* Background colour (used to obtain 3-d effect) */
@@ -1045,7 +1046,7 @@ struct widget_theme
 
 struct xa_widget_theme
 {
-	struct widget_theme *active;
+// 	struct widget_theme *active;
 	struct widget_theme *client;
 	struct widget_theme *popup;
 	struct widget_theme *alert;
@@ -1322,7 +1323,8 @@ struct xa_window
 	void *ontop_cols;
 	void *untop_cols;
 	struct xa_vdi_settings *vdi_settings;
-	struct xa_widget_theme *widget_theme;
+	struct widget_theme *active_theme;
+// 	struct xa_widget_theme *widget_theme;
 
 	long rect_lock;
 	long opts;			/* Window options. XAWO_xxx */
@@ -1878,7 +1880,6 @@ struct xa_client
 	struct xa_vdi_settings *vdi_settings;
 	struct xa_module_widget_theme *xmwt;	/* Widget theme module */
 	void *wtheme_handle;			/* Widget theme handle */
-
 	struct xa_widget_theme *widget_theme;
 
 #if GENERATE_DIAGS

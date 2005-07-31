@@ -973,7 +973,7 @@ display_popup(Tab *tab, XA_TREE *wt, int item, short rdx, short rdy)
 	struct xa_window *wind;
 	XA_WIND_ATTR tp = TOOLBAR /*|STORE_BACK*/;
 	RECT r;
-	int wash, mg = MONO ? 2 : 0;
+	int wash, mg = MONO ? 0 : 0;
 	
 	k->pop_item = item;
 	k->border = 0;
