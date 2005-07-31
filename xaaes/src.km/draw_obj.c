@@ -385,7 +385,7 @@ d3_pushbutton(struct xa_vdi_settings *v, short d, RECT *r, BFOBSPEC *col, short 
 inline long calc_back(const RECT *r, short planes)
 {
 	return 2L * planes
-		  * ((r->w + 15) / 16)
+		  * ((r->w + 15) >> 4) // / 16)
 		  * r->h;
 }
 
@@ -1245,12 +1245,14 @@ d_g_boxchar(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 		}
 		(*v->api->wr_mode)(v, colours.textmode ? MD_REPLACE : MD_TRANS);
 		(*v->api->t_font)(v, screen.standard_font_point, screen.standard_font_id);
+		(*v->api->t_effects)(v, 0);
 		ob_text(wt, v, &gr, &r, NULL, temp_text, 0, -1);
 	}
 	else
 	{
 		(*v->api->gbar)(v, 0, &r);
 		(*v->api->t_font)(v, screen.standard_font_point, screen.standard_font_id);
+		(*v->api->t_effects)(v, 0);
 		ob_text(wt, v, &gr, &r, &colours, temp_text, ob->ob_state, -1);
 
 		if (selected)
@@ -1282,6 +1284,7 @@ d_g_boxtext(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 
 	selected = ob->ob_state & OS_SELECTED;
 
+	(*v->api->t_effects)(v, 0);
 	set_text(ob, v, &gr, NULL, false, -1, temp_text, &colours, &thick, r);
 	set_colours(ob, v, &colours);
 
@@ -1328,6 +1331,7 @@ d_g_fboxtext(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 	const unsigned short selected = ob->ob_state & OS_SELECTED;
 	short thick;
 
+	(*v->api->t_effects)(v, 0);
 	set_text(ob, v, &gr, &cr, true, is_edit ? wt->e.pos : -1, temp_text, &colours, &thick, r);
 	set_colours(ob, v, &colours);
 
@@ -1424,6 +1428,7 @@ d_g_button(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 				gr.y = r.y;
 				(*v->api->t_font)(v, screen.standard_font_point, screen.standard_font_id);
 				(*v->api->t_extent)(v, text, &gr.w, &gr.h);
+				(*v->api->t_effects)(v, 0);
 				ob_text(wt, v, &gr, NULL, &colours, text, 0, -1);
 			}
 		}
@@ -1444,6 +1449,7 @@ d_g_button(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 				gr.x += 2; //screen.c_max_w;
 				(*v->api->wr_mode)(v, MD_TRANS);
 				(*v->api->t_font)(v, screen.standard_font_point, screen.standard_font_id);
+				(*v->api->t_effects)(v, 0);
 				ob_text(wt, v, &gr, &r, NULL, text, 0, und & 0x7f);
 			}
 		}
@@ -1477,6 +1483,7 @@ d_g_button(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 			if (text)
 			{
 				(*v->api->wr_mode)(v, MD_TRANS);
+				(*v->api->t_effects)(v, 0);
 				ob_text(wt, v, &gr, &r, NULL, text, 0, und);
 			}
 		}
@@ -1491,8 +1498,11 @@ d_g_button(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 
 			(*v->api->wr_mode)(v, MD_TRANS);
 			(*v->api->t_color)(v, selected ? G_WHITE : G_BLACK);
-			if (text) ob_text(wt, v, &gr, &r, NULL, text, 0, und);
-
+			if (text)
+			{
+				(*v->api->t_effects)(v, 0);
+				ob_text(wt, v, &gr, &r, NULL, text, 0, und);
+			}
 			/* Display a border? */
 			if (thick)
 			{
@@ -1626,12 +1636,13 @@ d_g_icon(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 
 	Micon.fd_w = ic.w;
 	Micon.fd_h = ic.h;
-	Micon.fd_wdwidth = (ic.w + 15) / 16;
+	Micon.fd_wdwidth = (ic.w + 15) >> 4; // / 16;
 	Micon.fd_nplanes = 1;
 	Micon.fd_stand = 0;
 	Mscreen.fd_addr = NULL;
 			
 	Micon.fd_addr = iconblk->ib_pmask;
+	
 	if (ob->ob_state & OS_SELECTED)
 	{
 		icn_col = ((iconblk->ib_char) >> 8) & 0xf;
@@ -1754,6 +1765,7 @@ d_g_text(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 	BFOBSPEC colours;
 	char temp_text[256];
 
+	(*v->api->t_effects)(v, 0);
 	set_text(ob, v, &gr, NULL, false, -1, temp_text, &colours, &thick, r);
 	set_colours(ob, v, &colours);
 	thin = thick > 0 ? thick-1 : thick+1;
@@ -1776,6 +1788,7 @@ d_g_ftext(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 	bool is_edit = wt->current == wt->e.obj;
 	char temp_text[256];
 
+	(*v->api->t_effects)(v, 0);
 	set_text(ob, v, &gr, &cr, true, is_edit ? wt->e.pos : -1, temp_text, &colours, &thick, r);
 	set_colours(ob, v, &colours);
 	thin = thick > 0 ? thick-1 : thick+1;
@@ -1998,6 +2011,7 @@ d_g_string(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 		else
 		{
 			(*v->api->t_font)(v, screen.standard_font_point, screen.standard_font_id);
+			(*v->api->t_effects)(v, 0);
 			g_text(wt, v, r, &wt->r, text, ob->ob_state);
 		}
 
@@ -2023,6 +2037,7 @@ d_g_title(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 	if (text)
 	{
 		(*v->api->t_font)(v, screen.standard_font_point, screen.standard_font_id);
+		(*v->api->t_effects)(v, 0);
 		g_text(wt, v, r, &wt->r, text, ob->ob_state);
 	}
 

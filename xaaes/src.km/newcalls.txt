@@ -7,6 +7,12 @@
  added to XaAES. This file will also contain known differences between XaAES 
  and other AES's.
 
+ToDo:
+
+ . Fix mono drawing -> much better now
+ . Fix PUSH menu-bar (and friends) -> done!
+ . Add config to disable alerts
+ . 
 ===============================================================================
                             -= The N.AES cookie =-
 

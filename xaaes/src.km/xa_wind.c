@@ -1658,12 +1658,12 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 	{
 		DIAGS(("WF_COLOR %d for %s", o[1], c_owner(client)));
 	oeps:
-		if (w->widget_theme->active->get_widgcolor)
+		if (w->active_theme->get_widgcolor)
 		{
 			if (o[1] <= W_BOTTOMER)
 			{
 				BFOBSPEC c[4];
-				(*w->widget_theme->active->get_widgcolor)(w, o[1], c);
+				(*w->active_theme->get_widgcolor)(w, o[1], c);
 				o[2] = ((short *)&c)[1];
 				o[3] = ((short *)&c)[3];
 			}

@@ -179,10 +179,10 @@ getbest_cicon(CICONBLK *ciconblk)
 	while (c)
 	{
 		/* Jinnee v<2.5 has misunderstood the next_res NULL rule :( */
-		if ( c == (CICON*)-1 ) break;
+		if ( c == (CICON*)-1) break;
 
 		if (c->num_planes <= screen.planes
-		    && (!best_cicon || (best_cicon && c->num_planes > best_cicon->num_planes)))
+		    && (!best_cicon || (c->num_planes > best_cicon->num_planes)))
 		{
 			best_cicon = c;
 		}
@@ -221,6 +221,7 @@ sizeof_iconblk(ICONBLK *ib)
 	DIAGS(("sizeof_iconblk: %ld", size));
 	return size;
 }
+
 static long
 sizeof_cicon(ICONBLK *ib, CICON *i)
 {
@@ -436,17 +437,19 @@ copy_iconblk(ICONBLK *src, ICONBLK *dst)
 	d = (char *)((long)dst + sizeof(ICONBLK));
 	words = ((src->ib_wicon + 15) >> 4) * src->ib_hicon;
 	{
-		short *fr;
+		short *fr, *dr = (short *)d;
 		
-		fr = src->ib_pmask;
-		dst->ib_pmask = (short *)d;
-		for (i = 0; i < words; i++)
-			*(short *)d++ = *fr++;
-
 		fr = src->ib_pdata;
-		dst->ib_pdata = (short *)d;
+		dst->ib_pdata = dr;
 		for (i = 0; i < words; i++)
-			*(short *)d++ = *fr++;
+			*dr++ = *fr++;
+
+		fr = src->ib_pmask;
+		dst->ib_pmask = dr;
+		for (i = 0; i < words; i++)
+			*dr++ = *fr++;
+
+		d = (char *)dr;
 	}
 	
 	dst->ib_ptext = d;
@@ -533,18 +536,19 @@ copy_ciconblk(CICONBLK *src, CICONBLK *dst, CICON *cicon)
 	
 	words = ((src->monoblk.ib_wicon + 15) >> 4) * src->monoblk.ib_hicon;
 	{
-		short *fr;
+		short *fr, *dr = (short *)d;
 		
-		fr = src->monoblk.ib_pmask;
-		dst->monoblk.ib_pmask = (short *)d;
-		for (i = 0; i < words; i++)
-			*(short *)d++ = *fr++;
-
 		fr = src->monoblk.ib_pdata;
-		dst->monoblk.ib_pdata = (short *)d;
+		dst->monoblk.ib_pdata = dr;
 		for (i = 0; i < words; i++)
-			*(short *)d++ = *fr++;
+			*dr++ = *fr++;
 
+		fr = src->monoblk.ib_pmask;
+		dst->monoblk.ib_pmask = dr;
+		for (i = 0; i < words; i++)
+			*dr++ = *fr++;
+
+		d = (char *)dr;
 	}
 	dst->monoblk.ib_ptext = d;
 	for (i = 0; i < 12; i++)
@@ -571,14 +575,27 @@ copy_ciconblk(CICONBLK *src, CICONBLK *dst, CICON *cicon)
 		CICON **nxt_sci = &src->mainlist;
 		CICON **nxt_dci = &dst->mainlist;
 
-		while (*nxt_sci && *nxt_sci != (void *)-1L)
+		if (!*nxt_sci || *nxt_sci == (void *)-1L)
+			*nxt_dci = NULL;
+		else
 		{
-			dst_ci = (CICON *)d;
-			d = copy_cicon(*nxt_sci, dst_ci, words);
-			*nxt_dci = dst_ci;
+			while (*nxt_sci && *nxt_sci != (void *)-1L)
+			{
+				dst_ci = (CICON *)d;
+				d = copy_cicon(*nxt_sci, dst_ci, words);
+				*nxt_dci = dst_ci;
+				nxt_sci = &((*nxt_sci)->next_res);
+				nxt_dci = &dst_ci->next_res;
 			
-			nxt_sci = &((*nxt_sci)->next_res);
-			nxt_dci = &((*nxt_dci)->next_res);
+			#if 0
+				dst_ci = (CICON *)d;
+				d = copy_cicon(*nxt_sci, dst_ci, words);
+				*nxt_dci = dst_ci;
+			
+				nxt_sci = &((*nxt_sci)->next_res);
+				nxt_dci = &((*nxt_dci)->next_res);
+			#endif
+			}
 		}
 	}
 	
@@ -692,14 +709,16 @@ duplicate_obtree(struct xa_client *client, OBJECT *obtree, short start)
 	short objs;
 	OBJECT *new;
 	void *data;
-	
+
 	size = obtree_len(obtree, start, &objs);
+
 	DIAGS(("final obtreelen with %d objs is %ld\n", objs, size));
 
 	if (client == C.Aes)
 		new = kmalloc(size + 1024);
 	else
 		new = umalloc(size + 1024);
+
 	if (new)
 	{
 		bzero(new, size);

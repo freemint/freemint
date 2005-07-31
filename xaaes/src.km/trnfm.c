@@ -581,7 +581,17 @@ transform_gem_bitmap(short vdih, MFDB msrc, MFDB mdest, short planes, struct rgb
 			remap_bitmap_colindexes(&msrc, (unsigned char *)&cref);
 			yield();
 		}
-		vr_trnfm(vdih, &msrc, &mdest);
+		if ((src_planes | dst_planes) != 1)
+			vr_trnfm(vdih, &msrc, &mdest);
+		else
+		{
+			short i, *s, *d;
+			s = msrc.fd_addr;
+			d = mdest.fd_addr;
+// 			display("copy %d words from %lx to %lx", msrc.fd_wdwidth * msrc.fd_h, s, d);
+			for (i = msrc.fd_wdwidth * msrc.fd_h; i > 0; i--)
+				*d++ = *s++;
+		}
 	}
 	else if (src_planes <= 8)
 	{

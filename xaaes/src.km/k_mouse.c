@@ -453,6 +453,32 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 	wind = find_window(lock, md->x, md->y);
 
 	/*
+	 * check for rootwindow widgets, like the menu-bar, clicks
+	 */
+	if (wind == root_window && md->state)
+	{
+		struct xa_widget *widg;
+
+		checkif_do_widgets(lock, wind, 0, md->x, md->y, &widg);
+		if (widg && widg->m.r.xaw_idx == XAW_MENU)
+		{
+			XA_TREE *menu;
+
+			if (C.aesmouse != -1)
+				graf_mouse(-1, NULL, NULL, true);
+
+			menu = (XA_TREE *)widg->stuff;
+			client = menu->owner;
+			if (!(client->status & CS_EXITING))
+			{
+				DIAG((D_mouse, client, "post widgclick (menustart) to %s", client->name));
+				C.ce_open_menu = client;
+				post_cevent(client, cXA_open_menu, widg, menu, 0,0, NULL,md);
+			}
+			return;
+		}			
+	}
+	/*
 	 * Found a window under mouse, and no mouse lock
 	 */
 	if (wind && !locker)
@@ -555,7 +581,7 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 	/* Moving the mouse into the menu bar is outside
 	 * Tab handling, because the bar itself is not for popping.
 	 */
-	if (!menustruct_locked() && !C.ce_open_menu)
+	if (cfg.menu_behave != PUSH && !menustruct_locked() && !C.ce_open_menu)
 	{
 		/* HR: watch the menu bar as a whole */
 		struct xa_client *aesp = C.Aes;
@@ -565,9 +591,9 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 		if (   (aesp->waiting_for & XAWAIT_MENU)
 		    && (aesp->em.flags & MU_M1))
 		{
-			if (   cfg.menu_behave != PUSH
-			    && !update_locked()
-			    && is_rect(md->x, md->y, aesp->em.flags & 1, &aesp->em.m1))
+			if (/*   cfg.menu_behave != PUSH && */
+			    !update_locked() &&
+			     is_rect(md->x, md->y, aesp->em.flags & 1, &aesp->em.m1))
 			{
 				XA_WIDGET *widg = get_widget(root_window, XAW_MENU);
 				XA_TREE *menu;
