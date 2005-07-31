@@ -454,6 +454,8 @@ k_init(void)
 	
 	DIAGS(("Virtual work station opened: %d", v->handle));
 
+	vs_clip(C.P_handle, 0, (short *)&screen.r);
+
 	/*
 	 * Setup the screen parameters
 	 */
