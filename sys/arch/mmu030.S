@@ -26,9 +26,9 @@ nulltc:
 	.globl	_sys_m_free
 
 _set_mmu:
+	movem.l	d0-d2/a0-a2,-(sp)
 	tst.l	_offset_tt_ram
 	beq.s	normal_set
-	movem.l	d0-d2/a0-a2,-(sp)
 	move.l	#end_set_mmu_called_st_ram - set_mmu_called_st_ram,d1
 	clr.w	-(sp)			// ST-ram
 	move.l	d1,-(sp)
@@ -66,13 +66,13 @@ copy_st_ram:
 	movem.l	(sp)+,d0-d2/a0-a2
 	rts
 normal_set:
+	movem.l	(sp)+,d0-d2/a0-a2
 	pmove	(nulltc).l,tc		// turn off mmu
 	dc.l	0xf0390800,nulltc	// pmove nulltc,tt0
 	dc.l	0xf0390c00,nulltc	// pmove nulltc,tt1
 	pmove	4(sp),crp		// caution: crp is 8 bytes
 	pflusha
 	pmove	0xc(sp),tc
-	movem.l	(sp)+,d0-d2/a0-a2
 	rts
 
 set_mmu_called_st_ram:
