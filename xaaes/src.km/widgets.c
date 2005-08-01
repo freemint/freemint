@@ -2829,9 +2829,6 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 		RECT *offsets;
 		RECT r_ofs;
 
-		if (!(wind->dial & created_for_POPUP) && theme == wind->owner->widget_theme->popup)
-			display("what the hell!!?");
-
 		wind->ext_borders = 0;
 		if (wind->frame >= 0 && (wind->draw_canvas = theme->draw_canvas))
 		{

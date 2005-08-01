@@ -35,6 +35,8 @@
 # define SHUT_COLD	2
 # define SHUT_HALT	3
 
+extern unsigned long next_res;
+
 extern char version[32];
 extern char vversion[128];
 
@@ -241,6 +243,7 @@ struct common
 #define HALT_SYSTEM	0x2		/* - halt system after xaaes shutdown */
 #define REBOOT_SYSTEM	0x4		/* - reboot system after xaaes shutdown */
 #define COLDSTART_SYSTEM 0x8		/* - cold reboot */
+#define RESOLUTION_CHANGE 0x10
 
 	bool mvalidate;
 

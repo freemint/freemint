@@ -162,3 +162,15 @@
 #define RSC_CONTROL      13  /* Formular/Dialog */
 #define CTRL_SLIST       1   /* BOX in Baum RSC_CONTROL */
 #define CTRL_CTRLITEM    2   /* IBOX in Baum RSC_CONTROL */
+
+#define RES_CHANGE       14  /* Formular/Dialog */
+#define RC_COLOURS       1   /* BUTTON in Baum RES_CHANGE */
+#define RC_COLUMNS       7   /* BUTTON in Baum RES_CHANGE */
+#define RC_VGA           10  /* BUTTON in Baum RES_CHANGE */
+#define RC_TVSEL         13  /* BUTTON in Baum RES_CHANGE */
+#define RC_OVERSCAN      16  /* BUTTON in Baum RES_CHANGE */
+#define RC_ILACE         17  /* BUTTON in Baum RES_CHANGE */
+#define RC_MODES         18  /* BUTTON in Baum RES_CHANGE */
+#define RC_BIT15         28  /* BUTTON in Baum RES_CHANGE */
+#define RC_CANCEL        29  /* BUTTON in Baum RES_CHANGE */
+#define RC_OK            30  /* BUTTON in Baum RES_CHANGE */

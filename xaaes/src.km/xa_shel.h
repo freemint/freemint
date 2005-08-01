@@ -36,6 +36,9 @@ int launch(enum locks lock,
 	   struct xa_client *caller);
 
 char *shell_find(enum locks lock, struct xa_client *client, char *fn);
+
+void init_env(void);
+
 long put_env(enum locks lock, const char *cmd);
 
 char * const * const get_raw_env(void);

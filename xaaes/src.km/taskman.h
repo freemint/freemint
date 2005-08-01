@@ -39,6 +39,7 @@ void free_namelist(struct cfg_name_list **list);
 
 
 void open_taskmanager(enum locks lock);
+void open_reschange(enum locks lock);
 void update_tasklist(enum locks lock);
 
 void open_imgload(enum locks lock);

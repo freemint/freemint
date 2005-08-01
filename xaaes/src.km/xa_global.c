@@ -27,6 +27,8 @@
 #include "xa_global.h"
 #include "version.h"
 
+unsigned long next_res;
+
 char version[32];
 char vversion[128];
 char arch_target[] = ASCII_ARCH_TARGET;

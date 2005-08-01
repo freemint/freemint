@@ -151,12 +151,16 @@ struct kentry *kentry;
 long
 init(struct kentry *k, const char *path)
 {
+	bool first = true;
 	/* setup kernel entry */
 	kentry = k;
+	next_res = 0L;
+
 #if 0
 	if (!imp_msg())
 		return ENOSYS;
 #endif
+again:
 	/* zero anything out */
 	bzero(&default_options, sizeof(default_options));
 	bzero(&cfg, sizeof(cfg));
@@ -167,7 +171,6 @@ init(struct kentry *k, const char *path)
 	strcpy(C.bootlog_path, "xa_boot.log");
 	C.bootlog_file = kernel_open(C.bootlog_path, O_WRONLY|O_CREAT|O_TRUNC, NULL, NULL);
 #endif
-	
 	if (check_kentry_version())
 		return ENOSYS;
 
@@ -419,11 +422,14 @@ init(struct kentry *k, const char *path)
 	C.mvalidate = true;
 
 	/* Print a text boot message */
-	bootmessage();
+	if (first)
+		bootmessage();
 	DIAGS(("bootmessage ok!"));
 
 	/* Setup the kernel OS call jump table */
+	
 	setup_handler_table();
+	
 	DIAGS(("setup_handler_table ok!"));
 
 	/* set bit 3 in conterm, so Bconin returns state of ALT and CTRL in upper 8 bit */
@@ -442,6 +448,7 @@ init(struct kentry *k, const char *path)
 #endif
 	DIAGS(("nkc_init ok!"));
 
+	init_env();
 	/* copy over environment from loader */
 	{
 		struct proc *p = get_curproc();
@@ -483,7 +490,7 @@ init(struct kentry *k, const char *path)
 	C.aesmouse = -1;
 
 	DIAGS(("load adi modules"));
-	adi_load();
+	adi_load(first);
 
 	DIAGS(("Creating XaAES kernel thread"));
 	{
@@ -513,8 +520,11 @@ init(struct kentry *k, const char *path)
 			s_hutdown(SHUT_BOOT);  /* warm start */
 		else if (C.shutdown & COLDSTART_SYSTEM)
 			s_hutdown(SHUT_COLD);
-	
 	}
+
+	first = false;
+	if ((C.shutdown & (RESOLUTION_CHANGE|HALT_SYSTEM|REBOOT_SYSTEM|COLDSTART_SYSTEM)) == RESOLUTION_CHANGE)
+		goto again;
 
 	/* succeeded */
 	return 0;
