@@ -255,6 +255,8 @@ k_shutdown(void)
 	kfree(C.Aes);
 	C.Aes = NULL;
 
+	free_desk_popup();
+
 	DIAGS(("Freeing cnf stuff"));
 // 	display("freeing cnf stuff");
 	{

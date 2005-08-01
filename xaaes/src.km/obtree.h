@@ -87,6 +87,7 @@ void	obj_change(XA_TREE *wt, struct xa_vdi_settings *v, short obj, int transdept
 void	obj_draw(XA_TREE *wt, struct xa_vdi_settings *v, short obj, int transdepth, const RECT *clip, struct xa_rect_list *r);
 short	obj_edit(XA_TREE *wt, struct xa_vdi_settings *v, short func, short obj, short keycode, short pos, bool redraw, const RECT *clip, struct xa_rect_list *rl, short *ret_pos, short *ret_obj);
 void	obj_set_radio_button(XA_TREE *wt, struct xa_vdi_settings *v, short obj, bool redraw, const RECT *clip, struct xa_rect_list *rl);
+short	obj_get_radio_button(XA_TREE *wt, short parent, short state);
 short	obj_watch(XA_TREE *wt, struct xa_vdi_settings *v, short obj, short in_state, short out_state, const RECT *clip, struct xa_rect_list *rl);
 
 #endif /* _obtree_h */

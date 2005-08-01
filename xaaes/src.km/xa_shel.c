@@ -1215,7 +1215,6 @@ put_env(enum locks lock, const char *cmd)
 		char *newenv;
 
 		DIAG((D_shel, NULL, " -- change; '%s'", cmd ? cmd : "~~"));
-
 		/* count without */
 		ct = count_env(strings, cmd);	
 		/* ct is including the extra \0 at the end! */
@@ -1244,7 +1243,6 @@ put_env(enum locks lock, const char *cmd)
 				strings[j + 1] = NULL;
 			}
 		}
-
 		if (newenv)
 		{
 			if (C.env) kfree(C.env);
@@ -1254,9 +1252,17 @@ put_env(enum locks lock, const char *cmd)
 		DIAGS(("putenv"));
 		IFDIAG(display_env(strings, 0);)
 	}
-
 	Sema_Dn(envstr);
 	return ret;
+}
+
+void
+init_env(void)
+{
+	int i = STRINGS;
+	char **s = strings;
+
+	for (i = 0; i < STRINGS; i++) *s++ = NULL;
 }
 
 /* HR: because everybody can mess around with the AES's environment

@@ -342,7 +342,8 @@ kernel_key(enum locks lock, struct rawkey *key)
 		}
 		case 'R':				/* attempt to recover a hung system */
 		{
-			recover();
+			open_reschange(lock);
+// 			recover();
 			return true;
 		}
 		case 'L':				/* open the task manager */
