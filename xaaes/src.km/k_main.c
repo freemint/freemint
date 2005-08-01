@@ -891,7 +891,10 @@ k_main(void *dummy)
 	/*
 	 * Initialization AES/VDI
 	 */
-	if (k_init() != 0)
+	if (!(next_res & 0x80000000))
+		next_res = cfg.videomode;
+
+	if (k_init(next_res) != 0)
 	{
 		DIAGS(("k_init failed!"));
 		goto leave;
@@ -1079,7 +1082,7 @@ k_main(void *dummy)
 		if (S.deleted_windows.first)
 			do_delayed_delete_window(lock);
 	}
-	while (!(C.shutdown & QUIT_NOW));
+	while (!(C.shutdown & (QUIT_NOW|RESOLUTION_CHANGE)));
 
 	DIAGS(("**** Leave kernel for shutdown"));
 	wait = 0;
@@ -1173,7 +1176,7 @@ k_exit(void)
 // 	display("k_shutdown..");
 	k_shutdown();
 // 	display("done");
-	
+
 	if (c_naes)
 	{
 		s_system(S_DELCOOKIE, C_nAES, 0L);

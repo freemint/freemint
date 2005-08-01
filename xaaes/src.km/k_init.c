@@ -298,7 +298,7 @@ static struct xa_colour_scheme default_colours = { G_LWHITE, G_BLACK, G_LBLACK, 
 static struct xa_colour_scheme bw_default_colours = { G_WHITE, G_BLACK, G_BLACK, G_WHITE, G_BLACK, G_WHITE };
 
 int
-k_init(void)
+k_init(unsigned long vm)
 {
 	short work_in[16];
 	short work_out[58];
@@ -310,7 +310,9 @@ k_init(void)
 		((short *)v)[f] = -1;
 
 	setup_xa_module_api();
-	
+
+	cfg.videomode = (short)vm;
+
 	global_vdiapi = v->api = init_xavdi_module();	
 	{
 		short *p;
@@ -350,20 +352,21 @@ k_init(void)
 		{
 			if (vdo == 0x00030000L)
 			{
+				short nvmode;
 
 				DIAGS(("Falcon video: mode %d(%x)", cfg.videomode, cfg.videomode));
 
 				/* Ronald Andersson:
 				 * This should be the method for falcon!
 				 */
-				cfg.videomode = vcheckmode(cfg.videomode);
-				if ((cfg.videomode & (1 << 4)) &&	/* VGA_FALCON */
-				    (cfg.videomode & 7) == 4)		/* is 16bit */
+				nvmode = vcheckmode(cfg.videomode);
+				if ((nvmode & (1 << 4)) &&	/* VGA_FALCON */
+				    (nvmode & 7) == 4)		/* is 16bit */
 				{
-					cfg.videomode &= ~(1 << 3);		/* Set 320 pixels */
+					nvmode &= ~(1 << 3);		/* Set 320 pixels */
 				}
 				
-				work_out[45] = cfg.videomode;
+				work_out[45] = nvmode;
 				mode = 5;
 			}
 			else
