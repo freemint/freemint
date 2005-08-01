@@ -30,6 +30,8 @@
 #include "global.h"
 #include "xa_types.h"
 
+void free_desk_popup(void);
+
 void wt_menu_area(XA_TREE *wt);
 void set_rootmenu_area(struct xa_client *client);
 

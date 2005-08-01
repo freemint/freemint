@@ -12,7 +12,7 @@ ToDo:
  . Fix mono drawing -> much better now
  . Fix PUSH menu-bar (and friends) -> done!
  . Add config to disable alerts
- . 
+ . alt-ctrl-tab selects previous app
 ===============================================================================
                             -= The N.AES cookie =-
 

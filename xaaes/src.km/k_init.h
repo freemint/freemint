@@ -29,7 +29,7 @@
 
 #include "global.h"
 
-int k_init(void);
+int k_init(unsigned long vm);
 void load_accs(void);
 
 #endif /* _k_init_h */

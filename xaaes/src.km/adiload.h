@@ -29,6 +29,6 @@
 
 #include "global.h"
 
-void adi_load(void);
+void adi_load(bool first);
 
 #endif /* _adiload_h */

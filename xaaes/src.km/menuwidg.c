@@ -488,7 +488,6 @@ static struct appmenu *appmenu = NULL;
 static OBJECT *appmenu_ob = NULL;
 static size_t appmenusize = 0;
 
-
 static const OBJECT drop_box =
 {
 	-1, 1, 2,			/* Object 0  */
@@ -504,6 +503,22 @@ static const OBJECT drop_choice =	/* Object 1 to n */
 	0, 1, 12, 1
 };
 
+void
+free_desk_popup(void)
+{
+	if (appmenu)
+	{
+		kfree(appmenu);
+		appmenu = NULL;
+	}
+	if (appmenu_ob)
+	{
+		kfree(appmenu_ob);
+		appmenu_ob = NULL;
+	}
+	appmenusize = 0;
+}
+	
 static OBJECT *
 built_desk_popup(enum locks lock, short x, short y)
 {
@@ -527,8 +542,9 @@ built_desk_popup(enum locks lock, short x, short y)
 
 		if (tmp && tmp_ob)
 		{
-			if (appmenu) kfree(appmenu);
-			if (appmenu_ob) kfree(appmenu_ob);
+			free_desk_popup();
+// 			if (appmenu) kfree(appmenu);
+// 			if (appmenu_ob) kfree(appmenu_ob);
 
 			appmenu = tmp;
 			appmenu_ob = tmp_ob;

@@ -2637,6 +2637,31 @@ obj_set_radio_button(XA_TREE *wt,
 }
 
 short
+obj_get_radio_button(XA_TREE *wt,
+		      short parent,
+		      short state)
+{
+	OBJECT *obtree = wt->tree;
+	short o;
+	
+	DIAG((D_objc, NULL, "obj_set_radio_button: wt=%lx, obtree=%lx, obj=%d, parent=%d",
+		wt, obtree, obj, parent));
+
+	if (parent != -1)
+	{
+		o = obtree[parent].ob_head;
+
+		while (o != parent)
+		{
+			if ( obtree[o].ob_flags & OF_RBUTTON && (obtree[o].ob_state & state))
+				break;
+			o = obtree[o].ob_next;
+		}
+	}
+	return o == parent ? -1 : o;
+}
+
+short
 obj_watch(XA_TREE *wt,
 	   struct xa_vdi_settings *v,
 	   short obj,
