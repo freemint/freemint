@@ -143,6 +143,30 @@ bootmessage(void)
 
 struct kentry *kentry;
 
+static bool
+sysfile_exists(const char *sd, char *fn)
+{
+	struct file *check;
+	bool flag = false;
+	char *buf;
+
+	buf = kmalloc(strlen(sd)+16);
+	if (buf)
+	{
+		strcpy(buf, sd);
+		strcat(buf, fn);
+
+		check = kernel_open(buf, O_RDONLY, NULL, NULL);
+		if (check)
+		{
+			kernel_close(check);
+			flag = true;
+		}
+		kfree(buf);
+	}
+	return flag;
+}
+
 /*
  * Module initialisation
  * - setup internal data
@@ -160,6 +184,8 @@ init(struct kentry *k, const char *path)
 	if (!imp_msg())
 		return ENOSYS;
 #endif
+	bzero(&G, sizeof(G));
+
 again:
 	/* zero anything out */
 	bzero(&default_options, sizeof(default_options));
@@ -181,16 +207,14 @@ again:
 	/* do some sanity checks of the installation
 	 * that are a common source of user problems
 	 */
+	if (first)
 	{
 		struct file *check;
-		char *buf;
 		bool flag;
 
 		/* look if there is a moose.xdd
 		 * terminate if yes
 		 */
-
-		flag = false;
 
 		check = kernel_open("u:\\dev\\moose", O_RDONLY, NULL, NULL);
 		if (check)
@@ -198,23 +222,9 @@ again:
 			kernel_close(check);
 			flag = true;
 		}
-
-		buf = kmalloc(strlen(sysdir)+16);
-		if (buf)
-		{
-			strcpy(buf, sysdir);
-			strcat(buf, "moose.xdd");
-
-			check = kernel_open(buf, O_RDONLY, NULL, NULL);
-			if (check)
-			{
-				kernel_close(check);
-				flag = true;
-			}
-
-			kfree(buf);
-		}
-
+		else
+			flag = sysfile_exists(sysdir, "moose.xdd");
+			
 		if (flag)
 		{
 			display("ERROR: There exist an moose.xdd in your FreeMiNT sysdir.");
@@ -222,30 +232,17 @@ again:
 			return EINVAL;
 		}
 
-
 		/* look is there is an moose.adi
 		 * terminate if yes; moose.adi must be in XaAES module directory
 		 */
-
-		buf = kmalloc(strlen(sysdir)+16);
-		if (buf)
-		{
-			strcpy(buf, sysdir);
-			strcat(buf, "moose.adi");
-
-			check = kernel_open(buf, O_RDONLY, NULL, NULL);
-			if (check)
-			{
-				kernel_close(check);
-				flag = true;
-			}
-
-			kfree(buf);
-		}
-
+		flag = sysfile_exists(sysdir, "moose_w.adi");
+		if (!flag)
+			flag = sysfile_exists(sysdir, "moose.adi");
+		
 		if (flag)
 		{
 			display("ERROR: There exist an moose.adi in your FreeMiNT sysdir.");
+			display(" sysdir = '%s'", sysdir);
 			display("       Please remove it and install it in the XaAES module directory");
 			display("       before starting the XaAES kernel module!");
 			return EINVAL;
@@ -305,6 +302,8 @@ again:
 
 	cfg.popup_timeout = 10;
 	cfg.popout_timeout = 1000;
+
+	cfg.alert_winds = 0xffff;
 
 #if !FILESELECTOR
 #error external fileselectors not supported yet!
@@ -377,29 +376,14 @@ again:
 	d_getpath(C.Aes->xpath, 0);
 
 	/* check if there exist a moose.adi */
+	if (first)
 	{
-		struct file *check;
-		char *buf;
 		bool flag;
 
-		flag = false;
-
-		buf = kmalloc(strlen(C.Aes->home_path)+16);
-		if (buf)
-		{
-			strcpy(buf, C.Aes->home_path);
-			strcat(buf, "moose.adi");
-
-			check = kernel_open(buf, O_RDONLY, NULL, NULL);
-			if (check)
-			{
-				kernel_close(check);
-				flag = true;
-			}
-
-			kfree(buf);
-		}
-
+		flag = sysfile_exists(C.Aes->home_path, "moose_w.adi");
+		if (!flag)
+			flag = sysfile_exists(C.Aes->home_path, "moose.adi");
+		
 		if (!flag)
 		{
 			display("ERROR: There exist no moose.adi in your XaAES module directory.");
@@ -490,7 +474,8 @@ again:
 	C.aesmouse = -1;
 
 	DIAGS(("load adi modules"));
-	adi_load(first);
+	if (!G.adi_mouse)
+		adi_load(first);
 
 	DIAGS(("Creating XaAES kernel thread"));
 	{

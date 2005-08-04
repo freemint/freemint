@@ -38,6 +38,7 @@
 #include "scrlobjc.h"
 #include "taskman.h"
 #include "widgets.h"
+#include "menuwidg.h"
 #include "obtree.h"
 #include "xa_form.h"
 #include "xa_rsrc.h"

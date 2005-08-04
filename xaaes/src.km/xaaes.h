@@ -51,6 +51,7 @@
 #define ABOUT_OK         10  /* BUTTON in Baum ABOUT_XAAES */
 #define ABOUT_TARGET     12  /* STRING in Baum ABOUT_XAAES */
 #define ABOUT_INFOSTR    13  /* STRING in Baum ABOUT_XAAES */
+#define RSC_VERSION      14  /* TEXT in Baum ABOUT_XAAES */
 
 #define DEF_DESKTOP      5   /* Formular/Dialog */
 #define DESKTOP          0   /* BOX in Baum DEF_DESKTOP */

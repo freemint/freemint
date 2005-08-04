@@ -30,6 +30,9 @@
 
 static struct adif *alladifs = NULL;
 
+/*
+ * Called by adi upon init to register itself
+ */
 long
 adi_register(struct adif *a)
 {
@@ -38,6 +41,30 @@ adi_register(struct adif *a)
 	alladifs = a;
 
 	return 0;
+}
+
+/*
+ * Called by adi upon unloading to unregister itself
+ * XXX this is called from k_main, after adi_close when
+ * shutting down. This should be done automatically when
+ * unloading the module
+ */
+
+long
+adi_unregister(struct adif *a)
+{
+	struct adif **list = &alladifs;
+
+	while (*list)
+	{
+		if (a == *list)
+		{
+			*list = a->next;
+			return E_OK;
+		}
+		list = &((*list)->next);
+	}
+	return -1L;
 }
 
 long
