@@ -281,7 +281,6 @@ xaaes_sysfile(const char *file)
 
 /* The screen descriptor */
 struct xa_screen screen;
-
 struct xa_window *root_window;
 
 /*
@@ -539,7 +538,20 @@ k_init(unsigned long vm)
 		return -1;
 	}
 
-	
+	/*
+	 * Version check the aessys resouce
+	 */
+	{
+		OBJECT *about = ResourceTree(C.Aes_rsc, ABOUT_XAAES);
+		
+		if ((ob_count_objs(about, 0) < RSC_VERSION)   ||
+		     about[RSC_VERSION].ob_type != G_TEXT     ||
+		    (strcmp(object_get_tedinfo(about + RSC_VERSION)->te_ptext, "0.0.1")))
+		{
+			display("ERROR: Outdated AESSYS resource file (%s) - update to recent version!", cfg.rsc_name);
+			return -1;
+		}
+	}
 	/*
 	 *  ---------        prepare the window widgets renderer module  --------------
 	 */
@@ -593,7 +605,6 @@ k_init(unsigned long vm)
 			tree[i].ob_x = tree[i].ob_y = 0;
 		
 		xobj_rsc = tree;
-
 	}
 
 #if FILESELECTOR

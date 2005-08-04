@@ -56,7 +56,7 @@
  */
 
 # define VER_MAJOR	0
-# define VER_MINOR	9
+# define VER_MINOR	10
 # define VER_STATUS	
 
 # define MSG_VERSION	str (VER_MAJOR) "." str (VER_MINOR) str (VER_STATUS) 
@@ -458,31 +458,6 @@ do_button_packet(void)
 	timeout		= 0;
 }
 
-long _cdecl
-init (struct kentry *k, struct adiinfo *ainfo)
-{
-	long ret;
-
-	kentry	= k;
-	ainf	= ainfo;
-
-	if (check_kentry_version())
-		return -1;
-
-	//c_conws (MSG_BOOT);
-	//c_conws (MSG_GREET);
-	DEBUG (("%s: enter init", __FILE__));
-
-	ret = (*ainf->adi_register)(&moose_aif);
-	if (ret)
-	{
-		DEBUG (("%s: init failed!", __FILE__));
-		return 1;
-	}
-	DEBUG (("%s: init ok", __FILE__));
-	return 0;
-}
-
 static long _cdecl
 moose_open (struct adif *a)
 {
@@ -591,4 +566,38 @@ static long _cdecl
 moose_timeout(struct adif *a)
 {
 	return 0;
+}
+
+long _cdecl
+init (struct kentry *k, struct adiinfo *ainfo)
+{
+	long ret;
+
+	kentry	= k;
+	ainf	= ainfo;
+
+	if (check_kentry_version())
+		return -1;
+
+	//c_conws (MSG_BOOT);
+	//c_conws (MSG_GREET);
+	DEBUG (("%s: enter init", __FILE__));
+
+	ret = (*ainf->adi_register)(&moose_aif);
+	if (ret)
+	{
+		DEBUG (("%s: init failed!", __FILE__));
+		return 1;
+	}
+	DEBUG (("%s: init ok", __FILE__));
+	return 0;
+}
+
+static long _cdecl
+moose_unregister(struct adif *a)
+{
+	long ret;
+	(void)moose_close(a);
+	ret = (*ainf->adi_unregister)(&moose_aif);
+	return ret;
 }

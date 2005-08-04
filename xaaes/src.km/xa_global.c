@@ -39,6 +39,7 @@ char info_string[256];
 struct config cfg;
 struct options default_options;
 struct options local_options;
+struct aesys_global G;
 struct common C;
 struct shared S;
 

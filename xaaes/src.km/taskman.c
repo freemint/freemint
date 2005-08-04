@@ -452,7 +452,7 @@ taskmanager_form_exit(struct xa_client *Client,
 		case TM_QUIT:
 		{
 			DIAGS(("taskmanager: quit XaAES"));
-			dispatch_shutdown(RESOLUTION_CHANGE/*0*/);
+			dispatch_shutdown(0);
 
 			object_deselect(wt->tree + TM_QUIT);
 			redraw_toolbar(lock, task_man_win, TM_QUIT);
@@ -603,6 +603,8 @@ set_reschg_obj(XA_TREE *wt, unsigned long res)
 	setsel(obtree, RC_OVERSCAN, (res & (1<<6)));
 	setsel(obtree, RC_ILACE, (res & (1<<7)));
 	setsel(obtree, RC_BIT15, (res & 0x8000));
+
+	ob_set_children_sf(obtree, RC_MODES, ~(OS_SELECTED|OS_DISABLED), OS_DISABLED, -1, 0, true);
 }
 
 inline static bool
@@ -932,11 +934,17 @@ sysalerts_form_exit(struct xa_client *Client,
 			}
 			break;
 		}
-		/* Empty the task list */
+		/* Empty the alerts list */
 		case SALERT_CLEAR:
 		{
 			struct scroll_info *list = object_get_slist(form + SYSALERT_LIST);
-			list->empty(list, NULL, -1);
+			struct seget_entrybyarg p = { 0 };
+			
+			p.arg.typ.txt = "Alerts";
+			list->get(list, NULL, SEGET_ENTRYBYTEXT, &p);
+			if (p.e)
+				list->empty(list, p.e, 0);
+			display("emptied the alert list");
 			object_deselect(wt->tree + item);
 			redraw_toolbar(lock, systemalerts_win, SYSALERT_LIST);
 			redraw_toolbar(lock, systemalerts_win, item);
@@ -1092,7 +1100,6 @@ do_system_menu(enum locks lock, int clicked_title, int menu_item)
 			{	sc.text = strings[i];
 				list->add(list, this, NULL, &sc, this ? (SEADD_CHILD|SEADD_PRIOR) : SEADD_PRIOR, SETYP_AMAL, true);
 			}
-
 			open_systemalerts(lock);
 			break;
 		}

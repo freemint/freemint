@@ -76,7 +76,6 @@ obfix(OBJECT *tree, int object)
 	o->ob_height = fixup(o->ob_height, screen.c_max_h);
 }
 
-	
 /*
  * Code in this module is based on the resource loader from
  * Steve Sowerby's AGiLE library. Thanks to Steve for allowing

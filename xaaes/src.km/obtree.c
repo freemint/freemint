@@ -909,6 +909,32 @@ ob_get_parent(OBJECT *obtree, short obj)
 	return -1;
 }
 
+void
+ob_set_children_sf(OBJECT *obtree, short parent, short sm, short sb, short fm, short fb, bool parent_too)
+{
+	short o;
+
+	if (parent != -1)
+	{
+		if (parent_too)
+		{
+			obtree[parent].ob_state = (obtree[parent].ob_state & sm) | sb;
+			obtree[parent].ob_flags = (obtree[parent].ob_flags & fm) | fb;
+		}			
+
+		if ((o = obtree[parent].ob_head) != -1)
+		{
+			while (o != parent)
+			{
+				obtree[o].ob_state = (obtree[o].ob_state & sm) | sb;
+				obtree[o].ob_flags = (obtree[o].ob_flags & fm) | fb;
+				o = obtree[o].ob_next;
+			}
+		}
+	}
+}
+
+
 short
 ob_remove(OBJECT *obtree, short object)
 {
@@ -2642,10 +2668,10 @@ obj_get_radio_button(XA_TREE *wt,
 		      short state)
 {
 	OBJECT *obtree = wt->tree;
-	short o;
+	short o = parent;
 	
-	DIAG((D_objc, NULL, "obj_set_radio_button: wt=%lx, obtree=%lx, obj=%d, parent=%d",
-		wt, obtree, obj, parent));
+	DIAG((D_objc, NULL, "obj_set_radio_button: wt=%lx, obtree=%lx, parent=%d",
+		wt, obtree, parent));
 
 	if (parent != -1)
 	{

@@ -58,8 +58,9 @@ struct adif
 
 struct adiinfo
 {
-	short		(*getfreeunit)	(char *);
-	long		(*adi_register)	(struct adif *);
+	short		(*getfreeunit)		(char *);
+	long		(*adi_register)		(struct adif *);
+	long		(*adi_unregister)	(struct adif *);
 
 	void		(*move)		(struct adif *, short x, short y);
 	void		(*button)	(struct adif *, struct moose_data *);
