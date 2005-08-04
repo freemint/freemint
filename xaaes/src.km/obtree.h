@@ -52,6 +52,7 @@ void		free_object_tree(struct xa_client *client, OBJECT *obtree);
 
 short	ob_count_objs(OBJECT *obtree, short start);
 short	ob_get_parent(OBJECT *t, short object);
+void	ob_set_children_sf(OBJECT *obtree, short parent, short sm, short sb, short fm, short fb, bool parent_too);
 short	ob_remove(OBJECT *obtree, short object);
 short	ob_add(OBJECT *obtree, short parent, short aobj);
 void	ob_order(OBJECT *obtree, short object, ushort pos);

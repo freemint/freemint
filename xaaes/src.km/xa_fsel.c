@@ -1515,9 +1515,13 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 		{
 			strncpy(fs->file, file, sizeof(fs->file) - 1);
 			*(fs->file + sizeof(fs->file) - 1) = 0;
-			if (fs->file[0] != '\0')
-				fs->tfile = true;
 		}
+		else
+		{
+			fs->file[0] = '\0';
+		}
+
+		fs->tfile = fs->file[0] != '\0' ? true : false;
 
 		object_get_spec(form + FS_FILE)->tedinfo->te_ptext = fs->file;
 		form[FS_ICONS].ob_flags |= OF_HIDETREE;
@@ -1527,24 +1531,18 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 		form[FS_LIST ].ob_height += dh;
 		form[FS_UNDER].ob_y += dh;
 
-		ob_rectangle(form, 0, &or);
-
-		/* Work out sizing */
-		if (!remember.w)
+		if (path && *path != '\0')
+			strcpy(fs->root, path);
+		else
 		{
-			center_rect(&or);
-			remember =
-			calc_window(lock, client, WC_BORDER,
-				    XaMENU|NAME, created_for_AES,
-				    C.Aes->options.thinframe,
-				    C.Aes->options.thinwork,
-				    *(RECT*)&or); //form->ob_x);
+			fs->root[0] = d_getdrv() + 'a';
+			fs->root[1] = ':';
+			fs->root[2] = '\\';
+			fs->root[3] = '*';
+			fs->root[4] = 0;
 		}
 
-		strcpy(fs->root, path);
-
 		/* Strip out the pattern description */
-
 		fs->fs_pattern[0] = '*';
 		fs->fs_pattern[1] = '\0';
 		pat = strrchr(fs->root, '\\');
@@ -1566,6 +1564,20 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 		}
 		
 		strcpy(fs->path, fs->root);
+
+		ob_rectangle(form, 0, &or);
+
+		/* Work out sizing */
+		if (!remember.w)
+		{
+			center_rect(&or);
+			remember =
+			calc_window(lock, client, WC_BORDER,
+				    XaMENU|NAME, created_for_AES,
+				    C.Aes->options.thinframe,
+				    C.Aes->options.thinwork,
+				    *(RECT*)&or); //form->ob_x);
+		}
 
 		kind = (XaMENU|NAME|TOOLBAR);
 		if (C.update_lock == client->p ||
@@ -1613,10 +1625,6 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 		fsel_filters(fs->menu->tree, fs->fs_pattern);
 
 		fs->clear_on_folder_change = 0;
-		fs->tfile = false;
-		strcpy(fs->file, file); /* fill in the file edit field */
-		if (*fs->file)
-			fs->tfile = true;
 
 		wt = set_toolbar_widget(lock, dialog_window, client, form, FS_FILE, 0/*WIP_NOTEXT*/, true, NULL, &or);
 		/* This can be of use for drawing. (keep off border & outline :-) */
@@ -1666,8 +1674,6 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 
 		strcpy(fs->filter, fs->fs_pattern);
 		fs->wind = dialog_window;
-	//	fs->treeview = false;
-	//	fs->rtbuild = false;
 		open_window(lock, dialog_window, dialog_window->r);
 
 		/* HR: after set_slist_object() & opwn_window */

@@ -33,6 +33,7 @@
 struct adif *	adi_name2adi	(char *aname);
 short		adi_getfreeunit	(char *name);
 long		adi_register	(struct adif *a);
+long		adi_unregister	(struct adif *a);
 long		adi_close	(struct adif *a);
 long		adi_open	(struct adif *a);
 long		adi_ioctl	(struct adif *a, short cmd, long arg);

@@ -249,7 +249,7 @@ struct common
 
 	long alert_pipe;		/* AESSYS: The MiNT Salert() pipe's file handle */
 	long KBD_dev;			/* AESSYS: The MiNT keyboard device's file handle */
-	struct adif *adi_mouse;
+// 	struct adif *adi_mouse;
 
 	/* exteneded & generalized (was GeneralCallback & stuff) */
 	//Tab active_menu[CASCADE];
@@ -291,9 +291,14 @@ struct common
 	char bootlog_path[200];
 #endif
 };
-
 /* All areas that are common. */
 extern struct common C;
+
+struct aesys_global
+{
+	struct adif *adi_mouse;
+};
+extern struct aesys_global G;
 
 struct helpserver
 {
@@ -345,6 +350,8 @@ struct config
 	bool menu_locking;		/* menus run in a window.
 	                                 * See lines.app run underneath the pulldown menu. :-) */
 	bool opentaskman;		/* open taskmanager at boot. */
+	
+	short alert_winds;		/* If set, alert windows are shown */
 
 	char cancel_buttons[NUM_CB][CB_L];
 #if FILESELECTOR
