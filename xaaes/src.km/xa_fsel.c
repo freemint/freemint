@@ -1531,15 +1531,39 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 		form[FS_LIST ].ob_height += dh;
 		form[FS_UNDER].ob_y += dh;
 
-		if (path && *path != '\0')
+		if (path && *path != '\0' && ((*path == '\\' || *path == '/') || (path[1] == ':' && (path[2] == '\\' || path[2] == '/'))))
+		{
+// 			display("legal paht '%s'", path);
 			strcpy(fs->root, path);
+		}
 		else
 		{
-			fs->root[0] = d_getdrv() + 'a';
+			int cwdl, drv = d_getdrv();
+			char chr;
+
+			fs->root[0] = drv + 'a';
 			fs->root[1] = ':';
+			d_getcwd(fs->root + 2, drv + 1, sizeof(fs->root));
+			
+			if ((chr = fs->root[2]))
+			{
+				cwdl = strlen(fs->root);
+				if (fs->root[cwdl - 1] != chr)
+				{
+					fs->root[cwdl] = chr;
+					fs->root[cwdl+1] = '\0';
+				}
+			}
+			else
+				fs->root[2] = '\\', fs->root[3] = '\0';
+	
+// 			display("illegal path '%s'", path ? path : "nopath");
+// 			display("set path to  '%s'", fs->root);
+		#if 0
 			fs->root[2] = '\\';
 			fs->root[3] = '*';
 			fs->root[4] = 0;
+		#endif
 		}
 
 		/* Strip out the pattern description */
@@ -1550,11 +1574,14 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 		if (!pat) pat = pbt;
 		if (pat)
 		{
-			strcpy(fs->fs_pattern, pat + 1);
-			strcpy(fs->fs_origpattern, fs->fs_pattern);
-			*(pat + 1) = 0;
-			if (strcmp(fs->fs_pattern, "*.*") == 0)
-				*(fs->fs_pattern + 1) = 0;
+			if (*(pat + 1))
+			{
+				strcpy(fs->fs_pattern, pat + 1);
+				strcpy(fs->fs_origpattern, fs->fs_pattern);
+				*(pat + 1) = 0;
+				if (strcmp(fs->fs_pattern, "*.*") == 0)
+					*(fs->fs_pattern + 1) = 0;
+			}
 		}
 
 		{
@@ -1769,6 +1796,10 @@ do_fsel_exinput(enum locks lock, struct xa_client *client, AESPB *pb, const char
 
 	pb->intout[0] = 0;
 
+// 	display("do_fsel_exinput for %s", client->proc_name);
+// 	display("path %lx '%s'", path, path ? path : "nopath");
+// 	display("file %lx '%s'", file, file ? file : "nofile");
+	
 	fs = kmalloc(sizeof(*fs));
 	
 	if (fs)
