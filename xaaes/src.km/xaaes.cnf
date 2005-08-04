@@ -236,6 +236,29 @@ menu = leave
 #toppage = faint
 
 #
+# alert_windows = <value>            (default is 0xffff)
+#
+# THE IMPLEMENTATION IS NOT DEFINATE AND ONLY PARTIAL AS OF NOW!!!
+#
+# alert_window is a bitmask indicating which alerts coming via the
+# alert pipe will be shown in a window. The idea is that this mask
+# is used to tell the AES which alerts you want like this;
+#  bit 0 set -> show alerts with no icon
+#  bit 1 set -> show alerts with INFO icon
+#  bit 2 set -> show alerts with QUESTION icon
+#  bit 3 set -> show alerts with STOP icon
+#  etc., etc.
+#
+# Because there is no consideration as to which icon is used
+# (for example, kernel's PROCESS KILLED alerts have icon #1, the same
+# as used for other warnings/informative ALERTS), the implemention
+# is not complete. So for now use this to either turn off or on alerts
+# altogether. To turn on alert windows, use a mask where all bits are set,
+# 0xffff, and to turn off clear all bits, 0x0000
+#
+#alert_windows = 0xffff
+
+#
 # next_active = 'client' or 'window' (default is 'window')
 #
 # Selects wether the previous active application or

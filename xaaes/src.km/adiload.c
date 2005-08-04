@@ -37,6 +37,7 @@ static struct adiinfo ai =
 {
 	adi_getfreeunit,
 	adi_register,
+	adi_unregister,
 	adi_move,
 	adi_button,
 	adi_wheel,

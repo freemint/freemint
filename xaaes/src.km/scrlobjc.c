@@ -1361,6 +1361,7 @@ get(SCROLL_INFO *list, SCROLL_ENTRY *entry, short what, void *arg)
 			 * If 'entry' is NULL, search start at root-level.
 			 * If 'idx' entry is not reached, a NULL is returned as 'e' while
 			 * the number of entries are returned in 'idx'
+			 * idx starts with 1 to ...
 			 */
 			case SEGET_ENTRYBYIDX:
 			{
@@ -2675,7 +2676,10 @@ click_scroll_list(enum locks lock, OBJECT *form, int item, const struct moose_da
 			}
 		}
 		else
-			list->click(list, this, md);
+		{
+			if (list->click)
+				list->click(list, this, md);
+		}
 	}
 }
 

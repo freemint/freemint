@@ -399,7 +399,7 @@ static vdi_vec *svwhlv = NULL;
  * initialise the mouse device
  */
 #define MIN_MOOSE_VER_MAJOR 0
-#define MIN_MOOSE_VER_MINOR 9
+#define MIN_MOOSE_VER_MINOR 10
 
 static bool
 init_moose(void)
@@ -411,18 +411,21 @@ init_moose(void)
 	C.move_block = 0;
 	C.rect_lock = 0;
 
-	C.adi_mouse = adi_name2adi("moose");
-	if (C.adi_mouse)
+	G.adi_mouse = adi_name2adi("moose_w");
+	if (!G.adi_mouse)
+		G.adi_mouse = adi_name2adi("moose");
+	
+	if (G.adi_mouse)
 	{
 		long aerr;
 
-		aerr = adi_open(C.adi_mouse);
+		aerr = adi_open(G.adi_mouse);
 		if (!aerr)
 		{
 			long moose_version;
 			struct moose_vecsbuf vecs;
 
-			aerr = adi_ioctl(C.adi_mouse, FS_INFO, (long)&moose_version);
+			aerr = adi_ioctl(G.adi_mouse, FS_INFO, (long)&moose_version);
 			if (!aerr)
 			{
 				if (moose_version < (((long)MIN_MOOSE_VER_MAJOR << 16) | MIN_MOOSE_VER_MINOR))
@@ -437,7 +440,7 @@ init_moose(void)
 				return false;
 			}
 			
-			aerr = adi_ioctl(C.adi_mouse, MOOSE_READVECS, (long)&vecs);
+			aerr = adi_ioctl(G.adi_mouse, MOOSE_READVECS, (long)&vecs);
 			if (aerr == 0 && vecs.motv)
 			{
 				vex_motv(C.P_handle, vecs.motv, (void **)(&svmotv));
@@ -455,10 +458,10 @@ init_moose(void)
 					//display("No wheel support present");
 				}
 
-				if (adi_ioctl(C.adi_mouse, MOOSE_DCLICK, (long)cfg.double_click_time))
+				if (adi_ioctl(G.adi_mouse, MOOSE_DCLICK, (long)cfg.double_click_time))
 					display("Moose set dclick time failed");
 
-				if (adi_ioctl(C.adi_mouse, MOOSE_PKT_TIMEGAP, (long)cfg.mouse_packet_timegap))
+				if (adi_ioctl(G.adi_mouse, MOOSE_PKT_TIMEGAP, (long)cfg.mouse_packet_timegap))
 					display("Moose set mouse-packets time-gap failed");
 
 				DIAGS(("Using moose adi"));
@@ -470,7 +473,7 @@ init_moose(void)
 		else
 		{
 			display("init_moose: opening moose adi failed (%lx)", aerr);	
-			C.adi_mouse = NULL;
+			G.adi_mouse = NULL;
 		}
 	}
 	else
@@ -535,11 +538,18 @@ display_alert(struct proc *p, long arg)
 	}
 }
 
+static unsigned short alert_masks[] =
+{
+	0x0001, 0x0002, 0x0004, 0x0008,
+	0x0010, 0x0020, 0x0040, 0x0080
+};
+
 static void
 alert_input(enum locks lock)
 {
 	/* System alert? Alert and add it to the log */
 	long n;
+	unsigned short amask;
 
 	n = f_instat(C.alert_pipe);
 	if (n > 0)
@@ -576,18 +586,23 @@ alert_input(enum locks lock)
 		{
 		case '1':
 			icon = form + SALERT_IC1;
+			amask = alert_masks[1];
 			break;
 		case '2':
 			icon = form + SALERT_IC2;
+			amask = alert_masks[2];
 			break;
 		case '3':
 			icon = form + SALERT_IC3;
+			amask = alert_masks[3];
 			break;
 		case '4':
 			icon = form + SALERT_IC4;
+			amask = alert_masks[4];
 			break;
 		default:
 			icon = NULL;
+			amask = alert_masks[0];
 			break;
 		}
 
@@ -608,7 +623,10 @@ alert_input(enum locks lock)
 		 /* Now you can always lookup the error in the log. */
 		DIAGS(("ALERT PIPE: '%s' %s", data->buf, update_locked() ? "pending" : "displayed"));
 
-		display_alert(NULL, (long)data);
+		if ((cfg.alert_winds & amask))
+			display_alert(NULL, (long)data);
+		else
+			kfree(data);
 	}
 	else
 	{
@@ -1202,8 +1220,12 @@ k_exit(void)
 	/*
 	 * close input devices
 	 */
-	if (C.adi_mouse)
-		adi_close(C.adi_mouse);
+	if (G.adi_mouse)
+	{
+		adi_close(G.adi_mouse);
+// 		adi_unregister(G.adi_mouse);
+// 		G.adi_mouse = NULL;
+	}
 
 	if (C.KBD_dev > 0)
 	{
