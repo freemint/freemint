@@ -259,15 +259,17 @@ fitin_root(RECT *r)
 		r->h = w->h;
 }
 		
-static void
+void
 inside_minmax(RECT *r, struct xa_window *wind)
 {
-	if (wind->max.w && r->w > wind->max.w)
+	bool um = (wind->active_widgets & USE_MAX);
+
+	if (um && wind->max.w && r->w > wind->max.w)
 		r->w = wind->max.w;
 	if (wind->min.w && r->w < wind->min.w)
 		r->w = wind->min.w;
-	
-	if (wind->max.h && r->h > wind->max.h)
+
+	if (um && wind->max.h && r->h > wind->max.h)
 		r->h = wind->max.h;
 	if (wind->min.h && r->h < wind->min.h)
 		r->h = wind->min.h;
