@@ -1290,6 +1290,12 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 	    || wind->owner->options.nolive)
 	{
 		int xy = sizer ? SE : compass(16, md->x, md->y, r); //compass(16, widg->mx, widg->my, r);
+		short maxw, maxh;
+		
+		if (wind->active_widgets & USE_MAX)
+			maxw = wind->max.w, maxh = wind->max.h;
+		else
+			maxw = maxh = 0;
 
 		/* Always have a nice consistent SIZER when resizing a window */
 		graf_mouse(border_mouse[xy], NULL, NULL, false);
@@ -1300,8 +1306,8 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 			   rect_dist_xy(wind->owner, md->x, md->y, &r, &d),
 			   wind->min.w,
 			   wind->min.h,
-			   wind->max.w,
-			   wind->max.h,
+			   maxw, //wind->max.w,
+			   maxh, //wind->max.h,
 			   &r);
 		unlock_screen(wind->owner->p, 1234);
 
@@ -1368,13 +1374,20 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 			/* Has the mouse moved? */
 			if (widget_active.m.x != pmx || widget_active.m.y != pmy)
 			{
+				short maxw, maxh;
+		
+				if (wind->active_widgets & USE_MAX)
+					maxw = wind->max.w, maxh = wind->max.h;
+				else
+					maxw = maxh = 0;
+				
 				r = widen_rectangle(xy, widget_active.m.x, widget_active.m.y, r, &d);
 
 				check_wh_cp(&r, xy,
 					    wind->min.w,
 					    wind->min.h,
-					    wind->max.w,
-					    wind->max.h);
+					    maxw, //wind->max.w,
+					    maxh); //wind->max.h);
 			}
 
 			move = r.x != wind->r.x || r.y != wind->r.y,

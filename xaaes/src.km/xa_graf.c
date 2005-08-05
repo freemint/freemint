@@ -79,7 +79,7 @@ check_wh_cp(RECT *c, COMPASS cp, short minw, short minh, short maxw, short maxh)
 	{
 		case NW:
 		{
-			if (c->w < minw)
+			if (minw && c->w < minw)
 			{
 				c->x -= (minw - c->w);
 				c->w = minw;
@@ -87,7 +87,7 @@ check_wh_cp(RECT *c, COMPASS cp, short minw, short minh, short maxw, short maxh)
 		}
 		case N_:
 		{
-			if (c->h < minh)
+			if (minh && minh && c->h < minh)
 			{
 				c->y -= (minh - c->h);
 				c->h = minh;
@@ -96,12 +96,12 @@ check_wh_cp(RECT *c, COMPASS cp, short minw, short minh, short maxw, short maxh)
 		}
 		case SW:
 		{
-			if (c->h < minh)
+			if (minh && c->h < minh)
 				c->h = minh;
 		}
 		case W_:
 		{
-			if (c->w < minw)
+			if (minw && c->w < minw)
 			{
 				c->x -= (minw - c->w);
 				c->w = minw;
@@ -110,18 +110,18 @@ check_wh_cp(RECT *c, COMPASS cp, short minw, short minh, short maxw, short maxh)
 		}
 		case SE:
 		{
-			if (c->w < minw)
+			if (minw && c->w < minw)
 				c->w = minw;
 		}
 		case S_:
 		{
-			if (c->h < minh)
+			if (minh && c->h < minh)
 				c->h = minh;
 			break;
 		}
 		case NE:
 		{
-			if (c->h < minh)
+			if (minh && c->h < minh)
 			{
 				c->y -= (minh - c->h);
 				c->h = minh;
@@ -129,7 +129,7 @@ check_wh_cp(RECT *c, COMPASS cp, short minw, short minh, short maxw, short maxh)
 		}
 		case E_:
 		{
-			if (c->w < minw)
+			if (minw && c->w < minw)
 				c->w = minw;
 			break;
 		}
