@@ -128,14 +128,18 @@ XA_wind_open(enum locks lock, struct xa_client *client, AESPB *pb)
 		 *	Is it correct to adjust the max size of windows here when they are
 		 *	opened? If so, why does wind_create() even take rectange as parameter?
 		 */
-// 		if (w->active_widgets & USE_MAX)
+		inside_minmax(&r, w);
+#if 0
+		if (w->active_widgets & USE_MAX)
 		{
 			/* for convenience: adjust max */
 			if (r.w > w->max.w)
 				w->max.w = r.w;
 			if (r.h > w->max.h)
 				w->max.h = r.h;
-		}	
+		}
+#endif
+	
 // 		if (w->opts & XAWO_WCOWORK)
 // 			r = w2f(&w->delta, &r, true);
 		pb->intout[0] = open_window(lock, w, r);
@@ -747,10 +751,16 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 					msg = WM_UNSHADED;
 				}
 			}
-			if (w->max.w && m.w > w->max.w)
-				m.w = w->max.w;
-			if (w->max.w && m.h > w->max.h)
-				m.h = w->max.h;
+			inside_minmax(&m, w);
+		#if 0
+			if (w->active_widgets & USE_MAX)
+			{
+				if (w->max.w && m.w > w->max.w)
+					m.w = w->max.w;
+				if (w->max.w && m.h > w->max.h)
+					m.h = w->max.h;
+			}
+		#endif
 
 			DIAGS(("wind_set: WF_CURRXYWH %d/%d/%d/%d, status = %x", *(const RECT *)&pb->intin[2], status));
 

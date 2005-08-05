@@ -90,6 +90,7 @@ void	remove_windows(enum locks lock, struct xa_client *client);
 void	remove_all_windows(enum locks lock, struct xa_client *client);
 void	inside_root(RECT *r, struct options *o);
 void	fitin_root(RECT *r);
+void	inside_minmax(RECT *r, struct xa_window *wind);
 void	set_winrect(struct xa_window *wind, RECT *wr, const RECT *r);
 
 void	iconify_window(enum locks lock, struct xa_window *wind, RECT *r);
