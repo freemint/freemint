@@ -33,6 +33,9 @@
 
 void init_objects(void);
 
+void init_ob_render(void);
+void exit_ob_render(void);
+
 bool d3_any(OBJECT *ob);
 bool d3_indicator(OBJECT *ob);
 bool d3_foreground(OBJECT *ob);

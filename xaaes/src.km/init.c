@@ -250,7 +250,7 @@ again:
 	}
 
 	sprintf(version, sizeof(version), "%i.%i", VER_MAJOR, VER_MINOR);
-	sprintf(vversion, sizeof(vversion), "%s %s %s", version,  DEV_STATUS & AES_FDEVSTATUS_STABLE ? "Stable" : "Unstable", ASCII_DEV_STATUS);
+	sprintf(vversion, sizeof(vversion), "%s %s%s", version,  DEV_STATUS & AES_FDEVSTATUS_STABLE ? "Stable " : "", ASCII_DEV_STATUS);
 #if GENERATE_DIAGS
 	bzero(&D, sizeof(D));
 	D.debug_level = 4;

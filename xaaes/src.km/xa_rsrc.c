@@ -511,7 +511,6 @@ fix_shortcuts(struct xa_client *client, OBJECT *obtree)
 						if (s)
 						{
 							int slen = strlen(s);
-							
 							if (j < slen)
 							{
 								scuts = sc;
@@ -534,7 +533,7 @@ fix_shortcuts(struct xa_client *client, OBJECT *obtree)
 								}
 								if (nc)
 								{
-									if (nc < slen)
+									if (nc <= slen)
 									{
 										nc--;
 										ob->ob_state = (ob->ob_state & 0x80ff) | ((nc & 0x7f) << 8);

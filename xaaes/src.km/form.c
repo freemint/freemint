@@ -254,7 +254,7 @@ form_button(XA_TREE *wt,
 	    short obj,
 	    const struct moose_data *md,
 	    unsigned long fbflags,
-	    struct xa_rect_list *rl,
+	    struct xa_rect_list **rl,
 	    /* Outputs */
 	    short *newstate,
 	    short *nxtob,
@@ -264,7 +264,11 @@ form_button(XA_TREE *wt,
 	OBJECT *obtree = wt->tree;
 	short next_obj = 0;
 	short flags, state;
+	struct xa_rect_list *lrl = NULL;
 	bool no_exit = true, dc, redraw = (fbflags & FBF_REDRAW);
+
+	if (!rl)
+		rl = &lrl;
 
 	DIAG((D_form, NULL, "form_button: wt=%lx, obtree=%lx, obj=%d",
 		wt, wt->tree, obj));
@@ -301,42 +305,54 @@ form_button(XA_TREE *wt,
 			POPINFO *pinf;
 			short x, y, obnum;
 
-			display("form_button: G_POPUP! %s", wt->owner->name);
+			if (obj_watch(wt, v, obj, state^OS_SELECTED, state, clip, *rl))
+			{
+		
+				pinf = object_get_popinfo(obtree + obj);
+				if ((obnum = pinf->obnum) > 0)
+					pinf->tree[obnum].ob_state |= OS_CHECKED;
+				else
+					obnum = 0;
 
-			pinf = object_get_popinfo(obtree + obj);
-			if ((obnum = pinf->obnum) > 0)
-				pinf->tree[obnum].ob_state |= OS_CHECKED;
-			else
-				obnum = 0;
+				mn.mn_tree = pinf->tree;
+				mn.mn_menu = ROOT;
+				mn.mn_item = obnum;
+				mn.mn_scroll = 1;
 
-			mn.mn_tree = pinf->tree;
-			mn.mn_menu = ROOT;
-			mn.mn_item = obnum;
-			mn.mn_scroll = 1;
+				obj_offset(wt, obj, &x, &y);
+				if (menu_popup(0, wt->owner, &mn, &result, x, y, 2) && result.mn_tree == mn.mn_tree)
+				{
+					if (result.mn_item > 0)
+						pinf->obnum = result.mn_item;
+				}
+				if (obnum > 0)
+					pinf->tree[obnum].ob_state &= ~OS_CHECKED;
+			
+				obj_change(wt, v, obj, -1, state & ~OS_SELECTED, flags, true, clip, *rl);
 
-			obj_offset(wt, obj, &x, &y);
-			if (menu_popup(0, wt->owner, &mn, &result, x, y, 2) && result.mn_tree == mn.mn_tree)
-				pinf->obnum = result.mn_item;
-			if (obnum > 0)
-				obtree[obnum].ob_state &= ~OS_CHECKED;
-			obj_change(wt, v, obj, 1, state & ~OS_SELECTED, flags, redraw, clip, rl);
+				/*
+				 * Ozk: Dont know about this...
+				 */
+				if (pinf->obnum != obnum)
+					no_exit = false;
+			}
 		}
 		else if (flags & OF_RBUTTON)
 		{
 			DIAGS(("form_button: call obj_set_radio_button"));
-			obj_set_radio_button(wt, v, obj, redraw, clip, rl);
+			obj_set_radio_button(wt, v, obj, redraw, clip, *rl);
 		}
 		else
 		{
 			if (redraw)
 			{
 				DIAGS(("form_button: call obj_watch"));
-				obj_watch(wt, v, obj, state^OS_SELECTED, state, clip, rl);
+				obj_watch(wt, v, obj, state^OS_SELECTED, state, clip, *rl);
 			}
 			else
 			{
 				DIAGS(("form_button: switch state"));
-				obj_change(wt, v, obj, -1, state^OS_SELECTED, flags, redraw, clip, rl);
+				obj_change(wt, v, obj, -1, state^OS_SELECTED, flags, redraw, clip, *rl);
 			}
 		}
 		state = obtree[obj].ob_state;	
@@ -375,12 +391,15 @@ form_cursor(XA_TREE *wt,
 	    ushort keycode,
 	    short obj,
 	    bool redraw,
-	    struct xa_rect_list *rl)
+	    struct xa_rect_list **rl)
 {
 	OBJECT *obtree = wt->tree;
 	short o = obj;
 	short edcnt;
 	short last_ob;
+	struct xa_rect_list *lrl = NULL;
+
+	if (!rl) rl = &lrl;
 
 	last_ob = ob_count_flag(obtree, OF_EDITABLE, 0, OF_LASTOB, &edcnt);
 
@@ -478,7 +497,7 @@ form_keyboard(XA_TREE *wt,
 	      short obj,
 	      const struct rawkey *key,
 	      bool redraw,
-	      struct xa_rect_list *rl,
+	      struct xa_rect_list **rl,
 	      /* outputs */
 	      short *nxtobj,
 	      short *newstate,
@@ -490,6 +509,9 @@ form_keyboard(XA_TREE *wt,
 	ushort keycode = key->aes, next_key = 0;
 	short next_obj;
 	struct fmd_result fr;
+	struct xa_rect_list *lrl = NULL;
+
+	if (!rl) rl = &lrl;
 
 	DIAG((D_form, NULL, "form_keyboard: wt=%lx, obtree=%lx, wt->owner=%lx(%lx), obj=%d, key=%x(%x), nrmkey=%x for %s",
 		wt, wt->tree, wt->owner, client, obj, keycode, key->aes, key->norm, wt->owner->name));
@@ -627,14 +649,16 @@ Exit_form_do( struct xa_client *client,
 
 			if (wind->send_message && fr->obj >= 0)
 			{
-				//struct xa_widget *widg = wt->widg;
 				short keystate;
 
 				if (fr->md)
+				{
 					keystate = fr->md->kstate;
+				}
 				else
 					vq_key_s(C.P_handle, &keystate);
 
+				
 				wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_NORM,
 						WM_TOOLBAR, 0, 0, wind->handle,
 						fr->obj, fr->dblmask ? 2 : 1, keystate, 0);
@@ -752,7 +776,7 @@ Click_form_do(enum locks lock,
 				 fr.obj,
 				 md,
 				 FBF_REDRAW,
-				 wind ? wind->rect_list.start : NULL,
+				 wind ? &wind->rect_list.start : NULL,
 				 &fr.obj_state,
 				 &fr.obj,
 				 &fr.dblmask))
@@ -793,7 +817,7 @@ Key_form_do(enum locks lock,
 	struct xa_vdi_settings *v;
 	RECT *clip = NULL;
 	OBJECT *obtree = NULL;
-	struct xa_rect_list *rl = wind ? wind->rect_list.start : NULL;
+	struct xa_rect_list *lrl = NULL, **rl = wind ? &wind->rect_list.start : &lrl;
 	struct fmd_result fr;
 	RECT r;
 
@@ -856,7 +880,7 @@ Key_form_do(enum locks lock,
 					  wt->e.pos,
 					  true,
 					  clip,
-					  rl,
+					  *rl,
 					  NULL,
 					  NULL);
 				fr.aeskey = 0;
@@ -865,8 +889,8 @@ Key_form_do(enum locks lock,
 			}
 			else if (fr.obj >= 0 && wt->e.obj != fr.obj)
 			{
-				obj_edit(wt, v, ED_END, 0, 0, 0, true, clip, rl, NULL, NULL);
-				obj_edit(wt, v, ED_INIT, fr.obj, 0, -1, true, clip, rl, NULL, NULL);
+				obj_edit(wt, v, ED_END, 0, 0, 0, true, clip, *rl, NULL, NULL);
+				obj_edit(wt, v, ED_INIT, fr.obj, 0, -1, true, clip, *rl, NULL, NULL);
 			}
 		}
 		else

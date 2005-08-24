@@ -584,7 +584,7 @@ wakeme_timeout(struct proc *p, struct xa_client *client)
 	if (client->blocktype == XABT_SELECT)
 		wakeselect(client->p);
 	else if (client->blocktype == XABT_SLEEP)
-		wake(IO_Q, (long)client);
+		wake(IO_Q, client->sleeplock); //(long)client);
 }
 
 void
@@ -709,7 +709,8 @@ cancel_evnt_multi(struct xa_client *client, int which)
 	{
 		client->waiting_for = 0;
 		client->em.flags = 0;
-		client->waiting_pb = NULL;
+		if (client != C.Hlp)
+			client->waiting_pb = NULL;
 	}
 	DIAG((D_kern,NULL,"[%d]cancel_evnt_multi for %s", which, c_owner(client)));
 }

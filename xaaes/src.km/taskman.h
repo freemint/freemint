@@ -28,7 +28,6 @@
 #define _taskman_h
 
 #include "global.h"
-
 void quit_all_apps(enum locks lock, struct xa_client *except);
 void quit_all_clients(enum locks lock, struct cfg_name_list *except_nl, struct xa_client *except_cl);
 
@@ -38,8 +37,11 @@ void removefrom_namelist(struct cfg_name_list **list, char *name, short nlen);
 void free_namelist(struct cfg_name_list **list);
 
 
-void open_taskmanager(enum locks lock);
-void open_reschange(enum locks lock);
+void open_taskmanager(enum locks lock, struct xa_client *client);
+void open_reschange(enum locks lock, struct xa_client *client);
+void open_milan_reschange(enum locks lock, struct xa_client *client);
+void open_nova_reschange(enum locks lock, struct xa_client *client);
+void open_falcon_reschange(enum locks lock, struct xa_client *client);
 void update_tasklist(enum locks lock);
 
 void open_imgload(enum locks lock);

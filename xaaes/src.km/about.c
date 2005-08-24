@@ -115,11 +115,11 @@ about_form_exit(struct xa_client *client,
 }
 
 void
-open_about(enum locks lock)
+open_about(enum locks lock, struct xa_client *client)
 {
 	if (!about_window)
 	{
-		static RECT remember = { 0, 0, 0, 0 };
+		RECT remember = { 0, 0, 0, 0 };
 
 		struct xa_window *dialog_window;
 		XA_TREE *wt;
@@ -127,7 +127,7 @@ open_about(enum locks lock)
 		OBJECT *obtree = ResourceTree(C.Aes_rsc, ABOUT_XAAES);
 		RECT or;
 
-		wt = obtree_to_wt(C.Aes, obtree);
+		wt = obtree_to_wt(client, obtree);
 		
 		ob_rectangle(obtree, 0, &or);
 
@@ -135,20 +135,20 @@ open_about(enum locks lock)
 		if (!remember.w)
 		{
 			center_rect(&or);
-			remember = calc_window(lock, C.Aes, WC_BORDER, CLOSER|NAME, created_for_AES,
-						C.Aes->options.thinframe,
-						C.Aes->options.thinwork, *(RECT *)&or); //*(RECT*)&obtree->ob_x);
+			remember = calc_window(lock, client, WC_BORDER, CLOSER|NAME, created_for_AES,
+						client->options.thinframe,
+						client->options.thinwork, *(RECT *)&or);
 		}
 
 		/* Create the window */
 		dialog_window = create_window(lock,
 						do_winmesag,
 						do_formwind_msg,
-						C.Aes,
+						client,
 						false,
-						CLOSER|NAME|TOOLBAR|(C.Aes->options.xa_nomove ? 0 : MOVER),
+						CLOSER|NAME|TOOLBAR|(client->options.xa_nomove ? 0 : MOVER),
 						created_for_AES,
-						C.Aes->options.thinframe,C.Aes->options.thinwork,
+						client->options.thinframe,client->options.thinwork,
 						remember, 0, NULL); //&remember);
 
 		/* Set the window title */

@@ -50,6 +50,8 @@ OBJECT *	duplicate_obtree(struct xa_client *client, OBJECT *obtree, short start)
 void		free_obtree_resources(struct xa_client *client, OBJECT *obtree);
 void		free_object_tree(struct xa_client *client, OBJECT *obtree);
 
+OBJECT *	create_popup_tree(struct xa_client *client, short type, short nobjs, short mw, short mh, void *(*cb)(short item, void **data), void **data);
+
 short	ob_count_objs(OBJECT *obtree, short start);
 short	ob_get_parent(OBJECT *t, short object);
 void	ob_set_children_sf(OBJECT *obtree, short parent, short sm, short sb, short fm, short fb, bool parent_too);
@@ -79,6 +81,7 @@ bool	obtree_has_default(OBJECT *obtree);
 bool	obtree_has_exit(OBJECT *obtree);
 bool	obtree_has_touchexit(OBJECT *obtree);
 
+void	obj_set_g_popup(XA_TREE *swt, short sobj, POPINFO *pinf);
 short	obj_offset(XA_TREE *wt, short object, short *mx, short *my);
 void	obj_rectangle(XA_TREE *wt, short object, RECT *c);
 void	obj_area(XA_TREE *wt, short object, RECT *c);

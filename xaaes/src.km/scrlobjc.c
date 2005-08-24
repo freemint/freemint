@@ -443,6 +443,7 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this, str
 		short x, y, w = 0, h = 0, f;
 		
 		(*v->api->f_color)(v, sel ? G_BLACK : G_WHITE);
+		(*v->api->f_interior)(v, FIS_SOLID);
 		(*v->api->bar)(v, 0, xy->x, xy->y, xy->w, this->r.h);
 		
 		if (this->state & OS_BOXED)

@@ -896,7 +896,7 @@ create_new_fnts(enum locks lock,
 		 * All structures attached here must have xa_data_hdr structure
 		 * as its first element for the xa_data_xx() functions to work on.
 		 */
-		add_xa_data(&client->xa_data, fnts, delete_fnts_info);
+		add_xa_data(&client->xa_data, fnts, NULL, delete_fnts_info);
 
 		fnts->wind		= wind;
 		fnts->vdi_settings	= wind->vdi_settings;
