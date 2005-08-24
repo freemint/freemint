@@ -60,6 +60,8 @@
 
 #include "xa_xtobj.h"
 
+#include "mvdi.h"
+
 /* kernel header */
 #include "mint/ssystem.h"
 #include "cookie.h"
@@ -67,7 +69,7 @@
 
 static struct xa_module_api xam_api;
 
-static char *xaaes_sysfile(const char *);
+// static char *xaaes_sysfile(const char *);
 
 static char *_cdecl
 api_xaaes_sysfile(const char *f)
@@ -178,9 +180,9 @@ api_lookup_xa_data(struct xa_data_hdr **l, void *data)
 }
 
 static void _cdecl
-api_add_xa_data(struct xa_data_hdr **list, void *data, void _cdecl(*destruct)(void *d))
+api_add_xa_data(struct xa_data_hdr **list, void *data, char *name, void _cdecl(*destruct)(void *d))
 {
-	add_xa_data(list, data, destruct);
+	add_xa_data(list, data, name, destruct);
 }
 static void _cdecl
 api_remove_xa_data(struct xa_data_hdr **list, void *data)
@@ -198,6 +200,12 @@ api_free_xa_data_list(struct xa_data_hdr **list)
 {
 	free_xa_data_list(list);
 }
+
+static void _cdecl
+api_load_img(char *fname, MFDB *img)
+{
+	load_image(fname, img);
+}	
 
 static void
 setup_xa_module_api(void)
@@ -229,49 +237,33 @@ setup_xa_module_api(void)
 	xam_api.delete_xa_data	= api_delete_xa_data;
 	xam_api.free_xa_data_list = api_free_xa_data_list;
 
-	xam_api.vdi		= init_xavdi_module();
+	xam_api.load_img	= api_load_img;
 }
 
-static short
-vcheckmode(short mode)
-{
-	__asm__ volatile
-	(
-		"movem.l	d1-d7/a0-a6,-(sp)\n\t"	\
-		"move.w		%0,-(sp)\n\t"		\
-		"move.w		#0x5f,-(sp)\n\t"	\
-		"trap		#14\n\t"		\
-		"addq.w		#4,sp\n\t"		\
-	/*	"move.w		d0,%0\n\t"		\ */
-		"movem.l	(sp)+,d1-d7/a0-a6\n\t"	\
-		:
-		: "d"(mode), "r"(mode)
-		: "memory"
-	);
-	return mode;
-}
 /*
  * check if file exist in Aes_home_path
  */
-static char *
+char *
 xaaes_sysfile(const char *file)
 {
-	static char p[128];
+	static char *fn;
 	struct file *fp;
+	long len = strlen(C.Aes->home_path) + strlen(file) + 2;
 
-	strcpy(p, C.Aes->home_path);
-	strcat(p, file);
+	fn = kmalloc(len);
 
-	DIAGS(("xaaes_sysfile: looking for '%s'", p));
-
-	fp = kernel_open(p, O_RDONLY, NULL, NULL);
-	if (fp)
+	if (fn)
 	{
-		kernel_close(fp);
-		return p;
+		strcpy(fn, C.Aes->home_path);
+		strcat(fn, file);
+		fp = kernel_open(fn, O_RDONLY, NULL, NULL);
+		if (fp)
+		{
+			kernel_close(fp);
+			return fn;
+		}
+		kfree(fn);
 	}
-
-	DIAGS(("xaaes_sysfile: no such file"));
 	return NULL;
 }
 
@@ -349,7 +341,32 @@ k_init(unsigned long vm)
 
 		if (cfg.videomode)
 		{
-			if (vdo == 0x00030000L)
+			if ((vm & 0x80000000) && mvdi_api.dispatch)
+			{
+				/* Ozk:
+				 * I'm guessing like never before here; I found out that one can select
+				 * the resolution by stuffing the device ID in work_out[45] and then
+				 * open VDI device 5, just like we do it for the Falcon. However, this
+				 * often caused the Milan VDI to freeze up real good. Then I found out
+				 * that on the Milan, vcheckmode() not only checks the validity of the
+				 * passed device ID, it actually sets this mode to be the one to use
+				 * when one opens physical workstation 1! And it works every time.
+				 * We could use vsetmode() too, but that sets the resolution immediately,
+				 * a thing I didnt like much.
+				 * Hopefully this will work on all Milans!
+				 */
+// 				vcheckmode(vm & 0xffff);
+				vsetmode(vm & 0xffff);
+			}
+			else if ((vm & 0x80000000) && nova_data && nova_data->valid)
+			{
+				if (nova_data->valid)
+					nova_data->xcb->resolution = cfg.videomode;
+// 				display("nova change res to %d - %s", cfg.videomode, nova_data->next_res.name);
+				nova_data->valid = false;
+				mode = 1;
+			}
+			else if (vdo == 0x00030000L)
 			{
 				short nvmode;
 
@@ -385,6 +402,7 @@ k_init(unsigned long vm)
 		{
 			DIAGS(("Default screenmode"));
 		}
+// 		display("set mode %x", mode);
 		DIAGS(("Screenmode is: %d", mode));
 		
 		work_in[0] = mode;
@@ -401,7 +419,6 @@ k_init(unsigned long vm)
 			s_system(S_CTRLCACHE, sc & ~3, cm);
 			
 			v_opnwk(work_in, &(C.P_handle), work_out);
-
 			s_system(S_CTRLCACHE, sc, cm);
 		}
 		
@@ -410,6 +427,7 @@ k_init(unsigned long vm)
 		if (C.P_handle == 0)
 		{
 			DIAGS(("v_opnwk failed (%i)!", C.P_handle));
+			display("v_opnwk failed (%i)!", C.P_handle);
 			return -1;
 		}
 
@@ -430,6 +448,7 @@ k_init(unsigned long vm)
 		DIAGS(("graf_handle -> %d", C.P_handle));
 	}
 
+	vs_clip(C.P_handle, 0, (short *)&screen.r);
 	/*
 	 * Open us a virtual workstation for XaAES to play with
 	 */
@@ -456,7 +475,6 @@ k_init(unsigned long vm)
 	
 	DIAGS(("Virtual work station opened: %d", v->handle));
 
-	vs_clip(C.P_handle, 0, (short *)&screen.r);
 
 	/*
 	 * Setup the screen parameters
@@ -474,6 +492,8 @@ k_init(unsigned long vm)
 
 	vq_extnd(v->handle, 1, work_out);	/* Get extended information */
 	screen.planes = work_out[4];		/* number of planes in the screen */
+
+	screen.pixel_fmt = detect_pixel_format(v);
 
 	DIAGS(("Video info: width(%d/%d), planes :%d, colours %d",
 		screen.r.w, screen.r.h, screen.planes, screen.colours));
@@ -520,9 +540,12 @@ k_init(unsigned long vm)
 	get_syspalette(C.P_handle, screen.palette);
 
 	/* Load the system resource files */
-	resource_name = xaaes_sysfile(cfg.rsc_name);
-	
-	if (resource_name)
+	if (!(resource_name = xaaes_sysfile(cfg.rsc_name)))
+	{
+		display("ERROR: Can't find AESSYS resource file '%s'", cfg.rsc_name);
+		return -1;
+	}
+	else
 	{
 		C.Aes_rsc = LoadResources(C.Aes,
 					  resource_name,
@@ -530,11 +553,12 @@ k_init(unsigned long vm)
 					  screen.c_max_w, // < 8 ? 8 : screen.c_max_w,
 					  screen.c_max_h, // < 16 ? 16 : screen.c_max_h); //DU_RSX_CONV, DU_RSY_CONV);
 					  true);
+		kfree(resource_name);
 		DIAGS(("system resource = %lx (%s)", C.Aes_rsc, cfg.rsc_name));
 	}	
-	if (!resource_name || !C.Aes_rsc)
+	if (!C.Aes_rsc)
 	{
-		display("ERROR: Can't find/load system resource file '%s'", cfg.rsc_name);
+		display("ERROR: Can't load system resource file '%s'", cfg.rsc_name);
 		return -1;
 	}
 
@@ -546,9 +570,10 @@ k_init(unsigned long vm)
 		
 		if ((ob_count_objs(about, 0) < RSC_VERSION)   ||
 		     about[RSC_VERSION].ob_type != G_TEXT     ||
-		    (strcmp(object_get_tedinfo(about + RSC_VERSION)->te_ptext, "0.0.1")))
+		    (strcmp(object_get_tedinfo(about + RSC_VERSION)->te_ptext, "0.0.2")))
 		{
 			display("ERROR: Outdated AESSYS resource file (%s) - update to recent version!", cfg.rsc_name);
+			display("       also make sure you read CHANGES.txt!!");
 			return -1;
 		}
 	}
@@ -576,8 +601,12 @@ k_init(unsigned long vm)
 	 * Now load and fix the resource containing the extended AES object icons
 	 * This will be done by the object renderer later on...
 	 */
-	resource_name = xaaes_sysfile(cfg.xobj_name);
-	if (resource_name)
+	if (!(resource_name = xaaes_sysfile(cfg.xobj_name)))
+	{
+		display("ERROR: Can't find extended AES objects resource file '%s'", cfg.xobj_name);
+		return -1;
+	}
+	else
 	{
 		xobj_rshdr = LoadResources(C.Aes,
 					 resource_name,
@@ -585,11 +614,12 @@ k_init(unsigned long vm)
 					 screen.c_max_w, // < 8 ? 8 : screen.c_max_w,
 					 screen.c_max_h, //< 16 ? 16 : screen.c_max_h); //DU_RSX_CONV, DU_RSY_CONV);
 					 false);
+		kfree(resource_name);
 		DIAGS(("xobj_rsc = %lx (%s)", xobj_rsc, cfg.widg_name));
 	}
-	if (!resource_name || !xobj_rshdr)
+	if (!xobj_rshdr)
 	{
-		display("ERROR: Can't find/load extended AES objects resource file '%s'", cfg.xobj_name);
+		display("ERROR: Can't load extended AES objects resource file '%s'", cfg.xobj_name);
 		return -1;
 	}
 
@@ -606,6 +636,8 @@ k_init(unsigned long vm)
 		
 		xobj_rsc = tree;
 	}
+
+// 	init_ob_render();
 
 #if FILESELECTOR
 	/* Do some itialisation */
@@ -675,7 +707,7 @@ k_init(unsigned long vm)
 		set_desktop_widget(root_window, C.Aes->desktop);
 		set_desktop(C.Aes, false);
 	}
-
+#if 0
 	DIAGS(("setting up task manager"));
 // 	display("setting up task manager");
 	set_slist_object(0, new_widget_tree(C.Aes, ResourceTree(C.Aes_rsc, TASK_MANAGER)), NULL, TM_LIST, SIF_SELECTABLE|SIF_AUTOSELECT,
@@ -715,7 +747,7 @@ k_init(unsigned long vm)
 			 NULL, NULL, NULL, NULL, NULL,
 			 NULL, NULL, NULL, NULL,
 			 NULL, NULL, NULL, 255);
-
+#endif
 	DIAGS(("display root window"));
 // 	display("display root window");
 	open_window(NOLOCKING, root_window, screen.r);
@@ -726,8 +758,8 @@ k_init(unsigned long vm)
 	v_show_c(v->handle, 0); /* 0 = reset */
 
 // 	display("Open taskman -- perhaps");
-	if (cfg.opentaskman)
-		open_taskmanager(NOLOCKING);
+// 	if (cfg.opentaskman)
+// 		open_taskmanager(NOLOCKING);
 
 // 	display("redrawing menu");
 	redraw_menu(NOLOCKING);
@@ -735,6 +767,51 @@ k_init(unsigned long vm)
 	return 0;
 }
 
+void
+init_helpthread(enum locks lock, struct xa_client *client)
+{
+
+	DIAGS(("setting up task manager"));
+// 	display("setting up task manager");
+	set_slist_object(0, new_widget_tree(client, ResourceTree(C.Aes_rsc, TASK_MANAGER)), NULL, TM_LIST, SIF_SELECTABLE|SIF_AUTOSELECT,
+			 NULL, NULL, NULL, NULL, NULL,
+			 NULL, NULL, NULL, NULL,
+			 "Client Applications", NULL, NULL, 255);
+
+
+	DIAGS(("setting up file selector"));
+
+	DIAGS(("setting up System Alert log"));
+// 	display("setting up System Alert log");
+	set_slist_object(0, new_widget_tree(client, ResourceTree(C.Aes_rsc, SYS_ERROR)), NULL, SYSALERT_LIST, SIF_SELECTABLE|SIF_AUTOSELECT|SIF_TREEVIEW|SIF_AUTOOPEN,
+			 NULL, NULL, NULL, NULL, NULL,
+			 NULL, NULL, NULL, NULL,
+			 NULL, NULL, NULL, 255);
+	{
+		struct scroll_info *list = object_get_slist(ResourceTree(C.Aes_rsc, SYS_ERROR) + SYSALERT_LIST);
+		struct scroll_content sc = { 0 };
+		char a[] = "Alerts";
+		char e[] = "Environment";
+
+		sc.text = a;
+		sc.n_strings = 1;
+		sc.usr_flags = 1;
+		sc.xflags = OF_AUTO_OPEN;
+		DIAGS(("Add Alerts entry..."));
+		list->add(list, NULL, NULL, &sc, 0, (SETYP_AMAL|SETYP_STATIC), NOREDRAW);
+		sc.text = e;
+		DIAGS(("Add Environment entry..."));
+		list->add(list, NULL, NULL, &sc, 0, (SETYP_AMAL|SETYP_STATIC), NOREDRAW);
+	}
+
+	DIAGS(("setting up About text list"));
+// 	display("setting up About text list");
+	set_slist_object(0, new_widget_tree(client, ResourceTree(C.Aes_rsc, ABOUT_XAAES)), NULL, ABOUT_LIST, 0,
+			 NULL, NULL, NULL, NULL, NULL,
+			 NULL, NULL, NULL, NULL,
+			 NULL, NULL, NULL, 255);
+
+}
 static const char *dont_load_list[] =
 {
 };

@@ -764,7 +764,7 @@ new_moose_pkt(enum locks lock, int internal, struct moose_data *md /*imd*/)
 			data[2] = md->y;
 
 			if (!internal)
-				wake(IO_Q, (long)S.wait_mouse);
+				wake(IO_Q, (long)S.wait_mouse->sleeplock);
 		}
 		else
 			buffer_moose_pkt(md);
@@ -1172,7 +1172,7 @@ wait_mouse(struct xa_client *client, short *br, short *xr, short *yr)
 		data[0] = 0xffff;
 		while (data[0] == 0xffff)
 		{
-			sleep(IO_Q, (long)client);
+			do_block(client); //sleep(IO_Q, (long)client);
 		}
 		S.wait_mouse = NULL;
 

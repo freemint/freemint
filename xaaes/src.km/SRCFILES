@@ -27,6 +27,7 @@ HEADER = \
 	matchpat.h \
 	menuwidg.h \
 	messages.h \
+	mvdi.h \
 	nkcc.h \
 	obtree.h \
 	rectlist.h \
@@ -62,7 +63,8 @@ HEADER = \
 	xa_user_things.h \
 	xa_vdi.h \
 	xa_wdlg.h \
-	xa_wind.h
+	xa_wind.h \
+	xcb.h
 
 COBJS = \
 	about.c \
@@ -89,6 +91,7 @@ COBJS = \
 	matchpat.c \
 	menuwidg.c \
 	messages.c \
+	mvdi.c \
 	nkcc.c \
 	obtree.c \
 	rectlist.c \

@@ -303,7 +303,7 @@ set_next_menu(struct xa_client *new, bool do_topwind, bool force)
  */
 
 void
-swap_menu(enum locks lock, struct xa_client *new, struct widget_tree *new_menu, short flags) //bool do_desk, bool do_topwind, int which)
+swap_menu(enum locks lock, struct xa_client *new, struct widget_tree *new_menu, short flags)
 {
 	struct proc *p = get_curproc();
 
@@ -336,7 +336,11 @@ swap_menu(enum locks lock, struct xa_client *new, struct widget_tree *new_menu, 
 
 			if (C.next_menu == new)
 				C.next_menu = NULL;
-			
+
+			if (new->std_menu)
+				remove_wt(new->std_menu, false);
+			if (new->nxt_menu && new->nxt_menu != new->std_menu)
+				remove_wt(new->nxt_menu, false);
 			new->std_menu = new->nxt_menu = NULL;
 		}
 		else if (lock_menustruct(p, true))

@@ -90,9 +90,10 @@ ndisplay(const char *fmt, ...)
 		kernel_write(C.bootlog_file, buf, l);
 	}
 #endif
-
+#if 1
 	buf[l] = '\0';
 	c_conws(buf);
+#endif
 }
 
 #if GENERATE_DIAGS

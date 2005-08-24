@@ -49,8 +49,8 @@
 
 #include "mint/signal.h"
 
-static struct xa_widget_row * get_last_row(struct xa_widget_row *row, short lmask, short lvalid, bool backwards);
-//static struct xa_widget_row * get_first_row(struct xa_widget_row *row, short lmask, short lvalid, bool backwards);
+// static struct xa_widget_row * get_last_row(struct xa_widget_row *row, short lmask, short lvalid, bool backwards);
+// static struct xa_widget_row * get_first_row(struct xa_widget_row *row, short lmask, short lvalid, bool backwards);
 static void rp_2_ap_row(struct xa_window *wind);
 
 //static OBJECT *def_widgets;
@@ -875,7 +875,7 @@ redraw_menu(enum locks lock)
 	{
 		if (C.update_lock && C.update_lock != rc->p)
 			return;
-		
+
 		display_widget(lock, root_window, widg, NULL);
 	}
 	else
@@ -2086,7 +2086,7 @@ get_next_row(struct xa_widget_row *row, short lmask, short lvalid)
 
 	return r;
 }
-
+#if 0
 static struct xa_widget_row *
 get_last_row(struct xa_widget_row *row, short lmask, short lvalid, bool backwards)
 {
@@ -2107,7 +2107,7 @@ get_last_row(struct xa_widget_row *row, short lmask, short lvalid, bool backward
 	}
 	return last;
 }
-
+#endif
 /* Dont deleteme yet!! */
 #if 0
 static struct xa_widget_row *
@@ -2858,6 +2858,8 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 			wind->draw_canvas = NULL;
 			offsets = &r_ofs;
 		}
+		
+		wind->draw_waframe = theme->draw_waframe;
 
 		dm = def_methods[XAW_BORDER + 1];
 		dm.r = theme->border;
@@ -3469,13 +3471,23 @@ do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct
 						/*
 						 * Check if the widget has a dragger function if button still pressed
 						*/
-						if (b && widg->m.drag) 
+						if (b && f == XAW_TOOLBAR && (w->dial & created_for_TOOLBAR))
 						{
-							/* If the mouse button is still down
-							 * do a drag (if the widget has a drag
-							 * behaviour) */
-							rtn = widg->m.drag(lock, w, widg, md);
+							/*
+							 * Special case; If click goes onto a userinstalled toolbar
+							 * we need to give the mouse event to the client if the button
+							 * is still being pressed, because a 'touchexit' object may
+							 * return control to client immediately, and it may do
+							 * graf_mkstate() to check if button is released. If we dont
+							 * do this, client will always detect a button released...
+							 */
+							if (md->cstate)
+								button_event(lock, w->owner, md);
+							if (widg->m.click)
+								rtn = widg->m.click(lock, w, widg, md);
 						}
+						else if (b && widg->m.drag)
+							rtn = widg->m.drag(lock, w, widg, md);
 						else
 						{
 						/*
@@ -3535,7 +3547,7 @@ do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct
 					{
 						DIAG((D_button, NULL, "Deselect widget"));
 						if (f != XAW_MENU && f != XAW_TOOLBAR)
-							redisplay_widget(lock, w, widg, oldstate); //OS_NORMAL);	/* Flag the widget as de-selected */
+							redisplay_widget(lock, w, widg, OS_NORMAL); //oldstate); //OS_NORMAL);	/* Flag the widget as de-selected */
 					}
 					else if (w == root_window && f == XAW_TOOLBAR)		/* HR: 280801 a little bit special. */
 						return false;		/* pass click to desktop owner */

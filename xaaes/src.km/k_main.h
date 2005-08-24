@@ -34,13 +34,18 @@
 #include "global.h"
 #include "xa_types.h"
 
+void ceExecfunc(enum locks lock, struct c_event *ce, bool cancel);
+
 void cancel_cevents(struct xa_client *client);
+bool CE_exists(struct xa_client *client, void *f);
 void cancel_CE(struct xa_client *client, void *f, bool(*callback)(struct c_event *ce, long arg), long arg);
 
 void post_cevent(struct xa_client *client, void (*func)(enum locks, struct c_event *, bool cancel), void *ptr1, void *ptr2, int d0, int d1, const RECT *r, const struct moose_data *md);
 short dispatch_cevent(struct xa_client *client);
 //short check_cevents(struct xa_client *client);
 
+void do_block(struct xa_client *client);
+void cBlock(struct xa_client *client, int which);
 void Block(struct xa_client *client, int which);
 void Unblock(struct xa_client *client, unsigned long value, int which);
 

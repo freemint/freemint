@@ -32,7 +32,8 @@
 
 #include "draw_obj.h"
 #include "obtree.h"
-
+#include "k_init.h"
+#include "trnfm.h"
 #include "rectlist.h"
 #include "c_window.h"
 #include "widgets.h"
@@ -43,8 +44,17 @@
 
 #define done(x) (*wt->state_mask &= ~(x))
 
+struct xa_texture
+{
+	struct xa_data_hdr h;
+	MFDB mfdb;
+	struct xa_wtexture t;
+};
+
 void *xobj_rshdr = NULL;
 void *xobj_rsc = NULL;
+static struct xa_texture *rootmenu_texture = NULL;
+
 
 #if GENERATE_DIAGS
 
@@ -542,8 +552,6 @@ shadow_area(struct xa_vdi_settings *v, short d, short state, RECT *rp, short col
 		if (x_thick)
 		{
 			r = *rp;
-		//	if	(x_thick < -4) x_thick = -4;
-		//	else if (x_thick > 4) x_thick = 4;
 			offset	= x_thick > 0 ? x_thick : 0;
 			inc	= -x_thick;
 
@@ -560,8 +568,6 @@ shadow_area(struct xa_vdi_settings *v, short d, short state, RECT *rp, short col
 		if (y_thick)
 		{
 			r = *rp;
-		//	if	(y_thick < -4) y_thick = -4;
-		//	else if (y_thick > 4) y_thick = 4;
 			offset	= y_thick > 0 ? y_thick : 0;
 			inc	= -y_thick;
 
@@ -1100,8 +1106,17 @@ draw_g_box(struct widget_tree *wt, struct xa_vdi_settings *v)
 	}
 	else
 	{
-		/* display inside */
-		(v->api->gbar)(v, 0, &r);
+// 		if (wt->rend_flags & WTR_ROOTMENU && rootmenu_texture)
+// 		{
+// 			RECT tr = r;
+// 			(*v->api->wr_mode)(v, MD_REPLACE);
+// 			(*v->api->draw_texture)(v, rootmenu_texture->t.body, &tr, &tr);
+// 		}
+// 		else
+// 		{
+			/* display inside */
+			(*v->api->gbar)(v, 0, &r);
+// 		}
 
 		if (ob->ob_state & OS_SELECTED)
 			write_selection(v, 0, &r);
@@ -1396,7 +1411,7 @@ d_g_button(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 	{
 		POPINFO *pi = object_get_popinfo(ob);
 		if (pi->obnum > 0)
-			text = object_get_spec(pi->tree + pi->obnum)->free_string;
+			text = object_get_spec(pi->tree + pi->obnum)->free_string + 2;
 	}
 	else
 		text = object_get_spec(ob)->free_string;
@@ -2078,17 +2093,60 @@ init_objects(void)
 	objc_jump_table[G_TITLE   ] = d_g_title;
 	objc_jump_table[G_CICON   ] = d_g_cicon;
 
-#if 0
-	objc_jump_table[G_SWBUTTON] = d_g_swbutton;
+// 	objc_jump_table[G_SWBUTTON] = d_g_swbutton;
 	objc_jump_table[G_POPUP   ] = d_g_button;
-	objc_jump_table[G_WINTITLE] = d_g_wintitle;
-	objc_jump_table[G_EDIT    ] = d_g_edit;
-#endif
+// 	objc_jump_table[G_WINTITLE] = d_g_wintitle;
+// 	objc_jump_table[G_EDIT    ] = d_g_edit;
 
 	objc_jump_table[G_SHORTCUT] = d_g_string;
 	objc_jump_table[G_SLIST   ] = d_g_slist;
 	objc_jump_table[G_EXTBOX  ] = d_g_box;
+
 }
+
+void
+init_ob_render(void)
+{
+	rootmenu_texture = NULL;
+#if 0
+	struct xa_texture *t;
+	char *fn;
+
+	if ((t = kmalloc(sizeof(*t))))
+	{
+		t->mfdb.fd_addr = NULL;
+		if ((fn = xaaes_sysfile("img\\ob.img")))
+		{
+			load_image(fn, &t->mfdb);
+			if (t->mfdb.fd_addr)
+			{
+				t->t.anchor = 0;
+				t->t.flags = 0;
+				t->t.tl_corner = t->t.bl_corner = t->t.tr_corner = t->t.br_corner = NULL;
+				t->t.top = t->t.bottom = t->t.left = t->t.right = NULL;
+				t->t.body = &t->mfdb;
+				
+				rootmenu_texture = t;
+			}
+		}
+		kfree(fn);
+		if (!t->mfdb.fd_addr)
+			kfree(t);
+	}
+#endif
+}			
+
+void
+exit_ob_render(void)
+{
+	if (rootmenu_texture)
+	{
+		kfree(rootmenu_texture->mfdb.fd_addr);
+		kfree(rootmenu_texture);
+		rootmenu_texture = NULL;
+	}
+}
+
 /* object types */
 #define G_BOX			20
 #define G_TEXT			21

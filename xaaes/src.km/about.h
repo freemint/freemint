@@ -29,6 +29,6 @@
 
 #include "global.h"
 
-void open_about(enum locks lock);
+void open_about(enum locks lock, struct xa_client *client);
 
 #endif /* _about_h */
