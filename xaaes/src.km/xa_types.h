@@ -202,6 +202,7 @@ struct xa_screen
 
 	short colours;			/* Number of colours available */
 	short planes;			/* Number of planes in screen */
+	short pixel_fmt;
 	short standard_font_height;	/* Needed for appl_getinfo */
 	short standard_font_id;
 	short standard_font_point;
@@ -224,7 +225,15 @@ struct xa_wtexture
 {
 	short anchor;
 	short flags;
-	MFDB	*mfdb;
+	MFDB	*tl_corner;
+	MFDB	*tr_corner;
+	MFDB	*bl_corner;
+	MFDB	*br_corner;
+	MFDB	*left;
+	MFDB	*right;
+	MFDB	*top;
+	MFDB	*bottom;
+	MFDB	*body;
 };
 	
 struct xa_wcol
@@ -443,6 +452,7 @@ struct xa_vdi_api
 	void _cdecl (*f_interior)	(struct xa_vdi_settings *v, short m);
 	void _cdecl (*f_style)		(struct xa_vdi_settings *v, short m);
 	void _cdecl (*f_perimeter)	(struct xa_vdi_settings *v, short m);
+	void _cdecl (*draw_texture)	(struct xa_vdi_settings *v, MFDB *texture, RECT *r, RECT *anchor);
 
 	void _cdecl (*box)		(struct xa_vdi_settings *v, short d, short x, short y, short w, short h);	
 	void _cdecl (*gbox)		(struct xa_vdi_settings *v, short d, const RECT *r);
@@ -537,7 +547,8 @@ typedef short _cdecl wdlg_exit  (void *dialog,
 struct xa_data_hdr;
 struct xa_data_hdr
 {
-	unsigned long		datatype;
+	unsigned long		id;
+	char			name[16];
 	struct xa_data_hdr	*next;
 	void			(*destruct)(void *data);
 };
@@ -706,7 +717,6 @@ struct xa_pdlg_info
 	PRN_SETTINGS *settings;
 	PRN_SETTINGS current_settings;
 	char document_name[256];
-
 };
 
 #define OB_CURS_ENABLED	1
@@ -731,8 +741,12 @@ struct widget_tree
 #define WTF_STATIC	0x00000010
 #define WTF_AUTOFREE	0x00000020
 #define WTF_FBDO_SLIST	0x00000040	/* form_button() handles SLIST objects */
-
 	unsigned long	flags;
+
+#define WTR_POPUP	0x00000001
+#define WTR_ROOTMENU	0x00000002
+
+	unsigned long	rend_flags;
 
 	struct xa_window *wind;		/* Not of any specific use just yet...*/
 	struct xa_client *owner;	/* The tree widget would be owned by a different app to
@@ -974,6 +988,7 @@ typedef bool _cdecl DrawWidg(struct xa_window *wind, struct xa_widget *widg, con
 typedef void _cdecl DrawCanvas(struct xa_window *wind, RECT *outer, RECT *inner, const RECT *clip);
 typedef void _cdecl SetWidgSize(struct xa_window *wind, struct xa_widget *widg);
 typedef void _cdecl WidgGemColor(struct xa_window *wind, short gem_widget, BFOBSPEC *c);
+typedef void _cdecl DrawFrame(struct xa_window *wind, const RECT *clip);
 
 struct render_widget
 {
@@ -1021,7 +1036,9 @@ struct widget_theme
 	RECT			outer;
 	RECT			inner;
 	DrawCanvas		*draw_canvas;
-	
+
+	DrawFrame		*draw_waframe;
+
 	struct render_widget	exterior;
 	
 	struct render_widget	border;
@@ -1078,12 +1095,12 @@ struct xa_module_api
 	void _cdecl	(*bclear)		(void *addr, unsigned long len);
 
 	void * _cdecl	(*lookup_xa_data)	(struct xa_data_hdr **l,    void *_data);
-	void _cdecl	(*add_xa_data)		(struct xa_data_hdr **list, void *_data, void _cdecl(*destruct)(void *d));
+	void _cdecl	(*add_xa_data)		(struct xa_data_hdr **list, void *_data, char *name, void _cdecl(*destruct)(void *d));
 	void _cdecl	(*remove_xa_data)	(struct xa_data_hdr **list, void *_data);
 	void _cdecl	(*delete_xa_data)	(struct xa_data_hdr **list, void *_data);
 	void _cdecl	(*free_xa_data_list)	(struct xa_data_hdr **list);
 
-	struct xa_vdi_api *vdi;
+	void _cdecl	(*load_img)		(char *fname, MFDB *result);	
 };
 
 struct xa_module_widget_theme
@@ -1411,12 +1428,14 @@ struct xa_window
 #endif
 	XA_WIDGET 		*tool;		/* If dialogue or popup: which widget is used. */
 	struct xa_widget_row	*widg_rows;
+	DrawFrame		*draw_waframe;
 	DrawCanvas		*draw_canvas;
 	XA_WIDGET		widgets[XA_MAX_WIDGETS]; /* The windows standard widget set (array for speed) */
 
 	char			wname[MAX_WINDOW_NAME];	/* window name line (copy) */
 	char			winfo[MAX_WINDOW_INFO];	/* window info line (copy) */
 
+	struct xa_data_hdr *xa_data;
 	struct wdlg_info *wdlg;
 };
 
@@ -1902,6 +1921,8 @@ struct xa_client
 	struct xa_aesmsg_list *crit_msg;	/* Critical AES messages - these are prioritized */
 	struct xa_aesmsg_list *irdrw_msg;	/* Internal redraw messages */
 
+	void	(*block)(struct xa_client *client, int which);
+
 #define CS_LAGGING		0x00000001
 #define CS_CE_REDRAW_SENT 	0x00000002
 #define CS_FORM_ALERT		0x00000004
@@ -2015,7 +2036,6 @@ struct xa_client
 	struct	c_event *tpcevnt_tail;
 
 	struct	xa_data_hdr *xa_data;
-
 };
 
 #endif /* _xa_types_h */

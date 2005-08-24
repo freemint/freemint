@@ -40,18 +40,25 @@
 #include "form.h"
 #include "k_main.h"
 #include "draw_obj.h"
+#include "menuwidg.h"
 #include "obtree.h"
 #include "scrlobjc.h"
 #include "taskman.h"
 #include "widgets.h"
 #include "xa_appl.h"
 #include "xa_form.h"
+#include "xa_menu.h"
 #include "xa_shel.h"
 #include "xa_rsrc.h"
 #include "xa_fsel.h"
 #include "trnfm.h"
 
+#include "mvdi.h"
+
 #include "mint/signal.h"
+#include "mint/stat.h"
+#include "mint/fcntl.h"
+
 
 
 static void
@@ -223,15 +230,28 @@ free_namelist(struct cfg_name_list **list)
 		kfree(l);
 	}
 }
-
+static void
+ceUpdtasklist(enum locks lock, struct c_event *ce, bool cancel)
+{
+	if (!cancel && task_man_win)
+	{
+		refresh_tasklist(0);
+		redraw_toolbar(0, task_man_win, TM_LIST);
+	}
+}
 void
 update_tasklist(enum locks lock)
 {
 	if (task_man_win)
 	{
+		if (!CE_exists(C.Hlp, ceUpdtasklist))
+			post_cevent(C.Hlp, ceUpdtasklist, NULL,NULL, 0,0, NULL,NULL);
+		yield();
+#if 0		
 		DIAGS(("update_tasklist"));
 		refresh_tasklist(lock);
 		redraw_toolbar(lock, task_man_win, TM_LIST);
+#endif
 	}
 }
 
@@ -240,7 +260,7 @@ taskmanager_destructor(enum locks lock, struct xa_window *wind)
 {
 	OBJECT *form = ResourceTree(C.Aes_rsc, TASK_MANAGER);
 	OBJECT *ob = form + TM_LIST;
-	SCROLL_INFO *list = object_get_slist(ob); //(SCROLL_INFO *)ob->ob_spec.index;
+	SCROLL_INFO *list = object_get_slist(ob);
 
 	list->empty(list, NULL, -1);
 	
@@ -500,22 +520,21 @@ taskmanager_form_exit(struct xa_client *Client,
 			break;
 		}
 	}
-
 	Sema_Dn(clients);
 }
 
 void
-open_taskmanager(enum locks lock)
+open_taskmanager(enum locks lock, struct xa_client *client)
 {
-	static RECT remember = { 0,0,0,0 };
-	struct xa_window *dialog_window;
+	RECT remember = { 0,0,0,0 };
+	struct xa_window *wind;
 	XA_TREE *wt;
 	OBJECT *obtree = ResourceTree(C.Aes_rsc, TASK_MANAGER);
 	RECT or;
 
 	ob_rectangle(obtree, 0, &or);
 
-	wt = obtree_to_wt(C.Aes, obtree);
+	wt = obtree_to_wt(client, obtree);
 
 	if (!task_man_win)
 	{
@@ -525,37 +544,37 @@ open_taskmanager(enum locks lock)
 		if (!remember.w)
 		{
 			center_rect(&or); //form_center(obtree, ICON_H);
-			remember = calc_window(lock, C.Aes, WC_BORDER,
-						CLOSER|NAME, created_for_AES|created_for_POPUP,
-						C.Aes->options.thinframe,
-						C.Aes->options.thinwork,
+			remember = calc_window(lock, client, WC_BORDER,
+						CLOSER|NAME, created_for_AES,
+						client->options.thinframe,
+						client->options.thinwork,
 						*(RECT *)&or); //*(RECT*)&obtree->ob_x);
 		}
 
 		/* Create the window */
-		dialog_window = create_window(lock,
-						do_winmesag, do_formwind_msg,
-						C.Aes,
-						false, /*false,*/
-						CLOSER|NAME|TOOLBAR|hide_move(&(C.Aes->options)),
-						created_for_AES/*|created_for_POPUP*/,
-						C.Aes->options.thinframe,
-						C.Aes->options.thinwork,
-						remember, NULL, NULL);
+		wind = create_window(lock,
+					do_winmesag, do_formwind_msg,
+					client,
+					false, /*false,*/
+					CLOSER|NAME|TOOLBAR|hide_move(&(client->options)),
+					created_for_AES,
+					client->options.thinframe,
+					client->options.thinwork,
+					remember, NULL, NULL);
 
 		/* Set the window title */
-		set_window_title(dialog_window, " Task Manager ", false);
+		set_window_title(wind, " Task Manager ", false);
 
-		wt = set_toolbar_widget(lock, dialog_window, C.Aes, obtree, -1, 0/*WIP_NOTEXT*/, true, NULL, &or);
+		wt = set_toolbar_widget(lock, wind, client, obtree, -1, 0/*WIP_NOTEXT*/, true, NULL, &or);
 		wt->exit_form = taskmanager_form_exit;
 
 		/* Set the window destructor */
-		dialog_window->destructor = taskmanager_destructor;
+		wind->destructor = taskmanager_destructor;
 	
 		/* better position (to get sliders correct initially) */
 		refresh_tasklist(lock);
-		open_window(lock, dialog_window, dialog_window->r);
-		task_man_win = dialog_window;
+		open_window(lock, wind, wind->r);
+		task_man_win = wind;
 	}
 	else if (task_man_win != window_list)
 	{
@@ -563,7 +582,56 @@ open_taskmanager(enum locks lock)
 	}
 }
 
+/* ************************************************************ */
+/*     Common resolution mode change functions/stuff		*/
+/* ************************************************************ */
 static struct xa_window *reschg_win = NULL;
+static int
+reschg_destructor(enum locks lock, struct xa_window *wind)
+{
+	reschg_win = NULL;
+	return true;
+}
+
+static struct xa_window *
+create_reschgwind(enum locks lock, struct xa_client *client, struct widget_tree *wt, FormExit(*f) )
+{
+	struct xa_window *wind;
+	OBJECT *obtree = wt->tree;
+        RECT r, or;
+
+	ob_rectangle(obtree, 0, &or);
+
+	center_rect(&or);
+
+	r = calc_window(lock, client, WC_BORDER,
+			CLOSER|NAME, created_for_AES,
+			client->options.thinframe,
+			client->options.thinwork,
+			*(RECT *)&or);
+
+	/* Create the window */
+	wind = create_window(lock,
+				do_winmesag, do_formwind_msg,
+				client,
+				false,
+				CLOSER|NAME|TOOLBAR|hide_move(&(client->options)),
+				created_for_AES,
+				client->options.thinframe,
+				client->options.thinwork,
+				r, NULL, NULL);
+
+	/* Set the window title */
+	set_window_title(wind, " Change Resolution ", false);
+
+	wt = set_toolbar_widget(lock, wind, client, obtree, -1, 0/*WIP_NOTEXT*/, true, NULL, &or);
+	wt->exit_form = f; //milan_reschg_form_exit;
+
+	/* Set the window destructor */
+	wind->destructor = reschg_destructor;
+
+	return wind;
+}
 
 static void
 setsel(OBJECT *obtree, short obj, bool sel)
@@ -575,15 +643,125 @@ setsel(OBJECT *obtree, short obj, bool sel)
 		state |= OS_SELECTED;
 	obtree[obj].ob_state = state;
 }
+/* ************************************************************ */
+/*     Atari resolution mode change functions			*/
+/* ************************************************************ */
+static void
+set_resmode_obj(XA_TREE *wt, short res)
+{
+	short obj;
+	struct xa_vdi_settings *v = wt->owner->vdi_settings;
 
+	if (res < 1)
+		res = 1;
+	if (res > 10)
+		res = 9;
+
+	obj = RC_MODES + res;
+	obj_set_radio_button(wt, v, obj, false, NULL, NULL);
+}
+
+static short
+get_resmode_obj(XA_TREE *wt)
+{
+	short obj;
+
+	obj = obj_get_radio_button(wt, RC_MODES, OS_SELECTED);
+
+	if (obj > 0)
+		obj -= RC_MODES;
+	else
+		obj = 1;
+
+	return obj;
+}
+	
+static void
+resmode_form_exit(struct xa_client *Client,
+		      struct xa_window *wind,
+		      struct widget_tree *wt,
+		      struct fmd_result *fr)
+{
+	enum locks lock = 0;
+	Sema_Up(clients);
+	lock |= clients;
+	
+	wt->current = fr->obj;
+	wt->which = 0;
+
+	switch (fr->obj)
+	{
+		case RC_OK:
+		{
+			DIAGS(("reschange: restart"));
+
+			object_deselect(wt->tree + RC_OK);
+			redraw_toolbar(lock, wind, RC_OK);
+			next_res = get_resmode_obj(wt);
+			next_res |= 0x80000000;
+			/* and release */
+			close_window(lock, wind);
+			delayed_delete_window(lock, wind);
+			dispatch_shutdown(RESOLUTION_CHANGE/*0*/);
+			break;
+		}
+		case RC_CANCEL:
+		{
+			object_deselect(wt->tree + RC_CANCEL);
+			redraw_toolbar(lock, wind, RC_CANCEL);
+
+			/* and release */
+			close_window(lock, wind);
+			delayed_delete_window(lock, wind);
+			break;
+		}
+		default:
+		{
+			DIAGS(("taskmanager: unhandled event %i", wt->current));
+			break;
+		}
+	}
+	Sema_Dn(clients);
+}
+
+void
+open_reschange(enum locks lock, struct xa_client *client)
+{
+	struct xa_window *wind;
+	XA_TREE *wt;
+	OBJECT *obtree;
+
+	if (!reschg_win)
+	{
+		obtree = ResourceTree(C.Aes_rsc, RES_CHATARI);
+		wt = obtree_to_wt(client, obtree);
+		if (!wt)
+			wt = new_widget_tree(client, obtree);
+		if (wt)
+		{
+			wind = create_reschgwind(lock, client, wt, resmode_form_exit);
+			if (wind)
+			{
+				set_resmode_obj(wt, cfg.videomode);
+				open_window(lock, wind, wind->r);
+				reschg_win = wind;
+			}
+		}
+	}
+	else if (reschg_win != window_list)
+	{
+		top_window(lock, true, false, reschg_win, (void *)-1L);
+	}
+}
+/* ************************************************************ */
+/*     Falcon resolution mode change functions			*/
+/* ************************************************************ */
 static void
 set_reschg_obj(XA_TREE *wt, unsigned long res)
 {
 	OBJECT *obtree = wt->tree;
 	short obj;
-	struct xa_vdi_settings *v = C.Aes->vdi_settings;
-
-// 	display("set to res %lx", res);
+	struct xa_vdi_settings *v = wt->owner->vdi_settings;
 
 	obj = res & 0x7;
 	if (obj > 4)
@@ -604,7 +782,7 @@ set_reschg_obj(XA_TREE *wt, unsigned long res)
 	setsel(obtree, RC_ILACE, (res & (1<<7)));
 	setsel(obtree, RC_BIT15, (res & 0x8000));
 
-	ob_set_children_sf(obtree, RC_MODES, ~(OS_SELECTED|OS_DISABLED), OS_DISABLED, -1, 0, true);
+// 	ob_set_children_sf(obtree, RC_MODES, ~(OS_SELECTED|OS_DISABLED), OS_DISABLED, -1, 0, true);
 }
 
 inline static bool
@@ -631,15 +809,7 @@ get_reschg_obj(XA_TREE *wt)
 	if (issel(obtree, RC_ILACE))	res |= (1<<7);
 	if (issel(obtree, RC_BIT15))	res |= 0x8000;
 
-// 	display("new res = %lx", res);
 	return res;
-}
-
-static int
-reschg_destructor(enum locks lock, struct xa_window *wind)
-{
-	reschg_win = NULL;
-	return true;
 }
 
 static void
@@ -660,13 +830,16 @@ reschg_form_exit(struct xa_client *Client,
 		case RC_OK:
 		{
 			DIAGS(("reschange: restart"));
-			dispatch_shutdown(RESOLUTION_CHANGE/*0*/);
 
 			object_deselect(wt->tree + RC_OK);
 			redraw_toolbar(lock, wind, RC_OK);
 			next_res = get_reschg_obj(wt);
 			next_res |= 0x80000000;
-			/*break;*/
+			/* and release */
+			close_window(lock, wind);
+			delayed_delete_window(lock, wind);
+			dispatch_shutdown(RESOLUTION_CHANGE/*0*/);
+			break;
 		}
 		case RC_CANCEL:
 		{
@@ -687,63 +860,843 @@ reschg_form_exit(struct xa_client *Client,
 
 	Sema_Dn(clients);
 }
+
 void
-open_reschange(enum locks lock)
+open_falcon_reschange(enum locks lock, struct xa_client *client)
 {
-	static RECT remember = { 0,0,0,0 };
 	struct xa_window *wind;
 	XA_TREE *wt;
-	OBJECT *obtree = ResourceTree(C.Aes_rsc, RES_CHANGE);
-	RECT or;
-
-	ob_rectangle(obtree, 0, &or);
-
-	wt = obtree_to_wt(C.Aes, obtree);
+	OBJECT *obtree;
 
 	if (!reschg_win)
 	{
-		/* Work out sizing */
-		if (!remember.w)
+		obtree = ResourceTree(C.Aes_rsc, RES_CHFALC);
+		wt = obtree_to_wt(client, obtree);
+		if (!wt)
+			wt = new_widget_tree(client, obtree);
+		if (wt)
 		{
-			center_rect(&or); //form_center(obtree, ICON_H);
-			remember = calc_window(lock, C.Aes, WC_BORDER,
-						CLOSER|NAME, created_for_AES|created_for_POPUP,
-						C.Aes->options.thinframe,
-						C.Aes->options.thinwork,
-						*(RECT *)&or);
+			wind = create_reschgwind(lock, client, wt, reschg_form_exit);
+			if (wind)
+			{
+				set_reschg_obj(wt, (unsigned long)cfg.videomode);
+				open_window(lock, wind, wind->r);
+				reschg_win = wind;
+			}
 		}
-
-		/* Create the window */
-		wind = create_window(lock,
-					do_winmesag, do_formwind_msg,
-					C.Aes,
-					false, /*false,*/
-					CLOSER|NAME|TOOLBAR|hide_move(&(C.Aes->options)),
-					created_for_AES/*|created_for_POPUP*/,
-					C.Aes->options.thinframe,
-					C.Aes->options.thinwork,
-					remember, NULL, NULL);
-
-		/* Set the window title */
-		set_window_title(wind, " Change Resolution ", false);
-
-		wt = set_toolbar_widget(lock, wind, C.Aes, obtree, -1, 0/*WIP_NOTEXT*/, true, NULL, &or);
-		wt->exit_form = reschg_form_exit;
-
-		/* Set the window destructor */
-		wind->destructor = reschg_destructor;
-	
-		/* better position (to get sliders correct initially) */
-		set_reschg_obj(wt, (unsigned long)cfg.videomode);
-
-		open_window(lock, wind, wind->r);
-		reschg_win = wind;
 	}
 	else if (reschg_win != window_list)
 	{
 		top_window(lock, true, false, reschg_win, (void *)-1L);
 	}
 }
+/* ************************************************************ */
+/*     Milan resolution mode change functions			*/
+/* ************************************************************ */
+static char *coldepths[] =
+{
+	"Monochrome",
+	"4 colors",
+	"16 colors",
+	"256 colors",
+	"15 bpp (32K)",
+	"16 bpp (64K)",
+	"24 bpp (16M)",
+	"32 bpp (16M)",
+};
+
+static char whatthehell[] = "What the hell!";
+
+struct milres_parm
+{
+	struct xa_data_hdr h;
+	
+	void *modes;
+	short curr_devid;
+	
+	short current[2];
+	long misc[4];
+	short count[8];
+	
+	short num_depths;
+	struct widget_tree *depth_wt;
+	struct widget_tree *col_wt[8];
+	short *devids[8];
+
+	POPINFO pinf_depth;
+	POPINFO pinf_res;
+};
+static void
+milan_reschg_form_exit(struct xa_client *Client,
+		      struct xa_window *wind,
+		      struct widget_tree *wt,
+		      struct fmd_result *fr)
+{
+	enum locks lock = 0;
+	short new_devid = -1;
+	struct milres_parm *p = lookup_xa_data_byname(&wind->xa_data, "milres_parm");
+
+	Sema_Up(clients);
+	lock |= clients;
+	
+	wt->current = fr->obj;
+	wt->which = 0;
+
+	switch (fr->obj)
+	{
+		case RCHM_COL:
+		{
+			int i, o;
+			POPINFO *pinf = object_get_popinfo(wt->tree + fr->obj);
+			struct widget_tree *pu_wt = NULL;
+
+// 			display("found %lx", p);
+
+			for (i = 0, o = pinf->obnum; i < 8 && o >= 0; i++)
+			{
+// 				display("o = %d, i = %d, colwt = %lx", o, i, p->col_wt[i]);
+				if (p->col_wt[i])
+				{
+					o--;
+					if (!o)
+					{
+						pu_wt = p->col_wt[i];
+						new_devid = *p->devids[i];
+						
+						p->current[0] = i;
+						break;
+					}
+				}
+			}
+			if (pu_wt)
+			{
+				pinf = &p->pinf_res;
+				pinf->tree = pu_wt->tree;
+				pinf->obnum = 1;
+				obj_set_g_popup(wt, RCHM_RES, pinf);
+				obj_draw(wt, wind->vdi_settings, RCHM_RES, -1, NULL, wind->rect_list.start);
+// 				display("new devid = %x", new_devid);
+				p->current[1] = new_devid;
+			}
+			break;
+		}
+		case RCHM_RES:
+		{
+			POPINFO *pinf = object_get_popinfo(wt->tree + fr->obj);
+			struct widget_tree *pu_wt = p->col_wt[p->current[0]];
+
+			if (pu_wt)
+			{
+				new_devid = *(p->devids[p->current[0]] + (pinf->obnum - 1));
+				p->current[1] = new_devid;
+			}
+// 			display("new devid = %x", new_devid);
+			break;
+		}
+#if 1
+		case RCHM_OK:
+		{
+			DIAGS(("reschange: restart"));
+
+			object_deselect(wt->tree + RC_OK);
+			redraw_toolbar(lock, wind, RC_OK);
+			next_res = p->current[1]; //get_reschg_obj(wt);
+			next_res |= 0x80000000;
+			close_window(lock, wind);
+			delayed_delete_window(lock, wind);
+			dispatch_shutdown(RESOLUTION_CHANGE/*0*/);
+			break;
+		}
+		case RCHM_CANCEL:
+		{
+			object_deselect(wt->tree + RC_CANCEL);
+			redraw_toolbar(lock, wind, RC_CANCEL);
+
+			/* and release */
+			close_window(lock, wind);
+			delayed_delete_window(lock, wind);
+			break;
+		}
+#endif
+		default:
+		{
+			DIAGS(("taskmanager: unhandled event %i", wt->current));
+			break;
+		}
+	}
+
+	Sema_Dn(clients);
+}
+static short
+count_milan_res(long num_modes, short planes, struct videodef *modes)
+{
+	short count = 0;
+
+	while (num_modes--)
+	{
+		if (modes->planes == planes)
+			count++;
+		modes++;
+	}
+	return count;
+}
+
+static void *
+nxt_mdepth(short item, void **data)
+{
+	int i;
+	struct milres_parm *p = *data;
+	short current = -1;
+	void *ret;
+
+	if (!item)
+	{
+		p->current[1] = p->current[0];
+	}
+	
+	for (i = p->current[1]; i < 8; i++)
+	{
+		if (p->count[i])
+		{
+			current = i;
+			break;
+		}
+	}
+	if (current == -1)
+	{
+		return whatthehell;
+	}
+	else
+	{	
+		ret = coldepths[current];
+		p->current[1] = current + 1;
+	}
+	
+	return ret;
+};
+static char idx2planes[] =
+{
+	1,2,4,8,15,16,24,32
+};
+
+static void *
+nxt_mres(short item, void **data)
+{
+	struct milres_parm *p = *data;
+	struct videodef *modes;
+	short planes;
+	long num_modes;
+	void *ret = NULL;
+
+	if (!item)
+	{
+		p->misc[2] = p->misc[0];
+		p->misc[3] = p->misc[1];
+		p->current[1] = p->current[0];
+	}
+
+	planes = idx2planes[p->current[1]];
+// 	ndisplay("nxt_mres: planes = %d", planes);
+
+	(long)modes = p->misc[2];
+	num_modes = p->misc[3];
+
+	while (num_modes > 0)
+	{
+		if (modes->planes == planes)
+		{
+			(struct milres_parm *)p->misc[2] = modes + 1;
+			p->misc[3] = num_modes - 1;
+			*(p->devids[p->current[1]] + item) = modes->devid;
+			ret = modes->name;
+// 			ndisplay(", name '%s' - %x", ret, modes->devid);
+			break;
+		}
+		num_modes--;
+		modes++;
+	}
+// 	display(" ..return %lx (%s)", ret, ret);
+	return ret;
+}
+
+static int
+instchrm_wt(struct xa_client *client, struct widget_tree **wt, OBJECT *obtree)
+{
+	int ret = 0;
+	
+	if (obtree)
+	{
+		*wt = new_widget_tree(client, obtree);
+		if (*wt)
+		{
+// 			display("new wt = %lx", *wt);
+			(*wt)->flags |= WTF_AUTOFREE | WTF_TREE_ALLOC;
+			ret = 1;
+		}
+		else
+		{
+// 			display("no new wt!!");
+			free_object_tree(C.Aes, obtree);
+		}
+	}
+	else
+		*wt = NULL;
+
+// 	display("return %d", ret);
+	return ret;
+}
+
+static void _cdecl
+delete_milres_parm(void *_p)
+{
+	struct milres_parm *p = _p;
+	int i;
+
+	if (p)
+	{
+		if (p->depth_wt)
+		{
+			remove_attachments(0, p->depth_wt->owner, p->depth_wt);
+			p->depth_wt->links--;
+			remove_wt(p->depth_wt, false);
+			p->depth_wt = NULL;
+		}
+		for (i = 0; i < 8; i++)
+		{
+			if (p->col_wt[i])
+			{
+				p->col_wt[i]->links--;
+				remove_wt(p->col_wt[i], false);
+				p->col_wt[i] = NULL;
+			}
+		}
+		kfree(p);
+	}
+}
+
+static struct milres_parm *
+check_milan_res(struct xa_client *client, short mw)
+{
+	int i, j;
+	short currmode = 0;
+	struct videodef *modes;
+	struct milres_parm *p = NULL;
+	long num_modes;
+
+	num_modes = mvdi_device(0, 0, DEVICE_GETDEVICE, (long *)&modes);
+	
+	if (num_modes >= 0)
+	{
+		currmode = modes->devid;
+	}
+	
+	num_modes = mvdi_device(0, 0, DEVICE_GETDEVICELIST, (long *)&modes);
+	if (num_modes > 0)
+	{
+		short depths = 0, devids = 0;
+		OBJECT *obtree;
+		short count[8];
+
+		count[0] = count_milan_res(num_modes,  1, modes);
+		count[1] = count_milan_res(num_modes,  2, modes);
+		count[2] = count_milan_res(num_modes,  4, modes);
+		count[3] = count_milan_res(num_modes,  8, modes);
+		count[4] = count_milan_res(num_modes, 15, modes);
+		count[5] = count_milan_res(num_modes, 16, modes);
+		count[6] = count_milan_res(num_modes, 24, modes);
+		count[7] = count_milan_res(num_modes, 32, modes);
+	
+		for (i = 0; i < 8; i++)
+		{
+			if (count[i])
+			{	
+				devids += count[i] + 1;
+				depths++;
+			}
+		}
+		
+		if (depths)
+		{
+			short *di;
+			
+			if (!(p = kmalloc(sizeof(*p) + (devids << 1))))
+				goto exit;
+
+			bzero(p, sizeof(*p));
+
+			p->curr_devid = currmode;
+			(long)di = (long)p + sizeof(*p);
+
+			for (i = 0; i < 8; i++)
+			{
+				p->count[i] = count[i];
+
+				if (p->count[i])
+				{
+					p->devids[i] = di;
+					di += p->count[i];
+				}
+			}
+			p->num_depths = depths;
+			p->current[0] = 0;
+// 			display("color depths %d", depths);
+			obtree = create_popup_tree(client, 0, depths, mw, 4, &nxt_mdepth, (void **)&p);
+			if (!instchrm_wt(client, &p->depth_wt, obtree))
+				goto exit;
+			
+			p->depth_wt->links++;
+
+// 			display("1");
+			for (i = 0,j = 1; i < 8; i++)
+			{
+				if (p->count[i])
+				{
+					p->current[0] = i;
+					p->misc[0] = (long)modes;
+					p->misc[1] = num_modes;
+					obtree = create_popup_tree(client, 0, p->count[i], mw, 4, &nxt_mres, (void **)&p);
+					if (instchrm_wt(client, &p->col_wt[i], obtree))
+					{
+						p->col_wt[i]->links++;
+					}
+					else
+						goto exit;
+					j++;
+// 					display("2 - %d %d", i, j);
+				}
+			}
+// 			display("3");
+		}
+	}
+	else
+	{
+exit:
+		delete_milres_parm(p);
+		p = NULL;
+	}	
+	return p;
+}
+
+static short
+milan_setdevid(struct widget_tree *wt, struct milres_parm *p, short devid)
+{
+	int i, j, depth_idx = 0, res_idx = -1;
+	short found_devid = 0, current;
+	struct widget_tree *first = NULL, *pu_wt = NULL;
+
+	for (i = 0; i < 8; i++)
+	{
+		if (p->col_wt[i])
+		{
+			if (!first)
+			{
+				first = p->col_wt[i];
+				found_devid = *p->devids[i];
+				current = i;
+			}
+			
+			for (j = 0; j < p->count[i]; j++)
+			{
+				if (*(p->devids[i] + j) == devid)
+				{
+					pu_wt = p->col_wt[i];
+					res_idx = j + 1;
+					found_devid = devid;
+					current = i;
+					break;
+				}
+			}
+			if (res_idx != -1)
+				break;
+			
+			depth_idx++;
+		}
+	}
+	p->pinf_depth.tree = p->depth_wt->tree;
+	p->current[0] = i;
+	if (res_idx != -1)
+	{
+		p->pinf_depth.obnum = depth_idx + 1;
+		p->pinf_res.tree = pu_wt->tree;
+		p->pinf_res.obnum = res_idx;
+	}
+	else
+	{
+		p->pinf_depth.obnum = 1;
+		p->pinf_res.tree = first->tree;
+		p->pinf_res.obnum = 1;
+	}
+	obj_set_g_popup(wt, RCHM_COL, &p->pinf_depth);
+	obj_set_g_popup(wt, RCHM_RES, &p->pinf_res);
+// 	display("init to devid %x", found_devid);
+	return found_devid;
+}
+
+void
+open_milan_reschange(enum locks lock, struct xa_client *client)
+{
+	struct xa_window *wind;
+	XA_TREE *wt;
+	OBJECT *obtree;
+	struct milres_parm *p;
+
+	if (!reschg_win)
+	{
+		obtree = ResourceTree(C.Aes_rsc, RES_CHMIL);
+		wt = obtree_to_wt(client, obtree);
+		if (!wt)
+			wt = new_widget_tree(client, obtree);
+
+		if (wt && (p = check_milan_res(client, obtree[RCHM_RES].ob_width)))
+		{
+
+			p->current[1] = milan_setdevid(wt, p, p->curr_devid);
+			
+			wind = create_reschgwind(lock, client, wt, milan_reschg_form_exit);
+			if (wind)
+			{
+				add_xa_data(&wind->xa_data, p, "milres_parm", delete_milres_parm);
+				open_window(lock, wind, wind->r);
+				reschg_win = wind;
+			}
+			else
+				goto failure;
+		}
+	}
+	else if (reschg_win != window_list)
+	{
+		top_window(lock, true, false, reschg_win, (void *)-1L);
+	}
+	return;
+failure:
+	delete_milres_parm(p);
+}
+/* ************************************************************ */
+/*     Nova resolution mode change functions			*/
+/* ************************************************************ */
+static char fn_novabib[] = "c:\\auto\\sta_vdi.bib\0";
+static void
+nova_reschg_form_exit(struct xa_client *Client,
+		      struct xa_window *wind,
+		      struct widget_tree *wt,
+		      struct fmd_result *fr)
+{
+	enum locks lock = 0;
+	short new_devid = -1;
+	struct milres_parm *p = lookup_xa_data_byname(&wind->xa_data, "milres_parm");
+
+	Sema_Up(clients);
+	lock |= clients;
+	
+	wt->current = fr->obj;
+	wt->which = 0;
+
+	switch (fr->obj)
+	{
+		case RCHM_COL:
+		{
+			int i, o;
+			POPINFO *pinf = object_get_popinfo(wt->tree + fr->obj);
+			struct widget_tree *pu_wt = NULL;
+
+// 			display("found %lx", p);
+
+			for (i = 0, o = pinf->obnum; i < 8 && o >= 0; i++)
+			{
+// 				display("o = %d, i = %d, colwt = %lx", o, i, p->col_wt[i]);
+				if (p->col_wt[i])
+				{
+					o--;
+					if (!o)
+					{
+						pu_wt = p->col_wt[i];
+						new_devid = *p->devids[i];
+						
+						p->current[0] = i;
+						break;
+					}
+				}
+			}
+			if (pu_wt)
+			{
+				pinf = &p->pinf_res;
+				pinf->tree = pu_wt->tree;
+				pinf->obnum = 1;
+				obj_set_g_popup(wt, RCHM_RES, pinf);
+				obj_draw(wt, wind->vdi_settings, RCHM_RES, -1, NULL, wind->rect_list.start);
+// 				display("new devid = %x", new_devid);
+				p->current[1] = new_devid;
+			}
+			break;
+		}
+		case RCHM_RES:
+		{
+			POPINFO *pinf = object_get_popinfo(wt->tree + fr->obj);
+			struct widget_tree *pu_wt = p->col_wt[p->current[0]];
+
+			if (pu_wt)
+			{
+				new_devid = *(p->devids[p->current[0]] + (pinf->obnum - 1));
+				p->current[1] = new_devid;
+			}
+// 			display("new devid = %x", new_devid);
+			break;
+		}
+#if 1
+		case RCHM_OK:
+		{
+			DIAGS(("reschange: restart"));
+
+			object_deselect(wt->tree + RC_OK);
+			redraw_toolbar(lock, wind, RC_OK);
+			next_res = p->current[1]; //get_reschg_obj(wt);
+			next_res |= 0x80000000;
+			nova_data->next_res = ((struct nova_res *)p->modes)[p->current[1]];
+			nova_data->valid = true;
+			close_window(lock, wind);
+			delayed_delete_window(lock, wind);
+			kfree(p->modes);
+			dispatch_shutdown(RESOLUTION_CHANGE/*0*/);
+			break;
+		}
+		case RCHM_CANCEL:
+		{
+			object_deselect(wt->tree + RC_CANCEL);
+			redraw_toolbar(lock, wind, RC_CANCEL);
+
+			/* and release */
+			close_window(lock, wind);
+			delayed_delete_window(lock, wind);
+			kfree(p->modes);
+			break;
+		}
+#endif
+		default:
+		{
+			DIAGS(("taskmanager: unhandled event %i", wt->current));
+			break;
+		}
+	}
+
+	Sema_Dn(clients);
+}
+
+static void *
+nxt_novares(short item, void **data)
+{
+	struct milres_parm *p = *data;
+	struct nova_res *modes;
+	short planes;
+	long num_modes;
+	void *ret = NULL;
+
+	if (!item)
+	{
+		p->misc[2] = p->misc[0];
+		p->misc[3] = p->misc[1];
+		p->current[1] = p->current[0];
+	}
+
+	planes = idx2planes[p->current[1]];
+// 	ndisplay("nxt_mres: planes = %d", planes);
+
+	(long)modes = p->misc[2];
+	num_modes = p->misc[3];
+
+	while (num_modes > 0)
+	{
+		if (modes->planes == planes)
+		{
+			(struct nova_res *)p->misc[2] = modes + 1;
+			p->misc[3] = num_modes - 1;
+			*(p->devids[p->current[1]] + item) = ((long)modes - p->misc[0]) / sizeof(*modes);
+			ret = modes->name;
+			((char *)ret)[32] = '\0';
+			break;
+		}
+		num_modes--;
+		modes++;
+	}
+// 	display(" ..return %lx (%s)", ret, ret);
+	return ret;
+}
+
+static short
+count_nova_res(long num_modes, short planes, struct nova_res *modes)
+{
+	short count = 0;
+
+	while (num_modes--)
+	{
+		if (modes->planes == planes)
+			count++;
+		modes++;
+	}
+	return count;
+}
+static struct milres_parm *
+check_nova_res(struct xa_client *client, short mw)
+{
+	int i, j;
+	unsigned short currmode = 0;
+	struct nova_res *modes;
+	struct milres_parm *p = NULL;
+	long num_modes;
+	struct file *fp;
+	XATTR x;
+
+	currmode = nova_data->xcb->resolution;
+	
+	fp = kernel_open(fn_novabib, O_RDONLY, NULL, &x);
+	if (fp)
+	{
+// 		display("found sta_vdi.bib");
+		modes = kmalloc(x.size);
+		if (modes)
+		{
+			OBJECT *obtree;
+			short depths = 0, devids = 0;
+			short count[8];
+
+			num_modes = kernel_read(fp, modes, x.size);
+			kernel_close(fp);
+			if (num_modes != x.size)
+				goto exit;
+			
+			num_modes = x.size / sizeof(struct nova_res);
+
+// 			for (i = 0; i < num_modes; i++)
+// 			{
+// 				display("idx %04d, name %s", i, modes[i].name);
+// 			}
+			
+			count[0] = count_nova_res(num_modes,  1, modes);
+			count[1] = count_nova_res(num_modes,  2, modes);
+			count[2] = count_nova_res(num_modes,  4, modes);
+			count[3] = count_nova_res(num_modes,  8, modes);
+			count[4] = count_nova_res(num_modes, 15, modes);
+			count[5] = count_nova_res(num_modes, 16, modes);
+			count[6] = count_nova_res(num_modes, 24, modes);
+			count[7] = count_nova_res(num_modes, 32, modes);
+
+			for (i = 0; i < 8; i++)
+			{
+				if (count[i])
+				{	
+					devids += count[i] + 1;
+					depths++;
+				}
+			}
+		
+			if (depths)
+			{
+				short *di;
+			
+				if (!(p = kmalloc(sizeof(*p) + (devids << 1))))
+					goto exit;
+
+				bzero(p, sizeof(*p));
+
+				p->modes = modes;
+				p->curr_devid = currmode;
+				
+				(long)di = (long)p + sizeof(*p);
+
+				for (i = 0; i < 8; i++)
+				{
+					p->count[i] = count[i];
+
+					if (p->count[i])
+					{
+						p->devids[i] = di;
+						di += p->count[i];
+					}
+				}
+				p->num_depths = depths;
+				p->current[0] = 0;
+// 				display("color depths %d", depths);
+				obtree = create_popup_tree(client, 0, depths, mw, 4, &nxt_mdepth, (void **)&p);
+				if (!instchrm_wt(client, &p->depth_wt, obtree))
+					goto exit;
+			
+				p->depth_wt->links++;
+
+// 				display("1");
+				for (i = 0,j = 1; i < 8; i++)
+				{
+					if (p->count[i])
+					{
+						p->current[0] = i;
+						p->misc[0] = (long)modes;
+						p->misc[1] = num_modes;
+						obtree = create_popup_tree(client, 0, p->count[i], mw, 4, &nxt_novares, (void **)&p);
+						if (instchrm_wt(client, &p->col_wt[i], obtree))
+						{
+							p->col_wt[i]->links++;
+						}
+						else
+							goto exit;
+						j++;
+// 						display("2 - %d %d", i, j);
+					}
+				}
+// 			display("3");
+			}	
+		}
+	}
+// 	else
+// 		display("sta_vdi.bib not found");
+
+	return p;
+exit:
+	if (modes)
+		kfree(modes);
+	if (p)
+		delete_milres_parm(p);
+	
+	return NULL;
+}
+	
+
+void
+open_nova_reschange(enum locks lock, struct xa_client *client)
+{
+	struct xa_window *wind;
+	XA_TREE *wt;
+	OBJECT *obtree;
+	struct milres_parm *p;
+
+	if (!reschg_win)
+	{
+		obtree = ResourceTree(C.Aes_rsc, RES_CHMIL);
+		wt = obtree_to_wt(client, obtree);
+		if (!wt)
+			wt = new_widget_tree(client, obtree);
+		if (wt && (p = check_nova_res(client, obtree[RCHM_RES].ob_width)))
+		{
+			p->current[1] = milan_setdevid(wt, p, p->curr_devid);
+			
+			wind = create_reschgwind(lock, client, wt, nova_reschg_form_exit);
+			if (wind)
+			{
+				add_xa_data(&wind->xa_data, p, "milres_parm", delete_milres_parm);
+				open_window(lock, wind, wind->r);
+				reschg_win = wind;
+			}
+			else
+				goto failure;
+		}
+	}
+	else if (reschg_win != window_list)
+	{
+		top_window(lock, true, false, reschg_win, (void *)-1L);
+	}
+	return;
+failure:
+	delete_milres_parm(p);
+	
+}
+
 static void
 handle_launcher(enum locks lock, struct fsel_data *fs, const char *path, const char *file)
 {
@@ -770,7 +1723,7 @@ handle_launcher(enum locks lock, struct fsel_data *fs, const char *path, const c
 static struct fsel_data aes_fsel_data;
 
 static void
-open_launcher(enum locks lock)
+open_launcher(enum locks lock, struct xa_client *client)
 {
 	struct fsel_data *fs;
 
@@ -784,7 +1737,7 @@ open_launcher(enum locks lock)
 	}
 
 	fs = &aes_fsel_data;
-	open_fileselector(lock, C.Aes, fs,
+	open_fileselector(lock, client, fs,
 			  cfg.launch_path,
 			  NULL, "Launch Program",
 			  handle_launcher, NULL);
@@ -792,117 +1745,6 @@ open_launcher(enum locks lock)
 #endif
 
 
-#if 0
-static struct xa_wtexture test_texture =
-{
-	0, 0, NULL,
-};
-static MFDB tmfdb;
-
-static char imgpath[200] = { 0 };
-extern struct xa_window_colours def_otop_wc;
-
-#define TESTMASK (WCOL_DRAWBKG|WCOL_BOXED)
-
-static void
-handle_imgload(enum locks lock, struct fsel_data *fs, const char *path, const char *file)
-{
-	char parms[200], *t;
-	
-	sprintf(parms+1, sizeof(parms)-1, "%s%s", path, file);
-	parms[0] = '\0';
-
-	for(t = parms + 1; *t; t++)
-	{
-		if (*t == '/')
-			*t = '\\';
-	}		
-
-	close_fileselector(lock, fs);
-
-	DIAGS(("launch: \"%s\"", parms+1));
-	sprintf(imgpath, sizeof(imgpath), "%s%s", path, fs->fs_pattern);
-	display("selected imgfile = '%s' in '%s'", file, path);
-	
-	load_image(parms+1, &tmfdb);
-	
-	if (tmfdb.fd_addr)
-	{
-		test_texture.mfdb = &tmfdb;
-		def_otop_wc.title.n.texture = &test_texture;
-		def_otop_wc.title.s.texture = &test_texture;
-		def_otop_wc.title.flags &= ~TESTMASK;
-
-		def_otop_wc.closer.n.texture = &test_texture;
-		def_otop_wc.closer.s.texture = &test_texture;
-		def_otop_wc.closer.flags &= ~TESTMASK;
-		
-		def_otop_wc.hider.n.texture = &test_texture;
-		def_otop_wc.hider.s.texture = &test_texture;
-		def_otop_wc.hider.flags &= ~TESTMASK;
-		
-		def_otop_wc.iconifier.n.texture = &test_texture;
-		def_otop_wc.iconifier.s.texture = &test_texture;
-		def_otop_wc.iconifier.flags &= ~TESTMASK;
-		
-		def_otop_wc.fuller.n.texture = &test_texture;
-		def_otop_wc.fuller.s.texture = &test_texture;
-		def_otop_wc.fuller.flags &= ~TESTMASK;
-		
-		def_otop_wc.sizer.n.texture = &test_texture;
-		def_otop_wc.sizer.s.texture = &test_texture;
-		def_otop_wc.sizer.flags &= ~TESTMASK;
-		
-		def_otop_wc.slider.n.texture = &test_texture;
-		def_otop_wc.slider.s.texture = &test_texture;
-		def_otop_wc.slider.flags &= ~(WCOL_DRAWBKG|WCOL_BOXED);
-	
-	}
-	else
-	{
-		def_otop_wc.title.n.texture = NULL;
-		def_otop_wc.title.s.texture = NULL;
-		def_otop_wc.closer.n.texture = NULL;
-		def_otop_wc.closer.s.texture = NULL;
-		def_otop_wc.hider.n.texture = NULL;
-		def_otop_wc.hider.s.texture = NULL;
-		def_otop_wc.iconifier.n.texture = NULL;
-		def_otop_wc.iconifier.s.texture = NULL;
-		def_otop_wc.fuller.n.texture = NULL;
-		def_otop_wc.fuller.s.texture = NULL;
-		def_otop_wc.sizer.n.texture = NULL;
-		def_otop_wc.sizer.s.texture = NULL;
-	
-		def_otop_wc.slider.n.texture = NULL;
-		def_otop_wc.slider.s.texture = NULL;
-	}
-}
-
-void
-open_imgload(enum locks lock)
-{
-	struct fsel_data *fs;
-	char *path = imgpath;
-
-	display("open path '%s'", path);
-	
-	if (!*path)
-	{
-		path[0] = 'u'; //d_getdrv() + 'a';
-		path[1] = ':'; //':';
-		path[2] = '\\';
-		path[3] = '*';
-		path[4] = 0;
-	}
-
-	fs = &aes_fsel_data;
-	open_fileselector(lock, C.Aes, fs,
-			  path,
-			  NULL, "Select image",
-			  handle_imgload, NULL);
-	
-}
-#endif
 
 static struct xa_window *systemalerts_win = NULL;
 
@@ -944,7 +1786,7 @@ sysalerts_form_exit(struct xa_client *Client,
 			list->get(list, NULL, SEGET_ENTRYBYTEXT, &p);
 			if (p.e)
 				list->empty(list, p.e, 0);
-			display("emptied the alert list");
+// 			display("emptied the alert list");
 			object_deselect(wt->tree + item);
 			redraw_toolbar(lock, systemalerts_win, SYSALERT_LIST);
 			redraw_toolbar(lock, systemalerts_win, item);
@@ -978,9 +1820,9 @@ refresh_systemalerts(OBJECT *form)
 }
 
 static void
-open_systemalerts(enum locks lock)
+open_systemalerts(enum locks lock, struct xa_client *client)
 {
-	static RECT remember = { 0, 0, 0, 0 };
+	RECT remember = { 0, 0, 0, 0 };
 
 	if (!systemalerts_win)
 	{
@@ -991,7 +1833,7 @@ open_systemalerts(enum locks lock)
 
 		ob_rectangle(obtree, 0, &or);
 
-		wt = obtree_to_wt(C.Aes, obtree);
+		wt = obtree_to_wt(client, obtree);
 
 		obtree[SALERT_ICONS].ob_flags |= OF_HIDETREE;
 
@@ -999,10 +1841,10 @@ open_systemalerts(enum locks lock)
 		if (!remember.w)
 		{
 			center_rect(&or);
-			remember = calc_window(lock, C.Aes, WC_BORDER,
+			remember = calc_window(lock, client, WC_BORDER,
 						CLOSER|NAME, created_for_AES,
-						C.Aes->options.thinframe,
-						C.Aes->options.thinwork,
+						client->options.thinframe,
+						client->options.thinwork,
 						*(RECT *)&or); //*(RECT*)&obtree->ob_x);
 		}
 
@@ -1010,18 +1852,18 @@ open_systemalerts(enum locks lock)
 		dialog_window = create_window(lock,
 						do_winmesag,
 						do_formwind_msg,
-						C.Aes,
+						client,
 						false,
-						CLOSER|NAME|TOOLBAR|hide_move(&(C.Aes->options)),
+						CLOSER|NAME|TOOLBAR|hide_move(&(client->options)),
 						created_for_AES,
-						C.Aes->options.thinframe,
-						C.Aes->options.thinwork,
+						client->options.thinframe,
+						client->options.thinwork,
 						remember, NULL, NULL);
 
 		/* Set the window title */
 		set_window_title(dialog_window, " System window & Alerts log", false);
 
-		wt = set_toolbar_widget(lock, dialog_window, C.Aes, obtree, -1, 0/*WIP_NOTEXT*/, true, NULL, &or);
+		wt = set_toolbar_widget(lock, dialog_window, client, obtree, -1, 0/*WIP_NOTEXT*/, true, NULL, &or);
 		wt->exit_form = sysalerts_form_exit;
 		/* Set the window destructor */
 		dialog_window->destructor = systemalerts_destructor;
@@ -1052,7 +1894,8 @@ do_system_menu(enum locks lock, int clicked_title, int menu_item)
 
 		/* Open the "About XaAES..." dialog */
 		case SYS_MN_ABOUT:
-			open_about(lock);
+			post_cevent(C.Hlp, ceExecfunc, open_about,NULL, 0,0, NULL,NULL);
+// 			open_about(lock);
 			break;
 
 		/* Quit all applications */
@@ -1069,14 +1912,14 @@ do_system_menu(enum locks lock, int clicked_title, int menu_item)
 
 		/* Open the "Task Manager" window */
 		case SYS_MN_TASKMNG:
-			open_taskmanager(lock);
+			post_cevent(C.Hlp, ceExecfunc, open_taskmanager,NULL, 0,0, NULL,NULL);
+// 			open_taskmanager(lock);
 			break;
-
 		/* Open system alerts log window */
 		case SYS_MN_SALERT:
-			open_systemalerts(lock);
+			post_cevent(C.Hlp, ceExecfunc, open_systemalerts,NULL, 0,0, NULL,NULL);
+// 			open_systemalerts(lock);
 			break;
-
 		/* Open system alerts log window filled with environment */
 		case SYS_MN_ENV:
 		{
@@ -1100,14 +1943,16 @@ do_system_menu(enum locks lock, int clicked_title, int menu_item)
 			{	sc.text = strings[i];
 				list->add(list, this, NULL, &sc, this ? (SEADD_CHILD|SEADD_PRIOR) : SEADD_PRIOR, SETYP_AMAL, true);
 			}
-			open_systemalerts(lock);
+			post_cevent(C.Hlp, ceExecfunc, open_systemalerts,NULL, 0,0, NULL,NULL);
+// 			open_systemalerts(lock);
 			break;
 		}
 
 #if FILESELECTOR
 		/* Launch a new app */
 		case SYS_MN_LAUNCH:
-			open_launcher(lock);
+			post_cevent(C.Hlp, ceExecfunc, open_launcher,NULL, 0,0, NULL,NULL);
+// 			open_launcher(lock);
 			break;
 #endif
 

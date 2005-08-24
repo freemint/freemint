@@ -657,6 +657,73 @@ xa_br_hook(struct xa_vdi_settings *v, short d, const RECT *r, short col)
 	v_pline(v->handle, 3, pnt);
 }
 
+static void _cdecl
+xa_draw_texture(struct xa_vdi_settings *v, MFDB *msrc, RECT *r, RECT *anch)
+{
+	short pnt[8];
+	short x, y, w, h, sy, sh, dy, dh, width, height;
+	MFDB mscreen;
+
+	mscreen.fd_addr = NULL;
+
+	x = (long)(r->x - anch->x) % msrc->fd_w;
+	w = msrc->fd_w - x;
+	sy = (long)(r->y - anch->y) % msrc->fd_h;
+	sh = msrc->fd_h - sy;
+	dy = r->y;
+	dh = r->h;
+	
+	width = r->w;
+	while (width > 0)
+	{
+		pnt[0] = x;
+		pnt[4] = r->x;
+		
+		width -= w;
+		if (width <= 0)
+			w += width;
+		else
+		{
+			r->x += w;
+			x = 0;
+		}
+		pnt[2] = pnt[0] + w - 1;
+		pnt[6] = pnt[4] + w - 1;
+		
+		y = sy;
+		h = sh;
+		r->y = dy;
+		r->h = dh;
+		height = r->h;
+		while (height > 0)
+		{
+			//pnt[0] = x;
+			pnt[1] = y;
+			//pnt[4] = r.x;
+			pnt[5] = r->y;
+			
+			height -= h;
+			if (height <= 0)
+				h += height;
+			else
+			{
+				r->y += h;
+				y = 0;
+			}
+			
+			//pnt[2] = x + w - 1;
+			pnt[3] = pnt[1] + h - 1;
+			
+			//pnt[6] = r.x + w - 1;
+			pnt[7] = pnt[5] + h - 1;
+
+			vro_cpyfm(v->handle, S_ONLY, pnt, msrc, &mscreen);
+			
+			h = msrc->fd_h;	
+		}
+		w = msrc->fd_w;
+	}
+}
 
 static struct xa_vdi_api vdiapi =
 {
@@ -687,6 +754,7 @@ static struct xa_vdi_api vdiapi =
 	xa_f_interior,
 	xa_f_style,
 	xa_f_perimeter,
+	xa_draw_texture,
 
 	xa_box,
 	xa_gbox,
@@ -705,6 +773,7 @@ static struct xa_vdi_api vdiapi =
 
 	xa_prop_clipped_name,
 	xa_wtxt_output,
+
 };
 
 struct xa_vdi_api *

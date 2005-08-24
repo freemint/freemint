@@ -27,6 +27,9 @@
 #include "xa_global.h"
 #include "version.h"
 
+struct nova_data *nova_data = NULL;
+struct cookie_mvdi mvdi_api;
+
 unsigned long next_res;
 
 char version[32];
@@ -104,9 +107,47 @@ lookup_xa_data(struct xa_data_hdr **list, void *_data)
 	return *list;
 }
 
-void
-add_xa_data(struct xa_data_hdr **list, void *_data, void (*destruct)(void *d))
+void *
+lookup_xa_data_byname(struct xa_data_hdr **list, char *name)
 {
+	while (*list)
+	{
+		if (!strcmp((*list)->name, name))
+			break;
+
+		list = &((*list)->next);
+	}
+	return *list;
+}
+void *
+lookup_xa_data_byid(struct xa_data_hdr **list, long id)
+{
+	while (*list)
+	{
+		if ((*list)->id == id)
+			break;
+
+		list = &((*list)->next);
+	}
+	return *list;
+}
+void *
+lookup_xa_data_byidname(struct xa_data_hdr **list, long id, char *name)
+{
+	while (*list)
+	{
+		if ((*list)->id == id && !strcmp((*list)->name, name) )
+			break;
+
+		list = &((*list)->next);
+	}
+	return *list;
+}
+
+void
+add_xa_data(struct xa_data_hdr **list, void *_data, char *name, void (*destruct)(void *d))
+{
+	int i;
 	struct xa_data_hdr *data = _data;
 
 	while (*list && (*list)->next)
@@ -117,6 +158,17 @@ add_xa_data(struct xa_data_hdr **list, void *_data, void (*destruct)(void *d))
 	else
 		*list = data;
 
+	if (name)
+	{
+		for (i = 0; i < 15 && (data->name[i] = *name++); i++)
+			;
+	}
+	else
+	{
+		for (i = 0; i < 15; i++)
+			data->name[i] = '\0';
+	}
+	data->name[15] = '\0';
 	data->destruct = destruct;
 }
 

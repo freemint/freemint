@@ -41,5 +41,6 @@ bool transform_gem_bitmap(short vdih, MFDB msrc, MFDB mdest, short planes, struc
 void fix_rsc_palette(struct xa_rsc_rgb *palette);
 void set_syspalette(short vdih, struct rgb_1000 *palette);
 void get_syspalette(short vdih, struct rgb_1000 *palette);
+short detect_pixel_format(struct xa_vdi_settings *v);
 
 #endif /* _trnfm_h */

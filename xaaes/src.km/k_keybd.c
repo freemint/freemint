@@ -269,6 +269,7 @@ static char *vecnames[] =
 };
 #endif
 
+
 static bool
 kernel_key(enum locks lock, struct rawkey *key)
 {
@@ -336,20 +337,24 @@ kernel_key(enum locks lock, struct rawkey *key)
 							 AC_OPEN, 0, 0, 0,
 							 client->p->pid, 0, 0, 0);
 				}
-
 			}
 			return true;
 		}
 		case 'R':				/* attempt to recover a hung system */
 		{
-			open_reschange(lock);
+			if (C.reschange)
+			{
+				post_cevent(C.Hlp, ceExecfunc, C.reschange, NULL, 0,0, NULL, NULL);
+// 				(*C.reschange)(lock, Client);
+			}
 // 			recover();
 			return true;
 		}
 		case 'L':				/* open the task manager */
 		case NK_ESC:
 		{
-			open_taskmanager(lock);
+			//open_taskmanager(lock);
+			post_cevent(C.Hlp, ceExecfunc, open_taskmanager,NULL, 0,0, NULL,NULL);
 			return true;
 		}
 		case 'T':				/* ctrl+alt+T    Tidy screen */
@@ -473,7 +478,7 @@ keyboard_input(enum locks lock)
 
 		DIAGS(("f_getchar: 0x%08lx, AES=%x, NORM=%x", key.raw.bcon, key.aes, key.norm));
 		//display("f_getchar: 0x%08lx, AES=%x, NORM=%x", key.raw.bcon, key.aes, key.norm);
-
+		
 		if (!kernel_key(lock, &key))
 			XA_keyboard_event(lock, &key);
 	}

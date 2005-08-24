@@ -741,7 +741,7 @@ free_obtree_resources(struct xa_client *client, OBJECT *obtree)
 		OBJECT *ob = obtree + j;
 
 		type = ob->ob_type & 0x00ff;
-		
+
 		switch (type)
 		{
 			case G_TEXT:
@@ -809,6 +809,116 @@ free_object_tree(struct xa_client *client, OBJECT *obtree)
 			ufree(obtree);
 	}
 }
+
+OBJECT *
+create_popup_tree(struct xa_client *client, short type, short nobjs, short min_w, short min_h, void *(*cb)(short item, void **data), void **data)
+{
+	int i;
+	OBJECT *new = NULL;
+	long sl, ol, longest;
+	struct xa_vdi_settings *v = client->vdi_settings;
+
+	if (nobjs > 0)
+	{
+		sl = longest = 0;
+		for (i = 0; i < nobjs; i++)
+		{
+			long l = strlen((*cb)(i, data)) + 4;
+			
+			if (l > longest)
+				longest = l;
+			sl += l;
+		}
+
+		ol = sizeof(*new) * (nobjs + 1);
+		
+		new = kmalloc(ol + sl + longest);
+
+		if (new)
+		{
+			short x, y, w, h;
+			char *entry, *this, *sepstr;
+			
+			(long)this = (long)new + ol;
+			
+			sepstr = this + sl;
+			for (i = 0; i < longest; i++)
+				sepstr[i] = '-';
+			sepstr[longest] = '\0';
+
+			x = y = 0;
+			new->ob_next = -1;
+			new->ob_head = 1;
+			new->ob_tail = nobjs;
+			
+			new->ob_type = G_BOX;
+			new->ob_flags = OF_NONE;
+			new->ob_state = OS_NORMAL;
+			
+			new->ob_spec.index = 0x00FF1100L;
+			new->ob_x = new->ob_y = 0;
+			new->ob_width = min_w;
+			new->ob_height = 0;
+
+			(*v->api->t_font)(v, screen.standard_font_point, screen.standard_font_id);
+			(*v->api->t_effects)(v, 0);
+
+			for (i = 1; i <= nobjs; i++)
+			{
+				entry = (*cb)(i - 1, data);
+
+				if (entry)
+				{					
+					new[i].ob_next = i + 1;
+					new[i].ob_head = new[i].ob_tail = -1;
+					new[i].ob_type = G_STRING;
+					new[i].ob_flags = OF_NONE;
+					
+					if (*entry == '-')
+					{
+						new[i].ob_state = OS_DISABLED;
+						new[i].ob_spec.free_string = sepstr;
+						(*v->api->t_extent)(v, sepstr, &w, &h);
+					}
+					else
+					{
+						this[0] = ' ';
+						this[1] = ' ';
+						new[i].ob_state = OS_NORMAL;
+						new[i].ob_spec.free_string = this;
+						strcpy(this + 2, entry);
+					
+						(*v->api->t_extent)(v, this, &w, &h);
+					
+						this += strlen(entry) + 2;
+						*this++ = ' ';
+						*this++ = '\0';
+					}
+					if (new->ob_width < w)
+						new->ob_width = w;
+					new->ob_height += h;
+						
+					new[i].ob_y = y;
+					new[i].ob_x = x;
+					new[i].ob_width = 0;
+					new[i].ob_height = h;
+					
+					y += h;
+				}
+			}
+			new[nobjs].ob_next = 0;
+			new[nobjs].ob_flags |= OF_LASTOB;
+			w = new->ob_width;
+			for (i = 1; i <= nobjs; i++)
+				new[i].ob_width = w;
+			
+			if (new->ob_height < min_h)
+				new->ob_height = min_h;
+		}
+	}
+	return new;
+}
+
 short
 object_thickness(OBJECT *ob)
 {
@@ -1331,6 +1441,22 @@ ob_find_shortcut(OBJECT *tree, ushort nk)
 	} while ( (tree[i++].ob_flags & OF_LASTOB) == 0);
 
 	return -1;
+}
+
+void
+obj_set_g_popup(XA_TREE *swt, short sobj, POPINFO *pinf)
+{
+	OBJECT *sob;
+	short type;
+	
+	sob = swt->tree + sobj;
+	type = sob->ob_type & 0xff;
+
+	if (type == G_BUTTON || type == G_POPUP)
+	{
+		sob->ob_type = G_POPUP;
+		object_set_spec(sob, (unsigned long)pinf);
+	}
 }
 
 /*

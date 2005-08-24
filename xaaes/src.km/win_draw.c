@@ -35,7 +35,6 @@
 #define MONO (scrninf->colours < 16)
 
 static const struct xa_module_api *api;
-static const struct xa_vdi_api *v_api;
 static const struct xa_screen *scrninf;
 
 static struct widget_theme *current_theme;
@@ -62,7 +61,8 @@ static	SetWidgSize	s_title_size, s_closer_size, s_fuller_size, s_info_size,
 			s_lfarrow_size, s_rtarrow_size, s_hslide_size,
 			s_iconifier_size, s_hider_size, s_menu_size;
 
-static DrawCanvas	draw_canvas, draw_pu_canvas;
+static DrawCanvas	/*draw_canvas,*/ draw_pu_canvas;
+static DrawFrame	d_waframe;
 
 
 /* ------------------------------------------------------------------------- */
@@ -110,8 +110,8 @@ static struct widget_theme def_theme =
 	{2, 2, 2, 2},	/* min */
 // 	{1, 1, 2, 2},
 	{0, 0, 0, 0},
-
 	NULL, //draw_canvas,
+	d_waframe,
 
 	{ 0,		NULL,		0,		0,			d_unused, NULL},			/* exterior		*/
 	{ BORDER,	border_dep,	XAW_BORDER,	NO,			d_borders, NULL},			/* border		*/
@@ -226,6 +226,7 @@ static struct widget_theme pu_def_theme =
 	{0, 0, 0, 0},
 
 	draw_pu_canvas,
+	d_waframe,
 
 	{ 0,		NULL,		0,		0,			d_unused, NULL},			/* exterior		*/
 	{ BORDER,	pu_border_dep,	XAW_BORDER,	NO,			d_borders, NULL},			/* border		*/
@@ -433,14 +434,14 @@ struct window_colours def_otop_cols =
                                                     {G_CYAN,   FIS_SOLID,   0,   G_BLACK,     1,    G_CYAN, G_WHITE, NULL},		/* Selected */
                                                     {G_BLUE,   FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}},	/* Highlighted */
 /* Slider */
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
                                                     {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
                                                     {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL},	/* Selected */
                                                     {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL}}, /* Highlighted */
  /* Slide */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-                                                    {G_LBLACK, FIS_SOLID,   0,   G_LBLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LBLACK, FIS_SOLID,   0,   G_LBLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_LBLACK, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LBLACK, FIS_SOLID,   0,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
                                                     {G_LBLACK, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
  /* Title */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
@@ -501,14 +502,14 @@ struct window_colours def_otop_cols =
 /*								           col	          col		*/
  /* Title text-info */
  { WTXT_DRAW3D|WTXT_ACT3D|WTXT_CENTER,
-                                      {1,     10, MD_TRANS, 0,        G_BLACK,	G_WHITE },	/* Normal */
-                                      {1,     10, MD_TRANS, 0,        G_BLACK,	G_WHITE },	/* Selected */
-                                      {1,     10, MD_TRANS, 0,        G_BLACK,	G_WHITE }},	/* Highlighted */
+                                      {0,     10, MD_TRANS, 0,        G_BLACK,	G_WHITE },	/* Normal */
+                                      {0,     10, MD_TRANS, 0,        G_BLACK,	G_WHITE },	/* Selected */
+                                      {0,     10, MD_TRANS, 0,        G_BLACK,	G_WHITE }},	/* Highlighted */
  /* Info text-info */
  { 0,
-                                      {1,     9,  MD_TRANS, 0,        G_BLACK,	G_WHITE },	/* Normal */
-                                      {1,     9,  MD_TRANS, 0,        G_BLACK,	G_WHITE },	/* Selected */
-                                      {1,     9,  MD_TRANS, 0,        G_BLACK,	G_WHITE }},	/* Highlighted */
+                                      {0,     9,  MD_TRANS, 0,        G_BLACK,	G_WHITE },	/* Normal */
+                                      {0,     9,  MD_TRANS, 0,        G_BLACK,	G_WHITE },	/* Selected */
+                                      {0,     9,  MD_TRANS, 0,        G_BLACK,	G_WHITE }},	/* Highlighted */
 
 };
 
@@ -587,13 +588,13 @@ struct window_colours def_utop_cols =
 /*								           col	          col		*/
  /* Title text-info */
  { WTXT_DRAW3D|WTXT_ACT3D|WTXT_CENTER,
-                                      {1,     10, MD_TRANS, 0,        G_LBLACK,	G_WHITE },	/* Normal */
-                                      {1,     10, MD_TRANS, 0,        G_LBLACK,	G_WHITE },	/* Selected */
-                                      {1,     10, MD_TRANS, 0,        G_BLACK,	G_WHITE }},	/* Highlighted */
+                                      {0,     10, MD_TRANS, 0,        G_LBLACK,	G_WHITE },	/* Normal */
+                                      {0,     10, MD_TRANS, 0,        G_LBLACK,	G_WHITE },	/* Selected */
+                                      {0,     10, MD_TRANS, 0,        G_BLACK,	G_WHITE }},	/* Highlighted */
  /* Info text-info */
- { 0,		      		      {1,     9,  MD_TRANS, 0,        G_LBLACK,	G_WHITE },	/* Normal */
-                                      {1,     9,  MD_TRANS, 0,        G_LBLACK,	G_WHITE },	/* Selected */
-                                      {1,     9,  MD_TRANS, 0,        G_BLACK,	G_WHITE }},	/* Highlighted */
+ { 0,		      		      {0,     9,  MD_TRANS, 0,        G_LBLACK,	G_WHITE },	/* Normal */
+                                      {0,     9,  MD_TRANS, 0,        G_LBLACK,	G_WHITE },	/* Selected */
+                                      {0,     9,  MD_TRANS, 0,        G_BLACK,	G_WHITE }},	/* Highlighted */
 };
 /* ---------------------------------------------------------------------------------- */
 /* ---------------------------------------------------------------------------------- */
@@ -602,8 +603,8 @@ struct window_colours mono_def_otop_cols =
 {
  { 0 },	0L,	/* data header, links */
 
- G_BLACK, /* window workarea frame color */
- G_BLACK, /* window frame color */
+ G_BLACK,	/* window workarea frame color */
+ G_BLACK,	/* window frame color */
 /*          flags                        wrmode      color       fill    fill    box       box        tl      br		*/
 /*                                                             interior  style  color    thickness  colour  colour		*/
  { WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
@@ -812,6 +813,7 @@ sl_2_pix(long s, long p)
 	return ((s * p) + (SL_RANGE >> 2)) / SL_RANGE;
 }
 
+#if 0
 static void
 draw_canvas(struct xa_window *wind, RECT *outer, RECT *inner, const RECT *clip)
 {
@@ -894,6 +896,8 @@ draw_canvas(struct xa_window *wind, RECT *outer, RECT *inner, const RECT *clip)
 #endif
 	}
 }
+#endif
+
 static void
 draw_pu_canvas(struct xa_window *wind, RECT *outer, RECT *inner, const RECT *clip)
 {
@@ -991,75 +995,11 @@ draw_widg_box(struct xa_vdi_settings *v, short d, struct xa_wcol_inf *wcoli, sho
 	
 	if (wext)
 	{
-		short pnt[8];
-		short x, y, w, h, sy, sh, dy, dh, width, height;
-		MFDB mscreen, *msrc;
-
-		mscreen.fd_addr = NULL;
-		msrc = wext->mfdb;
-
 		r.x -= o;
 		r.y -= o;
 		r.w += o + o;
 		r.h += o + o;
-		
-		x = (long)(r.x - anch->x) % msrc->fd_w;
-		w = msrc->fd_w - x;
-		sy = (long)(r.y - anch->y) % msrc->fd_h;
-		sh = msrc->fd_h - sy;
-		dy = r.y;
-		dh = r.h;
-		
-		width = r.w;
-		while (width > 0)
-		{
-			pnt[0] = x;
-			pnt[4] = r.x;
-			
-			width -= w;
-			if (width <= 0)
-				w += width;
-			else
-			{
-				r.x += w;
-				x = 0;
-			}
-			pnt[2] = pnt[0] + w - 1;
-			pnt[6] = pnt[4] + w - 1;
-			
-			y = sy;
-			h = sh;
-			r.y = dy;
-			r.h = dh;
-			height = r.h;
-			while (height > 0)
-			{
-				//pnt[0] = x;
-				pnt[1] = y;
-				//pnt[4] = r.x;
-				pnt[5] = r.y;
-				
-				height -= h;
-				if (height <= 0)
-					h += height;
-				else
-				{
-					r.y += h;
-					y = 0;
-				}
-				
-				//pnt[2] = x + w - 1;
-				pnt[3] = pnt[1] + h - 1;
-				
-				//pnt[6] = r.x + w - 1;
-				pnt[7] = pnt[5] + h - 1;
-
-				vro_cpyfm(v->handle, S_ONLY, pnt, msrc, &mscreen);
-				
-				h = msrc->fd_h;	
-			}
-			w = msrc->fd_w;
-		}
+		(*v->api->draw_texture)(v, wext->body, &r, anch);
 	}	
 }
 
@@ -1086,6 +1026,43 @@ draw_widg_icon(struct xa_vdi_settings *v, struct xa_widget *widg, XA_TREE *wt, s
 	x += (widg->ar.w - w) >> 1;
 	y += (widg->ar.h - h) >> 1;
 	display_object(0, wt, v, ind, x, y, 0);
+}
+
+static void
+d_waframe(struct xa_window *wind, const RECT *clip)
+{
+	struct xa_vdi_settings *v = wind->vdi_settings;
+	RECT *wa = &wind->wa;
+
+	if (wind->thinwork)
+	{
+		if (wind->wa_frame && wind->wa_borders)
+		{
+			short waframe_col = ((struct window_colours *)wind->colours)->waframe_col;
+			
+			if (wind->wa_borders & WAB_LEFT)
+				(*v->api->left_line)(v, 1, wa, waframe_col); //wind->colours->frame_col);
+			if (wind->wa_borders & WAB_RIGHT)
+				(*v->api->right_line)(v, 1, wa, waframe_col); //wind->colours->frame_col);
+			if (wind->wa_borders & WAB_TOP)
+				(*v->api->top_line)(v, 1, wa, waframe_col); //wind->colours->frame_col);
+			if (wind->wa_borders & WAB_BOTTOM)
+				(*v->api->bottom_line)(v, 1, wa, waframe_col); //wind->colours->frame_col);
+		}
+	}
+	/*
+	 * Dont worry about mono colours, because XaAES only allows
+	 * thinwork in mono.
+	 */
+	else
+	{
+		short sc = G_LBLACK, lc = G_WHITE;
+
+		(*v->api->br_hook)(v, 2, wa, sc);
+		(*v->api->tl_hook)(v, 2, wa, lc);
+		(*v->api->br_hook)(v, 1, wa, lc);
+		(*v->api->tl_hook)(v, 1, wa, sc);
+	}
 }
 
 static bool _cdecl
@@ -1212,6 +1189,8 @@ d_title(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	else
 #endif
 	{
+		draw_widg_box(v, 0, wci, widg->state, &widg->ar, &wind->r);
+#if 0
 		/* no move, no 3D */
 		if (wind->active_widgets & MOVER)
 		{
@@ -1235,6 +1214,7 @@ d_title(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 				(*v->api->gbar)(v, -1, &widg->ar);
 			}
 		}
+#endif
 	}
 
 // 	(*v->api->wr_mode)(v, MD_TRANS);
@@ -1399,7 +1379,7 @@ d_vslide(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	cl.w = sl->r.w;
 	cl.h = sl->r.h;
 	
-	draw_widg_box(wind->vdi_settings, -1, &wc->slider, widg->state, &cl, &cl);
+	draw_widg_box(wind->vdi_settings, 0/*-1*/, &wc->slider, widg->state, &cl, &cl);
 	return true;
 }
 
@@ -1445,7 +1425,7 @@ d_hslide(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	cl.w = sl->r.w;
 	cl.h = sl->r.h;
 	
-	draw_widg_box(wind->vdi_settings, -1, &wc->slider, widg->state, &cl, &cl/*&wind->r*/);
+	draw_widg_box(wind->vdi_settings, 0/*-1*/, &wc->slider, widg->state, &cl, &cl/*&wind->r*/);
 	return true;
 }
 
@@ -1476,17 +1456,27 @@ s_title_size(struct xa_window *wind, struct xa_widget *widg)
 {
 	struct xa_wcol_inf *wci = &((struct window_colours *)wind->ontop_cols)->title;
 	struct xa_wtxt_inf *wti = &((struct window_colours *)wind->ontop_cols)->title_txt;
+	struct xa_wtxt_inf *wtu = &((struct window_colours *)wind->untop_cols)->title_txt;
 	struct xa_vdi_settings *v = wind->vdi_settings;
 	short w, h;
 
 	widg->r.w = widg_w;
 
+	if (!wti->n.f)
+	{
+// 		(*v->api->t_font)(v, wti->n.p, 9912);
+// 		if (v->font_rid != v->font_sid)
+// 			(*v->api->t_font)(v, wti->n.p, 9919);
+// 		if (v->font_rid != v->font_sid)
+			(*v->api->t_font)(v, wti->n.p, 1);
+		wti->n.f = wti->s.f = wti->h.f = wtu->n.f = wtu->s.f = wtu->h.f = v->font_sid;
+	}	
 	(*v->api->t_font)(v, wti->n.p, wti->n.f);
 	(*v->api->t_effects)(v, wti->n.e);
 	(*v->api->t_extent)(v, "A", &w, &h);
 	(*v->api->t_effects)(v, 0);
 	
-	if ((wci->flags & WCOL_DRAW3D) || (wti->flags & WTXT_DRAW3D))
+	if ((wci->flags & (WCOL_DRAW3D|WCOL_BOXED)) || (wti->flags & WTXT_DRAW3D))
 		h += 4;
 	if ((wci->flags & WCOL_ACT3D) || (wti->flags & WTXT_ACT3D))
 		h++;
@@ -1498,20 +1488,33 @@ s_info_size(struct xa_window *wind, struct xa_widget *widg)
 {
 	struct xa_wcol_inf *wci = &((struct window_colours *)wind->ontop_cols)->info;
 	struct xa_wtxt_inf *wti = &((struct window_colours *)wind->ontop_cols)->info_txt;
+	struct xa_wtxt_inf *wtu = &((struct window_colours *)wind->untop_cols)->info_txt;
 	struct xa_vdi_settings *v = wind->vdi_settings;
 	short w, h;
 
 	widg->r.w = widg_w;
 		
+	if (!wti->n.f)
+	{
+		(*v->api->t_font)(v, wti->n.p, 1); // 103);
+// 		if (v->font_rid != v->font_sid)
+// 			(*v->api->t_font)(v, wti->n.p, 13384);
+		if (v->font_rid != v->font_sid)
+			(*v->api->t_font)(v, wti->n.p, 1);
+		wti->n.f = wti->s.f = wti->h.f = wtu->n.f = wtu->s.f = wtu->h.f = v->font_sid;
+	}	
+	
 	(*v->api->t_font)(v, wti->n.p, wti->n.f);
 	(*v->api->t_effects)(v, wti->n.e);
 	(*v->api->t_extent)(v, "A", &w, &h);
 	(*v->api->t_effects)(v, 0);
-	h += 4;
-	if ((wci->flags & WCOL_DRAW3D) || (wti->flags & WTXT_DRAW3D))
-		h += 4;
-	if ((wci->flags & WCOL_ACT3D) || (wti->flags & WTXT_ACT3D))
-		h++;
+// 	h += 2;
+ 	if ((wci->flags & (WCOL_DRAW3D|WCOL_BOXED)) || (wti->flags & WTXT_DRAW3D))
+ 		h += 4;
+ 	if ((wci->flags & WCOL_ACT3D) || (wti->flags & WTXT_ACT3D))
+ 		h++;
+// 	if ((wci->flags & WCOL_BOXED))
+// 		h += 2;
 
 	widg->r.h = h;
 };
@@ -1540,10 +1543,10 @@ set_widg_size(struct xa_window *wind, struct xa_widget *widg, struct xa_wcol_inf
 
 	object_spec_wh(ob, &w, &h);
 
-	if (f & WCOL_DRAW3D)
-		h += 2, w += 2;
-	if (f & WCOL_BOXED)
-		h += 2, w += 2;
+ 	if (f & WCOL_DRAW3D)
+ 		h += 2, w += 2;
+ 	if (f & WCOL_BOXED)
+ 		h += 2, w += 2;
 
 	widg->r.w = w;
 	widg->r.h = h;
@@ -1599,12 +1602,12 @@ s_sizer_size(struct xa_window *wind, struct xa_widget *widg)
 static void _cdecl
 s_vslide_size(struct xa_window *wind, struct xa_widget *widg)
 {
-	set_widg_size(wind, widg, &((struct window_colours *)wind->ontop_cols)->uparrow, WIDG_UP);
+ 	set_widg_size(wind, widg, &((struct window_colours *)wind->ontop_cols)->uparrow, WIDG_UP);
 }
 static void _cdecl
 s_hslide_size(struct xa_window *wind, struct xa_widget *widg)
 {
-	set_widg_size(wind, widg, &((struct window_colours *)wind->ontop_cols)->rtarrow, WIDG_RIGHT);
+ 	set_widg_size(wind, widg, &((struct window_colours *)wind->ontop_cols)->rtarrow, WIDG_RIGHT);
 }
 
 static void
@@ -1794,6 +1797,267 @@ fix_default_widgets(void *rsc)
 		fix_widg(def_widgets + i);
 }
 
+struct widg_texture
+{
+	struct xa_data_hdr h;
+	struct xa_wtexture t;
+	MFDB mfdb;
+};
+
+static void
+set_texture(struct xa_wcol_inf *wcol, struct xa_wtexture *wtexture)
+{
+	if (wtexture)
+	{
+		wcol->flags &= ~(WCOL_DRAWBKG); //|WCOL_BOXED);
+		wcol->h.texture = wtexture;
+		wcol->n.texture = wtexture;
+		wcol->s.texture = wtexture;
+	}
+	else
+	{
+		wcol->flags |= WCOL_DRAWBKG; //|WCOL_BOXED;
+		wcol->h.texture = NULL;
+		wcol->n.texture = NULL;
+		wcol->s.texture = NULL;
+	}
+}
+	
+static void
+cleanup_deftheme(void)
+{
+#if 0	
+	win
+	borders
+	slider
+	slide
+	title
+	info
+	closer
+	hider
+	iconifier
+	fuller
+	sizer
+	uparrow
+	dnarrow
+	lfarrow
+	rtarrow
+#endif
+	set_texture(&def_otop_cols.win, NULL);
+	set_texture(&def_otop_cols.borders, NULL);
+ 	set_texture(&def_otop_cols.slider, NULL);
+ 	set_texture(&def_otop_cols.slide, NULL);
+	set_texture(&def_otop_cols.title, NULL);
+ 	set_texture(&def_otop_cols.info, NULL);
+	set_texture(&def_otop_cols.closer, NULL);
+	set_texture(&def_otop_cols.hider, NULL);
+	set_texture(&def_otop_cols.iconifier, NULL);
+	set_texture(&def_otop_cols.fuller, NULL);
+	set_texture(&def_otop_cols.sizer, NULL);
+	set_texture(&def_otop_cols.uparrow, NULL);
+	set_texture(&def_otop_cols.dnarrow, NULL);
+	set_texture(&def_otop_cols.lfarrow, NULL);
+	set_texture(&def_otop_cols.rtarrow, NULL);
+
+	set_texture(&def_utop_cols.win, NULL);
+	set_texture(&def_utop_cols.borders, NULL);
+ 	set_texture(&def_utop_cols.slider, NULL);
+ 	set_texture(&def_utop_cols.slide, NULL);
+	set_texture(&def_utop_cols.title, NULL);
+ 	set_texture(&def_utop_cols.info, NULL);
+	set_texture(&def_utop_cols.closer, NULL);
+	set_texture(&def_utop_cols.hider, NULL);
+	set_texture(&def_utop_cols.iconifier, NULL);
+	set_texture(&def_utop_cols.fuller, NULL);
+	set_texture(&def_utop_cols.sizer, NULL);
+	set_texture(&def_utop_cols.uparrow, NULL);
+	set_texture(&def_utop_cols.dnarrow, NULL);
+	set_texture(&def_utop_cols.lfarrow, NULL);
+	set_texture(&def_utop_cols.rtarrow, NULL);
+}
+
+static int imgpath_file = 0;
+static char imgpath[128];
+
+static void _cdecl
+delete_texture(void *_t)
+{
+	struct widg_texture *t = _t;
+
+	if (t->mfdb.fd_addr)
+		kfree(t->mfdb.fd_addr);
+	kfree(t);
+}
+
+static struct widg_texture *
+load_texture(struct module *m, char *fn)
+{
+	struct widg_texture *t = NULL;
+
+	imgpath[imgpath_file] = '\0';
+	strcat(imgpath, fn);
+	if ((fn = (*api->sysfile)(imgpath)))
+	{
+		if ((t = (*api->kmalloc)(sizeof(*t))))
+		{
+			(*api->load_img)(fn, &t->mfdb);
+			if (t->mfdb.fd_addr)
+			{
+				(*api->add_xa_data)(&m->allocs, t, NULL, delete_texture);
+				t->t.flags = 0;
+				t->t.anchor = 0;
+				t->t.left = t->t.right = t->t.top = t->t.bottom = NULL;
+				t->t.body = &t->mfdb;
+			}
+			else
+			{
+				(*api->kfree)(t);
+				t = NULL;
+			}
+		}
+		(*api->kfree)(fn);
+	}
+	return t;
+}
+
+static void
+init_sliders(struct module *m)
+{
+	struct widg_texture *t;
+
+	if ((t = load_texture(m, "slider.img"))) //"rock011.img")))
+	{
+		set_texture(&def_otop_cols.slider, &t->t);
+		set_texture(&def_utop_cols.slider, &t->t);
+	}
+	if ((t = load_texture(m, "slide.img"))) //"drock028.img")))
+	{
+		set_texture(&def_otop_cols.slide, &t->t);
+		set_texture(&def_utop_cols.slide, &t->t);
+	}
+}
+
+static void
+info_texture(struct module *m)
+{
+	struct widg_texture *t;
+
+	if ((t = load_texture(m, "info.img"))) //"lgrey008.img")))
+	{
+		set_texture(&def_otop_cols.info, &t->t);
+		set_texture(&def_utop_cols.info, &t->t);
+	}
+}
+
+static void
+test_img_stuff(struct module *m)
+{
+	struct widg_texture *t;
+
+	init_sliders(m);
+	info_texture(m);
+	if ((t = load_texture(m, "exterior.img"))) //grey8b.img")))
+	{
+		set_texture(&def_otop_cols.win, &t->t);
+		set_texture(&def_otop_cols.borders, &t->t);
+// 		set_texture(&def_otop_cols.slider, &t->t);
+// 		set_texture(&def_otop_cols.slide, &t->t);
+		set_texture(&def_otop_cols.title, &t->t);
+// 		set_texture(&def_otop_cols.info, &t->t);
+		set_texture(&def_otop_cols.closer, &t->t);
+		set_texture(&def_otop_cols.hider, &t->t);
+		set_texture(&def_otop_cols.iconifier, &t->t);
+		set_texture(&def_otop_cols.fuller, &t->t);
+		set_texture(&def_otop_cols.sizer, &t->t);
+		set_texture(&def_otop_cols.uparrow, &t->t);
+		set_texture(&def_otop_cols.dnarrow, &t->t);
+		set_texture(&def_otop_cols.lfarrow, &t->t);
+		set_texture(&def_otop_cols.rtarrow, &t->t);
+	
+		set_texture(&def_utop_cols.win, &t->t);
+		set_texture(&def_utop_cols.borders, &t->t);
+// 		set_texture(&def_utop_cols.slider, &t->t);
+// 		set_texture(&def_utop_cols.slide, &t->t);
+		set_texture(&def_utop_cols.title, &t->t);
+// 		set_texture(&def_utop_cols.info, &t->t);
+		set_texture(&def_utop_cols.closer, &t->t);
+		set_texture(&def_utop_cols.hider, &t->t);
+		set_texture(&def_utop_cols.iconifier, &t->t);
+		set_texture(&def_utop_cols.fuller, &t->t);
+		set_texture(&def_utop_cols.sizer, &t->t);
+		set_texture(&def_utop_cols.uparrow, &t->t);
+		set_texture(&def_utop_cols.dnarrow, &t->t);
+		set_texture(&def_utop_cols.lfarrow, &t->t);
+		set_texture(&def_utop_cols.rtarrow, &t->t);
+	}
+}
+#if 0		
+// 	char *fn;
+
+	init_sliders(m);
+	info_texture(m);
+
+
+	imgpath[imgpath_file] = '\0';
+	strcat(imgpath, "grey8b.img");
+	fn = (*api->sysfile)(imgpath); //"img\\8b\\grey8b.img");
+	if (fn)
+	{
+		struct widg_texture *texture;
+		
+		texture = (*api->kmalloc)(sizeof(*texture));
+		if (texture)
+		{
+			(*api->load_img)(fn, &texture->mfdb);
+			if (texture->mfdb.fd_addr)
+			{
+				(*api->add_xa_data)(&m->allocs, texture, delete_texture);
+				
+				texture->t.flags = 0;
+				texture->t.anchor = 0;
+				texture->t.body = &texture->mfdb;
+				texture->t.left = texture->t.right = texture->t.top = texture->t.bottom = NULL;
+	
+				set_texture(&def_otop_cols.win, &texture->t);
+				set_texture(&def_otop_cols.borders, &texture->t);
+// 				set_texture(&def_otop_cols.slider, &texture->t);
+// 				set_texture(&def_otop_cols.slide, &texture->t);
+				set_texture(&def_otop_cols.title, &texture->t);
+// 				set_texture(&def_otop_cols.info, &texture->t);
+				set_texture(&def_otop_cols.closer, &texture->t);
+				set_texture(&def_otop_cols.hider, &texture->t);
+				set_texture(&def_otop_cols.iconifier, &texture->t);
+				set_texture(&def_otop_cols.fuller, &texture->t);
+				set_texture(&def_otop_cols.sizer, &texture->t);
+				set_texture(&def_otop_cols.uparrow, &texture->t);
+				set_texture(&def_otop_cols.dnarrow, &texture->t);
+				set_texture(&def_otop_cols.lfarrow, &texture->t);
+				set_texture(&def_otop_cols.rtarrow, &texture->t);
+			
+				set_texture(&def_utop_cols.win, &texture->t);
+				set_texture(&def_utop_cols.borders, &texture->t);
+// 				set_texture(&def_utop_cols.slider, &texture->t);
+// 				set_texture(&def_utop_cols.slide, &texture->t);
+				set_texture(&def_utop_cols.title, &texture->t);
+// 				set_texture(&def_utop_cols.info, &texture->t);
+				set_texture(&def_utop_cols.closer, &texture->t);
+				set_texture(&def_utop_cols.hider, &texture->t);
+				set_texture(&def_utop_cols.iconifier, &texture->t);
+				set_texture(&def_utop_cols.fuller, &texture->t);
+				set_texture(&def_utop_cols.sizer, &texture->t);
+				set_texture(&def_utop_cols.uparrow, &texture->t);
+				set_texture(&def_utop_cols.dnarrow, &texture->t);
+				set_texture(&def_utop_cols.lfarrow, &texture->t);
+				set_texture(&def_utop_cols.rtarrow, &texture->t);
+			}
+			else
+				(*api->kfree)(texture);
+		}
+		(*api->kfree)(fn);
+	}
+}
+#endif
+
 /*
  * This function is called by XaAES to have the module initialize itself
  */
@@ -1807,7 +2071,6 @@ init_module(const struct xa_module_api *xmapi, const struct xa_screen *screen, c
 // 	display("wind_draw: initmodule:");
 
 	api	= xmapi;
-	v_api	= xmapi->vdi;
 	scrninf	= screen;
 
 	current_theme = &def_theme;
@@ -1819,16 +2082,21 @@ init_module(const struct xa_module_api *xmapi, const struct xa_screen *screen, c
 		(*api->bclear)(m, sizeof(*m));
 
 		/* Load the widget resource files */
-		rscfile = (*api->sysfile)(widg_name);
-
-		if (rscfile)
+		if (!(rscfile = (*api->sysfile)(widg_name)))
+		{
+			display("ERROR: Can't find widget resource file '%s'", widg_name);
+			goto error;
+		}
+		else
 		{
 			rsc = (*api->load_resource)(rscfile, NULL, screen->c_max_w, screen->c_max_h, false);
 			DIAGS(("widget_resources = %lx (%s)", rsc, widg_name));
+			kfree(rscfile);
 		}
-		if (!rscfile || !rsc)
+		if (!rsc)
 		{
 			display("ERROR: Can't find/load widget resource file '%s'", widg_name);
+			goto error;
 			(*api->kfree)(m);
 			return NULL;
 		}
@@ -1848,9 +2116,26 @@ init_module(const struct xa_module_api *xmapi, const struct xa_screen *screen, c
 			DIAGS(("widg: %d/%d", widg_w, widg_h));
 		}
 		fix_default_widgets(rsc);
+
+		
+		if (screen->planes >= 8)
+		{
+			strcpy(imgpath, "img\\");
+			strcat(imgpath, screen->planes == 8 ? "8b\\" : "hc\\");
+			imgpath_file = strlen(imgpath);
+			test_img_stuff(m);
+		}
 	}
 	else
+	{
+error:
+		if (m)
+		{
+			(*api->kfree)(m);
+			m = NULL;
+		}
 		api = NULL;
+	}
 
 // 	display(" -- module init done!");
 	return m;
@@ -1865,7 +2150,8 @@ exit_module(void *_module)
 	 * This will free all allocs done by this module
 	 */
 	(*api->free_xa_data_list)(&m->allocs);
-	
+
+	cleanup_deftheme();
 	/*
 	 * for now, the resource loaded is attached to AESSYS
 	 * and cannot be freed here..
@@ -1906,7 +2192,7 @@ new_theme(void *_module, short win_type, struct widget_theme **ret_theme)
 	if (new)
 	{
 		new->module = m;
-		(*api->add_xa_data)(&m->allocs, new, delete_theme);
+		(*api->add_xa_data)(&m->allocs, new, NULL, delete_theme);
 		*ret_theme = new;
 	}
 	else
@@ -1953,8 +2239,8 @@ new_color_theme(void *_module, void **ontop, void **untop)
 		*new_ontop = MONO ? mono_def_otop_cols : def_otop_cols;
 		*new_untop = MONO ? mono_def_utop_cols : def_utop_cols;
 		
-		(*api->add_xa_data)(&m->allocs, new_ontop, delete_color_theme);
-		(*api->add_xa_data)(&m->allocs, new_untop, delete_color_theme);
+		(*api->add_xa_data)(&m->allocs, new_ontop, NULL, delete_color_theme);
+		(*api->add_xa_data)(&m->allocs, new_untop, NULL, delete_color_theme);
 
 		ret = 1L;
 	}

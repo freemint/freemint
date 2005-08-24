@@ -133,6 +133,7 @@ init_client(enum locks lock)
 	struct xa_client *client;
 	struct proc *p = get_curproc();
 	long f;
+// 	bool d = (!strnicmp(p->name, "aeshlp", 6)) ? true : false;
 
 	/* if attach_extension succeed it returns a pointer
 	 * to kmalloc'ed and *clean* memory area of the given size
@@ -145,6 +146,7 @@ init_client(enum locks lock)
 	}
 
 	init_client_mdbuff(client);
+	client->block = cBlock;
 
 	/*
 	 * Stuff the new client inherits from AESSYS
@@ -250,6 +252,8 @@ init_client(enum locks lock)
 			strcpy(client->cmd_name, info->cmd_name);
 			strcpy(client->home_path, info->home_path);
 		}
+// 		else if (d)
+// 			display("no shel_info");
 	}
 
 	/* Get the client's home directory (where it was started)
@@ -476,6 +480,7 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 	struct xa_client *top_owner;
 	long redraws;
 	bool was_infront = false;
+// 	bool d = (!strnicmp(client->proc_name, "aeshlp", 6)) ? true : false;
 
 	DIAG((D_appl, NULL, "XA_client_exit: %s", c_owner(client)));
 
@@ -497,6 +502,8 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 	 */
 	top_owner = C.Aes;
 	
+// 	if (d) display("0");
+
 	if (is_infront(client))
 	{
 		was_infront = true;
@@ -518,10 +525,13 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 		}
 	}
 
+// 	if (d) display("1");
 
 	swap_menu(lock, client, NULL, SWAPM_REMOVE);
+// 	if (d) display("2");
 	
 	exit_proc(lock, client->p, code);
+// 	if (d) display("3");
 	
 	/*
 	 * It is no longer interested in button released packet
@@ -534,15 +544,19 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 	 */
 	if (C.mouse_owner == client || C.realmouse_owner == client)
 		graf_mouse(ARROW, NULL, NULL, false);
+	
+// 	if (d) display("4");
 
 	remove_widget_active(client);
 
+// 	if (d) display("5");
 	/*
 	 * Go through and check that all windows belonging to this
 	 * client are closed
 	 */
 	remove_all_windows(lock, client);
 
+// 	if (d) display("6");
 	/*
 	 * Cancel, and count, all redraw messages that this
 	 * client may have received
@@ -553,12 +567,14 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 	 * set CS_BLOCK_CE to stop any new client events from being
 	 * queued..
 	 */
+// 	if (d) display("7");
 	cancel_cevents(client);
 	client->status |= CS_BLOCK_CE;
 	/*
 	 * Clear any queued key events
 	 */
 	cancel_keyqueue(client);
+// 	if (d) display("8");
 
 	client->rsrc = NULL;
 	while (client->resources)
@@ -582,6 +598,7 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 	 * remove any references
 	 */
 
+// 	if (d) display("9");
 	if (client->desktop)
 		set_desktop(client, true);
 
@@ -595,6 +612,7 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 	CLIENT_LIST_REMOVE(client);
 	APP_LIST_REMOVE(client);
 		
+// 	if (d) display("10");
 	if (redraws)
 	{
 		C.redraws -= redraws - 1;
@@ -602,20 +620,24 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 	}
 	
 	/* if taskmanager is open the tasklist will be updated */
+// 	if (d) display("11");
 	update_tasklist(lock);
 
+// 	if (d) display("12");
 	/*
 	 * free remaining resources
 	 */
 
-	free_attachments(client);
 	free_xa_data_list(&client->xa_data);
 	/*
 	 * Free wt list last
 	 */
 	free_wtlist(client);
+	
+	free_attachments(client);
 
 	/* free the quart screen buffer */
+// 	if (d) display("13");
 	if (client->half_screen_buffer)
 		ufree(client->half_screen_buffer);
 
@@ -627,6 +649,7 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 
 
 	client->cmd_tail = "\0";
+// 	if (d) display("14");
 
 	/* Ozk:
 	 * If we are called to really terminate the process, we detach
@@ -651,18 +674,23 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 	/* zero out; just to be sure */
 	//bzero(client, sizeof(*client));
 
+// 	if (d) display("15");
 	remove_client_crossrefs(client);
 
+// 	if (d) display("16");
 	exit_client_widget_theme(client);
 
+// 	if (d) display("17");
 	delete_wc_cache(&client->wcc);
 
 	if (detach)
 		detach_extension(NULL, XAAES_MAGIC);
 		
+// 	if (d) display("18");
 	S.clients_exiting--;
 
 	DIAG((D_appl, NULL, "client exit done"));
+// 	if (d) display("end");
 }
 
 /*
@@ -1268,7 +1296,7 @@ init_apgi_infotab(void)
 	if (DEV_STATUS & AES_FDEVSTATUS_STABLE)
 		s = mcs(s, "Stable ");
 	else
-		s = mcs(s, "Unstable ");
+		s = mcs(s, "");
 		
 	s = mcs(s, ASCII_DEV_STATUS);
 	*s++ = 0x7c;

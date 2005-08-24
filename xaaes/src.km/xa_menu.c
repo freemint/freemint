@@ -178,7 +178,9 @@ upd_menu(enum locks lock, struct xa_client *client, OBJECT *tree, short item, bo
 		{
 			set_rootmenu_area(client);
 			if (redraw)
+			{
 				redraw_menu(lock);
+			}
 		}
 	}
 }

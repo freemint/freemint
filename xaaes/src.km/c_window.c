@@ -851,14 +851,14 @@ create_window(
 
 	if (dial & created_for_POPUP)
 	{
-// 		w->x_shadow = 2;
-// 		w->y_shadow = 2;
+		w->x_shadow = 1;
+		w->y_shadow = 1;
 		w->wa_frame = true;
 	}
 	else
 	{
-		w->x_shadow = 2;
-		w->y_shadow = 2;
+		w->x_shadow = 1; //2;
+		w->y_shadow = 1; //2;
 		w->wa_frame = true;
 	}
 
@@ -1222,56 +1222,13 @@ draw_window(enum locks lock, struct xa_window *wind, const RECT *clip)
 
 	/* Dont waste precious CRT glass */
 	if (wind != root_window)
-	{
-		
-		RECT cl = wind->r;
-		RECT wa = wind->wa;
+	{		
+		(*v->api->f_color)(v, objc_rend.dial_colours.bg_col);
+		(*v->api->f_interior)(v, FIS_SOLID);
 
-		/* Display the window backdrop (borders only, GEM style) */
+		if (wind->draw_waframe)
+			(*wind->draw_waframe)(wind, clip);
 
-		cl.w -= wind->x_shadow;
-		cl.h -= wind->y_shadow;
-		{
-			RECT tcl;
-
-			(*v->api->f_color)(v, objc_rend.dial_colours.bg_col);
-			(*v->api->f_interior)(v, FIS_SOLID);
-
-			tcl = cl;
-			/* Display the work area */
-#if 0
-			if (MONO)
-			{
-				if (wind->frame > 0)
-					(*v->api->gbox)(v, 0, &cl);
-				//gbox(1, &wa);
-			}
-			else
-#endif
-			{
-				if (wind->thinwork)
-				{
-					if (wind->wa_frame)
-					{
-						if (wind->wa_borders & WAB_LEFT)
-							(*v->api->left_line)(v, 1, &wa, G_LBLACK); //wind->colours->frame_col);
-						if (wind->wa_borders & WAB_RIGHT)
-							(*v->api->right_line)(v, 1, &wa, G_LBLACK); //wind->colours->frame_col);
-						if (wind->wa_borders & WAB_TOP)
-							(*v->api->top_line)(v, 1, &wa, G_LBLACK); //wind->colours->frame_col);
-						if (wind->wa_borders & WAB_BOTTOM)
-							(*v->api->bottom_line)(v, 1, &wa, G_LBLACK); //wind->colours->frame_col);
-					}
-				}
-				else
-				{
-					(*v->api->br_hook)(v, 2, &wa, objc_rend.dial_colours.shadow_col);
-					(*v->api->tl_hook)(v, 2, &wa, objc_rend.dial_colours.lit_col);
-					(*v->api->br_hook)(v, 1, &wa, objc_rend.dial_colours.lit_col);
-					(*v->api->tl_hook)(v, 1, &wa, objc_rend.dial_colours.shadow_col);
-				}
-			}
-		}
 		if (wind->frame >= 0 && (wind->x_shadow | wind->y_shadow))
 		{
 			//shadow_object(0, OS_SHADOWED, &cl, G_BLACK, wind->shadow/2); //SHADOW_OFFSET/2);
@@ -1295,9 +1252,6 @@ draw_window(enum locks lock, struct xa_window *wind, const RECT *clip)
 
 		if (wind->draw_canvas)
 		{
-// 			r = wind->r;
-// 			r.w -= wind->x_shadow;
-// 			r.h -= wind->y_shadow;
 			(*wind->draw_canvas)(wind, &wind->outer, &wind->inner, clip);
 		}
 
@@ -1829,6 +1783,8 @@ delete_window1(enum locks lock, struct xa_window *wind)
 	{
 		wind->active_theme->links--;
 	}
+
+	free_xa_data_list(&wind->xa_data);
 
 	kfree(wind);
 }

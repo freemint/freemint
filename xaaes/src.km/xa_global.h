@@ -29,11 +29,16 @@
 
 #include "global.h"
 #include "xa_types.h"
+#include "mvdi.h"
+#include "xcb.h"
 
 # define SHUT_POWER	0
 # define SHUT_BOOT	1
 # define SHUT_COLD	2
 # define SHUT_HALT	3
+
+extern struct nova_data *nova_data;
+extern struct cookie_mvdi mvdi_api;
 
 extern unsigned long next_res;
 
@@ -209,6 +214,8 @@ struct common
 {
 	unsigned short nvdi_version;
 
+	void (*reschange)(enum locks lock, struct xa_client *client);
+
 // 	short vh;			/* Virtual workstation handle used by the AES */
 	short AESpid;			/* The AES's MiNT process ID */
 	short DSKpid;			/* The desktop programs pid, if any */
@@ -218,6 +225,8 @@ struct common
 	short prev_clip[4];
 
 	struct xa_client *Aes;		/* */
+	struct xa_client *Hlp;
+	AESPB		*Hlp_pb;
 	enum waiting_for Aes_waiting_for;
 	
 	short move_block;		/* 0 = movement allowed
@@ -409,7 +418,6 @@ typedef struct
 	short	*ptsout;	/**< TODO */
 } XVDIPB;
 
-
 /* The screen descriptor */
 extern struct xa_screen screen;
 extern struct xa_objc_render objc_rend;
@@ -441,7 +449,10 @@ struct xa_client *pid2client(short pid);
 struct xa_client *proc2client(struct proc *p);
 
 void *	lookup_xa_data		(struct xa_data_hdr **l,    void *_data);
-void	add_xa_data		(struct xa_data_hdr **list, void *_data, void _cdecl(*destruct)(void *d));
+void *	lookup_xa_data_byname	(struct xa_data_hdr **list, char *name);
+void *	lookup_xa_data_byid	(struct xa_data_hdr **list, long id);
+void *	lookup_xa_data_byidname	(struct xa_data_hdr **list, long id, char *name);
+void	add_xa_data		(struct xa_data_hdr **list, void *_data, char *name, void _cdecl(*destruct)(void *d));
 void	remove_xa_data		(struct xa_data_hdr **list, void *_data);
 void	delete_xa_data		(struct xa_data_hdr **list, void *_data);
 void	free_xa_data_list	(struct xa_data_hdr **list);
