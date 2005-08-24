@@ -60,7 +60,7 @@ bool	form_button	(XA_TREE *wt,
 			 short obj,
 			 const struct moose_data *md,
 			 unsigned long flags, //bool redraw,
-			 struct xa_rect_list *rl,
+			 struct xa_rect_list **rl,
 			 /* Outputs */
 			 short *newstate,
 			 short *nxtob,
@@ -71,14 +71,14 @@ short	form_cursor	(XA_TREE *wt,
 			 ushort keycode,
 			 short obj,
 			 bool redraw,
-			 struct xa_rect_list *rl);
+			 struct xa_rect_list **rl);
 
 bool	form_keyboard	(XA_TREE *wt,
 			 struct xa_vdi_settings *v,
 			 short obj,
 			 const struct rawkey *key,
 			 bool redraw,
-			 struct xa_rect_list *rl,
+			 struct xa_rect_list **rl,
 			 /* outputs */
 			 short *nxtobj,
 			 short *newstate,

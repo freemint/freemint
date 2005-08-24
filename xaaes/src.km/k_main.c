@@ -45,6 +45,7 @@
 #include "widgets.h"
 #include "obtree.h"
 
+#include "xa_appl.h"
 #include "xa_evnt.h"
 #include "xa_form.h"
 #include "xa_rsrc.h"
@@ -56,6 +57,7 @@
 #include "mint/ioctl.h"
 #include "mint/signal.h"
 #include "mint/ssystem.h"
+#include "cookie.h"
 
 
 #include "c_mouse.h"
@@ -70,11 +72,20 @@
  */
 
 void
+ceExecfunc(enum locks lock, struct c_event *ce, bool cancel)
+{
+	if (!cancel)
+	{
+		void (*f)(enum locks, struct xa_client *);
+		if ((f = ce->ptr1))
+			(*f)(lock, ce->client);
+	}
+}
+void
 cancel_cevents(struct xa_client *client)
 {
 	struct c_event *ce;
 
-	//ce = client->cevnt_head;
 	while ((ce = client->cevnt_head))
 	{
 		struct c_event *nxt;
@@ -100,6 +111,21 @@ cancel_cevents(struct xa_client *client)
 	if (C.ce_menu_move == client)
 		C.ce_menu_move = NULL;
 }
+
+bool
+CE_exists(struct xa_client *client, void *f)
+{
+	struct c_event *ce = client->cevnt_head;
+
+	while (ce)
+	{
+		if (ce->funct == f)
+			return true;
+		ce = ce->next;
+	}
+	return false;
+}
+
 /*
  * cancel_CE() - search for a client event with function callback == f.
  * If found, call the 'callback' with pointer to this client event along
@@ -220,7 +246,8 @@ dispatch_cevent(struct xa_client *client)
 		DIAG((D_kern, client, "Dispatch evnt %lx (head %lx, tail %lx, count %d) for %s",
 			ce, client->cevnt_head, client->cevnt_tail, client->cevnt_count, client->name));
 		
-		(*ce->funct)(0, ce, false);
+		
+// 		(*ce->funct)(0, ce, false);
 
 		if (!(nxt = ce->next))
 			client->cevnt_tail = nxt;
@@ -228,14 +255,16 @@ dispatch_cevent(struct xa_client *client)
 		client->cevnt_head = nxt;
 		client->cevnt_count--;
 	
+		(*ce->funct)(0, ce, false);
 		kfree(ce);
 
-		ret = client->cevnt_count + 1;
+// 		ret = client->cevnt_count + 1;
+		ret = (volatile short)client->cevnt_count;
 	}
 	return ret;
 }
 
-static void
+void
 do_block(struct xa_client *client)
 {
 #if 0
@@ -251,8 +280,9 @@ do_block(struct xa_client *client)
 	{
 		client->blocktype = XABT_SLEEP;
 		client->sleepqueue = IO_Q;
-		client->sleeplock = (long)client;
-		sleep(IO_Q, (long)client);
+		client->sleeplock = client == C.Aes ? (long)client->tp : (long)client;
+// 		client->sleeplock = (long)client;
+		sleep(IO_Q, client->sleeplock); //(long)client);
 	}
 	client->blocktype = XABT_NONE;
 	client->sleeplock = 0;
@@ -261,23 +291,13 @@ do_block(struct xa_client *client)
 void
 Block(struct xa_client *client, int which)
 {
-#if 0
-	while ((client->status & CS_MENU_NAV))
-	{
-		while (client->irdrw_msg || client->cevnt_count)
-		{
-			if (client->irdrw_msg)
-				exec_iredraw_queue(0, client);
-			
-			dispatch_cevent(client);
-		}
-		if (!(client->status & CS_MENU_NAV))
-			break;
-		do_block(client);
-	}
-#endif
-	
-	
+	(*client->block)(client, which);
+}
+
+void
+cBlock(struct xa_client *client, int which)
+{
+
 	while (!client->usr_evnt && (client->irdrw_msg || client->cevnt_count))
 	{
 		if (client->irdrw_msg)
@@ -314,22 +334,8 @@ Block(struct xa_client *client, int which)
 	while (!client->usr_evnt)
 	{
 		DIAG((D_kern, client, "[%d]Blocked %s", which, c_owner(client)));
+		
 		do_block(client);
-	#if 0
-		while ((client->status & CS_MENU_NAV))
-		{
-			while (client->irdrw_msg || client->cevnt_count)
-			{
-				if (client->irdrw_msg)
-					exec_iredraw_queue(0, client);
-				dispatch_cevent(client);
-			}
-			if (!(client->status & CS_MENU_NAV))
-				break;
-			
-			do_block(client);
-		}
-	#endif
 
 		/*
 		 * Ozk: This is gonna be the new style of delivering events;
@@ -369,15 +375,99 @@ Block(struct xa_client *client, int which)
 	}
 }
 
+static void
+iBlock(struct xa_client *client, int which)
+{
+	client->usr_evnt = 0;
+
+	while (!client->usr_evnt && (client->irdrw_msg || client->cevnt_count))
+	{
+		if (client->irdrw_msg)
+			exec_iredraw_queue(0, client);
+
+		dispatch_cevent(client);
+	}
+
+	if (client->usr_evnt)
+	{
+		if (client->usr_evnt & 1)
+		{
+			cancel_evnt_multi(client, 1);
+			cancel_mutimeout(client);
+		}
+		return;
+	}
+	/*
+	 * Now check if there are any events to deliver to the
+	 * application...
+	 */
+	if (check_queued_events(client))
+	{
+		cancel_mutimeout(client);
+		return;
+	}
+
+	/*
+	 * Getting here if no more client events are in the queue
+	 * Looping around doing client events until a user event
+	 * happens.. that is, we've got something to pass back to
+	 * the application.
+	 */
+	while (!client->usr_evnt)
+	{
+		DIAG((D_kern, client, "[%d]Blocked %s", which, c_owner(client)));
+		
+		if (client->tp_term)
+			return;
+		
+		do_block(client);
+
+		/*
+		 * Ozk: This is gonna be the new style of delivering events;
+		 * If the receiver of an event is not the same as the sender of
+		 * of the event, the event is queued (only for AES messges for now)
+		 * Then the sender will wake up the receiver, which will call
+		 * check_queued_events() and handle the event.
+		*/
+		while (!client->usr_evnt && (client->irdrw_msg || client->cevnt_count))
+		{
+			if (client->irdrw_msg)
+				exec_iredraw_queue(0, client);
+
+			dispatch_cevent(client);
+		}
+
+		if (client->usr_evnt)
+		{
+			if (client->usr_evnt & 1)
+			{
+				cancel_evnt_multi(client, 1);
+ 				cancel_mutimeout(client);
+			}
+			return;
+		}
+
+		if (check_queued_events(client))
+		{
+			cancel_mutimeout(client);
+			return;
+		}
+	}
+	if (client->usr_evnt & 1)
+	{
+		cancel_evnt_multi(client, 1);
+		cancel_mutimeout(client);
+	}
+}
 void
 Unblock(struct xa_client *client, unsigned long value, int which)
 {
 	/* the following served as a excellent safeguard on the
 	 * internal consistency of the event handling mechanisms.
 	 */
-	if (client == C.Aes)
-		wake(IO_Q, (long)client->tp);
-	else
+ 	if (client == C.Aes)
+ 		wake(IO_Q, client->sleeplock);
+ 	else
 	{
 		if (value == XA_OK)
 			cancel_evnt_multi(client,1);
@@ -385,7 +475,7 @@ Unblock(struct xa_client *client, unsigned long value, int which)
 		if (client->blocktype == XABT_SELECT)
 			wakeselect(client->p);
 		else if (client->blocktype == XABT_SLEEP)
-			wake(IO_Q, (long)client);
+			wake(IO_Q, client->sleeplock); //(long)client);
 	}
 
 	DIAG((D_kern,client,"[%d]Unblocked %s 0x%lx", which, c_owner(client), value));
@@ -688,6 +778,25 @@ int aessys_timeout = 0;
 
 static const char aesthread_name[] = "aesthred";
 
+static void
+aesthread_block(struct xa_client *client, int which)
+{
+	while ((client->irdrw_msg || client->cevnt_count))
+	{
+		if (client->irdrw_msg)
+			exec_iredraw_queue(0, client);
+
+		dispatch_cevent(client);
+	}
+	
+	if (client->status & (CS_LAGGING | CS_MISS_RDRW))
+	{
+		client->status &= ~(CS_LAGGING|CS_MISS_RDRW);
+	}
+	
+	if (!client->tp_term)
+		do_block(client);
+}
 /*
  * AES thread
  */
@@ -696,30 +805,73 @@ aesthread_entry(void *c)
 {
 	struct xa_client *client = c;
 
+	p_domain(1);
 	setup_common();
-	
+
 	for (;;)
 	{
-		while ((client->irdrw_msg || client->cevnt_count))
-		{
-			if (client->irdrw_msg)
-				exec_iredraw_queue(0, client);
-
-			dispatch_cevent(client);
-		}
-		
-		if (client->status & (CS_LAGGING | CS_MISS_RDRW))
-		{
-			client->status &= ~(CS_LAGGING|CS_MISS_RDRW);
-		}
-		
+		aesthread_block(client, 0);
 		if (client->tp_term)
-			break;	
-		sleep(IO_Q, (long)client->tp);
+			break;
 	}
-	//display("aesthread terminating");
 	client->tp = NULL;
 	client->tp_term = 2;
+	kthread_exit(0);
+}
+
+static void
+helpthread_entry(void *c)
+{
+	struct xa_client *client;
+	
+	p_domain(1);
+	setup_common();
+
+	client = init_client(0);
+
+	if (client)
+	{
+		AESPB *pb;
+		short *d;
+
+		if ((pb = kmalloc(sizeof(*pb) + ((12 + 32 + 32 + 32 + 32 + 32) * 2))))
+		{
+			(long)d = (long)pb + sizeof(*pb);
+			pb->control = d;
+			d += 12;
+			pb->global = d;
+			d += 32;
+			pb->intin = (const short *)d;
+			d += 32;
+			pb->intout = d;
+			d += 32;
+			pb->addrin = (const long *)d;
+			d += 32;
+			pb->addrout = (long *)d;
+		
+			C.Hlp = client;
+			C.Hlp_pb = client->waiting_pb = pb;
+			client->waiting_for = 0;
+			client->block = iBlock;
+			init_helpthread(NOLOCKING, client);
+// 			open_taskmanager(0, client);
+			for (;;)
+			{
+				(*client->block)(client, 0);
+				if (client->tp_term)
+					break;
+			}
+		}
+		exit_client(0, client, 0, false, false);
+		C.Hlp = NULL;
+		detach_extension(NULL, XAAES_MAGIC);	
+	}
+	if (C.Hlp_pb)
+	{
+		kfree(C.Hlp_pb);
+		C.Hlp_pb = NULL;
+	}
+	C.Hlp = NULL;
 	kthread_exit(0);
 }
 
@@ -896,6 +1048,54 @@ k_main(void *dummy)
 		}
 	}
 #endif
+	{
+		long vdo;
+
+		C.reschange = NULL;
+		if (!(s_system(S_GETCOOKIE, COOKIE__VDO, (unsigned long)(&vdo))))
+		{
+			switch (((vdo & 0xffff0000) >> 16))
+			{
+				case 0 ... 2:
+					C.reschange = open_reschange;
+					break;
+				case 3 ... 4:
+					C.reschange = open_falcon_reschange;
+					break;
+				default:;
+			}
+		}
+	}
+	
+	{
+		unsigned long mc;
+
+		mvdi_api.dispatch = NULL;
+
+		if (!(s_system(S_GETCOOKIE, COOKIE__VDI, (unsigned long)&mc)))
+		{
+			mvdi_api = *(struct cookie_mvdi *)mc;
+			C.reschange = open_milan_reschange;
+// 			display("found _VDI: Dispatch %lx(%lx)", mvdi_api.dispatch, mc->dispatch);
+		}
+		else
+		{
+			if (!nova_data)
+			{
+				if (!(s_system(S_GETCOOKIE, COOKIE_NOVA, (unsigned long)&mc)))
+					nova_data = kmalloc(sizeof(struct nova_data));
+				
+				if (nova_data)
+				{
+					nova_data->xcb = (struct xcb *)mc;
+					nova_data->valid = false;
+				}
+			}
+			if (nova_data)
+				C.reschange = open_nova_reschange;
+		}
+	}
+	
 	/*
 	 * register trap#2 handler
 	 */
@@ -988,6 +1188,7 @@ k_main(void *dummy)
 	{
 		long tpc;
 
+		C.Aes->block = aesthread_block;
 		tpc = kthread_create(C.Aes->p, aesthread_entry, C.Aes, &C.Aes->tp, "%s", aesthread_name);
 		if (tpc < 0)
 		{
@@ -996,7 +1197,27 @@ k_main(void *dummy)
 			goto leave;
 		}
 	}
-	
+	/*
+	 *
+	 */
+	{
+		long tpc;
+		tpc = kthread_create(C.Aes->p, helpthread_entry, NULL, NULL, "%s", "aeshlp");
+		if (tpc < 0)
+		{
+			C.Hlp = NULL;
+			display("XaAES ERROR: start AES thread failed");
+			goto leave;
+		}
+	}
+	/*
+	 * Wait for aeshlp to start
+	 */
+	while (!C.Hlp)
+		yield();
+
+	if (cfg.opentaskman)
+		post_cevent(C.Hlp, ceExecfunc, open_taskmanager,NULL, 0,0, NULL,NULL);
 	/*
 	 * Load Accessories
 	 */
@@ -1176,8 +1397,16 @@ k_exit(void)
 	C.shutdown |= QUIT_NOW;
 
 	restore_sigs();
-	post_cevent(C.Aes, CE_at_restoresigs, NULL, NULL, 0,0, NULL, NULL);
-	yield();
+	if (C.Aes)
+	{
+		post_cevent(C.Aes, CE_at_restoresigs, NULL, NULL, 0,0, NULL, NULL);
+		yield();
+	}
+	if (C.Hlp)
+	{
+		post_cevent(C.Hlp, CE_at_restoresigs, NULL, NULL, 0,0, NULL, NULL);
+		yield();
+	}
 // 	display("after yield");
 
 	if (svmotv)

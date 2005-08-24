@@ -99,7 +99,7 @@ k_shutdown(void)
 
 		FOREACH_CLIENT(client)
 		{
-			if (client != C.Aes)
+			if (client != C.Aes && client != C.Hlp)
 			{
 				flag = 0;
 				DIAGS(("client '%s' still running", client->name));
@@ -122,7 +122,7 @@ k_shutdown(void)
 
 			FOREACH_CLIENT(client)
 			{
-				if (client != C.Aes)
+				if (client != C.Aes && client != C.Hlp)
 				{
 					DIAGS(("killing client '%s'", client->name));
 					ikill(client->p->pid, SIGKILL);
@@ -132,6 +132,19 @@ k_shutdown(void)
 		j++;
 	}
 	DIAGS(("all clients have exited"));
+	if (C.Hlp)
+	{
+// 		display("C.Hlp=%lx, C.Aes=%lx", C.Hlp, C.Aes);
+		post_cevent(C.Hlp, CE_at_terminate, NULL, NULL, 0,0, NULL, NULL);
+// 		display("wait for hlp to terminate");
+		while ((volatile long)C.Hlp)
+		{
+// 			ndisplay(".");
+			Unblock(C.Hlp, 0, 0);
+			yield();
+		}
+// 		display("\r\n  ..done");
+	}
 //	display("done");
 #if 0
 	DIAGS(("Freeing open windows"));
@@ -186,7 +199,13 @@ k_shutdown(void)
 	if (C.Aes->tp)
 	{
 		post_cevent(C.Aes, CE_at_terminate, NULL,NULL, 0,0, NULL,NULL);
-		yield();
+// 		display("wait for aesthread to terminate");
+		while ((volatile long)C.Aes->tp)
+		{
+// 			ndisplay(".");
+			yield();
+		}
+// 		display("\r\n  ..done");
 	}
 // 	display("..done");
 
@@ -251,6 +270,9 @@ k_shutdown(void)
 	 * widget_tree's to C.Aes
 	 */
 	free_wtlist(C.Aes);
+
+	
+// 	exit_ob_render();
 
 // 	display("free C.Aes");
 	kfree(C.Aes);

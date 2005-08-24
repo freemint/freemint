@@ -27,9 +27,12 @@
 #ifndef _k_init_h
 #define _k_init_h
 
+#include "xa_types.h"
 #include "global.h"
 
 int k_init(unsigned long vm);
+void init_helpthread(enum locks lock, struct xa_client *client);
 void load_accs(void);
+char * xaaes_sysfile(const char *f);
 
 #endif /* _k_init_h */

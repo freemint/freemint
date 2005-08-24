@@ -1018,7 +1018,7 @@ wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms 
 									  obj,			/* Object	*/
 									  &md,			/* moose data	*/
 									  FBF_REDRAW|FBF_DO_SLIST,/* redraw flag	*/
-									  wind->rect_list.start,	/* rect list	*/
+									  &wind->rect_list.start,	/* rect list	*/
 									  NULL,			/* new state	*/
 									  &nxtobj,		/* next obj	*/
 									  &dc))			/* dc mask	*/
@@ -1083,7 +1083,7 @@ wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms 
 				unsigned short key = ev->key;
 
 				obtree = wt->tree;
-				nxtobj = form_cursor(wt, v, ev->key, wt->e.obj, true, wind->rect_list.start);
+				nxtobj = form_cursor(wt, v, ev->key, wt->e.obj, true, &wind->rect_list.start);
 				
 				if (nxtobj >= 0)
 				{
@@ -1136,7 +1136,7 @@ wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms 
 								  nxtobj,
 								  &md,
 								  FBF_REDRAW,
-								  wind->rect_list.start,
+								  &wind->rect_list.start,
 								  NULL,
 								  &nxtobj,
 								  &dc))

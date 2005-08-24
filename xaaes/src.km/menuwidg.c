@@ -102,7 +102,7 @@ change_title(Tab *tab, int state)
 
 	obtree->ob_x = k->rdx;
 	obtree->ob_y = k->rdy;
-
+	wt->rend_flags |= WTR_ROOTMENU;
 	obj_change(wt,
 		   C.Aes->vdi_settings,
 		   t, 2,
@@ -110,7 +110,8 @@ change_title(Tab *tab, int state)
 		   obtree[t].ob_flags,
 		   true,
 		   NULL,
-		   k->rl_bar);
+		   tab->wind ? tab->wind->rect_list.start : k->rl_bar);
+	wt->rend_flags &= ~WTR_ROOTMENU;
 }
 
 static void
@@ -488,14 +489,14 @@ static struct appmenu *appmenu = NULL;
 static OBJECT *appmenu_ob = NULL;
 static size_t appmenusize = 0;
 
-static const OBJECT drop_box =
+const OBJECT drop_box =
 {
 	-1, 1, 2,			/* Object 0  */
 	G_BOX, OF_NONE, OS_SHADOWED,
 	{ 0x00FF1100L },
 	0, 0, 12, 2
 };
-static const OBJECT drop_choice =	/* Object 1 to n */
+const OBJECT drop_choice =	/* Object 1 to n */
 {
 	0,-1,-1,
 	G_STRING, OF_NONE, OS_NORMAL,
@@ -634,12 +635,12 @@ built_desk_popup(enum locks lock, short x, short y)
 		}
 	}
 
-	if (split == n-1)		/* dont want to see split when last */
+	if (split == n - 1)		/* dont want to see split when last */
 		n--;
 
 	Sema_Dn(clients);
 	DIAGS(("built_desk_popup: building object.."));
-	obs = n+1;
+	obs = n + 1;
 	ob = appmenu_ob;
 
 	ob[0] = drop_box;
@@ -685,11 +686,11 @@ built_desk_popup(enum locks lock, short x, short y)
 		if (m > xw)
 			xw = m;
 
-		ob[j].ob_next = j+1;
+		ob[j].ob_next = j + 1;
 		ob[j].ob_y = i;
 	}
-	ob[obs-1].ob_flags|=OF_LASTOB;
-	ob[obs-1].ob_next = 0;
+	ob[obs - 1].ob_flags |= OF_LASTOB;
+	ob[obs - 1].ob_next = 0;
 
 	xw++;
 	for (i = 0; i < obs; i++)
@@ -1041,9 +1042,9 @@ display_popup(Tab *tab, XA_TREE *wt, int item, short rdx, short rdy)
 
 			tab->scroll = true;
 
-			r = calc_window(tab->lock, C.Aes, WC_WORK, tp, created_for_AES|created_for_POPUP, mg, true, r);
+			r = calc_window(tab->lock, tab->client/*C.Aes*/, WC_WORK, tp, created_for_AES|created_for_POPUP, mg, true, r);
 			tp |= TOOLBAR|VSLIDE|UPARROW|DNARROW/*|STORE_BACK*/;
-			r = calc_window(tab->lock, C.Aes, WC_BORDER, tp, created_for_AES|created_for_POPUP, mg, true, r);
+			r = calc_window(tab->lock, tab->client/*C.Aes*/, WC_BORDER, tp, created_for_AES|created_for_POPUP, mg, true, r);
 			
 			//if (r.y < root_window->wa.y)
 			//	r.y = root_window->wa.y;
@@ -1825,7 +1826,9 @@ Display_menu_widg(struct xa_window *wind, struct xa_widget *widg, const RECT *cl
 		//if (wind->nolist && (wind->dial & created_for_POPUP))
 		//{
 			//set_clip(&wind->wa);
+			wt->rend_flags |= WTR_POPUP;
 			draw_object_tree(0, wt, NULL, wind->vdi_settings, widg->start, MAX_DEPTH, NULL);
+			wt->rend_flags &= ~WTR_POPUP;
 			//clear_clip();
 		//}
 		//else
@@ -1837,7 +1840,9 @@ Display_menu_widg(struct xa_window *wind, struct xa_widget *widg, const RECT *cl
 		obtree->ob_y = widg->ar.y; //wt->rdy;
 		//obtree->ob_height = widg->r.h - 1;
 		obtree->ob_width = obtree[obtree[0].ob_head].ob_width = widg->ar.w;
+		wt->rend_flags |= WTR_ROOTMENU;
 		draw_object_tree(0, wt, NULL, wind->vdi_settings, 0, MAX_DEPTH, NULL);
+		wt->rend_flags &= ~WTR_ROOTMENU;
 		write_menu_line(wind->vdi_settings, (RECT*)&widg->ar); //obtree->ob_x);	/* HR: not in standard menu's object tree */
 	}
 }
@@ -2233,7 +2238,6 @@ menuclick(Tab *tab)
 
 	cancel_pop_timeouts();
 	DIAG((D_menu, NULL, "menuclick: tab=%lx", tab));
-	
 	m = find_menu_object(tab, k->pop_item, k->pdx, k->pdy, &k->drop);
 	if (m > 0 && k->clicks < 2 && is_attach(menu_client(tab), k->wt, m, NULL))
 	{
@@ -2242,6 +2246,6 @@ menuclick(Tab *tab)
 	}
 	else if (k->select)
 		tab = k->select(tab);
-	
+
 	return tab;
 }

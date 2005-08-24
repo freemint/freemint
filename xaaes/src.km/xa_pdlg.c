@@ -120,7 +120,7 @@ create_new_pdlg(struct xa_client *client, struct xa_window *wind)
 		struct scroll_info *list = NULL;
 
 		bzero(pdlg, sizeof(*pdlg));
-		add_xa_data(&client->xa_data, pdlg, delete_pdlg_info);
+		add_xa_data(&client->xa_data, pdlg, NULL, delete_pdlg_info);
 
 		mtree = duplicate_obtree(C.Aes, ResourceTree(C.Aes_rsc, WDLG_PDLG), 0);
 		if (mtree)
