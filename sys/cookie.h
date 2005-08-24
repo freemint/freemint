@@ -46,6 +46,7 @@ long	del_rsvfentry	(char *name);
 /* TOS cookies */
 # define COOKIE__CPU	0x5f435055L
 # define COOKIE__VDO	0x5f56444fL
+# define COOKIE__VDI	0x5f564449L
 # define COOKIE__FPU	0x5f465055L
 # define COOKIE__FDC	0x5f464443L
 # define COOKIE__SND	0x5f534e44L
@@ -66,6 +67,7 @@ long	del_rsvfentry	(char *name);
 # define COOKIE_XHDI	0x58484449L
 # define COOKIE_SCSI	0x53435349L
 # define COOKIE_NVDI	0x4e564449L
+# define COOKIE_NOVA	0x4e4f5641L
 # define COOKIE_FSMC	0x46534d43L
 # define COOKIE_RSVF	0x52535646L
 # define COOKIE_FSEL	0x4653454CL
