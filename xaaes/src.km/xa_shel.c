@@ -771,7 +771,7 @@ XA_shel_write(enum locks lock, struct xa_client *client, AESPB *pb)
 					 * compared to full shutdown is that ACC also
 					 * get AP_TERM
 					 */
-						quit_all_apps(lock, client);
+						quit_all_apps(lock, client, AP_TERM);
 						pb->intout[0] = 1;
 						break;
 					}
@@ -783,7 +783,7 @@ XA_shel_write(enum locks lock, struct xa_client *client, AESPB *pb)
 					/* full shutdown */
 					case 2:
 					{
-						quit_all_apps(lock, client);
+						quit_all_apps(lock, client, AP_TERM);
 						pb->intout[0] = 1;
 						break;
 					}
