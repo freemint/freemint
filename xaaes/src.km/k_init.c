@@ -343,20 +343,46 @@ k_init(unsigned long vm)
 		{
 			if ((vm & 0x80000000) && mvdi_api.dispatch)
 			{
-				/* Ozk:
+				long ret;
+				/* Ozk:  Resolution Change on the Milan;
+				 * 
 				 * I'm guessing like never before here; I found out that one can select
 				 * the resolution by stuffing the device ID in work_out[45] and then
 				 * open VDI device 5, just like we do it for the Falcon. However, this
 				 * often caused the Milan VDI to freeze up real good. Then I found out
-				 * that on the Milan, vcheckmode() not only checks the validity of the
+				 * that on _my_ Milan, vcheckmode() not only checks the validity of the
 				 * passed device ID, it actually sets this mode to be the one to use
 				 * when one opens physical workstation 1! And it works every time.
 				 * We could use vsetmode() too, but that sets the resolution immediately,
 				 * a thing I didnt like much.
 				 * Hopefully this will work on all Milans!
+				 * Update: Ofcourse this didnt work on all Milans!
 				 */
-// 				vcheckmode(vm & 0xffff);
-				vsetmode(vm & 0xffff);
+				
+				/*
+				 * First try...
+				 */
+// 				vcheckmode(vm & 0xffff);	/* Works on my Milan - 040 w/s3 trio */
+								/* Didnt work on Vido's Milan - 060 w/rage. Didnt change res*/
+				/*
+				 * Second try...		 * Works on my Milan - 040 w/s3 trio
+				 *				 * Didnt work on Vido's Milan - 060 w/rage. System freeze!
+				 */
+// 				vsetmode(vm & 0xffff);
+				
+				/*
+				 * Third try...			 * Works with some resolutio on my Milan - VERY unstable. Whe
+				 * This is the same as		 * it freezes, it freezes so good I have to use reset to recover
+				 * on the Falcon		 * Not tested on Vido's 060 w/rage Milan
+				 */
+// 				mode = 5;
+// 				work_out[45] = vm & 0xffffL;
+
+				/*
+				 * Fourth try...		* This works perfect on _my_ milan. Dont know how it works on
+				 *				* other machines yet...
+				 */
+				mvdi_device(vm & 0x0000ffffL, 0L, DEVICE_SETDEVICE, (long *)&ret);
 			}
 			else if ((vm & 0x80000000) && nova_data && nova_data->valid)
 			{

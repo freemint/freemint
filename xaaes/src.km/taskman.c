@@ -289,7 +289,7 @@ cur_client(SCROLL_INFO *list)
 }
 
 static void
-send_terminate(enum locks lock, struct xa_client *client)
+send_terminate(enum locks lock, struct xa_client *client, short reason)
 {
 	if (client->type & APP_ACCESSORY)
 	{
@@ -300,7 +300,7 @@ send_terminate(enum locks lock, struct xa_client *client)
 		 */
 		send_app_message(lock, NULL, client, AMQ_CRITICAL, QMF_CHKDUP,
 				 AC_CLOSE,    0, 0, client->p->pid,
-				 client->p->pid, 0, 0, 0);
+				 client->p->pid, reason, 0, 0);
 	}
 
 	/* XXX
@@ -309,11 +309,11 @@ send_terminate(enum locks lock, struct xa_client *client)
 	DIAGS(("send AP_TERM to %s", c_owner(client)));
 	send_app_message(lock, NULL, client, AMQ_CRITICAL, QMF_CHKDUP,
 			 AP_TERM,     0,       0, client->p->pid,
-			 client->p->pid, AP_TERM, 0, 0);
+			 client->p->pid, reason/*AP_TERM*/, 0, 0);
 }
 
 void
-quit_all_apps(enum locks lock, struct xa_client *except)
+quit_all_apps(enum locks lock, struct xa_client *except, short reason)
 {
 	struct xa_client *client;
 
@@ -325,7 +325,7 @@ quit_all_apps(enum locks lock, struct xa_client *except)
 		if (is_client(client) && client != except)
 		{
 			DIAGS(("shutting down %s", c_owner(client)));
-			send_terminate(lock, client);
+			send_terminate(lock, client, reason);
 		}
 	}
 
@@ -333,7 +333,7 @@ quit_all_apps(enum locks lock, struct xa_client *except)
 }
 
 void
-quit_all_clients(enum locks lock, struct cfg_name_list *except_nl, struct xa_client *except_cl)
+quit_all_clients(enum locks lock, struct cfg_name_list *except_nl, struct xa_client *except_cl, short reason)
 {
 	struct xa_client *client, *dsk = NULL;
 
@@ -360,7 +360,7 @@ quit_all_clients(enum locks lock, struct cfg_name_list *except_nl, struct xa_cli
 		    !isin_namelist(except_nl, client->proc_name, 8, NULL, NULL))
 		{
 			DIAGS(("Shutting down %s", c_owner(client)));
-			send_terminate(lock, client);
+			send_terminate(lock, client, reason);
 		}
 	}
 	Sema_Dn(clients);
@@ -420,7 +420,7 @@ taskmanager_form_exit(struct xa_client *Client,
 			DIAGS(("taskmanager: TM_TERM for %s", c_owner(client)));
 
 			if (is_client(client))
-				send_terminate(lock, client);
+				send_terminate(lock, client, AP_TERM);
 
 			object_deselect(wt->tree + TM_TERM);
 			redraw_toolbar(lock, task_man_win, TM_TERM);
@@ -463,7 +463,7 @@ taskmanager_form_exit(struct xa_client *Client,
 		case TM_QUITAPPS:
 		{
 			DIAGS(("taskmanager: quit all apps"));
-			quit_all_apps(lock, NULL);
+			quit_all_apps(lock, NULL, AP_TERM);
 
 			object_deselect(wt->tree + TM_QUITAPPS);
 			redraw_toolbar(lock, task_man_win, TM_QUITAPPS);
@@ -1901,7 +1901,7 @@ do_system_menu(enum locks lock, int clicked_title, int menu_item)
 		/* Quit all applications */
 		case SYS_MN_QUITAPP:
 			DIAGS(("Quit all Apps"));
-			quit_all_apps(lock, NULL);
+			quit_all_apps(lock, NULL, AP_TERM);
 			break;
 
 		/* Quit XaAES */
