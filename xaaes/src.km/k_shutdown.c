@@ -86,7 +86,7 @@ k_shutdown(void)
 
 	/* send all applications AP_TERM */
 //	display("quit all apps..");
-	quit_all_apps(NOLOCKING, NULL);
+	quit_all_apps(NOLOCKING, NULL, (C.shutdown & RESOLUTION_CHANGE) ? AP_RESCHG : AP_TERM);
 //	display("done");
 
 	/* wait until the clients are gone */
