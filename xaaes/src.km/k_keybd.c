@@ -376,7 +376,7 @@ kernel_key(enum locks lock, struct rawkey *key)
 				nl = cfg.ctlalta;
 			
 			DIAGS(("Quit all apps by CtlAlt A"));
-			quit_all_clients(lock, nl, NULL);
+			quit_all_clients(lock, nl, NULL, AP_TERM);
 			return true;
 		}
 		case 'Q':
