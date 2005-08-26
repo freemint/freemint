@@ -322,7 +322,7 @@ quit_all_apps(enum locks lock, struct xa_client *except, short reason)
 
 	FOREACH_CLIENT(client)
 	{
-		if (is_client(client) && client != except)
+		if (is_client(client) && client != C.Hlp && client != except)
 		{
 			DIAGS(("shutting down %s", c_owner(client)));
 			send_terminate(lock, client, reason);
@@ -594,7 +594,7 @@ reschg_destructor(enum locks lock, struct xa_window *wind)
 }
 
 static struct xa_window *
-create_reschgwind(enum locks lock, struct xa_client *client, struct widget_tree *wt, FormExit(*f) )
+create_dwind(enum locks lock, struct xa_client *client, struct widget_tree *wt, FormExit(*f), WindowDisplay(*d))
 {
 	struct xa_window *wind;
 	OBJECT *obtree = wt->tree;
@@ -628,7 +628,7 @@ create_reschgwind(enum locks lock, struct xa_client *client, struct widget_tree 
 	wt->exit_form = f; //milan_reschg_form_exit;
 
 	/* Set the window destructor */
-	wind->destructor = reschg_destructor;
+	wind->destructor = d; //reschg_destructor;
 
 	return wind;
 }
@@ -739,7 +739,7 @@ open_reschange(enum locks lock, struct xa_client *client)
 			wt = new_widget_tree(client, obtree);
 		if (wt)
 		{
-			wind = create_reschgwind(lock, client, wt, resmode_form_exit);
+			wind = create_dwind(lock, client, wt, resmode_form_exit, reschg_destructor);
 			if (wind)
 			{
 				set_resmode_obj(wt, cfg.videomode);
@@ -876,7 +876,7 @@ open_falcon_reschange(enum locks lock, struct xa_client *client)
 			wt = new_widget_tree(client, obtree);
 		if (wt)
 		{
-			wind = create_reschgwind(lock, client, wt, reschg_form_exit);
+			wind = create_dwind(lock, client, wt, reschg_form_exit, reschg_destructor);
 			if (wind)
 			{
 				set_reschg_obj(wt, (unsigned long)cfg.videomode);
@@ -1352,7 +1352,7 @@ open_milan_reschange(enum locks lock, struct xa_client *client)
 
 			p->current[1] = milan_setdevid(wt, p, p->curr_devid);
 			
-			wind = create_reschgwind(lock, client, wt, milan_reschg_form_exit);
+			wind = create_dwind(lock, client, wt, milan_reschg_form_exit, reschg_destructor);
 			if (wind)
 			{
 				add_xa_data(&wind->xa_data, p, "milres_parm", delete_milres_parm);
@@ -1656,7 +1656,6 @@ exit:
 	
 	return NULL;
 }
-	
 
 void
 open_nova_reschange(enum locks lock, struct xa_client *client)
@@ -1676,7 +1675,7 @@ open_nova_reschange(enum locks lock, struct xa_client *client)
 		{
 			p->current[1] = milan_setdevid(wt, p, p->curr_devid);
 			
-			wind = create_reschgwind(lock, client, wt, nova_reschg_form_exit);
+			wind = create_dwind(lock, client, wt, nova_reschg_form_exit, reschg_destructor);
 			if (wind)
 			{
 				add_xa_data(&wind->xa_data, p, "milres_parm", delete_milres_parm);
@@ -1695,6 +1694,136 @@ open_nova_reschange(enum locks lock, struct xa_client *client)
 failure:
 	delete_milres_parm(p);
 	
+}
+
+/*
+ * client still running dialog
+ */
+static struct xa_window *csr_win = NULL;
+
+static int
+csr_destructor(enum locks lock, struct xa_window *wind)
+{
+	csr_win = NULL;
+	return true;
+}
+
+static void
+csr_form_exit(struct xa_client *Client,
+		      struct xa_window *wind,
+		      struct widget_tree *wt,
+		      struct fmd_result *fr)
+{
+	enum locks lock = 0;
+
+	Sema_Up(clients);
+	lock |= clients;
+	
+	wt->current = fr->obj;
+	wt->which = 0;
+
+	switch (fr->obj)
+	{
+		case KORW_WAIT:
+		{
+			if (C.csr_client)
+			{
+				send_terminate(lock, C.csr_client, (C.shutdown & RESOLUTION_CHANGE) ? AP_RESCHG : AP_TERM);
+				set_shutdown_timeout(1000); //addroottimeout(1000L, shutdown_timeout, 1);
+				C.csr_client = NULL;
+			}
+			else
+				set_shutdown_timeout(1);
+
+			object_deselect(wt->tree + KORW_WAIT);
+			redraw_toolbar(lock, wind, KORW_WAIT);
+			close_window(lock, wind);
+			delayed_delete_window(lock, wind);
+			break;
+		}
+		case KORW_KILL:
+		{
+			object_deselect(wt->tree + KORW_KILL);
+			redraw_toolbar(lock, wind, KORW_KILL);
+
+			/* and release */
+			close_window(lock, wind);
+			delayed_delete_window(lock, wind);
+			if (C.csr_client) ikill(C.csr_client->p->pid, SIGKILL);
+			C.csr_client = NULL;
+			set_shutdown_timeout(500); //addroottimeout(500L, shutdown_timeout, 1);
+			break;
+		}
+	}
+	Sema_Dn(clients);
+}
+
+static void
+open_csr(enum locks lock, struct xa_client *client, struct xa_client *running)
+{
+	struct xa_window *wind;
+	XA_TREE *wt;
+	OBJECT *obtree;
+
+	if (!csr_win)
+	{
+		C.csr_client = running;
+		obtree = ResourceTree(C.Aes_rsc, KILL_OR_WAIT);
+
+		obtree[KORW_APPNAME].ob_spec.free_string = running->proc_name;
+		wt = obtree_to_wt(client, obtree);
+		if (!wt)
+			wt = new_widget_tree(client, obtree);
+		if (wt)
+		{
+			wind = create_dwind(lock, client, wt, csr_form_exit, csr_destructor);
+			if (wind)
+			{
+				open_window(lock, wind, wind->r);
+				csr_win = wind;
+			}
+		}
+	}
+	else if (csr_win != window_list)
+	{
+		top_window(lock, true, false, csr_win, (void *)-1L);
+	}
+}
+
+void
+CE_open_csr(enum locks lock, struct c_event *ce, bool cancel)
+{
+	if (!cancel)
+	{
+		open_csr(0, ce->client, ce->ptr1);
+	}
+}
+
+void
+CE_abort_csr(enum locks lock, struct c_event *ce, bool cancel)
+{
+	if (!cancel)
+	{
+		if (csr_win)
+		{
+			close_window(lock, csr_win);
+			delayed_delete_window(lock, csr_win);
+			set_shutdown_timeout(1000); //addroottimeout(1000, shutdown_timeout, 1);
+			C.csr_client = NULL;
+		}
+	}
+}
+
+static bool
+cancelcsr(struct c_event *ce, long arg)
+{
+	return true;
+}
+void
+cancel_csr(struct xa_client *running)
+{
+	cancel_CE(C.Hlp, CE_open_csr, cancelcsr, (long)running);
+	set_shutdown_timeout(1000); //addroottimeout(1000, shutdown_timeout, 1);
 }
 
 static void
