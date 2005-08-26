@@ -490,6 +490,14 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 	 * Clear if client was exclusively waiting for mouse input
 	 */
 	client->status |= CS_EXITING;
+
+	if (C.csr_client == client)
+	{
+		post_cevent(C.Hlp, CE_abort_csr, client, NULL, 0,0, NULL,NULL);
+	}
+	else
+		cancel_csr(client);
+
 	if (S.wait_mouse == client)
 	{
 		S.wm_count = 0;
