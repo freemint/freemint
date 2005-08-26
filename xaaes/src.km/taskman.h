@@ -28,6 +28,8 @@
 #define _taskman_h
 
 #include "global.h"
+#include "xa_types.h"
+
 void quit_all_apps(enum locks lock, struct xa_client *except, short reason);
 void quit_all_clients(enum locks lock, struct cfg_name_list *except_nl, struct xa_client *except_cl, short reason);
 
@@ -42,6 +44,10 @@ void open_reschange(enum locks lock, struct xa_client *client);
 void open_milan_reschange(enum locks lock, struct xa_client *client);
 void open_nova_reschange(enum locks lock, struct xa_client *client);
 void open_falcon_reschange(enum locks lock, struct xa_client *client);
+void CE_open_csr(enum locks lock, struct c_event *ce, bool cancel);
+void CE_abort_csr(enum locks lock, struct c_event *ce, bool cancel);
+void cancel_csr(struct xa_client *running);
+
 void update_tasklist(enum locks lock);
 
 void open_imgload(enum locks lock);

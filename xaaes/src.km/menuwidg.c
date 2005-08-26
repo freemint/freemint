@@ -138,23 +138,14 @@ change_entry(Tab *tab, int state)
 
 	if (k->popw)
 	{
-		struct xa_rect_list *rl = k->popw->rect_list.start;
-		
-		DIAGS(("change_entry: got popw"));
-		
-		while (rl)
-		{
-			obj_change(wt,
-				   k->popw->vdi_settings,
-				   t, 1 | 0x8000,
-				   state,
-				   obtree[t].ob_flags,
-				   true,
-				   &k->popw->wa,
-				   rl);
-			
-			rl = rl->next;
-		}
+		obj_change(wt,
+			   k->popw->vdi_settings,
+			   t, 1 | 0x8000,
+			   state,
+			   obtree[t].ob_flags,
+			   true,
+			   &k->popw->wa,
+			   k->popw->rect_list.start);
 	}
 	else
 	{
