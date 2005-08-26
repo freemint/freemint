@@ -83,7 +83,7 @@ k_shutdown(void)
 	long j = 0;
 
 	DIAGS(("Cleaning up ready to exit...."));
-
+#if 0
 	/* send all applications AP_TERM */
 //	display("quit all apps..");
 	quit_all_apps(NOLOCKING, NULL, (C.shutdown & RESOLUTION_CHANGE) ? AP_RESCHG : AP_TERM);
@@ -132,6 +132,7 @@ k_shutdown(void)
 		j++;
 	}
 	DIAGS(("all clients have exited"));
+#endif
 	if (C.Hlp)
 	{
 // 		display("C.Hlp=%lx, C.Aes=%lx", C.Hlp, C.Aes);

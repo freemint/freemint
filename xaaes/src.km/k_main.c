@@ -724,13 +724,6 @@ alert_input(enum locks lock)
 	}
 }
 
-void
-dispatch_shutdown(int flags)
-{
-	C.shutdown = QUIT_NOW | flags;
-	wakeselect(C.Aes->p);
-}
-
 static void k_exit(void);
 static void restore_sigs(void);
 static void setup_common(void);
@@ -960,10 +953,105 @@ static MAGX_COOKIE magx_cookie =
 };
 #endif
 
+static TIMEOUT *sdt = NULL;
+static short shutdown_started = 0;
+static short shutdown_step;
+
+static void
+sshutdown_timeout(struct proc *p, long arg)
+{
+	sdt = NULL;
+
+	if (C.update_lock || S.clients_exiting)
+	{
+		/* we need to delay */
+		struct timeout *t;
+
+		t = set_shutdown_timeout(100);
+		if (t)
+			t->arg = arg;
+	}
+	else
+	{
+		if (!(C.shutdown & SHUTTING_DOWN))
+		{
+			shutdown_step = 0;
+			quit_all_apps(NOLOCKING, NULL, (C.shutdown & RESOLUTION_CHANGE) ? AP_RESCHG : AP_TERM);
+			C.shutdown |= SHUTTING_DOWN;
+			set_shutdown_timeout(1000);
+		}
+		else
+		{
+			struct xa_client *client, *flag = NULL;
+
+			if (shutdown_step == 0)
+			{
+				FOREACH_CLIENT(client)
+				{
+					if (client != C.Aes && client != C.Hlp)
+					{
+						flag = client;
+						Unblock(client, 1, 1);
+					}
+				}
+				shutdown_step = 1;
+				set_shutdown_timeout(1000);
+			}
+			else
+			{
+				FOREACH_CLIENT(client)
+				{
+					if (!(client->status & CS_EXITING) && client != C.Aes && client != C.Hlp)
+					{
+						flag = client;
+						break;
+					}
+				}
+				if (flag)
+				{
+					post_cevent(C.Hlp, CE_open_csr, client, NULL, 0,0, NULL,NULL);
+				}
+			}
+			if (!flag)
+			{
+				C.shutdown |= EXIT_MAINLOOP;
+				wakeselect(C.Aes->p);
+			}
+		}
+	}
+}
+
+struct timeout *
+set_shutdown_timeout(long delta)
+{
+	if (sdt)
+		cancelroottimeout(sdt);
+	if (!(C.shutdown & EXIT_MAINLOOP) && shutdown_started)
+		sdt = addroottimeout(delta, sshutdown_timeout, 1);
+	return sdt;
+}
+
+void
+dispatch_shutdown(int flags)
+{
+	if (!shutdown_started)
+	{
+		C.shutdown = QUIT_NOW | flags;
+		shutdown_started = 1;
+		set_shutdown_timeout(0); //addroottimeout(0L, shutdown_timeout, 1);
+	}
+
+// 	C.shutdown = QUIT_NOW | flags;
+// 	wakeselect(C.Aes->p);
+}
+
 void
 k_main(void *dummy)
 {
 	int wait = 1;
+
+	shutdown_started = 0;
+	sdt = NULL;
 
 	/*
 	 * setup kernel thread
@@ -1293,8 +1381,13 @@ k_main(void *dummy)
 			update_locked() ? update_locked()->pid : 0,
 			mouse_locked() ? mouse_locked()->pid : 0));
 
-		if (C.shutdown & QUIT_NOW)
-			break;
+// 		if (C.shutdown & QUIT_NOW)
+// 			break;
+
+// 		if (C.shutdown & (QUIT_NOW|RESOLUTION_CHANGE))
+// 		{
+// 			to_shutdown = addroottimeout(0L, shutdown_timeout, 1);
+// 		}
 
 		if (fs_rtn > 0)
 		{
@@ -1321,18 +1414,19 @@ k_main(void *dummy)
 		if (S.deleted_windows.first)
 			do_delayed_delete_window(lock);
 	}
-	while (!(C.shutdown & (QUIT_NOW|RESOLUTION_CHANGE)));
+	while (!(C.shutdown & EXIT_MAINLOOP)); //(QUIT_NOW|RESOLUTION_CHANGE)));
 
 	DIAGS(("**** Leave kernel for shutdown"));
 	wait = 0;
-
+	if (sdt)
+		cancelroottimeout(sdt);
+	sdt = NULL;
 leave:
 	if (wait)
 	{
 		display("press any key to continue ...");
 		_c_conin();
 	}
-
 	k_exit();
 }
 
