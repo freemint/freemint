@@ -423,6 +423,26 @@ menu = leave
 #cltalta_survivors = "_aes_shell_", "taskbar ", "toswin2 "
 
 #
+# kill_wo_question = <list of app-names>
+#
+# 'app-names' is the filename part of the program file, padded with
+# spaces to fit 8 characters. This is NOT the 'nice' name. So, if your
+# Toswin2 binary is named "tw2.app", you use "tw2     ". Each app-name
+# is separated with comma.
+# 
+# This will allow you to specify applications which should be killed without
+# question during shutdown. It is necessary because many apps dont react to
+# the AP_TERM message, leaving the AES waiting for a maximum amount of time
+# each time the user wants to quit or change resolution. Very annoying for
+# the user, to say the least! Applications found in this list will be
+# brutally killed immediately, so make sure you dont add clean apps to this
+# list!
+# Application authors: Make sure your apps dont end up on this list! :)
+#
+#kill_wo_question = "procalc", "mintsett"
+# 
+
+#
 # clipboard = <path>   # path to clipboard
 # accpath   = <path>   # path from which accs are loaded
 # launcher  = <path>   # path to tos program launcher

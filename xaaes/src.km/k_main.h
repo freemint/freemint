@@ -37,6 +37,7 @@
 void ceExecfunc(enum locks lock, struct c_event *ce, bool cancel);
 // void shutdown_timeout(struct proc *p, long arg);
 struct timeout * set_shutdown_timeout(long delta);
+void kick_shutdn_if_last_client(void);
 
 void cancel_cevents(struct xa_client *client);
 bool CE_exists(struct xa_client *client, void *f);
