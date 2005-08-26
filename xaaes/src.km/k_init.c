@@ -587,6 +587,7 @@ k_init(unsigned long vm)
 		display("ERROR: Can't load system resource file '%s'", cfg.rsc_name);
 		return -1;
 	}
+	set_syspalette(C.P_handle, screen.palette);
 
 	/*
 	 * Version check the aessys resouce
@@ -596,10 +597,10 @@ k_init(unsigned long vm)
 		
 		if ((ob_count_objs(about, 0) < RSC_VERSION)   ||
 		     about[RSC_VERSION].ob_type != G_TEXT     ||
-		    (strcmp(object_get_tedinfo(about + RSC_VERSION)->te_ptext, "0.0.2")))
+		    (strcmp(object_get_tedinfo(about + RSC_VERSION)->te_ptext, "0.0.3")))
 		{
 			display("ERROR: Outdated AESSYS resource file (%s) - update to recent version!", cfg.rsc_name);
-			display("       also make sure you read CHANGES.txt!!");
+// 			display("       also make sure you read CHANGES.txt!!");
 			return -1;
 		}
 	}

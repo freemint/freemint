@@ -1137,8 +1137,8 @@ XA_graf_handle(enum locks lock, struct xa_client *client, AESPB *pb)
 	pb->intout[0] = C.P_handle;
 	pb->intout[1] = screen.c_max_w;
 	pb->intout[2] = screen.c_max_h;
-	pb->intout[3] = screen.c_max_w+2;
-	pb->intout[4] = screen.c_max_h+2;
+	pb->intout[3] = screen.c_max_w + 2;
+	pb->intout[4] = screen.c_max_h + 2;
 
 #if GENERATE_DIAGS
 	if (client)

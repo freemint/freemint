@@ -1729,7 +1729,7 @@ csr_form_exit(struct xa_client *Client,
 			if (C.csr_client)
 			{
 				send_terminate(lock, C.csr_client, (C.shutdown & RESOLUTION_CHANGE) ? AP_RESCHG : AP_TERM);
-				set_shutdown_timeout(1000); //addroottimeout(1000L, shutdown_timeout, 1);
+				set_shutdown_timeout(3000);
 				C.csr_client = NULL;
 			}
 			else
@@ -1746,12 +1746,15 @@ csr_form_exit(struct xa_client *Client,
 			object_deselect(wt->tree + KORW_KILL);
 			redraw_toolbar(lock, wind, KORW_KILL);
 
-			/* and release */
 			close_window(lock, wind);
 			delayed_delete_window(lock, wind);
-			if (C.csr_client) ikill(C.csr_client->p->pid, SIGKILL);
+			if (C.csr_client)
+			{
+				C.csr_client->status |= CS_SIGKILLED;
+				ikill(C.csr_client->p->pid, SIGKILL);
+			}
 			C.csr_client = NULL;
-			set_shutdown_timeout(500); //addroottimeout(500L, shutdown_timeout, 1);
+			set_shutdown_timeout(1);
 			break;
 		}
 	}
@@ -1808,7 +1811,6 @@ CE_abort_csr(enum locks lock, struct c_event *ce, bool cancel)
 		{
 			close_window(lock, csr_win);
 			delayed_delete_window(lock, csr_win);
-			set_shutdown_timeout(1000); //addroottimeout(1000, shutdown_timeout, 1);
 			C.csr_client = NULL;
 		}
 	}
@@ -1817,13 +1819,17 @@ CE_abort_csr(enum locks lock, struct c_event *ce, bool cancel)
 static bool
 cancelcsr(struct c_event *ce, long arg)
 {
-	return true;
+	if ((long)C.csr_client == arg)
+	{
+		C.csr_client = NULL;
+		return true;
+	}
+	return false;
 }
 void
 cancel_csr(struct xa_client *running)
 {
 	cancel_CE(C.Hlp, CE_open_csr, cancelcsr, (long)running);
-	set_shutdown_timeout(1000); //addroottimeout(1000, shutdown_timeout, 1);
 }
 
 static void

@@ -973,43 +973,86 @@ sshutdown_timeout(struct proc *p, long arg)
 	}
 	else
 	{
+		struct xa_client *client;
+
 		if (!(C.shutdown & SHUTTING_DOWN))
 		{
+			/*
+			 * Step one: send all running apps AP_TERM or AC_CLOSE
+			 *
+			 */
 			shutdown_step = 0;
+
+			FOREACH_CLIENT(client)
+			{
+				if (isin_namelist(cfg.kwq, client->proc_name, 8, NULL, NULL))
+				{
+					client->status |= CS_SIGKILLED;
+					ikill(client->p->pid, SIGKILL);
+				}
+			}
+			
 			quit_all_apps(NOLOCKING, NULL, (C.shutdown & RESOLUTION_CHANGE) ? AP_RESCHG : AP_TERM);
 			C.shutdown |= SHUTTING_DOWN;
 			set_shutdown_timeout(1000);
 		}
 		else
 		{
-			struct xa_client *client, *flag = NULL;
+			struct xa_client *flag = NULL;
 
 			if (shutdown_step == 0)
 			{
+				/*
+				 * Step two: Brutally kill clients whose name is found in the
+				 *           kill-without-question list. Unblock other clients
+				 *           incase they were blocked somewhere.
+				 *           Then give apps 10 seconds to shutdown.
+				 */
 				FOREACH_CLIENT(client)
 				{
 					if (client != C.Aes && client != C.Hlp)
 					{
-						flag = client;
-						Unblock(client, 1, 1);
-					}
-				}
-				shutdown_step = 1;
-				set_shutdown_timeout(1000);
-			}
-			else
-			{
-				FOREACH_CLIENT(client)
-				{
-					if (!(client->status & CS_EXITING) && client != C.Aes && client != C.Hlp)
-					{
-						flag = client;
-						break;
+						if (isin_namelist(cfg.kwq, client->proc_name, 8, NULL,NULL))
+						{
+							client->status |= CS_SIGKILLED;
+							ikill(client->p->pid, SIGKILL);
+						}
+						else
+						{
+							flag = client;
+							Unblock(client, 1, 1);
+						}
 					}
 				}
 				if (flag)
 				{
-					post_cevent(C.Hlp, CE_open_csr, client, NULL, 0,0, NULL,NULL);
+					shutdown_step = 1;
+					set_shutdown_timeout(10000);
+				}
+			}
+			else
+			{
+				/*
+				 * Step 3: Here we brutally kill any clients whose name is listed in
+				 *         the kill-without-question list, and ask the user what to
+				 *         do with other clients that havent termianted yet.
+				 */
+				FOREACH_CLIENT(client)
+				{
+					if (!(client->status & (CS_EXITING|CS_SIGKILLED)) && client != C.Aes && client != C.Hlp)
+					{
+						if (isin_namelist(cfg.kwq, client->proc_name, 8, NULL, NULL))
+							ikill(client->p->pid, SIGKILL);
+						else
+						{
+							flag = client;
+							break;
+						}
+					}
+				}
+				if (flag)
+				{
+						post_cevent(C.Hlp, CE_open_csr, flag, NULL, 0,0, NULL,NULL);
 				}
 			}
 			if (!flag)
@@ -1025,10 +1068,34 @@ struct timeout *
 set_shutdown_timeout(long delta)
 {
 	if (sdt)
+	{
 		cancelroottimeout(sdt);
+		sdt = NULL;
+	}
 	if (!(C.shutdown & EXIT_MAINLOOP) && shutdown_started)
 		sdt = addroottimeout(delta, sshutdown_timeout, 1);
 	return sdt;
+}
+
+void
+kick_shutdn_if_last_client(void)
+{
+	if (shutdown_started)
+	{
+		struct xa_client *c, *f = NULL;
+		FOREACH_CLIENT(c)
+		{
+			if (c == C.Aes || c == C.Hlp)
+				continue;
+			else
+			{
+				f = c;
+				break;
+			}
+		}
+		if (!f)
+			set_shutdown_timeout(0);
+	}
 }
 
 void
@@ -1038,7 +1105,7 @@ dispatch_shutdown(int flags)
 	{
 		C.shutdown = QUIT_NOW | flags;
 		shutdown_started = 1;
-		set_shutdown_timeout(0); //addroottimeout(0L, shutdown_timeout, 1);
+		set_shutdown_timeout(0);
 	}
 
 // 	C.shutdown = QUIT_NOW | flags;
@@ -1309,11 +1376,11 @@ k_main(void *dummy)
 	/*
 	 * Load Accessories
 	 */
-
+#if 0
 	DIAGS(("loading accs"));
 	load_accs();
 	DIAGS(("loading accs done!"));
-
+#endif
 
 	/*
 	 * startup shell and autorun
@@ -1324,6 +1391,17 @@ k_main(void *dummy)
 		enum locks lock = winlist|envstr|pending;
 		Path parms;
 		int i;
+
+		if (cfg.cnf_shell)
+		{
+			parms[0] = '\0';
+			if (cfg.cnf_shell_arg)
+				parms[0] = sprintf(parms+1, sizeof(parms)-1, "%s", cfg.cnf_shell_arg);
+
+			C.DSKpid = launch(lock, 0, 0, 0, cfg.cnf_shell, parms, C.Aes);
+			if (C.DSKpid > 0)
+				strcpy(C.desk, cfg.cnf_shell);
+		}
 
 		for (i = sizeof(cfg.cnf_run)/sizeof(cfg.cnf_run[0]) - 1; i >= 0; i--)
 		{
@@ -1338,7 +1416,7 @@ k_main(void *dummy)
 				launch(lock, 0, 0, 0, cfg.cnf_run[i], parms, C.Aes);
 			}
 		}
-
+#if 0
 		if (cfg.cnf_shell)
 		{
 			parms[0] = '\0';
@@ -1349,8 +1427,12 @@ k_main(void *dummy)
 			if (C.DSKpid > 0)
 				strcpy(C.desk, cfg.cnf_shell);
 		}
+#endif
 	}
 	DIAGS(("loading shell and autorun done!"));
+	DIAGS(("loading accs"));
+	load_accs();
+	DIAGS(("loading accs done!"));
 
 	C.Aes->waiting_for |= XAWAIT_MENU;
 
