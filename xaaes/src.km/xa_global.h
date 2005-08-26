@@ -401,6 +401,7 @@ struct config
 
 	struct helpserver *helpservers;	/* configured helpservers */
 	struct cfg_name_list *ctlalta;
+	struct cfg_name_list *kwq;	/* Apps listed here are killed without question upon shutdowns */
 
 	/* postponed cnf things */
 	char *cnf_shell;		/* SHELL= */

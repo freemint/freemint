@@ -696,6 +696,8 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 		
 // 	if (d) display("18");
 	S.clients_exiting--;
+	
+	kick_shutdn_if_last_client();
 
 	DIAG((D_appl, NULL, "client exit done"));
 // 	if (d) display("end");
