@@ -65,6 +65,7 @@ static PCB_A	pCB_app_options;
 static PCB_A    pCB_cancel;
 static PCB_A    pCB_filters;
 static PCB_A	pCB_ctlalta_survivors;
+static PCB_A	pCB_kill_without_question;
 static PCB_T    pCB_menu;
 static PCB_A    pCB_helpserver;
 
@@ -117,6 +118,7 @@ static struct parser_item parser_tab[] =
 	{ "CANCEL",                PI_V_A,   pCB_cancel			},
 	{ "FILTERS",               PI_V_A,   pCB_filters		},
 	{ "CTLALTA_SURVIVORS",	   PI_V_A,   pCB_ctlalta_survivors	},
+	{ "KILL_WO_QUESTION",	   PI_V_A,   pCB_kill_without_question	},
 	{ "MENU",                  PI_V_T,   pCB_menu			},
 	{ "HELPSERVER",            PI_V_A,   pCB_helpserver		},
 	
@@ -688,7 +690,17 @@ pCB_ctlalta_survivors(char *line)
 		addto_namelist(&cfg.ctlalta, s);
 	}
 }
-	
+static void
+pCB_kill_without_question(char *line)
+{
+	char *s;
+
+	while ((s = isolate_strarg(&line)))
+	{
+		DIAGS(("pCB_kill_without_question: Got string '%s'", s));
+		addto_namelist(&cfg.kwq, s);
+	}
+}	
 /*----------------------------------------------------------------------------*/
 static void
 pCB_menu(char *line)
