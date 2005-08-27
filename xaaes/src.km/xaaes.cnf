@@ -79,21 +79,20 @@
 # to show up the resolution-selection-menu.
 # 
 #video = <mode>
+#video = 4
 
 #
 # setenv name val ..... set up environment
 #
 #setenv NAME value
-
-#
-# use $HOME in shell_find
-#
-usehome = yes
-
-#
-# double click time (ms)
-#
-#dc_time = 50
+setenv ACCPATH		C:\
+setenv ACCEXT		ACC,ACX
+setenv GEMEXT		PRG,APP,GTP,OVL,SYS
+setenv TOSEXT		TOS,TTP
+setenv TOSRUN		u:\opt\toswin2\tw-call.app
+setenv OLGAMANAGER 	u:\c\system\olga\olga.app
+setenv GEMJINGPATH	u:\d\sound\gemjing\gemjing.prg
+setenv SDL_VIDEODRIVER	gem
 
 #
 # naes_cookie = <bool>          (default is 'no')
@@ -112,8 +111,22 @@ usehome = yes
 # See more info about this in newcalls.txt, it is possible to detect
 # that the cookie is a fake one (and thus really the AES is XaAES).
 #
-#naes_cookie = yes
+naes_cookie = yes
 
+#
+# use $HOME in shell_find
+#
+usehome = yes
+
+#
+# dc_time = <time in ms>        (default is 50)
+# 
+# double click time (ms)
+#
+dc_time = 35
+
+#
+# mp_timegap = <time in ms>     (default is 3)
 #
 # Mouse packet time-gap. This is the time (in 200hz timer ticks) that
 # must pass after a button-release event before a new button-press
@@ -123,7 +136,7 @@ usehome = yes
 # the right-button after a drag-session (Thing's directory-window, for
 # example), and the "extra-click" fires some unwanted action.
 #
-#mp_timegap (default is 3)
+#mp_timegap = 5
 
 #
 # lrmb_swap = <bool>            (default is 'no')
@@ -156,34 +169,38 @@ usehome = yes
 # 1 and 20. Per now, this actually sets the number of WM_ARROWED messages
 # send to the application per turn of the wheel.
 #
-#vertical_wheel_id = 0
-#vertical_wheel_amount = 3
-#horizontal_wheel_id = 1
-#horizontal_wheel_amount = 3
+vertical_wheel_id = 0
+vertical_wheel_amount = 3
+horizontal_wheel_id = 1
+horizontal_wheel_amount = 3
 
+#
+# redraw_timeout <time in ms>   (default is 500)
 #
 # redraw_timeout. This is the time in ms XaAES will wait for clients to
 # service WM_REDRAW messages between actions that generate redraws,
 # like moving/closing/opening/etc. windows. If a client is busy and this
-# 'times out'happens, it is marked as lagging and XaAES will service the
+# 'times out' happens, it is marked as lagging and XaAES will service the
 # redraws for it. When this happens, XaAES just draws the areas not
 # serviced with dark gray color until the client re-enters evnt_multi().
 # For slow machines, this timeout must be higher (longer) than on faster
 # machines.
 #
-# redraw_timeout (default is 500)
+redraw_timeout = 2000
 
-# 
 #
-# menu = pull or push or leave + optional nolocking
-# default is 
+# menu = <string>               (default is 'leave')
+#
+# <string> can be 'pull', 'push' or 'leave'
 #
 menu = leave
 
 #
-# popscroll - number of lines of a popup above which it will be made scrollable
+# popscroll = <value>           (default is 0)
 #
-#popscroll = 0
+# Set number of lines of a popup above which it will be made scrollable
+#
+#popscroll = 16
 
 #
 # menupop_pids = <bool>         (default = 'no')
@@ -200,7 +217,7 @@ menu = leave
 # If set to 'no' (the default), only the client's nice name (when available,
 # else its 'proc_name') is listed.
 #
-#menupop_pids = yes
+menupop_pids = no
 
 #
 # popup_timeout - Time in milliseconds before popups opens.  (default = 10)
@@ -225,18 +242,18 @@ menu = leave
 #                                         normal AES
 #
 #
-#popup_timeout = 100
-#popout_timeout = 1000
+popup_timeout = 10
+popout_timeout = 1000
 
 #
-# 
-#
 # toppage = bold or faint
+#
+# NO EFFECT
 #
 #toppage = faint
 
 #
-# alert_windows = <value>            (default is 0xffff)
+# alert_windows = <value>       (default is 0xffff)
 #
 # THE IMPLEMENTATION IS NOT DEFINATE AND ONLY PARTIAL AS OF NOW!!!
 #
@@ -259,13 +276,17 @@ menu = leave
 #alert_windows = 0xffff
 
 #
-# next_active = 'client' or 'window' (default is 'window')
+# next_active = <string>        (default is 'window')
+#
+# <string> can be 'client' or 'window'.
 #
 # Selects wether the previous active application or
 # the owner of the previous topped (or only) window
 # should be set active upon client termination.
-# next_active = client
+#
+next_active = client
 
+#- DEPRECIATED
 #-
 #- close_lastwind = 'client' or 'window' (default is 'window')
 #-
@@ -391,6 +412,18 @@ menu = leave
 # its only window should always top the previously topped app.
 #
 #app_options = taskbar, inhibit_hide = yes, clwtna = yes
+#
+app_options = default,thinwork = true, winframe_size = 0, xa_nomove = false
+app_options = aessys, thinwork = true, winframe_size = 0, xa_nomove = false
+app_options = autos401,xa_nomove = true
+app_options = ataricq,thinwork = true, winframe_size = 0
+app_options = jinnee, naesff = true
+app_options = nwatch, thinwork = true, winframe_size = 0
+app_options = popwatch, thinwork = true, winframe_size = 0
+app_options = taskbar, inhibit_hide = yes, clwtna = true
+app_options = amail, naesff = true
+app_options = mymail, thinwork = true, winframe_size = 0
+app_options = highwire, winframe_size = 0
 
 #
 # ctlalta_survivors = <list of app-names>
@@ -421,6 +454,8 @@ menu = leave
 # a ctrl-alt-a action;
 #
 #cltalta_survivors = "_aes_shell_", "taskbar ", "toswin2 "
+#
+ctlalta_survivors = "toswin2 ", "strngsrv", "_aes_shell_", "taskbar "
 
 #
 # kill_wo_question = <list of app-names>
@@ -441,6 +476,7 @@ menu = leave
 #
 #kill_wo_question = "procalc", "mintsett"
 # 
+kill_wo_question = "procalc ","mintsett"
 
 #
 # clipboard = <path>   # path to clipboard
@@ -449,39 +485,45 @@ menu = leave
 #
 clipboard = c:\clipbrd\
 accpath   = c:\
-#launcher  = u:\opt\toswin2\tw-call.prg
+launcher  = u:\opt\toswin2\tw-call.prg
 
-#
 #
 # widgets  = <file>
 # resource = <file>
 #
-#widgets  = adam.rsc
 #resource = xa_mono.rsc
+#widgets = widgets/homwdg.rsc
+#widgets = widgets/styl_wdg.rsc
+#widgets = widgets/nine-ozk.rsc
+#widtets = widgets/baroqwdg.rsc
+#widgets = widgets/ronb_wdg.rsc
+#widgets = widgets/magicwdg.rsc
 
 #
 #
-use_rsc_palette = yes
+#use_rsc_palette = yes
 
 #
 #
-remap_cicons = yes
+#remap_cicons = yes
 
 #
-# widget_auto_highlight = <bool> default: no
+# widget_auto_highlight = <bool> (default is 'no')
 #
 # When widget_auto_highlight is set true, standard window widget are
 # automatically highlighted when mouse hovers over them. This is still
 # very experimental, and widgets are not actually highlighted, they
 # are just animated - that is redrawn in SELECTED status.
 #
-#widget_auto_highlight = yes
+widget_auto_highlight = no
 
 #
 # helpserver (like N.AES config, first is the default)
 #
 #helpserver = HYP,ST-GUIDE,d:\help\st-guide.prg
 #helpserver = HTM,CAB,e:\www\cab.app
+helpserver = HYP,HYP_View,c:\system\hyp_view\hyp_view.app
+helpserver = HTM,HighWire,d:\internet\www\highwire\highwire.app
 
 #
 # cancel = string,string
@@ -501,7 +543,6 @@ filters = *.*, *.[atpg]*, *.[chs]*, *.l*, *.o*
 #
 # defaults:
 #
-
 #font_id=1
 #standard_point=10
 #medium_point=9
@@ -511,33 +552,39 @@ filters = *.*, *.[atpg]*, *.[chs]*, *.l*, *.o*
 # start any other programs with run
 #
 #run <path>\<application>
+#run u:\opt\taskbar\taskbar.prg
+#run u:\c\system\strngsrv\strngsrv.prg
+#run u:\opt\toswin2\toswin2.app
 
 #
 # system shell
 #
-
 #
 #---------- Thing -----------
 #
-#setenv AVSERVER THING
-#setenv FONTSELECT THING
-#
-#setenv THINGDIR c:\thing\thing
+#setenv THINGDIR   u:\c\thing\thing
+#setenv AVSERVER	  "THING   "
+#setenv FONTSELECT "THING   "
 #shell = c:\thing\thing\thing.app
-
+#
+#---------- Thing 1.27 -----------
+#
+#setenv THINGDIR   u:\c\thing127.e\thing
+#setenv AVSERVER	  "THING   "
+#setenv FONTSELECT "THING   "
+#shell = c:\thing127.e\thing\thing.app
 #
 #---------- Jinnee ----------
 #
-#setenv AVSERVER JINNEE
-#setenv FONTSELECT JINNEE
+#setenv AVSERVER   "JINNEE  "
+#setenv FONTSELECT "JINNEE  "
 #
 #shell = c:\jinnee\jinnee.app
-
 #
 #--------- Teradesk ---------
 #
-#setenv AVSERVER DESKTOP
-#setenv FONTSELECT DESKTOP
+#setenv AVSERVER   "DESKTOP "
+#setenv FONTSELECT "DESKTOP "
 #
-#shell = c:\desktop\desktop.prg
-
+#shell = c:\teradesk.350\desktop.prg
+#shell = c:\teradesk.360\desktop.prg
