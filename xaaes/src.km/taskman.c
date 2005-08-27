@@ -300,7 +300,7 @@ send_terminate(enum locks lock, struct xa_client *client, short reason)
 		 */
 		send_app_message(lock, NULL, client, AMQ_CRITICAL, QMF_CHKDUP,
 				 AC_CLOSE,    0, 0, client->p->pid,
-				 client->p->pid, reason, 0, 0);
+				 client->p->pid, 0, 0, 0);
 	}
 
 	/* XXX
