@@ -439,13 +439,16 @@ k_init(unsigned long vm)
 		 *	problems on Hades with Nova VDI.
 		 */
 		{
-			unsigned long sc, cm;
-			cm = s_system(S_CTRLCACHE, 0L, -1L);
-			sc = s_system(S_CTRLCACHE, -1L, 0L);
-			s_system(S_CTRLCACHE, sc & ~3, cm);
-			
+			unsigned long sc = 0, cm = 0;
+			if (nova_data)
+			{
+				cm = s_system(S_CTRLCACHE, 0L, -1L);
+				sc = s_system(S_CTRLCACHE, -1L, 0L);
+				s_system(S_CTRLCACHE, sc & ~3, cm);
+			}
 			v_opnwk(work_in, &(C.P_handle), work_out);
-			s_system(S_CTRLCACHE, sc, cm);
+			if (nova_data)
+				s_system(S_CTRLCACHE, sc, cm);
 		}
 		
 		DIAGS(("Physical work station opened: %d", C.P_handle));
@@ -475,6 +478,8 @@ k_init(unsigned long vm)
 	}
 
 	vs_clip(C.P_handle, 0, (short *)&screen.r);
+	vswr_mode(C.P_handle, MD_REPLACE);
+
 	/*
 	 * Open us a virtual workstation for XaAES to play with
 	 */
@@ -518,6 +523,10 @@ k_init(unsigned long vm)
 
 	vq_extnd(v->handle, 1, work_out);	/* Get extended information */
 	screen.planes = work_out[4];		/* number of planes in the screen */
+	
+	set_defaultpalette(C.P_handle);
+	set_defaultpalette(v->handle);
+	get_syspalette(C.P_handle, screen.palette);
 
 	screen.pixel_fmt = detect_pixel_format(v);
 
@@ -563,7 +572,8 @@ k_init(unsigned long vm)
 	DIAGS(("Display Device: Phys_handle=%d, Virt_handle=%d", C.P_handle, v->handle));
 	DIAGS((" size=[%d,%d], colours=%d, bitplanes=%d", screen.r.w, screen.r.h, screen.colours, screen.planes));
 
-	get_syspalette(C.P_handle, screen.palette);
+	
+// 	get_syspalette(C.P_handle, screen.palette);
 
 	/* Load the system resource files */
 	if (!(resource_name = xaaes_sysfile(cfg.rsc_name)))
