@@ -80,59 +80,8 @@ void
 k_shutdown(void)
 {
 	struct xa_vdi_settings *v = C.Aes->vdi_settings;
-	long j = 0;
 
 	DIAGS(("Cleaning up ready to exit...."));
-#if 0
-	/* send all applications AP_TERM */
-//	display("quit all apps..");
-	quit_all_apps(NOLOCKING, NULL, (C.shutdown & RESOLUTION_CHANGE) ? AP_RESCHG : AP_TERM);
-//	display("done");
-
-	/* wait until the clients are gone */
-//	display("wait for all clients to exit...");
-	DIAGS(("Wait for all clients to exit ..."));
-	for (;;)
-	{
-		struct xa_client *client;
-		int flag = 1;
-
-		FOREACH_CLIENT(client)
-		{
-			if (client != C.Aes && client != C.Hlp)
-			{
-				flag = 0;
-				DIAGS(("client '%s' still running", client->name));
-				Unblock(client, 1, 1);
-			}
-		}
-
-		if (flag)
-			break;
-
-		//yield();
-		/* sleep a second */
-		//f_select(5000L, NULL, 0, 0);
-		
-		nap(50);
-
-		if (j > 1000)
-		{
-			DIAGS(("Cleaning up clients"));
-
-			FOREACH_CLIENT(client)
-			{
-				if (client != C.Aes && client != C.Hlp)
-				{
-					DIAGS(("killing client '%s'", client->name));
-					ikill(client->p->pid, SIGKILL);
-				}
-			}
-		}
-		j++;
-	}
-	DIAGS(("all clients have exited"));
-#endif
 	if (C.Hlp)
 	{
 // 		display("C.Hlp=%lx, C.Aes=%lx", C.Hlp, C.Aes);
@@ -147,34 +96,6 @@ k_shutdown(void)
 // 		display("\r\n  ..done");
 	}
 //	display("done");
-#if 0
-	DIAGS(("Freeing open windows"));
-	{
-		struct xa_window *w;
-
-		w = window_list;
-		while (w)
-		{
-			struct xa_window *next = w->next;
-			close_window(NOLOCKING, w);
-			delete_window(NOLOCKING, w);
-			w = next;
-		}
-	}
-
-	DIAGS(("Freeing closed windows"));
-	{
-		struct xa_window *w;
-
-		w = S.closed_windows.first;
-		while (w)
-		{
-			struct xa_window *next = w->next;
-			delete_window(NOLOCKING, w);
-			w = next;
-		}
-	}
-#endif
 	DIAGS(("Removing all remaining windows"));
 //	display("remove all remaining windows");
 	

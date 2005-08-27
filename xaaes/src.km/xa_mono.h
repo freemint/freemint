@@ -103,7 +103,8 @@
 #define KILL_OR_WAIT     9   /* Formular/Dialog */
 #define KORW_WAIT        3   /* BUTTON in Baum KILL_OR_WAIT */
 #define KORW_KILL        4   /* BUTTON in Baum KILL_OR_WAIT */
-#define KORW_APPNAME     5   /* STRING in Baum KILL_OR_WAIT */
+#define KORW_APPNAME     5   /* TEXT in Baum KILL_OR_WAIT */
+#define KORW_KILLEMALL   7   /* BUTTON in Baum KILL_OR_WAIT */
 
 #define WDLG_FNTS        10  /* Formular/Dialog */
 #define FNTS_XCANCEL     1   /* BUTTON in Baum WDLG_FNTS */
