@@ -40,7 +40,7 @@
 #include "xa_global.h"
 
 #include "trnfm.h"
-#if 0
+#if 1
 static short systempalette[] =
 {
 0x03e8, 0x03e8, 0x03e8, 0x0000, 0x0000, 0x0000, 0x03e8, 0x0000, 
@@ -1625,9 +1625,15 @@ get_syspalette(short vdih, struct rgb_1000 *palette)
 		ind = vq_color(vdih, i, 0, rgb);
 		if (ind >= 0)
 		{
+// 			display("idx %03d, %04d, %04d, %04d", i, rgb[0], rgb[1], rgb[2]);
 			palette[i] = *(struct rgb_1000 *)&rgb;
 		}
 	}
+}
+void
+set_defaultpalette(short vdih)
+{
+	set_syspalette(vdih, (struct rgb_1000 *)systempalette);
 }
 
 /*

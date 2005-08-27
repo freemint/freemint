@@ -801,15 +801,15 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 		 */
 		if (maxplanes >= 8 && *earray && *earray != -1L)
 		{
-			short work_in[15] = { 1,1,1,1,1, 1,1,1,1,1, 2,0,0,0,0 };
-			short work_out[58];
+// 			short work_in[15] = { 1,1,1,1,1, 1,1,1,1,1, 2,0,0,0,0 };
+// 			short work_out[58];
 			struct xa_rsc_rgb *p;
 			int i;
 			unsigned short mask;
 			bool pal = false;
 
-			vdih = C.P_handle;
-			v_opnvwk(work_in, &vdih, work_out);
+// 			vdih = C.P_handle;
+// 			v_opnvwk(work_in, &vdih, work_out);
 
 			DIAG((D_rsrc, client, "Color palette present"));
 			(long)p = (long)(*earray + (long)base);
@@ -855,8 +855,8 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 				fix_rsc_palette((struct xa_rsc_rgb *)rscs->palette);
 				if (set_pal && cfg.set_rscpalette)
 				{
-					set_syspalette(client->vdi_settings->handle, rscs->palette);
-					get_syspalette(client->vdi_settings->handle, screen.palette);
+					set_syspalette(C.P_handle, rscs->palette);
+					get_syspalette(C.P_handle, screen.palette);
 				}
 			}
 		}
@@ -872,8 +872,8 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 	 * Close the virtual workstation that handled the RSC
 	 * color palette (if present).
 	 */
-	if (vdih != client->vdi_settings->handle)
-		v_clsvwk(vdih);
+// 	if (vdih != client->vdi_settings->handle)
+// 		v_clsvwk(vdih);
 
 	fix_trees(client, base, (OBJECT **)(unsigned long)(base + hdr->rsh_trindex), hdr->rsh_ntree, designWidth, designHeight);
 	
