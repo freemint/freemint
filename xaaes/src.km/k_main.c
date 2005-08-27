@@ -1353,7 +1353,7 @@ k_main(void *dummy)
 		enum locks lock = winlist|envstr|pending;
 		Path parms;
 		int i;
-
+		
 		if (cfg.cnf_shell)
 		{
 			parms[0] = '\0';
@@ -1391,11 +1391,12 @@ k_main(void *dummy)
 		}
 #endif
 	}
+#if 1
 	DIAGS(("loading shell and autorun done!"));
 	DIAGS(("loading accs"));
 	load_accs();
 	DIAGS(("loading accs done!"));
-
+#endif
 	C.Aes->waiting_for |= XAWAIT_MENU;
 
 	/*

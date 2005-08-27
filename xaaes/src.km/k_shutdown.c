@@ -150,11 +150,6 @@ k_shutdown(void)
 	/* To demonstrate the working on multiple resources. */
 	while (C.Aes->resources)
 		FreeResources(C.Aes, NULL, NULL);
-#if 0
-	FreeResources(C.Aes, NULL, NULL);/* first: widgets */
-	FreeResources(C.Aes, NULL, NULL);/* then: big resource */
-	FreeResources(C.Aes, NULL, NULL);
-#endif
 	/* just to be sure */
 	if (C.button_waiter == C.Aes)
 		C.button_waiter = NULL;
@@ -175,14 +170,14 @@ k_shutdown(void)
 		kfree(C.Aes->mnu_clientlistname);
 
 // 	display("free wtlist");
-#if 1
+	
 	if (C.Aes->xmwt && C.Aes->wtheme_handle)
 	{
 		exit_client_widget_theme(C.Aes);
 		(*C.Aes->xmwt->exit_module)(C.Aes->wtheme_handle);
 		C.Aes->wtheme_handle = NULL;
 	}
-#endif
+	
 	/*
 	 * Free the wind_calc() cache
 	 */
@@ -192,7 +187,6 @@ k_shutdown(void)
 	 * widget_tree's to C.Aes
 	 */
 	free_wtlist(C.Aes);
-
 	
 // 	exit_ob_render();
 
@@ -245,10 +239,6 @@ k_shutdown(void)
 	xaaes_kmalloc_leaks();
 	nkc_exit();
 
-#if 0
-	/* Remove semaphores: */
-	destroy_semaphores(log);
-#endif
 
 #if GENERATE_DIAGS
 	DIAGS(("C.shutdown = 0x%x", C.shutdown));
@@ -311,15 +301,18 @@ k_shutdown(void)
 			 *	problems on Hades with Nova VDI.
 			 */
 			{
-				unsigned long sc, cm;
-				cm = s_system(S_CTRLCACHE, 0L, -1L);
-				sc = s_system(S_CTRLCACHE, -1L, 0L);
-				s_system(S_CTRLCACHE, sc & ~3, cm);
+				unsigned long sc = 0, cm = 0;
+				if (nova_data)
+				{
+					cm = s_system(S_CTRLCACHE, 0L, -1L);
+					sc = s_system(S_CTRLCACHE, -1L, 0L);
+					s_system(S_CTRLCACHE, sc & ~3, cm);
+				}
 			
 				v_enter_cur(C.P_handle);	/* Ozk: Lets enter cursor mode */
 				v_clswk(C.P_handle);		/* Auto version must close the physical workstation */
-
-				s_system(S_CTRLCACHE, sc, cm);
+				if (nova_data)
+					s_system(S_CTRLCACHE, sc, cm);
 			}
 
 			display("\033e\033H");		/* Cursor enable, cursor home */
