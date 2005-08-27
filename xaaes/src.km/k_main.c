@@ -953,14 +953,10 @@ static MAGX_COOKIE magx_cookie =
 };
 #endif
 
-static TIMEOUT *sdt = NULL;
-static short shutdown_started = 0;
-static short shutdown_step;
-
 static void
 sshutdown_timeout(struct proc *p, long arg)
 {
-	sdt = NULL;
+	C.sdt = NULL;
 
 	if (C.update_lock || S.clients_exiting)
 	{
@@ -979,13 +975,15 @@ sshutdown_timeout(struct proc *p, long arg)
 		{
 			/*
 			 * Step one: send all running apps AP_TERM or AC_CLOSE
-			 *
+			 *           and brutally kill clients listed in the
+			 *           kill-without-question.
 			 */
-			shutdown_step = 0;
+			C.shutdown_step = 0;
+			C.shutdown |= SHUTTING_DOWN;
 
 			FOREACH_CLIENT(client)
 			{
-				if (isin_namelist(cfg.kwq, client->proc_name, 8, NULL, NULL))
+				if (!(client->status & CS_EXITING) && isin_namelist(cfg.kwq, client->proc_name, 8, NULL, NULL))
 				{
 					client->status |= CS_SIGKILLED;
 					ikill(client->p->pid, SIGKILL);
@@ -993,14 +991,13 @@ sshutdown_timeout(struct proc *p, long arg)
 			}
 			
 			quit_all_apps(NOLOCKING, NULL, (C.shutdown & RESOLUTION_CHANGE) ? AP_RESCHG : AP_TERM);
-			C.shutdown |= SHUTTING_DOWN;
 			set_shutdown_timeout(1000);
 		}
 		else
 		{
 			struct xa_client *flag = NULL;
 
-			if (shutdown_step == 0)
+			if (C.shutdown_step == 0)
 			{
 				/*
 				 * Step two: Brutally kill clients whose name is found in the
@@ -1012,7 +1009,7 @@ sshutdown_timeout(struct proc *p, long arg)
 				{
 					if (client != C.Aes && client != C.Hlp)
 					{
-						if (isin_namelist(cfg.kwq, client->proc_name, 8, NULL,NULL))
+						if (!(client->status & (CS_EXITING|CS_SIGKILLED)) && isin_namelist(cfg.kwq, client->proc_name, 8, NULL,NULL))
 						{
 							client->status |= CS_SIGKILLED;
 							ikill(client->p->pid, SIGKILL);
@@ -1026,8 +1023,8 @@ sshutdown_timeout(struct proc *p, long arg)
 				}
 				if (flag)
 				{
-					shutdown_step = 1;
-					set_shutdown_timeout(10000);
+					C.shutdown_step = 1;
+					set_shutdown_timeout(4000);
 				}
 			}
 			else
@@ -1041,7 +1038,7 @@ sshutdown_timeout(struct proc *p, long arg)
 				{
 					if (!(client->status & (CS_EXITING|CS_SIGKILLED)) && client != C.Aes && client != C.Hlp)
 					{
-						if (isin_namelist(cfg.kwq, client->proc_name, 8, NULL, NULL))
+						if ((C.shutdown & KILLEM_ALL) || isin_namelist(cfg.kwq, client->proc_name, 8, NULL, NULL))
 							ikill(client->p->pid, SIGKILL);
 						else
 						{
@@ -1067,20 +1064,24 @@ sshutdown_timeout(struct proc *p, long arg)
 struct timeout *
 set_shutdown_timeout(long delta)
 {
-	if (sdt)
+	if (C.sdt)
 	{
-		cancelroottimeout(sdt);
-		sdt = NULL;
+		cancelroottimeout(C.sdt);
+		C.sdt = NULL;
 	}
-	if (!(C.shutdown & EXIT_MAINLOOP) && shutdown_started)
-		sdt = addroottimeout(delta, sshutdown_timeout, 1);
-	return sdt;
+	if ((C.shutdown & (EXIT_MAINLOOP|SHUTDOWN_STARTED)) == SHUTDOWN_STARTED)
+		C.sdt = addroottimeout(delta, sshutdown_timeout, 1);
+	return C.sdt;
 }
 
+/*
+ * Called when a client is terminated to kicks shutdown if the client
+ * was the last one running
+ */
 void
 kick_shutdn_if_last_client(void)
 {
-	if (shutdown_started)
+	if ((C.shutdown & (SHUTDOWN_STARTED|EXIT_MAINLOOP)) == SHUTDOWN_STARTED)
 	{
 		struct xa_client *c, *f = NULL;
 		FOREACH_CLIENT(c)
@@ -1097,33 +1098,30 @@ kick_shutdn_if_last_client(void)
 			set_shutdown_timeout(0);
 	}
 }
-
+/*
+ * Initiate shutdown...
+ */
 void
 dispatch_shutdown(int flags)
 {
-	if (!shutdown_started)
+	if (!(C.shutdown & SHUTDOWN_STARTED))
 	{
-		C.shutdown = QUIT_NOW | flags;
-		shutdown_started = 1;
+		C.shutdown = SHUTDOWN_STARTED | flags;
 		set_shutdown_timeout(0);
 	}
-
-// 	C.shutdown = QUIT_NOW | flags;
-// 	wakeselect(C.Aes->p);
 }
 
+/*
+ * Main AESSYS thread...
+ */
 void
 k_main(void *dummy)
 {
 	int wait = 1;
 
-	shutdown_started = 0;
-	sdt = NULL;
-
 	/*
 	 * setup kernel thread
 	 */
-
 	C.AESpid = p_getpid();
 
 	/*
@@ -1164,52 +1162,16 @@ k_main(void *dummy)
 		}
 #endif
 	}
-#if 0
-	/* Ozk:
-	 * This was extremely not successful! :-) MagiC's fantastic "think I'll do this shel_write() mode like this insteadof
-	 * like MultiTOS's way" is the biggest problem.
-	 */
 	{
-		DIAGS(("Install 'magx' cookie.."));
-		if ( ((long)c_magx = m_xalloc(sizeof(*c_magx) + sizeof(MAGX_DOSVARS) + sizeof(MAGX_AESVARS) + 16, (4<<4)|(1<<3)|3) ))
-		{
-			MAGX_COOKIE *mc;
-			MAGX_DOSVARS *dv;
-			MAGX_AESVARS *av;
-			int *p;
-
-			mc = c_magx;
-			dv = (MAGX_DOSVARS *)((long)mc + sizeof(MAGX_COOKIE));
-			av = (MAGX_AESVARS *)((long)dv + sizeof(MAGX_DOSVARS));
-			p  = (int *)((long)av + sizeof(MAGX_AESVARS));
-			
-			memcpy(mc, &magx_cookie, sizeof(*mc));
-			mc->dosvars = dv;
-			mc->aesvars = av;
-			memcpy(dv, &magx_dosvars, sizeof(*dv));
-			memcpy(av, &magx_aesvars, sizeof(*av));
-			
-			p[0] = naes_cookie.time;
-			p[1] = naes_cookie.date;
-			dv->dos_time = (int *)&p[0];
-			dv->dos_date = (int *)&p[1];
-
-			if (s_system(S_SETCOOKIE, C_MAGX, (long)c_magx) != 0)
-			{
-				m_free(c_magx);
-				c_magx = NULL;
-				DIAGS(("Installing 'magx' cookie failed"));
-			}
-		}
-	}
-#endif
-	{
-		long vdo;
-
+		long tmp;
+		
 		C.reschange = NULL;
-		if (!(s_system(S_GETCOOKIE, COOKIE__VDO, (unsigned long)(&vdo))))
+		/*
+		 * Detect video hardware..
+		 */
+		if (!(s_system(S_GETCOOKIE, COOKIE__VDO, (unsigned long)(&tmp))))
 		{
-			switch (((vdo & 0xffff0000) >> 16))
+			switch (((tmp & 0xffff0000) >> 16))
 			{
 				case 0 ... 2:
 					C.reschange = open_reschange;
@@ -1220,29 +1182,29 @@ k_main(void *dummy)
 				default:;
 			}
 		}
-	}
-	
-	{
-		unsigned long mc;
-
+		
+		/*
+		 * see if we run on a Milan, in which case the _VDI cookie is present
+		 */
 		mvdi_api.dispatch = NULL;
-
-		if (!(s_system(S_GETCOOKIE, COOKIE__VDI, (unsigned long)&mc)))
+		if (!(s_system(S_GETCOOKIE, COOKIE__VDI, (unsigned long)&tmp)))
 		{
-			mvdi_api = *(struct cookie_mvdi *)mc;
+			mvdi_api = *(struct cookie_mvdi *)tmp;
 			C.reschange = open_milan_reschange;
-// 			display("found _VDI: Dispatch %lx(%lx)", mvdi_api.dispatch, mc->dispatch);
 		}
 		else
 		{
+			/*
+			 * No _VDI cookie, how about Nova VDI?
+			 */
 			if (!nova_data)
 			{
-				if (!(s_system(S_GETCOOKIE, COOKIE_NOVA, (unsigned long)&mc)))
+				if (!(s_system(S_GETCOOKIE, COOKIE_NOVA, (unsigned long)&tmp)))
 					nova_data = kmalloc(sizeof(struct nova_data));
 				
 				if (nova_data)
 				{
-					nova_data->xcb = (struct xcb *)mc;
+					nova_data->xcb = (struct xcb *)tmp;
 					nova_data->valid = false;
 				}
 			}
@@ -1353,7 +1315,7 @@ k_main(void *dummy)
 		}
 	}
 	/*
-	 *
+	 * Start AES help thread - will be dealing with AES windows.
 	 */
 	{
 		long tpc;
@@ -1463,14 +1425,6 @@ k_main(void *dummy)
 			update_locked() ? update_locked()->pid : 0,
 			mouse_locked() ? mouse_locked()->pid : 0));
 
-// 		if (C.shutdown & QUIT_NOW)
-// 			break;
-
-// 		if (C.shutdown & (QUIT_NOW|RESOLUTION_CHANGE))
-// 		{
-// 			to_shutdown = addroottimeout(0L, shutdown_timeout, 1);
-// 		}
-
 		if (fs_rtn > 0)
 		{
 			if (input_channels & (1UL << C.KBD_dev))
@@ -1496,13 +1450,13 @@ k_main(void *dummy)
 		if (S.deleted_windows.first)
 			do_delayed_delete_window(lock);
 	}
-	while (!(C.shutdown & EXIT_MAINLOOP)); //(QUIT_NOW|RESOLUTION_CHANGE)));
+	while (!(C.shutdown & EXIT_MAINLOOP));
 
 	DIAGS(("**** Leave kernel for shutdown"));
 	wait = 0;
-	if (sdt)
-		cancelroottimeout(sdt);
-	sdt = NULL;
+	if (C.sdt)
+		cancelroottimeout(C.sdt);
+	C.sdt = NULL;
 leave:
 	if (wait)
 	{
@@ -1606,14 +1560,6 @@ k_exit(void)
 		m_free(c_naes);
 		c_naes = NULL;
 	}
-#if 0
-	if (c_magx)
-	{
-		s_system(S_DELCOOKIE, C_MAGX, 0L);
-		m_free(c_magx);
-		c_magx = NULL;
-	}
-#endif
 // 	display("unreg trap2");
 	/*
 	 * deinstall trap #2 handler

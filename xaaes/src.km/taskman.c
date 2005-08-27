@@ -594,7 +594,7 @@ reschg_destructor(enum locks lock, struct xa_window *wind)
 }
 
 static struct xa_window *
-create_dwind(enum locks lock, struct xa_client *client, struct widget_tree *wt, FormExit(*f), WindowDisplay(*d))
+create_dwind(enum locks lock, XA_WIND_ATTR tp, char *title, struct xa_client *client, struct widget_tree *wt, FormExit(*f), WindowDisplay(*d))
 {
 	struct xa_window *wind;
 	OBJECT *obtree = wt->tree;
@@ -615,14 +615,15 @@ create_dwind(enum locks lock, struct xa_client *client, struct widget_tree *wt, 
 				do_winmesag, do_formwind_msg,
 				client,
 				false,
-				CLOSER|NAME|TOOLBAR|hide_move(&(client->options)),
+				tp | (title ? NAME : 0) | TOOLBAR | hide_move(&(client->options)),
 				created_for_AES,
 				client->options.thinframe,
 				client->options.thinwork,
 				r, NULL, NULL);
 
 	/* Set the window title */
-	set_window_title(wind, " Change Resolution ", false);
+	if (title)
+		set_window_title(wind, title, false);
 
 	wt = set_toolbar_widget(lock, wind, client, obtree, -1, 0/*WIP_NOTEXT*/, true, NULL, &or);
 	wt->exit_form = f; //milan_reschg_form_exit;
@@ -724,6 +725,8 @@ resmode_form_exit(struct xa_client *Client,
 	Sema_Dn(clients);
 }
 
+static char t_reschg[] = " Change Resolution ";
+
 void
 open_reschange(enum locks lock, struct xa_client *client)
 {
@@ -739,7 +742,7 @@ open_reschange(enum locks lock, struct xa_client *client)
 			wt = new_widget_tree(client, obtree);
 		if (wt)
 		{
-			wind = create_dwind(lock, client, wt, resmode_form_exit, reschg_destructor);
+			wind = create_dwind(lock, CLOSER, t_reschg, client, wt, resmode_form_exit, reschg_destructor);
 			if (wind)
 			{
 				set_resmode_obj(wt, cfg.videomode);
@@ -876,7 +879,7 @@ open_falcon_reschange(enum locks lock, struct xa_client *client)
 			wt = new_widget_tree(client, obtree);
 		if (wt)
 		{
-			wind = create_dwind(lock, client, wt, reschg_form_exit, reschg_destructor);
+			wind = create_dwind(lock, CLOSER, t_reschg, client, wt, reschg_form_exit, reschg_destructor);
 			if (wind)
 			{
 				set_reschg_obj(wt, (unsigned long)cfg.videomode);
@@ -1352,7 +1355,7 @@ open_milan_reschange(enum locks lock, struct xa_client *client)
 
 			p->current[1] = milan_setdevid(wt, p, p->curr_devid);
 			
-			wind = create_dwind(lock, client, wt, milan_reschg_form_exit, reschg_destructor);
+			wind = create_dwind(lock, CLOSER, t_reschg, client, wt, milan_reschg_form_exit, reschg_destructor);
 			if (wind)
 			{
 				add_xa_data(&wind->xa_data, p, "milres_parm", delete_milres_parm);
@@ -1675,7 +1678,7 @@ open_nova_reschange(enum locks lock, struct xa_client *client)
 		{
 			p->current[1] = milan_setdevid(wt, p, p->curr_devid);
 			
-			wind = create_dwind(lock, client, wt, nova_reschg_form_exit, reschg_destructor);
+			wind = create_dwind(lock, CLOSER, t_reschg, client, wt, nova_reschg_form_exit, reschg_destructor);
 			if (wind)
 			{
 				add_xa_data(&wind->xa_data, p, "milres_parm", delete_milres_parm);
@@ -1754,7 +1757,18 @@ csr_form_exit(struct xa_client *Client,
 				ikill(C.csr_client->p->pid, SIGKILL);
 			}
 			C.csr_client = NULL;
-			set_shutdown_timeout(1);
+			set_shutdown_timeout(0);
+			break;
+		}
+		case KORW_KILLEMALL:
+		{
+			object_deselect(wt->tree + KORW_KILLEMALL);
+			redraw_toolbar(lock, wind, KORW_KILLEMALL);
+			close_window(lock, wind);
+			delayed_delete_window(lock, wind);
+			C.shutdown |= KILLEM_ALL;
+			set_shutdown_timeout(0);
+			C.csr_client = NULL;
 			break;
 		}
 	}
@@ -1770,16 +1784,34 @@ open_csr(enum locks lock, struct xa_client *client, struct xa_client *running)
 
 	if (!csr_win)
 	{
+		TEDINFO *t;
+		
 		C.csr_client = running;
 		obtree = ResourceTree(C.Aes_rsc, KILL_OR_WAIT);
 
-		obtree[KORW_APPNAME].ob_spec.free_string = running->proc_name;
+		t = object_get_tedinfo(obtree + KORW_APPNAME);
+		if (running->name[0])
+		{
+			int i;
+			char *s = running->name;
+
+			while (*s && *s == ' ')
+				s++;
+
+			for (i = 0; i < 32 && (t->te_ptext[i] = *s++); i++)
+				;
+		}
+		else
+		{
+			strncpy(t->te_ptext, running->proc_name, 8);
+			t->te_ptext[8] = '\0';
+		}
 		wt = obtree_to_wt(client, obtree);
 		if (!wt)
 			wt = new_widget_tree(client, obtree);
 		if (wt)
 		{
-			wind = create_dwind(lock, client, wt, csr_form_exit, csr_destructor);
+			wind = create_dwind(lock, 0, " Shutdown ", client, wt, csr_form_exit, csr_destructor);
 			if (wind)
 			{
 				open_window(lock, wind, wind->r);

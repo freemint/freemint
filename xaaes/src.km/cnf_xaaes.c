@@ -101,7 +101,7 @@ static struct parser_item parser_tab[] =
 	{ "SMALL_POINT",           PI_R_S,   & cfg.small_font_point	},
 	{ "POPSCROLL",             PI_R_S,   & cfg.popscroll		},
 	{ "DC_TIME",               PI_R_S,   & cfg.double_click_time	},
-	{ "MP_TIMEGAP",            PI_R_S,   & cfg.mouse_packet_timegap},
+	{ "MP_TIMEGAP",            PI_R_S,   & cfg.mouse_packet_timegap },
 	{ "VIDEO",	           PI_R_S,   & cfg.videomode		},
 	{ "REDRAW_TIMEOUT",        PI_R_S,   & cfg.redraw_timeout, Range(0, 32000)	},
 	{ "POPUP_TIMEOUT",	   PI_R_S,   & cfg.popup_timeout, Range(0, 32000)	},
