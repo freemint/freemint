@@ -343,6 +343,7 @@ k_init(unsigned long vm)
 		{
 			if ((vm & 0x80000000) && mvdi_api.dispatch)
 			{
+				unsigned long sc, cm;
 				long ret;
 				/* Ozk:  Resolution Change on the Milan;
 				 * 
@@ -383,7 +384,11 @@ k_init(unsigned long vm)
 				 *				* other machines yet...
 				 */
 				
+				cm = s_system(S_CTRLCACHE, 0L, -1L);
+				sc = s_system(S_CTRLCACHE, -1L, 0L);
+				s_system(S_CTRLCACHE, sc & ~3, cm);
 				mvdi_device(vm & 0x0000ffffL, 0L, DEVICE_SETDEVICE, (long *)&ret);
+				s_system(S_CTRLCACHE, sc, cm);
 			}
 			else if ((vm & 0x80000000) && nova_data && nova_data->valid)
 			{
