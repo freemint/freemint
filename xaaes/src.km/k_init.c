@@ -383,12 +383,15 @@ k_init(unsigned long vm)
 				 * Fourth try...		* This works perfect on _my_ milan. Dont know how it works on
 				 *				* other machines yet...
 				 */
-				
-				cm = s_system(S_CTRLCACHE, 0L, -1L);
-				sc = s_system(S_CTRLCACHE, -1L, 0L);
-				s_system(S_CTRLCACHE, sc & ~3, cm);
-				mvdi_device(vm & 0x0000ffffL, 0L, DEVICE_SETDEVICE, (long *)&ret);
-				s_system(S_CTRLCACHE, sc, cm);
+// 				mvdi_device(vm & 0x0000ffff, 0L, DEVICE_SETDEVICE, (long *)&ret);
+				mode = 7;
+				work_out[45] = vm & 0x0000ffff;
+
+// 				cm = s_system(S_CTRLCACHE, 0L, -1L);
+// 				sc = s_system(S_CTRLCACHE, -1L, 0L);
+// 				s_system(S_CTRLCACHE, sc & ~3, cm);
+// 				mvdi_device(vm & 0x0000ffffL, 0L, DEVICE_SETDEVICE, (long *)&ret);
+// 				s_system(S_CTRLCACHE, sc, cm);
 			}
 			else if ((vm & 0x80000000) && nova_data && nova_data->valid)
 			{
