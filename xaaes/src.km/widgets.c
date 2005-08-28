@@ -902,11 +902,11 @@ iconify_grid(int i)
 	ic.x = screen.r.x;
 	ic.y = screen.r.y + screen.r.h - 1 - ic.h;
 
-	j = i/w;
+	j = i / w;
 	i %= w;
 
-	ic.x += i*ic.w;
-	ic.y -= j*ic.h;
+	ic.x += i * ic.w;
+	ic.y -= j * ic.h;
 
 	return ic;
 }
@@ -1023,7 +1023,6 @@ drag_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, cons
 					
 					if (wind->opts & XAWO_WCOWORK)
 						r = f2w(&wind->delta, &r, true);
-					
 					send_moved(lock, wind, AMQ_NORM, &r);
 				}
 
