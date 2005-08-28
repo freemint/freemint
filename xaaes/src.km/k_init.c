@@ -382,6 +382,7 @@ k_init(unsigned long vm)
 				 * Fourth try...		* This works perfect on _my_ milan. Dont know how it works on
 				 *				* other machines yet...
 				 */
+				
 				mvdi_device(vm & 0x0000ffffL, 0L, DEVICE_SETDEVICE, (long *)&ret);
 			}
 			else if ((vm & 0x80000000) && nova_data && nova_data->valid)
@@ -478,7 +479,6 @@ k_init(unsigned long vm)
 	}
 
 	vs_clip(C.P_handle, 0, (short *)&screen.r);
-	vswr_mode(C.P_handle, MD_REPLACE);
 
 	/*
 	 * Open us a virtual workstation for XaAES to play with
