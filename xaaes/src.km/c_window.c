@@ -264,15 +264,18 @@ inside_minmax(RECT *r, struct xa_window *wind)
 {
 	bool um = (wind->active_widgets & USE_MAX);
 
-	if (um && wind->max.w && r->w > wind->max.w)
-		r->w = wind->max.w;
-	if (wind->min.w && r->w < wind->min.w)
-		r->w = wind->min.w;
+	if (!(wind->window_status & XAWS_ICONIFIED))
+	{
+		if (um && wind->max.w && r->w > wind->max.w)
+			r->w = wind->max.w;
+		if (wind->min.w && r->w < wind->min.w)
+			r->w = wind->min.w;
 
-	if (um && wind->max.h && r->h > wind->max.h)
-		r->h = wind->max.h;
-	if (wind->min.h && r->h < wind->min.h)
-		r->h = wind->min.h;
+		if (um && wind->max.h && r->h > wind->max.h)
+			r->h = wind->max.h;
+		if (wind->min.h && r->h < wind->min.h)
+			r->h = wind->min.h;
+	}
 }
 
 void
