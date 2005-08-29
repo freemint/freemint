@@ -916,8 +916,8 @@ depack_img(char *name, XA_XIMG_HEAD *pic)
 // 			display("depack_img: size = %ld, width=%d", size, width);
 
 			/* if XIMG, read info */
-			if (pic->ximg.length >= ((sizeof(XIMG_header) >> 1) + (3 * 256)) &&
-			    pic->ximg.planes <= 8 && pic->ximg.magic == XIMG && pic->ximg.paltype == 0)
+			if (pic->ximg.planes <= 8 && pic->ximg.length >= ((sizeof(XIMG_header) >> 1) + (3 * (1 << (pic->ximg.planes)))) &&
+			    pic->ximg.magic == XIMG && pic->ximg.paltype == 0)
 			{
 				pal_size = (1 << pic->ximg.planes) * 3 * 2;
 				if((pic->palette = kmalloc(pal_size)))
@@ -958,11 +958,30 @@ end_depack:
 	if (fp)
 		kernel_close(fp);
 }
-		
+
+struct TrNfo
+{
+	short	shift;
+	short	half;
+	short	full;
+};
+static struct TrNfo from1_8[] =
+{
+	{0,0,0},
+	{8 + 7, 0, 1},		/* 1 */
+	{8 + 6, 1, 3},		/* 2 */
+	{8 + 5, 3, 7},		/* 3 */
+	{8 + 4, 7, 15},		/* 4 */
+	{8 + 3, 15, 31},	/* 5 */
+	{8 + 2, 31, 63},	/* 6 */
+	{8 + 1, 63, 127},	/* 7 */
+	{8 + 0, 127, 255},	/* 8 */
+};
+	
 static void
 from8b(void (*to)(struct rgb_1000 *, void **), struct rgb_1000 *pal, MFDB *src, MFDB *dst)
 {
-	int i, j, k, psize;
+	int i, j, k, psize, planes;
 	unsigned int palidx;
 	unsigned long val;
 	unsigned short *s_ptr, *src_ptr;
@@ -974,7 +993,8 @@ from8b(void (*to)(struct rgb_1000 *, void **), struct rgb_1000 *pal, MFDB *src, 
 	
 	psize = src->fd_wdwidth * src->fd_h;
 	src_ptr = src->fd_addr;
-	
+	planes = src->fd_nplanes;
+
 // 	display("psize = %d, src_ptr = %lx, d_ptr = %lx",
 // 		psize, src_ptr, *d_ptr);
 
@@ -984,26 +1004,29 @@ from8b(void (*to)(struct rgb_1000 *, void **), struct rgb_1000 *pal, MFDB *src, 
 		{
 			palidx = 0;
 			s_ptr = src_ptr;
-			for (j = 0; j < 8; j++)
+			for (j = 0; j < planes; j++)
 			{
 				palidx >>= 1;
 				palidx |= (*s_ptr & 0x8000);
 				*s_ptr <<= 1;
 				s_ptr += psize;
 			}
-			palidx >>= 8;
+			palidx >>= from1_8[planes].shift;
 			if (!pal)
 			{
 				struct rgb_1000 gp;
-				val = 255 - palidx;
-				val *= 1000; //palidx;
-				val += 127;
-				val /= 256;
+				val = from1_8[planes].full - palidx;
+				val *= 1000;
+				val += from1_8[planes].half;
+				val /= from1_8[planes].full + 1;
 				gp.red = gp.green = gp.blue = (val > 1000) ? 1000 : val;
 				(*to)(&gp, d_ptr);
 			}
 			else
 			{
+				if (src->fd_r1 && palidx < 15)
+					palidx = devtovdi8[palidx];
+					
 				col = pal + palidx;
 				(*to)(col, d_ptr);
 			}
@@ -1032,19 +1055,19 @@ from24b(void (*to)(struct rgb_1000 *, void **), struct rgb_1000 *pal, MFDB *src,
 			val = *(unsigned char *)src_ptr++;
 			val *= 1000;
 			val += 127;
-			val >>= 8; // /= 256;
+			val >>= 8;
 			ppal.red = val > 1000 ? 1000 : val;
 		
 			val = *(unsigned char *)src_ptr++;
 			val *= 1000;
 			val += 127;
-			val >>= 8; // /= 256;
+			val >>= 8;
 			ppal.green = val > 1000 ? 1000 : val;
 		
 			val = *(unsigned char *)src_ptr++;
 			val *= 1000;
 			val += 127;
-			val >>= 8; // /= 256;
+			val >>= 8;
 			ppal.blue = val > 1000 ? 1000 : val;
 
 			(*to)(&ppal, d_ptr);
@@ -1071,7 +1094,7 @@ from16b(void (*to)(struct rgb_1000 *, void **), struct rgb_1000 *pal, MFDB *src,
 		for (j = 0; j < src->fd_w; j++)
 		{
 			pix = *src_ptr++;
-			val = pix >> 11;
+			val = (pix >> 11) & 31;
 			val *= 1000;
 			val += 127;
 			val >>= 8;
@@ -1169,11 +1192,11 @@ load_image(char *name, MFDB *mimg)
 		{
 
 			ndisplay(", has palette");
-			if (ximg->planes == 8 && screen.planes == 8)
+			if (ximg->planes <= 8 && screen.planes == 8)
 			{
 				unsigned char cref[256];
 				ndisplay(",remap bitmap...");
-				build_pal_xref((struct rgb_1000 *)xa_img.palette, screen.palette, (unsigned char *)&cref, 256);
+				build_pal_xref((struct rgb_1000 *)xa_img.palette, screen.palette, (unsigned char *)&cref, (1 << msrc.fd_nplanes));
 				remap_bitmap_colindexes(&msrc, (unsigned char *)&cref);
 				ndisplay("OK!");
 			}
@@ -1181,6 +1204,30 @@ load_image(char *name, MFDB *mimg)
 		else
 			ndisplay(", no palette");
 		
+		if (ximg->planes < 8 && screen.planes == 8)
+		{
+			long newsize, oldsize;
+			char *newdata;
+
+			newsize = (long)(((msrc.fd_w + 15) >> 4) << 1) * msrc.fd_h * 8;
+			oldsize = (long)(((msrc.fd_w + 15) >> 4) << 1) * msrc.fd_h * msrc.fd_nplanes;
+			display("oldsize = %ld, newsize = %ld", oldsize, newsize);
+			if ((newdata = kmalloc(newsize)))
+			{
+				bzero(newdata, newsize);
+				memcpy(newdata, msrc.fd_addr, oldsize);
+				kfree(msrc.fd_addr);
+				msrc.fd_addr = xa_img.addr = newdata;
+				msrc.fd_nplanes = 8;
+			}
+			else
+			{
+				kfree(xa_img.addr);
+				mimg->fd_addr = NULL;
+				return;
+			}
+		}
+
 		*mimg = msrc;
 		mimg->fd_nplanes = screen.planes;
 		bmsize = (long)((long)mimg->fd_wdwidth * (mimg->fd_nplanes == 15 ? 16 : mimg->fd_nplanes) * mimg->fd_h) << 1;
@@ -1211,11 +1258,7 @@ load_image(char *name, MFDB *mimg)
 					
 					switch (msrc.fd_nplanes)
 					{
-					#if 0
-						case 01: from = from1b; break;
-						case 04: from = from4b; break;
-					#endif
-						case 8:	 from = from8b;  break;
+						case 1 ... 8: from = from8b;  break;
 // 						case 15: from = from15b; break;
  						case 16: from = from16b; break;
 						case 24: from = from24b; break;
@@ -1279,7 +1322,112 @@ map_size(MFDB *m, int i)
 
 	return l;
 }
+#if 0
+bool
+transform_bitmap(short vdih, MFDB *src, MFDB *dst, struct rgb_1000 *src_pal, struct rgb_1000 *sys_pal)
+{
+	bool ret = false;
+	char *newdata = NULL;
 
+	if (src->fd_nplanes > dst->fd_nplanes)
+		return false;
+
+	if (src->fd_nplanes <= 8 && dst->fd_nplanes <= 8)
+	{
+		if (src->fd_nplanes <= 8 && dst->fd_nplanes >= 2)
+		{
+			long newsize, oldsize;
+			if (src_pal && sys_pal)
+			{
+				unsigned char cref[256];
+				build_pal_xref(src_pal, sys_pal, (unsigned char *)&cref, (1 << src->fd_nplanes));
+				remap_bitmap_colindexes(src, (unsigned char *)&cref);
+				yield();
+			}
+			newsize = (long)(((src->fd_w + 15) >> 4) << 1) * src->fd_h * dst->fd_nplanes;
+			oldsize = (long)(((src->fd_w + 15) >> 4) << 1) * src->fd_h * src->fd_nplanes;
+			if ((newdata = kmalloc(newsize)))
+			{
+				bzero(newdata, newsize);
+				memcpy(newdata, src->fd_addr, oldsize);
+				src->fd_addr = newdata;
+				src->fd_nplanes = dst->fd_nplanes;
+			}
+			else
+			{
+				return false;
+			}
+		}
+		if ((src->fd_nplanes | dst->fd_nplanes) != 1)
+			vr_trnfm(vdih, src, dst);
+		else
+		{
+			short i, *s, *d;
+			s = src->fd_addr;
+			d = dst->fd_addr;
+// 			display("copy %d words from %lx to %lx", msrc.fd_wdwidth * msrc.fd_h, s, d);
+			for (i = src->fd_wdwidth * src->fd_h; i > 0; i--)
+				*d++ = *s++;
+		}
+		ret = true;
+	}
+	else
+	{
+/* ************************************************* */
+		if (dst->fd_nplanes > 8)
+		{
+// 			bool fail = true;
+			void (*to)(struct rgb_1000 *, void **);
+			void (*from)(void (*)(struct rgb_1000 *, void **), struct rgb_1000 *, MFDB *, MFDB *);
+
+			(long)to = -1L;
+			(long)from = -1L;			
+#if 1			
+			if (src->fd_nplanes <= 8 && src_pal && sys_pal)
+			{
+				unsigned char cref[256];
+				build_pal_xref(src_pal, sys_pal, (unsigned char *)&cref, (1 << src->fd_nplanes));
+				remap_bitmap_colindexes(src, (unsigned char *)&cref);
+// 				yield();
+			}
+#endif			
+			if (screen.pixel_fmt >= 0)
+			{
+				switch (dst->fd_nplanes)
+				{
+					case 15: to = f_to15[screen.pixel_fmt]; break;
+					case 16: to = f_to16[screen.pixel_fmt]; break;
+					case 24: to = f_to24[screen.pixel_fmt]; break;
+					case 32: to = f_to32[screen.pixel_fmt]; break;
+					default: to = NULL; break;
+				}
+				
+				switch (src->fd_nplanes)
+				{
+					case 1 ... 8: from = from8b;  break;
+					case 16: from = from16b; break;
+					case 24: from = from24b; break;
+					default: from = NULL;    break;
+				}
+				if (from && to)
+				{
+					src->fd_r1 = 1;
+// 					display("tranform %d -> %d bpp...", src->fd_nplanes, dst->fd_nplanes);
+					(*from)(to, src_pal ? src_pal : sys_pal, src, dst);
+// 					ndisplay("OK!");
+					src->fd_r1 = 0;
+					ret = true; //fail = false;
+				}
+			}
+		}
+	}
+	if (newdata)
+		kfree(newdata);
+
+	return ret;
+/* ************************************************* */		
+}
+#else
 bool
 transform_gem_bitmap(short vdih, MFDB msrc, MFDB mdest, short planes, struct rgb_1000 *src_pal, struct rgb_1000 *sys_pal)
 {
@@ -1432,7 +1580,8 @@ transform_gem_bitmap(short vdih, MFDB msrc, MFDB mdest, short planes, struct rgb
 
 	return true;
 }
-
+#endif
+#if 0
 bool
 transform_gem_bitmap_data(short vdih, MFDB msrc, MFDB mdest, int src_planes, int dst_planes)
 {
@@ -1564,6 +1713,7 @@ transform_gem_bitmap_data(short vdih, MFDB msrc, MFDB mdest, int src_planes, int
 
 	return true;
 }
+#endif
 
 void
 fix_rsc_palette(struct xa_rsc_rgb *palette)
