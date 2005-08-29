@@ -86,6 +86,72 @@ obfix(OBJECT *tree, int object)
  */
 extern short disp;
 
+#if 0
+static short *
+transform_icon_bitmap(struct xa_client *client, struct xa_rscs *rscs, CICONBLK *icon, short *map, long len, int planes, short vdih)
+{
+	MFDB src, dst;
+	short *new_data = map;
+	short *tmp = NULL;
+	long icon_len = len * planes;
+	long new_len = len * screen.planes;
+	struct remember_alloc *ra;
+
+	DIAG((D_s, client, "icon_len %ld, new_len %ld", icon_len, new_len));
+
+// 	if (planes < screen.planes)
+	{
+		DIAG((D_x, client, "alloc of %ld bytes", new_len));
+
+		/*
+		 * Ozk: we needs to remember mallocs done when new icon data
+		 * is created.
+		 */
+		if ((ra = kmalloc(sizeof(*ra))))
+		{
+			if (client == C.Aes || client == C.Hlp)
+				new_data = kmalloc(new_len);
+			else
+				new_data = umalloc(new_len);
+
+			if (!new_data)
+			{
+				kfree(ra);
+				return map;
+			}
+			/*
+			 * setup and attach the new remember_alloc
+			 */
+			ra->addr = new_data;
+			ra->next = rscs->ra;
+			rscs->ra = ra;
+			
+// 			memcpy(new_data, map, icon_len);	
+		}
+		else
+			return map;
+	}
+
+	src.fd_addr = map;
+	src.fd_w = icon->monoblk.ib_wicon; /* Transform MFDB's */
+	src.fd_h = icon->monoblk.ib_hicon;
+	src.fd_wdwidth = (src.fd_w + 15) >> 4; // / 16; /* round up */
+	src.fd_stand = 1;
+	src.fd_r1 = src.fd_r2 = src.fd_r3 = 0;
+	src.fd_nplanes = planes;
+	
+	dst = src;
+
+	dst.fd_addr = new_data;
+	dst.fd_stand = 0;
+	dst.fd_nplanes = screen.planes;
+
+	if (!transform_bitmap(vdih, &src, &dst, cfg.remap_cicons ? rscs->palette : NULL, screen.palette))
+		return map;
+	else
+		return new_data;
+}
+#else
 static short *
 transform_icon_bitmap(struct xa_client *client, struct xa_rscs *rscs, CICONBLK *icon, short *map, long len, int planes, short vdih)
 {
@@ -108,7 +174,7 @@ transform_icon_bitmap(struct xa_client *client, struct xa_rscs *rscs, CICONBLK *
 		 */
 		if ((ra = kmalloc(sizeof(*ra))))
 		{
-			if (client == C.Aes)
+			if (client == C.Aes || client == C.Hlp)
 				new_data = kmalloc(new_len);
 			else
 				new_data = umalloc(new_len);
@@ -155,7 +221,7 @@ transform_icon_bitmap(struct xa_client *client, struct xa_rscs *rscs, CICONBLK *
 	}
 	return new_data;
 }
-
+#endif
 /*
  * FixColourIconData: Convert a colour icon from device independent to device specific
  */
@@ -801,15 +867,10 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 		 */
 		if (maxplanes >= 8 && *earray && *earray != -1L)
 		{
-// 			short work_in[15] = { 1,1,1,1,1, 1,1,1,1,1, 2,0,0,0,0 };
-// 			short work_out[58];
 			struct xa_rsc_rgb *p;
 			int i;
 			unsigned short mask;
 			bool pal = false;
-
-// 			vdih = C.P_handle;
-// 			v_opnvwk(work_in, &vdih, work_out);
 
 			DIAG((D_rsrc, client, "Color palette present"));
 			(long)p = (long)(*earray + (long)base);
@@ -867,13 +928,6 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 #endif
 	}
 	fix_objects(client, rscs, cibh, vdih, base, (OBJECT *)(base + hdr->rsh_object), hdr->rsh_nobs);
-
-	/*
-	 * Close the virtual workstation that handled the RSC
-	 * color palette (if present).
-	 */
-// 	if (vdih != client->vdi_settings->handle)
-// 		v_clsvwk(vdih);
 
 	fix_trees(client, base, (OBJECT **)(unsigned long)(base + hdr->rsh_trindex), hdr->rsh_ntree, designWidth, designHeight);
 	
