@@ -658,13 +658,9 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	if (events & MU_TIMER)
 	{
-//  		cancel_mutimeout(client);
 		
 		/* The Intel ligent format */
 		client->timer_val = ((long)pb->intin[15] << 16) | pb->intin[14];
-//		if (!strnicmp(client->proc_name, "sprite", 6))
-//			display("Timer val: %ld(hi=%d,lo=%d)",
-//				client->timer_val, pb->intin[15], pb->intin[14]);
 		
 		DIAG((D_i,client,"Timer val: %ld(hi=%d,lo=%d)",
 			client->timer_val, pb->intin[15], pb->intin[14]));

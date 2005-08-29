@@ -46,26 +46,6 @@
 #include "mint/signal.h"
 #include "mint/ssystem.h"
 
-#if 0
-static const char stillrun[] = " is still running.|Wait again or Kill?][Wait|Kill]";
-
-static bool
-kill_or_wait(struct xa_client *client)
-{
-	char atxt[80] = {"[1]["};
-	const char *cn = client->name;
-
-	while (*cn == 0x20)
-		cn++;
-
-	strcat(atxt, cn);
-	strcat(atxt, stillrun);
-
-	do_form_alert(0, C.Aes, 1, atxt);
-
-	return false;
-}
-#endif
 
 static void
 CE_at_terminate(enum locks lock, struct c_event *ce, bool cancel)
@@ -84,31 +64,17 @@ k_shutdown(void)
 	DIAGS(("Cleaning up ready to exit...."));
 	if (C.Hlp)
 	{
-// 		display("C.Hlp=%lx, C.Aes=%lx", C.Hlp, C.Aes);
 		post_cevent(C.Hlp, CE_at_terminate, NULL, NULL, 0,0, NULL, NULL);
-// 		display("wait for hlp to terminate");
 		while ((volatile long)C.Hlp)
 		{
-// 			ndisplay(".");
 			Unblock(C.Hlp, 0, 0);
 			yield();
 		}
-// 		display("\r\n  ..done");
 	}
-//	display("done");
 	DIAGS(("Removing all remaining windows"));
-//	display("remove all remaining windows");
-	
-// 	display("rootwind = %lx, open_windows = %lx, closed_window = %lx, deleted_window = %lx",
-// 		S.open_windows, S.closed_windows, S.deleted_windows);
-// 	display("open_nlwinds = %lx, closed_nlwinds = %lx, calc_windows  = %lx",
-// 		S.open_nlwindows, S.closed_nlwindows, S.calc_windows);
-
 	remove_all_windows(NOLOCKING, NULL);
-// 	display("freeing delayed delete windows");
 	DIAGS(("Freeing delayed deleted windows"));
 	do_delayed_delete_window(NOLOCKING);
-// 	display("closing and deleting root window");
 	DIAGS(("Closing and deleting root window"));
 	if (root_window)
 	{
@@ -117,23 +83,17 @@ k_shutdown(void)
 		root_window = NULL;
 	}
 
-// 	display("shutting down aes thread ..");
+	DIAGS(("shutting down aes thread .."));
 	if (C.Aes->tp)
 	{
 		post_cevent(C.Aes, CE_at_terminate, NULL,NULL, 0,0, NULL,NULL);
-// 		display("wait for aesthread to terminate");
 		while ((volatile long)C.Aes->tp)
 		{
-// 			ndisplay(".");
 			yield();
 		}
-// 		display("\r\n  ..done");
 	}
-// 	display("..done");
-
 	
 	DIAGS(("Freeing Aes environment"));
-// 	display("freeing AES env");
 	if (C.env)
 	{
 		kfree(C.env);
@@ -141,11 +101,6 @@ k_shutdown(void)
 	}
 
 	DIAGS(("Freeing Aes resources"));
-// 	display("exit widget theme module");
-	/*
-	 * Exit the widget theme module
-	 */
-// 	display("freeing aes resources");
 
 	/* To demonstrate the working on multiple resources. */
 	while (C.Aes->resources)
@@ -154,23 +109,25 @@ k_shutdown(void)
 	if (C.button_waiter == C.Aes)
 		C.button_waiter = NULL;
 
-// 	display("cancel aesmsgs");
+	DIAGS(("cancel aesmsgs"));
 	cancel_app_aesmsgs(C.Aes);
-// 	display("cancel cevents");
+	DIAGS(("cancel cevents"));
 	cancel_cevents(C.Aes);
-// 	display("cancel keyqueue");
+	DIAGS(("cancel keyqueue"));
 	cancel_keyqueue(C.Aes);
 
-// 	display("freeing attachements");
+	DIAGS(("freeing attachements"));
 	if (C.Aes->attach)
 		kfree(C.Aes->attach);
 
-// 	display("free clientlistname");
+	DIAGS(("free clientlistname"));
 	if (C.Aes->mnu_clientlistname)
 		kfree(C.Aes->mnu_clientlistname);
 
-// 	display("free wtlist");
 	
+	/*
+	 * Exit the widget theme module
+	 */
 	if (C.Aes->xmwt && C.Aes->wtheme_handle)
 	{
 		exit_client_widget_theme(C.Aes);
@@ -186,18 +143,18 @@ k_shutdown(void)
 	 * Freeing the WT list is the last thing to do. Modules may attach
 	 * widget_tree's to C.Aes
 	 */
+	DIAGS(("free wtlist"));
 	free_wtlist(C.Aes);
 	
 // 	exit_ob_render();
-
-// 	display("free C.Aes");
+	
+	DIAGS(("free C.Aes"));
 	kfree(C.Aes);
 	C.Aes = NULL;
 
 	free_desk_popup();
 
 	DIAGS(("Freeing cnf stuff"));
-// 	display("freeing cnf stuff");
 	{
 		int i;
 
@@ -220,7 +177,6 @@ k_shutdown(void)
 		}
 	}
 
-// 	display("freeming options");
 	DIAGS(("Freeing Options"));
 	{
 		struct opt_list *op;
@@ -235,7 +191,6 @@ k_shutdown(void)
 		}
 	}
 
-// 	display("nkc_exit");
 	xaaes_kmalloc_leaks();
 	nkc_exit();
 
@@ -245,11 +200,11 @@ k_shutdown(void)
 
 	if (C.shutdown & HALT_SYSTEM)
 		DIAGS(("HALT_SYSTEM flag is set"));
-
 	if (C.shutdown & REBOOT_SYSTEM)
 		DIAGS(("REBOOT_SYSTEM flag is set"));
+	if (C.shutdown & RESOLUTION_CHANGE)
+		DIAGS(("RESOLUTION_CHANGE flag is set"));
 #endif
-// 	display("Bye!");
 
 	DIAGS(("Bye!"));
 	DIAGS((""));
@@ -269,7 +224,6 @@ k_shutdown(void)
 		C.bootlog_file = NULL;
 	}
 #endif
-
 	/*
 	 * Close the virtual used by XaAES
 	 */
@@ -284,7 +238,6 @@ k_shutdown(void)
 		vswr_mode(C.P_handle, MD_REPLACE);
 
 		/* Shut down the VDI */
-// 		display("clrwk");
 		v_clrwk(C.P_handle);
 
 		if (cfg.auto_program)
@@ -302,19 +255,17 @@ k_shutdown(void)
 			 */
 			{
 				unsigned long sc = 0, cm = 0;
-// 				if (nova_data)
-// 				{
+				if (nova_data)
+				{
 					cm = s_system(S_CTRLCACHE, 0L, -1L);
 					sc = s_system(S_CTRLCACHE, -1L, 0L);
 					s_system(S_CTRLCACHE, sc & ~3, cm);
-// 				}
-			
+				}
 				v_enter_cur(C.P_handle);	/* Ozk: Lets enter cursor mode */
 				v_clswk(C.P_handle);		/* Auto version must close the physical workstation */
-// 				if (nova_data)
+				if (nova_data)
 					s_system(S_CTRLCACHE, sc, cm);
 			}
-
 			display("\033e\033H");		/* Cursor enable, cursor home */
 		}
 		else
@@ -323,7 +274,5 @@ k_shutdown(void)
 			mt_appl_exit(my_global_aes);
 		}
 	}
-// 	display("leaving k_shutdown");
-
 	DIAGS(("leaving k_shutdown()"));
 }

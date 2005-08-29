@@ -1625,6 +1625,16 @@ d_g_image(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
  *                                        of object rectangle.
  */
 
+static unsigned short dismskb[10 * 160];
+static MFDB Mddm =
+{
+	dismskb,
+	160, 160,
+	10,
+	1,
+	1,
+	0,0,0
+};
 /*
  * Draw a mono icon
  */
@@ -1651,11 +1661,11 @@ d_g_icon(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 
 	Micon.fd_w = ic.w;
 	Micon.fd_h = ic.h;
-	Micon.fd_wdwidth = (ic.w + 15) >> 4; // / 16;
+	Micon.fd_wdwidth = (ic.w + 15) >> 4;
 	Micon.fd_nplanes = 1;
 	Micon.fd_stand = 0;
 	Mscreen.fd_addr = NULL;
-			
+	
 	Micon.fd_addr = iconblk->ib_pmask;
 	
 	if (ob->ob_state & OS_SELECTED)
@@ -1677,9 +1687,40 @@ d_g_icon(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 	cols[0] = icn_col;
 	cols[1] = msk_col;
 	vrt_cpyfm(v->handle, MD_TRANS, pxy, &Micon, &Mscreen, cols);
-
+		
 	if (ob->ob_state & OS_DISABLED)
-		(*v->api->write_disable)(v, &ic, G_WHITE);
+	{
+		int i, j, sc;			
+		unsigned short *s, *d, m;
+		unsigned long sm = 0xAAAA5555L;
+
+		s = iconblk->ib_pmask; //Micon.fd_addr;
+		d = Mddm.fd_addr;
+		sc = Mddm.fd_wdwidth - Micon.fd_wdwidth;
+
+		for (i = 0; i < Micon.fd_h; i++)
+		{
+			m = sm;
+			for (j = 0; j < Micon.fd_wdwidth; j++)
+			{
+				*d++ = *s++ & m;
+			}
+			sm = (sm << 16) | (sm >> 16);
+			d += sc;
+		}
+
+		if (screen.planes > 3)
+			cols[0] = G_LWHITE;
+		else
+			cols[0] = G_WHITE;
+		
+// 		cols[0] = (screen.planes >= 16) ? G_LWHITE : G_WHITE;
+		cols[1] = G_WHITE;
+		vrt_cpyfm(v->handle, MD_TRANS, pxy, &Mddm, &Mscreen, cols);
+	}
+
+// 	if (ob->ob_state & OS_DISABLED)
+// 		(*v->api->write_disable)(v, &ic, G_WHITE);
 
 	/* should be the same for color & mono */
 	icon_characters(v, iconblk, ob->ob_state & (OS_SELECTED|OS_DISABLED), obx, oby, ic.x, ic.y);
@@ -1697,7 +1738,7 @@ d_g_cicon(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 	ICONBLK *iconblk;
 	CICON	*best_cicon;
 	MFDB Mscreen;
-	MFDB Micon;
+	MFDB Micon, Mmask;
 	bool have_sel;
 	RECT ic;
 	short pxy[8], cols[2] = {0,1}, obx, oby, blitmode;
@@ -1730,6 +1771,7 @@ d_g_cicon(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 	Micon.fd_stand = 0;
 	Mscreen.fd_addr = NULL;
 
+	Mmask = Micon;
 	//have_sel = c->sel_data != NULL;
 	have_sel = best_cicon->sel_data ? true : false;
 
@@ -1737,33 +1779,53 @@ d_g_cicon(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 
 	/* check existence of selection. */
 	if ((ob->ob_state & OS_SELECTED) && have_sel)
-		Micon.fd_addr = best_cicon->sel_mask; //c->sel_mask;
+		Mmask.fd_addr = best_cicon->sel_mask;
 	else
-		Micon.fd_addr = best_cicon->col_mask; //c->col_mask;
+		Mmask.fd_addr = best_cicon->col_mask;
 
 	blitmode = screen.planes > 8 ? S_AND_D : S_OR_D;
 
-	vrt_cpyfm(v->handle, MD_TRANS, pxy, &Micon, &Mscreen, cols);
+	vrt_cpyfm(v->handle, MD_TRANS, pxy, &Mmask, &Mscreen, cols);
 
 	if ((ob->ob_state & OS_SELECTED) && have_sel)
-		Micon.fd_addr = best_cicon->sel_data; //c->sel_data;
+		Micon.fd_addr = best_cicon->sel_data;
 	else
-		Micon.fd_addr = best_cicon->col_data; //c->col_data;
-
+		Micon.fd_addr = best_cicon->col_data;
 	Micon.fd_nplanes = screen.planes;
-	vro_cpyfm(v->handle, blitmode, pxy, &Micon, &Mscreen);
-
-	if ((ob->ob_state & OS_SELECTED) && !have_sel)
 	{
-		Micon.fd_addr = best_cicon->col_mask; //c->col_mask;
-		Micon.fd_nplanes = 1;
-		vrt_cpyfm(v->handle, MD_XOR, pxy, &Micon, &Mscreen, cols);
+		vro_cpyfm(v->handle, blitmode, pxy, &Micon, &Mscreen);
+		icon_characters(v, iconblk, ob->ob_state & (OS_SELECTED|OS_DISABLED), obx, oby, ic.x, ic.y);
+
+		if ((ob->ob_state & OS_DISABLED) || ((ob->ob_state & OS_SELECTED) && !have_sel))
+		{
+			int i, j, sc;			
+			unsigned short *s, *d, m;
+			unsigned long sm = 0xAAAA5555L;
+
+			s = Mmask.fd_addr;
+			d = Mddm.fd_addr;
+			sc = Mddm.fd_wdwidth - Mmask.fd_wdwidth;
+
+			for (i = 0; i < Micon.fd_h; i++)
+			{
+				m = sm;
+				for (j = 0; j < Micon.fd_wdwidth; j++)
+				{
+					*d++ = *s++ & m;
+				}
+				sm = (sm << 16) | (sm >> 16);
+				d += sc;
+			}
+
+			if (ob->ob_state & OS_DISABLED)
+				cols[0] = G_LWHITE;
+			else
+				cols[0] = G_BLACK;
+
+			cols[1] = G_WHITE;				
+			vrt_cpyfm(v->handle, MD_TRANS, pxy, &Mddm, &Mscreen, cols);
+		}
 	}
-
-	if (ob->ob_state & OS_DISABLED)
-		(*v->api->write_disable)(v, &ic, G_WHITE);
-
-	icon_characters(v, iconblk, ob->ob_state & (OS_SELECTED|OS_DISABLED), obx, oby, ic.x, ic.y);
 
 	done(OS_SELECTED|OS_DISABLED);
 }
