@@ -253,6 +253,8 @@ typedef struct pEvntrec
 #define MU_NORM_KEYBD			0x0100		/* XaAES */
 #define MU_DYNAMIC_KEYBD		0x0200		/* XaAES */
 #define MU_FSELECT			0x0400		/* XaAES */
+#define MU_TIMEOUT			0x0800
+
 
 /* form_dial opcodes */
 #define FMD_START 			0

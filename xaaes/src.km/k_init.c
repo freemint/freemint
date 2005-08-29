@@ -449,14 +449,14 @@ k_init(unsigned long vm)
 		 */
 		{
 			unsigned long sc = 0, cm = 0;
-// 			if (nova_data)
-// 			{
+			if (nova_data)
+			{
 				cm = s_system(S_CTRLCACHE, 0L, -1L);
 				sc = s_system(S_CTRLCACHE, -1L, 0L);
 				s_system(S_CTRLCACHE, sc & ~3, cm);
-// 			}
+			}
 			v_opnwk(work_in, &(C.P_handle), work_out);
-// 			if (nova_data)
+			if (nova_data)
 				s_system(S_CTRLCACHE, sc, cm);
 		}
 		

@@ -218,6 +218,7 @@ hide_move(struct options *o)
 
 	return kind;
 }
+
 void
 set_winrect(struct xa_window *wind, RECT *wr, const RECT *new)
 {
