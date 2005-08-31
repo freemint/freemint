@@ -566,6 +566,7 @@ put_key_into_buf(uchar c0, uchar c1, uchar c2, uchar c3)
 	if ((*(uchar *)0x0484L & 0x04) == 0)
 		c0 = 0;
 # endif
+// 	display("c0 %x, c1 %x, c2 %x, c3 %x", c0, c1, c2, c3);
 
 	keyrec->tail += 4;
 	if (keyrec->tail >= keyrec->buflen)
@@ -1094,6 +1095,12 @@ ikbd_scan (ushort scancode, IOREC_T *rec)
 	{
 		if (generate_mouse_event(shift, scan, make) == -1)
 			return;
+
+		/* Ozk:
+		 * Scan codes between 0x02 -> 0x0d are modified by 0x76
+		 */
+		if (scan >= 0x02 && scan <= 0x0d)	
+			scan += 0x76;
 	}
 
 	/*

@@ -82,6 +82,7 @@ int		_ALERT		(char *);
 
 void	_cdecl	Tracelow	(const char *s, ...);
 void	_cdecl	Trace		(const char *s, ...);
+void		display		(const char *s, ...);
 void	_cdecl	Debug		(const char *s, ...);
 void	_cdecl	ALERT		(const char *s, ...);
 void	_cdecl	FORCE		(const char *s, ...);
