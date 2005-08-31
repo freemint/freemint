@@ -1507,7 +1507,11 @@ checkkeys (void)
  * ^S/^Q
  * XXX: so what?
  */
-		if ((tty->state & TS_COOKED) || (shift & MM_CTRLALT) == MM_CTRLALT)
+ 		/* Ozk:
+		 * Guessing wildly here, but shouldn't jobcontrol
+		 * be skipped when T_RAW is set?
+		 */
+		if (!(tty->sg.sg_flags & T_RAW) && ((tty->state & TS_COOKED) || (shift & MM_CTRLALT) == MM_CTRLALT))
 		{
 			ch = (keyrec->bufaddr + keyrec->tail)[3];
 			if (ch == UNDEF)
@@ -1549,7 +1553,6 @@ checkkeys (void)
 				ret = 1;
 			}
 		}
-
 	}
 
 	/* XXX: move this later to ikbd_scan()

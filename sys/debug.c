@@ -393,6 +393,18 @@ Trace(const char *s, ...)
 	}
 }
 
+void
+display(const char *s, ...)
+{
+	{
+		va_list args;
+		
+		va_start(args, s);
+		VDEBUGOUT(s, args, 0);
+		va_end(args);
+	}	
+}
+
 void _cdecl
 Debug(const char *s, ...)
 {
