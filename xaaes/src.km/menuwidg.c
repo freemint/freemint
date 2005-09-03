@@ -561,6 +561,9 @@ built_desk_popup(enum locks lock, short x, short y)
 
 	FOREACH_CLIENT(client)
 	{
+		if (client == C.Hlp)
+			continue;
+
 		if ((client->type & APP_ACCESSORY) || client == C.Aes)
 		{
 			if (n < appmenusize)
@@ -597,6 +600,9 @@ built_desk_popup(enum locks lock, short x, short y)
 
 	FOREACH_CLIENT(client)
 	{
+		if (client == C.Hlp)
+			continue;
+
 		if (!(client->type & APP_ACCESSORY) && client != C.Aes)
 		{
 			if (n < appmenusize)
