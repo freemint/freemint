@@ -602,6 +602,32 @@ struct display_alert_data
 	enum locks lock;
 };
 
+static void display_alert(struct proc *p, long arg);
+
+static void
+CE_fa(enum locks lock, struct c_event *ce, bool cancel)
+{
+	if (!cancel)
+	{
+		struct display_alert_data *data = ce->ptr1;
+
+		if (C.update_lock)
+		{
+			struct timeout *t;
+			t = addroottimeout(100, display_alert, 0);
+			if (t)
+				t->arg = (long)data;
+		}
+		else
+		{
+			do_form_alert(data->lock, ce->client, 1, data->buf, "XaAES");
+			kfree(data);
+		}
+	}
+	else
+		kfree(ce->ptr1);
+}
+		
 static void
 display_alert(struct proc *p, long arg)
 {
@@ -622,9 +648,12 @@ display_alert(struct proc *p, long arg)
 		forcem();
 
 		/* Bring up an alert */
-		do_form_alert(data->lock, C.Aes, 1, data->buf);
+		
+// 		do_form_alert(data->lock, C.Hlp, 1, data->buf, " XaAES ");
+// 		do_form_alert(data->lock, C.Aes, 1, data->buf);
+		post_cevent(C.Hlp, CE_fa, data,NULL, 0,0, NULL,NULL);
 
-		kfree(data);
+// 		kfree(data);
 	}
 }
 
@@ -770,7 +799,7 @@ static struct sgttyb KBD_dev_sg;
 int aessys_timeout = 0;
 
 static const char aesthread_name[] = "aesthred";
-
+static const char aeshlp_name[] = "XaSYS";
 static void
 aesthread_block(struct xa_client *client, int which)
 {
@@ -842,12 +871,12 @@ helpthread_entry(void *c)
 			d += 32;
 			pb->addrout = (long *)d;
 		
+			strcpy(client->name, aeshlp_name);
 			C.Hlp = client;
 			C.Hlp_pb = client->waiting_pb = pb;
 			client->waiting_for = 0;
 			client->block = iBlock;
 			init_helpthread(NOLOCKING, client);
-// 			open_taskmanager(0, client);
 			for (;;)
 			{
 				(*client->block)(client, 0);
@@ -877,16 +906,6 @@ CE_at_restoresigs(enum locks lock, struct c_event *ce, bool cancel)
 	}
 }
 
-/*
- * our XaAES server kernel thread
- * 
- * It have it's own context and can use all syscalls like a normal
- * process (except that it don't go through the syscall handler).
- * 
- * It run in kernel mode and share the kernel memspace, cwd, files
- * and sigs with all other kernel threads (mainly the idle thread
- * alias rootproc).
- */
 #define C_nAES 0x6E414553L     /* N.AES, the AES for MiNT */
 static N_AESINFO *c_naes = NULL;
 static N_AESINFO naes_cookie =
@@ -899,59 +918,6 @@ static N_AESINFO naes_cookie =
 	0L,
 };
 
-#if 0
-#define C_MAGX 0x4d616758	/* MagX */
-static MAGX_COOKIE *c_magx = NULL;
-
-static MAGX_AESVARS magx_aesvars =
-{
-	0x87654321,
-	NULL,
-	NULL,
-	(((long)'M'<<24)|((long)'A'<<16)|('G'<<8)|'X'),
-	(25<<9)|(1<<5)|1,		/* 1 jan, 2005	*/
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	0x0600,
-	0x0003
-};
-
-static MAGX_DOSVARS magx_dosvars =
-{
-	NULL,
-	0,
-	0,
-	0L,
-	0L,
-	0L,
-	NULL,
-	0L,
-	0,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	NULL,
-	0L,
-	0L,
-	0L
-};
-	
-static MAGX_COOKIE magx_cookie =
-{
-	0L,
-	&magx_dosvars,
-	&magx_aesvars,
-	NULL,
-	NULL,
-	0L
-};
-#endif
 
 static void
 sshutdown_timeout(struct proc *p, long arg)
@@ -1113,6 +1079,16 @@ dispatch_shutdown(int flags)
 
 /*
  * Main AESSYS thread...
+ */
+/*
+ * our XaAES server kernel thread
+ * 
+ * It have it's own context and can use all syscalls like a normal
+ * process (except that it don't go through the syscall handler).
+ * 
+ * It run in kernel mode and share the kernel memspace, cwd, files
+ * and sigs with all other kernel threads (mainly the idle thread
+ * alias rootproc).
  */
 void
 k_main(void *dummy)
@@ -1319,7 +1295,7 @@ k_main(void *dummy)
 	 */
 	{
 		long tpc;
-		tpc = kthread_create(C.Aes->p, helpthread_entry, NULL, NULL, "%s", "aeshlp");
+		tpc = kthread_create(C.Aes->p, helpthread_entry, NULL, NULL, "%s", aeshlp_name);
 		if (tpc < 0)
 		{
 			C.Hlp = NULL;
@@ -1338,33 +1314,19 @@ k_main(void *dummy)
 	/*
 	 * Load Accessories
 	 */
-#if 0
 	DIAGS(("loading accs"));
 	load_accs();
 	DIAGS(("loading accs done!"));
-#endif
 
 	/*
 	 * startup shell and autorun
 	 */
-
 	DIAGS(("loading shell and autorun"));
 	{
 		enum locks lock = winlist|envstr|pending;
 		Path parms;
 		int i;
 		
-		if (cfg.cnf_shell)
-		{
-			parms[0] = '\0';
-			if (cfg.cnf_shell_arg)
-				parms[0] = sprintf(parms+1, sizeof(parms)-1, "%s", cfg.cnf_shell_arg);
-
-			C.DSKpid = launch(lock, 0, 0, 0, cfg.cnf_shell, parms, C.Aes);
-			if (C.DSKpid > 0)
-				strcpy(C.desk, cfg.cnf_shell);
-		}
-
 		for (i = sizeof(cfg.cnf_run)/sizeof(cfg.cnf_run[0]) - 1; i >= 0; i--)
 		{
 			if (cfg.cnf_run[i])
@@ -1378,7 +1340,6 @@ k_main(void *dummy)
 				launch(lock, 0, 0, 0, cfg.cnf_run[i], parms, C.Aes);
 			}
 		}
-#if 0
 		if (cfg.cnf_shell)
 		{
 			parms[0] = '\0';
@@ -1389,20 +1350,13 @@ k_main(void *dummy)
 			if (C.DSKpid > 0)
 				strcpy(C.desk, cfg.cnf_shell);
 		}
-#endif
 	}
-#if 1
-	DIAGS(("loading shell and autorun done!"));
-	DIAGS(("loading accs"));
-	load_accs();
-	DIAGS(("loading accs done!"));
-#endif
+	
 	C.Aes->waiting_for |= XAWAIT_MENU;
 
 	/*
 	 * Main kernel loop
 	 */
-
 	do {
 		/* The root of all locking under AES pid. */
 		/* how about this? It means that these
@@ -1426,6 +1380,27 @@ k_main(void *dummy)
 			update_locked() ? update_locked()->pid : 0,
 			mouse_locked() ? mouse_locked()->pid : 0));
 
+		if (!C.Hlp)
+		{
+			/*
+			 * Start AES help thread - will be dealing with AES windows.
+			 */
+			long tpc;
+			display("What the hell!?");
+			tpc = kthread_create(C.Aes->p, helpthread_entry, NULL, NULL, "%s", aeshlp_name);
+			if (tpc < 0)
+			{
+				C.Hlp = NULL;
+				display("XaAES ERROR: start AES thread failed");
+			}
+			else
+			{
+				long to = 0x0000ffff;
+				while (!C.Hlp && to)
+					yield(), to--;
+			}
+		}
+				
 		if (fs_rtn > 0)
 		{
 			if (input_channels & (1UL << C.KBD_dev))

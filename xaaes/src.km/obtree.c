@@ -1406,6 +1406,104 @@ ob_find_cancel(OBJECT *ob)
 	return -1;
 }
 
+void
+ob_fix_shortcuts(OBJECT *obtree, bool not_hidden)
+{
+	struct sc
+	{
+		short o;
+		char c;
+	};
+	struct sc *sc, *scuts;
+	short objs;
+	long len;
+	char nk;
+
+
+	objs = ob_count_objs(obtree, 0);
+// 	display("ob_fix_shortcuts on tree %lx, %d objs", obtree, objs);
+
+	len = ((long)objs + 1) * sizeof(struct sc);
+
+	sc = kmalloc(len);
+	
+	if (sc)
+	{
+		int i = 0;
+		bzero(sc, len);
+		
+		do {
+			OBJECT *ob = obtree + i;
+			if ((ob->ob_state & OS_WHITEBAK) && (!not_hidden || !(ob->ob_flags & OF_HIDETREE)))
+			{
+				short ty = ob->ob_type & 0xff;
+			
+				if (ty == G_BUTTON || ty == G_STRING)
+				{
+					int j = (ob->ob_state >> 8) & 0x7f;
+// 					int nc = 0;
+// 					ndisplay("obj %d, und = %d", i, j);
+					if (j < 126)
+					{
+						char *s = object_get_spec(ob)->free_string;
+// 						display(" '%s'", s);
+						if (s)
+						{
+							int slen = strlen(s);
+							int nc = 0;
+							
+							if (j < slen)
+							{
+								scuts = sc;
+								nk = toupper(*(s + j));
+								
+// 								ndisplay("got %c '", nk);
+								
+								while (scuts->c && nc < slen)
+								{
+// 									ndisplay(",%c", scuts->c);
+									if (scuts->c == nk)
+									{
+										nk = toupper(*(s + nc));
+										nc++;
+										scuts = sc;
+// 										ndisplay("-u->nk=%c(%d)", nk, nc);
+									}
+									else
+										scuts++;
+								}
+// 								display("'");
+								if (!scuts->c)
+								{
+// 									display(" free");
+									scuts->c = nk;
+									scuts->o = i;
+								}
+								if (nc)
+								{
+									if (nc <= slen)
+									{
+// 										display(" remaped from %d(%c) to %d(%c)", j, *(s + j), nc - 1, *(s + (nc - 1)));
+										nc--;
+										ob->ob_state = (ob->ob_state & 0x80ff) | ((nc & 0x7f) << 8);
+									}
+									else
+									{
+// 										display(" no free keys");
+										ob->ob_state &= (~OS_WHITEBAK & 0x80ff);
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		} while ( !(obtree[i++].ob_flags & OF_LASTOB));
+
+		kfree(sc);
+	}	
+}
+
 short
 ob_find_shortcut(OBJECT *tree, ushort nk)
 {

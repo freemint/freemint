@@ -85,6 +85,9 @@ refresh_tasklist(enum locks lock)
 		/* default icon */
 		icon = form + TM_ICN_XAAES;
 
+		if (client == C.Hlp)
+			continue;
+
 		if (client->type & APP_ACCESSORY)
 			icon = form + TM_ICN_MENU;
 
@@ -373,6 +376,9 @@ taskmanager_form_exit(struct xa_client *Client,
 		      struct fmd_result *fr)
 {
 	enum locks lock = 0;
+	struct xa_vdi_settings *v = wind->vdi_settings;
+	short obj = fr->obj;
+	
 	Sema_Up(clients);
 	lock |= clients;
 	
@@ -381,9 +387,10 @@ taskmanager_form_exit(struct xa_client *Client,
 
 	switch (fr->obj)
 	{
+
 		case TM_LIST:
 		{
-			short obj = fr->obj;
+// 			short obj = fr->obj;
 			OBJECT *obtree = wt->tree;
 
 			DIAGS(("taskmanager_form_exit: Moved the shit out of form_do() to here!"));
@@ -502,6 +509,14 @@ taskmanager_form_exit(struct xa_client *Client,
 			dispatch_shutdown(COLDSTART_SYSTEM);
 			object_deselect(wt->tree + TM_COLD);
 			redraw_toolbar(lock, task_man_win, TM_COLD);
+			break;
+		}
+		case TM_RESCHG:
+		{
+			
+			if (C.reschange)
+				post_cevent(C.Hlp, ceExecfunc, C.reschange,NULL, 0,0, NULL,NULL);
+			obj_change(wt, v, obj, -1, wt->tree[obj].ob_state & ~OS_SELECTED, wt->tree[obj].ob_flags, true, NULL, wind->rect_list.start);
 			break;
 		}
 		case TM_OK:
@@ -2062,7 +2077,6 @@ do_system_menu(enum locks lock, int clicked_title, int menu_item)
 		/* Open the "About XaAES..." dialog */
 		case SYS_MN_ABOUT:
 			post_cevent(C.Hlp, ceExecfunc, open_about,NULL, 0,0, NULL,NULL);
-// 			open_about(lock);
 			break;
 
 		/* Quit all applications */
@@ -2080,12 +2094,10 @@ do_system_menu(enum locks lock, int clicked_title, int menu_item)
 		/* Open the "Task Manager" window */
 		case SYS_MN_TASKMNG:
 			post_cevent(C.Hlp, ceExecfunc, open_taskmanager,NULL, 0,0, NULL,NULL);
-// 			open_taskmanager(lock);
 			break;
 		/* Open system alerts log window */
 		case SYS_MN_SALERT:
 			post_cevent(C.Hlp, ceExecfunc, open_systemalerts,NULL, 0,0, NULL,NULL);
-// 			open_systemalerts(lock);
 			break;
 		/* Open system alerts log window filled with environment */
 		case SYS_MN_ENV:
@@ -2111,22 +2123,28 @@ do_system_menu(enum locks lock, int clicked_title, int menu_item)
 				list->add(list, this, NULL, &sc, this ? (SEADD_CHILD|SEADD_PRIOR) : SEADD_PRIOR, SETYP_AMAL, true);
 			}
 			post_cevent(C.Hlp, ceExecfunc, open_systemalerts,NULL, 0,0, NULL,NULL);
-// 			open_systemalerts(lock);
 			break;
 		}
 
 #if FILESELECTOR
 		/* Launch a new app */
 		case SYS_MN_LAUNCH:
+		{
 			post_cevent(C.Hlp, ceExecfunc, open_launcher,NULL, 0,0, NULL,NULL);
-// 			open_launcher(lock);
 			break;
+		}
 #endif
-
 		/* Launch desktop. */
 		case SYS_MN_DESK:
+		{
 			if (*C.desk)
 				C.DSKpid = launch(lock, 0, 0, 0, C.desk, "\0", C.Aes);
 			break;
+		}
+		case SYS_MN_RESCHG:
+		{
+			if (C.reschange)
+				post_cevent(C.Hlp, ceExecfunc, C.reschange,NULL, 0,0, NULL,NULL);
+		}
 	}
 }

@@ -315,7 +315,7 @@ max_w(int m, char to[][MAX_X+1], int *tot)
  * under the alert that is not a window.
  */
 int
-do_form_alert(enum locks lock, struct xa_client *client, int default_button, char *alert)
+do_form_alert(enum locks lock, struct xa_client *client, int default_button, char *alert, char *title)
 {
 	XA_WIND_ATTR kind = MOVER|NAME|TOOLBAR|USE_MAX;
 	struct xa_window *alert_window;
@@ -430,11 +430,12 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 		int width = strlen(alertxt->button[f])+3;
 		width *= screen.c_max_w;
 		DIAGS(("button %d, text '%s'", f, alertxt->button[f]));
+
 		alert_form[ALERT_BUT1 + f].ob_spec.free_string = alertxt->button[f];
 		alert_form[ALERT_BUT1 + f].ob_width = width;
 		alert_form[ALERT_BUT1 + f].ob_x = x;
 		alert_form[ALERT_BUT1 + f].ob_flags &= ~(OF_HIDETREE|OF_DEFAULT);
-		alert_form[ALERT_BUT1 + f].ob_state = 0;
+		alert_form[ALERT_BUT1 + f].ob_state = OS_WHITEBAK;
 		x += width + b;
 	}
 
@@ -463,6 +464,8 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 		/* Hide unused buttons */
 		alert_form[ALERT_BUT1 + f].ob_flags |= OF_HIDETREE;
 
+	ob_fix_shortcuts(alert_form, true);
+
 	/* Create a window and attach the alert object tree centered to it */
 	{
 		bool nolist = false;
@@ -482,8 +485,8 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 
 		r = calc_window(lock, client, WC_BORDER,
 				kind, created_for_AES,
-				C.Aes->options.thinframe,
-				C.Aes->options.thinwork,
+				client->options.thinframe,
+				client->options.thinwork,
 				*(RECT *)&or); //*(RECT *)&alert_form->ob_x);
 
 		alert_window = create_window(lock,
@@ -493,8 +496,8 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 					     nolist,
 					     kind,
 					     created_for_AES,
-					     C.Aes->options.thinframe,
-					     C.Aes->options.thinwork,
+					     client->options.thinframe,
+					     client->options.thinwork,
 					     r, NULL, NULL);
 
 		if (alert_window)
@@ -520,7 +523,8 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 			 * 
 			 * Set the window title to be the client's name to avoid confusion
 			 */
-			get_widget(alert_window, XAW_TITLE)->stuff = client->name;
+			set_window_title(alert_window, title ? title : client->name, false);
+// 			get_widget(alert_window, XAW_TITLE)->stuff = client->name;
 			alert_window->destructor = alert_destructor;
 
 			if (nolist)
@@ -640,7 +644,7 @@ XA_form_alert(enum locks lock, struct xa_client *client, AESPB *pb)
 	
 	DIAG((D_form, client, "XA_alert %s", (char *)pb->addrin[0]));
 	client->status |= CS_FORM_ALERT;
-	do_form_alert(lock, client, pb->intin[0], (char *)pb->addrin[0]);
+	do_form_alert(lock, client, pb->intin[0], (char *)pb->addrin[0], NULL);
 	Block(client, 0);
 	client->status &= ~CS_FORM_ALERT;
 
@@ -747,7 +751,7 @@ XA_form_error(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	DIAG((D_form, client, "alert_err %s", error_alert));
 	client->status |= CS_FORM_ALERT;
-	do_form_alert(lock, client, 1, error_alert);
+	do_form_alert(lock, client, 1, error_alert, NULL);
 	Block(client, 0);
 	client->status &= ~CS_FORM_ALERT;
 	
@@ -897,12 +901,20 @@ key_alert_widget(enum locks lock, struct xa_client *client, struct xa_window *wi
 		f = ob_find_flag(alert_form, OF_DEFAULT, 0, OF_LASTOB);
 	else if (keycode == 0x6100)   				/* UNDO */
 		f = ob_find_cancel(alert_form);
+	else
+	{
+		short ks;
+		
+		vq_key_s(C.P_handle, &ks);
+		if ( (ks & (K_CTRL|K_ALT)) == K_ALT )
+			f = ob_find_shortcut(alert_form, key->norm & 0x00ff);
+	}
 
 	if (   f >= ALERT_BUT1			/* Is f a valid button? */
 	    && f <  ALERT_BUT1 + 3
 	    && !(alert_form[f].ob_flags & OF_HIDETREE))
 	{
-		if (wt->owner != C.Aes)
+		if (client != C.Aes && client != C.Hlp)
 		{
 			//struct xa_client *client = wt->owner;
 

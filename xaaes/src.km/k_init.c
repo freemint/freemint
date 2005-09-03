@@ -288,6 +288,30 @@ extern void *xobj_rsc;
 static struct xa_colour_scheme default_colours = { G_LWHITE, G_BLACK, G_LBLACK, G_WHITE, G_BLACK, G_CYAN };
 static struct xa_colour_scheme bw_default_colours = { G_WHITE, G_BLACK, G_BLACK, G_WHITE, G_BLACK, G_WHITE };
 
+static void
+set_wrkin(short *in, short dev)
+{
+	int i;
+
+	in[0] = dev;
+	for (i = 1; i < 10; i++)
+		in[i] = 1;
+	in[10] = 2;
+	for (i = 11; i < 16; i++)
+		in[i] = 0;	
+#if 0
+	*in++ = dev;
+
+	for (i = 1; i < 10; *in++ = 1, i++)
+		;
+
+	*in++ = 2;
+
+	for (i = 0; i < (16 - 11); *in++ = 0, i++)
+		;
+#endif
+}
+
 int
 k_init(unsigned long vm)
 {
@@ -296,7 +320,9 @@ k_init(unsigned long vm)
 	short f;
 	char *resource_name;
 	struct xa_vdi_settings *v = &global_vdi_settings;
-
+	
+	display("\033H");		/* cursor home */
+	
 	for (f = 0; f < (sizeof(*v) >> 1); f++)
 		((short *)v)[f] = -1;
 
@@ -318,17 +344,6 @@ k_init(unsigned long vm)
 			DIAGS(("could not determine nvdi version"));
 #endif
 	}
-	
-	/*
-	 * setup work_in
-	 */
-	for (f = 0; f < sizeof(work_in)/sizeof(work_in[0]); f++)
-		work_in[f] = 0;
-
-	for (f = 0; f < 10; f++)
-		work_in[f] = 1;
-
-	work_in[10] = 2;
 
 	if (cfg.auto_program)
 	{
@@ -380,18 +395,17 @@ k_init(unsigned long vm)
 
 				/*
 				 * Fourth try...		* This works perfect on _my_ milan. Dont know how it works on
-				 *				* other machines yet...
+				 *				* other machines yet... didnt work with nvdi 5.03 installed!
 				 */
 // 				mvdi_device(vm & 0x0000ffff, 0L, DEVICE_SETDEVICE, (long *)&ret);
 				
 				/*
 				 * Fifth try...
 				 * this is the same method as used on the Falcon,
-				 * only using devid 7 instead of 5. 
+				 * only using devid 7 instead of 5.
 				 */
 				mode = 7;
-				work_out[45] = vm & 0x0000ffff;
-
+				work_out[45] = vcheckmode(vm & 0x0000ffff); //vm & 0x0000ffff;
 			}
 			else if ((vm & 0x80000000) && nova_data && nova_data->valid)
 			{
@@ -419,6 +433,7 @@ k_init(unsigned long vm)
 				
 				work_out[45] = nvmode;
 				mode = 5;
+// 				display("Falcon video: mode %x, %x", cfg.videomode, nvmode);
 			}
 			else
 			{
@@ -439,25 +454,27 @@ k_init(unsigned long vm)
 		}
 // 		display("set mode %x", mode);
 		DIAGS(("Screenmode is: %d", mode));
-		
-		work_in[0] = mode;
+
+		set_wrkin(work_in, mode);
 
 		/*
 		 * Ozk: We switch off instruction, data and branch caches (where available)
 		 *	while the VDI accesses the hardware. This fixes 'black-screen'
 		 *	problems on Hades with Nova VDI.
+		 *	Goddamned! The fact that caches needs to be turned off during
+		 *	opening the physical on a ct60/3 kept me puzzled for hours!
+		 *	Just could not make the thing go into mono mode, and had me
+		 *	scared shitless for a long time. Therefore we let this code
+		 *	stay enabled at all times!
 		 */
 		{
 			unsigned long sc = 0, cm = 0;
-			if (nova_data)
-			{
-				cm = s_system(S_CTRLCACHE, 0L, -1L);
-				sc = s_system(S_CTRLCACHE, -1L, 0L);
-				s_system(S_CTRLCACHE, sc & ~3, cm);
-			}
+
+			cm = s_system(S_CTRLCACHE, 0L, -1L);
+			sc = s_system(S_CTRLCACHE, -1L, 0L);
+			s_system(S_CTRLCACHE, sc & ~3, cm);
 			v_opnwk(work_in, &(C.P_handle), work_out);
-			if (nova_data)
-				s_system(S_CTRLCACHE, sc, cm);
+			s_system(S_CTRLCACHE, sc, cm);
 		}
 		
 		DIAGS(("Physical work station opened: %d", C.P_handle));
@@ -468,12 +485,13 @@ k_init(unsigned long vm)
 			display("v_opnwk failed (%i)!", C.P_handle);
 			return -1;
 		}
-
 		/*
 		 * We need to get rid of the cursor
 		 */
 		v_exit_cur(C.P_handle);
 		DIAGS(("v_exit_cur ok!"));
+		
+// 		_b_ubconout(2, ' ');
 	}
 	else
 	{
@@ -486,12 +504,11 @@ k_init(unsigned long vm)
 		DIAGS(("graf_handle -> %d", C.P_handle));
 	}
 
-	vs_clip(C.P_handle, 0, (short *)&screen.r);
-
 	/*
 	 * Open us a virtual workstation for XaAES to play with
 	 */
 	v->handle = C.P_handle;
+	set_wrkin(work_in, 1);
 	v_opnvwk(work_in, &v->handle, work_out);
 
 	if (v->handle == 0)
@@ -499,32 +516,28 @@ k_init(unsigned long vm)
 		DIAGS(("v_opnvwk failed (%i)!", v->handle));
 		return -1;
 	}
-
-	C.Aes->vdi_settings = v;
-	
-	(*global_vdiapi->f_perimeter)(v, 0);	/* from set_colours; never set to 1 ever */
-
-	hidem();
-	graf_mouse(ARROW, NULL, NULL, false);
-	showm();
-	v_hide_c(v->handle);
-	(*global_vdiapi->wr_mode)(v, MD_TRANS);
-	
-	(*global_vdiapi->t_alignment)(v, 0, 5);
-	
 	DIAGS(("Virtual work station opened: %d", v->handle));
-
-
 	/*
 	 * Setup the screen parameters
 	 */
 	screen.r.x = screen.r.y = 0;
 	screen.r.w = work_out[0] + 1;
 	screen.r.h = work_out[1] + 1;
-	v->screen = screen.r;
-	(*global_vdiapi->clear_clip)(v);
 	screen.colours = work_out[13];
 	screen.display_type = D_LOCAL;
+	v->screen = screen.r;
+	C.Aes->vdi_settings = v;
+	vs_clip(C.P_handle, 0, (short *)&screen.r);
+	
+	(*global_vdiapi->f_perimeter)(v, 0);	/* from set_colours; never set to 1 ever */
+	v_show_c(C.P_handle, 0);
+	hidem();
+	graf_mouse(ARROW, NULL, NULL, false);
+	showm();
+	(*global_vdiapi->wr_mode)(v, MD_TRANS);	
+	(*global_vdiapi->t_alignment)(v, 0, 5);
+	
+	(*global_vdiapi->clear_clip)(v);
 
 	objc_rend.dial_colours =
 		MONO ? bw_default_colours : default_colours;
@@ -541,6 +554,10 @@ k_init(unsigned long vm)
 	DIAGS(("Video info: width(%d/%d), planes :%d, colours %d",
 		screen.r.w, screen.r.h, screen.planes, screen.colours));
 
+// 	display("Video info: width(%d/%d), planes :%d, colours %d, pixelfmt = %d",
+// 		screen.r.w, screen.r.h, screen.planes, screen.colours, screen.pixel_fmt);
+
+	
 	/*
 	 * If we are using anything apart from the system font for windows,
 	 * better check for GDOS and load the fonts.
@@ -615,7 +632,7 @@ k_init(unsigned long vm)
 		
 		if ((ob_count_objs(about, 0) < RSC_VERSION)   ||
 		     about[RSC_VERSION].ob_type != G_TEXT     ||
-		    (strcmp(object_get_tedinfo(about + RSC_VERSION)->te_ptext, "0.0.4")))
+		    (strcmp(object_get_tedinfo(about + RSC_VERSION)->te_ptext, "0.0.5")))
 		{
 			display("ERROR: Outdated AESSYS resource file (%s) - update to recent version!", cfg.rsc_name);
 // 			display("       also make sure you read CHANGES.txt!!");
@@ -752,47 +769,6 @@ k_init(unsigned long vm)
 		set_desktop_widget(root_window, C.Aes->desktop);
 		set_desktop(C.Aes, false);
 	}
-#if 0
-	DIAGS(("setting up task manager"));
-// 	display("setting up task manager");
-	set_slist_object(0, new_widget_tree(C.Aes, ResourceTree(C.Aes_rsc, TASK_MANAGER)), NULL, TM_LIST, SIF_SELECTABLE|SIF_AUTOSELECT,
-			 NULL, NULL, NULL, NULL, NULL,
-			 NULL, NULL, NULL, NULL,
-			 "Client Applications", NULL, NULL, 255);
-
-
-	DIAGS(("setting up file selector"));
-
-	DIAGS(("setting up System Alert log"));
-// 	display("setting up System Alert log");
-	set_slist_object(0, new_widget_tree(C.Aes, ResourceTree(C.Aes_rsc, SYS_ERROR)), NULL, SYSALERT_LIST, SIF_SELECTABLE|SIF_AUTOSELECT|SIF_TREEVIEW|SIF_AUTOOPEN,
-			 NULL, NULL, NULL, NULL, NULL,
-			 NULL, NULL, NULL, NULL,
-			 NULL, NULL, NULL, 255);
-	{
-		struct scroll_info *list = object_get_slist(ResourceTree(C.Aes_rsc, SYS_ERROR) + SYSALERT_LIST);
-		struct scroll_content sc = { 0 };
-		char a[] = "Alerts";
-		char e[] = "Environment";
-
-		sc.text = a;
-		sc.n_strings = 1;
-		sc.usr_flags = 1;
-		sc.xflags = OF_AUTO_OPEN;
-		DIAGS(("Add Alerts entry..."));
-		list->add(list, NULL, NULL, &sc, 0, (SETYP_AMAL|SETYP_STATIC), NOREDRAW);
-		sc.text = e;
-		DIAGS(("Add Environment entry..."));
-		list->add(list, NULL, NULL, &sc, 0, (SETYP_AMAL|SETYP_STATIC), NOREDRAW);
-	}
-
-	DIAGS(("setting up About text list"));
-// 	display("setting up About text list");
-	set_slist_object(0, new_widget_tree(C.Aes, ResourceTree(C.Aes_rsc, ABOUT_XAAES)), NULL, ABOUT_LIST, 0,
-			 NULL, NULL, NULL, NULL, NULL,
-			 NULL, NULL, NULL, NULL,
-			 NULL, NULL, NULL, 255);
-#endif
 	DIAGS(("display root window"));
 // 	display("display root window");
 	open_window(NOLOCKING, root_window, screen.r);

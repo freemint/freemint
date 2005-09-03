@@ -231,44 +231,6 @@ XA_keyboard_event(enum locks lock, const struct rawkey *key)
 			cancel_keyqueue(client);
 	}
 }
-#if 0
-static char *vecnames[] =
-{
-	"Stack after reset ",
-	"PC after reset    ",
-	"Bus               ",
-	"Address           ",
-	"Illegal           ",
-	"Div by Zero       ",
-	"CHK inst          ",
-	"TRAPV             ",
-	"Privilege         ",
-	"Trace             ",
-	"Line-A            ",
-	"Line-F            ",
-	"reserved          ",
-	"FPU prot violation",
-	"Format error      ",
-	"Uninitialized int ",
-	"Reserved          ",
-	"Reserved          ",
-	"Reserved          ",
-	"Reserved          ",
-	"Reserved          ",
-	"Reserved          ",
-	"Reserved          ",
-	"Reserved          ",
-	"Spurious int      ",
-	"Lev 1             ",
-	"Lev 2 (HBL)       ",
-	"Lev 3             ",
-	"Lev 4 (VBL)       ",
-	"Lev 5             ",
-	"lev 6 (MFP)       ",
-	"lev 7 (NMI)       ",
-};
-#endif
-
 
 static bool
 kernel_key(enum locks lock, struct rawkey *key)
@@ -345,7 +307,6 @@ kernel_key(enum locks lock, struct rawkey *key)
 			if (C.reschange)
 			{
 				post_cevent(C.Hlp, ceExecfunc, C.reschange, NULL, 0,0, NULL, NULL);
-// 				(*C.reschange)(lock, Client);
 			}
 // 			recover();
 			return true;
@@ -353,7 +314,6 @@ kernel_key(enum locks lock, struct rawkey *key)
 		case 'L':				/* open the task manager */
 		case NK_ESC:
 		{
-			//open_taskmanager(lock);
 			post_cevent(C.Hlp, ceExecfunc, open_taskmanager,NULL, 0,0, NULL,NULL);
 			return true;
 		}
@@ -415,33 +375,7 @@ kernel_key(enum locks lock, struct rawkey *key)
 				top_window(lock, true, true, wind, (void *)-1L);
 			}
 			return true;
-		}
-	#if 0
-		case 'P':
-		{
-			int i;
-			volatile long *vec = NULL;
-			display("Vecors...");
-			for (i = 0; i < 32; i++)
-				display("%s %lx (%d)", vecnames[i], *vec++, i);
-			return true;
-		}
-	#endif
-	#if 0
-		case 'P':
-		{
-			display("set_syspalette");
-			set_syspalette(C.vh, screen.palette);
-			return true;
-		}
-		case 'I':
-		{
-			display("Select image");
-			open_imgload(lock);
-			return true;
-		}
-	#endif	
-	
+		}	
 	#if GENERATE_DIAGS
 		case 'D':				/* ctrl+alt+D, turn on debugging output */
 		{
@@ -477,7 +411,7 @@ keyboard_input(enum locks lock)
 		key.norm = 0;
 
 		DIAGS(("f_getchar: 0x%08lx, AES=%x, NORM=%x", key.raw.bcon, key.aes, key.norm));
-		//display("f_getchar: 0x%08lx, AES=%x, NORM=%x", key.raw.bcon, key.aes, key.norm);
+// 		display("f_getchar: 0x%08lx, AES=%x, NORM=%x", key.raw.bcon, key.aes, key.norm);
 		
 		if (!kernel_key(lock, &key))
 			XA_keyboard_event(lock, &key);
