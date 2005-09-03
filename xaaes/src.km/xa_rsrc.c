@@ -537,88 +537,6 @@ fix_objects(struct xa_client *client,
 	DIAG((D_rsrc, client, "fixed up %ld objects ob_spec (end=%lx)", n, obj));
 }
 
-static void
-fix_shortcuts(struct xa_client *client, OBJECT *obtree)
-{
-	struct sc
-	{
-		short o;
-		char c;
-	};
-	struct sc *sc, *scuts;
-	short objs;
-	long len;
-	char nk;
-
-	objs = ob_count_objs(obtree, 0);
-
-	len = ((long)objs + 1) * sizeof(struct sc);
-
-	sc = kmalloc(len);
-	
-	if (sc)
-	{
-		int i = 0;
-		bzero(sc, len);
-		
-		do {
-			OBJECT *ob = obtree + i;
-			if ((ob->ob_state & OS_WHITEBAK))
-			{
-				short ty = ob->ob_type & 0xff;
-			
-				if (ty == G_BUTTON || ty == G_STRING)
-				{
-					int j = (ob->ob_state >> 8) & 0x7f;
-					int nc = 0;
-					if (j < 126)
-					{
-						char *s = object_get_spec(ob)->free_string;
-						if (s)
-						{
-							int slen = strlen(s);
-							if (j < slen)
-							{
-								scuts = sc;
-								nk = toupper(*(s + j));
-								while (scuts->c && nc < slen)
-								{
-									if (scuts->c == nk)
-									{
-										nk = toupper(*(s + nc));
-										nc++;
-										scuts = sc;
-									}
-									else
-										scuts++;
-								}
-								if (!scuts->c)
-								{
-									scuts->c = nk;
-									scuts->o = i;
-								}
-								if (nc)
-								{
-									if (nc <= slen)
-									{
-										nc--;
-										ob->ob_state = (ob->ob_state & 0x80ff) | ((nc & 0x7f) << 8);
-									}
-									else
-									{
-										ob->ob_state &= (~OS_WHITEBAK & 0x80ff);
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-		} while ( !(obtree[i++].ob_flags & OF_LASTOB));
-
-		kfree(sc);
-	}	
-}
 	
 static void
 fix_trees(struct xa_client *client, void *b, OBJECT **trees, unsigned long n, short designWidth, short designHeight)
@@ -672,7 +590,7 @@ fix_trees(struct xa_client *client, void *b, OBJECT **trees, unsigned long n, sh
 #endif			
 				}
 				while (!(obj++->ob_flags & OF_LASTOB));
-				fix_shortcuts(client, *trees);
+				ob_fix_shortcuts(*trees, false);
 			}
 			else
 			{

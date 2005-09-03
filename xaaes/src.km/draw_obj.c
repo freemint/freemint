@@ -1714,13 +1714,9 @@ d_g_icon(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 		else
 			cols[0] = G_WHITE;
 		
-// 		cols[0] = (screen.planes >= 16) ? G_LWHITE : G_WHITE;
 		cols[1] = G_WHITE;
 		vrt_cpyfm(v->handle, MD_TRANS, pxy, &Mddm, &Mscreen, cols);
 	}
-
-// 	if (ob->ob_state & OS_DISABLED)
-// 		(*v->api->write_disable)(v, &ic, G_WHITE);
 
 	/* should be the same for color & mono */
 	icon_characters(v, iconblk, ob->ob_state & (OS_SELECTED|OS_DISABLED), obx, oby, ic.x, ic.y);

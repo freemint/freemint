@@ -1750,8 +1750,10 @@ set_syspalette(short vdih, struct rgb_1000 *palette)
 	else
 		pens = 1 << screen.planes;
 
+// 	display("set syspal - %d pens", pens);
 	for (i = 0; i < pens; i++)
 	{
+// 		display("%03d - %04d, %04d, %04d", i, palette[i].red, palette[i].green, palette[i].blue);
 		vs_color(vdih, i, (short *)&(palette[i]));
 	}
 }
@@ -1770,12 +1772,13 @@ get_syspalette(short vdih, struct rgb_1000 *palette)
 		case 4: pens = 16; break;
 		default: pens = 256; break;
 	}
+// 	display("get syspal - %d pens", pens);
 	for (i = 0; i < pens; i++)
 	{
 		ind = vq_color(vdih, i, 0, rgb);
 		if (ind >= 0)
 		{
-// 			display("idx %03d, %04d, %04d, %04d", i, rgb[0], rgb[1], rgb[2]);
+// 			display("idx %03d(%03d), %04d, %04d, %04d", i, ind, rgb[0], rgb[1], rgb[2]);
 			palette[i] = *(struct rgb_1000 *)&rgb;
 		}
 	}
@@ -1807,6 +1810,7 @@ detect_pixel_format(struct xa_vdi_settings *v)
 		(*v->api->l_width)(v, 1);
 
 		vq_color(v->handle, 0, 1, (short *)&srgb);
+// 		display("saved %04d, %04d, %04d", srgb.red, srgb.green, srgb.blue);
 		rgb.red = 1000;
 		rgb.green = 1000;
 		rgb.blue = 0;

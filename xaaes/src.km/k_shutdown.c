@@ -255,16 +255,12 @@ k_shutdown(void)
 			 */
 			{
 				unsigned long sc = 0, cm = 0;
-				if (nova_data)
-				{
-					cm = s_system(S_CTRLCACHE, 0L, -1L);
-					sc = s_system(S_CTRLCACHE, -1L, 0L);
-					s_system(S_CTRLCACHE, sc & ~3, cm);
-				}
+				cm = s_system(S_CTRLCACHE, 0L, -1L);
+				sc = s_system(S_CTRLCACHE, -1L, 0L);
+				s_system(S_CTRLCACHE, sc & ~3, cm);
 				v_enter_cur(C.P_handle);	/* Ozk: Lets enter cursor mode */
 				v_clswk(C.P_handle);		/* Auto version must close the physical workstation */
-				if (nova_data)
-					s_system(S_CTRLCACHE, sc, cm);
+				s_system(S_CTRLCACHE, sc, cm);
 			}
 			display("\033e\033H");		/* Cursor enable, cursor home */
 		}

@@ -693,6 +693,16 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 
 	if (detach)
 		detach_extension(NULL, XAAES_MAGIC);
+
+	if (client == C.Hlp && !client->tp_term)
+	{
+		kfree(C.Hlp_pb);
+		C.Hlp_pb = NULL;
+		C.Hlp = NULL;
+		display("attempt to restart XaSYS");
+		wakeselect(C.Aes->p);
+	}
+	
 		
 // 	if (d) display("18");
 	S.clients_exiting--;
