@@ -30,7 +30,7 @@
 #include "global.h"
 #include "xa_types.h"
 
-int do_form_alert(enum locks lock, struct xa_client *client, int default_button, char *alert);
+int do_form_alert(enum locks lock, struct xa_client *client, int default_button, char *alert, char *title);
 
 AES_function
 	XA_form_center,

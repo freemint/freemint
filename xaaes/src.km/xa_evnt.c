@@ -373,9 +373,9 @@ check_queued_events(struct xa_client *client)
 	bool multi = wevents & XAWAIT_MULTI ? true : false;
 	AESPB *pb;
 	short *out;
-// 	bool d = (strnicmp(client->proc_name, "sprite", 6)) ? false : true;
+// 	bool d = (strnicmp(client->proc_name, "gbe", 3)) ? false : true;
 	
-// 	if (d) display("wevent %x", wevents);
+// 	if (d) display("wevent %x for %s", wevents, client->proc_name);
 
 	if (!(pb = client->waiting_pb))
 	{
@@ -461,8 +461,9 @@ check_queued_events(struct xa_client *client)
 				key = keys.aes;
 
 			DIAGS((" -- kbstate=%x", mbs.ks));
-
+// 			if (d) display(" -- kbstate=%x", mbs.ks);
 			mbs.ks = keys.raw.conin.state;
+// 			if (d) display(" -- kbstate=%x, key = %x", mbs.ks, key);
 
 			if (multi)
 				events |= (wevents & (MU_NORM_KEYBD|MU_KEYBD));

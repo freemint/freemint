@@ -118,7 +118,6 @@ bootmessage(void)
 #if ALT_CTRL_APP_OPS
 	display(" - CTRL+ALT key-combo's");
 #endif
-
 	if (C.mvalidate)
 		display(" - Client vector validation");
 
