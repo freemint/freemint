@@ -1206,27 +1206,38 @@ static void full_textwin(WINDOW *v)
 
 	t->windirty = 1;
 }
+static void
+resnap_rect(GRECT *m, GRECT *r, short ncw, short nch, short ocw, short och, long max_w)
+{
+	r->g_w = (r->g_w / ocw) * ncw;
+	if (r->g_w > max_w)
+		r->g_w = max_w;
+	if (r->g_w > m->g_w)
+		r->g_w = m->g_w;
+	
+	r->g_h = (r->g_h / och) * nch;
+	if (r->g_h > m->g_h)
+		r->g_h = m->g_h;
+	snap(NULL, r, ncw, nch);
+}
 
 static void
-snap_textwin_rects(WINDOW *w)
+resnap_textwin_rects(WINDOW *w, short new_cw, short new_ch)
 {
 	TEXTWIN *t = w->extra;
 	GRECT r;
-	short max_w;
+	long max_w;
 
-	max_w = t->x_limit * t->cmaxwidth;
+	max_w = (long)t->x_limit * new_cw;
 
 	wind_get_grect(w->handle, WF_MAXWORKXYWH, &w->full);
-	if (w->full.g_w > max_w)
-		w->full.g_w = max_w;
-	snap(NULL, &w->full, t->cmaxwidth, t->cheight);
-	wind_set_grect(w->handle, WF_FULLXYWH, &w->full);
-	
+	r = w->full;
+	resnap_rect(&w->full, &r, new_cw, new_ch, t->cmaxwidth, t->cheight, max_w);
+	wind_xset_grect(w->handle, WF_FULLXYWH, &r, &w->full);
+
 	wind_get_grect(w->handle, WF_PREVXYWH, &r);
-	if (r.g_w > max_w)
-		r.g_w = max_w;
-	snap(NULL, &r, t->cmaxwidth, t->cheight);
-	wind_set_grect(w->handle, WF_PREVXYWH, &r);
+	resnap_rect(&w->full, &r, new_cw, new_ch, t->cmaxwidth, t->cheight, max_w);
+	wind_xset_grect(w->handle, WF_PREVXYWH, &r, &w->prev);
 
 	if (w->flags & WFULLED)
 	{
@@ -1234,12 +1245,18 @@ snap_textwin_rects(WINDOW *w)
 	}
 	else
 	{
-		if (w->work.g_w > max_w)
-			w->work.g_w = max_w;
-		snap(NULL, &w->work, t->cmaxwidth, t->cheight);
+		wind_get_grect(w->handle, WF_CURRXYWH, &w->work);
+		resnap_rect(&w->full, &w->work, new_cw, new_ch, t->cmaxwidth, t->cheight, max_w);
 		wind_xset_grect(w->handle, WF_CURRXYWH, &w->work, &w->work);
 	}
-	set_scroll_bars(w->extra);
+	t->windirty = 1;
+	t->cmaxwidth = new_cw;
+ 	t->cheight = new_ch;
+	t->win->max_w = NCOLS(t) * t->cmaxwidth;
+	t->win->max_h = NROWS(t) * t->cheight;
+	
+	t->offy = ((t->maxy * new_ch) - w->work.g_h);
+	refresh_textwin(t, TRUE);
 }
 
 /* resize a window */
@@ -1430,7 +1447,7 @@ static void arrow_textwin(WINDOW *v, short msg)
 	}
 	refresh_textwin(t, TRUE);
 }
-
+	
 static void vslid_textwin(WINDOW *v, short vpos)
 {
 	TEXTWIN	*t = (TEXTWIN *)v->extra;
@@ -2025,11 +2042,9 @@ void textwin_setfont(TEXTWIN *t, short font, short points)
 	short dummy;
 	int reopen = 0;
 #endif
-
 	w = t->win;
 	if (t->cfont == font && t->cpoints == points)
 		return;		/* no real change happens */
-
 #ifndef ONLY_XAAES
 	if (!w->wco && w->handle >= 0)
 	{
@@ -2045,25 +2060,31 @@ void textwin_setfont(TEXTWIN *t, short font, short points)
 	t->cpoints = points;
 	set_font(font, points);
 	vqt_fontinfo(vdi_handle, &firstchar, &lastchar, distances, &maxwidth, effects);
-	t->cmaxwidth = maxwidth;
-	t->cheight = distances[0]+distances[4]+1;
+// 	t->cmaxwidth = maxwidth;
+// 	t->cheight = distances[0]+distances[4]+1;
 	t->cbase = distances[4];
 	t->minADE = firstchar;
 	t->maxADE = lastchar;
 	set_cwidths(t);
 
-	t->win->max_w = width = NCOLS(t) * t->cmaxwidth;
-	t->win->max_h = height = NROWS(t) * t->cheight;
+// 	t->win->max_w = width = NCOLS(t) * t->cmaxwidth;
+// 	t->win->max_h = height = NROWS(t) * t->cheight;
 
 #ifndef ONLY_XAAES
 	if (w->wco)
 	{
+		
 #endif
-		snap_textwin_rects(w);
+		resnap_textwin_rects(w, maxwidth, distances[0] + distances[4] + 1);
 #ifndef ONLY_XAAES
 	}
 	else
 	{
+		t->cmaxwidth = maxwidth;
+		t->cheight = distances[0]+distances[4]+1;
+		t->win->max_w = width = NCOLS(t) * t->cmaxwidth;
+		t->win->max_h = height = NROWS(t) * t->cheight;
+	
 		wind_calc(WC_BORDER, w->kind, w->full.g_x, w->full.g_y, width, height, &dummy, &dummy, &w->full.g_w, &w->full.g_h);
 		if (w->full.g_w > gl_desk.g_w)
 			w->full.g_w = gl_desk.g_w;

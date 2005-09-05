@@ -1070,11 +1070,13 @@ debug ("window modification: %lu %lu %lu\n", param1, param2, param3);
 				param3 /= tw->cmaxwidth;
 				/* FALLTHRU */
 			case 8:  /* Size in characters.  */
-				if (param2 == 0 || param2 > 768) {
+				if (param2 == 0 || param2 > 768)
+				{
 					param2 = tw->win->full_work.g_h;
 					param2 /= tw->cheight;
 				}
-				if (param3 == 0 || param3 > 1024) {
+				if (param3 == 0 || param3 > 1024)
+				{
 					param3 = tw->win->full_work.g_w;
 					param3 /= tw->cmaxwidth;
 				}
