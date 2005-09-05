@@ -742,6 +742,8 @@ alert_input(enum locks lock)
 		 /* Now you can always lookup the error in the log. */
 		DIAGS(("ALERT PIPE: '%s' %s", data->buf, update_locked() ? "pending" : "displayed"));
 
+// 		display("alert_winds %x, amask %x", cfg.alert_winds, amask);
+
 		if ((cfg.alert_winds & amask))
 			display_alert(NULL, (long)data);
 		else
