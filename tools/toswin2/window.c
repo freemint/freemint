@@ -298,8 +298,8 @@ WINDOW *create_window(char *title, short kind,
 		}
 		else
 		{
-			v->work.g_w = ww;
-			v->work.g_h = wh;
+			v->work.g_w = ww < full.g_w ? ww : full.g_w;
+			v->work.g_h = wh < full.g_h ? wh : full.g_h;
 		}
 
 		if (w_limit == -1L)
@@ -318,8 +318,8 @@ WINDOW *create_window(char *title, short kind,
 
 		if (wx == -1 || wy == -1)
 		{
-			wx = (full.g_w - v->work.g_w) >> 1;
-			wy = (full.g_h - v->work.g_h) >> 1;
+			wx = (gl_desk.g_w - v->work.g_w) >> 1;
+			wy = (gl_desk.g_h - v->work.g_h) >> 1;
 		}
 		if (wx < full.g_x)
 			wx = full.g_x;
@@ -329,7 +329,7 @@ WINDOW *create_window(char *title, short kind,
 		v->work.g_x = wx;
 		v->work.g_y = wy;
 		v->full_work = v->full = full;
-		wind_set_grect(v->handle, WF_FULLXYWH, &full);
+// 		wind_set_grect(v->handle, WF_FULLXYWH, &full);
 #ifndef ONLY_XAAES
 	}
 	else
