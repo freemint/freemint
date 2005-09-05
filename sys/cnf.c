@@ -238,8 +238,31 @@ parse_long(struct parsinf *inf, struct range *range)
 		src++;
 	}
 
-	while (isdigit(*src))
-		ret.l = (ret.l * 10) + (*(src++) - '0');
+	if (src[0] == '0' && (src[1] == 'x' || src[1] == 'X'))
+	{
+		char c;
+
+		src += 2;
+		c = toupper((int)*src++);
+
+		while ( isdigit(c) || (c >= 'A' && c <= 'F'))
+		{
+			ret.l <<= 4;			
+			if (c < 'A')
+				ret.l |= c - '0';
+			else
+			{
+				ret.l |= (c - ('A' - 10)) & 0xf;
+			}
+			c = toupper((int)*src++);
+		}
+		src--;
+	}
+	else
+	{
+		while (isdigit(*src))
+			ret.l = (ret.l * 10) + (*(src++) - '0');
+	}
 
 	if (src > inf->src)
 	{
@@ -275,6 +298,30 @@ parse_short(struct parsinf *inf, struct range *range)
 
 	if (inf->dst)
 		ret.s = (short)ret.l;
+
+	return ret;
+}
+static union genarg
+parse_ushort(struct parsinf *inf, struct range *range)
+{
+	union genarg ret = parse_long(inf, NULL);
+
+	if (inf->dst)
+	{
+		unsigned long min, max;
+		if (range)
+			min = (unsigned short)range->a, max = (unsigned short)range->b;
+		else
+			min = 0L, max = 0x0000ffffL;
+
+		if ((unsigned long)ret.l >= min && (unsigned long)ret.l <= max)
+			ret.s = (unsigned short)ret.l;
+		else
+		{
+			ret._err = ARG_RANG;
+			inf->dst = NULL;
+		}
+	}
 
 	return ret;
 }
@@ -470,6 +517,7 @@ parser(FILEPTR *f, long f_size,
 				case 0x04: arg[arg_num] = parse_token  (inf, false); break;
 				case 0x05: arg[arg_num] = parse_line   (inf);        break;
 				case 0x06: arg[arg_num] = parse_drvlst (inf);        break;
+				case 0x07: arg[arg_num] = parse_ushort (inf, range); break;
 			}
 			if (!inf->dst)     /*--- (2.3) argument failure */
 			{
@@ -534,6 +582,7 @@ parser(FILEPTR *f, long f_size,
 				case PI_R_S: *(short *)(cb._v) = arg[0].s;                   break;
 				case PI_R_L: *(long  *)(cb._v) = arg[0].l;                   break;
 				case PI_R_B: *(bool  *)(cb._v) = arg[0].b;                   break;
+				case PI_R_US: *(unsigned short *)(cb._v) = arg[0].s;         break;
 				/* string buf */
 				case PI_R_T:
 				{

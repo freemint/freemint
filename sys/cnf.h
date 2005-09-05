@@ -102,6 +102,7 @@ enum pitype
 	PI_R_L   = 0x3002, /*     reference gets long */
 	PI_R_B   = 0x3003, /*     reference gets bool */
 	PI_R_T   = 0x3004, /*     reference gets path */
+	PI_R_US  = 0x3007, /*     reference get ushort */
 };
 
 
