@@ -5,7 +5,8 @@
 # upper/lowercase don't matter for all keywords
 # bool values can be expressed as 1/0, y/n, yes/no, true/false
 # 
-
+# Ozk: The values enabled resembles the xaaes.cnf file I use on my
+#      Milan 040. 
 #
 # video mode select
 # -----------------
@@ -85,12 +86,15 @@
 # setenv name val ..... set up environment
 #
 #setenv NAME value
+#
+# The following are environment variables you are strongly adviced
+# to set as soon as possible to ensure smooth operation of the
+# system;
 setenv ACCPATH		C:\
 setenv ACCEXT		ACC,ACX
 setenv GEMEXT		PRG,APP,GTP,OVL,SYS
 setenv TOSEXT		TOS,TTP
 setenv TOSRUN		u:\opt\toswin2\tw-call.app
-setenv OLGAMANAGER 	u:\c\system\olga\olga.app
 setenv GEMJINGPATH	u:\d\sound\gemjing\gemjing.prg
 setenv SDL_VIDEODRIVER	gem
 
@@ -242,7 +246,7 @@ menupop_pids = no
 #                                         normal AES
 #
 #
-popup_timeout = 10
+popup_timeout = 50
 popout_timeout = 1000
 
 #
@@ -273,7 +277,7 @@ popout_timeout = 1000
 # altogether. To turn on alert windows, use a mask where all bits are set,
 # 0xffff, and to turn off clear all bits, 0x0000
 #
-#alert_windows = 0xffff
+#alert_windows = 0x0000
 
 #
 # next_active = <string>        (default is 'window')
@@ -286,7 +290,7 @@ popout_timeout = 1000
 #
 next_active = client
 
-#- DEPRECIATED
+#- DEPRECIATED - OBSOLETE
 #-
 #- close_lastwind = 'client' or 'window' (default is 'window')
 #-
@@ -493,7 +497,7 @@ launcher  = u:\opt\toswin2\tw-call.prg
 #
 #resource = xa_mono.rsc
 #widgets = widgets/homwdg.rsc
-#widgets = widgets/styl_wdg.rsc
+widgets = widgets/styl_wdg.rsc
 #widgets = widgets/nine-ozk.rsc
 #widtets = widgets/baroqwdg.rsc
 #widgets = widgets/ronb_wdg.rsc
