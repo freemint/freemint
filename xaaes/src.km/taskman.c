@@ -925,6 +925,13 @@ static char *coldepths[] =
 
 static char whatthehell[] = "What the hell!";
 
+struct resinf
+{
+	short id;
+	short x;
+	short y;
+};
+
 struct milres_parm
 {
 	struct xa_data_hdr h;
@@ -939,7 +946,8 @@ struct milres_parm
 	short num_depths;
 	struct widget_tree *depth_wt;
 	struct widget_tree *col_wt[8];
-	short *devids[8];
+	struct resinf *resinf[8];
+// 	short *devids[8];
 
 	POPINFO pinf_depth;
 	POPINFO pinf_res;
@@ -964,11 +972,9 @@ milan_reschg_form_exit(struct xa_client *Client,
 	{
 		case RCHM_COL:
 		{
-			int i, o;
+			int i, o, newres = 1;
 			POPINFO *pinf = object_get_popinfo(wt->tree + fr->obj);
 			struct widget_tree *pu_wt = NULL;
-
-// 			display("found %lx", p);
 
 			for (i = 0, o = pinf->obnum; i < 8 && o >= 0; i++)
 			{
@@ -978,8 +984,40 @@ milan_reschg_form_exit(struct xa_client *Client,
 					o--;
 					if (!o)
 					{
+						int j;
+						struct resinf *old, *new = NULL;
+						
+						old = p->resinf[p->current[0]];
+						for (j = 0; j < p->count[p->current[0]]; j++, old++)
+						{
+							if (old->id == p->current[1])
+							{
+								new = old;
+								break;
+							}
+						}
+						if (new)
+						{
+							old = new;
+						
+							new = p->resinf[i];
+							for (j = 0; j < p->count[i]; j++)
+							{
+// 								display("check %x (%d/%d) against %x (%d/%d)",
+// 									new[j].id, new[j].x, new[j].y,
+// 									old->id, old->x, old->y);
+
+								if (new[j].x == old->x && new[j].y == old->y)
+								{
+									newres = j + 1;
+									break;
+								}
+							}
+						}
+						
 						pu_wt = p->col_wt[i];
-						new_devid = *p->devids[i];
+// 						new_devid = *p->devids[i];
+						new_devid = new[newres - 1].id; //(*p->resinf[i]).id;
 						
 						p->current[0] = i;
 						break;
@@ -990,7 +1028,7 @@ milan_reschg_form_exit(struct xa_client *Client,
 			{
 				pinf = &p->pinf_res;
 				pinf->tree = pu_wt->tree;
-				pinf->obnum = 1;
+				pinf->obnum = newres;
 				obj_set_g_popup(wt, RCHM_RES, pinf);
 				obj_draw(wt, wind->vdi_settings, RCHM_RES, -1, NULL, wind->rect_list.start);
 // 				display("new devid = %x", new_devid);
@@ -1005,7 +1043,11 @@ milan_reschg_form_exit(struct xa_client *Client,
 
 			if (pu_wt)
 			{
-				new_devid = *(p->devids[p->current[0]] + (pinf->obnum - 1));
+				struct resinf *r = p->resinf[p->current[0]];
+				
+				new_devid = r[pinf->obnum - 1].id;
+
+// 				new_devid = *(p->devids[p->current[0]] + (pinf->obnum - 1));
 				p->current[1] = new_devid;
 			}
 // 			display("new devid = %x", new_devid);
@@ -1045,15 +1087,28 @@ milan_reschg_form_exit(struct xa_client *Client,
 
 	Sema_Dn(clients);
 }
+
 static short
 count_milan_res(long num_modes, short planes, struct videodef *modes)
 {
 	short count = 0;
+// 	bool p = false;
 
 	while (num_modes--)
 	{
 		if (modes->planes == planes)
 			count++;
+#if 0
+		if (count == 1 && !p)
+		{
+			short i, *m;
+			display("Planes %d", planes);
+			m = (short *)modes;
+			for (i = (66/2); i < (106/2); i++)
+				display("%02d, %04x, %05d", i, m[i], m[i]);
+			p = true;
+		}
+#endif
 		modes++;
 	}
 	return count;
@@ -1123,10 +1178,20 @@ nxt_mres(short item, void **data)
 	{
 		if (modes->planes == planes)
 		{
+			struct resinf *r = p->resinf[p->current[1]];
+			
+			(struct milres_parm *)p->misc[2] = modes + 1;
+			p->misc[3] = num_modes - 1;
+			r[item].id = modes->devid;
+			r[item].x  = modes->res_x;
+			r[item].y  = modes->res_y;
+			ret = modes->name;
+#if 0
 			(struct milres_parm *)p->misc[2] = modes + 1;
 			p->misc[3] = num_modes - 1;
 			*(p->devids[p->current[1]] + item) = modes->devid;
 			ret = modes->name;
+#endif
 // 			ndisplay(", name '%s' - %x", ret, modes->devid);
 			break;
 		}
@@ -1209,6 +1274,7 @@ check_milan_res(struct xa_client *client, short mw)
 	}
 	
 	num_modes = mvdi_device(0, 0, DEVICE_GETDEVICELIST, (long *)&modes);
+
 	if (num_modes > 0)
 	{
 		short depths = 0, devids = 0;
@@ -1235,16 +1301,27 @@ check_milan_res(struct xa_client *client, short mw)
 		
 		if (depths)
 		{
-			short *di;
+			struct resinf *r;
+// 			short *di;
 			
-			if (!(p = kmalloc(sizeof(*p) + (devids << 1))))
+			if (!(p = kmalloc(sizeof(*p) + (sizeof(*r) * devids)))) //if (!(p = kmalloc(sizeof(*p) + (devids << 1))))
 				goto exit;
 
 			bzero(p, sizeof(*p));
 
 			p->curr_devid = currmode;
-			(long)di = (long)p + sizeof(*p);
+// 			(long)di = (long)p + sizeof(*p);
+			(long)r = (long)p + sizeof(*p);
 
+			for (i = 0; i < 8; i++)
+			{
+				if ((p->count[i] = count[i]))
+				{
+					p->resinf[i] = r;
+					r += p->count[i];
+				}
+			}
+#if 0			
 			for (i = 0; i < 8; i++)
 			{
 				p->count[i] = count[i];
@@ -1255,6 +1332,7 @@ check_milan_res(struct xa_client *client, short mw)
 					di += p->count[i];
 				}
 			}
+#endif
 			p->num_depths = depths;
 			p->current[0] = 0;
 // 			display("color depths %d", depths);
@@ -1309,12 +1387,23 @@ milan_setdevid(struct widget_tree *wt, struct milres_parm *p, short devid)
 			if (!first)
 			{
 				first = p->col_wt[i];
-				found_devid = *p->devids[i];
+// 				found_devid = *p->devids[i];
+				found_devid = (*p->resinf[i]).id;
 				current = i;
 			}
 			
 			for (j = 0; j < p->count[i]; j++)
 			{
+				struct resinf *r = p->resinf[i];
+				
+				if (r[j].id == devid)
+				{
+					pu_wt = p->col_wt[i];
+					res_idx = j + 1;
+					found_devid = devid;
+					current = i;
+				}
+			#if 0
 				if (*(p->devids[i] + j) == devid)
 				{
 					pu_wt = p->col_wt[i];
@@ -1323,6 +1412,7 @@ milan_setdevid(struct widget_tree *wt, struct milres_parm *p, short devid)
 					current = i;
 					break;
 				}
+			#endif
 			}
 			if (res_idx != -1)
 				break;
@@ -1413,6 +1503,69 @@ nova_reschg_form_exit(struct xa_client *Client,
 	{
 		case RCHM_COL:
 		{
+			int i, o, newres = 1;
+			POPINFO *pinf = object_get_popinfo(wt->tree + fr->obj);
+			struct widget_tree *pu_wt = NULL;
+
+			for (i = 0, o = pinf->obnum; i < 8 && o >= 0; i++)
+			{
+// 				display("o = %d, i = %d, colwt = %lx", o, i, p->col_wt[i]);
+				if (p->col_wt[i])
+				{
+					o--;
+					if (!o)
+					{
+						int j;
+						struct resinf *old, *new = NULL;
+						
+						old = p->resinf[p->current[0]];
+						for (j = 0; j < p->count[p->current[0]]; j++, old++)
+						{
+							if (old->id == p->current[1])
+							{
+								new = old;
+								break;
+							}
+						}
+						if (new)
+						{
+							old = new;
+						
+							new = p->resinf[i];
+							for (j = 0; j < p->count[i]; j++)
+							{
+// 								display("check %x (%d/%d) against %x (%d/%d)",
+// 									new[j].id, new[j].x, new[j].y,
+// 									old->id, old->x, old->y);
+
+								if (new[j].x == old->x && new[j].y == old->y)
+								{
+									newres = j + 1;
+									break;
+								}
+							}
+						}
+						
+						pu_wt = p->col_wt[i];
+// 						new_devid = *p->devids[i];
+						new_devid = new[newres - 1].id; //(*p->resinf[i]).id;
+						
+						p->current[0] = i;
+						break;
+					}
+				}
+			}
+			if (pu_wt)
+			{
+				pinf = &p->pinf_res;
+				pinf->tree = pu_wt->tree;
+				pinf->obnum = newres;
+				obj_set_g_popup(wt, RCHM_RES, pinf);
+				obj_draw(wt, wind->vdi_settings, RCHM_RES, -1, NULL, wind->rect_list.start);
+// 				display("new devid = %x", new_devid);
+				p->current[1] = new_devid;
+			}
+#if 0
 			int i, o;
 			POPINFO *pinf = object_get_popinfo(wt->tree + fr->obj);
 			struct widget_tree *pu_wt = NULL;
@@ -1428,7 +1581,8 @@ nova_reschg_form_exit(struct xa_client *Client,
 					if (!o)
 					{
 						pu_wt = p->col_wt[i];
-						new_devid = *p->devids[i];
+// 						new_devid = *p->devids[i];
+						new_devid = (*p->resinf[i]).id;
 						
 						p->current[0] = i;
 						break;
@@ -1445,6 +1599,7 @@ nova_reschg_form_exit(struct xa_client *Client,
 // 				display("new devid = %x", new_devid);
 				p->current[1] = new_devid;
 			}
+#endif
 			break;
 		}
 		case RCHM_RES:
@@ -1454,8 +1609,14 @@ nova_reschg_form_exit(struct xa_client *Client,
 
 			if (pu_wt)
 			{
+				struct resinf *r = p->resinf[p->current[0]];
+				
+				new_devid = r[pinf->obnum - 1].id;
+				p->current[1] = new_devid;
+			#if 0
 				new_devid = *(p->devids[p->current[0]] + (pinf->obnum - 1));
 				p->current[1] = new_devid;
+			#endif
 			}
 // 			display("new devid = %x", new_devid);
 			break;
@@ -1525,11 +1686,22 @@ nxt_novares(short item, void **data)
 	{
 		if (modes->planes == planes)
 		{
+			struct resinf *r = p->resinf[p->current[1]];
+			
+			(struct nova_res *)p->misc[2] = modes + 1;
+			p->misc[3] = num_modes - 1;
+			r[item].id = ((long)modes - p->misc[0]) / sizeof(*modes);
+			r[item].x = modes->max_x;
+			r[item].y = modes->max_y;
+			ret = modes->name;
+			((char *)ret)[32] = '\0';
+		#if 0
 			(struct nova_res *)p->misc[2] = modes + 1;
 			p->misc[3] = num_modes - 1;
 			*(p->devids[p->current[1]] + item) = ((long)modes - p->misc[0]) / sizeof(*modes);
 			ret = modes->name;
 			((char *)ret)[32] = '\0';
+		#endif
 			break;
 		}
 		num_modes--;
@@ -1582,11 +1754,6 @@ check_nova_res(struct xa_client *client, short mw)
 				goto exit;
 			
 			num_modes = x.size / sizeof(struct nova_res);
-
-// 			for (i = 0; i < num_modes; i++)
-// 			{
-// 				display("idx %04d, name %s", i, modes[i].name);
-// 			}
 			
 			count[0] = count_nova_res(num_modes,  1, modes);
 			count[1] = count_nova_res(num_modes,  2, modes);
@@ -1608,9 +1775,10 @@ check_nova_res(struct xa_client *client, short mw)
 		
 			if (depths)
 			{
-				short *di;
+				struct resinf *r;
+// 				short *di;
 			
-				if (!(p = kmalloc(sizeof(*p) + (devids << 1))))
+				if (!(p = kmalloc(sizeof (*p) + (sizeof(*r) * devids)))) //if (!(p = kmalloc(sizeof(*p) + (devids << 1))))
 					goto exit;
 
 				bzero(p, sizeof(*p));
@@ -1618,8 +1786,18 @@ check_nova_res(struct xa_client *client, short mw)
 				p->modes = modes;
 				p->curr_devid = currmode;
 				
-				(long)di = (long)p + sizeof(*p);
+// 				(long)di = (long)p + sizeof(*p);
+				(long)r = (long)p + sizeof(*p);
 
+				for (i = 0; i < 8; i++)
+				{
+					if ((p->count[i] = count[i]))
+					{
+						p->resinf[i] = r;
+						r += p->count[i];
+					}
+				}
+			#if 0
 				for (i = 0; i < 8; i++)
 				{
 					p->count[i] = count[i];
@@ -1630,6 +1808,7 @@ check_nova_res(struct xa_client *client, short mw)
 						di += p->count[i];
 					}
 				}
+			#endif
 				p->num_depths = depths;
 				p->current[0] = 0;
 // 				display("color depths %d", depths);

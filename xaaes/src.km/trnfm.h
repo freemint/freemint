@@ -43,6 +43,7 @@ void fix_rsc_palette(struct xa_rsc_rgb *palette);
 void set_syspalette(short vdih, struct rgb_1000 *palette);
 void get_syspalette(short vdih, struct rgb_1000 *palette);
 void set_defaultpalette(short vdih);
+void set_syscolor(void);
 short detect_pixel_format(struct xa_vdi_settings *v);
 
 #endif /* _trnfm_h */
