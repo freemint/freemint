@@ -1789,6 +1789,25 @@ set_defaultpalette(short vdih)
 	set_syspalette(vdih, (struct rgb_1000 *)systempalette);
 }
 
+struct color_tab256
+{
+	COLOR_TAB	tab;
+	COLOR_ENTRY	colors[256];
+};
+typedef struct color_tab256 COLOR_TAB256;
+
+static COLOR_TAB256 syscol;
+
+void
+set_syscolor(void)
+{
+	if (vq_ctab(C.P_handle, sizeof(COLOR_TAB256), (COLOR_TAB *)&syscol))
+	{
+		vq_dflt_ctab(C.P_handle, sizeof(COLOR_TAB256), (COLOR_TAB *)&syscol);
+		syscol.tab.map_id = vq_ctab(C.P_handle, sizeof(COLOR_TAB256), (COLOR_TAB *)&syscol);
+		vs_ctab(C.P_handle, (COLOR_TAB *)&syscol);
+	}
+}
 /*
  * Ozk: Attempt to detect pixel format in 15 bpp and above
  */

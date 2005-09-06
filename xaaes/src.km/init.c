@@ -458,6 +458,8 @@ again:
 	default_options.thinframe = 1;
 	default_options.wheel_mode = WHL_AROWWHEEL;
 
+	default_options.clwtna = 1;
+
 	C.Aes->options = default_options;
 
 //	addto_namelist(&cfg.ctlalta, "taskbar ");
