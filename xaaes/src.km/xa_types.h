@@ -294,7 +294,7 @@ struct widget_theme;
 
 struct options
 {
-	bool clwtna;			/* Close Last Window Tops Next App */
+	short clwtna;			/* Close Last Window Tops Next App */
 	bool windowner;			/* display window owner in title. */
 	bool nohide;
 	bool xa_nohide;

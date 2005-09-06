@@ -563,7 +563,7 @@ pCB_app_options(char *line)
 			else if (!strnicmp(s, "inhibit_hide", 12))
 				get_boolarg(s + 12, &opts->inhibit_hide);
 			else if (!strnicmp(s, "clwtna", 6))
-				get_boolarg(s + 6, &opts->clwtna);
+				get_argument(s + 6, &opts->clwtna); //get_boolarg(s + 6, &opts->clwtna);
 
 #if GENERATE_DIAGS
 			else
