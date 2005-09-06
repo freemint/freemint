@@ -227,7 +227,7 @@ k_shutdown(void)
 	/*
 	 * Close the virtual used by XaAES
 	 */
-	if (v && v->handle)
+	if (v && v->handle && v->handle != C.P_handle)
 		v_clsvwk(v->handle);
 	/*
 	 * Close the physical

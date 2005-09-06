@@ -115,7 +115,17 @@ struct videodef
 	char name[64];
 	short devid;
 	short planes;
-	char dontknow[106 - 68];
+	short res_x;
+	short res_y;
+	short vres_x;
+	short vres_y;
+	char dontknow[106 - 76];
+#if 0
+	char name[64];
+	short devid;
+	short planes;
+	char dontknow3[106 - 68];
+#endif
 };
 
 	

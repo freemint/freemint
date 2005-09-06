@@ -455,7 +455,6 @@ k_init(unsigned long vm)
 // 		display("set mode %x", mode);
 		DIAGS(("Screenmode is: %d", mode));
 
-		set_wrkin(work_in, mode);
 
 		/*
 		 * Ozk: We switch off instruction, data and branch caches (where available)
@@ -473,6 +472,7 @@ k_init(unsigned long vm)
 			cm = s_system(S_CTRLCACHE, 0L, -1L);
 			sc = s_system(S_CTRLCACHE, -1L, 0L);
 			s_system(S_CTRLCACHE, sc & ~3, cm);
+			set_wrkin(work_in, mode);
 			v_opnwk(work_in, &(C.P_handle), work_out);
 			s_system(S_CTRLCACHE, sc, cm);
 		}
@@ -485,13 +485,13 @@ k_init(unsigned long vm)
 			display("v_opnwk failed (%i)!", C.P_handle);
 			return -1;
 		}
+// 		_b_ubconout(2, ' ');
 		/*
 		 * We need to get rid of the cursor
 		 */
 		v_exit_cur(C.P_handle);
 		DIAGS(("v_exit_cur ok!"));
 		
-// 		_b_ubconout(2, ' ');
 	}
 	else
 	{
@@ -504,6 +504,7 @@ k_init(unsigned long vm)
 		DIAGS(("graf_handle -> %d", C.P_handle));
 	}
 
+	set_defaultpalette(C.P_handle);
 	/*
 	 * Open us a virtual workstation for XaAES to play with
 	 */
@@ -517,6 +518,7 @@ k_init(unsigned long vm)
 		return -1;
 	}
 	DIAGS(("Virtual work station opened: %d", v->handle));
+
 	/*
 	 * Setup the screen parameters
 	 */
@@ -527,26 +529,24 @@ k_init(unsigned long vm)
 	screen.display_type = D_LOCAL;
 	v->screen = screen.r;
 	C.Aes->vdi_settings = v;
-	vs_clip(C.P_handle, 0, (short *)&screen.r);
+	vs_clip(C.P_handle, 1, (short *)&screen.r);
+	(*global_vdiapi->set_clip)(v, &screen.r);
 	
 	(*global_vdiapi->f_perimeter)(v, 0);	/* from set_colours; never set to 1 ever */
 	v_show_c(C.P_handle, 0);
 	hidem();
 	graf_mouse(ARROW, NULL, NULL, false);
 	showm();
-	(*global_vdiapi->wr_mode)(v, MD_TRANS);	
 	(*global_vdiapi->t_alignment)(v, 0, 5);
 	
-	(*global_vdiapi->clear_clip)(v);
-
 	objc_rend.dial_colours =
 		MONO ? bw_default_colours : default_colours;
 
 	vq_extnd(v->handle, 1, work_out);	/* Get extended information */
 	screen.planes = work_out[4];		/* number of planes in the screen */
 	
-	set_defaultpalette(C.P_handle);
-	set_defaultpalette(v->handle);
+	if (screen.planes > 8)
+		set_defaultpalette(v->handle);
 	get_syspalette(C.P_handle, screen.palette);
 
 	screen.pixel_fmt = detect_pixel_format(v);
@@ -566,7 +566,6 @@ k_init(unsigned long vm)
 		(*global_vdiapi->load_fonts)(v);
 	else
 		cfg.font_id = 1;
-
 
 	(*global_vdiapi->t_font)(v, cfg.small_font_point, cfg.font_id);
 	screen.standard_font_id  = screen.small_font_id = v->font_rid;
@@ -622,7 +621,8 @@ k_init(unsigned long vm)
 		display("ERROR: Can't load system resource file '%s'", cfg.rsc_name);
 		return -1;
 	}
-	set_syspalette(C.P_handle, screen.palette);
+// 	set_syspalette(C.P_handle, screen.palette);
+// 	set_syscolor();
 
 	/*
 	 * Version check the aessys resouce

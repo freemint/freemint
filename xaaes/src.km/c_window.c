@@ -1582,6 +1582,7 @@ close_window(enum locks lock, struct xa_window *wind)
 	struct xa_client *client = wind->owner;
 	RECT r;
 	bool is_top;
+// 	bool d = (!strnicmp(client->proc_name, "mintsett", 8)) ? true : false;
 
 	if (wind == NULL)
 	{
@@ -1638,6 +1639,8 @@ close_window(enum locks lock, struct xa_window *wind)
 	}	
 
 	is_top = is_topped(wind);
+	
+// 	if (d) display("is_top = %d", is_top);
 
 	wl = wind->next;
 
@@ -1666,7 +1669,7 @@ close_window(enum locks lock, struct xa_window *wind)
 
 		while (w && w != root_window)
 		{
-			if (w->owner == client)
+			if (w->owner == client && !(w->window_status & (XAWS_ICONIFIED|XAWS_HIDDEN)))
 			{
 				if (w != window_list)
 					top_window(lock|winlist, true, true, w, NULL);
@@ -1692,15 +1695,79 @@ close_window(enum locks lock, struct xa_window *wind)
 	 */
 	update_windows_below(lock, &r, NULL, wl, NULL);
 
+// 	if (d) display("clwtna %d, w %lx, top_own %s", client->options.clwtna, w, window_list ? window_list->owner->name : "Noontop");
+
 	if (window_list && is_top && !w)
 	{
+		switch (client->options.clwtna)
+		{
+			case 0:		/* Keep active client ontop */
+				break;
+			default:
+			case 1:	/* Top app who owns window below closed one */
+			{
+				w = window_list;
+				while (w)
+				{
+					if (!(w->window_status & (XAWS_ICONIFIED|XAWS_HIDDEN)) && !(w->owner->status & CS_EXITING))
+						break;
+					w = w->next;
+				}
+				if (w && w != root_window)
+				{
+// 					if (d) display("topping win for %s", w->owner->name);
+					top_window(lock, true, true, w, NULL);
+				}
+				else if (w == root_window)
+				{
+// 					if (d) display("topping desktop! %s", desktop_owner()->name);
+					app_in_front(lock, desktop_owner(), true, true, true);
+				}
+				else
+				{
+// 					if (d) display("clwtna 1 last resort - top prev app");
+					app_in_front(lock, previous_client(lock, 1), true, true, false);
+				}
+		#if 0
+				if (!(window_list->owner->status & CS_EXITING) && window_list != root_window)
+				{
+					if (w)
+					{
+						if (d) display("topping win for %s", window_list->owner->name);
+						top_window(lock, true, true, w, NULL);
+					}
+				}
+				else if (window_list == root_window)
+				{
+					if (d) display("topping desktop! %s", desktop_owner()->name);
+					app_in_front(lock, desktop_owner(), true, true, true);
+				}
+		#endif
+				break;
+			}
+			case 2: /* Top the client previously topped */
+			{
+// 				if (d) display("topping prev client %s", previous_client(lock, 1)->name);
+				app_in_front(lock, previous_client(lock, 1), true, true, false);
+				break;
+			}
+// 			default:;
+		}
+#if 0
 		if (client->options.clwtna)
 		{/* Put owner of window ontop infront */
 			if (!(window_list->owner->status & CS_EXITING) && window_list != root_window)
 			{
+				if (d) display("topping win for %s", window_list->owner->name);
 				top_window(lock, true, true, window_list, NULL);
 			}
+			else if (window_list == root_window)
+			{
+				if (d) display("topping desktop! %s", desktop_owner()->name);
+				app_in_front(lock, desktop_owner(), true, true, true);
+			}
 		}
+#endif
 	}
 
 	set_winmouse();
