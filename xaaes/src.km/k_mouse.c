@@ -543,6 +543,24 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 		TAB_LIST_START, widget_active.widg));
 	
 
+	/* Ozk 040503: Moved the continuing handling of widgets actions here
+	 * so we dont have to msg the client to make real-time stuff
+	 * work. Having it here saves time, since it only needs to be
+	 * done when the mouse moves.
+	 */
+	if (widget_active.widg)
+	{
+		widget_active.m = *md;
+		client = widget_active.wind->owner;
+		if (!(client->status & CS_EXITING))
+		{
+// 			wind_mshape(widget_active.wind, md->x, md->y);
+			DIAG((D_mouse, client, "post active widget (move) to %s", client->name));
+			C.move_block = 1;
+			post_cevent(client, cXA_active_widget, NULL,NULL, 0,0, NULL, md);
+		}
+		return false;
+	}
 	if (TAB_LIST_START)
 	{
 		client = TAB_LIST_START->client;
@@ -557,6 +575,7 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 		}
 		return false;
 	}
+#if 0
 	/* Ozk 040503: Moved the continuing handling of widgets actions here
 	 * so we dont have to msg the client to make real-time stuff
 	 * work. Having it here saves time, since it only needs to be
@@ -574,7 +593,7 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 		}
 		return false;
 	}
-
+#endif
 // 	Sema_Up(clients);
 
 	

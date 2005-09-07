@@ -832,7 +832,7 @@ app_in_front(enum locks lock, struct xa_client *client, bool snd_untopped, bool 
 		if (topped)
 		{
 			update_all_windows(lock, window_list);
-			set_winmouse();
+			set_winmouse(-1, -1);
 		}
 
 		if (wastop)
