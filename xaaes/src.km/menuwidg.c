@@ -1838,7 +1838,7 @@ Display_menu_widg(struct xa_window *wind, struct xa_widget *widg, const RECT *cl
 		//obtree->ob_height = widg->r.h - 1;
 		obtree->ob_width = obtree[obtree[0].ob_head].ob_width = widg->ar.w;
 		wt->rend_flags |= WTR_ROOTMENU;
-		draw_object_tree(0, wt, NULL, wind->vdi_settings, 0, MAX_DEPTH, NULL);
+		draw_object_tree(0, wt, NULL, wind->vdi_settings, 1, MAX_DEPTH, NULL);
 		wt->rend_flags &= ~WTR_ROOTMENU;
 		write_menu_line(wind->vdi_settings, (RECT*)&widg->ar); //obtree->ob_x);	/* HR: not in standard menu's object tree */
 	}

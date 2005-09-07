@@ -252,7 +252,7 @@ top_window(enum locks lock, bool snd_untopped, bool snd_ontop, struct xa_window 
 	/* Ozk: Set mousecursor to whatever shape the owner of the
 	 *	window under mousecursor uses...
 	 */
-	set_winmouse();
+	set_winmouse(-1, -1);
 }
 
 void
