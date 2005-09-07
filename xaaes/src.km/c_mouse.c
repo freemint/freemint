@@ -85,9 +85,17 @@ cXA_button_event(enum locks lock, struct c_event *ce, bool cancel)
 			if (tab && !tab->task_data.menu.entry)
 				tab = collapse(root_tab, tab);
 			else if (!tab)
-				tab = root_tab;
+			{
+				wind = find_window(lock, md->x, md->y);
+				FOREACH_TAB(tab)
+				{
+					if (tab->task_data.menu.popw == wind)
+						break;
+				}
+				if (!tab)
+					tab = root_tab;
+			}
 
-			
 			DIAG((D_button, client, "cXA_button_event: Menu click"));
 			if (tab->ty)
 			{
@@ -97,6 +105,7 @@ cXA_button_event(enum locks lock, struct c_event *ce, bool cancel)
 				/* HR 161101: widgets in scrolling popups */
 				if (wind)
 				{
+					set_winmouse(md->x, md->y); //wind_mshape(wind, md->x, md->y);
 					if (wind->owner != client)
 					{
 						DIAG((D_button, client, "cXA_button_event: Wrong client %s, should be %s", wind->owner->name, client->name));
@@ -259,17 +268,15 @@ cXA_open_menu(enum locks lock, struct c_event *ce, bool cancel)
 	C.ce_open_menu = NULL;
 }
 
-void
-cXA_menu_move(enum locks lock, struct c_event *ce, bool cancel)
+static void
+menu_move(struct xa_client *client, struct moose_data *md, bool f)
 {
-	if (!cancel)
-	{
-		if (TAB_LIST_START->client == ce->client && !C.move_block)
+		if (TAB_LIST_START->client == client && !C.move_block)
 		{
 			Tab *tab = TAB_LIST_START;
 			MENU_TASK *k;
-			short x = ce->md.x;
-			short y = ce->md.y;
+			short x = md->x;
+			short y = md->y;
 
 			DIAG((D_mouse, ce->client, "cXA_menu_move for %s", ce->client->name));
 		
@@ -306,7 +313,7 @@ cXA_menu_move(enum locks lock, struct c_event *ce, bool cancel)
 				}
 				if ((k->em.flags & MU_M2))
 				{
-					if (is_rect(x, y, k->em.m2_flag & 1, &k->em.m2))
+					if (f || (is_rect(x, y, k->em.m2_flag & 1, &k->em.m2)))
 					{
 						k->em.flags &= ~MU_M2;
 						k->x = x;
@@ -321,7 +328,14 @@ cXA_menu_move(enum locks lock, struct c_event *ce, bool cancel)
 			}
 			
 			if (tab)
+			{
+				if (tab->task_data.menu.popw)
+					wind_mshape(tab->task_data.menu.popw, x, y);
 				tab = tab->tab_entry.next;
+			}
+			else
+				set_winmouse(x, y); //wind_mshape(find_window(lock, x, y), x,y);
+
 			while (tab)
 			{
 				k = &tab->task_data.menu;
@@ -330,6 +344,13 @@ cXA_menu_move(enum locks lock, struct c_event *ce, bool cancel)
 				tab = tab->tab_entry.next;
 			}
 		}
+}
+void
+cXA_menu_move(enum locks lock, struct c_event *ce, bool cancel)
+{
+	if (!cancel)
+	{
+		menu_move(ce->client, &ce->md, ce->d0);
 	}
 	C.ce_menu_move = NULL;
 }
@@ -541,7 +562,6 @@ cXA_wheel_event(enum locks lock, struct c_event *ce, bool cancel)
 					}
 				}
 			}
-			 
 			if (!slist && (wind->opts & XAWO_WHEEL))
 			{
 				switch (wind->wheel_mode)
@@ -609,6 +629,21 @@ cXA_wheel_event(enum locks lock, struct c_event *ce, bool cancel)
 			{
 				amount *= (md->clicks < 0 ? -md->clicks : md->clicks);
 				whlarrowed(wind, WA, amount, NULL);
+			}
+			if (wind->dial & created_for_POPUP)
+			{
+				if (TAB_LIST_START)
+				{
+					client = TAB_LIST_START->client;
+		
+					if (!(client->status & CS_EXITING) && !C.ce_menu_move && !C.ce_menu_click)
+					{
+						client = TAB_LIST_START->client;
+						C.ce_menu_move = client;
+						DIAG((D_mouse, client, "post menumove to %s", client->name));
+						post_cevent(client, cXA_menu_move, NULL,NULL, 1,0, NULL, md);
+					}
+				}
 			}
 		}
 	}

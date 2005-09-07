@@ -788,7 +788,7 @@ display_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, struct 
 {
 	RECT r;
 
-	if (!(wind->window_status & widg->m.statusmask) && wdg_is_inst(widg)) //widg->m.r.draw)
+	if (!(wind->window_status & widg->m.statusmask) && wdg_is_inst(widg))
 	{
 		struct xa_vdi_settings *v = wind->vdi_settings;
 
@@ -3570,14 +3570,16 @@ redisplay_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, short
 	if (wdg_is_inst(widg))
 	{
 		widg->state = state;
-
 		/* No rectangle list. */
-		if (wind->nolist)
+		if ((wind->dial & created_for_SLIST) || (wind->nolist && !wind->rect_list.start))
 		{
+			struct xa_vdi_settings *v = wind->vdi_settings;
+			(*v->api->set_clip)(v, &wind->r);
 			hidem();
 			/* Not on top, but visible */
 			widg->m.r.draw(wind, widg, &wind->r);
 			showm();
+			(*v->api->clear_clip)(v);
 		}
 		else
 			/* Display the selected widget */
@@ -3606,19 +3608,20 @@ do_active_widget(enum locks lock, struct xa_client *client)
 			{
 				/* Flag the widget as de-selected */
 				redisplay_widget(lock, wind, widg, OS_NORMAL);
-				set_winmouse();
+				set_winmouse(-1, -1);
 			}
 		}
 	}
 }
 
 void
-set_winmouse(void)
+set_winmouse(short x, short y)
 {
-	short x, y;
+// 	short x, y;
 	struct xa_window *wind;
 
-	check_mouse(NULL, NULL, &x, &y);
+	if (x == -1 && y == -1)
+		check_mouse(NULL, NULL, &x, &y);
 
 	wind = find_window(0, x, y);
 
@@ -3665,7 +3668,9 @@ wind_mshape(struct xa_window *wind, short x, short y)
 				}
 		
 				if (rwind)
+				{
 					redisplay_widget(0, rwind, rwidg, OS_NORMAL);
+				}
 			}
 		
 			if (wind->active_widgets & (SIZER|BORDER))

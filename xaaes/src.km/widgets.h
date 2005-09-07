@@ -82,7 +82,7 @@ void	remove_widget_active(struct xa_client *client);
 
 void	do_widget_repeat(void);
 void	do_active_widget(enum locks lock, struct xa_client *client);
-void	set_winmouse(void);
+void	set_winmouse(short x, short y);
 short	wind_mshape(struct xa_window *wind, short x, short y);
 
 /*

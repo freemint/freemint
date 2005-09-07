@@ -1196,7 +1196,7 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 	DIAG((D_wind, wind->owner, "open_window %d for %s exit with 1",
 		wind->handle, c_owner(wind->owner)));
 
-	set_winmouse();
+	set_winmouse(-1, -1);
 
 	return 1;
 }
@@ -1770,7 +1770,7 @@ close_window(enum locks lock, struct xa_window *wind)
 #endif
 	}
 
-	set_winmouse();
+	set_winmouse(-1, -1);
 
 	return true;
 }
