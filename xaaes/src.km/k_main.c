@@ -1079,6 +1079,53 @@ dispatch_shutdown(int flags)
 	}
 }
 
+static void
+CE_start_apps(enum locks lock, struct c_event *ce, bool cancel)
+{
+	if (!cancel)
+	{
+		Path parms;
+		int i;
+		
+		lock = winlist|envstr|pending;
+		/*
+		 * Load Accessories
+		 */
+		DIAGS(("loading accs"));
+		load_accs();
+		DIAGS(("loading accs done!"));
+		
+		/*
+		 * startup shell and autorun
+		 */
+		DIAGS(("loading shell and autorun"));
+
+		for (i = sizeof(cfg.cnf_run)/sizeof(cfg.cnf_run[0]) - 1; i >= 0; i--)
+		{
+			if (cfg.cnf_run[i])
+			{
+				DIAGS(("autorun[%d]: cmd=(%lx) '%s'", i, cfg.cnf_run[i], cfg.cnf_run[i] ? cfg.cnf_run[i] : "no cmd"));
+				DIAGS(("   args[%d]:    =(%lx) '%s'", i, cfg.cnf_run_arg[i], cfg.cnf_run_arg[i] ? cfg.cnf_run_arg[i] : "no arg"));
+				parms[0] = '\0';
+				if (cfg.cnf_run_arg[i])
+					parms[0] = sprintf(parms+1, sizeof(parms)-1, "%s", cfg.cnf_run_arg[i]);
+
+				launch(lock, 0, 0, 0, cfg.cnf_run[i], parms, C.Aes);
+			}
+		}
+		if (cfg.cnf_shell)
+		{
+			parms[0] = '\0';
+			if (cfg.cnf_shell_arg)
+				parms[0] = sprintf(parms+1, sizeof(parms)-1, "%s", cfg.cnf_shell_arg);
+
+			C.DSKpid = launch(lock, 0, 0, 0, cfg.cnf_shell, parms, C.Aes);
+			if (C.DSKpid > 0)
+				strcpy(C.desk, cfg.cnf_shell);
+		}
+	}
+}
+
 /*
  * Main AESSYS thread...
  */
@@ -1313,6 +1360,10 @@ k_main(void *dummy)
 
 	if (cfg.opentaskman)
 		post_cevent(C.Hlp, ceExecfunc, open_taskmanager,NULL, 0,0, NULL,NULL);
+
+	post_cevent(C.Hlp, CE_start_apps, NULL,NULL, 0,0, NULL,NULL);
+
+#if 0
 	/*
 	 * Load Accessories
 	 */
@@ -1353,7 +1404,7 @@ k_main(void *dummy)
 				strcpy(C.desk, cfg.cnf_shell);
 		}
 	}
-	
+#endif
 	C.Aes->waiting_for |= XAWAIT_MENU;
 
 	/*
