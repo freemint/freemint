@@ -1939,13 +1939,20 @@ free_xawidget_resources(struct xa_widget *widg)
 					wt, widg));
 
 				wt->links--;
-				//display(" free_xawidget_re: stuff is wt=%lx (links=%d) in widg=%lx",
-				//	wt, wt->links, widg);
+// 				if (d) display(" free_xawidget_re: stuff is wt=%lx (links=%d) in widg=%lx",
+// 					wt, wt->links, widg);
 				
 				if (!remove_wt(wt, false))
 				{
-					wt->widg = NULL;
-					wt->wind = NULL;
+					/* Ozk: 
+					 * Since the window deletion can happen after a wt is reused for
+					 * another window, we must check if it is infact still attached
+					 * to the window we remove it from. Fixes gfa_xref problems!
+					 */
+					if (wt->widg == widg)
+						wt->widg = NULL;
+					if (wt->wind == widg->wind)
+						wt->wind = NULL;
 				}
 				break;
 			}
@@ -3233,7 +3240,7 @@ remove_widget(enum locks lock, struct xa_window *wind, int tool)
 	//display("remove_widget %d: 0x%lx", tool, widg->stuff);
 
 	if (widg->m.destruct)
-		widg->m.destruct(widg);
+		(*widg->m.destruct)(widg);
 	else
 	{
 		widg->stufftype	= 0;
