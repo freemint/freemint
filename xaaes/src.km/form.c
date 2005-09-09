@@ -103,7 +103,7 @@ create_fmd_wind(enum locks lock, struct xa_client *client, XA_WIND_ATTR kind, WI
 		nolist = true;
 	}
 
-	kind |= (TOOLBAR | USE_MAX);
+	kind |= (TOOLBAR | USE_MAX | BACKDROP);
 	wind = create_window(lock,
 			     do_winmesag,
 			     do_formwind_msg,
@@ -154,6 +154,7 @@ Setup_form_do(struct xa_client *client,
 	XA_WIND_ATTR kind = NAME;
 	XA_TREE *wt = NULL;
 	struct xa_window *wind = NULL;
+// 	bool d = (!strnicmp(client->proc_name, "gfa_xref", 8)) ? true : false;
 
 	/*
 	 * Window for form/dialogs already created by form_dial()?
@@ -161,6 +162,7 @@ Setup_form_do(struct xa_client *client,
 	if (client->fmd.wind)
 	{
 		DIAG((D_form, client, "Setup_form_do: wind %d for %s", client->fmd.wind->handle, client->name));
+// 		if (d) display("Setup_form_do: wind %d for %s", client->fmd.wind->handle, client->name);
 		wind = client->fmd.wind;
 		calc_fmd_wind(client, obtree, kind, wind->dial, (RECT *)&client->fmd.r);
 		wt = set_toolbar_widget(lock, wind, client, obtree, edobj, WIP_NOTEXT, false, NULL, NULL); //&client->fmd.r);
@@ -173,6 +175,7 @@ Setup_form_do(struct xa_client *client,
 	else if (C.update_lock == client->p)
 	{
 		DIAG((D_form, client, "Setup_form_do: nonwindowed for %s", client->name));
+// 		if (d) display("Setup_form_do: nonwindowed for %s", client->name);
 		Set_form_do(client, obtree, edobj);
 		wt = client->fmd.wt;
 		goto okexit;
@@ -182,6 +185,7 @@ Setup_form_do(struct xa_client *client,
 	 */
 	else
 	{
+// 		if (d) display("new windowed formdo");
 		calc_fmd_wind(client, obtree, kind, client->fmd.state ? created_for_FMD_START : created_for_FORM_DO, (RECT *)&client->fmd.r);
 
 		if (!client->options.xa_nomove)
@@ -196,10 +200,13 @@ Setup_form_do(struct xa_client *client,
 	 */
 	if (!wind)
 	{
+// 		if (d) display("creating wind for form_do");
+
 		if ((wind = create_fmd_wind(lock, client, kind, client->fmd.state ? created_for_FMD_START : created_for_FORM_DO, &client->fmd.r)))
 		{
 			client->fmd.wind = wind;
 			wt = set_toolbar_widget(lock, wind, client, obtree, edobj, WIP_NOTEXT, false, NULL, NULL); //client->fmd.r);
+// 			display("wind = %lx, wt=%lx, wttree=%lx, widg=%lx", wind, wt, wt->tree, wt->widg);
 // 			wt->zen = false;
 		}
 		else
@@ -209,8 +216,12 @@ Setup_form_do(struct xa_client *client,
 		}
 	}
 okexit:
-	DIAGS(("Key_form_do: returning - edobj=%d, wind %lx",
+	DIAGS(("Setup_form_do: returning - edobj=%d, wind %lx",
 		wt->e.obj, wind));
+	
+// 	if (d) display("Setup_form_do: returning - edobj=%d, wind %lx",
+// 		wt->e.obj, wind);
+
 	if (ret_edobj)
 		*ret_edobj = wt->e.obj;
 	if (ret_wind)
@@ -702,6 +713,9 @@ Click_windowed_form_do(	enum locks lock,
 	DIAG((D_form, client, "Click_windowed_form_do: client=%lx, wind=%lx, wt=%lx",
 		client, wind, wt));
 
+// 	display("Click_windowed_form_do: client=%lx, wind=%lx, wt=%lx",
+// 		client, wind, wt);
+	
 	Click_form_do(lock, client, wind, wt, md);
 
 	return false;
@@ -720,12 +734,16 @@ Click_form_do(enum locks lock,
 	      struct widget_tree *wt,
 	      const struct moose_data *md)
 {
+// 	struct xa_widget *widg = get_widget(wind, XAW_TOOLBAR);
 	struct xa_vdi_settings *v;
 	OBJECT *obtree = NULL;
 	RECT r;
 
 	DIAG((D_form, client, "Click_form_do: %s formdo for %s",
 		wind ? "windowed":"classic", client->name));
+	
+// 	display("Click_form_do: %s formdo for %s",
+// 		wind ? "windowed":"classic", client->name);
 	/*
 	 * If window is not NULL, the form_do is a windowed one,
 	 * else it is a classic blocking form_do
@@ -737,6 +755,7 @@ Click_form_do(enum locks lock,
 		if (!wind->nolist && !is_topped(wind)) // !wind->nolist && wind != window_list && !(wind->active_widgets & NO_TOPPED) )
 		{
 			DIAGS(("Click_form_do: topping window"));
+// 			display("Click_form_do: topping window");
 			top_window(lock, true, false, wind, (void *)-1L);
 			return false;
 		}
@@ -744,10 +763,17 @@ Click_form_do(enum locks lock,
 		if (!wt)
 		{
 			DIAGS(("Click_form_do: using wind->toolbar"));
+// 			display("Click_form_do: using wind->toolbar");
 			wt = get_widget(wind, XAW_TOOLBAR)->stuff;
 		}
+
 		if (wt)
+		{
 			obtree = rp_2_ap(wind, wt->widg, &r);
+// 			display("Click_form_do: wt=%lx, wt_tree=%lx, widg=%lx, obtree = %lx",
+// 				wt, wt->tree, wt->widg, obtree);
+// 			display(" ---===---     widg=%lx, widg->stuff=%lx", widg, widg->stuff);
+		}
 	}
 	/*
 	 * Not a windowed form session.
@@ -759,6 +785,7 @@ Click_form_do(enum locks lock,
 		if (!wt)
 		{
 			DIAGS(("Click_form_do: using client->wt"));
+// 			display("Click_form_do: using client->wt");
 			wt = client->fmd.wt;
 		}
 		if (wt)
@@ -781,9 +808,11 @@ Click_form_do(enum locks lock,
 				 &fr.obj,
 				 &fr.dblmask))
 		{
+// 			display("Click_form_do: exit_for = %lx", wt->exit_form);
 			if (wt->exit_form)
 			{
 				DIAGS(("Click_form_do: calling exit_form"));
+// 				display("Click_form_do: calling exit_form");
 				fr.md = md;
 				fr.key = NULL;
 				wt->exit_form(client, wind, wt, &fr);
@@ -792,10 +821,14 @@ Click_form_do(enum locks lock,
 	}
 #if GENERATE_DIAGS
 	else
+	{
 		DIAGS(("Click_form_do: NO OBTREE!!"));
+// 		display("Click_form_do: NO OBTREE!!");
+	}
 #endif
 
 	DIAGS(("Click_form_do: return"));
+// 	display("Click_form_do: return");
 	return false;
 }
 
@@ -963,10 +996,14 @@ do_formwind_msg(
 	struct xa_vdi_settings *v = wind->vdi_settings;
 	XA_WIDGET *widg = wind->tool;
 	bool draw = false;
+// 	bool d = (!strnicmp(wind->owner->proc_name, "gfa_xref", 8)) ? true : false;
 
 	DIAG((D_form, wind->owner, "do_formwind_msg: wown %s, to %s, wdig=%lx, msg %d, %d, %d, %d, %d, %d, %d, %d",
 		wind->owner->name, to->name, widg, msg[0], msg[1], msg[2], msg[3], msg[4], msg[5], msg[6], msg[7]));
 
+// 	if (d) display("do_formwind_msg: wown %s, to %s, wdig=%lx, msg %d, %d, %d, %d, %d, %d, %d, %d",
+// 		wind->owner->name, to->name, widg, msg[0], msg[1], msg[2], msg[3], msg[4], msg[5], msg[6], msg[7]);
+	
 	if (widg)
 	{
 		XA_TREE *wt = widg->stuff;
@@ -1007,7 +1044,9 @@ do_formwind_msg(
 		}
 		case WM_TOPPED:
 		{
-			if (!wind->nolist && wind != root_window && (wind->window_status & XAWS_OPEN) && !is_topped(wind))
+			if (wind->owner->fmd.wind == wind)
+				top_window(0, true, false, wind, (void *)-1L);
+			else if (!wind->nolist && wind != root_window && (wind->window_status & XAWS_OPEN) && !is_topped(wind))
 			{
 				if (is_hidden(wind))
 					unhide_window(0, wind, true);
@@ -1018,6 +1057,9 @@ do_formwind_msg(
 		}
 		case WM_BOTTOMED:
 		{
+			if (wind->owner->fmd.wind == wind)
+				bottom_window(0, false, true, wind);
+
 			if (!wind->nolist && wind != root_window && (wind->window_status & XAWS_OPEN))
 				bottom_window(0, false, true, wind);
 			break;
