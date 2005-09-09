@@ -852,8 +852,10 @@ XA_form_do(enum locks lock, struct xa_client *client, AESPB *pb)
 					display_window(lock, 4, wind, NULL);
 
 			}
+// 			display("wait for form_do...");
 			Block(client, 0);
 			client->status &= ~CS_FORM_DO;
+// 			display(" ... return from form_do");
 			return XAC_DONE;
 		}
 		/* XXX - Ozk:

@@ -505,7 +505,7 @@ send_topped(enum locks lock, struct xa_window *wind)
 {
 	struct xa_client *client = wind->owner;
 
-	if (wind->send_message && !client->fmd.wind)
+	if (wind->send_message && (!client->fmd.wind || client->fmd.wind == wind))
 		wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 				   WM_TOPPED, 0, 0, wind->handle,
 				   0, 0, 0, 0);
@@ -515,7 +515,7 @@ send_bottomed(enum locks lock, struct xa_window *wind)
 {
 	struct xa_client *client = wind->owner;
 
-	if (wind->send_message && !client->fmd.wind)
+	if (wind->send_message && (!client->fmd.wind || client->fmd.wind == wind))
 		wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 				   WM_BOTTOMED, 0, 0, wind->handle,
 				   0, 0, 0, 0);
@@ -598,7 +598,7 @@ setwin_untopped(enum locks lock, struct xa_window *wind, bool snd_untopped)
 	
 	wind->colours = wind->untop_cols;
 
-	if (snd_untopped && wind->send_message && !client->fmd.wind)
+	if (snd_untopped && wind->send_message && (!client->fmd.wind || client->fmd.wind == wind))
 		wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 				   WM_UNTOPPED, 0, 0, wind->handle,
 				   0, 0, 0, 0);
@@ -610,7 +610,7 @@ setwin_ontop(enum locks lock, bool snd_ontop)
 	struct xa_window *top = window_list;
 	struct xa_client *client = top->owner;
 
-	if (!client->fmd.wind)
+	if (!client->fmd.wind || (top == client->fmd.wind))
 	{
 		top->colours = top->ontop_cols;
 		
@@ -790,6 +790,12 @@ create_window(
 	}
 	
 	bzero(w, sizeof(*w));
+
+	{
+		int i;
+		for (i = 0; i < XA_MAX_WIDGETS; i++)
+			w->widgets[i].wind = w;
+	}
 
 	w->vdi_settings = client->vdi_settings;
 
@@ -1863,6 +1869,9 @@ delete_window1(enum locks lock, struct xa_window *wind)
 static void
 CE_delete_window(enum locks lock, struct c_event *ce, bool cancel)
 {
+// 	if (!strnicmp(ce->client->proc_name, "gfa_xref", 8))
+// 		display("CE_del_wind %lx", ce->ptr1);
+
 	/*
 	 * Since the window in this event already have been removed from
 	 * all stacks, we perform  this deletion even when cancel flag is set
