@@ -926,7 +926,7 @@ kern_procdir_get_meminfo (SIZEBUF **buffer, const struct proc *p)
 # define M_SHTEXT_T	0x0020	/* XXX */
 
 		crs += ksprintf (crs, len - (crs - info->buf),
-				"%08x-%08x %3u %c%c%c%c%c%c %08x %02lu:%02lu %lu\n",
+				"%08lx-%08lx %3u %c%c%c%c%c%c %08x %02lu:%02lu %lu\n",
 				(ulong) p->p_mem->addr[i],
 				(ulong) p->p_mem->addr[i] + m->len + 1,
 				(unsigned) m->links,
@@ -939,6 +939,7 @@ kern_procdir_get_meminfo (SIZEBUF **buffer, const struct proc *p)
 				m->mflags & M_ALT ? 'a' :
 				m->mflags & M_SWAP ? 's' :
 				m->mflags & M_KER ? 'k' : '-',
+				0,
 				0UL,
 				0UL,
 				0UL);
