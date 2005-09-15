@@ -336,29 +336,34 @@ do_winmesag(enum locks lock,
 	short mp0, short mp1, short mp2, short mp3,
 	short mp4, short mp5, short mp6, short mp7)
 {
-	if (wind->do_message && !(wind->owner->status & CS_EXITING))
+	if (wind->do_message)
 	{
-		struct CE_do_winmesag_data *p;
 		struct xa_client *wo;
 		short msg[8] = { mp0,mp1,mp2,mp3,mp4,mp5,mp6,mp7 };
-
-		if (mp0 == WM_REDRAW)
-			C.redraws++, C.move_block = 3;
-		
 		wo = wind == root_window ? get_desktop()->owner : wind->owner;
-
-		p = kmalloc(sizeof(*p));
-		if (p)
+		
+		if ((wind->dial & created_for_SLIST))
+			wind->do_message(wind, wo, amq, qmf, msg);
+		else if (!(wind->owner->status & CS_EXITING))
 		{
-			int i;
+			struct CE_do_winmesag_data *p;
 
-			p->wind = wind;
-			p->client = wo;
-			p->amq = amq;
-			p->qmf = qmf;
-			for (i = 0; i < 8; i++)
-				p->msg[i] = msg[i];
-			post_cevent(wo, CE_do_winmesag, p, NULL, 0,0, NULL, NULL);
+			if (mp0 == WM_REDRAW)
+				C.redraws++, C.move_block = 3;
+		
+			p = kmalloc(sizeof(*p));
+			if (p)
+			{
+				int i;
+
+				p->wind = wind;
+				p->client = wo;
+				p->amq = amq;
+				p->qmf = qmf;
+				for (i = 0; i < 8; i++)
+					p->msg[i] = msg[i];
+				post_cevent(wo, CE_do_winmesag, p, NULL, 0,0, NULL, NULL);
+			}
 		}
 	}
 #if GENERATE_DIAGS

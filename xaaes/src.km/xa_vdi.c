@@ -306,7 +306,7 @@ xa_prop_clipped_name(struct xa_vdi_settings *v, const char *s, char *d, int w, s
 					if (cw != -1)
 					{
 						swidth += cw;
-						if (swidth >= w)
+						if (swidth > w)
 						{
 							if (tog) e++;
 							else     s--;
@@ -346,6 +346,7 @@ xa_prop_clipped_name(struct xa_vdi_settings *v, const char *s, char *d, int w, s
 		/*
 		 * Clip string. "This is a long string, yeah?" becomes "This is a long..."
 		 */
+		case 2:
 		case 0:
 		{
 			while (*s)
@@ -355,13 +356,13 @@ xa_prop_clipped_name(struct xa_vdi_settings *v, const char *s, char *d, int w, s
 				{
 					swidth += cw;
 
-					if (swidth >= w)
+					if (swidth > w)
 						break;
 					*dst++ = *s++;
 				}
 			}
-			*dst = '\0';		
-			if (*s)
+			*dst = '\0';
+			if (method == 0 && *s)
 			{
 				int i = strlen(d);
 				if (i > 8)

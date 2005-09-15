@@ -635,16 +635,16 @@ set_points_list(struct xa_fnts_info *fnts, struct xa_fnts_item *f)
 	OBJECT *obtree = fnts->wt->tree;
 	struct scroll_info *list = object_get_slist(obtree + FNTS_POINTS);
 	char b[8];
-	struct scroll_content sc = { 0 };
+	struct scroll_content sc = {{ 0 }};
 
 	list->empty(list, NULL, -1);
 
 	if (f)
 	{
-		sc.n_strings = 1;
+		sc.t.strings = 1;
 		for (i = 0; i < f->f.npts; i++)
 		{
-			sc.text = b;
+			sc.t.text = b;
 			sc.data = f;
 			sprintf(b, sizeof(b), "%d", f->f.pts[i]);
 			DIAGS(("set_point_list: add '%s'", b));
@@ -668,7 +668,7 @@ set_name_list(struct xa_fnts_info *fnts, struct xa_fnts_item *selstyle)
 	OBJECT *obtree = fnts->wt->tree;
 	SCROLL_INFO *list = object_get_slist(obtree + FNTS_FNTLIST);
 	SCROLL_INFO *list_type = object_get_slist(obtree + FNTS_TYPE);
-	struct scroll_content sc = { 0 };
+	struct scroll_content sc = {{ 0 }};
 	struct xa_wtxt_inf wtxt;
 
 	list_type->empty(list_type, NULL, -1);
@@ -679,14 +679,14 @@ set_name_list(struct xa_fnts_info *fnts, struct xa_fnts_item *selstyle)
 		if (fnts->dialog_flags & FNTS_DISPLAY)
 			sc.fnt = &wtxt;
 		
-		f = list->cur->c.data;
+		f = list->cur->data;
 		if (*f->f.style_name != '\0')
 		{
-			sc.n_strings = 1;
+			sc.t.strings = 1;
 			while (f)
 			{
 				wtxt.n.f = wtxt.s.f = wtxt.h.f = f->f.id;
-				sc.text = f->f.style_name;
+				sc.t.text = f->f.style_name;
 				sc.data = f;
 				list_type->add(list_type, NULL, NULL, &sc, false, 0, false);
 				f = f->nxt_kin;
@@ -713,10 +713,10 @@ set_name_list(struct xa_fnts_info *fnts, struct xa_fnts_item *selstyle)
 		if (!list_type->cur)
 			list_type->cur = list_type->top;
 
-		f = list_type->cur->c.data;
+		f = list_type->cur->data;
 	}
 	else if (list->cur)
-		f = list->cur->c.data;
+		f = list->cur->data;
 	else
 		f = NULL;
 
@@ -728,7 +728,7 @@ set_name_list(struct xa_fnts_info *fnts, struct xa_fnts_item *selstyle)
 static bool
 sort_names(struct scroll_entry *new, struct scroll_entry *this)
 {
-	return (stricmp(new->c.td.text.text->text, this->c.td.text.text->text) > 0) ? true : false;
+	return (stricmp(new->content->c.text.text, this->content->c.text.text) > 0) ? true : false;
 }
 
 static void
@@ -737,7 +737,7 @@ update_slists(struct xa_fnts_info *fnts)
 	OBJECT *obtree = fnts->wt->tree;
 	struct xa_fnts_item *f;
 	SCROLL_INFO *list_name, *list_style;
-	struct scroll_content sc = { 0 };
+	struct scroll_content sc = {{ 0 }};
 	struct xa_wtxt_inf wtxt;
 
 	list_name  = object_get_slist(obtree + FNTS_FNTLIST);
@@ -764,12 +764,12 @@ update_slists(struct xa_fnts_info *fnts)
 	if (fnts->dialog_flags & FNTS_DISPLAY)
 		sc.fnt = &wtxt;
 
-	sc.n_strings = 1;
+	sc.t.strings = 1;
 	while (f)
 	{
 		wtxt.n.f = wtxt.s.f = wtxt.h.f = f->f.id;
 		
-		sc.text = *f->f.family_name != '\0' ? f->f.family_name : f->f.full_name;
+		sc.t.text = *f->f.family_name != '\0' ? f->f.family_name : f->f.full_name;
 		sc.data = f;
 		list_name->add(list_name, NULL, sort_names, &sc, false, 0, NORMREDRAW);
 		f = f->nxt_family;
@@ -798,7 +798,7 @@ click_style(SCROLL_INFO *list, SCROLL_ENTRY *this, const struct moose_data *md)
 	struct xa_fnts_item *f;
 
 	if (list->cur)
-		f = list->cur->c.data;
+		f = list->cur->data;
 	else
 		f = NULL;
 
@@ -825,7 +825,7 @@ click_size(SCROLL_INFO *list, SCROLL_ENTRY *this, const struct moose_data *md)
 		TEDINFO *ted = object_get_tedinfo(obtree + FNTS_EDSIZE);
 		struct seget_entrybyarg p;
 
-		p.idx = 0;
+		p.idx = -1;
 		p.arg.typ.txt = ted->te_ptext;
 		list->get(list, list->cur, SEGET_TEXTCPY, &p);
 		//strcpy(ted->te_ptext, list->cur->c.td.text.text->text);

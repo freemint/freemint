@@ -38,7 +38,7 @@
 #include "c_window.h"
 #include "k_main.h"
 #include "k_mouse.h"
-
+#include "taskman.h"
 #include "mint/signal.h"
 
 
@@ -535,6 +535,7 @@ XA_handler(void *_pb)
 				client = init_client(0);
 				if (client)
 				{
+					add_to_tasklist(client);
 //					ALERT(("XaAES: client %s calls (%d)%s without appl_init()!!",
 //						client->proc_name, cmd, aes_tab[cmd].descr));
 					client->forced_init_client = true;
