@@ -62,10 +62,11 @@
 #define FLAG_LINK	0x00000008
 
 #define FSLIDX_NAME	0
-#define FSLIDX_DATE	1
+#define FSLIDX_SIZE	1
 #define FSLIDX_TIME	2
-#define FSLIDX_SIZE	3
-#define FSLIDX_RIGHT	4
+#define FSLIDX_DATE	3
+#define FSLIDX_FLAG	4
+#define FSLIDX_RIGHT	5
 
 static char fs_paths[DRV_MAX][NAME_MAX+2];
 static char fs_patterns[23][16];
@@ -476,12 +477,24 @@ static char *months[] =
 	"Nov",
 	"Dec",
 };
+static char *faccess[] =
+{
+	"---",
+	"--x",
+	"-w-",
+	"-wx",
+	"r--",
+	"r-x",
+	"rw-",
+	"rwx",
+};					
+
 static void
 read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 {
 	bool csens;
 	OBJECT *obtree = fs->form->tree;
-	char nm[NAME_MAX+2 + FSIZE_MAX+2  + 40];
+	char nm[NAME_MAX+2 + FSIZE_MAX+2  + 40 + 12];
 	short xstate;
 	long i, rep;
 
@@ -544,7 +557,6 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 
 			while (d_xreaddir(NAME_MAX, i, nm, &xat, &rep) == 0)
 			{
-	
 				struct scroll_content sc = {{0}};
 				char *nam = nm+4;
 				bool dir = S_ISDIR(xat.mode);
@@ -585,13 +597,9 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 				{
 					OBJECT *icon = NULL;
 					char *s = nam + strlen(nam) + 1;
-			
-					sc.t.text = nam;
-					sprintf(s, 20, "%02d %s %04d", xat.mdate & 31, months[((xat.mdate >> 5) & 15) - 1], 1980 + ((xat.mdate >> 9) & 127));
-					s += strlen(s) + 1;
-					sprintf(s, 20, "%02d:%02d", (xat.mtime >> 11) & 31, (xat.mtime >> 5) & 63);
-					s += strlen(s) + 1;
 
+					sc.t.text = nam;
+					
 					if (dir)
 					{
 						sc.usr_flags |= FLAG_DIR;
@@ -614,9 +622,17 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 					else
 						sprintf(s, 20, "<dir>");
 					
+					s += strlen(s) + 1;
+					sprintf(s, 20, "%02d:%02d", (xat.mtime >> 11) & 31, (xat.mtime >> 5) & 63);
+					s += strlen(s) + 1;
+					sprintf(s, 20, "%02d %s %04d", xat.mdate & 31, months[((xat.mdate >> 5) & 15) - 1], 1980 + ((xat.mdate >> 9) & 127));
+					
+					s += strlen(s) + 1;
+					sprintf(s, 12, "%s%s%s", faccess[(xat.mode >> 6) & 7], faccess[(xat.mode >> 3) & 7], faccess[xat.mode & 7]);
+// 					display("%s", s);
 
 					sc.icon = icon;
-					sc.t.strings = 4;
+					sc.t.strings = 5;
 					list->add(list, dir_ent, dirflag_name, &sc, dir_ent ? SEADD_PRIOR|SEADD_CHILD : SEADD_PRIOR, SETYP_AMAL, fs->rtbuild ? NORMREDRAW : NOREDRAW);
 				}
 			}
@@ -1489,6 +1505,7 @@ fs_msg_handler(
 		}
 // 		display("do fsel wind resize");
 		move_window(0, wind, false, -1, msg[4], msg[5], msg[6], msg[7]);
+		set_toolbar_coords(wind, NULL);
 		break;
 	}
 	default:
@@ -1750,24 +1767,24 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 			tab.r = (RECT){0,0,-50,0};
 			list->set(list, NULL, SESET_TAB, (long)&tab, false);
 			
-			tab.index = FSLIDX_DATE;
-			tab.flags = 0;
-			tab.r.w = -25;
-			list->set(list, NULL, SESET_TAB, (long)&tab, false);
-
-			tab.index = FSLIDX_TIME;
-			tab.flags = 0;
-			tab.r.w = -10;
-			list->set(list, NULL, SESET_TAB, (long)&tab, false);
-
 			tab.index = FSLIDX_SIZE;
 			tab.flags |= SETAB_RJUST;
-			tab.r.w = -15; //(RECT){0,0,-10,0};
+			tab.r.w = 0; //-10; //(RECT){0,0,-10,0};
 			list->set(list, NULL, SESET_TAB, (long)&tab, false);
 			
-			tab.index = FSLIDX_RIGHT;
+			tab.index = FSLIDX_TIME;
 			tab.flags = 0;
-			tab.r = (RECT){0,0,0,0};
+			tab.r.w = 0; //-10;
+			list->set(list, NULL, SESET_TAB, (long)&tab, false);
+			
+			tab.index = FSLIDX_DATE;
+			tab.flags = 0;
+			tab.r.w = 0; //-20;
+			list->set(list, NULL, SESET_TAB, (long)&tab, false);
+			
+			tab.index = FSLIDX_FLAG;
+			tab.flags = 0;
+			tab.r.w = 0; //-10;
 			list->set(list, NULL, SESET_TAB, (long)&tab, false);
 
 // 			tab.index = 3;
