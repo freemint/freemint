@@ -1484,12 +1484,18 @@ typedef enum scroll_info_flags SCROLL_INFO_FLAGS;
 #define SETAB_REL		0x0004
 #define SETAB_RORIG		0x0008
 #define SETAB_END		0x8000
+struct se_tab;
 struct se_tab
 {
 	short flags;
+	short uflags;
+	RECT v;
+	
 	RECT r;
+	short widest;
+	short highest;
 };
-
+#if 0
 struct se_text_tabulator
 {
 	short flags;
@@ -1497,19 +1503,34 @@ struct se_text_tabulator
 	short widest;
 	short highest;
 };
+#endif
 
 #define SETEXT_TXTSTR	1
 #define SETEXT_ALLOC	2
+struct se_icon
+{
+	RECT r;
+	OBJECT *icon;
+};
 struct se_text;
 struct se_text
 {
-	struct se_text *next;
+// 	struct se_text *next;
 	short flags;
 	unsigned short tblen;
 	char *text;
 	short w;
 	short h;
+	struct se_icon icon;
+	struct xa_wtxt_inf *fnt;
 	char txtstr[0];
+};
+
+struct sc_text
+{
+	short index;
+	short strings;
+	const char *text;
 };
 
 /*
@@ -1518,8 +1539,7 @@ struct se_text
  */
 struct scroll_content
 {
-	short n_strings;
-	char *text;
+	struct sc_text t;
 	OBJECT *icon;
 	short xstate;
 	short xflags;
@@ -1529,14 +1549,33 @@ struct scroll_content
 	struct xa_wcol_inf *col;
 };
 
+#if 0
 struct scroll_content_text
 {
 	short n_strings;
 	struct se_text *text;
 	struct xa_wtxt_inf *fnt;
 };
+#endif
 
 #define SECONTENT_TEXT	0
+#define SECONTENT_ICON  1
+
+struct se_content;
+struct se_content
+{
+	struct se_content *prev;
+	struct se_content *next;
+	short type;
+	short index;
+	union
+	{
+		struct se_text text;
+		struct se_icon icon;
+	}c;
+};
+
+#if 0
 struct scroll_entry_content
 {
 	short type;
@@ -1547,8 +1586,9 @@ struct scroll_entry_content
 	union
 	{
 		struct scroll_content_text text;
-	}td;	
+	}td;
 };
+#endif
 
 typedef	bool	scrl_compare	(struct scroll_entry *new_ent, struct scroll_entry *cur_ent);
 typedef int 	scrl_click	(struct scroll_info *list, struct scroll_entry *e, const struct moose_data *md);
@@ -1589,7 +1629,7 @@ typedef struct scroll_entry * scrl_search(struct scroll_info *list, struct scrol
 #define SESET_UNSELECTED	 6
 #define SESET_MULTISEL		 7
 #define SESET_OPEN		 8
-#define SESET_TEXTTAB		 9
+#define SESET_TAB		 9
 #define SESET_USRFLAGS		10
 #define SESET_USRDATA		11
 #define SESET_TEXT		12
@@ -1599,7 +1639,7 @@ typedef struct scroll_entry * scrl_search(struct scroll_info *list, struct scrol
 #define UNSELECT_ONE	0
 #define UNSELECT_ALL	1
 
-struct seset_txttab
+struct seset_tab
 {
 	short index;
 	short flags;
@@ -1621,7 +1661,7 @@ struct seset_txttab
 #define SEGET_ENTRYBYSTATE	11
 #define SEGET_ENTRYBYXSTATE	12
 #define SEGET_LISTXYWH		13
-#define SEGET_TEXTTAB		14
+#define SEGET_TAB		14
 #define SEGET_USRFLAGS		15
 #define SEGET_USRDATA		16
 #define SEGET_NEXTENT		17
@@ -1690,27 +1730,32 @@ struct seget_entrybyarg
 
 struct scroll_entry
 {
+	struct scroll_entry *list;	/* list we belong to */
+	
+	struct scroll_entry *root;
 	struct scroll_entry *next;	/* Next element */
 	struct scroll_entry *prev;	/* Previous element */
 	struct scroll_entry *up;	/* level up entry (parent) */
 	struct scroll_entry *down;	/* level down entry (childen) */
-
 	short xstate;
 	short xflags;
 	short state;
 	short level;
-
 	short indent;
-	short icon_w, icon_h;
+	short num_content;
+// 	short icon_w, icon_h;
 	RECT r;
 	SCROLL_ENTRY_TYPE  type; 	/* type flags */
 	SCROLL_ENTRY_FLAGS iflags;	/* internal flags */
 
-	struct scroll_entry_content c;
+	struct xa_wtxt_inf *fnt;
+	struct xa_wcol_inf *col;
+	struct se_content *content;
+	long usr_flags;
+	void *data;
+
 	
-	char the_text[0];		/* if text included in malloc it is here.
-					 * Let entry->text point to here.
-					 * FLAG_MAL is off */
+// 	struct scroll_entry_content c;
 };
 typedef struct scroll_entry SCROLL_ENTRY;
 
@@ -1727,8 +1772,11 @@ struct scroll_info
 	XA_TREE *wt;
 	short item;
 	OBJECT prev_ob;			/* Original object contents */
-	struct se_tab *se_tabs;
-	struct se_text_tabulator *tabs;
+	
+	short indent_upto;
+	short num_tabs;
+	struct se_tab *tabs;
+// 	struct se_text_tabulator *tabs;
 	short rel_x, rel_y;
 
 	SCROLL_ENTRY *start;		/* Pointer to first element */
@@ -1741,7 +1789,7 @@ struct scroll_info
 	short nesticn_h;
 
 	short indent;
-	short icon_w, icon_h;
+// 	short icon_w, icon_h;
 	short widest, highest;		/* Width and hight of the widgest and highest element; */
 	long start_x;
 	long off_x;

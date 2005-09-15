@@ -59,8 +59,118 @@
 #include "mint/stat.h"
 #include "mint/fcntl.h"
 
+static char *
+build_tasklist_string(struct xa_client *client)
+{
+	long tx_len = 128;
+	char *tx;
+ 
+	tx = kmalloc(tx_len);
 
+	if (tx)
+	{
+		long prio = p_getpriority(0, client->p->pid);
 
+		if (prio >= 0)
+		{
+			prio -= 20;
+
+			if (prio < 0 && prio > -10)
+				sprintf(tx, tx_len, " %3d/ %2ld%s", client->p->pid, prio, client->name);
+			else
+				sprintf(tx, tx_len, " %3d/%3ld%s", client->p->pid, prio, client->name);
+		}
+		else
+			sprintf(tx, tx_len, " %3d/   %s", client->p->pid, 0, client->name);
+
+	}
+	return tx;
+
+};
+
+void
+add_to_tasklist(struct xa_client *client)
+{
+	OBJECT *obtree = ResourceTree(C.Aes_rsc, TASK_MANAGER);
+	SCROLL_INFO *list = object_get_slist(obtree + TM_LIST);
+	OBJECT *icon;
+	char *tx;
+	struct scroll_content sc = {{ 0 }};
+
+	if (!list)
+		return;
+
+	if (client->type & APP_ACCESSORY)
+		icon = obtree + TM_ICN_MENU;
+	else
+		icon = obtree + TM_ICN_XAAES;
+
+	if ((tx = build_tasklist_string(client)))
+	{
+		sc.icon = icon;
+		sc.t.text = tx;
+		sc.t.strings = 1;
+		sc.data = client;
+		list->add(list, NULL, NULL, &sc, false, SETYP_MAL, true);
+	}
+	else
+	{
+		sc.icon = icon;
+		sc.t.text = client->name;
+		sc.t.strings = 1;
+		sc.data = client;
+		list->add(list, NULL, NULL, &sc, false, 0, true);
+	}
+}
+void
+remove_from_tasklist(struct xa_client *client)
+{
+	OBJECT *obtree = ResourceTree(C.Aes_rsc, TASK_MANAGER);
+	SCROLL_INFO *list = object_get_slist(obtree + TM_LIST);
+	struct seget_entrybyarg p = { 0 };
+
+	if (list)
+	{			
+		p.arg.typ.data = client;
+		list->get(list, NULL, SEGET_ENTRYBYDATA, &p);
+		if (p.e)
+			list->del(list, p.e, true);
+	}
+}
+#if 1
+void
+update_tasklist_entry(struct xa_client *client)
+{
+	OBJECT *obtree = ResourceTree(C.Aes_rsc, TASK_MANAGER);
+	SCROLL_INFO *list = object_get_slist(obtree + TM_LIST);
+	struct seget_entrybyarg p = { 0 };
+	
+	if (list)
+	{
+		char *tx;
+		p.arg.typ.data = client;
+		list->get(list, NULL, SEGET_ENTRYBYDATA, &p);
+		if (p.e)
+		{
+			struct sc_text t;
+
+			if ((tx = build_tasklist_string(client)))
+				t.text = tx;
+			else
+				t.text = client->name;
+			
+			t.index = 0;
+			t.strings = 1;
+			list->set(list, p.e, SESET_TEXT, (long)&t, true);
+			
+			if (tx)
+				kfree(tx);
+		}
+	}
+}
+#endif
+
+#if 0
 static void
 refresh_tasklist(enum locks lock)
 {
@@ -111,6 +221,7 @@ refresh_tasklist(enum locks lock)
 			sc.icon = icon;
 			sc.text = tx;
 			sc.n_strings = 1;
+			sc.data = client;
 			list->add(list, NULL, NULL, &sc, false, SETYP_MAL, true);
 		}
 		else
@@ -118,6 +229,7 @@ refresh_tasklist(enum locks lock)
 			sc.icon = icon;
 			sc.text = client->name;
 			sc.n_strings = 1;
+			sc.data = client;
 			list->add(list, NULL, NULL, &sc, false, 0, true);
 		}
 	}
@@ -125,6 +237,7 @@ refresh_tasklist(enum locks lock)
 	list->slider(list, true);
 	Sema_Dn(clients);
 }
+#endif
 
 static struct xa_window *task_man_win = NULL;
 
@@ -233,6 +346,7 @@ free_namelist(struct cfg_name_list **list)
 		kfree(l);
 	}
 }
+#if 0
 static void
 ceUpdtasklist(enum locks lock, struct c_event *ce, bool cancel)
 {
@@ -242,14 +356,14 @@ ceUpdtasklist(enum locks lock, struct c_event *ce, bool cancel)
 		redraw_toolbar(0, task_man_win, TM_LIST);
 	}
 }
+#endif
 void
 update_tasklist(enum locks lock)
 {
 	if (task_man_win)
 	{
-		if (!CE_exists(C.Hlp, ceUpdtasklist))
-			post_cevent(C.Hlp, ceUpdtasklist, NULL,NULL, 0,0, NULL,NULL);
-		yield();
+// 		if (!CE_exists(C.Hlp, ceUpdtasklist))
+// 			post_cevent(C.Hlp, ceUpdtasklist, NULL,NULL, 0,0, NULL,NULL);
 #if 0		
 		DIAGS(("update_tasklist"));
 		refresh_tasklist(lock);
@@ -261,17 +375,17 @@ update_tasklist(enum locks lock)
 static int
 taskmanager_destructor(enum locks lock, struct xa_window *wind)
 {
-	OBJECT *form = ResourceTree(C.Aes_rsc, TASK_MANAGER);
-	OBJECT *ob = form + TM_LIST;
-	SCROLL_INFO *list = object_get_slist(ob);
+// 	OBJECT *form = ResourceTree(C.Aes_rsc, TASK_MANAGER);
+// 	OBJECT *ob = form + TM_LIST;
+// 	SCROLL_INFO *list = object_get_slist(ob);
 
-	list->empty(list, NULL, -1);
+// 	list->empty(list, NULL, -1);
 	
 	task_man_win = NULL;
 
 	return true;
 }
-
+#if 0
 /*
  * as long update_tasklist() is called for every *modification* of
  * the global client list this routine work correct
@@ -290,6 +404,7 @@ cur_client(SCROLL_INFO *list)
 
 	return client;
 }
+#endif
 
 static void
 send_terminate(enum locks lock, struct xa_client *client, short reason)
@@ -407,11 +522,12 @@ taskmanager_form_exit(struct xa_client *Client,
 		{
 			OBJECT *ob = wt->tree + TM_LIST;
 			SCROLL_INFO *list = object_get_slist(ob);
-			struct xa_client *client = cur_client(list);
+			struct xa_client *client = NULL; //= cur_client(list);
 
+			if (list->cur)
+				client = list->cur->data;
 			DIAGS(("taskmanager: KILL for %s", c_owner(client)));
-
-			if (is_client(client))
+			if (client && is_client(client))
 				ikill(client->p->pid, SIGKILL);
 
 			object_deselect(wt->tree + TM_KILL);
@@ -422,11 +538,14 @@ taskmanager_form_exit(struct xa_client *Client,
 		{
 			OBJECT *ob = wt->tree + TM_LIST;
 			SCROLL_INFO *list = object_get_slist(ob);
-			struct xa_client *client = cur_client(list);
+			struct xa_client *client = NULL; //cur_client(list);
 
 			DIAGS(("taskmanager: TM_TERM for %s", c_owner(client)));
 
-			if (is_client(client))
+			if (list->cur)
+				client = list->cur->data;
+
+			if (client && is_client(client))
 				send_terminate(lock, client, AP_TERM);
 
 			object_deselect(wt->tree + TM_TERM);
@@ -437,11 +556,14 @@ taskmanager_form_exit(struct xa_client *Client,
 		{
 			OBJECT *ob = wt->tree + TM_LIST;
 			SCROLL_INFO *list = object_get_slist(ob);
-			struct xa_client *client = cur_client(list);
+			struct xa_client *client = NULL; //cur_client(list);
+
+			if (list->cur)
+				client = list->cur->data;
 
 			DIAGS(("taskmanager: TM_SLEEP for %s", c_owner(client)));
 			ALERT(("taskmanager: TM_SLEEP not yet implemented!"));
-			if (is_client(client))
+			if (client && is_client(client))
 			{
 			}
 
@@ -453,11 +575,14 @@ taskmanager_form_exit(struct xa_client *Client,
 		{
 			OBJECT *ob = wt->tree + TM_LIST;
 			SCROLL_INFO *list = object_get_slist(ob);
-			struct xa_client *client = cur_client(list);
+			struct xa_client *client = NULL; //cur_client(list);
+
+			if (list->cur)
+				client = list->cur->data;
 
 			DIAGS(("taskmanager: TM_WAKE for %s", c_owner(client)));
 			ALERT(("taskmanager: TM_WAKE not yet implemented!"));
-			if (is_client(client))
+			if (client && is_client(client))
 			{
 			}
 
@@ -587,7 +712,17 @@ open_taskmanager(enum locks lock, struct xa_client *client)
 		wind->destructor = taskmanager_destructor;
 	
 		/* better position (to get sliders correct initially) */
-		refresh_tasklist(lock);
+// 		refresh_tasklist(lock);
+#if 0		
+		{
+			struct xa_client *cl;
+			FOREACH_CLIENT(cl)
+			{
+				if (cl != C.Hlp)
+					add_to_tasklist(cl);
+			}
+		}
+#endif
 		open_window(lock, wind, wind->r);
 		task_man_win = wind;
 	}
@@ -2287,8 +2422,9 @@ do_system_menu(enum locks lock, int clicked_title, int menu_item)
 			char * const * const strings = get_raw_env();
 			int i;
 			struct seget_entrybyarg p = { 0 };
-			struct scroll_content sc = { 0 };
+			struct scroll_content sc = {{ 0 }};
 
+			p.idx = -1;
 			p.arg.typ.txt = "Environment";
 			p.arg.flags = 0;
 			p.arg.curlevel = 0;
@@ -2296,9 +2432,9 @@ do_system_menu(enum locks lock, int clicked_title, int menu_item)
 			list->get(list, NULL, SEGET_ENTRYBYTEXT, &p);
 			list->empty(list, p.e, 0);
 			this = p.e;
-			sc.n_strings = 1;
+			sc.t.strings = 1;
 			for (i = 0; strings[i]; i++)
-			{	sc.text = strings[i];
+			{	sc.t.text = strings[i];
 				list->add(list, this, NULL, &sc, this ? (SEADD_CHILD|SEADD_PRIOR) : SEADD_PRIOR, SETYP_AMAL, true);
 			}
 			post_cevent(C.Hlp, ceExecfunc, open_systemalerts,NULL, 0,0, NULL,NULL);
