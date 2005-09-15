@@ -437,7 +437,7 @@ calc_entry_wh(SCROLL_INFO *list, SCROLL_ENTRY *this)
 			{
 				s = c->c.text.text;
 				(*list->vdi_settings->api->text_extent)(list->vdi_settings, s, &this->fnt->n, &c->c.text.w, &c->c.text.h);
-				ew = c->c.text.w;
+				ew = c->c.text.w + 2;
 				eh = c->c.text.h;
 				if (c->c.text.icon.icon)
 				{
@@ -450,8 +450,8 @@ calc_entry_wh(SCROLL_INFO *list, SCROLL_ENTRY *this)
 			}
 			case SECONTENT_ICON:
 			{
-				ew = c->c.icon.r.w;
-				eh = c->c.icon.r.h;
+				ew = c->c.icon.r.w + 2;
+				eh = c->c.icon.r.h + 2;
 				break;
 			}
 			default:
@@ -467,7 +467,7 @@ calc_entry_wh(SCROLL_INFO *list, SCROLL_ENTRY *this)
 		{
 			if (tab->r.w < ew)
 			{
-				tab->r.w = ew;
+				tab->r.w = ew + 3;
 				recalc_tabs(list);
 				fullredraw = true;
 			}
@@ -654,7 +654,7 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this, str
 			tab = &list->tabs[c->index];
 
 			r.x = tab->r.x;
-			r.w = tab->r.w;
+			r.w = tab->r.w - 3;
 			if (c->index < list->indent_upto)
 			{
 				r.x += indent;
