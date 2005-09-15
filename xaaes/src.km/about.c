@@ -172,12 +172,12 @@ open_about(enum locks lock, struct xa_client *client)
 		if (!list->start)
 		{
 			char **t = about_lines;
-			struct scroll_content sc = { 0 };
+			struct scroll_content sc = {{ 0 }};
 
-			sc.n_strings = 1;
+			sc.t.strings = 1;
 			while (*t)
 			{
-				sc.text = *t;
+				sc.t.text = *t;
 				list->add(list, NULL, NULL, &sc, false, 0, false);
 				t++;
 			}

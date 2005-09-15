@@ -794,7 +794,8 @@ init_helpthread(enum locks lock, struct xa_client *client)
 
 	DIAGS(("setting up task manager"));
 // 	display("setting up task manager");
-	set_slist_object(0, new_widget_tree(client, ResourceTree(C.Aes_rsc, TASK_MANAGER)), NULL, TM_LIST, SIF_SELECTABLE|SIF_AUTOSELECT,
+	set_slist_object(0, new_widget_tree(client, ResourceTree(C.Aes_rsc, TASK_MANAGER)), NULL, TM_LIST,
+			 SIF_SELECTABLE|SIF_AUTOSELECT|SIF_ICONINDENT,
 			 NULL, NULL, NULL, NULL, NULL,
 			 NULL, NULL, NULL, NULL,
 			 "Client Applications", NULL, NULL, 255);
@@ -804,23 +805,27 @@ init_helpthread(enum locks lock, struct xa_client *client)
 
 	DIAGS(("setting up System Alert log"));
 // 	display("setting up System Alert log");
-	set_slist_object(0, new_widget_tree(client, ResourceTree(C.Aes_rsc, SYS_ERROR)), NULL, SYSALERT_LIST, SIF_SELECTABLE|SIF_AUTOSELECT|SIF_TREEVIEW|SIF_AUTOOPEN,
+	set_slist_object(0, new_widget_tree(client, ResourceTree(C.Aes_rsc, SYS_ERROR)), NULL, SYSALERT_LIST,
+			 SIF_SELECTABLE|SIF_AUTOSELECT|SIF_TREEVIEW|SIF_AUTOOPEN,
 			 NULL, NULL, NULL, NULL, NULL,
 			 NULL, NULL, NULL, NULL,
 			 NULL, NULL, NULL, 255);
 	{
-		struct scroll_info *list = object_get_slist(ResourceTree(C.Aes_rsc, SYS_ERROR) + SYSALERT_LIST);
-		struct scroll_content sc = { 0 };
+		OBJECT *obtree = ResourceTree(C.Aes_rsc, SYS_ERROR);
+		struct scroll_info *list = object_get_slist(obtree/*ResourceTree(C.Aes_rsc, SYS_ERROR)*/ + SYSALERT_LIST);
+		struct scroll_content sc = {{ 0 }};
 		char a[] = "Alerts";
 		char e[] = "Environment";
 
-		sc.text = a;
-		sc.n_strings = 1;
+		sc.t.text = a;
+		sc.t.strings = 1;
+		sc.icon = obtree + SALERT_IC1;
 		sc.usr_flags = 1;
 		sc.xflags = OF_AUTO_OPEN;
 		DIAGS(("Add Alerts entry..."));
 		list->add(list, NULL, NULL, &sc, 0, (SETYP_AMAL|SETYP_STATIC), NOREDRAW);
-		sc.text = e;
+		sc.t.text = e;
+		sc.icon = obtree + SALERT_IC2;
 		DIAGS(("Add Environment entry..."));
 		list->add(list, NULL, NULL, &sc, 0, (SETYP_AMAL|SETYP_STATIC), NOREDRAW);
 	}

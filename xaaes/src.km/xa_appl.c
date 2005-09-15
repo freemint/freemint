@@ -288,7 +288,7 @@ init_client(enum locks lock)
 	client->mouse_form = NULL;
 	client->save_mouse = client->mouse;
 	client->save_mouse_form = client->mouse_form;
-	
+
 	return client;
 }
 
@@ -318,6 +318,7 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 	{
 		if ((client = init_client(lock)))
 		{
+			add_to_tasklist(client);
 			/* Preserve the pointer to the globl array
 			 * so we can fill in the resource address later
 			 */
@@ -490,6 +491,8 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 	 * Clear if client was exclusively waiting for mouse input
 	 */
 	client->status |= CS_EXITING;
+
+	remove_from_tasklist(client);
 
 	if (C.csr_client == client)
 	{

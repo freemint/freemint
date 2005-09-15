@@ -30,6 +30,10 @@
 #include "global.h"
 #include "xa_types.h"
 
+void add_to_tasklist(struct xa_client *client);
+void remove_from_tasklist(struct xa_client *client);
+void update_tasklist_entry(struct xa_client *client);
+
 void quit_all_apps(enum locks lock, struct xa_client *except, short reason);
 void quit_all_clients(enum locks lock, struct cfg_name_list *except_nl, struct xa_client *except_cl, short reason);
 
