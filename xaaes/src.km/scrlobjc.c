@@ -66,6 +66,15 @@ static struct xa_wcol_inf default_col =
 	{G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_LBLACK,   NULL},
 };
 
+static struct se_tab default_setab =
+{
+	0,0,
+	{0,0,0,0},
+	{0,0,0,0},
+	0,
+	0,
+};
+
 static SCROLL_ENTRY *
 next_entry(SCROLL_ENTRY *this, short flags, short maxlevel, short *level)
 {
@@ -246,13 +255,50 @@ change_entry(SCROLL_INFO *list, SCROLL_ENTRY *entry, bool select, bool rdrw)
 	}
 }
 
+static void
+check_movement(SCROLL_INFO *list)
+{
+	struct xa_window *wind = list->wi;
+	OBJECT *obtree = list->wt->tree;
+	short x, y;
+
+	x = obtree->ob_x + list->rel_x;
+	y = obtree->ob_y + list->rel_y;
+
+	if (x != wind->rc.x ||
+	    y != wind->rc.y )
+	{
+		wind->r.x = wind->rc.x = x;
+		wind->r.y = wind->rc.y = y;
+		calc_work_area(list->wi);
+	}
+}
+static bool
+canredraw(SCROLL_INFO *list)
+{
+	struct xa_window *wind;
+
+	if (!(wind = list->pw))
+		wind = list->wt->wind;
+	if (wind && (wind->window_status & (XAWS_OPEN|XAWS_SHADED|XAWS_HIDDEN)) == XAWS_OPEN)
+	{
+		check_movement(list);
+		return true;
+	}
+	return false;
+}
+
+#if 0
 static struct se_tab se_tabs[] =
 {
+	{ 0, {0, 0, -1, 0}},
 	{ 0, {0, 0, -1/*32*8*/, 0}},
 	{ SETAB_RJUST|SETAB_REL, {0, 0, -1/*6*8*/, 0} },
 	{ SETAB_END, {0, 0, 0, 0}},
 };
+#endif
 
+#if 0
 /*
  * Work out width/height of each individual string in a SETYPE_TEXT entry
  */
@@ -297,42 +343,190 @@ entry_text_wh(SCROLL_INFO *list, SCROLL_ENTRY *this)
 
 	return fullredraw;
 }
+#endif
 
 static void
-reset_tabs(SCROLL_INFO *list)
+get_list_rect(struct scroll_info *list, RECT *r)
 {
-	struct se_text_tabulator *tabs = list->tabs;
-	struct se_tab *stabs = list->se_tabs;
-	while (stabs)
-	{
-		tabs->flags = stabs->flags;
-		tabs->r = stabs->r;
-		tabs->widest = 0;
-		tabs->highest = 0;
+	check_movement(list);
+	*r = list->wi->wa;
+}
 
-		if (stabs->r.w == -1)
-			tabs->r.w = 0;
-		if (stabs->r.h == -1)
-			tabs->r.h = 0;
-		if (stabs->flags & SETAB_END)
-			stabs = NULL;
+static void
+recalc_tabs(struct scroll_info *list)
+{
+	int i, ntabs;
+	short listw, /*listh,*/ x, totalw;
+	struct se_tab *tabs;
+	RECT r_list;
+
+	/* negative is percentage */
+	/* null is width of content */
+	/* positive is static size */
+
+	tabs = list->tabs;
+	ntabs = list->num_tabs;
+	get_list_rect(list, &r_list);
+	listw = r_list.w;
+	x = 0;
+	totalw = 0;
+
+	for (i = 0; i < ntabs; i++, tabs++)
+	{
+		tabs->r.x = x;
+	
+		if (tabs->v.w < 0)
+		{
+			short p = -tabs->v.w;
+			long tmp;
+
+			if (p > 100)
+				p = 100;
+
+			tmp = (long)listw * p;
+			tmp /= 100;
+
+			if ((listw - tmp) < 0)
+			{
+				tabs->r.w = 8;
+// 				listw = 0;
+			}
+			else
+			{
+				
+				tabs->r.w = tmp;
+// 				listw -= tmp;
+			}
+		}
+		else if (!tabs->v.w)
+		{
+			listw -= tabs->r.w;
+			if (listw < 0)
+				listw = 0;
+		}
 		else
-			tabs++, stabs++;
+		{
+			listw -= tabs->v.w;
+			tabs->r.w = tabs->v.w;
+			if (listw < 0)
+				listw = 0;
+		}
+		tabs->r.x = x;
+		tabs->r.y = 0;
+		x += tabs->r.w;
+		totalw += tabs->r.w;
 	}
+	if (list->widest < totalw)
+		list->widest = totalw;
+}
+
+static bool
+calc_entry_wh(SCROLL_INFO *list, SCROLL_ENTRY *this)
+{
+	bool fullredraw = false;
+	struct se_tab *tabs = list->tabs, *tab;
+	struct se_content *c = this->content;
+	short ew, eh, tw = 0, th = 0, nx = 0/*, ny = 0*/;
+	char *s;
+
+	while (c)
+	{
+		switch (c->type)
+		{
+			case SECONTENT_TEXT:
+			{
+				s = c->c.text.text;
+				(*list->vdi_settings->api->text_extent)(list->vdi_settings, s, &this->fnt->n, &c->c.text.w, &c->c.text.h);
+				ew = c->c.text.w;
+				eh = c->c.text.h;
+				if (c->c.text.icon.icon)
+				{
+					
+					ew += c->c.text.icon.r.w;
+					if (c->c.text.icon.r.h > eh)
+						eh = c->c.text.icon.r.h;
+				}
+				break;
+			}
+			case SECONTENT_ICON:
+			{
+				ew = c->c.icon.r.w;
+				eh = c->c.icon.r.h;
+				break;
+			}
+			default:
+			{
+				ew = 0;
+				eh = 0;
+			}
+		}
+
+		tab = &tabs[c->index];
+
+		if (tab->v.w == 0)
+		{
+			if (tab->r.w < ew)
+			{
+				tab->r.w = ew;
+				recalc_tabs(list);
+				fullredraw = true;
+			}
+		}
+				
+		tw += ew;
+
+		if (th < eh)
+			th = eh;
+		
+		nx += tab->r.w;
+
+		c = c->next;
+	}
+
+	this->r.w = tw;
+	this->r.h = th;
+	
+	return fullredraw;
 }
 
 static short
-draw_nesticon(struct xa_vdi_settings *v, RECT *xy, SCROLL_ENTRY *this)
+draw_nesticon(struct xa_vdi_settings *v, short width, RECT *xy, SCROLL_ENTRY *this)
 {
 	int i;
 	RECT r;
-	short x_center, y_center, width = 16;
+	short x_center, y_center, x;
 	short pnt[4];
 
 	x_center = (width >> 1);
 	y_center = (xy->h >> 1);
+	if (this->level)
+	{
+		struct scroll_entry *root = this->up;
+		
+		x = xy->x + (width * (this->level - 1));
 
-	r.x = xy->x + x_center - 4;
+		(*v->api->l_color)(v, G_LBLACK);
+		for (i = 0; i < this->level; i++)
+		{
+			if (root)
+			{
+				if (root->next)
+				{
+					pnt[0] = x + x_center;
+					pnt[1] = xy->y;
+					pnt[2] = pnt[0];
+					pnt[3] = xy->y + xy->h - 1;
+					v_pline(v->handle, 2, pnt);
+				}
+				root = root->up;
+			}
+			x -= width;
+		}
+	}
+	
+	x = xy->x + (width * this->level);
+	
+	r.x = x + x_center - 4;
 	r.y = xy->y + y_center - 4;
 	r.w = 9;
 	r.h = 9;
@@ -349,17 +543,19 @@ draw_nesticon(struct xa_vdi_settings *v, RECT *xy, SCROLL_ENTRY *this)
 		(*v->api->gbox)(v, 0, &r);
 
 		//if (this->prev || this->up)
+		if (this->prev)
 		{
 			(*v->api->l_color)(v, G_LBLACK);
-			pnt[0] = xy->x + x_center;
+			pnt[0] = x + x_center;
 			pnt[1] = xy->y;
 			pnt[2] = pnt[0];
 			pnt[3] = r.y;
 			v_pline(v->handle, 2, pnt);
 		}
 		//if (this->next || (this->xstate & OS_OPENED))
+		if (this->next)
 		{
-			pnt[0] = xy->x + x_center;
+			pnt[0] = x + x_center;
 			pnt[1] = r.y + 9;
 			pnt[2] = pnt[0];
 			pnt[3] = xy->y + xy->h - 1;
@@ -387,42 +583,28 @@ draw_nesticon(struct xa_vdi_settings *v, RECT *xy, SCROLL_ENTRY *this)
 	{
 		(*v->api->l_color)(v, G_LBLACK);
 		//if (this->prev || this->up)
+		if (this->prev || this->up)
 		{
-			pnt[0] = xy->x + x_center;
+			pnt[0] = x + x_center;
 			pnt[1] = xy->y;
 			pnt[2] = pnt[0];
 			pnt[3] = xy->y + y_center;
 			v_pline(v->handle, 2, pnt);
 		}
-		//if (this->next)
+		if (this->next)
 		{
-			pnt[0] = xy->x + x_center;
+			pnt[0] = x + x_center;
 			pnt[1] = xy->y + y_center;
 			pnt[2] = pnt[0];
 			pnt[3] = xy->y + xy->h - 1;
 			v_pline(v->handle, 2, pnt);
 		}
 		
-		pnt[0] = xy->x + x_center;
+		pnt[0] = x + x_center;
 		pnt[1] = xy->y + y_center;
-		pnt[2] = xy->x + width;
+		pnt[2] = x + width;
 		pnt[3] = pnt[1];
 		v_pline(v->handle, 2, pnt);
-	}
-
-	if (this->level)
-	{
-		short x = xy->x;
-		(*v->api->l_color)(v, G_LBLACK);
-		for (i = 0; i < this->level; i++)
-		{
-			x -= width;
-			pnt[0] = x + x_center;
-			pnt[1] = xy->y;
-			pnt[2] = pnt[0];
-			pnt[3] = xy->y + xy->h - 1;
-			v_pline(v->handle, 2, pnt);
-		}
 	}
 	return width;
 }
@@ -435,13 +617,12 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this, str
 	
 	if (this)
 	{
-		bool ii = (list->flags & SIF_ICONINDENT) ? true : false;
 		short indent = this->indent;
-		struct se_text_tabulator *tabs = list->tabs;
-		struct se_text *tetext;
+		struct se_content *c = this->content;
+		struct se_tab *tab;
 		struct xa_fnt_info *wtxt;
-		short x, y, w = 0, h = 0, f;
-		
+		RECT r, clp;
+
 		(*v->api->f_color)(v, sel ? G_BLACK : G_WHITE);
 		(*v->api->f_interior)(v, FIS_SOLID);
 		(*v->api->bar)(v, 0, xy->x, xy->y, xy->w, this->r.h);
@@ -452,105 +633,144 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this, str
 			(*v->api->wr_mode)(v, MD_XOR);
 			(*v->api->box)(v, 0, xy->x, xy->y, xy->w, this->r.h);
 		}
-
-		xy->x += indent;
-
+		
 		if (list->flags & SIF_TREEVIEW)
 		{
-			//draw_nesticon(xy, this, v);
-			x = draw_nesticon(v, xy, this);
-			xy->x += x;
-			indent += x;
-		}
-
-		if (sel)
-			wtxt = &this->c.td.text.fnt->s;
-		else
-			wtxt = &this->c.td.text.fnt->n;
-
-		f = this->c.td.text.fnt->flags;
-
-		(*v->api->wr_mode)(v, wtxt->wrm); //MD_TRANS);
-		(*v->api->t_font)(v, wtxt->p, wtxt->f);
-		(*v->api->t_effects)(v, wtxt->e);
-		x = xy->x;
-		if (ii)
-		{
-			x += list->icon_w;
-			indent += list->icon_w;
-		}
-		y = xy->y;
-
-		tetext = this->c.td.text.text;
-
-		while (tetext && tabs)
-		{
-			short x2, y2, dx, dy;
-			char t[200];
-
-			dx = x + tabs->r.x;
-			x2 = dx + tabs->r.w - 1 - indent;
-			dy = y + tabs->r.y;
-			y2 = dy + tabs->r.h - 1;
-
-			x = x2;
-			y = y2;
-			
-			(*v->api->prop_clipped_name)(v, tetext->text, t, tabs->r.w - indent, &w, &h, 0);
-			indent = 0;
-			
-			if (tabs->flags & SETAB_RJUST)
+			r.x = xy->x;
+			r.y = xy->y;
+			r.w = list->tabs[list->indent_upto].r.x;
+			r.h = this->r.h;
+			if (xa_rect_clip(clip, &r, &clp))
 			{
-				dx = x2 - w;
+				(*v->api->set_clip)(v, &clp);
+				draw_nesticon(v, 16, xy, this);
 			}
-			else if (tabs->flags & SETAB_CJUST)
+			indent += 16;
+		}
+		
+		r.h = this->r.h;
+		while (c)
+		{
+			tab = &list->tabs[c->index];
+
+			r.x = tab->r.x;
+			r.w = tab->r.w;
+			if (c->index < list->indent_upto)
 			{
-				dx = x2 - (w >> 1);
+				r.x += indent;
+				if (tab->v.w < 0)
+				{
+					if ((r.w -= indent) < 0 && r.x >= list->tabs[list->indent_upto].r.x)
+						r.w = 0;
+				}
 			}
 
-			dy += ((this->r.h - h) >> 1);
-			
-			if (f & WTXT_DRAW3D)
+			r.x += xy->x;
+			r.y = xy->y;
+
+			switch (c->type)
 			{
-				if (sel && (f & WTXT_ACT3D))
-					dx++, dy++;
+				case SECONTENT_ICON:
+				{
+					if (xa_rect_clip(clip, &r, &clp))
+					{
+						(*v->api->set_clip)(v, &clp);
+						if (sel)
+							c->c.icon.icon->ob_state |= OS_SELECTED;
+						else
+							c->c.icon.icon->ob_state &= ~OS_SELECTED;
+						tr.tree = c->c.icon.icon;
+						tr.owner = list->wt->owner;
+						display_object(lock, &tr, v, 0, r.x, r.y, 12);
+					}
+					break;
+				}
+				case SECONTENT_TEXT:
+				{
+					short x2, y2, dx, dy, tw, th, f;
+					char t[200];
+
+					if (xa_rect_clip(clip, &r, &clp))
+					{
+						(*v->api->set_clip)(v, &clp);
+
+						dx = r.x;
+						x2 = dx + r.w;
+						dy = r.y;
+						y2 = dy + this->r.h - 1;
+						tw = r.w;
+						if (c->c.text.icon.icon)
+						{
+							if (sel)
+								c->c.text.icon.icon->ob_state |= OS_SELECTED;
+							else
+								c->c.text.icon.icon->ob_state &= ~OS_SELECTED;
+							tr.tree = c->c.text.icon.icon;
+							tr.owner = list->wt->owner;
+							display_object(lock, &tr, v, 0, dx, dy, 12);
+							dx += c->c.text.icon.r.w;
+							tw -= c->c.text.icon.r.w;
+						}
+						if (tw > 0)
+						{
+							f = this->fnt->flags;
+					
+							if (sel)
+								wtxt = &this->fnt->s;
+							else
+								wtxt = &this->fnt->n;
+
+							(*v->api->wr_mode)(v, wtxt->wrm);
+							(*v->api->t_font)(v, wtxt->p, wtxt->f);
+							(*v->api->t_effects)(v, wtxt->e);
+					
+							(*v->api->prop_clipped_name)(v, c->c.text.text, t, tw, &tw, &th, 0);
+// 							display("%s", c->c.text.text);
+// 							display("%s", t);
+// 							display("tab  %d/%d/%d/%d", tab->r);
+// 							display("this %d/%d/%d/%d", this->r);
+// 							display("ent %d/%d", c->c.text.w, c->c.text.h);
+
+							if (tab->flags & SETAB_RJUST)
+							{
+								dx = x2 - tw;
+							}
+							else if (tab->flags & SETAB_CJUST)
+							{
+								dx = x2 - (tw >> 1);
+							}
+					
+							dy += ((this->r.h - th) >> 1);
+			
+							if (f & WTXT_DRAW3D)
+							{
+								if (sel && (f & WTXT_ACT3D))
+									dx++, dy++;
 	
-				(*v->api->t_color)(v, wtxt->bgc);
-				dx++;
-				dy++;
-				v_gtext(v->handle, dx, dy, t);
-				dx--;
-				dy--;
+								(*v->api->t_color)(v, wtxt->bgc);
+								dx++;
+								dy++;
+								v_gtext(v->handle, dx, dy, t);
+								dx--;
+								dy--;
+							}
+							(*v->api->t_color)(v, wtxt->fgc);
+							v_gtext(v->handle, dx, dy, t);
+						}
+					}
+					break;
+				}
+				default:;
 			}
-			(*v->api->t_color)(v, wtxt->fgc);
-			v_gtext(v->handle, dx, dy, t);
 
-			if (tabs->flags & SETAB_END)
-				tabs = NULL;
-			else
-				tabs++;
-			tetext = tetext->next;
+// 			(*v->api->line)(v, (xy->x + tab->r.x + tab->r.w - 1), r.y, (xy->x + tab->r.x + tab->r.w - 1), r.y + xy->h, G_LWHITE);
+			c = c->next;
 		}
+		(*v->api->set_clip)(v, clip);
 		/* normal */
 		(*v->api->t_effects)(v, 0);
-
-		//wtxt_output(this->c.fnt, this->c.text, this->state, xy, ii ? list->icon_w : 0, 0);
-		
-		(*v->api->f_color)(v, G_WHITE);
-		
-		if (ii && this->c.icon)
-		{
-			if (sel)
-				this->c.icon->ob_state |= OS_SELECTED;
-			else
-				this->c.icon->ob_state &= ~OS_SELECTED;
-
-			tr.tree = this->c.icon;
-			tr.owner = list->wt->owner;
-			display_object(lock, &tr, v, 0, xy->x + 1, xy->y + 1, 12);
-		}
 	}
-}
+}	
 
 void
 draw_slist(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *entry, const RECT *clip)
@@ -597,39 +817,6 @@ draw_slist(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *entry, const RECT *
 		}
 		(*v->api->set_clip)(v, clip);
 	}
-}
-
-static void
-check_movement(SCROLL_INFO *list)
-{
-	struct xa_window *wind = list->wi;
-	OBJECT *obtree = list->wt->tree;
-	short x, y;
-
-	x = obtree->ob_x + list->rel_x;
-	y = obtree->ob_y + list->rel_y;
-
-	if (x != wind->rc.x ||
-	    y != wind->rc.y )
-	{
-		wind->r.x = wind->rc.x = x;
-		wind->r.y = wind->rc.y = y;
-		calc_work_area(list->wi);
-	}
-}
-static bool
-canredraw(SCROLL_INFO *list)
-{
-	struct xa_window *wind;
-
-	if (!(wind = list->pw))
-		wind = list->wt->wind;
-	if (wind && (wind->window_status & (XAWS_OPEN|XAWS_SHADED|XAWS_HIDDEN)) == XAWS_OPEN)
-	{
-		check_movement(list);
-		return true;
-	}
-	return false;
 }
 /*
  * Reset listwindow's widgets according to contents
@@ -963,27 +1150,27 @@ alloc_entry_wtxt(struct scroll_entry *entry, struct xa_wtxt_inf *newwtxt)
 {
 	if (!(entry->iflags & SEF_WTXTALLOC))
 	{
-		struct xa_wtxt_inf *old = entry->c.td.text.fnt;
-		entry->c.td.text.fnt = kmalloc(sizeof(struct xa_wtxt_inf));
-		if (entry->c.td.text.fnt)
+		struct xa_wtxt_inf *old = entry->fnt;
+		entry->fnt = kmalloc(sizeof(struct xa_wtxt_inf));
+		if (entry->fnt)
 		{
 			entry->iflags |= SEF_WTXTALLOC;
 			
 			if (newwtxt)
-				*entry->c.td.text.fnt = *newwtxt;
+				*entry->fnt = *newwtxt;
 			else if (old)
-				*entry->c.td.text.fnt = *old;
+				*entry->fnt = *old;
 			else
-				*entry->c.td.text.fnt = *(struct xa_wtxt_inf *)&default_fnt;
+				*entry->fnt = *(struct xa_wtxt_inf *)&default_fnt;
 		}
 		else
 		{
-			entry->c.td.text.fnt = old;
+			entry->fnt = old;
 			return;
 		}
 	}
 	else if (newwtxt)
-		*entry->c.td.text.fnt = *newwtxt;
+		*entry->fnt = *newwtxt;
 }
 
 /*
@@ -1035,6 +1222,273 @@ seset_state(SCROLL_INFO *list, SCROLL_ENTRY *this, short newstate, short mask, b
 	}
 }
 
+static struct se_content *
+get_entry_setext(struct scroll_entry *this, short idx)
+{
+	struct se_content *p = NULL;
+
+	if (this)
+	{
+		p = this->content;
+		if (idx == -1)
+		{
+			while (p && p->type != SECONTENT_TEXT)
+				p = p->next;
+		}
+		else
+		{
+			while (p && !(p->index == idx && p->type == SECONTENT_TEXT))
+				p = p->next;
+		}
+	}
+	return p;
+}
+
+static struct se_content *
+get_entry_next_setext(struct se_content *this_sc)
+{
+	this_sc = this_sc->next;
+	while (this_sc && this_sc->type != SECONTENT_TEXT)
+		this_sc = this_sc->next;
+	return this_sc;
+}
+
+static void
+free_seicon(struct se_content *seicon)
+{
+	kfree(seicon);
+}
+
+static void
+free_setext(struct se_content *setext)
+{
+	if (setext->c.text.flags & SETEXT_ALLOC)
+		kfree(setext->c.text.text);
+	kfree(setext);
+}
+
+static void
+remove_se_content(struct scroll_entry *this, struct se_content *this_sc, struct se_content **prev, struct se_content **next)
+{
+	if (prev) *prev = this_sc->prev;
+	if (next) *next = this_sc->next;
+
+	if (this_sc->prev)
+		this_sc->prev->next = this_sc->next;
+	else
+		this->content = this_sc->next;
+	
+	if (this_sc->next)
+		this_sc->next->prev = this_sc->prev;
+}
+
+static void
+delete_all_content(struct scroll_entry *this)
+{
+	struct se_content *this_sc = this->content, *n;
+
+	while (this_sc)
+	{
+		remove_se_content(this, this_sc, NULL, &n);
+		switch (this_sc->type)
+		{
+			case SECONTENT_TEXT:
+			{
+				free_setext(this_sc);
+				break;
+			}
+			case SECONTENT_ICON:
+			{
+				free_seicon(this_sc);
+				break;
+			}
+			default:
+			{
+				kfree(this_sc);
+				break;
+			}
+		}
+		this_sc = n;
+	}
+}
+
+static void
+insert_se_content(struct scroll_entry *this, struct se_content *this_sc, short index)
+{
+	struct se_content *sc = this->content;
+	short last_idx;
+
+// 	ndisplay("ins_se_cont");
+
+	this_sc->index = index;
+
+	if (!sc)
+	{
+// 		ndisplay(" first");
+		this->content = this_sc;
+		last_idx = index;
+	}
+	else
+	{
+		while ((last_idx = sc->index) < index && sc->next)
+		{
+			sc = sc->next;
+		}
+// 		ndisplay(" last_idx = %d, index %d", last_idx, index);
+		
+		/*
+		 * If we got to the index, we insert before
+		 */
+		if (last_idx >= index)
+		{
+			if ((this_sc->prev = sc->prev))
+			{
+				sc->prev->next = this_sc;
+			}
+			else
+			{
+				this->content = this_sc;
+			}
+			this_sc->next = sc;
+			sc->prev = this_sc;
+			
+			if (last_idx == index)
+			{
+				this_sc = this_sc->next;
+				while (this_sc && this_sc->index == last_idx)
+				{
+					this_sc->index++;
+					last_idx++;
+					this_sc = this_sc->next;
+				}
+			}
+		}
+		/*
+		 * else we insert after
+		 */
+		else
+		{
+			this_sc->prev = sc;
+			if ((this_sc->next = sc->next))
+			{
+				sc->next->prev = this_sc;
+			}
+			sc->next = this_sc;
+		}
+	}
+// 	display("done");
+}
+
+static void
+set_setext_icon(struct se_content *this_sc, OBJECT *icon)
+{
+	this_sc->c.text.icon.icon = icon;
+	icon->ob_x = icon->ob_y = 0;
+	ob_spec_xywh(icon, 0, &this_sc->c.text.icon.r);
+}
+	
+static struct se_content *
+new_setext(const char *t, OBJECT *icon, short type)
+{
+	struct se_content *new = NULL;
+	short tblen, slen;
+
+
+	if (type & SETYP_AMAL)
+	{
+		slen = strlen(t);
+		tblen = slen < 44 ? 44 : slen + 1;
+		new = kmalloc(sizeof(*new) + tblen);
+		if (new)
+		{
+			bzero(new, sizeof(*new));
+			new->c.text.flags = SETEXT_TXTSTR;
+			new->c.text.text = new->c.text.txtstr;
+			strcpy(new->c.text.txtstr, t);
+			if (icon)
+				set_setext_icon(new, icon);
+		}
+	}
+	else
+	{
+		slen = strlen(t);
+		tblen = slen + 1;
+		new = kmalloc(sizeof(*new));
+		if (new)
+		{
+			bzero(new, sizeof(*new));
+			new->c.text.flags = 0;
+			(const char *)new->c.text.text = t;
+			if (icon)
+				set_setext_icon(new, icon);
+		}
+	}
+	if (new)
+	{
+		new->type = SECONTENT_TEXT;
+		new->next = NULL;
+		new->c.text.tblen = tblen;
+	}
+	return new;
+}
+/*
+ * create a new SECONTENT_ICON content
+ */
+static struct se_content *
+new_seicon(OBJECT *icon)
+{
+	struct se_content *new;
+ 
+ 	if ((new = kmalloc(sizeof(*new))))
+	{
+		bzero(new, sizeof(*new));
+		new->c.icon.icon = icon;
+		icon->ob_x = icon->ob_y = 0;
+		ob_spec_xywh(icon, 0, &new->c.icon.r);
+		new->type = SECONTENT_ICON;
+	}
+	return new;
+}
+/*
+ * Add a scroll entry content, type SECONTENT_TEXT
+ */
+static struct se_content *
+insert_strings(struct scroll_entry *this, short index, struct sc_text *t, OBJECT *icon, short type)
+{
+	struct se_content *this_sc, *ret = NULL;
+	int i;
+	const char *s = t->text;
+
+	for (i = 0; i < t->strings; i++)
+	{
+		if ((this_sc = new_setext(s, icon, type)))
+		{
+			if (!ret) ret = this_sc;
+			insert_se_content(this, this_sc, index + i);
+			if (icon)
+				icon = NULL;
+		}
+		s += strlen(s) + 1;
+	}
+	return ret;
+}
+
+static struct se_content *
+insert_icon(struct scroll_entry *this, short index, OBJECT *icon)
+{
+	struct se_content *this_sc = NULL;
+
+	if (icon)
+	{
+		this_sc = new_seicon(icon);
+		if (this_sc)
+		{
+			insert_se_content(this, this_sc, index);
+		}
+	}
+	return this_sc;
+}
+
 static int
 set(SCROLL_INFO *list,
     SCROLL_ENTRY *entry,
@@ -1070,7 +1524,7 @@ set(SCROLL_INFO *list,
 			alloc_entry_wtxt(entry, NULL);
 			if (entry->iflags & SEF_WTXTALLOC)
 			{
-				entry->c.td.text.fnt->n = *f;
+				entry->fnt->n = *f;
 			}
 				else ret = 0;
 			break;
@@ -1081,7 +1535,7 @@ set(SCROLL_INFO *list,
 			alloc_entry_wtxt(entry, NULL);
 			if (entry->iflags & SEF_WTXTALLOC)
 			{
-				entry->c.td.text.fnt->s = *f;
+				entry->fnt->s = *f;
 			}
 				else ret = 0;
 			break;
@@ -1092,7 +1546,7 @@ set(SCROLL_INFO *list,
 			alloc_entry_wtxt(entry, NULL);
 			if (entry->iflags & SEF_WTXTALLOC)
 			{
-				entry->c.td.text.fnt->h = *f;
+				entry->fnt->h = *f;
 			}
 				else ret = 0;
 			break;
@@ -1236,27 +1690,18 @@ set(SCROLL_INFO *list,
 			list->redraw(list, entry);
 			break;
 		}
-		case SESET_TEXTTAB:
+		case SESET_TAB:
 		{
-			struct seset_txttab *tab = (void *)arg;
-			struct se_tab *setabs = list->se_tabs;
+			struct seset_tab *tab = (void *)arg;
+			struct se_tab *tabs = list->tabs;
 			short idx = tab->index;
 
-			while (setabs)
+			if (idx < list->num_tabs)
 			{
-				if (!idx)
-					break;
-				if (setabs->flags & SETAB_END)
-					setabs = NULL;
-				setabs++;
-				idx--;
-			}
-			if (setabs)
-			{
-				setabs->flags &= SETAB_END;
-				setabs->flags |= tab->flags & ~SETAB_END;
-				setabs->r = tab->r;
-				reset_tabs(list);
+				tabs[idx].flags |= tab->flags;
+				tabs[idx].v = tab->r;
+				recalc_tabs(list);
+// 				reset_tabs(list);
 			}
 			else
 				ret = 0;
@@ -1265,13 +1710,13 @@ set(SCROLL_INFO *list,
 		case SESET_USRFLAGS:
 		{
 			if (entry)
-				entry->c.usr_flags = arg;
+				entry->usr_flags = arg;
 			break;
 		}
 		case SESET_USRDATA:
 		{
 			if (entry)
-				entry->c.data	= (void *)arg;
+				entry->data	= (void *)arg;
 			break;
 		}
 		case SESET_TREEVIEW:
@@ -1284,6 +1729,51 @@ set(SCROLL_INFO *list,
 				list->redraw(list, NULL);
 			break;
 		}
+		case SESET_TEXT:
+		{
+			struct sc_text *t = (struct sc_text *)arg;
+			
+			if (t && t->text && entry)
+			{
+				struct se_content *setext;
+				long slen;
+				
+				setext = get_entry_setext(entry, t->index);
+				if (setext)
+				{
+					slen = strlen(t->text);
+					if (slen < setext->c.text.tblen)
+						strcpy(setext->c.text.text, t->text);
+					else
+					{
+						struct se_content *new = new_setext(t->text, setext->c.text.icon.icon, SETYP_AMAL);
+						if (new)
+						{
+							remove_se_content(entry, setext, NULL, NULL);
+							free_setext(setext);
+							insert_se_content(entry, new, t->index);
+						}
+						else
+						{
+							strncpy(setext->c.text.text, t->text, setext->c.text.tblen);
+							setext->c.text.text[setext->c.text.tblen] = '\0';
+						}
+					}
+				}
+				else
+				{
+					struct se_content *new = new_setext(t->text, NULL, SETYP_AMAL);
+					if (new)
+					{
+						insert_se_content(entry, new, t->index);
+					}
+				}
+				if (rdrw)
+					list->redraw(list, entry);
+			}
+			break;
+		}
+		
 	}
 
 	if (redrw)
@@ -1294,22 +1784,6 @@ set(SCROLL_INFO *list,
 			list->redraw(list, entry);
 	}
 	return ret;
-}
-
-static struct se_text *
-get_entry_setext(struct scroll_entry *this, short idx)
-{
-	struct se_text *setext = NULL;
-
-	if (this)
-	{
-		setext = this->c.td.text.text;
-		while (setext && idx--)
-		{
-			setext = setext->next;
-		}
-	}	
-	return setext;
 }
 
 static int
@@ -1336,19 +1810,19 @@ get(SCROLL_INFO *list, SCROLL_ENTRY *entry, short what, void *arg)
 			case SEGET_NFNT:
 			{
 				struct xa_fnt_info *f = arg;
-				*f = entry->c.td.text.fnt->n;
+				*f = entry->fnt->n;
 				break;
 			}
 			case SEGET_SFNT:
 			{
 				struct xa_fnt_info *f = arg;
-				*f = entry->c.td.text.fnt->s;
+				*f = entry->fnt->s;
 				break;
 			}
 			case SEGET_HFNT:
 			{
 				struct xa_fnt_info *f = arg;
-				*f = entry->c.td.text.fnt->h;
+				*f = entry->fnt->h;
 				break;
 			}
 			case SEGET_WTXT:
@@ -1399,7 +1873,7 @@ get(SCROLL_INFO *list, SCROLL_ENTRY *entry, short what, void *arg)
 					this = list->start;
 				while (this)
 				{
-					if (this->c.data == p->arg.typ.data)
+					if (this->data == p->arg.typ.data)
 						break;
 					this = next_entry(this, p->arg.flags, p->arg.maxlevel, &p->arg.curlevel);
 				}
@@ -1410,18 +1884,34 @@ get(SCROLL_INFO *list, SCROLL_ENTRY *entry, short what, void *arg)
 			case SEGET_ENTRYBYTEXT:
 			{
 				struct seget_entrybyarg *p = arg;
-				struct se_text *setext;
+				struct se_content *setext;
 				struct scroll_entry *this = entry;
 
 				if (!this)
 					this = list->start;
+				
 				while (this)
 				{
-					setext = get_entry_setext(this, p->idx);
-					if (setext)
+					if (p->idx == -1)
 					{
-						if (!strcmp(p->arg.typ.txt, setext->text))
+						setext = get_entry_setext(this, -1);
+						while (setext)
+						{
+							if (!strcmp(p->arg.typ.txt, setext->c.text.text))
+								break;
+							setext = get_entry_next_setext(setext);
+						}
+						if (setext)
 							break;
+					}
+					else
+					{
+						setext = get_entry_setext(this, p->idx);
+						if (setext)
+						{
+							if (!strcmp(p->arg.typ.txt, setext->c.text.text))
+								break;
+						}
 					}
 					this = next_entry(this, p->arg.flags, p->arg.maxlevel, &p->arg.curlevel);
 				}
@@ -1473,29 +1963,22 @@ get(SCROLL_INFO *list, SCROLL_ENTRY *entry, short what, void *arg)
 			
 			case SEGET_LISTXYWH:
 			{
-				check_movement(list);
-				*(RECT *)arg = list->wi->wa;
+				get_list_rect(list, (RECT *)arg);
+
+// 				check_movement(list);
+// 				*(RECT *)arg = list->wi->wa;
 				break;
 			}
-			case SEGET_TEXTTAB:
+			case SEGET_TAB:
 			{
-				struct seset_txttab *tab = arg;
-				struct se_tab *setabs = list->se_tabs;
+				struct seset_tab *tab = arg;
+				struct se_tab *tabs = list->tabs;
 				short idx = tab->index;
 
-				while (setabs)
+				if (idx < list->num_tabs)
 				{
-					if (!idx)
-						break;
-					if (setabs->flags & SETAB_END)
-						setabs = NULL;
-					setabs++;
-					idx--;
-				}
-				if (setabs)
-				{
-					tab->flags = setabs->flags;
-					tab->r = setabs->r;
+					tab->flags = tabs[idx].flags;
+					tab->r = tabs[idx].v;
 				}
 				else
 					ret = 0;
@@ -1512,13 +1995,13 @@ get(SCROLL_INFO *list, SCROLL_ENTRY *entry, short what, void *arg)
 			case SEGET_USRFLAGS:
 			{
 				if (arg && entry)
-					*(long *)arg = entry->c.usr_flags;
+					*(long *)arg = entry->usr_flags;
 				break;
 			}
 			case SEGET_USRDATA:
 			{
 				if (arg && entry)
-					*(void **)arg = entry->c.data;
+					*(void **)arg = entry->data;
 				break;
 			}
 			case SEGET_NEXTENT:
@@ -1547,10 +2030,10 @@ get(SCROLL_INFO *list, SCROLL_ENTRY *entry, short what, void *arg)
 			case SEGET_TEXTCPY:
 			{
 				struct seget_entrybyarg *p = arg;
-				struct se_text *setext;
+				struct se_content *setext;
 
 				if ((setext = get_entry_setext(entry, p->idx)))
-					strcpy(p->arg.typ.txt, setext->text);
+					strcpy(p->arg.typ.txt, setext->c.text.text);
 				else
 					ret = 0;
 				break;
@@ -1558,10 +2041,10 @@ get(SCROLL_INFO *list, SCROLL_ENTRY *entry, short what, void *arg)
 			case SEGET_TEXTCMP:
 			{
 				struct seget_entrybyarg *p = arg;
-				struct se_text *setext;
+				struct se_content *setext;
 
 				if ((setext = get_entry_setext(entry, p->idx)))
-					p->ret.ret = strcmp(p->arg.typ.txt, setext->text);
+					p->ret.ret = strcmp(p->arg.typ.txt, setext->c.text.text);
 				else
 					ret = 0;
 				break;
@@ -1569,10 +2052,10 @@ get(SCROLL_INFO *list, SCROLL_ENTRY *entry, short what, void *arg)
 			case SEGET_TEXTPTR:
 			{
 				struct seget_entrybyarg *p = arg;
-				struct se_text *setext;
+				struct se_content *setext;
 
 				if ((setext = get_entry_setext(entry, p->idx)))
-					p->ret.ptr = setext->text;
+					p->ret.ptr = setext->c.text.text;
 				else
 					ret = 0;
 				break;
@@ -1648,12 +2131,12 @@ add_scroll_entry(SCROLL_INFO *list,
 {
 	struct scroll_entry *here, *new;
 	LRECT r;
-
+// 	display("add_scoll_entry");
 	if (!parent || is_in_list(list, parent))
 	{
 		bool fullredraw = false;
-		int i;
-		short ns = sc->n_strings;
+// 		struct se_content *seicon;
+		
 		/*
 		 * mem for the new entry...
 		 */
@@ -1666,53 +2149,16 @@ add_scroll_entry(SCROLL_INFO *list,
 			return 0;
 
 		bzero(new, sizeof(*new));
+// 		ndisplay("icon");
+// 		seicon = insert_icon(new, 0, sc->icon);
+// 		display(" %lx", seicon);
 
-		{
-			char *s = sc->text;
-			struct se_text *setext, **prev;
+// 		ndisplay("strings");
+		insert_strings(new, 0, &sc->t, sc->icon, type);
+// 		display(" done");
 
-			prev = &new->c.td.text.text;
-			new->c.type = SECONTENT_TEXT;
-
-			for (i = 0; i < ns; i++)
-			{
-				if (type & SETYP_AMAL)
-				{
-					setext = kmalloc(sizeof(*setext) + strlen(s) + 1);
-					if (setext)
-					{
-						setext->flags = SETEXT_TXTSTR;
-						setext->text = setext->txtstr;
-						strcpy(setext->text, s);
-						*prev = setext;
-						prev = &((*prev)->next);
-						*prev = NULL;
-					}
-				}
-				else
-				{
-					setext = kmalloc(sizeof(*setext));
-					if (setext)
-					{
-						setext->flags = 0;
-						setext->text = s;
-						*prev = setext;
-						prev = &((*prev)->next);
-						*prev = NULL;
-						if (type & SETYP_MAL)
-							setext->flags |= SETEXT_ALLOC;
-					}
-				}
-				setext->tblen = strlen(setext->text);
-				s += strlen(s) + 1;
-			}
-		}
-
-		new->c.td.text.n_strings = sc->n_strings;
-		
-		new->c.icon = sc->icon;
-		new->c.data = sc->data;
-		new->c.usr_flags = sc->usr_flags;
+		new->data = sc->data;
+		new->usr_flags = sc->usr_flags;
 
 		new->xstate = sc->xstate;
 		new->xflags = sc->xflags;
@@ -1720,36 +2166,25 @@ add_scroll_entry(SCROLL_INFO *list,
 		if (sc->fnt)
 			alloc_entry_wtxt(new, sc->fnt);
 		else
-			new->c.td.text.fnt = &default_fnt;
+			new->fnt = &default_fnt;
 		
-		if (!(new->c.col = sc->col))
-			new->c.col = &default_col;
+		if (!(new->col = sc->col))
+			new->col = &default_col;
 
 		new->type = type;
 
-		if (new->c.icon)
-		{
-			object_spec_wh(new->c.icon, &new->r.w, &new->r.h);
-			new->c.icon->ob_x = new->c.icon->ob_y = 0;
-			new->r.w += 2, new->r.h += 2;
-			new->icon_w = new->r.w;
-			new->icon_h = new->r.h;
-			if (new->r.w > list->icon_w)
-				list->icon_w = new->r.w;
-			if (new->r.h > list->icon_h)
-				list->icon_h = new->r.h;
-		}
-
-		if (new->c.td.text.text)
-			fullredraw = entry_text_wh(list, new);
-
 		new->indent = list->indent;
-		new->r.w += new->indent;
+// 		new->r.w += new->indent;
+// 		ndisplay("calc ent wh");
+		calc_entry_wh(list, new);
+// 		display(" done");
 		
 		if (parent)
 		{
 			if ((addmode & SEADD_CHILD))
+			{
 				here = parent->down;
+			}
 			else
 				here = parent;
 		}
@@ -1833,6 +2268,12 @@ add_scroll_entry(SCROLL_INFO *list,
 		
 		if (new->up)
 		{
+			
+			if (!new->up->level)
+				new->root = new->up;
+			else
+				new->root = new->up->root;
+
 			new->level = new->up->level + 1;
 			new->indent += (new->level * list->nesticn_w);
 			if (list->flags & SIF_TREEVIEW)
@@ -1914,11 +2355,12 @@ add_scroll_entry(SCROLL_INFO *list,
 			}
 			list->slider(list, redraw);
 		}
+// 		display("done!");
 		return 1;
 	}
+// 	display("Done failed");
 	return 0;
 }
-
 /*
  * Delete scroll entry
  */
@@ -1991,21 +2433,12 @@ free_scroll_entry(struct scroll_info *list, struct scroll_entry *this, long *hei
 				{
 					list->top = NULL;
 				}
-
-				if (this->c.type == SECONTENT_TEXT)
-				{
-					struct se_text *setext = this->c.td.text.text, *n;
-					while (setext)
-					{
-						n = setext->next;
-						if (setext->flags & SETEXT_ALLOC)
-							kfree(setext->text);
-						kfree(setext);
-						setext = n;
-					}
-					if ((this->iflags & SEF_WTXTALLOC))
-						kfree(this->c.td.text.fnt);
-				}
+				
+				delete_all_content(this);	
+				
+				if ((this->iflags & SEF_WTXTALLOC))
+					kfree(this->fnt);
+				
 				h += this->r.h;
 				kfree(this);
 			}
@@ -2054,23 +2487,15 @@ free_scroll_entry(struct scroll_info *list, struct scroll_entry *this, long *hei
 		if (this == list->top)
 			list->top = NULL;
 
-		if (this->c.type == SECONTENT_TEXT)
-		{
-			struct se_text *setext = this->c.td.text.text, *n;
-			while (setext)
-			{
-				n = setext->next;
-				if (setext->flags & SETEXT_ALLOC)
-					kfree(setext->text);
-				kfree(setext);
-				setext = n;
-			}
-			if ((this->iflags & SEF_WTXTALLOC))
-				kfree(this->c.td.text.fnt);
-		}
+		delete_all_content(this);
+		
+		if ((this->iflags & SEF_WTXTALLOC))
+			kfree(this->fnt);
+		
 		h += this->r.h;
 		kfree(this);
 	}
+	
 	if (height)
 		*height = h;
 
@@ -2587,7 +3012,7 @@ search(SCROLL_INFO *list, SCROLL_ENTRY *start, short mode, void *data)
 			 */
 			while (start)
 			{
-				if (start->c.data == data)
+				if (start->data == data)
 					break;
 				start = next_entry(start, 0, -1, NULL);
 			}
@@ -2596,9 +3021,18 @@ search(SCROLL_INFO *list, SCROLL_ENTRY *start, short mode, void *data)
 		}
 		case SEFM_BYTEXT:
 		{
+			struct se_content *setext;
+			
 			while (start)
 			{
-				if (!strcmp(start->c.td.text.text->text, data))
+				setext = get_entry_setext(start, -1);
+				while (setext)
+				{
+					if (!strcmp(setext->c.text.text, data))
+						break;
+					setext = get_entry_next_setext(setext);
+				}
+				if (setext)
 					break;
 				start = next_entry(start, 0, -1, NULL);
 			}
@@ -2631,6 +3065,40 @@ click_scroll_list(enum locks lock, OBJECT *form, int item, const struct moose_da
 	{
 		long y;
 
+		if (md->cstate & MBS_RIGHT)
+		{
+			short mb, mx, my, px, py;
+			S.wm_count++;
+			check_mouse(list->wi->owner, &mb, &px, &py);
+			while (mb)
+			{
+				long num;
+				wait_mouse(list->wi->owner, &mb, &mx, &my);
+				
+				if (!mb)
+					break;
+
+				if (mx != px)
+				{
+					if ((num = mx - px) < 0)
+						scroll_left(list, -num, true);
+					else	
+						scroll_right(list, num, true);
+					px = mx;
+				}
+				if (my != py)
+				{
+					if ((num = my - py) < 0)
+						scroll_up(list, -num, true);
+					else
+						scroll_down(list, num, true);
+					py = my;
+				}
+			}
+			S.wm_count--;
+			return;
+		}
+		
 		cy -= list->wi->wa.y;
 
 		if ((this = list->top))
@@ -2918,8 +3386,8 @@ unset_G_SLIST(struct scroll_info *list)
 		list->wt = NULL;
 	}
 
-	if (list->se_tabs)
-		kfree(list->se_tabs);
+	if (list->tabs)
+		kfree(list->tabs);
 
 	*ob = list->prev_ob;
 	if (list->flags & SIF_KMALLOC)
@@ -2955,7 +3423,9 @@ set_slist_object(enum locks lock,
 		 void *data,
 		 short lmax)	/* Used to determine whether a horizontal slider is needed. */
 {
+	int i;
 	struct scroll_info *list;
+	struct se_tab *tabs;
 	RECT r;
 	XA_WIND_ATTR wkind = UPARROW|VSLIDE|DNARROW;
 	OBJECT *ob = wt->tree + item;
@@ -2963,31 +3433,23 @@ set_slist_object(enum locks lock,
 	DIAG((D_rsrc, NULL, "set_slist_object"));
 
 	list = kmalloc(sizeof(*list));
-
-	if (!list)
+	tabs = kmalloc(sizeof(*tabs) * 10);
+	
+	if (!list || !tabs)
+	{
+		if (list)
+			kfree(list);
+		if (tabs)
+			kfree(tabs);
 		return NULL;
+	}
 
 	bzero(list, sizeof(*list));
 
-	{
-		int i = 1;
-		long len;
-		struct se_tab *setabs = se_tabs;
-
-		while (!(setabs->flags & SETAB_END))
-			i++, setabs++;
-		
-		len = sizeof(struct se_tab) + sizeof(struct se_text_tabulator);
-		
-		if (!(list->se_tabs = kmalloc(len * i) ))
-		{
-			kfree(list);
-			return NULL;
-		}
-		(long)list->tabs = (long)list->se_tabs + (sizeof(struct se_tab) * i);
-		memcpy(list->se_tabs, &se_tabs, (sizeof(struct se_tab) * i));
-		reset_tabs(list);
-	}
+	list->tabs = tabs;
+	list->num_tabs = 10;
+	for (i = 0; i < 10; i++)
+		tabs[i] = default_setab;
 
 	list->flags |= SIF_KMALLOC;
 
@@ -3086,6 +3548,7 @@ set_slist_object(enum locks lock,
 		list->redraw	= slist_redraw;
 		list->lock	= lock;
 
+		list->indent_upto = 1;
 		list->indent = 2;
 		list->nesticn_w = 16;
 		list->nesticn_h = 16;
@@ -3260,6 +3723,14 @@ slist_msg_handler(
 	{
 		if (list->fuller)
 			list->fuller(list, true);
+	}
+	case WM_SIZED:
+	{
+// 		display("resize slist wind");
+		move_window(0, wind, false, -1, msg[4], msg[5], msg[6], msg[7]);	
+		recalc_tabs(list);
+		list->slider(list, false);
+		break;
 	}
 	default:
 	{

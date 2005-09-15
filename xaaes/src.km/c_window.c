@@ -1274,8 +1274,9 @@ draw_window(enum locks lock, struct xa_window *wind, const RECT *clip)
 //  					widg->m.statusmask, widg->m.properties, widg->m.r.draw);
 
 			
-			if ( (wind != root_window && f == XAW_TOOLBAR) || (widg->m.properties & WIP_NOTEXT) ||
-			    (f == XAW_MENU && wind == root_window))
+			if ( (wind != root_window && f == XAW_TOOLBAR) ||
+			     (widg->m.properties & WIP_NOTEXT) ||
+			     (f == XAW_MENU && wind == root_window))
 				continue;
 
 			if (!(status & widg->m.statusmask) && wdg_is_inst(widg))
@@ -1561,7 +1562,7 @@ move_window(enum locks lock, struct xa_window *wind, bool blit, short newstate, 
 
 	set_and_update_window(wind, blit, false, &new);
 
-	if ((wind->window_status & XAWS_OPEN))
+	if ((wind->window_status & XAWS_OPEN) && !(wind->dial & created_for_SLIST))
 	{
 		struct xa_window *nxt = wind->nolist ? (wind->next ? wind->next : window_list) : wind->next;
 		update_windows_below(lock, &old, &new, nxt, NULL);
@@ -2308,14 +2309,8 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 		
 	if (!(wind->window_status & XAWS_OPEN))
 		return;
-
-	oldrl = wind->rect_list.start;
-	wind->rect_list.start = wind->rect_list.next = NULL;
-	newrl = make_rect_list(wind, false, RECT_SYS);
-	wind->rect_list.start = newrl;
-
 #if 1
-	if (wind->nolist && (wind->active_widgets & STORE_BACK))
+	if ((wind->nolist && (wind->active_widgets & STORE_BACK)) || (wind->dial & created_for_SLIST))
 	{
 		if (xmove || ymove || resize)
 		{
@@ -2327,11 +2322,17 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 			if (wind->active_widgets & STORE_BACK)
 				form_save(0, wind->r, &(wind->background));
 
-			generate_redraws(wlock, wind, (RECT *)&wind->r, !only_wa ? RDRW_ALL : RDRW_WA);
+			if (!(wind->dial & created_for_SLIST))
+				generate_redraws(wlock, wind, (RECT *)&wind->r, !only_wa ? RDRW_ALL : RDRW_WA);
 		}
+		
 		return;
 	}
 #endif
+	oldrl = wind->rect_list.start;
+	wind->rect_list.start = wind->rect_list.next = NULL;
+	newrl = make_rect_list(wind, false, RECT_SYS);
+	wind->rect_list.start = newrl;
 
 	if (blit && oldrl && newrl)
 	{

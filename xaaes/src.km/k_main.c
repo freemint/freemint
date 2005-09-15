@@ -44,6 +44,7 @@
 #include "taskman.h"
 #include "widgets.h"
 #include "obtree.h"
+#include "taskman.h"
 
 #include "xa_appl.h"
 #include "xa_evnt.h"
@@ -729,11 +730,12 @@ alert_input(enum locks lock)
 		{
 			struct scroll_info *list = object_get_slist(form + SYSALERT_LIST);
 			struct seget_entrybyarg p = { 0 };
-			struct scroll_content sc = { 0 };
+			struct scroll_content sc = {{ 0 }};
 			
 			sc.icon = icon;
-			sc.text = data->buf;
-			sc.n_strings = 1;
+			sc.t.text = data->buf;
+			sc.t.strings = 1;
+			p.idx = -1;
 			p.arg.typ.txt = "Alerts";
 			list->get(list, NULL, SEGET_ENTRYBYTEXT, &p);
 			list->add(list, p.e, NULL, &sc, p.e ? SEADD_CHILD: 0, SETYP_MAL, true);
@@ -1358,9 +1360,12 @@ k_main(void *dummy)
 	while (!C.Hlp)
 		yield();
 
+	add_to_tasklist(C.Aes);
+// 	add_to_tasklist(C.Hlp);
+
 	if (cfg.opentaskman)
 		post_cevent(C.Hlp, ceExecfunc, open_taskmanager,NULL, 0,0, NULL,NULL);
-
+	
 	post_cevent(C.Hlp, CE_start_apps, NULL,NULL, 0,0, NULL,NULL);
 
 #if 0
