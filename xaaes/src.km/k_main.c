@@ -1362,7 +1362,7 @@ k_main(void *dummy)
 
 	add_to_tasklist(C.Aes);
 // 	add_to_tasklist(C.Hlp);
-
+	
 	if (cfg.opentaskman)
 		post_cevent(C.Hlp, ceExecfunc, open_taskmanager,NULL, 0,0, NULL,NULL);
 	

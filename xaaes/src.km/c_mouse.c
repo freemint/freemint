@@ -278,7 +278,7 @@ menu_move(struct xa_client *client, struct moose_data *md, bool f)
 			short x = md->x;
 			short y = md->y;
 
-			DIAG((D_mouse, ce->client, "cXA_menu_move for %s", ce->client->name));
+			DIAG((D_mouse, client, "cXA_menu_move for %s", client->name));
 		
 			/*
 			 * Ozk: Cannot use FOREACH_TAB() here, since there may be additions to the top (start)

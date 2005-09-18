@@ -288,62 +288,6 @@ canredraw(SCROLL_INFO *list)
 	return false;
 }
 
-#if 0
-static struct se_tab se_tabs[] =
-{
-	{ 0, {0, 0, -1, 0}},
-	{ 0, {0, 0, -1/*32*8*/, 0}},
-	{ SETAB_RJUST|SETAB_REL, {0, 0, -1/*6*8*/, 0} },
-	{ SETAB_END, {0, 0, 0, 0}},
-};
-#endif
-
-#if 0
-/*
- * Work out width/height of each individual string in a SETYPE_TEXT entry
- */
-static bool
-entry_text_wh(SCROLL_INFO *list, SCROLL_ENTRY *this)
-{
-	bool fullredraw = false;
-	struct se_tab *stabs = list->se_tabs;
-	struct se_text_tabulator *tabs = list->tabs;
-	struct se_text *setext = this->c.td.text.text;
-	int i;
-	short tw = 0, h = 0;
-	char *s;
-
-	for (i = 0; i < this->c.td.text.n_strings; i++)
-	{
-		s = setext->text;
-		(*list->vdi_settings->api->text_extent)(list->vdi_settings, s, &this->c.td.text.fnt->n, &setext->w, &setext->h);
-		
-		if (setext->h > h)
-			h = setext->h;
-
-		setext->w += 4;
-		if (stabs->r.w == -1)
-		{
-			if (tabs->r.w < setext->w)
-			{
-				tabs->r.w = setext->w;
-				fullredraw = true;
-			}
-		}
-		tw += tabs->r.w;
-
-		setext = setext->next;
-		stabs++, tabs++;
-	}
-
-	this->r.w += tw;
-	
-	if (h > this->r.h)
-		this->r.h = h;
-
-	return fullredraw;
-}
-#endif
 
 static void
 get_list_rect(struct scroll_info *list, RECT *r)
@@ -417,7 +361,7 @@ recalc_tabs(struct scroll_info *list)
 		totalw += tabs->r.w;
 	}
 	if (list->widest < totalw)
-		list->widest = totalw;
+		list->widest = list->total_w = totalw;
 }
 
 static bool
@@ -436,7 +380,7 @@ calc_entry_wh(SCROLL_INFO *list, SCROLL_ENTRY *this)
 			case SECONTENT_TEXT:
 			{
 				s = c->c.text.text;
-				(*list->vdi_settings->api->text_extent)(list->vdi_settings, s, &this->fnt->n, &c->c.text.w, &c->c.text.h);
+				(*list->vdi_settings->api->text_extent)(list->vdi_settings, s, c->fnt ? &c->fnt->n : &this->fnt->n, &c->c.text.w, &c->c.text.h);
 				ew = c->c.text.w + 2;
 				eh = c->c.text.h;
 				if (c->c.text.icon.icon)
@@ -674,14 +618,29 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this, str
 				{
 					if (xa_rect_clip(clip, &r, &clp))
 					{
+						short ix, iy;
 						(*v->api->set_clip)(v, &clp);
 						if (sel)
 							c->c.icon.icon->ob_state |= OS_SELECTED;
 						else
 							c->c.icon.icon->ob_state &= ~OS_SELECTED;
+						
+						ix = c->c.icon.r.w - c->c.icon.icon->ob_width;
+						if (ix > 0)
+							ix = r.x + (ix >> 1);
+						else
+							ix = r.x;
+
+						iy = c->c.icon.r.h - c->c.icon.icon->ob_height;
+						if (iy > 0)
+							iy = r.y + (iy >> 1);
+						else
+							iy = r.y;
+						
 						tr.tree = c->c.icon.icon;
 						tr.owner = list->wt->owner;
-						display_object(lock, &tr, v, 0, r.x, r.y, 12);
+						display_object(lock, &tr, v, 0, ix, iy, 12);
+						
 					}
 					break;
 				}
@@ -701,13 +660,26 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this, str
 						tw = r.w;
 						if (c->c.text.icon.icon)
 						{
+							short ix, iy;
 							if (sel)
 								c->c.text.icon.icon->ob_state |= OS_SELECTED;
 							else
 								c->c.text.icon.icon->ob_state &= ~OS_SELECTED;
+							
+							ix = c->c.text.icon.r.w - c->c.text.icon.icon->ob_width;
+							if (ix > 0)
+								ix = dx + (ix >> 1);
+							else
+								ix = dx;
+							iy = c->c.text.icon.r.h - c->c.text.icon.icon->ob_height;
+							if (iy > 0)
+								iy = dy + (iy >> 1);
+							else
+								iy = dy;
+							
 							tr.tree = c->c.text.icon.icon;
 							tr.owner = list->wt->owner;
-							display_object(lock, &tr, v, 0, dx, dy, 12);
+							display_object(lock, &tr, v, 0, ix, iy, 12);
 							dx += c->c.text.icon.r.w;
 							tw -= c->c.text.icon.r.w;
 						}
@@ -716,9 +688,9 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this, str
 							f = this->fnt->flags;
 					
 							if (sel)
-								wtxt = &this->fnt->s;
+								wtxt = c->fnt ? &c->fnt->s : &this->fnt->s;
 							else
-								wtxt = &this->fnt->n;
+								wtxt = c->fnt ? &c->fnt->n : &this->fnt->n;
 
 							(*v->api->wr_mode)(v, wtxt->wrm);
 							(*v->api->t_font)(v, wtxt->p, wtxt->f);
@@ -827,6 +799,7 @@ reset_listwi_widgets(SCROLL_INFO *list, short redraw)
 	XA_WIND_ATTR tp = list->wi->active_widgets;
 	bool rdrw = false;
 	bool as = list->flags & SIF_AUTOSLIDERS;
+
 	if (list->wi)
 	{
 		if (list->total_w > list->wi->wa.w)
@@ -867,6 +840,7 @@ reset_listwi_widgets(SCROLL_INFO *list, short redraw)
 		if (rdrw || (tp != list->wi->active_widgets))
 		{
 			change_window_attribs(0, list->wi->owner, list->wi, tp, false, list->wi->r, NULL);
+			recalc_tabs(list);
 			if (canredraw(list))
 			{
 				draw_window(0, list->wi, &list->wi->r);
@@ -1139,6 +1113,40 @@ canblit(SCROLL_INFO *list)
 	return ret;
 }
 
+static void
+set_font(struct xa_fnt_info *src, struct xa_fnt_info *dst, struct xa_fnt_info *def)
+{
+
+	if (src->f != -1)
+		dst->f = src->f;
+	else if (def)
+		dst->f = def->f;
+
+	if (src->p != -1)
+		dst->p = src->p;
+	else if (def)
+		dst->p = def->p;
+
+	if (src->wrm != -1)
+		dst->wrm = src->wrm;
+	else if (def)
+		dst->wrm = def->wrm;
+
+	if (src->e != -1)
+		dst->e = src->e;
+	else if (def)
+		dst->e = def->e;
+
+	if (src->fgc != -1)
+		dst->fgc = src->fgc;
+	else if (def)
+		dst->fgc = def->fgc;
+
+	if (src->bgc != -1)
+		dst->bgc = src->bgc;
+	else if (def)
+		dst->bgc = def->bgc;
+};
 /*
  * Check if entry has its own wtxt structure or if its using the global
  * default one. If using default, allocate mem for and copy the default
@@ -1157,7 +1165,14 @@ alloc_entry_wtxt(struct scroll_entry *entry, struct xa_wtxt_inf *newwtxt)
 			entry->iflags |= SEF_WTXTALLOC;
 			
 			if (newwtxt)
-				*entry->fnt = *newwtxt;
+			{
+				entry->fnt->flags = newwtxt->flags;
+				set_font(&newwtxt->n, &entry->fnt->n, &default_fnt.n);
+				set_font(&newwtxt->s, &entry->fnt->s, &default_fnt.s);
+				set_font(&newwtxt->h, &entry->fnt->h, &default_fnt.h);
+				
+// 				*entry->fnt = *newwtxt;
+			}
 			else if (old)
 				*entry->fnt = *old;
 			else
@@ -1256,7 +1271,6 @@ get_entry_next_setext(struct se_content *this_sc)
 static void
 free_seicon(struct se_content *seicon)
 {
-	kfree(seicon);
 }
 
 static void
@@ -1264,7 +1278,6 @@ free_setext(struct se_content *setext)
 {
 	if (setext->c.text.flags & SETEXT_ALLOC)
 		kfree(setext->c.text.text);
-	kfree(setext);
 }
 
 static void
@@ -1283,31 +1296,32 @@ remove_se_content(struct scroll_entry *this, struct se_content *this_sc, struct 
 }
 
 static void
+delete_se_content(struct scroll_entry *this, struct se_content *sc, struct se_content **prev, struct se_content **next)
+{
+	remove_se_content(this, sc, prev, next);
+	switch (sc->type)
+	{
+		case SECONTENT_TEXT:
+			free_setext(sc);	break;
+		case SECONTENT_ICON:
+			free_seicon(sc);	break;
+		default:;
+	}
+	if (sc->fnt)
+		kfree(sc->fnt);
+	if (sc->col)
+		kfree(sc->col);
+	kfree(sc);
+}
+	
+static void
 delete_all_content(struct scroll_entry *this)
 {
 	struct se_content *this_sc = this->content, *n;
 
 	while (this_sc)
 	{
-		remove_se_content(this, this_sc, NULL, &n);
-		switch (this_sc->type)
-		{
-			case SECONTENT_TEXT:
-			{
-				free_setext(this_sc);
-				break;
-			}
-			case SECONTENT_ICON:
-			{
-				free_seicon(this_sc);
-				break;
-			}
-			default:
-			{
-				kfree(this_sc);
-				break;
-			}
-		}
+		delete_se_content(this, this_sc, NULL, &n);
 		this_sc = n;
 	}
 }
@@ -1380,11 +1394,22 @@ insert_se_content(struct scroll_entry *this, struct se_content *this_sc, short i
 }
 
 static void
+remove_setext_icon(struct se_content *this_sc)
+{
+	if (this_sc->c.text.icon.icon)
+	{
+		this_sc->c.text.icon.icon = NULL;
+	}
+}
+
+static void
 set_setext_icon(struct se_content *this_sc, OBJECT *icon)
 {
 	this_sc->c.text.icon.icon = icon;
 	icon->ob_x = icon->ob_y = 0;
 	ob_spec_xywh(icon, 0, &this_sc->c.text.icon.r);
+	this_sc->c.text.icon.r.w += 2;
+	this_sc->c.text.icon.r.h += 2;
 }
 	
 static struct se_content *
@@ -1445,6 +1470,8 @@ new_seicon(OBJECT *icon)
 		new->c.icon.icon = icon;
 		icon->ob_x = icon->ob_y = 0;
 		ob_spec_xywh(icon, 0, &new->c.icon.r);
+		new->c.icon.r.w += 2;
+		new->c.icon.r.h += 2;
 		new->type = SECONTENT_ICON;
 	}
 	return new;
@@ -1524,7 +1551,8 @@ set(SCROLL_INFO *list,
 			alloc_entry_wtxt(entry, NULL);
 			if (entry->iflags & SEF_WTXTALLOC)
 			{
-				entry->fnt->n = *f;
+				set_font(f, &entry->fnt->n, NULL);
+// 				entry->fnt->n = *f;
 			}
 				else ret = 0;
 			break;
@@ -1535,7 +1563,8 @@ set(SCROLL_INFO *list,
 			alloc_entry_wtxt(entry, NULL);
 			if (entry->iflags & SEF_WTXTALLOC)
 			{
-				entry->fnt->s = *f;
+				set_font(f, &entry->fnt->s, NULL);
+// 				entry->fnt->s = *f;
 			}
 				else ret = 0;
 			break;
@@ -1546,7 +1575,8 @@ set(SCROLL_INFO *list,
 			alloc_entry_wtxt(entry, NULL);
 			if (entry->iflags & SEF_WTXTALLOC)
 			{
-				entry->fnt->h = *f;
+				set_font(f, &entry->fnt->h, NULL);
+// 				entry->fnt->h = *f;
 			}
 				else ret = 0;
 			break;
@@ -1596,7 +1626,7 @@ set(SCROLL_INFO *list,
 						if ((r.w | r.h))
 						{
 							list->total_h += (r.h - entry->r.h);
-							list->total_w = list->widest = find_widest(list, NULL);
+// 							list->total_w = list->widest = find_widest(list, NULL);
 							if (!reset_listwi_widgets(list, rdrw))
 							{
 								if ((r.y + entry->r.h) < list->start_y)
@@ -1645,7 +1675,7 @@ set(SCROLL_INFO *list,
 						if ((r.w | r.h))
 						{
 							list->total_h -= (r.h - entry->r.h);
-							list->total_w = list->widest = find_widest(list, NULL);
+// 							list->total_w = list->widest = find_widest(list, NULL);
 							if (!reset_listwi_widgets(list, rdrw))
 							{
 								if ((r.y + r.h) < list->start_y)
@@ -1731,10 +1761,11 @@ set(SCROLL_INFO *list,
 		}
 		case SESET_TEXT:
 		{
-			struct sc_text *t = (struct sc_text *)arg;
+			struct setcontent_text *t = (struct setcontent_text *)arg; //sc_text *t = (struct sc_text *)arg;
 			
 			if (t && t->text && entry)
 			{
+				bool frdrw = false;
 				struct se_content *setext;
 				long slen;
 				
@@ -1749,9 +1780,11 @@ set(SCROLL_INFO *list,
 						struct se_content *new = new_setext(t->text, setext->c.text.icon.icon, SETYP_AMAL);
 						if (new)
 						{
-							remove_se_content(entry, setext, NULL, NULL);
-							free_setext(setext);
+							delete_se_content(entry, setext, NULL, NULL);
+// 							remove_se_content(entry, setext, NULL, NULL);
+// 							free_setext(setext);
 							insert_se_content(entry, new, t->index);
+							setext = new;
 						}
 						else
 						{
@@ -1766,14 +1799,35 @@ set(SCROLL_INFO *list,
 					if (new)
 					{
 						insert_se_content(entry, new, t->index);
+						setext = new;
 					}
 				}
+				if (setext)
+				{
+					if (t->icon)
+					{
+						if (t->icon == (void *)-1L)
+							remove_setext_icon(setext);
+						else
+						{
+							remove_setext_icon(setext);
+							set_setext_icon(setext, t->icon);
+						}
+					}
+					if (t->fnt)
+					{
+						if (!setext->fnt)
+							setext->fnt = kmalloc(sizeof(*setext->fnt));
+						if (setext->fnt)
+							*setext->fnt = *t->fnt;
+					}
+					frdrw = calc_entry_wh(list, entry);
+				}
 				if (rdrw)
-					list->redraw(list, entry);
+					list->redraw(list, frdrw ? NULL : entry);
 			}
 			break;
 		}
-		
 	}
 
 	if (redrw)
@@ -2295,7 +2349,7 @@ add_scroll_entry(SCROLL_INFO *list,
 				list->widest = new->r.w;
 			if (new->r.h > list->highest)
 				list->highest = new->r.h;
-			list->total_w = list->widest;
+// 			list->total_w = list->widest;
 			list->total_h += new->r.h;
 
 			
@@ -2434,7 +2488,7 @@ free_scroll_entry(struct scroll_info *list, struct scroll_entry *this, long *hei
 					list->top = NULL;
 				}
 				
-				delete_all_content(this);	
+				delete_all_content(this);
 				
 				if ((this->iflags & SEF_WTXTALLOC))
 					kfree(this->fnt);
@@ -2625,7 +2679,7 @@ del_scroll_entry(struct scroll_info *list, struct scroll_entry *e, short redraw)
 	}
 	if (lr.w == list->widest)
 	{
-		list->widest = list->total_w = find_widest(list, NULL);
+		list->widest /*= list->total_w */= find_widest(list, NULL);
 	}
 
 	if (!reset_listwi_widgets(list, redraw/*true*/) && redraw && sy)
@@ -3427,7 +3481,7 @@ set_slist_object(enum locks lock,
 	struct scroll_info *list;
 	struct se_tab *tabs;
 	RECT r;
-	XA_WIND_ATTR wkind = UPARROW|VSLIDE|DNARROW;
+	XA_WIND_ATTR wkind = 0;
 	OBJECT *ob = wt->tree + item;
 
 	DIAG((D_rsrc, NULL, "set_slist_object"));
@@ -3485,6 +3539,13 @@ set_slist_object(enum locks lock,
 	list->rel_x = r.x - wt->tree->ob_x;
 	list->rel_y = r.y - wt->tree->ob_y;
 
+	if (!(flags & SIF_AUTOSLIDERS))
+	{
+		wkind |= UPARROW|VSLIDE|DNARROW;
+		if (lmax * screen.c_max_w + ICON_W > r.w - 24)
+			wkind |= LFARROW|HSLIDE|RTARROW;
+	}
+
 	if (title)
 		wkind |= NAME;
 	if (info)
@@ -3494,8 +3555,6 @@ set_slist_object(enum locks lock,
 	if (fuller)
 		wkind |= FULLER;
 
-	if (lmax * screen.c_max_w + ICON_W > r.w - 24)
-		wkind |= LFARROW|HSLIDE|RTARROW;
 	
 	wkind |= TOOLBAR;
 
@@ -3727,8 +3786,9 @@ slist_msg_handler(
 	case WM_SIZED:
 	{
 // 		display("resize slist wind");
-		move_window(0, wind, false, -1, msg[4], msg[5], msg[6], msg[7]);	
+		move_window(0, wind, false, -1, msg[4], msg[5], msg[6], msg[7]);
 		recalc_tabs(list);
+		reset_listwi_widgets(list, false);
 		list->slider(list, false);
 		break;
 	}

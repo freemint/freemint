@@ -59,6 +59,56 @@
 #include "mint/stat.h"
 #include "mint/fcntl.h"
 
+static struct xa_wtxt_inf norm_txt =
+{
+ WTXT_NOCLIP,
+/* id  pnts efx   fgc      bgc */
+ {  -1,  -1,   MD_TRANS, 0, G_BLACK, G_WHITE },	/* Normal */
+ {  -1,  -1,   MD_TRANS, 0, G_WHITE, G_BLACK },	/* Selected */
+ {  -1,  -1,   MD_TRANS, 0, G_BLACK, G_WHITE },	/* Highlighted */
+
+};
+
+static struct xa_wtxt_inf acc_txt =
+{
+ WTXT_NOCLIP,
+/* id  pnts efx   fgc      bgc */
+ {  -1,  -1,   MD_TRANS, 0, G_BLUE, G_LBLUE },	/* Normal */
+ {  -1,  -1,   MD_TRANS, 0, G_BLUE, G_LBLUE },	/* Selected */
+ {  -1,  -1,   MD_TRANS, 0, G_BLACK, G_WHITE },	/* Highlighted */
+
+};
+
+static struct xa_wtxt_inf prg_txt =
+{
+ WTXT_NOCLIP,
+/* id  pnts efx   fgc      bgc */
+ {  -1,  -1,   MD_TRANS, 0, G_LRED, G_WHITE },	/* Normal */
+ {  -1,  -1,   MD_TRANS, 0, G_LRED, G_WHITE },	/* Selected */
+ {  -1,  -1,   MD_TRANS, 0, G_BLACK, G_WHITE },	/* Highlighted */
+
+};
+
+static struct xa_wtxt_inf sys_txt =
+{
+ WTXT_NOCLIP,
+/* id  pnts efx   fgc      bgc */
+ {  -1,  -1,   MD_TRANS, 0, G_LBLACK, G_LWHITE },	/* Normal */
+ {  -1,  -1,   MD_TRANS, 0, G_LBLACK, G_LWHITE },	/* Selected */
+ {  -1,  -1,   MD_TRANS, 0, G_BLACK, G_WHITE },	/* Highlighted */
+
+};
+
+static struct xa_wtxt_inf desk_txt =
+{
+ WTXT_NOCLIP,
+/* id  pnts efx   fgc      bgc */
+ {  -1,  -1,   MD_TRANS, 0, G_RED, G_LWHITE },	/* Normal */
+ {  -1,  -1,   MD_TRANS, 0, G_RED, G_LWHITE },	/* Selected */
+ {  -1,  -1,   MD_TRANS, 0, G_BLACK, G_WHITE },	/* Highlighted */
+
+};
+
 static char *
 build_tasklist_string(struct xa_client *client)
 {
@@ -82,10 +132,8 @@ build_tasklist_string(struct xa_client *client)
 		}
 		else
 			sprintf(tx, tx_len, " %3d/   %s", client->p->pid, 0, client->name);
-
 	}
 	return tx;
-
 };
 
 void
@@ -96,6 +144,17 @@ add_to_tasklist(struct xa_client *client)
 	OBJECT *icon;
 	char *tx;
 	struct scroll_content sc = {{ 0 }};
+
+	if (client->p->pid == C.DSKpid)
+		sc.fnt = &desk_txt;
+	else if (client->type & APP_ACCESSORY)
+		sc.fnt = &acc_txt;
+	else if (client->type & APP_SYSTEM)
+		sc.fnt = &sys_txt;
+	else if (client->type & APP_APPLICATION)
+		sc.fnt = &prg_txt;
+	else
+		sc.fnt = &norm_txt;
 
 	if (!list)
 		return;
@@ -138,6 +197,7 @@ remove_from_tasklist(struct xa_client *client)
 	}
 }
 #if 1
+
 void
 update_tasklist_entry(struct xa_client *client)
 {
@@ -152,15 +212,14 @@ update_tasklist_entry(struct xa_client *client)
 		list->get(list, NULL, SEGET_ENTRYBYDATA, &p);
 		if (p.e)
 		{
-			struct sc_text t;
+			struct setcontent_text t = { 0 }; //sc_text t;
 
 			if ((tx = build_tasklist_string(client)))
 				t.text = tx;
 			else
 				t.text = client->name;
 			
-			t.index = 0;
-			t.strings = 1;
+// 			t.index = 0;
 			list->set(list, p.e, SESET_TEXT, (long)&t, true);
 			
 			if (tx)
@@ -2435,7 +2494,7 @@ do_system_menu(enum locks lock, int clicked_title, int menu_item)
 			sc.t.strings = 1;
 			for (i = 0; strings[i]; i++)
 			{	sc.t.text = strings[i];
-				list->add(list, this, NULL, &sc, this ? (SEADD_CHILD|SEADD_PRIOR) : SEADD_PRIOR, SETYP_AMAL, true);
+				list->add(list, this, NULL, &sc, this ? (SEADD_CHILD|SEADD_PRIOR) : SEADD_PRIOR, SETYP_AMAL, true);		
 			}
 			post_cevent(C.Hlp, ceExecfunc, open_systemalerts,NULL, 0,0, NULL,NULL);
 			break;
