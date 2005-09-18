@@ -542,19 +542,20 @@ static void
 fix_trees(struct xa_client *client, void *b, OBJECT **trees, unsigned long n, short designWidth, short designHeight)
 {
 	unsigned long i;
-	int j;
+	int j, k;
 	OBJECT *obj;
 
-	DIAG((D_rsrc, NULL, "trees=%lx (%lx)", trees, trees[0]));
+	DIAG((D_rsrc, NULL, "fix_trees: trees=%lx (%lx)", trees, trees[0]));
 	for (i = 0; i < n; i++, trees++)
 	{
 		if (*trees != (OBJECT *)-1)
 		{
 			(unsigned long)*trees += (unsigned long)b;
 			
-			DIAG((D_s, NULL,"tree[%ld]>%ld = %lx", i, (unsigned long)*trees-(unsigned long)b, *trees));
+			DIAGS((" -- tree[%ld]>%ld = %lx", i, (unsigned long)*trees-(unsigned long)b, *trees));
 			
 			obj = *trees;
+			k = 0;
 
 			if ((obj[3].ob_type & 255) != G_TITLE)
 			{
@@ -564,7 +565,9 @@ fix_trees(struct xa_client *client, void *b, OBJECT **trees, unsigned long n, sh
 #if 1
 					unsigned short *c;
 					short ch, cl;
-				
+					DIAGS((" -- obj %d, type %x (n=%d, h=%d, t=%d)",
+						k, obj->ob_type, obj->ob_next, obj->ob_head, obj->ob_tail));
+					
 					c = (short *)&obj->ob_x;
 				
 					for (j = 0; j < 4; j++)
@@ -587,7 +590,8 @@ fix_trees(struct xa_client *client, void *b, OBJECT **trees, unsigned long n, sh
 					obj->ob_y = (((obj->ob_y & 255) * designHeight + (obj->ob_y >> 8)) * resHeight) / designHeight;
 					obj->ob_width = (((obj->ob_width & 255) * designWidth + (obj->ob_width >> 8)) * resWidth) / designWidth;
 					obj->ob_height = (((obj->ob_height & 255) * designHeight + (obj->ob_height >> 8)) * resHeight) / designHeight;
-#endif			
+#endif
+					k++;			
 				}
 				while (!(obj++->ob_flags & OF_LASTOB));
 				ob_fix_shortcuts(*trees, false);
@@ -598,12 +602,15 @@ fix_trees(struct xa_client *client, void *b, OBJECT **trees, unsigned long n, sh
 
 				j = 0;
 				do {
+					DIAGS((" -- obj %d, type %x (n=%d, h=%d, t=%d)",
+						j, obj->ob_type, obj->ob_next, obj->ob_head, obj->ob_tail));
 					obfix(obj, j);
 				}
 				while (!(obj[j++].ob_flags & OF_LASTOB));
 			}
 		}
 	}
+	DIAGS((" -- fix_trees: done"));
 }
 
 

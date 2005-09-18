@@ -1526,6 +1526,22 @@ struct se_text
 	char txtstr[0];
 };
 
+/*
+ * if f.id == 0, fnt info is ignored
+
+ * If icon == NULL, icon is left unchanged
+ * If icon == -1, icon is removed if already present
+ */
+struct setcontent_text
+{
+	short index;
+	struct xa_wtxt_inf *fnt;
+	struct xa_wcol_inf *col;
+	OBJECT *icon;
+	char *text;
+// 	struct xa_fnt_info f;
+};
+	
 struct sc_text
 {
 	short index;
@@ -1568,6 +1584,8 @@ struct se_content
 	struct se_content *next;
 	short type;
 	short index;
+	struct xa_wtxt_inf *fnt;
+	struct xa_wcol_inf *col;
 	union
 	{
 		struct se_text text;
