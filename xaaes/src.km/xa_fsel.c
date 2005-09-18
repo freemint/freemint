@@ -430,7 +430,17 @@ executable(char *nam)
 		    || !stricmp(ext, "gtp") || !stricmp(ext, "app")
 		    || !stricmp(ext, "acc")));
 }
+static bool
+disabled_exe(char *nam)
+{
+	char *ext = getsuf(nam);
 
+	return (ext
+		/* The mintlib does almost the same :-) */
+		&& (   !stricmp(ext, "prx")
+		    || !stricmp(ext, "gtx") || !stricmp(ext, "apx")
+		    || !stricmp(ext, "acx")));
+}
 static void
 set_file(struct fsel_data *fs, const char *fn)
 {
@@ -488,6 +498,35 @@ static char *faccess[] =
 	"rw-",
 	"rwx",
 };					
+
+static struct xa_wtxt_inf exe_txt =
+{
+ WTXT_NOCLIP,
+/* id  pnts efx   fgc      bgc */
+ {  -1,  -1,   MD_TRANS, 0, G_RED, G_WHITE },	/* Normal */
+ {  -1,  -1,   MD_TRANS, 0, G_YELLOW, G_WHITE },/* Selected */
+ {  -1,  -1,   MD_TRANS, 0, G_BLACK, G_WHITE },	/* Highlighted */
+
+};
+static struct xa_wtxt_inf dexe_txt =
+{
+ WTXT_NOCLIP,
+/* id  pnts efx   fgc      bgc */
+ {  -1,  -1,   MD_TRANS, 0, G_LRED, G_WHITE },	/* Normal */
+ {  -1,  -1,   MD_TRANS, 0, G_RED, G_WHITE },	/* Selected */
+ {  -1,  -1,   MD_TRANS, 0, G_BLACK, G_WHITE },	/* Highlighted */
+
+};
+
+static struct xa_wtxt_inf dir_txt =
+{
+ WTXT_NOCLIP,
+/* id  pnts efx   fgc      bgc */
+ {  -1,  -1,   MD_TRANS, 0, G_LCYAN, G_WHITE },/* Normal */
+ {  -1,  -1,   MD_TRANS, 0, G_CYAN, G_WHITE },	/* Selected */
+ {  -1,  -1,   MD_TRANS, 0, G_BLACK, G_WHITE },	/* Highlighted */
+
+};
 
 static void
 read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
@@ -591,6 +630,8 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 					}
 					if (fs->treeview)
 						sc.xstate |= OS_NESTICON;
+					
+					sc.fnt = &dir_txt;
 				}
 
 				if (match)
@@ -606,18 +647,26 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 						icon = obtree + FS_ICN_DIR;
 					}
 					else if (executable(nam))
+					{
 						icon = obtree + FS_ICN_PRG;
+						sc.fnt = &exe_txt;
+					}
+					else if (disabled_exe(nam))
+					{
+						icon = obtree + FS_ICN_PRG;
+						sc.fnt = &dexe_txt;
+					}
 					else
 						icon = obtree + FS_ICN_FILE;
 			
 					if (!dir)
 					{
 						if (xat.size < (1024UL * 1024) )
-							sprintf(s, 20, "%ld", xat.size);
+							sprintf(s, 20, "%lu", xat.size);
 						else if (xat.size < (1024UL * 1024 * 10))
-							sprintf(s, 20, "%ld KB", xat.size >> 10);
+							sprintf(s, 20, "%lu KB", xat.size >> 10);
 						else
-							sprintf(s, 20, "%ld MB", xat.size >> 20);
+							sprintf(s, 20, "%lu MB", xat.size >> 20);
 					}
 					else
 						sprintf(s, 20, "<dir>");
@@ -625,10 +674,43 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 					s += strlen(s) + 1;
 					sprintf(s, 20, "%02d:%02d", (xat.mtime >> 11) & 31, (xat.mtime >> 5) & 63);
 					s += strlen(s) + 1;
-					sprintf(s, 20, "%02d %s %04d", xat.mdate & 31, months[((xat.mdate >> 5) & 15) - 1], 1980 + ((xat.mdate >> 9) & 127));
-					
+					{
+						unsigned short year, month, day;
+						
+						year = ((xat.mdate >> 9) & 127) + 1980;
+
+						month = ((xat.mdate >> 5) & 15) - 1;
+						if (month < 1 || month > 12)
+							month = 1;
+						
+						day = xat.mdate & 31;
+						
+						sprintf(s, 20, "%02d %s %04d", day, months[month], year);
+					}
 					s += strlen(s) + 1;
 					sprintf(s, 12, "%s%s%s", faccess[(xat.mode >> 6) & 7], faccess[(xat.mode >> 3) & 7], faccess[xat.mode & 7]);
+					
+					if (xat.mode & S_ISUID)
+					{
+						if (s[2] == 'x')
+							s[2] = 's';
+						else
+							s[2] = 'S';
+					}
+					if (xat.mode & S_ISGID)
+					{
+						if (s[5] == 'x')
+							s[5] = 's';
+						else
+							s[5] = 'S';
+					}
+					if (xat.mode & S_ISVTX)
+					{
+						if (s[8] == 'x')
+							s[8] = 't';
+						else
+							s[8] = 'T';
+					}
 // 					display("%s", s);
 
 					sc.icon = icon;
@@ -904,7 +986,7 @@ fs_item_action(struct scroll_info *list, struct scroll_entry *this, const struct
 
 		if (!(uf & FLAG_DIR))
 		{
-			DIAG((D_fsel, NULL, " --- nodir '%s'", this->c.td.text.text->text));
+			DIAG((D_fsel, NULL, " --- nodir '%s'", this->content->c.text.text));
 				
 			/*
 			 * If not already selected, or if double-clicked, make selection
@@ -954,7 +1036,7 @@ fs_item_action(struct scroll_info *list, struct scroll_entry *this, const struct
 		else
 		{
 			/* folder entry action */
-			DIAG((D_fsel, NULL, " --- folder '%s'", this->c.td.text.text->text));
+			DIAG((D_fsel, NULL, " --- folder '%s'", this->content->c.text.text));
 			p.idx = -1;
 			p.arg.typ.txt = "..";
 			
@@ -1543,6 +1625,7 @@ fs_init_menu(struct fsel_data *fs)
 	fs->rtbuild = rtbuild;
 }
 
+
 static bool
 open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *fs,
 		   const char *path, const char *file, const char *title,
@@ -1600,12 +1683,18 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 
 		object_get_spec(form + FS_FILE)->tedinfo->te_ptext = fs->file;
 		form[FS_ICONS].ob_flags |= OF_HIDETREE;
-		
+
+#if 0		
 		{
 			short dh, dw;
+
 			
 			dh = root_window->wa.h - 7 * screen.c_max_h - form->ob_height;
 			dw = root_window->wa.w - (form->ob_width + (screen.c_max_w * 4));
+			
+			if ((dw + form->ob_width) > 560)
+				dw = 560 - form->ob_width;
+
 			form->ob_height += dh;
 			form->ob_width += dw;
 			form[FS_LIST ].ob_height += dh;
@@ -1613,6 +1702,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 			form[FS_UNDER].ob_y += dh;
 			form[FS_UNDER].ob_x += dw;
 		}
+#endif
 
 		if (path && *path != '\0' && ((*path == '\\' || *path == '/') || (path[1] == ':' && (path[2] == '\\' || path[2] == '/'))))
 		{
@@ -1675,6 +1765,24 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 		
 		strcpy(fs->path, fs->root);
 
+		{
+			short dh, dw;
+
+			
+			dh = root_window->wa.h - 7 * screen.c_max_h - form->ob_height;
+			dw = root_window->wa.w - (form->ob_width + (screen.c_max_w * 4));
+			
+			if ((dw + form->ob_width) > 560)
+				dw = 560 - form->ob_width;
+
+			form->ob_height += dh;
+			form->ob_width += dw;
+			form[FS_LIST ].ob_height += dh;
+			form[FS_LIST ].ob_width += dw;
+			form[FS_UNDER].ob_y += dh;
+			form[FS_UNDER].ob_x += dw;
+		}
+
 		ob_rectangle(form, 0, &or);
 
 		kind = (XaMENU|NAME|TOOLBAR|BORDER);
@@ -1689,7 +1797,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 				    C.Aes->options.thinwork,
 				    *(RECT*)&or); //form->ob_x);
 		}
-
+		
 		if (C.update_lock == client->p ||
 		    C.mouse_lock  == client->p)
 		{
@@ -1751,7 +1859,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 				 wt,
 				 dialog_window,
 				 FS_LIST,
-				 SIF_SELECTABLE | SIF_ICONINDENT | (fs->treeview ? SIF_TREEVIEW : 0),
+				 SIF_SELECTABLE | SIF_ICONINDENT | (fs->treeview ? SIF_TREEVIEW : 0) | SIF_AUTOSLIDERS,
 				 fs_closer, NULL,
 				 fs_click/*was dclick*/, fs_click, fs_click_nesticon,
 				 NULL, NULL, NULL, NULL/*free_scrollist*/,

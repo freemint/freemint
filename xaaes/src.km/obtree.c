@@ -247,25 +247,51 @@ sizeof_cicon(ICONBLK *ib, CICON *i)
 	return size;
 }
 
-short
-ob_count_objs(OBJECT *obtree, short start)
+static short
+count_them(OBJECT *obtree, short parent, short start)
 {
-	short parent, curr = start, objs = 0;
-
-	parent = ob_get_parent(obtree, start);
-
+	short curr = start, objs = 0;
+	
+	DIAGS((" -- count_them: enter, parent %d", parent));
+	
 	do
 	{
 		OBJECT *ob = obtree + curr;
 
 		objs++;
 		
+		DIAGS((" -- obj %d, type %x (n=%d, h=%d, t=%d)",
+			curr, ob->ob_type, ob->ob_next, ob->ob_head, ob->ob_tail));
+		
 		if (ob->ob_head != -1)
-		{
-			objs += ob_count_objs(obtree, ob->ob_head);
-		}
-	} while ((curr = obtree[curr].ob_next) != parent);
+			objs += count_them(obtree, curr, ob->ob_head);
+			
+		curr = obtree[curr].ob_next;
 	
+	} while (curr != parent && curr != -1); //((curr = obtree[curr].ob_next) != parent);
+	
+	DIAGS((" -- count_them: return %d", objs));
+	return objs;
+}
+
+short
+ob_count_objs(OBJECT *obtree, short start)
+{
+	short parent, objs = 0;
+	
+	DIAG((D_rsrc, NULL, "ob_count_objs: tree %lx, start %d", obtree, start));
+	
+	if (start > 0)
+		parent = ob_get_parent(obtree, start);
+	else
+		parent = start;
+
+	DIAGS((" -- parent = %d", parent));
+
+	objs = count_them(obtree, parent, parent);
+
+	DIAGS(("ob_count_objs: return %d", objs));
+
 	return objs;
 }
 
@@ -1003,6 +1029,8 @@ object_offsets(OBJECT *ob, RECT *c)
 short
 ob_get_parent(OBJECT *obtree, short obj)
 {
+	DIAG((D_rsrc, NULL, "ob_get_parent: tree %lx, obj %d", obtree, obj));
+
 	if (obj)
 	{
 		short last;
@@ -1012,11 +1040,13 @@ ob_get_parent(OBJECT *obtree, short obj)
 			last = obj;
 			obj = obtree[obj].ob_next;
 		} while (obtree[obj].ob_tail != last);
-
-		return obj;
 	}
+	else
+		obj = -1;
 
-	return -1;
+	DIAGS(("ob_get_parent: return %d", obj));
+	
+	return obj;
 }
 
 void
@@ -1419,14 +1449,19 @@ ob_fix_shortcuts(OBJECT *obtree, bool not_hidden)
 	long len;
 	char nk;
 
-
+	DIAG((D_rsrc, NULL, "ob_fix_shortcuts: tree=%lx)", obtree));
+	
 	objs = ob_count_objs(obtree, 0);
+	DIAGS((" -- %d objects", objs));
+
 // 	display("ob_fix_shortcuts on tree %lx, %d objs", obtree, objs);
 
 	len = ((long)objs + 1) * sizeof(struct sc);
 
 	sc = kmalloc(len);
 	
+	DIAGS((" -- sc = %lx", sc));
+
 	if (sc)
 	{
 		int i = 0;
@@ -1434,6 +1469,10 @@ ob_fix_shortcuts(OBJECT *obtree, bool not_hidden)
 		
 		do {
 			OBJECT *ob = obtree + i;
+			
+			DIAGS((" -- obj %d, type %x (n=%d, h=%d, t=%d)",
+				i, ob->ob_type, ob->ob_next, ob->ob_head, ob->ob_tail));
+
 			if ((ob->ob_state & OS_WHITEBAK) && (!not_hidden || !(ob->ob_flags & OF_HIDETREE)))
 			{
 				short ty = ob->ob_type & 0xff;
@@ -1442,7 +1481,7 @@ ob_fix_shortcuts(OBJECT *obtree, bool not_hidden)
 				{
 					int j = (ob->ob_state >> 8) & 0x7f;
 // 					int nc = 0;
-// 					ndisplay("obj %d, und = %d", i, j);
+					DIAGS((" -- obj %d, und = %d", i, j));
 					if (j < 126)
 					{
 						char *s = object_get_spec(ob)->free_string;
@@ -1501,7 +1540,8 @@ ob_fix_shortcuts(OBJECT *obtree, bool not_hidden)
 		} while ( !(obtree[i++].ob_flags & OF_LASTOB));
 
 		kfree(sc);
-	}	
+	}
+	DIAGS((" -- ob_fix_shortcuts: done"));	
 }
 
 short
