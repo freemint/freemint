@@ -726,9 +726,18 @@ set_name_list(struct xa_fnts_info *fnts, struct xa_fnts_item *selstyle)
 	list_type->redraw(list_type, NULL);	
 }	
 static bool
-sort_names(struct scroll_entry *new, struct scroll_entry *this)
+sort_names(struct scroll_info *list, struct scroll_entry *new, struct scroll_entry *this)
 {
-	return (stricmp(new->content->c.text.text, this->content->c.text.text) > 0) ? true : false;
+	char *s1, *s2;
+	struct sesetget_params p;
+
+	p.idx = -1;
+	list->get(list, new, SEGET_TEXTPTR, &p);
+	s1 = p.ret.ptr;
+	list->get(list, this, SEGET_TEXTPTR, &p);
+	s2 = p.ret.ptr;
+	
+	return (stricmp(s1, s2) > 0) ? true : false; // stricmp(new->content->c.text.text, this->content->c.text.text) > 0) ? true : false;
 }
 
 static void
@@ -823,10 +832,10 @@ click_size(SCROLL_INFO *list, SCROLL_ENTRY *this, const struct moose_data *md)
 		OBJECT *obtree = list->wt->tree;
 		struct xa_fnts_info *fnts = list->data;
 		TEDINFO *ted = object_get_tedinfo(obtree + FNTS_EDSIZE);
-		struct seget_entrybyarg p;
+		struct sesetget_params p; //seget_entrybyarg p;
 
 		p.idx = -1;
-		p.arg.typ.txt = ted->te_ptext;
+		p.arg.txt = ted->te_ptext;
 		list->get(list, list->cur, SEGET_TEXTCPY, &p);
 		//strcpy(ted->te_ptext, list->cur->c.td.text.text->text);
 		obj_edit(fnts->wt,
