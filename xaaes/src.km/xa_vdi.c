@@ -474,14 +474,14 @@ xa_gbox(struct xa_vdi_settings *v, short d, const RECT *r)
 	short h = r->h + d+d;
 	l[0] = x;
 	l[1] = y;
-	l[2] = x+w-1;
+	l[2] = x + w - 1;
 	l[3] = y;
-	l[4] = x+w-1;
-	l[5] = y+h-1;
+	l[4] = x + w - 1;
+	l[5] = y + h - 1;
 	l[6] = x;
-	l[7] = y+h-1;
+	l[7] = y + h - 1;
 	l[8] = x;
-	l[9] = y+1;			/* for Xor mode :-) */
+	l[9] = y + 1;			/* for Xor mode :-) */
 	v_pline(v->handle, 5, l);
 }
 

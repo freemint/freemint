@@ -41,17 +41,19 @@ struct fsel_data
 	XA_TREE *form;
 	XA_TREE *menu;
 	struct xa_client *owner;
+	short sort;
 	struct scroll_entry *selected_dir;
 	struct scroll_entry *selected_file;
 	fsel_handler	*selected;
 	fsel_handler	*canceled;
-	Path root;
-	Path path;
+	char root[PATH_MAX * 2]; //Path root;
+	char path[PATH_MAX * 2]; //Path path;
 	char fslash[2];
 	char fs_pattern[NAME_MAX * 2];
 	char fs_origpattern[NAME_MAX];
 	char filter[NAME_MAX * 2];
 	char file  [NAME_MAX + 2];		/* Is the tedindo->te_ptext of FS_FILE */
+	char ofile [NAME_MAX + 2];
 	long fcase,trunc;
 	int drives;
 	int clear_on_folder_change;
