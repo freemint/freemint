@@ -1561,6 +1561,7 @@ struct scroll_content
 	short xflags;
 	long usr_flags;
 	void *data;
+	void (*data_destruct)(void *);
 	struct xa_wtxt_inf *fnt;
 	struct xa_wcol_inf *col;
 };
@@ -1608,7 +1609,7 @@ struct scroll_entry_content
 };
 #endif
 
-typedef	bool	scrl_compare	(struct scroll_entry *new_ent, struct scroll_entry *cur_ent);
+typedef	bool	scrl_compare	(struct scroll_info *list, struct scroll_entry *new_ent, struct scroll_entry *cur_ent);
 typedef int 	scrl_click	(struct scroll_info *list, struct scroll_entry *e, const struct moose_data *md);
 typedef void	scrl_list	(struct scroll_info *list);
 typedef void	scrl_widget	(struct scroll_info *list, bool rdrw);
@@ -1652,6 +1653,9 @@ typedef struct scroll_entry * scrl_search(struct scroll_info *list, struct scrol
 #define SESET_USRDATA		11
 #define SESET_TEXT		12
 #define SESET_TREEVIEW		13
+#define SESET_CURRENT		14
+
+#define SESET_M_STATE		15
 
 /* SESET_UNSELECTED arguments */
 #define UNSELECT_ONE	0
@@ -1687,17 +1691,39 @@ struct seset_tab
 #define SEGET_TEXTCPY		19
 #define SEGET_TEXTCMP		20
 #define SEGET_TEXTPTR		21
+#define SEGET_CURRENT		22
+
 
 /*
- * arg.typ.state/xstate.method parameters
+ * Structure used to control walking the scroll-list entries.
  */
-#define ANYBITS		0
-#define EXACTBITS	1
+#define ENT_VISIBLE	1	/* Only visible entries */
+#define ENT_ISROOT	2	/* Start entry is 'root' */
+#define ENT_INCROOT	4	/* If ENT_ISROOT, consider it too or just its 'children'? */
+#define ENT_GOABOVE	8	/* Allow going up above level 0 */
+
+struct se_arg_level
+{
+	short flags;		/* Flags - ENT_xxx, see above */
+	short maxlevel;		/* Maximum descent level. If set to -1 descent is unlimited */
+	short curlevel;		/* Set to start level, usually 0. */
+};
+/*
+ * Structure used to control flags, as in an entries state, flags, xstate, xflag words.
+ */
+#define ANYBITS		0	/* Any bits will generate hit */
+#define EXACTBITS	1	/* Only exact match generate hit */
+struct se_arg_flags
+{
+	short method;
+	short bits;
+	short mask;
+};
 
 /*
  * structure used to pass parameters with get(SEGET_ENTRYBYxxx)
  */
-
+#if 0
 struct seget_entrybyarg
 {
 	int idx;
@@ -1707,29 +1733,13 @@ struct seget_entrybyarg
 	{
 		union
 		{
-			struct
-			{
-				short method;
-				short bits;
-				short mask;
-			}state;
-			
-			struct
-			{
-				short method;
-				short bits;
-				short mask;
-			}xstate;
-
+			struct se_arg_flags state;
+			struct se_arg_flags xstate;
 			char *txt;
 			void *data;
 			long usr_flag;
 		}typ;
-#define ENT_VISIBLE	1
-#define ENT_ISROOT	2
-		short flags;
-		short maxlevel;
-		short curlevel;
+		struct se_arg_level level;
 	}arg;
 	
 	union
@@ -1738,13 +1748,38 @@ struct seget_entrybyarg
 		void	*ptr;
 	}ret;
 };
+#endif
+struct sesetget_params
+{
+	int idx;
+	struct scroll_entry *e;
+	struct scroll_entry *e1;
+	
+	struct se_arg_level level;
+
+	union
+	{
+		struct se_arg_flags state;
+		struct se_arg_flags xstate;
+		char *txt;
+		void *data;
+		long usr_flag;
+	}arg;
+	
+	union
+	{
+		long ret;
+		void *ptr;
+	}ret;
+};
 
 #define OS_OPENED	1
 #define OS_NESTICON	2
 
 #define OS_BOXED	OS_STATE08
 
-#define OF_AUTO_OPEN	1
+#define OF_OPENABLE	1
+#define OF_AUTO_OPEN	2
 
 struct scroll_entry
 {
@@ -1771,7 +1806,7 @@ struct scroll_entry
 	struct se_content *content;
 	long usr_flags;
 	void *data;
-
+	void (*data_destruct)(void *);
 	
 // 	struct scroll_entry_content c;
 };
