@@ -273,7 +273,7 @@ fs_prompt(SCROLL_INFO *list, char *file)
 	else
 		s = parent->down;
 
-	display("selected %lx, s %lx, parent %lx", fs->selected_dir, s, parent);
+// 	display("selected %lx, s %lx, parent %lx", fs->selected_dir, s, parent);
 
 	/* Not if filename empty or list empty */
 	if (*file && s)
@@ -1704,7 +1704,7 @@ fileselector_form_exit(struct xa_client *client,
 #endif
 		{
 			struct scroll_entry *sel = get_selected(list);
-
+			
 			/* Just return with current selection */
 			if (fs->kbdnav && sel) //list->cur)
 				fs_item_action(list, sel/*list->cur*/, NULL, 0);
