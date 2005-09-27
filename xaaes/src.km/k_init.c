@@ -632,7 +632,7 @@ k_init(unsigned long vm)
 		
 		if ((ob_count_objs(about, 0) < RSC_VERSION)   ||
 		     about[RSC_VERSION].ob_type != G_TEXT     ||
-		    (strcmp(object_get_tedinfo(about + RSC_VERSION)->te_ptext, "0.0.5")))
+		    (strcmp(object_get_tedinfo(about + RSC_VERSION)->te_ptext, "0.0.6")))
 		{
 			display("ERROR: Outdated AESSYS resource file (%s) - update to recent version!", cfg.rsc_name);
 // 			display("       also make sure you read CHANGES.txt!!");
