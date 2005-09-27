@@ -729,14 +729,14 @@ alert_input(enum locks lock)
 		/* Add the log entry */
 		{
 			struct scroll_info *list = object_get_slist(form + SYSALERT_LIST);
-			struct seget_entrybyarg p = { 0 };
+			struct sesetget_params p = { 0 }; //seget_entrybyarg p = { 0 };
 			struct scroll_content sc = {{ 0 }};
 			
 			sc.icon = icon;
 			sc.t.text = data->buf;
 			sc.t.strings = 1;
 			p.idx = -1;
-			p.arg.typ.txt = "Alerts";
+			p.arg.txt = "Alerts";
 			list->get(list, NULL, SEGET_ENTRYBYTEXT, &p);
 			list->add(list, p.e, NULL, &sc, p.e ? SEADD_CHILD: 0, SETYP_MAL, true);
 		}

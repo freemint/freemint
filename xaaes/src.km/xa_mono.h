@@ -22,6 +22,7 @@
 #define FSEL_PATA        45  /* STRING in Baum FSEL_MENU */
 #define FSM_RTBUILD      69  /* STRING in Baum FSEL_MENU */
 #define FSM_TREEVIEW     70  /* STRING in Baum FSEL_MENU */
+#define FSM_SORTBYNAME   72  /* STRING in Baum FSEL_MENU */
 
 #define ALERT_ICONS      2   /* Formular/Dialog */
 #define ALR_IC_DRIVE     1   /* ICON in Baum ALERT_ICONS */
@@ -101,6 +102,7 @@
 #define FS_ICN_FILE      9   /* USERDEF in Baum FILE_SELECT */
 #define FS_CANCEL        10  /* BUTTON in Baum FILE_SELECT */
 #define FS_OK            11  /* BUTTON in Baum FILE_SELECT */
+#define FS_ICN_SYMLINK   12  /* ICON in Baum FILE_SELECT */
 
 #define KILL_OR_WAIT     9   /* Formular/Dialog */
 #define KORW_WAIT        3   /* BUTTON in Baum KILL_OR_WAIT */

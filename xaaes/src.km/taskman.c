@@ -186,11 +186,11 @@ remove_from_tasklist(struct xa_client *client)
 {
 	OBJECT *obtree = ResourceTree(C.Aes_rsc, TASK_MANAGER);
 	SCROLL_INFO *list = object_get_slist(obtree + TM_LIST);
-	struct seget_entrybyarg p = { 0 };
+	struct sesetget_params p = { 0 };
 
 	if (list)
 	{			
-		p.arg.typ.data = client;
+		p.arg.data = client;
 		list->get(list, NULL, SEGET_ENTRYBYDATA, &p);
 		if (p.e)
 			list->del(list, p.e, true);
@@ -203,12 +203,12 @@ update_tasklist_entry(struct xa_client *client)
 {
 	OBJECT *obtree = ResourceTree(C.Aes_rsc, TASK_MANAGER);
 	SCROLL_INFO *list = object_get_slist(obtree + TM_LIST);
-	struct seget_entrybyarg p = { 0 };
+	struct sesetget_params p = { 0 };
 	
 	if (list)
 	{
 		char *tx;
-		p.arg.typ.data = client;
+		p.arg.data = client;
 		list->get(list, NULL, SEGET_ENTRYBYDATA, &p);
 		if (p.e)
 		{
@@ -2335,9 +2335,9 @@ sysalerts_form_exit(struct xa_client *Client,
 		case SALERT_CLEAR:
 		{
 			struct scroll_info *list = object_get_slist(form + SYSALERT_LIST);
-			struct seget_entrybyarg p = { 0 };
+			struct sesetget_params p = { 0 };
 			
-			p.arg.typ.txt = "Alerts";
+			p.arg.txt = "Alerts";
 			list->get(list, NULL, SEGET_ENTRYBYTEXT, &p);
 			if (p.e)
 				list->empty(list, p.e, 0);
@@ -2480,14 +2480,14 @@ do_system_menu(enum locks lock, int clicked_title, int menu_item)
 			struct scroll_entry *this;
 			char * const * const strings = get_raw_env();
 			int i;
-			struct seget_entrybyarg p = { 0 };
+			struct sesetget_params p = { 0 };
 			struct scroll_content sc = {{ 0 }};
 
 			p.idx = -1;
-			p.arg.typ.txt = "Environment";
-			p.arg.flags = 0;
-			p.arg.curlevel = 0;
-			p.arg.maxlevel = 0;
+			p.arg.txt = "Environment";
+			p.level.flags = 0;
+			p.level.curlevel = 0;
+			p.level.maxlevel = 0;
 			list->get(list, NULL, SEGET_ENTRYBYTEXT, &p);
 			list->empty(list, p.e, 0);
 			this = p.e;
