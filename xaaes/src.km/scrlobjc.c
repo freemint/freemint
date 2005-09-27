@@ -1600,7 +1600,7 @@ set(SCROLL_INFO *list,
 					entry = next_entry(entry, p->level.flags, p->level.maxlevel, &p->level.curlevel);
 				while (entry)
 				{
-					display("flags %x, mxl %d, curl %d", p->level.flags, p->level.maxlevel, p->level.curlevel);
+// 					display("flags %x, mxl %d, curl %d", p->level.flags, p->level.maxlevel, p->level.curlevel);
 					state = entry->state;
 					state &= p->arg.state.mask;
 					state |= p->arg.state.bits;
