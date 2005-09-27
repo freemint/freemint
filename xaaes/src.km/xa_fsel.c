@@ -302,27 +302,39 @@ fs_prompt(SCROLL_INFO *list, char *file)
 
 			list->get(list, s, SEGET_USRFLAGS, &uf);
 
-			if ((uf & FLAG_DIR))
-			{
-				fs->selected_dir = s;
-				fs->selected_file = NULL;
-			}
-			else
-			{
-				fs->selected_dir = s->up;
-				fs->selected_file = s;
-			}
-
 			list->set(list, s, SESET_CURRENT, 0, NOREDRAW);
 			list->set(list, NULL, SESET_MULTISEL, 0, NOREDRAW);
 
 			list->set(list, NULL, SESET_STATE, ((long)(OS_BOXED|OS_SELECTED) << 16), NORMREDRAW);
 			
 			if (match == 1)
-				list->set(list, s, SESET_STATE, ((long)(OS_BOXED|OS_SELECTED) << 16) | OS_BOXED, NORMREDRAW);
+			{
+				if ((uf & FLAG_DIR))
+				{
+					fs->selected_dir = s->up;
+					fs->selected_file = NULL;
+				}
+				else
+				{
+					fs->selected_dir = s->up;
+					fs->selected_file = NULL;
+				}
+				list->set(list, s, SESET_STATE, ((long)(OS_BOXED|OS_SELECTED) << 16) | OS_BOXED, NORMREDRAW);	
+			}
 			else if (match == 2)
+			{
+				if ((uf & FLAG_DIR))
+				{
+					fs->selected_dir = s;
+					fs->selected_file = NULL;
+				}
+				else
+				{
+					fs->selected_dir = s->up;
+					fs->selected_file = s;
+				}
 				list->set(list, s, SESET_STATE, ((long)(OS_BOXED|OS_SELECTED) << 16) | OS_SELECTED, NORMREDRAW);
-
+			}
 			list->vis(list, s, NORMREDRAW);
 			set_dir(list);
 			ret = true;
@@ -1517,7 +1529,7 @@ fs_item_action(struct scroll_info *list, struct scroll_entry *this, const struct
 									if (!(flags & 2))
 										list->set(list, this, SESET_OPEN, 0, NORMREDRAW);
 								}
-								else if (*fs->file)
+								else /*if (*fs->file)*/
 									fs_done = true;
 							}
 						#if 0
@@ -1588,6 +1600,8 @@ fs_item_action(struct scroll_info *list, struct scroll_entry *this, const struct
 						set_file(fs, fs->ofile); //if (!fs->tfile) set_file(fs, "");
 					}
 				}
+				else
+					fs_done = true;
 			}
 		}
 	}
@@ -1705,6 +1719,13 @@ fileselector_form_exit(struct xa_client *client,
 		{
 			struct scroll_entry *sel = get_selected(list);
 			
+			if (sel)
+				fs_item_action(list, sel, NULL, 0);
+			else if (fs->selected_dir && !*fs->file)
+				fs_item_action(list, fs->selected_dir, NULL, 0);
+			else
+				fs_item_action(list, NULL, NULL, 0);
+#if 0
 			/* Just return with current selection */
 			if (fs->kbdnav && sel) //list->cur)
 				fs_item_action(list, sel/*list->cur*/, NULL, 0);
@@ -1712,7 +1733,7 @@ fileselector_form_exit(struct xa_client *client,
 				fs_item_action(list, fs->selected_dir, NULL, 0);
 			else
 				fs_item_action(list, fs->selected_dir, NULL, 0);
-	
+#endif	
 		}
 		break;
 	}
@@ -2017,7 +2038,7 @@ fs_key_form_do(enum locks lock,
 							/* something typed in there? */
 							if (strcmp(old, fs->file) != 0)
 							{
-								strcpy(fs->ofile, fs->file);
+								strcpy(fs->ofile, ""); //fs->file);
 								fs->tfile = true;
 								fs->kbdnav = true;
 								fs_prompt(list, fs->file);
