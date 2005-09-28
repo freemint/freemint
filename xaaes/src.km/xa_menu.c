@@ -421,7 +421,6 @@ menu_popup(enum locks lock, struct xa_client *client, MENU *mn, MENU *result, sh
 
 			DIAG((D_menu,NULL,"_menu_popup %lx + %d",ob, mn->mn_menu));
 
-		//	tab->pb = NULL;
 			tab->locker = client->p->pid;
 			tab->client = client;
 			tab->lock = lock;

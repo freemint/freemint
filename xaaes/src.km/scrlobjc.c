@@ -1592,12 +1592,30 @@ set(SCROLL_INFO *list,
 		case SESET_M_STATE:
 		{
 			struct sesetget_params *p = (void *)arg;
-			short state;
+			short state, maxlevel, flags;
 
-			if (p && entry)
+			if (p)
 			{
-				if (!(p->level.flags & ENT_INCROOT))
-					entry = next_entry(entry, p->level.flags, p->level.maxlevel, &p->level.curlevel);
+				flags = p->level.flags;
+				maxlevel = p->level.maxlevel;
+
+				if (!entry)
+				{
+					if ((entry = list->start))
+					{
+						if ((flags & ENT_ISROOT) && maxlevel != -1)
+						{
+							if ((maxlevel -= 1) < 0)
+								goto m_state_done;
+						}
+						flags &= ~(ENT_ISROOT|ENT_INCROOT);
+					}
+					else
+						goto m_state_done;
+				}
+
+				if ((flags & (ENT_ISROOT|ENT_INCROOT)) == ENT_ISROOT)
+					entry = next_entry(entry, flags, maxlevel, &p->level.curlevel);
 				while (entry)
 				{
 // 					display("flags %x, mxl %d, curl %d", p->level.flags, p->level.maxlevel, p->level.curlevel);
@@ -1610,9 +1628,10 @@ set(SCROLL_INFO *list,
 						if (rdrw && !hidden_entry(entry))
 							list->redraw(list, entry);
 					}
-					entry = next_entry(entry, p->level.flags, p->level.maxlevel, &p->level.curlevel);
+					entry = next_entry(entry, flags, maxlevel, &p->level.curlevel);
 				}
 			}
+m_state_done:
 			break;
 		}
 		case SESET_NFNT:
