@@ -989,7 +989,7 @@ dfwm_redraw(struct xa_window *wind, struct xa_widget *widg, struct widget_tree *
 void
 do_formwind_msg(
 	struct xa_window *wind,
-	struct xa_client *to,			/* if different from wind->owner */
+	struct xa_client *to_client,			/* if different from wind->owner */
 	short amq, short qmflags,
 	short *msg)
 {
@@ -999,7 +999,7 @@ do_formwind_msg(
 // 	bool d = (!strnicmp(wind->owner->proc_name, "gfa_xref", 8)) ? true : false;
 
 	DIAG((D_form, wind->owner, "do_formwind_msg: wown %s, to %s, wdig=%lx, msg %d, %d, %d, %d, %d, %d, %d, %d",
-		wind->owner->name, to->name, widg, msg[0], msg[1], msg[2], msg[3], msg[4], msg[5], msg[6], msg[7]));
+		wind->owner->name, to_client->name, widg, msg[0], msg[1], msg[2], msg[3], msg[4], msg[5], msg[6], msg[7]));
 
 // 	if (d) display("do_formwind_msg: wown %s, to %s, wdig=%lx, msg %d, %d, %d, %d, %d, %d, %d, %d",
 // 		wind->owner->name, to->name, widg, msg[0], msg[1], msg[2], msg[3], msg[4], msg[5], msg[6], msg[7]);
@@ -1017,7 +1017,8 @@ do_formwind_msg(
 #if 0
 		short wd = ow - ww,			/* space ouside workarea */
 		      hd = oh - wh;
-#endif		
+#endif
+// 		display("ow = %d, oh = %d", ow, oh);
 		switch (msg[0])
 		{
 		case WM_REDRAW:
@@ -1072,17 +1073,17 @@ do_formwind_msg(
 				{
 					switch (msg[4])
 					{
-					case WA_UPLINE:
-						dy -= screen.c_max_h;
-					break;
-					case WA_DNLINE:
-						dy += screen.c_max_h;
-					break;
-					case WA_UPPAGE:
-						dy -= oh - screen.c_max_h;
-					break;
-					case WA_DNPAGE:
-						dy += oh - screen.c_max_h;
+						case WA_UPLINE:
+							dy -= screen.c_max_h;
+							break;
+						case WA_DNLINE:
+							dy += screen.c_max_h;
+							break;
+						case WA_UPPAGE:
+							dy -= oh - screen.c_max_h;
+							break;
+						case WA_DNPAGE:
+							dy += oh - screen.c_max_h;
 					}
 /* align ( not that object height is always >= work area height) */
 					if (dy < 0)
@@ -1176,12 +1177,64 @@ do_formwind_msg(
 
 		if (draw)
 		{
-			RECT sc;
+			RECT sc, clip, *clp_p = NULL;
+// 			display("getting here?");
+			
+			if (wt->dy != dy && ((wind->nolist && nolist_list == wind) || (!wind->nolist && is_topped(wind))))
+			{
+				short yoff;
+				RECT from, to;
+				
+				yoff = dy - wt->dy; // - dy;
+				if (yoff < 0)
+				{
+// 					display("blit up");
+					yoff = -yoff;
+					
+					if (yoff < wind->wa.h - 4)
+					{
+						/* wincontent moving down to show elements above */
+						from.x = to.x = wind->wa.x;
+						from.y = wind->wa.y;
+						from.w = to.w = wind->wa.w;
+						from.h = to.h = wind->wa.h - yoff;
+					
+						to.y = from.y + yoff;
+						form_copy(&from, &to);
+						clip.x = wind->wa.x;
+						clip.y = wind->wa.y;
+						clip.w = wind->wa.w;
+						clip.h = yoff;
+						clp_p = &clip;
+					}
+				}
+				else if (yoff > 0)
+				{
+// 					display("blit down");
+					/* wincontent moving up to show elements below */
+					if (yoff < wind->wa.h - 4)
+					{
+						from.x = to.x = wind->wa.x;
+						from.y = wind->wa.y + yoff;
+						from.w = to.w = wind->wa.w;
+						from.h = to.h = wind->wa.h - yoff;
+						to.y = wind->wa.y;
+						form_copy(&from, &to);
+						clip.x = wind->wa.x;
+						clip.y = wind->wa.y + from.h;
+						clip.w = wind->wa.w;
+						clip.h = yoff;
+						clp_p = &clip;
+					}
+				}
+				
+			}
 			wt->dx = dx;
 			wt->dy = dy;
 			(*v->api->save_clip)(v, &sc);
-			display_window(0, 120, wind, NULL);
-			dfwm_redraw(wind, widg, wt, NULL);
+// 			display_window(0, 120, wind, NULL);
+			display_widget(0, wind, get_widget(wind, XAW_VSLIDE), wind->rect_list.start);
+			dfwm_redraw(wind, widg, wt, clp_p/*NULL*/);
 			(*v->api->restore_clip)(v, &sc);
 		}
 	}

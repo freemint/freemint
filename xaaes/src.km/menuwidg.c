@@ -987,7 +987,9 @@ display_popup(Tab *tab, XA_TREE *wt, int item, short rdx, short rdy)
 	struct xa_window *wind;
 	XA_WIND_ATTR tp = TOOLBAR /*|STORE_BACK*/;
 	RECT r;
-	int wash, mg = MONO ? 0 : 0;
+	short real_h;
+	bool mod_h = false;
+	int mg = MONO ? 0 : 0;
 	
 	k->pop_item = item;
 	k->border = 0;
@@ -1000,13 +1002,30 @@ display_popup(Tab *tab, XA_TREE *wt, int item, short rdx, short rdy)
 	obtree->ob_y = k->rdy = rdy;
 
 	obj_rectangle(wt, item, &r);
-// 	obj_area(wt, item, &r);
+/* ************ */
+	real_h = r.h;
+		
+	if (tab->scroll)
+	{
+		if (real_h > (8 * screen.c_max_h))
+		{
+			mod_h = true;
+			r.h = 8 * screen.c_max_h;
+		}
+	}
+	if (cfg.popscroll && real_h > cfg.popscroll * screen.c_max_h)
+	{
+		mod_h = true;
+		r.h = cfg.popscroll * screen.c_max_h;
+	}
+
+/* ************ */
 	DIAG((D_menu, tab->client, "display_popup: tab=%lx, %d/%d/%d/%d", tab, r));
 	
-	r = calc_window(tab->lock, C.Aes, WC_BORDER, tp, created_for_AES|created_for_POPUP, mg, true, r);
+	r = calc_window(tab->lock, tab->client, WC_BORDER, tp, created_for_AES|created_for_POPUP, mg, true, r);
 	
 	r = popup_inside(tab, r);
-	wash = r.h;
+// 	wash = r.h;
 	obtree->ob_x = k->pdx;
 	obtree->ob_y = k->pdy;
 
@@ -1015,10 +1034,6 @@ display_popup(Tab *tab, XA_TREE *wt, int item, short rdx, short rdy)
 	DIAG((D_menu, tab->client, " -- scroll=%d, menu_locking=%d",
 		tab->scroll, cfg.menu_locking));
 
-#if 0
-	if (tab->scroll && r.h > 8 * screen.c_max_h)
-		r.h = 8 * screen.c_max_h;
-#endif
 	if (r.y < root_window->wa.y)
 	{
 		r.y = root_window->wa.y;
@@ -1027,57 +1042,46 @@ display_popup(Tab *tab, XA_TREE *wt, int item, short rdx, short rdy)
 	}
 
 	if (r.y + r.h > root_window->wa.y + root_window->wa.h)
+	{
+		mod_h = true;
 		r.h = root_window->wa.h - r.y; 
+	}
 
-	if (cfg.popscroll && r.h > cfg.popscroll * screen.c_max_h)
-		r.h = cfg.popscroll * screen.c_max_h;
+// 	if (cfg.popscroll && r.h > cfg.popscroll * screen.c_max_h)
+// 		r.h = cfg.popscroll * screen.c_max_h;
 
-	//if (!cfg.menu_locking || r.h < wash)
-	//{
-		if (r.h < wash)
-		{
-
-			tab->scroll = true;
-
-			r = calc_window(tab->lock, tab->client/*C.Aes*/, WC_WORK, tp, created_for_AES|created_for_POPUP, mg, true, r);
-			tp |= TOOLBAR|VSLIDE|UPARROW|DNARROW/*|STORE_BACK*/;
-			r = calc_window(tab->lock, tab->client/*C.Aes*/, WC_BORDER, tp, created_for_AES|created_for_POPUP, mg, true, r);
+	if (mod_h) // < real_h) //r.h < wash)
+	{
+		tab->scroll = true;
+		
+		r = calc_window(tab->lock, tab->client, WC_WORK, tp, created_for_AES|created_for_POPUP, mg, true, r);
+		tp |= TOOLBAR|VSLIDE|UPARROW|DNARROW/*|STORE_BACK*/;
+		r = calc_window(tab->lock, tab->client, WC_BORDER, tp, created_for_AES|created_for_POPUP, mg, true, r);
 			
-			//if (r.y < root_window->wa.y)
-			//	r.y = root_window->wa.y;
-
-			wind = create_window(	tab->lock,
-						do_winmesag,
-						do_formwind_msg,
-						tab->client,
-						true, //cfg.menu_locking,	/* yields nolist if locking. */
-						tp,
-						created_for_AES|created_for_POPUP,
-						mg, true,
-						r,
-						&r, NULL);
-		}
-		else
-		{
-			//r = calc_window(tab->lock, C.Aes, WC_BORDER, tp, created_for_AES|created_for_POPUP, mg, true, r);
-			
-			//if (r.y < root_window->wa.y)
-			//	r.y = root_window->wa.y;
-
-			wind = create_window(	tab->lock,
-						do_winmesag, //NULL,
-						do_formwind_msg, //NULL,
-						tab->client,
-						true, //cfg.menu_locking,	/* yields nolist if locking. */
-						tp, //TOOLBAR|STORE_BACK,
-						created_for_AES|created_for_POPUP,
-						mg, true,
-						r,
-						NULL, NULL);
-		}
-//	}
-//	else
-//		wind = NULL;
+		wind = create_window(	tab->lock,
+					do_winmesag,
+					do_formwind_msg,
+					tab->client,
+					true, //cfg.menu_locking,	/* yields nolist if locking. */
+					tp,
+					created_for_AES|created_for_POPUP,
+					mg, true,
+					r,
+					&r, NULL);
+	}
+	else
+	{
+		wind = create_window(	tab->lock,
+					do_winmesag, //NULL,
+					do_formwind_msg, //NULL,
+					tab->client,
+					true, //cfg.menu_locking,	/* yields nolist if locking. */
+					tp, //TOOLBAR|STORE_BACK,
+					created_for_AES|created_for_POPUP,
+					mg, true,
+					r,
+					NULL, NULL);
+	}
 
 	if (wind)
 	{

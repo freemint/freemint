@@ -234,7 +234,23 @@ get_selorboxed(struct scroll_info *list)
 	list->get(list, NULL, SEGET_ENTRYBYSTATE, &p);
 	return p.e;
 }
+/*
+ * Modify state on multiple scroll-list entries
+ */
+static void
+modify_mult_state(struct scroll_info *list, void *parent, short bits, short mask)
+{
+	struct sesetget_params p;
 
+	p.idx = 0;
+	p.arg.state.method = 0;
+	p.arg.state.bits = bits; //0;
+	p.arg.state.mask = mask; //~(OS_SELECTED|OS_BOXED);
+	p.level.flags = ENT_ISROOT;
+	p.level.maxlevel = -1;
+	p.level.curlevel = 0;
+	list->set(list, parent, SESET_M_STATE, (long)&p, NORMREDRAW);
+}
 static void
 set_selected(struct scroll_info *list, struct scroll_entry *this)
 {
@@ -258,7 +274,7 @@ get_selected(struct scroll_info *list)
 }
 
 static bool
-fs_prompt(SCROLL_INFO *list, char *file)
+fs_prompt(SCROLL_INFO *list, char *file, bool typing)
 {
 	struct fsel_data *fs = list->data;
 	SCROLL_ENTRY *parent, *s;
@@ -344,6 +360,16 @@ fs_prompt(SCROLL_INFO *list, char *file)
 			fs->selected_file = NULL;
 			if (parent)
 			{
+				/*
+				 * Clear any boxed or selected settings in this level
+				 */
+				p.arg.state.mask = ~(OS_BOXED|OS_SELECTED);
+				p.arg.state.bits = 0;
+				p.level.flags = ENT_ISROOT;
+				p.level.maxlevel = -1;
+				p.level.curlevel = 0;
+				list->set(list, parent, SESET_M_STATE, (long)&p, NORMREDRAW);
+
 				list->set(list, parent, SESET_CURRENT, 0, NOREDRAW);
 				fs->selected_dir = parent;
 				set_dir(list);
@@ -359,7 +385,7 @@ fs_prompt(SCROLL_INFO *list, char *file)
 					list->set(list, s, SESET_STATE, ((long)(OS_BOXED|OS_SELECTED) << 16), NORMREDRAW);
 					ret = true;
 				}
-				else if (fs->kbdnav)
+				else if (fs->kbdnav && !typing)
 				{
 					s = list->start;
 					list->set(list, s, SESET_STATE, ((long)(OS_BOXED|OS_SELECTED) << 16) | OS_SELECTED, NORMREDRAW);
@@ -397,7 +423,7 @@ fs_prompt(SCROLL_INFO *list, char *file)
 					list->set(list, s, SESET_STATE, ((long)(OS_BOXED|OS_SELECTED) << 16), NORMREDRAW);
 					ret = true;
 				}
-				else if (fs->kbdnav)
+				else if (fs->kbdnav && !typing)
 				{
 					s = list->start;
 					list->set(list, s, SESET_STATE, ((long)(OS_BOXED|OS_SELECTED) << 16) | OS_SELECTED, NORMREDRAW);
@@ -1229,7 +1255,7 @@ CE_refresh_filelist(enum locks lock, struct c_event *ce, bool cancel)
 		struct fsel_data *fs = ce->ptr1;
 		struct scroll_info *list = ce->ptr2;
 		refresh_filelist(lock, fs, NULL);
-		fs_prompt(list, fs->file);
+		fs_prompt(list, fs->file, false);
 	}
 }
 
@@ -1360,7 +1386,7 @@ fs_updir(struct scroll_info *list)
 		fs->selected_file = fs->selected_dir = NULL;
 		set_dir(list);
 		refresh_filelist(fsel, fs, NULL);
-		fs_prompt(list, atroot ? fs->file : outof);
+		fs_prompt(list, atroot ? fs->file : outof, false);
 	}
 }
 
@@ -1404,10 +1430,10 @@ fs_enter_dir(struct fsel_data *fs, struct scroll_info *list, struct scroll_entry
 		short xs;
 		list->get(list, dir_ent, SEGET_XSTATE, &xs);
 		if (xs & OS_OPENED)
-			fs_prompt(list, fs->file);
+			fs_prompt(list, fs->file, false);
 	}
 	else
-		fs_prompt(list, fs->file);
+		fs_prompt(list, fs->file, false);
 }
 
 static int
@@ -1438,6 +1464,7 @@ fs_item_action(struct scroll_info *list, struct scroll_entry *this, const struct
 			{
 				if (md)
 				{
+					modify_mult_state(list, this->up, 0, ~(OS_SELECTED|OS_BOXED));
 					p.idx = -1;
 					p.e = this;
 					p.arg.txt = fs->file;
@@ -1592,6 +1619,7 @@ fs_item_action(struct scroll_info *list, struct scroll_entry *this, const struct
 						}
 						else
 						{
+							modify_mult_state(list, this->up, 0, ~(OS_BOXED|OS_SELECTED));
 							list->set(list, this, SESET_STATE, ((long)(OS_BOXED|OS_SELECTED) << 16) | OS_SELECTED, NORMREDRAW);
 							fs->selected_dir = this;
 						}
@@ -1619,7 +1647,7 @@ fs_item_action(struct scroll_info *list, struct scroll_entry *this, const struct
 		{
 			fs->selected(list->lock, fs, fs->path, fs->file);
 		}
-// 		display("select path '%s', file '%s'", fs->path, fs->file);
+		display("select path '%s', file '%s'", fs->path, fs->file);
 	}
 
 	return true;
@@ -1712,7 +1740,7 @@ fileselector_form_exit(struct xa_client *client,
 			/* changed filter */
 			strcpy(fs->fs_pattern, filter->te_ptext);
 			refresh_filelist(fsel, fs, NULL);
-			fs_prompt(list, fs->file);
+			fs_prompt(list, fs->file, false);
 		}
 		else
 #endif
@@ -1878,7 +1906,7 @@ fs_key_form_do(enum locks lock,
 		fs->selected_dir = fs->selected_file = NULL;
 		/* apply the change to the filelist */
 		refresh_filelist(fsel, fs, NULL);
-		fs_prompt(list, fs->file);
+		fs_prompt(list, fs->file, false);
 	}
 	else
 	{
@@ -2041,7 +2069,7 @@ fs_key_form_do(enum locks lock,
 								strcpy(fs->ofile, ""); //fs->file);
 								fs->tfile = true;
 								fs->kbdnav = true;
-								fs_prompt(list, fs->file);
+								fs_prompt(list, fs->file, true);
 							}
 						}
 					}
@@ -2145,7 +2173,7 @@ fs_msg_handler(
 // 		display("cur1 %lx", list->cur);
 		refresh_filelist(lock, fs, NULL);
 // 		display("cur2 %lx", list->cur);
-		fs_prompt(list, fs->file);
+		fs_prompt(list, fs->file, false);
 // 		display("cur3 %lx", list->cur);
 		break;
 	}
