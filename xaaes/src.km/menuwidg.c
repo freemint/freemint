@@ -1766,6 +1766,8 @@ click_popup_entry(struct task_administration_block *tab)
 
 	client->usr_evnt |= tab->usr_evnt;
 
+// 	display("click_popup_entry: usr_evnt = %d", client->usr_evnt);
+	
 	return NULL;
 }
 

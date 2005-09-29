@@ -1080,10 +1080,10 @@ do_formwind_msg(
 							dy += screen.c_max_h;
 							break;
 						case WA_UPPAGE:
-							dy -= oh - screen.c_max_h;
+							dy -= wh/*oh*/ - screen.c_max_h;
 							break;
 						case WA_DNPAGE:
-							dy += oh - screen.c_max_h;
+							dy += wh/*oh*/ - screen.c_max_h;
 					}
 /* align ( not that object height is always >= work area height) */
 					if (dy < 0)
@@ -1098,17 +1098,17 @@ do_formwind_msg(
 				{
 					switch (msg[4])
 					{
-					case WA_LFLINE:
-						dx -= screen.c_max_w;
-					break;
-					case WA_RTLINE:
-						dx += screen.c_max_w;
-					break;
-					case WA_LFPAGE:
-						dx -= ow - screen.c_max_w;
-					break;
-					case WA_RTPAGE:
-						dx += ow - screen.c_max_w;
+						case WA_LFLINE:
+							dx -= screen.c_max_w;
+							break;
+						case WA_RTLINE:
+							dx += screen.c_max_w;
+							break;
+						case WA_LFPAGE:
+							dx -= ww/*ow*/ - screen.c_max_w;
+							break;
+						case WA_RTPAGE:
+							dx += ww/*ow*/ - screen.c_max_w;
 					}
 					if (dx < 0)
 						dx = 0;
@@ -1179,7 +1179,7 @@ do_formwind_msg(
 		{
 			RECT sc, clip, *clp_p = NULL;
 // 			display("getting here?");
-			
+			hidem();
 			if (wt->dy != dy && ((wind->nolist && nolist_list == wind) || (!wind->nolist && is_topped(wind))))
 			{
 				short yoff;
@@ -1236,6 +1236,7 @@ do_formwind_msg(
 			display_widget(0, wind, get_widget(wind, XAW_VSLIDE), wind->rect_list.start);
 			dfwm_redraw(wind, widg, wt, clp_p/*NULL*/);
 			(*v->api->restore_clip)(v, &sc);
+			showm();
 		}
 	}
 }
