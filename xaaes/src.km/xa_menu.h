@@ -30,7 +30,7 @@
 #include "global.h"
 #include "xa_types.h"
 
-int menu_popup(enum locks lock, struct xa_client *client, MENU *mn, MENU *result, short px, short py, bool usr_evnt);
+int menu_popup(enum locks lock, struct xa_client *client, MENU *mn, MENU *result, short px, short py, short usr_evnt);
 
 AES_function
 	XA_menu_bar,
