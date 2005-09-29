@@ -1762,11 +1762,14 @@ click_popup_entry(struct task_administration_block *tab)
 
 		IFDIAG(tab->dbg = 6;)
 	}
+
+	m = tab->usr_evnt;
+
 	popout(TAB_LIST_START);			/* incl. screen unlock */
 
-	client->usr_evnt |= tab->usr_evnt;
+	client->usr_evnt |= m; //tab->usr_evnt;
 
-// 	display("click_popup_entry: usr_evnt = %d", client->usr_evnt);
+// 	display("click_popup_entry: usr_evnt = %d - %d - %m", client->usr_evnt, tab->usr_evnt, m);
 	
 	return NULL;
 }
