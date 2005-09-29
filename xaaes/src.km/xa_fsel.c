@@ -1647,7 +1647,7 @@ fs_item_action(struct scroll_info *list, struct scroll_entry *this, const struct
 		{
 			fs->selected(list->lock, fs, fs->path, fs->file);
 		}
-		display("select path '%s', file '%s'", fs->path, fs->file);
+// 		display("select path '%s', file '%s'", fs->path, fs->file);
 	}
 
 	return true;

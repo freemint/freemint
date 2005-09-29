@@ -443,9 +443,11 @@ menu_popup(enum locks lock, struct xa_client *client, MENU *mn, MENU *result, sh
 				 px - x,
 				 py - y);
 
+// 			display("going into menu_popup block");
 			client->status |= CS_BLOCK_MENU_NAV;
 			Block(client, 1);
 			client->status &= ~CS_BLOCK_MENU_NAV;
+// 			display("leaving menu_popup block");
 
 			ob->ob_x = old_x;
 			ob->ob_y = old_y;
@@ -472,11 +474,19 @@ XA_menu_popup(enum locks lock, struct xa_client *client, AESPB *pb)
 	CONTROL(2,1,2)
 
 	MENU *result = (MENU *)pb->addrin[1];
-	
-	if (menu_popup(lock, client, (MENU *)pb->addrin[0], result, pb->intin[0], pb->intin[1], 1))
+	MENU tmp;
+
+	tmp = *result;
+// 	display("XA_menu_popup: %s", client->name);
+	if (menu_popup(lock, client, (MENU *)pb->addrin[0], &tmp/*result*/, pb->intin[0], pb->intin[1], 1))
+	{
+		*result = tmp;
 		pb->intout[0] = result->mn_item < 0 ? 0 : 1;
+	}
 	else
 		pb->intout[0] = -1;
+
+// 	display("leave XA_menu_popup: %d for %s", pb->intout[0], client->name);
 
 	return XAC_DONE;
 }
@@ -551,9 +561,11 @@ XA_form_popup(enum locks lock, struct xa_client *client, AESPB *pb)
 				 x,
 				 y);
 
+// 			display("going into form_popup block");
 			client->status |= CS_BLOCK_MENU_NAV;
 			Block(client, 1);
 			client->status &= ~CS_BLOCK_MENU_NAV;
+// 			display("leaving form_popup block");
 
 			ob->ob_x = old_x;
 			ob->ob_y = old_y;
