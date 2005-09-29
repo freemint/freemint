@@ -1764,13 +1764,9 @@ click_popup_entry(struct task_administration_block *tab)
 	}
 
 	m = tab->usr_evnt;
-
 	popout(TAB_LIST_START);			/* incl. screen unlock */
+	client->usr_evnt |= m;
 
-	client->usr_evnt |= m; //tab->usr_evnt;
-
-// 	display("click_popup_entry: usr_evnt = %d - %d - %m", client->usr_evnt, tab->usr_evnt, m);
-	
 	return NULL;
 }
 
@@ -1780,7 +1776,7 @@ click_form_popup_entry(struct task_administration_block *tab)
 	MENU_TASK *k = &tab->task_data.menu;
 	//AESPB *pb = tab->pb;
 	struct xa_client *client = tab->client;
-	short m;
+	short m, ue;
 
 	m = find_menu_object(tab, k->pop_item, k->pdx, k->pdy, &k->drop);
 	if (m >= 0 && (k->wt->tree[m].ob_state & OS_DISABLED) != 0)
@@ -1790,11 +1786,13 @@ click_form_popup_entry(struct task_administration_block *tab)
 
 	IFDIAG(tab->dbg = 7;)
 
+	ue = tab->usr_evnt;
+	
 	popout(TAB_LIST_START);			/* incl. screen unlock */
 
 	if (tab->data)
-		*(short *)tab->data = m;
-	client->usr_evnt |= tab->usr_evnt;
+		*(short *)tab->data = m;	
+	client->usr_evnt |= ue;
 
 	return NULL;
 }
