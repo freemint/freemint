@@ -392,7 +392,7 @@ XA_menu_register(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 int
-menu_popup(enum locks lock, struct xa_client *client, MENU *mn, MENU *result, short px, short py, bool usr_evnt)
+menu_popup(enum locks lock, struct xa_client *client, MENU *mn, MENU *result, short px, short py, short usr_evnt)
 {
 	if (mn && result)
 	{
