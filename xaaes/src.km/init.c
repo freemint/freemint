@@ -499,7 +499,6 @@ again:
 			sleep(WAIT_Q, (long)&loader_pid);
 		
 // 		display("AESSYS kthread exited - C.shutdown = %x", C.shutdown);
-
 	
 #if BOOTLOG
 		if (C.bootlog_file)
