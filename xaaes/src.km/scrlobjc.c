@@ -2785,16 +2785,27 @@ del_scroll_entry(struct scroll_info *list, struct scroll_entry *e, short redraw)
 				}
 				/* else list is empty */
 			}
-			else
+			else if (lr.y < (list->start_y + list->wi->wa.h))
 			{
-				if (next)
+				dy = lr.y - list->start_y;
+				if ((lr.y + lr.h) < (list->start_y + list->wi->wa.h))
 				{
-					get_entry_lrect(list, next, 0, &r);
-					sy = (r.y + lr.h) - list->start_y;
-					if (sy > list->wi->wa.h)
-						sy = -1l;
-					dy = lr.y - list->start_y;
+					if (next)
+					{
+						get_entry_lrect(list, next, 0, &r);
+						sy = (r.y + lr.h) - list->start_y;
+						if (sy > list->wi->wa.h)
+							sy = -1l;
+					}
+					else
+					{
+						sy = (lr.y + lr.h) - list->start_y;
+						if (sy > list->wi->wa.h)
+							sy = -1L;
+					}
 				}
+				else
+					sy = -1L;
 			}
 		}
 	}
