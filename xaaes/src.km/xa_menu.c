@@ -437,7 +437,7 @@ menu_popup(enum locks lock, struct xa_client *client, MENU *mn, MENU *result, sh
 			if (mn->mn_scroll == -1)
 				tab->scroll = 8;
 			else if (mn->mn_scroll > 1)
-				tab->scroll = mn->mn_scroll;
+				tab->scroll = (mn->mn_scroll < 8) ? 8 : mn->mn_scroll;
 			else
 				tab->scroll = 0;
 
