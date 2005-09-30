@@ -433,7 +433,15 @@ menu_popup(enum locks lock, struct xa_client *client, MENU *mn, MENU *result, sh
 			tab->wind = NULL;
 			tab->widg = NULL;
 			tab->ty = POP_UP;
-			tab->scroll = mn->mn_scroll != 0;
+
+			if (mn->mn_scroll == -1)
+				tab->scroll = 8;
+			else if (mn->mn_scroll > 1)
+				tab->scroll = mn->mn_scroll;
+			else
+				tab->scroll = 0;
+
+			tab->scroll = (mn->mn_scroll == -1) ? 8 : 0;
 			
 			tab->usr_evnt = usr_evnt;
 			tab->data = result;
@@ -525,7 +533,7 @@ XA_form_popup(enum locks lock, struct xa_client *client, AESPB *pb)
 			tab->wind = NULL;
 			tab->widg = NULL;
 			tab->ty = POP_UP;
-			tab->scroll = false;
+			tab->scroll = 0; //false;
 			tab->data = &pb->intout[0];
 			tab->usr_evnt = 1;
 
