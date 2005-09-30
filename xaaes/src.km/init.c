@@ -488,7 +488,6 @@ again:
 			FATAL("can't create XaAES kernel thread");
 
 	}
-	
 	{
 		struct proc *p = get_curproc();
 		ulong oldmask;
@@ -498,6 +497,8 @@ again:
 
 		while (!(C.shutdown & QUIT_NOW))
 			sleep(WAIT_Q, (long)&loader_pid);
+		
+// 		display("AESSYS kthread exited - C.shutdown = %x", C.shutdown);
 		
 		p->p_sigmask = oldmask;
 		if (C.shutdown & HALT_SYSTEM)
