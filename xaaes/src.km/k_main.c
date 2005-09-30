@@ -1498,6 +1498,8 @@ leave:
 		_c_conin();
 	}
 	k_exit();
+
+	kthread_exit(0);
 }
 
 static void
@@ -1634,5 +1636,5 @@ k_exit(void)
 
 	/* XXX todo -> module_exit */
 // 	display("kthread_exit...");
-	kthread_exit(0);
+// 	kthread_exit(0);
 }
