@@ -1007,10 +1007,10 @@ display_popup(Tab *tab, XA_TREE *wt, int item, short rdx, short rdy)
 		
 	if (tab->scroll)
 	{
-		if (real_h > (8 * screen.c_max_h))
+		if (real_h > (tab->scroll/*8*/ * screen.c_max_h))
 		{
 			mod_h = true;
-			r.h = 8 * screen.c_max_h;
+			r.h = tab->scroll/*8*/ * screen.c_max_h;
 		}
 	}
 	if (cfg.popscroll && real_h > cfg.popscroll * screen.c_max_h)
@@ -1052,7 +1052,7 @@ display_popup(Tab *tab, XA_TREE *wt, int item, short rdx, short rdy)
 
 	if (mod_h) // < real_h) //r.h < wash)
 	{
-		tab->scroll = true;
+// 		tab->scroll = true;
 		
 		r = calc_window(tab->lock, tab->client, WC_WORK, tp, created_for_AES|created_for_POPUP, mg, true, r);
 		tp |= TOOLBAR|VSLIDE|UPARROW|DNARROW/*|STORE_BACK*/;

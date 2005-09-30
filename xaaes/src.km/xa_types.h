@@ -1955,7 +1955,7 @@ struct task_administration_block
 	TASK *task;	/* general task pointer */
 //	AESPB *pb;
 
-	bool scroll;
+	short scroll;
 	
 	int usr_evnt;
 	void *data;
