@@ -499,7 +499,15 @@ again:
 			sleep(WAIT_Q, (long)&loader_pid);
 		
 // 		display("AESSYS kthread exited - C.shutdown = %x", C.shutdown);
-		
+
+	
+#if BOOTLOG
+		if (C.bootlog_file)
+		{
+			kernel_close(C.bootlog_file);
+			C.bootlog_file = NULL;
+		}
+#endif
 		p->p_sigmask = oldmask;
 		if (C.shutdown & HALT_SYSTEM)
 			s_hutdown(SHUT_POWER);  /* poweroff or halt if poweroff is not supported */
