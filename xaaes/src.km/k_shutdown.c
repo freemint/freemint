@@ -217,12 +217,15 @@ k_shutdown(void)
 		D.debug_file = NULL;
 	}
 #endif
+
+#if 0
 #if BOOTLOG
 	if (C.bootlog_file)
 	{
 		kernel_close(C.bootlog_file);
 		C.bootlog_file = NULL;
 	}
+#endif
 #endif
 	/*
 	 * Close the virtual used by XaAES
