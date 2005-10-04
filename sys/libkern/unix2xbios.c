@@ -60,7 +60,11 @@ static const ushort __mon_yday [2][12] =
 # define SECS_PER_HOUR		(60L * 60L)
 # define SECS_PER_DAY		(SECS_PER_HOUR * 24L)
 
+# if 0
 # define LEAPS_THRU_END_OF(y)	((y) / 4)
+# else
+# define LEAPS_THRU_END_OF(y)	((y) / 4 - (y) / 100 + (y) / 400)
+# endif
 
 # ifdef __isleap
 # undef __isleap
