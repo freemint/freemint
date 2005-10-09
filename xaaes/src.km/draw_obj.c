@@ -2386,7 +2386,7 @@ display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, short it
 
 /* draw_object_tree */
 short
-draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, struct xa_vdi_settings *v, short item, short depth, short *xy) //short which)
+draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, struct xa_vdi_settings *v, short item, short depth, short *xy)
 {
 	XA_TREE this;
 	short next;

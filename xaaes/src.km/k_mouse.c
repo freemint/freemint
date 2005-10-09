@@ -388,15 +388,22 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 	 * If menu-task (navigating in a menu) in progress and button
 	 * pressed..
 	 */
-	if (TAB_LIST_START && md->state)
+	if (TAB_LIST_START) // && md->state)
 	{
-		client = TAB_LIST_START->client;
-		if (!C.ce_menu_click && !(client->status & CS_EXITING))
+// 		ndisplay("click while menunav");
+		if ((TAB_LIST_START->root->exit_mb && !md->state) || (!TAB_LIST_START->root->exit_mb && md->state))
 		{
-			C.ce_menu_click = client;
-			DIAG((D_mouse, client, "post button event (menu) to %s", client->name));
-			post_cevent(client, cXA_button_event, NULL,NULL, 0, 0, NULL, md);
+// 			ndisplay(" .. click triggered");
+			client = TAB_LIST_START->client;
+			if (!C.ce_menu_click && !(client->status & CS_EXITING))
+			{
+				C.ce_menu_click = client;
+				DIAG((D_mouse, client, "post button event (menu) to %s", client->name));
+// 				ndisplay("..cXA_button_event ordered");
+				post_cevent(client, cXA_button_event, NULL,NULL, 0, 0, NULL, md);
+			}
 		}
+// 		display(".. done");
 		return;
 	}
 
@@ -733,12 +740,20 @@ chk_button_waiter(struct moose_data *md)
 {
 	if (C.button_waiter && md->ty == MOOSE_BUTTON_PREFIX)
 	{
-		DIAGS(("new_moose_pkt: Got button_waiter %s", C.button_waiter->name));
-		add_client_md(C.button_waiter, md);
-		Unblock(C.button_waiter, 1, 1);
-		if (!(md->state && md->cstate))
+		if (C.button_waiter->status & CS_MENU_NAV)
+		{
+			add_client_md(C.button_waiter, md);
 			C.button_waiter = NULL;
-		return true;
+		}
+		else
+		{
+			DIAGS(("new_moose_pkt: Got button_waiter %s", C.button_waiter->name));
+			add_client_md(C.button_waiter, md);
+			Unblock(C.button_waiter, 1, 1);
+			if (!(md->state && md->cstate))
+				C.button_waiter = NULL;
+			return true;
+		}
 	}
 	return false;
 }

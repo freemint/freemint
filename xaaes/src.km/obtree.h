@@ -52,7 +52,7 @@ void		free_object_tree(struct xa_client *client, OBJECT *obtree);
 
 OBJECT *	create_popup_tree(struct xa_client *client, short type, short nobjs, short mw, short mh, void *(*cb)(short item, void **data), void **data);
 
-short	ob_count_objs(OBJECT *obtree, short start);
+short	ob_count_objs(OBJECT *obtree, short start, short depth);
 short	ob_get_parent(OBJECT *t, short object);
 void	ob_set_children_sf(OBJECT *obtree, short parent, short sm, short sb, short fm, short fb, bool parent_too);
 short	ob_remove(OBJECT *obtree, short object);
