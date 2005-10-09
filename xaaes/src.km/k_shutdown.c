@@ -209,6 +209,7 @@ k_shutdown(void)
 	DIAGS(("Bye!"));
 	DIAGS((""));
 
+#if 0
 #if GENERATE_DIAGS
 	/* Close the debug output file */
 	if (D.debug_file)
@@ -216,6 +217,7 @@ k_shutdown(void)
 		kernel_close(D.debug_file);
 		D.debug_file = NULL;
 	}
+#endif
 #endif
 
 #if 0

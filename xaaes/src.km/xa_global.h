@@ -74,9 +74,11 @@ struct shared
 
 	LIST_HEAD(xa_client) client_list;
 	LIST_HEAD(xa_client) app_list;
-	
+
 	LIST_HEAD(task_administration_block) menu_base;
-	
+
+	TIMEOUT *menuscroll_timeout;
+
 	TIMEOUT *popin_timeout;
 	struct xa_client *popin_timeout_ce;
 	TIMEOUT *popout_timeout;
@@ -216,7 +218,6 @@ struct common
 
 	void (*reschange)(enum locks lock, struct xa_client *client);
 
-// 	short vh;			/* Virtual workstation handle used by the AES */
 	short AESpid;			/* The AES's MiNT process ID */
 	short DSKpid;			/* The desktop programs pid, if any */
 
@@ -266,13 +267,7 @@ struct common
 
 	long alert_pipe;		/* AESSYS: The MiNT Salert() pipe's file handle */
 	long KBD_dev;			/* AESSYS: The MiNT keyboard device's file handle */
-// 	struct adif *adi_mouse;
-
-	/* exteneded & generalized (was GeneralCallback & stuff) */
-	//Tab active_menu[CASCADE];
-	//Tab *menu_base;
-
-	//short menu_nest;			/* current depth of submenus */
+	
 	RECT iconify;			/* Positioning information for iconifying windows */
 	void *Aes_rsc;			/* Pointer to the XaAES resources */
 	char *env;			/* new environment */
@@ -280,7 +275,6 @@ struct common
 	struct xa_window *hover_wind;
 	struct xa_widget *hover_widg;
 
-	//struct xa_window *focus;	/* Only 1 of 2: the top window(window_list) or root_window. */
 	struct proc *update_lock;
 	struct proc *mouse_lock;
 	struct proc *menu_lock;
@@ -386,6 +380,7 @@ struct config
 	short mouse_packet_timegap;	
 	short redraw_timeout;
 
+	struct xa_menu_settings	mn_set;
 	short popup_timeout;
 	short popout_timeout;
 

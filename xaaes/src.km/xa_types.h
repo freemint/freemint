@@ -396,7 +396,7 @@ enum waiting_for
 	XAWAIT_MENU	= 0x1000,	/* XaAES private; menu rectangle event */
 };
 
-typedef struct task_administration_block * TASK(struct task_administration_block *tab);
+typedef struct task_administration_block * TASK(struct task_administration_block *tab, short item);
 
 struct xa_mouse_rect
 {
@@ -419,6 +419,19 @@ typedef struct menu_attachments
 	struct widget_tree *to;
 	int to_item;
 } XA_MENU_ATTACHMENT;
+
+struct xa_menu_settings
+{
+	/* from here ... */
+	long  display;		/* submenu display delay in milliseconds */
+	long  drag;		/* submenu drag delay in milliseconds */
+	long  delay;		/* single-click scroll delay in milliseconds */
+	long  speed;		/* continuous scroll delay in milliseconds */
+	short height; 		/* menu scroll height (in items) */
+	/* .. to here is identical to MN_SET */
+
+	short	behave;
+};
 
 /*************************************************************************** */
 /* The vdi api
@@ -1392,22 +1405,10 @@ struct xa_window
 	struct xa_rectlist_entry rect_user;
 	struct xa_rectlist_entry rect_opt;
 	struct xa_rectlist_entry rect_toolbar;
-
-	
-// 	struct xa_rect_list *rect_list;	/* The rectangle list for redraws in this window */
-// 	struct xa_rect_list *rect_user;	/* User (wind_get) rect list current pointer */
-// 	struct xa_rect_list *rect_start;/* Start of the rectangle list memory block */
-// 	struct xa_rect_list *rect_wastart;
-// 	struct xa_rect_list *rect_prev;	/* Remember the first rectangle */
-// 	struct xa_rect_list  prev_rect;
 	
 	bool use_rlc;
 	RECT rl_clip;
-// 	struct xa_rect_list *rect_opt_start;
-// 	struct xa_rect_list *rect_opt;
-// 	struct xa_rect_list *rect_tb_start;	/* TOOLBAR rectangle list start */
-// 	struct xa_rect_list *rect_tb;		/* TOOLBAR next rectangle */
-
+	
 	void *background;		/* Pointer to a buffer containing the saved background */
 
 	WindowDisplay *redraw;		/* Pointer to the window's auto-redraw function (if any) */
@@ -1898,32 +1899,55 @@ typedef enum
 	POP_UP
 } TASK_TY;
 
+struct xa_popinfo
+{
+	struct xa_window *wind;
+	XA_TREE *wt;
+	
+	short	parent;			/* Object index of popup parent */
+	short	count;			/* Number of objects in popup */
+	short	scrl_start_row;		/* Row in popup at which scrolling starts */
+	short	scrl_start_obj;		/* Top scroll object (first object of scroll area) */
+	short	scrl_curr_obj;
+	short	scrl_height;
+	short	*objs;
+
+	short	current;		/* Currently selected, or pointed to, object */
+
+	short	attach_parent;		/* Object number of object in parent popup that has 'this' popup attached */
+	
+	XA_TREE	*attach_wt;
+	short	attach_item;
+	short	attached_to;
+
+	char	*save_start_txt;
+	char	*save_end_txt;
+	char	scrl_start_txt[16];
+	char	scrl_end_txt[16];
+};
+
+struct xa_menuinfo
+{
+	struct xa_window *wind;
+	XA_TREE	*wt;
+	
+	short	titles;
+	short	popups;
+	short	about;
+
+	short	current;
+};
+	
 struct menu_task
 {
 	TASK_STAGE stage;
-	struct xa_window *popw;
 	short ty;
-	short titles;
-	short menus;
-	short about;
-	short border;
-	short clicked_title;
-	short pop_item;
-	short point_at_menu;
-	
-	short parent_entry;	/* Index of entry inside parent popup that caused 'us' to exist */
 
-	XA_TREE *attach_wt;	/* attached widget tree */
-	short attach_item;	/* Index in attach_wt of popup attached */
-	short attached_to;	/* Index of entry inside current popup that brough up attach_wt */
-		
-	short clients;
-	short exit_mb;
-	short omx, omy;
+	struct xa_menuinfo m;
+	struct xa_popinfo  p;
+
 	short clicks, x, y;
 	RECT bar, drop;
-	struct xa_rect_list *rl_bar;
-	struct xa_rect_list *rl_drop;
 	
 	struct xa_mouse_rect em;
 	void *Mpreserve;
@@ -1931,7 +1955,6 @@ struct menu_task
 	TASK *entry;
 	TASK *select;
 	
-	XA_TREE *wt;
 	/* root displacements */
 	short rdx, rdy;
 	short pdx, pdy;
@@ -1942,7 +1965,9 @@ typedef struct menu_task MENU_TASK;
 struct task_administration_block
 {
 	LIST_ENTRY(task_administration_block) tab_entry;
-
+	
+	struct task_administration_block	*root;
+	
 	TASK_TY ty;	/* NO_TASK, ROOT_MENU, MENU_BAR, POP_UP... */
 
 	enum locks lock;
@@ -1953,8 +1978,8 @@ struct task_administration_block
 	XA_WIDGET *widg;
 
 	TASK *task;	/* general task pointer */
-//	AESPB *pb;
 
+	short exit_mb;
 	short scroll;
 	
 	int usr_evnt;
@@ -2103,6 +2128,8 @@ struct xa_client
 /*
  * This part is for Client event dispatching
 */
+// 	struct	xa_rectlist_entry *lost_redraws;
+
 #define MAX_KEYQUEUE	4
 	int	kq_count;
 	struct keyqueue *kq_head;

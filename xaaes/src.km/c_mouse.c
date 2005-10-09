@@ -76,31 +76,44 @@ cXA_button_event(enum locks lock, struct c_event *ce, bool cancel)
 	{
 		Tab *root_tab;
 
-		if ((root_tab = TAB_LIST_START) && md->state && root_tab->client == client)
+		if ((root_tab = TAB_LIST_START) /*&& md->state*/ && root_tab->client == client)
 		{
 			Tab *tab;
+			bool in_pop;
+						
+			in_pop = find_pop(md->x, md->y, &tab);
+
+			if (tab)
+			{
+				if (in_pop)
+				{
+					if (!tab->task_data.menu.entry)
+						tab = collapse(root_tab, tab);
+				}
+			}
+			else
+				tab = root_tab;				
 			
-			tab = find_pop(md->x, md->y);
-				
-			if (tab && !tab->task_data.menu.entry)
+		#if 0
+			if (tab &&  !tab->task_data.menu.entry)
 				tab = collapse(root_tab, tab);
 			else if (!tab)
 			{
 				wind = find_window(lock, md->x, md->y);
 				FOREACH_TAB(tab)
 				{
-					if (tab->task_data.menu.popw == wind)
+					if (tab->task_data.menu.p.wind == wind)
 						break;
 				}
 				if (!tab)
 					tab = root_tab;
 			}
-
+		#endif
 			DIAG((D_button, client, "cXA_button_event: Menu click"));
 			if (tab->ty)
 			{
 				MENU_TASK *k = &tab->task_data.menu;
-				wind = k->popw;
+				wind = k->p.wind;
 
 				/* HR 161101: widgets in scrolling popups */
 				if (wind)
@@ -130,7 +143,7 @@ cXA_button_event(enum locks lock, struct c_event *ce, bool cancel)
 					k->clicks = md->clicks;
 					k->x = md->x;
 					k->y = md->y;
-					k->entry(tab);
+					k->entry(tab, -1);
 					goto endmenu;
 				}
 			}
@@ -295,7 +308,7 @@ menu_move(struct xa_client *client, struct moose_data *md, bool f)
 					k->em.flags &= ~MU_MX; //0;
 					k->x = x;
 					k->y = y;
-					tab = k->em.t1(tab);	/* call the function */
+					tab = k->em.t1(tab, -1);	/* call the function */
 					break;
 				}
 				if ((k->em.flags & MU_M1))
@@ -305,7 +318,7 @@ menu_move(struct xa_client *client, struct moose_data *md, bool f)
 						k->em.flags &= ~MU_M1; //0;
 						k->x = x;
 						k->y = y;
-						tab = k->em.t1(tab);	/* call the function */
+						tab = k->em.t1(tab, -1);	/* call the function */
 						break;
 					}
 					if (m_inside(x, y, &k->bar))
@@ -318,19 +331,21 @@ menu_move(struct xa_client *client, struct moose_data *md, bool f)
 						k->em.flags &= ~MU_M2;
 						k->x = x;
 						k->y = y;
-						tab = k->em.t2(tab);
+						tab = k->em.t2(tab, -1);
 						break;
 					}
 					if (m_inside(x, y, &k->drop))
 						break;
 				}
+				if (m_inside(x, y, &k->p.wind->r))
+					break;
 				tab = tab->tab_entry.next;
 			}
 			
 			if (tab)
 			{
-				if (tab->task_data.menu.popw)
-					wind_mshape(tab->task_data.menu.popw, x, y);
+				if (tab->task_data.menu.p.wind)
+					wind_mshape(tab->task_data.menu.p.wind, x, y);
 				tab = tab->tab_entry.next;
 			}
 			else
@@ -340,7 +355,7 @@ menu_move(struct xa_client *client, struct moose_data *md, bool f)
 			{
 				k = &tab->task_data.menu;
 				if (k->outof)
-					k->outof(tab);
+					k->outof(tab, -1);
 				tab = tab->tab_entry.next;
 			}
 		}

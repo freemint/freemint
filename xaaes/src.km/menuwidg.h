@@ -37,7 +37,6 @@ void set_rootmenu_area(struct xa_client *client);
 
 TASK	click_form_popup_entry;
 TASK	click_popup_entry;
-TASK	do_scroll_menu;
 
 Tab *	nest_menutask(Tab *tab);
 void	popout(Tab *tab);
@@ -52,7 +51,7 @@ void	set_menu_widget(struct xa_window *wind, struct xa_client *owner, XA_TREE *m
 void	fix_menu(struct xa_client *client, XA_TREE *root, struct xa_window *w, bool do_desk);
 
 Tab *	collapse(Tab *from, Tab *upto);
-Tab *	find_pop(short x, short y);
+bool	find_pop(short x, short y, Tab **ret);
 
 
 INLINE	struct xa_widget * get_menu_widg(void) { return &root_window->widgets[XAW_MENU]; }
