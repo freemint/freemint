@@ -1609,6 +1609,7 @@ k_exit(void)
 	 */
 	if (G.adi_mouse)
 	{
+		DIAGS(("Closing adi_mouse"));
 		adi_close(G.adi_mouse);
 // 		adi_unregister(G.adi_mouse);
 // 		G.adi_mouse = NULL;
@@ -1617,18 +1618,20 @@ k_exit(void)
 	if (C.KBD_dev > 0)
 	{
 		long r;
-
+		DIAGS(("Closing kbd dev"));
 		r = f_cntl(C.KBD_dev, (long)&KBD_dev_sg, TIOCSETN);
 		KERNEL_DEBUG("fcntl(TIOCSETN) -> %li", r);
 
 		f_close(C.KBD_dev);
 	}
 
+	DIAGS(("Closing alert pipe"));
 	if (C.alert_pipe > 0)
 		f_close(C.alert_pipe);
 
 	DIAGS(("closed all input devices"));
 	
+	DIAGS(("Waking up loader"));
 	/* wakeup loader */
 	wake(WAIT_Q, (long)&loader_pid);
 		

@@ -499,7 +499,16 @@ again:
 			sleep(WAIT_Q, (long)&loader_pid);
 		
 // 		display("AESSYS kthread exited - C.shutdown = %x", C.shutdown);
+		DIAGS(("AESSYS kthread exited - C.shutdown = %x", C.shutdown));
 	
+#if GENERATE_DIAGS
+		/* Close the debug output file */
+		if (D.debug_file)
+		{
+			kernel_close(D.debug_file);
+			D.debug_file = NULL;
+		}
+#endif
 #if BOOTLOG
 		if (C.bootlog_file)
 		{

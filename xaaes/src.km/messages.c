@@ -630,6 +630,19 @@ queue_message(enum locks lock, struct xa_client *client, short amq, short qmf, u
 		}
 	}
 }
+
+#if 0
+static void
+add_lost_rect(struct xa_client *client, RECT *r)
+{
+	struct xa_rect_list **rl = client->lost_redraws.start;
+
+	while (rl)
+	{
+		
+}
+#endif
+
 /*
  * Context indipendant.
  * Send an AES message to a client application.
@@ -660,6 +673,8 @@ send_a_message(enum locks lock, struct xa_client *dest_client, short amq, short 
 				struct xa_vdi_settings *v = dest_client->vdi_settings;
 
 				RECT *r = (RECT *)&msg->m[4];
+
+// 				add_lost_rect(client, r);
 
 				dest_client->status |= CS_MISS_RDRW;
 				

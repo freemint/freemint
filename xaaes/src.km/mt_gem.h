@@ -329,11 +329,12 @@ typedef struct pEvntrec
 typedef struct _mn_set 
 {
 	long  display;		/**< the submenu display delay in milliseconds */
-	long  drag;			/**< the submenu drag delay in milliseconds */
+	long  drag;		/**< the submenu drag delay in milliseconds */
 	long  delay;		/**< the single-click scroll delay in milliseconds */
 	long  speed;		/**< the continuous scroll delay in milliseconds */
 	short height; 		/**< the menu scroll height (in items) */
 } MN_SET;
+
 
 /* shel_get modes */
 #define SHEL_BUFSIZE (-1)
