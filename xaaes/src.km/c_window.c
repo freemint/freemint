@@ -662,12 +662,11 @@ generate_redraws(enum locks lock, struct xa_window *wind, RECT *r, short flags)
 	{
 		if (wind != root_window && r && (flags & RDRW_WA) && !is_shaded(wind))
 		{
-			struct xa_widget *widg; // = get_widget(wind, XAW_TOOLBAR);
+			struct xa_widget *widg;
 
 			if (xa_rect_clip(&wind->rwa, r, &b))
 				send_redraw(lock, wind, &b);
 
-// 			if (!(widg->m.properties & WIP_NOTEXT) && wdg_is_inst(widg) && xa_rect_clip(&wind->wa, r, &b))
 			if ((widg = usertoolbar_installed(wind)) && xa_rect_clip(&widg->ar, r, &b))
 			{
 				send_app_message(lock, wind, NULL, AMQ_IREDRAW, QMF_NORM,

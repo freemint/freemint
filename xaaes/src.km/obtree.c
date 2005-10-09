@@ -248,7 +248,7 @@ sizeof_cicon(ICONBLK *ib, CICON *i)
 }
 
 static short
-count_them(OBJECT *obtree, short parent, short start)
+count_them(OBJECT *obtree, short parent, short start, short depth)
 {
 	short curr = start, objs = 0;
 	
@@ -263,32 +263,30 @@ count_them(OBJECT *obtree, short parent, short start)
 		DIAGS((" -- obj %d, type %x (n=%d, h=%d, t=%d)",
 			curr, ob->ob_type, ob->ob_next, ob->ob_head, ob->ob_tail));
 		
-		if (ob->ob_head != -1)
-			objs += count_them(obtree, curr, ob->ob_head);
+		if (ob->ob_head != -1 && depth)
+			objs += count_them(obtree, curr, ob->ob_head, depth - 1);
 			
 		curr = obtree[curr].ob_next;
 	
-	} while (curr != parent && curr != -1); //((curr = obtree[curr].ob_next) != parent);
+	} while (curr != parent && curr != -1);
 	
 	DIAGS((" -- count_them: return %d", objs));
 	return objs;
 }
 
 short
-ob_count_objs(OBJECT *obtree, short start)
+ob_count_objs(OBJECT *obtree, short parent, short depth)
 {
-	short parent, objs = 0;
+	short objs = 0, start = obtree[parent].ob_head;
 	
-	DIAG((D_rsrc, NULL, "ob_count_objs: tree %lx, start %d", obtree, start));
-	
-	if (start > 0)
-		parent = ob_get_parent(obtree, start);
-	else
-		parent = start;
+	DIAG((D_rsrc, NULL, "ob_count_objs: tree %lx, parent %d", obtree, parent));
 
 	DIAGS((" -- parent = %d", parent));
 
-	objs = count_them(obtree, parent, parent);
+	if (depth && start != -1)
+		objs = count_them(obtree, parent, start, depth - 1);
+// 	else
+// 		objs = 0;
 
 	DIAGS(("ob_count_objs: return %d", objs));
 
@@ -1451,7 +1449,7 @@ ob_fix_shortcuts(OBJECT *obtree, bool not_hidden)
 
 	DIAG((D_rsrc, NULL, "ob_fix_shortcuts: tree=%lx)", obtree));
 	
-	objs = ob_count_objs(obtree, 0);
+	objs = ob_count_objs(obtree, 0, -1);
 	DIAGS((" -- %d objects", objs));
 
 // 	display("ob_fix_shortcuts on tree %lx, %d objs", obtree, objs);

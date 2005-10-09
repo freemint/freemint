@@ -630,7 +630,7 @@ k_init(unsigned long vm)
 	{
 		OBJECT *about = ResourceTree(C.Aes_rsc, ABOUT_XAAES);
 		
-		if ((ob_count_objs(about, 0) < RSC_VERSION)   ||
+		if ((ob_count_objs(about, 0, -1) < RSC_VERSION)   ||
 		     about[RSC_VERSION].ob_type != G_TEXT     ||
 		    (strcmp(object_get_tedinfo(about + RSC_VERSION)->te_ptext, "0.0.6")))
 		{
@@ -785,6 +785,16 @@ k_init(unsigned long vm)
 // 	display("redrawing menu");
 	redraw_menu(NOLOCKING);
 // 	display("all fine - return 0");
+	
+	/*
+	 * Setup mn_set for menu_settings()
+	 */
+	cfg.mn_set.display = cfg.popup_timeout;
+	cfg.mn_set.drag = cfg.popout_timeout;
+	cfg.mn_set.delay = 250;
+	cfg.mn_set.speed = 0;
+	cfg.mn_set.height = root_window->wa.h / screen.c_max_h;
+
 	return 0;
 }
 

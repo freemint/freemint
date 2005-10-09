@@ -391,6 +391,168 @@ XA_menu_register(enum locks lock, struct xa_client *client, AESPB *pb)
 	return XAC_DONE;
 }
 
+/*
+ * mn_scroll	If positive number;
+ *			sets the 'row number' in the popup at which to start scroll area.
+ *		If Negative number;
+ *			Flags a dropdown listbox session.
+ *		If Null;
+ *			Scrolling turned off
+ *
+ * mn_item	Sets the object number of the object to be ontop of the scrollable
+ *		area.
+ */
+
+static void
+init_popinfo(struct widget_tree *wt, MENU *mn, struct xa_popinfo *pi)
+{
+	int i, count, pop_h;
+	short this, parent;
+	OBJECT *obtree = wt->tree;
+
+	pop_h = cfg.mn_set.height;
+
+	pi->count = count = ob_count_objs(wt->tree, mn->mn_menu, 1);
+	pi->objs = kmalloc(sizeof(short) * count);
+
+
+	pi->parent = parent = mn->mn_menu;
+
+// 	display("obtree %lx, parent %d, count %d", wt->tree, pi->parent, pi->count);
+// 	display("mn_menu %d, mn_scroll %d, mn_item %d", mn->mn_menu, mn->mn_scroll, mn->mn_item);
+
+	if (pi->objs && mn->mn_scroll > 1 && mn->mn_scroll < (pop_h - 1) && count > pop_h)
+	{
+		short flag = 0, *objs = pi->objs;
+
+		for (i = 1, this = obtree[pi->parent].ob_head; i <= count; i++)
+		{
+			if (this == parent || this == -1)
+			{
+// 				display(" premature end of object tree");
+				break;
+			}
+			
+			*objs++ = this;
+			
+			if (mn->mn_scroll == i)
+			{
+				/*
+				 * mn_scroll == row in popup at which scrolling starts 
+				 */
+				flag |= 1;
+				if (flag & 2)
+				{
+					/* If we're asked to start scrolling at an object above
+					 * the object at which scrolling starts, we refuse!
+					 */
+					pi->scrl_start_obj = i - 1;
+				}
+				pi->scrl_start_row = i - 1;
+				pi->scrl_height = pop_h - (i - 1);
+// 				display(" set scrl_start_row %d(%d), scrl_height %d", i - 1, this, pop_h - i);
+			}
+			if (mn->mn_item == this)
+			{
+				/*
+				 * mn_item == object number that we want to initiate scroll field with
+				 */
+				flag |= 2;
+// 				display(" set scrl_start_obj %d(%d)", i - 1, this);
+				pi->scrl_start_obj = i - 2;
+			}
+			this = obtree[this].ob_next;
+		}
+// 		display("flag %x, startrow %d, startobj %d",	flag, pi->scrl_start_row, pi->scrl_start_obj); 
+// 		display("pop height %d, scroll height %d", pop_h, pi->scrl_height);
+// 		display("Last obj in scrl %d(%d)", pi->scrl_start_row + pi->scrl_height, pi->objs[pi->scrl_start_row + pi->scrl_height]);
+#if 1
+		if (flag != ((1<<1)|1) || pi->scrl_height < 3)
+		{
+noscroll:
+			display("no scrolling!");
+			pi->scrl_start_row = -1;
+			kfree(pi->objs);
+			pi->objs = NULL;
+		}
+		else
+		{
+			if (pi->scrl_start_obj < pi->scrl_start_row)
+			{
+				pi->scrl_start_obj = pi->scrl_start_row;
+			}
+			
+			if ( (pi->scrl_start_obj + pi->scrl_height) > pi->count)
+			{
+				short corr = (pi->scrl_start_obj + pi->scrl_height) - pi->count;
+				pi->scrl_start_obj -= corr;
+				display("adjusted start_obj with %d", corr);
+				if (pi->scrl_start_obj < pi->scrl_start_row)
+				{
+					display("no scrolling needed");
+					goto noscroll;
+				}
+			}
+
+			pi->scrl_curr_obj = pi->scrl_start_obj;
+
+			strcpy(pi->scrl_start_txt, "  \1\1\1 ");
+			strcpy(pi->scrl_end_txt, "  \2\2\2 ");
+			
+			pi->save_start_txt = object_get_spec(obtree + pi->objs[pi->scrl_start_row])->free_string;
+			pi->save_end_txt = object_get_spec(obtree + pi->objs[pi->count - 1])->free_string;
+
+			if (pi->scrl_start_row != pi->scrl_curr_obj)
+			{
+				object_set_spec(obtree + pi->objs[pi->scrl_start_row], (long)pi->scrl_start_txt);	
+			}
+			
+			if ((pi->scrl_start_obj + pi->scrl_height) != pi->count)
+			{
+				object_set_spec(obtree + pi->objs[pi->count - 1], (long)pi->scrl_end_txt);
+			}
+			
+			{
+				short obj, y, first, last;
+				
+				first = pi->scrl_curr_obj + 1;
+				last = first + pi->scrl_height - 2;
+				
+				obtree[parent].ob_height = screen.c_max_h * pop_h;			
+				obj = pi->objs[pi->count - 1];
+				obtree[obj].ob_y = screen.c_max_h * (pop_h - 1);
+				
+				obj = pi->objs[pi->scrl_start_row];
+				obtree[obj].ob_next = pi->objs[first];
+				y = obtree[obj].ob_y + obtree[obj].ob_height;
+				
+				for (i = first; i < last; i++)
+				{
+					obj = pi->objs[i];
+// 					display("i=%d, obj=%d, y=%d", i, obj, y);
+					obtree[obj].ob_next = pi->objs[i + 1];
+					obtree[obj].ob_y = y;
+					y += obtree[obj].ob_height;
+				}
+
+				obtree[pi->objs[last - 1]].ob_next = pi->objs[pi->count - 1];
+			}
+	
+		}
+#endif
+		
+	}
+	else
+	{
+		if (pi->objs)
+		{
+			kfree(pi->objs);
+			pi->objs = NULL;
+		}
+		if (mn->mn_scroll > 0)
+			mn->mn_scroll = 1;
+	}
+}
 int
 menu_popup(enum locks lock, struct xa_client *client, MENU *mn, MENU *result, short px, short py, short usr_evnt)
 {
@@ -405,7 +567,7 @@ menu_popup(enum locks lock, struct xa_client *client, MENU *mn, MENU *result, sh
 
 		tab = nest_menutask(NULL);
 		ob = mn->mn_tree;
-		
+
 		if (tab && validate_obtree(client, ob, "_menu_popup:"))		/* else already locked */
 		{	
 			XA_TREE *wt;
@@ -416,6 +578,8 @@ menu_popup(enum locks lock, struct xa_client *client, MENU *mn, MENU *result, sh
 				wt = new_widget_tree(client, ob);
 			if (!wt)
 				return 0;
+
+			init_popinfo(wt, mn, &tab->task_data.menu.p);
 
 			*result = *mn;
 
@@ -436,12 +600,18 @@ menu_popup(enum locks lock, struct xa_client *client, MENU *mn, MENU *result, sh
 
 			if (mn->mn_scroll == -1)
 				tab->scroll = 8;
-			else if (mn->mn_scroll > 1)
-				tab->scroll = (mn->mn_scroll < 8) ? 8 : mn->mn_scroll;
+			else if (mn->mn_scroll == 1)
+				tab->scroll = cfg.mn_set.height;
 			else
 				tab->scroll = 0;
+// 			else if (mn->mn_scroll > 1)
+// 			{
+// 				tab->scroll = (mn->mn_scroll < 8) ? 8 : mn->mn_scroll;
+// 			}
+// 			else
+// 				tab->scroll = 0;
 
-			tab->scroll = (mn->mn_scroll == -1) ? 8 : 0;
+// 			tab->scroll = (mn->mn_scroll == -1) ? 8 : 0;
 			
 			tab->usr_evnt = usr_evnt;
 			tab->data = result;
@@ -680,14 +850,23 @@ XA_menu_settings(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	/* accepted, no implementation planned */
 	pb->intout[0] = 1;
-	if (pb->intin[0] == 0)
+	switch (pb->intin[0])
 	{
-		MN_SET *mn = (MN_SET*)pb->addrin[0];
-		mn->display = 200;
-		mn->drag = 10000;
-		mn->delay = 250;
-		mn->speed = 0;
-		mn->height = root_window->wa.h/screen.c_max_h;
+		case 0:
+		{
+			MN_SET *mn = (MN_SET*)pb->addrin[0];
+			*mn = *(MN_SET *)&cfg.mn_set;
+			break;
+		}
+		case 1:
+		{
+			MN_SET *mn = (MN_SET *)pb->addrin[0];
+			
+			*(MN_SET *)&cfg.mn_set = *mn;
+			cfg.popup_timeout = cfg.mn_set.display;
+			cfg.popout_timeout = cfg.mn_set.drag;
+			break;
+		}
 	}
 	return XAC_DONE;
 }
