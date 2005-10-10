@@ -3492,6 +3492,11 @@ do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct
 							if (widg->m.click)
 								rtn = widg->m.click(lock, w, widg, md);
 						}
+						if (b && (widg->m.properties & WIP_NODRAG))
+						{
+							if (widg->m.click)
+								widg->m.click(lock, w, widg, md);
+						}
 						else if (b && widg->m.drag)
 							rtn = widg->m.drag(lock, w, widg, md);
 						else
