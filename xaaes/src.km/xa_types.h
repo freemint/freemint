@@ -1140,10 +1140,16 @@ struct xa_widget_methods
 
 #define WIP_NOTEXT	0x0001		/* Widget is NOT part of window exterior, will not be automatically redrawn */
 #define WIP_WACLIP	0x0002		/* Widget is part of, and will be clipped by, windows work area */
-#define WIP_ACTIVE	0x0004		/* If this bit is set, widget is clickable, else is just to draw the
-					 * corresponding part of window exterior and clicks on it is ignored
-					 */
+/* WIP_ACTIVE - If this bit is set, widget is clickable, else is just to draw the
+ * corresponding part of window exterior and clicks on it is ignored
+ */
+#define WIP_ACTIVE	0x0004
 #define WIP_INSTALLED	0x0008
+/* WIP_NODRAG - When set, 'click' will be called immediately.
+ * When clear, 'drag' will be called if widget has one, else watch_object()
+ * is done and 'click' called upon released button if pointer still inside
+ */
+#define WIP_NODRAG	0x0010
 
 	WidgetBehaviour	*click;
 	WidgetBehaviour *drag;
@@ -1441,6 +1447,7 @@ struct xa_window
 };
 
 struct xa_window *get_top(void);
+
 extern struct xa_window *root_window;
 #define window_list S.open_windows.first
 #define nolist_list S.open_nlwindows.first
