@@ -388,22 +388,18 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 	 * If menu-task (navigating in a menu) in progress and button
 	 * pressed..
 	 */
-	if (TAB_LIST_START) // && md->state)
+	if (TAB_LIST_START)
 	{
-// 		ndisplay("click while menunav");
 		if ((TAB_LIST_START->root->exit_mb && !md->state) || (!TAB_LIST_START->root->exit_mb && md->state))
 		{
-// 			ndisplay(" .. click triggered");
 			client = TAB_LIST_START->client;
 			if (!C.ce_menu_click && !(client->status & CS_EXITING))
 			{
 				C.ce_menu_click = client;
 				DIAG((D_mouse, client, "post button event (menu) to %s", client->name));
-// 				ndisplay("..cXA_button_event ordered");
 				post_cevent(client, cXA_button_event, NULL,NULL, 0, 0, NULL, md);
 			}
 		}
-// 		display(".. done");
 		return;
 	}
 
@@ -582,25 +578,6 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 		}
 		return false;
 	}
-#if 0
-	/* Ozk 040503: Moved the continuing handling of widgets actions here
-	 * so we dont have to msg the client to make real-time stuff
-	 * work. Having it here saves time, since it only needs to be
-	 * done when the mouse moves.
-	 */
-	if (widget_active.widg)
-	{
-		widget_active.m = *md;
-		client = widget_active.wind->owner;
-		if (!(client->status & CS_EXITING))
-		{
-			DIAG((D_mouse, client, "post active widget (move) to %s", client->name));
-			C.move_block = 1;
-			post_cevent(client, cXA_active_widget, NULL,NULL, 0,0, NULL, md);
-		}
-		return false;
-	}
-#endif
 // 	Sema_Up(clients);
 
 	

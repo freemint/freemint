@@ -316,7 +316,7 @@ form_button(XA_TREE *wt,
 			POPINFO *pinf;
 			short x, y, obnum;
 
-			if (obj_watch(wt, v, obj, state^OS_SELECTED, state, clip, *rl))
+// 			if (obj_watch(wt, v, obj, state^OS_SELECTED, state, clip, *rl))
 			{
 		
 				pinf = object_get_popinfo(obtree + obj);

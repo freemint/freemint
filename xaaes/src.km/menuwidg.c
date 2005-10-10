@@ -2018,8 +2018,7 @@ click_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *wid
 	struct xa_client *client; //, *rc = lookup_extension(NULL, XAAES_MAGIC);
 	struct proc *p = get_curproc();
 	DIAG((D_menu, NULL, "click_menu_widget"));
-
-		
+	
 	if (md->cstate && md->clicks > 1)
 	{
 		return false;
@@ -2214,7 +2213,7 @@ set_menu_widget(struct xa_window *wind, struct xa_client *owner, XA_TREE *menu)
 	widg->m.r.draw = display_menu_widget;
 	widg->m.click = click_menu_widget;
 	widg->m.drag = NULL /* drag_menu_widget */;
-	widg->m.properties |= WIP_INSTALLED|WIP_ACTIVE;
+	widg->m.properties |= WIP_INSTALLED|WIP_ACTIVE|WIP_NODRAG;
 	widg->state = OS_NORMAL;
 	widg->stuff = menu;
 	widg->stufftype = STUFF_IS_WT;
@@ -2568,28 +2567,22 @@ CE_do_menu_scroll(enum locks lock, struct c_event *ce, bool cancel)
 
 	if (!cancel)
 	{
-		short ret;
+		short ret, mb;
 		
-		if (cfg.mn_set.speed)
+		check_mouse(ce->client, &mb, NULL,NULL);
+		
+		if (mb)
 		{
 			ret = !ce->d0 ? menu_scroll_down(tab) : menu_scroll_up(tab);
 
-			if (ret == 1)
+			check_mouse(ce->client, &mb, NULL,NULL);
+			
+			if (mb && ret == 1)
 			{
 				t = addroottimeout(cfg.mn_set.speed, !ce->d0 ? menu_scrld_to : menu_scrlu_to, 1);
 				if (t)
 					t->arg = (long)tab;
 			}
-		}
-		else
-		{
-			short mb;
-
-			do
-			{
-				ret = !ce->d0 ? menu_scroll_down(tab) : menu_scroll_up(tab);
-				check_mouse(ce->client, &mb, NULL, NULL);
-			} while (mb && ret == 1);
 		}
 		S.menuscroll_timeout = t;
 	}
