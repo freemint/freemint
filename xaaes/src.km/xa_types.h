@@ -732,8 +732,9 @@ struct xa_pdlg_info
 	char document_name[256];
 };
 
-#define OB_CURS_ENABLED	1
-#define OB_CURS_DRAWN	2
+#define OB_CURS_EOR	1
+#define OB_CURS_ENABLED	2
+#define OB_CURS_DRAWN	4
 struct objc_edit_info
 {
 	short obj;	/* Index of editable object */
@@ -778,6 +779,7 @@ struct widget_tree
 	short parent_x;			/* Keep both in: dont need to change everything in a single effort */
 	short parent_y;
 
+	short focus;
 	struct objc_edit_info e;
 
 	short lastob;			/* Can be used to validate item number */

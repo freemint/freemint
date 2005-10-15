@@ -110,7 +110,7 @@ change_title(Tab *tab, int state)
 		   obtree[t].ob_flags,
 		   true,
 		   NULL,
-		   tab->wind ? tab->wind->rect_list.start : NULL);
+		   tab->wind ? tab->wind->rect_list.start : NULL, 0);
 	wt->rend_flags &= ~WTR_ROOTMENU;
 }
 
@@ -145,12 +145,12 @@ change_entry(Tab *tab, int state)
 			   obtree[t].ob_flags,
 			   true,
 			   &k->p.wind->wa,
-			   k->p.wind->rect_list.start);
+			   k->p.wind->rect_list.start, 0);
 	}
 	else
 	{
 		DIAGS(("change_entry: no popw"));
-		obj_change(wt, C.Aes->vdi_settings, t, 1 | 0x8000, state, obtree[t].ob_flags, true, NULL, NULL);
+		obj_change(wt, C.Aes->vdi_settings, t, 1 | 0x8000, state, obtree[t].ob_flags, true, NULL, NULL, 0);
 	}
 }
 static void
@@ -175,12 +175,12 @@ redraw_entry(Tab *tab, short t)
 			   k->p.wind->vdi_settings,
 			   t, 1 | 0x8000,
 			   &k->p.wind->wa,
-			   k->p.wind->rect_list.start);
+			   k->p.wind->rect_list.start, 0);
 	}
 	else
 	{
 		DIAGS(("change_entry: no popw"));
-		obj_draw(wt, C.Aes->vdi_settings, t, 1 | 0x8000, NULL, NULL);
+		obj_draw(wt, C.Aes->vdi_settings, t, 1 | 0x8000, NULL, NULL, 0);
 	}
 }
 void
@@ -1946,7 +1946,7 @@ Display_menu_widg(struct xa_window *wind, struct xa_widget *widg, const RECT *cl
 		//{
 			//set_clip(&wind->wa);
 			wt->rend_flags |= WTR_POPUP;
-			draw_object_tree(0, wt, NULL, wind->vdi_settings, widg->start, MAX_DEPTH, NULL);
+			draw_object_tree(0, wt, NULL, wind->vdi_settings, widg->start, MAX_DEPTH, NULL, 0);
 			wt->rend_flags &= ~WTR_POPUP;
 			//clear_clip();
 		//}
@@ -1960,7 +1960,7 @@ Display_menu_widg(struct xa_window *wind, struct xa_widget *widg, const RECT *cl
 		//obtree->ob_height = widg->r.h - 1;
 		obtree->ob_width = obtree[obtree[0].ob_head].ob_width = widg->ar.w;
 		wt->rend_flags |= WTR_ROOTMENU;
-		draw_object_tree(0, wt, NULL, wind->vdi_settings, 1, MAX_DEPTH, NULL);
+		draw_object_tree(0, wt, NULL, wind->vdi_settings, 1, MAX_DEPTH, NULL, 0);
 		wt->rend_flags &= ~WTR_ROOTMENU;
 		write_menu_line(wind->vdi_settings, (RECT*)&widg->ar); //obtree->ob_x);	/* HR: not in standard menu's object tree */
 	}

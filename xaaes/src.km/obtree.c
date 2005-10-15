@@ -91,7 +91,25 @@ object_set_spec(OBJECT *ob, unsigned long cl)
 inline bool
 object_is_editable(OBJECT *ob)
 {
-	return ob->ob_flags & OF_EDITABLE ? true : false;
+	if (ob->ob_flags & OF_EDITABLE)
+	{
+		short t = ob->ob_type & 0xff;
+		switch (t)
+		{
+			case G_TEXT:
+			case G_BOXTEXT:
+			case G_FTEXT:
+			case G_FBOXTEXT:
+			{
+				return true;
+			}
+			default:
+			{
+				return false;
+			}
+		}
+	}
+	return false;		
 }
 
 inline TEDINFO *
@@ -124,6 +142,10 @@ object_is_transparent(OBJECT *ob, bool pdistrans)
 {
 	bool ret = false;
 
+	if (ob->ob_flags & OF_RBUTTON)
+		ret = true;
+	else
+	{
 	switch (ob->ob_type & 0xff)
 	{
 #if 0
@@ -165,7 +187,7 @@ object_is_transparent(OBJECT *ob, bool pdistrans)
 		}
 #endif
 	}
-
+	}
 	/* opaque */
 	return ret;
 }
@@ -1295,6 +1317,7 @@ ob_find_flst(OBJECT *tree, short f, short s, short mf, short ms, short stopf, sh
 
 	return -1;
 }
+
 short
 ob_find_any_flst(OBJECT *tree, short f, short s, short mf, short ms, short stopf, short stops)
 {
@@ -1311,6 +1334,290 @@ ob_find_any_flst(OBJECT *tree, short f, short s, short mf, short ms, short stopf
 	} while ( (!stopf || !(tree[o].ob_flags & stopf)) && (!stops || !(tree[o].ob_state & stops)) );
 
 	return -1;
+}
+#if 0
+static void
+ob_build_rows_columns(OBJECT *tree)
+{
+	short o, n, x, y, px, py, w, h;
+	RECT r;
+
+	ob_rectangle(tree, 0, &r);
+	o = 0;
+	r.x -= tree->ob_x;
+	r.y -= tree->ob_y;
+
+	do
+	{
+		display(" - obj %d, h=%d, t=%d, n=%d", o, tree[o].ob_head, tree[o].ob_tail, tree[o].ob_next);
+
+		if (tree[o].ob_head != -1)
+		{
+			x += tree[o].ob_x;
+			y += tree[o].ob_y;
+			
+			n = tree[o].ob_head;
+			
+			px = tree[n].ob_x;
+			py = tree[n].ob_y;
+		}
+		else
+		{
+			n = tree[o].ob_next;
+			while (tree[n].ob_tail == o)
+			{
+				if (!n || n == -1)
+				{
+					return -1
+				}
+				
+				x -= tree[n].ob_x;
+				y -= tree[n].ob_y;
+				
+				o = n;
+				n = tree[o].ob_next;
+				if (n == -1)
+					return -1;
+			}
+			px = tree[n].ob_x;
+			py = tree[n].ob_y;
+		}
+		o = n;
+
+		x += px;
+		y += py;
+
+		display(" %d/%d (%d/%d) (%d/%d/%d/%d)", x, y, px, py, r);
+
+		if ( (!f || (tree[o].ob_flags & f)) && (!s || (tree[o].ob_state & s)) )
+		{
+			if ( (!mf || !(tree[o].ob_flags & mf)) && (!ms || !(tree[o].ob_state & ms)) )
+			{
+ 				w = tree[o].ob_width;
+				h = tree[o].ob_height;
+				display("start = %d/%d/%d/%d this = %d/%d/%d/%d", r, x,y,w,h);
+				if (y > r.y &&
+				    ((x <= r.x && (x + w) > r.x) ||
+				    (x > r.x && x < (r.x + r.w)))
+				    )
+					return o;
+			}
+		}
+		
+		x -= px;
+		y -= py;
+
+	} while ((!stopf || !(tree[o].ob_flags & stopf)) && (!stops || !(tree[o].ob_state & stops)));
+
+	return -1;
+}
+#endif
+
+short
+ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, short mf, short s, short ms, short stopf, short stops, short dir)
+{
+	short o, n, x, y, px, py, w, h, cx, cy, co, cf;
+	RECT r;
+
+// 	ndisplay("parent %d, start %d", parent, start);
+	cx = cy = 30000;
+
+	co = -1;
+	cf = 0;
+
+	if (start <= 0)
+		start = tree->ob_head;
+	if (start < 0)
+		return -1;
+
+	o = 0;
+
+	ob_rectangle(tree, start, &r);
+	
+	x = y = 0;
+
+// 	display(", parent %d, start %d (%d/%d/%d/%d)", parent, start, r);
+
+	do
+	{
+// 		display(" - obj %d, h=%d, t=%d, n=%d", o, tree[o].ob_head, tree[o].ob_tail, tree[o].ob_next);
+
+		if (tree[o].ob_head != -1)
+		{
+			x += tree[o].ob_x;
+			y += tree[o].ob_y;
+			
+			n = tree[o].ob_head;
+			
+			px = tree[n].ob_x;
+			py = tree[n].ob_y;
+		}
+		else
+		{
+			n = tree[o].ob_next;
+			
+			if (!n || n == -1)
+				return co;
+
+			while (tree[n].ob_tail == o)
+			{
+				if (!n || n == -1)
+				{
+					return co;
+				}
+				
+				x -= tree[n].ob_x;
+				y -= tree[n].ob_y;
+				
+				o = n;
+				n = tree[o].ob_next;
+
+				if (n == -1)
+					return co;
+			}
+
+			px = tree[n].ob_x;
+			py = tree[n].ob_y;
+		}
+		
+		o = n;
+		
+		x += px;
+		y += py;
+
+// 		display(" %d/%d (%d/%d) (%d/%d/%d/%d)", x, y, px, py, r);
+
+		if ( (!f || (tree[o].ob_flags & f)) && (!s || (tree[o].ob_state & s)) )
+		{
+			if ( (!mf || !(tree[o].ob_flags & mf)) && (!ms || !(tree[o].ob_state & ms)) )
+			{
+				short flg = 0;
+
+ 				w = tree[o].ob_width;
+				h = tree[o].ob_height;
+// 				display("start = %d, %d/%d/%d/%d this = %d, %d/%d/%d/%d", start, r, o, x,y,w,h);
+				
+				if (!(dir & 1))
+				{
+					
+					if ( ((x <= r.x && (x + w) > r.x) || (x > r.x && x < (r.x + r.w))))
+					{
+						flg = 1;
+						if (!(cf & 1))
+							cy = 30000;
+					}
+					
+					if (!(dir & 2))
+					{
+						if ((y < r.y && (r.y - y) < cy))
+						{
+							if ((flg & 1) || (!(cf & 1) && !(flg & 1)) )
+							{
+								cy = r.y - y;
+								co = o;
+								cf |= flg;
+							}
+						}
+					}
+					else
+					{
+						if ((y > r.y && (y - r.y) < cy))
+						{
+							if ((flg & 1) || (!(cf & 1) && !(flg & 1)) )
+							{
+								cy = y - r.y;
+								co = o;
+								cf |= flg;
+							}
+						}
+					}
+					
+				}
+				else
+				{
+					if ( ((y <= r.y && (y + h) > r.y) || (y > r.y && y < (r.y + r.h))) )
+					{
+						flg = 1;
+						if (!(cf & 1))
+							cx = 30000;
+					}
+
+					if (!(dir & 2))
+					{
+						if (!(flg | cf))
+						{
+							if (y < r.y)
+							{
+								if ((r.y - y) == cy)
+								{
+									if (cx == 32000 || x > cx)
+									{
+										cx = x;
+										cy = r.y - y;
+										co = o;
+									}
+								}
+								else if ((r.y - y) < cy)
+								{
+									cx = x;
+									cy = r.y - y;
+									co = o;
+								}
+							}
+						}
+						else if ((x < r.x && (r.x - x) < cx))
+						{
+							if ((flg & 1) || (!(cf & 1) && !(flg & 1)) )
+							{
+								cx = r.x - x;
+								co = o;
+								cf |= flg;
+							}
+						}
+					}
+					else
+					{
+						if (!(flg | cf))
+						{
+							if (y > r.y)
+							{
+								if ((y - r.y) == cy)
+								{
+									if (x < cx)
+									{
+										cx = x;
+										cy = y - r.y;
+										co = o;
+									}
+								}
+								else if ((y - r.y) < cy)
+								{
+									cx = x;
+									cy = y - r.y;
+									co = o;
+								}
+							}		
+						}
+						else if ((x > r.x && (x - r.x) < cx))
+						{
+							if ((flg & 1) || (!(cf & 1) && !(flg & 1)) )
+							{
+								cx = x - r.x;
+								co = o;
+								cf |= flg;
+							}
+						}
+					}
+				}
+			}
+		}
+		
+		x -= px;
+		y -= py;
+
+	} while ((!stopf || !(tree[o].ob_flags & stopf)) && (!stops || !(tree[o].ob_state & stops)));
+
+	return co;
 }
 
 short
@@ -2081,7 +2388,7 @@ obj_change(XA_TREE *wt,
 	   short flags,
 	   bool redraw,
 	   const RECT *clip,
-	   struct xa_rect_list *rl)
+	   struct xa_rect_list *rl, short dflags)
 {
 	OBJECT *obtree = wt->tree;
 	bool draw = false;
@@ -2099,12 +2406,12 @@ obj_change(XA_TREE *wt,
 
 	if (draw && redraw)
 	{
-		obj_draw(wt, v, obj, transdepth, clip, rl);
+		obj_draw(wt, v, obj, transdepth, clip, rl, dflags);
 	}
 }
 
 void
-obj_draw(XA_TREE *wt, struct xa_vdi_settings *v, short obj, int transdepth, const RECT *clip, struct xa_rect_list *rl)
+obj_draw(XA_TREE *wt, struct xa_vdi_settings *v, short obj, int transdepth, const RECT *clip, struct xa_rect_list *rl, short flags)
 {
 	short start = obj, i;
 	RECT or;
@@ -2114,18 +2421,23 @@ obj_draw(XA_TREE *wt, struct xa_vdi_settings *v, short obj, int transdepth, cons
 
 	obj_area(wt, obj, &or);
 
-	if (transdepth != -1 && (transdepth & 0x8000))
+	if (transdepth == -2)
+		start = 0;
+	else
 	{
-		transdepth &= ~0x8000;
-		pd = true;
-	}
+		if (transdepth != -1 && (transdepth & 0x8000))
+		{
+			transdepth &= ~0x8000;
+			pd = true;
+		}
 
-	while (object_is_transparent(wt->tree + start, pd))
-	{
-		if ((i = ob_get_parent(wt->tree, start)) < 0 || !transdepth)
-			break;
-		transdepth--;
-		start = i;
+		while (object_is_transparent(wt->tree + start, pd))
+		{
+			if ((i = ob_get_parent(wt->tree, start)) < 0 || !transdepth)
+				break;
+			transdepth--;
+			start = i;
+		}
 	}
 	
 	if (rl)
@@ -2139,7 +2451,7 @@ obj_draw(XA_TREE *wt, struct xa_vdi_settings *v, short obj, int transdepth, cons
 				if (xa_rect_clip(&or, &r, &r))
 				{
 					(*v->api->set_clip)(v, &r);
-					draw_object_tree(0, wt, wt->tree, v, start, MAX_DEPTH, NULL);
+					draw_object_tree(0, wt, wt->tree, v, start, MAX_DEPTH, NULL, flags);
 				}
 			}
 		} while ((rl = rl->next));
@@ -2147,7 +2459,7 @@ obj_draw(XA_TREE *wt, struct xa_vdi_settings *v, short obj, int transdepth, cons
 	else
 	{
 		(*v->api->set_clip)(v, &or);
-		draw_object_tree(0, wt, wt->tree, v, start, MAX_DEPTH, NULL);
+		draw_object_tree(0, wt, wt->tree, v, start, MAX_DEPTH, NULL, flags);
 	}
 	(*v->api->clear_clip)(v);
 
@@ -2517,6 +2829,7 @@ char *edfunc[] =
 inline static bool
 chk_edobj(OBJECT *obtree, short obj, short lastobj)
 {
+
 	if (obj < 0 ||
 	    obj > lastobj ||
 	    !object_is_editable( obtree + obj ) )
@@ -2561,6 +2874,7 @@ obj_ED_INIT(struct widget_tree *wt,
 		 * of the text to edit.
 		 */
 		ei->obj = obj;
+		
 		if (*(ted->te_ptext) == '@')
 			*(ted->te_ptext) = 0;
 
@@ -2628,10 +2942,15 @@ obj_edit(XA_TREE *wt,
 			case ED_INIT:
 			{
 				hidem();
+				
 				obj_ED_INIT(wt, &wt->e, obj, -1, last, NULL, &old_ed_obj);
+				
 				if (redraw)
 					eor_objcursor(wt, v, rl);
+				wt->e.c_state ^= OB_CURS_EOR;
+				
 				showm();
+// 				display("ED_INIT: eors=%d, obj=%d for %s", wt->e.c_state & DRW_CURSOR, wt->e.obj, wt->owner->name);
 				pos = wt->e.pos;
 				break;
 			}
@@ -2649,6 +2968,8 @@ obj_edit(XA_TREE *wt,
 					eor_objcursor(wt, v, rl);
 					showm();
 				}
+				wt->e.c_state ^= OB_CURS_EOR;
+// 				display("ED_END: eors=%d, obj=%d for %s", wt->e.c_state & DRW_CURSOR, wt->e.obj, wt->owner->name);
 				break;
 			}
 			case ED_CHAR:
@@ -2680,7 +3001,7 @@ obj_edit(XA_TREE *wt,
 						{
 							eor_objcursor(wt, v, rl);
 							if (obj_ed_char(wt, &wt->e, ted, keycode))
-								obj_draw(wt, v, wt->e.obj, -1, clip, rl);
+								obj_draw(wt, v, wt->e.obj, -1, clip, rl, 0);
 							eor_objcursor(wt, v, rl);
 						}
 						else
@@ -2703,7 +3024,7 @@ obj_edit(XA_TREE *wt,
 					{
 						eor_objcursor(wt, v, rl);
 						if (obj_ed_char(wt, ei, ted, keycode))
-							obj_draw(wt, v, obj, -1, clip, rl);
+							obj_draw(wt, v, obj, -1, clip, rl, 0);
 						eor_objcursor(wt, v, rl);
 					}
 					else
@@ -2815,7 +3136,7 @@ obj_edit(XA_TREE *wt,
 					if (obj_ED_INIT(wt, &lei, obj, -1, last, &ted, &old_ed_obj))
 					{
 						if (obj_ed_char(wt, &lei, ted, keycode))
-							obj_draw(wt, v, obj, -1, clip, rl);
+							obj_draw(wt, v, obj, -1, clip, rl, 0);
 
 						pos = lei.pos;
 					}
@@ -2832,7 +3153,7 @@ obj_edit(XA_TREE *wt,
 
 					undraw_objcursor(wt, v, rl);
 					if (obj_ed_char(wt, ei, ted, keycode))
-						obj_draw(wt, v, obj, -1, clip, rl);
+						obj_draw(wt, v, obj, -1, clip, rl, 0);
 					set_objcursor(wt, v);
 					draw_objcursor(wt, v, rl);
 					pos = ei->pos;
@@ -2908,7 +3229,7 @@ obj_set_radio_button(XA_TREE *wt,
 						   obtree[o].ob_flags,
 						   redraw,
 						   clip,
-						   rl);
+						   rl, 0);
 				}	
 			}
 			o = obtree[o].ob_next;
@@ -2920,7 +3241,7 @@ obj_set_radio_button(XA_TREE *wt,
 			   obtree[obj].ob_state | OS_SELECTED,
 			   obtree[obj].ob_flags,
 			   redraw, clip,
-			   rl);
+			   rl, 0);
 	}
 }
 
@@ -2975,12 +3296,12 @@ obj_watch(XA_TREE *wt,
 		/* If mouse button is already released, assume that was just
 		 * a click, so select
 		 */
-		obj_change(wt, v, obj, -1, in_state, flags, true, clip, rl);
+		obj_change(wt, v, obj, -1, in_state, flags, true, clip, rl, 0);
 	}
 	else
 	{
 		S.wm_count++;
-		obj_change(wt, v, obj, -1, in_state, flags, true, clip, rl);
+		obj_change(wt, v, obj, -1, in_state, flags, true, clip, rl, 0);
 		while (mb)
 		{
 			short s;
@@ -3001,7 +3322,7 @@ obj_watch(XA_TREE *wt,
 				if (pobf != obf)
 				{
 					pobf = obf;
-					obj_change(wt, v, obj, -1, s, flags, true, clip, rl);
+					obj_change(wt, v, obj, -1, s, flags, true, clip, rl, 0);
 				}
 			}
 		}
