@@ -31,6 +31,8 @@
 #include "xa_types.h"
 #include "mt_gem.h"
 
+#define DRW_CURSOR	1
+
 void init_objects(void);
 
 void init_ob_render(void);
@@ -43,7 +45,7 @@ bool d3_background(OBJECT *ob);
 bool d3_activator(OBJECT *ob);
 
 void	display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, short object, short parent_x, short parent_y, short which);
-short	draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, struct xa_vdi_settings *v, short item, short depth, short *xy);
+short	draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, struct xa_vdi_settings *v, short item, short depth, short *xy, short flags);
 
 /* Internal utility routines */
 void shadow_object(struct xa_vdi_settings *v, short d, short state, RECT *r, short colour, short border_thick);

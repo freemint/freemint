@@ -215,21 +215,6 @@ static char *xev[] =
 	"9", "10", "11", "12", "13", "14", "15"
 };
 
-#if 0
-static void
-evnt_diag_output(void *pb, struct xa_client *client, char *which)
-{
-	if (pb)
-	{
-		short *o = ((AESPB *)pb)->intout;
-		char evx[128];
-		show_bits(o[0], "", xev, evx);
-		DIAG((D_multi, client, "%sevnt_multi return: %s x%d, y%d, b%d, ks%d, kc%d, mc%d",
-			which, evx, o[1], o[2], o[3], o[4], o[5], o[6]));
-	}
-}
-#define diag_out(x,c,y) evnt_diag_output(x,c,y);
-#endif
 
 #if 0
 static char *
@@ -241,6 +226,14 @@ em_flag(int f)
 #endif
 
 #else /* GENERATE_DIAGS */
+
+#if 0
+static char *xev[] =
+{
+	"KBD", "BUT", "M1", "M2", "MSG", "TIM", "WHL", "MX", "NKBD",
+	"9", "10", "11", "12", "13", "14", "15"
+};
+#endif
 
 #define diag_out(x,c,y)
 
@@ -373,6 +366,7 @@ check_queued_events(struct xa_client *client)
 	bool multi = wevents & XAWAIT_MULTI ? true : false;
 	AESPB *pb;
 	short *out;
+	union msg_buf *m;
 // 	bool d = (strnicmp(client->proc_name, "gbe", 3)) ? false : true;
 	
 // 	if (d) display("wevent %x for %s", wevents, client->proc_name);
@@ -388,16 +382,14 @@ check_queued_events(struct xa_client *client)
 	get_mbstate(client, &mbs);
 
 	if ((wevents & MU_MESAG) && (client->msg || client->rdrw_msg || client->crit_msg))
-	{
-		union msg_buf *cbuf;
-		
-		cbuf = (union msg_buf *)pb->addrin[0];
-		if (cbuf)
+	{		
+		m = (union msg_buf *)pb->addrin[0];
+		if (m)
 		{
-			if (!pending_critical_msgs(0, client, cbuf))
+			if (!pending_critical_msgs(0, client, m))
 			{
-				if (!pending_redraw_msgs(0, client, cbuf))
-					pending_msgs(0, client, cbuf);
+				if (!pending_redraw_msgs(0, client, m))
+					pending_msgs(0, client, m);
 			}
 
 			if (multi)
@@ -536,7 +528,28 @@ check_queued_events(struct xa_client *client)
 	{
 		cancel_mutimeout(client);
 // 		if (d) display("events %x - done", events);
+#if 0
+		if (!strnicmp(client->proc_name, "ergo", 4))
+		{
+			if (events & (MU_BUTTON|MU_MESAG))
+			{
+				char evtxt[128];
+				show_bits(events, "evnt=", xev, evtxt);
+				display("check_queued_events for %s", client->name);
+				display(" %s clks=0x%x, msk=0x%x, bst=0x%x T:%d",
+					evtxt, pb->intin[1],pb->intin[2],pb->intin[3], (events&MU_TIMER) ? pb->intin[14] : -1);
+				display("status %lx, %lx, C.redraws %ld", client->status, client->rdrw_msg, C.redraws);
+				display(" -- %x, %x, %x, %x, %x, %x, %x",
+					events, mbs.x, mbs.y, mbs.b, mbs.ks, key, mbs.c);
 
+				if (events & MU_MESAG)
+				{
+					display(" --- deliver %s to %s", pmsg(m->m[0]), client->name);
+					display(" --- %04x, %04x, %04x, %04x, %04x, %04x, %04x, %04x", m->m[1], m->m[2], m->m[3], m->m[4], m->m[5], m->m[6], m->m[7]);
+				}
+			}
+		}
+#endif
 #if GENERATE_DIAGS
 		{
 			char evtxt[128];
@@ -547,13 +560,6 @@ check_queued_events(struct xa_client *client)
 			DIAG((D_multi, client, "status %lx, %lx, C.redraws %ld", client->status, client->rdrw_msg, C.redraws));
 			DIAG((D_multi, client, " -- %x, %x, %x, %x, %x, %x, %x",
 				events, mbs.x, mbs.y, mbs.b, mbs.ks, key, mbs.c));
-		}
-#endif
-#if 0
-		if (client->timeout)
-		{
-			canceltimeout(client->timeout);
-			client->timeout = NULL;
 		}
 #endif
 

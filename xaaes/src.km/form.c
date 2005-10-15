@@ -299,7 +299,7 @@ form_button(XA_TREE *wt,
 	if ( (obtree[obj].ob_flags & OF_SELECTABLE) && !(obtree[obj].ob_state & OS_DISABLED) )
 	{
 		short type = obtree[obj].ob_type & 0xff;
-
+			
 		if (type == G_SLIST)
 		{
 			if ((wt->flags & WTF_FBDO_SLIST) || (fbflags & FBF_DO_SLIST))
@@ -318,7 +318,7 @@ form_button(XA_TREE *wt,
 
 // 			if (obj_watch(wt, v, obj, state^OS_SELECTED, state, clip, *rl))
 			{
-		
+
 				pinf = object_get_popinfo(obtree + obj);
 				if ((obnum = pinf->obnum) > 0)
 					pinf->tree[obnum].ob_state |= OS_CHECKED;
@@ -339,7 +339,7 @@ form_button(XA_TREE *wt,
 				if (obnum > 0)
 					pinf->tree[obnum].ob_state &= ~OS_CHECKED;
 			
-				obj_change(wt, v, obj, -1, state & ~OS_SELECTED, flags, true, clip, *rl);
+				obj_change(wt, v, obj, -1, state & ~OS_SELECTED, flags, true, clip, *rl, 0);
 
 				/*
 				 * Ozk: Dont know about this...
@@ -363,10 +363,23 @@ form_button(XA_TREE *wt,
 			else
 			{
 				DIAGS(("form_button: switch state"));
-				obj_change(wt, v, obj, -1, state^OS_SELECTED, flags, redraw, clip, *rl);
+				obj_change(wt, v, obj, -1, state^OS_SELECTED, flags, redraw, clip, *rl, 0);
 			}
 		}
 		state = obtree[obj].ob_state;	
+	}
+
+	if (flags & (OF_EXIT|OF_SELECTABLE|OF_TOUCHEXIT|OF_EDITABLE))
+	{
+		if (wt->focus != obj)
+		{
+			short pf = wt->focus;
+			wt->focus = obj;
+// 			display("redraw %");
+			if (pf != -1)
+				obj_draw(wt, v, pf, -2, NULL, *rl, DRW_CURSOR);
+			obj_draw(wt, v, obj, -2, NULL, *rl, DRW_CURSOR);
+		}
 	}
 
 	DIAGS(("form_button: state %x, flags %x",
@@ -400,9 +413,12 @@ short
 form_cursor(XA_TREE *wt,
 	    struct xa_vdi_settings *v,
 	    ushort keycode,
+	    ushort keystate,
 	    short obj,
 	    bool redraw,
-	    struct xa_rect_list **rl)
+	    struct xa_rect_list **rl,
+	/* outout */	    
+	    short *ret_focus)
 {
 	OBJECT *obtree = wt->tree;
 	short o = obj;
@@ -417,66 +433,144 @@ form_cursor(XA_TREE *wt,
 	DIAG((D_form, NULL, "form_cursor: wt=%lx, obtree=%lx, obj=%d, keycode=%x, lastob=%d, editobjs=%d",
 		wt, obtree, obj, keycode, last_ob, edcnt));
 
+	if (ret_focus)
+		*ret_focus = -1;
+
 	switch(keycode)
 	{			/* The cursor keys are always eaten. */
-	case 0x0f09:		/* TAB moves to next field */
-	case 0x5000:		/* DOWN ARROW also moves to next field */
-	{
-		if (edcnt > 1)
+		case 0x0f09:		/* TAB moves to next field */
 		{
-			short nxt = ob_find_next_any_flag(obtree, o, OF_EDITABLE);
-			if (nxt >= 0)
-				o = nxt;
+			if (ret_focus)
+			{
+				short nxt = ob_find_next_any_flagstate(obtree, 0, wt->focus, OF_SELECTABLE|OF_EDITABLE|OF_EXIT|OF_TOUCHEXIT, OF_HIDETREE, 0, OS_DISABLED, 0, 0, 2);
+				if (nxt >= 0)
+				{
+					*ret_focus = nxt;
+					if (obtree[nxt].ob_flags & OF_EDITABLE)
+						o = nxt;
+				}
+			}
+			else if (edcnt > 1)
+			{
+				short nxt = ob_find_next_any_flag(obtree, o, OF_EDITABLE);
+				if (nxt >= 0)
+					o = nxt;
 
-			DIAGS(("form_cursor: TAB/DOWN ARROW from %d to %d", obj, o));
+				DIAGS(("form_cursor: UP ARROW from %d to %d", obj, o));
+			}
+			break;
 		}
-		break;
-	}
-	case 0x4800:		/* UP ARROW moves to previous field */
-	{
-		if (edcnt > 1)
+		case 0x4800:		/* UP ARROW moves to previous field */
 		{
-			short nxt = ob_find_prev_any_flag(obtree, o, OF_EDITABLE);
-			if (nxt >= 0)
-				o = nxt;
+			if (ret_focus)
+			{
+				short nxt = ob_find_next_any_flagstate(obtree, 0, wt->focus, OF_SELECTABLE|OF_EDITABLE|OF_EXIT|OF_TOUCHEXIT, OF_HIDETREE, 0, OS_DISABLED, 0, 0, 0);
+				if (nxt >= 0)
+				{
+					*ret_focus = nxt;
+					if (obtree[nxt].ob_flags & OF_EDITABLE)
+						o = nxt;
+				}
+			}
+			else if (edcnt > 1)
+			{
+				short nxt = ob_find_prev_any_flag(obtree, o, OF_EDITABLE);
+				if (nxt >= 0)
+					o = nxt;
 
-			DIAGS(("form_cursor: UP ARROW from %d to %d", obj, o));
+				DIAGS(("form_cursor: UP ARROW from %d to %d", obj, o));
+			}
+			break;
 		}
-		break;
-	}
-	case 0x4737:		/* SHIFT+HOME */
-	case 0x5032:		/* SHIFT+DOWN ARROW moves to last field */
-	case 0x5100:		/* page down key (Milan &| emulators)   */
-	{
-		if (edcnt > 1)
+		case 0x5000:		/* Down ARROW moves to next object */
 		{
-			short nxt = ob_find_prev_any_flag(obtree, -1, OF_EDITABLE);
-			if (nxt >= 0)
-				o = nxt;
+			if (ret_focus)
+			{
+				short nxt = ob_find_next_any_flagstate(obtree, 0, wt->focus, OF_SELECTABLE|OF_EDITABLE|OF_EXIT|OF_TOUCHEXIT, OF_HIDETREE, 0, OS_DISABLED, 0, 0, 2);
+				if (nxt >= 0)
+				{
+					*ret_focus = nxt;
+					if (obtree[nxt].ob_flags & OF_EDITABLE)
+						o = nxt;
+				}
+			}
+			else if (edcnt > 1)
+			{
+				short nxt = ob_find_next_any_flag(obtree, o, OF_EDITABLE);
+				if (nxt >= 0)
+					o = nxt;
 
-			DIAGS(("form_cursor: SHIFT+HOME from %d to %d", obj, o));
+				DIAGS(("form_cursor: UP ARROW from %d to %d", obj, o));
+			}
+			break;
 		}
-		break;
-	}
-	case 0x4700:		/* HOME */
-	case 0x4838:		/* SHIFT+UP ARROW moves to first field */
-	case 0x4900:		/* page up key (Milan &| emulators)    */
-	{
-		if (edcnt > 1)
+		case 0x7300:
+		case 0x4b00:		/* Left ARROW */
 		{
-			short nxt = ob_find_next_any_flag(obtree, 0, OF_EDITABLE);
-			if (nxt >= 0)
-				o = nxt;
-
-			DIAGS(("form_cursor: HOME from %d to %d", obj, o));
+			if (ret_focus && (keycode == 0x7300 || !(wt->focus > 0 && (obtree[wt->focus].ob_flags & OF_EDITABLE))) )
+			{
+				short nxt = ob_find_next_any_flagstate(obtree, 0, wt->focus, OF_SELECTABLE|OF_EDITABLE|OF_EXIT|OF_TOUCHEXIT, OF_HIDETREE, 0, OS_DISABLED, 0, 0, 1);
+				if (nxt >= 0)
+				{
+					*ret_focus = nxt;
+					if (obtree[nxt].ob_flags & OF_EDITABLE)
+						o = nxt;
+				}
+			}
+			else
+				o = -1;
+			break;
 		}
-		break;
-	}
-	default:
-	{
-		o = -1;		/* This is also a safeguard.  */
-		break;
-	}
+		case 0x7400:
+		case 0x4d00:		/* Right ARROW */
+		{
+			if (ret_focus && (keycode == 0x7400 || !(wt->focus > 0 && (obtree[wt->focus].ob_flags & OF_EDITABLE))) )
+			{
+				short nxt = ob_find_next_any_flagstate(obtree, 0, wt->focus, OF_SELECTABLE|OF_EDITABLE|OF_EXIT|OF_TOUCHEXIT, OF_HIDETREE, 0, OS_DISABLED, 0, 0, 3);
+				if (nxt >= 0)
+				{
+					*ret_focus = nxt;
+					if (obtree[nxt].ob_flags & OF_EDITABLE)
+						o = nxt;
+				}
+			}
+			else
+				o = -1;
+			break;
+		}
+		case 0x4737:		/* SHIFT+HOME */
+		case 0x5032:		/* SHIFT+DOWN ARROW moves to last field */
+		case 0x5100:		/* page down key (Milan &| emulators)   */
+		{
+			if (edcnt > 1)
+			{
+				short nxt = ob_find_prev_any_flag(obtree, -1, OF_EDITABLE);
+				if (nxt >= 0)
+					o = nxt;
+
+				DIAGS(("form_cursor: SHIFT+HOME from %d to %d", obj, o));
+			}
+			break;
+		}
+		case 0x4700:		/* HOME */
+		case 0x4838:		/* SHIFT+UP ARROW moves to first field */
+		case 0x4900:		/* page up key (Milan &| emulators)    */
+		{
+			if (edcnt > 1)
+			{
+				short nxt = ob_find_next_any_flag(obtree, 0, OF_EDITABLE);
+				if (nxt >= 0)
+					o = nxt;
+
+				DIAGS(("form_cursor: HOME from %d to %d", obj, o));
+			}
+			break;
+		}
+		default:
+		{
+			o = -1;		/* This is also a safeguard.  */
+			break;
+		}
 	}
 
 	DIAGS(("form_cursor: from obj=%d to obj=%d, wt-edit_obj=%d, wt->e.pos=%d",
@@ -517,8 +611,8 @@ form_keyboard(XA_TREE *wt,
 #if GENERATE_DIAGS
 	struct xa_client *client = wt->owner;
 #endif
-	ushort keycode = key->aes, next_key = 0;
-	short next_obj;
+	ushort keycode = key->aes, next_key = 0, keystate = key->raw.conin.state;
+	short next_obj, new_focus;
 	struct fmd_result fr;
 	struct xa_rect_list *lrl = NULL;
 
@@ -537,13 +631,20 @@ form_keyboard(XA_TREE *wt,
 	else
 		next_obj = obj;
 	
-	next_obj = form_cursor(wt, v, keycode, next_obj, redraw, rl);
+	next_obj = form_cursor(wt, v, keycode, keystate, next_obj, redraw, rl, &new_focus);
 	
 	if (next_obj < 0)
 	{
 		OBJECT *obtree = wt->tree;
 
-		if (keycode == 0x1c0d || keycode == 0x720d)
+		if (keycode == 0x3920 && wt->focus != -1)
+		{
+			if (!(obtree[wt->focus].ob_flags & OF_EDITABLE))
+				next_obj = wt->focus;
+			else
+				next_obj = -1;
+		}
+		else if (keycode == 0x1c0d || keycode == 0x720d)
 		{
 			next_obj = ob_find_flst(obtree, OF_DEFAULT, 0, 0, OS_DISABLED, OF_LASTOB, 0);
 
@@ -559,12 +660,15 @@ form_keyboard(XA_TREE *wt,
 		}
 		else 
 		{
-			short ks;
+// 			short ks;
 			
+			if ((key->raw.conin.state & K_ALT) == K_ALT)
+				next_obj = ob_find_shortcut(obtree, key->norm & 0x00ff);
+		#if 0
 			vq_key_s(C.P_handle, &ks);
 			if ( (ks & (K_CTRL|K_ALT)) == K_ALT )
 				next_obj = ob_find_shortcut(obtree, key->norm & 0x00ff);
-
+		#endif
 			DIAG((D_keybd, NULL, "form_keyboard: shortcut %d for %s",
 				next_obj, client->name));
 		}
@@ -588,6 +692,20 @@ form_keyboard(XA_TREE *wt,
 		else if (keycode != 0x1c0d && keycode != 0x720d)
 			next_key = keycode;
 	}
+#if 1
+	if (new_focus != -1)
+	{
+		if (wt->focus != new_focus)
+		{
+			short pf = wt->focus;
+			wt->focus = new_focus;
+// 			display("redraw %");
+			if (pf != -1)
+				obj_draw(wt, v, pf, -2, NULL, *rl, DRW_CURSOR);
+			obj_draw(wt, v, new_focus, -2, NULL, *rl, DRW_CURSOR);
+		}
+	}
+#endif
 
 	/* Ozk: We return a 'next object' value of -1 when the key was
 	 *	not used by form_keybaord() function

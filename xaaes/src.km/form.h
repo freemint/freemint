@@ -69,9 +69,11 @@ bool	form_button	(XA_TREE *wt,
 short	form_cursor	(XA_TREE *wt,
 			 struct xa_vdi_settings *v,
 			 ushort keycode,
+			 ushort keystate,
 			 short obj,
 			 bool redraw,
-			 struct xa_rect_list **rl);
+			 struct xa_rect_list **rl,
+			 short *ret_focus);
 
 bool	form_keyboard	(XA_TREE *wt,
 			 struct xa_vdi_settings *v,

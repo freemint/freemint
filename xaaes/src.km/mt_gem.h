@@ -700,6 +700,7 @@ typedef  struct
 #define OS_SHADOWED		0x0020
 #define OS_WHITEBAK		0x0040
 #define OS_DRAW3D		0x0080
+
 #define OS_STATE08		0x0100
 #define OS_STATE09		0x0200
 #define OS_STATE10		0x0400

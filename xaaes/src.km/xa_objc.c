@@ -45,7 +45,7 @@ XA_objc_draw(enum locks lock, struct xa_client *client, AESPB *pb)
 	const RECT *r = (const RECT *)&pb->intin[2];
 	OBJECT *obtree = (OBJECT*)pb->addrin[0];
 	struct xa_vdi_settings *v = client->vdi_settings;
-	int item = pb->intin[0];
+	short item = pb->intin[0], editobj;
 	CONTROL(6,1,1)
 
 	DIAG((D_objc,client,"objc_draw rectangle: %d/%d,%d/%d", r->x, r->y, r->w, r->h));
@@ -56,26 +56,15 @@ XA_objc_draw(enum locks lock, struct xa_client *client, AESPB *pb)
 	if (validate_obtree(client, obtree, "XA_objc_draw:"))
 	{
 		XA_TREE *wt;
-#if 0
-		struct xa_window *wind = client->fmd.wind;
-
-		if (wind)
-			if (!wind->dial_followed)
-		{
-			if (item != 0)
-			{
-				f_color(objc_rend.dial_colours.bg_col);
-				gbar(0, &client->fmd.wind->wa);
-			}
-			wind->dial_followed = true;
-		}
-#endif
+		
 		if (!(wt = obtree_to_wt(client, obtree)))
 			wt = new_widget_tree(client, obtree);
 		if (!wt)
 			wt = set_client_wt(client, obtree);
 
 		assert(wt);
+
+		wt->e.c_state &= ~OB_CURS_EOR;
 
 		{
 			hidem();
@@ -87,7 +76,17 @@ XA_objc_draw(enum locks lock, struct xa_client *client, AESPB *pb)
 							 v,
 							 item,
 							 pb->intin[1],		/* depth */
-							 NULL);
+							 NULL,
+							 0);
+
+			/*
+			 * Ozk: Ok.. looks like the AES should automagically draw the cursor...
+			 */
+			if ((editobj = wt->e.obj) == -1)
+				editobj = ob_find_any_flst(obtree, OF_EDITABLE, 0, 0, OS_DISABLED, OF_LASTOB, 0);
+			if (editobj != -1)
+				obj_edit(wt, v, ED_INIT, editobj, 0, -1, false, NULL, NULL, NULL, NULL);
+
 			(*v->api->clear_clip)(v);
 			showm();
 		}
@@ -189,7 +188,7 @@ XA_objc_change(enum locks lock, struct xa_client *client, AESPB *pb)
 			    obtree[obj].ob_flags,
 			    pb->intin[7],
 			    NULL,
-			    &rl);
+			    &rl, 0);
 
 		pb->intout[0] = 1;
 	}
@@ -263,6 +262,10 @@ XA_objc_edit(enum locks lock, struct xa_client *client, AESPB *pb)
 	DIAG((D_form, client, "objc_edit (%d %d %d %d)",
 		pb->intin[0], pb->intin[1], pb->intin[2], pb->intin[3]));
 
+
+// 	display("objc_edit (%d %d %d %d) for %s",
+// 		pb->intin[0], pb->intin[1], pb->intin[2], pb->intin[3], client->name);
+	
 	if (validate_obtree(client, obtree, "XA_objc_edit:"))
 	{
 		XA_TREE *wt;
@@ -292,6 +295,8 @@ XA_objc_edit(enum locks lock, struct xa_client *client, AESPB *pb)
 	DIAG((D_form, client, "objc_edit exit (%d %d %d %d)",
 		pb->intin[0], pb->intin[1], pb->intin[2], pb->intin[3]));
 
+// 	display("xa_objc_edit: exit (%d %d %d %d)\n",
+// 		pb->intin[0], pb->intin[1], pb->intin[2], pb->intin[3]);
 	return XAC_DONE;
 }
 

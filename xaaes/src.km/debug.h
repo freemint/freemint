@@ -117,6 +117,7 @@ void diag(enum debug_item item, struct xa_client *client, char *t, ...);
 #endif
 
 #else /* GENERATE_DIAGS */
+// void show_bits(unsigned short, char *prf, char *t[], char *x);
 
 #define MAX_NAMED_DIAG 0
 #define DIAGS(x)

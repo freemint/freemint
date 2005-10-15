@@ -700,7 +700,7 @@ taskmanager_form_exit(struct xa_client *Client,
 			
 			if (C.reschange)
 				post_cevent(C.Hlp, ceExecfunc, C.reschange,NULL, 0,0, NULL,NULL);
-			obj_change(wt, v, obj, -1, wt->tree[obj].ob_state & ~OS_SELECTED, wt->tree[obj].ob_flags, true, NULL, wind->rect_list.start);
+			obj_change(wt, v, obj, -1, wt->tree[obj].ob_state & ~OS_SELECTED, wt->tree[obj].ob_flags, true, NULL, wind->rect_list.start, 0);
 			break;
 		}
 		case TM_OK:
@@ -1224,7 +1224,7 @@ milan_reschg_form_exit(struct xa_client *Client,
 				pinf->tree = pu_wt->tree;
 				pinf->obnum = newres;
 				obj_set_g_popup(wt, RCHM_RES, pinf);
-				obj_draw(wt, wind->vdi_settings, RCHM_RES, -1, NULL, wind->rect_list.start);
+				obj_draw(wt, wind->vdi_settings, RCHM_RES, -1, NULL, wind->rect_list.start, 0);
 // 				display("new devid = %x", new_devid);
 				p->current[1] = new_devid;
 			}
@@ -1755,45 +1755,10 @@ nova_reschg_form_exit(struct xa_client *Client,
 				pinf->tree = pu_wt->tree;
 				pinf->obnum = newres;
 				obj_set_g_popup(wt, RCHM_RES, pinf);
-				obj_draw(wt, wind->vdi_settings, RCHM_RES, -1, NULL, wind->rect_list.start);
+				obj_draw(wt, wind->vdi_settings, RCHM_RES, -1, NULL, wind->rect_list.start, 0);
 // 				display("new devid = %x", new_devid);
 				p->current[1] = new_devid;
 			}
-#if 0
-			int i, o;
-			POPINFO *pinf = object_get_popinfo(wt->tree + fr->obj);
-			struct widget_tree *pu_wt = NULL;
-
-// 			display("found %lx", p);
-
-			for (i = 0, o = pinf->obnum; i < 8 && o >= 0; i++)
-			{
-// 				display("o = %d, i = %d, colwt = %lx", o, i, p->col_wt[i]);
-				if (p->col_wt[i])
-				{
-					o--;
-					if (!o)
-					{
-						pu_wt = p->col_wt[i];
-// 						new_devid = *p->devids[i];
-						new_devid = (*p->resinf[i]).id;
-						
-						p->current[0] = i;
-						break;
-					}
-				}
-			}
-			if (pu_wt)
-			{
-				pinf = &p->pinf_res;
-				pinf->tree = pu_wt->tree;
-				pinf->obnum = 1;
-				obj_set_g_popup(wt, RCHM_RES, pinf);
-				obj_draw(wt, wind->vdi_settings, RCHM_RES, -1, NULL, wind->rect_list.start);
-// 				display("new devid = %x", new_devid);
-				p->current[1] = new_devid;
-			}
-#endif
 			break;
 		}
 		case RCHM_RES:
