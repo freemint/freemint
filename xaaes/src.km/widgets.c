@@ -550,6 +550,8 @@ init_widget_tree(struct xa_client *client, struct widget_tree *wt, OBJECT *obtre
 	
 	wt->tree = obtree;
 	wt->owner = client;
+	
+	wt->focus = -1;
 	wt->e.obj = -1;
 
 	sx = obtree->ob_x;
@@ -1781,11 +1783,11 @@ display_object_widget(struct xa_window *wind, struct xa_widget *widg, const RECT
 	{
 		/* clip work area */
 		(*v->api->set_clip)(v, &wind->wa);
-		draw_object_tree(0, wt, NULL, v, widg->start, 100, NULL);
+		draw_object_tree(0, wt, NULL, v, widg->start, 100, NULL, 0);
 		(*v->api->clear_clip)(v);
 	}
 	else
-		draw_object_tree(0, wt, NULL, v, widg->start, 100, NULL);
+		draw_object_tree(0, wt, NULL, v, widg->start, 100, NULL, 0);
 
 	return true;
 }
@@ -2997,7 +2999,7 @@ display_toolbar(struct xa_window *wind, struct xa_widget *widg, const RECT *clip
 	DIAG((D_form,wind->owner,"display_object_widget(wind=%d), wt=%lx, e.obj=%d, e.pos=%d",
 		wind->handle, wt, wt->e.obj, wt->e.pos));
 
-	draw_object_tree(0, wt, NULL, wind->vdi_settings, widg->start, 100, NULL);
+	draw_object_tree(0, wt, NULL, wind->vdi_settings, widg->start, 100, NULL, 0);
 
 	return true;
 }

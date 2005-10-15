@@ -169,7 +169,7 @@ wdialog_redraw(enum locks lock, struct xa_window *wind, short start, short depth
 				if (xa_rect_clip(&rl->r, r, &dr))
 				{
 					(*v->api->set_clip)(v, &dr);
-					draw_object_tree(0, wt, wt->tree, v, start, depth, NULL);
+					draw_object_tree(0, wt, wt->tree, v, start, depth, NULL, 0);
 				}
 				rl = rl->next;
 			}
@@ -179,7 +179,7 @@ wdialog_redraw(enum locks lock, struct xa_window *wind, short start, short depth
 			while (rl)
 			{
 				(*v->api->set_clip)(v, &rl->r);
-				draw_object_tree(0, wt, wt->tree, v, start, depth, NULL);
+				draw_object_tree(0, wt, wt->tree, v, start, depth, NULL, 0);
 				rl = rl->next;
 			}
 		}
@@ -246,7 +246,7 @@ wdlg_redraw(enum locks lock, struct xa_window *wind, short start, short depth, R
 				if (xa_rect_clip(&rl->r, r, &dr))
 				{
 					(*v->api->set_clip)(v, &dr);
-					draw_object_tree(0, wt, wt->tree, v, start, depth, NULL);
+					draw_object_tree(0, wt, wt->tree, v, start, depth, NULL, 0);
 				}
 				rl = rl->next;
 			}
@@ -256,7 +256,7 @@ wdlg_redraw(enum locks lock, struct xa_window *wind, short start, short depth, R
 			while (rl)
 			{
 				(*v->api->set_clip)(v, &rl->r);
-				draw_object_tree(0, wt, wt->tree, v, start, depth, NULL);
+				draw_object_tree(0, wt, wt->tree, v, start, depth, NULL, 0);
 				rl = rl->next;
 			}
 		}
@@ -1081,9 +1081,12 @@ wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms 
 			if ( ret && cont && wind == top && (ev->mwhich & MU_KEYBD) )
 			{
 				unsigned short key = ev->key;
+				unsigned short keystate;
+				 
+				vq_key_s(C.P_handle, &keystate);
 
 				obtree = wt->tree;
-				nxtobj = form_cursor(wt, v, ev->key, wt->e.obj, true, &wind->rect_list.start);
+				nxtobj = form_cursor(wt, v, ev->key, keystate, wt->e.obj, true, &wind->rect_list.start, NULL);
 				
 				if (nxtobj >= 0)
 				{

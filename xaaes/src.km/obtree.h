@@ -64,6 +64,7 @@ short	ob_count_flag(OBJECT *obtree, short f, short mf, short stopf, short *count
 short	ob_count_any_flag(OBJECT *obtree, short f, short mf, short stopf, short *count);
 short	ob_find_flst(OBJECT *obtree, short f, short s, short mf, short ms, short stopf, short stops);
 short	ob_find_any_flst(OBJECT *obtree, short f, short s, short mf, short ms, short stopf, short stops);
+short	ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, short mf, short s, short ms, short stopf, short stops, short dir);
 short	ob_find_next_any_flag(OBJECT *obtree, short start, short f);
 short	ob_find_prev_any_flag(OBJECT *obtree, short start, short f);
 short	ob_find_cancel(OBJECT *ob);
@@ -89,8 +90,8 @@ void	obj_rectangle(XA_TREE *wt, short object, RECT *c);
 void	obj_area(XA_TREE *wt, short object, RECT *c);
 short	obj_find(XA_TREE *wt, short object, short depth, short mx, short my, RECT *c);
 
-void	obj_change(XA_TREE *wt, struct xa_vdi_settings *v, short obj, int transdepth, short state, short flags, bool redraw, const RECT *clip, struct xa_rect_list *r);
-void	obj_draw(XA_TREE *wt, struct xa_vdi_settings *v, short obj, int transdepth, const RECT *clip, struct xa_rect_list *r);
+void	obj_change(XA_TREE *wt, struct xa_vdi_settings *v, short obj, int transdepth, short state, short flags, bool redraw, const RECT *clip, struct xa_rect_list *r, short dflags);
+void	obj_draw(XA_TREE *wt, struct xa_vdi_settings *v, short obj, int transdepth, const RECT *clip, struct xa_rect_list *r, short flags);
 short	obj_edit(XA_TREE *wt, struct xa_vdi_settings *v, short func, short obj, short keycode, short pos, bool redraw, const RECT *clip, struct xa_rect_list *rl, short *ret_pos, short *ret_obj);
 void	obj_set_radio_button(XA_TREE *wt, struct xa_vdi_settings *v, short obj, bool redraw, const RECT *clip, struct xa_rect_list *rl);
 short	obj_get_radio_button(XA_TREE *wt, short parent, short state);

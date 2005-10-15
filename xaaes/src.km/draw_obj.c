@@ -2235,7 +2235,7 @@ exit_ob_render(void)
 void
 display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, short item, short parent_x, short parent_y, short which)
 {
-	RECT r, o;
+	RECT r, o, sr;
 	OBJECT *ob = wt->tree + item;
 	ObjectDisplay *display_routine = NULL;
 
@@ -2254,6 +2254,7 @@ display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, short it
 	r.y = parent_y + ob->ob_y;
 	r.w = ob->ob_width; 
 	r.h = ob->ob_height;
+	sr = r;
 
 	o.x = r.x + o.x;
 	o.y = r.y + o.y;
@@ -2375,6 +2376,16 @@ display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, short it
 		if ((ob->ob_state & state_mask) & OS_SELECTED)
 			write_selection(v, 0, &r);
 	}
+	if (wt->focus == item)
+	{
+		(*v->api->wr_mode)(v, MD_TRANS);
+		(*v->api->l_color)(v, G_RED);
+		(*v->api->l_type)(v, 7);
+		(*v->api->l_udsty)(v, 0xaaaa); //0xe0e0); //0xaaaa);
+
+		(*v->api->gbox)(v, 0, &sr);
+		(*v->api->l_type)(v, 0);
+	}
 
 	(*v->api->wr_mode)(v, MD_TRANS);
 }
@@ -2386,7 +2397,7 @@ display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, short it
 
 /* draw_object_tree */
 short
-draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, struct xa_vdi_settings *v, short item, short depth, short *xy)
+draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, struct xa_vdi_settings *v, short item, short depth, short *xy, short flags)
 {
 	XA_TREE this;
 	short next;
@@ -2394,7 +2405,8 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, struct xa_vdi_setti
 	short x, y;
 	bool start_drawing = false;
 	bool curson = (wt->e.c_state & (OB_CURS_ENABLED | OB_CURS_DRAWN)) == (OB_CURS_ENABLED | OB_CURS_DRAWN) ? true : false;
-	
+	bool docurs = ((flags & DRW_CURSOR)); // && (wt->e.c_state & OB_CURS_EOR));
+
 	if (wt == NULL)
 	{
 		this = nil_tree;
@@ -2447,6 +2459,12 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, struct xa_vdi_setti
 		{
 			/* Display this object */
 			display_object(lock, wt, v, current, x, y, 10);
+			if (docurs && current == wt->e.obj)
+			{
+// 				display("redrawing cursor for obj %d", current);
+				eor_objcursor(wt, v, NULL);
+				docurs = false;
+			}
 		}
 
 		head = tree[current].ob_head;
