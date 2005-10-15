@@ -961,9 +961,9 @@ XA_appl_write(enum locks lock, struct xa_client *client, AESPB *pb)
 			short qmf = QMF_NORM;
 
 #if 0
-			if (!strnicmp(client->proc_name,    "zview", 5)/* ||
-			     !strnicmp(dest_clnt->proc_name, "zview", 5)) &&
-			    m->m[0] == WM_REDRAW*/) //(m->m[0] >= 0x4700 && m->m[0] <= 0x4760) )
+			if (!strnicmp(client->proc_name,    "ergo", 4) || !strnicmp(client->proc_name, "thing", 5)) /*
+			     !strnicmp(dest_clnt->proc_name, "thing", 5))  &&
+			    m->m[0] == WM_REDRAW)*/ //(m->m[0] >= 0x4700 && m->m[0] <= 0x4760) )
 			{
 				display("%s sends %s to %s", client->name, pmsg(m->m[0]), dest_clnt->name);
 				display(" %04x, %04x, %04x, %04x, %04x, %04x, %04x, %04x", m->m[1], m->m[2], m->m[3], m->m[4], m->m[5], m->m[6], m->m[7]);

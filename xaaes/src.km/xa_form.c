@@ -608,6 +608,7 @@ XA_form_keybd(enum locks lock, struct xa_client *client, AESPB *pb)
 			wt = set_client_wt(client, obtree);
 
 		vq_key_s(C.P_handle, &ks);
+		key.raw.conin.state = ks;
 		key.norm = normkey(ks, pb->intin[1]);
 		key.aes = pb->intin[1];
 		

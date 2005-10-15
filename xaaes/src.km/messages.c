@@ -40,7 +40,8 @@
 
 static void queue_message(enum locks lock, struct xa_client *dest_client, short amq, short qmf, union msg_buf *msg);
 
-#if GENERATE_DIAGS
+#if 1
+//GENERATE_DIAGS
 static const char *xmsgs[] =
 {
 	"WM_REDRAW",		/* 0x0014    20	*/
@@ -691,6 +692,10 @@ send_a_message(enum locks lock, struct xa_client *dest_client, short amq, short 
 				C.redraws++;
 				kick_mousemove_timeout();
 			}
+			else
+				queue_message(lock, dest_client, amq, qmf, msg);
+
+// 			display("send_a_message: client status %lx %s", dest_client->status, dest_client->name);
 #if GENERATE_DIAGS
 			if (dest_client->status & CS_FORM_ALERT)
 				DIAG((D_appl, dest_client, "send_a_message: Client %s is in form_alert "
@@ -700,7 +705,6 @@ send_a_message(enum locks lock, struct xa_client *dest_client, short amq, short 
 				DIAG((D_appl, dest_client, "send_a_message: Client %s is lagging - "
 					"AES message discarded!", dest_client->name));
 #endif
-
 			return;
 		}
 	}

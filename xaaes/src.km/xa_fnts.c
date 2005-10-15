@@ -1567,7 +1567,7 @@ XA_fnts_evnt(enum locks lock, struct xa_client *client, AESPB *pb)
 		else
 		{
 			if (wep.obj > 0 && (obtree[wep.obj].ob_state & OS_SELECTED))
-				obj_change(fnts->wt, wind->vdi_settings, wep.obj, -1, obtree[wep.obj].ob_state & ~OS_SELECTED, obtree[wep.obj].ob_flags, true, &wind->wa, wind->rect_list.start);
+				obj_change(fnts->wt, wind->vdi_settings, wep.obj, -1, obtree[wep.obj].ob_state & ~OS_SELECTED, obtree[wep.obj].ob_flags, true, &wind->wa, wind->rect_list.start, 0);
 		
 			val = get_edpoint(fnts);
 			if (val != fnts->fnt_pt)
