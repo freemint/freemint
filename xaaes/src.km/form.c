@@ -375,7 +375,6 @@ form_button(XA_TREE *wt,
 		{
 			short pf = wt->focus;
 			wt->focus = obj;
-// 			display("redraw %");
 			if (pf != -1)
 				obj_draw(wt, v, pf, -2, NULL, *rl, DRW_CURSOR);
 			obj_draw(wt, v, obj, -2, NULL, *rl, DRW_CURSOR);
@@ -436,7 +435,7 @@ form_cursor(XA_TREE *wt,
 	if (ret_focus)
 		*ret_focus = -1;
 
-	switch(keycode)
+	switch (keycode)
 	{			/* The cursor keys are always eaten. */
 		case 0x0f09:		/* TAB moves to next field */
 		{
@@ -612,7 +611,7 @@ form_keyboard(XA_TREE *wt,
 	struct xa_client *client = wt->owner;
 #endif
 	ushort keycode = key->aes, next_key = 0, keystate = key->raw.conin.state;
-	short next_obj, new_focus;
+	short next_obj, new_focus, new_eobj;
 	struct fmd_result fr;
 	struct xa_rect_list *lrl = NULL;
 
@@ -627,15 +626,17 @@ form_keyboard(XA_TREE *wt,
 	 * Cursor?
 	 */
 	if (wt->owner->options.xa_objced && wt->e.obj >= 0)
-		next_obj = wt->e.obj;
+		next_obj = new_eobj = wt->e.obj;
 	else
-		next_obj = obj;
+		next_obj = new_eobj = obj;
 	
-	next_obj = form_cursor(wt, v, keycode, keystate, next_obj, redraw, rl, &new_focus);
+	next_obj = new_eobj = form_cursor(wt, v, keycode, keystate, next_obj, redraw, rl, &new_focus);
 	
 	if (next_obj < 0)
 	{
 		OBJECT *obtree = wt->tree;
+
+		new_eobj = obj;
 
 		if (keycode == 0x3920 && wt->focus != -1)
 		{
@@ -660,15 +661,8 @@ form_keyboard(XA_TREE *wt,
 		}
 		else 
 		{
-// 			short ks;
-			
 			if ((key->raw.conin.state & K_ALT) == K_ALT)
 				next_obj = ob_find_shortcut(obtree, key->norm & 0x00ff);
-		#if 0
-			vq_key_s(C.P_handle, &ks);
-			if ( (ks & (K_CTRL|K_ALT)) == K_ALT )
-				next_obj = ob_find_shortcut(obtree, key->norm & 0x00ff);
-		#endif
 			DIAG((D_keybd, NULL, "form_keyboard: shortcut %d for %s",
 				next_obj, client->name));
 		}
@@ -690,39 +684,44 @@ form_keyboard(XA_TREE *wt,
 					         &fr.dblmask);
 		}
 		else if (keycode != 0x1c0d && keycode != 0x720d)
+		{
 			next_key = keycode;
+			next_obj = obj;
+		}
 	}
-#if 1
 	if (new_focus != -1)
 	{
 		if (wt->focus != new_focus)
 		{
 			short pf = wt->focus;
 			wt->focus = new_focus;
-// 			display("redraw %");
 			if (pf != -1)
 				obj_draw(wt, v, pf, -2, NULL, *rl, DRW_CURSOR);
 			obj_draw(wt, v, new_focus, -2, NULL, *rl, DRW_CURSOR);
 		}
 	}
-#endif
 
+	if (fr.no_exit)
+		next_obj = new_eobj;
+	
 	/* Ozk: We return a 'next object' value of -1 when the key was
 	 *	not used by form_keybaord() function
 	 */
 	if (next_obj < 0)
-		next_obj = -1;
-	
+		next_obj = -1;	
 	if (nxtobj)
 		*nxtobj = next_obj;
 	if (newstate)
-		*newstate = wt->tree[next_obj].ob_state;
+		*newstate = next_obj != -1 ? wt->tree[next_obj].ob_state : 0;
 	if (nxtkey)
 		*nxtkey = next_key;
 
 	DIAG((D_keybd, NULL, "form_keyboard: no_exit=%s(%d), nxtobj=%d, nxtkey=%x, obstate=%x, for %s",
 		fr.no_exit ? "true" : "false", fr.no_exit, next_obj, next_key, wt->tree[next_obj].ob_state, client->name));
 
+// 	display("form_keyboard: no_exit=%s(%d), nxtobj=%d, nxteobj=%d, nxtkey=%x, obstate=%x, for %s",
+// 		fr.no_exit ? "true" : "false", fr.no_exit, next_obj, new_eobj, next_key, wt->tree[next_obj].ob_state, wt->owner->name);
+	
 	return fr.no_exit ? 1 : 0;
 }
 	
