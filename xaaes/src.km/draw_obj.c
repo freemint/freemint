@@ -774,7 +774,7 @@ set_colours(OBJECT *ob, struct xa_vdi_settings *v, BFOBSPEC *colourword)
 static short
 format_dialog_text(char *text_out, const char *template, const char *text_in, short edit_pos)
 {
-	short index = 0, tpos = 0, max = strlen(template);
+	short index = 0, start_tpos = -1, tpos = 0, max = strlen(template);
 	/* HR: In case a template ends with '_' and the text is completely
 	 * filled, edit_index was indeterminate. :-)
 	 */
@@ -791,6 +791,9 @@ format_dialog_text(char *text_out, const char *template, const char *text_in, sh
 		}
 		else
 		{
+			if (start_tpos == -1)
+				start_tpos = index;
+
 			/* Found text field */
 
 			if (tpos == edit_pos)
@@ -813,8 +816,12 @@ format_dialog_text(char *text_out, const char *template, const char *text_in, sh
 	}
 
 	*text_out = '\0';
+	
+	if (edit_index > (start_tpos + tpos))
+		edit_index = start_tpos + tpos;
+
 	/* keep visible at end */
-	if (edit_index >= max)
+	if (edit_index > max)
 		edit_index--;
 
 	return edit_index;
@@ -850,8 +857,8 @@ set_text(OBJECT *ob,
         // FIXME: gemlib problem: hacked a bit need only "ted->te_color" word;
 	//	  -> cleaning the information that would not be taken if
 	//	     properly used:
-        colours->character = 0;
-        colours->framesize = 0;
+	colours->character = 0;
+	colours->framesize = 0;
 
 	/* Set the correct text size & font */
 	switch (ted->te_font)
@@ -894,17 +901,18 @@ set_text(OBJECT *ob,
 
 	(*v->api->t_extent)(v, temp_text, &w, &h);
 
+#if 1
 	/* HR 290301 & 070202: Dont let a text violate its object space! (Twoinone packer shell!! :-) */
 	if (w > r.w)
 	{
 		short	rw  = r.w / cur.w,
-			dif = (w - r.w + cur.w - 1)/cur.w,
-			h1dif,h2dif;
+			dif = (w - r.w + cur.w - 1) / cur.w,
+			h1dif, h2dif;
 
 		switch(ted->te_just)
 		{
 			case TE_LEFT:
-				*(temp_text + rw) = 0;
+				*(temp_text + rw) = '\0';
 				break;
 			case TE_RIGHT:
 				strcpy (temp_text, temp_text + dif);
@@ -916,9 +924,9 @@ set_text(OBJECT *ob,
 				strcpy (temp_text, temp_text + h1dif);
 				break;
 		}
-
 		(*v->api->t_extent)(v, temp_text, &w, &h);
 	}
+#endif
 
 	switch (ted->te_just)		/* Set text alignment - why on earth did */
 	{
@@ -1040,7 +1048,7 @@ void
 set_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v)
 {
 	char temp_text[256];
-	RECT r; // = wt->r;
+	RECT r;
 	OBJECT *ob;
 	RECT gr;
 	BFOBSPEC colours;
