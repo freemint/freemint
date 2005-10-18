@@ -694,9 +694,6 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 // 	if (d) display("17");
 	delete_wc_cache(&client->wcc);
 
-	if (detach)
-		detach_extension(NULL, XAAES_MAGIC);
-
 	if (client == C.Hlp && !client->tp_term)
 	{
 		kfree(C.Hlp_pb);
@@ -705,8 +702,10 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 		display("attempt to restart XaSYS");
 		wakeselect(C.Aes->p);
 	}
-	
-		
+
+	if (detach)
+		detach_extension(NULL, XAAES_MAGIC);
+
 // 	if (d) display("18");
 	S.clients_exiting--;
 	
@@ -733,10 +732,11 @@ XA_appl_exit(enum locks lock, struct xa_client *client, AESPB *pb)
 	/*
 	 * Ozk: Weirdest thing; imgc4cd and ic4plus calls appl_exit() directly
 	 * after it calls appl_init() and ignoring the appl_exit() make'em work!
+	 *
 	 */
-	if (	strnicmp(client->proc_name, "wdialog", 7) == 0 ||
-		strnicmp(client->proc_name, "imgc4cd", 7) == 0 ||
-		strnicmp(client->proc_name, "ic4plus", 7) == 0
+	if (	strnicmp(client->proc_name, "wdialog", 7) == 0
+// 		|| strnicmp(client->proc_name, "imgc4cd", 7) == 0
+// 		|| strnicmp(client->proc_name, "ic4plus", 7) == 0
 	   )
 	{
 		DIAG((D_appl, client, "appl_exit ignored for %s", client->name));

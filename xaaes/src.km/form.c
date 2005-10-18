@@ -685,8 +685,9 @@ form_keyboard(XA_TREE *wt,
 		}
 		else if (keycode != 0x1c0d && keycode != 0x720d)
 		{
-			next_key = keycode;
-			next_obj = obj;
+			if (wt->focus == wt->e.obj)
+				next_key = keycode;
+			next_obj = wt->e.obj;
 		}
 	}
 	if (new_focus != -1)
