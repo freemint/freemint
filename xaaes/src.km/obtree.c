@@ -1335,83 +1335,6 @@ ob_find_any_flst(OBJECT *tree, short f, short s, short mf, short ms, short stopf
 
 	return -1;
 }
-#if 0
-static void
-ob_build_rows_columns(OBJECT *tree)
-{
-	short o, n, x, y, px, py, w, h;
-	RECT r;
-
-	ob_rectangle(tree, 0, &r);
-	o = 0;
-	r.x -= tree->ob_x;
-	r.y -= tree->ob_y;
-
-	do
-	{
-		display(" - obj %d, h=%d, t=%d, n=%d", o, tree[o].ob_head, tree[o].ob_tail, tree[o].ob_next);
-
-		if (tree[o].ob_head != -1)
-		{
-			x += tree[o].ob_x;
-			y += tree[o].ob_y;
-			
-			n = tree[o].ob_head;
-			
-			px = tree[n].ob_x;
-			py = tree[n].ob_y;
-		}
-		else
-		{
-			n = tree[o].ob_next;
-			while (tree[n].ob_tail == o)
-			{
-				if (!n || n == -1)
-				{
-					return -1
-				}
-				
-				x -= tree[n].ob_x;
-				y -= tree[n].ob_y;
-				
-				o = n;
-				n = tree[o].ob_next;
-				if (n == -1)
-					return -1;
-			}
-			px = tree[n].ob_x;
-			py = tree[n].ob_y;
-		}
-		o = n;
-
-		x += px;
-		y += py;
-
-		display(" %d/%d (%d/%d) (%d/%d/%d/%d)", x, y, px, py, r);
-
-		if ( (!f || (tree[o].ob_flags & f)) && (!s || (tree[o].ob_state & s)) )
-		{
-			if ( (!mf || !(tree[o].ob_flags & mf)) && (!ms || !(tree[o].ob_state & ms)) )
-			{
- 				w = tree[o].ob_width;
-				h = tree[o].ob_height;
-				display("start = %d/%d/%d/%d this = %d/%d/%d/%d", r, x,y,w,h);
-				if (y > r.y &&
-				    ((x <= r.x && (x + w) > r.x) ||
-				    (x > r.x && x < (r.x + r.w)))
-				    )
-					return o;
-			}
-		}
-		
-		x -= px;
-		y -= py;
-
-	} while ((!stopf || !(tree[o].ob_flags & stopf)) && (!stops || !(tree[o].ob_state & stops)));
-
-	return -1;
-}
-#endif
 
 short
 ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, short mf, short s, short ms, short stopf, short stops, short dir)
@@ -1504,18 +1427,31 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 					{
 						if ( ((x <= r.x && (x + w) > r.x) || (x > r.x && x < (r.x + r.w))))
 						{
-							flg = 1;
-							if (!(cf & 1))
-								cy = 32000;
-						}
-					
-						if ((y < r.y && (r.y - y) < cy))
-						{
-							if ((flg & 1) || (!(cf & 1) && !(flg & 1)) )
+// 							flg = 1;
+							if ((y + h) <= r.y)
 							{
-								cy = r.y - y;
-								co = o;
-								cf |= flg;
+								if (!cf || (r.y - y) < cy)
+								{
+									cy = r.y - y;
+									co = o;
+									cf = 1;
+								}
+							}
+						}
+						if (!cf)
+						{
+							if ((y + h) < r.y)
+							{
+								cx = x - r.x;
+								if (cx < 0)
+									cx = -cx;
+						
+								if (cx < ax || (cx == ax && (r.y - y) < cy))
+								{
+									ax = cx;
+									cy = r.y - y;
+									co = o;
+								}
 							}
 						}
 					}
@@ -1523,21 +1459,16 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 					{
 						if ( ((x <= r.x && (x + w) > r.x) || (x > r.x && x < (r.x + r.w))))
 						{
-							flg = 1;
-							if (!(cf & 1))
-								cy = 32000;
-						}
-						
-						if (flg && (y >= (r.y + r.h) && (y - r.y) < cy))
-						{
-							if ((flg & 1) || (!(cf & 1) && !(flg & 1)) )
+							if (y >= (r.y + r.h))
 							{
-								cy = y - r.y;
-								co = o;
-								cf |= flg;
+								if (!cf || (y - r.y) < cy)
+								{
+									cy = y - r.y;
+									co = o;
+									cf = 1;
+								}
 							}
 						}
-						
 						if (!cf)
 						{
 							if (y > (r.y + r.h))
@@ -1611,17 +1542,6 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 								}
 							}
 						}
-					#if 0
-						else if ((x < r.x && (r.x - x) < cx))
-						{
-							if ((flg & 1) || (!(cf & 1) && !(flg & 1)) )
-							{
-								cx = r.x - x;
-								co = o;
-								cf |= flg;
-							}
-						}
-					#endif
 					}
 					else
 					{
