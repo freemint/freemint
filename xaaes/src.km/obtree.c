@@ -1371,7 +1371,7 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 	{
 // 		display(" - obj %d, h=%d, t=%d, n=%d", o, tree[o].ob_head, tree[o].ob_tail, tree[o].ob_next);
 
-		if (tree[o].ob_head != -1)
+		if (tree[o].ob_head != -1 && !(tree[o].ob_flags & OF_HIDETREE))
 		{
 			x += tree[o].ob_x;
 			y += tree[o].ob_y;
@@ -1493,7 +1493,7 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 					}
 					if (!cf)
 					{
-						if (y > (r.y + r.h))
+						if (y >= (r.y + r.h))
 						{
 							if ((y - r.y) == cy)
 							{
@@ -1525,22 +1525,19 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 
 					if ( ((y <= r.y && (y + h) > r.y)) || (y > r.y && (y + h) < (r.y + r.h)))
 					{
-						flg = 1;
-						if (!(cf & 1))
-							cx = 32000;
-					}
 
-					if ((flg) && (x < r.x && (r.x - x) < cx))
-					{
-						if ((flg & 1) || (!(cf & 1) && !(flg & 1)) )
+						if ((x < r.x))
 						{
-							cx = r.x - x;
-							co = o;
-							cf |= flg;
+							if (!cf || (r.x - x) < cx)
+							{
+								cx = r.x - x;
+								co = o;
+								cf = 1;
+							}
 						}
 					}
 					
-					if (!cf) //(!(flg | cf))
+					if (!cf)
 					{
 						if (y < r.y)
 						{
@@ -1567,14 +1564,20 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 				}
 				else
 				{
-					if ( (y == r.y) || (y > r.y && (y + h) < (r.y + r.h))) //(y > r.y && y < (r.y + r.h))) )
+					if ( (y >= r.y && y < (r.y + r.h)) || (y < r.y && (y + h) >= (r.y + r.h))) // || (y >= r.y && (y + h) <= (r.y + r.h))) //(y > r.y && y < (r.y + r.h))) )
 					{
-						flg = 1;
-						if (!(cf & 1))
-							cx = 32000;
+						if (x > r.x)
+						{
+							if (!cf || (x - r.x) < cx)
+							{
+								cx = x - r.x;
+								co = o;
+								cf = 1;
+							}
+						}
 					}
 
-					if (!(flg | cf))
+					if (!cf)
 					{
 						if (y > r.y)
 						{
@@ -1598,6 +1601,7 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 							}
 						}		
 					}
+			#if 0
 					else if ((x > r.x && (x - r.x) < cx))
 					{
 						if ((flg & 1) || (!(cf & 1) && !(flg & 1)) )
@@ -1607,189 +1611,10 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 							cf |= flg;
 						}
 					}
+			#endif
 				}
 			}
 		}
-#if 0
-		if ( (!f || (tree[o].ob_flags & f)) && (!s || (tree[o].ob_state & s)) )
-		{
-			if ( (!mf || !(tree[o].ob_flags & mf)) && (!ms || !(tree[o].ob_state & ms)) )
-			{
-				short flg = 0;
-
- 				w = tree[o].ob_width;
-				h = tree[o].ob_height;
-// 				display("start = %d, %d/%d/%d/%d this = %d, %d/%d/%d/%d", start, r, o, x,y,w,h);
-				
-				if (!(dir & 1))
-				{
-					if (!(dir & 2))
-					{
-						if ( ((x <= r.x && (x + w) > r.x) || (x > r.x && x < (r.x + r.w))))
-						{
-// 							flg = 1;
-							if ((y + h) <= r.y)
-							{
-								if (!cf || (r.y - y) < cy)
-								{
-									cy = r.y - y;
-									co = o;
-									cf = 1;
-								}
-							}
-						}
-						if (!cf)
-						{
-							if ((y + h) < r.y)
-							{
-								cx = x - r.x;
-								if (cx < 0)
-									cx = -cx;
-						
-								if (cx < ax || (cx == ax && (r.y - y) < cy))
-								{
-									ax = cx;
-									cy = r.y - y;
-									co = o;
-								}
-							}
-						}
-					}
-					else
-					{
-						if ( ((x <= r.x && (x + w) > r.x) || (x > r.x && x < (r.x + r.w))))
-						{
-							if (y >= (r.y + r.h))
-							{
-								if (!cf || (y - r.y) < cy)
-								{
-									cy = y - r.y;
-									co = o;
-									cf = 1;
-								}
-							}
-						}
-						if (!cf)
-						{
-							if (y > (r.y + r.h))
-							{
-								if ((y - r.y) == cy)
-								{
-// 									display("same cy %d, x=%d, cx=%d", cy, x, ax);
-									if (x < ax)
-									{
-// 										display("collect %d %d,%d", o, x, ax);
-										ax = x;
-										cy = y - r.y;
-										co = o;
-									}
-								}
-								else if ((y - r.y) < cy)
-								{
-// 									display(" lcollect %d %d,%d", o, x, y);
-									ax = x;
-									cy = y - r.y;
-									co = o;
-								}
-							}
-						}
-					}
-					
-				}
-				else
-				{
-					if (!(dir & 2))
-					{
-
-						if ( ((y <= r.y && (y + h) > r.y)) || (y > r.y && (y + h) < (r.y + r.h)))
-						{
-							flg = 1;
-							if (!(cf & 1))
-								cx = 32000;
-						}
-
-						if ((flg) && (x < r.x && (r.x - x) < cx))
-						{
-							if ((flg & 1) || (!(cf & 1) && !(flg & 1)) )
-							{
-								cx = r.x - x;
-								co = o;
-								cf |= flg;
-							}
-						}
-						
-						if (!cf) //(!(flg | cf))
-						{
-							if (y < r.y)
-							{
-								if ((r.y - y) == cy)
-								{
-// 									display("same cy %d x=%d, cx=%d", cy, x, ax);
-									if (ax == 32000 || x > ax)
-									{
-// 										display("collect %d %d,%d", o, x, ax);
-										ax = x;
-										cy = r.y - y;
-										co = o;
-									}
-								}
-								else if ((r.y - y) < cy)
-								{
-// 									display(" lcollect %d %d,%d", o, x, y);
-									ax = x;
-									cy = r.y - y;
-									co = o;
-								}
-							}
-						}
-					}
-					else
-					{
-						if ( (y == r.y) || (y > r.y && (y + h) < (r.y + r.h))) //(y > r.y && y < (r.y + r.h))) )
-						{
-							flg = 1;
-							if (!(cf & 1))
-								cx = 32000;
-						}
-
-						if (!(flg | cf))
-						{
-							if (y > r.y)
-							{
-								if ((y - r.y) == cy)
-								{
-// 									display("same cy %d, x=%d, cx=%d", cy, x, ax);
-									if (x < ax)
-									{
-// 										display("collect %d %d,%d", o, x, ax);
-										ax = x;
-										cy = y - r.y;
-										co = o;
-									}
-								}
-								else if ((y - r.y) < cy)
-								{
-// 									display(" lcollect %d %d,%d", o, x, y);
-									ax = x;
-									cy = y - r.y;
-									co = o;
-								}
-							}		
-						}
-						else if ((x > r.x && (x - r.x) < cx))
-						{
-							if ((flg & 1) || (!(cf & 1) && !(flg & 1)) )
-							{
-								cx = x - r.x;
-								co = o;
-								cf |= flg;
-							}
-						}
-					}
-				}
-			}
-		}
-#endif
 		
 		x -= px;
 		y -= py;
@@ -2379,8 +2204,7 @@ obj_find(XA_TREE *wt, short object, short depth, short mx, short my, RECT *c)
 	DIAG((D_objc, NULL, "obj_find: obj=%d, depth=%d, obtree=%lx, obtree at %d/%d/%d/%d, find at %d/%d",
 		object, depth, obtree, obtree->ob_x, obtree->ob_y, obtree->ob_width, obtree->ob_height,
 		mx, my));
-	do {
-		
+	do {	
 		if (current == object)	/* We can start considering objects at this point */
 		{
 			stop = object;
