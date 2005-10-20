@@ -519,7 +519,9 @@ typedef bool FormKeyInput(enum locks lock,
 			  struct xa_client *client,
 			  struct xa_window *window,
 			  struct widget_tree *wt,
-			  const struct rawkey *key);
+			  const struct rawkey *key,
+			  /* output */
+			  struct fmd_result *res_fr);
 
 typedef bool FormMouseInput(enum locks lock,
 			    struct xa_client *client,
@@ -833,9 +835,12 @@ struct xa_rscs
 /*
  * Structure used to pass form_do/dial results to FormExit functions()
  */
+#define FMDF_EDIT	1
+
 struct fmd_result
 {
 	bool no_exit;
+	short flags;
 	short obj;
 	short obj_state;
 	short dblmask;
@@ -1485,6 +1490,7 @@ enum scroll_info_flags
 	SIF_AUTOSELECT  = 0x0040,
 	SIF_TREEVIEW	= 0x0080,
 	SIF_AUTOOPEN	= 0x0100,
+	SIF_KEYBDACT	= 0x0200,
 
 };
 typedef enum scroll_info_flags SCROLL_INFO_FLAGS;
@@ -1630,6 +1636,7 @@ typedef void	scrl_vis	(struct scroll_info *list, struct scroll_entry *s, short r
 typedef int	scrl_set	(struct scroll_info *list, struct scroll_entry *s, short what, unsigned long data, short rdrw);
 typedef int	scrl_get	(struct scroll_info *list, struct scroll_entry *s, short what, void *arg);
 typedef void	scrl_redraw	(struct scroll_info *list, struct scroll_entry *s);
+typedef unsigned short	scrl_keybd	(struct scroll_info *list, unsigned short kc, unsigned short ks);
 typedef struct scroll_entry * scrl_search(struct scroll_info *list, struct scroll_entry *start, short mode, void *data);
 
 /* HR: The FS_LIST box is the place holder and the
@@ -1830,6 +1837,7 @@ struct scroll_info
 	struct xa_window *pw;		/* If the listbox is part of a windowed dialogue, we must know that,
 					 * otherwise we couldnt move that window (rp_2_ap). */
 	struct xa_vdi_settings *vdi_settings;
+	struct widget_tree *nil_wt;
 
 	SCROLL_INFO_FLAGS flags;
 	XA_TREE *wt;
@@ -1866,6 +1874,8 @@ struct scroll_info
 	scrl_click *dclick;		/* Callback function for double click behaviour */
 	scrl_click *click;		/* Callback function for single click behaviour */
 	scrl_click *click_nesticon;
+	
+	scrl_keybd *keypress;
 
 	scrl_widget *slider;		/* slider calc function */
 	scrl_widget *closer;		/* closer function */

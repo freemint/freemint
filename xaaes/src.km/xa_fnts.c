@@ -941,9 +941,9 @@ create_new_fnts(enum locks lock,
 				 wt,
 				 wind,
 				 FNTS_FNTLIST,
-				 SIF_SELECTABLE|SIF_AUTOSELECT,
+				 SIF_SELECTABLE|SIF_AUTOSELECT|SIF_KEYBDACT,
 				 NULL, NULL,			/* scrl_widget closer, fuller*/
-				 NULL, click_name, NULL,	/* scrl_click dclick, click, click_nesticon */
+				 NULL, click_name, NULL, NULL,	/* scrl_click dclick, click, click_nesticon, key */
 				 NULL, NULL, NULL, NULL,
 				 NULL, NULL, fnts, 1);
 
@@ -951,9 +951,9 @@ create_new_fnts(enum locks lock,
 				 wt,
 				 wind,
 				 FNTS_TYPE,
-				 SIF_SELECTABLE|SIF_AUTOSELECT,
+				 SIF_SELECTABLE|SIF_AUTOSELECT|SIF_KEYBDACT,
 				 NULL, NULL,
-				 NULL, click_style, NULL,
+				 NULL, click_style, NULL, NULL,
 				 NULL, NULL, NULL, NULL,
 				 NULL, NULL, fnts, 1);
 		
@@ -961,9 +961,9 @@ create_new_fnts(enum locks lock,
 				 wt,
 				 wind,
 				 FNTS_POINTS,
-				 SIF_SELECTABLE|SIF_AUTOSELECT,
+				 SIF_SELECTABLE|SIF_AUTOSELECT|SIF_KEYBDACT,
 				 NULL, NULL,
-				 NULL, click_size, NULL,
+				 NULL, click_size, NULL, NULL,
 				 NULL, NULL, NULL, NULL,
 				 NULL, NULL, fnts, 1);
 
@@ -1554,7 +1554,7 @@ XA_fnts_evnt(enum locks lock, struct xa_client *client, AESPB *pb)
 		wep.ev		= (EVNT *)pb->addrin[1];
 		wep.wdlg	= NULL;
 		wep.callout	= NULL;
-		wep.redraw	= wdialog_redraw; //fnts_redraw;
+		wep.redraw	= wdialog_redraw;
 		wep.obj		= 0;
 
 		ret = wdialog_event(lock, client, &wep);
@@ -1608,11 +1608,12 @@ Keypress(enum locks lock,
 	    struct xa_client *client,
 	    struct xa_window *wind,
 	    struct widget_tree *wt,
-	    const struct rawkey *key)
+	    const struct rawkey *key,
+	    struct fmd_result *res_fr)
 {
 	bool no_exit;
 
-	if ((no_exit = Key_form_do(lock, client, wind, wt, key)))
+	if ((no_exit = Key_form_do(lock, client, wind, wt, key, NULL)))
 	{
 		struct scroll_info *list;
 		struct xa_fnts_info *fnts;

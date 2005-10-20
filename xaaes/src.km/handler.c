@@ -523,6 +523,10 @@ XA_handler(void *_pb)
 	{
 		AES_function *cmd_routine;
 		unsigned long cmd_rtn;
+// 		struct proc *pr = get_curproc();
+
+// 		if (!strnicmp(pr->name, "appltest", 8))
+// 			display("%s calls (%d)%s", pr->name, cmd, aes_tab[cmd].descr);
 
 		/* XXX	- ozk:
 		 * I dont know how I like this! However, we test force-init/attaching client structure
@@ -536,8 +540,8 @@ XA_handler(void *_pb)
 				if (client)
 				{
 					add_to_tasklist(client);
-//					ALERT(("XaAES: client %s calls (%d)%s without appl_init()!!",
-//						client->proc_name, cmd, aes_tab[cmd].descr));
+// 					ALERT(("XaAES: client %s calls (%d)%s without appl_init()!!",
+// 						client->proc_name, cmd, aes_tab[cmd].descr));
 					client->forced_init_client = true;
 				}
 			}

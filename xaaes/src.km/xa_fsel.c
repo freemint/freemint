@@ -1859,124 +1859,82 @@ filename_completion(struct scroll_info *list)
 	}
 	return this;
 }
-
 /*
- * FormKeyInput()
+ * This function is called by form_keyboard() to let G_SLIST do further keyhandling
  */
-static bool
-fs_key_form_do(enum locks lock,
-	       struct xa_client *client,
-	       struct xa_window *wind,
-	       XA_TREE *wt,
-	       const struct rawkey *key)
+static unsigned short
+fs_slist_key(struct scroll_info *list, unsigned short keycode, unsigned short ks)
 {
-	unsigned short keycode = key->aes, kk;
-	unsigned short nkcode = key->norm, nk;
-	struct scroll_info *list = object_get_slist(((XA_TREE *)get_widget(wind, XAW_TOOLBAR)->stuff)->tree + FS_LIST);
+	SCROLL_ENTRY *was, *this; // = get_selected(list), *this; //list->cur;
 	struct fsel_data *fs = list->data;
-	//SCROLL_ENTRY *old_entry = list->cur;
+	long uf;
+	unsigned short keyout = keycode;
 
-	if (nkcode == 0)
-		nkcode = nkc_tconv(key->raw.bcon);
-	nk = tolower(nkcode & 0xff);
+	//list->set(list, was, SESET_CURRENT, 0, NOREDRAW);
 
-	/* HR 310501: ctrl|alt + letter :: select drive */
-	if ((key->raw.conin.state & K_ALT) && ((nk >= 'a' && nk <= 'z') || (nk >= '0' && nk <= '9')))
+	switch (keycode)
 	{
-		int drive_object_index = find_drive(nk, fs);
-		if (drive_object_index >= FSEL_DRVA)
-			wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
-					   MN_SELECTED, 0, 0, FSEL_DRV,
-					   drive_object_index, 0, 0, 0);
-	}
-
-	/* ctrl + backspace :: fs_updir() */
-	else if ((key->raw.conin.state & K_CTRL) && (nkcode & NKF_CTRL) && nk == NK_BS)
-	{
-		set_file(fs, fs->ofile);
-		fs_updir(list);
-	}
-	else if ((key->raw.conin.state & K_CTRL) && (nkcode & NKF_CTRL) && nk == '*')
-	{
-		/* change the filter to '*'
-		 * - this should always be the FSEL_PATA entry IIRC
-		 */
-		fs_change(lock, fs, fs->menu->tree,
-				FSEL_PATA, FSEL_FILTER, FSEL_PATA, fs->fs_pattern);
-		fs->selected_dir = fs->selected_file = NULL;
-		/* apply the change to the filelist */
-		refresh_filelist(fsel, fs, NULL);
-		fs_prompt(list, fs->file, false);
-	}
-	else
-	{
-		SCROLL_ENTRY *was, *this; // = get_selected(list), *this; //list->cur;
-		long uf;
-
-		//list->set(list, was, SESET_CURRENT, 0, NOREDRAW);
-
-		switch (keycode)
+		case 0x4800:	/* arrow up */
+		case 0x5000:	/* arrow down */
+		case 0x4b00:	/* arrow left */
+		case 0x4d00:	/* arrow right */
+		case 0x5200:	/* insert */
 		{
-			case 0x4800:	/* arrow up */
-			case 0x5000:	/* arrow down */
-			case 0x4b00:	/* arrow left */
-			case 0x4d00:	/* arrow right */
-			case 0x5200:	/* insert */
+			short xsb, xsa, kk;
+		
+			fs->kbdnav = true;
+
+			if (!(was = filename_completion(list)))
+				was = get_selected(list);
+
+			if (was)
+				list->get(list, was, SEGET_XSTATE, &xsb);
+
+			list->set(list, was, SESET_CURRENT, 0, NOREDRAW);
+
+			if ((keycode == 0x4b00 || keycode == 0x4d00) && scrl_cursor(list, keycode, 0) == 0)
 			{
-				short xsb, xsa;
-			
-				fs->kbdnav = true;
 
-				if (!(was = filename_completion(list)))
-					was = get_selected(list);
+				list->get(list, NULL, SEGET_CURRENT, &this);
 				
-				if (was)
-					list->get(list, was, SEGET_XSTATE, &xsb);
-	
-				list->set(list, was, SESET_CURRENT, 0, NOREDRAW);
-
-				if ((keycode == 0x4b00 || keycode == 0x4d00) && scrl_cursor(list, keycode) != -1)
+				if (keycode == 0x4d00)
 				{
-
-					list->get(list, NULL, SEGET_CURRENT, &this);
-					
-					if (keycode == 0x4d00)
-					{
-						/* If right arrow and selection dont move, the
-						 * selection have children.
-						 */
-						if (was && was == this)
-							fs_item_action(list, was, NULL, 3);
-						else
-							set_selected(list, this);
-					}
+					/* If right arrow and selection dont move, the
+					 * selection have children.
+					 */
+					if (was && was == this)
+						fs_item_action(list, was, NULL, 3);
 					else
-					{
-						if (was && was == this)
-						{
-							/* If current didtn change, we check if current was opened
-							 * before, in which case we dont do anything, because it was
-							 * automatically closed.
-							 * If current was closed already, we're at root, and this
-							 * arrow left should go one dir up
-							 */
-							list->get(list, this, SEGET_XSTATE, &xsa);
-							if (!(xsb & OS_OPENED) && !(xsa & OS_OPENED))
-							{
-								set_file(fs, fs->ofile);
-								fs_updir(list);
-								if (!get_selected(list))
-									scrl_cursor(list, 0x5200);
-							}
-						}
-					}
+						set_selected(list, this);
 				}
 				else
 				{
-					kk = scrl_cursor(list, ((!was && (keycode == 0x5000 || keycode == 0x4800)) ? 0x5200 : keycode));
-			
+					if (was && was == this)
+					{
+						/* If current didtn change, we check if current was opened
+						 * before, in which case we dont do anything, because it was
+						 * automatically closed.
+						 * If current was closed already, we're at root, and this
+						 * arrow left should go one dir up
+						 */
+						list->get(list, this, SEGET_XSTATE, &xsa);
+						if (!(xsb & OS_OPENED) && !(xsa & OS_OPENED))
+						{
+							set_file(fs, fs->ofile);
+							fs_updir(list);
+							if (!get_selected(list))
+								scrl_cursor(list, 0x5200, 0);
+						}
+					}
+				}
+			}
+			else
+			{
+				kk = (!was && (keycode == 0x5000 || keycode == 0x48000)) ? 0x5200 : keycode;
+				if (scrl_cursor(list, kk, 0) == 0)
+				{
 					list->get(list, NULL, SEGET_CURRENT, &this);
-			
+		
 					if (this)
 					{
 						fs->kbdnav = true;
@@ -1994,13 +1952,13 @@ fs_key_form_do(enum locks lock,
 								list->set(list, p.e, SESET_STATE, ((long)OS_BOXED << 16), NORMREDRAW);
 							}
 						}
-				
+			
 						list->get(list, this, SEGET_USRFLAGS, &uf);
-				
+			
 						if (!(uf & FLAG_DIR))
 						{
 							struct sesetget_params p; //seget_entrybyarg p;
-				
+			
 							if (this->up != fs->selected_dir)
 							{
 								fs->selected_dir = this->up;
@@ -2042,39 +2000,97 @@ fs_key_form_do(enum locks lock,
 						}
 						fs->kbdnav = false;
 					}
-				}			
-				break;
-			}
-			case 0x0f09:
-			{
-				fs->kbdnav = true;
-				filename_completion(list);
-				break;
-			}
-			default:
-			{
-				
-				if (scrl_cursor(list, keycode) == -1)
-				{
-					char old[NAME_MAX+2];
-					strcpy(old, fs->file);
-					/* HR 290501: if !discontinue */
-					if (Key_form_do(lock, client, wind, wt, key))
-					{
-						if (fs->wind)
-						{
-							/* something typed in there? */
-							if (strcmp(old, fs->file) != 0)
-							{
-								strcpy(fs->ofile, ""); //fs->file);
-								fs->tfile = true;
-								fs->kbdnav = true;
-								fs_prompt(list, fs->file, true);
-							}
-						}
-					}
 				}
-				break;
+			}
+			keyout = 0;			
+			break;
+		}
+	#if 0
+		case 0x0f09:
+		{
+			fs->kbdnav = true;
+			filename_completion(list);
+			keyout = 0;
+			break;
+		}
+	#endif
+	}
+	return keyout;
+}
+/*
+ * FormKeyInput()
+ */
+static bool
+fs_key_form_do(enum locks lock,
+	       struct xa_client *client,
+	       struct xa_window *wind,
+	       XA_TREE *wt,
+	       const struct rawkey *key,
+	       
+	       struct fmd_result *res_fr)
+{
+	unsigned short nkcode = key->norm, nk;
+	struct scroll_info *list = object_get_slist(((XA_TREE *)get_widget(wind, XAW_TOOLBAR)->stuff)->tree + FS_LIST);
+	struct fsel_data *fs = list->data;
+	//SCROLL_ENTRY *old_entry = list->cur;
+
+	wt = ((XA_TREE *)get_widget(wind, XAW_TOOLBAR)->stuff);
+// 	display("focus = %d (FS_FILE=%d), aeskey=%x", wt->focus, FS_FILE, key->aes);
+	
+	if (nkcode == 0)
+		nkcode = nkc_tconv(key->raw.bcon);
+	nk = tolower(nkcode & 0xff);
+
+	/* HR 310501: ctrl|alt + letter :: select drive */
+	if ((key->raw.conin.state & K_ALT) && ((nk >= 'a' && nk <= 'z') || (nk >= '0' && nk <= '9')))
+	{
+		int drive_object_index = find_drive(nk, fs);
+		if (drive_object_index >= FSEL_DRVA)
+			wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
+					   MN_SELECTED, 0, 0, FSEL_DRV,
+					   drive_object_index, 0, 0, 0);
+	}
+
+	/* ctrl + backspace :: fs_updir() */
+	else if ((key->raw.conin.state & K_CTRL) && (nkcode & NKF_CTRL) && nk == NK_BS)
+	{
+		set_file(fs, fs->ofile);
+		fs_updir(list);
+	}
+	else if ((key->raw.conin.state & K_CTRL) && (nkcode & NKF_CTRL) && nk == '*')
+	{
+		/* change the filter to '*'
+		 * - this should always be the FSEL_PATA entry IIRC
+		 */
+		fs_change(lock, fs, fs->menu->tree,
+				FSEL_PATA, FSEL_FILTER, FSEL_PATA, fs->fs_pattern);
+		fs->selected_dir = fs->selected_file = NULL;
+		/* apply the change to the filelist */
+		refresh_filelist(fsel, fs, NULL);
+		fs_prompt(list, fs->file, false);
+	}
+	else if (wt->focus == FS_FILE && key->aes == 0x0f09)
+	{
+// 		display("eating TAB");
+		fs->kbdnav = true;
+		filename_completion(list);
+	}
+	else
+	{
+		struct fmd_result fr;
+		char old[NAME_MAX+2];
+		strcpy(old, fs->file);
+		if (Key_form_do(lock, client, wind, wt, key, &fr))
+		{
+			/* Ozk:
+			 * If key went into the editable, we check if we need to prompt
+			 */
+			if ((fr.flags & FMDF_EDIT) && strcmp(old, fs->file) != 0)
+			{
+				strcpy(fs->ofile, ""); //fs->file);
+				fs->tfile = true;
+				fs->kbdnav = true;
+				fs_prompt(list, fs->file, true);
 			}
 		}
 	}
@@ -2468,7 +2484,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 				 FS_LIST,
 				 SIF_SELECTABLE | SIF_ICONINDENT | (fs->treeview ? SIF_TREEVIEW : 0) | SIF_AUTOSLIDERS,
 				 fs_closer, NULL,
-				 fs_click/*was dclick*/, fs_click, fs_click_nesticon,
+				 fs_click/*was dclick*/, fs_click, fs_click_nesticon, fs_slist_key,
 				 NULL, NULL, NULL, NULL/*free_scrollist*/,
 				 fs->path, NULL, fs, 30);
 		{

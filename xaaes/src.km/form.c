@@ -436,12 +436,14 @@ form_cursor(XA_TREE *wt,
 		*ret_focus = -1;
 
 	switch (keycode)
-	{			/* The cursor keys are always eaten. */
+	{				/* The cursor keys are always eaten. */
 		case 0x0f09:		/* TAB moves to next field */
 		{
+			short nxt, dir = (keystate & (K_RSHIFT|K_LSHIFT)) ? 0 : 2;
+			
 			if (ret_focus)
 			{
-				short nxt = ob_find_next_any_flagstate(obtree, 0, wt->focus, OF_SELECTABLE|OF_EDITABLE|OF_EXIT|OF_TOUCHEXIT, OF_HIDETREE, 0, OS_DISABLED, 0, 0, 2);
+				nxt = ob_find_next_any_flagstate(obtree, 0, wt->focus, OF_SELECTABLE|OF_EDITABLE|OF_EXIT|OF_TOUCHEXIT, OF_HIDETREE, 0, OS_DISABLED, 0, 0, dir); //2);
 				if (nxt >= 0)
 				{
 					*ret_focus = nxt;
@@ -451,7 +453,9 @@ form_cursor(XA_TREE *wt,
 			}
 			else if (edcnt > 1)
 			{
-				short nxt = ob_find_next_any_flag(obtree, o, OF_EDITABLE);
+				dir |= (3 << 2);
+				nxt = ob_find_next_any_flagstate(obtree, 0, wt->focus, OF_EDITABLE, OF_HIDETREE, 0, OS_DISABLED, 0, 0, dir);
+// 				short nxt = ob_find_next_any_flag(obtree, o, OF_EDITABLE);
 				if (nxt >= 0)
 					o = nxt;
 
@@ -620,7 +624,14 @@ form_keyboard(XA_TREE *wt,
 	DIAG((D_form, NULL, "form_keyboard: wt=%lx, obtree=%lx, wt->owner=%lx(%lx), obj=%d, key=%x(%x), nrmkey=%x for %s",
 		wt, wt->tree, wt->owner, client, obj, keycode, key->aes, key->norm, wt->owner->name));
 
+// 	display("form_keyboard: efocus=%d, wt=%lx, obtree=%lx, wt->owner=%lx(%lx), obj=%d, key=%x(%x), nrmkey=%x for %s",
+// 		wt->e.obj, wt, wt->tree, wt->owner, wt->owner, obj, keycode, key->aes, key->norm, wt->owner->name);
+	
 	fr.no_exit = true;
+
+
+	if (!obj)
+		obj = wt->e.obj;
 
 	/*
 	 * Cursor?
@@ -629,6 +640,27 @@ form_keyboard(XA_TREE *wt,
 		next_obj = new_eobj = wt->e.obj;
 	else
 		next_obj = new_eobj = obj;
+	
+	if (wt->focus != -1)
+	{
+		OBJECT *obtree = wt->tree;
+		switch (obtree[wt->focus].ob_type & 0xff)
+		{
+			case G_SLIST:
+			{
+				struct scroll_info *list = object_get_slist(obtree + wt->focus);
+				if (list && list->keypress)
+				{
+					if ((*list->keypress)(list, keycode, keystate) == 0)
+					{
+						goto done;
+					}
+				}
+				break;
+			}
+			default:;
+		}
+	}
 	
 	next_obj = new_eobj = form_cursor(wt, v, keycode, keystate, next_obj, redraw, rl, &new_focus);
 	
@@ -685,9 +717,9 @@ form_keyboard(XA_TREE *wt,
 		}
 		else if (keycode != 0x1c0d && keycode != 0x720d)
 		{
-			if (wt->focus == wt->e.obj)
+			if (wt->focus == -1 || wt->focus == new_eobj)
 				next_key = keycode;
-			next_obj = wt->e.obj;
+			next_obj = new_eobj;
 		}
 	}
 	if (new_focus != -1)
@@ -702,6 +734,7 @@ form_keyboard(XA_TREE *wt,
 		}
 	}
 
+done:
 	if (fr.no_exit)
 		next_obj = new_eobj;
 	
@@ -963,7 +996,9 @@ Key_form_do(enum locks lock,
 	    struct xa_client *client,
 	    struct xa_window *wind,
 	    struct widget_tree *wt,
-	    const struct rawkey *key)
+	    const struct rawkey *key,
+	    
+	    struct fmd_result *ret_fr)
 {
 	struct xa_vdi_settings *v;
 	RECT *clip = NULL;
@@ -973,6 +1008,7 @@ Key_form_do(enum locks lock,
 	RECT r;
 
 	fr.no_exit = true;
+	fr.flags = 0;
 
 	DIAG((D_form, client, "Key_form_do: %s formdo for %s",
 		wind ? "windowed":"classic", client->name));
@@ -1035,6 +1071,8 @@ Key_form_do(enum locks lock,
 					  NULL,
 					  NULL);
 				fr.aeskey = 0;
+				fr.flags |= FMDF_EDIT;
+
 				DIAGS(("Key_form_do: obj_edit - edobj=%d, edpos=%d",
 					wt->e.obj, wt->e.pos));
 			}
@@ -1055,6 +1093,9 @@ Key_form_do(enum locks lock,
 			}
 		}
 	}
+	
+	if (ret_fr)
+		*ret_fr = fr;
 
 	DIAGS(("Key_form_do: returning - no_exit=%s", fr.no_exit ? "yes":"no"));
 	return fr.no_exit;
