@@ -595,7 +595,6 @@ static void
 display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this, struct xa_vdi_settings *v, RECT *xy, const RECT *clip)
 {
 	bool sel = this->state & OS_SELECTED;
-	XA_TREE tr = nil_tree;
 	
 	if (this)
 	{
@@ -677,10 +676,9 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this, str
 						else
 							iy = r.y;
 						
-						tr.tree = c->c.icon.icon;
-						tr.owner = list->wt->owner;
-						display_object(lock, &tr, v, 0, ix, iy, 12);
-						
+						list->nil_wt->tree = c->c.icon.icon;
+						list->nil_wt->owner = list->wt->owner;
+						display_object(lock, list->nil_wt, v, 0, ix, iy, 12);	
 					}
 					break;
 				}
@@ -717,9 +715,9 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this, str
 							else
 								iy = dy;
 							
-							tr.tree = c->c.text.icon.icon;
-							tr.owner = list->wt->owner;
-							display_object(lock, &tr, v, 0, ix, iy, 12);
+							list->nil_wt->tree = c->c.text.icon.icon;
+							list->nil_wt->owner = list->wt->owner;
+							display_object(lock, list->nil_wt, v, 0, ix, iy, 12);
 							dx += c->c.text.icon.r.w;
 							tw -= c->c.text.icon.r.w;
 						}
@@ -3234,6 +3232,53 @@ search(SCROLL_INFO *list, SCROLL_ENTRY *start, short mode, void *data)
 	return ret;
 }
 
+static void
+entry_action(struct scroll_info *list, struct scroll_entry *this, const struct moose_data *md)
+{
+	if (!this)
+		this = list->cur;
+
+	if (this)
+	{
+		short ni_x = (list->wi->wa.x + this->indent) - list->off_x;
+		LRECT r;
+
+		if ((list->flags & SIF_TREEVIEW) && (md && md->x > ni_x && md->x < (ni_x + list->nesticn_w)) )
+		{
+			if ((this->xflags & OF_AUTO_OPEN))
+			{
+				if (this->xstate & OS_OPENED)
+					list->set(list, this, SESET_OPEN, 0, NORMREDRAW);
+				else
+					list->set(list, this, SESET_OPEN, 1, NORMREDRAW);
+			}
+			if (list->click_nesticon)
+				list->click_nesticon(list, this, md);
+		}
+		else
+		{
+			list->cur = this;
+			if (list->flags & SIF_AUTOSELECT)
+			{
+				if (!(list->flags & SIF_MULTISELECT))
+					list->set(list, NULL, SESET_UNSELECTED, UNSELECT_ALL, NORMREDRAW);
+				list->set(list, this, SESET_SELECTED, 0, NOREDRAW); //NORMREDRAW);
+				get_entry_lrect(list, this, 0, &r);
+				list->vis(list, this, NORMREDRAW);
+			}
+			if (list->click)			/* Call the new object selected function */
+				(*list->click)(list, this, md);
+		}
+	}
+#if 0
+	else
+	{
+		if (list->click)
+			list->click(list, this, md);
+	}
+#endif
+}
+
 /* HR 181201: pass all mouse data to these functions using struct moose_data. */
 void
 click_scroll_list(enum locks lock, OBJECT *form, int item, const struct moose_data *md)
@@ -3297,7 +3342,11 @@ click_scroll_list(enum locks lock, OBJECT *form, int item, const struct moose_da
 				if (this) y += this->r.h;
 			}
 		}
-		
+		if (this)
+			entry_action(list, this, md);
+		else if (list->click)
+			list->click(list, this, md);
+#if 0
 		if (this)
 		{
 			short ni_x = (list->wi->wa.x + this->indent) - list->off_x;
@@ -3335,6 +3384,7 @@ click_scroll_list(enum locks lock, OBJECT *form, int item, const struct moose_da
 			if (list->click)
 				list->click(list, this, md);
 		}
+#endif
 	}
 }
 
@@ -3597,6 +3647,7 @@ set_slist_object(enum locks lock,
 		 scrl_click *dclick,
 		 scrl_click *click,
 		 scrl_click *click_nesticon,
+		 scrl_keybd *key,
 
 		 scrl_add	*add,
 		 scrl_del	*del,
@@ -3611,15 +3662,16 @@ set_slist_object(enum locks lock,
 	int i;
 	struct scroll_info *list;
 	struct se_tab *tabs;
+	struct widget_tree *nil_wt;
 	RECT r;
 	XA_WIND_ATTR wkind = 0;
 	OBJECT *ob = wt->tree + item;
 
 	DIAG((D_rsrc, NULL, "set_slist_object"));
 
-	list = kmalloc(sizeof(*list));
+	list = kmalloc(sizeof(*list) + sizeof(*nil_wt));
 	tabs = kmalloc(sizeof(*tabs) * 10);
-	
+
 	if (!list || !tabs)
 	{
 		if (list)
@@ -3628,8 +3680,14 @@ set_slist_object(enum locks lock,
 			kfree(tabs);
 		return NULL;
 	}
+	
+	(long)nil_wt = (long)list + sizeof(*list);
 
-	bzero(list, sizeof(*list));
+	bzero(list, sizeof(*list) + sizeof(*nil_wt));
+
+	nil_wt->e.obj = -1;
+	nil_wt->focus = -1;
+	list->nil_wt = nil_wt;
 
 	list->tabs = tabs;
 	list->num_tabs = 10;
@@ -3664,6 +3722,7 @@ set_slist_object(enum locks lock,
 	list->dclick = dclick;			/* Pass the scroll list's double click function */
 	list->click = click;			/* Pass the scroll list's click function */
 	list->click_nesticon = click_nesticon;
+	list->keypress = key ? key : scrl_cursor;
 
 	list->title = title;
 	obj_area(wt, item, &r);
@@ -3721,6 +3780,11 @@ set_slist_object(enum locks lock,
 		list->slider	= sliders;
 		list->closer	= closer;
 
+		list->add	= add ? add		: add_scroll_entry;
+		list->del	= del ? del		: del_scroll_entry;
+		list->empty	= empty ? empty		: empty_scroll_list;
+		list->destroy	= destroy ? destroy	: unset_G_SLIST;
+#if 0
 		if (add)	list->add	= add;
 		else		list->add	= add_scroll_entry;
 		if (del)	list->del	= del;
@@ -3729,6 +3793,7 @@ set_slist_object(enum locks lock,
 		else		list->empty	= empty_scroll_list;
 		if (destroy)	list->destroy	= destroy;
 		else		list->destroy	= unset_G_SLIST;
+#endif
 
 		list->fuller	= fuller;
 		list->vis	= visible;
@@ -3930,10 +3995,9 @@ slist_msg_handler(
 	}
 }
 
-int
-scrl_cursor(SCROLL_INFO *list, ushort keycode)
+unsigned short
+scrl_cursor(SCROLL_INFO *list, unsigned short keycode, unsigned short keystate)
 {
-	
 	switch (keycode)
 	{
 	case 0x5200:			/* Insert */
@@ -3970,10 +4034,18 @@ scrl_cursor(SCROLL_INFO *list, ushort keycode)
 			}
 			if (n)
 			{
-				list->set(list, NULL, SESET_UNSELECTED, UNSELECT_ALL, NORMREDRAW);
-				list->cur = n;
-				list->set(list, n, SESET_SELECTED, 0, NOREDRAW);
-				list->vis(list, n, NORMREDRAW);
+				if (list->flags & SIF_KEYBDACT)
+				{
+					display("entry act uparw");
+					entry_action(list, n, NULL);
+				}
+				else
+				{
+					list->set(list, NULL, SESET_UNSELECTED, UNSELECT_ALL, NORMREDRAW);
+					list->cur = n;
+					list->set(list, n, SESET_SELECTED, 0, NOREDRAW);
+					list->vis(list, n, NORMREDRAW);
+				}
 			}
 		}
 		break;
@@ -3992,10 +4064,18 @@ scrl_cursor(SCROLL_INFO *list, ushort keycode)
 				n = list->start;
 			if (n)
 			{
-				list->set(list, NULL, SESET_UNSELECTED, UNSELECT_ALL, NORMREDRAW);
-				list->cur = n;
-				list->set(list, n, SESET_SELECTED, 0, NOREDRAW);
-				list->vis(list, n, NORMREDRAW);
+				if (list->flags & SIF_KEYBDACT)
+				{
+					display("entry act downarw");
+					entry_action(list, n, NULL);
+				}
+				else
+				{
+					list->set(list, NULL, SESET_UNSELECTED, UNSELECT_ALL, NORMREDRAW);
+					list->cur = n;
+					list->set(list, n, SESET_SELECTED, 0, NOREDRAW);
+					list->vis(list, n, NORMREDRAW);
+				}
 			}
 		}			
 		break;
@@ -4097,7 +4177,7 @@ scrl_cursor(SCROLL_INFO *list, ushort keycode)
 			list->set(list, list->cur, SESET_SELECTED, 0, NORMREDRAW);
 			list->vis(list, list->cur, NORMREDRAW);
 		}
-		return keycode;
+		break;
 	}
 	case 0x5032:			/* shift + down arrow */
 	case 0x5100:			/* page down */
@@ -4112,7 +4192,7 @@ scrl_cursor(SCROLL_INFO *list, ushort keycode)
 			list->set(list, list->cur, SESET_SELECTED, 0, NORMREDRAW);
 			list->vis(list, list->cur, NORMREDRAW);
 		}
-		return keycode;
+		break;
 	}
 	case 0x4700:			/* home */
 	{
@@ -4138,8 +4218,8 @@ scrl_cursor(SCROLL_INFO *list, ushort keycode)
 	}
 	default:
 	{
-		return -1;
+		return keycode;
 	}
 	}
-	return keycode;
+	return 0;
 }

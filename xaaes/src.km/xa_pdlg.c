@@ -151,7 +151,7 @@ create_new_pdlg(struct xa_client *client, struct xa_window *wind)
 						 XPDLG_LIST,
 						 SIF_SELECTABLE|SIF_AUTOSELECT,
 						 NULL, NULL,			/* scrl_widget closer, fuller*/
-						 NULL, click_list, NULL,	/* scrl_click dclick, click, click_nesticon */
+						 NULL, click_list, NULL, NULL,	/* scrl_click dclick, click, click_nesticon, keybd */
 						 NULL, NULL, NULL, NULL,
 						 NULL, NULL, pdlg, 1);
 
@@ -492,7 +492,7 @@ Keypress(enum locks lock,
 {
 	bool no_exit;
 
-	if ((no_exit = Key_form_do(lock, client, wind, wt, key)))
+	if ((no_exit = Key_form_do(lock, client, wind, wt, key, NULL)))
 	{
 		struct scroll_info *list;
 		struct xa_pdlg_info *pdlg;

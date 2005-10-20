@@ -2140,8 +2140,11 @@ menu_title(enum locks lock, Tab *tab, struct xa_window *wind, XA_WIDGET *widg, i
 			desk_popup.menu.mn_keystate = 0;
 
 			desk_popup.wt = &desk_wt;
+			
 			desk_wt.tree = desk_popup.menu.mn_tree;
 			desk_wt.owner = C.Aes;
+			desk_wt.e.obj = -1;
+			desk_wt.focus = -1;
 			
 			attach_menu(tab->lock, C.Aes, wt, k->m.about + 2, &desk_popup);
 		}

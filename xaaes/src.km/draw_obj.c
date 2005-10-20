@@ -2140,6 +2140,9 @@ init_objects(void)
 {
 	short f;
 
+	nil_tree.e.obj = -1;
+	nil_tree.focus = -1;
+
 	for (f = 0; f <= G_UNKNOWN; f++)
 		/* Anything with a NULL pointer won't get called */
 		objc_jump_table[f] = NULL;
@@ -2384,6 +2387,7 @@ display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, short it
 		if ((ob->ob_state & state_mask) & OS_SELECTED)
 			write_selection(v, 0, &r);
 	}
+
 	if (wt->focus == item)
 	{
 		(*v->api->wr_mode)(v, MD_TRANS);
