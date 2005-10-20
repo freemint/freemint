@@ -561,7 +561,6 @@ taskmanager_form_exit(struct xa_client *Client,
 
 	switch (fr->obj)
 	{
-
 		case TM_LIST:
 		{
 // 			short obj = fr->obj;

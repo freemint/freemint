@@ -45,6 +45,7 @@ SCROLL_INFO *set_slist_object(
 		scrl_click *dclick,
 		scrl_click *click,
 		scrl_click *click_nesticon,
+		scrl_keybd *key,
 
 		scrl_add	*add,
 		scrl_del	*del,
@@ -55,7 +56,7 @@ SCROLL_INFO *set_slist_object(
 		void *data,
 		short line_max);
 
-int scrl_cursor(SCROLL_INFO *list, ushort keycode);
+unsigned short scrl_cursor(SCROLL_INFO *list, unsigned short kc, unsigned short ks);
 void free_scrollist(SCROLL_INFO *list);
 
 #endif /* _scrlobjc_h */

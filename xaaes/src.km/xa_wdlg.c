@@ -1082,11 +1082,33 @@ wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms 
 			{
 				unsigned short key = ev->key;
 				unsigned short keystate;
+				unsigned short new_focus = wt->focus;
 				 
 				vq_key_s(C.P_handle, &keystate);
 
 				obtree = wt->tree;
-				nxtobj = form_cursor(wt, v, ev->key, keystate, wt->e.obj, true, &wind->rect_list.start, NULL);
+				
+				if (new_focus != -1)
+				{
+					switch (obtree[new_focus].ob_type & 0xff)
+					{
+						case G_SLIST:
+						{
+							struct scroll_info *list = object_get_slist(obtree + new_focus);
+							if (list && list->keypress)
+							{
+								if ((*list->keypress)(list, key, keystate) == 0)
+								{
+									goto kbd_done;
+								}
+							}
+							break;
+						}
+						default:;
+					}
+				}
+				
+				nxtobj = form_cursor(wt, v, ev->key, keystate, wt->e.obj, true, &wind->rect_list.start, &new_focus);
 				
 				if (nxtobj >= 0)
 				{
@@ -1103,7 +1125,14 @@ wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms 
 				}
 				else 
 				{
-					if (key == 0x1c0d || key == 0x720d)
+					if (key == 0x3920 && wt->focus != -1)
+					{
+						if (!(obtree[wt->focus].ob_flags & OF_EDITABLE))
+							nxtobj = wt->focus;
+						else
+							nxtobj = -1;
+					}
+					else if (key == 0x1c0d || key == 0x720d)
 					{
 						nxtobj = ob_find_flst(obtree, OF_DEFAULT, 0, 0, OS_DISABLED, OF_LASTOB, 0);
 						DIAG((D_wdlg, NULL, "wdlg_event(MU_KEYBD): Got RETURN key - default obj=%d for %s",
@@ -1153,7 +1182,7 @@ wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms 
 								ret = 0;
 						}
 					}
-					else if (key != 0x1c0d && key != 0x720d)
+					else if (key != 0x1c0d && key != 0x720d && wt->focus == wt->e.obj)
 					{
 						DIAG((D_wdlg, NULL, "wdlg_event(MU_KEYBD): HNDL_EDIT exit(%lx) with key=%x for %s",
 							wep->wdlg ? wep->wdlg->exit : NULL, key, client->name));
@@ -1167,13 +1196,24 @@ wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms 
 							 &wind->wa, wind->rect_list.start,
 							 NULL,
 							 NULL);
+
 						if (wep->callout)
 							ret = (*wep->callout)(client, wep->wdlg, ev, HNDL_EDIT, 0, NULL, &key);
+
 						ev->mwhich &= ~MU_KEYBD;
 					}
 				}
 				if (nxtobj >= 0)
 					ev->mwhich &= ~MU_KEYBD;
+kbd_done:
+				if (new_focus != -1 && wt->focus != new_focus)
+				{
+					short pf = wt->focus;
+					wt->focus = new_focus;
+					if (pf != -1)
+						obj_draw(wt, v, pf, -2, NULL, wind->rect_list.start, DRW_CURSOR);
+					obj_draw(wt, v, new_focus, -2, NULL, wind->rect_list.start, DRW_CURSOR);
+				}
 			} /* end if ( wind == top && (ev->mwhich & MU_KEYBD) ) */
 		} /* end if (ev) */
 	} /* end if (wt) */

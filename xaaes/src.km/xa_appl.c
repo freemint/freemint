@@ -133,7 +133,7 @@ init_client(enum locks lock)
 	struct xa_client *client;
 	struct proc *p = get_curproc();
 	long f;
-// 	bool d = (!strnicmp(p->name, "aeshlp", 6)) ? true : false;
+// 	bool d = (!strnicmp(p->name, "appltest", 8)) ? true : false;
 
 	/* if attach_extension succeed it returns a pointer
 	 * to kmalloc'ed and *clean* memory area of the given size
@@ -300,11 +300,13 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	struct aes_global *globl = (struct aes_global *)pb->global;
 	struct proc *p = get_curproc();
-	//long f;
+// 	bool d = (!strnicmp(p->name, "appltest", 8)) ? true : false;
 
 	CONTROL(0,1,0);
 
 	DIAG((D_appl, client, "appl_init for %d", p->pid));
+	
+// 	if (d) display("appl_init: client = %lx, globl = %lx for %d", client, globl, p->pid);
 
 	if (client)
 	{
@@ -721,6 +723,7 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 unsigned long
 XA_appl_exit(enum locks lock, struct xa_client *client, AESPB *pb)
 {
+	struct aes_global *globl = (struct aes_global *)pb->global;
 	CONTROL(0,1,0)
 
 	DIAG((D_appl, client, "appl_exit for %d", client->p->pid));
@@ -733,18 +736,26 @@ XA_appl_exit(enum locks lock, struct xa_client *client, AESPB *pb)
 	 * Ozk: Weirdest thing; imgc4cd and ic4plus calls appl_exit() directly
 	 * after it calls appl_init() and ignoring the appl_exit() make'em work!
 	 *
+	 * Update: Ozk:
+	 *  After changing to keeping shel_info until we are sure process
+	 *  terminates, appl_init()/appl_exit() works as expected.
+	 *
 	 */
 	if (	strnicmp(client->proc_name, "wdialog", 7) == 0
-// 		|| strnicmp(client->proc_name, "imgc4cd", 7) == 0
-// 		|| strnicmp(client->proc_name, "ic4plus", 7) == 0
 	   )
 	{
 		DIAG((D_appl, client, "appl_exit ignored for %s", client->name));
 		return XAC_DONE;
 	}
-
+	
 	/* we assume correct termination */
 	exit_client(lock, client, 0, false, true);
+
+	if (globl)
+	{
+		globl->version = 0;
+		globl->count = 0;
+	}
 
 	/* and decouple from process context */
 	//detach_extension(NULL, XAAES_MAGIC);
