@@ -91,7 +91,7 @@ object_set_spec(OBJECT *ob, unsigned long cl)
 inline bool
 object_is_editable(OBJECT *ob)
 {
-	if (ob->ob_flags & OF_EDITABLE)
+	if ((ob->ob_flags & OF_EDITABLE) && !(ob->ob_state & OS_DISABLED))
 	{
 		short t = ob->ob_type & 0xff;
 		switch (t)
@@ -3088,6 +3088,7 @@ obj_edit(XA_TREE *wt,
 					pos = ei->pos;
 				}
 				showm();
+// 				display("ED_CHR: eors=%d, obj=%d, chr=%c for %s", wt->e.c_state & DRW_CURSOR, wt->e.obj, keycode, wt->owner->name);
 				break;
 			}
 			case ED_CRSR:

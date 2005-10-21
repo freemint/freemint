@@ -644,7 +644,90 @@ no definitions are made yet.
               not set or redraw the slider. But it needs to collect the 'real'
               position of the slider for wheel -> slider calculations to work.
 
-      
+
+ >>>>>> UNFINISHED UNFINISHED <<<<<<<<<
+===============================================================================
+=                        XaAES and Keyboard navigation;                       =
+=               the importance of form_keybd() and form_button()              =
+=                            usage in your apps!                              =
+-------------------------------------------------------------------------------
+
+
+ Arrow up          Go to closest object above current focused
+ Arrow down        Go to closest object below current focused
+ Arrow left        Go to closest object 
+ 
+ 
+ XaAES now implements good keyboard navigation in dialogs when applications
+correctly use the form_keybd() and form_button() functions to implement their
+own non-modal form_do() function.
+
+ It is strongly adviced that application authors follow the gudelines that
+follow here!
+
+
+ form_keybd(obj, keycode, nextobj, newobj, keyout);
+ {
+ 	intin[0] = obj;
+ 	intin[1] = keycode;
+ 	intin[2] = nextobj;
+ }
+
+ GEM arrays as follows:
+
+	Address     Element    meaning 
+        ------------------------------------------------------
+        control    control[0]   55        # Opcode
+        control+2  control[1]   3          # Entries in intin
+        control+4  control[2]   3          # Entries in intout
+        control+6  control[3]   0          # Entries in addrin 
+        control+8  control[4]   0          # entries in addrout 
+        intin      intin[0]    obj
+        intin+2    intin[1]    keycode
+        intin+4    intin[2]    nextobj
+
+        intout     intout[0]   Return
+	intout+2   intout[1]   newobj
+	intout+4   intout[2]   keyout
+
+ Return: 0 - is returned if the key triggered a selection of an object
+             that is 'exitable'. That is, if object has OF_EXIT or
+             OF_TOUCHEXIT set. When this happens, 'newobj' contains the object
+             index of the selected object. A 0 is also returned in 'keyout'
+             to indicate that the key was used by form_keybd().
+
+         1 - is returned if the key triggered a selection of an object that
+             is not 'exitable', or if the key was not used by form_keybd().
+             If there was a selection done, a 0 is returned in 'keyout' to
+             indicate the key was used, and 'newobj' contains the index of the
+             object which should get editfocus, or -1 if no editables found,
+	     upon function return. If a nonzero value is returned in 'keyout',
+	     the key was not used by form_keybd(), and should be passed on to
+	     objc_edit(), after changing focus to object whose index is passed
+	     in 'newobj', if 'newobj' != -1.
+	     
+             XaAES always returns the index of the editable which should get
+             editfocus in 'newobj', or -1 if no editable objects was found.
+             Even when form_keybd() returns the key in 'keyout', applications
+	     MUST set editfocus to 'newobj' before giving the key to objc_edit()!
+
+ newobj:    If an object was selected by the function and it has OF_EXIT or
+            OF_TOUCHEXIT obflags set, 'newobj' contains the index of the
+            'exit' object, and a value of 0 is returned.
+	    
+            In any other cases, 'newobj' contains the object index of the
+            editable object which should get editfocus, or -1 if no editable
+            objects was found, upon function return.
+	   
+ keyout:    If the key was used by the function, 'keyout' will contain 0 upon
+            function return. Else the key is returned in 'keyout', and can be
+            passed to objc_edit(), after first setting editfocus to the
+	    editable whose index is return in 'newobj'.
+
+-------------------------------------------------------------------------------
+===============================================================================
+ 
+ **** Nothing below this point is implementet!!!! ****      
 -------------------------------------------------------------------------------
 ===============================================================================
                   New event/poll functions - One entry point!

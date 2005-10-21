@@ -75,7 +75,8 @@ short	form_cursor	(XA_TREE *wt,
 			 short obj,
 			 bool redraw,
 			 struct xa_rect_list **rl,
-			 short *ret_focus);
+			 short *ret_focus,
+			 short *keyout);
 
 bool	form_keyboard	(XA_TREE *wt,
 			 struct xa_vdi_settings *v,
