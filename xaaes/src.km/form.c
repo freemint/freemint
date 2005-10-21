@@ -417,10 +417,11 @@ form_cursor(XA_TREE *wt,
 	    bool redraw,
 	    struct xa_rect_list **rl,
 	/* outout */	    
-	    short *ret_focus)
+	    short *ret_focus,
+	    short *keyout)
 {
 	OBJECT *obtree = wt->tree;
-	short o = obj, nxt, dir;
+	short o = obj, nxt, dir, kout = 0;
 	short edcnt;
 	short last_ob;
 	struct xa_rect_list *lrl = NULL;
@@ -576,10 +577,14 @@ form_cursor(XA_TREE *wt,
 		}
 		default:
 		{
+			kout = keycode;
 			o = -1;		/* This is also a safeguard.  */
 			break;
 		}
 	}
+
+	if (keyout)
+		*keyout = kout;
 
 	DIAGS(("form_cursor: from obj=%d to obj=%d, wt-edit_obj=%d, wt->e.pos=%d",
 		obj, o, wt->e.obj, wt->e.pos));
@@ -623,6 +628,7 @@ form_keyboard(XA_TREE *wt,
 	short next_obj, new_focus, new_eobj;
 	struct fmd_result fr;
 	struct xa_rect_list *lrl = NULL;
+	OBJECT *obtree = wt->tree;
 
 	if (!rl) rl = &lrl;
 
@@ -634,9 +640,11 @@ form_keyboard(XA_TREE *wt,
 	
 	fr.no_exit = true;
 
-
 	if (!obj)
 		obj = wt->e.obj;
+
+	if (obj == -1 || !object_is_editable(obtree + obj))
+		obj = ob_find_next_any_flagstate(obtree, 0, wt->focus, OF_EDITABLE, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_FIRST);
 
 	/*
 	 * Cursor?
@@ -645,10 +653,9 @@ form_keyboard(XA_TREE *wt,
 		next_obj = new_eobj = wt->e.obj;
 	else
 		next_obj = new_eobj = obj;
-	
+
 	if (wt->focus != -1)
 	{
-		OBJECT *obtree = wt->tree;
 		switch (obtree[wt->focus].ob_type & 0xff)
 		{
 			case G_SLIST:
@@ -667,12 +674,10 @@ form_keyboard(XA_TREE *wt,
 		}
 	}
 	
-	next_obj = new_eobj = form_cursor(wt, v, keycode, keystate, next_obj, redraw, rl, &new_focus);
+	next_obj = new_eobj = form_cursor(wt, v, keycode, keystate, next_obj, redraw, rl, &new_focus, &keycode);
 	
-	if (next_obj < 0)
+	if (next_obj < 0 && keycode)
 	{
-		OBJECT *obtree = wt->tree;
-
 		new_eobj = obj;
 
 		if (keycode == 0x3920 && wt->focus != -1)
@@ -724,16 +729,21 @@ form_keyboard(XA_TREE *wt,
 		{
 			if (wt->focus == -1 || wt->focus == new_eobj)
 				next_key = keycode;
-			else if (wt->focus != -1 && wt->e.obj > 0 && !(obtree[wt->focus].ob_flags & OF_EDITABLE))
+			else if (wt->focus != -1 && new_eobj > 0 /*wt->e.obj > 0*/ && !(obtree[wt->focus].ob_flags & OF_EDITABLE))
 			{
-				new_focus = wt->e.obj;
+				new_focus = new_eobj; //wt->e.obj;
 				next_key = keycode;
-				next_obj = new_eobj = wt->e.obj;
+				next_obj = new_eobj; // = wt->e.obj;
 			}
 			else
+			{
 				next_obj = new_eobj;
+				next_key = keycode;
+			}
 		}
 	}
+	else if (!keycode)
+		next_key = 0;
 
 	if (new_focus != -1)
 	{
