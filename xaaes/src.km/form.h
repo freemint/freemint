@@ -54,6 +54,8 @@ void	center_rect	(RECT *r);
 
 #define FBF_REDRAW	1
 #define FBF_DO_SLIST	2
+#define FBF_CHANGE_FOCUS 4
+
 
 bool	form_button	(XA_TREE *wt,
 			 struct xa_vdi_settings *v,

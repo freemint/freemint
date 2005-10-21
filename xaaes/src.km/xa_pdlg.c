@@ -126,7 +126,10 @@ create_new_pdlg(struct xa_client *client, struct xa_window *wind)
 		if (mtree)
 		{
 			if ((mwt = new_widget_tree(client, mtree)))
+			{
 				mwt->flags |= WTF_AUTOFREE | WTF_TREE_ALLOC;
+				obj_init_focus(mwt, OB_IF_RESET);
+			}
 		}
 		dtree = duplicate_obtree(C.Aes, ResourceTree(C.Aes_rsc, PDLG_DIALOGS), 0);
 		if (dtree)

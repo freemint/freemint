@@ -1216,7 +1216,9 @@ short
 ob_find_flag(OBJECT *tree, short f, short mf, short stopf)
 {
 	int o = -1;
-
+	
+	stopf |= OF_LASTOB;
+	
 	do
 	{
 		o++;
@@ -1233,6 +1235,8 @@ short
 ob_find_any_flag(OBJECT *tree, short f, short mf, short stopf)
 {
 	short o = -1;
+
+	stopf |= OF_LASTOB;
 
 	do
 	{
@@ -1257,6 +1261,8 @@ short
 ob_count_flag(OBJECT *tree, short f, short mf, short stopf, short *count)
 {
 	short o = -1, cnt = 0;
+
+	stopf |= OF_LASTOB;
 
 	do
 	{
@@ -1284,6 +1290,9 @@ short
 ob_count_any_flag(OBJECT *tree, short f, short mf, short stopf, short *count)
 {
 	short o = -1, cnt = 0;
+	
+	stopf |= OF_LASTOB;
+	
 	do
 	{
 		o++;
@@ -1304,7 +1313,9 @@ short
 ob_find_flst(OBJECT *tree, short f, short s, short mf, short ms, short stopf, short stops)
 {
 	int o = -1;
-
+	
+	stopf |= OF_LASTOB;
+	
 	do
 	{
 		o++;
@@ -1323,6 +1334,8 @@ ob_find_any_flst(OBJECT *tree, short f, short s, short mf, short ms, short stopf
 {
 	short o = -1;
 
+	stopf |= OF_LASTOB;
+	
 	do
 	{
 		o++;
@@ -1337,7 +1350,7 @@ ob_find_any_flst(OBJECT *tree, short f, short s, short mf, short ms, short stopf
 }
 
 short
-ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, short mf, short s, short ms, short stopf, short stops, short dir)
+ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, short mf, short s, short ms, short stopf, short stops, short flags)
 {
 	short o, n, x, y, px, py, w, h, ax, cx, cy, co, cf, flg;
 	RECT r;
@@ -1351,11 +1364,25 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 	{
 		if ((start = tree->ob_head) > 0)
 		{
-			r.x = r.y = -1;
-			r.w = r.h = 1;
-			dir = 2;
+			if (!(flags & OBFIND_LAST))
+				flags |= OBFIND_FIRST;
 		}
 		else goto done;
+	}
+	if ((flags & OBFIND_FIRST))
+	{
+		r.x = r.y = -1;
+		r.w = r.h = 1;
+		flags &= ~(OBFIND_HOR|OBFIND_DOWN);
+		flags |= OBFIND_DOWN;
+	}
+	else if ((flags & OBFIND_LAST))
+	{
+		r.x = tree->ob_x + tree->ob_width;
+		r.y = tree->ob_y + tree->ob_height;
+		r.w = r.h = 8;
+		flags &= ~(OBFIND_LAST|OBFIND_HOR|OBFIND_DOWN);
+		flags |= OBFIND_HOR|OBFIND_UP;
 	}
 	else
 		ob_rectangle(tree, start, &r);
@@ -1419,7 +1446,7 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 
 		if ((!mf || !(tree[o].ob_flags & mf)) && (!ms || !(tree[o].ob_state & ms)))
 		{
-			if (dir & 4)
+			if (flags & OBFIND_EXACTFLAG)
 			{
 				if (!f || (tree[o].ob_flags & f) == f)
 					flg |= 1;
@@ -1427,7 +1454,7 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 			else if (!f || (tree[o].ob_flags & f))
 				flg |= 1;
 
-			if (dir & 8)
+			if (flags & OBFIND_EXACTSTATE)
 			{
 				if (!s || (tree[o].ob_state & s) == s)
 					flg |= 2;
@@ -1442,10 +1469,10 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 			w = tree[o].ob_width;
 			h = tree[o].ob_height;
 // 			display("start = %d, %d/%d/%d/%d this = %d, %d/%d/%d/%d", start, r, o, x,y,w,h);
-				
-			if (!(dir & 1))
+
+			if (!(flags & OBFIND_HOR))
 			{
-				if (!(dir & 2))
+				if (!(flags & OBFIND_DOWN))
 				{
 					if ( ((x <= r.x && (x + w) > r.x) || (x > r.x && x < (r.x + r.w))))
 					{
@@ -1520,7 +1547,7 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 			}
 			else
 			{
-				if (!(dir & 2))
+				if (!(flags & OBFIND_DOWN))
 				{
 
 					if ( ((y <= r.y && (y + h) > r.y)) || (y > r.y && (y + h) < (r.y + r.h)))
@@ -1601,17 +1628,6 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 							}
 						}		
 					}
-			#if 0
-					else if ((x > r.x && (x - r.x) < cx))
-					{
-						if ((flg & 1) || (!(cf & 1) && !(flg & 1)) )
-						{
-							cx = x - r.x;
-							co = o;
-							cf |= flg;
-						}
-					}
-			#endif
 				}
 			}
 		}
@@ -1890,6 +1906,40 @@ ob_find_shortcut(OBJECT *tree, ushort nk)
 	} while ( (tree[i++].ob_flags & OF_LASTOB) == 0);
 
 	return -1;
+}
+
+void
+obj_init_focus(XA_TREE *wt, short flags)
+{
+	/*
+	 * Ozk: init focus;
+	 * 1. Look for editable, if found it is focus, else..
+	 * 2. Look for default, if found it is focus, else..
+	 * 3. Look for first clickable object, if found it is focus, else..
+	 * 4. No focus found.
+	 */
+	if (flags & OB_IF_RESET)
+		wt->focus = -1;
+
+	if (wt->focus == -1)
+	{
+		short o;
+		OBJECT *obtree = wt->tree;
+		
+		o = ob_find_next_any_flagstate(obtree, 0, -1, OF_EDITABLE, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_EXACTFLAG);
+		if (o > 0)
+			wt->focus = o;
+		else if (!(flags & OB_IF_ONLY_EDITS))
+		{
+			{
+				o = ob_find_next_any_flagstate(obtree, 0, -1, OF_DEFAULT, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_EXACTFLAG);
+				if (o > 0 && (obtree[o].ob_flags & (OF_SELECTABLE|OF_EXIT|OF_TOUCHEXIT)))
+					wt->focus = o;
+			}
+			if (wt->focus == -1)
+				wt->focus = ob_find_next_any_flagstate(obtree, 0, -1, OF_SELECTABLE|OF_EXIT|OF_TOUCHEXIT, OF_HIDETREE, 0, OS_DISABLED, 0, 0, 0);
+		}
+	}
 }
 
 void
