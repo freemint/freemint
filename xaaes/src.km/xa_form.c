@@ -52,7 +52,7 @@
 
 bool
 key_alert_widget(enum locks lock, struct xa_client *client, struct xa_window *wind,
-	    struct widget_tree *wt, const struct rawkey *key);
+	    struct widget_tree *wt, const struct rawkey *key, struct fmd_result *res_fmd);
 /*
  * Create a copy of an object tree
  * - Intended for using the form templates in SYSTEM.RSC (we can't use them
@@ -883,7 +883,7 @@ XA_form_do(enum locks lock, struct xa_client *client, AESPB *pb)
  */
 bool
 key_alert_widget(enum locks lock, struct xa_client *client, struct xa_window *wind,
-	    struct widget_tree *wt, const struct rawkey *key)
+	    struct widget_tree *wt, const struct rawkey *key, struct fmd_result *res_fmd)
 {
 	XA_WIDGET *widg = get_widget(wind, XAW_TOOLBAR);
 	RECT r;

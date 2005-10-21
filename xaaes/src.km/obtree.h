@@ -64,7 +64,16 @@ short	ob_count_flag(OBJECT *obtree, short f, short mf, short stopf, short *count
 short	ob_count_any_flag(OBJECT *obtree, short f, short mf, short stopf, short *count);
 short	ob_find_flst(OBJECT *obtree, short f, short s, short mf, short ms, short stopf, short stops);
 short	ob_find_any_flst(OBJECT *obtree, short f, short s, short mf, short ms, short stopf, short stops);
-short	ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, short mf, short s, short ms, short stopf, short stops, short dir);
+/* Definitions for 'flags' parameter to ob_find_next_any_flagstate() */
+#define OBFIND_VERT		0x0000	/* To make source more readable */
+#define OBFIND_HOR		0x0001	/* horizontal search, else vertical search */
+#define OBFIND_UP		0x0000	/* To make source more readable */
+#define OBFIND_DOWN		0x0002  /* down/right search, else up/left search */
+#define OBFIND_EXACTFLAG	0x0004	/* All bits in 'f' must match */
+#define OBFIND_EXACTSTATE	0x0008	/* All bits in 's' must match */
+#define OBFIND_FIRST		0x0010	/* Find object closes to top, ignores OBFIND_[HOR/DOWN] */
+#define OBFIND_LAST		0x0020	/* Find object closes to bottom, ignores OBFIND_[HOR/DOWN/FIRST] */
+short	ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, short mf, short s, short ms, short stopf, short stops, short flags);
 short	ob_find_next_any_flag(OBJECT *obtree, short start, short f);
 short	ob_find_prev_any_flag(OBJECT *obtree, short start, short f);
 short	ob_find_cancel(OBJECT *ob);
@@ -84,6 +93,9 @@ bool	obtree_has_default(OBJECT *obtree);
 bool	obtree_has_exit(OBJECT *obtree);
 bool	obtree_has_touchexit(OBJECT *obtree);
 
+#define OB_IF_RESET	1
+#define OB_IF_ONLY_EDITS 2
+void	obj_init_focus(XA_TREE *wt, short flags);
 void	obj_set_g_popup(XA_TREE *swt, short sobj, POPINFO *pinf);
 short	obj_offset(XA_TREE *wt, short object, short *mx, short *my);
 void	obj_rectangle(XA_TREE *wt, short object, RECT *c);

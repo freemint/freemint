@@ -2299,6 +2299,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 		if (!fs->form)
 			goto memerr;
 		fs->form->flags |= WTF_TREE_ALLOC | WTF_AUTOFREE;
+		obj_init_focus(fs->form, OB_IF_RESET);
 
 		menu = duplicate_obtree(C.Aes, ResourceTree(C.Aes_rsc, FSEL_MENU), 0);
 		if (!menu)

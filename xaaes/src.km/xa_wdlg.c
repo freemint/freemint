@@ -486,7 +486,8 @@ XA_wdlg_create(enum locks lock, struct xa_client *client, AESPB *pb)
 				wind->wdlg = wdlg;
 
 				wt = set_toolbar_widget(lock, wind, client, obtree, -2, WIP_NOTEXT, true, &wdlg_th, &or);
-				
+				obj_init_focus(wt, OB_IF_RESET);
+	
 				wdlg->handle = (void *)((long)0xae000000 + wind->handle);
 				wdlg->wind = wind;
 				wdlg->code = pb->intin[0];		/* Code */
@@ -578,6 +579,9 @@ XA_wdlg_open(enum locks lock, struct xa_client *client, AESPB *pb)
 			*d = *b = 0;
 			get_widget(wind, XAW_TITLE)->stuff = wind->wname;
 		}
+
+		obj_init_focus(wdlg->std_wt, OB_IF_RESET);
+
 		wdlg->std_wt->tree->ob_x = wind->wa.x;
 		wdlg->std_wt->tree->ob_y = wind->wa.y;
 		open_window(lock, wind, wind->rc);
