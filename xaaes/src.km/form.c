@@ -652,7 +652,7 @@ form_keyboard(XA_TREE *wt,
 	if (obj < 0 || !object_is_editable(obtree + obj))
 	{
 		obj = ob_find_next_any_flagstate(obtree, 0, wt->focus, OF_EDITABLE, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_FIRST);
-		display(" -- newobj = %d", obj);
+// 		display(" -- newobj = %d", obj);
 	}
 
 	/*
