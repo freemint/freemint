@@ -978,7 +978,7 @@ XA_form_button(enum locks lock, struct xa_client *client, AESPB *pb)
 				   client->vdi_settings,
 				   obj,		/* obj idx	*/
 				   &md,		/* moose data	*/
-				   FBF_REDRAW,	/* redraw flag	*/
+				   FBF_REDRAW|FBF_CHANGE_FOCUS,	/* redraw flag	*/
 				   NULL,	/* rect list	*/
 				   /* output */
 				   &newstate,	/* new state	*/
