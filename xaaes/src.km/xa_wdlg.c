@@ -1112,7 +1112,7 @@ wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms 
 					}
 				}
 				
-				nxtobj = form_cursor(wt, v, ev->key, keystate, wt->e.obj, true, &wind->rect_list.start, &new_focus);
+				nxtobj = form_cursor(wt, v, ev->key, keystate, wt->e.obj, true, &wind->rect_list.start, &new_focus, &key);
 				
 				if (nxtobj >= 0)
 				{
@@ -1127,7 +1127,7 @@ wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms 
 							ret = (*wep->callout)(client, wep->wdlg, ev, HNDL_EDCH, 0, NULL, &nxtobj);
 					}
 				}
-				else 
+				else if (key)
 				{
 					if (key == 0x3920 && wt->focus != -1)
 					{
