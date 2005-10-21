@@ -463,7 +463,7 @@ form_cursor(XA_TREE *wt,
 			}
 			break;
 		}
-		case 0x4838:
+		case 0x4838:		/* shift + up arrow */
 		case 0x4800:		/* UP ARROW moves to previous field */
 		{
 			if (ret_focus)
@@ -488,7 +488,7 @@ form_cursor(XA_TREE *wt,
 			break;
 		}
 		case 0x5000:		/* Down ARROW moves to next object */
-		case 0x5032:
+		case 0x5032:		/* Shift + down arrow */
 		{
 			if (ret_focus)
 			{
@@ -546,8 +546,8 @@ form_cursor(XA_TREE *wt,
 			break;
 		}
 		case 0x4737:		/* SHIFT+HOME */
-// 		case 0x5032:		/* SHIFT+DOWN ARROW moves to last field */
 		case 0x5100:		/* page down key (Milan &| emulators)   */
+		case 0x4f00:		/* END key (Milan &| emus)		*/
 		{		
 			nxt = ob_find_next_any_flagstate(obtree, 0, wt->focus,
 				/*(keycode == 0x4838) ? */OF_EDITABLE/* : OF_SELECTABLE|OF_EDITABLE|OF_EXIT|OF_TOUCHEXIT*/, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_LAST);
@@ -561,7 +561,6 @@ form_cursor(XA_TREE *wt,
 			break;
 		}
 		case 0x4700:		/* HOME */
-// 		case 0x4838:		/* SHIFT+UP ARROW moves to first field */
 		case 0x4900:		/* page up key (Milan &| emulators)    */
 		{
 			nxt = ob_find_next_any_flagstate(obtree, 0, wt->focus,
@@ -715,7 +714,7 @@ form_keyboard(XA_TREE *wt,
 			fr.no_exit = form_button(wt, v,
 					         next_obj,
 					         &md,
-					         FBF_REDRAW,
+					         FBF_REDRAW, //|FBF_CHANGE_FOCUS,
 					         rl,
 					         &fr.obj_state,
 					         &fr.obj,
@@ -729,7 +728,7 @@ form_keyboard(XA_TREE *wt,
 			{
 				new_focus = wt->e.obj;
 				next_key = keycode;
-				next_obj = wt->e.obj;
+				next_obj = new_eobj = wt->e.obj;
 			}
 			else
 				next_obj = new_eobj;
@@ -967,7 +966,7 @@ Click_form_do(enum locks lock,
 		    !form_button(wt, v,
 				 fr.obj,
 				 md,
-				 FBF_REDRAW,
+				 FBF_REDRAW|FBF_CHANGE_FOCUS,
 				 wind ? &wind->rect_list.start : NULL,
 				 &fr.obj_state,
 				 &fr.obj,
