@@ -526,7 +526,10 @@ form_cursor(XA_TREE *wt,
 				}
 			}
 			else
+			{
 				o = -1;
+				kout = keycode;
+			}
 			break;
 		}
 		case 0x7400:
@@ -543,7 +546,10 @@ form_cursor(XA_TREE *wt,
 				}
 			}
 			else
+			{
 				o = -1;
+				kout = keycode;
+			}
 			break;
 		}
 		case 0x4737:		/* SHIFT+HOME */
@@ -643,8 +649,11 @@ form_keyboard(XA_TREE *wt,
 	if (!obj)
 		obj = wt->e.obj;
 
-	if (obj == -1 || !object_is_editable(obtree + obj))
+	if (obj < 0 || !object_is_editable(obtree + obj))
+	{
 		obj = ob_find_next_any_flagstate(obtree, 0, wt->focus, OF_EDITABLE, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_FIRST);
+		display(" -- newobj = %d", obj);
+	}
 
 	/*
 	 * Cursor?
@@ -729,7 +738,7 @@ form_keyboard(XA_TREE *wt,
 		{
 			if (wt->focus == -1 || wt->focus == new_eobj)
 				next_key = keycode;
-			else if (wt->focus != -1 && new_eobj > 0 /*wt->e.obj > 0*/ && !(obtree[wt->focus].ob_flags & OF_EDITABLE))
+			else if (wt->focus != -1 && new_eobj > 0 && (!(obtree[wt->focus].ob_flags & OF_EDITABLE) || wt->focus != new_eobj) )
 			{
 				new_focus = new_eobj; //wt->e.obj;
 				next_key = keycode;

@@ -653,9 +653,13 @@ no definitions are made yet.
 -------------------------------------------------------------------------------
 
 
- Arrow up          Go to closest object above current focused
- Arrow down        Go to closest object below current focused
- Arrow left        Go to closest object 
+ Arrow up          Go to object above current focus
+ Arrow down        Go to object below current focus
+ Arrow left        Go to object to the left of current focus
+ Arrow right       Go to object to the right of current focus
+
+ Home              Go to topmost editable field
+ shift + Home      Go to bottommost editable field.
  
  
  XaAES now implements good keyboard navigation in dialogs when applications
