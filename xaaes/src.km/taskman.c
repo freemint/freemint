@@ -2475,9 +2475,25 @@ do_system_menu(enum locks lock, int clicked_title, int menu_item)
 		/* Launch desktop. */
 		case SYS_MN_DESK:
 		{
-			if (*C.desk)
-				C.DSKpid = launch(lock, 0, 0, 0, C.desk, "\0", C.Aes);
+			if (C.DSKpid >= 0)
+				ALERT(("XaAES: AES shell already running!"));
+			else if (!*C.desk)
+				ALERT(("XaAES: No AES shell set; See 'shell =' configuration variable in xaaes.cnf"));
+			else
+				C.DSKpid = launch(lock, 0,0,0, C.desk, "\0", C.Aes);
 			break;
+	#if 0
+			if (*C.desk)
+			{
+				if (C.DSKpid >= 0);
+					ALERT("AES shell already running!");
+				else if (!*C.desk)
+					ALERT("No AES shell defined");
+				else
+					C.DSKpid = launch(lock, 0, 0, 0, C.desk, "\0", C.Aes);
+			}
+			break;
+	#endif
 		}
 		case SYS_MN_RESCHG:
 		{

@@ -876,6 +876,7 @@ duplicate_fnts_obtree(struct xa_client *client)
 			wt->flags |= WTF_AUTOFREE | WTF_TREE_ALLOC;
 			obtree->ob_state &= ~OS_OUTLINED;
 			form_center(obtree, ICON_H);
+			obj_init_focus(wt, OB_IF_RESET);
 		}
 		else
 			free_object_tree(C.Aes, obtree);
@@ -1250,7 +1251,9 @@ XA_fnts_open(enum locks lock, struct xa_client *client, AESPB *pb)
 		
 			widg->m.properties |= WIP_NOTEXT;
 			set_toolbar_handlers(&wdlg_th, wind, widg, widg->stuff);
-			
+		
+			obj_init_focus(wt, OB_IF_RESET);
+	
 			if (pb->intin[1] == -1 || pb->intin[2] == -1)
 			{
 				r.x = (root_window->wa.w - r.w) / 2;
@@ -1663,6 +1666,10 @@ static struct toolbar_handlers fnts_th =
 	NULL,			/* void (*destruct)(struct xa_widget *w); */
 };
 
+/* XA_fnts_do
+ * Ozk:
+ *  Todo: Cursor isnt automatically drawn.
+ */ 
 unsigned long
 XA_fnts_do(enum locks lock, struct xa_client *client, AESPB *pb)
 {
@@ -1681,6 +1688,8 @@ XA_fnts_do(enum locks lock, struct xa_client *client, AESPB *pb)
 		OBJECT *obtree = wt->tree;
 		RECT or;
 		XA_WIND_ATTR tp = wind->active_widgets & ~STD_WIDGETS;
+
+		obj_init_focus(wt, OB_IF_RESET);
 
 		ob_rectangle(obtree, 0, &or);
 		center_rect(&or);

@@ -1101,7 +1101,9 @@ CE_start_apps(enum locks lock, struct c_event *ce, bool cancel)
 		 * startup shell and autorun
 		 */
 		DIAGS(("loading shell and autorun"));
-
+		
+		C.DSKpid = -1;
+		
 		for (i = sizeof(cfg.cnf_run)/sizeof(cfg.cnf_run[0]) - 1; i >= 0; i--)
 		{
 			if (cfg.cnf_run[i])

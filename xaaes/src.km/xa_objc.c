@@ -64,22 +64,7 @@ XA_objc_draw(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		assert(wt);
 
-		if (wt->focus == -1)
-		{
-			short o;
-			
-			o = ob_find_next_any_flagstate(obtree, 0, -1, OF_EDITABLE, OF_HIDETREE, 0, OS_DISABLED, 0, 0, 3<<2);
-			if (o > 0)
-				wt->focus = o;
-			else
-			{
-				o = ob_find_next_any_flagstate(obtree, 0, -1, OF_DEFAULT, OF_HIDETREE, 0, OS_DISABLED, 0, 0, 3<<2);
-				if (o > 0 && (obtree[o].ob_flags & (OF_SELECTABLE|OF_EXIT|OF_TOUCHEXIT)))
-					wt->focus = o;
-			}
-			if (wt->focus == -1)
-				wt->focus = ob_find_next_any_flagstate(obtree, 0, -1, OF_SELECTABLE|OF_EXIT|OF_TOUCHEXIT, OF_HIDETREE, 0, OS_DISABLED, 0, 0, 0);
-		}
+		obj_init_focus(wt, OB_IF_RESET|OB_IF_ONLY_EDITS);
 
 		wt->e.c_state &= ~OB_CURS_EOR;
 
