@@ -2471,7 +2471,7 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, struct xa_vdi_setti
 		{
 			/* Display this object */
 			display_object(lock, wt, v, current, x, y, 10);
-			if (docurs && current == wt->e.obj)
+			if (docurs && current == wt->e.obj && (tree[current].ob_type & 0xff) != G_USERDEF)
 			{
 // 				display("redrawing cursor for obj %d", current);
 				eor_objcursor(wt, v, NULL);

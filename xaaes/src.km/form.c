@@ -284,6 +284,9 @@ form_button(XA_TREE *wt,
 	DIAG((D_form, NULL, "form_button: wt=%lx, obtree=%lx, obj=%d",
 		wt, wt->tree, obj));
 
+// 	display("form_button: wt=%lx, obtree=%lx, obj=%d",
+// 		wt, wt->tree, obj);
+	
 	flags = obtree[obj].ob_flags;
 	state = obtree[obj].ob_state;
 	dc = md->clicks > 1 ? true : false;
@@ -296,7 +299,7 @@ form_button(XA_TREE *wt,
 		no_exit = false;
 	}
 	
-	if ( (obtree[obj].ob_flags & OF_SELECTABLE) && !(obtree[obj].ob_state & OS_DISABLED) )
+	if ( (flags & OF_SELECTABLE) && !(state & OS_DISABLED) )
 	{
 		short type = obtree[obj].ob_type & 0xff;
 			
@@ -368,7 +371,7 @@ form_button(XA_TREE *wt,
 		}
 		state = obtree[obj].ob_state;	
 	}
-
+	
 	if ((flags & OF_EDITABLE) || ((fbflags & FBF_CHANGE_FOCUS) && (flags & (OF_EXIT|OF_SELECTABLE|OF_TOUCHEXIT|OF_EDITABLE))))
 	{
 		if (wt->focus != obj)
@@ -384,11 +387,24 @@ form_button(XA_TREE *wt,
 	DIAGS(("form_button: state %x, flags %x",
 		state, flags));
 
-	if ((state & OS_SELECTED) && (flags & OF_EXIT))
-		no_exit = false;
+	if (!(state & OS_DISABLED))
+	{
+		if ((state & OS_SELECTED) && (flags & OF_EXIT))
+			no_exit = false;
 		
-	if (!no_exit || (flags & OF_EDITABLE))
-		next_obj = obj;
+		if (!no_exit || (flags & OF_EDITABLE))
+			next_obj = obj;
+	}
+	else
+	{
+		next_obj = 0;
+// 		display("disabled obj");
+// 		if ((next_obj = wt->e.obj) < 0)
+// 			next_obj = ob_find_next_any_flagstate(obtree, 0, -1, OF_EDITABLE, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_FIRST);
+// 		if (next_obj < 0)
+// 			next_obj = 0;
+		no_exit = true;
+	}
 
 	if (clickmsk)
 		*clickmsk = dc ? 0x8000 : 0;
@@ -402,6 +418,9 @@ form_button(XA_TREE *wt,
 	DIAGS(("form_button: return no_exit=%s, nxtob=%d, newstate=%x, clickmask=%x",
 		no_exit ? "yes":"no", next_obj, state, dc ? 0x8000:0));
 
+// 	display("form_button: return no_exit=%s, nxtob=%d, newstate=%x, clickmask=%x",
+// 		no_exit ? "yes":"no", next_obj, state, dc ? 0x8000:0);
+	
 	return no_exit;
 }
 
@@ -646,13 +665,15 @@ form_keyboard(XA_TREE *wt,
 	
 	fr.no_exit = true;
 
-	if (!obj)
-		obj = wt->e.obj;
+	if (!(new_eobj = obj))
+		new_eobj = wt->e.obj;
 
-	if (obj < 0 || !object_is_editable(obtree + obj))
+	if (new_eobj < 0 || !object_is_editable(obtree + new_eobj))
 	{
+// 		if (new_eobj > 0)
+// 			display("obtype %x(%d), flags=%x", obtree[new_eobj].ob_type, obtree[new_eobj].ob_type, obtree[new_eobj].ob_flags);
 		obj = ob_find_next_any_flagstate(obtree, 0, wt->focus, OF_EDITABLE, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_FIRST);
-// 		display(" -- newobj = %d", obj);
+// 		display(" -- newobj = %d", new_eobj);
 	}
 
 	/*
@@ -661,7 +682,7 @@ form_keyboard(XA_TREE *wt,
 	if (wt->owner->options.xa_objced && wt->e.obj >= 0)
 		next_obj = new_eobj = wt->e.obj;
 	else
-		next_obj = new_eobj = obj;
+		next_obj = new_eobj;
 
 	if (wt->focus != -1)
 	{
@@ -683,11 +704,11 @@ form_keyboard(XA_TREE *wt,
 		}
 	}
 	
-	next_obj = new_eobj = form_cursor(wt, v, keycode, keystate, next_obj, redraw, rl, &new_focus, &keycode);
+	next_obj /*= new_eobj*/ = form_cursor(wt, v, keycode, keystate, next_obj, redraw, rl, &new_focus, &keycode);
 	
 	if (next_obj < 0 && keycode)
 	{
-		new_eobj = obj;
+// 		new_eobj = obj;
 
 		if (keycode == 0x3920 && wt->focus != -1)
 		{
@@ -737,22 +758,37 @@ form_keyboard(XA_TREE *wt,
 		else if (keycode != 0x1c0d && keycode != 0x720d)
 		{
 			if (wt->focus == -1 || wt->focus == new_eobj)
+			{
 				next_key = keycode;
+				if (new_eobj == obj && new_eobj != -1)
+					new_eobj = 0;
+			}
 			else if (wt->focus != -1 && new_eobj > 0 && (!(obtree[wt->focus].ob_flags & OF_EDITABLE) || wt->focus != new_eobj) )
 			{
 				new_focus = new_eobj; //wt->e.obj;
 				next_key = keycode;
-				next_obj = new_eobj; // = wt->e.obj;
+				if (new_eobj == obj && new_eobj != -1)
+					new_eobj = 0;
+// 				next_obj = new_eobj; // = wt->e.obj;
 			}
 			else
 			{
-				next_obj = new_eobj;
+				if (new_eobj != obj)
+					next_obj = new_eobj;
+				else if (new_eobj != -1)
+					new_eobj = 0;
 				next_key = keycode;
 			}
 		}
 	}
 	else if (!keycode)
+	{
 		next_key = 0;
+		if (next_obj > 0)
+			new_eobj = next_obj;
+		if (new_eobj == obj && new_eobj != -1)
+			new_eobj = 0;
+	}
 
 	if (new_focus != -1)
 	{
