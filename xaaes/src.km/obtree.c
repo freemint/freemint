@@ -100,6 +100,7 @@ object_is_editable(OBJECT *ob)
 			case G_BOXTEXT:
 			case G_FTEXT:
 			case G_FBOXTEXT:
+			case G_USERDEF:
 			{
 				return true;
 			}
