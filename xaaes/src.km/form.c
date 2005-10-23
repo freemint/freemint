@@ -274,7 +274,7 @@ form_button(XA_TREE *wt,
 	RECT *clip = NULL;
 	OBJECT *obtree = wt->tree;
 	short next_obj = 0;
-	short flags, state;
+	short flags, state, pstate;
 	struct xa_rect_list *lrl = NULL;
 	bool no_exit = true, dc, redraw = (fbflags & FBF_REDRAW);
 
@@ -288,7 +288,7 @@ form_button(XA_TREE *wt,
 // 		wt, wt->tree, obj);
 	
 	flags = obtree[obj].ob_flags;
-	state = obtree[obj].ob_state;
+	state = pstate = obtree[obj].ob_state;
 	dc = md->clicks > 1 ? true : false;
 
 	/* find_object can't report click on a OF_HIDETREE object. */
@@ -354,11 +354,26 @@ form_button(XA_TREE *wt,
 		else if (flags & OF_RBUTTON)
 		{
 			DIAGS(("form_button: call obj_set_radio_button"));
-			obj_set_radio_button(wt, v, obj, redraw, clip, *rl);
+			if (redraw && !(fbflags & FBF_KEYBD) && !(flags & OF_TOUCHEXIT))
+			{
+				if (!(state & OS_SELECTED))
+				{
+					obj_watch(wt, v, obj, state^OS_SELECTED, state, clip, *rl);
+					if (obtree[obj].ob_state & OS_SELECTED)
+						obj_set_radio_button(wt, v, obj, redraw, clip, *rl);
+				}
+				else
+				{
+					if (obj_watch(wt, v, obj, state, state, clip, *rl))
+						pstate &= ~OS_SELECTED;
+				}
+			}
+			else
+				obj_set_radio_button(wt, v, obj, redraw, clip, *rl);
 		}
 		else
 		{
-			if (redraw)
+			if (redraw && !(fbflags & FBF_KEYBD) && !(flags & OF_TOUCHEXIT))
 			{
 				DIAGS(("form_button: call obj_watch"));
 				obj_watch(wt, v, obj, state^OS_SELECTED, state, clip, *rl);
@@ -389,10 +404,10 @@ form_button(XA_TREE *wt,
 
 	if (!(state & OS_DISABLED))
 	{
-		if ((state & OS_SELECTED) && (flags & OF_EXIT))
+		if ((state & OS_SELECTED) && !(pstate & OS_SELECTED) && (flags & OF_EXIT))
 			no_exit = false;
 		
-		if (!no_exit || (flags & OF_EDITABLE))
+		if (!no_exit || ((flags & OF_EDITABLE) && (!(flags & OF_SELECTABLE) || ((state & OS_SELECTED) != (pstate & OS_SELECTED)) )))
 			next_obj = obj;
 	}
 	else
@@ -749,7 +764,7 @@ form_keyboard(XA_TREE *wt,
 			fr.no_exit = form_button(wt, v,
 					         next_obj,
 					         &md,
-					         FBF_REDRAW, //|FBF_CHANGE_FOCUS,
+					         FBF_REDRAW|FBF_KEYBD, //|FBF_CHANGE_FOCUS,
 					         rl,
 					         &fr.obj_state,
 					         &fr.obj,
