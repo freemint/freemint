@@ -705,6 +705,9 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 		wakeselect(C.Aes->p);
 	}
 
+	if (C.DSKpid == client->p->pid)
+		C.DSKpid = -1;
+
 	if (detach)
 		detach_extension(NULL, XAAES_MAGIC);
 

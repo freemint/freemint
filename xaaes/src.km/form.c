@@ -672,7 +672,7 @@ form_keyboard(XA_TREE *wt,
 	{
 // 		if (new_eobj > 0)
 // 			display("obtype %x(%d), flags=%x", obtree[new_eobj].ob_type, obtree[new_eobj].ob_type, obtree[new_eobj].ob_flags);
-		obj = ob_find_next_any_flagstate(obtree, 0, wt->focus, OF_EDITABLE, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_FIRST);
+		new_eobj = ob_find_next_any_flagstate(obtree, 0, wt->focus, OF_EDITABLE, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_FIRST);
 // 		display(" -- newobj = %d", new_eobj);
 	}
 

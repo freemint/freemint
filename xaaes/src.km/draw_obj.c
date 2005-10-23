@@ -1556,7 +1556,35 @@ icon_characters(struct xa_vdi_settings *v, ICONBLK *iconblk, short state, short 
 	    && iconblk->ib_wtext
 	    && iconblk->ib_htext)
 	{
-		(*v->api->f_color)(v, (state&OS_SELECTED) ? G_BLACK : G_WHITE);
+		tx = obx + iconblk->ib_xtext + ((iconblk->ib_wtext - strlen(iconblk->ib_ptext)*6) / 2);	
+		ty = oby + iconblk->ib_ytext + ((iconblk->ib_htext - 6) / 2);
+// 0x2053600
+		
+		if (state & OS_STATE08)
+		{
+			short col;
+			if (state & OS_SELECTED)
+				col = G_WHITE;
+			else
+				col = G_BLACK;
+			(*v->api->wr_mode)(v, MD_TRANS);
+			(*v->api->t_color)(v, col);
+			display("disp icontext without banner");
+		}
+		else
+		{
+			(*v->api->f_color)(v, (state & OS_SELECTED) ? G_BLACK : G_WHITE);
+			(*v->api->f_interior)(v, FIS_SOLID);
+			v_bar(v->handle, pnt);
+	
+			if (state & OS_SELECTED)
+				(*v->api->wr_mode)(v, MD_XOR);
+			if (state & OS_DISABLED)
+				(*v->api->t_effects)(v, FAINT);
+		}
+		v_gtext(v->handle, tx, ty, iconblk->ib_ptext);
+#if 0		
+		(*v->api->f_color)(v, (state & OS_SELECTED) ? G_BLACK : G_WHITE);
 		(*v->api->f_interior)(v, FIS_SOLID);
 		v_bar(v->handle, pnt);
 	
@@ -1569,6 +1597,7 @@ icon_characters(struct xa_vdi_settings *v, ICONBLK *iconblk, short state, short 
 			(*v->api->t_effects)(v, FAINT);
 
 		v_gtext(v->handle, tx, ty, iconblk->ib_ptext);
+#endif
 	}
 
 	if (lc != 0 && lc != ' ')

@@ -1200,7 +1200,180 @@ ob_order(OBJECT *root, short object, ushort pos)
 		root[current].ob_next = object;
 	}
 }
+#if 0
+	do {	
+		if (current == object)	/* We can start considering objects at this point */
+		{
+			stop = object;
+			start_checking = true;
+			rel_depth = 0;
+		}
+		
+		if (start_checking)
+		{
+			if (  !(obtree[current].ob_flags & OF_HIDETREE)
+			    && obtree[current].ob_x + x                     <= mx
+			    && obtree[current].ob_y + y                     <= my
+			    && obtree[current].ob_x + x + obtree[current].ob_width  >= mx
+			    && obtree[current].ob_y + y + obtree[current].ob_height >= my)
+			{
+				/* This is only a possible object, as it may have children on top of it. */
+				if (c)
+				{
+					r.x = obtree[current].ob_x + x;
+					r.y = obtree[current].ob_y + y;
+					r.w = obtree[current].ob_width;
+					r.h = obtree[current].ob_height;
+				}
+				pos_object = current;
+			}
+		}
 
+		if ( ((!start_checking) || (rel_depth < depth))
+		    &&  (obtree[current].ob_head != -1)
+		    && !(obtree[current].ob_flags & OF_HIDETREE))
+		{
+			/* Any children? */
+			x += obtree[current].ob_x;
+			y += obtree[current].ob_y;
+			rel_depth++;
+			current = obtree[current].ob_head;
+		}
+		else
+		{
+			/* Try for a sibling */
+			next = obtree[current].ob_next;
+
+			/* Trace back up tree if no more siblings */
+			while ((next != stop && next != -1) && (obtree[next].ob_tail == current))
+			{
+				current = next;
+				x -= obtree[current].ob_x;
+				y -= obtree[current].ob_y;
+				next = obtree[current].ob_next;
+				rel_depth--;
+			}
+			current = next;
+		}	
+	}
+	while (current != stop && current != -1 && (rel_depth > 0));
+#endif
+
+static void
+foreach_object(OBJECT *tree, short parent, short start, short stopf, short stops, bool(*f)(OBJECT *obtree, short obj, void *ret), void *data)
+{
+#if 0
+	short o = 0;
+	display("enter");
+	while (!(tree[o].ob_flags & OF_LASTOB))
+	{
+		if ((*f)(tree, o, data))
+			break;
+		o++;
+	}
+	display("leave");
+#else
+	short o, n;
+
+	o = start;
+
+	do
+	{
+// 		display(" - obj %d, h=%d, t=%d, n=%d", o, tree[o].ob_head, tree[o].ob_tail, tree[o].ob_next);
+
+		if ((*f)(tree, o, data))
+			break;
+
+		if (tree[o].ob_head != -1 && !(tree[o].ob_flags & OF_HIDETREE))
+		{
+			o = tree[o].ob_head;
+		}
+		else
+		{
+			n = tree[o].ob_next;
+			
+			while (n != parent && n != -1 && tree[n].ob_tail == o)
+			{
+				o = n;
+				n = tree[o].ob_next;
+			}
+			o = n;
+		}
+
+	} while (o != parent && o != -1 && !(*f)(tree, o, data));
+#endif
+}
+
+struct anyflst_parms
+{
+	short	flags, f, s, mf, ms, ret, ret1;
+};
+
+static bool
+count_flst(OBJECT *tree, short o, void *_data)
+{
+	struct anyflst_parms *d = _data;
+	short flg = 0;
+	
+	if ((!d->mf || !(tree[o].ob_flags & d->mf)) && (!d->ms || !(tree[o].ob_state & d->ms)))
+	{
+		if (d->flags & OBFIND_EXACTFLAG)
+		{
+			if (!d->f || (tree[o].ob_flags & d->f) == d->f)
+				flg |= 1;
+		}
+		else if (!d->f || (tree[o].ob_flags & d->f))
+			flg |= 1;
+
+		if (d->flags & OBFIND_EXACTSTATE)
+		{
+			if (!d->s || (tree[o].ob_state & d->s) == d->s)
+				flg |= 2;
+		}
+		else if (!d->s || (tree[o].ob_state))
+			flg |= 2;
+	}
+
+	if (flg == 3)
+	{
+		d->ret += 1;
+		d->ret1 = o;
+	}
+	return false;
+}
+
+static bool
+anyflst(OBJECT *tree, short o, void *_data)
+{
+	struct anyflst_parms *d = _data;
+	short flg = 0;
+	
+	if ((!d->mf || !(tree[o].ob_flags & d->mf)) && (!d->ms || !(tree[o].ob_state & d->ms)))
+	{
+		if (d->flags & OBFIND_EXACTFLAG)
+		{
+			if (!d->f || (tree[o].ob_flags & d->f) == d->f)
+				flg |= 1;
+		}
+		else if (!d->f || (tree[o].ob_flags & d->f))
+			flg |= 1;
+
+		if (d->flags & OBFIND_EXACTSTATE)
+		{
+			if (!d->s || (tree[o].ob_state & d->s) == d->s)
+				flg |= 2;
+		}
+		else if (!d->s || (tree[o].ob_state))
+			flg |= 2;
+	}
+
+	if (flg == 3)
+	{
+		d->ret = o;
+		return true;
+	}
+	return false;
+}
 /*
  * Find object whose flags is set to 'f', state set to 's' and
  * have none of 'mf' flags set and status is none of 'ms'.
@@ -1216,6 +1389,19 @@ ob_order(OBJECT *root, short object, ushort pos)
 short
 ob_find_flag(OBJECT *tree, short f, short mf, short stopf)
 {
+	struct anyflst_parms d;
+
+	d.flags = OBFIND_EXACTFLAG;
+	d.f = f;
+	d.s = 0;
+	d.mf = mf;
+	d.ms = 0;
+	d.ret = -1;
+
+	foreach_object(tree, 0, 0, stopf, 0, anyflst, &d);
+// 	display("ob_find_flag: ret %d", d.ret);
+	return d.ret;
+#if 0
 	int o = -1;
 	
 	stopf |= OF_LASTOB;
@@ -1231,10 +1417,24 @@ ob_find_flag(OBJECT *tree, short f, short mf, short stopf)
 	} while ( (!stopf || !(tree[o].ob_flags & stopf)));
 
 	return -1;
+#endif
 }
 short
 ob_find_any_flag(OBJECT *tree, short f, short mf, short stopf)
 {
+	struct anyflst_parms d;
+
+	d.flags = 0;
+	d.f = f;
+	d.s = 0;
+	d.mf = mf;
+	d.ms = 0;
+	d.ret = -1;
+
+	foreach_object(tree, 0, 0, stopf, 0, anyflst, &d);
+// 	display("ob_find_any_flag: ret %d", d.ret);
+	return d.ret;
+#if 0
 	short o = -1;
 
 	stopf |= OF_LASTOB;
@@ -1250,6 +1450,7 @@ ob_find_any_flag(OBJECT *tree, short f, short mf, short stopf)
 	} while ( (!stopf || !(tree[o].ob_flags & stopf)));
 
 	return -1;
+#endif
 }
 /*
  * Count objects whose flags equals those in 'f',
@@ -1261,6 +1462,24 @@ ob_find_any_flag(OBJECT *tree, short f, short mf, short stopf)
 short
 ob_count_flag(OBJECT *tree, short f, short mf, short stopf, short *count)
 {
+	struct anyflst_parms d;
+
+	d.flags = OBFIND_EXACTFLAG;
+	d.f = f;
+	d.s = 0;
+	d.mf = mf;
+	d.ms = 0;
+	d.ret = 0;
+	d.ret1 = -1;
+
+	foreach_object(tree, 0, 0, stopf, 0, count_flst, &d);
+// 	display("ob_count_flag: ret %d", d.ret);
+
+	if (count)
+		*count = d.ret;
+	return d.ret1;
+
+#if 0	
 	short o = -1, cnt = 0;
 
 	stopf |= OF_LASTOB;
@@ -1279,6 +1498,7 @@ ob_count_flag(OBJECT *tree, short f, short mf, short stopf, short *count)
 		*count = cnt;
 
 	return o;
+#endif
 }
 /*
  * Count objects who has any 'f' bit(s) set,
@@ -1290,6 +1510,25 @@ ob_count_flag(OBJECT *tree, short f, short mf, short stopf, short *count)
 short
 ob_count_any_flag(OBJECT *tree, short f, short mf, short stopf, short *count)
 {
+	struct anyflst_parms d;
+
+	d.flags = 0;
+	d.f = f;
+	d.s = 0;
+	d.mf = mf;
+	d.ms = 0;
+	d.ret = 0;
+	d.ret1 = -1;
+
+	foreach_object(tree, 0, 0, stopf, 0, count_flst, &d);
+// 	display("ob_count_any_flag: ret %d", d.ret);
+
+	if (count)
+		*count = d.ret;
+
+	return d.ret1;
+	
+#if 0
 	short o = -1, cnt = 0;
 	
 	stopf |= OF_LASTOB;
@@ -1308,11 +1547,43 @@ ob_count_any_flag(OBJECT *tree, short f, short mf, short stopf, short *count)
 		*count = cnt;
 
 	return o;
+#endif
+}
+
+short
+ob_find_any_flst(OBJECT *tree, short f, short s, short mf, short ms, short stopf, short stops)
+{
+	struct anyflst_parms d;
+
+	d.flags = 0;
+	d.f = f;
+	d.s = s;
+	d.mf = mf;
+	d.ms = ms;
+	d.ret = -1;
+
+	foreach_object(tree, 0, 0, stopf, stops, anyflst, &d);
+// 	display("ob_find_any_flst: ret %d", d.ret);
+	return d.ret;
 }
 
 short
 ob_find_flst(OBJECT *tree, short f, short s, short mf, short ms, short stopf, short stops)
 {
+	struct anyflst_parms d;
+
+	d.flags = OBFIND_EXACTFLAG|OBFIND_EXACTSTATE;
+	d.f = f;
+	d.s = s;
+	d.mf = mf;
+	d.ms = ms;
+	d.ret = -1;
+
+	foreach_object(tree, 0, 0, stopf, stops, anyflst, &d);
+// 	display("ob_find_flst: ret %d", d.ret);
+
+	return d.ret;
+#if 0	
 	int o = -1;
 	
 	stopf |= OF_LASTOB;
@@ -1328,26 +1599,7 @@ ob_find_flst(OBJECT *tree, short f, short s, short mf, short ms, short stopf, sh
 	} while ( (!stopf || !(tree[o].ob_flags & stopf)) && (!stops || !(tree[o].ob_state & stops)) );
 
 	return -1;
-}
-
-short
-ob_find_any_flst(OBJECT *tree, short f, short s, short mf, short ms, short stopf, short stops)
-{
-	short o = -1;
-
-	stopf |= OF_LASTOB;
-	
-	do
-	{
-		o++;
-		if ( (!f || (tree[o].ob_flags & f)) && (!s || (tree[o].ob_state & s)) )
-		{
-			if ( (!mf || !(tree[o].ob_flags & mf)) && (!ms || !(tree[o].ob_state & ms)) )
-				return o;
-		}
-	} while ( (!stopf || !(tree[o].ob_flags & stopf)) && (!stops || !(tree[o].ob_state & stops)) );
-
-	return -1;
+#endif
 }
 
 short
@@ -1355,7 +1607,9 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 {
 	short o, n, x, y, px, py, w, h, ax, cx, cy, co, cf, flg;
 	RECT r;
-
+	
+// 	display("e");
+	
 	cx = cy = ax = 32000;
 
 	co = -1;
