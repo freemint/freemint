@@ -3240,6 +3240,10 @@ obj_edit(XA_TREE *wt,
 	DIAG((D_form,wt->owner,"  --  obj_edit: func %s, wt=%lx obtree=%lx, obj:%d, k:%x, pos:%x",
 	      funcstr, wt, obtree, obj, keycode, pos));
 #endif
+// 	char *funcstr = func < 0 || func > 3 ? edfunc[4] : edfunc[func];
+// 	display("  --  obj_edit: func %s, wt=%lx obtree=%lx, obj:%d, k:%x, pos:%x",
+// 	      funcstr, wt, obtree, obj, keycode, pos);
+	
 	last = ob_find_any_flag(obtree, OF_LASTOB, 0, OF_LASTOB);
 
 	if (wt->e.obj != -1 && wt->e.obj > last)
@@ -3253,7 +3257,7 @@ obj_edit(XA_TREE *wt,
 			{
 				hidem();
 				
-				obj_ED_INIT(wt, &wt->e, obj, -1, last, NULL, &old_ed_obj);
+				obj_ED_INIT(wt, &wt->e, obj, pos/*-1*/, last, NULL, &old_ed_obj);
 				
 				if (redraw)
 					eor_objcursor(wt, v, rl);
@@ -3503,6 +3507,9 @@ obj_edit(XA_TREE *wt,
 	DIAG((D_objc, NULL, "obj_edit: old_obj=%d, return ret_obj=%d(%d), ret_pos=%d - ret=%d",
 		old_ed_obj, obj, wt->e.obj, pos, ret));
 
+// 	display("obj_edit: old_obj=%d, return ret_obj=%d(%d), ret_pos=%d - ret=%d",
+// 		old_ed_obj, obj, wt->e.obj, pos, ret);
+	
 	return ret;
 }
 
