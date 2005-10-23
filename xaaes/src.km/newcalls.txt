@@ -789,7 +789,8 @@ follow here!
             In any other cases, 'newobj' contains the object index of the
             editable object which should get editfocus if it changed, a 0 if
             editfocus didnt change or -1 if no editable objects was found.
-	   
+
+
  keyout:    If the key was used by the function, 'keyout' will contain 0 upon
             function return. Else the key is returned in 'keyout', and can be
             passed to objc_edit().
