@@ -52,7 +52,6 @@
 #include "mint/fcntl.h"
 #include "mint/signal.h"
 
-
 void
 cXA_button_event(enum locks lock, struct c_event *ce, bool cancel)
 {
