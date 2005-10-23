@@ -1171,7 +1171,7 @@ wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms 
 								  v,
 								  nxtobj,
 								  &md,
-								  FBF_REDRAW,
+								  FBF_REDRAW|FBF_KEYBD,
 								  &wind->rect_list.start,
 								  NULL,
 								  &nxtobj,

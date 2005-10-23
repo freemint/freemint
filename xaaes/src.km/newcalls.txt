@@ -748,7 +748,7 @@ follow here!
              short keyout;
 	     short idx;
      
-             if (form_keybd(editfocus, keycode, 1, &newobj, &keyout))
+             if (form_keybd(tree, editfocus, keycode, 1, &newobj, &keyout))
              {
                if (newobj > 0)
                {
@@ -763,10 +763,25 @@ follow here!
              }
 	     else
              {
-               handle_exit_object....
+               /*
+                * Since if object is exit, we need to manually check if
+                * it is also an editable object. This can be skipped if
+                * you dont use objects where you have both OF_EDITABLE and
+                * OF_EXIT or OF_TOUCHEXIT set.
+                */
+               if (newobj != editfocus && (tree[newobj].ob_flags & OF_EDITABLE))
+               {
+                 objc_edit(tree, editfocus, 0, 0, ED_END);
+                 objc_edit(tree, newobj, 0, &idx, ED_INIT);
+                 editfocus = newobj;
+               }
+               
+               .... continue processing exit object ....
+                 
              }
+   
              -----------------------------------------------------------------
-
+             -----------------------------------------------------------------
  newobj:    If an object was selected by the function and it has OF_EXIT or
             OF_TOUCHEXIT obflags set, 'newobj' contains the index of the
             'exit' object and return value is 0 to indicate this.
@@ -783,6 +798,40 @@ follow here!
 
  NOTES: If the object passed to 
 -------------------------------------------------------------------------------
+             >> example code to correctly handle output form form_button() <<
+             ----------------------------------------------------------------
+             short newobj;
+	     short idx;
+     
+             if (form_button(tree, obj, clicks, &newobj))
+             {
+               if (newobj > 0)
+               {
+                 objc_edit(tree, editfocus, 0, 0, ED_END);
+                 objc_edit(tree, newobj, 0, &idx, ED_INIT);
+                 editfocus = newobj;
+               }
+             }
+	     else
+             {
+               /*
+                * Since if object is exit, we need to manually check if
+                * it is also an editable object. This can be skipped if
+                * you dont use objects where you have both OF_EDITABLE and
+                * OF_EXIT or OF_TOUCHEXIT set.
+                */
+               if (newobj != editfocus && (tree[newobj].ob_flags & OF_EDITABLE))
+               {
+                 objc_edit(tree, editfocus, 0, 0, ED_END);
+                 objc_edit(tree, newobj, 0, &idx, ED_INIT);
+                 editfocus = newobj;
+               }
+               
+               .... continue processing exit object ....
+                 
+             }
+   
+             -----------------------------------------------------------------
 ===============================================================================
  
  **** Nothing below this point is implementet!!!! ****      
