@@ -731,7 +731,7 @@ follow here!
              object which should get editfocus, -1 if no editables found or
 	     0 if editfocus did not change.
 	     
-	     If a nonzero value is returned in 'keyout', the key was not used
+             If a nonzero value is returned in 'keyout', the key was not used
              by form_keybd() and 'newobj' normally contains 0 if editfocus
              didnt change or -1 if the object tree doesnt contain any editable
              objects.
