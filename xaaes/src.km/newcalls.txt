@@ -734,9 +734,21 @@ INPUT:
              
              If a 1 is returned in 'cont', and the key is passed back in
              'keyout', the value passed to the function in 'nextobj' is
-             returned in 'newobj'. It is recommended one place a value of 0
-             in 'nextobj'. This way it becomes easy to check if editfocus
-             changed, even if the key is returned in 'keyout'.
+             returned in 'newobj'. In original Atari documentation it is said
+             that one should place the same value (current edit focus) in both
+             'editfocus' and 'nextobj'. This is infact recommended, because
+             then it becomes very easy to check for a change of editfocus.
+             This because form_keybd() returns a new editfocus when changed
+             or the value in 'editfocus' when 'keyout' is 0.
+             If 'keyout' is nonzero to indicate key wasnt used, the
+             value in 'nextobj' is returned in 'newobj' if no new editfocus.
+             In both cases one will get the same return in 'newobj' if edit-
+             focus didnt change when giving identical values to 'editfocus'
+             and 'nextobj'.
+             
+             This means that 'nextobj' is NOT a reserved value. It has a
+             purpose, and that the Atari documentation is found to be correct
+             where all others were wrong!
 
  tree:       'tree' contains the address of the object tree on which
              form_keybd() should act.
@@ -813,27 +825,23 @@ OUTPUT:
              >> example code to correctly handle output form form_keybd() <<
              ----------------------------------------------------------------
              /*
-              * Ozk: This code is based on always passing a value of 0 in
-              *      'nextobj', as this lets us check for a editfocus change
-              *      by using "if (newobj > 0 && newobj != editfocus)", sine
-              *      AES returns either whats given to it in 'nextobj' if key
-              *      wasnt used (keyout != 0) or if the key was used, 'newobj'
-              *      contains the new editfocus or the same value as passed in
-              *      'editfocus' if that didtn change.
+              * Ozk: This code is based on always passing the current
+              *      editfocus in both 'editfocus' and 'nextobj', as this lets
+              *      us check for a change by using "if (newobj != editfocus)"
+              *      which is simple :) Read the section about 'nextobj' above
+              *      for more info!
               */
              short newobj;
              short keyout;
 	     short idx;
      
-             if (form_keybd(tree, editfocus, keycode, 0, &newobj, &keyout))
+             if (form_keybd(tree, editfocus, keycode, editfocus, &newobj, &keyout))
              {
              	/* Ozk: We dont check if a key is returned first. We know
-             	 *      that if 'newobj' > 0 ('nextobj' returned in case of
-             	 *      a valid key returned in 'keyout') and if 'newobj'
-             	 *      isnt the same as the editfocus we passed in
-             	 *      'editfocus', the edtifocus did infact change.
+             	 *      that "if (newobj != editfocus)", the editfocus did infact
+             	 *      change.
              	 */
-               if (newobj > 0 && newobj != editfocus)
+               if (newobj != editfocus)
                {
                  objc_edit(tree, editfocus, 0, 0, ED_END);
                  objc_edit(tree, newobj, 0, &idx, ED_INIT);
