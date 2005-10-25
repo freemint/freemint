@@ -3206,7 +3206,7 @@ set_toolbar_widget(enum locks lock,
 	 * cursor there. Used by wdlg_create() atm
 	 */
 	if (edobj == -2)
-		edobj = ob_find_any_flst(obtree, OF_EDITABLE, 0, 0, OS_DISABLED, OF_LASTOB, 0);
+		edobj = ob_find_any_flst(obtree, OF_EDITABLE, 0, 0, OS_DISABLED, 0, 0);
 
 	if (!obj_edit(wt, v, ED_INIT, edobj, 0, -1, false, NULL, NULL, NULL, &edobj))
 		obj_edit(wt, v, ED_INIT, edobj, 0, -1, false, NULL, NULL, NULL, NULL);

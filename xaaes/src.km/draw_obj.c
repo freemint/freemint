@@ -1558,7 +1558,6 @@ icon_characters(struct xa_vdi_settings *v, ICONBLK *iconblk, short state, short 
 	{
 		tx = obx + iconblk->ib_xtext + ((iconblk->ib_wtext - strlen(iconblk->ib_ptext)*6) / 2);	
 		ty = oby + iconblk->ib_ytext + ((iconblk->ib_htext - 6) / 2);
-// 0x2053600
 		
 		if (state & OS_STATE08)
 		{
@@ -2479,8 +2478,8 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, struct xa_vdi_setti
 
 	depth++;
 
-	if (wt->owner->options.xa_objced && curson)
-		undraw_objcursor(wt, v, NULL);
+// 	if (wt->owner->options.xa_objced && curson)
+// 		undraw_objcursor(wt, v, NULL);
 
 	do {
 
@@ -2498,13 +2497,16 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, struct xa_vdi_setti
 
 		if (start_drawing && !(tree[current].ob_flags & OF_HIDETREE))
 		{
-			/* Display this object */
 			display_object(lock, wt, v, current, x, y, 10);
-			if (docurs && current == wt->e.obj && (tree[current].ob_type & 0xff) != G_USERDEF)
+			/* Display this object */
+			if (docurs && current == wt->e.obj)
 			{
 // 				display("redrawing cursor for obj %d", current);
-				eor_objcursor(wt, v, NULL);
-				docurs = false;
+				if ((tree[current].ob_type & 0xff) != G_USERDEF)
+					eor_objcursor(wt, v, NULL); // display("redrawing cursor for obj %d", current);
+// 				else
+// 					display("skipping progdef curs");
+				docurs = false;	
 			}
 		}
 
@@ -2539,10 +2541,10 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, struct xa_vdi_setti
 			current = next;
 		}
 	}
-	while (current != stop && current != -1/*-1*/ && rel_depth > 0); // !(start_drawing && rel_depth < 1));
+	while (current != stop && current != -1 && rel_depth > 0); // !(start_drawing && rel_depth < 1));
 
-	if (wt->owner->options.xa_objced && curson)
-		draw_objcursor(wt, v, NULL);
+// 	if (wt->owner->options.xa_objced && curson)
+// 		draw_objcursor(wt, v, NULL);
 
 	(*v->api->wr_mode)(v, MD_TRANS);
 	(*v->api->f_interior)(v, FIS_SOLID);

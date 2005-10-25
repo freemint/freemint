@@ -599,6 +599,7 @@ XA_form_keybd(enum locks lock, struct xa_client *client, AESPB *pb)
 	{
 		XA_TREE *wt;
 		short ks;
+		short newobj, oldobj, nextobj, keyout, cont;
 		struct rawkey key;
 
 		if (!(wt = obtree_to_wt(client, obtree)))
@@ -614,21 +615,56 @@ XA_form_keybd(enum locks lock, struct xa_client *client, AESPB *pb)
 		
 		DIAGS(("XA_form_keybd: wt=%lx, wt->owner=%lx, wt->tree=%lx - %s",
 			wt, wt->owner, wt->tree, wt->owner->name));
+		
+		oldobj = pb->intin[0];
+		nextobj = pb->intin[2];
+// 		display("XA_form_keybd: intin0=%d, intin1=%d, intin2=%d", pb->intin[0], pb->intin[1], pb->intin[2]);
+		
+		cont = form_keyboard(wt,		/* widget tree	*/
+				      client->vdi_settings,
+				      pb->intin[0],	/* obj		*/
+				      &key,		/* rawkey	*/
+				      true,		/* redraw flag	*/
+				      NULL,		/* rect list	*/
+				      &newobj, //&pb->intout[1],	/* nxt obj	*/
+				      NULL,		/* newstate	*/
+				      &keyout); //&pb->intout[2]);	/* nxtkey	*/
 
-		pb->intout[0] = form_keyboard(wt,		/* widget tree	*/
-					      client->vdi_settings,
-					      pb->intin[0],	/* obj		*/
-					      &key,		/* rawkey	*/
-					      true,		/* redraw flag	*/
-					      NULL,		/* rect list	*/
-					      &pb->intout[1],	/* nxt obj	*/
-					      NULL,		/* newstate	*/
-					      &pb->intout[2]);	/* nxtkey	*/
-		if (pb->intout[1] == -1)
+		/*
+		 * Ozk: What a mess! If no exitobjects, AES should return whats passed in 'nextobj' when
+		 *      the key was not used. XaAES will pass a new editfocus instead if the focus passed
+		 *      in intin[0] isnt a valid editable object. If the key was used, then the AES should
+		 *      either pass back a new editfocus, or the same value given to us in intin[0].
+		 *
+		 */
+		if (cont)
 		{
-			pb->intout[1] = pb->intin[2];
-			pb->intout[2] = pb->intin[1];
+			if (!keyout)
+			{
+				if (newobj <= 0)
+					newobj = oldobj;
+			}
+			else if (newobj <= 0)
+				newobj = nextobj;
 		}
+
+		pb->intout[0] = cont;
+		pb->intout[1] = newobj;
+		pb->intout[2] = keyout;
+
+// 		display("XA_form_keybd: cont=%d(%d), keyout=%d(%d), neewobj=%d(%d)", pb->intout[0], cont, pb->intout[2], keyout, pb->intout[1], newobj);
+
+// 		if (!strnicmp(client->proc_name, "amail", 5))
+// 		{
+// 			if (pb->intout[0] && !pb->intout[2] && pb->intout[1] <= 0)
+// 				pb->intout[1] = pb->intin[0];
+// 		}
+		
+// 		if (pb->intout[1] == -1)
+// 		{
+// 			pb->intout[1] = pb->intin[2];
+// 			pb->intout[2] = pb->intin[1];
+// 		}
 	}
 	else
 		pb->intout[0] = pb->intout[1] = pb->intout[2] = 0;
@@ -901,7 +937,7 @@ key_alert_widget(enum locks lock, struct xa_client *client, struct xa_window *wi
 	rp_2_ap(wind, widg, &r);	/* Convert relative coords and window location to absolute screen location */
 
 	if (keycode == 0x720d || keycode == 0x1c0d)
-		f = ob_find_flag(alert_form, OF_DEFAULT, 0, OF_LASTOB);
+		f = ob_find_flag(alert_form, OF_DEFAULT, 0, 0);
 	else if (keycode == 0x6100)   				/* UNDO */
 		f = ob_find_cancel(alert_form);
 	else
