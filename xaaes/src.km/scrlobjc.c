@@ -4036,7 +4036,7 @@ scrl_cursor(SCROLL_INFO *list, unsigned short keycode, unsigned short keystate)
 			{
 				if (list->flags & SIF_KEYBDACT)
 				{
-					display("entry act uparw");
+// 					display("entry act uparw");
 					entry_action(list, n, NULL);
 				}
 				else
@@ -4066,7 +4066,7 @@ scrl_cursor(SCROLL_INFO *list, unsigned short keycode, unsigned short keystate)
 			{
 				if (list->flags & SIF_KEYBDACT)
 				{
-					display("entry act downarw");
+// 					display("entry act downarw");
 					entry_action(list, n, NULL);
 				}
 				else
