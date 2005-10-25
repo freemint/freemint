@@ -1200,79 +1200,10 @@ ob_order(OBJECT *root, short object, ushort pos)
 		root[current].ob_next = object;
 	}
 }
-#if 0
-	do {	
-		if (current == object)	/* We can start considering objects at this point */
-		{
-			stop = object;
-			start_checking = true;
-			rel_depth = 0;
-		}
-		
-		if (start_checking)
-		{
-			if (  !(obtree[current].ob_flags & OF_HIDETREE)
-			    && obtree[current].ob_x + x                     <= mx
-			    && obtree[current].ob_y + y                     <= my
-			    && obtree[current].ob_x + x + obtree[current].ob_width  >= mx
-			    && obtree[current].ob_y + y + obtree[current].ob_height >= my)
-			{
-				/* This is only a possible object, as it may have children on top of it. */
-				if (c)
-				{
-					r.x = obtree[current].ob_x + x;
-					r.y = obtree[current].ob_y + y;
-					r.w = obtree[current].ob_width;
-					r.h = obtree[current].ob_height;
-				}
-				pos_object = current;
-			}
-		}
-
-		if ( ((!start_checking) || (rel_depth < depth))
-		    &&  (obtree[current].ob_head != -1)
-		    && !(obtree[current].ob_flags & OF_HIDETREE))
-		{
-			/* Any children? */
-			x += obtree[current].ob_x;
-			y += obtree[current].ob_y;
-			rel_depth++;
-			current = obtree[current].ob_head;
-		}
-		else
-		{
-			/* Try for a sibling */
-			next = obtree[current].ob_next;
-
-			/* Trace back up tree if no more siblings */
-			while ((next != stop && next != -1) && (obtree[next].ob_tail == current))
-			{
-				current = next;
-				x -= obtree[current].ob_x;
-				y -= obtree[current].ob_y;
-				next = obtree[current].ob_next;
-				rel_depth--;
-			}
-			current = next;
-		}	
-	}
-	while (current != stop && current != -1 && (rel_depth > 0));
-#endif
 
 static void
 foreach_object(OBJECT *tree, short parent, short start, short stopf, short stops, bool(*f)(OBJECT *obtree, short obj, void *ret), void *data)
 {
-#if 0
-	short o = 0;
-	display("enter");
-	while (!(tree[o].ob_flags & OF_LASTOB))
-	{
-		if ((*f)(tree, o, data))
-			break;
-		o++;
-	}
-	display("leave");
-#else
 	short o, n;
 
 	o = start;
@@ -1301,7 +1232,6 @@ foreach_object(OBJECT *tree, short parent, short start, short stopf, short stops
 		}
 
 	} while (o != parent && o != -1 && !(*f)(tree, o, data));
-#endif
 }
 
 struct anyflst_parms
@@ -1605,7 +1535,7 @@ ob_find_flst(OBJECT *tree, short f, short s, short mf, short ms, short stopf, sh
 short
 ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, short mf, short s, short ms, short stopf, short stops, short flags)
 {
-	short o, n, x, y, px, py, w, h, ax, cx, cy, co, cf, flg;
+	short o, n, x, y, w, h, ax, cx, cy, co, cf, flg;
 	RECT r;
 	
 // 	display("e");
@@ -1653,49 +1583,6 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 	{
 // 		display(" - obj %d, h=%d, t=%d, n=%d", o, tree[o].ob_head, tree[o].ob_tail, tree[o].ob_next);
 
-		if (tree[o].ob_head != -1 && !(tree[o].ob_flags & OF_HIDETREE))
-		{
-			x += tree[o].ob_x;
-			y += tree[o].ob_y;
-			
-			n = tree[o].ob_head;
-			
-			px = tree[n].ob_x;
-			py = tree[n].ob_y;
-		}
-		else
-		{
-			n = tree[o].ob_next;
-			
-			if (!n || n == -1)
-				goto done;
-
-			while (tree[n].ob_tail == o)
-			{
-				if (!n || n == -1)
-				{
-					goto done; //return co;
-				}
-				
-				x -= tree[n].ob_x;
-				y -= tree[n].ob_y;
-				
-				o = n;
-				n = tree[o].ob_next;
-
-				if (n == -1)
-					goto done; //return co;
-			}
-
-			px = tree[n].ob_x;
-			py = tree[n].ob_y;
-		}
-		
-		o = n;
-		
-		x += px;
-		y += py;
-
 // 		display(" %d/%d (%d/%d) (%d/%d/%d/%d)", x, y, px, py, r);
 		flg = 0;
 
@@ -1721,6 +1608,9 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 		if (flg == 3)
 		{
 			flg = 0;
+
+			x += tree[o].ob_x;
+			y += tree[o].ob_y;
 			w = tree[o].ob_width;
 			h = tree[o].ob_height;
 // 			display("start = %d, %d/%d/%d/%d this = %d, %d/%d/%d/%d", start, r, o, x,y,w,h);
@@ -1885,12 +1775,32 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 					}
 				}
 			}
+			
+			x -= tree[o].ob_x;
+			y -= tree[o].ob_y;
 		}
-		
-		x -= px;
-		y -= py;
 
-	} while ((!stopf || !(tree[o].ob_flags & stopf)) && (!stops || !(tree[o].ob_state & stops)));
+		
+		if (tree[o].ob_head != -1 && !(tree[o].ob_flags & OF_HIDETREE))
+		{
+			x += tree[o].ob_x;
+			y += tree[o].ob_y;
+			o = tree[o].ob_head;
+		}
+		else
+		{
+			n = tree[o].ob_next;
+			
+			while (n != parent && n != -1 && tree[n].ob_tail == o)
+			{
+				x -= tree[n].ob_x;
+				y -= tree[n].ob_y;				
+				o = n;
+				n = tree[o].ob_next;
+			}
+			o = n;
+		}
+	} while (o != parent && o != -1 && (!stopf || !(tree[o].ob_flags & stopf)) && (!stops || !(tree[o].ob_state & stops)));
 
 done:
 // 	display(" -- return %d", co);
@@ -1901,7 +1811,7 @@ short
 ob_find_next_any_flag(OBJECT *tree, short start, short f)
 {
 	short o = start;
-	short l = ob_find_any_flag(tree, OF_LASTOB, 0, OF_LASTOB);
+	short l = ob_find_any_flag(tree, OF_LASTOB, 0, 0);
 
 	DIAGS(("ob_find_next_any_flag: start=%d, flags=%x, lastob=%d",
 		start, f, l));
@@ -1940,7 +1850,7 @@ short
 ob_find_prev_any_flag(OBJECT *tree, short start, short f)
 {
 	short o = start;
-	short l = ob_find_any_flag(tree, OF_LASTOB, 0, OF_LASTOB);
+	short l = ob_find_any_flag(tree, OF_LASTOB, 0, 0);
 
 	/*
 	 * If start == -1, start at last object.
@@ -2663,19 +2573,19 @@ obtree_is_menu(OBJECT *tree)
 bool
 obtree_has_default(OBJECT *obtree)
 {
-	short o = ob_find_any_flst(obtree, OF_DEFAULT, 0, 0, 0, OF_LASTOB, 0);
+	short o = ob_find_any_flst(obtree, OF_DEFAULT, 0, 0, 0, 0, 0);
 	return o >= 0 ? true : false;
 }
 bool
 obtree_has_exit(OBJECT *obtree)
 {
-	short o = ob_find_any_flst(obtree, OF_EXIT, 0, 0, 0, OF_LASTOB, 0);
+	short o = ob_find_any_flst(obtree, OF_EXIT, 0, 0, 0, 0, 0);
 	return o >= 0 ? true : false;
 } 
 bool
 obtree_has_touchexit(OBJECT *obtree)
 {
-	short o = ob_find_any_flst(obtree, OF_TOUCHEXIT, 0, 0, 0, OF_LASTOB, 0);
+	short o = ob_find_any_flst(obtree, OF_TOUCHEXIT, 0, 0, 0, 0, 0);
 	return o >= 0 ? true : false;
 } 
 
@@ -3244,7 +3154,7 @@ obj_edit(XA_TREE *wt,
 // 	display("  --  obj_edit: func %s, wt=%lx obtree=%lx, obj:%d, k:%x, pos:%x",
 // 	      funcstr, wt, obtree, obj, keycode, pos);
 	
-	last = ob_find_any_flag(obtree, OF_LASTOB, 0, OF_LASTOB);
+	last = ob_find_any_flag(obtree, OF_LASTOB, 0, 0);
 
 	if (wt->e.obj != -1 && wt->e.obj > last)
 		wt->e.obj = -1;
@@ -3257,7 +3167,7 @@ obj_edit(XA_TREE *wt,
 			{
 				hidem();
 				
-				obj_ED_INIT(wt, &wt->e, obj, pos/*-1*/, last, NULL, &old_ed_obj);
+				obj_ED_INIT(wt, &wt->e, obj, -1, last, NULL, &old_ed_obj);
 				
 				if (redraw)
 					eor_objcursor(wt, v, rl);
@@ -3352,6 +3262,18 @@ obj_edit(XA_TREE *wt,
 			}
 			case ED_CRSR:
 			{
+				hidem();
+				
+				obj_ED_INIT(wt, &wt->e, obj, pos, last, NULL, &old_ed_obj);
+				
+				if (redraw)
+					eor_objcursor(wt, v, rl);
+				wt->e.c_state ^= OB_CURS_EOR;
+				
+				showm();
+// 				display("ED_INIT: eors=%d, obj=%d for %s", wt->e.c_state & DRW_CURSOR, wt->e.obj, wt->owner->name);
+				pos = wt->e.pos;
+				break;
 #if 0
 				/* TODO: x coordinate -> cursor position conversion */
 
@@ -3362,7 +3284,6 @@ obj_edit(XA_TREE *wt,
 					wt->e.pos = strlen(ted->te_ptext);
 				/* TODO: REMOVE: end */
 #endif
-				return 1;
 				break;
 			}
 			default:

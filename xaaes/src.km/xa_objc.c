@@ -84,7 +84,7 @@ XA_objc_draw(enum locks lock, struct xa_client *client, AESPB *pb)
 			 * Ozk: Ok.. looks like the AES should automagically draw the cursor...
 			 */
 			if ((editobj = wt->e.obj) == -1)
-				editobj = ob_find_any_flst(obtree, OF_EDITABLE, 0, 0, OS_DISABLED, OF_LASTOB, 0);
+				editobj = ob_find_any_flst(obtree, OF_EDITABLE, 0, 0, OS_DISABLED, 0, 0);
 			if (editobj != -1)
 				obj_edit(wt, v, ED_INIT, editobj, 0, -1, false, NULL, NULL, NULL, NULL);
 
@@ -283,7 +283,7 @@ XA_objc_edit(enum locks lock, struct xa_client *client, AESPB *pb)
 					 pb->intin[3],		/* function	*/
 					 pb->intin[0],		/* object	*/
 					 pb->intin[1],		/* key		*/
-					 pb->intin[2],		/* pos		*/
+					 -1,/* pb->intin[2],*/	/* pos		*/
 					 true,			/* redraw flag	*/
 					 NULL,			/* Clip rect	*/
 					 NULL,			/* rect list	*/
