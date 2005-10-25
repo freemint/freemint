@@ -669,8 +669,22 @@ own non-modal form_do() function.
  It is strongly adviced that application authors follow the gudelines that
 follow here!
 
+ XaAES's keyboard navigation depends on correct usage of the following
+functions;
 
- form_keybd(tree, obj, keycode, nextobj, newobj, keyout);
+ form_keybd();
+ form_button();
+ objc_edit();
+
+ form_keybd()   - processes keys application receives via evnt_multi() or
+                  evnt_keybd().
+ form_button()  - processes mouse clicks on objects.
+ objc_edit()    - XaAES needs to know where the cursor is, so it is vital
+                  that objc_edit() is used correct. If XaAES doesnt have
+                  correct info about where the cursor is, you will get redraw
+                  problems regarding the cursor.
+
+ cont = form_keybd(tree, editfocus, keycode, nextobj, newobj, keyout);
  {
         intin[0] = editfocus;
         intin[1] = keycode;
@@ -695,62 +709,131 @@ follow here!
 
         addrin     addrin[0]   tree
 
-        intout     intout[0]   Return
+        intout     intout[0]   cont
 	intout+2   intout[1]   newobj
 	intout+4   intout[2]   keyout
 
+INPUT:
  editfocus:  This is the object which currently has editfocus. If editfocus is
              set to 0, or if the object passed is not editable, XaAES will try
              look for the first instance of an editable in the given tree. If
              one is found, it is returned in 'newobj' unless 'keycode'
-             triggered selection of an 'exit' object. If no editables was found
-             in the tree, XaAES will return a -1 in 'newobj'. If 'editfocus' is
-             a valid editable object, and 'keycode' doesnt change editfocus, a
-             value of 0 is return in 'newobj' to indicate that editfocus didnt
-             change. More info under 'Return'.
+             triggered selection of an 'exit' object.
  
  keycode:    The keycode one received from evnt_multi() or evnt_keybd().
              See above for an overview of the keys XaAES uses for keyboard
              navigation.
  
- nextobj:    This is reserved, and should always be set to 1.
+ nextobj:    A lot of confusion around this parameter, it seems.
+             In some documentation this is said to be reserved, or unused, yet
+             other say you should put the same value here as you do in
+             'editfocus'. Some documentation tells you it should contain 0, yet
+             other say it should contain 1. What a mess this is!
+             
+             Here is what I think is correct;
+             
+             If a 1 is returned in 'cont', and the key is passed back in
+             'keyout', the value passed to the function in 'nextobj' is
+             returned in 'newobj'. It is recommended one place a value of 0
+             in 'nextobj'. This way it becomes easy to check if editfocus
+             changed, even if the key is returned in 'keyout'.
 
  tree:       'tree' contains the address of the object tree on which
              form_keybd() should act.
-
- Return: 0 - is returned if the key triggered a selection of an object
+OUTPUT:
+ cont:   0 - is returned if the key triggered a selection of an object
              that is 'exitable'. That is, if object has OF_EXIT or
              OF_TOUCHEXIT set. When this happens, 'newobj' contains the object
              index of the selected object. A 0 is also returned in 'keyout'
              to indicate that the key was used by form_keybd().
+             
+             NOTE:
+                If you use objects that has both OF_EDITABLE and OF_EXIT or
+                OF_TOUCHEXIT flag bits set, you need to manually check if the
+                object returned in 'newobj' is an editable one, and change
+                editfocus accordingly. See example code below.
 
          1 - is returned if the key triggered a selection of an object that
              is not 'exitable', or if the key was not used by form_keybd().
              If there was a selection done, a 0 is returned in 'keyout' to
-             indicate the key was used, and 'newobj' contains the index of the
-             object which should get editfocus, -1 if no editables found or
-	     0 if editfocus did not change.
-	     
+             indicate the key was used and 'newobj' contains the index of the
+             object which should get editfocus. If editfocus did not change,
+             then the value passed in 'editfocus' is returned in 'newobj'.
+             
              If a nonzero value is returned in 'keyout', the key was not used
-             by form_keybd() and 'newobj' normally contains 0 if editfocus
-             didnt change or -1 if the object tree doesnt contain any editable
-             objects.
+             by form_keybd() and 'newobj' normally contains the value passed
+             in 'nextobj' if editfocus didnt change or, at least under XaAES,
+             the index of the new object which should gain editfocus.
 	     
              NOTE: Under XaAES it is possible that editfocus changes AND the
              key is returned! This means that when the key passed to
 	     form_keybd() is returned in 'keyout', one should always check
-	     'newobj', and if greater than 0, set editfocus to 'newobj' BEFORE
-	     passing the key to objc_edit().
+	     'newobj', and if not equal to 'nextobj', set editfocus to
+	     'newobj' BEFORE passing the key to objc_edit().
 	     
+ newobj:    If an object was selected by the function and it has OF_EXIT or
+            OF_TOUCHEXIT obflags set, 'newobj' contains the index of the
+            'exit' object and return value is 0 to indicate this.
+	    
+            If form_keybd() returns 1, 'newobj' contain the object index of the
+            editable object which should get editfocus if it changed. If edit-
+            focus didn not change, the value passed in 'nextobj' is returned
+            in 'nextobj' to indicate this. If the tree does not have any editable
+            objects, 'newobj' will contain -1 upon function return.
+
+ keyout:    If the key was used by the function, 'keyout' will contain 0 upon
+            function return. Else the key is returned in 'keyout', and can be
+            passed to objc_edit().
+
+ Comments:  The value returned in 'newobj' changes according to these different
+            situations;
+            
+            cont = form_keybd(tree, editfocus, keycode, nextobj, &newobj, &keyout);
+            
+            If cont == 0 - object with OF_EXIT or OF_TOUCHEXIT selected;
+               'newobj' contains the object index of the object selected.
+               'keyout' contains 0 to indicate key was used.
+            
+            If cont == 1 - non-exit object selected.
+               if 'keyout' == 0 - key used
+                  'newobj' contains the new editfocus, or the value passed in
+                           'editfocus' if editfocus didnt change.
+               
+               if 'keyout' != 0 - key not used.
+                  'newobj' contains the value passed to function in 'nextobj'.
+                           Under XaAES: contains the value passed to function
+                                        in 'nextobj' or new editfocus if this
+                                        changed. Typically happens if the value
+                                        passed in 'editfocus' is not a valid
+                                        editable object, in which case XaAES
+                                        searches for the first visible editable
+                                        in the tree and suggests this to be the
+                                        new editfocus.
+                           
              >> example code to correctly handle output form form_keybd() <<
              ----------------------------------------------------------------
+             /*
+              * Ozk: This code is based on always passing a value of 0 in
+              *      'nextobj', as this lets us check for a editfocus change
+              *      by using "if (newobj > 0 && newobj != editfocus)", sine
+              *      AES returns either whats given to it in 'nextobj' if key
+              *      wasnt used (keyout != 0) or if the key was used, 'newobj'
+              *      contains the new editfocus or the same value as passed in
+              *      'editfocus' if that didtn change.
+              */
              short newobj;
              short keyout;
 	     short idx;
      
-             if (form_keybd(tree, editfocus, keycode, 1, &newobj, &keyout))
+             if (form_keybd(tree, editfocus, keycode, 0, &newobj, &keyout))
              {
-               if (newobj > 0)
+             	/* Ozk: We dont check if a key is returned first. We know
+             	 *      that if 'newobj' > 0 ('nextobj' returned in case of
+             	 *      a valid key returned in 'keyout') and if 'newobj'
+             	 *      isnt the same as the editfocus we passed in
+             	 *      'editfocus', the edtifocus did infact change.
+             	 */
+               if (newobj > 0 && newobj != editfocus)
                {
                  objc_edit(tree, editfocus, 0, 0, ED_END);
                  objc_edit(tree, newobj, 0, &idx, ED_INIT);
@@ -764,7 +847,7 @@ follow here!
 	     else
              {
                /*
-                * Since if object is exit, we need to manually check if
+                * Since object is exit, we need to manually check if
                 * it is also an editable object. This can be skipped if
                 * you dont use objects where you have both OF_EDITABLE and
                 * OF_EXIT or OF_TOUCHEXIT set.
@@ -782,22 +865,6 @@ follow here!
    
              -----------------------------------------------------------------
              -----------------------------------------------------------------
- newobj:    If an object was selected by the function and it has OF_EXIT or
-            OF_TOUCHEXIT obflags set, 'newobj' contains the index of the
-            'exit' object and return value is 0 to indicate this.
-	    
-            In any other cases, 'newobj' contains the object index of the
-            editable object which should get editfocus if it changed, a 0 if
-            editfocus didnt change or -1 if no editable objects was found.
-
-
- keyout:    If the key was used by the function, 'keyout' will contain 0 upon
-            function return. Else the key is returned in 'keyout', and can be
-            passed to objc_edit().
-
- nextobj
-
- NOTES: If the object passed to 
 -------------------------------------------------------------------------------
              >> example code to correctly handle output form form_button() <<
              ----------------------------------------------------------------

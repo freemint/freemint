@@ -45,10 +45,11 @@
  * client->wt (XA_TREE) is used for modal form_do.
  * wind->toolbar (XA_TREE) is used for nonmodal (windowed) form_do.
  */
-void
+static void
 Set_form_do(struct xa_client *client,
 	    OBJECT *obtree,
-	    short edobj)
+	    short edobj,
+	    bool redraw)
 {
 	short new_obj;
 	XA_TREE *wt;
@@ -70,10 +71,13 @@ Set_form_do(struct xa_client *client,
 	 * object it returned, which obj_edit() looked up. See obj_edit()
 	 */
 	if (edobj == -2)
-		edobj = ob_find_any_flst(obtree, OF_EDITABLE, 0, 0, OS_DISABLED, OF_LASTOB, 0);
+		edobj = ob_find_any_flst(obtree, OF_EDITABLE, 0, 0, OS_DISABLED, 0, 0);
 
-	if (!obj_edit(wt, client->vdi_settings, ED_INIT, edobj, 0, -1, false, NULL, NULL, NULL, &new_obj))
-		obj_edit(wt, client->vdi_settings, ED_INIT, new_obj, 0, -1, false, NULL, NULL, NULL, NULL);
+	if (!obj_edit(wt, client->vdi_settings, ED_INIT, edobj, 0, -1, redraw, NULL, NULL, NULL, &new_obj))
+	{
+		edobj = ob_find_any_flst(obtree, OF_EDITABLE, 0, 0, OS_DISABLED, 0, 0);
+		obj_edit(wt, client->vdi_settings, ED_INIT, edobj, 0, -1, redraw, NULL, NULL, NULL, NULL);
+	}
 
 	/* Ozk:
 	 * Check if this obtree needs a keypress handler..
@@ -176,7 +180,7 @@ Setup_form_do(struct xa_client *client,
 	{
 		DIAG((D_form, client, "Setup_form_do: nonwindowed for %s", client->name));
 // 		if (d) display("Setup_form_do: nonwindowed for %s", client->name);
-		Set_form_do(client, obtree, edobj);
+		Set_form_do(client, obtree, edobj, true);
 		wt = client->fmd.wt;
 		goto okexit;
 	}
@@ -462,7 +466,7 @@ form_cursor(XA_TREE *wt,
 
 	if (!rl) rl = &lrl;
 
-	last_ob = ob_count_flag(obtree, OF_EDITABLE, 0, OF_LASTOB, &edcnt);
+	last_ob = ob_count_flag(obtree, OF_EDITABLE, 0, 0, &edcnt);
 
 	DIAG((D_form, NULL, "form_cursor: wt=%lx, obtree=%lx, obj=%d, keycode=%x, lastob=%d, editobjs=%d",
 		wt, obtree, obj, keycode, last_ob, edcnt));
@@ -734,7 +738,7 @@ form_keyboard(XA_TREE *wt,
 		}
 		else if (keycode == 0x1c0d || keycode == 0x720d)
 		{
-			next_obj = ob_find_flst(obtree, OF_DEFAULT, 0, 0, OS_DISABLED, OF_LASTOB, 0);
+			next_obj = ob_find_flst(obtree, OF_DEFAULT, 0, 0, OS_DISABLED, 0, 0);
 
 			DIAG((D_keybd, NULL, "form_keyboard: Got RETRURN key - default obj=%d for %s",
 				next_obj, client->name));
@@ -1159,7 +1163,7 @@ Key_form_do(enum locks lock,
 				DIAGS(("Key_form_do: obj_edit - edobj=%d, edpos=%d",
 					wt->e.obj, wt->e.pos));
 			}
-			else if (fr.obj >= 0 && wt->e.obj != fr.obj)
+			else if (fr.obj > 0 && wt->e.obj != fr.obj)
 			{
 				obj_edit(wt, v, ED_END, 0, 0, 0, true, clip, *rl, NULL, NULL);
 				obj_edit(wt, v, ED_INIT, fr.obj, 0, -1, true, clip, *rl, NULL, NULL);
