@@ -193,6 +193,9 @@ struct xa_colour_scheme
 	short lit_col;			/* Colour used for lit 3d edge */
 	short border_col;		/* Colour used for edging */
 	short highlight_col;		/* Colour used for highlighting */
+
+	short font_fgcol;
+	short font_bgcol;
 };
 
 struct xa_screen

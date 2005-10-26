@@ -304,7 +304,7 @@ XA_objc_edit(enum locks lock, struct xa_client *client, AESPB *pb)
 /* HR: objc_sysvar
    I think some programs need this to be able to do extended
     objects in 3D using progdefs.
-    And shure they have the right to call this when they can do
+    And sure they have the right to call this when they can do
     3D objects at all.    (appl_getinfo).
     .....
     I was right: Hip hip hurray!!! Luna.app buttons now OK.
