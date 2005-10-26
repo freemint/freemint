@@ -559,7 +559,7 @@ xa_top_line(struct xa_vdi_settings *v, short d, const RECT *r, short col)
 
 	short x = r->x - d;
 	short y = r->y - d;
-	short w = r->w + d+d;
+	short w = r->w + d + d;
 
 	xa_l_color(v, col);
 	pnt[0] = x;
