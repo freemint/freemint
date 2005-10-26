@@ -328,6 +328,31 @@ write_selection(struct xa_vdi_settings *v, short d, RECT *r)
 }
 
 static void
+d3_bottom_line(struct xa_vdi_settings *v, RECT *r, bool l3d, short fgc, short bgc)
+{
+	short x, y, w;
+			 
+	 if (l3d)
+	 {
+	 	x = r->x;
+	 	y = r->y + r->h - 1;
+	 	w = r->w - 1;
+	 }
+	 else
+	 {
+	 	x = r->x;
+	 	y = r->y + r->h;
+	 	w = r->w;
+	 }
+	(*v->api->line)(v, x, y, x + w, y, fgc);
+	if (l3d)
+	{
+		y++;
+		(*v->api->line)(v, x + 1, y, x + w + 1, y, bgc);
+	}
+}
+
+static void
 d3_pushbutton(struct xa_vdi_settings *v, short d, RECT *r, BFOBSPEC *col, short state, short thick, short mode)
 {
 	const unsigned short selected = state & OS_SELECTED;
@@ -370,6 +395,16 @@ d3_pushbutton(struct xa_vdi_settings *v, short d, RECT *r, BFOBSPEC *col, short 
 	else
 #endif
 	{
+		(*v->api->l_color)(v, objc_rend.dial_colours.fg_col);
+		while (t > 0)
+		{
+			/* outside box */
+			(*v->api->gbox)(v, j, r);
+			t--, j--;
+		}
+		(*v->api->br_hook)(v, j, r, selected ? objc_rend.dial_colours.lit_col : objc_rend.dial_colours.shadow_col);
+		(*v->api->tl_hook)(v, j, r, selected ? objc_rend.dial_colours.shadow_col : objc_rend.dial_colours.lit_col);
+#if 0
 		do {
 			(*v->api->br_hook)(v, j, r, selected ? objc_rend.dial_colours.lit_col : objc_rend.dial_colours.shadow_col);
 			(*v->api->tl_hook)(v, j, r, selected ? objc_rend.dial_colours.shadow_col : objc_rend.dial_colours.lit_col);
@@ -384,6 +419,7 @@ d3_pushbutton(struct xa_vdi_settings *v, short d, RECT *r, BFOBSPEC *col, short 
 			/* outside box */
 			(*v->api->gbox)(v, outline, r);
 		}
+#endif
 	}
 
 	shadow_object(v, outline, state, r, objc_rend.dial_colours.border_col, thick);
@@ -623,12 +659,12 @@ button_colours(void)
 }
 
 static void
-ob_text(XA_TREE *wt, struct xa_vdi_settings *v, RECT *r, RECT *o, BFOBSPEC *c, const char *t, short state, short und)
+ob_text(XA_TREE *wt, struct xa_vdi_settings *v, RECT *r, RECT *o, BFOBSPEC *c, char *t, short state, short flags, short und, short undcol)
 {
 	if (t && *t)
 	{
 		OBJECT *ob = wt->tree + wt->current;
-		bool fits = !o || (o && (o->h >= r->h - (d3_foreground(ob) ? 4 : 0)));
+		bool fits = !o || ((o->h >= r->h - (d3_foreground(ob) ? 4 : 0)));
 
 		/* set according to circumstances. */
 		if (c)
@@ -661,18 +697,60 @@ ob_text(XA_TREE *wt, struct xa_vdi_settings *v, RECT *r, RECT *o, BFOBSPEC *c, c
 		}
 
 		if (fits)
+		{
+			if (und < 0 && !MONO && (flags & OF_FL3DIND))
+			{
+				short tc = v->text_color;
+				(*v->api->t_color)(v, objc_rend.dial_colours.lit_col);
+				v_gtext(v->handle, r->x +1, r->y +1, t);
+				(*v->api->t_color)(v, tc);
+			}
 			v_gtext(v->handle, r->x, r->y, t);
-
+		}
+		
 		/* Now underline the shortcut character, if any. */
+		/* Ozk: Prepared for proportional fonts! */
 		if (und >= 0)
 		{
 			short l = strlen(t);
 			if (und < l)
 			{
-				short x = r->x + und * screen.c_max_w,
-				    y = r->y + screen.c_max_h - 1;
-				(*v->api->line)(v, x, y, x + screen.c_max_w - 1, y, G_RED);
+				char sc;
+				short x, y, w, h;
+				
+				y = r->y;
+				
+				if (!und)
+					x = 0;
+				else
+				{
+					sc = t[und];
+					t[und] = '\0';
+					(*v->api->t_extent)(v, t, &w, &h);
+					x = w;
+					t[und] = sc;
+				}
+				sc = t[und + 1];
+				t[und + 1] = '\0';
+				(*v->api->t_extent)(v, t, &w, &h);
+				t[und + 1] = sc;
+				w -= x;
+				y += h;
+				x += r->x;
+				(*v->api->line)(v, x, y, x + w, y, undcol);
 			}
+		}
+		else if (und == -2)
+		{
+			short w, h;
+			RECT nr = *r;
+			(*v->api->t_extent)(v, t, &w, &h);
+			nr.w = w;
+			d3_bottom_line(v, &nr, (flags & OF_FL3DBAK), G_BLACK, G_WHITE);
+
+// 			(*v->api->line)(v, r->x, r->y + r->h - 1, r->x + w - 1, r->y + r->h - 1, G_BLACK);
+//			if (flags & OF_FL3DBAK)
+// 				(*v->api->line)(v, r->x + 1, r->y + r->h, r->x + w, r->y + r->h, G_WHITE);
 		}
 	}
 }
@@ -680,20 +758,24 @@ ob_text(XA_TREE *wt, struct xa_vdi_settings *v, RECT *r, RECT *o, BFOBSPEC *c, c
 static void
 g_text(XA_TREE *wt, struct xa_vdi_settings *v, RECT r, RECT *o, const char *text, short state)
 {
+	char t[256];
 	/* only center the text. ;-) */
+
+	strcpy(t, text);
+
 	r.y += (r.h - screen.c_max_h) / 2;
 	if (!MONO && (state & OS_DISABLED))
 	{
 		(*v->api->t_color)(v, objc_rend.dial_colours.lit_col);
 		v_gtext(v->handle, r.x + 1, r.y + 1, text);
 		(*v->api->t_color)(v, objc_rend.dial_colours.shadow_col);
-		v_gtext(v->handle, r.x,   r.y,   text);
+		v_gtext(v->handle, r.x,   r.y,   t);
 		done(OS_DISABLED);
 	}
 	else
 	{
 		(*v->api->t_color)(v, menu_dis_col(wt));
-		ob_text(wt, v, &r, o, NULL, text, 0, (state & OS_WHITEBAK) ? (state >> 8) & 0x7f : -1);
+		ob_text(wt, v, &r, o, NULL, t, 0, 0, (state & OS_WHITEBAK) ? (state >> 8) & 0x7f : -1, G_RED);
 		if (state & OS_DISABLED)
 		{
 			(*v->api->write_disable)(v, &wt->r, objc_rend.dial_colours.bg_col);
@@ -1269,14 +1351,14 @@ d_g_boxchar(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 		(*v->api->wr_mode)(v, colours.textmode ? MD_REPLACE : MD_TRANS);
 		(*v->api->t_font)(v, screen.standard_font_point, screen.standard_font_id);
 		(*v->api->t_effects)(v, 0);
-		ob_text(wt, v, &gr, &r, NULL, temp_text, 0, -1);
+		ob_text(wt, v, &gr, &r, NULL, temp_text, 0, 0, -1, G_BLACK);
 	}
 	else
 	{
 		(*v->api->gbar)(v, 0, &r);
 		(*v->api->t_font)(v, screen.standard_font_point, screen.standard_font_id);
 		(*v->api->t_effects)(v, 0);
-		ob_text(wt, v, &gr, &r, &colours, temp_text, ob->ob_state, -1);
+		ob_text(wt, v, &gr, &r, &colours, temp_text, ob->ob_state, 0, -1, G_BLACK);
 
 		if (selected)
 			write_selection(v, 0, &r);
@@ -1320,13 +1402,13 @@ d_g_boxtext(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 			gr.x += PUSH3D_DISTANCE;
 			gr.y += PUSH3D_DISTANCE;
 		}
-		ob_text(wt, v, &gr, &r, &colours, temp_text, 0, -1);
+		ob_text(wt, v, &gr, &r, &colours, temp_text, 0, 0, -1, G_BLACK);
 	}
 	else
 	{
 		(*v->api->gbar)(v, 0, &r);
 		
-		ob_text(wt, v, &gr, &r, &colours, temp_text, ob->ob_state, -1);
+		ob_text(wt, v, &gr, &r, &colours, temp_text, ob->ob_state, 0, -1, G_BLACK);
 
 		if (selected)
 			write_selection(v, 0, &r);		/* before border */
@@ -1366,12 +1448,12 @@ d_g_fboxtext(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 			gr.x += PUSH3D_DISTANCE;
 			gr.y += PUSH3D_DISTANCE;
 		}
-		ob_text(wt, v, &gr, &r, &colours, temp_text, 0, -1);
+		ob_text(wt, v, &gr, &r, &colours, temp_text, 0, 0, -1, G_BLACK);
 	}
 	else
 	{
 		(*v->api->gbar)(v, 0, &r);
-		ob_text(wt, v, &gr, &r, &colours, temp_text, ob->ob_state, -1);
+		ob_text(wt, v, &gr, &r, &colours, temp_text, ob->ob_state, 0, -1, G_BLACK);
 
 		if (selected)
 			/* before border */
@@ -1425,7 +1507,7 @@ d_g_button(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 		text = object_get_spec(ob)->free_string;
 
 	colours = button_colours();
-	(*v->api->t_color)(v, G_BLACK);
+// 	(*v->api->t_color)(v, G_BLACK);
 
 	if ((ob->ob_state & OS_WHITEBAK) && (ob->ob_state & 0x8000))
 	{
@@ -1435,11 +1517,21 @@ d_g_button(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 		if (und == -2)
 		{
 			RECT rr = r;
-			rr.y += screen.c_max_h/2;
-			rr.h -= screen.c_max_h/2;
-			if (MONO || !d3_any(ob))
+			if (text)
 			{
-				(*v->api->l_color)(v, G_BLACK);
+				(*v->api->t_color)(v, G_BLACK);
+				(*v->api->t_effects)(v, 0);
+				if (ob->ob_state & OS_SHADOWED)
+					(*v->api->t_font)(v, screen.small_font_point, screen.small_font_id);
+				else
+					(*v->api->t_font)(v, screen.standard_font_point, screen.standard_font_id);
+				(*v->api->t_extent)(v, text, &gr.w, &gr.h);
+				rr.y += gr.h / 2;
+				rr.h -= gr.h / 2;
+			}
+			if (MONO || !(ob->ob_flags & OF_FL3DBAK))
+			{
+				(*v->api->l_color)(v, MONO ? G_BLACK : G_LBLACK);
 				(*v->api->gbox)(v, 0, &rr);
 			}
 			else
@@ -1449,10 +1541,7 @@ d_g_button(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 			{
 				gr.x = r.x + screen.c_max_w;
 				gr.y = r.y;
-				(*v->api->t_font)(v, screen.standard_font_point, screen.standard_font_id);
-				(*v->api->t_extent)(v, text, &gr.w, &gr.h);
-				(*v->api->t_effects)(v, 0);
-				ob_text(wt, v, &gr, NULL, &colours, text, 0, -1);
+				ob_text(wt, v, &gr, NULL, &colours, text, 0, ob->ob_flags, -1, G_BLACK);
 			}
 		}
 		else
@@ -1467,13 +1556,14 @@ d_g_button(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 			if (text)
 			{
 				short w, h;
+				(*v->api->t_color)(v, G_BLACK);
 				object_spec_wh((OBJECT *)xobj_rsc + xobj, &w, &h);
 				gr.x += w; //ICON_W;
 				gr.x += 2; //screen.c_max_w;
 				(*v->api->wr_mode)(v, MD_TRANS);
 				(*v->api->t_font)(v, screen.standard_font_point, screen.standard_font_id);
 				(*v->api->t_effects)(v, 0);
-				ob_text(wt, v, &gr, &r, NULL, text, 0, und & 0x7f);
+				ob_text(wt, v, &gr, &r, NULL, text, 0, 0, und & 0x7f, (ob->ob_flags & FL3DMASK) >> 9);
 			}
 		}
 	}
@@ -1489,6 +1579,7 @@ d_g_button(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 		 */
 		if (text)
 		{
+			(*v->api->t_color)(v, G_BLACK);
 			(*v->api->t_font)(v, screen.standard_font_point, screen.standard_font_id);
 			(*v->api->t_extent)(v, text, &tw, &th);
 			gr.y += (r.h - th) / 2;
@@ -1507,7 +1598,7 @@ d_g_button(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 			{
 				(*v->api->wr_mode)(v, MD_TRANS);
 				(*v->api->t_effects)(v, 0);
-				ob_text(wt, v, &gr, &r, NULL, text, 0, und);
+				ob_text(wt, v, &gr, &r, NULL, text, 0, 0, und, G_BLACK);
 			}
 		}
 		else
@@ -1524,7 +1615,7 @@ d_g_button(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 			if (text)
 			{
 				(*v->api->t_effects)(v, 0);
-				ob_text(wt, v, &gr, &r, NULL, text, 0, und);
+				ob_text(wt, v, &gr, &r, NULL, text, 0, 0, und, G_BLACK);
 			}
 			/* Display a border? */
 			if (thick)
@@ -1885,7 +1976,7 @@ d_g_text(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 		done(OS_SELECTED);
 	}
 
-	ob_text(wt, v, &gr, &r, &colours, temp_text, ob->ob_state, -1);
+	ob_text(wt, v, &gr, &r, &colours, temp_text, ob->ob_state, 0, -1, G_BLACK);
 }
 void
 d_g_ftext(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
@@ -1908,7 +1999,7 @@ d_g_ftext(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 		done(OS_SELECTED);
 	}
 
-	ob_text(wt, v, &gr, &r, &colours, temp_text, ob->ob_state, -1);
+	ob_text(wt, v, &gr, &r, &colours, temp_text, ob->ob_state, 0, -1, G_BLACK);
 
 #if 0
 	/*
@@ -2080,14 +2171,17 @@ d_g_string(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 	RECT r = wt->r;
 	OBJECT *ob = wt->tree + wt->current;
 	ushort state = ob->ob_state;
-	char *text = object_get_spec(ob)->free_string;
-
+	char *t, text[256];
+	 
 	/* most AES's allow null string */
-	if (text)
+	if ((t = object_get_spec(ob)->free_string))
 	{
-		bool tit =    ( state & OS_WHITEBAK )
+		bool tit = ( state & OS_WHITEBAK )
 		           && ( state & 0xff00   ) == 0xff00;
 
+		strncpy(text, t, 254);
+		text[255] = '\0';
+		
 		(*v->api->wr_mode)(v, MD_TRANS);
 
 		if (d3_foreground(ob) && !tit)
@@ -2119,13 +2213,30 @@ d_g_string(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 		}
 		else
 		{
+			short und = -1, undcol = G_BLACK, flags = 0;
+			if (state & OS_WHITEBAK)
+			{
+				short ns = state >> 8;
+				if (!(ns & 0x80))
+				{
+					und = ns & 0x7f;
+				}
+				else if (ns == 0xfe)
+				{
+					und = -2;
+					flags = ob->ob_flags;
+				}
+				else if (ns == 0xff)
+					flags = ob->ob_flags;
+			}
 			(*v->api->t_font)(v, screen.standard_font_point, screen.standard_font_id);
 			(*v->api->t_effects)(v, 0);
-			g_text(wt, v, r, &wt->r, text, ob->ob_state);
+			ob_text(wt, v, &r, &r, NULL, t, 0, flags, und, undcol);
+// 			g_text(wt, v, r, &wt->r, text, ob->ob_state);
 		}
 
 		if (tit)
-			(*v->api->line)(v, r.x, r.y + r.h, r.x + r.w -1, r.y + r.h, G_BLACK);
+			d3_bottom_line(v, &r, (ob->ob_flags & OF_FL3DBAK), G_BLACK, G_WHITE);
 	}
 }
 

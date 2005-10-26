@@ -683,6 +683,7 @@ typedef  struct
 #define OF_FL3DIND		0x0200	/* bit 9 */
 #define OF_FL3DBAK		0x0400	/* bit 10 */
 #define OF_FL3DACT		0x0600
+#define FL3DMASK		(OF_FL3DIND|OF_FL3DBAK|OF_FL3DACT)
 #define OF_SUBMENU		0x0800	/* bit 11 */
 #define OF_FLAG11		OF_SUBMENU
 #define OF_FLAG12		0x1000
