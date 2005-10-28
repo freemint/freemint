@@ -41,6 +41,7 @@ long		kernel_pterm	(struct proc *p, short code);
 long _cdecl	sys_pterm0	(void);
 long _cdecl	sys_ptermres	(long save, short code);
 
+long		pwaitpid	(short pid, short nohang, long *rusage, short *retval);
 long _cdecl	sys_pwaitpid	(short pid, short nohang, long *rusage);
 long _cdecl	sys_pwait3	(short nohang, long *rusage);
 long _cdecl	sys_pwait	(void);
