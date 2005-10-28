@@ -392,9 +392,8 @@ sys_ptermres(long save, short code)
  *
  *        again.
  */
-
-long _cdecl
-sys_pwaitpid(short pid, short nohang, long *rusage)
+long
+pwaitpid(short pid, short nohang, long *rusage, short *retval)
 {
 	struct proc *p;
 	long r;
@@ -483,6 +482,10 @@ sys_pwaitpid(short pid, short nohang, long *rusage)
 	 * the possibly fatal signal that caused it to die.
 	 */
 	r = (((unsigned long)p->pid) << 16) | (p->wait_cond & 0x0000ffff);
+	
+	if (retval)
+		*retval = (unsigned short)r;
+
 	/* This assumes that NSIG is 32, i. e. the highest possible
 	   signal is 31.  We have to use 0x9f instead of 0x1f to be
 	   prepared for a possible core dump flag.  */
@@ -495,7 +498,6 @@ sys_pwaitpid(short pid, short nohang, long *rusage)
 		   (with possible memory faults if the signal would be
 		   > NSIG).  */
 		r &= 0xffff00ff;
-
 
 	/* check resource usage */
 	if (rusage)
@@ -605,6 +607,11 @@ sys_pwaitpid(short pid, short nohang, long *rusage)
 	return r;
 }
 
+long _cdecl
+sys_pwaitpid(short pid, short nohang, long *rusage)
+{
+	return pwaitpid(pid, nohang, rusage, NULL);
+}
 /*
  * p_wait3: BSD process termination primitive, here to maintain
  * compatibility with existing binaries.
@@ -612,7 +619,7 @@ sys_pwaitpid(short pid, short nohang, long *rusage)
 long _cdecl
 sys_pwait3(short nohang, long *rusage)
 {
-	return sys_pwaitpid(-1, nohang, rusage);
+	return pwaitpid(-1, nohang, rusage, NULL); // sys_pwaitpid(-1, nohang, rusage);
 }
 
 /*
@@ -633,5 +640,5 @@ sys_pwait(void)
 	 * POSIX style libraries should use Pwaitpid even
 	 * to implement wait().
 	 */
-	return sys_pwaitpid(-1, 2, NULL);
+	return pwaitpid(-1, 2, NULL, NULL); //sys_pwaitpid(-1, 2, NULL);
 }

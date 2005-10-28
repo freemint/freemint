@@ -549,6 +549,7 @@ sys_pexec(short mode, const void *ptr1, const void *ptr2, const void *ptr3)
 	if (mkwait)
 	{
 		long oldsigint, oldsigquit;
+		unsigned short retval;
 
 		assert(curproc->p_sigacts);
 
@@ -561,7 +562,7 @@ sys_pexec(short mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		newpid = p->pid;
 		for(;;)
 		{
-			r = sys_pwaitpid(curproc->pid ? newpid : -1, 0, NULL);
+			r = pwaitpid(curproc->pid ? newpid : -1, 0, NULL, &retval); //r = sys_pwaitpid(curproc->pid ? newpid : -1, 0, NULL);
 			if (r < 0)
 			{
 				ALERT("p_exec: wait error");
@@ -575,9 +576,12 @@ sys_pexec(short mode, const void *ptr1, const void *ptr2, const void *ptr3)
 
 				/* sys_pwaitpid() strips the low word down to 8 bit,
 				 * fix that.
+				 * Ozk: thats not enough, gotta pass back all 16 bits.
 				 */
-				r = (long)((char)r);
+				r = retval;
 				r &= 0x0000ffffL;
+// 				r = (long)((char)r);
+// 				r &= 0x0000ffffL;
 				break;
 			}
 
