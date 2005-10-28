@@ -578,6 +578,31 @@ k_init(unsigned long vm)
 	screen.standard_font_point  = v->font_rsize;
 	screen.c_max_w = v->cell_w;
 	screen.c_max_h = v->cell_h;
+	
+	{
+		short i, j, count = 0, cellw, tmp;
+		unsigned long wch = 0;
+		for (i = 0; i < 256; i++)
+		{
+			j = vqt_width(v->handle, i, &cellw, &tmp, &tmp);
+// 			display("j %d, count %d, cellw %d, whc %ld", j, count, cellw, wch);
+			if (j >= 0)
+			{
+				count++;
+				wch += cellw;
+			}
+		}
+		if (count)
+		{
+// 			display("count %d, wch %ld", count, wch);
+			screen.c_max_w = (wch / count);
+		}
+// 		display("c_max_h = %d", screen.c_max_h);
+		(*global_vdiapi->t_extent)(&global_vdi_settings, "A_", &cellw, &tmp);
+		screen.c_max_h = tmp;
+// 		display("c_max_h = %d", tmp);
+		
+	}
 
 // 	display("stdfont: id = %d, size = %d, cw=%d, ch=%d",
 // 		screen.standard_font_id, screen.standard_font_point, screen.c_max_w, screen.c_max_h);
