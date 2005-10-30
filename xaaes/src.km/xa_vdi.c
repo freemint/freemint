@@ -236,6 +236,12 @@ xa_t_font(struct xa_vdi_settings *v, short point, short id)
 	{
 		v->font_rsize = point;
 		v->font_ssize = vst_point(v->handle, point, &v->font_w, &v->font_h, &v->cell_w, &v->cell_h);
+		id = 0;
+	}
+	if (!id)
+	{
+		vqt_fontinfo(v->handle, &v->first_ade, &v->last_ade, &v->dists[0], &v->max_w, &v->efx[0]);
+		v->dists[5] = 0;
 	}
 }
 
