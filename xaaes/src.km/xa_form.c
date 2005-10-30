@@ -49,10 +49,11 @@
 #include "xa_graf.h"
 #include "xa_rsrc.h"
 
-
+#if 0
 bool
 key_alert_widget(enum locks lock, struct xa_client *client, struct xa_window *wind,
 	    struct widget_tree *wt, const struct rawkey *key, struct fmd_result *res_fmd);
+#endif
 /*
  * Create a copy of an object tree
  * - Intended for using the form templates in SYSTEM.RSC (we can't use them
@@ -91,7 +92,7 @@ alert_destructor(enum locks lock, struct xa_window *wind)
 	remove_widget(lock, wind, XAW_TOOLBAR);
 	return true;
 }
-
+#if 0
 /*
  * Small handler for clicks on an alert box
  */
@@ -146,6 +147,7 @@ click_alert_widget(enum locks lock, struct xa_window *wind, struct xa_widget *wi
 				wt->extra = NULL;
 				wt->flags &= ~WTF_XTRA_ALLOC;
 			}
+
 			if (wt->tree && (wt->flags & WTF_TREE_ALLOC))
 			{
 				kfree(wt->tree);
@@ -159,6 +161,7 @@ click_alert_widget(enum locks lock, struct xa_window *wind, struct xa_widget *wi
 
 	return false;
 }
+#endif
 
 /*
  * Form_alert handler v2.1
@@ -495,7 +498,7 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 					     client,
 					     nolist,
 					     kind,
-					     created_for_AES,
+					     created_for_AES|created_for_ALERT,
 					     client->options.thinframe,
 					     client->options.thinwork,
 					     r, NULL, NULL);
@@ -513,9 +516,9 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 			 * 1 to 3, not an object index.
 			 * we also need a keypress handler for the default button (if there)
 			 */
-			alert_window->keypress = key_alert_widget;
-			widg->m.click = click_alert_widget;
-			widg->m.drag  = click_alert_widget;
+// 			alert_window->keypress = key_alert_widget;
+// 			widg->m.click = click_alert_widget;
+// 			widg->m.drag  = click_alert_widget;
 
 			/* We won't get any redraw messages
 			 * - The widget handler will take care of it.
@@ -685,6 +688,7 @@ XA_form_alert(enum locks lock, struct xa_client *client, AESPB *pb)
 	Block(client, 0);
 	client->status &= ~CS_FORM_ALERT;
 
+	display("return %d", pb->intout[0]);
 	return XAC_DONE;
 }
 
@@ -913,7 +917,7 @@ XA_form_do(enum locks lock, struct xa_client *client, AESPB *pb)
 	}
 		return XAC_DONE;
 }
-
+#if 0
 /*
  * Small handler for ENTER/RETURN/UNDO on an alert box
  */
@@ -974,6 +978,7 @@ key_alert_widget(enum locks lock, struct xa_client *client, struct xa_window *wi
 	/* Always discontinue */
 	return false;
 }
+#endif
 
 unsigned long
 XA_form_button(enum locks lock, struct xa_client *client, AESPB *pb)
