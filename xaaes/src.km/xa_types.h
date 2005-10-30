@@ -478,6 +478,7 @@ struct xa_vdi_api
 
 	void _cdecl (*box)		(struct xa_vdi_settings *v, short d, short x, short y, short w, short h);	
 	void _cdecl (*gbox)		(struct xa_vdi_settings *v, short d, const RECT *r);
+	void _cdecl (*rgbox)		(struct xa_vdi_settings *v, short d, short rnd, const RECT *r);
 	void _cdecl (*bar)		(struct xa_vdi_settings *v, short d, short x, short y, short w, short h);
 	void _cdecl (*gbar)		(struct xa_vdi_settings *v, short d, const RECT *r);
 	void _cdecl (*p_gbar)		(struct xa_vdi_settings *v, short d, const RECT *r);

@@ -492,6 +492,31 @@ xa_gbox(struct xa_vdi_settings *v, short d, const RECT *r)
 }
 
 static void _cdecl
+xa_rgbox(struct xa_vdi_settings *v, short d, short rnd, const RECT *r)
+{
+	short l[10];
+	short x = r->x - d;
+	short y = r->y - d;
+	short w = r->w + d+d;
+	short h = r->h + d+d;
+
+	l[0] = x + rnd;
+	l[1] = l[3] = y;
+	l[2] = x + w - 1 - rnd;
+	v_pline(v->handle, 2, l);
+	l[1] += (h - 1);
+	l[3] = l[1];
+	v_pline(v->handle, 2, l);
+
+	l[0] = l[2] = x;
+	l[1] = y + rnd;
+	l[3] = y + h - 1 - rnd;
+	v_pline(v->handle, 2, l);
+	l[0] += (w - 1);
+	l[2] = l[0];
+	v_pline(v->handle, 2, l);
+}
+static void _cdecl
 xa_box(struct xa_vdi_settings *v, short d, short x, short y, short w, short h)
 {
 	short l[10];
@@ -765,6 +790,7 @@ static struct xa_vdi_api vdiapi =
 
 	xa_box,
 	xa_gbox,
+	xa_rgbox,
 	xa_bar,
 	xa_gbar,
 	xa_p_gbar,
