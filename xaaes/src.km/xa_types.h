@@ -181,6 +181,10 @@ struct xa_vdi_settings
 	short	halign, valign;
 	short	font_w, font_h;
 	short	cell_w, cell_h;
+	short	first_ade, last_ade;
+	short	max_w;
+	short	dists[6];
+	short	efx[3];
 };
 
 typedef enum { D_LOCAL = 0, D_TCP = 1 } XA_DISPLAY;
@@ -214,7 +218,9 @@ struct xa_screen
 	short small_font_height;	/* Needed for appl_getinfo */
 
 	short c_max_w, c_max_h;		/* Maximum character dimensions in pixels */
+	short c_max_dist[8];
 	short c_min_w, c_min_h;		/* Minimum (small font) character dimensions in pixels */
+	short c_min_dist[8];
 
 	struct rgb_1000 palette[256];
 };

@@ -791,7 +791,7 @@ built_desk_popup(enum locks lock, short x, short y)
 	}
 
 	for (i = 0; i < obs; i++)
-		obfix(ob, i);
+		obfix(ob, i, DU_RSX_CONV, DU_RSY_CONV);
 
 	ob[0].ob_x = x;
 	ob[0].ob_y = y;
