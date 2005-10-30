@@ -312,6 +312,35 @@ set_wrkin(short *in, short dev)
 #endif
 }
 
+static void
+calc_average_fontsize(struct xa_vdi_settings *v, short *maxw, short *maxh, short *dist)
+{
+	short i, j, count = 0, cellw, tmp;
+	short temp[8];
+	unsigned long wch = 0;
+	for (i = 0; i < 256; i++)
+	{
+		j = vqt_width(v->handle, i, &cellw, &tmp, &tmp);
+		if (j >= 0)
+		{
+			count++;
+			wch += cellw;
+		}
+	}
+	if (count)
+	{
+		*maxw = (wch / count);
+	}
+	(*v->api->t_extent)(v, "A_", &cellw, &tmp);
+	*maxh = tmp;
+
+	vqt_fontinfo(v->handle, &i, &i, dist, &i, temp);
+
+// 	display("w %d(%d), h %d", *maxw, tmp, *maxh);
+// 	display("dists %d, %d, %d, %d, %d - %d, %d", dist[0], dist[1], dist[2], dist[3], dist[4]);
+// 	display("effex %d, %d, %d", temp[0], temp[1], temp[2]);
+}
+
 int
 k_init(unsigned long vm)
 {
@@ -530,14 +559,14 @@ k_init(unsigned long vm)
 	v->screen = screen.r;
 	C.Aes->vdi_settings = v;
 	vs_clip(C.P_handle, 1, (short *)&screen.r);
-	(*global_vdiapi->set_clip)(v, &screen.r);
+	(*v->api->set_clip)(v, &screen.r);
 	
-	(*global_vdiapi->f_perimeter)(v, 0);	/* from set_colours; never set to 1 ever */
+	(*v->api->f_perimeter)(v, 0);
+
 	v_show_c(C.P_handle, 0);
 	hidem();
 	graf_mouse(ARROW, NULL, NULL, false);
 	showm();
-	(*global_vdiapi->t_alignment)(v, 0, 5);
 	
 	objc_rend.dial_colours =
 		MONO ? bw_default_colours : default_colours;
@@ -563,47 +592,24 @@ k_init(unsigned long vm)
 	 * better check for GDOS and load the fonts.
 	 */
 	if (vq_gdos())
-		(*global_vdiapi->load_fonts)(v);
+		(*v->api->load_fonts)(v); //(*global_vdiapi->load_fonts)(v);
 	else
 		cfg.font_id = 1;
 
-	(*global_vdiapi->t_font)(v, cfg.small_font_point, cfg.font_id);
+	(*v->api->t_alignment)(v, 0, 5);
+	(*v->api->t_font)(v, cfg.small_font_point, cfg.font_id); //(*global_vdiapi->t_font)(v, cfg.small_font_point, cfg.font_id);
 	screen.standard_font_id  = screen.small_font_id = v->font_rid;
 	screen.small_font_height = v->font_h;
 	screen.small_font_point  = v->font_rsize;
 	screen.c_min_w = v->cell_w;
 	screen.c_min_h = v->cell_h;
-	(*global_vdiapi->t_font)(v, (screen.r.h <= 280) ? (cfg.standard_font_point = cfg.medium_font_point) : cfg.standard_font_point, -1);
+	calc_average_fontsize(v, &screen.c_min_w, &screen.c_min_h, &screen.c_min_dist[0]);
+	(*v->api->t_font)(v, (screen.r.h <= 280) ? (cfg.standard_font_point = cfg.medium_font_point) : cfg.standard_font_point, -1);
 	screen.standard_font_height = v->font_h;
 	screen.standard_font_point  = v->font_rsize;
 	screen.c_max_w = v->cell_w;
 	screen.c_max_h = v->cell_h;
-	
-	{
-		short i, j, count = 0, cellw, tmp;
-		unsigned long wch = 0;
-		for (i = 0; i < 256; i++)
-		{
-			j = vqt_width(v->handle, i, &cellw, &tmp, &tmp);
-// 			display("j %d, count %d, cellw %d, whc %ld", j, count, cellw, wch);
-			if (j >= 0)
-			{
-				count++;
-				wch += cellw;
-			}
-		}
-		if (count)
-		{
-// 			display("count %d, wch %ld", count, wch);
-			screen.c_max_w = (wch / count);
-		}
-// 		display("c_max_h = %d", screen.c_max_h);
-		(*global_vdiapi->t_extent)(&global_vdi_settings, "A_", &cellw, &tmp);
-		screen.c_max_h = tmp;
-// 		display("c_max_h = %d", tmp);
-		
-	}
-
+	calc_average_fontsize(v, &screen.c_max_w, &screen.c_max_h, &screen.c_max_dist[0]);
 // 	display("stdfont: id = %d, size = %d, cw=%d, ch=%d",
 // 		screen.standard_font_id, screen.standard_font_point, screen.c_max_w, screen.c_max_h);
 // 	display("smlfont: id = %d, size = %d, cw=%d, ch=%d",
@@ -635,8 +641,8 @@ k_init(unsigned long vm)
 		C.Aes_rsc = LoadResources(C.Aes,
 					  resource_name,
 					  NULL,
-					  screen.c_max_w, // < 8 ? 8 : screen.c_max_w,
-					  screen.c_max_h, // < 16 ? 16 : screen.c_max_h); //DU_RSX_CONV, DU_RSY_CONV);
+					  DU_RSX_CONV, // screen.c_max_w, // < 8 ? 8 : screen.c_max_w,
+					  DU_RSY_CONV, //screen.c_max_h, // < 16 ? 16 : screen.c_max_h); //DU_RSX_CONV, DU_RSY_CONV);
 					  true);
 		kfree(resource_name);
 		DIAGS(("system resource = %lx (%s)", C.Aes_rsc, cfg.rsc_name));
@@ -698,8 +704,8 @@ k_init(unsigned long vm)
 		xobj_rshdr = LoadResources(C.Aes,
 					 resource_name,
 					 NULL,
-					 screen.c_max_w, // < 8 ? 8 : screen.c_max_w,
-					 screen.c_max_h, //< 16 ? 16 : screen.c_max_h); //DU_RSX_CONV, DU_RSY_CONV);
+					 DU_RSX_CONV, //screen.c_max_w, // < 8 ? 8 : screen.c_max_w,
+					 DU_RSY_CONV, //screen.c_max_h, //< 16 ? 16 : screen.c_max_h); //DU_RSX_CONV, DU_RSY_CONV);
 					 false);
 		kfree(resource_name);
 		DIAGS(("xobj_rsc = %lx (%s)", xobj_rsc, cfg.widg_name));

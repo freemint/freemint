@@ -2089,7 +2089,7 @@ init_module(const struct xa_module_api *xmapi, const struct xa_screen *screen, c
 		}
 		else
 		{
-			rsc = (*api->load_resource)(rscfile, NULL, screen->c_max_w, screen->c_max_h, false);
+			rsc = (*api->load_resource)(rscfile, NULL, DU_RSX_CONV, DU_RSY_CONV, false);
 			DIAGS(("widget_resources = %lx (%s)", rsc, widg_name));
 			kfree(rscfile);
 		}
