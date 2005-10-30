@@ -54,26 +54,46 @@
  * Fixup OBJECT coordinates; the lower byte contains a (character-based)
  * coordinate, the upper byte an additional (pixel) offset.
  */
-
-static inline short
-fixup(short val, short scale)
+static void
+fixupobj(short *val, unsigned long fact, short design)
 {
-	return (val & 0xff) * scale + ((val >> 8) & 0xff);
+	unsigned short h, l;
+	unsigned long temp;
+
+	h = (*val & 0xff) * design;
+	l = (*val >> 8) & 0xff;
+	if (l > 128) l -= 256;
+	h += l;
+	temp = fact * h;
+	if (temp & 0x8000)
+		temp += 0x00010000L;
+	*val = (temp >> 16);
 }
 
 void
-obfix(OBJECT *tree, int object)
+obfix(OBJECT *tree, int object, short designWidth, short designHeight)
 {
-	OBJECT *o = tree + object;
+	unsigned long x_fact, y_fact;
+	OBJECT *ob = tree + object;
 
-	o->ob_x = fixup(o->ob_x, screen.c_max_w);
-	o->ob_y = fixup(o->ob_y, screen.c_max_h);
+	x_fact = (long)screen.c_max_w << 16;
+	x_fact /= designWidth;
+	y_fact = (long)screen.c_max_h << 16;
+	y_fact /= designHeight;
+
+	fixupobj(&ob->ob_x, x_fact, designWidth);
+	fixupobj(&ob->ob_y, y_fact, designHeight);
+
 	/*
 	 * Special case handling: any OBJECT 80 characters wide is supposed
 	 * to be a menu bar, which always covers the entire screen width...
 	 */
-	o->ob_width = (o->ob_width == 80) ? screen.r.w : fixup(o->ob_width, screen.c_max_w);
-	o->ob_height = fixup(o->ob_height, screen.c_max_h);
+	if (ob->ob_width == 80)
+		ob->ob_width = screen.r.w;
+	else
+		fixupobj(&ob->ob_width, x_fact, designWidth);
+	
+	fixupobj(&ob->ob_height, y_fact, designHeight);
 }
 
 /*
@@ -537,13 +557,21 @@ fix_objects(struct xa_client *client,
 	DIAG((D_rsrc, client, "fixed up %ld objects ob_spec (end=%lx)", n, obj));
 }
 
+#define resWidth (screen.c_max_w)
+#define resHeight (screen.c_max_h)
 	
 static void
 fix_trees(struct xa_client *client, void *b, OBJECT **trees, unsigned long n, short designWidth, short designHeight)
 {
 	unsigned long i;
+	unsigned long x_fact, y_fact;
 	int j, k;
 	OBJECT *obj;
+
+	x_fact = (long)screen.c_max_w << 16;
+	x_fact /= designWidth;
+	y_fact = (long)screen.c_max_h << 16;
+	y_fact /= designHeight;
 
 	DIAG((D_rsrc, NULL, "fix_trees: trees=%lx (%lx)", trees, trees[0]));
 	for (i = 0; i < n; i++, trees++)
@@ -562,36 +590,43 @@ fix_trees(struct xa_client *client, void *b, OBJECT **trees, unsigned long n, sh
 				/* Not a menu tree */
 				do {
 					/* Fix all object coordinates */
-#if 1
 					unsigned short *c;
-					short ch, cl;
+					unsigned short ch, cl;
+					unsigned long temp;
 					DIAGS((" -- obj %d, type %x (n=%d, h=%d, t=%d)",
 						k, obj->ob_type, obj->ob_next, obj->ob_head, obj->ob_tail));
 					
 					c = (short *)&obj->ob_x;
 				
+					/*
+					 * Coordinates: arranged as number of chars in low byte,
+					 * with a pixel correction in the upper byte.
+					 * Pixel correction is a signed byte, giving a negative
+					 * pixel addition to the character coordinate in the lower
+					 * byte
+					 */
 					for (j = 0; j < 4; j++)
 					{
-						cl = *c & 0xff;
-						ch = *c >> 8;
+						cl = (*c & 0xff);
+						ch = (*c >> 8) & 0x00ff;
+						if (ch > 128) ch -= 256;
 						if (j & 1)
+						{
 							cl *= designHeight;
+							cl += ch;
+							temp = y_fact * cl;
+						}
 						else
 						{
-							if (cl == 80 && j == 2)
-								cl = screen.r.w;
-							else
-								cl *= designWidth;
+							cl *= designWidth;
+							cl += ch;
+							temp = x_fact * cl;
 						}
-						*c++ = cl + (ch > 128 ? ch - 256 : ch);
+						if (temp & 0x8000)
+							temp += 0x00010000L;
+						*c++ = (temp >> 16);
 					}
-#else			
-					obj->ob_x = (((obj->ob_x & 255) * designWidth + (obj->ob_x >> 8)) * resWidth) / designWidth;
-					obj->ob_y = (((obj->ob_y & 255) * designHeight + (obj->ob_y >> 8)) * resHeight) / designHeight;
-					obj->ob_width = (((obj->ob_width & 255) * designWidth + (obj->ob_width >> 8)) * resWidth) / designWidth;
-					obj->ob_height = (((obj->ob_height & 255) * designHeight + (obj->ob_height >> 8)) * resHeight) / designHeight;
-#endif
-					k++;			
+					k++;
 				}
 				while (!(obj++->ob_flags & OF_LASTOB));
 				ob_fix_shortcuts(*trees, false);
@@ -599,12 +634,11 @@ fix_trees(struct xa_client *client, void *b, OBJECT **trees, unsigned long n, sh
 			else
 			{
 				/* Standard AES menu */	
-
 				j = 0;
 				do {
 					DIAGS((" -- obj %d, type %x (n=%d, h=%d, t=%d)",
 						j, obj->ob_type, obj->ob_next, obj->ob_head, obj->ob_tail));
-					obfix(obj, j);
+					obfix(obj, j, designWidth, designHeight);
 				}
 				while (!(obj[j++].ob_flags & OF_LASTOB));
 			}
@@ -661,8 +695,6 @@ list_resource(struct xa_client *client, void *resource, short flags)
 void *
 LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designWidth, short designHeight, bool set_pal)
 {
-#define resWidth (screen.c_max_w)
-#define resHeight (screen.c_max_h)
 
 	RSHDR *hdr = NULL;
 	CICONBLK **cibh = NULL;
@@ -1207,6 +1239,7 @@ XA_rsrc_load(enum locks lock, struct xa_client *client, AESPB *pb)
 			DIAG((D_rsrc, client, "rsrc_load('%s')", path));
 
 			rsc = LoadResources(client, path, NULL, DU_RSX_CONV, DU_RSY_CONV, false);
+// 			rsc = LoadResources(client, path, NULL, screen.c_max_w, screen.c_max_h, false);
 			if (rsc)
 			{
 				OBJECT **o;
@@ -1432,7 +1465,7 @@ XA_rsrc_obfix(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	if (validate_obtree(client, ob, "XA_rsrc_fix:"))
 	{
-		obfix(ob, item);
+		obfix(ob, item, DU_RSX_CONV, DU_RSY_CONV);
 		pb->intout[0] = 1;
 	}
 	else
