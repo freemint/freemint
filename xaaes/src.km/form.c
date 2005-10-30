@@ -23,6 +23,7 @@
  * along with XaAES; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
+#include RSCHNAME
 
 #include "xa_types.h"
 #include "xa_global.h"
@@ -862,18 +863,34 @@ Exit_form_do( struct xa_client *client,
 
 	if (wind)
 	{
-#if 0
+#if 1
 		/* XXX - Ozk: complete this someday, having most XaAES-controlled
 		 *	 dialog-windows using the same exit code..
 		 */
-		if (wind == client->alert)
+		if ((wind->dial & created_for_ALERT)) //wind == client->alert)
 		{
-			client->alert == NULL;
+			OBJECT *obtree = wt->tree;
+			short f = fr->obj;
+			/* Is f a valid button? */
+			display("click alert but1 %d, but4 %d", ALERT_BUT1, ALERT_BUT1 + 3);
+			if (   f >= ALERT_BUT1 && f < ALERT_BUT1 + 3 && !(obtree[f].ob_flags & OF_HIDETREE))
+			{
+				display("client '%s'", client->name);
+				if (client != C.Aes && client != C.Hlp && client->waiting_pb)
+				{
+					client->waiting_pb->intout[0] = f - ALERT_BUT1 + 1;
+					display("Alert return %d", client->waiting_pb->intout[0]);
+					client->usr_evnt = 1;
+					client->waiting_pb = NULL;
+				}
+			}
+			if (client->alert == wind)
+				client->alert = NULL;
 			close_window(lock, wind);
 			delayed_delete_window(lock, wind);
 		}
 #endif
-		/*else*/ if (wind == client->fmd.wind)
+		else if (wind == client->fmd.wind)
 		{
 			DIAG((D_form, NULL, "Exit_form_do: exit windowed form_do() for %s",
 				client->name));
@@ -928,9 +945,10 @@ Exit_form_do( struct xa_client *client,
 	}
 
 	if (client->waiting_pb)
+	{
 		client->waiting_pb->intout[0] = (fr->obj >= 0 ? fr->obj | fr->dblmask : 0);
-
-	client->usr_evnt = 1;
+		client->usr_evnt = 1;
+	}
 }
 /*
  * WidgetBehaviour()
