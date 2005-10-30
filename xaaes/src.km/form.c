@@ -872,14 +872,14 @@ Exit_form_do( struct xa_client *client,
 			OBJECT *obtree = wt->tree;
 			short f = fr->obj;
 			/* Is f a valid button? */
-			display("click alert but1 %d, but4 %d", ALERT_BUT1, ALERT_BUT1 + 3);
+// 			display("click alert but1 %d, but4 %d", ALERT_BUT1, ALERT_BUT1 + 3);
 			if (   f >= ALERT_BUT1 && f < ALERT_BUT1 + 3 && !(obtree[f].ob_flags & OF_HIDETREE))
 			{
-				display("client '%s'", client->name);
+// 				display("client '%s'", client->name);
 				if (client != C.Aes && client != C.Hlp && client->waiting_pb)
 				{
 					client->waiting_pb->intout[0] = f - ALERT_BUT1 + 1;
-					display("Alert return %d", client->waiting_pb->intout[0]);
+// 					display("Alert return %d", client->waiting_pb->intout[0]);
 					client->usr_evnt = 1;
 					client->waiting_pb = NULL;
 				}
