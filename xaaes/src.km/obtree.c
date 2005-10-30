@@ -3154,7 +3154,11 @@ obj_edit(XA_TREE *wt,
 // 	display("  --  obj_edit: func %s, wt=%lx obtree=%lx, obj:%d, k:%x, pos:%x",
 // 	      funcstr, wt, obtree, obj, keycode, pos);
 	
-	last = ob_find_any_flag(obtree, OF_LASTOB, 0, 0);
+	last = 0;
+	while (!(obtree[last].ob_flags & OF_LASTOB))
+		last++;
+
+// 	last = ob_find_any_flag(obtree, OF_LASTOB, 0, 0);
 
 	if (wt->e.obj != -1 && wt->e.obj > last)
 		wt->e.obj = -1;
@@ -3174,7 +3178,7 @@ obj_edit(XA_TREE *wt,
 				wt->e.c_state ^= OB_CURS_EOR;
 				
 				showm();
-// 				display("ED_INIT: eors=%d, obj=%d for %s", wt->e.c_state & DRW_CURSOR, wt->e.obj, wt->owner->name);
+// 				display("ED_INIT: eors=%d, obj=%d (last %d) for %s", wt->e.c_state & DRW_CURSOR, wt->e.obj, last, wt->owner->name);
 				pos = wt->e.pos;
 				break;
 			}

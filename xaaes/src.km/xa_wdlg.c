@@ -1021,7 +1021,7 @@ wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms 
 									  v,			/* VDI settings & api */
 									  obj,			/* Object	*/
 									  &md,			/* moose data	*/
-									  FBF_REDRAW|FBF_DO_SLIST,/* redraw flag	*/
+									  FBF_REDRAW|FBF_DO_SLIST|FBF_CHANGE_FOCUS,/* redraw flag	*/
 									  &wind->rect_list.start,	/* rect list	*/
 									  NULL,			/* new state	*/
 									  &nxtobj,		/* next obj	*/
@@ -1186,8 +1186,11 @@ wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms 
 								ret = 0;
 						}
 					}
-					else if (key != 0x1c0d && key != 0x720d && wt->focus == wt->e.obj)
+					else if (key != 0x1c0d && key != 0x720d)
 					{
+						if (wt->focus != wt->e.obj)
+							new_focus = wt->e.obj;
+
 						DIAG((D_wdlg, NULL, "wdlg_event(MU_KEYBD): HNDL_EDIT exit(%lx) with key=%x for %s",
 							wep->wdlg ? wep->wdlg->exit : NULL, key, client->name));
 						obj_edit(wt,
