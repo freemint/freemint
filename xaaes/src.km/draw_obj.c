@@ -395,6 +395,26 @@ d3_pushbutton(struct xa_vdi_settings *v, short d, RECT *r, BFOBSPEC *col, short 
 	else
 #endif
 	{
+#if 1
+		j--;
+		do {
+			(*v->api->br_hook)(v, j, r, selected ? objc_rend.dial_colours.lit_col : objc_rend.dial_colours.shadow_col);
+			(*v->api->tl_hook)(v, j, r, selected ? objc_rend.dial_colours.shadow_col : objc_rend.dial_colours.lit_col);
+			t--, j--;
+		}
+		while (t > 0);
+
+		/* full outline ? */
+		if (thick && !(mode & 2))
+		{
+			(*v->api->l_color)(v, objc_rend.dial_colours.fg_col);
+			/* outside box */
+			
+			if (thick > 2)
+				(*v->api->gbox)(v, outline - 1, r);
+			(*v->api->rgbox)(v, outline, 1, r);
+		}
+#else
 		do {
 			(*v->api->br_hook)(v, j, r, selected ? objc_rend.dial_colours.lit_col : objc_rend.dial_colours.shadow_col);
 			(*v->api->tl_hook)(v, j, r, selected ? objc_rend.dial_colours.shadow_col : objc_rend.dial_colours.lit_col);
@@ -407,8 +427,9 @@ d3_pushbutton(struct xa_vdi_settings *v, short d, RECT *r, BFOBSPEC *col, short 
 		{
 			(*v->api->l_color)(v, objc_rend.dial_colours.fg_col);
 			/* outside box */
-			(*v->api->gbox)(v, outline, r);
+			(*v->api->rgbox)(v, outline, 1, r);
 		}
+#endif
 	}
 
 	shadow_object(v, outline, state, r, objc_rend.dial_colours.border_col, thick);
