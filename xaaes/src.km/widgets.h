@@ -52,7 +52,6 @@ void *	rp_2_ap(struct xa_window *wind, XA_WIDGET *widg, RECT *r);
 XA_TREE * obtree_to_wt(struct xa_client *client, OBJECT *obtree);
 void	  init_widget_tree(struct xa_client *client, struct widget_tree *wt, OBJECT *obtree);
 XA_TREE * new_widget_tree(struct xa_client *client, OBJECT *obtree);
-XA_TREE * set_client_wt(struct xa_client *client, OBJECT *obtree);
 void free_wtlist(struct xa_client *client);
 void remove_from_wtlist(XA_TREE *wt);
 void copy_wt(XA_TREE *d, XA_TREE *s);

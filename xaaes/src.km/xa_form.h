@@ -36,9 +36,11 @@ AES_function
 	XA_form_center,
 	XA_form_dial,
 	XA_form_button,
+	XA_form_wbutton,	/* MagiC 5.10 */
 	XA_form_alert,
 	XA_form_do,
 	XA_form_error,
-	XA_form_keybd;
+	XA_form_keybd,
+	XA_form_wkeybd;		/* MagiC 5.10 */
 
 #endif /* _xa_form_h */

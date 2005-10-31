@@ -137,7 +137,7 @@ static struct xa_ftab aes_tab[220] =
 	/*  46 */ { XA_objc_edit,              0,        DESCR("objc_edit")       },
 	/*  47 */ { XA_objc_change,            0,        DESCR("objc_change")     },
 	/*  48 */ { XA_objc_sysvar,            0,        DESCR("objc_sysvar")     },
-	/*  49 */ { NULL,                      0,        DESCR(NULL)              },
+	/*  49 */ { XA_objc_find,              0,        DESCR("objc_xfind")      },
 
 	/*  50 */ { XA_form_do,                0,        DESCR("form_do")         },
 	/*  51 */ { XA_form_dial,              0,        DESCR("form_dial")       },
@@ -150,16 +150,16 @@ static struct xa_ftab aes_tab[220] =
 	/*  58 */ { NULL,                      0,        DESCR(NULL)              },
 	/*  59 */ { NULL,                      0,        DESCR(NULL)              },
 
-	/*  60 */ { NULL,                      0,        DESCR("objc_wdraw")      }, // MagiC 5.10 extension
-	/*  61 */ { NULL,                      0,        DESCR("objc_wchange")    }, // MagiC 5.10 extension
-	/*  62 */ { NULL,                      0,        DESCR("graf_wwatchbox")  }, // MagiC 5.10 extension
-	/*  63 */ { NULL,                      0,        DESCR("objc_wbutton")    }, // MagiC 5.10 extension
-	/*  64 */ { NULL,                      0,        DESCR("objc_wkeybd")     }, // MagiC 5.10 extension
-	/*  65 */ { NULL,                      0,        DESCR("objc_wedit")      }, // MagiC 5.10 extension
+	/*  60 */ { XA_objc_wdraw,             0,        DESCR("objc_wdraw")      }, // MagiC 5.10 extension
+	/*  61 */ { XA_objc_wchange,           0,        DESCR("objc_wchange")    }, // MagiC 5.10 extension
+	/*  62 */ { XA_graf_wwatchbox,         0,        DESCR("graf_wwatchbox")  }, // MagiC 5.10 extension
+	/*  63 */ { XA_form_wbutton,           0,        DESCR("form_wbutton")    }, // MagiC 5.10 extension
+	/*  64 */ { XA_form_wkeybd,            0,        DESCR("form_wkeybd")     }, // MagiC 5.10 extension
+	/*  65 */ { XA_objc_wedit,             0,        DESCR("objc_wedit")      }, // MagiC 5.10 extension
 	/*  66 */ { NULL,                      0,        DESCR(NULL)              },
 	/*  67 */ { NULL,                      0,        DESCR(NULL)              },
 	/*  68 */ { NULL,                      0,        DESCR(NULL)              },
-	/*  69 */ { NULL,                      0,        DESCR(NULL)              },
+	/*  69 */ { NULL,                      0,        DESCR("graf_multirubber")}, // N.AES extension
 
 	/*  70 */ { XA_graf_rubberbox,         0,        DESCR("graf_rubberbox")  },
 	/*  71 */ { XA_graf_dragbox,           0,        DESCR("graf_dragbox")    },
