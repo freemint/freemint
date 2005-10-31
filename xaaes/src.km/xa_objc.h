@@ -32,13 +32,16 @@
 
 AES_function
 	XA_objc_draw,
+	XA_objc_wdraw,		/* MagiC 5.10 */
 	XA_objc_offset,
 	XA_objc_find,
 	XA_objc_change,
+	XA_objc_wchange,	/* MagiC 5.10 */
 	XA_objc_add,
 	XA_objc_delete,
 	XA_objc_order,
 	XA_objc_edit,
+	XA_objc_wedit,		/* MagiC 5.10 */
 	XA_objc_sysvar;
 
 #endif /* _xa_objc_h */

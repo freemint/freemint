@@ -32,7 +32,7 @@
 #include "draw_obj.h"
 #include "obtree.h"
 #include "widgets.h"
-
+#include "c_window.h"
 #include "xa_evnt.h"
 
 
@@ -383,8 +383,6 @@ XA_graf_watchbox(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		if (!(wt = obtree_to_wt(client, obtree)))
 			wt = new_widget_tree(client, obtree);
-		if (!wt)
-			wt = set_client_wt(client, obtree);
 
 		pb->intout[0] = obj_watch( wt,
 					   C.Aes->vdi_settings,
@@ -396,6 +394,43 @@ XA_graf_watchbox(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		DIAG((D_graf,client,"_watchbox"));
 	}
+	return XAC_DONE;
+}
+
+/*
+ * MagiC 5.10 extension
+ */
+unsigned long
+XA_graf_wwatchbox(enum locks lock, struct xa_client *client, AESPB *pb)
+{
+	short ret = 0;
+	OBJECT *obtree = (OBJECT *)pb->addrin[0];
+	struct xa_window *wind;
+	XA_TREE *wt;
+
+	CONTROL(4,1,1)
+
+	if (validate_obtree(client, obtree, "XA_graf_wwatchbox:"))
+	{
+		if ((wind = get_wind_by_handle(lock, pb->intin[3])))
+		{
+			DIAG((D_graf, client, "graf_wwatchbox"));
+
+			if (!(wt = obtree_to_wt(client, obtree)))
+				wt = new_widget_tree(client, obtree);
+
+			ret = obj_watch(wt,
+					client->vdi_settings,
+					pb->intin[0],
+					pb->intin[1],
+					pb->intin[2],
+					NULL,
+					wind->rect_list.start);
+
+			DIAG((D_graf,client,"_wwatchbox"));
+		}
+	}
+	pb->intout[0] = ret;
 	return XAC_DONE;
 }
 

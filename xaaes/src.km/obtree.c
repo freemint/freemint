@@ -1001,6 +1001,9 @@ object_thickness(OBJECT *ob)
 	return t;
 }
 
+/*
+ * Return offsets to add to object dimensions to account for borders, etc.
+ */
 void
 object_offsets(OBJECT *ob, RECT *c)
 {
@@ -2414,7 +2417,7 @@ obj_find(XA_TREE *wt, short object, short depth, short mx, short my, RECT *c)
 	short x = -wt->dx, y = -wt->dy;
 	bool start_checking = false;
 	short pos_object = -1;
-	RECT r;
+	RECT r, or = (RECT){0,0,0,0};
 
 	DIAG((D_objc, NULL, "obj_find: obj=%d, depth=%d, obtree=%lx, obtree at %d/%d/%d/%d, find at %d/%d",
 		object, depth, obtree, obtree->ob_x, obtree->ob_y, obtree->ob_width, obtree->ob_height,
@@ -2427,21 +2430,26 @@ obj_find(XA_TREE *wt, short object, short depth, short mx, short my, RECT *c)
 			rel_depth = 0;
 		}
 		
-		if (start_checking)
+		if (start_checking && !(obtree[current].ob_flags & OF_HIDETREE))
 		{
-			if (  !(obtree[current].ob_flags & OF_HIDETREE)
-			    && obtree[current].ob_x + x                     <= mx
-			    && obtree[current].ob_y + y                     <= my
-			    && obtree[current].ob_x + x + obtree[current].ob_width  >= mx
-			    && obtree[current].ob_y + y + obtree[current].ob_height >= my)
+			RECT cr;
+			if (depth & 0x8000)
+				object_offsets(obtree + current, &or);
+			
+			cr.x = x + obtree[current].ob_x + or.x;
+			cr.y = y + obtree[current].ob_y + or.y;
+			cr.w = obtree[current].ob_width - or.w;
+			cr.h = obtree[current].ob_height - or.h;
+			
+			if (   cr.x		<= mx
+			    && cr.y		<= my
+			    && cr.x + cr.w	> mx
+			    && cr.y + cr.h	> my )
 			{
 				/* This is only a possible object, as it may have children on top of it. */
 				if (c)
 				{
-					r.x = obtree[current].ob_x + x;
-					r.y = obtree[current].ob_y + y;
-					r.w = obtree[current].ob_width;
-					r.h = obtree[current].ob_height;
+					r = cr;
 				}
 				pos_object = current;
 			}
@@ -2495,6 +2503,7 @@ ob_find(OBJECT *obtree, short object, short depth, short mx, short my)
 	short x = 0, y = 0;
 	bool start_checking = false;
 	short pos_object = -1;
+	RECT or;
 
 	DIAG((D_objc, NULL, "ob_find: obj=%d, depth=%d, obtree=%lx, obtree at %d/%d/%d/%d, find at %d/%d",
 		object, depth, obtree, obtree->ob_x, obtree->ob_y, obtree->ob_width, obtree->ob_height,
@@ -2506,13 +2515,22 @@ ob_find(OBJECT *obtree, short object, short depth, short mx, short my)
 			rel_depth = 0;
 		}
 		
-		if (start_checking)
+		if (start_checking && !(obtree[current].ob_flags & OF_HIDETREE))
 		{
-			if ( !(obtree[current].ob_flags & OF_HIDETREE)
-			    && obtree[current].ob_x + x                     <= mx
-			    && obtree[current].ob_y + y                     <= my
-			    && obtree[current].ob_x + x + obtree[current].ob_width  >= mx
-			    && obtree[current].ob_y + y + obtree[current].ob_height >= my)
+			RECT cr;
+			
+			if (depth & 0x8000)
+				object_offsets(obtree + current, &or);
+			
+			cr.x = x + obtree[current].ob_x + or.x;
+			cr.y = y + obtree[current].ob_y + or.y;
+			cr.w = obtree[current].ob_width - or.w;
+			cr.h = obtree[current].ob_height - or.h;
+			
+			if (   cr.x		<= mx
+			    && cr.y		<= my
+			    && cr.x + cr.w	> mx
+			    && cr.y + cr.h	> my )
 			{
 				/* This is only a possible object, as it may have children on top of it. */
 				pos_object = current;
@@ -2666,7 +2684,7 @@ obj_draw(XA_TREE *wt, struct xa_vdi_settings *v, short obj, int transdepth, cons
 		do
 		{
 			r = rl->r;
-			if (!clip || (clip && xa_rect_clip(clip, &r, &r)))
+			if (!clip || xa_rect_clip(clip, &r, &r))
 			{
 				if (xa_rect_clip(&or, &r, &r))
 				{

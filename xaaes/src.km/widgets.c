@@ -598,33 +598,6 @@ new_widget_tree(struct xa_client *client, OBJECT *obtree)
 }
 
 /* Ozk:
- * This is the last resort, when all else fails trying to
- * obtain a widget tree for a obtree. Uses the widget tree
- * embedded in the client structure.
- */
-XA_TREE *
-set_client_wt(struct xa_client *client, OBJECT *obtree)
-{
-#if 0
-	XA_TREE *wt = &client->wt;
-
-	DIAGS(("set_client_wt: obtree %lx for %s",
-		obtree, client->name));
-	if (wt->tree != obtree)
-	{
-		bzero(wt, sizeof(*wt));
-		wt->tree = obtree;
-		wt->owner = client;
-		wt->e.obj = -1;
-		wt->e.c_state = 0;
-		wt->c = *(RECT *)&obtree->ob_x;
-	}
-	return wt;
-#endif
-	return NULL;
-}
-
-/* Ozk:
  * This will also free statically declared widget_tree's
  */
 void
