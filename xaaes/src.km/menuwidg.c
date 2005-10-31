@@ -153,15 +153,16 @@ change_entry(Tab *tab, int state)
 		obj_change(wt, C.Aes->vdi_settings, t, 1 | 0x8000, state, obtree[t].ob_flags, true, NULL, NULL, 0);
 	}
 }
+
 static void
 redraw_entry(Tab *tab, short t)
 {
 	MENU_TASK *k = &tab->task_data.menu;
-	XA_TREE *wt = k->p.wt; //k->wt;
+	XA_TREE *wt = k->p.wt;
 	OBJECT *obtree = wt->tree;
 
-	DIAGS(("change entry: tab=%lx, obtree=%lx, obj=%d, state=%d",
-		tab, obtree, k->p.current, state));
+	DIAGS(("change entry: tab=%lx, obtree=%lx, obj=%d",
+		tab, obtree, k->p.current));
 
 	if (t < 0)
 		return;
@@ -1199,12 +1200,12 @@ display_popup(Tab *tab, short rdx, short rdy)
 		set_popup_widget(tab, wind, pi->parent);
 		if (!cfg.menu_locking)
 		{
-			DIAG((D_menu, tab->client, "nolocking pop window %lx + %d", obtree, item));
+			DIAG((D_menu, tab->client, "nolocking pop window %lx + %d", obtree, pi->parent));
 			open_window(tab->lock, wind, r);
 		}
 		else
 		{
-			DIAG((D_menu, tab->client, "locking pop window %lx + %d", obtree, item));
+			DIAG((D_menu, tab->client, "locking pop window %lx + %d", obtree, pi->parent));
 			open_window(tab->lock, wind, r);
 		}
 	}
@@ -1816,7 +1817,7 @@ click_menu_entry(struct task_administration_block *tab, short item)
 						OBJECT *rs = pop_wt->tree;
 
 						DIAG((D_menu, NULL, "Calling send_app_message()"));
-						DIAG((D_menu, NULL, "to %s,title=%d,point_at=%d", t_owner(wt), kc, m));
+						DIAG((D_menu, NULL, "to %s,title=%d, point_at=%d", t_owner(pop_wt), kc, m));
 
 						/* Note the AES4.0 extended message format...... */
 						send_app_message(lock, wind, pop_wt->owner, AMQ_NORM | AMQ_ANYCASE, QMF_CHKDUP,
