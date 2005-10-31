@@ -33,6 +33,7 @@
 #include "menuwidg.h"
 #include "widgets.h"
 #include "xa_form.h"
+#include "c_window.h"
 
 #include "mint/fcntl.h"
 
@@ -59,8 +60,6 @@ XA_objc_draw(enum locks lock, struct xa_client *client, AESPB *pb)
 		
 		if (!(wt = obtree_to_wt(client, obtree)))
 			wt = new_widget_tree(client, obtree);
-		if (!wt)
-			wt = set_client_wt(client, obtree);
 
 		assert(wt);
 
@@ -103,6 +102,76 @@ XA_objc_draw(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 unsigned long
+XA_objc_wdraw(enum locks lock, struct xa_client *client, AESPB *pb)
+{
+	OBJECT *obtree = (OBJECT*)pb->addrin[0];
+	struct xa_vdi_settings *v;
+	struct xa_window *wind;
+	struct xa_rect_list *rl;
+	short item = pb->intin[0], editobj, ret = 0;
+	
+	CONTROL(3,0,2)
+
+	DIAG((D_objc,client,"objc_wdraw "));
+
+	DIAG((D_objc, client, "objc_draw (%d %d %d %d)",
+		pb->intin[0], pb->intin[1], pb->intin[2], pb->intin[3]));
+
+	if (validate_obtree(client, obtree, "XA_objc_draw:"))
+	{
+		if ((wind = get_wind_by_handle(lock, pb->intin[2])))
+		{
+			XA_TREE *wt;
+		
+			if (!(wt = obtree_to_wt(client, obtree)))
+				wt = new_widget_tree(client, obtree);
+
+			assert(wt);
+
+			rl = wind->rect_list.start;
+			v = client->vdi_settings;
+			obj_init_focus(wt, OB_IF_ONLY_EDITS);
+
+			wt->e.c_state &= ~OB_CURS_EOR;
+			
+			hidem();
+			if (rl)
+			{
+				RECT r;
+				do
+				{
+					r = rl->r;
+					if (!(long)pb->addrin[1] || xa_rect_clip((RECT *)pb->addrin[1], &r, &r))
+					{
+						(*v->api->set_clip)(v, &r);
+						draw_object_tree(0, wt, wt->tree, v, item, pb->intin[1], NULL, 0);
+					}
+				} while ((rl = rl->next));
+			}
+			
+			/*
+			 * Ozk: Ok.. looks like the AES should automagically draw the cursor...
+			 */
+			if ((editobj = wt->e.obj) == -1)
+				editobj = ob_find_any_flst(obtree, OF_EDITABLE, 0, 0, OS_DISABLED, 0, 0);
+			if (editobj != -1)
+				obj_edit(wt, v, ED_INIT, editobj, 0, -1, true, (RECT *)pb->addrin[1], rl, NULL, NULL);
+
+			(*v->api->clear_clip)(v);
+			showm();
+			ret = 1;
+		}
+	}
+
+	pb->intout[0] = ret;
+
+	DIAG((D_objc, client, "objc_draw exit (%d %d %d %d)",
+		pb->intin[0], pb->intin[1], pb->intin[2], pb->intin[3]));
+
+	return XAC_DONE;
+}
+
+unsigned long
 XA_objc_offset(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	OBJECT *obtree = (OBJECT*)pb->addrin[0];
@@ -124,19 +193,25 @@ XA_objc_offset(enum locks lock, struct xa_client *client, AESPB *pb)
 unsigned long
 XA_objc_find(enum locks lock, struct xa_client *client, AESPB *pb)
 {
+	short depth;
 	OBJECT *obtree = (OBJECT *)pb->addrin[0];
 	CONTROL(4,1,1)
 
 	if (validate_obtree(client, obtree, "XA_objc_find:"))
 	{
 		struct widget_tree *wt;
-
+		
+		depth = pb->intin[1] & ~0x8000;
+		
+		if (pb->control[0] == 49)	/* objc_xfind? */
+			depth |= 0x8000;
+		
 		wt = obtree_to_wt(client, obtree);
 		if (wt)
 		{
 			pb->intout[0] = obj_find(wt,
 						 pb->intin[0],
-						 pb->intin[1],
+						 depth,
 						 pb->intin[2],
 						 pb->intin[3],
 						 NULL);
@@ -145,7 +220,7 @@ XA_objc_find(enum locks lock, struct xa_client *client, AESPB *pb)
 		{
 			pb->intout[0] = ob_find(obtree,
 						pb->intin[0],
-						pb->intin[1],
+						depth,
 						pb->intin[2],
 						pb->intin[3]);
 		}
@@ -174,8 +249,6 @@ XA_objc_change(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		if (!(wt = obtree_to_wt(client, obtree)))
 			wt = new_widget_tree(client, obtree);
-		if (!wt)
-			wt = set_client_wt(client, obtree);
 
 		assert(wt);
 
@@ -196,6 +269,45 @@ XA_objc_change(enum locks lock, struct xa_client *client, AESPB *pb)
 	else
 		pb->intout[0] = 0;
 
+	return XAC_DONE;
+}
+
+unsigned long
+XA_objc_wchange(enum locks lock, struct xa_client *client, AESPB *pb)
+{
+	short ret = 0;
+	OBJECT *obtree = (OBJECT*)pb->addrin[0];
+
+	CONTROL(3,0,2)
+
+	if (validate_obtree(client, obtree, "XA_objc_change:"))
+	{
+		short obj = pb->intin[0];
+		XA_TREE *wt;
+		struct xa_window *wind;
+
+		if ((wind = get_wind_by_handle(lock, pb->intin[2])))
+		{		
+			if (!(wt = obtree_to_wt(client, obtree)))
+				wt = new_widget_tree(client, obtree);
+
+			assert(wt);
+
+			obj_change(wt,
+				   C.Aes->vdi_settings,
+				    obj, -1,
+				    pb->intin[1],
+				    obtree[obj].ob_flags,
+				    true,
+				    (RECT *)pb->addrin[1],
+				    wind->rect_list.start, 0);
+
+			ret = 1;
+		}
+	}
+
+	pb->intout[0] = ret;
+	
 	return XAC_DONE;
 }
 
@@ -273,8 +385,6 @@ XA_objc_edit(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		if (!(wt = obtree_to_wt(client, obtree)))
 			wt = new_widget_tree(client, obtree);
-		if (!wt)
-			wt = set_client_wt(client, obtree);
 
 		assert(wt);
 
@@ -292,6 +402,55 @@ XA_objc_edit(enum locks lock, struct xa_client *client, AESPB *pb)
 	}
 	else
 		pb->intout[0] = 0;
+
+	DIAG((D_form, client, "objc_edit exit (%d %d %d %d)",
+		pb->intin[0], pb->intin[1], pb->intin[2], pb->intin[3]));
+
+// 	display("xa_objc_edit: exit (%d %d %d %d)\n",
+// 		pb->intin[0], pb->intin[1], pb->intin[2], pb->intin[3]);
+	return XAC_DONE;
+}
+unsigned long
+XA_objc_wedit(enum locks lock, struct xa_client *client, AESPB *pb)
+{
+	short ret = 0;
+	OBJECT *obtree = (OBJECT *)pb->addrin[0];
+	CONTROL(5,2,1)
+
+	DIAG((D_form, client, "objc_edit (%d %d %d %d)",
+		pb->intin[0], pb->intin[1], pb->intin[2], pb->intin[3]));
+
+
+// 	display("objc_edit (%d %d %d %d) for %s",
+// 		pb->intin[0], pb->intin[1], pb->intin[2], pb->intin[3], client->name);
+	
+	if (validate_obtree(client, obtree, "XA_objc_edit:"))
+	{
+		XA_TREE *wt;
+		struct xa_window *wind;
+
+		if ((wind = get_wind_by_handle(lock, pb->intin[4])))
+		{
+			if (!(wt = obtree_to_wt(client, obtree)))
+				wt = new_widget_tree(client, obtree);
+
+			assert(wt);
+
+			ret = obj_edit(wt,
+					 client->vdi_settings,
+					 pb->intin[3],		/* function	*/
+					 pb->intin[0],		/* object	*/
+					 pb->intin[1],		/* key		*/
+					 -1,/* pb->intin[2],*/	/* pos		*/
+					 true,			/* redraw flag	*/
+					 NULL,			/* Clip rect	*/
+					 wind->rect_list.start,	/* rect list	*/
+					 &pb->intout[1],	/* new pos	*/
+					 NULL);			/* new obj	*/
+		}
+	}
+	
+	pb->intout[0] = ret;
 
 	DIAG((D_form, client, "objc_edit exit (%d %d %d %d)",
 		pb->intin[0], pb->intin[1], pb->intin[2], pb->intin[3]));

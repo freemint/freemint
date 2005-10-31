@@ -588,11 +588,59 @@ XA_form_center(enum locks lock, struct xa_client *client, AESPB *pb)
 	return XAC_DONE;
 }
 
+static short
+_form_keybd(	struct xa_client *client,
+		struct widget_tree *wt,
+		struct xa_window *wind,
+		short nextobj,
+		short *keycode,
+		short *newobj)
+{
+	unsigned short ks;
+	short cont, editfocus = *newobj;
+	struct rawkey key;
+
+	vq_key_s(C.P_handle, &ks);
+	key.raw.conin.state = ks;
+	key.norm = normkey(ks, *keycode);
+	key.aes = *keycode;
+
+	cont = form_keyboard(wt,					/* widget tree	*/
+			     client->vdi_settings,
+			     editfocus,					/* obj		*/
+			     &key,					/* rawkey	*/
+			     true,					/* redraw flag	*/
+			     wind ? &wind->rect_list.start : NULL,	/* rect list	*/
+			     newobj,					/* nxt obj	*/
+			     NULL,					/* newstate	*/
+			     keycode);					/* nxtkey	*/
+
+	/*
+	 * Ozk: What a mess! If no exitobjects, AES should return whats passed in 'nextobj' when
+	 *      the key was not used. XaAES will pass a new editfocus instead if the focus passed
+	 *      in intin[0] isnt a valid editable object. If the key was used, then the AES should
+	 *      either pass back a new editfocus, or the same value given to us in intin[0].
+	 *
+	 */
+	if (cont)
+	{
+		if (!*keycode)
+		{
+			if (*newobj <= 0)
+				*newobj = editfocus;
+		}
+		else if (*newobj <= 0)
+			*newobj = nextobj;
+	}
+	return cont;
+}
+
 unsigned long
 XA_form_keybd(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	OBJECT *obtree = (OBJECT *)pb->addrin[0];
-
+	short newobj = 0, keyout = 0, cont = 0;
+	
 	CONTROL(3,3,1)
 
 	DIAG((D_keybd, client, "XA_form_keybd for %s %lx: obj:%d, k:%x, nob:%d",
@@ -601,76 +649,57 @@ XA_form_keybd(enum locks lock, struct xa_client *client, AESPB *pb)
 	if (validate_obtree(client, obtree, "XA_form_keybd:"))
 	{
 		XA_TREE *wt;
-		short ks;
-		short newobj, oldobj, nextobj, keyout, cont;
-		struct rawkey key;
 
 		if (!(wt = obtree_to_wt(client, obtree)))
 			wt = new_widget_tree(client, obtree);
 
-		if (!wt)
-			wt = set_client_wt(client, obtree);
-
-		vq_key_s(C.P_handle, &ks);
-		key.raw.conin.state = ks;
-		key.norm = normkey(ks, pb->intin[1]);
-		key.aes = pb->intin[1];
+// 	 	display("XA_form_keybd: intin0=%d, intin1=%d, intin2=%d", pb->intin[0], pb->intin[1], pb->intin[2]);
 		
-		DIAGS(("XA_form_keybd: wt=%lx, wt->owner=%lx, wt->tree=%lx - %s",
-			wt, wt->owner, wt->tree, wt->owner->name));
-		
-		oldobj = pb->intin[0];
-		nextobj = pb->intin[2];
-// 		display("XA_form_keybd: intin0=%d, intin1=%d, intin2=%d", pb->intin[0], pb->intin[1], pb->intin[2]);
-		
-		cont = form_keyboard(wt,		/* widget tree	*/
-				      client->vdi_settings,
-				      pb->intin[0],	/* obj		*/
-				      &key,		/* rawkey	*/
-				      true,		/* redraw flag	*/
-				      NULL,		/* rect list	*/
-				      &newobj, //&pb->intout[1],	/* nxt obj	*/
-				      NULL,		/* newstate	*/
-				      &keyout); //&pb->intout[2]);	/* nxtkey	*/
-
-		/*
-		 * Ozk: What a mess! If no exitobjects, AES should return whats passed in 'nextobj' when
-		 *      the key was not used. XaAES will pass a new editfocus instead if the focus passed
-		 *      in intin[0] isnt a valid editable object. If the key was used, then the AES should
-		 *      either pass back a new editfocus, or the same value given to us in intin[0].
-		 *
-		 */
-		if (cont)
-		{
-			if (!keyout)
-			{
-				if (newobj <= 0)
-					newobj = oldobj;
-			}
-			else if (newobj <= 0)
-				newobj = nextobj;
-		}
-
-		pb->intout[0] = cont;
-		pb->intout[1] = newobj;
-		pb->intout[2] = keyout;
-
-// 		display("XA_form_keybd: cont=%d(%d), keyout=%d(%d), neewobj=%d(%d)", pb->intout[0], cont, pb->intout[2], keyout, pb->intout[1], newobj);
-
-// 		if (!strnicmp(client->proc_name, "amail", 5))
-// 		{
-// 			if (pb->intout[0] && !pb->intout[2] && pb->intout[1] <= 0)
-// 				pb->intout[1] = pb->intin[0];
-// 		}
-		
-// 		if (pb->intout[1] == -1)
-// 		{
-// 			pb->intout[1] = pb->intin[2];
-// 			pb->intout[2] = pb->intin[1];
-// 		}
+		newobj = pb->intin[0];
+		keyout = pb->intin[1];
+		cont = _form_keybd(client, wt, NULL, pb->intin[2], &keyout, &newobj);	
 	}
-	else
-		pb->intout[0] = pb->intout[1] = pb->intout[2] = 0;
+	
+	pb->intout[0] = cont;
+	pb->intout[1] = newobj;
+	pb->intout[2] = keyout;
+
+	return XAC_DONE;
+}
+
+unsigned long
+XA_form_wkeybd(enum locks lock, struct xa_client *client, AESPB *pb)
+{
+	OBJECT *obtree = (OBJECT *)pb->addrin[0];
+	short cont = 0, newobj = 0, keyout = 0;
+	
+	CONTROL(4,3,1)
+
+	DIAG((D_keybd, client, "XA_form_wkeybd for %s %lx: obj:%d, k:%x, nob:%d",
+		c_owner(client), obtree, pb->intin[0], pb->intin[1], pb->intin[2]));
+
+	cont = newobj = keyout = 0;
+
+	if (validate_obtree(client, obtree, "XA_form_wkeybd:"))
+	{
+		XA_TREE *wt;
+		struct xa_window *wind;
+
+		if ((wind = get_wind_by_handle(lock, pb->intin[3])))
+		{
+			if (!(wt = obtree_to_wt(client, obtree)))
+				wt = new_widget_tree(client, obtree);
+
+// 		 	display("XA_form_wkeybd: intin0=%d, intin1=%d, intin2=%d", pb->intin[0], pb->intin[1], pb->intin[2]);
+			newobj = pb->intin[0];
+			keyout = pb->intin[1];
+			cont = _form_keybd(client, wt, wind, pb->intin[2], &keyout, &newobj);	
+		}
+	}
+	
+	pb->intout[0] = cont;
+	pb->intout[1] = newobj;
+	pb->intout[2] = keyout;
 
 	return XAC_DONE;
 }
@@ -1000,9 +1029,6 @@ XA_form_button(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		if (!(wt = obtree_to_wt(client, obtree)))
 			wt = new_widget_tree(client, obtree);
-
-		if (!wt)
-			wt = set_client_wt(client, obtree);
 		/*
 		 * Create a moose_data packet...
 		 */
@@ -1033,5 +1059,58 @@ XA_form_button(enum locks lock, struct xa_client *client, AESPB *pb)
 		pb->intout[0] = pb->intout[1] = 0;
 
 
+	return XAC_DONE;
+}
+
+unsigned long
+XA_form_wbutton(enum locks lock, struct xa_client *client, AESPB *pb)
+{
+	XA_TREE *wt;
+	OBJECT *obtree = (OBJECT*)pb->addrin[0];
+	struct xa_window *wind;
+	short obj = pb->intin[0], newstate, nextobj = 0, clickmask;
+	struct moose_data md;
+	bool retv = false;
+
+	CONTROL(3,2,1)
+
+	DIAG((D_form, client, "XA_form_button %lx: obj:%d, clks:%d",
+		obtree, obj, pb->intin[1]));
+
+	if (validate_obtree(client, obtree, "XA_form_button:"))
+	{
+		if ((wind = get_wind_by_handle(lock, pb->intin[2])))
+		{
+			if (!(wt = obtree_to_wt(client, obtree)))
+				wt = new_widget_tree(client, obtree);
+			
+			/*
+			 * Create a moose_data packet...
+			 */
+			check_mouse(client, &md.cstate, &md.x, &md.y);
+			if ((md.clicks = pb->intin[1]))
+				md.state = MBS_LEFT;
+	
+			/* XXX - Ozk:
+			 * I think we need to look for this obtree to see if we have it in
+			 * a window, in which case we need to use that windows rectangle list
+			 * during updates of the window.
+			 */
+			retv = form_button(wt,				/* widget tree	*/
+					   client->vdi_settings,
+					   obj,				/* obj idx	*/
+					   &md,				/* moose data	*/
+					   FBF_REDRAW|FBF_CHANGE_FOCUS,	/* redraw flag	*/
+					   &wind->rect_list.start,	/* rect list	*/
+					   /* output */
+					   &newstate,			/* new state	*/
+					   &nextobj,			/* next obj	*/
+					   &clickmask);			/* click mask	*/
+
+			nextobj |= clickmask;
+		}
+	}
+	pb->intout[0] = retv;
+	pb->intout[1] = nextobj;
 	return XAC_DONE;
 }

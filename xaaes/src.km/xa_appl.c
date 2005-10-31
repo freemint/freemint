@@ -1082,7 +1082,7 @@ static short info_tab[][4] =
 	},
 	/* 5 PC_GEM (none!) */
 	{
-		0,		/* objc_xfind */
+		1,		/* objc_xfind */
 		0,
 		0,		/* menu_click */
 		0		/* shel_rdef/wdef */

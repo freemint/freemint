@@ -71,6 +71,7 @@ AES_function
 	XA_graf_rubberbox,
 	XA_graf_dragbox,
 	XA_graf_watchbox,
+	XA_graf_wwatchbox,	/* MagiC 5.10 */
 	XA_graf_growbox,
 	XA_graf_shrinkbox,
 	XA_graf_movebox,
