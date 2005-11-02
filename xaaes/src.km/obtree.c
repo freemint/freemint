@@ -2708,9 +2708,31 @@ obj_draw(XA_TREE *wt, struct xa_vdi_settings *v, short obj, int transdepth, cons
  * object edit functions
  **************************************************************************
  */
+static short
+delete_marked(struct objc_edit_info *ei, char *txt)
+{
+	int x, sl = strlen(txt);
+	char *s, *d;
+	
+	if (ei->m_end > ei->m_start)
+	{
+		s = txt + ei->m_end;
+		d = txt + ei->m_start;
+		
+		for ( x = sl - ei->m_end + 1; x > 0; x--)
+			*d++ = *s++;
+
+		ei->pos = ei->m_start;
+		ei->m_start = ei->m_end = 0;
+
+		return 1;
+	}
+	return 0;
+}
+
 static bool ed_scrap_copy(XA_TREE *wt, struct objc_edit_info *ei, TEDINFO *ed_txt);
 static bool ed_scrap_cut(XA_TREE *wt, struct objc_edit_info *ei, TEDINFO *ed_txt);
-static bool ed_scrap_paste(XA_TREE *wt, struct objc_edit_info *ei, TEDINFO *ed_txt, int *cursor_pos);
+static bool ed_scrap_paste(XA_TREE *wt, struct objc_edit_info *ei, TEDINFO *ed_txt, short *cursor_pos);
 static bool obj_ed_char(XA_TREE *wt, struct objc_edit_info *ei, TEDINFO *ed_txt, ushort keycode);
 
 static char *
@@ -2733,9 +2755,12 @@ ed_scrap_cut(XA_TREE *wt, struct objc_edit_info *ei, TEDINFO *ed_txt)
 {
 	ed_scrap_copy(wt, ei, ed_txt);
 
-	/* clear the edit control */
-	*ed_txt->te_ptext = '\0';
-	ei->pos = 0;
+	if (!(delete_marked(ei, ed_txt->te_ptext)))
+	{
+		/* clear the edit control */
+		*ed_txt->te_ptext = '\0';
+		ei->pos = 0;
+	}
 	return true;
 }
 
@@ -2752,7 +2777,11 @@ ed_scrap_copy(XA_TREE *wt, struct objc_edit_info *ei, TEDINFO *ed_txt)
 				O_WRONLY|O_CREAT|O_TRUNC, NULL, NULL);
 		if (f)
 		{
-			kernel_write(f, ed_txt->te_ptext, len);
+			if (ei->m_end > ei->m_start)
+				kernel_write(f, ed_txt->te_ptext + ei->m_start, ei->m_end - ei->m_start);
+			else
+				kernel_write(f, ed_txt->te_ptext, len);
+			
 			kernel_close(f);
 		}
 	}
@@ -2760,7 +2789,7 @@ ed_scrap_copy(XA_TREE *wt, struct objc_edit_info *ei, TEDINFO *ed_txt)
 }
 
 static bool
-ed_scrap_paste(XA_TREE *wt, struct objc_edit_info *ei, TEDINFO *ed_txt, int *cursor_pos)
+ed_scrap_paste(XA_TREE *wt, struct objc_edit_info *ei, TEDINFO *ed_txt, short *cursor_pos)
 {
 	char scrp[256];
 	struct file *f;
@@ -2848,7 +2877,7 @@ obj_ed_char(XA_TREE *wt,
 	    ushort keycode)
 {
 	char *txt = ed_txt->te_ptext;
-	int cursor_pos = ei->pos, x, key, tmask, n, chg;
+	int x, key, tmask, n, chg;
 	bool update = false;
 
 	DIAG((D_objc, NULL, "ed_char keycode=0x%04x", keycode));
@@ -2863,70 +2892,126 @@ obj_ed_char(XA_TREE *wt,
 	case 0x011b:	/* ESCAPE clears the field */
 	{
 		txt[0] = '\0';
-		cursor_pos = 0;
+		ei->pos = 0;
+		ei->m_start = ei->m_end = 0;
 		update = true;
 		break;
 	}
 	case 0x537f:	/* DEL deletes character under cursor */
 	{
-		if (txt[cursor_pos])
+		if (txt[ei->pos])
 		{
-			for(x = cursor_pos; x < ed_txt->te_txtlen - 1; x++)
-				txt[x] = txt[x + 1];
-			
+			if (!(delete_marked(ei, txt)))
+			{
+				for (x = ei->pos; x < ed_txt->te_txtlen - 1; x++)
+					txt[x] = txt[x + 1];
+			}
 			update = true;
 		}
 		break;
 	}
 	case 0x0e08:	/* BACKSPACE deletes character left of cursor (if any) */
 	{
-		if (cursor_pos)
+		if (!(delete_marked(ei, txt)) && ei->pos)
 		{
-			for(x = cursor_pos; x < ed_txt->te_txtlen; x++)
+			for(x = ei->pos; x < ed_txt->te_txtlen; x++)
 				txt[x - 1] = txt[x];
-
-			cursor_pos--;
-			update = true;
+			ei->pos--;
 		}
+		update = true;
 		break;
 	}
 	case 0x4d00:	/* RIGHT ARROW moves cursor right */
 	{
-		if ((txt[cursor_pos]) && (cursor_pos < ed_txt->te_txtlen - 1))
+		if ((txt[ei->pos]) && (ei->pos < ed_txt->te_txtlen - 1))
 		{
-			cursor_pos++;
+			ei->pos++;
 			update = false;
+		}
+		if (ei->m_end > ei->m_start)
+		{
+			ei->m_start = ei->m_end = 0;
+			update = true;
 		}
 		break;
 	}
 	case 0x4d36:	/* SHIFT+RIGHT ARROW move cursor to far right of current text */
 	{
+		if (txt[ei->pos])
+		{
+			short npos = ei->pos + 1;
+			
+			if (ei->m_start == ei->m_end)
+			{
+				ei->m_start = ei->pos;
+				ei->m_end = npos;
+			}
+			else if (ei->pos > ei->m_start)
+				ei->m_end = npos;
+			else
+				ei->m_start = npos;
+			
+			ei->pos++;
+			update = true;
+		}
+	#if 0
 		for(x = 0; txt[x]; x++)
 			;
 
-		if (x != cursor_pos)
+		if (x != ei->pos)
 		{
-			cursor_pos = x;
+			ei->pos = x;
 			update = false;
 		}
+	#endif
 		break;
 	}
 	case 0x4b00:	/* LEFT ARROW moves cursor left */
 	{
-		if (cursor_pos)
+		if (ei->pos)
 		{
-			cursor_pos--;
+			ei->pos--;
 			update = false;
+		}
+		if (ei->m_end > ei->m_start)
+		{
+			ei->m_start = ei->m_end = 0;
+			update = true;
 		}
 		break;
 	}
 	case 0x4b34:	/* SHIFT+LEFT ARROW move cursor to start of field */
+	{
+		if (ei->pos)
+		{
+			short npos = ei->pos - 1;
+		
+			if (ei->m_start == ei->m_end)
+			{
+				ei->m_end = ei->pos;
+				ei->m_start = npos;
+			}
+			else if (ei->pos > ei->m_start)
+				ei->m_end = npos;
+			else
+				ei->m_start = npos;
+			
+			ei->pos--;
+			update = true;
+		}
+		break;
+	}
 	case 0x4700:	/* CLR/HOME also moves to far left */
 	{
-		if (cursor_pos)
+		if (ei->pos)
 		{
-			cursor_pos = 0;
+			ei->pos = 0;
 			update = false;
+		}
+		if (ei->m_end > ei->m_start)
+		{
+			ei->m_start = ei->m_end = 0;
+			update = true;
 		}
 		break;
 	}
@@ -2942,15 +3027,19 @@ obj_ed_char(XA_TREE *wt,
 	}
 	case 0x2f16: 	/* CTRL+V */
 	{
-		update = ed_scrap_paste(wt, ei, ed_txt, &cursor_pos);
+		short pos;
+		update = ed_scrap_paste(wt, ei, ed_txt, &pos);
+		ei->pos = pos;
 		break;
 	}
 	default:	/* Just a plain key - insert character */
 	{
+		delete_marked(ei, txt);
+
 		chg = 0;/* Ugly hack! */
-		if (cursor_pos == ed_txt->te_txtlen - 1)
+		if (ei->pos == ed_txt->te_txtlen - 1)
 		{
-			cursor_pos--;
+			ei->pos--;
 			chg = 1;
 		}
 				
@@ -2958,8 +3047,8 @@ obj_ed_char(XA_TREE *wt,
 		tmask = character_type[key];
 
 		n = strlen(ed_txt->te_pvalid) - 1;
-		if (cursor_pos < n)
-			n = cursor_pos;
+		if (ei->pos < n)
+			n = ei->pos;
 
 		switch(ed_txt->te_pvalid[n])
 		{
@@ -3013,43 +3102,42 @@ obj_ed_char(XA_TREE *wt,
 		
 		if (!tmask)
 		{
-			for(n = x = 0; ed_txt->te_ptmplt[n]; n++)
+			for (n = x = 0; ed_txt->te_ptmplt[n]; n++)
 			{
 				if (ed_txt->te_ptmplt[n] == '_')
 					x++;
-				else if (ed_txt->te_ptmplt[n] == key && x >= cursor_pos)
+				else if (ed_txt->te_ptmplt[n] == key && x >= ei->pos)
 					break;
 			}
 			if (key && (ed_txt->te_ptmplt[n] == key))
 			{
-				for(n = cursor_pos; n < x; n++)
+				for(n = ei->pos; n < x; n++)
 					txt[n] = ' ';
 				txt[x] = '\0';
-				cursor_pos = x;
+				ei->pos = x;
 			}
 			else
 			{
-				cursor_pos += chg;		/* Ugly hack! */
-				ei->pos = cursor_pos;
+				ei->pos += chg;		/* Ugly hack! */
 				return XAC_DONE;
 			}
 		}
 		else
 		{
 			txt[ed_txt->te_txtlen - 2] = '\0';	/* Needed! */
-			for(x = ed_txt->te_txtlen - 1; x > cursor_pos; x--)
+			for (x = ed_txt->te_txtlen - 1; x > ei->pos; x--)
 				txt[x] = txt[x - 1];
 
-			txt[cursor_pos] = (char)key;
+			txt[ei->pos] = (char)key;
 
-			cursor_pos++;
+			ei->pos++;
 		}
 
 		update = true;
 		break;
 	}
 	}
-	ei->pos = cursor_pos;
+// 	ei->pos = cursor_pos;
 	return update;
 }
 
@@ -3067,7 +3155,6 @@ char *edfunc[] =
 inline static bool
 chk_edobj(OBJECT *obtree, short obj, short lastobj)
 {
-
 	if (obj < 0 ||
 	    obj > lastobj ||
 	    !object_is_editable( obtree + obj ) )
@@ -3120,6 +3207,9 @@ obj_ED_INIT(struct widget_tree *wt,
 		if (pos && (pos == -1 || pos > p))
 			pos = p;
 		ei->pos = pos;
+		ei->m_start = 0;
+		ei->m_end = pos;
+
 		DIAGS(("ED_INIT: type %d, te_ptext='%s', %lx", obtree[obj].ob_type, ted->te_ptext, (long)ted->te_ptext));
 		ret = 1;
 	}
@@ -3176,8 +3266,6 @@ obj_edit(XA_TREE *wt,
 	while (!(obtree[last].ob_flags & OF_LASTOB))
 		last++;
 
-// 	last = ob_find_any_flag(obtree, OF_LASTOB, 0, 0);
-
 	if (wt->e.obj != -1 && wt->e.obj > last)
 		wt->e.obj = -1;
 
@@ -3185,14 +3273,37 @@ obj_edit(XA_TREE *wt,
 	{
 		switch (func)
 		{
+			case ED_REDRAW:
+			{
+				if (wt->e.obj != -1 && redraw)
+					eor_objcursor(wt, v, rl);
+				pos = wt->e.pos;
+				break;
+			}
+ed_init:
 			case ED_INIT:
 			{
+				bool newobj = wt->e.obj != obj;
 				hidem();
 				
-				obj_ED_INIT(wt, &wt->e, obj, -1, last, NULL, &old_ed_obj);
+				if (newobj)
+				{
+					if (wt->e.obj != -1)
+					{
+						wt->e.m_start = wt->e.m_end = 0;
+						if (redraw) obj_draw(wt, v, wt->e.obj, -2, clip, rl, 0);
+					}
 				
+					obj_ED_INIT(wt, &wt->e, obj, -1, last, NULL, &old_ed_obj);
+
+					set_objcursor(wt, v);
+				}
 				if (redraw)
+				{
+					if (newobj)
+						obj_draw(wt, v, obj, -2, clip, rl, 0);
 					eor_objcursor(wt, v, rl);
+				}
 				wt->e.c_state ^= OB_CURS_EOR;
 				
 				showm();
@@ -3202,24 +3313,35 @@ obj_edit(XA_TREE *wt,
 			}
 			case ED_END:
 			{
+// 				bool gm = wt->e.m_end > wt->e.m_start;
 				/* Ozk: Just turn off cursor :)
 				 */
 				if (wt->e.obj > 0)
 				{
 					pos = wt->e.pos;
 				}
+// 				wt->e.m_start = wt->e.m_end = 0;
 				if (redraw)
 				{
 					hidem();
+// 					if (gm)
+// 					{
+// 						eor_objcursor(wt, v, rl);
+// 						obj_draw(wt, v, obj, -2, clip, rl, 0);
+// 						eor_objcursor(wt, v, rl);
+// 					}
 					eor_objcursor(wt, v, rl);
 					showm();
 				}
 				wt->e.c_state ^= OB_CURS_EOR;
+// 				wt->e.obj = -1;
 // 				display("ED_END: eors=%d, obj=%d for %s", wt->e.c_state & DRW_CURSOR, wt->e.obj, wt->owner->name);
 				break;
 			}
 			case ED_CHAR:
 			{
+				if (!keycode)
+					goto ed_init;
 				hidem();
 				if ( wt->e.obj == -1 ||
 				     obj == -1 ||
@@ -3279,7 +3401,7 @@ obj_edit(XA_TREE *wt,
 					pos = ei->pos;
 				}
 				showm();
-// 				display("ED_CHR: eors=%d, obj=%d, chr=%c for %s", wt->e.c_state & DRW_CURSOR, wt->e.obj, keycode, wt->owner->name);
+// 				display("ED_CHAR: eors=%d, obj=%d, (%x)chr=%c for %s", wt->e.c_state & DRW_CURSOR, wt->e.obj, keycode, keycode, wt->owner->name);
 				break;
 			}
 			case ED_CRSR:
@@ -3293,7 +3415,7 @@ obj_edit(XA_TREE *wt,
 				wt->e.c_state ^= OB_CURS_EOR;
 				
 				showm();
-// 				display("ED_INIT: eors=%d, obj=%d for %s", wt->e.c_state & DRW_CURSOR, wt->e.obj, wt->owner->name);
+// 				display("ED_CRSR: eors=%d, obj=%d for %s", wt->e.c_state & DRW_CURSOR, wt->e.obj, wt->owner->name);
 				pos = wt->e.pos;
 				break;
 #if 0

@@ -395,41 +395,44 @@ d3_pushbutton(struct xa_vdi_settings *v, short d, RECT *r, BFOBSPEC *col, short 
 	else
 #endif
 	{
-#if 1
-		j--;
-		do {
-			(*v->api->br_hook)(v, j, r, selected ? objc_rend.dial_colours.lit_col : objc_rend.dial_colours.shadow_col);
-			(*v->api->tl_hook)(v, j, r, selected ? objc_rend.dial_colours.shadow_col : objc_rend.dial_colours.lit_col);
-			t--, j--;
-		}
-		while (t > 0);
-
-		/* full outline ? */
-		if (thick && !(mode & 2))
+		if (mode & 0x8000)
 		{
-			(*v->api->l_color)(v, objc_rend.dial_colours.fg_col);
-			/* outside box */
+			j--;
+			do {
+				(*v->api->br_hook)(v, j, r, selected ? objc_rend.dial_colours.lit_col : objc_rend.dial_colours.shadow_col);
+				(*v->api->tl_hook)(v, j, r, selected ? objc_rend.dial_colours.shadow_col : objc_rend.dial_colours.lit_col);
+				t--, j--;
+			}
+			while (t > 0);
+
+			/* full outline ? */
+			if (thick && !(mode & 2))
+			{
+				(*v->api->l_color)(v, objc_rend.dial_colours.fg_col);
+				/* outside box */
 			
-			if (thick > 2)
-				(*v->api->gbox)(v, outline - 1, r);
-			(*v->api->rgbox)(v, outline, 1, r);
+				if (thick > 2)
+					(*v->api->gbox)(v, outline - 1, r);
+				(*v->api->rgbox)(v, outline, 1, r);
+			}
 		}
-#else
-		do {
-			(*v->api->br_hook)(v, j, r, selected ? objc_rend.dial_colours.lit_col : objc_rend.dial_colours.shadow_col);
-			(*v->api->tl_hook)(v, j, r, selected ? objc_rend.dial_colours.shadow_col : objc_rend.dial_colours.lit_col);
-			t--, j--;
-		}
-		while (t >= 0);
-
-		/* full outline ? */
-		if (thick && !(mode & 2))
+		else
 		{
-			(*v->api->l_color)(v, objc_rend.dial_colours.fg_col);
-			/* outside box */
-			(*v->api->rgbox)(v, outline, 1, r);
+			do {
+				(*v->api->br_hook)(v, j, r, selected ? objc_rend.dial_colours.lit_col : objc_rend.dial_colours.shadow_col);
+				(*v->api->tl_hook)(v, j, r, selected ? objc_rend.dial_colours.shadow_col : objc_rend.dial_colours.lit_col);
+				t--, j--;
+			}
+			while (t >= 0);
+
+			/* full outline ? */
+			if (thick && !(mode & 2))
+			{
+				(*v->api->l_color)(v, objc_rend.dial_colours.fg_col);
+				/* outside box */
+				(*v->api->gbox)(v, outline, r);
+			}
 		}
-#endif
 	}
 
 	shadow_object(v, outline, state, r, objc_rend.dial_colours.border_col, thick);
@@ -705,17 +708,61 @@ ob_text(XA_TREE *wt, struct xa_vdi_settings *v, RECT *r, RECT *o, BFOBSPEC *c, c
 				(*v->api->t_color)(v, objc_rend.dial_colours.shadow_col);
 			}
 		}
-
-		if (fits)
+		
+		if (!(state & OS_DISABLED) && wt->e.obj == wt->current && wt->e.m_end > wt->e.m_start)
 		{
-			if (!MONO && (flags & OF_FL3DIND) && !(state & OS_DISABLED))
+			int sl = strlen(t) + 1;
+			short tc, x = r->x, y = r->y - v->dists[5], w, h;
+			short start, end;
+			char s[256];
+			RECT br = o ? *o : *r;
+			
+			start = wt->e.m_start + wt->e.edstart;
+			end = wt->e.m_end + wt->e.edstart;
+			tc = v->text_color;
+			if (start)
 			{
-				short tc = v->text_color;
-				(*v->api->t_color)(v, objc_rend.dial_colours.lit_col);
-				v_gtext(v->handle, r->x + 1, r->y + 1 - v->dists[5], t);
-				(*v->api->t_color)(v, tc);
+				strncpy(s, t, start);
+				s[start] = '\0';
+				v_gtext(v->handle, x, y, s);
+				(*v->api->t_extent)(v, s, &w, &h);
+				x += w;
 			}
-			v_gtext(v->handle, r->x, r->y - v->dists[5], t);
+			strncpy(s, t + start, end - start);
+			s[end - start] = '\0';
+			(*v->api->t_extent)(v, s, &w, &h);
+			br.x = x, br.w = w;
+			(*v->api->f_color)(v, G_BLUE);
+			(*v->api->wr_mode)(v, MD_REPLACE);
+			(*v->api->gbar)(v, 0, &br);
+			(*v->api->wr_mode)(v, MD_TRANS);
+			
+			(*v->api->t_color)(v, G_WHITE);
+
+			v_gtext(v->handle, x, y, s);
+			(*v->api->t_color)(v, tc);
+			if (sl > end)
+			{
+// 				(*v->api->t_extent)(v, s, &w, &h);
+				x += w;
+				strncpy(s, t + end, sl - end);
+				s[sl - end] = '\0';
+				v_gtext(v->handle, x, y, s);
+			}
+		}
+		else
+		{
+			if (fits)
+			{
+				if (!MONO && (flags & OF_FL3DIND) && !(state & OS_DISABLED))
+				{
+					short tc = v->text_color;
+					(*v->api->t_color)(v, objc_rend.dial_colours.lit_col);
+					v_gtext(v->handle, r->x + 1, r->y + 1 - v->dists[5], t);
+					(*v->api->t_color)(v, tc);
+				}
+				v_gtext(v->handle, r->x, r->y - v->dists[5], t);
+			}
 		}
 		/* Now underline the shortcut character, if any. */
 		/* Ozk: Prepared for proportional fonts! */
@@ -860,7 +907,7 @@ set_colours(OBJECT *ob, struct xa_vdi_settings *v, BFOBSPEC *colourword)
  * OK, edit_pos is not anymore the te_tmplen field.
  */
 static short
-format_dialog_text(char *text_out, const char *template, const char *text_in, short edit_pos)
+format_dialog_text(char *text_out, const char *template, const char *text_in, short edit_pos, short *ret_startpos)
 {
 	short index = 0, start_tpos = -1, tpos = 0, max = strlen(template);
 	/* HR: In case a template ends with '_' and the text is completely
@@ -908,6 +955,9 @@ format_dialog_text(char *text_out, const char *template, const char *text_in, sh
 	if (edit_index > (start_tpos + tpos))
 		edit_index = start_tpos + tpos;
 
+	if (ret_startpos)
+		*ret_startpos = start_tpos;
+
 	/* keep visible at end */
 	if (edit_index > max)
 		edit_index--;
@@ -933,11 +983,12 @@ set_text(OBJECT *ob,
 	 char *temp_text,
 	 BFOBSPEC *colours,
 	 short *thick,
+	 short *ret_edstart,
 	 RECT r)
 {
 	TEDINFO *ted = object_get_tedinfo(ob);
 	RECT cur;
-	short w, h, cur_x = 0;
+	short w, h, cur_x = 0, start_tpos = 0;
 
 	*thick = (char)ted->te_thickness;
 
@@ -983,13 +1034,12 @@ set_text(OBJECT *ob,
 	/* after vst_font & vst_point */
 
 	if (formatted)
-		cur_x = format_dialog_text(temp_text, ted->te_ptmplt, ted->te_ptext, edit_pos);
+		cur_x = format_dialog_text(temp_text, ted->te_ptmplt, ted->te_ptext, edit_pos, &start_tpos);
 	else
 		strncpy(temp_text, ted->te_ptext, 255);
 
 	(*v->api->t_extent)(v, temp_text, &w, &h);
 
-#if 1
 	/* HR 290301 & 070202: Dont let a text violate its object space! (Twoinone packer shell!! :-) */
 	if (w > r.w)
 	{
@@ -1014,7 +1064,6 @@ set_text(OBJECT *ob,
 		}
 		(*v->api->t_extent)(v, temp_text, &w, &h);
 	}
-#endif
 
 	switch (ted->te_just)		/* Set text alignment - why on earth did */
 	{
@@ -1050,6 +1099,9 @@ set_text(OBJECT *ob,
 	cur.w = w;
 	cur.h = h;
 	*gr = cur;
+
+	if (ret_edstart)
+		*ret_edstart = start_tpos;
 }
 
 static void
@@ -1158,7 +1210,7 @@ set_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v)
 	r.w  = ob->ob_width;
 	r.h  = ob->ob_height;
 	
-	set_text(ob, v, &gr, &wt->e.cr, true, wt->e.pos, temp_text, &colours, &thick, r);
+	set_text(ob, v, &gr, &wt->e.cr, true, wt->e.pos, temp_text, &colours, &thick, &wt->e.edstart, r);
 
 	wt->e.cr.x -= wt->tree->ob_x;
 	wt->e.cr.y -= wt->tree->ob_y;
@@ -1407,7 +1459,7 @@ d_g_boxtext(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 	selected = ob->ob_state & OS_SELECTED;
 
 	(*v->api->t_effects)(v, 0);
-	set_text(ob, v, &gr, NULL, false, -1, temp_text, &colours, &thick, r);
+	set_text(ob, v, &gr, NULL, false, -1, temp_text, &colours, &thick, NULL, r);
 	set_colours(ob, v, &colours);
 
 	if (d3_foreground(ob))		/* indicator or avtivator */
@@ -1454,7 +1506,7 @@ d_g_fboxtext(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 	short thick;
 
 	(*v->api->t_effects)(v, 0);
-	set_text(ob, v, &gr, &cr, true, is_edit ? wt->e.pos : -1, temp_text, &colours, &thick, r);
+	set_text(ob, v, &gr, &cr, true, is_edit ? wt->e.pos : -1, temp_text, &colours, &thick, NULL, r);
 	set_colours(ob, v, &colours);
 
 	if (d3_foreground(ob))
@@ -1621,7 +1673,7 @@ d_g_button(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 
 		if (d3_foreground(ob))
 		{
-			d3_pushbutton(v, 0, &r, NULL, ob->ob_state, thick, 1);
+			d3_pushbutton(v, 0, &r, NULL, ob->ob_state, thick, 0x8001);
 			if (selected)
 			{
 				gr.x += PUSH3D_DISTANCE;
@@ -1997,7 +2049,7 @@ d_g_text(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 	char temp_text[256];
 
 	(*v->api->t_effects)(v, 0);
-	set_text(ob, v, &gr, NULL, false, -1, temp_text, &colours, &thick, r);
+	set_text(ob, v, &gr, NULL, false, -1, temp_text, &colours, &thick, NULL, r);
 	set_colours(ob, v, &colours);
 	thin = thick > 0 ? thick-1 : thick+1;
 
@@ -2020,7 +2072,7 @@ d_g_ftext(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 	char temp_text[256];
 
 	(*v->api->t_effects)(v, 0);
-	set_text(ob, v, &gr, &cr, true, is_edit ? wt->e.pos : -1, temp_text, &colours, &thick, r);
+	set_text(ob, v, &gr, &cr, true, is_edit ? wt->e.pos : -1, temp_text, &colours, &thick, NULL, r);
 	set_colours(ob, v, &colours);
 	thin = thick > 0 ? thick-1 : thick+1;
 
