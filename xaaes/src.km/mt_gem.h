@@ -808,6 +808,7 @@ typedef  struct
 #define ED_DRAW			103		/* MagiC only */
 
 #define ED_PREP			200		/* XaAES only */
+#define ED_REDRAW		203		/* Redraw cursor, XaAES only */
 
 /* editable text justification */
 #define TE_LEFT			0
