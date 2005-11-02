@@ -752,6 +752,10 @@ struct objc_edit_info
 	short obj;	/* Index of editable object */
 	short pos;	/* Cursor (char) position */
 	short c_state;	/* Cursor state */
+
+	short edstart;	/* Offset into formatted string where first editable char begins */
+	short m_start;
+	short m_end;
 	RECT cr;	/* Cursor coordinates, relative */
 };
 	
