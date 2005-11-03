@@ -3167,6 +3167,37 @@ chk_edobj(OBJECT *obtree, short obj, short lastobj)
 	}
 }
 
+static bool
+ed_changed(struct widget_tree *wt)
+{
+	TEDINFO *ted;
+	OBJECT *obtree = wt->tree;
+	short obj = wt->e.obj;
+
+	if (obj < 0)
+		return false;
+
+	if ( (ted = object_get_tedinfo(obtree + obj)) )
+	{
+		if (wt->e.ptext != ted->te_ptext || wt->e.ptmplt != ted->te_ptmplt)
+		{
+// 			display("ptr change %lx(%lx), %lx(%lx)", wt->e.ptext, ted->te_ptext, wt->e.ptmplt, ted->te_ptmplt);
+			return true;
+		}
+		if (strcmp(wt->e.ptextb, ted->te_ptext))
+		{
+// 			display(" text change");
+			return true;
+		}
+		if (strcmp(wt->e.ptmpltb, ted->te_ptmplt))
+		{
+// 			display(" template change");
+			return true;
+		}
+	}
+	return false;
+}
+
 static short
 obj_ED_INIT(struct widget_tree *wt,
 	    struct objc_edit_info *ei,
@@ -3209,6 +3240,11 @@ obj_ED_INIT(struct widget_tree *wt,
 		ei->pos = pos;
 		ei->m_start = 0;
 		ei->m_end = pos;
+
+		ei->ptext = ted->te_ptext;
+		ei->ptmplt = ted->te_ptmplt;
+		strcpy(ei->ptextb, ei->ptext);
+		strcpy(ei->ptmpltb, ei->ptmplt);
 
 		DIAGS(("ED_INIT: type %d, te_ptext='%s', %lx", obtree[obj].ob_type, ted->te_ptext, (long)ted->te_ptext));
 		ret = 1;
@@ -3298,6 +3334,13 @@ ed_init:
 
 					set_objcursor(wt, v);
 				}
+				else if (ed_changed(wt))
+				{
+					obj_ED_INIT(wt, &wt->e, obj, -1, last, NULL, &old_ed_obj);
+
+					set_objcursor(wt, v);
+				}
+				
 				if (redraw)
 				{
 					if (newobj)
@@ -3401,6 +3444,7 @@ ed_init:
 					pos = ei->pos;
 				}
 				showm();
+				strcpy(wt->e.ptextb, wt->e.ptext);
 // 				display("ED_CHAR: eors=%d, obj=%d, (%x)chr=%c for %s", wt->e.c_state & DRW_CURSOR, wt->e.obj, keycode, keycode, wt->owner->name);
 				break;
 			}
