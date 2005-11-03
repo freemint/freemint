@@ -756,6 +756,10 @@ struct objc_edit_info
 	short edstart;	/* Offset into formatted string where first editable char begins */
 	short m_start;
 	short m_end;
+	char *ptext;
+	char *ptmplt;
+	char ptextb[256];
+	char ptmpltb[256];
 	RECT cr;	/* Cursor coordinates, relative */
 };
 	
