@@ -2937,6 +2937,7 @@ obj_ed_char(XA_TREE *wt,
 	}
 	case 0x4d36:	/* SHIFT+RIGHT ARROW move cursor to far right of current text */
 	{
+	#if 0
 		if (txt[ei->pos])
 		{
 			short npos = ei->pos + 1;
@@ -2954,7 +2955,7 @@ obj_ed_char(XA_TREE *wt,
 			ei->pos++;
 			update = true;
 		}
-	#if 0
+	#else
 		for(x = 0; txt[x]; x++)
 			;
 
@@ -2982,6 +2983,7 @@ obj_ed_char(XA_TREE *wt,
 	}
 	case 0x4b34:	/* SHIFT+LEFT ARROW move cursor to start of field */
 	{
+	#if 0
 		if (ei->pos)
 		{
 			short npos = ei->pos - 1;
@@ -3000,6 +3002,7 @@ obj_ed_char(XA_TREE *wt,
 			update = true;
 		}
 		break;
+	#endif
 	}
 	case 0x4700:	/* CLR/HOME also moves to far left */
 	{
@@ -3167,37 +3170,6 @@ chk_edobj(OBJECT *obtree, short obj, short lastobj)
 	}
 }
 
-static bool
-ed_changed(struct widget_tree *wt)
-{
-	TEDINFO *ted;
-	OBJECT *obtree = wt->tree;
-	short obj = wt->e.obj;
-
-	if (obj < 0)
-		return false;
-
-	if ( (ted = object_get_tedinfo(obtree + obj)) )
-	{
-		if (wt->e.ptext != ted->te_ptext || wt->e.ptmplt != ted->te_ptmplt)
-		{
-// 			display("ptr change %lx(%lx), %lx(%lx)", wt->e.ptext, ted->te_ptext, wt->e.ptmplt, ted->te_ptmplt);
-			return true;
-		}
-		if (strcmp(wt->e.ptextb, ted->te_ptext))
-		{
-// 			display(" text change");
-			return true;
-		}
-		if (strcmp(wt->e.ptmpltb, ted->te_ptmplt))
-		{
-// 			display(" template change");
-			return true;
-		}
-	}
-	return false;
-}
-
 static short
 obj_ED_INIT(struct widget_tree *wt,
 	    struct objc_edit_info *ei,
@@ -3238,13 +3210,8 @@ obj_ED_INIT(struct widget_tree *wt,
 		if (pos && (pos == -1 || pos > p))
 			pos = p;
 		ei->pos = pos;
-		ei->m_start = 0;
-		ei->m_end = pos;
-
-		ei->ptext = ted->te_ptext;
-		ei->ptmplt = ted->te_ptmplt;
-		strcpy(ei->ptextb, ei->ptext);
-		strcpy(ei->ptmpltb, ei->ptmplt);
+		ei->m_start = ei->m_end = 0;
+// 		ei->m_end = pos;
 
 		DIAGS(("ED_INIT: type %d, te_ptext='%s', %lx", obtree[obj].ob_type, ted->te_ptext, (long)ted->te_ptext));
 		ret = 1;
@@ -3319,9 +3286,25 @@ obj_edit(XA_TREE *wt,
 ed_init:
 			case ED_INIT:
 			{
-				bool newobj = wt->e.obj != obj;
 				hidem();
 				
+				obj_ED_INIT(wt, &wt->e, obj, -1, last, NULL, &old_ed_obj);
+				
+				if (redraw)
+					eor_objcursor(wt, v, rl);
+				wt->e.c_state ^= OB_CURS_EOR;
+				
+				showm();
+// 				display("ED_INIT: eors=%d, obj=%d (last %d) for %s", wt->e.c_state & DRW_CURSOR, wt->e.obj, last, wt->owner->name);
+				pos = wt->e.pos;
+				break;
+			}
+#if 0
+			case ED_XINIT:
+			{
+				bool newobj = wt->e.obj != obj;
+				hidem();
+
 				if (newobj)
 				{
 					if (wt->e.obj != -1)
@@ -3329,7 +3312,7 @@ ed_init:
 						wt->e.m_start = wt->e.m_end = 0;
 						if (redraw) obj_draw(wt, v, wt->e.obj, -2, clip, rl, 0);
 					}
-				
+
 					obj_ED_INIT(wt, &wt->e, obj, -1, last, NULL, &old_ed_obj);
 
 					set_objcursor(wt, v);
@@ -3337,8 +3320,8 @@ ed_init:
 				else if (ed_changed(wt))
 				{
 					obj_ED_INIT(wt, &wt->e, obj, -1, last, NULL, &old_ed_obj);
-
 					set_objcursor(wt, v);
+					newobj = true;
 				}
 				
 				if (redraw)
@@ -3354,30 +3337,22 @@ ed_init:
 				pos = wt->e.pos;
 				break;
 			}
+#endif
 			case ED_END:
 			{
-// 				bool gm = wt->e.m_end > wt->e.m_start;
 				/* Ozk: Just turn off cursor :)
 				 */
 				if (wt->e.obj > 0)
 				{
 					pos = wt->e.pos;
 				}
-// 				wt->e.m_start = wt->e.m_end = 0;
 				if (redraw)
 				{
 					hidem();
-// 					if (gm)
-// 					{
-// 						eor_objcursor(wt, v, rl);
-// 						obj_draw(wt, v, obj, -2, clip, rl, 0);
-// 						eor_objcursor(wt, v, rl);
-// 					}
 					eor_objcursor(wt, v, rl);
 					showm();
 				}
 				wt->e.c_state ^= OB_CURS_EOR;
-// 				wt->e.obj = -1;
 // 				display("ED_END: eors=%d, obj=%d for %s", wt->e.c_state & DRW_CURSOR, wt->e.obj, wt->owner->name);
 				break;
 			}
@@ -3444,7 +3419,6 @@ ed_init:
 					pos = ei->pos;
 				}
 				showm();
-				strcpy(wt->e.ptextb, wt->e.ptext);
 // 				display("ED_CHAR: eors=%d, obj=%d, (%x)chr=%c for %s", wt->e.c_state & DRW_CURSOR, wt->e.obj, keycode, keycode, wt->owner->name);
 				break;
 			}
