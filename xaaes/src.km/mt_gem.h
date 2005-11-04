@@ -807,8 +807,12 @@ typedef  struct
 #define ED_CRSR			100		/* MagiC only */
 #define ED_DRAW			103		/* MagiC only */
 
-#define ED_PREP			200		/* XaAES only */
-#define ED_REDRAW		203		/* Redraw cursor, XaAES only */
+#define ED_REDRAW		200		/* XaAES only */
+#define ED_XINIT		201
+#define ED_XCHAR		202
+#define ED_XEND			203		/* Redraw cursor, XaAES only */
+#define ED_CHGTEXTPTR		204
+#define ED_CHGTMPLPTR		205
 
 /* editable text justification */
 #define TE_LEFT			0
