@@ -336,12 +336,15 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 		{
 			/* In this case the string CAN ONLY BE null terminated. */
 			longtail = strlen(p_tail + 1);
+			if (longtail > 124)
+				longtail = 124;
 			DIAG((D_shel, NULL, "ARGV!  longtail = %ld", longtail));
-			if (longtail < 126)
-			{
-				p_tail[0] = longtail;
-				longtail = 0;
-			}
+// 			display("ARGV!  longtail = %ld", longtail);
+// 			if (longtail < 126)
+// 			{
+// 				p_tail[0] = longtail;
+// 				longtail = 0;
+// 			}
 		}
 	
 		if (longtail)
@@ -352,18 +355,21 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 			DIAG((D_shel, NULL, " -- ltail=%lx", tail));
 			if (!tail)
 				return 0;
-			strcpy(tail + 1, p_tail + 1);
+			strncpy(tail + 1, p_tail + 1, tailsize);
 			*tail = 0x7f;
+			tail[tailsize + 1] = '\0';
 			DIAG((D_shel, NULL, "long tailsize: %ld", tailsize));
 		}
 		else
 		{
 			(unsigned long)tailsize = (unsigned char)p_tail[0];
 			DIAG((D_shel, NULL, " -- tailsize1 = %ld", tailsize));
-			tail = kmalloc(tailsize + 2);
+			tail = kmalloc(126); //tail = kmalloc(tailsize + 2);
 			DIAG((D_shel, NULL, " -- tail=%lx", tail));
 			if (!tail)
 				return 0;
+			if (tailsize > 124)
+				tailsize = 124;
 			strncpy(tail, p_tail, tailsize + 1);
 			tail[tailsize + 1] = '\0';
 			DIAG((D_shel, NULL, "int tailsize: %ld", tailsize));
@@ -508,7 +514,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 					new_tailsize += tailsize;
 					kfree(tail);
 					tail = new_tail;
-					tail[new_tailsize + 1] = 0;
+					tail[new_tailsize + 1] = '\0';
 					tailsize = new_tailsize;
 					if (tailsize > 126)
 					{
