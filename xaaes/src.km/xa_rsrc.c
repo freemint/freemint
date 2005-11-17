@@ -275,7 +275,6 @@ FixColourIconData(struct xa_client *client, CICONBLK *icon, struct xa_rscs *rscs
 	if (best_cicon)
 	{
 		/* DIAG((D_rsrc,client,"[1]best_cicon planes: %d", best_cicon->num_planes)); */
-
 		c = best_cicon;
 		if (c->col_data)
 			c->col_data = transform_icon_bitmap(client, rscs, icon, c->col_data, len, c->num_planes, vdih);
@@ -292,7 +291,7 @@ FixColourIconData(struct xa_client *client, CICONBLK *icon, struct xa_rscs *rscs
 }
 
 static void
-fix_chrarray(void *b, char **p, unsigned long n)
+fix_chrarray(struct xa_client *client, void *b, char **p, unsigned long n, char **extra)
 {
 	while (n)
 	{
@@ -304,29 +303,57 @@ fix_chrarray(void *b, char **p, unsigned long n)
 		n--;
 	}
 }
+
 /* fixup all tedinfo field pointers */
 static void
-fix_tedarray(void *b, TEDINFO *ti, unsigned long n)
+fix_tedarray(struct xa_client *client, void *b, TEDINFO *ti, unsigned long n, char **extra)
 {
-	while (n)
+	if ((client->options.app_opts & XAAO_OBJC_EDIT))
 	{
-		(unsigned long)ti->te_ptext  += (unsigned long)b;
-		(unsigned long)ti->te_ptmplt += (unsigned long)b;
-		(unsigned long)ti->te_pvalid += (unsigned long)b;
-		DIAG((D_rsrc, NULL, "fix_tedarray: ti=%lx, ptext='%s'", ti, ti->te_ptext));
-		DIAG((D_rsrc, NULL, "ptext=%lx, ptmpl=%lx, pvalid=%lx",
-			ti->te_ptext, ti->te_ptmplt, ti->te_pvalid));
+		XTEDINFO *ei;
 		
-		ti++;
-		n--;
+		(char *)ei = *extra;
+		
+		while (n)
+		{
+			bzero(ei, sizeof(*ei));
+			ei->p_ti = ti;
+			(unsigned long)ti->te_ptext  += (unsigned long)b;
+			(unsigned long)ti->te_ptmplt += (unsigned long)b;
+			(unsigned long)ti->te_pvalid += (unsigned long)b;
+			ei->ti = *ti;
+			(long)ti->te_ptext = -1L;
+			(long)ti->te_ptmplt = (long)ei;
+			ti++;
+			ei++;
+			n--;
+			DIAG((D_rsrc, NULL, "fix_tedarray: ti=%lx, ptext='%s'", ti, ti->te_ptext));
+			DIAG((D_rsrc, NULL, "ptext=%lx, ptmpl=%lx, pvalid=%lx",
+				ti->te_ptext, ti->te_ptmplt, ti->te_pvalid));
+		}
+		*extra = (char *)ei;
 	}
-	
+	else
+	{
+		while (n)
+		{
+			(unsigned long)ti->te_ptext  += (unsigned long)b;
+			(unsigned long)ti->te_ptmplt += (unsigned long)b;
+			(unsigned long)ti->te_pvalid += (unsigned long)b;
+			DIAG((D_rsrc, NULL, "fix_tedarray: ti=%lx, ptext='%s'", ti, ti->te_ptext));
+			DIAG((D_rsrc, NULL, "ptext=%lx, ptmpl=%lx, pvalid=%lx",
+				ti->te_ptext, ti->te_ptmplt, ti->te_pvalid));
+		
+			ti++;
+			n--;
+		}
+	}
 	DIAG((D_rsrc, NULL, "fixed up %ld tedinfo's", n));
 }
 
 /* fixup all iconblk field pointers */
 static void
-fix_icnarray(void *b, ICONBLK *ib, unsigned long n)
+fix_icnarray(struct xa_client *client, void *b, ICONBLK *ib, unsigned long n, char **extra)
 {
 	while (n)
 	{
@@ -346,7 +373,7 @@ fix_icnarray(void *b, ICONBLK *ib, unsigned long n)
 
 /* fixup all bitblk data pointers */
 static void
-fix_bblarray(void *b, BITBLK *bb, unsigned long n)
+fix_bblarray(struct xa_client *client, void *b, BITBLK *bb, unsigned long n, char **extra)
 {
 	while (n)
 	{
@@ -361,7 +388,7 @@ fix_bblarray(void *b, BITBLK *bb, unsigned long n)
 }
 
 static short
-fix_cicons(void *base, CICONBLK **cibh)
+fix_cicons(struct xa_client *client, void *base, CICONBLK **cibh, char **extra)
 {
 	unsigned long *addr;
 	long isize;
@@ -498,12 +525,12 @@ fix_objects(struct xa_client *client,
 		{
 			case G_TEXT:
 			case G_BOXTEXT:
+			case G_FTEXT:
+			case G_FBOXTEXT:
 			case G_IMAGE:
 			case G_BUTTON:
 			case G_STRING:
 			case G_SHORTCUT:
-			case G_FTEXT:
-			case G_FBOXTEXT:
 			case G_TITLE:
 			{
 				obj->ob_spec.free_string += (long)b;
@@ -598,6 +625,22 @@ fix_trees(struct xa_client *client, void *b, OBJECT **trees, unsigned long n, sh
 					
 					c = (short *)&obj->ob_x;
 				
+					switch (obj->ob_type & 0xff)
+					{
+						case G_TEXT:
+						case G_BOXTEXT:
+						case G_FTEXT:
+						case G_FBOXTEXT:
+						{
+							TEDINFO *ted;
+				
+							(long)ted = obj->ob_spec.index;
+							if ((long)ted->te_ptext == -1L)
+								((XTEDINFO *)ted->te_ptmplt)->obj = k;
+							break;
+						}
+						default:;
+					}
 					/*
 					 * Coordinates: arranged as number of chars in low byte,
 					 * with a pixel correction in the upper byte.
@@ -698,10 +741,11 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 
 	RSHDR *hdr = NULL;
 	CICONBLK **cibh = NULL;
-	unsigned long osize = 0, size = 0;
+	unsigned long osize = 0, size = 0, extra = 0;
 	char *base = NULL, *end = NULL;
+	char *extra_ptr = NULL;
 	struct xa_rscs *rscs = NULL; 
-	short vdih = client->vdi_settings->handle; //C.vh;
+	short vdih = client->vdi_settings->handle;
 
 	if (!client)
 		client = C.Aes;
@@ -723,10 +767,39 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 		
 		fsize = x.size;
 		
+		if ((client->options.app_opts & XAAO_OBJC_EDIT))
+		{
+			hdr = kmalloc(sizeof(*hdr));
+			if (!hdr)
+			{
+				DIAGS((D_rsrc, client, "LoadResources(): kmalloc failed, out of memory?"));
+				kernel_close(f);
+				return NULL;
+			}
+			size = kernel_read(f, hdr, sizeof(*hdr));
+			if (size != sizeof(*hdr))
+			{
+				DIAG((D_rsrc, client, "LoadResource(): Error reading file '%s'", fname));
+				kernel_close(f);
+				return NULL;
+			}
+			if (hdr->rsh_nted)
+			{
+				extra = sizeof(XTEDINFO) * hdr->rsh_nted;
+			}
+			kfree(hdr);
+			kernel_lseek(f, 0, 0);
+		}
+
 		if (client == C.Aes)
-			base = kmalloc(fsize + sizeof(RSXHDR));
+			base = kmalloc(fsize + extra + sizeof(RSXHDR));
 		else
-			base = umalloc(fsize + sizeof(RSXHDR));
+			base = umalloc(fsize + extra + sizeof(RSXHDR));
+
+		if (extra)
+		{
+			extra_ptr = base + fsize + sizeof(RSXHDR);
+		}
 
 		size = kernel_read(f, base, fsize);
 		kernel_close(f);
@@ -783,11 +856,11 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 	if (!rscs)
 		return NULL;
 
-	fix_chrarray(base, (char **)	(base + hdr->rsh_frstr),   hdr->rsh_nstring);
-	fix_chrarray(base, (char **)	(base + hdr->rsh_frimg),   hdr->rsh_nimages);
-	fix_tedarray(base, (TEDINFO *)	(base + hdr->rsh_tedinfo), hdr->rsh_nted);
-	fix_icnarray(base, (ICONBLK *)	(base + hdr->rsh_iconblk), hdr->rsh_nib);
-	fix_bblarray(base, (BITBLK *)	(base + hdr->rsh_bitblk),  hdr->rsh_nbb);
+	fix_chrarray(client, base, (char **)	(base + hdr->rsh_frstr),   hdr->rsh_nstring, &extra_ptr);
+	fix_chrarray(client, base, (char **)	(base + hdr->rsh_frimg),   hdr->rsh_nimages, &extra_ptr);
+	fix_tedarray(client, base, (TEDINFO *)	(base + hdr->rsh_tedinfo), hdr->rsh_nted, &extra_ptr);
+	fix_icnarray(client, base, (ICONBLK *)	(base + hdr->rsh_iconblk), hdr->rsh_nib, &extra_ptr);
+	fix_bblarray(client, base, (BITBLK *)	(base + hdr->rsh_bitblk),  hdr->rsh_nbb, &extra_ptr);
 	
 	if (hdr->rsh_vrsn & 4)
 	{
@@ -804,7 +877,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 		if (*earray && *earray != -1L) /* Get colour icons */
 		{
 			cibh = (CICONBLK **)(*earray + (long)base);
-			maxplanes = fix_cicons(base, cibh);
+			maxplanes = fix_cicons(client, base, cibh, &extra_ptr);
 		}
 
 		if (*earray)
@@ -884,6 +957,9 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 			earray++;
 #endif
 	}
+	/*
+	 * fix_objects MUST run before fix_trees!!!
+	 */
 	fix_objects(client, rscs, cibh, vdih, base, (OBJECT *)(base + hdr->rsh_object), hdr->rsh_nobs);
 
 	fix_trees(client, base, (OBJECT **)(unsigned long)(base + hdr->rsh_trindex), hdr->rsh_ntree, designWidth, designHeight);
@@ -1116,7 +1192,13 @@ ResourceTedinfo(RSHDR *hdr, int num)
 		return NULL;
 
 	start(tedinfo);
-	return index + num;
+	
+	index += num;
+	
+	if ((long)index->te_ptext == -1L)
+		index = &((XTEDINFO *)index->te_ptmplt)->ti;
+
+	return index; // + num;
 }
 
 /* Find the iconblk with a given index */

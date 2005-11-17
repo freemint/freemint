@@ -324,8 +324,8 @@ struct options
 					 * +1: make a thicker frame for wasier border grabbing and sizing. */
 	short wheel_page;		/* how many wheel clicks for a page */
 	short wheel_mode;
-	long wind_opts;			/* Default window options - see struct xa_window.opts */
-	long app_opts;
+	unsigned long wind_opts;			/* Default window options - see struct xa_window.opts */
+	unsigned long app_opts;
 	long half_screen;
 
 #if GENERATE_DIAGS
@@ -366,8 +366,7 @@ union conkey
 		unsigned char scan;	/* scancode */
 		unsigned char dum;
 		unsigned char code;	/* ascii (if applicable */
-	}
-	conin;
+	} conin;
 };
 
 struct rawkey
@@ -749,6 +748,8 @@ struct xa_pdlg_info
 #define OB_CURS_DRAWN	4
 struct objc_edit_info
 {
+	TEDINFO *p_ti;
+
 	short obj;	/* Index of editable object */
 	short pos;	/* Cursor (char) position */
 	short c_state;	/* Cursor state */
@@ -756,12 +757,39 @@ struct objc_edit_info
 	short edstart;	/* Offset into formatted string where first editable char begins */
 	short m_start;
 	short m_end;
-	char *ptext;
-	char *ptmplt;
-	char ptextb[256];
-	char ptmpltb[256];
+	unsigned short t_offset;
+	unsigned short p_offset;
 	RECT cr;	/* Cursor coordinates, relative */
+	TEDINFO ti;
 };
+typedef struct objc_edit_info XTEDINFO;
+
+struct xated
+{
+	long	id;			// char		*te_ptext;
+	struct objc_edit_info *ei;	// char		*te_ptmplt;	/**< ptr to template */
+	void *p1;			// char		*te_pvalid;	/**< ptr to validation chrs. */
+	
+	short flags;			// short	te_font; 	/**< font */
+	short res0;			// short	te_fontid;	/**< font id */
+	short resrvd1;			// short	te_just; 	/**< justification */
+	short resrvd2;			// short	te_color;	/**< color information word */
+	short resrvd3;			// short	te_fontsize;	/**< font size */
+	short resrvd4;			// short	te_thickness;	/**< border thickness */
+	short resrvd5;			// short	te_txtlen;	/**< length of text string */
+	short resrvd6;			// short	te_tmplen;	/**< length of template string */
+};
+typedef struct xated XATED;
+
+struct xa_tedinfo
+{
+	union
+	{
+		TEDINFO ted;
+		struct xated xated;
+	}x;
+};
+typedef struct xa_tedinfo XATEDINFO;
 	
 struct widget_tree
 {
@@ -775,6 +803,7 @@ struct widget_tree
 #define WTF_STATIC	0x00000010
 #define WTF_AUTOFREE	0x00000020
 #define WTF_FBDO_SLIST	0x00000040	/* form_button() handles SLIST objects */
+#define WTF_OBJCEDIT	0x00000080
 	unsigned long	flags;
 
 #define WTR_POPUP	0x00000001
@@ -800,6 +829,7 @@ struct widget_tree
 	short parent_y;
 
 	short focus;
+	struct objc_edit_info *ei;
 	struct objc_edit_info e;
 
 	short lastob;			/* Can be used to validate item number */
@@ -914,9 +944,6 @@ struct fselect_result
 	long wfds;
 	long xfds;
 };
-
-#define XAPP_XT_WF_SLIDE	0x00000001	/**/
-
 
 typedef unsigned long AES_function(enum locks lock, struct xa_client *client, AESPB *pb);
 
@@ -1312,6 +1339,10 @@ enum xa_window_class
 };
 typedef enum xa_window_class WINDOW_CLASS;
 
+#define XAAO_WF_SLIDE	((long)AO0_WF_SLIDE << 16)
+#define XAAO_OBJC_EDIT	((long)AO0_OBJC_EDIT << 16)
+#define XAAO_SUPPORTED	(XAAO_WF_SLIDE|XAAO_OBJC_EDIT)
+
 /* Callback for a window's auto-redraw function */
 typedef int WindowDisplay (enum locks lock, struct xa_window *wind);
 
@@ -1388,7 +1419,7 @@ struct xa_window
 // 	struct xa_widget_theme *widget_theme;
 
 	long rect_lock;
-	long opts;			/* Window options. XAWO_xxx */
+	unsigned long opts;			/* Window options. XAWO_xxx */
 	short wheel_mode;		/* mouse wheel mode */
 	bool nolist;			/* If true, dont put in the window_list. For embedded listboxes mainly. */
 	bool thinwork;			/* if true and colour then work := single line box */

@@ -204,6 +204,7 @@ struct shel_info
 	short type;
 	short rppid;		/* Real parent pid, that is, the pid of app that called of shel_write() */
 	short reserved;
+	bool shel_write;
 
 	char *cmd_tail;
 	bool tail_is_heap;

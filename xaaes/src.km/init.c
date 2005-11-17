@@ -529,6 +529,14 @@ again:
 	if ((C.shutdown & (RESOLUTION_CHANGE|HALT_SYSTEM|REBOOT_SYSTEM|COLDSTART_SYSTEM)) == RESOLUTION_CHANGE)
 		goto again;
 
+	/* Ozk:
+	 * Make sure no processes have any XaAES module attachments
+	 * before we exit. If access to 'our' attachment vectors happen
+	 * after XaAES module quits, havoc is next on the agenda
+	 */
+	detach_extension((void *)-1L, XAAES_MAGIC);
+	detach_extension((void *)-1L, XAAES_MAGIC_SH);
+
 	/* succeeded */
 	return 0;
 

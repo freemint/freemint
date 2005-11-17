@@ -83,7 +83,9 @@ load_adi(struct basepage *b, const char *name)
 	ai.fname = name;
 	
 	r = module_init(initfunc, KENTRY, &ai);
-	
+	if (r == -1L)
+		display("kentry updated, %s too old! Please update it", name);
+
 	ai.fname = NULL;
 	return r;
 }

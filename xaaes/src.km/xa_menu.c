@@ -470,7 +470,7 @@ init_popinfo(struct widget_tree *wt, MENU *mn, struct xa_popinfo *pi)
 		if (flag != ((1<<1)|1) || pi->scrl_height < 3)
 		{
 noscroll:
-			display("no scrolling!");
+// 			display("no scrolling!");
 			pi->scrl_start_row = -1;
 			kfree(pi->objs);
 			pi->objs = NULL;
@@ -486,10 +486,10 @@ noscroll:
 			{
 				short corr = (pi->scrl_start_obj + pi->scrl_height) - pi->count;
 				pi->scrl_start_obj -= corr;
-				display("adjusted start_obj with %d", corr);
+// 				display("adjusted start_obj with %d", corr);
 				if (pi->scrl_start_obj < pi->scrl_start_row)
 				{
-					display("no scrolling needed");
+// 					display("no scrolling needed");
 					goto noscroll;
 				}
 			}

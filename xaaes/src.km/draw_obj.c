@@ -138,7 +138,7 @@ object_txt(OBJECT *tree, short t)			/* HR: I want to know the culprit in a glanc
 		case G_BOXTEXT:
 		case G_FBOXTEXT:
 		{
-			TEDINFO *ted = object_get_spec(tree + t)->tedinfo;
+			TEDINFO *ted = object_get_tedinfo(tree + t, NULL);
 			sprintf(nother, sizeof(nother), " (%lx)'%s'", (long)ted->te_ptext, ted->te_ptext);
 			break;
 		}
@@ -672,7 +672,15 @@ button_colours(void)
 }
 
 static void
-ob_text(XA_TREE *wt, struct xa_vdi_settings *v, RECT *r, RECT *o, BFOBSPEC *c, char *t, short state, short flags, short und, short undcol)
+ob_text(XA_TREE *wt,
+	struct xa_vdi_settings *v,
+	struct objc_edit_info *ei,
+	RECT *r, RECT *o,
+	BFOBSPEC *c,
+	char *t,
+	short state,
+	short flags,
+	short und, short undcol)
 {
 	if (t && *t)
 	{
@@ -709,7 +717,7 @@ ob_text(XA_TREE *wt, struct xa_vdi_settings *v, RECT *r, RECT *o, BFOBSPEC *c, c
 			}
 		}
 		
-		if (!(state & OS_DISABLED) && wt->e.obj == wt->current && wt->e.m_end > wt->e.m_start)
+		if (ei && !(state & OS_DISABLED) && ei->obj == wt->current && ei->m_end > ei->m_start)
 		{
 			int sl = strlen(t) + 1;
 			short tc, x = r->x, y = r->y - v->dists[5], w, h;
@@ -717,8 +725,8 @@ ob_text(XA_TREE *wt, struct xa_vdi_settings *v, RECT *r, RECT *o, BFOBSPEC *c, c
 			char s[256];
 			RECT br = o ? *o : *r;
 			
-			start = wt->e.m_start + wt->e.edstart;
-			end = wt->e.m_end + wt->e.edstart;
+			start = ei->m_start + ei->edstart;
+			end = ei->m_end + ei->edstart;
 			tc = v->text_color;
 			if (start)
 			{
@@ -827,7 +835,7 @@ g_text(XA_TREE *wt, struct xa_vdi_settings *v, RECT r, RECT *o, const char *text
 	else
 	{
 		(*v->api->t_color)(v, menu_dis_col(wt));
-		ob_text(wt, v, &r, o, NULL, t, 0, 0, (state & OS_WHITEBAK) ? (state >> 8) & 0x7f : -1, G_RED);
+		ob_text(wt, v, NULL, &r, o, NULL, t, 0, 0, (state & OS_WHITEBAK) ? (state >> 8) & 0x7f : -1, G_RED);
 		if (state & OS_DISABLED)
 		{
 			(*v->api->write_disable)(v, &wt->r, objc_rend.dial_colours.bg_col);
@@ -914,10 +922,12 @@ format_dialog_text(char *text_out, const char *template, const char *text_in, sh
 	 * filled, edit_index was indeterminate. :-)
 	 */
 	short edit_index = max;
+// 	char *to = text_out;
 	bool aap = *text_in == '@';
 
 	DIAG((D_o, NULL, "format_dialog_text edit_pos %d", edit_pos));
-
+// 	display("t  in '%s'", text_in);
+// 	display("tmplt '%s'", template);
 	while (*template)
 	{
 		if (*template != '_')
@@ -962,6 +972,7 @@ format_dialog_text(char *text_out, const char *template, const char *text_in, sh
 	if (edit_index > max)
 		edit_index--;
 
+// 	display("t out '%s'", to);
 	return edit_index;
 }
 
@@ -984,11 +995,28 @@ set_text(OBJECT *ob,
 	 BFOBSPEC *colours,
 	 short *thick,
 	 short *ret_edstart,
+	 struct objc_edit_info **ret_ei,
 	 RECT r)
 {
-	TEDINFO *ted = object_get_tedinfo(ob);
+	TEDINFO *ted;
+	XTEDINFO *xted = NULL;
 	RECT cur;
 	short w, h, cur_x = 0, start_tpos = 0;
+
+	(unsigned long)ted = object_get_spec(ob)->index;
+	
+	if ((long)ted->te_ptext == 0xffffffffL)
+	{
+// 		ndisplay("ted %lx, just %d", ted, ted->te_just);
+		(long)xted = (long)ted->te_ptmplt;
+		ted = &xted->ti;
+// 		display("ted %lx, just %d", ted, ted->te_just);
+// 		display("xted %lx, te_ptext %lx, text '%s'", xted, ted->te_ptext, ted->te_ptext);
+		if (ret_ei)
+			*ret_ei = xted;
+	}
+	else if (ret_ei)
+		*ret_ei = NULL;
 
 	*thick = (char)ted->te_thickness;
 
@@ -1034,7 +1062,9 @@ set_text(OBJECT *ob,
 	/* after vst_font & vst_point */
 
 	if (formatted)
+	{
 		cur_x = format_dialog_text(temp_text, ted->te_ptmplt, ted->te_ptext, edit_pos, &start_tpos);
+	}
 	else
 		strncpy(temp_text, ted->te_ptext, 255);
 
@@ -1100,6 +1130,7 @@ set_text(OBJECT *ob,
 	cur.h = h;
 	*gr = cur;
 
+// 	display(" -- '%s'", temp_text);
 	if (ret_edstart)
 		*ret_edstart = start_tpos;
 }
@@ -1126,33 +1157,45 @@ rl_xor(struct xa_vdi_settings *v, RECT *r, struct xa_rect_list *rl)
 void
 enable_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v)
 {
-	if (wt->e.obj > 0)
+	struct objc_edit_info *ei = wt->ei;
+
+	if (!ei)
+		return; //ei = &wt->e;
+
+	if (ei->obj > 0)
 	{
-		set_objcursor(wt, v);
-		wt->e.c_state |= OB_CURS_ENABLED;
+		set_objcursor(wt, v, ei);
+		ei->c_state |= OB_CURS_ENABLED;
 	}
 }
 
 void
 disable_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_rect_list *rl)
 {
+	struct objc_edit_info *ei = wt->ei;
+	if (!ei)
+		return; //ei = &wt->e;
 	undraw_objcursor(wt, v, rl);
-	wt->e.c_state &= ~OB_CURS_ENABLED;
+	ei->c_state &= ~OB_CURS_ENABLED;
 }
 
 void
 eor_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_rect_list *rl)
 {
+	struct objc_edit_info *ei = wt->ei;
 	RECT r;
 
-	if (wt->e.obj != -1)
+	if (!ei)
+		ei = &wt->e;
+
+	if (ei->obj != -1)
 	{
-		set_objcursor(wt, v);
-		r = wt->e.cr;
+		set_objcursor(wt, v, ei);
+		r = ei->cr;
 		r.x += wt->tree->ob_x;
 		r.y += wt->tree->ob_y;
 
-		if (!(wt->tree[wt->e.obj].ob_flags & OF_HIDETREE))
+		if (!(wt->tree[ei->obj].ob_flags & OF_HIDETREE))
 			rl_xor(v, &r, rl);
 	}
 }
@@ -1160,40 +1203,50 @@ eor_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_rect_
 void
 draw_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_rect_list *rl)
 {
-	if ( (wt->e.c_state & (OB_CURS_ENABLED | OB_CURS_DRAWN)) == OB_CURS_ENABLED )
+	struct objc_edit_info *ei = wt->ei;
+	
+	if (!ei)
+		return; //ei = &wt->e;
+
+	if ( (ei->c_state & (OB_CURS_ENABLED | OB_CURS_DRAWN)) == OB_CURS_ENABLED )
 	{
-		RECT r = wt->e.cr;
+		RECT r = ei->cr;
 
 		r.x += wt->tree->ob_x;
 		r.y += wt->tree->ob_y;
 		
-		if (wt->e.obj >= 0 && !(wt->tree[wt->e.obj].ob_flags & OF_HIDETREE))
+		if (ei->obj >= 0 && !(wt->tree[ei->obj].ob_flags & OF_HIDETREE))
 		{
-			rl_xor(v, &r, rl); //write_selection(0, &r);
-			wt->e.c_state |= OB_CURS_DRAWN;
+			rl_xor(v, &r, rl);
+			ei->c_state |= OB_CURS_DRAWN;
 		}
 	}
 }
 void
 undraw_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_rect_list *rl)
 {
-	if ( (wt->e.c_state & (OB_CURS_ENABLED | OB_CURS_DRAWN)) == (OB_CURS_ENABLED | OB_CURS_DRAWN) )
+	struct objc_edit_info *ei = wt->ei;
+
+	if (!ei)
+		return; //ei = &wt->e;
+
+	if ( (ei->c_state & (OB_CURS_ENABLED | OB_CURS_DRAWN)) == (OB_CURS_ENABLED | OB_CURS_DRAWN) )
 	{
-		RECT r = wt->e.cr;
+		RECT r = ei->cr;
 
 		r.x += wt->tree->ob_x;
 		r.y += wt->tree->ob_y;
 		
-		if (wt->e.obj >= 0 && !(wt->tree[wt->e.obj].ob_flags & OF_HIDETREE))
+		if (ei->obj >= 0 && !(wt->tree[ei->obj].ob_flags & OF_HIDETREE))
 		{
 			rl_xor(v, &r, rl); //write_selection(0, &r);
-			wt->e.c_state &= ~OB_CURS_DRAWN;
+			ei->c_state &= ~OB_CURS_DRAWN;
 		}
 	}
 }
-
+/* 780e000 */
 void
-set_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v)
+set_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v, struct objc_edit_info *ei)
 {
 	char temp_text[256];
 	RECT r;
@@ -1202,18 +1255,21 @@ set_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v)
 	BFOBSPEC colours;
 	short thick;
 
-	if (wt->e.obj <= 0)
+	if (!ei)
+		ei = &wt->e;
+
+	if (ei->obj <= 0)
 		return;
 
-	obj_offset(wt, wt->e.obj, &r.x, &r.y);
-	ob = wt->tree + wt->e.obj;
+	obj_offset(wt, ei->obj, &r.x, &r.y);
+	ob = wt->tree + ei->obj;
 	r.w  = ob->ob_width;
 	r.h  = ob->ob_height;
 	
-	set_text(ob, v, &gr, &wt->e.cr, true, wt->e.pos, temp_text, &colours, &thick, &wt->e.edstart, r);
+	set_text(ob, v, &gr, &ei->cr, true, ei->pos, temp_text, &colours, &thick, &ei->edstart, NULL, r);
 
-	wt->e.cr.x -= wt->tree->ob_x;
-	wt->e.cr.y -= wt->tree->ob_y;
+	ei->cr.x -= wt->tree->ob_x;
+	ei->cr.y -= wt->tree->ob_y;
 
 	//t_font(screen.standard_font_point, screen.standard_font_id);
 }
@@ -1420,14 +1476,14 @@ d_g_boxchar(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 		(*v->api->wr_mode)(v, colours.textmode ? MD_REPLACE : MD_TRANS);
 // 		(*v->api->t_font)(v, screen.standard_font_point, screen.standard_font_id);
 // 		(*v->api->t_effects)(v, 0);
-		ob_text(wt, v, &gr, &r, NULL, temp_text, 0, 0, -1, G_BLACK);
+		ob_text(wt, v, NULL, &gr, &r, NULL, temp_text, 0, 0, -1, G_BLACK);
 	}
 	else
 	{
 		(*v->api->gbar)(v, 0, &r);
 // 		(*v->api->t_font)(v, screen.standard_font_point, screen.standard_font_id);
 // 		(*v->api->t_effects)(v, 0);
-		ob_text(wt, v, &gr, &r, &colours, temp_text, ob->ob_state, 0, -1, G_BLACK);
+		ob_text(wt, v, NULL, &gr, &r, &colours, temp_text, ob->ob_state, 0, -1, G_BLACK);
 
 		if (selected)
 			write_selection(v, 0, &r);
@@ -1454,12 +1510,13 @@ d_g_boxtext(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 	RECT r = wt->r, gr;
 	OBJECT *ob = wt->tree + wt->current;
 	BFOBSPEC colours;
+	struct objc_edit_info *ei;
 	char temp_text[256];
 
 	selected = ob->ob_state & OS_SELECTED;
 
 	(*v->api->t_effects)(v, 0);
-	set_text(ob, v, &gr, NULL, false, -1, temp_text, &colours, &thick, NULL, r);
+	set_text(ob, v, &gr, NULL, false, -1, temp_text, &colours, &thick, NULL, &ei, r);
 	set_colours(ob, v, &colours);
 
 	if (d3_foreground(ob))		/* indicator or avtivator */
@@ -1471,13 +1528,13 @@ d_g_boxtext(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 			gr.x += PUSH3D_DISTANCE;
 			gr.y += PUSH3D_DISTANCE;
 		}
-		ob_text(wt, v, &gr, &r, &colours, temp_text, ob->ob_state, 0, -1, G_BLACK);
+		ob_text(wt, v, ei, &gr, &r, &colours, temp_text, ob->ob_state, 0, -1, G_BLACK);
 	}
 	else
 	{
 		(*v->api->gbar)(v, 0, &r);
 		
-		ob_text(wt, v, &gr, &r, &colours, temp_text, ob->ob_state, 0, -1, G_BLACK);
+		ob_text(wt, v, ei, &gr, &r, &colours, temp_text, ob->ob_state, 0, -1, G_BLACK);
 
 		if (selected)
 			write_selection(v, 0, &r);		/* before border */
@@ -1501,12 +1558,16 @@ d_g_fboxtext(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 	OBJECT *ob = wt->tree + wt->current;
 	RECT gr,cr;
 	BFOBSPEC colours;
-	const bool is_edit = (wt->current == wt->e.obj);
+	struct objc_edit_info *ei;
 	const unsigned short selected = ob->ob_state & OS_SELECTED;
 	short thick;
 
+	ei = wt->ei ? wt->ei : &wt->e;
+	if (ei->obj != wt->current)
+		ei = NULL;
+
 	(*v->api->t_effects)(v, 0);
-	set_text(ob, v, &gr, &cr, true, is_edit ? wt->e.pos : -1, temp_text, &colours, &thick, NULL, r);
+	set_text(ob, v, &gr, &cr, true, ei ? ei->pos : -1, temp_text, &colours, &thick, NULL, &ei, r);
 	set_colours(ob, v, &colours);
 
 	if (d3_foreground(ob))
@@ -1517,12 +1578,12 @@ d_g_fboxtext(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 			gr.x += PUSH3D_DISTANCE;
 			gr.y += PUSH3D_DISTANCE;
 		}
-		ob_text(wt, v, &gr, &r, &colours, temp_text, ob->ob_state, 0, -1, G_BLACK);
+		ob_text(wt, v, ei, &gr, &r, &colours, temp_text, ob->ob_state, 0, -1, G_BLACK);
 	}
 	else
 	{
 		(*v->api->gbar)(v, 0, &r);
-		ob_text(wt, v, &gr, &r, &colours, temp_text, ob->ob_state, 0, -1, G_BLACK);
+		ob_text(wt, v, ei, &gr, &r, &colours, temp_text, ob->ob_state, 0, -1, G_BLACK);
 
 		if (selected)
 			/* before border */
@@ -1536,18 +1597,6 @@ d_g_fboxtext(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 			shadow_object(v, 0, ob->ob_state, &r, colours.framecol, thick);
 		}
 	}
-
-#if 0
-	/*
-	 * Save cursor position
-	 */
-	if (is_edit)
-	{
-		wt->e.cr = cr;
-		wt->e.cr.x -= wt->tree->ob_x;
-		wt->e.cr.y -= wt->tree->ob_y;
-	}
-#endif
 
 	//t_font(screen.standard_font_point, screen.standard_font_id);
 	done(OS_SELECTED);
@@ -1616,7 +1665,7 @@ d_g_button(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 				(*v->api->wr_mode)(v, MD_REPLACE);
 				(*v->api->gbar)(v, 0, &gr);
 				(*v->api->wr_mode)(v, MD_TRANS);
-				ob_text(wt, v, &gr, NULL, NULL, text, ob->ob_state, ob->ob_flags, -1, G_BLACK);
+				ob_text(wt, v, NULL, &gr, NULL, NULL, text, ob->ob_state, ob->ob_flags, -1, G_BLACK);
 			}
 		}
 		else
@@ -1647,7 +1696,7 @@ d_g_button(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 					case 3:  undcol = G_RED;   break;
 					default: undcol = G_BLACK; break;
 				}
-				ob_text(wt, v, &r, &wt->r, NULL, text, ob->ob_state, 0, und & 0x7f, undcol);
+				ob_text(wt, v, NULL, &r, &wt->r, NULL, text, ob->ob_state, 0, und & 0x7f, undcol);
 			}
 		}
 	}
@@ -1682,7 +1731,7 @@ d_g_button(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 			if (text)
 			{
 				(*v->api->wr_mode)(v, MD_TRANS);
-				ob_text(wt, v, &gr, &r, NULL, text, ob->ob_state, 0, und, G_BLACK);
+				ob_text(wt, v, NULL, &gr, &r, NULL, text, ob->ob_state, 0, und, G_BLACK);
 			}
 		}
 		else
@@ -1698,7 +1747,7 @@ d_g_button(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 			(*v->api->t_color)(v, selected ? G_WHITE : G_BLACK);
 			if (text)
 			{
-				ob_text(wt, v, &gr, &r, NULL, text, ob->ob_state, 0, und, G_BLACK);
+				ob_text(wt, v, NULL, &gr, &r, NULL, text, ob->ob_state, 0, und, G_BLACK);
 			}
 			/* Display a border? */
 			if (thick)
@@ -1742,7 +1791,7 @@ icon_characters(struct xa_vdi_settings *v, ICONBLK *iconblk, short state, short 
 				col = G_BLACK;
 			(*v->api->wr_mode)(v, MD_TRANS);
 			(*v->api->t_color)(v, col);
-			display("disp icontext without banner");
+// 			display("disp icontext without banner");
 		}
 		else
 		{
@@ -1856,7 +1905,7 @@ d_g_icon(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 	MFDB Mscreen;
 	MFDB Micon;
 	RECT ic;
-	short pxy[8], cols[2], obx, oby, msk_col, icn_col;
+	short pxy[8], cols[2], obx, oby, msk_col, icn_col, blitmode;
 	
 	iconblk = object_get_spec(ob)->iconblk;
 	obx = wt->r.x;
@@ -1875,9 +1924,7 @@ d_g_icon(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 	Micon.fd_nplanes = 1;
 	Micon.fd_stand = 0;
 	Mscreen.fd_addr = NULL;
-	
-	Micon.fd_addr = iconblk->ib_pmask;
-	
+
 	if (ob->ob_state & OS_SELECTED)
 	{
 		icn_col = ((iconblk->ib_char) >> 8) & 0xf;
@@ -1888,15 +1935,24 @@ d_g_icon(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 		icn_col = ((iconblk->ib_char) >> 12) & 0xf;
 		msk_col = ((iconblk->ib_char) >> 8) & 0xf;
 	}
+	/* Ozk:
+	 * Dont draw mask when WHITEBAK set
+	 */
+	if (!(ob->ob_state & OS_WHITEBAK))
+	{
+		Micon.fd_addr = iconblk->ib_pmask;
+		cols[0] = msk_col;
+		cols[1] = icn_col;
+		vrt_cpyfm(v->handle, MD_TRANS, pxy, &Micon, &Mscreen, cols);
+		blitmode = MD_TRANS;
+	}
+	else
+		blitmode = MD_REPLACE;
 		
-	cols[0] = msk_col;
-	cols[1] = icn_col;
-	vrt_cpyfm(v->handle, MD_TRANS, pxy, &Micon, &Mscreen, cols);
-			
 	Micon.fd_addr = iconblk->ib_pdata;
 	cols[0] = icn_col;
 	cols[1] = msk_col;
-	vrt_cpyfm(v->handle, MD_TRANS, pxy, &Micon, &Mscreen, cols);
+	vrt_cpyfm(v->handle, blitmode, pxy, &Micon, &Mscreen, cols);
 		
 	if (ob->ob_state & OS_DISABLED)
 	{
@@ -1983,56 +2039,61 @@ d_g_cicon(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 
 	//DIAG((D_o, wt->owner, "cicon sel_mask 0x%lx col_mask 0x%lx", c->sel_mask, c->col_mask));
 
+	
 	/* check existence of selection. */
 	if ((ob->ob_state & OS_SELECTED) && have_sel)
-		Mmask.fd_addr = best_cicon->sel_mask;
-	else
-		Mmask.fd_addr = best_cicon->col_mask;
-
-	blitmode = screen.planes > 8 ? S_AND_D : S_OR_D;
-
-	vrt_cpyfm(v->handle, MD_TRANS, pxy, &Mmask, &Mscreen, cols);
-
-	if ((ob->ob_state & OS_SELECTED) && have_sel)
-		Micon.fd_addr = best_cicon->sel_data;
-	else
-		Micon.fd_addr = best_cicon->col_data;
-	Micon.fd_nplanes = screen.planes;
 	{
-		vro_cpyfm(v->handle, blitmode, pxy, &Micon, &Mscreen);
-		icon_characters(v, iconblk, ob->ob_state & (OS_SELECTED|OS_DISABLED), obx, oby, ic.x, ic.y);
-
-		if ((ob->ob_state & OS_DISABLED) || ((ob->ob_state & OS_SELECTED) && !have_sel))
-		{
-			int i, j, sc;			
-			unsigned short *s, *d, m;
-			unsigned long sm = 0xAAAA5555L;
-
-			s = Mmask.fd_addr;
-			d = Mddm.fd_addr;
-			sc = Mddm.fd_wdwidth - Mmask.fd_wdwidth;
-
-			for (i = 0; i < Micon.fd_h; i++)
-			{
-				m = sm;
-				for (j = 0; j < Micon.fd_wdwidth; j++)
-				{
-					*d++ = *s++ & m;
-				}
-				sm = (sm << 16) | (sm >> 16);
-				d += sc;
-			}
-
-			if (ob->ob_state & OS_DISABLED)
-				cols[0] = G_LWHITE;
-			else
-				cols[0] = G_BLACK;
-
-			cols[1] = G_WHITE;				
-			vrt_cpyfm(v->handle, MD_TRANS, pxy, &Mddm, &Mscreen, cols);
-		}
+		Micon.fd_addr = best_cicon->sel_data;
+		Mmask.fd_addr = best_cicon->sel_mask;
 	}
+	else
+	{
+		Micon.fd_addr = best_cicon->col_data;
+		Mmask.fd_addr = best_cicon->col_mask;
+	}
+	
+	if (!(ob->ob_state & OS_WHITEBAK))
+	{
+		vrt_cpyfm(v->handle, MD_TRANS, pxy, &Mmask, &Mscreen, cols);
+		blitmode = screen.planes > 8 ? S_AND_D : S_OR_D;
+	}
+	else
+		blitmode = S_ONLY;
 
+	Micon.fd_nplanes = screen.planes;
+	
+	vro_cpyfm(v->handle, blitmode, pxy, &Micon, &Mscreen);
+	icon_characters(v, iconblk, ob->ob_state & (OS_SELECTED|OS_DISABLED), obx, oby, ic.x, ic.y);
+
+	if ((ob->ob_state & OS_DISABLED) || ((ob->ob_state & OS_SELECTED) && !have_sel))
+	{
+		int i, j, sc;			
+		unsigned short *s, *d, m;
+		unsigned long sm = 0xAAAA5555L;
+
+		s = Mmask.fd_addr;
+		d = Mddm.fd_addr;
+		sc = Mddm.fd_wdwidth - Mmask.fd_wdwidth;
+
+		for (i = 0; i < Micon.fd_h; i++)
+		{
+			m = sm;
+			for (j = 0; j < Micon.fd_wdwidth; j++)
+			{
+				*d++ = *s++ & m;
+			}
+			sm = (sm << 16) | (sm >> 16);
+			d += sc;
+		}
+
+		if (ob->ob_state & OS_DISABLED)
+			cols[0] = G_LWHITE;
+		else
+			cols[0] = G_BLACK;
+
+		cols[1] = G_WHITE;				
+		vrt_cpyfm(v->handle, MD_TRANS, pxy, &Mddm, &Mscreen, cols);
+	}
 	done(OS_SELECTED|OS_DISABLED);
 }
 
@@ -2046,10 +2107,11 @@ d_g_text(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 	OBJECT *ob = wt->tree + wt->current;
 	RECT r = wt->r, gr;
 	BFOBSPEC colours;
+	struct objc_edit_info *ei;
 	char temp_text[256];
 
 	(*v->api->t_effects)(v, 0);
-	set_text(ob, v, &gr, NULL, false, -1, temp_text, &colours, &thick, NULL, r);
+	set_text(ob, v, &gr, NULL, false, -1, temp_text, &colours, &thick, NULL, &ei, r);
 	set_colours(ob, v, &colours);
 	thin = thick > 0 ? thick-1 : thick+1;
 
@@ -2059,7 +2121,7 @@ d_g_text(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 		done(OS_SELECTED);
 	}
 
-	ob_text(wt, v, &gr, &r, &colours, temp_text, ob->ob_state, 0, -1, G_BLACK);
+	ob_text(wt, v, ei, &gr, &r, &colours, temp_text, ob->ob_state, 0, -1, G_BLACK);
 }
 void
 d_g_ftext(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
@@ -2068,11 +2130,15 @@ d_g_ftext(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 	OBJECT *ob = wt->tree + wt->current;
 	RECT r = wt->r, gr, cr;
 	BFOBSPEC colours;
-	bool is_edit = wt->current == wt->e.obj;
+	struct objc_edit_info *ei;
 	char temp_text[256];
 
+	ei = wt->ei ? wt->ei : &wt->e;
+	if (ei->obj != wt->current)
+		ei = NULL;
+
 	(*v->api->t_effects)(v, 0);
-	set_text(ob, v, &gr, &cr, true, is_edit ? wt->e.pos : -1, temp_text, &colours, &thick, NULL, r);
+	set_text(ob, v, &gr, &cr, true, ei ? ei->pos : -1, temp_text, &colours, &thick, NULL, &ei, r);
 	set_colours(ob, v, &colours);
 	thin = thick > 0 ? thick-1 : thick+1;
 
@@ -2082,21 +2148,7 @@ d_g_ftext(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 		done(OS_SELECTED);
 	}
 
-	ob_text(wt, v, &gr, &r, &colours, temp_text, ob->ob_state, 0, -1, G_BLACK);
-
-#if 0
-	/*
-	 * Save cursor position
-	 */
-	if (is_edit)
-	{
-		wt->e.cr = cr;
-		wt->e.cr.x -= wt->tree->ob_x;
-		wt->e.cr.y -= wt->tree->ob_y;
-	}
-#endif
-
-	//t_font(screen.standard_font_point, screen.standard_font_id);
+	ob_text(wt, v, ei, &gr, &r, &colours, temp_text, ob->ob_state, 0, -1, G_BLACK);
 }
 
 #define userblk(ut) (*(USERBLK **)(ut->userblk_pp))
@@ -2317,7 +2369,7 @@ d_g_string(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 			(*v->api->t_font)(v, screen.standard_font_point, screen.standard_font_id);
 			(*v->api->t_color)(v, G_BLACK);
 			(*v->api->t_effects)(v, 0);
-			ob_text(wt, v, &r, &wt->r, NULL, t, state, flags, und, G_BLACK);
+			ob_text(wt, v, NULL, &r, &wt->r, NULL, t, state, flags, und, G_BLACK);
 // 			g_text(wt, v, r, &wt->r, text, ob->ob_state);
 		}
 
@@ -2355,7 +2407,7 @@ d_g_title(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 		if (state & 0x8000)
 			und = (state >> 8) & 0x7f;
 		
-		ob_text(wt, v, &r, &wt->r, NULL, text, ob->ob_state, OF_FL3DBAK, und, G_BLACK);
+		ob_text(wt, v, NULL, &r, &wt->r, NULL, text, ob->ob_state, OF_FL3DBAK, und, G_BLACK);
 // 		g_text(wt, v, r, &wt->r, text, ob->ob_state);
 
 		if (ob->ob_state & OS_SELECTED && wt->menu_line)
@@ -2651,9 +2703,10 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, struct xa_vdi_setti
 	short next;
 	short current = 0, stop = -1, rel_depth = 1, head;
 	short x, y;
+	struct objc_edit_info *ei = wt->ei;
 	bool start_drawing = false;
-// 	bool curson = (wt->e.c_state & (OB_CURS_ENABLED | OB_CURS_DRAWN)) == (OB_CURS_ENABLED | OB_CURS_DRAWN) ? true : false;
-	bool docurs = ((flags & DRW_CURSOR)); // && (wt->e.c_state & OB_CURS_EOR));
+	bool curson;
+	bool docurs = ((flags & DRW_CURSOR));
 
 	if (wt == NULL)
 	{
@@ -2661,6 +2714,7 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, struct xa_vdi_setti
 
 		wt = &this;
 		wt->e.obj = -1;
+		wt->ei = NULL;
 		wt->owner = C.Aes;
 	}
 
@@ -2686,8 +2740,13 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, struct xa_vdi_setti
 
 	depth++;
 
-// 	if (wt->owner->options.xa_objced && curson)
-// 		undraw_objcursor(wt, v, NULL);
+	if (ei)
+	{
+		curson = ((ei->c_state & (OB_CURS_ENABLED | OB_CURS_DRAWN)) == (OB_CURS_ENABLED | OB_CURS_DRAWN)) ? true : false;
+		if (curson) undraw_objcursor(wt, v, NULL);
+	}
+	else
+		curson = false;
 
 	do {
 
@@ -2707,7 +2766,7 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, struct xa_vdi_setti
 		{
 			display_object(lock, wt, v, current, x, y, 10);
 			/* Display this object */
-			if (docurs && current == wt->e.obj)
+			if (!ei && docurs && current == wt->e.obj)
 			{
 // 				display("redrawing cursor for obj %d", current);
 				if ((tree[current].ob_type & 0xff) != G_USERDEF)
@@ -2751,8 +2810,8 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, struct xa_vdi_setti
 	}
 	while (current != stop && current != -1 && rel_depth > 0); // !(start_drawing && rel_depth < 1));
 
-// 	if (wt->owner->options.xa_objced && curson)
-// 		draw_objcursor(wt, v, NULL);
+	if (curson)
+		draw_objcursor(wt, v, NULL);
 
 	(*v->api->wr_mode)(v, MD_TRANS);
 	(*v->api->f_interior)(v, FIS_SOLID);

@@ -230,6 +230,22 @@ default_path(struct xa_client *caller, char *cmd, char *path, char *name, char *
 	return drv;
 }
 
+#if 0
+static void
+disp_cb(struct module_callback *cb)
+{
+	display("---------------------");
+	display("CB at     %lx", cb);
+	display("share     %lx", cb->share);
+	display("release   %lx", cb->release);
+	display("on_exit   %lx", cb->on_exit);
+	display("on_exec   %lx", cb->on_exec);
+	display("on_fork   %lx", cb->on_fork);
+	display("on_stop   %lx", cb->on_stop);
+	display("on_signal %lx", cb->on_signal);
+}
+#endif
+
 int
 launch(enum locks lock, short mode, short wisgr, short wiscr,
        const char *parm, char *p_tail, struct xa_client *caller)
@@ -249,6 +265,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 	Path path, name, defdir;
 	struct proc *p = NULL;
 	int type = 0;
+// 	bool d = (caller && !strnicmp(caller->proc_name, "guitar", 6)) ? true : false;
 
 #if GENERATE_DIAGS
 	if (caller)
@@ -266,10 +283,15 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 			p_getpid(), mode, wisgr, wiscr, parm, p_tail));
 	}
 #endif
-//	display("launch for %s: 0x%x,%d,%d,%lx,%lx",
-//		caller ? caller->name : "no caller", mode, wisgr, wiscr, parm, p_tail);
-//	display(" --- parm=%lx, tail=%lx", parm, tail);
-
+#if 0
+	if (d)
+	{
+	display("launch for %s: 0x%x,%d,%d,%lx,%lx",
+		caller ? caller->name : "no caller", mode, wisgr, wiscr, parm, p_tail);
+	display(" --- parm=%lx, tail=%lx", parm, tail);
+	}
+#endif
+	
 	if (!parm)
 		return -1;
 
@@ -332,6 +354,15 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 
 	if (p_tail)
 	{
+#if 0
+		if (d)
+		{
+		display("p_tail: (%lx) %x, '%s' for %s", p_tail, (unsigned char)p_tail[0], (char *)&p_tail[1],
+			caller ? caller->name : "None");
+		display("pcmd: '%s'", pcmd);
+		}
+#endif
+
 		if (p_tail[0] == 0x7f || (unsigned char)p_tail[0] == 0xff)
 		{
 			/* In this case the string CAN ONLY BE null terminated. */
@@ -339,12 +370,6 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 			if (longtail > 124)
 				longtail = 124;
 			DIAG((D_shel, NULL, "ARGV!  longtail = %ld", longtail));
-// 			display("ARGV!  longtail = %ld", longtail);
-// 			if (longtail < 126)
-// 			{
-// 				p_tail[0] = longtail;
-// 				longtail = 0;
-// 			}
 		}
 	
 		if (longtail)
@@ -636,7 +661,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 		 * TODO: add XaAES extension that don't do this.
 		 */
 
-		p->ppid = C.Aes->p->pid;
+// 		p->ppid = C.Aes->p->pid;
 
 
 		if (x_mode & SW_PRENICE)
@@ -658,8 +683,15 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 		 * remember shel_write info for appl_init
 		 */
 		DIAGS((" -- attaching extension"));
-		info = attach_extension(p, XAAES_MAGIC_SH, sizeof(*info),
-					&xaaes_cb_vector_sh_info);
+		info = attach_extension(p, XAAES_MAGIC_SH, PEXT_COPYONSHARE | PEXT_SHAREONCE, sizeof(*info),
+					&info_cb); //xaaes_cb_vector_sh_info);
+		
+// 		if (!(strnicmp(p->name, "qed", 3)))
+// 		{
+// 			struct module_callback *cb = &info_cb; //xaaes_cb_vector_sh_info;
+// 			disp_cb(cb);
+// 		}
+		
 		if (info)
 		{
 			info->type = type;
@@ -668,6 +700,8 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 				info->rppid = caller->p->pid;
 			else
 				info->rppid = p_getpid();
+
+			info->shel_write = true;
 
 			info->cmd_tail = save_tail;
 			info->tail_is_heap = true;

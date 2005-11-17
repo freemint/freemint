@@ -36,7 +36,6 @@ struct xa_client *init_client(enum locks lock);
 bool is_client(struct xa_client *client);
 void exit_proc(enum locks lock, struct proc *proc, int code);
 void exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, bool detach);
-void remove_shel_info(struct proc *p);
 
 void init_apgi_infotab(void);
 
@@ -47,6 +46,7 @@ AES_function
 	XA_appl_search,
 	XA_appl_write,
 	XA_appl_getinfo,
+	XA_appl_options,
 	XA_appl_find,
 	XA_appl_control,
 	XA_appl_trecord,

@@ -269,12 +269,6 @@ enum xa_mouse
 #define XA_M_DESK	204
 #define XA_M_OK		300
 
-/* XaAES extensions to objc_edit() */
-#define ED_DISABLE	5
-#define ED_ENABLE	6
-#define ED_CRSRON	7
-#define ED_CRSROFF	8
-
 #define XMU_KEYBD	0x80000000
 #define XMU_BUTTON	0x40000000
 #define XMU_M1		0x20000000

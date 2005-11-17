@@ -138,7 +138,7 @@ init_client(enum locks lock)
 	/* if attach_extension succeed it returns a pointer
 	 * to kmalloc'ed and *clean* memory area of the given size
 	 */
-	client = attach_extension(NULL, XAAES_MAGIC, sizeof(*client), &xaaes_cb_vector);
+	client = attach_extension(NULL, XAAES_MAGIC, PEXT_NOSHARE, sizeof(*client), &xaaes_cb_vector);
 	if (!client)
 	{
 		ALERT(("attach_extension for %u failed, out of memory?", p->pid));
@@ -363,6 +363,20 @@ send_ch_exit(struct xa_client *client, short pid, int code)
 	}
 }
 
+static void
+CE_pwaitpid(enum locks lock, struct c_event *ce, bool cancel)
+{
+	long r;
+
+// 	display("doing pwaitpid for %s", ce->client->name);
+	while ((r = p_waitpid(-1, 1, NULL)) > 0)
+	{
+
+		DIAGS(("sigchld -> %li (pid %li)", r, ((r & 0xffff0000L) >> 16)));
+// 		display("sigchld -> %li (pid %li)", r, ((r & 0xffff0000L) >> 16));
+	}
+}
+
 /*
  * Clean up client-indipendant stuff, since XaAES must handle
  * some things even when the process is not yet (or ever) a
@@ -414,40 +428,29 @@ exit_proc(enum locks lock, struct proc *p, int code)
 	{
 		struct xa_client *client = pid2client(info->rppid);
 		
+		/* Ozk:
+		 * If process was started via shel_write, we need to perform
+		 * pwaitpid on behalf of the parent client.
+		 */
+		if (info->shel_write)
+		{
+			post_cevent(client, CE_pwaitpid, NULL,NULL, 0,0, NULL,NULL);
+		}
 		send_ch_exit(client, p->pid, code);
 #if GENERATE_DIAGS
 		if (client)
 		{
 			DIAGS(("Sent CH_EXIT (premature client exit) to (pid %d)%s for (pid %d)%s",
 				client->p->pid, client->name, p->pid, p->name));
+// 			display("Sent CH_EXIT (premature client exit) to (pid %d)%s for (pid %d)%s",
+// 				client->p->pid, client->name, p->pid, p->name);
 		}
 		else
-			DIAGS(("No real parent client"));
-#endif
-		remove_shel_info(p);
-	}
-}
-
-void
-remove_shel_info(struct proc *p)
-{
-	struct shel_info *info = lookup_extension(p, XAAES_MAGIC_SH);
-
-	DIAGS((" -- removing shel_info=%lx from pid %d (%s)",
-		info, p->pid, p->name));
-
-	if (info)
-	{
-		if (info->tail_is_heap && info->cmd_tail)
 		{
-			kfree(info->cmd_tail);
-			info->cmd_tail = NULL;
-			info->tail_is_heap = false;
+			DIAGS(("No real parent client"));
+// 			display("No real parent client");
 		}
-		/*
-		 * Ozk: we trust the kernel to release the extensions.
-		 * If that changes, release shel_info here.
-		 */
+#endif
 	}
 }
 
@@ -483,11 +486,17 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 	struct xa_client *top_owner;
 	long redraws;
 	bool was_infront = false;
+// 	struct shel_info *info = lookup_extension(client->p, XAAES_MAGIC_SH);
+
 // 	bool d = (!strnicmp(client->proc_name, "aeshlp", 6)) ? true : false;
 
 	DIAG((D_appl, NULL, "XA_client_exit: %s", c_owner(client)));
-
+	
+// 	display("info=%lx for %s", info, client->name);
+	
 	S.clients_exiting++;
+
+	client->pexit = pexit;
 
 	/*
 	 * Clear if client was exclusively waiting for mouse input
@@ -542,7 +551,7 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 
 	swap_menu(lock, client, NULL, SWAPM_REMOVE);
 // 	if (d) display("2");
-	
+
 	exit_proc(lock, client->p, code);
 // 	if (d) display("3");
 	
@@ -664,26 +673,26 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 	client->cmd_tail = "\0";
 // 	if (d) display("14");
 
+#if 0
 	/* Ozk:
 	 * If we are called to really terminate the process, we detach
 	 * AES extensions here and now. If not, we leave detaching to
 	 * our caller(s)...
 	 */
-	if (pexit)
+	if (client->pexit)
 	{
 		struct proc *p = client->p;
 		
 		
 		DIAG((D_appl, NULL, "Process terminating - detaching extensions..."));
-		client->pexit = true;
 		/* Ozk:
 		 * We trust the kernel to detach the client extension.
 		 * If that changes, detach client here (means extensions must be detachable
 		 * by its callbacks).
 		 */
-		remove_shel_info(p);
 	}
-	
+#endif
+
 	/* zero out; just to be sure */
 	//bzero(client, sizeof(*client));
 
@@ -1246,7 +1255,7 @@ static short info_tab[][4] =
 	{
 		0,		/* MagiC flydials */
 		0,		/* MagiC keyboard tables */
-		0,		/* return last cursor position */
+		1,		/* return last cursor position */
 		0
 	},
 	/*15 <-- 64 */
@@ -1286,9 +1295,28 @@ static short info_tab[][4] =
 		0,
 		0
 	},
+	/* 20 <-- 98 AES_FUNCTIONS */
+	{
+		0
+	|	AGI_AOPTS	/* appl_options() present */
+	|	AGI_WFORM
+	|	AGI_OBJCDATA
+		,
+		0,
+		0,
+		0
+	},
+	/* 21 <-- 99 AES_AOPTS */
+	{
+		(XAAO_SUPPORTED >> 16),
+		(XAAO_SUPPORTED & 0xffff),
+		0,
+		0
+	},
 };
 
 #define XA_VERSION_INFO	18
+#define LAST_IN_INFOTAB AES_AOPTS
 
 /*
  * appl_getinfo() handler
@@ -1401,9 +1429,9 @@ XA_appl_getinfo(enum locks lock, struct xa_client *client, AESPB *pb)
 				gi_type = XA_VERSION_INFO;
 				break;
 			}
-			case AES_WOPTS:
+			case AES_WOPTS ... LAST_IN_INFOTAB:
 			{
-				gi_type = 19;
+				gi_type = (gi_type - AES_VERSION) + XA_VERSION_INFO;
 				break;
 			}
 			default:
@@ -1428,6 +1456,44 @@ XA_appl_getinfo(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	pb->intout[0] = gi_type;
 
+	return XAC_DONE;
+}
+
+unsigned long
+XA_appl_options(enum locks lock, struct xa_client *client, AESPB *pb)
+{
+	short ret = 1, mode = pb->intin[0];
+
+	CONTROL(5,5,0)
+	
+	switch (mode)
+	{
+		case 0:
+		{
+			unsigned long ao = (unsigned long)pb->intin[1] << 16 | pb->intin[2];
+		
+			client->options.app_opts &= ~ao;
+			goto ret_aopts;
+		}
+		case 1:
+		{
+			unsigned long ao = (unsigned long)pb->intin[1] << 16 | pb->intin[2];
+			
+			client->options.app_opts |= ao;
+ret_aopts:
+			ao = client->options.app_opts;
+			pb->intout[1] = (unsigned long)client->options.app_opts >> 16;
+			pb->intout[2] = (unsigned long)client->options.app_opts & 0xffff;
+			pb->intout[3] = pb->intout[4] = 0;
+			break;
+		}
+		default:
+		{
+			ret = 0;
+			break;
+		}
+	}
+	pb->intout[0] = ret;
 	return XAC_DONE;
 }
 

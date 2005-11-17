@@ -70,7 +70,7 @@ void disable_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v, struct
 void eor_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_rect_list *rl);
 void draw_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_rect_list *rl);
 void undraw_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_rect_list *rl);
-void set_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v);
+void set_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v, struct objc_edit_info *ei);
 
 ObjectDisplay
 	d_g_box,
