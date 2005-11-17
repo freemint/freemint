@@ -31,6 +31,6 @@
 #include "mint/proc_extensions.h"
 
 extern struct module_callback xaaes_cb_vector;
-extern struct module_callback xaaes_cb_vector_sh_info;
+extern struct module_callback info_cb; //xaaes_cb_vector_sh_info;
 
 #endif /* _sys_proc_h */

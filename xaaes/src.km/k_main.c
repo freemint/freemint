@@ -785,6 +785,7 @@ sigterm(void)
 	KERNEL_DEBUG("AESSYS: sigterm received, dispatch_shutdown(0)");
 	dispatch_shutdown(0);
 }
+
 static void
 sigchld(void)
 {
@@ -880,6 +881,7 @@ helpthread_entry(void *c)
 			C.Hlp_pb = client->waiting_pb = pb;
 			client->waiting_for = 0;
 			client->block = iBlock;
+			client->options.app_opts |= XAAO_OBJC_EDIT;
 			init_helpthread(NOLOCKING, client);
 			for (;;)
 			{
@@ -1252,6 +1254,7 @@ k_main(void *dummy)
 		goto leave;
 	}
 
+	C.Aes->options.app_opts |= XAAO_OBJC_EDIT;
 	/*
 	 * Initialization AES/VDI
 	 */
@@ -1451,7 +1454,7 @@ k_main(void *dummy)
 			if (tpc < 0)
 			{
 				C.Hlp = NULL;
-				display("XaAES ERROR: start AES thread failed");
+// 				display("XaAES ERROR: start AES thread failed");
 			}
 			else
 			{

@@ -54,6 +54,7 @@ Set_form_do(struct xa_client *client,
 {
 	short new_obj;
 	XA_TREE *wt;
+	struct objc_edit_info *ei;
 
 	wt = obtree_to_wt(client, obtree);
 	if (!wt)
@@ -74,16 +75,18 @@ Set_form_do(struct xa_client *client,
 	if (edobj == -2)
 		edobj = ob_find_any_flst(obtree, OF_EDITABLE, 0, 0, OS_DISABLED, 0, 0);
 
-	if (!obj_edit(wt, client->vdi_settings, ED_INIT, edobj, 0, -1, redraw, NULL, NULL, NULL, &new_obj))
+	if (!obj_edit(wt, client->vdi_settings, ED_INIT, edobj, 0, -1, NULL, redraw, NULL, NULL, NULL, &new_obj))
 	{
 		edobj = ob_find_any_flst(obtree, OF_EDITABLE, 0, 0, OS_DISABLED, 0, 0);
-		obj_edit(wt, client->vdi_settings, ED_INIT, edobj, 0, -1, redraw, NULL, NULL, NULL, NULL);
+		obj_edit(wt, client->vdi_settings, ED_INIT, edobj, 0, -1, NULL, redraw, NULL, NULL, NULL, NULL);
 	}
+
+	ei = wt->ei ? wt->ei : &wt->e;
 
 	/* Ozk:
 	 * Check if this obtree needs a keypress handler..
 	 */
-	if (wt->e.obj >= 0 || obtree_has_default(obtree) )
+	if (ei->obj >= 0 || obtree_has_default(obtree) )
 		client->fmd.keypress = Key_form_do;
 
 	/*
@@ -159,6 +162,8 @@ Setup_form_do(struct xa_client *client,
 	XA_WIND_ATTR kind = NAME;
 	XA_TREE *wt = NULL;
 	struct xa_window *wind = NULL;
+	struct objc_edit_info *ei;
+
 // 	bool d = (!strnicmp(client->proc_name, "gfa_xref", 8)) ? true : false;
 
 	/*
@@ -170,7 +175,8 @@ Setup_form_do(struct xa_client *client,
 // 		if (d) display("Setup_form_do: wind %d for %s", client->fmd.wind->handle, client->name);
 		wind = client->fmd.wind;
 		calc_fmd_wind(client, obtree, kind, wind->dial, (RECT *)&client->fmd.r);
-		wt = set_toolbar_widget(lock, wind, client, obtree, edobj, WIP_NOTEXT, false, NULL, NULL); //&client->fmd.r);
+		wt = set_toolbar_widget(lock, wind, client, obtree, edobj, WIP_NOTEXT, false, NULL, NULL);
+		ei = wt->ei ? wt->ei : &wt->e;
 // 		wt->zen = false;
 		move_window(lock, wind, true, -1, client->fmd.r.x, client->fmd.r.y, client->fmd.r.w, client->fmd.r.h);
 	}
@@ -183,6 +189,7 @@ Setup_form_do(struct xa_client *client,
 // 		if (d) display("Setup_form_do: nonwindowed for %s", client->name);
 		Set_form_do(client, obtree, edobj, true);
 		wt = client->fmd.wt;
+		ei = wt->ei ? wt->ei : &wt->e;
 		goto okexit;
 	}
 	/*
@@ -210,7 +217,8 @@ Setup_form_do(struct xa_client *client,
 		if ((wind = create_fmd_wind(lock, client, kind, client->fmd.state ? created_for_FMD_START : created_for_FORM_DO, &client->fmd.r)))
 		{
 			client->fmd.wind = wind;
-			wt = set_toolbar_widget(lock, wind, client, obtree, edobj, WIP_NOTEXT, false, NULL, NULL); //client->fmd.r);
+			wt = set_toolbar_widget(lock, wind, client, obtree, edobj, WIP_NOTEXT, false, NULL, NULL);
+			ei = wt->ei ? wt->ei : &wt->e;
 // 			display("wind = %lx, wt=%lx, wttree=%lx, widg=%lx", wind, wt, wt->tree, wt->widg);
 // 			wt->zen = false;
 		}
@@ -222,13 +230,13 @@ Setup_form_do(struct xa_client *client,
 	}
 okexit:
 	DIAGS(("Setup_form_do: returning - edobj=%d, wind %lx",
-		wt->e.obj, wind));
+		ei->obj, wind));
 	
 // 	if (d) display("Setup_form_do: returning - edobj=%d, wind %lx",
-// 		wt->e.obj, wind);
+// 		ei->obj, wind);
 
 	if (ret_edobj)
-		*ret_edobj = wt->e.obj;
+		*ret_edobj = wt->ei ? wt->ei->obj : wt->e.obj;
 	if (ret_wind)
 		*ret_wind = wind;
 
@@ -479,7 +487,7 @@ form_cursor(XA_TREE *wt,
 	{				/* The cursor keys are always eaten. */
 		case 0x0f09:		/* TAB moves to next field */
 		{
-			dir = (keystate & (K_RSHIFT|K_LSHIFT)) ? OBFIND_UP : OBFIND_DOWN;
+			dir = OBFIND_HOR | ((keystate & (K_RSHIFT|K_LSHIFT)) ? OBFIND_UP : OBFIND_DOWN);
 			
 			if (ret_focus)
 			{
@@ -645,8 +653,8 @@ form_cursor(XA_TREE *wt,
 	if (o >= 0 && o != obj)
 	{	
 		/* If edit field has changed, update the screen */
-		obj_edit(wt, v, ED_END, 0, 0, 0, redraw, rl, NULL, NULL);
-		obj_edit(wt, v, ED_INIT, o, 0, -1, redraw, rl, NULL, NULL);
+		obj_edit(wt, v, ED_END, 0, 0, 0, NULL, redraw, rl, NULL, NULL);
+		obj_edit(wt, v, ED_INIT, o, 0, -1, NULL, redraw, rl, NULL, NULL);
 	}
 #endif
 	return o;
@@ -674,19 +682,22 @@ form_keyboard(XA_TREE *wt,
 	struct fmd_result fr;
 	struct xa_rect_list *lrl = NULL;
 	OBJECT *obtree = wt->tree;
+	struct objc_edit_info *ei;
 
 	if (!rl) rl = &lrl;
 
 	DIAG((D_form, NULL, "form_keyboard: wt=%lx, obtree=%lx, wt->owner=%lx(%lx), obj=%d, key=%x(%x), nrmkey=%x for %s",
 		wt, wt->tree, wt->owner, client, obj, keycode, key->aes, key->norm, wt->owner->name));
 
+	ei = wt->ei ? wt->ei : &wt->e;
 // 	display("form_keyboard: efocus=%d, wt=%lx, obtree=%lx, wt->owner=%lx(%lx), obj=%d, key=%x(%x), nrmkey=%x for %s",
-// 		wt->e.obj, wt, wt->tree, wt->owner, wt->owner, obj, keycode, key->aes, key->norm, wt->owner->name);
+// 		ei->obj, wt, wt->tree, wt->owner, wt->owner, obj, keycode, key->aes, key->norm, wt->owner->name);
 	
 	fr.no_exit = true;
 
+
 	if (!(new_eobj = obj))
-		new_eobj = wt->e.obj;
+		new_eobj = ei->obj;
 
 	if (new_eobj < 0 || !object_is_editable(obtree + new_eobj))
 	{
@@ -699,10 +710,7 @@ form_keyboard(XA_TREE *wt,
 	/*
 	 * Cursor?
 	 */
-	if (wt->owner->options.xa_objced && wt->e.obj >= 0)
-		next_obj = new_eobj = wt->e.obj;
-	else
-		next_obj = new_eobj;
+	next_obj = new_eobj;
 
 	if (wt->focus != -1)
 	{
@@ -785,11 +793,10 @@ form_keyboard(XA_TREE *wt,
 			}
 			else if (wt->focus != -1 && new_eobj > 0 && (!(obtree[wt->focus].ob_flags & OF_EDITABLE) || wt->focus != new_eobj) )
 			{
-				new_focus = new_eobj; //wt->e.obj;
+				new_focus = new_eobj;
 				next_key = keycode;
 				if (new_eobj == obj && new_eobj != -1)
 					new_eobj = 0;
-// 				next_obj = new_eobj; // = wt->e.obj;
 			}
 			else
 			{
@@ -1108,6 +1115,7 @@ Key_form_do(enum locks lock,
 	struct xa_vdi_settings *v;
 	RECT *clip = NULL;
 	OBJECT *obtree = NULL;
+	struct objc_edit_info *ei;
 	struct xa_rect_list *lrl = NULL, **rl = wind ? &wind->rect_list.start : &lrl;
 	struct fmd_result fr;
 	RECT r;
@@ -1142,6 +1150,8 @@ Key_form_do(enum locks lock,
 		obtree = wt->tree;
 		v = client->vdi_settings;
 	}
+	
+	ei = wt->ei ? wt->ei : &wt->e;
 
 	if (obtree)
 	{
@@ -1149,7 +1159,7 @@ Key_form_do(enum locks lock,
 
 		fr.no_exit = form_keyboard(wt,
 					   v,
-					   wt->e.obj,
+					   ei->obj,
 					   key,
 					   true,
 					   rl,
@@ -1167,9 +1177,10 @@ Key_form_do(enum locks lock,
 				obj_edit(wt,
 					  v,
 					  ED_CHAR,
-					  wt->e.obj,
+					  ei->obj,
 					  fr.aeskey,
-					  wt->e.pos,
+					  ei->pos,
+					  NULL,
 					  true,
 					  clip,
 					  *rl,
@@ -1179,12 +1190,12 @@ Key_form_do(enum locks lock,
 				fr.flags |= FMDF_EDIT;
 
 				DIAGS(("Key_form_do: obj_edit - edobj=%d, edpos=%d",
-					wt->e.obj, wt->e.pos));
+					ei->obj, ei->pos));
 			}
-			else if (fr.obj > 0 && wt->e.obj != fr.obj)
+			else if (fr.obj > 0 && ei->obj != fr.obj)
 			{
-				obj_edit(wt, v, ED_END, 0, 0, 0, true, clip, *rl, NULL, NULL);
-				obj_edit(wt, v, ED_INIT, fr.obj, 0, -1, true, clip, *rl, NULL, NULL);
+				obj_edit(wt, v, ED_END, 0, 0, 0, NULL, true, clip, *rl, NULL, NULL);
+				obj_edit(wt, v, ED_INIT, fr.obj, 0, -1, NULL, true, clip, *rl, NULL, NULL);
 			}
 		}
 		else
@@ -1287,14 +1298,14 @@ do_formwind_msg(
 		{
 		case WM_REDRAW:
 		{
-			if (!wt->owner->options.xa_objced && wt->e.obj > 0)
+			if (!(wt->flags & WTF_OBJCEDIT) && wt->e.obj > 0)
 			{
-				obj_edit(wt, v, ED_END, wt->e.obj, 0, 0, true, &wind->wa, wind->rect_list.start, NULL, NULL);
+				obj_edit(wt, v, ED_END, wt->e.obj, 0, 0, NULL, true, &wind->wa, wind->rect_list.start, NULL, NULL);
 			}
 			dfwm_redraw(wind, widg, wt, (RECT *)&msg[4]);
-			if (!wt->owner->options.xa_objced && wt->e.obj > 0)
+			if (!(wt->flags & WTF_OBJCEDIT) && wt->e.obj > 0)
 			{
-				obj_edit(wt, v, ED_END, wt->e.obj, 0, 0, true, &wind->wa, wind->rect_list.start, NULL, NULL);
+				obj_edit(wt, v, ED_END, wt->e.obj, 0, 0, NULL, true, &wind->wa, wind->rect_list.start, NULL, NULL);
 			}
 			kick_mousemove_timeout();
 			break;

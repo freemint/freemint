@@ -2423,6 +2423,9 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 				//	bs, orl->r));
 				if (xa_rect_clip(&bs, &orl->r, &bd))
 				{
+// 					if (dir == 3)
+// 						display(" %04d/%04d/%04d/%04d", bd);
+					
 					nrl = kmalloc(sizeof(*nrl));
 					assert(nrl);
 
@@ -2432,13 +2435,15 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 					if (brl)
 					{
 						struct xa_rect_list *n, *p;
-						short ox2 = bd.x + bd.w;
-						short oy2 = bd.y + bd.h;
+						short ox2; // = bd.x + bd.w;
+						short oy2; // = bd.y + bd.h;
 						
 						switch (dir)
 						{
 							case 0:	// up/left
 							{
+								ox2 = bd.x + bd.w;
+								oy2 = bd.y + bd.h;
 								n = brl;
 								p = NULL;
 								while (n)
@@ -2470,6 +2475,7 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 							}
 							case 1: // down/left
 							{
+								ox2 = bd.x + bd.w;
 								n = brl;
 								p = NULL;
 								while (n)
@@ -2501,11 +2507,12 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 							}
 							case 2: // up/right
 							{
+								ox2 = bd.x + bd.w;
+								oy2 = bd.y + bd.h;
 								n = brl;
 								p = NULL;
 								while (n)
 								{
-									//if (bd.x > n->r.x && bd.y < (n->r.y + n->r.h))
 									if ( (ox2 > (n->r.x + n->r.w) && bd.x >= (n->r.x + n->r.w)) ||
 									     ((n->r.x + n->r.w) < bd.x && oy2 <= n->r.y) )
 									{
@@ -2533,12 +2540,14 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 							}
 							case 3: // down/right
 							{
+								oy2 = bd.y + bd.h;
 								n = brl;
 								p = NULL;
 								while (n)
 								{
-									if ( ( ox2 > (n->r.x + n->r.w) && bd.x >= (n->r.x + n->r.w)) ||
-									     ( bd.y >= (n->r.y + n->r.h) && (n->r.x + n->r.w) > bd.x) )
+									if ( oy2 > n->r.y && 
+									     bd.x > n->r.x
+									   )
 									{
 										if (p)
 										{

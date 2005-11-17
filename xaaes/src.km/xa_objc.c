@@ -57,6 +57,7 @@ XA_objc_draw(enum locks lock, struct xa_client *client, AESPB *pb)
 	if (validate_obtree(client, obtree, "XA_objc_draw:"))
 	{
 		XA_TREE *wt;
+// 		struct objc_edit_info *ei;
 		
 		if (!(wt = obtree_to_wt(client, obtree)))
 			wt = new_widget_tree(client, obtree);
@@ -82,11 +83,13 @@ XA_objc_draw(enum locks lock, struct xa_client *client, AESPB *pb)
 			/*
 			 * Ozk: Ok.. looks like the AES should automagically draw the cursor...
 			 */
-			if ((editobj = wt->e.obj) == -1)
-				editobj = ob_find_any_flst(obtree, OF_EDITABLE, 0, 0, OS_DISABLED, 0, 0);
-			if (editobj != -1)
-				obj_edit(wt, v, ED_INIT, editobj, 0, -1, false, NULL, NULL, NULL, NULL);
-
+			if (!(wt->flags & WTF_OBJCEDIT))
+			{
+				if ((editobj = wt->e.obj) == -1)
+					editobj = ob_find_any_flst(obtree, OF_EDITABLE, 0, 0, OS_DISABLED, 0, 0);
+				if (editobj != -1)
+					obj_edit(wt, v, ED_INIT, editobj, 0, -1, NULL, false, NULL, NULL, NULL, NULL);
+			}
 			(*v->api->clear_clip)(v);
 			showm();
 		}
@@ -152,11 +155,14 @@ XA_objc_wdraw(enum locks lock, struct xa_client *client, AESPB *pb)
 			/*
 			 * Ozk: Ok.. looks like the AES should automagically draw the cursor...
 			 */
-			if ((editobj = wt->e.obj) == -1)
-				editobj = ob_find_any_flst(obtree, OF_EDITABLE, 0, 0, OS_DISABLED, 0, 0);
-			if (editobj != -1)
-				obj_edit(wt, v, ED_INIT, editobj, 0, -1, true, (RECT *)pb->addrin[1], rl, NULL, NULL);
-
+			if (!(wt->flags & WTF_OBJCEDIT))
+			{
+				if ((editobj = wt->e.obj) == -1)
+					editobj = ob_find_any_flst(obtree, OF_EDITABLE, 0, 0, OS_DISABLED, 0, 0);
+				if (editobj != -1)
+					obj_edit(wt, v, ED_INIT, editobj, 0, -1, NULL, true, (RECT *)pb->addrin[1], rl, NULL, NULL);
+			}
+			
 			(*v->api->clear_clip)(v);
 			showm();
 			ret = 1;
@@ -394,6 +400,7 @@ XA_objc_edit(enum locks lock, struct xa_client *client, AESPB *pb)
 					 pb->intin[0],		/* object	*/
 					 pb->intin[1],		/* key		*/
 					 -1,/* pb->intin[2],*/	/* pos		*/
+					 NULL,			/* string	*/
 					 true,			/* redraw flag	*/
 					 NULL,			/* Clip rect	*/
 					 NULL,			/* rect list	*/
@@ -442,6 +449,7 @@ XA_objc_wedit(enum locks lock, struct xa_client *client, AESPB *pb)
 					 pb->intin[0],		/* object	*/
 					 pb->intin[1],		/* key		*/
 					 -1,/* pb->intin[2],*/	/* pos		*/
+					 NULL,			/* string	*/
 					 true,			/* redraw flag	*/
 					 NULL,			/* Clip rect	*/
 					 wind->rect_list.start,	/* rect list	*/
@@ -526,5 +534,194 @@ XA_objc_sysvar(enum locks lock, struct xa_client *client, AESPB *pb)
 	else
 		pb->intout[0] = 0;
 
+	return XAC_DONE;
+}
+
+/* GET/SET object type
+ * If set, ob_type is set to type found in intin[2].
+ * Returns (if SET, previous) ob_type in intout[1].
+ */
+#define OBGET_TYPE	0x0001
+#define OBSET_TYPE	0x8001
+/* GET/SET object string */
+#define OBGET_STRING	0x0002
+#define OBSET_STRING	0x8002
+
+#define OBGET_CICON	0x0003
+#define OBSET_CICON	0x8003
+
+#define OBGET_SPEC	0x0004
+#define OBSET_SPEC	0x8004
+
+#define OBGET_BFOBSPEC	0x0005
+#define OBSET_BFOBSPEC	0x8005
+
+// opcode 66
+// objc_data(tree, object, what, size, wh, (void *)data0, (void *)data1, *short, *long);
+// intin[0] = object
+// intin[1] = what
+// intin[2] = size
+// intin[3] = wh
+//
+// addrin[0] = tree
+// addrin[1] = data0
+// addrin[2] = data1
+//
+// intout[0] - 1 = OK, 0 = error
+// intout[1] - mode dependant
+//
+// addrout[0] - mode dependant
+unsigned long
+XA_objc_data(enum locks lock, struct xa_client *client, AESPB *pb)
+{
+	short what = pb->intin[1] & ~0x8000;
+	short obj = pb->intin[0];
+	short ret0 = 0, ret1 = 0;
+	void *out0 = NULL;
+	bool set = pb->intin[1] & 0x8000;
+	OBJECT *obtree = (OBJECT *)pb->addrin[0];
+
+	if (validate_obtree(client, obtree, "XA_objc_data:"))
+	{
+		struct widget_tree *wt;
+		struct xa_window *wind;
+		struct xa_rect_list *rl;
+		struct xa_vdi_settings *v;
+		short obt = obtree[obj].ob_type & 0xff;
+		
+		if (!(wt = obtree_to_wt(client, obtree)))
+			wt = new_widget_tree(client, obtree);
+		
+		assert(wt);
+		
+		wind = get_wind_by_handle(lock, pb->intin[3]);
+		if (wind)
+		{
+			rl = wind->rect_list.start;
+			v = wind->vdi_settings;
+		}
+		else
+		{
+			v = client->vdi_settings;
+			rl = NULL;
+		}
+
+		switch (what)
+		{
+			case OBGET_TYPE:
+			{
+				ret0 = 1;
+				ret1 = obtree[obj].ob_type;
+				if (set)
+					obtree[obj].ob_type = pb->intin[2];
+				break;
+			}
+			case OBGET_STRING:
+			{
+				short blen = pb->intin[2];
+				short slen, sl;
+				char *d = (char *)pb->addrin[1];
+				char *s;
+				
+				if (object_has_tedinfo(obtree + obj))
+				{
+					TEDINFO *ted;
+					ted = object_get_tedinfo(obtree + obj, NULL);
+			
+					if (ted)
+					{
+						sl = strlen(ted->te_ptext) + 1;
+						if (set)
+						{
+							obj_edit(wt, v, ED_STRING, obj, 0, 0, d, rl ? true : false, NULL,rl, NULL,NULL);
+						}
+						else
+						{
+							slen = sl;
+							s = ted->te_ptext, d = (char *)pb->addrin[1];
+							if (blen != -1 && slen > blen)
+								slen = blen;
+							strncpy(d, s, slen);
+							d[slen - 1] = '\0';
+							sl = strlen(d);
+						}
+						ret0 = 1;
+						ret1 = sl;
+					}
+				}
+				else if (object_has_string(obtree + obj))
+				{
+					s = object_get_spec(obtree + obj)->free_string;
+					d = (char *)pb->addrin[1];
+					if (s && d)
+					{
+						sl = strlen(s) + 1;
+						if (set)
+						{
+							strcpy(s, d);
+							if (rl)
+								obj_draw(wt, v, obj, -1, NULL, rl, 0);
+						}
+						else
+						{
+							if (blen == -1)
+								blen = sl;
+							strncpy(d, s, blen);
+							d[blen - 1] = '\0';
+						}
+						ret0 = 1;
+						ret1 = sl;
+					}
+				}
+				else
+				{
+					switch (obt)
+					{
+						case G_CICON:
+						case G_ICON:
+						{
+							s = object_get_spec(obtree + obj)->iconblk->ib_ptext;
+							d = (char *)pb->addrin[1];
+							sl = strlen(s) + 1;
+							if (set)
+							{
+								strcpy(s, d);
+								if (rl)
+									obj_draw(wt, v, obj, -1, NULL, rl, 0);
+							}
+							else
+								strcpy(d, s);
+							ret0 = 1;
+							ret1 = sl;
+							break;
+						}
+						default:;
+					}
+				}
+				break;
+			}
+			case OBGET_SPEC:
+			{
+				(long)out0 = (long)object_get_spec(obtree + obj)->index;
+				if (set)
+					object_set_spec(obtree + obj, (unsigned long)pb->addrin[1]);
+				ret0 = 1;
+				ret1 = 0;
+				break;
+			}
+			case OBGET_BFOBSPEC:
+			{
+				(long)out0 = (long)object_get_spec(obtree + obj)->index;
+				if (set)
+					object_set_spec(obtree + obj, (unsigned long)pb->addrin[1]);
+			}
+			default:;
+		}
+		/* more cases here */
+	}
+
+	pb->intout[0] = ret0;
+	pb->intout[1] = ret1;
+	pb->addrout[0] = (long)out0;
 	return XAC_DONE;
 }

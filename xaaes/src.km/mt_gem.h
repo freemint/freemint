@@ -76,13 +76,13 @@ __BEGIN_DECLS
 #define APCI_HASDESK			0x04
 
 /* appl_getinfo modes */
-#define AES_LARGEFONT		0
-#define AES_SMALLFONT		1
+#define AES_LARGEFONT			0
+#define AES_SMALLFONT			1
 #define AES_SYSTEM			2
-#define AES_LANGUAGE 		3
-#define AES_PROCESS 		4
+#define AES_LANGUAGE 			3
+#define AES_PROCESS 			4
 #define AES_PCGEM			5
-#define AES_INQUIRE 		6
+#define AES_INQUIRE 			6
 #define AES_MOUSE			8
 #define AES_MENU			9
 #define AES_SHELL			10
@@ -92,10 +92,11 @@ __BEGIN_DECLS
 #define AES_FORM			14
 #define AES_VERSION			96
 #define AES_WOPTS			97
-
+#define AES_FUNCTIONS			98
+#define AES_AOPTS			99
 
 /* appl_getinfo return values */
-#define SYSTEM_FONT			0
+#define SYSTEM_FONT		0
 #define OUTLINE_FONT 		1
 
 #define AESLANG_ENGLISH		0
@@ -104,13 +105,22 @@ __BEGIN_DECLS
 #define AESLANG_SPANISH 	4
 #define AESLANG_ITALIAN 	5
 #define AESLANG_SWEDISH 	6
+
 /* appl_getinfo(AES_VERSION) return values */
 #define AES_DEVSTATUS_ALPHA	0
 #define AES_DEVSTATUS_BETA	1
 #define AES_DEVSTATUS_RELEASE	2
 #define AES_FDEVSTATUS_STABLE	0x100
-
 #define AES_ARCH_M68K		0
+
+/* appl_getinfo(AES_FUNCTIONS) return values */
+#define AGI_AOPTS		1
+#define AGI_WFORM		2
+#define AGI_OBJCDATA		4
+
+/* appl_options(AES_AOPTS) return values and appl_options() settings*/
+#define AO0_WF_SLIDE		1
+#define AO0_OBJC_EDIT		2
 
 
 /* appl_read modes */
@@ -799,10 +809,25 @@ typedef  struct
 #define EDCHAR 			2
 #define EDEND			3
 
-#define ED_START		EDSTART
-#define ED_INIT			EDINIT
-#define ED_CHAR			EDCHAR
-#define ED_END 			EDEND
+#define ED_START		0
+#define ED_INIT			1
+#define ED_CHAR			2
+#define ED_END 			3
+/* New modes in XaAES */
+/* XaAES extensions to objc_edit() */
+#define ED_DISABLE		5
+#define ED_ENABLE		6
+#define ED_CRSRON		7
+#define ED_CRSROFF		8
+
+#define ED_MARK			9
+#define ED_STRING		10
+#define ED_SETPTEXT		11
+#define ED_SETPTMPLT		12
+#define ED_SETPVALID		13
+#define ED_GETPTEXT		14
+#define ED_GETPTMPLT		15
+#define ED_GETPVALID		16
 
 #define ED_CRSR			100		/* MagiC only */
 #define ED_DRAW			103		/* MagiC only */

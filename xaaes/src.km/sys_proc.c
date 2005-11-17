@@ -31,7 +31,7 @@
 #include "semaphores.h"
 
 
-static void _cdecl xaaes_share(void *);
+static void _cdecl xaaes_share(void *, struct proc *, struct proc *);
 static void _cdecl xaaes_release(void *);
 
 static void _cdecl xaaes_on_exit(void *, struct proc *p, int code);
@@ -55,7 +55,7 @@ struct module_callback xaaes_cb_vector =
 
 
 static void _cdecl
-xaaes_share(void *_client)
+xaaes_share(void *_client, struct proc *from, struct proc *to)
 {
 	DIAGS(("xaaes_share: %lx", _client));
 }
@@ -80,10 +80,14 @@ xaaes_on_exit(void *_client, struct proc *p, int code)
 		enum locks lock = NOLOCKS;
 
 		DIAGS(("xaaes_on_exit event for %u (%i)", p->pid, code));
+// 		display("xaaes_on_exit: code %d for %s", code, p->name);
 		exit_client(lock, _client, code, true, false);
 	}
 	else
+	{
+// 		display("xaaes_on_exit: different proc!?");
 		DIAGS(("xaaes_on_exit - thread terminate"));
+	}
 }
 
 /*
@@ -122,36 +126,94 @@ xaaes_on_signal(void *_client, struct proc *p, unsigned short nr)
 	DIAGS(("xaaes_on_signal for %u (signal %u)", p->pid, nr));
 }
 
-static void _cdecl
-premature_xaaes_on_exit(void *_client, struct proc *p, int nr)
+static void _cdecl info_share(void *, struct proc *, struct proc *);
+static void _cdecl info_release(void *);
+
+static void _cdecl info_on_exit(void *, struct proc *p, int code);
+static void _cdecl info_on_exec(void *, struct proc *p);
+static void _cdecl info_on_fork(void *, struct proc *p, long flags, struct proc *child);
+static void _cdecl info_on_stop(void *, struct proc *p, unsigned short nr);
+static void _cdecl info_on_signal(void *, struct proc *p, unsigned short nr);
+
+struct module_callback info_cb = //xaaes_cb_vector_sh_info =
 {
-	DIAGS(("premature_xaaes_on_signal for %u (signal %u)", p->pid, nr));
-	exit_proc(0, p, nr);
-}
+	info_share,		/* share */
+	info_release,		/* release */
 
-static void _cdecl xaaes_sh_info_release(void *);
-
-
-struct module_callback xaaes_cb_vector_sh_info =
-{
-	NULL,			/* share */
-	xaaes_sh_info_release,
-
-	premature_xaaes_on_exit, //NULL,	/* on_exit */
-	NULL,			/* on_exec */
-	NULL,			/* on_fork */
-	NULL,			/* on_stop */
-	NULL,			/* on_signal */
+	info_on_exit, 	//NULL,	/* on_exit */
+	info_on_exec,		/* on_exec */
+	info_on_fork,		/* on_fork */
+	info_on_stop,		/* on_stop */
+	info_on_signal,		/* on_signal */
 };
 
+static void _cdecl
+info_share(void *_info, struct proc *from, struct proc *to)
+{
+	struct shel_info *info = _info;
+	struct xa_client *client = lookup_extension(from, XAAES_MAGIC);
+
+	if (client)
+	{
+		if (info->tail_is_heap)
+		{
+			info->cmd_tail = NULL;
+			info->tail_is_heap = false;
+		}
+		info->rppid = from->pid;
+		info->shel_write = false;
+	}
+	
+// 	display("info_share %lx", _info);
+}
 
 static void _cdecl
-xaaes_sh_info_release(void *_info)
+info_release(void *_info)
 {
 	struct shel_info *info = _info;
 
-	DIAGS(("xaaes_sh_info_release: releasing 0x%lx"));
+	DIAGS(("info_release: releasing 0x%lx", info));
+// 	display("info_release: releasing 0x%lx", info);
 
 	if (info->tail_is_heap && info->cmd_tail)
 		kfree(info->cmd_tail);
+}
+
+static void _cdecl
+info_on_exit(void *_info, struct proc *p, int nr)
+{
+ 	struct xa_client *c = lookup_extension(p, XAAES_MAGIC);
+	
+// 	display("info_on_exit: nr=%d, c=%lx, %s", nr, c, p ? p->name : "What?");	
+	DIAGS(("info_on_exit for %u (signal %u)", p->pid, nr));
+
+	/* Ozk:
+	 * If process got client structure, we do not call exit_proc() here,
+	 * else CH_EXIT wont get sent correctly
+	 */
+	if (!c)
+		exit_proc(0, p, nr);
+}
+
+static void _cdecl
+info_on_exec(void *_info, struct proc *p)
+{
+// 	display("info_on_exec: (info = %lx) %d", _info, p->pid);
+}
+
+static void _cdecl
+info_on_fork(void *_info, struct proc *p, long flags, struct proc *child)
+{
+// 	display("info_on_fork: (info = %lx) %d forks to %d (new = %lx)", _info, p->pid, child->pid, new);	
+}
+
+static void _cdecl
+info_on_stop(void *_info, struct proc *p, unsigned short nr)
+{
+// 	display("info_on_stop: (info = %lx) pid: %d", _info, p->pid);
+}
+static void _cdecl
+info_on_signal(void *_info, struct proc *p, unsigned short nr)
+{
+// 	display("info_on_signal: (info = %lx) pid: %d", _info, p->pid);
 }
