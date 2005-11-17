@@ -174,15 +174,13 @@ sysfile_exists(const char *sd, char *fn)
 long
 init(struct kentry *k, const char *path)
 {
+	long err = 0L;
+
 	bool first = true;
 	/* setup kernel entry */
 	kentry = k;
 	next_res = 0L;
 
-#if 0
-	if (!imp_msg())
-		return ENOSYS;
-#endif
 	bzero(&G, sizeof(G));
 
 again:
@@ -197,7 +195,10 @@ again:
 	C.bootlog_file = kernel_open(C.bootlog_path, O_WRONLY|O_CREAT|O_TRUNC, NULL, NULL);
 #endif
 	if (check_kentry_version())
-		return ENOSYS;
+	{
+		err = ENOSYS;
+		goto error;
+	}
 
 	/* remember loader */
 	loader_pid = p_getpid();
@@ -228,7 +229,8 @@ again:
 		{
 			display("ERROR: There exist an moose.xdd in your FreeMiNT sysdir.");
 			display("       Please remove it before starting the XaAES kernel module!");
-			return EINVAL;
+			err = EINVAL;
+			goto error;
 		}
 
 		/* look is there is an moose.adi
@@ -244,7 +246,8 @@ again:
 			display(" sysdir = '%s'", sysdir);
 			display("       Please remove it and install it in the XaAES module directory");
 			display("       before starting the XaAES kernel module!");
-			return EINVAL;
+			err = EINVAL;
+			goto error;
 		}
 	}
 
@@ -330,6 +333,7 @@ again:
 	if (!C.Aes)
 	{
 		display("XaAES ERROR: Can't allocate memory?");
+		err = ENOMEM;
 		goto error;
 	}
 
@@ -387,7 +391,8 @@ again:
 		{
 			display("ERROR: There exist no moose.adi in your XaAES module directory.");
 			display("       Please install it before starting the XaAES kernel module!");
-			return EINVAL;
+			err = EINVAL;
+			goto error;
 		}
 	}
 
@@ -546,8 +551,12 @@ error:
 	if (D.debug_file)
 		kernel_close(D.debug_file);
 #endif
+#if BOOTLOG
+	if (C.bootlog_file)
+		kernel_close(C.bootlog_file);
+#endif
 
-	return ENOMEM;
+	return err;
 }
 
 long
