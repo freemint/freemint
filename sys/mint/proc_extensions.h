@@ -33,7 +33,9 @@
 
 # include "ktypes.h"
 
-
+#define PEXT_NOSHARE		1	/* Never share this control block */
+#define PEXT_COPYONSHARE	2	/* Make a new copy when sharing this block */
+#define PEXT_SHAREONCE		4	/* Setting this will set PEXT_NOSHARE when PEXT_COPYONSHARE is set */
 /*
  * module callback vector
  *
@@ -45,7 +47,7 @@
  */
 struct module_callback
 {
-	void (*share)(void *);
+	void (*share)(void *, struct proc *, struct proc *);
 	void (*release)(void *);
 
 	void (*on_exit  )(void *, struct proc *, int);
@@ -65,6 +67,8 @@ struct module_callback
 struct proc_ext
 {
 	long ident;		/* module identification */
+	unsigned long flags;	/* flags */
+	unsigned long size;	/* size */
 	short links;		/* number of references */
 	short pad;		/* padding */
 
@@ -74,7 +78,7 @@ struct proc_ext
 	/* module callback vector */
 	struct module_callback *cb_vector;
 
-	long reserved[6];	/* sizeof() => 44 bytes */
+	long reserved[4];	/* sizeof() => 44 bytes */
 };
 
 struct p_ext
