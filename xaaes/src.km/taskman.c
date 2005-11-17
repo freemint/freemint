@@ -2141,7 +2141,7 @@ open_csr(enum locks lock, struct xa_client *client, struct xa_client *running)
 		C.csr_client = running;
 		obtree = ResourceTree(C.Aes_rsc, KILL_OR_WAIT);
 
-		t = object_get_tedinfo(obtree + KORW_APPNAME);
+		t = object_get_tedinfo(obtree + KORW_APPNAME, NULL);
 		if (running->name[0])
 		{
 			int i;

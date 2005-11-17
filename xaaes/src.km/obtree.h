@@ -33,8 +33,10 @@ bool			validate_obtree(struct xa_client *c, OBJECT *o, char *f);
 bool			object_have_spec(OBJECT *ob);
 OBSPEC *		object_get_spec(OBJECT *ob);
 void			object_set_spec(OBJECT *ob, unsigned long cl);
+bool			object_has_tedinfo(OBJECT *ob);
+bool			object_has_string(OBJECT *ob);
 bool			object_is_editable(OBJECT *ob);
-TEDINFO *		object_get_tedinfo(OBJECT *ob);
+TEDINFO *		object_get_tedinfo(OBJECT *ob, XTEDINFO **x);
 struct scroll_info *	object_get_slist(OBJECT *ob);
 POPINFO *		object_get_popinfo(OBJECT *ob);
 void			object_deselect(OBJECT *ob);
@@ -51,6 +53,9 @@ void		free_obtree_resources(struct xa_client *client, OBJECT *obtree);
 void		free_object_tree(struct xa_client *client, OBJECT *obtree);
 
 OBJECT *	create_popup_tree(struct xa_client *client, short type, short nobjs, short mw, short mh, void *(*cb)(short item, void **data), void **data);
+
+void	foreach_object(OBJECT *tree, short parent, short start, short stopf, short stops, bool(*f)(OBJECT *obtree, short obj, void *ret), void *data);
+void	dforeach_object(OBJECT *tree, short parent, short start, short stopf, short stops, bool(*f)(OBJECT *obtree, short obj, void *ret), void *data);
 
 short	ob_count_objs(OBJECT *obtree, short start, short depth);
 short	ob_get_parent(OBJECT *t, short object);
@@ -104,7 +109,7 @@ short	obj_find(XA_TREE *wt, short object, short depth, short mx, short my, RECT 
 
 void	obj_change(XA_TREE *wt, struct xa_vdi_settings *v, short obj, int transdepth, short state, short flags, bool redraw, const RECT *clip, struct xa_rect_list *r, short dflags);
 void	obj_draw(XA_TREE *wt, struct xa_vdi_settings *v, short obj, int transdepth, const RECT *clip, struct xa_rect_list *r, short flags);
-short	obj_edit(XA_TREE *wt, struct xa_vdi_settings *v, short func, short obj, short keycode, short pos, bool redraw, const RECT *clip, struct xa_rect_list *rl, short *ret_pos, short *ret_obj);
+short	obj_edit(XA_TREE *wt, struct xa_vdi_settings *v, short func, short obj, short keycode, short pos, char *string, bool redraw, const RECT *clip, struct xa_rect_list *rl, short *ret_pos, short *ret_obj);
 void	obj_set_radio_button(XA_TREE *wt, struct xa_vdi_settings *v, short obj, bool redraw, const RECT *clip, struct xa_rect_list *rl);
 short	obj_get_radio_button(XA_TREE *wt, short parent, short state);
 short	obj_watch(XA_TREE *wt, struct xa_vdi_settings *v, short obj, short in_state, short out_state, const RECT *clip, struct xa_rect_list *rl);

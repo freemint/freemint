@@ -453,7 +453,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		}
 		
 		if (mode != -1)
-			client->options.app_opts |= XAPP_XT_WF_SLIDE;
+			client->options.app_opts |= XAAO_WF_SLIDE;
 
 		break;
 	}
@@ -469,7 +469,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			short newpos = bound_sl(pb->intin[2]);
 			
 			XA_SLIDER_WIDGET *slw = widg->stuff;
-			if (client->options.app_opts & XAPP_XT_WF_SLIDE)
+			if (client->options.app_opts & XAAO_WF_SLIDE)
 			{
 				short newrpos = bound_sl(pb->intin[3]);
 				if (newpos != slw->position || newrpos != slw->rpos)
@@ -503,7 +503,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			short newpos = bound_sl(pb->intin[2]);
 			
 			XA_SLIDER_WIDGET *slw = widg->stuff;
-			if (client->options.app_opts & XAPP_XT_WF_SLIDE)
+			if (client->options.app_opts & XAAO_WF_SLIDE)
 			{
 				short newrpos = bound_sl(pb->intin[3]);
 				if (newpos != slw->position || newrpos != slw->rpos)
@@ -1134,7 +1134,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	}
 	case WF_OPTS:
 	{
-		long  opts, *optr;
+		unsigned long  opts, *optr;
 		short mode;
 
 		if (w)
@@ -1143,7 +1143,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			optr = &client->options.wind_opts;
 
 		mode = pb->intin[2];
- 		opts = (long)pb->intin[3] << 16 | pb->intin[4];
+ 		opts = (unsigned long)pb->intin[3] << 16 | pb->intin[4];
 
 		if (!mode)
 			*optr &= ~opts;
@@ -1582,7 +1582,7 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 		{
 			slw = get_widget(w, XAW_VSLIDE)->stuff;
 			o[1] = slw->position;
-			if (client->options.app_opts & XAPP_XT_WF_SLIDE)
+			if (client->options.app_opts & XAAO_WF_SLIDE)
 				o[2] = slw->rpos;
 		}
 		else
@@ -1595,7 +1595,7 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 		{
 			slw = get_widget(w, XAW_HSLIDE)->stuff;
 			o[1] = slw->position;
-			if (client->options.app_opts & XAPP_XT_WF_SLIDE)
+			if (client->options.app_opts & XAAO_WF_SLIDE)
 				o[2] = slw->rpos;
 		}
 		else
@@ -1730,7 +1730,7 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 	}
 	case WF_OPTS:
 	{
-		long *optr = (w ? &w->opts : &client->options.wind_opts);
+		unsigned long *optr = (w ? &w->opts : &client->options.wind_opts);
 		
 		o[1] = *optr >> 16;
 		o[2] = *optr;

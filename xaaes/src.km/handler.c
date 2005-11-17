@@ -156,7 +156,7 @@ static struct xa_ftab aes_tab[220] =
 	/*  63 */ { XA_form_wbutton,           0,        DESCR("form_wbutton")    }, // MagiC 5.10 extension
 	/*  64 */ { XA_form_wkeybd,            0,        DESCR("form_wkeybd")     }, // MagiC 5.10 extension
 	/*  65 */ { XA_objc_wedit,             0,        DESCR("objc_wedit")      }, // MagiC 5.10 extension
-	/*  66 */ { NULL,                      0,        DESCR(NULL)              },
+	/*  66 */ { XA_objc_data,              0,        DESCR("objc_data")       }, // XaAES extension
 	/*  67 */ { NULL,                      0,        DESCR(NULL)              },
 	/*  68 */ { NULL,                      0,        DESCR(NULL)              },
 	/*  69 */ { NULL,                      0,        DESCR("graf_multirubber")}, // N.AES extension
@@ -228,13 +228,13 @@ static struct xa_ftab aes_tab[220] =
 	/* 129 */ { XA_appl_control,           0,        DESCR("appl_control")    },
 
 	/* 130 */ { XA_appl_getinfo,           NOCLIENT, DESCR("appl_getinfo")    },
-	/* 131 */ { NULL,                      0,        DESCR(NULL)              },
+	/* 131 */ { NULL,                      0,        DESCR(NULL)              }, // XaAES only
 	/* 132 */ { NULL,                      0,        DESCR(NULL)              },
 	/* 133 */ { NULL,                      0,        DESCR(NULL)              },
 	/* 134 */ { NULL,                      0,        DESCR(NULL)              },
 	/* 135 */ { XA_form_popup,             0,        DESCR("form_popup")      },
 	/* 136 */ { NULL,                      0,        DESCR("form_xerr")       }, // unimplemented
-	/* 137 */ { NULL,                      0,        DESCR(NULL)              },
+	/* 137 */ { XA_appl_options,           0,        DESCR("appl_options")    },
 	/* 138 */ { NULL,                      0,        DESCR(NULL)              },
 	/* 139 */ { NULL,                      0,        DESCR(NULL)              },
 

@@ -800,6 +800,7 @@ add_slash(char *p, char *to)
 		strcat(p, to);
 }
 
+#if 0
 static bool
 executable(char *nam)
 {
@@ -813,6 +814,8 @@ executable(char *nam)
 		    || !stricmp(ext, "gtp") || !stricmp(ext, "app")
 		    || !stricmp(ext, "acc")));
 }
+#endif
+
 static bool
 disabled_exe(char *nam)
 {
@@ -825,33 +828,27 @@ disabled_exe(char *nam)
 		    || !stricmp(ext, "acx")));
 }
 static void
-set_file(struct fsel_data *fs, const char *fn)
+set_file(struct fsel_data *fs, char *fn, bool mark)
 {
-	XA_TREE *wt = get_widget(fs->wind, XAW_TOOLBAR)->stuff;
+// 	XA_TREE *wt = get_widget(fs->wind, XAW_TOOLBAR)->stuff;
 
 	DIAG((D_fsel, NULL, "set_file: fs.file='%s', wh=%d", fn ? fn : fs->file, fs->wind->handle));
 
 	/* fixup the cursor edit position */
-#if 0
-	/* FIXME: the edit_object() doesn't work in case the client
-	 * didn't call the form_do().
-	 *
-	 * We should call something like the below instead
-	 * of direct e.pos adjustments.
-	 */
-	{
-		short newpos;
-		edit_object(lock, wt->owner, ED_END, wt, wt->tree, FS_FILE, 0, &newpos);
-		strcpy(fs.file, fn); /* set the edit field text */
-		edit_object(lock, wt->owner, ED_INIT, wt, wt->tree, FS_FILE, 0, &newpos);
-	}
-#else
+// 	display("here, fn = %lx '%s'", fn, fn);
 	if (fn)
-		strcpy(fs->file, fn); /* set the edit field text */
-	wt->e.pos = strlen(fs->file);
-#endif
+	{
+		obj_edit(fs->form, fs->wind->vdi_settings, ED_MARK, FS_FILE, 0, -1, NULL, false, NULL,NULL, NULL,NULL);
+		obj_edit(fs->form, fs->wind->vdi_settings, ED_STRING, FS_FILE, mark ? 1 : 0, 0, fn, true, NULL, fs->wind->rect_list.start, NULL, NULL);
+	}
+	else
+		redraw_toolbar(0, fs->wind, FS_FILE);
+
+// 	if (fn)
+// 		strcpy(fs->file, fn); /* set the edit field text */
+// 	wt->e.pos = strlen(fs->file);
 	/* redraw the toolbar file object */
-	redraw_toolbar(0, fs->wind, FS_FILE);
+// 	redraw_toolbar(0, fs->wind, FS_FILE);
 }
 #define FSIZE_MAX 20
 
@@ -1218,10 +1215,10 @@ refresh_filelist(enum locks lock, struct fsel_data *fs, SCROLL_ENTRY *dir_ent)
 	{
 		TEDINFO *tx;
 
-		tx = ob_spec(form + FS_CASE);
+		tx = object_get_tedinfo(form + FS_CASE, NULL);
 		sprintf(tx->te_ptext, 32, "%ld", fs->fcase);
 
-		tx = ob_spec(form + FS_TRUNC);
+		tx = object_get_tedinfo(form + FS_TRUNC, NULL);
 		sprintf(tx->te_ptext, 32, "%ld", fs->trunc);
 
 		redraw_toolbar(lock, fs->wind, FS_DBAR);
@@ -1398,7 +1395,7 @@ fs_closer(struct scroll_info *list, bool rdrw)
 // 	if ( /*fs->clear_on_folder_change &&*/ !fs->tfile)
 // 		set_file(fs, "");
 
-	set_file(fs, fs->ofile);
+	set_file(fs, fs->ofile, false);
 	fs_updir(list);
 }
 
@@ -1421,7 +1418,7 @@ fs_enter_dir(struct fsel_data *fs, struct scroll_info *list, struct scroll_entry
 	if ((drv = get_drv(fs->root)) >= 0)
 		strcpy(fs_paths[drv], fs->root);
 
-	set_file(fs, fs->ofile);
+	set_file(fs, fs->ofile,false);
 	
 	fs->selected_file = NULL;
 	refresh_filelist(fsel, fs, fs->treeview ? dir_ent : NULL);
@@ -1473,7 +1470,7 @@ fs_item_action(struct scroll_info *list, struct scroll_entry *this, const struct
 					fs->selected_dir = this->up;
 					list->set(list, this, SESET_STATE, ((long)(OS_BOXED|OS_SELECTED) << 16) | OS_SELECTED, NORMREDRAW);
 					set_dir(list);
-					set_file(fs, NULL);
+					set_file(fs, fs->file, true);
 					if (md->clicks > 1)
 						fs_done = true;
 					else
@@ -1499,7 +1496,7 @@ fs_item_action(struct scroll_info *list, struct scroll_entry *this, const struct
 					fs->tfile = false;
 					list->set(list, NULL, SESET_CURRENT, 0, NOREDRAW); //list->cur = NULL;
 // 					fs->kbdnav = false;
-					set_file(fs, fs->ofile); //set_file(fs, "");
+					set_file(fs, fs->ofile, false); //set_file(fs, "");
 				}				
 				else if (!flags && (!md || md->clicks > 1))
 				{
@@ -1527,7 +1524,7 @@ fs_item_action(struct scroll_info *list, struct scroll_entry *this, const struct
 				if (md)
 					fs->kbdnav = false;
 
-				set_file(fs, fs->ofile);
+				set_file(fs, fs->ofile, false);
 				fs_updir(list);
 				if (!md && !fs->kbdnav)
 				{
@@ -1625,7 +1622,7 @@ fs_item_action(struct scroll_info *list, struct scroll_entry *this, const struct
 						}
 						set_dir(list);
 						
-						set_file(fs, fs->ofile); //if (!fs->tfile) set_file(fs, "");
+						set_file(fs, fs->ofile, false); //if (!fs->tfile) set_file(fs, "");
 					}
 				}
 				else
@@ -1696,7 +1693,7 @@ fileselector_form_exit(struct xa_client *client,
 	struct scroll_info *list = object_get_slist(obtree + FS_LIST);
 	struct fsel_data *fs = list->data;
 #ifdef FS_FILTER
-	TEDINFO *filter = object_get_tedinfo(obtree + FS_FILTER);
+	TEDINFO *filter = object_get_tedinfo(obtree + FS_FILTER, NULL);
 #endif
 	
 	wt->which = 0;
@@ -1854,7 +1851,7 @@ filename_completion(struct scroll_info *list)
 			fs->selected_file = NULL;
 		}
 		set_dir(list);
-		set_file(fs, NULL);
+		set_file(fs, fs->file, true);		/* update filename */
 		fs->tfile = false;
 	}
 	return this;
@@ -1920,7 +1917,7 @@ fs_slist_key(struct scroll_info *list, unsigned short keycode, unsigned short ks
 						list->get(list, this, SEGET_XSTATE, &xsa);
 						if (!(xsb & OS_OPENED) && !(xsa & OS_OPENED))
 						{
-							set_file(fs, fs->ofile);
+							set_file(fs, fs->ofile, false);
 							fs_updir(list);
 							if (!get_selected(list))
 								scrl_cursor(list, 0x5200, 0);
@@ -1967,7 +1964,7 @@ fs_slist_key(struct scroll_info *list, unsigned short keycode, unsigned short ks
 							}
 							p.idx = -1;
 							list->get(list, this, SEGET_TEXTPTR, &p);
-							set_file(fs, p.ret.ptr);
+							set_file(fs, p.ret.ptr, true);
 							fs->tfile = false;
 						}
 						else
@@ -1978,7 +1975,7 @@ fs_slist_key(struct scroll_info *list, unsigned short keycode, unsigned short ks
 								fs->selected_file = NULL;
 								set_dir(list);
 							}
-							set_file(fs, fs->ofile);
+							set_file(fs, fs->ofile, false);
 						}
 						if (kk == 0x5200)
 							fs->kbdnav = true;
@@ -1996,7 +1993,7 @@ fs_slist_key(struct scroll_info *list, unsigned short keycode, unsigned short ks
 							{
 								fs->selected_file = NULL;
 							}
-							set_file(fs, fs->ofile); //if (!fs->tfile) set_file(fs, "");
+							set_file(fs, fs->ofile, false); //if (!fs->tfile) set_file(fs, "");
 						}
 						fs->kbdnav = false;
 					}
@@ -2054,7 +2051,7 @@ fs_key_form_do(enum locks lock,
 	/* ctrl + backspace :: fs_updir() */
 	else if ((key->raw.conin.state & K_CTRL) && (nkcode & NKF_CTRL) && nk == NK_BS)
 	{
-		set_file(fs, fs->ofile);
+		set_file(fs, fs->ofile, false);
 		fs_updir(list);
 	}
 	else if ((key->raw.conin.state & K_CTRL) && (nkcode & NKF_CTRL) && nk == '*')
@@ -2078,14 +2075,16 @@ fs_key_form_do(enum locks lock,
 	else
 	{
 		struct fmd_result fr;
-		char old[NAME_MAX+2];
-		strcpy(old, fs->file);
+// 		char old[NAME_MAX+2];
+// 		obj_edit(wt, wind->vdi_settings, ED_GETTEXT, FS_EDIT, 0, 0, old, false, NULL, NULL, NULL,NULL);
+// 		strcpy(old, fs->file);
+		
 		if (Key_form_do(lock, client, wind, wt, key, &fr))
 		{
 			/* Ozk:
 			 * If key went into the editable, we check if we need to prompt
 			 */
-			if ((fr.flags & FMDF_EDIT) && strcmp(old, fs->file) != 0)
+			if ((fr.flags & FMDF_EDIT)) // && strcmp(old, fs->file) != 0)
 			{
 				strcpy(fs->ofile, ""); //fs->file);
 				fs->tfile = true;
@@ -2155,7 +2154,7 @@ fs_msg_handler(
 			display_widget(lock, fs->wind, get_widget(fs->wind, XAW_MENU), NULL);
 			fs->selected_dir = NULL;
 			fs->selected_file = NULL;
-			set_file(fs, fs->ofile);
+			set_file(fs, fs->ofile, false);
 // 			if (!fs->tfile)
 // 				set_file(fs, "");
 		}
@@ -2163,7 +2162,7 @@ fs_msg_handler(
 		{
 			fs_change(lock, fs, fs->menu->tree, msg[4], FSEL_FILTER, FSEL_PATA, fs->fs_pattern);
 			fs->selected_dir = fs->selected_file = NULL;
-			set_file(fs, fs->ofile);
+			set_file(fs, fs->ofile, false);
 // 			if (!fs->tfile)
 // 				set_file(fs, "");
 		}
@@ -2181,7 +2180,7 @@ fs_msg_handler(
 			/* remove the name from the edit field on drive change */
 // 			if ( !fs->tfile ) //fs->clear_on_folder_change )
 // 				set_file(fs, "");
-			set_file(fs, fs->ofile);
+			set_file(fs, fs->ofile, false);
 			fs->selected_dir = fs->selected_file = NULL;
 		}
 // 		display("cur0 %lx", list->cur);
@@ -2279,6 +2278,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 	XA_TREE *wt;
 	char *pat,*pbt;
 	struct scroll_info *list;
+	struct xa_vdi_settings *v = client->vdi_settings;
 	RECT remember = {0,0,0,0}, or;
 
 	DIAG((D_fsel,NULL,"open_fileselector for %s on '%s', fn '%s', '%s', %lx,%lx)",
@@ -2325,7 +2325,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 		
 		fs->tfile = fs->file[0] != '\0' ? true : false;
 
-		object_get_spec(form + FS_FILE)->tedinfo->te_ptext = fs->file;
+// 		object_get_tedinfo(form + FS_FILE, NULL)->te_ptext = fs->file;
 		form[FS_ICONS].ob_flags |= OF_HIDETREE;
 
 		if (path && *path != '\0' && ((*path == '\\' || *path == '/') || (path[1] == ':' && (path[2] == '\\' || path[2] == '/'))))
@@ -2469,6 +2469,9 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 		fs->clear_on_folder_change = 0;
 
 		wt = set_toolbar_widget(lock, dialog_window, client, form, FS_FILE, 0/*WIP_NOTEXT*/, true, NULL, &or);
+		obj_edit(fs->form, v, ED_SETPTEXT, FS_FILE, sizeof(fs->file) - 1, 0, fs->file, false, NULL,NULL, NULL,NULL);
+		obj_edit(fs->form, v, ED_MARK, FS_FILE, 0, -1, NULL, false, NULL,NULL, NULL,NULL);
+		obj_edit(fs->form, v, ED_STRING, FS_FILE, 0, 0, fs->file, false, NULL, NULL, NULL, NULL);
 		/* This can be of use for drawing. (keep off border & outline :-) */
 		wt->zen = true;
 		wt->exit_form = fileselector_form_exit;

@@ -89,34 +89,74 @@ object_set_spec(OBJECT *ob, unsigned long cl)
 }
 
 inline bool
+object_has_tedinfo(OBJECT *ob)
+{
+	switch (ob->ob_type & 0xff)
+	{
+		case G_TEXT:
+		case G_BOXTEXT:
+		case G_FTEXT:
+		case G_FBOXTEXT:
+		{
+			return true;
+		}
+		default:
+		{
+			return false;
+		}
+	}
+}
+inline bool
+object_has_string(OBJECT *ob)
+{
+	switch (ob->ob_type & 0xff)
+	{
+		case G_STRING:
+		case G_BUTTON:
+		case G_TITLE:
+		case G_SHORTCUT:
+		{
+			return true;
+		}
+		default:
+		{
+			return false;
+		}
+	}
+}
+inline bool
 object_is_editable(OBJECT *ob)
 {
 	if ((ob->ob_flags & OF_EDITABLE) && !(ob->ob_state & OS_DISABLED))
 	{
-		short t = ob->ob_type & 0xff;
-		switch (t)
-		{
-			case G_TEXT:
-			case G_BOXTEXT:
-			case G_FTEXT:
-			case G_FBOXTEXT:
-			case G_USERDEF:
-			{
-				return true;
-			}
-			default:
-			{
-				return false;
-			}
-		}
+		if (object_has_tedinfo(ob) || (ob->ob_type & 0xff) == G_USERDEF)
+			return true;
 	}
-	return false;		
+	return false;
 }
 
 inline TEDINFO *
-object_get_tedinfo(OBJECT *ob)
+object_get_tedinfo(OBJECT *ob, XTEDINFO **x)
 {
-	return object_get_spec(ob)->tedinfo;
+	TEDINFO *ted = NULL;
+	
+	if (x)
+		*x = NULL;
+
+	if (object_has_tedinfo(ob))
+	{
+		ted = object_get_spec(ob)->tedinfo;
+	
+		if ((long)ted->te_ptext == -1L)
+		{
+			if (x)
+			{
+				*x = (XTEDINFO *)ted->te_ptmplt;
+			}
+			ted = &((XTEDINFO *)ted->te_ptmplt)->ti;
+		}
+	}
+	return ted;
 }
 
 inline struct scroll_info *
@@ -174,7 +214,7 @@ object_is_transparent(OBJECT *ob, bool pdistrans)
 		case G_TEXT:
 		case G_FTEXT:
 		{
-			if (!(*(BFOBSPEC *)&object_get_tedinfo(ob)->te_just).textmode)
+			if (!(*(BFOBSPEC *)&object_get_tedinfo(ob, NULL)->te_just).textmode)
 				ret = true;
 			break;
 		}
@@ -182,7 +222,7 @@ object_is_transparent(OBJECT *ob, bool pdistrans)
 		case G_BOXTEXT:
 		case G_FBOXTEXT:
 		{
-			if (!(*(BFOBSPEC *)&object_get_tedinfo(ob)->te_just).textmode) //fillpattern)
+			if (!(*(BFOBSPEC *)&object_get_tedinfo(ob, NULL)->te_just).textmode) //fillpattern)
 				ret = true;
 			break;
 		}
@@ -219,6 +259,14 @@ static long
 sizeof_tedinfo(TEDINFO *ted)
 {
 	long size = sizeof(TEDINFO);
+	
+	if ((long)ted->te_ptext == -1L)
+	{
+		XTEDINFO *xt = (XTEDINFO *)ted->te_ptmplt;
+		size += sizeof(*xt);
+		ted = &xt->ti;
+	}
+
 	size += strlen(ted->te_ptext) + 1;
 	size += strlen(ted->te_ptmplt) + 1;
 	size += strlen(ted->te_pvalid) + 1;
@@ -349,7 +397,7 @@ obtree_len(OBJECT *obtree, short start, short *num_objs)
 			case G_FTEXT:
 			case G_FBOXTEXT:
 			{
-				size += sizeof_tedinfo(object_get_tedinfo(ob));
+				size += sizeof_tedinfo(object_get_spec(ob)->tedinfo); //object_get_tedinfo(ob));
 				break;
 			}
 			case G_IMAGE:
@@ -434,6 +482,19 @@ copy_tedinfo(TEDINFO *src, TEDINFO *dst)
  	DIAGS(("copy_tedinfo: copy from %lx, to %lx", src, dst));
 	
 	*dst = *src;
+	if ((long)src->te_ptext == -1L)
+	{
+		XTEDINFO *xdst, *xsrc = (XTEDINFO *)src->te_ptmplt;
+		
+		(long)xdst = (long)s;
+		s += sizeof(*xsrc);
+		
+		*xdst = *xsrc;
+		(long)dst->te_ptmplt = (long)xdst;
+		
+		src = &xsrc->ti;
+		dst = &xdst->ti;
+	}
 
 	dst->te_ptext = s;
 	strcpy(s, src->te_ptext);
@@ -683,7 +744,7 @@ copy_obtree(OBJECT *obtree, short start, OBJECT *dst, void **data)
 			case G_FBOXTEXT:
 			{
 				on->ob_spec.tedinfo = *data;
-				*data = copy_tedinfo(object_get_tedinfo(ob), *data);
+				*data = copy_tedinfo(object_get_spec(ob)->tedinfo, *data);
 				break;
 			}
 			case G_IMAGE:
@@ -994,7 +1055,7 @@ object_thickness(OBJECT *ob)
 		case G_BOXTEXT:
 		case G_FBOXTEXT:
 		{
-			ted = object_get_tedinfo(ob);
+			ted = object_get_tedinfo(ob, NULL);
 			t = (signed char)ted->te_thickness;
 		}
 	}
@@ -1204,11 +1265,11 @@ ob_order(OBJECT *root, short object, ushort pos)
 	}
 }
 
-static void
+void
 foreach_object(OBJECT *tree, short parent, short start, short stopf, short stops, bool(*f)(OBJECT *obtree, short obj, void *ret), void *data)
 {
 	short o, n;
-
+// 	display("foreach_object: tree=%lx", tree);
 	o = start;
 
 	do
@@ -1226,16 +1287,53 @@ foreach_object(OBJECT *tree, short parent, short start, short stopf, short stops
 		{
 			n = tree[o].ob_next;
 			
-			while (n != parent && n != -1 && tree[n].ob_tail == o)
+			while (n != parent && n != -1 && n != 0x7fff && tree[n].ob_tail == o)
 			{
 				o = n;
 				n = tree[o].ob_next;
 			}
 			o = n;
 		}
-
-	} while (o != parent && o != -1 && !(*f)(tree, o, data));
+	} while (o != parent && o != -1 && o != 0x7fff);
+	
+// 	display(" --- exit");
 }
+
+#if 0
+void
+dforeach_object(OBJECT *tree, short parent, short start, short stopf, short stops, bool(*f)(OBJECT *obtree, short obj, void *ret), void *data)
+{
+	short o, n;
+	display("foreach_object: tree=%lx", tree);
+	o = start;
+
+	do
+	{
+		display(" - obj %d, h=%d, t=%d, n=%d, f=%x", o, tree[o].ob_head, tree[o].ob_tail, tree[o].ob_next, tree[o].ob_flags);
+
+		if ((*f)(tree, o, data))
+			break;
+
+		if (tree[o].ob_head != -1 && !(tree[o].ob_flags & OF_HIDETREE))
+		{
+			o = tree[o].ob_head;
+		}
+		else
+		{
+			n = tree[o].ob_next;
+			
+			while (n != parent && n != -1 && n != 0x7fff && tree[n].ob_tail == o)
+			{
+				o = n;
+				n = tree[o].ob_next;
+			}
+			o = n;
+		}
+	} while (o != parent && o != -1 && o != 0x7fff/*&& !(*f)(tree, o, data) */);
+	
+	display(" --- exit");
+}
+#endif
 
 struct anyflst_parms
 {
@@ -1324,6 +1422,8 @@ ob_find_flag(OBJECT *tree, short f, short mf, short stopf)
 {
 	struct anyflst_parms d;
 
+// 	display("ob_find_flag: %lx", tree);
+
 	d.flags = OBFIND_EXACTFLAG;
 	d.f = f;
 	d.s = 0;
@@ -1350,6 +1450,7 @@ ob_find_flag(OBJECT *tree, short f, short mf, short stopf)
 	} while ( (!stopf || !(tree[o].ob_flags & stopf)));
 
 	return -1;
+// 	display(" -- exit");
 #endif
 }
 short
@@ -1357,6 +1458,8 @@ ob_find_any_flag(OBJECT *tree, short f, short mf, short stopf)
 {
 	struct anyflst_parms d;
 
+// 	display("ob_find_any_flag: %lx", tree);
+	
 	d.flags = 0;
 	d.f = f;
 	d.s = 0;
@@ -1383,6 +1486,8 @@ ob_find_any_flag(OBJECT *tree, short f, short mf, short stopf)
 	} while ( (!stopf || !(tree[o].ob_flags & stopf)));
 
 	return -1;
+
+// 	display(" -- exit");
 #endif
 }
 /*
@@ -1397,6 +1502,8 @@ ob_count_flag(OBJECT *tree, short f, short mf, short stopf, short *count)
 {
 	struct anyflst_parms d;
 
+// 	display("ob_count_flag: %lx", tree);
+	
 	d.flags = OBFIND_EXACTFLAG;
 	d.f = f;
 	d.s = 0;
@@ -1430,6 +1537,7 @@ ob_count_flag(OBJECT *tree, short f, short mf, short stopf, short *count)
 	if (count)
 		*count = cnt;
 
+// 	display(" -- exit");
 	return o;
 #endif
 }
@@ -1445,6 +1553,8 @@ ob_count_any_flag(OBJECT *tree, short f, short mf, short stopf, short *count)
 {
 	struct anyflst_parms d;
 
+// 	display("ob_count_any_flag: %lx", tree);
+	
 	d.flags = 0;
 	d.f = f;
 	d.s = 0;
@@ -1479,6 +1589,7 @@ ob_count_any_flag(OBJECT *tree, short f, short mf, short stopf, short *count)
 	if (count)
 		*count = cnt;
 
+// 	display(" -- exit");
 	return o;
 #endif
 }
@@ -1487,6 +1598,8 @@ short
 ob_find_any_flst(OBJECT *tree, short f, short s, short mf, short ms, short stopf, short stops)
 {
 	struct anyflst_parms d;
+
+// 	display("ob_find_any_flst: %lx", tree);
 
 	d.flags = 0;
 	d.f = f;
@@ -1497,6 +1610,7 @@ ob_find_any_flst(OBJECT *tree, short f, short s, short mf, short ms, short stopf
 
 	foreach_object(tree, 0, 0, stopf, stops, anyflst, &d);
 // 	display("ob_find_any_flst: ret %d", d.ret);
+// 	display(" -- exit");
 	return d.ret;
 }
 
@@ -1505,6 +1619,8 @@ ob_find_flst(OBJECT *tree, short f, short s, short mf, short ms, short stopf, sh
 {
 	struct anyflst_parms d;
 
+// 	display("ob_find_flst: %lx", tree);
+	
 	d.flags = OBFIND_EXACTFLAG|OBFIND_EXACTSTATE;
 	d.f = f;
 	d.s = s;
@@ -1514,7 +1630,7 @@ ob_find_flst(OBJECT *tree, short f, short s, short mf, short ms, short stopf, sh
 
 	foreach_object(tree, 0, 0, stopf, stops, anyflst, &d);
 // 	display("ob_find_flst: ret %d", d.ret);
-
+// 	display(" -- ret");
 	return d.ret;
 #if 0	
 	int o = -1;
@@ -2733,7 +2849,7 @@ delete_marked(struct objc_edit_info *ei, char *txt)
 static bool ed_scrap_copy(XA_TREE *wt, struct objc_edit_info *ei, TEDINFO *ed_txt);
 static bool ed_scrap_cut(XA_TREE *wt, struct objc_edit_info *ei, TEDINFO *ed_txt);
 static bool ed_scrap_paste(XA_TREE *wt, struct objc_edit_info *ei, TEDINFO *ed_txt, short *cursor_pos);
-static bool obj_ed_char(XA_TREE *wt, struct objc_edit_info *ei, TEDINFO *ed_txt, ushort keycode);
+static bool obj_ed_char(XA_TREE *wt, struct objc_edit_info *ei, TEDINFO *ed_txt, XTEDINFO *xted, ushort keycode);
 
 static char *
 ed_scrap_filename(char *scrp, size_t len)
@@ -2818,7 +2934,7 @@ ed_scrap_paste(XA_TREE *wt, struct objc_edit_info *ei, TEDINFO *ed_txt, short *c
 				case '\t':
 					break;
 				default:
-					obj_ed_char(wt, ei, ed_txt, (unsigned short)data[i]);
+					obj_ed_char(wt, ei, ed_txt, NULL, (unsigned short)data[i]);
 
 					if (ei->pos >= ed_txt->te_txtlen - 1)
 					{
@@ -2873,13 +2989,19 @@ static const unsigned char character_type[] =
 static bool
 obj_ed_char(XA_TREE *wt,
 	    struct objc_edit_info *ei,
-	    TEDINFO *ed_txt,
+	    TEDINFO *ted,
+	    XTEDINFO *xted,
 	    ushort keycode)
 {
-	char *txt = ed_txt->te_ptext;
+	char *txt;
 	int x, key, tmask, n, chg;
 	bool update = false;
 
+	if (!ted)
+		ted = &xted->ti;
+
+	txt = ted->te_ptext;
+	
 	DIAG((D_objc, NULL, "ed_char keycode=0x%04x", keycode));
 
 	switch (keycode)
@@ -2894,6 +3016,7 @@ obj_ed_char(XA_TREE *wt,
 		txt[0] = '\0';
 		ei->pos = 0;
 		ei->m_start = ei->m_end = 0;
+		ei->t_offset = ei->p_offset = 0;
 		update = true;
 		break;
 	}
@@ -2903,7 +3026,7 @@ obj_ed_char(XA_TREE *wt,
 		{
 			if (!(delete_marked(ei, txt)))
 			{
-				for (x = ei->pos; x < ed_txt->te_txtlen - 1; x++)
+				for (x = ei->pos; x < ted->te_txtlen - 1; x++)
 					txt[x] = txt[x + 1];
 			}
 			update = true;
@@ -2914,7 +3037,7 @@ obj_ed_char(XA_TREE *wt,
 	{
 		if (!(delete_marked(ei, txt)) && ei->pos)
 		{
-			for(x = ei->pos; x < ed_txt->te_txtlen; x++)
+			for(x = ei->pos; x < ted->te_txtlen; x++)
 				txt[x - 1] = txt[x];
 			ei->pos--;
 		}
@@ -2923,7 +3046,7 @@ obj_ed_char(XA_TREE *wt,
 	}
 	case 0x4d00:	/* RIGHT ARROW moves cursor right */
 	{
-		if ((txt[ei->pos]) && (ei->pos < ed_txt->te_txtlen - 1))
+		if ((txt[ei->pos]) && (ei->pos < ted->te_txtlen - 1))
 		{
 			ei->pos++;
 			update = false;
@@ -2937,34 +3060,37 @@ obj_ed_char(XA_TREE *wt,
 	}
 	case 0x4d36:	/* SHIFT+RIGHT ARROW move cursor to far right of current text */
 	{
-	#if 0
-		if (txt[ei->pos])
+		if (xted)
 		{
-			short npos = ei->pos + 1;
-			
-			if (ei->m_start == ei->m_end)
+			if (txt[ei->pos])
 			{
-				ei->m_start = ei->pos;
-				ei->m_end = npos;
-			}
-			else if (ei->pos > ei->m_start)
-				ei->m_end = npos;
-			else
-				ei->m_start = npos;
+				short npos = ei->pos + 1;
 			
-			ei->pos++;
-			update = true;
+				if (ei->m_start == ei->m_end)
+				{
+					ei->m_start = ei->pos;
+					ei->m_end = npos;
+				}
+				else if (ei->pos > ei->m_start)
+					ei->m_end = npos;
+				else
+					ei->m_start = npos;
+			
+				ei->pos++;
+				update = true;
+			}
 		}
-	#else
-		for(x = 0; txt[x]; x++)
-			;
-
-		if (x != ei->pos)
+		else
 		{
-			ei->pos = x;
-			update = false;
+			for(x = 0; txt[x]; x++)
+				;
+
+			if (x != ei->pos)
+			{
+				ei->pos = x;
+				update = false;
+			}
 		}
-	#endif
 		break;
 	}
 	case 0x4b00:	/* LEFT ARROW moves cursor left */
@@ -2983,26 +3109,28 @@ obj_ed_char(XA_TREE *wt,
 	}
 	case 0x4b34:	/* SHIFT+LEFT ARROW move cursor to start of field */
 	{
-	#if 0
-		if (ei->pos)
+		if (xted)
 		{
-			short npos = ei->pos - 1;
-		
-			if (ei->m_start == ei->m_end)
+			if (ei->pos)
 			{
-				ei->m_end = ei->pos;
-				ei->m_start = npos;
-			}
-			else if (ei->pos > ei->m_start)
-				ei->m_end = npos;
-			else
-				ei->m_start = npos;
+				short npos = ei->pos - 1;
+		
+				if (ei->m_start == ei->m_end)
+				{
+					ei->m_end = ei->pos;
+					ei->m_start = npos;
+				}
+				else if (ei->pos > ei->m_start)
+					ei->m_end = npos;
+				else
+					ei->m_start = npos;
 			
-			ei->pos--;
-			update = true;
+				ei->pos--;
+				update = true;
+			}
+			break;
 		}
-		break;
-	#endif
+		/* else fall through */
 	}
 	case 0x4700:	/* CLR/HOME also moves to far left */
 	{
@@ -3020,18 +3148,18 @@ obj_ed_char(XA_TREE *wt,
 	}
 	case 0x2e03:	/* CTRL+C */
 	{
-		update = ed_scrap_copy(wt, ei, ed_txt);
+		update = ed_scrap_copy(wt, ei, ted);
 		break;
 	}
 	case 0x2d18: 	/* CTRL+X */
 	{
-		update = ed_scrap_cut(wt, ei, ed_txt);
+		update = ed_scrap_cut(wt, ei, ted);
 		break;
 	}
 	case 0x2f16: 	/* CTRL+V */
 	{
 		short pos;
-		update = ed_scrap_paste(wt, ei, ed_txt, &pos);
+		update = ed_scrap_paste(wt, ei, ted, &pos);
 		ei->pos = pos;
 		break;
 	}
@@ -3040,7 +3168,7 @@ obj_ed_char(XA_TREE *wt,
 		delete_marked(ei, txt);
 
 		chg = 0;/* Ugly hack! */
-		if (ei->pos == ed_txt->te_txtlen - 1)
+		if (ei->pos == ted->te_txtlen - 1)
 		{
 			ei->pos--;
 			chg = 1;
@@ -3049,11 +3177,11 @@ obj_ed_char(XA_TREE *wt,
 		key = keycode & 0xff;
 		tmask = character_type[key];
 
-		n = strlen(ed_txt->te_pvalid) - 1;
+		n = strlen(ted->te_pvalid) - 1;
 		if (ei->pos < n)
 			n = ei->pos;
 
-		switch(ed_txt->te_pvalid[n])
+		switch(ted->te_pvalid[n])
 		{
 		case '0':
 			tmask &= CGd|CGdt;
@@ -3105,14 +3233,14 @@ obj_ed_char(XA_TREE *wt,
 		
 		if (!tmask)
 		{
-			for (n = x = 0; ed_txt->te_ptmplt[n]; n++)
+			for (n = x = 0; ted->te_ptmplt[n]; n++)
 			{
-				if (ed_txt->te_ptmplt[n] == '_')
+				if (ted->te_ptmplt[n] == '_')
 					x++;
-				else if (ed_txt->te_ptmplt[n] == key && x >= ei->pos)
+				else if (ted->te_ptmplt[n] == key && x >= ei->pos)
 					break;
 			}
-			if (key && (ed_txt->te_ptmplt[n] == key))
+			if (key && (ted->te_ptmplt[n] == key))
 			{
 				for(n = ei->pos; n < x; n++)
 					txt[n] = ' ';
@@ -3127,8 +3255,8 @@ obj_ed_char(XA_TREE *wt,
 		}
 		else
 		{
-			txt[ed_txt->te_txtlen - 2] = '\0';	/* Needed! */
-			for (x = ed_txt->te_txtlen - 1; x > ei->pos; x--)
+			txt[ted->te_txtlen - 2] = '\0';	/* Needed! */
+			for (x = ted->te_txtlen - 1; x > ei->pos; x--)
 				txt[x] = txt[x - 1];
 
 			txt[ei->pos] = (char)key;
@@ -3151,6 +3279,19 @@ char *edfunc[] =
 	"ED_INIT",
 	"ED_CHAR",
 	"ED_END",
+	"ED_4",
+	"ED_DISABLE",
+	"ED_ENABLE",
+	"ED_CRSRON",
+	"ED_CRSROFF",
+	"ED_MARK",
+	"ED_STRING",
+	"ED_SETPTEXT",
+	"ED_SETPTMPLT",
+	"ED_SETPVALID",
+	"ED_GETPTEXT",
+	"ED_GETPTMPLT",
+	"ED_GETPVALID",
 	"*ERR*"
 };
 #endif
@@ -3170,14 +3311,77 @@ chk_edobj(OBJECT *obtree, short obj, short lastobj)
 	}
 }
 
+#define CLRMARKS	0
+#define SETMARKS	1
+#define SETACTIVE	2
+
+static void
+obj_xED_INIT(struct widget_tree *wt,
+	     struct objc_edit_info *ei,
+	     short pos,
+	     short flags)
+{
+	TEDINFO *ted = &ei->ti;
+	short p;
+
+	/* Ozk:
+	 * See if the object passed to us really is editable.
+	 * We give up here if object not editable, because I think
+	 * thats what other aes's does. But before doing that we search
+	 * for another editable object which we pass back.
+	 * XXX - see how continuing setup with the lookedup object affects
+	 *       applications.
+	 */
+	{
+		/* Ozk: 
+		 * do things here to end edit of current obj...
+		 */
+		/* --- */
+		
+// 		display("xED_INIT: ei=%lx", ei);
+// 		display(" -- ted %lx, xted %lx, oted %lx", ted, ei, ei->p_ti);
+// 		display(" -- ptext %lx, txtlen %d", ted->te_ptext, ted->te_txtlen);
+// 		display(" -- text '%s'", ted->te_ptext);
+		
+		if (*(ted->te_ptext) == '@')
+			*(ted->te_ptext) = 0;
+
+		p = strlen(ted->te_ptext);
+		if (pos && (pos == -1 || pos > p))
+			pos = p;
+		
+		ei->m_start = 0;
+			
+		if (flags & SETMARKS)
+			ei->m_end = pos;
+		else
+			ei->m_end = 0;
+		ei->t_offset = 0;
+		ei->p_offset = 0;
+		
+		ei->pos = pos;
+		
+		if (flags & SETACTIVE)
+		{
+			wt->e = *ei;
+			wt->ei = ei;
+		}
+		DIAGS(("xED_INIT: te_ptext='%s', %lx", ted->te_ptext, (long)ted->te_ptext));
+// 		display("xED_INIT: te_ptext='%s', %lx", ted->te_ptext, (long)ted->te_ptext);
+	}
+}
+
 static short
 obj_ED_INIT(struct widget_tree *wt,
 	    struct objc_edit_info *ei,
 	    short obj, short pos, short last,
+	    short flags,
 	    TEDINFO **ted_ret,
+	    XTEDINFO **xted_ret,
 	    short *old_ed)
 {
 	TEDINFO *ted = NULL;
+	XTEDINFO *xted = NULL;
 	OBJECT *obtree = wt->tree;
 	short p, ret = 0, old_ed_obj = -1;
 
@@ -3189,7 +3393,7 @@ obj_ED_INIT(struct widget_tree *wt,
 	 * XXX - see how continuing setup with the lookedup object affects
 	 *       applications.
 	 */
-	if ( chk_edobj(obtree, obj, last) && (ted = object_get_tedinfo(obtree + obj)) )
+	if ( chk_edobj(obtree, obj, last) && (ted = object_get_tedinfo(obtree + obj, &xted)) )
 	{
 		/* Ozk: 
 		 * do things here to end edit of current obj...
@@ -3209,9 +3413,22 @@ obj_ED_INIT(struct widget_tree *wt,
 		p = strlen(ted->te_ptext);
 		if (pos && (pos == -1 || pos > p))
 			pos = p;
+		
+		if (xted_ret && xted)
+		{
+			ei->m_start = 0;
+			
+			if (flags & SETMARKS)
+				ei->m_end = pos;
+			else
+				ei->m_end = 0;
+			ei->t_offset = 0;
+			ei->p_offset = 0;
+		}
+		else
+			ei->m_start = ei->m_end = 0;
+		
 		ei->pos = pos;
-		ei->m_start = ei->m_end = 0;
-// 		ei->m_end = pos;
 
 		DIAGS(("ED_INIT: type %d, te_ptext='%s', %lx", obtree[obj].ob_type, ted->te_ptext, (long)ted->te_ptext));
 		ret = 1;
@@ -3228,11 +3445,33 @@ obj_ED_INIT(struct widget_tree *wt,
 
 	if (ted_ret)
 		*ted_ret = ted;
+	if (xted_ret)
+		*xted_ret = xted;
 	if (old_ed)
 		*old_ed = old_ed_obj;
 
 	return ret;
 }
+
+static short
+obj_xED_END(struct widget_tree *wt,
+	    struct xa_vdi_settings *v,
+	    struct objc_edit_info *ei,
+	    bool redraw,
+	    const RECT *clip,
+	    struct xa_rect_list *rl)
+{
+	disable_objcursor(wt, v, rl);
+
+	if (ei->m_start != ei->m_end)
+	{
+		ei->m_start = ei->m_end = 0;
+		if (redraw)
+			obj_draw(wt, v, ei->obj, -1, clip, rl, 0);
+	}
+	return ei->pos;
+}				
+
 /*
  * Returns 1 if successful (character eaten), or 0 if not.
  */
@@ -3243,6 +3482,7 @@ obj_edit(XA_TREE *wt,
 	 short obj,
 	 short keycode,
 	 short pos,	/* -1 sets position to end of text */
+	 char *string,
 	 bool redraw,
 	 const RECT *clip,
 	 struct xa_rect_list *rl,
@@ -3251,7 +3491,8 @@ obj_edit(XA_TREE *wt,
 	 short *ret_obj)
 {
 	short ret = 1;
-	TEDINFO *ted;
+	TEDINFO *ted = NULL;
+	XTEDINFO *xted = NULL;
 	OBJECT *obtree = wt->tree;
 	struct objc_edit_info *ei;
 	short last = 0, old_ed_obj = -1;
@@ -3262,6 +3503,7 @@ obj_edit(XA_TREE *wt,
 	      funcstr, wt, obtree, obj, keycode, pos));
 #endif
 // 	char *funcstr = func < 0 || func > 3 ? edfunc[4] : edfunc[func];
+	
 // 	display("  --  obj_edit: func %s, wt=%lx obtree=%lx, obj:%d, k:%x, pos:%x",
 // 	      funcstr, wt, obtree, obj, keycode, pos);
 	
@@ -3272,23 +3514,18 @@ obj_edit(XA_TREE *wt,
 	if (wt->e.obj != -1 && wt->e.obj > last)
 		wt->e.obj = -1;
 
-	if (!wt->owner->options.xa_objced)
+// 	display("flg %d, xted = %lx, obj = %d, xted->obj = %d", wt->flags & WTF_OBJCEDIT ? 1 : 0, xted, obj, xted ? xted->obj : -1);
+	
+	if (!(wt->flags & WTF_OBJCEDIT)) //!(wt->owner->options.app_opts & XAAO_OBJC_EDIT))
 	{
 		switch (func)
 		{
-			case ED_REDRAW:
-			{
-				if (wt->e.obj != -1 && redraw)
-					eor_objcursor(wt, v, rl);
-				pos = wt->e.pos;
-				break;
-			}
 ed_init:
 			case ED_INIT:
 			{
 				hidem();
 				
-				obj_ED_INIT(wt, &wt->e, obj, -1, last, NULL, &old_ed_obj);
+				obj_ED_INIT(wt, &wt->e, obj, -1, last, CLRMARKS, NULL, NULL, &old_ed_obj);
 				
 				if (redraw)
 					eor_objcursor(wt, v, rl);
@@ -3299,45 +3536,6 @@ ed_init:
 				pos = wt->e.pos;
 				break;
 			}
-#if 0
-			case ED_XINIT:
-			{
-				bool newobj = wt->e.obj != obj;
-				hidem();
-
-				if (newobj)
-				{
-					if (wt->e.obj != -1)
-					{
-						wt->e.m_start = wt->e.m_end = 0;
-						if (redraw) obj_draw(wt, v, wt->e.obj, -2, clip, rl, 0);
-					}
-
-					obj_ED_INIT(wt, &wt->e, obj, -1, last, NULL, &old_ed_obj);
-
-					set_objcursor(wt, v);
-				}
-				else if (ed_changed(wt))
-				{
-					obj_ED_INIT(wt, &wt->e, obj, -1, last, NULL, &old_ed_obj);
-					set_objcursor(wt, v);
-					newobj = true;
-				}
-				
-				if (redraw)
-				{
-					if (newobj)
-						obj_draw(wt, v, obj, -2, clip, rl, 0);
-					eor_objcursor(wt, v, rl);
-				}
-				wt->e.c_state ^= OB_CURS_EOR;
-				
-				showm();
-// 				display("ED_INIT: eors=%d, obj=%d (last %d) for %s", wt->e.c_state & DRW_CURSOR, wt->e.obj, last, wt->owner->name);
-				pos = wt->e.pos;
-				break;
-			}
-#endif
 			case ED_END:
 			{
 				/* Ozk: Just turn off cursor :)
@@ -3381,17 +3579,17 @@ ed_init:
 						if (obj == -1)
 							obj = ob_find_next_any_flag(obtree, 0, OF_EDITABLE);
 					}
-					if (obj_ED_INIT(wt, &wt->e, obj, pos, last, &ted, &old_ed_obj))
+					if (obj_ED_INIT(wt, &wt->e, obj, pos, last, CLRMARKS, &ted, NULL, &old_ed_obj))
 					{
 						if (redraw)
 						{
 							eor_objcursor(wt, v, rl);
-							if (obj_ed_char(wt, &wt->e, ted, keycode))
+							if (obj_ed_char(wt, &wt->e, ted, NULL, keycode))
 								obj_draw(wt, v, wt->e.obj, -1, clip, rl, 0);
 							eor_objcursor(wt, v, rl);
 						}
 						else
-							obj_ed_char(wt, &wt->e, ted, keycode);
+							obj_ed_char(wt, &wt->e, ted, NULL, keycode);
 							
 						pos = wt->e.pos;
 					}
@@ -3401,7 +3599,7 @@ ed_init:
 					/* Ozk:
 					 * Object is the one with cursor focus, so we do it normally
 					 */
-					ted = object_get_tedinfo(obtree + obj);
+					ted = object_get_tedinfo(obtree + obj, NULL);
 					ei = &wt->e;
 
 					DIAGS((" -- obj_edit: ted=%lx", ted));
@@ -3409,12 +3607,12 @@ ed_init:
 					if (redraw)
 					{
 						eor_objcursor(wt, v, rl);
-						if (obj_ed_char(wt, ei, ted, keycode))
+						if (obj_ed_char(wt, ei, ted, NULL, keycode))
 							obj_draw(wt, v, obj, -1, clip, rl, 0);
 						eor_objcursor(wt, v, rl);
 					}
 					else
-						obj_ed_char(wt, ei, ted, keycode);
+						obj_ed_char(wt, ei, ted, NULL, keycode);
 					
 					pos = ei->pos;
 				}
@@ -3426,7 +3624,7 @@ ed_init:
 			{
 				hidem();
 				
-				obj_ED_INIT(wt, &wt->e, obj, pos, last, NULL, &old_ed_obj);
+				obj_ED_INIT(wt, &wt->e, obj, pos, last, CLRMARKS, NULL, NULL, &old_ed_obj);
 				
 				if (redraw)
 					eor_objcursor(wt, v, rl);
@@ -3456,53 +3654,108 @@ ed_init:
 	}
 	else
 	{
+		bool drwcurs = false;
+// 		display("ted = %lx, xted = %lx", ted, xted);
 		switch (func)
 		{
 			case ED_INIT:
 			{
-				ei = &wt->e;
-				hidem();
-				if (ei->obj >= 0 && redraw)
-					undraw_objcursor(wt, v, rl);
-
-				if (!obj_ED_INIT(wt, ei, obj, -1, last, NULL, &old_ed_obj))
-					disable_objcursor(wt, v, rl);
-				else
+				ei = wt->ei;
+				
+				if (ei && ei->obj == obj)
+					xted = ei;
+				else if (obj >= 0 && obj <= last)
+					ted = object_get_tedinfo(obtree + obj, &xted);
+				
+// 				display("xED_INIT, ei=%lx, xted=%lx", ei, xted);
+				
+				if (!ei || ei != xted)
 				{
-					enable_objcursor(wt, v);
-					if (redraw)
-						draw_objcursor(wt, v, rl);
+					hidem();
+					
+					if (ei)
+					{
+// 						display("undrw old");
+						obj_xED_END(wt, v, ei, redraw, clip, rl);
+					}
+					/* Ozk:
+					 * If xted is NULL, obj is not a valid object.
+					 * We then check if obj is -1, in which case we
+					 * automatically place editfocus at first editable
+					 * field we find.
+					 * If object was just wrong for this tree, we return
+					 * a -1 in next obj to indicate this.
+					 */
+					if (obj == -1)
+					{
+						obj = ob_find_next_any_flagstate(obtree, 0, wt->focus, OF_EDITABLE, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_FIRST);
+						if (obj >= 0)
+							ted = object_get_tedinfo(obtree + obj, &xted);
+					}
+					if (!xted)
+					{
+						wt->ei = NULL;
+						wt->e.obj = -1;
+						ei = NULL;
+					}
+					else
+					{
+						ei = xted;
+					
+// 						display("init new, ei = %lx, xted = %lx", ei, xted);
+						obj_xED_INIT(wt, ei, pos, SETMARKS|SETACTIVE);
+						set_objcursor(wt, v, ei);
+						enable_objcursor(wt, v);
+						if (redraw)
+						{
+							obj_draw(wt, v, ei->obj, -1, clip, rl, 0);
+							draw_objcursor(wt, v, rl);
+						}
+					}
+					showm();
 				}
-				showm();
-				pos = ei->pos;
+// 				display("done xED_INIT");
+				if (ei)
+					pos = ei->pos;
+				else
+					pos = 0;
 				break;
 			}
 			case ED_DISABLE:
 			case ED_END:
 			{
-				/* Ozk: Just turn off cursor :)
-				 */
-				if (wt->e.obj > 0)
-					pos = wt->e.pos;
-
-				hidem();
-				disable_objcursor(wt, v, rl);
-				showm();
+// 				display("xED_END");
+				if ((ei = wt->ei))
+				{
+					hidem();
+					pos = obj_xED_END(wt, v, ei, redraw, clip, rl);
+					showm();
+					if (func == ED_END)
+					{
+						wt->ei = NULL;
+						wt->e.obj = -1;
+					}
+				}
+				else
+					ret = 0;
 				break;
 			}
 			case ED_ENABLE:
 			{
-				enable_objcursor(wt, v);
+				if ((ei = wt->ei))
+					enable_objcursor(wt, v);
 				break;
 			}
 			case ED_CRSROFF:
-			{
-				undraw_objcursor(wt, v, rl);
+			{	
+				if ((ei = wt->ei))
+					undraw_objcursor(wt, v, rl);
 				break;
 			}
 			case ED_CRSRON:
 			{
-				draw_objcursor(wt, v, rl);
+				if ((ei = wt->ei))
+					draw_objcursor(wt, v, rl);
 				break;
 			}
 			case ED_CHAR:
@@ -3514,49 +3767,220 @@ ed_init:
 				 * For now we return with error.
 				 */
 
-				hidem();
-				if ( wt->e.obj == -1 ||
-				     obj == -1 ||
-				     obj != wt->e.obj)
-				{
-					struct objc_edit_info lei;
-
-					/* Ozk:
-					 * If the object is not initiated, or if its different
-					 * from the object holding cursor focus, we do it like this;
-					 */
-					DIAGS((" -- obj_edit: on object=%d without cursor focus(=%d)",
-						obj, wt->e.obj));
-					lei.obj = -1;
-					lei.pos = 0;
-					lei.c_state = 0;
+				ei = wt->ei;
 				
-					if (obj_ED_INIT(wt, &lei, obj, -1, last, &ted, &old_ed_obj))
+				if (ei && ei->obj == obj)
+					xted = ei;
+				else if (obj >= 0 && obj <= last)
+					ted = object_get_tedinfo(obtree + obj, &xted);
+				
+// 				display("xED_CHAR ei=%lx", ei);
+				
+				if (!ei || ei != xted)
+				{
+					DIAGS((" -- obj_edit: on object=%d without cursor focus", obj));
+					
+					if ((ei = xted))
 					{
-						if (obj_ed_char(wt, &lei, ted, keycode))
-							obj_draw(wt, v, obj, -1, clip, rl, 0);
-
-						pos = lei.pos;
+						obj_xED_INIT(wt, ei, pos, CLRMARKS);
+						set_objcursor(wt, v, ei);
 					}
 				}
 				else
+					drwcurs = redraw;
+
+				if (ei)
 				{
-					/* Ozk:
-					 * Object is the one with cursor focus, so we do it normally
-					 */
-					ted = object_get_tedinfo(obtree + obj);
-					ei = &wt->e;
+				
+					DIAGS((" -- obj_edit: ted=%lx", (long)&xted->ti));
+					hidem();
+					if (drwcurs)
+						undraw_objcursor(wt, v, rl);
+					if (obj_ed_char(wt, ei, NULL, xted, keycode))
+					{
+						if (redraw)
+							obj_draw(wt, v, ei->obj, -1, clip, rl, 0);
+					}
+					set_objcursor(wt, v, ei);
 
-					DIAGS((" -- obj_edit: ted=%lx", ted));
-
-					undraw_objcursor(wt, v, rl);
-					if (obj_ed_char(wt, ei, ted, keycode))
+					if (drwcurs)
+					{
+						draw_objcursor(wt, v, rl);
+					}
+					pos = ei->pos;
+					showm();
+				}
+				else
+				{
+					ret = 0;
+					pos = 0;
+				}
+				break;
+			}
+			case ED_MARK:
+			{
+				ei = wt->ei;
+				
+				if (ei && ei->obj == obj)
+					xted = ei;
+				else if (obj >= 0 && obj <= last)
+					ted = object_get_tedinfo(obtree + obj, &xted);
+				
+// 				display("ED_MARK: ei=%lx, %d(%d)", ei, ei ? ei->obj : -1, obj);
+				
+				if (!ei || ei != xted)
+				{
+					if ((ei = xted))
+						obj_xED_INIT(wt, ei, -1, CLRMARKS);
+				}
+				else
+					drwcurs = redraw;
+				
+				if (ei)
+				{
+					unsigned short sl = strlen(ei->ti.te_ptext);
+// 					display(" -- sl %d, start %d, end %d", sl, keycode, pos);
+					if (sl > keycode && (pos == -1 || pos > keycode))
+					{
+						ei->m_start = keycode;
+						if (pos == -1)
+							ei->m_end = sl;
+						else
+							ei->m_end = pos;
+					}
+					else
+						ei->m_start = ei->m_end = 0;
+						
+// 					display("start %d, end %d", ei->m_start, ei->m_end);
+					if (redraw)
 						obj_draw(wt, v, obj, -1, clip, rl, 0);
-					set_objcursor(wt, v);
-					draw_objcursor(wt, v, rl);
+				}
+				else
+					ret = 0;
+				
+				break;
+			}
+			case ED_STRING:
+			{
+				/* Ozk:
+				 * Hmm... we allow to edit objects other than the one in wt->e.obj.
+				 * However, how should we act here when that other object is not an
+				 * editable? Use the wt->e.obj or return with error?
+				 * For now we return with error.
+				 */
+
+				ei = wt->ei;
+				if (ei && ei->obj == obj)
+					xted = ei;
+				else if (obj >= 0 && obj <= last)
+					ted = object_get_tedinfo(obtree + obj, &xted);
+				
+// 				display("ED_STRING ei=%lx, string '%s'", ei, string ? string : "No string!");
+				
+				if (!ei || ei != xted)
+				{
+					if ((ei = xted))
+					{
+						obj_xED_INIT(wt, ei, pos, CLRMARKS);
+						set_objcursor(wt, v, ei);
+					}
+				}
+				else
+					drwcurs = redraw;
+
+				DIAGS((" -- obj_edit: ted=%lx", ted));
+				if (ei)
+				{
+					hidem();
+					if (drwcurs)
+						undraw_objcursor(wt, v, rl);
+				
+					if (string && string != ei->ti.te_ptext && *string)
+					{
+						while (*string)
+							obj_ed_char(wt, ei, NULL, xted, *(unsigned char *)string++);
+						if (keycode & 1 && wt->ei == ei)
+							obj_xED_INIT(wt, ei, -1, SETMARKS);
+					}
+					else
+					{
+						if (!string || !*string)
+							ei->ti.te_ptext[0] = '\0';
+						obj_xED_INIT(wt, ei, -1, ((keycode & 1) && wt->ei == ei) ? SETMARKS : CLRMARKS);
+					}
+
+					set_objcursor(wt, v, ei);
+					if (redraw)
+						obj_draw(wt, v, ei->obj, -1, clip, rl, 0);
+
+					if (drwcurs)
+					{
+						draw_objcursor(wt, v, rl);
+					}
+					showm();
 					pos = ei->pos;
 				}
-				showm();
+				else
+				{
+					pos = 0;
+					ret = 0;
+				}
+				break;
+			}
+			case ED_SETPTEXT:
+			{
+				ei = wt->ei;
+				if (ei && ei->obj == obj)
+					xted = ei;
+				else if (obj >= 0 && obj <= last)
+					ted = object_get_tedinfo(obtree + obj, &xted);
+				
+// 				display("ED_SETPTEXT ei=%lx", ei);
+				
+				if (!ei || ei != xted)
+				{
+					ei = xted;
+				}
+				else
+					drwcurs = redraw;
+				
+				if (ei)
+				{
+					if (string)
+					{
+						int chrs;
+
+						chrs = strlen(xted->ti.te_ptext) + 1;
+						if (chrs >= xted->ti.te_txtlen)
+							chrs = xted->ti.te_txtlen - 1;
+						if (chrs > keycode)
+							chrs = keycode;
+	
+						xted->ti.te_ptext[chrs] = '\0';
+						strcpy(string, xted->ti.te_ptext);
+					
+						xted->ti.te_ptext = string;
+						xted->ti.te_txtlen = keycode;
+					
+						obj_xED_INIT(wt, ei, -1, CLRMARKS);
+						set_objcursor(wt, v, ei);
+					
+						if (redraw)
+						{
+							if (drwcurs)
+								undraw_objcursor(wt, v, rl);
+							obj_draw(wt, v, obj, -1, clip, rl, 0);
+							if (drwcurs)
+								draw_objcursor(wt, v, rl);
+						}
+					}
+					pos = ei->pos;
+				}
+				else
+				{
+					pos = 0;
+					ret = 0;
+				}
 				break;
 			}
 			case ED_CRSR:
@@ -3590,6 +4014,8 @@ ed_init:
 	DIAG((D_objc, NULL, "obj_edit: old_obj=%d, return ret_obj=%d(%d), ret_pos=%d - ret=%d",
 		old_ed_obj, obj, wt->e.obj, pos, ret));
 
+// 	if (xted)
+// 		display("exit..");
 // 	display("obj_edit: old_obj=%d, return ret_obj=%d(%d), ret_pos=%d - ret=%d",
 // 		old_ed_obj, obj, wt->e.obj, pos, ret);
 	
