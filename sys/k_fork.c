@@ -177,7 +177,7 @@ fork_proc1 (struct proc *p1, long flags, long *err)
 //		p2->p_limits = copy_limits (p1);
 
 	if (flags & FORK_SHAREEXT)
-		p2->p_ext = share_ext (p1);
+		share_ext (p1, p2);
 	else
 		p2->p_ext = NULL; /* proc extensions can only be shared */
 
@@ -258,7 +258,7 @@ sys_pvfork (void)
 	long p_sigmask;
 	long r;
 
-	p = fork_proc (0, &r);
+	p = fork_proc (FORK_SHAREEXT, &r); // (0, &r);
 	if (!p)
 	{
 		DEBUG(("p_vfork: couldn't get new PROC struct"));
@@ -334,7 +334,7 @@ sys_pfork (void)
 	int i, j, newpid;
 	long r;
 
-	p = fork_proc (0, &r);
+	p = fork_proc(FORK_SHAREEXT, &r); //fork_proc (0, &r);
 	if (!p)
 	{
 		DEBUG (("p_fork: couldn't get new PROC struct"));

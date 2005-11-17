@@ -76,7 +76,6 @@ terminate(struct proc *curproc, short code, short que)
 	struct proc *p;
 	int i, wakemint = 0;
 
-
 	/* notify proc extensions */
 	proc_ext_on_exit(curproc, code);
 

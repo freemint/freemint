@@ -190,6 +190,14 @@ sys_pexec(short mode, const void *ptr1, const void *ptr2, const void *ptr3)
 	int tail_offs = 1;
 # endif
 
+#if 0
+	{
+		struct proc *pr = curproc;
+		if (!strnicmp(pr->name, "guitar", 6))
+			display("pexec(%d) for %s", mode, pr->name);
+	}
+#endif
+	
 	/* the high bit of mode controls process tracing */
 	switch (mode & 0x7fff)
 	{
@@ -375,7 +383,7 @@ sys_pexec(short mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		else
 		{
 			b->p_parent = curproc->p_mem->base;
-			p = fork_proc(thread ? FORK_SHAREVM : 0, &r);
+			p = fork_proc(thread ? (FORK_SHAREVM | FORK_SHAREEXT) : FORK_SHAREEXT, &r);
 		}
 
 		if (!p)
@@ -418,7 +426,7 @@ sys_pexec(short mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		if (!strcmp(curproc->name, "AESSYS"))
 		{
 			struct pcred *cred = p->p_cred;
-
+			
 			assert(cred && cred->ucr);
 
 			aes_hack = 1;
@@ -562,7 +570,7 @@ sys_pexec(short mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		newpid = p->pid;
 		for(;;)
 		{
-			r = pwaitpid(curproc->pid ? newpid : -1, 0, NULL, &retval); //r = sys_pwaitpid(curproc->pid ? newpid : -1, 0, NULL);
+			r = pwaitpid(curproc->pid ? newpid : -1, 0, NULL, &retval);
 			if (r < 0)
 			{
 				ALERT("p_exec: wait error");
@@ -580,8 +588,6 @@ sys_pexec(short mode, const void *ptr1, const void *ptr2, const void *ptr3)
 				 */
 				r = retval;
 				r &= 0x0000ffffL;
-// 				r = (long)((char)r);
-// 				r &= 0x0000ffffL;
 				break;
 			}
 
