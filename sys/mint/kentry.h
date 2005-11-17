@@ -102,7 +102,7 @@ struct timeval;
  * versions are enough :-)
  */
 #define KENTRY_MAJ_VERSION	0
-#define KENTRY_MIN_VERSION	13
+#define KENTRY_MIN_VERSION	14
 
 
 /* hardware dependant vector
@@ -266,7 +266,7 @@ struct kentry_proc
 	/* proc extension management */
 	void *_cdecl (*lookup_extension)(struct proc *p, long ident);
 	void *_cdecl (*attach_extension)(struct proc *p, long ident,
-					 unsigned long size, struct module_callback *);
+					 unsigned long flags, unsigned long size, struct module_callback *);
 	void  _cdecl (*detach_extension)(struct proc *p, long ident);
 
 	/* internal setuid/setgid */
