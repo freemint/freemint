@@ -3686,6 +3686,7 @@ set_slist_object(enum locks lock,
 	bzero(list, sizeof(*list) + sizeof(*nil_wt));
 
 	nil_wt->e.obj = -1;
+	nil_wt->ei = NULL;
 	nil_wt->focus = -1;
 	list->nil_wt = nil_wt;
 

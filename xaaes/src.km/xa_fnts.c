@@ -604,7 +604,7 @@ select_edsize(struct xa_fnts_info *fnts)
 	short redraw;
 
 	list = object_get_slist(obtree + FNTS_POINTS);
-	ent = list->search(list, NULL, SEFM_BYTEXT, object_get_tedinfo(obtree + FNTS_EDSIZE)->te_ptext);
+	ent = list->search(list, NULL, SEFM_BYTEXT, object_get_tedinfo(obtree + FNTS_EDSIZE, NULL)->te_ptext);
 	
 	if (list->cur)
 	{
@@ -819,7 +819,7 @@ click_style(SCROLL_INFO *list, SCROLL_ENTRY *this, const struct moose_data *md)
 static unsigned long
 get_edpoint(struct xa_fnts_info *fnts)
 {
-	unsigned long val = atol(object_get_tedinfo(fnts->wt->tree + FNTS_EDSIZE)->te_ptext);
+	unsigned long val = atol(object_get_tedinfo(fnts->wt->tree + FNTS_EDSIZE, NULL)->te_ptext);
 	return (val << 16);
 }
 
@@ -831,29 +831,26 @@ click_size(SCROLL_INFO *list, SCROLL_ENTRY *this, const struct moose_data *md)
 	{
 		OBJECT *obtree = list->wt->tree;
 		struct xa_fnts_info *fnts = list->data;
-		TEDINFO *ted = object_get_tedinfo(obtree + FNTS_EDSIZE);
+		TEDINFO *ted = object_get_tedinfo(obtree + FNTS_EDSIZE, NULL);
 		struct sesetget_params p; //seget_entrybyarg p;
 
 		p.idx = -1;
 		p.arg.txt = ted->te_ptext;
 		list->get(list, list->cur, SEGET_TEXTCPY, &p);
-		//strcpy(ted->te_ptext, list->cur->c.td.text.text->text);
-		obj_edit(fnts->wt,
-			 fnts->vdi_settings,
-			 ED_INIT,
-			 FNTS_EDSIZE,
-			 0,
-			 -1,
-			 false,
-			 NULL,
-			 NULL,
-			 NULL, NULL);
+		
+		obj_edit(fnts->wt, fnts->vdi_settings,
+		         ED_STRING,
+		         FNTS_EDSIZE,
+		         1,
+		         0,
+		         ted->te_ptext,
+		         true,
+		         NULL,
+		         ((struct xa_fnts_info *)list->data)->wind->rect_list.start, NULL,NULL);
 
 		fnts->fnt_pt = get_edpoint(fnts);
 		
-		//fnts_redraw(0, ((struct xa_fnts_info *)list->data)->wind, FNTS_EDSIZE, 1, NULL);
-		wdialog_redraw(0, ((struct xa_fnts_info *)list->data)->wind, FNTS_EDSIZE, 1, NULL);
-		//fnts_redraw(0, ((struct xa_fnts_info *)list->data)->wind, FNTS_SHOW, 1, NULL);
+// 		wdialog_redraw(0, ((struct xa_fnts_info *)list->data)->wind, FNTS_EDSIZE, 1, NULL);
 		wdialog_redraw(0, ((struct xa_fnts_info *)list->data)->wind, FNTS_SHOW, 1, NULL);
 	}
 	return 0;
@@ -1174,16 +1171,16 @@ init_fnts(struct xa_fnts_info *fnts)
 		/*
 		 * set ratio edit field..
 		 */ 
-		ted = object_get_tedinfo(obtree + FNTS_EDRATIO);
+		ted = object_get_tedinfo(obtree + FNTS_EDRATIO, NULL);
 		sprintf(pt, sizeof(pt), "%d", (unsigned short)(fnts->fnt_ratio >> 16));
 		sprintf(pt + strlen(pt), sizeof(pt) - strlen(pt), ".%d", (short)(fnts->fnt_ratio));
 		strcpy(ted->te_ptext, pt);
-		obj_edit(fnts->wt, fnts->vdi_settings, ED_INIT, FNTS_EDRATIO, 0, -1, false, NULL, NULL, NULL, NULL);
+		obj_edit(fnts->wt, fnts->vdi_settings, ED_INIT, FNTS_EDRATIO, 0, -1, NULL, false, NULL, NULL, NULL, NULL);
 	
 		/*
 		 * Set sizes edit field...
 		 */
-		ted = object_get_tedinfo(obtree + FNTS_EDSIZE);
+		ted = object_get_tedinfo(obtree + FNTS_EDSIZE, NULL);
 
 		if (fnts->fnt_pt)
 		{
@@ -1193,7 +1190,7 @@ init_fnts(struct xa_fnts_info *fnts)
 		else
 			strcpy(ted->te_ptext, "10");
 	
-		obj_edit(fnts->wt, fnts->vdi_settings, ED_INIT, FNTS_EDSIZE, 0, -1, false, NULL, NULL, NULL, NULL);
+		obj_edit(fnts->wt, fnts->vdi_settings, ED_INIT, FNTS_EDSIZE, 0, -1, NULL, false, NULL, NULL, NULL, NULL);
 
 	}
 	DIAG((D_fnts, NULL, " --- fnt_id = %ld, fnt_pt = %lx, fnt_ratio = %lx",

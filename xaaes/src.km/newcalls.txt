@@ -168,7 +168,52 @@ anything else.
  See wind_set/get() WF_OPTS mode for a detailed description of the bitmasks
  returned.
 ............................................................................
+ AES_FUNCTIONS (98)
+
+ This mode will return information about the existance of extended AES
+ functions. Currently defined is;
  
+ ap_gout1:
+    bit 0 - AGI_APPL_OPTIONS
+            If set, appl_options() exists.
+
+    bit 1 - AGI_WFORM
+            If set, the following MagiC 5.10 introduced functions
+            exists;
+                 objc_wdraw()
+                 objc_wchange()
+                 objc_wedit()
+                 objc_xfind()
+                 graf_wwatchbox()
+                 form_wbutton()
+                 form_wkeybd()
+
+            bits 2 - 15 Not yet defined, always reads 0.
+
+ ap_gout2, ap_gout3 and ap_gout4:
+    Not yet defined, all bits reads 0
+............................................................................
+ AES_AOPTS (99)
+ 
+  This mode will return bitmasks of available application options.
+  The bitmasks returned here are identical to the bitmasks used to modify
+  the application options via appl_options(APL_OPTS). Needless to say, this option
+  is not available if bit 0 in ap_gout1 is cleared after
+  appl_getinfo(AES_FUNCTIONS).
+  
+  ap_gout1:
+     bit 0:   AO0_OBJC_EDIT
+              If set, extended slider management is available.
+     bit 1:   AO0_WF_SLIDER
+              If set, extended objc_edit() cursor management is present.
+              See more info about this below.
+     
+     bits 2 - 15: Not yet defined, always set to 0.
+
+ ap_gout2, ap_gout3, ap_gout4:
+     No bits defined, always set to 0.
+
+............................................................................
  Here are new appl_info() constants to add to your header file;
 
 /*
@@ -201,6 +246,89 @@ anything else.
  */
 #define AES_FDEVSTATUS_STABLE 0x100
 
+/*
+ * AES_FUNCTIONS
+ */
+#define AES_FUNCTIONS  98
+/*
+ * Definition of bits in ap_gout1 after appl_getinfo(AES_FUNCTIONS)
+ /*
+#define AGI_AOPTS 1  /* appl_options exists */
+#define AGI_WFORM 2  /* MagiC 5.10 introduced functions for easier dialog in/output exists */
+ 
+/*
+ * AES_AOPTS
+ */
+#define AES_AOPTS 99
+
+/*
+ * Definition of bits in ap_gout1 after appl_getinfo(AES_AOPTS)
+ */
+#define AO0_WF_SLIDER 1  /* Extended slider information exists */
+#define AO0_OBJC_EDIT 2  /* Extended objc_edit() modes exists */
+
+===============================================================================
+=                                appl_options()                               =
+=                                                                             =
+=                            New function in XaAES                            =
+-------------------------------------------------------------------------------
+  
+ appl_options() is a new function introduced by XaAES. Its purpose is to let
+application set/get options available to it, such as the extended objc_edit
+mode.
+
+ short appl_options(short mode,
+                short aopts0, short aopts1, short aopts2, short aopt3,
+                short *out0, short *out1, short *out2, short *out3);
+ {
+ 	intin[0] = mode;
+ 	intin[1] = p1;
+ 	intin[2] = p2;
+ 	intin[3] = p3;
+ 	intin[4] = p4;
+ }
+
+ GEM arrays as follows:
+
+	Address     Element    meaning 
+        ------------------------------------------------------
+        control    control[0]   137        # Opcode
+        control+2  control[1]   5          # Entries in intin
+        control+4  control[2]   5          # Entries in intout
+        control+6  control[3]   0          # Entries in addrin 
+        control+8  control[4]   0          # entries in addrout 
+        intin      intin[0]    mode
+        intin+2    intin[1]    aopt0
+        intin+4    intin[2]    aopt1
+        intin+6    intin[3]    aopt2
+        intin+8    intin[4]    aopt3
+
+        intout     intout[0]   Return value (1 = OK, 0 = error)
+
+        intout+2   intout[1]  out0
+        intout+4   intout[2]  out1
+        intout+6   intout[3]  out2
+        intout+8   intout[4]  out3
+
+ mode:      Selects the mode. If mode is AOPT_CLEAR (0), then the selected
+            options found in aopt0 - aopt3 is cleared, disabling then.
+            If AOPT_SET (1) then the selected option bit is set, enabling
+            them.
+
+ aopt0:     The first 16 of options which have the following meaning;
+            
+            bit 0 - AO0_WF_SLIDER
+                If this bit is set, blah, blah, yeah.
+            Bit 1 - AO0_OBJC_EDIT
+                If this options is enabled, objc_edit()... blah
+
+ aopt1:    The second group of 16 options, none of which is defined yet.
+           Always reads 0.
+ aopt2:    The third group of 16 options, none of which is defined yet.
+           Always reads 0. 
+ aopt3:    The third group of 16 options, none of which is defined yet.
+           Always reads 0.
+ 
 ===============================================================================
                        -= New window kind definitions =-
 
