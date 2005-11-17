@@ -2545,8 +2545,8 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 								p = NULL;
 								while (n)
 								{
-									if ( oy2 > n->r.y && 
-									     bd.x > n->r.x
+									if ( oy2 >= n->r.y && 
+									     bd.x >= n->r.x
 									   )
 									{
 										if (p)
