@@ -30,6 +30,8 @@
 
 # include "proc_help.h"
 
+# include "mint/asm.h"
+
 # include "arch/cpu.h"
 # include "arch/mprot.h"
 # include "arch/user_things.h"
@@ -748,17 +750,51 @@ free_limits (struct proc *p)
 #endif
 }
 
+static struct proc_ext *
+new_proc_ext(long ident, unsigned long flags, unsigned long size, struct module_callback *cb)
+{
+	struct proc_ext *e;
+	
+	e = kmalloc(sizeof(*e));
+	
+	if (e)
+	{
+		bzero(e, sizeof(*e));
+		
+		if ((e->data = kmalloc(size)))
+		{
+			/* Initialize data */
+			e->ident = ident;
+			e->flags = flags;
+			e->size = size;
+			e->links = 1;
+			e->cb_vector = cb;
+			bzero(e->data, size);
+		}
+		else
+		{
+			kfree(e);
+			e = NULL;
+		}
+	}
+	return e;
+}
+
 /* p_ext */
 
 struct p_ext *
-share_ext(struct proc *p)
+share_ext(struct proc *p, struct proc *p2)
 {
-	struct p_ext *p_ext = NULL;
+	struct p_ext *p_ext = NULL, *p_ext2;
+
+	p2->p_ext = NULL;
 
 	if (p->p_ext)
 	{
 		p_ext = kmalloc(sizeof(*p_ext));
-		if (p_ext)
+		p_ext2 = kmalloc(sizeof(*p_ext2));
+
+		if (p_ext && p_ext2)
 		{
 			int i;
 
@@ -766,25 +802,69 @@ share_ext(struct proc *p)
 			bzero(p_ext, sizeof(*p_ext));
 
 			p_ext->size = p->p_ext->size;
-			p_ext->used = p->p_ext->used;
+			p_ext->used = 0;
 
-			for (i = 0; i < p_ext->used; i++)
+			/* Ozk:
+			 * When sharing extensions, we prepare/share/copy ALL extensions
+			 * THEN we call the 'share' callback vector.
+			 */
+			/* Ozk:
+			 * First we share all extensions
+			 */
+			for (i = 0; i < p->p_ext->used; i++)
 			{
 				struct proc_ext *ext;
 
 				ext = p->p_ext->ext[i];
 				assert(ext);
-
-				ext->links++;
-				p_ext->ext[i] = ext;
-
-				/* share callback */
-				if (ext->cb_vector && ext->cb_vector->share)
-					(*ext->cb_vector->share)(ext->data);
+				if (!(ext->flags & PEXT_NOSHARE))
+				{
+					if ((ext->flags & PEXT_COPYONSHARE))
+					{
+						struct proc_ext *ext2;
+						 
+						ext2 = new_proc_ext(ext->ident, ext->flags, ext->size, ext->cb_vector);
+						if (ext2)
+						{
+							memcpy(ext2->data, ext->data, ext->size);
+							p_ext->ext[p_ext->used++] = ext2;
+							ext = ext2;
+						}
+					}
+					else
+					{
+						ext->links++;
+						p_ext->ext[p_ext->used++] = ext;
+					}
+					if ((ext->flags & (PEXT_SHAREONCE|PEXT_COPYONSHARE)) == (PEXT_SHAREONCE|PEXT_COPYONSHARE))
+						ext->flags |= PEXT_NOSHARE;
+				}
 			}
+			if (p_ext->used)
+			{
+				/* Ozk:
+				 * Beyond here we cannot access the real p_ext structure, since
+				 * */
+				p2->p_ext = p_ext;
+
+				memcpy(p_ext2, p_ext, sizeof(*p_ext));
+
+				/* Ozk:
+				 * Then we call 'share' vector for the extensions that really
+				 * was shared.
+				 */
+				for (i = 0; i < p_ext2->used; i++)
+				{
+					struct proc_ext *ext;
+				
+					ext = p_ext2->ext[i];
+					if (ext->cb_vector && ext->cb_vector->share)
+						(*ext->cb_vector->share)(ext->data, p, p2);
+				}
+			}
+			kfree(p_ext2);
 		}
 	}
-
 	return p_ext;
 }
 
@@ -837,8 +917,25 @@ proc_lookup_extension(struct proc *p, long ident)
 	return NULL;
 }
 
+/* attach_extension()
+ *
+ * Attach a control block 'size' bytes large, whose identifier is 'ident',
+ * to a process 'p'
+ *
+ * Currently defined flags;
+ *  PEXT_NOSHARE
+ *      The attachment will not be shared (and the 'share' callback is NOT taken)
+ *      upon process forks or when a child process is created.
+ *  PEXT_COPYONSHARE
+ *      A new control block is allocated, and the content of the parents control-
+ *      block is copied to the new.
+ *  PEXT_SHAREONCE
+ *      This will only work in conjunction with PEXT_COPYONSHARE. When set, will
+ *      cause the PEXT_NOSHARE flag to be set on the copy, preventing it from
+ *      being shared beyond the fist child.
+ */
 void * _cdecl
-proc_attach_extension(struct proc *p, long ident, unsigned long size, struct module_callback *cb)
+proc_attach_extension(struct proc *p, long ident, unsigned long flags, unsigned long size, struct module_callback *cb)
 {
 	struct p_ext *p_ext;
 	struct proc_ext *ext;
@@ -873,32 +970,12 @@ proc_attach_extension(struct proc *p, long ident, unsigned long size, struct mod
 		DEBUG(("proc_attach_extension: no free extension slots"));
 		return NULL;
 	}
-
-	ext = kmalloc(sizeof(*ext));
+	
+	ext = new_proc_ext(ident, flags, size, cb);
 	if (ext)
 	{
-		bzero(ext, sizeof(*ext));
-
-		/* initialize data */
-		ext->ident = ident;
-		ext->links = 1;
-		ext->cb_vector = cb;
-
-		/* allocate data area */
-		ext->data = kmalloc(size);
-		if (ext->data)
-		{
-			/* clean data area */
-			bzero(ext->data, size);
-
-			/* remember */
-			p_ext->ext[p_ext->used++] = ext;
-
-			/* return success */
-			return ext->data;
-		}
-		else
-			kfree(ext);
+		p_ext->ext[p_ext->used++] = ext;
+		return ext->data;
 	}
 
 	if (!p_ext->used)
@@ -911,11 +988,9 @@ proc_attach_extension(struct proc *p, long ident, unsigned long size, struct mod
 	return NULL;
 }
 
-void _cdecl
-proc_detach_extension(struct proc *p, long ident)
+static void
+detach_ext(struct proc *p, long ident)
 {
-	if (!p) p = curproc;
-
 	if (p->p_ext)
 	{
 		struct p_ext *p_ext = p->p_ext;
@@ -954,21 +1029,44 @@ proc_detach_extension(struct proc *p, long ident)
 	}
 }
 
+void _cdecl
+proc_detach_extension(struct proc *p, long ident)
+{
+	if (!p) p = curproc;
+
+	/* Ozk: special action when p == -1L; Remove 'ident' attachment
+	 *      from ALL processes currently running. This means that the
+	 *      kernel module for which these attachments were installed
+	 *      is about to exit, and does a detach_extension(-1L, ident)
+	 *      to clean up. This is very important, so that the vectors
+	 *      dont point into nowhere land after a module (like XaAES)
+	 *      exits.
+	 */
+	if ((long)p == -1L)
+	{
+		for (p = proclist; p; p = p->gl_next)
+			detach_ext(p, ident);
+	}
+	else
+		detach_ext(p, ident);
+}
+
 void
 proc_ext_on_exit(struct proc *p, int code)
 {
 	struct p_ext *p_ext = p->p_ext;
-
+	
 	if (p_ext)
 	{
 		int i;
-
 		for (i = 0; i < p_ext->used; i++)
 		{
 			struct proc_ext *ext = p_ext->ext[i];
-
+			
 			if (ext->cb_vector && ext->cb_vector->on_exit)
+			{
 				(*ext->cb_vector->on_exit)(ext->data, p, code);
+			}
 		}
 	}
 }
