@@ -112,6 +112,39 @@ proc_is_now_client(struct xa_client *client)
 }
 
 void
+client_nicename(struct xa_client *client, const char *n, bool autonice)
+{
+	int l;
+	char *d = client->name;
+
+	l = strlen(n);
+
+	if (autonice)
+		l += 2;
+	
+	if (l >= NICE_NAME)
+	{
+		if (autonice)
+		{
+			*d++ = ' ';
+			*d++ = ' ';
+			l -= 2;
+		}
+		strncpy(d, n, NICE_NAME - 1);
+		*(d + NICE_NAME - 1) = 0;
+	}
+	else
+	{
+		if (autonice)
+		{
+			*d++ = ' ';
+			*d++ = ' ';
+		}
+		strcpy(d, n);
+	}
+}
+
+void
 init_client_mdbuff(struct xa_client *client)
 {
 	client->md_head = client->mdb;
@@ -226,9 +259,6 @@ init_client(enum locks lock)
 
 	/* awaiting menu_register */
 	sprintf(client->name, sizeof(client->name), "  %s", client->proc_name);
-
-	/* update the taskmanager if open */
-	update_tasklist(lock);
 
 	DIAGS(("appl_init: checking shel info (pid %i)", client->p->pid));
 	{
@@ -375,6 +405,10 @@ CE_pwaitpid(enum locks lock, struct c_event *ce, bool cancel)
 		DIAGS(("sigchld -> %li (pid %li)", r, ((r & 0xffff0000L) >> 16)));
 // 		display("sigchld -> %li (pid %li)", r, ((r & 0xffff0000L) >> 16));
 	}
+	if (ce->d0)
+	{
+		send_ch_exit(ce->client, ce->d0, ce->d1);
+	}
 }
 
 /*
@@ -431,12 +465,18 @@ exit_proc(enum locks lock, struct proc *p, int code)
 		/* Ozk:
 		 * If process was started via shel_write, we need to perform
 		 * pwaitpid on behalf of the parent client.
+		 *
+		 * We should not sent CH_EXIT for processes that an AES client
+		 * started using other means than shel_write(), even if we can.
+		 * This is because the AES should not/need not bother, and that
+		 * it is defined that shel_write() should be used when AES needs
+		 * to bother.
 		 */
 		if (info->shel_write)
 		{
-			post_cevent(client, CE_pwaitpid, NULL,NULL, 0,0, NULL,NULL);
+			post_cevent(client, CE_pwaitpid, NULL,NULL, p->pid,code, NULL,NULL);
+// 			send_ch_exit(client, p->pid, code);
 		}
-		send_ch_exit(client, p->pid, code);
 #if GENERATE_DIAGS
 		if (client)
 		{
@@ -641,9 +681,7 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 		kick_mousemove_timeout();
 	}
 	
-	/* if taskmanager is open the tasklist will be updated */
 // 	if (d) display("11");
-	update_tasklist(lock);
 
 // 	if (d) display("12");
 	/*

@@ -1975,6 +1975,7 @@ free_xawidget_resources(struct xa_widget *widg)
 					DIAGS(("  --- release stuff=%lx in widg=%lx",
 						widg->stuff, widg));
 					kfree(widg->stuff);
+					widg->stuff = NULL;
 				}
 			}
 		}
@@ -2779,48 +2780,55 @@ static void
 init_slider_widget(struct xa_window *wind, struct xa_widget *widg, short slider_idx, RECT *offsets)
 {
 	struct xa_widget *w;
-	XA_SLIDER_WIDGET *sl = kmalloc(sizeof(*sl));
+	XA_SLIDER_WIDGET *sl;
+
+	/* Ozk: Bad mem leak here. If widget got slider info, we keep this
+	 */
+	if (!widg->stuff)
+	{
+		sl = kmalloc(sizeof(*sl));
 	
-	assert(sl);
-	widg->stuff = sl;
-	sl->length = SL_RANGE;
-	widg->flags |= XAWF_STUFFKMALLOC;
+		assert(sl);
+		widg->stuff = sl;
+		sl->length = SL_RANGE;
+		widg->flags |= XAWF_STUFFKMALLOC;
 							
-	if (slider_idx == XAW_VSLIDE)
-	{
-		DIAGS(("Make vslide (uparrow)"));
-		w = make_widget(wind, &def_methods[XAW_UPPAGE + 1], NULL, offsets);
-		w->arrowx = WA_UPPAGE;
-		w->xarrow = WA_DNPAGE;
-		w->limit = 0;
-		w->xlimit = SL_RANGE;
-		w->slider_type = XAW_VSLIDE;
+		if (slider_idx == XAW_VSLIDE)
+		{
+			DIAGS(("Make vslide (uparrow)"));
+			w = make_widget(wind, &def_methods[XAW_UPPAGE + 1], NULL, offsets);
+			w->arrowx = WA_UPPAGE;
+			w->xarrow = WA_DNPAGE;
+			w->limit = 0;
+			w->xlimit = SL_RANGE;
+			w->slider_type = XAW_VSLIDE;
 		
-		DIAGS(("Make vslide (dnarrow)"));
-		w = make_widget(wind, &def_methods[XAW_DNPAGE + 1], NULL, offsets);
-		w->arrowx = WA_DNPAGE;
-		w->xarrow = WA_UPPAGE;
-		w->limit = SL_RANGE;
-		w->xlimit = 0;
-		w->slider_type = XAW_VSLIDE;
-	}
-	else
-	{
-		DIAGS(("Make hslide (lfarrow)"));
-		w = make_widget(wind, &def_methods[XAW_LFPAGE + 1], NULL, offsets);
-		w->arrowx = WA_LFPAGE;
-		w->xarrow = WA_RTPAGE;
-		w->limit = 0;
-		w->xlimit = SL_RANGE;
-		w->slider_type = XAW_HSLIDE;
+			DIAGS(("Make vslide (dnarrow)"));
+			w = make_widget(wind, &def_methods[XAW_DNPAGE + 1], NULL, offsets);
+			w->arrowx = WA_DNPAGE;
+			w->xarrow = WA_UPPAGE;
+			w->limit = SL_RANGE;
+			w->xlimit = 0;
+			w->slider_type = XAW_VSLIDE;
+		}
+		else
+		{
+			DIAGS(("Make hslide (lfarrow)"));
+			w = make_widget(wind, &def_methods[XAW_LFPAGE + 1], NULL, offsets);
+			w->arrowx = WA_LFPAGE;
+			w->xarrow = WA_RTPAGE;
+			w->limit = 0;
+			w->xlimit = SL_RANGE;
+			w->slider_type = XAW_HSLIDE;
 		
-		DIAGS(("Make hslide (rtarrow)"));
-		w = make_widget(wind, &def_methods[XAW_RTPAGE + 1], NULL, offsets);
-		w->arrowx = WA_RTPAGE;
-		w->xarrow = WA_LFPAGE;
-		w->limit = SL_RANGE;
-		w->xlimit = 0;
-		w->slider_type = XAW_HSLIDE;	
+			DIAGS(("Make hslide (rtarrow)"));
+			w = make_widget(wind, &def_methods[XAW_RTPAGE + 1], NULL, offsets);
+			w->arrowx = WA_RTPAGE;
+			w->xarrow = WA_LFPAGE;
+			w->limit = SL_RANGE;
+			w->xlimit = 0;
+			w->slider_type = XAW_HSLIDE;	
+		}
 	}
 }
 							

@@ -136,6 +136,8 @@ __BEGIN_DECLS
 #define APP_APPLICATION		0x02
 #define APP_ACCESSORY		0x04
 #define APP_SHELL 		0x08
+#define APP_AESSYS		0x10
+#define APP_AESTHREAD		0x20
 
 /* appl_trecord types */
 #define APPEVNT_TIMER	 	0
