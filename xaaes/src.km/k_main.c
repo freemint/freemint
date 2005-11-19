@@ -876,8 +876,10 @@ helpthread_entry(void *c)
 			d += 32;
 			pb->addrout = (long *)d;
 		
-			strcpy(client->name, aeshlp_name);
+// 			strcpy(client->name, aeshlp_name);
+			client_nicename(client, aeshlp_name, true);
 			C.Hlp = client;
+			client->type = APP_AESTHREAD;
 			C.Hlp_pb = client->waiting_pb = pb;
 			client->waiting_for = 0;
 			client->block = iBlock;
@@ -1366,7 +1368,7 @@ k_main(void *dummy)
 		yield();
 
 	add_to_tasklist(C.Aes);
-// 	add_to_tasklist(C.Hlp);
+	add_to_tasklist(C.Hlp);
 	
 	if (cfg.opentaskman)
 		post_cevent(C.Hlp, ceExecfunc, open_taskmanager,NULL, 0,0, NULL,NULL);

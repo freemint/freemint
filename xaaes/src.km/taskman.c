@@ -99,6 +99,16 @@ static struct xa_wtxt_inf sys_txt =
 
 };
 
+static struct xa_wtxt_inf sys_thrd =
+{
+ WTXT_NOCLIP,
+/* id  pnts efx   fgc      bgc */
+ {  -1,  -1,   MD_TRANS, 0, G_LWHITE, G_LWHITE },	/* Normal */
+ {  -1,  -1,   MD_TRANS, 0, G_LBLACK, G_LWHITE },	/* Selected */
+ {  -1,  -1,   MD_TRANS, 0, G_BLACK, G_WHITE },	/* Highlighted */
+
+};
+
 static struct xa_wtxt_inf desk_txt =
 {
  WTXT_NOCLIP,
@@ -131,7 +141,7 @@ build_tasklist_string(struct xa_client *client)
 				sprintf(tx, tx_len, " %3d/%3ld%s", client->p->pid, prio, client->name);
 		}
 		else
-			sprintf(tx, tx_len, " %3d/   %s", client->p->pid, 0, client->name);
+			sprintf(tx, tx_len, " %3d/    %s", client->p->pid, 0, client->name);
 	}
 	return tx;
 };
@@ -151,6 +161,8 @@ add_to_tasklist(struct xa_client *client)
 		sc.fnt = &acc_txt;
 	else if (client->type & APP_SYSTEM)
 		sc.fnt = &sys_txt;
+	else if (client->type & APP_AESTHREAD)
+		sc.fnt = &sys_thrd;
 	else if (client->type & APP_APPLICATION)
 		sc.fnt = &prg_txt;
 	else
@@ -196,8 +208,6 @@ remove_from_tasklist(struct xa_client *client)
 			list->del(list, p.e, true);
 	}
 }
-#if 1
-
 void
 update_tasklist_entry(struct xa_client *client)
 {
@@ -227,76 +237,6 @@ update_tasklist_entry(struct xa_client *client)
 		}
 	}
 }
-#endif
-
-#if 0
-static void
-refresh_tasklist(enum locks lock)
-{
-	OBJECT *form = ResourceTree(C.Aes_rsc, TASK_MANAGER);
-	OBJECT *tl = form + TM_LIST;
-	SCROLL_INFO *list = object_get_slist(tl);
-	struct xa_client *client;
-
-	/* Empty the task list */
-	list->empty(list, NULL, -1);
-
-	Sema_Up(clients);
-
-	/* Add all current tasks to the list */
-	FOREACH_CLIENT(client)
-	{
-		const size_t tx_len = 128;
-		OBJECT *icon;
-		char *tx;
-		struct scroll_content sc = { 0 };
-
-		/* default icon */
-		icon = form + TM_ICN_XAAES;
-
-		if (client == C.Hlp)
-			continue;
-
-		if (client->type & APP_ACCESSORY)
-			icon = form + TM_ICN_MENU;
-
-		tx = kmalloc(tx_len);
-		if (tx)
-		{
-			long prio = p_getpriority(0, client->p->pid);
-
-			if (prio >= 0)
-			{
-				prio -= 20;
-
-				if (prio < 0 && prio > -10)
-					sprintf(tx, tx_len, " %3d/ %2ld%s", client->p->pid, prio, client->name);
-				else
-					sprintf(tx, tx_len, " %3d/%3ld%s", client->p->pid, prio, client->name);
-			}
-			else
-				sprintf(tx, tx_len, " %3d/   %s", client->p->pid, 0, client->name);
-
-			sc.icon = icon;
-			sc.text = tx;
-			sc.n_strings = 1;
-			sc.data = client;
-			list->add(list, NULL, NULL, &sc, false, SETYP_MAL, true);
-		}
-		else
-		{
-			sc.icon = icon;
-			sc.text = client->name;
-			sc.n_strings = 1;
-			sc.data = client;
-			list->add(list, NULL, NULL, &sc, false, 0, true);
-		}
-	}
-
-	list->slider(list, true);
-	Sema_Dn(clients);
-}
-#endif
 
 static struct xa_window *task_man_win = NULL;
 
@@ -405,65 +345,13 @@ free_namelist(struct cfg_name_list **list)
 		kfree(l);
 	}
 }
-#if 0
-static void
-ceUpdtasklist(enum locks lock, struct c_event *ce, bool cancel)
-{
-	if (!cancel && task_man_win)
-	{
-		refresh_tasklist(0);
-		redraw_toolbar(0, task_man_win, TM_LIST);
-	}
-}
-#endif
-void
-update_tasklist(enum locks lock)
-{
-	if (task_man_win)
-	{
-// 		if (!CE_exists(C.Hlp, ceUpdtasklist))
-// 			post_cevent(C.Hlp, ceUpdtasklist, NULL,NULL, 0,0, NULL,NULL);
-#if 0		
-		DIAGS(("update_tasklist"));
-		refresh_tasklist(lock);
-		redraw_toolbar(lock, task_man_win, TM_LIST);
-#endif
-	}
-}
 
 static int
 taskmanager_destructor(enum locks lock, struct xa_window *wind)
 {
-// 	OBJECT *form = ResourceTree(C.Aes_rsc, TASK_MANAGER);
-// 	OBJECT *ob = form + TM_LIST;
-// 	SCROLL_INFO *list = object_get_slist(ob);
-
-// 	list->empty(list, NULL, -1);
-	
 	task_man_win = NULL;
-
 	return true;
 }
-#if 0
-/*
- * as long update_tasklist() is called for every *modification* of
- * the global client list this routine work correct
- */
-static struct xa_client *
-cur_client(SCROLL_INFO *list)
-{
-	SCROLL_ENTRY *this = list->start;
-	struct xa_client *client = CLIENT_LIST_START;
-
-	while (this != list->cur)
-	{
-		this = this->next;
-		client = NEXT_CLIENT(client);
-	}
-
-	return client;
-}
-#endif
 
 static void
 send_terminate(enum locks lock, struct xa_client *client, short reason)
@@ -586,7 +474,14 @@ taskmanager_form_exit(struct xa_client *Client,
 				client = list->cur->data;
 			DIAGS(("taskmanager: KILL for %s", c_owner(client)));
 			if (client && is_client(client))
-				ikill(client->p->pid, SIGKILL);
+			{
+				if (client->type & (APP_AESTHREAD|APP_AESSYS))
+				{
+					ALERT(("Not a good idea, I tell you!"));
+				}
+				else
+					ikill(client->p->pid, SIGKILL);
+			}
 
 			object_deselect(wt->tree + TM_KILL);
 			redraw_toolbar(lock, task_man_win, TM_KILL);
@@ -604,7 +499,14 @@ taskmanager_form_exit(struct xa_client *Client,
 				client = list->cur->data;
 
 			if (client && is_client(client))
-				send_terminate(lock, client, AP_TERM);
+			{
+				if (client->type & (APP_AESTHREAD|APP_AESSYS))
+				{
+					ALERT(("Cannot terminate AES system proccesses!"));
+				}
+				else
+					send_terminate(lock, client, AP_TERM);
+			}
 
 			object_deselect(wt->tree + TM_TERM);
 			redraw_toolbar(lock, task_man_win, TM_TERM);
