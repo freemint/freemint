@@ -130,8 +130,8 @@ client_nicename(struct xa_client *client, const char *n, bool autonice)
 			*d++ = ' ';
 			l -= 2;
 		}
-		strncpy(d, n, NICE_NAME - 1);
-		*(d + NICE_NAME - 1) = 0;
+		strncpy(d, n, NICE_NAME - 3);
+		*(d + NICE_NAME - 3) = 0;
 	}
 	else
 	{
