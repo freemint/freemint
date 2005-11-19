@@ -3502,10 +3502,13 @@ obj_edit(XA_TREE *wt,
 	DIAG((D_form,wt->owner,"  --  obj_edit: func %s, wt=%lx obtree=%lx, obj:%d, k:%x, pos:%x",
 	      funcstr, wt, obtree, obj, keycode, pos));
 #endif
-// 	char *funcstr = func < 0 || func > 3 ? edfunc[4] : edfunc[func];
-	
-// 	display("  --  obj_edit: func %s, wt=%lx obtree=%lx, obj:%d, k:%x, pos:%x",
-// 	      funcstr, wt, obtree, obj, keycode, pos);
+#if 0
+	char *funcstr = func < 0 || func > 3 ? edfunc[4] : edfunc[func];
+
+	display("obj_edit: %s", wt->owner->name);
+	display("  -- func %s, wt=%lx obtree=%lx, obj:%d, k:%x, pos:%x",
+	      funcstr, wt, obtree, obj, keycode, pos);
+#endif
 	
 	last = 0;
 	while (!(obtree[last].ob_flags & OF_LASTOB))
@@ -3520,7 +3523,6 @@ obj_edit(XA_TREE *wt,
 	{
 		switch (func)
 		{
-ed_init:
 			case ED_INIT:
 			{
 				hidem();
@@ -3557,12 +3559,15 @@ ed_init:
 			case ED_CHAR:
 			{
 				if (!keycode)
-					goto ed_init;
-				hidem();
-				if ( wt->e.obj == -1 ||
-				     obj == -1 ||
-				     obj != wt->e.obj)
+					obj_ED_INIT(wt, &wt->e, obj, -1, last, CLRMARKS, NULL, NULL, &old_ed_obj);
+// 					goto ed_init;
+				else
 				{
+					hidem();
+					if ( wt->e.obj == -1 ||
+					     obj == -1 ||
+					     obj != wt->e.obj)
+					{
 					/* Ozk:
 					 * I am not sure if this is correct, but if ED_INIT have not been
 					 * called before ED_CHAR, we get passed an object value of -1.
@@ -3573,51 +3578,52 @@ ed_init:
 					 * 
 					 */
 
-					if (obj == -1)
-					{
-						obj = wt->e.obj;
 						if (obj == -1)
-							obj = ob_find_next_any_flag(obtree, 0, OF_EDITABLE);
+						{
+							obj = wt->e.obj;
+							if (obj == -1)
+								obj = ob_find_next_any_flag(obtree, 0, OF_EDITABLE);
+						}
+						if (obj_ED_INIT(wt, &wt->e, obj, pos, last, CLRMARKS, &ted, NULL, &old_ed_obj))
+						{
+							if (redraw)
+							{
+								eor_objcursor(wt, v, rl);
+								if (obj_ed_char(wt, &wt->e, ted, NULL, keycode))
+									obj_draw(wt, v, wt->e.obj, -1, clip, rl, 0);
+								eor_objcursor(wt, v, rl);
+							}
+							else
+								obj_ed_char(wt, &wt->e, ted, NULL, keycode);
+								
+							pos = wt->e.pos;
+						}
 					}
-					if (obj_ED_INIT(wt, &wt->e, obj, pos, last, CLRMARKS, &ted, NULL, &old_ed_obj))
+					else
 					{
+						/* Ozk:
+						 * Object is the one with cursor focus, so we do it normally
+						 */
+						ted = object_get_tedinfo(obtree + obj, NULL);
+						ei = &wt->e;
+
+						DIAGS((" -- obj_edit: ted=%lx", ted));
+
 						if (redraw)
 						{
 							eor_objcursor(wt, v, rl);
-							if (obj_ed_char(wt, &wt->e, ted, NULL, keycode))
-								obj_draw(wt, v, wt->e.obj, -1, clip, rl, 0);
+							if (obj_ed_char(wt, ei, ted, NULL, keycode))
+								obj_draw(wt, v, obj, -1, clip, rl, 0);
 							eor_objcursor(wt, v, rl);
 						}
 						else
-							obj_ed_char(wt, &wt->e, ted, NULL, keycode);
-							
-						pos = wt->e.pos;
-					}
-				}
-				else
-				{
-					/* Ozk:
-					 * Object is the one with cursor focus, so we do it normally
-					 */
-					ted = object_get_tedinfo(obtree + obj, NULL);
-					ei = &wt->e;
-
-					DIAGS((" -- obj_edit: ted=%lx", ted));
-
-					if (redraw)
-					{
-						eor_objcursor(wt, v, rl);
-						if (obj_ed_char(wt, ei, ted, NULL, keycode))
-							obj_draw(wt, v, obj, -1, clip, rl, 0);
-						eor_objcursor(wt, v, rl);
-					}
-					else
-						obj_ed_char(wt, ei, ted, NULL, keycode);
+							obj_ed_char(wt, ei, ted, NULL, keycode);
 					
-					pos = ei->pos;
+						pos = ei->pos;
+					}
+					showm();
+// 					display("ED_CHAR: eors=%d, obj=%d, (%x)chr=%c for %s", wt->e.c_state & DRW_CURSOR, wt->e.obj, keycode, keycode, wt->owner->name);
 				}
-				showm();
-// 				display("ED_CHAR: eors=%d, obj=%d, (%x)chr=%c for %s", wt->e.c_state & DRW_CURSOR, wt->e.obj, keycode, keycode, wt->owner->name);
 				break;
 			}
 			case ED_CRSR:

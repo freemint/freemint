@@ -80,6 +80,7 @@ XA_objc_draw(enum locks lock, struct xa_client *client, AESPB *pb)
 							 NULL,
 							 0);
 
+		#if 0
 			/*
 			 * Ozk: Ok.. looks like the AES should automagically draw the cursor...
 			 */
@@ -90,6 +91,7 @@ XA_objc_draw(enum locks lock, struct xa_client *client, AESPB *pb)
 				if (editobj != -1)
 					obj_edit(wt, v, ED_INIT, editobj, 0, -1, NULL, false, NULL, NULL, NULL, NULL);
 			}
+		#endif
 			(*v->api->clear_clip)(v);
 			showm();
 		}
@@ -155,6 +157,7 @@ XA_objc_wdraw(enum locks lock, struct xa_client *client, AESPB *pb)
 			/*
 			 * Ozk: Ok.. looks like the AES should automagically draw the cursor...
 			 */
+		#if 0
 			if (!(wt->flags & WTF_OBJCEDIT))
 			{
 				if ((editobj = wt->e.obj) == -1)
@@ -162,7 +165,7 @@ XA_objc_wdraw(enum locks lock, struct xa_client *client, AESPB *pb)
 				if (editobj != -1)
 					obj_edit(wt, v, ED_INIT, editobj, 0, -1, NULL, true, (RECT *)pb->addrin[1], rl, NULL, NULL);
 			}
-			
+		#endif	
 			(*v->api->clear_clip)(v);
 			showm();
 			ret = 1;

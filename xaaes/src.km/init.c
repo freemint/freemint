@@ -348,6 +348,7 @@ again:
 
 	TAB_LIST_INIT();
 
+	C.Aes->type = APP_AESSYS;
 	C.Aes->cmd_tail = "\0";
 	//C.Aes->wt.e.obj = -1;
 
