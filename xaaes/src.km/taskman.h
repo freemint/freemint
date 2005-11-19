@@ -52,8 +52,6 @@ void CE_open_csr(enum locks lock, struct c_event *ce, bool cancel);
 void CE_abort_csr(enum locks lock, struct c_event *ce, bool cancel);
 void cancel_csr(struct xa_client *running);
 
-void update_tasklist(enum locks lock);
-
 void open_imgload(enum locks lock);
 
 void do_system_menu(enum locks lock, int clicked_title, int menu_item);

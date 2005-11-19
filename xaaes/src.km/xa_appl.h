@@ -31,6 +31,8 @@
 #include "xa_types.h"
 
 void	init_client_mdbuff(struct xa_client *client);
+void	client_nicename(struct xa_client *client, const char *n, bool autonice);
+
 struct xa_client *init_client(enum locks lock);
 
 bool is_client(struct xa_client *client);
