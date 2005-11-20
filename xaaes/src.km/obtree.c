@@ -1159,51 +1159,57 @@ ob_set_children_sf(OBJECT *obtree, short parent, short sm, short sb, short fm, s
 	}
 }
 
+static short
+ob_get_previous(OBJECT *obtree, short parent, short obj)
+{
+	short head, next;
+
+	head = obtree[parent].ob_head;
+
+	if (head != obj)
+	{
+		while (1)
+		{
+			next = obtree[head].ob_next;
+			if (next == obj)
+				return head;
+			head = next;
+		}
+	}
+	return -1;
+}
 
 short
 ob_remove(OBJECT *obtree, short object)
 {
-	int parent, current, last;
-
-	current = object;
-
-	do
-	{
-		/* Find parent */
-		last = current;
-		current = obtree[current].ob_next;
-
-	} while (obtree[current].ob_tail != last);
-
-	parent = current;
+	int parent, next, prev;
 	
-	if (obtree[parent].ob_head == object)
-	{
-		/* First child */
+	if (object <= 0)
+		return -1;
 
-		if (obtree[object].ob_next == parent)
-			/* No siblings */
-			obtree[parent].ob_head = obtree[parent].ob_tail = -1;
-		else
-			/* Siblings */
-			obtree[parent].ob_head = obtree[object].ob_next;
-	}
-	else
-	{
-		/* Not first child */
+	next = obtree[object].ob_next;
+	parent = ob_get_parent(obtree, object);
 
-		current = obtree[parent].ob_head;
-		do {
-			/* Find adjacent sibling */
-			last = current;
-			current = obtree[current].ob_next;
+	if (parent != -1)
+	{
+		if (obtree[parent].ob_head == object)
+		{
+			if (obtree[parent].ob_tail == object)
+			{
+				next = -1;
+				obtree[parent].ob_tail = -1;
+			}
+			obtree[parent].ob_head = next;
 		}
-		while (current != object);
-		obtree[last].ob_next = obtree[object].ob_next;
-
-		if (obtree[object].ob_next == parent)
-			/* Last child removed */
-			obtree[parent].ob_tail = last;
+		else
+		{
+			prev = ob_get_previous(obtree, parent, object);
+			if (prev == -1)
+				return -1;
+			obtree[prev].ob_next = next;
+			if (obtree[parent].ob_tail == object)
+				obtree[parent].ob_tail = prev;
+		}
 	}
 	return parent;
 }
@@ -1241,12 +1247,13 @@ void
 ob_order(OBJECT *root, short object, ushort pos)
 {
 	short parent = ob_remove(root, object);
-
 	short current = root[parent].ob_head;
+	int i;
 
 	if (current == -1)		/* No siblings */
 	{
-		root[parent].ob_head = root[parent].ob_tail = object;
+		root[parent].ob_head = object;
+		root[parent].ob_tail = object;
 		root[object].ob_next = parent;
 	}
 	else if (!pos)			/* First among siblings */
@@ -1254,14 +1261,29 @@ ob_order(OBJECT *root, short object, ushort pos)
 		root[object].ob_next = current;
 		root[parent].ob_head = object;
 	}
-	else				/* Search for position */
+	else
 	{
-		for (pos--; pos && root[current].ob_next != parent; pos--)
-			current = root[current].ob_next;
-		if (root[current].ob_next == parent)
-			root[parent].ob_tail = object;
-		root[object].ob_next = root[current].ob_next;
-		root[current].ob_next = object;
+		if (pos == -1)
+		{
+			current = root[parent].ob_tail;
+			
+			root[object ].ob_next = parent;
+			root[current].ob_next = object;
+			root[parent ].ob_tail = object;
+		}
+		else
+		{
+			for (i = 1; i < pos; i++)
+			{
+				if ((current = root[current].ob_next) == -1)
+					break;
+			}
+			if (current != -1)
+			{
+				root[object].ob_next = root[current].ob_next;
+				root[current].ob_next = object;
+			}
+		}
 	}
 }
 
@@ -3461,7 +3483,7 @@ obj_xED_END(struct widget_tree *wt,
 	    const RECT *clip,
 	    struct xa_rect_list *rl)
 {
-	disable_objcursor(wt, v, rl);
+	undraw_objcursor(wt, v, rl, redraw); //disable_objcursor(wt, v, rl);
 
 	if (ei->m_start != ei->m_end)
 	{
@@ -3470,7 +3492,7 @@ obj_xED_END(struct widget_tree *wt,
 			obj_draw(wt, v, ei->obj, -1, clip, rl, 0);
 	}
 	return ei->pos;
-}				
+}
 
 /*
  * Returns 1 if successful (character eaten), or 0 if not.
@@ -3517,9 +3539,12 @@ obj_edit(XA_TREE *wt,
 	if (wt->e.obj != -1 && wt->e.obj > last)
 		wt->e.obj = -1;
 
+	if (obj >= 0 && obj <= last && (ted = object_get_tedinfo(obtree + obj, &xted)))
+	{
+
 // 	display("flg %d, xted = %lx, obj = %d, xted->obj = %d", wt->flags & WTF_OBJCEDIT ? 1 : 0, xted, obj, xted ? xted->obj : -1);
 	
-	if (!(wt->flags & WTF_OBJCEDIT)) //!(wt->owner->options.app_opts & XAAO_OBJC_EDIT))
+	if (!xted) //(!(wt->flags & WTF_OBJCEDIT)) //!(wt->owner->options.app_opts & XAAO_OBJC_EDIT))
 	{
 		switch (func)
 		{
@@ -3560,7 +3585,6 @@ obj_edit(XA_TREE *wt,
 			{
 				if (!keycode)
 					obj_ED_INIT(wt, &wt->e, obj, -1, last, CLRMARKS, NULL, NULL, &old_ed_obj);
-// 					goto ed_init;
 				else
 				{
 					hidem();
@@ -3711,12 +3735,12 @@ obj_edit(XA_TREE *wt,
 // 						display("init new, ei = %lx, xted = %lx", ei, xted);
 						obj_xED_INIT(wt, ei, pos, SETMARKS|SETACTIVE);
 						set_objcursor(wt, v, ei);
-						enable_objcursor(wt, v);
+// 						enable_objcursor(wt, v);
 						if (redraw)
 						{
 							obj_draw(wt, v, ei->obj, -1, clip, rl, 0);
-							draw_objcursor(wt, v, rl);
 						}
+						draw_objcursor(wt, v, rl, redraw);
 					}
 					showm();
 				}
@@ -3746,22 +3770,24 @@ obj_edit(XA_TREE *wt,
 					ret = 0;
 				break;
 			}
+		#if 0
 			case ED_ENABLE:
 			{
 				if ((ei = wt->ei))
 					enable_objcursor(wt, v);
 				break;
 			}
+		#endif
 			case ED_CRSROFF:
 			{	
 				if ((ei = wt->ei))
-					undraw_objcursor(wt, v, rl);
+					undraw_objcursor(wt, v, rl, redraw);
 				break;
 			}
 			case ED_CRSRON:
 			{
 				if ((ei = wt->ei))
-					draw_objcursor(wt, v, rl);
+					draw_objcursor(wt, v, rl, redraw);
 				break;
 			}
 			case ED_CHAR:
@@ -3793,7 +3819,7 @@ obj_edit(XA_TREE *wt,
 					}
 				}
 				else
-					drwcurs = redraw;
+					drwcurs = true; //redraw;
 
 				if (ei)
 				{
@@ -3801,7 +3827,7 @@ obj_edit(XA_TREE *wt,
 					DIAGS((" -- obj_edit: ted=%lx", (long)&xted->ti));
 					hidem();
 					if (drwcurs)
-						undraw_objcursor(wt, v, rl);
+						undraw_objcursor(wt, v, rl, redraw);
 					if (obj_ed_char(wt, ei, NULL, xted, keycode))
 					{
 						if (redraw)
@@ -3811,7 +3837,7 @@ obj_edit(XA_TREE *wt,
 
 					if (drwcurs)
 					{
-						draw_objcursor(wt, v, rl);
+						draw_objcursor(wt, v, rl, redraw);
 					}
 					pos = ei->pos;
 					showm();
@@ -3840,7 +3866,7 @@ obj_edit(XA_TREE *wt,
 						obj_xED_INIT(wt, ei, -1, CLRMARKS);
 				}
 				else
-					drwcurs = redraw;
+					drwcurs = true; //redraw;
 				
 				if (ei)
 				{
@@ -3858,8 +3884,12 @@ obj_edit(XA_TREE *wt,
 						ei->m_start = ei->m_end = 0;
 						
 // 					display("start %d, end %d", ei->m_start, ei->m_end);
+					if (drwcurs)
+						undraw_objcursor(wt, v, rl, redraw);
 					if (redraw)
 						obj_draw(wt, v, obj, -1, clip, rl, 0);
+					if (drwcurs)
+						draw_objcursor(wt, v, rl, redraw);
 				}
 				else
 					ret = 0;
@@ -3892,14 +3922,14 @@ obj_edit(XA_TREE *wt,
 					}
 				}
 				else
-					drwcurs = redraw;
+					drwcurs = true; //redraw;
 
 				DIAGS((" -- obj_edit: ted=%lx", ted));
 				if (ei)
 				{
 					hidem();
 					if (drwcurs)
-						undraw_objcursor(wt, v, rl);
+						undraw_objcursor(wt, v, rl, redraw);
 				
 					if (string && string != ei->ti.te_ptext && *string)
 					{
@@ -3921,7 +3951,7 @@ obj_edit(XA_TREE *wt,
 
 					if (drwcurs)
 					{
-						draw_objcursor(wt, v, rl);
+						draw_objcursor(wt, v, rl, redraw);
 					}
 					showm();
 					pos = ei->pos;
@@ -3948,7 +3978,7 @@ obj_edit(XA_TREE *wt,
 					ei = xted;
 				}
 				else
-					drwcurs = redraw;
+					drwcurs = true; //redraw;
 				
 				if (ei)
 				{
@@ -3974,10 +4004,10 @@ obj_edit(XA_TREE *wt,
 						if (redraw)
 						{
 							if (drwcurs)
-								undraw_objcursor(wt, v, rl);
+								undraw_objcursor(wt, v, rl, redraw);
 							obj_draw(wt, v, obj, -1, clip, rl, 0);
 							if (drwcurs)
-								draw_objcursor(wt, v, rl);
+								draw_objcursor(wt, v, rl, redraw);
 						}
 					}
 					pos = ei->pos;
@@ -4010,7 +4040,7 @@ obj_edit(XA_TREE *wt,
 			}
 		}
 	}
-	
+	}
 		
 	if (ret_pos)
 		*ret_pos = pos;

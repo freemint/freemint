@@ -523,11 +523,12 @@ XA_handler(void *_pb)
 	{
 		AES_function *cmd_routine;
 		unsigned long cmd_rtn;
-// 		struct proc *pr = get_curproc();
+#if 0
+		struct proc *pr = get_curproc();
 
-// 		if (!strnicmp(pr->name, "appltest", 8))
-// 			display("%s calls (%d)%s", pr->name, cmd, aes_tab[cmd].descr);
-
+		if (!strnicmp(pr->name, "taskb", 5))
+			display("%s calls (%d)%s", pr->name, cmd, aes_tab[cmd].descr);
+#endif
 		/* XXX	- ozk:
 		 * I dont know how I like this! However, we test force-init/attaching client structure
 		 * to a process calling the AES wihtout prior appl_init() call.
