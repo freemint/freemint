@@ -69,6 +69,72 @@
 #define FSLIDX_FLAG	4
 #define FSLIDX_RIGHT	5
 
+static char *months[] =
+{
+	"Jan",
+	"Feb",
+	"Mar",
+	"Apr",
+	"May",
+	"Jun",
+	"Jul",
+	"Aug",
+	"Sep",
+	"Okt",
+	"Nov",
+	"Dec",
+};
+static char *faccess[] =
+{
+	"---",
+	"--x",
+	"-w-",
+	"-wx",
+	"r--",
+	"r-x",
+	"rw-",
+	"rwx",
+};					
+
+static struct xa_wtxt_inf norm_txt =
+{
+ WTXT_NOCLIP,
+/* id  pnts efx   fgc      bgc */
+ {  -1,  -1,   MD_TRANS, 0, G_BLACK, G_WHITE },	/* Normal */
+ {  -1,  -1,   MD_TRANS, 0, G_WHITE, G_BLACK },/* Selected */
+ {  -1,  -1,   MD_TRANS, 0, G_BLACK, G_WHITE },	/* Highlighted */
+
+};
+
+static struct xa_wtxt_inf exe_txt =
+{
+ WTXT_NOCLIP,
+/* id  pnts efx   fgc      bgc */
+ {  -1,  -1,   MD_TRANS, 0, G_RED, G_WHITE },	/* Normal */
+ {  -1,  -1,   MD_TRANS, 0, G_YELLOW, G_WHITE },/* Selected */
+ {  -1,  -1,   MD_TRANS, 0, G_BLACK, G_WHITE },	/* Highlighted */
+
+};
+static struct xa_wtxt_inf dexe_txt =
+{
+ WTXT_NOCLIP,
+/* id  pnts efx   fgc      bgc */
+ {  -1,  -1,   MD_TRANS, 0, G_LRED, G_WHITE },	/* Normal */
+ {  -1,  -1,   MD_TRANS, 0, G_RED, G_WHITE },	/* Selected */
+ {  -1,  -1,   MD_TRANS, 0, G_BLACK, G_WHITE },	/* Highlighted */
+
+};
+
+static struct xa_wtxt_inf dir_txt =
+{
+ WTXT_NOCLIP,
+/* id  pnts efx   fgc      bgc */
+ {  -1,  -1,   MD_TRANS, 0, G_LCYAN, G_WHITE },/* Normal */
+ {  -1,  -1,   MD_TRANS, 0, G_CYAN, G_WHITE },	/* Selected */
+ {  -1,  -1,   MD_TRANS, 0, G_BLACK, G_WHITE },	/* Highlighted */
+
+};
+
 static char fs_paths[DRV_MAX][NAME_MAX+2];
 static char fs_patterns[23][16];
 
@@ -114,6 +180,10 @@ init_fsel(void)
 	{
 		if (cfg.Filters[i])
 			add_pattern(cfg.Filters[i]);
+	}
+	if (screen.planes < 4)
+	{
+		exe_txt = dexe_txt = dir_txt = norm_txt;
 	}
 }
 
@@ -852,71 +922,6 @@ set_file(struct fsel_data *fs, char *fn, bool mark)
 }
 #define FSIZE_MAX 20
 
-static char *months[] =
-{
-	"Jan",
-	"Feb",
-	"Mar",
-	"Apr",
-	"May",
-	"Jun",
-	"Jul",
-	"Aug",
-	"Sep",
-	"Okt",
-	"Nov",
-	"Dec",
-};
-static char *faccess[] =
-{
-	"---",
-	"--x",
-	"-w-",
-	"-wx",
-	"r--",
-	"r-x",
-	"rw-",
-	"rwx",
-};					
-
-static struct xa_wtxt_inf norm_txt =
-{
- WTXT_NOCLIP,
-/* id  pnts efx   fgc      bgc */
- {  -1,  -1,   MD_TRANS, 0, G_BLACK, G_WHITE },	/* Normal */
- {  -1,  -1,   MD_TRANS, 0, G_WHITE, G_BLACK },/* Selected */
- {  -1,  -1,   MD_TRANS, 0, G_BLACK, G_WHITE },	/* Highlighted */
-
-};
-
-static struct xa_wtxt_inf exe_txt =
-{
- WTXT_NOCLIP,
-/* id  pnts efx   fgc      bgc */
- {  -1,  -1,   MD_TRANS, 0, G_RED, G_WHITE },	/* Normal */
- {  -1,  -1,   MD_TRANS, 0, G_YELLOW, G_WHITE },/* Selected */
- {  -1,  -1,   MD_TRANS, 0, G_BLACK, G_WHITE },	/* Highlighted */
-
-};
-static struct xa_wtxt_inf dexe_txt =
-{
- WTXT_NOCLIP,
-/* id  pnts efx   fgc      bgc */
- {  -1,  -1,   MD_TRANS, 0, G_LRED, G_WHITE },	/* Normal */
- {  -1,  -1,   MD_TRANS, 0, G_RED, G_WHITE },	/* Selected */
- {  -1,  -1,   MD_TRANS, 0, G_BLACK, G_WHITE },	/* Highlighted */
-
-};
-
-static struct xa_wtxt_inf dir_txt =
-{
- WTXT_NOCLIP,
-/* id  pnts efx   fgc      bgc */
- {  -1,  -1,   MD_TRANS, 0, G_LCYAN, G_WHITE },/* Normal */
- {  -1,  -1,   MD_TRANS, 0, G_CYAN, G_WHITE },	/* Selected */
- {  -1,  -1,   MD_TRANS, 0, G_BLACK, G_WHITE },	/* Highlighted */
-
-};
 
 static void
 destroy_xattr(void *data)

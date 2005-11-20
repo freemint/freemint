@@ -1154,6 +1154,8 @@ rl_xor(struct xa_vdi_settings *v, RECT *r, struct xa_rect_list *rl)
 	else
 		write_selection(v, 0, r);
 }
+
+#if 0
 void
 enable_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v)
 {
@@ -1176,8 +1178,9 @@ disable_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_r
 	if (!ei)
 		return; //ei = &wt->e;
 	undraw_objcursor(wt, v, rl);
-	ei->c_state &= ~OB_CURS_ENABLED;
+// 	ei->c_state &= ~OB_CURS_ENABLED;
 }
+#endif
 
 void
 eor_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_rect_list *rl)
@@ -1201,46 +1204,51 @@ eor_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_rect_
 }
 	
 void
-draw_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_rect_list *rl)
+draw_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_rect_list *rl, bool rdrw)
 {
 	struct objc_edit_info *ei = wt->ei;
 	
 	if (!ei)
 		return; //ei = &wt->e;
 
-	if ( (ei->c_state & (OB_CURS_ENABLED | OB_CURS_DRAWN)) == OB_CURS_ENABLED )
+	if ( !(ei->c_state & (OB_CURS_ENABLED)) ) // | OB_CURS_DRAWN)) == OB_CURS_ENABLED )
 	{
-		RECT r = ei->cr;
-
-		r.x += wt->tree->ob_x;
-		r.y += wt->tree->ob_y;
-		
 		if (ei->obj >= 0 && !(wt->tree[ei->obj].ob_flags & OF_HIDETREE))
 		{
-			rl_xor(v, &r, rl);
-			ei->c_state |= OB_CURS_DRAWN;
+			if (rdrw)
+			{
+				RECT r = ei->cr;
+
+				r.x += wt->tree->ob_x;
+				r.y += wt->tree->ob_y;
+				rl_xor(v, &r, rl);
+			}
+			ei->c_state |= OB_CURS_ENABLED; //OB_CURS_DRAWN;
 		}
 	}
 }
 void
-undraw_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_rect_list *rl)
+undraw_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_rect_list *rl, bool rdrw)
 {
 	struct objc_edit_info *ei = wt->ei;
 
 	if (!ei)
 		return; //ei = &wt->e;
 
-	if ( (ei->c_state & (OB_CURS_ENABLED | OB_CURS_DRAWN)) == (OB_CURS_ENABLED | OB_CURS_DRAWN) )
+	if ( (ei->c_state & (OB_CURS_ENABLED))) // | OB_CURS_DRAWN)) == (OB_CURS_ENABLED | OB_CURS_DRAWN) )
 	{
-		RECT r = ei->cr;
-
-		r.x += wt->tree->ob_x;
-		r.y += wt->tree->ob_y;
 		
 		if (ei->obj >= 0 && !(wt->tree[ei->obj].ob_flags & OF_HIDETREE))
 		{
-			rl_xor(v, &r, rl); //write_selection(0, &r);
-			ei->c_state &= ~OB_CURS_DRAWN;
+			if (rdrw)
+			{
+				RECT r = ei->cr;
+
+				r.x += wt->tree->ob_x;
+				r.y += wt->tree->ob_y;
+				rl_xor(v, &r, rl); //write_selection(0, &r);
+			}
+			ei->c_state &= ~OB_CURS_ENABLED; //~OB_CURS_DRAWN;
 		}
 	}
 }
@@ -2705,7 +2713,7 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, struct xa_vdi_setti
 	short x, y;
 	struct objc_edit_info *ei = wt->ei;
 	bool start_drawing = false;
-	bool curson;
+	bool curson = false;
 	bool docurs = ((flags & DRW_CURSOR));
 
 	if (wt == NULL)
@@ -2742,11 +2750,16 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, struct xa_vdi_setti
 
 	if (ei)
 	{
-		curson = ((ei->c_state & (OB_CURS_ENABLED | OB_CURS_DRAWN)) == (OB_CURS_ENABLED | OB_CURS_DRAWN)) ? true : false;
-		if (curson) undraw_objcursor(wt, v, NULL);
+		if (ei->c_state & OB_CURS_ENABLED)
+		{
+			undraw_objcursor(wt, v, NULL, true);
+			curson = true;
+		}
+// 		curson = ((ei->c_state & (OB_CURS_ENABLED | OB_CURS_DRAWN)) == (OB_CURS_ENABLED | OB_CURS_DRAWN)) ? true : false;
+// 		if (curson) undraw_objcursor(wt, v, NULL);
 	}
-	else
-		curson = false;
+// 	else
+// 		curson = false;
 
 	do {
 
@@ -2780,7 +2793,7 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, struct xa_vdi_setti
 		head = tree[current].ob_head;
 
 		/* Any non-hidden children? */
-		if (    head != -1
+		if (    head >= 0
 		    && !(tree[current].ob_flags & OF_HIDETREE)
 		    &&  (!start_drawing || (start_drawing && rel_depth < depth)))
 		{
@@ -2797,7 +2810,7 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, struct xa_vdi_setti
 			next = tree[current].ob_next;
 
 			/* Trace back up tree if no more siblings */
-			while (next != stop && next != -1/*-1*/ && tree[next].ob_tail == current)
+			while (next != stop && next != -1 && next != 0x7fff/*-1*/ && tree[next].ob_tail == current)
 			{
 				current = next;
 				x -= tree[current].ob_x;
@@ -2808,10 +2821,10 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, struct xa_vdi_setti
 			current = next;
 		}
 	}
-	while (current != stop && current != -1 && rel_depth > 0); // !(start_drawing && rel_depth < 1));
+	while (current != stop && current != -1 && current != 0x7fff && rel_depth > 0); // !(start_drawing && rel_depth < 1));
 
 	if (curson)
-		draw_objcursor(wt, v, NULL);
+		draw_objcursor(wt, v, NULL, true);
 
 	(*v->api->wr_mode)(v, MD_TRANS);
 	(*v->api->f_interior)(v, FIS_SOLID);

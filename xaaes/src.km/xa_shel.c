@@ -230,22 +230,6 @@ default_path(struct xa_client *caller, char *cmd, char *path, char *name, char *
 	return drv;
 }
 
-#if 0
-static void
-disp_cb(struct module_callback *cb)
-{
-	display("---------------------");
-	display("CB at     %lx", cb);
-	display("share     %lx", cb->share);
-	display("release   %lx", cb->release);
-	display("on_exit   %lx", cb->on_exit);
-	display("on_exec   %lx", cb->on_exec);
-	display("on_fork   %lx", cb->on_fork);
-	display("on_stop   %lx", cb->on_stop);
-	display("on_signal %lx", cb->on_signal);
-}
-#endif
-
 int
 launch(enum locks lock, short mode, short wisgr, short wiscr,
        const char *parm, char *p_tail, struct xa_client *caller)
