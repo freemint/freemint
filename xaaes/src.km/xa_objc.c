@@ -46,7 +46,7 @@ XA_objc_draw(enum locks lock, struct xa_client *client, AESPB *pb)
 	const RECT *r = (const RECT *)&pb->intin[2];
 	OBJECT *obtree = (OBJECT*)pb->addrin[0];
 	struct xa_vdi_settings *v = client->vdi_settings;
-	short item = pb->intin[0], editobj;
+	short item = pb->intin[0];
 	CONTROL(6,1,1)
 
 	DIAG((D_objc,client,"objc_draw rectangle: %d/%d,%d/%d", r->x, r->y, r->w, r->h));
@@ -80,18 +80,6 @@ XA_objc_draw(enum locks lock, struct xa_client *client, AESPB *pb)
 							 NULL,
 							 0);
 
-		#if 0
-			/*
-			 * Ozk: Ok.. looks like the AES should automagically draw the cursor...
-			 */
-			if (!(wt->flags & WTF_OBJCEDIT))
-			{
-				if ((editobj = wt->e.obj) == -1)
-					editobj = ob_find_any_flst(obtree, OF_EDITABLE, 0, 0, OS_DISABLED, 0, 0);
-				if (editobj != -1)
-					obj_edit(wt, v, ED_INIT, editobj, 0, -1, NULL, false, NULL, NULL, NULL, NULL);
-			}
-		#endif
 			(*v->api->clear_clip)(v);
 			showm();
 		}
@@ -113,7 +101,7 @@ XA_objc_wdraw(enum locks lock, struct xa_client *client, AESPB *pb)
 	struct xa_vdi_settings *v;
 	struct xa_window *wind;
 	struct xa_rect_list *rl;
-	short item = pb->intin[0], editobj, ret = 0;
+	short item = pb->intin[0], ret = 0;
 	
 	CONTROL(3,0,2)
 
@@ -157,15 +145,6 @@ XA_objc_wdraw(enum locks lock, struct xa_client *client, AESPB *pb)
 			/*
 			 * Ozk: Ok.. looks like the AES should automagically draw the cursor...
 			 */
-		#if 0
-			if (!(wt->flags & WTF_OBJCEDIT))
-			{
-				if ((editobj = wt->e.obj) == -1)
-					editobj = ob_find_any_flst(obtree, OF_EDITABLE, 0, 0, OS_DISABLED, 0, 0);
-				if (editobj != -1)
-					obj_edit(wt, v, ED_INIT, editobj, 0, -1, NULL, true, (RECT *)pb->addrin[1], rl, NULL, NULL);
-			}
-		#endif	
 			(*v->api->clear_clip)(v);
 			showm();
 			ret = 1;
@@ -324,17 +303,22 @@ XA_objc_wchange(enum locks lock, struct xa_client *client, AESPB *pb)
 unsigned long
 XA_objc_add(enum locks lock, struct xa_client *client, AESPB *pb)
 {
+	short ret = 0;
 	OBJECT *obtree = (OBJECT *)pb->addrin[0];
 	
 	CONTROL(2,1,1)
 	
 	DIAG((D_form, client, "xa_objc_add: obtree=%lx, parent=%d, child=%d",
 		obtree, pb->intin[0], pb->intin[1]));
+	
+// 	display("xa_objc_add: %s, obtree=%lx, parent=%d, child=%d",
+// 		client->name, obtree, pb->intin[0], pb->intin[1]);
 
 	if (validate_obtree(client, obtree, "XA_objc_add:"))
-		pb->intout[0] = ob_add(obtree, pb->intin[0], pb->intin[1]);
-	else
-		pb->intout[0] = 0;
+	{
+		ret = ob_add(obtree, pb->intin[0], pb->intin[1]);
+	}
+	pb->intout[0] = ret;
 
 	DIAGS((" -- return %d", pb->intout[0]));
 	
@@ -344,16 +328,23 @@ XA_objc_add(enum locks lock, struct xa_client *client, AESPB *pb)
 unsigned long
 XA_objc_delete(enum locks lock, struct xa_client *client, AESPB *pb)
 {
+	short ret = 0;
 	OBJECT *obtree = (OBJECT *)pb->addrin[0];
+	
 	CONTROL(1,1,1)
 
+// 	display("xa_objc_delete: %s, obtree=%lx, obj=%d",
+// 		client->name, obtree, pb->intin[0]);
+	
 	if (validate_obtree(client, obtree, "XA_objc_delete:"))
 	{
-		ob_remove(obtree, pb->intin[0]);
-		pb->intout[0] = 1;
+		ret = ob_remove(obtree, pb->intin[0]);
+		if (ret < 0)
+			ret = 0;
+		else
+			ret = 1;
 	}
-	else
-		pb->intout[0] = 0;
+	pb->intout[0] = ret;
 
 	return XAC_DONE;
 }
@@ -364,9 +355,12 @@ XA_objc_order(enum locks lock, struct xa_client *client, AESPB *pb)
 	OBJECT *obtree = (OBJECT *)pb->addrin[0];
 	CONTROL(2,1,1)
 
+// 	display("xa_objc_add: %s, obtree=%lx, obj=%d, pos=%d",
+// 		client->name, obtree, pb->intin[0], pb->intin[1]);
+	
 	if (validate_obtree(client, obtree, "XA_objc_order:"))
 	{
-		ob_order((OBJECT *)pb->addrin[0], pb->intin[0], pb->intin[1]);
+		ob_order(obtree, pb->intin[0], pb->intin[1]);
 		pb->intout[0] = 1;
 	}
 	else

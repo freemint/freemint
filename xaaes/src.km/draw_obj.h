@@ -65,11 +65,11 @@ void form_save(short d, RECT r, void **area);
 void form_restore(short d, RECT r, void **area);
 void form_copy(const RECT *fr, const RECT *to);
 
-void enable_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v);
-void disable_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_rect_list *rl);
+// void enable_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v);
+// void disable_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_rect_list *rl);
 void eor_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_rect_list *rl);
-void draw_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_rect_list *rl);
-void undraw_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_rect_list *rl);
+void draw_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_rect_list *rl, bool rdrw);
+void undraw_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_rect_list *rl, bool rdrw);
 void set_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v, struct objc_edit_info *ei);
 
 ObjectDisplay
