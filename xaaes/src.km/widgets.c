@@ -539,25 +539,11 @@ obtree_to_wt(struct xa_client *client, OBJECT *obtree)
 
 	return wt;
 }
-static bool
-checkfor_xted(OBJECT *obtree, short obj, void *ret)
-{
-	short *flag = ret;
 
-	if (object_has_tedinfo(obtree + obj))
-	{
-		XTEDINFO *x;
-		(void)object_get_tedinfo(obtree + obj, &x);
-		if (x)
-			*flag = 1;
-		return true;
-	}
-	return false;
-}
 void
 init_widget_tree(struct xa_client *client, struct widget_tree *wt, OBJECT *obtree)
 {
-	short sx, sy, xted = 0;
+	short sx, sy;
 	RECT r;
 
 	bzero(wt, sizeof(*wt));
@@ -593,26 +579,6 @@ init_widget_tree(struct xa_client *client, struct widget_tree *wt, OBJECT *obtre
 	if ((obtree[3].ob_type & 0xff) == G_TITLE)
 		wt->is_menu = wt->menu_line = true;
 
-// 	if (!strnicmp(client->proc_name, "taskb", 5))
-// 		dforeach_object(obtree, 0, 0, 0, 0, checkfor_xted, &xted);
-// 	else
-		foreach_object(obtree, 0, 0, 0, 0, checkfor_xted, &xted);
-	
-	if (xted)
-		wt->flags |= WTF_OBJCEDIT;
-#if 0
-	do
-	{
-		if (object_has_tedinfo(obtree))
-		{
-			XTEDINFO *x;
-			(void)object_get_tedinfo(obtree, &x);
-			if (x)
-				wt->flags |= WTF_OBJCEDIT;
-			break;
-		}
-	} while (!(obtree++->ob_flags & OF_LASTOB));
-#endif
 }
 
 XA_TREE *
