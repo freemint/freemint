@@ -153,7 +153,7 @@ wdialog_redraw(enum locks lock, struct xa_window *wind, short start, short depth
 	{
 		OBJECT *obtree;
 		RECT dr;
-		bool drwcurs = (!(wt->flags & WTF_OBJCEDIT) && wt->e.obj != -1);
+		bool drwcurs = (!wt->ei && wt->e.obj != -1);
 
 		obtree = wt->tree;
 
@@ -235,7 +235,7 @@ wdlg_redraw(enum locks lock, struct xa_window *wind, short start, short depth, R
 			obtree = wt->tree;
 		}
 
-		drwcurs = (!(wt->flags & WTF_OBJCEDIT) && wt->e.obj != -1);
+		drwcurs = (!wt->ei && wt->e.obj != -1);
 		
 		lock_screen(wind->owner->p, false, NULL, 0);
 		hidem();
@@ -708,7 +708,7 @@ XA_wdlg_get(enum locks lock, struct xa_client *client, AESPB *pb)
 			{
 				struct objc_edit_info *ei;
 				
-				if (wdlg->std_wt->flags & WTF_OBJCEDIT)
+				if (wdlg->std_wt->ei)
 					ei = wdlg->std_wt->ei;
 				else
 					ei = &wdlg->std_wt->e;
@@ -1102,7 +1102,7 @@ wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms 
 				unsigned short key = ev->key;
 				unsigned short keystate;
 				unsigned short new_focus = wt->focus;
-				 
+								
 				vq_key_s(C.P_handle, &keystate);
 
 				obtree = wt->tree;
@@ -1127,9 +1127,10 @@ wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms 
 					}
 				}
 				
-				nxtobj = form_cursor(wt, v, ev->key, keystate, wt->e.obj, true, &wind->rect_list.start, &new_focus, &key);
-				
 				ei = wt->ei ? wt->ei : &wt->e;
+				
+				nxtobj = form_cursor(wt, v, ev->key, keystate, ei->obj, true, &wind->rect_list.start, &new_focus, &key);
+				
 				
 				if (nxtobj >= 0)
 				{
