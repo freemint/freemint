@@ -1298,12 +1298,12 @@ do_formwind_msg(
 		{
 		case WM_REDRAW:
 		{
-			if (!(wt->flags & WTF_OBJCEDIT) && wt->e.obj > 0)
+			if (!wt->ei)
 			{
 				obj_edit(wt, v, ED_END, wt->e.obj, 0, 0, NULL, true, &wind->wa, wind->rect_list.start, NULL, NULL);
 			}
 			dfwm_redraw(wind, widg, wt, (RECT *)&msg[4]);
-			if (!(wt->flags & WTF_OBJCEDIT) && wt->e.obj > 0)
+			if (!wt->ei)
 			{
 				obj_edit(wt, v, ED_END, wt->e.obj, 0, 0, NULL, true, &wind->wa, wind->rect_list.start, NULL, NULL);
 			}

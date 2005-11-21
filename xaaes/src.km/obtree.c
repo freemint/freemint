@@ -1309,14 +1309,14 @@ foreach_object(OBJECT *tree, short parent, short start, short stopf, short stops
 		{
 			n = tree[o].ob_next;
 			
-			while (n != parent && n != -1 && n != 0x7fff && tree[n].ob_tail == o)
+			while (n != parent && n != -1 && tree[n].ob_tail == o)
 			{
 				o = n;
 				n = tree[o].ob_next;
 			}
 			o = n;
 		}
-	} while (o != parent && o != -1 && o != 0x7fff);
+	} while (o != parent && o != -1);
 	
 // 	display(" --- exit");
 }
@@ -1344,14 +1344,14 @@ dforeach_object(OBJECT *tree, short parent, short start, short stopf, short stop
 		{
 			n = tree[o].ob_next;
 			
-			while (n != parent && n != -1 && n != 0x7fff && tree[n].ob_tail == o)
+			while (n != parent && n != -1 && tree[n].ob_tail == o)
 			{
 				o = n;
 				n = tree[o].ob_next;
 			}
 			o = n;
 		}
-	} while (o != parent && o != -1 && o != 0x7fff/*&& !(*f)(tree, o, data) */);
+	} while (o != parent && o != -1);
 	
 	display(" --- exit");
 }
@@ -3494,6 +3494,23 @@ obj_xED_END(struct widget_tree *wt,
 	return ei->pos;
 }
 
+static void
+obj_ED_END(struct widget_tree *wt,
+	   struct xa_vdi_settings *v,
+	   bool redraw,
+	   struct xa_rect_list *rl)
+{
+	/* Ozk: Just turn off cursor :)
+	 */
+	if (redraw)
+	{
+		hidem();
+		eor_objcursor(wt, v, rl);
+		showm();
+	}
+	wt->e.c_state ^= OB_CURS_EOR;
+// 	display("ED_END: eors=%d, obj=%d for %s", wt->e.c_state & DRW_CURSOR, wt->e.obj, wt->owner->name);
+}
 /*
  * Returns 1 if successful (character eaten), or 0 if not.
  */
@@ -3546,6 +3563,13 @@ obj_edit(XA_TREE *wt,
 	
 	if (!xted) //(!(wt->flags & WTF_OBJCEDIT)) //!(wt->owner->options.app_opts & XAAO_OBJC_EDIT))
 	{
+		if (wt->ei)
+		{
+			obj_xED_END(wt, v, wt->ei, redraw, clip, rl);
+			wt->ei = NULL;
+			wt->e.obj = -1;
+			wt->e.c_state = 0;
+		}
 		switch (func)
 		{
 			case ED_INIT:
@@ -3565,20 +3589,9 @@ obj_edit(XA_TREE *wt,
 			}
 			case ED_END:
 			{
-				/* Ozk: Just turn off cursor :)
-				 */
+				obj_ED_END(wt, v, redraw, rl);
 				if (wt->e.obj > 0)
-				{
 					pos = wt->e.pos;
-				}
-				if (redraw)
-				{
-					hidem();
-					eor_objcursor(wt, v, rl);
-					showm();
-				}
-				wt->e.c_state ^= OB_CURS_EOR;
-// 				display("ED_END: eors=%d, obj=%d for %s", wt->e.c_state & DRW_CURSOR, wt->e.obj, wt->owner->name);
 				break;
 			}
 			case ED_CHAR:
