@@ -2810,7 +2810,7 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, struct xa_vdi_setti
 			next = tree[current].ob_next;
 
 			/* Trace back up tree if no more siblings */
-			while (next != stop && next != -1 && next != 0x7fff/*-1*/ && tree[next].ob_tail == current)
+			while (next != stop && next != -1 && tree[next].ob_tail == current)
 			{
 				current = next;
 				x -= tree[current].ob_x;
@@ -2821,7 +2821,7 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, struct xa_vdi_setti
 			current = next;
 		}
 	}
-	while (current != stop && current != -1 && current != 0x7fff && rel_depth > 0); // !(start_drawing && rel_depth < 1));
+	while (current != stop && current != -1 && rel_depth > 0); // !(start_drawing && rel_depth < 1));
 
 	if (curson)
 		draw_objcursor(wt, v, NULL, true);

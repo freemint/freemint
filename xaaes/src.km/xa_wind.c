@@ -977,7 +977,8 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				if ((w->window_status & (XAWS_OPEN|XAWS_HIDDEN|XAWS_SHADED)) == XAWS_OPEN)
 				{
 					widg->start = pb->intin[4];
-					wt->e.obj = pb->intin[5];
+					obj_edit(wt, w->vdi_settings, ED_INIT, pb->intin[5], 0,0, NULL, false, NULL,NULL, NULL,NULL);
+// 					wt->e.obj = pb->intin[5];
 					redraw_toolbar(lock, w, pb->intin[4]);
 					widg->start = 0;
 				}
