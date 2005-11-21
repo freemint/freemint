@@ -578,7 +578,6 @@ init_widget_tree(struct xa_client *client, struct widget_tree *wt, OBJECT *obtre
 
 	if ((obtree[3].ob_type & 0xff) == G_TITLE)
 		wt->is_menu = wt->menu_line = true;
-
 }
 
 XA_TREE *
