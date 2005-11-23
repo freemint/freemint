@@ -975,6 +975,67 @@ set_mouse_shape(short m_shape, MFORM *m_form, struct xa_client *client, bool aes
 	}
 }
 
+inline static MFORM *
+get_mform(short m_shape)
+{
+	MFORM *ret_mf;
+
+	switch (m_shape)
+	{
+		case ARROW:
+			ret_mf = &M_ARROW_MOUSE;
+			break;
+		case TEXT_CRSR:
+			ret_mf = &M_TXT_MOUSE;
+			break;
+		case HOURGLASS:
+			ret_mf = &M_BEE_MOUSE;
+			break;
+		case POINT_HAND:
+			ret_mf = &M_POINT_MOUSE;
+			break;
+		case FLAT_HAND:
+			ret_mf = &M_HAND_MOUSE;
+			break;
+		case THIN_CROSS:
+			ret_mf = &M_TCRS_MOUSE;
+			break;
+		case THICK_CROSS:
+			ret_mf = &M_THKCRS_MOUSE;
+			break;
+		case OUTLN_CROSS:
+			ret_mf = &M_OCRS_MOUSE;
+			break;
+		case XACRS_BUBBLE_DISC:			/* The Data Uncertain logo */
+			ret_mf = &M_BUBD_MOUSE;
+			break;
+		case XACRS_RESIZER:			/* The 'resize window' cursor */
+			ret_mf = &M_SE_SIZER_MOUSE;
+			break;
+		case XACRS_NE_SIZER:
+			ret_mf = &M_NE_SIZER_MOUSE;
+			break;
+		case XACRS_MOVER:			/* The 'move window' cursor */
+			ret_mf = &M_MOVER_MOUSE;
+			break;
+		case XACRS_VERTSIZER:			/* The 'vertical size window' cursor */
+			ret_mf = &M_VERTSIZER_MOUSE;
+			break;
+		case XACRS_HORSIZER:			/* The 'horizontal size window' cursor */
+			ret_mf = &M_HORSIZER_MOUSE;
+			break;
+		case XACRS_POINTSLIDE:
+			ret_mf = &M_POINTSLIDE_MOUSE;
+			break;
+		default:
+		{
+			ret_mf = NULL;
+			break;
+		}
+	}
+	return ret_mf;
+}
+
 /*
  * AES graf_mouse() routines
  * Small extension to give a couple of extra cursor shapes
@@ -997,61 +1058,67 @@ graf_mouse(int m_shape, MFORM *mf, struct xa_client *client, bool aesm)
 	case M_OFF:
 		hidem();
 		return;
-	case ARROW:
-		set_mouse_shape(m_shape, &M_ARROW_MOUSE, client, aesm);
-		break;
-	case TEXT_CRSR:
-		set_mouse_shape(m_shape, &M_TXT_MOUSE, client, aesm);
-		break;
-	case HOURGLASS:
-		set_mouse_shape(m_shape, &M_BEE_MOUSE, client, aesm);
-		break;
-	case POINT_HAND:
-		set_mouse_shape(m_shape, &M_POINT_MOUSE, client, aesm);
-		break;
-	case FLAT_HAND:
-		set_mouse_shape(m_shape, &M_HAND_MOUSE, client, aesm);
-		break;
-	case THIN_CROSS:
-		set_mouse_shape(m_shape, &M_TCRS_MOUSE, client, aesm);
-		break;
-	case THICK_CROSS:
-		set_mouse_shape(m_shape, &M_THKCRS_MOUSE, client, aesm);
-		break;
-	case OUTLN_CROSS:
-		set_mouse_shape(m_shape, &M_OCRS_MOUSE, client, aesm);
-		break;
 	case M_SAVE:
-		return;
 	case M_RESTORE:
-		return;
 	case M_LAST:
 		return;
 	case USER_DEF:
 		set_mouse_shape(m_shape, mf ? mf : &M_BUBD_MOUSE, client, aesm);
 		//set_mouse_shape(m_shape, &M_BUBD_MOUSE, client, aesm);
 		break;
-	case XACRS_BUBBLE_DISC:			/* The Data Uncertain logo */
-		set_mouse_shape(m_shape, &M_BUBD_MOUSE, client, aesm);
+	default:
+	{
+		if ((mf = get_mform(m_shape)))
+			set_mouse_shape(m_shape, mf, client, aesm);
 		break;
-	case XACRS_RESIZER:			/* The 'resize window' cursor */
-		set_mouse_shape(m_shape, &M_SE_SIZER_MOUSE, client, aesm);
-		break;
-	case XACRS_NE_SIZER:
-		set_mouse_shape(m_shape, &M_NE_SIZER_MOUSE, client, aesm);
-		break;
-	case XACRS_MOVER:			/* The 'move window' cursor */
-		set_mouse_shape(m_shape, &M_MOVER_MOUSE, client, aesm);
-		break;
-	case XACRS_VERTSIZER:			/* The 'vertical size window' cursor */
-		set_mouse_shape(m_shape, &M_VERTSIZER_MOUSE, client, aesm);
-		break;
-	case XACRS_HORSIZER:			/* The 'horizontal size window' cursor */
-		set_mouse_shape(m_shape, &M_HORSIZER_MOUSE, client, aesm);
-		break;
-	case XACRS_POINTSLIDE:
-		set_mouse_shape(m_shape, &M_POINTSLIDE_MOUSE, client, aesm);
-		break;
+	}
+	}
+}
+
+void
+set_client_mouse(struct xa_client *client, short which, short m_shape, MFORM *mf)
+{
+	short *m;
+	MFORM **dmf;
+	bool set = which & 0x8000;
+	
+	which &= ~0x8000;
+// 	display("set client mouse %x, set=%s", which, set ? "true":"false");
+	switch (which)
+	{
+		case SCM_MAIN:
+		{
+			m = &client->mouse;
+			dmf = &client->mouse_form;
+			break;
+		}
+		case SCM_PREV:
+		{
+			m = &client->prev_mouse;
+			dmf = &client->prev_mouse_form;
+			break;
+		}
+		case SCM_SAVE:
+		{
+			m = &client->save_mouse;
+			dmf = &client->save_mouse_form;
+			break;
+		}
+		default: dmf = NULL, m = NULL; break;
+	}
+	if (dmf)
+	{
+		if (!mf)
+			mf = get_mform(m_shape);
+		if (mf)
+		{
+			*m = m_shape;
+			*dmf = mf;
+			if (set)
+			{
+				set_mouse_shape(m_shape, mf, client, false);
+			}
+		}
 	}
 }
 
@@ -1064,6 +1131,93 @@ graf_mouse(int m_shape, MFORM *mf, struct xa_client *client, bool aesm)
  * Ozk: XA_graf_mouse() may be called by processes not yet called
  * appl_init(). So, it must not depend on client being valid!
  */
+#if 1
+unsigned long
+XA_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
+{
+	short m = pb->intin[0];
+
+	CONTROL(1,1,1)
+
+	if (m == M_OFF || m == M_ON)
+	{
+		/* Any client can hide the mouse (required for redraws by clients that aren't top) */
+		graf_mouse(m, NULL, NULL, false);
+#if GENERATE_DIAGS
+		if (client)
+			DIAG((D_f,client,"mouse %d %s", client->mouse, m == M_ON ? "on" : "off"));
+		else
+			DIAG((D_f,NULL,"mouse (non AES process (pid %ld)) %s", p_getpid(), m == M_ON ? "on" : "off"));
+#endif
+	}
+	/*
+	 * Ozk: For now we ignore modes other than M_OFF & M_ON
+	 * when process is not a valid AES process.
+	 */
+	else if (client)
+	{
+		if (m == M_SAVE)
+		{
+			set_client_mouse(client, SCM_SAVE, client->mouse, client->mouse_form);
+			DIAG((D_f,client,"M_SAVE; mouse_form %d", client->mouse));
+		}
+		else if (m == M_RESTORE)
+		{
+			/*
+			 * Ozk: Not sure if M_RESTORE should set the previous mouse
+			 * cursor ... but we do it until someone complains, incase
+			 * it is correct
+			 */
+			set_client_mouse(client, SCM_PREV, client->save_mouse, client->save_mouse_form);
+// 			graf_mouse(client->save_mouse, client->save_mouse_form, client, false);
+			DIAG((D_f,client,"M_RESTORE; mouse_form from %d to %d", client->mouse, client->save_mouse));
+			set_client_mouse(client, SCM_MAIN|0x8000, client->save_mouse, client->save_mouse_form);
+		}
+		else if (m == M_PREVIOUS)
+		{
+			short pm;
+			MFORM *pmf;
+
+			/*
+			 * Ozk: Not sure about this either, but methinks that as we set to the previous
+			 * mouse cursor, the current becomes new previous. Consecutive M_PREVIOUS calls
+			 * will then toggle between the two last used mouse shapes.
+			 */
+// 			graf_mouse(client->prev_mouse, client->prev_mouse_form, client, false);
+			DIAG((D_f,client,"M_PREVIOUS; mouse_form from %d to %d", client->mouse, C.mouse));
+			pm			= client->mouse;
+			pmf			= client->mouse_form;
+			set_client_mouse(client, SCM_MAIN|0x8000, client->prev_mouse, client->prev_mouse_form);
+			set_client_mouse(client, SCM_PREV, pm, pmf);
+		}
+		else
+		{
+			MFORM *ud = NULL;
+			
+			if (m == USER_DEF && (ud = (MFORM *)pb->addrin[0]))
+			{
+				client->user_def = *ud;
+				ud = &client->user_def;
+			}
+			
+			set_client_mouse(client, SCM_PREV, client->mouse, client->mouse_form);
+// 			graf_mouse(m, ud, client, false);
+			set_client_mouse(client, SCM_MAIN|0x8000, m, ud);
+			DIAG((D_f,client,"mouse_form to %d(%lx)", m, ud));
+		}
+	}
+	else if (m != M_SAVE && m != M_RESTORE && m != M_PREVIOUS)
+	{
+		graf_mouse(m, (MFORM *)pb->addrin[0], client, false);
+		DIAG((D_f, NULL, "mouse form to %d for non AES process (pid %ld)", m, p_getpid()));
+	}
+
+	/* Always return no error */
+	pb->intout[0] = 1;
+
+	return XAC_DONE;
+}
+#else
 unsigned long
 XA_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 {
@@ -1158,6 +1312,7 @@ XA_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	return XAC_DONE;
 }
+#endif
 
 /*
  * Ozk: XA_graf_handle() may be called by processes not yet called
