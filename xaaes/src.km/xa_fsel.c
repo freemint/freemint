@@ -2477,6 +2477,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 		obj_edit(fs->form, v, ED_SETPTEXT, FS_FILE, sizeof(fs->file) - 1, 0, fs->file, false, NULL,NULL, NULL,NULL);
 		obj_edit(fs->form, v, ED_MARK, FS_FILE, 0, -1, NULL, false, NULL,NULL, NULL,NULL);
 		obj_edit(fs->form, v, ED_STRING, FS_FILE, 0, 0, fs->file, false, NULL, NULL, NULL, NULL);
+
 		/* This can be of use for drawing. (keep off border & outline :-) */
 		wt->zen = true;
 		wt->exit_form = fileselector_form_exit;
@@ -2694,12 +2695,17 @@ unsigned long
 XA_fsel_input(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	CONTROL(0,2,2)
+	short msave;
+	MFORM *save;
 
-	graf_mouse(ARROW, NULL, NULL, false);
+	msave = client->mouse;
+	save = client->mouse_form;
+	set_client_mouse(client, SCM_MAIN|0x8000, ARROW, NULL);
 	showm();
 	do_fsel_exinput(lock, client, pb, "");
+	set_client_mouse(client, SCM_MAIN|0x8000, msave, save);
 	graf_mouse(client->mouse, client->mouse_form, client, false);
-
+	
 	return XAC_DONE;
 }
 
@@ -2707,16 +2713,23 @@ unsigned long
 XA_fsel_exinput(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	const char *t = (const char *)(pb->addrin[2]);
+	short msave;
+	MFORM *save;
 
 	CONTROL(0,2,3)
 
+	msave = client->mouse;
+	save = client->mouse_form;
+	set_client_mouse(client, SCM_MAIN, ARROW, NULL);
+
 	if (pb->control[N_ADDRIN] <= 2 || t == NULL)
 		t = "";
-
-	graf_mouse(ARROW, NULL, NULL, false);
+	
 	showm();
 	do_fsel_exinput(lock, client, pb, t);
+	
+	set_client_mouse(client, SCM_MAIN, msave, save);
 	graf_mouse(client->mouse, client->mouse_form, client, false);
-
+	
 	return XAC_DONE;
 }

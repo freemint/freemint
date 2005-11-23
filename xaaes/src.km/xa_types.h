@@ -51,6 +51,13 @@
 #define RDRW_EXT	2
 #define RDRW_ALL	(RDRW_WA|RDRW_EXT)
 
+/*
+ * 'which' parameter for set_client_mouse() in xa_graf.c
+ */
+#define SCM_MAIN 0
+#define SCM_PREV 1
+#define SCM_SAVE 2
+
 
 /* forward declarations */
 struct task_administration_block;
