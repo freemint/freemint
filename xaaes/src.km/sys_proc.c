@@ -163,7 +163,6 @@ info_share(void *_info, struct proc *from, struct proc *to)
 		info->rppid = from->pid;
 		info->shel_write = false;
 	}
-	
 // 	display("info_share %lx", _info);
 }
 
