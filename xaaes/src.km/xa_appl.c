@@ -474,7 +474,8 @@ exit_proc(enum locks lock, struct proc *p, int code)
 		 */
 		if (info->shel_write)
 		{
-			post_cevent(client, CE_pwaitpid, NULL,NULL, p->pid,code, NULL,NULL);
+			if (client)
+				post_cevent(client, CE_pwaitpid, NULL,NULL, p->pid,code, NULL,NULL);
 // 			send_ch_exit(client, p->pid, code);
 		}
 #if GENERATE_DIAGS
