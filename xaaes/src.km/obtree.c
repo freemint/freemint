@@ -3948,7 +3948,7 @@ obj_edit(XA_TREE *wt,
 					{
 						while (*string)
 							obj_ed_char(wt, ei, NULL, xted, *(unsigned char *)string++);
-						if (keycode & 1 && wt->ei == ei)
+						if ((keycode & 1) && wt->ei == ei)
 							obj_xED_INIT(wt, ei, -1, SETMARKS);
 					}
 					else
@@ -3998,19 +3998,21 @@ obj_edit(XA_TREE *wt,
 					if (string)
 					{
 						int chrs;
-
-						chrs = strlen(xted->ti.te_ptext) + 1;
-						if (chrs >= xted->ti.te_txtlen)
-							chrs = xted->ti.te_txtlen - 1;
-						if (chrs > keycode)
-							chrs = keycode;
+						
+						if (pos == 1)
+						{
+							chrs = strlen(xted->ti.te_ptext) + 1;
+							if (chrs >= xted->ti.te_txtlen)
+								chrs = xted->ti.te_txtlen - 1;
+							if (chrs > keycode)
+								chrs = keycode;
 	
-						xted->ti.te_ptext[chrs] = '\0';
-						strcpy(string, xted->ti.te_ptext);
-					
+							xted->ti.te_ptext[chrs] = '\0';
+							strcpy(string, xted->ti.te_ptext);
+						}
 						xted->ti.te_ptext = string;
 						xted->ti.te_txtlen = keycode;
-					
+						
 						obj_xED_INIT(wt, ei, -1, CLRMARKS);
 						set_objcursor(wt, v, ei);
 					
