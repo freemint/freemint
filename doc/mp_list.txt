@@ -1,4 +1,4 @@
-Frank Naumann <fnaumann@cs.uni-magdeburg.de>                        1999-11-16
+Frank Naumann <fnaumann@freemint.de>                                1999-11-16
 ------------------------------------------------------------------------------
 
 FreeMiNT Memory Protection Compatibility list
