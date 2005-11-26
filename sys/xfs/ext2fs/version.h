@@ -5,7 +5,7 @@
  * Note:         Please send suggestions, patches or bug reports to me
  *               or the MiNT mailing list (mint@fishpool.com).
  * 
- * Copying:      Copyright 1999 Frank Naumann (fnaumann@cs.uni-magdeburg.de)
+ * Copying:      Copyright 1999 Frank Naumann (fnaumann@freemint.de)
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

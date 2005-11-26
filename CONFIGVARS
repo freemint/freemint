@@ -2,8 +2,8 @@
 # cross compiling
 #
 ifneq (yes,$(M68K_ATARI_MINT_CROSS))
-CROSS = no
-#CROSS = yes
+#CROSS = no
+CROSS = yes
 else
 CROSS = yes
 endif

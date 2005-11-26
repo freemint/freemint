@@ -5,7 +5,7 @@
  * Note:         Please send suggestions, patches or bug reports to me
  *               or the MiNT mailing list (mint@fishpool.com).
  * 
- * Copying:      Copyright 1999 Frank Naumann (fnaumann@cs.uni-magdeburg.de)
+ * Copying:      Copyright 1999 Frank Naumann (fnaumann@freemint.de)
  *               Copyright 1998, 1999 Axel Kaiser (DKaiser@AM-Gruppe.de)
  * 
  * Portions copyright 1992, 1993, 1994, 1995 Remy Card (card@masi.ibp.fr)
