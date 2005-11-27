@@ -784,6 +784,7 @@ check_kentry_version(void)
 # define c20ms_ptr		( KENTRY->vec_mch.c20ms)
 # define mfpregs		( KENTRY->vec_mch.mfpregs)
 # define cpush			(*KENTRY->vec_mch.cpush)
+# define cpushi			(*KENTRY->vec_mch.cpushi)
 # define nf_ops			( KENTRY->vec_mch.nf_ops)
 
 

@@ -648,7 +648,7 @@ exec_region(struct proc *p, MEMREGION *mem, int thread)
 	b = (BASEPAGE *)mem->loc;
 
 	/* flush cached versions of the text */
-	cpush((void *) b->p_tbase, b->p_tlen);
+	cpushi((void *) b->p_tbase, b->p_tlen);
 
 	/* set some (undocumented) variables in the basepage */
 	b->p_defdrv = p->p_cwd->curdrv;
