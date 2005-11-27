@@ -607,7 +607,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 
 			DIAGS(("Copy accstart to 0x%lx, size %lu", (char *)b + size, (long)accend - (long)accstart));
 			memcpy((char *)b + size, accstart, (long)accend - (long)accstart);
-			cpush(NULL, -1);
+			cpushi((char *)b + size, (long)accend - (long)accstart);
 
 			b->p_dbase = b->p_tbase;
 			b->p_tbase = (long)b + size;
