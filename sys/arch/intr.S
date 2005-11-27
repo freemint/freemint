@@ -544,7 +544,7 @@ _mmu_sigbus:
 	move.l	P_EXCSSP(a0),a1 	// a1 is now exception_ssp
 #if !defined(M68040) && !defined(M68060)
 	move.w	0xA(a1),d0		// d0 is SSW
-	btst	#6,d0		// read or write?
+	btst	#6,d0			// read or write?
 	beq.s	ms_w030
 	move.w	#2,P_EXCACCESS(a0)	// it was a read access
 	bra.s	ms_aa030
@@ -555,16 +555,16 @@ ms_aa030:
 	move.l	a1,P_EXCADDR(a0)	// save the access address
 
 	ptestr	d0,(a1),#7,a2		// a2 is the table address
-				// (no, it's the descriptor address
-				// matching (a1) - Gryf)
+					// (no, it's the descriptor address
+					// matching (a1) - Gryf)
 	move.l	a2,P_EXCTBL(a0) 	// save table address in curproc
 	pmove	psr,P_EXCMMUSR(a0)	// save resulting mmusr in curproc
 #else
 	move.l	_mcpu,d0
-	cmpi.w	#40,d0		// the 060 uses a different stackframe
+	cmpi.w	#40,d0			// the 060 uses a different stackframe
 	bne.s	ms_060
 	move.w	0xc(a1),d0		// d0 is SSW
-	btst	#8,d0		// read or write?
+	btst	#8,d0			// read or write?
 	beq.s	ms_w040
 	move.w	#2,P_EXCACCESS(a0)	// it was a read access
 	bra.s	ms_aa040
@@ -577,7 +577,7 @@ ms_aa040:
 ms_060:
 	move.l	0xc(a1),d0		// d0 is FSLW
 	swap	d0
-	lsr.w	#7,d0		// extract the access type
+	lsr.w	#7,d0			// extract the access type
 	andi.w	#3,d0
 	move.w	d0,P_EXCACCESS(a0)	// save the access type
 	move.l	0x8(a1),a1		// a1 is the access address

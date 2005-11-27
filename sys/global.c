@@ -40,6 +40,7 @@ struct global global =
 };
 
 long mcpu = 0;
+long pmmu = 0;
 short fpu = 0;
 short secure_mode = 0;
 unsigned long c20ms = 0;

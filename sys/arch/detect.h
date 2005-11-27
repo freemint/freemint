@@ -5,7 +5,7 @@
  * distribution. See the file CHANGES for a detailed log of changes.
  * 
  * 
- * Author: J”rg Westheide <joerg_westheide@su.maus.de>
+ * Author: Jrg Westheide <joerg_westheide@su.maus.de>
  * Started: 1998-12-20
  * 
  * please send suggestions, patches or bug reports to me or

@@ -176,7 +176,6 @@ _getmch (void)
 	
 	/* own CPU test */
 	mcpu = detect_cpu ();
-	
 	/* own FPU test; this must be done after the CPU detection */
 	fputype = detect_fpu ();
 	

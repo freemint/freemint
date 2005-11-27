@@ -102,7 +102,7 @@ struct timeval;
  * versions are enough :-)
  */
 #define KENTRY_MAJ_VERSION	0
-#define KENTRY_MIN_VERSION	14
+#define KENTRY_MIN_VERSION	15
 
 
 /* hardware dependant vector
@@ -123,6 +123,7 @@ struct kentry_mch
 
 	/* CPU dependant functions */
 	void _cdecl (*cpush)(const void *base, long size);
+	void _cdecl (*cpushi)(const void *base, long size);
 
 	/* nf operation vector if available on this machine; NULL otherwise */
 	struct nf_ops *nf_ops;
@@ -134,6 +135,7 @@ struct kentry_mch
 	&c20ms, \
 	_mfpregs, \
 	cpush, \
+	cpushi, \
 	NULL, \
 }
 
