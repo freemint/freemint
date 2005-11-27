@@ -240,7 +240,7 @@ load_module(const char *filename, long *err)
 	/* Ozk: For some reason, this cpush is needed,
 	 * else the kernel wont run on my Milan040!
 	 */
-	cpush(NULL, -1);
+	// cpushi(NULL, -1);
 
 	/* check for errors */
 	if (*err)

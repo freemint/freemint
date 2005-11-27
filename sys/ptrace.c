@@ -392,7 +392,7 @@ sys_p_trace (short request, short pid, void *addr, long data)
 					*(long *) addr = data;
 
 					/* flush write-back cache */
-					cpush(addr, 4);
+					cpushi (addr, 4);
 				}
 				else
 					*(long *) data = *(long *) addr;
