@@ -247,7 +247,7 @@ copy_mem (struct proc *p)
 
 # endif
 
-	cpush(ut, sizeof(*ut));
+	cpushi(ut, sizeof(*ut));
 	detach_region(curproc, m->tp_reg);
 	
 	TRACE (("copy_mem: ok (%lx)", m));
@@ -785,7 +785,7 @@ new_proc_ext(long ident, unsigned long flags, unsigned long size, struct module_
 struct p_ext *
 share_ext(struct proc *p, struct proc *p2)
 {
-	struct p_ext *p_ext = NULL, *p_ext2;
+	struct p_ext *p_ext = NULL, *p_ext2 = NULL;
 
 	p2->p_ext = NULL;
 
@@ -813,7 +813,7 @@ share_ext(struct proc *p, struct proc *p2)
 			 */
 			for (i = 0; i < p->p_ext->used; i++)
 			{
-				struct proc_ext *ext;
+				struct proc_ext *ext, *ext2 = NULL;
 
 				ext = p->p_ext->ext[i];
 				assert(ext);
@@ -821,23 +821,18 @@ share_ext(struct proc *p, struct proc *p2)
 				{
 					if ((ext->flags & PEXT_COPYONSHARE))
 					{
-						struct proc_ext *ext2;
-						 
 						ext2 = new_proc_ext(ext->ident, ext->flags, ext->size, ext->cb_vector);
-						if (ext2)
-						{
-							memcpy(ext2->data, ext->data, ext->size);
-							p_ext->ext[p_ext->used++] = ext2;
-							ext = ext2;
-						}
+						assert(ext2);
+						memcpy(ext2->data, ext->data, ext->size);
+						p_ext->ext[p_ext->used++] = ext2;
+						if ((ext2->flags & PEXT_SHAREONCE))
+							ext2->flags |= PEXT_NOSHARE;
 					}
 					else
 					{
 						ext->links++;
 						p_ext->ext[p_ext->used++] = ext;
-					}
-					if ((ext->flags & (PEXT_SHAREONCE|PEXT_COPYONSHARE)) == (PEXT_SHAREONCE|PEXT_COPYONSHARE))
-						ext->flags |= PEXT_NOSHARE;
+					}						
 				}
 			}
 			if (p_ext->used)
@@ -862,8 +857,14 @@ share_ext(struct proc *p, struct proc *p2)
 						(*ext->cb_vector->share)(ext->data, p, p2);
 				}
 			}
-			kfree(p_ext2);
+			else
+			{
+				kfree(p_ext);
+				p_ext = NULL;
+			}
 		}
+		if (p_ext2)
+			kfree(p_ext2);
 	}
 	return p_ext;
 }
@@ -972,6 +973,7 @@ proc_attach_extension(struct proc *p, long ident, unsigned long flags, unsigned 
 	}
 	
 	ext = new_proc_ext(ident, flags, size, cb);
+	
 	if (ext)
 	{
 		p_ext->ext[p_ext->used++] = ext;
@@ -1059,6 +1061,7 @@ proc_ext_on_exit(struct proc *p, int code)
 	if (p_ext)
 	{
 		int i;
+		
 		for (i = 0; i < p_ext->used; i++)
 		{
 			struct proc_ext *ext = p_ext->ext[i];

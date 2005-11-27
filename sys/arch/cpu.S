@@ -50,6 +50,8 @@ _is_superscalar:
 	.data
 _cachevec:
 	dc.l	_cache000
+_cacheveci:
+	dc.l	_cache000
 
 // vectors for CCW/CACR conversions
 
@@ -66,12 +68,13 @@ hascaches:
 // init cache routines
 
 _init_cache:
-	movem.l	d0-d1/a0-a2,-(sp)
+	movem.l	d0-d1/a0-a3,-(sp)
 	move.l	_mcpu,d0
-	beq.s	icquit
+	beq	icquit
 	cmp.w	#10,d0
-	beq.s	icquit
+	beq	icquit
 	lea	_cache030,a0
+	movea.l	a0,a3
 	lea	l2c020,a1
 	lea	c2l020,a2
 	cmp.w	#20,d0
@@ -81,11 +84,13 @@ _init_cache:
 	cmp.w	#30,d0
 	beq.s	icset
 	lea	_cache040,a0
+	lea	_cache040_i,a3
 	lea	l2c040,a1
 	lea	c2l040,a2
 	cmp.w	#40,d0
 	beq.s	icset
 	lea	_cache060,a0
+	lea	_cache060_i,a3
 	lea	l2c060,a1
 	lea	c2l060,a2
 	cmp.w	#60,d0
@@ -93,9 +98,10 @@ _init_cache:
 icset:	move.l	a0,_cachevec
 	move.l	a1,l2cv
 	move.l	a2,c2lv
+	move.l	a3,_cacheveci
 	st	hascaches
 	nop
-icquit:	movem.l	(sp)+,d0-d1/a0-a2
+icquit:	movem.l	(sp)+,d0-d1/a0-a3
 	rts
 
 // Cache control routines.
@@ -333,15 +339,28 @@ s61:	addq.l	#0x02,a0
 	rts
 
 #endif
+	.globl	_cpush
+	.globl	_cpushi
 
+// Ozk:
+// cpushi(void *base, long length):
+// flush data cache and invalidate instruction cache from base over a distance of length.
+// If length is -1 then the entire cache is flushed/invalidated
+// Usage: When modifying/setting up process text area.
+
+_cpushi:
+#ifndef M68000
+	move.l	4(sp),a0
+	move.l	8(sp),d0
+	nop
+	move.l	_cacheveci,a1
+	jmp	(a1)
+#endif
 //
 // cpush(void *base, long length):
 // flush both caches from base over a distance of length. If length is -1
 // then the entire cache is flushed
 //
-
-	.globl	_cpush
-
 _cpush:
 #ifndef M68000
 	move.l	4(sp),a0
@@ -384,21 +403,19 @@ _cache000:				// 68000 cache (i.e. no cache)
 //	later. For now, "cpusha bc" is done on every cpush() call
 
 #ifndef M68000
-_cache040:
-#ifdef never				// 68040 cache
+_cache040:				// 68040 cache
 	addq.l	#1,d0			// if was -1
 	beq.s	abc040			// then flush everything
 	add.l	#14,d0			// round up to line boundary
 	lsr.l	#4,d0			// convert to number of lines
 	cmp.l	#256,d0
 	bcs.s	fls040			// not too many lines, so dump only some
-#endif
-abc040:	dc.w	0xF4F8			// this is "cpusha bc" if your asm knows '040
+abc040:	dc.w	0xF478			// this is "cpusha dc" if your asm knows '040
 	rts
-#ifdef never
 fls040:
 // run through d0+1 times (since a0 may not be on a line boundary)
 	moveq	#16,d1
+	move.l	a0,a1
 do040:
 	// As the MC68040 (and the MC68060, which uses the following code as
 	// well) needs physical addresses for cpushl, we have to convert the
@@ -408,33 +425,73 @@ do040:
 	// conversion would actually only be necessary when the address to push
 	// crosses a page boundary, but I don't think the gain this could mean
 	// would be enough to judge the additional overhead needed.
-	move.l	a0,-(sp)
+	move.l	a1,a0
 	bsr.s	log2phys
 	cmpa.l	#-1,a0
-	movea.l	(sp)+,a0		// does not affect the CCR, so no problem here
 	beq.s	abc040			// if there's no physical address, flush all
-	dc.w	0xF4E8			// this is "cpushl bc,(a0)" for the '040
-	add.w	d1,a0
+	dc.w	0xF468			// this is "cpushl dc,(a0)" for the '040
+	add.w	d1,a1
 	dbf	d0,do040
 	rts
-#endif
 _cache060:				// 68060 cache (double the 040)
-#ifdef never
 	addq.l	#1,d0			// if was -1
 	beq.s	abc040			// then flush everything
 	add.l	#14,d0			// round up to line boundary
 	lsr.l	#4,d0			// convert to number of lines
 	cmp.l	#512,d0
 	bcs.s	fls040
-	dc.w	0xF4F8			// see abc040
+	dc.w	0xF478			// see abc040
 	rts
-#else
-	// Until I have no possibility to get the log2phys()-code really work on
-	// the 060, it's the safest to allways flush all caches (one shouldn't
-	// rely on a linear mapping of the memory)
-	dc.w	0xF4F8			// cpusha bc
+// ---------------------------------------------------
+// Ozk:
+// This is 'cpushi' which flushes only the datacache and then
+// invalidates the intruction cache. Intended to be used
+// where text area of processes are modified/prepared
+_cache040_i:				// 68040 cache
+	addq.l	#1,d0			// if was -1
+	beq.s	abc040i			// then flush everything
+	add.l	#14,d0			// round up to line boundary
+	lsr.l	#4,d0			// convert to number of lines
+	cmp.l	#256,d0
+	bcs.s	fls040i			// not too many lines, so dump only some
+abc040i:
+	dc.w	0xF478			// this is "cpusha dc"
+	dc.w	0xF498			// this is "cinva ic"
 	rts
-#endif
+fls040i:
+	// run through d0+1 times (since a0 may not be on a line boundary)
+	moveq	#16,d1
+	move.l	a0,a1
+do040i:
+	// As the MC68040 (and the MC68060, which uses the following code as
+	// well) needs physical addresses for cpushl, we have to convert the
+	// address(es) to push. This has to be done for each line, as memory
+	// may not be linearly mapped (i.e. there may be gaps in the physical
+	// memory used to form the logical address space). Of course, the
+	// conversion would actually only be necessary when the address to push
+	// crosses a page boundary, but I don't think the gain this could mean
+	// would be enough to judge the additional overhead needed.
+	move.l	a1,a0
+	bsr.s	log2phys
+	cmpa.l	#-1,a0
+	beq.s	abc040i			// if there's no physical address, flush all
+	dc.w	0xF468			// this is "cpushl dc,(a0)"
+	dc.w	0xF488			// this is "cinvl ic,(a0)"
+	add.w	d1,a1
+	dbf	d0,do040i
+	rts
+
+_cache060_i:				// 68060 cache (double the 040)
+	addq.l	#1,d0			// if was -1
+	beq.s	abc040i			// then flush everything
+	add.l	#14,d0			// round up to line boundary
+	lsr.l	#4,d0			// convert to number of lines
+	cmp.l	#512,d0
+	bcs.s	fls040i
+	dc.w	0xF468			// this is "cpushl dc,(a0)"
+	dc.w	0xF488			// this is "cinvl ic,(a0)"
+	rts
+// ---------------------------------------------------
 
 // log2phys
 //
@@ -457,12 +514,8 @@ _cache060:				// 68060 cache (double the 040)
 // a0: physical address (-1 if the address is not currently mapped)
 
 log2phys:
-	// We're going to use a temporary exception handler, so better mask
-	// all interrupts
-	move	sr,-(sp)
-	ori	#0x700,sr
 	movem.l	d0-d2/a1,-(sp)		// save some registers
-	cmpi.w	#0x60,_mcpu+2		// is this a 060?
+	cmpi.w	#60,_mcpu+2		// is this a 060?
 	beq.s	l2p_060			// yes, so use plpa
 	dc.w	0x4e7a,0x0003		// movec tc,d0
 	btst	#15,d0
@@ -491,35 +544,33 @@ l2p_resident:
 	add.l	d0,a0			// and build the effective phyiscal address
 l2p_exit:
 	movem.l	(sp)+,d0-d2/a1		// restore registers
-	move	(sp)+,sr		// restore interrupts
 	rts
 
 	// Here's the code for the MC68060. Note that it needs a temporary
 	// access exception handler because plpa may trigger such an exception
 	// if the logical address doesn't have a valid physical counterpart
 l2p_060:
+	dc.w	0x4e7a,0x0003		// movec tc,d0
+	btst	#15,d0
+	beq.s	l2p_exit
 	// Install the temporary access exception handler
+	move.w	sr,d1
+	or.w	#0x700,sr
 	movec	vbr,a1
 	move.l	8(a1),old_access
 	move.l	#temp_access,8(a1)
-	move.l	sp,a1			// save the sp for the handler
 	dc.w	0xf5c8			// translate the address (plpar (a0))
-l2p_return:
-	movec	vbr,a1
-	move.l	old_access,8(a1)	// restore the access exception handler
+	move.l	old_access,8(a1)
+	move.w	d1,sr
 	bra.s	l2p_exit
-
 // This is the temporary access exception handler. If it gets called, there's
 // no valid physical address for the logical address we want to convert.
 
 old_access:
 	dc.l	0
 temp_access:
-	move.l	a1,sp			// Restore the stackpointer
-	moveq	#-1,d0
-	move.l	d0,a0			// Signal "no valid physical address found"
-	bra.s	l2p_return
-
+	movea.l	#0xffffffff,a0
+	rte
 #endif
 
 //

@@ -17,6 +17,7 @@ long _cdecl	ccw_get		(void);
 long _cdecl	ccw_set		(ulong ctrl, ulong mask);
 
 void _cdecl	cpush		(const void *base, long size);
+void _cdecl	cpushi		(const void *base, long size);
 
 void _cdecl	setstack	(long);
 

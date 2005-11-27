@@ -1661,7 +1661,7 @@ load_and_reloc (FILEPTR *f, FILEHEAD *fh, char *where, long start, long nbytes, 
 
 	if (fh->reloc != 0 || xdd_read (f, (char *) &fixup, 4L) != 4L || fixup == 0)
 	{
-		cpush ((void *) base->p_tbase, base->p_tlen);
+		cpushi ((void *) base->p_tbase, base->p_tlen);
 		/* no relocation to be performed */
 		return E_OK;
 	}
@@ -1730,7 +1730,7 @@ load_and_reloc (FILEPTR *f, FILEHEAD *fh, char *where, long start, long nbytes, 
 	}
 	while (c);
 
-	cpush ((void *) base->p_tbase, base->p_tlen);
+	cpushi ((void *) base->p_tbase, base->p_tlen);
 	return E_OK;
 }
 
