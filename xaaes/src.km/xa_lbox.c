@@ -93,7 +93,7 @@ callout_select(struct xa_lbox_info *lbox, OBJECT *tree, struct lbox_item *item, 
 			lp->obj_index	= obj_index;
 			lp->last_state	= last_state;
 			
-			cpush(NULL, -1); //(u, xa_co_lboxselect.len);
+			cpushi(u, xa_callout_user.len);
 
 			act.sa_handler	= u->sighand_p;
 			act.sa_mask	= 0xffffffff;
@@ -151,7 +151,7 @@ callout_set(struct xa_lbox_info *lbox,
 			lp->rect	= (long)rect;
 			lp->first	= first;
 						
-			cpush(NULL, -1); //(u, xa_co_lboxselect.len);
+			cpushi(u, xa_callout_user.len);
 
 			act.sa_handler	= u->sighand_p;
 			act.sa_mask	= 0xffffffff;

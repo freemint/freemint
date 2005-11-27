@@ -170,7 +170,7 @@ callout_display(struct xa_fnts_item *f, short vdih, long pt, long ratio, RECT *c
 				wp->pt		= pt;
 				wp->ratio	= ratio;
 				
-				cpush(NULL, -1); //(u, xa_co_lboxselect.len);
+				cpushi(u, xa_callout_user.len);
 
 				act.sa_handler	= u->sighand_p;
 				act.sa_mask	= 0xffffffff;
