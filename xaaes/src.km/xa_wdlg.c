@@ -101,7 +101,7 @@ callout_exit(struct xa_client *client, struct wdlg_info *wdlg, void *ev, short n
 			else
 				wp->data	= (long)udata;
 
-			cpush(NULL, -1); //(u, xa_co_lboxselect.len);
+			cpushi(u, xa_callout_user.len);
 
 			act.sa_handler	= u->sighand_p;
 			act.sa_mask	= 0xffffffff;
