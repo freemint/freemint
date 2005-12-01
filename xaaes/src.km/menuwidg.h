@@ -59,4 +59,7 @@ INLINE	struct xa_widget * get_menu_widg(void) { return &root_window->widgets[XAW
 INLINE	XA_TREE *get_menu(void) { return root_window->widgets[XAW_MENU].stuff; }
 INLINE	struct xa_client *menu_owner(void) { return get_menu()->owner; }
 
+bool	keyboard_menu_widget(enum  locks lock, struct xa_window *wind, struct xa_widget *widg);
+bool	menu_keyboard(Tab *tab, const struct rawkey *key);
+
 #endif /* _menuwidg_h */
