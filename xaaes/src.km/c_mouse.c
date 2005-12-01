@@ -296,7 +296,7 @@ menu_move(struct xa_client *client, struct moose_data *md, bool f)
 			 * Ozk: Cannot use FOREACH_TAB() here, since there may be additions to the top (start)
 			 *      of the list during our wander down towards the bottom of it.
 			 */
-			while(tab)
+			while (tab)
 			{
 				k = &tab->task_data.menu;
 
@@ -304,7 +304,7 @@ menu_move(struct xa_client *client, struct moose_data *md, bool f)
 				{
 					/* XaAES internal flag: report any mouse movement. */
 
-					k->em.flags &= ~MU_MX; //0;
+					k->em.flags &= ~MU_MX;
 					k->x = x;
 					k->y = y;
 					tab = k->em.t1(tab, -1);	/* call the function */
@@ -314,7 +314,7 @@ menu_move(struct xa_client *client, struct moose_data *md, bool f)
 				{
 					if (is_rect(x, y, k->em.m1_flag & 1, &k->em.m1))
 					{
-						k->em.flags &= ~MU_M1; //0;
+						k->em.flags &= ~MU_M1;
 						k->x = x;
 						k->y = y;
 						tab = k->em.t1(tab, -1);	/* call the function */
@@ -336,6 +336,7 @@ menu_move(struct xa_client *client, struct moose_data *md, bool f)
 					if (m_inside(x, y, &k->drop))
 						break;
 				}
+
 				if (m_inside(x, y, &k->p.wind->r))
 					break;
 				tab = tab->tab_entry.next;
@@ -496,7 +497,7 @@ whlarrowed(struct xa_window *wind, short WA, short amount, const struct moose_da
 		{
 			wind->send_message(0, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 					   WM_ARROWED, 0,0, wind->handle,
-					   (amount << 8)|(WA & 7), md->x, md->y, md->kstate);
+					   (amount << 8)|(WA & 15), md->x, md->y, md->kstate);
 		}
 		else
 		{

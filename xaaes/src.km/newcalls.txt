@@ -745,9 +745,10 @@ no definitions are made yet.
 
               There is extended info in msg[4] with this mode, layed out as
               follows;
-                       bits 0-2 -  WA_xxx (same as in the original WM_ARROWED
-                                   messages, a value between 0 and 7)
-                                   bits 3-7 -  unused.
+                       bits 0-3 -  WA_xxx (same as in the original WM_ARROWED
+                                   messages, a value between 0 and 7, extended
+                                   modes up to 15)
+                                   bits 4-7 -  unused.
                        bits 8-15 - Number of lines to scroll (unsigned byte)
      
                      This makes it possible for wheel aware applications to

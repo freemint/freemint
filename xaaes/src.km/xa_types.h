@@ -2018,6 +2018,8 @@ struct menu_task
 	TASK_STAGE stage;
 	short ty;
 
+	unsigned long actflags;
+
 	struct xa_menuinfo m;
 	struct xa_popinfo  p;
 
