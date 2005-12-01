@@ -23,10 +23,13 @@
  * along with XaAES; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
- 
+
+#include "k_main.h"
 #include "c_keybd.h"
 #include "k_keybd.h"
 #include "xa_types.h"
+#include "xa_global.h"
+#include "menuwidg.h"
 
 void
 cXA_fmdkey(enum locks lock, struct c_event *ce, bool cancel)
@@ -67,4 +70,34 @@ cXA_keybd_event(enum locks lock, struct c_event *ce, bool cancel)
 		queue_key(client, key);
 	}
 	kfree(key);
+}
+
+void
+cXA_menu_key(enum locks lock, struct c_event *ce, bool cancel)
+{
+	struct xa_client *client = ce->client;
+	struct rawkey *key = ce->ptr1;
+
+	if (!cancel && TAB_LIST_START && TAB_LIST_START->client == client)
+	{
+		menu_keyboard(TAB_LIST_START, key);
+	}
+	kfree(key);
+}
+
+void
+cXA_open_menubykbd(enum locks lock, struct c_event *ce, bool cancel)
+{
+// 	if (!TAB_LIST_START)
+// 	{
+		struct xa_widget *widg = get_menu_widg();
+		struct widget_tree *wt = widg->stuff;
+
+		if (wt->owner == ce->client)
+		{
+			keyboard_menu_widget(lock, root_window, widg);
+		}
+		else
+			post_cevent(wt->owner, cXA_open_menubykbd, NULL, NULL, 0,0, NULL,NULL);
+// 	}	
 }

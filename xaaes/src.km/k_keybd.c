@@ -41,6 +41,7 @@
 #include "scrlobjc.h"
 #include "taskman.h"
 #include "widgets.h"
+#include "menuwidg.h"
 
 #include "obtree.h"
 
@@ -179,6 +180,17 @@ XA_keyboard_event(enum locks lock, const struct rawkey *key)
 	struct rawkey *rk;
 	bool waiting;
 
+	if (TAB_LIST_START)
+	{
+		rk = kmalloc(sizeof(*rk));
+		if (rk)
+		{
+			*rk = *key;
+			post_cevent(TAB_LIST_START->client, cXA_menu_key, rk, NULL, 0,0, NULL,NULL);
+		}
+		return;
+	}
+	
 	if (!(client = find_focus(true, &waiting, &locked_client, &keywind)))
 		return;
 
@@ -302,6 +314,11 @@ kernel_key(enum locks lock, struct rawkey *key)
 			}
 			return true;
 		}
+		case ' ':
+		{
+			post_cevent(menu_owner(), cXA_open_menubykbd, NULL,NULL, 0,0, NULL,NULL);
+			return true;
+		}
 		case 'R':				/* attempt to recover a hung system */
 		{
 			if (C.reschange)
@@ -407,7 +424,7 @@ keyboard_input(enum locks lock)
 		key.raw.bcon = f_getchar(C.KBD_dev, RAW);
 
 		/* Translate the BIOS raw data into AES format */
-		key.aes = (key.raw.conin.scan<<8) | key.raw.conin.code;
+		key.aes = (key.raw.conin.scan << 8) | key.raw.conin.code;
 		key.norm = 0;
 
 		DIAGS(("f_getchar: 0x%08lx, AES=%x, NORM=%x", key.raw.bcon, key.aes, key.norm));
