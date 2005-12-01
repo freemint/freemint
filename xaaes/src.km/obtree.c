@@ -1680,7 +1680,10 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 	RECT r;
 	
 // 	display("e");
-	
+
+// 	if (parent)
+// 		display("parent %d", parent);
+
 	cx = cy = ax = 32000;
 
 	co = -1;
@@ -1688,13 +1691,21 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 	
 	if (start <= 0)
 	{
-		if ((start = tree->ob_head) > 0)
+		if ((start = tree[parent].ob_head) > 0)
 		{
 			if (!(flags & OBFIND_LAST))
 				flags |= OBFIND_FIRST;
 		}
 		else goto done;
 	}
+
+	o = tree[parent].ob_head;
+	if (o == -1)
+		return -1;
+	ob_rectangle(tree, parent, &r);
+	x = r.x;
+	y = r.y;
+	
 	if ((flags & OBFIND_FIRST))
 	{
 		r.x = r.y = -1;
@@ -1704,9 +1715,14 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 	}
 	else if ((flags & OBFIND_LAST))
 	{
+		r.x += r.w;
+		r.y += r.h;
+		r.w = r.h = 1;
+	#if 0
 		r.x = tree->ob_x + tree->ob_width;
 		r.y = tree->ob_y + tree->ob_height;
 		r.w = r.h = 8;
+	#endif
 		flags &= ~(OBFIND_LAST|OBFIND_HOR|OBFIND_DOWN);
 		flags |= OBFIND_HOR|OBFIND_UP;
 	}
@@ -1715,8 +1731,8 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 
 // 	ndisplay("parent %d, start %d", parent, start);
 
-	o = 0;
-	x = y = 0;
+// 	o = 0;
+// 	x = y = 0;
 
 // 	display(", parent %d, start %d (%d/%d/%d/%d)", parent, start, r);
 
@@ -1920,10 +1936,14 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 			x -= tree[o].ob_x;
 			y -= tree[o].ob_y;
 		}
-
 		
-		if (tree[o].ob_head != -1 && !(tree[o].ob_flags & OF_HIDETREE))
+// 		if (parent)
+// 			display("0: o = %d, h=%d, t=%d, n=%d, f=%x", o, tree[o].ob_head, tree[o].ob_tail, tree[o].ob_next, tree[o].ob_flags);
+
+		if (tree[o].ob_head != -1 && (!(tree[o].ob_flags & OF_HIDETREE) || (flags & OBFIND_HIDDEN)))
 		{
+// 			if (parent != 0)
+// 				display("parent %d, child %d", o, tree[o].ob_head);
 			x += tree[o].ob_x;
 			y += tree[o].ob_y;
 			o = tree[o].ob_head;
@@ -1941,7 +1961,10 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 			}
 			o = n;
 		}
-	} while (o != parent && o != -1 && (!stopf || !(tree[o].ob_flags & stopf)) && (!stops || !(tree[o].ob_state & stops)));
+		
+// 		if (parent)
+// 			display("1: o = %d, h=%d, t=%d, n=%d, f=%x, ", o, tree[o].ob_head, tree[o].ob_tail, tree[o].ob_next, tree[o].ob_flags);
+	} while ( o != parent && o != -1); // && (!stopf || !(tree[o].ob_flags & stopf)) && (!stops || !(tree[o].ob_state & stops)));
 
 done:
 // 	display(" -- return %d", co);

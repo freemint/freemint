@@ -519,8 +519,7 @@ k_init(unsigned long vm)
 		 * We need to get rid of the cursor
 		 */
 		v_exit_cur(C.P_handle);
-		DIAGS(("v_exit_cur ok!"));
-		
+		DIAGS(("v_exit_cur ok!"));	
 	}
 	else
 	{

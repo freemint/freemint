@@ -78,6 +78,7 @@ short	ob_find_any_flst(OBJECT *obtree, short f, short s, short mf, short ms, sho
 #define OBFIND_EXACTSTATE	0x0008	/* All bits in 's' must match */
 #define OBFIND_FIRST		0x0010	/* Find object closes to top, ignores OBFIND_[HOR/DOWN] */
 #define OBFIND_LAST		0x0020	/* Find object closes to bottom, ignores OBFIND_[HOR/DOWN/FIRST] */
+#define OBFIND_HIDDEN		0x0040	/* Dont skip hidden trees */
 short	ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, short mf, short s, short ms, short stopf, short stops, short flags);
 short	ob_find_next_any_flag(OBJECT *obtree, short start, short f);
 short	ob_find_prev_any_flag(OBJECT *obtree, short start, short f);

@@ -605,7 +605,12 @@ typedef  struct
 #define WA_RTPAGE 		5
 #define WA_LFLINE 		6
 #define WA_RTLINE 		7
-#define WA_WHEEL		8	/* XaAES */
+/* XaAES only */
+#define WA_UPSCAN		8
+#define WA_DNSCAN		9
+#define WA_LFSCAN		10
+#define WA_RTSCAN		11
+//#define WA_WHEEL		8	/* XaAES */
 
 /* wind_update flags */
 #define END_UPDATE		0

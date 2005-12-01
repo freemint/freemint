@@ -677,7 +677,9 @@ form_keyboard(XA_TREE *wt,
 #if GENERATE_DIAGS
 	struct xa_client *client = wt->owner;
 #endif
-	ushort keycode = key->aes, next_key = 0, keystate = key->raw.conin.state;
+	ushort keycode	= key->aes,
+	       next_key = 0,
+	       keystate = key->raw.conin.state;
 	short next_obj, new_focus, new_eobj;
 	struct fmd_result fr;
 	struct xa_rect_list *lrl = NULL;
@@ -732,7 +734,7 @@ form_keyboard(XA_TREE *wt,
 		}
 	}
 	
-	next_obj /*= new_eobj*/ = form_cursor(wt, v, keycode, keystate, next_obj, redraw, rl, &new_focus, &keycode);
+	next_obj = form_cursor(wt, v, keycode, keystate, next_obj, redraw, rl, &new_focus, &keycode);
 	
 	if (next_obj < 0 && keycode)
 	{
@@ -1342,7 +1344,7 @@ do_formwind_msg(
 		}
 		case WM_ARROWED:
 		{
-			if (msg[4] < WA_LFPAGE)
+			if (msg[4] < WA_LFPAGE || msg[4] == WA_UPSCAN || msg[4] == WA_DNSCAN)
 			{
 				if (wh < oh)
 				{
@@ -1359,6 +1361,13 @@ do_formwind_msg(
 							break;
 						case WA_DNPAGE:
 							dy += wh/*oh*/ - screen.c_max_h;
+							break;
+						case WA_UPSCAN:
+							dy += msg[5];
+							break;
+						case WA_DNSCAN:
+							dy -= msg[5];
+							break;
 					}
 /* align ( not that object height is always >= work area height) */
 					if (dy < 0)
