@@ -1212,6 +1212,7 @@ do_popup(Tab *tab, XA_TREE *wt, int item, TASK *click, short rdx, short rdy)
 {
 	OBJECT *root = wt->tree;
 	MENU_TASK *k = &tab->task_data.menu;
+	short x, y;
 
 	DIAG((D_menu, tab->client, "do_popup: tab=%lx for %s", tab, tab->client->name));
 	menu_spec(root,item);
@@ -1225,22 +1226,19 @@ do_popup(Tab *tab, XA_TREE *wt, int item, TASK *click, short rdx, short rdy)
 
 	display_popup(tab, rdx, rdy);
 
+	k->em.m2 = k->drop;
+	k->em.flags |= MU_M2;
+	k->em.m2_flag = 0;			/* into popup */
+	k->em.t2 = popup;
+	k->outof = NULL;
+
+	check_mouse(wt->owner, NULL, &x, &y);
+	
+	if (m_inside(x, y, &k->drop))
 	{
-		short x, y;
-
-		k->em.m2 = k->drop;
-		k->em.flags |= MU_M2;
-		k->em.m2_flag = 0;			/* into popup */
-		k->em.t2 = popup;
-		k->outof = NULL;
-
-		check_mouse(wt->owner, NULL, &x, &y);
-		if (m_inside(x, y, &k->drop))
-		{
-			k->x = x;
-			k->y = y;
-			popup(tab, -1);
-		}
+		k->x = x;
+		k->y = y;
+		popup(tab, -1);
 	}
 }
 
@@ -2269,11 +2267,22 @@ menu_title(enum locks lock, Tab *tab, short title, struct xa_window *wind, XA_WI
 		obj_area(wt, k->m.current, &k->em.m1);
 		k->em.t1 = menu_bar;
 		
-		k->em.m2 = k->drop;
-		k->em.flags |= MU_M2;
-		k->em.m2_flag = 0;			/* into popup */
-		k->em.t2 = popup;
-		k->outof = NULL;
+		if (title == -2 || title > 0)
+		{
+			short o = ob_find_next_any_flagstate(k->p.wt->tree, k->p.parent, -1,
+				0, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_VERT|OBFIND_DOWN|OBFIND_HIDDEN|OBFIND_FIRST);
+			
+			if (o > 0)
+				popup(tab, o);
+		}
+		else
+		{
+			k->em.m2 = k->drop;
+			k->em.flags |= MU_M2;
+			k->em.m2_flag = 0;			/* into popup */
+			k->em.t2 = popup;
+			k->outof = NULL;
+		}
 
 		return true;
 	}
@@ -2814,12 +2823,17 @@ menu_keyboard(Tab *tab, const struct rawkey *key)
 			if (k->p.current > 0)
 				dir = OBFIND_VERT|OBFIND_UP|OBFIND_HIDDEN;
 			else
-				dir = OBFIND_VERT|OBFIND_FIRST;
+				dir = OBFIND_VERT|OBFIND_LAST;
 			
 			nxt = ob_find_next_any_flagstate(obtree, k->p.parent, k->p.current,
-				0, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_VERT|OBFIND_UP|OBFIND_HIDDEN);
+				0, OF_HIDETREE, 0, OS_DISABLED, 0, 0, dir);
 			
+
 			DIAGS(("  up   - was %d, next %d", k->p.current, nxt));
+			
+			if (nxt == -1)
+				goto last;
+			
 			break;
 		}
 		case 0x5000:		/* down arrow */
@@ -2833,6 +2847,9 @@ menu_keyboard(Tab *tab, const struct rawkey *key)
 				0, OF_HIDETREE, 0, OS_DISABLED, 0, 0, dir);
 
 			DIAGS(("  down - was %d, next %d", k->p.current, nxt));
+			
+			if (nxt == -1)
+				goto first;
 			break;
 		}
 		case 0x4d00:		/* Right arrow */
@@ -2840,15 +2857,24 @@ menu_keyboard(Tab *tab, const struct rawkey *key)
 			bool a = false;
 			
 			if (k->p.current > 0)
-				a = open_attach(tab, true);
-			
-			if (!a)
 			{
+				nxt = ob_find_next_any_flagstate(obtree, k->p.parent, k->p.current,
+					0, OF_HIDETREE, 0, OS_DISABLED, 0,0, OBFIND_HOR|OBFIND_DOWN|OBFIND_HIDDEN|OBFIND_NOWRAP);
+				if (nxt == -1)
+					a = open_attach(tab, true);
+			}
+			if (!a && nxt == -1)
+			{
+				tab = tab->root;
+				k = &tab->task_data.menu;
 				DIAGS(("  right, menu wt = %lx", k->m.wt));
 				if (k->m.wt)
 				{
-					nxt = ob_find_next_any_flagstate(obtree, k->m.titles, k->m.current,
+					nxt = ob_find_next_any_flagstate(k->m.wt->tree, k->m.titles, k->m.current,
 						0, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_HOR|OBFIND_DOWN|OBFIND_HIDDEN);
+					if (nxt < 0)
+						nxt = ob_find_next_any_flagstate(k->m.wt->tree, k->m.titles, -1,
+							0, OF_HIDETREE, 0, OS_DISABLED, 0,0, OBFIND_HOR|OBFIND_FIRST);
 					if (nxt != -1)
 						menu_bar(tab, nxt);
 				}
@@ -2858,19 +2884,31 @@ menu_keyboard(Tab *tab, const struct rawkey *key)
 		}
 		case 0x4b00:		/* Left arrow */
 		{
-			if (NEXT_TAB(tab))
-				set_popout_timeout(NEXT_TAB(tab), true);
-			else
+
+			nxt = ob_find_next_any_flagstate(obtree, k->p.parent, k->p.current,
+				0, OF_HIDETREE, 0, OS_DISABLED, 0,0, OBFIND_HOR|OBFIND_UP|OBFIND_HIDDEN|OBFIND_NOWRAP);
+			
+			if (nxt == -1)
 			{
-				DIAGS(("  left, menu wt = %lx", k->m.wt));
-				if (k->m.wt)
+				if (NEXT_TAB(tab))
+					set_popout_timeout(NEXT_TAB(tab), true);
+				else
 				{
-					nxt = ob_find_next_any_flagstate(obtree, k->m.titles, k->m.current,
-						0, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_HOR|OBFIND_UP|OBFIND_HIDDEN);
-					if (nxt != -1)
-						menu_bar(tab, nxt);
+					tab = tab->root;
+					k = &tab->task_data.menu;
+					DIAGS(("  left, menu wt = %lx", k->m.wt));
+					if (k->m.wt)
+					{
+						nxt = ob_find_next_any_flagstate(k->m.wt->tree, k->m.titles, k->m.current,
+							0, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_HOR|OBFIND_UP|OBFIND_HIDDEN);
+						if (nxt < 0)
+							nxt = ob_find_next_any_flagstate(k->m.wt->tree, k->m.titles, k->m.current,
+								0, OF_HIDETREE, 0, OS_DISABLED, 0,0, OBFIND_HOR|OBFIND_LAST);
+						if (nxt != -1)
+							menu_bar(tab, nxt);
+					}
+					nxt = -1;
 				}
-				nxt = -1;
 			}
 			break;
 		}
@@ -2878,6 +2916,7 @@ menu_keyboard(Tab *tab, const struct rawkey *key)
 		case 0x5100:		/* page down key (Milan &| emulators)   */
 		case 0x4f00:		/* END key (Milan &| emus)		*/
 		{
+last:
 			nxt = ob_find_next_any_flagstate(obtree, k->p.parent, -1,
 				0, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_VERT|OBFIND_DOWN|OBFIND_HIDDEN|OBFIND_LAST);
 			DIAGS(("  found first obj %d, parent %d", nxt, k->p.parent));
@@ -2886,12 +2925,15 @@ menu_keyboard(Tab *tab, const struct rawkey *key)
 		case 0x4700:		/* HOME */
 		case 0x4900:		/* page up key (Milan &| emulators)    */
 		{
+first:
 			nxt = ob_find_next_any_flagstate(obtree, k->p.parent, -1,
 				0, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_VERT|OBFIND_DOWN|OBFIND_HIDDEN|OBFIND_FIRST);
 			DIAGS(("  found last obj %d, parent %d", nxt, k->p.parent));
 			break;
 
 		}
+		case 0x1c0d:
+		case 0x720d:
 		case 0x3920:		/* space */
 		{
 			if (k->p.current > 0)
@@ -2902,7 +2944,14 @@ menu_keyboard(Tab *tab, const struct rawkey *key)
 			}
 			break;
 		}
+		case 0x011b:
+		{
+			if (k->entry)
+				(*k->entry)(tab, -2);
+			break;
 		}
+		}
+		
 		if (nxt != -1 && nxt != k->p.current)
 		{
 			popup(tab, nxt);

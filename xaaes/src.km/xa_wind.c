@@ -1025,9 +1025,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	{
 // 		bool d = (!strnicmp(client->proc_name, "ergo_hlp", 8));
 		
-		if (/*(w->window_status & XAWS_OPEN)*/
-		    w->handle != 0
-		    && (w->active_widgets & XaMENU) != 0)
+		if (w->handle != 0 && (w->active_widgets & XaMENU))
 		{
 			short obptr[2] = { pb->intin[2], pb->intin[3] };
 			OBJECT *ob;
@@ -1046,7 +1044,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			{
 				wt = obtree_to_wt(client, ob);
 
-				if (!wt || (wt && wt != widg->stuff))
+				if (!wt || (wt != widg->stuff))
 				{
 	
 					DIAGS(("  --- install new menu"));

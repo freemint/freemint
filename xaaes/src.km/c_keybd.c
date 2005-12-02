@@ -88,16 +88,23 @@ cXA_menu_key(enum locks lock, struct c_event *ce, bool cancel)
 void
 cXA_open_menubykbd(enum locks lock, struct c_event *ce, bool cancel)
 {
-// 	if (!TAB_LIST_START)
-// 	{
-		struct xa_widget *widg = get_menu_widg();
-		struct widget_tree *wt = widg->stuff;
+	struct xa_window *wind = ce->ptr1;
+	struct xa_widget *widg = ce->ptr2;
 
-		if (wt->owner == ce->client)
+	if (!cancel)
+	{
+		if (wind == root_window)
 		{
-			keyboard_menu_widget(lock, root_window, widg);
+			struct widget_tree *wt = widg->stuff;
+
+			if (wt->owner == ce->client)
+			{
+				keyboard_menu_widget(lock, root_window, widg);
+			}
+			else
+				post_cevent(wt->owner, cXA_open_menubykbd, wind, widg, 0,0, NULL,NULL);
 		}
 		else
-			post_cevent(wt->owner, cXA_open_menubykbd, NULL, NULL, 0,0, NULL,NULL);
-// 	}	
+			keyboard_menu_widget(lock, wind, widg);
+	}
 }
