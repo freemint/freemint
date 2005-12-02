@@ -241,8 +241,10 @@ load_module(const char *filename, long *err)
 	 * else the kernel wont run on my Milan040!
 	 */
 	/* Why, oh why!!! is this necessary??
+	 * Well..ozk, if you open your eyes when fixing things,
+	 * you would understand!! Goddamned.
 	 */
-	cpushi(NULL, -1);
+// 	cpushi(NULL, -1);
 
 	/* check for errors */
 	if (*err)

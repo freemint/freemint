@@ -414,8 +414,10 @@ abc040:	dc.w	0xF478			// this is "cpusha dc" if your asm knows '040
 	rts
 fls040:
 // run through d0+1 times (since a0 may not be on a line boundary)
+	move.l	a0,d1
+	and.w	#0xfff0,d1
+	movea.l	d1,a1
 	moveq	#16,d1
-	move.l	a0,a1
 do040:
 	// As the MC68040 (and the MC68060, which uses the following code as
 	// well) needs physical addresses for cpushl, we have to convert the
@@ -426,7 +428,7 @@ do040:
 	// crosses a page boundary, but I don't think the gain this could mean
 	// would be enough to judge the additional overhead needed.
 	move.l	a1,a0
-	bsr.s	log2phys
+	bsr	log2phys
 	cmpa.l	#-1,a0
 	beq.s	abc040			// if there's no physical address, flush all
 	dc.w	0xF468			// this is "cpushl dc,(a0)" for the '040
@@ -460,8 +462,10 @@ abc040i:
 	rts
 fls040i:
 	// run through d0+1 times (since a0 may not be on a line boundary)
+	move.l	a0,d1
+	and.w	#0xfff0,d1
+	movea.l	d1,a1
 	moveq	#16,d1
-	move.l	a0,a1
 do040i:
 	// As the MC68040 (and the MC68060, which uses the following code as
 	// well) needs physical addresses for cpushl, we have to convert the
@@ -488,8 +492,8 @@ _cache060_i:				// 68060 cache (double the 040)
 	lsr.l	#4,d0			// convert to number of lines
 	cmp.l	#512,d0
 	bcs.s	fls040i
-	dc.w	0xF468			// this is "cpushl dc,(a0)"
-	dc.w	0xF488			// this is "cinvl ic,(a0)"
+	dc.w	0xF478			// this is "cpusha dc"
+	dc.w	0xF498			// this is "cinva ic"
 	rts
 // ---------------------------------------------------
 
@@ -555,11 +559,14 @@ l2p_060:
 	beq.s	l2p_exit
 	// Install the temporary access exception handler
 	move.w	sr,d1
-	or.w	#0x700,sr
+	ori	#0x700,sr
 	movec	vbr,a1
 	move.l	8(a1),old_access
 	move.l	#temp_access,8(a1)
+	move.l	sp,a1
 	dc.w	0xf5c8			// translate the address (plpar (a0))
+lp2_rte:
+	movec	vbr,a1
 	move.l	old_access,8(a1)
 	move.w	d1,sr
 	bra.s	l2p_exit
@@ -569,8 +576,10 @@ l2p_060:
 old_access:
 	dc.l	0
 temp_access:
-	movea.l	#0xffffffff,a0
-	rte
+	movea.l	a1,sp
+	moveq	#-1,d0
+	move.l	d0,a0
+	bra.s	lp2_rte
 #endif
 
 //
