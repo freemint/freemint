@@ -314,9 +314,41 @@ kernel_key(enum locks lock, struct rawkey *key)
 			}
 			return true;
 		}
+		case NK_ESC:
 		case ' ':
 		{
-			post_cevent(menu_owner(), cXA_open_menubykbd, NULL,NULL, 0,0, NULL,NULL);
+			struct xa_window *wind;
+			struct xa_widget *widg;
+			
+			if (nk == NK_ESC && !TAB_LIST_START)
+				goto otm;
+
+			client = NULL;
+
+			if (key->raw.conin.state & (K_RSHIFT|K_LSHIFT))
+			{
+				client = find_focus(true, NULL, NULL, &wind);
+				if (client)
+				{
+					if (wind)
+					{
+						widg = get_widget(wind, XAW_MENU);
+						if (!wdg_is_act(widg))
+							client = NULL;
+					}
+					else
+						client = NULL;						
+				}
+			}
+			
+			if (!client)
+			{
+				widg = get_menu_widg();
+				client = menu_owner();
+				wind = root_window;
+			}
+			
+			post_cevent(client, cXA_open_menubykbd, wind,widg, 0,0, NULL,NULL);
 			return true;
 		}
 		case 'R':				/* attempt to recover a hung system */
@@ -329,8 +361,9 @@ kernel_key(enum locks lock, struct rawkey *key)
 			return true;
 		}
 		case 'L':				/* open the task manager */
-		case NK_ESC:
+// 		case NK_ESC:
 		{
+otm:
 			post_cevent(C.Hlp, ceExecfunc, open_taskmanager,NULL, 0,0, NULL,NULL);
 			return true;
 		}
