@@ -1966,6 +1966,8 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 // 			display("1: o = %d, h=%d, t=%d, n=%d, f=%x, ", o, tree[o].ob_head, tree[o].ob_tail, tree[o].ob_next, tree[o].ob_flags);
 	} while ( o != parent && o != -1); // && (!stopf || !(tree[o].ob_flags & stopf)) && (!stops || !(tree[o].ob_state & stops)));
 
+	if (!cf && (flags & OBFIND_NOWRAP))
+		co = -1;
 done:
 // 	display(" -- return %d", co);
 	return co;
