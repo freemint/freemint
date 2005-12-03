@@ -469,7 +469,7 @@ form_cursor(XA_TREE *wt,
 {
 	OBJECT *obtree = wt->tree;
 	short o = obj, nxt, dir, kout = 0;
-	short edcnt;
+	short edcnt, flags;
 	short last_ob;
 	struct xa_rect_list *lrl = NULL;
 
@@ -489,31 +489,52 @@ form_cursor(XA_TREE *wt,
 		{
 			dir = OBFIND_HOR | ((keystate & (K_RSHIFT|K_LSHIFT)) ? OBFIND_UP : OBFIND_DOWN);
 			
-			if (ret_focus)
+			if (!ret_focus)
 			{
-				nxt = ob_find_next_any_flagstate(obtree, 0, wt->focus, OF_SELECTABLE|OF_EDITABLE|OF_EXIT|OF_TOUCHEXIT, OF_HIDETREE, 0, OS_DISABLED, 0, 0, dir);
-				if (nxt >= 0)
-				{
-					*ret_focus = nxt;
-					if (obtree[nxt].ob_flags & OF_EDITABLE)
-						o = nxt;
-				}
+				flags = OF_EDITABLE;
 			}
-			else if (edcnt > 1)
+			else
+				flags = OF_SELECTABLE|OF_EDITABLE|OF_EXIT|OF_TOUCHEXIT;
+			
+			nxt = ob_find_next_any_flagstate(obtree, 0, wt->focus, flags, OF_HIDETREE, 0, OS_DISABLED, 0,0, dir);
+			
+			if (nxt < 0)
+				nxt = ob_find_next_any_flagstate(obtree, 0, -1, flags, OF_HIDETREE, 0, OS_DISABLED, 0,0, OBFIND_VERT|OBFIND_FIRST);
+			
+			if (nxt >= 0)
 			{
-				dir |= OBFIND_EXACTFLAG;
-				nxt = ob_find_next_any_flagstate(obtree, 0, wt->focus, OF_EDITABLE, OF_HIDETREE, 0, OS_DISABLED, 0, 0, dir);
-// 				short nxt = ob_find_next_any_flag(obtree, o, OF_EDITABLE);
-				if (nxt >= 0)
+				if (ret_focus)
+					*ret_focus = nxt;
+				if (obtree[nxt].ob_flags & OF_EDITABLE)
 					o = nxt;
-
-				DIAGS(("form_cursor: UP ARROW from %d to %d", obj, o));
 			}
 			break;
 		}
 		case 0x4838:		/* shift + up arrow */
 		case 0x4800:		/* UP ARROW moves to previous field */
 		{
+			dir = OBFIND_VERT | OBFIND_UP;
+			
+			if (!ret_focus)
+			{
+				flags = OF_EDITABLE;
+			}
+			else
+				flags = OF_SELECTABLE|OF_EDITABLE|OF_EXIT|OF_TOUCHEXIT;
+			
+			nxt = ob_find_next_any_flagstate(obtree, 0, wt->focus, flags, OF_HIDETREE, 0, OS_DISABLED, 0,0, dir);
+			
+			if (nxt < 0)
+				nxt = ob_find_next_any_flagstate(obtree, 0, -1, flags, OF_HIDETREE, 0, OS_DISABLED, 0,0, OBFIND_VERT|OBFIND_LAST);
+			
+			if (nxt >= 0)
+			{
+				if (ret_focus)
+					*ret_focus = nxt;
+				if (obtree[nxt].ob_flags & OF_EDITABLE)
+					o = nxt;
+			}
+		#if 0
 			if (ret_focus)
 			{
 				nxt = ob_find_next_any_flagstate(obtree, 0, wt->focus,
@@ -533,11 +554,34 @@ form_cursor(XA_TREE *wt,
 
 				DIAGS(("form_cursor: UP ARROW from %d to %d", obj, o));
 			}
+		#endif
 			break;
 		}
 		case 0x5000:		/* Down ARROW moves to next object */
 		case 0x5032:		/* Shift + down arrow */
 		{
+			dir = OBFIND_VERT | OBFIND_DOWN;
+			
+			if (!ret_focus)
+			{
+				flags = OF_EDITABLE;
+			}
+			else
+				flags = OF_SELECTABLE|OF_EDITABLE|OF_EXIT|OF_TOUCHEXIT;
+			
+			nxt = ob_find_next_any_flagstate(obtree, 0, wt->focus, flags, OF_HIDETREE, 0, OS_DISABLED, 0,0, dir);
+			
+			if (nxt < 0)
+				nxt = ob_find_next_any_flagstate(obtree, 0, -1, flags, OF_HIDETREE, 0, OS_DISABLED, 0,0, OBFIND_VERT|OBFIND_FIRST);
+			
+			if (nxt >= 0)
+			{
+				if (ret_focus)
+					*ret_focus = nxt;
+				if (obtree[nxt].ob_flags & OF_EDITABLE)
+					o = nxt;
+			}
+		#if 0
 			if (ret_focus)
 			{
 				nxt = ob_find_next_any_flagstate(obtree, 0, wt->focus,
@@ -557,14 +601,29 @@ form_cursor(XA_TREE *wt,
 
 				DIAGS(("form_cursor: UP ARROW from %d to %d", obj, o));
 			}
+		#endif
 			break;
 		}
 		case 0x7300:
 		case 0x4b00:		/* Left ARROW */
+		case 0x4b34:
 		{
-			if (ret_focus && (keycode == 0x7300 || !(wt->focus > 0 && (obtree[wt->focus].ob_flags & OF_EDITABLE))) )
+			if (ret_focus && (keycode == 0x7300 || !(wt->focus > 0 && wt->focus == obj && (obtree[wt->focus].ob_flags & OF_EDITABLE))) )
 			{
-				nxt = ob_find_next_any_flagstate(obtree, 0, wt->focus, OF_SELECTABLE|OF_EDITABLE|OF_EXIT|OF_TOUCHEXIT, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_HOR|OBFIND_UP);
+				dir = OBFIND_HOR | OBFIND_UP;
+				
+				if (wt->focus > 0 && (keystate & (K_RSHIFT|K_LSHIFT)))
+				{
+					flags = OF_EDITABLE;
+				}
+				else
+					flags = OF_SELECTABLE|OF_EDITABLE|OF_EXIT|OF_TOUCHEXIT;
+			
+				nxt = ob_find_next_any_flagstate(obtree, 0, wt->focus, flags, OF_HIDETREE, 0, OS_DISABLED, 0,0, dir);
+			
+				if (nxt < 0)
+					nxt = ob_find_next_any_flagstate(obtree, 0, -1, flags, OF_HIDETREE, 0, OS_DISABLED, 0,0, OBFIND_VERT|OBFIND_LAST);
+			
 				if (nxt >= 0)
 				{
 					*ret_focus = nxt;
@@ -581,10 +640,24 @@ form_cursor(XA_TREE *wt,
 		}
 		case 0x7400:
 		case 0x4d00:		/* Right ARROW */
+		case 0x4d36:
 		{
-			if (ret_focus && (keycode == 0x7400 || !(wt->focus > 0 && (obtree[wt->focus].ob_flags & OF_EDITABLE))) )
+			if (ret_focus && (keycode == 0x7400 || !(wt->focus > 0 && wt->focus == obj && (obtree[wt->focus].ob_flags & OF_EDITABLE))) )
 			{
-				nxt = ob_find_next_any_flagstate(obtree, 0, wt->focus, OF_SELECTABLE|OF_EDITABLE|OF_EXIT|OF_TOUCHEXIT, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_HOR|OBFIND_DOWN);
+				dir = OBFIND_HOR | OBFIND_DOWN;
+				
+				if (wt->focus > 0 && (keystate & (K_RSHIFT|K_LSHIFT)))
+				{
+					flags = OF_EDITABLE;
+				}
+				else
+					flags = OF_SELECTABLE|OF_EDITABLE|OF_EXIT|OF_TOUCHEXIT;
+			
+				nxt = ob_find_next_any_flagstate(obtree, 0, wt->focus, flags, OF_HIDETREE, 0, OS_DISABLED, 0,0, dir);
+			
+				if (nxt < 0)
+					nxt = ob_find_next_any_flagstate(obtree, 0, -1, flags, OF_HIDETREE, 0, OS_DISABLED, 0,0, OBFIND_VERT|OBFIND_FIRST);
+			
 				if (nxt >= 0)
 				{
 					*ret_focus = nxt;
@@ -602,7 +675,7 @@ form_cursor(XA_TREE *wt,
 		case 0x4737:		/* SHIFT+HOME */
 		case 0x5100:		/* page down key (Milan &| emulators)   */
 		case 0x4f00:		/* END key (Milan &| emus)		*/
-		{		
+		{
 			nxt = ob_find_next_any_flagstate(obtree, 0, wt->focus,
 				/*(keycode == 0x4838) ? */OF_EDITABLE/* : OF_SELECTABLE|OF_EDITABLE|OF_EXIT|OF_TOUCHEXIT*/, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_LAST);
 			if (nxt >= 0)
