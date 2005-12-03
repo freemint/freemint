@@ -1778,7 +1778,6 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 				{
 					if ( ((x <= r.x && (x + w) > r.x) || (x > r.x && x < (r.x + r.w))))
 					{
-// 						flg = 1;
 						if ((y + h) <= r.y)
 						{
 							if (!cf || (r.y - y) < cy)
@@ -1851,10 +1850,8 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 			{
 				if (!(flags & OBFIND_DOWN))
 				{
-
 					if ( ((y <= r.y && (y + h) > r.y)) || (y > r.y && (y + h) < (r.y + r.h)))
 					{
-
 						if ((x < r.x))
 						{
 							if (!cf || (r.x - x) < cx)
@@ -1865,7 +1862,6 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 							}
 						}
 					}
-					
 					if (!cf)
 					{
 						if (y < r.y)
@@ -1893,7 +1889,7 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 				}
 				else
 				{
-					if ( (y >= r.y && y < (r.y + r.h)) || (y < r.y && (y + h) >= (r.y + r.h))) // || (y >= r.y && (y + h) <= (r.y + r.h))) //(y > r.y && y < (r.y + r.h))) )
+					if ( (y >= r.y && y < (r.y + r.h)) || (y < r.y && (y + h) >= (r.y + r.h)))
 					{
 						if (x > r.x)
 						{
@@ -1908,7 +1904,7 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 
 					if (!cf)
 					{
-						if (y > r.y)
+						if (y > (r.y + r.h))
 						{
 							if ((y - r.y) == cy)
 							{
