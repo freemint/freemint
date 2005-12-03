@@ -534,27 +534,6 @@ form_cursor(XA_TREE *wt,
 				if (obtree[nxt].ob_flags & OF_EDITABLE)
 					o = nxt;
 			}
-		#if 0
-			if (ret_focus)
-			{
-				nxt = ob_find_next_any_flagstate(obtree, 0, wt->focus,
-					(keycode == 0x4838) ? OF_EDITABLE : OF_SELECTABLE|OF_EDITABLE|OF_EXIT|OF_TOUCHEXIT, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_VERT|OBFIND_UP);
-				if (nxt >= 0)
-				{
-					*ret_focus = nxt;
-					if (obtree[nxt].ob_flags & OF_EDITABLE)
-						o = nxt;
-				}
-			}
-			else if (edcnt > 1)
-			{
-				nxt = ob_find_prev_any_flag(obtree, o, OF_EDITABLE);
-				if (nxt >= 0)
-					o = nxt;
-
-				DIAGS(("form_cursor: UP ARROW from %d to %d", obj, o));
-			}
-		#endif
 			break;
 		}
 		case 0x5000:		/* Down ARROW moves to next object */
@@ -581,27 +560,6 @@ form_cursor(XA_TREE *wt,
 				if (obtree[nxt].ob_flags & OF_EDITABLE)
 					o = nxt;
 			}
-		#if 0
-			if (ret_focus)
-			{
-				nxt = ob_find_next_any_flagstate(obtree, 0, wt->focus,
-					(keycode == 0x5032) ? OF_EDITABLE : OF_SELECTABLE|OF_EDITABLE|OF_EXIT|OF_TOUCHEXIT, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_VERT|OBFIND_DOWN);
-				if (nxt >= 0)
-				{
-					*ret_focus = nxt;
-					if (obtree[nxt].ob_flags & OF_EDITABLE)
-						o = nxt;
-				}
-			}
-			else if (edcnt > 1)
-			{
-				nxt = ob_find_next_any_flag(obtree, o, OF_EDITABLE);
-				if (nxt >= 0)
-					o = nxt;
-
-				DIAGS(("form_cursor: UP ARROW from %d to %d", obj, o));
-			}
-		#endif
 			break;
 		}
 		case 0x7300:
