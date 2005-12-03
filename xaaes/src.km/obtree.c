@@ -1904,7 +1904,7 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 
 					if (!cf)
 					{
-						if (y > (r.y + r.h))
+						if (y >= (r.y + r.h))
 						{
 							if ((y - r.y) == cy)
 							{
