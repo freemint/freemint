@@ -433,7 +433,7 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 		}
 		case S_FLUSHCACHE:
 		{
-			cpush ((void *) arg1, (long) arg2);
+			cpushi ((void *) arg1, (long) arg2);
 			break;
 		}
 		case S_CTRLCACHE:
