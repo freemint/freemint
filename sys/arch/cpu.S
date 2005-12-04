@@ -404,12 +404,17 @@ _cache000:				// 68000 cache (i.e. no cache)
 
 #ifndef M68000
 _cache040:				// 68040 cache
-	addq.l	#1,d0			// if was -1
-	beq.s	abc040			// then flush everything
-	add.l	#14,d0			// round up to line boundary
-	lsr.l	#4,d0			// convert to number of lines
+	move.l	d0,d1			// If no bytes to push, exit
+	beq.s	_c060rts
+	addq.l	#1,d1			// If was -1
+	beq.s	abc040			// then fulsh everything
+	move.l	a0,d1			// extract the position within the cacheline
+	and.l	#0xf,d1			// which we use to calculate
+	subq.l	#1,d1			// one byte at address 0xf in cacheline should still
+	add.l	d1,d0			// only push this one cacheline
+	lsr.l	#4,d0			// how many cachelines we need to push
 	cmp.l	#256,d0
-	bcs.s	fls040			// not too many lines, so dump only some
+	bcs.s	fls040
 abc040:	dc.w	0xF478			// this is "cpusha dc" if your asm knows '040
 	rts
 fls040:
@@ -434,12 +439,19 @@ do040:
 	dc.w	0xF468			// this is "cpushl dc,(a0)" for the '040
 	add.w	d1,a1
 	dbf	d0,do040
+_c060rts:
 	rts
-_cache060:				// 68060 cache (double the 040)
-	addq.l	#1,d0			// if was -1
-	beq.s	abc040			// then flush everything
-	add.l	#14,d0			// round up to line boundary
-	lsr.l	#4,d0			// convert to number of lines
+	
+_cache060:
+	move.l	d0,d1			// If no bytes to push, exit
+	beq.s	_c060rts
+	addq.l	#1,d1			// If was -1
+	beq.s	abc040			// then fulsh everything
+	move.l	a0,d1			// extract the position within the cacheline
+	and.l	#0xf,d1			// which we use to calculate
+	subq.l	#1,d1			// one byte at address 0xf in cacheline should still
+	add.l	d1,d0			// only push this one cacheline
+	lsr.l	#4,d0			// how many cachelines we need to push
 	cmp.l	#512,d0
 	bcs.s	fls040
 	dc.w	0xF478			// see abc040
@@ -450,12 +462,17 @@ _cache060:				// 68060 cache (double the 040)
 // invalidates the intruction cache. Intended to be used
 // where text area of processes are modified/prepared
 _cache040_i:				// 68040 cache
-	addq.l	#1,d0			// if was -1
-	beq.s	abc040i			// then flush everything
-	add.l	#14,d0			// round up to line boundary
-	lsr.l	#4,d0			// convert to number of lines
+	move.l	d0,d1			// If no bytes to push, exit
+	beq.s	_c060rtsi
+	addq.l	#1,d1			// If was -1
+	beq.s	abc040i			// then fulsh everything
+	move.l	a0,d1			// extract the position within the cacheline
+	and.l	#0xf,d1			// which we use to calculate
+	subq.l	#1,d1			// one byte at address 0xf in cacheline should still
+	add.l	d1,d0			// only push this one cacheline
+	lsr.l	#4,d0			// how many cachelines we need to push
 	cmp.l	#256,d0
-	bcs.s	fls040i			// not too many lines, so dump only some
+	bcs.s	fls040i
 abc040i:
 	dc.w	0xF478			// this is "cpusha dc"
 	dc.w	0xF498			// this is "cinva ic"
@@ -483,13 +500,19 @@ do040i:
 	dc.w	0xF488			// this is "cinvl ic,(a0)"
 	add.w	d1,a1
 	dbf	d0,do040i
+_c060rtsi:
 	rts
 
-_cache060_i:				// 68060 cache (double the 040)
-	addq.l	#1,d0			// if was -1
-	beq.s	abc040i			// then flush everything
-	add.l	#14,d0			// round up to line boundary
-	lsr.l	#4,d0			// convert to number of lines
+_cache060_i:
+	move.l	d0,d1			// If no bytes to push, exit
+	beq.s	_c060rtsi
+	addq.l	#1,d1			// If was -1
+	beq.s	abc040i			// then fulsh everything
+	move.l	a0,d1			// extract the position within the cacheline
+	and.l	#0xf,d1			// which we use to calculate
+	subq.l	#1,d1			// one byte at address 0xf in cacheline should still
+	add.l	d1,d0			// only push this one cacheline
+	lsr.l	#4,d0			// how many cachelines we need to push
 	cmp.l	#512,d0
 	bcs.s	fls040i
 	dc.w	0xF478			// this is "cpusha dc"
