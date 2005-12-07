@@ -60,7 +60,7 @@ ksprintf (char *buf, long buflen, const char *fmt, ...)
 	long foo;
 	
 	va_start (args, fmt);
-	foo = vsprintf (buf, buflen, fmt, args);	
+	foo = kvsprintf (buf, buflen, fmt, args);	
 	va_end (args);
 	
 	return foo;

@@ -690,7 +690,7 @@ struct kentry_libkern
 	_mint_ctype, \
 	_mint_tolower, \
 	_mint_toupper, \
-	vsprintf, \
+	kvsprintf, \
 	ksprintf, \
 	_mint_getenv, \
 	_mint_atol, \

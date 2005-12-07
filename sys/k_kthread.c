@@ -83,9 +83,9 @@ kthread_create_v(struct proc *p, void _cdecl (*func)(void *), void *arg,
 		/* this blocks SIGKILL for the update process */
 		p2->p_flag |= P_FLAG_SYS;
 
-		vsprintf(p2->fname, sizeof(p2->fname), fmt, args);
-		vsprintf(p2->cmdlin, sizeof(p2->cmdlin), fmt, args);
-		vsprintf(p2->name, sizeof(p2->name), fmt, args);
+		kvsprintf(p2->fname, sizeof(p2->fname), fmt, args);
+		kvsprintf(p2->cmdlin, sizeof(p2->cmdlin), fmt, args);
+		kvsprintf(p2->name, sizeof(p2->name), fmt, args);
 
 		/* initialize signals */
 		p2->p_sigmask = 0;

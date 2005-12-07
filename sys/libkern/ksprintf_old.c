@@ -54,7 +54,7 @@ ksprintf_old (char *buf, const char *fmt, ...)
 	int foo;
 	
 	va_start (args, fmt);
-	foo = vsprintf (buf, SPRINTF_MAX, fmt, args);	
+	foo = kvsprintf (buf, SPRINTF_MAX, fmt, args);	
 	va_end (args);
 	
 	return foo;
