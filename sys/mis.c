@@ -122,7 +122,7 @@ shell_fprintf(long handle, const char *fmt, ...)
 	if (buf)
 	{
 		va_start(args, fmt);
-		vsprintf(buf, SHELL_MAXLINE, fmt, args);
+		kvsprintf(buf, SHELL_MAXLINE, fmt, args);
 		va_end(args);
 
 		sys_f_write(handle, strlen(buf), buf);

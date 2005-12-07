@@ -105,7 +105,7 @@ int	_cdecl _mint_toupper	(int c);
  * kernel string functions
  */
 
-long	_cdecl vsprintf		(char *buf, long buflen, const char *fmt, va_list args);
+long	_cdecl kvsprintf	(char *buf, long buflen, const char *fmt, va_list args);
 long	_cdecl ksprintf		(char *buf, long buflen, const char *fmt, ...);
 int	_cdecl ksprintf_old	(char *buf, const char *fmt, ...);
 

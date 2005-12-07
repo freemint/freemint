@@ -103,7 +103,7 @@ boot_printf (const char *fmt, ...)
 	va_list args;
 
 	va_start (args, fmt);
-	vsprintf (buf, sizeof (buf), fmt, args);
+	kvsprintf (buf, sizeof (buf), fmt, args);
 	va_end (args);
 
 	boot_print(buf);

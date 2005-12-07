@@ -99,7 +99,7 @@ PUTL (char *p, long *cnt, ulong u, int base, int width, int fill_char)
 	
 	do {
 		*t++ = "0123456789ABCDEF"[u % base];
-		(long)u /= base;
+		u /= base;
 		width--;
 	}
 	while (u > 0);
@@ -122,7 +122,7 @@ PUTL (char *p, long *cnt, ulong u, int base, int width, int fill_char)
 }
 
 long _cdecl
-vsprintf (char *buf, long buflen, const char *fmt, va_list args)
+kvsprintf (char *buf, long buflen, const char *fmt, va_list args)
 {
 	char *p = buf;
 	
