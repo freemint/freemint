@@ -50,11 +50,12 @@
  * Global variables
  */
 
+struct kerinfo *kernel;
+
 static char *buffer_start, *buffer_end, *buffer_tail;
 static volatile char *buffer_head;
 static volatile long buffer_contents;
 static long selector = 0L;
-static struct kerinfo *kernel;
 static struct flock our_lock = { F_WRLCK, 0, 0L, 0L, -1 };
 
 /*
