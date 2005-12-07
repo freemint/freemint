@@ -40,7 +40,7 @@
 # endif
 
 # undef FUNCTION
-# define FUNCTION str(MODULE_NAME)":"__FILE__","str(__LINE__)","__FUNCTION__"()"
+# define FUNCTION str(MODULE_NAME)":"__FILE__","str(__LINE__)
 
 # ifndef KENTRY
 # define KENTRY	kentry

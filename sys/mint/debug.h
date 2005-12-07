@@ -72,7 +72,7 @@ extern int debug_logging;
 # define _stringify(x)	#x
 # endif
 
-# define FUNCTION __FILE__","str(__LINE__)","__FUNCTION__"()"
+# define FUNCTION __FILE__","str(__LINE__)
 
 # endif /* DEBUG_INFO */
 
