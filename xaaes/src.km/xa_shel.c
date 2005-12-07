@@ -371,7 +371,8 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 		}
 		else
 		{
-			(unsigned long)tailsize = (unsigned char)p_tail[0];
+// 			(unsigned long)tailsize = (unsigned char)p_tail[0];
+			tailsize = (unsigned long)(unsigned char)p_tail[0];
 			DIAG((D_shel, NULL, " -- tailsize1 = %ld", tailsize));
 			tail = kmalloc(126); //tail = kmalloc(tailsize + 2);
 			DIAG((D_shel, NULL, " -- tail=%lx", tail));
@@ -610,7 +611,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 			cpushi((char *)b + size, (long)accend - (long)accstart);
 
 			b->p_dbase = b->p_tbase;
-			b->p_tbase = (long)b + size;
+			b->p_tbase = (long)((char *)b + size);
 
 			/* set PC appropriately */
 			p->ctxt[CURRENT].pc = b->p_tbase;

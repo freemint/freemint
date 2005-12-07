@@ -78,7 +78,7 @@ callout_select(struct xa_lbox_info *lbox, OBJECT *tree, struct lbox_item *item, 
 			bcopy(&xa_callout_user, u, xa_callout_user.len);
 			
 			u->sighand_p	+= (long)u;
-			(long)u->parm_p	+= (long)u;
+			u->parm_p	 = (void *)((char *)u->parm_p + (long)u);
 
 			p 	= u->parm_p;
 			p->func	= (long)lbox->slct;
@@ -135,7 +135,7 @@ callout_set(struct xa_lbox_info *lbox,
 			bcopy(&xa_callout_user, u, xa_callout_user.len);
 			
 			u->sighand_p	+= (long)u;
-			(long)u->parm_p	+= (long)u;
+			u->parm_p	 = (void *)((char *)u->parm_p + (long)u);
 
 			p = u->parm_p;
 			p->func = (long)lbox->set;
@@ -1612,7 +1612,7 @@ XA_lbox_get(enum locks lock, struct xa_client *client, AESPB *pb)
 			}
 			case 1:	/* Get obtree					*/
 			{
-				(void *)pb->addrout[0] = lbox->wt->tree;
+				pb->addrout[0] = (long)lbox->wt->tree;
 
 				DIAG((D_lbox, client, " --- get obtree = %lx",
 					pb->addrout[0]));
@@ -1628,7 +1628,7 @@ XA_lbox_get(enum locks lock, struct xa_client *client, AESPB *pb)
 			}
 			case 3:	/* Get user data				*/
 			{
-				(void *)pb->addrout[0] = lbox->user_data;
+				pb->addrout[0] = (long)lbox->user_data;
 
 				DIAG((D_lbox, client, " --- get user data %lx",
 					pb->addrout[0]));
@@ -1653,7 +1653,7 @@ XA_lbox_get(enum locks lock, struct xa_client *client, AESPB *pb)
 			}
 			case 6: /* Get items					*/
 			{
-				(void *)pb->addrout[0] = lbox->items;
+				pb->addrout[0] = (long)lbox->items;
 
 				DIAG((D_lbox, client, " --- get items (start of list) %lx",
 					pb->addrout[0]));
@@ -1672,7 +1672,7 @@ XA_lbox_get(enum locks lock, struct xa_client *client, AESPB *pb)
 					item = item->next;
 					i--;
 				}
-				(void *)pb->addrout[0] = item;
+				pb->addrout[0] = (long)item;
 
 				DIAG((D_lbox, client, " --- get item at index %d - %lx",
 					pb->intin[0], pb->addrout[0]));
@@ -1683,7 +1683,7 @@ XA_lbox_get(enum locks lock, struct xa_client *client, AESPB *pb)
 				struct lbox_item *item;
 
 				get_selected(lbox, 0, NULL, NULL, &item);
-				(void *)pb->addrout[0] = item;
+				pb->addrout[0] = (long)item;
 
 				DIAG((D_lbox, client, " --- get selected item %lx",
 					pb->addrout[0]));

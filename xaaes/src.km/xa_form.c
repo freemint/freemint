@@ -92,76 +92,6 @@ alert_destructor(enum locks lock, struct xa_window *wind)
 	remove_widget(lock, wind, XAW_TOOLBAR);
 	return true;
 }
-#if 0
-/*
- * Small handler for clicks on an alert box
- */
-static bool
-click_alert_widget(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
-{
-	XA_TREE *wt = widg->stuff;
-	RECT r;
-	OBJECT *alert_form;
-	int sel_b = -1, f, b;
-
-	if (!wind->nolist && !is_topped(wind)) // !wind->nolist && window_list != wind && !(wind->active_widgets & NO_TOPPED))
-	{	
-		top_window(lock, true, false, wind, (void *)-1L);
-		return false;
-	}
-
-	alert_form = wt->tree;
-
-	/* Convert relative coords and window location to absolute screen location */
-	rp_2_ap(wind, widg, &r);
-
-	f = obj_find(wt, 0, 10, md->x, md->y, NULL);
-
-	if (   f >= ALERT_BUT1			/* Did we click on a valid button? */
-	    && f <  ALERT_BUT1 + ALERT_BUTTONS
-	    && !(alert_form[f].ob_flags & OF_HIDETREE))
-	{
-		b = obj_watch(wt, wind->vdi_settings, f, OS_SELECTED, 0, &wind->wa, wind->rect_list.start);
-
-		if (b)
-			sel_b = f + 1 - ALERT_BUT1;
-
-		if (sel_b > -1)
-		{
-			if (wt->owner != C.Aes)
-			{
-				struct xa_client *client = wt->owner;
-
-				client->waiting_pb->intout[0] = f - ALERT_BUT1 +1;
-				client->usr_evnt = 1;
-			}
-
-			/* invalidate our data structures */
-			if (wt->owner->alert == wind)
-				wt->owner->alert = NULL;
-
-			close_window(lock, wind);
-			if (wt->extra && (wt->flags & WTF_XTRA_ALLOC))
-			{
-				kfree(wt->extra);
-				wt->extra = NULL;
-				wt->flags &= ~WTF_XTRA_ALLOC;
-			}
-
-			if (wt->tree && (wt->flags & WTF_TREE_ALLOC))
-			{
-				kfree(wt->tree);
-				wt->tree = NULL;
-				wt->flags &= ~(WTF_TREE_ALLOC|WTF_TREE_CALLOC);
-			}
-			/* delete on the next possible time */
-			delayed_delete_window(lock, wind);
-		}
-	}
-
-	return false;
-}
-#endif
 
 /*
  * Form_alert handler v2.1
@@ -511,23 +441,7 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 			wt->extra = alertxt;
 			wt->flags |= WTF_XTRA_ALLOC | WTF_TREE_ALLOC;
 
-			/* Change the click & drag behaviours for the alert box widget,
-			 * because alerts return a number
-			 * 1 to 3, not an object index.
-			 * we also need a keypress handler for the default button (if there)
-			 */
-// 			alert_window->keypress = key_alert_widget;
-// 			widg->m.click = click_alert_widget;
-// 			widg->m.drag  = click_alert_widget;
-
-			/* We won't get any redraw messages
-			 * - The widget handler will take care of it.
-			 * - the message handler vector id NULL!!!
-			 * 
-			 * Set the window title to be the client's name to avoid confusion
-			 */
 			set_window_title(alert_window, title ? title : client->name, false);
-// 			get_widget(alert_window, XAW_TITLE)->stuff = client->name;
 			alert_window->destructor = alert_destructor;
 
 			if (nolist)
@@ -717,7 +631,6 @@ XA_form_alert(enum locks lock, struct xa_client *client, AESPB *pb)
 	Block(client, 0);
 	client->status &= ~CS_FORM_ALERT;
 
-// 	display("return %d", pb->intout[0]);
 	return XAC_DONE;
 }
 
@@ -946,68 +859,6 @@ XA_form_do(enum locks lock, struct xa_client *client, AESPB *pb)
 	}
 		return XAC_DONE;
 }
-#if 0
-/*
- * Small handler for ENTER/RETURN/UNDO on an alert box
- */
-bool
-key_alert_widget(enum locks lock, struct xa_client *client, struct xa_window *wind,
-	    struct widget_tree *wt, const struct rawkey *key, struct fmd_result *res_fmd)
-{
-	XA_WIDGET *widg = get_widget(wind, XAW_TOOLBAR);
-	RECT r;
-	OBJECT *alert_form;
-	short f = 0;
-	ushort keycode = key->aes;
-
-	wt = widg->stuff; /* always NULL */
-
-	if (!wind->nolist && window_list != wind)			/* You can only work alerts when they are on top */
-		return false;
-
-	alert_form = wt->tree;
-
-	rp_2_ap(wind, widg, &r);	/* Convert relative coords and window location to absolute screen location */
-
-	if (keycode == 0x720d || keycode == 0x1c0d)
-		f = ob_find_flag(alert_form, OF_DEFAULT, 0, 0);
-	else if (keycode == 0x6100)   				/* UNDO */
-		f = ob_find_cancel(alert_form);
-	else
-	{
-		short ks;
-		
-		vq_key_s(C.P_handle, &ks);
-		if ( (ks & (K_CTRL|K_ALT)) == K_ALT )
-			f = ob_find_shortcut(alert_form, key->norm & 0x00ff);
-	}
-
-	if (   f >= ALERT_BUT1			/* Is f a valid button? */
-	    && f <  ALERT_BUT1 + 3
-	    && !(alert_form[f].ob_flags & OF_HIDETREE))
-	{
-		if (client != C.Aes && client != C.Hlp)
-		{
-			//struct xa_client *client = wt->owner;
-
-			client->waiting_pb->intout[0] = f - ALERT_BUT1 + 1;
-			client->usr_evnt = 1;
-
-			//Unblock(client, XA_OK, 11);
-		}
-
-		if (wt->owner->alert == wind)
-			wt->owner->alert = NULL;
-
-		/* invalidate our data structures */
-		close_window(lock, wind);
-		/* delete on the next possible time */
-		delayed_delete_window(lock, wind);
-	}
-	/* Always discontinue */
-	return false;
-}
-#endif
 
 unsigned long
 XA_form_button(enum locks lock, struct xa_client *client, AESPB *pb)

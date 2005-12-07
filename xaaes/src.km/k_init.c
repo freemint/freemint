@@ -299,17 +299,6 @@ set_wrkin(short *in, short dev)
 	in[10] = 2;
 	for (i = 11; i < 16; i++)
 		in[i] = 0;	
-#if 0
-	*in++ = dev;
-
-	for (i = 1; i < 10; *in++ = 1, i++)
-		;
-
-	*in++ = 2;
-
-	for (i = 0; i < (16 - 11); *in++ = 0, i++)
-		;
-#endif
 }
 
 static void
@@ -318,6 +307,7 @@ calc_average_fontsize(struct xa_vdi_settings *v, short *maxw, short *maxh, short
 	short i, j, count = 0, cellw, tmp;
 	short temp[8];
 	unsigned long wch = 0;
+	
 	for (i = 0; i < 256; i++)
 	{
 		j = vqt_width(v->handle, i, &cellw, &tmp, &tmp);
@@ -346,14 +336,17 @@ k_init(unsigned long vm)
 {
 	short work_in[16];
 	short work_out[58];
-	short f;
 	char *resource_name;
 	struct xa_vdi_settings *v = &global_vdi_settings;
 	
 // 	display("\033H");		/* cursor home */
 	
-	for (f = 0; f < (sizeof(*v) >> 1); f++)
-		((short *)v)[f] = -1;
+	{
+		short f, *t;
+
+		for (t = (short *)v, f = 0; f < (sizeof(*v) >> 1); f++)
+			*t++ = -1;
+	}
 
 	setup_xa_module_api();
 

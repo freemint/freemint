@@ -57,7 +57,6 @@ XA_objc_draw(enum locks lock, struct xa_client *client, AESPB *pb)
 	if (validate_obtree(client, obtree, "XA_objc_draw:"))
 	{
 		XA_TREE *wt;
-// 		struct objc_edit_info *ei;
 		
 		if (!(wt = obtree_to_wt(client, obtree)))
 			wt = new_widget_tree(client, obtree);
@@ -134,7 +133,7 @@ XA_objc_wdraw(enum locks lock, struct xa_client *client, AESPB *pb)
 				do
 				{
 					r = rl->r;
-					if (!(long)pb->addrin[1] || xa_rect_clip((RECT *)pb->addrin[1], &r, &r))
+					if (!pb->addrin[1] || xa_rect_clip((RECT *)pb->addrin[1], &r, &r))
 					{
 						(*v->api->set_clip)(v, &r);
 						draw_object_tree(0, wt, wt->tree, v, item, pb->intin[1], NULL, 0);
@@ -144,6 +143,7 @@ XA_objc_wdraw(enum locks lock, struct xa_client *client, AESPB *pb)
 			
 			/*
 			 * Ozk: Ok.. looks like the AES should automagically draw the cursor...
+			 * Nope!
 			 */
 			(*v->api->clear_clip)(v);
 			showm();
@@ -241,7 +241,7 @@ XA_objc_change(enum locks lock, struct xa_client *client, AESPB *pb)
 		assert(wt);
 
 		rl.next = NULL;
-		rl.r = *(RECT *)((long)&pb->intin[2]);
+		rl.r = *(const RECT *)(pb->intin + 2);
 
 		obj_change(wt,
 			   C.Aes->vdi_settings,
@@ -699,7 +699,7 @@ XA_objc_data(enum locks lock, struct xa_client *client, AESPB *pb)
 			}
 			case OBGET_SPEC:
 			{
-				(long)out0 = (long)object_get_spec(obtree + obj)->index;
+				out0 = (void *)object_get_spec(obtree + obj)->index;
 				if (set)
 					object_set_spec(obtree + obj, (unsigned long)pb->addrin[1]);
 				ret0 = 1;
@@ -708,7 +708,7 @@ XA_objc_data(enum locks lock, struct xa_client *client, AESPB *pb)
 			}
 			case OBGET_BFOBSPEC:
 			{
-				(long)out0 = (long)object_get_spec(obtree + obj)->index;
+				out0 = (void *)object_get_spec(obtree + obj)->index;
 				if (set)
 					object_set_spec(obtree + obj, (unsigned long)pb->addrin[1]);
 			}

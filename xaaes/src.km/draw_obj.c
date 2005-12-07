@@ -1003,12 +1003,12 @@ set_text(OBJECT *ob,
 	RECT cur;
 	short w, h, cur_x = 0, start_tpos = 0;
 
-	(unsigned long)ted = object_get_spec(ob)->index;
+	ted = (TEDINFO *)object_get_spec(ob)->index;
 	
-	if ((long)ted->te_ptext == 0xffffffffL)
+	if (ted->te_ptext == (char *)0xffffffffL)
 	{
 // 		ndisplay("ted %lx, just %d", ted, ted->te_just);
-		(long)xted = (long)ted->te_ptmplt;
+		xted = (XTEDINFO *)ted->te_ptmplt;
 		ted = &xted->ti;
 // 		display("ted %lx, just %d", ted, ted->te_just);
 // 		display("xted %lx, te_ptext %lx, text '%s'", xted, ted->te_ptext, ted->te_ptext);

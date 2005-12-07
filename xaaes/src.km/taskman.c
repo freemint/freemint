@@ -222,14 +222,13 @@ update_tasklist_entry(struct xa_client *client)
 		list->get(list, NULL, SEGET_ENTRYBYDATA, &p);
 		if (p.e)
 		{
-			struct setcontent_text t = { 0 }; //sc_text t;
+			struct setcontent_text t = { 0 };
 
 			if ((tx = build_tasklist_string(client)))
 				t.text = tx;
 			else
 				t.text = client->name;
 			
-// 			t.index = 0;
 			list->set(list, p.e, SESET_TEXT, (long)&t, true);
 			
 			if (tx)
@@ -516,7 +515,7 @@ taskmanager_form_exit(struct xa_client *Client,
 		{
 			OBJECT *ob = wt->tree + TM_LIST;
 			SCROLL_INFO *list = object_get_slist(ob);
-			struct xa_client *client = NULL; //cur_client(list);
+			struct xa_client *client = NULL;
 
 			if (list->cur)
 				client = list->cur->data;
@@ -535,7 +534,7 @@ taskmanager_form_exit(struct xa_client *Client,
 		{
 			OBJECT *ob = wt->tree + TM_LIST;
 			SCROLL_INFO *list = object_get_slist(ob);
-			struct xa_client *client = NULL; //cur_client(list);
+			struct xa_client *client = NULL;
 
 			if (list->cur)
 				client = list->cur->data;
@@ -671,18 +670,6 @@ open_taskmanager(enum locks lock, struct xa_client *client)
 		/* Set the window destructor */
 		wind->destructor = taskmanager_destructor;
 	
-		/* better position (to get sliders correct initially) */
-// 		refresh_tasklist(lock);
-#if 0		
-		{
-			struct xa_client *cl;
-			FOREACH_CLIENT(cl)
-			{
-				if (cl != C.Hlp)
-					add_to_tasklist(cl);
-			}
-		}
-#endif
 		open_window(lock, wind, wind->r);
 		task_man_win = wind;
 	}
@@ -951,7 +938,7 @@ reschg_form_exit(struct xa_client *Client,
 			/* and release */
 			close_window(lock, wind);
 			delayed_delete_window(lock, wind);
-			dispatch_shutdown(RESOLUTION_CHANGE/*0*/);
+			dispatch_shutdown(RESOLUTION_CHANGE);
 			break;
 		}
 		case RC_CANCEL:
@@ -1073,7 +1060,6 @@ milan_reschg_form_exit(struct xa_client *Client,
 
 			for (i = 0, o = pinf->obnum; i < 8 && o >= 0; i++)
 			{
-// 				display("o = %d, i = %d, colwt = %lx", o, i, p->col_wt[i]);
 				if (p->col_wt[i])
 				{
 					o--;
@@ -1098,10 +1084,6 @@ milan_reschg_form_exit(struct xa_client *Client,
 							new = p->resinf[i];
 							for (j = 0; j < p->count[i]; j++)
 							{
-// 								display("check %x (%d/%d) against %x (%d/%d)",
-// 									new[j].id, new[j].x, new[j].y,
-// 									old->id, old->x, old->y);
-
 								if (new[j].x == old->x && new[j].y == old->y)
 								{
 									newres = j + 1;
@@ -1111,8 +1093,7 @@ milan_reschg_form_exit(struct xa_client *Client,
 						}
 						
 						pu_wt = p->col_wt[i];
-// 						new_devid = *p->devids[i];
-						new_devid = new[newres - 1].id; //(*p->resinf[i]).id;
+						new_devid = new[newres - 1].id;
 						
 						p->current[0] = i;
 						break;
@@ -1126,7 +1107,6 @@ milan_reschg_form_exit(struct xa_client *Client,
 				pinf->obnum = newres;
 				obj_set_g_popup(wt, RCHM_RES, pinf);
 				obj_draw(wt, wind->vdi_settings, RCHM_RES, -1, NULL, wind->rect_list.start, 0);
-// 				display("new devid = %x", new_devid);
 				p->current[1] = new_devid;
 			}
 			break;
@@ -1142,24 +1122,21 @@ milan_reschg_form_exit(struct xa_client *Client,
 				
 				new_devid = r[pinf->obnum - 1].id;
 
-// 				new_devid = *(p->devids[p->current[0]] + (pinf->obnum - 1));
 				p->current[1] = new_devid;
 			}
-// 			display("new devid = %x", new_devid);
 			break;
 		}
-#if 1
 		case RCHM_OK:
 		{
 			DIAGS(("reschange: restart"));
 
 			object_deselect(wt->tree + RC_OK);
 			redraw_toolbar(lock, wind, RC_OK);
-			next_res = p->current[1]; //get_reschg_obj(wt);
+			next_res = p->current[1];
 			next_res |= 0x80000000;
 			close_window(lock, wind);
 			delayed_delete_window(lock, wind);
-			dispatch_shutdown(RESOLUTION_CHANGE/*0*/);
+			dispatch_shutdown(RESOLUTION_CHANGE);
 			break;
 		}
 		case RCHM_CANCEL:
@@ -1172,7 +1149,6 @@ milan_reschg_form_exit(struct xa_client *Client,
 			delayed_delete_window(lock, wind);
 			break;
 		}
-#endif
 		default:
 		{
 			DIAGS(("taskmanager: unhandled event %i", wt->current));
@@ -1264,9 +1240,8 @@ nxt_mres(short item, void **data)
 	}
 
 	planes = idx2planes[p->current[1]];
-// 	ndisplay("nxt_mres: planes = %d", planes);
 
-	(long)modes = p->misc[2];
+	modes = (struct videodef *)p->misc[2]; //(long)modes = p->misc[2];
 	num_modes = p->misc[3];
 
 	while (num_modes > 0)
@@ -1275,25 +1250,18 @@ nxt_mres(short item, void **data)
 		{
 			struct resinf *r = p->resinf[p->current[1]];
 			
-			(struct milres_parm *)p->misc[2] = modes + 1;
+// 			(struct milres_parm *)p->misc[2] = modes + 1;
+			p->misc[2] = (long)(modes + 1);
 			p->misc[3] = num_modes - 1;
 			r[item].id = modes->devid;
 			r[item].x  = modes->res_x;
 			r[item].y  = modes->res_y;
 			ret = modes->name;
-#if 0
-			(struct milres_parm *)p->misc[2] = modes + 1;
-			p->misc[3] = num_modes - 1;
-			*(p->devids[p->current[1]] + item) = modes->devid;
-			ret = modes->name;
-#endif
-// 			ndisplay(", name '%s' - %x", ret, modes->devid);
 			break;
 		}
 		num_modes--;
 		modes++;
 	}
-// 	display(" ..return %lx (%s)", ret, ret);
 	return ret;
 }
 
@@ -1307,20 +1275,17 @@ instchrm_wt(struct xa_client *client, struct widget_tree **wt, OBJECT *obtree)
 		*wt = new_widget_tree(client, obtree);
 		if (*wt)
 		{
-// 			display("new wt = %lx", *wt);
 			(*wt)->flags |= WTF_AUTOFREE | WTF_TREE_ALLOC;
 			ret = 1;
 		}
 		else
 		{
-// 			display("no new wt!!");
 			free_object_tree(C.Aes, obtree);
 		}
 	}
 	else
 		*wt = NULL;
 
-// 	display("return %d", ret);
 	return ret;
 }
 
@@ -1397,17 +1362,15 @@ check_milan_res(struct xa_client *client, short mw)
 		if (depths)
 		{
 			struct resinf *r;
-// 			short *di;
 			
-			if (!(p = kmalloc(sizeof(*p) + (sizeof(*r) * devids)))) //if (!(p = kmalloc(sizeof(*p) + (devids << 1))))
+			if (!(p = kmalloc(sizeof(*p) + (sizeof(*r) * devids))))
 				goto exit;
 
 			bzero(p, sizeof(*p));
 
 			p->curr_devid = currmode;
-// 			(long)di = (long)p + sizeof(*p);
-			(long)r = (long)p + sizeof(*p);
-
+// 			(long)r = (long)p + sizeof(*p);
+			r = (struct resinf *)((char *)p + sizeof(*p));
 			for (i = 0; i < 8; i++)
 			{
 				if ((p->count[i] = count[i]))
@@ -1416,28 +1379,14 @@ check_milan_res(struct xa_client *client, short mw)
 					r += p->count[i];
 				}
 			}
-#if 0			
-			for (i = 0; i < 8; i++)
-			{
-				p->count[i] = count[i];
-
-				if (p->count[i])
-				{
-					p->devids[i] = di;
-					di += p->count[i];
-				}
-			}
-#endif
 			p->num_depths = depths;
 			p->current[0] = 0;
-// 			display("color depths %d", depths);
 			obtree = create_popup_tree(client, 0, depths, mw, 4, &nxt_mdepth, (void **)&p);
 			if (!instchrm_wt(client, &p->depth_wt, obtree))
 				goto exit;
 			
 			p->depth_wt->links++;
 
-// 			display("1");
 			for (i = 0,j = 1; i < 8; i++)
 			{
 				if (p->count[i])
@@ -1453,10 +1402,8 @@ check_milan_res(struct xa_client *client, short mw)
 					else
 						goto exit;
 					j++;
-// 					display("2 - %d %d", i, j);
 				}
 			}
-// 			display("3");
 		}
 	}
 	else
@@ -1482,7 +1429,6 @@ milan_setdevid(struct widget_tree *wt, struct milres_parm *p, short devid)
 			if (!first)
 			{
 				first = p->col_wt[i];
-// 				found_devid = *p->devids[i];
 				found_devid = (*p->resinf[i]).id;
 				current = i;
 			}
@@ -1498,16 +1444,6 @@ milan_setdevid(struct widget_tree *wt, struct milres_parm *p, short devid)
 					found_devid = devid;
 					current = i;
 				}
-			#if 0
-				if (*(p->devids[i] + j) == devid)
-				{
-					pu_wt = p->col_wt[i];
-					res_idx = j + 1;
-					found_devid = devid;
-					current = i;
-					break;
-				}
-			#endif
 			}
 			if (res_idx != -1)
 				break;
@@ -1531,7 +1467,6 @@ milan_setdevid(struct widget_tree *wt, struct milres_parm *p, short devid)
 	}
 	obj_set_g_popup(wt, RCHM_COL, &p->pinf_depth);
 	obj_set_g_popup(wt, RCHM_RES, &p->pinf_res);
-// 	display("init to devid %x", found_devid);
 	return found_devid;
 }
 
@@ -1604,7 +1539,6 @@ nova_reschg_form_exit(struct xa_client *Client,
 
 			for (i = 0, o = pinf->obnum; i < 8 && o >= 0; i++)
 			{
-// 				display("o = %d, i = %d, colwt = %lx", o, i, p->col_wt[i]);
 				if (p->col_wt[i])
 				{
 					o--;
@@ -1629,10 +1563,6 @@ nova_reschg_form_exit(struct xa_client *Client,
 							new = p->resinf[i];
 							for (j = 0; j < p->count[i]; j++)
 							{
-// 								display("check %x (%d/%d) against %x (%d/%d)",
-// 									new[j].id, new[j].x, new[j].y,
-// 									old->id, old->x, old->y);
-
 								if (new[j].x == old->x && new[j].y == old->y)
 								{
 									newres = j + 1;
@@ -1642,8 +1572,7 @@ nova_reschg_form_exit(struct xa_client *Client,
 						}
 						
 						pu_wt = p->col_wt[i];
-// 						new_devid = *p->devids[i];
-						new_devid = new[newres - 1].id; //(*p->resinf[i]).id;
+						new_devid = new[newres - 1].id;
 						
 						p->current[0] = i;
 						break;
@@ -1657,7 +1586,6 @@ nova_reschg_form_exit(struct xa_client *Client,
 				pinf->obnum = newres;
 				obj_set_g_popup(wt, RCHM_RES, pinf);
 				obj_draw(wt, wind->vdi_settings, RCHM_RES, -1, NULL, wind->rect_list.start, 0);
-// 				display("new devid = %x", new_devid);
 				p->current[1] = new_devid;
 			}
 			break;
@@ -1673,29 +1601,23 @@ nova_reschg_form_exit(struct xa_client *Client,
 				
 				new_devid = r[pinf->obnum - 1].id;
 				p->current[1] = new_devid;
-			#if 0
-				new_devid = *(p->devids[p->current[0]] + (pinf->obnum - 1));
-				p->current[1] = new_devid;
-			#endif
 			}
-// 			display("new devid = %x", new_devid);
 			break;
 		}
-#if 1
 		case RCHM_OK:
 		{
 			DIAGS(("reschange: restart"));
 
 			object_deselect(wt->tree + RC_OK);
 			redraw_toolbar(lock, wind, RC_OK);
-			next_res = p->current[1]; //get_reschg_obj(wt);
+			next_res = p->current[1];
 			next_res |= 0x80000000;
 			nova_data->next_res = ((struct nova_res *)p->modes)[p->current[1]];
 			nova_data->valid = true;
 			close_window(lock, wind);
 			delayed_delete_window(lock, wind);
 			kfree(p->modes);
-			dispatch_shutdown(RESOLUTION_CHANGE/*0*/);
+			dispatch_shutdown(RESOLUTION_CHANGE);
 			break;
 		}
 		case RCHM_CANCEL:
@@ -1709,7 +1631,6 @@ nova_reschg_form_exit(struct xa_client *Client,
 			kfree(p->modes);
 			break;
 		}
-#endif
 		default:
 		{
 			DIAGS(("taskmanager: unhandled event %i", wt->current));
@@ -1727,7 +1648,7 @@ nxt_novares(short item, void **data)
 	struct nova_res *modes;
 	short planes;
 	long num_modes;
-	void *ret = NULL;
+	char *ret = NULL;
 
 	if (!item)
 	{
@@ -1737,9 +1658,8 @@ nxt_novares(short item, void **data)
 	}
 
 	planes = idx2planes[p->current[1]];
-// 	ndisplay("nxt_mres: planes = %d", planes);
 
-	(long)modes = p->misc[2];
+	modes = (struct nova_res *)p->misc[2];
 	num_modes = p->misc[3];
 
 	while (num_modes > 0)
@@ -1748,26 +1668,18 @@ nxt_novares(short item, void **data)
 		{
 			struct resinf *r = p->resinf[p->current[1]];
 			
-			(struct nova_res *)p->misc[2] = modes + 1;
+			p->misc[2] = (long)(modes + 1);
 			p->misc[3] = num_modes - 1;
 			r[item].id = ((long)modes - p->misc[0]) / sizeof(*modes);
 			r[item].x = modes->max_x;
 			r[item].y = modes->max_y;
-			ret = modes->name;
-			((char *)ret)[32] = '\0';
-		#if 0
-			(struct nova_res *)p->misc[2] = modes + 1;
-			p->misc[3] = num_modes - 1;
-			*(p->devids[p->current[1]] + item) = ((long)modes - p->misc[0]) / sizeof(*modes);
-			ret = modes->name;
-			((char *)ret)[32] = '\0';
-		#endif
+			ret = (char *)modes->name;
+			ret[32] = '\0';
 			break;
 		}
 		num_modes--;
 		modes++;
 	}
-// 	display(" ..return %lx (%s)", ret, ret);
 	return ret;
 }
 
@@ -1800,7 +1712,6 @@ check_nova_res(struct xa_client *client, short mw)
 	fp = kernel_open(fn_novabib, O_RDONLY, NULL, &x);
 	if (fp)
 	{
-// 		display("found sta_vdi.bib");
 		modes = kmalloc(x.size);
 		if (modes)
 		{
@@ -1836,9 +1747,8 @@ check_nova_res(struct xa_client *client, short mw)
 			if (depths)
 			{
 				struct resinf *r;
-// 				short *di;
 			
-				if (!(p = kmalloc(sizeof (*p) + (sizeof(*r) * devids)))) //if (!(p = kmalloc(sizeof(*p) + (devids << 1))))
+				if (!(p = kmalloc(sizeof (*p) + (sizeof(*r) * devids))))
 					goto exit;
 
 				bzero(p, sizeof(*p));
@@ -1846,8 +1756,7 @@ check_nova_res(struct xa_client *client, short mw)
 				p->modes = modes;
 				p->curr_devid = currmode;
 				
-// 				(long)di = (long)p + sizeof(*p);
-				(long)r = (long)p + sizeof(*p);
+				r = (struct resinf *)((char *)p + sizeof(*p));
 
 				for (i = 0; i < 8; i++)
 				{
@@ -1857,28 +1766,14 @@ check_nova_res(struct xa_client *client, short mw)
 						r += p->count[i];
 					}
 				}
-			#if 0
-				for (i = 0; i < 8; i++)
-				{
-					p->count[i] = count[i];
-
-					if (p->count[i])
-					{
-						p->devids[i] = di;
-						di += p->count[i];
-					}
-				}
-			#endif
 				p->num_depths = depths;
 				p->current[0] = 0;
-// 				display("color depths %d", depths);
 				obtree = create_popup_tree(client, 0, depths, mw, 4, &nxt_mdepth, (void **)&p);
 				if (!instchrm_wt(client, &p->depth_wt, obtree))
 					goto exit;
 			
 				p->depth_wt->links++;
 
-// 				display("1");
 				for (i = 0,j = 1; i < 8; i++)
 				{
 					if (p->count[i])
@@ -1894,16 +1789,11 @@ check_nova_res(struct xa_client *client, short mw)
 						else
 							goto exit;
 						j++;
-// 						display("2 - %d %d", i, j);
 					}
 				}
-// 			display("3");
 			}	
 		}
 	}
-// 	else
-// 		display("sta_vdi.bib not found");
-
 	return p;
 exit:
 	if (modes)
@@ -2207,7 +2097,6 @@ sysalerts_form_exit(struct xa_client *Client,
 			list->get(list, NULL, SEGET_ENTRYBYTEXT, &p);
 			if (p.e)
 				list->empty(list, p.e, 0);
-// 			display("emptied the alert list");
 			object_deselect(wt->tree + item);
 			redraw_toolbar(lock, systemalerts_win, SYSALERT_LIST);
 			redraw_toolbar(lock, systemalerts_win, item);
@@ -2266,7 +2155,7 @@ open_systemalerts(enum locks lock, struct xa_client *client)
 						CLOSER|NAME, created_for_AES,
 						client->options.thinframe,
 						client->options.thinwork,
-						*(RECT *)&or); //*(RECT*)&obtree->ob_x);
+						*(RECT *)&or);
 		}
 
 		/* Create the window */
@@ -2384,18 +2273,6 @@ do_system_menu(enum locks lock, int clicked_title, int menu_item)
 			else
 				C.DSKpid = launch(lock, 0,0,0, C.desk, "\0", C.Aes);
 			break;
-	#if 0
-			if (*C.desk)
-			{
-				if (C.DSKpid >= 0);
-					ALERT("AES shell already running!");
-				else if (!*C.desk)
-					ALERT("No AES shell defined");
-				else
-					C.DSKpid = launch(lock, 0, 0, 0, C.desk, "\0", C.Aes);
-			}
-			break;
-	#endif
 		}
 		case SYS_MN_RESCHG:
 		{

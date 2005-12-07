@@ -83,7 +83,7 @@ callout_exit(struct xa_client *client, struct wdlg_info *wdlg, void *ev, short n
 			bcopy(&xa_callout_user, u, xa_callout_user.len);
 			
 			u->sighand_p	+= (long)u;
-			(long)u->parm_p	+= (long)u;
+			u->parm_p	 = (void *)((char *)u->parm_p + (long)u);
 
 			p	= u->parm_p;
 			p->func	= (long)wdlg->exit;
@@ -507,7 +507,7 @@ XA_wdlg_create(enum locks lock, struct xa_client *client, AESPB *pb)
 				if (rep == 0)
 					delete_window(lock, wind);
 				else
-					(long)pb->addrout[0] = (long)wdlg->handle;
+					pb->addrout[0] = (long)wdlg->handle;
 			}
 			else
 				delete_window(lock, wind);
@@ -589,7 +589,7 @@ XA_wdlg_open(enum locks lock, struct xa_client *client, AESPB *pb)
 		wdlg->std_wt->tree->ob_x = wind->wa.x;
 		wdlg->std_wt->tree->ob_y = wind->wa.y;
 		open_window(lock, wind, wind->rc);
-		wdlg->data = (void*)pb->addrin[2];
+		wdlg->data = (void *)pb->addrin[2];
 		callout_exit(client, wdlg, NULL, HNDL_OPEN, pb->intin[3], wdlg->data, NULL);
 
 		pb->intout[0] = handle;
