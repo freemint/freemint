@@ -1485,7 +1485,7 @@ new_setext(const char *t, OBJECT *icon, short type)
 		{
 			bzero(new, sizeof(*new));
 			new->c.text.flags = 0;
-			(const char *)new->c.text.text = t;
+			new->c.text.text = t;
 			if (icon)
 				set_setext_icon(new, icon);
 		}

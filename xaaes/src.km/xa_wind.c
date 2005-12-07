@@ -635,7 +635,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				ir = NULL;
 			else
 			{
-				(const RECT *)ir = (const RECT *)&pb->intin[2];
+				ir = (RECT *)&pb->intin[2];
 				move = true;
 				if (cmd == WF_WORKXYWH && !(w->opts & XAWO_WCOWORK))
 				{
