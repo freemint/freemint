@@ -14,6 +14,8 @@
 # ifndef _mint_m68k_misc_h
 # define _mint_m68k_misc_h
 
+# include "mint/kcompiler.h"
+
 
 /*
  * note that we must save some registers ourselves,
@@ -41,7 +43,8 @@
 	    moveml sp@+,d5-d7/a4-a6 "		\
 	: "=r"(retvalue)	/* outputs */	\
 	: "r"(_f), "r"(_a)	/* inputs */	\
-	: "d0", "d1", "d2", "d3", "d4",		\
+	: __CLOBBER_RETURN("d0")		\
+	  "d1", "d2", "d3", "d4",		\
 	  "a0", "a1", "a2", "a3" /* clobbered regs */ \
 	);					\
 	retvalue;				\
@@ -66,7 +69,8 @@
 	    moveml sp@+,d5-d7/a4-a6 "		\
 	: "=r"(retvalue)	/* outputs */	\
 	: "r"(_f), "r"(_a), "r"(_b) /* inputs */ \
-	: "d0", "d1", "d2", "d3", "d4",		\
+	: __CLOBBER_RETURN("d0")		\
+	  "d1", "d2", "d3", "d4",		\
 	  "a0", "a1", "a2", "a3" /* clobbered regs */ \
 	);					\
 	retvalue;				\

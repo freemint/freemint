@@ -47,24 +47,25 @@ static struct adiinfo ai =
 static long
 module_init(void *initfunc, struct kentry *k, struct adiinfo *a)
 {
-	register long ret __asm__("d0");	 
+	register long ret __asm__("d0");
 
-	__asm__ volatile	 
-	(	 
-		"moveml	d3-d7/a3-a6,sp@-;"	 
-		"movl	%3,sp@-;"	 
-		"movl	%2,sp@-;"	 
-		"movl	%1,a0;"	 
-		"jsr	a0@;"	 
-		"addqw	#8,sp;"	 
-		"moveml	sp@+,d3-d7/a3-a6;"	 
-		: "=r"(ret)				/* outputs */	 
-		: "g"(initfunc), "r"(k), "r"(a)		/* inputs  */	 
-		: "d0", "d1", "d2", "a0", "a1", "a2",	/* clobbered regs */	 
-		"memory"	 
-	);	 
+	__asm__ volatile
+	(
+		"moveml	d3-d7/a3-a6,sp@-;"
+		"movl	%3,sp@-;"
+		"movl	%2,sp@-;"
+		"movl	%1,a0;"
+		"jsr	a0@;"
+		"addqw	#8,sp;"
+		"moveml	sp@+,d3-d7/a3-a6;"
+		: "=r"(ret)				/* outputs */
+		: "g"(initfunc), "r"(k), "r"(a)		/* inputs  */
+		: __CLOBBER_RETURN("d0")
+		  "d1", "d2", "a0", "a1", "a2",		/* clobbered regs */
+		  "memory"
+	);
 
-	return ret;	 
+	return ret;
 }
 
 static long

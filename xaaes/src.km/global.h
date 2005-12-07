@@ -105,7 +105,8 @@ __extension__								\
 		addqw   #2,sp "						\
 	: "=r"(retvalue)			/* outputs */		\
 	: "g"(n)				/* inputs  */		\
-	: "d0", "d1", "d2", "a0", "a1", "a2"    /* clobbered regs */	\
+	: __CLOBBER_RETURN("d0")					\
+	  "d1", "d2", "a0", "a1", "a2"		/* clobbered regs */	\
 	  AND_MEMORY							\
 	);								\
 	retvalue;							\
