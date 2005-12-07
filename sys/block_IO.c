@@ -2109,13 +2109,15 @@ bio_write (UNIT *u)
 }
 
 static void
-bio_units_add (DI *di, ulong sector, ulong blocks, ulong blocksize, void *buf, const ulong incr, const ulong size)
+bio_units_add (DI *di, ulong sector, ulong blocks, ulong blocksize, void *_buf, const ulong incr, const ulong size)
 {
 	/* Only add new blocks if the total size is less than or equal to the
 	 * given max. percentage of the cache
 	 */
 	if ((size * 100UL) <= cache.percentage)
 	{
+		char *buf = _buf;
+
 		while (blocks)
 		{
 			register UNIT *u;
@@ -2132,7 +2134,7 @@ bio_units_add (DI *di, ulong sector, ulong blocks, ulong blocksize, void *buf, c
 				if (u->io_sleep)
 					wake (IO_Q, (long) u);
 
-				(char *) buf += blocksize;
+				buf += blocksize;
 				sector += incr;
 				blocks--;
 			}
@@ -2149,8 +2151,9 @@ bio_units_add (DI *di, ulong sector, ulong blocks, ulong blocksize, void *buf, c
 }
 
 static long _cdecl
-bio_l_read (DI *di, ulong sector, ulong blocks, ulong blocksize, void *buf)
+bio_l_read (DI *di, ulong sector, ulong blocks, ulong blocksize, void *_buf)
 {
+	register char *buf = _buf;
 	register const ulong incr = blocksize >> di->p_l_shift;
 
 	register ulong tstart = sector;
@@ -2177,7 +2180,7 @@ bio_l_read (DI *di, ulong sector, ulong blocks, ulong blocksize, void *buf)
 				 * as the UNIT can be invalidated during
 				 * the next operations
 				 */
-				quickmovb ((char *) buf + size, u->data, blocksize);
+				quickmovb (buf + size, u->data, blocksize);
 
 				r = bio_readin (di, buf, size, tstart);
 # if 1
@@ -2186,7 +2189,7 @@ bio_l_read (DI *di, ulong sector, ulong blocks, ulong blocksize, void *buf)
 # endif
 
 				tblocks = 0;
-				(char *) buf += size;
+				buf += size;
 
 				if (r) break;
 			}
@@ -2195,7 +2198,7 @@ bio_l_read (DI *di, ulong sector, ulong blocks, ulong blocksize, void *buf)
 				quickmovb (buf, u->data, blocksize);
 			}
 
-			(char *) buf += blocksize;
+			buf += blocksize;
 		}
 		else
 		{
@@ -2287,8 +2290,9 @@ restart:
 }
 
 INLINE long
-bio_small_write (DI *di, ulong sector, ulong blocks, ulong blocksize, const void *buf)
+bio_small_write (DI *di, ulong sector, ulong blocks, ulong blocksize, const void *_buf)
 {
+	register const char *buf = _buf;
 	register const ulong incr = blocksize >> di->p_l_shift;
 	long r = E_OK;
 
@@ -2313,7 +2317,7 @@ bio_small_write (DI *di, ulong sector, ulong blocks, ulong blocksize, const void
 		}
 
 		quickmovb (u->data, buf, blocksize);
-		(const char *) buf += blocksize;
+		buf += blocksize;
 
 		bio_mark_modified (u);
 
