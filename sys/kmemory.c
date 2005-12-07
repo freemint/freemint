@@ -816,10 +816,10 @@ km_mr_dump (void)
 }
 # endif
 
-# undef km_mr_list_init()
-# undef km_mr_list_empty()
-# undef km_mr_list_insert(n)
-# undef km_mr_list_remove(n)
+# undef km_mr_list_init
+# undef km_mr_list_empty
+# undef km_mr_list_insert
+# undef km_mr_list_remove
 
 /* END MEMREGION alloc */
 /****************************************************************************/
@@ -965,10 +965,10 @@ km_s1_dump (void)
 }
 # endif
 
-# undef km_s1_list_init()
-# undef km_s1_list_empty()
-# undef km_s1_list_insert(n)
-# undef km_s1_list_remove(n)
+# undef km_s1_list_init
+# undef km_s1_list_empty
+# undef km_s1_list_insert
+# undef km_s1_list_remove
 
 /* END small 1 alloc */
 /****************************************************************************/
@@ -1281,10 +1281,10 @@ km_s2_dump (void)
 	printf ("--------------------------------------------------------\n");
 }
 
-# undef km_s2_list_init()
-# undef km_s2_list_empty()
-# undef km_s2_list_insert(n)
-# undef km_s2_list_remove(n)
+# undef km_s2_list_init
+# undef km_s2_list_empty
+# undef km_s2_list_insert
+# undef km_s2_list_remove
 # endif
 
 /* END small 2 alloc */
@@ -1359,10 +1359,10 @@ km_lb_dump (void)
 # error km_lb_dump not defined
 }
 
-# undef km_lb_list_init()
-# undef km_lb_list_empty()
-# undef km_lb_list_insert(n)
-# undef km_lb_list_remove(n)
+# undef km_lb_list_init
+# undef km_lb_list_empty
+# undef km_lb_list_insert
+# undef km_lb_list_remove
 # endif
 
 /* END large block alloc */
