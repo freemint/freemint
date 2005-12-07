@@ -8597,7 +8597,7 @@ fatfs_debug (const char *fmt, ...)
 	{
 		(*fp->dev->lseek)(fp, 0, SEEK_END);
 
-		vsprintf (buf, buflen, fmt, args);
+		kvsprintf (buf, buflen, fmt, args);
 		(*fp->dev->write)(fp, buf, strlen (buf));
 		(*fp->dev->write)(fp, "\r\n", 2);
 
@@ -8607,7 +8607,7 @@ fatfs_debug (const char *fmt, ...)
 	{
 		FP_FREE (fp);
 
-		vsprintf (buf, buflen, fmt, args);
+		kvsprintf (buf, buflen, fmt, args);
 		DEBUG ((buf));
 	}
 	va_end (args);

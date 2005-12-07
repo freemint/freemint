@@ -2190,7 +2190,7 @@ km_debug (const char *fmt, ...)
 
 	va_start (args, fmt);
 
-	vsprintf (line, sizeof (line), fmt, args);
+	kvsprintf (line, sizeof (line), fmt, args);
 	KM_FORCE ((line));
 
 	va_end (args);

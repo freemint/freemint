@@ -2682,7 +2682,7 @@ bio_debug (const char *fmt, ...)
 		{
 			(*fp->dev->lseek)(fp, 0, 2);
 
-			vsprintf (buf, buflen, fmt, args);
+			kvsprintf (buf, buflen, fmt, args);
 			(*fp->dev->write)(fp, buf, strlen (buf));
 			(*fp->dev->write)(fp, "\r\n", 2);
 
@@ -2692,7 +2692,7 @@ bio_debug (const char *fmt, ...)
 		{
 			FP_FREE (fp);
 
-			vsprintf (buf, buflen, fmt, args);
+			kvsprintf (buf, buflen, fmt, args);
 			BIO_FORCE ((buf));
 		}
 		va_end (args);
