@@ -443,7 +443,7 @@ cdiv (long a, long b)
 /****************************************************************************/
 /* BEGIN error handling */
 
-static void volatile
+static void
 fatal_ (const char *fmt_string)
 {
 	printf (fmt_string, PROGRAM, 'A' + DRV);
