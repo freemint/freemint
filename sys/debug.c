@@ -353,7 +353,7 @@ VDEBUGOUT(const char *s, va_list args, int alert_flag)
 		len -= strlen(lp);
 	}
 	
-	vsprintf(lptemp, len, s, args);
+	kvsprintf(lptemp, len, s, args);
 	
 	/* for alerts, try the alert pipe unconditionally */
 	if (alert_flag && _ALERT(lp))
