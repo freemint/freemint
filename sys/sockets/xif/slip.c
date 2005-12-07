@@ -437,6 +437,7 @@ slip_recv (struct slbuf *slb)
 		else
 			slp->rcv_tail = cp;
 newpacket:
+		;
 	}
 	
 	return 0;

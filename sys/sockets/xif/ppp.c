@@ -510,6 +510,7 @@ ppp_recv (struct slbuf *slb)
 		else
 			ppp->rcv_tail = cp;
 newpacket:
+		;
 	}
 	
 	return 0;
