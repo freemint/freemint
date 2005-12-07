@@ -64,7 +64,8 @@ XHDIfail (void)
 }
 
 /* XHDI handler function */
-static long (*XHDI)() = XHDIfail;
+typedef long (*xhdi_t)();
+static xhdi_t XHDI = XHDIfail;
 
 ushort XHDI_installed = 0;
 
@@ -94,7 +95,7 @@ init_XHDI (void)
 			magic_test--;
 			if (*magic_test == XHDIMAGIC)
 			{
-				(long *) XHDI = val;
+				XHDI = (xhdi_t)val;
 			}
 		}
 	}

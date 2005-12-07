@@ -403,6 +403,7 @@ st_set_dns (struct st_set_dns_param p)
 			break;
 		default:
 			/* Ignore */
+			break;
 		}
 }
 
