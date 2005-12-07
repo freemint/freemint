@@ -338,7 +338,7 @@ rp_2_ap(struct xa_window *wind, XA_WIDGET *widg, RECT *r)
 
 	if (widg->m.r.xaw_idx != XAW_TOOLBAR )
 	{
-		if (r && (long)r != (long)&widg->ar)
+		if (r && r != &widg->ar)
 			*r = widg->ar;
 		return rp2ap_obtree(wind, widg, &widg->ar);
 	}
@@ -419,7 +419,7 @@ rp_2_ap_cs(struct xa_window *wind, XA_WIDGET *widg, RECT *r)
 
 	if (widg->m.r.xaw_idx != XAW_TOOLBAR)
 	{
-		if (r && (long)r != (long)&widg->ar)
+		if (r && r != &widg->ar)
 			*r = widg->ar;
 		return;
 	}
@@ -3042,7 +3042,7 @@ set_toolbar_handlers(const struct toolbar_handlers *th, struct xa_window *wind, 
 	{
 		if (th && th->click)
 		{
-			if ((long)th->click == -1L)
+			if (th->click == (void *)-1L)
 				widg->m.click	= NULL;
 			else
 				widg->m.click	= th->click;
@@ -3052,7 +3052,7 @@ set_toolbar_handlers(const struct toolbar_handlers *th, struct xa_window *wind, 
 
 		if (th && th->drag)
 		{
-			if ((long)th->drag == -1L)
+			if (th->drag == (void *)-1L)
 				widg->m.drag	= NULL;
 			else
 				widg->m.drag	= th->drag;
@@ -3062,7 +3062,7 @@ set_toolbar_handlers(const struct toolbar_handlers *th, struct xa_window *wind, 
 		
 		if (th && th->draw)
 		{
-			if ((long)th->draw == -1L)
+			if (th->draw == (void *)-1L)
 			{
 				widg->m.r.draw	= NULL;
 				widg->m.properties &= ~WIP_INSTALLED;
@@ -3081,7 +3081,7 @@ set_toolbar_handlers(const struct toolbar_handlers *th, struct xa_window *wind, 
 		
 		if (th && th->destruct)
 		{
-			if ((long)th->destruct == -1L)
+			if (th->destruct == (void *)-1L)
 				widg->m.destruct = NULL;
 			else
 				widg->m.destruct = th->destruct;
@@ -3091,7 +3091,7 @@ set_toolbar_handlers(const struct toolbar_handlers *th, struct xa_window *wind, 
 		
 		if (th && th->release)
 		{
-			if ((long)th->release == -1L)
+			if (th->release == (void *)-1L)
 				widg->m.release = NULL;
 			else
 				widg->m.release	= th->release;
@@ -3106,7 +3106,7 @@ set_toolbar_handlers(const struct toolbar_handlers *th, struct xa_window *wind, 
 		{
 			if (th && th->keypress)
 			{
-				if ((long)th->keypress == -1L)
+				if (th->keypress == (void *)-1L)
 					wind->keypress = NULL;
 				else
 					wind->keypress = th->keypress;
@@ -3122,7 +3122,7 @@ set_toolbar_handlers(const struct toolbar_handlers *th, struct xa_window *wind, 
 	{
 		if (th && th->exitform)
 		{
-			if ((long)th->exitform == -1L)
+			if (th->exitform == (void *)-1L)
 				wt->exit_form = NULL;
 			else
 				wt->exit_form = th->exitform;

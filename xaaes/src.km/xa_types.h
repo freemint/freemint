@@ -721,6 +721,14 @@ struct wdlg_evnt_parms
 	short obj;
 };
 
+struct xa_usr_prn_settings;
+struct xa_usr_prn_settings
+{
+	struct xa_usr_prn_settings *next;
+	unsigned long flags;
+	PRN_SETTINGS *settings;
+};
+
 struct xa_pdlg_drv_info;
 struct xa_pdlg_drv_info
 {
@@ -745,6 +753,8 @@ struct xa_pdlg_info
 
 	struct xa_pdrv_info *priv_drivers;
 	
+	struct xa_usr_prn_settings *user_settings;
+
 	PRN_SETTINGS *settings;
 	PRN_SETTINGS current_settings;
 	char document_name[256];

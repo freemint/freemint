@@ -78,6 +78,7 @@ ceExecfunc(enum locks lock, struct c_event *ce, bool cancel)
 	if (!cancel)
 	{
 		void (*f)(enum locks, struct xa_client *);
+
 		if ((f = ce->ptr1))
 			(*f)(lock, ce->client);
 	}
@@ -863,7 +864,7 @@ helpthread_entry(void *c)
 
 		if ((pb = kmalloc(sizeof(*pb) + ((12 + 32 + 32 + 32 + 32 + 32) * 2))))
 		{
-			(long)d = (long)pb + sizeof(*pb);
+			d = (short *)((long)pb + sizeof(*pb));
 			pb->control = d;
 			d += 12;
 			pb->global = d;
@@ -1172,7 +1173,7 @@ k_main(void *dummy)
 	if (cfg.naes_cookie)
 	{
 		DIAGS(("Install 'nAES' cookie.."));
-		if ( ((long)c_naes = m_xalloc(sizeof(*c_naes), (4<<4)|(1<<3)|3) ))
+		if ( (c_naes = (N_AESINFO *)m_xalloc(sizeof(*c_naes), (4<<4)|(1<<3)|3) ))
 		{
 			memcpy(c_naes, &naes_cookie, sizeof(*c_naes));
 			if (s_system(S_SETCOOKIE, C_nAES, (long)c_naes) != 0)

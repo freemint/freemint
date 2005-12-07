@@ -920,7 +920,7 @@ depack_img(char *name, XA_XIMG_HEAD *pic)
 			    pic->ximg.magic == XIMG && pic->ximg.paltype == 0)
 			{
 				pal_size = (1 << pic->ximg.planes) * 3 * 2;
-				if((pic->palette = kmalloc(pal_size)))
+				if ((pic->palette = kmalloc(pal_size)))
 				{
 					if (!(pal_size == kernel_read(fp, pic->palette, pal_size)))
 					{
@@ -1242,8 +1242,8 @@ load_image(char *name, MFDB *mimg)
 				void (*to)(struct rgb_1000 *pal, void **imgdata);
 				void (*from)(void (*)(struct rgb_1000 *, void **), struct rgb_1000 *pal, MFDB *src, MFDB *dst);
 
-				(long)to = -1L;
-				(long)from = -1L;			
+				to = (void *)-1L;
+				from = (void *)-1L;
 				
 				if (screen.pixel_fmt >= 0)
 				{
@@ -1380,8 +1380,8 @@ transform_bitmap(short vdih, MFDB *src, MFDB *dst, struct rgb_1000 *src_pal, str
 			void (*to)(struct rgb_1000 *, void **);
 			void (*from)(void (*)(struct rgb_1000 *, void **), struct rgb_1000 *, MFDB *, MFDB *);
 
-			(long)to = -1L;
-			(long)from = -1L;			
+			to = (void *)-1L;
+			from = (void *)-1L;			
 #if 1			
 			if (src->fd_nplanes <= 8 && src_pal && sys_pal)
 			{

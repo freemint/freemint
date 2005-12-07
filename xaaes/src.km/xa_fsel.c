@@ -870,22 +870,6 @@ add_slash(char *p, char *to)
 		strcat(p, to);
 }
 
-#if 0
-static bool
-executable(char *nam)
-{
-	char *ext = getsuf(nam);
-
-	return (ext
-		/* The mintlib does almost the same :-) */
-		&& (   !stricmp(ext, "ttp") || !stricmp(ext, "prg")
-		    || !stricmp(ext, "tos") || !stricmp(ext, "g")
-		    || !stricmp(ext, "sh")  || !stricmp(ext, "bat")
-		    || !stricmp(ext, "gtp") || !stricmp(ext, "app")
-		    || !stricmp(ext, "acc")));
-}
-#endif
-
 static bool
 disabled_exe(char *nam)
 {

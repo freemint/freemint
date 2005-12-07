@@ -60,12 +60,13 @@ void
 k_shutdown(void)
 {
 	struct xa_vdi_settings *v = C.Aes->vdi_settings;
+	volatile long *h = (long *)&C.Hlp;
 
 	DIAGS(("Cleaning up ready to exit...."));
-	if (C.Hlp)
+	if (*h)
 	{
 		post_cevent(C.Hlp, CE_at_terminate, NULL, NULL, 0,0, NULL, NULL);
-		while ((volatile long)C.Hlp)
+		while (*h)
 		{
 			Unblock(C.Hlp, 0, 0);
 			yield();
@@ -86,8 +87,9 @@ k_shutdown(void)
 	DIAGS(("shutting down aes thread .."));
 	if (C.Aes->tp)
 	{
+		h = (long *)&C.Aes->tp;
 		post_cevent(C.Aes, CE_at_terminate, NULL,NULL, 0,0, NULL,NULL);
-		while ((volatile long)C.Aes->tp)
+		while (*h) //(volatile long)C.Aes->tp)
 		{
 			yield();
 		}

@@ -151,7 +151,7 @@ callout_display(struct xa_fnts_item *f, short vdih, long pt, long ratio, RECT *c
 				bcopy(&xa_callout_user, u, xa_callout_user.len);
 			
 				u->sighand_p	+= (long)u;
-				(long)u->parm_p	+= (long)u;
+				u->parm_p	 = (void *)((char *)u->parm_p + (long)u);
 
 				p	= u->parm_p;
 				p->func	= (long)f->f.display;

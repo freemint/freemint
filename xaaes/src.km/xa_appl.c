@@ -225,7 +225,7 @@ init_client(enum locks lock)
 	client->ut->ret_p      += (long)client->ut;
 	client->ut->parmblk_p  += (long)client->ut;
 	/* make sure data cache is flushed */
-	cpush(client->ut, xa_user_things.len);
+	cpushi(client->ut, xa_user_things.len);
 
 	client->cmd_tail = "\0";
 
