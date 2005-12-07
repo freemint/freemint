@@ -66,7 +66,7 @@ object_have_spec(OBJECT *ob)
 bool
 validate_obtree(struct xa_client *client, OBJECT *obtree, char *fdesc)
 {
-	if ((long)obtree <= 0x1000L)
+	if (obtree <= (OBJECT *)0x1000L)
 	{
 			/* inform user what's going on */
 		ALERT(("%s: validate OBTREE for %s failed, object ptr = %lx, killing it!", fdesc, client->proc_name, obtree));
@@ -147,7 +147,7 @@ object_get_tedinfo(OBJECT *ob, XTEDINFO **x)
 	{
 		ted = object_get_spec(ob)->tedinfo;
 	
-		if ((long)ted->te_ptext == -1L)
+		if (ted->te_ptext == (char *)-1L)
 		{
 			if (x)
 			{
@@ -260,7 +260,7 @@ sizeof_tedinfo(TEDINFO *ted)
 {
 	long size = sizeof(TEDINFO);
 	
-	if ((long)ted->te_ptext == -1L)
+	if (ted->te_ptext == (char *)-1L)
 	{
 		XTEDINFO *xt = (XTEDINFO *)ted->te_ptmplt;
 		size += sizeof(*xt);
@@ -356,9 +356,7 @@ ob_count_objs(OBJECT *obtree, short parent, short depth)
 
 	if (depth && start != -1)
 		objs = count_them(obtree, parent, start, depth - 1);
-// 	else
-// 		objs = 0;
-
+	
 	DIAGS(("ob_count_objs: return %d", objs));
 
 	return objs;
@@ -397,7 +395,7 @@ obtree_len(OBJECT *obtree, short start, short *num_objs)
 			case G_FTEXT:
 			case G_FBOXTEXT:
 			{
-				size += sizeof_tedinfo(object_get_spec(ob)->tedinfo); //object_get_tedinfo(ob));
+				size += sizeof_tedinfo(object_get_spec(ob)->tedinfo);
 				break;
 			}
 			case G_IMAGE:
@@ -477,20 +475,20 @@ obtree_len(OBJECT *obtree, short start, short *num_objs)
 static void *
 copy_tedinfo(TEDINFO *src, TEDINFO *dst)
 {
-	char *s = (char *)((long)dst + sizeof(TEDINFO));
+	char *s = (char *)dst + sizeof(TEDINFO);
 
  	DIAGS(("copy_tedinfo: copy from %lx, to %lx", src, dst));
 	
 	*dst = *src;
-	if ((long)src->te_ptext == -1L)
+	if (src->te_ptext == (char *)-1L)
 	{
 		XTEDINFO *xdst, *xsrc = (XTEDINFO *)src->te_ptmplt;
 		
-		(long)xdst = (long)s;
+		xdst = (XTEDINFO *)s;
 		s += sizeof(*xsrc);
 		
 		*xdst = *xsrc;
-		(long)dst->te_ptmplt = (long)xdst;
+		dst->te_ptmplt = (char *)xdst;
 		
 		src = &xsrc->ti;
 		dst = &xdst->ti;
@@ -523,7 +521,7 @@ copy_bitblk(BITBLK *src, BITBLK *dst)
 	*dst = *src;
 	
 	s = src->bi_pdata;
- 	d = (short *)((long)dst + sizeof(BITBLK));
+ 	d = (short *)((char *)dst + sizeof(BITBLK));
 	dst->bi_pdata = d;
 	for (i = 0; i < (src->bi_wb * src->bi_hl); i ++)
 		*d++ = *s++;
@@ -542,7 +540,7 @@ copy_iconblk(ICONBLK *src, ICONBLK *dst)
 
 	*dst = *src;
 
-	d = (char *)((long)dst + sizeof(ICONBLK));
+	d = (char *)dst + sizeof(ICONBLK);
 	words = ((src->ib_wicon + 15) >> 4) * src->ib_hicon;
 	{
 		short *fr, *dr = (short *)d;
@@ -575,7 +573,7 @@ copy_iconblk(ICONBLK *src, ICONBLK *dst)
 static void *
 copy_cicon(CICON *src, CICON *dst, long words)
 {
-	short *fr, *d = (short *)((long)dst + sizeof(CICON));
+	short *fr, *d = (short *)((char *)dst + sizeof(CICON));
 	long w;
 
 	DIAGS(("copy_cicon: from %lx to %lx(%lx), words %ld, planes %d", src, dst, d, words, src->num_planes));
@@ -640,7 +638,7 @@ copy_ciconblk(CICONBLK *src, CICONBLK *dst, CICON *cicon)
 
 	*dst = *src;
 
-	d = (char *)((long)dst + sizeof(CICONBLK));
+	d = (char *)dst + sizeof(CICONBLK);
 	
 	words = ((src->monoblk.ib_wicon + 15) >> 4) * src->monoblk.ib_hicon;
 	{
@@ -665,7 +663,7 @@ copy_ciconblk(CICONBLK *src, CICONBLK *dst, CICON *cicon)
 			break;
 	}
 
-	(long)d = ((long)d + 1) & 0xfffffffe;
+	d = (char *)(((long)d + 1) & 0xfffffffe);
 	
 	/*
 	 * If a cicon is passed to us, we only take that one into the copy,
@@ -755,9 +753,16 @@ copy_obtree(OBJECT *obtree, short start, OBJECT *dst, void **data)
 			}
 			case G_PROGDEF:
 			{
-				on->ob_spec.userblk = *data;
-				(USERBLK *)*data = (USERBLK *)object_get_spec(ob)->userblk;
-				(long)*data += sizeof(USERBLK);
+				USERBLK *s, *d;
+				
+				d = *data;
+				s = object_get_spec(ob)->userblk;
+				*d = *s;
+				on->ob_spec.userblk = d;
+				d++;
+				*data = d;
+// 				(USERBLK *)*data = (USERBLK *)object_get_spec(ob)->userblk;
+// 				(long)*data += sizeof(USERBLK);
 				break;
 			}
 			case G_BUTTON:
@@ -765,7 +770,7 @@ copy_obtree(OBJECT *obtree, short start, OBJECT *dst, void **data)
 			case G_TITLE:
 			{
 				char *s = object_get_spec(ob)->free_string;
-				char *d = (char *)*data;
+				char *d = *data;
 				on->ob_spec.free_string = d;
 				strcpy(d, s);
 				d += strlen(s) + 1;				
@@ -831,7 +836,7 @@ duplicate_obtree(struct xa_client *client, OBJECT *obtree, short start)
 	{
 		bzero(new, size);
 
-		(long)data = (long)new + ((long)objs * sizeof(OBJECT));
+		data = (char *)new + ((long)objs * sizeof(OBJECT));
 
 		copy_obtree(obtree, 0, new, &data);
 	}
@@ -947,7 +952,7 @@ create_popup_tree(struct xa_client *client, short type, short nobjs, short min_w
 			short x, y, w, h;
 			char *entry, *this, *sepstr;
 			
-			(long)this = (long)new + ol;
+			this = (char *)new + ol;
 			
 			sepstr = this + sl;
 			for (i = 0; i < longest; i++)
@@ -1456,24 +1461,6 @@ ob_find_flag(OBJECT *tree, short f, short mf, short stopf)
 	foreach_object(tree, 0, 0, stopf, 0, anyflst, &d);
 // 	display("ob_find_flag: ret %d", d.ret);
 	return d.ret;
-#if 0
-	int o = -1;
-	
-	stopf |= OF_LASTOB;
-	
-	do
-	{
-		o++;
-		if ((!f || (tree[o].ob_flags & f) == f))
-		{
-			if ((!mf || !(tree[o].ob_flags & mf)))
-				return o;
-		}
-	} while ( (!stopf || !(tree[o].ob_flags & stopf)));
-
-	return -1;
-// 	display(" -- exit");
-#endif
 }
 short
 ob_find_any_flag(OBJECT *tree, short f, short mf, short stopf)
@@ -1492,25 +1479,6 @@ ob_find_any_flag(OBJECT *tree, short f, short mf, short stopf)
 	foreach_object(tree, 0, 0, stopf, 0, anyflst, &d);
 // 	display("ob_find_any_flag: ret %d", d.ret);
 	return d.ret;
-#if 0
-	short o = -1;
-
-	stopf |= OF_LASTOB;
-
-	do
-	{
-		o++;
-		if ((!f || (tree[o].ob_flags & f)))
-		{
-			if ((!mf || !(tree[o].ob_flags & mf)))
-				return o;
-		}
-	} while ( (!stopf || !(tree[o].ob_flags & stopf)));
-
-	return -1;
-
-// 	display(" -- exit");
-#endif
 }
 /*
  * Count objects whose flags equals those in 'f',
@@ -1540,28 +1508,6 @@ ob_count_flag(OBJECT *tree, short f, short mf, short stopf, short *count)
 	if (count)
 		*count = d.ret;
 	return d.ret1;
-
-#if 0	
-	short o = -1, cnt = 0;
-
-	stopf |= OF_LASTOB;
-
-	do
-	{
-		o++;
-		if ((!f || (tree[o].ob_flags & f) == f))
-		{
-			if ((!mf || !(tree[o].ob_flags & mf)))
-				cnt++;
-		}
-	} while ( (!stopf || !(tree[o].ob_flags & stopf)));
-
-	if (count)
-		*count = cnt;
-
-// 	display(" -- exit");
-	return o;
-#endif
 }
 /*
  * Count objects who has any 'f' bit(s) set,
@@ -1591,29 +1537,7 @@ ob_count_any_flag(OBJECT *tree, short f, short mf, short stopf, short *count)
 	if (count)
 		*count = d.ret;
 
-	return d.ret1;
-	
-#if 0
-	short o = -1, cnt = 0;
-	
-	stopf |= OF_LASTOB;
-	
-	do
-	{
-		o++;
-		if ((!f || (tree[o].ob_flags & f)))
-		{
-			if ((!mf || !(tree[o].ob_flags & mf)))
-				cnt++;
-		}
-	} while ( (!stopf || !(tree[o].ob_flags & stopf)));
-
-	if (count)
-		*count = cnt;
-
-// 	display(" -- exit");
-	return o;
-#endif
+	return d.ret1;	
 }
 
 short
@@ -1654,23 +1578,6 @@ ob_find_flst(OBJECT *tree, short f, short s, short mf, short ms, short stopf, sh
 // 	display("ob_find_flst: ret %d", d.ret);
 // 	display(" -- ret");
 	return d.ret;
-#if 0	
-	int o = -1;
-	
-	stopf |= OF_LASTOB;
-	
-	do
-	{
-		o++;
-		if ( (!f || (tree[o].ob_flags & f) == f) && (!s || (tree[o].ob_state & s) == s) )
-		{
-			if ( (!mf || !(tree[o].ob_flags & mf)) && (!ms || !(tree[o].ob_state & ms)) )
-				return o;
-		}
-	} while ( (!stopf || !(tree[o].ob_flags & stopf)) && (!stops || !(tree[o].ob_state & stops)) );
-
-	return -1;
-#endif
 }
 
 short
@@ -1679,11 +1586,6 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 	short o, n, x, y, w, h, ax, cx, cy, co, cf, flg;
 	RECT r;
 	
-// 	display("e");
-
-// 	if (parent)
-// 		display("parent %d", parent);
-
 	cx = cy = ax = 32000;
 
 	co = -1;
@@ -1718,29 +1620,14 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 		r.x += r.w;
 		r.y += r.h;
 		r.w = r.h = 1;
-	#if 0
-		r.x = tree->ob_x + tree->ob_width;
-		r.y = tree->ob_y + tree->ob_height;
-		r.w = r.h = 8;
-	#endif
 		flags &= ~(OBFIND_LAST|OBFIND_HOR|OBFIND_DOWN);
 		flags |= OBFIND_HOR|OBFIND_UP;
 	}
 	else
 		ob_rectangle(tree, start, &r);
 
-// 	ndisplay("parent %d, start %d", parent, start);
-
-// 	o = 0;
-// 	x = y = 0;
-
-// 	display(", parent %d, start %d (%d/%d/%d/%d)", parent, start, r);
-
 	do
 	{
-// 		display(" - obj %d, h=%d, t=%d, n=%d", o, tree[o].ob_head, tree[o].ob_tail, tree[o].ob_next);
-
-// 		display(" %d/%d (%d/%d) (%d/%d/%d/%d)", x, y, px, py, r);
 		flg = 0;
 
 		if ((!mf || !(tree[o].ob_flags & mf)) && (!ms || !(tree[o].ob_state & ms)))
@@ -1770,7 +1657,6 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 			y += tree[o].ob_y;
 			w = tree[o].ob_width;
 			h = tree[o].ob_height;
-// 			display("start = %d, %d/%d/%d/%d this = %d, %d/%d/%d/%d", start, r, o, x,y,w,h);
 
 			if (!(flags & OBFIND_HOR))
 			{
@@ -1825,10 +1711,8 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 						{
 							if ((y - r.y) == cy)
 							{
-// 								display("same cy %d, x=%d, cx=%d", cy, x, ax);
 								if (x < ax)
 								{
-// 									display("collect %d %d,%d", o, x, ax);
 									ax = x;
 									cy = y - r.y;
 									co = o;
@@ -1836,7 +1720,6 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 							}
 							else if ((y - r.y) < cy)
 							{
-// 								display(" lcollect %d %d,%d", o, x, y);
 								ax = x;
 								cy = y - r.y;
 								co = o;
@@ -1868,10 +1751,8 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 						{
 							if ((r.y - y) == cy)
 							{
-// 								display("same cy %d x=%d, cx=%d", cy, x, ax);
 								if (ax == 32000 || x > ax)
 								{
-// 									display("collect %d %d,%d", o, x, ax);
 									ax = x;
 									cy = r.y - y;
 									co = o;
@@ -1879,7 +1760,6 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 							}
 							else if ((r.y - y) < cy)
 							{
-// 								display(" lcollect %d %d,%d", o, x, y);
 								ax = x;
 								cy = r.y - y;
 								co = o;
@@ -1908,10 +1788,8 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 						{
 							if ((y - r.y) == cy)
 							{
-// 								display("same cy %d, x=%d, cx=%d", cy, x, ax);
 								if (x < ax)
 								{
-// 									display("collect %d %d,%d", o, x, ax);
 									ax = x;
 									cy = y - r.y;
 									co = o;
@@ -1919,7 +1797,6 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 							}
 							else if ((y - r.y) < cy)
 							{
-// 								display(" lcollect %d %d,%d", o, x, y);
 								ax = x;
 								cy = y - r.y;
 								co = o;
@@ -1932,14 +1809,9 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 			x -= tree[o].ob_x;
 			y -= tree[o].ob_y;
 		}
-		
-// 		if (parent)
-// 			display("0: o = %d, h=%d, t=%d, n=%d, f=%x", o, tree[o].ob_head, tree[o].ob_tail, tree[o].ob_next, tree[o].ob_flags);
 
 		if (tree[o].ob_head != -1 && (!(tree[o].ob_flags & OF_HIDETREE) || (flags & OBFIND_HIDDEN)))
 		{
-// 			if (parent != 0)
-// 				display("parent %d, child %d", o, tree[o].ob_head);
 			x += tree[o].ob_x;
 			y += tree[o].ob_y;
 			o = tree[o].ob_head;
@@ -1957,15 +1829,11 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 			}
 			o = n;
 		}
-		
-// 		if (parent)
-// 			display("1: o = %d, h=%d, t=%d, n=%d, f=%x, ", o, tree[o].ob_head, tree[o].ob_tail, tree[o].ob_next, tree[o].ob_flags);
 	} while ( o != parent && o != -1); // && (!stopf || !(tree[o].ob_flags & stopf)) && (!stops || !(tree[o].ob_state & stops)));
 
 	if (!cf && (flags & OBFIND_NOWRAP))
 		co = -1;
 done:
-// 	display(" -- return %d", co);
 	return co;
 }
 

@@ -312,22 +312,24 @@ fix_tedarray(struct xa_client *client, void *b, TEDINFO *ti, unsigned long n, ch
 	{
 		XTEDINFO *ei;
 		
-		(char *)ei = *extra;
+		ei = *(XTEDINFO **)extra;
 		
 		while (n)
 		{
 			bzero(ei, sizeof(*ei));
+
 			ei->p_ti = ti;
-			(unsigned long)ti->te_ptext  += (unsigned long)b;
-			(unsigned long)ti->te_ptmplt += (unsigned long)b;
-			(unsigned long)ti->te_pvalid += (unsigned long)b;
+			ti->te_ptext	+= (long)b;
+			ti->te_ptmplt	+= (long)b;
+			ti->te_pvalid	+= (long)b;
 			ei->ti = *ti;
-			(long)ti->te_ptext = -1L;
-			(long)ti->te_ptmplt = (long)ei;
+			ti->te_ptext	= (char *)-1L;
+			ti->te_ptmplt	= (char *)ei;
+			
 			ti++;
 			ei++;
 			n--;
-			DIAG((D_rsrc, NULL, "fix_tedarray: ti=%lx, ptext='%s'", ti, ti->te_ptext));
+			DIAG((D_rsrc, NULL, "fix_tedarray: ti=%lx, ptext='%s'", ti, ei->ti.te_ptext));
 			DIAG((D_rsrc, NULL, "ptext=%lx, ptmpl=%lx, pvalid=%lx",
 				ti->te_ptext, ti->te_ptmplt, ti->te_pvalid));
 		}
@@ -337,9 +339,10 @@ fix_tedarray(struct xa_client *client, void *b, TEDINFO *ti, unsigned long n, ch
 	{
 		while (n)
 		{
-			(unsigned long)ti->te_ptext  += (unsigned long)b;
-			(unsigned long)ti->te_ptmplt += (unsigned long)b;
-			(unsigned long)ti->te_pvalid += (unsigned long)b;
+			ti->te_ptext	+= (long)b;
+			ti->te_ptmplt	+= (long)b;
+			ti->te_pvalid	+= (long)b;
+			
 			DIAG((D_rsrc, NULL, "fix_tedarray: ti=%lx, ptext='%s'", ti, ti->te_ptext));
 			DIAG((D_rsrc, NULL, "ptext=%lx, ptmpl=%lx, pvalid=%lx",
 				ti->te_ptext, ti->te_ptmplt, ti->te_pvalid));
@@ -357,10 +360,10 @@ fix_icnarray(struct xa_client *client, void *b, ICONBLK *ib, unsigned long n, ch
 {
 	while (n)
 	{
-		(unsigned long)ib->ib_pmask += (unsigned long)b;
-		(unsigned long)ib->ib_pdata += (unsigned long)b;
-		(unsigned long)ib->ib_ptext += (unsigned long)b;
-
+		ib->ib_pmask = (void *)((char *)ib->ib_pmask + (long)b);
+		ib->ib_pdata = (void *)((char *)ib->ib_pdata + (long)b);
+		ib->ib_ptext += (long)b;
+		
 		DIAG((D_rsrc, NULL, "fix_icnarray: ib=%lx, ib->ib_pmask=%lx, ib->ib_pdata=%lx, ib->ib_ptext=%lx",
 			ib, ib->ib_pmask, ib->ib_pdata, ib->ib_ptext));
 		
@@ -377,7 +380,7 @@ fix_bblarray(struct xa_client *client, void *b, BITBLK *bb, unsigned long n, cha
 {
 	while (n)
 	{
-		(unsigned long)bb->bi_pdata += (unsigned long)b;
+		bb->bi_pdata = (void *)((char *)bb->bi_pdata + (long)b);
 
 		DIAG((D_rsrc, NULL, "fix_bblarray: bb=%lx, pdata=%lx",
 			bb, bb->bi_pdata));
@@ -420,14 +423,14 @@ fix_cicons(struct xa_client *client, void *base, CICONBLK **cibh, char **extra)
 		cibh[i] = cib;						/* Put absolute address of this ciconblk into array */
 		isize = calc_back((RECT*)&ib->ib_xicon, 1);
 
-		addr = (unsigned long *)((unsigned long)cib + sizeof(ICONBLK));
+		addr = (unsigned long *)((char *)cib + sizeof(ICONBLK));
 		numRez = addr[0];
 		pdata = (short *)&addr[1];
 		/* mono data & mask */
 		ib->ib_pdata = pdata;
-		(unsigned long)pdata += isize;
+		pdata = (short *)((char *)pdata + isize);
 		ib->ib_pmask = pdata;
-		(unsigned long)pdata += isize;
+		pdata = (short *)((char *)pdata + isize);
 		/* HR: the texts are placed the same way as for all other objects
 		 * when longer than 12 bytes.
 		 */
@@ -440,7 +443,7 @@ fix_cicons(struct xa_client *client, void *base, CICONBLK **cibh, char **extra)
 		{
 			short l = ib->ib_wtext/6;
 			/* fix some resources */
-			ib->ib_ptext += (unsigned long)base;
+			ib->ib_ptext += (long)base;
 			DIAG((D_rsrc, NULL, "cicon: ib->ptext = %lx", ib->ib_ptext));
 			if (strlen(ib->ib_ptext) > l)
 				*(ib->ib_ptext + l) = 0;
@@ -450,11 +453,11 @@ fix_cicons(struct xa_client *client, void *base, CICONBLK **cibh, char **extra)
 			 * be larger than 32, so there is 1 zero byte there */
 			ib->ib_ptext = (char *)pdata;
 
-		/* (unused) place for name */
-		(unsigned long)pdata += 12;
+		/* (unused) place for name, 12 bytes */
+		pdata = (short *)((char *)pdata + 12);
 
 		cicn = (CICON *)pdata;
-		prev_cicn = cicn; //NULL;
+		prev_cicn = cicn;
 		/* There can be color icons with NO color icons,
 		 * only the mono icon block. */
 		cib->mainlist = NULL;
@@ -467,18 +470,18 @@ fix_cicons(struct xa_client *client, void *base, CICONBLK **cibh, char **extra)
 			if (planes > maxplanes)
 				maxplanes = planes;
 			
-			(unsigned long)pdata += sizeof(CICON);
+			pdata = (short *)((char *)pdata + sizeof(CICON));
 			cicn->col_data = pdata;
-			(unsigned long)pdata += psize;
+			pdata = (short *)((char *)pdata + psize);
 			cicn->col_mask = pdata;
-			(unsigned long)pdata +=  isize;
+			pdata = (short *)((char *)pdata + isize);
 			if (cicn->sel_data)
 			{
 				/* It's got a selected form */
 				cicn->sel_data = pdata;
-				(unsigned long)pdata += psize;
+				pdata = (short *)((char *)pdata + psize);
 				cicn->sel_mask = pdata;
-				(unsigned long)pdata +=  isize;
+				pdata = (short *)((char *)pdata + isize);
 			}
 			else
 				/* No selected version */
@@ -605,7 +608,7 @@ fix_trees(struct xa_client *client, void *b, OBJECT **trees, unsigned long n, sh
 	{
 		if (*trees != (OBJECT *)-1)
 		{
-			(unsigned long)*trees += (unsigned long)b;
+			*trees = (OBJECT *)(*(char **)trees + (long)b);
 			
 			DIAGS((" -- tree[%ld]>%ld = %lx", i, (unsigned long)*trees-(unsigned long)b, *trees));
 			
@@ -634,8 +637,8 @@ fix_trees(struct xa_client *client, void *b, OBJECT **trees, unsigned long n, sh
 						{
 							TEDINFO *ted;
 				
-							(long)ted = obj->ob_spec.index;
-							if ((long)ted->te_ptext == -1L)
+							ted = (TEDINFO *)obj->ob_spec.index;
+							if (ted->te_ptext == (char *)-1L)
 								((XTEDINFO *)ted->te_ptmplt)->obj = k;
 							break;
 						}
@@ -842,7 +845,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 		if (rshdr)
 		{
 			hdr = rshdr;
-			(RSHDR *)base = rshdr;
+			base = (char *)rshdr;
 			size = (unsigned long)hdr->rsh_rssize;
 			osize = (size + 1UL) & 0xfffffffeUL;
 			if (hdr->rsh_vrsn & 4)
@@ -872,11 +875,11 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 
 		/* this the row of pointers to extensions */
 		/* terminated by a 0L */
-		earray = (unsigned long *)(osize + (long)base);
+		earray = (unsigned long *)(base + osize);
 		earray++;						/* ozk: skip filesize */
 		if (*earray && *earray != -1L) /* Get colour icons */
 		{
-			cibh = (CICONBLK **)(*earray + (long)base);
+			cibh = (CICONBLK **)(base + *earray);
 			maxplanes = fix_cicons(client, base, cibh, &extra_ptr);
 		}
 
@@ -903,7 +906,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 			bool pal = false;
 
 			DIAG((D_rsrc, client, "Color palette present"));
-			(long)p = (long)(*earray + (long)base);
+			p = (struct xa_rsc_rgb *)(base + *earray);
 
 			/* Ozk:	First we check if the first 16 pens have valid data
 			 *	Valid data means two palette entries can not index
@@ -941,7 +944,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 			if (pal && mask == 0xffff)
 			{
 				DIAG((D_rsrc, client, "%s got palette", fname ? fname : "noname"));
-				(long)rscs->palette = (long)(*earray + (long)base);
+				rscs->palette = (void *)(base + *earray);
 								
 				fix_rsc_palette((struct xa_rsc_rgb *)rscs->palette);
 				if (set_pal && cfg.set_rscpalette)
@@ -962,7 +965,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 	 */
 	fix_objects(client, rscs, cibh, vdih, base, (OBJECT *)(base + hdr->rsh_object), hdr->rsh_nobs);
 
-	fix_trees(client, base, (OBJECT **)(unsigned long)(base + hdr->rsh_trindex), hdr->rsh_ntree, designWidth, designHeight);
+	fix_trees(client, base, (OBJECT **)(base + hdr->rsh_trindex), hdr->rsh_ntree, designWidth, designHeight);
 	
 	return base;
 }
@@ -973,7 +976,7 @@ Rsrc_setglobal(RSHDR *h, struct aes_global *gl)
 	if (gl)
 	{
 		OBJECT **o;
-		(unsigned long)o = (unsigned long)h + h->rsh_trindex;
+		o = (OBJECT **)((char *)h + h->rsh_trindex);
 
 		/* Fill in the application's global array with a pointer to the resource */
 		gl->ptree = o;
@@ -1045,7 +1048,7 @@ FreeResources(struct xa_client *client, AESPB *pb, struct xa_rscs *rsrc)
 					short i;
 
 					/* Free the memory allocated for scroll list objects. */
-					(unsigned long)trees = (unsigned long)(base + hdr->rsh_trindex);
+					trees = (OBJECT **)(base + hdr->rsh_trindex);
 					for (i = 0; i < hdr->rsh_ntree; i++)
 					{
 						free_obtree_resources(client, trees[i]);
@@ -1076,7 +1079,7 @@ FreeResources(struct xa_client *client, AESPB *pb, struct xa_rscs *rsrc)
 							nxt_hdr = nxt_active->rsc;
 
 						client->rsrc = nxt_hdr;
-						(unsigned long)o = nxt_hdr ? (unsigned long)nxt_hdr + nxt_hdr->rsh_trindex : 0L;
+						o = nxt_hdr ? (OBJECT **)((char *)nxt_hdr + nxt_hdr->rsh_trindex) : (OBJECT **)NULL;
 						client->trees = o;
 						
 						Rsrc_setglobal(client->rsrc, client->globl_ptr);
@@ -1195,10 +1198,10 @@ ResourceTedinfo(RSHDR *hdr, int num)
 	
 	index += num;
 	
-	if ((long)index->te_ptext == -1L)
+	if (index->te_ptext == (char *)-1L)
 		index = &((XTEDINFO *)index->te_ptmplt)->ti;
 
-	return index; // + num;
+	return index;
 }
 
 /* Find the iconblk with a given index */
@@ -1325,7 +1328,8 @@ XA_rsrc_load(enum locks lock, struct xa_client *client, AESPB *pb)
 			if (rsc)
 			{
 				OBJECT **o;
-				(unsigned long)o = (unsigned long)rsc + rsc->rsh_trindex;
+// 				(unsigned long)o = (unsigned long)rsc + rsc->rsh_trindex;
+				o = (OBJECT **)((char *)rsc + rsc->rsh_trindex);
 				client->rsrc = rsc;
 				client->trees = o;
 
@@ -1361,7 +1365,7 @@ XA_rsrc_load(enum locks lock, struct xa_client *client, AESPB *pb)
 	}
 
 
-	DIAGS(("ERROR: rsrc_load '%s' failed", pb->addrin[0] ? (char*)pb->addrin[0] : "~~"));
+	DIAGS(("ERROR: rsrc_load '%s' failed", pb->addrin[0] ? *(char *)&pb->addrin[0] : "~~"));
 
 	pb->intout[0] = 0;
 	return XAC_DONE;

@@ -1969,7 +1969,11 @@ click_form_popup_entry(struct task_administration_block *tab, short item)
 	popout(TAB_LIST_START);			/* incl. screen unlock */
 
 	if (tab->data)
-		*(short *)tab->data = m;	
+	{
+		short *dptr = (short *)tab->data;
+		*dptr = m;
+// 		*(short *)tab->data = m;	
+	}
 	client->usr_evnt |= ue;
 
 	return NULL;

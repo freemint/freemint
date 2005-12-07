@@ -63,6 +63,7 @@
  */
 
 #if WDIALOG_PDLG
+
 extern struct toolbar_handlers wdlg_th;
 
 static struct xa_window *
@@ -75,7 +76,6 @@ get_pdlg_wind(struct xa_client *client, void *pdlg_ptr)
 	else
 		return NULL;
 }
-
 static void _cdecl
 delete_pdlg_info(void *_pdlg)
 {
@@ -95,7 +95,6 @@ delete_pdlg_info(void *_pdlg)
 			remove_wt(pdlg->mwt, false);
 			pdlg->mwt = NULL;
 		}
-		
 		kfree(pdlg);
 	}
 }
@@ -106,43 +105,51 @@ click_list(SCROLL_INFO *list, SCROLL_ENTRY *this, const struct moose_data *md)
 	return 0;
 }
 
+static void
+read_prn_settings(struct xa_pdlg_info *pdlg, PRN_SETTINGS *s)
+{
+}
+
 static struct xa_pdlg_info *
 create_new_pdlg(struct xa_client *client, struct xa_window *wind)
 {
 	struct xa_pdlg_info *pdlg;
-	bool fail = false;
 
 	pdlg = kmalloc(sizeof(*pdlg));
 	if (pdlg)
 	{
-		OBJECT *mtree, *dtree;
+		OBJECT *mtree = NULL, *dtree = NULL;
 		struct widget_tree *mwt = NULL, *dwt = NULL;
 		struct scroll_info *list = NULL;
 
 		bzero(pdlg, sizeof(*pdlg));
-		add_xa_data(&client->xa_data, pdlg, NULL, delete_pdlg_info);
-
+		
 		mtree = duplicate_obtree(C.Aes, ResourceTree(C.Aes_rsc, WDLG_PDLG), 0);
+		
 		if (mtree)
 		{
 			if ((mwt = new_widget_tree(client, mtree)))
 			{
 				mwt->flags |= WTF_AUTOFREE | WTF_TREE_ALLOC;
 				obj_init_focus(mwt, OB_IF_RESET);
+				mwt->links++;
 			}
+			else goto fail;
 		}
+		
 		dtree = duplicate_obtree(C.Aes, ResourceTree(C.Aes_rsc, PDLG_DIALOGS), 0);
 		if (dtree)
 		{
 			if ((dwt = new_widget_tree(client, dtree)))
+			{
 				dwt->flags |= WTF_AUTOFREE | WTF_TREE_ALLOC;
+				dwt->links++;
+			}
+			else goto fail;
 		}
 
 		if (mwt && dwt)
 		{
-			mwt->links++;
-			dwt->links++;
-			
 			pdlg->handle = (void *)((unsigned long)pdlg >> 16 | (unsigned long)pdlg << 16);
 			pdlg->wind = wind;
 			pdlg->dwt = dwt;
@@ -157,13 +164,40 @@ create_new_pdlg(struct xa_client *client, struct xa_window *wind)
 						 NULL, click_list, NULL, NULL,	/* scrl_click dclick, click, click_nesticon, keybd */
 						 NULL, NULL, NULL, NULL,
 						 NULL, NULL, pdlg, 1);
-
+			if (!list)
+				goto fail;
+			
 			pdlg->list = list;
 
 			read_prn_settings(pdlg, &pdlg->current_settings);
+			
+			add_xa_data(&client->xa_data, pdlg, NULL, delete_pdlg_info);
 		}
 		else
-			fail = true;
+		{
+fail:
+			if (mwt)
+			{
+				mwt->links--;
+				remove_wt(mwt, false);
+			}
+			else if (mtree)
+				free_object_tree(client, mtree);
+			
+			if (dwt)
+			{
+				dwt->links--;
+				remove_wt(dwt, false);
+			}
+			else if (dtree)
+				free_object_tree(client, dtree);		
+
+			if (pdlg)
+			{
+				kfree(pdlg);
+				pdlg = NULL;
+			}
+		}
 	}
 	return pdlg;
 }
@@ -178,7 +212,7 @@ XA_pdlg_create(enum locks lock, struct xa_client *client, AESPB *pb)
 	RECT r, or;
 
 	DIAG((D_pdlg, client, "XA_pdlg_create"));
-	pb->intout[0] = 0;
+	display("XA_pbdl_create: %s", client->name);
 	pb->addrout[0] = 0L;
 
 	obtree = ResourceTree(C.Aes_rsc, WDLG_PDLG);
@@ -210,8 +244,7 @@ XA_pdlg_create(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	pb->addrout[0] = (long)pdlg->handle;
 
-	pb->intout[0] = 1;
-
+	display(" -- exit");
 	return XAC_DONE;
 
 memerr:
@@ -226,6 +259,7 @@ memerr:
 	if (pdlg)
 		kfree(pdlg);
 	
+	display(" -- exit error");
 	return XAC_DONE;
 
 }
@@ -237,6 +271,7 @@ XA_pdlg_delete(enum locks lock, struct xa_client *client, AESPB *pb)
 	struct xa_window *wind;
 
 	DIAG((D_pdlg, client, "XA_pdlg_delete"));
+	display("XA_pdlg_delete: %s", client->name);
 	
 	pb->intout[0] = 0;
 
@@ -251,6 +286,7 @@ XA_pdlg_delete(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		pb->intout[0] = 1;
 	}
+	display(" -- exit %d", pb->intout[0]);
 	return XAC_DONE;
 }
 
@@ -267,6 +303,7 @@ XA_pdlg_open(enum locks lock, struct xa_client *client, AESPB *pb)
 	struct xa_window *wind;
 
 	DIAG((D_pdlg, client, "XA_pdlg_open"));
+	display("XA_pdlg_open: %s", client->name);
 	
 	pb->intout[0] = 0;
 
@@ -275,12 +312,16 @@ XA_pdlg_open(enum locks lock, struct xa_client *client, AESPB *pb)
 	{
 		if (!(wind->window_status & XAWS_OPEN))
 		{
+			struct xa_widget *widg = get_widget(wind, XAW_TOOLBAR);
 			struct widget_tree *wt = pdlg->mwt;
 			RECT r = wind->wa;
 			XA_WIND_ATTR tp = wind->active_widgets | MOVER|NAME;
 		
-			set_toolbar_handlers(&wdlg_th, wind, get_widget(wind, XAW_TOOLBAR), get_widget(wind, XAW_TOOLBAR)->stuff);
-			
+			widg->m.properties |= WIP_NOTEXT;
+			set_toolbar_handlers(&wdlg_th, wind, widg, widg->stuff);
+
+			obj_init_focus(wt, OB_IF_RESET);
+
 			if (pb->intin[1] == -1 || pb->intin[2] == -1)
 			{
 				r.x = (root_window->wa.w - r.w) / 2;
@@ -315,6 +356,7 @@ XA_pdlg_open(enum locks lock, struct xa_client *client, AESPB *pb)
 		}
 		pb->intout[0] = wind->handle;
 	}
+	display(" -- exit %d", pb->intout[0]);
 	return XAC_DONE;
 }
 
@@ -325,7 +367,7 @@ XA_pdlg_close(enum locks lock, struct xa_client *client, AESPB *pb)
 	struct xa_window *wind;
 
 	DIAG((D_pdlg, client, "XA_pdlg_close"));
-	
+	display("XA_pdlg_close: %s", client->name);
 	pb->intout[0] = 0;
 
 	pdlg = (struct xa_pdlg_info *)((unsigned long)pb->addrin[0] >> 16 | (unsigned long)pb->addrin[0] << 16);
@@ -336,13 +378,18 @@ XA_pdlg_close(enum locks lock, struct xa_client *client, AESPB *pb)
 		pb->intout[2] = pdlg->mwt->tree->ob_y;
 		close_window(lock, wind);			
 	}
+	display(" -- exit %d", pb->intout[0]);
 	return XAC_DONE;
 }
 
 unsigned long
 XA_pdlg_get(enum locks lock, struct xa_client *client, AESPB *pb)
 {
+	long *o = (long *)&pb->intout[0];
+	
 	DIAG((D_pdlg, client, "XA_pdlg_get"));
+	
+	display("XA_pdlg_get: %d %s", pb->intin[0], client->name);
 
 	pb->intout[0] = 1;
 
@@ -350,14 +397,15 @@ XA_pdlg_get(enum locks lock, struct xa_client *client, AESPB *pb)
 	{
 		case 0:		/* pdlg_get_setsize */
 		{
-			*(long *)&pb->intout[0] = sizeof(PRN_SETTINGS);
+			*o = sizeof(PRN_SETTINGS);
 			break;
 		}
 		default:
 		{
-			*(long *)&pb->intout[0] = 0L;
+			*o = 0L;
 		}
-	}	
+	}
+	display(" -- exit %x/%x", pb->intout[0], pb->intout[1]);	
 	return XAC_DONE;
 }
 
@@ -366,10 +414,11 @@ XA_pdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	struct xa_pdlg_info *pdlg;
 	struct xa_window *wind;
+	short ret = -1;
 
 	DIAG((D_pdlg, client, "XA_pdlg_set"));
 
-	pb->intout[0] = 1;
+	display("XA_pdlg_set: %d %s", pb->intin[0], client->name);
 	
 	pdlg = (struct xa_pdlg_info *)((unsigned long)pb->addrin[0] >> 16 | (unsigned long)pb->addrin[0] << 16);
 	if (pdlg && (wind = get_pdlg_wind(client, pdlg)))
@@ -399,14 +448,58 @@ XA_pdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			}
 			case 5:		/* pdlg_new_settings	*/
 			{
+				struct xa_usr_prn_settings *us;
+				PRN_SETTINGS *new;
+				
+				us = kmalloc(sizeof(*us));
+				new = umalloc(sizeof(*new));
+				if (us && new)
+				{
+					us->next = pdlg->user_settings;
+					pdlg->user_settings = us;
+					us->flags = 1;
+					us->settings = new;
+					memcpy(new, &pdlg->current_settings, sizeof(PRN_SETTINGS));
+				}
+				else if (us)
+				{
+					kfree(us);
+					us = NULL;
+				}
+				else if (new)
+				{
+					ufree(new);
+					new = NULL;
+				}
+				pb->addrout[0] = (long)new;
 				break;
 			}
 			case 6:		/* pdlg_free_settings	*/
 			{
+				struct xa_usr_prn_settings **us = &pdlg->user_settings;
+				PRN_SETTINGS *s = (PRN_SETTINGS *)pb->addrin[0];
+				
+				ret = 0;
+				
+				while (*us)
+				{
+					if ((*us)->settings == s)
+						break;
+					us = &((*us)->next);
+				}
+				if (*us)
+				{
+					struct xa_usr_prn_settings *u = *us;
+					*us = (*us)->next;
+					ufree(u->settings);
+					kfree(u);
+					ret = 1;
+				}
 				break;
 			}
 			case 7:		/* pdlg_dflt_settings	*/
 			{
+				memcpy((char *)pb->addrin[0], &pdlg->current_settings, sizeof(PRN_SETTINGS));
 				break;
 			}
 			case 8:		/* pdlg_validate_settings */
@@ -419,11 +512,15 @@ XA_pdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			}
 			default:
 			{
-				pb->intout[0] = 0;
 				break;
 			}
 		}
 	}
+	
+	if (ret != -1)
+		pb->intout[0] = ret;
+
+	display(" -- exit %d", pb->intout[0]);
 	return XAC_DONE;
 }
 
@@ -432,6 +529,9 @@ check_internal_objects(struct xa_pdlg_info *pdlg, short obj)
 {
 	OBJECT *obtree = pdlg->mwt->tree;
 	int ret = 0;
+
+	if (obtree)
+		obtree = NULL;
 
 	/* return 1 if internal button, 0 otherwise */
 	return ret;
@@ -445,6 +545,7 @@ XA_pdlg_evnt(enum locks lock, struct xa_client *client, AESPB *pb)
 	short ret = 0;
 
 	DIAG((D_pdlg, client, "XA_pdlg_evnt"));
+	display("XA_pdlg_evnt: %s", client->name);
 
 	pdlg = (struct xa_pdlg_info *)((unsigned long)pb->addrin[0] >> 16 | (unsigned long)pb->addrin[0] << 16);
 	if (pdlg && (wind = get_pdlg_wind(client, pdlg)))
@@ -470,8 +571,11 @@ XA_pdlg_evnt(enum locks lock, struct xa_client *client, AESPB *pb)
 		else
 		{
 			if (wep.obj > 0 && (obtree[wep.obj].ob_state & OS_SELECTED))
+			{
 				obj_change(pdlg->mwt, wind->vdi_settings, wep.obj, -1, obtree[wep.obj].ob_state & ~OS_SELECTED, obtree[wep.obj].ob_flags, true, &wind->wa, wind->rect_list.start, 0);
-
+				ret = 0;
+				wep.obj = 0;
+			}
 			/* prepare return stuff here */
 		}
 		pb->intout[1] = wep.obj;
@@ -481,6 +585,8 @@ XA_pdlg_evnt(enum locks lock, struct xa_client *client, AESPB *pb)
 	DIAG((D_pdlg, client, " --- return %d, obj=%d",
 		pb->intout[0], pb->intout[1]));
 	
+	display(" -- exit %d obj %d", pb->intout[0], pb->intout[1]);
+
 	return XAC_DONE;
 }
 static FormKeyInput	Keypress;
@@ -491,7 +597,8 @@ Keypress(enum locks lock,
 	 struct xa_client *client,
 	 struct xa_window *wind,
 	 struct widget_tree *wt,
-	 const struct rawkey *key)
+	 const struct rawkey *key,
+	 struct fmd_result *ret_fr)
 {
 	bool no_exit;
 
@@ -529,7 +636,6 @@ static struct toolbar_handlers pdlg_th =
 
 	NULL,			/* DisplayWidget	*display;	*/
 	NULL,			/* WidgetBehaviour	*click;		*/
-	NULL,			/* WidgetBehaviour	*dclick;	*/
 	NULL,			/* WidgetBehaviour	*drag;		*/
 	NULL,			/* WidgetBehaviour	*release;	*/
 	NULL,			/* void (*destruct)(struct xa_widget *w); */
