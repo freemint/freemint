@@ -53,6 +53,7 @@ u8copy (void *dst, const void *src, long len)
 	const uchar *_src = src;
 
 	if ((((long)dst ^ (long)src) & 1) == 0) {
+		ulong *d; const ulong *s;
 		/*
 		 * both pointers are either aligned or unaligned,
 		 * so we can use long copy's
@@ -61,9 +62,8 @@ u8copy (void *dst, const void *src, long len)
 			*_dst++ = *_src++ ^ 0x80;
 			--len;
 		}
-		for ( ; len >= 4; len -= 4) {
-			*((ulong *)_dst)++ =
-				*((const ulong *)_src)++ ^ 0x80808080L;
+		for (d = (ulong *)_dst, s = (const ulong *)_src; len >= 4; len -= 4) {
+			*d++ = *s++ ^ 0x80808080L;
 		}
 	}
 	while (--len >= 0)
@@ -99,6 +99,7 @@ u16copy (void *dst, const void *src, long len)
 	const ushort *_src = src;
 
 	if ((((long)dst ^ (long)src) & 1) == 0) {
+		ulong *d; const ulong *s;
 		/*
 		 * both pointers are either aligned or unaligned,
 		 * so we can use long copy's
@@ -107,9 +108,8 @@ u16copy (void *dst, const void *src, long len)
 			*_dst++ = *_src++ ^ 0x8000;
 			len -= 2;
 		}
-		for ( ; len >= 4; len -= 4) {
-			*((ulong *)_dst)++ =
-				*((const ulong *)_src)++ ^ 0x80008000L;
+		for (d = (ulong *)_dst, s = (const ulong *)_src; len >= 4; len -= 4) {
+			*d++ = *s++ ^ 0x80008000L;
 		}
 	}
 	while ((len -= 2) >= 0)
