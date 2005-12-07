@@ -3681,7 +3681,7 @@ set_slist_object(enum locks lock,
 		return NULL;
 	}
 	
-	(long)nil_wt = (long)list + sizeof(*list);
+	nil_wt = (struct widget_tree *)((char *)list + sizeof(*list));
 
 	bzero(list, sizeof(*list) + sizeof(*nil_wt));
 

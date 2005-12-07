@@ -843,7 +843,7 @@ XA_menu_settings(enum locks lock, struct xa_client *client, AESPB *pb)
 	{
 		case 0:
 		{
-			MN_SET *mn = (MN_SET*)pb->addrin[0];
+			MN_SET *mn = (MN_SET *)pb->addrin[0];
 			*mn = *(MN_SET *)&cfg.mn_set;
 			break;
 		}
@@ -851,7 +851,7 @@ XA_menu_settings(enum locks lock, struct xa_client *client, AESPB *pb)
 		{
 			MN_SET *mn = (MN_SET *)pb->addrin[0];
 			
-			*(MN_SET *)&cfg.mn_set = *mn;
+ 			*(MN_SET *)&cfg.mn_set = *mn;
 			cfg.popup_timeout = cfg.mn_set.display;
 			cfg.popout_timeout = cfg.mn_set.drag;
 			break;
