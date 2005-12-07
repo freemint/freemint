@@ -382,23 +382,24 @@ module_init(void *initfunc, struct kerinfo *k)
 static void *	 
 module_init(void *initfunc, struct kerinfo *k)
 {
-	register void *ret __asm__("d0");	 
+	register void *ret __asm__("d0");
 
-	__asm__ volatile	 
-	(	 
-		"moveml	d3-d7/a3-a6,sp@-;"	 
-		"movl	%2,sp@-;"	 
-		"movl	%1,a0;"	 
-		"jsr	a0@;"	 
-		"addqw	#4,sp;"	 
-		"moveml	sp@+,d3-d7/a3-a6;"	 
-		: "=r"(ret)				/* outputs */	 
-		: "g"(initfunc), "r"(k)			/* inputs  */	 
-		: "d0", "d1", "d2", "a0", "a1", "a2",	/* clobbered regs */	 
-		"memory"	 
-	);	 
-	
-	return ret;	 
+	__asm__ volatile
+	(
+		"moveml	d3-d7/a3-a6,sp@-;"
+		"movl	%2,sp@-;"
+		"movl	%1,a0;"
+		"jsr	a0@;"
+		"addqw	#4,sp;"
+		"moveml	sp@+,d3-d7/a3-a6;"
+		: "=r"(ret)				/* outputs */
+		: "g"(initfunc), "r"(k)			/* inputs  */
+		: __CLOBBER_RETURN("d0")
+		  "d1", "d2", "a0", "a1", "a2",		/* clobbered regs */
+		  "memory"
+	);
+
+	return ret;
 }
 #endif
 
