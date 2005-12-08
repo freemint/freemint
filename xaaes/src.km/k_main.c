@@ -483,9 +483,9 @@ Unblock(struct xa_client *client, unsigned long value, int which)
 	DIAG((D_kern,client,"[%d]Unblocked %s 0x%lx", which, c_owner(client), value));
 }
 
-static vdi_vec *svmotv = NULL;
-static vdi_vec *svbutv = NULL;
-static vdi_vec *svwhlv = NULL;
+static void *svmotv = NULL;
+static void *svbutv = NULL;
+static void *svwhlv = NULL;
 
 /*
  * initialise the mouse device
@@ -535,12 +535,12 @@ init_moose(void)
 			aerr = adi_ioctl(G.adi_mouse, MOOSE_READVECS, (long)&vecs);
 			if (aerr == 0 && vecs.motv)
 			{
-				vex_motv(C.P_handle, vecs.motv, (void **)(&svmotv));
-				vex_butv(C.P_handle, vecs.butv, (void **)(&svbutv));
+				vex_motv(C.P_handle, vecs.motv, &svmotv);
+				vex_butv(C.P_handle, vecs.butv, &svbutv);
 
 				if (vecs.whlv)
 				{
-					vex_wheelv(C.P_handle, vecs.whlv, (void **)(&svwhlv));
+					vex_wheelv(C.P_handle, vecs.whlv, &svwhlv);
 					DIAGS(("Wheel support present"));
 					//display("Wheel support present");
 				}
