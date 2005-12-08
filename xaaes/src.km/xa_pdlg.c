@@ -79,10 +79,11 @@ xv_create_driver_info(XVDIPB *vpb, short handle, short id)
 		d = (*(DRV_INFO **)&vpb->intout[0]);
 	return d;
 }
-
+	
 static short
 xv_delete_driver_info(XVDIPB *vpb, short handle, DRV_INFO *d)
 {
+	ptr_to_array(d, pb->intin);
 	*(DRV_INFO**)&vpb->intin[0] = d;
 	VDI(vpb, 181, 0, 2, 0, handle);
 	return vpb->intout[0];
