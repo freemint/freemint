@@ -1232,7 +1232,7 @@ nxt_mres(short item, void **data)
 
 	planes = idx2planes[p->current[1]];
 
-	modes = (struct videodef *)p->misc[2]; //(long)modes = p->misc[2];
+	modes = (struct videodef *)p->misc[2];
 	num_modes = p->misc[3];
 
 	while (num_modes > 0)
@@ -1241,7 +1241,6 @@ nxt_mres(short item, void **data)
 		{
 			struct resinf *r = p->resinf[p->current[1]];
 			
-// 			(struct milres_parm *)p->misc[2] = modes + 1;
 			p->misc[2] = (long)(modes + 1);
 			p->misc[3] = num_modes - 1;
 			r[item].id = modes->devid;
@@ -1313,21 +1312,21 @@ check_milan_res(struct xa_client *client, short mw)
 {
 	int i, j;
 	short currmode = 0;
-	struct videodef *modes;
 	struct milres_parm *p = NULL;
-	long num_modes;
+	long num_modes, ret;
 
-	num_modes = mvdi_device(0, 0, DEVICE_GETDEVICE, (long *)&modes);
-	
+	num_modes = mvdi_device(0, 0, DEVICE_GETDEVICE, &ret);
+
 	if (num_modes >= 0)
 	{
-		currmode = modes->devid;
+		currmode = ((struct videodef *)ret)->devid;
 	}
 	
-	num_modes = mvdi_device(0, 0, DEVICE_GETDEVICELIST, (long *)&modes);
+	num_modes = mvdi_device(0, 0, DEVICE_GETDEVICELIST, &ret);
 
 	if (num_modes > 0)
 	{
+		struct videodef *modes = (struct videodef *)ret;
 		short depths = 0, devids = 0;
 		OBJECT *obtree;
 		short count[8];
@@ -1360,7 +1359,6 @@ check_milan_res(struct xa_client *client, short mw)
 			bzero(p, sizeof(*p));
 
 			p->curr_devid = currmode;
-// 			(long)r = (long)p + sizeof(*p);
 			r = (struct resinf *)((char *)p + sizeof(*p));
 			for (i = 0; i < 8; i++)
 			{
