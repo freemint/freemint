@@ -78,8 +78,8 @@
 /****************************************************************************/
 /* BEGIN kernel interface */
 
-static struct kentry	*kentry;
-static struct adiinfo	*ainf;
+struct kentry	*kentry;
+struct adiinfo	*ainf;
 
 /* END kernel interface */
 /****************************************************************************/
