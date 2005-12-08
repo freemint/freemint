@@ -748,7 +748,7 @@ XA_shel_write(enum locks lock, struct xa_client *client, AESPB *pb)
 //	display("shel_write(0x%x,%d,%d) for %s",
 //		wdoex, wisgr, wiscr, client ? client->name : "no client");
 	
-	if ((wdoex & 0xff) < 4)
+	if ((wdoex & 0xff) < SWM_SHUTDOWN) /* SWM_LANUCH, SWM_LAUNCHNOW or SWM_LAUNCACC */
 	{
 		Sema_Up(envstr);
 
@@ -777,7 +777,7 @@ XA_shel_write(enum locks lock, struct xa_client *client, AESPB *pb)
 		switch (wdoex)
 		{
 			/* shutdown system */
-			case 4:
+			case SWM_SHUTDOWN:
 			{
 				DIAGS(("shutown by shel_write(4, %d,%d)", wiscr, wisgr));
 
@@ -818,7 +818,7 @@ XA_shel_write(enum locks lock, struct xa_client *client, AESPB *pb)
 			}
 
 			/* resolution change */
-			case 5:
+			case SWM_REZCHANGE:
 				break;
 
 			/* undefined */
@@ -826,7 +826,7 @@ XA_shel_write(enum locks lock, struct xa_client *client, AESPB *pb)
 				break;
 
 			/* broadcast message */
-			case 7:	
+			case SWM_BROADCAST:	
 			{
 				struct xa_client *cl;
 
@@ -844,25 +844,25 @@ XA_shel_write(enum locks lock, struct xa_client *client, AESPB *pb)
 			}
 
 			/* Manipulate AES environment */
-			case 8:
+			case SWM_ENVIRON:
 			{
 				switch (wisgr)
 				{
-					case 0:
+					case ENVIRON_SIZE:
 					{
 						long ct = count_env(strings, NULL);
 						DIAG((D_shel, 0, "XA_shell_write(wdoex 8, wisgr 0) -- count = %d", ct));
 						pb->intout[0] = ct;
 						break;
 					}
-					case 1:
+					case ENVIRON_CHANGE:
 					{
 						DIAGS(("XA_shell_write(wdoex 8, wisgr 1)"));
 						DIAGS(("-> env add '%s'", cmd));
 						pb->intout[0] = put_env(lock, cmd);
 						break;
 					}
-					case 2:
+					case ENVIRON_COPY:
 					{
 						long ct = count_env(strings, NULL);
 						long ret;
@@ -880,7 +880,7 @@ XA_shel_write(enum locks lock, struct xa_client *client, AESPB *pb)
 			}
 
 			/* notify that app understands AP_TERM */
-			case 9:
+			case SWM_NEWMSG:
 			{
 				if (client)
 				{
@@ -891,14 +891,14 @@ XA_shel_write(enum locks lock, struct xa_client *client, AESPB *pb)
 			}
 
 			/* Send a msg to the AES  */
-			case 10:
+			case SWM_AESMSG:
 			{
 				pb->intout[0] = 1;
 				break;
 			}
 
 			/* create new thread */
-			case 20:
+			case SWM_THRCREATE:
 			{
 			#if 0
 			#endif

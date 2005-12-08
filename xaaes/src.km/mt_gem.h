@@ -393,34 +393,34 @@ typedef  struct
 
 
 /* shel_write modes */
-#define SWM_LAUNCH			0
+#define SWM_LAUNCH		0
 #define SWM_LAUNCHNOW		1
 #define SWM_LAUNCHACC		3
 #define SWM_SHUTDOWN		4
 #define SWM_REZCHANGE		5
 #define SWM_BROADCAST		7
-#define SWM_ENVIRON			8
-#define SWM_NEWMSG			9
-#define SWM_AESMSG			10
+#define SWM_ENVIRON		8
+#define SWM_NEWMSG		9
+#define SWM_AESMSG		10
 #define SWM_THRCREATE		20
 
 /* other names for shel_write modes */
-#define SHW_NOEXEC			SWM_LAUNCH
-#define SHW_EXEC			SWM_LAUNCHNOW
+#define SHW_NOEXEC		SWM_LAUNCH
+#define SHW_EXEC		SWM_LAUNCHNOW
 #define SHW_EXEC_ACC		SWM_LAUNCHACC
 #define SHW_SHUTDOWN		SWM_SHUTDOWN
-#define SHW_RESCHNG			SWM_REZCHANGE
+#define SHW_RESCHNG		SWM_REZCHANGE
 #define SHW_BROADCAST		SWM_BROADCAST
 #define SHW_INFRECGN		SWM_NEWMSG
-#define SHW_AESSEND			SWM_AESMSG
+#define SHW_AESSEND		SWM_AESMSG
 #define SHW_THR_CREATE		SWM_THRCREATE
 
 /* shel_write */
-#define SHW_IMMED			0	/* PC-GEM  2.x */
-#define SHW_CHAIN			1	/* TOS */
-#define SHW_DOS				2	/* PC-GEM  2.x */
+#define SHW_IMMED		0	/* PC-GEM  2.x */
+#define SHW_CHAIN		1	/* TOS */
+#define SHW_DOS			2	/* PC-GEM  2.x */
 #define SHW_PARALLEL		100	/* MAG!X */
-#define SHW_SINGLE			101	/* MAG!X */
+#define SHW_SINGLE		101	/* MAG!X */
 
 /* command line parser (shel_write: parameter "isover") */
 #define CL_NORMAL		0
