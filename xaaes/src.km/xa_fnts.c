@@ -648,7 +648,7 @@ set_points_list(struct xa_fnts_info *fnts, struct xa_fnts_item *f)
 			sc.data = f;
 			sprintf(b, sizeof(b), "%d", f->f.pts[i]);
 			DIAGS(("set_point_list: add '%s'", b));
-			list->add(list, NULL, NULL, &sc, false, SETYP_AMAL, false);
+			list->add(list, NULL, NULL, &sc, false, 0, false);
 		}
 	}
 	
@@ -903,7 +903,7 @@ create_new_fnts(enum locks lock,
 		 * All structures attached here must have xa_data_hdr structure
 		 * as its first element for the xa_data_xx() functions to work on.
 		 */
-		add_xa_data(&client->xa_data, fnts, NULL, delete_fnts_info);
+		add_xa_data(&client->xa_data, fnts, 0, NULL, delete_fnts_info);
 
 		fnts->wind		= wind;
 		fnts->vdi_settings	= wind->vdi_settings;

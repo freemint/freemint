@@ -635,13 +635,14 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				ir = NULL;
 			else
 			{
-				ir = (RECT *)&pb->intin[2];
 				move = true;
 				if (cmd == WF_WORKXYWH && !(w->opts & XAWO_WCOWORK))
 				{
-					r = w2f(&w->delta, ir, true);
-					ir = &r;
+					r = w2f(&w->delta, (const RECT *)(pb->intin + 2), true);
 				}
+				else
+					r = *(const RECT *)(pb->intin + 2);
+				ir = &r;
 			}
 			
 			DIAGS(("wind_set: WF_CURRXYWH - (%d/%d/%d/%d) blit=%s, ir=%lx",

@@ -1141,7 +1141,7 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 					sc.t.strings = 5;
 					sc.data = x;
 					sc.data_destruct = destroy_xattr;
-					list->add(list, dir_ent, sorters[fs->sort], &sc, dir_ent ? SEADD_PRIOR|SEADD_CHILD : SEADD_PRIOR, SETYP_AMAL, fs->rtbuild ? NORMREDRAW : NOREDRAW);
+					list->add(list, dir_ent, sorters[fs->sort], &sc, dir_ent ? SEADD_PRIOR|SEADD_CHILD : SEADD_PRIOR, 0, fs->rtbuild ? NORMREDRAW : NOREDRAW);
 				}
 			}
 			d_closedir(i);
