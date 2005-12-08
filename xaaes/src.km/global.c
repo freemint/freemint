@@ -27,17 +27,6 @@
 #include "global.h"
 #include "debug.h"
 
-inline void *
-ptr_from_shorts(short hi, short lo)
-{
-	union { short word[2]; void *ptr; } p;
-
-	p.word[0] = hi;
-	p.word[1] = lo;
-
-	return p.ptr;
-}
-
 /*
  * memory allocation for private XaAES memory
  * 
