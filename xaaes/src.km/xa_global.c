@@ -145,7 +145,7 @@ lookup_xa_data_byidname(struct xa_data_hdr **list, long id, char *name)
 }
 
 void
-add_xa_data(struct xa_data_hdr **list, void *_data, char *name, void (*destruct)(void *d))
+add_xa_data(struct xa_data_hdr **list, void *_data, long id, char *name, void (*destruct)(void *d))
 {
 	int i;
 	struct xa_data_hdr *data = _data;
@@ -169,6 +169,7 @@ add_xa_data(struct xa_data_hdr **list, void *_data, char *name, void (*destruct)
 			data->name[i] = '\0';
 	}
 	data->name[15] = '\0';
+	data->id = id;
 	data->destruct = destruct;
 }
 
@@ -249,24 +250,24 @@ do_vdi_trap (XVDIPB * vpb)
 {
 	__asm__ volatile
 	(
-		"movea.l	%0,a0\n\t"	/* &vdipb */
-		"move.l		a0,d1\n\t"
-		"move.w		#115,d0\n\t"	/* 0x0073 */
-		"trap		#2"
+		"movea.l	%0,a0\n\t" 	\
+		"move.l		a0,d1\n\t"	\
+		"move.w		#115,d0\n\t"	\
+		"trap		#2\n\t"		\
 		:
-		: "a"(vpb)
-		: "a0", "d0", "d1", "memory"
+		: "a"(vpb)			
+		: "a0", "d0", "d1", "memory"	
 	);
 }
 
 void
 VDI(XVDIPB *vpb, short c0, short c1, short c3, short c5, short c6)
 {
-	vpb->control[0] = c0;
-	vpb->control[1] = c1;
-	vpb->control[3] = c3;
-	vpb->control[5] = c5;
-	vpb->control[6] = c6;
+	vpb->control[V_OPCODE   ] = c0;
+	vpb->control[V_N_PTSIN  ] = c1;
+	vpb->control[V_N_INTIN  ] = c3;
+	vpb->control[V_SUBOPCODE] = c5;
+	vpb->control[V_HANDLE   ] = c6;
 
 	do_vdi_trap(vpb);
 }

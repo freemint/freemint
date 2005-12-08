@@ -600,8 +600,8 @@ multi_intout(struct xa_client *client, short *o, int evnt)
 
 struct display_alert_data
 {
-	char *buf;
 	enum locks lock;
+	char buf[0];
 };
 
 static void display_alert(struct proc *p, long arg);
@@ -679,7 +679,7 @@ alert_input(enum locks lock)
 		OBJECT *form, *icon;
 		char c;
 
-		data = kmalloc(sizeof(*data));
+		data = kmalloc(sizeof(*data) + n + 4);
 		if (!data)
 		{
 			DIAGS(("kmalloc(%i) failed, out of memory?", sizeof(*data)));
@@ -687,15 +687,6 @@ alert_input(enum locks lock)
 		}
 
 		data->lock = lock;
-		data->buf = kmalloc(n+4);
-		if (!data->buf)
-		{
-			kfree(data);
-
-			DIAGS(("kmalloc(%i) failed, out of memory?", n+4));
-			return;
-		}
-
 		f_read(C.alert_pipe, n, data->buf);
 
 		/* Pretty up the log entry with a nice
@@ -739,7 +730,7 @@ alert_input(enum locks lock)
 			p.idx = -1;
 			p.arg.txt = "Alerts";
 			list->get(list, NULL, SEGET_ENTRYBYTEXT, &p);
-			list->add(list, p.e, NULL, &sc, p.e ? SEADD_CHILD: 0, SETYP_MAL, true);
+			list->add(list, p.e, NULL, &sc, p.e ? SEADD_CHILD: 0, 0, true);
 		}
 
 		 /* Now you can always lookup the error in the log. */

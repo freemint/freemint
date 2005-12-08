@@ -66,6 +66,71 @@
 
 extern struct toolbar_handlers wdlg_th;
 
+static DRV_INFO *
+xv_create_driver_info(XVDIPB *vpb, short handle, short id)
+{
+	DRV_INFO *d = NULL;
+
+	vpb->intin[0] = id;
+	vpb->control[V_N_PTSOUT] = 0;
+	vpb->control[V_N_INTOUT] = 0;
+	VDI(vpb, 180, 0, 1, 0, handle);
+	if (vpb->control[V_N_INTOUT] >= 2)
+		d = (*(DRV_INFO **)&vpb->intout[0]);
+	return d;
+}
+
+static short
+xv_delete_driver_info(XVDIPB *vpb, short handle, DRV_INFO *d)
+{
+	*(DRV_INFO**)&vpb->intin[0] = d;
+	VDI(vpb, 181, 0, 2, 0, handle);
+	return vpb->intout[0];
+}
+
+static short
+xv_read_default_settings(XVDIPB *vpb, short handle, PRN_SETTINGS *p)
+{
+	*(PRN_SETTINGS **)&vpb->intin[0] = p;
+	vpb->control[V_N_PTSOUT] = 0;
+	vpb->control[V_N_INTOUT] = 0;
+	VDI(vpb, 182, 0, 2, 0, handle);
+	if (vpb->control[V_N_INTOUT] >= 1)
+		return vpb->intout[0];
+	return 0;
+}
+
+static short
+xv_write_default_settings(XVDIPB *vpb, short handle, PRN_SETTINGS *p)
+{
+	*(PRN_SETTINGS **)&vpb->intin[0] = p;
+	vpb->control[V_N_PTSOUT] = 0;
+	vpb->control[V_N_INTOUT] = 0;
+	VDI(vpb, 182, 0, 2, 1, handle);
+	if (vpb->control[V_N_INTOUT] >= 1)
+		return vpb->intout[0];
+	return 0;
+}
+
+static short
+xvq_devinfo(XVDIPB *vpb, short handle, short dev_id)
+{
+	vpb->intin[0] = dev_id;
+	VDI(vpb, 248, 0, 1, 0, handle);
+	return vpb->intout[0];
+}
+
+static short
+xvq_ext_devinfo(XVDIPB *vpb, short handle, short id, char *path, char *fname, char *dname)
+{
+	vpb->intin[0] = id;
+	*(char **)&vpb->intin[1] = path;
+	*(char **)&vpb->intin[3] = fname;
+	*(char **)&vpb->intin[5] = dname;
+	VDI(vpb, 248, 0, 7, 4242, handle);
+	return vpb->intout[0];
+}
+
 static struct xa_window *
 get_pdlg_wind(struct xa_client *client, void *pdlg_ptr)
 {
@@ -76,6 +141,7 @@ get_pdlg_wind(struct xa_client *client, void *pdlg_ptr)
 	else
 		return NULL;
 }
+
 static void _cdecl
 delete_pdlg_info(void *_pdlg)
 {
@@ -108,6 +174,7 @@ click_list(SCROLL_INFO *list, SCROLL_ENTRY *this, const struct moose_data *md)
 static void
 read_prn_settings(struct xa_pdlg_info *pdlg, PRN_SETTINGS *s)
 {
+	
 }
 
 static struct xa_pdlg_info *
@@ -171,7 +238,7 @@ create_new_pdlg(struct xa_client *client, struct xa_window *wind)
 
 			read_prn_settings(pdlg, &pdlg->current_settings);
 			
-			add_xa_data(&client->xa_data, pdlg, NULL, delete_pdlg_info);
+			add_xa_data(&client->xa_data, pdlg, 0, NULL, delete_pdlg_info);
 		}
 		else
 		{
@@ -409,6 +476,23 @@ XA_pdlg_get(enum locks lock, struct xa_client *client, AESPB *pb)
 	return XAC_DONE;
 }
 
+/*
+ * Called by delete_xa_data()
+ */
+static void
+delete_usr_settings(void *_us)
+{
+	struct xa_usr_prn_settings *us = _us;
+
+	if (us->settings)
+	{
+		display("freeing usr_settings %lx", us->settings);
+		ufree(us->settings);
+	}
+	display("freeing usr_prn_settings %lx", us);
+	kfree(us);
+}
+
 unsigned long
 XA_pdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 {
@@ -455,11 +539,10 @@ XA_pdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				new = umalloc(sizeof(*new));
 				if (us && new)
 				{
-					us->next = pdlg->user_settings;
-					pdlg->user_settings = us;
 					us->flags = 1;
 					us->settings = new;
 					memcpy(new, &pdlg->current_settings, sizeof(PRN_SETTINGS));
+					add_xa_data(&client->xa_data, us, (long)new, "pdlg_usersett", delete_usr_settings);
 				}
 				else if (us)
 				{
@@ -476,30 +559,23 @@ XA_pdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			}
 			case 6:		/* pdlg_free_settings	*/
 			{
-				struct xa_usr_prn_settings **us = &pdlg->user_settings;
+				struct xa_usr_prn_settings *us;
 				PRN_SETTINGS *s = (PRN_SETTINGS *)pb->addrin[0];
 				
-				ret = 0;
+				us = lookup_xa_data_byid(&client->xa_data, (long)s);
 				
-				while (*us)
+				ret = 0;
+				if (us)
 				{
-					if ((*us)->settings == s)
-						break;
-					us = &((*us)->next);
-				}
-				if (*us)
-				{
-					struct xa_usr_prn_settings *u = *us;
-					*us = (*us)->next;
-					ufree(u->settings);
-					kfree(u);
+					delete_xa_data(&client->xa_data, us);
 					ret = 1;
 				}
+				
 				break;
 			}
 			case 7:		/* pdlg_dflt_settings	*/
 			{
-				memcpy((char *)pb->addrin[0], &pdlg->current_settings, sizeof(PRN_SETTINGS));
+				memcpy((char *)pb->addrin[1], &pdlg->current_settings, sizeof(PRN_SETTINGS));
 				break;
 			}
 			case 8:		/* pdlg_validate_settings */

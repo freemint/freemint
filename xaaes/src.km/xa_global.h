@@ -414,15 +414,6 @@ struct config
 /* Global config data */
 extern struct config cfg;
 
-typedef struct
-{
-	short	*control;	/**< TODO */
-	short	*intin;		/**< TODO */
-	short	*ptsin;		/**< TODO */
-	short	*intout;	/**< TODO */
-	short	*ptsout;	/**< TODO */
-} XVDIPB;
-
 /* The screen descriptor */
 extern struct xa_screen screen;
 extern struct xa_objc_render objc_rend;
@@ -457,7 +448,7 @@ void *	lookup_xa_data		(struct xa_data_hdr **l,    void *_data);
 void *	lookup_xa_data_byname	(struct xa_data_hdr **list, char *name);
 void *	lookup_xa_data_byid	(struct xa_data_hdr **list, long id);
 void *	lookup_xa_data_byidname	(struct xa_data_hdr **list, long id, char *name);
-void	add_xa_data		(struct xa_data_hdr **list, void *_data, char *name, void _cdecl(*destruct)(void *d));
+void	add_xa_data		(struct xa_data_hdr **list, void *_data, long id, char *name, void _cdecl(*destruct)(void *d));
 void	remove_xa_data		(struct xa_data_hdr **list, void *_data);
 void	delete_xa_data		(struct xa_data_hdr **list, void *_data);
 void	free_xa_data_list	(struct xa_data_hdr **list);
