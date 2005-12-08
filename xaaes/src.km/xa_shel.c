@@ -44,7 +44,8 @@
 #define STRINGS 1024 /* number of environment variable allowes in zaaes.cnf */
 static char *strings[STRINGS];
 
-char * const * const get_raw_env(void) { return strings; }
+//char * const * const get_raw_env(void) { return strings; }
+const char ** get_raw_env(void) { return (const char **)strings; }
 
 #if GENERATE_DIAGS
 static void display_env(char **env, int which);

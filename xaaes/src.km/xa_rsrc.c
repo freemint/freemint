@@ -626,7 +626,7 @@ fix_trees(struct xa_client *client, void *b, OBJECT **trees, unsigned long n, sh
 					DIAGS((" -- obj %d, type %x (n=%d, h=%d, t=%d)",
 						k, obj->ob_type, obj->ob_next, obj->ob_head, obj->ob_tail));
 					
-					c = (short *)&obj->ob_x;
+					c = (unsigned short *)&obj->ob_x;
 				
 					switch (obj->ob_type & 0xff)
 					{
@@ -775,7 +775,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 			hdr = kmalloc(sizeof(*hdr));
 			if (!hdr)
 			{
-				DIAGS((D_rsrc, client, "LoadResources(): kmalloc failed, out of memory?"));
+				DIAG((D_rsrc, client, "LoadResources(): kmalloc failed, out of memory?"));
 				kernel_close(f);
 				return NULL;
 			}
@@ -1168,7 +1168,7 @@ ResourceTree(RSHDR *hdr, long num)
 	if (num_nok(ntree))
 		return NULL;
 
-	start(trindex);
+	index = (OBJECT **)((char *)hdr + hdr->rsh_trindex);
 	return index[num];
 }
 
@@ -1181,7 +1181,7 @@ ResourceObject(RSHDR *hdr, int num)
 	if (num_nok(nobs))
 		return NULL;
 
-	start(object);
+	index = (OBJECT *)((char *)hdr + hdr->rsh_object);// 	start(object);
 	return index + num;
 }
 
@@ -1194,7 +1194,7 @@ ResourceTedinfo(RSHDR *hdr, int num)
 	if (num_nok(nted))
 		return NULL;
 
-	start(tedinfo);
+	index = (TEDINFO *)((char *)hdr + hdr->rsh_tedinfo); //start(tedinfo);
 	
 	index += num;
 	
@@ -1213,7 +1213,7 @@ ResourceIconblk(RSHDR *hdr, int num)
 	if (num_nok(nib))
 		return NULL;
 
-	start(iconblk);
+	index = (ICONBLK *)((char *)hdr + hdr->rsh_iconblk); //start(iconblk);
 	return index + num;
 }
 
@@ -1226,7 +1226,7 @@ ResourceBitblk(RSHDR *hdr, int num)
 	if (num_nok(nbb))
 		return NULL;
 
-	start(bitblk);
+	index = (BITBLK *)((char *)hdr + hdr->rsh_bitblk); //start(bitblk);
 	return index + num;
 }
 
@@ -1244,7 +1244,7 @@ ResourceString(RSHDR *hdr, int num)
 	if (num_nok(nstring))
 		return NULL;
 
-	start(frstr);
+	index = (char **)((char *)hdr + hdr->rsh_frstr); //start(frstr);
 
 //	DIAG((D_s, NULL, "Gaddr 5 %lx '%s'", index[num], index[num]));
 	return index[num];
@@ -1263,7 +1263,7 @@ ResourceImage(RSHDR *hdr, int num)
 	if (num_nok(nimages))
 		return NULL;
 
-	start(frimg);
+	index = (void **)((char *)hdr + hdr->rsh_frimg); //start(frimg);
 	return index[num];
 }
 
@@ -1275,7 +1275,7 @@ ResourceFrstr(RSHDR *hdr, int num)
 {
 	char **index;
 
-	start(frstr);
+	index = (char **)((char *)hdr + hdr->rsh_frstr); //start(frstr);
 
 //	DIAG((D_s, NULL, "Gaddr 15 %lx '%s'", index, *index));
 	return index + num;
@@ -1287,7 +1287,7 @@ ResourceFrimg(RSHDR *hdr, int num)
 {
 	void **index;
 
-	start(frimg);
+	index = (void **)((char *)hdr + hdr->rsh_frimg); //start(frimg);
 
 //	DIAG((D_s, NULL, "Gaddr 16 %lx", index));
 	return index + num;
@@ -1365,7 +1365,7 @@ XA_rsrc_load(enum locks lock, struct xa_client *client, AESPB *pb)
 	}
 
 
-	DIAGS(("ERROR: rsrc_load '%s' failed", pb->addrin[0] ? *(char *)&pb->addrin[0] : "~~"));
+	DIAGS(("ERROR: rsrc_load '%s' failed", (pb->addrin[0]) ? (const char *)pb->addrin[0] : "~~"));
 
 	pb->intout[0] = 0;
 	return XAC_DONE;

@@ -111,6 +111,23 @@ struct xa_ximg_head
 };
 typedef struct xa_ximg_head XA_XIMG_HEAD;
 
+#define V_OPCODE	0
+#define V_N_PTSIN	1
+#define V_N_PTSOUT	2
+#define V_N_INTIN	3
+#define V_N_INTOUT	4
+#define V_SUBOPCODE	5
+#define V_HANDLE	6
+
+typedef struct
+{
+	short	*control;	/**< TODO */
+	short	*intin;		/**< TODO */
+	short	*ptsin;		/**< TODO */
+	short	*intout;	/**< TODO */
+	short	*ptsout;	/**< TODO */
+} XVDIPB;
+
 struct xa_rsc_rgb
 {
 	short red;
@@ -724,7 +741,7 @@ struct wdlg_evnt_parms
 struct xa_usr_prn_settings;
 struct xa_usr_prn_settings
 {
-	struct xa_usr_prn_settings *next;
+	struct xa_data_hdr h;
 	unsigned long flags;
 	PRN_SETTINGS *settings;
 };
@@ -745,6 +762,8 @@ struct xa_pdlg_info
 	struct	widget_tree *mwt;
 	struct	widget_tree *dwt;
 	struct	scroll_info *list;
+	
+	XVDIPB	*vpb;
 
 	short	exit_button;
 	short	flags;
@@ -753,8 +772,6 @@ struct xa_pdlg_info
 
 	struct xa_pdrv_info *priv_drivers;
 	
-	struct xa_usr_prn_settings *user_settings;
-
 	PRN_SETTINGS *settings;
 	PRN_SETTINGS current_settings;
 	char document_name[256];
@@ -1177,7 +1194,7 @@ struct xa_module_api
 	void _cdecl	(*bclear)		(void *addr, unsigned long len);
 
 	void * _cdecl	(*lookup_xa_data)	(struct xa_data_hdr **l,    void *_data);
-	void _cdecl	(*add_xa_data)		(struct xa_data_hdr **list, void *_data, char *name, void _cdecl(*destruct)(void *d));
+	void _cdecl	(*add_xa_data)		(struct xa_data_hdr **list, void *_data, long id, char *name, void _cdecl(*destruct)(void *d));
 	void _cdecl	(*remove_xa_data)	(struct xa_data_hdr **list, void *_data);
 	void _cdecl	(*delete_xa_data)	(struct xa_data_hdr **list, void *_data);
 	void _cdecl	(*free_xa_data_list)	(struct xa_data_hdr **list);
@@ -1530,9 +1547,6 @@ struct scroll_info;
 /* Directory entry flags */
 enum scroll_entry_type
 {
-	SETYP_AMAL	= 0x0001,
-	SETYP_MAL	= 0x0002,
-
 	SETYP_STATIC	= 0x8000,
 
 };

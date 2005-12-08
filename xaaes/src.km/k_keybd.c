@@ -324,6 +324,7 @@ kernel_key(enum locks lock, struct rawkey *key)
 				goto otm;
 
 			client = NULL;
+			widg = NULL;
 
 			if (key->raw.conin.state & (K_RSHIFT|K_LSHIFT))
 			{

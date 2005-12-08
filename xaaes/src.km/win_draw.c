@@ -1903,7 +1903,7 @@ load_texture(struct module *m, char *fn)
 			(*api->load_img)(fn, &t->mfdb);
 			if (t->mfdb.fd_addr)
 			{
-				(*api->add_xa_data)(&m->allocs, t, NULL, delete_texture);
+				(*api->add_xa_data)(&m->allocs, t, 0, NULL, delete_texture);
 				t->t.flags = 0;
 				t->t.anchor = 0;
 				t->t.left = t->t.right = t->t.top = t->t.bottom = NULL;
@@ -2192,7 +2192,7 @@ new_theme(void *_module, short win_type, struct widget_theme **ret_theme)
 	if (new)
 	{
 		new->module = m;
-		(*api->add_xa_data)(&m->allocs, new, NULL, delete_theme);
+		(*api->add_xa_data)(&m->allocs, new, 0, NULL, delete_theme);
 		*ret_theme = new;
 	}
 	else
@@ -2239,8 +2239,8 @@ new_color_theme(void *_module, void **ontop, void **untop)
 		*new_ontop = MONO ? mono_def_otop_cols : def_otop_cols;
 		*new_untop = MONO ? mono_def_utop_cols : def_utop_cols;
 		
-		(*api->add_xa_data)(&m->allocs, new_ontop, NULL, delete_color_theme);
-		(*api->add_xa_data)(&m->allocs, new_untop, NULL, delete_color_theme);
+		(*api->add_xa_data)(&m->allocs, new_ontop, 0, NULL, delete_color_theme);
+		(*api->add_xa_data)(&m->allocs, new_untop, 0, NULL, delete_color_theme);
 
 		ret = 1L;
 	}

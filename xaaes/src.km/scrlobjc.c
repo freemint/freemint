@@ -1460,38 +1460,21 @@ new_setext(const char *t, OBJECT *icon, short type)
 	struct se_content *new = NULL;
 	short tblen, slen;
 
-
-	if (type & SETYP_AMAL)
-	{
-		slen = strlen(t);
-		tblen = slen < 44 ? 44 : slen + 1;
-		new = kmalloc(sizeof(*new) + tblen);
-		if (new)
-		{
-			bzero(new, sizeof(*new));
-			new->c.text.flags = SETEXT_TXTSTR;
-			new->c.text.text = new->c.text.txtstr;
-			strcpy(new->c.text.txtstr, t);
-			if (icon)
-				set_setext_icon(new, icon);
-		}
-	}
-	else
-	{
-		slen = strlen(t);
-		tblen = slen + 1;
-		new = kmalloc(sizeof(*new));
-		if (new)
-		{
-			bzero(new, sizeof(*new));
-			new->c.text.flags = 0;
-			new->c.text.text = t;
-			if (icon)
-				set_setext_icon(new, icon);
-		}
-	}
+	/* Ozk:
+	 * On second thought, lets always copy the text
+	 */
+	slen = strlen(t);
+	tblen = slen < 44 ? 44 : slen + 1;
+	new = kmalloc(sizeof(*new) + tblen);
 	if (new)
 	{
+		bzero(new, sizeof(*new));
+		new->c.text.flags = SETEXT_TXTSTR;
+		new->c.text.text = new->c.text.txtstr;
+		strcpy(new->c.text.txtstr, t);
+		if (icon)
+			set_setext_icon(new, icon);
+		
 		new->type = SECONTENT_TEXT;
 		new->next = NULL;
 		new->c.text.tblen = tblen;
@@ -1864,7 +1847,7 @@ m_state_done:
 						strcpy(setext->c.text.text, t->text);
 					else
 					{
-						struct se_content *new = new_setext(t->text, setext->c.text.icon.icon, SETYP_AMAL);
+						struct se_content *new = new_setext(t->text, setext->c.text.icon.icon, 0);
 						if (new)
 						{
 							delete_se_content(entry, setext, NULL, NULL);
@@ -1882,7 +1865,7 @@ m_state_done:
 				}
 				else
 				{
-					struct se_content *new = new_setext(t->text, NULL, SETYP_AMAL);
+					struct se_content *new = new_setext(t->text, NULL, 0);
 					if (new)
 					{
 						insert_se_content(entry, new, t->index);
@@ -2297,10 +2280,7 @@ add_scroll_entry(SCROLL_INFO *list,
 		/*
 		 * mem for the new entry...
 		 */
-		if (type & SETYP_AMAL)
-			new = kmalloc(sizeof(*new));
-		else
-			new = kmalloc(sizeof(*new));
+		new = kmalloc(sizeof(*new));
 	
 		if (!new)
 			return 0;
