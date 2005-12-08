@@ -180,9 +180,9 @@ api_lookup_xa_data(struct xa_data_hdr **l, void *data)
 }
 
 static void _cdecl
-api_add_xa_data(struct xa_data_hdr **list, void *data, char *name, void _cdecl(*destruct)(void *d))
+api_add_xa_data(struct xa_data_hdr **list, void *data, long id, char *name, void _cdecl(*destruct)(void *d))
 {
-	add_xa_data(list, data, name, destruct);
+	add_xa_data(list, data, id, name, destruct);
 }
 static void _cdecl
 api_remove_xa_data(struct xa_data_hdr **list, void *data)
@@ -861,11 +861,11 @@ init_helpthread(enum locks lock, struct xa_client *client)
 		sc.usr_flags = 1;
 		sc.xflags = OF_AUTO_OPEN;
 		DIAGS(("Add Alerts entry..."));
-		list->add(list, NULL, NULL, &sc, 0, (SETYP_AMAL|SETYP_STATIC), NOREDRAW);
+		list->add(list, NULL, NULL, &sc, 0, SETYP_STATIC, NOREDRAW);
 		sc.t.text = e;
 		sc.icon = obtree + SALERT_IC2;
 		DIAGS(("Add Environment entry..."));
-		list->add(list, NULL, NULL, &sc, 0, (SETYP_AMAL|SETYP_STATIC), NOREDRAW);
+		list->add(list, NULL, NULL, &sc, 0, SETYP_STATIC, NOREDRAW);
 	}
 
 	DIAGS(("setting up About text list"));

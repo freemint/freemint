@@ -2815,7 +2815,7 @@ menu_keyboard(Tab *tab, const struct rawkey *key)
 	if (tab)
 	{
 		short keycode = key->aes, nxt = -1, dir;
-		Tab *nxt_tab = NULL;
+// 		Tab *nxt_tab = NULL;
 		MENU_TASK *k = &tab->task_data.menu;
 		OBJECT *obtree = k->p.wt->tree;
 

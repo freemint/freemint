@@ -176,22 +176,13 @@ add_to_tasklist(struct xa_client *client)
 	else
 		icon = obtree + TM_ICN_XAAES;
 
-	if ((tx = build_tasklist_string(client)))
-	{
-		sc.icon = icon;
-		sc.t.text = tx;
-		sc.t.strings = 1;
-		sc.data = client;
-		list->add(list, NULL, NULL, &sc, false, SETYP_MAL, true);
-	}
-	else
-	{
-		sc.icon = icon;
-		sc.t.text = client->name;
-		sc.t.strings = 1;
-		sc.data = client;
-		list->add(list, NULL, NULL, &sc, false, 0, true);
-	}
+	tx = build_tasklist_string(client);
+	sc.icon = icon;
+	sc.t.text = tx ? tx : client->name;
+	sc.t.strings = 1;
+	sc.data = client;
+	list->add(list, NULL, NULL, &sc, false, 0, true);
+	if (tx) kfree(tx);
 }
 void
 remove_from_tasklist(struct xa_client *client)
@@ -1493,7 +1484,7 @@ open_milan_reschange(enum locks lock, struct xa_client *client)
 			wind = create_dwind(lock, CLOSER, t_reschg, client, wt, milan_reschg_form_exit, reschg_destructor);
 			if (wind)
 			{
-				add_xa_data(&wind->xa_data, p, "milres_parm", delete_milres_parm);
+				add_xa_data(&wind->xa_data, p, 0, "milres_parm", delete_milres_parm);
 				open_window(lock, wind, wind->r);
 				reschg_win = wind;
 			}
@@ -1825,7 +1816,7 @@ open_nova_reschange(enum locks lock, struct xa_client *client)
 			wind = create_dwind(lock, CLOSER, t_reschg, client, wt, nova_reschg_form_exit, reschg_destructor);
 			if (wind)
 			{
-				add_xa_data(&wind->xa_data, p, "milres_parm", delete_milres_parm);
+				add_xa_data(&wind->xa_data, p, 0, "milres_parm", delete_milres_parm);
 				open_window(lock, wind, wind->r);
 				reschg_win = wind;
 			}
@@ -2233,7 +2224,7 @@ do_system_menu(enum locks lock, int clicked_title, int menu_item)
 			OBJECT *form = ResourceTree(C.Aes_rsc, SYS_ERROR);
 			struct scroll_info *list = object_get_slist(form + SYSALERT_LIST);
 			struct scroll_entry *this;
-			char * const * const strings = get_raw_env();
+			const char **strings = get_raw_env(); //char * const * const strings = get_raw_env();
 			int i;
 			struct sesetget_params p = { 0 };
 			struct scroll_content sc = {{ 0 }};
@@ -2249,7 +2240,7 @@ do_system_menu(enum locks lock, int clicked_title, int menu_item)
 			sc.t.strings = 1;
 			for (i = 0; strings[i]; i++)
 			{	sc.t.text = strings[i];
-				list->add(list, this, NULL, &sc, this ? (SEADD_CHILD|SEADD_PRIOR) : SEADD_PRIOR, SETYP_AMAL, true);		
+				list->add(list, this, NULL, &sc, this ? (SEADD_CHILD|SEADD_PRIOR) : SEADD_PRIOR, 0, true);		
 			}
 			post_cevent(C.Hlp, ceExecfunc, open_systemalerts,NULL, 0,0, NULL,NULL);
 			break;

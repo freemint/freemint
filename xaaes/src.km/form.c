@@ -176,7 +176,6 @@ Setup_form_do(struct xa_client *client,
 		wind = client->fmd.wind;
 		calc_fmd_wind(client, obtree, kind, wind->dial, (RECT *)&client->fmd.r);
 		wt = set_toolbar_widget(lock, wind, client, obtree, edobj, WIP_NOTEXT, false, NULL, NULL);
-		ei = wt->ei ? wt->ei : &wt->e;
 // 		wt->zen = false;
 		move_window(lock, wind, true, -1, client->fmd.r.x, client->fmd.r.y, client->fmd.r.w, client->fmd.r.h);
 	}
@@ -189,7 +188,6 @@ Setup_form_do(struct xa_client *client,
 // 		if (d) display("Setup_form_do: nonwindowed for %s", client->name);
 		Set_form_do(client, obtree, edobj, true);
 		wt = client->fmd.wt;
-		ei = wt->ei ? wt->ei : &wt->e;
 		goto okexit;
 	}
 	/*
@@ -218,7 +216,6 @@ Setup_form_do(struct xa_client *client,
 		{
 			client->fmd.wind = wind;
 			wt = set_toolbar_widget(lock, wind, client, obtree, edobj, WIP_NOTEXT, false, NULL, NULL);
-			ei = wt->ei ? wt->ei : &wt->e;
 // 			display("wind = %lx, wt=%lx, wttree=%lx, widg=%lx", wind, wt, wt->tree, wt->widg);
 // 			wt->zen = false;
 		}
@@ -229,6 +226,8 @@ Setup_form_do(struct xa_client *client,
 		}
 	}
 okexit:
+	ei = wt->ei ? wt->ei : &wt->e;
+
 	DIAGS(("Setup_form_do: returning - edobj=%d, wind %lx",
 		ei->obj, wind));
 	
@@ -236,7 +235,7 @@ okexit:
 // 		ei->obj, wind);
 
 	if (ret_edobj)
-		*ret_edobj = wt->ei ? wt->ei->obj : wt->e.obj;
+		*ret_edobj = ei->obj;
 	if (ret_wind)
 		*ret_wind = wind;
 
