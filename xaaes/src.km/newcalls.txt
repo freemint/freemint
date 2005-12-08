@@ -253,8 +253,8 @@ anything else.
 /*
  * Definition of bits in ap_gout1 after appl_getinfo(AES_FUNCTIONS)
  /*
-#define AGI_AOPTS 1  /* appl_options exists */
-#define AGI_WFORM 2  /* MagiC 5.10 introduced functions for easier dialog in/output exists */
+#define AGI_WFORM 1  /* MagiC 5.10 introduced functions for easier dialog in/output exists */
+#define AGI_AOPTS 2  /* appl_options exists */
  
 /*
  * AES_AOPTS

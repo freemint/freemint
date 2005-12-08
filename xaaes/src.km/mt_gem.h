@@ -114,8 +114,8 @@ __BEGIN_DECLS
 #define AES_ARCH_M68K		0
 
 /* appl_getinfo(AES_FUNCTIONS) return values */
-#define AGI_AOPTS		1
-#define AGI_WFORM		2
+#define AGI_WFORM		1
+#define AGI_AOPTS		2
 #define AGI_OBJCDATA		4
 
 /* appl_options(AES_AOPTS) return values and appl_options() settings*/
