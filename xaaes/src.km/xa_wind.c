@@ -568,14 +568,14 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	/* set window name line */
 	case WF_NAME:
 	{
-		set_window_title(w, *(const char **)(pb->intin+2), true);
+		set_window_title(w, ptr_from_shorts(pb->intin[2], pb->intin[3]), true);
 		break;
 	}
 
 	/* set window info line */
 	case WF_INFO:
 	{
-		set_window_info(w, *(const char **)(pb->intin+2), true);
+		set_window_info(w, ptr_from_shorts(pb->intin[2], pb->intin[3]), true);
 		break;
 	}
 	/* Move a window, check sizes */
@@ -833,8 +833,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	/* Set a new desktop object tree */
 	case WF_NEWDESK:
 	{
-		short obptr[2] = { pb->intin[2], pb->intin[3] };
-		OBJECT *ob = *(OBJECT **)&obptr;
+		OBJECT *ob = ptr_from_shorts(pb->intin[2], pb->intin[3]);
 
 		if (ob)
 		{
@@ -955,13 +954,9 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	/* */
 	case WF_TOOLBAR:
 	{
-		short obptr[2] = { pb->intin[2], pb->intin[3] };
-		OBJECT *ob;
+		OBJECT *ob = ptr_from_shorts(pb->intin[2], pb->intin[3]);
 		XA_WIDGET *widg = get_widget(w, XAW_TOOLBAR);
-		XA_TREE *wt;
 // 		bool d = (!strnicmp(client->proc_name, "ergo_hlp", 8));
-
-		ob = *(OBJECT **)&obptr;
 
 		DIAGS(("  wind_set(WF_TOOLBAR): obtree=%lx, current wt=%lx",
 			ob, widg->stuff));
@@ -970,7 +965,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		
 		if (ob)
 		{
-			wt = obtree_to_wt(client, ob);
+			XA_TREE *wt = obtree_to_wt(client, ob);
 			
 			if (wt && wt == widg->stuff)
 			{
@@ -1028,12 +1023,8 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		
 		if (w->handle != 0 && (w->active_widgets & XaMENU))
 		{
-			short obptr[2] = { pb->intin[2], pb->intin[3] };
-			OBJECT *ob;
+			OBJECT *ob = ptr_from_shorts(pb->intin[2], pb->intin[3]);
 			XA_WIDGET *widg = get_widget(w, XAW_MENU);
-			XA_TREE *wt;
-
-			ob = *(OBJECT **)&obptr;
 
 			DIAGS(("  wind_set(WF_MENU) obtree=%lx, current wt=%lxfor %s",
 				ob, widg->stuff, client->name));
@@ -1043,7 +1034,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			
 			if (ob)
 			{
-				wt = obtree_to_wt(client, ob);
+				XA_TREE *wt = obtree_to_wt(client, ob);
 
 				if (!wt || (wt != widg->stuff))
 				{
@@ -1681,7 +1672,6 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 			{
 				o[2] = o[3] = 0x1178;	/* CAB hack */
 			}
-			//o[3] = o[2];
 			o[4] = 0xf0f; 	/* HR 010402 mask and flags 3d */
 		}
 		else
