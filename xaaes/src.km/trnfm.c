@@ -1761,9 +1761,7 @@ set_syspalette(short vdih, struct rgb_1000 *palette)
 void
 get_syspalette(short vdih, struct rgb_1000 *palette)
 {
-	int i;
-	short pens, ind;
-	short rgb[3];
+	int i, pens;
 	
 	switch (screen.planes)
 	{
@@ -1772,14 +1770,15 @@ get_syspalette(short vdih, struct rgb_1000 *palette)
 		case 4: pens = 16; break;
 		default: pens = 256; break;
 	}
-// 	display("get syspal - %d pens", pens);
 	for (i = 0; i < pens; i++)
 	{
-		ind = vq_color(vdih, i, 0, rgb);
+		union { short rgb[3]; struct rgb_1000 rgb_1000; } rgbunion;
+		short ind;
+
+		ind = vq_color(vdih, i, 0, rgbunion.rgb);
 		if (ind >= 0)
 		{
-// 			display("idx %03d(%03d), %04d, %04d, %04d", i, ind, rgb[0], rgb[1], rgb[2]);
-			palette[i] = *(struct rgb_1000 *)&rgb;
+			palette[i] = rgbunion.rgb_1000;
 		}
 	}
 }

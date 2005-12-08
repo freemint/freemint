@@ -833,6 +833,10 @@ XA_menu_istart(enum locks lock, struct xa_client *client, AESPB *pb)
 unsigned long
 XA_menu_settings(enum locks lock, struct xa_client *client, AESPB *pb)
 {
+	union { MN_SET *mn; struct xa_menu_settings *cfgmn;} cfgmnptr;
+	
+	cfgmnptr.cfgmn = &cfg.mn_set;
+	
 	CONTROL(1,1,1)
 
 	DIAG((D_menu,client,"menu_settings %d", pb->intin[0]));
@@ -844,14 +848,14 @@ XA_menu_settings(enum locks lock, struct xa_client *client, AESPB *pb)
 		case 0:
 		{
 			MN_SET *mn = (MN_SET *)pb->addrin[0];
-			*mn = *(MN_SET *)&cfg.mn_set;
+			*mn = *cfgmnptr.mn;
 			break;
 		}
 		case 1:
 		{
 			MN_SET *mn = (MN_SET *)pb->addrin[0];
 			
- 			*(MN_SET *)&cfg.mn_set = *mn;
+ 			*cfgmnptr.mn = *mn;
 			cfg.popup_timeout = cfg.mn_set.display;
 			cfg.popout_timeout = cfg.mn_set.drag;
 			break;

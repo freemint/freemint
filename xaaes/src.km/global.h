@@ -60,6 +60,8 @@
 
 #endif
 
+void * ptr_from_shorts(short hi, short lo);
+
 
 /*
  * memory management
