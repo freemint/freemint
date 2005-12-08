@@ -60,7 +60,26 @@
 
 #endif
 
-void * ptr_from_shorts(short hi, short lo);
+static inline void *
+ptr_from_shorts(short hi, short lo)
+{
+	union { short word[2]; void *ptr; } p;
+
+	p.word[0] = hi;
+	p.word[1] = lo;
+
+	return p.ptr;
+}
+
+static inline void
+ptr_to_shorts(void *p, short *a)
+{
+	union { short s[2]; void *ptr; } ptoa;
+
+	ptoa.ptr = p;
+	a[0] = ptoa.s[0];
+	a[1] = ptoa.s[1];
+}
 
 
 /*
