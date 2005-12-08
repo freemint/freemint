@@ -2759,7 +2759,7 @@ delete_marked(struct objc_edit_info *ei, char *txt)
 
 static bool ed_scrap_copy(XA_TREE *wt, struct objc_edit_info *ei, TEDINFO *ed_txt);
 static bool ed_scrap_cut(XA_TREE *wt, struct objc_edit_info *ei, TEDINFO *ed_txt);
-static bool ed_scrap_paste(XA_TREE *wt, struct objc_edit_info *ei, TEDINFO *ed_txt, short *cursor_pos);
+static bool ed_scrap_paste(XA_TREE *wt, struct objc_edit_info *ei, TEDINFO *ed_txt);
 static bool obj_ed_char(XA_TREE *wt, struct objc_edit_info *ei, TEDINFO *ed_txt, XTEDINFO *xted, ushort keycode);
 
 static char *
@@ -2816,7 +2816,7 @@ ed_scrap_copy(XA_TREE *wt, struct objc_edit_info *ei, TEDINFO *ed_txt)
 }
 
 static bool
-ed_scrap_paste(XA_TREE *wt, struct objc_edit_info *ei, TEDINFO *ed_txt, short *cursor_pos)
+ed_scrap_paste(XA_TREE *wt, struct objc_edit_info *ei, TEDINFO *ed_txt)
 {
 	char scrp[256];
 	struct file *f;
@@ -2859,10 +2859,8 @@ ed_scrap_paste(XA_TREE *wt, struct objc_edit_info *ei, TEDINFO *ed_txt, short *c
 		kernel_close(f);
 
 		/* move the cursor to the end of the pasted text */
-		*cursor_pos = ei->pos;
 		return true;
 	}
-
 	return false;
 }
 
@@ -3069,9 +3067,7 @@ obj_ed_char(XA_TREE *wt,
 	}
 	case 0x2f16: 	/* CTRL+V */
 	{
-		short pos;
-		update = ed_scrap_paste(wt, ei, ted, &pos);
-		ei->pos = pos;
+		update = ed_scrap_paste(wt, ei, ted);
 		break;
 	}
 	default:	/* Just a plain key - insert character */
