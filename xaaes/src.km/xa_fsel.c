@@ -1916,7 +1916,7 @@ fs_slist_key(struct scroll_info *list, unsigned short keycode, unsigned short ks
 			}
 			else
 			{
-				kk = (!was && (keycode == 0x5000 || keycode == 0x48000)) ? 0x5200 : keycode;
+				kk = (!was && (keycode == 0x5000 || keycode == 0x4800)) ? 0x5200 : keycode;
 				if (scrl_cursor(list, kk, 0) == 0)
 				{
 					list->get(list, NULL, SEGET_CURRENT, &this);
