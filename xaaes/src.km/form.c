@@ -464,7 +464,7 @@ form_cursor(XA_TREE *wt,
 	    struct xa_rect_list **rl,
 	/* outout */	    
 	    short *ret_focus,
-	    short *keyout)
+	    unsigned short *keyout)
 {
 	OBJECT *obtree = wt->tree;
 	short o = obj, nxt, dir, kout = 0;
@@ -702,7 +702,7 @@ form_keyboard(XA_TREE *wt,
 	      /* outputs */
 	      short *nxtobj,
 	      short *newstate,
-	      short *nxtkey)
+	      unsigned short *nxtkey)
 {
 #if GENERATE_DIAGS
 	struct xa_client *client = wt->owner;

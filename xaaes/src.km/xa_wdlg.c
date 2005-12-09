@@ -1101,7 +1101,7 @@ wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms 
 			{
 				unsigned short key = ev->key;
 				unsigned short keystate;
-				unsigned short new_focus = wt->focus;
+				short new_focus = wt->focus;
 								
 				vq_key_s(C.P_handle, &keystate);
 

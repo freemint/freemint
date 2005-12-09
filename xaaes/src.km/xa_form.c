@@ -104,7 +104,7 @@ static void
 ipff_init(int m, char *l)
 {
 	if (l)
-		ln = l;
+		ln = (unsigned char *)l;
 	mc = m;
 }
 
@@ -514,7 +514,8 @@ _form_keybd(	struct xa_client *client,
 	short cont, editfocus = *newobj;
 	struct rawkey key;
 
-	vq_key_s(C.P_handle, &ks);
+	vq_key_s(C.P_handle, &cont);
+	ks = (unsigned short)cont;
 	key.raw.conin.state = ks;
 	key.norm = normkey(ks, *keycode);
 	key.aes = *keycode;

@@ -1371,24 +1371,24 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 	case WF_TOOLBAR:
 	{
 		XA_TREE *wt = get_widget(w, XAW_TOOLBAR)->stuff;
-		OBJECT **have = (OBJECT **)&pb->intout[1];
+// 		OBJECT **have = (OBJECT **)&pb->intout[1];
 
 		if (wt)
-			*have = wt->tree;
+			ptr_to_shorts(wt->tree, pb->intout + 1); //*have = wt->tree;
 		else
-			*have = NULL;
+			ptr_to_shorts(NULL, pb->intout + 1); //*have = NULL;
 
 		break;
 	}
 	case WF_MENU:
 	{
 		XA_TREE *wt = get_widget(w, XAW_MENU)->stuff;
-		OBJECT **have = (OBJECT **)&pb->intout[1];
+// 		OBJECT **have = (OBJECT **)&pb->intout[1];
 
 		if (wt)
-			*have = wt->tree;
+			ptr_to_shorts(wt->tree, pb->intout + 1); //*have = wt->tree;
 		else
-			*have = NULL;
+			ptr_to_shorts(NULL, pb->intout + 1); //*have = NULL;
 		break;
 	}
 	/*
@@ -1617,6 +1617,8 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 	}
 	case WF_SCREEN:
 	{
+		union { long *lp; short *sp;} ptrs;
+		
 		/* HR return a very small area :-) hope app's      */
 		/*    then decide to allocate a buffer themselves. */
 		/*    This worked for SELECTRIC.  */
@@ -1646,8 +1648,12 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 				client->options.half_screen));
 		}
 
-		*(char  **)&o[1] = client->half_screen_buffer;
-		*(size_t *)&o[3] = client->half_screen_size;
+		ptrs.sp = &o[1];
+		*ptrs.lp++ = (long)client->half_screen_buffer;
+		*ptrs.lp   = (long)client->half_screen_size;
+		
+// 		*(char  **)&o[1] = client->half_screen_buffer;
+// 		*(size_t *)&o[3] = client->half_screen_size;
 		break;
 	}
 	case WF_DCOLOR:
@@ -1663,10 +1669,14 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 		{
 			if (o[1] <= W_BOTTOMER)
 			{
-				BFOBSPEC c[4];
-				(*w->active_theme->get_widgcolor)(w, o[1], c);
-				o[2] = ((short *)&c)[1];
-				o[3] = ((short *)&c)[3];
+				union { short c[8]; BFOBSPEC cw[4]; } col;
+				
+				(*w->active_theme->get_widgcolor)(w, o[1], col.cw);
+				/*
+				 * Colorword is the last 16 bits of BFOBSPEC (low word)
+				 */
+				o[2] = col.c[1];
+				o[3] = col.c[3];
 			}
 			else
 			{

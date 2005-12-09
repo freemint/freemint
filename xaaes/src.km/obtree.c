@@ -213,20 +213,20 @@ object_is_transparent(OBJECT *ob, bool pdistrans)
 		}
 		case G_TEXT:
 		case G_FTEXT:
-		{
-			if (!(*(BFOBSPEC *)&object_get_tedinfo(ob, NULL)->te_just).textmode)
-				ret = true;
-			break;
-		}
-#if 1
 		case G_BOXTEXT:
 		case G_FBOXTEXT:
 		{
-			if (!(*(BFOBSPEC *)&object_get_tedinfo(ob, NULL)->te_just).textmode) //fillpattern)
+			union { short jc[2]; BFOBSPEC cw;} col;
+			TEDINFO *ted;
+			
+			ted = object_get_tedinfo(ob, NULL);
+			col.jc[0] = ted->te_just;
+			col.jc[1] = ted->te_color;
+			if (col.cw.textmode)
 				ret = true;
 			break;
 		}
-#endif
+		default:;
 	}
 	}
 	/* opaque */

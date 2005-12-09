@@ -452,7 +452,8 @@ do_button_packet(void)
 	*s++ = *d, *d++ = 0;
 	*s++ = *d, *d++ = 0;
 	*s   = *d, *d   = 0;
-	*(long*)&md.dbg1 = time_between;
+	md.dbg1	= (short)(time_between >> 16);
+	md.dbg2 = (short)time_between;
 	(*ainf->button)(&moose_aif, &md);
 	click_count	= 0;
 	timeout		= 0;
