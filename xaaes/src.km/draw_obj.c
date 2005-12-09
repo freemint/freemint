@@ -998,6 +998,7 @@ set_text(OBJECT *ob,
 	 struct objc_edit_info **ret_ei,
 	 RECT r)
 {
+	union { short jc[2]; BFOBSPEC bfobspec;} col;
 	TEDINFO *ted;
 	XTEDINFO *xted = NULL;
 	RECT cur;
@@ -1020,7 +1021,10 @@ set_text(OBJECT *ob,
 
 	*thick = (char)ted->te_thickness;
 
-	*colours = *(BFOBSPEC*)&ted->te_just;
+	col.jc[0] = ted->te_just;
+	col.jc[1] = ted->te_color;
+	*colours = col.bfobspec; //*(BFOBSPEC*)&ted->te_just;
+
         // FIXME: gemlib problem: hacked a bit need only "ted->te_color" word;
 	//	  -> cleaning the information that would not be taken if
 	//	     properly used:
@@ -1983,8 +1987,8 @@ d_g_icon(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 		unsigned short *s, *d, m;
 		unsigned long sm = 0xAAAA5555L;
 
-		s = iconblk->ib_pmask; //Micon.fd_addr;
-		d = Mddm.fd_addr;
+		s = (unsigned short *)iconblk->ib_pmask; //Micon.fd_addr;
+		d = (unsigned short *)Mddm.fd_addr;
 		sc = Mddm.fd_wdwidth - Micon.fd_wdwidth;
 
 		for (i = 0; i < Micon.fd_h; i++)

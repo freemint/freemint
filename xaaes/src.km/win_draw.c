@@ -425,78 +425,78 @@ struct window_colours def_otop_cols =
 /*          flags                        wrmode      color       fill    fill    box       box        tl      br		*/
 /*                                                             interior  style  color    thickness  colour  colour		*/
  { WCOL_DRAWBKG/*|WCOL_BOXED*/, MD_REPLACE,
-                                                    {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},
-                                                    {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},
-                                                    {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* window areas not covered by a widget/ unused widgets*/
+                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},
+                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},
+                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* window areas not covered by a widget/ unused widgets*/
  
   { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-                                                    {G_CYAN,   FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_CYAN, NULL},	/* Normal */
-                                                    {G_CYAN,   FIS_SOLID,   0,   G_BLACK,     1,    G_CYAN, G_WHITE, NULL},		/* Selected */
-                                                    {G_BLUE,   FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}},	/* Highlighted */
+                                                    {G_CYAN,   FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_CYAN, NULL},	/* Normal */
+                                                    {G_CYAN,   FIS_SOLID,   8,   G_BLACK,     1,    G_CYAN, G_WHITE, NULL},		/* Selected */
+                                                    {G_BLUE,   FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}},	/* Highlighted */
 /* Slider */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-                                                    {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL},	/* Selected */
-                                                    {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL}}, /* Highlighted */
+                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL},	/* Selected */
+                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL}}, /* Highlighted */
  /* Slide */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-                                                    {G_LBLACK, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LBLACK, FIS_SOLID,   0,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_LBLACK, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+                                                    {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
  /* Title */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-                                                    {G_LWHITE, FIS_SOLID,   0,   G_LBLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LWHITE, FIS_SOLID,   0,   G_LBLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+                                                    {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
  /* Info */
- { WCOL_DRAW3D|WCOL_DRAWBKG,		MD_REPLACE, {G_WHITE,  FIS_SOLID,   0,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL},	/* Normal */
-                                                    {G_WHITE,  FIS_SOLID,   0,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL},	/* Selected */
-                                                    {G_WHITE,  FIS_SOLID,   0,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL}}, /* Highlighted */
+ { WCOL_DRAW3D|WCOL_DRAWBKG,		MD_REPLACE, {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL},	/* Normal */
+                                                    {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL},	/* Selected */
+                                                    {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL}}, /* Highlighted */
  /* Closer */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
  /* Hider */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
  /* Iconifier */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
  /* Fuller */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
  /* Sizer */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
  /* UP Arrow */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE, 
-                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
  /* DN Arrow */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
  /* LF Arrow */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
  /* RT Arrow */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
 
 /* flags	                     fontId  size wrmode    Effect      forground       background	*/
 /*								           col	          col		*/
@@ -523,66 +523,66 @@ struct window_colours def_utop_cols =
 /*                                                             interior  style  color    thickness  colour  colour		*/
  /* Window color (when unused window exterior is drawn) */
  { WCOL_DRAWBKG/*|WCOL_BOXED*/,                      MD_REPLACE,
-                                                    {G_LWHITE, FIS_SOLID,   0,   G_LBLACK,     1,    G_WHITE, G_LBLACK, NULL},
-                                                    {G_LWHITE, FIS_SOLID,   0,   G_LBLACK,     1,    G_WHITE, G_LBLACK, NULL},
-                                                    {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}},	/* window areas not covered by a widget/ unused widgets*/
+                                                    {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,     1,    G_WHITE, G_LBLACK, NULL},
+                                                    {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,     1,    G_WHITE, G_LBLACK, NULL},
+                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}},	/* window areas not covered by a widget/ unused widgets*/
  
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-                                                    {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_LWHITE, NULL},	/* Normal */
-                                                    {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_LWHITE, G_WHITE,  NULL},	/* Selected */
-                                                    {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL}},	/* Highlighted */
+                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LWHITE, NULL},	/* Normal */
+                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_LWHITE, G_WHITE,  NULL},	/* Selected */
+                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL}},	/* Highlighted */
  /* Slider */
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL},	/* Selected */
-                                                    {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL}},	/* Highlighted */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL},	/* Selected */
+                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL}},	/* Highlighted */
  /* Slide */
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LBLACK, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LBLACK, FIS_SOLID,   0,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_LBLACK, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
  /* Title */
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_LWHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
  /* Info */
- { WCOL_DRAWBKG,			MD_REPLACE, {G_LWHITE, FIS_SOLID,   0,   G_LBLACK,    1,    G_LBLACK,G_BLACK, NULL},	/* Normal */
-                                                    {G_LWHITE, FIS_SOLID,   0,   G_LBLACK,    1,    G_LBLACK,G_BLACK, NULL},	/* Selected */
-                                                    {G_WHITE,  FIS_SOLID,   0,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL}}, /* Highlighted */
+ { WCOL_DRAWBKG,			MD_REPLACE, {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,    1,    G_LBLACK,G_BLACK, NULL},	/* Normal */
+                                                    {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,    1,    G_LBLACK,G_BLACK, NULL},	/* Selected */
+                                                    {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL}}, /* Highlighted */
  /* Closer */
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
  /* Hider */
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
  /* Iconifier */
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
  /* Fuller */
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
  /* Sizer */
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
  /* UP Arrow */
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
  /* DN Arrow */
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
  /* LF Arrow */
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
  /* RT Arrow */
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_LWHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
 
 /* flags	                     fontId  size wrmode    Effect      forground       background	*/
 /*								           col	          col		*/
@@ -608,14 +608,14 @@ struct window_colours mono_def_otop_cols =
 /*          flags                        wrmode      color       fill    fill    box       box        tl      br		*/
 /*                                                             interior  style  color    thickness  colour  colour		*/
  { WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-                                                    {G_WHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},
-                                                    {G_WHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},
-                                                    {G_WHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* window areas not covered by a widget/ unused widgets*/
+                                                    {G_WHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},
+                                                    {G_WHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},
+                                                    {G_WHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* window areas not covered by a widget/ unused widgets*/
  
   { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-                                                    {G_WHITE,   FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
-                                                    {G_WHITE,   FIS_SOLID,   0,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_WHITE,   FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}},	/* Highlighted */
+                                                    {G_WHITE,   FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
+                                                    {G_WHITE,   FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_WHITE,   FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}},	/* Highlighted */
 /* Slider */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
                                                     {G_WHITE, FIS_SOLID,    0,  G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
@@ -633,54 +633,54 @@ struct window_colours mono_def_otop_cols =
                                                     {G_BLACK, FIS_PATTERN,   2,  G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
  /* Info */
  { /*WCOL_DRAW3D|*/WCOL_DRAWBKG|WCOL_BOXED,	MD_REPLACE,
-                                                    {G_WHITE,  FIS_SOLID,   0,   G_BLACK,     1,    G_BLACK,G_BLACK, NULL},	/* Normal */
-                                                    {G_WHITE,  FIS_SOLID,   0,   G_BLACK,     1,    G_BLACK,G_BLACK, NULL},	/* Selected */
-                                                    {G_WHITE,  FIS_SOLID,   0,   G_BLACK,     1,    G_BLACK,G_BLACK, NULL}}, /* Highlighted */
+                                                    {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK,G_BLACK, NULL},	/* Normal */
+                                                    {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK,G_BLACK, NULL},	/* Selected */
+                                                    {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK,G_BLACK, NULL}}, /* Highlighted */
  /* Closer */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
  /* Hider */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
  /* Iconifier */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
  /* Fuller */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
  /* Sizer */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
  /* UP Arrow */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE, 
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
  /* DN Arrow */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
  /* LF Arrow */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
  /* RT Arrow */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
 
 /* flags	                     fontId  size wrmode    Effect      forground       background	*/
 /*								           col	          col		*/
@@ -705,14 +705,14 @@ struct window_colours mono_def_utop_cols =
 /*          flags                        wrmode      color       fill    fill    box       box        tl      br		*/
 /*                                                             interior  style  color    thickness  colour  colour		*/
  { WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-                                                    {G_WHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},
-                                                    {G_WHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},
-                                                    {G_WHITE, FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* window areas not covered by a widget/ unused widgets*/
+                                                    {G_WHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},
+                                                    {G_WHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},
+                                                    {G_WHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* window areas not covered by a widget/ unused widgets*/
  
   { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-                                                    {G_BLACK,   FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
-                                                    {G_BLACK,   FIS_SOLID,   0,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_BLACK,   FIS_SOLID,   0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}},	/* Highlighted */
+                                                    {G_BLACK,   FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
+                                                    {G_BLACK,   FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_BLACK,   FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}},	/* Highlighted */
 /* Slider */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
                                                     {G_WHITE, FIS_SOLID,    0,  G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
@@ -730,54 +730,54 @@ struct window_colours mono_def_utop_cols =
                                                     {G_BLACK, FIS_PATTERN,   2,  G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
  /* Info */
  { /*WCOL_DRAW3D|*/WCOL_DRAWBKG|WCOL_BOXED,	MD_REPLACE,
-                                                    {G_WHITE,  FIS_SOLID,   0,   G_BLACK,     1,    G_BLACK,G_BLACK, NULL},	/* Normal */
-                                                    {G_WHITE,  FIS_SOLID,   0,   G_BLACK,     1,    G_BLACK,G_BLACK, NULL},	/* Selected */
-                                                    {G_WHITE,  FIS_SOLID,   0,   G_BLACK,     1,    G_BLACK,G_BLACK, NULL}}, /* Highlighted */
+                                                    {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK,G_BLACK, NULL},	/* Normal */
+                                                    {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK,G_BLACK, NULL},	/* Selected */
+                                                    {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK,G_BLACK, NULL}}, /* Highlighted */
  /* Closer */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
  /* Hider */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
  /* Iconifier */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
  /* Fuller */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
  /* Sizer */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
  /* UP Arrow */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE, 
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
  /* DN Arrow */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
  /* LF Arrow */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
  /* RT Arrow */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_WHITE,	FIS_SOLID, 0,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
 
 /* struct xa_wtxt_inf */
 /* flags	                     fontId  size   wrmode    Effect           forground       background	*/
@@ -1610,40 +1610,43 @@ s_hslide_size(struct xa_window *wind, struct xa_widget *widg)
  	set_widg_size(wind, widg, &((struct window_colours *)wind->ontop_cols)->rtarrow, WIDG_RIGHT);
 }
 
+/*
+ * Build two BFOBSPEC fields from info found in xa_wcol_inf and xa_wtxt_inf.
+ * first BFOBSEPC is for normal widget while the second is for selected widget
+ */
 static void
 build_bfobspec(struct xa_wcol_inf *wci, struct xa_wtxt_inf *wti, BFOBSPEC *ret)
 {
-	BFOBSPEC n = (BFOBSPEC){0}, s;
+	union { unsigned long l[2]; BFOBSPEC o[2]; } b;
 	
-	s = n;
+	b.l[0] = b.l[1] = 0L;
 
 	if (wci)
 	{
-		n.framesize	= wci->n.box_th;
-		n.framecol	= wci->n.box_c;
-		n.fillpattern	= wci->n.i;
-		n.interiorcol	= wci->n.c;
+		b.o[0].framesize	= wci->n.box_th;
+		b.o[0].framecol		= wci->n.box_c;
+		b.o[0].fillpattern	= (wci->n.i == FIS_PATTERN && wci->n.f < 9) ? wci->n.f : 7;
+		b.o[0].interiorcol	= wci->n.c;
 	
-		s.framesize	= wci->s.box_th;
-		s.framecol	= wci->s.box_c;
-		s.fillpattern	= wci->s.i;
-		s.interiorcol	= wci->s.c;
+		b.o[1].framesize	= wci->s.box_th;
+		b.o[1].framecol		= wci->s.box_c;
+		b.o[1].fillpattern	= (wci->s.i == FIS_PATTERN && wci->s.f < 9) ? wci->s.f : 7;
+		b.o[1].interiorcol	= wci->s.c;
 	}
 
 	if (wti)
 	{
-		n.textcol = wti->n.fgc;
-
-		s.textcol = wti->s.fgc;
+		b.o[0].textcol = wti->n.fgc;
+		b.o[1].textcol = wti->s.fgc;
 	}
 	else
 	{
-		n.textcol = s.textcol = G_BLACK;
+		b.o[0].textcol = b.o[1].textcol = (unsigned)G_BLACK;
 	}
-	n.textmode = s.textmode = MD_TRANS;
+	b.o[0].textmode = b.o[1].textmode = (unsigned)MD_TRANS;
 
-	*ret++ = n;
-	*ret = s;
+	*ret++ = b.o[0];
+	*ret = b.o[1];
 }
 
 static void _cdecl
@@ -1653,44 +1656,51 @@ get_wcol(struct xa_window *wind, short gem_widget, BFOBSPEC *ret)
 	struct window_colours *untop_cols = wind->untop_cols;
 	BFOBSPEC c[4];
  
+ 	/*
+ 	 * Builds 4 BFOBSPECs,
+ 	 *  0 = colors for normal   widget when window ontop
+ 	 *  1 = colors for selected widget when window ontop
+ 	 *  2 = colors for normal   widget when window untopped
+ 	 *  3 = colors for selected widget when window untopped
+ 	 */
  	c[0] = c[1] = c[2] = c[3] = (BFOBSPEC){0};
 
 	switch (gem_widget)
 	{
 		case W_BOX:
 		{
-			build_bfobspec(&ontop_cols->borders, NULL, (BFOBSPEC *)&c[0]);
-			build_bfobspec(&untop_cols->borders, NULL, (BFOBSPEC *)&c[2]);
+			build_bfobspec(&ontop_cols->borders, NULL, &c[0]);
+			build_bfobspec(&untop_cols->borders, NULL, &c[2]);
 			break;
 		}
 		case W_TITLE:
 		{
-			build_bfobspec(&ontop_cols->title, NULL, (BFOBSPEC *)&c[0]);
-			build_bfobspec(&untop_cols->title, NULL, (BFOBSPEC *)&c[2]);
+			build_bfobspec(&ontop_cols->title, NULL, &c[0]);
+			build_bfobspec(&untop_cols->title, NULL, &c[2]);
 			break;
 		}
 		case W_CLOSER:
 		{
-			build_bfobspec(&ontop_cols->closer, NULL, (BFOBSPEC *)&c[0]);
-			build_bfobspec(&untop_cols->closer, NULL, (BFOBSPEC *)&c[2]);
+			build_bfobspec(&ontop_cols->closer, NULL, &c[0]);
+			build_bfobspec(&untop_cols->closer, NULL, &c[2]);
 			break;
 		}
 		case W_NAME:
 		{
-			build_bfobspec(&ontop_cols->title, &ontop_cols->title_txt, (BFOBSPEC *)&c[0]);
-			build_bfobspec(&untop_cols->title, &untop_cols->title_txt, (BFOBSPEC *)&c[2]);
+			build_bfobspec(&ontop_cols->title, &ontop_cols->title_txt, &c[0]);
+			build_bfobspec(&untop_cols->title, &untop_cols->title_txt, &c[2]);
 			break;
 		}
 		case W_FULLER:
 		{
-			build_bfobspec(&ontop_cols->fuller, NULL, (BFOBSPEC *)&c[0]);
-			build_bfobspec(&untop_cols->fuller, NULL, (BFOBSPEC *)&c[2]);
+			build_bfobspec(&ontop_cols->fuller, NULL, &c[0]);
+			build_bfobspec(&untop_cols->fuller, NULL, &c[2]);
 			break;
 		}
 		case W_INFO:
 		{
-			build_bfobspec(&ontop_cols->info, &ontop_cols->info_txt, (BFOBSPEC *)&c[0]);
-			build_bfobspec(&untop_cols->info, &untop_cols->info_txt, (BFOBSPEC *)&c[2]);
+			build_bfobspec(&ontop_cols->info, &ontop_cols->info_txt, &c[0]);
+			build_bfobspec(&untop_cols->info, &untop_cols->info_txt, &c[2]);
 			break;
 		}
 		case W_DATA:
@@ -1711,53 +1721,53 @@ get_wcol(struct xa_window *wind, short gem_widget, BFOBSPEC *ret)
 		}
 		case W_SIZER:
 		{
-			build_bfobspec(&ontop_cols->sizer, NULL, (BFOBSPEC *)&c[0]);
-			build_bfobspec(&untop_cols->sizer, NULL, (BFOBSPEC *)&c[2]);
+			build_bfobspec(&ontop_cols->sizer, NULL, &c[0]);
+			build_bfobspec(&untop_cols->sizer, NULL, &c[2]);
 			break;
 		}
 		case W_HBAR:
 		case W_VBAR:
 		{
-			build_bfobspec(&ontop_cols->slide, NULL, (BFOBSPEC *)&c[0]);
-			build_bfobspec(&untop_cols->slide, NULL, (BFOBSPEC *)&c[2]);
+			build_bfobspec(&ontop_cols->slide, NULL, &c[0]);
+			build_bfobspec(&untop_cols->slide, NULL, &c[2]);
 			break;
 		}
 		case W_UPARROW:
 		{
-			build_bfobspec(&ontop_cols->uparrow, NULL, (BFOBSPEC *)&c[0]);
-			build_bfobspec(&untop_cols->uparrow, NULL, (BFOBSPEC *)&c[2]);
+			build_bfobspec(&ontop_cols->uparrow, NULL, &c[0]);
+			build_bfobspec(&untop_cols->uparrow, NULL, &c[2]);
 			break;
 		}
 		case W_DNARROW:
 		{
-			build_bfobspec(&ontop_cols->dnarrow, NULL, (BFOBSPEC *)&c[0]);
-			build_bfobspec(&untop_cols->dnarrow, NULL, (BFOBSPEC *)&c[2]);
+			build_bfobspec(&ontop_cols->dnarrow, NULL, &c[0]);
+			build_bfobspec(&untop_cols->dnarrow, NULL, &c[2]);
 			break;
 		}
 		case W_HSLIDE:
 		case W_VSLIDE:
 		{
-			build_bfobspec(&ontop_cols->slide, NULL, (BFOBSPEC *)&c[0]);
-			build_bfobspec(&untop_cols->slide, NULL, (BFOBSPEC *)&c[2]);
+			build_bfobspec(&ontop_cols->slide, NULL, &c[0]);
+			build_bfobspec(&untop_cols->slide, NULL, &c[2]);
 			break;
 		}
 		case W_HELEV:
 		case W_VELEV:
 		{
-			build_bfobspec(&ontop_cols->slider, NULL, (BFOBSPEC *)&c[0]);
-			build_bfobspec(&untop_cols->slider, NULL, (BFOBSPEC *)&c[2]);
+			build_bfobspec(&ontop_cols->slider, NULL, &c[0]);
+			build_bfobspec(&untop_cols->slider, NULL, &c[2]);
 			break;
 		}
 		case W_LFARROW:
 		{
-			build_bfobspec(&ontop_cols->lfarrow, NULL, (BFOBSPEC *)&c[0]);
-			build_bfobspec(&untop_cols->lfarrow, NULL, (BFOBSPEC *)&c[2]);
+			build_bfobspec(&ontop_cols->lfarrow, NULL, &c[0]);
+			build_bfobspec(&untop_cols->lfarrow, NULL, &c[2]);
 			break;
 		}
 		case W_RTARROW:
 		{
-			build_bfobspec(&ontop_cols->rtarrow, NULL, (BFOBSPEC *)&c[0]);
-			build_bfobspec(&untop_cols->rtarrow, NULL, (BFOBSPEC *)&c[2]);
+			build_bfobspec(&ontop_cols->rtarrow, NULL, &c[0]);
+			build_bfobspec(&untop_cols->rtarrow, NULL, &c[2]);
 			break;
 		}
 	}
