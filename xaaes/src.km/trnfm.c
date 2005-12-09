@@ -795,7 +795,7 @@ gem_rdata(struct file *fp, XA_XIMG_HEAD *pic)
 		{
 			int y;
 			unsigned long vrep = 0L;
-			char *dst;
+			unsigned char *dst;
 			
 			for (y = 0; y < pic->ximg.img_h; y++)
 			{
@@ -1785,7 +1785,10 @@ get_syspalette(short vdih, struct rgb_1000 *palette)
 void
 set_defaultpalette(short vdih)
 {
-	set_syspalette(vdih, (struct rgb_1000 *)systempalette);
+	union { short *sp; struct rgb_1000 *rgb;} ptrs;
+	
+	ptrs.sp = systempalette;
+	set_syspalette(vdih, ptrs.rgb); //(struct rgb_1000 *)&systempalette);
 }
 
 struct color_tab256
@@ -1820,7 +1823,7 @@ detect_pixel_format(struct xa_vdi_settings *v)
 		MFDB scr, dst;
 		struct rgb_1000 srgb, rgb;
 		short pxy[8];
-		unsigned long b[32];
+		union { unsigned short w[64]; unsigned long l[32];} b;
 
 		(*v->api->wr_mode)(v, MD_REPLACE);
 		(*v->api->l_type)(v, 1);
@@ -1866,7 +1869,7 @@ detect_pixel_format(struct xa_vdi_settings *v)
 						/* 12345678.12345678 */			
 			case 15:
 			{
-				unsigned short pix = *(unsigned short *)(&b[0]);
+				unsigned short pix = b.w[0]; //*(unsigned short *)(&b[0]);
 				ndisplay("%d bit pixel %x", screen.planes, pix);
 				if (pix == ((31 << 2) | (7 << 13) | 3))		/* gggbbbbb.0rrrrrgg */
 				{
@@ -1887,7 +1890,7 @@ detect_pixel_format(struct xa_vdi_settings *v)
 			}
 			case 16:
 			{
-				unsigned short pix = *(unsigned short *)(&b[0]);
+				unsigned short pix = b.w[0]; //*(unsigned short *)(&b[0]);
 				ndisplay("%d bit pixel %x", screen.planes, pix);
 				if (pix == ((31 << 3) | (7 << 13) | 7))		/* gggbbbbb.rrrrrggg */
 				{
@@ -1918,7 +1921,7 @@ detect_pixel_format(struct xa_vdi_settings *v)
 			}
 			case 24:
 			{
-				unsigned long pix = b[0];
+				unsigned long pix = b.l[0]; //b[0];
 				ndisplay("%d bit pixel %lx", screen.planes, pix);
 				pix >>= 8;
 				if (pix == 0xffff00L)			/* rrrrrrrr.gggggggg.bbbbbbbb  Moto */
@@ -1940,7 +1943,7 @@ detect_pixel_format(struct xa_vdi_settings *v)
 			}
 			case 32:
 			{
-				unsigned long pix = b[0];
+				unsigned long pix = b.l[0];
 				ndisplay("%d bit pixel %lx", screen.planes, pix);
 				if (pix == 0xffff00L)			/* 00000000.rrrrrrrr.gggggggg.bbbbbbbb */
 				{

@@ -1351,12 +1351,15 @@ check_milan_res(struct xa_client *client, short mw)
 		
 		if (depths)
 		{
+			union { void **vp; struct milres_parm **mp;} ptrs;
 			struct resinf *r;
 			
 			if (!(p = kmalloc(sizeof(*p) + (sizeof(*r) * devids))))
 				goto exit;
 
 			bzero(p, sizeof(*p));
+
+			ptrs.mp = &p;
 
 			p->curr_devid = currmode;
 			r = (struct resinf *)((char *)p + sizeof(*p));
@@ -1370,7 +1373,7 @@ check_milan_res(struct xa_client *client, short mw)
 			}
 			p->num_depths = depths;
 			p->current[0] = 0;
-			obtree = create_popup_tree(client, 0, depths, mw, 4, &nxt_mdepth, (void **)&p);
+			obtree = create_popup_tree(client, 0, depths, mw, 4, &nxt_mdepth, ptrs.vp);
 			if (!instchrm_wt(client, &p->depth_wt, obtree))
 				goto exit;
 			
@@ -1383,7 +1386,7 @@ check_milan_res(struct xa_client *client, short mw)
 					p->current[0] = i;
 					p->misc[0] = (long)modes;
 					p->misc[1] = num_modes;
-					obtree = create_popup_tree(client, 0, p->count[i], mw, 4, &nxt_mres, (void **)&p);
+					obtree = create_popup_tree(client, 0, p->count[i], mw, 4, &nxt_mres, ptrs.vp);
 					if (instchrm_wt(client, &p->col_wt[i], obtree))
 					{
 						p->col_wt[i]->links++;
@@ -1735,12 +1738,15 @@ check_nova_res(struct xa_client *client, short mw)
 		
 			if (depths)
 			{
+				union { void **vp; struct milres_parm **mp;} ptrs;
 				struct resinf *r;
 			
 				if (!(p = kmalloc(sizeof (*p) + (sizeof(*r) * devids))))
 					goto exit;
 
 				bzero(p, sizeof(*p));
+				
+				ptrs.mp = &p;
 
 				p->modes = modes;
 				p->curr_devid = currmode;
@@ -1757,7 +1763,7 @@ check_nova_res(struct xa_client *client, short mw)
 				}
 				p->num_depths = depths;
 				p->current[0] = 0;
-				obtree = create_popup_tree(client, 0, depths, mw, 4, &nxt_mdepth, (void **)&p);
+				obtree = create_popup_tree(client, 0, depths, mw, 4, &nxt_mdepth, ptrs.vp);
 				if (!instchrm_wt(client, &p->depth_wt, obtree))
 					goto exit;
 			
@@ -1766,11 +1772,11 @@ check_nova_res(struct xa_client *client, short mw)
 				for (i = 0,j = 1; i < 8; i++)
 				{
 					if (p->count[i])
-					{
+					{						
 						p->current[0] = i;
 						p->misc[0] = (long)modes;
 						p->misc[1] = num_modes;
-						obtree = create_popup_tree(client, 0, p->count[i], mw, 4, &nxt_novares, (void **)&p);
+						obtree = create_popup_tree(client, 0, p->count[i], mw, 4, &nxt_novares, ptrs.vp);
 						if (instchrm_wt(client, &p->col_wt[i], obtree))
 						{
 							p->col_wt[i]->links++;

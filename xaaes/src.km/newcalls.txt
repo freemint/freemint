@@ -183,7 +183,6 @@ anything else.
                  objc_wdraw()
                  objc_wchange()
                  objc_wedit()
-                 objc_xfind()
                  graf_wwatchbox()
                  form_wbutton()
                  form_wkeybd()
