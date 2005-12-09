@@ -77,7 +77,7 @@ short	form_cursor	(XA_TREE *wt,
 			 bool redraw,
 			 struct xa_rect_list **rl,
 			 short *ret_focus,
-			 short *keyout);
+			 unsigned short *keyout);
 
 bool	form_keyboard	(XA_TREE *wt,
 			 struct xa_vdi_settings *v,
@@ -88,7 +88,7 @@ bool	form_keyboard	(XA_TREE *wt,
 			 /* outputs */
 			 short *nxtobj,
 			 short *newstate,
-			 short *nxtkey);
+			 unsigned short *nxtkey);
 
 void	Exit_form_do	(struct xa_client *client,
 			 struct xa_window *wind,

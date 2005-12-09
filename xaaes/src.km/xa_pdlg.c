@@ -76,15 +76,14 @@ xv_create_driver_info(XVDIPB *vpb, short handle, short id)
 	vpb->control[V_N_INTOUT] = 0;
 	VDI(vpb, 180, 0, 1, 0, handle);
 	if (vpb->control[V_N_INTOUT] >= 2)
-		d = (*(DRV_INFO **)&vpb->intout[0]);
+		d = ptr_from_shorts(vpb->intout[0], vpb->intout[1]); //(*(DRV_INFO **)&vpb->intout[0]);
 	return d;
 }
 	
 static short
 xv_delete_driver_info(XVDIPB *vpb, short handle, DRV_INFO *d)
 {
-	ptr_to_array(d, pb->intin);
-	*(DRV_INFO**)&vpb->intin[0] = d;
+	ptr_to_shorts(d, pb->intin);	//*(DRV_INFO**)&vpb->intin[0] = d;
 	VDI(vpb, 181, 0, 2, 0, handle);
 	return vpb->intout[0];
 }
@@ -92,7 +91,7 @@ xv_delete_driver_info(XVDIPB *vpb, short handle, DRV_INFO *d)
 static short
 xv_read_default_settings(XVDIPB *vpb, short handle, PRN_SETTINGS *p)
 {
-	*(PRN_SETTINGS **)&vpb->intin[0] = p;
+	ptr_to_shorts(p, vpb->intin); //*(PRN_SETTINGS **)&vpb->intin[0] = p;
 	vpb->control[V_N_PTSOUT] = 0;
 	vpb->control[V_N_INTOUT] = 0;
 	VDI(vpb, 182, 0, 2, 0, handle);
@@ -104,7 +103,7 @@ xv_read_default_settings(XVDIPB *vpb, short handle, PRN_SETTINGS *p)
 static short
 xv_write_default_settings(XVDIPB *vpb, short handle, PRN_SETTINGS *p)
 {
-	*(PRN_SETTINGS **)&vpb->intin[0] = p;
+	ptr_to_shorts(p, vpb->intin); //*(PRN_SETTINGS **)&vpb->intin[0] = p;
 	vpb->control[V_N_PTSOUT] = 0;
 	vpb->control[V_N_INTOUT] = 0;
 	VDI(vpb, 182, 0, 2, 1, handle);
@@ -125,9 +124,13 @@ static short
 xvq_ext_devinfo(XVDIPB *vpb, short handle, short id, char *path, char *fname, char *dname)
 {
 	vpb->intin[0] = id;
-	*(char **)&vpb->intin[1] = path;
-	*(char **)&vpb->intin[3] = fname;
-	*(char **)&vpb->intin[5] = dname;
+	ptr_to_shorts(path, vpb->intin  + 1);
+	ptr_to_shorts(fname, vpb->intin + 3);
+	ptr_to_shorts(dname, vpb->intin + 5);
+	
+// 	*(char **)&vpb->intin[1] = path;
+// 	*(char **)&vpb->intin[3] = fname;
+// 	*(char **)&vpb->intin[5] = dname;
 	VDI(vpb, 248, 0, 7, 4242, handle);
 	return vpb->intout[0];
 }

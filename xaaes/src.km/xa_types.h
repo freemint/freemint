@@ -107,7 +107,7 @@ struct xa_ximg_head
 {
   struct ximg_header ximg;
   short *palette;	/* palette etc.                        */
-  char *addr;     /* Address for the depacked bit-planes */
+  unsigned char *addr;     /* Address for the depacked bit-planes */
 };
 typedef struct xa_ximg_head XA_XIMG_HEAD;
 

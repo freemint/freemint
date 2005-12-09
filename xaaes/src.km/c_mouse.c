@@ -458,7 +458,11 @@ wheel_arrow(struct xa_window *wind, const struct moose_data *md, XA_WIDGET **wr,
 		}
 	}
 	else
+	{
+		if (r_amnt)
+			*r_amnt = 0;
 		return;
+	}
 
 	if (r)
 		*r = orient;
@@ -541,7 +545,7 @@ cXA_wheel_event(enum locks lock, struct c_event *ce, bool cancel)
 		else if (wind)
 		{
 			bool slist = false;
-			short orient, amount, WA = WA_UPPAGE;
+			short orient, amount = 0, WA = WA_UPPAGE;
 			
 			wheel_arrow(wind, md, &widg, &orient, &amount);
 			
