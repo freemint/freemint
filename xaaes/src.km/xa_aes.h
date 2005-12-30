@@ -118,21 +118,6 @@ struct xshelw
 	short gid;			/* New child's GID */
 };
 
-struct extbox_parms;
-struct extbox_parms
-{
-	unsigned long	obspec;
-	short		type;
-	void		(*callout)(struct extbox_parms *p);
-	void		*data;
-/*
- * part below this line is filled by object-renderer when calling 'callout'
- */
-	struct widget_tree *wt;
-	short	index;
-	RECT r;
-	RECT clip;
-};
 
 /* The shel_write extensions (used in xa_fork_exec()) */
 #define SW_UID 	0x1000	/* Set user id of launched child */
@@ -141,7 +126,8 @@ struct extbox_parms
 /* extended OBJECT types, XaAES only */
 #define G_SLIST		39
 #define G_EXTBOX	40
-#define G_UNKNOWN	41
+#define G_OBLINK	41
+#define G_UNKNOWN	42
 
 /* To ensure that both XaAES and clients talk about the same things :-) */
 #define SL_RANGE	1000

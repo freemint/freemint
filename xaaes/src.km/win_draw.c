@@ -1013,19 +1013,21 @@ static void
 draw_widg_icon(struct xa_vdi_settings *v, struct xa_widget *widg, XA_TREE *wt, short ind)
 {
 	short x, y, w, h;
-	OBJECT *ob = wt->tree + ind;
+	struct xa_aes_object ob;
+
+	ob = aesobj(wt->tree, ind);
 
 	if (widg->state & OS_SELECTED)
-		ob->ob_state |= OS_SELECTED;
+		aesobj_ob(&ob)->ob_state |= OS_SELECTED;
 	else
-		ob->ob_state &= ~OS_SELECTED;
+		aesobj_ob(&ob)->ob_state &= ~OS_SELECTED;
 
 	x = widg->ar.x, y = widg->ar.y;
 
-	(*api->object_spec_wh)(ob, &w, &h);
+	(*api->object_spec_wh)(aesobj_ob(&ob), &w, &h);
 	x += (widg->ar.w - w) >> 1;
 	y += (widg->ar.h - h) >> 1;
-	display_object(0, wt, v, ind, x, y, 0);
+	display_object(0, wt, v, ob, x, y, 0);
 }
 
 static void

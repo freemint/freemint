@@ -40,6 +40,7 @@ struct fsel_data
 	struct xa_window *wind;
 	XA_TREE *form;
 	XA_TREE *menu;
+	void *data;
 	struct xa_client *owner;
 	short sort;
 	struct scroll_entry *selected_dir;
@@ -68,7 +69,7 @@ struct fsel_data
 
 void open_fileselector(enum locks lock, struct xa_client *client, struct fsel_data *fs,
 		       const char *path, const char *file, const char *title,
-		       fsel_handler *s, fsel_handler *c);
+		       fsel_handler *s, fsel_handler *c, void *data);
 
 void close_fileselector(enum locks lock, struct fsel_data *fs);
 

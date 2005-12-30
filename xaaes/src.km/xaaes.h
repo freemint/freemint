@@ -129,8 +129,8 @@
 #define FNTS_XDISPLAY    18  /* BUTTON in Baum WDLG_FNTS */
 
 #define WDLG_PDLG        11  /* Formular/Dialog */
-#define XPDLG_PRINT      1   /* BUTTON in Baum WDLG_PDLG */
-#define XPDLG_CANCEL     2   /* BUTTON in Baum WDLG_PDLG */
+#define XPDLG_CANCEL     1   /* BUTTON in Baum WDLG_PDLG */
+#define XPDLG_PRINT      2   /* BUTTON in Baum WDLG_PDLG */
 #define XPDLG_LIST       3   /* BOX in Baum WDLG_PDLG */
 #define XPDLG_DIALOG     4   /* IBOX in Baum WDLG_PDLG */
 #define XPDLG_DRIVER     5   /* BUTTON in Baum WDLG_PDLG */

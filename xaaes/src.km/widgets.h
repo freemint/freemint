@@ -43,7 +43,7 @@ void	redraw_toolbar(enum locks lock, struct xa_window *wind, short item);
 void	set_toolbar_coords(struct xa_window *wind, const RECT *r);
 
 void	set_toolbar_handlers(const struct toolbar_handlers *th, struct xa_window *wind, struct xa_widget *widg, struct widget_tree *wt);
-XA_TREE *set_toolbar_widget(enum locks lock, struct xa_window *wind, struct xa_client *owner, OBJECT *obj, short item, short properties, bool zen, const struct toolbar_handlers *th, const RECT *r);
+XA_TREE *set_toolbar_widget(enum locks lock, struct xa_window *wind, struct xa_client *owner, OBJECT *obj, struct xa_aes_object item, short properties, bool zen, const struct toolbar_handlers *th, const RECT *r);
 
 void	remove_widget(enum locks lock, struct xa_window *wind, int tool);
 void	rp_2_ap_cs(struct xa_window *wind, XA_WIDGET *widg, RECT *r);

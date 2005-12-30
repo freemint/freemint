@@ -434,6 +434,8 @@ struct _pdlg_sub
 /*----------------------------------------------------------------------------------------*/ 
 /* Druckereigenschaften 																						*/
 /*----------------------------------------------------------------------------------------*/ 
+#define PDLG_OUTFILES		5
+
 #define	PC_FILE			0x0001		/**< Drucker kann ber GEMDOS-Dateien angesprochen werden */
 #define	PC_SERIAL		0x0002		/**< Drucker kann auf der seriellen Schnittstelle angesteuert werden */
 #define	PC_PARALLEL 	0x0004		/**< Drucker kann auf der parallelen Schnittstelle angesteuert werden */
@@ -464,7 +466,7 @@ struct _pdlg_sub
 #define	PLANE_YELLOW	0x0002		/**< TODO */
 #define	PLANE_MAGENTA	0x0004		/**< TODO */
 #define	PLANE_CYAN		0x0008		/**< TODO */
-
+#define PLANE_MASK	(PLANE_BLACK|PLANE_YELLOW|PLANE_MAGENTA|PLANE_CYAN)
 
 /* <driver_mode> */
 #define	DM_BG_PRINTING	0x0001		/**< Flag fr Hintergrunddruck */
@@ -575,7 +577,7 @@ struct _prn_settings
 #define PDLG_EVENODD        0x0100  /**< Offer option for even and odd pages */
 
 /* <button> for mt_pdlg_evnt()/mt_pdlg_do() */
-#define	PDLG_CANCEL 1				/**< "Abbruch" wurde angewhlt */
+#define	PDLG_CANCEL  1				/**< "Abbruch" wurde angewhlt */
 #define	PDLG_OK		2				/**< "OK" wurde gedrckt */
 
 short		   mt_pdlg_add_printers 		(PRN_DIALOG *prn_dialog, DRV_INFO *drv_info, short *global);

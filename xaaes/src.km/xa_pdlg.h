@@ -31,6 +31,7 @@
 #include "xa_types.h"
 
 #if WDIALOG_PDLG
+struct xa_window * get_pdlg_wind(struct xa_client *client, void *handle);
 
 AES_function
 	XA_pdlg_create,

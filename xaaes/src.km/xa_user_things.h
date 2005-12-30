@@ -72,6 +72,14 @@ struct co_wdlgexit_parms
 	long	data;
 };
 
+struct co_pdlg_sub_parms
+{
+	long settings;
+	long sub;
+	short obj;
+};
+
+	
 struct xa_callout_parms
 {
 	long	ret;
