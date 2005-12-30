@@ -151,7 +151,7 @@
 #define PDLG_P_TYPE      18  /* BUTTON in Baum PDLG_DIALOGS */
 #define PDLG_P_INTRAY    19  /* BUTTON in Baum PDLG_DIALOGS */
 #define PDLG_P_OUTTRAY   20  /* BUTTON in Baum PDLG_DIALOGS */
-#define PDLG_P_LETTER    21  /* USERDEF in Baum PDLG_DIALOGS */
+#define PDLG_P_LETTER    21  /* ICON in Baum PDLG_DIALOGS */
 #define PDLG_G_LAND      22  /* USERDEF in Baum PDLG_DIALOGS */
 #define PDLG_P_SCALE     23  /* FBOXTEXT in Baum PDLG_DIALOGS */
 #define PDLG_RASTER      28  /* BOX in Baum PDLG_DIALOGS */
