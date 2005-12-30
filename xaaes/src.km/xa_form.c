@@ -404,7 +404,7 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 		bool nolist = false;
 		RECT r;
 
-		ob_rectangle(alert_form, 0, &or);
+		ob_rectangle(alert_form, aesobj(alert_form, 0), &or);
 		center_rect(&or);
 		
 		if (C.update_lock && C.update_lock == client->p)
@@ -437,7 +437,7 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 		{
 			widg = get_widget(alert_window, XAW_TOOLBAR);
 
-			wt = set_toolbar_widget(lock, alert_window, client, alert_form, -1, WIP_NOTEXT, true, NULL, &or); //(RECT *)&alert_form->ob_x);
+			wt = set_toolbar_widget(lock, alert_window, client, alert_form, inv_aesobj(), WIP_NOTEXT, true, NULL, &or); //(RECT *)&alert_form->ob_x);
 			wt->extra = alertxt;
 			wt->flags |= WTF_XTRA_ALLOC | WTF_TREE_ALLOC;
 
@@ -506,12 +506,13 @@ static short
 _form_keybd(	struct xa_client *client,
 		struct widget_tree *wt,
 		struct xa_window *wind,
-		short nextobj,
+		struct xa_aes_object nextobj,
 		short *keycode,
-		short *newobj)
+		struct xa_aes_object *newobj)
 {
 	unsigned short ks;
-	short cont, editfocus = *newobj;
+	short cont;
+	struct xa_aes_object edit_focus = *newobj;
 	struct rawkey key;
 
 	vq_key_s(C.P_handle, &cont);
@@ -522,7 +523,7 @@ _form_keybd(	struct xa_client *client,
 
 	cont = form_keyboard(wt,					/* widget tree	*/
 			     client->vdi_settings,
-			     editfocus,					/* obj		*/
+			     edit_focus,				/* obj		*/
 			     &key,					/* rawkey	*/
 			     true,					/* redraw flag	*/
 			     wind ? &wind->rect_list.start : NULL,	/* rect list	*/
@@ -541,10 +542,10 @@ _form_keybd(	struct xa_client *client,
 	{
 		if (!*keycode)
 		{
-			if (*newobj <= 0)
-				*newobj = editfocus;
+			if (aesobj_item(newobj) <= 0)
+				*newobj = edit_focus;
 		}
-		else if (*newobj <= 0)
+		else if (aesobj_item(newobj) <= 0)
 			*newobj = nextobj;
 	}
 	return cont;
@@ -554,8 +555,9 @@ unsigned long
 XA_form_keybd(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	OBJECT *obtree = (OBJECT *)pb->addrin[0];
-	short newobj = 0, keyout = 0, cont = 0;
-	
+	short keyout = 0, cont = 0;
+	struct xa_aes_object newobj = aesobj(obtree, 0);
+
 	CONTROL(3,3,1)
 
 	DIAG((D_keybd, client, "XA_form_keybd for %s %lx: obj:%d, k:%x, nob:%d",
@@ -570,13 +572,13 @@ XA_form_keybd(enum locks lock, struct xa_client *client, AESPB *pb)
 
 // 	 	display("XA_form_keybd: intin0=%d, intin1=%d, intin2=%d", pb->intin[0], pb->intin[1], pb->intin[2]);
 		
-		newobj = pb->intin[0];
+		newobj = aesobj(wt->tree, pb->intin[0]);
 		keyout = pb->intin[1];
-		cont = _form_keybd(client, wt, NULL, pb->intin[2], &keyout, &newobj);	
+		cont = _form_keybd(client, wt, NULL, aesobj(wt->tree,pb->intin[2]), &keyout, &newobj);	
 	}
 	
 	pb->intout[0] = cont;
-	pb->intout[1] = newobj;
+	pb->intout[1] = aesobj_item(&newobj);
 	pb->intout[2] = keyout;
 
 	return XAC_DONE;
@@ -586,14 +588,15 @@ unsigned long
 XA_form_wkeybd(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	OBJECT *obtree = (OBJECT *)pb->addrin[0];
-	short cont = 0, newobj = 0, keyout = 0;
+	short cont = 0, keyout = 0;
+	struct xa_aes_object newobj = aesobj(obtree, 0);
 	
 	CONTROL(4,3,1)
 
 	DIAG((D_keybd, client, "XA_form_wkeybd for %s %lx: obj:%d, k:%x, nob:%d",
 		c_owner(client), obtree, pb->intin[0], pb->intin[1], pb->intin[2]));
 
-	cont = newobj = keyout = 0;
+	cont = keyout = 0;
 
 	if (validate_obtree(client, obtree, "XA_form_wkeybd:"))
 	{
@@ -606,14 +609,14 @@ XA_form_wkeybd(enum locks lock, struct xa_client *client, AESPB *pb)
 				wt = new_widget_tree(client, obtree);
 
 // 		 	display("XA_form_wkeybd: intin0=%d, intin1=%d, intin2=%d", pb->intin[0], pb->intin[1], pb->intin[2]);
-			newobj = pb->intin[0];
+			newobj = aesobj(obtree, pb->intin[0]);
 			keyout = pb->intin[1];
-			cont = _form_keybd(client, wt, wind, pb->intin[2], &keyout, &newobj);	
+			cont = _form_keybd(client, wt, wind, aesobj(obtree, pb->intin[2]), &keyout, &newobj);	
 		}
 	}
 	
 	pb->intout[0] = cont;
-	pb->intout[1] = newobj;
+	pb->intout[1] = aesobj_item(&newobj);
 	pb->intout[2] = keyout;
 
 	return XAC_DONE;
@@ -816,14 +819,14 @@ XA_form_do(enum locks lock, struct xa_client *client, AESPB *pb)
 	if (validate_obtree(client, obtree, "XA_form_do:"))
 	{
 		struct xa_window *wind;
-		short nextobj;
+		struct xa_aes_object nextobj;
 
-		nextobj = pb->intin[0] == 0 ? -2 : pb->intin[0];
+		nextobj = aesobj(obtree, pb->intin[0] == 0 ? -2 : pb->intin[0]);
 		client->waiting_pb = pb;
 
 // 		if (d) display("obtree rect = %d/%d/%d/%d", *(RECT *)&obtree->ob_x);
 	
-		if (Setup_form_do(client, obtree, nextobj/*pb->intin[0]*/, &wind, &nextobj))
+		if (Setup_form_do(client, obtree, nextobj, &wind, &nextobj))
 		{
 			client->status |= CS_FORM_DO;
 			if (wind)
@@ -866,18 +869,18 @@ XA_form_button(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	XA_TREE *wt;
 	OBJECT *obtree = (OBJECT*)pb->addrin[0];
-	short obj = pb->intin[0];
 	struct moose_data md;
 	bool retv;
 
 	CONTROL(2,2,1)
 
 	DIAG((D_form, client, "XA_form_button %lx: obj:%d, clks:%d",
-		obtree, obj, pb->intin[1]));
+		obtree, pb->intin[0], pb->intin[1]));
 
 	if (validate_obtree(client, obtree, "XA_form_button:"))
 	{
-		short newstate, nextobj, clickmask;
+		short newstate, clickmask;
+		struct xa_aes_object obj, nextobj;
 
 		if (!(wt = obtree_to_wt(client, obtree)))
 			wt = new_widget_tree(client, obtree);
@@ -887,7 +890,9 @@ XA_form_button(enum locks lock, struct xa_client *client, AESPB *pb)
 		check_mouse(client, &md.cstate, &md.x, &md.y);
 		if ((md.clicks = pb->intin[1]))
 			md.state = MBS_LEFT;
-	
+
+		obj = aesobj(wt->tree, pb->intin[0]);
+
 		/* XXX - Ozk:
 		 * I think we need to look for this obtree to see if we have it in
 		 * a window, in which case we need to use that windows rectangle list
@@ -905,7 +910,7 @@ XA_form_button(enum locks lock, struct xa_client *client, AESPB *pb)
 				   &clickmask);	/* click mask	*/
 
 		pb->intout[0] = retv;
-		pb->intout[1] = nextobj|clickmask;
+		pb->intout[1] = aesobj_item(&nextobj) | clickmask;
 	}
 	else
 		pb->intout[0] = pb->intout[1] = 0;
@@ -920,7 +925,7 @@ XA_form_wbutton(enum locks lock, struct xa_client *client, AESPB *pb)
 	XA_TREE *wt;
 	OBJECT *obtree = (OBJECT*)pb->addrin[0];
 	struct xa_window *wind;
-	short obj = pb->intin[0], newstate, nextobj = 0, clickmask;
+	short obj = pb->intin[0], newstate, objout = 0, clickmask;
 	struct moose_data md;
 	bool retv = false;
 
@@ -933,9 +938,12 @@ XA_form_wbutton(enum locks lock, struct xa_client *client, AESPB *pb)
 	{
 		if ((wind = get_wind_by_handle(lock, pb->intin[2])))
 		{
+			struct xa_aes_object nextobj;
+			
 			if (!(wt = obtree_to_wt(client, obtree)))
 				wt = new_widget_tree(client, obtree);
 			
+			nextobj = aesobj(obtree, obj);
 			/*
 			 * Create a moose_data packet...
 			 */
@@ -950,7 +958,7 @@ XA_form_wbutton(enum locks lock, struct xa_client *client, AESPB *pb)
 			 */
 			retv = form_button(wt,				/* widget tree	*/
 					   client->vdi_settings,
-					   obj,				/* obj idx	*/
+					   nextobj,			/* obj idx	*/
 					   &md,				/* moose data	*/
 					   FBF_REDRAW|FBF_CHANGE_FOCUS,	/* redraw flag	*/
 					   &wind->rect_list.start,	/* rect list	*/
@@ -959,10 +967,10 @@ XA_form_wbutton(enum locks lock, struct xa_client *client, AESPB *pb)
 					   &nextobj,			/* next obj	*/
 					   &clickmask);			/* click mask	*/
 
-			nextobj |= clickmask;
+			objout = aesobj_item(&nextobj) | clickmask;
 		}
 	}
 	pb->intout[0] = retv;
-	pb->intout[1] = nextobj;
+	pb->intout[1] = objout;
 	return XAC_DONE;
 }

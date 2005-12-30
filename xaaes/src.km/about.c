@@ -86,9 +86,9 @@ about_form_exit(struct xa_client *client,
 	enum locks lock = 0;
 	OBJECT *obtree = wt->tree;
 	
-	wt->current = fr->obj|fr->dblmask;
+// 	wt->current = fr->obj|fr->dblmask;
 
-	switch (fr->obj)
+	switch (aesobj_item(&fr->obj))
 	{
 		case ABOUT_OK:
 		{
@@ -100,14 +100,12 @@ about_form_exit(struct xa_client *client,
 		}
 		case ABOUT_LIST:
 		{
-			short obj = fr->obj;
-
-			if ( fr->md && ((obtree[obj].ob_type & 0xff) == G_SLIST))
+			if ( fr->md && (aesobj_ob(&fr->obj)->ob_type & 0xff) == G_SLIST)
 			{
 				if (fr->md->clicks > 1)
-					dclick_scroll_list(lock, obtree, obj, fr->md);
+					dclick_scroll_list(lock, obtree, aesobj_item(&fr->obj), fr->md);
 				else
-					click_scroll_list(lock, obtree, obj, fr->md);
+					click_scroll_list(lock, obtree, aesobj_item(&fr->obj), fr->md);
 			}
 			break;
 		}
@@ -129,7 +127,7 @@ open_about(enum locks lock, struct xa_client *client)
 
 		wt = obtree_to_wt(client, obtree);
 		
-		ob_rectangle(obtree, 0, &or);
+		ob_rectangle(obtree, aesobj(obtree, 0), &or);
 
 		/* Work out sizing */
 		if (!remember.w)
@@ -164,7 +162,7 @@ open_about(enum locks lock, struct xa_client *client)
 		(obtree + ABOUT_INFOSTR)->ob_spec.free_string = info_string;
 #endif
 
-		wt = set_toolbar_widget(lock, dialog_window, dialog_window->owner, obtree, -1, 0/*WIP_NOTEXT*/, true, NULL, &or);
+		wt = set_toolbar_widget(lock, dialog_window, dialog_window->owner, obtree, inv_aesobj(), 0/*WIP_NOTEXT*/, true, NULL, &or);
 		wt->exit_form = about_form_exit;
 		list = object_get_slist(obtree + ABOUT_LIST);
 

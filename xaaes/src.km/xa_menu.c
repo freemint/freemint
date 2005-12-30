@@ -582,7 +582,7 @@ menu_popup(enum locks lock, struct xa_client *client, MENU *mn, MENU *result, sh
 			old_y = ob->ob_y;
 
 			ob->ob_x = ob->ob_y = wt->dx = wt->dy = 0;
-			obj_offset(wt, mn->mn_menu, &x, &y);
+			obj_offset(wt, aesobj(wt->tree, mn->mn_menu), &x, &y);
 			tab->wind = NULL;
 			tab->widg = NULL;
 			tab->ty = POP_UP;

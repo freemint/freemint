@@ -67,15 +67,15 @@ click_desktop_widget(enum locks lock, struct xa_window *wind, struct xa_widget *
 	*/
 	if (!mouse_locked() && mowner != client && (md->state & 1))
 	{
-		int item;
+		struct xa_aes_object item;
 
-		item = obj_find(get_desktop(), 0, 1, md->x, md->y, NULL);
+		item = obj_find(get_desktop(), aesobj(get_desktop()->tree, 0), 1, md->x, md->y, NULL);
 
 		DIAG((D_button, NULL, "  --  item %d", item));
 
 		/* button must be released on the root object. */
 
-		if (md->cstate == 0 && item == 0)
+		if (md->cstate == 0 && aesobj_item(&item) == 0)
 		{
 			/* Also unhides the windows. */
 			app_in_front(lock, client, true, true, true);

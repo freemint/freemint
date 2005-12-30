@@ -642,7 +642,7 @@ menu_dis_col(XA_TREE *wt)		/* Get colours for disabled better. */
 	{
 		if (wt->is_menu)
 		{
-			OBJECT *ob = wt->tree + wt->current;
+			OBJECT *ob = wt->current.ob;
 			if (ob->ob_state & OS_DISABLED)
 			{
 				c = objc_rend.dial_colours.shadow_col;
@@ -684,7 +684,7 @@ ob_text(XA_TREE *wt,
 {
 	if (t && *t)
 	{
-		OBJECT *ob = wt->tree + wt->current;
+		OBJECT *ob = wt->current.ob;
 		bool fits = true; // !o || ((o->h >= r->h - (d3_foreground(ob) ? 4 : 0)));
 
 		/* set according to circumstances. */
@@ -717,7 +717,7 @@ ob_text(XA_TREE *wt,
 			}
 		}
 		
-		if (ei && !(state & OS_DISABLED) && ei->obj == wt->current && ei->m_end > ei->m_start)
+		if (ei && !(state & OS_DISABLED) && edit_ob(ei) == ob && ei->m_end > ei->m_start)
 		{
 			int sl = strlen(t) + 1;
 			short tc, x = r->x, y = r->y - v->dists[5], w, h;
@@ -1183,7 +1183,7 @@ enable_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v)
 	if (!ei)
 		return; //ei = &wt->e;
 
-	if (ei->obj > 0)
+	if (edit_set(ei))
 	{
 		set_objcursor(wt, v, ei);
 		ei->c_state |= OB_CURS_ENABLED;
@@ -1209,15 +1209,15 @@ eor_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_rect_
 
 	if (!ei)
 		ei = &wt->e;
-
-	if (ei->obj != -1)
+	
+	if (edit_set(ei))
 	{
 		set_objcursor(wt, v, ei);
 		r = ei->cr;
 		r.x += wt->tree->ob_x;
 		r.y += wt->tree->ob_y;
 
-		if (!(wt->tree[ei->obj].ob_flags & OF_HIDETREE))
+		if (!(edit_ob(ei)->ob_flags & OF_HIDETREE))
 			rl_xor(v, &r, rl);
 	}
 }
@@ -1232,7 +1232,7 @@ draw_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_rect
 
 	if ( !(ei->c_state & (OB_CURS_ENABLED)) ) // | OB_CURS_DRAWN)) == OB_CURS_ENABLED )
 	{
-		if (ei->obj >= 0 && !(wt->tree[ei->obj].ob_flags & OF_HIDETREE))
+		if (edit_set(ei) && !(edit_ob(ei)->ob_flags & OF_HIDETREE))
 		{
 			if (rdrw)
 			{
@@ -1257,7 +1257,7 @@ undraw_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_re
 	if ( (ei->c_state & (OB_CURS_ENABLED))) // | OB_CURS_DRAWN)) == (OB_CURS_ENABLED | OB_CURS_DRAWN) )
 	{
 		
-		if (ei->obj >= 0 && !(wt->tree[ei->obj].ob_flags & OF_HIDETREE))
+		if (edit_set(ei) && !(edit_ob(ei)->ob_flags & OF_HIDETREE))
 		{
 			if (rdrw)
 			{
@@ -1285,11 +1285,11 @@ set_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v, struct objc_edi
 	if (!ei)
 		ei = &wt->e;
 
-	if (ei->obj <= 0)
+	if (!edit_set(ei))
 		return;
 
-	obj_offset(wt, ei->obj, &r.x, &r.y);
-	ob = wt->tree + ei->obj;
+	obj_offset(wt, editfocus(ei), &r.x, &r.y);
+	ob = edit_ob(ei);
 	r.w  = ob->ob_width;
 	r.h  = ob->ob_height;
 	
@@ -1321,7 +1321,7 @@ static void
 draw_g_box(struct widget_tree *wt, struct xa_vdi_settings *v)
 {
 	RECT r = wt->r;
-	OBJECT *ob = wt->tree + wt->current;
+	OBJECT *ob = wt->current.ob;
 	BFOBSPEC colours;
 	short thick;
 
@@ -1334,7 +1334,7 @@ draw_g_box(struct widget_tree *wt, struct xa_vdi_settings *v)
 
 	/* plain box is a tiny little bit special. :-) */
 	if (d3_foreground(ob)
-	    && !(wt->current == 0 && thick < 0))	/* root box with inside border */
+	    && !(wt->current.ob == wt->tree && thick < 0))	/* root box with inside border */
 	{
 		d3_pushbutton( v, 0,
 		               &r,
@@ -1363,7 +1363,7 @@ draw_g_box(struct widget_tree *wt, struct xa_vdi_settings *v)
 		/* Display a border? */
 		if (thick)
 		{
-			if (!(wt->current == 0 && wt->zen))
+			if (!(wt->current.ob == wt->tree && wt->zen))
 			{
 				g2d_box(v, thick, &r, colours.framecol);
 				shadow_object(v, 0, ob->ob_state, &r, colours.framecol, thick);
@@ -1376,7 +1376,7 @@ void
 d_g_box(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 {
 	//RECT r = wt->r;
-	OBJECT *ob = wt->tree + wt->current;
+	OBJECT *ob = wt->current.ob;
 	//BFOBSPEC colours;
 	//short thick;
 
@@ -1392,7 +1392,7 @@ d_g_box(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 		ob->ob_type = ty;
 
 		p->wt		= wt;
-		p->index	= wt->current;
+		p->index	= wt->current.item;
 		p->r		= wt->r;
 		if (xa_rect_clip(&wt->r, &v->clip, &p->clip))
 		{
@@ -1416,7 +1416,7 @@ void
 d_g_ibox(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 {
 	RECT r = wt->r;
-	OBJECT *ob = wt->tree + wt->current;
+	OBJECT *ob = wt->current.ob;
 	BFOBSPEC colours;
 	short thick;
 
@@ -1434,7 +1434,7 @@ d_g_ibox(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 
 	/* plain box is a tiny little bit special. :-) */
 	if (d3_foreground(ob)
-	    && !(wt->current == 0 && thick < 0)) /* root box with inside border */
+	    && !(wt->current.ob == wt->tree && thick < 0)) /* root box with inside border */
 	{
 		d3_pushbutton( v, 0,
 		               &r,
@@ -1451,7 +1451,7 @@ d_g_ibox(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 		/* Display a border? */
 		if (thick)
 		{
-			if (!(wt->current == 0 && wt->zen))
+			if (!(wt->current.ob == wt->tree && wt->zen))
 			{
 				g2d_box(v, thick, &r, colours.framecol);
 				shadow_object(v, 0, ob->ob_state, &r, colours.framecol, thick);
@@ -1467,7 +1467,7 @@ void
 d_g_boxchar(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 {
 	RECT r = wt->r, gr = r;
-	OBJECT *ob = wt->tree + wt->current;
+	OBJECT *ob = wt->current.ob;
 	BFOBSPEC colours;
 	ushort selected = ob->ob_state & OS_SELECTED;
 	short thick;
@@ -1535,7 +1535,7 @@ d_g_boxtext(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 	short thick = 0;
 	ushort selected;
 	RECT r = wt->r, gr;
-	OBJECT *ob = wt->tree + wt->current;
+	OBJECT *ob = wt->current.ob;
 	BFOBSPEC colours;
 	struct objc_edit_info *ei;
 	char temp_text[256];
@@ -1582,7 +1582,7 @@ d_g_fboxtext(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 {
 	char temp_text[256];
 	RECT r = wt->r;
-	OBJECT *ob = wt->tree + wt->current;
+	OBJECT *ob = wt->current.ob;
 	RECT gr,cr;
 	BFOBSPEC colours;
 	struct objc_edit_info *ei;
@@ -1590,7 +1590,7 @@ d_g_fboxtext(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 	short thick;
 
 	ei = wt->ei ? wt->ei : &wt->e;
-	if (ei->obj != wt->current)
+	if (edit_ob(ei) != wt->current.ob)
 		ei = NULL;
 
 	(*v->api->t_effects)(v, 0);
@@ -1636,7 +1636,7 @@ void
 d_g_button(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 {
 	RECT r = wt->r, gr = r;
-	OBJECT *ob = wt->tree + wt->current;
+	OBJECT *ob = wt->current.ob;
 	BFOBSPEC colours;
 	short thick = object_thickness(ob); 
 	ushort selected = ob->ob_state & OS_SELECTED;
@@ -1697,13 +1697,14 @@ d_g_button(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 		}
 		else
 		{
-			short xobj, w, h;
+			short w, h;
+			struct xa_aes_object xobj;
 			XA_TREE b;
 
 			b.owner = wt->owner;
 			b.tree = xobj_rsc;
-			xobj = (ob->ob_flags & OF_RBUTTON) ? (selected ? XOBJ_R_SEL : XOBJ_R_DSEL) : (selected ? XOBJ_B_SEL : XOBJ_B_DSEL);
-			object_spec_wh((OBJECT *)xobj_rsc + xobj, &w, &h);
+			xobj = aesobj(xobj_rsc, (ob->ob_flags & OF_RBUTTON) ? (selected ? XOBJ_R_SEL : XOBJ_R_DSEL) : (selected ? XOBJ_B_SEL : XOBJ_B_DSEL));
+			object_spec_wh(aesobj_ob(&xobj), &w, &h);
 			if (gr.h > h)
 				gr.y += ((gr.h - h) >> 1);
 			display_object(	lock, &b, v, xobj, gr.x, gr.y, 11);
@@ -1872,7 +1873,7 @@ icon_characters(struct xa_vdi_settings *v, ICONBLK *iconblk, short state, short 
 void
 d_g_image(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 {
-	OBJECT *ob = wt->tree + wt->current;
+	OBJECT *ob = wt->current.ob;
 	BITBLK *bitblk;
 	MFDB Mscreen;
 	MFDB Micon;
@@ -1927,7 +1928,7 @@ static MFDB Mddm =
 void
 d_g_icon(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 {
-	OBJECT *ob = wt->tree + wt->current;
+	OBJECT *ob = wt->current.ob;
 	ICONBLK *iconblk;
 	MFDB Mscreen;
 	MFDB Micon;
@@ -2023,7 +2024,7 @@ d_g_icon(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 void
 d_g_cicon(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 {
-	OBJECT *ob = wt->tree + wt->current;
+	OBJECT *ob = wt->current.ob;
 	ICONBLK *iconblk;
 	CICON	*best_cicon;
 	MFDB Mscreen;
@@ -2131,7 +2132,7 @@ void
 d_g_text(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 {
 	short thick,thin;
-	OBJECT *ob = wt->tree + wt->current;
+	OBJECT *ob = wt->current.ob;
 	RECT r = wt->r, gr;
 	BFOBSPEC colours;
 	struct objc_edit_info *ei;
@@ -2154,14 +2155,14 @@ void
 d_g_ftext(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 {
 	short thick,thin;
-	OBJECT *ob = wt->tree + wt->current;
+	OBJECT *ob = wt->current.ob;
 	RECT r = wt->r, gr, cr;
 	BFOBSPEC colours;
 	struct objc_edit_info *ei;
 	char temp_text[256];
 
 	ei = wt->ei ? wt->ei : &wt->e;
-	if (ei->obj != wt->current)
+	if (edit_ob(ei) != wt->current.ob)
 		ei = NULL;
 
 	(*v->api->t_effects)(v, 0);
@@ -2186,7 +2187,7 @@ d_g_progdef(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 {
 	struct sigaction oact, act;
 	struct xa_client *client = lookup_extension(NULL, XAAES_MAGIC);
-	OBJECT *ob = wt->tree + wt->current;
+	OBJECT *ob = wt->current.ob;
 	PARMBLK *p;
 	//short r[4];
 	RECT save_clip;
@@ -2208,8 +2209,8 @@ d_g_progdef(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 		return;
 		
 	p = parmblk(client->ut);
-	p->pb_tree = wt->tree;
-	p->pb_obj = wt->current;
+	p->pb_tree = wt->current.tree;
+	p->pb_obj = wt->current.item;
 
 	p->pb_prevstate = p->pb_currstate = ob->ob_state;
 
@@ -2298,7 +2299,7 @@ d_g_slist(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 	SCROLL_INFO *list;
 	SCROLL_ENTRY *this;
 	struct xa_window *w;
-	OBJECT *ob = wt->tree + wt->current;
+	OBJECT *ob = wt->current.ob;
 
 	/* list = object_get_spec(ob)->listbox; */
 	list = (SCROLL_INFO*)object_get_spec(ob)->index;
@@ -2331,7 +2332,7 @@ void
 d_g_string(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 {
 	RECT r = wt->r;
-	OBJECT *ob = wt->tree + wt->current;
+	OBJECT *ob = wt->current.ob;
 	ushort state = ob->ob_state;
 	char *t, text[256];
 
@@ -2409,7 +2410,7 @@ d_g_string(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 void
 d_g_title(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 {
-	OBJECT *ob = wt->tree + wt->current;
+	OBJECT *ob = wt->current.ob;
 	char *t = object_get_spec(ob)->free_string;
 
 	if (t)
@@ -2455,8 +2456,8 @@ init_objects(void)
 {
 	short f;
 
-	nil_tree.e.obj = -1;
-	nil_tree.focus = -1;
+	clear_edit(&nil_tree.e);
+	clear_focus(&nil_tree);
 
 	for (f = 0; f <= G_UNKNOWN; f++)
 		/* Anything with a NULL pointer won't get called */
@@ -2559,10 +2560,10 @@ exit_ob_render(void)
  * Display a primitive object
  */
 void
-display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, short item, short parent_x, short parent_y, short which)
+display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_object item, short parent_x, short parent_y, short which)
 {
 	RECT r, o, sr;
-	OBJECT *ob = wt->tree + item;
+	OBJECT *ob = aesobj_ob(&item);
 	ObjectDisplay *display_routine = NULL;
 
 	/* HR: state_mask is for G_PROGDEF originally.
@@ -2607,7 +2608,7 @@ display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, short it
 		return;
 	}
 
-	/* Fill in the object display parameter structure */			
+	/* Fill in the object display parameter structure */
 	wt->current = item;
 	wt->parent_x = parent_x;
 	wt->parent_y = parent_y;
@@ -2632,8 +2633,8 @@ display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, short it
 			 item,
 			 r.x, r.y, r.w, r.h,
 			 t, display_routine,
-			 object_type(wt->tree, item),
-			 object_txt(wt->tree, item),
+			 object_type(aesobj_tree(&item), aesobj_item(&item)),
+			 object_txt(aesobj_tree(&item), aesobj_item(&item)),
 			 ob->ob_flags,flagstr,
 			 ob->ob_state,statestr));
 	}
@@ -2678,7 +2679,7 @@ display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, short it
 		if ((ob->ob_state & state_mask) & OS_OUTLINED)
 		{
 			/* special handling of root object. */
-			if (!wt->zen || item != 0)
+			if (!wt->zen || aesobj_item(&item) != 0)
 			{
 				if (!MONO && d3_any(ob))
 				{
@@ -2703,7 +2704,7 @@ display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, short it
 			write_selection(v, 0, &r);
 	}
 
-	if (wt->focus == item)
+	if (focus_ob(wt) == ob)
 	{
 		(*v->api->wr_mode)(v, MD_TRANS);
 		(*v->api->l_color)(v, G_RED);
@@ -2724,23 +2725,24 @@ display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, short it
 
 /* draw_object_tree */
 short
-draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, struct xa_vdi_settings *v, short item, short depth, short *xy, short flags)
+draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, struct xa_vdi_settings *v, struct xa_aes_object item, short depth, short *xy, short flags)
 {
 	XA_TREE this;
-	short next;
-	short current = 0, stop = -1, rel_depth = 1, head;
+	short /*current = 0, stop = -1, */rel_depth = 1, head;
 	short x, y;
 	struct objc_edit_info *ei = wt->ei;
 	bool start_drawing = false;
 	bool curson = false;
 	bool docurs = ((flags & DRW_CURSOR));
+	struct oblink_spec *oblink = NULL;
+	struct xa_aes_object current, stop;
 
 	if (wt == NULL)
 	{
 		this = nil_tree;
 
 		wt = &this;
-		wt->e.obj = -1;
+		clear_edit(&wt->e);
 		wt->ei = NULL;
 		wt->owner = C.Aes;
 	}
@@ -2753,9 +2755,13 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, struct xa_vdi_setti
 	if (!wt->owner)
 		wt->owner = C.Aes;
 
+	current = aesobj(wt->tree, 0);
+	stop = inv_aesobj();
+
 	/* dx,dy are provided by sliders if present. */
 	x = -wt->dx;
 	y = -wt->dy;
+
 	DIAG((D_objc, wt->owner, "dx = %d, dy = %d", x, y));
 	DIAG((D_objc, wt->owner, "draw_object_tree for %s to %d/%d,%d/%d; %lx + %d depth:%d",
 		t_owner(wt), x + tree->ob_x, y + tree->ob_y,
@@ -2786,61 +2792,78 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, struct xa_vdi_setti
 	//		current, x, y, tree[current].ob_flags, tree[current].ob_state,
 	//		tree[current].ob_head, tree[current].ob_tail, tree[current].ob_next,
 	//		rel_depth, start_drawing ? "yes":"no"));
-
-		if (current == item)
+uplink:
+		if (same_aesobj(&item, &current))
 		{
 			stop = item;
 			start_drawing = true;
 			rel_depth = 0;
 		}
 
-		if (start_drawing && !(tree[current].ob_flags & OF_HIDETREE))
+		if (!(aesobj_ob(&current)->ob_flags & OF_HIDETREE))
 		{
-			display_object(lock, wt, v, current, x, y, 10);
-			/* Display this object */
-			if (!ei && docurs && current == wt->e.obj)
+			if (set_aesobj_uplink(&tree, &current, &stop, &oblink))
+				goto uplink;
+
+			if (start_drawing)
 			{
-// 				display("redrawing cursor for obj %d", current);
-				if ((tree[current].ob_type & 0xff) != G_USERDEF)
-					eor_objcursor(wt, v, NULL); // display("redrawing cursor for obj %d", current);
-// 				else
-// 					display("skipping progdef curs");
-				docurs = false;	
+				display_object(lock, wt, v, current, x, y, 10);
+				/* Display this object */
+				if (!ei && docurs && same_aesobj(&current, &wt->e.o))
+				{
+					if ((aesobj_ob(&current)->ob_type & 0xff) != G_USERDEF)
+						eor_objcursor(wt, v, NULL);
+					docurs = false;	
+				}
 			}
 		}
 
-		head = tree[current].ob_head;
+		head = aesobj_ob(&current)->ob_head;
 
 		/* Any non-hidden children? */
 		if (    head >= 0
-		    && !(tree[current].ob_flags & OF_HIDETREE)
+		    && !(aesobj_ob(&current)->ob_flags & OF_HIDETREE)
 		    &&  (!start_drawing || (start_drawing && rel_depth < depth)))
 		{
-			x += tree[current].ob_x;
-			y += tree[current].ob_y;
+			x += aesobj_ob(&current)->ob_x;
+			y += aesobj_ob(&current)->ob_y;
 
 			rel_depth++;
 
-			current = head;
+			current = aesobj(aesobj_tree(&current), head);
 		}
 		else
 		{
+			struct xa_aes_object next;
+downlink:
 			/* Try for a sibling */
-			next = tree[current].ob_next;
+			next = aesobj(aesobj_tree(&current), aesobj_ob(&current)->ob_next);
 
 			/* Trace back up tree if no more siblings */
-			while (next != stop && next != -1 && tree[next].ob_tail == current)
+			while (valid_aesobj(&next) && !same_aesobj(&next, &stop))
 			{
-				current = next;
-				x -= tree[current].ob_x;
-				y -= tree[current].ob_y;
-				next = tree[current].ob_next;
-				rel_depth--;
+				struct xa_aes_object tail = aesobj(aesobj_tree(&next), aesobj_ob(&next)->ob_tail);
+				if (same_aesobj(&current, &tail))
+				{
+					current = next;
+					x -= aesobj_ob(&current)->ob_x;
+					y -= aesobj_ob(&current)->ob_y;
+					next = aesobj(aesobj_tree(&current), aesobj_ob(&current)->ob_next);
+					rel_depth--;
+				}
+				else
+					break;
+			}
+			if (valid_aesobj(&next) && same_aesobj(&next, &stop) && set_aesobj_downlink(&tree, &current, &stop, &oblink))
+			{
+				x -= aesobj_ob(&current)->ob_x;
+				y -= aesobj_ob(&current)->ob_y;
+				goto downlink;
 			}
 			current = next;
 		}
 	}
-	while (current != stop && current != -1 && rel_depth > 0); // !(start_drawing && rel_depth < 1));
+	while (valid_aesobj(&current) && !same_aesobj(&current, &stop)  && rel_depth > 0);
 
 	if (curson)
 		draw_objcursor(wt, v, NULL, true);
@@ -2849,6 +2872,9 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, struct xa_vdi_setti
 	(*v->api->f_interior)(v, FIS_SOLID);
 
 	DIAGS(("draw_object_tree exit OK!"));
+
+	clean_aesobj_links(&oblink);
+
 	return true;
 }
 

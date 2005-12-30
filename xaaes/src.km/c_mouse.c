@@ -566,14 +566,14 @@ cXA_wheel_event(enum locks lock, struct c_event *ce, bool cancel)
 			{
 				XA_TREE *wt = get_widget(wind, XAW_TOOLBAR)->stuff;
 				OBJECT *obtree;
-				short obj;
+				struct xa_aes_object obj;
 				
 				if (wt && (obtree = wt->tree))
 				{
-					obj = obj_find(wt, 0, 10, md->x, md->y, NULL);
-					if (obj > 0 && (obtree[obj].ob_type & 0xff) == G_SLIST)
+					obj = obj_find(wt, aesobj(wt->tree, 0), 10, md->x, md->y, NULL);
+					if (valid_aesobj(&obj) && (aesobj_ob(&obj)->ob_type & 0xff) == G_SLIST)
 					{
-						struct scroll_info *list = object_get_slist(obtree + obj);
+						struct scroll_info *list = object_get_slist(aesobj_ob(&obj));
 						
 						amount *= (md->clicks < 0 ? -md->clicks : md->clicks);
 						whlarrowed(list->wi, WA, amount, md);

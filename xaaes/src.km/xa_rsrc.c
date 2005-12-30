@@ -317,7 +317,7 @@ fix_tedarray(struct xa_client *client, void *b, TEDINFO *ti, unsigned long n, ch
 		{
 			bzero(ei, sizeof(*ei));
 
-			ei->p_ti = ti;
+			ei->p_ti = 	ti;
 			ti->te_ptext	+= (long)b;
 			ti->te_ptmplt	+= (long)b;
 			ti->te_pvalid	+= (long)b;
@@ -638,7 +638,10 @@ fix_trees(struct xa_client *client, void *b, OBJECT **trees, unsigned long n, sh
 				
 							ted = (TEDINFO *)obj->ob_spec.index;
 							if (ted->te_ptext == (char *)-1L)
-								((XTEDINFO *)ted->te_ptmplt)->obj = k;
+							{
+								((XTEDINFO *)ted->te_ptmplt)->o = aesobj(*trees, k);
+// 								set_aesobj(&((XTEDINFO *)ted->te_ptmplt)->o, *trees, k); //->index = k;
+							}
 							break;
 						}
 						default:;

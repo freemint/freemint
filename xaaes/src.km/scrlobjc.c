@@ -47,6 +47,7 @@
 static void
 slist_msg_handler(struct xa_window *wind, struct xa_client *to, short amq, short qmf, short *msg);
 
+static void entry_action(struct scroll_info *list, struct scroll_entry *this, const struct moose_data *md);
 
 static struct xa_wtxt_inf default_fnt =
 {
@@ -658,6 +659,7 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this, str
 					if (xa_rect_clip(clip, &r, &clp))
 					{
 						short ix, iy;
+						
 						(*v->api->set_clip)(v, &clp);
 						if (sel)
 							c->c.icon.icon->ob_state |= OS_SELECTED;
@@ -678,7 +680,7 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this, str
 						
 						list->nil_wt->tree = c->c.icon.icon;
 						list->nil_wt->owner = list->wt->owner;
-						display_object(lock, list->nil_wt, v, 0, ix, iy, 12);	
+						display_object(lock, list->nil_wt, v, aesobj(list->nil_wt->tree, 0), ix, iy, 12);	
 					}
 					break;
 				}
@@ -698,6 +700,7 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this, str
 						tw = r.w;
 						if (c->c.text.icon.icon)
 						{
+							
 							short ix, iy;
 							if (sel)
 								c->c.text.icon.icon->ob_state |= OS_SELECTED;
@@ -717,7 +720,7 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this, str
 							
 							list->nil_wt->tree = c->c.text.icon.icon;
 							list->nil_wt->owner = list->wt->owner;
-							display_object(lock, list->nil_wt, v, 0, ix, iy, 12);
+							display_object(lock, list->nil_wt, v, aesobj(list->nil_wt->tree, 0), ix, iy, 12);
 							dx += c->c.text.icon.r.w;
 							tw -= c->c.text.icon.r.w;
 						}
@@ -1908,6 +1911,19 @@ m_state_done:
 			}
 			break;
 		}
+		case SESET_ACTIVE:
+		{
+			if (entry != list->cur)
+			{
+				if (!(entry && is_in_list(list, entry)))
+					entry = NULL;
+				if ((list->cur = entry))
+				{
+					entry_action(list, list->cur, NULL);
+				}
+			}
+			break;
+		}
 	}
 
 	if (redrw)
@@ -2061,8 +2077,8 @@ get(SCROLL_INFO *list, SCROLL_ENTRY *entry, short what, void *arg)
 
 				if (!this)
 					this = list->start;
-				mask = p->arg.state.mask;
-				bits = p->arg.state.bits;
+				mask = (short)p->arg.state.mask;
+				bits = (short)p->arg.state.bits;
 				switch (p->arg.state.method)
 				{
 					case ANYBITS:
@@ -2082,6 +2098,89 @@ get(SCROLL_INFO *list, SCROLL_ENTRY *entry, short what, void *arg)
 						{
 							state = this->state & mask;
 							if (state == bits)
+								break;
+							this = next_entry(this, p->level.flags, p->level.maxlevel, &p->level.curlevel);
+						}
+						break;
+					}
+					default:
+						this = NULL;
+				}
+				if (!(p->e = this))
+					ret = 0L;
+				break;
+			}
+			case SEGET_ENTRYBYXSTATE:
+			{
+				struct sesetget_params *p = arg;
+				struct scroll_entry *this = entry;
+				short state, bits, mask;
+
+				if (!this)
+					this = list->start;
+				mask = (short)p->arg.state.mask;
+				bits = (short)p->arg.state.bits;
+				switch (p->arg.state.method)
+				{
+					case ANYBITS:
+					{
+						while (this)
+						{
+							state = this->xstate & mask;
+							if ((state & bits))
+								break;
+							this = next_entry(this, p->level.flags, p->level.maxlevel, &p->level.curlevel);
+						}
+						break;
+					}
+					case EXACTBITS:
+					{
+						while (this)
+						{
+							state = this->xstate & mask;
+							if (state == bits)
+								break;
+							this = next_entry(this, p->level.flags, p->level.maxlevel, &p->level.curlevel);
+						}
+						break;
+					}
+					default:
+						this = NULL;
+				}
+				if (!(p->e = this))
+					ret = 0L;
+				break;
+			}
+			case SEGET_ENTRYBYUSRFLAGS:
+			{
+				struct sesetget_params *p = arg;
+				struct scroll_entry *this = entry;
+				long flags, bits, mask;
+
+				if (!this)
+					this = list->start;
+			
+				mask = p->arg.usr_flags.mask;
+				bits = p->arg.usr_flags.bits;
+				switch (p->arg.state.method)
+				{
+					case ANYBITS:
+					{
+						while (this)
+						{
+							flags = this->usr_flags & mask;
+							if ((flags & bits))
+								break;
+							this = next_entry(this, p->level.flags, p->level.maxlevel, &p->level.curlevel);
+						}
+						break;
+					}
+					case EXACTBITS:
+					{
+						while (this)
+						{
+							flags = this->usr_flags & mask;
+							if (flags == bits)
 								break;
 							this = next_entry(this, p->level.flags, p->level.maxlevel, &p->level.curlevel);
 						}
@@ -3665,9 +3764,9 @@ set_slist_object(enum locks lock,
 
 	bzero(list, sizeof(*list) + sizeof(*nil_wt));
 
-	nil_wt->e.obj = -1;
+	clear_edit(&wt->e);
 	nil_wt->ei = NULL;
-	nil_wt->focus = -1;
+	clear_focus(nil_wt);
 	list->nil_wt = nil_wt;
 
 	list->tabs = tabs;
@@ -3706,7 +3805,7 @@ set_slist_object(enum locks lock,
 	list->keypress = key ? key : scrl_cursor;
 
 	list->title = title;
-	obj_area(wt, item, &r);
+	obj_area(wt, aesobj(wt->tree, item), &r);
 	list->rel_x = r.x - wt->tree->ob_x;
 	list->rel_y = r.y - wt->tree->ob_y;
 
@@ -4047,7 +4146,6 @@ scrl_cursor(SCROLL_INFO *list, unsigned short keycode, unsigned short keystate)
 			{
 				if (list->flags & SIF_KEYBDACT)
 				{
-// 					display("entry act downarw");
 					entry_action(list, n, NULL);
 				}
 				else
@@ -4074,7 +4172,7 @@ scrl_cursor(SCROLL_INFO *list, unsigned short keycode, unsigned short keystate)
 				list->set(list, list->cur, SESET_OPEN, 0, NORMREDRAW);
 			else if (list->cur->up)
 			{
-				SCROLL_ENTRY *n = list->cur->up; //prev_entry(list->cur, ENT_VISIBLE);
+				SCROLL_ENTRY *n = list->cur->up;
 // 				if (!n)
 // 					n = list->start;
 				if (n)
@@ -4133,10 +4231,17 @@ scrl_cursor(SCROLL_INFO *list, unsigned short keycode, unsigned short keystate)
 					n = list->start;
 				if (n)
 				{
-					list->set(list, NULL, SESET_UNSELECTED, UNSELECT_ALL, NORMREDRAW);
-					list->cur = n;
-					list->set(list, n, SESET_SELECTED, 0, NOREDRAW);
-					list->vis(list, n, NORMREDRAW);
+					if (list->flags & SIF_KEYBDACT)
+					{
+						entry_action(list, n, NULL);
+					}
+					else
+					{
+						list->set(list, NULL, SESET_UNSELECTED, UNSELECT_ALL, NORMREDRAW);
+						list->cur = n;
+						list->set(list, n, SESET_SELECTED, 0, NOREDRAW);
+						list->vis(list, n, NORMREDRAW);
+					}
 				}
 			}
 		}
@@ -4185,8 +4290,13 @@ scrl_cursor(SCROLL_INFO *list, unsigned short keycode, unsigned short keystate)
 		if (list->cur)
 		{
 			list->cur = list->top;
-			list->set(list, list->cur, SESET_SELECTED, 0, NORMREDRAW);
-			list->vis(list, list->cur, NORMREDRAW);
+			if (list->flags & SIF_KEYBDACT)
+				entry_action(list, list->cur, NULL);
+			else
+			{
+				list->set(list, list->cur, SESET_SELECTED, 0, NORMREDRAW);
+				list->vis(list, list->cur, NORMREDRAW);
+			}
 		}
 		break;
 	}

@@ -74,7 +74,7 @@ XA_objc_draw(enum locks lock, struct xa_client *client, AESPB *pb)
 							 wt,
 							 obtree,
 							 v,
-							 item,
+							 aesobj(wt->tree, item),
 							 pb->intin[1],		/* depth */
 							 NULL,
 							 0);
@@ -136,7 +136,7 @@ XA_objc_wdraw(enum locks lock, struct xa_client *client, AESPB *pb)
 					if (!pb->addrin[1] || xa_rect_clip((RECT *)pb->addrin[1], &r, &r))
 					{
 						(*v->api->set_clip)(v, &r);
-						draw_object_tree(0, wt, wt->tree, v, item, pb->intin[1], NULL, 0);
+						draw_object_tree(0, wt, wt->tree, v, aesobj(wt->tree, item), pb->intin[1], NULL, 0);
 					}
 				} while ((rl = rl->next));
 			}
@@ -168,7 +168,7 @@ XA_objc_offset(enum locks lock, struct xa_client *client, AESPB *pb)
 	if (validate_obtree(client, obtree, "XA_objc_offset:"))
 	{
 		pb->intout[0] = ob_offset(obtree,
-					  pb->intin[0],
+					  aesobj(obtree, pb->intin[0]),
 					  &pb->intout[1],
 					  &pb->intout[2]);
 	}
@@ -188,6 +188,7 @@ XA_objc_find(enum locks lock, struct xa_client *client, AESPB *pb)
 	if (validate_obtree(client, obtree, "XA_objc_find:"))
 	{
 		struct widget_tree *wt;
+		struct xa_aes_object o;
 		
 		depth = pb->intin[1] & ~0x8000;
 		
@@ -195,14 +196,17 @@ XA_objc_find(enum locks lock, struct xa_client *client, AESPB *pb)
 			depth |= 0x8000;
 		
 		wt = obtree_to_wt(client, obtree);
+
 		if (wt)
 		{
-			pb->intout[0] = obj_find(wt,
-						 pb->intin[0],
-						 depth,
-						 pb->intin[2],
-						 pb->intin[3],
-						 NULL);
+			o = obj_find(
+				 wt,
+				 aesobj(wt->tree, pb->intin[0]),
+				 depth,
+				 pb->intin[2],
+				 pb->intin[3],
+				 NULL);
+			pb->intout[0] = aesobj_item(&o);
 		}
 		else
 		{
@@ -245,7 +249,7 @@ XA_objc_change(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		obj_change(wt,
 			   C.Aes->vdi_settings,
-			    obj, -1,
+			    aesobj(wt->tree, obj), -1,
 			    pb->intin[6],
 			    obtree[obj].ob_flags,
 			    pb->intin[7],
@@ -283,7 +287,7 @@ XA_objc_wchange(enum locks lock, struct xa_client *client, AESPB *pb)
 
 			obj_change(wt,
 				   C.Aes->vdi_settings,
-				    obj, -1,
+				    aesobj(wt->tree, obj), -1,
 				    pb->intin[1],
 				    obtree[obj].ob_flags,
 				    true,
@@ -385,16 +389,19 @@ XA_objc_edit(enum locks lock, struct xa_client *client, AESPB *pb)
 	if (validate_obtree(client, obtree, "XA_objc_edit:"))
 	{
 		XA_TREE *wt;
+		struct xa_aes_object object;
 
 		if (!(wt = obtree_to_wt(client, obtree)))
 			wt = new_widget_tree(client, obtree);
 
 		assert(wt);
 
+		object = aesobj(obtree, pb->intin[0]);
+
 		pb->intout[0] = obj_edit(wt,
 					 C.Aes->vdi_settings,
 					 pb->intin[3],		/* function	*/
-					 pb->intin[0],		/* object	*/
+					 object,		/* object	*/
 					 pb->intin[1],		/* key		*/
 					 -1,/* pb->intin[2],*/	/* pos		*/
 					 NULL,			/* string	*/
@@ -435,15 +442,19 @@ XA_objc_wedit(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		if ((wind = get_wind_by_handle(lock, pb->intin[4])))
 		{
+			struct xa_aes_object object;
+			
 			if (!(wt = obtree_to_wt(client, obtree)))
 				wt = new_widget_tree(client, obtree);
 
 			assert(wt);
 
-			ret = obj_edit(wt,
+			object = aesobj(obtree, pb->intin[0]);
+			
+			ret =   obj_edit(wt,
 					 client->vdi_settings,
 					 pb->intin[3],		/* function	*/
-					 pb->intin[0],		/* object	*/
+					 object,		/* object	*/
 					 pb->intin[1],		/* key		*/
 					 -1,/* pb->intin[2],*/	/* pos		*/
 					 NULL,			/* string	*/
@@ -452,6 +463,7 @@ XA_objc_wedit(enum locks lock, struct xa_client *client, AESPB *pb)
 					 wind->rect_list.start,	/* rect list	*/
 					 &pb->intout[1],	/* new pos	*/
 					 NULL);			/* new obj	*/
+			
 		}
 	}
 	
@@ -615,10 +627,16 @@ XA_objc_data(enum locks lock, struct xa_client *client, AESPB *pb)
 			}
 			case OBGET_STRING:
 			{
+			/*
+			 * ozk: REMEMBER to CHANGE to object_get_string() usage!!!
+			 */
 				short blen = pb->intin[2];
 				short slen, sl;
 				char *d = (char *)pb->addrin[1];
 				char *s;
+				struct xa_aes_object object;
+				
+				object = aesobj(obtree, obj);
 				
 				if (object_has_tedinfo(obtree + obj))
 				{
@@ -630,7 +648,7 @@ XA_objc_data(enum locks lock, struct xa_client *client, AESPB *pb)
 						sl = strlen(ted->te_ptext) + 1;
 						if (set)
 						{
-							obj_edit(wt, v, ED_STRING, obj, 0, 0, d, rl ? true : false, NULL,rl, NULL,NULL);
+							obj_edit(wt, v, ED_STRING, object, 0, 0, d, rl ? true : false, NULL,rl, NULL,NULL);
 						}
 						else
 						{
@@ -646,9 +664,9 @@ XA_objc_data(enum locks lock, struct xa_client *client, AESPB *pb)
 						ret1 = sl;
 					}
 				}
-				else if (object_has_string(obtree + obj))
+				else if (object_has_freestr(obtree + obj))
 				{
-					s = object_get_spec(obtree + obj)->free_string;
+					s = object_get_freestr(obtree + obj);
 					d = (char *)pb->addrin[1];
 					if (s && d)
 					{
@@ -657,7 +675,7 @@ XA_objc_data(enum locks lock, struct xa_client *client, AESPB *pb)
 						{
 							strcpy(s, d);
 							if (rl)
-								obj_draw(wt, v, obj, -1, NULL, rl, 0);
+								obj_draw(wt, v, aesobj(wt->tree, obj), -1, NULL, rl, 0);
 						}
 						else
 						{
@@ -684,7 +702,7 @@ XA_objc_data(enum locks lock, struct xa_client *client, AESPB *pb)
 							{
 								strcpy(s, d);
 								if (rl)
-									obj_draw(wt, v, obj, -1, NULL, rl, 0);
+									obj_draw(wt, v, aesobj(wt->tree, obj), -1, NULL, rl, 0);
 							}
 							else
 								strcpy(d, s);

@@ -8,7 +8,7 @@ XAAESDEFS += -DWDIALOG_WDLG=1	# wdlg_xx() extensions
 XAAESDEFS += -DWDIALOG_LBOX=1	# lbox_xx() extensions
 XAAESDEFS += -DWDIALOG_FNTS=1	# fnts_xx() extensions
 XAAESDEFS += -DWDIALOG_FSLX=0	# fslx_xx() extensions
-XAAESDEFS += -DWDIALOG_PDLG=0	# pdlg_xx() extensions
+XAAESDEFS += -DWDIALOG_PDLG=1	# pdlg_xx() extensions
 
 
 ifeq ($(xaaes),deb)

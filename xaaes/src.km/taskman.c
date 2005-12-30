@@ -429,28 +429,25 @@ taskmanager_form_exit(struct xa_client *Client,
 {
 	enum locks lock = 0;
 	struct xa_vdi_settings *v = wind->vdi_settings;
-	short obj = fr->obj;
 	
 	Sema_Up(clients);
 	lock |= clients;
 	
-	wt->current = fr->obj;
 	wt->which = 0;
 
-	switch (fr->obj)
+	switch (aesobj_item(&fr->obj))
 	{
 		case TM_LIST:
 		{
-// 			short obj = fr->obj;
 			OBJECT *obtree = wt->tree;
 
 			DIAGS(("taskmanager_form_exit: Moved the shit out of form_do() to here!"));
-			if ( fr->md && ((obtree[obj].ob_type & 0xff) == G_SLIST))
+			if ( fr->md && ((aesobj_ob(&fr->obj)->ob_type & 0xff) == G_SLIST))
 			{
 				if (fr->md->clicks > 1)
-					dclick_scroll_list(lock, obtree, obj, fr->md);
+					dclick_scroll_list(lock, obtree, aesobj_item(&fr->obj), fr->md);
 				else
-					click_scroll_list(lock, obtree, obj, fr->md);
+					click_scroll_list(lock, obtree, aesobj_item(&fr->obj), fr->md);
 			}
 			break;
 		}
@@ -591,7 +588,7 @@ taskmanager_form_exit(struct xa_client *Client,
 			
 			if (C.reschange)
 				post_cevent(C.Hlp, ceExecfunc, C.reschange,NULL, 0,0, NULL,NULL);
-			obj_change(wt, v, obj, -1, wt->tree[obj].ob_state & ~OS_SELECTED, wt->tree[obj].ob_flags, true, NULL, wind->rect_list.start, 0);
+			obj_change(wt, v, fr->obj, -1, aesobj_ob(&fr->obj)->ob_state & ~OS_SELECTED, aesobj_ob(&fr->obj)->ob_flags, true, NULL, wind->rect_list.start, 0);
 			break;
 		}
 		case TM_OK:
@@ -606,7 +603,7 @@ taskmanager_form_exit(struct xa_client *Client,
 		}
 		default:
 		{
-			DIAGS(("taskmanager: unhandled event %i", wt->current));
+			DIAGS(("taskmanager: unhandled event %i", fr->obj));
 			break;
 		}
 	}
@@ -622,7 +619,7 @@ open_taskmanager(enum locks lock, struct xa_client *client)
 	OBJECT *obtree = ResourceTree(C.Aes_rsc, TASK_MANAGER);
 	RECT or;
 
-	ob_rectangle(obtree, 0, &or);
+	ob_rectangle(obtree, aesobj(obtree, 0), &or);
 
 	wt = obtree_to_wt(client, obtree);
 
@@ -655,7 +652,7 @@ open_taskmanager(enum locks lock, struct xa_client *client)
 		/* Set the window title */
 		set_window_title(wind, " Task Manager ", false);
 
-		wt = set_toolbar_widget(lock, wind, client, obtree, -1, 0/*WIP_NOTEXT*/, true, NULL, &or);
+		wt = set_toolbar_widget(lock, wind, client, obtree, inv_aesobj(), 0/*WIP_NOTEXT*/, true, NULL, &or);
 		wt->exit_form = taskmanager_form_exit;
 
 		/* Set the window destructor */
@@ -688,7 +685,7 @@ create_dwind(enum locks lock, XA_WIND_ATTR tp, char *title, struct xa_client *cl
 	OBJECT *obtree = wt->tree;
         RECT r, or;
 
-	ob_rectangle(obtree, 0, &or);
+	ob_rectangle(obtree, aesobj(obtree, 0), &or);
 
 	center_rect(&or);
 
@@ -713,24 +710,13 @@ create_dwind(enum locks lock, XA_WIND_ATTR tp, char *title, struct xa_client *cl
 	if (title)
 		set_window_title(wind, title, false);
 
-	wt = set_toolbar_widget(lock, wind, client, obtree, -1, 0/*WIP_NOTEXT*/, true, NULL, &or);
+	wt = set_toolbar_widget(lock, wind, client, obtree, inv_aesobj(), 0/*WIP_NOTEXT*/, true, NULL, &or);
 	wt->exit_form = f; //milan_reschg_form_exit;
 
 	/* Set the window destructor */
 	wind->destructor = d; //reschg_destructor;
 
 	return wind;
-}
-
-static void
-setsel(OBJECT *obtree, short obj, bool sel)
-{
-	short state;
-
-	state = obtree[obj].ob_state & ~OS_SELECTED;
-	if (sel)
-		state |= OS_SELECTED;
-	obtree[obj].ob_state = state;
 }
 /* ************************************************************ */
 /*     Atari resolution mode change functions			*/
@@ -747,15 +733,18 @@ set_resmode_obj(XA_TREE *wt, short res)
 		res = 9;
 
 	obj = RC_MODES + res;
-	obj_set_radio_button(wt, v, obj, false, NULL, NULL);
+	obj_set_radio_button(wt, v, aesobj(wt->tree, obj), false, NULL, NULL);
 }
 
 static short
 get_resmode_obj(XA_TREE *wt)
 {
+	struct xa_aes_object o;
 	short obj;
 
-	obj = obj_get_radio_button(wt, RC_MODES, OS_SELECTED);
+	o = obj_get_radio_button(wt, aesobj(wt->tree, RC_MODES), OS_SELECTED);
+
+	obj = aesobj_item(&o);
 
 	if (obj > 0)
 		obj -= RC_MODES;
@@ -775,16 +764,15 @@ resmode_form_exit(struct xa_client *Client,
 	Sema_Up(clients);
 	lock |= clients;
 	
-	wt->current = fr->obj;
 	wt->which = 0;
 
-	switch (fr->obj)
+	switch (aesobj_item(&fr->obj))
 	{
 		case RC_OK:
 		{
 			DIAGS(("reschange: restart"));
 
-			object_deselect(wt->tree + RC_OK);
+			object_deselect(aesobj_ob(&fr->obj));
 			redraw_toolbar(lock, wind, RC_OK);
 			next_res = get_resmode_obj(wt);
 			next_res |= 0x80000000;
@@ -806,7 +794,7 @@ resmode_form_exit(struct xa_client *Client,
 		}
 		default:
 		{
-			DIAGS(("taskmanager: unhandled event %i", wt->current));
+			DIAGS(("taskmanager: unhandled event %i", fr->obj));
 			break;
 		}
 	}
@@ -858,47 +846,45 @@ set_reschg_obj(XA_TREE *wt, unsigned long res)
 	if (obj > 4)
 		obj = 4;
 	obj += RC_COLOURS + 1;
-	obj_set_radio_button(wt, v, obj, false, NULL, NULL);
+	obj_set_radio_button(wt, v, aesobj(wt->tree, obj), false, NULL, NULL);
 
 	obj = RC_COLUMNS + 1 + ((res & (1<<3)) ? 1 : 0);
-	obj_set_radio_button(wt, v, obj, false, NULL, NULL);
+	obj_set_radio_button(wt, v, aesobj(wt->tree, obj), false, NULL, NULL);
 
 	obj = RC_VGA + 1 + ((res & (1<<4)) ? 1 : 0);
-	obj_set_radio_button(wt, v, obj, false, NULL, NULL);
+	obj_set_radio_button(wt, v, aesobj(wt->tree, obj), false, NULL, NULL);
 
 	obj = RC_TVSEL + 1 + ((res & (1<<5)) ? 1 : 0);
-	obj_set_radio_button(wt, v, obj, false, NULL, NULL);
+	obj_set_radio_button(wt, v, aesobj(wt->tree, obj), false, NULL, NULL);
 
-	setsel(obtree, RC_OVERSCAN, (res & (1<<6)));
-	setsel(obtree, RC_ILACE, (res & (1<<7)));
-	setsel(obtree, RC_BIT15, (res & 0x8000));
-
-// 	ob_set_children_sf(obtree, RC_MODES, ~(OS_SELECTED|OS_DISABLED), OS_DISABLED, -1, 0, true);
+	setsel(obtree + RC_OVERSCAN, (res & (1<<6)));
+	setsel(obtree + RC_ILACE, (res & (1<<7)));
+	setsel(obtree + RC_BIT15, (res & 0x8000));
 }
-
-inline static bool
-issel(OBJECT *obtree, short obj)
-{	return (obtree[obj].ob_state & OS_SELECTED); }
 
 static unsigned long
 get_reschg_obj(XA_TREE *wt)
 {
 	OBJECT *obtree = wt->tree;
-	short obj;
+	struct xa_aes_object obj;
 	unsigned long res = 0L;
 
-	if ((obj = obj_get_radio_button(wt, RC_COLOURS, OS_SELECTED)) != -1)
-		res |= obj - 1 - RC_COLOURS;
-	if ((obj = obj_get_radio_button(wt, RC_COLUMNS, OS_SELECTED)) != -1)
-		res |= (obj - 1 - RC_COLUMNS) << 3;
-	if ((obj = obj_get_radio_button(wt, RC_VGA, OS_SELECTED)) != -1)
-		res |= (obj - 1 - RC_VGA) << 4;
-	if ((obj = obj_get_radio_button(wt, RC_TVSEL, OS_SELECTED)) != -1)
-		res |= (obj - 1 - RC_TVSEL) << 5;
+	obj = obj_get_radio_button(wt, aesobj(wt->tree, RC_COLOURS), OS_SELECTED);
+	if (valid_aesobj(&obj))
+		res |= aesobj_item(&obj) - 1 - RC_COLOURS;
+	obj = obj_get_radio_button(wt, aesobj(wt->tree, RC_COLUMNS), OS_SELECTED);
+	if (valid_aesobj(&obj))
+		res |= (aesobj_item(&obj) - 1 - RC_COLUMNS) << 3;
+	obj = obj_get_radio_button(wt, aesobj(wt->tree, RC_VGA), OS_SELECTED);
+	if (valid_aesobj(&obj))
+		res |= (aesobj_item(&obj) - 1 - RC_VGA) << 4;
+	obj = obj_get_radio_button(wt, aesobj(wt->tree, RC_TVSEL), OS_SELECTED);
+	if (valid_aesobj(&obj))
+		res |= (aesobj_item(&obj) - 1 - RC_TVSEL) << 5;
 
-	if (issel(obtree, RC_OVERSCAN)) res |= (1<<6);
-	if (issel(obtree, RC_ILACE))	res |= (1<<7);
-	if (issel(obtree, RC_BIT15))	res |= 0x8000;
+	if (issel(obtree + RC_OVERSCAN)) res |= (1<<6);
+	if (issel(obtree + RC_ILACE))	res |= (1<<7);
+	if (issel(obtree + RC_BIT15))	res |= 0x8000;
 
 	return res;
 }
@@ -913,10 +899,10 @@ reschg_form_exit(struct xa_client *Client,
 	Sema_Up(clients);
 	lock |= clients;
 	
-	wt->current = fr->obj;
+// 	wt->current = fr->obj;
 	wt->which = 0;
 
-	switch (fr->obj)
+	switch (aesobj_item(&fr->obj))
 	{
 		case RC_OK:
 		{
@@ -944,7 +930,7 @@ reschg_form_exit(struct xa_client *Client,
 		}
 		default:
 		{
-			DIAGS(("taskmanager: unhandled event %i", wt->current));
+			DIAGS(("taskmanager: unhandled event %i", fr->obj));
 			break;
 		}
 	}
@@ -1038,15 +1024,15 @@ milan_reschg_form_exit(struct xa_client *Client,
 	Sema_Up(clients);
 	lock |= clients;
 	
-	wt->current = fr->obj;
+// 	wt->current = fr->obj;
 	wt->which = 0;
 
-	switch (fr->obj)
+	switch (aesobj_item(&fr->obj))
 	{
 		case RCHM_COL:
 		{
 			int i, o, newres = 1;
-			POPINFO *pinf = object_get_popinfo(wt->tree + fr->obj);
+			POPINFO *pinf = object_get_popinfo(aesobj_ob(&fr->obj));
 			struct widget_tree *pu_wt = NULL;
 
 			for (i = 0, o = pinf->obnum; i < 8 && o >= 0; i++)
@@ -1096,15 +1082,15 @@ milan_reschg_form_exit(struct xa_client *Client,
 				pinf = &p->pinf_res;
 				pinf->tree = pu_wt->tree;
 				pinf->obnum = newres;
-				obj_set_g_popup(wt, RCHM_RES, pinf);
-				obj_draw(wt, wind->vdi_settings, RCHM_RES, -1, NULL, wind->rect_list.start, 0);
+				obj_set_g_popup(wt, aesobj(wt->tree, RCHM_RES), pinf);
+				obj_draw(wt, wind->vdi_settings, aesobj(wt->tree, RCHM_RES), -1, NULL, wind->rect_list.start, 0);
 				p->current[1] = new_devid;
 			}
 			break;
 		}
 		case RCHM_RES:
 		{
-			POPINFO *pinf = object_get_popinfo(wt->tree + fr->obj);
+			POPINFO *pinf = object_get_popinfo(aesobj_ob(&fr->obj));
 			struct widget_tree *pu_wt = p->col_wt[p->current[0]];
 
 			if (pu_wt)
@@ -1142,7 +1128,7 @@ milan_reschg_form_exit(struct xa_client *Client,
 		}
 		default:
 		{
-			DIAGS(("taskmanager: unhandled event %i", wt->current));
+			DIAGS(("taskmanager: unhandled event %i", fr->obj));
 			break;
 		}
 	}
@@ -1457,8 +1443,8 @@ milan_setdevid(struct widget_tree *wt, struct milres_parm *p, short devid)
 		p->pinf_res.tree = first->tree;
 		p->pinf_res.obnum = 1;
 	}
-	obj_set_g_popup(wt, RCHM_COL, &p->pinf_depth);
-	obj_set_g_popup(wt, RCHM_RES, &p->pinf_res);
+	obj_set_g_popup(wt, aesobj(wt->tree, RCHM_COL), &p->pinf_depth);
+	obj_set_g_popup(wt, aesobj(wt->tree, RCHM_RES), &p->pinf_res);
 	return found_devid;
 }
 
@@ -1518,15 +1504,15 @@ nova_reschg_form_exit(struct xa_client *Client,
 	Sema_Up(clients);
 	lock |= clients;
 	
-	wt->current = fr->obj;
+// 	wt->current = fr->obj;
 	wt->which = 0;
 
-	switch (fr->obj)
+	switch (aesobj_item(&fr->obj))
 	{
 		case RCHM_COL:
 		{
 			int i, o, newres = 1;
-			POPINFO *pinf = object_get_popinfo(wt->tree + fr->obj);
+			POPINFO *pinf = object_get_popinfo(aesobj_ob(&fr->obj));
 			struct widget_tree *pu_wt = NULL;
 
 			for (i = 0, o = pinf->obnum; i < 8 && o >= 0; i++)
@@ -1576,15 +1562,15 @@ nova_reschg_form_exit(struct xa_client *Client,
 				pinf = &p->pinf_res;
 				pinf->tree = pu_wt->tree;
 				pinf->obnum = newres;
-				obj_set_g_popup(wt, RCHM_RES, pinf);
-				obj_draw(wt, wind->vdi_settings, RCHM_RES, -1, NULL, wind->rect_list.start, 0);
+				obj_set_g_popup(wt, aesobj(wt->tree, RCHM_RES), pinf);
+				obj_draw(wt, wind->vdi_settings, aesobj(wt->tree, RCHM_RES), -1, NULL, wind->rect_list.start, 0);
 				p->current[1] = new_devid;
 			}
 			break;
 		}
 		case RCHM_RES:
 		{
-			POPINFO *pinf = object_get_popinfo(wt->tree + fr->obj);
+			POPINFO *pinf = object_get_popinfo(aesobj_ob(&fr->obj));
 			struct widget_tree *pu_wt = p->col_wt[p->current[0]];
 
 			if (pu_wt)
@@ -1625,7 +1611,7 @@ nova_reschg_form_exit(struct xa_client *Client,
 		}
 		default:
 		{
-			DIAGS(("taskmanager: unhandled event %i", wt->current));
+			DIAGS(("taskmanager: unhandled event %i", fr->obj));
 			break;
 		}
 	}
@@ -1861,10 +1847,10 @@ csr_form_exit(struct xa_client *Client,
 	Sema_Up(clients);
 	lock |= clients;
 	
-	wt->current = fr->obj;
+// 	wt->current = fr->obj;
 	wt->which = 0;
 
-	switch (fr->obj)
+	switch (aesobj_item(&fr->obj))
 	{
 		case KORW_WAIT:
 		{
@@ -2046,7 +2032,7 @@ open_launcher(enum locks lock, struct xa_client *client)
 	open_fileselector(lock, client, fs,
 			  cfg.launch_path,
 			  NULL, "Launch Program",
-			  handle_launcher, NULL);
+			  handle_launcher, NULL, NULL);
 }
 #endif
 
@@ -2062,30 +2048,26 @@ sysalerts_form_exit(struct xa_client *Client,
 		    struct fmd_result *fr)
 {
 	enum locks lock = 0;
-	OBJECT *form = wt->tree;
-	short item = fr->obj;
+	short item = aesobj_item(&fr->obj);
 
 	switch (item)
 	{
 		case SYSALERT_LIST:
 		{
-			short obj = fr->obj;
-			OBJECT *obtree = wt->tree;
-
 			DIAGS(("taskmanager_form_exit: Moved the shit out of form_do() to here!"));
-			if ( fr->md && ((obtree[obj].ob_type & 0xff) == G_SLIST))
+			if ( fr->md && ((aesobj_ob(&fr->obj)->ob_type & 0xff) == G_SLIST))
 			{
 				if (fr->md->clicks > 1)
-					dclick_scroll_list(lock, obtree, obj, fr->md);
+					dclick_scroll_list(lock, wt->tree, aesobj_item(&fr->obj), fr->md);
 				else
-					click_scroll_list(lock, obtree, obj, fr->md);
+					click_scroll_list(lock, wt->tree, aesobj_item(&fr->obj), fr->md);
 			}
 			break;
 		}
 		/* Empty the alerts list */
 		case SALERT_CLEAR:
 		{
-			struct scroll_info *list = object_get_slist(form + SYSALERT_LIST);
+			struct scroll_info *list = object_get_slist(wt->tree + SYSALERT_LIST);
 			struct sesetget_params p = { 0 };
 			
 			p.arg.txt = "Alerts";
@@ -2136,7 +2118,7 @@ open_systemalerts(enum locks lock, struct xa_client *client)
 		XA_TREE *wt;
 		RECT or;
 
-		ob_rectangle(obtree, 0, &or);
+		ob_rectangle(obtree, aesobj(obtree, 0), &or);
 
 		wt = obtree_to_wt(client, obtree);
 
@@ -2168,7 +2150,7 @@ open_systemalerts(enum locks lock, struct xa_client *client)
 		/* Set the window title */
 		set_window_title(dialog_window, " System window & Alerts log", false);
 
-		wt = set_toolbar_widget(lock, dialog_window, client, obtree, -1, 0/*WIP_NOTEXT*/, true, NULL, &or);
+		wt = set_toolbar_widget(lock, dialog_window, client, obtree, inv_aesobj(), 0/*WIP_NOTEXT*/, true, NULL, &or);
 		wt->exit_form = sysalerts_form_exit;
 		/* Set the window destructor */
 		dialog_window->destructor = systemalerts_destructor;

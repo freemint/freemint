@@ -658,7 +658,7 @@ set_points_list(struct xa_fnts_info *fnts, struct xa_fnts_item *f)
 	//list->redraw(list, NULL);
 
 	//fnts_redraw(0, fnts->wind, FNTS_SHOW, 1, NULL);
-	wdialog_redraw(0, fnts->wind, FNTS_SHOW, 1, NULL);
+	wdialog_redraw(0, fnts->wind, aesobj(obtree, FNTS_SHOW), 1, NULL);
 }
 
 static void
@@ -833,14 +833,16 @@ click_size(SCROLL_INFO *list, SCROLL_ENTRY *this, const struct moose_data *md)
 		struct xa_fnts_info *fnts = list->data;
 		TEDINFO *ted = object_get_tedinfo(obtree + FNTS_EDSIZE, NULL);
 		struct sesetget_params p; //seget_entrybyarg p;
+		struct xa_aes_object object;
 
+		object = aesobj(fnts->wt->tree, FNTS_EDSIZE);
 		p.idx = -1;
 		p.arg.txt = ted->te_ptext;
 		list->get(list, list->cur, SEGET_TEXTCPY, &p);
 		
 		obj_edit(fnts->wt, fnts->vdi_settings,
 		         ED_STRING,
-		         FNTS_EDSIZE,
+		         object,
 		         1,
 		         0,
 		         ted->te_ptext,
@@ -850,8 +852,7 @@ click_size(SCROLL_INFO *list, SCROLL_ENTRY *this, const struct moose_data *md)
 
 		fnts->fnt_pt = get_edpoint(fnts);
 		
-// 		wdialog_redraw(0, ((struct xa_fnts_info *)list->data)->wind, FNTS_EDSIZE, 1, NULL);
-		wdialog_redraw(0, ((struct xa_fnts_info *)list->data)->wind, FNTS_SHOW, 1, NULL);
+		wdialog_redraw(0, ((struct xa_fnts_info *)list->data)->wind, aesobj(fnts->wt->tree, FNTS_SHOW), 1, NULL);
 	}
 	return 0;
 }
@@ -1007,7 +1008,7 @@ XA_fnts_create(enum locks lock, struct xa_client *client, AESPB *pb)
 	if ((wt = duplicate_fnts_obtree(client)))
 	{
 		obtree = wt->tree;
-		ob_rectangle(obtree, 0, &or);
+		ob_rectangle(obtree, aesobj(obtree, 0), &or);
 		
 		r = calc_window(lock, client, WC_BORDER,
 				tp, created_for_WDIAL,
@@ -1031,7 +1032,7 @@ XA_fnts_create(enum locks lock, struct xa_client *client, AESPB *pb)
 		if (!(fnts = create_new_fnts(lock, client, wind, wt, pb->intin[0], pb->intin[1], pb->intin[2], pb->intin[3], (char *)pb->addrin[0], (char *)pb->addrin[1])))
 			goto memerr;
 
-		wt = set_toolbar_widget(lock, wind, client, obtree, -2, 0, true, &wdlg_th, &or);
+		wt = set_toolbar_widget(lock, wind, client, obtree, aesobj(obtree, -2), 0, true, &wdlg_th, &or);
 
 		update_slists(fnts);
 		
@@ -1122,7 +1123,7 @@ update(struct xa_fnts_info *fnts, short bf)
 	set_but(obtree, FNTS_XMARK, (bf & FNTS_BMARK));
 
 	//fnts_redraw(0, fnts->wind, 0, 10, NULL);
-	wdialog_redraw(0, fnts->wind, 0, 10, NULL);
+	wdialog_redraw(0, fnts->wind, aesobj(obtree, 0), 10, NULL);
 }
 
 static void
@@ -1167,20 +1168,24 @@ init_fnts(struct xa_fnts_info *fnts)
 	{
 		char pt[16];
 		TEDINFO *ted;
+		struct xa_aes_object size_obj, ratio_obj;
 		
+		size_obj  = aesobj(fnts->wt->tree, FNTS_EDSIZE);
+		ratio_obj = aesobj(fnts->wt->tree, FNTS_EDRATIO);
+
 		/*
 		 * set ratio edit field..
 		 */ 
-		ted = object_get_tedinfo(obtree + FNTS_EDRATIO, NULL);
+		ted = object_get_tedinfo(aesobj_ob(&ratio_obj), NULL);
 		sprintf(pt, sizeof(pt), "%d", (unsigned short)(fnts->fnt_ratio >> 16));
 		sprintf(pt + strlen(pt), sizeof(pt) - strlen(pt), ".%d", (short)(fnts->fnt_ratio));
 		strcpy(ted->te_ptext, pt);
-		obj_edit(fnts->wt, fnts->vdi_settings, ED_INIT, FNTS_EDRATIO, 0, -1, NULL, false, NULL, NULL, NULL, NULL);
+		obj_edit(fnts->wt, fnts->vdi_settings, ED_INIT, ratio_obj, 0, -1, NULL, false, NULL, NULL, NULL, NULL);
 	
 		/*
 		 * Set sizes edit field...
 		 */
-		ted = object_get_tedinfo(obtree + FNTS_EDSIZE, NULL);
+		ted = object_get_tedinfo(aesobj_ob(&size_obj), NULL);
 
 		if (fnts->fnt_pt)
 		{
@@ -1190,7 +1195,7 @@ init_fnts(struct xa_fnts_info *fnts)
 		else
 			strcpy(ted->te_ptext, "10");
 	
-		obj_edit(fnts->wt, fnts->vdi_settings, ED_INIT, FNTS_EDSIZE, 0, -1, NULL, false, NULL, NULL, NULL, NULL);
+		obj_edit(fnts->wt, fnts->vdi_settings, ED_INIT, size_obj, 0, -1, NULL, false, NULL, NULL, NULL, NULL);
 
 	}
 	DIAG((D_fnts, NULL, " --- fnt_id = %ld, fnt_pt = %lx, fnt_ratio = %lx",
@@ -1264,7 +1269,7 @@ XA_fnts_open(enum locks lock, struct xa_client *client, AESPB *pb)
 			{
 				RECT or;
 
-				obj_rectangle(wt, 0, &or);
+				obj_rectangle(wt, aesobj(wt->tree, 0), &or);
 				or.x = r.x;
 				or.y = r.y;
 				change_window_attribs(lock, client, wind, tp, true, or, NULL);
@@ -1489,17 +1494,16 @@ XA_fnts_set(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 static int
-check_internal_objects(struct xa_fnts_info *fnts, short obj)
+check_internal_objects(struct xa_fnts_info *fnts, struct xa_aes_object obj)
 {
-	OBJECT *obtree = fnts->wt->tree;
 	long id;
 	int ret = 0;
 
-	if (obj == FNTS_XDISPLAY)
+	if (aesobj_item(&obj) == FNTS_XDISPLAY)
 	{
 		//fnts->dialog_flags ^= FNTS_DISPLAY;
 		
-		if (obtree[obj].ob_state & OS_SELECTED)
+		if (aesobj_ob(&obj)->ob_state & OS_SELECTED)
 			fnts->dialog_flags |= FNTS_DISPLAY;
 		else
 			fnts->dialog_flags &= ~FNTS_DISPLAY;
@@ -1545,7 +1549,7 @@ XA_fnts_evnt(enum locks lock, struct xa_client *client, AESPB *pb)
 	fnts = (struct xa_fnts_info *)((unsigned long)pb->addrin[0] >> 16 | (unsigned long)pb->addrin[0] << 16);
 	if (fnts && (wind = get_fnts_wind(client, fnts)))
 	{
-		OBJECT *obtree = fnts->wt->tree;
+// 		OBJECT *obtree = fnts->wt->tree;
 		long val;
 		struct wdlg_evnt_parms wep;
 
@@ -1555,26 +1559,25 @@ XA_fnts_evnt(enum locks lock, struct xa_client *client, AESPB *pb)
 		wep.wdlg	= NULL;
 		wep.callout	= NULL;
 		wep.redraw	= wdialog_redraw;
-		wep.obj		= 0;
+		wep.obj		= inv_aesobj();
 
 		ret = wdialog_event(lock, client, &wep);
 		
 		if (check_internal_objects(fnts, wep.obj))
 		{
-			wep.obj = 0;
+			wep.obj = inv_aesobj();
 			ret = 1;
 		}
 		else
 		{
-			if (wep.obj > 0 && (obtree[wep.obj].ob_state & OS_SELECTED))
-				obj_change(fnts->wt, wind->vdi_settings, wep.obj, -1, obtree[wep.obj].ob_state & ~OS_SELECTED, obtree[wep.obj].ob_flags, true, &wind->wa, wind->rect_list.start, 0);
+			if (valid_aesobj(&wep.obj) && (aesobj_ob(&wep.obj)->ob_state & OS_SELECTED))
+				obj_change(fnts->wt, wind->vdi_settings, wep.obj, -1, aesobj_ob(&wep.obj)->ob_state & ~OS_SELECTED, aesobj_ob(&wep.obj)->ob_flags, true, &wind->wa, wind->rect_list.start, 0);
 		
 			val = get_edpoint(fnts);
 			if (val != fnts->fnt_pt)
 			{
 				fnts->fnt_pt = val;
-				//fnts_redraw(0, wind, FNTS_SHOW, 1, NULL);
-				wdialog_redraw(0, wind, FNTS_SHOW, 1, NULL);
+				wdialog_redraw(0, wind, aesobj(fnts->wt->tree, FNTS_SHOW), 1, NULL);
 				select_edsize(fnts);
 			}
 			fnts->fnt_pt = val;
@@ -1583,7 +1586,7 @@ XA_fnts_evnt(enum locks lock, struct xa_client *client, AESPB *pb)
 			*(long *)&pb->intout[5] = fnts->fnt_pt;
 			*(long *)&pb->intout[7] = fnts->fnt_ratio;
 		}
-		pb->intout[1] = wep.obj;
+		pb->intout[1] = valid_aesobj(&wep.obj) ? aesobj_item(&wep.obj) : 0;
 		pb->intout[2] = get_cbstatus(wep.wt->tree);
 	}
 	pb->intout[0] = ret;
@@ -1628,7 +1631,7 @@ Keypress(enum locks lock,
 		{
 			fnts->fnt_pt = val;
 			//fnts_redraw(0, wind, FNTS_SHOW, 1, NULL);
-			wdialog_redraw(0, wind, FNTS_SHOW, 1, NULL);
+			wdialog_redraw(0, wind, aesobj(fnts->wt->tree, FNTS_SHOW), 1, NULL);
 
 			select_edsize(fnts);
 		}
@@ -1646,7 +1649,7 @@ Formexit( struct xa_client *client,
 	
 	if (!check_internal_objects(fnts, fr->obj))
 	{
-		fnts->exit_button = fr->obj >= 0 ? fr->obj : 0;
+		fnts->exit_button = valid_aesobj(&fr->obj) ? aesobj_item(&fr->obj) : 0;
 		client->usr_evnt = 1;
 	}
 }
@@ -1688,7 +1691,7 @@ XA_fnts_do(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		obj_init_focus(wt, OB_IF_RESET);
 
-		ob_rectangle(obtree, 0, &or);
+		ob_rectangle(obtree, aesobj(obtree, 0), &or);
 		center_rect(&or);
 
 		change_window_attribs(lock, client, wind, tp, true, or, NULL);
