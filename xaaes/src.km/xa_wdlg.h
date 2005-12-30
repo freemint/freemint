@@ -32,7 +32,7 @@
 
 #if WDIALOG_WDLG
 
-void  wdialog_redraw(enum locks lock, struct xa_window *wind, short start, short depth, RECT *r);
+void  wdialog_redraw(enum locks lock, struct xa_window *wind, struct xa_aes_object start, short depth, RECT *r);
 short wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms *wep);
 
 

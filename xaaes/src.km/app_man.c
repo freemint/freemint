@@ -489,11 +489,11 @@ void
 hide_app(enum locks lock, struct xa_client *client)
 {
 	bool reify = false, hidden = false;
-	struct xa_client *focus = focus_owner(), *nxtclient;
+	struct xa_client *infocus = focus_owner(), *nxtclient;
 	struct xa_window *w;
 
 	DIAG((D_appl, NULL, "hide_app for %s", c_owner(client) ));
-	DIAG((D_appl, NULL, "   focus is  %s", c_owner(focus) ));
+	DIAG((D_appl, NULL, "   focus is  %s", c_owner(infocus) ));
 
 	nxtclient = next_app(lock, true, true);
 	if ((client->type & APP_SYSTEM) ||
@@ -520,9 +520,9 @@ hide_app(enum locks lock, struct xa_client *client)
 	if (hidden)
 		client->name[1] = '*';
 	
-	DIAG((D_appl, NULL, "   focus now %s", c_owner(focus)));
+	DIAG((D_appl, NULL, "   focus now %s", c_owner(infocus)));
 	
-	if (client == focus)
+	if (client == infocus)
 		app_in_front(lock, nxtclient, true, true, true);
 
 	if (reify && !rpi_to)

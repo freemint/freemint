@@ -386,7 +386,7 @@ XA_graf_watchbox(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		pb->intout[0] = obj_watch( wt,
 					   C.Aes->vdi_settings,
-					   pb->intin[1],
+					   aesobj(wt->tree, pb->intin[1]),
 					   pb->intin[2],
 					   pb->intin[3],
 					   NULL,
@@ -421,7 +421,7 @@ XA_graf_wwatchbox(enum locks lock, struct xa_client *client, AESPB *pb)
 
 			ret = obj_watch(wt,
 					client->vdi_settings,
-					pb->intin[0],
+					aesobj(wt->tree, pb->intin[0]),
 					pb->intin[1],
 					pb->intin[2],
 					NULL,
@@ -448,9 +448,9 @@ XA_graf_slidebox(enum locks lock, struct xa_client *client, AESPB *pb)
 	if (validate_obtree(client, tree, "XA_graf_slidebox:"))
 	{
 		p = *(RECT *)&tree[pi].ob_x;
-		ob_offset(tree, pi, &p.x, &p.y);
+		ob_offset(tree, aesobj(tree, pi), &p.x, &p.y);
 		c = *(RECT *)&tree[ci].ob_x;
-		ob_offset(tree, ci, &c.x, &c.y);
+		ob_offset(tree, aesobj(tree, ci), &c.x, &c.y);
 
 		rect_dist(client, &c, &dist);		/* relative position of mouse in child rectangle */
 

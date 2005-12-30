@@ -551,9 +551,9 @@ init_widget_tree(struct xa_client *client, struct widget_tree *wt, OBJECT *obtre
 // 	display("init_widget_tree: tree %lx", obtree);
 	wt->tree = obtree;
 	wt->owner = client;
-	
-	wt->focus = -1;
-	wt->e.obj = -1;
+		
+	clear_focus(wt);
+	clear_edit(&wt->e);
 	wt->ei = NULL;
 
 	sx = obtree->ob_x;
@@ -561,7 +561,7 @@ init_widget_tree(struct xa_client *client, struct widget_tree *wt, OBJECT *obtre
 	obtree->ob_x = 100;
 	obtree->ob_y = 100;
 	
-	ob_area(obtree, 0, &r);
+	ob_area(obtree, aesobj(obtree, 0), &r);
 	wt->ox = obtree->ob_x - r.x;
 	wt->oy = obtree->ob_y - r.x;
 	
@@ -1752,17 +1752,17 @@ display_object_widget(struct xa_window *wind, struct xa_widget *widg, const RECT
 	root = rp_2_ap(wind, widg, NULL);
 
 	DIAG((D_form,wind->owner,"display_object_widget(wind=%d), wt=%lx, e.obj=%d, e.pos=%d, form: %d/%d",
-		wind->handle, wt, wt->e.obj, wt->e.pos, root->ob_x, root->ob_y));
+		wind->handle, wt, edit_item(&wt->e), wt->e.pos, root->ob_x, root->ob_y));
 
 	if (wind->nolist && (wind->dial & created_for_POPUP))
 	{
 		/* clip work area */
 		(*v->api->set_clip)(v, &wind->wa);
-		draw_object_tree(0, wt, NULL, v, widg->start, 100, NULL, 0);
+		draw_object_tree(0, wt, NULL, v, aesobj(wt->tree, widg->start), 100, NULL, 0);
 		(*v->api->clear_clip)(v);
 	}
 	else
-		draw_object_tree(0, wt, NULL, v, widg->start, 100, NULL, 0);
+		draw_object_tree(0, wt, NULL, v, aesobj(wt->tree, widg->start), 100, NULL, 0);
 
 	return true;
 }
@@ -2980,9 +2980,9 @@ display_toolbar(struct xa_window *wind, struct xa_widget *widg, const RECT *clip
 	rp_2_ap(wind, widg, NULL);
 
 	DIAG((D_form,wind->owner,"display_object_widget(wind=%d), wt=%lx, e.obj=%d, e.pos=%d",
-		wind->handle, wt, wt->e.obj, wt->e.pos));
+		wind->handle, wt, edit_item(&wt->e), wt->e.pos));
 
-	draw_object_tree(0, wt, NULL, wind->vdi_settings, widg->start, 100, NULL, 0);
+	draw_object_tree(0, wt, NULL, wind->vdi_settings, aesobj(wt->tree, widg->start), 100, NULL, 0);
 
 	return true;
 }
@@ -3102,7 +3102,7 @@ set_toolbar_handlers(const struct toolbar_handlers *th, struct xa_window *wind, 
 
 	if (wind)
 	{
-		if (wt && (wt->ei || wt->e.obj >= 0 || obtree_has_default(wt->tree)))
+		if (wt && (wt->ei || edit_set(&wt->e) || obtree_has_default(wt->tree)))
 		{
 			if (th && th->keypress)
 			{
@@ -3142,7 +3142,7 @@ set_toolbar_widget(enum locks lock,
 		struct xa_window *wind,
 		struct xa_client *owner,
 		OBJECT *obtree,
-		short edobj,
+		struct xa_aes_object edobj,
 		short properties,
 		bool zen,
 		const struct toolbar_handlers *th,
@@ -3188,8 +3188,10 @@ set_toolbar_widget(enum locks lock,
 	 * Ozk: if edobj == -2, we want to look for an editable and place the
 	 * cursor there. Used by wdlg_create() atm
 	 */
-	if (edobj == -2)
-		edobj = ob_find_any_flst(obtree, OF_EDITABLE, 0, 0, OS_DISABLED, 0, 0);
+	if (edobj.item == -2)
+	{
+		edobj =  ob_find_any_flst(obtree, OF_EDITABLE, 0, 0, OS_DISABLED, 0, 0);
+	}
 
 	if (!obj_edit(wt, v, ED_INIT, edobj, 0, -1, NULL, false, NULL, NULL, NULL, &edobj))
 		obj_edit(wt, v, ED_INIT, edobj, 0, -1, NULL, false, NULL, NULL, NULL, NULL);
