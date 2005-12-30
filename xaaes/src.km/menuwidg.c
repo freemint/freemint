@@ -105,7 +105,7 @@ change_title(Tab *tab, int state)
 	wt->rend_flags |= WTR_ROOTMENU;
 	obj_change(wt,
 		   C.Aes->vdi_settings,
-		   t, 2,
+		   aesobj(wt->tree, t), 2,
 		   state,
 		   obtree[t].ob_flags,
 		   true,
@@ -140,7 +140,7 @@ change_entry(Tab *tab, int state)
 	{
 		obj_change(wt,
 			   k->p.wind->vdi_settings,
-			   t, 1 | 0x8000,
+			   aesobj(wt->tree, t), 1 | 0x8000,
 			   state,
 			   obtree[t].ob_flags,
 			   true,
@@ -150,7 +150,7 @@ change_entry(Tab *tab, int state)
 	else
 	{
 		DIAGS(("change_entry: no popw"));
-		obj_change(wt, C.Aes->vdi_settings, t, 1 | 0x8000, state, obtree[t].ob_flags, true, NULL, NULL, 0);
+		obj_change(wt, C.Aes->vdi_settings, aesobj(wt->tree, t), 1 | 0x8000, state, obtree[t].ob_flags, true, NULL, NULL, 0);
 	}
 }
 
@@ -174,14 +174,14 @@ redraw_entry(Tab *tab, short t)
 	{
 		obj_draw(wt,
 			   k->p.wind->vdi_settings,
-			   t, 1 | 0x8000,
+			   aesobj(wt->tree, t), 1 | 0x8000,
 			   &k->p.wind->wa,
 			   k->p.wind->rect_list.start, 0);
 	}
 	else
 	{
 		DIAGS(("change_entry: no popw"));
-		obj_draw(wt, C.Aes->vdi_settings, t, 1 | 0x8000, NULL, NULL, 0);
+		obj_draw(wt, C.Aes->vdi_settings, aesobj(wt->tree, t), 1 | 0x8000, NULL, NULL, 0);
 	}
 }
 void
@@ -195,7 +195,7 @@ wt_menu_area(XA_TREE *wt)
 	/* additional fix to fit in window */
 		//obtree->ob_height = obtree[obtree->ob_head].ob_height = obtree[obtree->ob_tail].ob_height = get_menu_widg()->r.h; //wind->wa.w;
 		titles = obtree[obtree[0].ob_head].ob_head;
-		obj_area(wt, titles, &wt->area);
+		obj_area(wt, aesobj(wt->tree, titles), &wt->area);
 
 		DIAG((D_menu, wt->owner, "wt_menu_area: %d/%d/%d/%d for %s",
 			wt->area, wt->owner->name));
@@ -1032,17 +1032,17 @@ static int
 find_menu_object(struct widget_tree *wt, short start, short dx, short dy, short mx, short my, RECT *c)
 {
 	OBJECT *obtree = wt->tree;
-	short found;
+	struct xa_aes_object found;
 
 	obtree->ob_x = dx;
 	obtree->ob_y = dy;
 
 	if (c && !m_inside(mx, my, c))
-		found = -1;
+		found = inv_aesobj();
 	else
-		found = obj_find(wt, start, MAX_DEPTH, mx, my, c);
+		found = obj_find(wt, aesobj(wt->tree, start), MAX_DEPTH, mx, my, c);
 		
-	return found;
+	return aesobj_item(&found);
 }
 
 #if 0
@@ -1070,7 +1070,7 @@ menu_area(struct widget_tree *wt, int item, short dx, short dy, RECT *c)
 	sy = wt->tree->ob_y;
 	wt->tree->ob_x = dx;
 	wt->tree->ob_y = dy;
-	obj_area(wt, item, c);
+	obj_area(wt, aesobj(wt->tree, item), c);
 	wt->tree->ob_x = sx;
 	wt->tree->ob_y = sy;
 }
@@ -1094,7 +1094,7 @@ display_popup(Tab *tab, short rdx, short rdy)
 	obtree->ob_x = k->rdx = rdx; /* This is where we want to draw the popup object. */
 	obtree->ob_y = k->rdy = rdy;
 
-	obj_rectangle(wt, pi->parent, &r);
+	obj_rectangle(wt, aesobj(wt->tree, pi->parent), &r);
 /* ************ */
 	if (tab->scroll)
 	{
@@ -1181,7 +1181,7 @@ display_popup(Tab *tab, short rdx, short rdy)
 	if (wind)
 	{
 		RECT or;
-		obj_rectangle(wt, pi->parent, &or);
+		obj_rectangle(wt, aesobj(wt->tree, pi->parent), &or);
 		k->drop = wind->wa;
 		
 		k->pdx = obtree->ob_x + (k->drop.x - or.x);
@@ -1310,7 +1310,7 @@ do_timeout_popup(Tab *tab)
 		at, new_wt, ob));
 
 	ob->ob_x = 0, ob->ob_y = 0;
-	obj_offset(new_wt, at->item, &rdx, &rdy);
+	obj_offset(new_wt, aesobj(new_wt->tree, at->item), &rdx, &rdy);
 
 	rdx = tra.x - rdx;
 	rdy = tra.y - rdy;
@@ -1533,7 +1533,7 @@ menu_bar(struct task_administration_block *tab, short item)
 	else
 		title = item;
 	
-	if (title < 0)
+	if (title < 0 || title == k->m.titles || (k->m.wt->tree[title].ob_state & OS_DISABLED))
 	{
 		k->em.flags |= MU_M1;
 		k->em.m1_flag = 0;
@@ -1544,7 +1544,7 @@ menu_bar(struct task_administration_block *tab, short item)
 	{
 		k->em.flags |= MU_M1;
 		k->em.m1_flag = 1;
-		obj_area(k->m.wt, k->m.current, &k->em.m1);
+		obj_area(k->m.wt, aesobj(k->m.wt->tree, k->m.current), &k->em.m1);
 		k->em.t1 = menu_bar;
 		k->m.wt->dx = dx;
 		k->m.wt->dy = dy;
@@ -2002,7 +2002,7 @@ Display_menu_widg(struct xa_window *wind, struct xa_widget *widg, const RECT *cl
 		short dx = wt->dx, dy = wt->dy;
 		
 		wt->dx = wt->dy = 0;
-		obj_rectangle(wt, widg->start, &r);
+		obj_rectangle(wt, aesobj(wt->tree, widg->start), &r);
 		wt->dx = dx;
 		wt->dy = dy;
 
@@ -2013,7 +2013,7 @@ Display_menu_widg(struct xa_window *wind, struct xa_widget *widg, const RECT *cl
 		//{
 			//set_clip(&wind->wa);
 			wt->rend_flags |= WTR_POPUP;
-			draw_object_tree(0, wt, NULL, wind->vdi_settings, widg->start, MAX_DEPTH, NULL, 0);
+			draw_object_tree(0, wt, NULL, wind->vdi_settings, aesobj(wt->tree, widg->start), MAX_DEPTH, NULL, 0);
 			wt->rend_flags &= ~WTR_POPUP;
 			//clear_clip();
 		//}
@@ -2027,7 +2027,7 @@ Display_menu_widg(struct xa_window *wind, struct xa_widget *widg, const RECT *cl
 		//obtree->ob_height = widg->r.h - 1;
 		obtree->ob_width = obtree[obtree[0].ob_head].ob_width = widg->ar.w;
 		wt->rend_flags |= WTR_ROOTMENU;
-		draw_object_tree(0, wt, NULL, wind->vdi_settings, 1, MAX_DEPTH, NULL, 0);
+		draw_object_tree(0, wt, NULL, wind->vdi_settings, aesobj(wt->tree, 1), MAX_DEPTH, NULL, 0);
 		wt->rend_flags &= ~WTR_ROOTMENU;
 		write_menu_line(wind->vdi_settings, (RECT*)&widg->ar); //obtree->ob_x);	/* HR: not in standard menu's object tree */
 	}
@@ -2226,7 +2226,7 @@ menu_title(enum locks lock, Tab *tab, short title, struct xa_window *wind, XA_WI
 		wt->dx = wt->dy = 0;
 		tab->ty = k->ty = (wind == root_window ? ROOT_MENU : MENU_BAR);
 		k->stage = IN_TITLE;
-		obj_area(wt, k->m.titles, &k->bar);
+		obj_area(wt, aesobj(wt->tree, k->m.titles), &k->bar);
 		change_title(tab, 1);
 		obtree[k->m.popups].ob_flags &= ~OF_HIDETREE;
 		n = obtree[k->m.popups].ob_head;
@@ -2256,8 +2256,8 @@ menu_title(enum locks lock, Tab *tab, short title, struct xa_window *wind, XA_WI
 			
 			desk_wt.tree = desk_popup.menu.mn_tree;
 			desk_wt.owner = C.Aes;
-			desk_wt.e.obj = -1;
-			desk_wt.focus = -1;
+			clear_edit(&desk_wt.e);
+			clear_focus(&desk_wt);
 			
 			attach_menu(tab->lock, C.Aes, wt, k->m.about + 2, &desk_popup);
 		}
@@ -2268,16 +2268,16 @@ menu_title(enum locks lock, Tab *tab, short title, struct xa_window *wind, XA_WI
 
 		k->em.flags = MU_M1;
 		k->em.m1_flag = 1;		/* fill out rect event data; out of title */
-		obj_area(wt, k->m.current, &k->em.m1);
+		obj_area(wt, aesobj(wt->tree, k->m.current), &k->em.m1);
 		k->em.t1 = menu_bar;
 		
 		if (title == -2 || title > 0)
 		{
-			short o = ob_find_next_any_flagstate(k->p.wt->tree, k->p.parent, -1,
+			struct xa_aes_object o = ob_find_next_any_flagstate(k->p.wt->tree, aesobj(k->p.wt->tree, k->p.parent), inv_aesobj(),
 				0, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_VERT|OBFIND_DOWN|OBFIND_HIDDEN|OBFIND_FIRST);
 			
-			if (o > 0)
-				popup(tab, o);
+			if (valid_aesobj(&o))
+				popup(tab, o.item);
 		}
 		else
 		{
@@ -2546,7 +2546,7 @@ menu_scroll_up(Tab *tab)
 		{
 			RECT r, from, to;
 			
-			obj_rectangle(pi->wt, pi->parent, &r);
+			obj_rectangle(pi->wt, aesobj(pi->wt->tree, pi->parent), &r);
 			r.y += sy;
 			r.h = scroll_h;
 			if (xa_rect_clip(&wind->wa, &r, &r))
@@ -2647,7 +2647,7 @@ menu_scroll_down(Tab *tab)
 		{
 			RECT r, from, to;
 			
-			obj_rectangle(pi->wt, pi->parent, &r);
+			obj_rectangle(pi->wt, aesobj(pi->wt->tree, pi->parent), &r);
 			r.y += sy;
 			r.h = scroll_h;
 			if (xa_rect_clip(&wind->wa, &r, &r))
@@ -2814,10 +2814,12 @@ menu_keyboard(Tab *tab, const struct rawkey *key)
 {
 	if (tab)
 	{
-		short keycode = key->aes, nxt = -1, dir;
-// 		Tab *nxt_tab = NULL;
+		short keycode = key->aes, dir;
 		MENU_TASK *k = &tab->task_data.menu;
 		OBJECT *obtree = k->p.wt->tree;
+		struct xa_aes_object nxt;
+
+		nxt = inv_aesobj();
 
 		DIAGS(("process menukey! %x", keycode));
 		switch (keycode)
@@ -2829,13 +2831,13 @@ menu_keyboard(Tab *tab, const struct rawkey *key)
 			else
 				dir = OBFIND_VERT|OBFIND_LAST;
 			
-			nxt = ob_find_next_any_flagstate(obtree, k->p.parent, k->p.current,
+			nxt = ob_find_next_any_flagstate(obtree, aesobj(k->p.wt->tree, k->p.parent), aesobj(k->p.wt->tree, k->p.current),
 				0, OF_HIDETREE, 0, OS_DISABLED, 0, 0, dir);
 			
 
 			DIAGS(("  up   - was %d, next %d", k->p.current, nxt));
 			
-			if (nxt == -1)
+			if (!valid_aesobj(&nxt))
 				goto last;
 			
 			break;
@@ -2845,14 +2847,14 @@ menu_keyboard(Tab *tab, const struct rawkey *key)
 			if (k->p.current > 0)
 				dir = OBFIND_VERT|OBFIND_DOWN|OBFIND_HIDDEN;
 			else
-				dir = OBFIND_VERT|OBFIND_FIRST;
+				dir = OBFIND_VERT|OBFIND_FIRST|OBFIND_HIDDEN;
 			
-			nxt = ob_find_next_any_flagstate(obtree, k->p.parent, k->p.current,
+			nxt = ob_find_next_any_flagstate(obtree, aesobj(k->p.wt->tree, k->p.parent), aesobj(k->p.wt->tree, k->p.current),
 				0, OF_HIDETREE, 0, OS_DISABLED, 0, 0, dir);
 
 			DIAGS(("  down - was %d, next %d", k->p.current, nxt));
 			
-			if (nxt == -1)
+			if (!valid_aesobj(&nxt))
 				goto first;
 			break;
 		}
@@ -2862,37 +2864,39 @@ menu_keyboard(Tab *tab, const struct rawkey *key)
 			
 			if (k->p.current > 0)
 			{
-				nxt = ob_find_next_any_flagstate(obtree, k->p.parent, k->p.current,
+				nxt = ob_find_next_any_flagstate(obtree, aesobj(k->p.wt->tree, k->p.parent), aesobj(k->p.wt->tree, k->p.current),
 					0, OF_HIDETREE, 0, OS_DISABLED, 0,0, OBFIND_HOR|OBFIND_DOWN|OBFIND_HIDDEN|OBFIND_NOWRAP);
-				if (nxt == -1)
+				if (!valid_aesobj(&nxt))
 					a = open_attach(tab, true);
 			}
-			if (!a && nxt == -1)
+			if (!a && !valid_aesobj(&nxt))
 			{
 				tab = tab->root;
 				k = &tab->task_data.menu;
 				DIAGS(("  right, menu wt = %lx", k->m.wt));
 				if (k->m.wt)
 				{
-					nxt = ob_find_next_any_flagstate(k->m.wt->tree, k->m.titles, k->m.current,
+					nxt = ob_find_next_any_flagstate(k->m.wt->tree, aesobj(k->m.wt->tree, k->m.titles), aesobj(k->m.wt->tree, k->m.current),
 						0, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_HOR|OBFIND_DOWN|OBFIND_HIDDEN);
-					if (nxt < 0)
-						nxt = ob_find_next_any_flagstate(k->m.wt->tree, k->m.titles, -1,
+					if (!valid_aesobj(&nxt))
+						nxt = ob_find_next_any_flagstate(k->m.wt->tree, aesobj(k->m.wt->tree, k->m.titles), inv_aesobj(),
 							0, OF_HIDETREE, 0, OS_DISABLED, 0,0, OBFIND_HOR|OBFIND_FIRST);
-					if (nxt != -1)
-						menu_bar(tab, nxt);
+					if (valid_aesobj(&nxt))
+						menu_bar(tab, nxt.item);
 				}
-				nxt = -1;
+				nxt = inv_aesobj();
 			}
 			break;
 		}
 		case 0x4b00:		/* Left arrow */
 		{
-
-			nxt = ob_find_next_any_flagstate(obtree, k->p.parent, k->p.current,
-				0, OF_HIDETREE, 0, OS_DISABLED, 0,0, OBFIND_HOR|OBFIND_UP|OBFIND_HIDDEN|OBFIND_NOWRAP);
+			if (k->p.current > 0)
+			{
+				nxt = ob_find_next_any_flagstate(obtree, aesobj(k->p.wt->tree, k->p.parent), aesobj(k->p.wt->tree, k->p.current),
+					0, OF_HIDETREE, 0, OS_DISABLED, 0,0, OBFIND_HOR|OBFIND_UP|OBFIND_HIDDEN|OBFIND_NOWRAP);
+			}
 			
-			if (nxt == -1)
+			if (!valid_aesobj(&nxt))
 			{
 				if (NEXT_TAB(tab))
 					set_popout_timeout(NEXT_TAB(tab), true);
@@ -2903,15 +2907,15 @@ menu_keyboard(Tab *tab, const struct rawkey *key)
 					DIAGS(("  left, menu wt = %lx", k->m.wt));
 					if (k->m.wt)
 					{
-						nxt = ob_find_next_any_flagstate(k->m.wt->tree, k->m.titles, k->m.current,
+						nxt = ob_find_next_any_flagstate(k->m.wt->tree, aesobj(k->m.wt->tree, k->m.titles), aesobj(k->m.wt->tree, k->m.current),
 							0, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_HOR|OBFIND_UP|OBFIND_HIDDEN);
-						if (nxt < 0)
-							nxt = ob_find_next_any_flagstate(k->m.wt->tree, k->m.titles, k->m.current,
+						if (!valid_aesobj(&nxt))
+							nxt = ob_find_next_any_flagstate(k->m.wt->tree, aesobj(k->m.wt->tree, k->m.titles), aesobj(k->m.wt->tree, k->m.current),
 								0, OF_HIDETREE, 0, OS_DISABLED, 0,0, OBFIND_HOR|OBFIND_LAST);
-						if (nxt != -1)
-							menu_bar(tab, nxt);
+						if (valid_aesobj(&nxt))
+							menu_bar(tab, nxt.item);
 					}
-					nxt = -1;
+					nxt = inv_aesobj();
 				}
 			}
 			break;
@@ -2921,7 +2925,7 @@ menu_keyboard(Tab *tab, const struct rawkey *key)
 		case 0x4f00:		/* END key (Milan &| emus)		*/
 		{
 last:
-			nxt = ob_find_next_any_flagstate(obtree, k->p.parent, -1,
+			nxt = ob_find_next_any_flagstate(obtree, aesobj(k->p.wt->tree, k->p.parent), inv_aesobj(),
 				0, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_VERT|OBFIND_DOWN|OBFIND_HIDDEN|OBFIND_LAST);
 			DIAGS(("  found first obj %d, parent %d", nxt, k->p.parent));
 			break;
@@ -2930,7 +2934,7 @@ last:
 		case 0x4900:		/* page up key (Milan &| emulators)    */
 		{
 first:
-			nxt = ob_find_next_any_flagstate(obtree, k->p.parent, -1,
+			nxt = ob_find_next_any_flagstate(obtree, aesobj(k->p.wt->tree, k->p.parent), inv_aesobj(),
 				0, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_VERT|OBFIND_DOWN|OBFIND_HIDDEN|OBFIND_FIRST);
 			DIAGS(("  found last obj %d, parent %d", nxt, k->p.parent));
 			break;
@@ -2956,9 +2960,9 @@ first:
 		}
 		}
 		
-		if (nxt != -1 && nxt != k->p.current)
+		if (valid_aesobj(&nxt) && aesobj_item(&nxt) != k->p.current)
 		{
-			popup(tab, nxt);
+			popup(tab, aesobj_item(&nxt));
 		}
 		return true;
 	}

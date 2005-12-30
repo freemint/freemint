@@ -892,8 +892,8 @@ set_file(struct fsel_data *fs, char *fn, bool mark)
 // 	display("here, fn = %lx '%s'", fn, fn);
 	if (fn)
 	{
-		obj_edit(fs->form, fs->wind->vdi_settings, ED_MARK, FS_FILE, 0, -1, NULL, false, NULL,NULL, NULL,NULL);
-		obj_edit(fs->form, fs->wind->vdi_settings, ED_STRING, FS_FILE, mark ? 1 : 0, 0, fn, true, NULL, fs->wind->rect_list.start, NULL, NULL);
+		obj_edit(fs->form, fs->wind->vdi_settings, ED_MARK, aesobj(fs->form->tree, FS_FILE), 0, -1, NULL, false, NULL,NULL, NULL,NULL);
+		obj_edit(fs->form, fs->wind->vdi_settings, ED_STRING, aesobj(fs->form->tree, FS_FILE), mark ? 1 : 0, 0, fn, true, NULL, fs->wind->rect_list.start, NULL, NULL);
 	}
 	else
 		redraw_toolbar(0, fs->wind, FS_FILE);
@@ -1686,24 +1686,21 @@ fileselector_form_exit(struct xa_client *client,
 #endif
 	
 	wt->which = 0;
-	wt->current = fr->obj;
 	
-	switch (fr->obj)
+	switch (aesobj_item(&fr->obj))
 	{
 	/*
 	 * 
 	 */
 	case FS_LIST:
 	{
-		short obj = fr->obj;
-
 		DIAGS(("filesel_form_exit: Moved the shit out of form_do() to here!"));
-		if ( fr->md && ((obtree[obj].ob_type & 0xff) == G_SLIST))
+		if ( fr->md && ((aesobj_ob(&fr->obj)->ob_type & 0xff) == G_SLIST))
 		{
 			if (fr->md->clicks > 1)
-				dclick_scroll_list(lock, obtree, obj, fr->md);
+				dclick_scroll_list(lock, obtree, aesobj_item(&fr->obj), fr->md);
 			else
-				click_scroll_list(lock, obtree, obj, fr->md);
+				click_scroll_list(lock, obtree, aesobj_item(&fr->obj), fr->md);
 		}
 		break;
 	}
@@ -2055,7 +2052,7 @@ fs_key_form_do(enum locks lock,
 		refresh_filelist(fsel, fs, NULL);
 		fs_prompt(list, fs->file, false);
 	}
-	else if (wt->focus == FS_FILE && key->aes == 0x0f09)
+	else if (focus_item(wt) == FS_FILE && key->aes == 0x0f09)
 	{
 // 		display("eating TAB");
 		fs->kbdnav = true;
@@ -2258,7 +2255,7 @@ fs_init_menu(struct fsel_data *fs)
 static bool
 open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *fs,
 		   const char *path, const char *file, const char *title,
-		   fsel_handler *s, fsel_handler *c)
+		   fsel_handler *s, fsel_handler *c, void *data)
 {
 	bool nolist;
 	XA_WIND_ATTR kind;
@@ -2277,6 +2274,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 	{
 		bzero(fs, sizeof(*fs));
 
+		fs->data = data;
 		fs->owner = client;
 		
 		*fs->fslash = '\\';
@@ -2324,25 +2322,37 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 		}
 		else
 		{
-			int cwdl, drv = d_getdrv();
-			char chr;
+			int drv = d_getdrv();
 
 			fs->root[0] = drv + 'a';
 			fs->root[1] = ':';
 			d_getcwd(fs->root + 2, drv + 1, sizeof(fs->root));
+			/* */ 
+// 			display("no path passed, building '%s'", fs->root);
+		}
+		{
+			int cwdl;
+			char chr;
 			
-			if ((chr = fs->root[2]))
+			pat = strrchr(fs->root, '\\');
+			pbt = strrchr(fs->root, '/');
+			if (!pat) pat = pbt;
+			
+			if (*(pat + 1) && !strrchr(pat + 1, '*'))
 			{
-				cwdl = strlen(fs->root);
-				if (fs->root[cwdl - 1] != chr)
+				if ((chr = fs->root[2]))
 				{
-					fs->root[cwdl] = chr;
-					fs->root[cwdl+1] = '\0';
+					cwdl = strlen(fs->root);
+					if (fs->root[cwdl - 1] != chr)
+					{
+						fs->root[cwdl] = chr;
+						fs->root[cwdl+1] = '\0';
+					}
 				}
+				else
+					fs->root[2] = '\\', fs->root[3] = '\0';
 			}
-			else
-				fs->root[2] = '\\', fs->root[3] = '\0';
-	
+
 // 			display("illegal path '%s'", path ? path : "nopath");
 // 			display("set path to  '%s'", fs->root);
 		#if 0
@@ -2396,7 +2406,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 			form[FS_UNDER].ob_x += dw;
 		}
 
-		ob_rectangle(form, 0, &or);
+		ob_rectangle(form, aesobj(form, 0), &or);
 
 		kind = (XaMENU|NAME|TOOLBAR|BORDER);
 		/* Work out sizing */
@@ -2457,10 +2467,10 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 
 		fs->clear_on_folder_change = 0;
 
-		wt = set_toolbar_widget(lock, dialog_window, client, form, FS_FILE, 0/*WIP_NOTEXT*/, true, NULL, &or);
-		obj_edit(fs->form, v, ED_SETPTEXT, FS_FILE, sizeof(fs->file) - 1, 0, fs->file, false, NULL,NULL, NULL,NULL);
-		obj_edit(fs->form, v, ED_MARK, FS_FILE, 0, -1, NULL, false, NULL,NULL, NULL,NULL);
-		obj_edit(fs->form, v, ED_STRING, FS_FILE, 0, 0, fs->file, false, NULL, NULL, NULL, NULL);
+		wt = set_toolbar_widget(lock, dialog_window, client, form, aesobj(form, FS_FILE), 0/*WIP_NOTEXT*/, true, NULL, &or);
+		obj_edit(fs->form, v, ED_SETPTEXT, aesobj(fs->form->tree, FS_FILE), sizeof(fs->file) - 1, 0, fs->file, false, NULL,NULL, NULL,NULL);
+		obj_edit(fs->form, v, ED_MARK, aesobj(fs->form->tree, FS_FILE), 0, -1, NULL, false, NULL,NULL, NULL,NULL);
+		obj_edit(fs->form, v, ED_STRING, aesobj(fs->form->tree, FS_FILE), 0, 0, fs->file, false, NULL, NULL, NULL, NULL);
 
 		/* This can be of use for drawing. (keep off border & outline :-) */
 		wt->zen = true;
@@ -2616,11 +2626,11 @@ static int locked = 0;
 void
 open_fileselector(enum locks lock, struct xa_client *client, struct fsel_data *fs,
 		  const char *path, const char *file, const char *title,
-		  fsel_handler *s, fsel_handler *c)
+		  fsel_handler *s, fsel_handler *c, void *data)
 {
 	if (!locked)
 	{
-		open_fileselector1(lock, client, fs, path, file, title, s, c);
+		open_fileselector1(lock, client, fs, path, file, title, s, c, data);
 	}
 }
 
@@ -2657,7 +2667,7 @@ do_fsel_exinput(enum locks lock, struct xa_client *client, AESPB *pb, const char
 					file,
 					text,
 					handle_fsel,
-					cancel_fsel))
+					cancel_fsel, NULL))
 		{
 			client->status |= CS_FSEL_INPUT;
 			Block(client, 21);

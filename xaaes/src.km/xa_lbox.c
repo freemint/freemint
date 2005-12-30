@@ -279,12 +279,12 @@ get_last_visible_item(struct xa_lbox_info *lbox)
  * Redraw an LBOX object
  */
 static void
-redraw_lbox(struct xa_lbox_info *lbox, short obj, short depth, RECT *r)
+redraw_lbox(struct xa_lbox_info *lbox, short o, short depth, RECT *r)
 {
 	struct xa_window *wind;
 	struct widget_tree *wt;
 	struct xa_vdi_settings *v = lbox->vdi_settings;
-	short i, start;
+	struct xa_aes_object start, object, obj;
 	RECT or;
 
 	wt = lbox->wt;
@@ -293,14 +293,17 @@ redraw_lbox(struct xa_lbox_info *lbox, short obj, short depth, RECT *r)
 	DIAG((D_lbox, NULL, "redraw_lbox: lbox=%lx, wt=%lx, wind=%lx, parent=%d",
 		lbox, wt, wind, lbox->parent));
 
+	obj = aesobj(wt->tree, o);
+
 	obj_area(wt, obj, &or);
 
 	start = obj;
-	while (object_is_transparent(wt->tree + start, false))
+	while (object_is_transparent(aesobj_ob(&start), false))
 	{
-		if ((i = ob_get_parent(wt->tree, start)) < 0)
+		object = ob_get_parent(wt->tree, start);
+		if (object.item < 0)
 			break;
-		start = i;
+		start = object;
 		depth++;
 	}
 
@@ -737,8 +740,8 @@ drag_slide(struct xa_lbox_info *lbox, struct lbox_slide *s)
 		/*
 		 * new current object = total_object - visible_objects * slider_relpos / 1000
 		 */
-		obj_area(lbox->wt, parent, &sl_r);
-		obj_area(lbox->wt, lbox->parent, &lb_r);
+		obj_area(lbox->wt, aesobj(lbox->wt->tree, parent), &sl_r);
+		obj_area(lbox->wt, aesobj(lbox->wt->tree, lbox->parent), &lb_r);
 
 		first = s->first_visible;
 
@@ -942,13 +945,14 @@ static bool
 move_page(struct xa_lbox_info *lbox, struct lbox_slide *s, bool upd, RECT *lbox_r, RECT *slide_r)
 {
 	bool ret;
-	short parent, child, x, y, mx, my, dir;
+	short x, y, mx, my, dir;
+	struct xa_aes_object parent, child;
 	XA_TREE *wt = lbox->wt;
 
 	check_mouse(wt->owner, NULL, &mx, &my);
 
-	parent = s->bkg;
-	child  = s->sld;
+	parent = aesobj(wt->tree, s->bkg);
+	child  = aesobj(wt->tree, s->sld);
 
 	obj_offset(wt, child, &x, &y);
 
@@ -969,7 +973,7 @@ move_page(struct xa_lbox_info *lbox, struct lbox_slide *s, bool upd, RECT *lbox_
 		if (lbox_r)
 			redraw_lbox(lbox, lbox->parent, 2, lbox_r);
 		if (slide_r && s->bkg >= 0)
-			redraw_lbox(lbox, parent, 2, slide_r);
+			redraw_lbox(lbox, aesobj_item(&parent), 2, slide_r);
 	}
 	return ret;
 }
@@ -1121,12 +1125,12 @@ XA_lbox_create(enum locks lock, struct xa_client *client, AESPB *pb)
 				parnt = lbox->aslide.bkg;
 				child = lbox->aslide.sld;
 				if (child >= 0 && parnt >= 0)
-					ob_border_diff(obtree, child, parnt, &lbox->aslide.ofs);
+					ob_border_diff(obtree, aesobj(obtree, child), aesobj(obtree, parnt), &lbox->aslide.ofs);
 
 				parnt = lbox->bslide.bkg;
 				child = lbox->bslide.sld;
 				if (parnt >= 0 && child >= 0)
-					ob_border_diff(obtree, child, parnt, &lbox->bslide.ofs);
+					ob_border_diff(obtree, aesobj(obtree, child), aesobj(obtree, parnt), &lbox->bslide.ofs);
 			}
 
 			setup_lbox_objects(lbox);
@@ -1235,12 +1239,12 @@ XA_lbox_do(enum locks lock, struct xa_client *client, AESPB *pb)
 		
 		vq_key_s(C.P_handle, &ks);
 		obj &= ~0x8000;
-		obj_area(lbox->wt, lbox->parent, &r);
+		obj_area(lbox->wt, aesobj(lbox->wt->tree, lbox->parent), &r);
 
 		if (lbox->aslide.bkg > 0)
-			obj_area(wt, lbox->aslide.bkg, &asr);
+			obj_area(wt, aesobj(wt->tree, lbox->aslide.bkg), &asr);
 		if (lbox->bslide.bkg > 0)
-			obj_area(wt, lbox->bslide.bkg, &bsr);
+			obj_area(wt, aesobj(wt->tree, lbox->bslide.bkg), &bsr);
 
 		if (obj == lbox->aslide.dr)
 		{
@@ -1366,7 +1370,7 @@ XA_lbox_do(enum locks lock, struct xa_client *client, AESPB *pb)
 				hsr = &asr;
 			}
 
-			obj_area(lbox->wt, obj, &or);
+			obj_area(lbox->wt, aesobj(lbox->wt->tree, obj), &or);
 
 			check_mouse(client, &mb, &nx, &ny);
 
@@ -1389,8 +1393,9 @@ XA_lbox_do(enum locks lock, struct xa_client *client, AESPB *pb)
 
 					if (m_inside(nx, ny, &r))
 					{
-						nobj = obj_find(wt, lbox->parent, 1, nx, ny, NULL);
-
+						struct xa_aes_object nobject;
+						nobject = obj_find(wt, aesobj(wt->tree, lbox->parent), 1, nx, ny, NULL);
+						nobj = aesobj_item(&nobject);
 						if (nobj == obj)
 							nobj = -1;
 					

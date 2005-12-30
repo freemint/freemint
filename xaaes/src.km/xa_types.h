@@ -27,6 +27,7 @@
 #ifndef _xa_types_h
 #define _xa_types_h
 
+
 #include "global.h"
 
 #include "xa_aes.h"
@@ -134,6 +135,16 @@ struct xa_rsc_rgb
 	short green;
 	short blue;
 	short pen;
+};
+
+/*
+ * Describing an AES object
+ */
+struct xa_aes_object
+{
+	OBJECT *ob;
+	OBJECT *tree;
+	short item;
 };
 
 struct lrect
@@ -733,9 +744,9 @@ struct wdlg_evnt_parms
 	EVNT *ev;
 	struct wdlg_info *wdlg;
 	short (*callout)(struct xa_client *client, struct wdlg_info *wdlg, void *ev, short nxtobj, short mclicks, void *udata, void *feedback);
-	void  (*redraw)(enum locks lock, struct xa_window *wind, short start, short depth, RECT *r);
+	void  (*redraw)(enum locks lock, struct xa_window *wind, struct xa_aes_object start, short depth, RECT *r);
 
-	short obj;
+	struct xa_aes_object obj;
 };
 
 struct xa_usr_prn_settings;
@@ -753,28 +764,108 @@ struct xa_pdlg_drv_info
 	DRV_INFO		drv_info;
 };
 
+struct xa_prndrv_info;
+struct xa_prndrv_info
+{
+	struct xa_prndrv_info *next;
+#define DRVINFO_KMALLOC		1
+	long flags;
+	char path[128];
+	char fname[32];
+	char dname[128];
+	DRV_INFO *d;
+};
+
 struct xa_pdlg_info
 {
 	struct xa_data_hdr h;
 
 	void	*handle;
+	struct	xa_client *client;
 	struct	xa_window *wind;
 	struct	widget_tree *mwt;
 	struct	widget_tree *dwt;
 	struct	scroll_info *list;
-	
 	XVDIPB	*vpb;
+
+	short	min_w, min_h;
 
 	short	exit_button;
 	short	flags;
 	short	dialog_flags;
 	short	option_flags;
 
+	short	n_drivers;
+	short	n_printers;
+	
+	POPINFO drv_pinf;
+	short	drv_obnum;
+	struct widget_tree *drv_wt;
+	
+	POPINFO mode_pinf;
+	short	mode_obnum;
+	struct widget_tree *mode_wt;
+	
+	POPINFO color_pinf;
+	short	color_obnum;
+	struct widget_tree *color_wt;
+	
+	POPINFO dither_pinf;
+	short	dither_obnum;
+	struct widget_tree *dither_wt;
+	
+	POPINFO type_pinf;
+	short	type_obnum;
+	struct widget_tree *type_wt;
+	
+	POPINFO size_pinf;
+	short	size_obnum;
+	struct widget_tree *size_wt;
+	
+	POPINFO itray_pinf;
+	short	itray_obnum;
+	struct widget_tree *itray_wt;
+	
+	POPINFO otray_pinf;
+	short	otray_obnum;
+	struct widget_tree *otray_wt;
+
+	POPINFO outfile_pinf;
+	short	outfile_obnum;
+	short	sel_outfile_obnum;
+	struct widget_tree *outfile_wt;
+
+	struct xa_prndrv_info *drivers;
+
 	struct xa_pdrv_info *priv_drivers;
+
+	short	nxt_subdlgid;
+	PDLG_SUB *current_subdlg;
 	
 	PRN_SETTINGS *settings;
+
+	DRV_INFO *curr_drv;
+	PRN_ENTRY *curr_prn;
+	PRN_MODE *curr_mode;
+	DITHER_MODE *curr_dither;
+	MEDIA_TYPE *curr_type;
+	MEDIA_SIZE *curr_size;
+	PRN_TRAY *curr_itray;
+	PRN_TRAY *curr_otray;
+	
+	char *outfile;
+	char *outpath;
+	
+	char *outfiles[(PDLG_OUTFILES + 1) * 2];
+	
+	short n_colmodes;
+	long colormodes[32];
+
 	PRN_SETTINGS current_settings;
+	PRN_SETTINGS default_settings;
+	
 	char document_name[256];
+	char filesel[256];
 };
 
 #define OB_CURS_EOR	1
@@ -784,7 +875,9 @@ struct objc_edit_info
 {
 	TEDINFO *p_ti;
 
-	short obj;	/* Index of editable object */
+	struct xa_aes_object o;
+
+// 	short obj;	/* Index of editable object */
 	short pos;	/* Cursor (char) position */
 	short c_state;	/* Cursor state */
 
@@ -852,7 +945,8 @@ struct widget_tree
 	struct xa_widget *widg;		/* Cross pointer to widget. */
 	
 	OBJECT *tree;			/* The object tree */
-	short current;			/* current item within above tree. */
+// 	short current;			/* current item within above tree. */
+	struct xa_aes_object current;	
 	RECT r;				/* Why not do the addition (parent_x+ob_x) once in the caller? */
 					/* And set a usefull RECT as soon as possible, ready for use in
 					 * all kind of functions. */
@@ -862,7 +956,9 @@ struct widget_tree
 	short parent_x;			/* Keep both in: dont need to change everything in a single effort */
 	short parent_y;
 
-	short focus;
+// 	short focus;
+	struct xa_aes_object focus;
+
 	struct objc_edit_info *ei;
 	struct objc_edit_info e;
 
@@ -923,7 +1019,7 @@ struct fmd_result
 {
 	bool no_exit;
 	short flags;
-	short obj;
+	struct xa_aes_object obj;
 	short obj_state;
 	short dblmask;
 	ushort aeskey;
@@ -1751,8 +1847,9 @@ typedef struct scroll_entry * scrl_search(struct scroll_info *list, struct scrol
 #define SESET_TEXT		12
 #define SESET_TREEVIEW		13
 #define SESET_CURRENT		14
+#define SESET_ACTIVE		15
 
-#define SESET_M_STATE		15
+#define SESET_M_STATE		16
 
 /* SESET_UNSELECTED arguments */
 #define UNSELECT_ONE	0
@@ -1773,22 +1870,26 @@ struct seset_tab
 #define SEGET_HFNT		 4
 #define SEGET_WTXT		 5
 #define SEGET_SELECTED		 6
-#define SEGET_ENTRYBYIDX	 7
-#define SEGET_ENTRYBYTEXT	 8
-#define SEGET_ENTRYBYDATA	 9
-#define SEGET_ENTRYBYUSRFLG	10
-#define SEGET_ENTRYBYSTATE	11
-#define SEGET_ENTRYBYXSTATE	12
-#define SEGET_LISTXYWH		13
-#define SEGET_TAB		14
-#define SEGET_USRFLAGS		15
-#define SEGET_USRDATA		16
-#define SEGET_NEXTENT		17
-#define SEGET_PREVENT		18
-#define SEGET_TEXTCPY		19
-#define SEGET_TEXTCMP		20
-#define SEGET_TEXTPTR		21
-#define SEGET_CURRENT		22
+
+#define SEGET_ENTRYBYIDX	10
+#define SEGET_ENTRYBYTEXT	11
+#define SEGET_ENTRYBYDATA	12
+#define SEGET_ENTRYBYUSRFLG	13
+#define SEGET_ENTRYBYSTATE	14
+#define SEGET_ENTRYBYXSTATE	15
+#define SEGET_ENTRYBYUSRFLAGS	16
+
+#define SEGET_LISTXYWH		20
+#define SEGET_TAB		30
+
+#define SEGET_USRFLAGS		40
+#define SEGET_USRDATA		41
+#define SEGET_NEXTENT		50
+#define SEGET_PREVENT		51
+#define SEGET_TEXTCPY		60
+#define SEGET_TEXTCMP		61
+#define SEGET_TEXTPTR		62
+#define SEGET_CURRENT		100
 
 
 /*
@@ -1813,8 +1914,8 @@ struct se_arg_level
 struct se_arg_flags
 {
 	short method;
-	short bits;
-	short mask;
+	long bits;
+	long mask;
 };
 
 /*
@@ -1858,9 +1959,10 @@ struct sesetget_params
 	{
 		struct se_arg_flags state;
 		struct se_arg_flags xstate;
+		struct se_arg_flags usr_flags;
 		char *txt;
 		void *data;
-		long usr_flag;
+// 		long usr_flag;
 	}arg;
 	
 	union
@@ -2267,5 +2369,173 @@ struct xa_client
 
 	struct	xa_data_hdr *xa_data;
 };
+
+struct extbox_parms;
+struct extbox_parms
+{
+	unsigned long	obspec;
+	short		type;
+	void		(*callout)(struct extbox_parms *p);
+	void		*data;
+/*
+ * part below this line is filled by object-renderer when calling 'callout'
+ */
+	struct widget_tree *wt;
+	short	index;
+	RECT r;
+	RECT clip;
+};
+
+struct oblink_spec
+{
+	struct xa_aes_object to;
+	RECT save_to_r;
+	struct xa_aes_object from;
+	OBJECT save_obj;
+	struct xa_aes_object savestop;
+	union
+	{
+		short	 smisc[10];
+		long	 lmisc[5];
+		void	*pmisc[5];
+	} d;
+};
+
+/* ------------------------------------------------  */
+
+inline static bool
+is_tree_item_aesobj(struct xa_aes_object *o, OBJECT *tree, short item)
+{
+	return ((tree + item) == o->ob) ? true : false;
+}
+
+inline static bool
+same_aesobj(struct xa_aes_object *a, struct xa_aes_object *b)
+{
+	return (a->ob == b->ob) ? true : false;
+}
+inline static bool
+valid_aesobj(struct xa_aes_object *o)
+{
+	if (o->item == -1 || !o->tree)
+		return false;
+	return true;
+}
+inline static short
+aesobj_item(struct xa_aes_object *o)
+{
+	return o->item;
+}
+inline static OBJECT *
+aesobj_ob(struct xa_aes_object *o)
+{
+	return o->ob;
+}
+inline static OBJECT *
+aesobj_tree(struct xa_aes_object *o)
+{
+	return o->tree;
+}
+
+inline static struct xa_aes_object
+inv_aesobj(void)
+{
+	return (struct xa_aes_object){ob: NULL, tree: NULL, item: -1};
+}
+
+inline static struct xa_aes_object
+aesobj(OBJECT *tree, short item)
+{
+	return (struct xa_aes_object){ob: tree + item, tree: tree, item: item};
+}
+
+inline static bool
+is_aesobj(OBJECT *tree, short item, struct xa_aes_object *o)
+{
+	return ((tree + item) == aesobj_ob(o));
+}
+/*
+ * Focus object
+ */
+inline static void
+clear_focus(struct widget_tree *wt)
+{
+	wt->focus = inv_aesobj();
+}
+inline static void
+set_focus(struct widget_tree *wt, OBJECT *tree, short item)
+{
+	wt->focus = aesobj(tree, item); //set_aesobj(&wt->focus, tree ? tree : wt->tree, item);
+}
+
+inline static bool
+focus_set(struct widget_tree *wt)
+{
+	return (wt->focus.ob) ? true : false;
+}
+inline static short
+focus_item(struct widget_tree *wt)
+{
+	return wt->focus.item;
+}
+inline static OBJECT *
+focus_ob(struct widget_tree *wt)
+{
+	return wt->focus.ob;
+}
+
+inline static bool
+obj_is_focus(struct widget_tree *wt, struct xa_aes_object *o)
+{
+	return same_aesobj(&wt->focus, o);
+}
+
+inline static struct xa_aes_object
+focus(struct widget_tree *wt)
+{
+	return wt->focus;
+}
+
+/*
+ * Edit object
+ */
+inline static void
+clear_edit(struct objc_edit_info *ei)
+{
+	ei->o = inv_aesobj();
+}
+inline static void
+set_edit(struct objc_edit_info *ei, OBJECT *tree, short item)
+{
+	ei->o = aesobj(tree, item);
+}
+
+inline static bool
+edit_set(struct objc_edit_info *ei)
+{
+	return valid_aesobj(&ei->o);
+}
+inline static short
+edit_item(struct objc_edit_info *ei)
+{
+	return ei->o.item;
+}
+inline static OBJECT *
+edit_ob(struct objc_edit_info *ei)
+{
+	return ei->o.ob;
+}
+
+inline static bool
+obj_is_edit(struct objc_edit_info *ei, struct xa_aes_object *o)
+{
+	return same_aesobj(&ei->o, o);
+}
+
+inline static struct xa_aes_object
+editfocus(struct objc_edit_info *ei)
+{
+	return ei->o;
+}
 
 #endif /* _xa_types_h */

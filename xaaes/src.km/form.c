@@ -49,10 +49,10 @@
 static void
 Set_form_do(struct xa_client *client,
 	    OBJECT *obtree,
-	    short edobj,
+	    struct xa_aes_object edobj,
 	    bool redraw)
 {
-	short new_obj;
+	struct xa_aes_object new_obj;
 	XA_TREE *wt;
 	struct objc_edit_info *ei;
 
@@ -72,8 +72,10 @@ Set_form_do(struct xa_client *client,
 	 * If the first obj_edit call fails, we call it again passing the
 	 * object it returned, which obj_edit() looked up. See obj_edit()
 	 */
-	if (edobj == -2)
+	if (edobj.item == -2)
+	{
 		edobj = ob_find_any_flst(obtree, OF_EDITABLE, 0, 0, OS_DISABLED, 0, 0);
+	}
 
 	if (!obj_edit(wt, client->vdi_settings, ED_INIT, edobj, 0, -1, NULL, redraw, NULL, NULL, NULL, &new_obj))
 	{
@@ -86,7 +88,7 @@ Set_form_do(struct xa_client *client,
 	/* Ozk:
 	 * Check if this obtree needs a keypress handler..
 	 */
-	if (ei->obj >= 0 || obtree_has_default(obtree) )
+	if (edit_set(ei) || obtree_has_default(obtree) )
 		client->fmd.keypress = Key_form_do;
 
 	/*
@@ -96,7 +98,7 @@ Set_form_do(struct xa_client *client,
 	client->fmd.wt = wt;
 }
 
-struct xa_window *
+static struct xa_window *
 create_fmd_wind(enum locks lock, struct xa_client *client, XA_WIND_ATTR kind, WINDOW_TYPE dial, RECT *r)
 {
 	struct xa_window *wind = NULL;
@@ -133,7 +135,7 @@ calc_fmd_wind(struct xa_client *client, OBJECT *obtree, XA_WIND_ATTR kind, WINDO
 {
 	DIAG((D_form, client, "Setup_form_do: Create window for %s", client->name));
 
-	ob_area(obtree, 0, r); //ob_rectangle(obtree, 0, r);
+	ob_area(obtree, aesobj(obtree, 0), r); //ob_rectangle(obtree, 0, r);
 
 	*r = calc_window(0,
 			 client,
@@ -153,10 +155,10 @@ calc_fmd_wind(struct xa_client *client, OBJECT *obtree, XA_WIND_ATTR kind, WINDO
 bool
 Setup_form_do(struct xa_client *client,
 	      OBJECT *obtree,
-	      short edobj,
+	      struct xa_aes_object edobj,
 	      /* Output */
 	      struct xa_window **ret_wind,
-	      short *ret_edobj)
+	      struct xa_aes_object *ret_edobj)
 {
 	enum locks lock = 0;
 	XA_WIND_ATTR kind = NAME;
@@ -164,19 +166,15 @@ Setup_form_do(struct xa_client *client,
 	struct xa_window *wind = NULL;
 	struct objc_edit_info *ei;
 
-// 	bool d = (!strnicmp(client->proc_name, "gfa_xref", 8)) ? true : false;
-
 	/*
 	 * Window for form/dialogs already created by form_dial()?
 	 */
 	if (client->fmd.wind)
 	{
 		DIAG((D_form, client, "Setup_form_do: wind %d for %s", client->fmd.wind->handle, client->name));
-// 		if (d) display("Setup_form_do: wind %d for %s", client->fmd.wind->handle, client->name);
 		wind = client->fmd.wind;
 		calc_fmd_wind(client, obtree, kind, wind->dial, (RECT *)&client->fmd.r);
 		wt = set_toolbar_widget(lock, wind, client, obtree, edobj, WIP_NOTEXT, false, NULL, NULL);
-// 		wt->zen = false;
 		move_window(lock, wind, true, -1, client->fmd.r.x, client->fmd.r.y, client->fmd.r.w, client->fmd.r.h);
 	}
 	/*
@@ -195,7 +193,6 @@ Setup_form_do(struct xa_client *client,
 	 */
 	else
 	{
-// 		if (d) display("new windowed formdo");
 		calc_fmd_wind(client, obtree, kind, client->fmd.state ? created_for_FMD_START : created_for_FORM_DO, (RECT *)&client->fmd.r);
 
 		if (!client->options.xa_nomove)
@@ -210,14 +207,10 @@ Setup_form_do(struct xa_client *client,
 	 */
 	if (!wind)
 	{
-// 		if (d) display("creating wind for form_do");
-
 		if ((wind = create_fmd_wind(lock, client, kind, client->fmd.state ? created_for_FMD_START : created_for_FORM_DO, &client->fmd.r)))
 		{
 			client->fmd.wind = wind;
 			wt = set_toolbar_widget(lock, wind, client, obtree, edobj, WIP_NOTEXT, false, NULL, NULL);
-// 			display("wind = %lx, wt=%lx, wttree=%lx, widg=%lx", wind, wt, wt->tree, wt->widg);
-// 			wt->zen = false;
 		}
 		else
 		{
@@ -229,13 +222,10 @@ okexit:
 	ei = wt->ei ? wt->ei : &wt->e;
 
 	DIAGS(("Setup_form_do: returning - edobj=%d, wind %lx",
-		ei->obj, wind));
+		edit_item(ei), wind));
 	
-// 	if (d) display("Setup_form_do: returning - edobj=%d, wind %lx",
-// 		ei->obj, wind);
-
 	if (ret_edobj)
-		*ret_edobj = ei->obj;
+		*ret_edobj = editfocus(ei); //edit_item(ei);
 	if (ret_wind)
 		*ret_wind = wind;
 
@@ -274,18 +264,18 @@ center_rect(RECT *r)
 bool
 form_button(XA_TREE *wt,
 	    struct xa_vdi_settings *v,
-	    short obj,
+	    struct xa_aes_object obj,
 	    const struct moose_data *md,
 	    unsigned long fbflags,
 	    struct xa_rect_list **rl,
 	    /* Outputs */
 	    short *newstate,
-	    short *nxtob,
+	    struct xa_aes_object *nxtob,
 	    short *clickmsk)
 {
 	RECT *clip = NULL;
 	OBJECT *obtree = wt->tree;
-	short next_obj = 0;
+	struct  xa_aes_object next_obj = aesobj(wt->tree, 0);
 	short flags, state, pstate;
 	struct xa_rect_list *lrl = NULL;
 	bool no_exit = true, dc, redraw = (fbflags & FBF_REDRAW);
@@ -294,13 +284,13 @@ form_button(XA_TREE *wt,
 		rl = &lrl;
 
 	DIAG((D_form, NULL, "form_button: wt=%lx, obtree=%lx, obj=%d",
-		wt, wt->tree, obj));
+		wt, wt->tree, aesobj_item(&obj)));
 
 // 	display("form_button: wt=%lx, obtree=%lx, obj=%d",
 // 		wt, wt->tree, obj);
 	
-	flags = obtree[obj].ob_flags;
-	state = pstate = obtree[obj].ob_state;
+	flags = aesobj_ob(&obj)->ob_flags;
+	state = pstate = aesobj_ob(&obj)->ob_state;
 	dc = md->clicks > 1 ? true : false;
 
 	/* find_object can't report click on a OF_HIDETREE object. */
@@ -313,13 +303,13 @@ form_button(XA_TREE *wt,
 	
 	if ( (flags & OF_SELECTABLE) && !(state & OS_DISABLED) )
 	{
-		short type = obtree[obj].ob_type & 0xff;
+		short type = aesobj_ob(&obj)->ob_type & 0xff;
 			
 		if (type == G_SLIST)
 		{
 			if ((wt->flags & WTF_FBDO_SLIST) || (fbflags & FBF_DO_SLIST))
 			{
-				click_scroll_list(0, obtree, obj, md);
+				click_scroll_list(0, obtree, aesobj_item(&obj), md);
 				no_exit = true;
 			}
 			else
@@ -331,10 +321,9 @@ form_button(XA_TREE *wt,
 			POPINFO *pinf;
 			short x, y, obnum;
 
-// 			if (obj_watch(wt, v, obj, state^OS_SELECTED, state, clip, *rl))
 			{
 
-				pinf = object_get_popinfo(obtree + obj);
+				pinf = object_get_popinfo(aesobj_ob(&obj));
 				if ((obnum = pinf->obnum) > 0)
 					pinf->tree[obnum].ob_state |= OS_CHECKED;
 				else
@@ -349,7 +338,10 @@ form_button(XA_TREE *wt,
 				if (menu_popup(0, wt->owner, &mn, &result, x, y, 2) && result.mn_tree == mn.mn_tree)
 				{
 					if (result.mn_item > 0)
+					{
+						no_exit = false;
 						pinf->obnum = result.mn_item;
+					}
 				}
 				if (obnum > 0)
 					pinf->tree[obnum].ob_state &= ~OS_CHECKED;
@@ -359,8 +351,8 @@ form_button(XA_TREE *wt,
 				/*
 				 * Ozk: Dont know about this...
 				 */
-				if (pinf->obnum != obnum)
-					no_exit = false;
+// 				if (pinf->obnum != obnum)
+// 					no_exit = false;
 			}
 		}
 		else if (flags & OF_RBUTTON)
@@ -371,7 +363,7 @@ form_button(XA_TREE *wt,
 				if (!(state & OS_SELECTED))
 				{
 					obj_watch(wt, v, obj, state^OS_SELECTED, state, clip, *rl);
-					if (obtree[obj].ob_state & OS_SELECTED)
+					if (aesobj_ob(&obj)->ob_state & OS_SELECTED)
 						obj_set_radio_button(wt, v, obj, redraw, clip, *rl);
 				}
 				else
@@ -396,18 +388,21 @@ form_button(XA_TREE *wt,
 				obj_change(wt, v, obj, -1, state^OS_SELECTED, flags, redraw, clip, *rl, 0);
 			}
 		}
-		state = obtree[obj].ob_state;	
+		state = aesobj_ob(&obj)->ob_state;	
 	}
 	
-	if ((flags & OF_EDITABLE) || ((fbflags & FBF_CHANGE_FOCUS) && (flags & (OF_EXIT|OF_SELECTABLE|OF_TOUCHEXIT|OF_EDITABLE))))
+	if (!(state & OS_DISABLED))
 	{
-		if (wt->focus != obj)
+		if ((flags & OF_EDITABLE) || ((fbflags & FBF_CHANGE_FOCUS) && (flags & (OF_EXIT|OF_SELECTABLE|OF_TOUCHEXIT|OF_EDITABLE))))
 		{
-			short pf = wt->focus;
-			wt->focus = obj;
-			if (pf != -1)
-				obj_draw(wt, v, pf, -2, NULL, *rl, DRW_CURSOR);
-			obj_draw(wt, v, obj, -2, NULL, *rl, DRW_CURSOR);
+			if (!obj_is_focus(wt, &obj))
+			{
+				struct xa_aes_object pf = focus(wt);
+				wt->focus = obj;
+				if (valid_aesobj(&pf))
+					obj_draw(wt, v, pf, -2, NULL, *rl, DRW_CURSOR);
+				obj_draw(wt, v, obj, -2, NULL, *rl, DRW_CURSOR);
+			}
 		}
 	}
 
@@ -424,12 +419,7 @@ form_button(XA_TREE *wt,
 	}
 	else
 	{
-		next_obj = 0;
-// 		display("disabled obj");
-// 		if ((next_obj = wt->e.obj) < 0)
-// 			next_obj = ob_find_next_any_flagstate(obtree, 0, -1, OF_EDITABLE, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_FIRST);
-// 		if (next_obj < 0)
-// 			next_obj = 0;
+		next_obj = aesobj(wt->tree, 0);
 		no_exit = true;
 	}
 
@@ -443,7 +433,7 @@ form_button(XA_TREE *wt,
 		*newstate = state;
 
 	DIAGS(("form_button: return no_exit=%s, nxtob=%d, newstate=%x, clickmask=%x",
-		no_exit ? "yes":"no", next_obj, state, dc ? 0x8000:0));
+		no_exit ? "yes":"no", aesobj_item(&next_obj), state, dc ? 0x8000:0));
 
 // 	display("form_button: return no_exit=%s, nxtob=%d, newstate=%x, clickmask=%x",
 // 		no_exit ? "yes":"no", next_obj, state, dc ? 0x8000:0);
@@ -454,33 +444,35 @@ form_button(XA_TREE *wt,
 /*
  * Form Keyboard Handler for toolbars
  */
-short
+struct xa_aes_object
 form_cursor(XA_TREE *wt,
 	    struct xa_vdi_settings *v,
 	    ushort keycode,
 	    ushort keystate,
-	    short obj,
+	    struct xa_aes_object obj,
 	    bool redraw,
 	    struct xa_rect_list **rl,
 	/* outout */	    
-	    short *ret_focus,
+	    struct xa_aes_object *ret_focus,
 	    unsigned short *keyout)
 {
 	OBJECT *obtree = wt->tree;
-	short o = obj, nxt, dir, kout = 0;
+	short dir, kout = 0;
 	short edcnt, flags;
 	short last_ob;
 	struct xa_rect_list *lrl = NULL;
+	struct xa_aes_object nxt, o;
 
 	if (!rl) rl = &lrl;
+	
+	o = obj;
 
 	last_ob = ob_count_flag(obtree, OF_EDITABLE, 0, 0, &edcnt);
-
 	DIAG((D_form, NULL, "form_cursor: wt=%lx, obtree=%lx, obj=%d, keycode=%x, lastob=%d, editobjs=%d",
-		wt, obtree, obj, keycode, last_ob, edcnt));
+		wt, obtree, obj.item, keycode, last_ob, edcnt));
 
 	if (ret_focus)
-		*ret_focus = -1;
+		*ret_focus = inv_aesobj();
 
 	switch (keycode)
 	{				/* The cursor keys are always eaten. */
@@ -495,16 +487,19 @@ form_cursor(XA_TREE *wt,
 			else
 				flags = OF_SELECTABLE|OF_EDITABLE|OF_EXIT|OF_TOUCHEXIT;
 			
-			nxt = ob_find_next_any_flagstate(obtree, 0, wt->focus, flags, OF_HIDETREE, 0, OS_DISABLED, 0,0, dir);
+			nxt = ob_find_next_any_flagstate(obtree, aesobj(obtree, 0), focus(wt), flags, OF_HIDETREE, 0, OS_DISABLED, 0,0, dir);
 			
-			if (nxt < 0)
-				nxt = ob_find_next_any_flagstate(obtree, 0, -1, flags, OF_HIDETREE, 0, OS_DISABLED, 0,0, OBFIND_VERT|OBFIND_FIRST);
+			if (!valid_aesobj(&nxt))
+			{
+				dir = OBFIND_VERT | (keystate & (K_RSHIFT|K_LSHIFT)) ? OBFIND_LAST : OBFIND_FIRST;
+				nxt = ob_find_next_any_flagstate(obtree, aesobj(obtree, 0), inv_aesobj(), flags, OF_HIDETREE, 0, OS_DISABLED, 0,0, dir);
+			}
 			
-			if (nxt >= 0)
+			if (valid_aesobj(&nxt))
 			{
 				if (ret_focus)
 					*ret_focus = nxt;
-				if (obtree[nxt].ob_flags & OF_EDITABLE)
+				if (aesobj_ob(&nxt)->ob_flags & OF_EDITABLE)
 					o = nxt;
 			}
 			break;
@@ -521,16 +516,16 @@ form_cursor(XA_TREE *wt,
 			else
 				flags = OF_SELECTABLE|OF_EDITABLE|OF_EXIT|OF_TOUCHEXIT;
 			
-			nxt = ob_find_next_any_flagstate(obtree, 0, wt->focus, flags, OF_HIDETREE, 0, OS_DISABLED, 0,0, dir);
+			nxt = ob_find_next_any_flagstate(obtree, aesobj(obtree, 0), focus(wt), flags, OF_HIDETREE, 0, OS_DISABLED, 0,0, dir);
 			
-			if (nxt < 0)
-				nxt = ob_find_next_any_flagstate(obtree, 0, -1, flags, OF_HIDETREE, 0, OS_DISABLED, 0,0, OBFIND_VERT|OBFIND_LAST);
+			if (!valid_aesobj(&nxt))
+				nxt = ob_find_next_any_flagstate(obtree, aesobj(obtree, 0), inv_aesobj(), flags, OF_HIDETREE, 0, OS_DISABLED, 0,0, OBFIND_VERT|OBFIND_LAST);
 			
-			if (nxt >= 0)
+			if (valid_aesobj(&nxt))
 			{
 				if (ret_focus)
 					*ret_focus = nxt;
-				if (obtree[nxt].ob_flags & OF_EDITABLE)
+				if (aesobj_ob(&nxt)->ob_flags & OF_EDITABLE)
 					o = nxt;
 			}
 			break;
@@ -547,16 +542,16 @@ form_cursor(XA_TREE *wt,
 			else
 				flags = OF_SELECTABLE|OF_EDITABLE|OF_EXIT|OF_TOUCHEXIT;
 			
-			nxt = ob_find_next_any_flagstate(obtree, 0, wt->focus, flags, OF_HIDETREE, 0, OS_DISABLED, 0,0, dir);
+			nxt = ob_find_next_any_flagstate(obtree, aesobj(obtree, 0), focus(wt), flags, OF_HIDETREE, 0, OS_DISABLED, 0,0, dir);
 			
-			if (nxt < 0)
-				nxt = ob_find_next_any_flagstate(obtree, 0, -1, flags, OF_HIDETREE, 0, OS_DISABLED, 0,0, OBFIND_VERT|OBFIND_FIRST);
+			if (!valid_aesobj(&nxt))
+				nxt = ob_find_next_any_flagstate(obtree, aesobj(obtree, 0), inv_aesobj(), flags, OF_HIDETREE, 0, OS_DISABLED, 0,0, OBFIND_VERT|OBFIND_FIRST);
 			
-			if (nxt >= 0)
+			if (valid_aesobj(&nxt))
 			{
 				if (ret_focus)
 					*ret_focus = nxt;
-				if (obtree[nxt].ob_flags & OF_EDITABLE)
+				if (aesobj_ob(&nxt)->ob_flags & OF_EDITABLE)
 					o = nxt;
 			}
 			break;
@@ -565,32 +560,32 @@ form_cursor(XA_TREE *wt,
 		case 0x4b00:		/* Left ARROW */
 		case 0x4b34:
 		{
-			if (ret_focus && (keycode == 0x7300 || !(wt->focus > 0 && wt->focus == obj && (obtree[wt->focus].ob_flags & OF_EDITABLE))) )
+			if (ret_focus && (keycode == 0x7300 || !(focus_set(wt) && same_aesobj(&wt->focus, &o) && (focus_ob(wt)->ob_flags & OF_EDITABLE))) )
 			{
 				dir = OBFIND_HOR | OBFIND_UP;
 				
-				if (wt->focus > 0 && (keystate & (K_RSHIFT|K_LSHIFT)))
+				if (focus_set(wt) && (keystate & (K_RSHIFT|K_LSHIFT)))
 				{
 					flags = OF_EDITABLE;
 				}
 				else
 					flags = OF_SELECTABLE|OF_EDITABLE|OF_EXIT|OF_TOUCHEXIT;
 			
-				nxt = ob_find_next_any_flagstate(obtree, 0, wt->focus, flags, OF_HIDETREE, 0, OS_DISABLED, 0,0, dir);
+				nxt = ob_find_next_any_flagstate(obtree, aesobj(obtree, 0), focus(wt), flags, OF_HIDETREE, 0, OS_DISABLED, 0,0, dir);
 			
-				if (nxt < 0)
-					nxt = ob_find_next_any_flagstate(obtree, 0, -1, flags, OF_HIDETREE, 0, OS_DISABLED, 0,0, OBFIND_VERT|OBFIND_LAST);
+				if (!valid_aesobj(&nxt))
+					nxt = ob_find_next_any_flagstate(obtree, aesobj(obtree, 0), inv_aesobj(), flags, OF_HIDETREE, 0, OS_DISABLED, 0,0, OBFIND_VERT|OBFIND_LAST);
 			
-				if (nxt >= 0)
+				if (valid_aesobj(&nxt))
 				{
 					*ret_focus = nxt;
-					if (obtree[nxt].ob_flags & OF_EDITABLE)
+					if (aesobj_ob(&nxt)->ob_flags & OF_EDITABLE)
 						o = nxt;
 				}
 			}
 			else
 			{
-				o = -1;
+				o = inv_aesobj();
 				kout = keycode;
 			}
 			break;
@@ -599,32 +594,32 @@ form_cursor(XA_TREE *wt,
 		case 0x4d00:		/* Right ARROW */
 		case 0x4d36:
 		{
-			if (ret_focus && (keycode == 0x7400 || !(wt->focus > 0 && wt->focus == obj && (obtree[wt->focus].ob_flags & OF_EDITABLE))) )
+			if (ret_focus && (keycode == 0x7400 || !(focus_set(wt) && same_aesobj(&wt->focus, &o) && (focus_ob(wt)->ob_flags & OF_EDITABLE))) )
 			{
 				dir = OBFIND_HOR | OBFIND_DOWN;
 				
-				if (wt->focus > 0 && (keystate & (K_RSHIFT|K_LSHIFT)))
+				if (focus_set(wt) && (keystate & (K_RSHIFT|K_LSHIFT)))
 				{
 					flags = OF_EDITABLE;
 				}
 				else
 					flags = OF_SELECTABLE|OF_EDITABLE|OF_EXIT|OF_TOUCHEXIT;
 			
-				nxt = ob_find_next_any_flagstate(obtree, 0, wt->focus, flags, OF_HIDETREE, 0, OS_DISABLED, 0,0, dir);
+				nxt = ob_find_next_any_flagstate(obtree, aesobj(obtree, 0), focus(wt), flags, OF_HIDETREE, 0, OS_DISABLED, 0,0, dir);
 			
-				if (nxt < 0)
-					nxt = ob_find_next_any_flagstate(obtree, 0, -1, flags, OF_HIDETREE, 0, OS_DISABLED, 0,0, OBFIND_VERT|OBFIND_FIRST);
+				if (!valid_aesobj(&nxt))
+					nxt = ob_find_next_any_flagstate(obtree, aesobj(obtree,0), inv_aesobj(), flags, OF_HIDETREE, 0, OS_DISABLED, 0,0, OBFIND_VERT|OBFIND_FIRST);
 			
-				if (nxt >= 0)
+				if (valid_aesobj(&nxt))
 				{
 					*ret_focus = nxt;
-					if (obtree[nxt].ob_flags & OF_EDITABLE)
+					if (aesobj_ob(&nxt)->ob_flags & OF_EDITABLE)
 						o = nxt;
 				}
 			}
 			else
 			{
-				o = -1;
+				o = inv_aesobj();
 				kout = keycode;
 			}
 			break;
@@ -633,35 +628,35 @@ form_cursor(XA_TREE *wt,
 		case 0x5100:		/* page down key (Milan &| emulators)   */
 		case 0x4f00:		/* END key (Milan &| emus)		*/
 		{
-			nxt = ob_find_next_any_flagstate(obtree, 0, wt->focus,
-				/*(keycode == 0x4838) ? */OF_EDITABLE/* : OF_SELECTABLE|OF_EDITABLE|OF_EXIT|OF_TOUCHEXIT*/, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_LAST);
-			if (nxt >= 0)
+			nxt = ob_find_next_any_flagstate(obtree, aesobj(obtree, 0), focus(wt),
+				OF_EDITABLE, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_LAST);
+			if (valid_aesobj(&nxt))
 			{
 				if (ret_focus) *ret_focus = nxt;
-				if (obtree[nxt].ob_flags & OF_EDITABLE)
+				if (aesobj_ob(&nxt)->ob_flags & OF_EDITABLE)
 					o = nxt;
-				DIAGS(("form_cursor: SHIFT+HOME from %d to %d", obj, o));
+				DIAGS(("form_cursor: SHIFT+HOME from %d to %d", aesobj_item(&o), aesobj_item(&o)));
 			}
 			break;
 		}
 		case 0x4700:		/* HOME */
 		case 0x4900:		/* page up key (Milan &| emulators)    */
 		{
-			nxt = ob_find_next_any_flagstate(obtree, 0, wt->focus,
-				/*(keycode == 0x4838) ? */OF_EDITABLE/* : OF_SELECTABLE|OF_EDITABLE|OF_EXIT|OF_TOUCHEXIT*/, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_FIRST);
-			if (nxt >= 0)
+			nxt = ob_find_next_any_flagstate(obtree, aesobj(obtree,0), focus(wt),
+				OF_EDITABLE, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_FIRST);
+			if (valid_aesobj(&nxt))
 			{
 				if (ret_focus) *ret_focus = nxt;
-				if (obtree[nxt].ob_flags & OF_EDITABLE)
+				if (aesobj_ob(&nxt)->ob_flags & OF_EDITABLE)
 					o = nxt;
-				DIAGS(("form_cursor: HOME from %d to %d", obj, o));
+				DIAGS(("form_cursor: HOME from %d to %d", aesobj_item(&o), aesobj_item(&o)));
 			}
 			break;
 		}
 		default:
 		{
 			kout = keycode;
-			o = -1;		/* This is also a safeguard.  */
+			o = inv_aesobj();		/* This is also a safeguard.  */
 			break;
 		}
 	}
@@ -670,23 +665,12 @@ form_cursor(XA_TREE *wt,
 		*keyout = kout;
 
 	DIAGS(("form_cursor: from obj=%d to obj=%d, wt-edit_obj=%d, wt->e.pos=%d",
-		obj, o, wt->e.obj, wt->e.pos));
+		obj.item, o, edit_item(&wt->e), wt->e.pos));
 	
 	/* At last this piece of code is on the right spot.
 	 * This is important! Now I know that bug fixes in here are good enough for all cases.
 	 */
 
-#if 0
-	/* Big mistake - it is up to the apps themselves to actually move the cursor
-	 * But this could perhaps be used in an extended XaAES mode of some kind?
-	 */
-	if (o >= 0 && o != obj)
-	{	
-		/* If edit field has changed, update the screen */
-		obj_edit(wt, v, ED_END, 0, 0, 0, NULL, redraw, rl, NULL, NULL);
-		obj_edit(wt, v, ED_INIT, o, 0, -1, NULL, redraw, rl, NULL, NULL);
-	}
-#endif
 	return o;
 }
 /*
@@ -695,12 +679,12 @@ form_cursor(XA_TREE *wt,
 bool
 form_keyboard(XA_TREE *wt,
 	      struct xa_vdi_settings *v,
-	      short obj,
+	      struct xa_aes_object obj,
 	      const struct rawkey *key,
 	      bool redraw,
 	      struct xa_rect_list **rl,
 	      /* outputs */
-	      short *nxtobj,
+	      struct xa_aes_object *nxtobj,
 	      short *newstate,
 	      unsigned short *nxtkey)
 {
@@ -710,16 +694,16 @@ form_keyboard(XA_TREE *wt,
 	ushort keycode	= key->aes,
 	       next_key = 0,
 	       keystate = key->raw.conin.state;
-	short next_obj, new_focus, new_eobj;
 	struct fmd_result fr;
 	struct xa_rect_list *lrl = NULL;
 	OBJECT *obtree = wt->tree;
 	struct objc_edit_info *ei;
+	struct xa_aes_object next_obj, new_eobj, new_focus;
 
 	if (!rl) rl = &lrl;
 
 	DIAG((D_form, NULL, "form_keyboard: wt=%lx, obtree=%lx, wt->owner=%lx(%lx), obj=%d, key=%x(%x), nrmkey=%x for %s",
-		wt, wt->tree, wt->owner, client, obj, keycode, key->aes, key->norm, wt->owner->name));
+		wt, wt->tree, wt->owner, client, aesobj_item(&obj), keycode, key->aes, key->norm, wt->owner->name));
 
 	ei = wt->ei ? wt->ei : &wt->e;
 // 	display("form_keyboard: efocus=%d, wt=%lx, obtree=%lx, wt->owner=%lx(%lx), obj=%d, key=%x(%x), nrmkey=%x for %s",
@@ -727,16 +711,14 @@ form_keyboard(XA_TREE *wt,
 	
 	fr.no_exit = true;
 
+	if (!aesobj_item(&obj))
+		new_eobj = ei->o;
+	else
+		new_eobj = obj;
 
-	if (!(new_eobj = obj))
-		new_eobj = ei->obj;
-
-	if (new_eobj < 0 || !object_is_editable(obtree + new_eobj))
+	if (new_eobj.item < 0 || !object_is_editable(new_eobj.ob))
 	{
-// 		if (new_eobj > 0)
-// 			display("obtype %x(%d), flags=%x", obtree[new_eobj].ob_type, obtree[new_eobj].ob_type, obtree[new_eobj].ob_flags);
-		new_eobj = ob_find_next_any_flagstate(obtree, 0, wt->focus, OF_EDITABLE, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_FIRST);
-// 		display(" -- newobj = %d", new_eobj);
+		new_eobj = ob_find_next_any_flagstate(obtree, aesobj(obtree, 0), focus(wt), OF_EDITABLE, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_FIRST);
 	}
 
 	/*
@@ -744,13 +726,13 @@ form_keyboard(XA_TREE *wt,
 	 */
 	next_obj = new_eobj;
 
-	if (wt->focus != -1)
+	if (focus_set(wt))
 	{
-		switch (obtree[wt->focus].ob_type & 0xff)
+		switch (focus_ob(wt)->ob_type & 0xff)
 		{
 			case G_SLIST:
 			{
-				struct scroll_info *list = object_get_slist(obtree + wt->focus);
+				struct scroll_info *list = object_get_slist(focus_ob(wt));
 				if (list && list->keypress)
 				{
 					if ((*list->keypress)(list, keycode, keystate) == 0)
@@ -766,40 +748,37 @@ form_keyboard(XA_TREE *wt,
 	
 	next_obj = form_cursor(wt, v, keycode, keystate, next_obj, redraw, rl, &new_focus, &keycode);
 	
-	if (next_obj < 0 && keycode)
+	if (!valid_aesobj(&next_obj) && keycode)
 	{
-// 		new_eobj = obj;
-
-		if (keycode == 0x3920 && wt->focus != -1)
+		if (keycode == 0x3920 && focus_set(wt))
 		{
-			if (!(obtree[wt->focus].ob_flags & OF_EDITABLE))
+			if (!(focus_ob(wt)->ob_flags & OF_EDITABLE))
 				next_obj = wt->focus;
 			else
-				next_obj = -1;
+				next_obj = inv_aesobj();
 		}
 		else if (keycode == 0x1c0d || keycode == 0x720d)
 		{
 			next_obj = ob_find_flst(obtree, OF_DEFAULT, 0, 0, OS_DISABLED, 0, 0);
-
 			DIAG((D_keybd, NULL, "form_keyboard: Got RETRURN key - default obj=%d for %s",
-				next_obj, client->name));
+				next_obj.item, client->name));
 		}
 		else if (keycode == 0x6100)	/* UNDO */
 		{
 			next_obj = ob_find_cancel(obtree);
 
 			DIAG((D_keybd, NULL, "form_keyboard: Got UNDO key - cancel obj=%d for %s",
-				next_obj, client->name));
+				next_obj.item, client->name));
 		}
 		else 
 		{
 			if ((key->raw.conin.state & K_ALT) == K_ALT)
 				next_obj = ob_find_shortcut(obtree, key->norm & 0x00ff);
 			DIAG((D_keybd, NULL, "form_keyboard: shortcut %d for %s",
-				next_obj, client->name));
+				next_obj.item, client->name));
 		}
 
-		if (next_obj >= 0)
+		if (valid_aesobj(&next_obj))
 		{
 			struct moose_data md;
 
@@ -817,25 +796,26 @@ form_keyboard(XA_TREE *wt,
 		}
 		else if (keycode != 0x1c0d && keycode != 0x720d)
 		{
-			if (wt->focus == -1 || wt->focus == new_eobj)
+			if (!focus_set(wt) || same_aesobj(&wt->focus, &new_eobj))
 			{
 				next_key = keycode;
-				if (new_eobj == obj && new_eobj != -1)
-					new_eobj = 0;
+				if (same_aesobj(&new_eobj, &obj) && valid_aesobj(&new_eobj))
+					new_eobj = aesobj(wt->tree, 0);
 			}
-			else if (wt->focus != -1 && new_eobj > 0 && (!(obtree[wt->focus].ob_flags & OF_EDITABLE) || wt->focus != new_eobj) )
+			else if (focus_set(wt) && valid_aesobj(&new_eobj) &&
+				(!(focus_ob(wt)->ob_flags & OF_EDITABLE) || !same_aesobj(&wt->focus, &new_eobj)))
 			{
 				new_focus = new_eobj;
 				next_key = keycode;
-				if (new_eobj == obj && new_eobj != -1)
-					new_eobj = 0;
+				if (same_aesobj(&new_eobj, &obj) && valid_aesobj(&new_eobj))
+					new_eobj = aesobj(wt->tree, 0);
 			}
 			else
 			{
-				if (new_eobj != obj)
+				if (!same_aesobj(&new_eobj, &obj))
 					next_obj = new_eobj;
-				else if (new_eobj != -1)
-					new_eobj = 0;
+				else if (valid_aesobj(&new_eobj))
+					new_eobj = aesobj(wt->tree, 0);
 				next_key = keycode;
 			}
 		}
@@ -843,19 +823,19 @@ form_keyboard(XA_TREE *wt,
 	else if (!keycode)
 	{
 		next_key = 0;
-		if (next_obj > 0)
+		if (valid_aesobj(&next_obj))
 			new_eobj = next_obj;
-		if (new_eobj == obj && new_eobj != -1)
-			new_eobj = 0;
+		if (same_aesobj(&new_eobj, &obj) && valid_aesobj(&new_eobj))
+			new_eobj = aesobj(wt->tree, 0);
 	}
 
-	if (new_focus != -1)
+	if (valid_aesobj(&new_focus))
 	{
-		if (wt->focus != new_focus)
+		if (!same_aesobj(&wt->focus, &new_focus))
 		{
-			short pf = wt->focus;
+			struct xa_aes_object pf = wt->focus;
 			wt->focus = new_focus;
-			if (pf != -1)
+			if (valid_aesobj(&pf))
 				obj_draw(wt, v, pf, -2, NULL, *rl, DRW_CURSOR);
 			obj_draw(wt, v, new_focus, -2, NULL, *rl, DRW_CURSOR);
 		}
@@ -868,17 +848,17 @@ done:
 	/* Ozk: We return a 'next object' value of -1 when the key was
 	 *	not used by form_keybaord() function
 	 */
-	if (next_obj < 0)
-		next_obj = -1;	
+// 	if (next_obj < 0)
+// 		next_obj = -1;	
 	if (nxtobj)
 		*nxtobj = next_obj;
 	if (newstate)
-		*newstate = next_obj != -1 ? wt->tree[next_obj].ob_state : 0;
+		*newstate = valid_aesobj(&next_obj) ? aesobj_ob(&next_obj)->ob_state : 0;
 	if (nxtkey)
 		*nxtkey = next_key;
 
 	DIAG((D_keybd, NULL, "form_keyboard: no_exit=%s(%d), nxtobj=%d, nxtkey=%x, obstate=%x, for %s",
-		fr.no_exit ? "true" : "false", fr.no_exit, next_obj, next_key, wt->tree[next_obj].ob_state, client->name));
+		fr.no_exit ? "true" : "false", fr.no_exit, aesobj_item(&next_obj), next_key, aesobj_ob(&next_obj)->ob_state, client->name));
 
 // 	display("form_keyboard: no_exit=%s(%d), nxtobj=%d, nxteobj=%d, nxtkey=%x, obstate=%x, for %s",
 // 		fr.no_exit ? "true" : "false", fr.no_exit, next_obj, new_eobj, next_key, wt->tree[next_obj].ob_state, wt->owner->name);
@@ -908,16 +888,16 @@ Exit_form_do( struct xa_client *client,
 		 */
 		if ((wind->dial & created_for_ALERT)) //wind == client->alert)
 		{
-			OBJECT *obtree = wt->tree;
-			short f = fr->obj;
+// 			OBJECT *obtree = wt->tree;
+			struct xa_aes_object f = fr->obj;
 			/* Is f a valid button? */
 // 			display("click alert but1 %d, but4 %d", ALERT_BUT1, ALERT_BUT1 + 3);
-			if (   f >= ALERT_BUT1 && f < ALERT_BUT1 + 3 && !(obtree[f].ob_flags & OF_HIDETREE))
+			if (   aesobj_item(&f) >= ALERT_BUT1 && aesobj_item(&f) < ALERT_BUT1 + 3 && !(aesobj_ob(&f)->ob_flags & OF_HIDETREE))
 			{
 // 				display("client '%s'", client->name);
 				if (client != C.Aes && client != C.Hlp && client->waiting_pb)
 				{
-					client->waiting_pb->intout[0] = f - ALERT_BUT1 + 1;
+					client->waiting_pb->intout[0] = aesobj_item(&f) - ALERT_BUT1 + 1;
 // 					display("Alert return %d", client->waiting_pb->intout[0]);
 					client->usr_evnt = 1;
 					client->waiting_pb = NULL;
@@ -952,7 +932,7 @@ Exit_form_do( struct xa_client *client,
 			DIAG((D_form, NULL, "Exit_form_do: send WM_TOOLBAR to %s",
 				client->name));
 
-			if (wind->send_message && fr->obj >= 0)
+			if (wind->send_message && valid_aesobj(&fr->obj))
 			{
 				short keystate;
 
@@ -966,7 +946,7 @@ Exit_form_do( struct xa_client *client,
 				
 				wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_NORM,
 						WM_TOOLBAR, 0, 0, wind->handle,
-						fr->obj, fr->dblmask ? 2 : 1, keystate, 0);
+						aesobj_item(&fr->obj), fr->dblmask ? 2 : 1, keystate, 0);
 			}
 			return;
 		}
@@ -985,7 +965,7 @@ Exit_form_do( struct xa_client *client,
 
 	if (client->waiting_pb)
 	{
-		client->waiting_pb->intout[0] = (fr->obj >= 0 ? fr->obj | fr->dblmask : 0);
+		client->waiting_pb->intout[0] = (aesobj_item(&fr->obj) >= 0 ? aesobj_item(&fr->obj) | fr->dblmask : 0);
 		client->usr_evnt = 1;
 	}
 }
@@ -1091,9 +1071,9 @@ Click_form_do(enum locks lock,
 	{
 		struct fmd_result fr;
 
-		fr.obj = obj_find(wt, 0, 10, md->x, md->y, NULL);
+		fr.obj = obj_find(wt, aesobj(wt->tree, 0), 10, md->x, md->y, NULL);
 		
-		if (fr.obj >= 0 &&
+		if (aesobj_item(&fr.obj) >= 0 &&
 		    !form_button(wt, v,
 				 fr.obj,
 				 md,
@@ -1191,7 +1171,7 @@ Key_form_do(enum locks lock,
 
 		fr.no_exit = form_keyboard(wt,
 					   v,
-					   ei->obj,
+					   ei->o,
 					   key,
 					   true,
 					   rl,
@@ -1200,7 +1180,7 @@ Key_form_do(enum locks lock,
 					   &fr.aeskey);
 
 		DIAGS(("Key_form_do: form_keyboard - no_exit=%s, obj=%d, objstat=%x, aeskey %x",
-			fr.no_exit ? "yes":"no", fr.obj, fr.obj_state, fr.aeskey));
+			fr.no_exit ? "yes":"no", aesobj_item(&fr.obj), fr.obj_state, fr.aeskey));
 
 		if (fr.no_exit)
 		{
@@ -1209,7 +1189,7 @@ Key_form_do(enum locks lock,
 				obj_edit(wt,
 					  v,
 					  ED_CHAR,
-					  ei->obj,
+					  ei->o,
 					  fr.aeskey,
 					  ei->pos,
 					  NULL,
@@ -1222,11 +1202,11 @@ Key_form_do(enum locks lock,
 				fr.flags |= FMDF_EDIT;
 
 				DIAGS(("Key_form_do: obj_edit - edobj=%d, edpos=%d",
-					ei->obj, ei->pos));
+					edit_item(ei), ei->pos));
 			}
-			else if (fr.obj > 0 && ei->obj != fr.obj)
+			else if (aesobj_item(&fr.obj) > 0 && !obj_is_edit(ei, &fr.obj))
 			{
-				obj_edit(wt, v, ED_END, 0, 0, 0, NULL, true, clip, *rl, NULL, NULL);
+				obj_edit(wt, v, ED_END, fr.obj, 0, 0, NULL, true, clip, *rl, NULL, NULL);
 				obj_edit(wt, v, ED_INIT, fr.obj, 0, -1, NULL, true, clip, *rl, NULL, NULL);
 			}
 		}
@@ -1330,14 +1310,14 @@ do_formwind_msg(
 		{
 		case WM_REDRAW:
 		{
-			if (!wt->ei)
+			if (!wt->ei && edit_set(&wt->e))
 			{
-				obj_edit(wt, v, ED_END, wt->e.obj, 0, 0, NULL, true, &wind->wa, wind->rect_list.start, NULL, NULL);
+				obj_edit(wt, v, ED_END, editfocus(&wt->e), 0, 0, NULL, true, &wind->wa, wind->rect_list.start, NULL, NULL);
 			}
 			dfwm_redraw(wind, widg, wt, (RECT *)&msg[4]);
-			if (!wt->ei)
+			if (!wt->ei && edit_set(&wt->e))
 			{
-				obj_edit(wt, v, ED_END, wt->e.obj, 0, 0, NULL, true, &wind->wa, wind->rect_list.start, NULL, NULL);
+				obj_edit(wt, v, ED_END, editfocus(&wt->e), 0, 0, NULL, true, &wind->wa, wind->rect_list.start, NULL, NULL);
 			}
 			kick_mousemove_timeout();
 			break;

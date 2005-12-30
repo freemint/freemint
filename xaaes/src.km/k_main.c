@@ -315,6 +315,8 @@ cBlock(struct xa_client *client, int which)
 			cancel_evnt_multi(client, 1);
 			cancel_mutimeout(client);
 		}
+		else
+			client->usr_evnt = 0;
 		return;
 	}
 	/*
@@ -361,6 +363,8 @@ cBlock(struct xa_client *client, int which)
 				cancel_evnt_multi(client, 1);
  				cancel_mutimeout(client);
 			}
+			else
+				client->usr_evnt = 0;
 			return;
 		}
 
@@ -375,6 +379,8 @@ cBlock(struct xa_client *client, int which)
 		cancel_evnt_multi(client, 1);
 		cancel_mutimeout(client);
 	}
+	else
+		client->usr_evnt = 0;
 }
 
 static void

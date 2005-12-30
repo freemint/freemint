@@ -972,9 +972,9 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				DIAGS((" --- Same toolbar installed"));
 				if ((w->window_status & (XAWS_OPEN|XAWS_HIDDEN|XAWS_SHADED)) == XAWS_OPEN)
 				{
+					struct xa_aes_object edobj = aesobj(wt->tree, pb->intin[5]);
 					widg->start = pb->intin[4];
-					obj_edit(wt, w->vdi_settings, ED_INIT, pb->intin[5], 0,0, NULL, false, NULL,NULL, NULL,NULL);
-// 					wt->e.obj = pb->intin[5];
+					obj_edit(wt, w->vdi_settings, ED_INIT, edobj, 0,0, NULL, false, NULL,NULL, NULL,NULL);
 					redraw_toolbar(lock, w, pb->intin[4]);
 					widg->start = 0;
 				}
@@ -984,8 +984,8 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				RECT or;
 
 				DIAGS(("  --- Set new toolbar"));
-				ob_rectangle(ob, 0, &or);
-				wt = set_toolbar_widget(lock, w, client, ob, pb->intin[5], 0, true, NULL, &or);
+				ob_rectangle(ob, aesobj(ob, 0), &or);
+				wt = set_toolbar_widget(lock, w, client, ob, aesobj(ob, pb->intin[5]), 0, true, NULL, &or);
 				rp_2_ap_cs(w, widg, NULL);
 				if (wt && wt->tree)
 				{

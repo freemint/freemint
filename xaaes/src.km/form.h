@@ -33,20 +33,21 @@
 // void	Set_form_do	(struct xa_client *client,
 // 			 OBJECT *obtree,
 // 			 short edobj);
-
+#if 0
 struct xa_window *
 	create_fmd_wind	(enum locks lock,
 			 struct xa_client *client,
 			 XA_WIND_ATTR kind,
 			 WINDOW_TYPE dial,
 			 RECT *r);
+#endif
 
 bool	Setup_form_do	(struct xa_client *client,
 			 OBJECT *obtree,
-			 short edobj,
+			 struct xa_aes_object edobj,
 			 /* Output */
 			 struct xa_window **ret_wind,
-			 short *ret_edobj);
+			 struct xa_aes_object *ret_edobj);
 
 void	form_center	(OBJECT *obtree, short barsizes);
 void	form_center_r	(OBJECT *obtree, short barsizes, RECT *r);
@@ -60,33 +61,34 @@ void	center_rect	(RECT *r);
 
 bool	form_button	(XA_TREE *wt,
 			 struct xa_vdi_settings *v,
-			 short obj,
+			 struct xa_aes_object obj,
 			 const struct moose_data *md,
 			 unsigned long flags, //bool redraw,
 			 struct xa_rect_list **rl,
 			 /* Outputs */
 			 short *newstate,
-			 short *nxtob,
+			 struct xa_aes_object *nxtob,
 			 short *clickmsk);
 
-short	form_cursor	(XA_TREE *wt,
+struct xa_aes_object
+	form_cursor	(XA_TREE *wt,
 			 struct xa_vdi_settings *v,
 			 ushort keycode,
 			 ushort keystate,
-			 short obj,
+			 struct xa_aes_object obj,
 			 bool redraw,
 			 struct xa_rect_list **rl,
-			 short *ret_focus,
+			 struct xa_aes_object *ret_focus,
 			 unsigned short *keyout);
 
 bool	form_keyboard	(XA_TREE *wt,
 			 struct xa_vdi_settings *v,
-			 short obj,
+			 struct xa_aes_object obj,
 			 const struct rawkey *key,
 			 bool redraw,
 			 struct xa_rect_list **rl,
 			 /* outputs */
-			 short *nxtobj,
+			 struct xa_aes_object *nxtobj,
 			 short *newstate,
 			 unsigned short *nxtkey);
 

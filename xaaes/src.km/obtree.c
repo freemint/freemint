@@ -37,19 +37,6 @@
 static inline int max(int a, int b) { return a > b ? a : b; }
 static inline int min(int a, int b) { return a < b ? a : b; }
 
-inline OBSPEC *
-object_get_spec(OBJECT *ob)
-{
-	if (ob->ob_flags & OF_INDIRECT)
-	{
-		return ob->ob_spec.indirect;
-	}
-	else
-	{
-		return &ob->ob_spec;
-	}
-}
-
 bool
 object_have_spec(OBJECT *ob)
 {
@@ -107,7 +94,7 @@ object_has_tedinfo(OBJECT *ob)
 	}
 }
 inline bool
-object_has_string(OBJECT *ob)
+object_has_freestr(OBJECT *ob)
 {
 	switch (ob->ob_type & 0xff)
 	{
@@ -158,25 +145,44 @@ object_get_tedinfo(OBJECT *ob, XTEDINFO **x)
 	}
 	return ted;
 }
-
-inline struct scroll_info *
-object_get_slist(OBJECT *ob)
+/*
+ * extract string from object, return NULL if object is of a type
+ * with no string
+ */
+char *
+object_get_string(OBJECT *ob)
 {
-	return (struct scroll_info *)object_get_spec(ob)->index;
-}
+	char *ret = NULL;
 
-inline POPINFO *
-object_get_popinfo(OBJECT *ob)
-{
-	return	(POPINFO *)object_get_spec(ob)->popinfo;
+	if (object_has_tedinfo(ob))
+	{
+		TEDINFO *ted = object_get_tedinfo(ob, NULL);
+		ret = ted->te_ptext;
+	}
+	else if (object_has_freestr(ob))
+	{
+		ret = object_get_freestr(ob);
+	}
+	else
+	{
+		switch ((ob->ob_type & 0xff))
+		{
+			case G_CICON:
+			{
+				ret = object_get_spec(ob)->ciconblk->monoblk.ib_ptext;
+				break;
+			}
+			case G_ICON:
+			{
+				ret = object_get_spec(ob)->iconblk->ib_ptext;
+				break;
+			}
+			default:;
+		}
+	}
+	return ret;
 }
-
-inline void
-object_deselect(OBJECT *ob)
-{
-	ob->ob_state &= ~OS_SELECTED;
-}
-
+ 
 /* A quick hack to catch *most* of the problems with transparent objects */
 bool
 object_is_transparent(OBJECT *ob, bool pdistrans)
@@ -367,9 +373,11 @@ obtree_len(OBJECT *obtree, short start, short *num_objs)
 {
 	long size;
 	short parent, curr = start, objs = 0;
+	struct xa_aes_object object;
 
-	parent = ob_get_parent(obtree, start);
-	
+	object = ob_get_parent(obtree, aesobj(obtree, start));
+	parent = object.item;
+
 	DIAGS(("obtree_len: tree = %lx, start = %d, parent = %d", obtree, start, parent));
 
 	size = 0;
@@ -473,7 +481,7 @@ obtree_len(OBJECT *obtree, short start, short *num_objs)
 	return size;
 }
 static void *
-copy_tedinfo(TEDINFO *src, TEDINFO *dst)
+copy_tedinfo(OBJECT *root_tree, TEDINFO *src, TEDINFO *dst)
 {
 	char *s = (char *)dst + sizeof(TEDINFO);
 
@@ -488,6 +496,7 @@ copy_tedinfo(TEDINFO *src, TEDINFO *dst)
 		s += sizeof(*xsrc);
 		
 		*xdst = *xsrc;
+		xdst->o = aesobj(root_tree, aesobj_item(&xdst->o));
 		dst->te_ptmplt = (char *)xdst;
 		
 		src = &xsrc->ti;
@@ -714,8 +723,10 @@ static void
 copy_obtree(OBJECT *obtree, short start, OBJECT *dst, void **data)
 {
 	short parent, curr = start;
+	struct xa_aes_object object;
 
-	parent = ob_get_parent(obtree, start);
+	object = ob_get_parent(obtree, aesobj(obtree, start));
+	parent = object.item;
 
 	DIAGS(("copy_obtree: tree = %lx, start = %d, parent = %d, data=%lx/%lx", obtree, start, parent, data, *data));
 
@@ -742,7 +753,7 @@ copy_obtree(OBJECT *obtree, short start, OBJECT *dst, void **data)
 			case G_FBOXTEXT:
 			{
 				on->ob_spec.tedinfo = *data;
-				*data = copy_tedinfo(object_get_spec(ob)->tedinfo, *data);
+				*data = copy_tedinfo(dst, object_get_spec(ob)->tedinfo, *data);
 				break;
 			}
 			case G_IMAGE:
@@ -761,8 +772,6 @@ copy_obtree(OBJECT *obtree, short start, OBJECT *dst, void **data)
 				on->ob_spec.userblk = d;
 				d++;
 				*data = d;
-// 				(USERBLK *)*data = (USERBLK *)object_get_spec(ob)->userblk;
-// 				(long)*data += sizeof(USERBLK);
 				break;
 			}
 			case G_BUTTON:
@@ -900,6 +909,16 @@ free_obtree_resources(struct xa_client *client, OBJECT *obtree)
 				kfree(p);
 				break;
 			}
+			case G_OBLINK:
+			{
+				struct oblink_spec *obl = object_get_oblink(ob);
+				if (obl)
+				{
+					*ob = obl->save_obj;
+					kfree(obl);
+				}
+				break;
+			}
 			default:
 			{
 				DIAG((D_rsrc, client, "Unknown object type %d", type));
@@ -920,6 +939,27 @@ free_object_tree(struct xa_client *client, OBJECT *obtree)
 			kfree(obtree);
 		else
 			ufree(obtree);
+	}
+}
+/*
+ * overwrite the string of entry 'obnum' in popup with new text.
+ * Make sure the target textbuffer is large enough!
+ */
+void
+obj_change_popup_entry(struct xa_aes_object obj, short obnum, char *s)
+{
+	if (valid_aesobj(&obj) && (aesobj_ob(&obj)->ob_type & 0xff) == G_POPUP)
+	{
+		POPINFO *pinf = object_get_popinfo(aesobj_ob(&obj));
+		struct xa_aes_object this = aesobj(pinf->tree, obnum);
+		char *obtxt;
+		
+		obtxt = object_get_string(aesobj_ob(&this));
+		
+		if (obtxt)
+		{
+			strcpy(obtxt + 2, s);
+		}
 	}
 }
 
@@ -1113,57 +1153,6 @@ object_offsets(OBJECT *ob, RECT *c)
 	c->h = dh;
 }	
 
-/*
- * Returns the object number of this object's parent or -1 if it is the root
- */
-short
-ob_get_parent(OBJECT *obtree, short obj)
-{
-	DIAG((D_rsrc, NULL, "ob_get_parent: tree %lx, obj %d", obtree, obj));
-
-	if (obj)
-	{
-		short last;
-
-		do
-		{
-			last = obj;
-			obj = obtree[obj].ob_next;
-		} while (obtree[obj].ob_tail != last);
-	}
-	else
-		obj = -1;
-
-	DIAGS(("ob_get_parent: return %d", obj));
-	
-	return obj;
-}
-
-void
-ob_set_children_sf(OBJECT *obtree, short parent, short sm, short sb, short fm, short fb, bool parent_too)
-{
-	short o;
-
-	if (parent != -1)
-	{
-		if (parent_too)
-		{
-			obtree[parent].ob_state = (obtree[parent].ob_state & sm) | sb;
-			obtree[parent].ob_flags = (obtree[parent].ob_flags & fm) | fb;
-		}			
-
-		if ((o = obtree[parent].ob_head) != -1)
-		{
-			while (o != parent)
-			{
-				obtree[o].ob_state = (obtree[o].ob_state & sm) | sb;
-				obtree[o].ob_flags = (obtree[o].ob_flags & fm) | fb;
-				o = obtree[o].ob_next;
-			}
-		}
-	}
-}
-
 static short
 ob_get_previous(OBJECT *obtree, short parent, short obj)
 {
@@ -1185,21 +1174,23 @@ ob_get_previous(OBJECT *obtree, short parent, short obj)
 }
 
 short
-ob_remove(OBJECT *obtree, short object)
+ob_remove(OBJECT *obtree, short obj)
 {
 	int parent, next, prev;
+	struct xa_aes_object object;
 	
-	if (object <= 0)
+	if (obj <= 0)
 		return -1;
 
-	next = obtree[object].ob_next;
-	parent = ob_get_parent(obtree, object);
+	next = obtree[obj].ob_next;
+	object = ob_get_parent(obtree, aesobj(obtree, obj));
+	parent = object.item;
 
 	if (parent != -1)
 	{
-		if (obtree[parent].ob_head == object)
+		if (obtree[parent].ob_head == obj)
 		{
-			if (obtree[parent].ob_tail == object)
+			if (obtree[parent].ob_tail == obj)
 			{
 				next = -1;
 				obtree[parent].ob_tail = -1;
@@ -1208,11 +1199,11 @@ ob_remove(OBJECT *obtree, short object)
 		}
 		else
 		{
-			prev = ob_get_previous(obtree, parent, object);
+			prev = ob_get_previous(obtree, parent, obj);
 			if (prev == -1)
 				return -1;
 			obtree[prev].ob_next = next;
-			if (obtree[parent].ob_tail == object)
+			if (obtree[parent].ob_tail == obj)
 				obtree[parent].ob_tail = prev;
 		}
 	}
@@ -1293,78 +1284,72 @@ ob_order(OBJECT *root, short object, ushort pos)
 }
 
 void
-foreach_object(OBJECT *tree, short parent, short start, short stopf, short stops, bool(*f)(OBJECT *obtree, short obj, void *ret), void *data)
+foreach_object(OBJECT *tree,
+		struct xa_aes_object parent,
+		struct xa_aes_object start,
+		short stopf,
+		short stops,
+		bool(*f)(OBJECT *obtree, short obj, void *ret), void *data)
 {
-	short o, n;
-// 	display("foreach_object: tree=%lx", tree);
-	o = start;
+	struct xa_aes_object curr, next, stop;
+	bool dothings = false;
+	struct oblink_spec *oblink = NULL;
+
+	curr = aesobj(tree, 0);
+	stop = inv_aesobj();
 
 	do
 	{
-// 		display(" - obj %d, h=%d, t=%d, n=%d", o, tree[o].ob_head, tree[o].ob_tail, tree[o].ob_next);
+		if (same_aesobj(&curr, &parent))
+			stop = parent;
 
-		if ((*f)(tree, o, data))
-			break;
-
-		if (tree[o].ob_head != -1 && !(tree[o].ob_flags & OF_HIDETREE))
+uplink:
+		if (same_aesobj(&curr, &start))
 		{
-			o = tree[o].ob_head;
+			dothings = true;
+		}
+
+		if (set_aesobj_uplink(&tree, &curr, &stop, &oblink))
+			goto uplink;
+		
+		if (dothings)
+		{
+			if ((*f)(aesobj_tree(&curr), aesobj_item(&curr), data))
+				break;
+		}
+
+		if (aesobj_ob(&curr)->ob_head != -1 && !(aesobj_ob(&curr)->ob_flags & OF_HIDETREE))
+		{
+			curr = aesobj(aesobj_tree(&curr), aesobj_ob(&curr)->ob_head);
 		}
 		else
 		{
-			n = tree[o].ob_next;
+downlink:
+			next = aesobj(aesobj_tree(&curr), aesobj_ob(&curr)->ob_next);
 			
-			while (n != parent && n != -1 && tree[n].ob_tail == o)
+			while (valid_aesobj(&next) && !same_aesobj(&next, &stop))
 			{
-				o = n;
-				n = tree[o].ob_next;
+				struct xa_aes_object tail = aesobj(aesobj_tree(&next), aesobj_ob(&next)->ob_tail);
+				if (same_aesobj(&curr, &tail))
+				{
+					curr = next;
+					next = aesobj(aesobj_tree(&curr), aesobj_ob(&curr)->ob_next);
+				}
+				else break;
 			}
-			o = n;
+			if (same_aesobj(&next, &stop) && set_aesobj_downlink(&tree, &curr, &stop, &oblink))
+				goto downlink;
+			curr = next;
 		}
-	} while (o != parent && o != -1);
+	} while (valid_aesobj(&curr) && !same_aesobj(&curr, &stop));
 	
-// 	display(" --- exit");
+	clean_aesobj_links(&oblink);
 }
-
-#if 0
-void
-dforeach_object(OBJECT *tree, short parent, short start, short stopf, short stops, bool(*f)(OBJECT *obtree, short obj, void *ret), void *data)
-{
-	short o, n;
-	display("foreach_object: tree=%lx", tree);
-	o = start;
-
-	do
-	{
-		display(" - obj %d, h=%d, t=%d, n=%d, f=%x", o, tree[o].ob_head, tree[o].ob_tail, tree[o].ob_next, tree[o].ob_flags);
-
-		if ((*f)(tree, o, data))
-			break;
-
-		if (tree[o].ob_head != -1 && !(tree[o].ob_flags & OF_HIDETREE))
-		{
-			o = tree[o].ob_head;
-		}
-		else
-		{
-			n = tree[o].ob_next;
-			
-			while (n != parent && n != -1 && tree[n].ob_tail == o)
-			{
-				o = n;
-				n = tree[o].ob_next;
-			}
-			o = n;
-		}
-	} while (o != parent && o != -1);
-	
-	display(" --- exit");
-}
-#endif
 
 struct anyflst_parms
 {
 	short	flags, f, s, mf, ms, ret, ret1;
+	struct	xa_aes_object ret_object;
 };
 
 static bool
@@ -1396,6 +1381,7 @@ count_flst(OBJECT *tree, short o, void *_data)
 	{
 		d->ret += 1;
 		d->ret1 = o;
+		d->ret_object = aesobj(tree, o);
 	}
 	return false;
 }
@@ -1428,10 +1414,125 @@ anyflst(OBJECT *tree, short o, void *_data)
 	if (flg == 3)
 	{
 		d->ret = o;
+		d->ret_object = aesobj(tree, o);
 		return true;
 	}
 	return false;
 }
+
+/*
+ * Returns the object number of this object's parent or -1 if it is the root
+ */
+struct xa_aes_object
+ob_get_parent(OBJECT *tree, struct xa_aes_object obj)
+{
+	struct par { void *prv; struct xa_aes_object this; } *parents;
+	struct xa_aes_object curr, next, stop;
+	struct oblink_spec *oblink = NULL;
+
+	if (!aesobj_item(&obj))
+		return inv_aesobj();
+
+	curr = aesobj(tree, 0);
+	stop = inv_aesobj();
+	
+	parents = kmalloc(sizeof(*parents));
+	if (!parents)
+		return inv_aesobj();
+
+	parents->prv = NULL;
+	parents->this = inv_aesobj();
+	
+	do
+	{
+uplink:
+		if (same_aesobj(&curr, &obj))
+		{
+			break;
+		}
+
+		if (set_aesobj_uplink(&tree, &curr, &stop, &oblink))
+			goto uplink;
+
+		if (aesobj_ob(&curr)->ob_head != -1 && !(aesobj_ob(&curr)->ob_flags & OF_HIDETREE))
+		{
+			struct par *pn = kmalloc(sizeof(*pn));
+			
+			pn->prv = parents;
+			pn->this = curr;
+			parents = pn;
+			curr = aesobj(aesobj_tree(&curr), aesobj_ob(&curr)->ob_head);
+		}
+		else
+		{
+downlink:
+			next = aesobj(aesobj_tree(&curr), aesobj_ob(&curr)->ob_next);
+			
+			while (valid_aesobj(&next) && !same_aesobj(&next, &stop))
+			{
+				struct xa_aes_object tail = aesobj(aesobj_tree(&next), aesobj_ob(&next)->ob_tail);
+				if (same_aesobj(&curr, &tail))
+				{
+					struct par *pn;
+					 
+					if ((pn = parents->prv))
+					{
+						kfree(parents);
+						parents = pn;
+					}
+					curr = next;
+					next = aesobj(aesobj_tree(&curr), aesobj_ob(&curr)->ob_next);
+				}
+				else break;
+			}
+			if (same_aesobj(&next, &stop) && set_aesobj_downlink(&tree, &curr, &stop, &oblink))
+				goto downlink;
+			curr = next;
+		}
+	} while (valid_aesobj(&curr) && !same_aesobj(&curr, &stop));
+
+	curr = parents->this;
+	
+	while (parents)
+	{
+		struct par *pn = parents->prv;
+		kfree(parents);
+		parents = pn;
+	}
+	
+	DIAG((D_rsrc, NULL, "ob_get_parent: parent of %d in %lx is %d in %lx",
+		aesobj_item(&obj), aesobj_tree(&obj), aesobj_item(&curr), aesobj_tree(&curr)));
+	
+	clean_aesobj_links(&oblink);
+
+	return curr;
+	
+}
+#if 0
+struct xa_aes_object
+ob_get_parent(OBJECT *obtree, struct xa_aes_object obj)
+{
+	DIAG((D_rsrc, NULL, "ob_get_parent: tree %lx, obj %d", obtree, obj));
+
+	if (valid_aesobj(&obj) && aesobj_item(&obj) != 0)
+	{
+		struct xa_aes_object last, tail;
+
+		do
+		{
+			last = obj;
+			obj  = aesobj(aesobj_tree(&obj), aesobj_ob(&obj)->ob_next);
+			tail = aesobj(aesobj_tree(&obj), aesobj_ob(&obj)->ob_tail);
+		} while (valid_aesobj(&obj) && !same_aesobj(&last, &tail)); //obtree[obj].ob_tail != last);
+	}
+	else
+		obj = inv_aesobj();
+
+	DIAGS(("ob_get_parent: return %d", obj));
+
+	return obj;
+}
+#endif
 /*
  * Find object whose flags is set to 'f', state set to 's' and
  * have none of 'mf' flags set and status is none of 'ms'.
@@ -1444,12 +1545,10 @@ anyflst(OBJECT *tree, short o, void *_data)
  * Also not that ONE OF the bits in 'mf', 'ms', 'stopf' or 'stops'
  * is enough to cancel search.
  */
-short
+struct xa_aes_object
 ob_find_flag(OBJECT *tree, short f, short mf, short stopf)
 {
 	struct anyflst_parms d;
-
-// 	display("ob_find_flag: %lx", tree);
 
 	d.flags = OBFIND_EXACTFLAG;
 	d.f = f;
@@ -1457,28 +1556,25 @@ ob_find_flag(OBJECT *tree, short f, short mf, short stopf)
 	d.mf = mf;
 	d.ms = 0;
 	d.ret = -1;
+	d.ret_object = inv_aesobj();
 
-	foreach_object(tree, 0, 0, stopf, 0, anyflst, &d);
-// 	display("ob_find_flag: ret %d", d.ret);
-	return d.ret;
+	foreach_object(tree, aesobj(tree, 0), aesobj(tree, 0), stopf, 0, anyflst, &d);
+	return d.ret_object;
 }
-short
+struct xa_aes_object
 ob_find_any_flag(OBJECT *tree, short f, short mf, short stopf)
 {
 	struct anyflst_parms d;
 
-// 	display("ob_find_any_flag: %lx", tree);
-	
 	d.flags = 0;
 	d.f = f;
 	d.s = 0;
 	d.mf = mf;
 	d.ms = 0;
 	d.ret = -1;
-
-	foreach_object(tree, 0, 0, stopf, 0, anyflst, &d);
-// 	display("ob_find_any_flag: ret %d", d.ret);
-	return d.ret;
+	d.ret_object = inv_aesobj();
+	foreach_object(tree, aesobj(tree, 0), aesobj(tree, 0), stopf, 0, anyflst, &d);
+	return d.ret_object;
 }
 /*
  * Count objects whose flags equals those in 'f',
@@ -1492,8 +1588,6 @@ ob_count_flag(OBJECT *tree, short f, short mf, short stopf, short *count)
 {
 	struct anyflst_parms d;
 
-// 	display("ob_count_flag: %lx", tree);
-	
 	d.flags = OBFIND_EXACTFLAG;
 	d.f = f;
 	d.s = 0;
@@ -1502,8 +1596,7 @@ ob_count_flag(OBJECT *tree, short f, short mf, short stopf, short *count)
 	d.ret = 0;
 	d.ret1 = -1;
 
-	foreach_object(tree, 0, 0, stopf, 0, count_flst, &d);
-// 	display("ob_count_flag: ret %d", d.ret);
+	foreach_object(tree, aesobj(tree, 0), aesobj(tree, 0), stopf, 0, count_flst, &d);
 
 	if (count)
 		*count = d.ret;
@@ -1520,8 +1613,6 @@ short
 ob_count_any_flag(OBJECT *tree, short f, short mf, short stopf, short *count)
 {
 	struct anyflst_parms d;
-
-// 	display("ob_count_any_flag: %lx", tree);
 	
 	d.flags = 0;
 	d.f = f;
@@ -1531,8 +1622,7 @@ ob_count_any_flag(OBJECT *tree, short f, short mf, short stopf, short *count)
 	d.ret = 0;
 	d.ret1 = -1;
 
-	foreach_object(tree, 0, 0, stopf, 0, count_flst, &d);
-// 	display("ob_count_any_flag: ret %d", d.ret);
+	foreach_object(tree, aesobj(tree, 0), aesobj(tree, 0), stopf, 0, count_flst, &d);
 
 	if (count)
 		*count = d.ret;
@@ -1540,12 +1630,10 @@ ob_count_any_flag(OBJECT *tree, short f, short mf, short stopf, short *count)
 	return d.ret1;	
 }
 
-short
+struct xa_aes_object
 ob_find_any_flst(OBJECT *tree, short f, short s, short mf, short ms, short stopf, short stops)
 {
 	struct anyflst_parms d;
-
-// 	display("ob_find_any_flst: %lx", tree);
 
 	d.flags = 0;
 	d.f = f;
@@ -1553,19 +1641,16 @@ ob_find_any_flst(OBJECT *tree, short f, short s, short mf, short ms, short stopf
 	d.mf = mf;
 	d.ms = ms;
 	d.ret = -1;
+	d.ret_object = inv_aesobj();
 
-	foreach_object(tree, 0, 0, stopf, stops, anyflst, &d);
-// 	display("ob_find_any_flst: ret %d", d.ret);
-// 	display(" -- exit");
-	return d.ret;
+	foreach_object(tree, aesobj(tree, 0), aesobj(tree, 0), stopf, stops, anyflst, &d);
+	return d.ret_object;
 }
 
-short
+struct xa_aes_object
 ob_find_flst(OBJECT *tree, short f, short s, short mf, short ms, short stopf, short stops)
 {
 	struct anyflst_parms d;
-
-// 	display("ob_find_flst: %lx", tree);
 	
 	d.flags = OBFIND_EXACTFLAG|OBFIND_EXACTSTATE;
 	d.f = f;
@@ -1573,79 +1658,121 @@ ob_find_flst(OBJECT *tree, short f, short s, short mf, short ms, short stopf, sh
 	d.mf = mf;
 	d.ms = ms;
 	d.ret = -1;
+	d.ret_object = inv_aesobj();
 
-	foreach_object(tree, 0, 0, stopf, stops, anyflst, &d);
-// 	display("ob_find_flst: ret %d", d.ret);
-// 	display(" -- ret");
-	return d.ret;
+	foreach_object(tree, aesobj(tree, 0), aesobj(tree, 0), stopf, stops, anyflst, &d);
+	return d.ret_object;
 }
 
-short
-ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, short mf, short s, short ms, short stopf, short stops, short flags)
+struct xa_aes_object
+ob_find_next_any_flagstate(OBJECT *tree, struct xa_aes_object parent, struct xa_aes_object start, short f, short mf, short s, short ms, short stopf, short stops, short flags)
 {
-	short o, n, x, y, w, h, ax, cx, cy, co, cf, flg;
+	int rel_depth = 1;
+	short x, y, w, h, ax, cx, cy, cf, flg;
+	bool dothings = false;
+	OBJECT *this;
+// 	bool d = false;
+	struct oblink_spec *oblink = NULL;
+	struct xa_aes_object curr, next, stop, co;
 	RECT r;
 	
 	cx = cy = ax = 32000;
 
-	co = -1;
+	co = stop = inv_aesobj();
 	cf = 0;
 	
-	if (start <= 0)
+// 	if (d) display(" ob_find_any_next_flagstate, parent %d, start %d", aesobj_item(&parent), aesobj_item(&start));
+	
+	DIAG((D_rsrc, NULL,"ob_find_any_next_flagstate, parent %d, start %d", aesobj_item(&parent), aesobj_item(&start)));
+	
+	if (aesobj_item(&start) <= 0)
 	{
-		if ((start = tree[parent].ob_head) > 0)
+		if (aesobj_ob(&parent)->ob_head > 0)
 		{
+			start = aesobj(aesobj_tree(&parent), aesobj_ob(&parent)->ob_head);
 			if (!(flags & OBFIND_LAST))
 				flags |= OBFIND_FIRST;
 		}
 		else goto done;
 	}
+	
+	if (aesobj_ob(&parent)->ob_head == -1)
+	{
+// 		if (d) display("parent head -1");
+		return co;
+	}
 
-	o = tree[parent].ob_head;
-	if (o == -1)
-		return -1;
-	ob_rectangle(tree, parent, &r);
-	x = r.x;
-	y = r.y;
+	curr = aesobj(tree, 0);
+	x = 0;
+	y = 0;
 	
 	if ((flags & OBFIND_FIRST))
 	{
 		r.x = r.y = -1;
 		r.w = r.h = 1;
-		flags &= ~(OBFIND_HOR|OBFIND_DOWN);
+		flags &= ~(OBFIND_HOR|OBFIND_DOWN|OBFIND_NOWRAP);
 		flags |= OBFIND_DOWN;
+// 		if (d) display(" FIND FIRST");
 	}
 	else if ((flags & OBFIND_LAST))
 	{
+		ob_rectangle(tree, parent, &r);
 		r.x += r.w;
 		r.y += r.h;
 		r.w = r.h = 1;
-		flags &= ~(OBFIND_LAST|OBFIND_HOR|OBFIND_DOWN);
+		flags &= ~(OBFIND_LAST|OBFIND_HOR|OBFIND_DOWN|OBFIND_NOWRAP);
 		flags |= OBFIND_HOR|OBFIND_UP;
+// 		if (d) display(" FIND LAST");
 	}
 	else
 		ob_rectangle(tree, start, &r);
-
+	
+// 	if (d) display("  realstart %d (%d/%d/%d/%d)", aesobj_item(&start), r);
+	
 	do
 	{
 		flg = 0;
+uplink:
+		if (same_aesobj(&parent, &curr))
+		{
+			if (!dothings)
+			{
+// 				if (d) display("start doing things at obj %d, x=%d,y=%d", aesobj_item(&curr), x, y);
+				dothings = true;
+				rel_depth = 0;
+				stop = parent;
+			}
+		}
 
-		if ((!mf || !(tree[o].ob_flags & mf)) && (!ms || !(tree[o].ob_state & ms)))
+		if (set_aesobj_uplink(&tree, &curr, &stop, &oblink))
+		{
+// 			if (d)
+// 			{
+// 				display("uplink from %d in %lx to %d in %lx",
+// 					oblink->from.item, oblink->from.tree,
+// 					oblink->to.item, oblink->to.tree);
+// 			}
+			goto uplink;
+		}
+		
+		this = aesobj_ob(&curr);
+		
+		if (dothings && rel_depth > 0 && (!mf || !(this->ob_flags & mf)) && (!ms || !(this->ob_state & ms)))
 		{
 			if (flags & OBFIND_EXACTFLAG)
 			{
-				if (!f || (tree[o].ob_flags & f) == f)
+				if (!f || (this->ob_flags & f) == f)
 					flg |= 1;
 			}
-			else if (!f || (tree[o].ob_flags & f))
+			else if (!f || (this->ob_flags & f))
 				flg |= 1;
 
 			if (flags & OBFIND_EXACTSTATE)
 			{
-				if (!s || (tree[o].ob_state & s) == s)
+				if (!s || (this->ob_state & s) == s)
 					flg |= 2;
 			}
-			else if (!s || (tree[o].ob_state))
+			else if (!s || (this->ob_state))
 				flg |= 2;
 		}
 
@@ -1653,10 +1780,10 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 		{
 			flg = 0;
 
-			x += tree[o].ob_x;
-			y += tree[o].ob_y;
-			w = tree[o].ob_width;
-			h = tree[o].ob_height;
+			x += this->ob_x;
+			y += this->ob_y;
+			w = this->ob_width;
+			h = this->ob_height;
 
 			if (!(flags & OBFIND_HOR))
 			{
@@ -1669,7 +1796,7 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 							if (!cf || (r.y - y) < cy)
 							{
 								cy = r.y - y;
-								co = o;
+								co = curr;
 								cf = 1;
 							}
 						}
@@ -1686,7 +1813,7 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 							{
 								ax = cx;
 								cy = r.y - y;
-								co = o;
+								co = curr;
 							}
 						}
 					}
@@ -1700,7 +1827,7 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 							if (!cf || (y - r.y) < cy)
 							{
 								cy = y - r.y;
-								co = o;
+								co = curr;
 								cf = 1;
 							}
 						}
@@ -1715,14 +1842,14 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 								{
 									ax = x;
 									cy = y - r.y;
-									co = o;
+									co = curr;
 								}
 							}
 							else if ((y - r.y) < cy)
 							{
 								ax = x;
 								cy = y - r.y;
-								co = o;
+								co = curr;
 							}
 						}
 					}
@@ -1740,7 +1867,7 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 							if (!cf || (r.x - x) < cx)
 							{
 								cx = r.x - x;
-								co = o;
+								co = curr;
 								cf = 1;
 							}
 						}
@@ -1755,14 +1882,14 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 								{
 									ax = x;
 									cy = r.y - y;
-									co = o;
+									co = curr;
 								}
 							}
 							else if ((r.y - y) < cy)
 							{
 								ax = x;
 								cy = r.y - y;
-								co = o;
+								co = curr;
 							}
 						}
 					}
@@ -1776,7 +1903,7 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 							if (!cf || (x - r.x) < cx)
 							{
 								cx = x - r.x;
-								co = o;
+								co = curr;
 								cf = 1;
 							}
 						}
@@ -1792,69 +1919,97 @@ ob_find_next_any_flagstate(OBJECT *tree, short parent, short start, short f, sho
 								{
 									ax = x;
 									cy = y - r.y;
-									co = o;
+									co = curr;
 								}
 							}
 							else if ((y - r.y) < cy)
 							{
 								ax = x;
 								cy = y - r.y;
-								co = o;
+								co = curr;
 							}
 						}		
 					}
 				}
 			}
 			
-			x -= tree[o].ob_x;
-			y -= tree[o].ob_y;
+			x -= this->ob_x;
+			y -= this->ob_y;
 		}
 
-		if (tree[o].ob_head != -1 && (!(tree[o].ob_flags & OF_HIDETREE) || (flags & OBFIND_HIDDEN)))
+		if (aesobj_ob(&curr)->ob_head != -1 && (!(aesobj_ob(&curr)->ob_flags & OF_HIDETREE) || (flags & OBFIND_HIDDEN)))
 		{
-			x += tree[o].ob_x;
-			y += tree[o].ob_y;
-			o = tree[o].ob_head;
+// 			if (d) display(" parent %d, head = %d", aesobj_item(&curr), aesobj_ob(&curr)->ob_head);
+			x += aesobj_ob(&curr)->ob_x;
+			y += aesobj_ob(&curr)->ob_y;
+			curr = aesobj(aesobj_tree(&curr), aesobj_ob(&curr)->ob_head);
+			rel_depth++;
 		}
 		else
 		{
-			n = tree[o].ob_next;
+downlink:
+			next = aesobj(aesobj_tree(&curr), aesobj_ob(&curr)->ob_next);
 			
-			while (n != parent && n != -1 && tree[n].ob_tail == o)
+			while (valid_aesobj(&next) && !same_aesobj(&next, &stop))
 			{
-				x -= tree[n].ob_x;
-				y -= tree[n].ob_y;				
-				o = n;
-				n = tree[o].ob_next;
+				struct xa_aes_object tail = aesobj(aesobj_tree(&next), aesobj_ob(&next)->ob_tail);
+				if (same_aesobj(&curr, &tail))
+				{
+// 					if (d) display(" childs of %d done", aesobj_item(&curr));
+					curr = next;
+					x -= aesobj_ob(&curr)->ob_x;
+					y -= aesobj_ob(&curr)->ob_y;
+					next = aesobj(aesobj_tree(&curr), aesobj_ob(&curr)->ob_next);
+					rel_depth--;
+				}
+				else
+					break;
 			}
-			o = n;
+			if (same_aesobj(&next, &stop) && set_aesobj_downlink(&tree, &curr, &stop, &oblink))
+			{
+// 				if (d) display("downlink to %d in %lx", curr.item, curr.tree);
+				x -= aesobj_ob(&curr)->ob_x;
+				y -= aesobj_ob(&curr)->ob_y;
+				goto downlink;
+			}
+			curr = next;
+			
+// 			if (d) display(" next %d", aesobj_item(&curr));
 		}
-	} while ( o != parent && o != -1); // && (!stopf || !(tree[o].ob_flags & stopf)) && (!stops || !(tree[o].ob_state & stops)));
+	} while (valid_aesobj(&curr) && !same_aesobj(&curr, &stop) && rel_depth > 0);
 
 	if (!cf && (flags & OBFIND_NOWRAP))
-		co = -1;
+	{
+// 		if (d) display(" nowrap !");
+		co = inv_aesobj();
+	}
 done:
+	clean_aesobj_links(&oblink);
+
+// 	if (d) display("return %d", aesobj_item(&co));
 	return co;
 }
 
-short
+struct xa_aes_object
 ob_find_next_any_flag(OBJECT *tree, short start, short f)
 {
 	short o = start;
-	short l = ob_find_any_flag(tree, OF_LASTOB, 0, 0);
+	struct xa_aes_object object = ob_find_any_flag(tree, OF_LASTOB, 0, 0);
 
 	DIAGS(("ob_find_next_any_flag: start=%d, flags=%x, lastob=%d",
-		start, f, l));
+		start, f, object.item));
 	/*
 	 * Check if start is inside.
 	 */
-	if (l < 0 || l < start)
-		return -1;
+	if (!valid_aesobj(&object) || object.item < start)
+	{
+		return inv_aesobj();
+	}
 	
 	/*
 	 * Start at last object in tree? Wrap if so
 	 */
-	if (start == l)
+	if (start == aesobj_item(&object))
 		o = 0;
 	else
 		o++;
@@ -1868,36 +2023,36 @@ ob_find_next_any_flag(OBJECT *tree, short start, short f)
 			o, tree[o].ob_flags));
 
 		if (tree[o].ob_flags & f)
-			return o;
+			break;
 		if (tree[o].ob_flags & OF_LASTOB)
 			o = 0;
 		else
 			o++;
 	}
-	return -1;
+	return aesobj(tree, o);
 }
 short
 ob_find_prev_any_flag(OBJECT *tree, short start, short f)
 {
 	short o = start;
-	short l = ob_find_any_flag(tree, OF_LASTOB, 0, 0);
+	struct xa_aes_object object = ob_find_any_flag(tree, OF_LASTOB, 0, 0);
 
 	/*
 	 * If start == -1, start at last object.
 	 */
 	 if (start == -1)
-	 	start = l;
+	 	start = object.item;
 	/*
 	 * Check if start is inside.
 	 */
-	if (l < 0 || l < start)
+	if (object.item < 0 || object.item < start)
 		return -1;
 	
 	/*
 	 * Start at first object in tree? Wrap if so
 	 */
 	if (!start)
-		o = l;
+		o = object.item;
 	else
 		o--;
 
@@ -1906,14 +2061,14 @@ ob_find_prev_any_flag(OBJECT *tree, short start, short f)
 		if (tree[o].ob_flags & f)
 			return o;
 		if (!o)
-			o = l;
+			o = object.item;
 		else
 			o--;
 	}
 	return -1;
 }
 
-short
+struct xa_aes_object
 ob_find_cancel(OBJECT *ob)
 {
 	int f = 0;
@@ -1948,14 +2103,16 @@ ob_find_cancel(OBJECT *ob)
 					for (i = 0; cfg.cancel_buttons[i][0]; i++)
 					{
 						if (stricmp(s,cfg.cancel_buttons[i]) == 0)
-							return f;
+						{
+							return aesobj(ob, f);
+						}
 					}
 				}
 			}
 		}
 	} while (!(ob[f++].ob_flags & OF_LASTOB));
 
-	return -1;
+	return inv_aesobj();
 }
 
 void
@@ -1975,9 +2132,7 @@ ob_fix_shortcuts(OBJECT *obtree, bool not_hidden)
 	
 	objs = ob_count_objs(obtree, 0, -1);
 	DIAGS((" -- %d objects", objs));
-
-// 	display("ob_fix_shortcuts on tree %lx, %d objs", obtree, objs);
-
+	
 	len = ((long)objs + 1) * sizeof(struct sc);
 
 	sc = kmalloc(len);
@@ -2066,7 +2221,7 @@ ob_fix_shortcuts(OBJECT *obtree, bool not_hidden)
 	DIAGS((" -- ob_fix_shortcuts: done"));	
 }
 
-short
+struct xa_aes_object
 ob_find_shortcut(OBJECT *tree, ushort nk)
 {
 	int i = 0;
@@ -2092,7 +2247,9 @@ ob_find_shortcut(OBJECT *tree, ushort nk)
 						{
 							DIAG((D_keybd,NULL,"  -  in '%s' find '%c' on %d :: %c",s,nk,j, *(s+j)));
 							if (toupper(*(s + j)) == nk)
-								return i;
+							{
+								return aesobj(tree, i);
+							}
 						}
 					}
 				}
@@ -2100,7 +2257,7 @@ ob_find_shortcut(OBJECT *tree, ushort nk)
 		}
 	} while ( (tree[i++].ob_flags & OF_LASTOB) == 0);
 
-	return -1;
+	return inv_aesobj();
 }
 
 void
@@ -2114,42 +2271,58 @@ obj_init_focus(XA_TREE *wt, short flags)
 	 * 4. No focus found.
 	 */
 	if (flags & OB_IF_RESET)
-		wt->focus = -1;
+		clear_focus(wt);
 
-	if (wt->focus == -1)
+	if (!focus_set(wt))
 	{
-		short o;
+		struct xa_aes_object o;
 		OBJECT *obtree = wt->tree;
 		
-		o = ob_find_next_any_flagstate(obtree, 0, -1, OF_EDITABLE, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_EXACTFLAG);
-		if (o > 0)
+		o = ob_find_next_any_flagstate(obtree, aesobj(obtree, 0), inv_aesobj(), OF_EDITABLE, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_EXACTFLAG);
+		if (valid_aesobj(&o))
 			wt->focus = o;
 		else if (!(flags & OB_IF_ONLY_EDITS))
 		{
 			{
-				o = ob_find_next_any_flagstate(obtree, 0, -1, OF_DEFAULT, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_EXACTFLAG);
-				if (o > 0 && (obtree[o].ob_flags & (OF_SELECTABLE|OF_EXIT|OF_TOUCHEXIT)))
+				o = ob_find_next_any_flagstate(obtree, aesobj(obtree, 0), inv_aesobj(), OF_DEFAULT, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_EXACTFLAG);
+				if (valid_aesobj(&o) && (aesobj_ob(&o)->ob_flags & (OF_SELECTABLE|OF_EXIT|OF_TOUCHEXIT)))
 					wt->focus = o;
 			}
-			if (wt->focus == -1)
-				wt->focus = ob_find_next_any_flagstate(obtree, 0, -1, OF_SELECTABLE|OF_EXIT|OF_TOUCHEXIT, OF_HIDETREE, 0, OS_DISABLED, 0, 0, 0);
+			if (!focus_set(wt))
+			{
+				o = ob_find_next_any_flagstate(obtree, aesobj(obtree, 0), inv_aesobj(), OF_SELECTABLE|OF_EXIT|OF_TOUCHEXIT, OF_HIDETREE, 0, OS_DISABLED, 0, 0, 0);
+				if (valid_aesobj(&o))
+					wt->focus = o;
+			}
 		}
 	}
 }
 
 void
-obj_set_g_popup(XA_TREE *swt, short sobj, POPINFO *pinf)
+obj_set_g_popup(XA_TREE *swt, struct xa_aes_object sobj, POPINFO *pinf)
 {
-	OBJECT *sob;
 	short type;
 	
-	sob = swt->tree + sobj;
-	type = sob->ob_type & 0xff;
+	type = aesobj_ob(&sobj)->ob_type & 0xff;
 
 	if (type == G_BUTTON || type == G_POPUP)
 	{
-		sob->ob_type = G_POPUP;
-		object_set_spec(sob, (unsigned long)pinf);
+		aesobj_ob(&sobj)->ob_type = G_POPUP;
+		object_set_spec(aesobj_ob(&sobj), (unsigned long)pinf);
+	}
+}
+
+void
+obj_unset_g_popup(XA_TREE *swt, struct xa_aes_object sobj, char *txt)
+{
+	short type;
+	
+	type = aesobj_ob(&sobj)->ob_type & 0xff;
+
+	if (type == G_POPUP)
+	{
+		aesobj_ob(&sobj)->ob_type = G_BUTTON;
+		object_set_spec(aesobj_ob(&sobj), (unsigned long)txt);
 	}
 }
 
@@ -2157,111 +2330,154 @@ obj_set_g_popup(XA_TREE *swt, short sobj, POPINFO *pinf)
  * Get the true screen coords of an object
  */
 short
-obj_offset(XA_TREE *wt, short object, short *mx, short *my)
+obj_offset(XA_TREE *wt, struct xa_aes_object object, short *mx, short *my)
 {
 	OBJECT *obtree = wt->tree;
-	short next;
-	short current = 0;
+	struct xa_aes_object current = aesobj(obtree, 0), stop = inv_aesobj(), next;
+	struct oblink_spec *oblink = NULL;
 	short x = -wt->dx, y = -wt->dy;
 	
 	DIAG((D_objc, NULL, "obj_offset: obtree=%lx, obj=%d, xret=%lx, yret=%lx",
-		obtree, object, mx, my));
+		obtree, aesobj_item(&object), mx, my));
 
 	do
 	{
+
+uplink:
 		/* Found the object in the tree? cool, return the coords */
-		if (current == object)
+		if (same_aesobj(&current, &object))
 		{
-			x += obtree[current].ob_x;
-			y += obtree[current].ob_y;
+			x += aesobj_ob(&current)->ob_x;
+			y += aesobj_ob(&current)->ob_y;
 			
 			*mx = x;
 			*my = y;
 
 			DIAG((D_objc, NULL, "obj_offset: return found obj=%d at x=%d, y=%d",
 				object, x, y));
+			clean_aesobj_links(&oblink);
 			return 1;
 		}
+		
+		if (set_aesobj_uplink(&obtree, &current, &stop, &oblink))
+			goto uplink;
 
 		/* Any children? */
-		if (obtree[current].ob_head != -1)
+		if (aesobj_ob(&current)->ob_head != -1)
 		{
-			x += obtree[current].ob_x;
-			y += obtree[current].ob_y;
-			current = obtree[current].ob_head;
+			x += aesobj_ob(&current)->ob_x;
+			y += aesobj_ob(&current)->ob_y;
+			current = aesobj(aesobj_tree(&current), aesobj_ob(&current)->ob_head);
 		}
 		else
 		{
 			/* Try for a sibling */
-			next = obtree[current].ob_next;
-
-			while ((next != -1) && (obtree[next].ob_tail == current))
+downlink:			
+			next = aesobj(aesobj_tree(&current), aesobj_ob(&current)->ob_next);
+			
+			while (valid_aesobj(&next) && !same_aesobj(&next, &stop))
 			{
-				/* Trace back up tree if no more siblings */
-				current = next;
-				x -= obtree[current].ob_x;
-				y -= obtree[current].ob_y;
-				next = obtree[current].ob_next;
+				struct xa_aes_object tail = aesobj(aesobj_tree(&next), aesobj_ob(&next)->ob_tail);
+				if (same_aesobj(&current, &tail))
+				{
+					/* Trace back up tree if no more siblings */
+					current = next;
+					x -= aesobj_ob(&current)->ob_x;
+					y -= aesobj_ob(&current)->ob_y;
+					next = aesobj(aesobj_tree(&current), aesobj_ob(&current)->ob_next);
+				}
+				else
+					break;
+			}
+			if (same_aesobj(&next, &stop) && set_aesobj_downlink(&obtree, &current, &stop, &oblink))
+			{
+				x -= aesobj_ob(&current)->ob_x;
+				y -= aesobj_ob(&current)->ob_y;
+				goto downlink;
 			}
 			current = next;
 		}
 	}
-	while (current != -1); /* If 'current' is -1 then we have finished */
+	while (valid_aesobj(&current)); /* If 'current' is -1 then we have finished */
+
+	clean_aesobj_links(&oblink);
 
 	/* Bummer - didn't find the object, so return error */
 	DIAG((D_objc, NULL, "obj_offset: didnt find object"));
 	return 0;
 }
+
 short
-ob_offset(OBJECT *obtree, short object, short *mx, short *my)
+ob_offset(OBJECT *obtree, struct xa_aes_object object, short *mx, short *my)
 {
-	short next;
-	short current = 0;
+	struct xa_aes_object next;
+	struct xa_aes_object current = aesobj(obtree, 0), stop = inv_aesobj();
+	struct oblink_spec *oblink = NULL;
 	short x = 0, y = 0;
 	
 	DIAG((D_objc, NULL, "ob_offset: obtree=%lx, obj=%d, xret=%lx, yret=%lx",
-		obtree, object, mx, my));
+		obtree, aesobj_item(&object), mx, my));
 
 	do
 	{
+
+uplink:
 		/* Found the object in the tree? cool, return the coords */
-		if (current == object)
+		if (same_aesobj(&current, &object))
 		{
-			x += obtree[current].ob_x;
-			y += obtree[current].ob_y;
+			x += aesobj_ob(&current)->ob_x;
+			y += aesobj_ob(&current)->ob_y;
 			
 			*mx = x;
 			*my = y;
 
-			DIAG((D_objc, NULL, "ob_offset: return found obj=%d at x=%d, y=%d",
+			DIAG((D_objc, NULL, "obj_offset: return found obj=%d at x=%d, y=%d",
 				object, x, y));
+			clean_aesobj_links(&oblink);
 			return 1;
 		}
+		if (set_aesobj_uplink(&obtree, &current, &stop, &oblink))
+			goto uplink;
 
 		/* Any children? */
-		if (obtree[current].ob_head != -1)
+		if (aesobj_ob(&current)->ob_head != -1)
 		{
-			x += obtree[current].ob_x;
-			y += obtree[current].ob_y;
-			current = obtree[current].ob_head;
+			x += aesobj_ob(&current)->ob_x;
+			y += aesobj_ob(&current)->ob_y;
+			current = aesobj(aesobj_tree(&current), aesobj_ob(&current)->ob_head);
 		}
 		else
 		{
 			/* Try for a sibling */
-			next = obtree[current].ob_next;
-
-			while ((next != -1) && (obtree[next].ob_tail == current))
+downlink:			
+			next = aesobj(aesobj_tree(&current), aesobj_ob(&current)->ob_next);
+			
+			while (valid_aesobj(&next) && !same_aesobj(&next, &stop))
 			{
-				/* Trace back up tree if no more siblings */
-				current = next;
-				x -= obtree[current].ob_x;
-				y -= obtree[current].ob_y;
-				next = obtree[current].ob_next;
+				struct xa_aes_object tail = aesobj(aesobj_tree(&next), aesobj_ob(&next)->ob_tail);
+				if (same_aesobj(&current, &tail))
+				{
+					/* Trace back up tree if no more siblings */
+					current = next;
+					x -= aesobj_ob(&current)->ob_x;
+					y -= aesobj_ob(&current)->ob_y;
+					next = aesobj(aesobj_tree(&current), aesobj_ob(&current)->ob_next);
+				}
+				else
+					break;
+			}
+			if (same_aesobj(&next, &stop) && set_aesobj_downlink(&obtree, &current, &stop, &oblink))
+			{
+				x -= aesobj_ob(&current)->ob_x;
+				y -= aesobj_ob(&current)->ob_y;
+				goto downlink;
 			}
 			current = next;
 		}
 	}
-	while (current != -1); /* If 'current' is -1 then we have finished */
+	while (valid_aesobj(&current)); /* If 'current' is -1 then we have finished */
+
+	clean_aesobj_links(&oblink);
 
 	/* Bummer - didn't find the object, so return error */
 	DIAG((D_objc, NULL, "ob_offset: didnt find object"));
@@ -2269,48 +2485,40 @@ ob_offset(OBJECT *obtree, short object, short *mx, short *my)
 }
 
 void
-obj_rectangle(XA_TREE *wt, short obj, RECT *c)
+obj_rectangle(XA_TREE *wt, struct xa_aes_object obj, RECT *c)
 {
-	OBJECT *b;
-
 	if (!obj_offset(wt, obj, &c->x, &c->y))
 	{
-		obj = 0;
+		obj = aesobj(wt->tree, 0);
 		obj_offset(wt, obj, &c->x, &c->y);
 	}
-	b = wt->tree + obj;
-	c->w = b->ob_width;
-	c->h = b->ob_height;
+	c->w = aesobj_ob(&obj)->ob_width;
+	c->h = aesobj_ob(&obj)->ob_height;
 }
 void
-ob_rectangle(OBJECT *obtree, short obj, RECT *c)
+ob_rectangle(OBJECT *obtree, struct xa_aes_object obj, RECT *c)
 {
-	OBJECT *b;
-
 	if (!ob_offset(obtree, obj, &c->x, &c->y))
 	{
-		obj = 0;
+		obj = aesobj(obtree, 0);
 		ob_offset(obtree, obj, &c->x, &c->y);
 	}
-	b = obtree + obj;
-	c->w = b->ob_width;
-	c->h = b->ob_height;
+	c->w = aesobj_ob(&obj)->ob_width;
+	c->h = aesobj_ob(&obj)->ob_height;
 }
 void
-obj_area(XA_TREE *wt, short obj, RECT *c)
+obj_area(XA_TREE *wt, struct xa_aes_object obj, RECT *c)
 {
-	OBJECT *b;
 	RECT r;
 	
 	if (!obj_offset(wt, obj, &c->x, &c->y))
 	{
-		obj = 0;
+		obj = aesobj(wt->tree, 0);
 		obj_offset(wt, obj, &c->x, &c->y);
 	}
-	b = wt->tree + obj;
-	c->w = b->ob_width;
-	c->h = b->ob_height;
-	object_offsets(b, &r);
+	c->w = aesobj_ob(&obj)->ob_width;
+	c->h = aesobj_ob(&obj)->ob_height;
+	object_offsets(aesobj_ob(&obj), &r);
 	c->x += r.x;
 	c->y += r.y;
 	c->w -= r.w;
@@ -2318,20 +2526,18 @@ obj_area(XA_TREE *wt, short obj, RECT *c)
 }
 
 void
-ob_area(OBJECT *obtree, short obj, RECT *c)
+ob_area(OBJECT *obtree, struct xa_aes_object obj, RECT *c)
 {
-	OBJECT *b;
 	RECT r;
 	
 	if (!ob_offset(obtree, obj, &c->x, &c->y))
 	{
-		obj = 0;
+		obj = aesobj(obtree, 0);
 		ob_offset(obtree, obj, &c->x, &c->y);
 	}
-	b = obtree + obj;
-	c->w = b->ob_width;
-	c->h = b->ob_height;
-	object_offsets(b, &r);
+	c->w = aesobj_ob(&obj)->ob_width;
+	c->h = aesobj_ob(&obj)->ob_height;
+	object_offsets(aesobj_ob(&obj), &r);
 	c->x += r.x;
 	c->y += r.y;
 	c->w -= r.w;
@@ -2345,12 +2551,12 @@ ob_area(OBJECT *obtree, short obj, RECT *c)
  * into accrount when positioning/sizing the slider.
  */
 void
-ob_border_diff(OBJECT *obtree, short obj1, short obj2, RECT *r)
+ob_border_diff(OBJECT *obtree, struct xa_aes_object obj1, struct xa_aes_object obj2, RECT *r)
 {
 	RECT r1, r2;
 
-	object_offsets(obtree + obj1, &r1);
-	object_offsets(obtree + obj2, &r2);
+	object_offsets(aesobj_ob(&obj1), &r1);
+	object_offsets(aesobj_ob(&obj2), &r2);
 
 	r->x = r1.x - r2.x;
 	r->y = r1.y - r2.y;
@@ -2435,89 +2641,113 @@ object_spec_wh(OBJECT *ob, short *w, short *h)
  * Find which object is at a given location
  *
  */
-short
-obj_find(XA_TREE *wt, short object, short depth, short mx, short my, RECT *c)
+struct xa_aes_object
+obj_find(XA_TREE *wt, struct xa_aes_object object, short depth, short mx, short my, RECT *c)
 {
 	OBJECT *obtree = wt->tree;
-	short next;
-	short current = 0, stop = -1, rel_depth = 1;
+	struct xa_aes_object next;
+	struct xa_aes_object current = aesobj(wt->tree, 0), stop = inv_aesobj(), pos_object = inv_aesobj();
+	short rel_depth = 1;
 	short x = -wt->dx, y = -wt->dy;
 	bool start_checking = false;
-	short pos_object = -1;
+	struct oblink_spec *oblink = NULL;
 	RECT r, or = (RECT){0,0,0,0};
 
 	DIAG((D_objc, NULL, "obj_find: obj=%d, depth=%d, obtree=%lx, obtree at %d/%d/%d/%d, find at %d/%d",
 		object, depth, obtree, obtree->ob_x, obtree->ob_y, obtree->ob_width, obtree->ob_height,
 		mx, my));
-	do {	
-		if (current == object)	/* We can start considering objects at this point */
+	do {
+	
+uplink:
+		if (same_aesobj(&current, &object))	/* We can start considering objects at this point */
 		{
-			stop = object;
 			start_checking = true;
 			rel_depth = 0;
 		}
 		
-		if (start_checking && !(obtree[current].ob_flags & OF_HIDETREE))
+		if (!(aesobj_ob(&current)->ob_flags & OF_HIDETREE))
 		{
-			RECT cr;
-			if (depth & 0x8000)
-				object_offsets(obtree + current, &or);
+			if (set_aesobj_uplink(&obtree, &current, &stop, &oblink))
+				goto uplink;
 			
-			cr.x = x + obtree[current].ob_x + or.x;
-			cr.y = y + obtree[current].ob_y + or.y;
-			cr.w = obtree[current].ob_width - or.w;
-			cr.h = obtree[current].ob_height - or.h;
-			
-			if (   cr.x		<= mx
-			    && cr.y		<= my
-			    && cr.x + cr.w	> mx
-			    && cr.y + cr.h	> my )
+			if (start_checking)
 			{
-				/* This is only a possible object, as it may have children on top of it. */
-				if (c)
+				RECT cr;
+				if (depth & 0x8000)
+					object_offsets(aesobj_ob(&current), &or);
+			
+				cr.x = x + aesobj_ob(&current)->ob_x + or.x;
+				cr.y = y + aesobj_ob(&current)->ob_y + or.y;
+				cr.w = aesobj_ob(&current)->ob_width - or.w;
+				cr.h = aesobj_ob(&current)->ob_height - or.h;
+			
+				if (   cr.x		<= mx
+				    && cr.y		<= my
+				    && cr.x + cr.w	> mx
+				    && cr.y + cr.h	> my )
 				{
-					r = cr;
+					/* This is only a possible object, as it may have children on top of it. */
+					if (c)
+					{
+						r = cr;
+					}
+					pos_object = current;
 				}
-				pos_object = current;
 			}
 		}
 
 		if ( ((!start_checking) || (rel_depth < depth))
-		    &&  (obtree[current].ob_head != -1)
-		    && !(obtree[current].ob_flags & OF_HIDETREE))
+		    &&  (aesobj_ob(&current)->ob_head != -1)
+		    && !(aesobj_ob(&current)->ob_flags & OF_HIDETREE))
 		{
 			/* Any children? */
-			x += obtree[current].ob_x;
-			y += obtree[current].ob_y;
+			x += aesobj_ob(&current)->ob_x;
+			y += aesobj_ob(&current)->ob_y;
 			rel_depth++;
-			current = obtree[current].ob_head;
+			current = aesobj(aesobj_tree(&current), aesobj_ob(&current)->ob_head);
 		}
 		else
 		{
+downlink:
 			/* Try for a sibling */
-			next = obtree[current].ob_next;
+			next = aesobj(aesobj_tree(&current), aesobj_ob(&current)->ob_next);
 
 			/* Trace back up tree if no more siblings */
-			while ((next != stop && next != -1) && (obtree[next].ob_tail == current))
+			while (valid_aesobj(&next) && !same_aesobj(&next, &stop))
 			{
-				current = next;
-				x -= obtree[current].ob_x;
-				y -= obtree[current].ob_y;
-				next = obtree[current].ob_next;
-				rel_depth--;
+				struct xa_aes_object tail = aesobj(aesobj_tree(&next), aesobj_ob(&next)->ob_tail);
+
+				if (same_aesobj(&current, &tail))
+				{
+					current = next;
+					x -= aesobj_ob(&current)->ob_x;
+					y -= aesobj_ob(&current)->ob_y;
+					next = aesobj(aesobj_tree(&current), aesobj_ob(&current)->ob_next);
+					rel_depth--;
+				}
+				else
+					break;
+			}
+			if (same_aesobj(&next, &stop) && set_aesobj_downlink(&obtree, &current, &stop, &oblink))
+			{
+				x -= aesobj_ob(&current)->ob_x;
+				y -= aesobj_ob(&current)->ob_y;
+				goto downlink;
 			}
 			current = next;
 		}	
 	}
-	while (current != stop && current != -1 && (rel_depth > 0));
+	while (valid_aesobj(&current) && !same_aesobj(&current, &stop) && (rel_depth > 0));
 
-	if (c && pos_object >= 0)
+	clean_aesobj_links(&oblink);
+
+	if (c && valid_aesobj(&pos_object))
 	{
 		if (!xa_rect_clip(c, &r, &r))
-			pos_object = -1;
+			pos_object = inv_aesobj();
 	}
 	
-	DIAG((D_objc, NULL, "obj_find: found %d", pos_object));
+	DIAG((D_objc, NULL, "obj_find: found %d", aesobj_item(&pos_object)));
 
 	return pos_object;
 }
@@ -2618,20 +2848,20 @@ obtree_is_menu(OBJECT *tree)
 bool
 obtree_has_default(OBJECT *obtree)
 {
-	short o = ob_find_any_flst(obtree, OF_DEFAULT, 0, 0, 0, 0, 0);
-	return o >= 0 ? true : false;
+	struct xa_aes_object o = ob_find_any_flst(obtree, OF_DEFAULT, 0, 0, 0, 0, 0);
+	return o.item >= 0 ? true : false;
 }
 bool
 obtree_has_exit(OBJECT *obtree)
 {
-	short o = ob_find_any_flst(obtree, OF_EXIT, 0, 0, 0, 0, 0);
-	return o >= 0 ? true : false;
+	struct xa_aes_object o = ob_find_any_flst(obtree, OF_EXIT, 0, 0, 0, 0, 0);
+	return o.item >= 0 ? true : false;
 } 
 bool
 obtree_has_touchexit(OBJECT *obtree)
 {
-	short o = ob_find_any_flst(obtree, OF_TOUCHEXIT, 0, 0, 0, 0, 0);
-	return o >= 0 ? true : false;
+	struct xa_aes_object o = ob_find_any_flst(obtree, OF_TOUCHEXIT, 0, 0, 0, 0, 0);
+	return o.item >= 0 ? true : false;
 } 
 
 /* HR 120601: Objc_Change:
@@ -2647,7 +2877,7 @@ obtree_has_touchexit(OBJECT *obtree)
 void
 obj_change(XA_TREE *wt,
 	   struct xa_vdi_settings *v,
-	   short obj,
+	   struct xa_aes_object obj,
 	   int transdepth,
 	   short state,
 	   short flags,
@@ -2655,17 +2885,16 @@ obj_change(XA_TREE *wt,
 	   const RECT *clip,
 	   struct xa_rect_list *rl, short dflags)
 {
-	OBJECT *obtree = wt->tree;
 	bool draw = false;
 
-	if (obtree[obj].ob_flags != flags)
+	if (aesobj_ob(&obj)->ob_flags != flags)
 	{
-		obtree[obj].ob_flags = flags;
+		aesobj_ob(&obj)->ob_flags = flags;
 		draw |= true;
 	}
-	if (obtree[obj].ob_state != state)
+	if (aesobj_ob(&obj)->ob_state != state)
 	{
-		obtree[obj].ob_state = state;
+		aesobj_ob(&obj)->ob_state = state;
 		draw |= true;
 	}
 
@@ -2676,18 +2905,19 @@ obj_change(XA_TREE *wt,
 }
 
 void
-obj_draw(XA_TREE *wt, struct xa_vdi_settings *v, short obj, int transdepth, const RECT *clip, struct xa_rect_list *rl, short flags)
+obj_draw(XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_object obj, int transdepth, const RECT *clip, struct xa_rect_list *rl, short flags)
 {
-	short start = obj, i;
+	struct xa_aes_object start = obj;
 	RECT or;
 	bool pd = false;
+// 	struct xa_aes_object object;
 
 	hidem();
 
 	obj_area(wt, obj, &or);
 
 	if (transdepth == -2)
-		start = 0;
+		start = aesobj(wt->tree, 0);
 	else
 	{
 		if (transdepth != -1 && (transdepth & 0x8000))
@@ -2696,12 +2926,12 @@ obj_draw(XA_TREE *wt, struct xa_vdi_settings *v, short obj, int transdepth, cons
 			pd = true;
 		}
 
-		while (object_is_transparent(wt->tree + start, pd))
+		while (object_is_transparent(aesobj_ob(&start), pd))
 		{
-			if ((i = ob_get_parent(wt->tree, start)) < 0 || !transdepth)
+			start = ob_get_parent(wt->tree, start);
+			if (!valid_aesobj(&start) || !transdepth)
 				break;
 			transdepth--;
-			start = i;
 		}
 	}
 	
@@ -3267,7 +3497,7 @@ obj_xED_INIT(struct widget_tree *wt,
 		ei->p_offset = 0;
 		
 		ei->pos = pos;
-		
+
 		if (flags & SETACTIVE)
 		{
 			wt->e = *ei;
@@ -3290,7 +3520,10 @@ obj_ED_INIT(struct widget_tree *wt,
 	TEDINFO *ted = NULL;
 	XTEDINFO *xted = NULL;
 	OBJECT *obtree = wt->tree;
-	short p, ret = 0, old_ed_obj = -1;
+	struct xa_aes_object old_ed_obj;
+	short p, ret = 0;
+
+	old_ed_obj = inv_aesobj();
 
 	/* Ozk:
 	 * See if the object passed to us really is editable.
@@ -3306,18 +3539,19 @@ obj_ED_INIT(struct widget_tree *wt,
 		 * do things here to end edit of current obj...
 		 */
 		/* --- */
-		old_ed_obj = ei->obj;
+		old_ed_obj = ei->o;
 		/* Ozk:
 		 * Init the object.
 		 * If new posititon == -1, we place the cursor at the very end
 		 * of the text to edit.
 		 */
-		ei->obj = obj;
+		set_edit(ei, wt->tree, obj);
 		
 		if (*(ted->te_ptext) == '@')
 			*(ted->te_ptext) = 0;
 
 		p = strlen(ted->te_ptext);
+
 		if (pos && (pos == -1 || pos > p))
 			pos = p;
 		
@@ -3342,8 +3576,8 @@ obj_ED_INIT(struct widget_tree *wt,
 	}
 	else
 	{
-		old_ed_obj = ei->obj;
-		ei->obj = -1;
+		old_ed_obj = ei->o;
+		clear_edit(ei);
 		ret = 0;
 	}
 
@@ -3355,7 +3589,7 @@ obj_ED_INIT(struct widget_tree *wt,
 	if (xted_ret)
 		*xted_ret = xted;
 	if (old_ed)
-		*old_ed = old_ed_obj;
+		*old_ed = old_ed_obj.item;
 
 	return ret;
 }
@@ -3368,13 +3602,13 @@ obj_xED_END(struct widget_tree *wt,
 	    const RECT *clip,
 	    struct xa_rect_list *rl)
 {
-	undraw_objcursor(wt, v, rl, redraw); //disable_objcursor(wt, v, rl);
+	undraw_objcursor(wt, v, rl, redraw);
 
 	if (ei->m_start != ei->m_end)
 	{
 		ei->m_start = ei->m_end = 0;
 		if (redraw)
-			obj_draw(wt, v, ei->obj, -1, clip, rl, 0);
+			obj_draw(wt, v, editfocus(ei), -1, clip, rl, 0);
 	}
 	return ei->pos;
 }
@@ -3394,7 +3628,7 @@ obj_ED_END(struct widget_tree *wt,
 		showm();
 	}
 	wt->e.c_state ^= OB_CURS_EOR;
-// 	display("ED_END: eors=%d, obj=%d for %s", wt->e.c_state & DRW_CURSOR, wt->e.obj, wt->owner->name);
+// 	display("ED_END: eors=%d, obj=%d for %s", wt->e.c_state & DRW_CURSOR, edit_item(&wt->e), wt->owner->name);
 }
 /*
  * Returns 1 if successful (character eaten), or 0 if not.
@@ -3403,7 +3637,7 @@ short
 obj_edit(XA_TREE *wt,
 	 struct xa_vdi_settings *v,
 	 short func,
-	 short obj,
+	 struct xa_aes_object obj,
 	 short keycode,
 	 short pos,	/* -1 sets position to end of text */
 	 char *string,
@@ -3412,47 +3646,42 @@ obj_edit(XA_TREE *wt,
 	 struct xa_rect_list *rl,
 	/* outputs */
 	 short *ret_pos,
-	 short *ret_obj)
+	 struct xa_aes_object *ret_obj)
 {
 	short ret = 1;
 	TEDINFO *ted = NULL;
 	XTEDINFO *xted = NULL;
 	OBJECT *obtree = wt->tree;
 	struct objc_edit_info *ei;
-	short last = 0, old_ed_obj = -1;
+	short old_ed_obj = -1;
 
 #if GENERATE_DIAGS
 	char *funcstr = func < 0 || func > 3 ? edfunc[4] : edfunc[func];
 	DIAG((D_form,wt->owner,"  --  obj_edit: func %s, wt=%lx obtree=%lx, obj:%d, k:%x, pos:%x",
-	      funcstr, wt, obtree, obj, keycode, pos));
+	      funcstr, wt, obtree, aesobj_item(&obj), keycode, pos));
 #endif
 #if 0
 	char *funcstr = func < 0 || func > 3 ? edfunc[4] : edfunc[func];
 
 	display("obj_edit: %s", wt->owner->name);
 	display("  -- func %s, wt=%lx obtree=%lx, obj:%d, k:%x, pos:%x",
-	      funcstr, wt, obtree, obj, keycode, pos);
+	      funcstr, wt, obtree, aesobj_item(&obj), keycode, pos);
 #endif
-	
-	last = 0;
-	while (!(obtree[last].ob_flags & OF_LASTOB))
-		last++;
 
-	if (wt->e.obj != -1 && wt->e.obj > last)
-		wt->e.obj = -1;
+	if (valid_aesobj(&obj))
+		ted = object_get_tedinfo(aesobj_ob(&obj), &xted);
 
-	if (obj >= 0 && obj <= last && (ted = object_get_tedinfo(obtree + obj, &xted)))
-	{
-
-// 	display("flg %d, xted = %lx, obj = %d, xted->obj = %d", wt->flags & WTF_OBJCEDIT ? 1 : 0, xted, obj, xted ? xted->obj : -1);
-	
 	if (!xted) //(!(wt->flags & WTF_OBJCEDIT)) //!(wt->owner->options.app_opts & XAAO_OBJC_EDIT))
 	{
+		short last = 0;
+		while (!(obtree[last].ob_flags & OF_LASTOB))
+			last++;
+
 		if (wt->ei)
 		{
 			obj_xED_END(wt, v, wt->ei, redraw, clip, rl);
 			wt->ei = NULL;
-			wt->e.obj = -1;
+			clear_edit(&wt->e);
 			wt->e.c_state = 0;
 		}
 		switch (func)
@@ -3461,34 +3690,33 @@ obj_edit(XA_TREE *wt,
 			{
 				hidem();
 				
-				obj_ED_INIT(wt, &wt->e, obj, -1, last, CLRMARKS, NULL, NULL, &old_ed_obj);
+				obj_ED_INIT(wt, &wt->e, obj.item, -1, last, CLRMARKS, NULL, NULL, &old_ed_obj);
 				
 				if (redraw)
 					eor_objcursor(wt, v, rl);
 				wt->e.c_state ^= OB_CURS_EOR;
 				
 				showm();
-// 				display("ED_INIT: eors=%d, obj=%d (last %d) for %s", wt->e.c_state & DRW_CURSOR, wt->e.obj, last, wt->owner->name);
 				pos = wt->e.pos;
 				break;
 			}
 			case ED_END:
 			{
 				obj_ED_END(wt, v, redraw, rl);
-				if (wt->e.obj > 0)
+				if (edit_set(&wt->e))
 					pos = wt->e.pos;
 				break;
 			}
 			case ED_CHAR:
 			{
 				if (!keycode)
-					obj_ED_INIT(wt, &wt->e, obj, -1, last, CLRMARKS, NULL, NULL, &old_ed_obj);
+					obj_ED_INIT(wt, &wt->e, obj.item, -1, last, CLRMARKS, NULL, NULL, &old_ed_obj);
 				else
 				{
 					hidem();
-					if ( wt->e.obj == -1 ||
-					     obj == -1 ||
-					     obj != wt->e.obj)
+					if ( !edit_set(&wt->e) ||
+					     !valid_aesobj(&obj) ||
+					     !same_aesobj(&obj, &wt->e.o))
 					{
 					/* Ozk:
 					 * I am not sure if this is correct, but if ED_INIT have not been
@@ -3500,19 +3728,19 @@ obj_edit(XA_TREE *wt,
 					 * 
 					 */
 
-						if (obj == -1)
+						if (!valid_aesobj(&obj))
 						{
-							obj = wt->e.obj;
-							if (obj == -1)
+							obj = wt->e.o;
+							if (!valid_aesobj(&obj))
 								obj = ob_find_next_any_flag(obtree, 0, OF_EDITABLE);
 						}
-						if (obj_ED_INIT(wt, &wt->e, obj, pos, last, CLRMARKS, &ted, NULL, &old_ed_obj))
+						if (obj_ED_INIT(wt, &wt->e, obj.item, pos, last, CLRMARKS, &ted, NULL, &old_ed_obj))
 						{
 							if (redraw)
 							{
 								eor_objcursor(wt, v, rl);
 								if (obj_ed_char(wt, &wt->e, ted, NULL, keycode))
-									obj_draw(wt, v, wt->e.obj, -1, clip, rl, 0);
+									obj_draw(wt, v, editfocus(&wt->e), -1, clip, rl, 0);
 								eor_objcursor(wt, v, rl);
 							}
 							else
@@ -3526,7 +3754,7 @@ obj_edit(XA_TREE *wt,
 						/* Ozk:
 						 * Object is the one with cursor focus, so we do it normally
 						 */
-						ted = object_get_tedinfo(obtree + obj, NULL);
+						ted = object_get_tedinfo(aesobj_ob(&obj), NULL);
 						ei = &wt->e;
 
 						DIAGS((" -- obj_edit: ted=%lx", ted));
@@ -3544,7 +3772,6 @@ obj_edit(XA_TREE *wt,
 						pos = ei->pos;
 					}
 					showm();
-// 					display("ED_CHAR: eors=%d, obj=%d, (%x)chr=%c for %s", wt->e.c_state & DRW_CURSOR, wt->e.obj, keycode, keycode, wt->owner->name);
 				}
 				break;
 			}
@@ -3552,14 +3779,13 @@ obj_edit(XA_TREE *wt,
 			{
 				hidem();
 				
-				obj_ED_INIT(wt, &wt->e, obj, pos, last, CLRMARKS, NULL, NULL, &old_ed_obj);
+				obj_ED_INIT(wt, &wt->e, obj.item, pos, last, CLRMARKS, NULL, NULL, &old_ed_obj);
 				
 				if (redraw)
 					eor_objcursor(wt, v, rl);
 				wt->e.c_state ^= OB_CURS_EOR;
 				
 				showm();
-// 				display("ED_CRSR: eors=%d, obj=%d for %s", wt->e.c_state & DRW_CURSOR, wt->e.obj, wt->owner->name);
 				pos = wt->e.pos;
 				break;
 #if 0
@@ -3583,19 +3809,16 @@ obj_edit(XA_TREE *wt,
 	else
 	{
 		bool drwcurs = false;
-// 		display("ted = %lx, xted = %lx", ted, xted);
 		switch (func)
 		{
 			case ED_INIT:
 			{
 				ei = wt->ei;
 				
-				if (ei && ei->obj == obj)
+				if (ei && same_aesobj(&ei->o, &obj))
 					xted = ei;
-				else if (obj >= 0 && obj <= last)
-					ted = object_get_tedinfo(obtree + obj, &xted);
-				
-// 				display("xED_INIT, ei=%lx, xted=%lx", ei, xted);
+				else if (valid_aesobj(&obj))
+					ted = object_get_tedinfo(aesobj_ob(&obj), &xted);
 				
 				if (!ei || ei != xted)
 				{
@@ -3603,9 +3826,9 @@ obj_edit(XA_TREE *wt,
 					
 					if (ei)
 					{
-// 						display("undrw old");
 						obj_xED_END(wt, v, ei, redraw, clip, rl);
 					}
+						
 					/* Ozk:
 					 * If xted is NULL, obj is not a valid object.
 					 * We then check if obj is -1, in which case we
@@ -3614,35 +3837,33 @@ obj_edit(XA_TREE *wt,
 					 * If object was just wrong for this tree, we return
 					 * a -1 in next obj to indicate this.
 					 */
-					if (obj == -1)
+					if (!valid_aesobj(&obj))
 					{
-						obj = ob_find_next_any_flagstate(obtree, 0, wt->focus, OF_EDITABLE, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_FIRST);
-						if (obj >= 0)
-							ted = object_get_tedinfo(obtree + obj, &xted);
+						obj = ob_find_next_any_flagstate(obtree, aesobj(obtree, 0), inv_aesobj(), OF_EDITABLE, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_FIRST);
+						if (valid_aesobj(&obj))
+							ted = object_get_tedinfo(aesobj_ob(&obj), &xted);
 					}
 					if (!xted)
 					{
 						wt->ei = NULL;
-						wt->e.obj = -1;
+						clear_edit(&wt->e);
 						ei = NULL;
 					}
 					else
 					{
 						ei = xted;
 					
-// 						display("init new, ei = %lx, xted = %lx", ei, xted);
 						obj_xED_INIT(wt, ei, pos, SETMARKS|SETACTIVE);
 						set_objcursor(wt, v, ei);
 // 						enable_objcursor(wt, v);
 						if (redraw)
 						{
-							obj_draw(wt, v, ei->obj, -1, clip, rl, 0);
+							obj_draw(wt, v, editfocus(ei), -1, clip, rl, 0);
 						}
 						draw_objcursor(wt, v, rl, redraw);
 					}
 					showm();
 				}
-// 				display("done xED_INIT");
 				if (ei)
 					pos = ei->pos;
 				else
@@ -3652,7 +3873,6 @@ obj_edit(XA_TREE *wt,
 			case ED_DISABLE:
 			case ED_END:
 			{
-// 				display("xED_END");
 				if ((ei = wt->ei))
 				{
 					hidem();
@@ -3661,7 +3881,7 @@ obj_edit(XA_TREE *wt,
 					if (func == ED_END)
 					{
 						wt->ei = NULL;
-						wt->e.obj = -1;
+						clear_edit(&wt->e);
 					}
 				}
 				else
@@ -3699,12 +3919,10 @@ obj_edit(XA_TREE *wt,
 
 				ei = wt->ei;
 				
-				if (ei && ei->obj == obj)
+				if (ei && same_aesobj(&ei->o, &obj))
 					xted = ei;
-				else if (obj >= 0 && obj <= last)
-					ted = object_get_tedinfo(obtree + obj, &xted);
-				
-// 				display("xED_CHAR ei=%lx", ei);
+				else if (valid_aesobj(&obj))
+					ted = object_get_tedinfo(aesobj_ob(&obj), &xted);
 				
 				if (!ei || ei != xted)
 				{
@@ -3723,13 +3941,18 @@ obj_edit(XA_TREE *wt,
 				{
 				
 					DIAGS((" -- obj_edit: ted=%lx", (long)&xted->ti));
+
+					if (ei != wt->ei)
+					
 					hidem();
 					if (drwcurs)
 						undraw_objcursor(wt, v, rl, redraw);
 					if (obj_ed_char(wt, ei, NULL, xted, keycode))
 					{
 						if (redraw)
-							obj_draw(wt, v, ei->obj, -1, clip, rl, 0);
+						{
+							obj_draw(wt, v, editfocus(ei), -1, clip, rl, 0);
+						}
 					}
 					set_objcursor(wt, v, ei);
 
@@ -3751,12 +3974,10 @@ obj_edit(XA_TREE *wt,
 			{
 				ei = wt->ei;
 				
-				if (ei && ei->obj == obj)
+				if (ei && same_aesobj(&ei->o, &obj))
 					xted = ei;
-				else if (obj >= 0 && obj <= last)
-					ted = object_get_tedinfo(obtree + obj, &xted);
-				
-// 				display("ED_MARK: ei=%lx, %d(%d)", ei, ei ? ei->obj : -1, obj);
+				else if (valid_aesobj(&obj))
+					ted = object_get_tedinfo(aesobj_ob(&obj), &xted);
 				
 				if (!ei || ei != xted)
 				{
@@ -3769,7 +3990,7 @@ obj_edit(XA_TREE *wt,
 				if (ei)
 				{
 					unsigned short sl = strlen(ei->ti.te_ptext);
-// 					display(" -- sl %d, start %d, end %d", sl, keycode, pos);
+					
 					if (sl > keycode && (pos == -1 || pos > keycode))
 					{
 						ei->m_start = keycode;
@@ -3781,7 +4002,6 @@ obj_edit(XA_TREE *wt,
 					else
 						ei->m_start = ei->m_end = 0;
 						
-// 					display("start %d, end %d", ei->m_start, ei->m_end);
 					if (drwcurs)
 						undraw_objcursor(wt, v, rl, redraw);
 					if (redraw)
@@ -3804,12 +4024,10 @@ obj_edit(XA_TREE *wt,
 				 */
 
 				ei = wt->ei;
-				if (ei && ei->obj == obj)
+				if (ei && same_aesobj(&ei->o, &obj))
 					xted = ei;
-				else if (obj >= 0 && obj <= last)
-					ted = object_get_tedinfo(obtree + obj, &xted);
-				
-// 				display("ED_STRING ei=%lx, string '%s'", ei, string ? string : "No string!");
+				else if (valid_aesobj(&obj))
+					ted = object_get_tedinfo(aesobj_ob(&obj), &xted);
 				
 				if (!ei || ei != xted)
 				{
@@ -3820,7 +4038,7 @@ obj_edit(XA_TREE *wt,
 					}
 				}
 				else
-					drwcurs = true; //redraw;
+					drwcurs = true;
 
 				DIAGS((" -- obj_edit: ted=%lx", ted));
 				if (ei)
@@ -3845,7 +4063,7 @@ obj_edit(XA_TREE *wt,
 
 					set_objcursor(wt, v, ei);
 					if (redraw)
-						obj_draw(wt, v, ei->obj, -1, clip, rl, 0);
+						obj_draw(wt, v, editfocus(ei), -1, clip, rl, 0);
 
 					if (drwcurs)
 					{
@@ -3864,19 +4082,17 @@ obj_edit(XA_TREE *wt,
 			case ED_SETPTEXT:
 			{
 				ei = wt->ei;
-				if (ei && ei->obj == obj)
+				if (ei && same_aesobj(&ei->o, &obj))
 					xted = ei;
-				else if (obj >= 0 && obj <= last)
-					ted = object_get_tedinfo(obtree + obj, &xted);
-				
-// 				display("ED_SETPTEXT ei=%lx", ei);
+				else if (valid_aesobj(&obj))
+					ted = object_get_tedinfo(aesobj_ob(&obj), &xted);
 				
 				if (!ei || ei != xted)
 				{
 					ei = xted;
 				}
 				else
-					drwcurs = true; //redraw;
+					drwcurs = true;
 				
 				if (ei)
 				{
@@ -3940,7 +4156,6 @@ obj_edit(XA_TREE *wt,
 			}
 		}
 	}
-	}
 		
 	if (ret_pos)
 		*ret_pos = pos;
@@ -3948,104 +4163,99 @@ obj_edit(XA_TREE *wt,
 		*ret_obj = obj;
 
 	DIAG((D_objc, NULL, "obj_edit: old_obj=%d, return ret_obj=%d(%d), ret_pos=%d - ret=%d",
-		old_ed_obj, obj, wt->e.obj, pos, ret));
+		old_ed_obj, obj.item, wt->e.o.item, pos, ret));
 
-// 	if (xted)
-// 		display("exit..");
-// 	display("obj_edit: old_obj=%d, return ret_obj=%d(%d), ret_pos=%d - ret=%d",
-// 		old_ed_obj, obj, wt->e.obj, pos, ret);
-	
 	return ret;
 }
 
 void
 obj_set_radio_button(XA_TREE *wt,
 		      struct xa_vdi_settings *v,
-		      short obj,
+		      struct xa_aes_object obj,
 		      bool redraw,
 		      const RECT *clip,
 		      struct xa_rect_list *rl)
 {
 	OBJECT *obtree = wt->tree;
-	short parent, o;
+	struct xa_aes_object parent, o;
 	
 	parent = ob_get_parent(obtree, obj);
-
+	
 	DIAG((D_objc, NULL, "obj_set_radio_button: wt=%lx, obtree=%lx, obj=%d, parent=%d",
 		wt, obtree, obj, parent));
 
-	if (parent != -1)
+	if (valid_aesobj(&parent))
 	{
-		o = obtree[parent].ob_head;
+		o = aesobj(aesobj_tree(&parent), aesobj_ob(&parent)->ob_head);
 
-		while (o != parent)
+		while (valid_aesobj(&o) && !same_aesobj(&o, &parent))
 		{
-			if ( obtree[o].ob_flags & OF_RBUTTON && obtree[o].ob_state & OS_SELECTED )
+			if ( aesobj_ob(&o)->ob_flags & OF_RBUTTON && aesobj_ob(&o)->ob_state & OS_SELECTED )
 			{
 				DIAGS(("radio: change obj %d", o));
-				if (o != obj)
+				if (!same_aesobj(&o, &obj))
 				{
 					obj_change(wt,
 						   v,
 						   o, -1,
-						   obtree[o].ob_state & ~OS_SELECTED,
-						   obtree[o].ob_flags,
+						   aesobj_ob(&o)->ob_state & ~OS_SELECTED,
+						   aesobj_ob(&o)->ob_flags,
 						   redraw,
 						   clip,
 						   rl, 0);
 				}	
 			}
-			o = obtree[o].ob_next;
+			o = aesobj(aesobj_tree(&o), aesobj_ob(&o)->ob_next);
 		}
 		DIAGS(("radio: set obj %d", obj));
 		obj_change(wt,
 			   v,
 			   obj, -1,
-			   obtree[obj].ob_state | OS_SELECTED,
-			   obtree[obj].ob_flags,
+			   aesobj_ob(&obj)->ob_state | OS_SELECTED,
+			   aesobj_ob(&obj)->ob_flags,
 			   redraw, clip,
 			   rl, 0);
 	}
 }
 
-short
+struct xa_aes_object
 obj_get_radio_button(XA_TREE *wt,
-		      short parent,
+		      struct xa_aes_object parent,
 		      short state)
 {
-	OBJECT *obtree = wt->tree;
-	short o = parent;
+	struct xa_aes_object o = parent;
 	
 	DIAG((D_objc, NULL, "obj_set_radio_button: wt=%lx, obtree=%lx, parent=%d",
-		wt, obtree, parent));
+		wt, aesobj_tree(&parent), aesobj_item(&parent)));
 
-	if (parent != -1)
+	if (valid_aesobj(&parent))
 	{
-		o = obtree[parent].ob_head;
+		o = aesobj(aesobj_tree(&parent), aesobj_ob(&parent)->ob_head);
 
-		while (o != parent)
+		while (!same_aesobj(&o, &parent))
 		{
-			if ( obtree[o].ob_flags & OF_RBUTTON && (obtree[o].ob_state & state))
+			if ( aesobj_ob(&o)->ob_flags & OF_RBUTTON && (aesobj_ob(&o)->ob_state & state))
 				break;
-			o = obtree[o].ob_next;
+			o = aesobj(aesobj_tree(&o), aesobj_ob(&o)->ob_next);
 		}
 	}
-	return o == parent ? -1 : o;
+	return same_aesobj(&o, &parent) ? inv_aesobj() : o;
 }
 
 short
 obj_watch(XA_TREE *wt,
 	   struct xa_vdi_settings *v,
-	   short obj,
+	   struct xa_aes_object obj,
 	   short in_state,
 	   short out_state,
 	   const RECT *clip,
 	   struct xa_rect_list *rl)
 {
-	OBJECT *focus = wt->tree + obj;
-	short pobf = -2, obf = obj;
+// 	OBJECT *focus = wt->tree + obj;
+// 	short pobf = -2;
+	struct xa_aes_object obf = obj, pobf = aesobj(wt->tree, -2);
 	short mx, my, mb, x, y, omx, omy;
-	short flags = focus->ob_flags;
+	short flags = aesobj_ob(&obj)->ob_flags;
 
 	obj_offset(wt, obj, &x, &y);
 
@@ -4077,12 +4287,12 @@ obj_watch(XA_TREE *wt,
 				omy = my;
 				obf = obj_find(wt, obj, 10, mx, my, NULL);
 
-				if (obf == obj)
+				if (same_aesobj(&obf, &obj))
 					s = in_state;
 				else
 					s = out_state;
 
-				if (pobf != obf)
+				if (!same_aesobj(&pobf, &obf))
 				{
 					pobf = obf;
 					obj_change(wt, v, obj, -1, s, flags, true, clip, rl, 0);
@@ -4092,7 +4302,7 @@ obj_watch(XA_TREE *wt,
 		S.wm_count--;
 	}
 
-	if (obf == obj)
+	if (same_aesobj(&obf, &obj))
 		return 1;
 	else
 		return 0;
