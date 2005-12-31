@@ -3118,7 +3118,7 @@ XA_pdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				}
 				case 2:		/* Update		*/
 				{
-					get_document_name(pdlg->document_name, (char *)pb->addrin[2]);
+					get_document_name(pdlg->document_name, (const char *)pb->addrin[2]);
 					set_window_title(pdlg->wind, pdlg->document_name, true);
 					ret = 1;
 					break;
