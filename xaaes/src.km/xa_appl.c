@@ -27,6 +27,7 @@
 #include "xa_appl.h"
 #include "xa_global.h"
 
+
 #include "app_man.h"
 #include "c_window.h"
 #include "desktop.h"
@@ -46,6 +47,7 @@
 #include "xa_user_things.h"
 #include "version.h"
 #include "mint/fcntl.h"
+
 
 
 bool
@@ -1409,6 +1411,11 @@ init_apgi_infotab(void)
 	s = mcs(s, BDATE);*s++ = 0x20;s = mcs(s, BTIME);
 	*s++ = 0x7c;
 	s = mcs(s, BCOMPILER);
+#if 0
+	s = mcs(s, BC_MAJ);
+	s = mcs(s, ".");
+	s = mcs(s, BC_MIN);
+#endif
 	*s++ = 0;
 
 	DIAGS(("Build status-string '%s'", info_string));

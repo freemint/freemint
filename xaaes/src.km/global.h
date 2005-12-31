@@ -132,6 +132,7 @@ __extension__								\
 	);								\
 	retvalue;							\
 })
+
 #define xbios_getrez()	(short)trap_14_w((short)(0x04))
 
 #endif /* _global_h */
