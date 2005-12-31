@@ -984,6 +984,108 @@ XA_shel_read(enum locks lock, struct xa_client *client, AESPB *pb)
 	return XAC_DONE;
 }
 
+/*
+ * wildcard filename matching:
+ *	returns TRUE iff 'name' matches the pattern in 'template'
+ *
+ * this ought to be already available somewnere in MiNT ...
+ */
+static int
+wc_match (const char *name, const char *template)
+{
+	const char *p, *q;
+	int stop;
+
+	for (p = name, q = template; *p; )
+	{
+		if (*p == *q)
+		{
+			p++, q++;
+			continue;
+		}
+		stop = (*p == '.');
+		switch(*q)
+		{
+		case '?':
+			if (stop)
+				return 0;
+			p++, q++;
+			break;
+		case '*':
+			if (stop)
+				q++;
+			else p++;
+			break;
+		default:
+			return 0;
+		}
+	}
+	if (!*q || strcmp(q,"*") == 0)
+		return 1;
+
+	return 0;
+}
+
+/*
+ * like f_stat64(), but allows wildcard filename spec, and checks for regular file
+ */
+static long
+wc_stat64(int mode, const char *node, char *fn, struct stat *st)
+{
+	struct dirstruct dirh;
+	int len;
+	char *path;
+	char *name;
+	char fname[256];
+	char buf[256];
+	long r;
+
+	/*
+	 * If path empth, try the filename on its own
+	 */
+	if (!node)
+	{
+		r = f_stat64(mode, fn, st);
+		if (r == 0 && S_ISREG(st->mode))
+			return 0;
+		else
+			return -1;
+	}
+	
+	path = buf;
+	strcpy(buf, node);
+	len = strlen(buf);
+	if (buf[len] != '\\')
+		buf[len++] = '\\';
+	
+	buf[len] = '\0';
+
+	r = kernel_opendir(&dirh, buf);
+	
+	if (r)
+		return -1;
+
+	name = buf + len;
+	len = sizeof(buf) - len;
+	
+	while(!(r = kernel_readdir(&dirh, fname, sizeof(fname))))
+	{
+		strcpy(name, fname + 4);
+
+		if (wc_match(name, fn))
+		{
+			r = f_stat64(mode, path, st);
+			if (r == 0 && S_ISREG(st->mode))
+			{
+				kernel_closedir(&dirh);
+				return 0;
+			}
+		}
+	}
+	kernel_closedir(&dirh);
+	return -1;
+}
+
 char *
 shell_find(enum locks lock, struct xa_client *client, char *fn)
 {
@@ -1005,7 +1107,7 @@ shell_find(enum locks lock, struct xa_client *client, char *fn)
 	{
 		/* Check the clients home path */
 		sprintf(path, sizeof(path), "%s\\%s", client->home_path, fn);
-		r = f_stat64(0, path, &st);
+		r = wc_stat64(0, client->home_path, fn, &st); //r = f_stat64(0, path, &st);
 		DIAGS(("[1]  --   try: '%s' :: %ld", path, r));
 		if (r == 0 && S_ISREG(st.mode))
 			return path;
@@ -1014,7 +1116,7 @@ shell_find(enum locks lock, struct xa_client *client, char *fn)
 		if (cfg.usehome && kh)
 		{
 			sprintf(path, sizeof(path), "%s\\%s", kh, fn);
-			r = f_stat64(0, path, &st);
+			r = wc_stat64(0, kh, fn, &st); //r = f_stat64(0, path, &st);
 			DIAGS(("[2]  --   try: '%s' :: %ld", path, r));
 			if (r == 0 && S_ISREG(st.mode))
 				return path;
@@ -1045,7 +1147,7 @@ shell_find(enum locks lock, struct xa_client *client, char *fn)
 				cwd[n] = '\0';
 
 				sprintf(path, sizeof(path), "%s\\%s", cwd + f, fn);
-				r = f_stat64(0, path, &st);
+				r = wc_stat64(0, cwd + f, fn, &st); //r = f_stat64(0, path, &st);
 				DIAGS(("[3]  --   try: '%s' :: %ld", path, r));
 				if (r == 0 && S_ISREG(st.mode))
 					return path;
@@ -1055,16 +1157,17 @@ shell_find(enum locks lock, struct xa_client *client, char *fn)
 		}
 
 		/* Try clients current path: */
+		sprintf(path, sizeof(path), "%c:%s", client->xdrive + 'a', client->xpath);
+		r = wc_stat64(0, path, fn, &st); //r = f_stat64(0, path, &st);
 		sprintf(path, sizeof(path), "%c:%s\\%s",
 			client->xdrive + 'a', client->xpath, fn);
-		r = f_stat64(0, path, &st);
 		DIAGS(("[4]  --   try: '%s' :: %ld", path, r));
 		if (r == 0 && S_ISREG(st.mode))
 			return path;
 	}
 
 	/* Last ditch - try the file spec on its own */
-	r = f_stat64(0, fn, &st);
+	r = wc_stat64(0, NULL, fn, &st); //r = f_stat64(0, fn, &st);
 	DIAGS(("[5]  --    try: '%s' :: %ld", fn, r));
 	if (r == 0 && S_ISREG(st.mode))
 		return fn;
