@@ -920,10 +920,10 @@ load_accs(void)
 		r = kernel_readdir(&dirh, name, len);
 		while (r == 0)
 		{
-			r = strlen (name+4) - 4;
+			r = strlen (name + 4) - 4;
 			if ((r > 0) &&
-			    stricmp(name+4 + r, ".acc") == 0 &&
-			    !dont_load(name+4))
+			    stricmp(name + 4 + r, ".acc") == 0 &&
+			    !dont_load(name + 4))
 			{
 				char *ptr1 = name;
 				char *ptr2 = name+4;

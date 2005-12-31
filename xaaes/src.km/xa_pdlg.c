@@ -555,7 +555,6 @@ delete_pdlg_info(void *_pdlg)
 		kfree(pdlg);
 	}
 }
-
 static bool
 set_oblink(struct xa_pdlg_info *pdlg, OBJECT *to_tree, short to_obj)
 {
@@ -2986,6 +2985,8 @@ XA_pdlg_open(enum locks lock, struct xa_client *client, AESPB *pb)
 
 			init_dialog(pdlg);
 			
+			set_window_title(pdlg->wind, pdlg->document_name, false);
+			
 			wt->tree->ob_x = wind->wa.x;
 			wt->tree->ob_y = wind->wa.y;
 			if (!wt->zen)
@@ -3107,16 +3108,19 @@ XA_pdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			{
 				case 0:		/* pdlg_add_printers	*/
 				{
-					
+					ret = 0;
 					break;
 				}
 				case 1:		/* pdlg_remove_printers	*/
 				{
+					ret = 0;
 					break;
 				}
 				case 2:		/* Update		*/
 				{
-					
+					get_document_name(pdlg->document_name, (char *)pb->addrin[2]);
+					set_window_title(pdlg->wind, pdlg->document_name, true);
+					ret = 1;
 					break;
 				}
 				case 3:		/* pdlg_add_dialogs	*/
