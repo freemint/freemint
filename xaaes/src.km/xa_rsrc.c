@@ -1299,6 +1299,7 @@ unsigned long
 XA_rsrc_load(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	char *path;
+	short ret = 0;
 
 	CONTROL(0,1,1)
 
@@ -1351,9 +1352,10 @@ XA_rsrc_load(enum locks lock, struct xa_client *client, AESPB *pb)
 					/* Fill it out in the global of the rsrc_load. */
 					Rsrc_setglobal(rsc, (struct aes_global *)pb->global);
 
-				pb->intout[0] = 1;
-				return XAC_DONE;
+				ret = 1; //pb->intout[0] = 1;
+// 				return XAC_DONE;
 			}
+			kfree(path);
 		}
 	}
 	else
@@ -1369,7 +1371,7 @@ XA_rsrc_load(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	DIAGS(("ERROR: rsrc_load '%s' failed", (pb->addrin[0]) ? (const char *)pb->addrin[0] : "~~"));
 
-	pb->intout[0] = 0;
+	pb->intout[0] = ret; //0;
 	return XAC_DONE;
 }
 /*

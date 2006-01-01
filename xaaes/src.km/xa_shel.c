@@ -1034,8 +1034,7 @@ wc_stat64(int mode, const char *node, char *fn, struct stat *st)
 {
 	struct dirstruct dirh;
 	int len;
-	char *path;
-	char *name;
+	char *path, *name;
 	char fname[256];
 	char buf[256];
 	long r;
@@ -1089,7 +1088,8 @@ wc_stat64(int mode, const char *node, char *fn, struct stat *st)
 char *
 shell_find(enum locks lock, struct xa_client *client, char *fn)
 {
-	static Path path; /* XXX */
+	char *path;
+// 	static Path path; /* XXX */
 	char cwd[256];
 
 	struct stat st;
@@ -1097,83 +1097,103 @@ shell_find(enum locks lock, struct xa_client *client, char *fn)
 
 	const char *kp, *kh;
 	int f = 0, l, n;
+	long len = PATH_MAX * 2;
 
-	kp = get_env(lock, "PATH=");
-	kh = get_env(lock, "HOME=");
-
-	DIAGS(("shell_find for %s '%s', PATH= '%s'", client->name, fn ? fn : "~", kp ? kp : "~"));
-
-	if (!(isalpha(*fn) && *(fn+1) == ':'))
+	path = kmalloc(len);
+	if (path)
 	{
-		/* Check the clients home path */
-		sprintf(path, sizeof(path), "%s\\%s", client->home_path, fn);
-		r = wc_stat64(0, client->home_path, fn, &st); //r = f_stat64(0, path, &st);
-		DIAGS(("[1]  --   try: '%s' :: %ld", path, r));
-		if (r == 0 && S_ISREG(st.mode))
-			return path;
+		kp = get_env(lock, "PATH=");
+		kh = get_env(lock, "HOME=");
 
-		/* check $HOME directory */
-		if (cfg.usehome && kh)
+	
+		DIAGS(("shell_find for %s '%s', PATH= '%s'", client->name, fn ? fn : "~", kp ? kp : "~"));
+
+		if (!(isalpha(*fn) && *(fn + 1) == ':'))
 		{
-			sprintf(path, sizeof(path), "%s\\%s", kh, fn);
-			r = wc_stat64(0, kh, fn, &st); //r = f_stat64(0, path, &st);
-			DIAGS(("[2]  --   try: '%s' :: %ld", path, r));
+			/* Check the clients home path */
+			r = wc_stat64(0, client->home_path, fn, &st);
+			DIAGS(("[1]  --   try: '%s\\%s :: %ld", client->home_path, fn, r));
 			if (r == 0 && S_ISREG(st.mode))
-				return path;
-		}
-
-		/* the PATH env could be simply absent */
-		if (kp)	
-		{
-			/* Check our PATH environment variable */
-			/* l = strlen(cwd); */
-			/* cwd uninitialized; after sprintf? or is it kp? or is it sizeof? */
-			l = strlen(kp);
-			strcpy(cwd, kp);
-			while (f < l)
 			{
-				/* We understand ';' and ',' as path seperators */
-				n = f;
-				while (   cwd[n]
-				       && cwd[n] != ';'
-				       && cwd[n] != ',')
-				{
-					if (cwd[n] == '/')
-						cwd[n] = '\\';
-					n++;
-				}
-				if (cwd[n-1] == '\\')
-					cwd[n-1] = 0;
-				cwd[n] = '\0';
+				sprintf(path, len, "%s\\%s", client->home_path, fn);
+				return path;
+			}
 
-				sprintf(path, sizeof(path), "%s\\%s", cwd + f, fn);
-				r = wc_stat64(0, cwd + f, fn, &st); //r = f_stat64(0, path, &st);
-				DIAGS(("[3]  --   try: '%s' :: %ld", path, r));
+			/* check $HOME directory */
+			if (cfg.usehome && kh)
+			{
+				r = wc_stat64(0, kh, fn, &st);
+				DIAGS(("[2]  --   try: '%s\\%s' :: %ld", kh, fn, r));
 				if (r == 0 && S_ISREG(st.mode))
+				{
+					sprintf(path, len, "%s\\%s", kh, fn);
 					return path;
+				}
+			}
 
-				f = n + 1;
+			/* the PATH env could be simply absent */
+			if (kp)	
+			{
+				/* Check our PATH environment variable */
+				/* l = strlen(cwd); */
+				/* cwd uninitialized; after sprintf? or is it kp? or is it sizeof? */
+				l = strlen(kp);
+				strcpy(cwd, kp);
+				while (f < l)
+				{
+					/* We understand ';' and ',' as path seperators */
+					n = f;
+					while (   cwd[n]
+					       && cwd[n] != ';'
+					       && cwd[n] != ',')
+					{
+						if (cwd[n] == '/')
+							cwd[n] = '\\';
+						n++;
+					}
+					if (cwd[n-1] == '\\')
+						cwd[n-1] = 0;
+					cwd[n] = '\0';
+
+// 					sprintf(path, sizeof(path), "%s\\%s", cwd + f, fn);
+					r = wc_stat64(0, cwd + f, fn, &st);
+					DIAGS(("[3]  --   try: '%s\\%s' :: %ld", cwd + f, fn, r));
+					if (r == 0 && S_ISREG(st.mode))
+					{
+						sprintf(path, len, "%s\\%s", cwd + f, fn);
+						return path;
+					}
+
+					f = n + 1;
+				}
+			}
+
+			/* Try clients current path: */
+			sprintf(cwd, sizeof(cwd), "%c:%s", client->xdrive + 'a', client->xpath);
+			r = wc_stat64(0, cwd, fn, &st);
+			DIAGS(("[4]  --   try: '%s\\%s' :: %ld", cwd, fn, r));
+			if (r == 0 && S_ISREG(st.mode))
+			{
+				sprintf(path, len, "%c:%s\\%s", client->xdrive + 'a', client->xpath, fn);
+				return path;
 			}
 		}
 
-		/* Try clients current path: */
-		sprintf(path, sizeof(path), "%c:%s", client->xdrive + 'a', client->xpath);
-		r = wc_stat64(0, path, fn, &st); //r = f_stat64(0, path, &st);
-		sprintf(path, sizeof(path), "%c:%s\\%s",
-			client->xdrive + 'a', client->xpath, fn);
-		DIAGS(("[4]  --   try: '%s' :: %ld", path, r));
+		/* Last ditch - try the file spec on its own */
+		r = wc_stat64(0, NULL, fn, &st); //r = f_stat64(0, fn, &st);
+		DIAGS(("[5]  --    try: '%s' :: %ld", fn, r));
 		if (r == 0 && S_ISREG(st.mode))
+		{
+			strncpy(path, fn, len);
 			return path;
+		}
+		
+		kfree(path);
+		path = NULL;
 	}
 
-	/* Last ditch - try the file spec on its own */
-	r = wc_stat64(0, NULL, fn, &st); //r = f_stat64(0, fn, &st);
-	DIAGS(("[5]  --    try: '%s' :: %ld", fn, r));
-	if (r == 0 && S_ISREG(st.mode))
-		return fn;
-
-	DIAGS((" - NULL"));
-	return NULL;
+	DIAGS((" - %lx", path));
+	return path;
 }
 
 unsigned long
@@ -1181,6 +1201,7 @@ XA_shel_find(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	char *fn = (char *)(pb->addrin[0]);
 	char *path;
+	short ret = 0; /* default == didnt find file */
 
 	CONTROL(0,1,1)
 
@@ -1188,11 +1209,10 @@ XA_shel_find(enum locks lock, struct xa_client *client, AESPB *pb)
 	if (path)
 	{
 		strcpy(fn, path);
-		pb->intout[0] = 1;
+		ret = 1;
+		kfree(path);
 	}
-	else
-		/* Didn't find the file */
-		pb->intout[0] = 0;
+	pb->intout[0] = ret;
 
 	return XAC_DONE;
 }

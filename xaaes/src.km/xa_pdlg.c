@@ -68,7 +68,6 @@ extern struct toolbar_handlers wdlg_th;
 
 
 static char selafile[] = ">> No file selected <<";
-// static char errofile[] = "Error: unknown outdev/file";
 
 static char *outfiles[] = 
 {
@@ -213,14 +212,14 @@ xv_create_driver_info(XVDIPB *vpb, short handle, short id)
 	vpb->control[V_N_INTOUT] = 0;
 	VDI(vpb, 180, 0, 1, 0, handle);
 	if (vpb->control[V_N_INTOUT] >= 2)
-		d = ptr_from_shorts(vpb->intout[0], vpb->intout[1]); //(*(DRV_INFO **)&vpb->intout[0]);
+		d = ptr_from_shorts(vpb->intout[0], vpb->intout[1]);
 	return d;
 }
 	
 static short
 xv_delete_driver_info(XVDIPB *vpb, short handle, DRV_INFO *d)
 {
-	ptr_to_shorts(d, vpb->intin);	//*(DRV_INFO**)&vpb->intin[0] = d;
+	ptr_to_shorts(d, vpb->intin);
 	VDI(vpb, 181, 0, 2, 0, handle);
 	return vpb->intout[0];
 }
