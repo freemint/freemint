@@ -2539,6 +2539,9 @@ add_scroll_entry(SCROLL_INFO *list,
 			if (r.y < (list->start_y - list->off_y))
 			{
 				list->start_y += r.h;
+				reset_listwi_widgets(list, redraw);
+// 				if (!reset_listwi_widgets(list, redraw) && canredraw(list) && redraw)
+// 					list->redraw(list, NULL);
 			}
 			else if (r.y <  (list->start_y + list->wi->wa.h))
 			{
@@ -2549,7 +2552,7 @@ add_scroll_entry(SCROLL_INFO *list,
 					else
 						list->top = new;
 				}
-				if (!reset_listwi_widgets(list, redraw/*true*/) && redraw)
+				if (!reset_listwi_widgets(list, redraw) && redraw)
 				{
 					if (canredraw(list))
 					{
@@ -2585,11 +2588,20 @@ add_scroll_entry(SCROLL_INFO *list,
 						redraw = 0;
 				}
 			}
+			else
+			{
+				reset_listwi_widgets(list, redraw);
+
+// 				if (!reset_listwi_widgets(list, redraw) && canredraw(list) && redraw)
+// 					list->redraw(list, NULL);
+			}
+#if 0
 			if (fullredraw)
 			{
 				if (!reset_listwi_widgets(list, redraw) && canredraw(list) && redraw)
 					list->redraw(list, NULL);
 			}
+#endif
 			list->slider(list, redraw);
 		}
 // 		display("done!");
