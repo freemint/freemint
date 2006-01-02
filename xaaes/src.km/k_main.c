@@ -1437,11 +1437,13 @@ k_main(void *dummy)
 		 */
 		fs_rtn = f_select(aessys_timeout, (long *) &input_channels, 0L, 0L);	
 
-		DIAG((D_kern, NULL,">>Fselect -> %d, channels: 0x%08lx, update_lock %d, mouse_lock %d",
+		DIAG((D_kern, NULL,">>Fselect -> %d, channels: 0x%08lx, update_lock %d(%s), mouse_lock %d(%s)",
 			fs_rtn,
 			input_channels,
 			update_locked() ? update_locked()->pid : 0,
-			mouse_locked() ? mouse_locked()->pid : 0));
+			update_locked() ? update_locked()->name : "",
+			mouse_locked() ? mouse_locked()->pid : 0,
+			mouse_locked() ? mouse_locked()->name : ""));
 
 		if (!C.Hlp)
 		{

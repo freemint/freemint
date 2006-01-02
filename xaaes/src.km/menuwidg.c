@@ -516,8 +516,8 @@ nest_menutask(Tab *tab)
 
 	new_tab = new_menutask();
 	
-	DIAG((D_menu, tab->client, "nest_menutask: new %lx, old %lx for %s",
-		new_tab, tab, tab->client ? tab->client->name : "initial"));
+	DIAG((D_menu, NULL, "nest_menutask: new %lx, old %lx for %s",
+		new_tab, tab, (tab && tab->client) ? tab->client->name : "initial"));
 
 	if (new_tab)
 	{
@@ -2113,6 +2113,7 @@ click_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *wid
 
 	if (!menu_title(lock, NULL, -1, wind, widg, client->p->pid, md))
 	{
+		DIAGS(("menu_title failed?!"));
 		//menu_finish(NULL);
 	}
 
@@ -2171,7 +2172,7 @@ menu_title(enum locks lock, Tab *tab, short title, struct xa_window *wind, XA_WI
 	short item = 0;
 	short f, n;
 
-	DIAG((D_menu, NULL, "menu_title"));
+	DIAG((D_menu, NULL, "menu_title: tab=%lx, md=%lx", tab, md));
 	
 	if (!tab)
 	{
