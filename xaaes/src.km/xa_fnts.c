@@ -131,6 +131,13 @@ struct co_display_parms
 	char	*txt;
 };
 
+static short
+xvst_load_fonts(XVDIPB *vpb, short select, short handle)
+{
+	vpb->intin[0] = select;
+	VDI(vpb, 119, 0, 1, 0, handle);
+	return vpb->intout[0];
+}
 //callout_display(short x, short y, RECT *clip, long id, long pt, long ratio, char *txt)
 static void
 callout_display(struct xa_fnts_item *f, short vdih, long pt, long ratio, RECT *clip, RECT *area, char *txt)
@@ -556,11 +563,15 @@ get_font_items(struct xa_fnts_info *fnts)
 	vpb = create_vdipb();
 	DIAGS(("get_font_items: create vdipb=%lx", vpb));
 	
-//	if (vpb) dump_devstuff(vpb, C.vh);
-	
 	if (fnts->vdi_handle && !fnts->fnts_loaded)
 	{
-		fnts->fnts_loaded = 1 + vst_load_fonts(fnts->vdi_handle, 0);
+		DIAGS(("get_font_items: gdos version = %lx, calling vst_load_fonts(%d, 0)", C.gdos_version, fnts->vdi_handle));
+		fnts->fnts_loaded = 1;
+		if (C.gdos_version)
+		{
+			fnts->fnts_loaded += xvst_load_fonts(vpb, 0, fnts->vdi_handle);
+// 			fnts->fnts_loaded += vst_load_fonts(fnts->vdi_handle, 0);
+		}
 		DIAGS(("get_font_items: loaded %d fonts", fnts->fnts_loaded));
 	}
 

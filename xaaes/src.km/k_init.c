@@ -365,6 +365,7 @@ k_init(unsigned long vm)
 		else
 			DIAGS(("could not determine nvdi version"));
 #endif
+		display("nvdi version %x", C.nvdi_version);
 	}
 
 	if (cfg.auto_program)
@@ -583,7 +584,7 @@ k_init(unsigned long vm)
 	 * If we are using anything apart from the system font for windows,
 	 * better check for GDOS and load the fonts.
 	 */
-	if (vq_gdos())
+	if ((C.gdos_version = vq_gdos()))
 		(*v->api->load_fonts)(v); //(*global_vdiapi->load_fonts)(v);
 	else
 		cfg.font_id = 1;
