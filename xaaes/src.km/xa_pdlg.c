@@ -269,6 +269,7 @@ xvq_ext_devinfo(XVDIPB *vpb, short handle, short id, char *path, char *fname, ch
 	VDI(vpb, 248, 0, 7, 4242, handle);
 	return vpb->intout[0];
 }
+
 #if 0
 static short
 xv_trays(XVDIPB *vpb, short handle, short in, short out, short *r_in, short *r_out)
@@ -2492,6 +2493,14 @@ create_new_pdlg(struct xa_client *client, struct xa_window *wind)
 {
 	struct xa_pdlg_info *pdlg;
 	
+	DIAG((D_pdlg, client, "create_new_pdlg"));
+	
+	if (C.nvdi_version < 0x0410)
+	{
+		DIAGS((" -- VDI not capable of PRN_SETTINGS!"));
+		return (void *)-1L;
+	}
+	
 	pdlg = kmalloc(sizeof(*pdlg));
 	
 	if (pdlg)
@@ -2530,11 +2539,7 @@ create_new_pdlg(struct xa_client *client, struct xa_window *wind)
 		}
 
 		if (mwt && dwt)
-		{
-// 			PRN_SETTINGS *ps;
-// 			PDLG_SUB *sub;
-// 			struct scroll_content sc = {{ 0 }};
-			
+		{			
 			pdlg->handle = (void *)((unsigned long)pdlg >> 16 | (unsigned long)pdlg << 16);
 			pdlg->client = client;
 			pdlg->wind = wind;
@@ -2604,7 +2609,6 @@ XA_pdlg_create(enum locks lock, struct xa_client *client, AESPB *pb)
 	struct xa_pdlg_info *pdlg = NULL;
 	struct xa_window *wind = NULL;
 	OBJECT *obtree = NULL;
-	XA_TREE *wt = NULL;
 	XA_WIND_ATTR tp = MOVER|NAME;
 	RECT r, or;
 
@@ -2634,7 +2638,8 @@ XA_pdlg_create(enum locks lock, struct xa_client *client, AESPB *pb)
 			     r, NULL, NULL)))
 		goto memerr;
 
-	if (!(pdlg = create_new_pdlg(client, wind)))
+	pdlg = create_new_pdlg(client, wind);
+	if (!pdlg || pdlg == (void *)-1L)
 		goto memerr;
 
 	set_toolbar_widget(lock, wind, client, pdlg->mwt->tree, aesobj(pdlg->mwt->tree, -2), 0, true, &wdlg_th, &or);
@@ -2645,16 +2650,16 @@ XA_pdlg_create(enum locks lock, struct xa_client *client, AESPB *pb)
 	return XAC_DONE;
 
 memerr:
-	if (wt)
-		remove_wt(wt, true);
-	else if (obtree)
-		free_object_tree(C.Aes, obtree);
-
 	if (wind)
 		delete_window(lock, wind);
 	
 	if (pdlg)
-		kfree(pdlg);
+	{
+		if (pdlg == (void *)-1L)
+			ALERT(("XaAES: Print dialogs unavailable with current VDI"));
+		else
+			kfree(pdlg);
+	}
 	
 // 	display(" -- exit error");
 	return XAC_DONE;
@@ -3117,7 +3122,7 @@ XA_pdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				}
 				case 2:		/* Update		*/
 				{
-					get_document_name(pdlg->document_name, (const char *)pb->addrin[2]);
+					get_document_name(pdlg, (const char *)pb->addrin[2]);
 					set_window_title(pdlg->wind, pdlg->document_name, true);
 					ret = 1;
 					break;
@@ -3223,6 +3228,24 @@ XA_pdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				{
 					break;
 				}
+			}
+		}
+		else
+		{
+			switch (pb->intin[0])
+			{
+				case 0 ... 4:
+				case 7 ... 10:
+				{
+					ret = 0;
+					break;
+				}
+				case 5:
+				{
+					pb->addrout[0] = 0L;
+					break;
+				}
+				default:;
 			}
 		}
 	}

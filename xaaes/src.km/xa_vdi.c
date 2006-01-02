@@ -25,6 +25,7 @@
  */
 
 #include "xa_types.h"
+#include "xa_global.h"
 
 static void
 rtopxy(short *p, const RECT *r)
@@ -41,14 +42,15 @@ static void _cdecl
 xa_load_fonts(struct xa_vdi_settings *v)
 {
 	if (v->fonts_loaded ==  -1)
-		v->fonts_loaded = vst_load_fonts(v->handle, 0);
+		v->fonts_loaded = C.gdos_version ? vst_load_fonts(v->handle, 0) : 0;
 }
 static void _cdecl
 xa_unload_fonts(struct xa_vdi_settings *v)
 {
 	if (v->fonts_loaded)
 	{
-		vst_unload_fonts(v->handle, 0);
+		if (C.gdos_version)
+			vst_unload_fonts(v->handle, 0);
 		v->fonts_loaded = -1;
 	}
 }

@@ -2619,7 +2619,7 @@ display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, struct x
 	/* Better do this before AND after (fail safe) */
 	(*v->api->wr_mode)(v, MD_TRANS);
 
-#if 1
+#if 0
 #if GENERATE_DIAGS
 	if (wt->tree != xobj_rsc) //get_widgets())
 	{
@@ -2630,7 +2630,7 @@ display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, struct x
 		show_bits(ob->ob_state, "st=", pstates, statestr);
 
 		DIAG((D_o, wt->owner, "ob=%d, %d/%d,%d/%d [%d: 0x%lx]; %s%s (%x)%s (%x)%s",
-			 item,
+			aesobj_item(&item),
 			 r.x, r.y, r.w, r.h,
 			 t, display_routine,
 			 object_type(aesobj_tree(&item), aesobj_item(&item)),
@@ -2767,7 +2767,7 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, struct xa_vdi_setti
 		t_owner(wt), x + tree->ob_x, y + tree->ob_y,
 		tree->ob_width, tree->ob_height, tree, item, depth));
 	DIAG((D_objc, wt->owner, "  -   (%d)%s%s",
-		wt->is_menu, obtree_is_menu(tree) ? "menu" : "object", wt->zen ? " with zen" : ""));
+		wt->is_menu, obtree_is_menu(tree) ? "menu" : "object", wt->zen ? " with zen" : " no zen"));
 // 	DIAG((D_objc, wt->owner, "  -   clip: %d.%d/%d.%d    %d/%d,%d/%d",
 // 		cl[0], cl[1], cl[2], cl[3], cl[0], cl[1], cl[2] - cl[0] + 1, cl[3] - cl[1] + 1));
 

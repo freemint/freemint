@@ -216,6 +216,7 @@ struct shel_info
 struct common
 {
 	unsigned short nvdi_version;
+	unsigned long gdos_version;
 
 	void (*reschange)(enum locks lock, struct xa_client *client);
 
