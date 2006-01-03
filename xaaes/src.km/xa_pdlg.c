@@ -457,7 +457,7 @@ get_driver_list(struct xa_pdlg_info *pdlg)
 				pdlg->n_drivers++;
 			}				
 		}
-		if (i == 60) i = 70;
+		if (i == 61) i = 71;
 	}
 	
 	pdlg->drivers = start;
