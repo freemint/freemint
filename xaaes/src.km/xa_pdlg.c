@@ -854,14 +854,15 @@ d_set_orientation(struct xa_pdlg_info *pdlg, short o)
 }
 
 static void
-d_set_scale(struct xa_pdlg_info *pdlg, long scale)
+d_set_scale(struct xa_pdlg_info *pdlg, long _scale)
 {
+	unsigned long scale = _scale;
 	char *t = object_get_tedinfo(pdlg->dwt->tree + PDLG_P_SCALE, NULL)->te_ptext;
 
 	scale *= 100;
-	(unsigned long)scale >>= 16;
+	scale >>= 16;
 
-	sprintf(t, 4, "%ld", scale);
+	sprintf(t, 4, "%lu", scale);
 }
 static long
 d_get_scale(struct xa_pdlg_info *pdlg)
