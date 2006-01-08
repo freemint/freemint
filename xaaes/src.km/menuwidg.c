@@ -421,7 +421,6 @@ free_popinfo_resources(struct xa_popinfo *pi)
 
 	if (pi->objs)
 	{
-// 		display("cleanup obtree %lx, popup %d, %d objs", obtree, pi->parent, pi->count);
 		if (pi->scrl_start_row >= 0)
 		{
 			object_set_spec(obtree + pi->objs[pi->scrl_start_row], (long)pi->save_start_txt);
@@ -429,7 +428,6 @@ free_popinfo_resources(struct xa_popinfo *pi)
 		}
 		for (i = 0; i < (pi->count - 1); i++)
 		{
-// 			display("obj %d->next = %d", pi->objs[i], pi->objs[i + 1]);
 			obtree[pi->objs[i]].ob_next = pi->objs[i + 1];
 		}
 		
@@ -1208,14 +1206,14 @@ display_popup(Tab *tab, short rdx, short rdy)
 }
 
 static void
-do_popup(Tab *tab, XA_TREE *wt, int item, TASK *click, short rdx, short rdy)
+do_popup(Tab *tab, XA_TREE *wt, short item, short entry, TASK *click, short rdx, short rdy)
 {
 	OBJECT *root = wt->tree;
 	MENU_TASK *k = &tab->task_data.menu;
 	short x, y;
 
 	DIAG((D_menu, tab->client, "do_popup: tab=%lx for %s", tab, tab->client->name));
-	menu_spec(root,item);
+	menu_spec(root, item);
 	k->stage = IN_DESK;
 	k->p.current = -1;
 	k->entry = menuclick;
@@ -1232,13 +1230,29 @@ do_popup(Tab *tab, XA_TREE *wt, int item, TASK *click, short rdx, short rdy)
 	k->em.t2 = popup;
 	k->outof = NULL;
 
-	check_mouse(wt->owner, NULL, &x, &y);
-	
-	if (m_inside(x, y, &k->drop))
+	if (entry == -2)
 	{
-		k->x = x;
-		k->y = y;
-		popup(tab, -1);
+		struct xa_aes_object nxt;
+		nxt = ob_find_next_any_flagstate(k->p.wt->tree, aesobj(k->p.wt->tree, k->p.parent), inv_aesobj(),
+			0, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_VERT|OBFIND_DOWN|OBFIND_HIDDEN|OBFIND_FIRST);
+		if (valid_aesobj(&nxt))
+			popup(tab, aesobj_item(&nxt));
+	}
+	else
+	{
+		if (item == -1)
+		{
+			check_mouse(wt->owner, NULL, &x, &y);
+	
+			if (m_inside(x, y, &k->drop))
+			{
+				k->x = x;
+				k->y = y;
+				popup(tab, -1);
+			}
+		}
+		else
+			popup(tab, item);
 	}
 }
 
@@ -1251,7 +1265,7 @@ start_popup_session(Tab *tab, XA_TREE *wt, int item, TASK *click, short rdx, sho
 	check_mouse(tab->client, &tab->exit_mb, NULL, NULL);
 
 	tab->client->status |= CS_MENU_NAV;
-	do_popup(tab, wt, item, click, rdx, rdy);
+	do_popup(tab, wt, item, -1, click, rdx, rdy);
 }
 	
 static struct xa_client *
@@ -1276,12 +1290,18 @@ do_timeout_popup(Tab *tab)
 {
 	MENU_TASK *k = &tab->task_data.menu;
 	RECT tra;
-	short rdx, rdy;
+	short asel, rdx, rdy;
 	TASK *click;
 	OBJECT *ob;
 	Tab *new;
 	XA_TREE *new_wt;
 	XA_MENU_ATTACHMENT *at;
+
+	asel = k->attach_select;
+	k->attach_select = 0;
+
+	if (!asel)
+		asel = -1;
 
 	cancel_popout_timeout();
 	
@@ -1327,7 +1347,7 @@ do_timeout_popup(Tab *tab)
 	new = nest_menutask(tab);
 	new->task_data.menu.p.attach_parent = k->p.attached_to;
 
-	do_popup(new, new_wt, at->item, click, rdx, rdy);
+	do_popup(new, new_wt, at->item, asel, click, rdx, rdy);
 }
 static void
 do_collapse(Tab *tab)
@@ -1443,10 +1463,13 @@ set_popout_timeout(Tab *tab, bool instant)
 static void
 cancel_popin_timeout(void)
 {
-	if (S.popin_timeout)
+	TIMEOUT *t;
+	if ((t = S.popin_timeout))
 	{
+		Tab *tab = (void *)t->arg;
 		cancelroottimeout(S.popin_timeout);
 		S.popin_timeout = NULL;
+		tab->task_data.menu.attach_select = 0;
 	}
 	cancel_CE_do_popup();
 }
@@ -1600,7 +1623,7 @@ outofpop(Tab *tab, short item)
 }
 
 static bool
-open_attach(Tab *tab, bool instant)
+open_attach(Tab *tab, short asel, bool instant)
 {
 	MENU_TASK *k = &tab->task_data.menu;
 	XA_MENU_ATTACHMENT *at;
@@ -1614,6 +1637,7 @@ open_attach(Tab *tab, bool instant)
 		if (k->p.attached_to < 0 || (k->p.attached_to > 0 && k->p.attached_to != k->p.current) )
 		{
 			cancel_pop_timeouts();
+			k->attach_select = asel;
 			if (!instant && cfg.popup_timeout)
 			{
 				TIMEOUT *t;
@@ -1729,7 +1753,7 @@ popup(struct task_administration_block *tab, short item)
 			if (!dis)
 				change_entry(tab, 1);
 			if (item == -1)
-				open_attach(tab, false);	
+				open_attach(tab, -1, false);	
 		}
 		
 		menu_area(k->p.wt, m, k->pdx, k->pdy, &r);
@@ -2868,7 +2892,7 @@ menu_keyboard(Tab *tab, const struct rawkey *key)
 				nxt = ob_find_next_any_flagstate(obtree, aesobj(k->p.wt->tree, k->p.parent), aesobj(k->p.wt->tree, k->p.current),
 					0, OF_HIDETREE, 0, OS_DISABLED, 0,0, OBFIND_HOR|OBFIND_DOWN|OBFIND_HIDDEN|OBFIND_NOWRAP);
 				if (!valid_aesobj(&nxt))
-					a = open_attach(tab, true);
+					a = open_attach(tab, -2, true);
 			}
 			if (!a && !valid_aesobj(&nxt))
 			{

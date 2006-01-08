@@ -2148,7 +2148,9 @@ struct menu_task
 
 	struct xa_menuinfo m;
 	struct xa_popinfo  p;
-
+	
+	short attach_select;
+	
 	short clicks, x, y;
 	RECT bar, drop;
 	

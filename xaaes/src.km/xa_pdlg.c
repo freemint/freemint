@@ -457,7 +457,9 @@ get_driver_list(struct xa_pdlg_info *pdlg)
 				pdlg->n_drivers++;
 			}				
 		}
-		if (i == 61) i = 71;
+		/* Ozk: Memory drivers have IDs 61 - 70,
+		 *	and I promise, everyone, this _will_ skip ALL memory drivers!!! */
+		if (i == 60) i = 70;
 	}
 	
 	pdlg->drivers = start;
