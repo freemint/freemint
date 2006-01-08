@@ -344,12 +344,21 @@ kernel_key(enum locks lock, struct rawkey *key)
 			
 			if (!client)
 			{
-				widg = get_menu_widg();
-				client = menu_owner();
-				wind = root_window;
+				if (TAB_LIST_START)
+				{
+					client = TAB_LIST_START->client;
+					widg = TAB_LIST_START->widg;
+					wind = TAB_LIST_START->wind;
+				}
+				else
+				{
+					widg = get_menu_widg();
+					client = menu_owner();
+					wind = root_window;
+				}
 			}
-			
-			post_cevent(client, cXA_open_menubykbd, wind,widg, 0,0, NULL,NULL);
+			if (client)
+				post_cevent(client, cXA_open_menubykbd, wind,widg, 0,0, NULL,NULL);
 			return true;
 		}
 		case 'R':				/* attempt to recover a hung system */
