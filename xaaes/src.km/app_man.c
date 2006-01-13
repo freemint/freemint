@@ -229,7 +229,6 @@ recover(void)
 		free_menustruct_lock();
 		ikill(menu_lock->pid, SIGKILL);
 	}
-
 	forcem();
 }
 

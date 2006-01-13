@@ -1104,8 +1104,8 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 			
 			
 						month = ((xat.mdate >> 5) & 15) - 1;
-						if (month < 1 || month > 12)
-							month = 1;
+						if (month < 0 || month > 11)
+							month = 0;
 						
 						day = xat.mdate & 31;
 						

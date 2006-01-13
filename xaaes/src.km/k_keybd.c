@@ -363,7 +363,11 @@ kernel_key(enum locks lock, struct rawkey *key)
 		}
 		case 'R':				/* attempt to recover a hung system */
 		{
-			if (C.reschange)
+			if (key->raw.conin.state & (K_RSHIFT|K_LSHIFT))
+			{
+				recover();
+			}
+			else if (C.reschange)
 			{
 				post_cevent(C.Hlp, ceExecfunc, C.reschange, NULL, 0,0, NULL, NULL);
 			}
