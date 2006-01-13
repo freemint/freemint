@@ -395,9 +395,11 @@ recalc_tabs(struct scroll_info *list)
 		}
 		tabs->r.x = x;
 		tabs->r.y = 0;
+		
 		x += tabs->r.w;
 		totalw += tabs->r.w;
 	}
+
 	if (list->widest < totalw)
 		list->widest = list->total_w = totalw;
 }
@@ -410,7 +412,6 @@ calc_entry_wh(SCROLL_INFO *list, SCROLL_ENTRY *this)
 	struct se_content *c = this->content;
 	short ew, eh, tw = 0, th = 0, nx = 0/*, ny = 0*/;
 	char *s;
-
 	while (c)
 	{
 		switch (c->type)
@@ -423,7 +424,6 @@ calc_entry_wh(SCROLL_INFO *list, SCROLL_ENTRY *this)
 				eh = c->c.text.h;
 				if (c->c.text.icon.icon)
 				{
-					
 					ew += c->c.text.icon.r.w;
 					if (c->c.text.icon.r.h > eh)
 						eh = c->c.text.icon.r.h;
@@ -454,7 +454,7 @@ calc_entry_wh(SCROLL_INFO *list, SCROLL_ENTRY *this)
 				fullredraw = true;
 			}
 		}
-				
+		
 		tw += ew;
 
 		if (th < eh)
@@ -464,7 +464,6 @@ calc_entry_wh(SCROLL_INFO *list, SCROLL_ENTRY *this)
 
 		c = c->next;
 	}
-
 	this->r.w = tw;
 	this->r.h = th;
 	
@@ -605,18 +604,10 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this, str
 		struct xa_fnt_info *wtxt;
 		RECT r, clp;
 
+		(*v->api->wr_mode)(v, MD_REPLACE);
 		(*v->api->f_color)(v, sel ? G_BLACK : G_WHITE);
 		(*v->api->f_interior)(v, FIS_SOLID);
 		(*v->api->bar)(v, 0, xy->x, xy->y, xy->w, this->r.h);
-		
-		if (this->state & OS_BOXED)
-		{
-			(*v->api->l_color)(v, G_BLACK);
-			(*v->api->wr_mode)(v, MD_XOR);
-			(*v->api->box)(v, 0, xy->x, xy->y, xy->w, this->r.h);
-		}
-		
-		(*v->api->wr_mode)(v, MD_REPLACE);
 		
 		if (list->flags & SIF_TREEVIEW)
 		{
@@ -633,12 +624,14 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this, str
 		}
 		
 		r.h = this->r.h;
+		
 		while (c)
 		{
 			tab = &list->tabs[c->index];
 
 			r.x = tab->r.x;
 			r.w = tab->r.w - 3;
+			
 			if (c->index < list->indent_upto)
 			{
 				r.x += indent;
@@ -648,7 +641,7 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this, str
 						r.w = 0;
 				}
 			}
-
+			
 			r.x += xy->x;
 			r.y = xy->y;
 
@@ -779,6 +772,21 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this, str
 // 			(*v->api->line)(v, (xy->x + tab->r.x + tab->r.w - 1), r.y, (xy->x + tab->r.x + tab->r.w - 1), r.y + xy->h, G_LWHITE);
 			c = c->next;
 		}
+		
+		r.x = xy->x;
+		r.y = xy->y;
+		r.w = list->widest;
+		r.h = this->r.h;
+		if ((this->state & OS_BOXED) && xa_rect_clip(clip, &r, &clp))
+		{
+			(*v->api->set_clip)(v, &clp);
+			
+			(*v->api->l_color)(v, G_BLACK);
+			(*v->api->wr_mode)(v, MD_XOR);
+// 			(*v->api->box)(v, 0, xy->x, xy->y, xy->w, this->r.h);
+			(*v->api->box)(v, 0, r.x, r.y, r.w, r.h);
+		}
+		
 		(*v->api->set_clip)(v, clip);
 		/* normal */
 		(*v->api->t_effects)(v, 0);
@@ -2505,7 +2513,7 @@ add_scroll_entry(SCROLL_INFO *list,
 		
 		if (new->up)
 		{
-			
+
 			if (!new->up->level)
 				new->root = new->up;
 			else
@@ -3542,10 +3550,12 @@ drag_vslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 			s.w = sl->r.w;
 			s.h = sl->r.h;
 
-			lock_screen(wind->owner->p, 0, 0, 0);
+			if (!(wind->owner->status & CS_NO_SCRNLOCK))
+				lock_screen(wind->owner->p, 0, 0, 0);
 			graf_mouse(XACRS_VERTSIZER, NULL, NULL, false);
 			drag_box(wind->owner, s, &b, rect_dist_xy(wind->owner, md->x, md->y, &s, &d), &r);
-			unlock_screen(wind->owner->p, 0);
+			if (!(wind->owner->status & CS_NO_SCRNLOCK))
+				unlock_screen(wind->owner->p, 0);
 
 			offs = bound_sl(pix_to_sl(r.y - widg->ar.y, widg->r.h - sl->r.h));
 

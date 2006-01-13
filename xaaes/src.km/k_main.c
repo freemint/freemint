@@ -882,6 +882,7 @@ helpthread_entry(void *c)
 			client->waiting_for = 0;
 			client->block = iBlock;
 			client->options.app_opts |= XAAO_OBJC_EDIT;
+			client->status |= CS_NO_SCRNLOCK;
 			init_helpthread(NOLOCKING, client);
 			for (;;)
 			{
@@ -930,7 +931,7 @@ sshutdown_timeout(struct proc *p, long arg)
 {
 	C.sdt = NULL;
 
-	if (C.update_lock || S.clients_exiting)
+	if (/*C.update_lock ||*/ S.clients_exiting)
 	{
 		/* we need to delay */
 		struct timeout *t;
@@ -1014,14 +1015,15 @@ sshutdown_timeout(struct proc *p, long arg)
 							ikill(client->p->pid, SIGKILL);
 						else
 						{
-							flag = client;
+							if (!(flag = get_update_locker()))
+								flag = client;
 							break;
 						}
 					}
 				}
 				if (flag)
 				{
-						post_cevent(C.Hlp, CE_open_csr, flag, NULL, 0,0, NULL,NULL);
+					post_cevent(C.Hlp, CE_open_csr, flag, NULL, 0,0, NULL,NULL);
 				}
 			}
 			if (!flag)

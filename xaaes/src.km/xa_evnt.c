@@ -169,7 +169,8 @@ exec_iredraw_queue(enum locks lock, struct xa_client *client)
 	
 	if (pending_iredraw_msgs(lock, client, &ibuf))
 	{
-		lock_screen(client->p, false, NULL, 0);
+		if (!(client->status & CS_NO_SCRNLOCK))
+			lock_screen(client->p, false, NULL, 0);
 		hidem();
 		do {
 			short xaw = ibuf.irdrw.xaw;
@@ -200,7 +201,8 @@ exec_iredraw_queue(enum locks lock, struct xa_client *client)
 		showm();
 		C.redraws -= rdrws;
 
- 		unlock_screen(client->p, 0);
+		if (!(client->status & CS_NO_SCRNLOCK))
+ 			unlock_screen(client->p, 0);
 		kick_mousemove_timeout();
 	}
 	if (!client->rdrw_msg && C.redraws)

@@ -1240,7 +1240,7 @@ do_popup(Tab *tab, XA_TREE *wt, short item, short entry, TASK *click, short rdx,
 	}
 	else
 	{
-		if (item == -1)
+		if (entry == -1)
 		{
 			check_mouse(wt->owner, NULL, &x, &y);
 	
@@ -1252,12 +1252,12 @@ do_popup(Tab *tab, XA_TREE *wt, short item, short entry, TASK *click, short rdx,
 			}
 		}
 		else
-			popup(tab, item);
+			popup(tab, entry);
 	}
 }
 
 void
-start_popup_session(Tab *tab, XA_TREE *wt, int item, TASK *click, short rdx, short rdy)
+start_popup_session(Tab *tab, XA_TREE *wt, short item, short entry, TASK *click, short rdx, short rdy)
 {
 	DIAG((D_menu, tab->client, "start_popup_session: tab=%lx for %s",
 		tab, tab->client->name));
@@ -1265,7 +1265,7 @@ start_popup_session(Tab *tab, XA_TREE *wt, int item, TASK *click, short rdx, sho
 	check_mouse(tab->client, &tab->exit_mb, NULL, NULL);
 
 	tab->client->status |= CS_MENU_NAV;
-	do_popup(tab, wt, item, -1, click, rdx, rdy);
+	do_popup(tab, wt, item, entry, click, rdx, rdy);
 }
 	
 static struct xa_client *

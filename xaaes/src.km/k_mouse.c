@@ -376,8 +376,8 @@ dispatch_button_event(enum locks lock, struct xa_window *wind, const struct moos
 void
 XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 {
-	struct xa_client *client, *locker;
-	struct xa_window *wind = NULL;
+	struct xa_client *client, *locker, *mw_owner;
+	struct xa_window *wind = NULL, *mouse_wind;
 
 	DIAG((D_button, NULL, "XA_button_event: %d/%d, state=0x%x, clicks=%d",
 		md->x, md->y, md->state, md->clicks));
@@ -417,6 +417,13 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 		}
 		return;
 	}
+	
+	mouse_wind = find_window(lock, md->x, md->y);
+	if (mouse_wind)
+		mw_owner = mouse_wind == root_window ? get_desktop()->owner : mouse_wind->owner;
+	else
+		mw_owner = NULL;
+
 	{
 		if ( C.mouse_lock && (locker = get_mouse_locker()))
 		{
@@ -433,6 +440,12 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 				post_cevent(locker, cXA_form_do, NULL,NULL, 0, 0, NULL, md);
 				return;
 			}
+			else if (mouse_wind && mw_owner && (mw_owner->status & CS_NO_SCRNLOCK))
+			{
+				dispatch_button_event(lock, mouse_wind, md);
+				return;
+			}
+
 		}
 		if ( C.update_lock && (locker = get_update_locker()))
 		{
@@ -449,20 +462,25 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 				post_cevent(locker, cXA_form_do, NULL,NULL, 0, 0, NULL, md);
 				return;
 			}
+			else if (mouse_wind && mw_owner && (mw_owner->status & CS_NO_SCRNLOCK))
+			{
+				dispatch_button_event(lock, mouse_wind, md);
+				return;
+			}
 		}
 	}
 
 	locker = C.mouse_lock ? get_mouse_locker() : NULL;
-	wind = find_window(lock, md->x, md->y);
+// 	wind = find_window(lock, md->x, md->y);
 
 	/*
 	 * check for rootwindow widgets, like the menu-bar, clicks
 	 */
-	if (wind == root_window && md->state)
+	if (mouse_wind == root_window && md->state)
 	{
 		struct xa_widget *widg;
 
-		checkif_do_widgets(lock, wind, 0, md->x, md->y, &widg);
+		checkif_do_widgets(lock, mouse_wind, 0, md->x, md->y, &widg);
 		if (widg && widg->m.r.xaw_idx == XAW_MENU)
 		{
 			XA_TREE *menu;
@@ -484,39 +502,40 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 	/*
 	 * Found a window under mouse, and no mouse lock
 	 */
-	if (wind && !locker)
+	if (mouse_wind && !locker)
 	{
-		client = wind == root_window ? get_desktop()->owner : wind->owner;
+		client = mw_owner; //wind == root_window ? get_desktop()->owner : wind->owner;
 		/*
 		 * Ozk: If root window owner and desktop owner is not the same, the Desktop
 		 * should get the clicks made on it. If no desktop is installed, XaAES
 		 * XaAES is also the desktop owner (I think)
 		 */
-		if (wind->owner != client)
+		if (mouse_wind->owner != client)
 		{
 			/*
 			 * Ozk: When root-window is clicked, and owned by someone other
 			 * than AESSYS, we to let both do_widget(), and possibly send the
 			 * click to owner.
 			*/
-			deliver_button_event(wind, client, md);
+			deliver_button_event(mouse_wind, client, md);
 		}
 		else
 		{
-			dispatch_button_event(lock, wind, md);
+			dispatch_button_event(lock, mouse_wind, md);
 		}
 		return;
 	}
 	else if (locker)
 	{
-		if (wind)
-			client = wind == root_window ? get_desktop()->owner : wind->owner;
+		if (mouse_wind)
+			client = mw_owner; //wind == root_window ? get_desktop()->owner : wind->owner;
 		else
 			client = NULL;
 
-		if (wind && client == locker && (wind->active_widgets & TOOLBAR))
+		if ((mouse_wind && client && (client->status & CS_NO_SCRNLOCK)) ||
+		    (mouse_wind && client == locker && (mouse_wind->active_widgets & TOOLBAR)) )
 		{
-			dispatch_button_event(lock, wind, md);
+			dispatch_button_event(lock, mouse_wind, md);
 		}
 		else
 		{

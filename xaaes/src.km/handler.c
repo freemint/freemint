@@ -156,7 +156,7 @@ static struct xa_ftab aes_tab[220] =
 	/*  63 */ { XA_form_wbutton,           0,        DESCR("form_wbutton")    }, // MagiC 5.10 extension
 	/*  64 */ { XA_form_wkeybd,            0,        DESCR("form_wkeybd")     }, // MagiC 5.10 extension
 	/*  65 */ { XA_objc_wedit,             0,        DESCR("objc_wedit")      }, // MagiC 5.10 extension
-	/*  66 */ { XA_objc_data,              0,        DESCR("objc_data")       }, // XaAES extension
+	/*  66 */ { NULL,                      0,        DESCR(NULL)              },
 	/*  67 */ { NULL,                      0,        DESCR(NULL)              },
 	/*  68 */ { NULL,                      0,        DESCR(NULL)              },
 	/*  69 */ { NULL,                      0,        DESCR("graf_multirubber")}, // N.AES extension
@@ -238,7 +238,7 @@ static struct xa_ftab aes_tab[220] =
 	/* 138 */ { NULL,                      0,        DESCR(NULL)              },
 	/* 139 */ { NULL,                      0,        DESCR(NULL)              },
 
-	/* 140 */ { NULL,                      0,        DESCR(NULL)              },
+	/* 140 */ { XA_objc_data,              0,        DESCR("objc_data")       },
 	/* 141 */ { NULL,                      0,        DESCR(NULL)              },
 	/* 142 */ { NULL,                      0,        DESCR(NULL)              },
 	/* 143 */ { NULL,                      0,        DESCR(NULL)              },
