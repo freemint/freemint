@@ -380,7 +380,7 @@ XA_menu_register(enum locks lock, struct xa_client *client, AESPB *pb)
 	return XAC_DONE;
 }
 
-/*
+/* XXX - Ozk: TODO: Things related to mn_selected!
  * mn_scroll	If positive number;
  *			sets the 'row number' in the popup at which to start scroll area.
  *		If Negative number;
@@ -393,24 +393,24 @@ XA_menu_register(enum locks lock, struct xa_client *client, AESPB *pb)
  */
 
 static void
-init_popinfo(struct widget_tree *wt, MENU *mn, struct xa_popinfo *pi)
+init_popinfo(XAMENU *mn, struct xa_popinfo *pi)
 {
 	int i, count, pop_h;
 	short this, parent;
+	struct widget_tree *wt = mn->wt;
 	OBJECT *obtree = wt->tree;
 
 	pop_h = cfg.mn_set.height;
 
-	pi->count = count = ob_count_objs(wt->tree, mn->mn_menu, 1);
+	pi->count = count = ob_count_objs(obtree, mn->menu.mn_menu, 1);
 	pi->objs = kmalloc(sizeof(short) * count);
 
-
-	pi->parent = parent = mn->mn_menu;
+	pi->parent = parent = mn->menu.mn_menu;
 
 // 	display("obtree %lx, parent %d, count %d", wt->tree, pi->parent, pi->count);
 // 	display("mn_menu %d, mn_scroll %d, mn_item %d", mn->mn_menu, mn->mn_scroll, mn->mn_item);
 
-	if (pi->objs && mn->mn_scroll > 1 && mn->mn_scroll < (pop_h - 1) && count > pop_h)
+	if (pi->objs && mn->menu.mn_scroll > 1 && mn->menu.mn_scroll < (pop_h - 1) && count > pop_h)
 	{
 		short flag = 0, *objs = pi->objs;
 
@@ -424,7 +424,7 @@ init_popinfo(struct widget_tree *wt, MENU *mn, struct xa_popinfo *pi)
 			
 			*objs++ = this;
 			
-			if (mn->mn_scroll == i)
+			if (mn->menu.mn_scroll == i)
 			{
 				/*
 				 * mn_scroll == row in popup at which scrolling starts 
@@ -441,7 +441,7 @@ init_popinfo(struct widget_tree *wt, MENU *mn, struct xa_popinfo *pi)
 				pi->scrl_height = pop_h - (i - 1);
 // 				display(" set scrl_start_row %d(%d), scrl_height %d", i - 1, this, pop_h - i);
 			}
-			if (mn->mn_item == this)
+			if (mn->menu.mn_item == this)
 			{
 				/*
 				 * mn_item == object number that we want to initiate scroll field with
@@ -538,12 +538,19 @@ noscroll:
 			kfree(pi->objs);
 			pi->objs = NULL;
 		}
-		if (mn->mn_scroll > 0)
-			mn->mn_scroll = 1;
+		if (mn->menu.mn_scroll > 0)
+			mn->menu.mn_scroll = 1;
 	}
 }
+
+/*
+ * menu_popup expects the following elements of 'mn' to be initialized;
+ *	mn->menu
+ *	mn->mn_selected
+ * All other elements are initialized here.
+ */
 int
-menu_popup(enum locks lock, struct xa_client *client, MENU *mn, MENU *result, short px, short py, short usr_evnt)
+menu_popup(enum locks lock, struct xa_client *client, XAMENU *mn, MENU *result, short px, short py, short usr_evnt)
 {
 	if (mn && result)
 	{
@@ -555,7 +562,7 @@ menu_popup(enum locks lock, struct xa_client *client, MENU *mn, MENU *result, sh
 			popout(TAB_LIST_START);
 
 		tab = nest_menutask(NULL);
-		ob = mn->mn_tree;
+		ob = mn->menu.mn_tree;
 
 		if (tab && validate_obtree(client, ob, "_menu_popup:"))		/* else already locked */
 		{	
@@ -568,9 +575,11 @@ menu_popup(enum locks lock, struct xa_client *client, MENU *mn, MENU *result, sh
 			if (!wt)
 				return 0;
 
-			init_popinfo(wt, mn, &tab->task_data.menu.p);
+			mn->wt = wt;
+			
+			init_popinfo(mn, &tab->task_data.menu.p);
 
-			*result = *mn;
+			*result = mn->menu; //*mn;
 
 			DIAG((D_menu,NULL,"_menu_popup %lx + %d",ob, mn->mn_menu));
 
@@ -582,30 +591,30 @@ menu_popup(enum locks lock, struct xa_client *client, MENU *mn, MENU *result, sh
 			old_y = ob->ob_y;
 
 			ob->ob_x = ob->ob_y = wt->dx = wt->dy = 0;
-			obj_offset(wt, aesobj(wt->tree, mn->mn_menu), &x, &y);
+			obj_offset(wt, aesobj(wt->tree, mn->menu.mn_menu), &x, &y);
 			tab->wind = NULL;
 			tab->widg = NULL;
 			tab->ty = POP_UP;
 
-			if (mn->mn_scroll == -1)
+			if (mn->menu.mn_scroll == -1)
 				tab->scroll = 8;
-			else if (mn->mn_scroll == 1)
+			else if (mn->menu.mn_scroll == 1)
 				tab->scroll = cfg.mn_set.height;
 			else
 				tab->scroll = 0;
-// 			else if (mn->mn_scroll > 1)
+// 			else if (mn->menu.mn_scroll > 1)
 // 			{
-// 				tab->scroll = (mn->mn_scroll < 8) ? 8 : mn->mn_scroll;
+// 				tab->scroll = (mn->menu.mn_scroll < 8) ? 8 : mn->menu.mn_scroll;
 // 			}
 // 			else
 // 				tab->scroll = 0;
 
-// 			tab->scroll = (mn->mn_scroll == -1) ? 8 : 0;
+// 			tab->scroll = (mn->menu.mn_scroll == -1) ? 8 : 0;
 			
 			tab->usr_evnt = usr_evnt;
 			tab->data = result;
 			
-			start_popup_session(tab, wt, mn->mn_menu,
+			start_popup_session(tab, wt, mn->menu.mn_menu, mn->mn_selected,
 				 click_popup_entry,
 				 px - x,
 				 py - y);
@@ -636,13 +645,19 @@ menu_popup(enum locks lock, struct xa_client *client, MENU *mn, MENU *result, sh
 unsigned long
 XA_menu_popup(enum locks lock, struct xa_client *client, AESPB *pb)
 {
+
 	CONTROL(2,1,2)
 
 	MENU *result = (MENU *)pb->addrin[1];
+	XAMENU xmn;
 	MENU tmp;
 
 	tmp = *result;
-	if (menu_popup(lock, client, (MENU *)pb->addrin[0], &tmp/*result*/, pb->intin[0], pb->intin[1], 1))
+	
+	xmn.menu = *(MENU *)pb->addrin[0];
+	xmn.mn_selected = -1;
+
+	if (menu_popup(lock, client, &xmn/*(MENU *)pb->addrin[0]*/, &tmp, pb->intin[0], pb->intin[1], 1))
 	{
 		*result = tmp;
 		pb->intout[0] = result->mn_item < 0 ? 0 : 1;
@@ -718,7 +733,7 @@ XA_form_popup(enum locks lock, struct xa_client *client, AESPB *pb)
 			ob->ob_x = 0;
 			ob->ob_y = 0;
 
-			start_popup_session(tab, wt, 0,
+			start_popup_session(tab, wt, 0, -1,
 				 click_form_popup_entry,
 				 x,
 				 y);

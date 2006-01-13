@@ -552,7 +552,7 @@ XA_objc_sysvar(enum locks lock, struct xa_client *client, AESPB *pb)
  */
 #define OBGET_TYPE	0x0001
 #define OBSET_TYPE	0x8001
-/* GET/SET object string */
+
 #define OBGET_STRING	0x0002
 #define OBSET_STRING	0x8002
 
@@ -565,6 +565,16 @@ XA_objc_sysvar(enum locks lock, struct xa_client *client, AESPB *pb)
 #define OBGET_BFOBSPEC	0x0005
 #define OBSET_BFOBSPEC	0x8005
 
+#define OBGET_OBJECT	0x0006
+
+#define OBGET_AREA	0x0007
+
+#define OBGET_OFLAGS	0x0008
+#define OBSET_OFLAGS	0x8008
+
+#define OBGET_OSTATE	0x0009
+#define OBSET_OSTATE	0x8009
+
 // opcode 66
 // objc_data(tree, object, what, size, wh, (void *)data0, (void *)data1, *short, *long);
 // intin[0] = object
@@ -573,13 +583,14 @@ XA_objc_sysvar(enum locks lock, struct xa_client *client, AESPB *pb)
 // intin[3] = wh
 //
 // addrin[0] = tree
-// addrin[1] = data0
+// addrin[1] = clip RECT ptr
 // addrin[2] = data1
 //
 // intout[0] - 1 = OK, 0 = error
-// intout[1] - mode dependant
+// intout[1] - intout[4] = mode dependant
 //
 // addrout[0] - mode dependant
+
 unsigned long
 XA_objc_data(enum locks lock, struct xa_client *client, AESPB *pb)
 {
@@ -717,9 +728,19 @@ XA_objc_data(enum locks lock, struct xa_client *client, AESPB *pb)
 			}
 			case OBGET_SPEC:
 			{
-				out0 = (void *)object_get_spec(obtree + obj)->index;
-				if (set)
-					object_set_spec(obtree + obj, (unsigned long)pb->addrin[1]);
+				if (obt == G_USERDEF) // && pb->)
+				{
+					USERBLK *ub = object_get_spec(obtree + obj)->userblk;
+					out0 = (void *)ub->ub_parm;
+					if (set)
+						ub->ub_parm = pb->addrin[1];
+				}
+				else
+				{
+					out0 = (void *)object_get_spec(obtree + obj)->index;
+					if (set)
+						object_set_spec(obtree + obj, (unsigned long)pb->addrin[1]);
+				}
 				ret0 = 1;
 				ret1 = 0;
 				break;
@@ -729,6 +750,21 @@ XA_objc_data(enum locks lock, struct xa_client *client, AESPB *pb)
 				out0 = (void *)object_get_spec(obtree + obj)->index;
 				if (set)
 					object_set_spec(obtree + obj, (unsigned long)pb->addrin[1]);
+			}
+			case OBGET_OFLAGS:
+			{
+				
+				break;
+			}
+			case OBGET_OSTATE:
+			{
+				
+				break;
+			}
+			case OBGET_AREA:
+			{
+				ob_area(obtree, aesobj(obtree, obj), (RECT *)(pb->intout + 2));
+				break;
 			}
 			default:;
 		}
