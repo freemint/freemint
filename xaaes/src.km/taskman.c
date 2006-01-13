@@ -616,9 +616,10 @@ open_taskmanager(enum locks lock, struct xa_client *client)
 	RECT remember = { 0,0,0,0 };
 	struct xa_window *wind;
 	XA_TREE *wt;
-	OBJECT *obtree = ResourceTree(C.Aes_rsc, TASK_MANAGER);
+	OBJECT *obtree;
 	RECT or;
 
+	obtree = ResourceTree(C.Aes_rsc, TASK_MANAGER);
 	ob_rectangle(obtree, aesobj(obtree, 0), &or);
 
 	wt = obtree_to_wt(client, obtree);

@@ -164,6 +164,11 @@ struct xamenu
 {
 	struct widget_tree *wt;
 	MENU menu;
+
+	short mn_selected;	/* -1 means no selection,
+				 * -2 means select first entry,
+				 * positive value means object number to set selected
+				 */
 };
 typedef struct xamenu XAMENU;
 
@@ -2267,6 +2272,8 @@ struct xa_client
 #define CS_EXITING		0x00000200
 #define CS_BLOCK_CE		0x00000400
 #define CS_SIGKILLED		0x00000800
+
+#define CS_NO_SCRNLOCK		0x00001000
 
 	long status;
 
