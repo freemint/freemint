@@ -82,7 +82,6 @@ xif_module_init(void *initfunc, struct kerinfo *k, struct netinfo *n)
 		  "d1", "d2", "a0", "a1", "a2",		/* clobbered regs */
 		  "memory"
 	);
-
 	return ret;
 }
 #endif

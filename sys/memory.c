@@ -251,8 +251,8 @@ add_region (MMAP map, ulong place, ulong size, ushort mflags)
 	/* only add if there's anything left */
 	if (size)
 	{
-	  dp_diff -= size;
-	  dp_all += dp_diff;
+		dp_diff -= size;
+		dp_all += dp_diff;
 		m->len = size;
 		m->loc = place;
 		m->next = *map;
@@ -670,9 +670,10 @@ get_region (MMAP map, ulong size, short mode)
 }
 
 MEMREGION *
-_get_region (MMAP map, ulong size, short mode, short cmode, MEMREGION *m, short kernel_flag)
+_get_region (MMAP map, ulong s, short mode, short cmode, MEMREGION *m, short kernel_flag)
 {
 	MEMREGION *n, *k = NULL;
+	ulong size = s;
 
 	TRACE (("get_region (%s, %li (%lx), %x)",
 		((map == core) ? "core" : ((map == alt) ? "alt" : "???")),
@@ -690,13 +691,23 @@ _get_region (MMAP map, ulong size, short mode, short cmode, MEMREGION *m, short 
 	}
 
 	/* precautionary measures */
+	/* Ozk: Situation (observed with Jinnee):
+	 *	size is 0xffffffe4 (-28 signed long). Looks like Jinnee gets this from some failing system call
+	 *	ROUND adds QUANTUM - 1 (which is 8191) to this size, resulting in 8164.
+	 *	Then this is masked with ~8191 and guess what? Yeah, size turns 0!
+	 *	This went through here because the !size check was done _before_ ROUND.
+	 *  Possible problem:
+	 *	If a prog intentionally asks for more than 4294959103 bytes of memory,
+	 *	which will create identical situation as for this Jinnee bug, it will get 8192 (QUANTUM)
+	 *	Should we return error instead for this situaion?
+	 */
+	size = ROUND (size);
 	if (!size)
 	{
-		DEBUG (("request for 0 bytes??"));
+		DEBUG (("request for 0 or less bytes (%li)??", s));
 		size = 1;
+		size = ROUND (size);
 	}
-
-	size = ROUND (size);
 
 	n = *map;
 	while (n)
@@ -940,7 +951,6 @@ free_region (MEMREGION *reg)
 
 			goto end;
 		}
-
 		goto merge_after;
 	}
 
@@ -966,7 +976,6 @@ free_region (MEMREGION *reg)
 			reg = m;
 			goto merge_after;
 		}
-
 		goto end;
 	}
 
@@ -2355,6 +2364,8 @@ sanity_check (MMAP map, ulong line)
 			else if (m->len == 0)
 			{
 				ALERT ("%s, %lu: memory region with len 0!", __FILE__, line);
+				DEBUG (("%s, %lu: memory region with len 0!", __FILE__, line));
+
 			}
 			else if (end == next->loc && ISFREE (m) && ISFREE (next))
 			{
@@ -2364,10 +2375,12 @@ sanity_check (MMAP map, ulong line)
 			else if (!no_mem_prot && (m->loc != ROUND(m->loc)))
 			{
 				ALERT ("%lu: Memory region unaligned", line);
+				DEBUG (("%lu: Memory region unaligned", line));
 			}
 			else if (!no_mem_prot && (m->len != ROUND(m->len)))
 			{
 				ALERT ("%lu: Memory region length unaligned", line);
+				DEBUG (("%lu: Memory region length unaligned", line));
 			}
 
 			if (m->save && !(m->mflags & M_FSAVED) && !m->shadow)
