@@ -383,7 +383,7 @@ static void *
 module_init(void *initfunc, struct kerinfo *k)
 {
 	register void *ret __asm__("d0");
-
+	
 	__asm__ volatile
 	(
 		"moveml	d3-d7/a3-a6,sp@-;"

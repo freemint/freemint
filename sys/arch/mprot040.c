@@ -663,7 +663,7 @@ get_page_descriptor_fatal:
 	 * table we actually had to search in
 	 */
 	help = (ulong *)((ulong)help - (ulong)global_table + (ulong)table);
-	return(help + pgi);
+	return (help + pgi);
 }
 
 /*
@@ -684,204 +684,205 @@ init_tables(void)
 {
 	if (no_mem_prot)
 		return;
-	{
-    int n_megabytes;
-    long global_mode_table_size, rounded_table_size;
-    ulong last, this, addr, len;
-    ulong *desc;
-    int i;
+{
+	int n_megabytes;
+	long global_mode_table_size, rounded_table_size;
+	ulong last, this, addr, len;
+	ulong *desc;
+	int i;
 
-    TRACE(("init_tables"));
+	TRACE(("init_tables"));
 
 #define phys_top_tt (*(ulong *)0x5a4L)
-    if (phys_top_tt <= 0x01000000L) mint_top_tt = 0;
-    else mint_top_tt = phys_top_tt;
+	if (phys_top_tt <= 0x01000000L) mint_top_tt = 0;
+	else mint_top_tt = phys_top_tt;
 
 #define phys_top_st (*(ulong *)0x42eL)
-    mint_top_st = phys_top_st;
+	mint_top_st = phys_top_st;
 
-    if (mint_top_tt)
-    	tt_mbytes = (int)((mint_top_tt - 0x01000000L + ONE_MEG - 1L) / ONE_MEG);
-    else
-    	tt_mbytes = 0;
+	if (mint_top_tt)
+		tt_mbytes = (int)((mint_top_tt - 0x01000000L + ONE_MEG - 1L) / ONE_MEG);
+	else
+		tt_mbytes = 0;
 
-    n_megabytes = (int) ((mint_top_st / ONE_MEG) + tt_mbytes);
+	n_megabytes = (int) ((mint_top_st / ONE_MEG) + tt_mbytes);
 
     /*
      * Get the page table size. This is done by traversing the current MMU
      * tree, counting the number of descriptors.
      */
-    root_descriptors = pointer_descriptors = page_descriptors = 0UL;
-    page_table_size = walk_or_copy_tree(0, &root_descriptors,
+	root_descriptors = pointer_descriptors = page_descriptors = 0UL;
+	page_table_size = walk_or_copy_tree(0, &root_descriptors,
 	&pointer_descriptors, &page_descriptors);
-FORCE("root_descriptors: %lu", root_descriptors);
-FORCE("pointer_descriptors: %lu", pointer_descriptors);
-FORCE("page_descriptors: %lu", page_descriptors);
-FORCE("memory needed for each MMU tree: %lu byte", page_table_size);
+
+	FORCE("root_descriptors: %lu", root_descriptors);
+	FORCE("pointer_descriptors: %lu", pointer_descriptors);
+	FORCE("page_descriptors: %lu", page_descriptors);
+	FORCE("memory needed for each MMU tree: %lu byte", page_table_size);
 
     /* If size is 0, then something is wrong with the current MMU setup */
-    if (page_table_size == 0L)
-    {
+	if (page_table_size == 0L)
+	{
 init_tables_fatal:
-    	FATAL("Couldn't initialize memory protection. Please run MINTNP.PRG instead.");
-    }
+		FATAL("Couldn't initialize memory protection. Please run MINTNP.PRG instead.");
+	}
 
-
-    rounded_table_size = (long)ROUND512(page_table_size);
-    if (rounded_table_size <= MAX_TEMPLATE)
-    {
-FORCE("using template trees for each protection mode");
-	use_templates = 1;
-	global_table = kmalloc(5 * rounded_table_size + 511);
-    }
-    else
-	global_table = kmalloc(page_table_size + 511);
-    if (global_table == 0L)
-    	goto init_tables_fatal;
-    global_table = ROUND512(global_table);
-    if (use_templates)
-    {
-	prot_p_table = (ulong *)((long)global_table + rounded_table_size);
-	prot_g_table = (ulong *)((long)prot_p_table + rounded_table_size);
-	prot_s_table = (ulong *)((long)prot_g_table + rounded_table_size);
-	prot_pr_table = (ulong *)((long)prot_s_table + rounded_table_size);
-	template_tables[PROT_P] = prot_p_table;
-	template_tables[PROT_G] = prot_g_table;
-	template_tables[PROT_S] = prot_s_table;
-	template_tables[PROT_PR] = prot_pr_table;
-	template_tables[PROT_I] = prot_p_table;
-    }
+	rounded_table_size = (long)ROUND512(page_table_size);
+	if (rounded_table_size <= MAX_TEMPLATE)
+	{
+		FORCE("using template trees for each protection mode");
+		use_templates = 1;
+		global_table = kmalloc(5 * rounded_table_size + 511);
+	}
+	else
+		global_table = kmalloc(page_table_size + 511);
+	
+	if (global_table == 0L)
+		goto init_tables_fatal;
+	
+	global_table = ROUND512(global_table);
+	
+	if (use_templates)
+	{
+		prot_p_table = (ulong *)((long)global_table + rounded_table_size);
+		prot_g_table = (ulong *)((long)prot_p_table + rounded_table_size);
+		prot_s_table = (ulong *)((long)prot_g_table + rounded_table_size);
+		prot_pr_table = (ulong *)((long)prot_s_table + rounded_table_size);
+		template_tables[PROT_P] = prot_p_table;
+		template_tables[PROT_G] = prot_g_table;
+		template_tables[PROT_S] = prot_s_table;
+		template_tables[PROT_PR] = prot_pr_table;
+		template_tables[PROT_I] = prot_p_table;
+	}
 
     /* Create the template copy(ies) of the MMU tree. */
-    walk_or_copy_tree(1, global_table, global_table + root_descriptors,
-    	global_table + root_descriptors + pointer_descriptors);
-    if (use_templates)
-    {
-	/*
-	 * The additional template trees don't need correct table level
-	 * descriptors, so it's save to just copy global_table four times
-	 * (especially because walk_or_copy_tree must not be called more than
-	 * once in copy-mode)
-	 */
-	quickmove(prot_p_table, global_table, page_table_size);
-	quickmove(prot_g_table, global_table, page_table_size);
-	quickmove(prot_s_table, global_table, page_table_size);
-	quickmove(prot_pr_table, global_table, page_table_size);
-    }
+	walk_or_copy_tree(1, global_table, global_table + root_descriptors,
+	global_table + root_descriptors + pointer_descriptors);
+	if (use_templates)
+	{
+		/*
+		 * The additional template trees don't need correct table level
+		 * descriptors, so it's save to just copy global_table four times
+		 * (especially because walk_or_copy_tree must not be called more than
+		 * once in copy-mode)
+		 */
+		quickmove(prot_p_table, global_table, page_table_size);
+		quickmove(prot_g_table, global_table, page_table_size);
+		quickmove(prot_s_table, global_table, page_table_size);
+		quickmove(prot_pr_table, global_table, page_table_size);
+	}
 
     /*
      * Now ensure that at least one of ST and Alternate RAM are linearly
      * mapped (we need this as the MMU trees are written to logical RAM and
      * must be contiguos in the physical RAM as well)
      */
-    for (i = 0; i < 2; i++)
-    {
-    	if (i == 0)
-    	{
-	    addr = 0UL;
-	    len = mint_top_st;
-	}
-	else
+	for (i = 0; i < 2; i++)
 	{
-	    if (mint_top_tt)
-	    {
-	    	addr = 0x01000000UL;
-	    	len = mint_top_tt - 0x01000000UL;
-	    }
-	    else
-	    	break;
-	}
-	len = (len + pagesize - 1UL) & ~(pagesize - 1UL);
-	last = *get_page_descriptor(global_table, addr);
-	/* If there is an invalid descriptor, exit */
-	if ((last & 3) == 0)
-	{
-		DEBUG (("invalid descriptor, exit"));
-		goto init_tables_fatal;
-	}
-	last &= ~(pagesize - 1UL);
-	/*
-	 * While we're at it, also mark the four template trees, if necessary
-	 */
+		if (i == 0)
+		{
+			addr = 0UL;
+			len = mint_top_st;
+		}
+		else
+		{
+			if (mint_top_tt)
+			{
+				addr = 0x01000000UL;
+				len = mint_top_tt - 0x01000000UL;
+			}
+			else
+				break;
+		}
+		len = (len + pagesize - 1UL) & ~(pagesize - 1UL);
+		last = *get_page_descriptor(global_table, addr);
+		/* If there is an invalid descriptor, exit */
+		if ((last & 3) == 0)
+		{
+			DEBUG (("invalid descriptor, exit"));
+			goto init_tables_fatal;
+		}
+		last &= ~(pagesize - 1UL);
+		/*
+		 * While we're at it, also mark the four template trees, if necessary
+		 */
 #define membot (*(ulong *)0x432L)
-	if (use_templates && (addr >= membot))
-	{
-	    desc = get_page_descriptor(prot_p_table, addr);
-	    *desc &= ~PROTECTIONBITS;
-	    *desc |= mode_descriptors[PROT_P];
-	    desc = get_page_descriptor(prot_g_table, addr);
-	    *desc &= ~PROTECTIONBITS;
-	    *desc |= mode_descriptors[PROT_G];
-	    desc = get_page_descriptor(prot_s_table, addr);
-	    *desc &= ~PROTECTIONBITS;
-	    *desc |= mode_descriptors[PROT_S];
-	    desc = get_page_descriptor(prot_pr_table, addr);
-	    *desc &= ~PROTECTIONBITS;
-	    *desc |= mode_descriptors[PROT_PR];
+		if (use_templates && (addr >= membot))
+		{
+			desc = get_page_descriptor(prot_p_table, addr);
+			*desc &= ~PROTECTIONBITS;
+			*desc |= mode_descriptors[PROT_P];
+			desc = get_page_descriptor(prot_g_table, addr);
+			*desc &= ~PROTECTIONBITS;
+			*desc |= mode_descriptors[PROT_G];
+			desc = get_page_descriptor(prot_s_table, addr);
+			*desc &= ~PROTECTIONBITS;
+			*desc |= mode_descriptors[PROT_S];
+			desc = get_page_descriptor(prot_pr_table, addr);
+			*desc &= ~PROTECTIONBITS;
+			*desc |= mode_descriptors[PROT_PR];
+		}
+		len -= pagesize;
+		addr += pagesize;
+		while (len)
+		{
+			this = *get_page_descriptor(global_table, addr);
+			if ((this & 3) == 0)
+			{
+				DEBUG (("(this & 3) == 0 -> exit"));
+				goto init_tables_fatal;
+			}
+			this &= ~(pagesize - 1UL);
+			/*
+			 * The last physical address must be pagesize byte before the
+			 * current. Do not break the loop to ensure we made a complete
+			* check of all the descriptors needed for the memory controlled
+			* by MiNT.
+			*/
+			if ((addr > membot) && ((last + pagesize) != this))
+				page_ram_type &= ~(1 << i);
+			/*
+			* While we're at it, also mark the four template trees, if
+			* necessary
+			*/
+			if (use_templates && (addr >= membot))
+			{
+				desc = get_page_descriptor(prot_p_table, addr);
+				*desc &= ~PROTECTIONBITS;
+				*desc |= mode_descriptors[PROT_P];
+				desc = get_page_descriptor(prot_g_table, addr);
+				*desc &= ~PROTECTIONBITS;
+				*desc |= mode_descriptors[PROT_G];
+				desc = get_page_descriptor(prot_s_table, addr);
+				*desc &= ~PROTECTIONBITS;
+				*desc |= mode_descriptors[PROT_S];
+				desc = get_page_descriptor(prot_pr_table, addr);
+				*desc &= ~PROTECTIONBITS;
+				*desc |= mode_descriptors[PROT_PR];
+			}
+			last = this;
+			len -= pagesize;
+			addr += pagesize;
+		}
+		FORCE("%s RAM is %slinear", i ? "Alternate" : "ST", (page_ram_type & (1 << i)) ? "" : "non-");
 	}
-	len -= pagesize;
-	addr += pagesize;
-	while (len)
-	{
-	    this = *get_page_descriptor(global_table, addr);
-	    if ((this & 3) == 0)
-	    {
-	    	DEBUG (("(this & 3) == 0 -> exit"));
+	if (!page_ram_type)
 		goto init_tables_fatal;
-	    }
-	    this &= ~(pagesize - 1UL);
-	    /*
-	     * The last physical address must be pagesize byte before the
-	     * current. Do not break the loop to ensure we made a complete
-	     * check of all the descriptors needed for the memory controlled
-	     * by MiNT.
-	     */
-	    if ((addr > membot) && ((last + pagesize) != this))
-	    	page_ram_type &= ~(1 << i);
-	    /*
-	     * While we're at it, also mark the four template trees, if
-	     * necessary
-	     */
-	    if (use_templates && (addr >= membot))
-	    {
-		desc = get_page_descriptor(prot_p_table, addr);
-		*desc &= ~PROTECTIONBITS;
-		*desc |= mode_descriptors[PROT_P];
-		desc = get_page_descriptor(prot_g_table, addr);
-		*desc &= ~PROTECTIONBITS;
-		*desc |= mode_descriptors[PROT_G];
-		desc = get_page_descriptor(prot_s_table, addr);
-		*desc &= ~PROTECTIONBITS;
-		*desc |= mode_descriptors[PROT_S];
-		desc = get_page_descriptor(prot_pr_table, addr);
-		*desc &= ~PROTECTIONBITS;
-		*desc |= mode_descriptors[PROT_PR];
-	    }
-	    last = this;
-	    len -= pagesize;
-	    addr += pagesize;
-	}
-FORCE("%s RAM is %slinear", i ? "Alternate" : "ST",
-    (page_ram_type & (1 << i)) ? "" : "non-");
-    }
-    if (!page_ram_type)
-	goto init_tables_fatal;
 
-    global_mode_table_size = ((SIXTEEN_MEG / QUANTUM) +
-			    (((ulong)tt_mbytes * ONE_MEG) / QUANTUM));
+	global_mode_table_size = ((SIXTEEN_MEG / QUANTUM) + (((ulong)tt_mbytes * ONE_MEG) / QUANTUM));
 
-    global_mode_table = kmalloc(global_mode_table_size);
-    if (global_mode_table == 0L)
-	goto init_tables_fatal;
+	global_mode_table = kmalloc(global_mode_table_size);
+	if (global_mode_table == 0L)
+		goto init_tables_fatal;
 
-    TRACELOW(("mint_top_st is $%lx; mint_top_tt is $%lx, n_megabytes is %d",
-	mint_top_st, mint_top_tt, n_megabytes));
-    TRACELOW(("page_table_size is %ld, global_mode_table_size %ld",
-	    page_table_size, global_mode_table_size));
+	TRACELOW(("mint_top_st is $%lx; mint_top_tt is $%lx, n_megabytes is %d",
+		mint_top_st, mint_top_tt, n_megabytes));
+	TRACELOW(("page_table_size is %ld, global_mode_table_size %ld",
+		page_table_size, global_mode_table_size));
 
     /* set the whole global_mode_table to "global" */
-    memset(global_mode_table,PROT_G,global_mode_table_size);
-	}
+	memset(global_mode_table,PROT_G,global_mode_table_size);
+}
 }
 
 /*
@@ -965,10 +966,8 @@ mark_pages(ulong *table, ulong start, ulong len, short mode, short flush, short 
 		if (len)
 		{
 			desc = get_page_descriptor(table, start);
-			templ_desc = get_page_descriptor(
-				template_tables[mode], start);
-			quickmove(desc, templ_desc,
-				len * 4UL / pagesize);
+			templ_desc = get_page_descriptor(template_tables[mode], start);
+			quickmove(desc, templ_desc, len * 4UL / pagesize);
 		}
 	}
 	else
@@ -989,7 +988,6 @@ mark_pages(ulong *table, ulong start, ulong len, short mode, short flush, short 
 				/* And set the new ones */
 				*desc |= setcmode;
 			}
-			
 			len -= pagesize;
 		}
 	}
@@ -1074,112 +1072,118 @@ mark_region(MEMREGION *region, short mode, short cmode)
 {
 	if (no_mem_prot)
 		return;
-	{
-    ulong start = region->loc;
-    ulong len = region->len;
-    ulong i;
-    PROC *proc;
-    MEMREGION **mr;
-    short int setmode;
-    ulong cmpmode;
-    int shortcut;
-    unsigned char *tbl_ptr, *tbl_end;
+{
+	ulong start = region->loc;
+	ulong len = region->len;
+	ulong i;
+	PROC *proc;
+	MEMREGION **mr;
+	short int setmode;
+	ulong cmpmode;
+	int shortcut;
+	unsigned char *tbl_ptr, *tbl_end;
 
-    MP_DEBUG(("mark_region %lx len %lx mode %d cmode %d",start,len,mode,cmode));
+	MP_DEBUG(("mark_region %lx len %lx mode %d cmode %d",start,len,mode,cmode));
 
-    /* Don't do anything if init_tables() has not yet finished */
-    if ((global_table == 0L) || (global_mode_table == 0L))
-	return;
+	/* Don't do anything if init_tables() has not yet finished */
+	if ((global_table == 0L) || (global_mode_table == 0L))
+		return;
 
 #if 0 /* this should not occur any more */
-    if (mode == PROT_NOCHANGE) {
-	mode = global_mode_table[(start >> 13)];
-    }
+	if (mode == PROT_NOCHANGE)
+	{
+		mode = global_mode_table[(start >> 13)];
+	}
 #else
-    assert(mode != PROT_NOCHANGE);
+	assert(mode != PROT_NOCHANGE);
 #endif
 
-    /*
-     * First, check if the global_mode_table is already "compatible" with the
-     * new mode, i.e. the MMU-protection is the same for all affected pages
-     */
+	/*
+	 * First, check if the global_mode_table is already "compatible" with the
+	 * new mode, i.e. the MMU-protection is the same for all affected pages
+	 */
 
-    shortcut = 0;
-    tbl_ptr = &global_mode_table[start >> 13];
-    tbl_end = tbl_ptr + (len >> 13);
-    cmpmode = mode_descriptors[mode];
-    while (tbl_ptr != tbl_end)
-    {
-	if (mode_descriptors[*tbl_ptr] != cmpmode)
-	    break;
-	tbl_ptr++;
-    }
-    /* don't shortcut if cmode request is set */
-    if (tbl_ptr == tbl_end && !cmode)
-	shortcut = 1;
-
-    /* mark the global page table */
-    memset(&global_mode_table[start >> 13], mode, (len >> 13));
-    /* mark the global template tree */
-    mark_pages(global_table, start, len, mode, 0, cmode);
-
-    /*
-     * OK, if shortcut is set and mode is PROT_G, nothing has to be done,
-     * because all processes already have global access
-     */
-
-    if (shortcut && (mode == PROT_G))
-    	goto finished;
-
-    for (proc = proclist; proc; proc = proc->gl_next) {
-	if (proc->wait_q == ZOMBIE_Q || proc->wait_q == TSR_Q)
-		continue;	
-	if (!proc->p_mem || !proc->p_mem->page_table)
-		continue;
-	if (!shortcut && (mode == PROT_I || mode == PROT_G)) {
-	    /* everybody gets the same flags */
-	    goto notowner;
+	shortcut = 0;
+	tbl_ptr = &global_mode_table[start >> 13];
+	tbl_end = tbl_ptr + (len >> 13);
+	cmpmode = mode_descriptors[mode];
+	while (tbl_ptr != tbl_end)
+	{
+		if (mode_descriptors[*tbl_ptr] != cmpmode)
+			break;
+		tbl_ptr++;
 	}
-	if (proc->p_mem->memflags & F_OS_SPECIAL) {
-	    /* you're special; you get owner flags */
-	    MP_DEBUG(("mark_region: pid %d is an OS special!",proc->pid));
-	    goto owner;
-	}
-	if ((mr = proc->p_mem->mem) != 0) {
-	    for (i = 0; i < proc->p_mem->num_reg; i++, mr++) {
-		if (*mr == region) {
-		    MP_DEBUG(("mark_region: pid %d is an owner",proc->pid));
-owner:
-		    setmode = (mode == PROT_I) ? PROT_I : PROT_G;
-		    goto gotvals;
-		}
-	    }
-	}
+	/* don't shortcut if cmode request is set */
+	if (tbl_ptr == tbl_end && !cmode)
+		shortcut = 1;
 
-notowner:
-	/* if you get here you're not an owner, or mode is G or I */
-	    MP_DEBUG(("mark_region: pid %d gets non-owner modes",proc->pid));
+	/* mark the global page table */
+	memset(&global_mode_table[start >> 13], mode, (len >> 13));
+	/* mark the global template tree */
+	mark_pages(global_table, start, len, mode, 0, cmode);
 
 	/*
-	 * If shortcut is set, we won't do anything for non-owners, as the
-	 * old mode for the area is compatible (i.e. the same MMU-wise).
-	 * Note that we don't shortcut for curproc, as this call to
-	 * mark_region() may be the invalidation of a freed or shrinked
-	 * region which curproc is no longer owner of, but still has owner
-	 * rights (MMU-wise).
+	 * OK, if shortcut is set and mode is PROT_G, nothing has to be done,
+	 * because all processes already have global access
 	 */
-	if (shortcut && (proc != curproc))
-	    continue;
 
-	setmode = mode;
+	if (shortcut && (mode == PROT_G))
+    		goto finished;
+
+	for (proc = proclist; proc; proc = proc->gl_next)
+	{
+		if (proc->wait_q == ZOMBIE_Q || proc->wait_q == TSR_Q)
+			continue;
+		if (!proc->p_mem || !proc->p_mem->page_table)
+			continue;
+		if (!shortcut && (mode == PROT_I || mode == PROT_G))
+		{
+			/* everybody gets the same flags */
+			goto notowner;
+		}
+		if (proc->p_mem->memflags & F_OS_SPECIAL)
+		{
+			/* you're special; you get owner flags */
+			MP_DEBUG(("mark_region: pid %d is an OS special!",proc->pid));
+			goto owner;
+		}
+		if ((mr = proc->p_mem->mem) != 0)
+		{
+			for (i = 0; i < proc->p_mem->num_reg; i++, mr++)
+			{
+				if (*mr == region)
+				{
+					MP_DEBUG(("mark_region: pid %d is an owner",proc->pid));
+owner:
+					setmode = (mode == PROT_I) ? PROT_I : PROT_G;
+					goto gotvals;
+				}
+			}
+		}
+notowner:
+		/* if you get here you're not an owner, or mode is G or I */
+		MP_DEBUG(("mark_region: pid %d gets non-owner modes",proc->pid));
+
+		/*
+		* If shortcut is set, we won't do anything for non-owners, as the
+		* old mode for the area is compatible (i.e. the same MMU-wise).
+		* Note that we don't shortcut for curproc, as this call to
+		* mark_region() may be the invalidation of a freed or shrinked
+		* region which curproc is no longer owner of, but still has owner
+		* rights (MMU-wise).
+		*/
+		if (shortcut && (proc != curproc))
+			continue;
+
+		setmode = mode;
 
 gotvals:
-	mark_pages(proc->p_mem->page_table, start, len, setmode, 0, cmode);
-    }
-finished:
-    flush_mmu();
-    cpush((void *)start, len);
+		mark_pages(proc->p_mem->page_table, start, len, setmode, 0, cmode);
 	}
+finished:
+	flush_mmu();
+	cpush((void *)start, len);
+}
 }
 
 /* special version of mark_region, used for attaching (mode == PROT_P)
@@ -1189,54 +1193,58 @@ mark_proc_region(struct memspace *p_mem, MEMREGION *region, short mode, short pi
 {
 	if (no_mem_prot)
 		return;
+{
+	ulong start = region->loc;
+	ulong len = region->len;
+	short global_mode;
+
+
+	MP_DEBUG(("mark_proc_region %lx len %lx mode %d for pid %d",
+		start, len, mode, pid));
+
+	global_mode = global_mode_table[(start >> 13)];
+
+	assert(p_mem && p_mem->page_table);
+
+	if (global_mode == PROT_I || global_mode == PROT_G)
+		mode = global_mode;
+	else
 	{
-    ulong start = region->loc;
-    ulong len = region->len;
-    short global_mode;
-
-
-    MP_DEBUG(("mark_proc_region %lx len %lx mode %d for pid %d",
-	      start, len, mode, pid));
-
-    global_mode = global_mode_table[(start >> 13)];
-
-    assert(p_mem && p_mem->page_table);
-    if (global_mode == PROT_I || global_mode == PROT_G)
-      mode = global_mode;
-    else {
-	if (p_mem->memflags & F_OS_SPECIAL) {
-	    /* you're special; you get owner flags */
-	    MP_DEBUG(("mark_proc_region: pid %d is an OS special!",pid));
-	    goto owner;
-	}
-	if (mode == PROT_P) {
-	    MP_DEBUG(("mark_proc_region: pid %d is an owner",pid));
+		if (p_mem->memflags & F_OS_SPECIAL)
+		{
+		/* you're special; you get owner flags */
+			MP_DEBUG(("mark_proc_region: pid %d is an OS special!",pid));
+			goto owner;
+		}
+		if (mode == PROT_P)
+		{
+			MP_DEBUG(("mark_proc_region: pid %d is an owner",pid));
 owner:
-	    mode = PROT_G;
-	    goto gotvals;
+			mode = PROT_G;
+			goto gotvals;
+		}
+		else if (mode == PROT_I)
+		{
+		/*
+		* PROT_I actually means "detach region", which in turn means
+		* "restore the global table's access mode". Two things to note:
+		* - If the global mode is PROT_P, the result is the same as with
+		*   PROT_I, because for non-owners, these modes are identical
+		* - Using the global mode is not a bug, because detaching a region
+		*   not necessarily means it's being freed (see detach_region(),
+		*   which only calls mark_proc_region for regions with a link
+		*   count > 1, free_region() otherwise)
+		*/
+			mode = global_mode;
+		}
 	}
-	else if (mode == PROT_I)
-	{
-	    /*
-	     * PROT_I actually means "detach region", which in turn means
-	     * "restore the global table's access mode". Two things to note:
-	     * - If the global mode is PROT_P, the result is the same as with
-	     *   PROT_I, because for non-owners, these modes are identical
-	     * - Using the global mode is not a bug, because detaching a region
-	     *   not necessarily means it's being freed (see detach_region(),
-	     *   which only calls mark_proc_region for regions with a link
-	     *   count > 1, free_region() otherwise)
-	     */
-	    mode = global_mode;
-	}
-    }
 
 /* if you get here you're not an owner, or mode is G or I */
-    MP_DEBUG(("mark_proc_region: pid %d gets non-owner modes",pid));
+	MP_DEBUG(("mark_proc_region: pid %d gets non-owner modes",pid));
 
 gotvals:
-    mark_pages(p_mem->page_table, start, len, mode, FLUSH_BOTH, 0);
-	}
+	mark_pages(p_mem->page_table, start, len, mode, FLUSH_BOTH, 0);
+}
 }
 
 /*
