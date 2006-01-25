@@ -235,14 +235,15 @@ set_winrect(struct xa_window *wind, RECT *wr, const RECT *new)
 }
 
 void
-inside_root(RECT *r, struct options *o)
+inside_root(RECT *r, bool noleft)
 {
 	if (r->y < root_window->wa.y)
 		r->y = root_window->wa.y;
 
-	if (o->noleft)
-		if (r->x < root_window->wa.x)
-			r->x = root_window->wa.x;
+	if (noleft && r->x < root_window->wa.x)
+	{
+		r->x = root_window->wa.x;
+	}
 }
 
 void
@@ -948,6 +949,8 @@ change_window_attribs(enum locks lock,
 		struct xa_window *w,
 		XA_WIND_ATTR tp,
 		bool r_is_wa,
+		bool insideroot,
+		short noleft,
 		RECT r, RECT *remember)
 {
 	XA_WIND_ATTR old_tp = w->active_widgets;
@@ -979,6 +982,23 @@ change_window_attribs(enum locks lock,
 	}
 	else
 		w->r = r;
+	
+	if (insideroot)
+	{
+		bool nl;
+		switch (noleft)
+		{
+			case 1:
+				nl = false;	break;
+			case 2:
+				nl = true;	break;
+			case 0:
+			default:
+				nl = w->owner->options.noleft;
+				break;
+		}
+		inside_root(&w->r, nl);
+	}
 	
 	w->rc = w->r;
 
@@ -1064,7 +1084,7 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 
 		if (wind != root_window && !(wind->dial & (created_for_POPUP | created_for_SLIST)))
 		{
-			inside_root(&r, &wind->owner->options);
+			inside_root(&r, wind->owner->options.noleft);
 			inside_minmax(&r, wind);
 		}
 
@@ -1128,7 +1148,7 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 	if ((wind->window_status & XAWS_ICONIFIED))
 	{
 		if (wind != root_window && !(wind->dial & created_for_POPUP))
-			inside_root(&r, &wind->owner->options);
+			inside_root(&r, wind->owner->options.noleft);
 
 		if (r.w != -1 && r.h != -1)
 			wind->rc = wind->r = r;
@@ -1142,7 +1162,7 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 		/* Change the window coords */
 		if (wind != root_window && !(wind->dial & created_for_POPUP))
 		{
-			inside_root(&r, &wind->owner->options);
+			inside_root(&r, wind->owner->options.noleft);
 			//inside_minmax(&r, wind);
 		}
 		wind->rc = wind->r = r;
@@ -1557,7 +1577,7 @@ move_window(enum locks lock, struct xa_window *wind, bool blit, short newstate, 
 		wind->pr = wind->rc;
 	}
 
-	inside_root(&new, &wind->owner->options);
+	inside_root(&new, wind->owner->options.noleft);
 
 	set_and_update_window(wind, blit, false, &new);
 
