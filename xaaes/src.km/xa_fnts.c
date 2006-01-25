@@ -1283,7 +1283,7 @@ XA_fnts_open(enum locks lock, struct xa_client *client, AESPB *pb)
 				obj_rectangle(wt, aesobj(wt->tree, 0), &or);
 				or.x = r.x;
 				or.y = r.y;
-				change_window_attribs(lock, client, wind, tp, true, or, NULL);
+				change_window_attribs(lock, client, wind, tp, true, true, 2, or, NULL);
 			}
 
 			fnts->button_flags = pb->intin[0];
@@ -1705,7 +1705,7 @@ XA_fnts_do(enum locks lock, struct xa_client *client, AESPB *pb)
 		ob_rectangle(obtree, aesobj(obtree, 0), &or);
 		center_rect(&or);
 
-		change_window_attribs(lock, client, wind, tp, true, or, NULL);
+		change_window_attribs(lock, client, wind, tp, true, true, 2, or, NULL);
 		
 		widg->m.properties &= ~WIP_NOTEXT;
 		set_toolbar_handlers(&fnts_th, wind, widg, widg->stuff);
