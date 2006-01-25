@@ -888,7 +888,7 @@ reset_listwi_widgets(SCROLL_INFO *list, short redraw)
 
 		if (rdrw || (tp != list->wi->active_widgets))
 		{
-			change_window_attribs(0, list->wi->owner, list->wi, tp, false, list->wi->r, NULL);
+			change_window_attribs(0, list->wi->owner, list->wi, tp, false, false, 0, list->wi->r, NULL);
 			recalc_tabs(list);
 			if (canredraw(list))
 			{

@@ -2339,6 +2339,7 @@ obj_offset(XA_TREE *wt, struct xa_aes_object object, short *mx, short *my)
 	
 	DIAG((D_objc, NULL, "obj_offset: obtree=%lx, obj=%d, xret=%lx, yret=%lx",
 		obtree, aesobj_item(&object), mx, my));
+	DIAG((D_objc, NULL, " ---- --  : dx=%d, dy=%d", wt->dx, wt->dy));
 
 	do
 	{
@@ -2354,7 +2355,7 @@ uplink:
 			*my = y;
 
 			DIAG((D_objc, NULL, "obj_offset: return found obj=%d at x=%d, y=%d",
-				object, x, y));
+				aesobj_item(&object), x, y));
 			clean_aesobj_links(&oblink);
 			return 1;
 		}
@@ -2431,8 +2432,8 @@ uplink:
 			*mx = x;
 			*my = y;
 
-			DIAG((D_objc, NULL, "obj_offset: return found obj=%d at x=%d, y=%d",
-				object, x, y));
+			DIAG((D_objc, NULL, "ob_offset: return found obj=%d at x=%d, y=%d",
+				aesobj_item(&object), x, y));
 			clean_aesobj_links(&oblink);
 			return 1;
 		}
