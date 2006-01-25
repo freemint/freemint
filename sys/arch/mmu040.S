@@ -195,6 +195,7 @@ _read_phys:
 	move.l	4(sp),a0		// get address to read
 	move	sr,d1
 	ori	#0x700,sr		// disable all interrupts
+	
 	move.l	#0x00ffe060,d0		// value for DTT0: transparently
 					// translate all data accesses, not using
 					// the cache
@@ -211,5 +212,4 @@ _read_phys:
 #endif
 	move	d1,sr			// restore interrupts
 	rts
-
 #endif
