@@ -47,6 +47,8 @@ void change_window_attribs(enum locks lock,
 			   struct xa_window *w,
 			   XA_WIND_ATTR tp,
 			   bool r_is_wa,
+			   bool insideroot,
+			   short noleft,
 			   RECT r, RECT *remember);
 
 void wi_remove(struct win_base *b, struct xa_window *w);
@@ -88,7 +90,7 @@ void	bottom_window(enum locks lock, bool snd_untopped, bool snd_ontop, struct xa
 void	after_top(enum locks lock, bool untop);
 void	remove_windows(enum locks lock, struct xa_client *client);
 void	remove_all_windows(enum locks lock, struct xa_client *client);
-void	inside_root(RECT *r, struct options *o);
+void	inside_root(RECT *r, bool noleft);
 void	fitin_root(RECT *r);
 void	inside_minmax(RECT *r, struct xa_window *wind);
 void	set_winrect(struct xa_window *wind, RECT *wr, const RECT *r);

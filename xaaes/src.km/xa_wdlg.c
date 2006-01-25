@@ -372,7 +372,7 @@ wdialog_message(enum locks lock, struct xa_client *client, struct wdlg_evnt_parm
 		#endif
 			if (wind->r.w != r.w || wind->r.h != r.h)
 			{
-				inside_root(&r, &wind->owner->options);
+				inside_root(&r, wind->owner->options.noleft);
 				move_window(wlock, wind, true, -1, r.x, r.y, r.w, r.h);
 			}
 			break;
@@ -402,7 +402,7 @@ wdialog_message(enum locks lock, struct xa_client *client, struct wdlg_evnt_parm
 			if (wind->r.x != r.x || wind->r.y != r.y)
 			{
 				r.w = wind->rc.w, r.h = wind->rc.h;
-				inside_root(&r, &wind->owner->options);
+				inside_root(&r, wind->owner->options.noleft);
 				move_window(wlock, wind, true, -1, r.x, r.y, r.w, r.h);
 			}
 			break;
@@ -464,8 +464,7 @@ XA_wdlg_create(enum locks lock, struct xa_client *client, AESPB *pb)
 							
 	CONTROL(2,0,4)
 
-	DIAG((D_wdlg, client, "XA_wdlg_create"));
-	DIAG((D_wdlg, client, "  --  exit %lx, tree %lx, user_data %lx, data %lx",
+	DIAG((D_wdlg, client, "XA_wdlg_create: exit %lx, tree %lx, user_data %lx, data %lx",
 		pb->addrin[0], pb->addrin[1], pb->addrin[2], pb->addrin[3]));
 
 	if (pb->addrin[0] && validate_obtree(client, (OBJECT *)pb->addrin[1], "XA_wdlg_create:") && pb->addrout)
@@ -479,6 +478,8 @@ XA_wdlg_create(enum locks lock, struct xa_client *client, AESPB *pb)
 		obtree->ob_state &= ~OS_OUTLINED;
 
 		ob_rectangle(obtree, aesobj(obtree, 0), &or);
+
+		DIAGS(("XA_wdlg_create: ob=%lx, obx=%d, oby=%d", obtree, obtree->ob_x, obtree->ob_y));
 
 		if (obtree->ob_x <= 0 && obtree->ob_y <= 0)
 			center_rect(&or); //form_center(obtree, ICON_H);
@@ -551,9 +552,9 @@ XA_wdlg_open(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	handle = (short)pb->addrin[0];
 
-	DIAG((D_wdlg, client, "(%d)XA_wdlg_open, handle=%lx, title %lx, data %lx",
+	DIAG((D_wdlg, client, "XA_wdlg_open: handle=(%lx)%lx, title %lx, data %lx",
 		handle, pb->addrin[0], pb->addrin[1],pb->addrin[2]));
-	DIAG((D_wdlg, client, "  --  tp=%x, x=%d, y=%d",
+	DIAG((D_wdlg, client, "XA_wdlg_open: tp=%x, x=%d, y=%d",
 		pb->intin[0], pb->intin[1], pb->intin[2]));
 
 	/* Get the window */
@@ -573,6 +574,20 @@ XA_wdlg_open(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		/* recreate window with final widget set. */
 		
+		DIAG((D_wdlg, client, "XA_wdlg_open: ob=%lx, obx=%d, oby=%d",
+			wdlg->std_wt->tree, wdlg->std_wt->tree->ob_x, wdlg->std_wt->tree->ob_y));
+
+		if (pb->intin[1] >= root_window->wa.x)
+			r.x = pb->intin[1];
+		else
+			r.x = (root_window->wa.w - r.w) >> 1;
+			
+		if (pb->intin[2] >= root_window->wa.y)
+			r.y = pb->intin[2];
+		else
+			r.y = (root_window->wa.h - r.h) >> 1;
+		
+	#if 0
 		if (pb->intin[1] == -1 || pb->intin[2] == -1)
 		{
 			r.x = (root_window->wa.w - r.w) / 2;
@@ -583,13 +598,14 @@ XA_wdlg_open(enum locks lock, struct xa_client *client, AESPB *pb)
 			r.x = pb->intin[1];
 			r.y = pb->intin[2];
 		}
+	#endif
 		{
 			RECT or;
 
 			obj_area(wdlg->std_wt, aesobj(wdlg->std_wt->tree, 0), &or);
 			or.x = r.x;
 			or.y = r.y;
-			change_window_attribs(lock, client, wind, tp, true, or, NULL);
+			change_window_attribs(lock, client, wind, tp, true, true, 2, or, NULL);
 		}
 		if (!(s = (char *)pb->addrin[1]))
 			s = client->proc_name;
@@ -606,6 +622,8 @@ XA_wdlg_open(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		obj_init_focus(wdlg->std_wt, OB_IF_RESET);
 
+		DIAG((D_wdlg, client, "XA_wdlg_open: wa.x=%d, wa=%d", wind->wa.x, wind->wa.y));
+
 		wdlg->std_wt->tree->ob_x = wind->wa.x;
 		wdlg->std_wt->tree->ob_y = wind->wa.y;
 		open_window(lock, wind, wind->rc);
@@ -614,7 +632,6 @@ XA_wdlg_open(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		pb->intout[0] = handle;
 	}
-
 	return XAC_DONE;
 }
 
