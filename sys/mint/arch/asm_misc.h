@@ -50,7 +50,6 @@
 	retvalue;				\
 })
 
-
 # define callout2(func, a, b)			\
 ({						\
 	register long retvalue __asm__("d0");	\
