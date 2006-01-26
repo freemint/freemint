@@ -1,0 +1,21 @@
+NFSTDERR.XDD
+============
+
+It should serve as an example of how to use native features in FreeMiNT
+device drivers and other modules. It requires the kernel to be build
+with -DARANYM (common aranym aware FreeMiNT kernel builds) to actually
+work.
+
+This implements a device /dev/nfstderr to MiNT through which you can send
+information to the ARAnyM stderr output (the aranym console window).
+This is often useful for debugging purposes.
+
+$ cat mytext.txt >/dev/nfstderr
+
+It uses the NF_STDERR native feature which is a part of the basic set
+of features (required by the NF design to be implemented by any
+NF supporting emulator/machine).
+
+Enjoy
+
+STanda Opichal <opichals@seznam.cz>
