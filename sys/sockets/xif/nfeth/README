@@ -1,0 +1,62 @@
+nfeth.xif (formerly aranym.xif)
+===============================
+
+The MiNT-Net xif driver for Native Features "ETHERNET" interface.
+
+
+Installation and usage
+======================
+
+On host side (linux):
+---------------------
+
+Make sure the 'aratapif' (ARAnyM TAP IFconfig) binary is installed somewhere
+in your $PATH (/usr/bin or /usr/local/bin) and that it is installed setuid
+root. If it's not use the following commands (run them as root):
+
+linux:~# chown root /usr/bin/aratapif
+linux:~# chmod u+s /usr/bin/aratapif
+
+Another important thing is to load the tuntap device driver (if it isn't
+compiled in the host kernel). I load it with the following command:
+
+linux:~# modprobe tun
+
+And before loading this driver please check (and possibly fix) the 
+read/write permissions of the "/dev/net/tun" device:
+
+linux:~# chmod a+rw /net/dev/tun
+
+Otherwise ARAnyM started by regular user could not access this device.
+
+More information about TUN/TAP you'll find at http://vtun.sourceforge.net/tun/
+
+On Atari side:
+--------------
+
+Install MiNT-Net and copy the nfeth.xif into your mint folder.
+Then configure the eth0 interface, best by calling the 'eth0-config.sh'
+script.
+If you wanted to configure the IP addresses or netmask, you could do that
+in the ARAnyM config file.
+
+Then in MiNT-Net you can e.g. ping to 192.168.0.1 (which is the default IP
+of the TAP tunnel's host side).
+
+
+How it works
+============
+
+The ARAnyM establishes the TAP interface (using tuntap driver).
+tuntap linux driver: /usr/src/linux/Documentation/networking/tuntap.txt
+Some related info can be found at the following URLs:
+	VTUN (virtual tunnel)
+		http://vtun.sourceforge.net/tun
+	Hercules (s390 emulator)
+		http://www.conmicro.cx/hercules/
+
+
+
+Enjoy!
+
+The ARAnyM Team.
