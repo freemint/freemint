@@ -33,7 +33,6 @@
 # include "mint/mint.h"
 # include "mint/file.h"
 
-extern FILESYS *hostfs_init(void);
 extern FILESYS *hostfs_mount_drives(FILESYS *fs);
 
 #endif /* _hostfs_h_ */
