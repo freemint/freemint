@@ -3,7 +3,7 @@
 #
 
 SHELL = /bin/sh
-SUBDIRS = ext2fs minixfs nfs skeleton
+SUBDIRS = ext2fs hostfs minixfs nfs skeleton
 
 srcdir = .
 top_srcdir = ..

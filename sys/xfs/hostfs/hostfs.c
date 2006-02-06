@@ -1,0 +1,202 @@
+/*
+ * $Id$
+ *
+ * The Host OS filesystem access driver - entry point.
+ *
+ * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
+ * distribution. See the file CHANGES for a detailed log of changes.
+ *
+ * Copyright (c) 2002-2006 Standa of ARAnyM dev team.
+ * Copyright 1998, 1999, 2001 by Markus Kohm <Markus.Kohm@gmx.de>.
+ * Modified by Chris Felsch <C.Felsch@gmx.de>.
+ *
+ * Originally taken from the STonX CVS repository.
+ *
+ * This file is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2, or (at your option)
+ * any later version.
+ *
+ * This file is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+ */
+
+#include "global.h"
+#include "hostfs_xfs.h"
+#include "hostfs_dev.h"
+#include "hostfs.h"
+
+#include "mint/arch/nf_ops.h"
+
+
+/*
+ * global kerinfo structure
+ */
+struct kerinfo *KERNEL;
+
+
+/*
+ * filesystem basic description
+ */
+static struct fs_descr hostfs_descr =
+    {
+	NULL,
+	0, /* this is filled in by MiNT at FS_MOUNT */
+	0, /* FIXME: what about flags? */
+	{0,0,0,0}  /* reserved */
+    };
+
+
+FILESYS *hostfs_mount_drives(FILESYS *fs)
+{
+	long r;
+	int succ;
+	int keep = 0;
+	int rollback_failed = 0;
+
+	/**
+	 * FIXME: TODO: If there are really different settings in the filesystem
+	 * mounting to provide full case sensitive filesystem (like ext2) then
+	 * we need to strip the FS_NOXBIT from the filesystem flags. For now
+	 * every mount is half case sensitive and behaves just like mint's fatfs
+	 * implementation in this sense.
+	 *
+	 * We would also need to allocate a duplicate copy if there are different
+	 * styles of case sensitivity used in order to provide the kernel with
+	 * appropriate filesystem information. Also some NF function would be needed
+	 * to go though the configuration from the host side (at this point there
+	 * is only the fs_drive_bits() which doesn't say much).
+	 **/
+
+	hostfs_descr.file_system = fs;
+
+	/* Install the filesystem */
+	r = d_cntl (FS_INSTALL, "u:\\", (long) &hostfs_descr);
+	DEBUG(("hostfs: Dcntl(FS_INSTALL) descr=%x", &hostfs_descr));
+	if (r != 0 && r != (long)kernel)
+	{
+		DEBUG(("Return value was %li", r));
+
+		/* Nothing installed, so nothing to stay resident */
+		return NULL;
+	}
+
+	{
+		ulong drv_mask = fs_drive_bits();
+		ushort drv_number = 0;
+		char mount_point[] = "u:\\XX";
+
+		succ |= 1;
+
+		c_conws("\r\nMounts: ");
+
+		while ( drv_mask ) {
+			/* search the 1st log 1 bit position -> drv_number */
+			while( ! (drv_mask & 1) ) { drv_number++; drv_mask>>=1; }
+
+			/* ready */
+			succ = 0;
+
+			mount_point[3] = drv_number+'a';
+			mount_point[4] = '\0';
+
+			DEBUG(("hostfs: drive: %d", drv_number));
+
+			c_conws( (const char*)mount_point );
+			c_conws(" ");
+
+			/* mount */
+			r = d_cntl(FS_MOUNT, mount_point, (long) &hostfs_descr);
+			DEBUG(("hostfs: Dcnt(FS_MOUNT) dev_no: %d", hostfs_descr.dev_no));
+			if (r != hostfs_descr.dev_no )
+			{
+				DEBUG(("hostfs: return value was %li", r));
+			} else {
+				succ |= 2;
+				/* init */
+
+				r = fs_native_init( hostfs_descr.dev_no, mount_point, "/", 0 /*caseSensitive*/,
+										   fs, &hostfs_fs_devdrv );
+				DEBUG(("hostfs: native_init mount_point: %s", mount_point));
+				if ( r < 0 ) {
+					DEBUG(("hostfs: return value was %li", r));
+				} else {
+					succ = 0; /* do not unmount */
+					keep = 1; /* at least one is mounted */
+				}
+			}
+
+			/* Try to uninstall, if necessary */
+			if ( succ & 2 ) {
+				/* unmount */
+				r = d_cntl(FS_UNMOUNT, mount_point,
+						   (long) &hostfs_descr);
+				DEBUG(("hostfs: Dcntl(FS_UNMOUNT) descr=%x", &hostfs_descr));
+				if ( r < 0 ) {
+					DEBUG(("hostfs: return value was %li", r));
+					/* Can't uninstall, because unmount failed */
+					rollback_failed |= 2;
+				}
+			}
+
+			drv_number++; drv_mask>>=1;
+		}
+
+		c_conws("\r\n");
+	}
+
+	/* everything OK */
+	if ( keep )
+		return fs; /* We where successfull */
+
+	/* Something went wrong here -> uninstall the filesystem */
+	r = d_cntl(FS_UNINSTALL, "u:\\", (long) &hostfs_descr);
+	DEBUG(("hostfs: Dcntl(FS_UNINSTALL) descr=%x", &hostfs_descr));
+	if ( r < 0 ) {
+		DEBUG(("hostfs: return value was %li", r));
+		/* Can't say NULL,
+		 * because uninstall failed */
+		rollback_failed |= 1;
+	}
+
+       	/* Can't say NULL, if IF_UNINSTALL or FS_UNMOUNT failed */
+	if ( rollback_failed ) return (FILESYS *) 1;
+
+       	/* Nothing installed, so nothing to stay resident */
+	return NULL;
+}
+
+
+FILESYS *hostfs_init(void)
+{
+	if ( !KERNEL->nf_ops ) {
+		c_conws("Native Features not present on this system\r\n");
+		return NULL;
+	}
+
+	/* get the HostFs NatFeat ID */
+	nf_hostfs_id = KERNEL->nf_ops->get_id("HOSTFS");
+	if (nf_hostfs_id == 0) {
+		c_conws(MSG_PFAILURE("hostfs",
+					"\r\nThe HOSTFS NatFeat not found\r\n"));
+		return NULL;
+	}
+
+	nf_call = KERNEL->nf_ops->call;
+
+	/* compare the version */
+	if (nf_call(HOSTFS(GET_VERSION)) != HOSTFS_NFAPI_VERSION) {
+		c_conws(MSG_PFAILURE("hostfs",
+					"\r\nHOSTFS NFAPI version mismatch\n\r"));
+		return NULL;
+	}
+
+	return &hostfs_fs;
+}
+
