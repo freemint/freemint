@@ -311,3 +311,31 @@ FILESYS hostfs_fs =
 	0L, 0L              /* block(), deblock() */
 };
 
+
+FILESYS *hostfs_init(void)
+{
+	if ( !kernel->nf_ops ) {
+		c_conws("Native Features not present on this system\r\n");
+		return NULL;
+	}
+
+	/* get the HostFs NatFeat ID */
+	nf_hostfs_id = kernel->nf_ops->get_id("HOSTFS");
+	if (nf_hostfs_id == 0) {
+		c_conws(MSG_PFAILURE("hostfs",
+					"\r\nThe HOSTFS NatFeat not found\r\n"));
+		return NULL;
+	}
+
+	nf_call = kernel->nf_ops->call;
+
+	/* compare the version */
+	if (nf_call(HOSTFS(GET_VERSION)) != HOSTFS_NFAPI_VERSION) {
+		c_conws(MSG_PFAILURE("hostfs",
+					"\r\nHOSTFS NFAPI version mismatch\n\r"));
+		return NULL;
+	}
+
+	return &hostfs_fs;
+}
+

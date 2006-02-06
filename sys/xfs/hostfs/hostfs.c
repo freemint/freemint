@@ -172,31 +172,3 @@ FILESYS *hostfs_mount_drives(FILESYS *fs)
 	return NULL;
 }
 
-
-FILESYS *hostfs_init(void)
-{
-	if ( !KERNEL->nf_ops ) {
-		c_conws("Native Features not present on this system\r\n");
-		return NULL;
-	}
-
-	/* get the HostFs NatFeat ID */
-	nf_hostfs_id = KERNEL->nf_ops->get_id("HOSTFS");
-	if (nf_hostfs_id == 0) {
-		c_conws(MSG_PFAILURE("hostfs",
-					"\r\nThe HOSTFS NatFeat not found\r\n"));
-		return NULL;
-	}
-
-	nf_call = KERNEL->nf_ops->call;
-
-	/* compare the version */
-	if (nf_call(HOSTFS(GET_VERSION)) != HOSTFS_NFAPI_VERSION) {
-		c_conws(MSG_PFAILURE("hostfs",
-					"\r\nHOSTFS NFAPI version mismatch\n\r"));
-		return NULL;
-	}
-
-	return &hostfs_fs;
-}
-
