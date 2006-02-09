@@ -50,6 +50,11 @@
 # include "signal.h"
 # include "time.h"
 
+# ifdef WITH_HOSTFS
+# include "xfs/hostfs/hostfs_xfs.h"
+# include "xfs/hostfs/hostfs.h"
+# endif
+
 
 #if 1
 #define PATH2COOKIE_DB(x) TRACE(x)
@@ -211,6 +216,11 @@ init_filesys (void)
 	xfs_add (&tos_filesys);
 # endif
 	xfs_add (&fatfs_filesys);
+# ifdef WITH_HOSTFS
+	/* after fatfs_filesys to pick hostfs when
+	 * enabled on already FATFS occupied drive */
+	xfs_add (&hostfs_filesys);
+# endif
 	xfs_add (&bios_filesys);
 	xfs_add (&pipe_filesys);
 	xfs_add (&proc_filesys);
@@ -243,6 +253,15 @@ init_filesys (void)
 
 	/* initialize the main file system */
 	fatfs_init ();
+
+# ifdef WITH_HOSTFS
+	/* initialize the hostfs file system */
+	{
+		FILESYS *fs = hostfs_init ();
+		if ( fs )
+			hostfs_mount_drives( fs );
+	}
+# endif
 }
 
 # ifdef DEBUG_INFO
