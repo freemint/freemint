@@ -19,6 +19,7 @@ include $(top_srcdir)/PHONY
 all-here: all-kernels
 
 # default overwrites
+KERNELSUBDIRS += $(MODULEDIRS)
 
 # default definitions
 GENFILES = $(compile_all_dirs) mint/*~ sys/*~
