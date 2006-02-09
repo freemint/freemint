@@ -32,13 +32,8 @@
 #include "hostfs_dev.h"
 #include "hostfs.h"
 
+#include "mint/kerinfo.h"
 #include "mint/arch/nf_ops.h"
-
-
-/*
- * global kerinfo structure
- */
-struct kerinfo *KERNEL;
 
 
 /*
@@ -52,6 +47,48 @@ static struct fs_descr hostfs_descr =
 	{0,0,0,0}  /* reserved */
     };
 
+
+#if __KERNEL__ == 1
+
+FILESYS *hostfs_mount_drives(FILESYS *fs)
+{
+	long r;
+	ulong drv_mask = fs_drive_bits();
+	ushort drv_number = 0;
+	char mount_point[] = "u:\\XX";
+
+	c_conws("\r\nMounts: ");
+
+	while ( drv_mask ) {
+		/* search the 1st log 1 bit position -> drv_number */
+		while( ! (drv_mask & 1) ) { drv_number++; drv_mask>>=1; }
+
+		mount_point[3] = drv_number+'a';
+		mount_point[4] = '\0';
+
+		DEBUG(("hostfs: drive: %d", drv_number));
+
+		c_conws( (const char*)mount_point );
+		c_conws(" ");
+
+		/* r = d_cntl(FS_MOUNT, mount_point, (long) &hostfs_descr); */
+		/* the d_cntl(FS_MOUNT) starts with dev_no = 100 */
+		hostfs_descr.dev_no = 50+drv_number;
+		hostfs_descr.file_system = fs;
+		DEBUG(("hostfs: Dcnt(FS_MOUNT) dev_no: %d", hostfs_descr.dev_no));
+
+		r = fs_native_init( hostfs_descr.dev_no, mount_point, "/", 0 /*caseSensitive*/,
+				fs, &hostfs_fs_devdrv );
+		/* set the drive bit */
+		if ( !r )
+			*((long *) 0x4c2L) |= 1UL << drv_number;
+
+		drv_number++; drv_mask>>=1;
+	}
+	return fs;
+}
+
+#else /* __KERNEL__ == 1 */
 
 FILESYS *hostfs_mount_drives(FILESYS *fs)
 {
@@ -79,7 +116,7 @@ FILESYS *hostfs_mount_drives(FILESYS *fs)
 	/* Install the filesystem */
 	r = d_cntl (FS_INSTALL, "u:\\", (long) &hostfs_descr);
 	DEBUG(("hostfs: Dcntl(FS_INSTALL) descr=%x", &hostfs_descr));
-	if (r != 0 && r != (long)kernel)
+	if (r != 0 && r != (long)KERNEL)
 	{
 		DEBUG(("Return value was %li", r));
 
@@ -172,3 +209,4 @@ FILESYS *hostfs_mount_drives(FILESYS *fs)
 	return NULL;
 }
 
+#endif /* __KERNEL__ == 1 */

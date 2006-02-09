@@ -37,7 +37,7 @@ extern ulong    fs_drive_bits(void);
 extern long     fs_native_init(int fs_devnum, char *mountpoint, char *hostroot,
 				int halfsensitive, void *fs, void *fs_dev);
 
-extern FILESYS hostfs_fs;
+extern FILESYS hostfs_filesys;
 extern FILESYS *hostfs_init(void);
 
 #endif /* _hostfs_xfs_h_ */
