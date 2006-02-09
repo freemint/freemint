@@ -8,9 +8,11 @@ HEADER = \
 	hostfs_dev.h
 
 COBJS = \
-	main.c \
 	hostfs.c \
 	hostfs_xfs.c \
 	hostfs_dev.c
 
-SRCFILES = $(HEADER) $(COBJS)
+CMODOBJS = \
+	main.c
+
+SRCFILES = $(HEADER) $(COBJS) $(CMODOBJS)

@@ -35,49 +35,6 @@
 #include "mint/arch/nf_ops.h"
 
 
-long     _cdecl hostfs_fs_root		 (int drv, fcookie *fc);
-long     _cdecl hostfs_fs_lookup	 (fcookie *dir, const char *name, fcookie *fc);
-long     _cdecl hostfs_fs_creat	 (fcookie *dir, const char *name,
-								  unsigned mode, int attrib, fcookie *fc);
-DEVDRV * _cdecl hostfs_fs_getdev	 (fcookie *fc, long *devspecial);
-long     _cdecl hostfs_fs_getxattr	 (fcookie *file, XATTR *xattr);
-long     _cdecl hostfs_fs_chattr	 (fcookie *file, int attr);
-long     _cdecl hostfs_fs_chown		 (fcookie *file, int uid, int gid);
-long     _cdecl hostfs_fs_chmode	 (fcookie *file, unsigned mode);
-long     _cdecl hostfs_fs_mkdir		 (fcookie *dir, const char *name, unsigned mode);
-long     _cdecl hostfs_fs_rmdir		 (fcookie *dir, const char *name);
-long     _cdecl hostfs_fs_remove	 (fcookie *dir, const char *name);
-long     _cdecl hostfs_fs_getname	 (fcookie *relto, fcookie *dir,
-								  char *pathname, int size);
-long     _cdecl hostfs_fs_rename	 (fcookie *olddir, char *oldname,
-								  fcookie *newdir, const char *newname);
-long     _cdecl hostfs_fs_opendir	 (DIR *dirh, int tosflag);
-long     _cdecl hostfs_fs_readdir	 (DIR *dirh, char *name, int namelen,
-								  fcookie *fc);
-long     _cdecl hostfs_fs_rewinddir (DIR *dirh);
-long     _cdecl hostfs_fs_closedir	 (DIR *dirh);
-long     _cdecl hostfs_fs_pathconf	 (fcookie *dir, int which);
-long     _cdecl hostfs_fs_dfree	 (fcookie *dir, long *buf);
-long     _cdecl hostfs_fs_writelabel(fcookie *dir, const char *name);
-long     _cdecl hostfs_fs_readlabel (fcookie *dir, char *name,
-								  int namelen);
-long     _cdecl hostfs_fs_symlink	 (fcookie *dir, const char *name,
-								  const char *to);
-long     _cdecl hostfs_fs_readlink	 (fcookie *dir, char *buf, int len);
-long     _cdecl hostfs_fs_hardlink	 (fcookie *fromdir,
-								  const char *fromname,
-								  fcookie *todir, const char *toname);
-long     _cdecl hostfs_fs_fscntl	 (fcookie *dir, const char *name,
-								  int cmd, long arg);
-long     _cdecl hostfs_fs_dskchng	 (int drv, int mode);
-long     _cdecl hostfs_fs_release	 (fcookie *);
-long     _cdecl hostfs_fs_dupcookie (fcookie *new, fcookie *old);
-long     _cdecl hostfs_fs_sync		 (void);
-long     _cdecl hostfs_fs_mknod     (fcookie *dir, const char *name, ulong mode);
-long     _cdecl hostfs_fs_unmount	 (int drv);
-long     _cdecl hostfs_fs_stat64    (fcookie *file, STAT *xattr);
-
-
 unsigned long nf_hostfs_id = 0;
 long __CDECL (*nf_call)(long id, ...) = 0UL;
 
@@ -93,127 +50,153 @@ long     _cdecl fs_native_init(int fs_devnum, char *mountpoint, char *hostroot, 
 	return nf_call(HOSTFS(XFS_INIT), (long)fs_devnum, mountpoint, hostroot, (long)halfsensitive, fs, fs_dev);
 }
 
+/* FILESYS routines */
+
+static
 long     _cdecl hostfs_fs_root       (int drv, fcookie *fc)
 {
 	return nf_call(HOSTFS(XFS_ROOT), (long)drv, fc);
 }
 
+static
 long     _cdecl hostfs_fs_lookup     (fcookie *dir, const char *name, fcookie *fc)
 {
 	return nf_call(HOSTFS(XFS_LOOKUP), dir, name, fc);
 }
 
+static
 long     _cdecl hostfs_fs_creat      (fcookie *dir, const char *name,
 								   unsigned int mode, int attrib, fcookie *fc)
 {
 	return nf_call(HOSTFS(XFS_CREATE), dir, name, (long)mode, (long)attrib, fc);
 }
 
+static
 DEVDRV * _cdecl hostfs_fs_getdev     (fcookie *fc, long *devspecial)
 {
 	return (DEVDRV*) nf_call(HOSTFS(XFS_GETDEV), fc, devspecial);
 }
 
+static
 long     _cdecl hostfs_fs_getxattr   (fcookie *file, XATTR *xattr)
 {
 	return nf_call(HOSTFS(XFS_GETXATTR), file, xattr);
 }
 
+static
 long     _cdecl hostfs_fs_chattr     (fcookie *file, int attr)
 {
 	return nf_call(HOSTFS(XFS_CHATTR), file, (long)attr);
 }
 
+static
 long     _cdecl hostfs_fs_chown      (fcookie *file, int uid, int gid)
 {
 	return nf_call(HOSTFS(XFS_CHOWN), file, (long)uid, (long)gid);
 }
 
+static
 long     _cdecl hostfs_fs_chmode     (fcookie *file, unsigned int mode)
 {
 	return nf_call(HOSTFS(XFS_CHMOD), file, (long)mode);
 }
 
+static
 long     _cdecl hostfs_fs_mkdir      (fcookie *dir, const char *name, unsigned int mode)
 {
 	return nf_call(HOSTFS(XFS_MKDIR), dir, name, (long)mode);
 }
 
+static
 long     _cdecl hostfs_fs_rmdir      (fcookie *dir, const char *name)
 {
 	return nf_call(HOSTFS(XFS_RMDIR), dir, name);
 }
 
+static
 long     _cdecl hostfs_fs_remove     (fcookie *dir, const char *name)
 {
 	return nf_call(HOSTFS(XFS_REMOVE), dir, name);
 }
 
+static
 long     _cdecl hostfs_fs_getname    (fcookie *relto, fcookie *dir,
 								   char *pathname, int size)
 {
 	return nf_call(HOSTFS(XFS_GETNAME), relto, dir, pathname, (long)size);
 }
 
+static
 long     _cdecl hostfs_fs_rename     (fcookie *olddir, char *oldname,
 								   fcookie *newdir, const char *newname)
 {
 	return nf_call(HOSTFS(XFS_RENAME), olddir, oldname, newdir, newname);
 }
 
+static
 long     _cdecl hostfs_fs_opendir    (DIR *dirh, int tosflag)
 {
 	return nf_call(HOSTFS(XFS_OPENDIR), dirh, (long)tosflag);
 }
 
+static
 long     _cdecl hostfs_fs_readdir    (DIR *dirh, char *name, int namelen,
 								   fcookie *fc)
 {
 	return nf_call(HOSTFS(XFS_READDIR), dirh, name, (long)namelen, fc);
 }
 
+static
 long     _cdecl hostfs_fs_rewinddir  (DIR *dirh)
 {
 	return nf_call(HOSTFS(XFS_REWINDDIR), dirh);
 }
 
+static
 long     _cdecl hostfs_fs_closedir   (DIR *dirh)
 {
 	return nf_call(HOSTFS(XFS_CLOSEDIR), dirh);
 }
 
+static
 long     _cdecl hostfs_fs_pathconf   (fcookie *dir, int which)
 {
 	return nf_call(HOSTFS(XFS_PATHCONF), dir, (long)which);
 }
 
+static
 long     _cdecl hostfs_fs_dfree      (fcookie *dir, long *buf)
 {
 	return nf_call(HOSTFS(XFS_DFREE), dir, buf);
 }
 
+static
 long     _cdecl hostfs_fs_writelabel (fcookie *dir, const char *name)
 {
 	return nf_call(HOSTFS(XFS_WRITELABEL), dir, name);
 }
 
+static
 long     _cdecl hostfs_fs_readlabel  (fcookie *dir, char *name,
 								   int namelen)
 {
 	return nf_call(HOSTFS(XFS_READLABEL), dir, name, (long)namelen);
 }
 
+static
 long     _cdecl hostfs_fs_symlink    (fcookie *dir, const char *name,
 								   const char *to)
 {
 	return nf_call(HOSTFS(XFS_SYMLINK), dir, name, to);
 }
 
+static
 long     _cdecl hostfs_fs_readlink   (fcookie *dir, char *buf, int len)
 {
 	return nf_call(HOSTFS(XFS_READLINK), dir, buf, (long)len);
 }
 
+static
 long     _cdecl hostfs_fs_hardlink   (fcookie *fromdir,
 								   const char *fromname,
 								   fcookie *todir, const char *toname)
@@ -221,52 +204,63 @@ long     _cdecl hostfs_fs_hardlink   (fcookie *fromdir,
 	return nf_call(HOSTFS(XFS_HARDLINK), fromdir, fromname, todir, toname);
 }
 
+static
 long     _cdecl hostfs_fs_fscntl     (fcookie *dir, const char *name,
 								   int cmd, long arg)
 {
 	return nf_call(HOSTFS(XFS_FSCNTL), dir, name, (long)cmd, arg);
 }
 
+static
 long     _cdecl hostfs_fs_dskchng    (int drv, int mode)
 {
 	return nf_call(HOSTFS(XFS_DSKCHNG), (long)drv, (long)mode);
 }
 
+static
 long     _cdecl hostfs_fs_release    (fcookie *fc)
 {
 	return nf_call(HOSTFS(XFS_RELEASE), fc);
 }
 
+static
 long     _cdecl hostfs_fs_dupcookie  (fcookie *new, fcookie *old)
 {
 	return nf_call(HOSTFS(XFS_DUPCOOKIE), new, old);
 }
 
+static
 long     _cdecl hostfs_fs_sync       (void)
 {
 	return nf_call(HOSTFS(XFS_SYNC));
 }
 
+static
 long     _cdecl hostfs_fs_mknod      (fcookie *dir, const char *name, ulong mode)
 {
 	return nf_call(HOSTFS(XFS_MKNOD), dir, name, mode);
 }
 
+static
 long     _cdecl hostfs_fs_unmount    (int drv)
 {
 	return nf_call(HOSTFS(XFS_UNMOUNT), (long)drv);
 }
 
+#if 0
+/* This is not used as there are problems with timezone synchronization
+   between FreeMiNT and the NF implementing emulator. */
+static
 long     _cdecl hostfs_fs_stat64     (fcookie *file, STAT *xattr)
 {
 	return nf_call(HOSTFS(XFS_STAT64), file, xattr);
 }
-
+#endif
 
 /*
  * filesystem driver map
  */
-FILESYS hostfs_fs =
+FILESYS hostfs_filesys =
 {
 	(struct filesys *)0,    /* next */
 	/*
@@ -288,6 +282,7 @@ FILESYS hostfs_fs =
 	FS_CASESENSITIVE |
 	/* FS_DO_SYNC       |  not used on the host side (would be
 	 *                     called periodically -> commented out) */
+	FS_OWN_MEDIACHANGE  |
 	FS_LONGPATH      |
 	FS_REENTRANT_L1  |
 	FS_REENTRANT_L2  |
@@ -314,20 +309,20 @@ FILESYS hostfs_fs =
 
 FILESYS *hostfs_init(void)
 {
-	if ( !kernel->nf_ops ) {
+	if ( !KERNEL->nf_ops ) {
 		c_conws("Native Features not present on this system\r\n");
 		return NULL;
 	}
 
 	/* get the HostFs NatFeat ID */
-	nf_hostfs_id = kernel->nf_ops->get_id("HOSTFS");
+	nf_hostfs_id = KERNEL->nf_ops->get_id("HOSTFS");
 	if (nf_hostfs_id == 0) {
 		c_conws(MSG_PFAILURE("hostfs",
 					"\r\nThe HOSTFS NatFeat not found\r\n"));
 		return NULL;
 	}
 
-	nf_call = kernel->nf_ops->call;
+	nf_call = KERNEL->nf_ops->call;
 
 	/* compare the version */
 	if (nf_call(HOSTFS(GET_VERSION)) != HOSTFS_NFAPI_VERSION) {
@@ -336,6 +331,6 @@ FILESYS *hostfs_init(void)
 		return NULL;
 	}
 
-	return &hostfs_fs;
+	return &hostfs_filesys;
 }
 
