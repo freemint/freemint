@@ -65,6 +65,11 @@ $(MINT): $(OBJS) $(BUILDINFO) $(LIBKERNTARGET)
 		$(OBJS) $(BUILDINFO) \
 		$(shell for file in `cat $(srcdir)/arch/$(compile_dir)/objs` ; \
 			do echo $(srcdir)/arch/$(compile_dir)/$$file ; done) \
+		$(shell for mdir in '$(MODULEDIRS)'; do \
+				for file in `cat $(srcdir)/$$mdir/$(compile_dir)/objs` ; \
+					do echo $(srcdir)/$$mdir/$(compile_dir)/$$file ; \
+				done; \
+			done) \
 		$(LIBS)
 
 $(BUILDINFO): compiler buildheader buildserial
