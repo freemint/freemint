@@ -35,20 +35,48 @@
 #include "mint/dcntl.h"
 #include "mint/file.h"
 #include "mint/stat.h"
+#include "mint/proc.h"
 #include "libkern/libkern.h"
 
 /* get the version number */
+#include "dosdir.h"
 #include "hostfs_nfapi.h"
 
 /*
  * debugging stuff
  */
-#ifdef DEV_DEBUG
-#  define DEBUG(x)      KERNEL_ALERT x
-#  define TRACE(x)      KERNEL_ALERT x
+
+#if __KERNEL__ != 1
+# if 0
+# define HOSTFS_DEBUG      1
+# endif
+
+# ifdef HOSTFS_DEBUG
+
+# define FORCE(x)
+# define ALERT(x)       KERNEL_ALERT x
+# define DEBUG(x)       KERNEL_DEBUG x
+# define TRACE(x)       KERNEL_TRACE x
+# define ASSERT(x)      assert x
+
+# else
+
+# define FORCE(x)
+# define ALERT(x)       KERNEL_ALERT x
+# define DEBUG(x)
+# define TRACE(x)
+# define ASSERT(x)      assert x
+
+# endif
+
 #else
-#  define DEBUG(x)      KERNEL_DEBUG x
-#  define TRACE(x)      KERNEL_TRACE x
+#define d_cntl sys_d_cntl
+
+#include "init.h"
+#define c_conws boot_print
+
+#include "kerinfo.h"
+#define KERNEL (&kernelinfo)
 #endif
 
 
@@ -88,8 +116,6 @@
 
 #define MSG_PFAILURE(p,s) \
     "\7Sorry, hostfs.xfs NOT installed: " s "!\r\n"
-
-extern struct kerinfo *KERNEL;
 
 
 #endif /* _global_h_ */
