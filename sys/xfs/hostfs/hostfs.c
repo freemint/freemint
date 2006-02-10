@@ -57,7 +57,7 @@ FILESYS *hostfs_mount_drives(FILESYS *fs)
 	ushort drv_number = 0;
 	char mount_point[] = "u:\\XX";
 
-	c_conws("\r\nMounts: ");
+	c_conws("mounts: ");
 
 	while ( drv_mask ) {
 		/* search the 1st log 1 bit position -> drv_number */
@@ -85,6 +85,9 @@ FILESYS *hostfs_mount_drives(FILESYS *fs)
 
 		drv_number++; drv_mask>>=1;
 	}
+	c_conws("\r\n");
+	c_conws("\r\n");
+
 	return fs;
 }
 
