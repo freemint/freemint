@@ -1,0 +1,44 @@
+Kleine Anleitung zum Umgang mit den Sourcen:
+============================================
+
+Zum Compilieren ben”tigt man Pure C.
+
+Ich habe mir Mhe gegeben, das Packet sauber aus meinem System zu 
+trennen. D.h. man findet in den Verzeichnissen "lib" und "include" 
+s„mtliche Dateien, die zum Compilieren ben”tigt werden.
+Darunter k”nnen sich auch Dateien von anderen Programmen bzw. aus 
+Entwicklerpacketen befinden, die unter _FREMDEM_ Copyright stehen.
+Z.B. Original-Dateien aus der Pure C Distribution (stdlib, stdio...)
+
+Es ist daher WICHTIG, dass dieser Sourcen-Packet unter keinen Umst„nden
+ins Internet gestellt oder sonstwie verbreitet werden.
+
+Um das Projekt zu kompilieren empfielt es sich das Projekt in das
+Wurzelverzeichnis des Laufwerks E: zu kopieren. PC.PRG zu starten und
+im Men "Options/Load..." anw„hlen. Die Datei E:\<PROJEKT>\PC.CFG 
+anw„hlen und danach die Projekt-Datei E:\<PROJEKT>\PROG.PRJ anw„hlen.
+
+Danach sollte ein Klick auf "Project/Make" das Projekt erfolgreich
+compilieren.
+
+
+Rechtliches:
+------------
+Es ist lediglich erlaubt das fertig compilierte Produkt zu verbreiten.
+
+Die Sourcen werden von mir zu einem sp„teren Zeitpunkt bereinigt und
+der ™ffentlichkeit zur Verfgung gestellt.
+
+Falls ein Programm aus diesen Sourcen entsteht, sollte dies in dessen 
+Anleitung oder im Programm selbst vermerkt sein.
+
+Inoffizielle Versionen, sollten als solches gekennzeichnet sein und
+mit einem Link auf meine Homepage http://www.xn--donz-epa.ch/atari
+versehen werden.
+
+
+
+Viel Spass an den Sourcen!
+
+Philipp Donz‚   (philippdonze@gmx.ch)
+Chavornay, 10. Sept. 2004

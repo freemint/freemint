@@ -1,0 +1,939 @@
+History fr HypView (v0.35.2e)
+=======================================
+10.02.2006 (v0.35.3e)
+	-Modified for gemlib. [ozk]
+	-Ported to gcc. [ozk]
+	-Initial CVS revision. [ozk]
+	-Many changes to fix problems with different sized fonts [ozk]
+
+17.09.2005 (v0.35.2e)
+	-ALT-E Stack lschen (Men -> Stack lschen) [GS]
+
+20.08.2005
+	-Iconifizieren des Infodialogs [GS]
+	
+14.08.2005
+	-Scrollweite mit <Bild nach oben/runter> entspricht
+	 <SHIFT> + <Pfeil nach oben/runter>  [GS]
+	-Ctrl-Cursor hoch/links    - zur vorigen Seite blttern [GS]
+	-Ctrl-Cursor runter/rechts - zur nchsten Seite blttern [GS]
+
+14.08.2005
+	-Ist das Dokument fr das erste Fenster nicht mehr vorhanden, war
+	 keine Benutzung von HypView mehr mglich. [GS]
+
+12.08.2005 (v0.35.2d)
+	-Ist WDIALOG nicht vorhanden, sind einige Icons der Toolbar nicht
+	 bedienbar. [GS]
+	-Neue VDI.LIB, damit keine Probleme mehr mit PlainTOS und Texten
+	 mit Umlauten.
+
+10.08.2005 (v0.35.2c)
+	-Der Inhalt des letzten Fensters wird beim ffnen des ersten Fenster
+	 wieder dargestellt.
+
+09.08.2005 (v0.35.2b)
+	-Wird beim Markenpfad am Anfang '$HOME\' angeben, versucht HypView
+	 die Marken vom Homeverzeichnis zuladen.
+	 z.B.: MARKFILE=$HOME\MARKEN.DAT
+
+31.07.2005
+	-Fehler bei der Ausgabe der Popups unter N.AES 1.2.0 behoben. [GS]
+
+27.07.2005
+	-Bei den Marken erscheinen die Dateinamen von denen sie stammen. Dazu
+	 mssen sie aber neu gesetzt werden [GS]
+
+09.04.2005
+	-Im Info-Dialog wird das Erstellungsdatum von HypView angezeigt. [GS]
+
+03.03.2005
+	-Mit dem Schlsselwort REFONLY kann bestimmt werden ob bei einem Klick
+	 mit der linken Maustaste nur Verweise verfolgt werden oder auch
+	 nicht-markierte Worte. [GS]
+	-Ist ein alternativer Skin geladen, konnte es beim Umschalten zum
+	 "Autolocator" zu einem hsslichen weien Fleck kommen. [GS]
+
+02.03.2005
+	-Im Info-Dialog wird neben der Programmversion nun auch relevante
+	 Informationen zur aktuell Datei angezeigt. [GS]
+	-Die MagiC Dateiauswahl bekommt jetzt ein sinnvolles Dateimuster. [GS]
+
+05.02.2005 (v0.35.2)
+	-Workaround: Bug in XaAES fhrte dazu dass HypView bei einer 
+	 VA_START-Meldung in eine Endlos-Schleife verfiel.
+	 (In XaAES liefert wind_get(WF_OWNER) fr den "open status" immer 0).
+
+30.01.2005 (v0.35.1)
+	-Marken implementiert: Damit ist es nun mglich bis zu 10 "Favoriten"
+	 zu speichern. Die Marken werden in der mit MARKFILE spezifizierten
+	 Datei gespeichert. Es kann die gleiche Datei wie bei ST-GUIDE
+	 verwendet werden, da das Format kompatibel ist. [GS]
+	-Mit dem MARKFILE_SAVE_ASK kann die lstige Frage, ob die Marken-Datei
+	 gespeichert werden soll, deaktiviert werden. [GS]
+	-Bugfix: Zeichenfehler bei den Popup-Mens unter XaAES.
+	-Falls der Autolocator aktiv ist kann mittels CTRL+V Text aus dem
+	 Klemmbrett eingefgt werden.
+	-Pure C-Hilfe Protokoll (AC_HELP Meldung) wird untersttzt um nach
+	 Schlsselwrtern zu suchen.
+	-Suche in der REF Datenbank (mittels REFLINK.TTP generiert)
+	 implementiert [PD+GS].
+	 Zur Zeit lsst sich nur mittels der Meldung "AC_HELP" eine Suche 
+	 auslsen (also z.B. HypView in QED als Hilfe-Server anmelden und 
+	 dann HELP drcken wenn sich der Cursor auf einem Wort befindet.
+
+28.01.2005
+	-Bugfix: Falls ein Programm per VA_START eine Hilfeseite welche ein
+	 Leerzeichen im Titel aufrufen wollte, wurde die Seite nicht gefunden
+	 oder es kam gar zum Absturz. [GS]
+
+30.12.2004
+	-Mit CLIPBRD_NEW_WINDOW kann festgelegt werden ob beim Einfgen mit
+	 CTRL+V ein neues Fenster geffnet wird oder nicht. Bei zustzlichem
+	 Drcken von "SHIFT" wird das Gegenteil der gewhlten Funktion
+	 ausgefhrt.
+	-"Skin Laden" funktioniert wieder. Falls kein absoluter Pfad mittels
+	 SKIN angegeben wurde, wird im Verzeichnis "Skins" danach gesucht.
+	 D.h. relative Pfade beziehen sich immer auf das Verzeichnis "Skins"
+	 im Verzeichnis, aus dem HypView gestartet wurde.
+	-AV_WINDOW_CYCLE aktiviert den globalen Fensterwechsel (via AVSERVER),
+	 d.h. das "CTRL+W" nicht von HypView sondern vom AVSERVER erledigt
+	 wird. Durch zustzliches Drcken von "SHIFT" wird das Gegenteil der
+	 Funktion ausgefhrt.
+
+19.10.2004
+	-File Errors werden in einer Alertbox ausgeben und nicht mehr ber 
+	 die Console. [GS]
+
+16.10.2004 (v0.34.1)
+	-Neues Versionsnummern Schema: die 3te Zahl steht fr die Release
+
+14.10.2004 (v0.34)
+	-"Zurck" im Kontext-Men. [GS]
+
+06.10.2004
+	-Wurde per VA_START ein absoluter Pfad angeben und die Datei befindet
+	 sich nicht dort. So erfolgte die Auswertung der Pfadliste nicht 
+	 korrekt. [GS]
+
+30.09.2004
+	-Menicon aktiviert. [GS]
+
+18.09.2004
+	-Bugfix: CTRL+V ldt jetzt wirklich die Datei SCRAP.TXT aus dem 
+	 Clipboard. [GS]
+	-ALT-T Inhalts-Seite zeigen (wie Inhalt-Icon, wie ST-Guide) [GS]
+	-ALT-X Indexseite zeigen (wie Index-Icon, wie ST-Guide) [GS]
+	-ALT-K Katalog laden (wie Index-Icon, wie ST-Guide) [GS]
+	-Bugfix: Erkennung der REF Datei funktionierte nicht immer. [GS]
+	
+10.09.2004
+	-Gerhard Stoll interessiert sich fr den Quellcode von HypView und
+	 will das Programm erweitern. Seine nderungen sind mit [GS] markiert.
+	-Untersttzung der Ende Tasten (gibt es z.B. beim Milan). [GS]
+
+29.01.2004 (v0.33)
+	-Bugfix: ASCII Texte, die nur eine Zeile ohne CR/LF enthielten, wurden
+	 nicht angezeigt.
+
+14.01.2004
+	-Bugfix: HypView ignorierte die Kapitel-Angabe "Main" fr externe
+	 Referenzen. Dies fhrte dazu, dass bei Referenzen auf andere Hypertexten 
+	 nicht die richtige Startseite angezeigt wurde (sichtbar bei KATALOG.HYP).
+
+23.12.2003
+	-Bugfix: Falls HYP_VIEW.CFG nicht gefunden wurde, wurde flschlicherweise
+	 versucht ein nicht existierender "Skin" zu laden.
+	-Bugfix: Die Bestimmung des Bootlaufwerks funktionierte bisher nicht.
+
+24.11.2003
+	-Der Test auf WDIALOG wurde (hoffentlich endgltig) beseitigt.
+	-Compiler-Einstellung war beim letzten Release flschlicherweise auf
+	 68020 eingestellt. Dadurch lief das Programm unter MagiC PC und auf
+	 "einfachen" STs nicht mehr.
+	-Laut TOS.HYP fhrt ein @ am Anfang eines te_ptext (=eines Textfelds) 
+	 dazu, dass der Rest als Platzhalter interpretiert wird.
+	 Folge: Falls bei der Suche mit dem "Autolocator" als erstes Zeichen 
+	 ein @ eingegeben wird, werden alle Eingaben nicht angezeigt (die Suche
+	 wird jedoch ausgefhrt!). (MagiC ist jedoch davon nicht betroffen!)
+
+23.11.2003
+	-Der "intelligente Fuller" verschiebt das Fenster (=die obere linke Ecke
+	 des Fensters) nur noch wenn das vergrsserte Fenster ausserhalb des
+	 sichtbaren Bereichs zu liegen kommt. D.h. beim "Fullen" des Fensters
+	 springt das Fenster nicht mehr automatisch in die obere linke Ecke
+	 des sichtbaren Bereichs.
+
+17.11.2003 (v0.32)
+	-Bugfix: Im ACC-Betrieb kam es nach 2maligem ffnen zum Absturz, falls 
+	 kein DEFAULT Hypertext angegeben wurde.
+
+14.11.2003 (v0.31)
+	-Monochrome Bilder (=1 Bitplane) werden jetzt nicht mehr an die Anzahl
+	 Bitplanes der aktuellen Auflsung angepasst, sondern einfach monochrom
+	 gelassen. Sie werden dann mittels vrt_cpyfm() wie beim Original ST-Guide
+	 transparent auf den Bildschirm kopiert. (Diese Transparenz kann nicht
+	 mehr mit TRANSPARENT_PICS=0 deaktiviert werden!)
+	-Bugfix: Beim Bilder Laden wurde unter Umstnden zuwenig Speicher
+	 alloziert, was unter MagiC zum System-Absturz fhrte.
+	-Bugfix: Falls der intelligente "Fuller" deaktiviert wurde, jedoch
+	 die automatische Fenstergrssen-Anpassung aktiviert war, wurde beim
+	 Zeichensatzwechsel das Fenster auf max. Bildschirmgrsse vergrssert.
+	-Beim Zeichensatzwechsel (=CTRL+Z) wird nun sichergestellt, dass die
+	 Seite gut sichtbar ist, d.h. es wird wenn ntig nach Oben gescrollt.
+
+10.11.2003 (v0.30)
+	-Intelligenteres vergrssern/verkleinern beim Zeichensatz-Wechsel
+	-Das "intelligente" vergrssern des Fensters auf die maximale Dokument-
+	 grsse lsst sich nun mit dem Tag INTELLIGENT_FULLER=0 deaktivieren.
+	 Dadurch wird die maximale Fenstergrsse auf Bildschirmgrsse gesetzt.
+
+09.11.2003
+	-Falls WINADJUST=0 ist, wird trotzdem beim Zeichensatz-Wechsel die
+	 Fensterbreite/-hhe angepasst (="eingerastet").
+	-Zeichen, die eine Zusatz-Taste (wie CTRL, ALT) zur Eingabe bentigen,
+	 lassen sich nun auch in den Autolocator eingeben.
+
+04.11.2003
+	-Bugfix: AV-Protokoll wird nun auch beim Start als ACC initialisiert.
+	-2 maliges Drcken von ESC deaktiviert und versteckt das Eingabe-Feld
+	 des "Autolocator". Dadurch muss nicht mehr mit einem Mausklick das
+	 Eingabe-Feld "weg-geklickt" werden.
+
+20.09.2003 (v0.29)
+	-Der Umbruch von Text-Dateien ist nun mittels "ASCII_BREAK=" in der
+	 HYP_VIEW.CFG konfigurierbar. D.h. HypView bricht eine sehr lange
+	 Zeile um, sobald die angegebene Anzahl von Zeichen erreicht wurde.
+	-Der Umbruch von Text-Zeilen ist erfolgt wenn mglich bei einem
+	 Leerzeichen oder Tab-Zeichen. (Hallo Sascha :-))
+
+02.09.2003
+	-Bug "Endloses scrollen bei der Selektion" beseitigt
+
+29.08.2003
+	-Debugging-Ausgabe bei der Selektion entfernt :-)
+
+07.08.2003
+	-Fehler bei der Selektion entfernt
+
+04.08.2003 (v0.28)
+	-Untersttzung fr alternative Toolbars bzw. Skins eingebaut (Variable
+	 SKIN zeigt auf die gewnschte RSC Datei im "Skins" Verzeichnis)
+	 Gunnar Grbel hat vor einiger Zeit einige erstellt.
+
+03.08.2003
+	-Bugfix: Externe Referenzen mit Kapitelangabe funktionieren wieder.
+	-Bugfix: Ein (mittels Zurck-Button) entferntes Dokument konnte
+	 beim erneuten ffnen zum Absturz fhren.
+	-History-Popup mit bis zu 12 Eintrgen eingebaut.
+
+01.08.2003
+	-Untersttzung fr externe Referenzen eingebaut (@xref Tag)
+	 (=Referenzen-Popup mit bis zu 12 Eintrgen)
+
+31.07.2003 (v0.27)
+	-Unbekannte Dateien, die kein Null-Byte enthalten werden als Text
+	 dargestellt.
+	-Text-Dateien, mit Zeilen lnger als 127 Zeichen werden umgebrochen.
+	-Falls eine geladene Datei mittels eines Links geladen wurde, so werden
+	 folgende Dateien auch noch im realen Verzeichnis gesucht.
+	 Beispiel:
+		"C:\GUIDES\ARCVIEW.HYP" ist ein Link auf "D:\ARCVIEW\ARCVIEW.HYP"
+		Wird nun auf den Link "HISTORY.TXT" geklickt, so werden folgende
+		Pfade der Reihe nach berprft:
+			C:\GUIDES\HISTORY.TXT
+			D:\ARCVIEW\HISTORY.TXT
+			HISTORY.TXT
+			$PATH + HISTORY.TXT
+
+30.07.2003
+	-Bugfix: Darstellungs-Fehler bei sehr langen Seiten/Texten beseitigt.
+	-Verbesserte System-Integration: Offene Fenster werden in das
+	 "Window-Cycling" des Desktops integriert (mittels AV_ACCWINDOPEN,
+	 AV_ACCWINDCLOSED).
+
+11.07.2003
+	-ASCII-Text-Erkennung: Es werden nun Dateien, die die Zeichen
+	 1-4 und 16-25 enthalten als ASCII angezeigt. (Obwohl es sich
+	 korrekterweise nicht um ASCII handelt!)
+
+27.02.2003
+	-Bugfix: Falls zu einer REF Datei kein passender HYPertext vorlag,
+	 kam es zum Absturz.
+
+26.02.2003 (v0.26)
+	-Untersttzung fr REF Dateien eingebaut.
+	 Wird eine .REF Datei als Pfad bergeben, so wird sie geladen und
+	 die entsprechende .HYP Datei angezeigt. Achtung: Es wird einfach
+	 nur die Dateierweiterung abgendert und nicht der entsprechende
+	 Eintrag in der REF Datei ausgewertet!
+	-Falls eine Kapitelname im HYPertext nicht existiert, so wird
+	 versucht die entsprechende .REF Datei zu laden. Im Erfolgsfall
+	 wird dann darin nach dem passenden Kapitel gesucht.
+
+19.01.2003 (v0.25)
+	-Verffentlichung des aktuellen Standes.
+
+18.01.2003
+	-Arbeiten am automatischen Scrollen whrend der Selektion
+	 absgeschlossen. Folgende Features sind eingebaut:
+	    -gleichzeitiges horizontales und vertikales Scrollen
+	    -nach jedem Scroll-Schritt wird eine Pause von 50 ms gemacht.
+	     Dadurch sollte das Scrollen auch auf schnellen Rechnern brauchbar
+	     sein.
+	    -vertikales Scrollen ist linear Abhngig von der Mausposition.
+	     Das heisst, wenn die Maus weiter aus dem Fenster bewegt wird, wird
+	     auch schneller gescrollt. (64 Pixel = 1 Zeile schneller)
+	-Bugfix: Falls die Katalog-Datei nicht geffnet werden kann, so
+	 wird die Mausform wieder in einen Pfeil zurck gewandelt.
+	-Bugfix: Beim automatischen Anpassen der Fenstergrsse (WINADJUST=1)
+	 wird nun immer die ganze Toolbar angezeigt (=minimale Fensterbreite).
+	-Verbesserungen beim Umgang mit proportionalen Fonts. (Das Fensterraster
+	 wird nun als Durchschnitt der Zeichenbreiten von ASCII 32 bis ASCII 154
+	 berechnet.)
+	-Bugfix: Es wird nun immer der absolute Pfad einer Datei ermittelt.
+	 (Also auch fr Dateien, die sich im aktuellen Verzeichnis befinden.)
+   -Das Block-Ende einer Selektion kann nun jederzeit mit SHIFT-Klick
+    verndert werden.
+   -Rechtsklick ffnet ein Popup mit den Block-Funktionen.
+	-Blockfunktionen:
+		-Speichern von HYP und ASCII Texten im ASCII Format (auch ber die
+		 Toolbar zugnglich).
+		-CTRL+A whlt den ganzen geladenen Text aus
+		-CTRL+C kopierte den selektierten Block ins Clipboard. Falls kein
+		 Text selektiert ist, wird der ganze Text kopiert.
+		-CTRL+V ladet die Datei SCRAP.TXT aus dem Clipboard. (wie ST-Guide)
+
+xx.01.2003
+	-Diverse Arbeiten am automatischen Scrollen whrend der Selektion.
+
+31.12.2002
+	-Bugfix beim automatischen Scrollen. Keine "Lcher" mehr vorhanden.
+
+18.12.2002
+	-Verbesserungen bei der Selektion.
+
+17.12.2002
+	-Autolocator: Leerzeichen am Anfang der Eingabe werden ignoriert.
+	-Selektion ist nun auch mit proportionalen Zeichenstzen kompatibel.
+	 Bei Bitmap-Zeichenstzen berechnet anscheinend die Funktion
+	 vqt_extent() die Grsse einer leeren Zeichenkette (="") falsch,
+	 falls kursiv als Attribut definiert ist.
+
+16.12.2002
+	-Selektion wieder entfernt. Beginn einer neuen Implementation.
+	-NEU: Automatisches Scrolling in horizontaler Richtung beim Selektieren.
+
+06.12.2002
+	-Bugfix: LINKEFFECT wird nun genau gleich wie bei ST-Guide behandelt.
+	 D.h. der angegebene Effekt wird als "zustzlicher" Text-Effekt mit dem
+	 gerade aktuellen Verknpft.
+	-Bugfix: Die Icon-Position beim Iconifizieren wird nun immer neu einge-
+	 stellt.
+	 Dadurch klappt's auch mit ICFS bzw. Iconify-Servern, die
+	 wind_get(WF_ICONIFY) nicht untersttzen.
+
+04.12.2002
+	-Da ich aus zeitlichen Grnden kaum zum Programmieren kommen,
+	 verffentliche ich den aktuellen Stand.
+
+29.11.2002
+	-automatisches Scrollen in vertikaler Richtung beim Selektieren.
+
+27.11.2002
+	-Bugfix: Flschlicherweise wurden beim Klick auf "Zurck" Dateien
+	 geschlossen, die evtl. noch bentigt wurden.
+	 (Z.B. "Katalog.hyp" -> "TOS.hyp" -> "Katalog.hyp" -> zurck
+	  -> zurck -> CRASH!!!)
+
+26.11.2002
+	-Einfache Text-Selektion per Maus eingebaut.
+	 Folgende "Features":
+	 	-Funktioniert mit binr, ASCII und HYP Dateien
+	 	-Kein automatisches Scrollen am Fensterrand
+		-Keine Bercksichtigung der Text-Attribute (Betrifft HYP)
+		-Kein "Fortsetzen" der Selektion mittels Shift-Taste.
+		-Noch KEINE Aktionen eingebaut (also nur selektieren mglich).
+
+24.11.2002
+	-Bugfix: Speicherschutzverletzung bei AV_PROTOKOLL "beseitigt". D.h.
+	 HypView geht davon aus, dass bei der Anwort mit VA_PROTOSTATUS der
+	 Zeiger auf den eigenen Namen nicht mehr bentigt wird und daher
+	 freigegeben werden kann. Ein Desktop, der danach trotzdem auf diesen
+	 Zeiger zugreift wird immer noch "abschmieren". Selberschuld!
+
+20.11.2002
+	-Bugfix: Zugriff auf ungltigen Zeiger beseitigt. (Speicherschutz)
+
+18.11.2002
+	-kleinere Bugs beseitigt, die sich eingeschlichen haben.
+
+17.11.2002 (v0.20)
+	-Autolocator-Funktionalitt eingebaut.
+	 Dies funktioniert mit allen Formaten (=HYP, ASCII, binr).
+	 Funktionsweise:
+	 	-Such-Text eingeben
+	 	-RETURN startet die gleiche Suche erneut
+	 	-ESC lscht den eingegebenen Text
+	-Einfache Speicherfunktion fr HYP, welche die aktuelle Seite als ASCII
+	 speichert.
+
+13.11.2002
+	-Nach der internen Umstellung luft nun (anscheinend) alles so wie in der
+	 vorherigen Version.
+	-Die Mult-Window-Bugs sind nun hoffentlich behoben.
+
+02.10.2002
+	-Sortier-Reihenfolge der HISTORY gendert (=neuste Eintrge zuoberst)
+	-Allgemeine berarbeitung begonnen. (Da sich die Abstrze beim Gebrauch
+	 des "Multi-Window-Features" nicht so einfach beseitigen liessen.
+	 = strukturelle Schwchen)
+	-Die Standard-Pfadliste wird nun beim Starten automatisch an das Start-
+	 laufwerk angepasst. (z.B. wird aus C: M: falls von M: gebootet wird.)
+	 Dies betrifft nur die Standard-Pfade! D.h. es wird diese nderung nur
+	 vorgenommen, falls keine andere Pfadliste aus der CFG geladen wurde.
+	-Bugfix: beim seitenweise Scrollen per Maus wurde immer eine Zeile
+	 bersprungen.
+	-Bugfix: die Fileselect-Box im Fenster ist wieder zurck :-)
+	-Bugfix: Falls mehrere Fenster offen waren, geriet die "History"
+	 manchmal durcheinander, was sogar zum Absturz fhren konnte.
+	-Bugfix: Memory-Leck bei der Anzeige von ASCII-Dateien beseitigt.
+
+24.09.2002 (v0.17)
+	-Bugfix: Unntige/Fehlerhafte Mfree-Aufrufe beseitigt.
+	-Bugfix: Datei-Handle wurde nicht geschlossen, falls die Datei beim
+	 "zurck"-Bewegen erneut geffnet werden musste.
+	-Bugfix: ein zu ffnendes Fenster hat nun immer mindestens 1 Zeile und
+	 5 Kolonnen. Dadurch kann ein Absturz unter MagiC verhindert werden,
+	 da kein "zu kleines" Fenster erstellt wird.
+	-Bugfix: Speicherschutz-Problem unter MiNT beseitigt (zumindest falls es
+	 keine anderen mehr hat).
+	-Bugfix: Als ACC wurde nicht auf die AP_TERM Meldung reagiert.
+
+23.09.2002 (v0.16)
+	-Automatisches Anpassen der Fenster berarbeitet. Es sollte nun nicht mehr
+	 passieren, dass Fensterteile teilweise ausserhalb des sichtbaren Bereichs
+	 zu liegen kommen.
+	-Bugfix: Falls eine gerade offene Datei nochmals geffnet wurde, wurde
+	 in der "History" die falsche Seitennummer gespeichert.
+	-HypView berprft nun auf Wunsch (in der Konfiguration CHECK_TIME=1)
+	 vor dem erneuten Zugriff auf Dateien, ob sich diese gendert haben und
+	 ladet sie erneut. (Praktisch beim Schreiben von Hypertexten und beim
+	 Erstellen des KATALOG.HYP)
+
+18.09.2002
+	-HypView luft nun auch falls die Zeilen von HYP_VIEW.CFG mit LF (=Unix)
+	 oder auch nur mit CR (=Mac) abgeschlossen sind.
+	-Bugfix: Zeichenstze unterschiedlicher Grsse wurden nicht korrekt
+	 verarbeitet. Dies fhrte zu "berreste" beim Scrollen.
+
+16.09.2002
+	-Neues Schlsselwort in der Konfiguration: DEBUG_FILE
+	 Alle Fehlermeldungen, die normalerweise auf STDERR (=bei MagiC ist das
+	 der Bildschirm) knnen auf eine beliebige Datei umgeleitet werden.
+	 Dadurch lsst sich meine MiNT-Installation auch berreden die Fehler
+	 anzuzeigen.
+	-Bugfix: Beim Starten als ACC wollte HypView die Parameter auswerten,
+	 obwohl keine existieren bzw. die Daten ungltig sind.
+	-Bugfix: Es konnte vorkommen, das der Hilfe- und der Index-Button
+	 anwhlbaren, obwohl es diese Seiten nicht gab.
+	-Abfrage auf WDIALOG vorlufig ausgebaut. (Hallo MiNTler :-))
+	-Bugfix: Falls die HOME-Variable nicht mit einem '\' oder '/' ab-
+	 geschlossen war, wurde auf einen ungltigen Pfad zugegriffen und die CFG
+	 nicht gefunden.
+
+15.09.2002 (v0.15)
+	-Popups, die im Hypertext per @previous und @next in den HYP integriert
+	 sind werden nun auch geladen und dargestellt. (Vorher blockierten diese
+	 die Navigation mittels "Vorwrts" und "Rckwrts".)
+	-Untersttzung von WINPOS: Bugs beseitigt und verbessert (=es ist nun
+	 nicht mehr mglich das Fenster so zu positionieren, dass die Fenster-
+	 elemente nicht mehr bedienbar sind).
+	-"CTRL+Klick geht nicht immer"-Bug beseitigt: 0 Byte am Stringende
+	 vergessen :-)
+	-Falls in einem Hypertext keine Hilfe-Seite mittels @help definiert ist,
+	 wird nach dem Kapitel "Help" gesucht.
+	-Bugfix: Die Seite, die mittels @default in einem HYP definiert wird,
+	 wurde flschlicherweise immer als Startseite benutzt.
+	-Bugfix: Ein Klick auf ein @limage fhrte zum Absturz.
+
+13.09.2002
+	-Falls eine VA_START Meldung ankommt, die keine Datei als Parameter
+	 enthlt, so wird dies als "Aufwecken" von HypView interpretiert.
+	 Falls mit DEFAULT=xy eine Datei definiert wurde, so wird diese geffnet,
+	 sonst wird der File-Selector geffnet.
+	-Bugfix: Als ACC gestartet konnte es vorkommen, dass HypView auf ein
+	 nicht mehr existierendes Fenster zugriff, was natrlich zum Absturz
+	 fhrte.
+
+04.09.2002 (v0.14)
+	-Untersttzung fr "echte" Page-Up und Page-Down Tasten (wird von
+	 MagiCMac untersttzt).
+	-Falls kein Katalog mittels "KATALOG=xy.hyp" definiert ist, dann lsst
+	 sich das Katalog-Icon nicht mehr anwhlen.
+	-Bugfix: Bilder wurden beim zeilenweisen Scrollen "abgeschnitten".
+
+30.08.2002 (v0.13)
+	-Obwohl es noch einiges zu implementieren gbe, verffentliche ich diese
+	 "Etape".
+
+22.08.2002
+	-Links vom Typ SYSTEM_ARGUMENT, REXX_SCRIPT und REXX_COMMAND (=4-6) werden
+	 nun folgendermassen behandelt:
+	  -SYSTEM_ARGUMENT und REXX_SCRIPT fhren zu einer AV_STARTPROG Meldung
+		an den AV-Server.
+	  -REXX_COMMAND fhrt zum Senden einer VA_START Meldung an den Host, der
+		mittels @hostname im Hypertext gesetzt wurde.
+	  -Bei allen drei Typen wird vor dem Versenden der Meldung versucht einen
+		absoluten Pfad auf eine existierende Datei zu erstellen. D.h. als Pfad
+		wird der Zugriffspfad des Hypertexts genommen und das "Kommando" als
+		Dateinamen interpretiert. Wird eine solche Datei gefunden, so wird
+		die Meldung mit dem kompletten Zugriffspfad versendet. Ansonsten wird
+		nur das "Kommando" versendet. Z.B. findet QED dadurch die Dateien.
+		=> Beispiel in TEST.HYP/Kommunikation
+	-Interne-Representation der Hypertext-Seiten gendert. Dadurch wurde die
+	 Anzeige und das Scrollen beschleunigt. Trotzdem scheint das Zeilenweise-
+	 scrollen beim ST-Guide schneller zu gehen.
+
+21.08.2002
+	-Weitere Anpassung des TEST.HYP
+	-NEU: Klick auf @alink Verweise ffnen nun ein neues Fenster. Es gibt aber
+	 kaum Hypertexte die das bisher nutzen, da ST-Guide bekanntlich nur 1
+	 Fenster verwalten kann. Evtl. ndert sich das mit HypView?
+	-Links vom Typ 5 (REXX_SCRIPT) werden wie Typ 4 und 6 einfach an den
+	 AV-Server weitergegeben.
+	-Links vom Typ 7 (QUIT) fhren zum Schliessen des aktuellen Fensters.
+	-Links vom Typ 4-6 werden zuerst als Pfade interpretiert und im aktuellen
+	 Verzeichnis gesucht. Falls diese Datei nicht existiert, wird statt dessen
+	 der unvernderte Link an den AV-Server bergeben.
+	 Damit klappt es nun auch mit externen Verweisen auf nicht-Texte (z.B. auf
+	 eine Batch-Datei im aktuellen Verzeichnis => siehe TEST.HYP).
+
+20.08.2002
+	-Test-Hypertext berarbeitet und mit neuen Seiten fr nicht-existierende
+	 Features ergnzt. Jetzt geht's an's implementieren.
+
+27.07.2002
+	-Bugfix: Falls beim schliessen eines Hypertextes noch ein Popup-Fenster
+	 offen war beendete sich das Programm nicht.
+
+14.07.2002 (v0.12)
+	-Funktionsnderung: CTRL+UP/DOWN (=Strg und Pfeilhoch/-runter) bewirken
+	 nun wie SHIFT+UP/DOWN ein seitenweises Scrollen des Fensters.
+	 Dadurch funktioniert die "Page-Up/Down" Taste von PC-Tastaturen auch
+	 wie zu erwarten ist (und auch von anderen GEM-Programmen praktiziert
+	 wird). Dadurch weicht die Bedienung von ArcView von der ST-Guide
+	 blichen ab.
+	-Bugfix: Tastatur-Funktionen, die fr binr-/ASCII-Texte nicht verfgbar
+	 sind, fhren nicht mehr zum Absturz.
+	-NEU: Falls CTRL whrend dem Klick auf einen Link gedrckt gehalten
+	 wird, dann wird dieser in einem neuen Fenster dargestellt.
+	 (Achtung: Die Datei wird erneut geladen! => doppelter Speicherverbrauch!)
+	-Falls der Zeichensatz gendert wurde (CTRL+Z), werden alle offenen
+	 Dokumente aktualisiert und den entsprechenden Fenster eine Redraw-
+	 Meldung geschickt.
+	-Links des Typs 6 (REXX_COMMAND) werden wie Typ 4 (SYSTEM_ARGUMENT)
+	 behandelt. Dadurch wird das ffnen einer Datei mit einem speziellen
+	 Viewer dem AV-Server berlassen (der also den passenden Viewer suchen
+	 und starten muss).
+	-NEU: In der Konfigurationsdatei kann mittels VA_START_NEWWIN angegeben
+	 werden, wie auf eine VA_START-Meldung reagiert wird (0=kein neues Fenster
+	 ffnen;1=evtl.;2=immer)
+	-Bugfix: Ein iconifiziertes Fenster wurde beim Laden einer neuen Datei
+	 nicht automatisch "deiconifiziert".
+
+13.07.2002
+	-Bugfix: Das Index-Icon ist nur noch anwhlbar falls auch wirklich eine
+	 Index-Seite im Hypertext enthalten ist.
+	-Bugfix: Fehler in der Cache-Verwaltung beseitigt. Es wurde auf ein Hyper-
+	 text zugegriffen, der nicht mehr komplett im Speicher war.
+
+29.06.2002 (v0.11)
+	-Bugfix: ACC Betrieb endete meist mit einem Bus-Fehler.
+	-Bugfix: Hyp-Header wurden unntigerweise mehrmals geladen, weil nicht
+	 bemerkt wurde das die Datei schon geffnet ist. (=>Cache)
+
+26.06.2002
+	-Bugfix: Falls keine Default-Datei angegeben wurde, gab es einen Crash.
+	-Neu: System-Argumente werden per AV_STARTPROG an den AV-Server bergeben.
+	 (D.h. man kann nun z.B. den KATALOG.HYP erneuern)
+	-Neu: Falls eine Datei aus einer anderen geladen wird (z.B. Verweis auf
+	 HISTORY.TXT), dann wird versucht die Datei im Pfad der geffneten Datei
+	 zu ffnen. (Man sollte nicht "." in die Pfadliste aufnehmen, da sonst
+	 HypView Dateien in seinem (!) Verzeichnis sucht.)
+	-Bugfix: Der Link-Effekt wurde erst ab 16 Farben bernommen.
+
+25.06.2002 (v0.10)
+	-Bugfix: Speicherleck beim wechseln zwischen Dateien gestopft.
+	-Cache-Funktion wieder implementiert.
+	-Bugfix: "Speicher-Schiesser" beseitigt.
+	-Bugfix: Wechsel zwischen HYP-Dateien und anderen Formaten klappt
+	 wieder (=> Cache-Leerungs-Bug beseitigt)
+	-Popups funktionieren wieder.
+	-Zeichensatz-Wechsel (FONT <-> XFONT) mittels CTRL+Z klappt wieder.
+	-Bugfix: TOS.HYP luft nun wieder.
+	-Bugfix: Bestimmen der Klickposition funktioniert nun auch mit Hyper-
+	 texten, die Bilder enthalten und mit HCP < 3 erstellt wurden.
+	 (="Chrysalis-Bug")
+
+24.06.2002
+	-Navigation mittels Links wieder implementiert
+
+20.06.2002 bis 22.06.2002
+	-HYP-Format wird nun wieder geladen und angezeigt. (Nachwievor nach
+	 der alten Methode)
+	-Navigation mittels Iconleiste und Tastatur wieder eingebaut.
+
+19.06.2002
+	-Bugfix: Ein CTRL+ALT+HOME fhrt nicht mehr zum iconifizieren des
+	 Fensters.
+	-Die Konfiguration wird nun wieder aus der Datei geladen.
+	 Dabei habe ich einige Konfigurations-Punkte umgetauft und ein paar neue
+	 eingefhrt (TEXT_COLOR, BIN_COLUMNS, ASCII_TAB, LINK_EFFECT).
+
+16.06.2002
+	-Neu: Untersttzung fr ASCII Texte mit Atari-/PC-,Mac- und Unix-Zeilen-
+	 enden. (Es knnen nur Dateien geladen werden, die vollkommen in den
+	 Arbeitsspeicher passen.)
+	 Ein Text wird als ASCII Text erkannt falls er keine Zeichen unter dem
+	 Wert 32 enthlt (mit Ausnahme von CR, LF und TAB).
+	-Binrdateien haben eine fixe Zeilenlnge (zur Zeit 76, wird aber spter
+	 konfigurierbar).
+	-Beschleunigtes Scrolling, durch das ich mittels zustzlichem Speicher
+	 eine Tabelle mit allen Zeilen-Anfnge erstelle.
+
+15.06.2002
+	-Komplette berarbeitung begonnen.
+	 Das Konzept wird nun modularisiert, d.h. es werden in Zukunft mehr als
+	 nur HYP Dateien untersttzt. (Binr, ASCII, HYP fr den Anfang)
+	-Laden und Darstellen von Binrendaten klappt. (0-Zeichen werden als
+	 Leerzeichen ausgegeben)
+	-Untersttzung fr mehrere Fenster.
+
+11.06.2002
+	-Bugfix: Beim Berechnen der maximalen Seitenhhe wurde die Hhe von
+	 "@image" nicht korrekt bercksichtigt.
+	-Bugfix: @limage Tags werden nur noch interpretiert, falls der
+	 Hypertext mit dem HCP Version 3 (=aktuellste) compiliert wurden.
+	 Dadurch wird die Darstellung von "alten" Hypertexten verbessert.
+
+09.06.2002 (v0.07)
+	-HypView bildet nun nicht mehr die Fensterbreite als Minimum von
+	 @width und der ermittelten Kolonnenanzahl. (Anscheinend ist das
+	 wieder einmal ein Fehler in der ST-Guide Dokumentation.)
+	-Bugfix: Falls WINADJUST=0 war und keine Fensterposition mittels
+	 WINPOS definiert wurde, wurde das Fenster in maximaler grsse
+	 geffnet, was beim Scrollen meistens zu abgeschnittenen Texten
+	 fhrte. (Hallo Thomas! Ich habs gefunden :-))
+	-Bugfix: Manchmal wurden falsche Text-Attribute beim Neuzeichnen
+	 benutzt.
+	-Bugfix: Bei der Suche nach der Seite wird nun Gross-/Kleinschreibung
+	 ignoriert.
+	-Bugfix: Bei von Aussen bewirkten Seitenwechsel (z.B. Hilfe-Aufruf aus
+	 einem anderen Programm) wurde immer der Cache-Speicher gelscht und
+	 ein History-Eintrag vermerkt, auch wenn der Sprung innerhalb der
+	 gleichen Datei war und die Zielseite schon dargestellt wurde.
+
+05.06.2002 (v0.06)
+	-Falls eine Datei nicht gefunden wird, wird der Name in der Fehler-
+	 meldung erwhnt.
+	-Gunnar hat die 16 Farben-Version berarbeitet.
+
+04.06.2002
+	-Problem entdeckt: Bei den Konfigurationsvariablen wie z.B. PATH,
+	 KATALOG, DEFAULT darf kein Kommentar in der gleichen Zeile stehen,
+	 da sonst die Daten falsch interpretiert werden. Also Vorsicht!
+
+02.06.2002
+	-Gunnar Grbel hat sich die Mhe gemacht die HypView-Resource einwenig
+	 an die modernen Zeiten anzupassen und hat ein paar schne Icons in
+	 256 Farben gestaltet. (Vielen Dank!)
+	-Ich habe die Icons rasch in 16 Farben konvertiert.
+	-Bugfix: Das Icon fr das History-Popup wurde aktiviert, obwohl diese
+	 Funktion noch nicht verfgbar ist.
+
+25.05.2002
+	-ACC Behandlung gendert:
+		CTRL+Q  als ACC: Schliessen aller Fenster
+				  als APP: Beenden des Programmes
+		AP_TERM : Beendet immer das Programm!
+
+23.05.2002 (V0.05)
+	-Tastatur-Wiederholung wird nun beim Auswerten deaktiviert.
+	 Dank Richard klappt dies sogar auf einem sauberen Weg (wenn mglich).
+	-Die Hintergrundfarbe wird nur noch bercksichtigt, falls mindestens
+	 16 Farben zur verfgung stehen. (=Falls man einmal im S/W Modus startet,
+	 kann man doch noch Hypertexte ansehen.)
+	-Es ist nun mglich HypView auch zu beenden falls es als ACC gestartet
+	 wurde. --> Vorsicht unter SingleTOS!!
+	-Es wird nun immer die selbst ermittelte Zeilenbreite verwendet auch falls
+	 das Header-Tag @width existiert. Der ST-Guide macht das auch so.
+	 (=> Hypertext Dokumentation ist da fehlerhaft!)
+	-Bugfix bei der True-Color Anpassung von grossen Bildern beseitigt.
+	-Bilder werden nun wie beim ST-Guide "transparent" ausgegeben.
+	 Falls die Darstellung mit 16 bis 256 Farben erfolgt verursacht dies
+	 mehr Aufwand als ohne Transparenz!
+	 Das Feature kann mit "TRANSPARENT_PICS=0" deaktiviert werden.
+
+08.05.2002
+	-Minimale Verbesserung bei der True-Color Konvertierung (=nur noch 15
+	 Mono-Bitmaps mit vrt_cpyfm())
+
+04.05.2002
+	-True Color Untersttzung vollstndig umgeschrieben. Nun werden alle
+	 einzelnen Farben extrahiert und als Monochrombitmap mit vrt_cpyfm()
+	 in das True Color Bild geschrieben.
+	 Dies ist zwar langsam, funktioniert jedoch auf allen Grafikkarten?!
+	-Bugfix bei der Parameterbergabe (Dateiname - Kapitelname).
+	 Ausserdem wird nun auf ".HYP " (nicht nur "HYP ") getestet um den
+	 Kapitelnamen zu finden.
+
+01.05.2002 (V0.03)
+	-CTRL+I zeigt die Versionsnummer von HypView an.
+	-HYP-View luft nun endlich als ACC! (Das Programm verhlt sich prinzip-
+	 iell genau gleich. D.h. ich treffe keine Sicherheitsmassnahmen um die
+	 Lauffhigkeit unter TOS sicherzustellen!)
+
+30.04.2002
+	-Wie ich vernehmen konnte, klappt's nun mit der NOVA-Kompatibilitt,
+	 aber mit der Milan- und der Eclips-Grafikkarte luft's noch nicht :-(
+	-Falls kein Default-Hypertext angegeben wurde (DEFAULT=xy), dann wird
+	 die Fileselect-Box aufgerufen.
+	 Mittels CTRL+O kann sie jederzeit erneut aufgerufen werden.
+	 Auch das Icon zum Laden der Datei ist jetzt aktiv.
+	-Bugfix: Falls eine Datei schon geffnet/geladen wurde, konnte es
+	 vorkommen, dass bei einem erneuten Verweis auf diesen Hypertext
+	 nicht bemerkt wurde, dass er schon im Speicher ist. (=> doppelt
+	 geladen)
+	-Kommandozeile, VA_START- und Drag&Drop-Parameter:
+		 -Falls die ersten 3 Zeichen "*:\" sind, so werden diese bersprungen.
+		  (Nach ST-Guide-Konvention wird dieses Format verwendet, falls das
+		  Programm den absoluten Pfad einer Datei nicht weiss.)
+		 -Am rechten "Parameter-Rand" wird nach einem Kapitelnamen gesucht
+		 -Der Rest wird als Pfad angesehen. Konnte die Datei nicht geffnet
+		  werden, so wird versucht mit Hilfe der PATH Variable die Datei
+		  zu finden.
+	 Benennt man nun HYP_VIEW.APP in ST-GUIDE.APP um und lsst es laufen
+	 (da es noch nicht als ACC luft), so schicken alle ST-Guide-kompatiblen
+	 Programme ihre Hilfe-Anfragen an HYP-View!
+	-Aus historischen Grnden werden die Kapitelnamen mit einem ' '
+	 (=Leerzeichen) vom Pfad/Dateinamen getrennt. Der original ST-Guide
+	 interpretierte also ab dem ersten Leerzeichen alles als Kapitelnamen.
+	 Dies fhrte dazu, dass der ST-Guide nicht mit Leerzeichen im Pfad
+	 zurechtkam.
+	 Um nun kompatibel zu bleiben und trotzdem Leerzeichen im Pfad/Dateinamen
+	 zu erlauben sucht HYP-View nicht einfach nach einem Leerzeichen, sondern
+	 nach der Datei Extension "HYP" gefolgt von einem Leerzeichen. Wird also
+	 die Zeichenfolge "HYP " (Gross-/Klein-Buchstaben ist egal) im Pfad
+	 gefunden, so wird der Rest als Kapitelnamen interpretiert.
+	 ==> Also Achtung: Keinen Pfad erstellen, der auf dieses Muster passt,
+	 da die darin enthaltenen Hypertexte nicht gefunden werden knnen!
+
+28.04.2002
+	-nderungen am True-Color Workaround.
+	-Externe Konfiguration ber die HYP_VIEW.CFG erweitert:
+		-WINPOS erlaubt nun Breite und Hhe (in Zeichen!)
+		-WINADJUST aktiviert/deaktiviert die autom. Fenstergrssen-Anpassung
+		-BACKCOL erlaubt das Einstellen der Hintergrundfarbe.
+		 (im Gegensatz zum ST-Guide werden die Bilder nicht transparent
+		 gezeichnet.)
+		-Ein paar Kommentare zu den verschiedenen Variablen eingefgt.
+	-Bugfix: Absturz falls kein GDOS installiert war.
+	-Datei-Existenz wird nun mittels Fopen/Fclose berprft anstatt mit
+	 Fxattr. Damit luft HYP-View auch unter Single-TOS (zumindest unter
+	 TOS 4.04 habe ich kein Problem bemerkt).
+
+27.04.2002
+	-Anscheinend klappt's mit dem True-Color Workaround nicht.
+	-Bugfix: Da die @limage-Definition anscheinend nicht ganz rckwrts-
+	 kompatibel ist (was sich beim NOVA-Hypertext herausstellte), werden
+	 nun Bilder mit der Breite = 1 Zeichen als @limage Bilder interpretiert.
+	 Dadurch sollte es keine Probleme mit Hypertexten vor dem 19.04.1995
+	 mehr geben.
+	-Tests haben gezeigt, dass HYP-View die Bilder von Hypertexten, die
+	 mit dem HCP vor dem 19.04.1995 erstellt wurden, nicht 100% an der
+	 gleichen stelle wie beim ST-Guide anzeigt. (=HYP-View: 1 Pixel weiter
+	 unten)
+
+26.04.2002
+	-Nachdem ich auf meine "Alpha-Preview" einige Reaktionen erhalten habe,
+	 stellte sich auch heraus, dass es Probleme mit verschiedenen Grafik-
+	 karten gibt unteranderem: NOVA und die im Milan eingebaute.
+	 Der Fehler liegt wahrscheinlich daran, dass diese die Little-Endian
+	 Darstellung benutzen (=also die auf dem PC gebruchliche). Daher habe
+	 ich einen weiteren Workaround eingebaut.
+	-Neues Schlsselwort in der Konfigurationsdatei: LITTLEENDIAN=1
+	 aktiviert die Little-Endian Darstellung bei Grafikkarten. (Ich weiss,
+	 dass das keine gute Lsung ist. Aber evtl. luft's so auf die schnelle!)
+
+21.04.2002
+	-Eine "busy bee" zeigt nun, dass gerade eine Seite geladen wird.
+	 Dies ist vorallem wichtig beim langen Laden des TOS.HYP Indexes :-)
+	-Wie ich bei Tests mit dem HCP erfahren musste, werden nur Bilder
+	 mit 1 oder 4 Ebenen (=monochrom und 16 Farben) untersttzt, dadurch
+	 verringert sich der Aufwand fr mich: Ich muss nur eine Routine
+	 schreiben, die 4 Planes in 1 Plane konvertiert.
+	-Falls zuwenig Farben zur Darstellung der Bilder im Original vorhanden
+	 sind, wird das gleiche Verfahren wie beim ST-Guide angewendet:
+		Alle Farben bis auf Weiss und Hellgrau werden Schwarz gefrbt.
+	-Falls bis zu 8 Ebenen (=256 Farben) vorhanden sind, werden die Bilder
+	 "expandiert".
+	-Rudimentre (=usserst schlechte) Routine, die Bilder ins Gerte
+	 abhngige True-Color Format konvertiert. (Bisher lediglich auf meinem
+	 Falcon in High-Color (16Bit) getestet.)
+
+20.04.2002
+	-Mit der Tastenkombination CTRL+Z kann zwischen den 2 Zeichenstzen
+	 (FONT und XFONT) gewechselt werden.
+	-Bugfix: Beim Bestimmen der Fensterbreite wurden flschlicherweise
+	 Linienbefehle als Text und als Linien interpretiert, was je nach
+	 Anzahl Linien zu einer unntig grossen Fensterbreite fhrte.
+	-Die Einstellungen werden nun aus der Datei HYP_VIEW.CFG geladen.
+	 Damit lassen sich endlich die Einstellungen "von Aussen" verndern.
+
+18.04.2002
+	-Untersttzung von Popup-Texten.
+	 Verbesserungen gegenber dem ST-Guide:
+		- Popup in einem eigenen Fenster (=ohne Randelemente), jedoch
+		  Applikations-modal.
+		  Dadurch bleibt die Menuzeile aktiv und die Ausgabe anderer
+		  Programme wird nicht blockiert.
+		- Popups knnen auch Grafik-Objekte und Bilder enthalten.
+		  (Dummerweise entfernt der HCP die Objekte aus den "pnode"s,
+		  da der ST-Guide dies nicht verkraftet. Abhilfe: man muss ein
+		  normaler Eintrag (="node") erstellen und nach dem compilieren
+		  mit HCP den Header von Hand anpassen!)
+		- Die Grsse ist nicht beschrnkt. Es werden aber keine Slider
+		  angezeigt, falls das Popup grsser als der ganze Bildschirm
+		  ist. => Zu grosse Popups werden nicht ganz angezeigt.
+		  (aber trotzdem besser als die 12 Zeilen mit 60 Zeichen, die
+		  der original ST-Guide bietet)
+
+13.04.2002
+	-Nun kann man zur Anzeige auch proportionale Zeichenstze verwenden.
+	 Die Darstellung ist dabei (wie schon bei den quidistanten Zeichen-
+	 stzen) 100% ST-Guide kompatibel.
+	-Probleme bereiten die kursiven Texte, da zur Berechnung der "Klick-
+	 Position" die Breite jedes Zeichens genommen wird. Und nicht etwa
+	 die Breite der einzelnen Worte. Dadurch, kann die genaue Position
+	 der angeklickten Stelle nicht bestimmt werden!
+	 Dieses Problem hat aber der "echte" ST-Guide auch schon!
+	-Falls sich an der angeklickten Position nichts befindet, wird das
+	 darunterliegende Wort ermittelt und an eine Pseudo-Suchmaschine
+	 bergeben.
+
+11.04.2002
+	-Nach tagelanger Suche, habe ich endlich herausgefunden, warum die Titel-
+	 Grafik des "Chips'n'Chips" Hypertextes falsch dargestellt wurde:
+		Grafiken drfen auch grsser als die 65 KB sein. Die wahre grsse muss
+		aber mit Hilfe des "Next" Wertes berechnet werden.
+		D.h. "Next" enthlt das High-Word der Lnge der entpackten Daten.
+	 Etwas kompliziert formuliert. Wer also genau wissen will wie das geht,
+	 kann bei mir nachfragen.
+
+07.04.2002
+	-Bugfix: Das Anpassen der Fensterbreite und Hhe bercksichtigte
+	 nicht die aktuelle X/Y Position.
+
+12.03.2002
+	-GetLink() korrigiert. (Nach wie vor keine Untersttzung fr
+	 proportionale Zeichenstze)
+	-Beim Anzeigen einer neuen Seite springt das Fenster nicht stndig
+	 in die obere linke Ecke. D.h. es wird nur noch Breite und Hhe
+	 angepasst.
+	-Die wichtigsten Tastenkrzel zum Navigieren im Hypertext implementiert.
+
+Nachdem ich umgezogen bin, hatte ich endlich wieder Zeit um an meinem
+Programm zu basteln:
+
+
+11.03.2002
+	-Die 1. Plane aller Bilder wird nun korrekt dargestellt. Das bedeutet,
+	 dass man mit HypView monochrome Hypertexte ansehen kann.
+	 Bei Farbbildern kann man teilweise nur erahnen, was dargestellt wird.
+	-Der Index- und der Katalog-Button haben nun ihre Funktion erhalten.
+	 (Index springt zur Seite mit dem Namen "Index" und Katalog ffnet die
+	 Datei "KATALOG.HYP")
+
+05.03.2002
+	-Externe-Referenzen funktionieren nun auch.
+	-History-Eintrge knnen nun auf andere Dateien zeigen.
+	-Falls die Datei nicht im aktuellen Verzeichnis gefunden wird, so wird
+	 noch in den angegebenen Suchpfaden gesucht.
+
+03.03.2002
+	-Nun kann man auch mit Mausklicks auf Links durch den Hypertext "browsen"
+	 wobei das anzeigen von externen Referenzen und Popups noch nicht klappt
+	 und einfach mit einer Meldung quittiert wird.
+	 Das ganze muss noch etwas umstrukturiert werden!
+	-Probleme bei der History, falls sich der Pfad gendert hat.
+
+02.03.2002
+	-Die Reihenfolge der Seiten (=interne Vernetzung) wird nun beim Blttern
+	 bercksichtigt. Falls es in eine Richtung nicht mehr weitergeht, so
+	 wird der entsprechende Richtungspfeil versteckt.
+	-Ich habe provisorisch die Icons vom ST-Guide bernommen. Schliesslich
+	 soll spter einmal jede seiner Funktionen bernommen werden.
+
+28.02.2002
+	-Die Anzeige klappt nun. Probleme bereiteten mir die "@limage" Bilder.
+	 Die Anzeige basiert nun auf folgenden Annahmen:
+		Alle Grafikobjekte ("image","limage","box","line","rbox") befinden
+		sich am Anfang der entpackten Daten.
+		Danach befindet sich der eigentliche Text (inkl. Textattribute und
+	-Bisher funktioniert erst das vorwrts und rckwrts Blttern ohne die
+	 Reihenfolge zu beachten, also Node 0,1,2,...
+
+27.02.2002
+	-Bugfix: Bei der Verwendung von Textattributen wurde nicht beachtet, dass
+	 je nach Effekt der Text breiter wurde (z.B. Italic).
+
+16.02.2002 bis 23.02.2002
+	-berarbeitung der Anzeigeroutinen
+	 -Es wird bei jedem Redraw der ganze Hypertext neu gezeichnet
+	  ==> nicht besonders schnell!
+	 -Probleme mit "limage" bestehen noch.
+	 -Bei Bildern wird bisher nur die 1. Plane dargestellt (=kein Dithern,
+	  keine farbigen Bilder)
+
+15.02.2002
+	-Arbeiten am "GEM-Gewand": Texte werden nun in einem Fenster dargestellt.
+	 Noch keine Grafiken implementiert.
+
+30.01.2002
+	-Kleine Umstrukturierung, damit die Routinen wie eine Bibliothek
+	 zu einem anderen Programm dazugelinkt werden knnen.
+
+==> jetzt muss das ganze in eine GEM-Applikation "gestrickt" werden.
+
+
+29.11.2001
+	-Die HYP-Laderoutine neu geschrieben:
+		 -HYP_DOCUMENT enthlt nun die Indextabelle sowie Zusatzinfos
+		  (Autor, Version, ...) und natrlich der Zugriffspfad auf die Datei.
+		 -Besteht nun aus einem einzigen Speicherblock (=nicht mehrere
+		  "Mfree()" ntig um das Dokument zu entfernen)
+	-DisplayXY() Routinen angepasst.
+
+25.11.2001
+	-interne Reorganisation
+
+22.11.2001
+	-Verarbeitet nun die meisten getesteten Seiten. D.h. bisher werden alle
+	 grafischen Attribute bersprungen.
+	-Kann auch verschlsselte Dateien lesen (wie z.B. Chips&Chips)
+
+20.11.2001
+	-Einfache Textdarstellung einer Seite ohne Grafiken und Links klappt
+	 nun einigermassen.
+
+19.11.2001
+	-Nachdem ich seit geraumer Zeit mit dem Gedanken gespielt habe einen
+	 eigenen HYPertext Viewer zu schreiben, habe ich endlich mit etwas
+	 Code begonnen. (Ausserdem habe ich auch schon seit lngerer Zeit den
+	 Quelltext zu WinGuide von dessen Autor Frank Rger erhalten.)
+	 Es steht also nichts mehr im Weg um das Projekt zu realisieren.
+	-Die erste Version ist wie immer eine ".TOS" Version mit Textausgaben.
+	 Zur Zeit wird lediglich der HYP-Header sowie die Index-Daten aus einer
+	 HYP-Datei geladen und eine Indextabelle im Speicher erstellt.
+	 Danach wird ein "Baum-Artiger" Index angezeigt.
