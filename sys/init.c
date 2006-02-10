@@ -233,6 +233,7 @@ init (void)
 		strcpy(sysdir, "\\mint\\" MINT_VERS_PATH_STRING "\\");
 	else if (TRAP_Dsetpath("\\mint\\") == 0)
 		strcpy(sysdir, "\\mint\\");
+# ifndef BOOTSTRAPABLE
 	else
 	{
 		/* error, no <boot>/mint or <boot>/mint/<version> directory
@@ -243,6 +244,7 @@ init (void)
 		(void) TRAP_Cconin();
 		TRAP_Pterm0();
 	}
+# endif
 
 	/* check for GEM -- this must be done from user mode */
 	if (check_for_gem())
@@ -556,6 +558,27 @@ init (void)
 		((struct tty *) f->devinfo)->aux_cnt = 2;
 		f->pos = 1;	/* flag for close to --aux_cnt */
 	}
+
+# ifdef BOOTSTRAPABLE
+	/* Bootstrapped kernel (executed directly by some loader) does
+	 * not have any drive access until the init_filesys() is called.
+	 * To be able to boot from a kernel built-in filesystem we check
+	 * for the sysdir here again. */
+
+	/* the sysdrv to check for the sysdir folder */
+	sys_d_setdrv(sysdrv);
+
+	if (sys_d_setpath("\\mint\\" MINT_VERS_PATH_STRING) == 0)
+		strcpy(sysdir, "\\mint\\" MINT_VERS_PATH_STRING "\\");
+	else if (sys_d_setpath("\\mint\\") == 0)
+		strcpy(sysdir, "\\mint\\");
+	else
+	{
+		boot_printf(MSG_init_no_mint_folder, MINT_VERS_PATH_STRING);
+		step_by_step = -1; stop_and_ask(); /* wait for a key */
+		sys_s_hutdown(SHUT_HALT);
+	}
+# endif
 
 	/* Make the sysdir MiNT-style */
 	{
