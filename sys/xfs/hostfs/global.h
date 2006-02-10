@@ -95,9 +95,7 @@
     "\033p HostFS Filesystem driver version " MSG_VERSION " \033q\r\n"
 
 #define MSG_GREET	\
-    "½ 1998, 1999, 2001 by Markus Kohm <Markus.Kohm@gmx.de>.\r\n" \
-    "½ 2000 by Chris Felsch <C.Felsch@gmx.de>\r\n"\
-    "½ " MSG_BUILDDATE " by ARAnyM Team\r\n\r\n"
+    "½ " MSG_BUILDDATE " by ARAnyM Team\r\n"
 
 # define MSG_ALPHA      \
     "\033p WARNING: This is an unstable version - ALPHA! \033q\7\r\n"
