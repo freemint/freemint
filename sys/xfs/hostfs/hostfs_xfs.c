@@ -309,6 +309,12 @@ FILESYS hostfs_filesys =
 
 FILESYS *hostfs_init(void)
 {
+#if __KERNEL__ == 1
+	boot_print (MSG_BOOT);
+	boot_print (MSG_GREET);
+	boot_print ("\r\n");
+#endif
+	
 	if ( !KERNEL->nf_ops ) {
 		c_conws("Native Features not present on this system\r\n");
 		return NULL;
