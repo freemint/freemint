@@ -1,0 +1,83 @@
+HypView
+=======
+-Tabulatorweite fr Text-Dateien einstellbar
+ * TABSIZE
+    enthlt die gewnschte Tabulatorweite. Ist diese Variable nicht
+    vorhanden, so wird der Wert 8 verwendet. (hcp, ST-Guide)
+
+-Zeichensatztabellen fr Text-Dateien untersttzen (ISO Latin, PC, ...)
+ via KeyTab oder so 
+
+-Fehlermeldung falls keine weiteren Fenster mehr vorhanden.
+
++Window-Cycling selber machen, falls AV-Server das nicht bernimmt.
+
+-ST-Guide kann bei Verwendung eines Fonts mit kleineren Ausmaen als denen 
+ des Standard-Systemfonts, unter bestimmten Umstnden Texte so plazieren, 
+ da Text und Grafik sich nicht berschneiden. Angenommen auf einer
+ Hypertextseite soll zuerst ein Bild und darunter Text erscheinen.
+ Damit jetzt bei Verwendung von @image plus Leerzeilen - anstelle von
+ @limage (dieser Befehl setzt ja automatisch Text unter die Grafik) -
+ der Text unabhngig von der Hhe des Fonts immer unterhalb des Bildes
+ erscheint, benutzt ST-Guide an der Stelle, wo die Grafik erscheint,
+ Leerzeilen mit der Hhe des Standard-Systemfonts.
+
+-Intelligenter "Fuller" berarbeiten: die linke obere Ecke des Fensters
+ sollte nur wenn absolut ntig verndert (=das Fenster verschoben) werden.
+ Falls das vergrsserte Fenster platz auf dem Bildschirm hat, bleibt die
+ Ecke unverndert.
+
+-Anpassen der Fensterbreite und -hhe (=WIN_ADJUST) sollte separat
+ konfigurierbar sein.
+
+-bei der Selektion sind ein paar Bugs drin. Z.B. auch bei leere Zeilen
+ fhren zu Redraw-Fehlern.
+
+-Kontext-Men mit dem Befehl "Im Text-Editor ffnen..." erweitern
+
+-nach Vernderung der ASCII-Konfigurationsdatei ber einen Editor, d.h.
+ direkt nach dem Abspeichern im Editor, diese Datei einzulesen und sofort
+ alle nderungen in HypView zu bernehmen.
+
+-Schnellerer Seitenaufbau (z.B. indem man die Text-Ausmasse nur einmal
+ berechnet!)
+
+-Bug: Hintergrund Farbbilder werden falsch konvertiert mit Imagine VDI
+
++"Zurck" ins Kontext-Men aufnehmen(erledigt).
+ (evtl. Rechtsklick fr "Zurck"-Funktion anstatt Kontext-Men)
+
+-Zurck via Rechtsklick (wie bei ST-Guide) einbauen. Konfigurierbar!
+ Rechte Maustaste als Alternative zum Zurck-Icon, falls die Variable
+ RIGHTBACK in der ST-GUIDE.INF definiert ist und der Klick dann
+ geschieht, wenn der Mauszeiger sich gerade im ST-Guide-Fenster befindet.
+ Diese Funktion ist von einigen Betriebssystemen gewissermaen nicht voll
+ "abgesegnet" und daher zunchst nicht aktiviert. Mausfetischisten
+ mgen aber in der schnellen Rcksprungmglichkeit einen Gewinn sehen.
+ Ihnen zuliebe wurde diese Funktion implementiert.
+ * RIGHTBACK
+   Falls diese Variable definiert ist (Wert egal), so wird das Bettigen
+   der rechten Maustaste wie ein Klick auf den 'zurck' Button interpre-
+   tiert. Defaultmig ist diese Variable nicht gesetzt, weil das a) den
+   Nachteil hat, da Aktionen im hintenliegenden Fenster nicht mehr
+   mglich sind, und b) werden Rechtsklicks von den verschiedenen TOS-
+   Versionen unterschiedlich behandelt (Quelle: Martin "WINX" Osieka)
+
++ ALT-D - DEFHYP laden
+
+- ALT-R - Remarker ffnen, falls dieser luft oder die Variable REMARKER
+          definiert ist
+
+- SHIFT-CTRL-O - wie CTRL-O, nur mit *.* als Pattern im erscheinenden
+                 Fileselektor
+
+- Ctrl-F - Pattern suchen (wie Extra -> Suchen)
+  Bei Auswahl dieser Funktion (auch aktivierbar durch  Control - F )
+  erscheint ein Dialog, in dem ein Suchbegriff eingegeben werden kann.
+  Folgende Knpfe stehen zur Auswahl:
+     Im Text   Als Seite   Als REFerenz   Abbruch
+     In allen Seiten      ... aller Hypertexte
+
+- Ctrl-G   Pattern erneut suchen  (wie Extra -> Weitersuchen)
+
+- BubbleGEM fr Icon

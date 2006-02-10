@@ -1,0 +1,13 @@
+"Skins" fÅr HypView (ab V0.28)
+von Gunnar Grîbel (http://www.ppp-software.de)
+
+Installation
+============
+Gesamtes Verzeichnis "Skins" (inkl. SKIN_xx.RSC) in das Verzeichnis von
+HypView kopieren.
+Mit einem Editor (qed, luna,...) in der Konfigurations-Datei HYP_VIEW.CFG
+eine Zeile SKIN=... suchen bzw. einfÅgen. Diese Zeile wÑhlt die 
+entsprechende Resource-Datei aus.Z.B.
+	SKIN=SKIN_05.RSC
+veranlasst HypView die Datei SKIN_05.RSC aus dem Verzeichnis "Skins"
+zu laden.

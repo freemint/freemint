@@ -1,0 +1,295 @@
+ST-Guide Hypertext Format (=HYP)
+=========================
+Dies ist eine Dokumentation des ST-Guide Hypertext Formats.
+Sie basiert auf der Dokumentation, die man im HCP Hypertext von Holger
+Weets findet. Dazu habe ich an einigen Stellen ErgÑnzungen angebracht,
+welche mir beim Programmieren meines Hypertext Viewers aufgefallen sind.
+Meine ErgÑnzungen sind mit [PhD] gekennzeichnet.
+
+Diese Dokumentation bitte nicht weitergeben!
+
+Philipp Donze                                         Chavornay, 05.05.2002
+
+================================== schnipp ================================
+Header eines Hypertextes
+------------------------
+Der Header einer Hypertext Datei ist wie folgt aufgebaut:
+  4 Bytes Magic ('HDOC')
+  4 Bytes LÑnge der Indextabelle
+    (Seiten, Bilder, ext. Referenzen, system, rexx)
+  2 Bytes Anzahl der EintrÑge in dieser Tabelle
+  1 Byte Kennung, mit welcher Version des Compilers Åbersetzt wurde
+    (aktuell 3)
+  1 Byte Kennung, unter welchem Betriebsystem Åbersetzt wurde
+    (0: unbekannt, 1: AMIGA, 2: ATARI, 3: Macintosh)
+
+
+Indexbereich eines Hypertextes
+------------------------------
+1 Byte LÑnge dieses Eintrages
+1 Byte Typ dieses Eintrages
+    0: interne Seite        (@node)
+    1: Popup-Node           (@pnode)
+    2: externe Referenz     (@{... link FILE [LINE]})
+    3: Bild                 (@image)
+    4: SYSTEM-Argument      (@{... system ARG})
+    5: REXX-Script          (@{... rxs FILE})
+    6: REXX-Kommando        (@{... rx  ARG})
+    7: QUIT Dummy-Eintrag   (@{... quit})
+4 Bytes Seek Offset in die Datei
+2 Bytes Differenz entpackte/gepackte LÑnge des Objektes
+2 Bytes Index des Nachfolgers
+2 Bytes Index des VorgÑngers
+2 Bytes Index des Inhaltsverzeichnisses fÅr dieses Objekt
+x Bytes Name des Objektes, nullterminiert
+evtl. ein weiteres Nullbyte, damit der nÑchste Eintrag wieder
+    auf einer geraden Adresse liegt
+
+Von diesen Strukturen finden sich so viele in der Datei, wie der
+entsprechende Wert im Header angibt.
+
+Die LÑnge einer Seite berechnet sich aus der Differenz der
+Seek-Offsets dieser Seite und der des Nachfolger-Objektes.
+
+
+Erweiterte Header
+-----------------
+Erweiterte Header dienen i.w. dem Zweck, alle Daten auch bei Er-
+weiterungen des Systems kompatibel zu Ñlteren Versionen zu halten.
+
+Der Aufbau eines solchen Headers ist wie folgt:
+2 Bytes Kennung
+2 Bytes LÑnge
+n Bytes Daten
+
+Aktuell existieren folgende Header:
+0   Ende-Kennung, es folgen keine weiteren Header mehr
+1   Database Name, es folgen LÑnge und C-String
+    (@database)
+2   Name der Default-Node, es folgen LÑnge und C-String
+    (@default)
+3   Name der Host-Applikation(en), es folgen LÑnge und C-String(s)
+    (@hostname)
+4   Optionen, die von den Default-Einstellungen abweichen, es
+    folgen LÑnge und C-String
+    (@options, Kommandozeile)
+5   Name des/der Autoren, es folgen LÑnge und C-String
+    (@author)
+6   Versions-Information, es folgen LÑnge und C-String
+    (@$VER:)
+7   Name der Hilfe Seite, es folgen LÑnge und C-String
+    (@help)
+8   Beschreibung der Gebiete, in die der Text einzuordnen
+    ist, es folgen LÑnge und C-String
+    (@subject)
+9   HypTree-Header; Aufbau:
+    4 Bytes Summe der LÑngen aller expliziten Titel
+    Array von Wortbreiten Bitvektoren:
+     1. Wort: Bit n == 1 -> Seite n hat einen expliziten Titel
+     2. Wort: Bit n == 1 -> Seite 16+n hat einen expiziten Titel
+     usw.
+10  Flags fÅr den ST-Guide (2 Bytes)
+    Falls das Bit 10 gesetzt ist, so ist der Hypertext verschlÅsselt. [PhD]
+11  verwendete ZeilenlÑnge (@width)
+
+Ein Lesealgorithmus fÅr diese Header muû alle ihm nicht bekannten Header
+ohne Warnung oder Fehlermeldung Åberlesen.
+
+
+
+Datenbereich eines Hypertextes
+------------------------------
+Alle Seiten, Popup's und Bilder, die im Hypertext definiert wurden.
+Meist liegen die Daten in gepackter Form vor, so daû sie nicht ohne
+weiteres verwendet werden kînnen. Der verwendete Pack-Algorithmus
+entspricht dem LH5 Verfahren des LHarc, ist somit sehr effizient und
+zumindest beim Auspacken auch schnell genug.
+Die Reihenfolge der Daten-Objekte entspricht der der Indextabelle,
+externe Referenzen, system- und rexx-EintrÑge besitzen keine Daten
+in diesem Bereich, die Daten gehîren folglich immer zu einer
+ * Textseite oder zu einem
+ * Bild
+
+
+Format einer [p]node
+--------------------
+Gehîren die Daten zu einer Textseite (@node, @pnode), so haben die
+(entpackten) Daten folgendes Format:
+    a) optionaler Grafikbereich (nur @node)
+        Hier werden alle grafischen Objekte dieser Seite  wie
+        folgt beschrieben:
+        1 Byte Kennung (27, ESCAPE)
+        1 Byte Typ
+            50: Bild                    (@image)
+            51: Linie                   (@line)
+            52: Box                     (@box)
+            53: Box mit runden Ecken    (@rbox)
+        2 Bytes Index, falls Bild
+        damit keine 0-Bytes entstehen, liegt dieser Wert zur Basis
+            255 vor und zu beiden Bytes wurde der Wert 1 addiert
+        1 Byte X-Offset in Zeichen
+            Bilder: falls X = 0 ==> zentriert [PhD]
+        2 Bytes Y-Offset in Zeichen
+            damit keine 0-Bytes entstehen, liegt dieser Wert zur Basis
+            255 vor und zu beiden Bytes wurde der Wert 1 addiert
+        1 Byte Breite des Objektes in Zeichen
+            Bilder: falls Breite = 1 ==> limage [PhD]
+        1 Byte Hîhe des Objektes in Zeichen
+        1 Byte Data, falls kein Bild
+            Bevor folgende AufschlÅsselung angewendet werden kann muss
+            zuerst "Data" um eins verkleinert werden! [PhD]
+            Linie: Bit 0 == 1: Pfeilspitze am Anfang
+                   Bit 1 == 1: Pfeilspitze am Ende
+                   restliche Bits: Linienstil
+            Box:
+            RBox:  FÅllmuster
+        Bei Bildern werden Breite und Hîhe ignoriert, bei Linien bilden
+        sie das umgrenzende Rechteck.
+
+    b) optional bis zu 12 Querverweis-Datenblîcke
+        1 Byte Kennung (27, ESCAPE)
+        1 Byte Typ (48)
+        1 Byte LÑnge (Åber alles)
+        2 Bytes Indexnummer der Zielnode (im 255er Format [PhD])
+        Text fÅr das Popup, Nullterminiert
+
+    c) optional weitere Datenblîcke
+        1 Byte Kennung (27, ESCAPE)
+        1 Byte Typ (40-47)
+        1 Byte LÑnge (Åber alles)
+        Daten
+
+    d) optional Fenstertitel (@node, @title)
+        1 Byte Kennung (27, ESCAPE)
+        1 Byte Typ (35)
+        Fenstertitel, Nullterminiert
+        evtl. FÅllbyte, damit der Text auf einer geraden Adr.
+        beginnt
+
+    e) optional Tabelle mit Objekten & Seiten (@tree)
+        1 Byte Kennung (27, ESCAPE)
+        1 Byte Typ     (49, ObjTable)
+        2 Bytes Zeilennummer in der Zielseite
+        2 Bytes Nummer des Baumes
+        2 Bytes Objekt in diesem Baum
+        2 Bytes Index der Seite
+       Damit keine 0-Bytes entstehen, liegen alle 2 Byte Werte zur
+       Basis 255 vor und zu beiden Bytes wurde der Wert 1 addiert;
+
+    f) optional Text mit Attributen
+        Die einzelnen Zeilen sind durch ein 0-Byte abgeschlossen und
+        kînnen beliebig viele nicht auszugebende Zusatz-Information
+        enthalten.
+
+        Diese Informations-Sequenzen werden jeweils durch das Zeichen
+        ESCAPE (27) eingeleitet, ihm folgt ein weiteres ESCAPE oder
+        ein Typ, im ersten Fall ist das Zeichen ESCAPE auszugeben und
+        im zweiten Fall bestimmt der Typ das weitere Vorgehen:
+            36: Referenz auf andere Seite
+                    @{... link NODE}
+            37: wie 36, aber mit Zeilennummer
+                    @{... link NODE LINE}
+            38: wie 36 nur durch 'alink' erzeugt
+                    @{... alink NODE}
+            39: wie 38, aber mit Zeilennummer
+                    @{... alink NODE LINE}
+            >= 100: Vektor fÅr Textattribute:
+                nach Abzug von 100 ergibt sich folgender
+                Bitvektor:
+                 1: Fettschrift
+                 2: helle Schrift
+                 4: Kursivschrift
+                 8: unterstrichen
+                16: 'Outlined'
+                32: schattierte Schrift
+
+            Bei Typ 37 und 39 folgen 2 Bytes Zeilennummer; damit keine
+            0-Bytes entstehen, liegt dieser Wert zur Basis 255 vor und
+            zu beiden Bytes wurde der Wert 1 addiert
+
+            Bei Typ 36-39 folgen nun
+                2 Bytes Index in die Tabelle aus dem Indexbereich;
+                  damit keine 0-Bytes entstehen, liegt dieser Wert zur
+                  Basis 255 vor und zu beiden Bytes wurde der Wert 1
+                  addiert
+                1 Byte LÑnge des betreffenden Strings + 32
+                  ist die LÑnge gleich 32, so ist hier direkt der Name
+                  des indizierten Objektes auszugeben, ansonsten so
+                  viele Zeichen, wie die LÑnge angibt, minus 32 aus
+                  der nachfolgenden Zeichenkette
+
+
+Format eines Bildes
+-------------------
+Gehîren die Daten zu einem Bild, so liegt (nach dem Entpacken)
+folgendes Format vor:
+    a) Header
+        2 Bytes Breite des Bildes in Pixeln (wird ignoriert)
+        2 Bytes Hîhe des Bildes in Pixeln (wird ignoriert)
+        1 Byte Anzahl der Planes (1..8)
+        1 Byte 'Planepic': Bit n == 1 --> Daten fÅr Plane n
+          vorhanden
+        1 Byte 'PlaneOnOff': Bit n == 1 --> Plane ganz ausgefÅllt
+        1 Byte Filler, damit das Bild auf gerader Adr. liegt
+    b) 1. Plane
+       optional 2. Plane
+       ...
+       optional 8. Plane
+
+
+Format einer REF Datei
+----------------------
+Datei-Kennung
+  4 Bytes Magic ('HREF')
+
+Modul-Header
+  4 Bytes LÑnge des Moduls ohne Header
+  4 Bytes Anzahl der EintrÑge im aktuellen Modul
+
+Modul-Daten
+  1 Byte  Kennung des Eintrages
+          0: Dateiname (z.B. 'ST-GUIDE')
+             immer ohne Pfad
+             (eintragen eines Pfades ist jedoch erlaubt)
+             und meist auch ohne Endung
+             (als Endung wird .HYP verwendet, falls keine angegeben)
+          1: Node Name
+             Seitenname aus dem Hypertext zum letzten Datei-Eintrag
+          2: Alias Name
+             Aliasname aus dem Hypertext zum letzten Node-Eintrag
+             (wird vom hcp nur optional hier eingetragen)
+          3: Label Name
+             Labelname aus dem Hypertext zum letzten Node-Eintrag
+             (wird vom hcp nur optional hier eingetragen)
+          4: database Name
+             Database-Argument zum letzten Dateieintrag
+          5: Kennung des Betriebsystemes, unter dem der Hypertext
+             Åbersetzt wurde
+             ('0': unbekannt, '1': AMIGA, '2': ATARI, '3': Macintosh)
+
+  1 Byte  LÑnge des Eintrages
+  n Bytes Eintrag als Nullterminierter String
+          bei Typ 3 folgen dem String noch 2 Bytes Zeilennummer
+
+Beliebig viele weitere Modul-Header gefolgt von Modul-Daten.
+
+  8 Bytes Nullen als Ende-Kennung
+  [PhD] Diese 8 0-Bytes sind nicht in der Modul-LÑnge enthalten!
+
+
+====================== [PhD] ============================
+Ab hier folgen meine eigenen Notizen:
+
+-Format einer externen Referenz (=Node Typ 2 bzw. @{... link FILE [LINE]})
+ Es gibt keine Daten zum Laden, daher ist im Index die LÑnge 0. SÑmtliche
+ Daten befinden sich im Namen des Index-Eintrags und zwar im folgenden
+ Format:
+	<name>/<node-name>
+
+-Grîssen-Angabe bei Bildern:
+ Da Bilder grîsser als 65KB sein kînnen, die Angabe Åber die LÑnge der
+ entkomprimierten Daten aber auf 2 Bytes (=bis zu 65536 Bytes an Daten)
+ beschrÑnkt ist, wird zur Berechnung der waren Grîsse der Index-Eintrag
+ "next" zu hilfe gezogen:
+   entkomp. Grîsse = komp. Grîsse + (index->next<<16)+index->comp_diff
+ 
