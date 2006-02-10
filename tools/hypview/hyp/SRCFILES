@@ -1,0 +1,25 @@
+# This file gets included by the Makefile in this directory to determine
+# the files that should go only into source distributions.
+
+HEADER =
+COBJS = \
+	autoloc.c \
+	block.c \
+	cache.c \
+	click.c \
+	cursor.c \
+	display.c \
+	ext_refs.c \
+	hyp.c \
+	lh5d.c \
+	load.c \
+	popup.c \
+	prepare.c \
+	ref.c \
+	save.c \
+	search.c \
+	search_d.c \
+	tool.c
+
+
+SRCFILES = $(HEADER) $(COBJS)

@@ -1,0 +1,52 @@
+# This file gets included by the Makefile in this directory to determine
+# the files that should go only into source distributions.
+
+HEADER = \
+	defs.h \
+	diallib.h \
+	dl_miss.h \
+	dl_user.h \
+	hyp.h \
+	hyp_view.h
+
+COBJS = \
+	autoloc.c \
+	block.c \
+	config.c \
+	cookie.c \
+	dl_av.c \
+	dl_avcmd.c \
+	dl_bubbl.c \
+	dl_cfgrd.c \
+	dl_dhst.c \
+	dl_dial.c \
+	dl_drag.c \
+	dl_event.c \
+	dl_filsl.c \
+	dl_fonsl.c \
+	dl_help.c \
+	dl_init.c \
+	dl_items.c \
+	dl_ledit.c \
+	dl_menu.c \
+	dl_routs.c \
+	dl_user.c \
+	dl_win.c \
+	error.c \
+	file.c \
+	fileselc.c \
+	font.c \
+	global.c \
+	history.c \
+	hyp_view.c \
+	info.c \
+	init.c \
+	marker.c \
+	navigate.c \
+	selectio.c \
+	toolbar.c \
+	tools.c \
+	window.c
+
+
+SRCFILES = $(HEADER) $(COBJS)
