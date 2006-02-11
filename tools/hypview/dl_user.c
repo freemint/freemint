@@ -34,6 +34,8 @@
 
 #include "include/types.h"
 #include "include/scancode.h"
+#include "include/av.h"
+/* #include "include/bgh.h" */	/* XXX missing this */
 #include "diallib.h"
 #include "hyp.h"
 #else
@@ -62,7 +64,6 @@ HISTORY *last_history = NULL;
 /****** Events                                    ******/
 /*******************************************************/
 #if USE_GLOBAL_KEYBOARD == YES
-#include <scancode.h>
 
 short DoUserKeybd(short kstate, short scan, short ascii)
 {
@@ -319,8 +320,6 @@ void DD_DialogGetFormat(OBJECT *tree,short obj, unsigned long format[])
 /*******************************************************/
 #if USE_STGUIDE == YES
 
-#include <bgh.h>
-
 char *GetTopic(void)
 {
 	CHAIN_DATA *chain_ptr;
@@ -358,7 +357,6 @@ char *GetTopic(void)
 /****** AV Protokoll                              ******/
 /*******************************************************/
 #if USE_AV_PROTOCOL != NO
-#include <av.h>
 
 void DoVA_START(short msg[8])
 /*

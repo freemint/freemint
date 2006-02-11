@@ -812,8 +812,6 @@ PrepareNode(HYP_DOCUMENT *hyp, LOADED_NODE *node)
 						p.pic_adm[p.pic_idx].orig.g_y = dec_from_chars(&src[4]);
 						p.pic_adm[p.pic_idx].orig.g_h = src[7];
 						
-						p.pic_adm[p.pic_idx].trans.g_y = ((long)(unsigned short)dec_from_chars(&src[4]) * 16);
-						
 						tmp = pic->mfdb.fd_h;
 						if ((tmp % font_ch))
 							tmp += font_ch - (tmp % font_ch);
