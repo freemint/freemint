@@ -58,30 +58,30 @@
 #define	USE_USER_EVENTS		YES
 
 /*	Menzeile installieren? (Bentigt eine Resource MENU)	*/
-#define	USE_MENU					NO
+#define	USE_MENU		NO
 
 /*	Fenster-Dialoge verwenden? (Dank WDialog)	*/
 /* [GS] 0.35.2a Start */
-#define	USE_DIALOG				YES
+#define	USE_DIALOG		YES
 /* Ende; alt:
 #define	USE_DIALOG				NO
 */
 
 /*	Normale Fenster verwenden?	*/
-#define	USE_WINDOW				YES
+#define	USE_WINDOW		YES
 /*	setze den Iconify-Name gemss RSC	*/
-#define	SET_ICONIFY_NAME		NO
+#define	SET_ICONIFY_NAME	NO
 /* ffne fr jedes Fenster eine eigene VDI Workstation	*/
 #define	OPEN_VDI_WORKSTATION	NO
 /* logisches Raster verwenden	*/
-#define	USE_LOGICALRASTER		YES
+#define	USE_LOGICALRASTER	YES
 /*	Toolbar verwenden	*/
-#define	USE_TOOLBAR				YES
+#define	USE_TOOLBAR		YES
 
 /*	Fenster-Dateiselektor verwenden?	*/
-#define	USE_FILESELECTOR		YES
+#define	USE_FILESELECTOR	YES
 /*	Fenster-Fontselektor verwenden?	*/
-#define	USE_FONTSELECTOR		NO
+#define	USE_FONTSELECTOR	NO
 
 /*	AV-Protokoll Untersttzung: 
 		0	= deaktiviert
@@ -95,18 +95,18 @@
 #define	USE_AV_PROTOCOL		3
 
 /*	Atari Drag&Drop Protokoll Untersttzung	*/
-#define	USE_DRAGDROP			YES
+#define	USE_DRAGDROP		YES
 
 /*	Langedateinamen aktivieren (=Pdomain(PD_MINT))	*/
-#define	USE_LONGFILENAMES		YES
+#define	USE_LONGFILENAMES	YES
 
 /*	Lange Editfelder (wie sie von MagiC Untersttzt werden)	*/
 #define	USE_LONGEDITFIELDS	NO
 
 /*	BubbleGEM Hilfesystem	*/
-#define	USE_BUBBLEGEM			NO
+#define	USE_BUBBLEGEM		NO
 /*	ST-Guide Hilfesystem	*/
-#define	USE_STGUIDE				NO
+#define	USE_STGUIDE		NO
 
 /*	Untersttzung fr das Documen-History Protokoll	*/
 #define	USE_DOCUMENTHISTORY	YES
@@ -115,28 +115,28 @@
 #define	SPEC_DEFINITION_FILE	"defs.h"
 
 /*	Programmname "schn"	*/
-#define	PROGRAM_NAME			"HypView"
+#define	PROGRAM_NAME		"HypView"
 /*	Programmname in Grossbuchstaben	*/
-#define	PROGRAM_UNAME			"HYP_VIEW"
+#define	PROGRAM_UNAME		"HYP_VIEW"
 /*	Dateiname der Resource-Datei	*/
-#define	RESOURCE_FILE			"hyp_view.rsc"
+#define	RESOURCE_FILE		"hyp_view.rsc"
 /*	Dateiname der Resource-Header-Datei	*/
 #define	RESOURCE_HEADER_FILE	"hyp_view.h"
 /*	Dateiname der BubbleGEM-Hilfedatei	*/
-#define	BUBBLEGEM_FILE			"hyp_view.bgh"
+#define	BUBBLEGEM_FILE		"hyp_view.bgh"
 /*	Dateiname der ST-Guide-Hilfedatei	*/
-#define	STGUIDE_FILE			"*:\\hyp_view.hyp "
+#define	STGUIDE_FILE		"*:\\hyp_view.hyp "
 
 /*	Maximale Zeilenlnge der Konfigurationsdatei	*/
 #define	CFG_MAXLINESIZE		80
 /*	Soll die Konfigurationsdatei auch im HOME Verzeichnis gesucht werden?	*/
-#define	CFG_IN_HOME				YES
+#define	CFG_IN_HOME		YES
 
 /*	Anzahl der mglichen Drag&Drop Formate	*/
-#define	MAX_DDFORMAT			8
+#define	MAX_DDFORMAT		8
 
 /*	Anzahl gleichzeitig iconifizierter Fenster	*/
-#define	MAX_ICONIFY_PLACE		16
+#define	MAX_ICONIFY_PLACE	16
 /*	Anzahl der mglichen Rekursions-Ebenen bei Modalen Objekten	*/
 #define	MAX_MODALRECURSION	1
 
@@ -145,9 +145,9 @@
 #define EVENTS		MU_MESAG|MU_KEYBD|MU_BUTTON
 #define MBCLICKS	2|0x0100
 #define MBMASK		3
-#define MBSTATE	0
-#define MBLOCK1	NULL
-#define MBLOCK2	NULL
+#define MBSTATE		0
+#define MBLOCK1		NULL
+#define MBLOCK2		NULL
 #define WAIT		0L
 
 /********************************************
