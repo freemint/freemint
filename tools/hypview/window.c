@@ -564,7 +564,7 @@ HelpWindow(WINDOW_DATA *p, short obj, void *data)
 		for(i=0;i<MAX_DDFORMAT;i++)
 			format[i]=0L;
 
-		format[0] = 0x41524753; //(ULONG)'ARGS';
+		format[0] = 0x41524753; /* 'ARGS' */
 	}
 	else if(obj==WIND_DRAGDROP)
 	{

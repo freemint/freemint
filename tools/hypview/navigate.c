@@ -34,8 +34,6 @@
 
 #include "include/types.h"
 #include "include/scancode.h"
-// #include "include/av.h"
-// #include "mem.h"
 #include "diallib.h"
 #include "hyp.h"
 #include "stat.h"

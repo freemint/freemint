@@ -80,8 +80,8 @@ void MouseSelection(DOCUMENT *doc, EVNTDATA *m_data)
 	TEXT_POS start, end, new;
 	short scroll_x = 0, scroll_y = 0;
 
-// 	wind_update(BEG_UPDATE);
-// 	wind_update(BEG_MCTRL);
+	wind_update(BEG_UPDATE);
+	wind_update(BEG_MCTRL);
 	wind_get_grect(win->whandle,WF_WORKXYWH,&work);
 
 	/*	VDI Fll-Attribute fr XOR-Flchen	*/
@@ -201,8 +201,6 @@ shift_entry:
 		}
 		else
 			scroll_y = 0;
-
-// 		y -= y % font_ch;
 
 		/*	Muss gescrollt werden?	*/
 		if (scroll_x || scroll_y)
@@ -334,7 +332,8 @@ shift_entry:
 		{
 			/*	Kleine Pause, damit das Scrollen auch auf schnellen Rechnern
 				brauchbar ist	*/
-// 			evnt_timer(300);
+		/* XXX Add some config to this */
+		/* 	evnt_timer(300); */
 		}
 
 		end = new;
@@ -440,9 +439,9 @@ void DrawSelection(DOCUMENT *doc)
 
 	/*	Fenster-relative Koordinaten der Selektion berechnen	*/
 	x1 = doc->selection.start.x - (short)(win->x_pos * font_cw);
-	y1 = doc->selection.start.y - (win->y_pos * font_ch); //(short)(doc->selection.start.line - win->y_pos) * font_ch;
+	y1 = doc->selection.start.y - (win->y_pos * font_ch);
 	x2 = doc->selection.end.x - (short)(win->x_pos * font_cw);
-	y2 = doc->selection.end.y - (win->y_pos * font_ch); //(short)(doc->selection.end.line - win->y_pos) * font_ch;
+	y2 = doc->selection.end.y - (win->y_pos * font_ch);
 
 /*	Debug("Start: line %ld offset %ld x %d",doc->selection.start.line,doc->selection.start.offset,doc->selection.start.x);
 	Debug("End:   line %ld offset %ld x %d",doc->selection.end.line,doc->selection.end.offset,doc->selection.end.x);
