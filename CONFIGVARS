@@ -41,6 +41,7 @@ RANLIB = $(CROSSPREFIX)ranlib
 STRIP = $(CROSSPREFIX)strip
 FLAGS = $(CROSSPREFIX)flags
 OBJDUMP = $(CROSSPREFIX)objdump
+STACK = $(CROSSPREFIX)stack
 
 # 
 # some tools
