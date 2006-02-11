@@ -34,8 +34,6 @@
 
 #include "include/types.h"
 #include "include/scancode.h"
-// #include "include/av.h"
-// #include "mem.h"
 #include "diallib.h"
 #include "hyp.h"
 #else
@@ -89,8 +87,6 @@ void DoButton(EVNT *event)
 }
 
 #if USE_USER_EVENTS == YES
-
-#include <scancode.h>
 
 void DoUserEvents(EVNT *event)
 {
