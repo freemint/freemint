@@ -25,6 +25,7 @@ CFLAGS += -g
 
 # default definitions
 OBJS = $(COBJS:.c=.o)
+GENFILES = $(TARGET) libbgh.pdb libbgh.lib
 
 $(TARGET): $(OBJS)
 	$(AR) cr $@ $(OBJS)
