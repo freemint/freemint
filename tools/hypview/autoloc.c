@@ -24,23 +24,14 @@
  */
 
 #ifdef __GNUC__
-#include <string.h>
-#include <osbind.h>
-#include <fcntl.h>
-#include <gem.h>
-
-#include "include/types.h"
-#include "mem.h"
-#include "diallib.h"
-#include "hyp.h"
+	#include <osbind.h>
+	#include <fcntl.h>
 #else
-
-#include <tos.h>
-#include <aes.h>
-#include "diallib.h"
-#include SPEC_DEFINITION_FILE
-
+	#include <tos.h>
 #endif
+#include <gem.h>
+#include "diallib.h"
+#include "defs.h"
 
 #define AUTOLOC_SIZE		26
 

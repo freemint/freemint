@@ -22,24 +22,15 @@
  * along with HypView; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
+ 
 #ifdef __GNUC__
-#include <mint/errno.h>
-#include <string.h>
-#include <osbind.h>
-#include <fcntl.h>
-#include <mt_gem.h>
-
-#include "include/dragdrop.h"
-#include "diallib.h"
-#include "hyp.h"
+	#include <osbind.h>
 #else
-#include <string.h>
-#include <tos.h>
-#include <aes.h>
-#include <DRAGDROP.H>
-#include "diallib.h"
-#include SPEC_DEFINITION_FILE
+	#include <tos.h>
 #endif
+#include <gemx.h>
+#include "dragdrop/dragdrop.h"
+#include "diallib.h"
 
 #if USE_DRAGDROP == YES
 

@@ -4,7 +4,7 @@
 TARGET = hyp_view.app
 
 SHELL = /bin/sh
-SUBDIRS = hyp plain dragdrop
+SUBDIRS = hyp plain dragdrop bubble
 
 srcdir = .
 top_srcdir = ..

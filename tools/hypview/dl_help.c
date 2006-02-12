@@ -22,28 +22,19 @@
  * along with HypView; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
+ 
+#include <string.h>
 #ifdef __GNUC__
-#include <mint/errno.h>
-#include <limits.h>
-#include <string.h>
-#include <ctype.h>
-#include <osbind.h>
-#include <fcntl.h>
-#include <mt_gem.h>
-#include <stdio.h>
-#include <macros.h>
-
-#include "include/types.h"
-#include "diallib.h"
-#include "hyp.h"
-
+	#include <osbind.h>
 #else
-#include <string.h>
-#include <tos.h>
-#include <aes.h>
-#include <av.h>
-#include "diallib.h"
+	#include <tos.h>
 #endif
+#include <gem.h>
+#include "diallib.h"
+#include "include/av.h"
+#include "mem.h"
+
+
 #if USE_STGUIDE == YES
 
 char *help_file=STGUIDE_FILE;

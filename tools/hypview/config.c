@@ -23,27 +23,11 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifdef __GNUC__
 #include <stdlib.h>
-#include <limits.h>
 #include <string.h>
-#include <ctype.h>
-#include <osbind.h>
-#include <fcntl.h>
-#include <mt_gem.h>
-#include <stdio.h>
-#include <macros.h>
+#include "diallib.h"
+#include "defs.h"
 
-#include "include/types.h"
-#include "diallib.h"
-#include "hyp.h"
-#else
-#include <stdlib.h>
-#include <string.h>
-#include <aes.h>
-#include "diallib.h"
-#include SPEC_DEFINITION_FILE
-#endif
 void LoadConfig(void)
 {
 	extern char cfg_comment;

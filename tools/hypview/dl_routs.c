@@ -23,35 +23,19 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifdef __GNUC__
-#include <stdarg.h>
-#include <unistd.h>
-#include <support.h>
-#include <mint/errno.h>
-#include <limits.h>
-#include <string.h>
-#include <ctype.h>
-#include <mintbind.h>
-#include <fcntl.h>
-#include <mt_gem.h>
 #include <stdio.h>
-#include <macros.h>
-
-#include "include/types.h"
-#include "include/scancode.h"
-#include "diallib.h"
-#include "hyp.h"
-
-#define STDERR STDERR_FILENO
-#else
 #include <stdlib.h>
 #include <string.h>
-#include <tos.h>
-#include <aes.h>
-#include <sysvars.h>
-#include <scancode.h>
-#include "diallib.h"
+#ifdef __GNUC__
+	#include <stdarg.h>
+	#include <unistd.h>
+	#include <mintbind.h>
+#else
+	#include <tos.h>
 #endif
+#include <gemx.h>
+#include "include/scancode.h"
+#include "diallib.h"
 
 void ConvertKeypress(short *key,short *kstate);
 void CopyMaximumChars(OBJECT *obj,char *str);
@@ -212,17 +196,17 @@ Debug(const char *str, ...)
 */
 				{
 					if(is_l)
-						_ltoa((*((long *)(list))++), ptr, 10);
+						ltoa((*((long *)(list))++), ptr, 10);
 					else
-						_itoa((*((short *)(list))++), ptr, 10, 0);
+						itoa((*((short *)(list))++), ptr, 10);
 					done = TRUE;
 				}
 				else if(c=='u')
 				{
 					if(is_l)
-						_ultoa((*((unsigned long *)(list))++),ptr,10);
+						ultoa((*((unsigned long *)(list))++),ptr,10);
 					else
-						_ultoa((unsigned long)(*((unsigned short *)(list))++),ptr,10);
+						ultoa((unsigned long)(*((unsigned short *)(list))++),ptr,10);
 					done=TRUE;
 				}
 				else if(c=='x')
@@ -230,9 +214,9 @@ Debug(const char *str, ...)
 					*ptr++='0';
 					*ptr++='x';
 					if(is_l)
-						_ltoa((*((unsigned long *)(list))++),ptr,16);
+						ltoa((*((unsigned long *)(list))++),ptr,16);
 					else
-						_itoa((*((unsigned short *)(list))++),ptr,16, 0);
+						itoa((*((unsigned short *)(list))++),ptr,16);
 					done=TRUE;
 				}
 				else if(c=='s')
@@ -262,8 +246,8 @@ Debug(const char *str, ...)
 	};
 	*ptr=0;
 
-	Fwrite(STDERR,strlen(temp),temp);
-	Fwrite(STDERR,2,"\r\n");
+	Fwrite(STDERR_FILENO,strlen(temp),temp);
+	Fwrite(STDERR_FILENO,2,"\r\n");
 }
 #else
 void
@@ -281,7 +265,7 @@ Debug(const char *fmt, ...)
 	buf[l++] = '\n';
 	buf[l  ] = '\0';
 
-	Fwrite(STDERR, l, buf);
+	Fwrite(STDERR_FILENO, l, buf);
 }
 #endif
 

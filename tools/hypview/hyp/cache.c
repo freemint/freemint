@@ -24,17 +24,12 @@
  */
 
 #ifdef __GNUC__
-#include <osbind.h>
-#include <mt_gem.h>
-#include <stdio.h>
-
-#include "../include/types.h"
+	#include <osbind.h>
+#else
+	#include <tos.h>
+#endif
 #include "../diallib.h"
 #include "../hyp.h"
-#else
-#include <tos.h>
-#include "source\hyp.h"
-#endif
 
 long GetCacheSize(long num_elements)
 {

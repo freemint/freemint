@@ -23,24 +23,32 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#ifndef _dl_miss_h
+#define _dl_miss_h
 /*
 		definiere fehlende Typen
 */
-#ifndef __GNUC__
-#ifndef __AES__
-#include <types.h>
 
+#ifdef __GNUC__
+	#include <mint/ostruct.h>
+	#define KEYTAB _KEYTAB
+#endif
+
+#ifndef __GEMLIB_DEFS
 	typedef short GRECT[4];
-	typedef short GlobalArray[12];
 	typedef char *OBSPEC;
 	typedef void *OBJECT;
 	typedef void *RSHDR;
+#endif
+#ifndef _MT_GEMLIB_X_H_
 	typedef void *EVNT;
 	typedef void *DIALOG;
-	typedef void *EVNTDATA;
-	typedef short	(cdecl *HNDL_OBJ)(DIALOG *dialog,EVNT *events,short obj,short clicks,void *data);
+#ifdef __GNUC__
+	typedef short (*HNDL_OBJ)();
+#else
+	typedef short (cdecl *HNDL_OBJ)();
+#endif
 	typedef void *FNT_DIALOG;
-	typedef void *XTED;
 #endif
 
 #ifndef __VDI__
@@ -51,10 +59,25 @@
 	#endif
 #endif
 
-#ifndef __TOS
-	typedef void *_KEYTAB;
+#if !defined(__TOS) && !defined(_MINT_OSTRUCT_H)
+	typedef void *KEYTAB;
 #endif
 
+#ifndef NULL
+	#define	NULL	((void *)0)
+#endif
+
+#ifndef TRUE
+	#define	TRUE	1
+#endif
+
+#ifndef FALSE
+	#define	FALSE	0
+#endif
+
+#ifndef NIL
+	#define	NIL	((void *)-1)
+#endif
 
 #ifndef min
 	#define	min(a, b)	((a) < (b) ? (a) : (b))
@@ -63,10 +86,10 @@
 	#define	max(a, b)	((a) > (b) ? (a) : (b))
 #endif
 #ifndef abs
-#define	abs(a)		((a) >= 0   ? (a) : -(a))
+	#define	abs(a)		((a) >= 0   ? (a) : -(a))
 #endif
 
-#else	/* __GNUC__ */
+
 /*	Maus-Position/Status und Tastatur-Status (evnt_button, evnt_multi)	*/
 typedef struct
 {
@@ -99,4 +122,4 @@ typedef struct
 	short ap_bvhard;
 } GlobalArray;
 
-#endif /* __GNUC__ */
+#endif       /* _dl_miss_h */

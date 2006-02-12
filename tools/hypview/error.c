@@ -23,28 +23,12 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifdef __GNUC__
+#include <stdio.h>
+#include <string.h>
 #include <errno.h>
-#include <string.h>
-#include <ctype.h>
-#include <mintbind.h>
-#include <fcntl.h>
-#include <mt_gem.h>
-#include <stdio.h>
-#include <macros.h>
-
-#include "include/types.h"
-#include "include/scancode.h"
+#include <gem.h>
 #include "diallib.h"
-#include "hyp.h"
-#else
-#include <stdio.h>
-#include <string.h>
-#include <tos.h>
-#include <aes.h>
-#include "diallib.h"
-#include SPEC_DEFINITION_FILE
-#endif
+#include "defs.h"
 
 void FileError(char *path,char *str)
 {
