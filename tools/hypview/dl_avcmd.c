@@ -23,18 +23,9 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifdef __GNUC__
-#include <mt_gem.h>
-
-#include "include/types.h"
+#include <gem.h>
 #include "include/av.h"
-#include "mem.h"
 #include "diallib.h"
-#include "hyp.h"
-#else
-#include <aes.h>
-#include <av.h>
-#endif
 
 extern short ap_id,server_id;
 
@@ -250,7 +241,13 @@ void DoAV_SETWINDPOS(short x,short y,short w,short h)
 /*	Dem Server wird ein Mouseklick gemeldet	*/
 void DoAV_SENDCLICK(EVNTDATA *m, short ev_return)
 {
-	short msg[8] = {AV_SENDCLICK,ap_id,0,m->x,m->y,m->bstate,m->kstate,ev_return};
+	short msg[8]={AV_SENDCLICK,0,0,0,0,0,0,0};
+	msg[1]=ap_id;
+	msg[3]=m->x;
+	msg[4]=m->y;
+	msg[5]=m->bstate;
+	msg[6]=m->kstate;
+	msg[7]=ev_return;
 	
 	appl_write(server_id,16,msg);
 }

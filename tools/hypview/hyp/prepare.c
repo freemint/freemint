@@ -24,28 +24,15 @@
  */
 
 #ifdef __GNUC__
-#include <mint/errno.h>
-#include <limits.h>
-#include <string.h>
-#include <ctype.h>
 #include <osbind.h>
-#include <fcntl.h>
-#include <mt_gem.h>
-#include <stdio.h>
-#include <macros.h>
-
-#include "../include/types.h"
-#include "../diallib.h"
-#include "../hyp.h"
 #else
-#include <string.h>
 #include <tos.h>
-#include <vdi.h>
-#include <aes.h>
-#include "diallib.h"
-#include SPEC_DEFINITION_FILE
-#include "source\hyp.h"
 #endif
+#include <string.h>
+#include <gem.h>
+#include "../diallib.h"
+#include "../defs.h"
+#include "../hyp.h"
 
 #ifndef __GNUC__
 extern void reduce(void *addr,long planesize,short dither);
@@ -112,17 +99,17 @@ reduce(char *addr, long plane_size, short _16to2)
 static void
 mono_bitmap(void *src, void *dst, long planesize, short color)
 {
-#if 0
-; void mono_bitmap(void *src,void *dst,long planesize,int color);
-; A0 - A3 Pointer auf 1. bis 4. Plane
-; A4 - Pointer auf Zielbereich
-; A5 - Endadresse fr Plane 1
-; D0 - D3 entsprechendes Wort aus entsprechender Plane
-; D4 Pixelcounter
-; D5 Pixelwert
-; D6 aktuelle mono bitmap (16 Pixel)
-; D7 gesuchte Farbe (=Pixelwert)
-#endif
+/*
+ ; void mono_bitmap(void *src,void *dst,long planesize,int color);
+ ; A0 - A3 Pointer auf 1. bis 4. Plane
+ ; A4 - Pointer auf Zielbereich
+ ; A5 - Endadresse fr Plane 1
+ ; D0 - D3 entsprechendes Wort aus entsprechender Plane
+ ; D4 Pixelcounter
+ ; D5 Pixelwert
+ ; D6 aktuelle mono bitmap (16 Pixel)
+ ; D7 gesuchte Farbe (=Pixelwert)
+ */
 
 /* MODULE mono_bitmap */
 	__asm__ volatile
@@ -446,7 +433,11 @@ LoadPicture(HYP_DOCUMENT *hyp_doc, short num)
 	
 			vr_trnfm(vdi_handle, &std_pic, &pic->mfdb);
 		}
+#ifdef __GNUC__
 		Mshrink(pic,sizeof(LOADED_PICTURE) + plane_size * pic->mfdb.fd_nplanes);
+#else
+		Mshrink(0,pic,sizeof(LOADED_PICTURE) + plane_size * pic->mfdb.fd_nplanes);
+#endif
 	}
 	Mfree(data);
 

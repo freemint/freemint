@@ -23,16 +23,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifdef __GNUC__
-#include <mt_gem.h>
-
-#include "include/types.h"
+#include <gem.h>
 #include "diallib.h"
-#else
-#include <aes.h>
-#include "diallib.h"
-#include SPEC_DEFINITION_FILE
-#endif
 
 #if USE_MENU == YES
 

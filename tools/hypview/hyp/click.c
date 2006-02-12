@@ -24,28 +24,18 @@
  */
 
 #ifdef __GNUC__
-#include <string.h>
-#include <ctype.h>
-#include <osbind.h>
-#include <mt_gem.h>
-#include <stdio.h>
-
-#include "../include/types.h"
-#include "../include/av.h"
-#include "../mem.h"
-#include "../diallib.h"
-#include "../hyp.h"
+	#include <osbind.h>
 #else
+	#include <tos.h>
+#endif
 #include <string.h>
 #include <ctype.h>
-#include <tos.h>
-#include <vdi.h>
-#include <aes.h>
-#include <av.h>
-#include "diallib.h"
-#include SPEC_DEFINITION_FILE
-#include "source\hyp.h"
-#endif
+#include <gem.h>
+#include "../diallib.h"
+#include "../defs.h"
+#include "../include/av.h"
+#include "../hyp.h"
+#include "../mem.h"
 
 /* [GS] 0.35.2a alt:
 short find_keyword(char *word)

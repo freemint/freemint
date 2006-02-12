@@ -24,22 +24,16 @@
  */
 
 #ifdef __GNUC__
-#include <string.h>
-#include <osbind.h>
-#include <fcntl.h>
-#include <mt_gem.h>
-#include "../include/types.h"
-#include "../diallib.h"
-#include "../hyp.h"
+	#include <osbind.h>
+	#include <fcntl.h>
 #else
-#include <string.h>
-#include <tos.h>
-#include <vdi.h>
-#include <aes.h>
-#include "diallib.h"
-#include SPEC_DEFINITION_FILE
-#include "source\hyp.h"
+	#include <tos.h>
 #endif
+#include <string.h>
+#include <gemx.h>
+#include "../diallib.h"
+#include "../defs.h"
+#include "../hyp.h"
 
 char *index_entry = "Index";
 char *help_entry = "Help";
@@ -106,7 +100,7 @@ HypLoad(DOCUMENT *doc, short handle)
 			Mfree(ref);
 		return(F_LOADERROR);
 	}
-	else if ((*(long *)head.magic) != 0x48444f43) /* 'HDOC' */
+	else if ((*(long *)head.magic) != 0x48444f43L) /* 'HDOC' */
 	{
 		/*	"magischer Wert" nicht im Datei-Header...	*/
 		Debug("ERROR: Wrong file format. Magic value not found.");

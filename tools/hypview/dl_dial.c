@@ -24,18 +24,12 @@
  */
 
 #ifdef __GNUC__
-#include <string.h>
-#include <osbind.h>
-#include <mt_gem.h>
-#include <macros.h>
-
-#include "include/types.h"
-#include "diallib.h"
+	#include <osbind.h>
 #else
-#include <tos.h>
-#include <aes.h>
-#include "diallib.h"
+	#include <tos.h>
 #endif
+#include <gemx.h>
+#include "diallib.h"
 
 #if USE_DIALOG == YES
 

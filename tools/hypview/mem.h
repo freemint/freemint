@@ -33,11 +33,11 @@
 #define MX_PREFTT	3
 
 /* Protection bits.  */
-#define MX_MPROT	1<<3
+#define MX_MPROT	(1<<3)
 
-#define MX_PRIVATE	1<<4
-#define MX_GLOBAL	2<<4 			/*	globaler Speicher anfordern	*/
-#define MX_SUPER	3<<4
-#define MX_READABLE	4<<4
+#define MX_PRIVATE	(1<<4)
+#define MX_GLOBAL	(2<<4) 			/*	globaler Speicher anfordern	*/
+#define MX_SUPER	(3<<4)
+#define MX_READABLE	(4<<4)
 
 #endif

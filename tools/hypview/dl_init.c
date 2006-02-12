@@ -24,29 +24,13 @@
  */
 
 #ifdef __GNUC__
-#include <mint/errno.h>
-#include <unistd.h>
-#include <limits.h>
-#include <string.h>
-#include <ctype.h>
-#include <mintbind.h>
-#include <fcntl.h>
-#include <mt_gem.h>
-#include <stdio.h>
-#include <macros.h>
-
-#include "include/types.h"
-#include "diallib.h"
-#include "hyp.h"
-
-#define STDERR STDERR_FILENO
+	#include <mintbind.h>
 #else
-#include <stdio.h>
-#include <tos.h>
-#include <vdi.h>
-#include <aes.h>
-#include "diallib.h"
+	#include <tos.h>
 #endif
+#include <gem.h>
+#include "diallib.h"
+#include "defs.h"
 
 /* Ozk:
  * This belongs in gemlib .. ask Arnaud to add this later...
@@ -93,7 +77,7 @@ char	**string_addr;
 OBJECT	*menu_tree;
 #endif
 
-_KEYTAB *key_table;
+KEYTAB *key_table;
 
 short DoAesInit(void);
 short DoInitSystem(void);
@@ -108,8 +92,8 @@ short DoAesInit(void)
 	if(ret >= 0)
 	{
 		debug_handle = (short)ret;
-		old_stderr = (short)Fdup(STDERR);
-		ret = Fforce(STDERR, debug_handle);
+		old_stderr = (short)Fdup(STDERR_FILENO);
+		ret = Fforce(STDERR_FILENO, debug_handle);
 		if(ret < 0L)
 			puts("Error in Fforce()");
 		else
@@ -268,6 +252,6 @@ void DoExitSystem(void)
 
 #if DEBUG_LOG == YES
 	Fclose(debug_handle);
-	Fforce(STDERR,old_stderr);
+	Fforce(STDERR_FILENO,old_stderr);
 #endif
 }

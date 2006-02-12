@@ -23,17 +23,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifdef __GNUC__
 #include <string.h>
-#include <mt_gem.h>
-
-#include "../include/types.h"
-#include "../diallib.h"
 #include "../hyp.h"
-#else
-#include <string.h>
-#include "source\hyp.h"
-#endif
 
 short find_nr_by_title(HYP_DOCUMENT *hyp_doc,char *title)
 {

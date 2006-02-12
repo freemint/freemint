@@ -23,23 +23,11 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifdef __GNUC__
 #include <string.h>
-#include <mt_gem.h>
-
+#include <gemx.h>
 #include "diallib.h"
+#include "defs.h"
 #include "hyp.h"
-#else
-/* [GS] 0.35.2a Start */
-#include <string.h>
-/* Ende */
-#include <aes.h>
-#include "diallib.h"
-#include SPEC_DEFINITION_FILE
-
-/* [GS] 0.35.2a Start */
-#include "source\hyp.h"
-#endif
 
 static DIALOG *Prog_Dialog;
 

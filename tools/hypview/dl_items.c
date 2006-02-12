@@ -23,25 +23,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifdef __GNUC__
-#include <mint/errno.h>
-#include <limits.h>
-#include <string.h>
-#include <ctype.h>
-#include <osbind.h>
-#include <fcntl.h>
-#include <mt_gem.h>
-#include <stdio.h>
-#include <macros.h>
-
-#include "include/types.h"
+#include <gemx.h>
 #include "diallib.h"
-#include "hyp.h"
-#else
-#include <tos.h>
-#include <aes.h>
-#include "diallib.h"
-#endif
 
 #if USE_ITEM == YES
 
@@ -178,10 +161,9 @@ void AllIconify(short handle, GRECT *r)
 	{
 		short hndl = 0, pid, opn, above, below;
 		while (wind_get(hndl, WF_OWNER, &pid, &opn, &above, &below))
-		{	
-			if ((ptr = find_ptr_by_whandle(hndl)) &&
-			    ptr &&
-			    !(ptr->status & WIS_ALLICONIFY) &&
+		{
+			ptr = find_ptr_by_whandle(hndl);
+			if (ptr && !(ptr->status & WIS_ALLICONIFY) &&
 			    (ptr->status & WIS_OPEN) &&
 			    (iconified_count < MAX_ICONIFY_PLACE)
 			    )
@@ -259,7 +241,15 @@ void CycleItems(void)
 	}
 	if (our != -1)
 	{
-		short msg[8] = {WM_TOPPED, ap_id,0,our,0,0,0,0};
+		short msg[8];
+		msg[0] = WM_TOPPED;
+		msg[1] = ap_id;
+		msg[2] = 0;
+		msg[3] = our;
+		msg[4] = 0;
+		msg[5] = 0;
+		msg[6] = 0;
+		msg[7] = 0;
 		
 		appl_write(ap_id, 16, msg);
 	}

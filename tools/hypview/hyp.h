@@ -23,26 +23,26 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef HYP_H
-#define	HYP_H	1
+#ifndef _hyp_h
+#define	_hyp_h	1
 
-#ifndef __GNUC__
-#ifndef __AES__
-	long EVNTDATA;
+#include <compiler.h>		/* for inline macro */
+
+#ifndef _dl_miss_h
+	typedef short EVNTDATA[4];
 #endif
-#ifndef __VDI__
-typedef long MFDB;
+#ifndef __GEMLIB_DEFS
+	typedef long MFDB;
+#endif
+
+#ifndef _diallib_h
+	typedef long WINDOW_DATA;
 #endif
 
 #ifndef DEFS_H
-typedef long DOCUMENT;
-typedef long WINDOW_DATA;
-typedef long TEXT_POS;
-typedef long BLOCK;
-#endif
-
-#else
-	#include "defs.h"
+	typedef long DOCUMENT;
+	typedef long TEXT_POS;
+	typedef long BLOCK;
 #endif
 
 /*

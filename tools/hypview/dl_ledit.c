@@ -24,24 +24,14 @@
  */
 
 #ifdef __GNUC__
-
-#include <string.h>
-#include <osbind.h>
-#include <mt_gem.h>
-#include <mint/cookie.h>
-
-#include "diallib.h"
-
+	#include <osbind.h>
 #else
-
-#include <string.h>
-#include <tos.h>
-#include <aes.h>
-#include <cookie.h>
-#include "diallib.h"
-#include SPEC_DEFINITION_FILE
-
+	#include <tos.h>
 #endif
+#include <gem.h>
+#include "diallib.h"
+#include "include/cookie.h"
+#include "include/magx.h"
 
 #if USE_LONGEDITFIELDS == YES
 

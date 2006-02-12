@@ -27,23 +27,17 @@
 	Tabulatorweite: 3
 	Kommentare ab: Spalte 60											*Spalte 60*
 */
-#ifdef __GNUC__
 #include <string.h>
-#include <fcntl.h>
-#include <mintbind.h>
 #include <errno.h>
-#include <signal.h>
-#include <gem.h>
-
-#include "dragdrop.h"
-
+#ifdef __GNUC__
+	#include <fcntl.h>
+	#include <mintbind.h>
+	#include <signal.h>
 #else
-#include	<PORTAB.H>
-#include	<MY_TOS.H>
-#include	<MT_AES.H>
-#include <string.h>
-#include "DRAGDROP.H"
+	#include <tos.h>
 #endif
+#include <gem.h>
+#include "dragdrop.h"
 
 /*----------------------------------------------------------------------------------------*/ 
 /* Drag & Drop - Pipe ffnen (fr den Sender)															*/

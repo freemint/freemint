@@ -23,13 +23,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef __DIALOG__
-#define __DIALOG__
-
-#ifdef __GNUC__
-#include <gemx.h>
-#include <mint/ostruct.h>
-#endif
+#ifndef _diallib_h
+#define _diallib_h
 
 #define	ON							1
 #define	OFF						0
@@ -245,7 +240,7 @@ extern	char	**string_addr;
 #if USE_MENU == YES
 extern	OBJECT	*menu_tree;
 #endif
-extern	_KEYTAB *key_table;
+extern	KEYTAB *key_table;
 
 short DoAesInit(void);
 short DoInitSystem(void);
@@ -485,4 +480,4 @@ void DoVA_START(short msg[8]);
 void DoVA_Message(short msg[8]);
 
 
-#endif
+#endif       /* _diallib_h */

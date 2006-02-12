@@ -24,24 +24,12 @@
  */
 
 #ifdef __GNUC__
-#include <string.h>
-#include <ctype.h>
-#include <mintbind.h>
-#include <fcntl.h>
-#include <mt_gem.h>
-#include <stdio.h>
-#include <macros.h>
-
-#include "include/types.h"
-#include "include/scancode.h"
-#include "diallib.h"
-#include "hyp.h"
+	#include <osbind.h>
 #else
-#include <tos.h>
-#include <vdi.h>
-#include <aes.h>
-#include "diallib.h"
+	#include <tos.h>
 #endif
+#include <gemx.h>
+#include "diallib.h"
 
 #if USE_WINDOW == YES
 

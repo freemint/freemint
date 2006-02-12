@@ -23,28 +23,16 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include <string.h>
 #ifdef __GNUC__
-#include <mint/errno.h>
-#include <limits.h>
-#include <string.h>
-#include <ctype.h>
-#include <osbind.h>
-#include <fcntl.h>
-#include <mt_gem.h>
-#include <stdio.h>
-#include <macros.h>
-
-#include "include/types.h"
-#include "include/av.h"
-#include "mem.h"
-#include "diallib.h"
-#include "hyp.h"
+	#include <osbind.h>
+	#include <fcntl.h>
 #else
-#include <tos.h>
-#include <aes.h>
-#include <string.h>
-#include "diallib.h"
+	#include <tos.h>
 #endif
+#include <errno.h>
+#include <gem.h>
+#include "diallib.h"
 
 short CfgOpenFile(char *path);
 void CfgCloseFile(void);
@@ -321,7 +309,7 @@ short CfgSaveMemory(long len)
 			cfg_save_size+=4096;
 			ret=Mxalloc(cfg_save_size,3);
 			if(ret<0)
-				ret=Malloc(cfg_save_size);
+				ret=(long)Malloc(cfg_save_size);
 			if(ret>0)
 			{
 			char *temp=cfg_savemem;
@@ -339,7 +327,7 @@ short CfgSaveMemory(long len)
 		cfg_save_size=max(4096,len+1);
 		ret=Mxalloc(cfg_save_size,3);
 		if(ret<0)
-			ret=Malloc(cfg_save_size);
+			ret=(long)Malloc(cfg_save_size);
 		if(ret>0)
 		{
 			cfg_savemem=(char *)ret;
