@@ -338,7 +338,7 @@ k_init(unsigned long vm)
 	short work_out[58];
 	char *resource_name;
 	struct xa_vdi_settings *v = &global_vdi_settings;
-	
+
 // 	display("\033H");		/* cursor home */
 	
 	{
