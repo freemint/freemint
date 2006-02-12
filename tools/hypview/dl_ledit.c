@@ -25,12 +25,13 @@
 
 #ifdef __GNUC__
 	#include <osbind.h>
+	#include <mint/cookie.h>
 #else
 	#include <tos.h>
+	#include <cookie.h>
 #endif
 #include <gem.h>
 #include "diallib.h"
-#include "include/cookie.h"
 #include "include/magx.h"
 
 #if USE_LONGEDITFIELDS == YES
@@ -141,7 +142,7 @@ void DoInitLongEdit(void)
 	short i;
 	MAGX_COOKIE *cookie;
 	
-	if (!GetCookie('MagX',(long *)&cookie))
+	if (!Getcookie('MagX',(long *)&cookie))
 		magic_version = cookie->aesvars->version;
 
 	for (i = 0; i < long_edit_count; i++)
