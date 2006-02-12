@@ -201,6 +201,7 @@ again:
 	}
 
 	/* remember loader */
+	
 	loader_pid = p_getpid();
 	loader_pgrp = p_getpgrp();
 
