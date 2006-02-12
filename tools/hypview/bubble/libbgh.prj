@@ -1,0 +1,5 @@
+libbgh.lib 
+.L [-J]
+=
+
+bgh.c
