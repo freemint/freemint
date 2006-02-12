@@ -13,7 +13,6 @@ COBJS = \
 	autoloc.c \
 	block.c \
 	config.c \
-	cookie.c \
 	dl_av.c \
 	dl_avcmd.c \
 	dl_bubbl.c \
