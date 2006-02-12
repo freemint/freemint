@@ -23,22 +23,12 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifdef __GNUC__
 #include <string.h>
-#include <mt_gem.h>
-#include <macros.h>
-
-#include "../include/types.h"
+#include <gemx.h>
 #include "../diallib.h"
+#include "../defs.h"
 #include "../hyp.h"
-#else
-#include <string.h>
-#include <tos.h>
-#include <aes.h>
-#include "diallib.h"
-#include SPEC_DEFINITION_FILE
-#include "source\hyp.h"
-#endif
+
 
 extern HYP_DOCUMENT *Hyp;
 

@@ -24,23 +24,14 @@
  */
 
 #ifdef __GNUC__
-#include <string.h>
-#include <osbind.h>
-#include <mt_gem.h>
-#include <stdio.h>
-
-#include "../include/types.h"
-#include "../mem.h"
-#include "../diallib.h"
-#include "../hyp.h"
+	#include <osbind.h>
 #else
-#include <string.h>
-#include <tos.h>
-#include <aes.h>
-#include "diallib.h"
-#include SPEC_DEFINITION_FILE
-#include "source\hyp.h"
+	#include <tos.h>
 #endif
+#include <string.h>
+#include "../diallib.h"
+#include "../defs.h"
+#include "../hyp.h"
 
 extern HYP_DOCUMENT *Hyp;
 

@@ -23,30 +23,11 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifdef __GNUC__
-#include <mint/errno.h>
-#include <limits.h>
-#include <string.h>
-#include <ctype.h>
-#include <osbind.h>
-#include <fcntl.h>
-#include <mt_gem.h>
-#include <stdio.h>
-#include <macros.h>
-
-#include "include/types.h"
-#include "include/av.h"
-#include "mem.h"
+#include <gem.h>
 #include "diallib.h"
-#include "hyp.h"
-#else
-#include <tos.h>
-#include <aes.h>
-#include <bgh.h>
-#include "diallib.h"
-#endif
 
 #if USE_BUBBLEGEM == YES
+#include "bubble/bgh.h"
 
 char *bub_fname=BUBBLEGEM_FILE;
 

@@ -23,31 +23,18 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include <stdio.h>
+#include <string.h>
 #ifdef __GNUC__
-#include <mint/errno.h>
-#include <limits.h>
-#include <string.h>
-#include <ctype.h>
-#include <osbind.h>
-#include <fcntl.h>
-#include <mt_gem.h>
-#include <stdio.h>
-#include <macros.h>
-
-#include "../include/types.h"
-#include "../diallib.h"
-#include "../hyp.h"
+	#include <osbind.h>
+	#include <fcntl.h>
 #else
-/* [GS] 0.35.2a Start */
-#include <stdio.h>
-/* Ende */
-#include <string.h>
-#include <tos.h>
-#include <aes.h>
-#include "diallib.h"
-#include SPEC_DEFINITION_FILE
-#include "source\hyp.h"
+	#include <tos.h>
 #endif
+#include <gemx.h>
+#include "../diallib.h"
+#include "../defs.h"
+#include "../hyp.h"
 
 /* [GS] 0.35.2a Start */
 

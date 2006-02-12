@@ -38,31 +38,7 @@
 *
 *********************************************************************/
 
-/*PHD: #include <conio.h>*/
-#ifdef __GNUC__
-#include <mint/errno.h>
 #include <limits.h>
-#include <string.h>
-#include <ctype.h>
-#include <osbind.h>
-#include <fcntl.h>
-#include <mt_gem.h>
-#include <stdio.h>
-
-#include "../include/types.h"
-#include "../diallib.h"
-#include "../hyp.h"
-#else
-#include <stdio.h>
-#include <stdlib.h>
-
-#include <portab.h>
-#include <stddef.h>
-#ifdef __cstddef__
-#include <ansi_prefix.mac.h>
-#endif
-#include <limits.h>
-#endif
 
 #define DICBIT    13    /* 12(-lh4-) or 13(-lh5-) */
 #define DICSIZ (1U << DICBIT)
@@ -104,6 +80,8 @@ long lh5_packedLen;
 char *lh5_unpackedMem;
 long lh5_unpackedLen;
   
+/* Local prototype */
+void lh5_decode( short reset);
 
 
 static void

@@ -22,49 +22,25 @@
  * along with HypView; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
+ 
 #ifdef __GNUC__
-#include <mint/errno.h>
-#include <limits.h>
-#include <string.h>
-#include <ctype.h>
-#include <osbind.h>
-#include <fcntl.h>
-#include <mt_gem.h>
-#include <stdio.h>
-#include <macros.h>
-
-#include "include/types.h"
-#include "diallib.h"
-#include "hyp.h"
-
-#if USE_AV_PROTOCOL != NO
-#include "include/av.h"
-#endif
-#if USE_BUBBLEGEM==YES
-#include "include/bubble.h"
-#endif
-#if USE_DOCUMENTHISTORY == YES
-#include "include/dhst.h"
-#endif
-
-
-
+	#include <osbind.h>
 #else
-#include <tos.h>
-#include <aes.h>
-#include <scancode.h>
+	#include <tos.h>
+#endif
+
+#include <gemx.h>
 #include "diallib.h"
-#include SPEC_DEFINITION_FILE
+#include "defs.h"
 
 #if USE_AV_PROTOCOL != NO
-#include <av.h>
+	#include "include/av.h"
 #endif
-#if USE_BUBBLEGEM==YES
-#include <bubble.h>
+#if USE_BUBBLEGEM == YES
+	#include "bubble/bubble.h"
 #endif
 #if USE_DOCUMENTHISTORY == YES
-#include <dhst.h>
-#endif
+	#include "include/dhst.h"
 #endif
 
 extern short _app;

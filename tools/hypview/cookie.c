@@ -1,32 +1,59 @@
+/*
+ * $Id$
+ * 
+ * HypView - (c)      - 2006 Philipp Donze
+ *               2006 -      Philipp Donze & Odd Skancke
+ *
+ * A replacement hypertext viewer
+ *
+ * This file is part of HypView.
+ *
+ * HypView is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * HypView is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with HypView; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
 
-#include <mintbind.h>
-#include <mint/ssystem.h>
-
+#ifdef __GNUC__
+	#include <mintbind.h>
+	#include <mint/sysvars.h>
+	#include <mint/ssystem.h>
+#else
+	#include <tos.h>
+	#include <sysvars.h>
+#endif
 #include "include/cookie.h"
-#include "include/sysvars.h"
-#include "diallib.h"
-#include "include/types.h"
-#if 0
-#include <tos.h>
-#include <my_const.h>
-#include <sysvars.h>
-#include "cookie.h"
+
+#ifndef NDIAG
+#define NDIAG(x) 
+#endif
+#ifndef DIAG
+#define DIAG(x) 
+#endif
 
 #ifndef NULL
 #define	NULL	0L
 #endif
 
 #ifndef TRUE
-#define	FALSE	0
 #define	TRUE	1
-#endif
+#define	FALSE	0
 #endif
 
 long *cookiejar = NULL;
 
 static long __init_cookie(void)
 {
-	return(*_P_COOKIES);
+	return (long)(*_p_cookies);
 }
 
 short
@@ -43,7 +70,8 @@ GetCookie(long cookie, long *value)
 		long val;
 		
 		NDIAG((" got Ssystem()"));
-		if (!(r = Ssystem(S_GETCOOKIE, cookie, &val)))
+		r = Ssystem(S_GETCOOKIE, cookie, (long)&val);
+		if (!r)
 		{
 			DIAG((" - return %ld(%lx)", val, val));
 			if (value) *value = val;
@@ -79,13 +107,13 @@ GetCookie(long cookie, long *value)
 				if (value)
 					*value = jar[1];
 				DIAG((" - return %ld(%lx)", jar[1], jar[1]));
-				return (COOKIE_OK);
+				return COOKIE_OK;
 			}
 			else
 				jar = &(jar[2]);
 		}while(jar[-2]);
 		DIAG((" - cookie not found"));
-		return(COOKIE_NOTFOUND);
+		return COOKIE_NOTFOUND;
 	}
 }
 
@@ -100,15 +128,16 @@ SetCookie(long cookie,long value)
 	if (!r)
 	{
 		NDIAG((" got Ssystem()"));
-		if (!(r = Ssystem(S_SETCOOKIE, cookie, value)))
+		r = Ssystem(S_SETCOOKIE, cookie, value);
+		if (!r)
 		{
 			DIAG((" - OK"));
-			return (COOKIE_OK);
+			return COOKIE_OK;
 		}
 		else
 		{
 			DIAG((" cookie not found (Ssystem() returns %lx)", r));
-			return (COOKIE_NOTFOUND);
+			return COOKIE_NOTFOUND;
 		}
 	}
 	else
@@ -120,7 +149,7 @@ SetCookie(long cookie,long value)
 			cookiejar = (long *)Supexec(__init_cookie);
 
 		if (cookiejar == NULL)
-			return (COOKIE_JARNOTEXIST);
+			return COOKIE_JARNOTEXIST;
 	
 		jar = cookiejar;
 
@@ -128,7 +157,7 @@ SetCookie(long cookie,long value)
 		{
 			count++;									/*	Cookies mitzhlen		*/
 			if(jar[0] == cookie)					/*	eigener Cookie schon vorhanden	*/
-				return(COOKIE_EXISTS);
+				return COOKIE_EXISTS;
 			else
 			{
 				jar = &(jar[2]);						/*	weitersuchen	*/
@@ -141,10 +170,10 @@ SetCookie(long cookie,long value)
 			jar[1] = jar[-1];						/*	Anzahl natrlich auch kopieren	*/
 			jar[-2] = cookie;						/*	unseren Cookie hineinkopieren	*/
 			jar[-1] = value;							/*	unseren Wert auch einfgen	*/
-			return(COOKIE_OK);					/*	OK zurck melden	*/
+			return COOKIE_OK;					/*	OK zurck melden	*/
 		}
 		else
-			return(COOKIE_JARFULL);				/*	Leider kein Platz mehr!	*/
+			return COOKIE_JARFULL;				/*	Leider kein Platz mehr!	*/
 	}
 }
 
@@ -161,7 +190,8 @@ RemoveCookie(long cookie)
 	{
 		NDIAG((" got Ssystem()"));
 
-		if (!(r = Ssystem(S_DELCOOKIE, cookie, NULL)))
+		r = Ssystem(S_DELCOOKIE, cookie, NULL);
+		if (!r)
 		{
 			DIAG((" - OK"));
 			return COOKIE_OK;
@@ -184,7 +214,7 @@ RemoveCookie(long cookie)
 		if(cookiejar == NULL)
 		{
 			DIAG((" - no jar!"));
-			return(COOKIE_JARNOTEXIST);
+			return COOKIE_JARNOTEXIST;
 		}
 	
 		jar = cookiejar;
@@ -200,12 +230,12 @@ RemoveCookie(long cookie)
 					jar = &(jar[2]);					/*	nchster Cookie	*/
 				}while(jar[-2]);					/*	kein NULL-Cookie?	*/
 				DIAG((" - OK"));
-				return(COOKIE_OK);				/*	OK zurck melden	*/
+				return COOKIE_OK;				/*	OK zurck melden	*/
 			}
 			else
 				jar = &(jar[2]);						/*	weitersuchen	*/
 		}while(jar[-2]);							/*	bis zum NULL-Cookie	*/
 		DIAG((" cookie not found"));
-		return(COOKIE_NOTFOUND);				/*	Leider Cookie nicht gefunden !	*/
+		return COOKIE_NOTFOUND;				/*	Leider Cookie nicht gefunden !	*/
 	}
 }

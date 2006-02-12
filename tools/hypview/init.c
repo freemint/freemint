@@ -23,40 +23,27 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include <string.h>
 #ifdef __GNUC__
-#include <unistd.h>
-#include <string.h>
-#include <ctype.h>
-#include <mintbind.h>
-#include <fcntl.h>
-#include <mt_gem.h>
-#include <stdio.h>
-#include <macros.h>
-
-#include "include/types.h"
-#include "include/scancode.h"
-#include "include/sysvars.h"
-#include "diallib.h"
-#include "hyp.h"
-#include "stat.h"
-
-#define STDERR STDERR_FILENO
+	#include <unistd.h>
+	#include <osbind.h>
+	#include <fcntl.h>
+	#include <mint/sysvars.h>
 #else
-#include <string.h>
-#include <tos.h>
-#include <vdi.h>
-#include <aes.h>
-#include "diallib.h"
-#include SPEC_DEFINITION_FILE
-#include <sysvars.h>
+	#include <tos.h>
+	#include <sysvars.h>
 #endif
+#include <gem.h>
+#include "diallib.h"
+#include "defs.h"
+
 
 char bootDrive=-1;
 
 static long
 getBootDrive(void)
 {
-	bootDrive = *_BOOTDEV + 'A';
+	bootDrive = *_bootdev + 'A';
 	
 	return bootDrive;
 }
@@ -69,11 +56,11 @@ void Init(void)
 	/*	GEMDOS-Initialisierung:	*/
 	/***************************/
 
-	/*	Falls die Fehler nicht auf STDERR ausgegeben werden sollen	*/
+	/*	Falls die Fehler nicht auf STDERR_FILENO ausgegeben werden sollen	*/
 	if(*debug_file)
 	{
 		dummy = (short)Fopen(debug_file,O_WRONLY|O_CREAT|O_APPEND);
-		Fforce(STDERR,dummy);
+		Fforce(STDERR_FILENO,dummy);
 	}
 
 

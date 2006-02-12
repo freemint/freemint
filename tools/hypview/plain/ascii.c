@@ -23,30 +23,17 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include <string.h>
 #ifdef __GNUC__
-#include <mint/errno.h>
-#include <limits.h>
-#include <string.h>
-#include <ctype.h>
-#include <osbind.h>
-#include <fcntl.h>
-#include <mt_gem.h>
-#include <stdio.h>
-#include <macros.h>
-
-#include "../include/types.h"
-#include "../diallib.h"
-#include "../hyp.h"
-#include "ascii.h"
+	#include <osbind.h>
 #else
-#include <string.h>
-#include <tos.h>
-#include <vdi.h>
-#include <aes.h>
-#include "diallib.h"
-#include SPEC_DEFINITION_FILE
-#include "ascii.h"
+	#include <tos.h>
 #endif
+#include <gem.h>
+#include "../diallib.h"
+#include "../defs.h"
+#include "ascii.h"
+
 
 extern WINDOW_DATA *Win;
 
@@ -115,7 +102,7 @@ short AsciiLoad(DOCUMENT *doc, short handle)
 
 					if (columns--)
 					{
-						*ptr++ = 10;		/*	knstliches Zeilen-Ende	*/
+						*ptr++ = '\n';		/*	knstliches Zeilen-Ende	*/
 						doc->columns = max(doc->columns, columns);
 					}
 					else
@@ -125,16 +112,16 @@ short AsciiLoad(DOCUMENT *doc, short handle)
 					}
 					columns = 0;
 				}
-				else if ((val == 13) || (val == 10))	/*	CR oder LF?	*/
+				else if ((val == '\r') || (val == '\n'))	/*	CR oder LF?	*/
 				{
 					doc->lines++;				/*	Zeile zhlen	*/
 					doc->columns = max(doc->columns,columns);
 					columns = 0;
 					ptr++;						/*	Zeilenende berspringen	*/
-					if ((val == 13)&&(*ptr == 10))
+					if ((val == '\r')&&(*ptr == '\n'))
 						ptr++;
 				}
-				else if(val == 9)				/*	Tab-Stopp?...	*/
+				else if(val == '\t')				/*	Tab-Stopp?...	*/
 				{
 					columns += ascii_tab_size - columns % ascii_tab_size;
 					ptr++;						/*	Tabulator berspringen	*/
@@ -192,16 +179,16 @@ short AsciiLoad(DOCUMENT *doc, short handle)
 						if(ascii->line_ptr)
 							ascii->line_ptr[line++] = (char *)ptr;
 					}
-					else if ((val == 13) || (val == 10))	/*	CR oder LF?	*/
+					else if ((val == '\r') || (val == '\n'))	/*	CR oder LF?	*/
 					{
 						columns = 0;
 						*ptr++ = 0;
-						if ((val == 13) && (*ptr == 10))
+						if ((val == '\r') && (*ptr == '\n'))
 							*ptr++ = 1;
 						if (ascii->line_ptr)
 							ascii->line_ptr[line++] = (char *)ptr;
 					}
-					else if (val == 9)				/*	Tab-Stopp?...	*/
+					else if (val == '\t')				/*	Tab-Stopp?...	*/
 					{
 						columns += ascii_tab_size - columns % ascii_tab_size;
 						ptr++;						/*	Tabulator berspringen	*/
@@ -272,7 +259,7 @@ void AsciiGetTextLine(char *src, char *end, char *line_buffer)
 	while (src < end)
 	{
 		val = *src++;
-		if ((val == 9) && (ascii_tab_size))
+		if ((val == '\t') && (ascii_tab_size))
 		{
 			val = ascii_tab_size - (dst - line_buffer) % ascii_tab_size;
 			while (val--)
@@ -393,7 +380,7 @@ void AsciiGetCursorPosition(DOCUMENT *doc, short x, short y, TEXT_POS *pos)
 	while (*src)
 	{
 		i++;
-		if ((*src == 9) && (ascii_tab_size))
+		if ((*src == '\t') && (ascii_tab_size))
 		{
 			/*	Tabulator expansion	*/
 			*dst++=' ';

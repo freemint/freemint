@@ -23,33 +23,17 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifdef __GNUC__
-#include <mint/errno.h>
-#include <mint/ssystem.h>
-#include <limits.h>
 #include <string.h>
-#include <ctype.h>
-#include <mintbind.h>
-#include <fcntl.h>
-#include <mt_gem.h>
-#include <stdio.h>
-#include <macros.h>
-
-#include "include/types.h"
+#ifdef __GNUC__
+	#include <osbind.h>
+#else
+	#include <tos.h>
+#endif
+#include <gem.h>
 #include "include/dhst.h"
 #include "include/cookie.h"
 #include "mem.h"
 #include "diallib.h"
-#include "hyp.h"
-
-#else
-#include <string.h>
-#include <tos.h>
-#include <aes.h>
-#include <cookie.h>
-#include <dhst.h>
-#include "diallib.h"
-#endif
 
 #if USE_DOCUMENTHISTORY == YES
 

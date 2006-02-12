@@ -23,30 +23,18 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifdef __GNUC__
-#include <string.h>
-#include <ctype.h>
-#include <mintbind.h>
-#include <fcntl.h>
-#include <mt_gem.h>
 #include <stdio.h>
-#include <macros.h>
-
-#include "include/types.h"
+#include <string.h>
+#ifdef __GNUC__
+	#include <osbind.h>
+	#include <fcntl.h>
+#else
+	#include <tos.h>
+#endif
+#include <gemx.h>
 #include "include/scancode.h"
 #include "diallib.h"
-#include "hyp.h"
-#include "stat.h"
-#else
-#include <stdio.h>
-#include <string.h>
-#include <tos.h>
-#include <aes.h>
-#include <scancode.h>
-#include "diallib.h"
-#include SPEC_DEFINITION_FILE
-#include "source\hyp.h"
-#endif
+#include "defs.h"
 
 #define MAX_MARKEN		10
 #define UNKNOWN_LEN		10
