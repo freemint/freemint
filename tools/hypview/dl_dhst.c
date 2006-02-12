@@ -26,13 +26,13 @@
 #include <string.h>
 #ifdef __GNUC__
 	#include <osbind.h>
+	#include "include/mem.h"
 #else
 	#include <tos.h>
 #endif
 #include <gem.h>
 #include "include/dhst.h"
 #include "include/cookie.h"
-#include "mem.h"
 #include "diallib.h"
 
 #if USE_DOCUMENTHISTORY == YES
