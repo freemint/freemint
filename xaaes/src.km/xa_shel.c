@@ -561,6 +561,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 
 					type = APP_APPLICATION;
 					ret = p->pid;
+					p_setpgrp(p->pid, loader_pgrp);
 				}
 			}
 			break;
@@ -622,7 +623,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 
 			type = APP_ACCESSORY;
 			ret = p->pid;
-
+			p_setpgrp(p->pid, loader_pgrp);
 			break;
 		}
 	}

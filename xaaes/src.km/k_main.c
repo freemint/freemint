@@ -1119,6 +1119,7 @@ CE_start_apps(enum locks lock, struct c_event *ce, bool cancel)
 					parms[0] = sprintf(parms+1, sizeof(parms)-1, "%s", cfg.cnf_run_arg[i]);
 
 				launch(lock, 0, 0, 0, cfg.cnf_run[i], parms, C.Aes);
+				yield();
 			}
 		}
 		if (cfg.cnf_shell)
@@ -1130,6 +1131,7 @@ CE_start_apps(enum locks lock, struct c_event *ce, bool cancel)
 			C.DSKpid = launch(lock, 0, 0, 0, cfg.cnf_shell, parms, C.Aes);
 			if (C.DSKpid > 0)
 				strcpy(C.desk, cfg.cnf_shell);
+			yield();
 		}
 	}
 }
@@ -1301,7 +1303,7 @@ k_main(void *dummy)
 	 *
 	 * XXX it's just very ugly todo this so
 	 */
-	//get_curproc()->p_fd->ofiles[C.KBD_dev]->flags |= O_HEAD;
+// 	get_curproc()->p_fd->ofiles[C.KBD_dev]->flags |= O_HEAD;
 
 	/* next try
 	 * switching tty device into RAW mode
