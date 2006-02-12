@@ -26,10 +26,10 @@
 #include <string.h>
 #ifdef __GNUC__
 	#include <osbind.h>
+	#include "include/mem.h"
 #else
 	#include <tos.h>
 #endif
-#include "mem.h"
 #include "include/av.h"
 #include <gem.h>
 #include "diallib.h"

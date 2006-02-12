@@ -25,6 +25,7 @@
 
 #ifdef __GNUC__
 	#include <osbind.h>
+	#include "../include/mem.h"
 #else
 	#include <tos.h>
 #endif
@@ -35,7 +36,6 @@
 #include "../defs.h"
 #include "../include/av.h"
 #include "../hyp.h"
-#include "../mem.h"
 
 /* [GS] 0.35.2a alt:
 short find_keyword(char *word)

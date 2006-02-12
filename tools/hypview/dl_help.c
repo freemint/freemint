@@ -26,13 +26,13 @@
 #include <string.h>
 #ifdef __GNUC__
 	#include <osbind.h>
+	#include "include/mem.h"
 #else
 	#include <tos.h>
 #endif
 #include <gem.h>
 #include "diallib.h"
 #include "include/av.h"
-#include "mem.h"
 
 
 #if USE_STGUIDE == YES
