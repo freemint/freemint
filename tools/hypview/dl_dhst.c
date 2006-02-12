@@ -25,14 +25,15 @@
 
 #include <string.h>
 #ifdef __GNUC__
+	#include <mint/cookie.h>
 	#include <osbind.h>
 	#include "include/mem.h"
 #else
 	#include <tos.h>
+	#include <cookie.h>
 #endif
 #include <gem.h>
 #include "include/dhst.h"
-#include "include/cookie.h"
 #include "diallib.h"
 
 #if USE_DOCUMENTHISTORY == YES
@@ -40,30 +41,11 @@
 void DhstAddFile(char *path);
 void DhstFree(short msg[8]);
 
-#if 0
-static short
-GetCookie (unsigned long tag, long *ret_val)
-{
-	unsigned long r;
-
-	if (!(Ssystem(S_GETCOOKIE, tag, &r)))
-	{
-		*ret_val = r;
-		return 0;
-	}
-	else
-	{
-		*ret_val = 0L;
-		return 1;
-	}
-}
-#endif
-
 void DhstAddFile(char *path)
 {
 	long value;
 
-	if (!GetCookie(0x44485354L/*'DHST'*/, &value))
+	if (!Getcookie(0x44485354L/*'DHST'*/, &value))
 	{
 		short msg[8];
 		char *ptr;

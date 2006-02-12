@@ -260,11 +260,7 @@ char *read,*write=NULL;
 	}
 	Fclose(handle);
 
-#ifdef __GNUC__
 	Mshrink(head,(unsigned long)write-(unsigned long)head);
-#else
-	Mshrink(0, head,(unsigned long)write-(unsigned long)head);
-#endif
 	return head;
 }
 

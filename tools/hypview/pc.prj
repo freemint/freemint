@@ -64,7 +64,6 @@ DL_CFGRD.C	(DIALLIB.H)		;	liest eine ASCII-Konfigurationsdatei.
 DL_DHST.C	(DIALLIB.H)		;	Document-History Protokoll (benîtigt COOKIE.O)
 
 dragdrop\libdgdp.prj		;	wird fÅr DL_DRAG benîtigt
-cookie.c				;	wird fÅr DL_LEDIT und DL_DHST benîtigt
 bubble\libbgh.prj		;	wird fÅr DL_BUBBL benîtigt
 
 gem.lib

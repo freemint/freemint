@@ -433,11 +433,7 @@ LoadPicture(HYP_DOCUMENT *hyp_doc, short num)
 	
 			vr_trnfm(vdi_handle, &std_pic, &pic->mfdb);
 		}
-#ifdef __GNUC__
 		Mshrink(pic,sizeof(LOADED_PICTURE) + plane_size * pic->mfdb.fd_nplanes);
-#else
-		Mshrink(0,pic,sizeof(LOADED_PICTURE) + plane_size * pic->mfdb.fd_nplanes);
-#endif
 	}
 	Mfree(data);
 
