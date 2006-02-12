@@ -1,0 +1,72 @@
+HYP_VIEW.APP
+.C
+.L
+=
+pcxstart.o
+;lib\gemstart.o
+
+hyp_view.c			[-P]
+global.c	(defs.h)
+config.c		[-P]
+fileselc.c	[-P]
+file.c		[-P]
+error.c		[-P]
+window.c		[-P]
+toolbar.c	[-P]
+init.c		[-P]
+plain\ascii.c	[-P]
+plain\binary.c	[-P]
+history.c	[-P]
+navigate.c	[-P]
+tools.c		[-P]
+autoloc.c	[-P]
+selectio.c	[-P]
+font.c		[-P]
+block.c		[-P]
+marker.c		[-P]
+info.c		[-P]
+hyp\hyp.c			(hyp.h)		[-P]
+hyp\ref.c			(hyp.h)		[-P]
+hyp\load.c			(hyp.h)		[-P]
+hyp\lh5d.c		
+hyp\prepare.c		(hyp.h)		[-P]  ; [GS] 0.35.2a
+hyp\display.c		(hyp.h)		[-P]  ; [GS] 0.35.2a
+hyp\gfx.s			
+hyp\click.c		(hyp.h)		[-P]
+hyp\autoloc.c	(hyp.h)
+hyp\cache.c		(hyp.h)
+hyp\popup.c		(hyp.h)
+hyp\save.c		(hyp.h)
+hyp\tool.c		(hyp.h)
+hyp\cursor.c		(hyp.h)
+hyp\block.c		(hyp.h)
+hyp\ext_refs.c	(hyp.h)		[-P]
+hyp\search.c		(hyp.h)	[-P]
+
+DL_USER.C	(DIALLIB.H)		[-P]  ; [GS] 0.35.2a ;	Wichtige User-Routinen
+DL_INIT.C	(DIALLIB.H)		;	Sehr wichtig
+DL_EVENT.C	(DIALLIB.H)		;	Sehr wichtig
+DL_ITEMS.C	(DIALLIB.H)		;	Sehr wichtig
+;DL_MENU.C	(DIALLIB.H)		;	fÅr Menu-Steuerung nîtig
+DL_DIAL.C	(DIALLIB.H)		;	fÅr Dialoge nîtig [GS] 0.35.2a
+DL_WIN.C	(DIALLIB.H)		;	fÅr Fenster nîtig
+DL_FILSL.C	(DIALLIB.H)		;	fÅr Dateiauswahl im Fenster nîtig
+;DL_FONSL.C	(DIALLIB.H)		;	fÅr Zeichensatzauswahl im Fenster nîtig
+
+DL_ROUTS.C	(DIALLIB.H)		;	Diverse Routinen (Debug, File Parsing,...)
+DL_AV.C		(DIALLIB.H)		;	AV-Protokoll
+DL_AVCMD.C	(DIALLIB.H)		;	AV-Protokoll Kommandos versenden
+DL_DRAG.C	(DIALLIB.H)		;	Ataris Drag&Drop-Protokoll (benîtigt DRAGDROP.O)
+;DL_BUBBL.C	(DIALLIB.H)		;	BubbleGEM Hilfe-Protokoll (benîtigt BGH.O)
+;DL_HELP.C	(DIALLIB.H)		;	ST-Guide Hilfe-Protokoll
+;DL_LEDIT.C	(DIALLIB.H)		;	Lange Editfelder von MagiC (benîtigt COOKIE.O)
+DL_CFGRD.C	(DIALLIB.H)		;	liest eine ASCII-Konfigurationsdatei.
+DL_DHST.C	(DIALLIB.H)		;	Document-History Protokoll (benîtigt COOKIE.O)
+
+dragdrop\libdgdp.prj		;	wird fÅr DL_DRAG benîtigt
+cookie.c				;	wird fÅr DL_LEDIT und DL_DHST benîtigt
+bubble\libbgh.prj		;	wird fÅr DL_BUBBL benîtigt
+
+gem.lib
+tos.lib
+PCSTDLIB.LIB
