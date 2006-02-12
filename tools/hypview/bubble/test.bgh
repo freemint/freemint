@@ -1,0 +1,27 @@
+#BGH 000 000 000
+#More		000	Dieser Text ist nicht konform!
+#	012 Hilfetext fr Objekt 19 im Dialog 0 und Objekt 2 von Alert 5
+#	044 Hilfetext fr Objekte 2, 5 und 23 im Dialog 1 und Objekt 8 von User 5
+
+#Dial   000   Hilfetext fr Dialog 0
+# 005 Hilfetext fr Objekt  5 im Dialog 0
+# 033 Hilfetext fr Objekte 33 und 56 im Dialog 0
+# 056   ^
+# 019 >012
+
+#Dial 001 Hilfetext fr Dialog 1
+# 015 Hilfetext fr Objekt 15 im Dialog 1
+# 003 Hilfetext fr Objekt  3 im Dialog 1
+# 005 >044
+# 002 ^
+# 023 ^
+
+#Alert 005 Hilfetext fr Alert 5
+# 001 Hilfetext fr Button 1 von Alert 5
+# 002 >012
+# 003 Hilfetext fr Button 3 von Alert 5
+
+#User 152
+# 377 Hilfetext for Objekt 377 in der User-Gruppe 152
+#User 005
+# 008 >044
