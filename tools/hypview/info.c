@@ -35,12 +35,14 @@ static DIALOG *Prog_Dialog;
 static short __CDECL
 ProgHandle ( struct HNDL_OBJ_args args)
 {
-	if ( args.obj == HNDL_CLSD  || args.obj == PROG_OK)
+	if (args.obj == HNDL_CLSD)
 		return 0;
-/* [GS] 0.35.2e Start */
+	if (args.obj == PROG_OK) {
+		tree_addr[PROGINFO][PROG_OK].ob_state &= ~OS_SELECTED;
+		return 0;
+	}
 	else if(args.obj == HNDL_MESG)
 		SpecialMessageEvents(args.dialog , args.events);
-/* Ende */
 
 	return 1;
 }
@@ -66,8 +68,7 @@ void ProgrammInfos( DOCUMENT *doc )
 		strncpy ( tree[PROG_VERSION].ob_spec.free_string, hyp->version, 39 );
 	tree[PROG_VERSION].ob_spec.free_string[39] = '\0';
 
-	if(has_wlffp & 1)
-	{
+	if(has_wlffp & 1) {
 		Prog_Dialog = OpenDialog( ProgHandle, tree, "Programminfo...", -1, -1);
 	}
 	else
@@ -80,10 +81,3 @@ void ProgrammInfos( DOCUMENT *doc )
 		form_dial ( FMD_FINISH, little.g_x, little.g_y, little.g_w, little.g_h, big.g_x, big.g_y, big.g_w, big.g_h );
 	}
 }
-
-/* Ende; alt:
-void ProgrammInfos(void)
-{
-	form_alert(1,"[0][ " PROGRAM_NAME " V" VERSION " | Preview version.  |Do not distribute!  ][  OK  ]");
-}
-*/
