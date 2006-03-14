@@ -1,7 +1,7 @@
 /*
  * $Id$
  * 
- * HypView - (c)      - 2006 Philipp Donze
+ * HypView - (c) 2001 - 2006 Philipp Donze
  *               2006 -      Philipp Donze & Odd Skancke
  *
  * A replacement hypertext viewer
@@ -30,6 +30,7 @@
 	#include <tos.h>
 #endif
 #include <gem.h>
+#include "include/scancode.h"
 #include "diallib.h"
 #include "defs.h"
 
@@ -82,7 +83,7 @@ AutolocatorUpdate(DOCUMENT *doc, long start_line)
 	GRECT tbar;
 	long line = start_line;
 
-	if((doc->buttons & BITVAL(TO_SEARCHBOX)) == 0)
+	if ((doc->buttons & BITVAL(TO_SEARCHBOX)) == 0)
 		return;
 
 	/*	Toolbar mit neuem Text zeichnen	*/
@@ -104,7 +105,7 @@ AutolocatorUpdate(DOCUMENT *doc, long start_line)
 
 	/*	Wenn der Auto-Locator nicht leer ist... */
 	if(*doc->autolocator) {
-		graf_mouse(BUSYBEE,NULL);
+		graf_mouse(BUSYBEE, NULL);
 		line = doc->autolocProc(doc, start_line);
 		graf_mouse(ARROW, NULL);
 	}
@@ -113,7 +114,7 @@ AutolocatorUpdate(DOCUMENT *doc, long start_line)
 */
 	if (line >= 0)
 	{
-		if(line != win->y_pos)
+		if (line != win->y_pos)
 		{
 			win->y_pos = line;
 			SendRedraw(win);
@@ -131,7 +132,7 @@ AutolocatorUpdate(DOCUMENT *doc, long start_line)
 }
 
 /*	Fgt dem Autolocator ein neues Zeichen ein und aktiviert die Suche */
-short AutolocatorKey(DOCUMENT *doc,short ascii)
+short AutolocatorKey(DOCUMENT *doc, short kbstate, short ascii)
 {
 	WINDOW_DATA *win = Win;
 	char *ptr;
@@ -141,19 +142,24 @@ short AutolocatorKey(DOCUMENT *doc,short ascii)
 		return FALSE;
 
 	ptr = AutolocatorInit(doc);
-		
-	if(ascii==8)					/*	Backspace?	*/
+	doc->autolocator_dir = 1;
+	
+	if (ascii == 8)				/* Backspace */
 	{
-		if(ptr>doc->autolocator)
+		if (ptr > doc->autolocator)
 			ptr--;
 		*ptr=0;
 	}
-	else if(ascii==13)			/*	Return gedrckt	*/
+	else if (ascii == 13)		/* Return */
 	{
-		/*	erneute Suche mit dem gleichen String	*/
-		line++;
+		if (kbstate & KbSHIFT) {
+			doc->autolocator_dir = 0;
+			line--;
+		}
+		else
+			line++;
 	}
-	else if(ascii==27)
+	else if (ascii == 27)		/* Escape */
 	{
 		if(ptr>doc->autolocator)
 		{
@@ -187,12 +193,8 @@ short AutolocatorKey(DOCUMENT *doc,short ascii)
 		}
 	}
 
-/* [GS] v0.35.2e Start */
-	ToolbarUpdate(doc,win->toolbar,FALSE);
-/* Ende; alt:
-	ToolbarUpdate(doc,win->toolbar);
-*/
-	AutolocatorUpdate(doc,line);
+	ToolbarUpdate(doc, win->toolbar, FALSE);
+	AutolocatorUpdate(doc, line);
 	
 	return TRUE;
 }
@@ -246,11 +248,7 @@ void AutoLocatorPaste(DOCUMENT *doc)
 		}
 		Fclose((short)ret);
 
-/* [GS] v0.35.2e Start */
-		ToolbarUpdate(doc,win->toolbar,FALSE);
-/* Ende; alt:
-		ToolbarUpdate(doc,win->toolbar);
-*/
-		AutolocatorUpdate(doc,win->y_pos);
+		ToolbarUpdate(doc, win->toolbar, FALSE);
+		AutolocatorUpdate(doc, win->y_pos);
 	}
 }
