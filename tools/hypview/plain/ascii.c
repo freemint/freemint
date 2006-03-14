@@ -1,7 +1,7 @@
 /*
  * $Id$
  * 
- * HypView - (c)      - 2006 Philipp Donze
+ * HypView - (c) 2001 - 2006 Philipp Donze
  *               2006 -      Philipp Donze & Odd Skancke
  *
  * A replacement hypertext viewer
@@ -316,24 +316,42 @@ long AsciiAutolocator(DOCUMENT *doc,long line)
 	char *src;
 	long len = strlen(search);
 
-	if (!ascii)								/*	Keine Datei geladen	*/
-		return(-1);
+	if (!ascii)						/* no file load */
+		return -1;
 	
-	while (line < doc->lines)
+	if (doc->autolocator_dir > 0) 
 	{
-		src = ascii->line_ptr[line];
-		if(src)
+		while (line < doc->lines)
 		{
-			while(*src)
+			src = ascii->line_ptr[line];
+			if (src)
 			{
-				if(strnicmp(src++, search, len) == 0)
-					return (line);
+				while (*src)
+				{
+					if (strnicmp(src++, search, len) == 0)
+						return line;
+				}
 			}
+			line++;
 		}
-		line++;
 	}
-	
-	return (-1);
+	else
+	{
+		while (line > 0)
+		{
+			src = ascii->line_ptr[line];
+			if (src)
+			{
+				while (*src)
+				{
+					if (strnicmp(src++, search, len) == 0)
+						return line;
+				}
+			}
+			line--;
+		}
+	}
+	return -1;
 }
 
 void AsciiGetCursorPosition(DOCUMENT *doc, short x, short y, TEXT_POS *pos)

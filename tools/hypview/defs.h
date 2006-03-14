@@ -1,7 +1,7 @@
 /*
  * $Id$
  * 
- * HypView - (c)      - 2006 Philipp Donze
+ * HypView - (c) 2001 - 2006 Philipp Donze
  *               2006 -      Philipp Donze & Odd Skancke
  *
  * A replacement hypertext viewer
@@ -90,6 +90,7 @@ struct _document_
 	DOC_CLICKPROC clickProc;		/*	Funktion zur Verarbeitung von Maus-Aktionen	*/
 	DOC_AUTOLOCPROC autolocProc;		/*	Autolocator-Funktion	*/
 	char *autolocator;			/*	Suchstring des Autolocators	*/
+	int autolocator_dir;		/* Direction of search for autolocator (1 = down, else up) */
 	DOC_GETCURSORPROC getCursorProc;	/*	Funktion zum Ermitteln der Cursor Position	*/
 	BLOCK selection;			/*	Daten des aktuellen Text-Blocks	*/
 	DOC_BLOCKPROC blockProc;		/*	Funktion fr Block-Operationen	*/
@@ -262,7 +263,7 @@ void GoThisButton(DOCUMENT *doc,short obj);
 /*
  *		Autoloc.c
  */
-short AutolocatorKey(DOCUMENT *doc,short ascii);
+short AutolocatorKey(DOCUMENT *doc, short kbstate, short ascii);
 void AutoLocatorPaste(DOCUMENT *doc);
 
 /*
