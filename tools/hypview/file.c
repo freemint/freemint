@@ -1,7 +1,7 @@
 /*
  * $Id$
  * 
- * HypView - (c)      - 2006 Philipp Donze
+ * HypView - (c) 2001 - 2006 Philipp Donze
  *               2006 -      Philipp Donze & Odd Skancke
  *
  * A replacement hypertext viewer
@@ -45,7 +45,7 @@ short LoadFile(DOCUMENT *doc, short handle)
 	if(type == F_UNKNOWN)
 		type = AsciiLoad(doc, handle);
 
-	return(type);
+	return type;
 }
 
 static short
@@ -53,7 +53,7 @@ find_file(char *path, char *real_path)
 {
 	WINDOW_DATA *win = Win;
 	long ret;
-	char *list=path_list;
+	char *list = path_list;
 	char *dst;
 
 	/*	Falls schon eine Datei/ein Fenster geffnet wurde	*/
@@ -63,109 +63,107 @@ find_file(char *path, char *real_path)
 		char *filename;
 
 		/*	Die neue Datei in dessen Pfad suchen	*/
-		strcpy(real_path,doc->path);
+		strcpy(real_path, doc->path);
 		
-		filename=strrchr(real_path,'\\');
-		if(!filename)
-			filename=real_path;
+		filename = strrchr(real_path, '\\');
+		if (!filename)
+			filename = real_path;
 		else
 			filename++;
 		
-		strcpy(filename,path);
-		ret=Fopen(real_path,O_RDONLY);
+		strcpy(filename, path);
+		ret=Fopen(real_path, O_RDONLY);
 /*		Debug("1: Trying at %s => %ld",real_path,ret);
 */		if (ret >= 0)
 		{
 			Fclose((short)ret);
-			return(TRUE);
+			return TRUE;
 		}
 
 
 		/*	Versuche die Datei als Link aufzuschlsseln	*/
-		ret=Freadlink(DL_PATHMAX,real_path,doc->path);
-		if(ret==0)
+		ret = Freadlink(DL_PATHMAX, real_path, doc->path);
+		if (ret == 0)
 		{
 /*			Debug("=> %ld: '%s' is at '%s'",ret,doc->path,real_path);
 */
-			filename=strrchr(real_path,'\\');
-			if(!filename)
-				filename=real_path;
+			filename = strrchr(real_path, '\\');
+			if (!filename)
+				filename = real_path;
 			else
 				filename++;
 			
-			strcpy(filename,path);
+			strcpy(filename, path);
 
-			ret=Fopen(real_path,O_RDONLY);
+			ret = Fopen(real_path, O_RDONLY);
 /*			Debug("2: Trying at %s => %ld",real_path,ret);
-*/			if(ret>=0)
+*/			if (ret >= 0)
 			{
 				Fclose((short)ret);
-				return(TRUE);
+				return TRUE;
 			}
 		}
 	}
 
 
 	/*	Pfad, so wie er gegeben ist ausprobieren	*/
-	ret=Fopen(path,O_RDONLY);
+	ret=Fopen(path, O_RDONLY);
 /*	Debug("3: Trying at %s => %ld",path,ret);
 */
-	if(ret>=0)
+	if (ret >= 0)
 	{
-		if(path[1]==':')		/*	Handelt es sich um einen absoluten Pfad?	*/
-			strcpy(real_path,path);
+		if (path[1] == ':')		/*	Handelt es sich um einen absoluten Pfad?	*/
+			strcpy(real_path, path);
 		else
 		{
 			/*	Absoluten Pfad ermitteln	*/
-			real_path[0]=Dgetdrv()+'A';
-			real_path[1]=':';
-			Dgetpath(&real_path[2],0);
-			dst=&real_path[strlen(real_path)];
-			*dst++=dir_separator;
-			strcat(real_path,path);
+			real_path[0] = Dgetdrv() + 'A';
+			real_path[1] = ':';
+			Dgetpath(&real_path[2], 0);
+			dst =& real_path[strlen(real_path)];
+			*dst++ = dir_separator;
+			strcat(real_path, path);
 		}
 
 		Fclose((short)ret);
-		return(TRUE);
+		return TRUE;
 	}
 
-/* [GS] 0.34 Start */
-	if ( path[1] == ':' )     	/*	Handelt es sich um einen absoluten Pfad?	*/
+	if (path[1] == ':')     	/*	Handelt es sich um einen absoluten Pfad?	*/
 	{							/*  Dann Dateinamen extrahieren					*/
-		dst = strrchr( path, '\\' );
-		if ( dst )
-			strcpy ( path, dst + 1);
+		dst = strrchr(path, '\\');
+		if (dst)
+			strcpy (path, dst + 1);
 	}
-/* Ende */
 
 	/*	Pfad mit Pfad aus der Pfadliste kombiniert probieren	*/
-	while(*list)
+	while (*list)
 	{
-		dst=real_path;
-		while(*list && *list!=';')
-			*dst++=*list++;
+		dst = real_path;
+		while (*list && (*list != ';'))
+			*dst++ = *list++;
 
-		*dst--=0;
+		*dst-- = 0;
 		list++;
-		if(*dst!=dir_separator)
+		if (*dst != dir_separator)
 		{
 			dst++;
-			*dst++=dir_separator;
-			*dst=0;
+			*dst++ = dir_separator;
+			*dst = 0;
 		}
-		strcat(real_path,path);
+		strcat(real_path, path);
 
 
-		ret=Fopen(real_path,O_RDONLY);
+		ret = Fopen(real_path, O_RDONLY);
 /*		Debug("4. Trying at %s => %ld",real_path,ret);
 */	
-		if(ret>=0)
+		if (ret>=0)
 		{
 			Fclose((short)ret);
-			return(TRUE);
+			return TRUE;
 		}
 	}
-	return(FALSE);
+	return FALSE;
 }
 
 static DOCUMENT *
@@ -176,30 +174,30 @@ open_file(char *path)
 	short handle;
 	char *ptr;
 
-	ret = Fopen(path,O_RDONLY);
+	ret = Fopen(path, O_RDONLY);
 	
 	if (ret < 0)
 	{
 		FileErrorNr(path, ret);
-		return (NULL);
+		return NULL;
 	}
 	handle = (short)ret;
 
 	/*	Nicht gefunden? --> neues Dokument erstellen	*/	
 	doc = (DOCUMENT *)Malloc(sizeof(DOCUMENT) + strlen(path) + 1);
 	
-	if(!doc)
+	if (!doc)
 	{
 		form_alert(1, string_addr[DI_MEMORY_ERROR]);	/*	Fehler melden	*/
 		Fclose(handle);
-		return (NULL);
+		return NULL;
 	}
 	memset(doc, 0, sizeof(DOCUMENT));
 
 	doc->path = (char *)((long)doc + sizeof(DOCUMENT));
-	strcpy(doc->path,path);
+	strcpy(doc->path, path);
 	ptr = strrchr(doc->path, dir_separator);
-	if(!ptr++)
+	if (!ptr++)
 		ptr = doc->path;
 	doc->filename = ptr;
 	doc->lines = 0;
@@ -216,7 +214,7 @@ open_file(char *path)
 	/*	Hier folgt die typ-spezifische Lade-Routine	*/
 	if(LoadFile(doc, handle) < 0)
 	{
-		FileError(doc->filename,"format not recognized");
+		FileError(doc->filename, "format not recognized");
 		Mfree(doc);
 		doc = NULL;
 	}
@@ -238,7 +236,7 @@ open_file(char *path)
 
 	Fclose(handle);
 
-	return(doc);
+	return doc;
 }
 
 
@@ -247,33 +245,29 @@ open_file(char *path)
 void CloseFile(DOCUMENT *doc)
 {
 	/*	Hier folgt die typ-spezifische Aufrum-Arbeit.*/
-	if(doc->data)
+	if (doc->data)
 		doc->closeProc(doc);
-	if(doc->autolocator)
+	if (doc->autolocator)
 		Mfree(doc->autolocator);
 
-	Mfree(doc);				/*	Speicher der DOCUMENT-Struktur freigeben	*/
+	Mfree(doc);
 }
 
 
 /*	ffnet eine Datei in einem neuen Fenster	*/
-/* [GS] 0.35.2c Start: */
 short OpenFileNW(char *path, char *chapter, long node)
-/* Ende; alt:
-short OpenFileNW(char *path, char *chapter)
-*/
 {
 	DOCUMENT *doc;
 	char real_path[DL_PATHMAX];
 	/*	Leere Zeichenkette (=kein Pfad)	*/
-	if(!*path)
+	if (!*path)
 		return FALSE;
 
 /*
 	Debug("OpenFileNW(<%s>,Chapter <%s>)",path,(chapter?chapter:"N/A"));
 */
 
-	graf_mouse(BUSYBEE,NULL);
+	graf_mouse(BUSYBEE, NULL);
 
 	/*	Falls der Suchpfad mit "*:\" beginnt (=> HYP-Datei): entfernen	*/
 	if (strncmp(path, "*:\\", 3) == 0)
@@ -290,20 +284,16 @@ short OpenFileNW(char *path, char *chapter)
 	doc = open_file(real_path);
 	if (doc)
 	{
-/* [GS] 0.35.2c Start: */
 		doc->gotoNodeProc(doc, chapter, node);
-/* Ende; alt:
-		doc->gotoNodeProc(doc,chapter,0);
-*/
 
 		/*	neues Fenster anlegen?	*/
-		OpenWindow(HelpWindow,NAME|CLOSER|FULLER|MOVER|SIZER|UPARROW|DNARROW|
-					VSLIDE|LFARROW|RTARROW|HSLIDE|SMALLER,doc->path,
-					-1,-1,doc);
+		OpenWindow(HelpWindow, NAME|CLOSER|FULLER|MOVER|SIZER|
+				   UPARROW|DNARROW|VSLIDE|LFARROW|RTARROW|HSLIDE|
+				   SMALLER, doc->path, -1, -1, doc);
 	}
 	else
 	{
-		graf_mouse(ARROW,NULL);
+		graf_mouse(ARROW, NULL);
 		return FALSE;
 	}
 
@@ -312,30 +302,30 @@ short OpenFileNW(char *path, char *chapter)
 
 
 /*	ffnet eine Datei im gleichen Fenster falls <new_win> < 2	*/
-short OpenFileSW(char *path, char *chapter,short new_win)
+short OpenFileSW(char *path, char *chapter, short new_win)
 {
 	WINDOW_DATA *win = Win;
 	DOCUMENT *doc = NULL;
 	char real_path[DL_PATHMAX];
 
 	/*	Leere Zeichenkette (=kein Pfad)	*/
-	if(!*path)
+	if (!*path)
 		return FALSE;
 
 
 /*	Debug("OpenFileSW(<%s>,Chapter <%s>,new win %d)",path,(chapter?chapter:"N/A"),new_win);
 */
 
-	graf_mouse(BUSYBEE,NULL);
+	graf_mouse(BUSYBEE, NULL);
 
 	/*	Falls der Suchpfad mit "*:\" beginnt (=> HYP-Datei): entfernen	*/
-	if(strncmp(path,"*:\\",3)==0)
+	if (strncmp(path, "*:\\", 3) == 0)
 		path+=3;
 
-	if(!find_file(path,real_path))
+	if (!find_file(path, real_path))
 	{
-		graf_mouse(ARROW,NULL);
-		FileError(path,"not found");
+		graf_mouse(ARROW, NULL);
+		FileError(path, "not found");
 		return FALSE;
 	}
 
@@ -351,7 +341,7 @@ short OpenFileSW(char *path, char *chapter,short new_win)
 			if(Win->type == WIN_WINDOW)
 			{
 				doc2 = Win->data;
-				if(strcmp(doc2->path, real_path) == 0)
+				if (strcmp(doc2->path, real_path) == 0)
 				{
 					AddHistoryEntry(Win);
 					doc = doc2;
@@ -369,7 +359,7 @@ short OpenFileSW(char *path, char *chapter,short new_win)
 		AddHistoryEntry(win);
 
 		/*	Datei als aktuelles Dokument im Fenster geladen?	*/
-		if(strcmp(prev_doc->path,real_path) == 0)
+		if (strcmp(prev_doc->path, real_path) == 0)
 		{
 			doc = prev_doc;
 			win->data = prev_doc->next;
@@ -382,7 +372,7 @@ short OpenFileSW(char *path, char *chapter,short new_win)
 			doc = prev_doc->next;
 			while (doc)
 			{
-				if(strcmp(doc->path, real_path) == 0)
+				if (strcmp(doc->path, real_path) == 0)
 				{
 					prev_doc->next = doc->next;
 					doc->next = NULL;
@@ -415,18 +405,18 @@ short OpenFileSW(char *path, char *chapter,short new_win)
 
 		/*	Noch kein Fenster offen?	*/
 		if(!win)
-			OpenWindow(HelpWindow,NAME|CLOSER|FULLER|MOVER|SIZER|UPARROW|DNARROW|
-					VSLIDE|LFARROW|RTARROW|HSLIDE|SMALLER,doc->path,
-					-1,-1,doc);
+			OpenWindow(HelpWindow, NAME|CLOSER|FULLER|MOVER|SIZER|UPARROW|DNARROW|
+					VSLIDE|LFARROW|RTARROW|HSLIDE|SMALLER, doc->path,
+					-1, -1, doc);
 		else
 		{
 			if(win->status & WIS_ICONIFY)
 				UniconifyWindow(win);
 			doc->next = win->data;
 			Win = win;
-			ReInitWindow(win,doc);
-			wind_set(win->whandle,WF_TOP,0,0,0,0);
-			graf_mouse(ARROW,NULL);
+			ReInitWindow(win, doc);
+			wind_set(win->whandle, WF_TOP, 0, 0, 0, 0);
+			graf_mouse(ARROW, NULL);
 		}
 	}
 	else
@@ -439,37 +429,39 @@ short OpenFileSW(char *path, char *chapter,short new_win)
 }
 
 
-
+/* Verifies the current documents file modification time/date and reloads the
+ * document if necessary. This behaviour is enabled by the CHECK_TIME option. */
 void CheckFiledate(DOCUMENT *doc)
 {
 	XATTR attr;
 	long ret;
-	ret = Fxattr(0/*FXATTR_RESOLVE*/,doc->path,&attr);
-	if(ret == 0)
+	
+	ret = Fxattr(0/*FXATTR_RESOLVE*/, doc->path, &attr);
+	if (ret == 0)
 	{
-		/*	Hat sich das Datum oder die Zeit gendert?	*/
-		if(attr.mtime != doc->mtime || attr.mdate != doc->mdate)
+		/* Modification time or date has changed ?*/
+		if (attr.mtime != doc->mtime || attr.mdate != doc->mdate)
 		{
 			long node = 0;
 
-			graf_mouse(BUSYBEE,NULL);
+			graf_mouse(BUSYBEE, NULL);			/*	We are busy... */
 
-			node = doc->getNodeProc(doc);
-			doc->closeProc(doc);
+			node = doc->getNodeProc(doc);		/* Remember current node */
+			doc->closeProc(doc);				/* Close document */
 
-			/*	Datei erneut laden	*/
-			ret=Fopen(doc->path,O_RDONLY);
-			if(ret>=0)
-				LoadFile(doc,(short)ret);
+			/* Reload file */
+			ret = Fopen(doc->path, O_RDONLY);
+			if (ret >= 0)
+				LoadFile(doc, (short)ret);
 			else
 				FileErrorNr(doc->filename, ret);
 			Fclose((short)ret);
 
-			/*	zur vorherigen Seite springen	*/
-			doc->gotoNodeProc(doc,NULL,node);
-
+			/* jump to previously active node */
+			doc->gotoNodeProc(doc, NULL, node);
+			
 			ReInitWindow(Win, doc);
-			graf_mouse(ARROW,NULL);
+			graf_mouse(ARROW, NULL);			/* We are done. */
 		}
 	}
 }
