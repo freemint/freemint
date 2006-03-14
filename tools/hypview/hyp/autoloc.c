@@ -1,7 +1,7 @@
 /*
  * $Id$
  * 
- * HypView - (c)      - 2006 Philipp Donze
+ * HypView - (c) 2001 - 2006 Philipp Donze
  *               2006 -      Philipp Donze & Odd Skancke
  *
  * A replacement hypertext viewer
@@ -122,31 +122,47 @@ HypGetTextLine(HYP_DOCUMENT *hyp, long line, char *dst)
 long
 HypAutolocator(DOCUMENT *doc, long line)
 {
-	char *search=doc->autolocator;
+	char *search = doc->autolocator;
 	char *src;
 	LOADED_NODE *node;
 	char temp[LINE_BUF];
-	long len=strlen(search);
+	long len = strlen(search);
 	HYP_DOCUMENT *hyp;
 	
 	Hyp = hyp = doc->data;
 
 	node = (LOADED_NODE *)hyp->entry;
 	
-	if(!node)									/*	Keine Seite geladen	*/
-		return(-1);
+	if (!node)								/*	no node loaded	*/
+		return -1;
 	
-	while (line < node->lines)
+	if (doc->autolocator_dir > 0) 
 	{
-		HypGetTextLine(hyp, line, temp);
-		src = temp;
-		while(*src)
+		while (line < node->lines)
 		{
-			if(strnicmp(src++, search, len) == 0)
-				return (line);
+			HypGetTextLine(hyp, line, temp);
+			src = temp;
+			while (*src)
+			{
+				if (strnicmp(src++, search, len) == 0)
+					return line;
+			}
+			line++;
 		}
-		line++;
 	}
-	
-	return(-1);
+	else
+	{
+		while (line > 0)
+		{
+			HypGetTextLine(hyp, line, temp);
+			src = temp;
+			while (*src)
+			{
+				if (strnicmp(src++, search, len) == 0)
+					return line;
+			}
+			line--;
+		}
+	}		
+	return -1;
 }

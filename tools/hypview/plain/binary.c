@@ -1,7 +1,7 @@
 /*
  * $Id$
  * 
- * HypView - (c)      - 2006 Philipp Donze
+ * HypView - (c) 2001 - 2006 Philipp Donze
  *               2006 -      Philipp Donze & Odd Skancke
  *
  * A replacement hypertext viewer
@@ -91,21 +91,32 @@ BinaryAutolocator(DOCUMENT *doc, long line)
 	char *src, *end;
 	long len = strlen(search);
 
-	if(!ascii)								/*	Keine Datei geladen	*/
-		return(-1);
+	if (!ascii)								/*	Keine Datei geladen	*/
+		return -1;
 	
 	end = &ascii->start + ascii->length - len;
 	src = &ascii->start + line * binary_columns;
-	while (src <= end)
+	if (doc->autolocator_dir > 0) 
 	{
-		if (strnicmp(src, search, len) == 0)
+		while (src <= end)
 		{
-			return ((src - 1 - &ascii->start) / binary_columns);
+			if (strnicmp(src, search, len) == 0) {
+				return (src - 1 - &ascii->start) / binary_columns;
+			}
+			src++;
 		}
-		src++;
 	}
-	
-	return(-1);
+	else
+	{
+		while (src >= &ascii->start)
+		{
+			if (strnicmp(src, search, len) == 0) {
+				return (src - 1 - &ascii->start) / binary_columns;
+			}
+			src--;
+		}
+	}
+	return -1;
 }
 
 void

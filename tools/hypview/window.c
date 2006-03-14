@@ -1,7 +1,7 @@
 /*
  * $Id$
  * 
- * HypView - (c)      - 2006 Philipp Donze
+ * HypView - (c) 2001 - 2006 Philipp Donze
  *               2006 -      Philipp Donze & Odd Skancke
  *
  * A replacement hypertext viewer
@@ -532,7 +532,7 @@ HelpWindow(WINDOW_DATA *p, short obj, void *data)
 
 		if(event->mwhich & MU_KEYBD)
 		{
-			if(AutolocatorKey(doc,ascii))
+			if(AutolocatorKey(doc, event->kstate, ascii))
 				event->mwhich&=~MU_KEYBD;
 		}
 
