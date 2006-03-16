@@ -39,9 +39,9 @@ void RefGotoNode(DOCUMENT *doc, char *chapter,long node_num);
 
 REF_FILE *ref_load(short handle)
 {
-REF_FILE *ref=NIL;
-long size,pos;
-unsigned long magic;
+	REF_FILE *ref = NIL;
+	long size,pos;
+	unsigned long magic;
 
 	Fread(handle,4,&magic);
 
@@ -56,7 +56,7 @@ unsigned long magic;
 	Fseek(pos, handle, 0);
 	
 	/*	Speicher	fr Header und Indexdaten reservieren	*/
-	ref=(REF_FILE *)Malloc(size);
+	ref = (REF_FILE *)Malloc(size);
 	if(!ref)
 	{
 		Debug("Error while allocating %ld bytes for REF file.",size);
@@ -91,15 +91,16 @@ unsigned char size;
 
 short ref_findnode(REF_FILE *ref, char *string, long *node, short *line)
 {
-char *ptr=&ref->start;
-unsigned char size;
-long node_num=0;
-	if(ref == NIL)
+	char *ptr = &ref->start;
+	unsigned char size;
+	long node_num=0;
+
+	if(!ref || ref == NIL)
 		return(FALSE);
 
 	do
 	{
-		if(*ptr == REF_FILENAME)
+		if (*ptr == REF_FILENAME)
 			node_num=-1;
 		else if(*ptr == REF_NODENAME)
 			node_num++;
