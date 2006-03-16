@@ -473,10 +473,13 @@ set_start(struct prepnode *p, short empty)
 	{
 		long limag_yadd = 0;
 		short limage_y = -1;
+		short align;
+		short inside_idx = -1;
 		
 		for (i = 0; i < p->pic_count; i++)
 		{
 			short ly2 = p->pic_adm[i].orig.g_y + p->pic_adm[i].orig.g_h;
+			
 			if (p->line >= p->pic_adm[i].orig.g_y && p->line < ly2)
 			{
 				DIAG((" 0 inside type=%d, y=%d, h=%d", p->pic_adm[i].type, p->pic_adm[i].orig.g_y, p->pic_adm[i].orig.g_h));
@@ -486,7 +489,6 @@ set_start(struct prepnode *p, short empty)
 					char *psrc = p->pic_adm[i].src;
 					short py2 = 0, ny, type = p->pic_adm[i].type;
 					short islimage;
-					short align;
 					LOADED_PICTURE *pic;
 					
 					if (type == LINE || type == BOX || type == RBOX)
@@ -545,12 +547,17 @@ set_start(struct prepnode *p, short empty)
 						}
 						else
 						{
-							ny = py2;
-							DIAG((" -- idx %d placed after %d, y = %d", i, i - 1, py2));
+							ny = p->y;
 							p->pic_adm[i].trans.g_y = ny;
-							p->line_ptr[p->line].y += (ny - p->y);
-							p->y += (ny - p->y);
-							DIAG((" -- liney %d", p->line_ptr[p->line].y));
+							if (inside_idx == -1 || p->pic_adm[i].trans.g_h > p->pic_adm[inside_idx].trans.g_h)
+							{
+								if (inside_idx >= 0)
+									p->pic_adm[inside_idx].type = -1;
+								inside_idx = i;
+							}
+							else
+								p->pic_adm[i].type = -1;
+							DIAG((" -- idx %d largest height", inside_idx));
 						}
 						DIAG((" -- pict y=%d, liney=%ld", ny * font_ch, p->y));
 						if (type == PIC)
@@ -569,6 +576,15 @@ set_start(struct prepnode *p, short empty)
 					}
 				}
 			}
+		}
+		if (inside_idx >= 0 && !empty)
+		{
+			p->start_y = p->line;
+			p->start_line = -1;
+			p->y_start = p->y;
+			p->start_idx = inside_idx;
+			p->between = 1;
+			p->last_line = -1;
 		}
 	}
 }
@@ -590,12 +606,17 @@ check_end(struct prepnode *p, short force)
 				long py2 = p->pic_adm[p->start_idx].trans.g_y + p->pic_adm[p->start_idx].trans.g_h;
 				if (p->pic_adm[p->start_idx].type != -1)
 				{
+					short start_line = p->start_line;
+
 					DIAG((" lines between %d(real=%d) and %d(real=%d) belong in rect (idx=%d) %d/%d/%d/%d",
 						p->start_y, p->start_line, p->line - 1, p->last_line, p->start_idx,
 						p->pic_adm[p->start_idx].orig.g_x, p->pic_adm[p->start_idx].orig. g_y,
 						p->pic_adm[p->start_idx].orig.g_w, p->pic_adm[p->start_idx].orig.g_h));
 			
-					if (p->start_line != -1)
+					if (start_line == -1)
+						start_line = p->start_y;
+					
+					if (start_line != -1)
 					{
 						DIAG((" -- last_line = %d, y = %ld", p->line, p->y));
 						h2 = p->pic_adm[p->start_idx].trans.g_h;
@@ -608,18 +629,19 @@ check_end(struct prepnode *p, short force)
 							
 							DIAG(("transy=%d, y2=%d", p->pic_adm[p->start_idx].trans.g_y, p->pic_adm[p->start_idx].trans.g_y + p->pic_adm[p->start_idx].trans.g_h));
 					
-							p->line_ptr[p->start_line].y += diff;
+							p->line_ptr[start_line].y += diff;
 							p->y += diff;
 							diff = (p->y % font_ch);
 							if (diff)
 							{
 								diff = font_ch - diff;
-								p->line_ptr[p->start_line].y += diff;
+								p->line_ptr[start_line].y += diff;
 								p->y += diff;
 							}
 							DIAG((" -- font_ch = %d, diff=%ld, set y=%d on line %d (newly=%ld)(newy %ld)",
-								font_ch, diff, p->line_ptr[p->start_line].y, p->start_line, p->y_start + p->line_ptr[p->start_line].y, p->y));
+								font_ch, diff, p->line_ptr[start_line].y, start_line, p->y_start + p->line_ptr[start_line].y, p->y));
 						}
+						p->pic_adm[p->start_idx].type = -1;
 					}
 				#if 1
 					else if (p->y < py2)
@@ -814,8 +836,9 @@ PrepareNode(HYP_DOCUMENT *hyp, LOADED_NODE *node)
 							p.limage_add += p.pic_adm[p.pic_idx].orig.g_h;
 							p.pic_adm[p.pic_idx].flags = 1;
 						}
-						DIAG((" IDX %d(PIC ): org %d/%d/%d/%d - %d/%d/%d/%d",
+						DIAG((" IDX %d(PIC ): limage? %s, org %d/%d/%d/%d - %d/%d/%d/%d",
 							p.pic_idx,
+							(hyp->comp_vers >= 3 && (src[6] == 1)) ? "Yes":"No",
 							p.pic_adm[p.pic_idx].orig.g_x,  p.pic_adm[p.pic_idx].orig. g_y,
 							p.pic_adm[p.pic_idx].orig.g_w,  p.pic_adm[p.pic_idx].orig.g_h,
 							p.pic_adm[p.pic_idx].trans.g_x, p.pic_adm[p.pic_idx].trans.g_y,
