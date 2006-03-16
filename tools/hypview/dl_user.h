@@ -28,6 +28,7 @@
 /********************************************
  *   begin options                          *
  ********************************************/
+/* #define GENERATE_DIAGS */
 /*	Debugmodus? (=Debug Ausgaben compilieren)	*/
 #define	DEBUG					OFF
 /*	Debuglogbuch-Datei erstellen? (=Alle Debug Ausgaben in diese Datei)	*/
