@@ -1,0 +1,37 @@
+This document describes in short how to install and use HypView.
+
+Installation
+------------
+HypView can be used as normal application or as accessory.
+By setting the STGUIDE and/or HELPVIEWER environment variable to
+the full path to HypView, it's possible for other applications to
+start it if necessary.
+Set your desktop to open *.HYP files using HypView. If you like you
+can set HypView as default viewer.
+
+
+Usage
+-----
+HypView has been written to replace ST-Guide. Therefore it's working
+"as the original". The icons in the toolbar are nearly identical.
+From left to right:
+  -"Back": jumps back to the page which lead to the current page
+  -"History": displays a history popup which allows jumping back
+   to a specific page.
+  -"Bookmarks": Allows you to select and define your fovorite pages
+  -"Previous": Go to previous page
+  -"Home": Go to parent page of the current page.
+  -"Next": Go to next page
+  -"Index": Display index of all pages/nodes defined.
+  -"Catalog": Display the catalog hypertext (defined in the HypView
+   configuration file)
+  -"See also...": Displays a popup which suggests further readings.
+  -"Help": Jump to help page of the current hypertext.
+  -"Info": Displays some information about HypView and the current
+   hypertext file.
+  -"Load": Opens a fileselector to load a new file.
+  -"Save": Opens a fileselector to select a filename to which the
+   current selection (or the current page) is saved.
+  -"Extra": Displays a popup (=same as the right-click context menu)
+   which provides access to further operations.
+

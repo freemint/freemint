@@ -1,0 +1,50 @@
+Project HypView
+===============
+
+Description
+-----------
+The project HypView aims at developing a free ST-Guide replacement.
+ST-Guide is hypertext viewer for TOS compatible systems and used
+to display online help in many applications. It allows to read
+documentations not only in a linear manner (from beginning to end),
+but also to freely jump across chapters by clicking on a highlighted
+text passage. Today this is a very familiar concept for everybody
+browsing through the world wide web using HTML pages.
+ST-Guide files are recognized by their file extension (HYP) and are
+often accompanied by .REF files.
+
+
+History
+-------
+This project was started by Philipp Donze in 2001 as a private,
+one-man project. Until beginning of 2004 a varying number of beta 
+testers helped to improve the application. Thanks to the contributions
+of Gerhard Stoll, the project progressed more until 2006 when the
+sources have gone "public" under the initiative of Odd Skancke (which
+ported also the sources to gcc).
+Today the project (including its sources) is freely available under 
+the GNU Public License (GPL, provided in COPYING). The latest source
+code is available through the CVS repository of FreeMiNT (in the 
+'freemint/tools/hypview' directory).
+
+
+Disclaimer
+----------
+  This application is provided as is. It has not been fully tested.
+  The program comes WITHOUT warranty of any kind!
+  Use it at your OWN RISK!
+
+
+Authors
+-------
+Philipp Donze (PhilippDonze@gmx.ch, http://www.xn--donz-epa.ch)
+Gerhard Stoll (Gerhard_Stoll@b.maus.de)
+Odd Skanke (ozk@atari.org)
+
+
+
+If you have problems using HypView, please contact one of the authors.
+We're also glad to receive comments, ideas and suggestions!
+
+Philipp Donze
+Chavornay, 11th march 2006
