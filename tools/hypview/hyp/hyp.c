@@ -345,7 +345,7 @@ HypGetNode(DOCUMENT *doc)
 long
 HypFindNode(DOCUMENT *doc, char *chapter)
 {
-	HYP_DOCUMENT *hyp=doc->data;
+	HYP_DOCUMENT *hyp = doc->data;
 	long node_num;
 	/*	Zuerst im Hypertext suchen	*/
 	node_num = find_nr_by_title(hyp,chapter);
@@ -359,9 +359,9 @@ HypFindNode(DOCUMENT *doc, char *chapter)
 			char old_ext[5];
 			long ret;
 
-			cptr = strrchr(doc->filename,'.');
+			cptr = strrchr(doc->filename, '.');
 			strcpy(old_ext,cptr);
-			strcpy(cptr,".ref");
+			strcpy(cptr, ".ref");
 
 			ret = Fopen(doc->path,O_RDONLY);
 			if(ret >= 0)
@@ -372,7 +372,8 @@ HypFindNode(DOCUMENT *doc, char *chapter)
 
 			strcpy(cptr,old_ext);
 		}
-		if(ref_findnode(hyp->ref, chapter, &node_num, &line))
+		
+		if (ref_findnode(hyp->ref, chapter, &node_num, &line))
 			doc->start_line = line;
 	}
 /*

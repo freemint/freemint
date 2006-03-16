@@ -31,7 +31,7 @@ GENFILES = $(TARGET) pc.pdb
 
 $(TARGET): $(OBJS) hyp/libhyp.a plain/libplain.a
 	$(CC) -o $@ $(CFLAGS) $(LDFLAGS) $(OBJS) $(LIBS)
-	$(STRIP) $(TARGET)
+#	$(STRIP) $(TARGET)
 	$(STACK) -S128K $(TARGET)
 
 include $(top_srcdir)/DEPENDENCIES
