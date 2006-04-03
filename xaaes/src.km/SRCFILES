@@ -31,6 +31,7 @@ HEADER = \
 	nkcc.h \
 	obtree.h \
 	rectlist.h \
+	render_obj.h \
 	scrlobjc.h \
 	semaphores.h \
 	sys_proc.h \
@@ -95,6 +96,7 @@ COBJS = \
 	nkcc.c \
 	obtree.c \
 	rectlist.c \
+	render_obj.c \
 	scrlobjc.c \
 	semaphores.c \
 	sys_proc.c \

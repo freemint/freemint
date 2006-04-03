@@ -74,6 +74,18 @@ struct menu_attachements;
 
 struct keyqueue;
 
+static inline bool obj_is_3d(OBJECT *ob)         { return (ob->ob_flags & OF_FL3DACT) != 0;	}
+static inline bool obj_is_indicator(OBJECT *ob)  { return (ob->ob_flags & OF_FL3DACT) == OF_FL3DIND; }
+static inline bool obj_is_foreground(OBJECT *ob) { return (ob->ob_flags & OF_FL3DIND) != 0; }
+static inline bool obj_is_background(OBJECT *ob) { return (ob->ob_flags & OF_FL3DACT) == OF_FL3DBAK; }
+static inline bool obj_is_activator(OBJECT *ob)  { return (ob->ob_flags & OF_FL3DACT) == OF_FL3DACT; }
+
+static inline bool is_3d(short flags)         { return (flags & OF_FL3DACT) != 0;	}
+static inline bool is_indicator(short flags)  { return (flags & OF_FL3DACT) == OF_FL3DIND; }
+static inline bool is_foreground(short flags) { return (flags & OF_FL3DIND) != 0; }
+static inline bool is_background(short flags) { return (flags & OF_FL3DACT) == OF_FL3DBAK; }
+static inline bool is_activator(short flags)  { return (flags & OF_FL3DACT) == OF_FL3DACT; }
+
 #define XIMG      0x58494D47
 struct img_header
 {
@@ -97,7 +109,7 @@ struct ximg_header
   short pat_len;  /* length of Patterns      (2) */
   short pix_w;    /* Pixel width in 1/1000 mmm  (372)    */
   short pix_h;    /* Pixel height in 1/1000 mmm (372)    */
-  short img_w;    /* Pixels per line (=(x+7)/8 Bytes)    */
+  short img_w;    /* Pixels per line (= (x + 7) / 8 Bytes)    */
   short img_h;    /* Total number of lines               */
   long  magic;    /* Contains "XIMG" if standard color   */
   short paltype;  /* palette type (0=RGB (short each)) */
@@ -137,6 +149,27 @@ struct xa_rsc_rgb
 	short pen;
 };
 
+struct xa_mfdb
+{
+	short d_w;
+	short d_h;
+	MFDB mfdb;
+};
+typedef struct xa_mfdb XAMFDB;
+
+/* Rectangle List entry */
+struct xa_rect_list
+{
+	struct xa_rect_list *next;
+	/* Dimensions of segment */
+	RECT r;
+};
+
+struct xa_rectlist_entry
+{
+	struct xa_rect_list *start;
+	struct xa_rect_list *next;
+};
 /*
  * Describing an AES object
  */
@@ -274,15 +307,27 @@ struct xa_wtexture
 {
 	short anchor;
 	short flags;
-	MFDB	*tl_corner;
-	MFDB	*tr_corner;
-	MFDB	*bl_corner;
-	MFDB	*br_corner;
-	MFDB	*left;
-	MFDB	*right;
-	MFDB	*top;
-	MFDB	*bottom;
-	MFDB	*body;
+	short w, h;
+	XAMFDB	*tl_corner;
+	XAMFDB	*tr_corner;
+	XAMFDB	*bl_corner;
+	XAMFDB	*br_corner;
+	XAMFDB	*left;
+	XAMFDB	*right;
+	XAMFDB	*top;
+	XAMFDB	*bottom;
+	XAMFDB	*body;
+};
+
+struct xa_gradient
+{
+	struct xa_data_hdr *allocs;
+	short wmask, hmask;
+	short w, h;
+	short method;
+	short n_steps;
+	short steps[8];
+	struct rgb_1000 c[16];
 };
 	
 struct xa_wcol
@@ -295,15 +340,22 @@ struct xa_wcol
 	short	tlc;	/* Top-Left color for 3-d effect */
 	short	brc;	/* Bottom-Right color for 3-d effect */
 	struct	xa_wtexture *texture;
+	struct	xa_gradient *gradient;
 };
 
 struct xa_wcol_inf
 {
 
-#define WCOL_ACT3D	1
-#define WCOL_DRAW3D	2
-#define WCOL_DRAWBKG	4
-#define WCOL_BOXED	8
+#define WCOL_ACT3D		0x0001	/* Draw 3D action when selected */
+#define WCOL_DRAW3D		0x0002	/* Draw 3D borders */
+#define WCOL_DRAWBKG		0x0004	/* Draw background */
+#define WCOL_DRAWTEXTURE	0x0008	/* Draw Texture */
+#define WCOL_ONLYTEXTURE	0x0010	/* Skip drawing background when texture exists */
+#define WCOL_BOXED		0x0020	/* Draw box */
+#define WCOL_REV3D		0x0040	/* Draw the bottom/left lines before top/right 3D borders */
+#define WCOL_BOXBF3D		0x0080	/* Draw the BOX (if WCOL_BOXED) before 3D borders (if WCOL_DRAW3D) */
+#define WCOL_GRADIENT		0x0100
+#define WCOL_BOXRND		0x0200	/* Draw Rounded BOX */
 
 	short	flags;	/* */
 	short	wrm;	/* wrmode */
@@ -312,23 +364,30 @@ struct xa_wcol_inf
 	struct xa_wcol h; /* Highlighted */
 };
 
+#define WTXT_ACT3D	0x0001
+#define WTXT_DRAW3D	0x0002
+#define WTXT_CENTER	0x0004
+#define WTXT_NOCLIP	0x0008
+#define WTXT_DRAWBNR	0x0010
 struct xa_fnt_info
 {
-	long	f;	/* Font ID */
-	short	p;	/* Point size */
-	short	wrm;
-	short	e;	/* Effects */
-	short	fgc;	/* Foreground colour */
-	short	bgc;	/* Background colour (used to obtain 3-d effect) */
+	long		f;	/* Font ID */
+	short		p;	/* Point size */
+	unsigned short	flags;
+	short		wrm;
+	short		e;	/* Effects */
+	short		fgc;	/* Foreground colour */
+	short		bgc;	/* Background colour (used to obtain 3-d effect) */
+	short		bannercol;
+
+	short		x_3dact;
+	short		y_3dact;
+	struct		xa_wtexture *texture;
+	void		*misc;
 };
 	
 struct xa_wtxt_inf
 {
-
-#define WTXT_ACT3D	1
-#define WTXT_DRAW3D	2
-#define WTXT_CENTER	4
-#define WTXT_NOCLIP	8
 
 	short	flags;	/* Flags */
 	struct xa_fnt_info n;
@@ -484,6 +543,12 @@ struct xa_menu_settings
 /*************************************************************************** */
 /* The vdi api
 */
+
+static inline long calc_back(const RECT *r, short planes)
+{
+	return 2L * planes * ((r->w + 15) >> 4) * r->h;
+}
+
 struct xa_vdi_api
 {
 	void _cdecl (*wr_mode)		(struct xa_vdi_settings *v, short m);
@@ -513,7 +578,7 @@ struct xa_vdi_api
 	void _cdecl (*f_interior)	(struct xa_vdi_settings *v, short m);
 	void _cdecl (*f_style)		(struct xa_vdi_settings *v, short m);
 	void _cdecl (*f_perimeter)	(struct xa_vdi_settings *v, short m);
-	void _cdecl (*draw_texture)	(struct xa_vdi_settings *v, MFDB *texture, RECT *r, RECT *anchor);
+	void _cdecl (*draw_texture)	(struct xa_vdi_settings *v, XAMFDB *texture, RECT *r, RECT *anchor);
 
 	void _cdecl (*box)		(struct xa_vdi_settings *v, short d, short x, short y, short w, short h);	
 	void _cdecl (*gbox)		(struct xa_vdi_settings *v, short d, const RECT *r);
@@ -534,6 +599,16 @@ struct xa_vdi_api
 	const char * _cdecl	(*prop_clipped_name)	(struct xa_vdi_settings *v, const char *s, char *d, int w, short *ret_w, short *ret_h, short method);
 	void _cdecl		(*wtxt_output)		(struct xa_vdi_settings *v, struct xa_wtxt_inf *wtxti, char *txt, short state, const RECT *r, short xoff, short yoff);
 
+	void _cdecl (*form_save)	(short d, RECT r, void **area);
+	void _cdecl (*form_restore)	(short d, RECT r, void **area);
+	void _cdecl (*form_copy)	(const RECT *from, const RECT *to);
+
+	void _cdecl (*r2pxy)		(short *p, short d, const RECT *r);
+	void _cdecl (*rtopxy)		(short *p, const RECT *r);
+	void _cdecl (*ri2pxy)		(short *p, short d, short x, short y, short w, short h);
+	void _cdecl (*ritopxy)		(short *p, short x, short y, short w, short h);
+
+	void _cdecl (*create_gradient)	(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, short *steps, short w, short h );
 };
 
 /*-----------------------------------------------------------------
@@ -611,9 +686,10 @@ typedef short _cdecl wdlg_exit  (void *dialog,
 struct xa_data_hdr;
 struct xa_data_hdr
 {
-	unsigned long		id;
-	char			name[16];
 	struct xa_data_hdr	*next;
+	unsigned long		id;
+	long			links;
+	char			name[16];
 	void			(*destruct)(void *data);
 };
 
@@ -948,9 +1024,12 @@ struct widget_tree
 					 * the actual window (like the menu bar on the root window),
 					 * or the desktop toolbar widget. HR 270801: was: int pid; */
 	struct xa_widget *widg;		/* Cross pointer to widget. */
-	
+
+	struct object_render_api *objcr_api;
+	void *objcr_theme;		/* object renderer private data */
+	void *objcr_data;		/* object renderer private ptr */
+
 	OBJECT *tree;			/* The object tree */
-// 	short current;			/* current item within above tree. */
 	struct xa_aes_object current;	
 	RECT r;				/* Why not do the addition (parent_x+ob_x) once in the caller? */
 					/* And set a usefull RECT as soon as possible, ready for use in
@@ -961,7 +1040,6 @@ struct widget_tree
 	short parent_x;			/* Keep both in: dont need to change everything in a single effort */
 	short parent_y;
 
-// 	short focus;
 	struct xa_aes_object focus;
 
 	struct objc_edit_info *ei;
@@ -971,9 +1049,9 @@ struct widget_tree
 	short which;			/* kind of event for use by WDIAL exit handler. */
 
 	short rdx, rdy;
-	short puobj;
+// 	short puobj;
 	short pdx, pdy;
-
+	short pop;
 	bool is_menu;			/* true when the tree is a menu or part of it. */
 	bool menu_line;			/* draw a menu line. */
 	bool zen;			/* true when the tree is embedded in a window.
@@ -1130,7 +1208,7 @@ typedef enum
  /* bit 1&2 - placement:	0 = top, 1 = midle, 2 = end */
 
 #define XAR_VERT		1
-#define XAR_PM			6
+#define XAR_PM			6	/* Placement mask */
 #define XAR_START		(1 << 1)
 #define XAR_MIDDLE		(2 << 1)
 #define XAR_END			(3 << 1)
@@ -1147,18 +1225,22 @@ enum xa_widgets
   */
 	XAW_BORDER = 0,			/* Extended XaAES widget, used for border sizing. */
 	XAW_TITLE,
+	XAW_WCONTEXT,			/* -- new -- */
+	XAW_WAPPICN,			/* -- new -- */
 	XAW_CLOSE,
 	XAW_FULL,
 	XAW_INFO,
 	XAW_RESIZE,
-	XAW_UPLN,			/* 6 */
-	XAW_DNLN,			/* 7 */
+	XAW_UPLN,			/* 8 (was 6) */
+	XAW_UPLN1,			/* -- new -- */
+	XAW_DNLN,			/* 10 (was 7) */
 	XAW_VSLIDE,
-	XAW_LFLN,			/* 9 */
-	XAW_RTLN,			/* 10 */
+	XAW_LFLN,			/* 12 (was 9) */
+	XAW_LFLN1,			/* -- new -- */
+	XAW_RTLN,			/* 14 (was 10) */
 	XAW_HSLIDE,
 	XAW_ICONIFY,
-	XAW_HIDE,			/* 13 */
+	XAW_HIDE,			/* 17 (was 13) */
  
  /*
   * The widget types above this comment MUST be context indipendant.
@@ -1167,8 +1249,8 @@ enum xa_widgets
   * Furthermore, remember to change XA_MAX_CF_WIDGETS below if you
   * put insert a new context dependant widget before XAW_TOOLBAR!
  */
-	XAW_TOOLBAR,			/* 14 Extended XaAES widget */
-	XAW_MENU,			/* 15 Extended XaAES widget, must be drawn last. */
+	XAW_TOOLBAR,			/* 18 ( was 14) Extended XaAES widget */
+	XAW_MENU,			/* 19 ( was 15) Extended XaAES widget, must be drawn last. */
 	
 	XAW_MOVER,			/* Not actually used like the others */
 	XAW_UPPAGE,
@@ -1189,6 +1271,7 @@ typedef void _cdecl DrawCanvas(struct xa_window *wind, RECT *outer, RECT *inner,
 typedef void _cdecl SetWidgSize(struct xa_window *wind, struct xa_widget *widg);
 typedef void _cdecl WidgGemColor(struct xa_window *wind, short gem_widget, BFOBSPEC *c);
 typedef void _cdecl DrawFrame(struct xa_window *wind, const RECT *clip);
+typedef void _cdecl FreePriv(struct xa_window *wind, struct xa_widget *widg);
 
 struct render_widget
 {
@@ -1196,9 +1279,10 @@ struct render_widget
 	XA_WIND_ATTR	*tp_depends;
 	short		xaw_idx;
 	short		pos_in_row;
-	DrawWidg	*draw;
-	SetWidgSize	*setsize;
-	void		*priv;
+	DrawWidg	*draw;		/* Function called to draw the widget */
+	SetWidgSize	*setsize;	/* Function called to get widget dimensions */
+	FreePriv	*freepriv;	/* Function called to release any widget render resources */
+	long		priv[4];	/* wdiget render on a 'per widget' private data */
 };
 
 struct nwidget_row
@@ -1227,7 +1311,6 @@ struct widget_theme
 	struct xa_data_hdr	h;
 	long			links;
 
-
 	struct nwidget_row	*layout;
 
 	WidgGemColor		*get_widgcolor;
@@ -1243,14 +1326,18 @@ struct widget_theme
 	
 	struct render_widget	border;
 	struct render_widget	title;
+	struct render_widget	wcontext;
+	struct render_widget	wappicn;
 	struct render_widget	closer;
 	struct render_widget	fuller;
 	struct render_widget	info;
 	struct render_widget	sizer;
 	struct render_widget	uparrow;
+	struct render_widget	uparrow1;
 	struct render_widget	dnarrow;
 	struct render_widget	vslide;
 	struct render_widget	lfarrow;
+	struct render_widget	lfarrow1;
 	struct render_widget	rtarrow;
 	struct render_widget	hslide;
 	struct render_widget	iconifier;
@@ -1267,6 +1354,7 @@ struct xa_widget_theme
 	struct widget_theme *client;
 	struct widget_theme *popup;
 	struct widget_theme *alert;
+	struct widget_theme *slist;
 };
 
 struct xa_module_api
@@ -1281,11 +1369,22 @@ struct xa_module_api
 	void _cdecl			(*remove_wt)	(struct widget_tree *wt);
 
 	/* OBJECT specific functions */
-	void _cdecl	(*ob_spec_xywh)		(OBJECT *tree, short obj, RECT *r);
-	void _cdecl	(*object_spec_wh)	(OBJECT *ob, short *w, short *h);
+	OBSPEC * 	_cdecl (*object_get_spec)	(OBJECT *ob);
+	void 		_cdecl (*object_set_spec)	(OBJECT *ob, unsigned long cl);
+	POPINFO *	_cdecl (*object_get_popinfo)	(OBJECT *ob);
+	TEDINFO *	_cdecl (*object_get_tedinfo)	(OBJECT *ob, XTEDINFO **x);
+	void		_cdecl (*object_spec_wh)	(OBJECT *ob, short *w, short *h);
 
-	void * _cdecl	(*rp2ap)	(struct xa_window *wind, struct xa_widget *widg, RECT *r);
-	void _cdecl	(*rp2apcs)	(struct xa_window *wind, struct xa_widget *widg, RECT *r);
+	void _cdecl	(*ob_spec_xywh)		(OBJECT *tree, short obj, RECT *r);
+	void _cdecl	(*render_object)	(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_aes_object item, short px, short py);
+	CICON * _cdecl	(*getbest_cicon)	(CICONBLK *ciconblk);
+	short _cdecl	(*obj_offset)		(struct widget_tree *wt, struct xa_aes_object object, short *mx, short *my);
+	void _cdecl	(*obj_rectangle)	(struct widget_tree *wt, struct xa_aes_object object, RECT *r);
+
+	void * _cdecl	(*rp2ap)		(struct xa_window *wind, struct xa_widget *widg, RECT *r);
+	void _cdecl	(*rp2apcs)		(struct xa_window *wind, struct xa_widget *widg, RECT *r);
+
+	short _cdecl	(*rect_clip)		(RECT *s, RECT *d, RECT *r);
 
 	void * _cdecl	(*kmalloc)		(long size);
 	void * _cdecl	(*umalloc)		(long size);
@@ -1295,12 +1394,17 @@ struct xa_module_api
 	void _cdecl	(*bclear)		(void *addr, unsigned long len);
 
 	void * _cdecl	(*lookup_xa_data)	(struct xa_data_hdr **l,    void *_data);
+	void * _cdecl	(*lookup_xa_data_byid)	(struct xa_data_hdr **l,    long id);
+	void * _cdecl	(*lookup_xa_data_byname)(struct xa_data_hdr **l,    char *name);
+	void * _cdecl	(*lookup_xa_data_byidname)(struct xa_data_hdr **l,  long id, char *name);
 	void _cdecl	(*add_xa_data)		(struct xa_data_hdr **list, void *_data, long id, char *name, void _cdecl(*destruct)(void *d));
 	void _cdecl	(*remove_xa_data)	(struct xa_data_hdr **list, void *_data);
 	void _cdecl	(*delete_xa_data)	(struct xa_data_hdr **list, void *_data);
+	void _cdecl	(*ref_xa_data)		(struct xa_data_hdr **list, void *_data, short count);
+	long _cdecl	(*deref_xa_data)	(struct xa_data_hdr **list, void *_data, short flags);
 	void _cdecl	(*free_xa_data_list)	(struct xa_data_hdr **list);
 
-	void _cdecl	(*load_img)		(char *fname, MFDB *result);	
+	void _cdecl	(*load_img)		(char *fname, XAMFDB *result);	
 };
 
 struct xa_module_widget_theme
@@ -1314,9 +1418,52 @@ struct xa_module_widget_theme
 	long _cdecl	(*new_theme)(void *module, short win_type, struct widget_theme **);
 	long _cdecl	(*free_theme)(void *module, struct widget_theme **);
 
-	long _cdecl	(*new_color_theme)(void *module, void **ontop, void **untop);
+	long _cdecl	(*new_color_theme)(void *module, short win_type, void **ontop, void **untop);
 	void _cdecl	(*free_color_theme)(void *module, void *ctheme);
 };
+/* ****************************************************************************************** */
+/* ****************************************************************************************** */
+/* ****************************************************************************************** */
+/* ****************************************************************************************** */
+typedef void _cdecl DrawObject(struct widget_tree *wt, struct xa_vdi_settings *v);
+struct object_render_api
+{
+	struct xa_data_hdr	h;
+
+	short _cdecl (*objc_sysvar)	(void *theme, short mode, short what, short *val1, short *val2, short *val3, short *val4);
+	void  _cdecl (*obj_offsets)	(struct widget_tree *wt, OBJECT *ob, RECT *c);
+	short _cdecl (*obj_thickness)	(struct widget_tree *wt, OBJECT *ob);
+	short _cdecl (*obj_is_transp)	(struct widget_tree *wt, OBJECT *ob, bool progdef_is_trans);
+
+	void _cdecl  (*write_menu_line)	(struct xa_vdi_settings *v, RECT *r);
+	void _cdecl  (*g2d_box)		(struct xa_vdi_settings *v, short b, RECT *r, short colour);
+	void _cdecl  (*draw_2d_box)	(struct xa_vdi_settings *v, short x, short y, short w, short h, short border_thick, short colour);
+	void _cdecl  (*write_selection)	(struct xa_vdi_settings *v, short d, RECT *r);
+
+	void _cdecl  (*set_cursor)	(struct widget_tree *wt, struct xa_vdi_settings *v, struct objc_edit_info *ei);
+	void _cdecl  (*eor_cursor)	(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_rect_list *rl);
+	void _cdecl  (*draw_cursor)	(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_rect_list *rl, short flags);
+	void _cdecl  (*undraw_cursor)	(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_rect_list *rl, short flags);
+
+	DrawObject	*drawers[256];
+};
+
+struct xa_module_object_render
+{
+	char	*sname;
+	char	*lname;
+
+	void * _cdecl	(*init_module)(const struct xa_module_api *, const struct xa_screen *);
+	long   _cdecl	(*exit_module)(void);
+
+	long _cdecl	(*open)	(struct object_render_api **ptr_api);
+	long _cdecl	(*close)(struct object_render_api *api);
+
+	long _cdecl	(*new_theme)(void **ptr_theme);
+	long _cdecl	(*free_theme)(void *theme);
+
+};
+
 
 struct xa_widget_methods
 {
@@ -1380,6 +1527,7 @@ struct xa_widget
 	
 	RECT		r;		/* Relative position */
 	RECT		ar;		/* Absolute position */
+	RECT		prevr;		/* Prevsioiu position - free to use for modules */
 
 #define XAWF_ALLOC		1
 #define XAWF_STUFFKMALLOC	2
@@ -1433,20 +1581,6 @@ typedef struct xa_slider_widget XA_SLIDER_WIDGET;
 #define ZT_B	2
 #define ZT_C	3
 #define ZT_D	4
-
-/* Rectangle List entry */
-struct xa_rect_list
-{
-	struct xa_rect_list *next;
-	/* Dimensions of segment */
-	RECT r;
-};
-
-struct xa_rectlist_entry
-{
-	struct xa_rect_list *start;
-	struct xa_rect_list *next;
-};
 
 enum window_type
 {
@@ -2237,6 +2371,10 @@ struct xa_client
 	void *wtheme_handle;			/* Widget theme handle */
 	struct xa_widget_theme *widget_theme;
 
+	struct xa_module_object_render *objcr_module;
+	struct object_render_api *objcr_api;
+	void *objcr_theme;
+
 #if GENERATE_DIAGS
 	short enter;
 #endif
@@ -2254,6 +2392,7 @@ struct xa_client
 
 	struct xa_aesmsg_list *msg;		/* Pending AES messages */
 	struct xa_aesmsg_list *rdrw_msg;	/* WM_REDRAW messages */
+	struct xa_aesmsg_list *lost_rdrw_msg;
 	struct xa_aesmsg_list *crit_msg;	/* Critical AES messages - these are prioritized */
 	struct xa_aesmsg_list *irdrw_msg;	/* Internal redraw messages */
 
@@ -2274,6 +2413,8 @@ struct xa_client
 #define CS_SIGKILLED		0x00000800
 
 #define CS_NO_SCRNLOCK		0x00001000
+#define CS_CLIENT_EXIT		0x00002000
+
 
 	long status;
 
@@ -2378,6 +2519,20 @@ struct xa_client
 
 	struct	xa_data_hdr *xa_data;
 };
+
+#define HTDNAME "helptdata"
+struct helpthread_data
+{
+	struct xa_data_hdr h;
+
+	struct xa_window *w_about;
+	struct xa_window *w_taskman;
+	struct xa_window *w_sysalrt;
+	struct xa_window *w_reschg;
+	struct xa_window *w_csr;
+	
+};
+
 
 struct extbox_parms;
 struct extbox_parms

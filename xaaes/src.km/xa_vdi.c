@@ -26,8 +26,18 @@
 
 #include "xa_types.h"
 #include "xa_global.h"
+#include "trnfm.h"
 
-static void
+static void _cdecl
+r2pxy(short *p, short d, const RECT *r)
+{
+	*p++ = r->x - d;
+	*p++ = r->y - d;
+	*p++ = r->x + r->w + d - 1;
+	*p   = r->y + r->h + d - 1;
+}
+
+static void _cdecl
 rtopxy(short *p, const RECT *r)
 {
 	*p++ = r->x;
@@ -36,7 +46,23 @@ rtopxy(short *p, const RECT *r)
 	*p   = r->y + r->h - 1;
 }
 
-
+static void _cdecl
+ri2pxy(short *p, short d, short x, short y, short w, short h)
+{
+	*p++ = x - d;
+	*p++ = y - d;
+	*p++ = x + w + d - 1;
+	*p   = y + h + d - 1;
+} 
+	
+static void _cdecl
+ritopxy(short *p, short x, short y, short w, short h)
+{
+	*p++ = x;
+	*p++ = y;
+	*p++ = x + w - 1; 
+	*p   = y + h - 1;
+}
 
 static void _cdecl
 xa_load_fonts(struct xa_vdi_settings *v)
@@ -692,7 +718,7 @@ xa_br_hook(struct xa_vdi_settings *v, short d, const RECT *r, short col)
 }
 
 static void _cdecl
-xa_draw_texture(struct xa_vdi_settings *v, MFDB *msrc, RECT *r, RECT *anch)
+xa_draw_texture(struct xa_vdi_settings *v, XAMFDB *msrc, RECT *r, RECT *anch)
 {
 	short pnt[8];
 	short x, y, w, h, sy, sh, dy, dh, width, height;
@@ -700,10 +726,10 @@ xa_draw_texture(struct xa_vdi_settings *v, MFDB *msrc, RECT *r, RECT *anch)
 
 	mscreen.fd_addr = NULL;
 
-	x = (long)(r->x - anch->x) % msrc->fd_w;
-	w = msrc->fd_w - x;
-	sy = (long)(r->y - anch->y) % msrc->fd_h;
-	sh = msrc->fd_h - sy;
+	x = (long)(r->x - anch->x) % msrc->d_w;
+	w = msrc->d_w - x;
+	sy = (long)(r->y - anch->y) % msrc->d_h;
+	sh = msrc->d_h - sy;
 	dy = r->y;
 	dh = r->h;
 	
@@ -751,12 +777,133 @@ xa_draw_texture(struct xa_vdi_settings *v, MFDB *msrc, RECT *r, RECT *anch)
 			//pnt[6] = r.x + w - 1;
 			pnt[7] = pnt[5] + h - 1;
 
-			vro_cpyfm(v->handle, S_ONLY, pnt, msrc, &mscreen);
+			vro_cpyfm(v->handle, S_ONLY, pnt, &msrc->mfdb, &mscreen);
 			
-			h = msrc->fd_h;	
+			h = msrc->d_h;	
 		}
-		w = msrc->fd_w;
+		w = msrc->d_w;
 	}
+}
+#if 0
+/* HR: 1 (good) set of routines for screen saving */
+inline long
+calc_back(const RECT *r, short planes)
+{
+	return 2L * planes
+		  * ((r->w + 15) >> 4)
+		  * r->h;
+}
+#endif
+
+static void _cdecl
+xa_form_save(short d, RECT r, void **area)
+{
+	MFDB Mscreen = { 0 };
+	MFDB Mpreserve;
+	short pnt[8];
+
+	r.x -= d;
+	r.y -= d;
+	r.w += d * 2;
+	r.h += d * 2;
+
+	if (r.x < 0)
+	{
+		r.w += r.x;
+		r.x = 0;
+	}
+	if (r.y < 0)
+	{
+		r.h += r.y;
+		r.y = 0;
+	}
+	
+	if (r.w > 0 && r.h > 0)
+	{
+		rtopxy(pnt, &r);
+		ritopxy(pnt + 4, 0, 0, r.w, r.h);
+
+		DIAG((D_menu, NULL, "form_save %d/%d,%d/%d", r.x, r.y, r.w, r.h));
+
+		Mpreserve.fd_w = r.w;
+		Mpreserve.fd_h = r.h;
+		Mpreserve.fd_wdwidth = (r.w + 15) / 16;
+		Mpreserve.fd_nplanes = screen.planes;
+		Mpreserve.fd_stand = 0;
+
+		/* if something is allocated free it */
+		if (*area)
+			kfree(*area);
+
+		*area = kmalloc(calc_back(&r,screen.planes));
+		
+		if (*area)
+		{
+			DIAG((D_menu, NULL, "form_save: to %lx", *area));
+			Mpreserve.fd_addr = *area;
+			hidem();
+			vro_cpyfm(C.P_handle, S_ONLY, pnt, &Mscreen, &Mpreserve);
+			showm();
+		}
+	}
+}
+
+static void _cdecl
+xa_form_restore(short d, RECT r, void **area)
+{
+	if (*area)
+	{
+		MFDB Mscreen = { 0 };
+		MFDB Mpreserve;
+		short pnt[8];
+
+		r.x -= d;
+		r.y -= d;
+		r.w += d * 2;
+		r.h += d * 2;
+
+		if (r.x < 0)
+		{
+			r.w += r.x;
+			r.x = 0;
+		}
+		if (r.y < 0)
+		{
+			r.h += r.y;
+			r.y = 0;
+		}
+
+		if (r.w > 0 && r.h > 0)
+		{
+			rtopxy(pnt+4, &r);
+			ritopxy(pnt,0,0,r.w,r.h);
+
+			DIAG((D_menu, NULL, "form_restore %d/%d,%d/%d from %lx", r.x, r.y, r.w, r.h, *area));
+
+			Mpreserve.fd_w = r.w;
+			Mpreserve.fd_h = r.h;
+			Mpreserve.fd_wdwidth = (r.w + 15) / 16;
+			Mpreserve.fd_nplanes = screen.planes;
+			Mpreserve.fd_stand = 0;
+			Mpreserve.fd_addr = *area;
+			hidem();
+			vro_cpyfm(C.P_handle, S_ONLY, pnt, &Mpreserve, &Mscreen);
+			showm();
+
+			kfree(*area);
+			*area = NULL;
+		}
+	}
+}
+
+static void _cdecl
+xa_form_copy(const RECT *fr, const RECT *to)
+{
+	MFDB Mscreen = { 0 };
+	short pnt[8];
+	rtopxy(pnt, fr);
+	rtopxy(pnt + 4, to);
+	vro_cpyfm(C.P_handle, S_ONLY, pnt, &Mscreen, &Mscreen);
 }
 
 static struct xa_vdi_api vdiapi =
@@ -809,6 +956,16 @@ static struct xa_vdi_api vdiapi =
 	xa_prop_clipped_name,
 	xa_wtxt_output,
 
+	xa_form_save,
+	xa_form_restore,
+	xa_form_copy,
+
+	r2pxy,
+	rtopxy,
+	ri2pxy,
+	ritopxy,
+	
+	create_gradient,
 };
 
 struct xa_vdi_api *

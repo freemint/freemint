@@ -1167,6 +1167,7 @@ ResourceTree(RSHDR *hdr, long num)
 {
 	OBJECT **index;
 
+	DIAGS(("ResourceTree: hdr = %lx, num = %ld", hdr, num));
 	if (num_nok(ntree))
 		return NULL;
 

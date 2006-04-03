@@ -91,7 +91,8 @@ setup_widget_theme(struct xa_client *client, struct xa_widget_theme *wtheme)
 	struct widget_theme *theme = C.Aes->widget_theme->client;
 	struct widget_theme *ptheme = C.Aes->widget_theme->popup;
 	struct widget_theme *atheme = C.Aes->widget_theme->alert;
-				
+	struct widget_theme *stheme = C.Aes->widget_theme->slist;
+
 	if (theme)
 	{
 		wtheme->client = theme;
@@ -126,6 +127,18 @@ setup_widget_theme(struct xa_client *client, struct xa_widget_theme *wtheme)
 		(*client->xmwt->new_theme)(client->wtheme_handle, WINCLASS_ALERT, &atheme);
 		if ((wtheme->alert = atheme))
 			atheme->links++;
+	}
+	
+	if (stheme)
+	{
+		wtheme->slist = stheme;
+		stheme->links++;
+	}
+	else
+	{
+		(*client->xmwt->new_theme)(client->wtheme_handle, WINCLASS_SLIST, &stheme);
+		if ((wtheme->slist = stheme))
+			stheme->links++;
 	}
 }
 
@@ -170,6 +183,12 @@ exit_client_widget_theme(struct xa_client *client)
 			theme->links--;
 			if (!theme->links)
 				(*client->xmwt->free_theme)(client->wtheme_handle, &client->widget_theme->alert);
+		}
+		if ((theme = client->widget_theme->slist))
+		{
+			theme->links--;
+			if (!theme->links)
+				(*client->xmwt->free_theme)(client->wtheme_handle, &client->widget_theme->slist);
 		}
 		
 		kfree(client->widget_theme);
@@ -545,13 +564,21 @@ init_widget_tree(struct xa_client *client, struct widget_tree *wt, OBJECT *obtre
 {
 	short sx, sy;
 	RECT r;
+	struct xa_data_hdr *h;
 
 	bzero(wt, sizeof(*wt));
 	
 // 	display("init_widget_tree: tree %lx", obtree);
 	wt->tree = obtree;
 	wt->owner = client;
-		
+
+	wt->objcr_api = client->objcr_api;
+// 	client->objcr_api->h.links++;
+	
+	h = client->objcr_theme;
+	wt->objcr_theme = h;
+// 	h->links++;
+
 	clear_focus(wt);
 	clear_edit(&wt->e);
 	wt->ei = NULL;
@@ -561,7 +588,9 @@ init_widget_tree(struct xa_client *client, struct widget_tree *wt, OBJECT *obtre
 	obtree->ob_x = 100;
 	obtree->ob_y = 100;
 	
-	ob_area(obtree, aesobj(obtree, 0), &r);
+// 	ob_area(obtree, aesobj(obtree, 0), &r);
+	obj_area(wt, aesobj(obtree, 0), &r);
+
 	wt->ox = obtree->ob_x - r.x;
 	wt->oy = obtree->ob_y - r.x;
 	
@@ -576,6 +605,7 @@ init_widget_tree(struct xa_client *client, struct widget_tree *wt, OBJECT *obtre
 	wt->next = client->wtlist;
 	client->wtlist = wt;
 
+	
 	if ((obtree[3].ob_type & 0xff) == G_TITLE)
 		wt->is_menu = wt->menu_line = true;
 }
@@ -647,22 +677,6 @@ remove_from_wtlist(XA_TREE *wt)
 	DIAGS(("remove_from_wtlist: wt=%lx not in %s wtlist",
 		wt, wt->owner->name));
 }
-
-/* Ozk:
- * Not all things should be duplicated in a widget_tree
- */
-void
-copy_wt(XA_TREE *d, XA_TREE *s)
-{
-	ulong f = d->flags;
-	XA_TREE *n = d->next;
-
-	*d = *s;
-
-	d->flags = f;
-	d->next = n;
-}
-	
 void
 free_wt(XA_TREE *wt)
 {
@@ -722,13 +736,27 @@ free_wt(XA_TREE *wt)
 	if (wt->flags & WTF_ALLOC)
 	{
 		DIAGS(("  --- freed wt=%lx", wt));
+	#if 0
+		if (wt->objcr_api)
+		{
+			struct xa_data_hdr *h = wt->objcr_theme;
+			
+// 			wt->objcr_api->h.links--;
+// 			h->links--;
+		}
+	#endif
 		kfree(wt);
 	}
 	else
 	{
 		struct xa_client *client = wt->owner;
+		void *s[2];
 		DIAGS(("  --- wt=%lx not alloced", wt));
+		s[0] = wt->objcr_api;
+		s[1] = wt->objcr_theme;
 		bzero(wt, sizeof(*wt));
+		wt->objcr_api = s[0];
+		wt->objcr_theme = s[1];
 		wt->owner = client;
 	}
 }
@@ -1113,7 +1141,16 @@ click_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 	}
 	return false;
 }
-
+static bool
+click_wcontext(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
+{
+	return false;
+}
+static bool
+click_wappicn(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
+{
+	return false;
+}
 /*======================================================
 	CLOSE WIDGET BEHAVIOUR
 ========================================================*/
@@ -2724,13 +2761,17 @@ struct xa_widget_methods def_methods[] =
  {0,0,					{0},	NULL,		NULL,		NULL,	NULL,	NULL,	free_xawidget_resources	},/* Dummy */
  {0,0,					{0},	NULL,		drag_border,	NULL,	NULL,	NULL,	free_xawidget_resources	},/* Border */
  {0,0,					{0},	click_title,	drag_title,	NULL,	NULL,	NULL,	free_xawidget_resources	},/* title */
+ {0,XAWS_ICONIFIED,			{0},	click_wcontext,	NULL,		NULL,	NULL,	NULL,	free_xawidget_resources },/* wcontext */
+ {0,XAWS_ICONIFIED,			{0},	click_wappicn,	NULL,		NULL,	NULL,	NULL,	free_xawidget_resources },/* wappicn */
  {0,XAWS_ICONIFIED,			{0},	click_close,	NULL,		NULL,	NULL,	NULL,	free_xawidget_resources	},/* closer */
  {0,XAWS_ICONIFIED,			{0},	click_full,	NULL,		NULL,	NULL,	NULL,	free_xawidget_resources	},/* fuller */
  {0,XAWS_ICONIFIED | XAWS_SHADED,	{0},	click_title,	NULL,		NULL,	NULL,	NULL,	free_xawidget_resources	},/* info */
  {0,XAWS_ICONIFIED | XAWS_SHADED,	{0},	NULL,		drag_resize,	NULL,	NULL,	NULL,	free_xawidget_resources	},/* resize */
  {0,XAWS_ICONIFIED | XAWS_SHADED,	{0},	click_scroll,	click_scroll,	NULL,	NULL,	NULL,	free_xawidget_resources	},/* uparrow */
+ {0,XAWS_ICONIFIED | XAWS_SHADED,	{0},	click_scroll,	click_scroll,	NULL,	NULL,	NULL,	free_xawidget_resources	},/* uparrow */
  {0,XAWS_ICONIFIED | XAWS_SHADED,	{0},	click_scroll,	click_scroll,	NULL,	NULL,	NULL,	free_xawidget_resources	},/* dnarrow */
  {0,XAWS_ICONIFIED | XAWS_SHADED,	{0},	NULL,		drag_vslide,	NULL,	NULL,	NULL,	free_xawidget_resources	},/* vslide */
+ {0,XAWS_ICONIFIED | XAWS_SHADED,	{0},	click_scroll,	click_scroll,	NULL,	NULL,	NULL,	free_xawidget_resources	},/* lfarrow */
  {0,XAWS_ICONIFIED | XAWS_SHADED,	{0},	click_scroll,	click_scroll,	NULL,	NULL,	NULL,	free_xawidget_resources	},/* lfarrow */
  {0,XAWS_ICONIFIED | XAWS_SHADED,	{0},	click_scroll,	click_scroll,	NULL,	NULL,	NULL,	free_xawidget_resources	},/* rtarrow */
  {0,XAWS_ICONIFIED | XAWS_SHADED,	{0},	NULL,		drag_hslide,	NULL,	NULL,	NULL,	free_xawidget_resources	},/* hslide */
@@ -2900,10 +2941,11 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 							break;
 						}
 						case XAW_UPLN:
+						case XAW_UPLN1:
 						case XAW_DNLN:
 						{
 							widg->slider_type = XAW_VSLIDE;
-							if (xaw_idx == XAW_UPLN)
+							if (xaw_idx == XAW_UPLN || xaw_idx == XAW_UPLN1)
 							{
 								widg->arrowx = WA_UPLINE;
 								widg->xarrow = WA_DNLINE;
@@ -2920,10 +2962,11 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 							break;
 						}
 						case XAW_LFLN:
+						case XAW_LFLN1:
 						case XAW_RTLN:
 						{
 							widg->slider_type = XAW_HSLIDE;
-							if (xaw_idx == XAW_LFLN)
+							if (xaw_idx == XAW_LFLN || xaw_idx == XAW_LFLN1)
 							{
 								widg->arrowx = WA_LFLINE;
 								widg->xarrow = WA_RTLINE;
@@ -3152,13 +3195,14 @@ set_toolbar_widget(enum locks lock,
 		OBJECT *obtree,
 		struct xa_aes_object edobj,
 		short properties,
-		bool zen,
+		short flags,
 		const struct toolbar_handlers *th,
 		const RECT *r)
 {
 	struct xa_vdi_settings *v = wind->vdi_settings;
 	XA_TREE *wt;
 	XA_WIDGET *widg = get_widget(wind, XAW_TOOLBAR);
+	RECT or,wr;
 
 	DIAG((D_wind, wind->owner, "set_toolbar_widget for %d (%s): obtree %lx, %d",
 		wind->handle, wind->owner->name, obtree, edobj));
@@ -3188,8 +3232,21 @@ set_toolbar_widget(enum locks lock,
 
 	wt->widg = widg;
 	wt->wind = wind;
-	wt->zen  = zen;
+	wt->zen  = flags & STW_ZEN ? true : false;
 	wt->links++;
+
+	if ((flags & (STW_COC|STW_GOC)))
+	{
+		obj_rectangle(wt, aesobj(wt->tree, 0), &or);
+		wr = or;
+		r = &wr;
+	}
+	else
+		or = *r;
+
+	if (flags & (STW_COC))
+		center_rect(&or);
+
 	//display("set_toolbar_widg: link++ on %lx (links=%d)", wt, wt->links);
 
 	/*
@@ -3221,6 +3278,12 @@ set_toolbar_widget(enum locks lock,
 	widg->m.r.tp = TOOLBAR;
 	widg->m.r.xaw_idx = XAW_TOOLBAR;
 	wind->active_widgets |= TOOLBAR;
+	
+	if ((flags & STW_SWC))
+	{
+		or = w2f(&wind->wadelta, &or, false);
+		move_window(lock, wind, true, -1, or.x, or.y, or.w, or.h);
+	}
 	set_toolbar_coords(wind, r);
 
 	return wt;
@@ -3233,6 +3296,9 @@ remove_widget(enum locks lock, struct xa_window *wind, int tool)
 
 	DIAG((D_form, NULL, "remove_widget %d: 0x%lx", tool, widg->stuff));
 	//display("remove_widget %d: 0x%lx", tool, widg->stuff);
+
+	if (widg->m.r.freepriv)
+		(*widg->m.r.freepriv)(wind, widg);
 
 	if (widg->m.destruct)
 		(*widg->m.destruct)(widg);

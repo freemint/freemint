@@ -34,12 +34,13 @@ bool			object_have_spec(OBJECT *ob);
 void			object_set_spec(OBJECT *ob, unsigned long cl);
 bool			object_has_tedinfo(OBJECT *ob);
 bool			object_has_freestr(OBJECT *ob);
-bool			object_is_editable(OBJECT *ob);
+bool			object_is_editable(OBJECT *ob, short flags, short state);
 TEDINFO *		object_get_tedinfo(OBJECT *ob, XTEDINFO **x);
 char *			object_get_string(OBJECT *ob);
-bool			object_is_transparent(OBJECT *ob, bool progdef_is_transparent);
-short			object_thickness(OBJECT *ob);
-void			object_offsets(OBJECT *ob, RECT *r);
+
+bool			obj_is_transparent(struct widget_tree *wt, OBJECT *ob, bool progdef_is_transparent);
+// short			object_thickness(OBJECT *ob);
+// void			object_offsets(OBJECT *ob, RECT *r);
 void			object_spec_wh(OBJECT *ob, short *w, short *h);
 
 
@@ -76,7 +77,7 @@ struct xa_aes_object	ob_find_any_flst(OBJECT *obtree, short f, short s, short mf
 #define OBFIND_LAST		0x0020	/* Find object closes to bottom, ignores OBFIND_[HOR/DOWN/FIRST] */
 #define OBFIND_HIDDEN		0x0040	/* Dont skip hidden trees */
 #define OBFIND_NOWRAP		0x0080
-struct xa_aes_object	ob_find_next_any_flagstate(OBJECT *tree, struct xa_aes_object parent, struct xa_aes_object start, short f, short mf, short s, short ms, short stopf, short stops, short flags);
+struct xa_aes_object	ob_find_next_any_flagstate(struct widget_tree *wt, struct xa_aes_object parent, struct xa_aes_object start, short f, short mf, short s, short ms, short stopf, short stops, short flags);
 struct xa_aes_object	ob_find_next_any_flag(OBJECT *obtree, short start, short f);
 short	ob_find_prev_any_flag(OBJECT *obtree, short start, short f);
 struct xa_aes_object	ob_find_cancel(OBJECT *ob);
@@ -85,11 +86,11 @@ void	ob_fix_shortcuts(OBJECT *obtree, bool not_hidden);
 struct xa_aes_object 	ob_find_shortcut(OBJECT *tree, ushort nk);
 
 short	ob_offset(OBJECT *obtree, struct xa_aes_object object, short *mx, short *my);
-void	ob_rectangle(OBJECT *obtree, struct xa_aes_object obj, RECT *c);
-void	ob_area(OBJECT *obtree, struct xa_aes_object obj, RECT *c);
-void	ob_border_diff(OBJECT *obtree, struct xa_aes_object obj1, struct xa_aes_object obj2, RECT *r);
+// void	ob_rectangle(OBJECT *obtree, struct xa_aes_object obj, RECT *c);
+// void	ob_area(OBJECT *obtree, struct xa_aes_object obj, RECT *c);
+void	obj_border_diff(struct widget_tree *wt, struct xa_aes_object obj1, struct xa_aes_object obj2, RECT *r);
 void	ob_spec_xywh(OBJECT *obtree, short obj, RECT *r);
-short	ob_find(OBJECT *obtree, short object, short depth, short mx, short my);
+// short	ob_find(OBJECT *obtree, short object, short depth, short mx, short my);
 
 bool	obtree_is_menu(OBJECT *tree);
 bool	obtree_has_default(OBJECT *obtree);

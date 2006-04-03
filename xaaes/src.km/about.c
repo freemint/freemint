@@ -68,12 +68,14 @@ static char *about_lines[] =
 	NULL
 };
 
-static struct xa_window *about_window = NULL;
+// static struct xa_window *about_window = NULL;
 
 static int
 about_destructor(enum locks lock, struct xa_window *wind)
 {
-	about_window = NULL;
+	struct helpthread_data *htd = lookup_xa_data_byname(&wind->owner->xa_data, HTDNAME);
+	if (htd)
+		htd->w_about = NULL;
 	return true;
 }
 
@@ -93,9 +95,9 @@ about_form_exit(struct xa_client *client,
 		case ABOUT_OK:
 		{
 			object_deselect(obtree + ABOUT_OK);
-			redraw_toolbar(lock, about_window, ABOUT_OK);
-			close_window(lock, about_window);
-			delayed_delete_window(lock, about_window);
+			redraw_toolbar(lock, wind, ABOUT_OK);
+			close_window(lock, wind);
+// 			delayed_delete_window(lock, wind);
 			break;
 		}
 		case ABOUT_LIST:
@@ -113,21 +115,36 @@ about_form_exit(struct xa_client *client,
 }
 
 void
-open_about(enum locks lock, struct xa_client *client)
+open_about(enum locks lock, struct xa_client *client, bool open)
 {
-	if (!about_window)
+	struct helpthread_data *htd;
+	struct xa_window *wind;
+	XA_TREE *wt = NULL;
+	OBJECT *obtree = NULL;
+	RECT or;
+
+	htd = get_helpthread_data(client);
+	if (!htd)
+		return;
+	
+	if (!htd->w_about)
 	{
 		RECT remember = { 0, 0, 0, 0 };
-
-		struct xa_window *dialog_window;
-		XA_TREE *wt;
 		SCROLL_INFO *list;
-		OBJECT *obtree = ResourceTree(C.Aes_rsc, ABOUT_XAAES);
-		RECT or;
 
-		wt = obtree_to_wt(client, obtree);
+		obtree = duplicate_obtree(client, ResourceTree(C.Aes_rsc, ABOUT_XAAES), 0);
+		if (!obtree) goto fail;
+		wt = new_widget_tree(client, obtree);
+		if (!wt) goto fail;
+		wt->flags |= WTF_TREE_ALLOC | WTF_AUTOFREE;
 		
-		ob_rectangle(obtree, aesobj(obtree, 0), &or);
+		set_slist_object(0, wt, NULL, ABOUT_LIST, 0,
+				 NULL, NULL, NULL, NULL, NULL, NULL,
+				 NULL, NULL, NULL, NULL,
+				 NULL, NULL, NULL, 255);
+		obj_init_focus(wt, OB_IF_RESET);
+		
+		obj_rectangle(wt, aesobj(obtree, 0), &or);
 
 		/* Work out sizing */
 		if (!remember.w)
@@ -139,18 +156,20 @@ open_about(enum locks lock, struct xa_client *client)
 		}
 
 		/* Create the window */
-		dialog_window = create_window(lock,
-						do_winmesag,
-						do_formwind_msg,
-						client,
-						false,
-						CLOSER|NAME|TOOLBAR|(client->options.xa_nomove ? 0 : MOVER),
-						created_for_AES,
-						client->options.thinframe,client->options.thinwork,
-						remember, 0, NULL); //&remember);
+		wind = create_window(lock,
+					do_winmesag,
+					do_formwind_msg,
+					client,
+					false,
+					CLOSER|NAME|TOOLBAR|(client->options.xa_nomove ? 0 : MOVER),
+					created_for_AES,
+					client->options.thinframe,client->options.thinwork,
+					remember, 0, NULL);
+		
+		if (!wind) goto fail;
 
 		/* Set the window title */
-		set_window_title(dialog_window, "  About  ", true);
+		set_window_title(wind, "  About  ", true);
 		/* set version */
 		(obtree + ABOUT_VERSION)->ob_spec.free_string = vversion;
 		/* Set version date */
@@ -162,8 +181,9 @@ open_about(enum locks lock, struct xa_client *client)
 		(obtree + ABOUT_INFOSTR)->ob_spec.free_string = info_string;
 #endif
 
-		wt = set_toolbar_widget(lock, dialog_window, dialog_window->owner, obtree, inv_aesobj(), 0/*WIP_NOTEXT*/, true, NULL, &or);
+		wt = set_toolbar_widget(lock, wind, wind->owner, obtree, inv_aesobj(), 0/*WIP_NOTEXT*/, STW_ZEN, NULL, &or);
 		wt->exit_form = about_form_exit;
+
 		list = object_get_slist(obtree + ABOUT_LIST);
 
 		/* fill the list if already list */
@@ -184,12 +204,28 @@ open_about(enum locks lock, struct xa_client *client)
 		list->slider(list, false);
 
 		/* Set the window destructor */
-		dialog_window->destructor = about_destructor;
-		open_window(lock, dialog_window, remember);
-		about_window = dialog_window;
+		wind->destructor = about_destructor;
+		htd->w_about = wind;
+		if (open)
+			open_window(lock, wind, wind->r); //remember);
 	}
-	else if (about_window != window_list)
+	else
 	{
-		top_window(lock, true, false, about_window, (void *)-1L);
+		wind = htd->w_about;
+		if (open)
+		{
+			open_window(lock, wind, wind->r);
+			if (wind != window_list)
+				top_window(lock, true, false, wind, (void *)-1L);
+		}
 	}
+	return;
+fail:
+	if (wt)
+	{
+		remove_wt(wt, false);
+		obtree = NULL;
+	}
+	if (obtree)
+		free_object_tree(client, obtree);
 }

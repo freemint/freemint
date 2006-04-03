@@ -99,39 +99,39 @@ static char *faccess[] =
 static struct xa_wtxt_inf norm_txt =
 {
  WTXT_NOCLIP,
-/* id  pnts efx   fgc      bgc */
- {  -1,  -1,   MD_TRANS, 0, G_BLACK, G_WHITE },	/* Normal */
- {  -1,  -1,   MD_TRANS, 0, G_WHITE, G_BLACK },/* Selected */
- {  -1,  -1,   MD_TRANS, 0, G_BLACK, G_WHITE },	/* Highlighted */
+/* id  pnts  flags wrm,     efx   fgc      bgc   banner x_3dact y_3dact texture */
+ {  -1,  -1,  0,  MD_TRANS, 0, G_BLACK, G_WHITE, G_WHITE, 0,      0,     NULL},	/* Normal */
+ {  -1,  -1,  0,  MD_TRANS, 0, G_WHITE, G_BLACK, G_WHITE, 0,      0,     NULL},/* Selected */
+ {  -1,  -1,  0,  MD_TRANS, 0, G_BLACK, G_WHITE, G_WHITE, 0,      0,     NULL},	/* Highlighted */
 
 };
 
 static struct xa_wtxt_inf exe_txt =
 {
  WTXT_NOCLIP,
-/* id  pnts efx   fgc      bgc */
- {  -1,  -1,   MD_TRANS, 0, G_RED, G_WHITE },	/* Normal */
- {  -1,  -1,   MD_TRANS, 0, G_YELLOW, G_WHITE },/* Selected */
- {  -1,  -1,   MD_TRANS, 0, G_BLACK, G_WHITE },	/* Highlighted */
+/* id  pnts  flags wrm,     efx   fgc      bgc   banner x_3dact y_3dact texture */
+ {  -1,  -1, 0,   MD_TRANS, 0, G_RED,    G_WHITE, G_WHITE, 0,      0,     NULL},	/* Normal */
+ {  -1,  -1, 0,   MD_TRANS, 0, G_YELLOW, G_WHITE, G_WHITE, 0,      0,     NULL},/* Selected */
+ {  -1,  -1, 0,   MD_TRANS, 0, G_BLACK,  G_WHITE, G_WHITE, 0,      0,     NULL},	/* Highlighted */
 
 };
 static struct xa_wtxt_inf dexe_txt =
 {
  WTXT_NOCLIP,
-/* id  pnts efx   fgc      bgc */
- {  -1,  -1,   MD_TRANS, 0, G_LRED, G_WHITE },	/* Normal */
- {  -1,  -1,   MD_TRANS, 0, G_RED, G_WHITE },	/* Selected */
- {  -1,  -1,   MD_TRANS, 0, G_BLACK, G_WHITE },	/* Highlighted */
+/* id  pnts  flags wrm,     efx   fgc      bgc   banner x_3dact y_3dact texture */
+ {  -1,  -1, 0,   MD_TRANS, 0, G_LRED,  G_WHITE, G_WHITE, 0,      0,     NULL },	/* Normal */
+ {  -1,  -1, 0,   MD_TRANS, 0, G_RED,   G_WHITE, G_WHITE, 0,      0,     NULL },	/* Selected */
+ {  -1,  -1, 0,   MD_TRANS, 0, G_BLACK, G_WHITE, G_WHITE, 0,      0,     NULL },	/* Highlighted */
 
 };
 
 static struct xa_wtxt_inf dir_txt =
 {
  WTXT_NOCLIP,
-/* id  pnts efx   fgc      bgc */
- {  -1,  -1,   MD_TRANS, 0, G_LCYAN, G_WHITE },/* Normal */
- {  -1,  -1,   MD_TRANS, 0, G_CYAN, G_WHITE },	/* Selected */
- {  -1,  -1,   MD_TRANS, 0, G_BLACK, G_WHITE },	/* Highlighted */
+/* id  pnts  flags wrm,     efx   fgc      bgc   banner x_3dact y_3dact texture */
+ {  -1,  -1, 0,   MD_TRANS, 0, G_LCYAN, G_WHITE, G_WHITE, 0,      0,     NULL },/* Normal */
+ {  -1,  -1, 0,   MD_TRANS, 0, G_CYAN,  G_WHITE, G_WHITE, 0,      0,     NULL },	/* Selected */
+ {  -1,  -1, 0,   MD_TRANS, 0, G_BLACK, G_WHITE, G_WHITE, 0,      0,     NULL },	/* Highlighted */
 
 };
 
@@ -2406,7 +2406,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 			form[FS_UNDER].ob_x += dw;
 		}
 
-		ob_rectangle(form, aesobj(form, 0), &or);
+		obj_rectangle(fs->form, aesobj(form, 0), &or);
 
 		kind = (XaMENU|NAME|TOOLBAR|BORDER);
 		/* Work out sizing */
@@ -2467,7 +2467,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 
 		fs->clear_on_folder_change = 0;
 
-		wt = set_toolbar_widget(lock, dialog_window, client, form, aesobj(form, FS_FILE), 0/*WIP_NOTEXT*/, true, NULL, &or);
+		wt = set_toolbar_widget(lock, dialog_window, client, form, aesobj(form, FS_FILE), 0/*WIP_NOTEXT*/, STW_ZEN, NULL, &or);
 		obj_edit(fs->form, v, ED_SETPTEXT, aesobj(fs->form->tree, FS_FILE), sizeof(fs->file) - 1, 0, fs->file, false, NULL,NULL, NULL,NULL);
 		obj_edit(fs->form, v, ED_MARK, aesobj(fs->form->tree, FS_FILE), 0, -1, NULL, false, NULL,NULL, NULL,NULL);
 		obj_edit(fs->form, v, ED_STRING, aesobj(fs->form->tree, FS_FILE), 0, 0, fs->file, false, NULL, NULL, NULL, NULL);

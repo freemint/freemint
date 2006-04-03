@@ -24,11 +24,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-// #include "xa_global.h"
-
 #include "xa_types.h"
-#include "draw_obj.h"
-#include "obtree.h"
 #include "xaaeswdg.h"
 #include "win_draw.h"
 
@@ -39,10 +35,17 @@ static const struct xa_screen *scrninf;
 
 static struct widget_theme *current_theme;
 static struct widget_theme *current_pu_theme;
+static struct widget_theme *current_slist_theme;
 
 static short widg_w;
 static short widg_h;
 
+struct widg_texture
+{
+	struct xa_data_hdr h;
+	struct xa_wtexture t;
+	XAMFDB xamfdb;
+};
 
 struct module
 {
@@ -50,13 +53,15 @@ struct module
 	struct xa_data_hdr *allocs;
 };
 
+static FreePriv free_priv_gradients;
+
 static	WidgGemColor	get_wcol, set_wcol;
 
-static	DrawWidg	d_unused, d_borders, d_title, d_closer, d_fuller, d_info,
+static	DrawWidg	d_unused, d_borders, d_title, d_wcontext, d_wappicn, d_closer, d_fuller, d_info,
 			d_sizer, d_uparrow, d_dnarrow, d_vslide,
 			d_lfarrow, d_rtarrow, d_hslide, d_iconifier, d_hider;
 
-static	SetWidgSize	s_title_size, s_closer_size, s_fuller_size, s_info_size,
+static	SetWidgSize	s_title_size, s_wcontext_size, s_wappicn_size, s_closer_size, s_fuller_size, s_info_size,
 			s_sizer_size, s_uparrow_size, s_dnarrow_size, s_vslide_size,
 			s_lfarrow_size, s_rtarrow_size, s_hslide_size,
 			s_iconifier_size, s_hider_size, s_menu_size;
@@ -113,23 +118,27 @@ static struct widget_theme def_theme =
 	NULL, //draw_canvas,
 	d_waframe,
 
-	{ 0,		NULL,		0,		0,			d_unused, NULL},			/* exterior		*/
-	{ BORDER,	border_dep,	XAW_BORDER,	NO,			d_borders, NULL},			/* border		*/
-	{ NAME,		name_dep,	XAW_TITLE,	LT | R_VARIABLE,	d_title, s_title_size},			/* title		*/
-	{ CLOSER,	NULL,		XAW_CLOSE,	LT,			d_closer, s_closer_size},		/* closer		*/
-	{ FULLER,	NULL,		XAW_FULL,	RT,			d_fuller, s_fuller_size},		/* fuller		*/
-	{ INFO,		NULL,		XAW_INFO,	LT | R_VARIABLE,	d_info, s_info_size},			/* info line		*/
-	{ SIZER,	sizer_dep,	XAW_RESIZE,	RB,			d_sizer, s_sizer_size},			/* resizer		*/
-	{ UPARROW,	NULL,		XAW_UPLN,	LT,			d_uparrow, s_uparrow_size},		/* up arrow		*/
-	{ DNARROW,	NULL,		XAW_DNLN,	RT,			d_dnarrow, s_dnarrow_size},		/* down arrow		*/
-	{ VSLIDE,	vslide_dep,	XAW_VSLIDE,	LT | R_VARIABLE,	d_vslide, s_vslide_size},		/* vertical slider	*/
-	{ LFARROW,	NULL,		XAW_LFLN,	LT,			d_lfarrow, s_lfarrow_size},		/* left arrow		*/
-	{ RTARROW,	NULL,		XAW_RTLN,	RT,			d_rtarrow, s_rtarrow_size},		/* right arrow		*/
-	{ HSLIDE,	hslide_dep,	XAW_HSLIDE,	LT | R_VARIABLE,	d_hslide, s_hslide_size},		/* horizontal slider	*/
-	{ ICONIFIER,	NULL,		XAW_ICONIFY,	RT,			d_iconifier, s_iconifier_size},		/* iconifier		*/
-	{ HIDER,	NULL,		XAW_HIDE,	RT,			d_hider, s_hider_size},			/* hider		*/
-	{ 0,		NULL,		XAW_TOOLBAR,	0,			NULL, NULL},				/* Toolbar		*/
-	{ XaMENU,	NULL,		XAW_MENU,	LT | R_VARIABLE,	NULL, s_menu_size },			/* menu bar		*/
+	{ 0,		NULL,		0,		0,			d_unused, NULL,NULL,{ 0 }},			/* exterior		*/
+	{ BORDER,	border_dep,	XAW_BORDER,	NO,			d_borders, NULL,NULL,{ 0 }},			/* border		*/
+	{ NAME,		name_dep,	XAW_TITLE,	LT | R_VARIABLE,	d_title, s_title_size,free_priv_gradients,{ 0 }},	/* title		*/
+	{ WCONTEXT,	NULL,		XAW_WCONTEXT,	LT,			d_wcontext, s_wcontext_size,free_priv_gradients,{ 0 }},	/* closer		*/
+	{ WAPPICN,	NULL,		XAW_WAPPICN,	LT,			d_wappicn, s_wappicn_size,free_priv_gradients,{ 0 }},	/* closer		*/
+	{ CLOSER,	NULL,		XAW_CLOSE,	LT,			d_closer, s_closer_size,free_priv_gradients,{ 0 }},	/* closer		*/
+	{ FULLER,	NULL,		XAW_FULL,	RT,			d_fuller, s_fuller_size,free_priv_gradients,{ 0 }},	/* fuller		*/
+	{ INFO,		NULL,		XAW_INFO,	LT | R_VARIABLE,	d_info, s_info_size,free_priv_gradients,{ 0 }},		/* info line		*/
+	{ SIZER,	sizer_dep,	XAW_RESIZE,	RB,			d_sizer, s_sizer_size,free_priv_gradients,{ 0 }},	/* resizer		*/
+	{ UPARROW,	NULL,		XAW_UPLN,	RT,			d_uparrow, s_uparrow_size,free_priv_gradients,{ 0 }},	/* up arrow		*/
+	{ UPARROW1,	NULL,		XAW_UPLN1,	LT,			d_uparrow, s_uparrow_size,free_priv_gradients,{ 0 }},	/* up arrow		*/
+	{ DNARROW,	NULL,		XAW_DNLN,	RT,			d_dnarrow, s_dnarrow_size,free_priv_gradients,{ 0 }},	/* down arrow		*/
+	{ VSLIDE,	vslide_dep,	XAW_VSLIDE,	LT | R_VARIABLE,	d_vslide, s_vslide_size,free_priv_gradients,{ 0 }},	/* vertical slider	*/
+	{ LFARROW,	NULL,		XAW_LFLN,	RT,			d_lfarrow, s_lfarrow_size,free_priv_gradients,{ 0 }},	/* left arrow		*/
+	{ LFARROW1,	NULL,		XAW_LFLN1,	LT,			d_lfarrow, s_lfarrow_size,free_priv_gradients,{ 0 }},	/* left arrow		*/
+	{ RTARROW,	NULL,		XAW_RTLN,	RT,			d_rtarrow, s_rtarrow_size,free_priv_gradients,{ 0 }},	/* right arrow		*/
+	{ HSLIDE,	hslide_dep,	XAW_HSLIDE,	LT | R_VARIABLE,	d_hslide, s_hslide_size,free_priv_gradients,{ 0 }},	/* horizontal slider	*/
+	{ ICONIFIER,	NULL,		XAW_ICONIFY,	RT,			d_iconifier, s_iconifier_size,free_priv_gradients,{ 0 }},/* iconifier		*/
+	{ HIDER,	NULL,		XAW_HIDE,	RT,			d_hider, s_hider_size,free_priv_gradients,{ 0 }},	/* hider		*/
+	{ 0,		NULL,		XAW_TOOLBAR,	0,			NULL, NULL,NULL,{ 0 }},					/* Toolbar		*/
+	{ XaMENU,	NULL,		XAW_MENU,	LT | R_VARIABLE,	NULL, s_menu_size,NULL,{ 0 }},				/* menu bar		*/
 
 	NULL,								/* handle (module ptr)	*/
 };
@@ -155,16 +164,18 @@ struct render_widget *row3[] =
 };
 struct render_widget *row4[] =
 {
-	&def_theme.uparrow,
+	&def_theme.uparrow1,
 	&def_theme.vslide,
 	&def_theme.dnarrow,
+	&def_theme.uparrow,
 	&def_theme.sizer,
 	NULL,
 };
 struct render_widget *row5[] =
 {
-	&def_theme.lfarrow,
+	&def_theme.lfarrow1,
 	&def_theme.hslide,
+	&def_theme.lfarrow,
 	&def_theme.rtarrow,
 	NULL,
 };
@@ -175,12 +186,12 @@ struct nwidget_row def_layout[] =
 // 	{(XAR_END | XAR_VERT),		(UPARROW | VSLIDE | DNARROW | SIZER), row4},
 	{(XAR_START),			INFO, row2},
 	{(XAR_START),			XaMENU, row3},
-	{(XAR_END | XAR_VERT),		(UPARROW | VSLIDE | DNARROW | SIZER), row4},
-	{(XAR_END),			(LFARROW | HSLIDE | RTARROW), row5},
+	{(XAR_END | XAR_VERT),		(UPARROW | VSLIDE | UPARROW1 | DNARROW | SIZER), row4},
+	{(XAR_END),			(LFARROW | HSLIDE | LFARROW1 | RTARROW), row5},
 	{0, -1, NULL},
 };
 /* ------------------------------------------------------------------------- */
-/* ----------  Normal client window theme ---------------------------------- */
+/* ----------  Popup window theme ---------------------------------- */
 /* ------------------------------------------------------------------------- */
 struct nwidget_row pu_def_layout[];
 
@@ -231,14 +242,18 @@ static struct widget_theme pu_def_theme =
 	{ 0,		NULL,		0,		0,			d_unused, NULL},			/* exterior		*/
 	{ BORDER,	pu_border_dep,	XAW_BORDER,	NO,			d_borders, NULL},			/* border		*/
 	{ NAME,		pu_name_dep,	XAW_TITLE,	LT | R_VARIABLE,	d_title, s_title_size},			/* title		*/
+	{ WCONTEXT,	NULL,		XAW_WCONTEXT,	LT,			d_wcontext, s_wcontext_size},	/* closer		*/
+	{ WAPPICN,	NULL,		XAW_WAPPICN,	LT,			d_wappicn, s_wappicn_size},	/* closer		*/
 	{ CLOSER,	NULL,		XAW_CLOSE,	LT,			d_closer, s_closer_size},		/* closer		*/
 	{ FULLER,	NULL,		XAW_FULL,	RT,			d_fuller, s_fuller_size},		/* fuller		*/
 	{ INFO,		NULL,		XAW_INFO,	LT | R_VARIABLE,	d_info, s_info_size},			/* info line		*/
 	{ SIZER,	pu_sizer_dep,	XAW_RESIZE,	RB,			d_sizer, s_sizer_size},			/* resizer		*/
-	{ UPARROW,	NULL,		XAW_UPLN,	LT,			d_uparrow, s_uparrow_size},		/* up arrow		*/
+	{ UPARROW,	NULL,		XAW_UPLN,	RT,			d_uparrow, s_uparrow_size},		/* up arrow		*/
+	{ UPARROW1,	NULL,		XAW_UPLN1,	LT,			d_uparrow, s_uparrow_size},
 	{ DNARROW,	NULL,		XAW_DNLN,	RT,			d_dnarrow, s_dnarrow_size},		/* down arrow		*/
 	{ VSLIDE,	pu_vslide_dep,	XAW_VSLIDE,	LT | R_VARIABLE,	d_vslide, s_vslide_size},		/* vertical slider	*/
-	{ LFARROW,	NULL,		XAW_LFLN,	LT,			d_lfarrow, s_lfarrow_size},		/* left arrow		*/
+	{ LFARROW,	NULL,		XAW_LFLN,	RT,			d_lfarrow, s_lfarrow_size},		/* left arrow		*/
+	{ LFARROW1,	NULL,		XAW_LFLN1,	LT,			d_lfarrow, s_lfarrow_size},
 	{ RTARROW,	NULL,		XAW_RTLN,	RT,			d_rtarrow, s_rtarrow_size},		/* right arrow		*/
 	{ HSLIDE,	pu_hslide_dep,	XAW_HSLIDE,	LT | R_VARIABLE,	d_hslide, s_hslide_size},		/* horizontal slider	*/
 	{ ICONIFIER,	NULL,		XAW_ICONIFY,	RT,			d_iconifier, s_iconifier_size},		/* iconifier		*/
@@ -270,16 +285,18 @@ struct render_widget *pu_row3[] =
 };
 struct render_widget *pu_row4[] =
 {
-	&pu_def_theme.uparrow,
+	&pu_def_theme.uparrow1,
 	&pu_def_theme.vslide,
 	&pu_def_theme.dnarrow,
+	&pu_def_theme.uparrow,
 	&pu_def_theme.sizer,
 	NULL,
 };
 struct render_widget *pu_row5[] =
 {
-	&pu_def_theme.lfarrow,
+	&pu_def_theme.lfarrow1,
 	&pu_def_theme.hslide,
+	&pu_def_theme.lfarrow,
 	&pu_def_theme.rtarrow,
 	NULL,
 };
@@ -290,10 +307,148 @@ struct nwidget_row pu_def_layout[] =
 // 	{(XAR_END | XAR_VERT),		(UPARROW | VSLIDE | DNARROW | SIZER), pu_row4},
 	{(XAR_START),			INFO, pu_row2},
 	{(XAR_START),			XaMENU, pu_row3},
-	{(XAR_END | XAR_VERT),		(UPARROW | VSLIDE | DNARROW | SIZER), pu_row4},
-	{(XAR_END),			(LFARROW | HSLIDE | RTARROW), pu_row5},
+	{(XAR_END | XAR_VERT),		(UPARROW | VSLIDE | UPARROW1 | DNARROW | SIZER), pu_row4},
+	{(XAR_END),			(LFARROW | HSLIDE | LFARROW1 | RTARROW), pu_row5},
 	{0, -1, NULL},
 };
+/* ------------------------------------------------------------------------- */
+/* ----------  Scroll-list window theme ---------------------------------- */
+/* ------------------------------------------------------------------------- */
+struct nwidget_row sl_def_layout[];
+
+static XA_WIND_ATTR sl_name_dep[] =
+{
+	(CLOSER|FULLER|ICONIFIER|HIDE), -1,
+	0
+};
+static XA_WIND_ATTR sl_sizer_dep[] =
+{
+	(UPARROW|DNARROW|VSLIDE), (LFARROW|RTARROW|HSLIDE),
+	0
+};
+static XA_WIND_ATTR sl_vslide_dep[] =
+{
+	(UPARROW|DNARROW|SIZER), -1,
+	0
+};
+static XA_WIND_ATTR sl_hslide_dep[] =
+{
+	(LFARROW|RTARROW), -1,
+	0
+};
+#if 0
+static XA_WIND_ATTR sl_uparrow1_dep[] =
+{
+	UPARROW, -1,
+	0
+};
+static XA_WIND_ATTR sl_lfarrow1_dep[] =
+{
+	LFARROW, -1,
+	0
+};
+#endif
+static XA_WIND_ATTR sl_border_dep[] =
+{
+	(SIZER|MOVER), -1,
+	0
+};
+
+static struct widget_theme sl_def_theme = 
+{
+	{ 0 },		/* xa_data_hdr */
+	0L,		/* Links */
+	
+	&sl_def_layout[0],
+
+	get_wcol,
+	set_wcol,
+
+	{2, 2, 2, 2},	/* min */
+// 	{1, 1, 2, 2},
+	{0, 0, 0, 0},
+	NULL, //draw_canvas,
+	d_waframe,
+
+	{ 0,		NULL,		0,		0,			d_unused, NULL,NULL,{ 0 }},		/* exterior		*/
+	{ BORDER,	sl_border_dep,	XAW_BORDER,	NO,			d_borders, NULL,NULL,{ 0 }},		/* border		*/
+	{ NAME,		sl_name_dep,	XAW_TITLE,	LT | R_VARIABLE,	d_title, s_title_size,free_priv_gradients,{ 0 }},	/* title		*/
+	{ WCONTEXT,	NULL,		XAW_WCONTEXT,	LT,			d_wcontext, s_wcontext_size},	/* closer		*/
+	{ WAPPICN,	NULL,		XAW_WAPPICN,	LT,			d_wappicn, s_wappicn_size},	/* closer		*/
+	{ CLOSER,	NULL,		XAW_CLOSE,	LT,			d_closer, s_closer_size,free_priv_gradients,{ 0 }},	/* closer		*/
+	{ FULLER,	NULL,		XAW_FULL,	RT,			d_fuller, s_fuller_size,free_priv_gradients,{ 0 }},	/* fuller		*/
+	{ INFO,		NULL,		XAW_INFO,	LT | R_VARIABLE,	d_info, s_info_size,free_priv_gradients,{ 0 }},	/* info line		*/
+	{ SIZER,	sl_sizer_dep,	XAW_RESIZE,	RB,			d_sizer, s_sizer_size,free_priv_gradients,{ 0 }},	/* resizer		*/
+	{ UPARROW,	NULL,		XAW_UPLN,	RT,			d_uparrow, s_uparrow_size,free_priv_gradients,{ 0 }},	/* up arrow		*/
+	{ UPARROW1,	NULL,		XAW_UPLN1,	LT,			d_uparrow, s_uparrow_size,free_priv_gradients,{ 0 }},	/* up arrow		*/
+	{ DNARROW,	NULL,		XAW_DNLN,	RT,			d_dnarrow, s_dnarrow_size,free_priv_gradients,{ 0 }},	/* down arrow		*/
+	{ VSLIDE,	sl_vslide_dep,	XAW_VSLIDE,	LT | R_VARIABLE,	d_vslide, s_vslide_size,free_priv_gradients,{ 0 }},	/* vertical slider	*/
+	{ LFARROW,	NULL,		XAW_LFLN,	RT,			d_lfarrow, s_lfarrow_size,free_priv_gradients,{ 0 }},	/* left arrow		*/
+	{ LFARROW1,	NULL,		XAW_LFLN1,	LT,			d_lfarrow, s_lfarrow_size,free_priv_gradients,{ 0 }},	/* left arrow		*/
+	{ RTARROW,	NULL,		XAW_RTLN,	RT,			d_rtarrow, s_rtarrow_size,free_priv_gradients,{ 0 }},	/* right arrow		*/
+	{ HSLIDE,	sl_hslide_dep,	XAW_HSLIDE,	LT | R_VARIABLE,	d_hslide, s_hslide_size,free_priv_gradients,{ 0 }},	/* horizontal slider	*/
+	{ ICONIFIER,	NULL,		XAW_ICONIFY,	RT,			d_iconifier, s_iconifier_size,free_priv_gradients,{ 0 }},/* iconifier		*/
+	{ HIDER,	NULL,		XAW_HIDE,	RT,			d_hider, s_hider_size,free_priv_gradients,{ 0 }},	/* hider		*/
+	{ 0,		NULL,		XAW_TOOLBAR,	0,			NULL, NULL,NULL,{ 0 }},			/* Toolbar		*/
+	{ XaMENU,	NULL,		XAW_MENU,	LT | R_VARIABLE,	NULL, s_menu_size,NULL,{ 0 }},		/* menu bar		*/
+
+	NULL,								/* handle (module ptr)	*/
+};
+
+struct render_widget *sl_row1[] =
+{
+	&sl_def_theme.closer,
+	&sl_def_theme.title,
+	&sl_def_theme.hider,
+	&sl_def_theme.iconifier,
+	&sl_def_theme.fuller,
+	NULL,
+};
+struct render_widget *sl_row2[] =
+{
+	&sl_def_theme.info,
+	NULL,
+};
+struct render_widget *sl_row3[] =
+{
+	&sl_def_theme.menu,
+	NULL,
+};
+struct render_widget *sl_row4[] =
+{
+	&sl_def_theme.uparrow1,
+	&sl_def_theme.vslide,
+	&sl_def_theme.dnarrow,
+	&sl_def_theme.uparrow,
+	&sl_def_theme.sizer,
+	NULL,
+};
+struct render_widget *sl_row5[] =
+{
+	&sl_def_theme.lfarrow1,
+	&sl_def_theme.hslide,
+	&sl_def_theme.lfarrow,
+	&sl_def_theme.rtarrow,
+	NULL,
+};
+
+struct nwidget_row sl_def_layout[] =
+{
+	{(XAR_START),			(NAME | CLOSER | FULLER | ICONIFIER | HIDE), sl_row1},
+// 	{(XAR_END | XAR_VERT),		(UPARROW | VSLIDE | DNARROW | SIZER), row4},
+	{(XAR_START),			INFO, sl_row2},
+	{(XAR_START),			XaMENU, sl_row3},
+	{(XAR_END | XAR_VERT),		(UPARROW | VSLIDE | UPARROW1 | DNARROW | SIZER), sl_row4},
+	{(XAR_END),			(LFARROW | HSLIDE | LFARROW1 | RTARROW), sl_row5},
+	{0, -1, NULL},
+};
+/* ------------------------------------------------------------------------- */
+/* ------------------------------------------------------------------------- */
+static void set_texture(struct module *m, struct xa_wcol_inf *wcol, struct widg_texture *t); //struct xa_wtexture *wtexture);
+// static void free_texture(struct module *m, struct xa_wcol_inf *wcol);
+// static struct widg_texture * load_grad(struct module *m, struct rgb_1000 *start, short w, short h, short steps, short flags);
+static struct xa_wtexture * find_gradient(struct xa_vdi_settings *, struct xa_wcol *, bool, struct xa_data_hdr **, short w, short h);
+
 /* ------------------------------------------------------------------------- */
 /* ------------------------------------------------------------------------- */
  
@@ -384,19 +539,24 @@ delete_theme(void *_theme)
  * to the widget-drawer functions via the 'colours', 'ontop_cols' and 'untop_cols'
  * elements of xa_window structure.
  */
+#define WCF_TOP		0x00000001
+
 struct window_colours
 {
 	struct xa_data_hdr	h;
-	long			links;
-	
+
+	unsigned long		flags;
+
 	short 			waframe_col;
 	short 			frame_col;
 
-	struct xa_wcol_inf	win;
+	struct xa_wcol_inf	win;		/* Must be first */
 	struct xa_wcol_inf	borders;
 
-	struct xa_wcol_inf	slider;
-	struct xa_wcol_inf	slide;
+	struct xa_wcol_inf	hslider;
+	struct xa_wcol_inf	hslide;
+	struct xa_wcol_inf	vslider;
+	struct xa_wcol_inf	vslide;
 
 	struct xa_wcol_inf	title;
 
@@ -410,112 +570,277 @@ struct window_colours
 	struct xa_wcol_inf	uparrow;
 	struct xa_wcol_inf	dnarrow;
 	struct xa_wcol_inf	lfarrow;
-	struct xa_wcol_inf	rtarrow;
+	struct xa_wcol_inf	rtarrow;	/* Must be last */
 
 	struct xa_wtxt_inf	title_txt;
 	struct xa_wtxt_inf	info_txt;
 };
 
+/* ---------------------------------------------------------------------------------- */
+/* -----------  Standard client window colour theme --------------------------------- */
+/* ---------------------------------------------------------------------------------- */
+struct xa_gradient otop_vslide_gradient =
+{
+	NULL,
+	-1, 0,
+	 0, 16,
+
+	1, 0, {0},
+	{{400,400,400},{600,600,600}},
+};
+struct xa_gradient otop_hslide_gradient =
+{
+	NULL,
+	 0, -1,
+	16,  0,
+
+	0, 0, {0},
+	{{400,400,400},{600,600,600}},
+};
+struct xa_gradient otop_vslider_gradient =
+{
+	NULL,
+	-1, 0,
+	 0, 16,
+
+	1, 0, {0},
+	{{900,900,900},{600,600,600}},
+};
+struct xa_gradient otop_hslider_gradient =
+{
+	NULL,
+	 0, -1,
+	16,  0,
+
+	0, 0, {0},
+	{{900,900,900},{600,600,600}},
+};
+
+struct xa_gradient utop_vslide_gradient =
+{
+	NULL,
+	-1, 0,
+	 0, 16,
+
+	1, 0, {0},
+	{{300,300,300},{500,500,500}},
+};
+struct xa_gradient utop_hslide_gradient =
+{
+	NULL,
+	 0, -1,
+	16,  0,
+
+	0, 0, {0},
+	{{300,300,300},{500,500,500}},
+};
+struct xa_gradient utop_vslider_gradient =
+{
+	NULL,
+	-1, 0,
+	 0, 16,
+
+	1, 0, {0},
+	{{800,800,800},{500,500,500}},
+};
+struct xa_gradient utop_hslider_gradient =
+{
+	NULL,
+	 0, -1,
+	16,  0,
+
+	0, 0, {0},
+	{{800,800,800},{500,500,500}},
+};
+
+static struct xa_gradient otop_title_gradient = 
+{
+	NULL,
+	-1, -1,
+	0, 0,
+
+	2, 0,{0},
+	{{500,500,500},{900,900,900}},
+// 	{{200,500,200},{800,1000,800}},
+};
+static struct xa_gradient utop_title_gradient =
+{
+	NULL,
+	-1, -1,
+	0, 0,
+	
+	2, 0, {0},
+	{{500,500,500},{800,800,800}},
+/*	{{500,500,500},{900,900,900}}, */
+};
+
+static struct xa_gradient otop_info_gradient = 
+{
+	NULL,
+	0, -1,
+	16, 0,
+
+	0,0,{0},
+	{{800,800,800},{950,950,950}},
+// 	3, 1, {3, 0},
+// 	{{200,200,200},{600,600,600},{900,900,900}},
+};
+static struct xa_gradient utop_info_gradient = 
+{
+	NULL,
+	0, -1,
+	16, 0,
+
+	0, 0, {0},
+	{{600,600,600},{800,800,800}},
+};
+
+#if 0
+static struct xa_gradient otop_green_gradient = 
+{
+	NULL,
+	-1, -1,
+	0, 0,
+
+	2, 0,{0},
+	{{200,500,200},{800,1000,800}},
+};
+#endif
+static struct xa_gradient otop_grey_gradient =
+{
+	NULL,
+	-1, -1,
+	0, 0,
+	
+	2, 0, {0},
+	{{600,600,600},{900,900,900}},
+};
+static struct xa_gradient utop_grey_gradient =
+{
+	NULL,
+	-1, -1,
+	0, 0,
+	
+	2, 0, {0},
+	{{500,500,500},{800,800,800}},
+/*	{{500,500,500},{900,900,900}}, */
+};
+
 struct window_colours def_otop_cols =
 {
- { 0 },	0L,	/* data header, links */
+ { 0 },	/* data header */
+ WCF_TOP,
 
  G_LBLACK, /* window workarea frame color */
  G_LBLACK, /* window frame color */
 /*          flags                        wrmode      color       fill    fill    box       box        tl      br		*/
 /*                                                             interior  style  color    thickness  colour  colour		*/
  { WCOL_DRAWBKG/*|WCOL_BOXED*/, MD_REPLACE,
-                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},
-                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},
-                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* window areas not covered by a widget/ unused widgets*/
+        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},
+        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},
+        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* window areas not covered by a widget/ unused widgets*/
  
   { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-                                                    {G_CYAN,   FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_CYAN, NULL},	/* Normal */
-                                                    {G_CYAN,   FIS_SOLID,   8,   G_BLACK,     1,    G_CYAN, G_WHITE, NULL},		/* Selected */
-                                                    {G_BLUE,   FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}},	/* Highlighted */
-/* Slider */
+        {G_CYAN,   FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_CYAN, NULL},	/* Normal */
+        {G_CYAN,   FIS_SOLID,   8,   G_BLACK,     1,    G_CYAN, G_WHITE, NULL},		/* Selected */
+        {G_BLUE,   FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}},	/* Highlighted */
+/* Horizontal Slider */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL},	/* Selected */
-                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL}}, /* Highlighted */
- /* Slide */
+        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_hslider_gradient},	/* Normal */
+        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL, &otop_hslider_gradient},	/* Selected */
+        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL, &otop_hslider_gradient}}, /* Highlighted */
+ /* Horizontal Slide */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-                                                    {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
- /* Title */
+        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_hslide_gradient},	/* Normal */
+        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL, &otop_hslide_gradient},	/* Selected */
+        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_hslide_gradient}}, /* Highlighted */
+ 
+ /* Vertical Slider */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-                                                    {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_vslider_gradient},	/* Normal */
+        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL, &otop_vslider_gradient},	/* Selected */
+        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL, &otop_vslider_gradient}}, /* Highlighted */
+ /* Vertical Slide */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_vslide_gradient},	/* Normal */
+        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL, &otop_vslide_gradient},	/* Selected */
+        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_vslide_gradient}}, /* Highlighted */
+/* Title */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED|WCOL_GRADIENT, MD_REPLACE,
+             {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_title_gradient},	/* Normal */
+             {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,     1,    G_BLACK, G_WHITE,  NULL, &otop_title_gradient},	/* Selected */
+             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,      1,    G_WHITE, G_LBLACK, NULL, &otop_title_gradient}}, /* Highlighted */
  /* Info */
- { WCOL_DRAW3D|WCOL_DRAWBKG,		MD_REPLACE, {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL},	/* Normal */
-                                                    {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL},	/* Selected */
-                                                    {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL}}, /* Highlighted */
+ { WCOL_DRAW3D|WCOL_DRAWBKG|WCOL_GRADIENT, MD_REPLACE,
+             {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL, &otop_info_gradient},	/* Normal */
+             {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL, &otop_info_gradient},	/* Selected */
+             {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL, &otop_info_gradient}}, /* Highlighted */
  /* Closer */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_title_gradient},	/* Normal */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &otop_title_gradient},	/* Selected */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_title_gradient}}, /* Highlighted */
  /* Hider */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_title_gradient},	/* Normal */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &otop_title_gradient},	/* Selected */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_title_gradient}}, /* Highlighted */
  /* Iconifier */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_title_gradient},	/* Normal */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &otop_title_gradient},	/* Selected */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_title_gradient}}, /* Highlighted */
  /* Fuller */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_title_gradient},	/* Normal */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &otop_title_gradient},	/* Selected */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_title_gradient}}, /* Highlighted */
  /* Sizer */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_grey_gradient},	/* Normal */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &otop_grey_gradient},	/* Selected */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_grey_gradient}}, /* Highlighted */
  /* UP Arrow */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE, 
-                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_grey_gradient},	/* Normal */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &otop_grey_gradient},	/* Selected */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_grey_gradient}}, /* Highlighted */
  /* DN Arrow */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_grey_gradient},	/* Normal */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &otop_grey_gradient},	/* Selected */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_grey_gradient}}, /* Highlighted */
  /* LF Arrow */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_grey_gradient},	/* Normal */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &otop_grey_gradient},	/* Selected */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_grey_gradient}}, /* Highlighted */
  /* RT Arrow */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
-                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_grey_gradient},	/* Normal */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &otop_grey_gradient},	/* Selected */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_grey_gradient}}, /* Highlighted */
 
-/* flags	                     fontId  size wrmode    Effect      forground       background	*/
-/*								           col	          col		*/
+/* flags	                     fontId  size flags wrmode    Effect      forground       background x_3dact y_3dact	*/
+/*								                col	          col		*/
  /* Title text-info */
  { WTXT_DRAW3D|WTXT_ACT3D|WTXT_CENTER,
-                                      {0,     10, MD_TRANS, 0,        G_BLACK,	G_WHITE },	/* Normal */
-                                      {0,     10, MD_TRANS, 0,        G_BLACK,	G_WHITE },	/* Selected */
-                                      {0,     10, MD_TRANS, 0,        G_BLACK,	G_WHITE }},	/* Highlighted */
+                                   /* id  pnts flags wrm,   efx         fgc      bgc      banner  x_3dact y_3dact texture */
+                                      {0, 10,   0, MD_TRANS, 0,        G_BLACK,	G_WHITE, G_WHITE,  1,       1,     NULL}, /* Normal */
+                                      {0, 10,   0, MD_TRANS, 0,        G_BLACK,	G_WHITE, G_WHITE,  1,       1,     NULL},	/* Selected */
+                                      {0, 10,   0, MD_TRANS, 0,        G_BLACK,	G_WHITE, G_WHITE,  1,       1,     NULL}},	/* Highlighted */
  /* Info text-info */
  { 0,
-                                      {0,     9,  MD_TRANS, 0,        G_BLACK,	G_WHITE },	/* Normal */
-                                      {0,     9,  MD_TRANS, 0,        G_BLACK,	G_WHITE },	/* Selected */
-                                      {0,     9,  MD_TRANS, 0,        G_BLACK,	G_WHITE }},	/* Highlighted */
+                                      {0,  9,   0, MD_TRANS, 0,        G_BLACK,	G_WHITE, G_WHITE,  1,       1,     NULL},	/* Normal */
+                                      {0,  9,   0, MD_TRANS, 0,        G_BLACK,	G_WHITE, G_WHITE,  1,       1,     NULL},	/* Selected */
+                                      {0,  9,   0, MD_TRANS, 0,        G_BLACK,	G_WHITE, G_WHITE,  1,       1,     NULL}},	/* Highlighted */
 
 };
 
 struct window_colours def_utop_cols =
 {
- { 0 },	0L,	/* data header */
+ { 0 },	/* data header */
+ 0,
  
  G_LBLACK,	/* Window work area frame color */
  G_LBLACK,	/* window frame color */
@@ -531,77 +856,703 @@ struct window_colours def_utop_cols =
                                                     {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LWHITE, NULL},	/* Normal */
                                                     {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_LWHITE, G_WHITE,  NULL},	/* Selected */
                                                     {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL}},	/* Highlighted */
- /* Slider */
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL},	/* Selected */
-                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL}},	/* Highlighted */
- /* Slide */
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+ /* H Slider */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
+        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_hslider_gradient},	/* Normal */
+        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL, &utop_hslider_gradient},	/* Selected */
+        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL, &utop_hslider_gradient}},	/* Highlighted */
+ /* H Slide */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
+        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_hslide_gradient},	/* Normal */
+        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &utop_hslide_gradient},	/* Selected */
+        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_hslide_gradient}}, /* Highlighted */
+  /* V Slider */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
+        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_vslider_gradient},	/* Normal */
+        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL, &utop_vslider_gradient},	/* Selected */
+        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL, &utop_vslider_gradient}},	/* Highlighted */
+ /* V Slide */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
+        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_vslide_gradient},	/* Normal */
+        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &utop_vslide_gradient},	/* Selected */
+        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_vslide_gradient}}, /* Highlighted */
  /* Title */
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_GRADIENT, MD_REPLACE,
+             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_title_gradient},	/* Normal */
+             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &utop_title_gradient},	/* Selected */
+             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_title_gradient}}, /* Highlighted */
  /* Info */
- { WCOL_DRAWBKG,			MD_REPLACE, {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,    1,    G_LBLACK,G_BLACK, NULL},	/* Normal */
-                                                    {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,    1,    G_LBLACK,G_BLACK, NULL},	/* Selected */
-                                                    {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL}}, /* Highlighted */
+ { WCOL_DRAWBKG|WCOL_GRADIENT,		MD_REPLACE,
+             {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,    1,    G_LBLACK,G_BLACK, NULL, &utop_info_gradient},	/* Normal */
+             {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,    1,    G_LBLACK,G_BLACK, NULL, &utop_info_gradient},	/* Selected */
+             {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL, &utop_info_gradient}}, /* Highlighted */
  /* Closer */
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient},	/* Normal */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &utop_grey_gradient},	/* Selected */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient}}, /* Highlighted */
  /* Hider */
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient},	/* Normal */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &utop_grey_gradient},	/* Selected */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient}}, /* Highlighted */
  /* Iconifier */
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient},	/* Normal */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &utop_grey_gradient},	/* Selected */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient}}, /* Highlighted */
  /* Fuller */
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient},	/* Normal */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &utop_grey_gradient},	/* Selected */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient}}, /* Highlighted */
  /* Sizer */
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient},	/* Normal */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &utop_grey_gradient},	/* Selected */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient}}, /* Highlighted */
  /* UP Arrow */
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient},	/* Normal */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &utop_grey_gradient},	/* Selected */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient}}, /* Highlighted */
  /* DN Arrow */
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient},	/* Normal */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &utop_grey_gradient},	/* Selected */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient}}, /* Highlighted */
  /* LF Arrow */
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient},	/* Normal */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &utop_grey_gradient},	/* Selected */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient}}, /* Highlighted */
  /* RT Arrow */
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
-                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
-                                                    {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient},	/* Normal */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &utop_grey_gradient},	/* Selected */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient}}, /* Highlighted */
 
 /* flags	                     fontId  size wrmode    Effect      forground       background	*/
 /*								           col	          col		*/
  /* Title text-info */
  { WTXT_DRAW3D|WTXT_ACT3D|WTXT_CENTER,
-                                      {0,     10, MD_TRANS, 0,        G_LBLACK,	G_WHITE },	/* Normal */
-                                      {0,     10, MD_TRANS, 0,        G_LBLACK,	G_WHITE },	/* Selected */
-                                      {0,     10, MD_TRANS, 0,        G_BLACK,	G_WHITE }},	/* Highlighted */
+                                   /* id  pnts flags wrm,   efx         fgc      bgc      banner  x_3dact y_3dact texture */
+                                      {0,  10,  0, MD_TRANS, 0,        G_LBLACK, G_WHITE, G_WHITE, 1,      1,       NULL},	/* Normal */
+                                      {0,  10,  0, MD_TRANS, 0,        G_LBLACK, G_WHITE, G_WHITE, 1,      1,       NULL},	/* Selected */
+                                      {0,  10,  0, MD_TRANS, 0,        G_BLACK,	 G_WHITE, G_WHITE, 1,      1,       NULL}},	/* Highlighted */
  /* Info text-info */
- { 0,		      		      {0,     9,  MD_TRANS, 0,        G_LBLACK,	G_WHITE },	/* Normal */
-                                      {0,     9,  MD_TRANS, 0,        G_LBLACK,	G_WHITE },	/* Selected */
-                                      {0,     9,  MD_TRANS, 0,        G_BLACK,	G_WHITE }},	/* Highlighted */
+ { 0,		      		      {0,   9,  0, MD_TRANS, 0,        G_LBLACK, G_WHITE, G_WHITE, 1,      1,       NULL},	/* Normal */
+                                      {0,   9,  0, MD_TRANS, 0,        G_LBLACK, G_WHITE, G_WHITE, 1,      1,       NULL},	/* Selected */
+                                      {0,   9,  0, MD_TRANS, 0,        G_BLACK,	 G_WHITE, G_WHITE, 1,      1,       NULL}},	/* Highlighted */
 };
 /* ---------------------------------------------------------------------------------- */
+/* ---------------- Alert window colour theme --------------------------------------- */
 /* ---------------------------------------------------------------------------------- */
+static struct xa_gradient alert_otop_title_gradient = 
+{
+	NULL,
+	-1, -1,
+	0, 0,
+
+	2, 0,{0},
+	{{500,200,200},{1000,800,800}},
+};
+static struct xa_gradient alert_utop_title_gradient =
+{
+	NULL,
+	-1, -1,
+	0, 0,
+	
+	2, 0, {0},
+	{{500,500,500},{700,700,700}},
+/*	{{500,500,500},{900,900,900}}, */
+};
+
+static struct xa_gradient alert_utop_grey_gradient =
+{
+	NULL,
+	-1, -1,
+	0, 0,
+	
+	2, 0, {0},
+	{{300,300,300},{700,700,700}},
+/*	{{500,500,500},{900,900,900}}, */
+};
+struct window_colours alert_def_otop_cols =
+{
+ { 0 },	/* data header */
+ WCF_TOP,
+
+ G_LBLACK, /* window workarea frame color */
+ G_LBLACK, /* window frame color */
+/*          flags                        wrmode      color       fill    fill    box       box        tl      br		*/
+/*                                                             interior  style  color    thickness  colour  colour		*/
+ { WCOL_DRAWBKG/*|WCOL_BOXED*/, MD_REPLACE,
+                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},
+                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},
+                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* window areas not covered by a widget/ unused widgets*/
+ 
+  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_CYAN,   FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_CYAN, NULL},	/* Normal */
+                                                    {G_CYAN,   FIS_SOLID,   8,   G_BLACK,     1,    G_CYAN, G_WHITE, NULL},		/* Selected */
+                                                    {G_BLUE,   FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}},	/* Highlighted */
+/* Horizontal Slider */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL},	/* Selected */
+                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL}}, /* Highlighted */
+ /* Horizontal Slide */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+ 
+ /* Vertical Slider */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL},	/* Selected */
+                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL}}, /* Highlighted */
+ /* Vertical Slide */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+/* Title */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED|WCOL_GRADIENT, MD_REPLACE,
+             {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,     1,    G_WHITE, G_LBLACK, NULL, &alert_otop_title_gradient},	/* Normal */
+             {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,     1,    G_BLACK, G_WHITE,  NULL, &alert_otop_title_gradient},	/* Selected */
+             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,      1,    G_WHITE, G_LBLACK, NULL, &alert_otop_title_gradient}}, /* Highlighted */
+ /* Info */
+ { WCOL_DRAW3D|WCOL_DRAWBKG|WCOL_GRADIENT, MD_REPLACE,
+             {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL, NULL},	/* Normal */
+             {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL, NULL},	/* Selected */
+             {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL, NULL}}, /* Highlighted */
+ /* Closer */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &alert_otop_title_gradient},	/* Normal */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &alert_otop_title_gradient},	/* Selected */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &alert_otop_title_gradient}}, /* Highlighted */
+ /* Hider */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL},	/* Normal */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, NULL},	/* Selected */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL}}, /* Highlighted */
+ /* Iconifier */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL},	/* Normal */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, NULL},	/* Selected */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL}}, /* Highlighted */
+ /* Fuller */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL},	/* Normal */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, NULL},	/* Selected */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL}}, /* Highlighted */
+ /* Sizer */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL},	/* Normal */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, NULL},	/* Selected */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL}}, /* Highlighted */
+ /* UP Arrow */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE, 
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL},	/* Normal */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, NULL},	/* Selected */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL}}, /* Highlighted */
+ /* DN Arrow */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL},	/* Normal */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, NULL},	/* Selected */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL}}, /* Highlighted */
+ /* LF Arrow */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL},	/* Normal */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, NULL},	/* Selected */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL}}, /* Highlighted */
+ /* RT Arrow */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL},	/* Normal */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, NULL},	/* Selected */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL}}, /* Highlighted */
+
+/* flags	                     fontId  size flags wrmode    Effect      forground       background x_3dact y_3dact	*/
+/*								                col	          col		*/
+ /* Title text-info */
+ { WTXT_DRAW3D|WTXT_ACT3D|WTXT_CENTER,
+                                   /* id  pnts flags wrm,   efx         fgc      bgc      banner  x_3dact y_3dact texture */
+                                      {0, 10,   0, MD_TRANS, 0,        G_RED,G_WHITE, G_WHITE,  1,       1,     NULL}, /* Normal */
+                                      {0, 10,   0, MD_TRANS, 0,        G_RED,G_WHITE, G_WHITE,  1,       1,     NULL},	/* Selected */
+                                      {0, 10,   0, MD_TRANS, 0,        G_RED,G_WHITE, G_WHITE,  1,       1,     NULL}},	/* Highlighted */
+ /* Info text-info */
+ { 0,
+                                      {0,  9,   0, MD_TRANS, 0,        G_BLACK,	G_WHITE, G_WHITE,  1,       1,     NULL},	/* Normal */
+                                      {0,  9,   0, MD_TRANS, 0,        G_BLACK,	G_WHITE, G_WHITE,  1,       1,     NULL},	/* Selected */
+                                      {0,  9,   0, MD_TRANS, 0,        G_BLACK,	G_WHITE, G_WHITE,  1,       1,     NULL}},	/* Highlighted */
+
+};
+
+struct window_colours alert_def_utop_cols =
+{
+ { 0 },	/* data header */
+ 0,
+ 
+ G_LBLACK,	/* Window work area frame color */
+ G_LBLACK,	/* window frame color */
+/*          flags                        wrmode      color       fill    fill    box       box        tl      br		*/
+/*                                                             interior  style  color    thickness  colour  colour		*/
+ /* Window color (when unused window exterior is drawn) */
+ { WCOL_DRAWBKG/*|WCOL_BOXED*/,                      MD_REPLACE,
+                                                    {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,     1,    G_WHITE, G_LBLACK, NULL},
+                                                    {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,     1,    G_WHITE, G_LBLACK, NULL},
+                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}},	/* window areas not covered by a widget/ unused widgets*/
+ 
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LWHITE, NULL},	/* Normal */
+                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_LWHITE, G_WHITE,  NULL},	/* Selected */
+                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL}},	/* Highlighted */
+ /* H Slider */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL},	/* Selected */
+                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL}},	/* Highlighted */
+ /* H Slide */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+  /* V Slider */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL},	/* Selected */
+                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL}},	/* Highlighted */
+ /* V Slide */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE, {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
+                                                    {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
+ /* Title */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_GRADIENT, MD_REPLACE,
+             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &alert_utop_title_gradient},	/* Normal */
+             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &alert_utop_title_gradient},	/* Selected */
+             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &alert_utop_title_gradient}}, /* Highlighted */
+ /* Info */
+ { WCOL_DRAWBKG|WCOL_GRADIENT,		MD_REPLACE,
+             {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,    1,    G_LBLACK,G_BLACK, NULL, NULL},	/* Normal */
+             {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,    1,    G_LBLACK,G_BLACK, NULL, NULL},	/* Selected */
+             {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL, NULL}}, /* Highlighted */
+ /* Closer */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &alert_utop_grey_gradient},	/* Normal */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &alert_utop_grey_gradient},	/* Selected */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &alert_utop_grey_gradient}}, /* Highlighted */
+ /* Hider */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL},	/* Normal */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, NULL},	/* Selected */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL}}, /* Highlighted */
+ /* Iconifier */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL},	/* Normal */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, NULL},	/* Selected */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL}}, /* Highlighted */
+ /* Fuller */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL},	/* Normal */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, NULL},	/* Selected */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL}}, /* Highlighted */
+ /* Sizer */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL},	/* Normal */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, NULL},	/* Selected */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL}}, /* Highlighted */
+ /* UP Arrow */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL},	/* Normal */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, NULL},	/* Selected */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL}}, /* Highlighted */
+ /* DN Arrow */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL},	/* Normal */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, NULL},	/* Selected */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL}}, /* Highlighted */
+ /* LF Arrow */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL},	/* Normal */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, NULL},	/* Selected */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL}}, /* Highlighted */
+ /* RT Arrow */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL},	/* Normal */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, NULL},	/* Selected */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL}}, /* Highlighted */
+
+/* flags	                     fontId  size wrmode    Effect      forground       background	*/
+/*								           col	          col		*/
+ /* Title text-info */
+ { WTXT_DRAW3D|WTXT_ACT3D|WTXT_CENTER,
+                                   /* id  pnts flags wrm,   efx         fgc      bgc      banner  x_3dact y_3dact texture */
+                                      {0,  10,  0, MD_TRANS, 0,        G_LBLACK, G_WHITE, G_WHITE, 1,      1,       NULL},	/* Normal */
+                                      {0,  10,  0, MD_TRANS, 0,        G_LBLACK, G_WHITE, G_WHITE, 1,      1,       NULL},	/* Selected */
+                                      {0,  10,  0, MD_TRANS, 0,        G_BLACK,	 G_WHITE, G_WHITE, 1,      1,       NULL}},	/* Highlighted */
+ /* Info text-info */
+ { 0,		      		      {0,   9,  0, MD_TRANS, 0,        G_LBLACK, G_WHITE, G_WHITE, 1,      1,       NULL},	/* Normal */
+                                      {0,   9,  0, MD_TRANS, 0,        G_LBLACK, G_WHITE, G_WHITE, 1,      1,       NULL},	/* Selected */
+                                      {0,   9,  0, MD_TRANS, 0,        G_BLACK,	 G_WHITE, G_WHITE, 1,      1,       NULL}},	/* Highlighted */
+};
+/* ---------------------------------------------------------------------------------- */
+/* ---------------- Scroll List window colour theme --------------------------------- */
+/* ---------------------------------------------------------------------------------- */
+struct xa_gradient slist_otop_vslide_gradient =
+{
+	NULL,
+	-1, 0,
+	0, 16,
+
+	1, 0, {0},
+	{{300,300,300},{500,500,500}},
+};
+struct xa_gradient slist_otop_hslide_gradient =
+{
+	NULL,
+	0, -1, 
+	16, 0,
+
+	0, 0, {0},
+	{{300,300,300},{500,500,500}},
+};
+struct xa_gradient slist_otop_vslider_gradient =
+{
+	NULL,
+	-1, 0,
+	0, 16,
+
+	1, 0, {0},
+	{{800,800,800},{500,500,500}},
+};
+struct xa_gradient slist_otop_hslider_gradient =
+{
+	NULL,
+	0, -1, 
+	16, 0,
+
+	0, 0, {0},
+	{{800,800,800},{500,500,500}},
+};
+struct xa_gradient slist_utop_vslide_gradient =
+{
+	NULL,
+	-1, 0,
+	0, 16,
+
+	1, 0, {0},
+	{{300,300,300},{500,500,500}},
+};
+struct xa_gradient slist_utop_hslide_gradient =
+{
+	NULL,
+	0, -1, 
+	16, 0,
+
+	0, 0, {0},
+	{{300,300,300},{500,500,500}},
+};
+struct xa_gradient slist_utop_vslider_gradient =
+{
+	NULL,
+	-1, 0,
+	0, 16,
+
+	1, 0, {0},
+	{{800,800,800},{500,500,500}},
+};
+struct xa_gradient slist_utop_hslider_gradient =
+{
+	NULL,
+	0, -1, 
+	16, 0,
+
+	0, 0, {0},
+	{{800,800,800},{500,500,500}},
+};
+
+static struct xa_gradient slist_otop_title_gradient = 
+{
+	NULL,
+	-1, -1,
+	0, 0,
+
+	2, 0,{0},
+	{{00,00,400},{600,600,1000}},
+};
+static struct xa_gradient slist_utop_title_gradient =
+{
+	NULL,
+	-1, -1,
+	0, 0,
+	
+	2, 0, {0},
+	{{500,500,500},{700,700,700}},
+/*	{{500,500,500},{900,900,900}}, */
+};
+
+static struct xa_gradient slist_otop_info_gradient = 
+{
+	NULL,
+	0, -1,
+	16, 0,
+
+	3, 1, {3, 0},
+	{{200,200,200},{600,600,600},{900,900,900}},
+};
+static struct xa_gradient slist_utop_info_gradient = 
+{
+	NULL,
+	0, -1,
+	16, 0,
+
+	0, 0, {0},
+	{{200,200,200},{400,400,400}},
+};
+static struct xa_gradient slist_otop_grey_gradient =
+{
+	NULL,
+	-1, -1,
+	0, 0,
+	
+	2, 0, {0},
+	{{500,500,500},{900,900,900}},
+};
+static struct xa_gradient slist_utop_grey_gradient =
+{
+	NULL,
+	-1, -1,
+	0, 0,
+	
+	2, 0, {0},
+	{{300,300,300},{700,700,700}},
+/*	{{500,500,500},{900,900,900}}, */
+};
+
+struct window_colours slist_def_otop_cols =
+{
+ { 0 },	/* data header */
+ WCF_TOP,
+
+ G_LBLACK, /* window workarea frame color */
+ G_LBLACK, /* window frame color */
+/*          flags                        wrmode      color       fill    fill    box       box        tl      br		*/
+/*                                                             interior  style  color    thickness  colour  colour		*/
+ { WCOL_DRAWBKG/*|WCOL_BOXED*/, MD_REPLACE,
+                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},
+                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},
+                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* window areas not covered by a widget/ unused widgets*/
+ 
+  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_CYAN,   FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_CYAN, NULL},	/* Normal */
+                                                    {G_CYAN,   FIS_SOLID,   8,   G_BLACK,     1,    G_CYAN, G_WHITE, NULL},		/* Selected */
+                                                    {G_BLUE,   FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}},	/* Highlighted */
+/* Horizontal Slider */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_hslider_gradient},	/* Normal */
+             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL, &slist_otop_hslider_gradient},	/* Selected */
+             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL, &slist_otop_hslider_gradient}}, /* Highlighted */
+ /* Horizontal Slide */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+             {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_hslide_gradient},	/* Normal */
+             {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL, &slist_otop_hslide_gradient},	/* Selected */
+             {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_hslide_gradient}}, /* Highlighted */
+ 
+ /* Vertical Slider */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_vslider_gradient},	/* Normal */
+             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL, &slist_otop_vslider_gradient},	/* Selected */
+             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL, &slist_otop_vslider_gradient}}, /* Highlighted */
+ /* Vertical Slide */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+             {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_vslide_gradient},	/* Normal */
+             {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL, &slist_otop_vslide_gradient},	/* Selected */
+             {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_vslide_gradient}}, /* Highlighted */
+/* Title */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED|WCOL_GRADIENT, MD_REPLACE,
+             {G_BLUE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_title_gradient},	/* Normal */
+             {G_LBLUE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL, &slist_otop_title_gradient},	/* Selected */
+             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,      1,    G_WHITE, G_LBLACK, NULL, &slist_otop_title_gradient}}, /* Highlighted */
+ /* Info */
+ { WCOL_DRAW3D|WCOL_DRAWBKG|WCOL_GRADIENT, MD_REPLACE,
+             {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL, &slist_otop_info_gradient},	/* Normal */
+             {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL, &slist_otop_info_gradient},	/* Selected */
+             {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL, &slist_otop_info_gradient}}, /* Highlighted */
+ /* Closer */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_title_gradient},	/* Normal */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &slist_otop_title_gradient},	/* Selected */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_title_gradient}}, /* Highlighted */
+ /* Hider */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_title_gradient},	/* Normal */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &slist_otop_title_gradient},	/* Selected */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_title_gradient}}, /* Highlighted */
+ /* Iconifier */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_title_gradient},	/* Normal */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &slist_otop_title_gradient},	/* Selected */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_title_gradient}}, /* Highlighted */
+ /* Fuller */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_title_gradient},	/* Normal */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &slist_otop_title_gradient},	/* Selected */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_title_gradient}}, /* Highlighted */
+ /* Sizer */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_grey_gradient},	/* Normal */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &slist_otop_grey_gradient},	/* Selected */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_grey_gradient}}, /* Highlighted */
+ /* UP Arrow */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE, 
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_grey_gradient},	/* Normal */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &slist_otop_grey_gradient},	/* Selected */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_grey_gradient}}, /* Highlighted */
+ /* DN Arrow */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_grey_gradient},	/* Normal */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &slist_otop_grey_gradient},	/* Selected */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_grey_gradient}}, /* Highlighted */
+ /* LF Arrow */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_grey_gradient},	/* Normal */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &slist_otop_grey_gradient},	/* Selected */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_grey_gradient}}, /* Highlighted */
+ /* RT Arrow */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_grey_gradient},	/* Normal */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &slist_otop_grey_gradient},	/* Selected */
+              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_grey_gradient}}, /* Highlighted */
+
+/* flags	                     fontId  size flags wrmode    Effect      forground       background x_3dact y_3dact	*/
+/*								                col	          col		*/
+ /* Title text-info */
+ { /*WTXT_DRAW3D|WTXT_ACT3D|*/WTXT_CENTER,
+                                   /* id  pnts flags wrm,   efx         fgc      bgc      banner  x_3dact y_3dact texture */
+                                      {0, 10,   0, MD_TRANS, 0,        G_WHITE,	G_LWHITE, G_WHITE,  1,       1,     NULL}, /* Normal */
+                                      {0, 10,   0, MD_TRANS, 0,        G_WHITE,	G_LWHITE, G_WHITE,  1,       1,     NULL},	/* Selected */
+                                      {0, 10,   0, MD_TRANS, 0,        G_WHITE,	G_LWHITE, G_WHITE,  1,       1,     NULL}},	/* Highlighted */
+ /* Info text-info */
+ { 0,
+                                      {0,  9,   0, MD_TRANS, 0,        G_BLACK,	G_WHITE, G_WHITE,  1,       1,     NULL},	/* Normal */
+                                      {0,  9,   0, MD_TRANS, 0,        G_BLACK,	G_WHITE, G_WHITE,  1,       1,     NULL},	/* Selected */
+                                      {0,  9,   0, MD_TRANS, 0,        G_BLACK,	G_WHITE, G_WHITE,  1,       1,     NULL}},	/* Highlighted */
+
+};
+
+struct window_colours slist_def_utop_cols =
+{
+ { 0 },	/* data header */
+ 0,
+ 
+ G_LBLACK,	/* Window work area frame color */
+ G_LBLACK,	/* window frame color */
+/*          flags                        wrmode      color       fill    fill    box       box        tl      br		*/
+/*                                                             interior  style  color    thickness  colour  colour		*/
+ /* Window color (when unused window exterior is drawn) */
+ { WCOL_DRAWBKG/*|WCOL_BOXED*/,                      MD_REPLACE,
+                                                    {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,     1,    G_WHITE, G_LBLACK, NULL},
+                                                    {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,     1,    G_WHITE, G_LBLACK, NULL},
+                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}},	/* window areas not covered by a widget/ unused widgets*/
+ 
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LWHITE, NULL},	/* Normal */
+                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_LWHITE, G_WHITE,  NULL},	/* Selected */
+                                                    {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL}},	/* Highlighted */
+ /* H Slider */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
+        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_hslider_gradient},	/* Normal */
+        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL, &slist_utop_hslider_gradient},	/* Selected */
+        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL, &slist_utop_hslider_gradient}},	/* Highlighted */
+ /* H Slide */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
+        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_hslide_gradient},	/* Normal */
+        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &slist_utop_hslide_gradient},	/* Selected */
+        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_hslide_gradient}}, /* Highlighted */
+  /* V Slider */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
+        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_vslider_gradient},	/* Normal */
+        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL, &slist_utop_vslider_gradient},	/* Selected */
+        {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL, &slist_utop_vslider_gradient}},	/* Highlighted */
+ /* V Slide */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
+        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_vslide_gradient},	/* Normal */
+        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &slist_utop_vslide_gradient},	/* Selected */
+        {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_vslide_gradient}}, /* Highlighted */
+ /* Title */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_GRADIENT, MD_REPLACE,
+             {G_BLUE, FIS_SOLID,   8,   G_LBLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_title_gradient},	/* Normal */
+             {G_LBLUE, FIS_SOLID,   8,   G_LBLACK,     1,    G_LBLACK, G_WHITE, NULL, &slist_utop_title_gradient},	/* Selected */
+             {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_title_gradient}}, /* Highlighted */
+ /* Info */
+ { WCOL_DRAWBKG|WCOL_GRADIENT,		MD_REPLACE,
+             {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,    1,    G_LBLACK,G_BLACK, NULL, &slist_utop_info_gradient},	/* Normal */
+             {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,    1,    G_LBLACK,G_BLACK, NULL, &slist_utop_info_gradient},	/* Selected */
+             {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL, &slist_utop_info_gradient}}, /* Highlighted */
+ /* Closer */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_grey_gradient},	/* Normal */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &slist_utop_grey_gradient},	/* Selected */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_grey_gradient}}, /* Highlighted */
+ /* Hider */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_grey_gradient},	/* Normal */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &slist_utop_grey_gradient},	/* Selected */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_grey_gradient}}, /* Highlighted */
+ /* Iconifier */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_grey_gradient},	/* Normal */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &slist_utop_grey_gradient},	/* Selected */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_grey_gradient}}, /* Highlighted */
+ /* Fuller */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_grey_gradient},	/* Normal */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &slist_utop_grey_gradient},	/* Selected */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_grey_gradient}}, /* Highlighted */
+ /* Sizer */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_grey_gradient},	/* Normal */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &slist_utop_grey_gradient},	/* Selected */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_grey_gradient}}, /* Highlighted */
+ /* UP Arrow */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_grey_gradient},	/* Normal */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &slist_utop_grey_gradient},	/* Selected */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_grey_gradient}}, /* Highlighted */
+ /* DN Arrow */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_grey_gradient},	/* Normal */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &slist_utop_grey_gradient},	/* Selected */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_grey_gradient}}, /* Highlighted */
+ /* LF Arrow */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_grey_gradient},	/* Normal */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &slist_utop_grey_gradient},	/* Selected */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_grey_gradient}}, /* Highlighted */
+ /* RT Arrow */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_grey_gradient},	/* Normal */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &slist_utop_grey_gradient},	/* Selected */
+             {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_utop_grey_gradient}}, /* Highlighted */
+
+/* flags	                     fontId  size wrmode    Effect      forground       background	*/
+/*								           col	          col		*/
+ /* Title text-info */
+ { WTXT_DRAW3D|WTXT_ACT3D|WTXT_CENTER,
+                                   /* id  pnts flags wrm,   efx         fgc      bgc      banner  x_3dact y_3dact texture */
+                                      {0,  10,  0, MD_TRANS, 0,        G_LBLACK, G_WHITE, G_WHITE, 1,      1,       NULL},	/* Normal */
+                                      {0,  10,  0, MD_TRANS, 0,        G_LBLACK, G_WHITE, G_WHITE, 1,      1,       NULL},	/* Selected */
+                                      {0,  10,  0, MD_TRANS, 0,        G_BLACK,	 G_WHITE, G_WHITE, 1,      1,       NULL}},	/* Highlighted */
+ /* Info text-info */
+ { 0,		      		      {0,   9,  0, MD_TRANS, 0,        G_LBLACK, G_WHITE, G_WHITE, 1,      1,       NULL},	/* Normal */
+                                      {0,   9,  0, MD_TRANS, 0,        G_LBLACK, G_WHITE, G_WHITE, 1,      1,       NULL},	/* Selected */
+                                      {0,   9,  0, MD_TRANS, 0,        G_BLACK,	 G_WHITE, G_WHITE, 1,      1,       NULL}},	/* Highlighted */
+};
+/* ---------------------------------------------------------------------------------- */
+/* ---------------- Monochrome color theme used by all window classes --------------- */
 /* ---------------------------------------------------------------------------------- */
 struct window_colours mono_def_otop_cols =
 {
- { 0 },	0L,	/* data header, links */
+ { 0 },	/* data header, links */
+ WCF_TOP,
 
  G_BLACK,	/* window workarea frame color */
  G_BLACK,	/* window frame color */
@@ -616,12 +1567,22 @@ struct window_colours mono_def_otop_cols =
                                                     {G_WHITE,   FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
                                                     {G_WHITE,   FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
                                                     {G_WHITE,   FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}},	/* Highlighted */
-/* Slider */
+/* H Slider */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
                                                     {G_WHITE, FIS_SOLID,    0,  G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
                                                     {G_WHITE, FIS_SOLID,    0,  G_BLACK,     1,    G_BLACK, G_WHITE,  NULL},	/* Selected */
                                                     {G_WHITE, FIS_SOLID,    0,  G_BLACK,     1,    G_WHITE, G_BLACK,  NULL}}, /* Highlighted */
- /* Slide */
+ /* H Slide */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_BLACK, FIS_PATTERN,  4,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
+                                                    {G_BLACK, FIS_PATTERN,  4,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_BLACK, FIS_PATTERN,  4,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
+/* V Slider */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_WHITE, FIS_SOLID,    0,  G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
+                                                    {G_WHITE, FIS_SOLID,    0,  G_BLACK,     1,    G_BLACK, G_WHITE,  NULL},	/* Selected */
+                                                    {G_WHITE, FIS_SOLID,    0,  G_BLACK,     1,    G_WHITE, G_BLACK,  NULL}}, /* Highlighted */
+ /* V Slide */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
                                                     {G_BLACK, FIS_PATTERN,  4,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
                                                     {G_BLACK, FIS_PATTERN,  4,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
@@ -686,19 +1647,21 @@ struct window_colours mono_def_otop_cols =
 /*								           col	          col		*/
  /* Title text-info */
  { WTXT_DRAW3D|WTXT_ACT3D|WTXT_CENTER,
-                                      {1,     10, MD_REPLACE, 0,        G_BLACK,	G_WHITE },	/* Normal */
-                                      {1,     10, MD_REPLACE, 0,        G_BLACK,	G_WHITE },	/* Selected */
-                                      {1,     10, MD_REPLACE, 0,        G_BLACK,	G_WHITE }},	/* Highlighted */
+                                   /* id  pnts flags wrm,     efx         fgc      bgc      banner  x_3dact y_3dact texture */
+                                      {1,  10,  0, MD_REPLACE, 0,        G_BLACK, G_WHITE, G_WHITE,  1,      1,      NULL},	/* Normal */
+                                      {1,  10,  0, MD_REPLACE, 0,        G_BLACK, G_WHITE, G_WHITE,  1,      1,      NULL},	/* Selected */
+                                      {1,  10,  0, MD_REPLACE, 0,        G_BLACK, G_WHITE, G_WHITE,  1,      1,      NULL}},	/* Highlighted */
  /* Info text-info */
- { 0,		      		      {1,     9,  MD_REPLACE, 0,        G_BLACK,	G_WHITE },	/* Normal */
-                                      {1,     9,  MD_REPLACE, 0,        G_BLACK,	G_WHITE },	/* Selected */
-                                      {1,     9,  MD_REPLACE, 0,        G_BLACK,	G_WHITE }},	/* Highlighted */
+ { 0,		      		      {1,   9,  0, MD_REPLACE, 0,        G_BLACK, G_WHITE, G_WHITE,  1,      1,      NULL},	/* Normal */
+                                      {1,   9,  0, MD_REPLACE, 0,        G_BLACK, G_WHITE, G_WHITE,  1,      1,      NULL},	/* Selected */
+                                      {1,   9,  0, MD_REPLACE, 0,        G_BLACK, G_WHITE, G_WHITE,  1,      1,      NULL}},	/* Highlighted */
 
 };
 
 struct window_colours mono_def_utop_cols =
 {
- { 0 },	0L,	/* data header, links */
+ { 0 },	/* data header, links */
+ 0,
 
  G_BLACK, /* window workarea frame color */
  G_BLACK, /* window frame color */
@@ -713,12 +1676,22 @@ struct window_colours mono_def_utop_cols =
                                                     {G_BLACK,   FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
                                                     {G_BLACK,   FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
                                                     {G_BLACK,   FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}},	/* Highlighted */
-/* Slider */
+/* H Slider */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
                                                     {G_WHITE, FIS_SOLID,    0,  G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
                                                     {G_WHITE, FIS_SOLID,    0,  G_BLACK,     1,    G_BLACK, G_WHITE,  NULL},	/* Selected */
                                                     {G_WHITE, FIS_SOLID,    0,  G_BLACK,     1,    G_WHITE, G_BLACK,  NULL}}, /* Highlighted */
- /* Slide */
+ /* H Slide */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_BLACK, FIS_PATTERN,  4,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
+                                                    {G_BLACK, FIS_PATTERN,  4,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
+                                                    {G_BLACK, FIS_PATTERN,  4,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
+/* V Slider */
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
+                                                    {G_WHITE, FIS_SOLID,    0,  G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
+                                                    {G_WHITE, FIS_SOLID,    0,  G_BLACK,     1,    G_BLACK, G_WHITE,  NULL},	/* Selected */
+                                                    {G_WHITE, FIS_SOLID,    0,  G_BLACK,     1,    G_WHITE, G_BLACK,  NULL}}, /* Highlighted */
+ /* V Slide */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
                                                     {G_BLACK, FIS_PATTERN,  4,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
                                                     {G_BLACK, FIS_PATTERN,  4,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
@@ -780,17 +1753,19 @@ struct window_colours mono_def_utop_cols =
                                                     {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
 
 /* struct xa_wtxt_inf */
-/* flags	                     fontId  size   wrmode    Effect           forground       background	*/
+/* id  pnts  flags wrm,     efx   fgc      bgc   banner x_3dact y_3dact texture */
+/* flags	                     Id     wrmode    Effect           forground       background	*/
 /*								                  col	          col		*/
  /* Title text-info */
  { WTXT_DRAW3D|WTXT_ACT3D|WTXT_CENTER,
-                                      {1,     10, MD_REPLACE, TXT_LIGHT,        G_BLACK,	G_WHITE },	/* Normal */
-                                      {1,     10, MD_REPLACE, TXT_LIGHT,        G_BLACK,	G_WHITE },	/* Selected */
-                                      {1,     10, MD_REPLACE, TXT_LIGHT,        G_BLACK,	G_WHITE }},	/* Highlighted */
+                                   /* id  pnts flags wrm,     efx         fgc      bgc      banner  x_3dact y_3dact texture */
+                                      {1, 10,   0, MD_REPLACE, TXT_LIGHT, G_BLACK, G_WHITE, G_WHITE, 1,       1,    NULL},	/* Normal */
+                                      {1, 10,   0, MD_REPLACE, TXT_LIGHT, G_BLACK, G_WHITE, G_WHITE, 1,       1,    NULL},	/* Selected */
+                                      {1, 10,   0, MD_REPLACE, TXT_LIGHT, G_BLACK, G_WHITE, G_WHITE, 1,       1,    NULL}},	/* Highlighted */
  /* Info text-info */
- { 0,		      		      {1,     9,  MD_REPLACE, TXT_LIGHT,        G_BLACK,	G_WHITE },	/* Normal */
-                                      {1,     9,  MD_REPLACE, TXT_LIGHT,        G_BLACK,	G_WHITE },	/* Selected */
-                                      {1,     9,  MD_REPLACE, TXT_LIGHT,        G_BLACK,	G_WHITE }},	/* Highlighted */
+ { 0,		      		      {1,  9,   0, MD_REPLACE, TXT_LIGHT, G_BLACK, G_WHITE, G_WHITE, 1,       1,    NULL},	/* Normal */
+                                      {1,  9,   0, MD_REPLACE, TXT_LIGHT, G_BLACK, G_WHITE, G_WHITE, 1,       1,    NULL},	/* Selected */
+                                      {1,  9,   0, MD_REPLACE, TXT_LIGHT, G_BLACK, G_WHITE, G_WHITE, 1,       1,    NULL}},	/* Highlighted */
 };
 
 static inline long
@@ -935,7 +1910,7 @@ draw_pu_canvas(struct xa_window *wind, RECT *outer, RECT *inner, const RECT *cli
  * Draw a window widget
  */
 static void
-draw_widg_box(struct xa_vdi_settings *v, short d, struct xa_wcol_inf *wcoli, short state, RECT *wr, RECT *anch)
+draw_widg_box(struct xa_vdi_settings *v, short d, struct xa_wcol_inf *wcoli, struct xa_wtexture *t, short state, RECT *wr, RECT *anch)
 {
 	struct xa_wcol *wcol;
 	struct xa_wtexture *wext;
@@ -950,7 +1925,7 @@ draw_widg_box(struct xa_vdi_settings *v, short d, struct xa_wcol_inf *wcoli, sho
 	else
 		wcol = &wcoli->n;
 
-	wext = wcol->texture;
+	wext = t ? t : wcol->texture;
 
 	if (d)
 	{
@@ -983,7 +1958,7 @@ draw_widg_box(struct xa_vdi_settings *v, short d, struct xa_wcol_inf *wcoli, sho
 		o -= 1;
 	}
 
-	if (f & WCOL_DRAWBKG)
+	if (!t && (f & WCOL_DRAWBKG))
 	{
 		(*v->api->f_interior)(v, wcol->i);
 		if (wcol->i > 1)
@@ -1027,7 +2002,7 @@ draw_widg_icon(struct xa_vdi_settings *v, struct xa_widget *widg, XA_TREE *wt, s
 	(*api->object_spec_wh)(aesobj_ob(&ob), &w, &h);
 	x += (widg->ar.w - w) >> 1;
 	y += (widg->ar.h - h) >> 1;
-	display_object(0, wt, v, ob, x, y, 0);
+	(*api->render_object)(wt, v, ob, x, y); //display_object(0, wt, v, ob, x, y, 0);
 }
 
 static void
@@ -1072,7 +2047,7 @@ d_unused(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 {
 	struct xa_wcol_inf *wc = &((struct window_colours *)wind->colours)->win;
 	(*api->rp2ap)(wind, widg, &widg->ar);
-	draw_widg_box(wind->vdi_settings, 0, wc, 0, &widg->ar, &wind->r);
+	draw_widg_box(wind->vdi_settings, 0, wc, NULL, 0, &widg->ar, &wind->r);
 	return true;
 }
 
@@ -1093,42 +2068,42 @@ d_borders(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 			r.y = wind->r.y;
 			r.w = size;
 			r.h = size;
-			draw_widg_box(v, 0, wci, 0, &r, &wind->r);
+			draw_widg_box(v, 0, wci, NULL, 0, &r, &wind->r);
 
 			/* Left border */
 			r.y += size;
 			r.h = wind->r.h - (size + size + wind->y_shadow);
-			draw_widg_box(v, 0, wci, 0, &r, &wind->r);
+			draw_widg_box(v, 0, wci, NULL, 0, &r, &wind->r);
 
 			/* bottom-left box */
 			r.y = wind->r.y + wind->r.h - (size + wind->y_shadow);
 			r.h = size;
-			draw_widg_box(v, 0, wci, 0, &r, &wind->r);
+			draw_widg_box(v, 0, wci, NULL, 0, &r, &wind->r);
 
 			/* Bottom border */
 			r.x += size;
 			r.w = wind->r.w - (size + size + wind->x_shadow);
-			draw_widg_box(v, 0, wci, 0, &r, &wind->r);
+			draw_widg_box(v, 0, wci, NULL, 0, &r, &wind->r);
 
 			/* right-bottom box */
 			r.x = wind->r.x + wind->r.w - (size + wind->x_shadow);
 			r.w = size;
-			draw_widg_box(v, 0, wci, 0, &r, &wind->r);
+			draw_widg_box(v, 0, wci, NULL, 0, &r, &wind->r);
 
 			/* right border */
 			r.y = wind->r.y + size;
 			r.h = wind->r.h - (size + size + wind->y_shadow);
-			draw_widg_box(v, 0, wci, 0, &r, &wind->r);
+			draw_widg_box(v, 0, wci, NULL, 0, &r, &wind->r);
 
 			/* top-right box */
 			r.y = wind->r.y;
 			r.h = size;
-			draw_widg_box(v, 0, wci, 0, &r, &wind->r);
+			draw_widg_box(v, 0, wci, NULL, 0, &r, &wind->r);
 
 			/* Top border*/
 			r.x = wind->r.x + size;
 			r.w = wind->r.w - (size + size + wind->x_shadow);
-			draw_widg_box(v, 0, wci, 0, &r, &wind->r);
+			draw_widg_box(v, 0, wci, NULL, 0, &r, &wind->r);
 		}
 		else
 		{
@@ -1168,13 +2143,27 @@ strip_name(char *to, const char *fro)
 	*to = '\0';
 }
 
+static void _cdecl
+free_priv_gradients(struct xa_window *wind, struct xa_widget *widg)
+{
+	int i;
+
+	for (i = 0; i < 4; i++)
+	{
+		if (widg->m.r.priv[i])
+			(*api->free_xa_data_list)((struct xa_data_hdr **)&widg->m.r.priv[i]);
+	}
+}
+
 static bool _cdecl
 d_title(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 {
 	struct options *o = &wind->owner->options;
-	struct xa_wcol_inf *wci = &((struct window_colours *)wind->colours)->title;
-	struct xa_wtxt_inf *wti = &((struct window_colours *)wind->colours)->title_txt;
+	struct window_colours *wc = wind->colours;
+	struct xa_wcol_inf *wci = &wc->title; //&((struct window_colours *)wind->colours)->title;
+	struct xa_wtxt_inf *wti = &wc->title_txt; //&((struct window_colours *)wind->colours)->title_txt;
 	struct xa_vdi_settings *v = wind->vdi_settings;
+	struct xa_wtexture *t = NULL;
 	char tn[256];
 	bool dial = (wind->dial & (created_for_FORM_DO|created_for_FMD_START)) != 0;
 
@@ -1191,7 +2180,56 @@ d_title(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	else
 #endif
 	{
-		draw_widg_box(v, 0, wci, widg->state, &widg->ar, &wind->r);
+		if (scrninf->planes > 8)
+		{
+			struct xa_data_hdr **allocs;
+// 			struct module *m = wind->active_theme->module;
+			struct xa_wcol *wcol;
+			
+			if (wc->flags & WCF_TOP)
+			{
+				wcol = &wci->n;
+				allocs = (struct xa_data_hdr **)&widg->m.r.priv[0];
+			}
+			else
+			{
+				wcol = &wci->s;
+				allocs = (struct xa_data_hdr **)&widg->m.r.priv[1];
+			}
+			t = find_gradient(v, wcol, true, allocs, widg->ar.w, widg->ar.h);
+		}
+		widg->prevr = widg->ar;
+
+	#if 0
+		if (scrninf->planes > 8 && wci->n.texture->w != widg->ar.w)
+		{
+			struct module *m;
+			struct widg_texture *t;
+			struct rgb_1000 s[2];
+			
+			m = wind->active_theme->module; //&((struct module *)wind->active_theme->module)
+			
+			if (wc->flags & WCF_TOP)
+			{
+// 				s[0] = (struct rgb_1000){400, 400, 600};
+// 				s[1] = (struct rgb_1000){800, 800, 1000};
+				s[0] = (struct rgb_1000){300, 500, 300};
+				s[1] = (struct rgb_1000){800, 1000, 800};
+			}
+			else
+			{
+				s[0] = (struct rgb_1000){500, 500, 500};
+				s[1] = (struct rgb_1000){900, 900, 900};
+// 				s[0] = (struct rgb_1000){100, 100, 100};
+// 				s[1] = (struct rgb_1000){500, 500, 500};
+			}
+			free_texture(m, wci);
+			t = load_grad(m, s, widg->ar.w, widg->ar.h, 0, 2);
+			set_texture(m, wci, t);
+			wci->n.texture->w = widg->ar.w;
+		}
+	#endif
+		draw_widg_box(v, 0, wci, t, widg->state, &widg->ar, &widg->ar); // &wind->r);
 #if 0
 		/* no move, no 3D */
 		if (wind->active_widgets & MOVER)
@@ -1252,12 +2290,100 @@ d_title(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 }
 
 static bool _cdecl
+d_wcontext(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
+{
+	struct window_colours *wc = wind->colours;
+	struct xa_wcol_inf *wci = &wc->closer;
+	struct xa_wtexture *t = NULL;
+	
+	(*api->rp2ap)(wind, widg, &widg->ar);
+	
+	if (scrninf->planes > 8)
+	{
+		struct xa_data_hdr **allocs;
+// 		struct module *m = wind->active_theme->module;
+		struct xa_wcol *wcol;
+			
+		if (wc->flags & WCF_TOP)
+		{
+			wcol = &wci->n;
+			allocs = (struct xa_data_hdr **)&widg->m.r.priv[0];
+		}
+		else
+		{
+			wcol = &wci->s;
+			allocs = (struct xa_data_hdr **)&widg->m.r.priv[1];
+		}
+		t = find_gradient(wind->vdi_settings, wcol, true, allocs, widg->ar.w, widg->ar.h);
+	}
+	widg->prevr = widg->ar;
+	draw_widg_box(wind->vdi_settings, 0, wci, t, widg->state, &widg->ar, t ? &widg->ar : &wind->r);
+	draw_widg_icon(wind->vdi_settings, widg, &((struct module *)wind->active_theme->module)->wwt, WIDG_CLOSER);
+	return true;
+}
+
+static bool _cdecl
+d_wappicn(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
+{
+	struct window_colours *wc = wind->colours;
+	struct xa_wcol_inf *wci = &wc->closer;
+	struct xa_wtexture *t = NULL;
+	
+	(*api->rp2ap)(wind, widg, &widg->ar);
+	
+	if (scrninf->planes > 8)
+	{
+		struct xa_data_hdr **allocs;
+// 		struct module *m = wind->active_theme->module;
+		struct xa_wcol *wcol;
+			
+		if (wc->flags & WCF_TOP)
+		{
+			wcol = &wci->n;
+			allocs = (struct xa_data_hdr **)&widg->m.r.priv[0];
+		}
+		else
+		{
+			wcol = &wci->s;
+			allocs = (struct xa_data_hdr **)&widg->m.r.priv[1];
+		}
+		t = find_gradient(wind->vdi_settings, wcol, true, allocs, widg->ar.w, widg->ar.h);
+	}
+	widg->prevr = widg->ar;
+	draw_widg_box(wind->vdi_settings, 0, wci, t, widg->state, &widg->ar, t ? &widg->ar : &wind->r);
+	draw_widg_icon(wind->vdi_settings, widg, &((struct module *)wind->active_theme->module)->wwt, WIDG_CLOSER);
+	return true;
+}
+
+static bool _cdecl
 d_closer(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 {
-	struct xa_wcol_inf *wci = &((struct window_colours *)wind->colours)->closer;
-
+	struct window_colours *wc = wind->colours;
+	struct xa_wcol_inf *wci = &wc->closer;
+	struct xa_wtexture *t = NULL;
+	
 	(*api->rp2ap)(wind, widg, &widg->ar);
-	draw_widg_box(wind->vdi_settings, 0, wci, widg->state, &widg->ar, &wind->r);
+	
+	if (scrninf->planes > 8)
+	{
+		struct xa_data_hdr **allocs;
+// 		struct module *m = wind->active_theme->module;
+		struct xa_wcol *wcol;
+			
+		if (wc->flags & WCF_TOP)
+		{
+			wcol = &wci->n;
+			allocs = (struct xa_data_hdr **)&widg->m.r.priv[0];
+		}
+		else
+		{
+			wcol = &wci->s;
+			allocs = (struct xa_data_hdr **)&widg->m.r.priv[1];
+		}
+		t = find_gradient(wind->vdi_settings, wcol, true, allocs, widg->ar.w, widg->ar.h);
+	}
+	widg->prevr = widg->ar;
+	draw_widg_box(wind->vdi_settings, 0, wci, t, widg->state, &widg->ar, t ? &widg->ar : &wind->r);
 	draw_widg_icon(wind->vdi_settings, widg, &((struct module *)wind->active_theme->module)->wwt, WIDG_CLOSER);
 	return true;
 }
@@ -1265,9 +2391,32 @@ d_closer(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 static bool _cdecl
 d_fuller(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 {
-	struct xa_wcol_inf *wci = &((struct window_colours *)wind->colours)->fuller;
+	struct window_colours *wc = wind->colours;
+	struct xa_wcol_inf *wci = &wc->fuller;
+	struct xa_wtexture *t = NULL;
+	
 	(*api->rp2ap)(wind, widg, &widg->ar);
-	draw_widg_box(wind->vdi_settings, 0, wci, widg->state, &widg->ar, &wind->r);
+	
+	if (scrninf->planes > 8)
+	{
+		struct xa_data_hdr **allocs;
+// 		struct module *m = wind->active_theme->module;
+		struct xa_wcol *wcol;
+			
+		if (wc->flags & WCF_TOP)
+		{
+			wcol = &wci->n;
+			allocs = (struct xa_data_hdr **)&widg->m.r.priv[0];
+		}
+		else
+		{
+			wcol = &wci->s;
+			allocs = (struct xa_data_hdr **)&widg->m.r.priv[1];
+		}
+		t = find_gradient(wind->vdi_settings, wcol, true, allocs, widg->ar.w, widg->ar.h);
+	}
+	widg->prevr = widg->ar;
+	draw_widg_box(wind->vdi_settings, 0, wci, t, widg->state, &widg->ar, t ? &widg->ar : &wind->r);
 	draw_widg_icon(wind->vdi_settings, widg, &((struct module *)wind->active_theme->module)->wwt, WIDG_FULL);
 	return true;
 }
@@ -1275,12 +2424,36 @@ d_fuller(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 static bool _cdecl
 d_info(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 {
-	struct xa_wcol_inf *wci = &((struct window_colours *)wind->colours)->info;
-	struct xa_wtxt_inf *wti = &((struct window_colours *)wind->colours)->info_txt;
+	struct window_colours *wc = wind->colours;
+	struct xa_wcol_inf *wci = &wc->info;
+	struct xa_wtxt_inf *wti = &wc->info_txt;
+	struct xa_wtexture *t = NULL;
 
 	/* Convert relative coords and window location to absolute screen location */
 	(*api->rp2ap)(wind, widg, &widg->ar);
-	draw_widg_box(wind->vdi_settings, 0, wci, widg->state, &widg->ar, &wind->r);
+		
+	if (scrninf->planes > 8)
+	{
+		struct xa_data_hdr **allocs;
+// 		struct module *m = wind->active_theme->module;
+		struct xa_wcol *wcol;
+			
+		if (wc->flags & WCF_TOP)
+		{
+			wcol = &wci->n;
+			allocs = (struct xa_data_hdr **)&widg->m.r.priv[0];
+		}
+		else
+		{
+			wcol = &wci->s;
+			allocs = (struct xa_data_hdr **)&widg->m.r.priv[1];
+		}
+		t = find_gradient(wind->vdi_settings, wcol, true, allocs, widg->ar.w, widg->ar.h);
+	}
+	widg->prevr = widg->ar;
+
+
+	draw_widg_box(wind->vdi_settings, 0, wci, t, widg->state, &widg->ar, t ? &widg->ar : &wind->r);
 	draw_widget_text(wind->vdi_settings, widg, wti, widg->stuff, 4, 0); 
 	return true;
 }
@@ -1288,10 +2461,32 @@ d_info(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 static bool _cdecl
 d_sizer(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 {
-	struct xa_wcol_inf *wci = &((struct window_colours *)wind->colours)->sizer;
-
+	struct window_colours *wc = wind->colours;
+	struct xa_wcol_inf *wci = &wc->sizer;
+	struct xa_wtexture *t = NULL;
+	
 	(*api->rp2ap)(wind, widg, &widg->ar);
-	draw_widg_box(wind->vdi_settings, 0, wci, widg->state, &widg->ar, &wind->r);
+	
+	if (scrninf->planes > 8)
+	{
+		struct xa_data_hdr **allocs;
+// 		struct module *m = wind->active_theme->module;
+		struct xa_wcol *wcol;
+			
+		if (wc->flags & WCF_TOP)
+		{
+			wcol = &wci->n;
+			allocs = (struct xa_data_hdr **)&widg->m.r.priv[0];
+		}
+		else
+		{
+			wcol = &wci->s;
+			allocs = (struct xa_data_hdr **)&widg->m.r.priv[1];
+		}
+		t = find_gradient(wind->vdi_settings, wcol, true, allocs, widg->ar.w, widg->ar.h);
+	}
+	widg->prevr = widg->ar;
+	draw_widg_box(wind->vdi_settings, 0, wci, t, widg->state, &widg->ar, t ? &widg->ar : &wind->r);
 	draw_widg_icon(wind->vdi_settings, widg, &((struct module *)wind->active_theme->module)->wwt, WIDG_SIZE);
 	return true;
 }
@@ -1299,42 +2494,156 @@ d_sizer(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 static bool _cdecl
 d_uparrow(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 {
-	struct xa_wcol_inf *wci = &((struct window_colours *)wind->colours)->uparrow;
-
+	struct window_colours *wc = wind->colours;
+	struct xa_wcol_inf *wci = &wc->uparrow;
+	struct xa_wtexture *t = NULL;
+	
 	(*api->rp2ap)(wind, widg, &widg->ar);
-	draw_widg_box(wind->vdi_settings, 0, wci, widg->state, &widg->ar, &wind->r);
+	
+	if (scrninf->planes > 8)
+	{
+		struct xa_data_hdr **allocs;
+// 		struct module *m = wind->active_theme->module;
+		struct xa_wcol *wcol;
+			
+		if (wc->flags & WCF_TOP)
+		{
+			wcol = &wci->n;
+			allocs = (struct xa_data_hdr **)&widg->m.r.priv[0];
+		}
+		else
+		{
+			wcol = &wci->s;
+			allocs = (struct xa_data_hdr **)&widg->m.r.priv[1];
+		}
+		t = find_gradient(wind->vdi_settings, wcol, true, allocs, widg->ar.w, widg->ar.h);
+	}
+	widg->prevr = widg->ar;
+	draw_widg_box(wind->vdi_settings, 0, wci, t, widg->state, &widg->ar, t ? &widg->ar : &wind->r);
 	draw_widg_icon(wind->vdi_settings, widg, &((struct module *)wind->active_theme->module)->wwt, WIDG_UP);
 	return true;
 }
 static bool _cdecl
 d_dnarrow(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 {
-	struct xa_wcol_inf *wci = &((struct window_colours *)wind->colours)->dnarrow;
-
+	struct window_colours *wc = wind->colours;
+	struct xa_wcol_inf *wci = &wc->dnarrow;
+	struct xa_wtexture *t = NULL;
+	
 	(*api->rp2ap)(wind, widg, &widg->ar);
-	draw_widg_box(wind->vdi_settings, 0, wci, widg->state, &widg->ar, &wind->r);
+	
+	if (scrninf->planes > 8)
+	{
+		struct xa_data_hdr **allocs;
+// 		struct module *m = wind->active_theme->module;
+		struct xa_wcol *wcol;
+			
+		if (wc->flags & WCF_TOP)
+		{
+			wcol = &wci->n;
+			allocs = (struct xa_data_hdr **)&widg->m.r.priv[0];
+		}
+		else
+		{
+			wcol = &wci->s;
+			allocs = (struct xa_data_hdr **)&widg->m.r.priv[1];
+		}
+		t = find_gradient(wind->vdi_settings, wcol, true, allocs, widg->ar.w, widg->ar.h);
+	}
+	widg->prevr = widg->ar;
+	draw_widg_box(wind->vdi_settings, 0, wci, t, widg->state, &widg->ar, t ? &widg->ar : &wind->r);
 	draw_widg_icon(wind->vdi_settings, widg, &((struct module *)wind->active_theme->module)->wwt, WIDG_DOWN);
 	return true;
 }
 static bool _cdecl
 d_lfarrow(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 {
-	struct xa_wcol_inf *wci = &((struct window_colours *)wind->colours)->lfarrow;
-
+	struct window_colours *wc = wind->colours;
+	struct xa_wcol_inf *wci = &wc->lfarrow;
+	struct xa_wtexture *t = NULL;
+	
 	(*api->rp2ap)(wind, widg, &widg->ar);
-	draw_widg_box(wind->vdi_settings, 0, wci, widg->state, &widg->ar, &wind->r);
+	
+	if (scrninf->planes > 8)
+	{
+		struct xa_data_hdr **allocs;
+// 		struct module *m = wind->active_theme->module;
+		struct xa_wcol *wcol;
+			
+		if (wc->flags & WCF_TOP)
+		{
+			wcol = &wci->n;
+			allocs = (struct xa_data_hdr **)&widg->m.r.priv[0];
+		}
+		else
+		{
+			wcol = &wci->s;
+			allocs = (struct xa_data_hdr **)&widg->m.r.priv[1];
+		}
+		t = find_gradient(wind->vdi_settings, wcol, true, allocs, widg->ar.w, widg->ar.h);
+	}
+	widg->prevr = widg->ar;
+	draw_widg_box(wind->vdi_settings, 0, wci, t, widg->state, &widg->ar, t ? &widg->ar : &wind->r);
 	draw_widg_icon(wind->vdi_settings, widg, &((struct module *)wind->active_theme->module)->wwt, WIDG_LEFT);
 	return true;
 }
 static bool _cdecl
 d_rtarrow(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 {
-	struct xa_wcol_inf *wci = &((struct window_colours *)wind->colours)->rtarrow;
-
+	struct window_colours *wc = wind->colours;
+	struct xa_wcol_inf *wci = &wc->rtarrow;
+	struct xa_wtexture *t = NULL;
+	
 	(*api->rp2ap)(wind, widg, &widg->ar);
-	draw_widg_box(wind->vdi_settings, 0, wci, widg->state, &widg->ar, &wind->r);
+	
+	if (scrninf->planes > 8)
+	{
+		struct xa_data_hdr **allocs;
+// 		struct module *m = wind->active_theme->module;
+		struct xa_wcol *wcol;
+			
+		if (wc->flags & WCF_TOP)
+		{
+			wcol = &wci->n;
+			allocs = (struct xa_data_hdr **)&widg->m.r.priv[0];
+		}
+		else
+		{
+			wcol = &wci->s;
+			allocs = (struct xa_data_hdr **)&widg->m.r.priv[1];
+		}
+		t = find_gradient(wind->vdi_settings, wcol, true, allocs, widg->ar.w, widg->ar.h);
+	}
+	widg->prevr = widg->ar;
+	draw_widg_box(wind->vdi_settings, 0, wci, t, widg->state, &widg->ar, t ? &widg->ar : &wind->r);
 	draw_widg_icon(wind->vdi_settings, widg, &((struct module *)wind->active_theme->module)->wwt, WIDG_RIGHT);
 	return true;
+}
+
+static inline struct xa_wtexture *
+get_widg_gradient(struct xa_vdi_settings *v, struct xa_widget *widg, struct window_colours *wc, struct xa_wcol_inf *wci, short i, short w, short h)
+{
+	struct xa_wtexture *t = NULL;
+
+	if (scrninf->planes > 8)
+	{
+		struct xa_data_hdr **allocs;
+// 		struct module *m = wind->active_theme->module;
+		struct xa_wcol *wcol;
+			
+		if (wc->flags & WCF_TOP)
+		{
+			wcol = &wci->n;
+			allocs = (struct xa_data_hdr **)&widg->m.r.priv[i];
+		}
+		else
+		{
+			wcol = &wci->s;
+			allocs = (struct xa_data_hdr **)&widg->m.r.priv[i + 1];
+		}
+		t = find_gradient(v, wcol, true, allocs, w, h);
+	}
+	return t;
 }
 
 static bool _cdecl
@@ -1344,6 +2653,7 @@ d_vslide(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	XA_SLIDER_WIDGET *sl = widg->stuff;
 	RECT cl;
 	struct window_colours *wc = wind->colours;
+	struct xa_wtexture *t;
 
 	sl->flags &= ~SLIDER_UPDATE;
 
@@ -1356,7 +2666,8 @@ d_vslide(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 		sl->r.w = widg->ar.w;
 		sl->r.h = widg->ar.h;
 		cl = widg->ar;
-		draw_widg_box(wind->vdi_settings, 0, &wc->slider, 0, &widg->ar, &widg->ar);
+		t = get_widg_gradient(wind->vdi_settings, widg, wc, &wc->vslider, 2, widg->ar.w, widg->ar.h);
+		draw_widg_box(wind->vdi_settings, 0, &wc->vslider, t, 0, &widg->ar, &widg->ar);
 		return true;
 	}
 	len = sl_2_pix(widg->ar.h, sl->length);
@@ -1370,7 +2681,8 @@ d_vslide(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	if (offs + len > widg->ar.y + widg->ar.h)
 		len = widg->ar.y + widg->ar.h - offs;
 
-	draw_widg_box(wind->vdi_settings, 0, &wc->slide, 0, &widg->ar, &widg->ar);	
+	t = get_widg_gradient(wind->vdi_settings, widg, wc, &wc->vslide, 0, widg->ar.w, widg->ar.h);
+	draw_widg_box(wind->vdi_settings, 0, &wc->vslide, t, 0, &widg->ar, &widg->ar);
 	
 	sl->r.y = offs - widg->ar.y;
 	sl->r.h = len;
@@ -1380,8 +2692,9 @@ d_vslide(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	cl.y = sl->r.y + widg->ar.y;
 	cl.w = sl->r.w;
 	cl.h = sl->r.h;
-	
-	draw_widg_box(wind->vdi_settings, 0/*-1*/, &wc->slider, widg->state, &cl, &cl);
+
+	t = get_widg_gradient(wind->vdi_settings, widg, wc, &wc->vslider, 2, cl.w, cl.h);
+	draw_widg_box(wind->vdi_settings, 0/*-1*/, &wc->vslider, t, widg->state, &cl, &cl);
 	return true;
 }
 
@@ -1391,6 +2704,7 @@ d_hslide(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	int len, offs;
 	XA_SLIDER_WIDGET *sl = widg->stuff;
 	struct window_colours *wc = wind->colours;
+	struct xa_wtexture *t;
 	RECT cl;
 
 	sl->flags &= ~SLIDER_UPDATE;
@@ -1402,7 +2716,8 @@ d_hslide(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 		sl->r.x = sl->r.y = 0;
 		sl->r.w = widg->ar.w;
 		sl->r.h = widg->ar.h;
-		draw_widg_box(wind->vdi_settings, 0, &wc->slider, 0, &widg->ar, &widg->ar/*&wind->r*/);
+		t = get_widg_gradient(wind->vdi_settings, widg, wc, &wc->hslider, 2, widg->ar.w, widg->ar.h);
+		draw_widg_box(wind->vdi_settings, 0, &wc->hslider, t, 0, &widg->ar, &widg->ar/*&wind->r*/);
 		return true;
 	}
 	len = sl_2_pix(widg->ar.w, sl->length);
@@ -1416,7 +2731,8 @@ d_hslide(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	if (offs + len > widg->ar.x + widg->ar.w)
 		len = widg->ar.x + widg->ar.w - offs;
 	
-	draw_widg_box(wind->vdi_settings, 0, &wc->slide, 0, &widg->ar, &widg->ar/*&wind->r*/);	
+	t = get_widg_gradient(wind->vdi_settings, widg, wc, &wc->hslide, 0, widg->ar.w, widg->ar.h);
+	draw_widg_box(wind->vdi_settings, 0, &wc->hslide, t, 0, &widg->ar, &widg->ar/*&wind->r*/);	
 	
 	sl->r.x = offs - widg->ar.x;
 	sl->r.w = len;
@@ -1427,17 +2743,40 @@ d_hslide(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	cl.w = sl->r.w;
 	cl.h = sl->r.h;
 	
-	draw_widg_box(wind->vdi_settings, 0/*-1*/, &wc->slider, widg->state, &cl, &cl/*&wind->r*/);
+	t = get_widg_gradient(wind->vdi_settings, widg, wc, &wc->hslider, 2, cl.w, cl.h);
+	draw_widg_box(wind->vdi_settings, 0/*-1*/, &wc->hslider, t, widg->state, &cl, &cl/*&wind->r*/);
 	return true;
 }
 
 static bool _cdecl
 d_iconifier(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 {
-	struct xa_wcol_inf *wci = &((struct window_colours *)wind->colours)->iconifier;
-
+	struct window_colours *wc = wind->colours;
+	struct xa_wcol_inf *wci = &wc->iconifier;
+	struct xa_wtexture *t = NULL;
+	
 	(*api->rp2ap)(wind, widg, &widg->ar);
-	draw_widg_box(wind->vdi_settings, 0, wci, widg->state, &widg->ar, &wind->r);
+	
+	if (scrninf->planes > 8)
+	{
+		struct xa_data_hdr **allocs;
+// 		struct module *m = wind->active_theme->module;
+		struct xa_wcol *wcol;
+			
+		if (wc->flags & WCF_TOP)
+		{
+			wcol = &wci->n;
+			allocs = (struct xa_data_hdr **)&widg->m.r.priv[0];
+		}
+		else
+		{
+			wcol = &wci->s;
+			allocs = (struct xa_data_hdr **)&widg->m.r.priv[1];
+		}
+		t = find_gradient(wind->vdi_settings, wcol, true, allocs, widg->ar.w, widg->ar.h);
+	}
+	widg->prevr = widg->ar;
+	draw_widg_box(wind->vdi_settings, 0, wci, t, widg->state, &widg->ar, t ? &widg->ar : &wind->r);
 	draw_widg_icon(wind->vdi_settings, widg, &((struct module *)wind->active_theme->module)->wwt, WIDG_ICONIFY); //widg->loc.rsc_index);
 	return true;
 }
@@ -1445,10 +2784,32 @@ d_iconifier(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 static bool _cdecl
 d_hider(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 {
-	struct xa_wcol_inf *wci = &((struct window_colours *)wind->colours)->hider;
-
-	(*api->rp2ap)(wind, widg, &widg->ar);	
-	draw_widg_box(wind->vdi_settings, 0, wci, widg->state, &widg->ar, &wind->r);
+	struct window_colours *wc = wind->colours;
+	struct xa_wcol_inf *wci = &wc->hider;
+	struct xa_wtexture *t = NULL;
+	
+	(*api->rp2ap)(wind, widg, &widg->ar);
+	
+	if (scrninf->planes > 8)
+	{
+		struct xa_data_hdr **allocs;
+// 		struct module *m = wind->active_theme->module;
+		struct xa_wcol *wcol;
+			
+		if (wc->flags & WCF_TOP)
+		{
+			wcol = &wci->n;
+			allocs = (struct xa_data_hdr **)&widg->m.r.priv[0];
+		}
+		else
+		{
+			wcol = &wci->s;
+			allocs = (struct xa_data_hdr **)&widg->m.r.priv[1];
+		}
+		t = find_gradient(wind->vdi_settings, wcol, true, allocs, widg->ar.w, widg->ar.h);
+	}
+	widg->prevr = widg->ar;
+	draw_widg_box(wind->vdi_settings, 0, wci, t, widg->state, &widg->ar, t ? &widg->ar : &wind->r);
 	draw_widg_icon(wind->vdi_settings, widg, &((struct module *)wind->active_theme->module)->wwt, WIDG_HIDE); //widg->loc.rsc_index);
 	return true;
 }
@@ -1543,8 +2904,7 @@ set_widg_size(struct xa_window *wind, struct xa_widget *widg, struct xa_wcol_inf
 
 	f = wci->flags;
 
-	object_spec_wh(ob, &w, &h);
-
+	(*api->object_spec_wh)(ob, &w, &h);
  	if (f & WCOL_DRAW3D)
  		h += 2, w += 2;
  	if (f & WCOL_BOXED)
@@ -1552,6 +2912,17 @@ set_widg_size(struct xa_window *wind, struct xa_widget *widg, struct xa_wcol_inf
 
 	widg->r.w = w;
 	widg->r.h = h;
+}
+
+static void _cdecl
+s_wcontext_size(struct xa_window *wind, struct xa_widget *widg)
+{
+	set_widg_size(wind, widg, &((struct window_colours *)wind->ontop_cols)->closer, WIDG_CLOSER);
+}
+static void _cdecl
+s_wappicn_size(struct xa_window *wind, struct xa_widget *widg)
+{
+	set_widg_size(wind, widg, &((struct window_colours *)wind->ontop_cols)->closer, WIDG_CLOSER);
 }
 static void _cdecl
 s_closer_size(struct xa_window *wind, struct xa_widget *widg)
@@ -1604,7 +2975,7 @@ s_sizer_size(struct xa_window *wind, struct xa_widget *widg)
 static void _cdecl
 s_vslide_size(struct xa_window *wind, struct xa_widget *widg)
 {
- 	set_widg_size(wind, widg, &((struct window_colours *)wind->ontop_cols)->uparrow, WIDG_UP);
+	set_widg_size(wind, widg, &((struct window_colours *)wind->ontop_cols)->uparrow, WIDG_UP);
 }
 static void _cdecl
 s_hslide_size(struct xa_window *wind, struct xa_widget *widg)
@@ -1730,8 +3101,8 @@ get_wcol(struct xa_window *wind, short gem_widget, BFOBSPEC *ret)
 		case W_HBAR:
 		case W_VBAR:
 		{
-			build_bfobspec(&ontop_cols->slide, NULL, &c[0]);
-			build_bfobspec(&untop_cols->slide, NULL, &c[2]);
+			build_bfobspec(&ontop_cols->vslide, NULL, &c[0]);
+			build_bfobspec(&untop_cols->vslide, NULL, &c[2]);
 			break;
 		}
 		case W_UPARROW:
@@ -1749,15 +3120,15 @@ get_wcol(struct xa_window *wind, short gem_widget, BFOBSPEC *ret)
 		case W_HSLIDE:
 		case W_VSLIDE:
 		{
-			build_bfobspec(&ontop_cols->slide, NULL, &c[0]);
-			build_bfobspec(&untop_cols->slide, NULL, &c[2]);
+			build_bfobspec(&ontop_cols->vslide, NULL, &c[0]);
+			build_bfobspec(&untop_cols->vslide, NULL, &c[2]);
 			break;
 		}
 		case W_HELEV:
 		case W_VELEV:
 		{
-			build_bfobspec(&ontop_cols->slider, NULL, &c[0]);
-			build_bfobspec(&untop_cols->slider, NULL, &c[2]);
+			build_bfobspec(&ontop_cols->vslider, NULL, &c[0]);
+			build_bfobspec(&untop_cols->vslider, NULL, &c[2]);
 			break;
 		}
 		case W_LFARROW:
@@ -1809,22 +3180,17 @@ fix_default_widgets(void *rsc)
 		fix_widg(def_widgets + i);
 }
 
-struct widg_texture
-{
-	struct xa_data_hdr h;
-	struct xa_wtexture t;
-	MFDB mfdb;
-};
 
 static void
-set_texture(struct xa_wcol_inf *wcol, struct xa_wtexture *wtexture)
+set_texture(struct module *m, struct xa_wcol_inf *wcol, struct widg_texture *t) //struct xa_wtexture *wtexture)
 {
-	if (wtexture)
+	if (t)
 	{
 		wcol->flags &= ~(WCOL_DRAWBKG); //|WCOL_BOXED);
-		wcol->h.texture = wtexture;
-		wcol->n.texture = wtexture;
-		wcol->s.texture = wtexture;
+		wcol->h.texture = &t->t;
+		wcol->n.texture = &t->t;
+		wcol->s.texture = &t->t;
+		(*api->ref_xa_data)(&m->allocs, t, 3);
 	}
 	else
 	{
@@ -1834,58 +3200,150 @@ set_texture(struct xa_wcol_inf *wcol, struct xa_wtexture *wtexture)
 		wcol->s.texture = NULL;
 	}
 }
-	
+#if 0
 static void
-cleanup_deftheme(void)
+free_texture(struct module *m, struct xa_wcol_inf *wcol)
 {
-#if 0	
-	win
-	borders
-	slider
-	slide
-	title
-	info
-	closer
-	hider
-	iconifier
-	fuller
-	sizer
-	uparrow
-	dnarrow
-	lfarrow
-	rtarrow
+	struct widg_texture *t;
+	struct xa_wtexture *wtext;
+	
+// 	display("free texture");
+	if ((wtext = wcol->h.texture))
+	{
+		t = (*api->lookup_xa_data_byid)(&m->allocs, (long)wtext);
+		if (t)
+			(*api->deref_xa_data)(&m->allocs, t, 1);
+	}
+	if ((wtext = wcol->n.texture))
+	{
+		t = (*api->lookup_xa_data_byid)(&m->allocs, (long)wtext);
+		if (t)
+			(*api->deref_xa_data)(&m->allocs, t, 1);
+	}
+	if ((wtext = wcol->s.texture))
+	{
+		t = (*api->lookup_xa_data_byid)(&m->allocs, (long)wtext);
+		if (t)
+			(*api->deref_xa_data)(&m->allocs, t, 1);
+	}
+	set_texture(m, wcol, NULL);
+// 	display("free texture done");
+}
 #endif
-	set_texture(&def_otop_cols.win, NULL);
-	set_texture(&def_otop_cols.borders, NULL);
- 	set_texture(&def_otop_cols.slider, NULL);
- 	set_texture(&def_otop_cols.slide, NULL);
-	set_texture(&def_otop_cols.title, NULL);
- 	set_texture(&def_otop_cols.info, NULL);
-	set_texture(&def_otop_cols.closer, NULL);
-	set_texture(&def_otop_cols.hider, NULL);
-	set_texture(&def_otop_cols.iconifier, NULL);
-	set_texture(&def_otop_cols.fuller, NULL);
-	set_texture(&def_otop_cols.sizer, NULL);
-	set_texture(&def_otop_cols.uparrow, NULL);
-	set_texture(&def_otop_cols.dnarrow, NULL);
-	set_texture(&def_otop_cols.lfarrow, NULL);
-	set_texture(&def_otop_cols.rtarrow, NULL);
+static void
+ref_colortheme_resources(struct module *m, struct window_colours *wc)
+{
+	int i, wcols;
+	struct xa_wcol_inf *wci;
+	struct widg_texture *t;
+	struct xa_wtexture *wtexture;
+	
+	wcols = ( (long)&wc->rtarrow - (long)&wc->win) / sizeof(struct  xa_wcol_inf);
+// 	display(" wcols = %d", wcols);
+	wci = &wc->win;
 
-	set_texture(&def_utop_cols.win, NULL);
-	set_texture(&def_utop_cols.borders, NULL);
- 	set_texture(&def_utop_cols.slider, NULL);
- 	set_texture(&def_utop_cols.slide, NULL);
-	set_texture(&def_utop_cols.title, NULL);
- 	set_texture(&def_utop_cols.info, NULL);
-	set_texture(&def_utop_cols.closer, NULL);
-	set_texture(&def_utop_cols.hider, NULL);
-	set_texture(&def_utop_cols.iconifier, NULL);
-	set_texture(&def_utop_cols.fuller, NULL);
-	set_texture(&def_utop_cols.sizer, NULL);
-	set_texture(&def_utop_cols.uparrow, NULL);
-	set_texture(&def_utop_cols.dnarrow, NULL);
-	set_texture(&def_utop_cols.lfarrow, NULL);
-	set_texture(&def_utop_cols.rtarrow, NULL);
+	for (i = 0; i <= wcols; i++)
+	{
+		if ((wtexture = wci[i].h.texture))
+		{
+			t = (*api->lookup_xa_data_byid)(&m->allocs, (long)wtexture);
+			if (t) (*api->ref_xa_data)(&m->allocs, t, 1);
+			else display("WARNING!!");
+		}
+		if ((wtexture = wci[i].n.texture))
+		{
+			t = (*api->lookup_xa_data_byid)(&m->allocs, (long)wtexture);
+			if (t) (*api->ref_xa_data)(&m->allocs, t, 1);
+			else display("WARNING!!");
+		}
+		if ((wtexture = wci[i].s.texture))
+		{
+			t = (*api->lookup_xa_data_byid)(&m->allocs, (long)wtexture);
+			if (t) (*api->ref_xa_data)(&m->allocs, t, 1);
+			else display("WARNING!!");
+		}
+	}
+}
+static void
+deref_colortheme_resources(struct module *m, struct window_colours *wc)
+{
+	int i, wcols;
+	struct xa_wcol_inf *wci;
+	struct widg_texture *t;
+	struct xa_wtexture *wtexture;
+	
+	wcols = ((long)&wc->rtarrow - (long)&wc->win) / sizeof(struct xa_wcol_inf);
+	wci = &wc->win;
+// 	display("wcols = %d", wcols);
+
+	for (i = 0; i <= wcols; i++)
+	{
+		if ((wtexture = wci[i].h.texture))
+		{
+			t = (*api->lookup_xa_data_byid)(&m->allocs, (long)wtexture);
+			if (t)
+			{
+				(*api->deref_xa_data)(&m->allocs, t, 1);
+// 				if (!(*api->deref_xa_data)(&m->allocs, t, 1))
+// 					display("freeing %lx", wci[i].h.texture);
+			}
+			else display("free: WARNING!!");
+		}
+		if ((wtexture = wci[i].n.texture))
+		{
+			t = (*api->lookup_xa_data_byid)(&m->allocs, (long)wtexture);
+			if (t)
+			{
+				(*api->deref_xa_data)(&m->allocs, t, 1);
+// 				if (!(*api->deref_xa_data)(&m->allocs, t, 1))
+// 					display("freeing %lx", wci[i].n.texture);
+			}
+			else display("free: WARNING!!");
+		}
+		if ((wtexture = wci[i].s.texture))
+		{
+			t = (*api->lookup_xa_data_byid)(&m->allocs, (long)wtexture);
+			if (t)
+			{
+				(*api->deref_xa_data)(&m->allocs, t, 1);
+// 				if (!(*api->deref_xa_data)(&m->allocs, t, 1))
+// 					display("freeing %lx", wci[i].s.texture);
+			}
+			else display("free: WARNING!!");
+		}
+	}
+}
+
+static void
+foreach_widget(struct module *m, struct window_colours *wc, void(*f)(struct module *, struct xa_wcol_inf *, void *), void *parms)
+{
+	int i, wcols;
+	struct xa_wcol_inf *wci;
+	
+	wcols = ((long)&wc->rtarrow - (long)&wc->win) / sizeof(struct xa_wcol_inf);
+	wci = &wc->win;
+
+	for (i = 0; i <= wcols; i++)
+	{
+		(*f)(m, &wci[i], parms);
+	}
+}
+
+static void
+cleanup_colortheme(struct module *m, struct window_colours *wc, char *txt)
+{
+	int i, wcols;
+	struct xa_wcol_inf *wci;
+	
+	deref_colortheme_resources(m, wc);
+	
+	wcols = ((long)&wc->rtarrow - (long)&wc->win) / sizeof(struct xa_wcol_inf);
+	wci = &wc->win;
+
+	for (i = 0; i <= wcols; i++)
+	{
+		set_texture(m, &wci[i], NULL);
+	}
 }
 
 static int imgpath_file = 0;
@@ -1896,9 +3354,9 @@ delete_texture(void *_t)
 {
 	struct widg_texture *t = _t;
 
-	if (t->mfdb.fd_addr)
-		kfree(t->mfdb.fd_addr);
-	kfree(t);
+	if (t->xamfdb.mfdb.fd_addr)
+		(*api->kfree)(t->xamfdb.mfdb.fd_addr);
+	(*api->kfree)(t);
 }
 
 static struct widg_texture *
@@ -1912,14 +3370,16 @@ load_texture(struct module *m, char *fn)
 	{
 		if ((t = (*api->kmalloc)(sizeof(*t))))
 		{
-			(*api->load_img)(fn, &t->mfdb);
-			if (t->mfdb.fd_addr)
+			(*api->bclear)(t, sizeof(*t));
+			
+			(*api->load_img)(fn, &t->xamfdb);
+			if (t->xamfdb.mfdb.fd_addr)
 			{
-				(*api->add_xa_data)(&m->allocs, t, 0, NULL, delete_texture);
+				(*api->add_xa_data)(&m->allocs, t, (long)&t->t, NULL, delete_texture);
 				t->t.flags = 0;
 				t->t.anchor = 0;
 				t->t.left = t->t.right = t->t.top = t->t.bottom = NULL;
-				t->t.body = &t->mfdb;
+				t->t.body = &t->xamfdb;
 			}
 			else
 			{
@@ -1931,22 +3391,115 @@ load_texture(struct module *m, char *fn)
 	}
 	return t;
 }
+static void _cdecl
+delete_pmap(void *_t)
+{
+	struct widg_texture *t = _t;
+
+	if (t->xamfdb.mfdb.fd_addr)
+		(*api->kfree)(t->xamfdb.mfdb.fd_addr);
+	(*api->kfree)(t);
+}
+
+static struct xa_wtexture *
+find_gradient(struct xa_vdi_settings *v, struct xa_wcol *wcol, bool free, struct xa_data_hdr **allocs, short w, short h)
+{
+	struct widg_texture *t;
+	struct xa_wtexture *ret = NULL;
+	struct xa_gradient *g = wcol->gradient;
+
+	if (g)
+	{
+		if (!allocs)
+			allocs = &g->allocs;
+
+		w &= g->wmask;
+		w |= g->w;
+		h &= g->hmask;
+		h |= g->h;
+		t =  (*api->lookup_xa_data_byid)(allocs, (((long)w << 16) | h) );
+
+		if (!t)
+		{
+			if (free)
+			{
+// 				display("free prev");
+				(*api->free_xa_data_list)(allocs);
+			}
+
+			t = kmalloc(sizeof(*t));
+			if (t)
+			{
+// 				display("new");
+				(*api->bclear)(t, sizeof(*t));
+				
+				(*v->api->create_gradient)(&t->xamfdb, g->c, g->method, g->n_steps, g->steps, w, h);
+			
+				if (t->xamfdb.mfdb.fd_addr)
+				{
+					(*api->add_xa_data)(allocs, t, (((long)w << 16) | h), NULL, delete_pmap);
+					t->t.flags = 0;
+					t->t.anchor = 0;
+					t->t.left = t->t.right = t->t.top = t->t.bottom = NULL;
+					t->t.body = &t->xamfdb;
+					ret = &t->t;
+				}
+				else
+				{
+					(*api->kfree)(t);
+					t = NULL;
+				}
+			}
+		}
+		else
+		{
+// 			display("fnd");
+			ret = &t->t;
+		}
+	}
+	return ret;
+}
 
 static void
 init_sliders(struct module *m)
 {
 	struct widg_texture *t;
+	if ((t = load_texture(m, "slider.img")))
+	{
+		set_texture(m, &def_otop_cols.vslider, t);
+		set_texture(m, &def_utop_cols.vslider, t);
+		set_texture(m, &def_otop_cols.hslider, t);
+		set_texture(m, &def_utop_cols.hslider, t);
 
-	if ((t = load_texture(m, "slider.img"))) //"rock011.img")))
-	{
-		set_texture(&def_otop_cols.slider, &t->t);
-		set_texture(&def_utop_cols.slider, &t->t);
+		set_texture(m, &slist_def_otop_cols.vslider, t);
+		set_texture(m, &slist_def_utop_cols.vslider, t);
+		set_texture(m, &slist_def_otop_cols.hslider, t);
+		set_texture(m, &slist_def_utop_cols.hslider, t);
 	}
-	if ((t = load_texture(m, "slide.img"))) //"drock028.img")))
+
+	if ((t = load_texture(m, "slide.img")))
 	{
-		set_texture(&def_otop_cols.slide, &t->t);
-		set_texture(&def_utop_cols.slide, &t->t);
+		set_texture(m, &def_otop_cols.vslide, t);
+		set_texture(m, &def_utop_cols.vslide, t);
+		set_texture(m, &def_otop_cols.hslide, t);
+		set_texture(m, &def_utop_cols.hslide, t);
+		set_texture(m, &slist_def_otop_cols.vslide, t);
+		set_texture(m, &slist_def_utop_cols.vslide, t);
+		set_texture(m, &slist_def_otop_cols.hslide, t);
+		set_texture(m, &slist_def_utop_cols.hslide, t);
 	}
+#if 0
+	if ((t = load_texture(m, "slider.img")))
+	{
+		set_texture(m, &def_otop_cols.hslider, t);
+		set_texture(m, &def_utop_cols.hslider, t);
+	}
+	if ((t = load_texture(m, "slide.img")))
+	{
+		set_texture(m, &def_otop_cols.hslide, t);
+		set_texture(m, &def_utop_cols.hslide, t);
+	}
+#endif
 }
 
 static void
@@ -1956,9 +3509,36 @@ info_texture(struct module *m)
 
 	if ((t = load_texture(m, "info.img"))) //"lgrey008.img")))
 	{
-		set_texture(&def_otop_cols.info, &t->t);
-		set_texture(&def_utop_cols.info, &t->t);
+		set_texture(m, &def_otop_cols.info, t);
+		set_texture(m, &def_utop_cols.info, t);
 	}
+}
+static void
+title_texture(struct module *m)
+{
+	struct widg_texture *t;
+
+	t = load_texture(m, "wtitle.img");
+	
+	if (t) //((t = load_texture(m, "wtitle.img")))
+	{
+		set_texture(m, &def_otop_cols.title, t);
+		set_texture(m, &def_utop_cols.title, t);
+	}
+	t = load_texture(m, "slwtitle.img");
+	if (t)
+	{
+		set_texture(m, &slist_def_otop_cols.title, t);
+		set_texture(m, &slist_def_utop_cols.title, t);
+	}
+}
+
+static void
+installtexture(struct module *m, struct xa_wcol_inf *wci, void *_t)
+{
+	struct widg_texture *t = _t;
+	if (!wci->n.texture && !wci->s.texture && !wci->h.texture)
+		set_texture(m, wci, t);
 }
 
 static void
@@ -1968,107 +3548,51 @@ test_img_stuff(struct module *m)
 
 	init_sliders(m);
 	info_texture(m);
+	title_texture(m);
+
 	if ((t = load_texture(m, "exterior.img"))) //grey8b.img")))
 	{
-		set_texture(&def_otop_cols.win, &t->t);
-		set_texture(&def_otop_cols.borders, &t->t);
-// 		set_texture(&def_otop_cols.slider, &t->t);
-// 		set_texture(&def_otop_cols.slide, &t->t);
-		set_texture(&def_otop_cols.title, &t->t);
-// 		set_texture(&def_otop_cols.info, &t->t);
-		set_texture(&def_otop_cols.closer, &t->t);
-		set_texture(&def_otop_cols.hider, &t->t);
-		set_texture(&def_otop_cols.iconifier, &t->t);
-		set_texture(&def_otop_cols.fuller, &t->t);
-		set_texture(&def_otop_cols.sizer, &t->t);
-		set_texture(&def_otop_cols.uparrow, &t->t);
-		set_texture(&def_otop_cols.dnarrow, &t->t);
-		set_texture(&def_otop_cols.lfarrow, &t->t);
-		set_texture(&def_otop_cols.rtarrow, &t->t);
-	
-		set_texture(&def_utop_cols.win, &t->t);
-		set_texture(&def_utop_cols.borders, &t->t);
-// 		set_texture(&def_utop_cols.slider, &t->t);
-// 		set_texture(&def_utop_cols.slide, &t->t);
-		set_texture(&def_utop_cols.title, &t->t);
-// 		set_texture(&def_utop_cols.info, &t->t);
-		set_texture(&def_utop_cols.closer, &t->t);
-		set_texture(&def_utop_cols.hider, &t->t);
-		set_texture(&def_utop_cols.iconifier, &t->t);
-		set_texture(&def_utop_cols.fuller, &t->t);
-		set_texture(&def_utop_cols.sizer, &t->t);
-		set_texture(&def_utop_cols.uparrow, &t->t);
-		set_texture(&def_utop_cols.dnarrow, &t->t);
-		set_texture(&def_utop_cols.lfarrow, &t->t);
-		set_texture(&def_utop_cols.rtarrow, &t->t);
+		// foreach_widget(struct module *m, struct window_colours *wc, void(*f)(struct xa_wcol_inf *wci, void *d), void *parms)
+		foreach_widget(m, &def_otop_cols, installtexture, t);
+		foreach_widget(m, &def_utop_cols, installtexture, t);
+		foreach_widget(m, &slist_def_otop_cols, installtexture, t);
+		foreach_widget(m, &slist_def_utop_cols, installtexture, t);
 	}
-}
 #if 0		
-// 	char *fn;
-
-	init_sliders(m);
-	info_texture(m);
-
-
-	imgpath[imgpath_file] = '\0';
-	strcat(imgpath, "grey8b.img");
-	fn = (*api->sysfile)(imgpath); //"img\\8b\\grey8b.img");
-	if (fn)
-	{
-		struct widg_texture *texture;
-		
-		texture = (*api->kmalloc)(sizeof(*texture));
-		if (texture)
-		{
-			(*api->load_img)(fn, &texture->mfdb);
-			if (texture->mfdb.fd_addr)
-			{
-				(*api->add_xa_data)(&m->allocs, texture, delete_texture);
-				
-				texture->t.flags = 0;
-				texture->t.anchor = 0;
-				texture->t.body = &texture->mfdb;
-				texture->t.left = texture->t.right = texture->t.top = texture->t.bottom = NULL;
+		set_texture(m, &def_otop_cols.win, t);
+		set_texture(m, &def_otop_cols.borders, t);
+// 		set_texture(m, &def_otop_cols.slider, t);
+// 		set_texture(m, &def_otop_cols.slide, t);
+// 		set_texture(m, &def_otop_cols.title, t);
+// 		set_texture(m, &def_otop_cols.info, t);
+		set_texture(m, &def_otop_cols.closer, t);
+		set_texture(m, &def_otop_cols.hider, t);
+		set_texture(m, &def_otop_cols.iconifier, t);
+		set_texture(m, &def_otop_cols.fuller, t);
+		set_texture(m, &def_otop_cols.sizer, t);
+		set_texture(m, &def_otop_cols.uparrow, t);
+		set_texture(m, &def_otop_cols.dnarrow, t);
+		set_texture(m, &def_otop_cols.lfarrow, t);
+		set_texture(m, &def_otop_cols.rtarrow, t);
 	
-				set_texture(&def_otop_cols.win, &texture->t);
-				set_texture(&def_otop_cols.borders, &texture->t);
-// 				set_texture(&def_otop_cols.slider, &texture->t);
-// 				set_texture(&def_otop_cols.slide, &texture->t);
-				set_texture(&def_otop_cols.title, &texture->t);
-// 				set_texture(&def_otop_cols.info, &texture->t);
-				set_texture(&def_otop_cols.closer, &texture->t);
-				set_texture(&def_otop_cols.hider, &texture->t);
-				set_texture(&def_otop_cols.iconifier, &texture->t);
-				set_texture(&def_otop_cols.fuller, &texture->t);
-				set_texture(&def_otop_cols.sizer, &texture->t);
-				set_texture(&def_otop_cols.uparrow, &texture->t);
-				set_texture(&def_otop_cols.dnarrow, &texture->t);
-				set_texture(&def_otop_cols.lfarrow, &texture->t);
-				set_texture(&def_otop_cols.rtarrow, &texture->t);
-			
-				set_texture(&def_utop_cols.win, &texture->t);
-				set_texture(&def_utop_cols.borders, &texture->t);
-// 				set_texture(&def_utop_cols.slider, &texture->t);
-// 				set_texture(&def_utop_cols.slide, &texture->t);
-				set_texture(&def_utop_cols.title, &texture->t);
-// 				set_texture(&def_utop_cols.info, &texture->t);
-				set_texture(&def_utop_cols.closer, &texture->t);
-				set_texture(&def_utop_cols.hider, &texture->t);
-				set_texture(&def_utop_cols.iconifier, &texture->t);
-				set_texture(&def_utop_cols.fuller, &texture->t);
-				set_texture(&def_utop_cols.sizer, &texture->t);
-				set_texture(&def_utop_cols.uparrow, &texture->t);
-				set_texture(&def_utop_cols.dnarrow, &texture->t);
-				set_texture(&def_utop_cols.lfarrow, &texture->t);
-				set_texture(&def_utop_cols.rtarrow, &texture->t);
-			}
-			else
-				(*api->kfree)(texture);
-		}
-		(*api->kfree)(fn);
+		set_texture(m, &def_utop_cols.win, t);
+		set_texture(m, &def_utop_cols.borders, t);
+// 		set_texture(m, &def_utop_cols.slider, t);
+// 		set_texture(m, &def_utop_cols.slide, t);
+// 		set_texture(m, &def_utop_cols.title, t);
+// 		set_texture(m, &def_utop_cols.info, t);
+		set_texture(m, &def_utop_cols.closer, t);
+		set_texture(m, &def_utop_cols.hider, t);
+		set_texture(m, &def_utop_cols.iconifier, t);
+		set_texture(m, &def_utop_cols.fuller, t);
+		set_texture(m, &def_utop_cols.sizer, t);
+		set_texture(m, &def_utop_cols.uparrow, t);
+		set_texture(m, &def_utop_cols.dnarrow, t);
+		set_texture(m, &def_utop_cols.lfarrow, t);
+		set_texture(m, &def_utop_cols.rtarrow, t);
 	}
-}
 #endif
+}
 
 /*
  * This function is called by XaAES to have the module initialize itself
@@ -2087,6 +3611,7 @@ init_module(const struct xa_module_api *xmapi, const struct xa_screen *screen, c
 
 	current_theme = &def_theme;
 	current_pu_theme = &pu_def_theme;
+	current_slist_theme = &sl_def_theme;
 
 	m = (*api->kmalloc)(sizeof(*m));
 	if (m)
@@ -2103,7 +3628,7 @@ init_module(const struct xa_module_api *xmapi, const struct xa_screen *screen, c
 		{
 			rsc = (*api->load_resource)(rscfile, NULL, DU_RSX_CONV, DU_RSY_CONV, false);
 			DIAGS(("widget_resources = %lx (%s)", rsc, widg_name));
-			kfree(rscfile);
+			(*api->kfree)(rscfile);
 		}
 		if (!rsc)
 		{
@@ -2158,12 +3683,19 @@ exit_module(void *_module)
 {
 	struct module *m = _module;
 	
+// 	display("exit win draw");
 	/*
 	 * This will free all allocs done by this module
 	 */
-	(*api->free_xa_data_list)(&m->allocs);
+// 	cleanup_deftheme(m);
+	cleanup_colortheme(m, &def_otop_cols, "default ontop");
+	cleanup_colortheme(m, &def_utop_cols, "default untop");
+	cleanup_colortheme(m, &alert_def_otop_cols, "alert default ontop");
+	cleanup_colortheme(m, &alert_def_utop_cols, "alert default untop");
+	cleanup_colortheme(m, &slist_def_otop_cols, "slist default ontop");
+	cleanup_colortheme(m, &slist_def_utop_cols, "slist default untop");
 
-	cleanup_deftheme();
+	(*api->free_xa_data_list)(&m->allocs);
 	/*
 	 * for now, the resource loaded is attached to AESSYS
 	 * and cannot be freed here..
@@ -2193,6 +3725,9 @@ new_theme(void *_module, short win_type, struct widget_theme **ret_theme)
 			break;
 		case WINCLASS_ALERT:
 			new = duplicate_theme(current_theme);
+			break;
+		case WINCLASS_SLIST:
+			new = duplicate_theme(current_slist_theme);
 			break;
 		default:
 		{
@@ -2230,26 +3765,55 @@ free_theme(void *_module, struct widget_theme **theme)
 	return ret;
 }
 
+
 static void _cdecl
 delete_color_theme(void *_ctheme)
 {
 	(*api->kfree)(_ctheme);
 }
 
+
 static long _cdecl
-new_color_theme(void *_module, void **ontop, void **untop)
+new_color_theme(void *_module, short win_class, void **ontop, void **untop)
 {
 	struct window_colours *new_ontop, *new_untop;
 	struct module *m = _module;
 	long ret;
 
+// 	display("new_color_theme:");
 	new_ontop = (*api->kmalloc)(sizeof(*new_ontop));
 	new_untop = (*api->kmalloc)(sizeof(*new_untop));
 	
 	if (new_ontop && new_untop)
 	{
-		*new_ontop = MONO ? mono_def_otop_cols : def_otop_cols;
-		*new_untop = MONO ? mono_def_utop_cols : def_utop_cols;
+		switch (win_class)
+		{
+			case WINCLASS_CLIENT:
+				*new_ontop = MONO ? mono_def_otop_cols : def_otop_cols;
+				*new_untop = MONO ? mono_def_utop_cols : def_utop_cols;
+				break;
+			case WINCLASS_POPUP:
+				*new_ontop = MONO ? mono_def_otop_cols : def_otop_cols;
+				*new_untop = MONO ? mono_def_utop_cols : def_utop_cols;
+				break;
+			case WINCLASS_ALERT:
+				*new_ontop = MONO ? mono_def_otop_cols : alert_def_otop_cols;
+				*new_untop = MONO ? mono_def_utop_cols : alert_def_utop_cols;
+				break;
+			case WINCLASS_SLIST:
+				*new_ontop = MONO ? mono_def_otop_cols : slist_def_otop_cols;
+				*new_untop = MONO ? mono_def_utop_cols : slist_def_utop_cols;
+				break;
+			default:
+			{
+				*new_ontop = MONO ? mono_def_otop_cols : def_otop_cols;
+				*new_untop = MONO ? mono_def_utop_cols : def_utop_cols;
+				break;
+			}
+		}
+		
+		ref_colortheme_resources(m, new_ontop);
+		ref_colortheme_resources(m, new_untop);
 		
 		(*api->add_xa_data)(&m->allocs, new_ontop, 0, NULL, delete_color_theme);
 		(*api->add_xa_data)(&m->allocs, new_untop, 0, NULL, delete_color_theme);
@@ -2270,14 +3834,19 @@ new_color_theme(void *_module, void **ontop, void **untop)
 	return ret;
 }
 
+
 static void _cdecl
 free_color_theme(void *_module, void *ctheme)
 {
 	struct module *m = _module;
 	struct window_colours *wc;
 
+// 	display("free_color_theme");
 	if ((wc = (*api->lookup_xa_data)(&m->allocs, ctheme)))
+	{
+		deref_colortheme_resources(m, wc);
 		(*api->delete_xa_data)(&m->allocs, wc);
+	}
 }
 
 /*

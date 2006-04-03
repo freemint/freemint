@@ -36,6 +36,7 @@
 #include "k_keybd.h"
 #include "messages.h"
 #include "menuwidg.h"
+#include "draw_obj.h"
 #include "sys_proc.h"
 #include "taskman.h"
 #include "util.h"
@@ -191,6 +192,8 @@ init_client(enum locks lock)
 	client->xmwt = C.Aes->xmwt;
 	client->wtheme_handle = C.Aes->wtheme_handle;
 
+	client->objcr_module = C.Aes->objcr_module;
+
 	client->ut = umalloc(xa_user_things.len);
 	client->mnu_clientlistname = umalloc(strlen(mnu_clientlistname)+1);
 
@@ -309,6 +312,8 @@ init_client(enum locks lock)
 
 	proc_is_now_client(client);
 	
+	init_client_objcrend(client);
+
 //	app_in_front(lock, client, true, false);
 
 	/* Reset the AES messages pending list for our new application */
@@ -530,13 +535,12 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 	long redraws;
 	bool was_infront = false;
 // 	struct shel_info *info = lookup_extension(client->p, XAAES_MAGIC_SH);
-
-// 	bool d = (!strnicmp(client->proc_name, "aeshlp", 6)) ? true : false;
+// 	bool d = (client == C.Hlp) ? true : false; //(!strnicmp(client->proc_name, "xasys", 6)) ? true : false;
 
 	DIAG((D_appl, NULL, "XA_client_exit: %s", c_owner(client)));
 	
 // 	display("info=%lx for %s", info, client->name);
-	
+// 	if (d) display(" exit C.HLP");
 	S.clients_exiting++;
 
 	client->pexit = pexit;
@@ -546,14 +550,18 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 	 */
 	client->status |= CS_EXITING;
 
-	remove_from_tasklist(client);
+// 	if (d) display("rem from takslist");
 
-	if (C.csr_client == client)
+	if (client != C.Hlp)
 	{
-		post_cevent(C.Hlp, CE_abort_csr, client, NULL, 0,0, NULL,NULL);
+		remove_from_tasklist(client);
+		if (C.csr_client == client)
+		{
+			post_cevent(C.Hlp, CE_abort_csr, client, NULL, 0,0, NULL,NULL);
+		}
+		else
+			cancel_csr(client);
 	}
-	else
-		cancel_csr(client);
 
 	if (S.wait_mouse == client)
 	{
@@ -666,8 +674,8 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 // 	if (d) display("9");
 	if (client->desktop)
 		set_desktop(client, true);
-
-	if (was_infront)
+// 	if (d) display("9.1");
+	if (was_infront && top_owner != client)
 		app_in_front(lock, top_owner, true, true, false);
 
 	/*
@@ -758,6 +766,8 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 	if (C.DSKpid == client->p->pid)
 		C.DSKpid = -1;
 
+	exit_client_objcrend( client );
+	
 	if (detach)
 		detach_extension(NULL, XAAES_MAGIC);
 

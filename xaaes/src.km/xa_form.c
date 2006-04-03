@@ -404,7 +404,10 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 		bool nolist = false;
 		RECT r;
 
-		ob_rectangle(alert_form, aesobj(alert_form, 0), &or);
+		wt = new_widget_tree(client, alert_form);
+		assert(wt);
+		wt->flags |= WTF_XTRA_ALLOC | WTF_TREE_ALLOC | WTF_AUTOFREE;
+		obj_rectangle(wt, aesobj(alert_form, 0), &or);
 		center_rect(&or);
 		
 		if (C.update_lock && C.update_lock == client->p)
@@ -437,9 +440,8 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 		{
 			widg = get_widget(alert_window, XAW_TOOLBAR);
 
-			wt = set_toolbar_widget(lock, alert_window, client, alert_form, inv_aesobj(), WIP_NOTEXT, true, NULL, &or); //(RECT *)&alert_form->ob_x);
+			set_toolbar_widget(lock, alert_window, client, alert_form, inv_aesobj(), WIP_NOTEXT, STW_ZEN, NULL, &or); //(RECT *)&alert_form->ob_x);
 			wt->extra = alertxt;
-			wt->flags |= WTF_XTRA_ALLOC | WTF_TREE_ALLOC;
 
 			set_window_title(alert_window, title ? title : client->name, false);
 			alert_window->destructor = alert_destructor;
@@ -452,6 +454,8 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 			/* For if the app has hidden the mouse */
 			forcem();
 		}
+		else
+			remove_wt(wt, false);
 	}
 
 	return retv;
