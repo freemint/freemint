@@ -62,62 +62,107 @@
 static struct xa_wtxt_inf norm_txt =
 {
  WTXT_NOCLIP,
-/* id  pnts efx   fgc      bgc */
- {  -1,  -1,   MD_TRANS, 0, G_BLACK, G_WHITE },	/* Normal */
- {  -1,  -1,   MD_TRANS, 0, G_WHITE, G_BLACK },	/* Selected */
- {  -1,  -1,   MD_TRANS, 0, G_BLACK, G_WHITE },	/* Highlighted */
+/* id  pnts  flags wrm,     efx   fgc      bgc   banner x_3dact y_3dact texture */
+ {  -1,  -1, 0, MD_TRANS, 0, G_BLACK, G_WHITE, G_WHITE,   0,      0,     NULL},	/* Normal */
+ {  -1,  -1, 0, MD_TRANS, 0, G_WHITE, G_BLACK, G_WHITE,   0,      0,     NULL},	/* Selected */
+ {  -1,  -1, 0, MD_TRANS, 0, G_BLACK, G_WHITE, G_WHITE,   0,      0,     NULL},	/* Highlighted */
 
 };
 
 static struct xa_wtxt_inf acc_txt =
 {
  WTXT_NOCLIP,
-/* id  pnts efx   fgc      bgc */
- {  -1,  -1,   MD_TRANS, 0, G_BLUE, G_LBLUE },	/* Normal */
- {  -1,  -1,   MD_TRANS, 0, G_BLUE, G_LBLUE },	/* Selected */
- {  -1,  -1,   MD_TRANS, 0, G_BLACK, G_WHITE },	/* Highlighted */
+/* id  pnts  flags wrm,     efx   fgc      bgc   banner x_3dact y_3dact texture */
+ {  -1,  -1, 0, MD_TRANS, 0, G_BLUE, G_LBLUE, G_WHITE,   0,      0,     NULL  },	/* Normal */
+ {  -1,  -1, 0, MD_TRANS, 0, G_BLUE, G_LBLUE, G_WHITE,   0,      0,     NULL  },	/* Selected */
+ {  -1,  -1, 0, MD_TRANS, 0, G_BLACK, G_WHITE, G_WHITE,   0,      0,     NULL  },	/* Highlighted */
 
 };
 
 static struct xa_wtxt_inf prg_txt =
 {
  WTXT_NOCLIP,
-/* id  pnts efx   fgc      bgc */
- {  -1,  -1,   MD_TRANS, 0, G_LRED, G_WHITE },	/* Normal */
- {  -1,  -1,   MD_TRANS, 0, G_LRED, G_WHITE },	/* Selected */
- {  -1,  -1,   MD_TRANS, 0, G_BLACK, G_WHITE },	/* Highlighted */
+/* id  pnts  flags wrm,     efx   fgc      bgc   banner x_3dact y_3dact texture */
+ {  -1,  -1, 0, MD_TRANS, 0, G_LRED, G_WHITE, G_WHITE,   0,      0,     NULL  },	/* Normal */
+ {  -1,  -1, 0, MD_TRANS, 0, G_LRED, G_WHITE, G_WHITE,   0,      0,     NULL  },	/* Selected */
+ {  -1,  -1, 0, MD_TRANS, 0, G_BLACK, G_WHITE, G_WHITE,   0,      0,     NULL  },	/* Highlighted */
 
 };
 
 static struct xa_wtxt_inf sys_txt =
 {
  WTXT_NOCLIP,
-/* id  pnts efx   fgc      bgc */
- {  -1,  -1,   MD_TRANS, 0, G_LBLACK, G_LWHITE },	/* Normal */
- {  -1,  -1,   MD_TRANS, 0, G_LBLACK, G_LWHITE },	/* Selected */
- {  -1,  -1,   MD_TRANS, 0, G_BLACK, G_WHITE },	/* Highlighted */
+/* id  pnts  flags wrm,     efx   fgc      bgc   banner x_3dact y_3dact texture */
+ {  -1,  -1,  0, MD_TRANS, 0, G_LBLACK, G_LWHITE, G_WHITE,   0,      0,     NULL  },	/* Normal */
+ {  -1,  -1,  0, MD_TRANS, 0, G_LBLACK, G_LWHITE, G_WHITE,   0,      0,     NULL  },	/* Selected */
+ {  -1,  -1,  0, MD_TRANS, 0, G_BLACK, G_WHITE,  G_WHITE,   0,      0,     NULL  },	/* Highlighted */
 
 };
 
 static struct xa_wtxt_inf sys_thrd =
 {
  WTXT_NOCLIP,
-/* id  pnts efx   fgc      bgc */
- {  -1,  -1,   MD_TRANS, 0, G_LWHITE, G_LWHITE },	/* Normal */
- {  -1,  -1,   MD_TRANS, 0, G_LBLACK, G_LWHITE },	/* Selected */
- {  -1,  -1,   MD_TRANS, 0, G_BLACK, G_WHITE },	/* Highlighted */
+/* id  pnts  flags wrm,     efx   fgc      bgc   banner x_3dact y_3dact texture */
+ {  -1,  -1, 0, MD_TRANS, 0, G_LWHITE, G_LWHITE, G_WHITE,   0,      0,     NULL  },	/* Normal */
+ {  -1,  -1, 0, MD_TRANS, 0, G_LBLACK, G_LWHITE, G_WHITE,   0,      0,     NULL  },	/* Selected */
+ {  -1,  -1, 0, MD_TRANS, 0, G_BLACK,  G_WHITE,  G_WHITE,   0,      0,     NULL  },	/* Highlighted */
 
 };
 
 static struct xa_wtxt_inf desk_txt =
 {
  WTXT_NOCLIP,
-/* id  pnts efx   fgc      bgc */
- {  -1,  -1,   MD_TRANS, 0, G_RED, G_LWHITE },	/* Normal */
- {  -1,  -1,   MD_TRANS, 0, G_RED, G_LWHITE },	/* Selected */
- {  -1,  -1,   MD_TRANS, 0, G_BLACK, G_WHITE },	/* Highlighted */
+/* id  pnts  flags wrm,     efx   fgc      bgc   banner x_3dact y_3dact texture */
+ {  -1,  -1, 0, MD_TRANS, 0, G_RED,   G_LWHITE, G_WHITE,   0,      0,     NULL  },	/* Normal */
+ {  -1,  -1, 0, MD_TRANS, 0, G_RED,   G_LWHITE, G_WHITE,   0,      0,     NULL  },	/* Selected */
+ {  -1,  -1, 0, MD_TRANS, 0, G_BLACK, G_WHITE,  G_WHITE,   0,      0,     NULL  },	/* Highlighted */
 
 };
+
+static void
+delete_htd(void *_htd)
+{
+	struct helpthread_data *htd = _htd;
+
+	if (htd->w_about)
+	{
+		close_window(0, htd->w_about);
+		delete_window(0, htd->w_about);
+	}
+	if (htd->w_taskman)
+	{
+		close_window(0, htd->w_taskman);
+		delete_window(0, htd->w_taskman);
+	}
+	if (htd->w_sysalrt)
+	{
+		close_window(0, htd->w_sysalrt);
+		delete_window(0, htd->w_sysalrt);
+	}
+	if (htd->w_reschg)
+	{
+		close_window(0, htd->w_reschg);
+		delete_window(0, htd->w_reschg);
+	}
+	kfree(htd);
+}
+	
+struct helpthread_data *
+get_helpthread_data(struct xa_client *client)
+{
+	struct helpthread_data *htd;
+
+	htd = lookup_xa_data_byname(&client->xa_data, HTDNAME);
+	if (!htd)
+	{
+		if ((htd = kmalloc(sizeof(*htd))))
+		{
+			bzero(htd, sizeof(*htd));
+			add_xa_data(&client->xa_data, htd, 0, HTDNAME, delete_htd);
+		}
+	}
+	return htd;
+}
 
 static char *
 build_tasklist_string(struct xa_client *client)
@@ -149,86 +194,124 @@ build_tasklist_string(struct xa_client *client)
 void
 add_to_tasklist(struct xa_client *client)
 {
-	OBJECT *obtree = ResourceTree(C.Aes_rsc, TASK_MANAGER);
-	SCROLL_INFO *list = object_get_slist(obtree + TM_LIST);
-	OBJECT *icon;
-	char *tx;
-	struct scroll_content sc = {{ 0 }};
+	struct helpthread_data *htd = lookup_xa_data_byname(&C.Hlp->xa_data, HTDNAME);
+	struct xa_window *wind;
 
-	if (client->p->pid == C.DSKpid)
-		sc.fnt = &desk_txt;
-	else if (client->type & APP_ACCESSORY)
-		sc.fnt = &acc_txt;
-	else if (client->type & APP_SYSTEM)
-		sc.fnt = &sys_txt;
-	else if (client->type & APP_AESTHREAD)
-		sc.fnt = &sys_thrd;
-	else if (client->type & APP_APPLICATION)
-		sc.fnt = &prg_txt;
-	else
-		sc.fnt = &norm_txt;
-
-	if (!list)
+	if (!htd)
 		return;
+	
+	wind = htd->w_taskman;
+	
+	if (wind)
+	{
+		struct widget_tree *wt = get_widget(wind, XAW_TOOLBAR)->stuff;
+		OBJECT *obtree = wt->tree; //ResourceTree(C.Aes_rsc, TASK_MANAGER);
+		SCROLL_INFO *list = object_get_slist(obtree + TM_LIST);
+		OBJECT *icon;
+		char *tx;
+		struct scroll_content sc = {{ 0 }};
 
-	if (client->type & APP_ACCESSORY)
-		icon = obtree + TM_ICN_MENU;
-	else
-		icon = obtree + TM_ICN_XAAES;
+// 		display("add2tl: wt = %lx, obtree = %lx, list =%lx", wt, obtree, list);
 
-	tx = build_tasklist_string(client);
-	sc.icon = icon;
-	sc.t.text = tx ? tx : client->name;
-	sc.t.strings = 1;
-	sc.data = client;
-	list->add(list, NULL, NULL, &sc, false, 0, true);
-	if (tx) kfree(tx);
+		if (client->p->pid == C.DSKpid)
+			sc.fnt = &desk_txt;
+		else if (client->type & APP_ACCESSORY)
+			sc.fnt = &acc_txt;
+		else if (client->type & APP_SYSTEM)
+			sc.fnt = &sys_txt;
+		else if (client->type & APP_AESTHREAD)
+			sc.fnt = &sys_thrd;
+		else if (client->type & APP_APPLICATION)
+			sc.fnt = &prg_txt;
+		else
+			sc.fnt = &norm_txt;
+
+		if (!list)
+			return;
+
+		if (client->type & APP_ACCESSORY)
+			icon = obtree + TM_ICN_MENU;
+		else
+			icon = obtree + TM_ICN_XAAES;
+
+		tx = build_tasklist_string(client);
+		sc.icon = icon;
+		sc.t.text = tx ? tx : client->name;
+		sc.t.strings = 1;
+		sc.data = client;
+		list->add(list, NULL, NULL, &sc, false, 0, true);
+		if (tx) kfree(tx);
+	}
 }
+
 void
 remove_from_tasklist(struct xa_client *client)
 {
-	OBJECT *obtree = ResourceTree(C.Aes_rsc, TASK_MANAGER);
-	SCROLL_INFO *list = object_get_slist(obtree + TM_LIST);
-	struct sesetget_params p = { 0 };
+	struct helpthread_data *htd = lookup_xa_data_byname(&C.Hlp->xa_data, HTDNAME);
+	struct xa_window *wind;
 
-	if (list)
-	{			
-		p.arg.data = client;
-		list->get(list, NULL, SEGET_ENTRYBYDATA, &p);
-		if (p.e)
-			list->del(list, p.e, true);
-	}
-}
-void
-update_tasklist_entry(struct xa_client *client)
-{
-	OBJECT *obtree = ResourceTree(C.Aes_rsc, TASK_MANAGER);
-	SCROLL_INFO *list = object_get_slist(obtree + TM_LIST);
-	struct sesetget_params p = { 0 };
-	
-	if (list)
+	if (!htd)
+		return;
+	wind = htd->w_taskman;
+
+	if (wind)
 	{
-		char *tx;
-		p.arg.data = client;
-		list->get(list, NULL, SEGET_ENTRYBYDATA, &p);
-		if (p.e)
-		{
-			struct setcontent_text t = { 0 };
+		struct widget_tree *wt = get_widget(wind, XAW_TOOLBAR)->stuff;
+		OBJECT *obtree = wt->tree; //ResourceTree(C.Aes_rsc, TASK_MANAGER);
+		SCROLL_INFO *list = object_get_slist(obtree + TM_LIST);
+		struct sesetget_params p = { 0 };
 
-			if ((tx = build_tasklist_string(client)))
-				t.text = tx;
-			else
-				t.text = client->name;
-			
-			list->set(list, p.e, SESET_TEXT, (long)&t, true);
-			
-			if (tx)
-				kfree(tx);
+		if (list)
+		{
+			p.arg.data = client;
+			list->get(list, NULL, SEGET_ENTRYBYDATA, &p);
+			if (p.e)
+				list->del(list, p.e, true);
 		}
 	}
 }
 
-static struct xa_window *task_man_win = NULL;
+void
+update_tasklist_entry(struct xa_client *client)
+{
+	struct helpthread_data *htd = lookup_xa_data_byname(&C.Hlp->xa_data, HTDNAME);
+	struct xa_window *wind;
+
+	if (!htd)
+		return;
+	wind = htd->w_taskman;
+
+	if (wind)
+	{
+		struct widget_tree *wt = get_widget(wind, XAW_TOOLBAR)->stuff;
+		OBJECT *obtree = wt->tree; //ResourceTree(C.Aes_rsc, TASK_MANAGER);
+		SCROLL_INFO *list = object_get_slist(obtree + TM_LIST);
+		struct sesetget_params p = { 0 };
+	
+		if (list)
+		{
+			char *tx;
+			p.arg.data = client;
+			list->get(list, NULL, SEGET_ENTRYBYDATA, &p);
+			if (p.e)
+			{
+				struct setcontent_text t = { 0 };
+
+				if ((tx = build_tasklist_string(client)))
+					t.text = tx;
+				else
+					t.text = client->name;
+			
+				list->set(list, p.e, SESET_TEXT, (long)&t, true);
+			
+				if (tx)
+					kfree(tx);
+			}
+		}
+	}
+}
+
+// static struct xa_window *task_man_win = NULL;
 
 bool
 isin_namelist(struct cfg_name_list *list, char *name, short nlen, struct cfg_name_list **last, struct cfg_name_list **prev)
@@ -339,7 +422,11 @@ free_namelist(struct cfg_name_list **list)
 static int
 taskmanager_destructor(enum locks lock, struct xa_window *wind)
 {
-	task_man_win = NULL;
+	struct helpthread_data *htd = lookup_xa_data_byname(&wind->owner->xa_data, HTDNAME);
+
+	if (htd)
+		htd->w_taskman = NULL;
+// 	task_man_win = NULL;
 	return true;
 }
 
@@ -471,7 +558,7 @@ taskmanager_form_exit(struct xa_client *Client,
 			}
 
 			object_deselect(wt->tree + TM_KILL);
-			redraw_toolbar(lock, task_man_win, TM_KILL);
+			redraw_toolbar(lock, wind, TM_KILL);
 			break;
 		}
 		case TM_TERM:
@@ -496,7 +583,7 @@ taskmanager_form_exit(struct xa_client *Client,
 			}
 
 			object_deselect(wt->tree + TM_TERM);
-			redraw_toolbar(lock, task_man_win, TM_TERM);
+			redraw_toolbar(lock, wind, TM_TERM);
 			break;
 		}
 		case TM_SLEEP:
@@ -515,7 +602,7 @@ taskmanager_form_exit(struct xa_client *Client,
 			}
 
 			object_deselect(wt->tree + TM_SLEEP);
-			redraw_toolbar(lock, task_man_win, TM_SLEEP);
+			redraw_toolbar(lock, wind, TM_SLEEP);
 			break;
 		}
 		case TM_WAKE:
@@ -534,7 +621,7 @@ taskmanager_form_exit(struct xa_client *Client,
 			}
 
 			object_deselect(wt->tree + TM_WAKE);
-			redraw_toolbar(lock, task_man_win, TM_WAKE);
+			redraw_toolbar(lock, wind, TM_WAKE);
 			break;
 		}
 
@@ -545,7 +632,7 @@ taskmanager_form_exit(struct xa_client *Client,
 			quit_all_apps(lock, NULL, AP_TERM);
 
 			object_deselect(wt->tree + TM_QUITAPPS);
-			redraw_toolbar(lock, task_man_win, TM_QUITAPPS);
+			redraw_toolbar(lock, wind, TM_QUITAPPS);
 			break;
 		}
 		case TM_QUIT:
@@ -554,7 +641,7 @@ taskmanager_form_exit(struct xa_client *Client,
 			dispatch_shutdown(0);
 
 			object_deselect(wt->tree + TM_QUIT);
-			redraw_toolbar(lock, task_man_win, TM_QUIT);
+			redraw_toolbar(lock, wind, TM_QUIT);
 			break;
 		}
 		case TM_REBOOT:
@@ -563,7 +650,7 @@ taskmanager_form_exit(struct xa_client *Client,
 			dispatch_shutdown(REBOOT_SYSTEM);
 
 			object_deselect(wt->tree + TM_REBOOT);
-			redraw_toolbar(lock, task_man_win, TM_REBOOT);
+			redraw_toolbar(lock, wind, TM_REBOOT);
 			break;
 		}
 		case TM_HALT:
@@ -572,7 +659,7 @@ taskmanager_form_exit(struct xa_client *Client,
 			dispatch_shutdown(HALT_SYSTEM);
 
 			object_deselect(wt->tree + TM_HALT);
-			redraw_toolbar(lock, task_man_win, TM_HALT);
+			redraw_toolbar(lock, wind, TM_HALT);
 			break;
 		}
 		case TM_COLD:
@@ -580,25 +667,25 @@ taskmanager_form_exit(struct xa_client *Client,
 			DIAGS(("taskmanager: coldstart system"));
 			dispatch_shutdown(COLDSTART_SYSTEM);
 			object_deselect(wt->tree + TM_COLD);
-			redraw_toolbar(lock, task_man_win, TM_COLD);
+			redraw_toolbar(lock, wind, TM_COLD);
 			break;
 		}
 		case TM_RESCHG:
 		{
 			
 			if (C.reschange)
-				post_cevent(C.Hlp, ceExecfunc, C.reschange,NULL, 0,0, NULL,NULL);
+				post_cevent(C.Hlp, ceExecfunc, C.reschange,NULL, 1,0, NULL,NULL);
 			obj_change(wt, v, fr->obj, -1, aesobj_ob(&fr->obj)->ob_state & ~OS_SELECTED, aesobj_ob(&fr->obj)->ob_flags, true, NULL, wind->rect_list.start, 0);
 			break;
 		}
 		case TM_OK:
 		{
 			object_deselect(wt->tree + TM_OK);
-			redraw_toolbar(lock, task_man_win, TM_OK);
+			redraw_toolbar(lock, wind, TM_OK);
 
 			/* and release */
-			close_window(lock, task_man_win);
-			delayed_delete_window(lock, task_man_win);
+			close_window(lock, wind);
+// 			delayed_delete_window(lock, wind);
 			break;
 		}
 		default:
@@ -611,32 +698,48 @@ taskmanager_form_exit(struct xa_client *Client,
 }
 
 void
-open_taskmanager(enum locks lock, struct xa_client *client)
+open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 {
 	RECT remember = { 0,0,0,0 };
+	struct helpthread_data *htd;
 	struct xa_window *wind;
-	XA_TREE *wt;
-	OBJECT *obtree;
+	XA_TREE *wt = NULL;
+	OBJECT *obtree = NULL;
 	RECT or;
 
-	obtree = ResourceTree(C.Aes_rsc, TASK_MANAGER);
-	ob_rectangle(obtree, aesobj(obtree, 0), &or);
-
-	wt = obtree_to_wt(client, obtree);
-
-	if (!task_man_win)
+	htd = get_helpthread_data(client);
+	if (!htd)
+		return;
+	
+	if (!htd->w_taskman) //(!task_man_win)
 	{
+/* ********** */
+		obtree = duplicate_obtree(client, ResourceTree(C.Aes_rsc, TASK_MANAGER), 0);
+		if (!obtree) goto fail;
+		wt = new_widget_tree(client, obtree);
+		if (!wt) goto fail;
+		wt->flags |= WTF_TREE_ALLOC | WTF_AUTOFREE;
+		
+		set_slist_object(0, wt, NULL, TM_LIST,
+				 SIF_SELECTABLE|SIF_AUTOSELECT|SIF_ICONINDENT,
+				 NULL, NULL, NULL, NULL, NULL, NULL,
+				 NULL, NULL, NULL, NULL,
+				 "Client Applications", NULL, NULL, 255);
+
+		obj_init_focus(wt, OB_IF_RESET);
+/* ********** */
+		obj_rectangle(wt, aesobj(obtree, 0), &or);
 		obtree[TM_ICONS].ob_flags |= OF_HIDETREE;
 
 		/* Work out sizing */
 		if (!remember.w)
 		{
-			center_rect(&or); //form_center(obtree, ICON_H);
+			center_rect(&or);
 			remember = calc_window(lock, client, WC_BORDER,
 						CLOSER|NAME, created_for_AES,
 						client->options.thinframe,
 						client->options.thinwork,
-						*(RECT *)&or); //*(RECT*)&obtree->ob_x);
+						*(RECT *)&or);
 		}
 
 		/* Create the window */
@@ -649,33 +752,55 @@ open_taskmanager(enum locks lock, struct xa_client *client)
 					client->options.thinframe,
 					client->options.thinwork,
 					remember, NULL, NULL);
-
+		
+		if (!wind) goto fail;
+		
 		/* Set the window title */
 		set_window_title(wind, " Task Manager ", false);
 
-		wt = set_toolbar_widget(lock, wind, client, obtree, inv_aesobj(), 0/*WIP_NOTEXT*/, true, NULL, &or);
+		wt = set_toolbar_widget(lock, wind, client, obtree, inv_aesobj(), 0/*WIP_NOTEXT*/, STW_ZEN, NULL, &or);
 		wt->exit_form = taskmanager_form_exit;
 
 		/* Set the window destructor */
 		wind->destructor = taskmanager_destructor;
 	
-		open_window(lock, wind, wind->r);
-		task_man_win = wind;
+		htd->w_taskman = wind;
+		
+		if (open)
+			open_window(lock, wind, wind->r);	
 	}
-	else if (task_man_win != window_list)
+	else
 	{
-		top_window(lock, true, false, task_man_win, (void *)-1L);
+		wind = htd->w_taskman;
+		if (open)
+		{
+			open_window(lock, wind, wind->r);
+			if (wind != window_list)
+				top_window(lock, true, false, wind, (void *)-1L);
+		}
 	}
+	return;
+fail:
+	if (wt)
+	{
+		remove_wt(wt, false);
+		obtree = NULL;
+	}
+	if (obtree)
+		free_object_tree(client, obtree);
 }
 
 /* ************************************************************ */
 /*     Common resolution mode change functions/stuff		*/
 /* ************************************************************ */
-static struct xa_window *reschg_win = NULL;
+// static struct xa_window *reschg_win = NULL;
 static int
 reschg_destructor(enum locks lock, struct xa_window *wind)
 {
-	reschg_win = NULL;
+	struct helpthread_data *htd = lookup_xa_data_byname(&wind->owner->xa_data, HTDNAME);
+	if (htd)
+		htd->w_reschg = NULL;
+// 	reschg_win = NULL;
 	return true;
 }
 
@@ -686,7 +811,7 @@ create_dwind(enum locks lock, XA_WIND_ATTR tp, char *title, struct xa_client *cl
 	OBJECT *obtree = wt->tree;
         RECT r, or;
 
-	ob_rectangle(obtree, aesobj(obtree, 0), &or);
+	obj_rectangle(wt, aesobj(obtree, 0), &or);
 
 	center_rect(&or);
 
@@ -711,7 +836,7 @@ create_dwind(enum locks lock, XA_WIND_ATTR tp, char *title, struct xa_client *cl
 	if (title)
 		set_window_title(wind, title, false);
 
-	wt = set_toolbar_widget(lock, wind, client, obtree, inv_aesobj(), 0/*WIP_NOTEXT*/, true, NULL, &or);
+	wt = set_toolbar_widget(lock, wind, client, obtree, inv_aesobj(), 0/*WIP_NOTEXT*/, STW_ZEN, NULL, &or);
 	wt->exit_form = f; //milan_reschg_form_exit;
 
 	/* Set the window destructor */
@@ -805,33 +930,49 @@ resmode_form_exit(struct xa_client *Client,
 static char t_reschg[] = " Change Resolution ";
 
 void
-open_reschange(enum locks lock, struct xa_client *client)
+open_reschange(enum locks lock, struct xa_client *client, bool open)
 {
 	struct xa_window *wind;
-	XA_TREE *wt;
-	OBJECT *obtree;
+	struct helpthread_data *htd;
+	XA_TREE *wt = NULL;
+	OBJECT *obtree = NULL;
 
-	if (!reschg_win)
+	htd = get_helpthread_data(client);
+
+	if (!htd->w_reschg) //(!reschg_win)
 	{
-		obtree = ResourceTree(C.Aes_rsc, RES_CHATARI);
-		wt = obtree_to_wt(client, obtree);
-		if (!wt)
-			wt = new_widget_tree(client, obtree);
-		if (wt)
+		obtree = duplicate_obtree(client, ResourceTree(C.Aes_rsc, RES_CHATARI), 0);
+		if (!obtree) goto fail;
+		wt = new_widget_tree(client, obtree);
+		if (!wt) goto fail;		
+		wt->flags |= WTF_TREE_ALLOC | WTF_AUTOFREE;
+		wind = create_dwind(lock, CLOSER, t_reschg, client, wt, resmode_form_exit, reschg_destructor);
+		if (!wind) goto fail;
+		
+		set_resmode_obj(wt, cfg.videomode);
+		if (open)
+			open_window(lock, wind, wind->r);
+		htd->w_reschg = wind; //reschg_win = wind;
+	}
+	else
+	{
+		wind = htd->w_reschg;
+		if (open)
 		{
-			wind = create_dwind(lock, CLOSER, t_reschg, client, wt, resmode_form_exit, reschg_destructor);
-			if (wind)
-			{
-				set_resmode_obj(wt, cfg.videomode);
-				open_window(lock, wind, wind->r);
-				reschg_win = wind;
-			}
+			open_window(lock, wind, wind->r);
+			if (wind != window_list)
+				top_window(lock, true, false, wind, (void *)-1L);
 		}
 	}
-	else if (reschg_win != window_list)
+	return;
+fail:
+	if (wt)
 	{
-		top_window(lock, true, false, reschg_win, (void *)-1L);
+		remove_wt(wt, false);
+		obtree = NULL;
 	}
+	if (obtree)
+		free_object_tree(client, obtree);
 }
 /* ************************************************************ */
 /*     Falcon resolution mode change functions			*/
@@ -940,33 +1081,49 @@ reschg_form_exit(struct xa_client *Client,
 }
 
 void
-open_falcon_reschange(enum locks lock, struct xa_client *client)
+open_falcon_reschange(enum locks lock, struct xa_client *client, bool open)
 {
 	struct xa_window *wind;
-	XA_TREE *wt;
-	OBJECT *obtree;
+	struct helpthread_data *htd;
+	XA_TREE *wt = NULL;
+	OBJECT *obtree = NULL;
 
-	if (!reschg_win)
+	htd = get_helpthread_data(client);
+
+	if (!htd->w_reschg) //(!reschg_win)
 	{
-		obtree = ResourceTree(C.Aes_rsc, RES_CHFALC);
-		wt = obtree_to_wt(client, obtree);
-		if (!wt)
-			wt = new_widget_tree(client, obtree);
-		if (wt)
+		obtree = duplicate_obtree(client, ResourceTree(C.Aes_rsc, RES_CHFALC), 0);
+		if (!obtree) goto fail;
+		wt = new_widget_tree(client, obtree);
+		if (!wt) goto fail;		
+		wt->flags |= WTF_TREE_ALLOC | WTF_AUTOFREE;
+		wind = create_dwind(lock, CLOSER, t_reschg, client, wt, reschg_form_exit, reschg_destructor);
+		if (!wind) goto fail;
+		
+		set_reschg_obj(wt, (unsigned long)cfg.videomode);
+		if (open)
+			open_window(lock, wind, wind->r);
+		htd->w_reschg = wind; //reschg_win = wind;
+	}
+	else
+	{
+		wind = htd->w_reschg;
+		if (open)
 		{
-			wind = create_dwind(lock, CLOSER, t_reschg, client, wt, reschg_form_exit, reschg_destructor);
-			if (wind)
-			{
-				set_reschg_obj(wt, (unsigned long)cfg.videomode);
-				open_window(lock, wind, wind->r);
-				reschg_win = wind;
-			}
+			open_window(lock, wind, wind->r);
+			if (wind != window_list)
+				top_window(lock, true, false, wind, (void *)-1L);
 		}
 	}
-	else if (reschg_win != window_list)
+	return;
+fail:
+	if (wt)
 	{
-		top_window(lock, true, false, reschg_win, (void *)-1L);
+		remove_wt(wt, false);
+		obtree = NULL;
 	}
+	if (obtree)
+		free_object_tree(client, obtree);
 }
 /* ************************************************************ */
 /*     Milan resolution mode change functions			*/
@@ -1450,43 +1607,58 @@ milan_setdevid(struct widget_tree *wt, struct milres_parm *p, short devid)
 }
 
 void
-open_milan_reschange(enum locks lock, struct xa_client *client)
+open_milan_reschange(enum locks lock, struct xa_client *client, bool open)
 {
 	struct xa_window *wind;
-	XA_TREE *wt;
-	OBJECT *obtree;
-	struct milres_parm *p;
+	struct helpthread_data *htd;
+	XA_TREE *wt = NULL;
+	OBJECT *obtree = NULL;
+	struct milres_parm *p = NULL;
 
-	if (!reschg_win)
+	if (!(htd = get_helpthread_data( client )))
+		return;
+
+	if (!htd->w_reschg) //reschg_win)
 	{
-		obtree = ResourceTree(C.Aes_rsc, RES_CHMIL);
-		wt = obtree_to_wt(client, obtree);
-		if (!wt)
-			wt = new_widget_tree(client, obtree);
-
-		if (wt && (p = check_milan_res(client, obtree[RCHM_RES].ob_width)))
-		{
-
-			p->current[1] = milan_setdevid(wt, p, p->curr_devid);
+		obtree = duplicate_obtree(client, ResourceTree(C.Aes_rsc, RES_CHMIL), 0);
+		if (!obtree) goto fail;
+		wt = new_widget_tree(client, obtree);
+		if (!wt) goto fail;		
+		wt->flags |= WTF_TREE_ALLOC | WTF_AUTOFREE;
+		p = check_milan_res(client, obtree[RCHM_RES].ob_width);
+		if (!p) goto fail;
+		
+		p->current[1] = milan_setdevid(wt, p, p->curr_devid);
 			
-			wind = create_dwind(lock, CLOSER, t_reschg, client, wt, milan_reschg_form_exit, reschg_destructor);
-			if (wind)
-			{
-				add_xa_data(&wind->xa_data, p, 0, "milres_parm", delete_milres_parm);
-				open_window(lock, wind, wind->r);
-				reschg_win = wind;
-			}
-			else
-				goto failure;
+		wind = create_dwind(lock, CLOSER, t_reschg, client, wt, milan_reschg_form_exit, reschg_destructor);
+		if (!wind) goto fail;
+
+		add_xa_data(&wind->xa_data, p, 0, "milres_parm", delete_milres_parm);
+		if (open)
+			open_window(lock, wind, wind->r);
+		htd->w_reschg = wind; //reschg_win = wind;
+	}
+	else
+	{
+		wind = htd->w_reschg;
+		if (open)
+		{
+			open_window(lock, wind, wind->r);
+			if (wind != window_list)
+				top_window(lock, true, false, wind, (void *)-1L);
 		}
 	}
-	else if (reschg_win != window_list)
-	{
-		top_window(lock, true, false, reschg_win, (void *)-1L);
-	}
 	return;
-failure:
+fail:
 	delete_milres_parm(p);
+
+	if (wt)
+	{
+		remove_wt(wt, false);
+		obtree = NULL;
+	}
+	if (obtree)
+		free_object_tree(client, obtree);
 }
 /* ************************************************************ */
 /*     Nova resolution mode change functions			*/
@@ -1787,53 +1959,73 @@ exit:
 }
 
 void
-open_nova_reschange(enum locks lock, struct xa_client *client)
+open_nova_reschange(enum locks lock, struct xa_client *client, bool open)
 {
 	struct xa_window *wind;
-	XA_TREE *wt;
-	OBJECT *obtree;
-	struct milres_parm *p;
+	struct helpthread_data *htd;
+	XA_TREE *wt = NULL;
+	OBJECT *obtree = NULL;
+	struct milres_parm *p = NULL;
 
-	if (!reschg_win)
+	if (!(htd = get_helpthread_data(client)))
+		return;
+
+	if (!htd->w_reschg) // !reschg_win)
 	{
-		obtree = ResourceTree(C.Aes_rsc, RES_CHMIL);
-		wt = obtree_to_wt(client, obtree);
-		if (!wt)
-			wt = new_widget_tree(client, obtree);
-		if (wt && (p = check_nova_res(client, obtree[RCHM_RES].ob_width)))
-		{
-			p->current[1] = milan_setdevid(wt, p, p->curr_devid);
+		obtree = duplicate_obtree(client, ResourceTree(C.Aes_rsc, RES_CHMIL), 0);
+		if (!obtree) goto fail;
+		wt = new_widget_tree(client, obtree);
+		if (!wt) goto fail;
+		wt->flags |= WTF_TREE_ALLOC | WTF_AUTOFREE;
+		p = check_nova_res(client, obtree[RCHM_RES].ob_width);
+		if (!p) goto fail;
+
+		p->current[1] = milan_setdevid(wt, p, p->curr_devid);
 			
-			wind = create_dwind(lock, CLOSER, t_reschg, client, wt, nova_reschg_form_exit, reschg_destructor);
-			if (wind)
-			{
-				add_xa_data(&wind->xa_data, p, 0, "milres_parm", delete_milres_parm);
-				open_window(lock, wind, wind->r);
-				reschg_win = wind;
-			}
-			else
-				goto failure;
+		wind = create_dwind(lock, CLOSER, t_reschg, client, wt, nova_reschg_form_exit, reschg_destructor);
+		if (!wind) goto fail;
+
+		add_xa_data(&wind->xa_data, p, 0, "milres_parm", delete_milres_parm);
+		if (open)
+			open_window(lock, wind, wind->r);
+		htd->w_reschg = wind; //reschg_win = wind;
+	}
+	else
+	{
+		wind = htd->w_reschg;
+		if (open)
+		{
+			open_window(lock, wind, wind->r);
+			if (wind != window_list)
+				top_window(lock, true, false, wind, (void *)-1L);
 		}
 	}
-	else if (reschg_win != window_list)
-	{
-		top_window(lock, true, false, reschg_win, (void *)-1L);
-	}
 	return;
-failure:
+fail:
 	delete_milres_parm(p);
+
+	if (wt)
+	{
+		remove_wt(wt, false);
+		obtree = NULL;
+	}
+	if (obtree)
+		free_object_tree(client, obtree);
 	
 }
 
 /*
  * client still running dialog
  */
-static struct xa_window *csr_win = NULL;
+// static struct xa_window *csr_win = NULL;
 
 static int
 csr_destructor(enum locks lock, struct xa_window *wind)
 {
-	csr_win = NULL;
+	struct helpthread_data *htd = lookup_xa_data_byname(&wind->owner->xa_data, HTDNAME);
+	if (htd)
+		htd->w_csr = NULL;
+// 	csr_win = NULL;
 	return true;
 }
 
@@ -1905,16 +2097,24 @@ static void
 open_csr(enum locks lock, struct xa_client *client, struct xa_client *running)
 {
 	struct xa_window *wind;
-	XA_TREE *wt;
-	OBJECT *obtree;
+	struct helpthread_data *htd;
+	XA_TREE *wt = NULL;
+	OBJECT *obtree = NULL;
 
-	if (!csr_win)
+	if (!(htd = get_helpthread_data(client)))
+		return;
+
+	if (!htd->w_csr) // !csr_win)
 	{
 		TEDINFO *t;
 		
+		obtree = duplicate_obtree(client, ResourceTree(C.Aes_rsc, KILL_OR_WAIT), 0);
+		if (!obtree) goto fail;
+		wt = new_widget_tree(client, obtree);
+		if (!wt) goto fail;
+		wt->flags |= WTF_TREE_ALLOC | WTF_AUTOFREE;
 		C.csr_client = running;
-		obtree = ResourceTree(C.Aes_rsc, KILL_OR_WAIT);
-
+		
 		t = object_get_tedinfo(obtree + KORW_APPNAME, NULL);
 		if (running->name[0])
 		{
@@ -1932,23 +2132,29 @@ open_csr(enum locks lock, struct xa_client *client, struct xa_client *running)
 			strncpy(t->te_ptext, running->proc_name, 8);
 			t->te_ptext[8] = '\0';
 		}
-		wt = obtree_to_wt(client, obtree);
-		if (!wt)
-			wt = new_widget_tree(client, obtree);
-		if (wt)
-		{
-			wind = create_dwind(lock, 0, " Shutdown ", client, wt, csr_form_exit, csr_destructor);
-			if (wind)
-			{
-				open_window(lock, wind, wind->r);
-				csr_win = wind;
-			}
-		}
+			
+		wind = create_dwind(lock, 0, " Shutdown ", client, wt, csr_form_exit, csr_destructor);
+		if (!wind)
+			goto fail;
+		htd->w_csr = wind;
+		open_window(lock, wind, wind->r);		
 	}
-	else if (csr_win != window_list)
+	else
 	{
-		top_window(lock, true, false, csr_win, (void *)-1L);
+		wind = htd->w_csr;
+		open_window(lock, wind, wind->r);
+		if (wind != window_list)
+			top_window(lock, true, false, wind, (void *)-1L);
 	}
+	return;
+fail:
+	if (wt)
+	{
+		remove_wt(wt, false);
+		obtree = NULL;
+	}
+	if (obtree)
+		free_object_tree(client, obtree);
 }
 
 void
@@ -1965,10 +2171,12 @@ CE_abort_csr(enum locks lock, struct c_event *ce, bool cancel)
 {
 	if (!cancel)
 	{
-		if (csr_win)
+		struct helpthread_data *htd = lookup_xa_data_byname(&ce->client->xa_data, HTDNAME);
+		
+		if (htd && htd->w_csr)
 		{
-			close_window(lock, csr_win);
-			delayed_delete_window(lock, csr_win);
+			close_window(lock, htd->w_csr);
+			delayed_delete_window(lock, htd->w_csr);
 			C.csr_client = NULL;
 		}
 	}
@@ -2039,7 +2247,7 @@ open_launcher(enum locks lock, struct xa_client *client)
 
 
 
-static struct xa_window *systemalerts_win = NULL;
+// static struct xa_window *systemalerts_win = NULL;
 
 /* double click now also available for internal handlers. */
 static void
@@ -2076,16 +2284,16 @@ sysalerts_form_exit(struct xa_client *Client,
 			if (p.e)
 				list->empty(list, p.e, 0);
 			object_deselect(wt->tree + item);
-			redraw_toolbar(lock, systemalerts_win, SYSALERT_LIST);
-			redraw_toolbar(lock, systemalerts_win, item);
+			redraw_toolbar(lock, wind, SYSALERT_LIST);
+			redraw_toolbar(lock, wind, item);
 			break;
 		}
 		case SALERT_OK:
 		{
 			object_deselect(wt->tree + item);
-			redraw_toolbar(lock, systemalerts_win, item);
-			close_window(lock, systemalerts_win);
-			delayed_delete_window(lock, systemalerts_win);	
+			redraw_toolbar(lock, wind, item);
+			close_window(lock, wind);
+// 			delayed_delete_window(lock, wind);	
 			break;
 		}
 	}
@@ -2094,7 +2302,10 @@ sysalerts_form_exit(struct xa_client *Client,
 static int
 systemalerts_destructor(enum locks lock, struct xa_window *wind)
 {
-	systemalerts_win = NULL;
+	struct helpthread_data *htd = lookup_xa_data_byname(&wind->owner->xa_data, HTDNAME);
+	if (htd)
+		htd->w_sysalrt = NULL;
+// 	systemalerts_win = NULL;
 	return true;
 }
 
@@ -2107,21 +2318,77 @@ refresh_systemalerts(OBJECT *form)
 	list->slider(list, true);
 }
 
-static void
-open_systemalerts(enum locks lock, struct xa_client *client)
+void
+open_systemalerts(enum locks lock, struct xa_client *client, bool open)
 {
+	struct helpthread_data *htd;
+	OBJECT *obtree = NULL;
+	struct widget_tree *wt = NULL;
+	struct xa_window *wind;
 	RECT remember = { 0, 0, 0, 0 };
 
-	if (!systemalerts_win)
+	if (!(htd = get_helpthread_data(client)))
+		return;
+
+	if (!htd->w_sysalrt) //(!systemalerts_win)
 	{
-		OBJECT *obtree = ResourceTree(C.Aes_rsc, SYS_ERROR);
-		struct xa_window *dialog_window;
-		XA_TREE *wt;
 		RECT or;
+		
+		obtree = duplicate_obtree(client, ResourceTree(C.Aes_rsc, SYS_ERROR), 0);
+		if (!obtree) goto fail;
+		wt = new_widget_tree(client, obtree);
+		if (!wt) goto fail;
+		wt->flags |= WTF_TREE_ALLOC | WTF_AUTOFREE;
 
-		ob_rectangle(obtree, aesobj(obtree, 0), &or);
+		set_slist_object(0, wt, NULL, SYSALERT_LIST,
+				 SIF_SELECTABLE|SIF_AUTOSELECT|SIF_TREEVIEW|SIF_AUTOOPEN,
+				 NULL, NULL, NULL, NULL, NULL, NULL,
+				 NULL, NULL, NULL, NULL,
+				 NULL, NULL, NULL, 255);
+		obj_init_focus(wt, OB_IF_RESET);
+		
+		{
+			struct scroll_info *list = object_get_slist(obtree + SYSALERT_LIST);
+			struct scroll_content sc = {{ 0 }};
+			char a[] = "Alerts";
+			char e[] = "Environment";
 
-		wt = obtree_to_wt(client, obtree);
+			sc.t.text = a;
+			sc.t.strings = 1;
+			sc.icon = obtree + SALERT_IC1;
+			sc.usr_flags = 1;
+			sc.xflags = OF_AUTO_OPEN;
+			DIAGS(("Add Alerts entry..."));
+			list->add(list, NULL, NULL, &sc, 0, SETYP_STATIC, NOREDRAW);
+			sc.t.text = e;
+			sc.icon = obtree + SALERT_IC2;
+			DIAGS(("Add Environment entry..."));
+			list->add(list, NULL, NULL, &sc, 0, SETYP_STATIC, NOREDRAW);
+		}
+		{
+			struct scroll_info *list = object_get_slist(obtree + SYSALERT_LIST);
+			struct scroll_entry *this;
+			const char **strings = get_raw_env(); //char * const * const strings = get_raw_env();
+			int i;
+			struct sesetget_params p = { 0 };
+			struct scroll_content sc = {{ 0 }};
+
+			p.idx = -1;
+			p.arg.txt = "Environment";
+			p.level.flags = 0;
+			p.level.curlevel = 0;
+			p.level.maxlevel = 0;
+			list->get(list, NULL, SEGET_ENTRYBYTEXT, &p);
+			list->empty(list, p.e, 0);
+			this = p.e;
+			sc.t.strings = 1;
+			for (i = 0; strings[i]; i++)
+			{	sc.t.text = strings[i];
+				list->add(list, this, NULL, &sc, this ? (SEADD_CHILD|SEADD_PRIOR) : SEADD_PRIOR, 0, true);		
+			}
+		}
+
+		obj_rectangle(wt, aesobj(obtree, 0), &or);
 
 		obtree[SALERT_ICONS].ob_flags |= OF_HIDETREE;
 
@@ -2137,36 +2404,54 @@ open_systemalerts(enum locks lock, struct xa_client *client)
 		}
 
 		/* Create the window */
-		dialog_window = create_window(lock,
-						do_winmesag,
-						do_formwind_msg,
-						client,
-						false,
-						CLOSER|NAME|TOOLBAR|hide_move(&(client->options)),
-						created_for_AES,
-						client->options.thinframe,
-						client->options.thinwork,
-						remember, NULL, NULL);
+		wind = create_window(lock,
+					do_winmesag,
+					do_formwind_msg,
+					client,
+					false,
+					CLOSER|NAME|TOOLBAR|hide_move(&(client->options)),
+					created_for_AES,
+					client->options.thinframe,
+					client->options.thinwork,
+					remember, NULL, NULL);
+		if (!wind) goto fail;
 
 		/* Set the window title */
-		set_window_title(dialog_window, " System window & Alerts log", false);
+		set_window_title(wind, " System window & Alerts log", false);
 
-		wt = set_toolbar_widget(lock, dialog_window, client, obtree, inv_aesobj(), 0/*WIP_NOTEXT*/, true, NULL, &or);
+		wt = set_toolbar_widget(lock, wind, client, obtree, inv_aesobj(), 0/*WIP_NOTEXT*/, STW_ZEN, NULL, &or);
 		wt->exit_form = sysalerts_form_exit;
 		/* Set the window destructor */
-		dialog_window->destructor = systemalerts_destructor;
+		wind->destructor = systemalerts_destructor;
 
 		refresh_systemalerts(obtree);
 
-		open_window(lock, dialog_window, dialog_window->r);
-		systemalerts_win = dialog_window;
-	}
-	else if (systemalerts_win != window_list)
-	{
-		top_window(lock, true, false, systemalerts_win, (void *)-1L);
-	}
-}
+		if (open)
+			open_window(lock, wind, wind->r);
 
+		htd->w_sysalrt = wind; //systemalerts_win = dialog_window;
+	}
+	else
+	{
+		wind = htd->w_sysalrt;
+		if (open)
+		{
+			open_window(lock, wind, wind->r);
+			if (wind != window_list)
+				top_window(lock, true, false, wind, (void *)-1L);
+		}
+	}
+	return;
+fail:
+	if (wt)
+	{
+		remove_wt(wt, false);
+		obtree = NULL;
+	}
+	if (obtree)
+		free_object_tree(client, obtree);
+
+}
 
 /*
  * Handle clicks on the system default menu
@@ -2182,7 +2467,7 @@ do_system_menu(enum locks lock, int clicked_title, int menu_item)
 
 		/* Open the "About XaAES..." dialog */
 		case SYS_MN_ABOUT:
-			post_cevent(C.Hlp, ceExecfunc, open_about,NULL, 0,0, NULL,NULL);
+			post_cevent(C.Hlp, ceExecfunc, open_about,NULL, 1,0, NULL,NULL);
 			break;
 
 		/* Quit all applications */
@@ -2199,15 +2484,17 @@ do_system_menu(enum locks lock, int clicked_title, int menu_item)
 
 		/* Open the "Task Manager" window */
 		case SYS_MN_TASKMNG:
-			post_cevent(C.Hlp, ceExecfunc, open_taskmanager,NULL, 0,0, NULL,NULL);
+			post_cevent(C.Hlp, ceExecfunc, open_taskmanager,NULL, 1,0, NULL,NULL);
 			break;
 		/* Open system alerts log window */
 		case SYS_MN_SALERT:
-			post_cevent(C.Hlp, ceExecfunc, open_systemalerts,NULL, 0,0, NULL,NULL);
+			post_cevent(C.Hlp, ceExecfunc, open_systemalerts,NULL, 1,0, NULL,NULL);
 			break;
 		/* Open system alerts log window filled with environment */
 		case SYS_MN_ENV:
 		{
+			post_cevent(C.Hlp, ceExecfunc, open_systemalerts, NULL, 1,0, NULL,NULL);
+#if 0
 			OBJECT *form = ResourceTree(C.Aes_rsc, SYS_ERROR);
 			struct scroll_info *list = object_get_slist(form + SYSALERT_LIST);
 			struct scroll_entry *this;
@@ -2229,7 +2516,8 @@ do_system_menu(enum locks lock, int clicked_title, int menu_item)
 			{	sc.t.text = strings[i];
 				list->add(list, this, NULL, &sc, this ? (SEADD_CHILD|SEADD_PRIOR) : SEADD_PRIOR, 0, true);		
 			}
-			post_cevent(C.Hlp, ceExecfunc, open_systemalerts,NULL, 0,0, NULL,NULL);
+			post_cevent(C.Hlp, ceExecfunc, open_systemalerts,NULL, 1,0, NULL,NULL);
+#endif
 			break;
 		}
 
@@ -2237,7 +2525,7 @@ do_system_menu(enum locks lock, int clicked_title, int menu_item)
 		/* Launch a new app */
 		case SYS_MN_LAUNCH:
 		{
-			post_cevent(C.Hlp, ceExecfunc, open_launcher,NULL, 0,0, NULL,NULL);
+			post_cevent(C.Hlp, ceExecfunc, open_launcher,NULL, 1,0, NULL,NULL);
 			break;
 		}
 #endif
@@ -2255,7 +2543,7 @@ do_system_menu(enum locks lock, int clicked_title, int menu_item)
 		case SYS_MN_RESCHG:
 		{
 			if (C.reschange)
-				post_cevent(C.Hlp, ceExecfunc, C.reschange,NULL, 0,0, NULL,NULL);
+				post_cevent(C.Hlp, ceExecfunc, C.reschange,NULL, 1,0, NULL,NULL);
 		}
 	}
 }

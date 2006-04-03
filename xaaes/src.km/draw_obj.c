@@ -25,7 +25,7 @@
  */
 
 //#include WIDGHNAME
-#include "xa_xtobj.h"
+// #include "xa_xtobj.h"
 
 #include "xa_types.h"
 #include "xa_global.h"
@@ -44,20 +44,14 @@
 
 #define done(x) (*wt->state_mask &= ~(x))
 
-struct xa_texture
-{
-	struct xa_data_hdr h;
-	MFDB mfdb;
-	struct xa_wtexture t;
-};
+static void d_g_progdef(struct widget_tree *wt, struct xa_vdi_settings *v);
+static void d_g_slist(struct widget_tree *wt, struct xa_vdi_settings *v);
 
-void *xobj_rshdr = NULL;
-void *xobj_rsc = NULL;
-static struct xa_texture *rootmenu_texture = NULL;
+
+static struct widget_tree nil_wt;
 
 
 #if GENERATE_DIAGS
-
 static char *pstates[] =
 {
 	"SEL",
@@ -77,7 +71,7 @@ static char *pstates[] =
 	"14",
 	"15"
 };
-
+#if 0
 static char *pflags[] =
 {
 	"S",
@@ -97,7 +91,7 @@ static char *pflags[] =
 	"14",
 	"15"
 };
-
+#endif
 static char *ob_types[] =
 {
 	"box",
@@ -122,7 +116,7 @@ static char *ob_types[] =
 	"xaaes slist",	/* 39 */
 	"40"
 };
-
+#if 0
 static char *
 object_txt(OBJECT *tree, short t)			/* HR: I want to know the culprit in a glance */
 {
@@ -171,6 +165,7 @@ object_type(OBJECT *tree, short t)
 
 	return other;
 }
+#endif
 #else
 #if 0
 static char *ob_types[] =
@@ -200,104 +195,52 @@ static char *ob_types[] =
 #endif
 #endif
 
-bool inline d3_any(OBJECT *ob)        { return (ob->ob_flags & OF_FL3DACT) != 0;	}
-bool inline d3_indicator(OBJECT *ob)  { return (ob->ob_flags & OF_FL3DACT) == OF_FL3DIND; }
-bool inline d3_foreground(OBJECT *ob) { return (ob->ob_flags & OF_FL3DIND) != 0; }
-bool inline d3_background(OBJECT *ob) { return (ob->ob_flags & OF_FL3DACT) == OF_FL3DBAK; }
-bool inline d3_activator(OBJECT *ob)  { return (ob->ob_flags & OF_FL3DACT) == OF_FL3DACT; }
-
-static void
-g2d_box(struct xa_vdi_settings *v, short b, RECT *r, short colour)
-{
-	/* inside runs from 3 to 0 */
-	if (b > 0)
-	{
-		if (b >  4) b =  3;
-		else        b--;
-		(*v->api->l_color)(v, colour);
-		while (b >= 0)
-			(*v->api->gbox)(v, -b, r), b--;
-	}
-	/* outside runs from 4 to 1 */
-	else if (b < 0)
-	{
-		if (b < -4) b = -4;
-		(*v->api->l_color)(v, colour);
-		while (b < 0)
-			(*v->api->gbox)(v, -b, r), b++;
-	}
-}
-
-void
-draw_2d_box(struct xa_vdi_settings *v, short x, short y, short w, short h, short border_thick, short colour)
-{
-	RECT r;
-
-	r.x = x;
-	r.y = y;
-	r.w = w;
-	r.h = h;
-
-	g2d_box(v, border_thick, &r, colour);
-}
-
-/* HR: pxy wrapper functions (Beware the (in)famous -1 bug */
-/* Also vsf_perimeter only works in XOR writing mode */
-
-void
-write_menu_line(struct xa_vdi_settings *v, RECT *cl)
-{
-	short pnt[4];
-	(*v->api->l_color)(v, G_BLACK);
-
-	pnt[0] = cl->x;
-	pnt[1] = cl->y + cl->h - 1;
-	pnt[2] = cl->x + cl->w - 1;
-	pnt[3] = pnt[1];
-	v_pline(v->handle, 2, pnt);
-}
-
-void
-r2pxy(short *p, short d, const RECT *r)
-{
-	*p++ = r->x - d;
-	*p++ = r->y - d;
-	*p++ = r->x + r->w + d - 1;
-	*p   = r->y + r->h + d - 1;
-}
-
-void
-rtopxy(short *p, const RECT *r)
-{
-	*p++ = r->x;
-	*p++ = r->y;
-	*p++ = r->x + r->w - 1; 
-	*p   = r->y + r->h - 1;
-}
-
-void
-ri2pxy(short *p, short d, short x, short y, short w, short h)
-{
-	*p++ = x - d;
-	*p++ = y - d;
-	*p++ = x + w + d - 1;
-	*p   = y + h + d - 1;
-} 
-	
-void
-ritopxy(short *p, short x, short y, short w, short h)
-{
-	*p++ = x;
-	*p++ = y;
-	*p++ = x + w - 1; 
-	*p   = y + h - 1;
-}
 
 #if NAES3D
 #define PW (default_options.naes ? 1 : 0)
 #else
 #define PW 0
 #endif
+
+long
+init_client_objcrend(struct xa_client *client)
+{
+	long ret = E_OK;
+
+	DIAGS(("init_client_objcrend: moduleapi=%lx, %s", client->objcr_module, client->name));
+	if (!client->objcr_api)
+	{
+		ret = (*client->objcr_module->open)(&client->objcr_api);
+		DIAGS((" -- open: ret %lx, objcr_api = %lx", ret, client->objcr_api));
+		if (!ret && client->objcr_api)
+		{
+			client->objcr_api->drawers[G_PROGDEF] = d_g_progdef;
+			client->objcr_api->drawers[G_SLIST] = d_g_slist;
+		}
+	}
+	if (!ret && !client->objcr_theme)
+	{
+		ret = (*client->objcr_module->new_theme)(&client->objcr_theme);
+		DIAGS((" -- theme: ret = %lx, theme = %lx", ret, client->objcr_theme));
+	}
+	return ret;
+}
+
+void
+exit_client_objcrend(struct xa_client *client)
+{
+	DIAGS(("exit_client_objcrend: %s", client->name));
+	if (client->objcr_theme)
+	{
+		(*client->objcr_module->free_theme)(client->objcr_theme);
+		client->objcr_theme = NULL;
+	}
+	if (client->objcr_api)
+	{
+		(*client->objcr_module->close)(client->objcr_api);
+		client->objcr_api = NULL;
+	}
+}
 
 void
 adjust_size(short d, RECT *r)
@@ -307,285 +250,7 @@ adjust_size(short d, RECT *r)
 	r->w += d+d;
 	r->h += d+d;
 }
-
-static void
-chiseled_gbox(struct xa_vdi_settings *v, short d, const RECT *r)
-{
-	(*v->api->br_hook)(v, d,   r, objc_rend.dial_colours.lit_col);
-	(*v->api->tl_hook)(v, d,   r, objc_rend.dial_colours.shadow_col);
-	(*v->api->br_hook)(v, d-1, r, objc_rend.dial_colours.shadow_col);
-	(*v->api->tl_hook)(v, d-1, r, objc_rend.dial_colours.lit_col);
-}
-	
-static void
-write_selection(struct xa_vdi_settings *v, short d, RECT *r)
-{
-	(*v->api->wr_mode)(v, MD_XOR);
-	(*v->api->f_color)(v, G_BLACK);
-	(*v->api->f_interior)(v, FIS_SOLID);
-	(*v->api->gbar)(v, d, r);
-	(*v->api->wr_mode)(v, MD_TRANS);
-}
-
-static void
-d3_bottom_line(struct xa_vdi_settings *v, RECT *r, bool l3d, short fgc, short bgc)
-{
-	short x, y, w;
-			 
-	 if (l3d)
-	 {
-	 	x = r->x;
-	 	y = r->y + r->h - 1;
-	 	w = r->w - 1;
-	 }
-	 else
-	 {
-	 	x = r->x;
-	 	y = r->y + r->h;
-	 	w = r->w;
-	 }
-	(*v->api->line)(v, x, y, x + w, y, fgc);
-	if (l3d)
-	{
-		y++;
-		(*v->api->line)(v, x + 1, y, x + w + 1, y, bgc);
-	}
-}
-
-static void
-d3_pushbutton(struct xa_vdi_settings *v, short d, RECT *r, BFOBSPEC *col, short state, short thick, short mode)
-{
-	const unsigned short selected = state & OS_SELECTED;
-	short t, j, outline;
-
-	thick = -thick;		/* make thick same direction as d (positive value --> LARGER!) */
-
-	if (thick > 0)		/* outside thickness */
-		d += thick;
-	d += 2;
-
-	if (mode & 1)		/* fill ? */
-	{
-		if (col == NULL)
-			(*v->api->f_color)(v, objc_rend.dial_colours.bg_col);
-		/* otherwise set by set_colours() */
-		/* inside bar */
-		(*v->api->gbar)(v, d, r);
-	}
-
-	j = d;
-	t = abs(thick);
-	outline = j;
-
-#if NAES3D
-	if (default_options.naes && !(mode & 2))
-	{	
-		(*v->api->l_color)(v, objc_rend.dial_colours.fg_col);
-		
-		while (t > 0)
-		{
-			/* outside box */
-			(*v->api->gbox)(v, j, r);
-			t--, j--;
-		}
-	
-		(*v->api->br_hook)(v, j, r, selected ? objc_rend.dial_colours.lit_col : objc_rend.dial_colours.shadow_col);
-		(*v->api->tl_hook)(v, j, r, selected ? objc_rend.dial_colours.shadow_col : objc_rend.dial_colours.lit_col);
-	}
-	else
-#endif
-	{
-		if (mode & 0x8000)
-		{
-			j--;
-			do {
-				(*v->api->br_hook)(v, j, r, selected ? objc_rend.dial_colours.lit_col : objc_rend.dial_colours.shadow_col);
-				(*v->api->tl_hook)(v, j, r, selected ? objc_rend.dial_colours.shadow_col : objc_rend.dial_colours.lit_col);
-				t--, j--;
-			}
-			while (t > 0);
-
-			/* full outline ? */
-			if (thick && !(mode & 2))
-			{
-				(*v->api->l_color)(v, objc_rend.dial_colours.fg_col);
-				/* outside box */
-			
-				if (thick > 2)
-					(*v->api->gbox)(v, outline - 1, r);
-				(*v->api->rgbox)(v, outline, 1, r);
-			}
-		}
-		else
-		{
-			do {
-				(*v->api->br_hook)(v, j, r, selected ? objc_rend.dial_colours.lit_col : objc_rend.dial_colours.shadow_col);
-				(*v->api->tl_hook)(v, j, r, selected ? objc_rend.dial_colours.shadow_col : objc_rend.dial_colours.lit_col);
-				t--, j--;
-			}
-			while (t >= 0);
-
-			/* full outline ? */
-			if (thick && !(mode & 2))
-			{
-				(*v->api->l_color)(v, objc_rend.dial_colours.fg_col);
-				/* outside box */
-				(*v->api->gbox)(v, outline, r);
-			}
-		}
-	}
-
-	shadow_object(v, outline, state, r, objc_rend.dial_colours.border_col, thick);
-
-	(*v->api->l_color)(v, objc_rend.dial_colours.border_col);
-}
-		
 /* HR: 1 (good) set of routines for screen saving */
-inline long calc_back(const RECT *r, short planes)
-{
-	return 2L * planes
-		  * ((r->w + 15) >> 4) // / 16)
-		  * r->h;
-}
-
-void form_save(short d, RECT r, void **area)
-{
-	MFDB Mscreen = { 0 };
-	MFDB Mpreserve;
-	short pnt[8];
-
-	r.x -= d;
-	r.y -= d;
-	r.w += d * 2;
-	r.h += d * 2;
-
-	if (r.x < 0)
-	{
-		r.w += r.x;
-		r.x = 0;
-	}
-	if (r.y < 0)
-	{
-		r.h += r.y;
-		r.y = 0;
-	}
-	
-	if (r.w > 0 && r.h > 0)
-	{
-		rtopxy(pnt, &r);
-		ritopxy(pnt+4,0,0,r.w,r.h);
-
-		DIAG((D_menu, NULL, "form_save %d/%d,%d/%d", r.x, r.y, r.w, r.h));
-
-		Mpreserve.fd_w = r.w;
-		Mpreserve.fd_h = r.h;
-		Mpreserve.fd_wdwidth = (r.w + 15) / 16;
-		Mpreserve.fd_nplanes = screen.planes;
-		Mpreserve.fd_stand = 0;
-
-		/* if something is allocated free it */
-		if (*area)
-			kfree(*area);
-
-		*area = kmalloc(calc_back(&r,screen.planes));
-		if (*area)
-		{
-			DIAG((D_menu, NULL, "form_save: to %lx", *area));
-			Mpreserve.fd_addr = *area;
-			hidem();
-			vro_cpyfm(C.P_handle, S_ONLY, pnt, &Mscreen, &Mpreserve);
-			showm();
-		}
-	}
-}
-
-void form_restore(short d, RECT r, void **area)
-{
-	if (*area)
-	{
-		MFDB Mscreen = { 0 };
-		MFDB Mpreserve;
-		short pnt[8];
-
-		r.x -= d;
-		r.y -= d;
-		r.w += d * 2;
-		r.h += d * 2;
-
-		if (r.x < 0)
-		{
-			r.w += r.x;
-			r.x = 0;
-		}
-		if (r.y < 0)
-		{
-			r.h += r.y;
-			r.y = 0;
-		}
-
-		if (r.w > 0 && r.h > 0)
-		{
-			rtopxy(pnt+4, &r);
-			ritopxy(pnt,0,0,r.w,r.h);
-
-			DIAG((D_menu, NULL, "form_restore %d/%d,%d/%d from %lx", r.x, r.y, r.w, r.h, *area));
-
-			Mpreserve.fd_w = r.w;
-			Mpreserve.fd_h = r.h;
-			Mpreserve.fd_wdwidth = (r.w + 15) / 16;
-			Mpreserve.fd_nplanes = screen.planes;
-			Mpreserve.fd_stand = 0;
-			Mpreserve.fd_addr = *area;
-			hidem();
-			vro_cpyfm(C.P_handle, S_ONLY, pnt, &Mpreserve, &Mscreen);
-			showm();
-
-			kfree(*area);
-			*area = NULL;
-		}
-	}
-}
-
-void
-form_copy(const RECT *fr, const RECT *to)
-{
-	MFDB Mscreen = { 0 };
-	short pnt[8];
-	rtopxy(pnt,fr);
-	rtopxy(pnt+4,to);
-	vro_cpyfm(C.P_handle, S_ONLY, pnt, &Mscreen, &Mscreen);
-}
-
-void
-shadow_object(struct xa_vdi_settings *v, short d, short state, RECT *rp, short colour, short thick)
-{
-	RECT r = *rp;
-	short offset, increase;
-
-	/* Are we shadowing this object? (Borderless objects aren't shadowed!) */
-	if (thick && (state & OS_SHADOWED))
-	{
-		short i;
-
-		if (thick < -4) thick = -4;
-		else
-		if (thick >  4) thick =  4;
-
-		offset = thick > 0 ? thick : 0;
-		increase = -thick;
-
-		r.x += offset;
-		r.y += offset;
-		r.w += increase;
-		r.h += increase;
-
-		for (i = 0; i < abs(thick)*2; i++)
-		{
-			r.w++, r.h++;
-			(*v->api->br_hook)(v, d, &r, colour);
-		}
-	}
-}
 
 void
 shadow_area(struct xa_vdi_settings *v, short d, short state, RECT *rp, short colour, short x_thick, short y_thick)
@@ -632,547 +297,6 @@ shadow_area(struct xa_vdi_settings *v, short d, short state, RECT *rp, short col
 		}
 	}
 }
-#if 0
-static short
-menu_dis_col(XA_TREE *wt)		/* Get colours for disabled better. */
-{
-	short c = G_BLACK;
-
-	if (!MONO)
-	{
-		if (wt->is_menu)
-		{
-			OBJECT *ob = wt->current.ob;
-			if (ob->ob_state & OS_DISABLED)
-			{
-				c = objc_rend.dial_colours.shadow_col;
-				done(OS_DISABLED);
-			}
-		}
-	}
-
-	return c;
-}
-#endif
-static BFOBSPEC
-button_colours(void)
-{
-	BFOBSPEC c;
-
-	c.character = 0;
-	c.framesize = 0;
-
-	c.framecol = objc_rend.dial_colours.border_col;
-	c.textcol  = G_BLACK;
-	c.textmode = 1;
-	c.fillpattern = IP_HOLLOW;
-	c.interiorcol = objc_rend.dial_colours.bg_col;
-
-	return c;
-}
-
-static void
-ob_text(XA_TREE *wt,
-	struct xa_vdi_settings *v,
-	struct objc_edit_info *ei,
-	RECT *r, RECT *o,
-	BFOBSPEC *c,
-	char *t,
-	short state,
-	short flags,
-	short und, short undcol)
-{
-	if (t && *t)
-	{
-		OBJECT *ob = wt->current.ob;
-		bool fits = true; // !o || ((o->h >= r->h - (d3_foreground(ob) ? 4 : 0)));
-
-		/* set according to circumstances. */
-		if (c)
-		{
-			/* more restrictions	*/
-			if (    c->textmode
-			    && !MONO
-			    && d3_any(ob)
-			    && (     c->fillpattern == IP_HOLLOW
-			         || (c->fillpattern == IP_SOLID && c->interiorcol == G_WHITE)))
-			{
-				(*v->api->f_color)(v, objc_rend.dial_colours.bg_col);
-				(*v->api->wr_mode)(v, MD_REPLACE);
-				(*v->api->gbar)(v, 0, o ? o : r);
-				(*v->api->wr_mode)(v, MD_TRANS);
-			}
-			else
-				(*v->api->wr_mode)(v, c->textmode ? MD_REPLACE : MD_TRANS);
-		}
-
-		if (!MONO && (state & OS_DISABLED))
-		{
-			done(OS_DISABLED);
-			if (fits)
-			{
-				(*v->api->t_color)(v, objc_rend.dial_colours.lit_col);
-				v_gtext(v->handle, r->x + 1, r->y + 1 - v->dists[5], t);
-				(*v->api->t_color)(v, objc_rend.dial_colours.shadow_col);
-			}
-		}
-		
-		if (ei && !(state & OS_DISABLED) && edit_ob(ei) == ob && ei->m_end > ei->m_start)
-		{
-			int sl = strlen(t) + 1;
-			short tc, x = r->x, y = r->y - v->dists[5], w, h;
-			short start, end;
-			char s[256];
-			RECT br = o ? *o : *r;
-			
-			start = ei->m_start + ei->edstart;
-			end = ei->m_end + ei->edstart;
-			tc = v->text_color;
-			if (start)
-			{
-				strncpy(s, t, start);
-				s[start] = '\0';
-				v_gtext(v->handle, x, y, s);
-				(*v->api->t_extent)(v, s, &w, &h);
-				x += w;
-			}
-			strncpy(s, t + start, end - start);
-			s[end - start] = '\0';
-			(*v->api->t_extent)(v, s, &w, &h);
-			br.x = x, br.w = w;
-			(*v->api->f_color)(v, G_BLUE);
-			(*v->api->wr_mode)(v, MD_REPLACE);
-			(*v->api->gbar)(v, 0, &br);
-			(*v->api->wr_mode)(v, MD_TRANS);
-			
-			(*v->api->t_color)(v, G_WHITE);
-
-			v_gtext(v->handle, x, y, s);
-			(*v->api->t_color)(v, tc);
-			if (sl > end)
-			{
-// 				(*v->api->t_extent)(v, s, &w, &h);
-				x += w;
-				strncpy(s, t + end, sl - end);
-				s[sl - end] = '\0';
-				v_gtext(v->handle, x, y, s);
-			}
-		}
-		else
-		{
-			if (fits)
-			{
-				if (!MONO && (flags & OF_FL3DIND) && !(state & OS_DISABLED))
-				{
-					short tc = v->text_color;
-					(*v->api->t_color)(v, objc_rend.dial_colours.lit_col);
-					v_gtext(v->handle, r->x + 1, r->y + 1 - v->dists[5], t);
-					(*v->api->t_color)(v, tc);
-				}
-				v_gtext(v->handle, r->x, r->y - v->dists[5], t);
-			}
-		}
-		/* Now underline the shortcut character, if any. */
-		/* Ozk: Prepared for proportional fonts! */
-		if (und >= 0)
-		{
-			short l = strlen(t);
-			if (und < l)
-			{
-				char sc;
-				short x, y, w, h;
-				
-				y = r->y;
-				
-				if (!und)
-					x = 0;
-				else
-				{
-					sc = t[und];
-					t[und] = '\0';
-					(*v->api->t_extent)(v, t, &w, &h);
-					x = w;
-					t[und] = sc;
-				}
-				sc = t[und + 1];
-				t[und + 1] = '\0';
-				(*v->api->t_extent)(v, t, &w, &h);
-				t[und + 1] = sc;
-				w -= x;
-				y += (h - v->dists[0] + 1);
-				x += r->x;
-				(*v->api->line)(v, x, y, x + w, y, undcol);
-			}
-		}
-		else if (und == -2)
-		{
-			short w, h;
-			RECT nr = *r;
-			(*v->api->t_extent)(v, t, &w, &h);
-			nr.w = w;
-			d3_bottom_line(v, &nr, (flags & OF_FL3DBAK), G_BLACK, G_WHITE);
-		}
-	}
-}
-#if 0
-static void
-g_text(XA_TREE *wt, struct xa_vdi_settings *v, RECT r, RECT *o, const char *text, short state)
-{
-	char t[256];
-	/* only center the text. ;-) */
-
-	strcpy(t, text);
-
-	r.y += (r.h - screen.c_max_h) / 2;
-	if (!MONO && (state & OS_DISABLED))
-	{
-		(*v->api->t_color)(v, objc_rend.dial_colours.lit_col);
-		v_gtext(v->handle, r.x + 1, r.y + 1, text);
-		(*v->api->t_color)(v, objc_rend.dial_colours.shadow_col);
-		v_gtext(v->handle, r.x,   r.y,   t);
-		done(OS_DISABLED);
-	}
-	else
-	{
-		(*v->api->t_color)(v, menu_dis_col(wt));
-		ob_text(wt, v, NULL, &r, o, NULL, t, 0, 0, (state & OS_WHITEBAK) ? (state >> 8) & 0x7f : -1, G_RED);
-		if (state & OS_DISABLED)
-		{
-			(*v->api->write_disable)(v, &wt->r, objc_rend.dial_colours.bg_col);
-			done(OS_DISABLED);
-		}
-	}
-}
-#endif
-
-/* This function doesnt change colourword anymore, but just sets the required color.
- * Neither does it affect writing mode for text (this is handled in ob_text() */
-static void
-set_colours(OBJECT *ob, struct xa_vdi_settings *v, BFOBSPEC *colourword)
-{
-	(*v->api->wr_mode)(v, MD_REPLACE);
-
-	/* 2 */
-	(*v->api->f_interior)(v, FIS_PATTERN);
-
-	if (colourword->fillpattern == IP_SOLID)
-	{
-		/* 2,8  solid fill  colour */
-		(*v->api->f_style)(v, 8);
-		(*v->api->f_color)(v, colourword->interiorcol);
-	}
-	else
-	{
-		if (colourword->fillpattern == IP_HOLLOW)	
-		{
-			short c;
-
-			/* 2,8 solid fill  white */
-			(v->api->f_style)(v, 8);
-
-			/* Object inherits default dialog background colour? */
-			if ((colourword->interiorcol == 0) && d3_any(ob))
-				c = objc_rend.dial_colours.bg_col;
-			else
-				c = G_WHITE;
-			
-			(*v->api->f_color)(v, c);
-
-		}
-		else
-		{
-			(*v->api->f_style)(v, colourword->fillpattern);
-			(*v->api->f_color)(v, colourword->interiorcol);
-		}
-	}
-
-#if SELECT_COLOR
-	if (!MONO && (ob->ob_state & OS_SELECTED))
-	{
-		/* Allow a different colour set for 3d push  */
-		if (d3_any(ob))
-			(*v->api->f_color)(v, selected3D_colour[colourword->interiorcol]);
-		else
-			(*v->api->f_color)(v, selected_colour[colourword->interiorcol]);
-	}
-#endif
-
-	(*v->api->t_color)(v, colourword->textcol);
-	(*v->api->l_color)(v, colourword->framecol);
-}
-
-/*
- * Format a G_FTEXT type text string from its template,
- * and return the real position of the text cursor.
- * 
- * HR: WRONG_LEN
- * It is a very confusing here, edit_pos is always (=1) passed as tedinfo->te_tmplen.
- * which means that this only works if that field is wrongly used as the text corsor position.
- * A very bad thing, because it is supposed to be a constant describing the amount of memory
- * allocated to the template string.
- * 
- * 28 jan 2001
- * OK, edit_pos is not anymore the te_tmplen field.
- */
-static short
-format_dialog_text(char *text_out, const char *template, const char *text_in, short edit_pos, short *ret_startpos)
-{
-	short index = 0, start_tpos = -1, tpos = 0, max = strlen(template);
-	/* HR: In case a template ends with '_' and the text is completely
-	 * filled, edit_index was indeterminate. :-)
-	 */
-	short edit_index = max;
-// 	char *to = text_out;
-	bool aap = *text_in == '@';
-
-	DIAG((D_o, NULL, "format_dialog_text edit_pos %d", edit_pos));
-// 	display("t  in '%s'", text_in);
-// 	display("tmplt '%s'", template);
-	while (*template)
-	{
-		if (*template != '_')
-		{
-			*text_out++ = *template;
-		}
-		else
-		{
-			if (start_tpos == -1)
-				start_tpos = index;
-
-			/* Found text field */
-
-			if (tpos == edit_pos)
-				edit_index = index;
-				
-			if (*text_in)
-			{
-				if (aap)
-					*text_out++ = '_';
-				else
-					*text_out++ = *text_in++;
-			}
-			else
-				*text_out++ = cfg.ted_filler;
-
-			tpos++;		
-		}
-		template++;
-		index++;
-	}
-
-	*text_out = '\0';
-	
-	if (edit_index > (start_tpos + tpos))
-		edit_index = start_tpos + tpos;
-
-	if (ret_startpos)
-		*ret_startpos = start_tpos;
-
-	/* keep visible at end */
-	if (edit_index > max)
-		edit_index--;
-
-// 	display("t out '%s'", to);
-	return edit_index;
-}
-
-/* implement wt->x,y
- * Modifications: set_text(...  &gr, &cr, temp_text ...)
- * cursor alignment in centered text.
- * Justification now integrated in set_text (v_gtext isolated).
- * Preparations for positioning cursor in proportional fonts.
- * Moved a few calls.
- * pbox(hl,ext[0]+x,ext[1]+y,ext[4]+x-1,ext[5]+y-1);
- */
-static void
-set_text(OBJECT *ob,
-	 struct xa_vdi_settings *v,
-	 RECT *gr,
-	 RECT *cr,
-	 bool formatted,
-	 short edit_pos,
-	 char *temp_text,
-	 BFOBSPEC *colours,
-	 short *thick,
-	 short *ret_edstart,
-	 struct objc_edit_info **ret_ei,
-	 RECT r)
-{
-	union { short jc[2]; BFOBSPEC bfobspec;} col;
-	TEDINFO *ted;
-	XTEDINFO *xted = NULL;
-	RECT cur;
-	short w, h, cur_x = 0, start_tpos = 0;
-
-	ted = (TEDINFO *)object_get_spec(ob)->index;
-	
-	if (ted->te_ptext == (char *)0xffffffffL)
-	{
-// 		ndisplay("ted %lx, just %d", ted, ted->te_just);
-		xted = (XTEDINFO *)ted->te_ptmplt;
-		ted = &xted->ti;
-// 		display("ted %lx, just %d", ted, ted->te_just);
-// 		display("xted %lx, te_ptext %lx, text '%s'", xted, ted->te_ptext, ted->te_ptext);
-		if (ret_ei)
-			*ret_ei = xted;
-	}
-	else if (ret_ei)
-		*ret_ei = NULL;
-
-	*thick = (char)ted->te_thickness;
-
-	col.jc[0] = ted->te_just;
-	col.jc[1] = ted->te_color;
-	*colours = col.bfobspec; //*(BFOBSPEC*)&ted->te_just;
-
-        // FIXME: gemlib problem: hacked a bit need only "ted->te_color" word;
-	//	  -> cleaning the information that would not be taken if
-	//	     properly used:
-	colours->character = 0;
-	colours->framesize = 0;
-
-	/* Set the correct text size & font */
-	switch (ted->te_font)
-	{
-	case TE_GDOS_PROP:		/* Use a proportional SPEEDOGDOS font (AES4.1 style) */
-	case TE_GDOS_MONO:		/* Use a monospaced SPEEDOGDOS font (AES4.1 style) */
-	case TE_GDOS_BITM:		/* Use a GDOS bitmap font (AES4.1 style) */
-	{
-		(*v->api->t_font)(v, ted->te_fontsize, ted->te_fontid);
-		cur.w = screen.c_max_w;
-		cur.h = screen.c_max_h;
-		break;
-	}
-	case TE_SMALL:			/* Use the small system font (probably 8 point) */
-	{
-		(*v->api->t_font)(v, screen.small_font_point, screen.small_font_id);
-		cur.w = screen.c_min_w;
-		cur.h = screen.c_min_h;
-		break;
-	}
-	case TE_STANDARD:		/* Use the standard system font (probably 10 point) */
-	default:
-	{
-		(*v->api->t_font)(v, screen.standard_font_point, screen.standard_font_id);
-		cur.w = screen.c_max_w;
-		cur.h = screen.c_max_h;
-		break;
-	}
-	}
-
-	/* HR: use vqt_extent to obtain x, because it is almost impossible, or
-	 *	at least very unnecessary tedious to position the cursor.
-	 *	vst_alignment is not needed anymore.
-	 */
-	/* after vst_font & vst_point */
-
-	if (formatted)
-	{
-		cur_x = format_dialog_text(temp_text, ted->te_ptmplt, ted->te_ptext, edit_pos, &start_tpos);
-	}
-	else
-		strncpy(temp_text, ted->te_ptext, 255);
-
-	(*v->api->t_extent)(v, temp_text, &w, &h);
-
-	/* HR 290301 & 070202: Dont let a text violate its object space! (Twoinone packer shell!! :-) */
-	if (w > r.w)
-	{
-		short	rw  = r.w / cur.w,
-			dif = (w - r.w + cur.w - 1) / cur.w,
-			h1dif, h2dif;
-
-		switch(ted->te_just)
-		{
-			case TE_RIGHT:
-			{
-				strcpy (temp_text, temp_text + dif);
-				break;
-			}
-			case TE_CNTR:
-			{
-				h1dif = dif/2;
-				h2dif = (dif+1)/2;
-				*(temp_text + strlen(temp_text) - h2dif) = 0;
-				strcpy (temp_text, temp_text + h1dif);
-				break;
-			}
-			default:
-			case TE_LEFT:
-			{
-				*(temp_text + rw) = '\0';
-				break;
-			}
-		}
-		(*v->api->t_extent)(v, temp_text, &w, &h);
-	}
-
-	switch (ted->te_just)		/* Set text alignment - why on earth did */
-	{
-						/* Atari use a different horizontal alignment */
-		case TE_RIGHT:
-		{
-			cur.x = r.x + r.w - w;
-			break;
-		}
-		case TE_CNTR:
-		{
-			cur.x = r.x + (r.w - w) / 2;
-			break;
-		}
-		default:
-		case TE_LEFT:			/* code for GEM to the one the VDI uses? */
-		{
-			cur.x = r.x;
-			break;
-		}
-	}
-
-	cur.y = r.y + (r.h - h) / 2;
-
-	if (cr)
-	{
-		short tw, th;
-		char sc;
-		 
-		sc = temp_text[cur_x];
-		temp_text[cur_x] = '\0';
-		(*v->api->t_extent)(v, temp_text, &tw, &th);
-		temp_text[cur_x] = sc;
-		
-		*cr = cur;		
-		cr->x += tw; //cur_x * cur.w;	/* non prop font only */
-		cr->w = 1;
-	}
-
-	cur.w = w;
-	cur.h = h;
-	*gr = cur;
-
-// 	display(" -- '%s'", temp_text);
-	if (ret_edstart)
-		*ret_edstart = start_tpos;
-}
-
-static void
-rl_xor(struct xa_vdi_settings *v, RECT *r, struct xa_rect_list *rl)
-{
-	if (rl)
-	{
-		short c[4];
-		while (rl)
-		{
-			rtopxy(c, &rl->r);
-			vs_clip(v->handle, 1, c);
-			write_selection(v, 0, r);
-			rl = rl->next;
-		}
-		rtopxy(c, &v->clip);
-		vs_clip(v->handle, 1, c);
-	}
-	else
-		write_selection(v, 0, r);
-}
 
 #if 0
 void
@@ -1201,111 +325,7 @@ disable_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_r
 }
 #endif
 
-void
-eor_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_rect_list *rl)
-{
-	struct objc_edit_info *ei = wt->ei;
-	RECT r;
 
-	if (!ei)
-		ei = &wt->e;
-	
-	if (edit_set(ei))
-	{
-		set_objcursor(wt, v, ei);
-		r = ei->cr;
-		r.x += wt->tree->ob_x;
-		r.y += wt->tree->ob_y;
-
-		if (!(edit_ob(ei)->ob_flags & OF_HIDETREE))
-			rl_xor(v, &r, rl);
-	}
-}
-	
-void
-draw_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_rect_list *rl, bool rdrw)
-{
-	struct objc_edit_info *ei = wt->ei;
-	
-	if (!ei)
-		return; //ei = &wt->e;
-
-	if ( !(ei->c_state & (OB_CURS_ENABLED)) ) // | OB_CURS_DRAWN)) == OB_CURS_ENABLED )
-	{
-		if (edit_set(ei) && !(edit_ob(ei)->ob_flags & OF_HIDETREE))
-		{
-			if (rdrw)
-			{
-				RECT r = ei->cr;
-
-				r.x += wt->tree->ob_x;
-				r.y += wt->tree->ob_y;
-				rl_xor(v, &r, rl);
-			}
-			ei->c_state |= OB_CURS_ENABLED; //OB_CURS_DRAWN;
-		}
-	}
-}
-void
-undraw_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_rect_list *rl, bool rdrw)
-{
-	struct objc_edit_info *ei = wt->ei;
-
-	if (!ei)
-		return; //ei = &wt->e;
-
-	if ( (ei->c_state & (OB_CURS_ENABLED))) // | OB_CURS_DRAWN)) == (OB_CURS_ENABLED | OB_CURS_DRAWN) )
-	{
-		
-		if (edit_set(ei) && !(edit_ob(ei)->ob_flags & OF_HIDETREE))
-		{
-			if (rdrw)
-			{
-				RECT r = ei->cr;
-
-				r.x += wt->tree->ob_x;
-				r.y += wt->tree->ob_y;
-				rl_xor(v, &r, rl); //write_selection(0, &r);
-			}
-			ei->c_state &= ~OB_CURS_ENABLED; //~OB_CURS_DRAWN;
-		}
-	}
-}
-/* 780e000 */
-void
-set_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v, struct objc_edit_info *ei)
-{
-	char temp_text[256];
-	RECT r;
-	OBJECT *ob;
-	RECT gr;
-	BFOBSPEC colours;
-	short thick;
-
-	if (!ei)
-		ei = &wt->e;
-
-	if (!edit_set(ei))
-		return;
-
-	obj_offset(wt, editfocus(ei), &r.x, &r.y);
-	ob = edit_ob(ei);
-	r.w  = ob->ob_width;
-	r.h  = ob->ob_height;
-	
-	set_text(ob, v, &gr, &ei->cr, true, ei->pos, temp_text, &colours, &thick, &ei->edstart, NULL, r);
-
-	ei->cr.x -= wt->tree->ob_x;
-	ei->cr.y -= wt->tree->ob_y;
-
-	//t_font(screen.standard_font_point, screen.standard_font_id);
-}
-
-#if SELECT_COLOR
-                                      /*  0  1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 */
-static const short selected_colour[]   = {1, 0,13,15,14,10,12,11, 8, 9, 5, 7, 6, 2, 4, 3};
-static const short selected3D_colour[] = {1, 0,13,15,14,10,12,11, 9, 8, 5, 7, 6, 2, 4, 3};
-#endif
 
 /* HR: implement wt->x,y in all ObjectDisplay functions */
 /* HR 290101: OBSPEC union & BFOBSPEC structure now fully implemented
@@ -1317,873 +337,13 @@ static const short selected3D_colour[] = {1, 0,13,15,14,10,12,11, 9, 8, 5, 7, 6,
 /*
  * Draw a box (respecting 3d flags)
  */
-static void
-draw_g_box(struct widget_tree *wt, struct xa_vdi_settings *v)
-{
-	RECT r = wt->r;
-	OBJECT *ob = wt->current.ob;
-	BFOBSPEC colours;
-	short thick;
 
-	colours = object_get_spec(ob)->obspec;
-	thick = object_thickness(ob);
-	set_colours(ob, v, &colours);
-
-	/* before borders */
-	done(OS_SELECTED);
-
-	/* plain box is a tiny little bit special. :-) */
-	if (d3_foreground(ob)
-	    && !(wt->current.ob == wt->tree && thick < 0))	/* root box with inside border */
-	{
-		d3_pushbutton( v, 0,
-		               &r,
-		               &colours,
-		               ob->ob_state,
-		               thick,
-		               1);
-	}
-	else
-	{
-// 		if (wt->rend_flags & WTR_ROOTMENU && rootmenu_texture)
-// 		{
-// 			RECT tr = r;
-// 			(*v->api->wr_mode)(v, MD_REPLACE);
-// 			(*v->api->draw_texture)(v, rootmenu_texture->t.body, &tr, &tr);
-// 		}
-// 		else
-// 		{
-			/* display inside */
-			(*v->api->gbar)(v, 0, &r);
-// 		}
-
-		if (ob->ob_state & OS_SELECTED)
-			write_selection(v, 0, &r);
-
-		/* Display a border? */
-		if (thick)
-		{
-			if (!(wt->current.ob == wt->tree && wt->zen))
-			{
-				g2d_box(v, thick, &r, colours.framecol);
-				shadow_object(v, 0, ob->ob_state, &r, colours.framecol, thick);
-			}
-		}
-	}
-}
-
-void
-d_g_box(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
-{
-	//RECT r = wt->r;
-	OBJECT *ob = wt->current.ob;
-	//BFOBSPEC colours;
-	//short thick;
-
-	if ((ob->ob_type & 0xff) == G_EXTBOX)
-	{
-		struct extbox_parms *p = (struct extbox_parms *)object_get_spec(ob)->index;
-		short ty = ob->ob_type;
-		
-		ob->ob_type = p->type;
-		object_set_spec(ob, (unsigned long)p->obspec);
-		draw_g_box(wt, v);
-		object_set_spec(ob, (unsigned long)p);
-		ob->ob_type = ty;
-
-		p->wt		= wt;
-		p->index	= wt->current.item;
-		p->r		= wt->r;
-		if (xa_rect_clip(&wt->r, &v->clip, &p->clip))
-		{
-			p->clip.w = p->clip.x + p->clip.w - 1;
-			p->clip.h = p->clip.y + p->clip.h - 1;
-				
-			(*p->callout)(p);
-		}
-// 		(*v->api->set_clip)(v, &v->clip);
-	}
-	else
-	{
-		draw_g_box(wt, v);
-	}
-}
-
-/*
- * Draw a plain hollow ibox
- */
-void
-d_g_ibox(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
-{
-	RECT r = wt->r;
-	OBJECT *ob = wt->current.ob;
-	BFOBSPEC colours;
-	short thick;
-
-	colours = object_get_spec(ob)->obspec;
-	thick = object_thickness(ob);
-	set_colours(ob, v, &colours);
-
-	/* before borders */
-	done(OS_SELECTED|OS_DISABLED);
-
-#if NAES3D
-	if (default_options.naes && thick < 0)
-		(*v->api->gbox)(v, d3_foreground(ob) ? 2 : 0, &r);
-#endif
-
-	/* plain box is a tiny little bit special. :-) */
-	if (d3_foreground(ob)
-	    && !(wt->current.ob == wt->tree && thick < 0)) /* root box with inside border */
-	{
-		d3_pushbutton( v, 0,
-		               &r,
-		               &colours,
-		               ob->ob_state,
-		               thick,
-		               0);
-	}
-	else
-	{
-		if (ob->ob_state & OS_SELECTED)
-			write_selection(v, 0, &r);
-
-		/* Display a border? */
-		if (thick)
-		{
-			if (!(wt->current.ob == wt->tree && wt->zen))
-			{
-				g2d_box(v, thick, &r, colours.framecol);
-				shadow_object(v, 0, ob->ob_state, &r, colours.framecol, thick);
-			}
-		}
-	}
-}
-
-/*
- * Display a boxchar (respecting 3d flags)
- */
-void
-d_g_boxchar(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
-{
-	RECT r = wt->r, gr = r;
-	OBJECT *ob = wt->current.ob;
-	BFOBSPEC colours;
-	ushort selected = ob->ob_state & OS_SELECTED;
-	short thick;
-	char temp_text[2];
-
-	colours = object_get_spec(ob)->obspec;
-	
-	temp_text[0] = object_get_spec(ob)->obspec.character;
-	temp_text[1] = '\0';
-
-	thick = object_thickness(ob);
-
-	/* leaves MD_REPLACE */
-	set_colours(ob, v, &colours);
-
-	(*v->api->t_font)(v, screen.standard_font_point, screen.standard_font_id);
-	(*v->api->t_effects)(v, 0);
-	/* Centre the text in the box */
-	(*v->api->t_extent)(v, temp_text, &gr.w, &gr.h);
-	gr.x = r.x + ((r.w - gr.w) / 2);
-	gr.y = r.y + ((r.h - gr.h) / 2);
-// 	gr.w = screen.c_max_w;
-// 	gr.h = screen.c_max_h;
-
-	if (d3_foreground(ob))
-	{
-		d3_pushbutton(v, 0, &r, &colours, ob->ob_state, thick, 1);
-		if (ob->ob_state & OS_SELECTED)
-		{
-			gr.x += PUSH3D_DISTANCE;
-			gr.y += PUSH3D_DISTANCE;
-		}
-		(*v->api->wr_mode)(v, colours.textmode ? MD_REPLACE : MD_TRANS);
-// 		(*v->api->t_font)(v, screen.standard_font_point, screen.standard_font_id);
-// 		(*v->api->t_effects)(v, 0);
-		ob_text(wt, v, NULL, &gr, &r, NULL, temp_text, 0, 0, -1, G_BLACK);
-	}
-	else
-	{
-		(*v->api->gbar)(v, 0, &r);
-// 		(*v->api->t_font)(v, screen.standard_font_point, screen.standard_font_id);
-// 		(*v->api->t_effects)(v, 0);
-		ob_text(wt, v, NULL, &gr, &r, &colours, temp_text, ob->ob_state, 0, -1, G_BLACK);
-
-		if (selected)
-			write_selection(v, 0, &r);
-
-		/* Display a border? */
-		if (thick)
-		{
-			g2d_box(v, thick, &r, colours.framecol);
-			shadow_object(v, 0, ob->ob_state, &r, colours.framecol, thick);
-		}
-	}
-
-	done(OS_SELECTED);
-}
-
-/*
- * Draw a boxtext object
- */
-void
-d_g_boxtext(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
-{
-	short thick = 0;
-	ushort selected;
-	RECT r = wt->r, gr;
-	OBJECT *ob = wt->current.ob;
-	BFOBSPEC colours;
-	struct objc_edit_info *ei;
-	char temp_text[256];
-
-	selected = ob->ob_state & OS_SELECTED;
-
-	(*v->api->t_effects)(v, 0);
-	set_text(ob, v, &gr, NULL, false, -1, temp_text, &colours, &thick, NULL, &ei, r);
-	set_colours(ob, v, &colours);
-
-	if (d3_foreground(ob))		/* indicator or avtivator */
-	{
-		d3_pushbutton(v, 0, &r, &colours, ob->ob_state, thick, 1);
-
-		if (selected)
-		{
-			gr.x += PUSH3D_DISTANCE;
-			gr.y += PUSH3D_DISTANCE;
-		}
-		ob_text(wt, v, ei, &gr, &r, &colours, temp_text, ob->ob_state, 0, -1, G_BLACK);
-	}
-	else
-	{
-		(*v->api->gbar)(v, 0, &r);
-		
-		ob_text(wt, v, ei, &gr, &r, &colours, temp_text, ob->ob_state, 0, -1, G_BLACK);
-
-		if (selected)
-			write_selection(v, 0, &r);		/* before border */
-
-		if (thick)	/* Display a border? */
-		{
-			(*v->api->wr_mode)(v, MD_REPLACE);
-			g2d_box(v, thick, &r, colours.framecol);
-			shadow_object(v, 0, ob->ob_state, &r, colours.framecol, thick);
-		}
-	}
-
-	//t_font(screen.standard_font_point, screen.standard_font_id);
-	done(OS_SELECTED);
-}
-void
-d_g_fboxtext(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
-{
-	char temp_text[256];
-	RECT r = wt->r;
-	OBJECT *ob = wt->current.ob;
-	RECT gr,cr;
-	BFOBSPEC colours;
-	struct objc_edit_info *ei;
-	const unsigned short selected = ob->ob_state & OS_SELECTED;
-	short thick;
-
-	ei = wt->ei ? wt->ei : &wt->e;
-	if (edit_ob(ei) != wt->current.ob)
-		ei = NULL;
-
-	(*v->api->t_effects)(v, 0);
-	set_text(ob, v, &gr, &cr, true, ei ? ei->pos : -1, temp_text, &colours, &thick, NULL, &ei, r);
-	set_colours(ob, v, &colours);
-
-	if (d3_foreground(ob))
-	{
-		d3_pushbutton(v, 0, &r, &colours, ob->ob_state, thick, 1);
-		if (selected)
-		{
-			gr.x += PUSH3D_DISTANCE;
-			gr.y += PUSH3D_DISTANCE;
-		}
-		ob_text(wt, v, ei, &gr, &r, &colours, temp_text, ob->ob_state, 0, -1, G_BLACK);
-	}
-	else
-	{
-		(*v->api->gbar)(v, 0, &r);
-		ob_text(wt, v, ei, &gr, &r, &colours, temp_text, ob->ob_state, 0, -1, G_BLACK);
-
-		if (selected)
-			/* before border */
-			write_selection(v, 0, &r);
-
-		/* Display a border? */
-		if (thick)
-		{
-			(*v->api->wr_mode)(v, MD_REPLACE);
-			g2d_box(v, thick, &r, colours.framecol);
-			shadow_object(v, 0, ob->ob_state, &r, colours.framecol, thick);
-		}
-	}
-
-	//t_font(screen.standard_font_point, screen.standard_font_id);
-	done(OS_SELECTED);
-}
-
-/*
- * Draw a button object
- */
-void
-d_g_button(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
-{
-	RECT r = wt->r, gr = r;
-	OBJECT *ob = wt->current.ob;
-	BFOBSPEC colours;
-	short thick = object_thickness(ob); 
-	ushort selected = ob->ob_state & OS_SELECTED;
-	char *text = NULL; // = object_get_spec(ob)->free_string;
-	
-	if (ob->ob_type == G_POPUP)
-	{
-		POPINFO *pi = object_get_popinfo(ob);
-		if (pi->obnum > 0)
-			text = object_get_spec(pi->tree + pi->obnum)->free_string + 2;
-	}
-	else
-		text = object_get_spec(ob)->free_string;
-
-	colours = button_colours();
-// 	(*v->api->t_color)(v, G_BLACK);
-
-	if ((ob->ob_state & OS_WHITEBAK) && (ob->ob_state & 0x8000))
-	{
-		short und = (short)ob->ob_state >> 8;
-		(*v->api->wr_mode)(v, MD_REPLACE);
-		/* group frame */
-		if (und == -2)
-		{
-			RECT rr = r;
-			if (text && *text)
-			{
-				(*v->api->t_color)(v, G_BLACK);
-				(*v->api->t_effects)(v, 0);
-				if (ob->ob_state & OS_SHADOWED)
-					(*v->api->t_font)(v, screen.small_font_point, screen.small_font_id);
-				else
-					(*v->api->t_font)(v, screen.standard_font_point, screen.standard_font_id);
-				
-				(*v->api->t_extent)(v, text, &gr.w, &gr.h);
-				rr.y += gr.h / 2;
-				rr.h -= gr.h / 2;
-			}
-			if (MONO || !(ob->ob_flags & OF_FL3DBAK))
-			{
-				(*v->api->l_color)(v, MONO ? G_BLACK : G_LBLACK);
-				(*v->api->gbox)(v, 0, &rr);
-			}
-			else
-				chiseled_gbox(v, 0, &rr);
-
-			if (text && *text)
-			{
-				gr.x = r.x + screen.c_max_w;
-				gr.y = r.y;
-				
-				(*v->api->f_color)(v, objc_rend.dial_colours.bg_col);
-				(*v->api->wr_mode)(v, MD_REPLACE);
-				(*v->api->gbar)(v, 0, &gr);
-				(*v->api->wr_mode)(v, MD_TRANS);
-				ob_text(wt, v, NULL, &gr, NULL, NULL, text, ob->ob_state, ob->ob_flags, -1, G_BLACK);
-			}
-		}
-		else
-		{
-			short w, h;
-			struct xa_aes_object xobj;
-			XA_TREE b;
-
-			b.owner = wt->owner;
-			b.tree = xobj_rsc;
-			xobj = aesobj(xobj_rsc, (ob->ob_flags & OF_RBUTTON) ? (selected ? XOBJ_R_SEL : XOBJ_R_DSEL) : (selected ? XOBJ_B_SEL : XOBJ_B_DSEL));
-			object_spec_wh(aesobj_ob(&xobj), &w, &h);
-			if (gr.h > h)
-				gr.y += ((gr.h - h) >> 1);
-			display_object(	lock, &b, v, xobj, gr.x, gr.y, 11);
-			if (text)
-			{
-				short undcol;
-				(*v->api->t_color)(v, G_BLACK);
-				r.x += (w + 2);
-				(*v->api->wr_mode)(v, MD_TRANS);
-				(*v->api->t_font)(v, screen.standard_font_point, screen.standard_font_id);
-				(*v->api->t_effects)(v, 0);
-				
-				switch ((ob->ob_flags & FL3DMASK) >> 9)
-				{
-					case 1:	 undcol = G_GREEN; break;
-					case 2:  undcol = G_BLUE; break;
-					case 3:  undcol = G_RED;   break;
-					default: undcol = G_BLACK; break;
-				}
-				ob_text(wt, v, NULL, &r, &wt->r, NULL, text, ob->ob_state, 0, und & 0x7f, undcol);
-			}
-		}
-	}
-	else
-	{
-		short und, tw, th;
-
-		und = (ob->ob_state & OS_WHITEBAK) ? (ob->ob_state >> 8) & 0x7f : -1;
-
-		/* Use extent, NOT vst_alinment. Makes x and y to v_gtext
-		 * real values that can be used for other stuff (like shortcut
-		 * underlines :-)
-		 */
-		if (text)
-		{
-			(*v->api->t_color)(v, G_BLACK);
-			(*v->api->t_effects)(v, 0);
-			(*v->api->t_font)(v, screen.standard_font_point, screen.standard_font_id);
-			(*v->api->t_extent)(v, text, &tw, &th);
-			gr.y += (r.h - th) / 2;
-			gr.x += (r.w - tw) / 2;
-		}
-
-		if (d3_foreground(ob))
-		{
-			d3_pushbutton(v, 0, &r, NULL, ob->ob_state, thick, 0x8001);
-			if (selected)
-			{
-				gr.x += PUSH3D_DISTANCE;
-				gr.y += PUSH3D_DISTANCE;
-			}
-			if (text)
-			{
-				(*v->api->wr_mode)(v, MD_TRANS);
-				ob_text(wt, v, NULL, &gr, &r, NULL, text, ob->ob_state, 0, und, G_BLACK);
-			}
-		}
-		else
-		{
-			(*v->api->wr_mode)(v, MD_REPLACE);
-			(*v->api->f_interior)(v, FIS_SOLID);
-			(*v->api->f_color)(v, selected ? G_BLACK : G_WHITE);
-
-			/* display inside bar */		
-			(*v->api->gbar)(v, -thick, &r);
-
-			(*v->api->wr_mode)(v, MD_TRANS);
-			(*v->api->t_color)(v, selected ? G_WHITE : G_BLACK);
-			if (text)
-			{
-				ob_text(wt, v, NULL, &gr, &r, NULL, text, ob->ob_state, 0, und, G_BLACK);
-			}
-			/* Display a border? */
-			if (thick)
-			{
-				g2d_box(v, thick, &r, G_BLACK);
-				shadow_object(v, 0, ob->ob_state, &r, colours.framecol, thick);
-			}
-		}
-	}
-	done(OS_SELECTED);
-}
-
-static void
-icon_characters(struct xa_vdi_settings *v, ICONBLK *iconblk, short state, short obx, short oby, short icx, short icy)
-{
-	char lc = iconblk->ib_char;
-	short tx,ty,pnt[4];
-
-	(*v->api->wr_mode)(v, MD_REPLACE);
-	ritopxy(pnt, obx + iconblk->ib_xtext, oby + iconblk->ib_ytext,
-		     iconblk->ib_wtext, iconblk->ib_htext);
-
-	(*v->api->t_font)(v, screen.small_font_point, screen.small_font_id);
-
-	/* center the text in a bar given by iconblk->tx, relative to object */
-	(*v->api->t_color)(v, G_BLACK);
-	if (   iconblk->ib_ptext
-	    && *iconblk->ib_ptext
-	    && iconblk->ib_wtext
-	    && iconblk->ib_htext)
-	{
-		tx = obx + iconblk->ib_xtext + ((iconblk->ib_wtext - strlen(iconblk->ib_ptext)*6) / 2);	
-		ty = oby + iconblk->ib_ytext + ((iconblk->ib_htext - 6) / 2);
-		
-		if (state & OS_STATE08)
-		{
-			short col;
-			if (state & OS_SELECTED)
-				col = G_WHITE;
-			else
-				col = G_BLACK;
-			(*v->api->wr_mode)(v, MD_TRANS);
-			(*v->api->t_color)(v, col);
-// 			display("disp icontext without banner");
-		}
-		else
-		{
-			(*v->api->f_color)(v, (state & OS_SELECTED) ? G_BLACK : G_WHITE);
-			(*v->api->f_interior)(v, FIS_SOLID);
-			v_bar(v->handle, pnt);
-	
-			if (state & OS_SELECTED)
-				(*v->api->wr_mode)(v, MD_XOR);
-			if (state & OS_DISABLED)
-				(*v->api->t_effects)(v, FAINT);
-		}
-		v_gtext(v->handle, tx, ty, iconblk->ib_ptext);
-#if 0		
-		(*v->api->f_color)(v, (state & OS_SELECTED) ? G_BLACK : G_WHITE);
-		(*v->api->f_interior)(v, FIS_SOLID);
-		v_bar(v->handle, pnt);
-	
-		tx = obx + iconblk->ib_xtext + ((iconblk->ib_wtext - strlen(iconblk->ib_ptext)*6) / 2);	
-		ty = oby + iconblk->ib_ytext + ((iconblk->ib_htext - 6) / 2);
-
-		if (state & OS_SELECTED)
-			(*v->api->wr_mode)(v, MD_XOR);
-		if (state & OS_DISABLED)
-			(*v->api->t_effects)(v, FAINT);
-
-		v_gtext(v->handle, tx, ty, iconblk->ib_ptext);
-#endif
-	}
-
-	if (lc != 0 && lc != ' ')
-	{
-		char ch[2];
-		ch[0] = lc;
-		ch[1] = 0;
-		v_gtext(v->handle, icx + iconblk->ib_xchar, icy + iconblk->ib_ychar, ch);
-		/* Seemingly the ch is supposed to be relative to the image */
-	}
-
-	if (state & OS_SELECTED)
-		(*v->api->f_color)(v, G_WHITE);
-
-	//t_font(screen.standard_font_point, screen.standard_font_id);
-	(*v->api->t_effects)(v, 0);
-	(*v->api->wr_mode)(v, MD_TRANS);
-}
-
-/*
- * Draw a image
- */
-void
-d_g_image(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
-{
-	OBJECT *ob = wt->current.ob;
-	BITBLK *bitblk;
-	MFDB Mscreen;
-	MFDB Micon;
-	short pxy[8], cols[2], icx, icy;
-
-	bitblk = object_get_spec(ob)->bitblk;
-
-	icx = wt->r.x;
-	icy = wt->r.y;
-
-	Mscreen.fd_addr = NULL;
-			
-	Micon.fd_w = (bitblk->bi_wb & -2) << 3;
-	Micon.fd_h = bitblk->bi_hl;
-	Micon.fd_wdwidth = (Micon.fd_w + 15) >> 4;
-	Micon.fd_nplanes = 1;
-	Micon.fd_stand = 0;
-	Micon.fd_addr = bitblk->bi_pdata;
-
-	cols[0] = bitblk->bi_color;	/* HR 100202: simply 1 foreground color index. */
-	cols[1] = 0;			/* background color; not used in mode MD_TRANS. */
-
-	pxy[0] = bitblk->bi_x;
-	pxy[1] = bitblk->bi_y;
-	pxy[2] = Micon.fd_w - 1 - pxy[0];
-	pxy[3] = Micon.fd_h - 1 - pxy[1];
-	pxy[4] = icx;
-	pxy[5] = icy;
-	pxy[6] = icx + pxy[2];
-	pxy[7] = icy + pxy[3];
-
-	vrt_cpyfm(v->handle, MD_TRANS, pxy, &Micon, &Mscreen, cols);
-}
-
-/* HR 060202: all icons: handle disabled: make icon rectangle and text faint in stead
- *                                        of object rectangle.
- */
-
-static unsigned short dismskb[10 * 160];
-static MFDB Mddm =
-{
-	dismskb,
-	160, 160,
-	10,
-	1,
-	1,
-	0,0,0
-};
-/*
- * Draw a mono icon
- */
-void
-d_g_icon(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
-{
-	OBJECT *ob = wt->current.ob;
-	ICONBLK *iconblk;
-	MFDB Mscreen;
-	MFDB Micon;
-	RECT ic;
-	short pxy[8], cols[2], obx, oby, msk_col, icn_col, blitmode;
-	
-	iconblk = object_get_spec(ob)->iconblk;
-	obx = wt->r.x;
-	oby = wt->r.y;
-
-	ic = *(RECT*)&iconblk->ib_xicon;
-	ic.x += obx;
-	ic.y += oby;
-
-	ritopxy(pxy,     0, 0, ic.w, ic.h);
-	rtopxy (pxy + 4, &ic);
-
-	Micon.fd_w = ic.w;
-	Micon.fd_h = ic.h;
-	Micon.fd_wdwidth = (ic.w + 15) >> 4;
-	Micon.fd_nplanes = 1;
-	Micon.fd_stand = 0;
-	Mscreen.fd_addr = NULL;
-
-	if (ob->ob_state & OS_SELECTED)
-	{
-		icn_col = ((iconblk->ib_char) >> 8) & 0xf;
-		msk_col = ((iconblk->ib_char) >> 12) & 0xf;
-	}
-	else
-	{
-		icn_col = ((iconblk->ib_char) >> 12) & 0xf;
-		msk_col = ((iconblk->ib_char) >> 8) & 0xf;
-	}
-	/* Ozk:
-	 * Dont draw mask when WHITEBAK set
-	 */
-	if (!(ob->ob_state & OS_WHITEBAK))
-	{
-		Micon.fd_addr = iconblk->ib_pmask;
-		cols[0] = msk_col;
-		cols[1] = icn_col;
-		vrt_cpyfm(v->handle, MD_TRANS, pxy, &Micon, &Mscreen, cols);
-		blitmode = MD_TRANS;
-	}
-	else
-		blitmode = MD_REPLACE;
-		
-	Micon.fd_addr = iconblk->ib_pdata;
-	cols[0] = icn_col;
-	cols[1] = msk_col;
-	vrt_cpyfm(v->handle, blitmode, pxy, &Micon, &Mscreen, cols);
-		
-	if (ob->ob_state & OS_DISABLED)
-	{
-		int i, j, sc;			
-		unsigned short *s, *d, m;
-		unsigned long sm = 0xAAAA5555L;
-
-		s = (unsigned short *)iconblk->ib_pmask; //Micon.fd_addr;
-		d = (unsigned short *)Mddm.fd_addr;
-		sc = Mddm.fd_wdwidth - Micon.fd_wdwidth;
-
-		for (i = 0; i < Micon.fd_h; i++)
-		{
-			m = sm;
-			for (j = 0; j < Micon.fd_wdwidth; j++)
-			{
-				*d++ = *s++ & m;
-			}
-			sm = (sm << 16) | (sm >> 16);
-			d += sc;
-		}
-
-		if (screen.planes > 3)
-			cols[0] = G_LWHITE;
-		else
-			cols[0] = G_WHITE;
-		
-		cols[1] = G_WHITE;
-		vrt_cpyfm(v->handle, MD_TRANS, pxy, &Mddm, &Mscreen, cols);
-	}
-
-	/* should be the same for color & mono */
-	icon_characters(v, iconblk, ob->ob_state & (OS_SELECTED|OS_DISABLED), obx, oby, ic.x, ic.y);
-
-	done(OS_SELECTED|OS_DISABLED);
-}
-
-/*
- * Draw a colour icon
- */
-void
-d_g_cicon(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
-{
-	OBJECT *ob = wt->current.ob;
-	ICONBLK *iconblk;
-	CICON	*best_cicon;
-	MFDB Mscreen;
-	MFDB Micon, Mmask;
-	bool have_sel;
-	RECT ic;
-	short pxy[8], cols[2] = {0,1}, obx, oby, blitmode;
-
-	best_cicon = getbest_cicon(object_get_spec(ob)->ciconblk);
-	/* No matching icon, so use the mono one instead */
-	if (!best_cicon)
-	{
-		//DIAG((D_o, wt->owner, "cicon !best_cicon", c));
-		d_g_icon(lock, wt, v);
-		return;
-	}
-
-	iconblk = object_get_spec(ob)->iconblk;
-	obx = wt->r.x;
-	oby = wt->r.y;
-
-	ic = *(RECT*)&iconblk->ib_xicon;
-
-	ic.x += obx;
-	ic.y += oby;
-
-	ritopxy(pxy,     0, 0, ic.w, ic.h);
-	rtopxy (pxy + 4, &ic);
-			
-	Micon.fd_w = ic.w;
-	Micon.fd_h = ic.h;
-	Micon.fd_wdwidth = (ic.w + 15) >> 4;
-	Micon.fd_nplanes = 1;
-	Micon.fd_stand = 0;
-	Mscreen.fd_addr = NULL;
-
-	Mmask = Micon;
-	//have_sel = c->sel_data != NULL;
-	have_sel = best_cicon->sel_data ? true : false;
-
-	//DIAG((D_o, wt->owner, "cicon sel_mask 0x%lx col_mask 0x%lx", c->sel_mask, c->col_mask));
-
-	
-	/* check existence of selection. */
-	if ((ob->ob_state & OS_SELECTED) && have_sel)
-	{
-		Micon.fd_addr = best_cicon->sel_data;
-		Mmask.fd_addr = best_cicon->sel_mask;
-	}
-	else
-	{
-		Micon.fd_addr = best_cicon->col_data;
-		Mmask.fd_addr = best_cicon->col_mask;
-	}
-	
-	if (!(ob->ob_state & OS_WHITEBAK))
-	{
-		vrt_cpyfm(v->handle, MD_TRANS, pxy, &Mmask, &Mscreen, cols);
-		blitmode = screen.planes > 8 ? S_AND_D : S_OR_D;
-	}
-	else
-		blitmode = S_ONLY;
-
-	Micon.fd_nplanes = screen.planes;
-	
-	vro_cpyfm(v->handle, blitmode, pxy, &Micon, &Mscreen);
-	icon_characters(v, iconblk, ob->ob_state & (OS_SELECTED|OS_DISABLED), obx, oby, ic.x, ic.y);
-
-	if ((ob->ob_state & OS_DISABLED) || ((ob->ob_state & OS_SELECTED) && !have_sel))
-	{
-		int i, j, sc;			
-		unsigned short *s, *d, m;
-		unsigned long sm = 0xAAAA5555L;
-
-		s = Mmask.fd_addr;
-		d = Mddm.fd_addr;
-		sc = Mddm.fd_wdwidth - Mmask.fd_wdwidth;
-
-		for (i = 0; i < Micon.fd_h; i++)
-		{
-			m = sm;
-			for (j = 0; j < Micon.fd_wdwidth; j++)
-			{
-				*d++ = *s++ & m;
-			}
-			sm = (sm << 16) | (sm >> 16);
-			d += sc;
-		}
-
-		if (ob->ob_state & OS_DISABLED)
-			cols[0] = G_LWHITE;
-		else
-			cols[0] = G_BLACK;
-
-		cols[1] = G_WHITE;				
-		vrt_cpyfm(v->handle, MD_TRANS, pxy, &Mddm, &Mscreen, cols);
-	}
-	done(OS_SELECTED|OS_DISABLED);
-}
-
-/*
- * Draw a text object
- */
-void
-d_g_text(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
-{
-	short thick,thin;
-	OBJECT *ob = wt->current.ob;
-	RECT r = wt->r, gr;
-	BFOBSPEC colours;
-	struct objc_edit_info *ei;
-	char temp_text[256];
-
-	(*v->api->t_effects)(v, 0);
-	set_text(ob, v, &gr, NULL, false, -1, temp_text, &colours, &thick, NULL, &ei, r);
-	set_colours(ob, v, &colours);
-	thin = thick > 0 ? thick-1 : thick+1;
-
-	if (d3_foreground(ob))
-	{
-		d3_pushbutton(v, thick > 0 ? -thick : 0, &r, &colours, ob->ob_state, thin, 3);
-		done(OS_SELECTED);
-	}
-
-	ob_text(wt, v, ei, &gr, &r, &colours, temp_text, ob->ob_state, 0, -1, G_BLACK);
-}
-void
-d_g_ftext(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
-{
-	short thick,thin;
-	OBJECT *ob = wt->current.ob;
-	RECT r = wt->r, gr, cr;
-	BFOBSPEC colours;
-	struct objc_edit_info *ei;
-	char temp_text[256];
-
-	ei = wt->ei ? wt->ei : &wt->e;
-	if (edit_ob(ei) != wt->current.ob)
-		ei = NULL;
-
-	(*v->api->t_effects)(v, 0);
-	set_text(ob, v, &gr, &cr, true, ei ? ei->pos : -1, temp_text, &colours, &thick, NULL, &ei, r);
-	set_colours(ob, v, &colours);
-	thin = thick > 0 ? thick-1 : thick+1;
-
-	if (d3_foreground(ob))
-	{
-		d3_pushbutton(v, thick > 0 ? -thick : 0, &r, &colours, ob->ob_state, thin, 3);
-		done(OS_SELECTED);
-	}
-
-	ob_text(wt, v, ei, &gr, &r, &colours, temp_text, ob->ob_state, 0, -1, G_BLACK);
-}
 
 #define userblk(ut) (*(USERBLK **)(ut->userblk_pp))
 #define ret(ut)     (     (long *)(ut->ret_p     ))
 #define parmblk(ut) (  (PARMBLK *)(ut->parmblk_p ))
-void
-d_g_progdef(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
+static void
+d_g_progdef(struct widget_tree *wt, struct xa_vdi_settings *v)
 {
 	struct sigaction oact, act;
 	struct xa_client *client = lookup_extension(NULL, XAAES_MAGIC);
@@ -2292,8 +452,8 @@ d_g_progdef(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 #undef ret
 #undef parmblk
 
-void
-d_g_slist(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
+static void
+d_g_slist(struct widget_tree *wt, struct xa_vdi_settings *v)
 {
 	RECT r = wt->r, wa;
 	SCROLL_INFO *list;
@@ -2323,130 +483,13 @@ d_g_slist(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
 		get_widget(w, XAW_TITLE)->stuff = list->title;
 		r = v->clip;
 		draw_window(list->lock, w, &r);
-		draw_slist(lock, list, NULL, &r);
+		draw_slist(0, list, NULL, &r);
 	}
 	done(OS_SELECTED);
 }
 
-void
-d_g_string(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
-{
-	RECT r = wt->r;
-	OBJECT *ob = wt->current.ob;
-	ushort state = ob->ob_state;
-	char *t, text[256];
 
-	t = object_get_spec(ob)->free_string;
-
-	/* most AES's allow null string */
-	if (t)
-	{
-		bool tit = ( state & OS_WHITEBAK )
-		           && ( state & 0xff00   ) == 0xff00;
-			
-		strncpy(text, t, 254);
-		text[255] = '\0';
-		
-		(*v->api->wr_mode)(v, MD_TRANS);
-
-		if (d3_foreground(ob) && !tit)
-			d3_pushbutton(v, 0, &r, NULL, state, 0, 0);
-
-		if (   wt->is_menu
-		    && (ob->ob_state & OS_DISABLED)
-		    && *text == '-')
-		{
-			r.x += 1, r.w -= 3;
-			r.y += (r.h - 2)/2;
-			if (MONO)
-			{
-				(*v->api->l_type)(v, 7);
-				(*v->api->l_udsty)(v, 0xaaaa);
-				(*v->api->line)(v, r.x, r.y, r.x + r.w, r.y, G_BLACK);
-				(*v->api->l_udsty)(v, 0x5555);
-				(*v->api->line)(v, r.x, r.y + 1, r.x + r.w, r.y + 1, G_BLACK);
-				(*v->api->l_type)(v, 0);
-			}
-			else
-			{
-				r.x += 2, r.w -= 4;
-				(*v->api->line)(v, r.x, r.y,     r.x + r.w, r.y,     objc_rend.dial_colours.fg_col);
-				(*v->api->line)(v, r.x, r.y + 1, r.x + r.w, r.y + 1, objc_rend.dial_colours.lit_col);
-				(*v->api->l_color)(v, G_BLACK);
-			}
-			done(OS_DISABLED);
-		}
-		else
-		{
-			short und = -1, flags = 0;
-			if ((state & OS_WHITEBAK))
-			{
-				short ns = state >> 8;
-				if (!(ns & 0x80))
-				{
-					und = ns & 0x7f;
-				}
-				else if (ns == 0xfe)
-				{
-					und = -2;
-					flags = ob->ob_flags;
-				}
-				else if (ns == 0xff)
-					flags = ob->ob_flags;
-			}
-			(*v->api->t_font)(v, screen.standard_font_point, screen.standard_font_id);
-			(*v->api->t_color)(v, G_BLACK);
-			(*v->api->t_effects)(v, 0);
-			ob_text(wt, v, NULL, &r, &wt->r, NULL, t, state, flags, und, G_BLACK);
-// 			g_text(wt, v, r, &wt->r, text, ob->ob_state);
-		}
-
-		if (tit)
-			d3_bottom_line(v, &r, (ob->ob_flags & OF_FL3DBAK), G_BLACK, G_WHITE);
-	
-	}
-}
-
-void
-d_g_title(enum locks lock, struct widget_tree *wt, struct xa_vdi_settings *v)
-{
-	OBJECT *ob = wt->current.ob;
-	char *t = object_get_spec(ob)->free_string;
-
-	if (t)
-	{
-		short und = -1, state = ob->ob_state;
-		RECT r = wt->r;
-		char text[256];
-		strncpy(text, t, 254);
-		text[255] = '\0';
-
-		(*v->api->wr_mode)(v, MD_TRANS);
-
-		/* menu in user window.*/
-		if (!wt->menu_line)
-			d3_pushbutton(v, -2, &r, NULL, ob->ob_state, 1, MONO ? 1 : 3);
-
-		/* most AES's allow null string */
-		(*v->api->t_color)(v, G_BLACK);
-		(*v->api->t_font)(v, screen.standard_font_point, screen.standard_font_id);
-		(*v->api->t_effects)(v, 0);
-		
-		if (state & 0x8000)
-			und = (state >> 8) & 0x7f;
-		
-		ob_text(wt, v, NULL, &r, &wt->r, NULL, text, ob->ob_state, OF_FL3DBAK, und, G_BLACK);
-// 		g_text(wt, v, r, &wt->r, text, ob->ob_state);
-
-		if (ob->ob_state & OS_SELECTED && wt->menu_line)
-			/* very special!!! */
-			write_selection(v, 0, &r);
-	}
-	done(OS_SELECTED);
-}
-
-XA_TREE nil_tree = { 0 };
-static ObjectDisplay *objc_jump_table[G_UNKNOWN];
+// static ObjectDisplay *objc_jump_table[G_UNKNOWN];
 
 /*
  * Initialise the object display jump table
@@ -2454,6 +497,9 @@ static ObjectDisplay *objc_jump_table[G_UNKNOWN];
 void
 init_objects(void)
 {
+	clear_edit(&nil_wt.e);
+	clear_focus(&nil_wt);
+#if 0
 	short f;
 
 	clear_edit(&nil_tree.e);
@@ -2486,50 +532,7 @@ init_objects(void)
 	objc_jump_table[G_SHORTCUT] = d_g_string;
 	objc_jump_table[G_SLIST   ] = d_g_slist;
 	objc_jump_table[G_EXTBOX  ] = d_g_box;
-
-}
-
-void
-init_ob_render(void)
-{
-	rootmenu_texture = NULL;
-#if 0
-	struct xa_texture *t;
-	char *fn;
-
-	if ((t = kmalloc(sizeof(*t))))
-	{
-		t->mfdb.fd_addr = NULL;
-		if ((fn = xaaes_sysfile("img\\ob.img")))
-		{
-			load_image(fn, &t->mfdb);
-			if (t->mfdb.fd_addr)
-			{
-				t->t.anchor = 0;
-				t->t.flags = 0;
-				t->t.tl_corner = t->t.bl_corner = t->t.tr_corner = t->t.br_corner = NULL;
-				t->t.top = t->t.bottom = t->t.left = t->t.right = NULL;
-				t->t.body = &t->mfdb;
-				
-				rootmenu_texture = t;
-			}
-		}
-		kfree(fn);
-		if (!t->mfdb.fd_addr)
-			kfree(t);
-	}
 #endif
-}			
-
-void
-exit_ob_render(void)
-{
-	if (rootmenu_texture)
-	{
-		kfree(rootmenu_texture->mfdb.fd_addr);
-		kfree(rootmenu_texture);
-		rootmenu_texture = NULL;
-	}
 }
 
 /* object types */
@@ -2564,7 +567,7 @@ display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, struct x
 {
 	RECT r, o, sr;
 	OBJECT *ob = aesobj_ob(&item);
-	ObjectDisplay *display_routine = NULL;
+	DrawObject *drawer = NULL;
 
 	/* HR: state_mask is for G_PROGDEF originally.
 	 * But it means that other objects must unflag what they
@@ -2575,7 +578,7 @@ display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, struct x
 	unsigned short state_mask = (OS_SELECTED|OS_CROSSED|OS_CHECKED|OS_DISABLED|OS_OUTLINED);
 	unsigned short t = ob->ob_type & 0xff;
 
-	object_offsets(ob, &o);
+	(*wt->objcr_api->obj_offsets)(wt, ob, &o);
 
 	r.x = parent_x + ob->ob_x;
 	r.y = parent_y + ob->ob_y;
@@ -2596,12 +599,12 @@ display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, struct x
 
 	if (t <= G_UNKNOWN)
 		/* Get display routine for this type of object from jump table */
-		display_routine = objc_jump_table[t];
+		drawer = wt->objcr_api->drawers[t]; //objc_jump_table[t];
 
 //	if (t >= G_SWBUTTON && t <= G_SHORTCUT)
 //		display("display %s(%d) for %s", ob_types[t], t, wt->owner->name);
 
-	if (display_routine == NULL)
+	if (!drawer)
 	{
 		DIAG((D_objc,wt->owner,"no display_routine! ob_type: %d(0x%x)", t, ob->ob_type));
 		/* dont attempt doing what could be indeterminate!!! */
@@ -2642,7 +645,7 @@ display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, struct x
 #endif
 
 	/* Call the appropriate display routine */
-	(*display_routine)(lock, wt, v);
+	(*drawer)(wt, v);
 
 	(*v->api->wr_mode)(v, MD_TRANS);
 
@@ -2681,7 +684,7 @@ display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, struct x
 			/* special handling of root object. */
 			if (!wt->zen || aesobj_item(&item) != 0)
 			{
-				if (!MONO && d3_any(ob))
+				if (!MONO && obj_is_3d(ob))
 				{
 					(*v->api->tl_hook)(v, 1, &r, objc_rend.dial_colours.lit_col);
 					(*v->api->br_hook)(v, 1, &r, objc_rend.dial_colours.shadow_col);
@@ -2701,7 +704,7 @@ display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, struct x
 		}
 
 		if ((ob->ob_state & state_mask) & OS_SELECTED)
-			write_selection(v, 0, &r);
+			(*wt->objcr_api->write_selection)(v, 0, &r);
 	}
 
 	if (focus_ob(wt) == ob)
@@ -2739,12 +742,13 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, struct xa_vdi_setti
 
 	if (wt == NULL)
 	{
-		this = nil_tree;
-
-		wt = &this;
 		clear_edit(&wt->e);
+		this = nil_wt; //nil_tree;
+		wt = &this;
 		wt->ei = NULL;
 		wt->owner = C.Aes;
+		wt->objcr_api = C.Aes->objcr_api;
+		wt->objcr_theme = C.Aes->objcr_theme;
 	}
 
 	if (tree == NULL)
@@ -2754,6 +758,9 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, struct xa_vdi_setti
 
 	if (!wt->owner)
 		wt->owner = C.Aes;
+
+	if (!wt->objcr_api || !wt->objcr_theme)
+		return true;
 
 	current = aesobj(wt->tree, 0);
 	stop = inv_aesobj();
@@ -2777,7 +784,7 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, struct xa_vdi_setti
 	{
 		if (ei->c_state & OB_CURS_ENABLED)
 		{
-			undraw_objcursor(wt, v, NULL, true);
+			(*wt->objcr_api->undraw_cursor)(wt, v, NULL, 1);
 			curson = true;
 		}
 // 		curson = ((ei->c_state & (OB_CURS_ENABLED | OB_CURS_DRAWN)) == (OB_CURS_ENABLED | OB_CURS_DRAWN)) ? true : false;
@@ -2812,7 +819,7 @@ uplink:
 				if (!ei && docurs && same_aesobj(&current, &wt->e.o))
 				{
 					if ((aesobj_ob(&current)->ob_type & 0xff) != G_USERDEF)
-						eor_objcursor(wt, v, NULL);
+						(*wt->objcr_api->eor_cursor)(wt, v, NULL);
 					docurs = false;	
 				}
 			}
@@ -2866,7 +873,7 @@ downlink:
 	while (valid_aesobj(&current) && !same_aesobj(&current, &stop)  && rel_depth > 0);
 
 	if (curson)
-		draw_objcursor(wt, v, NULL, true);
+		(*wt->objcr_api->draw_cursor)(wt, v, NULL, 1);
 
 	(*v->api->wr_mode)(v, MD_TRANS);
 	(*v->api->f_interior)(v, FIS_SOLID);

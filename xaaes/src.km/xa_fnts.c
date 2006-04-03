@@ -1019,7 +1019,7 @@ XA_fnts_create(enum locks lock, struct xa_client *client, AESPB *pb)
 	if ((wt = duplicate_fnts_obtree(client)))
 	{
 		obtree = wt->tree;
-		ob_rectangle(obtree, aesobj(obtree, 0), &or);
+		obj_rectangle(wt, aesobj(obtree, 0), &or);
 		
 		r = calc_window(lock, client, WC_BORDER,
 				tp, created_for_WDIAL,
@@ -1043,7 +1043,7 @@ XA_fnts_create(enum locks lock, struct xa_client *client, AESPB *pb)
 		if (!(fnts = create_new_fnts(lock, client, wind, wt, pb->intin[0], pb->intin[1], pb->intin[2], pb->intin[3], (char *)pb->addrin[0], (char *)pb->addrin[1])))
 			goto memerr;
 
-		wt = set_toolbar_widget(lock, wind, client, obtree, aesobj(obtree, -2), 0, true, &wdlg_th, &or);
+		wt = set_toolbar_widget(lock, wind, client, obtree, aesobj(obtree, -2), 0, STW_ZEN, &wdlg_th, &or);
 
 		update_slists(fnts);
 		
@@ -1702,7 +1702,7 @@ XA_fnts_do(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		obj_init_focus(wt, OB_IF_RESET);
 
-		ob_rectangle(obtree, aesobj(obtree, 0), &or);
+		obj_rectangle(wt, aesobj(obtree, 0), &or);
 		center_rect(&or);
 
 		change_window_attribs(lock, client, wind, tp, true, true, 2, or, NULL);

@@ -154,9 +154,13 @@ typedef unsigned long XA_WIND_ATTR;
 
 enum wind_xattr
 {
-	XMENU = 0x0001,		/*  A window with a menu bar */
-	XTOOL = 0x0002,		/*      "    with a tool bar */
-	XMAX  = 0x0004		/*  Use the create window max rextangle when sizing */
+	XMENU		= 0x0001,		/*  A window with a menu bar */
+	XTOOL		= 0x0002,		/*      "    with a tool bar */
+	XMAX 		= 0x0004,		/*  Use the create window max rextangle when sizing */
+	XWCONTEXT	= 0x0008,
+	XWAPPICN	= 0x0010,
+	XUPARROW1	= 0x0020,
+	XLFARROW1	= 0x0040,
 };
 
 /* Extended XaAES Attributes */
@@ -165,12 +169,16 @@ enum wind_xattr
 #define XaMENU		((long) XMENU << 16) /* Have a menu bar */
 #define TOOLBAR		((long) XTOOL << 16) /* Have a tool bar */
 #define USE_MAX		((long) XMAX  << 16) /* Use max */
+#define WCONTEXT	((long) XWCONTEXT << 16)
+#define WAPPICN		((long) XWAPPICN << 16)
+#define UPARROW1	((long) XUPARROW1 << 16)
+#define LFARROW1	((long) XLFARROW1 << 16)
 
 /* Internal */
-#define XaPOP		0x01000000L /* Special kind of window. */
-#define XaTOP		0x02000000L /* Window stays permanently on top (mostly popups) */
+// #define XaPOP		0x01000000L /* Special kind of window. */
+// #define XaTOP		0x02000000L /* Window stays permanently on top (mostly popups) */
 #define NO_TOPPED	0x04000000L /* Send MU_BUTTON for a click on workarea, not WM_TOPPED */
-#define NO_LIST		0x08000000L /* Dont put this window in a list */
+// #define NO_LIST		0x08000000L /* Dont put this window in a list */
 #define STORE_BACK	0x10000000L /* Store the background of a window & don't generate redraw
 				     * messages to windows below. HR 250602: Now only used for form_alerts
 				     * when the application has locked the screen.
@@ -179,8 +187,8 @@ enum wind_xattr
 #define HIDER		HIDE
 
 /* visible widgets */
-#define VS_WIDGETS (UPARROW|DNARROW|VSLIDE)
-#define HS_WIDGETS (RTARROW|LFARROW|HSLIDE)
+#define VS_WIDGETS (UPARROW|DNARROW|VSLIDE|UPARROW1)
+#define HS_WIDGETS (RTARROW|LFARROW|HSLIDE|LFARROW1)
 
 #define V_WIDG  (CLOSER|NAME|MOVER|ICONIFIER|FULLER|XaMENU|HIDE|INFO|SIZER|UPARROW|DNARROW|VSLIDE|LFARROW|RTARROW|HSLIDE|BORDER)
 /* stdwidgets that can be changed with standard_widgets() */

@@ -30,8 +30,10 @@
 #include "global.h"
 #include "xa_types.h"
 
+void create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, short *steps, short w, short h );
+
 void depack_img(char *name, XA_XIMG_HEAD *pic);
-void load_image(char *name, MFDB *mimg);
+void load_image(char *name, XAMFDB *mimg);
 
 void remap_bitmap_colindexes(MFDB *map, unsigned char *cref);
 void build_pal_xref(struct rgb_1000 *src_palette, struct rgb_1000 *dst_palette, unsigned char *cref, int pens);

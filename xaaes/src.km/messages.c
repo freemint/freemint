@@ -265,6 +265,7 @@ cancel_app_aesmsgs(struct xa_client *client)
 	redraws += cancel_aesmsgs(&client->rdrw_msg);
 	redraws += cancel_aesmsgs(&client->msg);
 	redraws += cancel_aesmsgs(&client->crit_msg);
+	cancel_aesmsgs(&client->lost_rdrw_msg);
 	return redraws;
 }
 
@@ -433,8 +434,11 @@ add_msg_2_queue(struct xa_aesmsg_list **queue, union msg_buf *msg, short qmflags
 				*next = new_msg;
 				new_msg->message = *msg;
 				new_msg->next = NULL;
-				C.redraws++;
-				C.move_block = 3;
+				if (!(qmflags & QMF_NOCOUNT))
+				{
+					C.redraws++;
+					C.move_block = 3;
+				}
 			}
 		}
 		return;
@@ -612,6 +616,15 @@ queue_message(enum locks lock, struct xa_client *client, short amq, short qmf, u
 #endif
 			break;
 		}
+		case AMQ_LOSTRDRW:
+		{	
+#if GENERATE_DIAGS
+			add_msg_2_queue(client, &client->lost_rdrw_msg, msg, qmf);
+#else
+			add_msg_2_queue(&client->lost_rdrw_msg, msg, qmf);
+#endif
+			break;
+		}		
 		case AMQ_CRITICAL:
 		{
 #if GENERATE_DIAGS
@@ -672,25 +685,27 @@ send_a_message(enum locks lock, struct xa_client *dest_client, short amq, short 
 			if (msg->m[0] == WM_REDRAW)
 			{
 				struct xa_vdi_settings *v = dest_client->vdi_settings;
-
 				RECT *r = (RECT *)&msg->m[4];
 
 // 				add_lost_rect(client, r);
+				queue_message(lock, dest_client, AMQ_LOSTRDRW, qmf|QMF_NOCOUNT|QMF_CHKDUP, msg);
 
 				dest_client->status |= CS_MISS_RDRW;
-				
-				hidem();
-				(*v->api->set_clip)(v, r);
+// 				if (dest_client->status & (CS_LAGGING))
+				{
+					hidem();
+					(*v->api->set_clip)(v, r);
 			
-				(*v->api->f_color)(v, 9);
-				(*v->api->wr_mode)(v, MD_REPLACE);
-				(*v->api->f_interior)(v, FIS_SOLID);
-				(*v->api->bar)(v, 0, r->x, r->y, r->w, r->h);
+					(*v->api->f_color)(v, 9);
+					(*v->api->wr_mode)(v, MD_REPLACE);
+					(*v->api->f_interior)(v, FIS_SOLID);
+					(*v->api->bar)(v, 0, r->x, r->y, r->w, r->h);
 
-				(*v->api->clear_clip)(v);
-				showm();
-				C.redraws++;
-				kick_mousemove_timeout();
+					(*v->api->clear_clip)(v);
+					showm();
+					C.redraws++;
+					kick_mousemove_timeout();
+				}
 			}
 			else
 				queue_message(lock, dest_client, amq, qmf, msg);
