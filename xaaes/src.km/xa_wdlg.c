@@ -469,20 +469,21 @@ XA_wdlg_create(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	if (pb->addrin[0] && validate_obtree(client, (OBJECT *)pb->addrin[1], "XA_wdlg_create:") && pb->addrout)
 	{
+		short swtflags = STW_ZEN|STW_GOC|STW_SWC;
 		XA_WIND_ATTR tp = MOVER|NAME;
-		RECT r, or;
+		RECT r, or = (RECT){100,100,100,100};
 		OBJECT *obtree = (OBJECT*)pb->addrin[1];
 
 		pb->addrout[0] = 0;
 
 		obtree->ob_state &= ~OS_OUTLINED;
 
-		ob_rectangle(obtree, aesobj(obtree, 0), &or);
+// 		ob_rectangle(obtree, aesobj(obtree, 0), &or);
 
 		DIAGS(("XA_wdlg_create: ob=%lx, obx=%d, oby=%d", obtree, obtree->ob_x, obtree->ob_y));
 
 		if (obtree->ob_x <= 0 && obtree->ob_y <= 0)
-			center_rect(&or); //form_center(obtree, ICON_H);
+			swtflags |= STW_COC; //center_rect(&or);
 
 // 		ob_area(obtree, 0, &or);
 
@@ -510,7 +511,7 @@ XA_wdlg_create(enum locks lock, struct xa_client *client, AESPB *pb)
 
 				wind->wdlg = wdlg;
 
-				wt = set_toolbar_widget(lock, wind, client, obtree, aesobj(obtree, -2), WIP_NOTEXT, true, &wdlg_th, &or);
+				wt = set_toolbar_widget(lock, wind, client, obtree, aesobj(obtree, -2), WIP_NOTEXT, swtflags, &wdlg_th, &or);
 				obj_init_focus(wt, OB_IF_RESET);
 	
 				wdlg->handle = (void *)((long)0xae000000 + wind->handle);
@@ -871,18 +872,17 @@ XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 					obtree->ob_state &= ~OS_OUTLINED;
 					if (!(wind->window_status & XAWS_ICONIFIED))
 					{
-						ob_rectangle(obtree, aesobj(obtree, 0), &or);
+						obj_rectangle(wt, aesobj(obtree, 0), &or);
 						
-						wt = set_toolbar_widget(lock, wind, client, obtree, aesobj(obtree, 0), WIP_NOTEXT, true, &wdlg_th, &or);
+						set_toolbar_widget(lock, wind, client, obtree, aesobj(obtree, 0), WIP_NOTEXT, STW_ZEN, &wdlg_th, &or);
 						wt->exit_form = NULL;
 						
-
 						r = calc_window(lock, client, WC_BORDER,
 							wind->active_widgets, wind->dial,
 							client->options.thinframe,
 							client->options.thinwork,
 							*(RECT *)&or);
-
+						
 						r.x = wind->r.x;
 						r.y = wind->r.y;
 						move_window(lock, wind, true, -1, r.x, r.y, r.w, r.h);
@@ -996,9 +996,9 @@ XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 					
 					if (wt != get_widget(wind, XAW_TOOLBAR)->stuff)
 					{
-						RECT or;
-						ob_rectangle(obtree, aesobj(obtree, 0), &or);
-						wt = set_toolbar_widget(lock, wind, client, obtree, aesobj(obtree, 0), WIP_NOTEXT, true, NULL, &or);
+// 						RECT or;
+// 						ob_rectangle(obtree, aesobj(obtree, 0), &or);
+						wt = set_toolbar_widget(lock, wind, client, obtree, aesobj(obtree, 0), WIP_NOTEXT, STW_ZEN|STW_GOC, NULL, NULL);
 						wt->exit_form = NULL;
 					}
 
@@ -1095,7 +1095,7 @@ wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms 
 							{
 								ei = wt->ei ? wt->ei : &wt->e;
 							
-								if ( valid_aesobj(&nxtobj) && object_is_editable(aesobj_ob(&nxtobj)) && !same_aesobj(&nxtobj, &ei->o))
+								if ( valid_aesobj(&nxtobj) && object_is_editable(aesobj_ob(&nxtobj), 0, 0) && !same_aesobj(&nxtobj, &ei->o))
 								{
 								
 									if (edit_set(ei))

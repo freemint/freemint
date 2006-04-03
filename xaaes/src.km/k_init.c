@@ -57,11 +57,12 @@
 #include "trnfm.h"
 
 #include "win_draw.h"
+#include "render_obj.h"
 
 #include "xa_xtobj.h"
 
 #include "mvdi.h"
-
+#include "mt_gem.h"
 /* kernel header */
 #include "mint/ssystem.h"
 #include "cookie.h"
@@ -120,6 +121,29 @@ api_remove_wt(struct widget_tree *wt)
 	remove_wt(wt, false);
 }
 
+static OBSPEC * _cdecl
+api_object_get_spec(OBJECT *ob)
+{
+	return object_get_spec(ob);
+}
+
+static void _cdecl
+api_object_set_spec(OBJECT *ob, unsigned long cl)
+{
+	object_set_spec(ob, cl);
+}
+
+static POPINFO * _cdecl
+api_object_get_popinfo(OBJECT *ob)
+{
+	return object_get_popinfo(ob);
+}
+static TEDINFO * _cdecl
+api_object_get_tedinfo(OBJECT *ob, XTEDINFO **x)
+{
+	return object_get_tedinfo(ob, x);
+}
+
 static void _cdecl
 api_ob_spec_xywh(OBJECT *obtree, short obj, RECT *r)
 {
@@ -132,6 +156,33 @@ api_object_spec_wh(OBJECT *ob, short *w, short *h)
 	object_spec_wh(ob, w, h);
 }
 
+static void _cdecl
+api_render_object(XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_object item, short px, short py)
+{
+	display_object(0, wt, v, item, px, py, 0);
+}
+
+static CICON * _cdecl
+api_getbest_cicon(CICONBLK *ciconblk)
+{
+	return getbest_cicon(ciconblk);
+}
+
+static short _cdecl
+api_obj_offset(struct widget_tree *wt, struct xa_aes_object object, short *mx, short *my)
+{
+	return obj_offset(wt, object, mx, my);
+}
+
+static void _cdecl
+api_obj_rectangle(struct widget_tree *wt, struct xa_aes_object object, RECT *r)
+{
+	obj_rectangle(wt, object, r);
+}
+
+// static short _cdecl
+// api_object_thickness(OBJECT *ob){return object_thickness(ob);}
+
 static void * _cdecl
 api_rp2ap(struct xa_window *wind, struct xa_widget *widg, RECT *r)
 {
@@ -141,6 +192,12 @@ static void _cdecl
 api_rp2apcs(struct xa_window *wind, struct xa_widget *widg, RECT *r)
 {
 	rp_2_ap_cs(wind, widg, r);
+}
+
+static short _cdecl
+api_rect_clip(RECT *s, RECT *d, RECT *r)
+{
+	return (xa_rect_clip(s, d, r)) ? 1 : 0;
 }
 
 static void * _cdecl
@@ -179,6 +236,22 @@ api_lookup_xa_data(struct xa_data_hdr **l, void *data)
 	return lookup_xa_data(l, data);
 }
 
+static void * _cdecl
+api_lookup_xa_data_byid(struct xa_data_hdr **l, long id)
+{
+	return lookup_xa_data_byid(l, id);
+}
+static void * _cdecl
+api_lookup_xa_data_byname(struct xa_data_hdr **l, char *name)
+{
+	return lookup_xa_data_byname(l, name);
+}
+static void * _cdecl
+api_lookup_xa_data_byidname(struct xa_data_hdr **l, long id, char *name)
+{
+	return lookup_xa_data_byidname(l, id, name);
+}
+
 static void _cdecl
 api_add_xa_data(struct xa_data_hdr **list, void *data, long id, char *name, void _cdecl(*destruct)(void *d))
 {
@@ -194,7 +267,16 @@ api_delete_xa_data(struct xa_data_hdr **list, void *data)
 {
 	delete_xa_data(list, data);
 }
-
+static void _cdecl
+api_ref_xa_data(struct xa_data_hdr **list, void *data, short count)
+{
+	ref_xa_data(list, data, count);
+}
+static long _cdecl
+api_deref_xa_data(struct xa_data_hdr **list, void *data, short flags)
+{
+	return deref_xa_data(list, data, flags);
+}
 static void _cdecl
 api_free_xa_data_list(struct xa_data_hdr **list)
 {
@@ -202,7 +284,7 @@ api_free_xa_data_list(struct xa_data_hdr **list)
 }
 
 static void _cdecl
-api_load_img(char *fname, MFDB *img)
+api_load_img(char *fname, XAMFDB *img)
 {
 	load_image(fname, img);
 }	
@@ -219,11 +301,23 @@ setup_xa_module_api(void)
 	xam_api.obtree_to_wt	= api_obtree_to_wt;
 	xam_api.remove_wt	= api_remove_wt;
 
-	xam_api.ob_spec_xywh	= api_ob_spec_xywh;
+	xam_api.object_get_spec	= api_object_get_spec;
+	xam_api.object_set_spec = api_object_set_spec;
+	xam_api.object_get_popinfo = api_object_get_popinfo;
+ 	xam_api.object_get_tedinfo = api_object_get_tedinfo;
 	xam_api.object_spec_wh	= api_object_spec_wh;
+	
+	xam_api.ob_spec_xywh	= api_ob_spec_xywh;
+	xam_api.getbest_cicon	= api_getbest_cicon;
+	xam_api.obj_offset	= api_obj_offset;
+	xam_api.obj_rectangle	= api_obj_rectangle;
+
+	xam_api.render_object	= api_render_object;
 
 	xam_api.rp2ap		= api_rp2ap;
 	xam_api.rp2apcs		= api_rp2apcs;
+
+	xam_api.rect_clip	= api_rect_clip;
 
 	xam_api.kmalloc		= api_kmalloc;
 	xam_api.umalloc		= api_umalloc;
@@ -231,11 +325,16 @@ setup_xa_module_api(void)
 	xam_api.ufree		= api_ufree;
 	xam_api.bclear		= api_bzero;
 
-	xam_api.lookup_xa_data	= api_lookup_xa_data;
-	xam_api.add_xa_data	= api_add_xa_data;
-	xam_api.remove_xa_data	= api_remove_xa_data;
-	xam_api.delete_xa_data	= api_delete_xa_data;
-	xam_api.free_xa_data_list = api_free_xa_data_list;
+	xam_api.lookup_xa_data		= api_lookup_xa_data;
+	xam_api.lookup_xa_data_byid	= api_lookup_xa_data_byid;
+	xam_api.lookup_xa_data_byname	= api_lookup_xa_data_byname;
+	xam_api.lookup_xa_data_byidname = api_lookup_xa_data_byidname;
+	xam_api.add_xa_data		= api_add_xa_data;
+	xam_api.remove_xa_data		= api_remove_xa_data;
+	xam_api.delete_xa_data		= api_delete_xa_data;
+	xam_api.ref_xa_data		= api_ref_xa_data;
+	xam_api.deref_xa_data		= api_deref_xa_data;
+	xam_api.free_xa_data_list	= api_free_xa_data_list;
 
 	xam_api.load_img	= api_load_img;
 }
@@ -316,6 +415,7 @@ calc_average_fontsize(struct xa_vdi_settings *v, short *maxw, short *maxh, short
 			count++;
 			wch += cellw;
 		}
+// 		display("i=%d, j=%d, count=%d, cellw=%d, totalw=%ld", i, j, count, cellw, wch);
 	}
 	if (count)
 	{
@@ -352,7 +452,7 @@ k_init(unsigned long vm)
 
 	cfg.videomode = (short)vm;
 
-	global_vdiapi = v->api = init_xavdi_module();	
+	xa_vdiapi = v->api = init_xavdi_module();	
 	{
 		short *p;
 
@@ -526,7 +626,8 @@ k_init(unsigned long vm)
 		DIAGS(("graf_handle -> %d", C.P_handle));
 	}
 
-	set_defaultpalette(C.P_handle);
+	get_syspalette(C.P_handle, screen.palette);
+// 	set_defaultpalette(C.P_handle);
 	/*
 	 * Open us a virtual workstation for XaAES to play with
 	 */
@@ -567,9 +668,9 @@ k_init(unsigned long vm)
 	vq_extnd(v->handle, 1, work_out);	/* Get extended information */
 	screen.planes = work_out[4];		/* number of planes in the screen */
 	
-	if (screen.planes > 8)
-		set_defaultpalette(v->handle);
-	get_syspalette(C.P_handle, screen.palette);
+// 	if (screen.planes > 8)
+// 		set_defaultpalette(v->handle);
+// 	get_syspalette(C.P_handle, screen.palette);
 
 	screen.pixel_fmt = detect_pixel_format(v);
 
@@ -585,12 +686,12 @@ k_init(unsigned long vm)
 	 * better check for GDOS and load the fonts.
 	 */
 	if ((C.gdos_version = vq_gdos()))
-		(*v->api->load_fonts)(v); //(*global_vdiapi->load_fonts)(v);
+		(*v->api->load_fonts)(v);
 	else
 		cfg.font_id = 1;
 
 	(*v->api->t_alignment)(v, 0, 5);
-	(*v->api->t_font)(v, cfg.small_font_point, cfg.font_id); //(*global_vdiapi->t_font)(v, cfg.small_font_point, cfg.font_id);
+	(*v->api->t_font)(v, cfg.small_font_point, cfg.font_id);
 	screen.standard_font_id  = screen.small_font_id = v->font_rid;
 	screen.small_font_height = v->font_h;
 	screen.small_font_point  = v->font_rsize;
@@ -668,21 +769,30 @@ k_init(unsigned long vm)
 	 */
 	 
 	main_xa_theme(&C.Aes->xmwt);
-
+	main_object_render(&C.Aes->objcr_module);
+	
+	if (!(*C.Aes->objcr_module->init_module)(&xam_api, &screen))
+	{
+		display("object render returned NULL");
+		return -1;
+	}
+	if (init_client_objcrend(C.Aes))
+		return -1;
+	
 	if (!(C.Aes->wtheme_handle = (*C.Aes->xmwt->init_module)(&xam_api, &screen, (char *)&cfg.widg_name)))
 	{
 		display("module returned NULL");
 		return -1;
 	}
-
+	/*
+	 *  ---------        prepare the AES object renderer module  --------------
+	 */
+	
 	/*
 	 * Setup default widget theme
 	 */
 	init_client_widget_theme(C.Aes);
-	
-	/*
-	 *  ---------        prepare the AES object renderer module  --------------
-	 */
+#if 0
 	/*
 	 * Now load and fix the resource containing the extended AES object icons
 	 * This will be done by the object renderer later on...
@@ -722,7 +832,7 @@ k_init(unsigned long vm)
 		
 		xobj_rsc = tree;
 	}
-
+#endif
 // 	init_ob_render();
 
 #if FILESELECTOR
@@ -825,59 +935,10 @@ k_init(unsigned long vm)
 void
 init_helpthread(enum locks lock, struct xa_client *client)
 {
-	struct widget_tree *wt;
-
 	DIAGS(("setting up task manager"));
-// 	display("setting up task manager");
-	wt = new_widget_tree(client, ResourceTree(C.Aes_rsc, TASK_MANAGER));
-	
-	set_slist_object(0, wt, NULL, TM_LIST,
-			 SIF_SELECTABLE|SIF_AUTOSELECT|SIF_ICONINDENT,
-			 NULL, NULL, NULL, NULL, NULL, NULL,
-			 NULL, NULL, NULL, NULL,
-			 "Client Applications", NULL, NULL, 255);
-	obj_init_focus(wt, OB_IF_RESET);
-
-	DIAGS(("setting up file selector"));
-
-	DIAGS(("setting up System Alert log"));
-// 	display("setting up System Alert log");
-	wt = new_widget_tree(client, ResourceTree(C.Aes_rsc, SYS_ERROR));
-	set_slist_object(0, wt, NULL, SYSALERT_LIST,
-			 SIF_SELECTABLE|SIF_AUTOSELECT|SIF_TREEVIEW|SIF_AUTOOPEN,
-			 NULL, NULL, NULL, NULL, NULL, NULL,
-			 NULL, NULL, NULL, NULL,
-			 NULL, NULL, NULL, 255);
-	obj_init_focus(wt, OB_IF_RESET);
-	{
-		OBJECT *obtree = ResourceTree(C.Aes_rsc, SYS_ERROR);
-		struct scroll_info *list = object_get_slist(obtree/*ResourceTree(C.Aes_rsc, SYS_ERROR)*/ + SYSALERT_LIST);
-		struct scroll_content sc = {{ 0 }};
-		char a[] = "Alerts";
-		char e[] = "Environment";
-
-		sc.t.text = a;
-		sc.t.strings = 1;
-		sc.icon = obtree + SALERT_IC1;
-		sc.usr_flags = 1;
-		sc.xflags = OF_AUTO_OPEN;
-		DIAGS(("Add Alerts entry..."));
-		list->add(list, NULL, NULL, &sc, 0, SETYP_STATIC, NOREDRAW);
-		sc.t.text = e;
-		sc.icon = obtree + SALERT_IC2;
-		DIAGS(("Add Environment entry..."));
-		list->add(list, NULL, NULL, &sc, 0, SETYP_STATIC, NOREDRAW);
-	}
-
-	DIAGS(("setting up About text list"));
-// 	display("setting up About text list");
-	wt = new_widget_tree(client, ResourceTree(C.Aes_rsc, ABOUT_XAAES));
-	set_slist_object(0, wt, NULL, ABOUT_LIST, 0,
-			 NULL, NULL, NULL, NULL, NULL, NULL,
-			 NULL, NULL, NULL, NULL,
-			 NULL, NULL, NULL, 255);
-	obj_init_focus(wt, OB_IF_RESET);
-
+// 	display("init_helpthread");
+	open_taskmanager(0, client, 0);
+// 	display("init_helpthread done");
 }
 static const char *dont_load_list[] =
 {

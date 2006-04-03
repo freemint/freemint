@@ -657,7 +657,7 @@ XA_menu_popup(enum locks lock, struct xa_client *client, AESPB *pb)
 	xmn.menu = *(MENU *)pb->addrin[0];
 	xmn.mn_selected = -1;
 
-	if (menu_popup(lock, client, &xmn/*(MENU *)pb->addrin[0]*/, &tmp, pb->intin[0], pb->intin[1], 1))
+	if (menu_popup(lock, client, &xmn, &tmp, pb->intin[0], pb->intin[1], 1))
 	{
 		*result = tmp;
 		pb->intout[0] = result->mn_item < 0 ? 0 : 1;

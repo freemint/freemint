@@ -100,7 +100,6 @@ pending_redraw_msgs(enum locks lock, struct xa_client *client, union msg_buf *bu
 	return rtn;
 }
 
-
 static int
 pending_msgs(enum locks lock, struct xa_client *client, union msg_buf *buf)
 {

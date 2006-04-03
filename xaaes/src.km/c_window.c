@@ -720,9 +720,14 @@ fix_wind_kind(XA_WIND_ATTR tp)
 {
 	/* avoid confusion: if only 1 specified, give both (fail safe!) */
 	if (tp & (UPARROW|DNARROW))
-		tp |= UPARROW|DNARROW;
+		tp |= UPARROW|DNARROW|UPARROW1;
+	else
+		tp &= ~UPARROW1;
+
 	if (tp & (LFARROW|RTARROW))
-		tp |= LFARROW|RTARROW;
+		tp |= LFARROW|RTARROW|LFARROW1;
+	else
+		tp &= ~LFARROW1;
 
 	/* cant hide a window that cannot be moved. */
 	if (!(tp & MOVER))
@@ -836,6 +841,11 @@ create_window(
 		w->class = WINCLASS_POPUP;
 		w->active_theme = client->widget_theme->popup; //w->widget_theme->popup;
 	}
+	else if (dial & created_for_SLIST)
+	{
+		w->class = WINCLASS_SLIST;
+		w->active_theme = client->widget_theme->slist;
+	}
 	else
 	{
 		w->class = WINCLASS_CLIENT;
@@ -845,7 +855,7 @@ create_window(
 	w->active_theme->links++;
 
 
-	(*client->xmwt->new_color_theme)(client->wtheme_handle, &w->ontop_cols, &w->untop_cols);
+	(*client->xmwt->new_color_theme)(client->wtheme_handle, w->class, &w->ontop_cols, &w->untop_cols);
 	w->colours = w->ontop_cols;
 
 	w->wheel_mode = client->options.wheel_mode;
@@ -957,18 +967,8 @@ change_window_attribs(enum locks lock,
 
 	DIAG((D_wind, client, "change_window_attribs for %s: r:%d,%d/%d,%d  no max",
 		c_owner(client), r.x,r.y,r.w,r.h));
-	
-	/* avoid confusion: if only 1 specified, give both (fail safe!) */
-	if ((tp & UPARROW) || (tp & DNARROW))
-		tp |= UPARROW|DNARROW;
-	if ((tp & LFARROW) || (tp & RTARROW))
-		tp |= LFARROW|RTARROW;
-	/* cant hide a window that cannot be moved. */
-	if ((tp & MOVER) == 0)
-		tp &= ~HIDE;
-	/* temporary until solved. */
-	if (tp & MENUBAR)
-		tp |= XaMENU;
+
+	tp = fix_wind_kind(tp);
 
 	standard_widgets(w, tp, false);
 	
@@ -1101,7 +1101,7 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 
 		if (wind->active_widgets & STORE_BACK)
 		{
-			form_save(0, wind->r, &(wind->background));
+			(*xa_vdiapi->form_save)(0, wind->r, &(wind->background));
 		}
 		
 		if (!(wind->dial & created_for_POPUP))
@@ -1192,7 +1192,7 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 	/* Is this a 'preserve own background' window? */
 	if (wind->active_widgets & STORE_BACK)
 	{
-		form_save(0, wind->r, &(wind->background));
+		(*xa_vdiapi->form_save)(0, wind->r, &(wind->background));
 		/* This is enough, it is only for TOOLBAR windows. */
 		generate_redraws(lock, wind, &wind->r, RDRW_ALL);
 	}
@@ -1656,7 +1656,7 @@ close_window(enum locks lock, struct xa_window *wind)
 		}
 
 		if (wind->active_widgets & STORE_BACK)
-			form_restore(0, wind->r, &(wind->background));
+			(*xa_vdiapi->form_restore)(0, wind->r, &(wind->background));
 		
 		clear_wind_rectlist(wind);
 		wind->window_status &= ~XAWS_OPEN;
@@ -1687,7 +1687,7 @@ close_window(enum locks lock, struct xa_window *wind)
 	{
 		if (wind->active_widgets & STORE_BACK)
 		{
-			form_restore(0, wind->r, &(wind->background));
+			(*xa_vdiapi->form_restore)(0, wind->r, &(wind->background));
 			return true;
 		}
 
@@ -1754,21 +1754,6 @@ close_window(enum locks lock, struct xa_window *wind)
 // 					if (d) display("clwtna 1 last resort - top prev app");
 					app_in_front(lock, previous_client(lock, 1), true, true, false);
 				}
-		#if 0
-				if (!(window_list->owner->status & CS_EXITING) && window_list != root_window)
-				{
-					if (w)
-					{
-						if (d) display("topping win for %s", window_list->owner->name);
-						top_window(lock, true, true, w, NULL);
-					}
-				}
-				else if (window_list == root_window)
-				{
-					if (d) display("topping desktop! %s", desktop_owner()->name);
-					app_in_front(lock, desktop_owner(), true, true, true);
-				}
-		#endif
 				break;
 			}
 			case 2: /* Top the client previously topped */
@@ -1777,23 +1762,7 @@ close_window(enum locks lock, struct xa_window *wind)
 				app_in_front(lock, previous_client(lock, 1), true, true, false);
 				break;
 			}
-// 			default:;
 		}
-#if 0
-		if (client->options.clwtna)
-		{/* Put owner of window ontop infront */
-			if (!(window_list->owner->status & CS_EXITING) && window_list != root_window)
-			{
-				if (d) display("topping win for %s", window_list->owner->name);
-				top_window(lock, true, true, window_list, NULL);
-			}
-			else if (window_list == root_window)
-			{
-				if (d) display("topping desktop! %s", desktop_owner()->name);
-				app_in_front(lock, desktop_owner(), true, true, true);
-			}
-		}
-#endif
 	}
 
 	set_winmouse(-1, -1);
@@ -2083,43 +2052,74 @@ update_windows_below(enum locks lock, const RECT *old, RECT *new, struct xa_wind
  * the client going non-lagged.
  * Context dependant!
  */
+static int
+get_lost_redraw_msg(struct xa_client *client, union msg_buf *buf)
+{
+	struct xa_aesmsg_list *msg;
+	int rtn = 0;
+	msg = client->lost_rdrw_msg;
+	if (msg)
+	{
+		/* dequeue */
+		client->lost_rdrw_msg = msg->next;
+
+		/* write to client */
+		*buf = msg->message;
+
+		DIAG((D_m, NULL, "Got pending WM_REDRAW (%lx (wind=%d, %d/%d/%d/%d)) for %s",
+			msg, buf->m[3], *(RECT *)&buf->m[4], c_owner(client) ));
+
+		kfree(msg);
+		rtn = 1;
+// 		kick_mousemove_timeout();
+	}
+// 	else if (C.redraws)
+// 		yield();
+	return rtn;
+}
+
 void
 redraw_client_windows(enum locks lock, struct xa_client *client)
 {
 	struct xa_window *wl;
 	struct xa_rect_list *rl;
+	union msg_buf buf;
+	bool makerl = true;
+	RECT r;
 
-	if (get_desktop()->owner == client)
+	while (get_lost_redraw_msg(client, &buf))
 	{
-		wl = root_window;
-		make_rect_list(wl, true, RECT_SYS);
-		rl = wl->rect_list.start;
-		while (rl)
+		if (get_desktop()->owner == client)
 		{
-			generate_redraws(lock, wl, &rl->r, RDRW_ALL);
-			
-			rl = rl->next;
-		}
-	}
-
-	wl = root_window->prev;
-
-	while (wl)
-	{
-		if (wl->owner == client && (wl->window_status & XAWS_OPEN))
-		{
-			make_rect_list(wl, true, RECT_SYS);
-
+			wl = root_window;
+			if (makerl) make_rect_list(wl, true, RECT_SYS);
+			rl = wl->rect_list.start;
+			while (rl)
 			{
+				if (xa_rect_clip(&rl->r, (RECT *)&buf.m[4], &r))
+					generate_redraws(lock, wl, &r, RDRW_ALL);
+				rl = rl->next;
+			}
+		}
+
+		wl = root_window->prev;
+
+		while (wl)
+		{
+			if (wl->owner == client && (wl->window_status & XAWS_OPEN))
+			{
+				if (makerl) make_rect_list(wl, true, RECT_SYS);
 				rl = wl->rect_list.start;
 				while (rl)
 				{
-					generate_redraws(lock, wl, &rl->r, RDRW_ALL);
+					if (xa_rect_clip(&rl->r, (RECT *)&buf.m[4], &r))
+						generate_redraws(lock, wl, &r, RDRW_ALL);
 					rl = rl->next;
 				}
 			}
+			wl = wl->prev;
 		}
-		wl = wl->prev;
+		makerl = false;
 	}
 }
 
@@ -2224,7 +2224,6 @@ calc_window(enum locks lock, struct xa_client *client, int request, XA_WIND_ATTR
 	short class;
 	RECT o;
 	DIAG((D_wind,client,"calc %s from %d/%d,%d/%d", request ? "work" : "border", r));
-
 	tp = fix_wind_kind(tp);
 	dial |= created_for_CALC;
 
@@ -2334,12 +2333,12 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 		if (xmove || ymove || resize)
 		{
 			if (wind->active_widgets & STORE_BACK)
-				form_restore(0, old, &(wind->background));
+				(*xa_vdiapi->form_restore)(0, old, &(wind->background));
 		
 			make_rect_list(wind, true, RECT_SYS);
 
 			if (wind->active_widgets & STORE_BACK)
-				form_save(0, wind->r, &(wind->background));
+				(*xa_vdiapi->form_save)(0, wind->r, &(wind->background));
 
 			if (!(wind->dial & created_for_SLIST))
 				generate_redraws(wlock, wind, (RECT *)&wind->r, !only_wa ? RDRW_ALL : RDRW_WA);
@@ -2642,7 +2641,7 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 					bd.y += old.y;
 					//DIAGS(("Blitting from %d/%d/%d/%d to %d/%d/%d/%d (%lx, %lx)",
 					//	bd, bs, brl, (long)brl->next));
-					form_copy(&bd, &bs);
+					(*xa_vdiapi->form_copy)(&bd, &bs);
 					nrl = nrl->next;
 				}
 				showm();

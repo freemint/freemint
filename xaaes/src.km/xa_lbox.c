@@ -298,7 +298,7 @@ redraw_lbox(struct xa_lbox_info *lbox, short o, short depth, RECT *r)
 	obj_area(wt, obj, &or);
 
 	start = obj;
-	while (object_is_transparent(aesobj_ob(&start), false))
+	while (obj_is_transparent(wt, aesobj_ob(&start), false))
 	{
 		object = ob_get_parent(wt->tree, start);
 		if (object.item < 0)
@@ -1125,12 +1125,12 @@ XA_lbox_create(enum locks lock, struct xa_client *client, AESPB *pb)
 				parnt = lbox->aslide.bkg;
 				child = lbox->aslide.sld;
 				if (child >= 0 && parnt >= 0)
-					ob_border_diff(obtree, aesobj(obtree, child), aesobj(obtree, parnt), &lbox->aslide.ofs);
+					obj_border_diff(wt, aesobj(obtree, child), aesobj(obtree, parnt), &lbox->aslide.ofs);
 
 				parnt = lbox->bslide.bkg;
 				child = lbox->bslide.sld;
 				if (parnt >= 0 && child >= 0)
-					ob_border_diff(obtree, aesobj(obtree, child), aesobj(obtree, parnt), &lbox->bslide.ofs);
+					obj_border_diff(wt, aesobj(obtree, child), aesobj(obtree, parnt), &lbox->bslide.ofs);
 			}
 
 			setup_lbox_objects(lbox);

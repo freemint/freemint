@@ -149,7 +149,7 @@ callout_pdlg_sub(struct xa_pdlg_info *pdlg, short which, PDLG_SUB *sub, PRN_SETT
 		if (sub->tree)
 		{
 			RECT r;
-			ob_rectangle(pdlg->mwt->tree, aesobj(pdlg->mwt->tree, XPDLG_DIALOG), &r);
+			obj_rectangle(pdlg->mwt, aesobj(pdlg->mwt->tree, XPDLG_DIALOG), &r);
 			sub->tree->ob_x = r.x;
 			sub->tree->ob_y = r.y;
 		}
@@ -587,7 +587,7 @@ set_oblink(struct xa_pdlg_info *pdlg, OBJECT *to_tree, short to_obj)
 		if (init || !same_aesobj(&obl->to, &to))
 		{
 			
-			ob_rectangle(to_tree, to, &r);
+			obj_rectangle(wt, to, &r);
 			
 			if (aesobj_ob(&to)->ob_width < pdlg->min_w)
 				aesobj_ob(&to)->ob_width = pdlg->min_w;
@@ -624,7 +624,7 @@ set_oblink(struct xa_pdlg_info *pdlg, OBJECT *to_tree, short to_obj)
 		}
 		if (resize)
 		{
-			ob_rectangle(wt->tree, aesobj(wt->tree, 0), &r);
+			obj_rectangle(wt, aesobj(wt->tree, 0), &r);
 			if (wt->widg)
 			{
 				wt->widg->r.w = r.w;
@@ -643,7 +643,7 @@ set_oblink(struct xa_pdlg_info *pdlg, OBJECT *to_tree, short to_obj)
 		if ((upd || resize) && (!wt->ei || !edit_set(wt->ei)))
 		{
 			struct xa_aes_object new_eobj;
-			new_eobj = ob_find_next_any_flagstate(wt->tree, aesobj(wt->tree, 0), inv_aesobj(), OF_EDITABLE, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_FIRST);
+			new_eobj = ob_find_next_any_flagstate(wt, aesobj(wt->tree, 0), inv_aesobj(), OF_EDITABLE, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_FIRST);
 			if (valid_aesobj(&new_eobj))
 				obj_edit(wt, pdlg->wind->vdi_settings, ED_INIT, new_eobj, 0, -1, NULL, false, NULL,NULL, NULL,NULL);
 		}
@@ -2492,8 +2492,9 @@ remove_app_dialogs(struct xa_pdlg_info *pdlg)
 	
 
 static struct xa_pdlg_info *
-create_new_pdlg(struct xa_client *client, struct xa_window *wind)
+create_new_pdlg(struct xa_client *client, XA_WIND_ATTR tp) //, struct xa_window *wind)
 {
+	struct xa_window *wind = NULL;
 	struct xa_pdlg_info *pdlg;
 	
 	DIAG((D_pdlg, client, "create_new_pdlg"));
@@ -2518,7 +2519,7 @@ create_new_pdlg(struct xa_client *client, struct xa_window *wind)
 			goto fail;
 
 		mtree = duplicate_obtree(C.Aes, ResourceTree(C.Aes_rsc, WDLG_PDLG), 0);
-		
+
 		if (mtree)
 		{
 			if ((mwt = new_widget_tree(client, mtree)))
@@ -2540,7 +2541,31 @@ create_new_pdlg(struct xa_client *client, struct xa_window *wind)
 			}
 			else goto fail;
 		}
+		{
+			RECT r, or;
 
+			obj_rectangle(mwt, aesobj(mwt->tree, 0), &or);
+	
+			r = calc_window(0, client, WC_BORDER,
+					tp, created_for_WDIAL,
+					client->options.thinframe,
+					client->options.thinwork,
+					*(RECT *)&or);
+
+			if (!(wind = create_window(0,
+					     send_app_message,
+					     NULL,
+					     client,
+					     false,
+					     tp,
+					     created_for_WDIAL,
+					     client->options.thinframe,
+					     client->options.thinwork,
+					     r, NULL, NULL)))
+				goto fail;
+		
+			set_toolbar_widget(0, wind, client, mwt->tree, aesobj(mwt->tree, -2), 0, STW_ZEN, &wdlg_th, &or);
+		}
 		if (mwt && dwt)
 		{			
 			pdlg->handle = (void *)((unsigned long)pdlg >> 16 | (unsigned long)pdlg << 16);
@@ -2579,6 +2604,9 @@ create_new_pdlg(struct xa_client *client, struct xa_window *wind)
 		else
 		{
 fail:
+			if (wind)
+				delete_window(0, wind);
+
 			if (mwt)
 			{
 				mwt->links--;
@@ -2610,15 +2638,15 @@ unsigned long
 XA_pdlg_create(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	struct xa_pdlg_info *pdlg = NULL;
-	struct xa_window *wind = NULL;
-	OBJECT *obtree = NULL;
-	XA_WIND_ATTR tp = MOVER|NAME;
-	RECT r, or;
+// 	struct xa_window *wind = NULL;
+// 	OBJECT *obtree = NULL;
+// 	XA_WIND_ATTR tp = MOVER|NAME;
+// 	RECT r, or;
 
 	DIAG((D_pdlg, client, "XA_pdlg_create"));
 // 	display("XA_pbdl_create: %s", client->name);
 	pb->addrout[0] = 0L;
-
+#if 0
 	obtree = ResourceTree(C.Aes_rsc, WDLG_PDLG);
 	
 	ob_rectangle(obtree, aesobj(obtree, 0), &or);
@@ -2640,12 +2668,12 @@ XA_pdlg_create(enum locks lock, struct xa_client *client, AESPB *pb)
 			     client->options.thinwork,
 			     r, NULL, NULL)))
 		goto memerr;
-
-	pdlg = create_new_pdlg(client, wind);
+#endif
+	pdlg = create_new_pdlg(client, MOVER|NAME);
 	if (!pdlg || pdlg == (void *)-1L)
 		goto memerr;
 
-	set_toolbar_widget(lock, wind, client, pdlg->mwt->tree, aesobj(pdlg->mwt->tree, -2), 0, true, &wdlg_th, &or);
+// 	set_toolbar_widget(lock, wind, client, pdlg->mwt->tree, aesobj(pdlg->mwt->tree, -2), 0, true, &wdlg_th, &or);
 
 	pb->addrout[0] = (long)pdlg->handle;
 
@@ -2653,9 +2681,6 @@ XA_pdlg_create(enum locks lock, struct xa_client *client, AESPB *pb)
 	return XAC_DONE;
 
 memerr:
-	if (wind)
-		delete_window(lock, wind);
-	
 	if (pdlg)
 	{
 		if (pdlg == (void *)-1L)
@@ -3398,7 +3423,7 @@ XA_pdlg_do(enum locks lock, struct xa_client *client, AESPB *pb)
 		RECT or;
 		XA_WIND_ATTR tp = wind->active_widgets & ~STD_WIDGETS;
 
-		ob_rectangle(obtree, aesobj(obtree, 0), &or);
+		obj_rectangle(wt, aesobj(obtree, 0), &or);
 		center_rect(&or);
 
 		change_window_attribs(lock, client, wind, tp, true, true, 2, or, NULL);
