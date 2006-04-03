@@ -50,7 +50,7 @@ struct xa_screen screen; /* The screen descriptor */
 struct xa_objc_render objc_rend;
 
 struct xa_vdi_settings global_vdi_settings;
-struct xa_vdi_api *global_vdiapi;
+struct xa_vdi_api *xa_vdiapi;
 
 short border_mouse[CDV] =
 {
@@ -68,7 +68,7 @@ XA_PENDING_WIDGET widget_active;
 
 const char mnu_clientlistname[] = "  Clients \3";
 
-XA_TREE nil_tree;
+// XA_TREE nil_tree;
 
 struct xa_client *
 pid2client(short pid)
@@ -131,6 +131,7 @@ lookup_xa_data_byid(struct xa_data_hdr **list, long id)
 	}
 	return *list;
 }
+
 void *
 lookup_xa_data_byidname(struct xa_data_hdr **list, long id, char *name)
 {
@@ -157,9 +158,13 @@ add_xa_data(struct xa_data_hdr **list, void *_data, long id, char *name, void (*
 		(*list)->next = data;
 	else
 		*list = data;
+	
+	data->next = NULL;
 
 	if (name)
 	{
+// 		display("add_xa_data with name '%s'", name);
+
 		for (i = 0; i < 15 && (data->name[i] = *name++); i++)
 			;
 	}
@@ -183,6 +188,7 @@ remove_xa_data(struct xa_data_hdr **list, void *_data)
 		if (*list == data)
 		{
 			*list = (*list)->next;
+			data->next = NULL;
 			break;
 		}
 		list = &((*list)->next);
@@ -198,7 +204,34 @@ delete_xa_data(struct xa_data_hdr **list, void *_data)
 	remove_xa_data(list, data);
 	
 	if (data->destruct)
-		(data->destruct)(data);
+		(*data->destruct)(data);
+}
+
+void
+ref_xa_data(struct xa_data_hdr **list, void *_data, short count)
+{
+	struct xa_data_hdr *data = _data;
+// 	display("ref_xa_data %lx - links = %ld, count = %d", data, data->links, count);
+	data->links += (long)count;
+}
+
+long
+deref_xa_data(struct xa_data_hdr **list, void *_data, short flags)
+{
+	long ret;
+	struct xa_data_hdr *data = _data;
+
+// 	ndisplay("deref_xa_data %lx - links = %ld", data, data->links);
+	data->links--;
+	if (data->links < 0)
+		display(" negative links!!");
+	if (!(ret = data->links) && (flags & 1))
+	{
+// 		display("deref_xa_data - deleting!");
+		delete_xa_data(list, data);
+	}
+	return ret;
+// 	display("");
 }
 
 void
@@ -209,11 +242,13 @@ free_xa_data_list(struct xa_data_hdr **list)
 	while (l)
 	{
 		struct xa_data_hdr *n = l->next;
+		l->next = NULL;
 // 		display(" --- Calling xa_data_destruct: %lx (destruct=%lx)", l, (long)l->destruct);
 		if (l->destruct)
 			(*l->destruct)(l);
 		l = n;
 	}
+	*list = NULL;
 }
 
 /*

@@ -218,7 +218,7 @@ struct common
 	unsigned short nvdi_version;
 	unsigned long gdos_version;
 
-	void (*reschange)(enum locks lock, struct xa_client *client);
+	void (*reschange)(enum locks lock, struct xa_client *client, bool open);
 
 	short AESpid;			/* The AES's MiNT process ID */
 	short DSKpid;			/* The desktop programs pid, if any */
@@ -419,7 +419,7 @@ extern struct config cfg;
 extern struct xa_screen screen;
 extern struct xa_objc_render objc_rend;
 extern struct xa_vdi_settings global_vdi_settings;
-extern struct xa_vdi_api *global_vdiapi;
+extern struct xa_vdi_api *xa_vdiapi;
 
 #define MONO (screen.colours < 16)
 
@@ -435,7 +435,7 @@ extern short border_mouse[];
 
 extern const char mnu_clientlistname[];
 
-extern XA_TREE nil_tree;
+// extern XA_TREE nil_tree;
 
 /* shortcuts */
 static inline void hidem(void)  { v_hide_c(C.P_handle);    }
@@ -452,6 +452,8 @@ void *	lookup_xa_data_byidname	(struct xa_data_hdr **list, long id, char *name);
 void	add_xa_data		(struct xa_data_hdr **list, void *_data, long id, char *name, void _cdecl(*destruct)(void *d));
 void	remove_xa_data		(struct xa_data_hdr **list, void *_data);
 void	delete_xa_data		(struct xa_data_hdr **list, void *_data);
+void	ref_xa_data		(struct xa_data_hdr **list, void *_data, short count);
+long	deref_xa_data		(struct xa_data_hdr **list, void *_data, short flags);
 void	free_xa_data_list	(struct xa_data_hdr **list);
 
 /* Global VDI calls */

@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
  *                                        2004 F.Naumann & O.Skancke
@@ -24,12 +24,9 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef _about_h
-#define _about_h
+#ifndef _render_obj_h_
+#define _render_obj_h_
 
-#include "global.h"
-#include "taskman.h"
+void main_object_render(struct xa_module_object_render **);
 
-void open_about(enum locks lock, struct xa_client *client, bool open);
-
-#endif /* _about_h */
+#endif /* _render_obj_h_ */

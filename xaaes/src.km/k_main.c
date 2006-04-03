@@ -77,12 +77,13 @@ ceExecfunc(enum locks lock, struct c_event *ce, bool cancel)
 {
 	if (!cancel)
 	{
-		void (*f)(enum locks, struct xa_client *);
+		void (*f)(enum locks, struct xa_client *, bool);
 
 		if ((f = ce->ptr1))
-			(*f)(lock, ce->client);
+			(*f)(lock, ce->client, ce->d0);
 	}
 }
+
 void
 cancel_cevents(struct xa_client *client)
 {
@@ -403,6 +404,8 @@ iBlock(struct xa_client *client, int which)
 			cancel_evnt_multi(client, 1);
 			cancel_mutimeout(client);
 		}
+// 		else
+// 			client->usr_evnt = 0;
 		return;
 	}
 	/*
@@ -426,7 +429,10 @@ iBlock(struct xa_client *client, int which)
 		DIAG((D_kern, client, "[%d]Blocked %s", which, c_owner(client)));
 		
 		if (client->tp_term)
+		{
+// 			display("iBlock - tp_term set");
 			return;
+		}
 		
 		do_block(client);
 
@@ -452,6 +458,8 @@ iBlock(struct xa_client *client, int which)
 				cancel_evnt_multi(client, 1);
  				cancel_mutimeout(client);
 			}
+// 			else
+// 				client->usr_evnt = 0;
 			return;
 		}
 
@@ -466,6 +474,8 @@ iBlock(struct xa_client *client, int which)
 		cancel_evnt_multi(client, 1);
 		cancel_mutimeout(client);
 	}
+// 	else
+// 		client->usr_evnt = 0;
 }
 void
 Unblock(struct xa_client *client, unsigned long value, int which)
@@ -612,6 +622,12 @@ struct display_alert_data
 
 static void display_alert(struct proc *p, long arg);
 
+static unsigned short alert_masks[] =
+{
+	0x0001, 0x0002, 0x0004, 0x0008,
+	0x0010, 0x0020, 0x0040, 0x0080
+};
+
 static void
 CE_fa(enum locks lock, struct c_event *ce, bool cancel)
 {
@@ -628,7 +644,93 @@ CE_fa(enum locks lock, struct c_event *ce, bool cancel)
 		}
 		else
 		{
-			do_form_alert(data->lock, ce->client, 1, data->buf, "XaAES");
+			struct xa_client *client = ce->client;
+			struct helpthread_data *htd = lookup_xa_data_byname(&client->xa_data, HTDNAME);
+			struct xa_window *wind = NULL;
+			char c;
+			unsigned short amask;
+
+			if (!htd || !htd->w_sysalrt)
+				open_systemalerts(0, client, false);
+
+			if (htd)
+				wind = htd->w_sysalrt;
+			
+			c = data->buf[1];
+			
+			if (wind)
+			{
+				struct widget_tree *wt;
+				OBJECT *form, *icon;
+
+				wt = get_widget(wind, XAW_TOOLBAR)->stuff;
+				form = wt->tree;
+				switch (c)
+				{
+				case '1':
+					icon = form + SALERT_IC1;
+					amask = alert_masks[1];
+					break;
+				case '2':
+					icon = form + SALERT_IC2;
+					amask = alert_masks[2];
+					break;
+				case '3':
+					icon = form + SALERT_IC3;
+					amask = alert_masks[3];
+					break;
+				case '4':
+					icon = form + SALERT_IC4;
+					amask = alert_masks[4];
+					break;
+				default:
+					icon = NULL;
+					amask = alert_masks[0];
+					break;
+				}
+				/* Add the log entry */
+				{
+					struct scroll_info *list = object_get_slist(form + SYSALERT_LIST);
+					struct sesetget_params p = { 0 }; //seget_entrybyarg p = { 0 };
+					struct scroll_content sc = {{ 0 }};
+			
+					sc.icon = icon;
+					sc.t.text = data->buf;
+					sc.t.strings = 1;
+					p.idx = -1;
+					p.arg.txt = "Alerts";
+					list->get(list, NULL, SEGET_ENTRYBYTEXT, &p);
+					list->add(list, p.e, NULL, &sc, p.e ? SEADD_CHILD: 0, 0, true);
+				}
+			}
+			else
+			{
+				switch (c)
+				{
+				case '1':
+					amask = alert_masks[1];
+					break;
+				case '2':
+					amask = alert_masks[2];
+					break;
+				case '3':
+					amask = alert_masks[3];
+					break;
+				case '4':
+					amask = alert_masks[4];
+					break;
+				default:
+					amask = alert_masks[0];
+					break;
+				}
+			}
+
+			if ((cfg.alert_winds & amask))
+			{
+				/* if an app left the mouse off */
+				forcem();
+				do_form_alert(data->lock, client, 1, data->buf, "XaAES");
+			}
 			kfree(data);
 		}
 	}
@@ -652,38 +754,22 @@ display_alert(struct proc *p, long arg)
 	{
 		struct display_alert_data *data = (struct display_alert_data *)arg;
 
-		/* if an app left the mouse off */
-		forcem();
-
-		/* Bring up an alert */
-		
-// 		do_form_alert(data->lock, C.Hlp, 1, data->buf, " XaAES ");
-// 		do_form_alert(data->lock, C.Aes, 1, data->buf);
+		/* Bring up an alert */		
 		post_cevent(C.Hlp, CE_fa, data,NULL, 0,0, NULL,NULL);
-
-// 		kfree(data);
 	}
 }
-
-static unsigned short alert_masks[] =
-{
-	0x0001, 0x0002, 0x0004, 0x0008,
-	0x0010, 0x0020, 0x0040, 0x0080
-};
 
 static void
 alert_input(enum locks lock)
 {
 	/* System alert? Alert and add it to the log */
 	long n;
-	unsigned short amask;
 
 	n = f_instat(C.alert_pipe);
+
 	if (n > 0)
 	{
 		struct display_alert_data *data;
-		OBJECT *form, *icon;
-		char c;
 
 		data = kmalloc(sizeof(*data) + n + 4);
 		if (!data)
@@ -691,61 +777,13 @@ alert_input(enum locks lock)
 			DIAGS(("kmalloc(%i) failed, out of memory?", sizeof(*data)));
 			return;
 		}
-
+// 		display("alert_input - %ld bytes in pipe, buff %lx", n, (long)data);
 		data->lock = lock;
 		f_read(C.alert_pipe, n, data->buf);
-
-		/* Pretty up the log entry with a nice
-		 * icon to match the one in the alert
-		 */
-		form = ResourceTree(C.Aes_rsc, SYS_ERROR);
-		c = data->buf[1];
-		switch(c)
-		{
-		case '1':
-			icon = form + SALERT_IC1;
-			amask = alert_masks[1];
-			break;
-		case '2':
-			icon = form + SALERT_IC2;
-			amask = alert_masks[2];
-			break;
-		case '3':
-			icon = form + SALERT_IC3;
-			amask = alert_masks[3];
-			break;
-		case '4':
-			icon = form + SALERT_IC4;
-			amask = alert_masks[4];
-			break;
-		default:
-			icon = NULL;
-			amask = alert_masks[0];
-			break;
-		}
-
-		/* Add the log entry */
-		{
-			struct scroll_info *list = object_get_slist(form + SYSALERT_LIST);
-			struct sesetget_params p = { 0 }; //seget_entrybyarg p = { 0 };
-			struct scroll_content sc = {{ 0 }};
-			
-			sc.icon = icon;
-			sc.t.text = data->buf;
-			sc.t.strings = 1;
-			p.idx = -1;
-			p.arg.txt = "Alerts";
-			list->get(list, NULL, SEGET_ENTRYBYTEXT, &p);
-			list->add(list, p.e, NULL, &sc, p.e ? SEADD_CHILD: 0, 0, true);
-		}
-
-		 /* Now you can always lookup the error in the log. */
-		DIAGS(("ALERT PIPE: '%s' %s", data->buf, update_locked() ? "pending" : "displayed"));
-
-// 		display("alert_winds %x, amask %x", cfg.alert_winds, amask);
-
-		if ((cfg.alert_winds & amask))
-			display_alert(NULL, (long)data);
+		data->buf[n] = '\0';
+// 		display("alert_intput %s", data->buf);
+		if (C.Hlp)
+			post_cevent(C.Hlp, CE_fa, data, NULL, 0,0, NULL,NULL);
 		else
 			kfree(data);
 	}
@@ -856,11 +894,14 @@ helpthread_entry(void *c)
 
 	if (client)
 	{
+		struct helpthread_data *htd;
 		AESPB *pb;
 		short *d;
 
 		if ((pb = kmalloc(sizeof(*pb) + ((12 + 32 + 32 + 32 + 32 + 32) * 2))))
 		{
+			volatile short *t = &client->tp_term;
+
 			d = (short *)((long)pb + sizeof(*pb));
 			pb->control = d;
 			d += 12;
@@ -874,7 +915,6 @@ helpthread_entry(void *c)
 			d += 32;
 			pb->addrout = (long *)d;
 		
-// 			strcpy(client->name, aeshlp_name);
 			client_nicename(client, aeshlp_name, true);
 			C.Hlp = client;
 			client->type = APP_AESTHREAD;
@@ -884,23 +924,41 @@ helpthread_entry(void *c)
 			client->options.app_opts |= XAAO_OBJC_EDIT;
 			client->status |= CS_NO_SCRNLOCK;
 			init_helpthread(NOLOCKING, client);
-			for (;;)
+			while (!*t)
 			{
 				(*client->block)(client, 0);
-				if (client->tp_term)
+				if (*t)
+				{
+// 					display("client will terminate");
 					break;
+				}
 			}
+// 			display("broke from while");
 		}
+
+// 		display("remove htd");
+		htd = lookup_xa_data_byname(&client->xa_data, HTDNAME);
+		if (htd)
+			delete_xa_data(&client->xa_data, htd);
+		
+		while (dispatch_cevent(client))
+			;
+		
+// 		display(" exit client");
 		exit_client(0, client, 0, false, false);
-		C.Hlp = NULL;
-		detach_extension(NULL, XAAES_MAGIC);	
+
+// 		display("detach extension");
+		detach_extension(NULL, XAAES_MAGIC);
+// 		display(" .. done");	
 	}
 	if (C.Hlp_pb)
 	{
+// 		display("free pb");
 		kfree(C.Hlp_pb);
 		C.Hlp_pb = NULL;
 	}
 	C.Hlp = NULL;
+// 	display("C.HLP exiting!!");
 	kthread_exit(0);
 }
 
@@ -1092,8 +1150,8 @@ CE_start_apps(enum locks lock, struct c_event *ce, bool cancel)
 	{
 		Path parms;
 		int i;
-		
 		lock = winlist|envstr|pending;
+		
 		/*
 		 * Load Accessories
 		 */
@@ -1119,7 +1177,7 @@ CE_start_apps(enum locks lock, struct c_event *ce, bool cancel)
 					parms[0] = sprintf(parms+1, sizeof(parms)-1, "%s", cfg.cnf_run_arg[i]);
 
 				launch(lock, 0, 0, 0, cfg.cnf_run[i], parms, C.Aes);
-				yield();
+// 				yield();
 			}
 		}
 		if (cfg.cnf_shell)
@@ -1131,7 +1189,7 @@ CE_start_apps(enum locks lock, struct c_event *ce, bool cancel)
 			C.DSKpid = launch(lock, 0, 0, 0, cfg.cnf_shell, parms, C.Aes);
 			if (C.DSKpid > 0)
 				strcpy(C.desk, cfg.cnf_shell);
-			yield();
+// 			yield();
 		}
 	}
 }
@@ -1369,14 +1427,19 @@ k_main(void *dummy)
 	while (!C.Hlp)
 		yield();
 
+// 	display("C.HLP started OK");
+
 	add_to_tasklist(C.Aes);
 	add_to_tasklist(C.Hlp);
 	
 	if (cfg.opentaskman)
-		post_cevent(C.Hlp, ceExecfunc, open_taskmanager,NULL, 0,0, NULL,NULL);
+		post_cevent(C.Hlp, ceExecfunc, open_taskmanager,NULL, 1,0, NULL,NULL);
 	
+// 	display("post CE_start_apps");
 	post_cevent(C.Hlp, CE_start_apps, NULL,NULL, 0,0, NULL,NULL);
-
+// 	display("done");
+// 	yield();
+// 	display("done 22");
 #if 0
 	/*
 	 * Load Accessories

@@ -369,7 +369,7 @@ kernel_key(enum locks lock, struct rawkey *key)
 			}
 			else if (C.reschange)
 			{
-				post_cevent(C.Hlp, ceExecfunc, C.reschange, NULL, 0,0, NULL, NULL);
+				post_cevent(C.Hlp, ceExecfunc, C.reschange, NULL, 1,0, NULL, NULL);
 			}
 // 			recover();
 			return true;
@@ -378,7 +378,7 @@ kernel_key(enum locks lock, struct rawkey *key)
 // 		case NK_ESC:
 		{
 otm:
-			post_cevent(C.Hlp, ceExecfunc, open_taskmanager,NULL, 0,0, NULL,NULL);
+			post_cevent(C.Hlp, ceExecfunc, open_taskmanager,NULL, 1,0, NULL,NULL);
 			return true;
 		}
 		case 'T':				/* ctrl+alt+T    Tidy screen */

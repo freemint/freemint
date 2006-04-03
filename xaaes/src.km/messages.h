@@ -71,13 +71,14 @@ struct xa_client;
 #define AMQ_REDRAW	1	/* AES redraw messages for client */
 #define AMQ_CRITICAL	2	/* Critical messages, preceedes the above queue types */
 #define AMQ_IREDRAW	3	/* Internal redraw messages */
+#define AMQ_LOSTRDRW	4	/* Lost redraw messages */
 
 #define AMQ_ANYCASE	0x8000	/* These messages are queued (on NORMal queue) no matter what state the client is in */
 
 #define QMF_NORM	0
 #define QMF_PREPEND	1	/* If set, insert message at start of queue, else add to queue */
 #define QMF_CHKDUP	2	/* If set, check for duplicate messages */
-
+#define QMF_NOCOUNT	4	/* If set, do not count */
 typedef void
 SendMessage(
 	enum locks lock,

@@ -203,12 +203,19 @@ get_coldist(struct rgb_1000 *src, struct rgb_1000 *dst)
 	return r;
 }
 
-static unsigned char
-fgetc(struct file *fp)
+static char
+fgetc(struct file *fp, long *count)
 {
-	unsigned char ret;
-	kernel_read(fp, &ret, 1);
-	return (volatile unsigned char)ret;
+	long r;
+	char ret;
+
+	r = kernel_read(fp, &ret, 1);
+	if (r != 1)
+		display("read error! %lx(%ld)", r, r);
+	else
+		*count += 1;
+	
+	return (volatile char)ret;
 }
 
 #if 0
@@ -668,56 +675,65 @@ remap_bitmap_colindexes(MFDB *map, unsigned char *cref)
 }
 /* Vertical replication codes are only allowed in certain places */
 static int
-read_gem_line( struct file *fp, unsigned char *line, unsigned long scan, int patlen, unsigned long *vrep, bool allow_vrep, bool d)
+read_gem_line( struct file *fp, unsigned char *line, unsigned long scan, int patlen, unsigned long *vrep, bool allow_vrep, bool planes, bool d, long *rcnt)
 {
 	unsigned char *l = line, *end = line + scan + 1;
+	unsigned char *endline = line + scan;
 
-// 	if (d) display("read gem line = %lx, scan = %ld, patlen = %d, vrep = %ld",
-// 		line, scan, patlen, *vrep);
+	if (d) display("read gem line = %lx, scan = %ld, patlen = %d, vrep = %ld",
+		line, scan, patlen, *vrep);
 
-	while (scan)
+	do //while (scan)
 	{
-		unsigned short b1 = fgetc(fp);
-// 		if (d) display("read %d", b1);
+		short b1 = fgetc(fp, rcnt);
+		
+		b1 &= 0xff;
+		if (d) display("read %d", b1);
 
 		if ( b1 == 0x80 )
 		/* Literal run */
 		{
-			unsigned short len = fgetc(fp);
-			scan -= len;
-// 			if (d) display("litteral %d bytes (scan = %ld)", len, scan);
-			while ( len-- > 0 )
+			short len = fgetc(fp, rcnt) & 0x00ff;
+			
+			if (d) display("litteral %d bytes (scan = %ld)", len, scan);
+			if (len > 0)
 			{
-				if (line > end || line < l)
+				scan -= len;
+				for (; len > 0; len--)
+// 				while ( len-- > 0 )
 				{
-					display("ERROR0 line=%lx, end=%lx", line, end);
-					return 0;
+					if (line > end || line < l)
+					{
+						display("ERROR0 line=%lx, end=%lx", line, end);
+						return 0;
+					}
+					*line++ = (unsigned char)fgetc(fp, rcnt);
 				}
-				*line++ = fgetc(fp);
 			}
 		}
 		else if ( b1 == 0x00 )
 		/* Pattern code */
 		{
-			unsigned short rep = fgetc(fp);
-// 			if (d) display("pattern rep %d", rep);
+			short rep = fgetc(fp, rcnt) & 0x00ff;
+			if (d) display("pattern rep %d, allowed = %s", rep, allow_vrep ? "Yes":"No");
 			if ( rep == 0 && allow_vrep )
 			/* SCANREPEAT Is actually a vertical replication */
 			{
-				if (fgetc(fp) != 0xff)
+				if ((unsigned char)fgetc(fp, rcnt) != 0xff)
 				{
 					display("ERROR1 wrong scanrep");
 					return 0;
 				}
-				*vrep = (unsigned long)fgetc(fp) - 1;
+				*vrep = (unsigned long)((unsigned char)fgetc(fp, rcnt) - 1);
+				if (d) display("repeat line %ld times", *vrep);
 			}
-			else /* PATTERN REPEAT */
+			else if (rep)/* PATTERN REPEAT */
 			{
 				int i;
 				
-// 				if (d) display("repeat pat_len %d %d times (%d bytes) scan %ld", patlen, rep, patlen * rep, scan);
+				if (d) display("repeat pat_len %d %d times (%d bytes) scan %ld", patlen, rep, patlen * rep, scan);
 				scan -= patlen * rep;
-// 				if (d) display("scan %ld", scan);
+				if (d) display("scan %ld", scan);
 				for ( i = 0; i < patlen; i++ )
 				{
 					if (line > end || line < l)
@@ -725,7 +741,7 @@ read_gem_line( struct file *fp, unsigned char *line, unsigned long scan, int pat
 						display("ERROR1 line=%lx, end=%lx", line, end);
 						return 0;
 					}
-					*line++ = fgetc(fp);
+					*line++ = (unsigned char)fgetc(fp, rcnt);
 				}
 				while ( rep > 1 )
 				{
@@ -746,10 +762,10 @@ read_gem_line( struct file *fp, unsigned char *line, unsigned long scan, int pat
 		/* Is a black/white (=0xff's/0x00's) run code */
 		{
 			unsigned char store = (unsigned char)((signed char)b1 >> 7 );
-			unsigned short am;
+			short am;
 
 			am = b1 & 0x7f;
-// 			if (d) display("store %d bytes with %d val", am, store);
+			if (d) display("store %d bytes with %d val", am, store);
 			if (line + am > end || line < l)
 			{
 				display("ERROR3 line=%lx, end=%lx", line, end);
@@ -759,27 +775,27 @@ read_gem_line( struct file *fp, unsigned char *line, unsigned long scan, int pat
 			while (am)
 				*line++ = store, am--;
 		}
-// 		if (d) display("scan = %ld", scan);
+		if (d) display("scan = %ld", scan);
 		allow_vrep = false;
 	}
-// 	if (d) display(" -- scan = %ld line %lx, wrote %ld bytes, vrep = %ld",
-// 		scan, line, line - l, *vrep);
+	while (line < endline);
+	
+	if (line != endline)
+		display("ERROR4: past buffer!");
+
+	if (d) display(" -- scan = %ld line %lx, wrote %ld bytes, vrep = %ld",
+		scan, line, line - l, *vrep);
 
 	return 1;
 }
 
 static long
-gem_rdata(struct file *fp, XA_XIMG_HEAD *pic)
+gem_rdata(struct file *fp, XA_XIMG_HEAD *pic, bool disp, long *rcnt)
 {
 	unsigned long scan = (pic->ximg.img_w + 7) / 8;
 	unsigned long wscan = ((pic->ximg.img_w + 15) >> 4) << 1;
-	long stride = ((pic->ximg.img_w * pic->ximg.planes + 31) / 32) * 4;
-	unsigned char /**line,*/ *data, *s, *e;
-
-// 	if (!(line = kmalloc(scan)))
-// 	{
-// 		return -1;
-// 	}
+	long ret = 0, stride = ((pic->ximg.img_w * pic->ximg.planes + 31) / 32) * 4;
+	unsigned char *data, *s, *e;
 
 	data = pic->addr;
 
@@ -788,7 +804,6 @@ gem_rdata(struct file *fp, XA_XIMG_HEAD *pic)
 // 	display("scan %ld, wscan %ld, stride %ld", scan, wscan, stride);
 
 // 	display("size of data should be %ld bytes", (pic->ximg.img_h * stride));
-
 	switch (pic->ximg.planes)
 	{
 		case 1:
@@ -806,7 +821,13 @@ gem_rdata(struct file *fp, XA_XIMG_HEAD *pic)
 					vrep--;
 				}
 				else
-					read_gem_line(fp, dst, scan, pic->ximg.pat_len, &vrep, true, false);
+				{
+					if (!(read_gem_line(fp, dst, scan, pic->ximg.pat_len, &vrep, true, true, false, rcnt)))
+					{
+						ret = -1;
+						break;
+					}
+				}
 			}
 			break;
 		}
@@ -815,26 +836,37 @@ gem_rdata(struct file *fp, XA_XIMG_HEAD *pic)
 			int i, y;
 			unsigned long vrep = 0L;
 			unsigned char *dst = data;
+			long readcount;
 
-			for (y = 0; y < pic->ximg.img_h; y++)
+			for (y = 0; ret == 0 && y < pic->ximg.img_h; y += (vrep + 1))
 			{
+				vrep = 0;
 				for (i = 0; i < pic->ximg.planes; i++)
 				{
-					dst = data + (y + (i * pic->ximg.img_h)) * wscan;
+					dst = data + (long)((long)y + ((long)i * pic->ximg.img_h)) * wscan;
+					
+					readcount = 0;
+// 					if (disp) display("LINE %d, plane %d", y, i);
+					if (!(read_gem_line(fp, dst, scan, pic->ximg.pat_len, &vrep, true, true, false/*disp*/, &readcount)))
+					{
+						display("2 ... 8b err0 - read %ld bytes", readcount);
+						*rcnt += readcount;
+						ret = -1;
+						break;
+					}
+// 					if (disp) display("read %ld bytes for this line", readcount);
+					*rcnt += readcount;
 					if (vrep)
 					{
-						if (dst < s || dst + stride > e)
+						long a;
+						if (vrep + y > pic->ximg.img_h)
+							vrep = pic->ximg.img_h - y;
+// 						display("repeat line %ld times", vrep);
+						for (a = 0; a < vrep; a++)
 						{
-							display("Er0");
-							return -1;
+							memcpy(dst + wscan, dst, wscan);
+							dst += wscan;
 						}
-						memcpy(dst - wscan, dst, wscan);
-						vrep--;
-					}
-					else
-					{
-						if (!(read_gem_line(fp, dst, scan, pic->ximg.pat_len, &vrep, true, false)))
-							return -1;
 					}
 				}
 			}
@@ -847,39 +879,53 @@ gem_rdata(struct file *fp, XA_XIMG_HEAD *pic)
 		   Of course, my guesswork says that the order is R,G,B and as
 		   GBM used B,G,R, i'll have to reverse the order. */
 		{
-			long y, sl;
+			long y, sl, rsl, remain;
 			unsigned long vrep = 0L;
 			unsigned char *dst;
 // 			ndisplay("24b img: ");
 			sl = (long)((pic->ximg.img_w + 15) & ~15) * 3;
-			
+			rsl = (long)((pic->ximg.img_w + 7) & ~7) * 3;
+			remain = sl - rsl;
+// 			sl = (long)pic->ximg.img_w * 3;			
 // 			display("stride %ld, sl %ld, scan %ld, wscan %ld", stride, sl, scan, wscan);
 
 			for (y = 0, dst = data; y < pic->ximg.img_h; y++, dst += sl)
 			{
 				if (vrep)
 				{
-					memcpy(dst - sl, data, sl);
+					memcpy(dst - sl, dst, sl);
 					vrep--;
 				}
 				else
 				{
-					if (!(read_gem_line(fp, dst, sl, pic->ximg.pat_len, &vrep, true, true)))
+// 					if (disp) display("LINE #%ld ------------------------------- ", y);
+					if (!(read_gem_line(fp, dst, rsl, pic->ximg.pat_len, &vrep, true, false, false/*disp*/, rcnt)))
 					{
 						display("24b err0");
-						return -1;
+						ret = -1; //return -1;
+						break;
 					}
+// 					if (remain && disp) display("got remains %ld bytes", remain);
 				}
 			}
+// 			if (disp)
 // 			display("start = %lx, end %lx(%lx) size = %ld(%ld)",
-// 				s, dst, dst + sl, dst - s, (dst+sl) - s);
+// 					s, dst, dst + sl, dst - s, (dst+sl) - s);
+			break;
 		}
-		break;
+		default:
+		{
+			ret = -1;
+			break;
+		}
 	}
+
+	if (disp)
+		display("ret %ld bytes from file", *rcnt);
 
 // 	kfree(line);
 
-	return 0L;
+	return ret;
 }
 
 /* Loads & depacks IMG (0 if succeded, else error). */
@@ -890,16 +936,33 @@ depack_img(char *name, XA_XIMG_HEAD *pic)
 	int width, word_aligned, pal_size;
 	long size, err;
 	struct file *fp = NULL;
+	bool disp = false;
+	long rcnt;
 
 	pic->addr = NULL;
 	pic->palette = NULL;
-
+#if 0
+	{
+		int slen = strlen(name);
+		char *fname = name + slen;
+		
+		while (*fname != '/' && *fname != '\\')
+			fname--;
+		fname++;
+		display(" --?? %s", fname);
+		if (!strcmp("wtitle.img", fname))
+		{
+			display("Yeahhah!");
+			disp = true;
+		}
+	}
+#endif
 	fp = kernel_open(name, O_RDONLY, &err, NULL);
 
 	if (fp)
 	{
 		/* read header info (bw & ximg) into image structure */
-		if ((kernel_read(fp, (char *)&(pic->ximg.version), sizeof(XIMG_header)) != sizeof(XIMG_header)))
+		if ((kernel_read(fp, (char *)&pic->ximg.version, sizeof(XIMG_header)) != sizeof(XIMG_header)))
 		{
 			goto end_depack;
 		}
@@ -933,10 +996,25 @@ depack_img(char *name, XA_XIMG_HEAD *pic)
 			if (!(pic->addr = kmalloc(size)))
 				goto end_depack;
 
-			kernel_lseek(fp, 2L * pic->ximg.length, 0);
+			if (disp) display("Seek to %ld", 2L * pic->ximg.length);
+			rcnt = 2L * pic->ximg.length;
+			kernel_lseek(fp, rcnt, SEEK_SET);
 
-			if (gem_rdata(fp, pic) == -1L)
+			if (disp)
+			{
+				struct ximg_header *ximg = &pic->ximg;
+				display("version %d\r\n hlen    %d\r\n planes  %d\r\n pat_len %d\r\n pix_w   %d\r\n pix_h   %d\r\n img_w   %d\r\n img_h   %d\r\n magic   %lx\r\n paltype %d",
+					ximg->version, ximg->length, ximg->planes, ximg->pat_len, ximg->pix_w, ximg->pix_h, ximg->img_w, ximg->img_h,
+					ximg->magic, ximg->paltype);
+			}
+			
+			if (gem_rdata(fp, pic, disp, &rcnt) == -1L)
+			{
+				if (disp) display("read %ld bytes from file", rcnt);
 				goto end_depack;
+			}
+			else if (disp)
+				display("read %ld bytes from file", rcnt);
 			
 		}
 	}
@@ -1157,8 +1235,334 @@ static to_x_bit *f_to32[] =
 	toIbs32b
 };
 
+void _cdecl
+create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, short *steps, short w, short h )
+{
+	pm->mfdb.fd_addr = NULL;
+
+	if (screen.pixel_fmt >= 0)
+	{
+		if (screen.planes > 8)
+		{
+			int i, j, pixelsize;
+			char *data, *ed;
+			char *d;
+			short wdwidth;
+			long size, scanlen, red, green, blue, ired, igreen, iblue;
+			void (*to)(struct rgb_1000 *pal, void **imgdata);
+			struct rgb_1000 col;
+			
+			wdwidth = (w + 15) >> 4;
+// 			size = 2L * (long)wdwidth * (long)(screen.planes == 15 ? 16 : screen.planes) * h;
+// 			display("size0 %ld", size);
+			switch (screen.planes)
+			{
+				case 15: to = f_to15[screen.pixel_fmt]; pixelsize = 2; break;
+				case 16: to = f_to16[screen.pixel_fmt]; pixelsize = 2; break;
+				case 24: to = f_to24[screen.pixel_fmt]; pixelsize = 3; break; //toI24b; break;
+				case 32: to = f_to32[screen.pixel_fmt]; pixelsize = 4; break; //toM32b; break;
+				default: to = NULL; pixelsize = 0; break;
+			}
+			scanlen = (long)pixelsize * ((w + 15) & ~15);
+			size = (long)scanlen * h;
+// 			display("size1 %ld, scanlen = %ld", size, scanlen);
+			
+			if (!to || !(data = kmalloc(size)))
+				return;
+// 			display("data %lx, size %ld, to = %lx", data, size, to);
+
+			pm->d_w = w;
+			pm->d_h = h;
+			pm->mfdb.fd_addr = data; //(void *)((long)pm + sizeof(*pm));
+			pm->mfdb.fd_w = (w + 15) & ~15;
+			pm->mfdb.fd_h = h;
+			pm->mfdb.fd_wdwidth = wdwidth;
+			pm->mfdb.fd_stand = 0;
+			pm->mfdb.fd_nplanes = screen.planes == 15 ? 16 : screen.planes;
+			pm->mfdb.fd_r1 = pm->mfdb.fd_r2 = pm->mfdb.fd_r3 = 0;
+			
+			scanlen = pm->mfdb.fd_w * pixelsize;
+
+			
+			data = pm->mfdb.fd_addr;
+			ed = data + size;
+
+			switch (method)
+			{
+			
+			case 0:
+			{
+				ired = ((long)(c[1].red - c[0].red) << 16) / h;
+				igreen = ((long)(c[1].green - c[0].green) << 16) / h;
+				iblue = ((long)(c[1].blue - c[0].blue) << 16) / h;
+				
+				red = (long)c[0].red << 16;
+				green = (long)c[0].green << 16;
+				blue = (long)c[0].blue << 16;
+			
+				col = c[0];
+				for (i = 0; i < h; i++)
+				{
+					d = data;
+					col.red = red >> 16;
+					col.green = green >> 16;
+					col.blue = blue >> 16;
+					for (j = 0; j < w; j++)
+					{
+						(*to)(&col, (void **)&d);
+					}
+					red += ired;
+					green += igreen;
+					blue += iblue;
+				
+					data += scanlen;
+				}
+				break;
+			}
+			case 1:
+			{
+				long rgb[3];
+			
+				ired = ((long)(c[1].red - c[0].red) << 16) / w;
+				igreen = ((long)(c[1].green - c[0].green) << 16) / w;
+				iblue = ((long)(c[1].blue - c[0].blue) << 16) / w;
+				red = (long)c[0].red << 16;
+				green = (long)c[0].green << 16;
+				blue = (long)c[0].blue << 16;
+			
+				rgb[0] = red;
+				rgb[1] = green;
+				rgb[2] = blue;
+				for (i = 0; i < h; i++)
+				{
+					d = data;
+					for (j = 0; j < w; j++)
+					{
+						col.red = red >> 16;
+						col.green = green >> 16;
+						col.blue = blue >> 16;
+						(*to)(&col, (void **)&d);
+
+						red += ired;
+						green += igreen;
+						blue += iblue;
+					}
+					red = rgb[0];
+					green = rgb[1];
+					blue = rgb[2];
+					col = c[0];
+					
+					data += scanlen;
+				}
+				break;
+			}
+			case 2:
+			{
+				struct rgb_1000 strt;
+				long rgb[3];
+				long yred, ygreen, yblue;
+
+				yred = ((long)(c[1].red - c[0].red) << 16)  / h;
+				ygreen = ((long)(c[1].green - c[0].green) << 16) / h;
+				yblue = ((long)(c[1].blue - c[0].blue) << 16) / h;
+								
+				
+				col = strt = c[0]; //*start;
+				rgb[0] = (long)strt.red << 16;
+				rgb[1] = (long)strt.green << 16;
+				rgb[2] = (long)strt.blue << 16;
+				
+				for (i = 0; i < h; i++)
+				{
+					d = data;
+
+					ired = ((long)(c[1].red - strt.red) << 16) / w;
+					igreen = ((long)(c[1].green - strt.green) << 16) / w;
+					iblue = ((long)(c[1].blue - strt.blue) << 16) / w;
+					
+					red = (long)strt.red << 16;
+					green = (long)strt.green << 16;
+					blue = (long)strt.blue << 16;
+			
+					for (j = 0; j < w; j++)
+					{
+						col.red = red >> 16;
+						col.green = green >> 16;
+						col.blue = blue >> 16;
+						if (d > ed)
+							display("What the HELL!!!");
+						else
+							(*to)(&col, (void **)&d);
+
+						red += ired;
+						green += igreen;
+						blue += iblue;
+					}
+					
+					rgb[0] += yred;
+					rgb[1] += ygreen;
+					rgb[2] += yblue;
+					
+					strt.red = rgb[0] >> 16;
+					strt.green = rgb[1] >> 16;
+					strt.blue = rgb[2] >> 16;
+					
+					data += scanlen;
+				}
+				break;
+			}
+			case 3:
+			{
+				short h1, h2, step = steps[0];
+				
+				if (step < 0)
+				{
+					step = -step;
+					if (step > 100)
+						step = 100;
+					h1 = ((long)h * step) / 100;
+					h2 = h - h1;
+				}
+				else
+				{
+					h1 = step;
+					h2 = h - step;
+				}
+				
+				ired = ((long)(c[1].red - c[0].red) << 16) / h1;
+				igreen = ((long)(c[1].green - c[0].green) << 16) / h1;
+				iblue = ((long)(c[1].blue - c[0].blue) << 16) / h1;
+				
+				red = (long)c[0].red << 16;
+				green = (long)c[0].green << 16;
+				blue = (long)c[0].blue << 16;
+					
+					col.red = red >> 16;
+					col.green = green >> 16;
+					col.blue = blue >> 16;
+				
+				for (i = 0; i < h1; i++)
+				{
+					d = data;
+					
+					for (j = 0; j < w; j++)
+					{
+						if (d > ed)
+							display("What the HELL!!!");
+						else
+							(*to)(&col, (void **)&d);
+					}
+					red += ired;
+					green += igreen;
+					blue += iblue;
+					col.red = red >> 16;
+					col.green = green >> 16;
+					col.blue = blue >> 16;
+				
+					data += scanlen;
+				}
+				
+				ired = ((long)(c[2].red - col.red) << 16) / h2;
+				igreen = ((long)(c[2].green - col.green) << 16) / h2;
+				iblue = ((long)(c[2].blue - col.blue) << 16) / h2;
+			
+				red = (long)col.red << 16;
+				green = (long)col.green << 16;
+				blue = (long)col.blue << 16;
+					col.red = red >> 16;
+					col.green = green >> 16;
+					col.blue = blue >> 16;
+				for (i = 0; i < h2; i++)
+				{
+					d = data;
+					for (j = 0; j < w; j++)
+					{
+						if (d > ed)
+							display("What the HELL!!!");
+						else
+							(*to)(&col, (void **)&d);
+					}
+					red += ired;
+					green += igreen;
+					blue += iblue;
+					col.red = red >> 16;
+					col.green = green >> 16;
+					col.blue = blue >> 16;
+				
+					data += scanlen;
+				}
+				break;
+			}
+			case 4:
+			{
+				short w1, w2, step = steps[0];
+				if (step < 0)
+				{
+					step = -step;
+					if (step > 100)
+						step = 100;
+					w1 = ((long)w * step) / 100;
+					w2 = w - w1;
+				}
+				else
+				{
+					w1 = step;
+					w2 = w - step;
+				}
+				
+				for (i = 0; i < h; i++)
+				{
+					d = data;
+
+					ired =   ((long)(c[1].red - c[0].red) << 16) / w1;
+					igreen = ((long)(c[1].green - c[0].green) << 16) / w1;
+					iblue =  ((long)(c[1].blue - c[0].blue) << 16) / w1;
+					
+					red =	(long)c[0].red << 16;
+					green =	(long)c[0].green << 16;
+					blue =	(long)c[0].blue << 16;
+					for (j = 0; j < w1; j++)
+					{
+						col.red = red >> 16;
+						col.green = green >> 16; 
+						col.blue = blue >> 16;
+						(*to)(&col, (void **)&d);
+						red += ired;
+						green += igreen;
+						blue += iblue;
+					}
+					
+					ired =   ((long)(c[2].red - col.red) << 16) / w2;
+					igreen = ((long)(c[2].green - col.green) << 16) / w2;
+					iblue =  ((long)(c[2].blue - col.blue) << 16) / w2;
+					
+					red =   (long)col.red << 16;
+					green = (long)col.green << 16;
+					blue =  (long)col.blue << 16;
+					for (j = 0; j < w2; j++)
+					{
+						col.red = red >> 16;
+						col.green = green >> 16; 
+						col.blue = blue >> 16;
+						(*to)(&col, (void **)&d);
+						red += ired;
+						green += igreen;
+						blue += iblue;
+					}
+					data += scanlen;
+				}		
+				break;
+				default:;
+				}
+			}
+			if (data > ed || d > ed)
+				display("end %lx, data = %lx, d = %lx", ed, data, d);
+		}
+	}
+}
+
 void
-load_image(char *name, MFDB *mimg)
+load_image(char *name, XAMFDB *mimg)
 {
 	XA_XIMG_HEAD xa_img;
 	struct ximg_header *ximg = &xa_img.ximg;
@@ -1166,38 +1570,39 @@ load_image(char *name, MFDB *mimg)
 
 	display("load_img: '%s'", name);
 
-// 	display("load_img: file %s", name);
+	display("load_img: file %s", name);
 
 	ndisplay("  depacking...");
 	depack_img(name, &xa_img);
-	mimg->fd_addr = NULL;
+	mimg->mfdb.fd_addr = NULL;
 
 	if (xa_img.addr)
 	{
-		MFDB msrc;
+		XAMFDB msrc;
 		
 // 		display("version %d\r\n hlen    %d\r\n planes  %d\r\n pat_len %d\r\n pix_w   %d\r\n pix_h   %d\r\n img_w   %d\r\n img_h   %d\r\n magic   %lx\r\n paltype %d",
 // 			ximg->version, ximg->length, ximg->planes, ximg->pat_len, ximg->pix_w, ximg->pix_h, ximg->img_w, ximg->img_h,
 // 			ximg->magic, ximg->paltype);
 		ndisplay("OK!");
-		msrc.fd_addr	= xa_img.addr;
-		msrc.fd_w	= ximg->img_w;
-		msrc.fd_h	= ximg->img_h;
-		msrc.fd_wdwidth = (ximg->img_w + 15) >> 4;
-		msrc.fd_stand	= 1;
-		msrc.fd_nplanes = ximg->planes;
-		msrc.fd_r1	= msrc.fd_r2 = msrc.fd_r3 = 0;
+		msrc.mfdb.fd_addr	= xa_img.addr;
+		msrc.mfdb.fd_w		= (ximg->img_w + 15) & ~15;
+		msrc.mfdb.fd_h		= ximg->img_h;
+		msrc.mfdb.fd_wdwidth	= (ximg->img_w + 15) >> 4;
+		msrc.mfdb.fd_stand	= 1;
+		msrc.mfdb.fd_nplanes	= ximg->planes;
+		msrc.mfdb.fd_r1 = msrc.mfdb.fd_r2 = msrc.mfdb.fd_r3 = 0;
+		msrc.d_w = ximg->img_w;
+		msrc.d_h = ximg->img_h;
 
 		if (xa_img.palette)
 		{
-
 			ndisplay(", has palette");
 			if (ximg->planes <= 8 && screen.planes == 8)
 			{
 				unsigned char cref[256];
 				ndisplay(",remap bitmap...");
-				build_pal_xref((struct rgb_1000 *)xa_img.palette, screen.palette, (unsigned char *)&cref, (1 << msrc.fd_nplanes));
-				remap_bitmap_colindexes(&msrc, (unsigned char *)&cref);
+				build_pal_xref((struct rgb_1000 *)xa_img.palette, screen.palette, (unsigned char *)&cref, (1 << msrc.mfdb.fd_nplanes));
+				remap_bitmap_colindexes(&msrc.mfdb, (unsigned char *)&cref);
 				ndisplay("OK!");
 			}
 		}
@@ -1209,30 +1614,30 @@ load_image(char *name, MFDB *mimg)
 			long newsize, oldsize;
 			char *newdata;
 
-			newsize = (long)(((msrc.fd_w + 15) >> 4) << 1) * msrc.fd_h * 8;
-			oldsize = (long)(((msrc.fd_w + 15) >> 4) << 1) * msrc.fd_h * msrc.fd_nplanes;
+			newsize = (long)(((msrc.mfdb.fd_w + 15) >> 4) << 1) * msrc.mfdb.fd_h * 8;
+			oldsize = (long)(((msrc.mfdb.fd_w + 15) >> 4) << 1) * msrc.mfdb.fd_h * msrc.mfdb.fd_nplanes;
 			display("oldsize = %ld, newsize = %ld", oldsize, newsize);
 			if ((newdata = kmalloc(newsize)))
 			{
 				bzero(newdata, newsize);
-				memcpy(newdata, msrc.fd_addr, oldsize);
-				kfree(msrc.fd_addr);
-				msrc.fd_addr = xa_img.addr = newdata;
-				msrc.fd_nplanes = 8;
+				memcpy(newdata, msrc.mfdb.fd_addr, oldsize);
+				kfree(msrc.mfdb.fd_addr);
+				msrc.mfdb.fd_addr = xa_img.addr = newdata;
+				msrc.mfdb.fd_nplanes = 8;
 			}
 			else
 			{
 				kfree(xa_img.addr);
-				mimg->fd_addr = NULL;
+				mimg->mfdb.fd_addr = NULL;
 				return;
 			}
 		}
 
 		*mimg = msrc;
-		mimg->fd_nplanes = screen.planes;
-		bmsize = (long)((long)mimg->fd_wdwidth * (mimg->fd_nplanes == 15 ? 16 : mimg->fd_nplanes) * mimg->fd_h) << 1;
+		mimg->mfdb.fd_nplanes = screen.planes;
+		bmsize = (long)((long)mimg->mfdb.fd_wdwidth * (mimg->mfdb.fd_nplanes == 15 ? 16 : mimg->mfdb.fd_nplanes) * mimg->mfdb.fd_h) << 1;
 
-		if ((mimg->fd_addr = kmalloc(bmsize)))
+		if ((mimg->mfdb.fd_addr = kmalloc(bmsize)))
 		{
 // 			display("alloc %ld bytes at %lx for bitmap", bmsize, mimg->fd_addr);
 // 			display(" transform into %lx", mimg->fd_addr);
@@ -1256,7 +1661,7 @@ load_image(char *name, MFDB *mimg)
 						default: to = NULL; break;
 					}
 					
-					switch (msrc.fd_nplanes)
+					switch (msrc.mfdb.fd_nplanes)
 					{
 						case 1 ... 8: from = from8b;  break;
 // 						case 15: from = from15b; break;
@@ -1266,8 +1671,8 @@ load_image(char *name, MFDB *mimg)
 					}
 					if (from && to)
 					{
-						ndisplay(", tranform %d -> %d bpp...", msrc.fd_nplanes, screen.planes);
-						(*from)(to, (struct rgb_1000 *)xa_img.palette, &msrc, mimg);
+						ndisplay(", tranform %d -> %d bpp...", msrc.mfdb.fd_nplanes, screen.planes);
+						(*from)(to, (struct rgb_1000 *)xa_img.palette, &msrc.mfdb, &mimg->mfdb);
 						ndisplay("OK!");
 						fail = false;
 					}
@@ -1275,31 +1680,31 @@ load_image(char *name, MFDB *mimg)
 				if (fail)
 				{
 					if (!from)
-						display("\r\n  cannot handle %d bpp images!", msrc.fd_nplanes);
+						display("\r\n  cannot handle %d bpp images!", msrc.mfdb.fd_nplanes);
 					if (!to)
 						display("\r\n  cannot handle %d bpp screen modes!", screen.planes);
 					if (screen.pixel_fmt < 0)
 						display("\r\n unknown pixel format - cannot transform");
-					kfree(mimg->fd_addr);
-					mimg->fd_addr = NULL;
+					kfree(mimg->mfdb.fd_addr);
+					mimg->mfdb.fd_addr = NULL;
 				}
 			}
 			else
 			{
 				ndisplay(", vr_trnfm()..."); 
-				vr_trnfm(C.P_handle, &msrc, mimg);
+				vr_trnfm(C.P_handle, &msrc.mfdb, &mimg->mfdb);
 				ndisplay("OK!");
 			}
 			kfree(xa_img.addr);	
 		}
 		else
 		{
-			ndisplay(", inline vr_trnfm() at %lx...", msrc.fd_addr);
-			mimg->fd_addr = msrc.fd_addr;
-			vr_trnfm(C.P_handle, &msrc, mimg);
+			ndisplay(", inline vr_trnfm() at %lx...", msrc.mfdb.fd_addr);
+			mimg->mfdb.fd_addr = msrc.mfdb.fd_addr;
+			vr_trnfm(C.P_handle, &msrc.mfdb, &mimg->mfdb);
 			ndisplay("OK!");
 		}
-		mimg->fd_stand = 0;
+		mimg->mfdb.fd_stand = 0;
 	
 		if (xa_img.palette)
 			kfree(xa_img.palette);

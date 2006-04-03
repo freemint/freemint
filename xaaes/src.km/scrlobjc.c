@@ -52,10 +52,10 @@ static void entry_action(struct scroll_info *list, struct scroll_entry *this, co
 static struct xa_wtxt_inf default_fnt =
 {
  WTXT_NOCLIP,
-/* id  pnts efx   fgc      bgc */
- {  1,  10,   MD_TRANS, 0, G_BLACK, G_WHITE },	/* Normal */
- {  1,  10,   MD_TRANS, 0, G_WHITE, G_BLACK },	/* Selected */
- {  1,  10,   MD_TRANS, 0, G_BLACK, G_WHITE },	/* Highlighted */
+/* id  pnts  flags wrm,     efx   fgc      bgc   banner x_3dact y_3dact texture */
+ {  1,  10, 0,   MD_TRANS, 0, G_BLACK, G_WHITE, G_WHITE,   0,      0,    NULL},	/* Normal */
+ {  1,  10, 0,   MD_TRANS, 0, G_WHITE, G_BLACK, G_WHITE,   0,      0,    NULL},	/* Selected */
+ {  1,  10, 0,   MD_TRANS, 0, G_BLACK, G_WHITE, G_WHITE,   0,      0,    NULL},	/* Highlighted */
 
 };
 static struct xa_wcol_inf default_col =
@@ -673,6 +673,8 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this, str
 						
 						list->nil_wt->tree = c->c.icon.icon;
 						list->nil_wt->owner = list->wt->owner;
+						list->nil_wt->objcr_api = list->wt->owner->objcr_api;
+						list->nil_wt->objcr_theme = list->wt->owner->objcr_theme;
 						display_object(lock, list->nil_wt, v, aesobj(list->nil_wt->tree, 0), ix, iy, 12);	
 					}
 					break;
@@ -713,6 +715,8 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this, str
 							
 							list->nil_wt->tree = c->c.text.icon.icon;
 							list->nil_wt->owner = list->wt->owner;
+							list->nil_wt->objcr_api = list->wt->owner->objcr_api;
+							list->nil_wt->objcr_theme = list->wt->owner->objcr_theme;
 							display_object(lock, list->nil_wt, v, aesobj(list->nil_wt->tree, 0), ix, iy, 12);
 							dx += c->c.text.icon.r.w;
 							tw -= c->c.text.icon.r.w;
@@ -1724,7 +1728,7 @@ m_state_done:
 										hidem();
 										if (d.h > 4)
 										{
-											form_copy(&s, &d);
+											(*list->vdi_settings->api->form_copy)(&s, &d);
 											s.h = d.y - s.y;
 										}
 										else
@@ -1773,7 +1777,7 @@ m_state_done:
 										{
 											d.y += ((r.y + entry->r.h) - list->start_y);
 											d.h = s.h;
-											form_copy(&s, &d);
+											(*list->vdi_settings->api->form_copy)(&s, &d);
 											d.h = s.y - d.y;
 											d.y += s.h;
 										}
@@ -2585,7 +2589,7 @@ add_scroll_entry(SCROLL_INFO *list,
 									d = s;
 									d.y += r.h;
 									if (d.h > 0)
-										form_copy(&s, &d);
+										(*list->vdi_settings->api->form_copy)(&s, &d);
 								}
 								list->redraw(list, new);
 								showm();
@@ -2935,7 +2939,7 @@ del_scroll_entry(struct scroll_info *list, struct scroll_entry *e, short redraw)
 				d = s;
 				s.y += sy;
 				d.y += dy;
-				form_copy(&s, &d);
+				(*list->vdi_settings->api->form_copy)(&s, &d);
 				d.y += (d.h - 1);
 				d.h = list->wi->wa.h - (d.y - list->wi->wa.y) + 1;
 				draw_slist(0, list, NULL, &d);
@@ -3037,7 +3041,7 @@ scroll_up(SCROLL_INFO *list, long num, bool rdrw)
 			d = s;
 			s.y += max;
 			hidem();
-			form_copy(&s, &d);
+			(*list->vdi_settings->api->form_copy)(&s, &d);
 			d.y += (d.h - 1);
 			d.h = max + 1;
 			draw_slist(0, list, NULL, &d);
@@ -3113,7 +3117,7 @@ scroll_down(SCROLL_INFO *list, long num, bool rdrw)
 			d = s;
 			d.y += max;
 			hidem();
-			form_copy(&s, &d);
+			(*list->vdi_settings->api->form_copy)(&s, &d);
 			s.h = max;
 			draw_slist(0, list, NULL, &s);
 			(*list->vdi_settings->api->clear_clip)(list->vdi_settings);
@@ -3155,7 +3159,7 @@ scroll_left(SCROLL_INFO *list, long num, bool rdrw)
 			d = s;
 			s.x += max;
 			hidem();
-			form_copy(&s, &d);
+			(*list->vdi_settings->api->form_copy)(&s, &d);
 			d.x += d.w;
 			d.w = max;
 			draw_slist(0, list, NULL, &d);
@@ -3194,7 +3198,7 @@ scroll_right(SCROLL_INFO *list, long num, bool rdrw)
 			d = s;
 			d.x += max;
 			hidem();
-			form_copy(&s, &d);
+			(*list->vdi_settings->api->form_copy)(&s, &d);
 			s.w = max;
 			draw_slist(0, list, NULL, &s);
 			(*list->vdi_settings->api->clear_clip)(list->vdi_settings);
@@ -3702,7 +3706,6 @@ unset_G_SLIST(struct scroll_info *list)
 
 	DIAG((D_objc, NULL, "unset_G_SLIST: list=%lx, obtree=%lx, index=%d",
 		list, list->wt->tree, list->item));
-
 	this = list->start;
 	while (this)
 	{

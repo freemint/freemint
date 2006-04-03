@@ -50,9 +50,11 @@
 static void
 CE_at_terminate(enum locks lock, struct c_event *ce, bool cancel)
 {
+// 	display("at_terminate %d, %lx", cancel, ce->client);
 	if (!cancel)
-		ce->client->tp_term = 1;
+		ce->client->tp_term = 3;
 }
+
 /*
  * Cleanup on exit
  */
@@ -62,6 +64,9 @@ k_shutdown(void)
 	struct xa_vdi_settings *v = C.Aes->vdi_settings;
 
 	DIAGS(("Cleaning up ready to exit...."));
+// 	display("Cleaning up ready to exit....");
+#if 1
+// 	display("wait for HLP");
 	if (C.Hlp)
 	{
 		volatile struct xa_client **h = (volatile struct xa_client **)&C.Hlp;
@@ -72,29 +77,39 @@ k_shutdown(void)
 			yield();
 		}
 	}
+#endif
+	/* To demonstrate the working on multiple resources. */
+	while (C.Aes->resources)
+		FreeResources(C.Aes, NULL, NULL);
+	
 	DIAGS(("Removing all remaining windows"));
+// 	display("Removing all remaining windows");
 	remove_all_windows(NOLOCKING, NULL);
 	DIAGS(("Freeing delayed deleted windows"));
+// 	display("Freeing delayed delete windows");
 	do_delayed_delete_window(NOLOCKING);
 	DIAGS(("Closing and deleting root window"));
+// 	display("Closing and deleting root window");
+		
 	if (root_window)
 	{
 		close_window(NOLOCKING, root_window);
 		delete_window(NOLOCKING, root_window);
 		root_window = NULL;
 	}
-
 	DIAGS(("shutting down aes thread .."));
+// 	display("waitfor tp");
 	if (C.Aes->tp)
 	{
 		volatile struct proc **h = (volatile struct proc **)&C.Aes->tp;
 		post_cevent(C.Aes, CE_at_terminate, NULL,NULL, 0,0, NULL,NULL);
 		while (*h)
 		{
+			Unblock(C.Aes, 0, 0);
 			yield();
 		}
 	}
-	
+// 	display("shutting down");
 	DIAGS(("Freeing Aes environment"));
 	if (C.env)
 	{
@@ -103,10 +118,14 @@ k_shutdown(void)
 	}
 
 	DIAGS(("Freeing Aes resources"));
-
+#if 0
 	/* To demonstrate the working on multiple resources. */
 	while (C.Aes->resources)
 		FreeResources(C.Aes, NULL, NULL);
+	
+	while (dispatch_cevent(C.Aes))
+		yield();
+#endif	
 	/* just to be sure */
 	if (C.button_waiter == C.Aes)
 		C.button_waiter = NULL;
@@ -137,6 +156,7 @@ k_shutdown(void)
 		C.Aes->wtheme_handle = NULL;
 	}
 	
+	
 	/*
 	 * Free the wind_calc() cache
 	 */
@@ -147,9 +167,12 @@ k_shutdown(void)
 	 */
 	DIAGS(("free wtlist"));
 	free_wtlist(C.Aes);
-	
-// 	exit_ob_render();
-	
+	/*
+	 * Exit the object render module
+	 */
+	exit_client_objcrend( C.Aes );
+	(*C.Aes->objcr_module->exit_module)();
+
 	DIAGS(("free C.Aes"));
 	kfree(C.Aes);
 	C.Aes = NULL;

@@ -984,8 +984,12 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				RECT or;
 
 				DIAGS(("  --- Set new toolbar"));
-				ob_rectangle(ob, aesobj(ob, 0), &or);
-				wt = set_toolbar_widget(lock, w, client, ob, aesobj(ob, pb->intin[5]), 0, true, NULL, &or);
+				wt = obtree_to_wt(client, ob);
+				if (!wt)
+					wt = new_widget_tree(client, ob);
+				assert(wt);
+				obj_rectangle(wt, aesobj(ob, 0), &or);
+				wt = set_toolbar_widget(lock, w, client, ob, aesobj(ob, pb->intin[5]), 0, STW_ZEN, NULL, &or);
 				rp_2_ap_cs(w, widg, NULL);
 				if (wt && wt->tree)
 				{
