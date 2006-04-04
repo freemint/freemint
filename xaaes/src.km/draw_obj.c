@@ -613,8 +613,10 @@ display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, struct x
 
 	/* Fill in the object display parameter structure */
 	wt->current = item;
-	wt->parent_x = parent_x;
-	wt->parent_y = parent_y;
+	wt->r_parent.x = parent_x;
+	wt->r_parent.y = parent_y;
+// 	wt->parent_x = parent_x;
+// 	wt->parent_y = parent_y;
 	/* absolute RECT, ready for use everywhere. */
 	wt->r = r;
 	wt->state_mask = &state_mask;
