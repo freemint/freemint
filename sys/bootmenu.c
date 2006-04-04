@@ -57,6 +57,8 @@ short load_auto = 1;		/* Flag: load AUTO programs appearing after us (if 1) */
 static short save_ini = 1;	/* Flag: write new ini file while exiting bootmenu (if 1) */
 static short boot_delay = 4;	/* boot delay in seconds */
 static const char *mint_ini = "mint.ini";
+static short use_cmdline = 0;	/* use command line (only provided by EmuTOS if bootstrapped */
+static char  *argsptr = 0L;
 
 
 /* Helper function for getdelim() below */
@@ -65,8 +67,15 @@ get_a_char(int fd)
 {
 	char ch;
 
-	if (TRAP_Fread(fd, 1, &ch) == 1)
-		return (int)ch;
+	if (fd > 0) {
+		/* read mint.ini character */
+		if (TRAP_Fread(fd, 1, &ch) == 1)
+			return (int)ch;
+	} else {
+		/* next args character */
+		if ( *argsptr )
+			return *argsptr++;
+	}
 	return -1;
 }
 
@@ -456,60 +465,78 @@ error:
 	stop_and_ask();
 }
 
+static void
+read_ini_file (short fd, char delimiter)
+{
+	char *s, line[MAX_CMD_LEN];
+
+	while (getdelim(line, sizeof(line), delimiter, fd) != -1)
+	{
+		if (line[0] && (line[0] != '#') && strchr(line, '='))
+		{
+			int x;
+
+			strupr(line);
+			x = 0;
+			while (ini_keywords[x])
+			{
+				s = strstr(line, ini_keywords[x]);
+				if (s && (s == line))
+				{
+					s = strchr(line, '=');
+					if (s)
+					{
+						s++;
+						do_func[x](s);
+						break;
+					}
+					else
+						boot_printf(MSG_init_no_value, mint_ini, line);
+				}
+				x++;
+			}
+
+			if (ini_keywords[x] == NULL)
+				boot_printf(MSG_init_unknown_cmd, mint_ini, line);
+		}
+	}
+
+	boot_printf(MSG_init_rw_done);
+}
+
 void
 read_ini (void)
 {
 	char ini_file[128];
 	long r;
 
-	ksprintf(ini_file, sizeof(ini_file), "%s%s", sysdir, mint_ini);
-	boot_printf(MSG_init_read, ini_file);
+	/* check and read the command line arguments - if not empty */
+	argsptr = (*(BASEPAGE**)(*((long **)(0x4f2L)))[10])->p_cmdlin;
+	if ( argsptr && strlen(argsptr) > 0 ) {
+		use_cmdline = 1;
+		save_ini = 0;
 
-	r = TRAP_Fopen(ini_file, 0);
-	if (r < 0)
-	{
-		boot_printf(MSG_init_rw_error, r);
+		strcpy(ini_file, "args: ");
+		strcat(ini_file, argsptr);
+		boot_printf(MSG_init_read, ini_file);
 
-		/* if it doesn't exist, try to create */
-		write_ini();
-	}
-	else
-	{
-		char *s, line[MAX_CMD_LEN];
-		short inihandle = r;
+		read_ini_file( -1, ' ');
+	} else {
+		ksprintf(ini_file, sizeof(ini_file), "%s%s", sysdir, mint_ini);
+		boot_printf(MSG_init_read, ini_file);
 
-		while (getdelim(line, sizeof(line), '\n', inihandle) != -1)
+		r = TRAP_Fopen(ini_file, 0);
+		if (r < 0)
 		{
-			if (line[0] && (line[0] != '#') && strchr(line, '='))
-			{
-				int x;
+			boot_printf(MSG_init_rw_error, r);
 
-				strupr(line);
-				x = 0;
-				while (ini_keywords[x])
-				{
-					s = strstr(line, ini_keywords[x]);
-					if (s && (s == line))
-					{
-						s = strchr(line, '=');
-						if (s)
-						{
-							s++;
-							do_func[x](s);
-							break;
-						}
-						else
-							boot_printf(MSG_init_no_value, mint_ini, line);
-					}
-					x++;
-				}
+			/* if it doesn't exist, try to create */
+			write_ini();
+		} else {
+			read_ini_file( r, '\n');
 
-				if (ini_keywords[x] == NULL)
-					boot_printf(MSG_init_unknown_cmd, mint_ini, line);
-			}
+			TRAP_Fclose(r);
 		}
-
-		boot_printf(MSG_init_rw_done);
 	}
 
 	boot_printf("\r\n");
