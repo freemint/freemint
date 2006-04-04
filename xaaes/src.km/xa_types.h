@@ -1037,8 +1037,9 @@ struct widget_tree
 	RECT area;
 	ushort *state_mask;
 
-	short parent_x;			/* Keep both in: dont need to change everything in a single effort */
-	short parent_y;
+	RECT r_parent;
+// 	short parent_x;			/* Keep both in: dont need to change everything in a single effort */
+// 	short parent_y;
 
 	struct xa_aes_object focus;
 
