@@ -229,10 +229,10 @@ fgetw(struct file *fp)
 #endif
 
 /* pixelformat E07F */
-static void
-toI15b(struct rgb_1000 *pal, void **img_ptr)
+static void *
+toI15b(struct rgb_1000 *pal, void *img_ptr)
 {
-	unsigned short *img = *img_ptr;
+	unsigned short *img = img_ptr;
 	unsigned long register r, g, b;
 
 	r = pal->red;
@@ -263,12 +263,12 @@ toI15b(struct rgb_1000 *pal, void **img_ptr)
 	r |= (b << 8);
 
 	*img++ = r;
-	*img_ptr = img;
+	return img;
 }
-static void
-toF16b(struct rgb_1000 *pal, void **img_ptr)
+static void *
+toF16b(struct rgb_1000 *pal, void *img_ptr)
 {
-	unsigned short *img = *img_ptr;
+	unsigned short *img = img_ptr;
 	unsigned long register r, g, b;
 
 	r = pal->red;
@@ -299,13 +299,13 @@ toF16b(struct rgb_1000 *pal, void **img_ptr)
 	r |= b;
 
 	*img++ = r;
-	*img_ptr = img;
+	return img;
 }
 
-static void
-toM16b(struct rgb_1000 *pal, void **img_ptr)
+static void *
+toM16b(struct rgb_1000 *pal, void *img_ptr)
 {
-	unsigned short *img = *img_ptr;
+	unsigned short *img = img_ptr;
 	unsigned long register r, g, b;
 
 	r = pal->red;
@@ -338,16 +338,16 @@ toM16b(struct rgb_1000 *pal, void **img_ptr)
 	r |= b;
 	
 	*img++ = r;
-	*img_ptr = img;
+	return img;
 
 }
-static void
-toI16b(struct rgb_1000 *pal, void **img_ptr)
+static void *
+toI16b(struct rgb_1000 *pal, void *img_ptr)
 {
-	unsigned short *img = *img_ptr;
+	unsigned short *img = img_ptr;
 	unsigned long register r, g, b;
 
-	img = *img_ptr;
+// 	img = *img_ptr;
 	
 	r = pal->red;
 	r <<= 5;		//*= 32;
@@ -378,13 +378,13 @@ toI16b(struct rgb_1000 *pal, void **img_ptr)
 	r |= (((g & 7) << 5) | b) << 8;
 	
 	*img++ = r;
-	*img_ptr = img;
+	return img;
 };
 
-static void
-toI24b(struct rgb_1000 *pal, void **img_ptr)
+static void *
+toI24b(struct rgb_1000 *pal, void *img_ptr)
 {
-	unsigned char *img = *img_ptr;
+	unsigned char *img = img_ptr;
 	unsigned long register r, g, b;
 
 	r = pal->red;
@@ -412,12 +412,12 @@ toI24b(struct rgb_1000 *pal, void **img_ptr)
 	*img++ = b;
 	*img++ = g;
 	*img++ = r;
-	*img_ptr = img;
+	return img;
 };
-static void
-toM24b(struct rgb_1000 *pal, void **img_ptr)
+static void *
+toM24b(struct rgb_1000 *pal, void *img_ptr)
 {
-	unsigned char *img = *img_ptr;
+	unsigned char *img = img_ptr;
 	unsigned long register r, g, b;
 
 	r = pal->red;
@@ -445,13 +445,13 @@ toM24b(struct rgb_1000 *pal, void **img_ptr)
 	*img++ = r;
 	*img++ = g;
 	*img++ = b;
-	*img_ptr = img;
+	return img;
 };
 
-static void
-toI32b(struct rgb_1000 *pal, void **img_ptr)
+static void *
+toI32b(struct rgb_1000 *pal, void *img_ptr)
 {
-	unsigned long *img = *img_ptr;
+	unsigned long *img = img_ptr;
 	unsigned long register r, g, b;
 
 	r = pal->red;
@@ -483,13 +483,13 @@ toI32b(struct rgb_1000 *pal, void **img_ptr)
 	r <<= 8;
 
 	*img++ = r;
-	*img_ptr = img;
+	return img;
 };
 
-static void
-toM32b(struct rgb_1000 *pal, void **img_ptr)
+static void *
+toM32b(struct rgb_1000 *pal, void *img_ptr)
 {
-	unsigned long *img = *img_ptr;
+	unsigned long *img = img_ptr;
 	unsigned long register r, g, b;
 
 	r = pal->red;
@@ -518,13 +518,13 @@ toM32b(struct rgb_1000 *pal, void **img_ptr)
 	b |= (r << 16);
 
 	*img++ = b;
-	*img_ptr = img;
+	return img;
 };
 
-static void
-toIbs32b(struct rgb_1000 *pal, void **img_ptr)
+static void *
+toIbs32b(struct rgb_1000 *pal, void *img_ptr)
 {
-	unsigned long *img = *img_ptr;
+	unsigned long *img = img_ptr;
 	unsigned long register r, g, b;
 
 	r = pal->red;
@@ -553,7 +553,7 @@ toIbs32b(struct rgb_1000 *pal, void **img_ptr)
 	r |= (b << 16);
 
 	*img++ = r;
-	*img_ptr = img;
+	return img;
 };
 
 /*
@@ -1057,7 +1057,7 @@ static struct TrNfo from1_8[] =
 };
 	
 static void
-from8b(void (*to)(struct rgb_1000 *, void **), struct rgb_1000 *pal, MFDB *src, MFDB *dst)
+from8b(void *(*to)(struct rgb_1000 *, void *), struct rgb_1000 *pal, MFDB *src, MFDB *dst)
 {
 	int i, j, k, psize, planes;
 	unsigned int palidx;
@@ -1098,7 +1098,7 @@ from8b(void (*to)(struct rgb_1000 *, void **), struct rgb_1000 *pal, MFDB *src, 
 				val += from1_8[planes].half;
 				val /= from1_8[planes].full + 1;
 				gp.red = gp.green = gp.blue = (val > 1000) ? 1000 : val;
-				(*to)(&gp, d_ptr);
+				*d_ptr = (*to)(&gp, *d_ptr);
 			}
 			else
 			{
@@ -1106,7 +1106,7 @@ from8b(void (*to)(struct rgb_1000 *, void **), struct rgb_1000 *pal, MFDB *src, 
 					palidx = devtovdi8[palidx];
 					
 				col = pal + palidx;
-				(*to)(col, d_ptr);
+				*d_ptr = (*to)(col, *d_ptr);
 			}
 		}
 	}
@@ -1114,7 +1114,7 @@ from8b(void (*to)(struct rgb_1000 *, void **), struct rgb_1000 *pal, MFDB *src, 
 // 		dst->fd_addr, *d_ptr, *(long*)d_ptr - (long)dst->fd_addr);
 }
 static void
-from24b(void (*to)(struct rgb_1000 *, void **), struct rgb_1000 *pal, MFDB *src, MFDB *dst)
+from24b(void *(*to)(struct rgb_1000 *, void *), struct rgb_1000 *pal, MFDB *src, MFDB *dst)
 {
 	int i, j;
 	unsigned long val;
@@ -1148,14 +1148,14 @@ from24b(void (*to)(struct rgb_1000 *, void **), struct rgb_1000 *pal, MFDB *src,
 			val >>= 8;
 			ppal.blue = val > 1000 ? 1000 : val;
 
-			(*to)(&ppal, d_ptr);
+			*d_ptr = (*to)(&ppal, *d_ptr);
 		}
 	}
 // 	display("dst_ptr start = %lx, dst_ptr end = %lx (size = %ld)",
 // 		dst->fd_addr, *d_ptr, *(long*)d_ptr - (long)dst->fd_addr);
 }
 static void
-from16b(void (*to)(struct rgb_1000 *, void **), struct rgb_1000 *pal, MFDB *src, MFDB *dst)
+from16b(void *(*to)(struct rgb_1000 *, void *), struct rgb_1000 *pal, MFDB *src, MFDB *dst)
 {
 	int i, j;
 	unsigned long val;
@@ -1190,14 +1190,14 @@ from16b(void (*to)(struct rgb_1000 *, void **), struct rgb_1000 *pal, MFDB *src,
 			val >>= 8;
 			ppal.blue = val > 1000 ? 1000 : val;
 
-			(*to)(&ppal, d_ptr);
+			*d_ptr = (*to)(&ppal, *d_ptr);
 		}
 	}
 // 	display("dst_ptr start = %lx, dst_ptr end = %lx (size = %ld)",
 // 		dst->fd_addr, *d_ptr, *(long*)d_ptr - (long)dst->fd_addr);
 }
 
-typedef void to_x_bit(struct rgb_1000 *pal, void **imgdata);
+typedef void * to_x_bit(struct rgb_1000 *pal, void *imgdata);
 #if 0
 		15	moto,
 			intel,
@@ -1235,6 +1235,71 @@ static to_x_bit *f_to32[] =
 	toIbs32b
 };
 
+static void
+repeat_16bpixel(void *_pixel, void *_dest, int count)
+{
+	register unsigned short *dest = _dest;
+	register unsigned short pixel = *(unsigned short *)_pixel;
+
+	while (count--)
+		*dest++ = (unsigned short)pixel;
+}
+
+static void
+repeat_24bpixel(void *_pixel, void *_dest, int count)
+{
+	register union { unsigned char b[4]; unsigned short s[2]; unsigned long p;} pxl;
+	register union { unsigned char *bp; unsigned short *sp; long lng;} pptr;
+	register unsigned long pixel = *(unsigned long *)_pixel;
+
+	pxl.p = pixel;
+	pptr.bp = _dest;
+
+	pixel >>= 8;
+
+	if (pptr.lng & 1)
+	{
+		while (count > 2)
+		{
+			*pptr.bp++ = pxl.b[1];
+			*pptr.sp++ = pxl.s[1];
+			*pptr.sp++ = pixel;
+			*pptr.bp++ = pxl.b[3];
+			count -= 2;
+		}
+		if (count)
+		{
+			*pptr.bp++ = pxl.b[1];
+			*pptr.sp = pxl.s[1];
+		}
+	}
+	else
+	{
+		while (count > 2)
+		{
+			*pptr.sp++ = pixel;
+			*pptr.bp++ = pxl.b[3];
+			*pptr.bp++ = pxl.b[1];
+			*pptr.sp++ = pxl.s[1];
+			count -= 2;
+		}
+		if (count)
+		{
+			*pptr.sp++ = pixel;
+			*pptr.bp = pxl.b[3];
+		}
+	}	
+}
+static void
+repeat_32bpixel(void *_pixel, void *_dest, int count)
+{
+	register unsigned long *dest = _dest;
+	register unsigned long pixel = *(unsigned long *)_pixel;
+
+	while (count--)
+		*dest++ = pixel;
+}
+
 void _cdecl
 create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, short *steps, short w, short h )
 {
@@ -1248,8 +1313,9 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 			char *data, *ed;
 			char *d;
 			short wdwidth;
-			long size, scanlen, red, green, blue, ired, igreen, iblue;
-			void (*to)(struct rgb_1000 *pal, void **imgdata);
+			long pixel, size, scanlen, red, green, blue, ired, igreen, iblue;
+			void * (*to)(struct rgb_1000 *pal, void *imgdata);
+			void (*rp)(void *, void *, int);
 			struct rgb_1000 col;
 			
 			wdwidth = (w + 15) >> 4;
@@ -1257,11 +1323,11 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 // 			display("size0 %ld", size);
 			switch (screen.planes)
 			{
-				case 15: to = f_to15[screen.pixel_fmt]; pixelsize = 2; break;
-				case 16: to = f_to16[screen.pixel_fmt]; pixelsize = 2; break;
-				case 24: to = f_to24[screen.pixel_fmt]; pixelsize = 3; break; //toI24b; break;
-				case 32: to = f_to32[screen.pixel_fmt]; pixelsize = 4; break; //toM32b; break;
-				default: to = NULL; pixelsize = 0; break;
+				case 15: to = f_to15[screen.pixel_fmt]; pixelsize = 2; rp = repeat_16bpixel; break;
+				case 16: to = f_to16[screen.pixel_fmt]; pixelsize = 2; rp = repeat_16bpixel; break;
+				case 24: to = f_to24[screen.pixel_fmt]; pixelsize = 3; rp = repeat_24bpixel; break; //toI24b; break;
+				case 32: to = f_to32[screen.pixel_fmt]; pixelsize = 4; rp = repeat_32bpixel; break; //toM32b; break;
+				default: to = NULL; pixelsize = 0; rp = NULL; break;
 			}
 			scanlen = (long)pixelsize * ((w + 15) & ~15);
 			size = (long)scanlen * h;
@@ -1299,18 +1365,22 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 				red = (long)c[0].red << 16;
 				green = (long)c[0].green << 16;
 				blue = (long)c[0].blue << 16;
-			
-				col = c[0];
+
+// 				d = (void *)&pixel;
 				for (i = 0; i < h; i++)
 				{
-					d = data;
 					col.red = red >> 16;
 					col.green = green >> 16;
 					col.blue = blue >> 16;
+				#if 1
+					(*to)(&col, &pixel);
+					(*rp)(&pixel, data, w);
+				#else
 					for (j = 0; j < w; j++)
 					{
-						(*to)(&col, (void **)&d);
+						d = (*to)(&col, d);
 					}
+				#endif
 					red += ired;
 					green += igreen;
 					blue += iblue;
@@ -1341,7 +1411,7 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 						col.red = red >> 16;
 						col.green = green >> 16;
 						col.blue = blue >> 16;
-						(*to)(&col, (void **)&d);
+						d = (*to)(&col, d);
 
 						red += ired;
 						green += igreen;
@@ -1389,10 +1459,7 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 						col.red = red >> 16;
 						col.green = green >> 16;
 						col.blue = blue >> 16;
-						if (d > ed)
-							display("What the HELL!!!");
-						else
-							(*to)(&col, (void **)&d);
+						d = (*to)(&col, d);
 
 						red += ired;
 						green += igreen;
@@ -1443,15 +1510,16 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 				
 				for (i = 0; i < h1; i++)
 				{
-					d = data;
+// 					d = data;
 					
-					for (j = 0; j < w; j++)
-					{
-						if (d > ed)
-							display("What the HELL!!!");
-						else
-							(*to)(&col, (void **)&d);
-					}
+					(*to)(&col, &pixel);
+					(*rp)(&pixel, data, w);
+					
+// 					for (j = 0; j < w; j++)
+// 					{
+// 						d = (*to)(&col, d);
+// 					}
+
 					red += ired;
 					green += igreen;
 					blue += iblue;
@@ -1474,14 +1542,13 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 					col.blue = blue >> 16;
 				for (i = 0; i < h2; i++)
 				{
-					d = data;
-					for (j = 0; j < w; j++)
-					{
-						if (d > ed)
-							display("What the HELL!!!");
-						else
-							(*to)(&col, (void **)&d);
-					}
+					(*to)(&col, &pixel);
+					(*rp)(&pixel, data, w);
+// 					d = data;
+// 					for (j = 0; j < w; j++)
+// 					{
+// 						d = (*to)(&col, d);
+// 					}
 					red += ired;
 					green += igreen;
 					blue += iblue;
@@ -1526,7 +1593,7 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 						col.red = red >> 16;
 						col.green = green >> 16; 
 						col.blue = blue >> 16;
-						(*to)(&col, (void **)&d);
+						d = (*to)(&col, d);
 						red += ired;
 						green += igreen;
 						blue += iblue;
@@ -1544,7 +1611,7 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 						col.red = red >> 16;
 						col.green = green >> 16; 
 						col.blue = blue >> 16;
-						(*to)(&col, (void **)&d);
+						d = (*to)(&col, d);
 						red += ired;
 						green += igreen;
 						blue += iblue;
@@ -1555,8 +1622,8 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 				default:;
 				}
 			}
-			if (data > ed || d > ed)
-				display("end %lx, data = %lx, d = %lx", ed, data, d);
+// 			if (data > ed || d > ed)
+// 				display("end %lx, data = %lx, d = %lx", ed, data, d);
 		}
 	}
 }
@@ -1644,8 +1711,8 @@ load_image(char *name, XAMFDB *mimg)
 			if (screen.planes > 8)
 			{
 				bool fail = true;
-				void (*to)(struct rgb_1000 *pal, void **imgdata);
-				void (*from)(void (*)(struct rgb_1000 *, void **), struct rgb_1000 *pal, MFDB *src, MFDB *dst);
+				void * (*to)(struct rgb_1000 *pal, void *imgdata);
+				void (*from)(void *(*)(struct rgb_1000 *, void *), struct rgb_1000 *pal, MFDB *src, MFDB *dst);
 
 				to = (void *)-1L;
 				from = (void *)-1L;

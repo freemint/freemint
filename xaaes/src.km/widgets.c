@@ -3343,7 +3343,7 @@ is_H_arrow(struct xa_window *w, XA_WIDGET *widg, int click)
 		return 0;
 
 	/* outside slider, arrows must be defined */
-	if (w->active_widgets & LFARROW)
+	if (w->active_widgets & (LFARROW|LFARROW1))
 	{
 		/* outside has 2 sides :-) */
 
@@ -3374,7 +3374,7 @@ is_V_arrow(struct xa_window *w, XA_WIDGET *widg, int click)
 	if (click > y && click < y2)
 		return 0;
 
- 	if (w->active_widgets & UPARROW)
+ 	if (w->active_widgets & (UPARROW|UPARROW1))
 	{
 		if (sl->position > 0 && click < y)
 			return XAW_UPPAGE;
@@ -3710,7 +3710,7 @@ wind_mshape(struct xa_window *wind, short x, short y)
 	XA_WIDGET *widg;
 	RECT r;
 
-	if (!update_locked())
+	if (!update_locked() || update_locked() == wind->owner->p)
 	{
 	if (wind)
 	{
