@@ -53,6 +53,7 @@
 #define ONLY_TEXTURE	(1<<6)
 #define DRAW_ALL	(DRAW_BKG|DRAW_BOX|DRAW_3D)
 #define REV_3D		(1<<7)
+#define ANCH_PARENT	(1<<8)
 #define CALC_ONLY	(1<<15)
 #define NAES3D	1
 
@@ -3505,7 +3506,7 @@ draw_g_box(struct widget_tree *wt, struct xa_vdi_settings *v, struct color_theme
 	else if (!c && (ct->col.flags & WCOL_DRAW3D) && (flags & DRAW_3D))
 		d3t--; //, d++;
 
-	draw_objc_bkg(wt, v, ct, c, flags, -1, c ? c->framecol : -1, d, d3t, thick, thick, &r, &r, area);
+	draw_objc_bkg(wt, v, ct, c, flags, -1, c ? c->framecol : -1, d, d3t, thick, thick, &r, (flags & ANCH_PARENT) ? (RECT *)&wt->current.tree->ob_x : &r, area);
 
 	draw_outline(wt, v, out, &r);
 }
@@ -4964,7 +4965,7 @@ drw_g_text(struct widget_tree *wt, struct xa_vdi_settings *v, bool ftext)
 	if (edit_ob(ei) != wt->current.ob)
 		ei = NULL;
 
-	boxflags = (c.textmode ? (DRAW_BKG|DRAW_TEXTURE|ONLY_TEXTURE) : 0) | DRAW_3D;
+	boxflags = (c.textmode ? (DRAW_BKG|DRAW_TEXTURE|ONLY_TEXTURE) : 0) | (ANCH_PARENT|DRAW_3D);
 	if (fl3d && c.fillpattern == IP_HOLLOW && !c.interiorcol)
 	{
 		/* CONFIG: Draw background or not here */

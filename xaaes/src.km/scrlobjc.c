@@ -3404,30 +3404,36 @@ click_scroll_list(enum locks lock, OBJECT *form, int item, const struct moose_da
 			short mb, mx, my, px, py;
 			S.wm_count++;
 			check_mouse(list->wi->owner, &mb, &px, &py);
-			while (mb)
+			if (mb)
 			{
-				long num;
-				wait_mouse(list->wi->owner, &mb, &mx, &my);
-				
-				if (!mb)
-					break;
+				graf_mouse(FLAT_HAND, NULL, NULL, false);
 
-				if (mx != px)
+				while (mb)
 				{
-					if ((num = mx - px) < 0)
-						scroll_left(list, -num, true);
-					else	
-						scroll_right(list, num, true);
-					px = mx;
+					long num;
+					wait_mouse(list->wi->owner, &mb, &mx, &my);
+				
+					if (!mb)
+						break;
+
+					if (mx != px)
+					{
+						if ((num = mx - px) < 0)
+							scroll_left(list, -num, true);
+						else	
+							scroll_right(list, num, true);
+						px = mx;
+					}
+					if (my != py)
+					{
+						if ((num = my - py) < 0)
+							scroll_up(list, -num, true);
+						else
+							scroll_down(list, num, true);
+						py = my;
+					}
 				}
-				if (my != py)
-				{
-					if ((num = my - py) < 0)
-						scroll_up(list, -num, true);
-					else
-						scroll_down(list, num, true);
-					py = my;
-				}
+				set_winmouse(-1, -1);
 			}
 			S.wm_count--;
 			return;
