@@ -155,7 +155,9 @@ free_icon_pos(enum locks lock, struct xa_window *ignore)
 	for (;;)
 	{
 		struct xa_window *w = window_list;
+
 		ic = iconify_grid(i++);
+// 		display("icgrid %d/%d/%d/%d", ic);
 
 		/* find first unused position. */
 		while (w)
@@ -391,10 +393,16 @@ unhide_window(enum locks lock, struct xa_window *wind, bool check)
 {
 	if (is_hidden(wind))
 	{
-		RECT r = wind->rc;
+		RECT r;
 
-		r.x = wind->hx;
-		r.y = wind->hy;
+		if ((wind->window_status & XAWS_ICONIFIED))
+			r = free_icon_pos(lock, wind);
+		else
+		{
+			r = wind->rc;
+			r.x = wind->hx;
+			r.y = wind->hy;
+		}
 		wind->t = r;
 		if (wind->opts & XAWO_WCOWORK)
 			r = f2w(&wind->delta, &r, true);
@@ -713,6 +721,7 @@ void
 uniconify_window(enum locks lock, struct xa_window *wind, RECT *r)
 {
 	move_window(lock, wind, true, ~XAWS_ICONIFIED, r->x, r->y, r->w, r->h);
+	set_reiconify_timeout( lock);
 }
 
 XA_WIND_ATTR

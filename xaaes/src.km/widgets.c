@@ -897,10 +897,120 @@ redraw_menu(enum locks lock)
 	DIAGS(("Display MENU - exit OK"));
 }
 
+#if 0
+static short cfg_icnfy_orient = 3;
+static short cfg_icnfy_l_x = 0;
+static short cfg_icnfy_r_x = 0;
+static short cfg_icnfy_t_y = 0;
+static short cfg_icnfy_b_y = 16;
+static short cfg_icnfy_w = 64;
+static short cfg_icnfy_h = 64;
+#endif
 /* Establish iconified window position from a simple ordinal. */
 RECT
 iconify_grid(int i)
 {
+	short v_num = (root_window->wa.w - cfg.icnfy_l_x - cfg.icnfy_r_x) / cfg.icnfy_w;
+	short h_num = (root_window->wa.h - cfg.icnfy_t_y - cfg.icnfy_b_y) / cfg.icnfy_h;
+	short start_x, start_y, column, row;
+	RECT ic = {0,0,cfg.icnfy_w, cfg.icnfy_h}; //ICONIFIED_W,ICONIFIED_H};
+
+	switch ((cfg.icnfy_orient & 0xff))
+	{
+		case 0:
+		{
+			ic.x = start_x = root_window->wa.x + cfg.icnfy_l_x;
+			column = i / h_num;
+			if (column)
+			{
+				ic.x += (column * cfg.icnfy_w);
+				if ((ic.x + cfg.icnfy_w) > root_window->wa.w)
+					ic.x = start_x;
+			}
+			row = i % h_num;
+			if ((cfg.icnfy_orient & 0x100))
+				ic.y = ((root_window->wa.y + root_window->wa.h) - cfg.icnfy_b_y - cfg.icnfy_h) - (row * cfg.icnfy_h);
+			else
+				ic.y = (root_window->wa.y + cfg.icnfy_t_y) + (row * cfg.icnfy_h);
+			break;
+		}
+		case 1:
+		{		
+			ic.x = start_x = root_window->wa.w - cfg.icnfy_w - cfg.icnfy_r_x;
+// 			ic.y = start_y = root_window->wa.y + cfg.icnfy_t_y;
+			
+			column = i / h_num;
+			
+			if (column)
+			{
+				ic.x -= (column * cfg.icnfy_w);
+				if (ic.x < cfg.icnfy_l_x)
+					ic.x = start_x;
+			}
+			row = i % h_num ;
+			
+			if ((cfg.icnfy_orient & 0x100))
+				ic.y = ((root_window->wa.y + root_window->wa.h) - cfg.icnfy_b_y - cfg.icnfy_h) - (row * cfg.icnfy_h);
+			else
+				ic.y = (root_window->wa.y + cfg.icnfy_t_y) + (row * cfg.icnfy_h);
+			
+			break;
+		}
+		case 2:
+		{
+			ic.y = start_y = root_window->wa.y + cfg.icnfy_t_y;
+			column = i % v_num;
+			if ((cfg.icnfy_orient & 0x100))
+			{
+				ic.x = ((root_window->wa.x + root_window->wa.w) - cfg.icnfy_r_x - cfg.icnfy_w) - (column * cfg.icnfy_w);
+// 				ic.x -= (column * cfg.icnfy_w);
+			}
+			else
+			{
+				ic.x = start_x = root_window->wa.x + cfg.icnfy_l_x + (column * cfg.icnfy_w);
+// 				ic.x += (column * cfg.icnfy_w);
+			}
+			row = i / v_num;
+			if (row)
+			{
+				ic.y += (row * cfg.icnfy_h);
+				if ((ic.y + cfg.icnfy_h + cfg.icnfy_b_y) > root_window->wa.h)
+					ic.y = start_y;
+			}
+			break;
+		}
+		case 3:
+		{
+			ic.y = start_y = (root_window->wa.y + root_window->wa.h) - cfg.icnfy_h - cfg.icnfy_b_y;
+			column = i % v_num;
+			
+			if ((cfg.icnfy_orient & 0x100))
+			{
+				ic.x = ((root_window->wa.x + root_window->wa.w) - cfg.icnfy_r_x - cfg.icnfy_w) - (column * cfg.icnfy_w);
+// 				ic.x -= (column * cfg.icnfy_w);
+			}
+			else
+			{
+				ic.x = root_window->wa.x + cfg.icnfy_l_x + (column * cfg.icnfy_w);
+// 				ic.x += (column * cfg.icnfy_w);
+			}
+
+			row = i / v_num;
+			if (row)
+			{
+				ic.y -= (row * cfg.icnfy_h);
+				if (ic.y < (root_window->wa.y + cfg.icnfy_t_y))
+					ic.y = start_y;
+			}
+			break;
+		}
+		
+	}
+	return ic;
+
+#if 0
+
+
 	RECT ic = {0,0,ICONIFIED_W,ICONIFIED_H};
 	int j, w = screen.r.w/ic.w;
 
@@ -914,7 +1024,9 @@ iconify_grid(int i)
 	ic.y -= j * ic.h;
 
 	return ic;
+#endif
 }
+
 /*
  * Click & drag on the title bar - does a move window
  */
@@ -1231,7 +1343,7 @@ click_iconify(enum locks lock, struct xa_window *wind, struct xa_widget *widg, c
 			/* Could the whole screen be covered by iconified
 			 * windows? That would be an achievement, wont it?
 			 */
-			if (r.y > root_window->wa.y)
+			if (r.y >= root_window->wa.y)
 				msg = (md->kstate & K_CTRL) ? WM_ALLICONIFY : WM_ICONIFY;
 		}
 		if (msg != -1)

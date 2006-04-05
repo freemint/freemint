@@ -461,6 +461,7 @@ unhide_app(enum locks lock, struct xa_client *client)
 }
 
 static TIMEOUT *rpi_to = NULL;
+static int rpi_block = 0;
 
 static void
 repos_iconified(struct proc *p, long arg)
@@ -469,19 +470,50 @@ repos_iconified(struct proc *p, long arg)
 	struct xa_window *w = window_list;
 	RECT r;
 
-	while (w)
+	if (!rpi_block && !S.clients_exiting)
 	{
-		if ((w->window_status & (XAWS_OPEN|XAWS_ICONIFIED|XAWS_HIDDEN)) == (XAWS_OPEN|XAWS_ICONIFIED))
+		while (w)
 		{
-			r = free_icon_pos(lock, w);
-			if (w->opts & XAWO_WCOWORK)
-				r = f2w(&w->delta, &r, true);
-			send_moved(lock, w, AMQ_NORM, &r);
-			w->t = r;
+			if ((w->window_status & (XAWS_OPEN|XAWS_ICONIFIED|XAWS_HIDDEN)) == (XAWS_OPEN|XAWS_ICONIFIED))
+			{
+				r = free_icon_pos(lock, w);
+				if (w->opts & XAWO_WCOWORK)
+					r = f2w(&w->delta, &r, true);
+				send_moved(lock, w, AMQ_NORM, &r);
+				w->t = r;
+			}
+			w = w->next;
 		}
-		w = w->next;
+		rpi_to = NULL;
 	}
-	rpi_to = NULL;
+	else
+		rpi_to = addroottimeout(1000L, repos_iconified, arg);
+}
+
+void
+set_reiconify_timeout(enum locks lock)
+{
+	if (!rpi_to && cfg.icnfy_reorder_to)
+		rpi_to = addroottimeout(cfg.icnfy_reorder_to, repos_iconified, (long)lock);
+}
+void
+cancel_reiconify_timeout(void)
+{
+	if (rpi_to)
+	{
+		cancelroottimeout(rpi_to);
+		rpi_to = NULL;
+	}
+}
+void
+block_reiconify_timeout(void)
+{
+	rpi_block++;
+}
+void
+unblock_reiconify_timeout(void)
+{
+	rpi_block--;
 }
 
 void
@@ -500,6 +532,8 @@ hide_app(enum locks lock, struct xa_client *client)
 	    (client->swm_newmsg & NM_INHIBIT_HIDE))
 		return;
 	
+	block_reiconify_timeout();
+
 	w = window_list;
 	while (w)
 	{
@@ -524,8 +558,13 @@ hide_app(enum locks lock, struct xa_client *client)
 	if (client == infocus)
 		app_in_front(lock, nxtclient, true, true, true);
 
-	if (reify && !rpi_to)
-		rpi_to = addroottimeout(1000L, repos_iconified, (long)lock);
+	unblock_reiconify_timeout();
+
+	if (reify)
+		set_reiconify_timeout(lock);
+
+// 	if (reify && !rpi_to)
+// 		rpi_to = addroottimeout(1000L, repos_iconified, (long)lock);
 }
 
 void
