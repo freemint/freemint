@@ -303,6 +303,10 @@ again:
 	cfg.hor_wheel_id = 1;
 	cfg.hor_wheel_amount = 1;
 
+	cfg.icnfy_orient = 3;
+	cfg.icnfy_w = 72;
+	cfg.icnfy_h = 72;
+
 	cfg.popup_timeout = 10;
 	cfg.popout_timeout = 1000;
 

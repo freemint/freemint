@@ -46,6 +46,12 @@ void app_in_front(enum locks lock, struct xa_client *client, bool snd_untopped, 
 bool is_infront(struct xa_client *client);
 struct xa_client * get_app_infront(void);
 void set_active_client(enum locks lock, struct xa_client *client);
+
+void set_reiconify_timeout(enum locks lock);
+void cancel_reiconify_timeout(void);
+void block_reiconify_timeout(void);
+void unblock_reiconify_timeout(void);
+
 void hide_app(enum locks lock, struct xa_client *client);
 void unhide_app(enum locks lock, struct xa_client *client);
 void hide_other(enum locks lock, struct xa_client *client);
