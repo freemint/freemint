@@ -1413,7 +1413,7 @@ struct xa_module_widget_theme
 	char		*sname;
 	char		*lname;
 
-	void * _cdecl	(*init_module)(const struct xa_module_api *, const struct xa_screen *screen, char *widg_name);
+	void * _cdecl	(*init_module)(const struct xa_module_api *, const struct xa_screen *screen, char *widg_name, bool grads);
 	void _cdecl	(*exit_module)(void *module);
 
 	long _cdecl	(*new_theme)(void *module, short win_type, struct widget_theme **);
@@ -1454,7 +1454,7 @@ struct xa_module_object_render
 	char	*sname;
 	char	*lname;
 
-	void * _cdecl	(*init_module)(const struct xa_module_api *, const struct xa_screen *);
+	void * _cdecl	(*init_module)(const struct xa_module_api *, const struct xa_screen *, bool grads);
 	long   _cdecl	(*exit_module)(void);
 
 	long _cdecl	(*open)	(struct object_render_api **ptr_api);

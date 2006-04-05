@@ -82,6 +82,17 @@
 #video = <mode>
 #video = 4
 
+####################################################
+# gradients = <value>    (default = 0)
+#
+# setting gradients to a nonzero value turns on use of
+# color gradients in the window widget and aes object
+# renderer in hc/tc color modes.
+# THIS IS ONLY A TEMPORARY CONFIGURATION THAT WILL BE GONE
+# LATER ON!!! Only turn this on if you have a fast machine
+#
+#gradients = 1
+
 #####################################################################
 # setenv name val ..... set up environment
 #
