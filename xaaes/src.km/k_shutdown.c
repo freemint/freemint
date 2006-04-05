@@ -29,6 +29,7 @@
 #include "k_shutdown.h"
 #include "xa_global.h"
 
+#include "app_man.h"
 #include "k_main.h"
 #include "k_keybd.h"
 #include "c_window.h"
@@ -65,8 +66,9 @@ k_shutdown(void)
 
 	DIAGS(("Cleaning up ready to exit...."));
 // 	display("Cleaning up ready to exit....");
-#if 1
 // 	display("wait for HLP");
+	cancel_reiconify_timeout();
+
 	if (C.Hlp)
 	{
 		volatile struct xa_client **h = (volatile struct xa_client **)&C.Hlp;
@@ -77,7 +79,6 @@ k_shutdown(void)
 			yield();
 		}
 	}
-#endif
 	/* To demonstrate the working on multiple resources. */
 	while (C.Aes->resources)
 		FreeResources(C.Aes, NULL, NULL);

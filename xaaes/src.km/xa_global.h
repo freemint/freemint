@@ -393,7 +393,16 @@ struct config
 	short hor_wheel_id;		/* ID of vertical wheel */
 	short hor_wheel_amount;
 	//short wheel_amount;		/* amount of lines for a wheel click. */
-	
+
+	short icnfy_orient;
+	short icnfy_l_x;
+	short icnfy_r_x;
+	short icnfy_t_y;
+	short icnfy_b_y;
+	short icnfy_w;
+	short icnfy_h;
+	short icnfy_reorder_to;
+
 	short standard_font_point;	/* Size for normal text */
 	short medium_font_point;	/* The same, but for low resolution screens */
 	short small_font_point;		/* Size for small text */

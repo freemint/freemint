@@ -280,6 +280,72 @@ popout_timeout = 1000
 #alert_windows = 0x0000
 
 #####################################################################
+# icnfy_orient = <value>        (default is 3)
+#
+# This controls how XaAES arranges iconified windows. Currently the
+# following orientations are available;
+#
+# 0 - Iconified windows are stacked top -> bottom starting at the
+#     top/left of the screen. When one column is full, the next
+#     column is being used.
+# 1 - Iconified windows are stacked top -> bottom starting at the
+#     top/right of the screen. When a column is full, windows are
+#     stacked in the column to the left of the filled one.
+# 2 - Iconified windows are placed in rows going left -> right starting
+#     at the top/left of the screen. When a row is full, the row below
+#     the current one is used.
+# 3 - Iconified windows are placed in rows going left -> right starting
+#     at the bottom/left of the screen. When a row is full, the row above
+#     the current one is used.
+#
+# If you bit 8 in icnfy_orient value is set, then the starting position
+# will be reversed. This means that for orientation 0, the windows will
+# be stacked bottom -> top starting at the bottom-most position instead.
+# Using a hexadecimal value is easy for better readability;
+#
+#icnfy_orient = 0x003   # Start at left/bottom of the screen and go towards
+                        # the right/bottom.
+#icnfy_orient = 0x103   # Start at right/bottom corner and go towards
+                        # windows towards the left/bottm corner.
+
+#####################################################################
+# icnfy_width  = <value>        (default is 72)
+# icnfy_height = <value>        (default is 72)
+#
+# These sets the width and height of iconified windows.
+#icnfy_width = 80
+#icnfy_height = 80
+
+#####################################################################
+# icnfy_left = <value>           (default is 0)
+# icnfy_right = <value>           (default is 0)
+# icnfy_top = <value>           (default is 0)
+# icnfy_bottom = <value>           (default is 0)
+#
+# These variables dictates how far from left, right, top and bottom edges
+# of the screen the iconfied windows should be placed. This means that
+# if icnfy_left is set to 4, iconified windows are always placed minimum 4
+# pixels off the left edge of the screen. If you want to protect the area
+# of the taskbar, for example, you can use icnfy_bottom = 16, for example,
+# as that makes sure iconified windows never get closer to the bottom of the
+# screen than 16 pixels.
+
+icnfy_left = 0
+icnfy_right = 0
+icnfy_top = 0
+icnfy_bottom = 16
+
+#####################################################################
+# icnfy_reorder_to = <time in ms>  (default is 0)
+#
+# Setting this to a nonzero value will make XaAES rearragne the currently
+# iconified windows when an iconified window is uniconified or hidden.
+# This will also, later on, reorder iconified windows when an application
+# that quits had iconified windows.
+#
+#icnfy_reorder_to = 100
+
+#####################################################################
 # next_active = <string>        (default is 'window')
 #
 # <string> can be 'client' or 'window'.
