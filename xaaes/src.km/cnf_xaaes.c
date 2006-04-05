@@ -128,6 +128,16 @@ static struct parser_item parser_tab[] =
 	{ "VERTICAL_WHEEL_AMOUNT",   PI_R_S,   & cfg.ver_wheel_amount, Range(1, 20) },
 	{ "HORIZONTAL_WHEEL_AMOUNT", PI_R_S,   & cfg.hor_wheel_amount, Range(1, 20) },
 	
+	/* Iconify options */
+	{ "ICNFY_ORIENT",	PI_R_S, &cfg.icnfy_orient		},
+	{ "ICNFY_LEFT",		PI_R_S, &cfg.icnfy_l_x			},
+	{ "ICNFY_RIGHT",	PI_R_S, &cfg.icnfy_r_x			},
+	{ "ICNFY_TOP",		PI_R_S, &cfg.icnfy_t_y			},
+	{ "ICNFY_BOTTOM",	PI_R_S, &cfg.icnfy_b_y			},
+	{ "ICNFY_WIDTH",	PI_R_S, &cfg.icnfy_w			},
+	{ "ICNFY_HEIGHT",	PI_R_S, &cfg.icnfy_h			},
+	{ "ICNFY_REORDER_TO",	PI_R_S, &cfg.icnfy_reorder_to, Range(0, 32000) },
+
 	/* startup things */
 	{ "SHELL",                 PI_V_ATK, pCB_shell			},
 	{ "RUN",                   PI_C_TA,  pCB_run			},
