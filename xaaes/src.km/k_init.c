@@ -771,7 +771,7 @@ k_init(unsigned long vm)
 	main_xa_theme(&C.Aes->xmwt);
 	main_object_render(&C.Aes->objcr_module);
 	
-	if (!(*C.Aes->objcr_module->init_module)(&xam_api, &screen))
+	if (!(*C.Aes->objcr_module->init_module)(&xam_api, &screen, cfg.gradients))
 	{
 		display("object render returned NULL");
 		return -1;
@@ -779,7 +779,7 @@ k_init(unsigned long vm)
 	if (init_client_objcrend(C.Aes))
 		return -1;
 	
-	if (!(C.Aes->wtheme_handle = (*C.Aes->xmwt->init_module)(&xam_api, &screen, (char *)&cfg.widg_name)))
+	if (!(C.Aes->wtheme_handle = (*C.Aes->xmwt->init_module)(&xam_api, &screen, (char *)&cfg.widg_name, cfg.gradients)))
 	{
 		display("module returned NULL");
 		return -1;

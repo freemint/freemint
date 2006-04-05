@@ -60,6 +60,8 @@
 static short _cdecl obj_thickness(struct widget_tree *wt, OBJECT *ob);
 static void _cdecl obj_offsets(struct widget_tree *wt, OBJECT *ob, RECT *c);
 
+static bool use_gradients = true;
+
 struct texture
 {
 	struct xa_data_hdr h;
@@ -2522,7 +2524,7 @@ find_gradient(struct xa_vdi_settings *v, struct color_theme *ct, short w, short 
 	struct xa_wtexture *ret = NULL;
 	struct xa_gradient *g = ct->col.gradient;
 
-	if (g)
+	if (g && use_gradients)
 	{
 		w &= g->wmask;
 		w |= g->w;
@@ -5345,10 +5347,11 @@ load_textures(struct theme *theme)
 }
 
 static void * _cdecl
-init_module(const struct xa_module_api *xmapi, const struct xa_screen *xa_screen)
+init_module(const struct xa_module_api *xmapi, const struct xa_screen *xa_screen, bool grad)
 {
 	char *resource_name;
 
+	use_gradients = grad;
 	api = xmapi;
 	screen = xa_screen;
 

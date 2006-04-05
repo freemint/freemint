@@ -53,6 +53,8 @@ struct module
 	struct xa_data_hdr *allocs;
 };
 
+static bool use_gradients = true;
+
 static FreePriv free_priv_gradients;
 
 static	WidgGemColor	get_wcol, set_wcol;
@@ -3408,7 +3410,7 @@ find_gradient(struct xa_vdi_settings *v, struct xa_wcol *wcol, bool free, struct
 	struct xa_wtexture *ret = NULL;
 	struct xa_gradient *g = wcol->gradient;
 
-	if (g)
+	if (g && use_gradients)
 	{
 		if (!allocs)
 			allocs = &g->allocs;
@@ -3598,13 +3600,14 @@ test_img_stuff(struct module *m)
  * This function is called by XaAES to have the module initialize itself
  */
 static void * _cdecl
-init_module(const struct xa_module_api *xmapi, const struct xa_screen *screen, char *widg_name)
+init_module(const struct xa_module_api *xmapi, const struct xa_screen *screen, char *widg_name, bool grads)
 {
 	char *rscfile;
 	RSHDR *rsc;
 	struct module *m;
 
 // 	display("wind_draw: initmodule:");
+	use_gradients = grads;
 
 	api	= xmapi;
 	scrninf	= screen;
