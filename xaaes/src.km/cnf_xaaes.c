@@ -138,6 +138,8 @@ static struct parser_item parser_tab[] =
 	{ "ICNFY_HEIGHT",	PI_R_S, &cfg.icnfy_h			},
 	{ "ICNFY_REORDER_TO",	PI_R_S, &cfg.icnfy_reorder_to, Range(0, 32000) },
 
+	{ "GRADIENTS",		PI_R_S, &cfg.gradients			},
+
 	/* startup things */
 	{ "SHELL",                 PI_V_ATK, pCB_shell			},
 	{ "RUN",                   PI_C_TA,  pCB_run			},

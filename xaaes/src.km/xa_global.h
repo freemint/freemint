@@ -332,6 +332,8 @@ struct cfg_name_list
 	
 struct config
 {
+	short gradients;
+
 	Path launch_path;		/* Initial path for launcher */
 	Path scrap_path;		/* Path to the scrap directory */
 	Path acc_path;			/* Path to desk accessory directory */
