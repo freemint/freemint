@@ -1261,7 +1261,7 @@ repeat_24bpixel(void *_pixel, void *_dest, int count)
 
 	if (pptr.lng & 1)
 	{
-		while (count > 2)
+		while (count > 1)
 		{
 			*pptr.bp++ = pxl.b[1];
 			*pptr.sp++ = pxl.s[1];
@@ -1277,7 +1277,7 @@ repeat_24bpixel(void *_pixel, void *_dest, int count)
 	}
 	else
 	{
-		while (count > 2)
+		while (count > 1)
 		{
 			*pptr.sp++ = pixel;
 			*pptr.bp++ = pxl.b[3];
