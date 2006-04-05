@@ -1252,6 +1252,8 @@ repeat_24bpixel(void *_pixel, void *_dest, int count)
 	register union { unsigned char *bp; unsigned short *sp; long lng;} pptr;
 	register unsigned long pixel = *(unsigned long *)_pixel;
 
+	pixel >>= 8;
+
 	pxl.p = pixel;
 	pptr.bp = _dest;
 
