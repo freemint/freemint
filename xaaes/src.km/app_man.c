@@ -472,6 +472,73 @@ repos_iconified(struct proc *p, long arg)
 
 	if (!rpi_block && !S.clients_exiting)
 	{
+		int i = 0;
+		short cx, cy;
+		struct xa_window *cw;
+		
+		while (1)
+		{
+			r = iconify_grid(i++);
+			w = window_list;
+			cw = NULL;
+			cx = 32000;
+			cy = 32000;
+
+			while (w)
+			{
+				if ((w->window_status & (XAWS_OPEN|XAWS_ICONIFIED|XAWS_HIDDEN)) == (XAWS_OPEN|XAWS_ICONIFIED))
+				{
+					if (w->t.x == r.x && w->t.y == r.y && !(w->window_status & XAWS_SEMA))
+					{
+						w->window_status |= XAWS_SEMA;
+						if (cw)
+						{
+							cw->window_status &= ~XAWS_SEMA;
+							cw = NULL;
+							cx = cy = 32000;
+						}
+						break;
+					}
+					else if (!(w->window_status & XAWS_SEMA) && (!cw || ((cfg.icnfy_orient & 2) ? abs((w->t.x - r.x)) <= cx : abs((w->t.y - r.y)) <= cy)))
+					{
+						if (cw)
+							cw->window_status &= ~XAWS_SEMA;
+						cx = abs(w->t.x - r.x);
+						cy = abs(w->t.y - r.y);
+						cw = w;
+						cw->window_status |= XAWS_SEMA;
+					}
+				#if 0
+					r = iconify_grid(i++);
+					if (w->opts & XAWO_WCOWORK)
+						r = f2w(&w->delta, &r, true);
+					send_moved(lock, w, AMQ_NORM, &r);
+					w->t = r;
+				#endif
+				}
+				
+				w = w->next;
+			}
+
+			if (cw)
+			{
+				if (cw->opts & XAWO_WCOWORK)
+					r = f2w(&cw->delta, &r, true);
+				send_moved(lock, cw, AMQ_NORM, &r);
+				w->t = r;
+			}
+			
+			if (!cw && !w)
+				break;
+		}
+		
+		w = window_list;
+		while (w)
+		{
+			w->window_status &= ~XAWS_SEMA;
+			w = w->next;
+		}
+	#if 0
 		while (w)
 		{
 			if ((w->window_status & (XAWS_OPEN|XAWS_ICONIFIED|XAWS_HIDDEN)) == (XAWS_OPEN|XAWS_ICONIFIED))
@@ -484,6 +551,7 @@ repos_iconified(struct proc *p, long arg)
 			}
 			w = w->next;
 		}
+	#endif
 		rpi_to = NULL;
 	}
 	else
