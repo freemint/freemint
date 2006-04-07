@@ -318,7 +318,7 @@ popout_timeout = 1000
                         # the right/bottom.
 #icnfy_orient = 0x103   # Start at right/bottom corner and go towards
                         # windows towards the left/bottm corner.
-
+                        
 #####################################################################
 # icnfy_width  = <value>        (default is 72)
 # icnfy_height = <value>        (default is 72)
