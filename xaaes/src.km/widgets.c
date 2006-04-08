@@ -3828,7 +3828,7 @@ wind_mshape(struct xa_window *wind, short x, short y)
 	{
 		if (!(wo->status & CS_EXITING))
 		{
-			if (cfg.widg_auto_highlight)
+			if (!update_locked() && cfg.widg_auto_highlight)
 			{
 				struct xa_window *rwind = NULL;
 				struct xa_widget *hwidg, *rwidg = NULL;
