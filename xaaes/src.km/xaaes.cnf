@@ -138,7 +138,7 @@ usehome = yes
 # 
 # double click time (ms)
 #
-dc_time = 35
+#dc_time = 35
 
 #####################################################################
 # mp_timegap = <time in ms>     (default is 3)
@@ -168,7 +168,7 @@ dc_time = 35
 # wheel configuration;
 #
 # vertical_wheel_id = <value>      (default is 0)
-# vertical_wheel_amount = <value>  (default = 1)
+# vertical_wheel_amount = <value>  (default is 1)
 # horizontal_wheel_id = <value>    (default is 1)
 # horizontal_wheel_amount <value>  (default is 1)
 #
@@ -208,7 +208,7 @@ redraw_timeout = 2000
 #
 # <string> can be 'pull', 'push' or 'leave'
 #
-menu = leave
+#menu = push
 
 #####################################################################
 # popscroll = <value>           (default is 0)
@@ -232,7 +232,7 @@ menu = leave
 # If set to 'no' (the default), only the client's nice name (when available,
 # else its 'proc_name') is listed.
 #
-menupop_pids = no
+#menupop_pids = yes
 
 #####################################################################
 # popup_timeout - Time in milliseconds before popups opens.  (default = 10)
@@ -257,8 +257,8 @@ menupop_pids = no
 #                                         normal AES
 #
 #
-popup_timeout = 50
-popout_timeout = 1000
+#popup_timeout = 50
+#popout_timeout = 1000
 
 #####################################################################
 # toppage = bold or faint
@@ -340,11 +340,11 @@ popout_timeout = 1000
 # of the taskbar, for example, you can use icnfy_bottom = 16, for example,
 # as that makes sure iconified windows never get closer to the bottom of the
 # screen than 16 pixels.
-
-icnfy_left = 0
-icnfy_right = 0
-icnfy_top = 0
-icnfy_bottom = 16
+#
+#icnfy_left = 0
+#icnfy_right = 0
+#icnfy_top = 0
+#icnfy_bottom = 16
 
 #####################################################################
 # icnfy_reorder_to = <time in ms>  (default is 0)
@@ -365,7 +365,7 @@ icnfy_bottom = 16
 # the owner of the previous topped (or only) window
 # should be set active upon client termination.
 #
-next_active = client
+#next_active = client
 
 #####################################################################
 #- DEPRECIATED - OBSOLETE
@@ -512,17 +512,17 @@ next_active = client
 #app_options = taskbar, inhibit_hide = yes, clwtna = yes
 #
 # These are goot app_otions settings that I (ozk) use atm.
-app_options = default,thinwork = true, winframe_size = 0, xa_nomove = false
-app_options = aessys, thinwork = true, winframe_size = 0, xa_nomove = false
-app_options = autos401,xa_nomove = true
-app_options = ataricq,thinwork = true, winframe_size = 0
-app_options = jinnee, naesff = true
-app_options = nwatch, thinwork = true, winframe_size = 0
-app_options = popwatch, thinwork = true, winframe_size = 0
-app_options = taskbar, inhibit_hide = yes, clwtna = true
-app_options = amail, naesff = true
-app_options = mymail, thinwork = true, winframe_size = 0
-app_options = highwire, winframe_size = 0
+#app_options = default,thinwork = true, winframe_size = 0, xa_nomove = false
+#app_options = aessys, thinwork = true, winframe_size = 0, xa_nomove = false
+#app_options = autos401,xa_nomove = true
+#app_options = ataricq,thinwork = true, winframe_size = 0
+#app_options = jinnee, naesff = true
+#app_options = nwatch, thinwork = true, winframe_size = 0
+#app_options = popwatch, thinwork = true, winframe_size = 0
+#app_options = taskbar, inhibit_hide = yes, clwtna = true
+#app_options = amail, naesff = true
+#app_options = mymail, thinwork = true, winframe_size = 0
+#app_options = highwire, winframe_size = 0
 
 #####################################################################
 # ctlalta_survivors = <list of app-names>
@@ -554,7 +554,7 @@ app_options = highwire, winframe_size = 0
 #
 #cltalta_survivors = "_aes_shell_", "taskbar ", "toswin2 "
 #
-ctlalta_survivors = "toswin2 ", "strngsrv", "_aes_shell_", "taskbar "
+#ctlalta_survivors = "toswin2 ", "strngsrv", "_aes_shell_", "taskbar "
 
 #####################################################################
 # kill_wo_question = <list of app-names>
@@ -575,7 +575,7 @@ ctlalta_survivors = "toswin2 ", "strngsrv", "_aes_shell_", "taskbar "
 #
 #kill_wo_question = "procalc", "mintsett"
 # 
-kill_wo_question = "procalc ","mintsett"
+#kill_wo_question = "procalc ","mintsett"
 
 #####################################################################
 # clipboard = <path>   # path to clipboard
@@ -584,7 +584,7 @@ kill_wo_question = "procalc ","mintsett"
 #
 clipboard = c:\clipbrd\
 accpath   = c:\
-launcher  = u:\opt\toswin2\tw-call.prg
+#launcher  = u:\opt\toswin2\tw-call.prg
 
 #####################################################################
 # widgets  = <file>
@@ -592,7 +592,7 @@ launcher  = u:\opt\toswin2\tw-call.prg
 #
 #resource = xa_mono.rsc
 #widgets = widgets/homwdg.rsc
-widgets = widgets/styl_wdg.rsc
+#widgets = widgets/styl_wdg.rsc
 #widgets = widgets/nine-ozk.rsc
 #widtets = widgets/baroqwdg.rsc
 #widgets = widgets/ronb_wdg.rsc
@@ -614,7 +614,7 @@ widgets = widgets/styl_wdg.rsc
 # very experimental, and widgets are not actually highlighted, they
 # are just animated - that is redrawn in SELECTED status.
 #
-widget_auto_highlight = no
+#widget_auto_highlight = yes
 
 #####################################################################
 # helpserver (like N.AES config, first is the default)
