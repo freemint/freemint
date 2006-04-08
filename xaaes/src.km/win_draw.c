@@ -657,6 +657,7 @@ struct xa_gradient utop_hslider_gradient =
 
 static struct xa_gradient otop_title_gradient = 
 {
+#if 0
 	NULL,
 	-1, -1,
 	0, 0,
@@ -664,9 +665,18 @@ static struct xa_gradient otop_title_gradient =
 	2, 0,{0},
 	{{500,500,600},{900,900,1000}},
 // 	{{200,500,200},{800,1000,800}},
+#else
+	NULL,
+	 0, -1,
+	16,  0,
+
+	0, 0, {0},
+	{{700,700,900},{500,500,700}},
+#endif
 };
 static struct xa_gradient utop_title_gradient =
 {
+#if 0
 	NULL,
 	-1, -1,
 	0, 0,
@@ -674,6 +684,14 @@ static struct xa_gradient utop_title_gradient =
 	2, 0, {0},
 	{{500,500,500},{800,800,800}},
 /*	{{500,500,500},{900,900,900}}, */
+#else
+	NULL,
+	0, -1,
+	16, 0,
+
+	0,0,{0},
+	{{600,600,600},{800,800,800}},
+#endif
 };
 
 static struct xa_gradient otop_info_gradient = 
@@ -828,9 +846,9 @@ struct window_colours def_otop_cols =
  /* Title text-info */
  { WTXT_DRAW3D|WTXT_ACT3D|WTXT_CENTER,
                                    /* id  pnts flags wrm,   efx         fgc      bgc      banner  x_3dact y_3dact texture */
-                                      {0, 10,   0, MD_TRANS, 0,        G_BLACK,	G_WHITE, G_WHITE,  1,       1,     NULL}, /* Normal */
-                                      {0, 10,   0, MD_TRANS, 0,        G_BLACK,	G_WHITE, G_WHITE,  1,       1,     NULL},	/* Selected */
-                                      {0, 10,   0, MD_TRANS, 0,        G_BLACK,	G_WHITE, G_WHITE,  1,       1,     NULL}},	/* Highlighted */
+                                      {0, 10,   0, MD_TRANS, 0,        G_WHITE,	G_BLUE, G_WHITE,  1,       1,     NULL}, /* Normal */
+                                      {0, 10,   0, MD_TRANS, 0,        G_WHITE,	G_BLUE, G_WHITE,  1,       1,     NULL},	/* Selected */
+                                      {0, 10,   0, MD_TRANS, 0,        G_WHITE,	G_WHITE, G_WHITE,  1,       1,     NULL}},	/* Highlighted */
  /* Info text-info */
  { 0,
                                       {0,  9,   0, MD_TRANS, 0,        G_BLACK,	G_WHITE, G_WHITE,  1,       1,     NULL},	/* Normal */
@@ -838,7 +856,7 @@ struct window_colours def_otop_cols =
                                       {0,  9,   0, MD_TRANS, 0,        G_BLACK,	G_WHITE, G_WHITE,  1,       1,     NULL}},	/* Highlighted */
 
 };
-
+	
 struct window_colours def_utop_cols =
 {
  { 0 },	/* data header */
@@ -3665,6 +3683,22 @@ init_module(const struct xa_module_api *xmapi, const struct xa_screen *screen, c
 			imgpath_file = strlen(imgpath);
 			test_img_stuff(m);
 		}
+		
+		if (screen->planes > 8 && use_gradients)
+		{
+			def_otop_cols.title_txt.n.fgc = G_WHITE;
+			def_otop_cols.title_txt.n.bgc = G_BLUE;
+			def_otop_cols.title_txt.s.fgc = G_WHITE;
+			def_otop_cols.title_txt.s.bgc = G_BLUE;
+		}
+		else
+		{
+			def_otop_cols.title_txt.n.fgc = G_BLACK;
+			def_otop_cols.title_txt.n.bgc = G_WHITE;
+			def_otop_cols.title_txt.s.fgc = G_BLACK;
+			def_otop_cols.title_txt.s.bgc = G_WHITE;
+		}
+	
 	}
 	else
 	{
