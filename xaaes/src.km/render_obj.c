@@ -4196,13 +4196,13 @@ d_g_ibox(struct widget_tree *wt, struct xa_vdi_settings *v)
 {
 	OBJECT *ob = wt->current.ob;
 	struct theme *theme = wt->objcr_theme;
-	struct object_theme *obt = &theme->boxtext;
+	struct object_theme *obt = &theme->box;
 	struct color_theme *ct;
-	BFOBSPEC colours;
+	BFOBSPEC c;
 	short fl3d;
 	bool selected;
 
-	colours = (*api->object_get_spec)(ob)->obspec;
+	c = (*api->object_get_spec)(ob)->obspec;
 	fl3d = (ob->ob_flags & FL3DMASK) >> 9;
 	selected = ob->ob_state & OS_SELECTED;
 	
@@ -4214,7 +4214,7 @@ d_g_ibox(struct widget_tree *wt, struct xa_vdi_settings *v)
 	{
 		ct = selected ? &obt->norm.s[fl3d] : &obt->norm.n[fl3d];
 	}
-	draw_g_box(wt, v, ct, &colours, DRAW_BOX|DRAW_3D, NULL);
+	draw_g_box(wt, v, ct, &c, DRAW_BOX|DRAW_3D, NULL);
 	done(OS_SELECTED|OS_DISABLED);
 }
 
