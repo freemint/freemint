@@ -236,6 +236,43 @@ post_cevent(struct xa_client *client,
 }
 
 short
+dispatch_selcevent(struct xa_client *client, void *f)
+{
+	struct c_event **ce;
+	short ret = 0;
+
+	ce = &client->cevnt_head;
+
+	if (*ce)
+	{
+		struct c_event *nxt, *this, *prev = NULL;
+
+		DIAG((D_kern, client, "Dispatch selected evnt %lx, %lx (head %lx, tail %lx, count %d) for %s",
+			f, *ce, client->cevnt_head, client->cevnt_tail, client->cevnt_count, client->name));
+		
+		if ((*ce)->funct == f)
+		{
+			if (!(nxt = (*ce)->next))
+				client->cevnt_tail = prev; //nxt;
+
+			this = *ce;
+			*ce = nxt; //client->cevnt_head = nxt;
+			client->cevnt_count--;
+	
+			(*this->funct)(0, this, false);
+			kfree(this);
+		
+			ret = (volatile short)client->cevnt_count;
+		}
+		else
+		{
+			prev = *ce;
+			ce = &((*ce)->next);
+		}
+	}
+	return ret;
+}
+short
 dispatch_cevent(struct xa_client *client)
 {
 	struct c_event *ce;
