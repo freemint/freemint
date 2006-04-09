@@ -29,6 +29,7 @@
 
 #include "k_main.h"
 #include "k_mouse.h"
+#include "c_mouse.h"
 #include "draw_obj.h"
 #include "obtree.h"
 #include "widgets.h"
@@ -1353,6 +1354,14 @@ XA_graf_mkstate(enum locks lock, struct xa_client *client, AESPB *pb)
 	if (client)
 	{
 		struct mbs mbs;
+
+		/* Ozk:
+		 * Make sure button events are delivered here .. eb_model doesnt
+		 * enter evnt_multi() inside of its own popup implementation.
+		 * Why, oh WHY! cannot programmers use the OS's functions!?
+		 */
+		while (dispatch_selcevent(client, cXA_deliver_button_event))
+			;
 
 		get_mbstate(client, &mbs);
 		pb->intout[1] = mbs.x;
