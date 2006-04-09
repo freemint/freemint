@@ -1363,11 +1363,19 @@ XA_graf_mkstate(enum locks lock, struct xa_client *client, AESPB *pb)
 		while (dispatch_selcevent(client, cXA_deliver_button_event))
 			;
 
-		get_mbstate(client, &mbs);
-		pb->intout[1] = mbs.x;
-		pb->intout[2] = mbs.y;
-		pb->intout[3] = mbs.b;
-		pb->intout[4] = mbs.ks;
+		if (client->md_head->clicks == -1 && client->md_head == client->md_tail)
+		{
+			check_mouse(client, &pb->intout[3], &pb->intout[1], &pb->intout[2]);
+			vq_key_s(C.P_handle, &pb->intout[4]);
+		}
+		else
+		{	
+			get_mbstate(client, &mbs);
+			pb->intout[1] = mbs.x;
+			pb->intout[2] = mbs.y;
+			pb->intout[3] = mbs.b;
+			pb->intout[4] = mbs.ks;
+		}
 	}
 	else
 		multi_intout(NULL, pb->intout, 0);
