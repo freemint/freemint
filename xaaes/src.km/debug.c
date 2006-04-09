@@ -186,7 +186,7 @@ diags(const char *fmt, ...)
 #if 0
 	struct proc *p = get_curproc();
 
-	if ((strnicmp(p->name, "organizr", 8)))
+	if ((strnicmp(p->name, "eb_dump", 7)))
 		return;
 #endif
 
@@ -224,7 +224,7 @@ diag(enum debug_item item, struct xa_client *client, char *t, ...)
 #if 0
 	struct proc *p = get_curproc();
 
-	if ((strnicmp(p->name, "organizr", 8)))
+	if ((strnicmp(p->name, "eb_dump", 7)))
 		return;
 #endif
 	if (D.debug_level == 4
