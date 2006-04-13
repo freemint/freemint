@@ -636,7 +636,7 @@ XA_handler(void *_pb)
 				client->enter++;
 #endif
 			if (aes_tab[cmd].flags & DO_LOCKSCREEN)
-				lock_screen(p, 0, NULL, 2);
+				lock_screen(p, false);
 			
 			/* callout the AES function */
 
@@ -649,7 +649,7 @@ XA_handler(void *_pb)
 			cmd_rtn = (*cmd_routine)(lock, client, pb);
 
 			if (aes_tab[cmd].flags & DO_LOCKSCREEN)
-				unlock_screen(p, 2);
+				unlock_screen(p);
 
 			/* execute delayed delete_window */
 			if (S.deleted_windows.first)

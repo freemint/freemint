@@ -1076,10 +1076,10 @@ drag_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, cons
 			bound.h = root_window->r.h*2;
 
 			if (!(wind->owner->status & CS_NO_SCRNLOCK))
-				lock_screen(wind->owner->p, 0, 0, 1234);
+				lock_screen(wind->owner->p, false);
 			drag_box(wind->owner, r, &bound, rect_dist_xy(wind->owner, md->x, md->y, &r, &d), &r);
 			if (!(wind->owner->status & CS_NO_SCRNLOCK))
-				unlock_screen(wind->owner->p, 1235);
+				unlock_screen(wind->owner->p);
 
 			if (r.x != wind->rc.x || r.y != wind->rc.y)
 			{
@@ -1281,7 +1281,8 @@ click_close(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 	{
 		wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 				   WM_CLOSED, 0, 0, wind->handle,
-				   0, 0, 0, 0);
+				   0,0,0,0);
+
 		if ((wind->window_status & XAWS_OPEN))
 			ret = true;	/* redisplay */
 	}
@@ -1428,7 +1429,7 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 		graf_mouse(border_mouse[xy], NULL, NULL, false);
 
 		if (!(wind->owner->status & CS_NO_SCRNLOCK))
-			lock_screen(wind->owner->p, 0, 0, 1234);
+			lock_screen(wind->owner->p, false);
 		rubber_box(wind->owner, xy,
 		           r,
 			   rect_dist_xy(wind->owner, md->x, md->y, &r, &d),
@@ -1438,7 +1439,7 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 			   maxh, //wind->max.h,
 			   &r);
 		if (!(wind->owner->status & CS_NO_SCRNLOCK))
-			unlock_screen(wind->owner->p, 1234);
+			unlock_screen(wind->owner->p);
 
 		move = r.x != wind->r.x || r.y != wind->r.y,
 		size = r.w != wind->r.w || r.h != wind->r.h;
@@ -1770,11 +1771,11 @@ drag_vslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 			s.h = sl->r.h;
 
 			if (!(wind->owner->status & CS_NO_SCRNLOCK))
-				lock_screen(wind->owner->p, 0, 0, 0);
+				lock_screen(wind->owner->p, false);
 			graf_mouse(XACRS_VERTSIZER, NULL, NULL, false);
 			drag_box(wind->owner, s, &b, rect_dist_xy(wind->owner, md->x, md->y, &s, &d), &r);
 			if (!(wind->owner->status & CS_NO_SCRNLOCK))
-				unlock_screen(wind->owner->p, 0);
+				unlock_screen(wind->owner->p);
 
 			offs = bound_sl(pix_to_sl(r.y - widg->ar.y, widg->r.h - sl->r.h));
 
@@ -1843,11 +1844,11 @@ drag_hslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 			s.h = sl->r.h;
 
 			if (!(wind->owner->status & CS_NO_SCRNLOCK))
-				lock_screen(wind->owner->p, 0, 0, 0);
+				lock_screen(wind->owner->p, false);
 			graf_mouse(XACRS_HORSIZER, NULL, NULL, false);
 			drag_box(wind->owner, s, &b, rect_dist_xy(wind->owner, md->x, md->y, &s, &d), &r);
 			if (!(wind->owner->status & CS_NO_SCRNLOCK))
-				unlock_screen(wind->owner->p, 0);
+				unlock_screen(wind->owner->p);
 			
 			offs = bound_sl(pix_to_sl(r.x - widg->ar.x, widg->r.w - sl->r.w));
 

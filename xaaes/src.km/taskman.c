@@ -36,9 +36,11 @@
 #include "xa_global.h"
 
 #include "about.h"
+#include "app_man.h"
 #include "c_window.h"
 #include "form.h"
 #include "k_main.h"
+#include "k_mouse.h"
 #include "draw_obj.h"
 #include "menuwidg.h"
 #include "obtree.h"
@@ -47,6 +49,7 @@
 #include "widgets.h"
 #include "xa_appl.h"
 #include "xa_form.h"
+#include "xa_graf.h"
 #include "xa_menu.h"
 #include "xa_shel.h"
 #include "xa_rsrc.h"
@@ -506,6 +509,77 @@ quit_all_clients(enum locks lock, struct cfg_name_list *except_nl, struct xa_cli
 		}
 	}
 	Sema_Dn(clients);
+}
+
+void
+CHlp_aesmsg(struct xa_client *client)
+{
+	union msg_buf *m;
+
+	if (client->waiting_pb && (m = (union msg_buf *)client->waiting_pb->addrin[0]))
+	{
+		switch (m->m[0])
+		{
+			case 0x5354:
+			{
+// 				display("0x5354 gotten");
+				unlock_screen(client->p);
+				break;
+			}
+			default:;
+		}
+	}
+}
+void
+screen_dump(enum locks lock, struct xa_client *client, bool open)
+{
+	struct xa_client *dest_client;
+
+	if ((dest_client = get_app_by_procname("gfa_snap")))
+	{
+		display("send dump message to %s", dest_client->proc_name);
+		if (lock_screen(client->p, true))
+		{
+			short msg[8] = {0x5354, client->p->pid, 0, 0, 0,0,200,200};
+			RECT r, d = {0};
+			short b = 0, x, y;
+
+			if (open)
+			{
+				graf_mouse(THIN_CROSS, NULL,NULL, false);
+				while (!b)
+					check_mouse(client, &b, &x, &y);
+
+				r.x = x; 
+				r.y = y;
+				r.w = 0;
+				r.h = 0;
+				rubber_box(client, SE, r, &d, 0,0, root_window->r.h, root_window->r.w, &r);
+			}
+			else
+				r = root_window->r;
+			
+			if ((r.w | r.h))
+			{
+				msg[4] = r.x;
+				msg[5] = r.y;
+				msg[6] = r.w;
+				msg[7] = r.h;
+				send_a_message(lock, dest_client, AMQ_NORM, 0, (union msg_buf *)msg);
+// 				graf_mouse(ARROW, NULL,NULL, false);
+			}
+			else
+				unlock_screen(client->p);
+		}
+	}
+	else
+		display("gfa_snap not found");
+#if 0
+	if (lock_screen(client->p, true))
+	{
+
+	}
+#endif
 }
 
 static void
