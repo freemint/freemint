@@ -43,10 +43,10 @@ void free_update_lock(void);
 void free_mouse_lock(void);
 void free_menustruct_lock(void);
 
-bool   lock_screen(struct proc *proc, bool try, short *r, int which);
-bool unlock_screen(struct proc *proc, int which);
-bool   lock_mouse(struct proc *proc, bool try, short *r, int which);
-bool unlock_mouse(struct proc *proc, int which);
+bool   lock_screen(struct proc *proc, bool try);
+bool unlock_screen(struct proc *proc);
+bool   lock_mouse(struct proc *proc, bool try);
+bool unlock_mouse(struct proc *proc);
 bool   lock_menustruct(struct proc *proc, bool try);
 bool unlock_menustruct(struct proc *proc);
 

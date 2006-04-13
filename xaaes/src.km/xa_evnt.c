@@ -169,7 +169,7 @@ exec_iredraw_queue(enum locks lock, struct xa_client *client)
 	if (pending_iredraw_msgs(lock, client, &ibuf))
 	{
 		if (!(client->status & CS_NO_SCRNLOCK))
-			lock_screen(client->p, false, NULL, 0);
+			lock_screen(client->p, false);
 		hidem();
 		do {
 			short xaw = ibuf.irdrw.xaw;
@@ -201,7 +201,7 @@ exec_iredraw_queue(enum locks lock, struct xa_client *client)
 		C.redraws -= rdrws;
 
 		if (!(client->status & CS_NO_SCRNLOCK))
- 			unlock_screen(client->p, 0);
+ 			unlock_screen(client->p);
 		kick_mousemove_timeout();
 	}
 	if (!client->rdrw_msg && C.redraws)
@@ -310,7 +310,7 @@ get_mbstate(struct xa_client *client, struct mbs *d)
 			client->md_head->clicks, client->md_head, client->md_tail, client->md_end);
 	}
 #endif
-	
+
 	md = client->md_head;
 	clicks = md->clicks;
 			
@@ -406,6 +406,7 @@ check_queued_events(struct xa_client *client)
 		else
 		{
 			DIAG((D_m, NULL, "MU_MESAG and NO PB! for %s", client->name));
+			display("MU_MESAG and NO PB! for %s", client->name);
 			return false;
 		}
 	}
