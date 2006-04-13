@@ -529,8 +529,8 @@ typedef  struct
 #define WF_TOOLBAR		 30
 #define WF_FTOOLBAR		 31
 #define WF_NTOOLBAR		 32
-#define WF_MENU			 33		 /* XaAEES */
-#define WF_WHEEL		 40		 /* XaAES */
+#define WF_MENU			 33	/* XaAEES */
+#define WF_WHEEL		 40	/* XaAES */
 #define WF_OPTS			 41	/* XaAES */
 
 #define WF_CALCF2W		42

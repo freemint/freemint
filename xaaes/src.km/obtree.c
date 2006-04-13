@@ -2510,6 +2510,19 @@ obj_rectangle(XA_TREE *wt, struct xa_aes_object obj, RECT *c)
 }
 
 void
+obj_orectangle(XA_TREE *wt, struct xa_aes_object obj, RECT *c)
+{
+	if (!ob_offset(aesobj_tree(&obj), obj, &c->x, &c->y))
+	{
+		obj = aesobj(aesobj_tree(&obj), 0);
+		ob_offset(aesobj_tree(&obj), obj, &c->x, &c->y);
+	}
+	c->w = aesobj_ob(&obj)->ob_width;
+	c->h = aesobj_ob(&obj)->ob_height;
+	display("obj_orect: %d/%d/%d/%d", *c);
+}
+
+void
 obj_area(XA_TREE *wt, struct xa_aes_object obj, RECT *c)
 {
 	RECT r;

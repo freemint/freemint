@@ -974,6 +974,19 @@ get_app_infront(void)
 	return APP_LIST_START;
 }
 
+struct xa_client *
+get_app_by_procname(char *name)
+{
+	struct xa_client *client;
+
+	FOREACH_CLIENT(client)
+	{
+		if (!strnicmp(client->proc_name, name, 8))
+			break;
+	}
+	return client;
+}
+
 void
 set_active_client(enum locks lock, struct xa_client *client)
 {

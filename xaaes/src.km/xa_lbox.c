@@ -307,7 +307,7 @@ redraw_lbox(struct xa_lbox_info *lbox, short o, short depth, RECT *r)
 		depth++;
 	}
 
-	lock_screen(wt->owner->p, false, NULL, 0);
+	lock_screen(wt->owner->p, false);
 
 	if (wind)
 	{
@@ -345,7 +345,7 @@ redraw_lbox(struct xa_lbox_info *lbox, short o, short depth, RECT *r)
 		draw_object_tree(0, wt, wt->tree, v, start, depth, NULL, 0);
 	}
 	(*v->api->clear_clip)(v);
-	unlock_screen(wt->owner->p, 0);
+	unlock_screen(wt->owner->p);
 }
 
 /*

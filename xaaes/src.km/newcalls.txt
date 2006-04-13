@@ -216,12 +216,12 @@ anything else.
  Here are new appl_info() constants to add to your header file;
 
 /*
- * AES_VERSION mode for appl_init()
+ * AES_VERSION mode for appl_getinfo()
  */
 #define AES_VERSION  96
 
 /*
- * AES_WOPTS mode for appl_init() - Return supported Window OPTionS
+ * AES_WOPTS mode for appl_getinfo() - Return supported Window Options
  * available via wind_set/get(WF_OPTS)
  */
 #define AES_WOPTS 97
