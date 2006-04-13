@@ -47,7 +47,7 @@ void	set_toolbar_handlers(const struct toolbar_handlers *th, struct xa_window *w
 #define STW_ZEN	1
 #define STW_GOC	2 /* Get object coordinates */
 #define STW_COC 4 /* Center object coordinates */
-#define STW_SWC 3 /* Set window coordinates */
+#define STW_SWC 8 /* Set window coordinates */
 XA_TREE *set_toolbar_widget(enum locks lock, struct xa_window *wind, struct xa_client *owner, OBJECT *obj, struct xa_aes_object item, short properties, short flags, const struct toolbar_handlers *th, const RECT *r);
 
 void	remove_widget(enum locks lock, struct xa_window *wind, int tool);

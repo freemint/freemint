@@ -52,6 +52,7 @@ XA_wind_create(enum locks lock, struct xa_client *client, AESPB *pb)
 	const RECT r = *((const RECT *)&pb->intin[1]);
 	struct xa_window *new_window;
 	XA_WIND_ATTR kind = (unsigned short)pb->intin[0];
+// 	bool d = (!strnicmp("cops", client->proc_name, 4));
 
 	CONTROL(5,1,0)
 	
@@ -81,6 +82,8 @@ XA_wind_create(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	if (new_window)
 	{
+// 		if (d) display("xa_wind_create: new window %d", new_window->handle);
+
 		if (pb->control[N_INTOUT] >= 5)
 		{
 			if (new_window->opts & XAWO_WCOWORK)
@@ -108,6 +111,7 @@ XA_wind_open(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	RECT r; // = *((const RECT *)&pb->intin[1]);
 	struct xa_window *w;
+// 	bool d = (!strnicmp("cops", client->proc_name, 4));
 
 	CONTROL(5,1,0)
 
@@ -115,6 +119,7 @@ XA_wind_open(enum locks lock, struct xa_client *client, AESPB *pb)
 	w = get_wind_by_handle(lock, pb->intin[0]);
 	if (!w)
 	{
+// 		if (d) display(" wind %d doesnt exists!", pb->intin[0]);
 		pb->intout[0] = 0;
 	}
 	else
@@ -152,6 +157,7 @@ unsigned long
 XA_wind_close(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	struct xa_window *w;
+// 	bool d = (!strnicmp("cops", client->proc_name, 4));
 
 	CONTROL(1,1,0)	
 
@@ -162,6 +168,7 @@ XA_wind_close(enum locks lock, struct xa_client *client, AESPB *pb)
 	if (w == 0)
 	{
 		DIAGS(("WARNING:wind_close for %s: Invalid window handle %d", c_owner(client), pb->intin[0]));
+// 		if (d) display("WARNING:wind_close for %s: Invalid window handle %d", client->proc_name, pb->intin[0]);
 		pb->intout[0] = 1;
 		return XAC_DONE;
 	}
@@ -170,10 +177,11 @@ XA_wind_close(enum locks lock, struct xa_client *client, AESPB *pb)
 	if (w->owner != client)
 	{
 		DIAGS(("WARNING: %s cannot close window %d (not owner)", c_owner(client), w->handle));
+// 		if (d) display("WARNING: %s cannot close window %d (not owner)", client->proc_name, w->handle);
 		pb->intout[0] = 1;
 		return XAC_DONE;
 	}
-
+// 	if (d) display("closing %d", w->handle);
 	close_window(lock, w);
 	pb->intout[0] = 1;
 
@@ -362,6 +370,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	struct xa_window *w;
 	int wind = pb->intin[0];
 	int cmd = pb->intin[1];
+// 	bool d = (!strnicmp("cops", client->proc_name, 4));
 
 	CONTROL(6,1,0)	
 
@@ -369,6 +378,9 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	DIAG((D_wind, client, "wind_set for %s  w%lx, h%d, %s", c_owner(client),
 		w, w ? w->handle : -1, setget(cmd)));
+
+// 	if (d) display(" wind_set for %s  w%lx, h%d, %s", w ? w->owner->proc_name : client->proc_name,
+// 		w, w ? w->handle : -1, setget(cmd));
 
 	/* wind 0 is the root window */
 	if (!w || wind == 0)
@@ -1959,13 +1971,16 @@ XA_wind_update(enum locks lock, struct xa_client *client, AESPB *pb)
 	{
 		DIAG((D_sema, NULL, "'%s' BEG_UPDATE", p->name));
 
-		if (lock_screen(p, try, pb->intout, 1))
+		if (lock_screen(p, try))
 		{
 			if (client)
 				client->fmd.lock |= SCREEN_UPD;
 			C.update_lock = p;
 			C.updatelock_count++;
 		}
+		else if (try)
+			pb->intout[0] = 0;
+
 		DIAG((D_sema, NULL, " -- count %d for %s",
 			C.updatelock_count, C.update_lock->name));
 
@@ -1974,7 +1989,7 @@ XA_wind_update(enum locks lock, struct xa_client *client, AESPB *pb)
 	/* Release the update lock */
 	case END_UPDATE:
 	{
-		if (unlock_screen(p, 1))
+		if (unlock_screen(p))
 		{
 			if (client)
 				client->fmd.lock &= ~SCREEN_UPD;
@@ -1997,13 +2012,15 @@ XA_wind_update(enum locks lock, struct xa_client *client, AESPB *pb)
 	{
 		DIAG((D_sema, NULL, "'%s' BEG_MCTRL", client->name));
 
-		if (lock_mouse(p, try, pb->intout, 1))
+		if (lock_mouse(p, try))
 		{
 			if (client)
 				client->fmd.lock |= MOUSE_UPD;
 			C.mouse_lock = p;
 			C.mouselock_count++;
 		}
+		else if (try)
+			pb->intout[0] = 0;
 
 		DIAG((D_sema, NULL, " -- count %d for %s",
 			C.mouselock_count, C.mouse_lock->name));
@@ -2012,8 +2029,7 @@ XA_wind_update(enum locks lock, struct xa_client *client, AESPB *pb)
 	/* Release the mouse lock */
 	case END_MCTRL:
 	{
-		
-		if (unlock_mouse(p, 1))
+		if (unlock_mouse(p))
 		{
 			if (client)
 				client->fmd.lock &= ~MOUSE_UPD;

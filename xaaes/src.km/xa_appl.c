@@ -1090,7 +1090,9 @@ XA_appl_write(enum locks lock, struct xa_client *client, AESPB *pb)
 				}
 			}
 			if (m)
+			{
 				send_a_message(lock, dest_clnt, amq, qmf, m);
+			}
 			
 			if (dest_clnt != client)
 				yield();

@@ -234,7 +234,45 @@ post_cevent(struct xa_client *client,
 		Unblock(client, 1, 0);
 	}
 }
+#if 1
+short
+dispatch_selcevent(struct xa_client *client, void *f, bool cancel)
+{
+	struct c_event *ce = client->cevnt_head, *p = NULL;
 
+	DIAG((D_evnt, client, "dispatch_selcevent: function %lx in client events for %s", f, client->name));
+
+	while (ce)
+	{
+		if (ce->funct == f)
+		{
+			struct c_event *nce;
+			DIAGS((" --- Found func==%lx, dispatching...", f));
+			DIAGS((" --- delete client event!"));
+
+			if (p)
+				p->next = ce->next;
+			else
+				client->cevnt_head = ce->next;
+
+			if (!(nce = ce->next))
+				client->cevnt_tail = p;
+
+			client->cevnt_count--;
+			
+			(*ce->funct)(0, ce, cancel);
+
+			DIAGS(("---------- freeing CE %lx with function %lx", ce, f));
+			kfree(ce);
+			ce = nce;
+			return (volatile short)client->cevnt_count;
+		}
+		p = ce;
+		ce = ce->next;
+	}
+	return 0;
+}
+#else
 short
 dispatch_selcevent(struct xa_client *client, void *f)
 {
@@ -272,6 +310,8 @@ dispatch_selcevent(struct xa_client *client, void *f)
 	}
 	return ret;
 }
+#endif
+
 short
 dispatch_cevent(struct xa_client *client)
 {
@@ -451,7 +491,12 @@ iBlock(struct xa_client *client, int which)
 	 */
 	if (check_queued_events(client))
 	{
-		cancel_mutimeout(client);
+		if (C.Hlp_pb->intout[0] & MU_MESAG)
+		{
+			CHlp_aesmsg(client);
+		}
+		client->waiting_for = XAWAIT_MULTI|MU_MESAG;
+		client->waiting_pb = C.Hlp_pb;
 		return;
 	}
 
@@ -502,7 +547,13 @@ iBlock(struct xa_client *client, int which)
 
 		if (check_queued_events(client))
 		{
-			cancel_mutimeout(client);
+			if (C.Hlp_pb->intout[0] & MU_MESAG)
+			{
+				CHlp_aesmsg(client);
+			}
+			client->waiting_for = XAWAIT_MULTI|MU_MESAG;
+			client->waiting_pb = C.Hlp_pb;
+// 			cancel_mutimeout(client);
 			return;
 		}
 	}
@@ -934,11 +985,15 @@ helpthread_entry(void *c)
 		struct helpthread_data *htd;
 		AESPB *pb;
 		short *d;
+		long pbsize = sizeof(*pb) + ((12 + 32 + 32 + 32 + 32 + 32 + 32) * 2);
 
-		if ((pb = kmalloc(sizeof(*pb) + ((12 + 32 + 32 + 32 + 32 + 32) * 2))))
+		if ((pb = kmalloc(pbsize))) //sizeof(*pb) + ((12 + 32 + 32 + 32 + 32 + 32 + 32) * 2))))
 		{
 			volatile short *t = &client->tp_term;
+			union msg_buf *msgb;
 
+			bzero(pb, pbsize);
+			
 			d = (short *)((long)pb + sizeof(*pb));
 			pb->control = d;
 			d += 12;
@@ -951,18 +1006,24 @@ helpthread_entry(void *c)
 			pb->addrin = (const long *)d;
 			d += 32;
 			pb->addrout = (long *)d;
+
+			d += 32;
+			msgb = (union msg_buf *)d;
 		
 			client_nicename(client, aeshlp_name, true);
 			C.Hlp = client;
 			client->type = APP_AESTHREAD;
 			C.Hlp_pb = client->waiting_pb = pb;
-			client->waiting_for = 0;
+			client->waiting_for = MU_MESAG;
 			client->block = iBlock;
 			client->options.app_opts |= XAAO_OBJC_EDIT;
 			client->status |= CS_NO_SCRNLOCK;
 			init_helpthread(NOLOCKING, client);
 			while (!*t)
 			{
+				client->waiting_pb = C.Hlp_pb;
+				client->waiting_pb->addrin[0] = (long)msgb;
+				client->waiting_for = MU_MESAG|XAWAIT_MULTI;
 				(*client->block)(client, 0);
 				if (*t)
 				{

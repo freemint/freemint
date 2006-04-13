@@ -167,7 +167,7 @@ wdialog_redraw(enum locks lock, struct xa_window *wind, struct xa_aes_object sta
 				start = aesobj(obtree, item);
 		}
 		
-		lock_screen(wind->owner->p, false, NULL, 0);
+		lock_screen(wind->owner->p, false);
 		hidem();
 				
 		if (drwcurs)
@@ -200,7 +200,7 @@ wdialog_redraw(enum locks lock, struct xa_window *wind, struct xa_aes_object sta
 		
 		showm();
 		(*v->api->clear_clip)(v);
-		unlock_screen(wind->owner->p, 0);
+		unlock_screen(wind->owner->p);
 	}
 }
 
@@ -257,7 +257,7 @@ wdlg_redraw(enum locks lock, struct xa_window *wind, struct xa_aes_object start,
 		
 		drwcurs = (!wt->ei && edit_set(&wt->e));
 		
-		lock_screen(wind->owner->p, false, NULL, 0);
+		lock_screen(wind->owner->p, false);
 		hidem();
 				
 		if (drwcurs)
@@ -290,7 +290,7 @@ wdlg_redraw(enum locks lock, struct xa_window *wind, struct xa_aes_object start,
 		
 		showm();
 		(*v->api->clear_clip)(v);
-		unlock_screen(wind->owner->p, 0);
+		unlock_screen(wind->owner->p);
 	}
 }
 
@@ -499,6 +499,7 @@ XA_wdlg_create(enum locks lock, struct xa_client *client, AESPB *pb)
 				     client->options.thinframe,
 				     client->options.thinwork,
 				     r, NULL, NULL);
+
 		if (wind)
 		{
 			short rep;
@@ -652,7 +653,6 @@ XA_wdlg_close(enum locks lock, struct xa_client *client, AESPB *pb)
 	handle = (short)pb->addrin[0];
 
 	DIAG((D_wdlg, client, "(%d)XA_wdlg_close, handle=%lx", handle, pb->addrin[0]));
-
 	/* Get the window */
 	wind = get_wind_by_handle(lock, handle);
 	if (wind && (wdlg = wind->wdlg))
@@ -817,6 +817,7 @@ XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	/* Get the window */
 	wind = get_wind_by_handle(lock, handle);
+
 	if (wind && (wdlg = wind->wdlg))
 	{
 		pb->intout[0] = 1;
@@ -873,10 +874,8 @@ XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 					if (!(wind->window_status & XAWS_ICONIFIED))
 					{
 						obj_rectangle(wt, aesobj(obtree, 0), &or);
-						
 						set_toolbar_widget(lock, wind, client, obtree, aesobj(obtree, 0), WIP_NOTEXT, STW_ZEN, &wdlg_th, &or);
 						wt->exit_form = NULL;
-						
 						r = calc_window(lock, client, WC_BORDER,
 							wind->active_widgets, wind->dial,
 							client->options.thinframe,
@@ -907,7 +906,6 @@ XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 					nr.y -= wind->wa.y - wind->rc.y;
 					nr.w += wind->rc.w - wind->wa.w;
 					nr.h += wind->rc.h - wind->wa.h;
-
 					move_window(lock, wind, true, -1, nr.x, nr.y, nr.w, nr.h);
 				}
 				break;
@@ -1010,6 +1008,7 @@ XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 						r.w = obtree->ob_width;
 						r.h = obtree->ob_height;
 					}
+
 					move_window(lock, wind, true, ~XAWS_ICONIFIED, nr->x, nr->y, nr->w, nr->h);
 				}
 				pb->intout[0] = 1;
@@ -1187,7 +1186,6 @@ wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms 
 					if (!same_aesobj(&nxtobj, &ei->o))
 					{
 						short no = aesobj_item(&nxtobj);
-// 						display(" editfocus change from %d in %lx to %d in %lx", ei->o.item, ei->o.tree, nxtobj.item, nxtobj.tree);
 						obj_edit(wt, v, ED_END, nxtobj, 0, 0, NULL, true, &wind->wa, wind->rect_list.start, NULL, NULL);
 						obj_edit(wt, v, ED_INIT, nxtobj, 0, -1, NULL, true, &wind->wa, wind->rect_list.start, NULL, NULL);
 						if (wep->callout)

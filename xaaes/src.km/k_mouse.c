@@ -329,12 +329,14 @@ deliver_button_event(struct xa_window *wind, struct xa_client *target, const str
 	}
 	else
 	{
+		
 		/*
 		 * And post a "deliver this button event" client event
 		 */
 		DIAG((D_mouse, target, "deliver_button_event: Send cXA_deliver_button_event to %s", target->name));
 		post_cevent(target, cXA_deliver_button_event, wind,NULL, 0,0, NULL,md);
 	}
+	
 }
 
 static void
@@ -523,6 +525,7 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 		{
 			dispatch_button_event(lock, mouse_wind, md);
 		}
+		
 		return;
 	}
 	else if (locker)

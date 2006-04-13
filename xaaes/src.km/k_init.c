@@ -657,10 +657,10 @@ k_init(unsigned long vm)
 	
 	(*v->api->f_perimeter)(v, 0);
 
-	v_show_c(C.P_handle, 0);
-	hidem();
-	graf_mouse(ARROW, NULL, NULL, false);
-	showm();
+// 	v_show_c(C.P_handle, 0);
+// 	hidem();
+// 	graf_mouse(ARROW, NULL, NULL, false);
+// 	showm();
 	
 	objc_rend.dial_colours =
 		MONO ? bw_default_colours : default_colours;
@@ -910,7 +910,7 @@ k_init(unsigned long vm)
 	/* Initial iconified window coords */
 	C.iconify = iconify_grid(0);
 
-	v_show_c(v->handle, 0); /* 0 = reset */
+// 	v_show_c(v->handle, 1); /* 0 = reset */
 
 // 	display("Open taskman -- perhaps");
 // 	if (cfg.opentaskman)
@@ -928,6 +928,8 @@ k_init(unsigned long vm)
 	cfg.mn_set.delay = 250;
 	cfg.mn_set.speed = 0;
 	cfg.mn_set.height = root_window->wa.h / screen.c_max_h;
+
+	v_show_c(C.P_handle, 0);
 
 	return 0;
 }

@@ -105,6 +105,7 @@ void	obj_unset_g_popup(XA_TREE *swt, struct xa_aes_object sobj, char *txt);
 void	obj_change_popup_entry(struct xa_aes_object obj, short obnum, char *s);
 short	obj_offset(XA_TREE *wt, struct xa_aes_object object, short *mx, short *my);
 void	obj_rectangle(XA_TREE *wt, struct xa_aes_object object, RECT *c);
+void	obj_orectangle(XA_TREE *wt, struct xa_aes_object object, RECT *c);
 void	obj_area(XA_TREE *wt, struct xa_aes_object object, RECT *c);
 struct xa_aes_object	obj_find(XA_TREE *wt, struct xa_aes_object object, short depth, short mx, short my, RECT *c);
 

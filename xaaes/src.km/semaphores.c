@@ -198,10 +198,10 @@ free_menustruct_lock(void)
 }
 
 bool
-lock_screen(struct proc *proc, bool try, short *ret, int which)
+lock_screen(struct proc *proc, bool try)
 {
-	DIAG((D_sema, NULL, "[%d]lock_screen for (%d)%s state: %d for (%d)%s, try: %d",
-		which, proc->pid, proc->name, update_lock.counter,
+	DIAG((D_sema, NULL, "lock_screen for (%d)%s state: %d for (%d)%s, try: %d",
+		proc->pid, proc->name, update_lock.counter,
 		update_lock.proc ? update_lock.proc->pid : -1,
 		update_lock.proc ? update_lock.proc->name : "", try));
 
@@ -215,8 +215,8 @@ lock_screen(struct proc *proc, bool try, short *ret, int which)
 				ressource_semaphore_free(&mouse_lock);
 		}
 
-		if (ret)
-			*ret = 0;
+// 		if (ret)
+// 			*ret = 0;
 
 		return false;
 	}
@@ -227,12 +227,12 @@ lock_screen(struct proc *proc, bool try, short *ret, int which)
 }
 
 bool
-unlock_screen(struct proc *proc, int which)
+unlock_screen(struct proc *proc)
 {
 	bool r = false;
 
-	DIAG((D_sema, NULL, "[%d]unlock_screen for (%d)%s state: %d for (%d)%s",
-		which, proc->pid, proc->name, update_lock.counter,
+	DIAG((D_sema, NULL, "unlock_screen for (%d)%s state: %d for (%d)%s",
+		proc->pid, proc->name, update_lock.counter,
 		update_lock.proc ? update_lock.proc->pid : -1,
 		update_lock.proc ? update_lock.proc->name : ""));
 
@@ -250,10 +250,10 @@ unlock_screen(struct proc *proc, int which)
 }
 
 bool
-lock_mouse(struct proc *proc, bool try, short *ret, int which)
+lock_mouse(struct proc *proc, bool try)
 {
 	DIAG((D_sema, NULL, "[%d]lock_mouse for (%d)%s state: %d for (%d)%s, try: %d",
-		which, proc->pid, proc->name, mouse_lock.counter,
+		proc->pid, proc->name, mouse_lock.counter,
 		mouse_lock.proc ? mouse_lock.proc->pid : -1,
 		mouse_lock.proc ? mouse_lock.proc->name : "", try));
 
@@ -261,10 +261,7 @@ lock_mouse(struct proc *proc, bool try, short *ret, int which)
 	{
 		if (ressource_semaphore_try(&mouse_lock, proc))
 			return true;
-
-		if (ret)
-			*ret = 0;
-
+		
 		return false;
 	}
 
@@ -273,12 +270,12 @@ lock_mouse(struct proc *proc, bool try, short *ret, int which)
 }
 
 bool
-unlock_mouse(struct proc *proc, int which)
+unlock_mouse(struct proc *proc)
 {
 	bool r = false;
 
-	DIAG((D_sema, NULL, "[%d]unlock_mouse for (%d)%s state: %d for (%d)%s",
-		which, proc->pid, proc->name, mouse_lock.counter,
+	DIAG((D_sema, NULL, "unlock_mouse for (%d)%s state: %d for (%d)%s",
+		proc->pid, proc->name, mouse_lock.counter,
 		mouse_lock.proc ? mouse_lock.proc->pid : -1,
 		mouse_lock.proc ? mouse_lock.proc->name : ""));
 
@@ -308,7 +305,7 @@ lock_menustruct(struct proc *proc, bool try)
 		return ressource_semaphore_try(&ms_lock, proc);
 	}
 
-	//lock_screen(proc, false, NULL, 2);
+	//lock_screen(proc, false);
 	ressource_semaphore_lock(&ms_lock, proc);
 	return true;
 }
@@ -327,7 +324,7 @@ unlock_menustruct(struct proc *proc)
 	if (ms_lock.proc == proc)
 	{
 		r = ressource_semaphore_rel(&ms_lock, proc);
-		//unlock_screen(proc, 3);
+		//unlock_screen(proc);
 	}
 	else
 	{

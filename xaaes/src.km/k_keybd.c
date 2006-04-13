@@ -361,6 +361,21 @@ kernel_key(enum locks lock, struct rawkey *key)
 				post_cevent(client, cXA_open_menubykbd, wind,widg, 0,0, NULL,NULL);
 			return true;
 		}
+#if 0
+#if GENERATE_DIAGS == 0
+		case 'D':
+		{
+			short mode;
+			if (key->raw.conin.state & (K_RSHIFT|K_LSHIFT))
+				mode = 0;
+			else
+				mode = 1;
+			post_cevent(C.Hlp, ceExecfunc, screen_dump, NULL, mode,0, NULL,NULL);
+
+			return true;
+		}
+#endif
+#endif
 		case 'R':				/* attempt to recover a hung system */
 		{
 			if (key->raw.conin.state & (K_RSHIFT|K_LSHIFT))
@@ -403,6 +418,13 @@ otm:
 			quit_all_clients(lock, nl, NULL, AP_TERM);
 			return true;
 		}
+		case 'P':
+		{
+			DIAGS(("Recover palette"));
+			if (screen.planes <= 8)
+				set_syspalette(C.P_handle, screen.palette);
+			return true;
+		}
 		case 'Q':
 		{
 			DIAGS(("shutdown by CtlAlt Q"));
@@ -440,13 +462,13 @@ otm:
 			}
 			return true;
 		}	
-	#if GENERATE_DIAGS
+#if GENERATE_DIAGS
 		case 'D':				/* ctrl+alt+D, turn on debugging output */
 		{
 			D.debug_level = 4;
 			return true;
 		}
-	#endif
+#endif
 #if GENERATE_DIAGS
 		case 'O':
 		{
