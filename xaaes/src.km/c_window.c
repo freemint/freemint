@@ -1207,6 +1207,8 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 	}
 	else
 	{
+		struct xa_rect_list *rl;
+
 		our_win = wind->r;
 
 		wl = wind->next;
@@ -1224,7 +1226,13 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 		after_top(lock|winlist, true);
 
 		/* Display the window using clipping rectangles from the rectangle list */
-		generate_redraws(lock, wind, &wind->r, RDRW_ALL);
+		rl = wind->rect_list.start;
+		while (rl)
+		{
+			if (xa_rect_clip(&wind->r, &rl->r, &clip))
+				generate_redraws(lock, wind, &clip/*&wind->r*/, RDRW_ALL);
+			rl = rl->next;
+		}
 	}
 
 	DIAG((D_wind, wind->owner, "open_window %d for %s exit with 1",
@@ -1590,7 +1598,7 @@ move_window(enum locks lock, struct xa_window *wind, bool blit, short newstate, 
 
 	set_and_update_window(wind, blit, false, &new);
 
-	if ((wind->window_status & XAWS_OPEN) && !(wind->dial & created_for_SLIST))
+	if ((wind->window_status & XAWS_OPEN) && !(wind->dial & created_for_SLIST) && !(wind->active_widgets & STORE_BACK))
 	{
 		struct xa_window *nxt = wind->nolist ? (wind->next ? wind->next : window_list) : wind->next;
 		update_windows_below(lock, &old, &new, nxt, NULL);
@@ -1660,8 +1668,8 @@ close_window(enum locks lock, struct xa_window *wind)
 			wi_put_first(&S.closed_nlwindows, wind);
 			
 			r = wind->r;
-
-			update_windows_below(lock, &r, NULL, wl, NULL);
+			if (!(wind->active_widgets & STORE_BACK))
+				update_windows_below(lock, &r, NULL, wl, NULL);
 		}
 
 		if (wind->active_widgets & STORE_BACK)
@@ -2349,7 +2357,7 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 			if (wind->active_widgets & STORE_BACK)
 				(*xa_vdiapi->form_save)(0, wind->r, &(wind->background));
 
-			if (!(wind->dial & created_for_SLIST))
+			if (!(wind->dial & created_for_SLIST)) // && !(wind->active_widgets & STORE_BACK))
 				generate_redraws(wlock, wind, (RECT *)&wind->r, !only_wa ? RDRW_ALL : RDRW_WA);
 		}
 		

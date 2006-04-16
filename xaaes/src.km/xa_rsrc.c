@@ -1369,8 +1369,7 @@ XA_rsrc_load(enum locks lock, struct xa_client *client, AESPB *pb)
 		return 0;
 	}
 
-
-	DIAGS(("ERROR: rsrc_load '%s' failed", (pb->addrin[0]) ? (const char *)pb->addrin[0] : "~~"));
+	DIAGS(("ERROR: rsrc_load '%s' %sfailed", (pb->addrin[0]) ? (const char *)pb->addrin[0] : "~~", ret ? "suceeded":"failed"));
 
 	pb->intout[0] = ret; //0;
 	return XAC_DONE;

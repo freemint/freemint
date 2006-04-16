@@ -382,6 +382,7 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 		alert_form[ALERT_BUT1].ob_y -= dh;
 		alert_form[ALERT_BUT2].ob_y -= dh;
 		alert_form[ALERT_BUT3].ob_y -= dh;
+		alert_form[ALERT_BUT4].ob_y -= dh;
 	}
 
 	/* Set the default button if it was specified */
@@ -410,7 +411,7 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 		obj_rectangle(wt, aesobj(alert_form, 0), &or);
 		center_rect(&or);
 		
-		if (C.update_lock && C.update_lock == client->p)
+		if (update_locked() == client->p) //(C.update_lock && C.update_lock == client->p)
 		{
 			kind |= STORE_BACK;
 			nolist = true;
