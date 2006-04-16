@@ -29,6 +29,59 @@
 
 #include "k_mouse.h"
 
+#if BOOTLOG
+
+static inline void
+write_bootlog(char *t, short l)
+{
+	struct file *fp;
+
+	if (C.bootlog_path[0])
+	{
+		fp = kernel_open(C.bootlog_path, O_RDWR, NULL,NULL);
+		
+		if (!fp)
+			fp = kernel_open(C.bootlog_path, O_RDWR|O_CREAT|O_TRUNC, NULL,NULL);
+		else
+			kernel_lseek(fp, 0, SEEK_END);
+		if (fp) {
+			kernel_write(fp, t, l);
+			kernel_close(fp);
+		}
+	}
+}
+
+void
+bootlog(bool disp, const char *fmt, ...)
+{
+	char buf[512];
+	va_list args;
+	long l;
+
+	va_start(args, fmt);
+	l = vsprintf(buf, sizeof(buf), fmt, args);
+	va_end(args);
+
+	DEBUG((buf));
+
+	buf[l] = '\n';
+#if GENERATE_DIAGS
+	if (D.debug_file)
+	{
+		kernel_write(D.debug_file, buf, l+1);
+	}
+#endif
+	write_bootlog(buf, l+1);
+
+	if (disp)
+	{
+		buf[l] = '\r';
+		buf[l+1] = '\n';
+		buf[l+2] = '\0';
+		c_conws(buf);
+	}
+}
+#endif
 
 void
 display(const char *fmt, ...)
@@ -43,6 +96,7 @@ display(const char *fmt, ...)
 
 	DEBUG((buf));
 
+	buf[l] = '\n';
 #if GENERATE_DIAGS
 	if (D.debug_file)
 	{
@@ -51,11 +105,7 @@ display(const char *fmt, ...)
 	}
 #endif
 #if BOOTLOG
-	if (C.bootlog_file)
-	{
-		buf[l] = '\n';
-		kernel_write(C.bootlog_file, buf, l+1);
-	}
+	write_bootlog(buf, l+1);
 #endif
 #if 1
 	buf[l] = '\r';
@@ -85,10 +135,7 @@ ndisplay(const char *fmt, ...)
 	}
 #endif
 #if BOOTLOG
-	if (C.bootlog_file)
-	{
-		kernel_write(C.bootlog_file, buf, l);
-	}
+	write_bootlog(buf, l);
 #endif
 #if 1
 	buf[l] = '\0';

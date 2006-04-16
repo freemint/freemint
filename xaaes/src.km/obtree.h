@@ -106,7 +106,7 @@ void	obj_change_popup_entry(struct xa_aes_object obj, short obnum, char *s);
 short	obj_offset(XA_TREE *wt, struct xa_aes_object object, short *mx, short *my);
 void	obj_rectangle(XA_TREE *wt, struct xa_aes_object object, RECT *c);
 void	obj_orectangle(XA_TREE *wt, struct xa_aes_object object, RECT *c);
-void	obj_area(XA_TREE *wt, struct xa_aes_object object, RECT *c);
+bool	obj_area(XA_TREE *wt, struct xa_aes_object object, RECT *c);
 struct xa_aes_object	obj_find(XA_TREE *wt, struct xa_aes_object object, short depth, short mx, short my, RECT *c);
 
 void	obj_change(XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_object obj, int transdepth, short state, short flags, bool redraw, const RECT *clip, struct xa_rect_list *r, short dflags);
@@ -131,13 +131,27 @@ setsel(OBJECT *ob, bool sel)
 	ob->ob_state = state;
 }
 
-static inline void
+static inline bool
 disable_object(OBJECT *ob, bool set)
 {
 	if (set)
-		ob->ob_state |= OS_DISABLED;
+	{
+		if (!(ob->ob_state & OS_DISABLED)) {
+			ob->ob_state |= OS_DISABLED;
+			return true;
+		}
+		else
+			return false;
+	}
 	else
-		ob->ob_state &= ~OS_DISABLED;
+	{
+		if ((ob->ob_state & OS_DISABLED)) {
+			ob->ob_state &= ~OS_DISABLED;
+			return true;
+		}
+		else
+			return false;
+	}
 }
 
 static inline bool

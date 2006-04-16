@@ -50,7 +50,6 @@ const char ** get_raw_env(void) { return (const char **)strings; }
 #if GENERATE_DIAGS
 static void display_env(char **env, int which);
 #endif
-static const char *get_env(enum locks lock, const char *name);
 static int copy_env(char *to, char *s[], const char *without, char **last);
 static long count_env(char *s[], const char *without);
 
@@ -997,6 +996,8 @@ wc_match (const char *name, const char *template)
 	const char *p, *q;
 	int stop;
 
+	DIAGS(("wc_match '%s' - '%s'", template, name));
+
 	for (p = name, q = template; *p; )
 	{
 		if (*p == *q)
@@ -1063,7 +1064,10 @@ wc_stat64(int mode, const char *node, char *fn, struct stat *st)
 	r = kernel_opendir(&dirh, buf);
 	
 	if (r)
+	{
+		DIAGS(("Error %lx opening dir %s", r, buf));
 		return -1;
+	}
 
 	name = buf + len;
 	len = sizeof(buf) - len;
@@ -1113,7 +1117,7 @@ shell_find(enum locks lock, struct xa_client *client, char *fn)
 		{
 			/* Check the clients home path */
 			r = wc_stat64(0, client->home_path, fn, &st);
-			DIAGS(("[1]  --   try: '%s\\%s :: %ld", client->home_path, fn, r));
+			DIAGS(("[1]  --   try: '%s\\%s' :: %ld", client->home_path, fn, r));
 			if (r == 0 && S_ISREG(st.mode))
 			{
 				sprintf(path, len, "%s\\%s", client->home_path, fn);
@@ -1248,7 +1252,7 @@ display_env(char **env, int which)
 #endif
 
 /* This version finds XX & XX= */
-static const char *
+const char *
 get_env(enum locks lock, const char *name)
 {
 	int i;
@@ -1304,13 +1308,14 @@ copy_env(char *to, char *s[], const char *without, char **last)
 
 	while (s[i])
 	{
-		if (strncmp(s[i], ARGV, 4) == 0)
+		if (!strncmp(s[i], ARGV, 4))
 		{
 			DIAGS(("copy_env ARGV: skipped remainder of environment"));
 			break;
 		}
 
-		if (l == 0 || (l != 0 && strncmp(s[i], without, l) != 0))
+		if (!l || strncmp(s[i], without, l))
+// 		if (l == 0 || (l != 0 && strncmp(s[i], without, l) != 0))
 		{
 			strcpy(to, s[i]);
 			s[j++] = to;

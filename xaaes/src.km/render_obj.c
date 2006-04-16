@@ -5559,7 +5559,7 @@ new_theme(void **themeptr)
 			current_theme = (*api->kmalloc)(sizeof(struct theme));
 			if (current_theme)
 			{
-				if (MONO)
+				if (screen->planes < 4)
 					*current_theme = mono_stdtheme;
 				else
 					*current_theme = stdtheme;

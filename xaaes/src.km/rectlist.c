@@ -309,6 +309,7 @@ make_rect_list(struct xa_window *wind, bool swap, short which)
 		p.ptr1 = S.open_nlwindows.last;
 	else
 		p.ptr1 = wind->prev;
+
 	nrl = build_rect_list(&p);
 	if (swap)
 		rle->start = rle->next = nrl;

@@ -178,9 +178,9 @@ XA_keyboard_event(enum locks lock, const struct rawkey *key)
 	struct xa_client *locked_client;
 	struct xa_client *client;
 	struct rawkey *rk;
-	bool waiting;
+	bool waiting, chlp_lock = update_locked() == C.Hlp->p;
 
-	if (TAB_LIST_START)
+	if (!chlp_lock && TAB_LIST_START)
 	{
 		rk = kmalloc(sizeof(*rk));
 		if (rk)
@@ -361,7 +361,7 @@ kernel_key(enum locks lock, struct rawkey *key)
 				post_cevent(client, cXA_open_menubykbd, wind,widg, 0,0, NULL,NULL);
 			return true;
 		}
-#if 0
+#if 1
 #if GENERATE_DIAGS == 0
 		case 'D':
 		{

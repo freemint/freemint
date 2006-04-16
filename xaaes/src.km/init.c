@@ -25,6 +25,7 @@
  */
 
 #include RSCHNAME
+#include "util.h"
 
 #include "init.h"
 #include "xa_global.h"
@@ -88,56 +89,56 @@ imp_msg(void)
 static void
 bootmessage(void)
 {
-	display("%s", Aes_display_name);
-	display("MultiTasking AES for MiNT");
-	display("");
-	display("(c) 1995-1999 Craig Graham, Johan Klockars, Martin Koehling, Thomas Binder");
-	display("              and other assorted dodgy characters from around the world...");
-	display("(c) 1999-2003 Henk Robbers @ Amsterdam");
-	display("    2003-2004 Frank Naumann <fnaumann@freemint.de> and");
-	display("              Odd Skancke <ozk@atari.org>");
-	display("");
-	display("Using Harald Siegmunds NKCC");
-	display("");
-	display("Date: %s, time: %s", __DATE__, __TIME__);
-	display("Supports mouse wheels");
-	display("Compile time switches enabled:");
+	BLOG((true, "%s", Aes_display_name));
+	BLOG((true, "MultiTasking AES for MiNT"));
+	BLOG((true, ""));
+	BLOG((true, "(c) 1995-1999 Craig Graham, Johan Klockars, Martin Koehling, Thomas Binder"));
+	BLOG((true, "              and other assorted dodgy characters from around the world..."));
+	BLOG((true, "(c) 1999-2003 Henk Robbers @ Amsterdam"));
+	BLOG((true, "    2003-2004 Frank Naumann <fnaumann@freemint.de> and"));
+	BLOG((true, "              Odd Skancke <ozk@atari.org>"));
+	BLOG((true, ""));
+	BLOG((true, "Using Harald Siegmunds NKCC"));
+	BLOG((true, ""));
+	BLOG((true, "Date: %s, time: %s", __DATE__, __TIME__));
+	BLOG((true, "Supports mouse wheels"));
+	BLOG((true, "Compile time switches enabled:"));
 
 #if GENERATE_DIAGNOSTICS
-	display(" - Diagnostics");
+	BLOG((true, " - Diagnostics"));
 #endif
 
 #if DISPLAY_LOGO_IN_TITLE
-	display(" - Logo in title bar");
+	BLOG((true, " - Logo in title bar"));
 #endif
 
 #if POINT_TO_TYPE
-	display(" - Point-to-type capability");
+	BLOG((true, " - Point-to-type capability"));
 #endif
 
 #if ALT_CTRL_APP_OPS
-	display(" - CTRL+ALT key-combo's");
+	BLOG((true, " - CTRL+ALT key-combo's"));
 #endif
 	if (C.mvalidate)
-		display(" - Client vector validation");
+		BLOG((true, " - Client vector validation"));
 
-	display(" - Realtime (live) window scrolling, moving and sizing");
+	BLOG((true, " - Realtime (live) window scrolling, moving and sizing"));
 
 #if PRESERVE_DIALOG_BGD
-	display(" - Preserve dialog backgrounds");
+	BLOG((true, " - Preserve dialog backgrounds"));
 #endif
 
 #if !FILESELECTOR
-	display(" - Built without file selector");
+	BLOG((true, " - Built without file selector"));
 #endif
 
 	if (cfg.fsel_cookie)
 		display(" - FSEL cookie found");
 
 	if (cfg.auto_program)
-		display("auto program");
+		BLOG((true, "auto program"));
 
-	display("");
+	BLOG((true, ""));
 }
 
 struct kentry *kentry;
@@ -171,6 +172,7 @@ sysfile_exists(const char *sd, char *fn)
  * - setup internal data
  * - start main kernel thread
  */
+static Path start_path;
 long
 init(struct kentry *k, const char *path)
 {
@@ -182,7 +184,8 @@ init(struct kentry *k, const char *path)
 	next_res = 0L;
 
 	bzero(&G, sizeof(G));
-
+	C.bootlog_path[0] = '\0';
+	get_drive_and_path(start_path, sizeof(start_path));
 again:
 	/* zero anything out */
 	bzero(&default_options, sizeof(default_options));
@@ -190,10 +193,21 @@ again:
 	bzero(&S, sizeof(S));
 	bzero(&C, sizeof(C));
 
+	strcpy(C.start_path, start_path);
 #if BOOTLOG
-	strcpy(C.bootlog_path, "xa_boot.log");
-	C.bootlog_file = kernel_open(C.bootlog_path, O_WRONLY|O_CREAT|O_TRUNC, NULL, NULL);
+	if (!C.bootlog_path[0])
+	{
+		strcpy(C.bootlog_path, C.start_path);
+		strcat(C.bootlog_path, "xa_boot.log");
+		display("bootlog '%s'", C.bootlog_path);
+	}
+
+	if (first)
+		BLOG(( false, "\n~~~~~~~~~~~~ XaAES start up!! ~~~~~~~~~~~~~~~~" ));
+	else
+		BLOG((false, "\n~~~~~~~~~~~~ XaAES restarting! ~~~~~~~~~~~~~~~"));
 #endif
+	
 	if (check_kentry_version())
 	{
 		err = ENOSYS;
@@ -228,8 +242,8 @@ again:
 			
 		if (flag)
 		{
-			display("ERROR: There exist an moose.xdd in your FreeMiNT sysdir.");
-			display("       Please remove it before starting the XaAES kernel module!");
+			BLOG((true, "ERROR: There exist an moose.xdd in your FreeMiNT sysdir."));
+			BLOG((true, "       Please remove it before starting the XaAES kernel module!"));
 			err = EINVAL;
 			goto error;
 		}
@@ -243,10 +257,10 @@ again:
 		
 		if (flag)
 		{
-			display("ERROR: There exist an moose.adi in your FreeMiNT sysdir.");
-			display(" sysdir = '%s'", sysdir);
-			display("       Please remove it and install it in the XaAES module directory");
-			display("       before starting the XaAES kernel module!");
+			BLOG((true, "ERROR: There exist an moose.adi in your FreeMiNT sysdir."));
+			BLOG((true, " sysdir = '%s'", sysdir));
+			BLOG((true, "       Please remove it and install it in the XaAES module directory"));
+			BLOG((true, "       before starting the XaAES kernel module!"));
 			err = EINVAL;
 			goto error;
 		}
@@ -315,7 +329,7 @@ again:
 #if !FILESELECTOR
 #error external fileselectors not supported yet!
 	cfg.no_xa_fsel = true;
-	DIAGS(("XaAES is compiled without builtin fileselector"));
+	BLOG((false, "XaAES is compiled without builtin fileselector"));
 #endif
 	cfg.fsel_cookie = s_system(S_GETCOOKIE, COOKIE_FSEL, 0) != 0xffffffff;
 	if (cfg.fsel_cookie)
@@ -337,7 +351,7 @@ again:
 	C.Aes = kmalloc(sizeof(*C.Aes));
 	if (!C.Aes)
 	{
-		display("XaAES ERROR: Can't allocate memory?");
+		BLOG((true, "XaAES ERROR: Can't allocate memory?"));
 		err = ENOMEM;
 		goto error;
 	}
@@ -379,7 +393,7 @@ again:
 		if (name)
 			*name = '\0';
 	}
-	DIAGS(("module path: '%s'", C.Aes->home_path));
+	BLOG((false, "module path: '%s'", C.Aes->home_path));
 
 	C.Aes->xdrive = d_getdrv();
 	d_getpath(C.Aes->xpath, 0);
@@ -395,8 +409,9 @@ again:
 		
 		if (!flag)
 		{
-			display("ERROR: There exist no moose.adi in your XaAES module directory.");
-			display("       Please install it before starting the XaAES kernel module!");
+			
+			BLOG((true, "ERROR: There exist no moose.adi in your XaAES module directory."));
+			BLOG((true, "       Please install it before starting the XaAES kernel module!"));
 			err = EINVAL;
 			goto error;
 		}
@@ -408,7 +423,7 @@ again:
 	/* clear my_global_aes[0] for old gemlib */
 	my_global_aes[0] = 0;
 	mt_appl_init(my_global_aes);
-	DIAGS(("appl_init -> %i", my_global_aes[0]));
+	BLOG((false, "appl_init -> %i", my_global_aes[0]));
 
 	cfg.auto_program = (my_global_aes[0] == 0);
 
@@ -418,13 +433,13 @@ again:
 	/* Print a text boot message */
 	if (first)
 		bootmessage();
-	DIAGS(("bootmessage ok!"));
+	BLOG((false, "bootmessage ok!"));
 
 	/* Setup the kernel OS call jump table */
 	
 	setup_handler_table();
 	
-	DIAGS(("setup_handler_table ok!"));
+	BLOG((false, "setup_handler_table ok!"));
 
 	/* set bit 3 in conterm, so Bconin returns state of ALT and CTRL in upper 8 bit */
 	{
@@ -433,14 +448,14 @@ again:
 		helper = (s_system(S_GETBVAL, 0x0484, 0)) | 8;
 		s_system(S_SETBVAL, 0x0484, (char)helper);
 	}
-	DIAGS(("set bit 3 in conterm ok!"));
+	BLOG((false, "set bit 3 in conterm ok!"));
 
 #if GENERATE_DIAGS
 	{ short nkc_vers = nkc_init(); DIAGS(("nkc_init: version %x", nkc_vers)); }
 #else
 	nkc_init();
 #endif
-	DIAGS(("nkc_init ok!"));
+	BLOG((false, "nkc_init ok!"));
 
 	init_env();
 	/* copy over environment from loader */
@@ -472,10 +487,6 @@ again:
 	default_options.clwtna = 1;
 
 	C.Aes->options = default_options;
-
-//	addto_namelist(&cfg.ctlalta, "taskbar ");
-//	addto_namelist(&cfg.ctlalta, "strngsrv");
-//	addto_namelist(&cfg.ctlalta, "toswin2 ");
 	
 	/* Parse the config file */
 	load_config();
@@ -485,11 +496,11 @@ again:
 
 	C.aesmouse = -1;
 
-	DIAGS(("load adi modules"));
+	BLOG((false, "load adi modules"));
 	if (!G.adi_mouse)
 		adi_load(first);
 
-	DIAGS(("Creating XaAES kernel thread"));
+	BLOG((false, "Creating XaAES kernel thread"));
 	{
 		long r;
 
@@ -510,7 +521,7 @@ again:
 			sleep(WAIT_Q, (long)&loader_pid);
 		
 // 		display("AESSYS kthread exited - C.shutdown = %x", C.shutdown);
-		DIAGS(("AESSYS kthread exited - C.shutdown = %x", C.shutdown));
+		BLOG((false, "AESSYS kthread exited - C.shutdown = %x", C.shutdown));
 	
 #if GENERATE_DIAGS
 		/* Close the debug output file */
@@ -518,13 +529,6 @@ again:
 		{
 			kernel_close(D.debug_file);
 			D.debug_file = NULL;
-		}
-#endif
-#if BOOTLOG
-		if (C.bootlog_file)
-		{
-			kernel_close(C.bootlog_file);
-			C.bootlog_file = NULL;
 		}
 #endif
 		p->p_sigmask = oldmask;
@@ -557,11 +561,6 @@ error:
 	if (D.debug_file)
 		kernel_close(D.debug_file);
 #endif
-#if BOOTLOG
-	if (C.bootlog_file)
-		kernel_close(C.bootlog_file);
-#endif
-
 	return err;
 }
 

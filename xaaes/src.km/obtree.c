@@ -2522,15 +2522,17 @@ obj_orectangle(XA_TREE *wt, struct xa_aes_object obj, RECT *c)
 	display("obj_orect: %d/%d/%d/%d", *c);
 }
 
-void
+bool
 obj_area(XA_TREE *wt, struct xa_aes_object obj, RECT *c)
 {
+	bool found = true;
 	RECT r;
 	
 	if (!obj_offset(wt, obj, &c->x, &c->y))
 	{
 		obj = aesobj(wt->tree, 0);
 		obj_offset(wt, obj, &c->x, &c->y);
+		found = false;
 	}
 	c->w = aesobj_ob(&obj)->ob_width;
 	c->h = aesobj_ob(&obj)->ob_height;
@@ -2539,6 +2541,7 @@ obj_area(XA_TREE *wt, struct xa_aes_object obj, RECT *c)
 	c->y += r.y;
 	c->w -= r.w;
 	c->h -= r.h;
+	return found;
 }
 
 /*
@@ -2910,9 +2913,10 @@ obj_draw(XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_object obj, int t
 	bool pd = false;
 // 	struct xa_aes_object object;
 
+	if (!obj_area(wt, obj, &or))
+		return;
+	
 	hidem();
-
-	obj_area(wt, obj, &or);
 
 	if (transdepth == -2)
 		start = aesobj(wt->tree, 0);
