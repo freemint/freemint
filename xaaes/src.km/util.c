@@ -25,7 +25,7 @@
  */
 
 #include "util.h"
-
+#include "debug.h"
 
 int
 get_drv(const char *p)
@@ -81,6 +81,58 @@ drive_and_path(char *fname, char *path, char *name, bool n, bool set)
 	}
 
 	return drive;
+}
+
+void
+set_drive_and_path(char *fname)
+{
+	char buf[256];
+	int t; char *tn;
+	int drive;
+
+	strcpy(buf, fname);
+	tn = buf;
+	drive = get_drv(tn);
+
+	if (drive >= 0)
+		tn += 2;
+
+	/* Seperate path & name */
+	t = strlen(tn) - 1;
+	while (t >= 0 && tn[t] != '\\')
+		t--;
+
+	if (tn[t] == '\\')
+	{
+		tn[t] = '\0';
+	}
+	if (!*tn)
+	{
+		tn[0] = '\\';
+		tn[1] = '\0';
+	}
+	DIAGS(("set_drive_and_path %d '%s'", drive, tn));
+	if (drive >= 0)
+		d_setdrv(drive);
+
+	d_setpath(tn);
+}
+
+void
+get_drive_and_path(char *path, short plen)
+{
+	int drv;
+
+	drv = d_getdrv();
+	path[0] = (char)drv + 'a';
+	path[1] = ':';
+	d_getpath(path + 2, 0);
+	drv = strlen(path);
+	if (path[drv - 1] != '\\' && path[drv - 1] != '/')
+	{
+		path[drv++] = '\\';
+		path[drv] = '\0';
+	}
 }
 
 void

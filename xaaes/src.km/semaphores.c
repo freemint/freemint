@@ -252,7 +252,7 @@ unlock_screen(struct proc *proc)
 bool
 lock_mouse(struct proc *proc, bool try)
 {
-	DIAG((D_sema, NULL, "[%d]lock_mouse for (%d)%s state: %d for (%d)%s, try: %d",
+	DIAG((D_sema, NULL, "lock_mouse for (%d)%s state: %d for (%d)%s, try: %d",
 		proc->pid, proc->name, mouse_lock.counter,
 		mouse_lock.proc ? mouse_lock.proc->pid : -1,
 		mouse_lock.proc ? mouse_lock.proc->name : "", try));

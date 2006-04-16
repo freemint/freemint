@@ -1635,6 +1635,7 @@ enum window_status
 	XAWS_ZWSHADED	= 0x0008,
 	XAWS_HIDDEN	= 0x0010,
 	XAWS_FULLED	= 0x0020,
+	XAWS_NODELETE	= 0x0040,
 	XAWS_SEMA	= 0x8000,
 };
 typedef enum window_status WINDOW_STATUS;
@@ -2352,7 +2353,7 @@ typedef struct task_administration_block Tab;
 #define MAX_X 100
 #define MAX_B 20
 #define ALERT_LINES 6
-#define ALERT_BUTTONS 3
+#define ALERT_BUTTONS 4
 
 struct alertxt
 {

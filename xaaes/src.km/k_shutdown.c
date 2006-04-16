@@ -64,9 +64,9 @@ k_shutdown(void)
 {
 	struct xa_vdi_settings *v = C.Aes->vdi_settings;
 
-	DIAGS(("Cleaning up ready to exit...."));
+	BLOG((false, "Cleaning up ready to exit...."));
 // 	display("Cleaning up ready to exit....");
-// 	display("wait for HLP");
+	BLOG((false, "wait for AES help thread to terminate...."));
 	cancel_reiconify_timeout();
 
 	if (C.Hlp)
@@ -83,13 +83,13 @@ k_shutdown(void)
 	while (C.Aes->resources)
 		FreeResources(C.Aes, NULL, NULL);
 	
-	DIAGS(("Removing all remaining windows"));
+	BLOG((false, "Removing all remaining windows"));
 // 	display("Removing all remaining windows");
 	remove_all_windows(NOLOCKING, NULL);
-	DIAGS(("Freeing delayed deleted windows"));
+	BLOG((false, "Freeing delayed deleted windows"));
 // 	display("Freeing delayed delete windows");
 	do_delayed_delete_window(NOLOCKING);
-	DIAGS(("Closing and deleting root window"));
+	BLOG((false, "Closing and deleting root window"));
 // 	display("Closing and deleting root window");
 		
 	if (root_window)
@@ -98,7 +98,7 @@ k_shutdown(void)
 		delete_window(NOLOCKING, root_window);
 		root_window = NULL;
 	}
-	DIAGS(("shutting down aes thread .."));
+	BLOG((false, "shutting down aes thread .."));
 // 	display("waitfor tp");
 	if (C.Aes->tp)
 	{
@@ -111,14 +111,14 @@ k_shutdown(void)
 		}
 	}
 // 	display("shutting down");
-	DIAGS(("Freeing Aes environment"));
+	BLOG((false, "Freeing Aes environment"));
 	if (C.env)
 	{
 		kfree(C.env);
 		C.env = NULL;
 	}
 
-	DIAGS(("Freeing Aes resources"));
+// 	BLOG((false, "Freeing Aes resources"));
 #if 0
 	/* To demonstrate the working on multiple resources. */
 	while (C.Aes->resources)
@@ -131,56 +131,57 @@ k_shutdown(void)
 	if (C.button_waiter == C.Aes)
 		C.button_waiter = NULL;
 
-	DIAGS(("cancel aesmsgs"));
+	BLOG((false, "cancel aesmsgs"));
 	cancel_app_aesmsgs(C.Aes);
-	DIAGS(("cancel cevents"));
+	BLOG((false, "cancel cevents"));
 	cancel_cevents(C.Aes);
-	DIAGS(("cancel keyqueue"));
+	BLOG((false, "cancel keyqueue"));
 	cancel_keyqueue(C.Aes);
 
-	DIAGS(("freeing attachements"));
+	BLOG((false, "freeing attachements"));
 	if (C.Aes->attach)
 		kfree(C.Aes->attach);
 
-	DIAGS(("free clientlistname"));
+	BLOG((false, "free clientlistname"));
 	if (C.Aes->mnu_clientlistname)
 		kfree(C.Aes->mnu_clientlistname);
 
-	
 	/*
 	 * Exit the widget theme module
 	 */
 	if (C.Aes->xmwt && C.Aes->wtheme_handle)
 	{
+		BLOG((false, "Exit widget theme module"));
 		exit_client_widget_theme(C.Aes);
 		(*C.Aes->xmwt->exit_module)(C.Aes->wtheme_handle);
 		C.Aes->wtheme_handle = NULL;
 	}
-	
-	
+
 	/*
 	 * Free the wind_calc() cache
 	 */
+	BLOG((false, "Freeing wind_calc cache"));
 	delete_wc_cache(&C.Aes->wcc);
 	/*
 	 * Freeing the WT list is the last thing to do. Modules may attach
 	 * widget_tree's to C.Aes
 	 */
-	DIAGS(("free wtlist"));
+	BLOG((false, "freeing wtlist"));
 	free_wtlist(C.Aes);
 	/*
 	 * Exit the object render module
 	 */
+	BLOG((false, "Exit object render module"));
 	exit_client_objcrend( C.Aes );
 	(*C.Aes->objcr_module->exit_module)();
 
-	DIAGS(("free C.Aes"));
+	BLOG((false, "Free main XaAES client structure"));
 	kfree(C.Aes);
 	C.Aes = NULL;
 
 	free_desk_popup();
 
-	DIAGS(("Freeing cnf stuff"));
+	BLOG((false, "Freeing cnf stuff"));
 	{
 		int i;
 
@@ -203,7 +204,7 @@ k_shutdown(void)
 		}
 	}
 
-	DIAGS(("Freeing Options"));
+	BLOG((false, "Freeing Options"));
 	{
 		struct opt_list *op;
 
@@ -221,19 +222,18 @@ k_shutdown(void)
 	nkc_exit();
 
 
-#if GENERATE_DIAGS
-	DIAGS(("C.shutdown = 0x%x", C.shutdown));
-
+	BLOG((false, "C.shutdown = 0x%x", C.shutdown));
+#if BOOTLOG
 	if (C.shutdown & HALT_SYSTEM)
-		DIAGS(("HALT_SYSTEM flag is set"));
+		BLOG((false, "HALT_SYSTEM flag is set"));
 	if (C.shutdown & REBOOT_SYSTEM)
-		DIAGS(("REBOOT_SYSTEM flag is set"));
+		BLOG((false, "REBOOT_SYSTEM flag is set"));
 	if (C.shutdown & RESOLUTION_CHANGE)
-		DIAGS(("RESOLUTION_CHANGE flag is set"));
+		BLOG((false, "RESOLUTION_CHANGE flag is set"));
 #endif
 
-	DIAGS(("Bye!"));
-	DIAGS((""));
+// 	BLOG((false, "Bye, bye ........................!"));
+// 	BLOG((false,""));
 
 #if 0
 #if GENERATE_DIAGS
@@ -246,25 +246,20 @@ k_shutdown(void)
 #endif
 #endif
 
-#if 0
-#if BOOTLOG
-	if (C.bootlog_file)
-	{
-		kernel_close(C.bootlog_file);
-		C.bootlog_file = NULL;
-	}
-#endif
-#endif
 	/*
 	 * Close the virtual used by XaAES
 	 */
 	if (v && v->handle && v->handle != C.P_handle)
+	{
+		BLOG((false, "Closing down vwk"));
 		v_clsvwk(v->handle);
+	}
 	/*
 	 * Close the physical
 	 */
 	if (C.P_handle)
 	{
+		BLOG((false, "Closing down physical vdi workstation"));
 		vst_color(C.P_handle, G_BLACK);
 		vswr_mode(C.P_handle, MD_REPLACE);
 
@@ -301,5 +296,5 @@ k_shutdown(void)
 			mt_appl_exit(my_global_aes);
 		}
 	}
-	DIAGS(("leaving k_shutdown()"));
+	BLOG((false, "leaving k_shutdown()"));
 }

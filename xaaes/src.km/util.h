@@ -31,7 +31,8 @@
 
 int get_drv(const char *p);
 int drive_and_path(char *fname, char *path, char *name, bool n, bool set);
-
+void set_drive_and_path(char *fname);
+void get_drive_and_path(char *path, short plen);
 void strnupr(char *s, int n);
 
 bool xa_invalid(int which, int pid, void *addr, long size, bool allownil);

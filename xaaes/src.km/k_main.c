@@ -584,7 +584,7 @@ Unblock(struct xa_client *client, unsigned long value, int which)
 			wake(IO_Q, client->sleeplock); //(long)client);
 	}
 
-	DIAG((D_kern,client,"[%d]Unblocked %s 0x%lx", which, c_owner(client), value));
+	DIAG((D_kern, client,"[%d]Unblocked %s 0x%lx", which, client->proc_name/*c_owner(client)*/, value));
 }
 
 static void *svmotv = NULL;
@@ -645,13 +645,11 @@ init_moose(void)
 				if (vecs.whlv)
 				{
 					vex_wheelv(C.P_handle, vecs.whlv, &svwhlv);
-					DIAGS(("Wheel support present"));
-					//display("Wheel support present");
+					BLOG((false, "Wheel support present"));
 				}
 				else
 				{
-					DIAGS(("No wheel support"));
-					//display("No wheel support present");
+					BLOG((false, "No wheel support"));
 				}
 
 				if (adi_ioctl(G.adi_mouse, MOOSE_DCLICK, (long)cfg.double_click_time))
@@ -660,7 +658,7 @@ init_moose(void)
 				if (adi_ioctl(G.adi_mouse, MOOSE_PKT_TIMEGAP, (long)cfg.mouse_packet_timegap))
 					display("Moose set mouse-packets time-gap failed");
 
-				DIAGS(("Using moose adi"));
+				BLOG((false, "Using moose adi"));
 				ret = true;
 			}
 			else
@@ -905,7 +903,7 @@ fatal(void)
 static void
 sigterm(void)
 {
-	DIAGS(("AESSYS: sigterm received, dispatch_shutdown(0)"));
+	BLOG((false, "AESSYS: sigterm received, dispatch_shutdown(0)"));
 	KERNEL_DEBUG("AESSYS: sigterm received, dispatch_shutdown(0)");
 	dispatch_shutdown(0);
 }
@@ -1253,14 +1251,13 @@ CE_start_apps(enum locks lock, struct c_event *ce, bool cancel)
 		/*
 		 * Load Accessories
 		 */
-		DIAGS(("loading accs"));
+		BLOG((false, "loading accs ---------------------------"));
 		load_accs();
-		DIAGS(("loading accs done!"));
 		
 		/*
 		 * startup shell and autorun
 		 */
-		DIAGS(("loading shell and autorun"));
+		BLOG((false, "loading shell and autorun ---------------"));
 		
 		C.DSKpid = -1;
 		
@@ -1268,14 +1265,13 @@ CE_start_apps(enum locks lock, struct c_event *ce, bool cancel)
 		{
 			if (cfg.cnf_run[i])
 			{
-				DIAGS(("autorun[%d]: cmd=(%lx) '%s'", i, cfg.cnf_run[i], cfg.cnf_run[i] ? cfg.cnf_run[i] : "no cmd"));
-				DIAGS(("   args[%d]:    =(%lx) '%s'", i, cfg.cnf_run_arg[i], cfg.cnf_run_arg[i] ? cfg.cnf_run_arg[i] : "no arg"));
+				BLOG((false, "autorun[%d]: cmd=(%lx) '%s'", i, cfg.cnf_run[i], cfg.cnf_run[i] ? cfg.cnf_run[i] : "no cmd"));
+				BLOG((false, "   args[%d]:    =(%lx) '%s'", i, cfg.cnf_run_arg[i], cfg.cnf_run_arg[i] ? cfg.cnf_run_arg[i] : "no arg"));
 				parms[0] = '\0';
 				if (cfg.cnf_run_arg[i])
 					parms[0] = sprintf(parms+1, sizeof(parms)-1, "%s", cfg.cnf_run_arg[i]);
 
 				launch(lock, 0, 0, 0, cfg.cnf_run[i], parms, C.Aes);
-// 				yield();
 			}
 		}
 		if (cfg.cnf_shell)
@@ -1284,10 +1280,10 @@ CE_start_apps(enum locks lock, struct c_event *ce, bool cancel)
 			if (cfg.cnf_shell_arg)
 				parms[0] = sprintf(parms+1, sizeof(parms)-1, "%s", cfg.cnf_shell_arg);
 
+			BLOG((false, "Launch shell '%s' with args '%s'", cfg.cnf_shell, parms[0] ? parms : "No args"));
 			C.DSKpid = launch(lock, 0, 0, 0, cfg.cnf_shell, parms, C.Aes);
 			if (C.DSKpid > 0)
 				strcpy(C.desk, cfg.cnf_shell);
-// 			yield();
 		}
 	}
 }
@@ -1329,7 +1325,7 @@ k_main(void *dummy)
 	
 	if (cfg.naes_cookie)
 	{
-		DIAGS(("Install 'nAES' cookie.."));
+		BLOG((false, "Install 'nAES' cookie.."));
 		if ( (c_naes = (N_AESINFO *)m_xalloc(sizeof(*c_naes), (4<<4)|(1<<3)|3) ))
 		{
 			memcpy(c_naes, &naes_cookie, sizeof(*c_naes));
@@ -1337,19 +1333,19 @@ k_main(void *dummy)
 			{
 				m_free(c_naes);
 				c_naes = NULL;
-				DIAGS(("Installing 'nAES' cookie failed!"));
+				BLOG((false, "Installing 'nAES' cookie failed!"));
 			}
-#if GENERATE_DIAGS
+#if BOOTLOG
 			else
 			{
-				DIAGS(("Installed 'nAES' cookie in readable memory at %lx", (long)c_naes));
+				BLOG((false, "Installed 'nAES' cookie in readable memory at %lx", (long)c_naes));
 			}
 #endif
 		}
-#if GENERATE_DIAGS
+#if BOOTLOG
 		else
 		{
-			DIAGS(("Could not get memory for 'nAES' cookie! (Mxalloc() fail)"));
+			BLOG((false, "Could not get memory for 'nAES' cookie! (Mxalloc() fail)"));
 		}
 #endif
 	}
@@ -1410,7 +1406,7 @@ k_main(void *dummy)
 
 	if (register_trap2(XA_handler, 0, 0, 0))
 	{
-		DIAGS(("register_trap2 failed!"));
+		display("ERROR: register_trap2 failed!");
 		goto leave;
 	}
 
@@ -1423,7 +1419,7 @@ k_main(void *dummy)
 
 	if (k_init(next_res) != 0)
 	{
-		DIAGS(("k_init failed!"));
+		display("ERROR: k_init failed!");
 		goto leave;
 	}
 
@@ -1435,23 +1431,23 @@ k_main(void *dummy)
 	C.alert_pipe = f_open(alert_pipe_name, O_CREAT|O_RDWR);
 	if (C.alert_pipe < 0)
 	{
-		display("XaAES ERROR: Can't open '%s' :: %ld",
+		display("ERROR: Can't open alert pipe '%s' :: %ld",
 			alert_pipe_name, C.alert_pipe);
 
 		goto leave;
 	}
-	DIAGS(("Open '%s' to %ld", alert_pipe_name, C.alert_pipe));
+	BLOG((false, "Opened alert pipe '%s' to %ld", alert_pipe_name, C.alert_pipe));
 
 	/* Open the u:/dev/console device to get keyboard input */
 	C.KBD_dev = f_open(KBD_dev_name, O_DENYRW|O_RDONLY);
 	if (C.KBD_dev < 0)
 	{
-		display("XaAES ERROR: Can't open '%s' :: %ld",
+		display("ERROR: Can't open keyboard device '%s' :: %ld",
 			KBD_dev_name, C.KBD_dev);
 
 		goto leave;
 	}
-	DIAGS(("Open '%s' to %ld", KBD_dev_name, C.KBD_dev));
+	BLOG((false, "Opened keyboard device '%s' to %ld", KBD_dev_name, C.KBD_dev));
 
 	/* forcing to be a pty master
 	 * - pty master ignore job control
@@ -1485,11 +1481,11 @@ k_main(void *dummy)
 	/* initialize mouse */
 	if (!init_moose())
 	{
-		display("XaAES ERROR: init_moose failed");
+		display("ERROR: init_moose failed");
 		goto leave;
 	}
 
-	DIAGS(("Handles: KBD %ld, ALERT %ld", C.KBD_dev, C.alert_pipe));
+	BLOG((false, "Handles: KBD %ld, ALERT %ld", C.KBD_dev, C.alert_pipe));
 
 	/*
 	 * Start AES thread
@@ -1502,7 +1498,7 @@ k_main(void *dummy)
 		if (tpc < 0)
 		{
 			C.Aes->tp = NULL;
-			display("XaAES ERROR: start AES thread failed");
+			display("ERROR: start AES thread failed");
 			goto leave;
 		}
 	}
@@ -1515,7 +1511,7 @@ k_main(void *dummy)
 		if (tpc < 0)
 		{
 			C.Hlp = NULL;
-			display("XaAES ERROR: start AES thread failed");
+			display("ERROR: start AES helper thread failed");
 			goto leave;
 		}
 	}
@@ -1533,55 +1529,11 @@ k_main(void *dummy)
 	if (cfg.opentaskman)
 		post_cevent(C.Hlp, ceExecfunc, open_taskmanager,NULL, 1,0, NULL,NULL);
 	
-// 	display("post CE_start_apps");
 	post_cevent(C.Hlp, CE_start_apps, NULL,NULL, 0,0, NULL,NULL);
-// 	display("done");
-// 	yield();
-// 	display("done 22");
-#if 0
-	/*
-	 * Load Accessories
-	 */
-	DIAGS(("loading accs"));
-	load_accs();
-	DIAGS(("loading accs done!"));
-
-	/*
-	 * startup shell and autorun
-	 */
-	DIAGS(("loading shell and autorun"));
-	{
-		enum locks lock = winlist|envstr|pending;
-		Path parms;
-		int i;
-		
-		for (i = sizeof(cfg.cnf_run)/sizeof(cfg.cnf_run[0]) - 1; i >= 0; i--)
-		{
-			if (cfg.cnf_run[i])
-			{
-				DIAGS(("autorun[%d]: cmd=(%lx) '%s'", i, cfg.cnf_run[i], cfg.cnf_run[i] ? cfg.cnf_run[i] : "no cmd"));
-				DIAGS(("   args[%d]:    =(%lx) '%s'", i, cfg.cnf_run_arg[i], cfg.cnf_run_arg[i] ? cfg.cnf_run_arg[i] : "no arg"));
-				parms[0] = '\0';
-				if (cfg.cnf_run_arg[i])
-					parms[0] = sprintf(parms+1, sizeof(parms)-1, "%s", cfg.cnf_run_arg[i]);
-
-				launch(lock, 0, 0, 0, cfg.cnf_run[i], parms, C.Aes);
-			}
-		}
-		if (cfg.cnf_shell)
-		{
-			parms[0] = '\0';
-			if (cfg.cnf_shell_arg)
-				parms[0] = sprintf(parms+1, sizeof(parms)-1, "%s", cfg.cnf_shell_arg);
-
-			C.DSKpid = launch(lock, 0, 0, 0, cfg.cnf_shell, parms, C.Aes);
-			if (C.DSKpid > 0)
-				strcpy(C.desk, cfg.cnf_shell);
-		}
-	}
-#endif
+	
 	C.Aes->waiting_for |= XAWAIT_MENU;
 
+	BLOG((false, " Entering main loop ------------------------------------"));
 	/*
 	 * Main kernel loop
 	 */
@@ -1658,7 +1610,7 @@ k_main(void *dummy)
 	}
 	while (!(C.shutdown & EXIT_MAINLOOP));
 
-	DIAGS(("**** Leave kernel for shutdown"));
+	BLOG((false, "**** Leave kernel for shutdown"));
 	wait = 0;
 	if (C.sdt)
 		cancelroottimeout(C.sdt);
@@ -1773,7 +1725,7 @@ k_exit(void)
 	 * deinstall trap #2 handler
 	 */
 	register_trap2(XA_handler, 1, 0, 0);
-	DIAGS(("unregistered trap handler"));
+	BLOG((false, "unregistered trap handler"));
 // 	display("done");
 
 	/*
@@ -1781,7 +1733,7 @@ k_exit(void)
 	 */
 	if (G.adi_mouse)
 	{
-		DIAGS(("Closing adi_mouse"));
+		BLOG((false, "Closing adi_mouse"));
 		adi_close(G.adi_mouse);
 // 		adi_unregister(G.adi_mouse);
 // 		G.adi_mouse = NULL;
@@ -1790,24 +1742,24 @@ k_exit(void)
 	if (C.KBD_dev > 0)
 	{
 		long r;
-		DIAGS(("Closing kbd dev"));
+		BLOG((false, "Closing kbd dev"));
 		r = f_cntl(C.KBD_dev, (long)&KBD_dev_sg, TIOCSETN);
 		KERNEL_DEBUG("fcntl(TIOCSETN) -> %li", r);
 
 		f_close(C.KBD_dev);
 	}
 
-	DIAGS(("Closing alert pipe"));
+	BLOG((false, "Closing alert pipe"));
 	if (C.alert_pipe > 0)
 		f_close(C.alert_pipe);
 
-	DIAGS(("closed all input devices"));
+	BLOG((false, "closed all input devices"));
 	
-	DIAGS(("Waking up loader"));
+	BLOG((false, "Waking up loader"));
 	/* wakeup loader */
 	wake(WAIT_Q, (long)&loader_pid);
 		
-	DIAGS(("-> kthread_exit"));
+	BLOG((false, "-> kthread_exit"));
 
 	/* XXX todo -> module_exit */
 // 	display("kthread_exit...");
