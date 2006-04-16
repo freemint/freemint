@@ -215,8 +215,9 @@ add_to_tasklist(struct xa_client *client)
 		struct scroll_content sc = {{ 0 }};
 
 // 		display("add2tl: wt = %lx, obtree = %lx, list =%lx", wt, obtree, list);
-
-		if (client->p->pid == C.DSKpid)
+		if (screen.planes < 4)
+			sc.fnt = &norm_txt;
+		else if (client->p->pid == C.DSKpid)
 			sc.fnt = &desk_txt;
 		else if (client->type & APP_ACCESSORY)
 			sc.fnt = &acc_txt;
@@ -515,6 +516,7 @@ void
 CHlp_aesmsg(struct xa_client *client)
 {
 	union msg_buf *m;
+	char alert[256];
 
 	if (client->waiting_pb && (m = (union msg_buf *)client->waiting_pb->addrin[0]))
 	{
@@ -523,28 +525,50 @@ CHlp_aesmsg(struct xa_client *client)
 			case 0x5354:
 			{
 // 				display("0x5354 gotten");
-				unlock_screen(client->p);
+				if (m->m[3] == 1)
+				{
+					C.update_lock = NULL;
+					C.updatelock_count--;
+					unlock_screen(client->p);
+// 					do_form_alert(0, client, 1, "[1][Snapper got videodata, screen unlocked][OK]", "XaAES");
+				}
+				else if (m->m[3] != 0)
+				{
+					sprintf(alert, sizeof(alert), "[1][ Snapper could not save snap! | ERROR: %d ][ Ok ]", m->m[3]);
+					do_form_alert(0, client, 1, alert, "XaAES");
+				}
 				break;
 			}
 			default:;
 		}
 	}
 }
+
+static char sdalert[] = "[2][What do you want to snap?][Block|Full screen|Top Window|Cancel]";
+
 void
 screen_dump(enum locks lock, struct xa_client *client, bool open)
 {
 	struct xa_client *dest_client;
 
-	if ((dest_client = get_app_by_procname("gfa_snap")))
+	if ((dest_client = get_app_by_procname("xaaesnap")))
 	{
-		display("send dump message to %s", dest_client->proc_name);
-		if (lock_screen(client->p, true))
+// 		display("send dump message to %s", dest_client->proc_name);
+		if (update_locked() != client->p && lock_screen(client->p, true))
 		{
 			short msg[8] = {0x5354, client->p->pid, 0, 0, 0,0,200,200};
 			RECT r, d = {0};
 			short b = 0, x, y;
+			bool doit = true;
 
-			if (open)
+			C.update_lock = client->p;
+			C.updatelock_count++;
+
+			do_form_alert(lock, client, 4, sdalert, "XaAES");
+			Block(client, 0);
+// 			display("intout %d", C.Hlp_pb->intout[0]);
+
+			if (C.Hlp_pb->intout[0] == 1) //(open)
 			{
 				graf_mouse(THIN_CROSS, NULL,NULL, false);
 				while (!b)
@@ -556,10 +580,29 @@ screen_dump(enum locks lock, struct xa_client *client, bool open)
 				r.h = 0;
 				rubber_box(client, SE, r, &d, 0,0, root_window->r.h, root_window->r.w, &r);
 			}
-			else
+			else if (C.Hlp_pb->intout[0] == 2)
 				r = root_window->r;
-			
-			if ((r.w | r.h))
+			else if (C.Hlp_pb->intout[0] == 3)
+			{
+				struct xa_window *wind = window_list;
+				
+				if (wind->r.x > 0 && wind->r.y > 0 &&
+				   (wind->r.x + wind->r.w) < root_window->r.w &&
+				   (wind->r.y + wind->r.h) < root_window->r.h)
+					r = wind->r;
+				else
+				{
+					C.updatelock_count--;
+					C.update_lock = NULL;
+					unlock_screen(client->p);
+					do_form_alert(lock, client, 1, "[1][Cannot snap topwindow as | parts of it is offscreen!][OK]", "XaAES");
+					doit = false;
+				}
+			}
+			else
+				doit = false;
+
+			if ((r.w | r.h) && doit) //C.Hlp_pb->intout[0] != 4)
 			{
 				msg[4] = r.x;
 				msg[5] = r.y;
@@ -569,17 +612,15 @@ screen_dump(enum locks lock, struct xa_client *client, bool open)
 // 				graf_mouse(ARROW, NULL,NULL, false);
 			}
 			else
+			{
+				C.updatelock_count--;
+				C.update_lock = NULL;
 				unlock_screen(client->p);
+			}
 		}
 	}
 	else
-		display("gfa_snap not found");
-#if 0
-	if (lock_screen(client->p, true))
-	{
-
-	}
-#endif
+		do_form_alert(lock, client, 1, "[1]['xaaesnap' process not found.|Start 'xaaesnap.prg' and try again|Later XaAES will start the snapper|according to userconfiguration][OK]", "XaAES");
 }
 
 static void
@@ -828,6 +869,8 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 					remember, NULL, NULL);
 		
 		if (!wind) goto fail;
+		
+		wind->window_status |= XAWS_NODELETE;
 		
 		/* Set the window title */
 		set_window_title(wind, " Task Manager ", false);

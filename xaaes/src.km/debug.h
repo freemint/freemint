@@ -32,8 +32,9 @@
 void display(const char *fmt, ...);
 void ndisplay(const char *fmt, ...);
 
-
 #if GENERATE_DIAGS
+
+#define BOOTLOG 1
 
 #define MAX_NAMED_DIAG 130
 
@@ -126,5 +127,12 @@ void diag(enum debug_item item, struct xa_client *client, char *t, ...);
 #define CONTROL(a,b,c)
 
 #endif /* GENERATE_DIAGS */
+
+#if BOOTLOG
+void bootlog(bool disp, const char *fmt, ...);
+#define BLOG(x)	bootlog x
+#else
+#define BLOG(x)
+#endif
 
 #endif /* _debug_h */

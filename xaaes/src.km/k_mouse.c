@@ -380,6 +380,7 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 {
 	struct xa_client *client, *locker, *mw_owner;
 	struct xa_window *wind = NULL, *mouse_wind;
+	bool chlp_lock = update_locked() == C.Hlp->p;
 
 	DIAG((D_button, NULL, "XA_button_event: %d/%d, state=0x%x, clicks=%d",
 		md->x, md->y, md->state, md->clicks));
@@ -390,6 +391,9 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 	 * If menu-task (navigating in a menu) in progress and button
 	 * pressed..
 	 */
+
+	if (!chlp_lock)
+	{
 	if (TAB_LIST_START)
 	{
 		if ((TAB_LIST_START->root->exit_mb && !md->state) || (!TAB_LIST_START->root->exit_mb && md->state))
@@ -419,7 +423,8 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 		}
 		return;
 	}
-	
+	}
+
 	mouse_wind = find_window(lock, md->x, md->y);
 	if (mouse_wind)
 		mw_owner = mouse_wind == root_window ? get_desktop()->owner : mouse_wind->owner;
@@ -561,7 +566,8 @@ int
 XA_move_event(enum locks lock, const struct moose_data *md)
 {
 	struct xa_client *client;
-
+	bool chlp_lock = update_locked() == C.Hlp->p;
+	
 	DIAG((D_mouse, NULL, "XA_move_event: menulocker = %s, ce_open_menu = %s, tablist = %lx, actwidg = %lx",
 		menustruct_locked() ? menustruct_locked()->name : "NONE",
 		C.ce_open_menu ? C.ce_open_menu->name : "NONE",
@@ -573,6 +579,8 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 	 * work. Having it here saves time, since it only needs to be
 	 * done when the mouse moves.
 	 */
+	if (!chlp_lock)
+	{
 	if (widget_active.widg)
 	{
 		widget_active.m = *md;
@@ -638,6 +646,7 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 			}
 		}
 	}
+	}
 
 	client = C.mouse_lock ? get_mouse_locker() : NULL;
 	if (client)
@@ -645,7 +654,7 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 		if (client->waiting_for & (MU_M1|MU_M2|MU_MX))
 			dispatch_mu_event(client, md, true);
 	}
-	else
+	else if (!chlp_lock)
 	{
 		struct xa_window *wind = find_window(0, md->x, md->y);
 

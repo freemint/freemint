@@ -902,10 +902,10 @@ Exit_form_do( struct xa_client *client,
 			struct xa_aes_object f = fr->obj;
 			/* Is f a valid button? */
 // 			display("click alert but1 %d, but4 %d", ALERT_BUT1, ALERT_BUT1 + 3);
-			if (   aesobj_item(&f) >= ALERT_BUT1 && aesobj_item(&f) < ALERT_BUT1 + 3 && !(aesobj_ob(&f)->ob_flags & OF_HIDETREE))
+			if (   aesobj_item(&f) >= ALERT_BUT1 && aesobj_item(&f) < ALERT_BUT1 + ALERT_BUTTONS && !(aesobj_ob(&f)->ob_flags & OF_HIDETREE))
 			{
 // 				display("client '%s'", client->name);
-				if (client != C.Aes && client != C.Hlp && client->waiting_pb)
+				if (client != C.Aes /*&& client != C.Hlp*/ && client->waiting_pb)
 				{
 					client->waiting_pb->intout[0] = aesobj_item(&f) - ALERT_BUT1 + 1;
 // 					display("Alert return %d", client->waiting_pb->intout[0]);
@@ -1425,7 +1425,8 @@ do_formwind_msg(
 		case WM_CLOSED:
 		{
 			close_window(0, wind);
-			delayed_delete_window(0, wind);
+			if (!(wind->window_status & XAWS_NODELETE))
+				delayed_delete_window(0, wind);
 			return;
 		}
 		case WM_VSLID:

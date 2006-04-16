@@ -45,6 +45,7 @@
 #define ALERT_BUT1       8   /* BUTTON in Baum ALERT_BOX */
 #define ALERT_BUT2       9   /* BUTTON in Baum ALERT_BOX */
 #define ALERT_BUT3       10  /* BUTTON in Baum ALERT_BOX */
+#define ALERT_BUT4       11  /* BUTTON in Baum ALERT_BOX */
 
 #define ABOUT_XAAES      4   /* Formular/Dialog */
 #define ABOUT_LIST       5   /* BOX in Baum ABOUT_XAAES */

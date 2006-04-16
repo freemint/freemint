@@ -26,6 +26,8 @@
 
 #include RSCHNAME
 
+#include "util.h"
+
 #include "k_init.h"
 #include "xa_global.h"
 
@@ -459,13 +461,12 @@ k_init(unsigned long vm)
 		if (!(s_system(S_GETCOOKIE, COOKIE_NVDI, (unsigned long)&p)))
 		{
 			C.nvdi_version = *p;
-			DIAGS(("nvdi version = %x", C.nvdi_version));
+			BLOG((false, "nvdi version = %x", C.nvdi_version));
 		}
-#if GENERATE_DIAGS
+#if BOOTLOG
 		else
-			DIAGS(("could not determine nvdi version"));
+			BLOG((false, "could not determine nvdi version"));
 #endif
-		display("nvdi version %x", C.nvdi_version);
 	}
 
 	if (cfg.auto_program)
@@ -542,7 +543,7 @@ k_init(unsigned long vm)
 			{
 				short nvmode;
 
-				DIAGS(("Falcon video: mode %d(%x)", cfg.videomode, cfg.videomode));
+				BLOG((false, "Falcon video: mode %d(%x)", cfg.videomode, cfg.videomode));
 
 				/* Ronald Andersson:
 				 * This should be the method for falcon!
@@ -566,17 +567,17 @@ k_init(unsigned long vm)
 				}
 				else
 				{
-					DIAGS(("videomode %d invalid", cfg.videomode));
-					DIAGS(("must be between 1 and 10"));
+					BLOG((false, "videomode %d invalid", cfg.videomode));
+					BLOG((false, "must be between 1 and 10"));
 				}
 			}
 		}
 		else
 		{
-			DIAGS(("Default screenmode"));
+			BLOG((false, "Default screenmode"));
 		}
 // 		display("set mode %x", mode);
-		DIAGS(("Screenmode is: %d", mode));
+		BLOG((false, "Screenmode is: %d", mode));
 
 
 		/*
@@ -600,12 +601,11 @@ k_init(unsigned long vm)
 			s_system(S_CTRLCACHE, sc, cm);
 		}
 		
-		DIAGS(("Physical work station opened: %d", C.P_handle));
+		BLOG((false, "Physical work station opened: %d", C.P_handle));
 
 		if (C.P_handle == 0)
 		{
-			DIAGS(("v_opnwk failed (%i)!", C.P_handle));
-			display("v_opnwk failed (%i)!", C.P_handle);
+			BLOG((true, "v_opnwk failed (%i)!", C.P_handle));
 			return -1;
 		}
 // 		_b_ubconout(2, ' ');
@@ -613,7 +613,7 @@ k_init(unsigned long vm)
 		 * We need to get rid of the cursor
 		 */
 		v_exit_cur(C.P_handle);
-		DIAGS(("v_exit_cur ok!"));	
+		BLOG((false, "v_exit_cur ok!"));	
 	}
 	else
 	{
@@ -623,7 +623,7 @@ k_init(unsigned long vm)
 		 */
 		short junk;
 		C.P_handle = mt_graf_handle(&junk, &junk, &junk, &junk, my_global_aes);
-		DIAGS(("graf_handle -> %d", C.P_handle));
+		BLOG((false, "graf_handle -> %d", C.P_handle));
 	}
 
 	get_syspalette(C.P_handle, screen.palette);
@@ -637,10 +637,10 @@ k_init(unsigned long vm)
 
 	if (v->handle == 0)
 	{
-		DIAGS(("v_opnvwk failed (%i)!", v->handle));
+		BLOG((true, "v_opnvwk failed (%i)!", v->handle));
 		return -1;
 	}
-	DIAGS(("Virtual work station opened: %d", v->handle));
+	BLOG((false, "Virtual work station opened: %d", v->handle));
 
 	/*
 	 * Setup the screen parameters
@@ -674,7 +674,7 @@ k_init(unsigned long vm)
 
 	screen.pixel_fmt = detect_pixel_format(v);
 
-	DIAGS(("Video info: width(%d/%d), planes :%d, colours %d",
+	BLOG((false, "Video info: width(%d/%d), planes :%d, colours %d",
 		screen.r.w, screen.r.h, screen.planes, screen.colours));
 
 // 	display("Video info: width(%d/%d), planes :%d, colours %d, pixelfmt = %d",
@@ -704,10 +704,11 @@ k_init(unsigned long vm)
 	screen.c_max_w = v->cell_w;
 	screen.c_max_h = v->cell_h;
 	calc_average_fontsize(v, &screen.c_max_w, &screen.c_max_h, &screen.c_max_dist[0]);
-// 	display("stdfont: id = %d, size = %d, cw=%d, ch=%d",
-// 		screen.standard_font_id, screen.standard_font_point, screen.c_max_w, screen.c_max_h);
-// 	display("smlfont: id = %d, size = %d, cw=%d, ch=%d",
-// 		screen.small_font_id, screen.small_font_point, screen.c_min_w, screen.c_min_h);
+
+	BLOG((false, "stdfont: id = %d, size = %d, cw=%d, ch=%d",
+ 		screen.standard_font_id, screen.standard_font_point, screen.c_max_w, screen.c_max_h));
+	BLOG((false, "smlfont: id = %d, size = %d, cw=%d, ch=%d",
+		screen.small_font_id, screen.small_font_point, screen.c_min_w, screen.c_min_h));
 
 	/*
 	 * Init certain things in the info_tab used by appl_getinfo()
@@ -718,13 +719,14 @@ k_init(unsigned long vm)
 	 * Open a diagnostics file? All console output can be considered diagnostics,
 	 * so I just redirect the console to the required file/device
 	 */
-	DIAGS(("Display Device: Phys_handle=%d, Virt_handle=%d", C.P_handle, v->handle));
-	DIAGS((" size=[%d,%d], colours=%d, bitplanes=%d", screen.r.w, screen.r.h, screen.colours, screen.planes));
+	BLOG((false, "Display Device: Phys_handle=%d, Virt_handle=%d", C.P_handle, v->handle));
+	BLOG((false, " size=[%d,%d], colours=%d, bitplanes=%d", screen.r.w, screen.r.h, screen.colours, screen.planes));
 
 	
 // 	get_syspalette(C.P_handle, screen.palette);
 
 	/* Load the system resource files */
+	BLOG((false, "Loading system resource file '%s'", cfg.rsc_name));
 	if (!(resource_name = xaaes_sysfile(cfg.rsc_name)))
 	{
 		display("ERROR: Can't find AESSYS resource file '%s'", cfg.rsc_name);
@@ -739,7 +741,7 @@ k_init(unsigned long vm)
 					  DU_RSY_CONV, //screen.c_max_h, // < 16 ? 16 : screen.c_max_h); //DU_RSX_CONV, DU_RSY_CONV);
 					  true);
 		kfree(resource_name);
-		DIAGS(("system resource = %lx (%s)", C.Aes_rsc, cfg.rsc_name));
+		BLOG((false, "system resource = %lx (%s)", C.Aes_rsc, cfg.rsc_name));
 	}	
 	if (!C.Aes_rsc)
 	{
@@ -757,7 +759,7 @@ k_init(unsigned long vm)
 		
 		if ((ob_count_objs(about, 0, -1) < RSC_VERSION)   ||
 		     about[RSC_VERSION].ob_type != G_TEXT     ||
-		    (strcmp(object_get_tedinfo(about + RSC_VERSION, NULL)->te_ptext, "0.0.7")))
+		    (strcmp(object_get_tedinfo(about + RSC_VERSION, NULL)->te_ptext, "0.0.8")))
 		{
 			display("ERROR: Outdated AESSYS resource file (%s) - update to recent version!", cfg.rsc_name);
 // 			display("       also make sure you read CHANGES.txt!!");
@@ -771,19 +773,25 @@ k_init(unsigned long vm)
 	main_xa_theme(&C.Aes->xmwt);
 	main_object_render(&C.Aes->objcr_module);
 	
+	BLOG((false, "Attempt to open object render module..."));
 	if (!(*C.Aes->objcr_module->init_module)(&xam_api, &screen, cfg.gradients))
 	{
 		display("object render returned NULL");
 		return -1;
 	}
+	BLOG((false, "Attempt to open new object theme..."));
 	if (init_client_objcrend(C.Aes))
-		return -1;
-	
-	if (!(C.Aes->wtheme_handle = (*C.Aes->xmwt->init_module)(&xam_api, &screen, (char *)&cfg.widg_name, cfg.gradients)))
-	{
-		display("module returned NULL");
+	{	display("Opening object theme failed");
 		return -1;
 	}
+	
+	BLOG((false, "Attempt to open window widget renderer..."));
+	if (!(C.Aes->wtheme_handle = (*C.Aes->xmwt->init_module)(&xam_api, &screen, (char *)&cfg.widg_name, cfg.gradients)))
+	{
+		display("Window widget module returned NULL");
+		return -1;
+	}
+
 	/*
 	 *  ---------        prepare the AES object renderer module  --------------
 	 */
@@ -791,49 +799,8 @@ k_init(unsigned long vm)
 	/*
 	 * Setup default widget theme
 	 */
+	BLOG((false, "Setting up default window widget theme..."));
 	init_client_widget_theme(C.Aes);
-#if 0
-	/*
-	 * Now load and fix the resource containing the extended AES object icons
-	 * This will be done by the object renderer later on...
-	 */
-	if (!(resource_name = xaaes_sysfile(cfg.xobj_name)))
-	{
-		display("ERROR: Can't find extended AES objects resource file '%s'", cfg.xobj_name);
-		return -1;
-	}
-	else
-	{
-		xobj_rshdr = LoadResources(C.Aes,
-					 resource_name,
-					 NULL,
-					 DU_RSX_CONV, //screen.c_max_w, // < 8 ? 8 : screen.c_max_w,
-					 DU_RSY_CONV, //screen.c_max_h, //< 16 ? 16 : screen.c_max_h); //DU_RSX_CONV, DU_RSY_CONV);
-					 false);
-		kfree(resource_name);
-		DIAGS(("xobj_rsc = %lx (%s)", xobj_rsc, cfg.widg_name));
-	}
-	if (!xobj_rshdr)
-	{
-		display("ERROR: Can't load extended AES objects resource file '%s'", cfg.xobj_name);
-		return -1;
-	}
-
-	/* get widget object parameters. */
-	{
-		int i;
-		RECT c;
-		OBJECT *tree = ResourceTree(xobj_rshdr, EXT_AESOBJ);
-		
-		ob_spec_xywh(tree, 1, &c);
-
-		for (i = 1; i < EXTOBJ_NAME; i++)
-			tree[i].ob_x = tree[i].ob_y = 0;
-		
-		xobj_rsc = tree;
-	}
-#endif
-// 	init_ob_render();
 
 #if FILESELECTOR
 	/* Do some itialisation */
@@ -844,7 +811,7 @@ k_init(unsigned long vm)
 	/* Create the root (desktop) window
 	 * - We don't want messages from it, so make it a NO_MESSAGES window
 	 */
-	DIAGS(("creating root window"));
+	BLOG((false, "creating root window"));
 // 	display("creating root window");
 	root_window = create_window(
 				NOLOCKING,
@@ -877,22 +844,8 @@ k_init(unsigned long vm)
 		strcpy(vs + strlen(vs) - 3, version + 3);
 	}
 #endif
-	DIAGS(("menu widget set"));
-// 	display("menu widget set");
-
-	/* Fix up the file selector menu */
-	//fix_menu(C.Aes, ResourceTree(C.Aes_rsc, FSEL_MENU), false);
-
-	/* Fix up the window widget bitmaps and any others we might be using
-   	 * (Calls vr_trnfm() for all the bitmaps)
-   	 * HR: No, it doesnt! ;-)
-   	 */
-	DIAGS(("fixing up widgets"));
-//	fix_default_widgets(widget_resources);
-
 	/* Set a default desktop */
-	DIAGS(("setting default desktop"));
-// 	display("setting default desktop");
+	BLOG((false, "setting default desktop"));
 	{
 		OBJECT *ob = get_xa_desktop();
 		*(RECT*)&ob->ob_x = root_window->r;
@@ -903,8 +856,7 @@ k_init(unsigned long vm)
 		set_desktop_widget(root_window, C.Aes->desktop);
 		set_desktop(C.Aes, false);
 	}
-	DIAGS(("display root window"));
-// 	display("display root window");
+	BLOG((false, "opening root window"));
 	open_window(NOLOCKING, root_window, screen.r);
 
 	/* Initial iconified window coords */
@@ -937,10 +889,9 @@ k_init(unsigned long vm)
 void
 init_helpthread(enum locks lock, struct xa_client *client)
 {
-	DIAGS(("setting up task manager"));
-// 	display("init_helpthread");
+	BLOG((false, "init_helpthread"));
 	open_taskmanager(0, client, 0);
-// 	display("init_helpthread done");
+	BLOG((false, "init_helpthread done"));
 }
 static const char *dont_load_list[] =
 {
@@ -958,6 +909,8 @@ dont_load(const char *name)
 	return 0;
 }
 
+static char accpath[] = "ACCPATH=";
+
 void
 load_accs(void)
 {
@@ -965,18 +918,57 @@ load_accs(void)
 	struct dirstruct dirh;
 	long len;
 	char *name;
+	const char *env;
 	long r;
 
-	strcpy(buf, cfg.acc_path);
+	if ((env = get_env(0, accpath)))
+		strcpy(buf, env);
+	else
+		strcpy(buf, cfg.acc_path);
+
 	len = strlen(buf);
 
-	buf[len++] = '\\';
-	buf[len] = '\0';
+	if (len)
+	{
+		int i = 0;
+		
+		while (buf[i])
+		{
+			if (buf[i] == '/')
+				buf[i] = '\\';
+			i++;
+		}
+		if (buf[len - 1] != '\\')
+		{
+			buf[len++] = '\\';
+			buf[len] = '\0';
+		}
+	}
+
+	else if (!len)
+	{
+		strcpy(buf, "c:\\");
+		len = strlen(buf);
+	}
+
+	if (!env)
+	{
+		char nenv[256];
+		strcpy(nenv, accpath);
+		strcpy(nenv + strlen(accpath), buf);
+		put_env(0, nenv);
+		BLOG((false, "ACCPATH= not existing, creating %s", nenv));
+	}
+	strcpy(cfg.acc_path, buf);
+
+	set_drive_and_path(cfg.acc_path);
+
+	BLOG((false, "loading accessories from '%s'", buf));
 
 	name = buf + len;
 	len = sizeof(buf) - len;
 
-	DIAGS(("load_accs: enter (%s)", buf));
+	BLOG((false, "load_accs: enter (%s)", buf));
 
 	r = kernel_opendir(&dirh, buf);
 	if (r == 0)
@@ -1001,13 +993,12 @@ load_accs(void)
 
 				*ptr1 = '\0';
 
-				DIAGS(("load_accs: launch (%s)", buf));
+				BLOG((false, "load_accs: launch (%s)", buf));
 				launch(NOLOCKING, 3, 0, 0, buf, "", C.Aes);
 			}
 
 			r = kernel_readdir(&dirh, name, len);
 		}
-
 		kernel_closedir(&dirh);
 	}
 }

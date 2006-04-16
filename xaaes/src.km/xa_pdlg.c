@@ -818,7 +818,7 @@ d_get_fromto_page(struct xa_pdlg_info *pdlg, short which)
 static void
 d_set_allfrom_sel(struct xa_pdlg_info *pdlg, short which)
 {
-	obj_set_radio_button(pdlg->dwt, pdlg->wind->vdi_settings, aesobj(pdlg->dwt->tree, which ? PDLG_G_SELFROM : PDLG_G_SELALL), false, NULL, NULL);
+	obj_set_radio_button(pdlg->mwt, pdlg->wind->vdi_settings, aesobj(pdlg->dwt->tree, which ? PDLG_G_SELFROM : PDLG_G_SELALL), false, NULL, pdlg->wind->rect_list.start);
 }
 static void
 d_set_copies(struct xa_pdlg_info *pdlg, short copies)
@@ -957,11 +957,12 @@ d_set_outfile(struct xa_pdlg_info *pdlg, char *tofile)
 		else
 			obj_change_popup_entry(aesobj(pdlg->dwt->tree, PDLG_I_PORT), idx, txt);
 	}
+	obj_draw(pdlg->mwt, pdlg->wind->vdi_settings, aesobj(pdlg->dwt->tree, PDLG_I_PORT), -1, NULL, pdlg->wind->rect_list.start, 0);
 }
 static void
 d_set_prn_fgbg(struct xa_pdlg_info *pdlg, bool bg)
 {
-	obj_set_radio_button(pdlg->dwt, pdlg->wind->vdi_settings, aesobj(pdlg->dwt->tree, bg ? PDLG_I_BG : PDLG_R_FG), false, NULL, NULL);
+	obj_set_radio_button(pdlg->mwt, pdlg->wind->vdi_settings, aesobj(pdlg->dwt->tree, bg ? PDLG_I_BG : PDLG_R_FG), false, NULL, pdlg->wind->rect_list.start);
 }
 static long
 d_get_prn_fgbg(struct xa_pdlg_info *pdlg)
@@ -1122,6 +1123,7 @@ build_printer_popup(struct xa_pdlg_info *pdlg)
 		else
 			free_object_tree(pdlg->client, tree);
 	}
+// 	obj_draw(pdlg->mwt, pdlg->wind->vdi_settings, aesobj(pdlg->mwt->tree, XPDLG_DRIVER), -1, NULL, pdlg->wind->rect_list.start, 0);
 }
 
 static char errtxt[] = " -- ERROR -- ";
@@ -1218,7 +1220,8 @@ build_mode_popup(struct xa_pdlg_info *pdlg, PRN_SETTINGS *pset)
 		
 		if (tree)
 			free_object_tree(pdlg->client, tree);
-	}	
+	}
+	obj_draw(pdlg->mwt, pdlg->wind->vdi_settings, aesobj(pdlg->dwt->tree, PDLG_G_QUALITY), -1, NULL, pdlg->wind->rect_list.start, 0);
 }
 static char *colornames[] =
 {
@@ -1383,6 +1386,7 @@ build_color_popup(struct xa_pdlg_info *pdlg, PRN_SETTINGS *pset)
 		if (tree)
 			free_object_tree(pdlg->client, tree);
 	}
+	obj_draw(pdlg->mwt, pdlg->wind->vdi_settings, aesobj(pdlg->dwt->tree, PDLG_G_COLOR), -1, NULL, pdlg->wind->rect_list.start, 0);
 }
 static void *
 next_size(short item, void **data)
@@ -1472,6 +1476,7 @@ build_size_popup(struct xa_pdlg_info *pdlg, PRN_SETTINGS *pset)
 		if (tree)
 			free_object_tree(pdlg->client, tree);
 	}
+	obj_draw(pdlg->mwt, pdlg->wind->vdi_settings, aesobj(pdlg->dwt->tree, PDLG_P_FORMAT), -1, NULL, pdlg->wind->rect_list.start, 0);
 }
 
 static void *
@@ -1562,6 +1567,7 @@ build_type_popup(struct xa_pdlg_info *pdlg, PRN_SETTINGS *pset)
 		if (tree)
 			free_object_tree(pdlg->client, tree);
 	}
+	obj_draw(pdlg->mwt, pdlg->wind->vdi_settings, aesobj(pdlg->dwt->tree, PDLG_P_TYPE), -1, NULL, pdlg->wind->rect_list.start, 0);
 }
 
 static char deftray[] = "std";
@@ -1664,6 +1670,7 @@ build_tray_popup(struct xa_pdlg_info *pdlg, short which, PRN_SETTINGS *pset)
 		if (tree)
 			free_object_tree(pdlg->client, tree);
 	}
+	obj_draw(pdlg->mwt, pdlg->wind->vdi_settings, aesobj(pdlg->dwt->tree, obidx), -1, NULL, pdlg->wind->rect_list.start, 0);
 }
 
 static void *
@@ -1754,6 +1761,7 @@ build_dither_popup(struct xa_pdlg_info *pdlg, PRN_SETTINGS *pset)
 		if (tree)
 			free_object_tree(pdlg->client, tree);
 	}
+	obj_draw(pdlg->mwt, pdlg->wind->vdi_settings, aesobj(pdlg->dwt->tree, PDLG_R_RASTER), -1, NULL, pdlg->wind->rect_list.start, 0);
 }
 
 static void *
@@ -1873,6 +1881,7 @@ build_outfile_popup(struct xa_pdlg_info *pdlg, DRV_INFO *drv, PRN_ENTRY *prn, PR
 		if (tree)
 			free_object_tree(pdlg->client, tree);
 	}
+	obj_draw(pdlg->mwt, pdlg->wind->vdi_settings, aesobj(pdlg->dwt->tree, PDLG_I_PORT), -1, NULL, pdlg->wind->rect_list.start, 0);
 }
 
 static void
@@ -2286,21 +2295,25 @@ change_printer(struct xa_pdlg_info *pdlg, short idx, PRN_SETTINGS *pset)
 		if (curr_prn)
 			prn_cap = curr_prn->printer_capabilities;
 		
-		disable_object(pdlg->dwt->tree + PDLG_I_BG, !(prn_cap & PC_BACKGROUND));
-		disable_object(pdlg->dwt->tree + PDLG_R_FG, !(prn_cap & PC_BACKGROUND));
+		if (disable_object(pdlg->dwt->tree + PDLG_I_BG, !(prn_cap & PC_BACKGROUND)))
+			obj_draw(pdlg->mwt, pdlg->wind->vdi_settings, aesobj(pdlg->dwt->tree, PDLG_I_BG), -1, NULL, pdlg->wind->rect_list.start, 0);
 		
-		disable_object(pdlg->dwt->tree + PDLG_P_SCALE, !(prn_cap & PC_SCALING));
+		if (disable_object(pdlg->dwt->tree + PDLG_R_FG, !(prn_cap & PC_BACKGROUND)))
+			obj_draw(pdlg->mwt, pdlg->wind->vdi_settings, aesobj(pdlg->dwt->tree, PDLG_R_FG), -1, NULL, pdlg->wind->rect_list.start, 0);
+		
+		if (disable_object(pdlg->dwt->tree + PDLG_P_SCALE, !(prn_cap & PC_SCALING)))
+			obj_draw(pdlg->mwt, pdlg->wind->vdi_settings, aesobj(pdlg->dwt->tree, PDLG_P_SCALE), -1, NULL, pdlg->wind->rect_list.start, 0);
 
-		disable_object(pdlg->dwt->tree + PDLG_G_COPIES, !(prn_cap & PC_COPIES));
+		if (disable_object(pdlg->dwt->tree + PDLG_G_COPIES, !(prn_cap & PC_COPIES)))
+			obj_draw(pdlg->mwt, pdlg->wind->vdi_settings, aesobj(pdlg->dwt->tree, PDLG_G_COPIES), -1, NULL, pdlg->wind->rect_list.start, 0);
 
 		if (pdlg->curr_mode)
 			mode_cap = pdlg->curr_mode->mode_capabilities;
 
-		for (i = 0; i < 4; i++)
-			disable_object(pdlg->dwt->tree + PDLG_R_C + i, !(mode_cap & MC_SLCT_CMYK));
-// 		disable_object(pdlg->dwt->tree + PDLG_G_M, !(mode_cap & MC_MAGENTA));
-// 		disable_object(pdlg->dwt->tree + PDLG_G_Y, !(mode_cap & MC_YELLOW));
-// 		disable_object(pdlg->dwt->tree + PDLG_G_K, !(mode_cap & MC_BLACK));
+		for (i = 0; i < 4; i++) {
+			if (disable_object(pdlg->dwt->tree + PDLG_R_C + i, !(mode_cap & MC_SLCT_CMYK)))
+				obj_draw(pdlg->mwt, pdlg->wind->vdi_settings, aesobj(pdlg->dwt->tree, PDLG_R_C + i), -1, NULL, pdlg->wind->rect_list.start, 0);
+		}
 		
 // 		display_pset(&pdlg->current_settings);
 	}
