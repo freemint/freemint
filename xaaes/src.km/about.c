@@ -215,7 +215,7 @@ open_about(enum locks lock, struct xa_client *client, bool open)
 		if (open)
 		{
 			open_window(lock, wind, wind->r);
-			if (wind != window_list)
+			if (wind != TOP_WINDOW/*window_list*/)
 				top_window(lock, true, false, wind, (void *)-1L);
 		}
 	}

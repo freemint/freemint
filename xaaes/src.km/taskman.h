@@ -44,6 +44,8 @@ void addto_namelist(struct cfg_name_list **list, char *name);
 void removefrom_namelist(struct cfg_name_list **list, char *name, short nlen);
 void free_namelist(struct cfg_name_list **list);
 
+void send_terminate(enum locks lock, struct xa_client *client, short reason);
+
 void CHlp_aesmsg(struct xa_client *client);
 void screen_dump(enum locks lock, struct xa_client *client, bool open);
 

@@ -39,10 +39,12 @@
 #include "draw_obj.h"
 #include "obtree.h"
 #include "rectlist.h"
+#include "taskman.h"
 
 #include "xa_evnt.h"
 #include "xa_graf.h"
 #include "xa_rsrc.h"
+#include "xa_menu.h"
 #include "xa_wdlg.h"
 
 #include "win_draw.h"
@@ -1043,7 +1045,7 @@ drag_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, cons
 			struct xa_window *scan_wind;
 
 			/* Don't allow windows below a STORE_BACK to move */
-			if (wind != window_list)
+			if (wind != TOP_WINDOW/*window_list*/)
 			{
 				for (scan_wind = wind->prev; scan_wind; scan_wind = scan_wind->prev)
 				{
@@ -1157,19 +1159,57 @@ drag_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, cons
 	return true;
 }
 
+/* This must run in the context of the window owner!! */
+static void
+shade_action(enum locks lock, struct xa_window *wind)
+{
+
+	if (!(wind->window_status & XAWS_ZWSHADED))
+	{
+		if ((wind->window_status & XAWS_SHADED))
+		{
+			if (wind->send_message)
+			{
+				DIAGS(("Click_title: unshading window %d for %s",
+					wind->handle, wind->owner->name));
+
+				wind->send_message(lock, wind, NULL, AMQ_CRITICAL, QMF_CHKDUP,
+					WM_UNSHADED, 0, 0,wind->handle, 0, 0, 0, 0);
+
+				move_window(lock, wind, true, ~(XAWS_SHADED|XAWS_ZWSHADED), wind->rc.x, wind->rc.y, wind->rc.w, wind->rc.h);
+			}
+		}
+		else
+		{
+			if (wind->send_message)
+			{
+				DIAGS(("Click_title: shading window %d for %s",
+					wind->handle, wind->owner->name));
+
+				move_window(lock, wind, true, XAWS_SHADED, wind->rc.x, wind->rc.y, wind->rc.w, wind->rc.h);
+				wind->send_message(lock, wind, NULL, AMQ_CRITICAL, QMF_CHKDUP,
+					WM_SHADED, 0, 0, wind->handle, 0,0,0,0);
+			}
+		}
+	}
+}
 /*
  * Single click title bar sends window to the back
  */
 static bool
 click_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
-	if (wind->nolist)
+	bool nolist = wind->nolist;
+
+	if (nolist && (wind->window_status & XAWS_NOFOCUS))
 		return true;
+	
+// 	if (nolist)
+// 		display("NOTLIST!");
 
 	/* Ozk: If either shifts pressed, unconditionally send the window to bottom */
 	if (md->clicks == 1)
 	{
-
 		if (md->state == MBS_LEFT)
 		{
 			if ((md->kstate & 3) && (wind->active_widgets & (STORE_BACK|BACKDROP)) == BACKDROP)
@@ -1178,25 +1218,43 @@ click_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 			}
 			else
 			{
-				/* if not on top or on top and not focus */
-				if (!is_topped(wind))
+				if (nolist)
 				{
-					send_topped(lock, wind);
+					if (wind_has_focus(wind)) {
+						send_bottomed(lock, wind);
+// 						display("bottomed nolist");
+					} else {
+// 						display("topped nolist");
+						send_topped(lock, wind);
+					}
 				}
-				/* If window is already top, then send it to the back */
-				/* Ozk: Always bottom iconified windows... */
-				else if ((wind->window_status & XAWS_ICONIFIED))
+				else
 				{
-					send_bottomed(lock, wind);
-				}
-				else if ((wind->active_widgets & (STORE_BACK|BACKDROP)) == BACKDROP)
-				{
-					send_bottomed(lock, wind);
+					/* if not on top or on top and not focus */
+					if (!is_topped(wind))
+					{
+						send_topped(lock, wind);
+					}
+					else if (!wind_has_focus(wind))
+						setnew_focus(wind, 0);
+					
+					/* If window is already top, then send it to the back */
+					/* Ozk: Always bottom iconified windows... */
+					else if ((wind->window_status & XAWS_ICONIFIED))
+					{
+						send_bottomed(lock, wind);
+					}
+					else if ((wind->active_widgets & (STORE_BACK|BACKDROP)) == BACKDROP)
+					{
+						send_bottomed(lock, wind);
+					}
 				}
 			}
 		}
 		else if (md->state == MBS_RIGHT && !(wind->dial & created_for_SLIST))
 		{
+			shade_action(lock, wind);
+#if 0
 			if (!(wind->window_status & XAWS_ZWSHADED))
 			{
 				if ((wind->window_status & XAWS_SHADED))
@@ -1225,6 +1283,7 @@ click_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 					}
 				}
 			}
+#endif
 		}
 		return true;
 	}
@@ -1277,14 +1336,27 @@ click_close(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 {
 	bool ret = false;
 
-	if (wind->send_message)
+	if (md->state & MBS_RIGHT)
 	{
-		wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
-				   WM_CLOSED, 0, 0, wind->handle,
-				   0,0,0,0);
-
+		post_cevent(C.Hlp, CE_winctxt, wind, NULL, 0,0, NULL,md);
+		ret = true;
+	}
+	else
+	{
+		send_closed(lock, wind);
 		if ((wind->window_status & XAWS_OPEN))
-			ret = true;	/* redisplay */
+			ret = true;
+#if 0		
+		if (wind->send_message)
+		{
+			wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
+					   WM_CLOSED, 0, 0, wind->handle,
+					   0,0,0,0);
+
+			if ((wind->window_status & XAWS_OPEN))
+				ret = true;	/* redisplay */
+		}
+#endif
 	}
 	/* Don't redisplay in the do_widgets() routine */
 	return ret;
@@ -1311,7 +1383,49 @@ click_full(enum locks lock, struct xa_window *wind, struct xa_widget *widg, cons
 	ICONIFY WIDGET BEHAVIOUR
 ========================================================*/
 /* Displayed by display_def_widget */
+static bool
+iconify_action(enum locks lock, struct xa_window *wind, const struct moose_data *md)
+{
+	if (!wind->send_message)
+		return false;
 
+	if ((wind->window_status & XAWS_OPEN))
+	{
+		short msg = -1;
+		RECT r;
+
+		if ((wind->window_status & XAWS_ICONIFIED))
+		{
+			/* Window is already iconified - send request to restore it */
+			r = wind->ro;
+			
+			msg = WM_UNICONIFY;
+		}
+		else
+		{
+			/* Window is open - send request to iconify it */
+
+			r = free_icon_pos(lock|winlist, NULL);
+
+			/* Could the whole screen be covered by iconified
+			 * windows? That would be an achievement, wont it?
+			 */
+			if (r.y >= root_window->wa.y)
+				msg = (md && md->kstate & K_CTRL) ? WM_ALLICONIFY : WM_ICONIFY;
+		}
+		if (msg != -1)
+		{
+			if (wind->opts & XAWO_WCOWORK)
+				r = f2w(msg == WM_UNICONIFY ? &wind->save_delta : &wind->delta, &r, true);
+
+			wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
+				   msg, 0, 0, wind->handle,
+				   r.x, r.y, r.w, r.h);
+		}
+	}
+	/* Redisplay.... */
+	return true;
+}
 /*
  * click the iconify widget
  */
@@ -1319,7 +1433,9 @@ static bool
 click_iconify(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
 	DIAGS(("click_iconify:"));
-	
+	iconify_action(lock, wind, md);
+	return true;
+#if 0	
 	if (!wind->send_message)
 		return false;
 
@@ -1359,6 +1475,7 @@ click_iconify(enum locks lock, struct xa_window *wind, struct xa_widget *widg, c
 	}
 	/* Redisplay.... */
 	return true;
+#endif
 }
 
 /*======================================================
@@ -1565,6 +1682,196 @@ static inline bool
 drag_border(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
 	return size_window(lock, wind, widg, false, drag_border, md);
+}
+
+
+static char *wctxt_popup_text[] =
+{
+	"Keep over others",
+	"Keep under others",
+	"Send to top",
+	"Send to bottom",
+	"Close",
+	"Hide",
+	"Iconify",
+	"Shade",
+	"Quit",
+	"Kill",
+	"\0"
+};
+static void *
+next_wctxt_entry(short item, void **_data)
+{
+	char *ret;
+	short *data = *_data;
+
+	if (!item)
+		(*data) = 0;
+
+// 	display("string %d", (*data));
+	ret = wctxt_popup_text[(*data)++];
+// 	display("'%s'", ret);
+
+	return ret;
+	
+}
+static void
+CE_shade_action(enum locks lock, struct c_event *ce, bool cancel)
+{
+	if (!cancel)
+	{
+		struct xa_window *wind = ce->ptr1;
+		if (wind->window_status & XAWS_OPEN)
+			shade_action(0, wind);
+	}
+}
+
+void
+CE_winctxt(enum locks lock, struct c_event *ce, bool cancel)
+{
+	if (!cancel)
+	{
+		OBJECT *obtree;
+		int n_entries = 0;
+		int *nptr = &n_entries;
+
+		while (*wctxt_popup_text[n_entries])
+			n_entries++;
+
+// 		display("%d objects", n_entries);
+		
+		obtree = create_popup_tree(ce->client, 0, n_entries, 16,16, next_wctxt_entry, (void **)&nptr);
+		
+// 		display("created %lx with %d objects", obtree, n_entries);
+
+		if (obtree)
+		{
+			XAMENU xmn;
+			MENU result;
+			XA_TREE *wt;
+			short x, y, obnum = -1;
+
+			wt = new_widget_tree(ce->client, obtree);
+// 			display("wt = %lx", wt);
+			if (wt)
+			{
+				struct xa_window *wind;
+				
+				wind = ce->ptr1;
+				
+				if (!wind)
+					return;
+
+				wt->flags |= WTF_TREE_ALLOC | WTF_AUTOFREE;
+				xmn.menu.mn_tree = wt->tree;
+				xmn.menu.mn_menu = ROOT;
+				xmn.menu.mn_item = 1;
+				xmn.menu.mn_scroll = 1;
+				xmn.mn_selected = -1;
+
+				obtree->ob_x = ce->md.x;
+				obtree->ob_y = ce->md.y;
+// 				display("x, y = %d/%d", ce->md.x, ce->md.y);
+				obj_offset(wt, aesobj(obtree, 0), &x, &y);
+
+				if (wind->window_status & XAWS_FLOAT)
+					obtree[1].ob_state |= OS_CHECKED;
+				if (wind->window_status & XAWS_SINK)
+					obtree[2].ob_state |= OS_CHECKED;
+				
+				if (menu_popup(0, wt->owner, &xmn, &result, x, y, 2) && result.mn_tree == xmn.menu.mn_tree)
+				{
+					if (result.mn_item > 0)
+					{
+						obnum = result.mn_item;
+// 						display("selection of object %d was done", result.mn_item);
+					}
+// 					else display("no selection made");
+				}
+// 				else
+// 					display(" hmmm...");
+
+				
+				remove_wt(wt, false);
+				
+				if (wind && (wind->window_status & (XAWS_OPEN)))
+				{
+					switch (obnum)
+					{
+						case 1: /* Keep over others */
+						{
+							wind->window_status &= ~XAWS_SINK;
+							wind->window_status ^= XAWS_FLOAT;
+							top_window(0, true, true, wind, (void *)-1L);
+							break;
+						}
+						case 2: /* Keep under others */
+						{
+							wind->window_status &= ~XAWS_FLOAT;
+							wind->window_status ^= XAWS_SINK;
+							bottom_window(0, true, true, wind);
+							break;
+						}
+						case 3: /* Send to top */
+						{
+							top_window(0, true, true, wind, (void *)-1L);
+							break;
+						}
+						case 4: /* Send to bottom */
+						{
+							bottom_window(0, true, true, wind);
+							break;
+						}
+						case 5: /* Close window */
+						{
+							send_closed(0, wind);
+							break;
+						}
+						case 6: /* Hide window */
+						{
+							if ((wind->window_status & XAWS_HIDDEN))
+								unhide_window(0, wind, false);
+							else
+								hide_window(0, wind);
+							break;
+						}
+						case 7: /* Iconify window */
+						{
+							iconify_action(0, wind, NULL);
+							break;
+						}
+						case 8: /* Shade window */
+						{
+							post_cevent(wind->owner, CE_shade_action, wind,NULL, 0,0, NULL,&ce->md);
+							break;
+						}
+						case 9: /* Quit */
+						{
+
+							if (wind->owner->type & (APP_AESTHREAD|APP_AESSYS))
+								ALERT(("Cannot terminate AES system proccesses!"));
+							else
+								send_terminate(lock, wind->owner, AP_TERM);
+							break;
+						}
+						case 10: /* Kill */
+						{
+							if (wind->owner->type & (APP_AESTHREAD|APP_AESSYS))
+							{
+								ALERT(("Not a good idea, I tell you!"));
+							}
+							else
+								ikill(wind->owner->p->pid, SIGKILL);
+							break;
+						}
+						default:;
+					}
+				}
+			}
+			else
+				free_object_tree(C.Hlp, obtree);
+		}
+	}
 }
 
 
@@ -3809,7 +4116,7 @@ set_winmouse(short x, short y)
 	if (x == -1 && y == -1)
 		check_mouse(NULL, NULL, &x, &y);
 
-	wind = find_window(0, x, y);
+	wind = find_window(0, x, y, FNDW_NOLIST|FNDW_NORMAL);
 
 	wind_mshape(wind, x, y);
 }

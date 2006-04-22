@@ -29,7 +29,9 @@
 
 #include "global.h"
 #include "xa_types.h"
-	
+
+void CE_winctxt(enum locks lock, struct c_event *ce, bool cancel);
+
 //void	setup_widget_theme(struct xa_client *client, struct xa_widget_theme *xwt);
 void init_client_widget_theme(struct xa_client *client);
 void exit_client_widget_theme(struct xa_client *client);

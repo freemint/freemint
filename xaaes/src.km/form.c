@@ -331,7 +331,6 @@ form_button(XA_TREE *wt,
 			short x, y, obnum;
 
 			{
-
 				pinf = object_get_popinfo(aesobj_ob(&obj));
 				if ((obnum = pinf->obnum) > 0)
 					pinf->tree[obnum].ob_state |= OS_CHECKED;
@@ -1344,7 +1343,10 @@ do_formwind_msg(
 		{
 			if (wind->owner->fmd.wind == wind)
 				top_window(0, true, false, wind, (void *)-1L);
-			else if (!wind->nolist && wind != root_window && (wind->window_status & XAWS_OPEN) && !is_topped(wind))
+			else if ( wind != root_window &&
+				 (wind->window_status & XAWS_OPEN) &&
+				 (wind->nolist ? !wind_has_focus(wind) : !is_topped(wind))
+				)
 			{
 				if (is_hidden(wind))
 					unhide_window(0, wind, true);
@@ -1358,7 +1360,10 @@ do_formwind_msg(
 			if (wind->owner->fmd.wind == wind)
 				bottom_window(0, false, true, wind);
 
-			if (!wind->nolist && wind != root_window && (wind->window_status & XAWS_OPEN))
+			else if ( wind != root_window &&
+				 (wind->window_status & XAWS_OPEN) &&
+				 (wind->nolist ? wind_has_focus(wind) : is_topped(wind))
+				)
 				bottom_window(0, false, true, wind);
 			break;
 		}
