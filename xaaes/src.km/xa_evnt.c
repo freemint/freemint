@@ -281,7 +281,7 @@ checkfor_mumx_evnt(struct xa_client *client, bool is_locker, short x, short y)
 				struct xa_window *wind;
 				struct xa_client *wo = NULL;
 
-				wind = find_window(0, x, y);
+				wind = find_window(0, x, y, FNDW_NOLIST|FNDW_NORMAL);
 			
 				if (wind)
 					wo = wind == root_window ? get_desktop()->owner : wind->owner;

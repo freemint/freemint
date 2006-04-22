@@ -1972,7 +1972,7 @@ click_form_popup_entry(struct task_administration_block *tab, short item)
 	MENU_TASK *k = &tab->task_data.menu;
 	struct xa_client *client = tab->client;
 	struct widget_tree *wt = k->p.wt;
-	short m, ue;
+	short m, ue, *dptr;
 
 	if (item == -1)
 		m = find_menu_object(wt, k->p.parent, k->pdx, k->pdy, k->x, k->y, &k->drop);
@@ -1990,14 +1990,12 @@ click_form_popup_entry(struct task_administration_block *tab, short item)
 
 	ue = tab->usr_evnt;
 	
+	dptr = (short *)tab->data;
+
 	popout(TAB_LIST_START);			/* incl. screen unlock */
 
-	if (tab->data)
-	{
-		short *dptr = (short *)tab->data;
+	if (dptr)
 		*dptr = m;
-// 		*(short *)tab->data = m;	
-	}
 	client->usr_evnt |= ue;
 
 	return NULL;

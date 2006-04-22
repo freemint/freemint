@@ -98,7 +98,7 @@ cXA_button_event(enum locks lock, struct c_event *ce, bool cancel)
 				tab = collapse(root_tab, tab);
 			else if (!tab)
 			{
-				wind = find_window(lock, md->x, md->y);
+				wind = find_window(lock, md->x, md->y, FNDW_NOLIST|FNDW_NORMAL);
 				FOREACH_TAB(tab)
 				{
 					if (tab->task_data.menu.p.wind == wind)
@@ -349,7 +349,7 @@ menu_move(struct xa_client *client, struct moose_data *md, bool f)
 				tab = tab->tab_entry.next;
 			}
 			else
-				set_winmouse(x, y); //wind_mshape(find_window(lock, x, y), x,y);
+				set_winmouse(x, y); //wind_mshape(find_window(lock, x, y, FNDW_NOLIST|FNDW_NORMAL), x,y);
 
 			while (tab)
 			{
