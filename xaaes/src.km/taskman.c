@@ -434,7 +434,7 @@ taskmanager_destructor(enum locks lock, struct xa_window *wind)
 	return true;
 }
 
-static void
+void
 send_terminate(enum locks lock, struct xa_client *client, short reason)
 {
 	if (client->type & APP_ACCESSORY)
@@ -584,7 +584,7 @@ screen_dump(enum locks lock, struct xa_client *client, bool open)
 				r = root_window->r;
 			else if (C.Hlp_pb->intout[0] == 3)
 			{
-				struct xa_window *wind = window_list;
+				struct xa_window *wind = TOP_WINDOW/*window_list*/;
 				
 				if (wind->r.x > 0 && wind->r.y > 0 &&
 				   (wind->r.x + wind->r.w) < root_window->r.w &&
@@ -861,7 +861,7 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 		wind = create_window(lock,
 					do_winmesag, do_formwind_msg,
 					client,
-					false, /*false,*/
+					true, /*false,*/ /*false,*/
 					CLOSER|NAME|TOOLBAR|hide_move(&(client->options)),
 					created_for_AES,
 					client->options.thinframe,
@@ -892,7 +892,7 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 		if (open)
 		{
 			open_window(lock, wind, wind->r);
-			if (wind != window_list)
+			if (!wind->nolist && wind != TOP_WINDOW/*window_list*/)
 				top_window(lock, true, false, wind, (void *)-1L);
 		}
 	}
@@ -1077,7 +1077,7 @@ open_reschange(enum locks lock, struct xa_client *client, bool open)
 		if (open)
 		{
 			open_window(lock, wind, wind->r);
-			if (wind != window_list)
+			if (wind != TOP_WINDOW/*window_list*/)
 				top_window(lock, true, false, wind, (void *)-1L);
 		}
 	}
@@ -1228,7 +1228,7 @@ open_falcon_reschange(enum locks lock, struct xa_client *client, bool open)
 		if (open)
 		{
 			open_window(lock, wind, wind->r);
-			if (wind != window_list)
+			if (wind != TOP_WINDOW/*window_list*/)
 				top_window(lock, true, false, wind, (void *)-1L);
 		}
 	}
@@ -1761,7 +1761,7 @@ open_milan_reschange(enum locks lock, struct xa_client *client, bool open)
 		if (open)
 		{
 			open_window(lock, wind, wind->r);
-			if (wind != window_list)
+			if (wind != TOP_WINDOW/*window_list*/)
 				top_window(lock, true, false, wind, (void *)-1L);
 		}
 	}
@@ -2064,7 +2064,10 @@ check_nova_res(struct xa_client *client, short mw)
 				}
 			}	
 		}
+		else
+			kernel_close(fp);
 	}
+	
 	return p;
 exit:
 	if (modes)
@@ -2113,7 +2116,7 @@ open_nova_reschange(enum locks lock, struct xa_client *client, bool open)
 		if (open)
 		{
 			open_window(lock, wind, wind->r);
-			if (wind != window_list)
+			if (wind != TOP_WINDOW/*window_list*/)
 				top_window(lock, true, false, wind, (void *)-1L);
 		}
 	}
@@ -2260,7 +2263,7 @@ open_csr(enum locks lock, struct xa_client *client, struct xa_client *running)
 	{
 		wind = htd->w_csr;
 		open_window(lock, wind, wind->r);
-		if (wind != window_list)
+		if (wind != TOP_WINDOW/*window_list*/)
 			top_window(lock, true, false, wind, (void *)-1L);
 	}
 	return;
@@ -2554,7 +2557,7 @@ open_systemalerts(enum locks lock, struct xa_client *client, bool open)
 		if (open)
 		{
 			open_window(lock, wind, wind->r);
-			if (wind != window_list)
+			if (wind != TOP_WINDOW/*window_list*/)
 				top_window(lock, true, false, wind, (void *)-1L);
 		}
 	}

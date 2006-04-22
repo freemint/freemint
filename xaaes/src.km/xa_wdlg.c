@@ -1051,7 +1051,7 @@ wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms 
 					ev->mwhich &= ~MU_MESAG;
 			}
 
-			top = window_list;
+			top = TOP_WINDOW/*window_list*/;
 
 			if (ev->mwhich & MU_BUTTON)
 				cpy_ev2md(ev, &md);
@@ -1059,7 +1059,7 @@ wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms 
 			if (ret && (ev->mwhich & MU_BUTTON))
 			{
 				struct xa_window *cwind;
-				cwind = find_window(lock, ev->mx, ev->my);
+				cwind = find_window(lock, ev->mx, ev->my, FNDW_NOLIST|FNDW_NORMAL);
 
 				if (cwind && wep->wind == cwind && (wind == top || (wind->active_widgets & NO_TOPPED)) )
 				{

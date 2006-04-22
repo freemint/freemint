@@ -31,6 +31,11 @@
 #include "xa_types.h"
 #include "xa_global.h"
 
+#define FNDW_NOLIST 1
+#define FNDW_NORMAL 2
+
+static inline struct xa_window * get_top(void) {return S.open_windows.first;}
+
 struct xa_window *create_window(enum locks lock,
 				SendMessage *message_handler,
 				DoWinMesag *message_doer,
@@ -53,8 +58,10 @@ void change_window_attribs(enum locks lock,
 
 void wi_remove(struct win_base *b, struct xa_window *w);
 void wi_put_first(struct win_base *b, struct xa_window *w);
+void wi_move_first(struct win_base *b, struct xa_window *w);
+void wi_move_blast(struct win_base *b, struct xa_window *w);
 
-struct xa_window *find_window(enum locks lock, short x, short y);
+struct xa_window *find_window(enum locks lock, short x, short y, short flags);
 struct xa_window *get_wind_by_handle(enum locks lock, short h);
 struct xa_window *pull_wind_to_top(enum locks lock, struct xa_window *w);
 struct xa_window *top_w(enum locks lock);
@@ -108,6 +115,7 @@ void	send_sized	(enum locks lock, struct xa_window *wind, short amq, RECT *r);
 void	send_reposed	(enum locks lock, struct xa_window *wind, short amq, RECT *r);
 void	send_vslid	(enum locks lock, struct xa_window *wind, short offs);
 void	send_hslid	(enum locks lock, struct xa_window *wind, short offs);
+void	send_closed	(enum locks lock, struct xa_window *wind);
 void	send_redraw	(enum locks lock, struct xa_window *wind, RECT *r);
 void	send_iredraw	(enum locks lock, struct xa_window *wind, short xaw, RECT *r);
 void	generate_redraws(enum locks lock, struct xa_window *wind, RECT *r, short flags);

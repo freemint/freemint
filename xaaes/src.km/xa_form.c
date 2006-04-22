@@ -439,6 +439,8 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 
 		if (alert_window)
 		{
+			alert_window->window_status |= XAWS_FLOAT|XAWS_NOFOCUS;
+
 			widg = get_widget(alert_window, XAW_TOOLBAR);
 
 			set_toolbar_widget(lock, alert_window, client, alert_form, inv_aesobj(), WIP_NOTEXT, STW_ZEN, NULL, &or); //(RECT *)&alert_form->ob_x);
@@ -842,7 +844,6 @@ XA_form_do(enum locks lock, struct xa_client *client, AESPB *pb)
 					top_window(lock, true, false, wind, (void *)-1L);
 				else
 					display_window(lock, 4, wind, NULL);
-
 			}
 // 			display("wait for form_do...");
 			Block(client, 0);

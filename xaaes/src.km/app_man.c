@@ -40,6 +40,8 @@
 #include "messages.h"
 #include "widgets.h"
 
+#include "k_mouse.h"
+
 #include "mint/signal.h"
 
 
@@ -74,6 +76,98 @@ wind_has_focus(struct xa_window *wind)
 	return wind == w ? true : false;
 }
 
+struct xa_client *
+reset_focus(struct xa_window **new_focus, short flags)
+{
+	struct xa_client *client = NULL;
+	struct xa_window *top = TOP_WINDOW/*window_list*/, *fw = NULL;
+	
+	if (S.focus && (S.focus->window_status & XAWS_STICKYFOCUS))
+		fw = S.focus;
+
+	if (!fw && 0)
+	{
+		short x, y;
+		 
+		check_mouse(NULL, NULL, &x, &y);
+		fw = find_window(0, x, y, FNDW_NOLIST|FNDW_NORMAL);
+		if (fw && fw != root_window && !(fw->window_status & XAWS_NOFOCUS))
+		{
+			client = fw->owner;
+		}
+		else
+			fw = NULL;
+	}
+
+	if (!fw)
+	{
+		if (!(flags & 1) && S.focus)
+		{
+			if (S.focus->nolist)
+				fw = S.focus;
+		}
+		if (!fw && top && !(top->window_status & XAWS_NOFOCUS) && is_topped(top) && !is_hidden(top))
+		{
+			fw = top;
+		}
+	}
+
+	if (fw)
+		client = fw == root_window ? get_desktop()->owner : fw->owner;
+	if (new_focus)
+		*new_focus = fw;
+	
+	return client;
+}
+
+void
+setnew_focus(struct xa_window *wind, short flags)
+{
+	if (wind != S.focus)
+	{
+		if (S.focus && (S.focus->window_status & XAWS_STICKYFOCUS))
+			return;
+
+		if ((flags & 1) && wind && (!S.focus || (wind->owner != S.focus->owner && !is_infront(wind->owner))))
+		{
+			set_active_client(0, wind->owner);
+			swap_menu(0, wind->owner, NULL, SWAPM_DESK);
+		}
+		
+		if (wind)
+		{
+			wind->colours = wind->ontop_cols;
+			send_iredraw(0, wind, 0, NULL);
+		}
+		if (S.focus)
+		{
+			S.focus->colours = S.focus->untop_cols;
+			send_iredraw(0, S.focus, 0, NULL);
+		}
+
+		DIAGS(("setfocus to %d of '%s', was %d of '%s'",
+			(long)wind ? wind->handle : -1, (long)wind ? wind->owner->proc_name : "None",
+			(long)S.focus ? S.focus->handle : -1, (long)S.focus ? S.focus->owner->proc_name : "None"));
+
+		S.focus = wind;
+	}
+}
+
+void
+unset_focus(struct xa_window *wind)
+{
+	if (wind == S.focus)
+	{
+		struct xa_window *fw;
+
+		S.focus = NULL;
+		reset_focus(&fw, 0);
+		setnew_focus(fw, 0);
+		wind->colours = wind->untop_cols;
+		send_iredraw(0, wind, 0, NULL);
+	}
+}
+
 /*
  * HR: Generalization of focus determination.
  *     Each step checks MU_KEYBD except the first.
@@ -92,10 +186,11 @@ wind_has_focus(struct xa_window *wind)
  *       In other words: There can always be a client returned. So we must only know
  *          if that client is already waiting. Hence the ref bool.
  */
+
 struct xa_client *
 find_focus(bool withlocks, bool *waiting, struct xa_client **locked_client, struct xa_window **keywind)
 {
-	struct xa_window *top = window_list, *nlwind = nolist_list;
+	struct xa_window *top = TOP_WINDOW/*window_list*/, *nlwind = nolist_list;
 	struct xa_client *client = NULL, *locked = NULL;
 
 	if (waiting)
@@ -123,7 +218,7 @@ find_focus(bool withlocks, bool *waiting, struct xa_client **locked_client, stru
 			if (client->fmd.keypress ||				/* classic (blocked) form_do */
 			/* XXX - Ozk:
 			 * Find a better solution here! nolist windows that are created for popups (menu's and popups)
-			 * should not be taken into account when client wants top_window via wind_get(WF_TOP)!
+			 * should not be taken into account when client wants TOP_WINDOW via wind_get(WF_TOP)!
 			 * But the AES may perhaps need to direct some keypresses to those later on..
 			 */
 			    (nlwind && nlwind->owner == client && !(nlwind->dial & created_for_POPUP)) ||
@@ -144,9 +239,21 @@ find_focus(bool withlocks, bool *waiting, struct xa_client **locked_client, stru
 				return client;
 			}
 		}
-	}	
-
+	}
+#if 0
 	if (is_topped(top) && !is_hidden(top))
+	{
+		if (waiting && ((top->owner->waiting_for & (MU_KEYBD | MU_NORM_KEYBD)) || top->keypress))
+			*waiting = true;
+
+		if (keywind)
+			*keywind = top;
+
+		DIAGS(("-= 4 =-"));
+		client = top->owner;
+	}
+#endif
+	if ((top = S.focus) && !is_hidden(top))
 	{
 		if (waiting && ((top->owner->waiting_for & (MU_KEYBD | MU_NORM_KEYBD)) || top->keypress))
 			*waiting = true;
@@ -172,6 +279,7 @@ find_focus(bool withlocks, bool *waiting, struct xa_client **locked_client, stru
 		else if (c == C.Aes)
 			client = c;
 	}
+
 	DIAGS(("find_focus: focus = %s, infront = %s", client->name, APP_LIST_START->name));
 
 	return client;
@@ -259,7 +367,7 @@ set_next_menu(struct xa_client *new, bool do_topwind, bool force)
 				
 				if (new->std_menu != widg->stuff)
 				{
-					if (do_topwind && (top = window_list != root_window ? root_window : NULL))
+					if (do_topwind && (top = TOP_WINDOW/*window_list*/ != root_window ? root_window : NULL))
 						wastop = is_topped(top) ? true : false;
 			
 					if ((wt = widg->stuff))
@@ -861,7 +969,7 @@ previous_client(enum locks lock, short exlude)
 void
 app_in_front(enum locks lock, struct xa_client *client, bool snd_untopped, bool snd_ontop, bool allwinds)
 {
-	struct xa_window *wl,*wf,*wp;
+	struct xa_window *wl,*wf,*wp, *fw;
 
 	if (client)
 	{
@@ -872,7 +980,7 @@ app_in_front(enum locks lock, struct xa_client *client, bool snd_untopped, bool 
 		DIAG((D_appl, client, "app_in_front: %s", c_owner(client)));
 
 		if (window_list != root_window)
-			wastop = is_topped(window_list) ? window_list : NULL;
+			wastop = is_topped(TOP_WINDOW/*window_list*/) ? TOP_WINDOW/*window_list*/ : NULL;
 		else
 			wastop = NULL;
 		
@@ -905,8 +1013,11 @@ app_in_front(enum locks lock, struct xa_client *client, bool snd_untopped, bool 
 							was_hidden = true;
 						}
 
+						wi_move_first(&S.open_windows, wl);
+					#if 0
 						wi_remove(&S.open_windows, wl);
 						wi_put_first(&S.open_windows, wl);
+					#endif
 						topped = wl;
 					}
 				}
@@ -925,10 +1036,13 @@ app_in_front(enum locks lock, struct xa_client *client, bool snd_untopped, bool 
 				if (topped && is_hidden(topped))
 					unhide_window(lock, topped, false);
 			}
-			if (topped && topped != window_list)
+			if (topped && topped != TOP_WINDOW/*window_list*/)
 			{
+				wi_move_first(&S.open_windows, topped);
+			#if 0
 				wi_remove(&S.open_windows, topped);
 				wi_put_first(&S.open_windows, topped);
+			#endif
 			}
 		}
 		
@@ -940,25 +1054,25 @@ app_in_front(enum locks lock, struct xa_client *client, bool snd_untopped, bool 
 			update_all_windows(lock, window_list);
 			set_winmouse(-1, -1);
 		}
-
+		
 		if (wastop)
 		{
 			if (!is_topped(wastop))
 			{
 				setwin_untopped(lock, wastop, snd_untopped);
-				send_iredraw(lock, wastop, 0, NULL);
 			}
-			if (wastop != window_list && window_list != root_window && is_topped(window_list))
+			if (wastop != TOP_WINDOW/*window_list*/ && TOP_WINDOW/*window_list*/ != root_window && is_topped(TOP_WINDOW/*window_list*/))
 			{
 				setwin_ontop(lock, snd_ontop);
-				send_iredraw(lock, window_list, 0, NULL);
 			}
 		}
-		else if (window_list != root_window && is_topped(window_list))
+		else if (TOP_WINDOW /*window_list*/ != root_window && is_topped(TOP_WINDOW/*window_list*/))
 		{
 			setwin_ontop(lock, snd_ontop);
-			send_iredraw(lock, window_list, 0, NULL);
 		}
+
+		reset_focus(&fw, 0);
+		setnew_focus(fw, 0);
 	}
 }
 

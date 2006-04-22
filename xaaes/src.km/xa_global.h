@@ -60,6 +60,7 @@ struct win_base
 {
 	struct xa_window *first;
 	struct xa_window *last;
+	struct xa_window *top;
 };
 
 struct shared
@@ -71,6 +72,8 @@ struct shared
 	struct win_base open_nlwindows;
 	struct win_base closed_nlwindows;
 	struct win_base calc_windows;		/* list of open nolist windows - fmd, alerts, etc. */
+
+	struct xa_window *focus;
 
 	LIST_HEAD(xa_client) client_list;
 	LIST_HEAD(xa_client) app_list;

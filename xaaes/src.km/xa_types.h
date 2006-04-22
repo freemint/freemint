@@ -1636,6 +1636,10 @@ enum window_status
 	XAWS_HIDDEN	= 0x0010,
 	XAWS_FULLED	= 0x0020,
 	XAWS_NODELETE	= 0x0040,
+	XAWS_NOFOCUS	= 0x0080,
+	XAWS_STICKYFOCUS = 0x0100,
+	XAWS_FLOAT	= 0x0200,
+	XAWS_SINK	= 0x0400,
 	XAWS_SEMA	= 0x8000,
 };
 typedef enum window_status WINDOW_STATUS;
@@ -1657,7 +1661,7 @@ struct xa_window
 	struct xa_window	*next;	/* Window list stuff - next is the window below */
 	struct xa_window	*prev;	/*		     - prev is the window above (both NULL terminated) */
 	struct xa_client	*owner;
-	
+
 	WINDOW_TYPE	dial;		/* Flag - 1 = this window was created by form_dial,
 					 *            so don't destroy it until the form_dial(FMD_FINISH)
 					 *      - 2 = created by form_do()
@@ -1667,7 +1671,7 @@ struct xa_window
 	short	class;
 
 	WINDOW_STATUS window_status;	/* Window status */
-	
+
 	XA_WIND_ATTR	requested_widgets;
 	XA_WIND_ATTR	active_widgets;	/* Summary of the current standard widgets for the window */
 	XA_WIND_ATTR	save_widgets;	/* Remember active_widgets if iconified */
@@ -1774,10 +1778,9 @@ struct xa_window
 	struct wdlg_info *wdlg;
 };
 
-struct xa_window *get_top(void);
-
 extern struct xa_window *root_window;
 #define window_list S.open_windows.first
+#define TOP_WINDOW S.open_windows.top
 #define nolist_list S.open_nlwindows.first
 
 struct scroll_info;
