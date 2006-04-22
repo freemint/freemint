@@ -579,7 +579,7 @@ menu_popup(enum locks lock, struct xa_client *client, XAMENU *mn, MENU *result, 
 			
 			init_popinfo(mn, &tab->task_data.menu.p);
 
-			*result = mn->menu; //*mn;
+			*result = mn->menu;
 
 			DIAG((D_menu,NULL,"_menu_popup %lx + %d",ob, mn->menu.mn_menu));
 

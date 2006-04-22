@@ -425,7 +425,7 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 	}
 	}
 
-	mouse_wind = find_window(lock, md->x, md->y);
+	mouse_wind = find_window(lock, md->x, md->y, FNDW_NOLIST|FNDW_NORMAL);
 	if (mouse_wind)
 		mw_owner = mouse_wind == root_window ? get_desktop()->owner : mouse_wind->owner;
 	else
@@ -476,9 +476,15 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 			}
 		}
 	}
+	
+	if (mouse_wind && (md->state & MBS_RIGHT) && (md->kstate & (K_CTRL|K_ALT)))
+	{
+		post_cevent(C.Hlp, CE_winctxt, mouse_wind, NULL, 0,0, NULL, md);
+		return;
+	}
 
 	locker = C.mouse_lock ? get_mouse_locker() : NULL;
-// 	wind = find_window(lock, md->x, md->y);
+// 	wind = find_window(lock, md->x, md->y, FNDW_NOLIST|FNDW_NORMAL);
 
 	/*
 	 * check for rootwindow widgets, like the menu-bar, clicks
@@ -608,9 +614,15 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 		}
 		return false;
 	}
-// 	Sema_Up(clients);
-
 	
+// 	Sema_Up(clients);
+#if 0
+	{
+		struct xa_window *fw;
+		reset_focus(&fw);
+		setnew_focus(fw, 0);
+	}
+#endif
 	/* Moving the mouse into the menu bar is outside
 	 * Tab handling, because the bar itself is not for popping.
 	 */
@@ -656,7 +668,7 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 	}
 	else if (!chlp_lock)
 	{
-		struct xa_window *wind = find_window(0, md->x, md->y);
+		struct xa_window *wind = find_window(0, md->x, md->y, FNDW_NOLIST|FNDW_NORMAL);
 
 		wind_mshape(wind, md->x, md->y);
 
@@ -722,7 +734,7 @@ XA_wheel_event(enum locks lock, const struct moose_data *md)
 		}
 	}
 	locker = C.mouse_lock ? get_mouse_locker() : NULL;
-	wind = find_window(lock, md->x, md->y);
+	wind = find_window(lock, md->x, md->y, FNDW_NOLIST|FNDW_NORMAL);
 
 	client = wind == root_window ? get_desktop()->owner : wind->owner;
 
