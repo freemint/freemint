@@ -928,7 +928,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	 */
 	case WF_ICONIFY:
 	{
-		if (w->window_status & XAWS_ICONIFIED)
+		if (is_iconified(w))
 			pb->intout[0] = 0;
 		else
 		{
@@ -956,7 +956,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	/* Un-Iconify a window */
 	case WF_UNICONIFY:
 	{
-		if (!(w->window_status & XAWS_ICONIFIED))
+		if (!is_iconified(w))
 			pb->intout[0] = 0;
 		else
 		{
@@ -1758,14 +1758,14 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 	}
 	case WF_ICONIFY:
 	{
-		o[1] = (w->window_status & XAWS_ICONIFIED) ? 1 : 0;
+		o[1] = (is_iconified(w)) ? 1 : 0;
 		o[2] = C.iconify.w;
 		o[3] = C.iconify.h;
 		break;
 	}
 	case WF_UNICONIFY:
 	{
-		RECT *sr = (w->window_status & XAWS_ICONIFIED) ? &w->ro : &w->r;
+		RECT *sr = (is_iconified(w)) ? &w->ro : &w->r;
 		if (w->opts & XAWO_WCOWORK)
 			*ro = f2w(&w->delta, sr, true);
 		else

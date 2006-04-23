@@ -554,6 +554,8 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 
 	if (client != C.Hlp)
 	{
+		cancel_winctxt_popup(lock, NULL, client);
+		
 		remove_from_tasklist(client);
 		if (C.csr_client == client)
 		{

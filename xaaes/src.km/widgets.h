@@ -31,6 +31,7 @@
 #include "xa_types.h"
 
 void CE_winctxt(enum locks lock, struct c_event *ce, bool cancel);
+void cancel_winctxt_popup(enum locks lock, struct xa_window *wind, struct xa_client *client);
 
 //void	setup_widget_theme(struct xa_client *client, struct xa_widget_theme *xwt);
 void init_client_widget_theme(struct xa_client *client);

@@ -477,9 +477,10 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 		}
 	}
 	
-	if (mouse_wind && (md->state & MBS_RIGHT) && (md->kstate & (K_CTRL|K_ALT)))
+	if (mouse_wind && !mouse_wind->nolist && (md->state & MBS_RIGHT) && (md->kstate & (K_CTRL|K_ALT)) == (K_CTRL|K_ALT) )
 	{
-		post_cevent(C.Hlp, CE_winctxt, mouse_wind, NULL, 0,0, NULL, md);
+		if (!(mw_owner->status & CS_EXITING))
+			post_cevent(C.Hlp, CE_winctxt, mouse_wind, NULL, 0,0, NULL, md);
 		return;
 	}
 
