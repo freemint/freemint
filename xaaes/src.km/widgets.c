@@ -1240,7 +1240,7 @@ click_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 					
 					/* If window is already top, then send it to the back */
 					/* Ozk: Always bottom iconified windows... */
-					else if ((wind->window_status & XAWS_ICONIFIED))
+					else if (is_iconified(wind))
 					{
 						send_bottomed(lock, wind);
 					}
@@ -1293,7 +1293,7 @@ click_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 		{
 			/* If window is iconified - send request to restore it */
 
-			if ((wind->window_status & XAWS_ICONIFIED))
+			if (is_iconified(wind))
 			{
 				wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 						   WM_UNICONIFY, 0, 0, wind->handle,
@@ -1394,7 +1394,7 @@ iconify_action(enum locks lock, struct xa_window *wind, const struct moose_data 
 		short msg = -1;
 		RECT r;
 
-		if ((wind->window_status & XAWS_ICONIFIED))
+		if (is_iconified(wind))
 		{
 			/* Window is already iconified - send request to restore it */
 			r = wind->ro;
@@ -1444,7 +1444,7 @@ click_iconify(enum locks lock, struct xa_window *wind, struct xa_widget *widg, c
 		short msg = -1;
 		RECT r;
 
-		if ((wind->window_status & XAWS_ICONIFIED))
+		if (is_iconified(wind))
 		{
 			/* Window is already iconified - send request to restore it */
 			r = wind->ro;
@@ -1726,6 +1726,55 @@ CE_shade_action(enum locks lock, struct c_event *ce, bool cancel)
 	}
 }
 
+static struct xa_window *Ctxtwin = NULL;
+
+static bool
+cwinctxt(struct c_event *ce, long arg)
+{
+	void **parms = (void **)arg;
+	struct xa_window *wind = parms[0];
+	struct xa_client *client = parms[1];
+	struct xa_window *ctxtwin = ce->ptr1;
+
+	if ((wind && wind == ctxtwin) || (client && ctxtwin && ctxtwin->owner == client)) {
+// 		display("deleting pending winctxt popup");
+		return true;
+	} else {
+// 		display("skipping pending winctxt popup");
+		return false;
+	}
+}
+
+void
+cancel_winctxt_popup(enum locks lock, struct xa_window *wind, struct xa_client *client)
+{
+	void *parms[2];
+
+	if (!C.Hlp)
+		return;
+
+	parms[0] = wind;
+	parms[1] = client;
+
+	cancel_CE(C.Hlp, CE_winctxt, cwinctxt, (long)&parms);
+
+// 	display("cancel_winctxt_popup: wind = %d(%lx), owner = '%s', client '%s'",
+// 		wind ? wind->handle : -2, wind, wind ? wind->owner->proc_name : "None",
+// 		client ? client->proc_name : "none");
+	
+// 	display("Ctxtwin = %lx, owner = %s", Ctxtwin, Ctxtwin ? Ctxtwin->owner->proc_name : "none");
+// 	if (Ctxtwin && Ctxtwin == wind)
+// 		display(" MATCHING WINDOWS");
+
+	if (Ctxtwin && ((Ctxtwin == wind) || (client && client == Ctxtwin->owner)))
+	{
+// 		display("poping out winctxt popup on wind %d for %s", wind->handle, wind->owner->proc_name);
+		Ctxtwin = NULL;
+		popout(TAB_LIST_START);
+		C.Hlp->usr_evnt = 2;
+	}
+}
+
 void
 CE_winctxt(enum locks lock, struct c_event *ce, bool cancel)
 {
@@ -1734,16 +1783,15 @@ CE_winctxt(enum locks lock, struct c_event *ce, bool cancel)
 		OBJECT *obtree;
 		int n_entries = 0;
 		int *nptr = &n_entries;
+		struct xa_window *wind = ce->ptr1;
+
+		if (!wind || wind == root_window)
+			return;
 
 		while (*wctxt_popup_text[n_entries])
 			n_entries++;
 
-// 		display("%d objects", n_entries);
-		
 		obtree = create_popup_tree(ce->client, 0, n_entries, 16,16, next_wctxt_entry, (void **)&nptr);
-		
-// 		display("created %lx with %d objects", obtree, n_entries);
-
 		if (obtree)
 		{
 			XAMENU xmn;
@@ -1752,16 +1800,8 @@ CE_winctxt(enum locks lock, struct c_event *ce, bool cancel)
 			short x, y, obnum = -1;
 
 			wt = new_widget_tree(ce->client, obtree);
-// 			display("wt = %lx", wt);
 			if (wt)
-			{
-				struct xa_window *wind;
-				
-				wind = ce->ptr1;
-				
-				if (!wind)
-					return;
-
+			{				
 				wt->flags |= WTF_TREE_ALLOC | WTF_AUTOFREE;
 				xmn.menu.mn_tree = wt->tree;
 				xmn.menu.mn_menu = ROOT;
@@ -1771,14 +1811,20 @@ CE_winctxt(enum locks lock, struct c_event *ce, bool cancel)
 
 				obtree->ob_x = ce->md.x;
 				obtree->ob_y = ce->md.y;
-// 				display("x, y = %d/%d", ce->md.x, ce->md.y);
 				obj_offset(wt, aesobj(obtree, 0), &x, &y);
 
 				if (wind->window_status & XAWS_FLOAT)
 					obtree[1].ob_state |= OS_CHECKED;
 				if (wind->window_status & XAWS_SINK)
 					obtree[2].ob_state |= OS_CHECKED;
-				
+				if (is_hidden(wind))
+					obtree[6].ob_state |= OS_CHECKED;
+				if (is_iconified(wind))
+					obtree[7].ob_state |= OS_CHECKED;
+				if (is_shaded(wind))
+					obtree[8].ob_state |= OS_CHECKED;
+
+				Ctxtwin = wind;
 				if (menu_popup(0, wt->owner, &xmn, &result, x, y, 2) && result.mn_tree == xmn.menu.mn_tree)
 				{
 					if (result.mn_item > 0)
@@ -1791,9 +1837,14 @@ CE_winctxt(enum locks lock, struct c_event *ce, bool cancel)
 // 				else
 // 					display(" hmmm...");
 
+// 				display(" CE_winctxt clear Ctxtwin - obnum = %d", obnum);
+				Ctxtwin = NULL;
 				
 				remove_wt(wt, false);
-				
+
+				if (obnum <= 0)
+					return;
+
 				if (wind && (wind->window_status & (XAWS_OPEN)))
 				{
 					switch (obnum)
@@ -1809,7 +1860,10 @@ CE_winctxt(enum locks lock, struct c_event *ce, bool cancel)
 						{
 							wind->window_status &= ~XAWS_FLOAT;
 							wind->window_status ^= XAWS_SINK;
-							bottom_window(0, true, true, wind);
+							if (is_topped(wind))
+								top_window(0, true, true, wind, (void *)-1L);
+							else
+								bottom_window(0, true, true, wind);
 							break;
 						}
 						case 3: /* Send to top */

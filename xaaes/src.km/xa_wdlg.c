@@ -221,7 +221,7 @@ wdlg_redraw(enum locks lock, struct xa_window *wind, struct xa_aes_object start,
 		RECT dr;
 		bool drwcurs;
 
-		if ((wind->window_status & XAWS_ICONIFIED))
+		if (is_iconified(wind))
 		{
 			short x = 0, y = 0;
 
@@ -871,7 +871,7 @@ XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 					 */
 					wdlg->std_wt = wt;
 					obtree->ob_state &= ~OS_OUTLINED;
-					if (!(wind->window_status & XAWS_ICONIFIED))
+					if (!is_iconified(wind))
 					{
 						obj_rectangle(wt, aesobj(obtree, 0), &or);
 						set_toolbar_widget(lock, wind, client, obtree, aesobj(obtree, 0), WIP_NOTEXT, STW_ZEN, &wdlg_th, &or);
@@ -913,7 +913,7 @@ XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			/* wdlg_iconify */
 			case 3:
 			{
-				if (!(wind->window_status & XAWS_ICONIFIED))
+				if (!is_iconified(wind))
 				{
 					RECT *nr = (RECT *)pb->addrin[1];
 					char *t = (char *)pb->addrin[2];
@@ -962,7 +962,7 @@ XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			/* wdlg_uniconify */
 			case 4:
 			{
-				if ((wind->window_status & XAWS_ICONIFIED))
+				if (is_iconified(wind))
 				{
 					OBJECT *obtree = (OBJECT *)pb->addrin[3];
 					char *t = (char *)pb->addrin[2];
@@ -1068,7 +1068,7 @@ wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms 
 					if (valid_aesobj(&obj)) //(obj = obj_find(wt, aesobj(wt->tree, 0),7, ev->mx, ev->my, NULL)) >= 0)
 					{
 						ev->mwhich &= ~MU_BUTTON;
-						if (!(wind->window_status & XAWS_ICONIFIED))
+						if (!is_iconified(wind))
 						{
 							DIAG((D_wdlg, NULL, "wdialog_event(MU_BUTTON): doing form_do on obj=%d for %s",
 								aesobj_item(&obj), client->name));
