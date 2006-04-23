@@ -130,6 +130,7 @@ void	setwin_ontop(enum locks lock, bool snd_ontop);
 bool	is_topped(struct xa_window *wind);
 static inline bool is_hidden(struct xa_window *wind){return (wind->window_status & XAWS_HIDDEN);}
 static inline bool is_shaded(struct xa_window *wind){return (wind->window_status & XAWS_SHADED);}
+static inline bool is_iconified(struct xa_window *wind){return (wind->window_status & XAWS_ICONIFIED);}
 bool	unhide(struct xa_window *w, short *x, short *y);
 
 void	set_window_title(struct xa_window *wind, const char *title, bool redraw);

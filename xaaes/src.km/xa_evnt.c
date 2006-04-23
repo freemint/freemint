@@ -531,7 +531,7 @@ check_queued_events(struct xa_client *client)
 		cancel_mutimeout(client);
 // 		if (d) display("events %x - done", events);
 #if 0
-		if (!strnicmp(client->proc_name, "ergo", 4))
+		if (client == C.Hlp) //(!strnicmp(client->proc_name, "ergo", 4))
 		{
 			if (events & (MU_BUTTON|MU_MESAG))
 			{

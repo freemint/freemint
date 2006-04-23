@@ -613,7 +613,8 @@ menu_popup(enum locks lock, struct xa_client *client, XAMENU *mn, MENU *result, 
 			
 			tab->usr_evnt = usr_evnt;
 			tab->data = result;
-			
+			result->mn_item = -1;
+
 			start_popup_session(tab, wt, mn->menu.mn_menu, mn->mn_selected,
 				 click_popup_entry,
 				 px - x,

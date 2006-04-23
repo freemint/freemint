@@ -616,15 +616,7 @@ repos_iconified(struct proc *p, long arg)
 						cw = w;
 						cw->window_status |= XAWS_SEMA;
 					}
-				#if 0
-					r = iconify_grid(i++);
-					if (w->opts & XAWO_WCOWORK)
-						r = f2w(&w->delta, &r, true);
-					send_moved(lock, w, AMQ_NORM, &r);
-					w->t = r;
-				#endif
-				}
-				
+				}				
 				w = w->next;
 			}
 
@@ -646,20 +638,6 @@ repos_iconified(struct proc *p, long arg)
 			w->window_status &= ~XAWS_SEMA;
 			w = w->next;
 		}
-	#if 0
-		while (w)
-		{
-			if ((w->window_status & (XAWS_OPEN|XAWS_ICONIFIED|XAWS_HIDDEN)) == (XAWS_OPEN|XAWS_ICONIFIED))
-			{
-				r = free_icon_pos(lock, w);
-				if (w->opts & XAWO_WCOWORK)
-					r = f2w(&w->delta, &r, true);
-				send_moved(lock, w, AMQ_NORM, &r);
-				w->t = r;
-			}
-			w = w->next;
-		}
-	#endif
 		rpi_to = NULL;
 	}
 	else
@@ -717,7 +695,7 @@ hide_app(enum locks lock, struct xa_client *client)
 		    && w->owner == client
 		    && !is_hidden(w))
 		{
-			if ((w->window_status & XAWS_ICONIFIED))
+			if (is_iconified(w))
 				reify = true;
 
 			hide_window(lock, w);
@@ -738,9 +716,6 @@ hide_app(enum locks lock, struct xa_client *client)
 
 	if (reify)
 		set_reiconify_timeout(lock);
-
-// 	if (reify && !rpi_to)
-// 		rpi_to = addroottimeout(1000L, repos_iconified, (long)lock);
 }
 
 void
@@ -980,7 +955,7 @@ app_in_front(enum locks lock, struct xa_client *client, bool snd_untopped, bool 
 		DIAG((D_appl, client, "app_in_front: %s", c_owner(client)));
 
 		if (window_list != root_window)
-			wastop = is_topped(TOP_WINDOW/*window_list*/) ? TOP_WINDOW/*window_list*/ : NULL;
+			wastop = is_topped(TOP_WINDOW) ? TOP_WINDOW : NULL;
 		else
 			wastop = NULL;
 		
@@ -1014,14 +989,9 @@ app_in_front(enum locks lock, struct xa_client *client, bool snd_untopped, bool 
 						}
 
 						wi_move_first(&S.open_windows, wl);
-					#if 0
-						wi_remove(&S.open_windows, wl);
-						wi_put_first(&S.open_windows, wl);
-					#endif
 						topped = wl;
 					}
 				}
-
 				if (wl == wf)
 					break;
 			
@@ -1036,13 +1006,9 @@ app_in_front(enum locks lock, struct xa_client *client, bool snd_untopped, bool 
 				if (topped && is_hidden(topped))
 					unhide_window(lock, topped, false);
 			}
-			if (topped && topped != TOP_WINDOW/*window_list*/)
+			if (topped && topped != TOP_WINDOW)
 			{
 				wi_move_first(&S.open_windows, topped);
-			#if 0
-				wi_remove(&S.open_windows, topped);
-				wi_put_first(&S.open_windows, topped);
-			#endif
 			}
 		}
 		
@@ -1061,12 +1027,12 @@ app_in_front(enum locks lock, struct xa_client *client, bool snd_untopped, bool 
 			{
 				setwin_untopped(lock, wastop, snd_untopped);
 			}
-			if (wastop != TOP_WINDOW/*window_list*/ && TOP_WINDOW/*window_list*/ != root_window && is_topped(TOP_WINDOW/*window_list*/))
+			if (wastop != TOP_WINDOW && TOP_WINDOW != root_window && is_topped(TOP_WINDOW))
 			{
 				setwin_ontop(lock, snd_ontop);
 			}
 		}
-		else if (TOP_WINDOW /*window_list*/ != root_window && is_topped(TOP_WINDOW/*window_list*/))
+		else if (TOP_WINDOW != root_window && is_topped(TOP_WINDOW))
 		{
 			setwin_ontop(lock, snd_ontop);
 		}
@@ -1100,7 +1066,6 @@ get_app_by_procname(char *name)
 	}
 	return client;
 }
-
 void
 set_active_client(enum locks lock, struct xa_client *client)
 {

@@ -501,6 +501,7 @@ quit_all_clients(enum locks lock, struct cfg_name_list *except_nl, struct xa_cli
 	FOREACH_CLIENT(client)
 	{
 		if (is_client(client) &&
+		    client != C.Hlp &&
 		    client != except_cl &&
 		    client != dsk &&
 		    !isin_namelist(except_nl, client->proc_name, 8, NULL, NULL))
@@ -712,7 +713,7 @@ taskmanager_form_exit(struct xa_client *Client,
 
 			DIAGS(("taskmanager: TM_SLEEP for %s", c_owner(client)));
 			ALERT(("taskmanager: TM_SLEEP not yet implemented!"));
-			if (client && is_client(client))
+			if (client && is_client(client) && client != C.Hlp)
 			{
 			}
 
@@ -731,7 +732,7 @@ taskmanager_form_exit(struct xa_client *Client,
 
 			DIAGS(("taskmanager: TM_WAKE for %s", c_owner(client)));
 			ALERT(("taskmanager: TM_WAKE not yet implemented!"));
-			if (client && is_client(client))
+			if (client && is_client(client) && client != C.Hlp)
 			{
 			}
 
@@ -861,7 +862,7 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 		wind = create_window(lock,
 					do_winmesag, do_formwind_msg,
 					client,
-					true, /*false,*/ /*false,*/
+					false,
 					CLOSER|NAME|TOOLBAR|hide_move(&(client->options)),
 					created_for_AES,
 					client->options.thinframe,
@@ -892,7 +893,7 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 		if (open)
 		{
 			open_window(lock, wind, wind->r);
-			if (!wind->nolist && wind != TOP_WINDOW/*window_list*/)
+			if (wind != TOP_WINDOW)
 				top_window(lock, true, false, wind, (void *)-1L);
 		}
 	}

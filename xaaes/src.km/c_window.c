@@ -162,7 +162,7 @@ free_icon_pos(enum locks lock, struct xa_window *ignore)
 		/* find first unused position. */
 		while (w)
 		{
-			if (w != ignore && (w->window_status & XAWS_ICONIFIED))
+			if (w != ignore && is_iconified(w))
 			{
 				if (w->t.x == ic.x && w->t.y == ic.y)
 					/* position occupied; advance with next position in grid. */
@@ -269,7 +269,7 @@ inside_minmax(RECT *r, struct xa_window *wind)
 {
 	bool um = (wind->active_widgets & USE_MAX);
 
-	if (!(wind->window_status & XAWS_ICONIFIED))
+	if (!is_iconified(wind))
 	{
 		if (um && wind->max.w && r->w > wind->max.w)
 			r->w = wind->max.w;
@@ -317,7 +317,6 @@ wi_put_first(struct win_base *b, struct xa_window *w)
 			wind = &((*wind)->next);
 		}
 	}
-
 	if (*wind)
 	{
 		w->next = *wind;
@@ -326,25 +325,19 @@ wi_put_first(struct win_base *b, struct xa_window *w)
 	}
 	else
 	{
+		if (b->first)
+		{
+			w->prev = b->last;
+			b->last->next = w;
+		}
+		else
+			w->prev = NULL;
+
 		b->last = w;
-		w->next = w->prev = NULL;
+		w->next = NULL;
 	}
 	*wind = w;
 	b->top = w;
-#if 0
-	if (b->first)
-	{
-		w->next = b->first;
-		w->prev = NULL;
-		b->first->prev = w;
-	}
-	else
-	{
-		b->last = w;
-		w->next = w->prev = NULL;
-	}
-	b->first = w;
-#endif
 }
 
 /* This a special version of put last; it puts w just befor last. */
@@ -388,52 +381,6 @@ wi_put_blast(struct win_base *b, struct xa_window *w, bool top)
 
 	if (top)
 		b->top = w;
-
-		
-#if 0		
-		w->next = (*wind)->next;
-		(*wind)->next = w;
-		w->prev = *wind;
-	}
-
-	else
-	{
-		w->next = NULL;
-		w->prev = NULL;
-		b->first = b->top = w;
-	}
-	*wind = w;
-
-	if (top)
-		b->top = w;
-#endif
-#if 0
-
-	if (b->last)
-	{
-		if (b->last == root_window)
-		{
-			struct xa_window *l = b->last;
-			w->next = l;
-			w->prev = l->prev;
-			if (l->prev)
-				l->prev->next = w;
-			l->prev = w;
-		}
-		else
-		{
-			w->next = NULL;
-			b->last->next = w;
-			w->prev = b->last;
-			b->last = w;
-		}
-	}
-	else
-	{
-		b->first = b->last = w;
-		w->next = w->prev = NULL;
-	}
-#endif
 }
 
 void
@@ -474,14 +421,6 @@ is_topped(struct xa_window *wind)
 
 	return true;
 }
-
-#if 0
-inline bool
-is_hidden(struct xa_window *wind)
-{
-	return (wind->window_status & XAWS_HIDDEN);
-}
-#endif
 /*
  * XXX - Ozk:
  *	Note that the window is not actually hidden until client calls
@@ -512,7 +451,7 @@ unhide_window(enum locks lock, struct xa_window *wind, bool check)
 	{
 		RECT r;
 
-		if ((wind->window_status & XAWS_ICONIFIED))
+		if (is_iconified(wind))
 			r = free_icon_pos(lock, wind);
 		else
 		{
@@ -1290,7 +1229,7 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 	/* New top window - change the cursor to this client's choice */
 	graf_mouse(wind->owner->mouse, wind->owner->mouse_form, wind->owner, false);
 
-	if ((wind->window_status & XAWS_ICONIFIED))
+	if (is_iconified(wind))
 	{
 		if (wind != root_window && !(wind->dial & created_for_POPUP))
 			inside_root(&r, wind->owner->options.noleft);
@@ -1587,7 +1526,7 @@ after_top(enum locks lock, bool untop)
 struct xa_window *
 pull_wind_to_top(enum locks lock, struct xa_window *w)
 {
-	struct xa_window *wl;
+	struct xa_window *wl, *below, *above;
 	RECT clip, r;
 
 	DIAG((D_wind, w->owner, "pull_wind_to_top %d for %s", w->handle, w_owner(w)));
@@ -1598,6 +1537,45 @@ pull_wind_to_top(enum locks lock, struct xa_window *w)
 	}
 	else if (!(w->owner->status & CS_EXITING))
 	{
+		below = w->next;
+		above = w->prev;
+		r = w->r;
+
+		wi_move_first(&S.open_windows, w);
+		wl = window_list;
+
+		while (wl)
+		{
+			if (wl == w)
+			{
+				wl = above;
+				while (wl && wl != w)
+				{
+					clip = wl->r;
+					if (xa_rc_intersect(r, &clip))
+						make_rect_list(wl, true, RECT_SYS);
+					wl = wl->prev;
+				}
+				set_and_update_window(w, true, false, NULL);
+				break;
+			}
+			else if (wl == below)
+			{
+				while (wl)
+				{
+					clip = wl->r;
+					if (xa_rc_intersect(r, &clip))
+						make_rect_list(wl, true, RECT_SYS);
+					if (wl == w)
+						break;
+					wl = wl->next;
+				}
+				update_windows_below(lock, &r, NULL, below, w);
+				break;
+			}
+			wl = wl->next;
+		}
+#if 0
 		wl = w->prev;
 		r = w->r;
 
@@ -1622,6 +1600,7 @@ pull_wind_to_top(enum locks lock, struct xa_window *w)
 			}
 		}
 		set_and_update_window(w, true, false, NULL);
+#endif
 	}
 	return w;
 }
@@ -1649,7 +1628,6 @@ send_wind_to_bottom(enum locks lock, struct xa_window *w)
 			make_rect_list(wl, true, RECT_SYS);
 		wl = wl->next;
 	}
-
 	make_rect_list(w, true, RECT_SYS);
 }
 
@@ -1686,7 +1664,7 @@ move_window(enum locks lock, struct xa_window *wind, bool blit, short newstate, 
 			if (!(newstate & XAWS_ICONIFIED))
 			{
 				DIAGS(("move_window: Clear iconified"));
-				if ((wind->window_status & XAWS_ICONIFIED))
+				if (is_iconified(wind))
 				{
 					standard_widgets(wind, wind->save_widgets, true);
 #if GENERATE_DIAGS
@@ -1717,7 +1695,7 @@ move_window(enum locks lock, struct xa_window *wind, bool blit, short newstate, 
 			if ((newstate & XAWS_ICONIFIED))
 			{
 				DIAGS(("move_window: set iconified"));
-				if (!(wind->window_status & XAWS_ICONIFIED))
+				if (!is_iconified(wind))
 				{
 					wind->save_widgets = wind->active_widgets;
 					wind->save_delta = wind->delta;
@@ -1804,6 +1782,9 @@ close_window(enum locks lock, struct xa_window *wind)
 		C.hover_widg = NULL;
 	}
 
+	if (!(wind->dial & (created_for_SLIST|created_for_CALC)))
+		cancel_winctxt_popup(lock, wind, NULL);
+	
 	if (wind->nolist)
 	{
 		DIAGS(("close_window: nolist window %d, bkg=%lx",
@@ -2073,7 +2054,11 @@ delete_window(enum locks lock, struct xa_window *wind)
 	else
 		wi_remove(&S.closed_windows, wind);
 	
-	remove_from_iredraw_queue(lock, wind);
+	if (!(wind->dial & (created_for_SLIST|created_for_CALC)))
+	{
+		cancel_winctxt_popup(lock, wind, NULL);
+		remove_from_iredraw_queue(lock, wind);
+	}
 	cancel_do_winmesag(lock, wind);
 
 	post_cevent(wind->owner, CE_delete_window, wind, NULL, 0,0, NULL, NULL);
@@ -2102,7 +2087,11 @@ delayed_delete_window(enum locks lock, struct xa_window *wind)
 	else
 		wi_remove(&S.closed_windows, wind);
 
-	remove_from_iredraw_queue(lock, wind);
+	if (!(wind->dial & (created_for_SLIST|created_for_CALC)))
+	{
+		cancel_winctxt_popup(lock, wind, NULL);
+		remove_from_iredraw_queue(lock, wind);
+	}
 	cancel_do_winmesag(lock, wind);
 	
 	post_cevent(wind->owner, CE_delete_window, wind, NULL, 0,0, NULL, NULL);
