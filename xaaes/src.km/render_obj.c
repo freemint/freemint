@@ -159,7 +159,8 @@ static struct xa_gradient menu_gradient =
 	16,  0,
 
 	0, 0, {0},
-	{{750,750,750},{900,900,900}},
+// 	{{750,750,750},{900,900,900}},
+	{{900,900,900},{600,600,600}},
 };
 static struct xa_gradient sel_title_gradient =
 {
@@ -167,7 +168,7 @@ static struct xa_gradient sel_title_gradient =
 	0, -1,
 	16, 0,
 	0,0,{0},
-	{{950,950,950},{800,800,800}},
+	{{600,600,600},{950,950,950}},
 };
 static struct xa_gradient sel_popent_gradient =
 {

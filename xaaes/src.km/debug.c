@@ -155,6 +155,7 @@ const char *D_cl = "CONTROL: %d::%d, %d::%d, %d::%d\n";
 const char *D_fl = "%s,%d: ";
 const char *D_flu = "%ld,%d - %s,%d: ";
 
+// #endif
 void
 show_bits(unsigned short data, char *prf, char *t[], char *x)
 {
@@ -178,6 +179,7 @@ show_bits(unsigned short data, char *prf, char *t[], char *x)
 			x[i] = ',';
 	}
 }
+// #if GENERATE_DIAGS
 
 char *
 w_owner(struct xa_window *w)

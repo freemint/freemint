@@ -196,7 +196,7 @@ cXA_deliver_button_event(enum locks lock, struct c_event *ce, bool cancel)
 		/*
 		 * Double click on a iconified window will uniconify
 		 */
-		if (wind && (wind->window_status & XAWS_ICONIFIED) && widg && widg->m.click)
+		if (wind && is_iconified(wind) && widg && widg->m.click)
 		{
 			if (ce->md.clicks > 1)
 				widg->m.click(lock, wind, widg, &ce->md);
