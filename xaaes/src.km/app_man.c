@@ -110,6 +110,27 @@ reset_focus(struct xa_window **new_focus, short flags)
 		{
 			fw = top;
 		}
+		else
+		{
+			struct xa_client *topcl = get_app_infront();
+			fw = window_list;
+			while (fw)
+			{
+				if ( (fw == root_window ? get_desktop()->owner : fw->owner) == topcl && !(fw->window_status & XAWS_NOFOCUS))
+					break;
+				fw = fw->next;
+			}
+			if (!fw)
+			{
+				fw = window_list;
+				while (fw)
+				{
+					if (!(fw->window_status & XAWS_NOFOCUS))
+						break;
+					fw = fw->next;
+				}
+			}
+		}
 	}
 
 	if (fw)
@@ -121,35 +142,61 @@ reset_focus(struct xa_window **new_focus, short flags)
 }
 
 void
-setnew_focus(struct xa_window *wind, short flags)
+setnew_focus(struct xa_window *wind, struct xa_window *unfocus, bool topowner, bool snd_untopped, bool snd_ontop)
 {
-	if (wind != S.focus)
+	
+	if (!unfocus || unfocus == S.focus)
 	{
-		if (S.focus && (S.focus->window_status & XAWS_STICKYFOCUS))
-			return;
+		struct xa_client *owner;
 
-		if ((flags & 1) && wind && (!S.focus || (wind->owner != S.focus->owner && !is_infront(wind->owner))))
-		{
-			set_active_client(0, wind->owner);
-			swap_menu(0, wind->owner, NULL, SWAPM_DESK);
-		}
+		if ((S.focus && (S.focus->window_status & XAWS_STICKYFOCUS)) ||
+		    (wind && (wind->window_status & XAWS_NOFOCUS))
+		   )
+			return;
 		
 		if (wind)
+			owner = wind == root_window ? get_desktop()->owner : wind->owner;
+		else
+			owner = NULL;
+		
+		if (topowner && wind && (!S.focus || (owner != S.focus->owner && !is_infront(owner))))
 		{
-			wind->colours = wind->ontop_cols;
-			send_iredraw(0, wind, 0, NULL);
+			set_active_client(0, owner);
+			swap_menu(0, owner, NULL, SWAPM_DESK);
 		}
+
+		if (wind)
+		{
+			if (wind != S.focus)
+			{
+				if (get_app_infront() == owner)
+				{
+					setwin_ontop(0, wind, snd_ontop);
+					wind->colours = wind->ontop_cols;
+					send_iredraw(0, wind, 0, NULL);
+				}
+				else
+					wind = NULL;
+			}
+		}
+		
 		if (S.focus)
 		{
-			S.focus->colours = S.focus->untop_cols;
-			send_iredraw(0, S.focus, 0, NULL);
+			if (wind || S.focus->owner != get_app_infront())
+			{
+				setwin_untopped(0, S.focus, snd_untopped);
+				S.focus->colours = S.focus->untop_cols;
+				send_iredraw(0, S.focus, 0, NULL);
+				S.focus = wind;
+			}
 		}
+		else
+			S.focus = wind;
 
 		DIAGS(("setfocus to %d of '%s', was %d of '%s'",
 			(long)wind ? wind->handle : -1, (long)wind ? wind->owner->proc_name : "None",
 			(long)S.focus ? S.focus->handle : -1, (long)S.focus ? S.focus->owner->proc_name : "None"));
 
-		S.focus = wind;
 	}
 }
 
@@ -162,7 +209,7 @@ unset_focus(struct xa_window *wind)
 
 		S.focus = NULL;
 		reset_focus(&fw, 0);
-		setnew_focus(fw, 0);
+		setnew_focus(fw, NULL, true, true, true);
 		wind->colours = wind->untop_cols;
 		send_iredraw(0, wind, 0, NULL);
 	}
@@ -190,7 +237,7 @@ unset_focus(struct xa_window *wind)
 struct xa_client *
 find_focus(bool withlocks, bool *waiting, struct xa_client **locked_client, struct xa_window **keywind)
 {
-	struct xa_window *top = TOP_WINDOW/*window_list*/, *nlwind = nolist_list;
+	struct xa_window *top = TOP_WINDOW, *nlwind = nolist_list;
 	struct xa_client *client = NULL, *locked = NULL;
 
 	if (waiting)
@@ -367,7 +414,7 @@ set_next_menu(struct xa_client *new, bool do_topwind, bool force)
 				
 				if (new->std_menu != widg->stuff)
 				{
-					if (do_topwind && (top = TOP_WINDOW/*window_list*/ != root_window ? root_window : NULL))
+					if (do_topwind && (top = TOP_WINDOW != root_window ? root_window : NULL))
 						wastop = is_topped(top) ? true : false;
 			
 					if ((wt = widg->stuff))
@@ -387,12 +434,7 @@ set_next_menu(struct xa_client *new, bool do_topwind, bool force)
 					{
 						if ((wastop && !is_topped(top)) || (!wastop && is_topped(top)))
 						{
-							if (wastop)
-								setwin_untopped(lock, top, true);
-							else
-								setwin_ontop(lock, true);
-				
-							send_iredraw(lock, top, 0, NULL);
+							setnew_focus(TOP_WINDOW, NULL, false, true, true);
 						}
 					}
 				}
@@ -944,27 +986,19 @@ previous_client(enum locks lock, short exlude)
 void
 app_in_front(enum locks lock, struct xa_client *client, bool snd_untopped, bool snd_ontop, bool allwinds)
 {
-	struct xa_window *wl,*wf,*wp, *fw;
+	struct xa_window *wl,*wf,*wp;
 
 	if (client)
 	{
-		bool was_hidden = false;
+		bool was_hidden = false, upd = false;
 		struct xa_client *infront;
-		struct xa_window *topped = NULL, *wastop;
+		struct xa_window *topped = NULL;
 		
 		DIAG((D_appl, client, "app_in_front: %s", c_owner(client)));
-
-		if (window_list != root_window)
-			wastop = is_topped(TOP_WINDOW) ? TOP_WINDOW : NULL;
-		else
-			wastop = NULL;
 		
 		infront = get_app_infront();
 		if (infront != client)
-		{
 			set_active_client(lock, client);
-			//swap_menu(lock, client, NULL, SWAPM_DESK); //true, false, 1);
-		}
 
 		if (client->std_menu != get_menu() || client->nxt_menu)
 			swap_menu(lock, client, NULL, SWAPM_DESK);
@@ -978,8 +1012,9 @@ app_in_front(enum locks lock, struct xa_client *client, bool snd_untopped, bool 
 			{
 				wp = wl->prev;
 
-				if (wl->owner == client && wl != root_window)
+				if (wl->owner == client && wl != root_window && !(wl->window_status & XAWS_SEMA))
 				{
+					wl->window_status |= XAWS_SEMA;
 					if ((wl->window_status & XAWS_OPEN))
 					{
 						if (is_hidden(wl))
@@ -989,13 +1024,20 @@ app_in_front(enum locks lock, struct xa_client *client, bool snd_untopped, bool 
 						}
 
 						wi_move_first(&S.open_windows, wl);
-						topped = wl;
+						upd = true;
+						if (!(wl->window_status & XAWS_NOFOCUS))
+							topped = wl;
 					}
 				}
 				if (wl == wf)
-					break;
-			
+					break;			
 				wl = wp;
+			}
+			wl = window_list;
+			while (wl)
+			{
+				wl->window_status &= ~XAWS_SEMA;
+				wl = wl->next;
 			}
 		}
 		else
@@ -1009,36 +1051,19 @@ app_in_front(enum locks lock, struct xa_client *client, bool snd_untopped, bool 
 			if (topped && topped != TOP_WINDOW)
 			{
 				wi_move_first(&S.open_windows, topped);
+				upd = true;
 			}
 		}
 		
 		if (was_hidden)
 			set_unhidden(lock, client);
 
-		if (topped)
+		if (topped || upd)
 		{
 			update_all_windows(lock, window_list);
 			set_winmouse(-1, -1);
 		}
-		
-		if (wastop)
-		{
-			if (!is_topped(wastop))
-			{
-				setwin_untopped(lock, wastop, snd_untopped);
-			}
-			if (wastop != TOP_WINDOW && TOP_WINDOW != root_window && is_topped(TOP_WINDOW))
-			{
-				setwin_ontop(lock, snd_ontop);
-			}
-		}
-		else if (TOP_WINDOW != root_window && is_topped(TOP_WINDOW))
-		{
-			setwin_ontop(lock, snd_ontop);
-		}
-
-		reset_focus(&fw, 0);
-		setnew_focus(fw, 0);
+		setnew_focus(topped, S.focus, false, true, true);
 	}
 }
 

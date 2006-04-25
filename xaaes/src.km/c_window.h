@@ -56,7 +56,7 @@ void change_window_attribs(enum locks lock,
 			   short noleft,
 			   RECT r, RECT *remember);
 
-void wi_remove(struct win_base *b, struct xa_window *w);
+void wi_remove(struct win_base *b, struct xa_window *w, bool chkfocus);
 void wi_put_first(struct win_base *b, struct xa_window *w);
 void wi_move_first(struct win_base *b, struct xa_window *w);
 void wi_move_blast(struct win_base *b, struct xa_window *w);
@@ -125,9 +125,10 @@ void	send_ontop(enum locks lock);
 void	send_topped(enum locks lock, struct xa_window *wind);
 void	send_bottomed(enum locks lock, struct xa_window *wind);
 void	setwin_untopped(enum locks lock, struct xa_window *wind, bool snd_untopped);
-void	setwin_ontop(enum locks lock, bool snd_ontop);
+void	setwin_ontop(enum locks lock, struct xa_window *wind, bool snd_ontop);
 
-bool	is_topped(struct xa_window *wind);
+static inline bool is_topped(struct xa_window *wind){return wind == S.focus ? true : false;}
+static inline bool is_toppable(struct xa_window *wind){return (wind->window_status & XAWS_NOFOCUS) ? false : true;}
 static inline bool is_hidden(struct xa_window *wind){return (wind->window_status & XAWS_HIDDEN);}
 static inline bool is_shaded(struct xa_window *wind){return (wind->window_status & XAWS_SHADED);}
 static inline bool is_iconified(struct xa_window *wind){return (wind->window_status & XAWS_ICONIFIED);}

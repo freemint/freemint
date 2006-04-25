@@ -439,7 +439,7 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 
 		if (alert_window)
 		{
-			alert_window->window_status |= XAWS_FLOAT|XAWS_NOFOCUS;
+			alert_window->window_status |= XAWS_FLOAT;
 
 			widg = get_widget(alert_window, XAW_TOOLBAR);
 

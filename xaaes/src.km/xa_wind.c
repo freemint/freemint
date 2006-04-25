@@ -206,11 +206,8 @@ XA_wind_find(enum locks lock, struct xa_client *client, AESPB *pb)
 void
 top_window(enum locks lock, bool snd_untopped, bool snd_ontop, struct xa_window *w, struct xa_window *old_focus)
 {
-// 	struct xa_client *client = w->owner;
-	struct xa_window *new_focus, *oldtop;
-
 // 	display("top_window %d for %s", w->handle, w->owner->proc_name); //client->proc_name);
-	DIAG((D_wind, client, "top_window %d for %s",  w->handle, c_owner(client)));
+	DIAG((D_wind, NULL, "top_window %d for %s",  w->handle, w == root_window ? get_desktop()->owner->proc_name : w->owner->proc_name));
 	/* Ozk: if -1L passed as old_focus pointer, determine here which is ontop
 	 *	before we top 'w'. Else check if old_focus really is ontop.
 	 *	This is for redrawing the window exterior to indicate now topped
@@ -223,36 +220,14 @@ top_window(enum locks lock, bool snd_untopped, bool snd_ontop, struct xa_window 
 	{
 		if (!(w->window_status & XAWS_NOFOCUS)) {
 // 			display("setnew focus on nolist wind");
-			setnew_focus(w, 0);
+			setnew_focus(w, NULL, false, snd_ontop, false);
 		}
 	}
 	else
 	{
-		oldtop = TOP_WINDOW;
-// 		display("oldtop = %lx", oldtop);
 		pull_wind_to_top(lock, w);
-// 		display("nowtop = %lx, shouldtop = %lx", TOP_WINDOW, w);
-		if (oldtop && !is_topped(oldtop))
-		{
-			setwin_untopped(lock, oldtop, snd_untopped);
-		}
-		if (!oldtop || oldtop != w)
-		{
-			if (w != root_window && w == TOP_WINDOW/*window_list*/)
-			{
-				setwin_ontop(lock, snd_ontop);
-			}
-		}
-		if (!is_infront(w->owner))
-		{
-			set_active_client(lock, w->owner);
-			swap_menu(lock, w->owner, NULL, SWAPM_DESK); //true, false, 0);
-		}
-// 		if (!(S.focus->window_status & XAWS_STICKYFOCUS) && S.focus->nolist)
-		reset_focus(&new_focus, 1);
-		setnew_focus(new_focus, 0);
+		setnew_focus(w, NULL, true, snd_untopped, snd_ontop);
 	}
-
 	set_winmouse(-1, -1);
 #if 0
 	if (old_focus == (void *)-1L)
@@ -320,29 +295,26 @@ bottom_window(enum locks lock, bool snd_untopped, bool snd_ontop, struct xa_wind
 	{
 		/* Send it to the back */
 		send_wind_to_bottom(lock, w);
-
+		if (was_top)
+		{
+			if (!(TOP_WINDOW->window_status & XAWS_NOFOCUS))
+				new_focus = TOP_WINDOW;
+			else
+			{
+				new_focus = window_list;
+				while (new_focus && new_focus != root_window)
+				{
+					if (!(new_focus->window_status & XAWS_NOFOCUS))
+						break;
+					new_focus = new_focus->next;
+				}
+			}
+			setnew_focus(new_focus, w, true, snd_untopped, snd_ontop);
+		}
+		
 		DIAG((D_wind, w->owner, " - menu_owner %s, w_list_owner %s",
 			t_owner(get_menu()), w_owner(window_list)));
 
-		/* Our window is now right above root_window */
-
-		if (was_top)
-		{
-			/*  send WM_ONTOP to just topped window. */
-			setwin_untopped(lock, w, snd_untopped);
-
-			if (!is_infront(TOP_WINDOW/*window_list*/->owner))
-			{
-				set_active_client(lock, TOP_WINDOW/*window_list*/->owner);
-				swap_menu(lock, TOP_WINDOW/*window_list*/->owner, NULL, SWAPM_DESK); //true, false, 0);
-			}
-			if (is_topped(TOP_WINDOW/*window_list*/))
-			{
-				setwin_ontop(lock, snd_ontop);
-			}
-		}
-		reset_focus(&new_focus, 0);
-		setnew_focus(new_focus, 0);
 		update_windows_below(lock, &w->r, NULL, wl, w);
 	}
 }
@@ -872,7 +844,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		}
 		else if (w != root_window && (w->window_status & (XAWS_OPEN|XAWS_HIDDEN)) == XAWS_OPEN)
 		{
-			if ( !is_topped(w))
+			if ( !wind_has_focus(w)) // !is_topped(w))
 			{
 				top_window(lock|winlist, true, false, w, (void *)-1L);
 			}
@@ -1562,7 +1534,9 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 	}
 	case WF_TOP:
 	{
-		w = TOP_WINDOW/*window_list*/;
+		w = S.focus;
+		if (!w)
+			w = TOP_WINDOW/*window_list*/;
 
 		o[1] = o[2] = 0;
 		o[3] = o[4] = -1;

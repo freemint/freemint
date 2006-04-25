@@ -1036,7 +1036,7 @@ Click_form_do(enum locks lock,
 	{
 		v = wind->vdi_settings;
 
-		if (!wind->nolist && !is_topped(wind)) // !wind->nolist && wind != window_list && !(wind->active_widgets & NO_TOPPED) )
+		if (!wind->nolist && !is_topped(wind) && is_toppable(wind)) // !wind->nolist && wind != window_list && !(wind->active_widgets & NO_TOPPED) )
 		{
 			DIAGS(("Click_form_do: topping window"));
 // 			display("Click_form_do: topping window");
