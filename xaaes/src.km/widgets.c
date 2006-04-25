@@ -1235,8 +1235,8 @@ click_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 					{
 						send_topped(lock, wind);
 					}
-					else if (!wind_has_focus(wind))
-						setnew_focus(wind, 0);
+					else if (!wind_has_focus(wind) && !(wind->window_status & XAWS_NOFOCUS))
+						setnew_focus(wind, NULL, true, true, true);
 					
 					/* If window is already top, then send it to the back */
 					/* Ozk: Always bottom iconified windows... */
@@ -1684,11 +1684,23 @@ drag_border(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 	return size_window(lock, wind, widg, false, drag_border, md);
 }
 
+#define WCTXT_FLOAT	1
+#define WCTXT_SINK	2
+#define WCTXT_NOFOCUS	3
+#define WCTXT_TOP	4
+#define WCTXT_BOTTOM	5
+#define WCTXT_CLOSE	6
+#define WCTXT_HIDE	7
+#define WCTXT_ICONIFY	8
+#define WCTXT_SHADE	9
+#define WCTXT_QUIT	10
+#define WCTXT_KILL	11
 
 static char *wctxt_popup_text[] =
 {
 	"Keep over others",
 	"Keep under others",
+	"Deny keyboard focus ",
 	"Send to top",
 	"Send to bottom",
 	"Close",
@@ -1814,15 +1826,17 @@ CE_winctxt(enum locks lock, struct c_event *ce, bool cancel)
 				obj_offset(wt, aesobj(obtree, 0), &x, &y);
 
 				if (wind->window_status & XAWS_FLOAT)
-					obtree[1].ob_state |= OS_CHECKED;
+					obtree[WCTXT_FLOAT].ob_state |= OS_CHECKED;
 				if (wind->window_status & XAWS_SINK)
-					obtree[2].ob_state |= OS_CHECKED;
+					obtree[WCTXT_SINK].ob_state |= OS_CHECKED;
+				if (wind->window_status & XAWS_NOFOCUS)
+					obtree[WCTXT_NOFOCUS].ob_state |= OS_CHECKED;
 				if (is_hidden(wind))
-					obtree[6].ob_state |= OS_CHECKED;
+					obtree[WCTXT_HIDE].ob_state |= OS_CHECKED;
 				if (is_iconified(wind))
-					obtree[7].ob_state |= OS_CHECKED;
+					obtree[WCTXT_ICONIFY].ob_state |= OS_CHECKED;
 				if (is_shaded(wind))
-					obtree[8].ob_state |= OS_CHECKED;
+					obtree[WCTXT_SHADE].ob_state |= OS_CHECKED;
 
 				Ctxtwin = wind;
 				if (menu_popup(0, wt->owner, &xmn, &result, x, y, 2) && result.mn_tree == xmn.menu.mn_tree)
@@ -1849,14 +1863,14 @@ CE_winctxt(enum locks lock, struct c_event *ce, bool cancel)
 				{
 					switch (obnum)
 					{
-						case 1: /* Keep over others */
+						case WCTXT_FLOAT: /* Keep over others */
 						{
 							wind->window_status &= ~XAWS_SINK;
 							wind->window_status ^= XAWS_FLOAT;
 							top_window(0, true, true, wind, (void *)-1L);
 							break;
 						}
-						case 2: /* Keep under others */
+						case WCTXT_SINK: /* Keep under others */
 						{
 							wind->window_status &= ~XAWS_FLOAT;
 							wind->window_status ^= XAWS_SINK;
@@ -1866,22 +1880,30 @@ CE_winctxt(enum locks lock, struct c_event *ce, bool cancel)
 								bottom_window(0, true, true, wind);
 							break;
 						}
-						case 3: /* Send to top */
+						case WCTXT_NOFOCUS:
+						{
+							struct xa_window *fw;
+							wind->window_status ^= XAWS_NOFOCUS;
+							reset_focus(&fw, 0);
+							setnew_focus(fw, NULL, true, true, true);
+							break;
+						}
+						case WCTXT_TOP: /* Send to top */
 						{
 							top_window(0, true, true, wind, (void *)-1L);
 							break;
 						}
-						case 4: /* Send to bottom */
+						case WCTXT_BOTTOM: /* Send to bottom */
 						{
 							bottom_window(0, true, true, wind);
 							break;
 						}
-						case 5: /* Close window */
+						case WCTXT_CLOSE: /* Close window */
 						{
 							send_closed(0, wind);
 							break;
 						}
-						case 6: /* Hide window */
+						case WCTXT_HIDE: /* Hide window */
 						{
 							if ((wind->window_status & XAWS_HIDDEN))
 								unhide_window(0, wind, false);
@@ -1889,17 +1911,17 @@ CE_winctxt(enum locks lock, struct c_event *ce, bool cancel)
 								hide_window(0, wind);
 							break;
 						}
-						case 7: /* Iconify window */
+						case WCTXT_ICONIFY: /* Iconify window */
 						{
 							iconify_action(0, wind, NULL);
 							break;
 						}
-						case 8: /* Shade window */
+						case WCTXT_SHADE: /* Shade window */
 						{
 							post_cevent(wind->owner, CE_shade_action, wind,NULL, 0,0, NULL,&ce->md);
 							break;
 						}
-						case 9: /* Quit */
+						case WCTXT_QUIT: /* Quit */
 						{
 
 							if (wind->owner->type & (APP_AESTHREAD|APP_AESSYS))
@@ -1908,7 +1930,7 @@ CE_winctxt(enum locks lock, struct c_event *ce, bool cancel)
 								send_terminate(lock, wind->owner, AP_TERM);
 							break;
 						}
-						case 10: /* Kill */
+						case WCTXT_KILL: /* Kill */
 						{
 							if (wind->owner->type & (APP_AESTHREAD|APP_AESSYS))
 							{
