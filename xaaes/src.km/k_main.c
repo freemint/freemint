@@ -63,15 +63,6 @@
 
 #include "c_mouse.h"
 
-/*
- * Kernel Message Handler
- * 
- * This is responsible for accepting requests via the XaAES.cmd pipe and
- * sending (most) replies via the clients' reply pipes.
- * 	
- * We also get keyboard & mouse input data here.
- */
-
 void
 ceExecfunc(enum locks lock, struct c_event *ce, bool cancel)
 {
@@ -234,7 +225,7 @@ post_cevent(struct xa_client *client,
 		Unblock(client, 1, 0);
 	}
 }
-#if 1
+
 short
 dispatch_selcevent(struct xa_client *client, void *f, bool cancel)
 {
@@ -272,45 +263,6 @@ dispatch_selcevent(struct xa_client *client, void *f, bool cancel)
 	}
 	return 0;
 }
-#else
-short
-dispatch_selcevent(struct xa_client *client, void *f)
-{
-	struct c_event **ce;
-	short ret = 0;
-
-	ce = &client->cevnt_head;
-
-	if (*ce)
-	{
-		struct c_event *nxt, *this, *prev = NULL;
-
-		DIAG((D_kern, client, "Dispatch selected evnt %lx, %lx (head %lx, tail %lx, count %d) for %s",
-			f, *ce, client->cevnt_head, client->cevnt_tail, client->cevnt_count, client->name));
-		
-		if ((*ce)->funct == f)
-		{
-			if (!(nxt = (*ce)->next))
-				client->cevnt_tail = prev; //nxt;
-
-			this = *ce;
-			*ce = nxt; //client->cevnt_head = nxt;
-			client->cevnt_count--;
-	
-			(*this->funct)(0, this, false);
-			kfree(this);
-		
-			ret = (volatile short)client->cevnt_count;
-		}
-		else
-		{
-			prev = *ce;
-			ce = &((*ce)->next);
-		}
-	}
-	return ret;
-}
-#endif
 
 short
 dispatch_cevent(struct xa_client *client)
@@ -361,8 +313,7 @@ do_block(struct xa_client *client)
 		client->blocktype = XABT_SLEEP;
 		client->sleepqueue = IO_Q;
 		client->sleeplock = client == C.Aes ? (long)client->tp : (long)client;
-// 		client->sleeplock = (long)client;
-		sleep(IO_Q, client->sleeplock); //(long)client);
+		sleep(IO_Q, client->sleeplock);
 	}
 	client->blocktype = XABT_NONE;
 	client->sleeplock = 0;
@@ -377,7 +328,6 @@ Block(struct xa_client *client, int which)
 void
 cBlock(struct xa_client *client, int which)
 {
-
 	while (!client->usr_evnt && (client->irdrw_msg || client->cevnt_count))
 	{
 		if (client->irdrw_msg)
@@ -585,7 +535,7 @@ Unblock(struct xa_client *client, unsigned long value, int which)
 			wake(IO_Q, client->sleeplock); //(long)client);
 	}
 
-	DIAG((D_kern, client,"[%d]Unblocked %s 0x%lx", which, client->proc_name/*c_owner(client)*/, value));
+	DIAG((D_kern, client,"[%d]Unblocked %s 0x%lx", which, client->proc_name, value));
 }
 
 static void *svmotv = NULL;
@@ -928,6 +878,7 @@ int aessys_timeout = 0;
 
 static const char aesthread_name[] = "aesthred";
 static const char aeshlp_name[] = "XaSYS";
+
 static void
 aesthread_block(struct xa_client *client, int which)
 {
@@ -986,7 +937,7 @@ helpthread_entry(void *c)
 		short *d;
 		long pbsize = sizeof(*pb) + ((12 + 32 + 32 + 32 + 32 + 32 + 32) * 2);
 
-		if ((pb = kmalloc(pbsize))) //sizeof(*pb) + ((12 + 32 + 32 + 32 + 32 + 32 + 32) * 2))))
+		if ((pb = kmalloc(pbsize)))
 		{
 			volatile short *t = &client->tp_term;
 			union msg_buf *msgb;
@@ -1152,7 +1103,7 @@ sshutdown_timeout(struct proc *p, long arg)
 				if (flag)
 				{
 					C.shutdown_step = 1;
-					set_shutdown_timeout(4000);
+					set_shutdown_timeout(1000); //(4000);
 				}
 			}
 			else
@@ -1223,8 +1174,10 @@ kick_shutdn_if_last_client(void)
 				break;
 			}
 		}
-		if (!f)
+		if (!f) /* If last client, complete shutdown now! */
 			set_shutdown_timeout(0);
+		else /* Else reset the timeout giving the next app new chances */
+			set_shutdown_timeout(1000);
 	}
 }
 /*

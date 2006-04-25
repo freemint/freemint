@@ -225,7 +225,7 @@ nextwind_rect(struct build_rl_parms *p)
 		/*
 		 * Lets skip windows whose owner is exiting or is hidden
 		 */
-		if (!(wind->owner->status & CS_EXITING) &&
+		if (!(wind->owner->status & CS_EXITING) && !(wind->active_widgets & STORE_BACK) &&
 		     (wind->window_status & (XAWS_HIDDEN|XAWS_OPEN)) == XAWS_OPEN)
 		{
 			p->next_r = &wind->r;
