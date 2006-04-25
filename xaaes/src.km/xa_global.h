@@ -61,6 +61,7 @@ struct win_base
 	struct xa_window *first;
 	struct xa_window *last;
 	struct xa_window *top;
+	struct xa_window *focus;
 };
 
 struct shared

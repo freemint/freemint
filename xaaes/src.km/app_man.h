@@ -66,7 +66,8 @@ struct xa_client *	find_menu(enum locks lock, struct xa_client *client, short ex
 struct xa_client *	focus_owner  (void);
 bool wind_has_focus(struct xa_window *wind);
 struct xa_client *reset_focus(struct xa_window **new_focus, short flags);
-void setnew_focus(struct xa_window *wind, short flags);
+
+void setnew_focus(struct xa_window *wind, struct xa_window *depend, bool topowner, bool snd_untopped, bool snd_ontop);
 void unset_focus(struct xa_window *wind);
 struct xa_client *find_focus(bool withlocks, bool *waiting, struct xa_client **locked_client, struct xa_window **keywind);
 
