@@ -1660,6 +1660,7 @@ struct xa_window
 {
 	struct xa_window	*next;	/* Window list stuff - next is the window below */
 	struct xa_window	*prev;	/*		     - prev is the window above (both NULL terminated) */
+	struct xa_window	*parent;
 	struct xa_client	*owner;
 
 	WINDOW_TYPE	dial;		/* Flag - 1 = this window was created by form_dial,
@@ -1996,6 +1997,8 @@ typedef struct scroll_entry * scrl_search(struct scroll_info *list, struct scrol
 
 #define SESET_M_STATE		16
 
+#define SESET_PRNTWIND		17
+
 /* SESET_UNSELECTED arguments */
 #define UNSELECT_ONE	0
 #define UNSELECT_ALL	1
@@ -2025,6 +2028,7 @@ struct seset_tab
 #define SEGET_ENTRYBYUSRFLAGS	16
 
 #define SEGET_LISTXYWH		20
+#define SEGET_PRNTWIND		21
 #define SEGET_TAB		30
 
 #define SEGET_USRFLAGS		40

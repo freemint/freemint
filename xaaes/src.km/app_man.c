@@ -178,6 +178,8 @@ setnew_focus(struct xa_window *wind, struct xa_window *unfocus, bool topowner, b
 				else
 					wind = NULL;
 			}
+			else
+				wind = NULL;
 		}
 		
 		if (S.focus)
@@ -325,9 +327,16 @@ find_focus(bool withlocks, bool *waiting, struct xa_client **locked_client, stru
 		}
 		else if (c == C.Aes)
 			client = c;
+		else
+		{
+			client = menu_owner();
+			if (client->blocktype != XABT_NONE && waiting)
+				*waiting = true;
+		}
 	}
 
 	DIAGS(("find_focus: focus = %s, infront = %s", client->name, APP_LIST_START->name));
+// 	display("find_focus: focus = %s, infront = %s", client->name, APP_LIST_START->name);
 
 	return client;
 }

@@ -368,9 +368,14 @@ check_queued_events(struct xa_client *client)
 	AESPB *pb;
 	short *out;
 	union msg_buf *m;
-// 	bool d = (strnicmp(client->proc_name, "gbe", 3)) ? false : true;
+// 	bool d = (strnicmp(client->proc_name, "atarirc", 7)) ? false : true;
 	
-// 	if (d) display("wevent %x for %s", wevents, client->proc_name);
+// 	if (d)
+// 	{
+// 		char evtxt[128];
+// 		show_bits(wevents, "evnt=", xev, evtxt);
+// 		display("multi=%s, wevent=%s for %s", multi ? "Yes":"No", evtxt, client->proc_name);
+// 	}
 
 	if (!(pb = client->waiting_pb))
 	{
@@ -463,6 +468,7 @@ check_queued_events(struct xa_client *client)
 				events |= (wevents & (MU_NORM_KEYBD|MU_KEYBD));
 			else
 			{
+// 				if (d) display("we're not here, I hope?");
 				*out = key;
 				goto got_evnt;
 			}
@@ -531,9 +537,9 @@ check_queued_events(struct xa_client *client)
 		cancel_mutimeout(client);
 // 		if (d) display("events %x - done", events);
 #if 0
-		if (client == C.Hlp) //(!strnicmp(client->proc_name, "ergo", 4))
+		if (!strnicmp(client->proc_name, "atarirc", 7))
 		{
-			if (events & (MU_BUTTON|MU_MESAG))
+			if (1) //(events & (MU_BUTTON|MU_MESAG))
 			{
 				char evtxt[128];
 				show_bits(events, "evnt=", xev, evtxt);
