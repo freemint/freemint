@@ -229,52 +229,6 @@ top_window(enum locks lock, bool snd_untopped, bool snd_ontop, struct xa_window 
 		setnew_focus(w, NULL, true, snd_untopped, snd_ontop);
 	}
 	set_winmouse(-1, -1);
-#if 0
-	if (old_focus == (void *)-1L)
-		old_focus = is_topped(window_list) ? window_list : NULL;
-	else if (old_focus && !is_topped(old_focus))
-		old_focus = NULL;
-
-	if (old_focus == root_window)
-		old_focus = NULL;
-
-	/* Ozk: If owner of window we're about to top is not infront,
-	 *	make it in front and swap to its menu.
-	 */
-	if (!is_infront(w->owner))
-	{
-		set_active_client(lock, w->owner);
-		swap_menu(lock, w->owner, NULL, SWAPM_DESK); //true, false, 0);
-	}
-	/* Ozk: Now pull the new topped window to top of list..
-	 */
-	pull_wind_to_top(lock, w);
-	graf_mouse(client->mouse, client->mouse_form, client, false);
-	/* Ozk: redisplay title of the window previously on top
-	 *	to indicate its not topped anymore
-	 */
-	if (old_focus && !is_topped(old_focus))
-	{
-		setwin_untopped(lock, old_focus, snd_untopped);
-		send_iredraw(lock, old_focus, 0, NULL);
-	}
-	/* Ozk: Make sure the window we should top is not the same as
-	 *	the window that was ontop entering here, in wich case
-	 *	we dont redraw its exterior (already is ontop)
-	 */
-	if (!old_focus || old_focus != w)
-	{
-		if (is_topped(w) && w != root_window)
-		{
-			setwin_ontop(lock, snd_ontop);
-			send_iredraw(lock, w, 0, NULL);
-		}
-	}
-	/* Ozk: Set mousecursor to whatever shape the owner of the
-	 *	window under mousecursor uses...
-	 */
-	set_winmouse(-1, -1);
-#endif
 }
 
 void
