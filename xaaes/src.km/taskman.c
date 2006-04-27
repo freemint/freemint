@@ -829,6 +829,7 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 	
 	if (!htd->w_taskman) //(!task_man_win)
 	{
+		struct scroll_info *list;
 /* ********** */
 		obtree = duplicate_obtree(client, ResourceTree(C.Aes_rsc, TASK_MANAGER), 0);
 		if (!obtree) goto fail;
@@ -836,11 +837,13 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 		if (!wt) goto fail;
 		wt->flags |= WTF_TREE_ALLOC | WTF_AUTOFREE;
 		
-		set_slist_object(0, wt, NULL, TM_LIST,
+		list = set_slist_object(0, wt, NULL, TM_LIST,
 				 SIF_SELECTABLE|SIF_AUTOSELECT|SIF_ICONINDENT,
 				 NULL, NULL, NULL, NULL, NULL, NULL,
 				 NULL, NULL, NULL, NULL,
 				 "Client Applications", NULL, NULL, 255);
+
+		if (!list) goto fail;
 
 		obj_init_focus(wt, OB_IF_RESET);
 /* ********** */
@@ -871,6 +874,7 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 		
 		if (!wind) goto fail;
 		
+		list->set(list, NULL, SESET_PRNTWIND, (long)wind, NOREDRAW);
 		wind->window_status |= XAWS_NODELETE;
 		
 		/* Set the window title */
@@ -2258,6 +2262,7 @@ open_csr(enum locks lock, struct xa_client *client, struct xa_client *running)
 		if (!wind)
 			goto fail;
 		htd->w_csr = wind;
+		wind->window_status |= XAWS_FLOAT;
 		open_window(lock, wind, wind->r);		
 	}
 	else
@@ -2453,6 +2458,7 @@ open_systemalerts(enum locks lock, struct xa_client *client, bool open)
 
 	if (!htd->w_sysalrt) //(!systemalerts_win)
 	{
+		struct scroll_info *list;
 		RECT or;
 		
 		obtree = duplicate_obtree(client, ResourceTree(C.Aes_rsc, SYS_ERROR), 0);
@@ -2461,15 +2467,18 @@ open_systemalerts(enum locks lock, struct xa_client *client, bool open)
 		if (!wt) goto fail;
 		wt->flags |= WTF_TREE_ALLOC | WTF_AUTOFREE;
 
-		set_slist_object(0, wt, NULL, SYSALERT_LIST,
+		list = set_slist_object(0, wt, NULL, SYSALERT_LIST,
 				 SIF_SELECTABLE|SIF_AUTOSELECT|SIF_TREEVIEW|SIF_AUTOOPEN,
 				 NULL, NULL, NULL, NULL, NULL, NULL,
 				 NULL, NULL, NULL, NULL,
 				 NULL, NULL, NULL, 255);
+		
+		if (!list) goto fail;
+		
 		obj_init_focus(wt, OB_IF_RESET);
 		
 		{
-			struct scroll_info *list = object_get_slist(obtree + SYSALERT_LIST);
+// 			struct scroll_info *list = object_get_slist(obtree + SYSALERT_LIST);
 			struct scroll_content sc = {{ 0 }};
 			char a[] = "Alerts";
 			char e[] = "Environment";
@@ -2487,7 +2496,7 @@ open_systemalerts(enum locks lock, struct xa_client *client, bool open)
 			list->add(list, NULL, NULL, &sc, 0, SETYP_STATIC, NOREDRAW);
 		}
 		{
-			struct scroll_info *list = object_get_slist(obtree + SYSALERT_LIST);
+// 			struct scroll_info *list = object_get_slist(obtree + SYSALERT_LIST);
 			struct scroll_entry *this;
 			const char **strings = get_raw_env(); //char * const * const strings = get_raw_env();
 			int i;
@@ -2536,7 +2545,9 @@ open_systemalerts(enum locks lock, struct xa_client *client, bool open)
 					client->options.thinwork,
 					remember, NULL, NULL);
 		if (!wind) goto fail;
-
+		
+		list->set(list, NULL, SESET_PRNTWIND, (long)wind, NOREDRAW);
+		
 		/* Set the window title */
 		set_window_title(wind, " System window & Alerts log", false);
 

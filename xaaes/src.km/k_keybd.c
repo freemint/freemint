@@ -127,7 +127,7 @@ void
 queue_key(struct xa_client *client, const struct rawkey *key)
 {
 	struct keyqueue *kq;
-
+	DIAGS(("queue key for %s", client->proc_name));
 	if (client->kq_count < MAX_KEYQUEUE)
 	{
 		kq = kmalloc(sizeof(*kq));	
@@ -153,7 +153,7 @@ unqueue_key(struct xa_client *client, struct rawkey *key)
 {
 	bool ret = false;
 	struct keyqueue *kq;
-	
+	DIAGS(("unqueue key for %s", client->proc_name));
 	if ((kq = client->kq_tail))
 	{
 		*key = kq->key;
@@ -192,15 +192,18 @@ XA_keyboard_event(enum locks lock, const struct rawkey *key)
 	}
 	
 	if (!(client = find_focus(true, &waiting, &locked_client, &keywind)))
+	{
+		display("no focus?!");
 		return;
+	}
 
 	DIAG((D_keybd,client,"XA_keyboard_event: %s; update_lock:%d, focus: %s, window_list: %s",
 		waiting ? "waiting" : "", update_locked() ? update_locked()->pid : 0,
 		c_owner(client), keywind ? w_owner(keywind) : "no keywind"));
 	
-//	display("XA_keyboard_event: %s; update_lock:%d, focus: %s, window_list: %s",
-//		waiting ? "waiting" : "", update_locked() ? update_locked()->pid : 0,
-//		client->name, keywind ? keywind->owner->name : "no keywind");
+// 	display("XA_keyboard_event: %s; update_lock:%d, focus: %s, window_list: %s, waiting_pb=%lx",
+// 		waiting ? "waiting" : "", update_locked() ? update_locked()->pid : 0,
+// 		client->name, keywind ? keywind->owner->name : "no keywind", client->waiting_pb);
 	
 	/* Found either (MU_KEYBD|MU_NORM_KEYBD) or keypress handler. */
 	if (waiting)
