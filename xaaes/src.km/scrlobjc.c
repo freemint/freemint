@@ -1936,6 +1936,16 @@ m_state_done:
 			}
 			break;
 		}
+		case SESET_PRNTWIND:
+		{
+			struct xa_window *parent = (struct xa_window *)arg;
+			
+			if (parent)
+				list->pw = parent;
+			if (list->wi)
+				list->wi->parent = parent;
+			break;
+		}
 	}
 
 	if (redrw)
@@ -2212,6 +2222,12 @@ get(SCROLL_INFO *list, SCROLL_ENTRY *entry, short what, void *arg)
 
 // 				check_movement(list);
 // 				*(RECT *)arg = list->wi->wa;
+				break;
+			}
+			case SEGET_PRNTWIND:
+			{
+				struct xa_window **rwind = arg;
+				*rwind = list->pw;
 				break;
 			}
 			case SEGET_TAB:
@@ -3872,7 +3888,7 @@ set_slist_object(enum locks lock,
 		int dh;
 
 		list->vdi_settings = list->wi->vdi_settings;
-
+		list->wi->parent = list->pw;
 		if (title)
 			set_window_title(list->wi, title, false);
 		if (info)

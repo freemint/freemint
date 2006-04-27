@@ -790,13 +790,53 @@ remove_wt(XA_TREE *wt, bool force)
  * SLIST windows, for example, that are considered to be objects along
  * the lines of AES Object trees,
  */
+static inline void
+draw_widget(struct xa_window *wind, XA_WIDGET *widg, struct xa_rect_list *rl)
+{
+	struct xa_vdi_settings *v = wind->vdi_settings;
+	RECT r;
+
+	DIAG((D_wind, wind->owner, "draw_widget: wind handle %d, widget %d (func=%lx)",
+		wind->handle, widg->m.r.xaw_idx, widg->m.r.draw));
+
+	if (!rl)
+		rl = wind->rect_list.start;
+
+	if (rl)
+	{
+		hidem();
+
+		while (rl)
+		{	
+			if (widg->m.properties & WIP_WACLIP)
+			{
+				if (xa_rect_clip(&rl->r, &wind->wa, &r))
+				{
+					(*v->api->set_clip)(v, &r);
+					widg->m.r.draw(wind, widg, &r);
+				}
+			}
+			else
+			{
+				(*v->api->set_clip)(v, &rl->r);
+				widg->m.r.draw(wind, widg, &rl->r);
+			}
+			rl = rl->next;
+		}
+		(*v->api->clear_clip)(v);
+		showm();
+	}
+}
+
 void
 display_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, struct xa_rect_list *rl)
 {
-	RECT r;
+// 	RECT r;
 
 	if (!(wind->window_status & widg->m.statusmask) && wdg_is_inst(widg))
 	{
+		draw_widget(wind, widg, rl);
+#if 0
 		struct xa_vdi_settings *v = wind->vdi_settings;
 
 		DIAG((D_wind, wind->owner, "draw_window %d: display widget %d (func=%lx)",
@@ -825,6 +865,7 @@ display_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, struct 
 		}
 		(*v->api->clear_clip)(v);
 		showm();
+#endif
 	}
 }
 
@@ -4142,13 +4183,19 @@ redisplay_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, short
 		/* No rectangle list. */
 		if ((wind->dial & created_for_SLIST) || (wind->nolist && !wind->rect_list.start))
 		{
-			struct xa_vdi_settings *v = wind->vdi_settings;
-			(*v->api->set_clip)(v, &wind->r);
-			hidem();
-			/* Not on top, but visible */
-			widg->m.r.draw(wind, widg, &wind->r);
-			showm();
-			(*v->api->clear_clip)(v);
+			if (wind->parent && (wind->dial & created_for_SLIST))
+				draw_widget(wind, widg, wind->parent->rect_list.start);
+			else
+			{
+				struct xa_vdi_settings *v = wind->vdi_settings;
+			
+				(*v->api->set_clip)(v, &wind->r);
+				hidem();
+				/* Not on top, but visible */
+				widg->m.r.draw(wind, widg, &wind->r);
+				showm();
+				(*v->api->clear_clip)(v);
+			}
 		}
 		else
 			/* Display the selected widget */
