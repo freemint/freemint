@@ -1811,7 +1811,7 @@ close_window(enum locks lock, struct xa_window *wind)
 					top_window(lock|winlist, true, true, w, NULL);
 				else
 				{
-					setnew_focus(w, wind, true, true, true);
+					setnew_focus(w, NULL, true, true, true);
 // 					setwin_ontop(lock, true);
 // 					send_iredraw(lock, w, 0, NULL);
 					set_and_update_window(w, true, true, NULL);

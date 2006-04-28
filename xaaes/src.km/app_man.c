@@ -272,7 +272,7 @@ find_focus(bool withlocks, bool *waiting, struct xa_client **locked_client, stru
 			 */
 			    (nlwind && nlwind->owner == client && !(nlwind->dial & created_for_POPUP)) ||
 			    client->waiting_for & (MU_KEYBD | MU_NORM_KEYBD) ||
-			    (top->owner == client && top->keypress))		/* Windowed form_do() */
+			    (S.focus->owner == client /*top->owner == client*/ && top->keypress))		/* Windowed form_do() */
 			{
 				if (waiting)
 					*waiting = true;
