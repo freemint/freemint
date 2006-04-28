@@ -16,6 +16,8 @@
 
 # include "tty.h"
 
+# include "libkern/libkern.h"
+
 # include "mint/filedesc.h"
 # include "mint/ioctl.h"
 # include "mint/signal.h"
@@ -1398,6 +1400,13 @@ tty_getchar (FILEPTR *f, int mode)
 	/* pty masters never worry about job control and always read in
 	 * raw mode
 	 */
+#if 0
+	if (f->dev == &bios_tdevice && f->fc.aux == 2)
+	{
+		display("tty_getchar: tty->pgrp = %d, curproc->pgrp = %d HEAD = %s",
+			tty->pgrp, curproc->pgrp, (f->flags & O_HEAD) ? "yes":"no");
+	}
+#endif
 	if (f->flags & O_HEAD)
 	{
 		long ret = (*f->dev->read)(f, (char *)&r, 4L);
@@ -1427,7 +1436,7 @@ tty_getchar (FILEPTR *f, int mode)
 	else
 		tty->state &= ~TS_COOKED;
 	
-	c = UNDEF+1;	/* set to UNDEF when we successfully read a character */
+	c = UNDEF + 1;	/* set to UNDEF when we successfully read a character */
 	
 	/* we may be in the middle of an escape sequence */
 	scan = (tty->state & TS_ESC);
@@ -1531,7 +1540,13 @@ tty_putchar (FILEPTR *f, long data, int mode)
 	char ch;
 	
 	assert (tty);
-	
+#if 0	
+	if (f->dev == &bios_tdevice && f->fc.aux == 2)
+	{
+		display("tty_putchar: tty->pgrp = %d, curproc->pgrp = %d HEAD = %s",
+			tty->pgrp, curproc->pgrp, (f->flags & O_HEAD) ? "yes":"no");
+	}
+#endif
 	/* pty masters never worry about job control
 	 */
 	if (f->flags & O_HEAD)

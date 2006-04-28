@@ -76,6 +76,7 @@ extern unsigned long c20ms;
 extern short falcontos;
 extern short FalconVideo;
 extern short ste_video;
+extern short protect_page0;
 
 # endif
 
