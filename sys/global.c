@@ -65,3 +65,10 @@ short FalconVideo = 0;
 /* variable set to 1 if the _VDO cookie indicates STE style video
  */
 short ste_video = 0;
+
+/* Flag that makes init_table() set protectionmode == super on
+ * the first logical<->physical page descriptor. This because
+ * some hardware dont provide protecting the systemvariables/
+ * vectors from userspace accesses
+ */
+short protect_page0 = 0;

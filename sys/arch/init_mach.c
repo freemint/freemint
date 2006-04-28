@@ -33,7 +33,6 @@
  */
 
 # include "init_mach.h"
-
 # include "libkern/libkern.h"
 
 # include "arch/aranym.h"
@@ -90,7 +89,7 @@ _getmch (void)
 {
 	enum special_hw add_info = none;
 	struct cookie *jar;
-	
+
 	jar = *CJAR;
 	if (jar)
 	{
@@ -196,6 +195,22 @@ _getmch (void)
 
 		return -1;
 	}
+	
+	/* Ozk: If protect_page0 == 0, we check if we should tell the pmmu code
+	 *	to set SUPER on the first descriptor by placing a value of 1 here.
+	 *	The pmmu code checks for a value of 1 here in which case it sets
+	 *	SUPER. Any other value will make the pmmu code use existing
+	 *	translation tables unmodified. The idea here is to make this
+	 *	configurable someway, just setting protect_page0 to 2, for example
+	 *	will disable this whole check. That is unimplemented yet. I think
+	 *	this must be a boot option, since pmmu code intializes things
+	 *	long before mint.cnf is read->parsed... or?
+	 */
+	if (protect_page0 == 0 && (mch == MILAN_C || add_info == hades))
+	{
+		boot_print("Hardware needs SUPER on first descriptor!\r\n");
+		protect_page0 = 1;
+	}
 # endif /* !M68000 */
 	
 	/* initialize the info strings */
@@ -244,7 +259,7 @@ _getmch (void)
 	
 	if (gl_lang >= MAXLANG || gl_lang < 0)
 		gl_lang = 0;
-	
+
 	return 0;
 }
 
