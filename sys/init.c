@@ -301,7 +301,6 @@ init (void)
 # ifdef VERBOSE_BOOT
 	boot_print(MSG_init_done);
 # endif
-
 	stop_and_ask();
 
 # ifdef DEBUG_INFO
@@ -319,7 +318,6 @@ init (void)
 		DEBUG(("Kernel SSP:  0x%08lx (FREE: %ld bytes)", ssp, ssp - (_base->p_bbase + _base->p_blen)));
 	}
 # endif
-
 	sysdrv = *((short *) 0x446);	/* get the boot drive number */
 
 # ifdef VERBOSE_BOOT

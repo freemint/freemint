@@ -511,7 +511,7 @@ do_open (FILEPTR **f, const char *name, int rwmode, int attr, XATTR *x)
 		tty->use_cnt++;
 
 		/* first open for this device (not counting set_auxhandle)? */
-		if ((!tty->pgrp && tty->use_cnt-tty->aux_cnt <= 1)
+		if ((!tty->pgrp && tty->use_cnt - tty->aux_cnt <= 1)
 			|| tty->use_cnt <= 1)
 		{
 			short s = tty->state & (TS_BLIND|TS_HOLD|TS_HPCL);
