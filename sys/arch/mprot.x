@@ -129,13 +129,15 @@ report_buserr(void)
 	
 	ksprintf(alertbuf, sizeof(alertbuf),
 		 "[1][ PROCESS  \"%s\"  KILLED: |"
-		 " MEMORY VIOLATION.  (PID %03d) | |"
+		 " MEMORY VIOLATION.  (PID %03d) |"
 		 " Type: %s PC: %08lx |"
-		 " Addr: %08lx  BP: %08lx ][ OK ]",
+		 " Addr: %08lx  BP: %08lx |"
+		 "                 OS: %08lx][ OK ]",
 		 curproc->name,
 		 curproc->pid,
 		 type, pc,
-		 aa, curproc->p_mem->base);
+		 aa, curproc->p_mem->base,
+		 pc - ((ulong)curproc->p_mem->base + 256));
 	
 	DEBUG((alertbuf));
 	

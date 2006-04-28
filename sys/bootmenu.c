@@ -508,20 +508,40 @@ void
 read_ini (void)
 {
 	char ini_file[128];
-	long r;
+	long r, usp;
 
+	
+	/* Ozk: This code crashed on hardware that correctly denies
+	 *	user accesses to the low 2Kb of system RAM. Therefore
+	 *	we must switch to Super before accessing the system-
+	 *	variables. Do your homework, please :-)
+	 */
+	usp = TRAP_Super(1L);
+	if (!usp)
+		usp = TRAP_Super(0L);
+	else
+		usp = 0L;
+	
 	/* check and read the command line arguments - if not empty */
 	argsptr = (*(BASEPAGE**)(*((long **)(0x4f2L)))[10])->p_cmdlin;
+
 	if ( argsptr && strlen(argsptr) > 0 ) {
 		use_cmdline = 1;
 		save_ini = 0;
 
 		strcpy(ini_file, "args: ");
 		strcat(ini_file, argsptr);
+		if (usp)
+			TRAP_Super(usp);
+
 		boot_printf(MSG_init_read, ini_file);
 
+		
 		read_ini_file( -1, ' ');
 	} else {
+		if (usp)
+			TRAP_Super(usp);
+
 		ksprintf(ini_file, sizeof(ini_file), "%s%s", sysdir, mint_ini);
 		boot_printf(MSG_init_read, ini_file);
 

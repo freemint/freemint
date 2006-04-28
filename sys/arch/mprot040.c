@@ -122,6 +122,7 @@
  * 
  */
 
+# include "global.h"
 # include "mprot.h"
 
 # include "libkern/libkern.h"
@@ -359,13 +360,12 @@ walk_page(int mode, ulong *root, ulong *pointer, ulong *page,
 		if (is_mint_mem(ri, pi, pgi))
 		{
 			*help = desc;
-			
-# if 0
+# if 1
 			/* If it's the first descriptor (i.e. for logical
 			 * address 0), ensure the "supervisor only" flag is
 			 * set
 			 */
-			if ((ri + pi + pgi) == 0)
+			if ((ri + pi + pgi) == 0 && protect_page0 == 1)
 			{
 				if ((*help & SUPERBIT) != SUPERBIT)
 				{
