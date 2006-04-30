@@ -1050,24 +1050,6 @@ iconify_grid(int i)
 		
 	}
 	return ic;
-
-#if 0
-
-
-	RECT ic = {0,0,ICONIFIED_W,ICONIFIED_H};
-	int j, w = screen.r.w/ic.w;
-
-	ic.x = screen.r.x;
-	ic.y = screen.r.y + screen.r.h - 1 - ic.h;
-
-	j = i / w;
-	i %= w;
-
-	ic.x += i * ic.w;
-	ic.y -= j * ic.h;
-
-	return ic;
-#endif
 }
 
 /*
@@ -1086,7 +1068,7 @@ drag_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, cons
 			struct xa_window *scan_wind;
 
 			/* Don't allow windows below a STORE_BACK to move */
-			if (wind != TOP_WINDOW/*window_list*/)
+			if (wind != TOP_WINDOW)
 			{
 				for (scan_wind = wind->prev; scan_wind; scan_wind = scan_wind->prev)
 				{
@@ -1727,20 +1709,22 @@ drag_border(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 
 #define WCTXT_FLOAT	1
 #define WCTXT_SINK	2
-#define WCTXT_NOFOCUS	3
-#define WCTXT_TOP	4
-#define WCTXT_BOTTOM	5
-#define WCTXT_CLOSE	6
-#define WCTXT_HIDE	7
-#define WCTXT_ICONIFY	8
-#define WCTXT_SHADE	9
-#define WCTXT_QUIT	10
-#define WCTXT_KILL	11
+#define WCTXT_TOOLBOX	3	
+#define WCTXT_NOFOCUS	4
+#define WCTXT_TOP	5
+#define WCTXT_BOTTOM	6
+#define WCTXT_CLOSE	7
+#define WCTXT_HIDE	8
+#define WCTXT_ICONIFY	9
+#define WCTXT_SHADE	10
+#define WCTXT_QUIT	11
+#define WCTXT_KILL	12
 
 static char *wctxt_popup_text[] =
 {
 	"Keep over others",
 	"Keep under others",
+	"Toolbox attribute",
 	"Deny keyboard focus ",
 	"Send to top",
 	"Send to bottom",
@@ -1870,6 +1854,8 @@ CE_winctxt(enum locks lock, struct c_event *ce, bool cancel)
 					obtree[WCTXT_FLOAT].ob_state |= OS_CHECKED;
 				if (wind->window_status & XAWS_SINK)
 					obtree[WCTXT_SINK].ob_state |= OS_CHECKED;
+				if (wind->window_status & XAWS_BINDFOCUS)
+					obtree[WCTXT_TOOLBOX].ob_state |= OS_CHECKED;
 				if (wind->window_status & XAWS_NOFOCUS)
 					obtree[WCTXT_NOFOCUS].ob_state |= OS_CHECKED;
 				if (is_hidden(wind))
@@ -1919,6 +1905,20 @@ CE_winctxt(enum locks lock, struct c_event *ce, bool cancel)
 								top_window(0, true, true, wind, (void *)-1L);
 							else
 								bottom_window(0, true, true, wind);
+							break;
+						}
+						case WCTXT_TOOLBOX:
+						{
+							wind->window_status ^= XAWS_BINDFOCUS;
+							if ((wind->window_status & XAWS_BINDFOCUS))
+							{
+								if (get_app_infront() != wind->owner)
+									hide_toolboxwindows(wind->owner);
+								else
+									top_window(0, true, false, wind, (void *)-1L);
+							}
+							else
+								top_window(0, true, true, wind, (void *)-1L);
 							break;
 						}
 						case WCTXT_NOFOCUS:

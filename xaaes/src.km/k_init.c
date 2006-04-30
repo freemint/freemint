@@ -858,6 +858,7 @@ k_init(unsigned long vm)
 	}
 	BLOG((false, "opening root window"));
 	open_window(NOLOCKING, root_window, screen.r);
+	S.open_windows.root = root_window;
 
 	/* Initial iconified window coords */
 	C.iconify = iconify_grid(0);
