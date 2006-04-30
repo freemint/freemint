@@ -60,6 +60,7 @@ void wi_remove(struct win_base *b, struct xa_window *w, bool chkfocus);
 void wi_put_first(struct win_base *b, struct xa_window *w);
 void wi_move_first(struct win_base *b, struct xa_window *w);
 void wi_move_blast(struct win_base *b, struct xa_window *w);
+void wi_move_belowroot(struct win_base *b, struct xa_window *w);
 
 struct xa_window *find_window(enum locks lock, short x, short y, short flags);
 struct xa_window *get_wind_by_handle(enum locks lock, short h);
@@ -107,6 +108,9 @@ void	uniconify_window(enum locks lock, struct xa_window *wind, RECT *r);
 
 void	hide_window(enum locks lock, struct xa_window *wind);
 void	unhide_window(enum locks lock, struct xa_window *wind, bool check);
+void	hide_toolboxwindows(struct xa_client *client);
+void	show_toolboxwindows(struct xa_client *client);
+
 void	clear_wind_handles(void);
 void	clear_wind_rectlist(struct xa_window *wind);
 

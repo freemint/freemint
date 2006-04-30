@@ -61,13 +61,14 @@ struct win_base
 	struct xa_window *first;
 	struct xa_window *last;
 	struct xa_window *top;
-	struct xa_window *focus;
+	struct xa_window *root;
 };
 
 struct shared
 {
 	struct win_base open_windows;		/* list of all open windows */
 	struct win_base closed_windows;		/* list of all closed windows */
+	struct win_base hidden_windows;
 	struct win_base deleted_windows;	/* list of windows to be deleted (delayed action) */
 	
 	struct win_base open_nlwindows;
