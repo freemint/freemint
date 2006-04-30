@@ -97,6 +97,7 @@ k_shutdown(void)
 		close_window(NOLOCKING, root_window);
 		delete_window(NOLOCKING, root_window);
 		root_window = NULL;
+		S.open_windows.root = NULL;
 	}
 	BLOG((false, "shutting down aes thread .."));
 // 	display("waitfor tp");

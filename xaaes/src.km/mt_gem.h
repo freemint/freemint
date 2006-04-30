@@ -539,18 +539,19 @@ typedef  struct
 #define WF_CALCU2F		45
 #define WF_MAXWORKXYWH		46
 
-#define WF_M_BACKDROP	100      /* KAOS 1.4    */
+#define WF_M_BACKDROP		100      /* KAOS 1.4    */
 #define WF_M_OWNER		101      /* KAOS 1.4    */
-#define WF_M_WINDLIST	102      /* KAOS 1.4    */
+#define WF_M_WINDLIST		102      /* KAOS 1.4    */
 #define WF_MINXYWH		103      /* MagiC 6     */
 #define WF_INFOXYWH		104      /* MagiC 6.10  */
 #define WF_WIDGETS		200		 /* NAES */
+#define WF_TOPMOST		232	/* XaAES, MyAES */
 #define WF_WINX			22360
 #define WF_WINXCFG		22361
-#define WF_SHADE	    22365      /* WINX 2.3 */
+#define WF_SHADE		22365      /* WINX 2.3 */
 #define WF_STACK		22366      /* WINX 2.3 */
 #define WF_TOPALL		22367      /* WINX 2.3 */
-#define WF_BOTTOMALL	22368	   /* WINX 2.3 */
+#define WF_BOTTOMALL		22368	   /* WINX 2.3 */
 #define WF_XAAES		0x5841	   /* XaAES: 'XA' */
 
 /* wind_set(WF_BEVENT) */

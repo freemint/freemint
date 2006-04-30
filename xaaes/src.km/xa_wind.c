@@ -1126,6 +1126,53 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		break;
 	}
+	case WF_TOPMOST:
+	{
+		if (w)
+		{
+			switch (pb->intin[2])
+			{
+				case 0:
+				{
+					if ((w->window_status & (XAWS_FLOAT|XAWS_BINDFOCUS)))
+					{
+						w->window_status &= ~(XAWS_FLOAT|XAWS_SINK|XAWS_BINDFOCUS|XAWS_NOFOCUS);
+						if (w->window_status & XAWS_OPEN)
+							top_window(lock, true, true, w, (void *)-1L);
+					}
+					break;
+				}
+				case 1:
+				{
+					if (!(w->window_status & XAWS_FLOAT))
+					{
+						w->window_status &= ~(XAWS_SINK|XAWS_BINDFOCUS);
+						w->window_status |= (XAWS_FLOAT | XAWS_NOFOCUS);
+						if (w->window_status & XAWS_OPEN)
+							top_window(lock, true, false, w, (void *)-1L);
+					}
+					break;
+				}
+				case 2:
+				{
+					if (!(w->window_status & (XAWS_FLOAT|XAWS_BINDFOCUS)))
+					{
+						w->window_status &= ~XAWS_SINK;
+						w->window_status |= (XAWS_FLOAT | XAWS_BINDFOCUS | XAWS_NOFOCUS);
+						if (w->window_status & XAWS_OPEN)
+						{
+							if (get_app_infront() == client)
+								top_window(lock, true, false, w, (void *)-1L);
+							else
+								hide_toolboxwindows(client);
+						}
+					}
+					break;
+				}
+				default:;
+			}
+		}
+	}
 
 	}
 	return XAC_DONE;
@@ -1490,7 +1537,7 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 	{
 		w = S.focus;
 		if (!w)
-			w = TOP_WINDOW/*window_list*/;
+			w = TOP_WINDOW;
 
 		o[1] = o[2] = 0;
 		o[3] = o[4] = -1;

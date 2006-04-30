@@ -169,6 +169,11 @@ free_icon_pos(enum locks lock, struct xa_window *ignore)
 					break;
 			}
 			w = w->next;
+			if (w == root_window)
+			{
+				w = NULL;
+				break;
+			}
 		}
 		if (!w)
 			/* position not in list of iconified windows, so it is free. */
@@ -185,29 +190,6 @@ move_ctxdep_widgets(struct xa_window *wind)
 	if (wind->active_widgets & XaMENU)
 		rp_2_ap_cs(wind, get_widget(wind, XAW_MENU), NULL);
 }
-
-#if 0
-/*
- * Check if a new menu and/or desktop is needed
- */
-static void
-check_menu_desktop(enum locks lock, struct xa_window *old_top, struct xa_window *new_top)
-{
-	/* If we're getting a new top window, we may need to swap menu bars... */
-	if (old_top && (old_top == root_window || old_top->owner != new_top->owner || !is_infront(new_top->owner)))
-	{
-		Sema_Up(desk);
-
-		DIAG((D_appl, NULL, "check_menu_desktop from %s to %s",
-			old_top->owner->name, new_top->owner->name));
-
-		set_active_client(lock, new_top->owner);
-		swap_menu(lock|desk, new_top->owner, NULL, SWAPM_DESK | SWAPM_TOPW); //true, true, 2);
-
-		Sema_Dn(desk);
-	}
-}
-#endif
 
 XA_WIND_ATTR
 hide_move(struct options *o)
@@ -344,11 +326,23 @@ wi_put_first(struct win_base *b, struct xa_window *w)
 
 /* This a special version of put last; it puts w just befor last. */
 static void
-wi_put_blast(struct win_base *b, struct xa_window *w, bool top)
+wi_put_blast(struct win_base *b, struct xa_window *w, bool top, bool belowroot)
 {
 	struct xa_window **wind;
 
 	wind = &b->last;
+
+	if (belowroot)
+	{
+		wind = &b->last;
+		(*wind)->next = w;
+		w->next = NULL;
+		w->prev = *wind;
+		*wind = w;
+		return;
+	}
+
+	wind = b->root ? &(b->root->prev) : &b->last;
 
 	while (*wind)
 	{
@@ -393,7 +387,7 @@ wi_move_first(struct win_base *b, struct xa_window *w)
 	if (!(w->window_status & XAWS_SINK))
 		wi_put_first(b, w);
 	else
-		wi_put_blast(b, w, true);
+		wi_put_blast(b, w, true, false);
 }
 
 void
@@ -403,7 +397,13 @@ wi_move_blast(struct win_base *b, struct xa_window *w)
 	if ((w->window_status & XAWS_FLOAT))
 		wi_put_first(b, w);
 	else
-		wi_put_blast(b, w, false);
+		wi_put_blast(b, w, false, false);
+}
+void
+wi_move_belowroot(struct win_base *b, struct xa_window *w)
+{
+	wi_remove(b, w, false);
+	wi_put_blast(b, w, false, true);
 }
 /*
  * XXX - Ozk:
@@ -451,6 +451,68 @@ unhide_window(enum locks lock, struct xa_window *wind, bool check)
 		if (any_hidden(lock, wind->owner, wind))
 			set_unhidden(lock, wind->owner);
 	}
+}
+
+void
+hide_toolboxwindows(struct xa_client *client)
+{
+	struct xa_window *wind = window_list, *nxt;
+
+	while (wind && wind != root_window)
+	{
+		nxt = wind->next;
+		if (wind->owner == client && (wind->window_status & XAWS_BINDFOCUS))
+		{
+			struct xa_window *wl = wind->next;
+			wi_move_belowroot(&S.open_windows, wind);
+			wind->window_status |= XAWS_BELOWROOT;
+			clear_wind_rectlist(wind);
+			update_windows_below(0, &wind->r, NULL, wl, NULL);
+		}
+		wind = nxt;
+	}
+	set_winmouse(-1, -1);
+}
+
+void
+show_toolboxwindows(struct xa_client *client)
+{
+	struct xa_window *wind = root_window->next, *nxt;
+	RECT clip;
+
+	while (wind)
+	{
+		nxt = wind->next;
+		if (wind->owner == client && (wind->window_status & XAWS_BELOWROOT))
+		{
+			wi_move_first(&S.open_windows, wind);
+			wind->window_status &= ~XAWS_BELOWROOT;
+			wind->window_status |= XAWS_SEMA;	
+		}
+		wind = nxt;
+	}
+
+	wind = window_list;
+	while (wind && wind != root_window)
+	{
+		if (wind->window_status & XAWS_SEMA)
+		{
+			struct xa_rect_list *rl;
+			
+			wind->window_status &= ~XAWS_SEMA;
+			make_rect_list(wind, true, RECT_SYS);
+			rl = wind->rect_list.start;
+			while (rl)
+			{
+				if (xa_rect_clip(&wind->r, &rl->r, &clip))
+					generate_redraws(0, wind, &clip, RDRW_ALL);
+				rl = rl->next;
+			}
+			update_windows_below(0, &wind->r, NULL, wind->next, NULL);
+		}
+		wind = wind->next;
+	}
+	set_winmouse(-1, -1);
 }
 
 /*
@@ -538,7 +600,7 @@ get_window_info(struct xa_window *wind, char *dst)
 void
 send_ontop(enum locks lock)
 {
-	struct xa_window *top = TOP_WINDOW/*window_list*/;
+	struct xa_window *top = TOP_WINDOW;
 	struct xa_client *client = top->owner;
 
 	if (!client->fmd.wind)
@@ -668,14 +730,10 @@ setwin_untopped(enum locks lock, struct xa_window *wind, bool snd_untopped)
 void
 setwin_ontop(enum locks lock, struct xa_window *wind, bool snd_ontop)
 {
-// 	struct xa_window *top = TOP_WINDOW/*window_list*/;
 	struct xa_client *client = wind->owner;
 
 	if (!client->fmd.wind || (wind == client->fmd.wind))
 	{
-// 		if (S.focus == snd_ontop)
-// 			top->colours = top->ontop_cols;
-		
 		if (wind != root_window && snd_ontop && wind->send_message)
 			wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 					  WM_ONTOP, 0, 0, wind->handle,
@@ -1126,6 +1184,7 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 {
 	struct xa_window *wl = window_list;
 	RECT clip, our_win;
+	bool ignorefocus = false;
 
 	DIAG((D_wind, wind->owner, "open_window %d for %s to %d/%d,%d/%d status %x",
 		wind->handle, c_owner(wind->owner), r.x,r.y,r.w,r.h, wind->window_status));
@@ -1195,6 +1254,9 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 						wl = window_list;
 					else
 						wl = wl->next;
+					
+					if (wl == root_window)
+						break;
 				}
 			}
 			
@@ -1208,7 +1270,16 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 	}
 
 	wi_remove(&S.closed_windows, wind, false);
-	wi_put_first(&S.open_windows, wind);
+	if (wind != root_window && wind->window_status & XAWS_BINDFOCUS)
+	{
+		ignorefocus = true;
+		if (get_app_infront() == wind->owner)
+			wi_put_first(&S.open_windows, wind);
+		else
+			wi_put_first(&S.hidden_windows, wind);
+	}
+	else
+		wi_put_first(&S.open_windows, wind);
 
 	/* New top window - change the cursor to this client's choice */
 	graf_mouse(wind->owner->mouse, wind->owner->mouse_form, wind->owner, false);
@@ -1247,8 +1318,7 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 
 	calc_work_area(wind);
 
-// 	check_menu_desktop(lock|winlist, wl, wind);
-	if (wl && (wl == root_window || wl->owner != wind->owner || !is_infront(wind->owner)))
+	if (!ignorefocus && wl && (wl == root_window || wl->owner != wind->owner || !is_infront(wind->owner)))
 	{
 		DIAG((D_appl, NULL, "open_window: Change infront app from %s to %s",
 			wl->owner->name, wind->owner->name));
@@ -1288,6 +1358,8 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 			if (xa_rc_intersect(our_win, &clip))
 				make_rect_list(wl, true, RECT_SYS);
 
+			if (wl == root_window)
+				break;
 			wl = wl->next;
 		}
 
@@ -1436,11 +1508,15 @@ find_window(enum locks lock, short x, short y, short flags)
 	if (flags & FNDW_NORMAL)
 	{
 		w = window_list;
-		while(w)
+		while (w)
 		{
 			if (!(w->owner->status & CS_EXITING) && m_inside(x, y, &w->r))
 				break;
-
+			if (w == root_window)
+			{
+				w = NULL;
+				break;
+			}
 			w = w->next;
 		}
 	}
@@ -1476,26 +1552,6 @@ get_wind_by_handle(enum locks lock, short h)
 
 	return w;
 }
-#if 0
-/*
- * Handle windows after topping
- */
-void
-after_top(enum locks lock, bool untop)
-{
-	struct xa_window *below;
-
-	below = window_list->next;
-
-	/* Refresh the previous top window as being 'non-topped' */
-	if (below && below != root_window)
-	{
-		setwin_untopped(lock, below, untop);
-		//below->colours = below->untop_cols;
-		send_iredraw(lock, below, 0, NULL);
-	}
-}
-#endif
 /*
  * Pull this window to the head of the window list
  */
@@ -1524,7 +1580,10 @@ pull_wind_to_top(enum locks lock, struct xa_window *w)
 		{
 			if (wl == w)
 			{
-				wl = above;
+				if (w->window_status & XAWS_BELOWROOT)
+					wl = root_window;
+				else
+					wl = above;
 				while (wl && wl != w)
 				{
 					clip = wl->r;
@@ -1710,7 +1769,7 @@ close_window(enum locks lock, struct xa_window *wind)
 	struct xa_window *wl, *w = NULL;
 	struct xa_client *client = wind->owner;
 	RECT r;
-	bool is_top;
+	bool is_top, ignorefocus = false;
 // 	bool d = (!strnicmp(client->proc_name, "mintsett", 8)) ? true : false;
 
 	if (wind == NULL)
@@ -1773,7 +1832,8 @@ close_window(enum locks lock, struct xa_window *wind)
 	}
 
 	is_top = is_topped(wind);
-	
+	ignorefocus = (wind->window_status & XAWS_NOFOCUS) ? true : false;
+
 // 	if (d) display("is_top = %d", is_top);
 
 	wl = wind->next;
@@ -1788,91 +1848,90 @@ close_window(enum locks lock, struct xa_window *wind)
 	/* Tag window as closed */
 	wind->window_status &= ~(XAWS_OPEN);
 
-	if (!wl)
-		wl = window_list;
-
-	update_windows_below(lock, &r, NULL, wl, NULL);
-	
-	if (is_top)
+	if (!(wind->window_status & XAWS_BELOWROOT))
 	{
-		if (wind->active_widgets & STORE_BACK)
-		{
-			(*xa_vdiapi->form_restore)(0, wind->r, &(wind->background));
-			return true;
-		}
+		if (!wl)
+			wl = window_list;
 
-		w = window_list;
-
-		while (w && w != root_window)
+		update_windows_below(lock, &r, NULL, wl, NULL);
+	
+		if (is_top)
 		{
-			if (w->owner == client && !(w->window_status & (XAWS_ICONIFIED|XAWS_HIDDEN|XAWS_NOFOCUS)))
+			if (wind->active_widgets & STORE_BACK)
 			{
-				if (w != TOP_WINDOW)
-					top_window(lock|winlist, true, true, w, NULL);
-				else
-				{
-					setnew_focus(w, NULL, true, true, true);
-// 					setwin_ontop(lock, true);
-// 					send_iredraw(lock, w, 0, NULL);
-					set_and_update_window(w, true, true, NULL);
-				}
-				wl = w->next;
-				break;
+				(*xa_vdiapi->form_restore)(0, wind->r, &(wind->background));
+				return true;
 			}
-			w = w->next;
+
+			w = window_list;
+
+			while (w && w != root_window)
+			{
+				if (w->owner == client && !(w->window_status & (XAWS_ICONIFIED|XAWS_HIDDEN|XAWS_NOFOCUS)))
+				{
+					if (w != TOP_WINDOW)
+						top_window(lock|winlist, true, true, w, NULL);
+					else
+					{
+						setnew_focus(w, NULL, true, true, true);
+// 						setwin_ontop(lock, true);
+// 						send_iredraw(lock, w, 0, NULL);
+						set_and_update_window(w, true, true, NULL);
+					}
+					wl = w->next;
+					break;
+				}
+				w = w->next;
+			}
+
+			if (w && (w == root_window || (w->owner->status & CS_EXITING)))
+				w = NULL;
 		}
-
-		if (w && (w == root_window || (w->owner->status & CS_EXITING)))
-			w = NULL;
-	}
-
-	/* Redisplay any windows below the one we just have closed
-	 * or just have topped
-	 */
-// 	update_windows_below(lock, &r, NULL, wl, NULL);
 
 // 	if (d) display("clwtna %d, w %lx, top_own %s", client->options.clwtna, w, window_list ? window_list->owner->name : "Noontop");
 
-	if (TOP_WINDOW/*window_list*/ && is_top && !w)
-	{
-		switch (client->options.clwtna)
+		if (!ignorefocus && TOP_WINDOW && is_top && !w)
 		{
-			case 0:		/* Keep active client ontop */
+			switch (client->options.clwtna)
 			{
-				break;
-			}
-			default:
-			case 1:	/* Top app who owns window below closed one */
-			{
-				w = TOP_WINDOW/*window_list*/;
-				while (w)
+				case 0:		/* Keep active client ontop */
 				{
-					if (!(w->window_status & (XAWS_ICONIFIED|XAWS_HIDDEN|XAWS_NOFOCUS)) && !(w->owner->status & CS_EXITING))
-						break;
-					w = w->next;
+					break;
 				}
-				if (w && w != root_window)
+				default:
+				case 1:	/* Top app who owns window below closed one */
 				{
-// 					if (d) display("topping win for %s", w->owner->name);
-					top_window(lock, true, true, w, NULL);
+					if ((w = TOP_WINDOW))
+					{
+						do
+						{
+							if (!(w->window_status & (XAWS_ICONIFIED|XAWS_HIDDEN|XAWS_NOFOCUS)) && !(w->owner->status & CS_EXITING))
+								break;
+						} while (w != root_window && (w = w->next));
+					}
+					if (w && w != root_window)
+					{
+// 						if (d) display("topping win for %s", w->owner->name);
+						top_window(lock, true, true, w, NULL);
+					}
+					else if (w == root_window)
+					{
+// 						if (d) display("topping desktop! %s", desktop_owner()->name);
+						app_in_front(lock, desktop_owner(), true, true, true);
+					}
+					else
+					{
+// 						if (d) display("clwtna 1 last resort - top prev app");
+						app_in_front(lock, previous_client(lock, 1), true, true, false);
+					}
+					break;
 				}
-				else if (w == root_window)
+				case 2: /* Top the client previously topped */
 				{
-// 					if (d) display("topping desktop! %s", desktop_owner()->name);
-					app_in_front(lock, desktop_owner(), true, true, true);
-				}
-				else
-				{
-// 					if (d) display("clwtna 1 last resort - top prev app");
+// 					if (d) display("topping prev client %s", previous_client(lock, 1)->name);
 					app_in_front(lock, previous_client(lock, 1), true, true, false);
+					break;
 				}
-				break;
-			}
-			case 2: /* Top the client previously topped */
-			{
-// 				if (d) display("topping prev client %s", previous_client(lock, 1)->name);
-				app_in_front(lock, previous_client(lock, 1), true, true, false);
-				break;
 			}
 		}
 	}
@@ -2110,6 +2169,7 @@ update_all_windows(enum locks lock, struct xa_window *wl)
 		wl = wl->next;
 	}
 }
+
 /*
  * Display a window that isn't on top, respecting clipping
  * - Pass clip == NULL to redraw whole window, otherwise clip is a pointer to a GRECT that
@@ -2121,7 +2181,9 @@ update_windows_below(enum locks lock, const RECT *old, RECT *new, struct xa_wind
 	RECT clip;
 	enum locks wlock = lock | winlist;
 
-	while (wl)
+	if (!wl)
+		return;
+	do
 	{
 		if (wend && wend == wl)
 			break;
@@ -2157,12 +2219,8 @@ update_windows_below(enum locks lock, const RECT *old, RECT *new, struct xa_wind
 					make_rect_list(wl, true, RECT_SYS);
 				}
 			}
-		}
-		if (!wl->next && wl->nolist)
-			wl = window_list;
-		else
-			wl = wl->next;
-	}
+		}		
+	} while (wl != root_window && (wl = ((!wl->next && wl->nolist) ? window_list : wl->next)));
 }
 
 /*
