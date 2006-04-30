@@ -1640,6 +1640,8 @@ enum window_status
 	XAWS_STICKYFOCUS = 0x0100,
 	XAWS_FLOAT	= 0x0200,
 	XAWS_SINK	= 0x0400,
+	XAWS_BINDFOCUS	= 0x0800,
+	XAWS_BELOWROOT	= 0x1000,
 	XAWS_SEMA	= 0x8000,
 };
 typedef enum window_status WINDOW_STATUS;

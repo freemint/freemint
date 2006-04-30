@@ -1051,7 +1051,7 @@ wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms 
 					ev->mwhich &= ~MU_MESAG;
 			}
 
-			top = TOP_WINDOW/*window_list*/;
+			top = TOP_WINDOW;
 
 			if (ev->mwhich & MU_BUTTON)
 				cpy_ev2md(ev, &md);

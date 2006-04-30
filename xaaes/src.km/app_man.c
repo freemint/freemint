@@ -80,7 +80,7 @@ struct xa_client *
 reset_focus(struct xa_window **new_focus, short flags)
 {
 	struct xa_client *client = NULL;
-	struct xa_window *top = TOP_WINDOW/*window_list*/, *fw = NULL;
+	struct xa_window *top = TOP_WINDOW, *fw = NULL;
 	
 	if (S.focus && (S.focus->window_status & XAWS_STICKYFOCUS))
 		fw = S.focus;
@@ -116,8 +116,15 @@ reset_focus(struct xa_window **new_focus, short flags)
 			fw = window_list;
 			while (fw)
 			{
-				if ( (fw == root_window ? get_desktop()->owner : fw->owner) == topcl && !(fw->window_status & XAWS_NOFOCUS))
+				if (fw == root_window)
+				{
+					if (get_desktop()->owner != topcl)
+						fw = NULL;
 					break;
+				}
+				else if (fw->owner == topcl && !(fw->window_status & XAWS_NOFOCUS))
+					break;
+
 				fw = fw->next;
 			}
 			if (!fw)
@@ -127,6 +134,11 @@ reset_focus(struct xa_window **new_focus, short flags)
 				{
 					if (!(fw->window_status & XAWS_NOFOCUS))
 						break;
+					if (fw == root_window)
+					{
+						fw = NULL;
+						break;
+					}
 					fw = fw->next;
 				}
 			}
@@ -667,7 +679,9 @@ repos_iconified(struct proc *p, long arg)
 						cw = w;
 						cw->window_status |= XAWS_SEMA;
 					}
-				}				
+				}
+				if (w == root_window)
+					break;				
 				w = w->next;
 			}
 
@@ -877,7 +891,7 @@ get_topwind(enum locks lock, struct xa_client *client, struct xa_window *startw,
 	}
 	return w;
 }
-	
+
 struct xa_window *
 next_wind(enum locks lock)
 {
@@ -1105,6 +1119,8 @@ set_active_client(enum locks lock, struct xa_client *client)
 {
 	if (client != APP_LIST_START)
 	{
+		hide_toolboxwindows(APP_LIST_START);
+		show_toolboxwindows(client);
 		APP_LIST_REMOVE(client);
 		APP_LIST_INSERT_START(client);
 	}
