@@ -1,0 +1,16 @@
+aranym.xfs
+==========
+
+This .XFS implements the u:/host mountpoint which provides the
+m68k <-> host OS communication interface. This, in ARAnyM, is
+implemented using NatFeat interface and therefore more emulators
+could provide the same functionality if requested/implemented.
+
+At this moment all it does is that it creates the u:\host\clipbrd
+folder which serves as a GEM clipbrd location. Using this one
+can perform cut/copy/paste operations which directly use the
+host OS clipboard (using the "CLIPBRD" NatFeat).
+
+
+Standa Opichal <opichals@seznam.cz> 
+

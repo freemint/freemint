@@ -1,0 +1,17 @@
+# This file gets included by the Makefile in this directory to determine
+# the files that should go only into source distributions.
+
+HEADER = \
+	global.h \
+	aranym_fsdev.h \
+	nfclip_nfapi.h \
+	nfclip_dev.h
+
+COBJS = \
+	aranym_fsdev.c \
+	nfclip_dev.c
+
+CMODOBJS = \
+	main.c
+
+SRCFILES = $(HEADER) $(COBJS) $(CMODOBJS)
