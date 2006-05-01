@@ -751,6 +751,8 @@ __free_data (COOKIE *c)
 		kfree (c->data.data.small, c->data.data.small_size);
 		c->data.data.small = NULL;
 	}
+
+	c->stat.size = 0;
 }
 
 INLINE long
@@ -2051,7 +2053,6 @@ ram_open (FILEPTR *f)
 	if ((f->flags & O_TRUNC) && c->stat.size)
 	{
 		__free_data (c);
-		c->stat.size = 0;
 	}
 
 	if ((f->flags & O_RWMODE) == O_EXEC)
