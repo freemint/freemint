@@ -181,7 +181,6 @@ free_icon_pos(enum locks lock, struct xa_window *ignore)
 	}
 	return ic;
 }
-
 static void
 move_ctxdep_widgets(struct xa_window *wind)
 {		
@@ -826,13 +825,15 @@ iconify_window(enum locks lock, struct xa_window *wind, RECT *r)
 	if ((r->w == -1 && r->h == -1) || (!r->w && !r->h))
 		*r = free_icon_pos(lock, NULL);
 	move_window(lock, wind, true, XAWS_ICONIFIED, r->x, r->y, r->w, r->h);
+	wind->window_status &= ~XAWS_CHGICONIF;
 }
 
 void
 uniconify_window(enum locks lock, struct xa_window *wind, RECT *r)
 {
 	move_window(lock, wind, true, ~XAWS_ICONIFIED, r->x, r->y, r->w, r->h);
-	set_reiconify_timeout( lock);
+	wind->window_status &= ~XAWS_CHGICONIF;
+	set_reiconify_timeout(lock);
 }
 
 XA_WIND_ATTR
@@ -1433,7 +1434,7 @@ draw_window(enum locks lock, struct xa_window *wind, const RECT *clip)
 	
 	{
 		int f;
-		short status = wind->window_status;
+		WINDOW_STATUS status = wind->window_status;
 		XA_WIDGET *widg;
 		RECT r;
 
@@ -1644,7 +1645,7 @@ send_wind_to_bottom(enum locks lock, struct xa_window *w)
  * Change an open window's coordinates, updating rectangle lists as appropriate
  */
 void
-move_window(enum locks lock, struct xa_window *wind, bool blit, short newstate, short X, short Y, short W, short H)
+move_window(enum locks lock, struct xa_window *wind, bool blit, WINDOW_STATUS newstate, short X, short Y, short W, short H)
 {
 	IFDIAG(struct xa_client *client = wind->owner;)
 	RECT old, new;
@@ -1665,10 +1666,10 @@ move_window(enum locks lock, struct xa_window *wind, bool blit, short newstate, 
 	if (!wind->nolist && C.redraws)
 		yield();
 
-	if (newstate != -1)
+	if (newstate != -1L)
 	{
 		blit = false;
-		if (newstate < -1)
+		if (newstate & XAWS_SEMA)
 		{
 			if (!(newstate & XAWS_ICONIFIED))
 			{
