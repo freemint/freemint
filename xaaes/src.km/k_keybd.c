@@ -193,7 +193,7 @@ XA_keyboard_event(enum locks lock, const struct rawkey *key)
 	
 	if (!(client = find_focus(true, &waiting, &locked_client, &keywind)))
 	{
-		display("no focus?!");
+// 		display("no focus?!");
 		return;
 	}
 
@@ -379,6 +379,7 @@ kernel_key(enum locks lock, struct rawkey *key)
 		}
 #endif
 #endif
+#if 0
 		case 'F':
 		{
 			struct xa_window *wind;
@@ -412,6 +413,7 @@ kernel_key(enum locks lock, struct rawkey *key)
 			}
 			return true;
 		}
+#endif
 		case 'R':				/* attempt to recover a hung system */
 		{
 			if (key->raw.conin.state & (K_RSHIFT|K_LSHIFT))

@@ -1186,7 +1186,8 @@ drag_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, cons
 static void
 shade_action(enum locks lock, struct xa_window *wind)
 {
-
+	if (wind->active_widgets & (MOVER|NAME))
+	{
 	if (!(wind->window_status & XAWS_ZWSHADED))
 	{
 		if ((wind->window_status & XAWS_SHADED))
@@ -1214,6 +1215,7 @@ shade_action(enum locks lock, struct xa_window *wind)
 					WM_SHADED, 0, 0, wind->handle, 0,0,0,0);
 			}
 		}
+	}
 	}
 }
 /*
@@ -1421,13 +1423,13 @@ iconify_action(enum locks lock, struct xa_window *wind, const struct moose_data 
 		{
 			/* Window is already iconified - send request to restore it */
 			r = wind->ro;
-			
+
 			msg = WM_UNICONIFY;
+			wind->window_status |= XAWS_CHGICONIF;
 		}
 		else
 		{
 			/* Window is open - send request to iconify it */
-
 			r = free_icon_pos(lock|winlist, NULL);
 
 			/* Could the whole screen be covered by iconified
@@ -1441,6 +1443,7 @@ iconify_action(enum locks lock, struct xa_window *wind, const struct moose_data 
 			if (wind->opts & XAWO_WCOWORK)
 				r = f2w(msg == WM_UNICONIFY ? &wind->save_delta : &wind->delta, &r, true);
 
+			wind->t = r;
 			wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 				   msg, 0, 0, wind->handle,
 				   r.x, r.y, r.w, r.h);
@@ -1458,47 +1461,6 @@ click_iconify(enum locks lock, struct xa_window *wind, struct xa_widget *widg, c
 	DIAGS(("click_iconify:"));
 	iconify_action(lock, wind, md);
 	return true;
-#if 0	
-	if (!wind->send_message)
-		return false;
-
-	if ((wind->window_status & XAWS_OPEN))
-	{
-		short msg = -1;
-		RECT r;
-
-		if (is_iconified(wind))
-		{
-			/* Window is already iconified - send request to restore it */
-			r = wind->ro;
-			
-			msg = WM_UNICONIFY;
-		}
-		else
-		{
-			/* Window is open - send request to iconify it */
-
-			r = free_icon_pos(lock|winlist, NULL);
-
-			/* Could the whole screen be covered by iconified
-			 * windows? That would be an achievement, wont it?
-			 */
-			if (r.y >= root_window->wa.y)
-				msg = (md->kstate & K_CTRL) ? WM_ALLICONIFY : WM_ICONIFY;
-		}
-		if (msg != -1)
-		{
-			if (wind->opts & XAWO_WCOWORK)
-				r = f2w(msg == WM_UNICONIFY ? &wind->save_delta : &wind->delta, &r, true);
-
-			wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
-				   msg, 0, 0, wind->handle,
-				   r.x, r.y, r.w, r.h);
-		}
-	}
-	/* Redisplay.... */
-	return true;
-#endif
 }
 
 /*======================================================
@@ -1715,10 +1677,17 @@ drag_border(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 #define WCTXT_BOTTOM	6
 #define WCTXT_CLOSE	7
 #define WCTXT_HIDE	8
-#define WCTXT_ICONIFY	9
-#define WCTXT_SHADE	10
-#define WCTXT_QUIT	11
-#define WCTXT_KILL	12
+#define WCTXT_HIDEAPP	9
+#define WCTXT_HIDEOTH	10
+#define WCTXT_UNHIDEOTH	11
+#define WCTXT_ICONIFY	12
+#define WCTXT_ICONIFYALL 13
+#define WCTXT_UNICONIFYALL 14
+#define WCTXT_SHADE	15
+#define WCTXT_SHADEALL	16
+#define WCTXT_UNSHADEALL 17
+#define WCTXT_QUIT	18
+#define WCTXT_KILL	19
 
 static char *wctxt_popup_text[] =
 {
@@ -1729,9 +1698,16 @@ static char *wctxt_popup_text[] =
 	"Send to top",
 	"Send to bottom",
 	"Close",
-	"Hide",
+	"Hide window",
+	"Hide owner",
+	"Hide others",
+	"Unhide others",
 	"Iconify",
-	"Shade",
+	"Iconify all",
+	"Uniconify all",
+	"Shade window",
+	"Shade all",
+	"Unshade all",
 	"Quit",
 	"Kill",
 	"\0"
@@ -1952,14 +1928,81 @@ CE_winctxt(enum locks lock, struct c_event *ce, bool cancel)
 								hide_window(0, wind);
 							break;
 						}
+						case WCTXT_HIDEAPP:
+						{
+							hide_app(0, wind->owner);
+							break;
+						}
+						case WCTXT_HIDEOTH:
+						{
+							hide_other(0, wind->owner);
+							break;
+						}
+						case WCTXT_UNHIDEOTH:
+						{
+							unhide_all(0, wind->owner);
+							break;
+						}
 						case WCTXT_ICONIFY: /* Iconify window */
 						{
 							iconify_action(0, wind, NULL);
 							break;
 						}
+						case WCTXT_ICONIFYALL:
+						case WCTXT_UNICONIFYALL:
+						{
+							struct xa_client *cl = wind->owner;
+							struct xa_window *nxt;
+							
+							wind = window_list;
+							while (wind && wind != root_window)
+							{
+								nxt = wind->next;
+								if (obnum == WCTXT_ICONIFYALL)
+								{
+									if (wind->owner == cl && !is_iconified(wind))
+// 									{	display("iconify %d", wind->handle);
+										iconify_action(0, wind, NULL);
+										wind->window_status |= XAWS_ICONIFIED|XAWS_SEMA;
+									}
+								}
+								else
+								{
+									if (wind->owner == cl && is_iconified(wind))
+										iconify_action(0, wind, NULL);
+								}
+								wind = nxt;
+							}
+							wind = window_list;
+							while (wind && wind != root_window)
+							{
+								if (wind->owner == cl && (wind->window_status & XAWS_SEMA))
+									wind->window_status &= ~(XAWS_ICONIFIED|XAWS_SEMA);
+								wind = wind->next;
+							}
+// 							display("done iconify all");
+							break;
+						}
 						case WCTXT_SHADE: /* Shade window */
 						{
 							post_cevent(wind->owner, CE_shade_action, wind,NULL, 0,0, NULL,&ce->md);
+							break;
+						}
+						case WCTXT_SHADEALL:
+						case WCTXT_UNSHADEALL:
+						{
+							struct xa_client *owner = wind->owner;
+							wind = window_list;
+							while (wind)
+							{
+								if (wind->owner == owner)
+								{
+									if ( (obnum == WCTXT_SHADEALL && !(wind->window_status & XAWS_SHADED)) ||
+									   ( (obnum == WCTXT_UNSHADEALL && (wind->window_status & XAWS_SHADED))))
+										post_cevent(owner, CE_shade_action, wind,NULL, 0,0, NULL, &ce->md);
+								}
+								wind = wind->next;
+							}
 							break;
 						}
 						case WCTXT_QUIT: /* Quit */
@@ -4248,7 +4291,7 @@ short
 wind_mshape(struct xa_window *wind, short x, short y)
 {
 	short shape = -1;
-	short status = wind->window_status;
+	WINDOW_STATUS status = wind->window_status;
 	struct xa_client *wo = wind == root_window ? get_desktop()->owner : wind->owner;
 	XA_WIDGET *widg;
 	RECT r;

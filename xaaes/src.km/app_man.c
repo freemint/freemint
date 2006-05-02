@@ -339,12 +339,14 @@ find_focus(bool withlocks, bool *waiting, struct xa_client **locked_client, stru
 		}
 		else if (c == C.Aes)
 			client = c;
+	#if 0
 		else
 		{
 			client = menu_owner();
 			if (client->blocktype != XABT_NONE && waiting)
 				*waiting = true;
 		}
+	#endif
 	}
 
 	DIAGS(("find_focus: focus = %s, infront = %s", client->name, APP_LIST_START->name));
@@ -655,9 +657,9 @@ repos_iconified(struct proc *p, long arg)
 			cx = 32000;
 			cy = 32000;
 
-			while (w)
+			while (w && w != root_window)
 			{
-				if ((w->window_status & (XAWS_OPEN|XAWS_ICONIFIED|XAWS_HIDDEN)) == (XAWS_OPEN|XAWS_ICONIFIED))
+				if ((w->window_status & (XAWS_OPEN|XAWS_ICONIFIED|XAWS_HIDDEN|XAWS_CHGICONIF)) == (XAWS_OPEN|XAWS_ICONIFIED))
 				{
 					if (w->t.x == r.x && w->t.y == r.y && !(w->window_status & XAWS_SEMA))
 					{
@@ -680,8 +682,6 @@ repos_iconified(struct proc *p, long arg)
 						cw->window_status |= XAWS_SEMA;
 					}
 				}
-				if (w == root_window)
-					break;				
 				w = w->next;
 			}
 
@@ -693,7 +693,7 @@ repos_iconified(struct proc *p, long arg)
 				w->t = r;
 			}
 			
-			if (!cw && !w)
+			if (!cw && (!w || w == root_window))
 				break;
 		}
 		
@@ -712,9 +712,15 @@ repos_iconified(struct proc *p, long arg)
 void
 set_reiconify_timeout(enum locks lock)
 {
-	if (!rpi_to && cfg.icnfy_reorder_to)
+	if (rpi_to)
+	{
+		cancelroottimeout(rpi_to);
+		rpi_to = NULL;
+	}
+	if (cfg.icnfy_reorder_to)
 		rpi_to = addroottimeout(cfg.icnfy_reorder_to, repos_iconified, (long)lock);
 }
+
 void
 cancel_reiconify_timeout(void)
 {
@@ -865,7 +871,7 @@ any_window(enum locks lock, struct xa_client *client)
 }
 
 struct xa_window *
-get_topwind(enum locks lock, struct xa_client *client, struct xa_window *startw, bool not, short wsmsk, short wschk)
+get_topwind(enum locks lock, struct xa_client *client, struct xa_window *startw, bool not, WINDOW_STATUS wsmsk, WINDOW_STATUS wschk)
 {
 	struct xa_window *w = startw;
 
