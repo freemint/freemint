@@ -1961,7 +1961,8 @@ CE_winctxt(enum locks lock, struct c_event *ce, bool cancel)
 								if (obnum == WCTXT_ICONIFYALL)
 								{
 									if (wind->owner == cl && !is_iconified(wind))
-// 									{	display("iconify %d", wind->handle);
+									{
+// 										display("iconify %d", wind->handle);
 										iconify_action(0, wind, NULL);
 										wind->window_status |= XAWS_ICONIFIED|XAWS_SEMA;
 									}
