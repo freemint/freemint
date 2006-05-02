@@ -573,7 +573,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		RECT r;
 		RECT m;
 // 		short mx, my, mw, mh;
-		short status = -1, msg = -1;
+		WINDOW_STATUS status = -1L, msg = -1;
 
 		if (cmd == WF_PREVXYWH)
 		{
@@ -1061,7 +1061,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	}
 	case WF_SHADE:
 	{
-		short status = -1, msg = -1;
+		WINDOW_STATUS status = -1L, msg = -1;
 
 		if (pb->intin[2] == 1)
 		{
