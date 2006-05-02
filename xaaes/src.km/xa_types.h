@@ -60,6 +60,26 @@
 #define SCM_SAVE 2
 
 
+enum window_status
+{
+	XAWS_OPEN	 = 0x00000001L,
+	XAWS_ICONIFIED	 = 0x00000002L,
+	XAWS_CHGICONIF	 = 0x00000004L,
+	XAWS_SHADED	 = 0x00000008L,
+	XAWS_ZWSHADED	 = 0x00000010L,
+	XAWS_HIDDEN	 = 0x00000020L,
+	XAWS_FULLED	 = 0x00000040L,
+	XAWS_NODELETE	 = 0x00000080L,
+	XAWS_NOFOCUS	 = 0x00000100L,
+	XAWS_STICKYFOCUS = 0x00000200L,
+	XAWS_FLOAT	 = 0x00000400L,
+	XAWS_SINK	 = 0x00000800L,
+	XAWS_BINDFOCUS	 = 0x00001000L,
+	XAWS_BELOWROOT	 = 0x00002000L,
+	XAWS_SEMA	 = 0x80000000L,
+};
+typedef enum window_status WINDOW_STATUS;
+
 /* forward declarations */
 struct task_administration_block;
 struct widget_tree;
@@ -1469,7 +1489,7 @@ struct xa_module_object_render
 struct xa_widget_methods
 {
 	short		properties;
-	short		statusmask;
+	WINDOW_STATUS	statusmask;
 	
 	struct render_widget	r;
 
@@ -1626,25 +1646,6 @@ typedef void DrawWinElement(struct xa_window *wind);
 #define XAWO_WCOWORK	((long)WO0_WCOWORK << 16)
 
 #define XAWO_SUPPORTED	(XAWO_WHEEL|XAWO_FULLREDRAW|XAWO_NOBLITW|XAWO_NOBLITH|XAWO_SENDREPOS|XAWO_WCOWORK)
-
-enum window_status
-{
-	XAWS_OPEN	= 0x0001,
-	XAWS_ICONIFIED	= 0x0002,
-	XAWS_SHADED	= 0x0004,
-	XAWS_ZWSHADED	= 0x0008,
-	XAWS_HIDDEN	= 0x0010,
-	XAWS_FULLED	= 0x0020,
-	XAWS_NODELETE	= 0x0040,
-	XAWS_NOFOCUS	= 0x0080,
-	XAWS_STICKYFOCUS = 0x0100,
-	XAWS_FLOAT	= 0x0200,
-	XAWS_SINK	= 0x0400,
-	XAWS_BINDFOCUS	= 0x0800,
-	XAWS_BELOWROOT	= 0x1000,
-	XAWS_SEMA	= 0x8000,
-};
-typedef enum window_status WINDOW_STATUS;
 
 struct xa_wc_cache;
 struct xa_wc_cache
