@@ -452,6 +452,14 @@ unhide_window(enum locks lock, struct xa_window *wind, bool check)
 	}
 }
 
+static inline void
+movewind_belowroot(struct xa_window *wind)
+{
+	wi_move_belowroot(&S.open_windows, wind);
+	wind->window_status |= XAWS_BELOWROOT;
+	clear_wind_rectlist(wind);
+}
+
 void
 hide_toolboxwindows(struct xa_client *client)
 {
@@ -463,9 +471,10 @@ hide_toolboxwindows(struct xa_client *client)
 		if (wind->owner == client && (wind->window_status & XAWS_BINDFOCUS))
 		{
 			struct xa_window *wl = wind->next;
-			wi_move_belowroot(&S.open_windows, wind);
-			wind->window_status |= XAWS_BELOWROOT;
-			clear_wind_rectlist(wind);
+			movewind_belowroot(wind);
+// 			wi_move_belowroot(&S.open_windows, wind);
+// 			wind->window_status |= XAWS_BELOWROOT;
+// 			clear_wind_rectlist(wind);
 			update_windows_below(0, &wind->r, NULL, wl, NULL);
 		}
 		wind = nxt;
@@ -1271,13 +1280,12 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 	}
 
 	wi_remove(&S.closed_windows, wind, false);
-	if (wind != root_window && wind->window_status & XAWS_BINDFOCUS)
+	ignorefocus = (wind->window_status & XAWS_NOFOCUS) ? true : false;
+	
+	if (wind != root_window && (wind->window_status & XAWS_BINDFOCUS) && get_app_infront() != wind->owner)
 	{
-		ignorefocus = true;
-		if (get_app_infront() == wind->owner)
-			wi_put_first(&S.open_windows, wind);
-		else
-			wi_put_first(&S.hidden_windows, wind);
+		wi_put_blast(&S.open_windows, wind, false, true);
+		wind->window_status |= XAWS_BELOWROOT;
 	}
 	else
 		wi_put_first(&S.open_windows, wind);
@@ -1325,7 +1333,7 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 			wl->owner->name, wind->owner->name));
 
 		set_active_client(lock, wind->owner);
-		swap_menu(lock|desk, wind->owner, NULL, SWAPM_DESK | SWAPM_TOPW);
+		swap_menu(lock|desk, wind->owner, NULL, SWAPM_DESK); // | SWAPM_TOPW);
 	}
 
 	make_rect_list(wind, true, RECT_SYS);
@@ -1339,11 +1347,14 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 	/* Is this a 'preserve own background' window? */
 	if (wind->active_widgets & STORE_BACK)
 	{
-		(*xa_vdiapi->form_save)(0, wind->r, &(wind->background));
-		/* This is enough, it is only for TOOLBAR windows. */
-		generate_redraws(lock, wind, &wind->r, RDRW_ALL);
+		if (!(wind->window_status & XAWS_BELOWROOT))
+		{
+			(*xa_vdiapi->form_save)(0, wind->r, &(wind->background));
+			/* This is enough, it is only for TOOLBAR windows. */
+			generate_redraws(lock, wind, &wind->r, RDRW_ALL);
+		}
 	}
-	else
+	else if (!(wind->window_status & XAWS_BELOWROOT))
 	{
 		struct xa_rect_list *rl;
 
@@ -1364,8 +1375,7 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 			wl = wl->next;
 		}
 
-		if (!(wind->window_status & XAWS_NOFOCUS))
-			setnew_focus(wind, S.focus, true, true, false);
+		setnew_focus(wind, S.focus, true, true, false);
 
 		/* Display the window using clipping rectangles from the rectangle list */
 		rl = wind->rect_list.start;
@@ -1375,6 +1385,10 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 				generate_redraws(lock, wind, &clip/*&wind->r*/, RDRW_ALL);
 			rl = rl->next;
 		}
+	}
+	else
+	{
+		setnew_focus(wind, S.focus, true, true, false);
 	}
 
 	DIAG((D_wind, wind->owner, "open_window %d for %s exit with 1",
@@ -1871,7 +1885,7 @@ close_window(enum locks lock, struct xa_window *wind)
 				if (w->owner == client && !(w->window_status & (XAWS_ICONIFIED|XAWS_HIDDEN|XAWS_NOFOCUS)))
 				{
 					if (w != TOP_WINDOW)
-						top_window(lock|winlist, true, true, w, NULL);
+						top_window(lock|winlist, true, true, w);
 					else
 					{
 						setnew_focus(w, NULL, true, true, true);
@@ -1913,7 +1927,7 @@ close_window(enum locks lock, struct xa_window *wind)
 					if (w && w != root_window)
 					{
 // 						if (d) display("topping win for %s", w->owner->name);
-						top_window(lock, true, true, w, NULL);
+						top_window(lock, true, true, w);
 					}
 					else if (w == root_window)
 					{

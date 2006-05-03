@@ -161,13 +161,26 @@ setnew_focus(struct xa_window *wind, struct xa_window *unfocus, bool topowner, b
 	{
 		struct xa_client *owner;
 
-		if ((S.focus && (S.focus->window_status & XAWS_STICKYFOCUS)) ||
-		    (wind && (wind->window_status & XAWS_NOFOCUS))
-		   )
+		if ((S.focus && (S.focus->window_status & XAWS_STICKYFOCUS)))
 			return;
 		
 		if (wind)
-			owner = wind == root_window ? get_desktop()->owner : wind->owner;
+		{
+			if (!(wind->window_status & XAWS_OPEN))
+				return;
+			if ((wind->window_status & XAWS_NOFOCUS))
+			{
+				if (wind->colours != wind->untop_cols || S.focus == wind)
+				{
+					wind->colours = wind->untop_cols;
+					send_iredraw(0, wind, 0, NULL);
+					S.focus = NULL;
+				}
+				return;
+			}
+			else
+				owner = wind == root_window ? get_desktop()->owner : wind->owner;
+		}
 		else
 			owner = NULL;
 		

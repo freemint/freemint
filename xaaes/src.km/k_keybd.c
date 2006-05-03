@@ -379,41 +379,6 @@ kernel_key(enum locks lock, struct rawkey *key)
 		}
 #endif
 #endif
-#if 0
-		case 'F':
-		{
-			struct xa_window *wind;
-			short x, y;
-			
-			check_mouse(NULL, NULL, &x, &y);
-			wind = find_window(0, x, y, FNDW_NORMAL);
-			
-			if (wind && wind != root_window)
-			{
-				if (key->raw.conin.state & (K_LSHIFT))
-				{
-					display("set sink on %d", wind->handle);
-					wind->window_status &= ~XAWS_FLOAT;
-					wind->window_status |= XAWS_SINK;
-					bottom_window(0, true, true, wind);
-				}
-				else if (key->raw.conin.state & (K_RSHIFT))
-				{
-					display("clear float/sink on %d", wind->handle);
-					wind->window_status &= ~(XAWS_FLOAT|XAWS_SINK);
-					top_window(0, true, true, wind, (void *)-1L);
-				}
-				else
-				{
-					display("set float on %d", wind->handle);
-					wind->window_status &= ~XAWS_SINK;
-					wind->window_status |= XAWS_FLOAT;
-					top_window(0, true, true, wind, (void *)-1L);
-				}
-			}
-			return true;
-		}
-#endif
 		case 'R':				/* attempt to recover a hung system */
 		{
 			if (key->raw.conin.state & (K_RSHIFT|K_LSHIFT))
@@ -496,7 +461,7 @@ otm:
 			wind = next_wind(lock);
 			if (wind)
 			{
-				top_window(lock, true, true, wind, (void *)-1L);
+				top_window(lock, true, true, wind);
 			}
 			return true;
 		}	
