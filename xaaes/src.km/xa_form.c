@@ -841,7 +841,7 @@ XA_form_do(enum locks lock, struct xa_client *client, AESPB *pb)
 				if (!(wind->window_status & XAWS_OPEN))
 					open_window(lock, wind, wind->rc);
 				else if (!wind->nolist && !is_topped(wind))
-					top_window(lock, true, false, wind, (void *)-1L);
+					top_window(lock, true, false, wind);
 				else
 					display_window(lock, 4, wind, NULL);
 			}

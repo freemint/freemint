@@ -1676,18 +1676,19 @@ drag_border(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 #define WCTXT_TOP	5
 #define WCTXT_BOTTOM	6
 #define WCTXT_CLOSE	7
-#define WCTXT_HIDE	8
-#define WCTXT_HIDEAPP	9
-#define WCTXT_HIDEOTH	10
-#define WCTXT_UNHIDEOTH	11
-#define WCTXT_ICONIFY	12
-#define WCTXT_ICONIFYALL 13
-#define WCTXT_UNICONIFYALL 14
-#define WCTXT_SHADE	15
-#define WCTXT_SHADEALL	16
-#define WCTXT_UNSHADEALL 17
-#define WCTXT_QUIT	18
-#define WCTXT_KILL	19
+#define WCTXT_CLOSEALL	8
+#define WCTXT_HIDE	9
+#define WCTXT_HIDEAPP	10
+#define WCTXT_HIDEOTH	11
+#define WCTXT_UNHIDEOTH	12
+#define WCTXT_ICONIFY	13
+#define WCTXT_ICONIFYALL 14
+#define WCTXT_UNICONIFYALL 15
+#define WCTXT_SHADE	16
+#define WCTXT_SHADEALL	17
+#define WCTXT_UNSHADEALL 18
+#define WCTXT_QUIT	19
+#define WCTXT_KILL	20
 
 static char *wctxt_popup_text[] =
 {
@@ -1697,9 +1698,10 @@ static char *wctxt_popup_text[] =
 	"Deny keyboard focus ",
 	"Send to top",
 	"Send to bottom",
-	"Close",
-	"Hide window",
-	"Hide owner",
+	"Close this",
+	"Close all",
+	"Hide this",
+	"Hide app",
 	"Hide others",
 	"Unhide others",
 	"Iconify",
@@ -1870,7 +1872,7 @@ CE_winctxt(enum locks lock, struct c_event *ce, bool cancel)
 						{
 							wind->window_status &= ~XAWS_SINK;
 							wind->window_status ^= XAWS_FLOAT;
-							top_window(0, true, true, wind, (void *)-1L);
+							top_window(0, true, true, wind);
 							break;
 						}
 						case WCTXT_SINK: /* Keep under others */
@@ -1878,7 +1880,7 @@ CE_winctxt(enum locks lock, struct c_event *ce, bool cancel)
 							wind->window_status &= ~XAWS_FLOAT;
 							wind->window_status ^= XAWS_SINK;
 							if (is_topped(wind))
-								top_window(0, true, true, wind, (void *)-1L);
+								top_window(0, true, true, wind);
 							else
 								bottom_window(0, true, true, wind);
 							break;
@@ -1891,10 +1893,10 @@ CE_winctxt(enum locks lock, struct c_event *ce, bool cancel)
 								if (get_app_infront() != wind->owner)
 									hide_toolboxwindows(wind->owner);
 								else
-									top_window(0, true, false, wind, (void *)-1L);
+									top_window(0, true, false, wind);
 							}
 							else
-								top_window(0, true, true, wind, (void *)-1L);
+								top_window(0, true, true, wind);
 							break;
 						}
 						case WCTXT_NOFOCUS:
@@ -1907,7 +1909,7 @@ CE_winctxt(enum locks lock, struct c_event *ce, bool cancel)
 						}
 						case WCTXT_TOP: /* Send to top */
 						{
-							top_window(0, true, true, wind, (void *)-1L);
+							top_window(0, true, true, wind);
 							break;
 						}
 						case WCTXT_BOTTOM: /* Send to bottom */
@@ -1918,6 +1920,20 @@ CE_winctxt(enum locks lock, struct c_event *ce, bool cancel)
 						case WCTXT_CLOSE: /* Close window */
 						{
 							send_closed(0, wind);
+							break;
+						}
+						case WCTXT_CLOSEALL:
+						{
+							struct xa_client *cl = wind->owner;
+							struct xa_window *nxt;
+							
+							while (wind)
+							{
+								nxt = wind->next;
+								if (wind->owner == cl && (wind->window_status & XAWS_OPEN))
+									send_closed(0, wind);
+								wind = nxt;
+							}
 							break;
 						}
 						case WCTXT_HIDE: /* Hide window */

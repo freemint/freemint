@@ -93,7 +93,7 @@ RECT	calc_window(enum locks lock, struct xa_client *client, int request,
 		    XA_WIND_ATTR tp, WINDOW_TYPE dial, int thinframe, bool thinwork,
 		    RECT r);
 
-void	top_window(enum locks lock, bool snd_untopped, bool snd_ontop, struct xa_window *w, struct xa_window *oldtop);
+void	top_window(enum locks lock, bool snd_untopped, bool snd_ontop, struct xa_window *w);
 void	bottom_window(enum locks lock, bool snd_untopped, bool snd_ontop, struct xa_window *w);
 void	after_top(enum locks lock, bool untop);
 void	remove_windows(enum locks lock, struct xa_client *client);
