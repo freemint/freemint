@@ -204,24 +204,16 @@ XA_wind_find(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 void
-top_window(enum locks lock, bool snd_untopped, bool snd_ontop, struct xa_window *w, struct xa_window *old_focus)
+top_window(enum locks lock, bool snd_untopped, bool snd_ontop, struct xa_window *w)
 {
 // 	display("top_window %d for %s", w->handle, w->owner->proc_name); //client->proc_name);
 	DIAG((D_wind, NULL, "top_window %d for %s",  w->handle, w == root_window ? get_desktop()->owner->proc_name : w->owner->proc_name));
-	/* Ozk: if -1L passed as old_focus pointer, determine here which is ontop
-	 *	before we top 'w'. Else check if old_focus really is ontop.
-	 *	This is for redrawing the window exterior to indicate now topped
-	 *	is being 'de-topped' :)
-	 */
 	if (w == root_window)
 		return;
 
 	if (w->nolist)
 	{
-		if (!(w->window_status & XAWS_NOFOCUS)) {
-// 			display("setnew focus on nolist wind");
-			setnew_focus(w, NULL, false, snd_ontop, false);
-		}
+		setnew_focus(w, NULL, false, snd_ontop, false);
 	}
 	else
 	{
@@ -800,7 +792,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		{
 			if ( !wind_has_focus(w)) // !is_topped(w))
 			{
-				top_window(lock|winlist, true, false, w, (void *)-1L);
+				top_window(lock|winlist, true, false, w);
 			}
 		}
 		else
@@ -1138,7 +1130,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 					{
 						w->window_status &= ~(XAWS_FLOAT|XAWS_SINK|XAWS_BINDFOCUS|XAWS_NOFOCUS);
 						if (w->window_status & XAWS_OPEN)
-							top_window(lock, true, true, w, (void *)-1L);
+							top_window(lock, true, true, w);
 					}
 					break;
 				}
@@ -1149,7 +1141,14 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 						w->window_status &= ~(XAWS_SINK|XAWS_BINDFOCUS);
 						w->window_status |= (XAWS_FLOAT | XAWS_NOFOCUS);
 						if (w->window_status & XAWS_OPEN)
-							top_window(lock, true, false, w, (void *)-1L);
+							top_window(lock, true, false, w);
+						if (!S.focus)
+						{
+							struct xa_window *nf;
+							reset_focus(&nf, 0);
+							if (nf)
+								setnew_focus(nf, NULL, true, true, true);
+						}
 					}
 					break;
 				}
@@ -1162,7 +1161,16 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 						if (w->window_status & XAWS_OPEN)
 						{
 							if (get_app_infront() == client)
-								top_window(lock, true, false, w, (void *)-1L);
+							{
+								struct xa_window *nf;
+
+								top_window(lock, true, false, w);
+								nf = get_topwind(lock, client, window_list, false, (XAWS_OPEN|XAWS_HIDDEN|XAWS_NOFOCUS), XAWS_OPEN);
+								if (!nf)
+									nf = get_topwind(lock, client, window_list, false, (XAWS_OPEN|XAWS_NOFOCUS), XAWS_OPEN);
+								if (nf)
+									setnew_focus(nf, NULL, false, false, true);
+							}
 							else
 								hide_toolboxwindows(client);
 						}

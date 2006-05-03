@@ -333,7 +333,7 @@ wdialog_message(enum locks lock, struct xa_client *client, struct wdlg_evnt_parm
 				return -1;
 			if (is_hidden(wind))
 				unhide_window(wlock, wind, true);
-			top_window(wlock, true, false, wind, (void *)-1L);
+			top_window(wlock, true, false, wind);
 			break;
 		}
 		case WM_CLOSED:
@@ -1137,7 +1137,7 @@ wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms 
 
 					if (is_hidden(wind))
 						unhide_window(lock, wind, true);
-					top_window(lock, true, true, wind, (void *)-1L);
+					top_window(lock, true, true, wind);
 					ret = 1;
 					cont = 0;
 				}

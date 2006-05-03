@@ -1040,7 +1040,7 @@ Click_form_do(enum locks lock,
 		{
 			DIAGS(("Click_form_do: topping window"));
 // 			display("Click_form_do: topping window");
-			top_window(lock, true, false, wind, (void *)-1L);
+			top_window(lock, true, false, wind);
 			return false;
 		}
 		
@@ -1342,7 +1342,7 @@ do_formwind_msg(
 		case WM_TOPPED:
 		{
 			if (wind->owner->fmd.wind == wind)
-				top_window(0, true, false, wind, (void *)-1L);
+				top_window(0, true, false, wind);
 			else if ( wind != root_window &&
 				 (wind->window_status & XAWS_OPEN) &&
 				 (wind->nolist ? !wind_has_focus(wind) : !is_topped(wind))
@@ -1351,7 +1351,7 @@ do_formwind_msg(
 				if (is_hidden(wind))
 					unhide_window(0, wind, true);
 					
-				top_window(0, true, false, wind, (void *)-1L);
+				top_window(0, true, false, wind);
 			}
 			break;
 		}

@@ -250,7 +250,7 @@ make_rect_list(struct xa_window *wind, bool swap, short which)
 	struct build_rl_parms p;
 	RECT area;
 
-	if (wind->owner->status & CS_EXITING)
+	if ((wind->owner->status & CS_EXITING))
 		return NULL;
 	
 	DIAGS(("Freeing old rect_list for %d", wind->handle));
@@ -281,7 +281,6 @@ make_rect_list(struct xa_window *wind, bool swap, short which)
 		{
 			if (swap)
 				free_rectlist_entry(&wind->rect_toolbar);
-			
 			if (!usertoolbar_installed(wind) || !xa_rect_clip(&wind->wa, &wind->widgets[XAW_TOOLBAR].ar, &area))
 				return NULL;
 			rle = &wind->rect_toolbar;
@@ -293,7 +292,7 @@ make_rect_list(struct xa_window *wind, bool swap, short which)
 
 	DIAGS(("make_rect_list for wind %d", wind->handle));
 
-	if ((wind->window_status & XAWS_HIDDEN) ||
+	if ((wind->window_status & (XAWS_HIDDEN|XAWS_BELOWROOT)) ||
 	    area.x > (screen.r.x + screen.r.w) ||
 	    area.y > (screen.r.y + screen.r.h) ||
 	   (area.x + area.w) < screen.r.x  ||
