@@ -898,7 +898,7 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 		{
 			open_window(lock, wind, wind->r);
 			if (wind != TOP_WINDOW)
-				top_window(lock, true, false, wind, (void *)-1L);
+				top_window(lock, true, false, wind);
 		}
 	}
 	return;
@@ -1083,7 +1083,7 @@ open_reschange(enum locks lock, struct xa_client *client, bool open)
 		{
 			open_window(lock, wind, wind->r);
 			if (wind != TOP_WINDOW/*window_list*/)
-				top_window(lock, true, false, wind, (void *)-1L);
+				top_window(lock, true, false, wind);
 		}
 	}
 	return;
@@ -1234,7 +1234,7 @@ open_falcon_reschange(enum locks lock, struct xa_client *client, bool open)
 		{
 			open_window(lock, wind, wind->r);
 			if (wind != TOP_WINDOW/*window_list*/)
-				top_window(lock, true, false, wind, (void *)-1L);
+				top_window(lock, true, false, wind);
 		}
 	}
 	return;
@@ -1767,7 +1767,7 @@ open_milan_reschange(enum locks lock, struct xa_client *client, bool open)
 		{
 			open_window(lock, wind, wind->r);
 			if (wind != TOP_WINDOW/*window_list*/)
-				top_window(lock, true, false, wind, (void *)-1L);
+				top_window(lock, true, false, wind);
 		}
 	}
 	return;
@@ -2122,7 +2122,7 @@ open_nova_reschange(enum locks lock, struct xa_client *client, bool open)
 		{
 			open_window(lock, wind, wind->r);
 			if (wind != TOP_WINDOW/*window_list*/)
-				top_window(lock, true, false, wind, (void *)-1L);
+				top_window(lock, true, false, wind);
 		}
 	}
 	return;
@@ -2270,7 +2270,7 @@ open_csr(enum locks lock, struct xa_client *client, struct xa_client *running)
 		wind = htd->w_csr;
 		open_window(lock, wind, wind->r);
 		if (wind != TOP_WINDOW/*window_list*/)
-			top_window(lock, true, false, wind, (void *)-1L);
+			top_window(lock, true, false, wind);
 	}
 	return;
 fail:
@@ -2570,7 +2570,7 @@ open_systemalerts(enum locks lock, struct xa_client *client, bool open)
 		{
 			open_window(lock, wind, wind->r);
 			if (wind != TOP_WINDOW/*window_list*/)
-				top_window(lock, true, false, wind, (void *)-1L);
+				top_window(lock, true, false, wind);
 		}
 	}
 	return;
