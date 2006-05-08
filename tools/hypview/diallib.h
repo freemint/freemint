@@ -1,7 +1,7 @@
 /*
  * $Id$
  * 
- * HypView - (c)      - 2006 Philipp Donze
+ * HypView - (c) 2001 - 2006 Philipp Donze
  *               2006 -      Philipp Donze & Odd Skancke
  *
  * A replacement hypertext viewer
@@ -26,82 +26,82 @@
 #ifndef _diallib_h
 #define _diallib_h
 
-#define	ON							1
-#define	OFF						0
-#define	YES						ON
-#define	NO							OFF
+#define	ON                      1
+#define	OFF                     0
+#define	YES                     ON
+#define	NO                      OFF
 
-#define	GERMAN					1
-#define	ENGLISH					2
-#define	FRENCH					3
+#define	GERMAN                  1
+#define	ENGLISH                 2
+#define	FRENCH                  3
 
-#include "dl_user.h"			/*	Applikationsspezifische Daten	*/
+#include "dl_user.h"            /* Application specific definitions */
 
-#include RESOURCE_HEADER_FILE			/*	Resource-Header einbinden	*/
+#include RESOURCE_HEADER_FILE   /* Include resource header file */
 
-#include "dl_miss.h"			/*	fehlende Definitionen ergnzen	*/
+#include "dl_miss.h"            /* Include missing type definitions */
 
-#define	USE_ITEM				(USE_DIALOG|USE_WINDOW|USE_FILESELECTOR|USE_FONTSELECTOR)
+#define	USE_ITEM       (USE_DIALOG|USE_WINDOW|USE_FILESELECTOR|USE_FONTSELECTOR)
 
-/*	Window-Typen	*/
-#define	WIN_WINDOW	1
-#define	WIN_DIALOG	2
-#define	WIN_FILESEL	3
-#define	WIN_FONTSEL	4
-#define	WIN_PRINTER	5
+/*	Window types	*/
+#define	WIN_WINDOW  1
+#define	WIN_DIALOG  2
+#define	WIN_FILESEL 3
+#define	WIN_FONTSEL 4
+#define	WIN_PRINTER 5
 
-/*	USER_DATA status-flags	*/
-#define	WIS_OPEN	0x01
-#define	WIS_ICONIFY	0x02
-#define	WIS_ALLICONIFY	0x04
-#define	WIS_FULL	0x10
-#define WIS_MFCLOSE	0x20	/* Marked For CLOSE */
+/*	USER_DATA status flags	*/
+#define	WIS_OPEN        0x01
+#define	WIS_ICONIFY     0x02
+#define	WIS_ALLICONIFY  0x04
+#define	WIS_FULL        0x10
+#define WIS_MFCLOSE     0x20	/* Marked for CLOSE */
 
 
-/*	Window-Messages	*/
-#define	WIND_INIT					-1
-#define	WIND_OPEN					-2
-#define	WIND_OPENSIZE				-3
-#define	WIND_EXIT					-4
-#define	WIND_CLOSE					-5
+/*	Window messages	*/
+#define	WIND_INIT                -1
+#define	WIND_OPEN                -2
+#define	WIND_OPENSIZE            -3
+#define	WIND_EXIT                -4
+#define	WIND_CLOSE               -5
 
-#define	WIND_KEYPRESS				-10
-#define	WIND_CLICK					-11
+#define	WIND_KEYPRESS           -10
+#define	WIND_CLICK              -11
 
-#define	WIND_REDRAW					-20
-#define	WIND_SIZED					-21
-#define	WIND_MOVED					-22
-#define	WIND_TOPPED					-23
-#define	WIND_NEWTOP					-24
-#define	WIND_UNTOPPED				-25
-#define	WIND_ONTOP					-26
-#define	WIND_BOTTOM					-27
-#define	WIND_FULLED					-28
+#define	WIND_REDRAW             -20
+#define	WIND_SIZED              -21
+#define	WIND_MOVED              -22
+#define	WIND_TOPPED             -23
+#define	WIND_NEWTOP             -24
+#define	WIND_UNTOPPED           -25
+#define	WIND_ONTOP              -26
+#define	WIND_BOTTOM             -27
+#define	WIND_FULLED             -28
 
 #define	WIND_DRAGDROPFORMAT		-30
-#define	WIND_DRAGDROP				-31
+#define	WIND_DRAGDROP           -31
 
-#define	WIND_ICONIFY				-40
-#define	WIND_UNICONIFY				-41
-#define	WIND_ALLICONIFY			-42
+#define	WIND_ICONIFY            -40
+#define	WIND_UNICONIFY          -41
+#define	WIND_ALLICONIFY         -42
 
-#define	WIND_BUBBLE					-50
+#define	WIND_BUBBLE             -50
 
-/*	Toolbar Messages	*/
-#define	WIND_TBCLICK				-60
-#define	WIND_TBUPDATE				-61
+/*	Toolbar messages	*/
+#define	WIND_TBCLICK            -60
+#define	WIND_TBUPDATE           -61
 
-/*	File Maximum	*/
-#define	DL_PATHMAX					256
-#define	DL_NAMEMAX					64
+/*	File maximum	*/
+#define	DL_PATHMAX              256
+#define	DL_NAMEMAX               64
 
-/*	AV-Protokoll Flags	*/
-#define	AV_P_VA_SETSTATUS		0x01
-#define	AV_P_VA_START			0x02
-#define	AV_P_AV_STARTED			0x04
-#define	AV_P_VA_FONTCHANGED		0x08
-#define	AV_P_QUOTING			0x10
-#define	AV_P_VA_PATH_UPDATE		0x20
+/*	AV protokol flags	*/
+#define	AV_P_VA_SETSTATUS       0x01
+#define	AV_P_VA_START           0x02
+#define	AV_P_AV_STARTED         0x04
+#define	AV_P_VA_FONTCHANGED     0x08
+#define	AV_P_QUOTING            0x10
+#define	AV_P_VA_PATH_UPDATE     0x20
 
 typedef struct _chain_data_
 {
@@ -320,9 +320,8 @@ WINDOW_DATA *find_openwindow_by_whandle(short handle);
 WINDOW_DATA *find_window_by_whandle(short handle);
 WINDOW_DATA *find_window_by_proc(HNDL_WIN proc);
 WINDOW_DATA *find_window_by_data(void *data);
-/* [GS] 0.35.2c Start: */
-short count_window ( void );
-/* Ende */
+short count_window(void);
+
 /*
  *		DL_FILSL.C
  */

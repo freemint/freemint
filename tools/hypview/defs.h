@@ -25,39 +25,38 @@
 
 #ifndef	DEFS_H
 #define	DEFS_H		1
-#define	VERSION "0.35.3e"
+#define	VERSION "0.40.0"
 
 #define	LINE_BUF		512
 
-/*	verschiedene Werte fr den Dateityp	*/
+/* Return values for file loading routines  */
 enum {
-	F_LOADERROR=-2,				/*	Fehler beim Laden der Datei	*/
-	F_UNKNOWN=-1,				/*	Unbekannter Dateityp	*/
-	F_BINARY=0,				/*	entsprechendes Format	*/
-	F_ASCII,				/*	entsprechendes Format	*/
-	F_HYP,					/*	entsprechendes Format	*/
-	F_LAST					/*	Letzter Typ	*/
+	F_LOADERROR = -2,       /* Error while loading */
+	F_UNKNOWN = -1,         /* Unknown file type */
+	F_BINARY = 0,           /* binary format */
+	F_ASCII,                /* ASCII format */
+	F_HYP,                  /* ST-Guide hypertext format */
 };
 
 typedef struct {
-	long line;				/*	Zeilennummer */
+	long line;              /* Line number */
 	long y;
-	long offset;				/*	Offset zum Anfang des Wortes (in Zeichen)	*/
-	short x;				/*	x Koordinate der unteren Ecke	*/
+	long offset;            /* Char. offset to beginning of word */
+	short x;                /* x coordinate of lower left corner */
 }TEXT_POS;
 
 typedef struct
 {
-	short valid;						/*	Flag, das anzeigt ob Daten vorhanden	*/
-	TEXT_POS start;				/*	Block Anfang	*/
-	TEXT_POS end;					/*	Block Ende	*/
+	short valid;            /* Flag indicating validity of content */
+	TEXT_POS start;         /* Start of block */
+	TEXT_POS end;           /* End of block */
 }BLOCK;
 
-#define	BLK_CHKOP			0		/*	berprfen ob Operation vorhanden	*/
-#define	BLK_ASCIISAVE		1		/*	Block als ASCII unter Handle <param> sichern	*/
-#define	BLK_PRINT			2		/*	Block auf Drucker ausgeben	*/
+#define	BLK_CHKOP           0       /* Check if operation is supported */
+#define	BLK_ASCIISAVE       1       /* Save current block as ASCII */
+#define	BLK_PRINT           2       /* Print current block */
 
-/*	Anonyme Dokumenttyp spezifische Funktionen	*/
+/* Anonymous document type specific functions */
 struct _document_;
 typedef	void (*DOC_PROC1)(struct _document_ *doc);
 typedef	long (*DOC_GETNODEPROC)(struct _document_ *doc);
@@ -69,36 +68,36 @@ typedef	short (*DOC_BLOCKPROC)(struct _document_ *doc, short op, BLOCK *block, v
 
 struct _document_
 {
-	struct _document_ *next;		/*	Zeiger auf das nchste Dokument	*/
-	short type;				/*	Dokumenttyp siehe F_xy	*/
-	char *path;				/*	vollstndiger Zugriffspfad	*/
-	char *filename;				/*	Dateiname	*/
-	char *window_title;			/*	Fenster-Titel	*/
-	long start_line;			/*	erste anzuzeigende Zeile	*/
-	long lines;				/*	Anzahl Fenster-Zeilen	*/
+	struct _document_ *next;    /* Pointer to next document */
+	short type;                 /* Document type see F_xy constants */
+	char *path;                 /* Full file access path */
+	char *filename;             /* File name */
+	char *window_title;         /* Window titel */
+	long start_line;            /* First visible line of document */
+	long lines;                 /* Number of lines (in window lines) */
 	long height;
-	long columns;				/*	Anzahl Fenster-Kolonnen	*/
-	short buttons;				/*	Toolbar-Button-Konfiguration	*/
-	void *data;				/*	Typ-spezifische Daten	*/
-	short mtime,mdate;			/*	nderungszeit und -datum der Datei	*/
-	WINDOW_DATA *window;			/*	Fenster, indem die Datei dargestellt wird/wurde	*/
-	WINDOW_DATA *popup;			/*	Zur Zeit dargestelltes Popup	*/
-	DOC_PROC1 displayProc;			/*	Funktion zur Anzeige des Dokuments	*/
-	DOC_PROC1 closeProc;			/*	Funktion zum schliessen des Dokuments	*/
-	DOC_GOTOPROC gotoNodeProc;		/*	Funktion zum Anspringen eines Kapitels	*/
-	DOC_GETNODEPROC getNodeProc;		/*	Funktion zum Ermitteln der Kapitel-Nummer	*/
-	DOC_CLICKPROC clickProc;		/*	Funktion zur Verarbeitung von Maus-Aktionen	*/
-	DOC_AUTOLOCPROC autolocProc;		/*	Autolocator-Funktion	*/
-	char *autolocator;			/*	Suchstring des Autolocators	*/
-	int autolocator_dir;		/* Direction of search for autolocator (1 = down, else up) */
-	DOC_GETCURSORPROC getCursorProc;	/*	Funktion zum Ermitteln der Cursor Position	*/
-	BLOCK selection;			/*	Daten des aktuellen Text-Blocks	*/
-	DOC_BLOCKPROC blockProc;		/*	Funktion fr Block-Operationen	*/
+	long columns;               /* Number of window columns */
+	short buttons;              /* Toolbar button configuration (bit vector)*/
+	void *data;                 /* File format specific data */
+	short mtime,mdate;          /* File modification time and date */
+	WINDOW_DATA *window;        /* Window associated with this file */
+	WINDOW_DATA *popup;			/* Currently activ popup window */
+	DOC_PROC1 displayProc;      /* Document display function */
+	DOC_PROC1 closeProc;        /* Document close function */
+	DOC_GOTOPROC gotoNodeProc;  /* Document navigation function */
+	DOC_GETNODEPROC getNodeProc;/* Function to determine current node number */
+	DOC_CLICKPROC clickProc;    /* Mouse-click processing function */
+	DOC_AUTOLOCPROC autolocProc;/* Autolocator search function */
+	char *autolocator;          /* Autolocator search string */
+	int autolocator_dir;        /* Autolocator direction (1 = down, else up) */
+	DOC_GETCURSORPROC getCursorProc;/* Cursor position function */
+	BLOCK selection;            /* Content of  selection */
+	DOC_BLOCKPROC blockProc;    /* Block operation function */
 };
 typedef struct _document_ DOCUMENT;
 
 
-/*	Konvertiert Objektnummern in Bit-Werte	*/
+/*	Convert toolbar object number into bit values for DOCUMENT->buttons */
 #define BITVAL(x)	(1<<(x-4))
 
 
@@ -108,11 +107,7 @@ typedef struct _document_ DOCUMENT;
 extern char path_list[];
 extern char default_file[];
 extern char catalog_file[];
-/* [GS] 0.35.2a Start */
 extern char file_extensions[];
-/* Ende; alt:
-extern char *file_extensions;
-*/
 extern char dir_separator;
 extern short binary_columns;
 extern short ascii_tab_size;
@@ -139,10 +134,8 @@ extern short av_window_cycle;
 extern char marken_path[];
 extern short marken_save_ask;
 extern char all_ref[];
-/* [GS] 0.35.2a Start:*/
 extern char hypfind_path[];
 extern short refonly;
-/* Ende */
 
 /*
  *		Config.c
@@ -166,11 +159,7 @@ void SelectFileSave(DOCUMENT *doc);
  */
 short LoadFile(DOCUMENT *doc, short handle);
 void CloseFile(DOCUMENT *doc);
-/* [GS] 0.35.2c Start: */
 short OpenFileNW(char *path, char *chapter, long node);
-/* Ende; alt:
-short OpenFileNW(char *path, char *chapter);
-*/
 short OpenFileSW(char *path, char *chapter,short new_win);
 void CheckFiledate(DOCUMENT *doc);
 
@@ -197,9 +186,6 @@ short HypLoad(DOCUMENT *doc, short handle);
  */
 void SendClose(WINDOW_DATA *wind);
 void SendRedraw(WINDOW_DATA *wind);
-/* [GS] 0.35.2a alt: verschoben nach info.c
-void ProgrammInfos(void);
-*/
 void ReInitWindow(WINDOW_DATA *wind, DOCUMENT *doc);
 short HelpWindow(WINDOW_DATA *ptr, short obj, void *data);
 
@@ -211,12 +197,8 @@ void KeyboardOnOff(void);
 /*
  *		Toolbar.c
  */
-/* [GS] v0.35.2e Start */
-void ToolbarUpdate(DOCUMENT *doc,OBJECT *toolbar, short redraw);
-/* Ende; alt:
-void ToolbarUpdate(DOCUMENT *doc,OBJECT *toolbar);
-*/
-void ToolbarClick(DOCUMENT *doc,short obj);
+void ToolbarUpdate(DOCUMENT *doc, OBJECT *toolbar, short redraw);
+void ToolbarClick(DOCUMENT *doc, short obj);
 void RemoveSearchBox(DOCUMENT *doc);
 
 /*
@@ -224,26 +206,24 @@ void RemoveSearchBox(DOCUMENT *doc);
  */
 typedef struct _history_
 {
-	struct _history_ *next;
-	WINDOW_DATA *win;					/*	Zugehriges Fenster	*/
-	DOCUMENT *doc;						/*	Zeiger auf Dokument	*/
-	long line;							/*	1. anzuzeigende Zeile	*/
-	long node;							/*	evtl. "Kapitel"-Nummer	*/
-	char title;
+	struct _history_ *next;      /* Pointer to next history entry */
+	WINDOW_DATA *win;            /* Associated window */
+	DOCUMENT *doc;               /* Pointer to document */
+	long line;                   /* First visible line */
+	long node;                   /* Document node (=chapter) number */
+	char title;                  /* First byte of history title */
 }HISTORY;
 
-extern HISTORY *history;			/*	Pointer auf die History-Daten	*/
+extern HISTORY *history;         /* Pointer to history data */
 
 void AddHistoryEntry(WINDOW_DATA *wind);
 short RemoveHistoryEntry(DOCUMENT **doc,long *node,long *line);
 void RemoveAllHistoryEntries(WINDOW_DATA *wind);
 short CountWindowHistoryEntries(WINDOW_DATA *wind);
 short CountDocumentHistoryEntries(DOCUMENT *doc);
-/* [GS] 0.35.2e Start: */
 void DeletLastHistory(void *entry);
 void *GetLastHistory(void);
 void SetLastHistory(WINDOW_DATA *the_win,void *last);
-/* Ende */
 
 /*
  *		Tools.c
@@ -292,24 +272,21 @@ void BlockAsciiSave(DOCUMENT *doc, char *path);
 /*
  *		Marker.c
  */
-void MarkerSave ( DOCUMENT *doc, short num );
-void MarkerShow ( DOCUMENT *doc, short num, short new_window );
-void MarkerPopup ( DOCUMENT *doc, short x, short y);
-void MarkerSaveToDisk ( void );
-void MarkerInit( void );
+void MarkerSave(DOCUMENT *doc, short num);
+void MarkerShow(DOCUMENT *doc, short num, short new_window);
+void MarkerPopup(DOCUMENT *doc, short x, short y);
+void MarkerSaveToDisk(void);
+void MarkerInit(void);
 
 /*
  *		Info.c
  */
-void ProgrammInfos( DOCUMENT *doc );
+void ProgrammInfos(DOCUMENT *doc);
 
-/* [GS] 0.35.2a Start */
 /*
  *		search.c
  */
-void search_all ( char *string );
-void Search (DOCUMENT *doc);
-
-/* Ende */
+void search_all(char *string);
+void Search(DOCUMENT *doc);
 
 #endif
