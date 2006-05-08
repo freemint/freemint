@@ -3,17 +3,17 @@ This document describes in short how to install and use HypView.
 Installation
 ------------
 HypView can be used as normal application or as accessory.
-By setting the STGUIDE and/or HELPVIEWER environment variable to
-the full path to HypView, it's possible for other applications to
-start it if necessary.
 Set your desktop to open *.HYP files using HypView. If you like you
 can set HypView as default viewer.
+By setting the STGUIDE and/or HELPVIEWER environment variable to
+the full path to HypView, other applications have the possibility to
+start HypView if necessary.
 
 
 Usage
 -----
 HypView has been written to replace ST-Guide. Therefore it's working
-"as the original". The icons in the toolbar are nearly identical.
+like "the original". The icons in the toolbar are nearly identical.
 From left to right:
   -"Back": jumps back to the page which lead to the current page
   -"History": displays a history popup which allows jumping back
@@ -35,3 +35,18 @@ From left to right:
   -"Extra": Displays a popup (=same as the right-click context menu)
    which provides access to further operations.
 
+
+Features
+--------
+-Display of ASCII and binary files.
+-Modern look thanks to the skins made by Gunnar Gröbel
+-Multiple windows can be opened atonce (CTRL+click on a link to open it in a
+ new window)
+-No problems with long filenames (even with spaces in the name).
+-Support for Drag & Drop and Document History protocol
+-Popup nodes don't block the system. They are displayed in their own window.
+-Automatic reload of the document if an other application has modified it.
+-Autolocator function available for HYP, ASCII and binary files.
+-Exact block selection: you can mark a block using the mouse
+ and copy it, just as in any standard text editor.
+-Color images are also displayed on systems with more than 256 colors.
