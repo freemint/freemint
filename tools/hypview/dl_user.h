@@ -1,7 +1,7 @@
 /*
  * $Id$
  * 
- * HypView - (c)      - 2006 Philipp Donze
+ * HypView - (c) 2001 - 2006 Philipp Donze
  *               2006 -      Philipp Donze & Odd Skancke
  *
  * A replacement hypertext viewer
@@ -29,122 +29,112 @@
  *   begin options                          *
  ********************************************/
 /* #define GENERATE_DIAGS */
-/*	Debugmodus? (=Debug Ausgaben compilieren)	*/
+/* Debug mode? (=add debugging output while compiling) */
 #define	DEBUG					OFF
-/*	Debuglogbuch-Datei erstellen? (=Alle Debug Ausgaben in diese Datei)	*/
+/* Create debug log file? (=put all debugging output into file) */
 #define	DEBUG_LOG				NO
 
-/*	Sprache des Programms (fr Text-Strings im Programmcode)	*/
-#define	LANGUAGE				GERMAN
+/* Main language for this application (=built in error messages) */
+#define	LANGUAGE				ENGLISH
 
-/*	Programm nur unter MagiC lauffhig? (MagiC spez. Funktionen Benutzen?)	*/
+/* Use MagiC specific functions? (=limit usage on MagiC compatible systems) */
 #define	MAGIC_ONLY				NO
 
-/*	globale VDI Workstation initialisieren? (der ganzen Applikation bekannt)	*/
+/* Use a global VDI workstation? */
 #define	USE_GLOBAL_VDI			YES
-/*	Farbpalette speichern?	*/
+/*	Save color palette on init?	*/
 #define	SAVE_COLORS				NO
 
-/*	Beim Schliessen eines Fensters (Dialog/Fenster) werden alle Strukturen 
-	aus dem Speicher entfert	*/
+/* Closing a window/dialog will automatically remove all related structures */
 #define	WIND_CLOSE_IS_REMOVE	YES
-/* [GS] 0.35.2a Start */
 #define	DIAL_CLOSE_IS_REMOVE	YES
-/* Ende; alt:
-#define	DIAL_CLOSE_IS_REMOVE	NO
-*/
 
-/*	Eigene Globale Tastaturkombinationen? (=bentigt DoUserKeybd())	*/
+/* Use a global keyboard shortcut handler (=needs DoUserKeybd() in dl_user.c) */
 #define	USE_GLOBAL_KEYBOARD	NO
 
-/*	Eigene Events abfangen?	*/
+/* Use user specific events? (=Pass events to DoUserEvents() before handling) */
 #define	USE_USER_EVENTS		YES
 
-/*	Menzeile installieren? (Bentigt eine Resource MENU)	*/
+/* Install/remove menubar on initialization? (Needs a resource object MENU) */
 #define	USE_MENU		NO
 
-/*	Fenster-Dialoge verwenden? (Dank WDialog)	*/
-/* [GS] 0.35.2a Start */
+/* Use window dialog management routines? (Based on WDialog) */
 #define	USE_DIALOG		YES
-/* Ende; alt:
-#define	USE_DIALOG				NO
-*/
 
-/*	Normale Fenster verwenden?	*/
+/* Use normal window management routines? */
 #define	USE_WINDOW		YES
-/*	setze den Iconify-Name gemss RSC	*/
+/* Automatically set the title when iconifying according to RSC file */
 #define	SET_ICONIFY_NAME	NO
-/* ffne fr jedes Fenster eine eigene VDI Workstation	*/
+/* Open a separate VDI workstation for each new window */
 #define	OPEN_VDI_WORKSTATION	NO
-/* logisches Raster verwenden	*/
+/* Use a logical raster for computations (=not the pixel raster) */
 #define	USE_LOGICALRASTER	YES
-/*	Toolbar verwenden	*/
+/* Use toolbar routines */
 #define	USE_TOOLBAR		YES
 
-/*	Fenster-Dateiselektor verwenden?	*/
+/* Use fileselector routines */
 #define	USE_FILESELECTOR	YES
-/*	Fenster-Fontselektor verwenden?	*/
+/* Use fontselector routines */
 #define	USE_FONTSELECTOR	NO
 
-/*	AV-Protokoll Untersttzung: 
-		0	= deaktiviert
-		1	= minimal (nur VA_START,AV_SENDCLICK und AV_SENDKEY empfangen)
-		2	= normal (AV_PROTOKOL,AV_EXIT,VA_PROTOSTATUS,VA_START,
-			  AV_SENDCLICK und AV_SENDKEY)
-			  Also anmelden und abmelden beim AV-Server!
-		3	= vollstndig (Empfang und Versenden aller mglichen Nachrichten)
-			  Bentigt die Prozedur DoVA_Message()!
+/* Level of AV protocol support:
+	0 = none
+	1 = minimal (limit on VA_START, AV_SENDCLICK and AV_SENDKEY reception)
+	2 = normal (AV_PROTOKOL, AV_EXIT, VA_PROTOSTATUS, VA_START,
+	    AV_SENDCLICK and AV_SENDKEY)
+	3 = full (Sending and reception of all possible messages)
+	    Needs DoVA_Message()!
 */
-#define	USE_AV_PROTOCOL		3
+#define	USE_AV_PROTOCOL     3
 
-/*	Atari Drag&Drop Protokoll Untersttzung	*/
-#define	USE_DRAGDROP		YES
+/* Support Drag&Drop protokol */
+#define	USE_DRAGDROP        YES
 
-/*	Langedateinamen aktivieren (=Pdomain(PD_MINT))	*/
-#define	USE_LONGFILENAMES	YES
+/* Support long file names (=Pdomain(PD_MINT)) */
+#define	USE_LONGFILENAMES   YES
 
-/*	Lange Editfelder (wie sie von MagiC Untersttzt werden)	*/
-#define	USE_LONGEDITFIELDS	NO
+/* Enable support for long edit fields (As in MagiC)	*/
+#define	USE_LONGEDITFIELDS  NO
 
-/*	BubbleGEM Hilfesystem	*/
-#define	USE_BUBBLEGEM		NO
-/*	ST-Guide Hilfesystem	*/
-#define	USE_STGUIDE		NO
+/* BubbleGEM help system */
+#define	USE_BUBBLEGEM       NO
+/* ST-Guide help system */
+#define	USE_STGUIDE         NO
 
-/*	Untersttzung fr das Documen-History Protokoll	*/
+/* Document history protocol */
 #define	USE_DOCUMENTHISTORY	YES
 
-/*	Name der Prototypen-Include-Datei angeben	*/
-#define	SPEC_DEFINITION_FILE	"defs.h"
+/* Name of user specific prototype */
+#define	SPEC_DEFINITION_FILE  "defs.h"
 
-/*	Programmname "schn"	*/
+/* "nice" form of the application name */
 #define	PROGRAM_NAME		"HypView"
-/*	Programmname in Grossbuchstaben	*/
+/* Application name in uppercase letters */
 #define	PROGRAM_UNAME		"HYP_VIEW"
-/*	Dateiname der Resource-Datei	*/
+/* Name of the resource file */
 #define	RESOURCE_FILE		"hyp_view.rsc"
-/*	Dateiname der Resource-Header-Datei	*/
+/* Name of the resource header file */
 #define	RESOURCE_HEADER_FILE	"hyp_view.h"
-/*	Dateiname der BubbleGEM-Hilfedatei	*/
+/* Name of the BubbleGEM header file */
 #define	BUBBLEGEM_FILE		"hyp_view.bgh"
-/*	Dateiname der ST-Guide-Hilfedatei	*/
+/* Name of the ST-Guide help file */
 #define	STGUIDE_FILE		"*:\\hyp_view.hyp "
 
-/*	Maximale Zeilenlnge der Konfigurationsdatei	*/
+/* Maximum line lenght in the configuration file */
 #define	CFG_MAXLINESIZE		80
-/*	Soll die Konfigurationsdatei auch im HOME Verzeichnis gesucht werden?	*/
+/* Look for configuration file in the HOME folder? */
 #define	CFG_IN_HOME		YES
 
-/*	Anzahl der mglichen Drag&Drop Formate	*/
+/* Number of supported Drag&Drop formats */
 #define	MAX_DDFORMAT		8
 
-/*	Anzahl gleichzeitig iconifizierter Fenster	*/
+/* Maximum number of simultaneous iconified windows */
 #define	MAX_ICONIFY_PLACE	16
-/*	Anzahl der mglichen Rekursions-Ebenen bei Modalen Objekten	*/
+/* Maximum number of recursion levels for modal dialogs */
 #define	MAX_MODALRECURSION	1
 
 
-/*	Daten fr event_multi	*/
+/* event_multi parameters	*/
 #define EVENTS		MU_MESAG|MU_KEYBD|MU_BUTTON
 #define MBCLICKS	2|0x0100
 #define MBMASK		3
