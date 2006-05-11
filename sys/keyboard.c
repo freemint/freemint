@@ -844,10 +844,11 @@ scan2asc(uchar scancode)
 			asc = iso_tolower(asc);
 	}
 
-	/* I think that Ctrl key works as this:
-	 * Ozk: Yes, but only when _ONLY_ Ctrl is pressed? .. not sure, but.
+	/* Ctrl key works as this regardless of the Alt/AltGr state.
+	 * Otherwise the keyboard shortcuts (like Ctrl/Alt/Q) don't work
+	 * anymore in N.AES. 
 	 */
-	if ((shift & MM_CTRL) && !(shift & (MM_ALTERNATE|MM_ALTGR)))
+	if (shift & MM_CTRL)
 	{
 		if (asc == 0x0d)
 			asc = 0x0a;		/* God bless great ideas */
