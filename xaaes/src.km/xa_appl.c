@@ -705,9 +705,9 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 	/*
 	 * Free wt list last
 	 */
+	free_attachments(client);
 	free_wtlist(client);
 	
-	free_attachments(client);
 
 	/* free the quart screen buffer */
 // 	if (d) display("13");

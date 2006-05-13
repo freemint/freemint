@@ -654,7 +654,7 @@ repos_iconified(struct proc *p, long arg)
 {
 	enum locks lock = (enum locks)arg;
 	struct xa_window *w = window_list;
-	RECT r;
+	RECT ir, r;
 
 	if (!rpi_block && !S.clients_exiting)
 	{
@@ -664,7 +664,7 @@ repos_iconified(struct proc *p, long arg)
 		
 		while (1)
 		{
-			r = iconify_grid(i++);
+			ir = iconify_grid(i++);
 			w = window_list;
 			cw = NULL;
 			cx = 32000;
@@ -674,6 +674,11 @@ repos_iconified(struct proc *p, long arg)
 			{
 				if ((w->window_status & (XAWS_OPEN|XAWS_ICONIFIED|XAWS_HIDDEN|XAWS_CHGICONIF)) == (XAWS_OPEN|XAWS_ICONIFIED))
 				{
+					if (w->opts & XAWO_WCOWORK)
+						r = f2w(&w->save_delta, &ir, true);
+					else
+						r = ir;
+					
 					if (w->t.x == r.x && w->t.y == r.y && !(w->window_status & XAWS_SEMA))
 					{
 						w->window_status |= XAWS_SEMA;
@@ -701,7 +706,7 @@ repos_iconified(struct proc *p, long arg)
 			if (cw)
 			{
 				if (cw->opts & XAWO_WCOWORK)
-					r = f2w(&cw->delta, &r, true);
+					r = f2w(&cw->delta, &ir, true);
 				send_moved(lock, cw, AMQ_NORM, &r);
 				w->t = r;
 			}

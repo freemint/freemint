@@ -550,7 +550,7 @@ noscroll:
  * All other elements are initialized here.
  */
 int
-menu_popup(enum locks lock, struct xa_client *client, XAMENU *mn, MENU *result, short px, short py, short usr_evnt)
+menu_popup(enum locks lock, struct xa_client *client, XAMENU *mn, XAMENU_RESULT *result, short px, short py, short usr_evnt)
 {
 	if (mn && result)
 	{
@@ -579,7 +579,8 @@ menu_popup(enum locks lock, struct xa_client *client, XAMENU *mn, MENU *result, 
 			
 			init_popinfo(mn, &tab->task_data.menu.p);
 
-			*result = mn->menu;
+			result->menu = mn->menu;
+			result->at = NULL;
 
 			DIAG((D_menu,NULL,"_menu_popup %lx + %d",ob, mn->menu.mn_menu));
 
@@ -613,7 +614,7 @@ menu_popup(enum locks lock, struct xa_client *client, XAMENU *mn, MENU *result, 
 			
 			tab->usr_evnt = usr_evnt;
 			tab->data = result;
-			result->mn_item = -1;
+			result->menu.mn_item = -1;
 
 			start_popup_session(tab, wt, mn->menu.mn_menu, mn->mn_selected,
 				 click_popup_entry,
@@ -651,16 +652,16 @@ XA_menu_popup(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	MENU *result = (MENU *)pb->addrin[1];
 	XAMENU xmn;
-	MENU tmp;
+	XAMENU_RESULT tmp;
 
-	tmp = *result;
+	tmp.menu = *result;
 	
 	xmn.menu = *(MENU *)pb->addrin[0];
 	xmn.mn_selected = -1;
 
 	if (menu_popup(lock, client, &xmn, &tmp, pb->intin[0], pb->intin[1], 1))
 	{
-		*result = tmp;
+		*result = tmp.menu;
 		pb->intout[0] = result->mn_item < 0 ? 0 : 1;
 	}
 	else
@@ -797,7 +798,7 @@ XA_menu_attach(enum locks lock, struct xa_client *client, AESPB *pb)
 							    client,
 							    wt,
 							    pb->intin[1],
-							    &xamn);
+							    &xamn, NULL,NULL);
 			}
 			break;
 		}

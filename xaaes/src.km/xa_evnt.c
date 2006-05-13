@@ -716,11 +716,11 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 void
 cancel_evnt_multi(struct xa_client *client, int which)
 {
-	if (client != C.Aes)
+	if (client != C.Aes && client != C.Hlp)
 	{
 		client->waiting_for = 0;
 		client->em.flags = 0;
-		if (client != C.Hlp)
+// 		if (client != C.Hlp)
 			client->waiting_pb = NULL;
 	}
 	DIAG((D_kern,NULL,"[%d]cancel_evnt_multi for %s", which, c_owner(client)));

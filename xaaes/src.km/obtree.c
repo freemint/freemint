@@ -1044,12 +1044,16 @@ create_popup_tree(struct xa_client *client, short type, short nobjs, short min_w
 						new[i].ob_state = OS_NORMAL;
 						new[i].ob_spec.free_string = this;
 						strcpy(this + 2, entry);
-					
-						(*v->api->t_extent)(v, this, &w, &h);
-					
-						this += strlen(entry) + 2;
+						
+						entry = this;
+						this += strlen(this);
 						*this++ = ' ';
 						*this++ = '\0';
+						(*v->api->t_extent)(v, entry/*this*/, &w, &h);
+					
+// 						this += strlen(entry) + 2;
+// 						*this++ = ' ';
+// 						*this++ = '\0';
 					}
 					if (new->ob_width < w)
 						new->ob_width = w;
