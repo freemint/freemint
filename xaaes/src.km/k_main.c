@@ -445,9 +445,9 @@ iBlock(struct xa_client *client, int which)
 		{
 			CHlp_aesmsg(client);
 		}
+		client->usr_evnt = 0;
 		client->waiting_for = XAWAIT_MULTI|MU_MESAG;
 		client->waiting_pb = C.Hlp_pb;
-		return;
 	}
 
 	/*
@@ -501,10 +501,9 @@ iBlock(struct xa_client *client, int which)
 			{
 				CHlp_aesmsg(client);
 			}
+			client->usr_evnt = 0;
 			client->waiting_for = XAWAIT_MULTI|MU_MESAG;
 			client->waiting_pb = C.Hlp_pb;
-// 			cancel_mutimeout(client);
-			return;
 		}
 	}
 	if (client->usr_evnt & 1)

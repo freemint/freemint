@@ -554,7 +554,7 @@ screen_dump(enum locks lock, struct xa_client *client, bool open)
 
 	if ((dest_client = get_app_by_procname("xaaesnap")))
 	{
-// 		display("send dump message to %s", dest_client->proc_name);
+		display("send dump message to %s", dest_client->proc_name);
 		if (update_locked() != client->p && lock_screen(client->p, true))
 		{
 			short msg[8] = {0x5354, client->p->pid, 0, 0, 0,0,200,200};
@@ -567,6 +567,7 @@ screen_dump(enum locks lock, struct xa_client *client, bool open)
 
 			do_form_alert(lock, client, 4, sdalert, "XaAES");
 			Block(client, 0);
+			
 // 			display("intout %d", C.Hlp_pb->intout[0]);
 
 			if (C.Hlp_pb->intout[0] == 1) //(open)
@@ -585,8 +586,8 @@ screen_dump(enum locks lock, struct xa_client *client, bool open)
 				r = root_window->r;
 			else if (C.Hlp_pb->intout[0] == 3)
 			{
-				struct xa_window *wind = TOP_WINDOW/*window_list*/;
-				
+				struct xa_window *wind = TOP_WINDOW;
+
 				if (wind->r.x > 0 && wind->r.y > 0 &&
 				   (wind->r.x + wind->r.w) < root_window->r.w &&
 				   (wind->r.y + wind->r.h) < root_window->r.h)
@@ -618,6 +619,9 @@ screen_dump(enum locks lock, struct xa_client *client, bool open)
 				C.update_lock = NULL;
 				unlock_screen(client->p);
 			}
+			client->usr_evnt = 0;
+			client->waiting_for = XAWAIT_MULTI|MU_MESAG;
+			client->waiting_pb = C.Hlp_pb;
 		}
 	}
 	else
