@@ -168,6 +168,7 @@ k_shutdown(void)
 	 * widget_tree's to C.Aes
 	 */
 	BLOG((false, "freeing wtlist"));
+	free_attachments(C.Aes);
 	free_wtlist(C.Aes);
 	/*
 	 * Exit the object render module
