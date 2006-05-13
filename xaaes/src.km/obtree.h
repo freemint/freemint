@@ -130,6 +130,15 @@ setsel(OBJECT *ob, bool sel)
 		state |= OS_SELECTED;
 	ob->ob_state = state;
 }
+static inline void
+setchecked(OBJECT *ob, bool set)
+{
+	short state = ob->ob_state & ~OS_CHECKED;
+	state = ob->ob_state & ~OS_CHECKED;
+	if (set)
+		state |= OS_CHECKED;
+	ob->ob_state = state;
+}
 
 static inline bool
 disable_object(OBJECT *ob, bool set)

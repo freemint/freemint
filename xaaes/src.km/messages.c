@@ -680,7 +680,7 @@ send_a_message(enum locks lock, struct xa_client *dest_client, short amq, short 
 	
 	if (amq != AMQ_IREDRAW  && !(amq & AMQ_ANYCASE))
 	{
-		if (dest_client->status & (CS_LAGGING | CS_FORM_ALERT | CS_FORM_DO | CS_FSEL_INPUT | CS_BLOCK_MENU_NAV))
+		if (dest_client->status & (CS_LAGGING | CS_FORM_ALERT | CS_FORM_DO | CS_FSEL_INPUT)) // | CS_BLOCK_MENU_NAV))
 		{
 			if (msg->m[0] == WM_REDRAW)
 			{
@@ -723,9 +723,7 @@ send_a_message(enum locks lock, struct xa_client *dest_client, short amq, short 
 			return;
 		}
 	}
-
 	queue_message(lock, dest_client, amq, qmf, msg);
-
 	Unblock(dest_client, 1, 123);
 }
 

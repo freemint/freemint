@@ -213,17 +213,54 @@ enum menu_behave
 	LEAVE
 };
 
+struct menu_attachments;
+typedef bool on_open_attach(struct menu_attachments *);
+
+typedef struct menu_attachments
+{
+	struct menu_attachments *prev;
+	struct menu_attachments *next;
+
+	on_open_attach *on_open;
+	void *data;
+
+	struct widget_tree *wt;
+	short item;
+	struct widget_tree *to;
+	short to_item;
+
+} XA_MENU_ATTACHMENT;
+
+struct xa_menu_settings
+{
+	/* from here ... */
+	long  display;		/* submenu display delay in milliseconds */
+	long  drag;		/* submenu drag delay in milliseconds */
+	long  delay;		/* single-click scroll delay in milliseconds */
+	long  speed;		/* continuous scroll delay in milliseconds */
+	short height; 		/* menu scroll height (in items) */
+	/* .. to here is identical to MN_SET */
+
+	short	behave;
+};
+
 struct xamenu
 {
 	struct widget_tree *wt;
 	MENU menu;
-
 	short mn_selected;	/* -1 means no selection,
 				 * -2 means select first entry,
 				 * positive value means object number to set selected
 				 */
 };
 typedef struct xamenu XAMENU;
+
+struct xamenu_result
+{
+	MENU menu;
+	XA_MENU_ATTACHMENT *at;
+};
+typedef struct xamenu_result XAMENU_RESULT;
 
 typedef enum
 {
@@ -534,32 +571,6 @@ struct xa_mouse_rect
 	TASK *t1, *t2;	/* used by tasking */
 };
 
-#define ATTACH_MAX 64	/* This is per menu_bar!!!! */
-
-typedef struct menu_attachments
-{
-	struct menu_attachments *prev;
-	struct menu_attachments *next;
-
-	struct widget_tree *wt;
-	int item;
-	struct widget_tree *to;
-	int to_item;
-} XA_MENU_ATTACHMENT;
-
-struct xa_menu_settings
-{
-	/* from here ... */
-	long  display;		/* submenu display delay in milliseconds */
-	long  drag;		/* submenu drag delay in milliseconds */
-	long  delay;		/* single-click scroll delay in milliseconds */
-	long  speed;		/* continuous scroll delay in milliseconds */
-	short height; 		/* menu scroll height (in items) */
-	/* .. to here is identical to MN_SET */
-
-	short	behave;
-};
-
 /*************************************************************************** */
 /* The vdi api
 */
@@ -658,7 +669,6 @@ typedef bool WidgetKeyInput	(struct xa_window *wind,
 typedef bool DisplayWidget(enum locks lock, struct xa_window *wind,
 			   struct xa_widget *widg);
 #endif
-
 typedef bool FormKeyInput(enum locks lock,
 			  struct xa_client *client,
 			  struct xa_window *window,
@@ -2267,11 +2277,14 @@ struct xa_popinfo
 
 	short	current;		/* Currently selected, or pointed to, object */
 
-	short	attach_parent;		/* Object number of object in parent popup that has 'this' popup attached */
+	XA_MENU_ATTACHMENT *at_up;
+	XA_MENU_ATTACHMENT *at_dn;
+
+// 	short	attach_parent;		/* Object number of object in parent popup that has 'this' popup attached */
 	
-	XA_TREE	*attach_wt;
-	short	attach_item;
-	short	attached_to;
+// 	XA_TREE	*attach_wt;
+// 	short	attach_item;
+// 	short	attached_to;
 
 	char	*save_start_txt;
 	char	*save_end_txt;

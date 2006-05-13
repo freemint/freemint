@@ -326,7 +326,7 @@ form_button(XA_TREE *wt,
 		else if (type == G_POPUP)
 		{
 			XAMENU xmn;
-			MENU result;
+			XAMENU_RESULT result;
 			POPINFO *pinf;
 			short x, y, obnum;
 
@@ -344,12 +344,12 @@ form_button(XA_TREE *wt,
 				xmn.mn_selected = (fbflags & FBF_KEYBD) ? ((obnum > 0) ? obnum : -2) : -1;
 
 				obj_offset(wt, obj, &x, &y);
-				if (menu_popup(0, wt->owner, &xmn, &result, x, y, 2) && result.mn_tree == xmn.menu.mn_tree)
+				if (menu_popup(0, wt->owner, &xmn, &result, x, y, 2) && result.menu.mn_tree == xmn.menu.mn_tree)
 				{
-					if (result.mn_item > 0)
+					if (result.menu.mn_item > 0)
 					{
 						no_exit = false;
-						pinf->obnum = result.mn_item;
+						pinf->obnum = result.menu.mn_item;
 					}
 				}
 				if (obnum > 0)

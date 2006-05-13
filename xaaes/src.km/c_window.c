@@ -149,7 +149,7 @@ clear_wind_rectlist(struct xa_window *wind)
 RECT
 free_icon_pos(enum locks lock, struct xa_window *ignore)
 {
-	RECT ic;
+	RECT ic, r;
 	int i = 0;
 
 	for (;;)
@@ -162,9 +162,14 @@ free_icon_pos(enum locks lock, struct xa_window *ignore)
 		/* find first unused position. */
 		while (w)
 		{
-			if (w != ignore && is_iconified(w))
+			if (w != ignore && (is_iconified(w) || (w->window_status & XAWS_CHGICONIF)))
 			{
-				if (w->t.x == ic.x && w->t.y == ic.y)
+				if (w->opts & XAWO_WCOWORK)
+					r = f2w(&w->delta, &ic, true);
+				else
+					r = ic;
+
+				if (w->t.x == r.x && w->t.y == r.y)
 					/* position occupied; advance with next position in grid. */
 					break;
 			}
