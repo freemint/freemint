@@ -73,6 +73,9 @@
 # define IS_IMMUTABLE(c)	((c)->flags & S_IMMUTABLE)
 # define IS_PERSISTENT(c)	((c)->flags & S_PERSISTENT)
 
+# define S_INHERITED_MASK	(~ S_PERSISTENT)
+
+
 static long memory = 0;
 
 static void *
@@ -623,7 +626,7 @@ __creat (COOKIE *d, const char *name, COOKIE **new, unsigned mode, int attrib)
 		/* res [0]..[6]	= 0; */
 
 		(*new)->s	= d->s;
-		(*new)->flags	= d->flags;
+		(*new)->flags	= d->flags & S_INHERITED_MASK;
 
 		if (IS_DIR (*new))
 		{
@@ -717,8 +720,10 @@ __unlink (COOKIE *d, const char *name)
 
 	t = f->cookie;
 
-	if (IS_PERSISTENT (t))
+	if (IS_PERSISTENT (t)) {
+		RAM_DEBUG (("arafs: __unlink: object is persistent!"));
 		return EACCES;
+	}
 
 	if (IS_DIR (t))
 	{
