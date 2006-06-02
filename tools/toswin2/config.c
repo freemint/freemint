@@ -16,7 +16,7 @@
  * exportierte Variablen
  */
 bool	gl_shortcut = TRUE;
-bool	gl_allogin = FALSE;
+bool	gl_allogin = TRUE;
 
 bool	gl_con_auto = FALSE;		/* beim Start anlegen */
 bool	gl_con_output = FALSE;		/* bei Ausgaben ffnen */
