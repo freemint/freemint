@@ -36,7 +36,8 @@ __extension__								\
 		lea	sp@(12),sp"					\
 	: "=r"(retvalue)						\
 	: "g"(n), "r"(_a), "r"(_b), "r"(_c), "r"(_d), "r"(_e)		\
-	: "d0", "d1", "d2", "a0", "a1", "a2", "memory");		\
+	: __CLOBBER_RETURN("d0")					\
+	  "d1", "d2", "a0", "a1", "a2", "memory");		\
 	retvalue;							\
 })
 #endif
@@ -62,7 +63,8 @@ __extension__								\
 		lea	sp@(18),sp"					\
 	: "=r"(retvalue)						\
 	: "g"(n), "r"(_a), "r"(_b), "r"(_c), "r"(_d)			\
-	: "d0", "d1", "d2", "a0", "a1", "a2", "memory");		\
+	: __CLOBBER_RETURN("d0")					\
+	  "d1", "d2", "a0", "a1", "a2", "memory");		\
 	retvalue;							\
 })
 #endif
@@ -92,7 +94,8 @@ __extension__								\
 		lea	sp@(26),sp"					\
 	: "=r"(retvalue)						\
 	: "g"(n), "r"(_a), "r"(_b), "r"(_c), "r"(_d), "r"(_e), "r"(_f)	\
-	: "d0", "d1", "d2", "a0", "a1", "a2", "memory");		\
+	: __CLOBBER_RETURN("d0")					\
+	  "d1", "d2", "a0", "a1", "a2", "memory");		\
 	retvalue;							\
 })
 #endif
@@ -114,7 +117,8 @@ __extension__								\
 		lea	sp@(10),sp"					\
 	: "=r"(retvalue)						\
 	: "g"(n), "r"(_a), "r"(_b)					\
-	: "d0", "d1", "d2", "a0", "a1", "a2", "memory");		\
+	: __CLOBBER_RETURN("d0")					\
+	  "d1", "d2", "a0", "a1", "a2", "memory");		\
 	retvalue;							\
 })
 #endif
@@ -138,7 +142,8 @@ __extension__								\
 		lea	sp@(12),sp"					\
 	: "=r"(retvalue)						\
 	: "g"(n), "r"(_a), "r"(_b), "r"(_c)				\
-	: "d0", "d1", "d2", "a0", "a1", "a2", "memory");		\
+	: __CLOBBER_RETURN("d0")					\
+	  "d1", "d2", "a0", "a1", "a2", "memory");		\
 	retvalue;							\
 })
 #endif
