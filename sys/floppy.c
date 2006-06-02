@@ -372,13 +372,13 @@ void floppy_interrupt_asm1()
 {
 	(void)floppy_interrupt();
 
-	asm volatile
+	__asm__ volatile
 	(
-		"_floppy_interrupt_asm:
-		 movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)
-		 bsr		 _floppy_interrupt
-		 movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2
-		 rte"
+		"_floppy_interrupt_asm:"
+		"movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)"
+		"bsr _floppy_interrupt"
+		"movem.l (%%sp)+,%%a0-%%a2/%%d0-%%d2"
+		"rte"
 		: 			/* output register */
 		:			/* input registers */
 		 			/* clobbered */
