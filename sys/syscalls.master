@@ -107,6 +107,25 @@ opcode	class name	args */
 0x01e	undefined
 0x01f	undefined
 
+/*
+ * The next binding is not quite right if used in another than the usual ways:
+ *      1. Super(1L) from either user or supervisor mode
+ *      2. ret = Super(0L) from user mode and after this Super(ret) from
+ *         supervisor mode
+ * We get the following situations (usp, ssp relative to the start of Super):
+ *      Parameter       Userstack       Superstack      Calling Mode    ret
+ *         1L              usp             ssp              user         0L
+ *         1L              usp             ssp           supervisor     -1L
+ *         0L             usp-6            usp              user        ssp
+ *         0L              ssp            ssp-6          supervisor   ssp-6
+ *        ptr             usp-6           ptr+6             user        ssp
+ *        ptr             usp+6            ptr           supervisor      sr
+ * The usual C-bindings are safe only because the "unlk a6" is compensating
+ * the errors when you invoke this function. In this binding the "unlk a6" at
+ * the end of the calling function compensates the error made in sequence 2
+ * above (the usp is 6 to low after the first call which is not corrected by
+ * the second call).
+ */
 0x020	Super		(long new_ssp)
 0x021	undefined
 0x022	undefined
@@ -621,6 +640,17 @@ opcode	class name	args */
 0x03e	Metagettoc	(short drive, ushort dummy, void *tocentry) unsupported
 0x03f	Metadiscinfo	(short drive, void *discinfo) unsupported
 
+/*
+ * Flag:
+ *  -1: get config
+ * !-1: set config      previous config returned
+ *      bit
+ *       0       0 blit mode soft        1 blit mode hardware
+ *       1       0 no blitter            1 blitter present
+ *       2..14   reserved
+ *       15      must be zero on set/returned as zero
+ * blitmode (bit 0) forced to soft if no blitter(bit 1 == 0).
+ */
 0x040	Blitmode	(short flag) passthrough
 0x041	passthrough
 0x042	passthrough
