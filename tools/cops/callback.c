@@ -257,7 +257,7 @@ cpx_rsh_obfix(CPX_DESC *cpx_desc, OBJECT *tree, short ob)
 	short hpix, ypix;
 
 	DEBUG_CALLBACK(cpx_desc);
-	DEBUG(("rsh_obfix ob %d\n", ob));
+	DEBUG(("rsh_obfix ob %d\n", (int)ob));
 
 	ypix = (tree[ob].ob_y & 0xff00) >> 8;
 	tree[ob].ob_y &= 0xff;

@@ -32,7 +32,6 @@
 
 #include "phstuff.h"
 
-extern LONG	clear_cpu_caches( void );
 
 /*----------------------------------------------------------------------------------------*/ 
 /* CPX-Datei laden und relozieren */
@@ -146,15 +145,18 @@ load_and_reloc(CPX_DESC *cpx_desc, long handle, long fsize, struct program_heade
 	/* Programm geladen? */
 	if (addr)
 	{
-		r = Ssystem(-1, 0,NULL);
-	
-		if (!r)
+		if (!Ssystem(-1, 0,NULL))
 		{
 			/* flush cpu caches */
 			Ssystem(S_FLUSHCACHE, addr, TDB_len);
 		}
 		else
-			Supexec( clear_cpu_caches);
+		{
+#if 0 /* correct clear_cpu_caches.s */
+			extern long clear_cpu_caches(void);
+			Supexec(clear_cpu_caches);
+#endif
+		}
 	}
 
 	return addr;
