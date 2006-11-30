@@ -58,8 +58,11 @@ enum special_hw
 {
 	none = 0,
 	hades,
-	ct60,
+	ct60
+# ifdef ARANYM
+	,
 	aranym
+# endif
 };
 
 static long _getmch (void);
