@@ -23,6 +23,22 @@
  * and complain
  */
 
+#if __GNUC__ > 2 || __GNUC_MINOR__ > 5
+# if __GNUC__ >= 3
+   /* gcc 3 does not want a clobbered register to be input or output */
+#  define MINT_CLOBBER_LIST	"d1", "d2", "d3", "d4", "a0", "a1", "a2", "a3"
+# else	
+#  define MINT_CLOBBER_LIST	"d0", "d1", "d2", "d3", "d4", "a0", "a1", "a2", "a3"
+/* old version
+	__CLOBBER_RETURN("d0")		\
+	  "d1", "d2", "d3", "d4",		\
+	  "a0", "a1", "a2", "a3"
+*/
+# endif
+#else
+# define MINT_CLOBBER_LIST
+#endif
+
 /* On TOS 1.04, when calling Bconout(2,'\a') the VDI jumps directly
    back to the BIOS which expects the register A5 to be set to zero.
    (Specifying the register as clobbered does not work.) */
@@ -43,9 +59,7 @@
 	    moveml sp@+,d5-d7/a4-a6 "		\
 	: "=r"(retvalue)	/* outputs */	\
 	: "r"(_f), "r"(_a)	/* inputs */	\
-	: __CLOBBER_RETURN("d0")		\
-	  "d1", "d2", "d3", "d4",		\
-	  "a0", "a1", "a2", "a3" /* clobbered regs */ \
+	:  MINT_CLOBBER_LIST /* clobbered regs */ \
 	);					\
 	retvalue;				\
 })
@@ -68,9 +82,7 @@
 	    moveml sp@+,d5-d7/a4-a6 "		\
 	: "=r"(retvalue)	/* outputs */	\
 	: "r"(_f), "r"(_a), "r"(_b) /* inputs */ \
-	: __CLOBBER_RETURN("d0")		\
-	  "d1", "d2", "d3", "d4",		\
-	  "a0", "a1", "a2", "a3" /* clobbered regs */ \
+	: MINT_CLOBBER_LIST /* clobbered regs */ \
 	);					\
 	retvalue;				\
 })
