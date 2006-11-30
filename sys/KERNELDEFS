@@ -17,6 +17,7 @@
 # -DM68060		build for 68060 (same as M68040, currently)
 # -DMILAN		build Milan kernel
 # -DARANYM		build Aranym kernel
+# -DCOLDFIRE		build coldfire kernel
 
 # 
 # debug flags
@@ -79,6 +80,12 @@ CPU  = 020-60
 KERNELDEFS = -DDEBUG_INFO -DM68040
 endif
 
+ifeq ($(kernel),col)
+MINT = mintnp.prg
+CPU  = v4e
+KERNELDEFS = -DONLY030 -DMMU040 -DCPU040 -DNO_AKP_KEYBOARD -DNO_RAMFS -DNO_FAKE_SUPER -DCOLDFIRE 
+endif
+
 ifeq ($(kernel),mil)
 MINT = mintmil.prg
 CPU  = 020-60
@@ -122,5 +129,5 @@ endif
 #
 # all default targets
 #
-kerneltargets = 000 030 040 deb mil ara my1 my2 my3 my4
-cputargets = 000 030 020-60
+kerneltargets = 000 030 040 deb mil ara my1 my2 my3 my4 col
+cputargets = 000 030 020-60 v4e
