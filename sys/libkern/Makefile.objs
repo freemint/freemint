@@ -17,6 +17,9 @@ include $(top_srcdir)/PHONY
 
 all-here: objs
 
+NOCFLAGS-md5.c = -mcfv4e
+CFLAGS-md5.c = -m68000
+
 # default overwrites
 DEFINITIONS = -D__KERNEL__
 cflags = $(kernel_cflags)

@@ -22,17 +22,31 @@ INCLUDES = -I$(top_srcdir)
 DEFINITIONS = $(KERNELDEFAULTDEFS) $(KERNELDEFS)
 
 CFLAGS-context.S = -m68030
+NOCFLAGS-context.S = -mcfv4e
 CFLAGS-cpu.S = -m68030
-NOCFLAGS-cpu.S = -m68020-60
+NOCFLAGS-cpu.S = -m68020-60 -mcfv4e
 CFLAGS-detect.S = -m68030
-NOCFLAGS-detect.S = -m68020-60
+NOCFLAGS-detect.S = -m68020-60 -mcfv4e
 CFLAGS-intr.S = -m68030
+NOCFLAGS-intr.S = -mcfv4e
 CFLAGS-mmu030.S = -m68030
+NOCFLAGS-mmu030.S = -mcfv4e
+NOCFLAGS-syscall.S = -mcfv4e
+CFLAGS-syscall.S = -m68020-60
+NOCFLAGS-user_things.S = -mcfv4e
+CFLAGS-user_things.S = -m68020
+NOCFLAGS-kernel.S = -mcfv4e
+CFLAGS-kernel.S = -m68000
 
-NOCFLAGS-mprot030.c = -m68000 -m68020 -m68040 -m68060 -m68020-60
-NOCFLAGS-mprot040.c = -m68000 -m68020 -m68030 -m68040 -m68020-60
+
+NOCFLAGS-mprot030.c = -m68000 -m68020 -m68040 -m68060 -m68020-60 -mcfv4e
+NOCFLAGS-mprot040.c = -m68000 -m68020 -m68030 -m68040 -m68020-60 -mcfv4e
 CFLAGS-mprot030.c = -m68030
 CFLAGS-mprot040.c = -m68060
+NOCFLAGS-init_intr.c = -mcfv4e
+CFLAGS-init_intr.c = -m68000
+NOCFLAGS-sig_mach.c = -mcfv4e
+CFLAGS-sig_mach.c = -m68000
 
 cflags = $(kernel_cflags)
 nocflags = $(kernel_nocflags)
