@@ -379,6 +379,18 @@ module_init(void *initfunc, struct kerinfo *k)
 	return (*init)(k);
 }
 #else
+
+#if __GNUC__ > 2 || __GNUC_MINOR__ > 5
+# if __GNUC__ >= 3
+   /* gcc 3 does not want a clobbered register to be input or output */
+#  define LOCAL_CLOBBER_LIST	"d1", "d2", "a0", "a1", "a2", "memory"
+# else	
+#  define LOCAL_CLOBBER_LIST	__CLOBBER_RETURN("d0") "d1", "d2", "a0", "a1", "a2", "memory"
+# endif
+#else
+# define LOCAL_CLOBBER_LIST
+#endif
+
 static void *	 
 module_init(void *initfunc, struct kerinfo *k)
 {
@@ -394,9 +406,7 @@ module_init(void *initfunc, struct kerinfo *k)
 		"moveml	sp@+,d3-d7/a3-a6;"
 		: "=r"(ret)				/* outputs */
 		: "g"(initfunc), "r"(k)			/* inputs  */
-		: __CLOBBER_RETURN("d0")
-		  "d1", "d2", "a0", "a1", "a2",		/* clobbered regs */
-		  "memory"
+		: LOCAL_CLOBBER_LIST /* clobbered regs */
 	);
 
 	return ret;
