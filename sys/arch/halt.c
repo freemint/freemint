@@ -55,7 +55,7 @@ hw_poweroff(void)
 	nf_shutdown();
 # else
 	/* CT60 poweroff */
-	long int dummy;
+	unsigned long int dummy;
 
 	if (get_cookie(NULL, COOKIE_CT60, &dummy) == E_OK)
 	{
