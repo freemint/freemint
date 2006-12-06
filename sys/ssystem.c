@@ -273,7 +273,7 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 		 */
 		case S_GETCOOKIE:
 		{
-			r = get_cookie (NULL, arg1, (long *) arg2);
+			r = get_cookie (NULL, arg1, (unsigned long *) arg2);
 
 			break;
 		}

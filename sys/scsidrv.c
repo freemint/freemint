@@ -111,7 +111,7 @@ scsidrv_init (void)
 	init_scsidrv_mon();
 # endif
 
-	r = get_toscookie (COOKIE_SCSI, (long *) &scsidrv);
+	r = get_toscookie (COOKIE_SCSI, (unsigned long *) &scsidrv);
 	if (!r && scsidrv)
 	{
 		scsidrv_installed = scsidrv->version;
