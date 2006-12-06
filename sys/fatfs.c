@@ -5329,6 +5329,13 @@ get_bpb (_x_BPB *xbpb, DI *di)
 
 			break;
 		}
+		default: 
+		{		
+			xbpb->fsiz =0;
+			xbpb->datrec = 0;
+			xbpb->rdrec = 0;
+			break;
+		}
 	}
 
 	if (WPEEK_INTEL (fbs->sectors))
@@ -5353,6 +5360,11 @@ get_bpb (_x_BPB *xbpb, DI *di)
 		{
 			xbpb->info = 0;
 		}
+	}
+	else 
+	{	
+		xbpb->info = 0;
+		xbpb->fflag = 0; 
 	}
 
 	xbpb->fats--;
