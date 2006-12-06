@@ -752,7 +752,7 @@ load_unicode_table(FILEPTR *fp, const char *name, long len)
 	if (!buf)
 		return ENOMEM;
 
-	if ((*fp->dev->read)(fp, buf, len) == len)
+	if ((*fp->dev->read)(fp, (char *) buf, len) == len)
 	{
 		uchar *s = buf;
 		int a;
