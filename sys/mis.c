@@ -645,7 +645,7 @@ sh_ls(long argc, char **argv)
 
 				if (full)
 				{
-					short year, month, day, hour, minute;
+					unsigned short year, month, day, hour, minute;
 
 					/* Reuse the path[] space for attributes */
 					strcpy(path, "?---------");
@@ -1353,7 +1353,7 @@ execute(char *cmdline)
 /* XXX because of Cconrs() the command line cannot be longer than 254 bytes.
  */
 static char *
-prompt(uchar *buffer, long buflen)
+prompt(char *buffer, long buflen)
 {
 	char *lbuff, *cwd;
 	short idx;
@@ -1393,8 +1393,8 @@ prompt(uchar *buffer, long buflen)
 static void
 shell(void *arg)
 {
-	uchar linebuf[LINELEN + 2];
-	uchar *lbuff;
+	char linebuf[LINELEN + 2];
+	char *lbuff;
 	long r;
 
 	(void)sys_p_domain(1);			/* switch to MiNT domain */
