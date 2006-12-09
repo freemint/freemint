@@ -379,7 +379,7 @@ env_append(char *where, char *what)
 
 /* Execute an external program */
 static long
-execvp(char **argv)
+internal_execvp(char **argv)
 {
 	char *oldcmd, *npath, *var, *new_env, *new_var, *t, *path, *np;
 	long count, x, y, r = -1L, blanks = 0;
@@ -1337,7 +1337,7 @@ execute(char *cmdline)
 	if ((commands[cnt] == NULL) || (!xcommands && cmdno > MAX_BASIC_CMD))
 		cmdno = 0;
 
-	r = (cmdno == 0) ? execvp(argv) : cmd_routs[cnt](argc, argv);
+	r = (cmdno == 0) ? internal_execvp(argv) : cmd_routs[cnt](argc, argv);
 
 	for (x = 1; x < argc; x++)
 	{
