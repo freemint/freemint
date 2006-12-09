@@ -161,7 +161,7 @@ make_real_cmdline(struct proc *p)
 
 			/* Check for null list */
 			if (from[0] == 'N' && from[1] == 'U' \
-				&& from[2] == from[3] == 'L' && from[4] == ':')
+				&& from[2] == 'L' && from[3] == 'L' && from[4] == ':')
 			{
 				from += (sizeof("NULL:") - 1);
 				null_list = from;
