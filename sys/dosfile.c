@@ -1218,12 +1218,12 @@ sys_f_poll (POLLFD *fds, ulong nfds, ulong timeout)
 	}
 
 	if (timeout == ~0)
-		retval = sys_f_select (0L, &rfds, &wfds, &xfds);
+		retval = sys_f_select (0L, (long *)&rfds, (long *)&wfds, (long *)&xfds);
 	else if (timeout == 0)
-		retval = sys_f_select (1L, &rfds, &wfds, &xfds);
+		retval = sys_f_select (1L, (long *)&rfds, (long *)&wfds, (long *)&xfds);
 # define USHRT_MAX	65535
 	else if (timeout < USHRT_MAX)
-		retval = sys_f_select (timeout, &rfds, &wfds, &xfds);
+		retval = sys_f_select (timeout, (long *)&rfds, (long *)&wfds, (long *)&xfds);
 	else
 	{
 		ulong saved_rfds, saved_wfds, saved_xfds;
@@ -1243,7 +1243,7 @@ sys_f_poll (POLLFD *fds, ulong nfds, ulong timeout)
 				last_round = 1;
 			}
 
-			retval = sys_f_select (this_timeout, &rfds, &wfds, &xfds);
+			retval = sys_f_select (this_timeout, (long *)&rfds, (long *)&wfds, (long *)&xfds);
 			if (retval != 0)
 				break;
 

@@ -46,7 +46,7 @@ struct file;
 struct filedesc
 {
 	struct file	**ofiles;	/* file structures for open files */
-	char		*ofileflags;	/* per-process open file flags */
+	uchar		*ofileflags;	/* per-process open file flags */
 	short		nfiles;		/* number of open files allocated */
 	short		pad2;
 // XXX	short		lastfile;	/* high-water mark of ofiles */
