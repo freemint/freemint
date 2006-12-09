@@ -1525,7 +1525,7 @@ tos_ioctl(FILEPTR *f, int mode, void *buf)
 		ti = (struct tindex *)f->fc.index;
 
 		if (mode == F_GETLK) {
-			lck = denylock(ti->locks, &t);
+			lck = denylock(curproc->pid,ti->locks, &t);
 			if (lck)
 				*fl = lck->l;
 			else
@@ -1562,7 +1562,7 @@ tos_ioctl(FILEPTR *f, int mode, void *buf)
 			t.l.l_start, t.l.l_len));
 		do {
 		/* see if there's a conflicting lock */
-			while ((lck = denylock(ti->locks, &t)) != 0) {
+			while ((lck = denylock(curproc->pid,ti->locks, &t)) != 0) {
 				DEBUG(("tosfs: lock conflicts with one held by %d",
 					lck->l.l_pid));
 				if (mode == F_SETLKW) {
