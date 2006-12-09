@@ -643,11 +643,11 @@ kern_get_welcome (SIZEBUF **buffer)
 	if (!info)
 		return ENOMEM;
 
-	to = info->buf;
+	to = (uchar *) info->buf;
 
 	for (greet = greets; *greet != NULL; greet++)
 	{
-		from = *greet;
+		from = (uchar *) *greet;
 
 		while (*from)
 		{
@@ -659,7 +659,7 @@ kern_get_welcome (SIZEBUF **buffer)
 				continue;
 			}
 
-			*to++ = (char) atarist_to_latin1 [*from++];
+			*to++ = (uchar) atarist_to_latin1 [*from++];
 		}
 	}
 

@@ -217,7 +217,7 @@ kern_sysctl (long *name, ulong namelen, void *oldp, ulong *oldlenp,
 			return sysctl_rdstruct (oldp, oldlenp, newp, &boottime, sizeof (struct timeval));
 
 		case KERN_INITIALTPA:
-			return sysctl_long (oldp, oldlenp, newp, newlen, &initialmem);
+			return sysctl_long (oldp, oldlenp, newp, newlen,  (long *)&initialmem);
 
 		case KERN_SYSDIR:
 			return sysctl_rdstring (oldp, oldlenp, newp, sysdir);
