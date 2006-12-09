@@ -339,10 +339,10 @@ sys_d_setkey (llong dev, char *key, int cipher)
 	if (*key)
 	{
 		struct MD5Context md5sum;
-		char hash [16];
+		uchar hash [16];
 
 		MD5Init (&md5sum);
-		MD5Update (&md5sum, key, strlen (key));
+		MD5Update (&md5sum, (uchar *) key, strlen (key));
 		MD5Final (hash, &md5sum);
 
 		if (!(di->mode & BIO_ENCRYPTED))
