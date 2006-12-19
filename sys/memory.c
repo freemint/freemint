@@ -1950,7 +1950,6 @@ realloc_region (MEMREGION *reg, long newsize)
 	if (newsize != -1L)
 		newsize = ROUND (newsize);
 
-	oldsize = reg->len;
 
 	/* last fit allocation: this is pretty straightforward,
 	 * we just look for the last block that would work
@@ -1978,6 +1977,7 @@ realloc_region (MEMREGION *reg, long newsize)
 				}
 			}
 		}
+
 		if (!lastfit)
 			return 0;
 
@@ -2009,7 +2009,7 @@ realloc_region (MEMREGION *reg, long newsize)
 		SANITY_CHECK (map);
 		return (long) newm;
 	}
-
+	else oldsize = reg->len;
 	/* check for trivial resize */
 	if (newsize == oldsize)
 		return reg->loc;
