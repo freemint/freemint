@@ -346,9 +346,9 @@ VDEBUGOUT(const char *s, va_list args, int alert_flag)
 	if (++logptr == LBSIZE)
 		logptr = 0;
 	
-	if (curproc)
+	if (get_curproc())
 	{
-		ksprintf(lp, len, "pid %3d (%s): ", curproc->pid, curproc->name);
+		ksprintf(lp, len, "pid %3d (%s): ", get_curproc()->pid, get_curproc()->name);
 		lptemp += strlen(lp);
 		len -= strlen(lp);
 	}
@@ -368,7 +368,11 @@ Tracelow(const char *s, ...)
 {
 	if (debug_logging
 	    || (debug_level >= LOW_LEVEL)
-	    || (curproc->debug_level >= LOW_LEVEL))
+	    || (get_curproc() && (get_curproc()->debug_level >= LOW_LEVEL))
+# ifdef DEBUG_INFO
+	    || (get_curproc()==NULL)
+# endif
+	)
 	{
 		va_list args;
 		
@@ -383,7 +387,11 @@ Trace(const char *s, ...)
 {
 	if (debug_logging
 	    || (debug_level >= TRACE_LEVEL)
-	    || (curproc->debug_level >= TRACE_LEVEL))
+	    || (get_curproc() && (get_curproc()->debug_level >= TRACE_LEVEL))
+# ifdef DEBUG_INFO
+	    || (get_curproc()==NULL)
+# endif
+	)
 	{
 		va_list args;
 		
@@ -410,7 +418,11 @@ Debug(const char *s, ...)
 {
 	if (debug_logging
 	    || (debug_level >= DEBUG_LEVEL)
-	    || (curproc->debug_level >= DEBUG_LEVEL))
+	    || (get_curproc() && (get_curproc()->debug_level >= DEBUG_LEVEL))
+# ifdef DEBUG_INFO
+	    || (get_curproc()==NULL)
+# endif
+	)
 	{
 		va_list args;
 		
@@ -421,7 +433,7 @@ Debug(const char *s, ...)
 	
 	if (debug_logging
 	    && ((debug_level >= DEBUG_LEVEL)
-	        || (curproc->debug_level >= DEBUG_LEVEL)))
+	        || (get_curproc() && (get_curproc()->debug_level >= DEBUG_LEVEL)))) 
 	{
 		DUMPLOG();
 	}
@@ -633,7 +645,7 @@ do_func_key(int scan)
 		/* shift-F9: dump the mmu tree */
 		case 0x5c:
 		{
-			BIG_MEM_DUMP(1, curproc);
+			BIG_MEM_DUMP(1, get_curproc());
 			break;
 		}
 		
