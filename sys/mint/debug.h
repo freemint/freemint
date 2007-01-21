@@ -43,29 +43,11 @@ extern int debug_logging;
 
 # else
 
-# define TRACELOW(s)	\
-	do { \
-		if ((debug_level >= LOW_LEVEL) \
-		    || (curproc->debug_level >= LOW_LEVEL) \
-		    || debug_logging) \
-			Tracelow s ; \
-	} while (0)
+# define TRACELOW(s)	Tracelow s
 
-# define TRACE(s)	\
-	do { \
-		if ((debug_level >= TRACE_LEVEL) \
-		    || (curproc->debug_level >= TRACE_LEVEL) \
-		    || debug_logging) \
-			Trace s ; \
-	} while (0)
+# define TRACE(s)	Trace s
 
-# define DEBUG(s)	\
-	do { \
-		if ((debug_level >= DEBUG_LEVEL) \
-		    || (curproc->debug_level >= DEBUG_LEVEL) \
-		    || debug_logging) \
-			Debug s ; \
-	} while (0)
+# define DEBUG(s)	Debug s 
 
 # ifndef str
 # define str(x)		_stringify(x)
