@@ -75,9 +75,8 @@
 	#define	FALSE	0
 #endif
 
-#ifndef NIL
-	#define	NIL	((void *)-1)
-#endif
+#undef NIL
+#define	NIL	((void *)-1)
 
 #ifndef min
 	#define	min(a, b)	((a) < (b) ? (a) : (b))
