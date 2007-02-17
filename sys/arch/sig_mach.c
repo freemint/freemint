@@ -48,15 +48,16 @@ int
 sendsig(ushort sig)
 {
 	struct sigaction *sigact = &(SIGACTION(curproc, sig));
-	long oldstack, newstack;
-	long *stack;
+	unsigned long oldstack, newstack;
+	unsigned long *stack;
 	struct user_things *ut;
 	struct sigcontext *sigctxt;
 	CONTEXT *call, contexts[2];
 
 # define newcurrent (contexts[0])
 # define oldsysctxt (contexts[1])
-	
+
+
 	assert(curproc->stack_magic == STACK_MAGIC);
 	
 	/* another kludge: there is one case in which the p_sigreturn
@@ -120,7 +121,7 @@ sendsig(ushort sig)
 		
 		return 0;
 	}
-	
+
 	call = &(curproc->ctxt[SYSCALL]);
 	
 	/* what we do is build two fake stack frames; the top one is
@@ -133,14 +134,17 @@ sendsig(ushort sig)
 	
 	/* set a new system stack, with a bit of buffer space */
 	oldstack = curproc->sysstack;
-	newstack = ((long) &newcurrent) - 0x40 - 12;
-	
-	if (newstack < (long) curproc->stack + ISTKSIZE + 256)
+# ifdef COLDFIRE
+	newstack = ((unsigned long) &newcurrent) - 0x40L - 12L - 0x100L;
+# else
+	newstack = ((unsigned long) &newcurrent) - 0x40L - 12L;
+# endif	
+	if (newstack < (unsigned long) curproc->stack + ISTKSIZE + 256)
 	{
 		ALERT("stack overflow");
 		return 1;
 	}
-	else if ((long) curproc->stack + STKSIZE < newstack)
+	else if ((unsigned long) curproc->stack + STKSIZE < newstack)
 	{
 		FATAL("system stack not in proc structure");
 	}
@@ -170,14 +174,14 @@ sendsig(ushort sig)
 	sigctxt->sc_pc = oldsysctxt.pc;
 	sigctxt->sc_usp = oldsysctxt.usp;
 	sigctxt->sc_sr = oldsysctxt.sr;
-	*(--stack) = (long) sigctxt;
-	*(--stack) = (long) call->sfmt & 0xfff;
-	*(--stack) = (long) sig;
+	*(--stack) = (unsigned long) sigctxt;
+	*(--stack) = (unsigned long) call->sfmt & 0xfff;
+	*(--stack) = (unsigned long) sig;
 	*(--stack) = ut->sig_return_p;
 	if (call->sr & 0x2000)
-		call->ssp = ((long)stack);
+		call->ssp = ((unsigned long)stack);
 	else
-		call->usp = ((long)stack);
+		call->usp = ((unsigned long)stack);
 	
 	call->pc = sigact->sa_handler;
 	/* don't restart FPU communication */
@@ -207,23 +211,25 @@ sendsig(ushort sig)
 		
 		/* unwound_stack is set by p_sigreturn() */
 		if (sig == 0 && unwound_stack)
-			stack = (long *)unwound_stack;
+			stack = (unsigned long *)unwound_stack;
 		else
 			/* newstack points just below our current sp,
 			 * much less than ISTKSIZE away so better set
 			 * it up with interrupts off...  -nox
 			 */
-			stack = (long *)newstack;
+			stack = (unsigned long *)newstack;
 		
 		splhigh();
 		
 		unwound_stack = 0;
-		curproc->sysstack = (long)stack;
-		++stack;
+		curproc->sysstack = (unsigned long)stack;
+		stack++;
 		*stack++ = FRAME_MAGIC;
 		*stack++ = oldstack;
-		*stack = sig;
+		*stack = sig ;
+
 		leave_kernel();
+
 		restore_context(call);
 	}
 	
@@ -300,8 +306,11 @@ top:
 	else
 	{
 		unwound_stack = 0;
-		
+# ifdef COLDFIRE	
+		oldctxt = (CONTEXT *) (((long) &frame[2]) + 0x40 + 0x100);
+# else
 		oldctxt = (CONTEXT *) (((long) &frame[2]) + 0x40);
+# endif
 		if (oldctxt->regs[0] != CTXT_MAGIC)
 		{
 			FATAL ("p_sigreturn: corrupted context");
