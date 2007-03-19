@@ -21,7 +21,7 @@
 	.globl	_enter_gemdos
 	.globl	_leave_kernel
 
-	.globl	_curproc
+	.extern	_curproc
 	.globl	_in_kernel
 	.globl	__base
 
