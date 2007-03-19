@@ -46,6 +46,7 @@
 long _cdecl
 sys_s_version (void)
 {
+	TRACE(("Sversion()"));
 # ifdef OLDTOSFS
 	/* one direct call to ROM less */
 	return gemdos_version;
@@ -61,7 +62,7 @@ sys_s_version (void)
 long _cdecl
 sys_s_uper (long new_ssp)
 {
-	PROC *p = curproc;
+	PROC *p = get_curproc();
 	register int in_super;
 	register long r;
 
@@ -77,7 +78,6 @@ sys_s_uper (long new_ssp)
 
 	TRACE (("Super(%lx)", new_ssp));
 	in_super = p->ctxt[SYSCALL].sr & 0x2000;
-
 	if (new_ssp == 1)
 	{
 		r = in_super ? -1L : 0;
@@ -105,7 +105,6 @@ sys_s_uper (long new_ssp)
 				new_ssp : p->ctxt[SYSCALL].usp;
 		}
 	}
-
 	return r;
 }
 
@@ -116,7 +115,7 @@ sys_s_uper (long new_ssp)
 long _cdecl
 sys_s_yield (void)
 {
-	PROC *p = curproc;
+	PROC *p = get_curproc();
 
 	/* reward the nice process */
 	p->curpri = p->pri;
@@ -130,9 +129,9 @@ sys_s_yield (void)
  * user i.d.'s
  */
 
-long _cdecl sys_p_getpid (void) { return curproc->pid; }
-long _cdecl sys_p_getppid (void) { return curproc->ppid; }
-long _cdecl sys_p_getpgrp (void) { return curproc->pgrp; }
+long _cdecl sys_p_getpid (void) { return get_curproc()->pid; }
+long _cdecl sys_p_getppid (void) { return get_curproc()->ppid; }
+long _cdecl sys_p_getpgrp (void) { return get_curproc()->pgrp; }
 
 /*
  * note: Psetpgrp(0, ...) is equivalent to Psetpgrp(Pgetpid(), ...)
@@ -142,14 +141,14 @@ long _cdecl sys_p_getpgrp (void) { return curproc->pgrp; }
 long _cdecl
 sys_p_setpgrp (int pid, int newgrp)
 {
-	PROC *p = curproc;
+	PROC *p = get_curproc();
 	PROC *t;
 
 	TRACE (("Psetpgrp(%i, %i)", pid, newgrp));
 
 	if (pid == 0)
 	{
-		t = curproc;
+		t = get_curproc();
 	}
 	else
 	{
@@ -184,7 +183,7 @@ sys_p_setpgrp (int pid, int newgrp)
 long _cdecl
 sys_p_getauid (void)
 {
-	PROC *p = curproc;
+	PROC *p = get_curproc();
 
 	TRACE (("Pgetauid()"));
 
@@ -193,7 +192,7 @@ sys_p_getauid (void)
 long _cdecl
 sys_p_setauid (int id)
 {
-	PROC *p = curproc;
+	PROC *p = get_curproc();
 
 	TRACE (("Psetauid(%i)", id));
 
@@ -211,7 +210,7 @@ sys_p_setauid (int id)
 long _cdecl
 sys_p_usrval (long arg)
 {
-	PROC *p = curproc;
+	PROC *p = get_curproc();
 	long r;
 
 	TRACE (("Pusrval(%lx)", arg));
@@ -230,7 +229,7 @@ sys_p_usrval (long arg)
 long _cdecl
 sys_p_umask (ushort mode)
 {
-	PROC *p = curproc;
+	PROC *p = get_curproc();
 	long oldmask = p->p_cwd->cmask;
 
 	p->p_cwd->cmask = mode & (~S_IFMT);
@@ -245,7 +244,7 @@ sys_p_umask (ushort mode)
 long _cdecl
 sys_p_domain (int arg)
 {
-	PROC *p = curproc;
+	PROC *p = get_curproc();
 	long r;
 	TRACE (("Pdomain(%i)", arg));
 
@@ -301,7 +300,7 @@ sys_t_alarm (long x)
 long _cdecl
 sys_t_malarm (long x)
 {
-	PROC *p = curproc;
+	PROC *p = get_curproc();
 	long oldalarm;
 	TIMEOUT *t;
 
@@ -443,7 +442,7 @@ itimer_prof_me (PROC *p)
 long _cdecl
 sys_t_setitimer (int which, long *interval, long *value, long *ointerval, long *ovalue)
 {
-	PROC *p = curproc;
+	PROC *p = get_curproc();
 	long oldtimer;
 	TIMEOUT *t;
 	void _cdecl (*handler)() = 0;
@@ -503,7 +502,7 @@ foundtimer:
 				- (p->usrtime - p->itimer[which].startusrtime);
 
 			if (which == ITIMER_PROF)
-				tmpold -= (curproc->systime - p->itimer[which].startsystime);
+				tmpold -= (get_curproc()->systime - p->itimer[which].startsystime);
 
 			if (tmpold <= 0)
 				tmpold = 0;
@@ -519,7 +518,7 @@ foundtimer:
 	{
 		/* cancel old timer */
 		if (p->itimer[which].timeout)
-			canceltimeout (curproc->itimer[which].timeout);
+			canceltimeout (get_curproc()->itimer[which].timeout);
 
 		p->itimer[which].timeout = NULL;
 
@@ -527,8 +526,8 @@ foundtimer:
 		if (*value)
 		{
 			p->itimer[which].reqtime = MAX (*value, 10);
-			p->itimer[which].startsystime = curproc->systime;
-			p->itimer[which].startusrtime = curproc->usrtime;
+			p->itimer[which].startsystime = get_curproc()->systime;
+			p->itimer[which].startusrtime = get_curproc()->usrtime;
 
 			switch (which)
 			{
@@ -571,7 +570,7 @@ foundtimer:
 long _cdecl
 sys_s_ysconf (int which)
 {
-	PROC *p = curproc;
+	PROC *p = get_curproc();
 
 	switch (which)
 	{
@@ -631,19 +630,19 @@ shutdown(void)
 	int i;
 
 	DEBUG(("shutdown() entered"));
-	assert(curproc->p_sigacts);
+	assert(get_curproc()->p_sigacts);
 
 	/* Ignore signals, that could terminate this process */
-	SIGACTION(curproc, SIGCHLD).sa_handler = SIG_IGN;
-	SIGACTION(curproc, SIGTERM).sa_handler = SIG_IGN;
-	SIGACTION(curproc, SIGABRT).sa_handler = SIG_IGN;
-	SIGACTION(curproc, SIGQUIT).sa_handler = SIG_IGN;
-	SIGACTION(curproc, SIGHUP).sa_handler = SIG_IGN;
+	SIGACTION(get_curproc(), SIGCHLD).sa_handler = SIG_IGN;
+	SIGACTION(get_curproc(), SIGTERM).sa_handler = SIG_IGN;
+	SIGACTION(get_curproc(), SIGABRT).sa_handler = SIG_IGN;
+	SIGACTION(get_curproc(), SIGQUIT).sa_handler = SIG_IGN;
+	SIGACTION(get_curproc(), SIGHUP).sa_handler = SIG_IGN;
 
 	for (p = proclist; p; p = p->gl_next)
 	{
 		/* Skip MiNT, curproc and AES */
-		if (p->pid && (p != curproc) && ((p->p_mem->memflags & F_OS_SPECIAL) == 0))
+		if (p->pid && (p != get_curproc()) && ((p->p_mem->memflags & F_OS_SPECIAL) == 0))
 		{
 			if (p->wait_q != ZOMBIE_Q && p->wait_q != TSR_Q)
 			{
@@ -716,7 +715,7 @@ shutdown(void)
 long _cdecl
 sys_s_hutdown(long restart)
 {
-	PROC *p = curproc;
+	PROC *p = get_curproc();
 
 	/* only root may shut down the system */
 	if ((p->p_cred->ucr->euid == 0) || (p->p_cred->ruid == 0))

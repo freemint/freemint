@@ -427,7 +427,7 @@ get_cookie (struct cookie *cj, ulong tag, ulong *ret)
 	DEBUG (("get_cookie(): tag=%08lx (%s) ret=%08lx", tag, asc, ret));
 
 # ifdef JAR_PRIVATE
-	ut = curproc->p_mem->tp_ptr;
+	ut = get_curproc()->p_mem->tp_ptr;
 	cjar = ut->user_jar_p;
 # endif
 
@@ -546,7 +546,7 @@ set_cookie (struct cookie *cj, ulong tag, ulong val)
 	asc [4] = '\0';
 # endif
 # ifdef JAR_PRIVATE
-	ut = curproc->p_mem->tp_ptr;
+	ut = get_curproc()->p_mem->tp_ptr;
 	cjar = ut->user_jar_p;
 # endif
 
@@ -615,7 +615,7 @@ del_cookie (struct cookie *cj, ulong tag)
 # endif
 
 # ifdef JAR_PRIVATE
-	ut = curproc->p_mem->tp_ptr;
+	ut = get_curproc()->p_mem->tp_ptr;
 	cjar = ut->user_jar_p;
 # endif
 
@@ -675,7 +675,7 @@ add_rsvfentry (char *name, char portflags, char bdev)
 		if (!rsvfregion)
 			return ENOMEM;
 
-		bzero ((void *) rsvfregion->loc, RSVF_MEM);
+		mint_bzero ((void *) rsvfregion->loc, RSVF_MEM);
 
 		rsvfvec = (RSVF *) attach_region (rootproc, rsvfregion);
 		rsvfmax = MAX_ENTRYS;

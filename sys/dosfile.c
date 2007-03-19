@@ -47,7 +47,7 @@ short select_coll;
 long _cdecl
 sys_f_open (const char *name, short mode)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 	FILEPTR *fp = NULL;
 	short fd = MIN_OPEN - 1;
 	int global = 0;
@@ -120,7 +120,7 @@ error:
 long _cdecl
 sys_f_create (const char *name, short attrib)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 	FILEPTR *fp = NULL;
 	short fd = MIN_OPEN - 1;
 	long ret;
@@ -192,7 +192,7 @@ error:
 long _cdecl
 sys_f_close (short fd)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 	FILEPTR *f;
 	long r;
 
@@ -235,7 +235,7 @@ sys_f_close (short fd)
 long _cdecl
 sys_f_read (short fd, long count, char *buf)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 	FILEPTR *f;
 	long r;
 
@@ -258,7 +258,7 @@ sys_f_read (short fd, long count, char *buf)
 long _cdecl
 sys_f_write (short fd, long count, const char *buf)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 	FILEPTR *f;
 	long r;
 
@@ -312,7 +312,7 @@ sys_f_write (short fd, long count, const char *buf)
 long _cdecl
 sys_f_seek (long place, short fd, short how)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 	FILEPTR *f;
 	long r;
 
@@ -341,7 +341,7 @@ sys_f_dup (short fd)
 long _cdecl
 sys_f_force (short newfd, short oldfd)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 	FILEPTR *fp;
 	long ret;
 
@@ -356,14 +356,14 @@ sys_f_force (short newfd, short oldfd)
 		return EBADF;
 	}
 
-	do_close (curproc, curproc->p_fd->ofiles[newfd]);
-	curproc->p_fd->ofiles[newfd] = fp;
+	do_close (get_curproc(), get_curproc()->p_fd->ofiles[newfd]);
+	get_curproc()->p_fd->ofiles[newfd] = fp;
 
 	/* set default file descriptor flags */
 	if (newfd >= MIN_OPEN)
-		curproc->p_fd->ofileflags[newfd] = FD_CLOEXEC;
+		get_curproc()->p_fd->ofileflags[newfd] = FD_CLOEXEC;
 	else if (newfd >= 0)
-		curproc->p_fd->ofileflags[newfd] = 0;
+		get_curproc()->p_fd->ofileflags[newfd] = 0;
 
 	fp->links++;
 
@@ -377,7 +377,7 @@ sys_f_force (short newfd, short oldfd)
 
 		if (!tty->pgrp)
 		{
-			tty->pgrp = curproc->pgrp;
+			tty->pgrp = get_curproc()->pgrp;
 			DEBUG (("f_force: assigned tty->pgrp = %i", tty->pgrp));
 
 			if (!(fp->flags & O_NDELAY) && (tty->state & TS_BLIND))
@@ -391,7 +391,7 @@ sys_f_force (short newfd, short oldfd)
 long _cdecl
 sys_f_datime (ushort *timeptr, short fd, short wflag)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 	FILEPTR *f;
 	long r;
 
@@ -426,7 +426,7 @@ sys_f_datime (ushort *timeptr, short fd, short wflag)
 long _cdecl
 sys_f_lock (short fd, short mode, long start, long length)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 	FILEPTR *f;
 	long r;
 	struct flock lock;
@@ -508,7 +508,7 @@ sys__ffstat_1_16 (struct file *f, struct stat *st)
 long _cdecl
 sys_ffstat (short fd, struct stat *st)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 	FILEPTR	*f;
 	long ret;
 
@@ -529,7 +529,7 @@ sys_ffstat (short fd, struct stat *st)
 long _cdecl
 sys_f_cntl (short fd, long arg, short cmd)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 	FILEPTR	*f;
 	long r;
 
@@ -688,7 +688,7 @@ sys_f_select (ushort timeout, long *rfdp, long *wfdp, long *xfdp)
 	t = 0;
 
 	TRACELOW(("Fselect(%u, %lx, %lx, %lx)", timeout, rfd, wfd, xfd));
-	p = curproc;			/* help the optimizer out */
+	p = get_curproc();			/* help the optimizer out */
 
 	assert (p->p_fd && p->p_cwd);
 
@@ -713,7 +713,7 @@ sys_f_select (ushort timeout, long *rfdp, long *wfdp, long *xfdp)
  * closed one of the handles.
  */
 
-	curproc->wait_cond = (long)wakeselect;		/* flag */
+	get_curproc()->wait_cond = (long)wakeselect;		/* flag */
 
 retry_after_collision:
 	mask = 1L;
@@ -806,7 +806,7 @@ retry_after_collision:
  * see a profiler...
  *
  */
-	if (!strcmp (curproc->name, "AESSYS")) {
+	if (!strcmp (get_curproc()->name, "AESSYS")) {
 	/* pointer to gems etv_timer handler */
 		char *foo = *(char **)(lineA0()-0x42);
 		long *bar;
@@ -826,15 +826,15 @@ retry_after_collision:
 		/* no data is ready yet */
 		if (timeout && !t)
 		{
-			t = addtimeout (curproc, (long)timeout, unselectme);
+			t = addtimeout (get_curproc(), (long)timeout, unselectme);
 			timeout = 0;
 		}
 
 		/* curproc->wait_cond changes when data arrives or the timeout happens */
 		sr = spl7 ();
-		while (curproc->wait_cond == (long)wakeselect)
+		while (get_curproc()->wait_cond == (long)wakeselect)
 		{
-			curproc->wait_cond = wait_cond;
+			get_curproc()->wait_cond = wait_cond;
 			spl (sr);
 			/*
 			 * The 0x100 tells sleep() to return without sleeping
@@ -846,12 +846,12 @@ retry_after_collision:
 			 * to wakeselect causing curproc to sleep forever.
 			 */
 			if (sleep (SELECT_Q|0x100, wait_cond))
-				curproc->wait_cond = 0;
+				get_curproc()->wait_cond = 0;
 			sr = spl7 ();
 		}
-		if (curproc->wait_cond == (long)&select_coll)
+		if (get_curproc()->wait_cond == (long)&select_coll)
 		{
-			curproc->wait_cond = (long)wakeselect;
+			get_curproc()->wait_cond = (long)wakeselect;
 			spl (sr);
 			goto retry_after_collision;
 		}
@@ -995,7 +995,7 @@ sys_f_midipipe (short pid, short in, short out)
 	/* first, find the process */
 
 	if (pid == 0)
-		p = curproc;
+		p = get_curproc();
 	else
 	{
 		p = pid2proc(pid);
@@ -1045,7 +1045,7 @@ sys_f_midipipe (short pid, short in, short out)
 long _cdecl
 sys_f_fchown (short fd, short uid, short gid)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 	FILEPTR *f;
 	long r;
 
@@ -1080,7 +1080,7 @@ sys_f_fchown (short fd, short uid, short gid)
 			return r;
 		}
 
-		if (xattr.uid != curproc->p_cred->ucr->euid || xattr.uid != uid)
+		if (xattr.uid != get_curproc()->p_cred->ucr->euid || xattr.uid != uid)
 		{
 			DEBUG (("Ffchown(%i): not the file's owner", fd));
 			return EACCES;
@@ -1121,7 +1121,7 @@ sys_f_fchown (short fd, short uid, short gid)
 long _cdecl
 sys_f_fchmod (short fd, ushort mode)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 	FILEPTR *f;
 	long r;
 	XATTR xattr;
@@ -1279,7 +1279,7 @@ sys_f_poll (POLLFD *fds, ulong nfds, ulong timeout)
 long _cdecl
 sys_fwritev (short fd, const struct iovec *iov, long niov)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 	FILEPTR *f;
 	long r;
 
@@ -1344,7 +1344,7 @@ sys_fwritev (short fd, const struct iovec *iov, long niov)
 long _cdecl
 sys_freadv (short fd, const struct iovec *iov, long niov)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 	FILEPTR *f;
 	long r;
 

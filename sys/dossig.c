@@ -49,7 +49,7 @@ sys_p_kill (short pid, short sig)
 	if (pid < 0)
 		r = killgroup (-pid, sig, 0);
 	else if (pid == 0)
-		r = killgroup (curproc->pgrp, sig, 0);
+		r = killgroup (get_curproc()->pgrp, sig, 0);
 	else
 	{
 		p = pid2proc (pid);
@@ -59,7 +59,7 @@ sys_p_kill (short pid, short sig)
 			return ENOENT;
 		}
 
-		if (curproc->p_cred->ucr->euid && curproc->p_cred->ruid != p->p_cred->ruid)
+		if (get_curproc()->p_cred->ucr->euid && get_curproc()->p_cred->ruid != p->p_cred->ruid)
 		{
 			DEBUG (("Pkill: wrong user"));
 			return EACCES;
@@ -94,7 +94,7 @@ sys_p_kill (short pid, short sig)
 long _cdecl
 sys_p_sigaction (short sig, const struct sigaction *act, struct sigaction *oact)
 {
-	PROC *p = curproc;
+	PROC *p = get_curproc();
 
 	TRACE (("Psigaction(%d)", sig));
 	assert (p->p_sigacts);
@@ -144,7 +144,7 @@ sys_p_sigaction (short sig, const struct sigaction *act, struct sigaction *oact)
 long _cdecl
 sys_p_signal (short sig, long handler)
 {
-	PROC *p = curproc;
+	PROC *p = get_curproc();
 	struct sigaction *sigact;
 	long ret;
 
@@ -194,7 +194,7 @@ out:
 long _cdecl
 sys_p_sigblock (ulong mask)
 {
-	PROC *p = curproc;
+	PROC *p = get_curproc();
 	ulong oldmask;
 
 	TRACE (("Psigblock(%lx)",mask));
@@ -216,7 +216,7 @@ sys_p_sigblock (ulong mask)
 long _cdecl
 sys_p_sigsetmask (ulong mask)
 {
-	PROC *p = curproc;
+	PROC *p = get_curproc();
 	ulong oldmask;
 
 	TRACE (("Psigsetmask(%lx)",mask));
@@ -236,7 +236,7 @@ sys_p_sigsetmask (ulong mask)
 long _cdecl
 sys_p_sigpending (void)
 {
-	PROC *p = curproc;
+	PROC *p = get_curproc();
 
 	TRACE (("Psigpending()"));
 
@@ -256,7 +256,7 @@ sys_p_sigpending (void)
 long _cdecl
 sys_p_sigpause (ulong mask)
 {
-	PROC *p = curproc;
+	PROC *p = get_curproc();
 	ulong oldmask;
 
 	TRACE(("Psigpause(%lx)", mask));

@@ -42,11 +42,13 @@
 # include "memory.h"
 # include "util.h"
 
+# include "proc.h"
 
+/*
 # ifndef __MSHORT__
 # error This file is not 32-bit clean.
 # endif
-
+*/
 
 /* NOTE:  For the rest of the *ix world a negative priority value
  *        signifies high priority when requesting cpu usage.  In
@@ -122,7 +124,7 @@ sys_pgetpriority(short which, short who)
 				return EINVAL;
 			}
 			else if (who == 0)
-				who = curproc->pid;
+				who = get_curproc()->pid;
 			
 			p = pid2proc(who);
 			if (p == NULL)
@@ -146,7 +148,7 @@ sys_pgetpriority(short which, short who)
 				return EINVAL;
 			}
 			else if (who == 0)
-				who = curproc->pgrp;
+				who = get_curproc()->pgrp;
 			
 			for (p = proclist; p; p = p->gl_next)
 			{
@@ -181,7 +183,7 @@ sys_pgetpriority(short which, short who)
 				return EINVAL;
 			}
 			else if (who == 0)
-				who = curproc->p_cred->ucr->euid;
+				who = get_curproc()->p_cred->ucr->euid;
 			
 			for (p = proclist; p; p = p->gl_next)
 			{
@@ -247,7 +249,7 @@ sys_psetpriority(short which, short who, short pri)
 	else if (pri > PRIO_MAX)
 		pri = PRIO_MAX;
   
-	if (pri < 0 && !suser(curproc->p_cred->ucr))
+	if (pri < 0 && !suser(get_curproc()->p_cred->ucr))
 	{
 		DEBUG(("Psetpriority: attempt to assign negative priority by non-root"));
 		return EPERM;
@@ -265,7 +267,7 @@ sys_psetpriority(short which, short who, short pri)
 				return EINVAL;
 			}
 			else if (who == 0)
-				who = curproc->pid;
+				who = get_curproc()->pid;
 			
 			p = pid2proc(who);
 			if (p == NULL)
@@ -273,8 +275,8 @@ sys_psetpriority(short which, short who, short pri)
 				DEBUG(("Psetpriority: no such process %d", who));
 				return ESRCH;
 			}
-			if (curproc->p_cred->ucr->euid
-				&& curproc->p_cred->ucr->euid != p->p_cred->ucr->euid)
+			if (get_curproc()->p_cred->ucr->euid
+				&& get_curproc()->p_cred->ucr->euid != p->p_cred->ucr->euid)
 			{
 				DEBUG(("Psetpriority: not owner"));
 				return EACCES;
@@ -295,15 +297,15 @@ sys_psetpriority(short which, short who, short pri)
 				return EINVAL;
 			}
 			else if (who == 0)
-				who = curproc->pgrp;
+				who = get_curproc()->pgrp;
 			
 			for (p = proclist; p; p = p->gl_next)
 			{
 				if (p->pgrp == who) 
 					hits++;
 				
-				if (curproc->p_cred->ucr->euid
-					&& curproc->p_cred->ucr->euid != p->p_cred->ucr->euid)
+				if (get_curproc()->p_cred->ucr->euid
+					&& get_curproc()->p_cred->ucr->euid != p->p_cred->ucr->euid)
 				{
 					DEBUG (("Psetpriority: not owner"));
 					retval = EACCES;
@@ -336,10 +338,10 @@ sys_psetpriority(short which, short who, short pri)
 			}
 			else if (who == 0)
 			{
-				who = curproc->p_cred->ucr->euid;
+				who = get_curproc()->p_cred->ucr->euid;
 			}
 			
-			if (who != curproc->p_cred->ucr->euid)
+			if (who != get_curproc()->p_cred->ucr->euid)
 			{
 				DEBUG(("Psetpriority: not owner"));
 				retval = EACCES;
@@ -426,7 +428,7 @@ sys_prenice(short pid, short delta)
 long _cdecl
 sys_pnice(short delta)
 {
-	return sys_prenice(curproc->pid, delta);
+	return sys_prenice(get_curproc()->pid, delta);
 }
 
 /*
@@ -441,7 +443,7 @@ sys_pnice(short delta)
 long _cdecl
 sys_prusage(long *r)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 	
 	r[0] = p->systime;
 	r[1] = p->usrtime;
@@ -466,7 +468,7 @@ sys_prusage(long *r)
 long _cdecl
 sys_psetlimit(short i, long v)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 	long oldlimit;
 
 	switch(i)

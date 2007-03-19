@@ -109,7 +109,7 @@ fp_alloc (struct proc *p, FILEPTR **resultfp, const char *func)
 		return ENOMEM;
 	}
 
-	bzero (fp, sizeof (*fp));
+	mint_bzero (fp, sizeof (*fp));
 
 	fp->links = 1;
 	// later
@@ -198,24 +198,24 @@ fp_get1 (struct proc *p, short fd, FILEPTR **fp, const char *func)
 long
 do_dup (short fd, short min)
 {
-	PROC *p = curproc;
+	PROC *p = get_curproc();
 	FILEPTR *fp;
 	short newfd;
 	long ret;
 
 	assert (p->p_fd);
 
-	ret = FD_ALLOC (curproc, &newfd, min);
+	ret = FD_ALLOC (get_curproc(), &newfd, min);
 	if (ret) return ret;
 
 	ret = GETFILEPTR (&p, &fd, &fp);
 	if (ret)
 	{
-		FD_REMOVE (curproc, newfd);
+		FD_REMOVE (get_curproc(), newfd);
 		return ret;
 	}
 
-	FP_DONE (curproc, fp, newfd, ((newfd >= MIN_OPEN) ? FD_CLOEXEC : 0));
+	FP_DONE (get_curproc(), fp, newfd, ((newfd >= MIN_OPEN) ? FD_CLOEXEC : 0));
 
 	fp->links++;
 	return newfd;
@@ -232,7 +232,7 @@ do_dup (short fd, short min)
 long
 do_open (FILEPTR **f, const char *name, int rwmode, int attr, XATTR *x)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 
 	fcookie dir, fc;
 	long devsp;

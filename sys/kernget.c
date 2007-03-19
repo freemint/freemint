@@ -739,12 +739,12 @@ kern_procdir_get_environ (SIZEBUF **buffer, struct proc *p)
 
 	pbase = (long)p->p_mem->base;
 
-	DEBUG (("get_environ: curproc = %lx, p = %lx", curproc, p));
-	DEBUG (("get_environ: curproc->base = %lx, p->base = %lx", curproc->p_mem->base, pbase));
+	DEBUG (("get_environ: curproc = %lx, p = %lx", get_curproc(), p));
+	DEBUG (("get_environ: curproc->base = %lx, p->base = %lx", get_curproc()->p_mem->base, pbase));
 	DEBUG (("get_environ: %lx, %lx, %lx, %lx",
-			proc_addr2region (curproc, pbase),
+			proc_addr2region (get_curproc(), pbase),
 			proc_addr2region (p, pbase),
-			addr2mem (curproc, pbase),
+			addr2mem (get_curproc(), pbase),
 			addr2region (pbase)
 	));
 
@@ -754,13 +754,13 @@ kern_procdir_get_environ (SIZEBUF **buffer, struct proc *p)
 		goto out;
 	}
 
-	baseregion = proc_addr2region (curproc, pbase);
+	baseregion = proc_addr2region (get_curproc(), pbase);
 	if (!baseregion)
 	{
 		baseregion = addr2region (pbase);
 
 		if (baseregion)
-			attach_region (curproc, baseregion);
+			attach_region (get_curproc(), baseregion);
 		else
 			DEBUG (("kern_procdir_get_environ: no baseregion found, pid %i", p->pid));
 	}
@@ -775,13 +775,13 @@ kern_procdir_get_environ (SIZEBUF **buffer, struct proc *p)
 		goto out;
 	}
 
-	envregion = proc_addr2region (curproc, penv);
+	envregion = proc_addr2region (get_curproc(), penv);
 	if (!envregion)
 	{
 		envregion = addr2region (penv);
 		assert (envregion);
 
-		attach_region (curproc, envregion);
+		attach_region (get_curproc(), envregion);
 	}
 	else
 		/* already attached, don't detach */
@@ -869,9 +869,9 @@ kern_procdir_get_environ (SIZEBUF **buffer, struct proc *p)
 
 out:
 	if (envregion)
-		detach_region (curproc, envregion);
+		detach_region (get_curproc(), envregion);
 	if (baseregion)
-		detach_region (curproc, baseregion);
+		detach_region (get_curproc(), baseregion);
 
 	*buffer = info;
 	return ret;
@@ -1078,13 +1078,13 @@ kern_procdir_get_stat (SIZEBUF **buffer, struct proc *p)
 			}
 		}
 
-		baseregion = proc_addr2region (curproc, base);
+		baseregion = proc_addr2region (get_curproc(), base);
 		if (!baseregion)
 		{
 			baseregion = addr2region (base);
 
 			if (baseregion)
-				attach_region (curproc, baseregion);
+				attach_region (get_curproc(), baseregion);
 			else
 				DEBUG (("kern_procdir_get_stat: no baseregion found, pid %i", p->pid));
 		}
@@ -1095,7 +1095,7 @@ kern_procdir_get_stat (SIZEBUF **buffer, struct proc *p)
 		startcode = endcode - (ulong)p->p_mem->base->p_bbase - (ulong)p->p_mem->base->p_blen;
 
 		if (baseregion)
-			detach_region (curproc, baseregion);
+			detach_region (get_curproc(), baseregion);
 	}
 	else
 	{

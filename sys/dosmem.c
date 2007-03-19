@@ -30,6 +30,7 @@
 # include "memory.h"
 # include "util.h" /* pid2proc */
 
+# include "proc.h"
 
 /* new call for TT TOS, for the user to inform DOS of alternate memory
  * FIXME: doesn't work if memory protection is on
@@ -37,7 +38,7 @@
 long _cdecl
 sys_m_addalt (long start, long size)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 	long x;
 
 	assert (p->p_cred && p->p_cred->ucr);
@@ -74,9 +75,9 @@ _do_malloc (MMAP map, long size, int mode)
 	if (size == -1L)
 	{
 		maxsize = max_rsize(map, 0L);
-		if (curproc->maxmem)
+		if (get_curproc()->maxmem)
 		{
-			mleft = curproc->maxmem - memused(curproc);
+			mleft = get_curproc()->maxmem - memused(get_curproc());
 			if (maxsize > mleft)
 				maxsize = mleft;
 			if (maxsize < 0)
@@ -96,9 +97,9 @@ _do_malloc (MMAP map, long size, int mode)
 	if (size == 0) return 0;
 
 	/* memory limit? */
-	if (curproc->maxmem)
+	if (get_curproc()->maxmem)
 	{
-		if (size > curproc->maxmem - memused(curproc))
+		if (size > get_curproc()->maxmem - memused(get_curproc()))
 		{
 			DEBUG(("malloc: memory request would exceed limit"));
 			return 0;
@@ -111,7 +112,7 @@ _do_malloc (MMAP map, long size, int mode)
 		return 0;
 	}
 
-	v = attach_region(curproc, m);
+	v = attach_region(get_curproc(), m);
 	if (!v)
 	{
 		m->links = 0;
@@ -134,8 +135,8 @@ _do_malloc (MMAP map, long size, int mode)
 	/* some programs crash when newly allocated memory isn't all zero,
 	 * like TOS 1.04 GEM when loading xcontrol.acc ...
 	 */
-	if ((curproc->p_mem->memflags & F_ALLOCZERO) || (mode & F_ALLOCZERO))
-		bzero ((void *) m->loc, m->len);
+	if ((get_curproc()->p_mem->memflags & F_ALLOCZERO) || (mode & F_ALLOCZERO))
+		mint_bzero ((void *) m->loc, m->len);
 
 	return (long) v;
 }
@@ -157,8 +158,8 @@ sys_m_xalloc (long size, int mode)
 	 * VDI catches up with multitasking TOS.
 	 */
 	if (((mode & F_PROTMODE) == 0)
-		&& (curproc->ctxt[SYSCALL].pc > 0x00e00000L)
-		&& (curproc->ctxt[SYSCALL].pc < 0x00efffffL))
+		&& (get_curproc()->ctxt[SYSCALL].pc > 0x00e00000L)
+		&& (get_curproc()->ctxt[SYSCALL].pc < 0x00efffffL))
 	{
 		mode |= (F_PROT_S + 0x10) | F_KEEP;
 		TRACE(("m_xalloc: VDI special (call from ROM)"));
@@ -172,7 +173,7 @@ sys_m_xalloc (long size, int mode)
 
 	if (protmode == 0)
 	{
-		protmode = (curproc->p_mem->memflags & F_PROTMODE) >> F_PROTSHIFT;
+		protmode = (get_curproc()->p_mem->memflags & F_PROTMODE) >> F_PROTSHIFT;
 	}
 	else
 		--protmode;
@@ -192,7 +193,7 @@ sys_m_xalloc (long size, int mode)
 	 * to change the protection mode of a block you already own.
 	 * "size" is really its base address. (new as of 2/6/1992)
 	 */
-	if (mode & 0x08) change_prot_status(curproc,size,protmode);
+	if (mode & 0x08) change_prot_status(get_curproc(),size,protmode);
 # endif
 
 	/*
@@ -280,7 +281,7 @@ sys_m_alloc (long size)
 	long r;
 
 	TRACE(("Malloc(%lx)", size));
-	if (curproc->p_mem->memflags & F_ALTALLOC)
+	if (get_curproc()->p_mem->memflags & F_ALTALLOC)
 		r = sys_m_xalloc(size, 3);
 	else
 		r = sys_m_xalloc(size, 0);
@@ -292,7 +293,7 @@ sys_m_alloc (long size)
 long _cdecl
 sys_m_free (long block)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 	struct memspace *mem = p->p_mem;
 	int i;
 
@@ -369,7 +370,7 @@ sys_m_free (long block)
 long _cdecl
 sys_m_shrink (int dummy, long block, long size)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 	struct memspace *mem = p->p_mem;
 	int i;
 
@@ -420,7 +421,7 @@ sys_m_validate (int pid, long addr, long size, long *flags)
 	TRACE (("Mvalidate(%i, %lx, %li, %lx)", pid, addr, size, flags));
 
 	if (pid == 0)
-		p = curproc;
+		p = get_curproc();
 	else if (pid > 0)
 		p = pid2proc (pid);
 
@@ -430,7 +431,7 @@ sys_m_validate (int pid, long addr, long size, long *flags)
 		return ESRCH;
 	}
 
-	if (p != curproc && !suser (curproc->p_cred->ucr) && !(curproc->p_mem->memflags & F_OS_SPECIAL))
+	if (p != get_curproc() && !suser (get_curproc()->p_cred->ucr) && !(get_curproc()->p_mem->memflags & F_OS_SPECIAL))
 	{
 		DEBUG (("Mvalidate: permission denied"));
 		return EPERM;
@@ -458,7 +459,7 @@ sys_m_validate (int pid, long addr, long size, long *flags)
 long _cdecl
 sys_m_access (long addr, long size, int mode)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 	MEMREGION *m;
 
 	TRACE (("Maccess(%i, %lx, %li)", mode, addr, size));

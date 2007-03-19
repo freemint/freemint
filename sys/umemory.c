@@ -45,6 +45,8 @@
 # include "memory.h"
 # include "signal.h"
 
+# include "proc.h"
+
 
 /****************************************************************************/
 /* BEGIN definition part */
@@ -236,7 +238,7 @@ umem_setup(MEMREGION *m)
 void * _cdecl
 _umalloc(unsigned long size, const char *func)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 	MEMREGION *m;
 	int i;
 
@@ -303,7 +305,7 @@ _umalloc(unsigned long size, const char *func)
 void _cdecl
 _ufree(void *place, const char *func)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 	MEMREGION *m;
 
 	DEBUG(("ufree(0x%lx, %s)", place, func));

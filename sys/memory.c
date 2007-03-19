@@ -35,6 +35,8 @@
 # include "proc_help.h"
 # include "util.h"
 
+# include "proc.h"
+
 
 struct screen
 {
@@ -231,7 +233,7 @@ add_region (MMAP map, ulong place, ulong size, ushort mflags)
 	if (!m)
 		return 0;	/* failure */
 
-	bzero (m, sizeof (*m));
+	mint_bzero (m, sizeof (*m));
 
 	if (place & MASKBITS)
 	{
@@ -737,7 +739,7 @@ _get_region (MMAP map, ulong s, short mode, short cmode, MEMREGION *m, short ker
 					 */
 					if (m)
 					{
-						bzero (m, sizeof (*m));
+						mint_bzero (m, sizeof (*m));
 
 						m->mflags = n->mflags & M_MAP;
 						m->next = n->next;
@@ -776,7 +778,7 @@ _get_region (MMAP map, ulong s, short mode, short cmode, MEMREGION *m, short ker
 		{
 			assert (k->len > size);
 
-			bzero (m, sizeof (*m));
+			mint_bzero (m, sizeof (*m));
 
 			m->mflags = k->mflags & M_MAP;
 			m->next = k->next;
@@ -1031,7 +1033,7 @@ shrink_region (MEMREGION *reg, ulong newsize)
 	/* shrinking to 0 is the same as freeing */
 	if (newsize == 0)
 	{
-		detach_region (curproc, reg);
+		detach_region (get_curproc(), reg);
 		ret = 0;
 		goto leave;
 	}
@@ -1207,7 +1209,7 @@ long
 alloc_region (MMAP map, ulong size, short mode)
 {
 	MEMREGION *m;
-	PROC *proc = curproc;
+	PROC *proc = get_curproc();
 	long v;
 
 	TRACELOW(("alloc_region(map,size: %lx,mode: %x)",size,mode));
@@ -1341,8 +1343,8 @@ create_env (const char *env, unsigned long flags)
 	if (!env)
 	{
 		/* duplicate parent's environment */
-		assert(curproc->p_mem);
-		env = curproc->p_mem->base->p_env;
+		assert(get_curproc()->p_mem);
+		env = get_curproc()->p_mem->base->p_env;
 		TRACELOW (("create_env: using parents env: %lx", env));
 	}
 
@@ -1377,7 +1379,7 @@ create_env (const char *env, unsigned long flags)
 			return NULL;
 		}
 
-		m = addr2mem(curproc, v);
+		m = addr2mem(get_curproc(), v);
 		assert(m);
 	}
 
@@ -1455,8 +1457,8 @@ create_base(const char *cmd, MEMREGION *env,
 	if (initialmem && (len > (prgsize + 1024L * initialmem)))
 		len = prgsize + 1024L * initialmem;
 
-	if (curproc->maxmem && len > curproc->maxmem)
-		len = curproc->maxmem;
+	if (get_curproc()->maxmem && len > get_curproc()->maxmem)
+		len = get_curproc()->maxmem;
 
 	if (prgsize && len < prgsize + 0x400)
 	{
@@ -1468,7 +1470,7 @@ create_base(const char *cmd, MEMREGION *env,
 
 	protmode = (flags & F_PROTMODE) >> F_PROTSHIFT;
 
-	m = addr2mem (curproc, alloc_region (map, len, protmode));
+	m = addr2mem (get_curproc(), alloc_region (map, len, protmode));
 	if (!m)
 	{
 		DEBUG (("create_base: alloc_region failed"));
@@ -1481,7 +1483,7 @@ create_base(const char *cmd, MEMREGION *env,
 	{
 		BASEPAGE *b = (BASEPAGE *)(m->loc);
 
-		bzero (b, sizeof (*b));
+		mint_bzero (b, sizeof (*b));
 		b->p_lowtpa = (long) b;
 		b->p_hitpa = m->loc + m->len;
 		b->p_env = env ? ((char *) env->loc) : NULL;
@@ -1522,7 +1524,7 @@ load_region (const char *filename, MEMREGION *env, const char *cmdlin, XATTR *xp
 	long size, start;
 	FILEHEAD fh;
 
-	*err = FP_ALLOC (curproc, &f);
+	*err = FP_ALLOC (get_curproc(), &f);
 	if (*err) return NULL;
 
 	/* bug: this should be O_DENYW mode, not O_DENYNONE
@@ -1551,7 +1553,7 @@ failed:
 		if (*err == E_OK)
 			*err = ENOEXEC ;
 
-		do_close (curproc, f);
+		do_close (get_curproc(), f);
 		return NULL;
 	}
 
@@ -1572,7 +1574,7 @@ failed:
 	if (reg && ((size + 1024L) > reg->len))
 	{
 		DEBUG (("load_region: insufficient memory to load"));
-		detach_region (curproc, reg);
+		detach_region (get_curproc(), reg);
 		reg = NULL;
 		*err = ENOMEM;
 	}
@@ -1595,7 +1597,7 @@ failed:
 	*err = load_and_reloc (f, &fh, (char *) b + 256, start, size, b);
 	if (*err)
 	{
-		detach_region (curproc, reg);
+		detach_region (get_curproc(), reg);
 		goto failed;
 	}
 
@@ -1619,10 +1621,10 @@ failed:
 			start++;
 			--size;
 		}
-		bzero ((void *) start, size);
+		mint_bzero ((void *) start, size);
 	}
 
-	do_close (curproc, f);
+	do_close (get_curproc(), f);
 
 	DEBUG (("load_region: return region = %lx", reg));
 
@@ -1812,7 +1814,7 @@ recalc_maxmem(PROC *p, long size)
 int
 valid_address (long addr)
 {
-	PROC *p = curproc;
+	PROC *p = get_curproc();
 	struct memspace *mem = p->p_mem;
 	int i;
 

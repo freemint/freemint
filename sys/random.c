@@ -549,7 +549,7 @@ init_std_data (struct random_bucket *r)
 static void
 rand_clear_pool (void)
 {
-	bzero (&random_state, sizeof (random_state));
+	mint_bzero (&random_state, sizeof (random_state));
 	init_std_data (&random_state);
 }
 
@@ -566,9 +566,9 @@ rand_initialize (void)
 	for (i = 0; i < NUM_DRIVES; i++)
 		blkdev_timer_state[i] = NULL;
 	
-	bzero (&keyboard_timer_state, sizeof (keyboard_timer_state));
-	bzero (&mouse_timer_state, sizeof (mouse_timer_state));
-	bzero (&extract_timer_state, sizeof (extract_timer_state));
+	mint_bzero (&keyboard_timer_state, sizeof (keyboard_timer_state));
+	mint_bzero (&mouse_timer_state, sizeof (mouse_timer_state));
+	mint_bzero (&extract_timer_state, sizeof (extract_timer_state));
 	
 	extract_timer_state.dont_count_entropy = 1;
 	
@@ -595,7 +595,7 @@ rand_initialize_irq (int irq)
 	if (state)
 	{
 		irq_timer_state[irq] = state;
-		bzero (state, sizeof (*state));
+		mint_bzero (state, sizeof (*state));
 	}
 }
 # endif
@@ -616,7 +616,7 @@ rand_initialize_blkdev (int major)
 	if (state)
 	{
 		blkdev_timer_state[major] = state;
-		bzero (state, sizeof (*state));
+		mint_bzero (state, sizeof (*state));
 	}
 }
 
@@ -1314,7 +1314,7 @@ extract_entropy (struct random_bucket *r, char * buf, ulong nbytes)
 	}
 	
 	/* Wipe data just returned from memory */
-	bzero (tmp, sizeof (tmp));
+	mint_bzero (tmp, sizeof (tmp));
 	
 	return ret;
 }
@@ -1505,7 +1505,7 @@ random_ioctl (FILEPTR *file, int cmd, void *arg)
 		}
 		case RNDADDTOENTCNT:
 		{
-			if (!suser (curproc->p_cred->ucr))
+			if (!suser (get_curproc()->p_cred->ucr))
 				return EACCES;
 			
 			ent_count = *((long *) arg);
@@ -1531,7 +1531,7 @@ random_ioctl (FILEPTR *file, int cmd, void *arg)
 		}
 		case RNDGETPOOL:
 		{
-			if (!suser (curproc->p_cred->ucr))
+			if (!suser (get_curproc()->p_cred->ucr))
 				return EACCES;
 			
 			p = arg;
@@ -1549,7 +1549,7 @@ random_ioctl (FILEPTR *file, int cmd, void *arg)
 		}
 		case RNDADDENTROPY:
 		{
-			if (!suser (curproc->p_cred->ucr))
+			if (!suser (get_curproc()->p_cred->ucr))
 				return EACCES;
 			
 			p = arg;
@@ -1579,7 +1579,7 @@ random_ioctl (FILEPTR *file, int cmd, void *arg)
 		}
 		case RNDZAPENTCNT:
 		{
-			if (!suser (curproc->p_cred->ucr))
+			if (!suser (get_curproc()->p_cred->ucr))
 				return EACCES;
 			
 			random_state.entropy_count = 0;
@@ -1588,7 +1588,7 @@ random_ioctl (FILEPTR *file, int cmd, void *arg)
 		}
 		case RNDCLEARPOOL:
 		{
-			if (!suser (curproc->p_cred->ucr))
+			if (!suser (get_curproc()->p_cred->ucr))
 				return EACCES;
 			
 			/* Clear the entropy pool and associated counters */

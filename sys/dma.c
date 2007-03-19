@@ -251,8 +251,8 @@ dma_start (ulong i)
 	}
 	
 	c->lock = 1;
-	c->pid = curproc->pid;
-	c->p = curproc;
+	c->pid = get_curproc()->pid;
+	c->p = get_curproc();
 }
 
 /* only synchronusly callable [to kernel]
@@ -319,7 +319,7 @@ dma_block (ulong i, ulong timeout, void _cdecl (*func)(PROC *p))
 	}
 	
 	sleep (IO_Q, (long) &(c->pid));
-	c->pid = curproc->pid;
+	c->pid = get_curproc()->pid;
 	
 	if (c->t)
 	{

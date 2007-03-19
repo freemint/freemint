@@ -120,7 +120,7 @@ so_create (struct socket **resultso, short domain, short type, short protocol)
 	{
 		long ret;
 
-		bzero (so, sizeof (*so));
+		mint_bzero (so, sizeof (*so));
 
 		so->date = datestamp;
 		so->time = timestamp;
@@ -172,7 +172,7 @@ so_dup (struct socket **resultso, struct socket *so)
 	{
 		long ret;
 
-		bzero (newso, sizeof (*newso));
+		mint_bzero (newso, sizeof (*newso));
 
 		newso->date = datestamp;
 		newso->time = timestamp;

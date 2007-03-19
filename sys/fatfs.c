@@ -1708,7 +1708,7 @@ c_del_cookie (register COOKIE *c)
 		kfree (c->lastlookup);
 
 	kfree (c->name);
-	bzero (c, sizeof (*c));
+	mint_bzero (c, sizeof (*c));
 }
 
 /* END global data & access implementation */
@@ -5420,7 +5420,7 @@ get_devinfo (const ushort drv, long *err)
 	}
 
 	/* initialize the complete area with 0 */
-	bzero (BPB (drv), sizeof (*BPB (drv)));
+	mint_bzero (BPB (drv), sizeof (*BPB (drv)));
 
 	*err = get_bpb (t, di);
 	if (*err == E_OK)
@@ -6888,7 +6888,7 @@ fatfs_readdir (DIR *dirh, char *nm, int nmlen, fcookie *fc)
 				FAT_DEBUG (("fatfs_readdir: TOS_SEARCH, make TOS_NAME"));
 				dir2str (dir->info->name, nm);
 
-				if (curproc->domain != DOM_TOS)
+				if (get_curproc()->domain != DOM_TOS)
 					strlwr (nm);
 			}
 
@@ -6899,7 +6899,7 @@ fatfs_readdir (DIR *dirh, char *nm, int nmlen, fcookie *fc)
 			}
 			else
 			{
-				if (curproc->domain != DOM_TOS)
+				if (get_curproc()->domain != DOM_TOS)
 					strlwr (nm);
 			}
 
@@ -8355,7 +8355,7 @@ fatfs_ioctl (FILEPTR *f, int mode, void *buf)
 
 			if (mode == F_GETLK)
 			{
-				lck = denylock (curproc->pid, c->locks, &t);
+				lck = denylock (get_curproc()->pid, c->locks, &t);
 				if (lck)
 				{
 					*fl = lck->l;
@@ -8376,7 +8376,7 @@ fatfs_ioctl (FILEPTR *f, int mode, void *buf)
 				lck = *lckptr;
 				while (lck)
 				{
-					if (lck->l.l_pid == curproc->pid
+					if (lck->l.l_pid == get_curproc()->pid
 						&& lck->l.l_start == t.l.l_start
 						&& lck->l.l_len == t.l.l_len)
 					{
@@ -8405,7 +8405,7 @@ fatfs_ioctl (FILEPTR *f, int mode, void *buf)
 				long r;
 
 				/* see if there's a conflicting lock */
-				while ((lck = denylock (curproc->pid, c->locks, &t)) != 0)
+				while ((lck = denylock (get_curproc()->pid, c->locks, &t)) != 0)
 				{
 					FAT_DEBUG (("fatfs_ioctl: lock conflicts with one held by %d", lck->l.l_pid));
 					if (mode == F_SETLKW)
@@ -8445,7 +8445,7 @@ fatfs_ioctl (FILEPTR *f, int mode, void *buf)
 			while (!lck);
 
 			lck->l = t.l;
-			lck->l.l_pid = curproc->pid;
+			lck->l.l_pid = get_curproc()->pid;
 			lck->next = c->locks;
 			c->locks = lck;
 

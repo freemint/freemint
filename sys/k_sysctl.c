@@ -66,7 +66,7 @@ long _cdecl
 sys_p_sysctl (long *name, ulong namelen, void *old, ulong *oldlenp,
 	      const void *new, ulong newlen)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 
 	long ret;
 	sysctlfn *fn;

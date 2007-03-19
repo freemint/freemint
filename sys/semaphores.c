@@ -47,7 +47,7 @@ _semaphore_init(struct semaphore *s, const char *info)
 void _cdecl
 _semaphore_lock(struct semaphore *s, const char *info)
 {
-	short pid = curproc->pid;
+	short pid = get_curproc()->pid;
 
 	DEBUG(("want semaphore(0x%lx) from %s for %u", s, info, pid));
 
@@ -71,7 +71,7 @@ _semaphore_lock(struct semaphore *s, const char *info)
 int _cdecl
 _semaphore_rel(struct semaphore *s, const char *info)
 {
-	short pid = curproc->pid;
+	short pid = get_curproc()->pid;
 
 	DEBUG(("semaphore(0x%lx) released from %s for %u", s, info, pid));
 
@@ -98,7 +98,7 @@ _semaphore_rel(struct semaphore *s, const char *info)
 int _cdecl
 _semaphore_try(struct semaphore *s, const char *info)
 {
-	short pid = curproc->pid;
+	short pid = get_curproc()->pid;
 
 	DEBUG(("try semaphore(0x%lx) from %s for %u", s, info, pid));
 

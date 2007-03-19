@@ -22,6 +22,7 @@
 # include "dosfile.h"
 # include "filesys.h"
 # include "tty.h"
+# include "proc.h"
 
 
 /*
@@ -117,37 +118,37 @@ file_putchar (FILEPTR *f, long c, int mode)
 long _cdecl
 sys_c_conin (void)
 {
-	return file_getchar (curproc->p_fd->ofiles[0], COOKED | ECHO);
+	return file_getchar (get_curproc()->p_fd->ofiles[0], COOKED | ECHO);
 }
 
 long _cdecl
 sys_c_conout (int c)
 {
-	return file_putchar (curproc->p_fd->ofiles[1], (long) c, COOKED);
+	return file_putchar (get_curproc()->p_fd->ofiles[1], (long) c, COOKED);
 }
 
 long _cdecl
 sys_c_auxin (void)
 {
-	return file_getchar (curproc->p_fd->ofiles[2], RAW);
+	return file_getchar (get_curproc()->p_fd->ofiles[2], RAW);
 }
 
 long _cdecl
 sys_c_auxout (int c)
 {
-	return file_putchar (curproc->p_fd->ofiles[2], (long) c, RAW);
+	return file_putchar (get_curproc()->p_fd->ofiles[2], (long) c, RAW);
 }
 
 long _cdecl
 sys_c_prnout (int c)
 {
-	return file_putchar (curproc->p_fd->ofiles[3], (long) c, RAW);
+	return file_putchar (get_curproc()->p_fd->ofiles[3], (long) c, RAW);
 }
 
 long _cdecl
 sys_c_rawio (int c)
 {
-	PROC *p = curproc;
+	PROC *p = get_curproc();
 
 	if (c == 0x00ff)
 	{
@@ -169,13 +170,13 @@ sys_c_rawio (int c)
 long _cdecl
 sys_c_rawcin (void)
 {
-	return file_getchar (curproc->p_fd->ofiles[0], RAW);
+	return file_getchar (get_curproc()->p_fd->ofiles[0], RAW);
 }
 
 long _cdecl
 sys_c_necin (void)
 {
-	return file_getchar (curproc->p_fd->ofiles[0], COOKED | NOECHO);
+	return file_getchar (get_curproc()->p_fd->ofiles[0], COOKED | NOECHO);
 }
 
 long _cdecl
@@ -196,7 +197,7 @@ sys_c_conrs (char *buf)
 	long size, count, r;
 
 	size = ((long) *buf) & 0xff;
-	if (is_terminal (curproc->p_fd->ofiles[0]))
+	if (is_terminal (get_curproc()->p_fd->ofiles[0]))
 	{
 		/* TB: When reading from a terminal, f_read is used which
 		 * automatically breaks at the first newline
@@ -268,31 +269,31 @@ sys_c_conrs (char *buf)
 long _cdecl
 sys_c_conis (void)
 {
-	return -(!!file_instat (curproc->p_fd->ofiles[0]));
+	return -(!!file_instat (get_curproc()->p_fd->ofiles[0]));
 }
 
 long _cdecl
 sys_c_conos (void)
 {
-	return -(!!file_outstat (curproc->p_fd->ofiles[1]));
+	return -(!!file_outstat (get_curproc()->p_fd->ofiles[1]));
 }
 
 long _cdecl
 sys_c_prnos (void)
 {
-	return -(!!file_outstat (curproc->p_fd->ofiles[3]));
+	return -(!!file_outstat (get_curproc()->p_fd->ofiles[3]));
 }
 
 long _cdecl
 sys_c_auxis (void)
 {
-	return -(!!file_instat (curproc->p_fd->ofiles[2]));
+	return -(!!file_instat (get_curproc()->p_fd->ofiles[2]));
 }
 
 long _cdecl
 sys_c_auxos (void)
 {
-	return -(!!file_outstat (curproc->p_fd->ofiles[2]));
+	return -(!!file_outstat (get_curproc()->p_fd->ofiles[2]));
 }
 
 
@@ -313,7 +314,7 @@ sys_f_instat (int h)
 	}
 	else
 # endif
-		proc = curproc;
+		proc = get_curproc();
 
 	if (fh < MIN_HANDLE || fh >= proc->p_fd->nfiles)
 	{
@@ -338,7 +339,7 @@ sys_f_outstat (int h)
 	}
 	else
 # endif
-		proc = curproc;
+		proc = get_curproc();
 
 	if (fh < MIN_HANDLE || fh >= proc->p_fd->nfiles)
 	{
@@ -363,7 +364,7 @@ sys_f_getchar (int h, int mode)
 	}
 	else
 # endif
-		proc = curproc;
+		proc = get_curproc();
 
 	if (fh < MIN_HANDLE || fh >= proc->p_fd->nfiles)
 	{
@@ -388,7 +389,7 @@ sys_f_putchar (int h, long c, int mode)
 	}
 	else
 # endif
-		proc = curproc;
+		proc = get_curproc();
 
 	if (fh < MIN_HANDLE || fh >= proc->p_fd->nfiles)
 	{

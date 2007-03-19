@@ -194,9 +194,9 @@ load_and_init_slb(char *name, char *path, long min_ver, SHARED_LIB **sl)
 		kfree(fullpath);
 		return(ENOMEM);
 	}
-	mark_proc_region(curproc->p_mem, mr, PROT_G, curproc->pid);
+	mark_proc_region(get_curproc()->p_mem, mr, PROT_G, get_curproc()->pid);
 	*sl = (SHARED_LIB *)mr->loc;
-	bzero(*sl, sizeof(SHARED_LIB));
+	mint_bzero(*sl, sizeof(SHARED_LIB));
 	(*sl)->slb_region = mr;
 
 	/* Load, but don't run the SLB */
@@ -298,9 +298,9 @@ slb_error:
 
 	oldcmdlin = *(long *)b->p_cmdlin;
 
-	curproc->p_flag |= P_FLAG_SLO;
+	get_curproc()->p_flag |= P_FLAG_SLO;
 	r = sys_pexec(106, name, b, 0L);
-	curproc->p_flag &= ~P_FLAG_SLO;
+	get_curproc()->p_flag &= ~P_FLAG_SLO;
 
 	if (r < 0L)
 	{
@@ -310,19 +310,19 @@ slb_error:
 
 	/* Wait for the init routine to finish */
 
-	assert (curproc->p_sigacts);
+	assert (get_curproc()->p_sigacts);
 
-	oldsigint = SIGACTION(curproc, SIGINT).sa_handler;
-	oldsigquit = SIGACTION(curproc, SIGQUIT).sa_handler;
+	oldsigint = SIGACTION(get_curproc(), SIGINT).sa_handler;
+	oldsigquit = SIGACTION(get_curproc(), SIGQUIT).sa_handler;
 
-	SIGACTION(curproc, SIGINT).sa_handler =
-	SIGACTION(curproc, SIGQUIT).sa_handler = SIG_IGN;
+	SIGACTION(get_curproc(), SIGINT).sa_handler =
+	SIGACTION(get_curproc(), SIGQUIT).sa_handler = SIG_IGN;
 
 	newpid = (int) r;
 	r = sys_pwaitpid (newpid, 2, NULL);
 
-	SIGACTION(curproc, SIGINT).sa_handler = oldsigint;
-	SIGACTION(curproc, SIGQUIT).sa_handler = oldsigquit;
+	SIGACTION(get_curproc(), SIGINT).sa_handler = oldsigint;
+	SIGACTION(get_curproc(), SIGQUIT).sa_handler = oldsigquit;
 
 	if (r < 0)
 	{
@@ -373,7 +373,7 @@ slb_error:
 	(*sl)->slb_proc->p_flag |= P_FLAG_SLB;	/* mark as SLB */
 	(*sl)->slb_next = slb_list;
 	slb_list = *sl;
-	mark_proc_region(curproc->p_mem, mr, PROT_PR, curproc->pid);
+	mark_proc_region(get_curproc()->p_mem, mr, PROT_PR, get_curproc()->pid);
 	return(0);
 }
 
@@ -405,7 +405,7 @@ sys_s_lbopen(char *name, char *path, long min_ver, SHARED_LIB **sl, SLB_EXEC *fn
 	MEMREGION **mr;
 
 	/* First, ensure the call came from user mode */
-	if (curproc->ctxt[SYSCALL].sr & 0x2000)
+	if (get_curproc()->ctxt[SYSCALL].sr & 0x2000)
 	{
 		DEBUG(("Slbopen: Called from supervisor mode"));
 		raise(SIGSYS);
@@ -422,7 +422,7 @@ sys_s_lbopen(char *name, char *path, long min_ver, SHARED_LIB **sl, SLB_EXEC *fn
 	/* Shared libraries may not open shared libraries ... */
 	for (slb = slb_list; slb; slb = slb->slb_next)
 	{
-		if (slb->slb_proc == curproc)
+		if (slb->slb_proc == get_curproc())
 		{
 			DEBUG(("Slbopen: Called from an SLB"));
 			return(EACCES);
@@ -446,14 +446,14 @@ sys_s_lbopen(char *name, char *path, long min_ver, SHARED_LIB **sl, SLB_EXEC *fn
 			return(EBADARG);
 		}
 		/* Ensure curproc hasn't already opened this library */
-		if (is_user(slb, curproc->pid) && has_opened(slb, curproc->pid))
+		if (is_user(slb, get_curproc()->pid) && has_opened(slb, get_curproc()->pid))
 		{
 			DEBUG(("Slbopen: Library was already opened by this "
 				"process"));
 			return(EACCES);
 		}
-		assert(!has_opened(slb, curproc->pid));
-		if (!is_user(slb, curproc->pid))
+		assert(!has_opened(slb, get_curproc()->pid));
+		if (!is_user(slb, get_curproc()->pid))
 			*sl = slb;
 	}
 	else
@@ -484,7 +484,7 @@ sys_s_lbopen(char *name, char *path, long min_ver, SHARED_LIB **sl, SLB_EXEC *fn
 			 * Directory paths may be also separated with commas.
 			 *
 			 */
-			path = _mint_getenv(curproc->p_mem->base, "SLBPATH");
+			path = _mint_getenv(get_curproc()->p_mem->base, "SLBPATH");
 
 			if (!path)
 				path = "./";
@@ -540,7 +540,7 @@ sys_s_lbopen(char *name, char *path, long min_ver, SHARED_LIB **sl, SLB_EXEC *fn
 	}
 
 	/* Allow curproc temporary global access to the library structure */
-	mark_proc_region (curproc->p_mem, slb->slb_region, PROT_G, curproc->pid);
+	mark_proc_region (get_curproc()->p_mem, slb->slb_region, PROT_G, get_curproc()->pid);
 
 	/* Mark all memregions of the shared library as "global" for curproc */
 	assert (slb->slb_proc->p_mem);
@@ -550,7 +550,7 @@ sys_s_lbopen(char *name, char *path, long min_ver, SHARED_LIB **sl, SLB_EXEC *fn
 		for (i = 0; i < slb->slb_proc->p_mem->num_reg; i++, mr++)
 		{
 			if (*mr != 0L)
-				mark_proc_region (curproc->p_mem, *mr, PROT_G, curproc->pid);
+				mark_proc_region (get_curproc()->p_mem, *mr, PROT_G, get_curproc()->pid);
 		}
 	}
 
@@ -560,12 +560,12 @@ sys_s_lbopen(char *name, char *path, long min_ver, SHARED_LIB **sl, SLB_EXEC *fn
 	 * slb_util.spp), which means the open() routine has just been
 	 * successfully executed.
 	 */
-	if (is_user(slb, curproc->pid))
+	if (is_user(slb, get_curproc()->pid))
 	{
 		DEBUG(("Slbopen: open() successful"));
-		mark_opened(slb, curproc->pid, 1);
+		mark_opened(slb, get_curproc()->pid, 1);
 		slb->slb_used++;
-		mark_proc_region(curproc->p_mem, slb->slb_region, PROT_PR, curproc->pid);
+		mark_proc_region(get_curproc()->p_mem, slb->slb_region, PROT_PR, get_curproc()->pid);
 		return(slb->slb_version);
 	}
 
@@ -574,21 +574,21 @@ sys_s_lbopen(char *name, char *path, long min_ver, SHARED_LIB **sl, SLB_EXEC *fn
 	 * returning from this GEMDOS call, slb_open() in slb_util.spp gets
 	 * called
 	 */
-	mark_users(slb, curproc->pid, 1);
+	mark_users(slb, get_curproc()->pid, 1);
 
-	ut = curproc->p_mem->tp_ptr;
-	ut->bp = curproc->p_mem->base;
+	ut = get_curproc()->p_mem->tp_ptr;
+	ut->bp = get_curproc()->p_mem->base;
 
 	*fn = (SLB_EXEC)ut->slb_exec_p;
 
-	usp = (long *)curproc->ctxt[SYSCALL].usp;
-	*(--usp) = curproc->ctxt[SYSCALL].pc;
+	usp = (long *)get_curproc()->ctxt[SYSCALL].usp;
+	*(--usp) = get_curproc()->ctxt[SYSCALL].pc;
 	*(--usp) = (long)slb;
-	*(--usp) = (long)curproc->p_mem->base;
+	*(--usp) = (long)get_curproc()->p_mem->base;
 	*(--usp) = (long)slb->slb_head;
-	curproc->ctxt[SYSCALL].pc = ut->slb_open_p;
-	curproc->ctxt[SYSCALL].usp = (long)usp;
-	mark_proc_region(curproc->p_mem, slb->slb_region, PROT_PR, curproc->pid);
+	get_curproc()->ctxt[SYSCALL].pc = ut->slb_open_p;
+	get_curproc()->ctxt[SYSCALL].usp = (long)usp;
+	mark_proc_region(get_curproc()->p_mem, slb->slb_region, PROT_PR, get_curproc()->pid);
 	DEBUG(("Slbopen: Calling open()"));
 	return(slb->slb_version);
 }
@@ -616,7 +616,7 @@ sys_s_lbclose(SHARED_LIB *sl)
 	MEMREGION **mr;
 
 	/* First, ensure the call came from user mode */
-	if (curproc->ctxt[SYSCALL].sr & 0x2000)
+	if (get_curproc()->ctxt[SYSCALL].sr & 0x2000)
 	{
 		DEBUG(("Slbclose: Called from supervisor mode"));
 		raise(SIGSYS);
@@ -636,7 +636,7 @@ sys_s_lbclose(SHARED_LIB *sl)
 	}
 
 	/* Check whether curproc is user of this SLB */
-	if (!is_user(slb, curproc->pid))
+	if (!is_user(slb, get_curproc()->pid))
 	{
 		DEBUG(("Slbclose: Process is not user of this SLB"));
 		return(EACCES);
@@ -647,20 +647,20 @@ sys_s_lbclose(SHARED_LIB *sl)
 	 * context so that upon returning from Slbclose(), slb_close() in
 	 * slb_util.spp will be called
 	 */
-	mark_proc_region(curproc->p_mem, slb->slb_region, PROT_G, curproc->pid);
-	if (has_opened(slb, curproc->pid))
+	mark_proc_region(get_curproc()->p_mem, slb->slb_region, PROT_G, get_curproc()->pid);
+	if (has_opened(slb, get_curproc()->pid))
 	{
-		struct user_things *ut = curproc->p_mem->tp_ptr;
+		struct user_things *ut = get_curproc()->p_mem->tp_ptr;
 
 		slb->slb_used--;
-		mark_opened(slb, curproc->pid, 0);
-		usp = (long *)curproc->ctxt[SYSCALL].usp;
-		*(--usp) = curproc->ctxt[SYSCALL].pc;
+		mark_opened(slb, get_curproc()->pid, 0);
+		usp = (long *)get_curproc()->ctxt[SYSCALL].usp;
+		*(--usp) = get_curproc()->ctxt[SYSCALL].pc;
 		*(--usp) = (long)slb;
-		*(--usp) = (long)curproc->p_mem->base;
-		curproc->ctxt[SYSCALL].pc = ut->slb_close_p;
-		curproc->ctxt[SYSCALL].usp = (long)usp;
-		mark_proc_region(curproc->p_mem, slb->slb_region, PROT_PR, curproc->pid);
+		*(--usp) = (long)get_curproc()->p_mem->base;
+		get_curproc()->ctxt[SYSCALL].pc = ut->slb_close_p;
+		get_curproc()->ctxt[SYSCALL].usp = (long)usp;
+		mark_proc_region(get_curproc()->p_mem, slb->slb_region, PROT_PR, get_curproc()->pid);
 		DEBUG(("Slbclose: Calling close()"));
 		return(0);
 	}
@@ -671,7 +671,7 @@ sys_s_lbclose(SHARED_LIB *sl)
 	 * list of users, deny any further access to the library's memory, and
 	 * - if no more users remain - remove the library from memory.
 	 */
-	mark_users(slb, curproc->pid, 0);
+	mark_users(slb, get_curproc()->pid, 0);
 	assert (slb->slb_proc->p_mem);
 	mr = slb->slb_proc->p_mem->mem;
 	if (mr)
@@ -679,7 +679,7 @@ sys_s_lbclose(SHARED_LIB *sl)
 		for (i = 0; i < slb->slb_proc->p_mem->num_reg; i++, mr++)
 		{
 			if (*mr != 0L)
-				mark_proc_region(curproc->p_mem, *mr, PROT_I, curproc->pid);
+				mark_proc_region(get_curproc()->p_mem, *mr, PROT_I, get_curproc()->pid);
 		}
 	}
 	if (slb->slb_used == 0)
@@ -693,11 +693,11 @@ sys_s_lbclose(SHARED_LIB *sl)
 		 */
 		slb->slb_name[0] = 0;
 		slb->slb_proc->p_flag &= ~P_FLAG_SLB;
-		mark_proc_region(curproc->p_mem, slb->slb_region, PROT_PR, curproc->pid);
+		mark_proc_region(get_curproc()->p_mem, slb->slb_region, PROT_PR, get_curproc()->pid);
 		sys_p_kill(pid, SIGCONT);
 	}
 	else
-		mark_proc_region(curproc->p_mem, slb->slb_region, PROT_PR, curproc->pid);
+		mark_proc_region(get_curproc()->p_mem, slb->slb_region, PROT_PR, get_curproc()->pid);
 
 	return(0);
 }
@@ -734,7 +734,7 @@ slb_close_on_exit (int terminate)
 	/* Is curproc user of a shared library? */
 	for (slb = slb_list; slb; slb = slb->slb_next)
 	{
-		if (is_user (slb, curproc->pid))
+		if (is_user (slb, get_curproc()->pid))
 			break;
 	}
 	if (slb == 0L)
@@ -746,14 +746,14 @@ slb_close_on_exit (int terminate)
 	 * call came from supervisor mode or curproc has already close()d the
 	 * library (or never open()ed it).
 	 */
-	mark_proc_region (curproc->p_mem, slb->slb_region, PROT_G, curproc->pid);
-	if (terminate || (curproc->ctxt[SYSCALL].sr & 0x2000) ||
-		!has_opened(slb, curproc->pid))
+	mark_proc_region (get_curproc()->p_mem, slb->slb_region, PROT_G, get_curproc()->pid);
+	if (terminate || (get_curproc()->ctxt[SYSCALL].sr & 0x2000) ||
+		!has_opened(slb, get_curproc()->pid))
 	{
-		mark_users(slb, curproc->pid, 0);
-		if (has_opened(slb, curproc->pid))
+		mark_users(slb, get_curproc()->pid, 0);
+		if (has_opened(slb, get_curproc()->pid))
 			slb->slb_used--;
-		mark_opened(slb, curproc->pid, 0);
+		mark_opened(slb, get_curproc()->pid, 0);
 		assert (slb->slb_proc->p_mem);
 
 		mr = slb->slb_proc->p_mem->mem;
@@ -762,7 +762,7 @@ slb_close_on_exit (int terminate)
 			for (i = 0; i < slb->slb_proc->p_mem->num_reg; i++, mr++)
 			{
 				if (*mr != 0L)
-					mark_proc_region(curproc->p_mem, *mr, PROT_I, curproc->pid);
+					mark_proc_region(get_curproc()->p_mem, *mr, PROT_I, get_curproc()->pid);
 			}
 		}
 		if (slb->slb_used == 0)
@@ -770,7 +770,7 @@ slb_close_on_exit (int terminate)
 			short pid = slb->slb_proc->pid;
 
 			slb->slb_name[0] = 0;
-			mark_proc_region(curproc->p_mem, slb->slb_region, PROT_PR, curproc->pid);
+			mark_proc_region(get_curproc()->p_mem, slb->slb_region, PROT_PR, get_curproc()->pid);
 
 			/* Unblock the signal deliveries */
 			slb->slb_proc->p_flag &= ~P_FLAG_SLB;
@@ -778,7 +778,7 @@ slb_close_on_exit (int terminate)
 			sys_p_kill(pid, SIGCONT);
 		}
 		else
-			mark_proc_region(curproc->p_mem, slb->slb_region, PROT_PR, curproc->pid);
+			mark_proc_region(get_curproc()->p_mem, slb->slb_region, PROT_PR, get_curproc()->pid);
 		return(-1);
 	}
 
@@ -786,18 +786,18 @@ slb_close_on_exit (int terminate)
 	 * Otherwise, change curproc's context to call slb_close_and_pterm() in
 	 * slb_util.spp upon "returning" from Pterm().
 	 */
-	ut = curproc->p_mem->tp_ptr;
+	ut = get_curproc()->p_mem->tp_ptr;
 
-	assert(has_opened(slb, curproc->pid));
+	assert(has_opened(slb, get_curproc()->pid));
 	slb->slb_used--;
-	mark_opened(slb, curproc->pid, 0);
-	usp = (long *)curproc->ctxt[SYSCALL].usp;
-	*(--usp) = curproc->ctxt[SYSCALL].pc;
+	mark_opened(slb, get_curproc()->pid, 0);
+	usp = (long *)get_curproc()->ctxt[SYSCALL].usp;
+	*(--usp) = get_curproc()->ctxt[SYSCALL].pc;
 	*(--usp) = (long)slb;
-	*(--usp) = (long)curproc->p_mem->base;
-	curproc->ctxt[SYSCALL].pc = ut->slb_close_and_pterm_p;
-	curproc->ctxt[SYSCALL].usp = (long)usp;
-	mark_proc_region(curproc->p_mem, slb->slb_region, PROT_PR, curproc->pid);
+	*(--usp) = (long)get_curproc()->p_mem->base;
+	get_curproc()->ctxt[SYSCALL].pc = ut->slb_close_and_pterm_p;
+	get_curproc()->ctxt[SYSCALL].usp = (long)usp;
+	mark_proc_region(get_curproc()->p_mem, slb->slb_region, PROT_PR, get_curproc()->pid);
 	return(1);
 }
 
@@ -817,7 +817,7 @@ remove_slb(void)
 	/* Is curproc a shared library? */
 	for (slb = slb_list; slb; slb = slb->slb_next)
 	{
-		if (slb->slb_proc == curproc)
+		if (slb->slb_proc == get_curproc())
 			break;
 		last = slb;
 	}
@@ -835,9 +835,9 @@ remove_slb(void)
 	}
 	if (last)
 	{
-		mark_proc_region(curproc->p_mem, last->slb_region, PROT_G, curproc->pid);
+		mark_proc_region(get_curproc()->p_mem, last->slb_region, PROT_G, get_curproc()->pid);
 		last->slb_next = slb->slb_next;
-		mark_proc_region(curproc->p_mem, last->slb_region, PROT_PR, curproc->pid);
+		mark_proc_region(get_curproc()->p_mem, last->slb_region, PROT_PR, get_curproc()->pid);
 	}
 	else
 		slb_list = slb->slb_next;

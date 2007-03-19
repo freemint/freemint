@@ -199,7 +199,7 @@ zero_read (FILEPTR *f, char *buf, long bytes)
 {
 	UNUSED (f);
 	
-	bzero (buf, bytes);
+	mint_bzero (buf, bytes);
 	return bytes;
 }
 

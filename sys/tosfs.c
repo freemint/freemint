@@ -995,7 +995,7 @@ tos_getname(fcookie *root, fcookie *dir, char *pathname, int size)
 /*
  * BUG: must be a better way to decide upper/lower case
  */
-		if (curproc->domain == DOM_MINT)
+		if (get_curproc()->domain == DOM_MINT)
 			strlwr(pathname);
 		return E_OK;
 	} else {
@@ -1133,7 +1133,7 @@ again:
  * unfortunately some old programs rely on the behaviour
  * below
  */
-		if (curproc->domain == DOM_MINT)
+		if (get_curproc()->domain == DOM_MINT)
 		strlwr(name);
 	}
 	else
@@ -1525,7 +1525,7 @@ tos_ioctl(FILEPTR *f, int mode, void *buf)
 		ti = (struct tindex *)f->fc.index;
 
 		if (mode == F_GETLK) {
-			lck = denylock(curproc->pid,ti->locks, &t);
+			lck = denylock(get_curproc()->pid,ti->locks, &t);
 			if (lck)
 				*fl = lck->l;
 			else
@@ -1538,7 +1538,7 @@ tos_ioctl(FILEPTR *f, int mode, void *buf)
 			old = &ti->locks;
 			lck = *old;
 			while (lck) {
-				if (lck->l.l_pid == curproc->pid &&
+				if (lck->l.l_pid == get_curproc()->pid &&
 				    lck->l.l_start == t.l.l_start &&
 				    lck->l.l_len == t.l.l_len) {
 		/* found it -- remove the lock */
@@ -1562,7 +1562,7 @@ tos_ioctl(FILEPTR *f, int mode, void *buf)
 			t.l.l_start, t.l.l_len));
 		do {
 		/* see if there's a conflicting lock */
-			while ((lck = denylock(curproc->pid,ti->locks, &t)) != 0) {
+			while ((lck = denylock(get_curproc()->pid,ti->locks, &t)) != 0) {
 				DEBUG(("tosfs: lock conflicts with one held by %d",
 					lck->l.l_pid));
 				if (mode == F_SETLKW) {
@@ -1589,7 +1589,7 @@ tos_ioctl(FILEPTR *f, int mode, void *buf)
 			}
 		} while (!lck);
 		lck->l = t.l;
-		lck->l.l_pid = curproc->pid;
+		lck->l.l_pid = get_curproc()->pid;
 		lck->next = ti->locks;
 		ti->locks = lck;
 	/* mark the file as being locked */
