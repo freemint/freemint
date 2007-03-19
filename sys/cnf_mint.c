@@ -295,7 +295,7 @@ pCB_alias(const char *drive, const char *path, struct parsinf *inf)
 	else
 	{
 		fcookie root_dir;
-		long r = path2cookie(curproc, path, NULL, &root_dir);
+		long r = path2cookie(get_curproc(), path, NULL, &root_dir);
 		if (r)
 		{
 			parser_msg(inf, NULL);
@@ -306,10 +306,10 @@ pCB_alias(const char *drive, const char *path, struct parsinf *inf)
 		{
 			aliasdrv[drv] = root_dir.dev + 1;
 			*((long *)0x4c2L) |= (1L << drv);
-			release_cookie(&curproc->p_cwd->curdir[drv]);
-			dup_cookie(&curproc->p_cwd->curdir[drv], &root_dir);
-			release_cookie(&curproc->p_cwd->root[drv]);
-			curproc->p_cwd->root[drv] = root_dir;
+			release_cookie(&get_curproc()->p_cwd->curdir[drv]);
+			dup_cookie(&get_curproc()->p_cwd->curdir[drv], &root_dir);
+			release_cookie(&get_curproc()->p_cwd->root[drv]);
+			get_curproc()->p_cwd->root[drv] = root_dir;
 		}
 	}
 }
@@ -327,16 +327,16 @@ pCB_aux(char *path)
 	ret = do_open(&fp, path, O_RDWR|O_CREAT|O_TRUNC, 0, NULL);
 	if (!ret)
 	{
-		do_close(curproc, curproc->p_fd->ofiles[2]);
-		do_close(curproc, curproc->p_fd->aux);
-		curproc->p_fd->aux = curproc->p_fd->ofiles[2] = fp;
+		do_close(get_curproc(), get_curproc()->p_fd->ofiles[2]);
+		do_close(get_curproc(), get_curproc()->p_fd->aux);
+		get_curproc()->p_fd->aux = get_curproc()->p_fd->ofiles[2] = fp;
 		fp->links++;
 		if (is_terminal(fp) && fp->fc.fs == &bios_filesys &&
 		    fp->dev == &bios_tdevice &&
 		    (has_bconmap ? (fp->fc.aux>=6) : (fp->fc.aux==1)))
 		{
 			if (has_bconmap)
-				curproc->p_fd->bconmap = fp->fc.aux;
+				get_curproc()->p_fd->bconmap = fp->fc.aux;
 			((struct tty *)fp->devinfo)->aux_cnt++;
 			fp->pos = 1;
 		}
@@ -385,8 +385,8 @@ pCB_con(char *path)
 		int i;
 		for (i = -1; i < 2; i++)
 		{
-			do_close(curproc, curproc->p_fd->ofiles[i]);
-			curproc->p_fd->ofiles[i] = fp;
+			do_close(get_curproc(), get_curproc()->p_fd->ofiles[i]);
+			get_curproc()->p_fd->ofiles[i] = fp;
 			fp->links++;
 		}
 
@@ -526,11 +526,11 @@ pCB_prn(char *path)
 	ret = do_open(&fp, path, O_RDWR|O_CREAT|O_TRUNC, 0, NULL);
 	if (!ret)
 	{
-		do_close(curproc, curproc->p_fd->ofiles[3]);
-		do_close(curproc, curproc->p_fd->prn);
+		do_close(get_curproc(), get_curproc()->p_fd->ofiles[3]);
+		do_close(get_curproc(), get_curproc()->p_fd->prn);
 
-		curproc->p_fd->prn =
-		curproc->p_fd->ofiles[3] = fp;
+		get_curproc()->p_fd->prn =
+		get_curproc()->p_fd->ofiles[3] = fp;
 
 		fp->links++;
 	}

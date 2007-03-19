@@ -206,7 +206,7 @@
 long _cdecl
 sys_p_trace (short request, short pid, void *addr, long data)
 {
-	PROC *p = curproc;
+	PROC *p = get_curproc();
 	PROC *t;
 
 	int write;

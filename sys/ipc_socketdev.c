@@ -336,7 +336,7 @@ long
 so_fstat_old (FILEPTR *f, XATTR *xattr)
 {
 	struct socket *so = (struct socket *) f->devinfo;
-	struct ucred *ucr = curproc->p_cred->ucr;
+	struct ucred *ucr = get_curproc()->p_cred->ucr;
 
 	xattr->mode	= S_IFSOCK;
 	xattr->index	= f->devinfo;
@@ -367,7 +367,7 @@ long
 so_fstat (FILEPTR *f, struct stat *st)
 {
 	struct socket *so = (struct socket *) f->devinfo;
-	struct ucred *ucr = curproc->p_cred->ucr;
+	struct ucred *ucr = get_curproc()->p_cred->ucr;
 
 	st->dev		= 0;		/* inode's device */
 	st->ino		= f->devinfo;	/* inode's number */
@@ -395,7 +395,7 @@ so_fstat (FILEPTR *f, struct stat *st)
 	st->flags	= 0;		/* user defined flags for file */
 	st->gen		= 0;		/* file generation number */
 
-	bzero (st->res, sizeof (st->res));
+	mint_bzero (st->res, sizeof (st->res));
 
 	return 0;
 }
@@ -430,7 +430,7 @@ sockemu_open (FILEPTR *f)
 	so = kmalloc (sizeof (*so));
 	if (so)
 	{
-		bzero (so, sizeof (*so));
+		mint_bzero (so, sizeof (*so));
 
 		so->state = SS_VIRGIN;
 
@@ -477,7 +477,7 @@ sockemu_ioctl (FILEPTR *f, int cmd, void *buf)
 		case SOCKETPAIR_CMD:
 		case ACCEPT_CMD:
 		{
-			PROC *p = curproc;
+			PROC *p = get_curproc();
 			FILEPTR *newfp = NULL;
 			short newfd = MIN_OPEN - 1;
 			long ret;

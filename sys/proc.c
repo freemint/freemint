@@ -56,9 +56,10 @@
 unsigned short proc_clock = 0x7fff;
 
 
+
 /* global process variables */
 struct proc *proclist = NULL;		/* list of all active processes */
-struct proc *curproc  = NULL;		/* current process		*/
+struct proc *curproc  = NULL;	/* current process		*/
 struct proc *rootproc = NULL;		/* pid 0 -- MiNT itself		*/
 struct proc *sys_q[NUM_QUEUES] =
 {
@@ -69,6 +70,7 @@ struct proc *sys_q[NUM_QUEUES] =
 short time_slice = 2;
 
 struct proc *_cdecl get_curproc(void) { return curproc; }
+
 
 /*
  * initialize the process table
@@ -88,14 +90,14 @@ init_proc(void)
 	static struct plimit	limits0;
 
 	/* XXX */
-	bzero(&rootproc0, sizeof(rootproc0));
-	bzero(&mem0, sizeof(mem0));
-	bzero(&ucred0, sizeof(ucred0));
-	bzero(&pcred0, sizeof(pcred0));
-	bzero(&fd0, sizeof(fd0));
-	bzero(&cwd0, sizeof(cwd0));
-	bzero(&sigacts0, sizeof(sigacts0));
-	bzero(&limits0, sizeof(limits0));
+	mint_bzero(&rootproc0, sizeof(rootproc0));
+	mint_bzero(&mem0, sizeof(mem0));
+	mint_bzero(&ucred0, sizeof(ucred0));
+	mint_bzero(&pcred0, sizeof(pcred0));
+	mint_bzero(&fd0, sizeof(fd0));
+	mint_bzero(&cwd0, sizeof(cwd0));
+	mint_bzero(&sigacts0, sizeof(sigacts0));
+	mint_bzero(&limits0, sizeof(limits0)); 
 
 	pcred0.ucr = &ucred0;			ucred0.links = 1;
 
@@ -110,54 +112,53 @@ init_proc(void)
 	fd0.ofileflags = fd0.dfileflags;
 	fd0.nfiles = NDFILE;
 
-	DEBUG(("%lx, %lx, %lx, %lx, %lx, %lx, %lx",
+	DEBUG(("init_proc() inf : %lx, %lx, %lx, %lx, %lx, %lx, %lx",
 		&rootproc0, &mem0, &pcred0, &ucred0, &fd0, &cwd0, &sigacts0));
 
-	rootproc = curproc = &rootproc0;	rootproc0.links = 1;
-
+	curproc = rootproc = &rootproc0;
+	rootproc0.links = 1;
+	
+	
 	/* set the stack barrier */
-	curproc->stack_magic = STACK_MAGIC;
+	rootproc->stack_magic = STACK_MAGIC;
 
-	curproc->ppid = -1;		/* no parent */
-	curproc->p_flag = P_FLAG_SYS;
-	curproc->domain = DOM_TOS;	/* TOS domain */
-	curproc->sysstack = (long)(curproc->stack + STKSIZE - 12);
-	curproc->magic = CTXT_MAGIC;
+	rootproc->ppid = -1;		/* no parent */
+	rootproc->p_flag = P_FLAG_SYS;
+	rootproc->domain = DOM_TOS;	/* TOS domain */
+	rootproc->sysstack = (long)(rootproc->stack + STKSIZE - 12);
+	rootproc->magic = CTXT_MAGIC;
 
-	((long *) curproc->sysstack)[1] = FRAME_MAGIC;
-	((long *) curproc->sysstack)[2] = 0;
-	((long *) curproc->sysstack)[3] = 0;
+	((long *) rootproc->sysstack)[1] = FRAME_MAGIC;
+	((long *) rootproc->sysstack)[2] = 0;
+	((long *) rootproc->sysstack)[3] = 0;
 
-	curproc->p_fd->dta = &dta;	/* looks ugly */
-	strcpy(curproc->name, "MiNT");
-	strcpy(curproc->fname, "MiNT");
-	strcpy(curproc->cmdlin, "MiNT");
+	rootproc->p_fd->dta = &dta;	/* looks ugly */
+	strcpy(rootproc->name, "MiNT");
+	strcpy(rootproc->fname, "MiNT");
+	strcpy(rootproc->cmdlin, "MiNT");
 
 	/* get some memory */
-	curproc->p_mem->memflags = F_PROT_S; /* default prot mode: super-only */
-	curproc->p_mem->num_reg = NUM_REGIONS;
+	rootproc->p_mem->memflags = F_PROT_S; /* default prot mode: super-only */
+	rootproc->p_mem->num_reg = NUM_REGIONS;
 	{
-		const unsigned long size = curproc->p_mem->num_reg * sizeof(void *);
+		unsigned long size = rootproc->p_mem->num_reg * sizeof(void *);
 		void *ptr = kmalloc(size * 2);
-
 		/* make sure kmalloc was successful */
 		assert(ptr);
-
+		rootproc->p_mem->mem = ptr;
+		rootproc->p_mem->addr = ptr + size;
 		/* make sure it's filled with zeros */
-		bzero(ptr, size * 2);
-
-		curproc->p_mem->mem = ptr;
-		curproc->p_mem->addr = ptr + size;
+		mint_bzero(ptr, size * 2L); 
 	}
-	curproc->p_mem->base = _base;
-
+	rootproc->p_mem->base = _base;
+	
 	/* init trampoline things */
-	curproc->p_mem->tp_ptr = &kernel_things;
-	curproc->p_mem->tp_reg = NULL;
+	rootproc->p_mem->tp_ptr = &kernel_things;
+	rootproc->p_mem->tp_reg = NULL;
 
 	/* init page table for curproc */
-	init_page_table_ptr(curproc->p_mem);
-	init_page_table(curproc, curproc->p_mem);
+	init_page_table_ptr(rootproc->p_mem);
+	init_page_table(rootproc, rootproc->p_mem);
 
 	/* get root and current directories for all drives */
 	{
@@ -171,13 +172,13 @@ init_proc(void)
 			fs = drives[i];
 			if (fs && xfs_root(fs, i, &dir) == E_OK)
 			{
-				curproc->p_cwd->root[i] = dir;
-				dup_cookie(&curproc->p_cwd->curdir[i], &dir);
+				rootproc->p_cwd->root[i] = dir;
+				dup_cookie(&rootproc->p_cwd->curdir[i], &dir);
 			}
 			else
 			{
-				curproc->p_cwd->root[i].fs = curproc->p_cwd->curdir[i].fs = 0;
-				curproc->p_cwd->root[i].dev = curproc->p_cwd->curdir[i].dev = i;
+				rootproc->p_cwd->root[i].fs = rootproc->p_cwd->curdir[i].fs = 0;
+				rootproc->p_cwd->root[i].dev = rootproc->p_cwd->curdir[i].dev = i;
 			}
 		}
 	}
@@ -185,30 +186,29 @@ init_proc(void)
 	/* Set the correct drive. The current directory we
 	 * set later, after all file systems have been loaded.
 	 */
-	curproc->p_cwd->curdrv = TRAP_Dgetdrv();
-	proclist = curproc;
+	rootproc->p_cwd->curdrv = TRAP_Dgetdrv();
+	proclist = rootproc;
 
-	curproc->p_cwd->cmask = 0;
+	rootproc->p_cwd->cmask = 0;
 
 	/* some more protection against job control; unless these signals are
 	 * re-activated by a shell that knows about job control, they'll have
 	 * no effect
 	 */
-	SIGACTION(curproc, SIGTTIN).sa_handler = SIG_IGN;
-	SIGACTION(curproc, SIGTTOU).sa_handler = SIG_IGN;
-	SIGACTION(curproc, SIGTSTP).sa_handler = SIG_IGN;
+	SIGACTION(rootproc, SIGTTIN).sa_handler = SIG_IGN;
+	SIGACTION(rootproc, SIGTTOU).sa_handler = SIG_IGN;
+	SIGACTION(rootproc, SIGTSTP).sa_handler = SIG_IGN;
 
 	/* set up some more per-process variables */
-	curproc->started = xtime;
+	rootproc->started = xtime;
 
 	if (has_bconmap)
 		/* init_xbios not happened yet */
-		curproc->p_fd->bconmap = (int) TRAP_Bconmap(-1);
+		rootproc->p_fd->bconmap = (int) TRAP_Bconmap(-1);
 	else
-		curproc->p_fd->bconmap = 1;
-
-	curproc->logbase = (void *) TRAP_Logbase();
-	curproc->criticerr = *((long _cdecl (**)(long)) 0x404L);
+		rootproc->p_fd->bconmap = 1;
+	rootproc->logbase = (void *) TRAP_Logbase();
+	rootproc->criticerr = *((long _cdecl (**)(long)) 0x404L);
 }
 
 /* remaining_proc_time():
@@ -283,7 +283,6 @@ void
 fresh_slices(int slices)
 {
 	reset_priorities();
-
 	curproc->slices = 0;
 	curproc->curpri = MAX_NICE + 1;
 	proc_clock = time_slice + slices;

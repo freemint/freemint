@@ -71,13 +71,13 @@
  */
 
 long
-terminate(struct proc *curproc, short code, short que)
+terminate(struct proc *pcurproc, short code, short que)
 {
 	struct proc *p;
 	int i, wakemint = 0;
 
 	/* notify proc extensions */
-	proc_ext_on_exit(curproc, code);
+	proc_ext_on_exit(pcurproc, code);
 
 	if (bconbsiz)
 		(void) bflush();
@@ -91,56 +91,56 @@ terminate(struct proc *curproc, short code, short que)
 	/* Remove structure if curproc is an SLB */
 	remove_slb ();
 
-	if (curproc->pid == 0)
+	if (pcurproc->pid == 0)
 		FATAL ("attempt to terminate MiNT");
 
 	/* cancel all pending timeouts for this process */
 	cancelalltimeouts();
 
 	/* cancel alarm clock */
-	curproc->alarmtim = 0;
+	pcurproc->alarmtim = 0;
 
 	/* Free saved commandline */
-	if (curproc->real_cmdline)
+	if (pcurproc->real_cmdline)
 	{
-		kfree (curproc->real_cmdline);
-		curproc->real_cmdline = NULL;
+		kfree (pcurproc->real_cmdline);
+		pcurproc->real_cmdline = NULL;
 	}
 
 	/* free exec cookie */
-	release_cookie (&curproc->exe);
+	release_cookie (&pcurproc->exe);
 
 	/* release all semaphores owned by this process */
-	free_semaphores (curproc->pid);
+	free_semaphores (pcurproc->pid);
 
 	/* make sure that any open files that refer to this process are
 	 * closed
 	 */
-	changedrv (PROC_RDEV_BASE | curproc->pid);
+	changedrv (PROC_RDEV_BASE | pcurproc->pid);
 
 	/* release any drives locked by Dlock */
 	for (i = 0; i < NUM_DRIVES; i++)
 	{
-		if (dlockproc[i] == curproc)
+		if (dlockproc[i] == pcurproc)
 			dlockproc[i] = NULL;
 	}
 
-	free_ext (curproc);
+	free_ext (pcurproc);
 
-	free_fd (curproc);
+	free_fd (pcurproc);
 
-	free_cwd (curproc);
+	free_cwd (pcurproc);
 
 	/* attention, this invalidates the MMU table */
 	if (que == ZOMBIE_Q)
-		free_mem (curproc);
+		free_mem (pcurproc);
 	/* else
 		 make TSR process non-swappable */
 
 	/* find our parent (if parent not found, then use process 0 as parent
 	 * since that process is constantly in a wait loop)
 	 */
-	p = pid2proc (curproc->ppid);
+	p = pid2proc (pcurproc->ppid);
 	if (!p)
 	{
 		TRACE (("terminate: parent not found"));
@@ -159,7 +159,7 @@ terminate(struct proc *curproc, short code, short que)
 
 		sr = splhigh ();
 		if (p->wait_q == WAIT_Q
-		    && (p->wait_cond == (long) curproc || p->wait_cond == (long) sys_pwaitpid))
+		    && (p->wait_cond == (long) pcurproc || p->wait_cond == (long) sys_pwaitpid))
 		{
 			rm_q (WAIT_Q, p);
 			add_q (READY_Q, p);
@@ -169,12 +169,12 @@ terminate(struct proc *curproc, short code, short que)
 		spl (sr);
 	}
 
-	if (curproc->ptracer && curproc->ptracer != p)
+	if (pcurproc->ptracer && pcurproc->ptracer != p)
 	{
 		/* BUG: should we ensure curproc->ptracer is awake ? */
 
 		/* tell tracing process */
-		post_sig (curproc->ptracer, SIGCHLD);
+		post_sig (pcurproc->ptracer, SIGCHLD);
 	}
 
 	/* inform of process termination */
@@ -184,7 +184,7 @@ terminate(struct proc *curproc, short code, short que)
 	 * also, check for processes we were tracing, and
 	 * cancel the trace
 	 */
-	i = curproc->pid;
+	i = pcurproc->pid;
 	for (p = proclist; p; p = p->gl_next)
 	{
 		if (p->ppid == i)
@@ -194,7 +194,7 @@ terminate(struct proc *curproc, short code, short que)
 				wakemint = 1;	/* we need to wake proc. 0 */
 		}
 
-		if (p->ptracer == curproc)
+		if (p->ptracer == pcurproc)
 		{
 			p->ptracer = 0;
 
@@ -232,7 +232,7 @@ terminate(struct proc *curproc, short code, short que)
 	 * through to us
 	 */
 	for (i = 0; i < NSIG; i++)
-		SIGACTION(curproc, i).sa_handler = SIG_IGN;
+		SIGACTION(pcurproc, i).sa_handler = SIG_IGN;
 
 	/* finally, reset the time/date stamp for /proc and /sys.  */
 	procfs_stmp = xtime;
@@ -298,7 +298,7 @@ sys_pterm(short code)
 			break;
 	}
 
-	return (kernel_pterm(curproc, code));
+	return (kernel_pterm(get_curproc(), code));
 }
 
 long _cdecl
@@ -310,7 +310,7 @@ sys_pterm0(void)
 long _cdecl
 sys_ptermres(long save, short code)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 	struct memspace *mem = p->p_mem;
 
 	MEMREGION *m;
@@ -399,9 +399,9 @@ pwaitpid(short pid, short nohang, long *rusage, short *retval)
 	int ourpid, ourpgrp;
 	int found;
 
-
-	ourpid = curproc->pid;
-	ourpgrp = curproc->pgrp;
+	
+	ourpid = get_curproc()->pid;
+	ourpgrp = get_curproc()->pgrp;
 
 	if (ourpid)
 		TRACE(("Pwaitpid(%d, %d, %lx)", pid, nohang, rusage));
@@ -415,7 +415,7 @@ pwaitpid(short pid, short nohang, long *rusage, short *retval)
 		found = 0;
 		for (p = proclist; p; p = p->gl_next)
 		{
-			if ((p->ppid == ourpid || p->ptracer == curproc)
+			if ((p->ppid == ourpid || p->ptracer == get_curproc())
 			    && (pid == -1
 				|| (pid > 0 && pid == p->pid)
 # if 0
@@ -459,7 +459,7 @@ pwaitpid(short pid, short nohang, long *rusage, short *retval)
 					return 0;
 				}
 
-				if (curproc->pid)
+				if (get_curproc()->pid)
 					TRACE(("Pwaitpid: going to sleep"));
 
 				sleep (WAIT_Q, (long) sys_pwaitpid);
@@ -506,13 +506,13 @@ pwaitpid(short pid, short nohang, long *rusage, short *retval)
 	}
 
 	/* avoid adding adopted trace processes usage to the foster parent */
-	if (curproc->pid == p->ppid)
+	if (get_curproc()->pid == p->ppid)
 	{
 		/* add child's resource usage to parent's */
 		if (p->wait_q == TSR_Q || p->wait_q == ZOMBIE_Q)
 		{
-			curproc->chldstime += p->systime + p->chldstime;
-			curproc->chldutime += p->usrtime + p->chldutime;
+			get_curproc()->chldstime += p->systime + p->chldstime;
+			get_curproc()->chldutime += p->usrtime + p->chldutime;
 		}
 	}
 
@@ -532,7 +532,7 @@ pwaitpid(short pid, short nohang, long *rusage, short *retval)
 	 */
  	if (p->ptracer && p->ptracer->pid != p->ppid)
  	{
-		if (curproc == p->ptracer)
+		if (get_curproc() == p->ptracer)
 		{
 			/* deliver the signal to the tracing process first */
 			TRACE(("Pwaitpid(ptracer): returning status %lx to tracing process", r));
@@ -562,7 +562,7 @@ pwaitpid(short pid, short nohang, long *rusage, short *retval)
 
 	/* it better have been on the ZOMBIE queue from here on in... */
 	assert (p->wait_q == ZOMBIE_Q);
-	assert (p != curproc);
+	assert (p != get_curproc());
 
 	/* take the child off both the global and ZOMBIE lists */
 	{

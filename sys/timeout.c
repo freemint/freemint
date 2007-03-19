@@ -204,7 +204,7 @@ addtimeout (PROC *p, long delta, void _cdecl (*func)(PROC *))
 TIMEOUT * _cdecl
 addtimeout_curproc (long delta, void _cdecl (*func)(PROC *))
 {
-	return __addtimeout (curproc, delta, func, 0);
+	return __addtimeout (get_curproc(), delta, func, 0);
 }
 
 /*
@@ -248,7 +248,7 @@ cancelalltimeouts (void)
 	prev = &tlist;
 	while (cur)
 	{
-		if (cur->proc == curproc)
+		if (cur->proc == get_curproc())
 		{
 			delta = cur->when;
 			old = cur;
@@ -273,7 +273,7 @@ cancelalltimeouts (void)
 	prev = &expire_list;
 	for (cur = *prev; cur; cur = *prev)
 	{
-		if (cur->proc == curproc)
+		if (cur->proc == get_curproc())
 		{
 			*prev = cur->next;
 			spl (sr);
@@ -340,7 +340,7 @@ __canceltimeout (TIMEOUT *this, struct proc *p)
 void _cdecl
 canceltimeout (TIMEOUT *this)
 {
-	__canceltimeout (this, curproc);
+	__canceltimeout (this, get_curproc());
 }
 
 void _cdecl
@@ -484,7 +484,7 @@ nap (unsigned n)
 {
 	TIMEOUT *t;
 	
-	t = addtimeout (curproc, n, unnapme);
+	t = addtimeout (get_curproc(), n, unnapme);
 	sleep (SELECT_Q, (long) nap);
 	canceltimeout (t);
 }

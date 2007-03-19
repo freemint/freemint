@@ -1401,7 +1401,7 @@ load_external_table(FILEPTR *fp, const char *name, long size)
 		return ENOMEM;
 	}
 
-	bzero(kbuf, size+1);
+	mint_bzero(kbuf, size+1);
 
 	if ((*fp->dev->read)(fp, kbuf, size) == size)
 	{
@@ -1539,7 +1539,7 @@ load_internal_table(void)
 	}
 
 	assert(kbuf);
-	bzero(kbuf, size);
+
 
 	p = kbuf;
 

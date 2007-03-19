@@ -124,7 +124,7 @@ getstat64(FILESYS *fs, fcookie *fc, STAT *stat)
 		stat->flags	= 0;
 		stat->gen	= 0;
 
-		bzero(stat->res, sizeof(stat->res));
+		mint_bzero(stat->res, sizeof(stat->res));
 	}
 
 	return r;

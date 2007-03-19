@@ -38,11 +38,10 @@
 long _cdecl
 sys_d_setdrv (int d)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 	long r;
-
-	r = sys_b_drvmap() | dosdrvs;
-
+	
+	r = sys_b_drvmap() | dosdrvs ;
 	TRACELOW (("Dsetdrv(%d)", d));
 	assert (p->p_fd && p->p_cwd);
 
@@ -62,7 +61,7 @@ sys_d_setdrv (int d)
 long _cdecl
 sys_d_getdrv (void)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 
 	TRACELOW (("Dgetdrv"));
 	assert (p->p_fd && p->p_cwd);
@@ -73,7 +72,7 @@ sys_d_getdrv (void)
 long _cdecl
 sys_d_free (long *buf, int d)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 	fcookie *dir = 0;
 	FILESYS *fs;
 	fcookie root;
@@ -142,7 +141,7 @@ aliased:
 long _cdecl
 sys_d_create (const char *path)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 
 	fcookie dir;
 	long r;
@@ -205,7 +204,7 @@ sys_d_create (const char *path)
 long _cdecl
 sys_d_delete (const char *path)
 {
-	struct proc *cp = curproc;
+	struct proc *cp = get_curproc();
 	struct ucred *cred = cp->p_cred->ucr;
 
 	fcookie parentdir, targdir;
@@ -421,7 +420,7 @@ sys_d_setpath0 (struct proc *p, const char *path)
 long _cdecl
 sys_d_setpath (const char *path)
 {
-	return sys_d_setpath0(curproc, path);
+	return sys_d_setpath0(get_curproc(), path);
 }
 
 /*
@@ -437,7 +436,7 @@ sys_d_setpath (const char *path)
 long _cdecl
 sys_d_getcwd (char *path, int drv, int size)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 	struct cwd *cwd = p->p_cwd;
 
 	FILESYS *fs;
@@ -520,7 +519,7 @@ sys_d_getpath (char *path, int drv)
 long _cdecl
 sys_f_setdta (DTABUF *dta)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 
 	TRACE(("Fsetdta: %lx", dta));
 	p->p_fd->dta = dta;
@@ -532,7 +531,7 @@ sys_f_setdta (DTABUF *dta)
 long _cdecl
 sys_f_getdta (void)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 	long r;
 
 	r = (long) p->p_fd->dta;
@@ -548,7 +547,7 @@ sys_f_getdta (void)
 long _cdecl
 sys_f_sfirst (const char *path, int attrib)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 
 	char *s, *slash;
 	FILESYS *fs;
@@ -802,7 +801,7 @@ long searchtime;
 long _cdecl
 sys_f_snext (void)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 
 	char buf[TOS_NAMELEN+1];
 	DTABUF *dta = p->p_fd->dta;
@@ -948,7 +947,7 @@ baderror:
 long _cdecl
 sys_f_attrib (const char *name, int rwflag, int attr)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 	struct ucred *cred = p->p_cred->ucr;
 
 	fcookie fc;
@@ -1007,7 +1006,7 @@ sys_f_attrib (const char *name, int rwflag, int attr)
 long _cdecl
 sys_f_delete (const char *name)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 	struct ucred *cred = p->p_cred->ucr;
 
 	fcookie dir, fc;
@@ -1102,7 +1101,7 @@ sys_f_delete (const char *name)
 long _cdecl
 sys_f_rename (int junk, const char *old, const char *new)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 	struct ucred *cred = p->p_cred->ucr;
 
 	fcookie olddir, newdir, oldfil;
@@ -1211,7 +1210,7 @@ sys_f_rename (int junk, const char *old, const char *new)
 long _cdecl
 sys_d_pathconf (const char *name, int which)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 
 	fcookie dir;
 	long r;
@@ -1244,7 +1243,7 @@ sys_d_pathconf (const char *name, int which)
 long _cdecl
 sys_d_opendir (const char *name, int flag)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 
 	DIR *dirh;
 	fcookie dir;
@@ -1365,7 +1364,7 @@ sys_d_rewind (long handle)
 long _cdecl
 sys_d_closedir (long handle)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 	DIR *dirh = (DIR *)handle;
 	DIR **where;
 	long r;
@@ -1408,7 +1407,7 @@ sys_d_closedir (long handle)
 long _cdecl
 sys_f_xattr (int flag, const char *name, XATTR *xattr)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 
 	fcookie fc;
 	long r;
@@ -1447,7 +1446,7 @@ sys_f_xattr (int flag, const char *name, XATTR *xattr)
 long _cdecl
 sys_f_link (const char *old, const char *new)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 	
 	fcookie olddir, newdir;
 	char temp1[PATH_MAX], temp2[PATH_MAX];
@@ -1501,7 +1500,7 @@ sys_f_link (const char *old, const char *new)
 long _cdecl
 sys_f_symlink (const char *old, const char *new)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 	
 	fcookie newdir;
 	long r;
@@ -1536,7 +1535,7 @@ sys_f_symlink (const char *old, const char *new)
 long _cdecl
 sys_f_readlink (int buflen, char *buf, const char *linkfile)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 
 	fcookie file;
 	long r;
@@ -1578,7 +1577,7 @@ sys_f_readlink (int buflen, char *buf, const char *linkfile)
 long _cdecl
 sys_d_cntl (int cmd, const char *name, long arg)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 
 	fcookie dir;
 	long r;
@@ -1643,7 +1642,7 @@ sys_f_chown (const char *name, int uid, int gid)
 long _cdecl
 sys_f_chown16 (const char *name, int uid, int gid, int follow_symlinks)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 	struct ucred *cred = p->p_cred->ucr;
 
 	fcookie fc;
@@ -1720,7 +1719,7 @@ sys_f_chown16 (const char *name, int uid, int gid, int follow_symlinks)
 long _cdecl
 sys_f_chmod (const char *name, unsigned int mode)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 	struct ucred *cred = p->p_cred->ucr;
 
 	fcookie fc;
@@ -1778,7 +1777,7 @@ struct proc *dlockproc [NUM_DRIVES];
 long _cdecl
 sys_d_lock (int mode, int _dev)
 {
-	struct proc *cp = curproc;
+	struct proc *cp = get_curproc();
 	struct proc *p;
 
 	FILEPTR *f;
@@ -1904,7 +1903,7 @@ sys_d_lock (int mode, int _dev)
 		}
 	}
 
-	dlockproc[dev] = curproc;
+	dlockproc[dev] = get_curproc();
 	return E_OK;
 }
 
@@ -1916,7 +1915,7 @@ sys_d_lock (int mode, int _dev)
 long _cdecl
 sys_d_readlabel (const char *name, char *buf, int buflen)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 
 	fcookie dir;
 	long r;
@@ -1942,7 +1941,7 @@ sys_d_readlabel (const char *name, char *buf, int buflen)
 long _cdecl
 sys_d_writelabel (const char *name, const char *label)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 	struct ucred *cred = p->p_cred->ucr;
 
 	fcookie dir;
@@ -1977,7 +1976,7 @@ sys_d_writelabel (const char *name, const char *label)
 long _cdecl
 sys_d_chroot (const char *path)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 	struct ucred *cred = p->p_cred->ucr;
 	struct cwd *cwd = p->p_cwd;
 
@@ -2059,7 +2058,7 @@ error:
 long _cdecl
 sys_f_stat64 (int flag, const char *name, STAT *stat)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 
 	fcookie fc;
 	long r;

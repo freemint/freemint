@@ -157,8 +157,8 @@ sys_p_msg(int mode, long mbid, char *ptr)
 	    }
 	}
 	/* nobody is reading just now */
-	curproc->mb_long1 = *(long *)ptr;	/* copy the message */
-	curproc->mb_long2 = *(long *)(ptr+4);	/* into my proc struct */
+	get_curproc()->mb_long1 = *(long *)ptr;	/* copy the message */
+	get_curproc()->mb_long2 = *(long *)(ptr+4);	/* into my proc struct */
 	goto dosleep;
     }
     else return ENOSYS;			/* invalid mode */
@@ -185,7 +185,7 @@ got_rendezvous:
 	else {
 	    short sr = spl7();
 	    /* The blocked write was in mode 1: writer wakes up */
-	    p->mb_writer = curproc->pid;	/* tell writer reader's pid */
+	    p->mb_writer = get_curproc()->pid;	/* tell writer reader's pid */
 	    p->mb_mode = -1;			/* mark rendezvous */
 	    p->wait_cond = 0;			/* not necessary? */
 	    if (p->wait_q != READY_Q) {
@@ -200,7 +200,7 @@ got_rendezvous:
     else {
 	short sr = spl7();
 	/* curproc is writing */
-	p->mb_writer = curproc->pid;		/* provide the PID */
+	p->mb_writer = get_curproc()->pid;		/* provide the PID */
 	p->mb_long1 = *(long *)(ptr);		/* copy the message */
 	p->mb_long2 = *(long *)(ptr+4);
 	p->mb_mode = -1;			/* mark rendezvous */
@@ -213,7 +213,7 @@ got_rendezvous:
 	spl(sr);
 	if (mode == 2) {
 	    /* now curproc becomes a reader */
-	    mbid = 0xFFFF0000L | curproc->pid;
+	    mbid = 0xFFFF0000L | get_curproc()->pid;
 	    mode = 0;
 	    goto dosleep;
 	}
@@ -232,8 +232,8 @@ dosleep:
 	if (noblock) {
 	    return -1L;
 	}
-	curproc->mb_mbid = mbid;	/* and ID waited for */
-	curproc->mb_mode = mode;	/* save mode */
+	get_curproc()->mb_mbid = mbid;	/* and ID waited for */
+	get_curproc()->mb_mode = mode;	/* save mode */
 
 /*
  * OK: now we sleep until a rendezvous has occured. The loop is because we
@@ -243,7 +243,7 @@ dosleep:
  */
 	do {
 		sleep(WAIT_Q, WAIT_MB);			/* block */
-	} while (curproc->mb_mode != -1);
+	} while (get_curproc()->mb_mode != -1);
 
 	/*
 	 * When we wake up, we transfer the message from our proc struct
@@ -255,12 +255,12 @@ dosleep:
 	 * with any more.
 	 */
 	if (mode == 0) {
-	    *(long *)(ptr) = curproc->mb_long1;
-	    *(long *)(ptr+4) = curproc->mb_long2;
+	    *(long *)(ptr) = get_curproc()->mb_long1;
+	    *(long *)(ptr+4) = get_curproc()->mb_long2;
 	}
 	/* in any case, copy the 'writer' field because that's the PID */
 	/* of the other side of the rendezvous */
-	*(short *)(ptr+8) = curproc->mb_writer;
+	*(short *)(ptr+8) = get_curproc()->mb_writer;
 	return 0;
 }
 
@@ -355,7 +355,7 @@ sys_p_semaphore(int mode, long id, long timeout)
 				return ENOMEM;
 
 			s->id = id;
-			s->owner = curproc->pid;
+			s->owner = get_curproc()->pid;
 			s->next = semalist;
 			semalist = s;
 
@@ -371,7 +371,7 @@ loop:
 				if (s->id == id)
 				{
 					/* found your semaphore */
-					if (s->owner == curproc->pid)
+					if (s->owner == get_curproc()->pid)
 					{
 						DEBUG(("Psemaphore(%d,%lx): curproc already owns it!",
 							mode, id));
@@ -381,7 +381,7 @@ loop:
 					if (s->owner == -1)
 					{
 						/* it's free; you get it */
-						s->owner = curproc->pid;
+						s->owner = get_curproc()->pid;
 						if (timeout_ptr)
 							canceltimeout(timeout_ptr);
 						
@@ -400,12 +400,12 @@ loop:
 							if (timeout != -1 && !timeout_ptr)
 							{
 								/* schedule a timeout */
-								timeout_ptr = addtimeout(curproc, timeout, unsemame);
+								timeout_ptr = addtimeout(get_curproc(), timeout, unsemame);
 							}
 
 							/* block until it's released, then try again */
 							sleep(WAIT_Q, WAIT_SEMA);
-							if (curproc->wait_cond != WAIT_SEMA)
+							if (get_curproc()->wait_cond != WAIT_SEMA)
 							{
 								TRACE(("Psemaphore(%d,%lx) timed out",
 									mode, id));
@@ -445,7 +445,7 @@ loop:
 				{
 					/* found your semaphore */
 
-					if (s->owner != curproc->pid
+					if (s->owner != get_curproc()->pid
 					    && s->owner != -1)
 					{
 						DEBUG(("Psemaphore(%d,%lx): access denied, locked by pid %i",

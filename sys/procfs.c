@@ -175,9 +175,9 @@ name2proc (const char *name)
 	
 	i = atol (pstr);
 	if (i == -1)
-		return curproc;
+		return get_curproc();
 	else if (i == -2)
-		i = curproc->ppid;
+		i = get_curproc()->ppid;
 	
 	return pid2proc (i);
 }
@@ -330,7 +330,7 @@ proc_stat64 (fcookie *fc, STAT *ptr)
 {
 	struct proc *p = getproc (fc->index);
 	
-	bzero (ptr, sizeof (*ptr));
+	mint_bzero (ptr, sizeof (*ptr));
 	
 	ptr->blocks = 1;
 	ptr->blksize = 1;
@@ -400,7 +400,7 @@ proc_remove (fcookie *dir, const char *name)
 	 * (coz daemons start with root privileges, then downgrade themselves,
 	 * nevertheless, ruid remains a zero).
 	 */
-	if (!suser (curproc->p_cred->ucr) && curproc->p_cred->ucr->euid != t->p_cred->ucr->euid)
+	if (!suser (get_curproc()->p_cred->ucr) && get_curproc()->p_cred->ucr->euid != t->p_cred->ucr->euid)
 	{
 		DEBUG(("proc_remove: wrong user"));
 		return EACCES;
@@ -635,9 +635,9 @@ proc_write (FILEPTR *f, const char *buf, long nbytes)
 
 	TRACE(("proc_write to pid %d: %ld bytes to %lx", p->pid, nbytes, where));
 
-	if (p->pid == curproc->ppid)
+	if (p->pid == get_curproc()->ppid)
 	{
-		DEBUG(("proc_write: pid %d, attempt to write to parent memory", curproc->pid));
+		DEBUG(("proc_write: pid %d, attempt to write to parent memory", get_curproc()->pid));
 		return EACCES;
 	}
 
@@ -660,7 +660,7 @@ proc_write (FILEPTR *f, const char *buf, long nbytes)
 		 * (draco)
 		 */
 		
-		if (secure_mode && curproc->euid)
+		if (secure_mode && get_curproc()->euid)
 		{
 			save_id[0] = p->rgid;
 			save_id[1] = p->ruid;
@@ -970,7 +970,7 @@ proc_ioctl (FILEPTR *f, int mode, void *buf)
 		 *	proc += 2L;	*(short *)proc = 0;
 		 *	return Pexec(200, "u:\\bin\\tcsh", "", 0L);
 		 *
-		 * and voil , we have superuser shell :-)
+		 * and voil, we have superuser shell :-)
 		 *
 		 * A fix? Enable memory protection... (draco)
 		 *
@@ -1027,7 +1027,7 @@ proc_ioctl (FILEPTR *f, int mode, void *buf)
 				 * day this flag will go away, I hope.
 				 */
 
-				if ((secure_mode) && (curproc->p_cred->ucr->euid))
+				if ((secure_mode) && (get_curproc()->p_cred->ucr->euid))
 					return EPERM;
 				/* you're making the process OS_SPECIAL */
 				TRACE (("Fcntl OS_SPECIAL pid %d",p->pid));
@@ -1047,7 +1047,7 @@ proc_ioctl (FILEPTR *f, int mode, void *buf)
 		}
 		case PTRACESFLAGS:
 		{
-			if (p->ptracer == curproc || p->ptracer == 0)
+			if (p->ptracer == get_curproc() || p->ptracer == 0)
 			{
 				p->ptraceflags = *(ushort *) buf;
 				if (p->ptraceflags == 0)
@@ -1063,13 +1063,13 @@ proc_ioctl (FILEPTR *f, int mode, void *buf)
 						post_sig (p, SIGCONT);
 					}
 				}
-				else if (p == curproc)
+				else if (p == get_curproc())
 				{
 					p->ptracer = pid2proc (p->ppid);
 				}
 				else
 				{
-					p->ptracer = curproc;
+					p->ptracer = get_curproc();
 				}
 			}
 			else
@@ -1082,7 +1082,7 @@ proc_ioctl (FILEPTR *f, int mode, void *buf)
 		}
 		case PTRACEGFLAGS:
 		{
-			if (p->ptracer == curproc)
+			if (p->ptracer == get_curproc())
 			{
 				*(ushort *) buf = p->ptraceflags;
 				return E_OK;

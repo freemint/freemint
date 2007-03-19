@@ -7,6 +7,7 @@
 # -DCRYPTO_CODE		include the cryptographic filesystem stuff
 # -DSOFT_UNITABLE	loadable unicode tables
 # -DBUILTIN_SHELL	include the built-in minimal shell
+# -DC_ONLY		replace some assembly function by C compatible one
 
 #
 # machine flags
@@ -58,7 +59,7 @@ ifeq ($(kernel),000)
 MINT = mint000.prg
 CPU  = 000
 KERNELDEFS = -DM68000 -DNO_RAMFS -DNO_FAKE_SUPER 
-KERNELDEFS += #-DDEBUG_INFO
+KERNELDEFS += -DDEBUG_INFO
 OPTS += -fstrength-reduce
 endif
 
@@ -83,7 +84,7 @@ endif
 ifeq ($(kernel),col)
 MINT = mintnp.prg
 CPU  = v4e
-KERNELDEFS = -DDEBUG_INFO -DONLY030 -DM68040 -DMMU040 -DCPU040 -DNO_AKP_KEYBOARD -DNO_RAMFS -DNO_FAKE_SUPER -DCOLDFIRE 
+KERNELDEFS = -DDEBUG_INFO -DONLY030 -DM68040 -DMMU040 -DCPU040 -DNO_AKP_KEYBOARD -DNO_RAMFS -DNO_FAKE_SUPER -DCOLDFIRE -DC_ONLY -DVERBOSE_BOOT
 endif
 
 ifeq ($(kernel),mil)
@@ -93,9 +94,10 @@ KERNELDEFS = -DMILAN -DM68040
 endif
 
 ifeq ($(kernel),ara)
-MINT = mintara.prg
+MINT = mint.prg
 CPU  = 020-60
-KERNELDEFS = -DARANYM -DM68040 -DDEBUG_INFO
+KERNELDEFS = -DARANYM -DM68040 -DWITH_HOSTFS -DBOOTSTRAPABLE -DC_ONLY
+MODULEDIRS = xfs/hostfs
 endif
 
 ifeq ($(kernel),my1)

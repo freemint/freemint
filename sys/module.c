@@ -55,13 +55,14 @@
 # include "memory.h"
 # include "time.h"
 
+# include "proc.h"
 
 long _cdecl
 kernel_opendir(struct dirstruct *dirh, const char *name)
 {
 	long r;
 
-	r = path2cookie(curproc, name, follow_links, &dirh->fc);
+	r = path2cookie(get_curproc(), name, follow_links, &dirh->fc);
 	if (r == E_OK)
 	{
 		dirh->index = 0;
@@ -220,7 +221,7 @@ load_module(const char *filename, long *err)
 		goto failed;
 	}
 
-	bzero(b, size);
+	mint_bzero(b, size);
 	b->p_lowtpa = (long) b;
 	b->p_hitpa = (long)((char *) b + size);
 
@@ -507,7 +508,7 @@ load_xdd(struct basepage *b, const char *name)
 
 			DEBUG(("load_xdd: installing %s itself!\7", name));
 
-			bzero(&the_dev, sizeof(the_dev));
+			mint_bzero(&the_dev, sizeof(the_dev));
 			the_dev.driver = dev;
 
 			strcpy(dev_name, "u:\\dev\\");
@@ -627,7 +628,7 @@ module_open(FILEPTR *f)
 {
 	DEBUG(("module_open [%i]: enter (%lx)", f->fc.aux, f->flags));
 	
-	if (!suser(curproc->p_cred->ucr))
+	if (!suser(get_curproc()->p_cred->ucr))
 		return EPERM;
 	
 	return 0;
