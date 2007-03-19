@@ -143,7 +143,7 @@ kthread_create_v(struct proc *p, void _cdecl (*func)(void *), void *arg,
 void _cdecl
 kthread_exit(short code)
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 
 	if (code != 0)
 		ALERT("WARNING: thread `%s' (%d) exits with status %d\n",

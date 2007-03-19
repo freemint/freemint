@@ -561,7 +561,7 @@ INLINE void
 km_free_region (MEMREGION *m)
 {
 # ifdef KMEMORY_DEBUG
-	bzero ((void *) m->loc, m->len);
+	mint_bzero ((void *) m->loc, m->len);
 # endif
 # ifdef KM_USAGE
 	used_mem -= m->len;
@@ -941,7 +941,7 @@ km_s1_free (KM_S1 *ptr, KM_P *page)
 	page->s.s1.used--;
 
 # ifdef KMEMORY_DEBUG
-	bzero ((char *) ptr + S1_HEAD, S1_SIZE - S1_HEAD);
+	mint_bzero ((char *) ptr + S1_HEAD, S1_SIZE - S1_HEAD);
 # endif
 
 	if (page->s.s1.used == 0 && page->self && s1_free != page)
@@ -1208,7 +1208,7 @@ km_s2_free (KM_S2 *ptr, KM_P *page)
 	}
 
 # ifdef KMEMORY_DEBUG
-	bzero ((char *) ptr + S2_HEAD, ptr->size - S2_HEAD);
+	mint_bzero ((char *) ptr + S2_HEAD, ptr->size - S2_HEAD);
 # endif
 
 	if (ptr->size == PAGESIZE - P__HEAD)

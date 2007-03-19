@@ -64,6 +64,9 @@
 # include "timeout.h"
 # include "util.h"
 
+# ifdef COLDFIRE
+extern void	patch_memset_purec(BASEPAGE *b);
+# endif
 
 void rts (void);
 static struct proc *exec_region(struct proc *p, MEMREGION *mem, int thread);
@@ -126,8 +129,8 @@ make_fname(struct proc *p, const char *source)
 	}
 	else
 	{
-		assert(curproc->p_cwd);
-		tmp[0] = curproc->p_cwd->curdrv + ((curproc->p_cwd->curdrv < 26) ? 'A' : '1'-26);
+		assert(get_curproc()->p_cwd);
+		tmp[0] = get_curproc()->p_cwd->curdrv + ((get_curproc()->p_cwd->curdrv < 26) ? 'A' : '1'-26);
 	}
 
 	/* FIXME: This is completely wrong!!! */
@@ -189,10 +192,10 @@ sys_pexec(short mode, const void *ptr1, const void *ptr2, const void *ptr3)
 	const char *tfmt = "Pexec(%d,%s,\"%s\",%lx)";
 	int tail_offs = 1;
 # endif
-
+	TRACE(("Pexec mode:%d",mode));
 #if 0
 	{
-		struct proc *pr = curproc;
+		struct proc *pr = get_curproc();
 		if (!strnicmp(pr->name, "guitar", 6))
 			display("pexec(%d) for %s", mode, pr->name);
 	}
@@ -306,7 +309,7 @@ sys_pexec(short mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		if (!base)
 		{
 			DEBUG(("Pexec: unable to create basepage"));
-			detach_region(curproc, env);
+			detach_region(get_curproc(), env);
 			return r;
 		}
 
@@ -330,19 +333,22 @@ sys_pexec(short mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		if (!base)
 		{
 			DEBUG(("Pexec: load_region failed"));
-			detach_region(curproc, env);
+			detach_region(get_curproc(), env);
 			return r;
 		}
 
 		TRACE(("Pexec: basepage region(%lx) is %ld bytes at %lx", base, base->len, base->loc));
+# ifdef COLDFIRE
+		patch_memset_purec((BASEPAGE *)base->loc);
+# endif
 	}
 	else
 	{
 		/* mode == 4, 6, 104, 106, 204, or 206 -- just go */
 
-		base = addr2mem(curproc, (long) ptr2);
+		base = addr2mem(get_curproc(), (long) ptr2);
 		if (base)
-			env = addr2mem(curproc, *(long *)(base->loc + 0x2c));
+			env = addr2mem(get_curproc(), *(long *)(base->loc + 0x2c));
 		else
 			env = NULL;
 
@@ -373,8 +379,8 @@ sys_pexec(short mode, const void *ptr1, const void *ptr2, const void *ptr3)
 
 		if (overlay)
 		{
-			b->p_parent = curproc->p_mem->base->p_parent;
-			p = curproc;
+			b->p_parent = get_curproc()->p_mem->base->p_parent;
+			p = get_curproc();
 
 			/* make sure that exec_region doesn't free the base and env */
 			base->links++;
@@ -382,7 +388,7 @@ sys_pexec(short mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		}
 		else
 		{
-			b->p_parent = curproc->p_mem->base;
+			b->p_parent = get_curproc()->p_mem->base;
 			p = fork_proc(thread ? (FORK_SHAREVM | FORK_SHAREEXT) : FORK_SHAREEXT, &r);
 		}
 
@@ -390,8 +396,8 @@ sys_pexec(short mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		{
 			if (mkload || mkbase)
 			{
-				detach_region(curproc, base);
-				detach_region(curproc, env);
+				detach_region(get_curproc(), base);
+				detach_region(get_curproc(), env);
 			}
 
 			return r;
@@ -407,8 +413,8 @@ sys_pexec(short mode, const void *ptr1, const void *ptr2, const void *ptr3)
 			{
 				if (mkload || mkbase)
 				{
-					detach_region(curproc, base);
-					detach_region(curproc, env);
+					detach_region(get_curproc(), base);
+					detach_region(get_curproc(), env);
 				}
 
 				return r;
@@ -423,7 +429,7 @@ sys_pexec(short mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		 * so AES can run with root rights, but user programs don't.
 		 * This should be done by the AES, however.
 		 */
-		if (!strcmp(curproc->name, "AESSYS"))
+		if (!strcmp(get_curproc()->name, "AESSYS"))
 		{
 			struct pcred *cred = p->p_cred;
 			
@@ -469,7 +475,7 @@ sys_pexec(short mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		}
 
 		/* notify proc extensions */
-		proc_ext_on_exec(curproc);
+		proc_ext_on_exec(get_curproc());
 
 		/* exec_region frees the memory attached to p;
 		 * that's always what we want, since fork_proc duplicates
@@ -518,10 +524,10 @@ sys_pexec(short mode, const void *ptr1, const void *ptr2, const void *ptr3)
 			env->links--;
 
 			/* let our parent run, if it Vfork'd() */
-			if ((p = pid2proc(curproc->ppid)) != NULL)
+			if ((p = pid2proc(get_curproc()->ppid)) != NULL)
 			{
 				unsigned short sr = splhigh();
-				if (p->wait_q == WAIT_Q &&  p->wait_cond == (long)curproc)
+				if (p->wait_q == WAIT_Q &&  p->wait_cond == (long)get_curproc())
 				{
 					rm_q(WAIT_Q, p);
 					add_q(READY_Q, p);
@@ -533,10 +539,10 @@ sys_pexec(short mode, const void *ptr1, const void *ptr2, const void *ptr3)
 			 * we guarantee ourselves at least 3 timeslices to do
 			 * an Mshrink
 			 */
-			assert(curproc->magic == CTXT_MAGIC);
+			assert(get_curproc()->magic == CTXT_MAGIC);
 			fresh_slices(3);
 			leave_kernel();
-			change_context(&(curproc->ctxt[CURRENT]));
+			change_context(&(get_curproc()->ctxt[CURRENT]));
 		}
 		else
 		{
@@ -550,8 +556,8 @@ sys_pexec(short mode, const void *ptr1, const void *ptr2, const void *ptr3)
 
 	if (mkfree)
 	{
-		detach_region(curproc, base);
-		detach_region(curproc, env);
+		detach_region(get_curproc(), base);
+		detach_region(get_curproc(), env);
 	}
 
 	if (mkwait)
@@ -559,18 +565,18 @@ sys_pexec(short mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		long oldsigint, oldsigquit;
 		unsigned short retval;
 
-		assert(curproc->p_sigacts);
+		assert(get_curproc()->p_sigacts);
 
-		oldsigint = SIGACTION(curproc, SIGINT).sa_handler;
-		oldsigquit = SIGACTION(curproc, SIGQUIT).sa_handler;
+		oldsigint = SIGACTION(get_curproc(), SIGINT).sa_handler;
+		oldsigquit = SIGACTION(get_curproc(), SIGQUIT).sa_handler;
 
-		SIGACTION(curproc, SIGINT).sa_handler = SIG_IGN;
-		SIGACTION(curproc, SIGQUIT).sa_handler = SIG_IGN;
+		SIGACTION(get_curproc(), SIGINT).sa_handler = SIG_IGN;
+		SIGACTION(get_curproc(), SIGQUIT).sa_handler = SIG_IGN;
 
 		newpid = p->pid;
 		for(;;)
 		{
-			r = pwaitpid(curproc->pid ? newpid : -1, 0, NULL, &retval);
+			r = pwaitpid(get_curproc()->pid ? newpid : -1, 0, NULL, &retval);
 			if (r < 0)
 			{
 				ALERT("p_exec: wait error");
@@ -591,14 +597,14 @@ sys_pexec(short mode, const void *ptr1, const void *ptr2, const void *ptr3)
 				break;
 			}
 
-			if (curproc->pid)
+			if (get_curproc()->pid)
 				DEBUG(("Pexec: wrong child found"));
 		}
 
-		assert(curproc->p_sigacts);
+		assert(get_curproc()->p_sigacts);
 
-		SIGACTION(curproc, SIGINT).sa_handler = oldsigint;
-		SIGACTION(curproc, SIGQUIT).sa_handler = oldsigquit;
+		SIGACTION(get_curproc(), SIGINT).sa_handler = oldsigint;
+		SIGACTION(get_curproc(), SIGQUIT).sa_handler = oldsigquit;
 
 		return r;
 	}
@@ -675,7 +681,7 @@ exec_region(struct proc *p, MEMREGION *mem, int thread)
 	 * curproc->p_flag & 4 is only true when this call comes from the
 	 * sys_pexec(106) made by Slbopen().
 	 */
-	if (curproc->p_flag & P_FLAG_SLO)
+	if (get_curproc()->p_flag & P_FLAG_SLO)
 	{
 		long *exec_longs = (long *)b->p_tbase;
 
@@ -688,9 +694,9 @@ exec_region(struct proc *p, MEMREGION *mem, int thread)
 			/* attach temporarily to current process to avoid bus error,
 			 * and pickup the address from the trampoline jumptable.
 			 */
-			attach_region(curproc, p->p_mem->tp_reg);
+			attach_region(get_curproc(), p->p_mem->tp_reg);
 			b->p_tbase = p->p_mem->tp_ptr->slb_init_and_exit_p;
-			detach_region(curproc, p->p_mem->tp_reg);
+			detach_region(get_curproc(), p->p_mem->tp_reg);
 		}
 	}
 
@@ -781,7 +787,7 @@ exec_region(struct proc *p, MEMREGION *mem, int thread)
 		}
 
 		/* and clear out */
-		bzero(p->p_mem->mem, p->p_mem->num_reg * sizeof(void *) * 2);
+		mint_bzero(p->p_mem->mem, p->p_mem->num_reg * sizeof(void *) * 2);
 	}
 
 	assert(p->p_sigacts);
@@ -837,8 +843,8 @@ exec_region(struct proc *p, MEMREGION *mem, int thread)
 	 * dLibs is expecting it. This ugly hack only works correctly if the
 	 * Pexec'ing program (i.e. curproc) is in user mode.
 	 */
-	if (curproc != rootproc)
-		curproc->p_mem->base->p_usp = curproc->ctxt[SYSCALL].usp - 0x32;
+	if (get_curproc() != rootproc)
+		get_curproc()->p_mem->base->p_usp = get_curproc()->ctxt[SYSCALL].usp - 0x32;
 
 	TRACE(("exec_region: ok (%lx)", p));
 	return p;
@@ -887,7 +893,7 @@ create_process(const void *filename, const void *cmdline, const void *newenv,
 	}
 
 	/* tell the child who the parent was */
-	b->p_parent = curproc->p_mem->base;
+	b->p_parent = get_curproc()->p_mem->base;
 
 	r = 0;
 	p = fork_proc(0, &r);
@@ -923,7 +929,7 @@ create_process(const void *filename, const void *cmdline, const void *newenv,
 	}
 
 	/* notify proc extensions */
-	proc_ext_on_exec(curproc);
+	proc_ext_on_exec(get_curproc());
 
 	/* exec_region frees the memory attached to p;
 	 * that's always what we want, since fork_proc duplicates
@@ -959,8 +965,8 @@ create_process(const void *filename, const void *cmdline, const void *newenv,
 	run_next(p, 3);
 
 leave:
-	if (base) detach_region(curproc, base);
-	if (env) detach_region(curproc, env);
+	if (base) detach_region(get_curproc(), base);
+	if (env) detach_region(get_curproc(), env);
 
 	return r;
 }

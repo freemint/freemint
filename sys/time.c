@@ -47,6 +47,8 @@
 # include "procfs.h"
 # include "shmfs.h"
 
+# include "proc.h"
+
 
 ushort timestamp;
 ushort datestamp;
@@ -131,7 +133,7 @@ sys_t_setdate (ushort date)
 {
 	struct timeval tv = { 0, 0 };
 
-	if (!suser (curproc->p_cred->ucr))
+	if (!suser (get_curproc()->p_cred->ucr))
 	{
 		DEBUG (("Tsetdate: attempt to change time by unprivileged user"));
 		return EPERM;
@@ -146,7 +148,7 @@ sys_t_settime (ushort time)
 {
 	struct timeval tv = { 0, 0 };
 
-	if (!suser (curproc->p_cred->ucr))
+	if (!suser (get_curproc()->p_cred->ucr))
 	{
 		DEBUG (("Tsettime: attempt to change time by unprivileged user"));
 		return EPERM;
@@ -264,7 +266,7 @@ sys_t_settimeofday (struct timeval *tv, struct timezone *tz)
 {
 	TRACE (("Tsettimeofday (tv = 0x%x, tz = 0x%x)", tv, tz));
 
-	if (!suser (curproc->p_cred->ucr))
+	if (!suser (get_curproc()->p_cred->ucr))
 	{
 		DEBUG (("t_settimeofday: attempt to change time by unprivileged user"));
 		return EPERM;
@@ -323,7 +325,7 @@ sys_t_adjtime(const struct timeval *delta, struct timeval *olddelta)
 {
 	TRACE (("Tadjtime (delta = 0x%x, olddelta = 0x%x)", delta, olddelta));
 
-	if (!suser (curproc->p_cred->ucr))
+	if (!suser (get_curproc()->p_cred->ucr))
 	{
 		DEBUG (("t_adjtime: attempt to change time by unprivileged user"));
 		return EPERM;
@@ -364,7 +366,11 @@ sys_t_adjtime(const struct timeval *delta, struct timeval *olddelta)
 void
 init_time (void)
 {
+# ifdef COLDFIRE
+	long value = 0;
+# else
 	long value = _mfpregs->tbdr;
+# endif
 
 # if 0
 	/* See, a piece of code is a function, not just a long integer */
@@ -451,7 +457,11 @@ quick_synch (void)
 			 * to care to much about overflows.
 			 */
 
+# ifdef COLDFIRE
+	timerc = 0;
+# else
 	timerc = _mfpregs->tbdr;
+# endif
 	current_ticks = *hz_200;
 
 	/* Make sure that the clock runs monotonic.  */
@@ -504,7 +514,7 @@ synch_timers ()
 	datestamp = (tos_combined >> 16) & 0xffff;
 	timestamp = tos_combined & 0xffff;
 
-	if (hardtime && curproc->pid == 0)
+	if (hardtime && get_curproc()->pid == 0)
 	{
 		/* Hm, if Tsetdate or Tsettime was called by the user our
 		 * changes get lost. That's why this strange piece of code
@@ -607,7 +617,7 @@ sys_b_settime (ulong datetime)
 
 		TRACE (("settime (%li) -> do_settimeofday", datetime));
 
-		if (!suser (curproc->p_cred->ucr))
+		if (!suser (get_curproc()->p_cred->ucr))
 		{
 			DEBUG (("Settime: attempt to change time by unprivileged user"));
 			return;

@@ -85,14 +85,19 @@ do_usrcall (void)
 long _cdecl
 sys_b_supexec (Func funcptr, long arg1, long arg2, long arg3, long arg4, long arg5)
 {
-	CONTEXT *syscall = &curproc->ctxt[SYSCALL];
+	CONTEXT *syscall = &get_curproc()->ctxt[SYSCALL];
 	ushort savesr;
 
+	if(funcptr==NULL)
+	{
+		TRACE(("Supexec() error no valid function"));
+		return EPERM;
+	}
 	/* For SECURELEVEL > 1 only the Superuser can set the CPU into supervisor
 	 * mode.
 	 */
 
-	if ((secure_mode > 1) && !suser (curproc->p_cred->ucr))
+	if ((secure_mode > 1) && !suser (get_curproc()->p_cred->ucr))
 	{
 		DEBUG (("Supexec: user call"));
 		raise (SIGSYS);
@@ -102,20 +107,24 @@ sys_b_supexec (Func funcptr, long arg1, long arg2, long arg3, long arg4, long ar
 	/* set things up so that "signal 0" will be handled by calling the user's
 	 * function.
 	 */
-
-	assert (curproc->p_sigacts);
-
+	
+	assert (get_curproc()->p_sigacts);
+	
 	usrcall = funcptr;
 	usrarg1 = arg1;
 	usrarg2 = arg2;
 	usrarg3 = arg3;
 	usrarg4 = arg4;
 	usrarg5 = arg5;
-	SIGACTION(curproc, 0).sa_handler = (long) do_usrcall;
-
+#ifdef COLDFIRE
+/*	return (*usrcall)((long) usrcall, usrarg1, usrarg2, usrarg3, usrarg4, usrarg5); */
+#endif
+	SIGACTION(get_curproc(), 0).sa_handler = (long) do_usrcall;
 	savesr = syscall->sr;	/* save old super/user mode flag */
 	syscall->sr |= 0x2000;	/* set supervisor mode */
+
 	handle_sig (0);		/* actually call out to the user function */
+
 	syscall->sr = savesr;
 
 	/* do_usrcall saves the user's return value in usrret */
@@ -134,7 +143,7 @@ sys_b_midiws (int cnt, const char *buf)
 	FILEPTR *f;
 	long towrite = cnt+1;
 
-	f = curproc->p_fd->midiout;	/* MIDI output handle */
+	f = get_curproc()->p_fd->midiout;	/* MIDI output handle */
 	if (!f)
 		return EBADF;
 
@@ -212,10 +221,10 @@ sys_b_uiorec (int dev)
 		/* get around another BIOS Bug:
 		 * in (at least) TOS 2.05 Iorec(0) is broken
 		 */
-		if ((unsigned) curproc->p_fd->bconmap - 6 < btty_max)
-			return (long) MAPTAB[curproc->p_fd->bconmap-6].iorec;
+		if ((unsigned) get_curproc()->p_fd->bconmap - 6 < btty_max)
+			return (long) MAPTAB[get_curproc()->p_fd->bconmap-6].iorec;
 
-		mapin (curproc->p_fd->bconmap);
+		mapin (get_curproc()->p_fd->bconmap);
 	}
 
 	return (long) ROM_Iorec (dev);
@@ -233,7 +242,7 @@ rsconf (int baud, int flow, int uc, int rs, int ts, int sc)
 
 	if (has_bconmap)
 	{
-		b = curproc->p_fd->bconmap - 6;
+		b = get_curproc()->p_fd->bconmap - 6;
 		if (b < btty_max)
 			t += b;
 		else
@@ -296,7 +305,7 @@ rsconf (int baud, int flow, int uc, int rs, int ts, int sc)
 	else
 	{
 		if (has_bconmap)
-			mapin (curproc->p_fd->bconmap);
+			mapin (get_curproc()->p_fd->bconmap);
 
 		if (intr_done)
 			rsval = ROM_Rsconf (baud, flow, uc, rs, ts, sc);
@@ -346,7 +355,7 @@ rsconf (int baud, int flow, int uc, int rs, int ts, int sc)
 long _cdecl
 sys_b_bconmap (int dev)
 {
-	int old = curproc->p_fd->bconmap;
+	int old = get_curproc()->p_fd->bconmap;
 
 	TRACE (("Bconmap(%d)", dev));
 
@@ -374,13 +383,13 @@ sys_b_bconmap (int dev)
 			return 0;
 		}
 
-		if (set_auxhandle (curproc, dev) == 0)
+		if (set_auxhandle (get_curproc(), dev) == 0)
 		{
 			DEBUG (("Bconmap: Couldn't change AUX:"));
 			return 0;
 		}
 
-		curproc->p_fd->bconmap = dev;
+		get_curproc()->p_fd->bconmap = dev;
 		return old;
 	}
 
@@ -398,7 +407,7 @@ sys_b_cursconf (int cmd, int op)
 	FILEPTR *f;
 	long r;
 
-	f = curproc->p_fd->control;
+	f = get_curproc()->p_fd->control;
 	if (!f || !is_terminal(f))
 		return ENOSYS;
 
@@ -642,18 +651,18 @@ init_bconmap (void)
 
 	curbconmap = (has_bconmap) ? (int) TRAP_Bconmap (-1) : 1;
 
-	oldmap = curproc->p_fd->bconmap = curbconmap;
+	oldmap = get_curproc()->p_fd->bconmap = curbconmap;
 	for (i = 0; i < btty_max; i++)
 	{
 		int r;
 		if (has_bconmap)
-			curproc->p_fd->bconmap = i + 6;
+			get_curproc()->p_fd->bconmap = i + 6;
 
 		r = (int) rsconf (-2, -1, -1, -1, -1, -1);
 		if (r < 0)
 		{
 			if (has_bconmap)
-				mapin (curproc->p_fd->bconmap);
+				mapin (get_curproc()->p_fd->bconmap);
 			TRAP_Rsconf ((r = 0), -1, -1, -1, -1, -1);
 		}
 
@@ -661,7 +670,7 @@ init_bconmap (void)
 	}
 
 	if (has_bconmap)
-		mapin (curproc->p_fd->bconmap = oldmap);
+		mapin (get_curproc()->p_fd->bconmap = oldmap);
 }
 
 void

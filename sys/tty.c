@@ -120,7 +120,7 @@ tty_read(FILEPTR *f, void *buf, long nbytes)
 		rdmode = RAW;
 		mode = T_RAW;
 	}
-	else if (curproc->domain == DOM_MINT)
+	else if (get_curproc()->domain == DOM_MINT)
 	{
 		/* MiNT domain process */
 		mode = tty->sg.sg_flags;
@@ -151,20 +151,20 @@ tty_read(FILEPTR *f, void *buf, long nbytes)
 	{
 		long r, bytes = 0;
 		
-		r = (*f->dev->select)(f, (long) curproc, O_RDONLY);
+		r = (*f->dev->select)(f, (long) get_curproc(), O_RDONLY);
 		if (r != 1)
 		{
 			TIMEOUT *t;
 			
-			curproc->wait_cond = (long) wakeselect;	/* flag */
-			t = addtimeout (curproc, (long) tty->vtime, (to_func *) wakeselect);
+			get_curproc()->wait_cond = (long) wakeselect;	/* flag */
+			t = addtimeout (get_curproc(), (long) tty->vtime, (to_func *) wakeselect);
 			if (!t)
 			{
-				(*f->dev->unselect)(f, (long) curproc, O_RDONLY);
+				(*f->dev->unselect)(f, (long) get_curproc(), O_RDONLY);
 				return ENOMEM;
 			}
 			
-			while (curproc->wait_cond == (long) wakeselect)
+			while (get_curproc()->wait_cond == (long) wakeselect)
 			{
 				TRACE (("sleeping in tty_read (VTIME)"));
 				if (sleep (SELECT_Q | 0x100, (long) wakeselect))
@@ -177,7 +177,7 @@ tty_read(FILEPTR *f, void *buf, long nbytes)
 		(void)(*f->dev->ioctl)(f, FIONREAD, &bytes);
 		if (!r)
 		{
-			(*f->dev->unselect)(f, (long) curproc, O_RDONLY);
+			(*f->dev->unselect)(f, (long) get_curproc(), O_RDONLY);
 			wake (SELECT_Q, (long) &select_coll);
 		}
 		
@@ -196,9 +196,9 @@ tty_read(FILEPTR *f, void *buf, long nbytes)
 		&& f->dev->readb
 		&& ((f->flags & O_HEAD)
 			|| ((tty->state &= ~TS_COOKED), !tty->pgrp)
-			|| tty->pgrp == curproc->pgrp
-			|| f->fc.dev != curproc->p_fd->control->fc.dev
-			|| f->fc.index != curproc->p_fd->control->fc.index)
+			|| tty->pgrp == get_curproc()->pgrp
+			|| f->fc.dev != get_curproc()->p_fd->control->fc.dev
+			|| f->fc.index != get_curproc()->p_fd->control->fc.index)
 		&& !(tty->state & TS_BLIND)
 		&& (r = (*f->dev->readb)(f, buf, nbytes)) != ENODEV)
 	{
@@ -412,15 +412,15 @@ void
 tty_checkttou (FILEPTR *f, struct tty *tty)
 {
 	if (tty->pgrp
-		&& (tty->pgrp != curproc->pgrp)
+		&& (tty->pgrp != get_curproc()->pgrp)
 		&& (tty->sg.sg_flags & T_TOSTOP)
-		&& (SIGACTION(curproc, SIGTTOU).sa_handler != SIG_IGN)
-		&& ((curproc->p_sigmask & (1L << SIGTTOU)) == 0L)
-		&& (f->fc.dev == curproc->p_fd->control->fc.dev)
-		&& (f->fc.index == curproc->p_fd->control->fc.index))
+		&& (SIGACTION(get_curproc(), SIGTTOU).sa_handler != SIG_IGN)
+		&& ((get_curproc()->p_sigmask & (1L << SIGTTOU)) == 0L)
+		&& (f->fc.dev == get_curproc()->p_fd->control->fc.dev)
+		&& (f->fc.index == get_curproc()->p_fd->control->fc.index))
 	{
-		TRACE (("job control: tty pgrp is %d proc pgrp is %d", tty->pgrp, curproc->pgrp));
-		killgroup (curproc->pgrp, SIGTTOU, 1);
+		TRACE (("job control: tty pgrp is %d proc pgrp is %d", tty->pgrp, get_curproc()->pgrp));
+		killgroup (get_curproc()->pgrp, SIGTTOU, 1);
 		check_sigs ();
 	}
 }
@@ -447,7 +447,7 @@ tty_write (FILEPTR *f, const void *buf, long nbytes)
 		use_putchar = 1;
 		mode = T_RAW;
 	}
-	else if (curproc->domain == DOM_TOS)
+	else if (get_curproc()->domain == DOM_TOS)
 		/* for TOS programs, 1 byte writes are always in raw mode */
 		mode = (nbytes == 1) ? T_RAW : T_TOS;
 	else
@@ -460,7 +460,7 @@ tty_write (FILEPTR *f, const void *buf, long nbytes)
 	/*
 	 * "mode" can now be reduced to just T_CRMODE or not
 	 */
-	if ((curproc->domain == DOM_MINT) && (mode & T_CRMOD) && !(mode & T_RAW))
+	if ((get_curproc()->domain == DOM_MINT) && (mode & T_CRMOD) && !(mode & T_RAW))
 		mode = T_CRMOD;
 	else
 		mode = 0;
@@ -1158,17 +1158,17 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 		case TIOCNOTTY:
 		{
 			/* Disassociate from controlling tty.  */
-			if (curproc->p_fd->control == NULL)
+			if (get_curproc()->p_fd->control == NULL)
 				return ENOTTY;
 				
-			if (curproc->p_fd->control->fc.index != f->fc.index ||
-			    curproc->p_fd->control->fc.dev != f->fc.dev)
+			if (get_curproc()->p_fd->control->fc.index != f->fc.index ||
+			    get_curproc()->p_fd->control->fc.dev != f->fc.dev)
 		    		return ENOTTY;
 		    	
 		    	/* Session leader.  Disassociate from controlling
 		    	 * tty.
 		    	 */
-			if (curproc->pgrp == curproc->pid)
+			if (get_curproc()->pgrp == get_curproc()->pid)
 			{
 				if (tty->pgrp > 0)
 				{
@@ -1181,8 +1181,8 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 			tty->pgrp = 0;
 			DEBUG (("TIOCNOTTY: assigned tty->pgrp = %i", tty->pgrp));
 			
-			do_close (curproc, curproc->p_fd->control);
-			curproc->p_fd->control = NULL;
+			do_close (get_curproc(), get_curproc()->p_fd->control);
+			get_curproc()->p_fd->control = NULL;
 			
 			return 0;
 		}
@@ -1193,14 +1193,14 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 		 */
 		case TIOCSCTTY:
 		{
-			if (curproc->pgrp == curproc->pid &&
-			    curproc->pgrp == tty->pgrp)
+			if (get_curproc()->pgrp == get_curproc()->pid &&
+			    get_curproc()->pgrp == tty->pgrp)
 				return 0;
 			
 			if (f->flags & O_HEAD)
 				return ENOTTY;
 				
-			if (curproc->pgrp != curproc->pid || curproc->p_fd->control)
+			if (get_curproc()->pgrp != get_curproc()->pid || get_curproc()->p_fd->control)
 				return EPERM;
 
 			f->links++;
@@ -1224,20 +1224,20 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 					    p->p_fd->control->fc.index == f->fc.index &&
 					    p->p_fd->control->fc.dev == f->fc.dev)
 					{
-						    if (!suser (curproc->p_cred->ucr) ||
+						    if (!suser (get_curproc()->p_cred->ucr) ||
 							(long)arg != 1)
 						    {
-							    do_close (curproc, f);
+							    do_close (get_curproc(), f);
 							    return EPERM;
 						    }
-						    do_close (curproc, p->p_fd->control);
+						    do_close (get_curproc(), p->p_fd->control);
 						    p->p_fd->control = NULL;
 					}
 				}
 			}
 			
-			curproc->p_fd->control = f;
-			tty->pgrp = curproc->pgrp;
+			get_curproc()->p_fd->control = f;
+			tty->pgrp = get_curproc()->pgrp;
 			DEBUG (("TIOCSCTTY: assigned tty->pgrp = %i", tty->pgrp));
 			
 			if (!(f->flags & O_NDELAY) && (tty->state & TS_BLIND))
@@ -1403,8 +1403,8 @@ tty_getchar (FILEPTR *f, int mode)
 #if 0
 	if (f->dev == &bios_tdevice && f->fc.aux == 2)
 	{
-		display("tty_getchar: tty->pgrp = %d, curproc->pgrp = %d HEAD = %s",
-			tty->pgrp, curproc->pgrp, (f->flags & O_HEAD) ? "yes":"no");
+		display("tty_getchar: tty->pgrp = %d, gcurproc->pgrp = %d HEAD = %s",
+			tty->pgrp, get_curproc()->pgrp, (f->flags & O_HEAD) ? "yes":"no");
 	}
 #endif
 	if (f->flags & O_HEAD)
@@ -1422,12 +1422,12 @@ tty_getchar (FILEPTR *f, int mode)
 	 * we should return EIO instead of signalling.
 	 */
 	
-	if ((tty->pgrp && tty->pgrp != curproc->pgrp)
-		&& (f->fc.dev == curproc->p_fd->control->fc.dev)
-		&& (f->fc.index == curproc->p_fd->control->fc.index))
+	if ((tty->pgrp && tty->pgrp != get_curproc()->pgrp)
+		&& (f->fc.dev == get_curproc()->p_fd->control->fc.dev)
+		&& (f->fc.index == get_curproc()->p_fd->control->fc.index))
 	{
-		TRACE (("job control: tty pgrp is %d proc pgrp is %d", tty->pgrp, curproc->pgrp));
-		killgroup (curproc->pgrp, SIGTTIN, 1);
+		TRACE (("job control: tty pgrp is %d proc pgrp is %d", tty->pgrp, get_curproc()->pgrp));
+		killgroup (get_curproc()->pgrp, SIGTTIN, 1);
 		check_sigs ();
 	}
 	
@@ -1496,20 +1496,20 @@ tty_getchar (FILEPTR *f, int mode)
 				;	/* do nothing */
 			else if (c == tty->ltc.t_dsuspc)
 			{
-				DEBUG (("tty_getchar: killgroup (%i, SIGTSTP, 1)", curproc->pgrp));
-				killgroup (curproc->pgrp, SIGTSTP, 1);
+				DEBUG (("tty_getchar: killgroup (%i, SIGTSTP, 1)", get_curproc()->pgrp));
+				killgroup (get_curproc()->pgrp, SIGTSTP, 1);
 				check_sigs ();
 			}
 			else if (c == tty->tc.t_intrc)
 			{
-				DEBUG (("tty_getchar: killgroup (%i, SIGINT, 1)", curproc->pgrp));
-				killgroup (curproc->pgrp, SIGINT, 1);
+				DEBUG (("tty_getchar: killgroup (%i, SIGINT, 1)", get_curproc()->pgrp));
+				killgroup (get_curproc()->pgrp, SIGINT, 1);
 				check_sigs ();
 			}
 			else if (c == tty->tc.t_quitc)
 			{
-				DEBUG (("tty_getchar: killgroup (%i, SIGQUIT, 1)", curproc->pgrp));
-				killgroup (curproc->pgrp, SIGQUIT, 1);
+				DEBUG (("tty_getchar: killgroup (%i, SIGQUIT, 1)", get_curproc()->pgrp));
+				killgroup (get_curproc()->pgrp, SIGQUIT, 1);
 				check_sigs ();
 			}
 			else if (c == tty->tc.t_stopc)
@@ -1544,7 +1544,7 @@ tty_putchar (FILEPTR *f, long data, int mode)
 	if (f->dev == &bios_tdevice && f->fc.aux == 2)
 	{
 		display("tty_putchar: tty->pgrp = %d, curproc->pgrp = %d HEAD = %s",
-			tty->pgrp, curproc->pgrp, (f->flags & O_HEAD) ? "yes":"no");
+			tty->pgrp, get_curproc()->pgrp, (f->flags & O_HEAD) ? "yes":"no");
 	}
 #endif
 	/* pty masters never worry about job control

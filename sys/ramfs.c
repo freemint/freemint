@@ -823,7 +823,7 @@ __creat (COOKIE *d, const char *name, COOKIE **new, unsigned mode, int attrib)
 		STAT *s = &((*new)->stat);
 
 		/* clear all */
-		bzero (*new, sizeof (**new));
+		mint_bzero (*new, sizeof (**new));
 
 		s->dev		= d->stat.dev;
 		s->ino		= (long) *new;
@@ -969,7 +969,7 @@ __unlink (COOKIE *d, const char *name)
 void
 ramfs_init (void)
 {
-	char initial [] = "dynamic ram-xfs ½ by [fn]";
+	char initial [] = "dynamic ram-xfs  by [fn]";
 	STAT *s;
 
 
@@ -981,7 +981,7 @@ ramfs_init (void)
 	 */
 
 	/* clear super struct */
-	bzero (super, sizeof (*super));
+	mint_bzero (super, sizeof (*super));
 
 	super->root	= root;
 
@@ -991,7 +991,7 @@ ramfs_init (void)
 		strcpy (super->label, initial);
 
 	/* clear root cookie */
-	bzero (root, sizeof (*root));
+	mint_bzero (root, sizeof (*root));
 
 	root->s		= super;
 	root->links	= 1;
@@ -2109,7 +2109,7 @@ ram_write (FILEPTR *f, const char *buf, long bytes)
 			c->data.data.size = size;
 
 			/* clear it! */
-			bzero (table, size * sizeof (*table));
+			mint_bzero (table, size * sizeof (*table));
 		}
 		else
 		{
@@ -2130,7 +2130,7 @@ ram_write (FILEPTR *f, const char *buf, long bytes)
 			if (table)
 			{
 				/* clear it! */
-				bzero (table, size * sizeof (*table));
+				mint_bzero (table, size * sizeof (*table));
 
 				/* save old data */
 				bcopy (c->data.data.table, table, c->data.data.size * sizeof (*table));
@@ -2307,7 +2307,7 @@ ram_read (FILEPTR *f, char *buf, long bytes)
 		if (ptr)
 			bcopy (ptr + off, buf, data);
 		else
-			bzero (buf, data);
+			mint_bzero (buf, data);
 
 		buf += data;
 		bytes -= data;
@@ -2332,7 +2332,7 @@ ram_read (FILEPTR *f, char *buf, long bytes)
 			if (ptr)
 				bcopy (ptr, buf, BLOCK_SIZE);
 			else
-				bzero (buf, BLOCK_SIZE);
+				mint_bzero (buf, BLOCK_SIZE);
 
 			buf += BLOCK_SIZE;
 			end -= BLOCK_SIZE;
@@ -2356,7 +2356,7 @@ ram_read (FILEPTR *f, char *buf, long bytes)
 		if (ptr)
 			bcopy (ptr, buf, bytes);
 		else
-			bzero (buf, bytes);
+			mint_bzero (buf, bytes);
 
 		done += bytes;
 		f->pos += bytes;
@@ -2496,7 +2496,7 @@ ram_ioctl (FILEPTR *f, int mode, void *buf)
 
 			if (mode == F_GETLK)
 			{
-				lck = denylock (curproc->pid, c->locks, &t);
+				lck = denylock (get_curproc()->pid, c->locks, &t);
 				if (lck)
 					*fl = lck->l;
 				else
@@ -2541,7 +2541,7 @@ ram_ioctl (FILEPTR *f, int mode, void *buf)
 			RAM_DEBUG (("ram_ioctl: lock %lx: %ld + %ld", c, t.l.l_start, t.l.l_len));
 
 			/* see if there's a conflicting lock */
-			while ((lck = denylock (curproc->pid, c->locks, &t)) != 0)
+			while ((lck = denylock (get_curproc()->pid, c->locks, &t)) != 0)
 			{
 				RAM_DEBUG (("ram_ioctl: lock conflicts with one held by %d", lck->l.l_pid));
 				if (mode == F_SETLKW)

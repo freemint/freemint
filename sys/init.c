@@ -213,7 +213,7 @@ init (void)
 {
 	long r, *sysbase;
 	FILEPTR *f;
-
+	
 	/* greetings (placed here 19960610 cpbs to allow me to get version
 	 * info by starting MINT.PRG, even if MiNT's already installed.)
 	 */
@@ -505,6 +505,8 @@ init (void)
 	rootproc->p_fd->ofiles[0] = f; f->links++;
 	rootproc->p_fd->ofiles[1] = f; f->links++;
 
+#ifndef COLDFIRE
+
 	r = FP_ALLOC(rootproc, &f);
 	if (r) FATAL("Can't allocate fp!");
 
@@ -557,6 +559,8 @@ init (void)
 		f->pos = 1;	/* flag for close to --aux_cnt */
 	}
 
+#endif
+
 # ifdef BOOTSTRAPABLE
 	/* Bootstrapped kernel (executed directly by some loader) does
 	 * not have any drive access until the init_filesys() is called.
@@ -566,16 +570,18 @@ init (void)
 	/* the sysdrv to check for the sysdir folder */
 	sys_d_setdrv(sysdrv);
 
+
 	if (sys_d_setpath("\\mint\\" MINT_VERS_PATH_STRING) == 0)
 		strcpy(sysdir, "\\mint\\" MINT_VERS_PATH_STRING "\\");
 	else if (sys_d_setpath("\\mint\\") == 0)
 		strcpy(sysdir, "\\mint\\");
-	else
+	else 
 	{
 		boot_printf(MSG_init_no_mint_folder, MINT_VERS_PATH_STRING);
 		step_by_step = -1; stop_and_ask(); /* wait for a key */
 		sys_s_hutdown(SHUT_HALT);
 	}
+
 # endif
 
 	/* Make the sysdir MiNT-style */
@@ -597,11 +603,13 @@ init (void)
 	}
 
 	/* print the warning message if MP is turned off */
+# ifndef COLDFIRE
 # ifndef M68000
 	if (no_mem_prot && mcpu > 20)
 		boot_print(memprot_warning);
 
 	stop_and_ask();
+# endif
 # endif
 
 	/* initialize delay */
@@ -698,6 +706,7 @@ init (void)
 	/* not reached */
 	FATAL("restore_context() returned ???");
 }
+
 
 /* ------------------ The MiNT thread and related code --------------------- */
 
@@ -815,7 +824,7 @@ _mint_setenv(BASEPAGE *bp, const char *var, const char *value)
 	old_size = env_size(env_str);
 	var_size = strlen(var) + strlen(value) + 16;	/* '=', terminating '\0' and some space */
 
-	m = addr2mem(curproc, (long)env_str);
+	m = addr2mem(get_curproc(), (long)env_str);
 	if (!m) FATAL("No memory region of environment!");
 
 	/* If there is enough place in the current environment,
@@ -844,7 +853,7 @@ _mint_setenv(BASEPAGE *bp, const char *var, const char *value)
 		}
 
 		/* just to be sure */
-		bzero(new_env, old_size + var_size);
+		mint_bzero(new_env, old_size + var_size);
 
 		es = env_str;
 		ne = new_env;
@@ -915,7 +924,7 @@ mint_thread(void *arg)
 	if (_base->p_env == NULL)
 		FATAL ("Can't allocate environment!");
 
-	bzero(_base->p_env, QUANTUM);
+	mint_bzero(_base->p_env, QUANTUM);
 
 	/*
 	 * Set the PATH variable to our sysdir
@@ -1100,7 +1109,7 @@ mint_thread(void *arg)
 		 * For that, the absolute path must be used, because the user
 		 * could have changed the current drive/dir inside mint.cnf file.
 		 */
-		path2cookie(curproc, sysdir, NULL, &dir);
+		path2cookie(get_curproc(), sysdir, NULL, &dir);
 		ext = (dir.fs->fsflags & FS_NOXBIT) ? ".tos" : "";
 		release_cookie(&dir);
 

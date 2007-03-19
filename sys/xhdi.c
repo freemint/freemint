@@ -53,6 +53,8 @@
 # include "init.h"		/* boot_printf */
 # include "k_prot.h"		/* suser */
 
+# include "proc.h"
+
 
 /*
  * internal usage
@@ -214,7 +216,7 @@ sys_xhdi (ushort op,
 		return XHDI (6);
 	
 	/* all other functions are restricted to root processes */
-	if (!suser (curproc->p_cred->ucr))
+	if (!suser (get_curproc()->p_cred->ucr))
 		return EPERM;
 	
 	/* XHNewCookie and XHMiNTInfo are never allowed */

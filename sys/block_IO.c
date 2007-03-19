@@ -1592,7 +1592,7 @@ bio_set_percentage (long percentage)
 static long _cdecl
 bio_config (const ushort drv, const long config, const long mode)
 {
-	struct ucred *cred = curproc->p_cred->ucr;
+	struct ucred *cred = get_curproc()->p_cred->ucr;
 	if (drv >= NUM_DRIVES)
 		return ENXIO;
 
@@ -1737,7 +1737,7 @@ bio_get_di (ushort drv)
 	}
 
 	/* zero out allocated memory */
-	bzero (di->table, HASHSIZE * sizeof (*(di->table)));
+	mint_bzero (di->table, HASHSIZE * sizeof (*(di->table)));
 
 	/* ok, check for a valid XHDI drive, use it by default */
 	if (XHDI_installed >= 0x110)
@@ -1928,7 +1928,7 @@ bio_res_di (ushort drv)
 	}
 
 	/* zero out allocated memory */
-	bzero (di->table, HASHSIZE * sizeof (*(di->table)));
+	mint_bzero (di->table, HASHSIZE * sizeof (*(di->table)));
 
 	di->valid = 1;
 	di->lock = ENABLE;

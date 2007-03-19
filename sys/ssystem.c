@@ -56,7 +56,7 @@ short disallow_single = 0;
 long _cdecl
 sys_s_system (int mode, ulong arg1, ulong arg2)
 {
-	ushort isroot = suser (curproc->p_cred->ucr);
+	ushort isroot = suser (get_curproc()->p_cred->ucr);
 	ulong *lpointer;
 	ushort *wpointer;
 	uchar *bpointer;
@@ -295,14 +295,14 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 
 				for (p = proclist; p; p = p->gl_next)
 				{
-					if (p != curproc && p->wait_q != ZOMBIE_Q && p->wait_q != TSR_Q)
+					if (p != get_curproc() && p->wait_q != ZOMBIE_Q && p->wait_q != TSR_Q)
 					{
 						if (p->p_mem->tp_reg)
 						{
-							attach_region(curproc, p->p_mem->tp_reg);
+							attach_region(get_curproc(), p->p_mem->tp_reg);
 							ut = p->p_mem->tp_ptr;
 							set_cookie(ut->user_jar_p, arg1, arg2);
-							detach_region(curproc, p->p_mem->tp_reg);
+							detach_region(get_curproc(), p->p_mem->tp_reg);
 						}
 						else if (p->pid == 0)
 							set_cookie(kernel_things.user_jar_p, arg1, arg2);
@@ -332,14 +332,14 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 
 				for (p = proclist; p; p = p->gl_next)
 				{
-					if (p != curproc && p->wait_q != ZOMBIE_Q && p->wait_q != TSR_Q)
+					if (p != get_curproc() && p->wait_q != ZOMBIE_Q && p->wait_q != TSR_Q)
 					{
 						if (p->p_mem->tp_reg)
 						{
-							attach_region(curproc, p->p_mem->tp_reg);
+							attach_region(get_curproc(), p->p_mem->tp_reg);
 							ut = p->p_mem->tp_ptr;
 							del_cookie(ut->user_jar_p, arg1);
-							detach_region(curproc, p->p_mem->tp_reg);
+							detach_region(get_curproc(), p->p_mem->tp_reg);
 						}
 						else if (p->pid == 0)
 							del_cookie(kernel_things.user_jar_p, arg1);

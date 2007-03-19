@@ -40,6 +40,8 @@
 # include "ramfs.h"
 # include "shmfs.h"
 
+# include "proc.h"
+
 
 static long	_cdecl uni_root		(int drv, fcookie *fc);
 static long	_cdecl uni_lookup	(fcookie *dir, const char *name, fcookie *fc);
@@ -281,7 +283,7 @@ do_ulookup (fcookie *dir, const char *name, fcookie *fc, UNIFILE **up)
 		{
 			if (S_ISDIR(u->mode))
 			{
-				struct cwd *cwd = curproc->p_cwd;
+				struct cwd *cwd = get_curproc()->p_cwd;
 
 				if (u->dev >= NUM_DRIVES)
 				{
@@ -404,7 +406,7 @@ uni_remove (fcookie *dir, const char *name)
 			if (!S_ISLNK(u->mode))
 				return ENOENT;
 
-			if (!suser (curproc->p_cred->ucr) && (u->dev != curproc->p_cred->ucr->euid))
+			if (!suser (get_curproc()->p_cred->ucr) && (u->dev != get_curproc()->p_cred->ucr->euid))
 				return EACCES;
 
 			kfree (u->data);
@@ -502,7 +504,7 @@ uni_getname (fcookie *root, fcookie *dir, char *pathname, int size)
 		}
 	}
 
-	if (curproc->p_cwd->root[dir->dev].fs != fs)
+	if (get_curproc()->p_cwd->root[dir->dev].fs != fs)
 	{
 		ALERT(MSG_unifs_fs_doesnt_match_dirs);
 		return EINTERNAL;
@@ -515,7 +517,7 @@ uni_getname (fcookie *root, fcookie *dir, char *pathname, int size)
 	}
 	if (!(fs->fsflags & FS_LONGPATH))
 	{
-		r = xfs_getname (fs, &curproc->p_cwd->root[dir->dev], dir, tmppath, PATH_MAX);
+		r = xfs_getname (fs, &get_curproc()->p_cwd->root[dir->dev], dir, tmppath, PATH_MAX);
 		if (r) return r;
 		if (strlen (tmppath) < size)
 		{
@@ -527,7 +529,7 @@ uni_getname (fcookie *root, fcookie *dir, char *pathname, int size)
 			return EBADARG;
 		}
 	}
-	return xfs_getname (fs, &curproc->p_cwd->root[dir->dev], dir, pathname, size);
+	return xfs_getname (fs, &get_curproc()->p_cwd->root[dir->dev], dir, pathname, size);
 }
 
 static long _cdecl
@@ -632,7 +634,7 @@ tryagain:
 				u = u->next;
 				goto tryagain;
 			}
-			dup_cookie (fc, &curproc->p_cwd->root[u->dev]);
+			dup_cookie (fc, &get_curproc()->p_cwd->root[u->dev]);
 			if (!fc->fs)
 			{
 				/* drive not yet initialized
@@ -740,7 +742,7 @@ uni_symlink (fcookie *dir, const char *name, const char *to)
 		return r;
 	}
 
-	if (curproc->p_cred->ucr->egid)
+	if (get_curproc()->p_cred->ucr->egid)
 	{
 		/* only members of admin group may do that */
 		return EACCES;
@@ -761,7 +763,7 @@ uni_symlink (fcookie *dir, const char *name, const char *to)
 
 	strcpy (u->data, to);
 	u->mode = S_IFLNK | DEFAULT_DIRMODE;
-	u->dev = curproc->p_cred->ucr->euid;
+	u->dev = get_curproc()->p_cred->ucr->euid;
 	u->next = u_root;
 	u->fs = &uni_filesys;
 	u->cdate = datestamp;
@@ -837,7 +839,7 @@ uni_fscntl(fcookie *dir, const char *name, int cmd, long arg)
 			struct fs_descr *d = (struct fs_descr *) arg;
 			FILESYS *fs;
 
-			if (!suser (curproc->p_cred->ucr))
+			if (!suser (get_curproc()->p_cred->ucr))
 				return EPERM;
 
 			/* check if FS is installed already */
@@ -859,7 +861,7 @@ uni_fscntl(fcookie *dir, const char *name, int cmd, long arg)
 			UNIFILE *u;
 			int drvmap_dev_no = -1;
 
-			if (!suser (curproc->p_cred->ucr))
+			if (!suser (get_curproc()->p_cred->ucr))
 				return EPERM;
 
 			/* first check for existing names */
@@ -935,7 +937,7 @@ uni_fscntl(fcookie *dir, const char *name, int cmd, long arg)
 			FILESYS *fs;
 			UNIFILE *u;
 
-			if (!suser (curproc->p_cred->ucr))
+			if (!suser (get_curproc()->p_cred->ucr))
 				return EPERM;
 
 			/* first check that directory exists */
@@ -1004,7 +1006,7 @@ uni_fscntl(fcookie *dir, const char *name, int cmd, long arg)
 			FILESYS *fs, *last_fs;
 			UNIFILE *u;
 
-			if (!suser (curproc->p_cred->ucr))
+			if (!suser (get_curproc()->p_cred->ucr))
 				return EPERM;
 
 			/* first check if there are any files or directories associated with

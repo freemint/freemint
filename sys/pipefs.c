@@ -285,7 +285,7 @@ pipe_getxattr (fcookie *fc, XATTR *xattr)
 static long _cdecl
 pipe_stat64 (fcookie *fc, STAT *ptr)
 {
-	bzero (ptr, sizeof (*ptr));
+	mint_bzero (ptr, sizeof (*ptr));
 
 	ptr->dev = fc->dev;
 	ptr->ino = fc->index;
@@ -609,8 +609,8 @@ pipe_creat (fcookie *dir, const char *name, unsigned int mode, int attrib, fcook
 	b->mtime = b->ctime = xtime;
 	b->dosflags = attrib;
 	b->mode = ((attrib & FA_SYSTEM) ? S_IFCHR : S_IFIFO) | (mode & ~S_IFMT);
-	b->uid = curproc->p_cred->ucr->euid;
-	b->gid = curproc->p_cred->ucr->egid;
+	b->uid = get_curproc()->p_cred->ucr->euid;
+	b->gid = get_curproc()->p_cred->ucr->egid;
 
 	/* the O_HEAD flag indicates that the file hasn't actually been opened
 	 * yet; the next open gets to be the pty master. pipe_open will
@@ -1149,7 +1149,7 @@ pipe_ioctl (FILEPTR *f, int mode, void *buf)
 
 			while (this->flags & O_LOCK)
 			{
-				if (this->lockpid != curproc->pid)
+				if (this->lockpid != get_curproc()->pid)
 				{
 					DEBUG(("pipe_ioctl: pipe already locked"));
 					if (mode == F_SETLKW && lck->l_type != F_UNLCK)
@@ -1181,7 +1181,7 @@ pipe_ioctl (FILEPTR *f, int mode, void *buf)
 			else
 			{
 				this->flags |= O_LOCK;
-				this->lockpid = curproc->pid;
+				this->lockpid = get_curproc()->pid;
 				f->flags |= O_LOCK;
 			}
 

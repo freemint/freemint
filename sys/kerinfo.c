@@ -71,7 +71,7 @@ static void * _cdecl m_dmabuf_alloc(ulong size, short cm)
 static LOCK * _cdecl
 denylock_curproc(LOCK *list, LOCK *newlock)
 {
-	return denylock(curproc->pid, list, newlock);
+	return denylock(get_curproc()->pid, list, newlock);
 }
 
 static long _cdecl

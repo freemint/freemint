@@ -50,7 +50,7 @@
 long _cdecl
 f_pipe (short *usrh)
 {
-	PROC *p = curproc;
+	PROC *p = get_curproc();
 	FILEPTR *in, *out;
 	short infd, outfd;
 	long r;
@@ -149,7 +149,7 @@ f_pipe (short *usrh)
 long _cdecl
 sys_pipe (short fds[2])
 {
-	struct proc *p = curproc;
+	struct proc *p = get_curproc();
 	struct socket *rso = NULL, *wso = NULL;
 	FILEPTR *rf = NULL, *wf = NULL;
 	short rfd = MIN_OPEN - 1, wfd = MIN_OPEN - 1;
@@ -246,7 +246,7 @@ getsock (struct proc *p, short fd, struct file **fp)
 long _cdecl
 sys_socket (long domain, long type, long protocol)
 {
-	PROC *p = curproc;
+	PROC *p = get_curproc();
 	FILEPTR *fp = NULL;
 	short fd = MIN_OPEN - 1;
 	struct socket *so = NULL;
@@ -284,7 +284,7 @@ error:
 long _cdecl
 sys_socketpair (long domain, long type, long protocol, short fds[2])
 {
-	PROC *p = curproc;
+	PROC *p = get_curproc();
 	FILEPTR *fp1 = NULL, *fp2 = NULL;
 	short fd1 = MIN_OPEN - 1, fd2 = MIN_OPEN - 1;
 	struct socket *so1 = NULL, *so2 = NULL;
@@ -347,7 +347,7 @@ error:
 long _cdecl
 sys_bind (short fd, struct sockaddr *addr, long addrlen)
 {
-	PROC *p = curproc;
+	PROC *p = get_curproc();
 	FILEPTR *fp;
 	long r;
 	struct socket *so;
@@ -369,7 +369,7 @@ sys_bind (short fd, struct sockaddr *addr, long addrlen)
 long _cdecl
 sys_listen (short fd, long backlog)
 {
-	PROC *p = curproc;
+	PROC *p = get_curproc();
 	FILEPTR *fp;
 	long r;
 	struct socket *so;
@@ -400,7 +400,7 @@ sys_listen (short fd, long backlog)
 long _cdecl
 sys_accept (short fd, struct sockaddr *addr, long *addrlen)
 {
-	PROC *p = curproc;
+	PROC *p = get_curproc();
 	FILEPTR *fp, *newfp = NULL;
 	short newfd = MIN_OPEN - 1;
 	struct socket *so, *newso = NULL;
@@ -472,7 +472,7 @@ error1:
 long _cdecl
 sys_connect (short fd, struct sockaddr *addr, long addrlen)
 {
-	PROC *p = curproc;
+	PROC *p = get_curproc();
 	FILEPTR *fp;
 	long r;
 	struct socket *so;
@@ -526,7 +526,7 @@ sys_connect (short fd, struct sockaddr *addr, long addrlen)
 long _cdecl
 sys_getsockname (short fd, struct sockaddr *addr, long *addrlen)
 {
-	PROC *p = curproc;
+	PROC *p = get_curproc();
 	FILEPTR *fp;
 	long r;
 	struct socket *so;
@@ -555,7 +555,7 @@ sys_getsockname (short fd, struct sockaddr *addr, long *addrlen)
 long _cdecl
 sys_getpeername (short fd, struct sockaddr *addr, long *addrlen)
 {
-	PROC *p = curproc;
+	PROC *p = get_curproc();
 	FILEPTR *fp;
 	long r;
 	struct socket *so;
@@ -584,7 +584,7 @@ sys_getpeername (short fd, struct sockaddr *addr, long *addrlen)
 long _cdecl
 sys_sendto (short fd, char *buf, long buflen, long flags, struct sockaddr *addr, long addrlen)
 {
-	PROC *p = curproc;
+	PROC *p = get_curproc();
 	FILEPTR *fp;
 	long r;
 	struct socket *so;
@@ -605,7 +605,7 @@ sys_sendto (short fd, char *buf, long buflen, long flags, struct sockaddr *addr,
 long _cdecl
 sys_sendmsg (short fd, struct msghdr *msg, long flags)
 {
-	PROC *p = curproc;
+	PROC *p = get_curproc();
 	FILEPTR *fp;
 	long r;
 	struct socket *so;
@@ -633,7 +633,7 @@ sys_sendmsg (short fd, struct msghdr *msg, long flags)
 long _cdecl
 sys_recvfrom (short fd, char *buf, long buflen, long flags, struct sockaddr *addr, long *addrlen)
 {
-	PROC *p = curproc;
+	PROC *p = get_curproc();
 	FILEPTR *fp;
 	long r;
 	struct socket *so;
@@ -663,7 +663,7 @@ sys_recvfrom (short fd, char *buf, long buflen, long flags, struct sockaddr *add
 long _cdecl
 sys_recvmsg (short fd, struct msghdr *msg, long flags)
 {
-	PROC *p = curproc;
+	PROC *p = get_curproc();
 	FILEPTR *fp;
 	long r;
 	struct socket *so;
@@ -691,7 +691,7 @@ sys_recvmsg (short fd, struct msghdr *msg, long flags)
 long _cdecl
 sys_setsockopt (short fd, long level, long optname, void *optval, long optlen)
 {
-	PROC *p = curproc;
+	PROC *p = get_curproc();
 	FILEPTR *fp;
 	long r;
 	
@@ -708,7 +708,7 @@ sys_setsockopt (short fd, long level, long optname, void *optval, long optlen)
 long _cdecl
 sys_getsockopt (short fd, long level, long optname, void *optval, long *optlen)
 {
-	PROC *p = curproc;
+	PROC *p = get_curproc();
 	FILEPTR *fp;
 	long r;
 	
@@ -725,7 +725,7 @@ sys_getsockopt (short fd, long level, long optname, void *optval, long *optlen)
 long _cdecl
 sys_shutdown (short fd, long how)
 {
-	PROC *p = curproc;
+	PROC *p = get_curproc();
 	FILEPTR *fp;
 	long r;
 	

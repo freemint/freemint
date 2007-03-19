@@ -1295,7 +1295,7 @@ denyshare (FILEPTR *list, FILEPTR *f)
 		if ((newsm == O_COMPAT && newrm != O_RDONLY && oldrm != O_RDONLY)
 			|| (oldsm == O_COMPAT && newrm != O_RDONLY))
 		{
-			struct filedesc *fd = curproc->p_fd;
+			struct filedesc *fd = get_curproc()->p_fd;
 			int i;
 
 			for (i = MIN_HANDLE; i < fd->nfiles; i++)
