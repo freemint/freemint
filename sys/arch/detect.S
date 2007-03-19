@@ -224,6 +224,9 @@ exit:	move.l	a2,(0xf4).w	// restore stuff and exit
 //
 
 _detect_cpu:
+#ifdef COLDFIRE
+	moveq	#60,d0
+#else
 	movem.l	a0-a2/d1-d2,-(sp)
 
 	move.l	(0x10).w,-(sp)	// save the illegal instr. exception vector
@@ -305,6 +308,7 @@ exit:	move.l	a1,sp
 	nop			// flush write pipelines
 
 	movem.l	(sp)+,a0-a2/d1-d2
+#endif
 	rts
 
 #endif
@@ -343,6 +347,9 @@ exit:	move.l	a1,sp
 	.globl	_mcpu
 
 _detect_fpu:
+#ifdef COLDFIRE
+	moveq	#0,d0
+#else
 	movem.l	a0-a2/d1,-(sp)
 	move.l	sp,a0		// save the ssp
 	clr.l	d0		// assume no FPU
@@ -396,4 +403,5 @@ fexit:	move.l	a1,(0x2c).w	// restore Line-F
 	nop			// flush pipelines
 	swap	d0
 	movem.l	(sp)+,a0-a2/d1
+#endif
 	rts

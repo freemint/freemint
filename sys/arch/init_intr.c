@@ -74,7 +74,7 @@ new_xbra_install (long *xv, long addr, long _cdecl (*func)())
 
 	/* better to be safe... */
 # ifndef M68000
-	cpush ((long *) addr, sizeof (addr));
+	cpush ((long *) addr, sizeof (addr)); 
 	cpush (xv, sizeof (xv));
 # endif
 }
@@ -133,7 +133,7 @@ init_intr (void)
 	long dummy;
 
 	new_xbra_install (&dummy, 0x80L, unused_trap);		/* trap #0 */
-	new_xbra_install (&old_dos, 0x84L, mint_dos);		/* trap #1, GEMDOS */
+	new_xbra_install (&old_dos, 0x84L, mint_dos);		/* trap #1, GEMDOS */	
 # if 0	/* we only install this on request yet */
 	new_xbra_install (&old_trap2, 0x88L, mint_trap2);	/* trap #2, GEM */
 # endif
@@ -176,6 +176,7 @@ init_intr (void)
 
 	if (tosvers >= 0x106)
 		new_xbra_install (&old_linef, 44L, new_linef);
+
 	new_xbra_install (&old_chk, 24L, new_chk);
 	new_xbra_install (&old_trapv, 28L, new_trapv);
 

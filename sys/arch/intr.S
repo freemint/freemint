@@ -28,11 +28,11 @@
 
 	.globl	_build_context
 	.globl	_restore_context
-	.globl	_curproc
+	.extern	_curproc
 	.globl	_leave_kernel
 	.globl	_preempt		// C function in proc.c
 	.globl	_proc_clock		// controls process' allocation of CPU time
-	.globl	_in_kernel
+	.extern	_in_kernel
 	.globl	__base
 	.globl	_calc_load_average
 	.globl	_uptimetick
@@ -448,7 +448,7 @@ _send_packet:
 	.globl	_new_bus,_new_addr,_new_ill,_new_divzero,_new_priv,_new_linef
 	.globl	_new_trace,_new_chk,_new_trapv,_new_fpcp,_new_mmu,_new_pmmuacc
 	.globl	_new_uninit,_new_spurious,_new_format,_new_cpv
-	.globl	_in_kernel,_sig_routine
+	.extern	_in_kernel,_sig_routine
 	.globl	_sigbus,_sigaddr,_sigill,_sigfpe,_sigpriv,_sigtrap
 	.globl	_haltformat,_haltcpv
 	.globl	_sig_exc
@@ -834,7 +834,7 @@ _new_priv:
 
 // system entry points from syscall.spp
 
-	.globl	_mint_dos,_mint_bios,_mint_xbios
+	.extern	_mint_dos,_mint_bios,_mint_xbios
 	.globl	_old_trace
 
 	dc.l	0x58425241		// XBRA
@@ -960,7 +960,8 @@ rwdone:
 	clr.l	d0		// 0 means "successful operation"
 	rts
 
-	.globl	_old_criticerr,_new_criticerr,_mint_criticerr
+	.globl	_old_criticerr,_new_criticerr
+	.extern _mint_criticerr
 
 	dc.l	0x58425241		// XBRA
 	dc.l	0x4d694e54		// MiNT
@@ -969,7 +970,8 @@ _old_criticerr:
 _new_criticerr:
 	jmp	_mint_criticerr
 
-	.globl	_old_exec_os,_new_exec_os,_do_exec_os
+	.globl	_old_exec_os,_new_exec_os
+	.extern _do_exec_os
 
 	dc.l	0x58425241		// XBRA
 	dc.l	0x4d694e54		// MiNT
