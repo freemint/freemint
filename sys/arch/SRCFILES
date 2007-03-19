@@ -31,6 +31,7 @@ SOBJS = \
 	scsidrv_emu.S \
 	syscall.S \
 	user_things.S \
-	xhdi_emu.S
+	xhdi_emu.S \
+	v4epatch.S
 
 SRCFILES = $(STARTUP) $(COBJS) $(SOBJS)

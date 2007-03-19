@@ -1,3 +1,4 @@
+
 /*
  * $Id$
  *
@@ -59,12 +60,12 @@
 	.globl	_mint_bios,_mint_xbios
 	.globl	_mint_dos
 	.globl	_old_dos,_old_bios,_old_xbios
-	.globl	_build_context
+	.extern	_build_context
 	.globl	_restore_context
 	.globl	_proc_clock		// controls process' allocation of CPU time
 	.globl	_enter_gemdos
 	.globl	_leave_kernel
-	.globl	_in_kernel
+	.extern	_in_kernel
 	.globl	_preempt
 	.globl	_unwound_stack
 	.globl	_check_sigs
@@ -73,7 +74,7 @@
 	.globl	_mint_trap2
 	.globl	_gdos_version,_vdi_handler,_aes_handler
 
-	.globl	_curproc
+	.extern	_curproc
 	.globl	_bios_tab,_bios_max
 	.globl	_xbios_tab,_xbios_max,_old_xbios
 	.globl	_dos_tab,_dos_max
@@ -817,7 +818,11 @@ v_rte:	rte				// and return :-)
 
 _lineA0:
 	movem.l	d2/a2,-(sp)		// save scratch registers
+#ifdef COLDFIRE
+	jsr 0xE09512             // TOS40
+#else
 	dc.w	0xa000			// call the line A initialization routine
+#endif
 	movem.l	(sp)+,d2/a2
 	rts
 

@@ -13,8 +13,8 @@
  */
 
 	.globl	_main
-	.globl	_init
-	.globl	__base
+	.extern	_init
+	.extern	__base
 
 	.text
 _main:	move.l	0x04(sp),a0		// basepage address
