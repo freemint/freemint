@@ -35,29 +35,31 @@
 
 # include "kmemory.h"
 
+# include "proc.h"
+
 
 long _cdecl
 sys_pgetuid(void)
 {
-	return curproc->p_cred->ruid;
+	return get_curproc()->p_cred->ruid;
 }
 
 long _cdecl
 sys_pgetgid(void)
 {
-	return curproc->p_cred->rgid;
+	return get_curproc()->p_cred->rgid;
 }
 
 long _cdecl
 sys_pgeteuid(void)
 {
-	return curproc->p_cred->ucr->euid;
+	return get_curproc()->p_cred->ucr->euid;
 }
 
 long _cdecl
 sys_pgetegid(void)
 {
-	return curproc->p_cred->ucr->egid;
+	return get_curproc()->p_cred->ucr->egid;
 }
 
 long _cdecl
@@ -83,7 +85,7 @@ long _cdecl
 sys_psetuid(unsigned short uid)
 {
 	TRACE(("Psetuid(%i)", uid));
-	return proc_setuid(curproc, uid);
+	return proc_setuid(get_curproc(), uid);
 }
 
 long _cdecl
@@ -109,14 +111,14 @@ long _cdecl
 sys_psetgid(unsigned short gid)
 {
 	TRACE(("Psetgid(%i)", gid));
-	return proc_setgid(curproc, gid);
+	return proc_setgid(get_curproc(), gid);
 }
 
 /* uk, blank: set effective uid/gid but leave the real uid/gid unchanged. */
 long _cdecl
 sys_psetreuid(unsigned short ruid, unsigned short euid)
 {
-	struct pcred *cred = curproc->p_cred;
+	struct pcred *cred = get_curproc()->p_cred;
 	
 	TRACE(("Psetreuid(%i, %i)", ruid, euid));
 	
@@ -149,7 +151,7 @@ sys_psetreuid(unsigned short ruid, unsigned short euid)
 long _cdecl
 sys_psetregid(unsigned short rgid, unsigned short egid)
 {
-	struct pcred *cred = curproc->p_cred;
+	struct pcred *cred = get_curproc()->p_cred;
 	
 	TRACE(("Psetregid(%i, %i)", rgid, egid));
 	
@@ -203,7 +205,7 @@ sys_psetegid(unsigned short egid)
 long _cdecl
 sys_pgetgroups(short gidsetlen, unsigned short gidset[])
 {
-	struct ucred *cred = curproc->p_cred->ucr;
+	struct ucred *cred = get_curproc()->p_cred->ucr;
 	int i;
 	
 	TRACE(("Pgetgroups(%i, ...)", gidsetlen));
@@ -223,7 +225,7 @@ sys_pgetgroups(short gidsetlen, unsigned short gidset[])
 long _cdecl
 sys_psetgroups(short ngroups, unsigned short gidset[])
 {
-	struct pcred *cred = curproc->p_cred;
+	struct pcred *cred = get_curproc()->p_cred;
 	ushort grsize;
 	
 	TRACE(("Psetgroups(%i, ...)", ngroups));

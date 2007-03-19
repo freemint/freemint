@@ -360,11 +360,11 @@ search_name (KTAB *k, const char *name)
 static int
 follow_link_denied (PROC *p, char *function)
 {
-	int deny = curproc->p_cred->ucr->euid
-			&& (curproc->p_cred->ucr->euid ^ p->p_cred->suid)
-			&& (curproc->p_cred->ucr->euid ^ p->p_cred->ruid)
-			&& (curproc->p_cred->ruid ^ p->p_cred->suid)
-			&& (curproc->p_cred->ruid ^ p->p_cred->ruid);
+	int deny = get_curproc()->p_cred->ucr->euid
+			&& (get_curproc()->p_cred->ucr->euid ^ p->p_cred->suid)
+			&& (get_curproc()->p_cred->ucr->euid ^ p->p_cred->ruid)
+			&& (get_curproc()->p_cred->ruid ^ p->p_cred->suid)
+			&& (get_curproc()->p_cred->ruid ^ p->p_cred->ruid);
 
 	if (deny)
 		DEBUG (("%s: can't follow links for pid %d: Access denied", function, p->pid));
@@ -608,7 +608,7 @@ kern_proc_stat64 (fcookie *file, STAT *stat)
 	stat->flags = 0;
 	stat->gen = 0;
 
-	bzero (stat->res, sizeof (stat->res));
+	mint_bzero (stat->res, sizeof (stat->res));
 
 	switch (file->index & 0xffff)
 	{
@@ -658,7 +658,7 @@ kern_fddir_stat64 (fcookie *file, STAT *stat)
 	stat->flags = 0;
 	stat->gen = 0;
 
-	bzero (stat->res, sizeof (stat->res));
+	mint_bzero (stat->res, sizeof (stat->res));
 
 	if ((file->index & 0xffff0000) == PROCDIR_FD)
 		stat->mode = S_IFDIR | 0500;
@@ -724,7 +724,7 @@ kern_stat64 (fcookie *file, STAT *stat)
 	stat->flags = 0;
 	stat->gen = 0;
 
-	bzero (stat->res, sizeof (stat->res));
+	mint_bzero (stat->res, sizeof (stat->res));
 
 	switch (file->index)
 	{
@@ -738,8 +738,8 @@ kern_stat64 (fcookie *file, STAT *stat)
 		}
 		case ROOTDIR_SELF:
 		{
-			stat->uid = curproc->p_cred->ruid;
-			stat->gid = curproc->p_cred->rgid;
+			stat->uid = get_curproc()->p_cred->ruid;
+			stat->gid = get_curproc()->p_cred->rgid;
 
 			break;
 		}
@@ -1319,7 +1319,7 @@ kern_readlink (fcookie *file, char *name, int namelen)
 		char buf[5];
 		int len;
 
-		ksprintf (buf, sizeof (buf), "%d", curproc->pid);
+		ksprintf (buf, sizeof (buf), "%d", get_curproc()->pid);
 		strncpy_f (name, buf, namelen);
 
 		len = strlen (buf);
@@ -1651,7 +1651,7 @@ kern_follow_link (fcookie *fc, int depth)
 
 	if (fc->index == ROOTDIR_SELF)
 	{
-		fc->index = (((long) curproc->pid) << 16) | PROCDIR_DIR;
+		fc->index = (((long) get_curproc()->pid) << 16) | PROCDIR_DIR;
 		return 0;
 	}
 

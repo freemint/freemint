@@ -461,7 +461,7 @@ internal_execvp(char **argv)
 	 * re-create the old GEMDOS style command line string.
 	 */
 	npath = oldcmd + 128;
-	bzero(oldcmd, 128);
+	mint_bzero(oldcmd, 128);
 
 	x = 1;			/* must skip the first argument (program name) */
 	y = 0;

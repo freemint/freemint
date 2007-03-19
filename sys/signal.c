@@ -47,14 +47,14 @@
 static long
 send_sig (PROC *p, ushort sig, int priv)
 {
-	if (suser (curproc->p_cred->ucr))
+	if (suser (get_curproc()->p_cred->ucr))
 	{
 		priv = 1;
 	}
-	else if (  curproc->p_cred->ucr->euid == p->p_cred->suid
-		|| curproc->p_cred->ucr->euid == p->p_cred->ruid
-		|| curproc->p_cred->ruid      == p->p_cred->suid
-		|| curproc->p_cred->ruid      == p->p_cred->ruid)
+	else if (  get_curproc()->p_cred->ucr->euid == p->p_cred->suid
+		|| get_curproc()->p_cred->ucr->euid == p->p_cred->ruid
+		|| get_curproc()->p_cred->ruid      == p->p_cred->suid
+		|| get_curproc()->p_cred->ruid      == p->p_cred->ruid)
 	{
 		priv = 1;
 	}
@@ -64,7 +64,7 @@ send_sig (PROC *p, ushort sig, int priv)
 		/* Every process has a permanent ticket to send SIGCONT
 		 * to other members of the same process group.
 		 */
-		if (curproc->pgrp == p->pgrp)
+		if (get_curproc()->pgrp == p->pgrp)
 			priv = 1;
 	}
 
@@ -243,7 +243,7 @@ ikill (int pid, ushort sig)
 	if (pid < 0)
 		r = killgroup (-pid, sig, 1);
 	else if (pid == 0)
-		r = killgroup (curproc->pgrp, sig, 1);
+		r = killgroup (get_curproc()->pgrp, sig, 1);
 	else
 	{
 		p = pid2proc (pid);
@@ -274,15 +274,15 @@ check_sigs (void)
 	int i;
 	short deliversig;
 
-	if (curproc->pid == 0)
+	if (get_curproc()->pid == 0)
 		return;
 top:
-	assert (curproc->p_sigacts);
-	sigs = curproc->sigpending;
+	assert (get_curproc()->p_sigacts);
+	sigs = get_curproc()->sigpending;
 
 	/* Always notify the tracer about signals sent */
-	if (!curproc->ptracer || curproc->sigpending & 1L)
-		sigs &= ~(curproc->p_sigmask);
+	if (!get_curproc()->ptracer || get_curproc()->sigpending & 1L)
+		sigs &= ~(get_curproc()->p_sigmask);
 
 	if (sigs)
 	{
@@ -293,15 +293,15 @@ top:
 		 * passes a SIGNULL to indicate that we should really deliver
 		 * the signal, hence its always safe to remove it from pending.
 		 */
-		deliversig = (curproc->sigpending & 1L);
-		curproc->sigpending &= ~1L;
+		deliversig = (get_curproc()->sigpending & 1L);
+		get_curproc()->sigpending &= ~1L;
 
 		for (i = 1; i < NSIG; i++)
 		{
 			if (sigs & sigm)
 			{
-				curproc->sigpending &= ~sigm;
-				if (curproc->ptracer && !deliversig
+				get_curproc()->sigpending &= ~sigm;
+				if (get_curproc()->ptracer && !deliversig
 					&& (i != SIGCONT) && (i != SIGKILL))
 				{
 					TRACE (("tracer being notified of signal %d", i));
@@ -316,12 +316,12 @@ top:
 				{
 					ulong omask;
 
-					omask = curproc->p_sigmask;
+					omask = get_curproc()->p_sigmask;
 
 					/* sigextra gives which extra signals
 					 * should also be masked
 					 */
-					curproc->p_sigmask |= SIGACTION(curproc, i).sa_mask | sigm;
+					get_curproc()->p_sigmask |= SIGACTION(get_curproc(), i).sa_mask | sigm;
 					handle_sig (i);
 
 /*
@@ -335,7 +335,7 @@ top:
  * one signal per kernel entry, so this shouldn't really be a problem.
  */
 					/* unmask signals */
-					curproc->p_sigmask = omask;
+					get_curproc()->p_sigmask = omask;
 				}
 			}
 
@@ -350,7 +350,7 @@ top:
 void _cdecl
 raise (ushort sig)
 {
-	post_sig (curproc, sig);
+	post_sig (get_curproc(), sig);
 	check_sigs ();
 }
 
@@ -362,16 +362,15 @@ handle_sig (ushort sig)
 {
 	/* just to be sure */
 	assert (sig < NSIG);
-	assert (curproc->p_sigacts);
-
+	assert (get_curproc()->p_sigacts);
 	/* notify proc extensions */
-	proc_ext_on_signal(curproc, sig);
+	proc_ext_on_signal(get_curproc(), sig);
 
-	curproc->last_sig = sig;
-	if (SIGACTION(curproc, sig).sa_handler == SIG_IGN)
+	get_curproc()->last_sig = sig;
+	if (SIGACTION(get_curproc(), sig).sa_handler == SIG_IGN)
 		return;
 
-	if (SIGACTION(curproc, sig).sa_handler == SIG_DFL)
+	if (SIGACTION(get_curproc(), sig).sa_handler == SIG_DFL)
 	{
 _default:
 		switch (sig)
@@ -402,7 +401,7 @@ _default:
 			return;
 
 		case SIGCONT:
-			curproc->sigpending &= ~STOPSIGS;
+			get_curproc()->sigpending &= ~STOPSIGS;
 			return;
 
 		/* here are the fatal signals. for SIGINT, we use
@@ -415,10 +414,10 @@ _default:
 		 * terminate vector.
 		 */
 		case SIGINT:		/* ^C */
-			if (curproc->domain == DOM_TOS)
+			if (get_curproc()->domain == DOM_TOS)
 			{
-				curproc->signaled = 1;
-				kernel_pterm (curproc, ENOSYS);
+				get_curproc()->signaled = 1;
+				kernel_pterm (get_curproc(), ENOSYS);
 				return;
 			}
 			/* otherwise, fall through */
@@ -426,7 +425,7 @@ _default:
 			/* Mark the process as being killed
 			 * by a signal.  Used by Pwaitpid.
 			 */
-			curproc->signaled = 1;
+			get_curproc()->signaled = 1;
 
 			/* tell the user what happened */
 			bombs (sig);
@@ -435,10 +434,10 @@ _default:
 			 * in the user's term_vec code; we don't want to get
 			 * stuck in an infinite loop!
 			 */
-			if ((curproc->p_sigmask & 1L) || sig == SIGKILL)
-				terminate (curproc, sig << 8, ZOMBIE_Q);
+			if ((get_curproc()->p_sigmask & 1L) || sig == SIGKILL)
+				terminate (get_curproc(), sig << 8, ZOMBIE_Q);
 			else
-				kernel_pterm (curproc, sig << 8);
+				kernel_pterm (get_curproc(), sig << 8);
 		}
 	}
 	else
@@ -476,7 +475,7 @@ sas_ss_flags (PROC *p, ulong sp)
 long _cdecl
 p_sigaltstack (const stack_t *uss, stack_t *uoss)
 {
-	return do_sigaltstack (curproc, uss, uoss, xxx);
+	return do_sigaltstack (get_curproc(), uss, uoss, xxx);
 }
 
 long
@@ -536,21 +535,21 @@ stop (ushort sig)
 
 	code = sig << 8;
 
-	if (curproc->pid == 0)
+	if (get_curproc()->pid == 0)
 	{
 		FORCE ("attempt to stop MiNT");
 		return;
 	}
 
 	/* notify parent */
-	if (curproc->ptracer)
+	if (get_curproc()->ptracer)
 	{
-		DEBUG (("stop (%i) SIGCHLD -> tracer pid %i", sig, curproc->ptracer->pid));
-		post_sig (curproc->ptracer, SIGCHLD);
+		DEBUG (("stop (%i) SIGCHLD -> tracer pid %i", sig, get_curproc()->ptracer->pid));
+		post_sig (get_curproc()->ptracer, SIGCHLD);
 	}
 	else
 	{
-		PROC *p = pid2proc (curproc->ppid);
+		PROC *p = pid2proc (get_curproc()->ppid);
 		if (p) assert (p->p_sigacts);
 		if (p && !(SIGACTION(p, SIGCHLD).sa_flags & SA_NOCLDSTOP))
 		{
@@ -568,25 +567,25 @@ stop (ushort sig)
 		}
 	}
 
-	oldmask = curproc->p_sigmask;
+	oldmask = get_curproc()->p_sigmask;
 
-	if (!curproc->ptracer)
+	if (!get_curproc()->ptracer)
 	{
 		assert ((1L << sig) & STOPSIGS);
 
 		/* mask out most signals */
-		curproc->p_sigmask |= ~(UNMASKABLE | SIGTERM);
+		get_curproc()->p_sigmask |= ~(UNMASKABLE | SIGTERM);
 	}
 
 	/* notify proc extensions */
-	proc_ext_on_stop(curproc, sig);
+	proc_ext_on_stop(get_curproc(), sig);
 
 	/* sleep until someone signals us awake */
 	sleep (STOP_Q, (long) code | 0177);
 
 	/* when we wake up, restore the signal mask */
-	curproc->p_sigmask = oldmask;
+	get_curproc()->p_sigmask = oldmask;
 
 	/* and discard any signals that would cause us to stop again */
-	curproc->sigpending &= ~STOPSIGS;
+	get_curproc()->sigpending &= ~STOPSIGS;
 }

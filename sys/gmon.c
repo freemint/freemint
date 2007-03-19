@@ -357,7 +357,7 @@ write_gmon (void)
 		struct gmon_hdr ghdr __attribute__ ((aligned (__alignof__ (long))));
 		
 		/* write gmon.out header: */
-		bzero (&ghdr, sizeof (struct gmon_hdr));
+		mint_bzero (&ghdr, sizeof (struct gmon_hdr));
 		memcpy (&ghdr.cookie[0], GMON_MAGIC, sizeof (ghdr.cookie));
 		*(__s32 *) ghdr.version = GMON_VERSION;
 		(*f->dev->write)(f, (const char *) &ghdr, sizeof (struct gmon_hdr));

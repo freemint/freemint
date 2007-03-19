@@ -49,6 +49,8 @@
 # include "kmemory.h"
 # include "memory.h"
 
+# include "proc.h"
+
 
 /* p_mem */
 
@@ -191,7 +193,7 @@ copy_mem (struct proc *p)
 	ut = m->tp_ptr = (struct user_things *) m->tp_reg->loc;
 
 	/* temporary attach to curproc so it's accessible */
-	attach_region(curproc, m->tp_reg);
+	attach_region(get_curproc(), m->tp_reg);
 
 	/* trampoline is inherited from the kernel */
 	bcopy(&user_things, m->tp_ptr, user_things.len);
@@ -248,7 +250,7 @@ copy_mem (struct proc *p)
 # endif
 
 	cpushi(ut, sizeof(*ut));
-	detach_region(curproc, m->tp_reg);
+	detach_region(get_curproc(), m->tp_reg);
 	
 	TRACE (("copy_mem: ok (%lx)", m));
 	return m;
@@ -451,8 +453,8 @@ copy_fd (struct proc *p)
 	}
 	
 	/* clear directory search info */
-	bzero (fd->srchdta, NUM_SEARCH * sizeof (DTABUF *));
-	bzero (fd->srchdir, sizeof (fd->srchdir));
+	mint_bzero (fd->srchdta, NUM_SEARCH * sizeof (DTABUF *));
+	mint_bzero (fd->srchdir, sizeof (fd->srchdir));
 	fd->searches = NULL;
 	
 	TRACE (("copy_fd: ok (%lx)", fd));
@@ -597,7 +599,7 @@ copy_cwd (struct proc *p)
 		return NULL;
 	}
 	
-	bzero (cwd, sizeof (*cwd));
+	mint_bzero (cwd, sizeof (*cwd));
 	
 	cwd->links = 1;
 	cwd->cmask =  org_cwd->cmask;
@@ -759,7 +761,7 @@ new_proc_ext(long ident, unsigned long flags, unsigned long size, struct module_
 	
 	if (e)
 	{
-		bzero(e, sizeof(*e));
+		mint_bzero(e, sizeof(*e));
 		
 		if ((e->data = kmalloc(size)))
 		{
@@ -769,7 +771,7 @@ new_proc_ext(long ident, unsigned long flags, unsigned long size, struct module_
 			e->size = size;
 			e->links = 1;
 			e->cb_vector = cb;
-			bzero(e->data, size);
+			mint_bzero(e->data, size);
 		}
 		else
 		{
@@ -799,7 +801,7 @@ share_ext(struct proc *p, struct proc *p2)
 			int i;
 
 			/* clean memory */
-			bzero(p_ext, sizeof(*p_ext));
+			mint_bzero(p_ext, sizeof(*p_ext));
 
 			p_ext->size = p->p_ext->size;
 			p_ext->used = 0;
@@ -900,7 +902,7 @@ free_ext(struct proc *p)
 void * _cdecl
 proc_lookup_extension(struct proc *p, long ident)
 {
-	if (!p) p = curproc;
+	if (!p) p = get_curproc();
 
 	if (p->p_ext)
 	{
@@ -941,7 +943,7 @@ proc_attach_extension(struct proc *p, long ident, unsigned long flags, unsigned 
 	struct p_ext *p_ext;
 	struct proc_ext *ext;
 
-	if (!p) p = curproc;
+	if (!p) p = get_curproc();
 
 	assert(size);
 
@@ -956,7 +958,7 @@ proc_attach_extension(struct proc *p, long ident, unsigned long flags, unsigned 
 		}
 
 		/* clean memory */
-		bzero(p_ext, sizeof(*p_ext));
+		mint_bzero(p_ext, sizeof(*p_ext));
 
 		/* initialize */
 		p_ext->size = sizeof(p_ext->ext) / sizeof(p_ext->ext[0]);
@@ -1034,7 +1036,7 @@ detach_ext(struct proc *p, long ident)
 void _cdecl
 proc_detach_extension(struct proc *p, long ident)
 {
-	if (!p) p = curproc;
+	if (!p) p = get_curproc();
 
 	/* Ozk: special action when p == -1L; Remove 'ident' attachment
 	 *      from ALL processes currently running. This means that the

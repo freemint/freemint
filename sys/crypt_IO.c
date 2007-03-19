@@ -67,6 +67,7 @@
 # include "init.h"
 # include "k_prot.h"
 # include "kmemory.h"
+# include "proc.h"
 
 
 void
@@ -303,7 +304,7 @@ sys_d_setkey (llong dev, char *key, int cipher)
 
 	DEBUG (("Dsetkey(%li, %d)", (long) dev, cipher));
 
-	if (!suser (curproc->p_cred->ucr))
+	if (!suser (get_curproc()->p_cred->ucr))
 		return EPERM;
 
 	switch (cipher)
@@ -374,7 +375,7 @@ sys_d_setkey (llong dev, char *key, int cipher)
 			di->rwabs = di->crypt.rwabs;
 			di->rrwabs = &di->rwabs;
 
-			bzero (di->crypt.key, sizeof(*(di->crypt.key)));
+			mint_bzero (di->crypt.key, sizeof(*(di->crypt.key)));
 			kfree (di->crypt.key);
 		}
 	}

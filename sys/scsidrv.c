@@ -56,6 +56,8 @@
 # include "init.h"	/* boot_printf */
 # include "k_prot.h"
 
+# include "proc.h"
+
 
 static REQDATA emu_scsidrv_ReqData;
 
@@ -142,7 +144,7 @@ sys_scsidrv (ushort op,
 	typedef long (*wrap4)(long, long, long, long);
 
 	/* only superuser can use this interface */
-	if (!suser (curproc->p_cred->ucr))
+	if (!suser (get_curproc()->p_cred->ucr))
 		return EPERM;
 
 	if (!scsidrv)
@@ -492,7 +494,7 @@ init_scsidrv_mon(void)
 
 		memcpy(scsiCall, &myScsiCall, 38);
 
-		bzero(handlerInfo, sizeof(handlerInfo));
+		mint_bzero(handlerInfo, sizeof(handlerInfo));
 	}
 }
 

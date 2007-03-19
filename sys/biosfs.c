@@ -175,12 +175,14 @@ static struct bios_file BDEV [] =
 	 * are present on all machines (except for modem1, which does however
 	 * have a different device number on TTs and STs)
 	 */
+#ifndef COLDFIRE
 	{ "modem1",	&bios_tdevice,	 6,       O_TTY, &aux_tty, NULL},
 #ifndef MILAN/* these do not really work on Milan, so it is best to use the UART
 	   XDD instead of this // rincewind */
 	{ "modem2",	&bios_tdevice,	 7,       O_TTY, &sccb_tty, NULL},
 	{ "serial1",	&bios_tdevice,	 8,       O_TTY, &ttmfp_tty, NULL},
 	{ "serial2",	&bios_tdevice,	 9,       O_TTY, &scca_tty, NULL},
+#endif
 #endif
 	{"", 0, 0, 0, 0, 0}
 };
@@ -342,7 +344,7 @@ XATTR fdxattr;
 static void
 _set_xattr (XATTR *xp, ushort mode, int rdev)
 {
-	bzero (xp, sizeof (*xp));
+	mint_bzero (xp, sizeof (*xp));
 
 	xp->mode	= mode;
 	xp->dev		= BIOSDRV;
@@ -363,8 +365,8 @@ set_xattr (XATTR *xp, ushort mode, int rdev)
 {
 	_set_xattr (xp, mode, rdev);
 
-	xp->uid		= curproc->p_cred->ucr->euid;
-	xp->gid		= curproc->p_cred->ucr->egid;
+	xp->uid		= get_curproc()->p_cred->ucr->euid;
+	xp->gid		= get_curproc()->p_cred->ucr->egid;
 }
 
 
@@ -537,7 +539,7 @@ bios_lookup(fcookie *dir, const char *name, fcookie *fc)
 		if (isdigit(*name) || *name == '-')
 		{
 			int fd = (int) atol(name);
-			if (fd >= MIN_HANDLE && fd < curproc->p_fd->nfiles)
+			if (fd >= MIN_HANDLE && fd < get_curproc()->p_fd->nfiles)
 			{
 				fc->fs = &bios_filesys;
 				fc->dev = dir->dev;
@@ -605,11 +607,11 @@ bios_getxattr (fcookie *fc, XATTR *xattr)
 		xattr->index = fc->index;
 		xattr->dev = fc->dev;
 	}
-	else if (IS_FD_ENTRY(fc, curproc))
+	else if (IS_FD_ENTRY(fc, get_curproc()))
 	{
 		/* u:\dev\fd\n */
 #ifdef FOLLOW_XATTR_CHAIN
-		f = curproc->handle[(int)fc->aux];
+		f = get_curproc()->handle[(int)fc->aux];
 		if (f)
 		{
 			r = (*f->fc.fs->getxattr)(&f->fc, xattr);
@@ -631,7 +633,7 @@ bios_getxattr (fcookie *fc, XATTR *xattr)
 	else if (b->device == &fakedev)
 	{
 #ifdef FOLLOW_XATTR_CHAIN
-		if ((f = curproc->handle[b->private]) != 0)
+		if ((f = get_curproc()->handle[b->private]) != 0)
 		{
 			/* u:\dev\stdin, u:\dev\stdout, etc. */
 			r = (*f->fc.fs->getxattr) (&f->fc, xattr);
@@ -664,7 +666,7 @@ bios_chown (fcookie *fc, int uid, int gid)
 {
 	struct bios_file *b = (struct bios_file *) fc->index;
 
-	if (suser (curproc->p_cred->ucr))
+	if (suser (get_curproc()->p_cred->ucr))
 	{
 		if (!b)
 		{
@@ -677,7 +679,7 @@ bios_chown (fcookie *fc, int uid, int gid)
 			if (uid != -1) fdxattr.uid = uid;
 			if (gid != -1) fdxattr.gid = gid;
 		}
-		else if (!IS_FD_ENTRY(fc, curproc))
+		else if (!IS_FD_ENTRY(fc, get_curproc()))
 		{
 			/* any other entry */
 			if (uid != -1) b->xattr.uid = uid;
@@ -693,7 +695,7 @@ bios_chown (fcookie *fc, int uid, int gid)
 static long _cdecl
 bios_chmode (fcookie *fc, unsigned int mode)
 {
-	struct ucred *cred = curproc->p_cred->ucr;
+	struct ucred *cred = get_curproc()->p_cred->ucr;
 	struct bios_file *b = (struct bios_file *) fc->index;
 
 	if (!b)
@@ -713,7 +715,7 @@ bios_chmode (fcookie *fc, unsigned int mode)
 			return E_OK;
 		}
 	}
-	else if (!IS_FD_ENTRY (fc, curproc))
+	else if (!IS_FD_ENTRY (fc, get_curproc()))
 	{
 		if (suser (cred) || (cred->euid == b->xattr.uid))
 		{
@@ -739,7 +741,7 @@ bios_rmdir (fcookie *dir, const char *name)
 static long _cdecl
 bios_remove (fcookie *dir, const char *name)
 {
-	struct ucred *cred = curproc->p_cred->ucr;
+	struct ucred *cred = get_curproc()->p_cred->ucr;
 	struct bios_file *b, **lastb;
 
 	if (!suser (cred))
@@ -808,7 +810,7 @@ bios_getname (fcookie *root, fcookie *dir, char *pathname, int size)
 static long _cdecl
 bios_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newname)
 {
-	struct ucred *cred = curproc->p_cred->ucr;
+	struct ucred *cred = get_curproc()->p_cred->ucr;
 	struct bios_file *b;
 	struct bios_file *be = 0;
 
@@ -860,7 +862,7 @@ bios_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 	if (IS_FD_DIR (&dirh->fc))
 	{
 		i = dirh->index++;
-		if (i + MIN_HANDLE >= curproc->p_fd->nfiles)
+		if (i + MIN_HANDLE >= get_curproc()->p_fd->nfiles)
 			return ENMFILES;
 
 		fc->fs = &bios_filesys;
@@ -992,7 +994,7 @@ bios_dfree (fcookie *dir, long *buf)
 static long _cdecl
 bios_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 {
-	struct ucred *cred = curproc->p_cred->ucr;
+	struct ucred *cred = get_curproc()->p_cred->ucr;
 	struct bios_file *b;
 	static int devindex = 0;
 
@@ -1178,7 +1180,7 @@ bios_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 static long _cdecl
 bios_symlink (fcookie *dir, const char *name, const char *to)
 {
-	struct ucred *cred = curproc->p_cred->ucr;
+	struct ucred *cred = get_curproc()->p_cred->ucr;
 	struct bios_file *b;
 	long r;
 	fcookie fc;
@@ -1222,7 +1224,7 @@ bios_readlink (fcookie *fc, char *buf, int buflen)
 {
 	struct bios_file *b = (struct bios_file *) fc->index;
 
-	if (IS_FD_DIR (fc) || IS_FD_ENTRY (fc, curproc))
+	if (IS_FD_DIR (fc) || IS_FD_ENTRY (fc, get_curproc()))
 		return ENOSYS;
 	if (!b) return ENOSYS;
 	if (b->device) return ENOSYS;
@@ -1240,7 +1242,7 @@ bios_getdev (fcookie *fc, long *devsp)
 	struct bios_file *b;
 
 	/* Check for \dev\fd\... */
-	if (IS_FD_ENTRY (fc, curproc))
+	if (IS_FD_ENTRY (fc, get_curproc()))
 	{
 	    *devsp = (int) fc->aux;
 	    return &fakedev;
@@ -1556,9 +1558,9 @@ iwrite (int bdev, const char *buf, long bytes, int ndelay, struct bios_file *b)
 				if (isleep > 200)
 					isleep = 200;
 
-				curproc->wait_cond = (long) &tty->state;
+				get_curproc()->wait_cond = (long) &tty->state;
 
-				t = addtimeout (curproc, (long) isleep, wakewrite);
+				t = addtimeout (get_curproc(), (long) isleep, wakewrite);
 				if (t)
 				{
 					TRACE (("sleeping in iwrite"));
@@ -1910,7 +1912,7 @@ long
 iocsbrk (int bdev, int mode, struct bios_tty *t)
 {
 	ulong bits;
-	int oldmap = curproc->p_fd->bconmap;
+	int oldmap = get_curproc()->p_fd->bconmap;
 
 	if (has_bconmap)
 	{
@@ -1929,7 +1931,7 @@ iocsbrk (int bdev, int mode, struct bios_tty *t)
 			return E_OK;
 		}
 		if (bdev >= 6)
-			curproc->p_fd->bconmap = bdev;
+			get_curproc()->p_fd->bconmap = bdev;
 	}
 
 	bits = rsconf (-1, -1, -1, -1, -1, -1);	/* get settings */
@@ -1942,7 +1944,7 @@ iocsbrk (int bdev, int mode, struct bios_tty *t)
 
 	(void) rsconf(-1, -1, -1, -1, (int) bits, -1);
 
-	curproc->p_fd->bconmap = oldmap;
+	get_curproc()->p_fd->bconmap = oldmap;
 	return E_OK;
 }
 
@@ -2015,10 +2017,10 @@ iocsflagsb (int bdev, ulong flags, ulong mask, struct tty *tty, struct bios_tty 
 	}
 	if (mask & (TF_FLAGS|TF_STOPBITS|TF_CHARBITS))
 	{
-		int oldmap = curproc->p_fd->bconmap;
+		int oldmap = get_curproc()->p_fd->bconmap;
 
 		if (has_bconmap && bdev >= 6)
-			curproc->p_fd->bconmap = bdev;
+			get_curproc()->p_fd->bconmap = bdev;
 		bits = rsconf (-1, -1, -1, -1, -1, -1);	/* get settings */
 		oucr = ucr = (bits >> 24L) & 0x0ff;	/* isolate UCR byte */
 		oflags |= (ucr >> 3) & (TF_STOPBITS|TF_CHARBITS);
@@ -2091,7 +2093,7 @@ iocsflagsb (int bdev, ulong flags, ulong mask, struct tty *tty, struct bios_tty 
 				*sgflags |= flags & (T_RTSCTS|T_TANDEM);
 			}
 		}
-		curproc->p_fd->bconmap = oldmap;
+		get_curproc()->p_fd->bconmap = oldmap;
 	}
 	return (long) flags >= 0 ? flags : oflags;
 }
@@ -2243,9 +2245,9 @@ bios_ioctl (FILEPTR *f, int mode, void *buf)
 				return oldbaud;
 			}
 /* trick rsconf into setting the correct port (it uses curproc->p_fd->bconmap) */
-			oldmap = curproc->p_fd->bconmap;
+			oldmap = get_curproc()->p_fd->bconmap;
 			if (has_bconmap && dev >= 6)
-				curproc->p_fd->bconmap = dev;
+				get_curproc()->p_fd->bconmap = dev;
 			i = (int)rsconf(-2, -1, -1, -1, -1, -1);
 
 			if (i < 0 || i >= MAXBAUD)
@@ -2266,20 +2268,20 @@ bios_ioctl (FILEPTR *f, int mode, void *buf)
 				}
 				if (newbaud == oldbaud ||
 				    ((struct tty *)f->devinfo)->hup_ospeed) {
-					curproc->p_fd->bconmap = oldmap;
+					get_curproc()->p_fd->bconmap = oldmap;
 					return E_OK;
 				}
 				for (i = 0; i < MAXBAUD; i++) {
 					if (baudmap[i] == newbaud) {
 						rsconf(i, -1, -1, -1, -1, -1);
-						curproc->p_fd->bconmap = oldmap;
+						get_curproc()->p_fd->bconmap = oldmap;
 						return 0;
 					} else if (baudmap[i] < newbaud) {
 						*r = baudmap[i];
 						break;
 					}
 				}
-				curproc->p_fd->bconmap = oldmap;
+				get_curproc()->p_fd->bconmap = oldmap;
 				return EBADARG;
 			} else if (newbaud == 0L) {
 	/* drop DTR: works only on modem1 and SCC lines */
@@ -2293,7 +2295,7 @@ bios_ioctl (FILEPTR *f, int mode, void *buf)
 						0, (1 << 7), t->irec);
 				}
 			}
-			curproc->p_fd->bconmap = oldmap;
+			get_curproc()->p_fd->bconmap = oldmap;
 			return E_OK;
 		} else if (dev == 2 || dev == 5) {
 			/* screen: assume 9600 baud */
@@ -2380,7 +2382,7 @@ bios_ioctl (FILEPTR *f, int mode, void *buf)
 		struct flock *lck = (struct flock *)buf;
 
 		b = (struct bios_file *)f->fc.index;
-		while (b->lockpid && b->lockpid != curproc->pid) {
+		while (b->lockpid && b->lockpid != get_curproc()->pid) {
 			if (mode == F_SETLKW && lck->l_type != F_UNLCK)
 				sleep(IO_Q, (long)b);
 			else
@@ -2391,13 +2393,13 @@ bios_ioctl (FILEPTR *f, int mode, void *buf)
 				DEBUG(("bios_ioctl: wrong file descriptor for UNLCK"));
 				return ENSLOCK;
 			}
-			if (b->lockpid != curproc->pid)
+			if (b->lockpid != get_curproc()->pid)
 				return ENSLOCK;
 			b->lockpid = 0;
 			f->flags &= ~O_LOCK;
 			wake(IO_Q, (long)b);	/* wake anyone waiting for this lock */
 		} else {
-			b->lockpid = curproc->pid;
+			b->lockpid = get_curproc()->pid;
 			f->flags |= O_LOCK;
 		}
 		break;

@@ -32,6 +32,8 @@
 # include "nullfs.h"
 # include "time.h"
 
+# include "proc.h"
+
 
 static long	_cdecl shm_root		(int drv, fcookie *fc);
 static long	_cdecl shm_creat	(fcookie *dir, const char *name, unsigned mode, int attrib, fcookie *fc);
@@ -195,7 +197,7 @@ shm_stat64 (fcookie *fc, STAT *ptr)
 {
 	SHMFILE *s = (SHMFILE *) fc->index;
 	
-	bzero (ptr, sizeof (*ptr));
+	mint_bzero (ptr, sizeof (*ptr));
 	
 	if (!s)
 	{
@@ -527,8 +529,8 @@ shm_creat (fcookie *dir, const char *name, unsigned int mode, int attrib, fcooki
 	s->inuse = 0;
 	strncpy (s->filename, name, SHMNAME_MAX);
 	s->filename[SHMNAME_MAX] = 0;
-	s->uid = curproc->p_cred->ucr->euid;
-	s->gid = curproc->p_cred->ucr->egid;
+	s->uid = get_curproc()->p_cred->ucr->euid;
+	s->gid = get_curproc()->p_cred->ucr->egid;
 	s->mode = mode;
 	s->next = shmroot;
 	s->reg = 0;
@@ -674,7 +676,7 @@ shm_ioctl (FILEPTR *f, int mode, void *buf)
 			}
 			
 			/* find the memory region to be attached */
-			m = addr2mem (curproc, (long) buf);
+			m = addr2mem (get_curproc(), (long) buf);
 			if (!m || !buf)
 			{
 				DEBUG(("Fcntl: SHMSETBLK: bad address %lx", buf));
@@ -704,16 +706,16 @@ shm_ioctl (FILEPTR *f, int mode, void *buf)
 			}
 			
 			/* check for memory limits */
-			if (curproc->maxmem)
+			if (get_curproc()->maxmem)
 			{
-				if (m->len > curproc->maxmem - memused (curproc))
+				if (m->len > get_curproc()->maxmem - memused (get_curproc()))
 				{
 					DEBUG(("Fcntl: SHMGETBLK would violate memory limits"));
 					return E_OK;
 				}
 			}
 			
-			return (long) attach_region (curproc, m);
+			return (long) attach_region (get_curproc(), m);
 		}
 		
 		default:

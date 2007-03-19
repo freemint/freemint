@@ -151,7 +151,7 @@ sys_b_getbpb (int dev)
 long _cdecl
 sys_b_rwabs (int rwflag, void *buffer, int number, int recno, int dev, long lrecno)
 {
-	PROC *p = curproc;
+	PROC *p = get_curproc();
 	long r;
 
 	/* jr: inspect bit 3 of rwflag!!!
@@ -207,7 +207,7 @@ sys_b_setexc (int number, long vector)
 # ifdef JAR_PRIVATE
 	struct user_things *ut;
 # endif
-	PROC *p = curproc;
+	PROC *p = get_curproc();
 	long *place;
 	long old;
 
@@ -504,7 +504,7 @@ sys_b_ursconf (int baud, int flow, int uc, int rs, int ts, int sc)
 {
 	if (has_bconmap)
 	{
-		ushort dev = curproc->p_fd->bconmap;
+		ushort dev = get_curproc()->p_fd->bconmap;
 
 		if ((ushort) dev < BDEVMAP_MAX)
 		{
@@ -943,7 +943,7 @@ _ubconstat (int dev)
 {
 	if (dev < MAX_BHANDLE)
 	{
-		FILEPTR *f = curproc->p_fd->ofiles [binput [dev]];
+		FILEPTR *f = get_curproc()->p_fd->ofiles [binput [dev]];
 		if (file_instat (f))
 			goto reset;
 		else
@@ -956,8 +956,8 @@ _ubconstat (int dev)
 			/* Data is coming - quick! We need some CPU!
 			 */
 reset:
-			curproc->slices = SLICES (curproc->curpri);
-			curproc->curpri = curproc->pri;
+			get_curproc()->slices = SLICES (get_curproc()->curpri);
+			get_curproc()->curpri = get_curproc()->pri;
 			return -1;
 
 		}
@@ -966,8 +966,8 @@ reset:
 			/* Process is polling like mad - punish it!
 			 */
 punish:
-			if (curproc->curpri > MIN_NICE)
-				curproc->curpri -= 1;
+			if (get_curproc()->curpri > MIN_NICE)
+				get_curproc()->curpri -= 1;
 
 			return 0;
 		}
@@ -986,7 +986,7 @@ bconstat (int dev)
 	}
 
 	if (dev == AUXDEV && has_bconmap)
-		dev = curproc->p_fd->bconmap;
+		dev = get_curproc()->p_fd->bconmap;
 
 	return BCONSTAT (dev);
 }
@@ -1001,7 +1001,7 @@ _ubconin (int dev)
 {
 	if (dev < MAX_BHANDLE)
 	{
-		FILEPTR *f = curproc->p_fd->ofiles [binput [dev]];
+		FILEPTR *f = get_curproc()->p_fd->ofiles [binput [dev]];
 
 		return file_getchar (f, RAW);
 	}
@@ -1047,7 +1047,7 @@ again:
 		{
 			if (has_bconmap)
 			{
-				dev = curproc->p_fd->bconmap;
+				dev = get_curproc()->p_fd->bconmap;
 				h = dev - SERDEV;
 			}
 			else
@@ -1109,7 +1109,7 @@ _ubconout (int dev, int c)
 
 	if (dev < MAX_BHANDLE)
 	{
-		f = curproc->p_fd->ofiles [boutput [dev]];
+		f = get_curproc()->p_fd->ofiles [boutput [dev]];
 		if (!f)
 			return 0;
 
@@ -1122,7 +1122,7 @@ _ubconout (int dev, int c)
 	else if (dev == 5)
 	{
 		c &= 0x00ff;
-		f = curproc->p_fd->control;
+		f = get_curproc()->p_fd->control;
 		if (!f)
 			return 0;
 
@@ -1153,7 +1153,7 @@ bconout (int dev, int c)
 	int statdev;
 
 	if (dev == AUXDEV && has_bconmap)
-		dev = curproc->p_fd->bconmap;
+		dev = get_curproc()->p_fd->bconmap;
 
 	/* compensate for a known BIOS bug: MIDI and IKBD are switched
 	 */
@@ -1224,7 +1224,7 @@ _ubcostat (int dev)
 	if (dev == 4)
 	{
 		/* really the MIDI port */
-		f = curproc->p_fd->ofiles [boutput [3]];
+		f = get_curproc()->p_fd->ofiles [boutput [3]];
 		return file_outstat (f) ? -1 : 0;
 	}
 
@@ -1233,7 +1233,7 @@ _ubcostat (int dev)
 
 	if (dev < MAX_BHANDLE)
 	{
-		f = curproc->p_fd->ofiles [boutput [dev]];
+		f = get_curproc()->p_fd->ofiles [boutput [dev]];
 		return file_outstat (f) ? -1 : 0;
 	}
 	else
@@ -1250,7 +1250,7 @@ bcostat(int dev)
 	}
 	else if (dev == AUXDEV && has_bconmap)
 	{
-		dev = curproc->p_fd->bconmap;
+		dev = get_curproc()->p_fd->bconmap;
 	}
 	/* compensate here for the BIOS bug, so that the MIDI and IKBD
 	 * files work correctly
@@ -1315,9 +1315,9 @@ bflush (void)
 	if (dev < MAX_BHANDLE || dev == 5)
 	{
 		if (dev == 5)
-			f = curproc->p_fd->ofiles [-1];
+			f = get_curproc()->p_fd->ofiles [-1];
 		else
-			f = curproc->p_fd->ofiles [boutput [dev]];
+			f = get_curproc()->p_fd->ofiles [boutput [dev]];
 
 		if (!f)
 		{
@@ -1391,7 +1391,7 @@ bflush (void)
 	 */
 	if (dev == AUXDEV && has_bconmap)
 	{
-		dev = curproc->p_fd->bconmap;
+		dev = get_curproc()->p_fd->bconmap;
 		statdev = dev;
 	}
 
@@ -1450,7 +1450,7 @@ do_bconin(int dev)
 
 	if (dev < MAX_BHANDLE)
 	{
-		f = curproc->p_fd->ofiles [binput[dev]];
+		f = get_curproc()->p_fd->ofiles [binput[dev]];
 		if (!f) return 0;
 		nread = 0;
 		(void)(*f->dev->ioctl)(f, FIONREAD, &nread);

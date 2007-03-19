@@ -240,7 +240,7 @@ nomem:
 struct proc *
 fork_proc (long flags, long *err)
 {
-	return fork_proc1 (curproc, flags, err);
+	return fork_proc1 (get_curproc(), flags, err);
 }
 
 /*
@@ -289,8 +289,8 @@ sys_pvfork (void)
 	 * has released the memory space correctly. That's why we mask off
 	 * all signals.
 	 */
-	p_sigmask = curproc->p_sigmask;
-	curproc->p_sigmask = ~(((unsigned long) 1 << SIGKILL) | 1);
+	p_sigmask = get_curproc()->p_sigmask;
+	get_curproc()->p_sigmask = ~(((unsigned long) 1 << SIGKILL) | 1);
 
 	{
 		unsigned short sr = splhigh();
@@ -303,7 +303,7 @@ sys_pvfork (void)
 
 	TRACE(("p_vfork: parent waking up"));
 
-	curproc->p_sigmask = p_sigmask;
+	get_curproc()->p_sigmask = p_sigmask;
 	/* note that the PROC structure pointed to by p may be freed during
 	 * the check_sigs call!
 	 */
@@ -365,7 +365,7 @@ sys_pfork (void)
 				 * points to the parent's memory descriptor, so
 				 * we must search the parent's memory table here.
 				 */
-				for (j = 0; curproc->p_mem->mem[j] != m; j++)
+				for (j = 0; get_curproc()->p_mem->mem[j] != m; j++)
 					;
 				n = p->p_mem->mem[j];
 				n->links++;
@@ -402,16 +402,16 @@ sys_pfork (void)
 		}
 	}
 
-	assert (curproc->p_mem && curproc->p_mem->mem);
+	assert (get_curproc()->p_mem && get_curproc()->p_mem->mem);
 
 	/* The save regions are initially attached to the child's regions. To
 	 * prevent swapping of the region and its save region (which should
 	 * still be identical) on the next context switch, we attach them here
 	 * to the current process.
 	 */
-	for (i = 0; i < curproc->p_mem->num_reg; i++)
+	for (i = 0; i < get_curproc()->p_mem->num_reg; i++)
 	{
-		m = curproc->p_mem->mem[i];
+		m = get_curproc()->p_mem->mem[i];
 		if (m)
 		{
 			m->mflags &= ~M_SEEN;
@@ -428,7 +428,7 @@ sys_pfork (void)
 	 * points to its grandparent's basepage.
 	 */
 	b = (BASEPAGE *) p->p_mem->mem[1]->loc;
-	b->p_parent = (BASEPAGE *) curproc->p_mem->mem[1]->loc;
+	b->p_parent = (BASEPAGE *) get_curproc()->p_mem->mem[1]->loc;
 
 	p->ctxt[CURRENT] = p->ctxt[SYSCALL];
 	p->ctxt[CURRENT].regs[0] = 0;		/* child returns a 0 from call */
