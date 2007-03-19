@@ -453,7 +453,9 @@ _cache060:
 	add.l	d1,d0			// only push this one cacheline
 	lsr.l	#4,d0			// how many cachelines we need to push
 	cmp.l	#512,d0
+#ifndef COLDFIRE
 	bcs.s	fls040
+#endif
 	dc.w	0xF478			// see abc040
 	rts
 // ---------------------------------------------------
@@ -514,7 +516,9 @@ _cache060_i:
 	add.l	d1,d0			// only push this one cacheline
 	lsr.l	#4,d0			// how many cachelines we need to push
 	cmp.l	#512,d0
+#ifndef COLDFIRE
 	bcs.s	fls040i
+#endif
 	dc.w	0xF478			// this is "cpusha dc"
 	dc.w	0xF498			// this is "cinva ic"
 	rts
