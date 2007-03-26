@@ -46,6 +46,10 @@
  */
 # undef OLDTOSFS
 
+# ifdef COLDFIRE
+# define OLDTOSFS  // else the TFTP Ram-Disk is destroyed
+# endif
+
 /*
  * include old style socket device emulation
  */
