@@ -728,7 +728,7 @@ struct kentry_libkern
 	memcpy, \
 	memset, \
 	bcopy, \
-	bzero, \
+	mint_bzero, \
 }
 
 
