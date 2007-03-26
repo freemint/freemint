@@ -199,7 +199,7 @@ void *	_cdecl memcpy		(void *dst, const void *src, unsigned long nbytes);
 void *	_cdecl memset		(void *dst, int ucharfill, unsigned long size);
 
 void	_cdecl bcopy		(const void *src, void *dst, unsigned long nbytes);
-void	_cdecl bzero		(void *dst, unsigned long size);
+void	_cdecl mint_bzero		(void *dst, unsigned long size);
 
 /* old definitions */
 # define quickmovb		memcpy
