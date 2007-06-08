@@ -77,7 +77,6 @@ CFLAGS-timeout.c = -m68000
 NOCFLAGS-xbios.c = -mcfv4e
 CFLAGS-xbios.c = -m68000
 
-
 cflags = $(kernel_cflags)
 nocflags = $(kernel_nocflags)
 

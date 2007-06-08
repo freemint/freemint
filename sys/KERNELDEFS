@@ -131,5 +131,10 @@ endif
 #
 # all default targets
 #
-kerneltargets = 000 030 040 deb mil ara my1 my2 my3 my4 col
-cputargets = 000 030 020-60 v4e
+kerneltargets = 000 030 040 deb mil ara my1 my2 my3 my4
+cputargets = 000 030 020-60
+
+ifeq (COLDFIRE,yes)
+kerneltargets += col
+cputargets += v4e
+endif
