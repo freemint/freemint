@@ -195,17 +195,22 @@ void	_cdecl _mint_quickcpy	(void *dst, const void *src, unsigned long nbytes);
 void	_cdecl _mint_quickswap	(void *dst, void *src, unsigned long nbytes);
 void	_cdecl _mint_quickzero	(char *place, unsigned long size);
 
-void *	_cdecl memcpy		(void *dst, const void *src, unsigned long nbytes);
-void *	_cdecl memset		(void *dst, int ucharfill, unsigned long size);
-
-void	_cdecl bcopy		(const void *src, void *dst, unsigned long nbytes);
-void	_cdecl mint_bzero		(void *dst, unsigned long size);
+void	_cdecl _mint_bcopy	(const void *src, void *dst, unsigned long nbytes);
+void	_cdecl _mint_bzero	(void *dst, unsigned long size);
 
 /* old definitions */
 # define quickmovb		memcpy
 # define quickmove		_mint_quickcpy
 # define quickswap		_mint_quickswap
 # define quickzero		_mint_quickzero
+# define bcopy			_mint_bcopy
+# define bzero			_mint_bzero
+
+/* introduced from ozk I think */
+# define mint_bzero		_mint_bzero
+
+void *	_cdecl memcpy		(void *dst, const void *src, unsigned long nbytes);
+void *	_cdecl memset		(void *dst, int ucharfill, unsigned long size);
 
 # endif
 
