@@ -145,17 +145,17 @@ MD5Final(unsigned char digest[16], struct MD5Context *ctx)
 	if (count < 8)
 	{
 		/* Two lots of padding:  Pad the first block to 64 bytes */
-		mint_bzero(p, count);
+		bzero(p, count);
 		byteReverse((unsigned long *) ctx->in, 16);
 		MD5Transform(ctx->buf, (__u32 *) ctx->in);
 		
 		/* Now fill the next block with 56 bytes */
-		mint_bzero(ctx->in, 56);
+		bzero(ctx->in, 56);
 	}
 	else
 	{
 		/* Pad block to 56 bytes */
-		mint_bzero(p, count - 8);
+		bzero(p, count - 8);
 	}
 	byteReverse((unsigned long *) ctx->in, 14);
 	
@@ -166,7 +166,7 @@ MD5Final(unsigned char digest[16], struct MD5Context *ctx)
 	MD5Transform(ctx->buf, (__u32 *) ctx->in);
 	byteReverse(ctx->buf, 4);
 	memcpy(digest, ctx->buf, 16);
-	mint_bzero(ctx, sizeof(ctx));	/* In case it's sensitive */
+	bzero(ctx, sizeof(ctx));	/* In case it's sensitive */
 }
 
 /* The four core functions */

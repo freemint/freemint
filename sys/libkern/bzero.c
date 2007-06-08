@@ -49,7 +49,7 @@
  */
 
 void
-mint_bzero (void *dst, unsigned long size)
+_mint_bzero (void *dst, unsigned long size)
 {
 # ifdef C_ONLY
 char *place=(char *) dst;

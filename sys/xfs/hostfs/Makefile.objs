@@ -35,7 +35,9 @@ DEFINITIONS = $(KERNELDEFAULTDEFS) $(KERNELDEFS)
 # default definitions
 OBJS = $(COBJS:.c=.o)
 
-VPATH = ..
+# don't use VPATH
+# VPATH not only look for prerequisites but also for targets
+vpath %.c ..
 
 all-here: objs
 

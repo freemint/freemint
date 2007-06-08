@@ -40,7 +40,6 @@ CFLAGS-user_things.S = -m68020
 NOCFLAGS-kernel.S = -mcfv4e
 CFLAGS-kernel.S = -m68000
 
-
 NOCFLAGS-mprot030.c = -m68000 -m68020 -m68040 -m68060 -m68020-60 -mcfv4e
 NOCFLAGS-mprot040.c = -m68000 -m68020 -m68030 -m68040 -m68020-60 -mcfv4e
 CFLAGS-mprot030.c = -m68030
