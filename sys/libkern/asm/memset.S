@@ -7,7 +7,7 @@
 | 8.II.2000, draco@atari.org
 | 
 | 
-| void * _mint_memset(void *s, int val, long len)
+| void *memset(void *s, int val, long len)
 | 
 	.text
 

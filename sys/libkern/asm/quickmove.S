@@ -11,11 +11,11 @@
 
 	.text
 
-	.globl	_bcopy
-	.globl	_memcpy
 	.globl	__mint_quickcpy
+	.globl	__mint_bcopy
+	.globl	_memcpy
 
-_bcopy:
+__mint_bcopy:
 	movem.l	4(sp),a0/a1
 	exg	a0,a1
 	bra.s	_quickmovb1

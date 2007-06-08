@@ -1,9 +1,15 @@
+
+#
+# compile coldfire target (requires newer gcc)
+#
+#COLDFIRE = yes
+
 # 
 # cross compiling
 #
 ifneq (yes,$(M68K_ATARI_MINT_CROSS))
-CROSS = no
-#CROSS = yes
+#CROSS = no
+CROSS = yes
 else
 CROSS = yes
 endif
@@ -55,12 +61,10 @@ TOUCH = touch
 MKDIR = mkdir
 SED   = sed
 
-
 #
 # optimizations
 # 
 OPTS = -O2 -fomit-frame-pointer
-
 
 #
 # warning options
@@ -78,7 +82,6 @@ WARN = \
 # default definitions
 #
 DEFINITIONS = 
-
 
 #
 # model type
