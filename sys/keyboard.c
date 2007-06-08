@@ -1713,6 +1713,32 @@ init_keybd(void)
 # endif
 }
 
+# else
+
+long
+sys_keytbl(char *unshift, char *shift, char *caps)
+{
+	return ROM_Keytbl(unshift, shift, caps);
+}
+
+long
+sys_bioskeys(void)
+{
+	return ROM_Bioskeys();
+}
+
+long
+sys_kbrate(ushort del, ushort rep)
+{
+	return ROM_Kbrate(del, rep);
+}
+
+long
+sys_kbdvbase(void)
+{
+	return ROM_Kbdvbase();
+}
+
 # endif	/* NO_AKP_KEYBOARD */
 
 /* EOF */
