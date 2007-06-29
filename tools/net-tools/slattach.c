@@ -122,7 +122,6 @@ mysystem (char *command, ...)
 static void
 do_link (char *device, char *name)
 {
-	extern int __libc_unix_names;  /* Secret MiNTLib feature.  */
 	struct iflink ifl;
 	int sockfd;
 	long r;
@@ -134,10 +133,7 @@ do_link (char *device, char *name)
 		exit (1);
 	}
 
-	if (!__libc_unix_names)
-		unx2dos (device, ifl.device);
-	else
-		strcpy (device, ifl.device);
+	strcpy (ifl.device, device);
 
 	strncpy (ifl.ifname, name, sizeof (ifl.ifname));
 	r = ioctl (sockfd, SIOCSIFLINK, &ifl);
@@ -294,12 +290,10 @@ set_baud (int ttyfd, int fake, int baudidx)
 	}
 
 	/*
-	 * Is this really needed?
-	 */
-#if 0
-	/*
 	 * Changing baud using Rsconf() and Bconmap(); required with
 	 * HSmodem with speeds above 19200 !!!
+	 * note: not only with hsmodem but with freemint's serial
+	 * drivers as well.
 	 */
 	{
 		struct stat st;
@@ -322,7 +316,6 @@ set_baud (int ttyfd, int fake, int baudidx)
 				Bconmap (save);
 		}
 	}
-#endif
 
 	return 0;
 }
