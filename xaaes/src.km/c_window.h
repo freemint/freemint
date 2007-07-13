@@ -36,7 +36,7 @@
 
 static inline struct xa_window * get_top(void) {return S.open_windows.first;}
 
-struct xa_window *create_window(enum locks lock,
+struct xa_window * _cdecl create_window(enum locks lock,
 				SendMessage *message_handler,
 				DoWinMesag *message_doer,
 				struct xa_client *client,
@@ -70,12 +70,12 @@ struct xa_window *root_w(enum locks lock);
 
 XA_WIND_ATTR fix_wind_kind(XA_WIND_ATTR tp);
 
-bool	close_window(enum locks lock, struct xa_window *wind);
-int	open_window(enum locks lock, struct xa_window *w, RECT r);
-void	send_wind_to_bottom(enum locks lock, struct xa_window *w);
-void	move_window(enum locks lock, struct xa_window *wind, bool blit, WINDOW_STATUS newstate, short x, short y, short w, short h);
-void	delete_window(enum locks lock, struct xa_window *wind);
-void	delayed_delete_window(enum locks lock, struct xa_window *wind);
+bool _cdecl	close_window(enum locks lock, struct xa_window *wind);
+int  _cdecl	open_window(enum locks lock, struct xa_window *w, RECT r);
+void _cdecl	send_wind_to_bottom(enum locks lock, struct xa_window *w);
+void _cdecl	move_window(enum locks lock, struct xa_window *wind, bool blit, WINDOW_STATUS newstate, short x, short y, short w, short h);
+void _cdecl	delete_window(enum locks lock, struct xa_window *wind);
+void _cdecl	delayed_delete_window(enum locks lock, struct xa_window *wind);
 void	do_delayed_delete_window(enum locks lock);
 void	display_window(enum locks lock, int which, struct xa_window *w, RECT *clip);
 
@@ -93,7 +93,7 @@ RECT	calc_window(enum locks lock, struct xa_client *client, int request,
 		    XA_WIND_ATTR tp, WINDOW_TYPE dial, int thinframe, bool thinwork,
 		    RECT r);
 
-void	top_window(enum locks lock, bool snd_untopped, bool snd_ontop, struct xa_window *w);
+void _cdecl	top_window(enum locks lock, bool snd_untopped, bool snd_ontop, struct xa_window *w);
 void	bottom_window(enum locks lock, bool snd_untopped, bool snd_ontop, struct xa_window *w);
 void	after_top(enum locks lock, bool untop);
 void	remove_windows(enum locks lock, struct xa_client *client);

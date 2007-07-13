@@ -29,6 +29,7 @@ HEADER = \
 	messages.h \
 	mvdi.h \
 	nkcc.h \
+	ob_inlines.h \
 	obtree.h \
 	rectlist.h \
 	render_obj.h \
@@ -40,6 +41,7 @@ HEADER = \
 	util.h \
 	vaproto.h \
 	version.h \
+	vdi_parms.h \
 	widgets.h \
 	win_draw.h \
 	xa_aes.h \

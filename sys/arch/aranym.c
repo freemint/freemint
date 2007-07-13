@@ -43,7 +43,7 @@ int detect_native_features(void);
 static unsigned long nf_get_id_instr = 0x73004e75UL;
 static unsigned long nf_call_instr = 0x73014e75UL;
 
-static struct nf_ops _nf_ops = { &nf_get_id_instr, &nf_call_instr }; 
+static struct nf_ops _nf_ops = { (void *)&nf_get_id_instr, (void *)&nf_call_instr }; 
 static struct nf_ops *nf_ops = NULL; 
 
 struct nf_ops *
@@ -59,7 +59,7 @@ nf_init(void)
 }
 
 
-const char *
+char *
 nf_name(void)
 {
 	static char buf[64] = "Unknown emulator";

@@ -112,7 +112,7 @@ struct di
 /* cache unit */
 struct unit
 {
-	char	*data;			/* pointer to the data */
+	uchar	*data;			/* pointer to the data */
 	UNIT	*next;			/* next in hash table */
 	UNIT	*wb_prev;		/* prev in writeback queue */
 	UNIT	*wb_next;		/* next in writeback queue */

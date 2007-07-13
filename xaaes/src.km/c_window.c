@@ -118,6 +118,74 @@ clear_wind_handles(void)
 		wind_handle[f] = 0;
 }
 
+/*
+ * Go through and check that all windows belonging to this client are
+ * closed and deleted
+ */
+
+/* HR: This is an exemple of the use of the lock system.
+ *     The function can be called by both server and client.
+ * 
+ *     If called by the server, lock will be preset to winlist,
+ *     resulting in no locking (not needed).
+ *     
+ *     If called by the signal handler, it is unclear, so the
+ *     lock is applied. (doesnt harm).
+ */
+static void
+rw(enum locks lock, struct xa_window *wl, struct xa_client *client)
+{
+	struct xa_window *nwl;
+
+	while (wl)
+	{
+		DIAGS(("-- RW: %lx, next=%lx, prev=%lx",
+			wl, wl->next, wl->prev));
+
+		nwl = wl->next;
+		if (wl != root_window)
+		{
+			if (!client || wl->owner == client)
+			{
+				if ((wl->window_status & XAWS_OPEN))
+				{
+					DIAGS(("-- RW: closing %lx, client=%lx", wl, client));
+					close_window(lock, wl);
+				}
+				DIAGS(("-- RW: deleting %lx", wl));
+				delete_window(lock, wl);
+			}
+		}
+#if GENERATE_DIAGS
+		else
+			DIAGS((" -- RW: skipping root window"));
+#endif
+		wl = nwl;
+	}
+}
+
+void
+remove_windows(enum locks lock, struct xa_client *client)
+{
+	DIAG((D_wind,client,"remove_windows on open_windows list for %s", c_owner(client)));
+	rw(lock, window_list, client);
+	DIAG((D_wind,client,"remove_windows on closed_windows list for %s", c_owner(client)));
+	rw(lock, S.closed_windows.first, client);
+}
+
+void
+remove_all_windows(enum locks lock, struct xa_client *client)
+{
+	DIAG((D_wind, client,"remove_all_windows for %s", c_owner(client)));
+
+	remove_windows(lock, client);
+	DIAG((D_wind, client, "remove_all_windows on open_nlwindows for %s", c_owner(client)));
+	rw(lock, S.open_nlwindows.first, client);
+	DIAG((D_wind, client, "remove_all_windows on closed_nlwindows for %s", c_owner(client)));
+	rw(lock, S.closed_nlwindows.first, client);
+	rw(lock, S.calc_windows.first, client);
+}
+
 inline static void
 calc_shade_height(struct xa_window *wind)
 {
@@ -137,6 +205,7 @@ calc_shade_height(struct xa_window *wind)
 void
 clear_wind_rectlist(struct xa_window *wind)
 {
+	DIAGS(("clear_wind_rectlist: on %d of %s", wind->handle, wind->owner->name));
 	free_rectlist_entry(&wind->rect_list);
 	free_rectlist_entry(&wind->rect_opt);
 	free_rectlist_entry(&wind->rect_toolbar);
@@ -269,9 +338,42 @@ inside_minmax(RECT *r, struct xa_window *wind)
 	}
 }
 
+#if GENERATE_DIAGS
+static char *stacks[] =
+{
+	"HUH!!",
+	"Open windows",
+	"Closed windows",
+	"Open nlwindows",
+	"Closed nlwindows",
+	"Deleted windows",
+	"hidden windows",
+	"calc_windows",
+};
+#endif
+
 void
 wi_remove(struct win_base *b, struct xa_window *w, bool chkfocus)
 {
+#if GENERATE_DIAGS
+	int stack = 0;
+	if (b == &S.open_windows)
+		stack = 1;
+	else if (b == &S.closed_windows)
+		stack = 2;
+	else if (b == &S.open_nlwindows)
+		stack = 3;
+	else if (b == &S.closed_nlwindows)
+		stack = 4;
+	else if (b == &S.deleted_windows)
+		stack = 5;
+	else if (b == &S.hidden_windows)
+		stack = 6;
+	else if (b == &S.calc_windows)
+		stack = 7;
+
+	DIAGA(("wi_put_first: on stack %s", stacks[stack]));
+#endif
 	if (w->prev)
 		w->prev->next = w->next;
 	if (w->next)
@@ -284,15 +386,44 @@ wi_remove(struct win_base *b, struct xa_window *w, bool chkfocus)
 	w->prev = NULL;
 
 	if (b->top == w)
+	{
+		w->window_status &= ~XAWS_FIRST;
 		b->top = b->first;
-	if (chkfocus && w == S.focus)
+		if (b->top)
+			b->first->window_status |= XAWS_FIRST;
+		DIAGA(("wi_remove: remove top %d of %s, newtop %d of %s",
+			w->handle, w->owner->name,
+			b->top ? b->top->handle : -2,
+			b->top ? b->top->owner->name : "no more winds"));
+	}
+	if (chkfocus && w == S.focus) {
+		DIAGA(("wi_remove: remove focus %d of %s", w->handle, w->owner->name));
 		S.focus = NULL;
+	}
 }
 
 void
 wi_put_first(struct win_base *b, struct xa_window *w)
 {
 	struct xa_window **wind;
+#if GENERATE_DIAGS
+	int stack = 0;
+	if (b == &S.open_windows)
+		stack = 1;
+	else if (b == &S.closed_windows)
+		stack = 2;
+	else if (b == &S.open_nlwindows)
+		stack = 3;
+	else if (b == &S.closed_nlwindows)
+		stack = 4;
+	else if (b == &S.deleted_windows)
+		stack = 5;
+	else if (b == &S.hidden_windows)
+		stack = 6;
+	else if (b == &S.calc_windows)
+		stack = 7;
+	DIAGA(("wi_put_first: on stack %s", stacks[stack]));
+#endif
 
 	wind = &b->first;
 
@@ -325,14 +456,40 @@ wi_put_first(struct win_base *b, struct xa_window *w)
 		w->next = NULL;
 	}
 	*wind = w;
+	if (b->top) {
+		DIAGA(("wi_put_first: detopped %d of %s", b->top->handle, b->top->owner->name));
+		b->top->window_status &= ~XAWS_FIRST;
+	}
 	b->top = w;
+	DIAGA(("wi_put_first: new top %d of %s", w->handle, w->owner->name));
+	w->window_status |= XAWS_FIRST;
 }
+
+extern bool diags_always;
 
 /* This a special version of put last; it puts w just befor last. */
 static void
 wi_put_blast(struct win_base *b, struct xa_window *w, bool top, bool belowroot)
 {
 	struct xa_window **wind;
+#if GENERATE_DIAGS
+	int stack = 0;
+	if (b == &S.open_windows)
+		stack = 1;
+	else if (b == &S.closed_windows)
+		stack = 2;
+	else if (b == &S.open_nlwindows)
+		stack = 3;
+	else if (b == &S.closed_nlwindows)
+		stack = 4;
+	else if (b == &S.deleted_windows)
+		stack = 5;
+	else if (b == &S.hidden_windows)
+		stack = 6;
+	else if (b == &S.calc_windows)
+		stack = 7;
+	DIAGA(("wi_put_first: on stack %s", stacks[stack]));
+#endif
 
 	wind = &b->last;
 
@@ -380,34 +537,50 @@ wi_put_blast(struct win_base *b, struct xa_window *w, bool top, bool belowroot)
 	}
 
 	if (top || !b->top)
+	{
+		if (b->top && b->top != w) {
+			b->top->window_status &= ~XAWS_FIRST;
+			DIAGA(("wi_put_blast: detopped %d of %s", b->top->handle, b->top->owner->name));
+		}
 		b->top = w;
+		w->window_status |= XAWS_FIRST;
+		DIAGA(("wi_put_blast: new top %d of %s", b->top->handle, b->top->owner->name));
+	}
 }
 
 void
 wi_move_first(struct win_base *b, struct xa_window *w)
 {
+	DIAGA(("wi_move_first: %d of %s", w->handle, w->owner->name));
+
 	wi_remove(b, w, false);
 
 	if (!(w->window_status & XAWS_SINK))
 		wi_put_first(b, w);
 	else
 		wi_put_blast(b, w, true, false);
+	DIAGA(("wi_move_first: !"));
 }
 
 void
 wi_move_blast(struct win_base *b, struct xa_window *w)
 {
+	DIAGA(("wi_move_blast: %d of %s", w->handle, w->owner->name));
+
 	wi_remove(b, w, false);
 	if ((w->window_status & XAWS_FLOAT))
 		wi_put_first(b, w);
 	else
 		wi_put_blast(b, w, false, false);
+	DIAGA(("wi_move_blast: !"));
 }
 void
 wi_move_belowroot(struct win_base *b, struct xa_window *w)
 {
+	DIAGA(("wi_move_belowroot: %d of %s", w->handle, w->owner->name));
 	wi_remove(b, w, false);
 	wi_put_blast(b, w, false, true);
+	DIAGA(("wi_move_belowroot: !"));
 }
 /*
  * XXX - Ozk:
@@ -759,16 +932,17 @@ send_iredraw(enum locks lock, struct xa_window *wind, short xaw, RECT *r)
 {
 	if (wind == root_window)
 	{
-		if (get_desktop()->owner == C.Aes)
+		if (get_desktop()->owner == C.Aes) {
 			display_window(lock, 0, wind, r);
-		else if (r)
+		} else if (r) {
 			send_app_message(lock, wind, get_desktop()->owner, AMQ_IREDRAW, QMF_NORM,
 					 WM_REDRAW, xaw, ((long)wind) >> 16, ((long)wind) & 0xffff,
 					 r->x, r->y, r->w, r->h);
-		else
+		} else {
 			send_app_message(lock, wind, get_desktop()->owner, AMQ_IREDRAW, QMF_NORM,
 					 WM_REDRAW, xaw, ((long)wind) >> 16, ((long)wind) & 0xffff,
 					 0,0,0,0);
+		}
 	}
 	else
 	{
@@ -791,6 +965,8 @@ generate_redraws(enum locks lock, struct xa_window *wind, RECT *r, short flags)
 {
 	RECT b;
 	
+	DIAGS(("generate_redraws: on %d of %s", wind->handle, wind->owner->name));
+
 	if ((wind->window_status & (XAWS_OPEN|XAWS_HIDDEN)) == XAWS_OPEN)
 	{
 		if (wind != root_window && r && (flags & RDRW_WA) && !is_shaded(wind))
@@ -811,6 +987,7 @@ generate_redraws(enum locks lock, struct xa_window *wind, RECT *r, short flags)
 		if ((flags & RDRW_EXT))
 			send_iredraw(lock, wind, 0, r);
 	}
+	DIAGS(("generate_redraws: !"));
 }
 static void
 remove_from_iredraw_queue(enum locks lock, struct xa_window *wind)
@@ -850,6 +1027,68 @@ uniconify_window(enum locks lock, struct xa_window *wind, RECT *r)
 	set_reiconify_timeout(lock);
 }
 
+void _cdecl
+top_window(enum locks lock, bool snd_untopped, bool snd_ontop, struct xa_window *w)
+{
+// 	display("top_window %d for %s", w->handle, w->owner->proc_name); //client->proc_name);
+	DIAG((D_wind, NULL, "top_window %d for %s",  w->handle, w == root_window ? get_desktop()->owner->proc_name : w->owner->proc_name));
+	if (w == root_window)
+		return;
+
+	if (w->nolist)
+	{
+		setnew_focus(w, NULL, false, snd_ontop, false);
+	}
+	else
+	{
+		pull_wind_to_top(lock, w);
+		setnew_focus(w, NULL, true, snd_untopped, snd_ontop);
+	}
+	set_winmouse(-1, -1);
+}
+
+void _cdecl
+bottom_window(enum locks lock, bool snd_untopped, bool snd_ontop, struct xa_window *w)
+{
+	bool was_top = (is_topped(w) ? true : false);
+	struct xa_window *wl = w->next, *new_focus;
+
+	DIAG((D_wind, w->owner, "bottom_window %d", w->handle));
+
+	if (w == root_window || wl == root_window)
+		/* Don't do anything if already bottom */
+		return;
+
+	if (w->nolist)
+		unset_focus(w);
+	else
+	{
+		/* Send it to the back */
+		send_wind_to_bottom(lock, w);
+		if (was_top)
+		{
+			if (!(TOP_WINDOW->window_status & XAWS_NOFOCUS))
+				new_focus = TOP_WINDOW;
+			else
+			{
+				new_focus = window_list;
+				while (new_focus && new_focus != root_window)
+				{
+					if (!(new_focus->window_status & XAWS_NOFOCUS))
+						break;
+					new_focus = new_focus->next;
+				}
+			}
+			setnew_focus(new_focus, w, true, snd_untopped, snd_ontop);
+		}
+		
+		DIAG((D_wind, w->owner, " - menu_owner %s, w_list_owner %s",
+			t_owner(get_menu()), w_owner(window_list)));
+
+		update_windows_below(lock, &w->r, NULL, wl, w);
+	}
+}
+
 XA_WIND_ATTR
 fix_wind_kind(XA_WIND_ATTR tp)
 {
@@ -882,7 +1121,7 @@ fix_wind_kind(XA_WIND_ATTR tp)
  *
  * needed a dynamiccally sized frame
  */
-struct xa_window *
+struct xa_window * _cdecl
 create_window(
 	enum locks lock,
 	SendMessage *message_handler,
@@ -969,13 +1208,13 @@ create_window(
 	if (dial & created_for_ALERT)
 	{
 		w->class = WINCLASS_ALERT;
-		w->active_theme = client->widget_theme->alert; //w->widget_theme->alert;
+		w->active_theme = client->widget_theme->alert;
 		w->window_status |= XAWS_FLOAT;
 	}
 	else if (dial & created_for_POPUP)
 	{
 		w->class = WINCLASS_POPUP;
-		w->active_theme = client->widget_theme->popup; //w->widget_theme->popup;
+		w->active_theme = client->widget_theme->popup;
 		w->window_status |= XAWS_FLOAT|XAWS_NOFOCUS;
 	}
 	else if (dial & created_for_SLIST)
@@ -987,7 +1226,7 @@ create_window(
 	else
 	{
 		w->class = WINCLASS_CLIENT;
-		w->active_theme = client->widget_theme->client; //w->widget_theme->client;
+		w->active_theme = client->widget_theme->client;
 	}
 	
 	w->active_theme->links++;
@@ -1194,7 +1433,7 @@ change_window_attribs(enum locks lock,
 		*remember = w->r;
 }
 
-int
+int _cdecl
 open_window(enum locks lock, struct xa_window *wind, RECT r)
 {
 	struct xa_window *wl = window_list;
@@ -1204,8 +1443,9 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 	DIAG((D_wind, wind->owner, "open_window %d for %s to %d/%d,%d/%d status %x",
 		wind->handle, c_owner(wind->owner), r.x,r.y,r.w,r.h, wind->window_status));
 
-	if (C.redraws)
+	if (C.redraws) {
 		yield();
+	}
 
 	if ((wind->window_status & XAWS_OPEN))
 	{
@@ -1292,11 +1532,11 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 		wi_put_blast(&S.open_windows, wind, false, true);
 		wind->window_status |= XAWS_BELOWROOT;
 	}
-	else
+	else {
 		wi_put_first(&S.open_windows, wind);
-
+	}
 	/* New top window - change the cursor to this client's choice */
-	graf_mouse(wind->owner->mouse, wind->owner->mouse_form, wind->owner, false);
+	xa_graf_mouse(wind->owner->mouse, wind->owner->mouse_form, wind->owner, false);
 
 	if (is_iconified(wind))
 	{
@@ -1323,9 +1563,10 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 		{
 			wind->r.h = wind->sh;
 
-			if (wind->send_message)
+			if (wind->send_message) {
 				wind->send_message(lock, wind, NULL, AMQ_CRITICAL, QMF_CHKDUP,
 					WM_SHADED, 0,0, wind->handle, 0,0,0,0);
+			}
 		}
 	}
 	wind->window_status |= XAWS_OPEN;
@@ -1340,15 +1581,13 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 		set_active_client(lock, wind->owner);
 		swap_menu(lock|desk, wind->owner, NULL, SWAPM_DESK); // | SWAPM_TOPW);
 	}
-
 	make_rect_list(wind, true, RECT_SYS);
-	
 	/*
 	 * Context dependant widgets must always follow the window
 	 * movements
 	 */
 	move_ctxdep_widgets(wind);
-	
+
 	/* Is this a 'preserve own background' window? */
 	if (wind->active_widgets & STORE_BACK)
 	{
@@ -1386,10 +1625,12 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 		rl = wind->rect_list.start;
 		while (rl)
 		{
-			if (xa_rect_clip(&wind->r, &rl->r, &clip))
+			if (xa_rect_clip(&wind->r, &rl->r, &clip)) {
 				generate_redraws(lock, wind, &clip/*&wind->r*/, RDRW_ALL);
+			}
 			rl = rl->next;
 		}
+
 	}
 	else
 	{
@@ -1484,13 +1725,14 @@ draw_window(enum locks lock, struct xa_window *wind, const RECT *clip)
 				DIAG((D_wind, wind->owner, "draw_window %d: display widget %d (func=%lx)",
 					wind->handle, f, widg->m.r.draw));
 				
+
 				if (widg->m.properties & WIP_WACLIP)
 				{
 					if (xa_rect_clip(clip, &wind->wa, &r))
 					{
 						(*v->api->set_clip)(v, &r);
 // 						if (f == XAW_TOOLBAR) display("drawing toolbar (waclip) for %s", wind->owner->name);
-						widg->m.r.draw(wind, widg, &r);
+						(*widg->m.r.draw)(wind, widg, &r);
 						(*v->api->set_clip)(v, clip);
 					}
 				}
@@ -1634,7 +1876,7 @@ pull_wind_to_top(enum locks lock, struct xa_window *w)
 	return w;
 }
 
-void
+void _cdecl
 send_wind_to_bottom(enum locks lock, struct xa_window *w)
 {
 	struct xa_window *wl;
@@ -1663,7 +1905,7 @@ send_wind_to_bottom(enum locks lock, struct xa_window *w)
 /*
  * Change an open window's coordinates, updating rectangle lists as appropriate
  */
-void
+void _cdecl
 move_window(enum locks lock, struct xa_window *wind, bool blit, WINDOW_STATUS newstate, short X, short Y, short W, short H)
 {
 	IFDIAG(struct xa_client *client = wind->owner;)
@@ -1783,7 +2025,7 @@ move_window(enum locks lock, struct xa_window *wind, bool blit, WINDOW_STATUS ne
  * Also places window in the closed_windows list but does NOT delete it
  * - the window will still exist after this call.
  */
-bool
+bool _cdecl
 close_window(enum locks lock, struct xa_window *wind)
 {
 	struct xa_window *wl, *w = NULL;
@@ -1842,7 +2084,7 @@ close_window(enum locks lock, struct xa_window *wind)
 			unset_focus(wind);
 		}
 
-		if (wind->active_widgets & STORE_BACK)
+		if ((wind->active_widgets & STORE_BACK))
 			(*xa_vdiapi->form_restore)(0, wind->r, &(wind->background));
 		
 		clear_wind_rectlist(wind);
@@ -1921,13 +2163,13 @@ close_window(enum locks lock, struct xa_window *wind)
 				default:
 				case 1:	/* Top app who owns window below closed one */
 				{
-					if ((w = TOP_WINDOW))
+					if ((w = TOP_WINDOW) && w != root_window)
 					{
 						do
 						{
 							if (!(w->window_status & (XAWS_ICONIFIED|XAWS_HIDDEN|XAWS_NOFOCUS)) && !(w->owner->status & CS_EXITING))
 								break;
-						} while (w != root_window && (w = w->next));
+						} while ((w = w->next) && w != root_window);
 					}
 					if (w && w != root_window)
 					{
@@ -1965,13 +2207,14 @@ free_standard_widgets(struct xa_window *wind)
 {
 	int i;
 	
-	DIAGS(("free_standard_widgets for window %d, owner %s", wind->handle, wind->owner->name));
+	DIAGS(("free_standard_widgets: wind %d of %s", wind->handle, wind->owner->name));
 	
 	for (i = 0; i < XA_MAX_WIDGETS; i++)
 	{
 		//DIAGS(("call remove_widget for widget %d", i));
 		remove_widget(0, wind, i);
 	}
+	DIAGS(("free_standard_widgets: !"));
 }
 
 static void
@@ -1986,7 +2229,7 @@ delete_window1(enum locks lock, struct xa_window *wind)
 	{
 		C.hover_wind = NULL;
 		C.hover_widg = NULL;
-		graf_mouse(ARROW, NULL, NULL, false);
+		xa_graf_mouse(ARROW, NULL, NULL, false);
 	}
 
 //	cancel_do_winmesag(lock, wind);
@@ -2059,7 +2302,7 @@ CE_delete_window(enum locks lock, struct c_event *ce, bool cancel)
 		delete_window1(lock, ce->ptr1);
 }
 
-void
+void _cdecl
 delete_window(enum locks lock, struct xa_window *wind)
 {
 	/* We must be sure it is in the correct list. */
@@ -2090,7 +2333,7 @@ delete_window(enum locks lock, struct xa_window *wind)
 	//delete_window1(lock, wind);
 }
 
-void
+void _cdecl
 delayed_delete_window(enum locks lock, struct xa_window *wind)
 {
 	DIAG((D_wind, wind->owner, "delayed_delete_window %d for %s: open? %s",
@@ -2201,6 +2444,8 @@ update_windows_below(enum locks lock, const RECT *old, RECT *new, struct xa_wind
 	RECT clip;
 	enum locks wlock = lock | winlist;
 
+	DIAGS(("update_windows_below: ..."));
+
 	if (!wl)
 		return;
 	do
@@ -2241,6 +2486,8 @@ update_windows_below(enum locks lock, const RECT *old, RECT *new, struct xa_wind
 			}
 		}		
 	} while (wl != root_window && (wl = ((!wl->next && wl->nolist) ? window_list : wl->next)));
+
+	DIAGS(("update_windows_below: !"));
 }
 
 /*

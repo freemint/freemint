@@ -64,9 +64,10 @@ static void   _cdecl m_kfree     (void *place) { _kfree (place, "xfs/xdd"); }
 static void * _cdecl m_umalloc   (ulong size)  { return _umalloc (size, "xfs/xdd"); }
 static void   _cdecl m_ufree     (void *place) { _ufree (place, "xfs/xdd"); }
 
+#ifdef NONBLOACKING_DMA
 static void * _cdecl m_dmabuf_alloc(ulong size, short cm)
 { return _dmabuf_alloc (size, cm, "xfs/xdd"); }
-
+#endif
 
 static LOCK * _cdecl
 denylock_curproc(LOCK *list, LOCK *newlock)

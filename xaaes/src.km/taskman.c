@@ -535,7 +535,7 @@ CHlp_aesmsg(struct xa_client *client)
 				}
 				else if (m->m[3] != 0)
 				{
-					sprintf(alert, sizeof(alert), "[1][ Snapper could not save snap! | ERROR: %d ][ Ok ]", m->m[3]);
+					sprintf(alert, sizeof(alert), /*scrn_snap_serr*/"[1][ Snapper could not save snap! | ERROR: %d ][ Ok ]", m->m[3]);
 					do_form_alert(0, client, 1, alert, "XaAES");
 				}
 				break;
@@ -545,7 +545,7 @@ CHlp_aesmsg(struct xa_client *client)
 	}
 }
 
-static char sdalert[] = "[2][What do you want to snap?][Block|Full screen|Top Window|Cancel]";
+static char sdalert[] = /*scrn_snap_what*/ "[2][What do you want to snap?][Block|Full screen|Top Window|Cancel]";
 
 void
 screen_dump(enum locks lock, struct xa_client *client, bool open)
@@ -554,13 +554,14 @@ screen_dump(enum locks lock, struct xa_client *client, bool open)
 
 	if ((dest_client = get_app_by_procname("xaaesnap")))
 	{
-		display("send dump message to %s", dest_client->proc_name);
+// 		display("send dump message to %s", dest_client->proc_name);
 		if (update_locked() != client->p && lock_screen(client->p, true))
 		{
 			short msg[8] = {0x5354, client->p->pid, 0, 0, 0,0,200,200};
 			RECT r, d = {0};
 			short b = 0, x, y;
 			bool doit = true;
+			AESPB *a = C.Hlp_pb;
 
 			C.update_lock = client->p;
 			C.updatelock_count++;
@@ -570,9 +571,9 @@ screen_dump(enum locks lock, struct xa_client *client, bool open)
 			
 // 			display("intout %d", C.Hlp_pb->intout[0]);
 
-			if (C.Hlp_pb->intout[0] == 1) //(open)
+			if (a->intout[0] == 1) //(open)
 			{
-				graf_mouse(THIN_CROSS, NULL,NULL, false);
+				xa_graf_mouse(THIN_CROSS, NULL,NULL, false);
 				while (!b)
 					check_mouse(client, &b, &x, &y);
 
@@ -582,9 +583,9 @@ screen_dump(enum locks lock, struct xa_client *client, bool open)
 				r.h = 0;
 				rubber_box(client, SE, r, &d, 0,0, root_window->r.h, root_window->r.w, &r);
 			}
-			else if (C.Hlp_pb->intout[0] == 2)
+			else if (a->intout[0] == 2)
 				r = root_window->r;
-			else if (C.Hlp_pb->intout[0] == 3)
+			else if (a->intout[0] == 3)
 			{
 				struct xa_window *wind = TOP_WINDOW;
 
@@ -597,7 +598,7 @@ screen_dump(enum locks lock, struct xa_client *client, bool open)
 					C.updatelock_count--;
 					C.update_lock = NULL;
 					unlock_screen(client->p);
-					do_form_alert(lock, client, 1, "[1][Cannot snap topwindow as | parts of it is offscreen!][OK]", "XaAES");
+					do_form_alert(lock, client, 1, /*scrn_snap_twc*/"[1][Cannot snap topwindow as | parts of it is offscreen!][OK]", "XaAES");
 					doit = false;
 				}
 			}
@@ -611,7 +612,7 @@ screen_dump(enum locks lock, struct xa_client *client, bool open)
 				msg[6] = r.w;
 				msg[7] = r.h;
 				send_a_message(lock, dest_client, AMQ_NORM, 0, (union msg_buf *)msg);
-// 				graf_mouse(ARROW, NULL,NULL, false);
+// 				xa_graf_mouse(ARROW, NULL,NULL, false);
 			}
 			else
 			{
@@ -621,11 +622,11 @@ screen_dump(enum locks lock, struct xa_client *client, bool open)
 			}
 			client->usr_evnt = 0;
 			client->waiting_for = XAWAIT_MULTI|MU_MESAG;
-			client->waiting_pb = C.Hlp_pb;
+			client->waiting_pb = a;
 		}
 	}
 	else
-		do_form_alert(lock, client, 1, "[1]['xaaesnap' process not found.|Start 'xaaesnap.prg' and try again|Later XaAES will start the snapper|according to userconfiguration][OK]", "XaAES");
+		do_form_alert(lock, client, 1, /*scrn_snap_notfound*/"[1]['xaaesnap' process not found.|Start 'xaaesnap.prg' and try again|Later XaAES will start the snapper|according to userconfiguration][OK]", "XaAES");
 }
 
 static void
@@ -671,7 +672,7 @@ taskmanager_form_exit(struct xa_client *Client,
 			{
 				if (client->type & (APP_AESTHREAD|APP_AESSYS))
 				{
-					ALERT(("Not a good idea, I tell you!"));
+					ALERT(/*kill_aes_thread*/("Not a good idea, I tell you!"));
 				}
 				else
 					ikill(client->p->pid, SIGKILL);
@@ -696,7 +697,7 @@ taskmanager_form_exit(struct xa_client *Client,
 			{
 				if (client->type & (APP_AESTHREAD|APP_AESSYS))
 				{
-					ALERT(("Cannot terminate AES system proccesses!"));
+					ALERT((/*kill_aes_thread*/"Cannot terminate AES system proccesses!"));
 				}
 				else
 					send_terminate(lock, client, AP_TERM);
@@ -758,7 +759,7 @@ taskmanager_form_exit(struct xa_client *Client,
 		case TM_QUIT:
 		{
 			DIAGS(("taskmanager: quit XaAES"));
-			dispatch_shutdown(0);
+			dispatch_shutdown(0,0);
 
 			object_deselect(wt->tree + TM_QUIT);
 			redraw_toolbar(lock, wind, TM_QUIT);
@@ -767,7 +768,7 @@ taskmanager_form_exit(struct xa_client *Client,
 		case TM_REBOOT:
 		{
 			DIAGS(("taskmanager: reboot system"));
-			dispatch_shutdown(REBOOT_SYSTEM);
+			dispatch_shutdown(REBOOT_SYSTEM,0);
 
 			object_deselect(wt->tree + TM_REBOOT);
 			redraw_toolbar(lock, wind, TM_REBOOT);
@@ -776,7 +777,7 @@ taskmanager_form_exit(struct xa_client *Client,
 		case TM_HALT:
 		{
 			DIAGS(("taskmanager: halt system"));
-			dispatch_shutdown(HALT_SYSTEM);
+			dispatch_shutdown(HALT_SYSTEM, 0);
 
 			object_deselect(wt->tree + TM_HALT);
 			redraw_toolbar(lock, wind, TM_HALT);
@@ -785,7 +786,7 @@ taskmanager_form_exit(struct xa_client *Client,
 		case TM_COLD:
 		{
 			DIAGS(("taskmanager: coldstart system"));
-			dispatch_shutdown(COLDSTART_SYSTEM);
+			dispatch_shutdown(COLDSTART_SYSTEM, 0);
 			object_deselect(wt->tree + TM_COLD);
 			redraw_toolbar(lock, wind, TM_COLD);
 			break;
@@ -845,7 +846,7 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 				 SIF_SELECTABLE|SIF_AUTOSELECT|SIF_ICONINDENT,
 				 NULL, NULL, NULL, NULL, NULL, NULL,
 				 NULL, NULL, NULL, NULL,
-				 "Client Applications", NULL, NULL, 255);
+				 /*tm_client_apps*/"Client Applications", NULL, NULL, 255);
 
 		if (!list) goto fail;
 
@@ -882,7 +883,7 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 		wind->window_status |= XAWS_NODELETE;
 		
 		/* Set the window title */
-		set_window_title(wind, " Task Manager ", false);
+		set_window_title(wind, /*tm_manager*/" Task Manager ", false);
 
 		wt = set_toolbar_widget(lock, wind, client, obtree, inv_aesobj(), 0/*WIP_NOTEXT*/, STW_ZEN, NULL, &or);
 		wt->exit_form = taskmanager_form_exit;
@@ -920,6 +921,7 @@ fail:
 /*     Common resolution mode change functions/stuff		*/
 /* ************************************************************ */
 // static struct xa_window *reschg_win = NULL;
+#if 0
 static int
 reschg_destructor(enum locks lock, struct xa_window *wind)
 {
@@ -929,8 +931,8 @@ reschg_destructor(enum locks lock, struct xa_window *wind)
 // 	reschg_win = NULL;
 	return true;
 }
-
-static struct xa_window *
+#endif
+struct xa_window * _cdecl
 create_dwind(enum locks lock, XA_WIND_ATTR tp, char *title, struct xa_client *client, struct widget_tree *wt, FormExit(*f), WindowDisplay(*d))
 {
 	struct xa_window *wind;
@@ -973,6 +975,7 @@ create_dwind(enum locks lock, XA_WIND_ATTR tp, char *title, struct xa_client *cl
 /* ************************************************************ */
 /*     Atari resolution mode change functions			*/
 /* ************************************************************ */
+#if 0
 static void
 set_resmode_obj(XA_TREE *wt, short res)
 {
@@ -1031,7 +1034,7 @@ resmode_form_exit(struct xa_client *Client,
 			/* and release */
 			close_window(lock, wind);
 			delayed_delete_window(lock, wind);
-			dispatch_shutdown(RESOLUTION_CHANGE/*0*/);
+			dispatch_shutdown(RESOLUTION_CHANGE/*0*/, next_res);
 			break;
 		}
 		case RC_CANCEL:
@@ -1100,6 +1103,7 @@ fail:
 	if (obtree)
 		free_object_tree(client, obtree);
 }
+#ifndef ST_ONLY
 /* ************************************************************ */
 /*     Falcon resolution mode change functions			*/
 /* ************************************************************ */
@@ -1183,7 +1187,7 @@ reschg_form_exit(struct xa_client *Client,
 			/* and release */
 			close_window(lock, wind);
 			delayed_delete_window(lock, wind);
-			dispatch_shutdown(RESOLUTION_CHANGE);
+			dispatch_shutdown(RESOLUTION_CHANGE, next_res);
 			break;
 		}
 		case RC_CANCEL:
@@ -1251,6 +1255,7 @@ fail:
 	if (obtree)
 		free_object_tree(client, obtree);
 }
+#endif
 /* ************************************************************ */
 /*     Milan resolution mode change functions			*/
 /* ************************************************************ */
@@ -1274,7 +1279,6 @@ struct resinf
 	short x;
 	short y;
 };
-
 struct milres_parm
 {
 	struct xa_data_hdr h;
@@ -1295,6 +1299,7 @@ struct milres_parm
 	POPINFO pinf_depth;
 	POPINFO pinf_res;
 };
+#ifndef ST_ONLY
 static void
 milan_reschg_form_exit(struct xa_client *Client,
 		      struct xa_window *wind,
@@ -1397,7 +1402,7 @@ milan_reschg_form_exit(struct xa_client *Client,
 			next_res |= 0x80000000;
 			close_window(lock, wind);
 			delayed_delete_window(lock, wind);
-			dispatch_shutdown(RESOLUTION_CHANGE);
+			dispatch_shutdown(RESOLUTION_CHANGE, next_res);
 			break;
 		}
 		case RCHM_CANCEL:
@@ -1445,6 +1450,7 @@ count_milan_res(long num_modes, short planes, struct videodef *modes)
 	}
 	return count;
 }
+#endif
 
 static void *
 nxt_mdepth(short item, void **data)
@@ -1479,11 +1485,12 @@ nxt_mdepth(short item, void **data)
 	
 	return ret;
 };
+
 static char idx2planes[] =
 {
 	1,2,4,8,15,16,24,32
 };
-
+#ifndef ST_ONLY
 static void *
 nxt_mres(short item, void **data)
 {
@@ -1524,7 +1531,7 @@ nxt_mres(short item, void **data)
 	}
 	return ret;
 }
-
+#endif
 static int
 instchrm_wt(struct xa_client *client, struct widget_tree **wt, OBJECT *obtree)
 {
@@ -1576,7 +1583,7 @@ delete_milres_parm(void *_p)
 		kfree(p);
 	}
 }
-
+#ifndef ST_ONLY
 static struct milres_parm *
 check_milan_res(struct xa_client *client, short mw)
 {
@@ -1676,6 +1683,7 @@ exit:
 	}	
 	return p;
 }
+#endif
 
 static short
 milan_setdevid(struct widget_tree *wt, struct milres_parm *p, short devid)
@@ -1731,7 +1739,7 @@ milan_setdevid(struct widget_tree *wt, struct milres_parm *p, short devid)
 	obj_set_g_popup(wt, aesobj(wt->tree, RCHM_RES), &p->pinf_res);
 	return found_devid;
 }
-
+#ifndef ST_ONLY
 void
 open_milan_reschange(enum locks lock, struct xa_client *client, bool open)
 {
@@ -1786,6 +1794,7 @@ fail:
 	if (obtree)
 		free_object_tree(client, obtree);
 }
+#endif
 /* ************************************************************ */
 /*     Nova resolution mode change functions			*/
 /* ************************************************************ */
@@ -1803,7 +1812,6 @@ nova_reschg_form_exit(struct xa_client *Client,
 	Sema_Up(clients);
 	lock |= clients;
 	
-// 	wt->current = fr->obj;
 	wt->which = 0;
 
 	switch (aesobj_item(&fr->obj))
@@ -1894,7 +1902,7 @@ nova_reschg_form_exit(struct xa_client *Client,
 			close_window(lock, wind);
 			delayed_delete_window(lock, wind);
 			kfree(p->modes);
-			dispatch_shutdown(RESOLUTION_CHANGE);
+			dispatch_shutdown(RESOLUTION_CHANGE, next_res);
 			break;
 		}
 		case RCHM_CANCEL:
@@ -2142,6 +2150,7 @@ fail:
 		free_object_tree(client, obtree);
 	
 }
+#endif
 
 /*
  * client still running dialog
@@ -2262,7 +2271,7 @@ open_csr(enum locks lock, struct xa_client *client, struct xa_client *running)
 			t->te_ptext[8] = '\0';
 		}
 			
-		wind = create_dwind(lock, 0, " Shutdown ", client, wt, csr_form_exit, csr_destructor);
+		wind = create_dwind(lock, 0, /*txt_shutdown*/" Shutdown ", client, wt, csr_form_exit, csr_destructor);
 		if (!wind)
 			goto fail;
 		htd->w_csr = wind;
@@ -2370,7 +2379,7 @@ open_launcher(enum locks lock, struct xa_client *client)
 	fs = &aes_fsel_data;
 	open_fileselector(lock, client, fs,
 			  cfg.launch_path,
-			  NULL, "Launch Program",
+			  NULL, /*txt_launch_prg*/"Launch Program",
 			  handle_launcher, NULL, NULL);
 }
 #endif
@@ -2409,7 +2418,7 @@ sysalerts_form_exit(struct xa_client *Client,
 			struct scroll_info *list = object_get_slist(wt->tree + SYSALERT_LIST);
 			struct sesetget_params p = { 0 };
 			
-			p.arg.txt = "Alerts";
+			p.arg.txt = /*txt_alerts*/"Alerts";
 			list->get(list, NULL, SEGET_ENTRYBYTEXT, &p);
 			if (p.e)
 				list->empty(list, p.e, 0);
@@ -2484,8 +2493,8 @@ open_systemalerts(enum locks lock, struct xa_client *client, bool open)
 		{
 // 			struct scroll_info *list = object_get_slist(obtree + SYSALERT_LIST);
 			struct scroll_content sc = {{ 0 }};
-			char a[] = "Alerts";
-			char e[] = "Environment";
+			char a[] = /*txt_alerts*/"Alerts";
+			char e[] = /*txt_environment*/"Environment";
 
 			sc.t.text = a;
 			sc.t.strings = 1;
@@ -2508,7 +2517,7 @@ open_systemalerts(enum locks lock, struct xa_client *client, bool open)
 			struct scroll_content sc = {{ 0 }};
 
 			p.idx = -1;
-			p.arg.txt = "Environment";
+			p.arg.txt = /*txt_environment*/"Environment";
 			p.level.flags = 0;
 			p.level.curlevel = 0;
 			p.level.maxlevel = 0;
@@ -2553,7 +2562,7 @@ open_systemalerts(enum locks lock, struct xa_client *client, bool open)
 		list->set(list, NULL, SESET_PRNTWIND, (long)wind, NOREDRAW);
 		
 		/* Set the window title */
-		set_window_title(wind, " System window & Alerts log", false);
+		set_window_title(wind, /*wint_sysalert*/" System window & Alerts log", false);
 
 		wt = set_toolbar_widget(lock, wind, client, obtree, inv_aesobj(), 0/*WIP_NOTEXT*/, STW_ZEN, NULL, &or);
 		wt->exit_form = sysalerts_form_exit;
@@ -2615,7 +2624,7 @@ do_system_menu(enum locks lock, int clicked_title, int menu_item)
 		/* Quit XaAES */
 		case SYS_MN_QUIT:
 			DIAGS(("Quit XaAES"));
-			dispatch_shutdown(0);
+			dispatch_shutdown(0, 0);
 			break;
 
 		/* Open the "Task Manager" window */
@@ -2669,9 +2678,9 @@ do_system_menu(enum locks lock, int clicked_title, int menu_item)
 		case SYS_MN_DESK:
 		{
 			if (C.DSKpid >= 0)
-				ALERT(("XaAES: AES shell already running!"));
+				ALERT((/*shell_running*/"XaAES: AES shell already running!"));
 			else if (!*C.desk)
-				ALERT(("XaAES: No AES shell set; See 'shell =' configuration variable in xaaes.cnf"));
+				ALERT((/*no_shell*/"XaAES: No AES shell set; See 'shell =' configuration variable in xaaes.cnf"));
 			else
 				C.DSKpid = launch(lock, 0,0,0, C.desk, "\0", C.Aes);
 			break;

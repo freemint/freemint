@@ -63,7 +63,7 @@ void cancel_tpcevents(struct xa_client *client);
 void post_tpcevent(struct xa_client *client, void (*func)(enum locks, struct c_event *, bool cancel), void *ptr1, void *ptr2, int d0, int d1, RECT *r, const struct moose_data *md);
 short dispatch_tpcevent(struct xa_client *client);
 
-void dispatch_shutdown(int flags);
+void _cdecl dispatch_shutdown(short flags, unsigned long arg);
 void k_main(void *);
 
 extern int aessys_timeout;

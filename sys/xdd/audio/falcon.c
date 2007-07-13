@@ -38,12 +38,13 @@ static long		fal_mix_ioctl (short cmd, void *arg);
 /*
  * install things
  */
+long fal_init(struct device *dev);
 long
 fal_init (struct device *dev)
 {
 	long snd_cookie;
 
-	if (get_toscookie (COOKIE__SND, &snd_cookie) ||
+	if (get_toscookie (COOKIE__SND, (unsigned long *)&snd_cookie) ||
 	    !(snd_cookie & ( SND_16BIT | SND_DSP | SND_MATRIX) ) ) {
 		/*
 		 * _SND cookie not set or no Falcon
@@ -310,13 +311,13 @@ fal_ioctl (mode, buf)
 
 #define FAL_SCALE(v)	(((v)*15/100) << 4)
 #define FAL_CHECK(v)	((v) >= 0 && (v) <= 100)
-
+long fal_mix_init(struct device *dev);
 long
 fal_mix_init (struct device *dev)
 {
 	long snd_cookie;
 
-	if (get_toscookie (COOKIE__SND, &snd_cookie) ||
+	if (get_toscookie (COOKIE__SND, (unsigned long *)&snd_cookie) ||
 	    !(snd_cookie & (SND_16BIT|SND_DSP|SND_MATRIX))) {
 		/*
 		 * _SND cookie not set or no Falcon compatible

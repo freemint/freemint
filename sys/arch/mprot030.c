@@ -554,7 +554,7 @@ get_prot_mode(MEMREGION *r)
 }
 
 void
-mark_region(MEMREGION *region, short mode, short cmode)
+mark_region(MEMREGION *region, short mode, short cmode __attribute__((unused)))
 {
 	if (no_mem_prot)
 		return;
@@ -631,7 +631,7 @@ gotvals:
 /* special version of mark_region, used for attaching (mode == PROT_P)
    and detaching (mode == PROT_I) a memory region to/from a process. */
 void
-mark_proc_region(struct memspace *p_mem, MEMREGION *region, short mode, short pid)
+mark_proc_region(struct memspace *p_mem, MEMREGION *region, short mode, short pid __attribute__((unused)))
 {
 	if (no_mem_prot)
 		return;
@@ -915,7 +915,11 @@ init_page_table (PROC *proc, struct memspace *p_mem)
 	tbl_bf[i].tbl_address = (long_desc *)((i << 24) | 0xf0000000L);
     }
     tbl_bf[0xf] = tbl_b0[0];
-    *(ulong *)(&(tbl_bf[0xf].tbl_address)) |= 1;
+//     *(ulong *) (&(tbl_bf[0xf].tbl_address)) |= 1;
+    {
+	unsigned long tbla = (unsigned long)tbl_bf[0xf].tbl_address | 1;
+	tbl_bf[0xf].tbl_address = (struct long_desc *)tbla;
+    }
 
     proc->ctxt[0].crp.limit = 0x7fff;	/* disable limit function */
     proc->ctxt[0].crp.dt = 3;		/* points to valid 8-byte entries */
@@ -967,7 +971,7 @@ mem_prot_special(PROC *proc)
 
 {
     MEMREGION **mr;
-    int i;
+    unsigned int i;
     unsigned char mode;
 
 
@@ -996,7 +1000,7 @@ mem_prot_special(PROC *proc)
 
     mr = proc->p_mem->mem;
 
-    for (i=0; i < proc->p_mem->num_reg; i++, mr++) {
+    for (i = 0; i < proc->p_mem->num_reg; i++, mr++) {
 	if (*mr) {
 	    mode = global_mode_table[((*mr)->loc >> 13)];
 	    if (mode == PROT_P)
@@ -1121,7 +1125,11 @@ QUICKDUMP(void)
  */
 
 void
+#ifdef DEBUG_INFO
 BIG_MEM_DUMP(int bigone, PROC *proc)
+#else
+BIG_MEM_DUMP(int bigone __attribute__((unused)), PROC *proc __attribute__((unused)))
+#endif
 {
 #ifdef DEBUG_INFO
     char linebuf[128];
@@ -1131,7 +1139,7 @@ BIG_MEM_DUMP(int bigone, PROC *proc)
     PROC *p;
     ulong loc;
     short owner;
-    short i;
+    unsigned int i;
     short first;
 
 
@@ -1159,7 +1167,7 @@ BIG_MEM_DUMP(int bigone, PROC *proc)
 			continue;
 		    if (p->p_mem && p->p_mem->mem) {
 			mr = p->p_mem->mem;
-			for (i=0; i < p->p_mem->num_reg; i++, mr++) {
+			for (i = 0; i < p->p_mem->num_reg; i++, mr++) {
 			    if (*mr == mp) {
 				owner = p->pid;
 				goto gotowner;
@@ -1219,7 +1227,7 @@ int
 mem_access_for(PROC *p, ulong start, long nbytes)
 {
 	MEMREGION **mr;
-	int i;
+	unsigned int i;
 
 	if (no_mem_prot) return -1;
 	if (start >= (ulong)p && start+nbytes <= (ulong)(p+1))

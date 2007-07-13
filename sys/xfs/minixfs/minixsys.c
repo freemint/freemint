@@ -371,15 +371,25 @@ m_getxattr (fcookie *fc, XATTR *xattr)
 	
 	if (native_utc)
 	{
+		SET_XATTR_TD(xattr,m,rip.i_mtime);
+		SET_XATTR_TD(xattr,a,rip.i_atime);
+		SET_XATTR_TD(xattr,c,rip.i_ctime);
+#if 0
 		*((long *) &(xattr->mtime)) = rip.i_mtime;
 		*((long *) &(xattr->atime)) = rip.i_atime;
 		*((long *) &(xattr->ctime)) = rip.i_ctime;
+#endif
 	}
 	else
 	{
+		SET_XATTR_TD(xattr,m,dostime(rip.i_mtime));
+		SET_XATTR_TD(xattr,a,dostime(rip.i_atime));
+		SET_XATTR_TD(xattr,c,dostime(rip.i_ctime));
+#if 0
 		*((long *) &(xattr->mtime)) = dostime (rip.i_mtime);
 		*((long *) &(xattr->atime)) = dostime (rip.i_atime);
 		*((long *) &(xattr->ctime)) = dostime (rip.i_ctime);
+#endif
 	}
 	
 	xattr->reserved2 = 0;

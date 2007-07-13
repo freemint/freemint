@@ -373,7 +373,7 @@ do_winmesag(enum locks lock,
 		DIAGS((" --==-- do_winmesag: no do_message!"));
 #endif
 }
-	
+
 static void
 #if GENERATE_DIAGS
 add_msg_2_queue(struct xa_client *client, struct xa_aesmsg_list **queue, union msg_buf *msg, short qmflags)
@@ -388,7 +388,7 @@ add_msg_2_queue(struct xa_aesmsg_list **queue, union msg_buf *msg, short qmflags
 	{
 		short *old;
 
-		DIAG((D_m, NULL, "WM_REDRAW rect %d/%d,%d/%d", new[4], new[5], new[6], new[7]));
+		DIAG((D_m, NULL, "WM_REDRAW for %s, rect %d/%d,%d/%d", client->name, new[4], new[5], new[6], new[7]));
 		
 		if (!new[3])
 			display("WM_REDRAW on root-window???");
@@ -428,7 +428,7 @@ add_msg_2_queue(struct xa_aesmsg_list **queue, union msg_buf *msg, short qmflags
 		if (msg)
 		{
 			new_msg = kmalloc(sizeof(*new_msg));
-			DIAG((D_m, NULL, "new WM_REDRAW message %lx", new_msg));
+			DIAG((D_m, NULL, "new WM_REDRAW message %lx for %s", new_msg, client->name));
 			if (new_msg)
 			{
 				*next = new_msg;
@@ -594,7 +594,7 @@ queue_message(enum locks lock, struct xa_client *client, short amq, short qmf, u
 {
 	
 	amq &= ~AMQ_ANYCASE;
-	
+
 	switch (amq)
 	{
 		case AMQ_NORM:

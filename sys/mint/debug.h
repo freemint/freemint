@@ -41,7 +41,7 @@ extern int debug_logging;
 
 # define FUNCTION __FUNCTION__
 
-# else
+# else /* DEBUG_INFO */
 
 # define TRACELOW(s)	Tracelow s
 

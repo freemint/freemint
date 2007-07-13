@@ -42,8 +42,42 @@ struct time
 	ulong	nanoseconds;
 };
 
-
 # ifdef __KERNEL__
+
+#define dta_UTC_local_dos(dta,xattr,x)					\
+{									\
+	union { ushort s[2]; ulong l;} data;				\
+									\
+	/* UTC -> localtime -> DOS style */				\
+	data.s[0]	= xattr.__CONCAT(x,time);			\
+	data.s[1]	= xattr.__CONCAT(x,date);			\
+	data.l		= dostime(data.l - timezone);			\
+	dta->dta_time	= data.s[0];					\
+	dta->dta_date	= data.s[1];					\
+}
+
+#define xtime_to_local_dos(a,x)				\
+{							\
+	union { ushort s[2]; ulong l;} data;		\
+	data.s[0] = a->__CONCAT(x,time);		\
+	data.s[1] = a->__CONCAT(x,date);		\
+	data.l = dostime(data.l - timezone);		\
+	a->__CONCAT(x,time) = data.s[0];		\
+	a->__CONCAT(x,date) = data.s[1];		\
+}
+
+#define SET_XATTR_TD(a,x,ut)			\
+{						\
+	union { ushort s[2]; ulong l;} data;	\
+	data.l = ut;				\
+	a->__CONCAT(x,time) = data.s[0];	\
+	a->__CONCAT(x,date) = data.s[1];	\
+}
+
+#define XATTRL_TD(a,x) (((unsigned long)a.__CONCAT(x,time) << 16) | a.__CONCAT(x,date))
+#define XATTRP_TD(a,x) (((unsigned long)a->__CONCAT(x,time) << 16) | a->__CONCAT(x,date))
+
+#define SHORT2LONG(a,b,c) { union { long l; short s[2]; } val; val.s[0] = a; val.s[1] = b; c = val.l; }
 
 /**
  * Structure defined by POSIX.1b to be like a timeval.

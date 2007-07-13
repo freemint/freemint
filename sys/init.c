@@ -207,7 +207,7 @@ check_for_gem (void)
 }
 
 static long GEM_memflags = F_FASTLOAD | F_ALTLOAD | F_ALTALLOC | F_PROT_S;
-
+extern int debug_level;
 void
 init (void)
 {
@@ -219,7 +219,7 @@ init (void)
 	 */
 	boot_print (greet1);
 	boot_print (greet2);
-
+	debug_level = 3;
 	/*
 	 * Initialize sysdir
 	 *
@@ -231,8 +231,8 @@ init (void)
 	 */
 	if (TRAP_Dsetpath("\\mint\\" MINT_VERS_PATH_STRING) == 0)
 		strcpy(sysdir, "\\mint\\" MINT_VERS_PATH_STRING "\\");
-	else if (TRAP_Dsetpath("\\mint\\") == 0)
-		strcpy(sysdir, "\\mint\\");
+// 	else if (TRAP_Dsetpath("\\mint\\") == 0)
+// 		strcpy(sysdir, "\\mint\\");
 # ifndef BOOTSTRAPABLE
 	else
 	{
@@ -1006,6 +1006,7 @@ mint_thread(void *arg)
 	 */
 	if (init_is_gem && init_prg)
 	{
+		boot_printf("init is gem and init_prg = %s\r\n", init_prg);
 		new_xbra_install(&old_exec_os, EXEC_OS, (long _cdecl (*)())new_exec_os);
 	}
 
@@ -1019,6 +1020,7 @@ mint_thread(void *arg)
 	/* we default to U:\ before starting init */
 	sys_d_setdrv('u' - 'a');
  	sys_d_setpath("/");
+	stop_and_ask();
 
 	/* prepare to run the init program as PID 1. */
 	set_pid_1();

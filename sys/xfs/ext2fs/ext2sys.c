@@ -343,16 +343,26 @@ e_getxattr (fcookie *fc, XATTR *ptr)
 	if (native_utc)
 	{
 		/* kernel recalc to local time & DOS style */
+		SET_XATTR_TD(ptr,m,le2cpu32(c->in.i_mtime));
+		SET_XATTR_TD(ptr,a,le2cpu32(c->in.i_atime));
+		SET_XATTR_TD(ptr,c,le2cpu32(c->in.i_ctime));
+#if 0
 		*((long *) &(ptr->mtime)) = le2cpu32 (c->in.i_mtime);
 		*((long *) &(ptr->atime)) = le2cpu32 (c->in.i_atime);
 		*((long *) &(ptr->ctime)) = le2cpu32 (c->in.i_ctime);
+#endif
 	}
 	else
 	{
 		/* the old way */
+		SET_XATTR_TD(ptr,m,dostime(le2cpu32(c->in.i_mtime)));
+		SET_XATTR_TD(ptr,a,dostime(le2cpu32(c->in.i_atime)));
+		SET_XATTR_TD(ptr,c,dostime(le2cpu32(c->in.i_ctime)));
+#if 0
 		*((long *) &(ptr->mtime)) = dostime (le2cpu32 (c->in.i_mtime));
 		*((long *) &(ptr->atime)) = dostime (le2cpu32 (c->in.i_atime));
 		*((long *) &(ptr->ctime)) = dostime (le2cpu32 (c->in.i_ctime));
+#endif
 	}
 	
 	DEBUG (("Ext2-FS [%c]: e_getxattr: #%li -> ok", fc->dev+'A', c->inode));
@@ -1687,7 +1697,7 @@ e_symlink (fcookie *dir, const char *name, const char *to)
 		if (!u)
 			goto out_no_entry;
 		
-		link = u->data;
+		link = (char *)u->data;
 	}
 	else
 	{
@@ -1775,7 +1785,7 @@ e_readlink (fcookie *fc, char *buf, int len)
 		if (!u)
 			return err;
 		
-		link = u->data;
+		link = (char *)u->data;
 	}
 	else
 	{

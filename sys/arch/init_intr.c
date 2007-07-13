@@ -69,8 +69,8 @@ uchar framesizes[16] =
 void
 new_xbra_install (long *xv, long addr, long _cdecl (*func)())
 {
-	*xv = *(long *) addr;
-	*(long *) addr = (long) func;
+	*xv = *(long *)addr;
+	*(long *)addr = (long)func;
 
 	/* better to be safe... */
 # ifndef M68000
@@ -96,24 +96,24 @@ init_intr (void)
 
 # ifndef NO_AKP_KEYBOARD
 	{
+#ifndef MILAN
+		savesr = splhigh();
+		syskey->ikbdsys = (long)ikbdsys_handler;
+#ifndef M68000
+		cpush(&syskey->ikbdsys, sizeof(long));
+#endif
+		new_xbra_install(&old_acia, 0x0118L, new_acia);
+		spl(savesr);
+#else
 		long *syskey_aux;
 
 		syskey_aux = (long *)syskey;
 		syskey_aux--;
 
 		new_xbra_install (&oldkeys, (long)syskey_aux, newkeys);
-
-		if (tosvers < 0x0200)
-		{
-			syskey->ikbdsys = (long)ikbdsys_handler;
-# ifndef M68000
-			cpush(&syskey->ikbdsys, sizeof(long));
-# endif
-			new_xbra_install(&old_acia, 0x0118L, new_acia);
-		}
+#endif
 	}
 # endif
-
 	old_term = (long) TRAP_Setexc (0x102, -1UL);
 
 	savesr = splhigh();
@@ -229,14 +229,15 @@ restr_intr (void)
 
 # ifndef NO_AKP_KEYBOARD
 	{
+#ifdef MILAN
 		long *syskey_aux;
 
 		syskey_aux = (long *)syskey;
 		syskey_aux--;
 		*syskey_aux = (long) oldkeys;
-
-		if (tosvers < 0x0200)
-			*((long *) 0x0118L) = old_acia;
+#else
+		*((long *) 0x0118L) = old_acia;
+#endif
 	}
 # endif
 

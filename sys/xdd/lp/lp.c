@@ -52,6 +52,8 @@
 
 struct kerinfo *kernel;
 
+DEVDRV * init(struct kerinfo *k);
+
 static char *buffer_start, *buffer_end, *buffer_tail;
 static volatile char *buffer_head;
 static volatile long buffer_contents;

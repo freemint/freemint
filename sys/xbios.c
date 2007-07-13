@@ -88,7 +88,7 @@ sys_b_supexec (Func funcptr, long arg1, long arg2, long arg3, long arg4, long ar
 	CONTEXT *syscall = &get_curproc()->ctxt[SYSCALL];
 	ushort savesr;
 
-	if(funcptr==NULL)
+	if (funcptr == NULL)
 	{
 		TRACE(("Supexec() error no valid function"));
 		return EPERM;
@@ -234,7 +234,11 @@ long _cdecl
 rsconf (int baud, int flow, int uc, int rs, int ts, int sc)
 {
 	long rsval;
+#ifdef MFP_DEBUG_DIRECT
+	static int oldbaud = 0;
+#else
 	static int oldbaud = -1;
+#endif
 	unsigned b = 0;
 	struct bios_tty *t = bttys;
 
@@ -254,7 +258,7 @@ rsconf (int baud, int flow, int uc, int rs, int ts, int sc)
 		if ((flow & 0x8002) == 2 && t && t->tty == &ttmfp_tty)
 			flow &= ~2;
 	}
-	else if (tosvers < 0x0104)
+	else if (tosvers <= 0x0199)
 	{
 		/*
 		 * If this is an old TOS, try to rearrange things to support

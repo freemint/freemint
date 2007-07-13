@@ -1038,12 +1038,12 @@ get_mform(short m_shape)
 }
 
 /*
- * AES graf_mouse() routines
+ * AES xa_graf_mouse() routines
  * Small extension to give a couple of extra cursor shapes
  * (Data Uncertain logo, mover & sizers)
  */
 void
-graf_mouse(int m_shape, MFORM *mf, struct xa_client *client, bool aesm)
+xa_graf_mouse(int m_shape, MFORM *mf, struct xa_client *client, bool aesm)
 {
 	if (m_shape == -1 && aesm)
 	{
@@ -1129,12 +1129,12 @@ set_client_mouse(struct xa_client *client, short which, short m_shape, MFORM *mf
  * are done correctly
  */
 /*
- * Ozk: XA_graf_mouse() may be called by processes not yet called
+ * Ozk: XA_xa_graf_mouse() may be called by processes not yet called
  * appl_init(). So, it must not depend on client being valid!
  */
 #if 1
 unsigned long
-XA_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_xa_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	short m = pb->intin[0];
 
@@ -1143,7 +1143,7 @@ XA_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 	if (m == M_OFF || m == M_ON)
 	{
 		/* Any client can hide the mouse (required for redraws by clients that aren't top) */
-		graf_mouse(m, NULL, NULL, false);
+		xa_graf_mouse(m, NULL, NULL, false);
 #if GENERATE_DIAGS
 		if (client)
 			DIAG((D_f,client,"mouse %d %s", client->mouse, m == M_ON ? "on" : "off"));
@@ -1170,7 +1170,7 @@ XA_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 			 * it is correct
 			 */
 			set_client_mouse(client, SCM_PREV, client->save_mouse, client->save_mouse_form);
-// 			graf_mouse(client->save_mouse, client->save_mouse_form, client, false);
+// 			xa_graf_mouse(client->save_mouse, client->save_mouse_form, client, false);
 			DIAG((D_f,client,"M_RESTORE; mouse_form from %d to %d", client->mouse, client->save_mouse));
 			set_client_mouse(client, SCM_MAIN|0x8000, client->save_mouse, client->save_mouse_form);
 		}
@@ -1184,7 +1184,7 @@ XA_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 			 * mouse cursor, the current becomes new previous. Consecutive M_PREVIOUS calls
 			 * will then toggle between the two last used mouse shapes.
 			 */
-// 			graf_mouse(client->prev_mouse, client->prev_mouse_form, client, false);
+// 			xa_graf_mouse(client->prev_mouse, client->prev_mouse_form, client, false);
 			DIAG((D_f,client,"M_PREVIOUS; mouse_form from %d to %d", client->mouse, C.mouse));
 			pm			= client->mouse;
 			pmf			= client->mouse_form;
@@ -1202,14 +1202,14 @@ XA_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 			}
 			
 			set_client_mouse(client, SCM_PREV, client->mouse, client->mouse_form);
-// 			graf_mouse(m, ud, client, false);
+// 			xa_graf_mouse(m, ud, client, false);
 			set_client_mouse(client, SCM_MAIN|0x8000, m, ud);
 			DIAG((D_f,client,"mouse_form to %d(%lx)", m, ud));
 		}
 	}
 	else if (m != M_SAVE && m != M_RESTORE && m != M_PREVIOUS)
 	{
-		graf_mouse(m, (MFORM *)pb->addrin[0], client, false);
+		xa_graf_mouse(m, (MFORM *)pb->addrin[0], client, false);
 		DIAG((D_f, NULL, "mouse form to %d for non AES process (pid %ld)", m, p_getpid()));
 	}
 
@@ -1220,7 +1220,7 @@ XA_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 #else
 unsigned long
-XA_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
+XA_xa_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	short m = pb->intin[0];
 
@@ -1229,7 +1229,7 @@ XA_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 	if (m == M_OFF || m == M_ON)
 	{
 		/* Any client can hide the mouse (required for redraws by clients that aren't top) */
-		graf_mouse(m, NULL, NULL, false);
+		xa_graf_mouse(m, NULL, NULL, false);
 #if GENERATE_DIAGS
 		if (client)
 			DIAG((D_f,client,"mouse %d %s", client->mouse, m == M_ON ? "on" : "off"));
@@ -1259,7 +1259,7 @@ XA_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 			client->prev_mouse = client->save_mouse;
 			client->prev_mouse_form = client->save_mouse_form;
 			
-			graf_mouse(client->save_mouse, client->save_mouse_form, client, false);
+			xa_graf_mouse(client->save_mouse, client->save_mouse_form, client, false);
 			DIAG((D_f,client,"M_RESTORE; mouse_form from %d to %d", client->mouse, client->save_mouse));
 			client->mouse       = client->save_mouse;
 			client->mouse_form  = client->save_mouse_form;
@@ -1274,7 +1274,7 @@ XA_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 			 * mouse cursor, the current becomes new previous. Consecutive M_PREVIOUS calls
 			 * will then toggle between the two last used mouse shapes.
 			 */
-			graf_mouse(client->prev_mouse, client->prev_mouse_form, client, false);
+			xa_graf_mouse(client->prev_mouse, client->prev_mouse_form, client, false);
 			DIAG((D_f,client,"M_PREVIOUS; mouse_form from %d to %d", client->mouse, C.mouse));
 			pm			= client->mouse;
 			pmf			= client->mouse_form;
@@ -1296,7 +1296,7 @@ XA_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 			client->prev_mouse = client->mouse;
 			client->prev_mouse_form = client->mouse_form;
 
-			graf_mouse(m, ud, client, false);
+			xa_graf_mouse(m, ud, client, false);
 			client->mouse = m;
 			client->mouse_form = ud;
 			DIAG((D_f,client,"mouse_form to %d(%lx)", m, ud));
@@ -1304,7 +1304,7 @@ XA_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 	}
 	else if (m != M_SAVE && m != M_RESTORE && m != M_PREVIOUS)
 	{
-		graf_mouse(m, (MFORM *)pb->addrin[0], client, false);
+		xa_graf_mouse(m, (MFORM *)pb->addrin[0], client, false);
 		DIAG((D_f, NULL, "mouse form to %d for non AES process (pid %ld)", m, p_getpid()));
 	}
 

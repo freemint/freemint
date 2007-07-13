@@ -51,33 +51,33 @@ struct tty default_tty =
 	0,			/* use_cnt */
 	0,			/* aux_cnt */
 	{
-	13, 13,			/* input speed == output speed == 9600 baud */
-	CTRL('H'),		/* erase */
-	CTRL('U'),		/* kill */
-	T_ECHO|T_CRMOD|T_XKEY|T_ECHOCTL, /* flags */
+		13, 13,			/* input speed == output speed == 9600 baud */
+		CTRL('H'),		/* erase */
+		CTRL('U'),		/* kill */
+		T_ECHO|T_CRMOD|T_XKEY|T_ECHOCTL, /* flags */
 	},
 	{
-	CTRL('C'),		/* interrupt */
-	CTRL('\\'),		/* quit */
-	CTRL('Q'),		/* start */
-	CTRL('S'),		/* stop */
-	CTRL('D'),		/* EOF */
-	'\r'			/* alternate end of line */
+		CTRL('C'),		/* interrupt */
+		CTRL('\\'),		/* quit */
+		CTRL('Q'),		/* start */
+		CTRL('S'),		/* stop */
+		CTRL('D'),		/* EOF */
+		'\r'			/* alternate end of line */
 	},
 	{
-	CTRL('Z'),		/* suspend */
-	CTRL('Y'),		/* suspend after read */
-	CTRL('R'),		/* reprint */
-	CTRL('O'),		/* flush output */
-	CTRL('W'),		/* erase word */
-	CTRL('V')		/* quote next char */
+		CTRL('Z'),		/* suspend */
+		CTRL('Y'),		/* suspend after read */
+		CTRL('R'),		/* reprint */
+		CTRL('O'),		/* flush output */
+		CTRL('W'),		/* erase word */
+		CTRL('V')		/* quote next char */
 	},
 	{
-	0, 0, 0, 0		/* window size is unknown */
+		0, 0, 0, 0		/* window size is unknown */
 	},
 	0,			/* no process is selecting us for reading */
 	0,			/* or for writing */
-	0,			/* use default XKEY map */
+	NULL,			/* use default XKEY map */
 	0,			/* not currently hanging up */
 	1, 0			/* RAW reads need 1 char, no timeout */
 };
@@ -1379,7 +1379,7 @@ escseq (struct tty *tty, int scan)
 # ifdef NO_AKP_KEYBOARD
 	tab = *(((const char **) ROM_Keytbl((void *) -1UL, (void *) -1UL, (void *) -1UL)) + 2 );
 # else
-	tab = get_keytab()->caps;
+	tab = (char *)get_keytab()->caps;
 # endif
 	scan = tab[scan];
 	

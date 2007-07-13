@@ -233,7 +233,7 @@ add_region (MMAP map, ulong place, ulong size, ushort mflags)
 	if (!m)
 		return 0;	/* failure */
 
-	mint_bzero (m, sizeof (*m));
+	mint_bzero(m, sizeof (*m));
 
 	if (place & MASKBITS)
 	{
@@ -278,28 +278,24 @@ core_malloc (long amt, short mode)
 	static int mxalloc = -1;	/* does GEMDOS know about Mxalloc? */
 	long ret;
 
-	if (mxalloc < 0)
-	{
+	if (mxalloc < 0) {
 		ret = (long)TRAP_Mxalloc(-1L, 0);
 		if (ret == -32)
 			mxalloc = 0;	/* unknown function */
-		else
-			if (ret >= 0)
-				mxalloc = 1;
-			else
-			{
-				ALERT("GEMDOS returned %ld from Mxalloc", ret);
-				mxalloc = 0;
-			}
+		else if (ret >= 0)
+			mxalloc = 1;
+		else {
+			ALERT("GEMDOS returned %ld from Mxalloc", ret);
+			mxalloc = 0;
+		}
 	}
 
 	if (mxalloc)
 		return (long)TRAP_Mxalloc(amt, mode);
+	else if (mode == 1)
+		return 0L;
 	else
-		if (mode == 1)
-			return 0L;
-		else
-			return (long)TRAP_Malloc(amt);
+		return (long)TRAP_Malloc(amt);
 }
 
 static void
@@ -328,9 +324,7 @@ init_core (void)
 # ifdef OLDTOSFS
 	tossave = (void *)core_malloc((long)TOS_MEM, 0);
 	if (!tossave)
-	{
 		FATAL("Not enough memory to run MiNT");
-	}
 # endif
 
 	/*
@@ -357,13 +351,10 @@ init_core (void)
 		scrnplace = (*(long *) 0x44eL);
 # endif
 
-	if (FalconVideo)
-	{
+	if (FalconVideo) {
 		/* the Falcon can tell us the screen size */
 		scrnsize = TRAP_VgetSize(TRAP_VsetMode(-1));
-	}
-	else
-	{
+	} else {
 		struct screen *vscreen;
 
 		vscreen = (struct screen *)((char *)lineA0() - 346);
@@ -375,20 +366,15 @@ init_core (void)
 	/* check for a graphics card with fixed screen location */
 # define phys_top_st (*(ulong *) 0x42eL)
 
-	if (scrnplace >= phys_top_st)
-	{
+	if (scrnplace >= phys_top_st) {
 		/* screen isn't in ST RAM */
 		scrnsize = 0x7fffffffUL;
 		scrndone = 1;
-	}
-	else
-	{
+	} else {
 		temp = (ulong)core_malloc(scrnsize+256L, 0);
-		if (temp)
-		{
-			TRAP_Setscreen((void *)-1L, (void *)((temp+511)&(0xffffff00L)), -1);
-			if ((long)TRAP_Physbase() != ((temp+511)&(0xffffff00L)))
-			{
+		if (temp) {
+			TRAP_Setscreen((void *)-1L, (void *)((temp + 511) & (0xffffff00L)), -1);
+			if ((long)TRAP_Physbase() != ((temp + 511) & (0xffffff00L))) {
 				scrnsize = 0x7fffffffUL;
 				scrndone = 1;
 			}
@@ -404,11 +390,9 @@ init_core (void)
 	boot_printf (MSG_mem_core, size);
 # endif
 
-       	while (size > 0)
-	{
+       	while (size > 0) {
 		place = (ulong) core_malloc (size, 0);
-		if (!scrndone && (place + size == scrnplace))
-		{
+		if (!scrndone && (place + size == scrnplace)) {
 			size += scrnsize;
 			scrndone = 1;
 		}
@@ -418,9 +402,7 @@ init_core (void)
 	}
 
 	if (!scrndone)
-	{
 		(void) add_region (core, scrnplace, scrnsize, M_CORE);
-	}
 
 # ifdef VERBOSE_BOOT
 	boot_printf (MSG_mem_lost, dp_all);
@@ -436,8 +418,7 @@ init_core (void)
 		boot_print (MSG_mem_noalt);
 # endif /* VERBOSE_BOOT */
 
-	while (size > 0)
-	{
+	while (size > 0) {
 		place = (ulong)core_malloc(size, 1);
 		if (!add_region(alt, place, size, M_ALT))
 			FATAL("init_mem: unable to add a region");
@@ -519,23 +500,19 @@ attach_region (PROC *p, MEMREGION *reg)
 		reg->loc, ((reg->mflags & M_CORE) ? "core" : "alt"),
 		reg->len, p->pid));
 
-	if (!reg || !reg->loc)
-	{
+	if (!reg || !reg->loc) {
 		ALERT ("attach_region: attaching a null region?");
 		return 0;
 	}
 
-	if (!mem || !mem->mem)
-	{
+	if (!mem || !mem->mem) {
 		ALERT ("attach_region: attaching a region to an invalid proc?");
 		return 0;
 	}
 
 retry:
-	for (i = 0; i < mem->num_reg; i++)
-	{
-		if (!mem->mem[i])
-		{
+	for (i = 0; i < mem->num_reg; i++) {
+		if (!mem->mem[i]) {
 			assert (mem->addr[i] == 0);
 
 			mem->mem[i] = reg;
@@ -558,6 +535,16 @@ retry:
 	return 0;
 }
 
+
+static inline void
+unref_memreg(struct proc *p, MEMREGION *m)
+{
+	m->links--;
+	if (!m->links)
+		free_region(m);
+	else
+		mark_proc_region(p->p_mem, m, PROT_I, p->pid);
+}
 /*
  * detach_region(proc, reg): remove region from the procedure's address
  * space. If no more processes reference the region, return it to the
@@ -574,31 +561,30 @@ detach_region (PROC *p, MEMREGION *reg)
 	TRACELOW(("detach_region %lx len %lx from pid %d",
 		reg->loc, reg->len, p->pid));
 
-	if (!reg || !reg->loc)
-	{
+	if (!reg || !reg->loc) {
 		ALERT ("detach_region: detaching a null region?");
 		return;
 	}
 
-	if (!mem || !mem->mem)
-	{
+	if (!mem || !mem->mem) {
 		ALERT ("detach_region: detaching a region from an invalid proc?");
 		return;
 	}
 
-	for (i = mem->num_reg - 1; i >= 0; i--)
-	{
-		if (mem->mem[i] == reg)
-		{
+	for (i = mem->num_reg - 1; i >= 0; i--) {
+		if (mem->mem[i] == reg) {
 			mem->mem[i] = 0;
 			mem->addr[i] = 0;
 
+			unref_memreg(p, reg);
+#if 0
 			reg->links--;
 			if (reg->links == 0)
 				free_region (reg);
 			else
 				/* cause curproc's table to be updated */
 				mark_proc_region (p->p_mem, reg, PROT_I, p->pid);
+#endif
 
 			return;
 		}
@@ -608,23 +594,20 @@ detach_region (PROC *p, MEMREGION *reg)
 }
 
 long
-detach_region_by_addr(struct proc *p, long block)
+detach_region_by_addr(struct proc *p, unsigned long block)
 {
 	struct memspace *mem = p->p_mem;
 	int i;
 
 	TRACELOW(("detach_region_by_addr %lx by pid %i", block, p->pid));
 
-	if (!mem || !mem->mem)
-	{
+	if (!mem || !mem->mem) {
 		ALERT("detach_region_by_addr: invalid proc?");
 		return EBADARG;
 	}
 
-	for (i = mem->num_reg - 1; i >= 0; i--)
-	{
-		if (mem->addr[i] == block)
-		{
+	for (i = mem->num_reg - 1; i >= 0; i--) {
+		if (mem->addr[i] == block) {
 			MEMREGION *m = mem->mem[i];
 
 			assert(m != NULL);
@@ -632,14 +615,15 @@ detach_region_by_addr(struct proc *p, long block)
 
 			mem->mem[i] = 0;
 			mem->addr[i] = 0;
-
+			unref_memreg(p, m);
+#if 0
 			m->links--;
 			if (m->links == 0)
 				free_region(m);
 			else
 				/* cause curproc's table to be updated */
 				mark_proc_region(mem, m, PROT_I, p->pid);
-
+#endif
 			return 0;
 		}
 	}
@@ -661,30 +645,42 @@ detach_region_by_addr(struct proc *p, long block)
 MEMREGION *
 get_region (MMAP map, ulong size, short mode)
 {
-	MEMREGION *m = kmr_get ();
+	MEMREGION *m; // = kmr_get ();
 	MEMREGION *n;
 
+	if (!(m = kmr_get()))
+		return m;
+	if (!(n = _get_region(map, size, mode, 0, m, 0)))
+		kmr_free(m);
+	return n;
+#if 0
 	n = _get_region (map, size, mode, 0, m, 0);
 	if (!n && m)
 		kmr_free (m);
-
 	return n;
+#endif
 }
 
 MEMREGION *
 _get_region (MMAP map, ulong s, short mode, short cmode, MEMREGION *m, short kernel_flag)
 {
 	MEMREGION *n, *k = NULL;
-	ulong size = s;
+	unsigned long size = s;
 
-	TRACE (("get_region (%s, %li (%lx), %x)",
+	size = ROUND(s);
+	if (!size) {
+		DEBUG (("request for 0 or less bytes (%li)??", s));
+		size = 1;
+		size = ROUND(size);
+	}
+
+	TRACE (("_get_region (%s, %li (%lx), %x) (%s)",
 		((map == core) ? "core" : ((map == alt) ? "alt" : "???")),
-		size, size, mode));
+		s, size, mode, kernel_flag ? "kmalloc":"normal"));
 
 	SANITY_CHECK (map);
 
-	if (kernel_flag)
-	{
+	if (kernel_flag) {
 		assert (m);
 
 		/* for ST-RAM don't follow special kernel alloc strategy */
@@ -703,102 +699,73 @@ _get_region (MMAP map, ulong s, short mode, short cmode, MEMREGION *m, short ker
 	 *	which will create identical situation as for this Jinnee bug, it will get 8192 (QUANTUM)
 	 *	Should we return error instead for this situaion?
 	 */
+#if 0
 	size = ROUND (size);
-	if (!size)
-	{
+	if (!size) {
 		DEBUG (("request for 0 or less bytes (%li)??", s));
 		size = 1;
 		size = ROUND (size);
 	}
-
+#endif
 	n = *map;
-	while (n)
-	{
-		if (ISFREE (n))
-		{
-			if (n->len == size)
-			{
-				if (kernel_flag)
-					k = n;
-				else
-				{
-					if (m) kmr_free (m);
+	if (kernel_flag) {
+		while (n) {
+			if (ISFREE(n) && n->len >= size)
+				k = n;
+			n = n->next;
+		}
+		if (k) {
+			if (k->len == size) {
+				kmr_free(m);
+				n = k;
+			} else {
+				assert(k->len > size);
+				mint_bzero(m, sizeof(*m));
+				m->mflags = k->mflags & M_MAP;
+				m->next = k->next;
+				k->next = m;
+
+				k->len = k->len - size;
+				m->len = size;
+				m->loc = k->loc + k->len;
+				n = m;
+			}
+			goto win;
+		} else {
+			TRACELOW (("get_region: no memory left in this map"));
+			goto fail;
+		}
+	} else {
+		while (n) {
+			if (ISFREE(n)) {
+				if (n->len == size) {
+					if (m) kmr_free(m);
 					goto win;
 				}
-			}
-			else
-			{
-				if (n->len > size)
-				{
-					if (kernel_flag)
-						k = n;
-					else
-
-					/* split a new region, 'm', which will
-					 * contain the free bytes after n
-					 */
-					if (m)
-					{
-						mint_bzero (m, sizeof (*m));
-
+				if (n->len > size) {
+					if (m) {
+						mint_bzero(m, sizeof(*m));
 						m->mflags = n->mflags & M_MAP;
+
 						m->next = n->next;
 						n->next = m;
-
 						m->loc = n->loc + size;
 						m->len = n->len - size;
 						n->len = size;
-
-						assert (n->loc + n->len == m->loc);
-
+						assert(n->loc + n->len == m->loc);
 						goto win;
-					}
-					else
-					{
-						DEBUG (("get_region: no regions left"));
+					} else {
+						DEBUG(("_get_region: no regions left"));
 						goto fail;
 					}
 				}
 			}
-		}
-
-		n = n->next;
-	}
-
-	if (kernel_flag && k)
-	{
-		if (k->len == size)
-		{
-			kmr_free (m);
-
-			n = k;
-			goto win;
-		}
-		else
-		{
-			assert (k->len > size);
-
-			mint_bzero (m, sizeof (*m));
-
-			m->mflags = k->mflags & M_MAP;
-			m->next = k->next;
-			k->next = m;
-
-			k->len = k->len - size;
-			m->len = size;
-			m->loc = k->loc + k->len;
-
-			n = m;
-			goto win;
+			n = n->next;
 		}
 	}
-
-	TRACELOW (("get_region: no memory left in this map"));
-
 fail:
 	SANITY_CHECK (map);
 	return NULL;
-
 win:
 	n->links++;
 
@@ -807,6 +774,7 @@ win:
 		n->mflags |= M_KEEP;
 
 	SANITY_CHECK (map);
+	TRACELOW (("get_region: return %lx", n));
 	return n;
 }
 
@@ -845,11 +813,11 @@ free_region (MEMREGION *reg)
 	shdw = reg->shadow;
 	if (shdw)
 	{
-		TRACE(("Freeing region with shadows"));
+		TRACE(("free_region: Freeing region with shadows"));
 		save = reg->save;
 		if (!save)
 		{
-			TRACELOW(("Restoring region from save memory"));
+			TRACELOW(("free_region: Restoring region from save memory"));
 			save = shdw->save;
 			assert(save);
 
@@ -1015,17 +983,21 @@ end:
  *         @retval E_OK    Resize succeded.
  */
 long
-shrink_region (MEMREGION *reg, ulong newsize)
+shrink_region (MEMREGION *reg, unsigned long nsize)
 {
 	MEMREGION *n;
 	ulong diff;
 	long ret;
+	unsigned long newsize;
 
 
 	SANITY_CHECK_MAPS ();
 
-	newsize = ROUND(newsize);
-	assert (reg->links > 0);
+	newsize = ROUND(nsize);
+
+	DEBUG(("shrink_region: reg %lx, nsize %ld, newsize %ld", reg, nsize, newsize));
+
+	assert(reg->links > 0);
 
 	if (!(reg->mflags & (M_CORE | M_ALT | M_KER)))
 		FATAL ("shrink_region: bad region flags (%x)", reg->mflags);
@@ -1033,7 +1005,7 @@ shrink_region (MEMREGION *reg, ulong newsize)
 	/* shrinking to 0 is the same as freeing */
 	if (newsize == 0)
 	{
-		detach_region (get_curproc(), reg);
+		detach_region(get_curproc(), reg);
 		ret = 0;
 		goto leave;
 	}
@@ -1073,6 +1045,7 @@ shrink_region (MEMREGION *reg, ulong newsize)
 
 	if (n && ISFREE(n) && reg->loc + reg->len == n->loc)
 	{
+		DEBUG(("shrink_region: newsize %ld, diff %ld", newsize, diff));
 		reg->len = newsize;
 		n->loc -= diff;
 		n->len += diff;
@@ -1080,10 +1053,13 @@ shrink_region (MEMREGION *reg, ulong newsize)
 		 * (part of it is already invalid; that's OK)
 		 */
 		mark_region (n, PROT_I, 0);
+		DEBUG(("shrink_region: nloc %lx, nlen %ld", n->loc, n->len));
 	}
 	else
 	{
+		DEBUG(("shrink_region: aint free"));
 		n = kmr_get ();
+		DEBUG(("shrink_region: aint free 1"));
 		if (!n)
 		{
 			DEBUG(("shrink_region: new_region failed"));
@@ -1098,6 +1074,7 @@ shrink_region (MEMREGION *reg, ulong newsize)
 
 		/* MEMPROT: invalidate the new, free region */
 		mark_region (n, PROT_I, 0);
+		DEBUG(("shrink_region: aint free 2"));
 	}
 
 	ret = 0;
@@ -1116,14 +1093,14 @@ leave:
 long
 max_rsize (MMAP map, long needed)
 {
-        const MEMREGION *m;
+	const MEMREGION *m;
 	long size = 0, lastsize = 0, end = 0;
 
 	if (needed)
 	{
 		for (m = *map; m; m = m->next)
 		{
-			if (ISFREE(m) || (m->links == 0xfffe && !m->shadow))
+			if (ISFREE(m) || (m->links == -2L/*0xfffe*/ && !m->shadow))
 			{
 				if (end == m->loc)
 				{
@@ -1147,7 +1124,7 @@ max_rsize (MMAP map, long needed)
 	}
 	for (m = *map; m; m = m->next)
 	{
-		if (ISFREE(m) || (m->links == 0xfffe && !m->shadow) || (m->links == 0xffff))
+		if (ISFREE(m) || (m->links == -2/*0xfffe*/ && !m->shadow) || (m->links == -1/*0xffff*/))
 		{
 			if (end == m->loc)
 			{
@@ -1182,7 +1159,7 @@ tot_rsize (MMAP map, short flag)
 
 	for (m = *map; m; m = m->next)
 	{
-		if (flag || ISFREE(m) || (m->links == 0xffff))
+		if (flag || ISFREE(m) || (m->links == -1/*0xffff*/))
 			size += m->len;
 	}
 
@@ -1316,7 +1293,7 @@ fork_region (MEMREGION *reg, long txtsize)
 		save->save = (struct memregion *)txtsize;
 		quickmove((char *)save->loc, (char *)reg->loc, 256);
 		quickmove((char *)save->loc + 256,
-			  (char *)reg->loc + (txtsize+256), len-256);
+			  (char *)reg->loc + (txtsize + 256), len - 256);
 	}
 	save->mflags |= M_FSAVED;
 	shdw->save = save;
@@ -1404,16 +1381,23 @@ create_base(const char *cmd, MEMREGION *env,
 	 * load there; otherwise, if more than (minalt+1)*128K alt ram available
 	 * for heap space, load in alt ram ("minalt" is the high byte of flags)
 	 */
+#if 0
 	if (flags & F_ALTLOAD)
 	{
 		minalt = (flags & F_MINALT) >> 28L;
-		minalt = len = (minalt+1)*128*1024L + prgsize + 256;
+		minalt = len = (minalt + 1) * 128 * 1024L + prgsize + 256;
 		if ((flags & F_MINALT) == F_MINALT)
 			len = 0;
 	}
-
+#endif
 	if (flags & F_ALTLOAD)
 	{
+		minalt = (flags & F_MINALT) >> 28L;
+		minalt = len = (minalt + 1) * 128 * 1024L + prgsize + 256;
+		if ((flags & F_MINALT) == F_MINALT)
+			len = 0;
+
+
 		coresize = max_rsize (core, len);
 		altsize = max_rsize (alt, len);
 		if (altsize >= coresize)
@@ -1442,7 +1426,7 @@ create_base(const char *cmd, MEMREGION *env,
 	}
 
 	/* make sure that a little bit of memory is left over */
-	if (len > 2 * KEEP_MEM)
+	if (len > (2 * KEEP_MEM))
 		len -= KEEP_MEM;
 
 	/* BUG:
@@ -1470,7 +1454,7 @@ create_base(const char *cmd, MEMREGION *env,
 
 	protmode = (flags & F_PROTMODE) >> F_PROTSHIFT;
 
-	m = addr2mem (get_curproc(), alloc_region (map, len, protmode));
+	m = addr2mem(get_curproc(), alloc_region(map, len, protmode));
 	if (!m)
 	{
 		DEBUG (("create_base: alloc_region failed"));
@@ -1483,16 +1467,15 @@ create_base(const char *cmd, MEMREGION *env,
 	{
 		BASEPAGE *b = (BASEPAGE *)(m->loc);
 
-		mint_bzero (b, sizeof (*b));
-		b->p_lowtpa = (long) b;
+		mint_bzero(b, sizeof (*b));
+		b->p_lowtpa = (long)b;
 		b->p_hitpa = m->loc + m->len;
-		b->p_env = env ? ((char *) env->loc) : NULL;
+		b->p_env = env ? ((char *)env->loc) : NULL;
 		b->p_flags = flags;
 
 		if (cmd)
 			strncpy (b->p_cmdlin, cmd, 127);
 	}
-
 leave:
 	SANITY_CHECK (map);
 	return m;
@@ -1544,8 +1527,8 @@ load_region (const char *filename, MEMREGION *env, const char *cmdlin, XATTR *xp
 		return NULL;
 	}
 
-	size = xdd_read (f, (void *) &fh, (long) sizeof (fh));
-	if (fh.fmagic != GEMDOS_MAGIC || size != (long) sizeof (fh))
+	size = xdd_read (f, (void *)&fh, (long)sizeof(fh));
+	if (size != sizeof(fh) || fh.fmagic != GEMDOS_MAGIC)
 	{
 		DEBUG (("load_region: file not executable"));
 		*err = ENOEXEC;
@@ -1571,18 +1554,22 @@ failed:
 	reg = create_base (cmdlin, env, fh.flag, size, err);
 	if (env) env->links--;
 
-	if (reg && ((size + 1024L) > reg->len))
-	{
+	if (!reg)
+		goto failed;
+
+// 	if (reg && ((size + 1024L) > reg->len))
+	if ((size + 1024) > reg->len) {
 		DEBUG (("load_region: insufficient memory to load"));
 		detach_region (get_curproc(), reg);
 		reg = NULL;
 		*err = ENOMEM;
+		goto failed;
 	}
 
-	if (reg == NULL)
-		goto failed;
+// 	if (reg == NULL)
+// 		goto failed;
 
-	b = (BASEPAGE *) reg->loc;
+	b = (BASEPAGE *)reg->loc;
 	b->p_flags = fh.flag;
 	b->p_tbase = b->p_lowtpa + 256;
 	b->p_tlen = fh.ftext;
@@ -1594,7 +1581,7 @@ failed:
 	size = fh.ftext + fh.fdata;
 	start = 0;
 
-	*err = load_and_reloc (f, &fh, (char *) b + 256, start, size, b);
+	*err = load_and_reloc (f, &fh, (char *)b + 256, start, size, b);
 	if (*err)
 	{
 		detach_region (get_curproc(), reg);
@@ -1613,16 +1600,7 @@ failed:
 		size = b->p_hitpa - b->p_bbase;
 
 	if (size > 0)
-	{
-		start = b->p_bbase;
-		if (start & 1)
-		{
-			*(char *) start = 0;
-			start++;
-			--size;
-		}
-		mint_bzero ((void *) start, size);
-	}
+		mint_bzero((void *)b->p_bbase, size);
 
 	do_close (get_curproc(), f);
 
@@ -1654,9 +1632,9 @@ load_and_reloc (FILEPTR *f, FILEHEAD *fh, char *where, long start, long nbytes, 
 
 	TRACE (("load_and_reloc: %ld to %ld at %lx", start, nbytes+start, where));
 
-	r = xdd_lseek (f, start + sizeof (FILEHEAD), SEEK_SET);
+	r = xdd_lseek(f, start + sizeof(FILEHEAD), SEEK_SET);
 	if (r < E_OK) return r;
-	r = xdd_read (f, where, nbytes);
+	r = xdd_read(f, where, nbytes);
 	if (r != nbytes)
 	{
 		DEBUG (("load_and_reloc: unexpected EOF"));
@@ -1666,17 +1644,26 @@ load_and_reloc (FILEPTR *f, FILEHEAD *fh, char *where, long start, long nbytes, 
 	/* now do the relocation
 	 * skip over symbol table, etc.
 	 */
-	r = xdd_lseek (f, sizeof (FILEHEAD) + fh->ftext + fh->fdata + fh->fsym, SEEK_SET);
+	r = xdd_lseek(f, sizeof(FILEHEAD) + fh->ftext + fh->fdata + fh->fsym, SEEK_SET);
 	if (r < E_OK)
 		return ENOEXEC;
 
-	if (fh->reloc != 0 || xdd_read (f, (char *) &fixup, 4L) != 4L || fixup == 0)
-	{
-		cpushi ((void *) base->p_tbase, base->p_tlen);
+	r = xdd_read(f, (char *)&fixup, 4);
+	if (fh->reloc || r != 4 || !fixup) {
+		TRACE(("load_and_reloc: cpushi %ld bytes, nofixup", base->p_tlen));
+		cpushi((void *)base->p_tbase, base->p_tlen);
 		/* no relocation to be performed */
 		return E_OK;
 	}
-
+#if 0		
+	if (fh->reloc != 0 || xdd_read(f, (char *)&fixup, 4L) != 4L || fixup == 0)
+	{
+		TRACE(("load_and_reloc: cpushi %ld bytes, nofixup", base->p_tlen));
+		cpushi((void *)base->p_tbase, base->p_tlen);
+		/* no relocation to be performed */
+		return E_OK;
+	}
+#endif
 	size = LRBUFSIZ;
 	bytes_read = 0;
 	next = buffer;
@@ -1717,7 +1704,7 @@ load_and_reloc (FILEPTR *f, FILEHEAD *fh, char *where, long start, long nbytes, 
 		do {
 			if (!bytes_read)
 			{
-				bytes_read = xdd_read (f,(char *)buffer,size);
+				bytes_read = xdd_read (f, (char *)buffer, size);
 				next = buffer;
 			}
 			if (bytes_read < 0)
@@ -1740,8 +1727,8 @@ load_and_reloc (FILEPTR *f, FILEHEAD *fh, char *where, long start, long nbytes, 
 		fixup += ((unsigned) c) & 0xff;
 	}
 	while (c);
-
-	cpushi ((void *) base->p_tbase, base->p_tlen);
+	TRACE(("load_and_reloc: cpushi %ld bytes reloc", base->p_tlen));
+	cpushi((void *)base->p_tbase, base->p_tlen);
 	return E_OK;
 }
 
@@ -1846,10 +1833,10 @@ addr2mem (PROC *p, long addr)
 	if (!mem || !mem->mem)
 		goto error;
 
-	for (i = 0; i < mem->num_reg; i++)
+	for (i = 0; i < mem->num_reg; i++) {
 		if (addr == mem->addr[i])
 			return mem->mem[i];
-
+	}
 error:
 	return NULL;
 }
@@ -1858,7 +1845,7 @@ error:
  * convert an address to the memory region attached to a process
  */
 MEMREGION *
-proc_addr2region (PROC *p, long addr)
+proc_addr2region (PROC *p, unsigned long addr)
 {
 	struct memspace *mem = p->p_mem;
 	int i;
@@ -1946,12 +1933,13 @@ realloc_region (MEMREGION *reg, long newsize)
 
 	SANITY_CHECK (map);
 
-	if (!((reg == 0) || (reg->mflags & M_CORE)))
-		return 0;
+	FORCE("realloc_region: reg = %lx, newsize %ld", (long)reg, newsize);
+
+// 	if (! (reg == NULL || (reg->mflags & M_CORE)) )
+// 		return 0;
 
 	if (newsize != -1L)
 		newsize = ROUND (newsize);
-
 
 	/* last fit allocation: this is pretty straightforward,
 	 * we just look for the last block that would work
@@ -1959,10 +1947,13 @@ realloc_region (MEMREGION *reg, long newsize)
 	 * problem: we don't know what the "last block that would fit"
 	 * is for newsize == -1L, so we look for the biggest block
 	 */
-	if (reg == 0)
+
+	if (reg == NULL)
 	{
 		MEMREGION *lastfit = 0;
 		MEMREGION *newm = kmr_get ();
+
+		FORCE("realloc_region: reg is NULL");
 
 		for (m = *map; m; m = m->next)
 		{
@@ -2010,8 +2001,13 @@ realloc_region (MEMREGION *reg, long newsize)
 
 		SANITY_CHECK (map);
 		return (long) newm;
+	} else {
+		if (!(reg->mflags & M_CORE))
+			return 0;
 	}
-	else oldsize = reg->len;
+
+	oldsize = reg->len;
+
 	/* check for trivial resize */
 	if (newsize == oldsize)
 		return reg->loc;
@@ -2036,10 +2032,12 @@ realloc_region (MEMREGION *reg, long newsize)
 	 */
 	if (newsize < oldsize && newsize != -1L)
 	{
-
 		if (prevptr && ISFREE (prevptr))
 		{
 			/* add this memory to the previous free region */
+
+			FORCE("reg = %lx", reg);
+			FORCE("loc = %lx", reg->loc);
 
 			prevptr->len += oldsize - newsize;
 			reg->loc += oldsize - newsize;
@@ -2080,10 +2078,8 @@ realloc_region (MEMREGION *reg, long newsize)
 		else
 			*map = m;
 		m->next = reg;
-
 		mark_region (m, PROT_I, 0);
 		mark_region (reg, PROT_G, 0);
-
 		SANITY_CHECK (map);
 		return reg->loc;
 	}

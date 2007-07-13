@@ -29,8 +29,8 @@
 
 #include "global.h"
 
-void display(const char *fmt, ...);
-void ndisplay(const char *fmt, ...);
+void _cdecl display(const char *fmt, ...);
+void _cdecl ndisplay(const char *fmt, ...);
 
 #if GENERATE_DIAGS
 
@@ -100,6 +100,7 @@ char *c_owner(struct xa_client *c);
 char *t_owner(struct widget_tree *t);
 
 #define DIAGS(x) if (D.debug_level) diags x
+#define DIAGA(x) if (D.debug_level) diaga x
 #define DIAG(x) diag x
 #define IFDIAG(x) x
 
@@ -107,6 +108,7 @@ char *t_owner(struct widget_tree *t);
 extern struct debugger D;
 
 void diags(const char *fmt, ...);
+void diaga(const char *fmt, ...);
 void diag(enum debug_item item, struct xa_client *client, char *t, ...);
 
 #if DEBUG_CONTROL
@@ -122,6 +124,7 @@ void diag(enum debug_item item, struct xa_client *client, char *t, ...);
 
 #define MAX_NAMED_DIAG 0
 #define DIAGS(x)
+#define DIAGA(x)
 #define DIAG(x)
 #define IFDIAG(x)
 #define CONTROL(a,b,c)
@@ -129,9 +132,10 @@ void diag(enum debug_item item, struct xa_client *client, char *t, ...);
 #endif /* GENERATE_DIAGS */
 
 #if BOOTLOG
-void bootlog(bool disp, const char *fmt, ...);
+void _cdecl bootlog(bool disp, const char *fmt, ...);
 #define BLOG(x)	bootlog x
 #else
+void _cdecl bootlog(bool disp, const char *fmt, ...);
 #define BLOG(x)
 #endif
 

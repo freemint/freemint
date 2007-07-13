@@ -480,7 +480,7 @@ pwaitpid(short pid, short nohang, long *rusage, short *retval)
 	 * calculate the return code from the child's exit code and pid and
 	 * the possibly fatal signal that caused it to die.
 	 */
-	r = (((unsigned long)p->pid) << 16) | (p->wait_cond & 0x0000ffff);
+	r = (((unsigned long)p->pid) << 16) | (p->wait_cond & 0x0000ffffUL);
 	
 	if (retval)
 		*retval = (unsigned short)r;

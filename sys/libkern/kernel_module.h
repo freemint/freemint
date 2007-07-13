@@ -879,6 +879,9 @@ check_kentry_version(void)
 # define kernel_lseek		(*KENTRY->vec_fs.kernel_lseek)
 # define kernel_close		(*KENTRY->vec_fs.kernel_close)
 
+#define path2cookie		(*KENTRY->vec_fs.path2cookie)
+#define relpath2cookie		(*KENTRY->vec_fs.relpath2cookie)
+#define release_cookie		(*KENTRY->vec_fs.release_cookie)
 
 /*
  * kentry_sockets
@@ -932,7 +935,7 @@ check_kentry_version(void)
 /*
  * kentry_debug
  */
-
+# define DEBUG_LEVEL		(*KENTRY->vec_debug.debug_level)
 # define KERNEL_TRACE		(*KENTRY->vec_debug.trace)
 # define KERNEL_DEBUG		(*KENTRY->vec_debug.debug)
 # define KERNEL_ALERT		(*KENTRY->vec_debug.alert)
@@ -987,5 +990,53 @@ check_kentry_version(void)
 # define memset			(*KENTRY->vec_libkern.memset)
 # define bcopy			(*KENTRY->vec_libkern.bcopy)
 # define bzero			(*KENTRY->vec_libkern.bzero)
+
+/*
+ * kentry_xfs
+ */
+# define xfs_block		(*KENTRY->vec_xfs.block)
+# define xfs_deblock		(*KENTRY->vec_xfs.deblock)
+# define xfs_root		(*KENTRY->vec_xfs.root)
+# define xfs_lookup		(*KENTRY->vec_xfs.lookup)
+# define xfs_getdev		(*KENTRY->vec_xfs.getdev)
+# define xfs_getxattr		(*KENTRY->vec_xfs.getxattr)
+# define xfs_chattr		(*KENTRY->vec_xfs.chattr)
+# define xfs_chown		(*KENTRY->vec_xfs.chown)
+# define xfs_chmode		(*KENTRY->vec_xfs.chmode)
+# define xfs_mkdir		(*KENTRY->vec_xfs.mkdir)
+# define xfs_rmdir		(*KENTRY->vec_xfs.rmdir)
+# define xfs_creat		(*KENTRY->vec_xfs.creat)
+# define xfs_remove		(*KENTRY->vec_xfs.remove)
+# define xfs_getname		(*KENTRY->vec_xfs.getname)
+# define xfs_rename		(*KENTRY->vec_xfs.rename)
+# define xfs_opendir		(*KENTRY->vec_xfs.opendir)
+# define xfs_readdir		(*KENTRY->vec_xfs.readdir)
+# define xfs_rewinddir		(*KENTRY->vec_xfs.rewinddir)
+# define xfs_closedir		(*KENTRY->vec_xfs.closedir)
+# define xfs_pathconf		(*KENTRY->vec_xfs.pathconf)
+# define xfs_dfree		(*KENTRY->vec_xfs.dfree)
+# define xfs_writelabel		(*KENTRY->vec_xfs.writelabel)
+# define xfs_readlabel		(*KENTRY->vec_xfs.readlabel)
+# define xfs_symlink		(*KENTRY->vec_xfs.symlink)
+# define xfs_readlink		(*KENTRY->vec_xfs.readlink)
+# define xfs_hardlink		(*KENTRY->vec_xfs.hardlink)
+# define xfs_fscntl		(*KENTRY->vec_xfs.fscntl)
+# define xfs_dskchng		(*KENTRY->vec_xfs.dskchng)
+# define xfs_release		(*KENTRY->vec_xfs.release)
+# define xfs_dupcookie		(*KENTRY->vec_xfs.dupcookie)
+# define xfs_mknod		(*KENTRY->vec_xfs.mknod)
+# define xfs_unmount		(*KENTRY->vec_xfs.unmount)
+# define xfs_stat64		(*KENTRY->vec_xfs.stat64)
+
+/*
+ * kentry_xdd
+ */
+# define xdd_open		(*KENTRY->vec_xdd.open)
+# define xdd_write		(*KENTRY->vec_xdd.write)
+# define xdd_read		(*KENTRY->vec_xdd.read)
+# define xdd_lseek		(*KENTRY->vec_xdd.lseek)
+# define xdd_ioctl		(*KENTRY->vec_xdd.ioctl)
+# define xdd_datime		(*KENTRY->vec_xdd.datime)
+# define xdd_close		(*KENTRY->vec_xdd.close)
 
 # endif /* _libkern_kernel_module_h */

@@ -113,7 +113,7 @@ real_fault(ulong address)
 	 }
 
 	/* Non existent ST RAM address */
-	if ((address >= *(long *)0x42eL /* phystop */) && \
+	if ((address >= *(unsigned long *)0x42eL /* phystop */) && \
 		(address < 0x00e00000L))
 	{
 		return 1L;
@@ -122,7 +122,7 @@ real_fault(ulong address)
 	/* Non existent TT RAM address */
 	if (*(long *)0x05a8L == 0x1357bd13L)	/* ramvalid */
 	{
-		if (address > *(long *)0x05a4L)	/* ramtop */
+		if (address > *(unsigned long *)0x05a4L)	/* ramtop */
 			return 1L;
 	}
 
@@ -131,20 +131,25 @@ real_fault(ulong address)
 
 # ifdef M68000
 static long
-handle_68000_bus_frame(MC68000_BUS_FRAME *frame)
+// handle_68000_bus_frame(MC68000_BUS_FRAME *frame)
+handle_68000_bus_frame(struct m68k_stack_frames *frame)
 {
 	return 0;
 }
 static long
-handle_68010_bus_frame(MC68010_BUS_FRAME *frame)
+// handle_68010_bus_frame(MC68010_BUS_FRAME *frame)
+handle_68010_bus_frame(struct m68k_stack_frames *frame)
 {
 	return 0;
 }
 # endif
 
 static long
-handle_68030_short_frame(MC68030_SHORT_FRAME *frame)
+// handle_68030_short_frame(MC68030_SHORT_FRAME *frame)
+handle_68030_short_frame(struct m68k_stack_frames *f)
 {
+	struct mc68030_bus_frame_short *frame = &f->type.m68030_sbus;
+
 	/* We only handle data faults, instruction
 	 * stream faults will cause bus error to be signalled.
 	 */
@@ -198,7 +203,7 @@ handle_68030_short_frame(MC68030_SHORT_FRAME *frame)
 		 * We always "allow" this. We understand that this
 		 * is the "access 3" as on the listing above.
 		 */
-		if (frame->data_output_buffer.one_long == *(long *)0x0008L)
+		if (frame->data_output_buffer.one_long == *(unsigned long *)0x0008L)
 		{
 			/* Reset flags in proc */
 			curproc->p_flag &= ~P_FLAG_BER;
@@ -299,8 +304,11 @@ handle_68030_short_frame(MC68030_SHORT_FRAME *frame)
 }
 
 static long
-handle_68030_long_frame(MC68030_LONG_FRAME *frame)
+// handle_68030_long_frame(MC68030_LONG_FRAME *frame)
+handle_68030_long_frame(struct m68k_stack_frames *f)
 {
+	struct mc68030_bus_frame_long *frame = &f->type.m68030_lbus;
+
 	/* We only handle data faults, instruction
 	 * stream faults will cause bus error to be signalled.
 	 */
@@ -396,7 +404,7 @@ handle_68030_long_frame(MC68030_LONG_FRAME *frame)
 		/* The top part of the long frame is identical with
 		 * short frame, so we can handle them both with one routine.
 		 */
-		return handle_68030_short_frame((MC68030_SHORT_FRAME *)frame);
+		return handle_68030_short_frame(f); //handle_68030_short_frame((MC68030_SHORT_FRAME *)frame);
 	}
 
 	/* All other cases: raise bus error signal */
@@ -405,8 +413,11 @@ handle_68030_long_frame(MC68030_LONG_FRAME *frame)
 }
 
 static long
-handle_68040_frame(MC68040_BUS_FRAME *frame)
+// handle_68040_frame(MC68040_BUS_FRAME *frame)
+handle_68040_frame(struct m68k_stack_frames *f)
 {
+	struct mc68040_bus_frame *frame = &f->type.m68040_bus;
+
 	/* We don't handle ATC faults */
 	if (frame->ssw.atc)
 		return 0;
@@ -441,7 +452,8 @@ handle_68040_frame(MC68040_BUS_FRAME *frame)
 }
 
 static long
-handle_68060_frame(MC68060_BUS_FRAME *frame)
+// handle_68060_frame(MC68060_BUS_FRAME *frame)
+handle_68060_frame(struct m68k_stack_frames *f __attribute__((unused)))
 {
 	return 0;
 }
@@ -449,10 +461,11 @@ handle_68060_frame(MC68060_BUS_FRAME *frame)
 /* We use the frame_zero type initially
  * to get access to the frame format word.
  */
-long
-check_bus(struct frame_zero frame)
+long _cdecl
+// check_bus(struct frame_zero frame)
+check_bus(struct m68k_stack_frames frame)
 {
-	ushort frame_format = frame.format_word & 0xf000;
+	ushort frame_format = frame.type.zero.format_word & 0xf000;
 
 	/* All this below only applies, when the program
 	 * has called Super() or Supexec() and thinks that
@@ -463,29 +476,29 @@ check_bus(struct frame_zero frame)
 
 # ifdef M68000
 	if (mcpu == 0)
-		return handle_68000_bus_frame((MC68000_BUS_FRAME *)&frame);
+		return handle_68000_bus_frame(&frame); //((MC68000_BUS_FRAME *)&frame);
 	else if (mcpu >= 10)
 	{
 		if (frame_format == 0x8000)
-			return handle_68010_bus_frame((MC68010_BUS_FRAME *)&frame);
+			return handle_68010_bus_frame(&frame); //((MC68010_BUS_FRAME *)&frame);
 		else if (frame_format == 0xa000)
-			return handle_68030_short_frame((MC68030_SHORT_FRAME *)&frame);
+			return handle_68030_short_frame(&frame); //((MC68030_SHORT_FRAME *)&frame);
 		else if (frame_format == 0xb000)
-			return handle_68030_long_frame((MC68030_LONG_FRAME *)&frame);
+			return handle_68030_long_frame(&frame); //((MC68030_LONG_FRAME *)&frame);
 		else if (frame_format == 0x7000)
-			return handle_68040_frame((MC68040_BUS_FRAME *)&frame);
+			return handle_68040_frame(&frame); //((MC68040_BUS_FRAME *)&frame);
 		else if (frame_format == 0x4000)
-			return handle_68060_frame((MC68060_BUS_FRAME *)&frame);
+			return handle_68060_frame(&frame); //((MC68060_BUS_FRAME *)&frame);
 	}
 # else
 	if (frame_format == 0xa000)
-		return handle_68030_short_frame((MC68030_SHORT_FRAME *)&frame);
+		return handle_68030_short_frame(&frame); //((MC68030_SHORT_FRAME *)&frame);
 	else if (frame_format == 0xb000)
-		return handle_68030_long_frame((MC68030_LONG_FRAME *)&frame);
+		return handle_68030_long_frame(&frame); //((MC68030_LONG_FRAME *)&frame);
 	else if (frame_format == 0x7000)
-		return handle_68040_frame((MC68040_BUS_FRAME *)&frame);
+		return handle_68040_frame(&frame); //((MC68040_BUS_FRAME *)&frame);
 	else if (frame_format == 0x4000)
-		return handle_68060_frame((MC68060_BUS_FRAME *)&frame);
+		return handle_68060_frame(&frame); //((MC68060_BUS_FRAME *)&frame);
 # endif
 	/* For all unknown processors and stack frame formats
 	 * we let it go.
@@ -520,15 +533,396 @@ check_bus(struct frame_zero frame)
 # define MOVEC_C2G	0x4e7a
 # define MOVEC_G2C	0x4e7b
 
-long
-check_priv(struct privilege_violation_stackframe frame)
+long _cdecl
+check_priv(struct privilege_violation_stackframe *frame)
 {
 	ushort opcode;
-
-	opcode = *frame.pc;
-
+	opcode = *frame->pc;
 # ifndef M68000
+	/* Emulate the "move from sr" instruction,
+	 * which is not privileged on 68000, and privileged later.
+	 * Thus many programs (even Thing Desktop) execute it in
+	 * user mode, if they need an access to the condition codes.
+	 */
+	if ((opcode & MODE_REG_MASK) == MOVE_FROM_SR)
+	{
+		ushort mode, reg;
 
+		reg = opcode & 0x0007;
+		mode = opcode >> 3;
+		mode &= 0x0007;
+
+		switch (mode)
+		{
+			/* Hide the IPL mask and trace bits, reveal the S bit */
+			case 0x0:		/* MOVE SR,Dn */
+			{
+				ulong temp;
+
+				temp = frame->data_reg[reg];
+				temp &= 0xffff0000L;
+				temp |= (frame->sr & 0x20ff);
+				frame->data_reg[reg] = temp;
+				frame->pc++;
+
+				return -1;	/* reload registers and do RTE */
+			}
+
+			/* Here comes unsafe stuff, i.e. writes to the memory.
+			 * We simply ignore them, because an attempt to fully
+			 * emulate it would be both slow and dangerous.
+			 *
+			 * Programs should not use the instruction, so we are
+			 * doing them a favour anyways, if we silently tolerate
+			 * the offension.
+			 */
+			case 0x2:		/* MOVE SR,(An) */
+			{
+				frame->pc++;
+
+				return -1;	/* reload registers and do RTE */
+			}
+
+			case 0x3:		/* MOVE SR,(An)+ */
+			{
+				frame->addr_reg[reg] += sizeof(short);
+				frame->pc++;
+
+				return -1;	/* reload registers and do RTE */
+			}
+
+			case 0x4:		/* MOVE SR,-(An) */
+			{
+				frame->addr_reg[reg] -= sizeof(short);
+				frame->pc++;
+
+				return -1;	/* reload registers and do RTE */
+			}
+
+			case 0x5:		/* MOVE SR,(d16,An) */
+			{
+				frame->pc += 2;
+
+				return -1;	/* reload registers and do RTE */
+			}
+
+			/* MOVE SR,(d8,An,Xn) */
+			/* MOVE SR,(bd,An,Xn) - 68020+ */
+			/* MOVE SR,([bd,An,Xn],od) - 68020+ */
+			/* MOVE SR,([bd,An],Xn,od) - 68020+ */
+			case 0x6:
+			{
+				return 0;	/* This makes them "really" privileged */
+			}
+
+			case 0x7:
+			{
+				/* "MOVE SR,x.w" and "MOVE SR,x.l" */
+				frame->pc += (reg == 0) ? 2 : 3;
+
+				return -1;	/* reload registers and RTE */
+			}
+
+			default:
+			{
+				return 0;
+			}
+		}
+	}
+# endif /* M68000 */
+
+# ifndef NO_FAKE_SUPER
+
+	/* We mimic the original behaviour: some instructions are only
+	 * available after Super(), so we must now emulate them, when
+	 * letting programs continue in user mode after Super().
+	 */
+	if ((curproc->p_flag & P_FLAG_SUPER) == 0)
+		return 0;
+
+	/* andi.w #xxxx,SR: we generally do andi.w #xxxx,CCR instead
+	 */
+	if (opcode == ANDI_TO_SR)
+	{
+		ushort imm;
+
+		imm = frame->pc[1];
+		/* This can switch the CPU back to user mode, it is now
+		 * safe to do that, so we emulate it as well.
+		 */
+		if ((imm & 0x2000) == 0)
+			curproc->p_flag &= ~P_FLAG_SUPER;
+		imm |= 0xffe0;
+		frame->sr &= imm;
+
+		frame->pc += 2;
+
+		return -1;		/* reload everything and RTE */
+	}
+
+	/* eori.w #xxxx,SR: we generally do eori.w #xxxx,CCR instead
+	 */
+	if (opcode == EORI_TO_SR)
+	{
+		ushort imm;
+
+		imm = frame->pc[1];
+		/* This can switch the CPU back to user mode, it is now
+		 * safe to do that, so we emulate it as well.
+		 */
+		if (imm & 0x2000)
+			curproc->p_flag &= ~P_FLAG_SUPER;
+		imm &= 0x001f;
+		frame->sr ^= imm;
+
+		frame->pc += 2;
+
+		return -1;		/* reload everything and RTE */
+	}
+
+	/* ori.w #xxxx,SR: we generally do ori.w #xxxx,CCR instead
+	 */
+	if (opcode == ORI_TO_SR)
+	{
+		ushort imm;
+
+		imm = frame->pc[1];
+		imm &= 0x001f;
+		frame->sr |= imm;
+
+		frame->pc += 2;
+
+		return -1;		/* reload everything and RTE */
+	}
+
+	/* Ignore this */
+	if (opcode == RESET)
+	{
+		frame->pc++;
+
+		return -1;
+	}
+
+	/* Ignore STOP instruction, unless the user wants to set the IPL to
+	 * 6 or 7. This means that the user wants to lock the machine up
+	 * totally, and it may be that there's not even any valid code
+	 * behind the instruction. So we kill the process.
+	 */
+	if (opcode == STOP)
+	{
+		ushort imm, ipl;
+
+		imm = frame->pc[1];
+
+		/* We let it go if STOP sets either of the trace bits.
+		 */
+		if ((imm & 0xe000) == 0x2000)
+		{
+			ipl = imm >> 8;
+			ipl &= 7;
+			if (ipl > 5)
+				return 0;	/* make privilege violation */
+		}
+		frame->pc += 2;
+
+		return -1;
+	}
+
+	/* MOVEC is available as of 68010 */
+	if (mcpu)
+	{
+		/* All data read from the control registers we read as zeros
+		 * except user stack pointer.
+		 */
+		if (opcode == MOVEC_C2G)
+		{
+			ushort imm, reg, control;
+			volatile ulong *register_set;
+
+			imm = frame->pc[1];
+			reg = imm >> 12;
+			control = imm & 0x0fff;
+
+			register_set = (reg & 0x8) ? frame->addr_reg : frame->data_reg;
+			reg &= 7;
+
+			if (mcpu >= 10)
+			{
+				switch (control)
+				{
+					case 0x000:	/* Source function code */
+					case 0x001:	/* Destination function code */
+					case 0x801:	/* Vector base register */
+					{
+						register_set[reg] = 0L;	/* pretend 0 */
+
+						frame->pc += 2;
+
+						return -1;
+					}
+					case 0x800:	/* User stack pointer */
+					{
+						register_set[reg] = get_usp();
+
+						frame->pc += 2;
+
+						return -1;
+					}
+				}
+			}
+
+			if (mcpu >= 20)
+			{
+				switch (control)
+				{
+					case 0x002:	/* Cache control register */
+					{
+						register_set[reg] = 0L;	/* pretend 0 */
+
+						frame->pc += 2;
+
+						return -1;
+					}
+					case 0x802:	/* Cache address register */
+					{
+						if (mcpu == 20 || mcpu == 30)
+						{
+							register_set[reg] = 0;
+
+							frame->pc += 2;
+
+							return -1;
+						}
+						break;
+					}
+					case 0x803:
+					case 0x804:
+					{
+						register_set[reg] = get_usp();
+
+						frame->pc += 2;
+
+						return -1;
+					}
+				}
+			}
+
+			if (mcpu >= 40)
+			{
+				switch (control)
+				{
+					case 0x003:	/* MMU translation control register */
+					case 0x004:	/* Instruction transparent translation register 0 */
+					case 0x005:	/* Instruction transparent translation register 0 */
+					case 0x006:	/* Data transparent translation register 0 */
+					case 0x007:	/* Data transparent translation register 0 */
+					case 0x805:	/* MMUSR */
+					case 0x806:	/* URP */
+					case 0x807:	/* SRP */
+					{
+						register_set[reg] = 0;
+
+						frame->pc += 2;
+
+						return -1;
+					}
+				}
+			}
+
+			if (mcpu == 60)
+			{
+			}
+		}
+
+		/* We ignore all writes to control registers */
+		if (opcode == MOVEC_G2C)
+		{
+			ushort control = frame->pc[1] & 0x0fff;
+
+			if (mcpu >= 10)
+			{
+				switch (control)
+				{
+					case 0x000:	/* Source function code */
+					case 0x001:	/* Destination function code */
+					case 0x801:	/* Vector base register */
+					{
+						frame->pc += 2;
+
+						return -1;
+					}
+				}
+			}
+
+			if (mcpu >= 20)
+			{
+				switch (control)
+				{
+					case 0x002:	/* Cache control register */
+					{
+						frame->pc += 2;
+
+						return -1;
+					}
+					case 0x802:	/* Cache address register */
+					{
+						if (mcpu == 20 || mcpu == 30)
+						{
+							frame->pc += 2;
+
+							return -1;
+						}
+						break;
+					}
+					case 0x803:
+					case 0x804:
+					{
+						frame->pc += 2;
+
+						return -1;
+					}
+				}
+			}
+
+			if (mcpu >= 40)
+			{
+				switch (control)
+				{
+					case 0x003:	/* MMU translation control register */
+					case 0x004:	/* Instruction transparent translation register 0 */
+					case 0x005:	/* Instruction transparent translation register 1 */
+					case 0x006:	/* Data transparent translation register 0 */
+					case 0x007:	/* Data transparent translation register 1 */
+					case 0x805:	/* MMUSR */
+					case 0x806:	/* URP */
+					case 0x807:	/* SRP */
+					{
+						frame->pc += 2;
+
+						return -1;
+					}
+				}
+			}
+
+			if (mcpu == 60)
+			{
+			}
+
+			return -1;
+		}
+	}
+
+# endif /* NO_FAKE_SUPER */
+
+	return 0;
+}
+#if 0
+long _cdecl
+check_priv(volatile struct privilege_violation_stackframe frame)
+{
+	ushort opcode;
+	opcode = *frame.pc;
+# ifndef M68000
 	/* Emulate the "move from sr" instruction,
 	 * which is not privileged on 68000, and privileged later.
 	 * Thus many programs (even Thing Desktop) execute it in
@@ -619,7 +1013,6 @@ check_priv(struct privilege_violation_stackframe frame)
 			}
 		}
 	}
-
 # endif /* M68000 */
 
 # ifndef NO_FAKE_SUPER
@@ -728,7 +1121,7 @@ check_priv(struct privilege_violation_stackframe frame)
 		if (opcode == MOVEC_C2G)
 		{
 			ushort imm, reg, control;
-			ulong *register_set;
+			volatile ulong *register_set;
 
 			imm = frame.pc[1];
 			reg = imm >> 12;
@@ -907,5 +1300,6 @@ check_priv(struct privilege_violation_stackframe frame)
 
 	return 0;
 }
+#endif
 
 /* EOF */

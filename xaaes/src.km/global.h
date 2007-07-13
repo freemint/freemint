@@ -29,7 +29,7 @@
 
 #include <stddef.h>
 
-#include "mint/mint.h"
+#include "mint/module.h"
 #include "mint/config.h"
 #include "libkern/libkern.h"
 

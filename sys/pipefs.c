@@ -158,7 +158,7 @@ struct pipe
 	char	buf[PIPESIZ];	/* pipe data */
 };
 
-struct fifo* piperoot;
+struct fifo *piperoot;
 struct timeval pipestamp;
 
 static long _cdecl
@@ -236,10 +236,14 @@ pipe_getxattr (fcookie *fc, XATTR *xattr)
 
 		xattr->uid = xattr->gid = 0;
 
+		SET_XATTR_TD(xattr,m,pipestamp.tv_sec);
+		SET_XATTR_TD(xattr,a,xtime.tv_sec);
+		SET_XATTR_TD(xattr,c,rootproc->started.tv_sec);
+#if 0
 		*(long *) &xattr->mtime = pipestamp.tv_sec;
 		*(long *) &xattr->atime = xtime.tv_sec;
 		*(long *) &xattr->ctime = rootproc->started.tv_sec;
-
+#endif
 		xattr->mode = S_IFDIR | DEFAULT_DIRMODE;
 		xattr->attr = FA_DIR;
 		xattr->size = xattr->nblocks = 0;
@@ -248,10 +252,14 @@ pipe_getxattr (fcookie *fc, XATTR *xattr)
 	{
 		struct fifo *this = (struct fifo *) fc->index;
 
+		SET_XATTR_TD(xattr,m,this->mtime.tv_sec);
+		SET_XATTR_TD(xattr,a,xtime.tv_sec);
+		SET_XATTR_TD(xattr,c,this->ctime.tv_sec);
+#if 0
 		*(long *) &xattr->mtime = this->mtime.tv_sec;
 		*(long *) &xattr->atime = xtime.tv_sec;
 		*(long *) &xattr->ctime = this->ctime.tv_sec;
-
+#endif
 		xattr->uid = this->uid;
 		xattr->gid = this->gid;
 		xattr->mode = this->mode;
@@ -592,7 +600,7 @@ pipe_creat (fcookie *dir, const char *name, unsigned int mode, int attrib, fcook
 		   /* do_open does the rest of tty initialization */
 	}
 	else
-		tty = 0;
+		tty = NULL;
 
 	/* set up the pipes appropriately */
 	inp->start = inp->len = 0;
@@ -621,7 +629,7 @@ pipe_creat (fcookie *dir, const char *name, unsigned int mode, int attrib, fcook
 	b->inp = inp; b->outp = outp; b->tty = tty;
 
 	b->next = piperoot;
-	b->open = (FILEPTR *)0;
+	b->open = (FILEPTR *)NULL;
 	piperoot = b;
 
 	/* we have to return a file cookie as well */

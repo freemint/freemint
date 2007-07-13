@@ -106,26 +106,26 @@ long	scsidrv_GetMsg		(ushort bus, ushort *msg);
 
 struct scsicmd
 {
-	short	*handle;		/* Handle fr Bus und Ger„t */
+	short	*handle;		/* Handle fï¿½r Bus und Gerï¿½t */
 	char	*cmd;			/* Zeiger auf CmdBlock */
-	ushort	cmdlen;			/* L„nge des Cmd-Block (fr ACSI n”tig) */
+	ushort	cmdlen;			/* Lï¿½nge des Cmd-Block (fï¿½r ACSI nï¿½tig) */
 	void	*buf;			/* Datenpuffer */
-	ulong	transferlen;		/* šbertragungsl„nge */
-	char	*sense;			/* Puffer fr ReqSense (18 Bytes) */
+	ulong	transferlen;		/* ï¿½bertragungslï¿½nge */
+	char	*sense;			/* Puffer fï¿½r ReqSense (18 Bytes) */
 	ulong	timeout;		/* Timeout in 1/200 sec */
-	ushort	flags;			/* Bitvektor fr Ablaufwnsche */
+	ushort	flags;			/* Bitvektor fï¿½r Ablaufwï¿½nsche */
 # define Disconnect 0x10		/* versuche disconnect */
 };
 
 struct businfo
 {
 	/* abgearbeitete Busnummern
-	 * jeder Treiber mu bei InuireSCSI das
+	 * jeder Treiber muï¿½ bei InuireSCSI das
 	 * mit seiner Busnummer korrespondierende
 	 * Bit setzen.
 	 */
 	ulong	BusIds;
-	char	res [28];	/* fr Erweiterungen */
+	char	res [28];	/* fï¿½r Erweiterungen */
 	
 	char	BusName [20];	/* 'SCSI', 'ACSI', 'PAK-SCSI' */
 	ushort	BusNo;		/* Nummer, unter der der Bus anzusprechen ist */
@@ -137,14 +137,14 @@ struct businfo
 	 */
 	ushort	features;
 # define cArbit		0x01	/* auf dem Bus wird arbitriert */
-# define cAllCmds	0x02	/* hier k”nnen ale SCSI-Cmds abgesetzt werden */
+# define cAllCmds	0x02	/* hier kï¿½nnen ale SCSI-Cmds abgesetzt werden */
 # define cTargCtrl	0x04	/* Das Target steuert den Ablauf (so soll's sein!) */
 # define cTarget	0x08	/* auf diesem Bus kann man sich als Target installieren */
-# define cCanDisconnect	0x10	/* Disconnect ist m”glich */
-# define cScatterGather	0x20	/* scatter gather bei virtuellem RAM m”glich */
+# define cCanDisconnect	0x10	/* Disconnect ist mï¿½glich */
+# define cScatterGather	0x20	/* scatter gather bei virtuellem RAM mï¿½glich */
 	
-	/* maximale Transferl„nge auf diesem Bus (in Bytes)
-	 * entspricht zB bei ACSI der Gr”e des FRB
+	/* maximale Transferlï¿½nge auf diesem Bus (in Bytes)
+	 * entspricht zB bei ACSI der Grï¿½ï¿½e des FRB
 	 */
 	ulong	MaxLen;
 };
@@ -209,7 +209,7 @@ struct scsidrv
 	long _cdecl (*SendMsg)		(ushort bus, ushort msg);
 	long _cdecl (*GetMsg)		(ushort bus, ushort *msg);
 	
-	/* globale Variablen (fr Targetroutinen) */
+	/* globale Variablen (fï¿½r Targetroutinen) */
 	REQDATA *ReqData;
 };
 

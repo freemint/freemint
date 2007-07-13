@@ -224,7 +224,7 @@ parse_drvlst(struct parsinf *inf)
 
 /*----------------------------------------------------------------------------*/
 static union genarg
-parse_long(struct parsinf *inf, struct range *range)
+parse_long(struct parsinf *inf, const struct range *range)
 {
 	char *src = inf->src;
 	int sign = 1;
@@ -291,7 +291,7 @@ parse_long(struct parsinf *inf, struct range *range)
 
 /*----------------------------------------------------------------------------*/
 static union genarg
-parse_short(struct parsinf *inf, struct range *range)
+parse_short(struct parsinf *inf, const struct range *range)
 {
 	struct range s_rng = {0x8000,0x7FFF};
 	union genarg ret = parse_long(inf, (range ? range : &s_rng));
@@ -302,7 +302,7 @@ parse_short(struct parsinf *inf, struct range *range)
 	return ret;
 }
 static union genarg
-parse_ushort(struct parsinf *inf, struct range *range)
+parse_ushort(struct parsinf *inf, const struct range *range)
 {
 	union genarg ret = parse_long(inf, NULL);
 
@@ -503,7 +503,8 @@ parser(FILEPTR *f, long f_size,
 
 		while (state == 2) /*---------- process arg */
 		{
-			struct range *range = (item->dat ? (struct range *) &item->dat : NULL);
+// 			struct range *range = (item->dat ? (struct range *)&item->dat : NULL);
+			const struct range *range = (item->dat.dat ? &item->dat.range : NULL);
 			char  *start;
 
 			parse_spaces(inf); /*--- (2.1) skip leading spaces */
@@ -577,7 +578,7 @@ parser(FILEPTR *f, long f_size,
 				case PI_C_TT:
 				case PI_C_TA:             (*cb.cc )(  A0C,A1C,         inf); break;
 				case PI_C_0TT:            (*cb._cc)(0,A0C,A1C             ); break;
-				case PI_V_ATK:            (*cb.ccl)(  A0C,A1C,item->dat   ); break;
+				case PI_V_ATK:            (*cb.ccl)(  A0C,A1C,item->dat.dat); break;
 				/* references */
 				case PI_R_S: *(short *)(cb._v) = arg[0].s;                   break;
 				case PI_R_L: *(long  *)(cb._v) = arg[0].l;                   break;
@@ -586,7 +587,7 @@ parser(FILEPTR *f, long f_size,
 				/* string buf */
 				case PI_R_T:
 				{
-					if (strlen(arg[0].c) < item->dat)
+					if (strlen(arg[0].c) < item->dat.dat)
 						strcpy((char *)(cb._v), arg[0].c); 
 					break;
 				}

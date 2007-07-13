@@ -225,7 +225,8 @@ struct common
 	unsigned long gdos_version;
 
 	void (*reschange)(enum locks lock, struct xa_client *client, bool open);
-
+	struct kernkey_entry *kernkeys;
+	
 	short AESpid;			/* The AES's MiNT process ID */
 	short DSKpid;			/* The desktop programs pid, if any */
 
@@ -235,8 +236,9 @@ struct common
 
 	struct xa_client *Aes;		/* */
 	struct xa_client *Hlp;
-	AESPB		*Hlp_pb;
-	enum waiting_for Aes_waiting_for;
+	void 	*Hlp_pb;
+// 	enum waiting_for Aes_waiting_for;
+	unsigned long	Aes_waiting_for;
 	
 	short move_block;		/* 0 = movement allowed
 					 * 1 = internal movement cevent sent to client - no move
@@ -359,7 +361,6 @@ struct config
 	bool remap_cicons;
 	bool set_rscpalette;
 	bool no_xa_fsel;
-	bool auto_program;
 	bool point_to_type;
 	bool fsel_cookie;
 	bool usehome;			/* use $HOME in shell_find */
@@ -472,11 +473,38 @@ void	free_xa_data_list	(struct xa_data_hdr **list);
 
 /* Global VDI calls */
 XVDIPB *	create_vdipb(void);
-void		do_vdi_trap (XVDIPB * vpb);
-void		VDI(XVDIPB *vpb, short c0, short c1, short c3, short c5, short c6);
+// void		do_vdi_trap (XVDIPB * vpb);
+// void		VDI(XVDIPB *vpb, short c0, short c1, short c3, short c5, short c6);
 void		get_vdistr(char *d, short *s, short len);
 void		xvst_font(XVDIPB *vpb, short handle, short id);
 XFNT_INFO *	xvqt_xfntinfo(XVDIPB *vpb, short handle, short flags, short id, short index);
 short		xvst_point(XVDIPB *vpb, short handle, short point);
+
+static inline void
+do_vdi_trap (XVDIPB * vpb)
+{
+	__asm__ volatile
+	(
+		"movea.l	%0,a0\n\t" 		\
+		"move.l		a0,d1\n\t"		\
+		"move.w		#115,d0\n\t"		\
+		"trap		#2\n\t"			\
+		:
+		: "a"(vpb)			
+		: "a0", "d0", "d1", "memory"	
+	);
+}
+
+static inline void
+VDI(XVDIPB *vpb, short c0, short c1, short c3, short c5, short c6)
+{
+	vpb->control[V_OPCODE   ] = c0;
+	vpb->control[V_N_PTSIN  ] = c1;
+	vpb->control[V_N_INTIN  ] = c3;
+	vpb->control[V_SUBOPCODE] = c5;
+	vpb->control[V_HANDLE   ] = c6;
+
+	do_vdi_trap(vpb);
+}
 
 #endif /* _xa_global_h */

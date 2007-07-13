@@ -56,6 +56,7 @@ struct privilege_violation_stackframe
 	ushort *pc;
 	ushort format_word;
 };
+		
 
 /* Every 68k processor uses different stack frame format for
  * access faults. Very funny...
@@ -155,7 +156,6 @@ struct mc68000_bus_frame
 	ushort sr;
 	ushort *pc;
 };
-
 /* 68010 bus error stack frame, format $8 */
 struct mc68010_bus_frame
 {
@@ -285,11 +285,26 @@ struct mc68060_bus_frame
 	union
 	{
 		ushort *fault_pc;
-		struct mc68060_fslw;
+		struct mc68060_fslw fslw;
 	} bottom;
 };
 
-long check_bus(struct frame_zero frame);
-long check_priv(struct privilege_violation_stackframe frame);
+struct m68k_stack_frames
+{
+	union {
+		struct frame_zero 			zero;
+		struct privilege_violation_stackframe	privviol;
+		struct mc68000_bus_frame		m68000_bus;
+		struct mc68010_bus_frame		m68010_bus;
+		struct mc68030_bus_frame_short		m68030_sbus;
+		struct mc68030_bus_frame_long		m68030_lbus;
+		struct mc68040_bus_frame		m68040_bus;
+		struct mc68060_bus_frame		m68060_bus;
+	} type;
+};
 
+// long check_bus(struct frame_zero frame);
+long _cdecl check_bus(struct m68k_stack_frames);
+// long _cdecl check_priv(volatile struct privilege_violation_stackframe frame);
+long _cdecl check_priv(struct privilege_violation_stackframe *frame);
 # endif /* _check_exc_h */

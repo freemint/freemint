@@ -61,6 +61,7 @@
 # include "timeout.h"		/* nap, addtimeout, canceltimeout, addroottimeout, cancelroottimeout */
 # include "umemory.h"		/* umalloc, ufree */
 # include "util.h"		/* pid2proc */
+# include "xfs_xdd.h"
 
 
 # undef DEFAULT_MODE

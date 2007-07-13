@@ -1,5 +1,5 @@
 /*
- * Copyright 1993, 1994 by Ulrich Khn. All rights reserved.
+ * Copyright 1993, 1994 by Ulrich Kï¿½hn. All rights reserved.
  *
  * THIS PROGRAM COMES WITH ABSOLUTELY NO WARRANTY, NOT
  * EVEN THE IMPLIED WARRANTIES OF MERCHANTIBILITY OR
@@ -138,15 +138,25 @@ fattr2xattr (fattr *fa, XATTR *xa)
 	
 	if (native_utc)
 	{
+		SET_XATTR_TD(xa,m,fa->mtime.seconds);
+		SET_XATTR_TD(xa,a,fa->atime.seconds);
+		SET_XATTR_TD(xa,c,fa->ctime.seconds);
+#if 0
 		*((long *) &(xa->mtime)) = fa->mtime.seconds;
 		*((long *) &(xa->atime)) = fa->atime.seconds;
 		*((long *) &(xa->ctime)) = fa->ctime.seconds;
+#endif
 	}
 	else
 	{
+		SET_XATTR_TD(xa,m,dostime(fa->mtime.seconds));
+		SET_XATTR_TD(xa,a,dostime(fa->atime.seconds));
+		SET_XATTR_TD(xa,c,dostime(fa->ctime.seconds));
+#if 0
 		*((long *) &(xa->mtime)) = dostime (fa->mtime.seconds);
 		*((long *) &(xa->atime)) = dostime (fa->atime.seconds);
 		*((long *) &(xa->ctime)) = dostime (fa->ctime.seconds);
+#endif
 	}
 	
 # if 0

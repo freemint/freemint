@@ -85,7 +85,7 @@ arpdev_read (FILEPTR *fp, char *buf, long nbytes)
 		if (j >= ARP_HASHSIZE)
 			break;
 		
-		bzero (&info, sizeof (info));
+		mint_bzero (&info, sizeof (info));
 		
 		/*
 		 * Protocoll address

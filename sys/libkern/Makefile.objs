@@ -22,6 +22,15 @@ CFLAGS-md5.c = -m68000
 
 # default overwrites
 DEFINITIONS = -D__KERNEL__
+
+NOCFLAGS-strchr.c = -Wcast-qual
+NOCFLAGS-strrchr.c = -Wcast-qual
+NOCFLAGS-strstr.c = -Wcast-qual
+NOCFLAGS-strtol.c = -Wcast-qual
+NOCFLAGS-strtoll.c = -Wcast-qual
+NOCFLAGS-strtoul.c = -Wcast-qual
+NOCFLAGS-strtoull.c = -Wcast-qual
+
 cflags = $(kernel_cflags)
 nocflags = $(kernel_nocflags)
 

@@ -317,7 +317,7 @@ ext2_check_dir_entry (const char *caller, COOKIE *dir, ext2_d2 *de, UNIT *u, ulo
 		error_msg = "rec_len % 4 != 0";
 	else if (rec_len < EXT2_DIR_REC_LEN (de->name_len))
 		error_msg = "rec_len is too small for name_len";
-	else if (dir && ((char *) de - u->data) + rec_len > EXT2_BLOCK_SIZE (dir->s))
+	else if (dir && (ulong)de - (ulong)u->data + rec_len > EXT2_BLOCK_SIZE(dir->s)) // ((char *)de - (char *)u->data) + rec_len > EXT2_BLOCK_SIZE(dir->s))
 		error_msg = "directory entry across blocks";
 	else if (dir && le2cpu32 (de->inode) > le2cpu32 (dir->s->sbi.s_sb->s_inodes_count))
 		error_msg = "inode out of bounds";
@@ -658,7 +658,7 @@ ext2_add_entry (COOKIE *dir, const char *name, long namelen, ext2_d2 **res_dir, 
 	
 	while (1)
 	{
-		if ((char *) de >= EXT2_BLOCK_SIZE (s) + u->data)
+		if ((unsigned long)de >= (unsigned long)u->data + EXT2_BLOCK_SIZE(s)) // ((char *) de >= EXT2_BLOCK_SIZE (s) + u->data)
 		{
 			u = ext2_bread (dir, offset >> EXT2_BLOCK_SIZE_BITS (s), err);
 			if (!u)

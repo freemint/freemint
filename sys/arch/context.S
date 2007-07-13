@@ -71,9 +71,10 @@ _build_context:
 
 	movem.l	d0-d7/a0-a6,(a0)	// save registers D0-D7/A0-A6
 
+#ifndef M68000
 	tst.w	_no_mem_prot		// is there memory protection?
 	bne.s	noprot1
-#if defined(M68040) || defined(M68060)
+#if defined (M68040) || defined (M68060)
 	dc.w	0x4e7a,0x0806		// movec urp,d0
 	move.l	d0,C_CRP(a0)
 #else
@@ -81,12 +82,13 @@ _build_context:
 	pmove	tc,C_TC(a0)		// save TC from MMU
 #endif
 noprot1:
+#endif
 	clr.b	C_PTRACE(a0)		// no pending traces, thanks!
 	lea	12(sp),a1		// start of the interesting stack area
 	move.w	(a1)+,d0		// 68000 fake frame format
 
 #ifdef M68000
-	move.w	(0x59e).w,d7		// get process frame flag
+	move.w	(0x59e).w,d1		// get process frame flag
 	bne.s	nojunk			// we have some junk on the stack
 	move.w	d0,C_SFMT(a0)		// save fake frame format
 	subq.w	#0x8,d0			// if bus error (note: subq is faster than
@@ -102,21 +104,22 @@ nojunk:
 	move.w	d0,C_SR(a0)		// save it
 	move.l	(a1)+,C_PC(a0)		// save PC of context
 #ifdef M68000
-	tst.w	d7			// test longframe (AKP)
+	tst.w	d1			// test longframe (AKP)
 	beq.s	short1			// short
 #endif
 	tst.w	_fpu			// is there a true FPU in the system
 	beq.s	nofpu
 
 	fsave	C_FSTATE(a0)		// save internal state frame
-
+#ifndef M68000
 	cmp.w	#60,_mcpu+2		// on 68060 frame format is different
 	bne.s	no60
 	tst.b	C_FSTATE+2(a0)		// if NULL frame then the FPU is not in use
 	beq.s	nofpu			// skip programmer's model save
 	bra.s	save
-
-no60:	tst.b	C_FSTATE(a0)		// if NULL frame then the FPU is not in use
+no60:
+#endif
+	tst.b	C_FSTATE(a0)		// if NULL frame then the FPU is not in use
 	beq.s	nofpu			// skip programmer's model save
 save:	fmovem.x fp0-fp7,C_FREGS(a0)		// save data registers
 	fmovem.l fpcr/fpsr/fpiar,C_FCTRL(a0)	// and control registers
@@ -149,11 +152,13 @@ L_CONT1:
 	move.l	(sp)+,C_A0(a0)		// save old register a0
 	rts
 
-_save_context:	move.l	a0,-(sp)	// save a0
+_save_context:
+	move.l	a0,-(sp)		// save a0
 	move.l	8(sp),a0		// get address of context save area
 
 	movem.l	d0-d7/a0-a6,(a0)	// save D0-D7/A0-A6
 
+#ifndef M68000
 	tst.w	_no_mem_prot
 	bne.s	noprot2
 	move.w	sr,d1
@@ -166,21 +171,23 @@ _save_context:	move.l	a0,-(sp)	// save a0
 #endif
 	move.w	d1,sr
 noprot2:
+#endif
 
 // if running with a true coprocessor we need to save the FPU state
 
 	tst.w	_fpu			// is there a true FPU in the system
 	beq.s	nofpu2
 	fsave	C_FSTATE(a0)		// save internal state frame
-
+#ifndef M68000
 	cmp.w	#60,_mcpu+2		// on 68060 frame format is different
 	bne.s	no60_2
 	tst.b	C_FSTATE+2(a0)		// if NULL frame then the FPU is not in use
 	beq.s	nofpu2			// skip programmer's model save
 	bra.s	save2
-
-no60_2:	tst.b	C_FSTATE(a0)		// if NULL frame then the FPU is not in use
-	beq.s	nofpu2			// skip programmer's model save
+no60_2:
+#endif
+	tst.b	C_FSTATE(a0)			// if NULL frame then the FPU is not in use
+	beq.s	nofpu2				// skip programmer's model save
 save2:	fmovem.x fp0-fp7,C_FREGS(a0)		// save data registers
 	fmovem.l fpcr/fpsr/fpiar,C_FCTRL(a0)	// and control registers
 nofpu2:
@@ -228,7 +235,7 @@ _restore_context:
 //	bne.s	noprot3
 //	pmove	C_CRP(a0),crp		// restore MMU root pointer
 //	pmove	C_TC(a0),tc		// restore MMU control register
-noprot3:
+//noprot3:
 
 #ifdef M68000
 	tst.w	(0x59e).w		// test longframe (AKP)
@@ -256,13 +263,16 @@ rcovernc:
 // if running with a true coprocessor we need to restore the FPU state
 	tst.w	_fpu			// is there a true FPU in the system
 	beq.s	short3
+#ifndef M68000
 	cmp.w	#60,_mcpu+2		// on 68060 frame format is different
 	bne.s	no60_3
 	tst.b	C_FSTATE+2(a0)
 	beq.s	short4
 	bra.s	save3
-no60_3:	tst.b	C_FSTATE(a0)		// if NULL frame then the FPU is not in use
-	beq.s	short4			// skip programmer's model restore
+no60_3:
+#endif
+	tst.b	C_FSTATE(a0)			// if NULL frame then the FPU is not in use
+	beq.s	short4				// skip programmer's model restore
 save3:	fmovem.l C_FCTRL(a0),fpcr/fpsr/fpiar	// restore control registers
 	fmovem.x C_FREGS(a0),fp0-fp7		// and data registers
 short4:
@@ -294,6 +304,7 @@ _change_context:
 	move.l	a1,usp			// set user stack pointer
 	move.l	C_TERM(a0),(0x408).w	// restore GEMDOS terminate vector
 
+#ifndef M68000
 // Set memory context now
 	tst.w	_no_mem_prot
 	bne.s	noprot4
@@ -310,6 +321,8 @@ _change_context:
 #endif
 	move.w	d1,sr
 noprot4:
+#endif
+
 #ifdef M68000
 	tst.w	(0x59e).w		// test longframe (AKP)
 	beq.s	short6
@@ -337,12 +350,16 @@ rcover2nc:
 
 	tst.w	_fpu			// is there a true FPU in the system
 	beq.s	short6
+
+#ifndef M68000
 	cmp.w	#60,_mcpu+2		// on 68060 frame format is different
 	bne.s	no60_4
 	tst.b	C_FSTATE+2(a0)
 	beq.s	short5
 	bra.s	save5
-no60_4:	tst.b	C_FSTATE(a0)		// if NULL frame then the FPU is not in use
+no60_4:
+#endif
+	tst.b	C_FSTATE(a0)		// if NULL frame then the FPU is not in use
 	beq.s	short5			// skip programmer's model restore
 save5:	fmovem.l C_FCTRL(a0),fpcr/fpsr/fpiar	// restore control registers
 	fmovem.x C_FREGS(a0),fp0-fp7		// and data registers

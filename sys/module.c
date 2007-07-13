@@ -155,8 +155,8 @@ kernel_close(struct file *f)
 }
 
 
-static long load_xfs (struct basepage *b, const char *name);
-static long load_xdd (struct basepage *b, const char *name);
+static long load_xfs (struct basepage *b, const char *name, short *class, short *subclass);
+static long load_xdd (struct basepage *b, const char *name, short *class, short *subclass);
 
 static const char *_types[] =
 {
@@ -164,7 +164,7 @@ static const char *_types[] =
 	".xfs"
 };
 
-static long (*_loads[])(struct basepage *, const char *) =
+static long (*_loads[])(struct basepage *, const char *, short *, short *) =
 {
 	load_xdd,
 	load_xfs
@@ -189,13 +189,30 @@ load_all_modules(unsigned long mask)
 	}
 }
 
-static struct basepage *
-load_module(const char *filename, long *err)
+static struct kernel_module *loaded_modules = NULL;
+
+static void
+free_km(struct kernel_module *km)
 {
-	struct basepage *b = NULL;
+	if (km->prev)
+		km->prev->next = km->next;
+	else
+		loaded_modules = km->next;
+
+	if (km->next)
+		km->next->prev = km->prev;
+
+	kfree(km);
+}
+
+static struct kernel_module *
+load_module(const char *path, const char *filename, long *err)
+{
+	struct basepage *b;
+	struct kernel_module *km = NULL;
 	struct file *f;
 	FILEHEAD fh;
-	long size;
+	long size, kmsize;
 
 	f = kernel_open(filename, O_DENYW | O_EXEC, err, NULL);
 	if (!f) return NULL;
@@ -211,19 +228,23 @@ load_module(const char *filename, long *err)
 
 	size = fh.ftext + fh.fdata + fh.fbss;
 	size += 256; /* sizeof (struct basepage) */
+	
+	kmsize = ((sizeof(*km) + 15) & 0xfffffff0);
 
-	b = kmalloc(size);
-	if (!b)
+	km = kmalloc(size + kmsize);
+	if (!km)
 	{
 		DEBUG(("load_module: out of memory?"));
-
+		
 		*err = ENOMEM;
 		goto failed;
 	}
 
-	mint_bzero(b, size);
+	mint_bzero(km, size + kmsize);
+	b = (struct basepage *)((char *)km + kmsize);
+	
 	b->p_lowtpa = (long) b;
-	b->p_hitpa = (long)((char *) b + size);
+	b->p_hitpa = (long)((char *)b + size);
 
 	b->p_flags = fh.flag;
 	b->p_tbase = b->p_lowtpa + 256;
@@ -236,7 +257,7 @@ load_module(const char *filename, long *err)
 	*err = load_and_reloc(f, &fh, (char *)b + 256, 0, fh.ftext + fh.fdata, b);
 
 	/* close file */
-	kernel_close(f);
+// 	kernel_close(f);
 
 	/* Ozk: For some reason, this cpush is needed,
 	 * else the kernel wont run on my Milan040!
@@ -254,11 +275,43 @@ load_module(const char *filename, long *err)
 		goto failed;
 	}
 
-	DEBUG(("load_module: basepage = %lx", b));
-	return b;
+	km->next = loaded_modules;
+	km->b = b;
+	km->flags = MOD_LOADED;
+	if (path)
+	{
+		strcpy(km->name, filename);
+		strcpy(km->path, path);
+	}
+	else
+	{
+		char *sa, *sb;
+		strcpy(km->path, filename);
+		sa = strrchr(km->path, '\\');
+		sb = strrchr(km->path, '/');
+		if (sa && sb)
+		{
+			if (sa < sb)
+				sa = sb;
+		}
+		else if (!sa)
+			sa = sb;
+		if (sa)
+		{
+			sa++;
+			strcpy(km->name, sa);
+			*sa = '\0';
+		}
+	}
+	loaded_modules = km;
+	kernel_close(f);
 
+	DEBUG(("load_module: name '%s', path '%s'", km->name, km->path));
+	DEBUG(("load_module: basepage = %lx", b));
+	return km;
 failed:
-	if (b) kfree(b);
+	kernel_close(f);
+	if (km) kfree(km);
 
 	DEBUG(("load_module: -> NULL"));
 	return NULL;
@@ -278,18 +331,21 @@ dont_load(const char *name)
 	for (i = 0; i < (sizeof(dont_load_list) / sizeof(*dont_load_list)); i++)
 		if (stricmp(dont_load_list[i], name) == 0)
 			return 1;
-
 	return 0;
 }
 
 void _cdecl
 load_modules_old(const char *ext, long (*loader)(struct basepage *, const char *))
 {
-	load_modules(sysdir, ext, loader);
+	long (*l)(struct basepage *, const char *, short *, short *);
+
+	l = (void *)loader;
+
+	load_modules(sysdir, ext, l);
 }
 
 void _cdecl
-load_modules(const char *path, const char *ext, long (*loader)(struct basepage *, const char *))
+load_modules(const char *path, const char *ext, long (*loader)(struct basepage *, const char *, short *, short *))
 {
 	struct dirstruct dirh;
 	char buf[128];
@@ -327,7 +383,7 @@ load_modules(const char *path, const char *ext, long (*loader)(struct basepage *
 			    stricmp(name+4 + r, ext) == 0 &&
 			    !dont_load(name+4))
 			{
-				struct basepage *b;
+				struct kernel_module *km;
 
 				/* remove the 4 byte index from readdir */
 				{
@@ -344,14 +400,15 @@ load_modules(const char *path, const char *ext, long (*loader)(struct basepage *
 					*ptr1 = '\0';
 				}
 
-				b = load_module(buf, &r);
-				if (b)
+				km = load_module(path, buf, &r);
+				if (km)
 				{
 					DEBUG(("load_modules: load \"%s\"", buf));
-					r = loader(b, name);
+					r = loader(km->b, name, &km->class, &km->subclass);
 					DEBUG(("load_modules: load done \"%s\" (%li)", buf, r));
 
-					if (r) kfree(b);
+					if (r)
+						free_km(km);
 				}
 				else
 					DEBUG(("load_module of \"%s\" failed (%li)", buf, r));
@@ -359,8 +416,9 @@ load_modules(const char *path, const char *ext, long (*loader)(struct basepage *
 
 			r = kernel_readdir(&dirh, name, len);
 			DEBUG(("load_modules: d_readdir = %li (%s)", r, name+4));
+// 			DEBUG((" Press key"));
+// 			sys_c_conin();
 		}
-
 		kernel_closedir(&dirh);
 	}
 }
@@ -384,7 +442,7 @@ module_init(void *initfunc, struct kerinfo *k)
 #if __GNUC__ > 2 || __GNUC_MINOR__ > 5
 # if __GNUC__ >= 3
    /* gcc 3 does not want a clobbered register to be input or output */
-#  define LOCAL_CLOBBER_LIST	"d1", "d2", "a0", "a1", "a2", "memory"
+#  define LOCAL_CLOBBER_LIST	__CLOBBER_RETURN("d0") "d1", "d2", "a0", "a1", "a2", "memory"
 # else	
 #  define LOCAL_CLOBBER_LIST	__CLOBBER_RETURN("d0") "d1", "d2", "a0", "a1", "a2", "memory"
 # endif
@@ -399,14 +457,14 @@ module_init(void *initfunc, struct kerinfo *k)
 	
 	__asm__ volatile
 	(
-		"moveml	d3-d7/a3-a6,sp@-;"
-		"movl	%2,sp@-;"
-		"movl	%1,a0;"
-		"jsr	a0@;"
-		"addqw	#4,sp;"
-		"moveml	sp@+,d3-d7/a3-a6;"
+		"movem.l d3-d7/a3-a6,-(sp)\r\n"
+		"move.l	%2,-(sp)\r\n"
+		"move.l	%1,a0\r\n"
+		"jsr	(a0)\r\n"
+		"addqw	#4,sp\r\n"
+		"moveml	(sp)+,d3-d7/a3-a6\r\n"
 		: "=r"(ret)				/* outputs */
-		: "g"(initfunc), "r"(k)			/* inputs  */
+		: "r"(initfunc), "r"(k)			/* inputs  */
 		: LOCAL_CLOBBER_LIST /* clobbered regs */
 	);
 
@@ -420,7 +478,7 @@ module_init(void *initfunc, struct kerinfo *k)
  * processes are run
  */
 long
-load_xfs(struct basepage *b, const char *name)
+load_xfs(struct basepage *b, const char *name, short *class, short *subclass)
 {
 	void *initfunc = (void *)b->p_tbase;
 	FILESYS *fs;
@@ -433,6 +491,8 @@ load_xfs(struct basepage *b, const char *name)
 	{
 		DEBUG(("load_xfs: %s loaded OK (%lx)", name, fs));
 
+		*class = MODCLASS_XFS;
+		*subclass = 0;
 		/* link it into the list of drivers
 		 *
 		 * uk: but only if it has not installed itself
@@ -457,7 +517,6 @@ load_xfs(struct basepage *b, const char *name)
 			for (f = active_fs; f; f = f->next)
 				if (f == fs)
 					break;
-
 			if (!f)
 			{
 				/* we ran completly through the list
@@ -467,10 +526,8 @@ load_xfs(struct basepage *b, const char *name)
 				xfs_add(fs);
 			}
 		}
-
 		return 0;
 	}
-
 	return -1;
 }
 
@@ -484,7 +541,7 @@ load_xfs(struct basepage *b, const char *name)
  * so they can make use of external device drivers
  */
 long
-load_xdd(struct basepage *b, const char *name)
+load_xdd(struct basepage *b, const char *name, short *class, short *subclass)
 {
 	void *initfunc = (void *)b->p_tbase;
 	DEVDRV *dev;
@@ -497,6 +554,8 @@ load_xdd(struct basepage *b, const char *name)
 	{
 		DEBUG(("load_xdd: %s loaded OK", name));
 
+		*class = MODCLASS_XDD;
+		*subclass = 0;
 		if ((DEVDRV *) 1L != dev)
 		{
 			/* we need to install the device driver ourselves */
@@ -586,37 +645,122 @@ register_trap2(long _cdecl (*dispatch)(void *), int mode, int flag, long extra)
 	return ret;
 }
 
+static long _cdecl
+load_km(const char *path, struct kernel_module **res_km)
+{
+	struct kernel_module *km;
+	long err;
+
+	km = load_module(NULL, path, &err);
+	if (km)
+	{
+		km->class = MODCLASS_KM;
+		km->subclass = 0;
+	}
+	if (res_km)
+		*res_km = km;
+	return err;
+}
+
+static bool _cdecl
+km_loaded(struct kernel_module *km)
+{
+	struct kernel_module *list = loaded_modules;
+
+	if (!km)
+		return false;
+
+	while (list)
+	{
+		if (list == km)
+			break;
+		list = list->next;
+	}
+	return list ? true : false;
+}
+#if 0
+static long _cdecl
+probe_km(struct kernel_module *km)
+{
+	long ret;
+	if (km_loaded(km))
+	{
+		long _cdecl (*probe)(struct kentry *, const char *name, struct km_api **);
+		struct km_api *kmapi = NULL;
+
+		probe = (long _cdecl(*)(struct kentry *, const char *, struct km_api **)km->b->p_tbase;
+		ret = (*probe)(&kentry, km->path, &kmapi);
+		if (ret != 0L)
+		{
+			if (kmapi)
+				km->kmapi = *kmapi;
+			else
+				km->flags |= OLDMODULE;
+		}
+	}
+	else
+		ret = EBADARG;
+	return ret;
+}
+#endif
 /*
  * run a kernel module
  * kernel module init is to be intended to block until finished
  */
+long _cdecl sys_c_conin(void);
+
 static long _cdecl
 run_km(const char *path)
 {
-	struct basepage *bp;
+	long err;
+	struct kernel_module *km = NULL;
+
+	err = load_km(path, &km);
+
+	if (err == E_OK && km_loaded(km))
+	{
+		long _cdecl (*run)(struct kentry *, const struct kernel_module *);
+
+		FORCE("run_km(%s) ok (bp 0x%lx)!", path, km->b);
+		sys_c_conin();
+// 		run = (long _cdecl(*)(struct kentry *, const char *))km->b->p_tbase;
+		run = (long _cdecl(*)(struct kentry *, const struct kernel_module *))km->b->p_tbase;
+		err = (*run)(&kentry, km); //km->path);
+	}
+	else
+		err = EBADARG;
+
+	return err;
+}
+#if 0
+static long _cdecl
+run_km(const char *path)
+{
+	struct kernel_module *km;
 	long err;
 	
-	bp = load_module(path, &err);
-	if (bp)
+	km = load_module(NULL, path, &err);
+	if (km)
 	{
 		long _cdecl (*run)(struct kentry *, const char *path);
 		
-		FORCE("run_km(%s) ok (bp 0x%lx)!", path, bp);
+		FORCE("run_km(%s) ok (bp 0x%lx)!", path, km->b);
 		
 		//sys_c_conin();
-		
-		run = (long _cdecl (*)(struct kentry *, const char *))bp->p_tbase;
+		km->class = MODCLASS_KM;
+		km->subclass = 0;
+
+		run = (long _cdecl (*)(struct kentry *, const char *))km->b->p_tbase;
 		err = (*run)(&kentry, path);
 		
-		kfree(bp);
+		free_km(km);
 	}
 	else
 		FORCE("run_km(%s) failed -> %li", path, err);
 	
 	return err;
 }
-
-
+#endif
 /*
  * kernel module device
  * intended for runtime configuration/loading/unloading

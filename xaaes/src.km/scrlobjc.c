@@ -1496,6 +1496,7 @@ new_setext(const char *t, OBJECT *icon, short type)
 	}
 	return new;
 }
+#if 0
 /*
  * create a new SECONTENT_ICON content
  */
@@ -1516,6 +1517,7 @@ new_seicon(OBJECT *icon)
 	}
 	return new;
 }
+#endif
 /*
  * Add a scroll entry content, type SECONTENT_TEXT
  */
@@ -1539,7 +1541,7 @@ insert_strings(struct scroll_entry *this, short index, struct sc_text *t, OBJECT
 	}
 	return ret;
 }
-
+#if 0
 static struct se_content *
 insert_icon(struct scroll_entry *this, short index, OBJECT *icon)
 {
@@ -1555,7 +1557,7 @@ insert_icon(struct scroll_entry *this, short index, OBJECT *icon)
 	}
 	return this_sc;
 }
-
+#endif
 static int
 set(SCROLL_INFO *list,
     SCROLL_ENTRY *entry,
@@ -3422,7 +3424,7 @@ click_scroll_list(enum locks lock, OBJECT *form, int item, const struct moose_da
 			check_mouse(list->wi->owner, &mb, &px, &py);
 			if (mb)
 			{
-				graf_mouse(FLAT_HAND, NULL, NULL, false);
+				xa_graf_mouse(FLAT_HAND, NULL, NULL, false);
 
 				while (mb)
 				{
@@ -3578,7 +3580,7 @@ drag_vslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 
 			if (!(wind->owner->status & CS_NO_SCRNLOCK))
 				lock_screen(wind->owner->p, false);
-			graf_mouse(XACRS_VERTSIZER, NULL, NULL, false);
+			xa_graf_mouse(XACRS_VERTSIZER, NULL, NULL, false);
 			drag_box(wind->owner, s, &b, rect_dist_xy(wind->owner, md->x, md->y, &s, &d), &r);
 			if (!(wind->owner->status & CS_NO_SCRNLOCK))
 				unlock_screen(wind->owner->p);
@@ -3603,7 +3605,7 @@ drag_vslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 				{
 					cont = true;
 					/* Always have a nice consistent sizer when dragging a box */
-					graf_mouse(XACRS_VERTSIZER, NULL, NULL, false);
+					xa_graf_mouse(XACRS_VERTSIZER, NULL, NULL, false);
 					rp_2_ap(wind, widg, &widg->ar);
 					old_offs = md->y - (widg->ar.y + sl->r.y);
 					old_y = md->y;
@@ -3631,7 +3633,7 @@ drag_vslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 			}
 			S.wm_count--;
 		}
-		graf_mouse(wind->owner->mouse, NULL, NULL, false);
+		xa_graf_mouse(wind->owner->mouse, NULL, NULL, false);
 	}
 	return true;
 }
@@ -3663,7 +3665,7 @@ drag_hslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 			s.h = sl->r.h;
 
 			lock_screen(wind->owner->p, false);
-			graf_mouse(XACRS_HORSIZER, NULL, NULL, false);
+			xa_graf_mouse(XACRS_HORSIZER, NULL, NULL, false);
 			drag_box(wind->owner, s, &b, rect_dist_xy(wind->owner, md->x, md->y, &s, &d), &r);
 			unlock_screen(wind->owner->p);
 
@@ -3687,7 +3689,7 @@ drag_hslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 				{
 					cont = true;
 					/* Always have a nice consistent sizer when dragging a box */
-					graf_mouse(XACRS_HORSIZER, NULL, NULL, false);
+					xa_graf_mouse(XACRS_HORSIZER, NULL, NULL, false);
 					rp_2_ap(wind, widg, &widg->ar);
 					old_offs = md->x - (widg->ar.x + sl->r.x);
 					old_x = md->x;
@@ -3715,7 +3717,7 @@ drag_hslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 			}
 			S.wm_count--;
 		}
-		graf_mouse(wind->owner->mouse, NULL, NULL, false);
+		xa_graf_mouse(wind->owner->mouse, NULL, NULL, false);
 	}
 	return true;
 }

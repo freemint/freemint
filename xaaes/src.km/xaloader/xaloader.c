@@ -78,6 +78,8 @@ loader_init(int argc, char **argv, char **env)
 	 */
 	(void)Pdomain(1);
 
+	Cconws("XaAES loader starting...\r\n");
+
 	/*
 	 * first make sure we are on FreeMiNT's '/'
 	 */

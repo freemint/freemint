@@ -1,4 +1,6 @@
+#
 # These are some standard rules common to all Makefiles.
+#
 
 include $(srcdir)/BINFILES
 include $(srcdir)/SRCFILES

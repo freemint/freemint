@@ -1,5 +1,5 @@
 /*
- * Copyright 1993, 1994 by Ulrich Khn. All rights reserved.
+ * Copyright 1993, 1994 by Ulrich Kï¿½hn. All rights reserved.
  *
  * THIS PROGRAM COMES WITH ABSOLUTELY NO WARRANTY, NOT
  * EVEN THE IMPLIED WARRANTIES OF MERCHANTIBILITY OR
@@ -189,9 +189,10 @@ xdr_ulong (xdrs *x, ulong *val)
 }
 
 bool_t
-xdr_string (xdrs *x, char **cpp, long maxlen)
+xdr_string (xdrs *x, const char **cpp, long maxlen)
 {
 	long rawlen;
+	union { const char **cc; char **c; } cp;
 	
 	if (x->length < sizeof (ulong))
 		return FALSE;
@@ -207,9 +208,14 @@ xdr_string (xdrs *x, char **cpp, long maxlen)
 			return FALSE;
 		if (x->length < rawlen)
 			return FALSE;
-		
+
+		cp.cc = cpp;
+		memcpy(*cp.c, x->current, l);
+		*(*cp.c + l) = '\0';
+#if 0
  		memcpy (*cpp, x->current, l);
 		*(*cpp + l) = '\0';
+#endif
 		x->current += rawlen;
 		x->length -= rawlen;
 		
@@ -235,8 +241,8 @@ xdr_string (xdrs *x, char **cpp, long maxlen)
 			 */
 			*(long *)(x->current + rawlen - 4) = 0L;
 		}
-		
-		memcpy (x->current, *cpp, l);
+		cp.cc = cpp;
+		memcpy (x->current, *cp.c/* *cpp */, l);
 		x->current += rawlen;
 		x->length -= rawlen;
 		
@@ -249,7 +255,7 @@ xdr_string (xdrs *x, char **cpp, long maxlen)
 }
 
 bool_t
-xdr_opaque (xdrs *x, opaque **opp, long *len, long maxlen)
+xdr_opaque (xdrs *x, const opaque **opp, long *len, long maxlen)
 {
 	long rawlen;
 	
@@ -258,6 +264,7 @@ xdr_opaque (xdrs *x, opaque **opp, long *len, long maxlen)
 	
 	if (XDR_DECODE == x->op)
 	{
+		union { const char **cc; char **c; } cp;
 		ulong l = *(ulong *) x->current;
 
 		x->current += sizeof (ulong);
@@ -268,8 +275,9 @@ xdr_opaque (xdrs *x, opaque **opp, long *len, long maxlen)
 			return FALSE;
 		if (x->length < rawlen)
 			return FALSE;
-		
-		memcpy (*opp, x->current, l);
+
+		cp.cc = opp;
+		memcpy (*cp.c/* *opp */, x->current, l);
 		x->current += rawlen;
 		x->length -= rawlen;
 		
