@@ -27,7 +27,7 @@ struct device
 	short	status;			/* rec < 0 < playing */
 	long	srate;
 	void	(*reset) (void);
-	void	*(*copyfn) (void *dst, const void *src, long len);
+	void *	(*copyfn) (void *dst, const void *src, long len);
 	long	(*copyin) (const char *buf, long len);
 	long	(*copyout) (char *buf, long len);
 	long	(*ioctl) (short mode, void *arg);

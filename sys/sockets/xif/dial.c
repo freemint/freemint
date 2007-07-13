@@ -439,6 +439,7 @@ dial_config (struct netif *nif, struct ifopt *ifo)
  * This function should return 0 on success and != 0 if initialization
  * fails.
  */
+long driver_init(void);
 long
 driver_init (void)
 {

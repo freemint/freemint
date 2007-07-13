@@ -65,7 +65,7 @@
 /* MiNT definitions */
 
 # define BOOT_MSG	"\033p Motorola DSP 56001 device version " __DATE__ " \033q\r\n" \
-			" ½ 1996-99 F. Noring, L. Brinkhoff, T. Berndtsson\r\n\r\n"
+			" ï¿½ 1996-99 F. Noring, L. Brinkhoff, T. Berndtsson\r\n\r\n"
 
 # define MSG_FAILURE	"\7Not installed, Dcntl() failed!\r\n"
 
@@ -73,6 +73,7 @@
 # define ALERT(x,y)	KERNEL_ALERT (x,y)
 # define TRACE(x)
 
+DEVDRV * _cdecl init(struct kerinfo *k);
 
 /* MiNT device driver structure */
 
@@ -267,8 +268,8 @@ dsp56k_upload(uchar *bin, long len)
 
 	dsp56k_reset();
 
-	p = bootstrap;
-	for (i = 0; i < sizeof_bootstrap/3; i++)
+	p = (unsigned char *)bootstrap;
+	for (i = 0; i < sizeof_bootstrap / 3; i++)
 	{
 		/* tx_wait(10); */
 		dsp56k_host_interface.data.b[1] = *p++;
@@ -385,10 +386,10 @@ dsp56k_write(FILEPTR *f, const char *buf, long count)
 		}
 		case 2:  /* 16 bit */
 		{
-			short *data;
+			const short *data;
 
 			count /= 2;
-			data = (short *) buf;
+			data = (const short *) buf;
 			handshake(count, dsp56k.maxio, dsp56k.timeout, DSP56K_TRANSMIT,
 				dsp56k_host_interface.data.w[1] = data[n++]);
 			return 2*n;
@@ -404,10 +405,10 @@ dsp56k_write(FILEPTR *f, const char *buf, long count)
 		}
 		case 4:  /* 32 bit */
 		{
-			long *data;
+			const long *data;
 
 			count /= 4;
-			data = (long *) buf;
+			data = (const long *) buf;
 			handshake(count, dsp56k.maxio, dsp56k.timeout, DSP56K_TRANSMIT,
 				dsp56k_host_interface.data.l = data[n++]);
 			return 4*n;
@@ -457,7 +458,7 @@ dsp56k_ioctl(FILEPTR *f, int cmd, void *buf)
 				return EINVAL;
 			
 
-			r = dsp56k_upload(bin, len);
+			r = dsp56k_upload((unsigned char *)bin, len);
 			if (r < 0)
 				return r;
 			

@@ -184,6 +184,8 @@ _getmch (void)
 	if ((fputype >> 16) > 1)
 		fpu = 1;
 	
+	boot_printf(" fputype=%ld, fpu=%d\r\n", fputype, fpu);
+
 # ifndef M68000
 
 # ifdef M68030
@@ -318,6 +320,7 @@ identify (enum special_hw info)
 			break;
 		}
 # endif
+		default:;
 	}
 	
 	_fpu = " no ";

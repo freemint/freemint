@@ -25,6 +25,14 @@
 struct basepage;
 struct nf_ops;
 
+#define MOD_LOADED	1
+
+#define MODCLASS_XIF	1
+#define MODCLASS_XDD	2
+#define MODCLASS_XFS	3
+#define MODCLASS_KM	4
+#define MODCLASS_KMDEF	5
+
 
 /* kerinfo - kernel interface table
  * --------------------------------
@@ -297,7 +305,7 @@ struct kerinfo
 	void	_cdecl (*so_free)(struct socket *);
 
 	/* load safely additional modules */
-	void	_cdecl (*load_modules)(const char *extension, long (*loader)(struct basepage *, const char *));
+	void	_cdecl (*load_modules)(const char *extension, long (*loader)(struct basepage *, const char *)); //, short *, short *));
 
 	/* fork/leave a kernel thread */
 	long	_cdecl (*kthread_create)(void (*func)(void *), void *arg, struct proc **np, const char *fmt, ...);

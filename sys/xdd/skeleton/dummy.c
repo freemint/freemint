@@ -103,7 +103,7 @@
 	"\033p Dummy device driver version " MSG_VERSION " \033q\r\n"
 
 # define MSG_GREET	\
-	"½ " MSG_BUILDDATE " by ???? ???????.\r\n\r\n"
+	"ï¿½ " MSG_BUILDDATE " by ???? ???????.\r\n\r\n"
 
 # define MSG_MINT	\
 	"\033pMiNT too old!\033q\r\n"
@@ -125,6 +125,8 @@ struct kerinfo *kernel;
 
 /****************************************************************************/
 /* BEGIN definition part */
+
+DEVDRV * _cdecl init(struct kerinfo *k);
 
 
 // XXX

@@ -325,7 +325,7 @@ tcp_options (struct tcb *tcb, struct tcp_dgram *tcph)
 	long mss = TCP_MSS;
 	
 	optlen = tcph->hdrlen*4 - TCP_MINLEN;
-	cp = tcph->data;
+	cp = (unsigned char *)tcph->data;
 	for (i = 0; i < optlen; i += len)
 	{
 		switch (cp[i])

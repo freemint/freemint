@@ -14,8 +14,7 @@
 
 extern ushort proc_clock;		/* timeslices */
 extern short time_slice;
-extern struct proc *sys_q[NUM_QUEUES];	/* process queues */
-
+extern struct proc_queue sysq[NUM_QUEUES];
 
 /* macro for calculating number of missed time slices, based on a
  * process' priority

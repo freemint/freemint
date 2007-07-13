@@ -12,14 +12,14 @@
  * The driver uses the interface name "de?" (dma ethernet with ? from 0..9)
  *
  * History:
- * V0.1ß	The first quite stable released version.
+ * V0.1ï¿½	The first quite stable released version.
  *		- enqueueing of send packets if DMA locked
  *		- cache management still missing
  *		- problems on fast computers with heavy ACSI load (many
  *		  attached devices)
- * V0.1ß (net-090)
- *		- minor changes against the other V0.1ß
- * V0.3ß	- CPU transfers from/to the DMA buffer are done through
+ * V0.1ï¿½ (net-090)
+ *		- minor changes against the other V0.1ï¿½
+ * V0.3ï¿½	- CPU transfers from/to the DMA buffer are done through
  *		  mirrored ST RAM. This is not a real good replacement for
  *		  cache management but causes less overhead and at least is
  *		  better than nothing at all!
@@ -72,7 +72,7 @@
  * I'm waiting for months to get support (information about the PAM's boards)
  * from:
  * GK Computer
- * M. Völkel
+ * M. Vï¿½lkel
  * 7800 Freiburg
  * Phone: 0761/409061
  * Fax:   0761/408617
@@ -254,7 +254,7 @@ lance_ioctl (struct netif *nif, short cmd, long arg)
 	
 	return ENOSYS;
 }
-
+long driver_init(void);
 long
 driver_init (void)
 {

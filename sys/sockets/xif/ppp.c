@@ -773,10 +773,10 @@ ppp_recv_frame (struct ppp *ppp, BUF *b)
 	uchar *cp;
 	long len, r;
 	
-	cp = b->dstart;
+	cp = (unsigned char *)b->dstart;
 	len = b->dend - b->dstart;
 	
-	if (len < 3 || ppp_fcs (cp, len) != FCS_GOOD)
+	if (len < 3 || ppp_fcs((char *)cp, len) != FCS_GOOD)
 	{
 		buf_deref (b, BUF_ATOMIC);
 		if (len < 3)
@@ -818,7 +818,7 @@ ppp_recv_frame (struct ppp *ppp, BUF *b)
 		ppp->nif->in_errors++;
 		return;
 	}
-	b->dstart = cp;
+	b->dstart = (char *)cp;
 	b->dend -= 2;
 	
 	/*
@@ -830,7 +830,7 @@ ppp_recv_frame (struct ppp *ppp, BUF *b)
 		case PPPPROTO_COMP_TCP:
 			if (ppp->opts & PPPO_COMPRESS)
 				r = slc_uncompress (b, TYPE_COMPRESSED_TCP, ppp->comp);
-			cp = b->dstart;
+			cp = (unsigned char *)b->dstart;
 			proto = PPPPROTO_IP;
 			break;
 		
@@ -842,7 +842,7 @@ ppp_recv_frame (struct ppp *ppp, BUF *b)
 				 (r = slc_uncompress (b, TYPE_UNCOMPRESSED_TCP,
 					ppp->comp)))
 				ppp->opts |= PPPO_COMPRESS;
-			cp = b->dstart;
+			cp = (unsigned char *)b->dstart;
 			proto = PPPPROTO_IP;
 			break;
 		

@@ -60,7 +60,9 @@ load_inode_bitmap (SI *s, ulong block_group)
 	
 	return u;
 }
-
+static void
+donothing(void)
+{}
 void
 ext2_free_inode (COOKIE *inode)
 {
@@ -139,8 +141,9 @@ ext2_free_inode (COOKIE *inode)
 	
 	/* remove from inode cache */
 	del_cookie (inode);
-	
+
 error_return:
+	donothing();
 	/* unlock_super (s); */
 }
 
@@ -291,7 +294,7 @@ repeat:
 		if (ext2_set_bit (j, u->data))
 		{
 			ALERT (("Ext2-FS: ext2_new_inode [%c]: "
-				"bit already set for inode %ld", dir->dev+'A', j));
+				"bit already set for inode %ld (%ld)", dir->dev+'A', j));
 			
 			goto repeat;
 		}
@@ -437,7 +440,7 @@ ext2_check_inodes_bitmap (SI * s)
 		{
 			ulong x;
 			
-			x = ext2_count_free (u->data, EXT2_INODES_PER_GROUP (s) / 8);
+			x = ext2_count_free ((char *)u->data, EXT2_INODES_PER_GROUP (s) / 8);
 			if (x != free_count)
 			{
 				ALERT (("Ext2-FS: ext2_check_inodes_bitmap [%c]: "

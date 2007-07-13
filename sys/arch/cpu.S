@@ -365,8 +365,6 @@ _cpush:
 #ifndef M68000
 	move.l	4(sp),a0
 	move.l	8(sp),d0
-//	movem.l	4(sp),d0/a0		// get parameters
-//	exg	a0,d0			// and in the right order
 	nop				// flush pipelines
 	move.l	_cachevec,a1
 	jmp	(a1)

@@ -102,8 +102,8 @@ volatile long *hz_200 = _hz_200;
 	"\033p RTL8012 ethernet romport driver version " MSG_VERSION " \033q\r\n"
 
 # define MSG_GREET	\
-	"½ 2000 by Vassilis Papathanassiou.\r\n" \
-	"½ " MSG_BUILDDATE " by Frank Naumann.\r\n\r\n"
+	"ï¿½ 2000 by Vassilis Papathanassiou.\r\n" \
+	"ï¿½ " MSG_BUILDDATE " by Frank Naumann.\r\n\r\n"
 
 # define MSG_MINT	\
 	"\033pMiNT too old!\033q\r\n"
@@ -941,7 +941,7 @@ rtl8012_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, sh
 	 * Store packet in 1rst or 2nd buffer
 	 * It is done automaticaly for rtl80xx
 	 */
-	send_block (nbuf->dstart, len);
+	send_block ((unsigned char *)nbuf->dstart, len);
 	
 	if (!Q_EMPTY (pr))
 	{
@@ -1065,8 +1065,8 @@ static struct netif if_RTL12 =
 	
 	maxpackets:	1			/* can receive max. 1 packet */
 };
-
-long _cdecl
+long driver_init(void);
+long
 driver_init (void)
 {
 	char message[128];
@@ -1237,7 +1237,7 @@ rtl8012_recv_packet (struct netif *nif)
 	}
 	b->dend += pktlen;
 	
-	read_block (b->dstart, pktlen);
+	read_block ((unsigned char *)b->dstart, pktlen);
 	
 	/* Pass packet to upper layers */
 	if (nif->bpf)

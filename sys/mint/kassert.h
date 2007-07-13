@@ -22,10 +22,14 @@
 # undef assert
 # endif
 
+#if 0
+# define assert(x)
+#else
 # define assert(expression)						\
-	((expression) ? (void) 0 :					\
+	((expression) ? (void)0 :					\
 		FATAL ("assert (`%s') failed at line %ld of %s.",	\
 			#expression, (long) __LINE__, __FILE__))
 
+#endif
 
 # endif /* _mint_kassert_h */

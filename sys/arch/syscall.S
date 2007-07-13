@@ -64,6 +64,7 @@
 	.globl	_restore_context
 	.globl	_proc_clock		// controls process' allocation of CPU time
 	.globl	_enter_gemdos
+	.globl	_enter_kernel
 	.globl	_leave_kernel
 	.extern	_in_kernel
 	.globl	_preempt
@@ -88,6 +89,8 @@
 	
 	.globl	_stop
 
+	.globl _stackerror
+
 // ***********************
 // * GEMDOS trap handler *
 // ***********************
@@ -103,7 +106,6 @@ _old_dos:
 	dc.l	0
 _mint_dos:
 
-#ifdef SYSCALL_REENTRANT
 //
 // see at symbol reentrant_trap for a detailed explanation
 //
@@ -115,33 +117,14 @@ _mint_dos:
 	lea	_dos_tab,a5
 	move.w	_dos_max,d5
 	bra	reentrant_trap
-
 norm_gemdos:
-
-#else
-
-// Non-reentrant syscall handler
-//
-// if we are in kernel we simply jump to the old vector
-// this allow direct trapping from kernel (not done from the
-// kernel itself anymore)
-
-	tst.w	_in_kernel
-	bne.s	rom_gemdos
-
-#endif
-
 	clr.w	-(sp)			// no frame format needed
 // NOTE: FOR NOW, WE PRESERVE A0 ACROSS GEMDOS CALLS. THIS WILL CHANGE
 // SOMEDAY, DON'T RELY ON IT!!!
-	//move.l	_curproc,d0		// note: preserve all regs but d0
-	//addq.l	#4,d0			// for compatibility
-
-	//move.l	d0,-(sp)		// push pointer to syscall context save
-	move.l	_curproc,-(sp)
+	move.l	_curproc,-(sp)		// push pointer to syscall context save
 	addq.l	#4,(sp)
-	
-	jsr	_build_context
+
+	jsr	_build_context		// build_context sets A1 to stack used before we get here
 	lea	_dos_tab,a5		// set syscall_tab
 	move.w	_dos_max,d5		// set syscall_max
 //
@@ -180,12 +163,6 @@ no_sys_printf:
 #endif
 	bra	_syscall
 
-#ifndef SYSCALL_REENTRANT
-rom_gemdos:
-	move.l	_old_dos.w(pc),-(sp)
-	rts
-#endif
-
 // **********************
 // * XBIOS trap handler *
 // **********************
@@ -202,7 +179,6 @@ _old_xbios:
 	dc.l	0
 _mint_xbios:
 
-#ifdef SYSCALL_REENTRANT
 //
 // see at symbol reentrant_trap for a detailed explanation
 //
@@ -216,11 +192,6 @@ _mint_xbios:
 	bra	reentrant_trap
 
 norm_xbios:
-#else
-	tst.w	_in_kernel
-	bne	LX_rom
-#endif
-
 	btst	#5,(sp) 		// test for user/super mode
 	beq.s	LX_usr
 #ifndef M68000
@@ -250,6 +221,7 @@ LX_check:
 	tst.w	P_EUID(a0)		// curproc->euid, is this enough?
 	bne.s	ret
 pok:
+#ifndef M68000
 	tst.w	_falcontos		// on TOS 4.0 - 4.04...
 	beq.s	sk
 	cmp.w	#5,(a1) 		// ...check for Setscreen command
@@ -261,10 +233,12 @@ pok:
 	beq.s	LX_rom
 	cmp.w	#111,(a1)		// Dsp_LodToBinary()
 	beq.s	LX_rom
-
+#endif
 // _curproc is already in a0 here
 
-sk:	bset	#0x07,_in_kernel
+sk:
+	jsr	_enter_kernel
+//	bset	#0x07,_in_kernel
 	clr.w	-(sp)			// no frame format needed
 	pea	4(a0)			// push pointer to syscall context save
 	jsr	_build_context
@@ -283,14 +257,14 @@ sk:	bset	#0x07,_in_kernel
 	move.l	8(a1),-(sp)
 	move.l	4(a1),-(sp)
 	move.l	(a1),-(sp)
-	//bset	#0x07,_in_kernel
 	bra	_syscall
 
 // For Dsp_LodToBinary(), Dsp_LoadProg()
 // jump directly to the ROM vector -- this avoids all hazards.
-
+#ifndef M68000
 LX_rom:	move.l	_old_xbios.w(pc),a0	// jump to ROM
 	jmp	(a0)
+#endif
 
 ret:	sub.l	a0,a0			// curproc address is our sweet secret
 	moveq	#-36,d0 		// return EACCDN
@@ -317,11 +291,9 @@ ret:	sub.l	a0,a0			// curproc address is our sweet secret
 _old_bios:	dc.l	0
 _mint_bios:
 
-#ifdef	SYSCALL_REENTRANT
 //
 // see at symbol reentrant_trap for a detailed explanation
 //
-
 	tst.w	_in_kernel
 	beq	norm_bios
 
@@ -332,13 +304,8 @@ _mint_bios:
 	bra	reentrant_trap
 
 norm_bios:
-
-#else
-	tst.w	_in_kernel
-	bne	rom_bios
-#endif
-
-	bset	#0x07,_in_kernel
+	jsr	_enter_kernel
+//	bset	#0x07,_in_kernel
 	tst.w	_bconbdev		// is BIOS buffering on?
 	bmi	L_bios			// no, skip all this
 
@@ -468,7 +435,6 @@ pt_ende:
 
 out:	moveq	#0,d2
 out_select:
-
 	move.l	_curproc,a0
 	move.l	d0,P_SYSCTXT+C_D0(a0)	// set d0 in the saved context
 	move.w	P_SYSCTXT+C_SR(a0),d0	// get saved status register
@@ -562,7 +528,7 @@ error:	cmp.l	#_xbios_tab,a5
 	bne.s	enosys
 	jsr	_trap_14_emu
 	bra	out
-enosys:	moveq	#-32,d0	// ENOSYS
+enosys:	moveq	#-32,d0		// ENOSYS
 	bra	out
 
 _vdi_handler:
@@ -586,7 +552,6 @@ _old_trap2:
 	dc.l	0
 _mint_trap2:
 
-#ifdef SYSCALL_REENTRANT
 //
 // see at symbol reentrant_trap for a detailed explanation
 //
@@ -598,21 +563,10 @@ _mint_trap2:
 	bra	reentrant_trap2
 
 norm_trap2:
-
-#else
-
-// Non-reentrant syscall handler
-//
-// if we are in kernel we simply jump to the old vector
-// this allow direct trapping from kernel (not done from the
-// kernel itself anymore)
-
-	tst.w	_in_kernel
-	bne	rom_trap2
-#endif
 	bset	#0x07,_in_kernel
-	// The AES/VDI passes parameters in D0/D1, so we do not touch
-	// them registers..
+
+// The AES/VDI passes parameters in D0/D1, so we do not touch
+// them registers..
 	clr.w	-(sp)
 	move.l	_curproc,-(sp)
 	addq.l	#4,(sp)
@@ -639,7 +593,6 @@ norm_trap2:
 	// What to do with trap 2 calls we dont know?
 	// for now just noting..
 trap2_out:
-	//moveq	#1,d2
 	bra	out_select
 
 	// Call the VDI
@@ -651,7 +604,7 @@ enter_vdi:
 	move.l	d1,-(sp)		// VDI parameter block address
 	jsr	(a0)
 	addq.w	#4,sp
-	moveq	#1,d2
+	moveq	#1,d2			// nonzero D2 prevents preempt
 	bra.s	trap2_out
 
 	// Call the AES
@@ -663,13 +616,13 @@ enter_aes:
 	move.l	d1,-(sp)
 	jsr	(a0)
 	addq.w	#4,sp
-	moveq	#0,d2
+	moveq	#0,d2			// zero D2 allows preempt
 	bra.s	trap2_out
 
 	// Return the GDOS version if VDI is installed
 	// as a kernel module. 
 trap2_gdosvers:
-	tst.l	_vdi_handler
+	move.l	_vdi_handler,d2
 	beq.s	old_trap2
 	move.l	_gdos_version,d0
 	moveq	#1,d2
@@ -714,9 +667,6 @@ _trap_1_emu:
 	move.w	(sp),-(sp)
 	move.w	4(sp),2(sp)
 	clr.w	4(sp)
-//	move.l	(sp)+,d0
-//	clr.w	-(sp)			// frame format word
-//	move.l	d0,-(sp)		// return address
 TE_D:	move.w	sr,-(sp)
 #ifndef	M68000
 	jmp	([_old_dos])
@@ -751,9 +701,6 @@ _trap_13_emu:
 	move.w	(sp),-(sp)
 	move.w	4(sp),2(sp)
 	clr.w	4(sp)
-//	move.l	(sp)+,d0
-//	clr.w	-(sp)			// frame format word
-//	move.l	d0,-(sp)		// return address
 TE_B:	move.w	sr,-(sp)
 #ifndef	M68000
 	jmp	([_old_bios])
@@ -770,9 +717,6 @@ _trap_14_emu:
 	move.w	(sp),-(sp)
 	move.w	4(sp),2(sp)
 	clr.w	4(sp)
-//	move.l	(sp)+,d0
-//	clr.w	-(sp)			// frame format word
-//	move.l	d0,-(sp)		// return address
 TE_X:	move.w	sr,-(sp)
 #ifndef	M68000
 	jmp	([_old_xbios])
@@ -942,8 +886,6 @@ ucret:	lea	24(sp),sp		// fix up stack
 	move.l	d0,_usrret		// save returned value
 	rts				// back to caller
 
-#ifdef SYSCALL_REENTRANT
-
 // *****************************
 // * Reentrant syscall handler *
 // *****************************
@@ -974,12 +916,16 @@ reent_shortframe:
 	tst.w	_fpu
 	beq.s	reent_fpu_saved
 	fsave	-(sp)
+
+#ifndef M68000
 	cmp.w	#60,_mcpu+2
 	bne.s	reent_no_060
 	tst.b	2(sp)
 	beq.s	reent_fpu_notused
 	bra.s	reent_save_fpu
 reent_no_060:
+#endif
+	
 	tst.b	(sp)
 	beq.s	reent_fpu_notused
 reent_save_fpu:
@@ -1020,7 +966,7 @@ reent_fpu_saved:
 	addq.w	#8,d5
 reent_24:
 
-// ---------- BEGIN without NEW_SYSCALL ---------------
+// ---------- END without NEW_SYSCALL ---------------
 #else
 // ---------- BEGIN with NEW_SYSCALL ------------------
 // Ozk:	When writing this routine, I didnt know if the
@@ -1128,12 +1074,16 @@ reent2_shortframe:
 	tst.w	_fpu
 	beq.s	reent2_fpu_saved
 	fsave	-(sp)
+
+#ifndef M68000
 	cmp.w	#60,_mcpu+2
 	bne.s	reent2_no_060
 	tst.b	2(sp)
 	beq.s	reent2_fpu_notused
 	bra.s	reent2_save_fpu
 reent2_no_060:
+#endif
+	
 	tst.b	(sp)
 	beq.s	reent2_fpu_notused
 reent2_save_fpu:
@@ -1235,5 +1185,3 @@ reent2_call_old:
 	movem.l	(sp)+,d1-d7/a0-a6
 	move.l	_old_trap2,-(sp)
 	rts
-	
-#endif /* SYSCALL_REENTRANT */

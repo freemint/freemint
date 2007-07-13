@@ -454,7 +454,7 @@ clear_popinfo(struct xa_popinfo *pi)
 	
 	pi->current = -1;
 	
-	pi->at_up = pi->at_dn = NULL;
+	pi->at_up = pi->at_down = NULL;
 #if 0
 	pi->attach_parent = -1;
 	pi->attach_wt = NULL;
@@ -792,7 +792,9 @@ built_desk_popup(enum locks lock, short x, short y)
 
 	if (split < n)
 	{
-		memset(appmenu[split].name, '-', xw);
+		for (i = 0; i < xw; i++)
+			appmenu[split].name[i] = '-';
+// 		memset(appmenu[split].name, '-', xw);
 		appmenu[split].name[xw] = '\0';
 	}
 
@@ -882,7 +884,7 @@ menu_pop(Tab *tab)
 		b->x = k->x;		/* pass back current x & y */
 		b->y = k->y;
 
-		b->p.at_up = k->p.at_dn = NULL;
+		b->p.at_up = k->p.at_down = NULL;
 #if 0
 		b->p.attach_wt = NULL;
 		b->p.attach_item = -1;
@@ -1356,8 +1358,9 @@ do_timeout_popup(Tab *tab)
 	
 	k->p.at_up = at;
 	new = nest_menutask(tab);
-	new->task_data.menu.p.at_dn = at;
-	if (at->on_open)(*at->on_open)(at);
+	new->task_data.menu.p.at_down = at;
+	if (at->on_open)
+		(*at->on_open)(at);
 #if 0
 	k->p.attach_wt		= new_wt;
 	k->p.attach_item	= at->item;
@@ -1986,7 +1989,7 @@ click_popup_entry(struct task_administration_block *tab, short item)
 			md->menu.mn_item = -1;
 		
 		if (md->menu.mn_item >= 0)
-			md->at = k->p.at_dn;
+			md->at = k->p.at_down;
 		else
 			md->at = NULL;
 

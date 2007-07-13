@@ -135,9 +135,9 @@ sendsig(ushort sig)
 	/* set a new system stack, with a bit of buffer space */
 	oldstack = curproc->sysstack;
 # ifdef COLDFIRE
-	newstack = ((unsigned long) &newcurrent) - 0x40L - 12L - 0x100L;
+	newstack = ((unsigned long) &newcurrent) - 0x40UL - 12UL - 0x100UL;
 # else
-	newstack = ((unsigned long) &newcurrent) - 0x40L - 12L;
+	newstack = ((unsigned long) &newcurrent) - 0x40UL - 12UL - 0x100UL;
 # endif	
 	if (newstack < (unsigned long) curproc->stack + ISTKSIZE + 256)
 	{
@@ -150,7 +150,7 @@ sendsig(ushort sig)
 	}
 	
 	oldsysctxt = *call;
-	stack = (long *)(call->sr & 0x2000 ? call->ssp : call->usp);
+	stack = (unsigned long *)(call->sr & 0x2000 ? call->ssp : call->usp);
 	
 	/* Hmmm... here's another potential problem for the signal 0
 	 * terminate vector: if the program keeps returning back to
@@ -169,7 +169,8 @@ sendsig(ushort sig)
 	 */
 	ut = curproc->p_mem->tp_ptr;
 
-	stack -= 3;
+	stack -= (sizeof(struct sigcontext) + 3) / 4;
+// 	stack -= 3;
 	sigctxt = (struct sigcontext *)stack;
 	sigctxt->sc_pc = oldsysctxt.pc;
 	sigctxt->sc_usp = oldsysctxt.usp;
@@ -271,13 +272,13 @@ long _cdecl
 sys_psigreturn (void)
 {
 	CONTEXT *oldctxt;
-	long *frame;
+	unsigned long *frame;
 	long sig;
 	struct user_things *ut = curproc->p_mem->tp_ptr;
 
 	unwound_stack = 0;
 top:
-	frame = (long *) curproc->sysstack;
+	frame = (unsigned long *)curproc->sysstack;
 	frame++;	/* frame should point at FRAME_MAGIC, now */
 	sig = frame[2];
 	if (*frame != FRAME_MAGIC || (sig < 0) || (sig >= NSIG))
@@ -309,7 +310,7 @@ top:
 # ifdef COLDFIRE	
 		oldctxt = (CONTEXT *) (((long) &frame[2]) + 0x40 + 0x100);
 # else
-		oldctxt = (CONTEXT *) (((long) &frame[2]) + 0x40);
+		oldctxt = (CONTEXT *) (((long) &frame[2]) + 0x40 + 0x100);
 # endif
 		if (oldctxt->regs[0] != CTXT_MAGIC)
 		{

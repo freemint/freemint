@@ -244,9 +244,7 @@ do_open (FILEPTR **f, const char *name, int rwmode, int attr, XATTR *x)
 	char temp1[PATH_MAX];
 	short cur_gid, cur_egid;
 
-
 	TRACE (("do_open(%s)", name));
-
 
 	/*
 	 * first step: get a cookie for the directory

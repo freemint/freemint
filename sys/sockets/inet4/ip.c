@@ -618,7 +618,7 @@ frag_opts (struct ip_dgram *iph, long optlen)
 	uchar *cp, len, type;
 	long i;
 	
-	for (cp = iph->data, i = 0; i < optlen; )
+	for (cp = (unsigned char *)iph->data, i = 0; i < optlen; )
 	{
 		type = cp[i];
 		switch (type & IPOPT_TYPE)

@@ -37,7 +37,7 @@
 
 #ifdef M68000
 
-int no_mem_prot = 0;
+int no_mem_prot = 1;
 ulong mem_prot_flags = 0L; /* Bitvector, currently only bit 0 is used */
 
 void

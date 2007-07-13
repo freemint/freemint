@@ -28,12 +28,12 @@ void	init_swap (void);
 long	change_prot_status (struct proc *proc, long start, short newmode);
 long	_cdecl attach_region (struct proc *proc, MEMREGION *reg);
 void	_cdecl detach_region (struct proc *proc, MEMREGION *reg);
-long	detach_region_by_addr (struct proc *p, long block);
+long	detach_region_by_addr (struct proc *p, unsigned long block);
 
 MEMREGION *get_region (MMAP map, ulong size, short mode);
 MEMREGION *_get_region (MMAP map, ulong size, short mode, short cmode, MEMREGION *descr, short kernel_flag);
 void	free_region (MEMREGION *reg);
-long	shrink_region (MEMREGION *reg, ulong newsize);
+long	shrink_region (MEMREGION *reg, unsigned long newsize);
 
 long	max_rsize (MMAP map, long needed);
 long	tot_rsize (MMAP map, short flag);
@@ -52,7 +52,7 @@ void	recalc_maxmem (struct proc *p, long size);
 int	valid_address (long addr);
 MEMREGION *_cdecl addr2mem (struct proc *p, long addr);
 MEMREGION *addr2region (long addr);
-MEMREGION *proc_addr2region (struct proc *p, long addr);
+MEMREGION *proc_addr2region (struct proc *p, unsigned long addr);
 
 long	realloc_region (MEMREGION *, long);
 long	_cdecl sys_s_realloc (long);

@@ -501,6 +501,22 @@ xa_f_perimeter(struct xa_vdi_settings *v, short m)
 static void _cdecl
 xa_gbox(struct xa_vdi_settings *v, short d, const RECT *r)
 {
+#if 0
+	XVDIPB *pb = create_vdipb();
+	if (pb) {
+		pb->ptsin[0] = pb->ptsin[6] = pb->ptsin[8] = r->x - d;
+		pb->ptsin[1] = pb->ptsin[3] = r->y - d;
+		pb->ptsin[2] = pb->ptsin[4] = pb->ptsin[0] + r->w + d+d;
+// 		pb->ptsin[3] = pb->ptsin[1];
+// 		pb->ptsin[4] = pb->ptsin[2];
+		pb->ptsin[5] = pb->ptsin[7] = pb->ptsin[1] + r->h + d+d;
+// 		pb->ptsin[6] = pb->ptsin[0];
+// 		pb->ptsin[7] = pb->ptsin[5];
+// 		pb->ptsin[8] = pb->ptsin[0];
+		pb->ptsin[9] = pb->ptsin[1] + 1;
+		VDI(pb, 6, 5, 0, 0, v->handle);
+	}
+#else
 	short l[10];
 	short x = r->x - d;
 	short y = r->y - d;
@@ -517,6 +533,7 @@ xa_gbox(struct xa_vdi_settings *v, short d, const RECT *r)
 	l[8] = x;
 	l[9] = y + 1;			/* for Xor mode :-) */
 	v_pline(v->handle, 5, l);
+#endif
 }
 
 static void _cdecl
@@ -548,6 +565,7 @@ static void _cdecl
 xa_box(struct xa_vdi_settings *v, short d, short x, short y, short w, short h)
 {
 	short l[10];
+
 	x -= d, y -= d, w += d+d, h += d+d;
 	l[0] = x;
 	l[1] = y;
@@ -964,8 +982,9 @@ static struct xa_vdi_api vdiapi =
 	rtopxy,
 	ri2pxy,
 	ritopxy,
-	
+#ifndef ST_ONLY
 	create_gradient,
+#endif
 };
 
 struct xa_vdi_api *

@@ -54,10 +54,10 @@ long _cdecl sys_fsync(short fh);
 void _changedrv(ushort drv, const char *function);
 #define changedrv(drv) _changedrv(drv, FUNCTION);
 long disk_changed(ushort drv);
-long relpath2cookie(struct proc *p, fcookie *dir, const char *path, char *lastnm,
+long _cdecl relpath2cookie(struct proc *p, fcookie *dir, const char *path, char *lastnm,
 		    fcookie *res, int depth);
-long path2cookie(struct proc *p, const char *path, char *lastname, fcookie *res);
-void release_cookie(fcookie *fc);
+long _cdecl path2cookie(struct proc *p, const char *path, char *lastname, fcookie *res);
+void _cdecl release_cookie(fcookie *fc);
 void dup_cookie(fcookie *new, fcookie *old);
 int _cdecl denyshare(FILEPTR *list, FILEPTR *newfileptr);
 int denyaccess(struct ucred *cred, XATTR *, ushort);

@@ -28,6 +28,7 @@
 
 #include "global.h"
 #include "xa_global.h"
+#include "vdi_parms.h"
 #include "xa_pdlg.h"
 #include "xa_wdlg.h"
 #include "xa_fsel.h"
@@ -207,6 +208,10 @@ xv_create_driver_info(XVDIPB *vpb, short handle, short id)
 {
 	DRV_INFO *d = NULL;
 
+	V_CREATE_DRIVER_INFO(vpb, handle, id, d);
+	return d;
+
+#if 0
 	vpb->intin[0] = id;
 	vpb->control[V_N_PTSOUT] = 0;
 	vpb->control[V_N_INTOUT] = 0;
@@ -214,6 +219,7 @@ xv_create_driver_info(XVDIPB *vpb, short handle, short id)
 	if (vpb->control[V_N_INTOUT] >= 2)
 		d = ptr_from_shorts(vpb->intout[0], vpb->intout[1]);
 	return d;
+#endif
 }
 	
 static short
@@ -1988,7 +1994,6 @@ static void
 change_tray(struct xa_pdlg_info *pdlg, short idx, short which)
 {
 	PRN_TRAY *tray = NULL;
-
 	if (!which)
 	{
 		pdlg->itray_obnum = idx + 1;
@@ -2020,7 +2025,7 @@ change_tray(struct xa_pdlg_info *pdlg, short idx, short which)
 
 		if (pdlg->curr_prn)
 		{
-			if ((tray = pdlg->curr_prn->input_trays))
+			if ((tray = pdlg->curr_prn->output_trays))
 			{
 				short i;
 				
@@ -2030,12 +2035,12 @@ change_tray(struct xa_pdlg_info *pdlg, short idx, short which)
 						break;
 				}
 				if (!tray)
-					tray = pdlg->curr_prn->input_trays;
+					tray = pdlg->curr_prn->output_trays;
 			}
 		}
-		if (tray != pdlg->curr_itray)
+		if (tray != pdlg->curr_otray)
 		{
-			pdlg->curr_itray = tray;
+			pdlg->curr_otray = tray;
 			set_trays_pset(pdlg->curr_itray, tray, &pdlg->current_settings);
 		}
 	}
@@ -2110,7 +2115,7 @@ change_outfile(struct xa_pdlg_info *pdlg, short idx)
 					  file, "Select output file",
 					  handle_fs, cancel_fs, pdlg);
 			pdlg->client->status |= CS_FSEL_INPUT;
-			Block(pdlg->client, 21);
+			(*pdlg->client->block)(pdlg->client, 21); //Block(pdlg->client, 21);
 			pdlg->client->status &= ~CS_FSEL_INPUT;
 			
 			if (pdlg->filesel[0])
@@ -2651,42 +2656,13 @@ unsigned long
 XA_pdlg_create(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	struct xa_pdlg_info *pdlg = NULL;
-// 	struct xa_window *wind = NULL;
-// 	OBJECT *obtree = NULL;
-// 	XA_WIND_ATTR tp = MOVER|NAME;
-// 	RECT r, or;
 
 	DIAG((D_pdlg, client, "XA_pdlg_create"));
 // 	display("XA_pbdl_create: %s", client->name);
 	pb->addrout[0] = 0L;
-#if 0
-	obtree = ResourceTree(C.Aes_rsc, WDLG_PDLG);
-	
-	ob_rectangle(obtree, aesobj(obtree, 0), &or);
-	
-	r = calc_window(lock, client, WC_BORDER,
-			tp, created_for_WDIAL,
-			client->options.thinframe,
-			client->options.thinwork,
-			*(RECT *)&or);
-
-	if (!(wind = create_window(lock,
-			     send_app_message,
-			     NULL,
-			     client,
-			     false,
-			     tp,
-			     created_for_WDIAL,
-			     client->options.thinframe,
-			     client->options.thinwork,
-			     r, NULL, NULL)))
-		goto memerr;
-#endif
 	pdlg = create_new_pdlg(client, MOVER|NAME);
 	if (!pdlg || pdlg == (void *)-1L)
 		goto memerr;
-
-// 	set_toolbar_widget(lock, wind, client, pdlg->mwt->tree, aesobj(pdlg->mwt->tree, -2), 0, true, &wdlg_th, &or);
 
 	pb->addrout[0] = (long)pdlg->handle;
 
@@ -3454,7 +3430,7 @@ XA_pdlg_do(enum locks lock, struct xa_client *client, AESPB *pb)
 		open_window(lock, wind, wind->rc);
 
 		client->status |= CS_FORM_DO;
-		Block(client, 0);
+		(*client->block)(client, 0); //Block(client, 0);
 		client->status &= ~CS_FORM_DO;
 		
 		pdlg->flags &= ~1;

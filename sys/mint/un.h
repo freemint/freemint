@@ -19,7 +19,8 @@ struct sockaddr_un
 	char	sun_path[128];
 };
 
-# define UN_PATH_OFFSET	((short)((struct sockaddr_un *) 0)->sun_path)
+// # define UN_PATH_OFFSET	((short)((struct sockaddr_un *) 0)->sun_path)
+# define UN_PATH_OFFSET ( (short)((long)&(((struct sockaddr_un *)0L)->sun_path) && 0xffffUL) )
 # define UN_ADDR_SIZE	(sizeof (struct sockaddr_un))
 
 /* Possible unix socket flags */

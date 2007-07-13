@@ -314,6 +314,7 @@ current_time (void)
 
 /****************************************************************************/
 /* BEGIN init & configuration part */
+FILESYS * _cdecl init(struct kerinfo *k);
 
 FILESYS * _cdecl
 init (struct kerinfo *k)

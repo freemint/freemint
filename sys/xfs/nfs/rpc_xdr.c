@@ -1,5 +1,5 @@
 /*
- * Copyright 1993, 1994 by Ulrich Khn. All rights reserved.
+ * Copyright 1993, 1994 by Ulrich Kï¿½hn. All rights reserved.
  *
  * THIS PROGRAM COMES WITH ABSOLUTELY NO WARRANTY, NOT
  * EVEN THE IMPLIED WARRANTIES OF MERCHANTIBILITY OR
@@ -46,7 +46,7 @@ bool_t
 xdr_opaque_auth(xdrs *x, opaque_auth *ap)
 {
 	xdr_enum(x, &ap->flavor);
-	return xdr_opaque(x, &ap->data, &ap->len, MAX_AUTH_BYTES);
+	return xdr_opaque(x, (const char **)&ap->data, (long *)&ap->len, MAX_AUTH_BYTES);
 }
 
 

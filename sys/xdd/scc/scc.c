@@ -199,8 +199,8 @@
 	"\033p SCC serial driver version " MSG_VERSION " \033q\r\n"
 
 # define MSG_GREET	\
-	"½ 1998, 1999 by Rainer Mannigel.\r\n" \
-	"½ " MSG_BUILDDATE " by Frank Naumann.\r\n\r\n"
+	"ï¿½ 1998, 1999 by Rainer Mannigel.\r\n" \
+	"ï¿½ " MSG_BUILDDATE " by Frank Naumann.\r\n\r\n"
 
 # define MSG_MINT	\
 	"\033pMiNT too old!\033q\r\n"
@@ -345,12 +345,12 @@ DEVDRV *	_cdecl init	(struct kerinfo *k);
  */
 INLINE void	notify_top_half	(IOVAR *iovar);
 static void	wr_scc 		(IOVAR *iovar, SCC *regs);
-static void	scc_txempty	(void);
-static void	scc_rxavail	(void);
-static void	scc_stchange	(void);
-static void	scc_special	(void);
+static void	scc_txempty	(void) __attribute__((used));
+static void	scc_rxavail	(void) __attribute__((used));
+static void	scc_stchange	(void) __attribute__((used));
+static void	scc_special	(void) __attribute__((used));
 
-static void	scc_intrwrap	(void);
+static void	scc_intrwrap	(void) __attribute__((used));
        void	scca_txempty	(void);
        void	scca_rxavail	(void);
        void	scca_stchange	(void);
@@ -955,11 +955,11 @@ init_SCC (IOVAR **iovar, SCC *regs)
 	if (!buffer)
 		goto error;
 	
-	(*iovar)->input.buffer		= buffer;
+	(*iovar)->input.buffer		= (unsigned char *)buffer;
 	(*iovar)->input.low_water	= 1 * (IOBUFSIZE / 4);
 	(*iovar)->input.high_water	= 3 * (IOBUFSIZE / 4);
 	
-	(*iovar)->output.buffer		= buffer + IOBUFSIZE;
+	(*iovar)->output.buffer		= (unsigned char *)buffer + IOBUFSIZE;
 	(*iovar)->output.low_water	= 1 * (IOBUFSIZE / 4);
 	(*iovar)->output.high_water	= 3 * (IOBUFSIZE / 4);
 	

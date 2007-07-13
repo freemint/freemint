@@ -406,6 +406,21 @@ sys_f_datime (ushort *timeptr, short fd, short wflag)
 
 	if (f->fc.fs && f->fc.fs->fsflags & FS_EXT_3)
 	{
+		unsigned long ut = 0;
+		unsigned short dt;
+		if (wflag)
+			ut = unixtime(timeptr[0], timeptr[1]) + timezone;
+		dt = ut >> 16;
+		r = xdd_datime(f, &dt, wflag);
+		if (!r && !wflag) {
+			ut = (ut & 0x0000ffffUL) | ((unsigned long)dt << 16);
+			ut = dostime(ut - timezone);
+			timeptr[1] = (unsigned short)ut;
+			ut >>= 16;
+			timeptr[0] = (unsigned short)ut;
+		}
+		return r;
+#if 0
 		ulong t = 0;
 		long r;
 
@@ -418,6 +433,7 @@ sys_f_datime (ushort *timeptr, short fd, short wflag)
 			*(long *) timeptr = dostime (t - timezone);
 
 		return r;
+#endif
 	}
 
 	return xdd_datime (f, timeptr, wflag);
@@ -477,10 +493,14 @@ sys__ffstat_1_12 (struct file *f, XATTR *xattr)
 	ret = xfs_getxattr (f->fc.fs, &f->fc, xattr);
 	if ((ret == E_OK) && (f->fc.fs->fsflags & FS_EXT_3))
 	{
+		xtime_to_local_dos(xattr,m);
+		xtime_to_local_dos(xattr,a);
+		xtime_to_local_dos(xattr,c);
+
 		/* UTC -> localtime -> DOS style */
-		*((long *) &(xattr->mtime)) = dostime (*((long *) &(xattr->mtime)) - timezone);
-		*((long *) &(xattr->atime)) = dostime (*((long *) &(xattr->atime)) - timezone);
-		*((long *) &(xattr->ctime)) = dostime (*((long *) &(xattr->ctime)) - timezone);
+// 		*((long *) &(xattr->mtime)) = dostime (*((long *) &(xattr->mtime)) - timezone);
+// 		*((long *) &(xattr->atime)) = dostime (*((long *) &(xattr->atime)) - timezone);
+// 		*((long *) &(xattr->ctime)) = dostime (*((long *) &(xattr->ctime)) - timezone);
 	}
 
 	return ret;
@@ -538,7 +558,9 @@ sys_f_cntl (short fd, long arg, short cmd)
 	if (cmd == F_DUPFD)
   		return do_dup (fd, arg);
 
+	TRACE(("Fcntl getfileptr"));
 	r = GETFILEPTR (&p, &fd, &f);
+	TRACE(("Fcntl r = %lx", r));
 	if (r) return r;
 
 	switch (cmd)
@@ -583,11 +605,13 @@ sys_f_cntl (short fd, long arg, short cmd)
 		}
 		case FSTAT64:
 		{
-			TRACE (("Fcntl FSTAT64 (%i, %lx) on \"%s\" -> %li", fd, arg, xfs_name (&(f->fc)), r));
+			TRACE (("Fcntl FSTAT64"));
+			TRACE (("Fcntl FSTAT64 (%i, %lx) on \"%s\" -> %li", fd, arg, xfs_name(&(f->fc)), r));
 			return sys__ffstat_1_16 (f, (struct stat *) arg);
 		}
 		case FUTIME:
 		{
+			TRACE (("Fcntl FUTIME"));
 			if (f->fc.fs && (f->fc.fs->fsflags & FS_EXT_3) && arg)
 			{
 				MUTIMBUF *buf = (MUTIMBUF *) arg;

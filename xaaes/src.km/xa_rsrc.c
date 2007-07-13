@@ -70,8 +70,8 @@ fixupobj(short *val, unsigned long fact, short design)
 	*val = (temp >> 16);
 }
 
-void
-obfix(OBJECT *tree, int object, short designWidth, short designHeight)
+void _cdecl
+obfix(OBJECT *tree, short object, short designWidth, short designHeight)
 {
 	unsigned long x_fact, y_fact;
 	OBJECT *ob = tree + object;
@@ -701,7 +701,7 @@ list_resource(struct xa_client *client, void *resource, short flags)
 {
 	struct xa_rscs *new;
 
-	if (client == C.Aes)
+	if (client == C.Aes || client == C.Hlp)
 		new = kmalloc(sizeof(*new));
 	else
 		new = umalloc(sizeof(*new));
@@ -740,7 +740,7 @@ list_resource(struct xa_client *client, void *resource, short flags)
  * fname = name of file to load
  * Return = base pointer of resources or NULL on failure
  */
-void *
+RSHDR * _cdecl
 LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designWidth, short designHeight, bool set_pal)
 {
 
@@ -750,10 +750,12 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 	char *base = NULL, *end = NULL;
 	char *extra_ptr = NULL;
 	struct xa_rscs *rscs = NULL; 
-	short vdih = client->vdi_settings->handle;
+	short vdih;
 
 	if (!client)
 		client = C.Aes;
+
+	vdih = client->vdi_settings->handle;
 
 	if (fname)
 	{
@@ -796,7 +798,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 			kernel_lseek(f, 0, 0);
 		}
 
-		if (client == C.Aes)
+		if (client == C.Aes || client == C.Hlp)
 			base = kmalloc(fsize + extra + sizeof(RSXHDR));
 		else
 			base = umalloc(fsize + extra + sizeof(RSXHDR));
@@ -811,8 +813,10 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 		if (size != fsize)
 		{
 			DIAG((D_rsrc, client, "LoadResource(): Error loading file (size mismatch)"));
-			if (client == C.Aes)	kfree(base);
-			else			ufree(base);
+			if (client == C.Aes || client == C.Hlp)
+				kfree(base);
+			else
+				ufree(base);
 			return NULL;
 		}
 
@@ -837,8 +841,10 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 		{
 			client->rsct--;
 
-			if (client == C.Aes)	kfree(base);
-			else			ufree(base);
+			if (client == C.Aes || client == C.Hlp)
+				kfree(base);
+			else
+				ufree(base);
 		}
 	}
 	else
@@ -969,7 +975,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 
 	fix_trees(client, base, (OBJECT **)(base + hdr->rsh_trindex), hdr->rsh_ntree, designWidth, designHeight);
 	
-	return base;
+	return (RSHDR *)base;
 }
 
 static void
@@ -1093,7 +1099,7 @@ FreeResources(struct xa_client *client, AESPB *pb, struct xa_rscs *rsrc)
 					 * Now we remember each allocation done related to loading
 					 * a resource file, and we release the stuff here.
 					 */
-					if (client == C.Aes)
+					if (client == C.Aes || client == C.Hlp)
 					{
 						struct remember_alloc *ra;
 					
@@ -1162,7 +1168,7 @@ FreeResources(struct xa_client *client, AESPB *pb, struct xa_rscs *rsrc)
  * Find the tree with a given index
  * fixing up the pointer array is now done in Loadresources, to make it usable via global[5]
  */
-OBJECT *
+OBJECT * _cdecl
 ResourceTree(RSHDR *hdr, long num)
 {
 	OBJECT **index;
@@ -1369,7 +1375,7 @@ XA_rsrc_load(enum locks lock, struct xa_client *client, AESPB *pb)
 		return 0;
 	}
 
-	DIAGS(("ERROR: rsrc_load '%s' %sfailed", (pb->addrin[0]) ? (const char *)pb->addrin[0] : "~~", ret ? "suceeded":"failed"));
+	DIAGS(("ERROR: rsrc_load '%s' %s", (pb->addrin[0]) ? (const char *)pb->addrin[0] : "~~", ret ? "suceeded":"failed"));
 
 	pb->intout[0] = ret; //0;
 	return XAC_DONE;

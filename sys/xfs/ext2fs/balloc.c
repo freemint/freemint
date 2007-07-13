@@ -298,9 +298,9 @@ repeat:
 		 * Search first in the remainder of the current group; then,
 		 * cyclicly search through the rest of the groups.
 		 */
-		p = u->data + (j >> 3);
+		p = (char *)u->data + (j >> 3);
 		r = memscan (p, 0, (EXT2_BLOCKS_PER_GROUP (s) - j + 7) >> 3);
-		k = (r - u->data) << 3;
+		k = ((unsigned long)r - (unsigned long)u->data) << 3;
 		if (k < EXT2_BLOCKS_PER_GROUP (s))
 		{
 			j = k;
@@ -350,7 +350,7 @@ repeat:
 		goto io_error;
 	
 	r = memscan (u->data, 0, EXT2_BLOCKS_PER_GROUP (s) >> 3);
-	j = (r - u->data) << 3;
+	j = ((unsigned long)r - (unsigned long)u->data) << 3;
 	if (j < EXT2_BLOCKS_PER_GROUP (s))
 	{
 		goto search_back;
@@ -393,7 +393,7 @@ got_block:
 			"block = %lu", tmp);
 	}
 	
-	if (ext2_set_bit (j, u->data))
+	if (ext2_set_bit(j, u->data))
 	{
 		ALERT (("Ext2-FS: ext2_new_block [%c]: bit already set for block %ld", s->dev+'A', j));
 		goto repeat;
@@ -579,7 +579,7 @@ ext2_check_blocks_bitmap (SI *s)
 		{
 			ulong x;
 			
-			x = ext2_count_free (u->data, EXT2_BLOCK_SIZE (s));
+			x = ext2_count_free ((char *)u->data, EXT2_BLOCK_SIZE (s));
 			if (free_blocks != x)
 			{
 				ALERT (("Ext2-FS: ext2_check_blocks_bitmap [%c]: "

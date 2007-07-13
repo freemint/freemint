@@ -36,6 +36,7 @@
 #include "xa_types.h"
 
 bool is_bevent(int gotbut, int gotcl, const short *o, int which);
+bool add_md(struct moose_data *md);
 
 void button_event(enum locks lock, struct xa_client *client, const struct moose_data *md);
 
@@ -53,5 +54,7 @@ void check_mouse(struct xa_client *client, short *br, short *xr, short *yr);
 void adi_move(struct adif *a, short x, short y);
 void adi_button(struct adif *a, struct moose_data *md);
 void adi_wheel(struct adif *a, struct moose_data *md);
+
+bool eiffel_wheel(unsigned short scan);
 
 #endif /* _k_mouse_h */

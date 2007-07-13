@@ -1,5 +1,5 @@
 /*
- * Copyright 1993, 1994 by Ulrich Khn. All rights reserved.
+ * Copyright 1993, 1994 by Ulrich Kï¿½hn. All rights reserved.
  *
  * THIS PROGRAM COMES WITH ABSOLUTELY NO WARRANTY, NOT
  * EVEN THE IMPLIED WARRANTIES OF MERCHANTIBILITY OR
@@ -690,15 +690,17 @@ nfs_stat64 (fcookie *fc, STAT *stat)
 		stat->rdev	= xattr.rdev;
 		
 		stat->atime.high_time	= 0;
-		stat->atime.time	= *((long *) &(xattr.atime));
+		stat->atime.time	= XATTRL_TD(xattr,a); //*((long *) &(xattr.atime));
 		stat->atime.nanoseconds	= 0;
 		
 		stat->mtime.high_time	= 0;
-		stat->mtime.time	= *((long *) &(xattr.mtime));
+		SHORT2LONG(xattr.mtime, xattr.mdate, stat->mtime.time);
+//		stat->mtime.time	= *((long *) &(xattr.mtime));
 		stat->mtime.nanoseconds	= 0;
 		
 		stat->ctime.high_time	= 0;
-		stat->ctime.time	= *((long *) &(xattr.ctime));
+		SHORT2LONG(xattr.ctime, xattr.cdate, stat->ctime.time);
+// 		stat->ctime.time	= *((long *) &(xattr.ctime));
 		stat->ctime.nanoseconds	= 0;
 		
 		stat->size	= xattr.size;

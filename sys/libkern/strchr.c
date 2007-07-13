@@ -24,7 +24,6 @@
 
 # include "libkern.h"
 
-
 /*
  * strchr - find first occurrence of a character in a string
  * 
@@ -41,6 +40,5 @@ _mint_strchr(const char *s, long charwanted)
 	while ((c = *s++) != (char) charwanted)
 		if (c == 0)
 			return NULL;
-
 	return ((char *) --s);
 }

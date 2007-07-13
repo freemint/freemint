@@ -1147,9 +1147,15 @@ ram_getxattr (fcookie *fc, XATTR *xattr)
 	xattr->size 			= c->stat.size;
 	xattr->blksize			= c->stat.blksize;
 	xattr->nblocks			= (c->stat.size + BLOCK_SIZE) >> BLOCK_SHIFT;
+
+	SET_XATTR_TD(xattr,m,c->stat.mtime.time);
+	SET_XATTR_TD(xattr,a,c->stat.atime.time);
+	SET_XATTR_TD(xattr,c,c->stat.ctime.time);
+#if 0
 	*((long *) &(xattr->mtime))	= c->stat.mtime.time;
 	*((long *) &(xattr->atime))	= c->stat.atime.time;
 	*((long *) &(xattr->ctime))	= c->stat.ctime.time;
+#endif
 
 	/* fake attr field a little bit */
 	if (S_ISDIR (xattr->mode))

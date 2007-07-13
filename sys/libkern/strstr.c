@@ -22,9 +22,9 @@ _mint_strstr(const char *s, const char *wanted)
 		if (*wanted)
 			return 0;
 		else
-			return s;
+			return (char *)s;
 	} else if (!*wanted) {
-		return s;
+		return (char *)s;
 	}
 	
 	/*

@@ -1,5 +1,5 @@
 /*
- * Copyright 1993, 1994 by Ulrich KÅhn. All rights reserved.
+ * Copyright 1993, 1994 by Ulrich KÔøΩhn. All rights reserved.
  *
  * THIS PROGRAM COMES WITH ABSOLUTELY NO WARRANTY, NOT
  * EVEN THE IMPLIED WARRANTIES OF MERCHANTIBILITY OR
@@ -150,7 +150,7 @@ init_auth (void)
 		mib[1] = KERN_HOSTNAME;
 		size = sizeof(buf);
 		
-		r = p_sysctl(mib, 2, buf, &size, NULL, 0);
+		r = p_sysctl(mib, 2, buf, (unsigned long *)&size, NULL, 0);
 		if (r == 0)
 		{
 			if (strcmp (buf, "(none)"))

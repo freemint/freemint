@@ -227,7 +227,7 @@ fgetw(struct file *fp)
 	return (volatile unsigned short)ret;
 }
 #endif
-
+#ifndef ST_ONLY
 /* pixelformat E07F */
 static void *
 toI15b(struct rgb_1000 *pal, void *img_ptr)
@@ -555,7 +555,7 @@ toIbs32b(struct rgb_1000 *pal, void *img_ptr)
 	*img++ = r;
 	return img;
 };
-
+#endif
 /*
  * build_pal_xref will build a table of cross-reference palette indexes.
  * This means that for each entry in the source palette, cref contains the
@@ -673,6 +673,7 @@ remap_bitmap_colindexes(MFDB *map, unsigned char *cref)
 		}
 	}
 }
+
 /* Vertical replication codes are only allowed in certain places */
 static int
 read_gem_line( struct file *fp, unsigned char *line, unsigned long scan, int patlen, unsigned long *vrep, bool allow_vrep, bool planes, bool d, long *rcnt)
@@ -872,6 +873,7 @@ gem_rdata(struct file *fp, XA_XIMG_HEAD *pic, bool disp, long *rcnt)
 			}
 			break;
 		}
+#ifndef ST_ONLY
 		case 24:
 		/* 24bpp data is strange in that it isn't bit planed at all like
 		   the others are. This makes decoding quicker, and most 24bpp
@@ -913,6 +915,7 @@ gem_rdata(struct file *fp, XA_XIMG_HEAD *pic, bool disp, long *rcnt)
 // 					s, dst, dst + sl, dst - s, (dst+sl) - s);
 			break;
 		}
+#endif
 		default:
 		{
 			ret = -1;
@@ -966,8 +969,11 @@ depack_img(char *name, XA_XIMG_HEAD *pic)
 		{
 			goto end_depack;
 		}
-
-		if (pic->ximg.length > 7 && pic->ximg.planes >= 1 && pic->ximg.planes < 33 && pic->ximg.img_w > 0 && pic->ximg.img_h > 0)
+#ifndef ST_ONLY
+		if (pic->ximg.length > 7 && pic->ximg.planes >= 1 && pic->ximg.planes <= 32 && pic->ximg.img_w > 0 && pic->ximg.img_h > 0)
+#else
+		if (pic->ximg.length > 7 && pic->ximg.planes >= 1 && pic->ximg.planes <= 8 && pic->ximg.img_w > 0 && pic->ximg.img_h > 0)
+#endif
 		{
 			word_aligned = (pic->ximg.img_w + 15) >> 4;
 			word_aligned <<= 1;
@@ -999,7 +1005,7 @@ depack_img(char *name, XA_XIMG_HEAD *pic)
 			if (disp) display("Seek to %ld", 2L * pic->ximg.length);
 			rcnt = 2L * pic->ximg.length;
 			kernel_lseek(fp, rcnt, SEEK_SET);
-
+#if 0
 			if (disp)
 			{
 				struct ximg_header *ximg = &pic->ximg;
@@ -1007,7 +1013,7 @@ depack_img(char *name, XA_XIMG_HEAD *pic)
 					ximg->version, ximg->length, ximg->planes, ximg->pat_len, ximg->pix_w, ximg->pix_h, ximg->img_w, ximg->img_h,
 					ximg->magic, ximg->paltype);
 			}
-			
+#endif			
 			if (gem_rdata(fp, pic, disp, &rcnt) == -1L)
 			{
 				if (disp) display("read %ld bytes from file", rcnt);
@@ -1043,16 +1049,17 @@ struct TrNfo
 	short	half;
 	short	full;
 };
+#ifndef ST_ONLY
 static struct TrNfo from1_8[] =
 {
 	{0,0,0},
-	{8 + 7, 0, 1},		/* 1 */
-	{8 + 6, 1, 3},		/* 2 */
-	{8 + 5, 3, 7},		/* 3 */
-	{8 + 4, 7, 15},		/* 4 */
-	{8 + 3, 15, 31},	/* 5 */
-	{8 + 2, 31, 63},	/* 6 */
-	{8 + 1, 63, 127},	/* 7 */
+	{8 + 7,   0,   1},	/* 1 */
+	{8 + 6,   1,   3},	/* 2 */
+	{8 + 5,   3,   7},	/* 3 */
+	{8 + 4,   7,  15},	/* 4 */
+	{8 + 3,  15,  31},	/* 5 */
+	{8 + 2,  31,  63},	/* 6 */
+	{8 + 1,  63, 127},	/* 7 */
 	{8 + 0, 127, 255},	/* 8 */
 };
 	
@@ -1196,7 +1203,7 @@ from16b(void *(*to)(struct rgb_1000 *, void *), struct rgb_1000 *pal, MFDB *src,
 // 	display("dst_ptr start = %lx, dst_ptr end = %lx (size = %ld)",
 // 		dst->fd_addr, *d_ptr, *(long*)d_ptr - (long)dst->fd_addr);
 }
-
+#endif
 typedef void * to_x_bit(struct rgb_1000 *pal, void *imgdata);
 #if 0
 		15	moto,
@@ -1211,6 +1218,7 @@ typedef void * to_x_bit(struct rgb_1000 *pal, void *imgdata);
 			intel,
 			intel byteswapped,
 #endif
+#ifndef ST_ONLY
 static to_x_bit *f_to15[] =
 {
 	toF16b,
@@ -1234,7 +1242,9 @@ static to_x_bit *f_to32[] =
 	toI32b,
 	toIbs32b
 };
+#endif
 
+#ifndef ST_ONLY
 static void
 repeat_16bpixel(void *_pixel, void *_dest, int count)
 {
@@ -1629,6 +1639,7 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 		}
 	}
 }
+#endif
 
 void
 load_image(char *name, XAMFDB *mimg)
@@ -1681,7 +1692,7 @@ load_image(char *name, XAMFDB *mimg)
 		if (ximg->planes < 8 && screen.planes == 8)
 		{
 			long newsize, oldsize;
-			char *newdata;
+			unsigned char *newdata;
 
 			newsize = (long)(((msrc.mfdb.fd_w + 15) >> 4) << 1) * msrc.mfdb.fd_h * 8;
 			oldsize = (long)(((msrc.mfdb.fd_w + 15) >> 4) << 1) * msrc.mfdb.fd_h * msrc.mfdb.fd_nplanes;
@@ -1710,6 +1721,7 @@ load_image(char *name, XAMFDB *mimg)
 		{
 // 			display("alloc %ld bytes at %lx for bitmap", bmsize, mimg->fd_addr);
 // 			display(" transform into %lx", mimg->fd_addr);
+#ifndef ST_ONLY
 			if (screen.planes > 8)
 			{
 				bool fail = true;
@@ -1759,6 +1771,7 @@ load_image(char *name, XAMFDB *mimg)
 				}
 			}
 			else
+#endif
 			{
 				ndisplay(", vr_trnfm()..."); 
 				vr_trnfm(C.P_handle, &msrc.mfdb, &mimg->mfdb);

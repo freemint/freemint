@@ -1,7 +1,7 @@
 /*
  * event.c
  *
- * Eventverarbeitung fr TosWin
+ * Eventverarbeitung fr TosWin
  *
  */
 
@@ -93,14 +93,14 @@ void menu_help(int title, int item)
 {
 	char *p, str[50], s[50];
 	
-	get_string(menu, item, s);
-	/* die fhrenden '  ' berspringen und das letzte auch nicht */
+	get_string(menu, item, s, sizeof(s));
+	/* die fhrenden '  ' berspringen und das letzte auch nicht */
 	strncpy(str, s + 2, strlen(s) - 3);
 	
 	p = str;
 	while (TRUE)
 	{
-		/* Meneintrag endet entweder bei min. zwei Blanks oder Punkten */
+		/* Meneintrag endet entweder bei min. zwei Blanks oder Punkten */
 		if ((*p == ' ' && *(p+1) == ' ') ||
 		    (*p == '.' && *(p+1) == '.'))
 			break;
@@ -392,7 +392,7 @@ void event_init(void)
 	if (gl_debug && gl_magx)
 		menu_ienable(menu, MCCONFIG, TRUE);
 	
-	/* fr Alerts und Fontauswahl im Fenster */
+	/* fr Alerts und Fontauswahl im Fenster */
 	set_mdial_wincb(handle_msg);
 	
 	update_menu();

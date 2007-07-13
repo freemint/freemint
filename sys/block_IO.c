@@ -275,7 +275,7 @@ BIO bio =
 /* cache block */
 struct cbl
 {
-	char	*data;			/* ptr to the data */
+	uchar	*data;			/* ptr to the data */
 	UNIT	**active;		/* array of the used UNITS */
 	ushort	*used;			/* array of the UNIT positions */
 	ulong	stat;			/* access statistic */
@@ -1462,7 +1462,7 @@ bio_set_cache_size (long size)
 	ulong m_stat;
 	ulong m_block;
 	CBL *blocks;
-	char *data;
+	unsigned char *data;
 	long r;
 
 	if (size < 0)
@@ -1500,7 +1500,7 @@ bio_set_cache_size (long size)
 	}
 	else
 	{
-		char *c = (char *) (blocks + cache.count + count);
+		unsigned char *c = (unsigned char *) (blocks + cache.count + count);
 		long i;
 		for (i = 0; i < cache.count + count; i++)
 		{

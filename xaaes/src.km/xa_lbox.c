@@ -747,12 +747,12 @@ drag_slide(struct xa_lbox_info *lbox, struct lbox_slide *s)
 
 		if (s->flags & LBOX_VERT)
 		{
-			graf_mouse(XACRS_VERTSIZER, NULL, NULL, false);
+			xa_graf_mouse(XACRS_VERTSIZER, NULL, NULL, false);
 			max = obtree[parent].ob_height - (obtree[child].ob_height - s->ofs.h);
 		}
 		else
 		{
-			graf_mouse(XACRS_HORSIZER, NULL, NULL, false);
+			xa_graf_mouse(XACRS_HORSIZER, NULL, NULL, false);
 			max = obtree[parent].ob_width - (obtree[child].ob_width - s->ofs.w);
 		}
 
@@ -840,7 +840,7 @@ drag_slide(struct xa_lbox_info *lbox, struct lbox_slide *s)
 				}
 			} /* if (mb && sx != mx && sy != mx) */
 		} /* while (mb) */
-		graf_mouse(ARROW, NULL, NULL, false);
+		xa_graf_mouse(ARROW, NULL, NULL, false);
 	} /* if (mb) */
 }
 static void

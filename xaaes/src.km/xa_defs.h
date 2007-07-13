@@ -28,6 +28,11 @@
 #define _xa_defs_h
 
 
+/* absolute value for any type of number */
+#ifndef abs
+#define	abs(x)		((x)<0?(-(x)):(x))
+#endif
+
 /*----------------------------------------------------------------- */
 /* COMPILE TIME SWITCHES */
 /* - define as 1 to turn on, 0 to turn off */

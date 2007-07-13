@@ -154,7 +154,7 @@ static struct adif moose_aif =
 #  define ALERT(x)	KERNEL_ALERT x
 # endif
 
-long _cdecl		init		(struct kentry *k, struct adiinfo *ai);
+long _cdecl		init		(struct kentry *k, struct adiinfo *ai, char **reason);
 
 /* END definition part */
 /****************************************************************************/
@@ -570,7 +570,7 @@ moose_timeout(struct adif *a)
 }
 
 long _cdecl
-init (struct kentry *k, struct adiinfo *ainfo)
+init (struct kentry *k, struct adiinfo *ainfo, char **reason)
 {
 	long ret;
 

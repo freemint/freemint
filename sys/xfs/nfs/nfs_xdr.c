@@ -1,5 +1,5 @@
 /*
- * Copyright 1993 by Ulrich Khn. All rights reserved.
+ * Copyright 1993 by Ulrich Kï¿½hn. All rights reserved.
  *
  * THIS PROGRAM COMES WITH ABSOLUTELY NO WARRANTY, NOT
  * EVEN THE IMPLIED WARRANTIES OF MERCHANTIBILITY OR
@@ -262,7 +262,7 @@ xdr_diropargs (xdrs *x, diropargs *ap)
 	if (!xdr_nfsfh (x, &ap->dir))
 		return FALSE;
 	
-	return xdr_string (x, &ap->name, MAXNAMLEN);
+	return xdr_string (x, (const char **)&ap->name, MAXNAMLEN);
 }
 
 long
@@ -284,7 +284,7 @@ xdr_readlinkres (xdrs *x, readlinkres *rp)
 		return FALSE;
 	
 	if (NFS_OK == rp->status)
-		return xdr_string (x, &rp->readlinkres_u.data, MAXPATHLEN);
+		return xdr_string (x, (const char **)&rp->readlinkres_u.data, MAXPATHLEN);
 	
 	return TRUE;
 }
@@ -314,8 +314,8 @@ xdr_readres (xdrs *x, readres *rp)
 		if (!xdr_fattr (x, &rp->readres_u.read_ok.attributes))
 			return FALSE;
 		
-		if (!xdr_opaque (x, &rp->readres_u.read_ok.data_val,
-				    &rp->readres_u.read_ok.data_len, MAXDATA))
+		if (!xdr_opaque (x, (const char **)&rp->readres_u.read_ok.data_val,
+				    (long *)&rp->readres_u.read_ok.data_len, MAXDATA))
 			return FALSE;
 	}
 	
@@ -365,7 +365,7 @@ xdr_writeargs (xdrs *x, writeargs *ap)
 	xdr_ulong (x, &ap->offset);
 	xdr_ulong (x, &ap->totalcount);
 	
-	return xdr_opaque (x, &ap->data_val, &ap->data_len, MAXDATA);
+	return xdr_opaque (x, (const opaque **)&ap->data_val, (long *)&ap->data_len, MAXDATA);
 }
 
 long
@@ -459,7 +459,7 @@ xdr_entry (xdrs *x, entry *ep)
 	if (XDR_DECODE == x->op)
 		ep->name = (char *) ep + sizeof (entry);
 	
-	if (!xdr_string (x, &ep->name, MAXNAMLEN))
+	if (!xdr_string (x, (const char **)&ep->name, MAXNAMLEN))
 		return FALSE;
 	
 	if (!xdr_nfscookie (x, ep->cookie))
@@ -475,7 +475,7 @@ xdr_entry (xdrs *x, entry *ep)
 		ep->nextentry = (entry *) p;
 	}
 	
-	return xdr_pointer (x, (char **) &ep->nextentry, sizeof (entry), (xdrproc_t) xdr_entry);
+	return xdr_pointer (x, (char **)((entry *)&ep->nextentry), sizeof(entry), (xdrproc_t) xdr_entry);
 }
 
 long
@@ -505,7 +505,7 @@ xdr_readdirres (xdrs *x, readdirres *rp)
 	
 	if (NFS_OK == rp->status)
 	{
-		if (!xdr_pointer (x, (char**) &rp->readdirres_u.readdirok.entries,
+		if (!xdr_pointer (x, (char**)((entry *)&rp->readdirres_u.readdirok.entries),
 			sizeof(entry), (xdrproc_t) xdr_entry))
 		{
 			return FALSE;

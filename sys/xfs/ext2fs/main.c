@@ -36,8 +36,8 @@
 	"\033p Ext2 filesystem driver version " MSG_VERSION " \033q\r\n"
 
 # define MSG_GREET	\
-	"½ 1998, 1999 by Axel Kaiser.\r\n" \
-	"½ " MSG_BUILDDATE " by Frank Naumann.\r\n"
+	"ï¿½ 1998, 1999 by Axel Kaiser.\r\n" \
+	"ï¿½ " MSG_BUILDDATE " by Frank Naumann.\r\n"
 
 # define MSG_ALPHA	\
 	"\033p WARNING: This is an unstable version - ALPHA! \033q\7\r\n"
@@ -57,9 +57,9 @@
 # define MSG_FAILURE	\
 	"\7Sorry, module NOT installed!\r\n\r\n"
 
+FILESYS * init(struct kerinfo *k);
 
 struct kerinfo *KERNEL;
-
 FILESYS *
 init (struct kerinfo *k)
 {
