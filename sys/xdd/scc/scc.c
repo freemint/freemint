@@ -345,12 +345,12 @@ DEVDRV *	_cdecl init	(struct kerinfo *k);
  */
 INLINE void	notify_top_half	(IOVAR *iovar);
 static void	wr_scc 		(IOVAR *iovar, SCC *regs);
-static void	scc_txempty	(void) __attribute__((used));
-static void	scc_rxavail	(void) __attribute__((used));
-static void	scc_stchange	(void) __attribute__((used));
-static void	scc_special	(void) __attribute__((used));
+static void	scc_txempty	(void) USED;
+static void	scc_rxavail	(void) USED;
+static void	scc_stchange	(void) USED;
+static void	scc_special	(void) USED;
 
-static void	scc_intrwrap	(void) __attribute__((used));
+static void	scc_intrwrap	(void) USED;
        void	scca_txempty	(void);
        void	scca_rxavail	(void);
        void	scca_stchange	(void);
