@@ -428,9 +428,9 @@ INLINE void	pc16550_read_x	(IOVAR *iovar, UART *regs);
 INLINE void	pc16550_read_o	(IOVAR *iovar, UART *regs);
 INLINE void	pc16550_read	(IOVAR *iovar, UART *regs);
 INLINE void	pc16550_write	(IOVAR *iovar, UART *regs);
-static void	pc16550_int	(void) __attribute__((used));
+static void	pc16550_int	(void) USED;
 
-static void	pc16550_intx	(void) __attribute__((used));
+static void	pc16550_intx	(void) USED;
        void	pc16550_int0	(void);
        void	pc16550_int1	(void);
        void	pc16550_int2	(void);

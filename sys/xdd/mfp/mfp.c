@@ -287,15 +287,14 @@ DEVDRV *	_cdecl init	(struct kerinfo *k);
  */
 INLINE void	notify_top_half	(IOVAR *iovar);
 static void	wr_mfp		(IOVAR *iovar, MFP *regs);
-static void	mfp_txerror	(void) __attribute__((used));
-static void	mfp_txempty	(void) __attribute__((used));
-static void	mfp_rxavail	(void) __attribute__((used));
-static void	mfp_dcdint	(void) __attribute__((used));
-static void	mfp_ctsint	(void) __attribute__((used));
-static void	mfp_rxerror	(void) __attribute__((used));
+static void	mfp_txerror	(void) USED;
+static void	mfp_txempty	(void) USED;
+static void	mfp_rxavail	(void) USED;
+static void	mfp_dcdint	(void) USED;
+static void	mfp_ctsint	(void) USED;
+static void	mfp_rxerror	(void) USED;
 
-static void	mfp_intrwrap	(void) __attribute__((used));
-
+static void	mfp_intrwrap	(void) USED;
        void	mfp1_dcdint	(void);
        void	mfp1_ctsint	(void);
        void	mfp1_txerror	(void);
@@ -1379,8 +1378,6 @@ wr_mfp (IOVAR *iovar, MFP *regs)
 		}
 	}
 }
-
-static void mfp_dcdint(void) __attribute__((used));
 
 static void
 mfp_dcdint (void)

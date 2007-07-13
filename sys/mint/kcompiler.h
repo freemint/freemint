@@ -40,6 +40,15 @@
 
 # include <compiler.h>
 
+# ifndef USED
+# if __GNUC__ >= 4
+# define USED __attribute__((used))
+# else
+# define USED
+# endif
+# else
+# error "USED already defined"
+# endif
 
 # ifndef EXITING
 # define EXITING	__EXITING
