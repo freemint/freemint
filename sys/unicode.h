@@ -66,7 +66,7 @@ void init_unicode(void);
 INLINE char
 UNI2ATARI (register uchar off, register uchar cp)
 {
-	register char *codepage = (char *) t_uni2atari[cp];
+	register char *codepage = (char *)t_uni2atari[cp];
 	return (codepage == NULL) ? '?' : codepage[off];
 }
 

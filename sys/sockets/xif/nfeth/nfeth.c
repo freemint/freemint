@@ -525,7 +525,7 @@ driver_init (void)
 		/*
 		 * Set interface hardware and broadcast addresses.
 		 */
-		if (! get_hw_addr(ethX, iface->hwlocal.addr, ETH_ALEN))
+		if (! get_hw_addr(ethX, (char *)iface->hwlocal.addr, ETH_ALEN))
 			continue; /* if XIF_GET_MAC returns false then skip this interface */
 
 		memcpy (iface->hwbrcst.addr, "\377\377\377\377\377\377", ETH_ALEN);

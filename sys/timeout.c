@@ -176,14 +176,16 @@ __addtimeout (PROC *p, long delta, void _cdecl (*func)(PROC *), ushort flags)
 			if (t->proc == p && t->func == func)
 			{
 				*prev = t->next;
-				break;
+				spl(sr);
+				inserttimeout(t, delta);
+				return t;
 			}
 		}
 		
 		spl (sr);
 	}
 	
-	if (!t) t = newtimeout (flags & 1);
+	t = newtimeout (flags & 1);
 	
 	if (t)
 	{

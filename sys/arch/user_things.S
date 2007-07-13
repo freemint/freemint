@@ -117,12 +117,12 @@ pc_valid_return:			// tells kernel its us
 // d0: Version number of the shared library, or GEMDOS error code
 
 slb_open:
-	move.l	(sp),a0
-	move.l	4(sp),-(sp)
+	move.l	(sp),a0			// slbhead
+	move.l	4(sp),-(sp)		// base
 	move.l	SH_OPEN(a0),a1
 	jsr	(a1)
 	addq.l	#4,sp
-	move.l	8(sp),a0
+	move.l	8(sp),a0		// slb
 	tst.l	d0
 	bmi.s	failed
 	lea	SL_NAME(a0),a0
@@ -133,7 +133,7 @@ slb_open:
 	move.l	a0,-(sp)
 	move.w	#0x0016,-(sp)
 	trap	#1
-	lea	34(sp),sp
+	lea	22+12(sp),sp
 	rts
 
 failed:	move.l	d0,-(sp)

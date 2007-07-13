@@ -30,6 +30,8 @@
 #include "global.h"
 #include "xa_types.h"
 
+struct xa_window * _cdecl create_dwind(enum locks lock, XA_WIND_ATTR tp, char *title, struct xa_client *client, struct widget_tree *wt, FormExit(*f), WindowDisplay(*d));
+
 struct helpthread_data * get_helpthread_data(struct xa_client *client);
 
 void add_to_tasklist(struct xa_client *client);
@@ -51,10 +53,10 @@ void screen_dump(enum locks lock, struct xa_client *client, bool open);
 
 void open_taskmanager(enum locks lock, struct xa_client *client, bool open);
 void open_systemalerts(enum locks lock, struct xa_client *client, bool open);
-void open_reschange(enum locks lock, struct xa_client *client, bool open);
-void open_milan_reschange(enum locks lock, struct xa_client *client, bool open);
-void open_nova_reschange(enum locks lock, struct xa_client *client, bool open);
-void open_falcon_reschange(enum locks lock, struct xa_client *client, bool open);
+// void open_reschange(enum locks lock, struct xa_client *client, bool open);
+// void open_milan_reschange(enum locks lock, struct xa_client *client, bool open);
+// void open_nova_reschange(enum locks lock, struct xa_client *client, bool open);
+// void open_falcon_reschange(enum locks lock, struct xa_client *client, bool open);
 void CE_open_csr(enum locks lock, struct c_event *ce, bool cancel);
 void CE_abort_csr(enum locks lock, struct c_event *ce, bool cancel);
 void cancel_csr(struct xa_client *running);

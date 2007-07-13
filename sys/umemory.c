@@ -73,7 +73,7 @@ struct umem_descriptor
 static int
 umem_check_inside(MEMREGION *m, void *ptr)
 {
-	long place = (long)ptr;
+	unsigned long place = (unsigned long)ptr;
 
 	if (place >= m->loc && place < (m->loc + m->len))
 		return 1;
@@ -310,7 +310,7 @@ _ufree(void *place, const char *func)
 
 	DEBUG(("ufree(0x%lx, %s)", place, func));
 
-	m = proc_addr2region(p, (long)place);
+	m = proc_addr2region(p, (unsigned long)place);
 	if (m)
 	{
 		struct umem_descriptor *descr;

@@ -82,11 +82,11 @@ static PCB_TAx  pCB_run;
 static struct parser_item parser_tab[] =
 {
 	/* config variables */
-	{ "LAUNCHER",              PI_R_T,     cfg.launch_path         , sizeof(cfg.launch_path) },
-	{ "CLIPBOARD",             PI_R_T,     cfg.scrap_path          , sizeof(cfg.scrap_path)  },
-	{ "ACCPATH",               PI_R_T,     cfg.acc_path            , sizeof(cfg.acc_path)    },
-	{ "WIDGETS",               PI_R_T,     cfg.widg_name           , sizeof(cfg.widg_name)  },
-	{ "RESOURCE",              PI_R_T,     cfg.rsc_name            , sizeof(cfg.rsc_name)   },
+	{ "LAUNCHER",              PI_R_T,     cfg.launch_path         , { dat: sizeof(cfg.launch_path) } },
+	{ "CLIPBOARD",             PI_R_T,     cfg.scrap_path          , { dat: sizeof(cfg.scrap_path)  } },
+	{ "ACCPATH",               PI_R_T,     cfg.acc_path            , { dat: sizeof(cfg.acc_path)    } },
+	{ "WIDGETS",               PI_R_T,     cfg.widg_name           , { dat: sizeof(cfg.widg_name)   } },
+	{ "RESOURCE",              PI_R_T,     cfg.rsc_name            , { dat: sizeof(cfg.rsc_name)    } },
 	{ "USEHOME",               PI_R_B,   & cfg.usehome		},
 	{ "NAES_COOKIE",           PI_R_B,   & cfg.naes_cookie		},
 	{ "MENUPOP_PIDS",          PI_R_B,   & cfg.menupop_pids		},

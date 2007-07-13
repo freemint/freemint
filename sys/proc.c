@@ -55,16 +55,13 @@
  */
 unsigned short proc_clock = 0x7fff;
 
+struct proc_queue sysq[NUM_QUEUES] = { { NULL } };
 
 
 /* global process variables */
 struct proc *proclist = NULL;		/* list of all active processes */
 struct proc *curproc  = NULL;	/* current process		*/
 struct proc *rootproc = NULL;		/* pid 0 -- MiNT itself		*/
-struct proc *sys_q[NUM_QUEUES] =
-{
-	NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL
-};
 
 /* default; actual value comes from mint.cnf */
 short time_slice = 2;
@@ -89,6 +86,8 @@ init_proc(void)
 	static struct sigacts	sigacts0;
 	static struct plimit	limits0;
 
+	mint_bzero(&sysq, sizeof(sysq));
+
 	/* XXX */
 	mint_bzero(&rootproc0, sizeof(rootproc0));
 	mint_bzero(&mem0, sizeof(mem0));
@@ -109,7 +108,7 @@ init_proc(void)
 //	rootproc0.p_limits	= &limits0;	limits0.links = 1;
 
 	fd0.ofiles = fd0.dfiles;
-	fd0.ofileflags = fd0.dfileflags;
+	fd0.ofileflags = (unsigned char *)fd0.dfileflags;
 	fd0.nfiles = NDFILE;
 
 	DEBUG(("init_proc() inf : %lx, %lx, %lx, %lx, %lx, %lx, %lx",
@@ -269,8 +268,13 @@ run_next(struct proc *p, int slices)
 	p->slices = -slices;
 	p->curpri = MAX_NICE;
 	p->wait_q = READY_Q;
-	p->q_next = sys_q[READY_Q];
-	sys_q[READY_Q] = p;
+	p->q_next = sysq[READY_Q].head;
+	sysq[READY_Q].head = p;
+	if (!p->q_next)
+		sysq[READY_Q].tail = p;
+	else
+		p->q_next->q_prev = p;
+	p->q_prev = NULL;
 
 	spl(sr);
 }
@@ -296,24 +300,20 @@ fresh_slices(int slices)
 void
 add_q(int que, struct proc *proc)
 {
-	struct proc *q, **lastq;
-
 	/* "proc" should not already be on a list */
 	assert(proc->wait_q == 0);
 	assert(proc->q_next == 0);
 
-	lastq = &sys_q[que];
-	q = *lastq;
-	while (q)
-	{
-		lastq = &q->q_next;
-		q = *lastq;
+	if (sysq[que].tail) {
+		proc->q_prev = sysq[que].tail;
+		sysq[que].tail->q_next = proc;
+	} else {
+		proc->q_prev = NULL;
+		sysq[que].head = proc;
 	}
-	*lastq = proc;
-
+	sysq[que].tail = proc;
 	proc->wait_q = que;
-	if (que != READY_Q && proc->slices >= 0)
-	{
+	if (que != READY_Q && proc->slices >= 0) {
 		proc->curpri = proc->pri;	/* reward the process */
 		proc->slices = SLICES(proc->curpri);
 	}
@@ -325,28 +325,21 @@ add_q(int que, struct proc *proc)
 void
 rm_q(int que, struct proc *proc)
 {
-	struct proc *q;
-	struct proc *old = 0;
-
 	assert(proc->wait_q == que);
 
-	q = sys_q[que];
-	while (q && q != proc)
-	{
-		old = q;
-		q = q->q_next;
-	}
-
-	if (q == 0)
-		FATAL("rm_q: unable to remove process from queue");
-
-	if (old)
-		old->q_next = proc->q_next;
+	if (proc->q_prev)
+		proc->q_prev->q_next = proc->q_next;
 	else
-		sys_q[que] = proc->q_next;
+		sysq[que].head = proc->q_next;
 
+	if (proc->q_next)
+		proc->q_next->q_prev = proc->q_prev;
+	else {
+		if ((sysq[que].tail = proc->q_prev))
+			proc->q_prev->q_next = NULL;
+	}
 	proc->wait_q = 0;
-	proc->q_next = 0;
+	proc->q_next = proc->q_prev = NULL;
 }
 
 /*
@@ -551,9 +544,9 @@ sleep(int _que, long cond)
 	 * an indicatation that the wakeup has already happend before we
 	 * actually go to sleep and return immediatly.
 	 */
-	if ((que == READY_Q && !sys_q[READY_Q])
+	if ((que == READY_Q && !sysq[READY_Q].head)
 	    || ((sleepcond != cond || (iwakecond == cond && cond) || (_que & 0x100 && curproc->wait_cond != cond))
-		&& (!sys_q[READY_Q] || (newslice = 0, proc_clock))))
+		&& (!sysq[READY_Q].head || (newslice = 0, proc_clock))))
 	{
 		/* we're just going to wake up again right away! */
 		iwakecond = 0;
@@ -580,7 +573,7 @@ sleep(int _que, long cond)
 	 */
 	spl(sr);
 
-	if (!sys_q[READY_Q])
+	if (!sysq[READY_Q].head)
 	{
 		/* hmm, no-one is ready to run. might be a deadlock, might not.
 		 * first, try waking up any napping processes;
@@ -589,7 +582,7 @@ sleep(int _que, long cond)
 		 */
 		wake(SELECT_Q, (long) nap);
 
-		if (!sys_q[READY_Q])
+		if (!sysq[READY_Q].head)
 		{
 			sr = splhigh();
 			p = rootproc;		/* pid 0 */
@@ -627,7 +620,7 @@ sleep(int _que, long cond)
 	p = 0;
 	while (!p)
 	{
-		for (p = sys_q[READY_Q]; p; p = p->q_next)
+		for (p = sysq[READY_Q].head; p; p = p->q_next)
 		{
 			if (p->slices > 0)
 				p->slices--;
@@ -679,7 +672,7 @@ do_wake(int que, long cond)
 	struct proc *p;
 
 top:
-	p = sys_q[que];
+	p = sysq[que].head;
 
 	while (p)
 	{
@@ -841,7 +834,7 @@ static unsigned short number_running;
 void
 DUMPPROC(void)
 {
-# ifdef DEBUG_INFO
+#ifdef DEBUG_INFO
 	struct proc *p = curproc;
 
 	FORCE("Uptime: %ld seconds Loads: %ld %ld %ld Processes running: %d",
@@ -851,10 +844,11 @@ DUMPPROC(void)
 
 	for (curproc = proclist; curproc; curproc = curproc->gl_next)
 	{
-		FORCE("state %s PC: %lx BP: %lx (pgrp %i)",
+		FORCE("state %s sys %s, inkern %s PC: %lx/%lx BP: %lx (pgrp %i)",
 			qname(curproc->wait_q),
-			curproc->p_flag & P_FLAG_SYS ?
-				curproc->ctxt[CURRENT].pc : curproc->ctxt[SYSCALL].pc,
+			curproc->p_flag & P_FLAG_SYS ? "yes":" no",
+			curproc->in_kern ? "yes":" no",
+			curproc->ctxt[CURRENT].pc, curproc->ctxt[SYSCALL].pc,
 			curproc->p_mem ? curproc->p_mem->base : NULL,
 			curproc->pgrp);
 	}

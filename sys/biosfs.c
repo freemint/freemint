@@ -377,7 +377,7 @@ biosfs_init (void)
 	int majdev, mindev;
 	int i;
 
-	get_toscookie (COOKIE_RSVF, &rsvf);
+	get_toscookie (COOKIE_RSVF, (unsigned long *)&rsvf);
 
 	broot = BDEV;
 
@@ -1163,7 +1163,7 @@ bios_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 			 * structure here, cause we don't know if any process
 			 * who didn't recognize this change is still using it.
 			 */
-			b->tty = 0;
+			b->tty = NULL;
 			b->device = &bios_ndevice;
 			b->private = arg;
 			b->flags = 0;
@@ -1200,7 +1200,7 @@ bios_symlink (fcookie *dir, const char *name, const char *to)
 
 	strncpy (b->name, name, BNAME_MAX);
 	b->name[BNAME_MAX] = 0;
-	b->device = 0;
+	b->device = NULL;
 	b->private = ENOSYS;
 	b->flags = 0;
 	b->tty = kmalloc ((long) strlen (to) + 1);
@@ -1430,10 +1430,10 @@ bios_writeb (FILEPTR *f, const char *buf, long bytes)
 long
 iwrite (int bdev, const char *buf, long bytes, int ndelay, struct bios_file *b)
 {
-	IOREC_T *ior = 0;
-	long *cout = 0;	/* keep compiler happy */
-	long *ospeed = 0;
-	struct tty *tty = 0; /* still not happy yet? */
+	IOREC_T *ior = NULL;
+	long *cout = NULL;	/* keep compiler happy */
+	long *ospeed = NULL;
+	struct tty *tty = NULL; /* still not happy yet? */
 	const char *p = buf;
 	int slept = 0;
 
@@ -2362,13 +2362,13 @@ bios_ioctl (FILEPTR *f, int mode, void *buf)
 	case TCURSSTEADY:
 		if (f->fc.aux != 2)
 			return ENOSYS;
-		ROM_Cursconf(mode - TCURSOFF, 0);
+		(void)ROM_Cursconf(mode - TCURSOFF, 0);
 		break;
 	case TCURSSRATE:
 	case TCURSSDELAY:	/* undocumented! */
 		if (f->fc.aux != 2)
 			return ENOSYS;
-		ROM_Cursconf(mode - TCURSOFF, *((short *)buf));
+		(void)ROM_Cursconf(mode - TCURSOFF, *((short *)buf));
 		break;
 	case TCURSGRATE:
 	case TCURSGDELAY:	/* undocumented! */

@@ -102,7 +102,7 @@ struct timeval;
  * versions are enough :-)
  */
 #define KENTRY_MAJ_VERSION	0
-#define KENTRY_MIN_VERSION	15
+#define KENTRY_MIN_VERSION	16
 
 
 /* hardware dependant vector
@@ -412,6 +412,10 @@ struct kentry_fs
 	long _cdecl (*kernel_write)(struct file *f, const void *buf, long buflen);
 	long _cdecl (*kernel_lseek)(FILEPTR *f, long where, int whence);
 	void _cdecl (*kernel_close)(struct file *f);
+
+	long _cdecl (*path2cookie)(struct proc *p, const char *path, char *lastname, fcookie *res);
+	long _cdecl (*relpath2cookie)(struct proc *p, fcookie *relto, const char *path, char *lastname, fcookie *res, int depth);
+	void _cdecl (*release_cookie)(fcookie *fc);
 };
 #define DEFAULTS_kentry_fs \
 { \
@@ -435,6 +439,10 @@ struct kentry_fs
 	kernel_write, \
 	kernel_lseek, \
 	kernel_close, \
+	\
+	path2cookie, \
+	relpath2cookie, \
+	release_cookie \
 }
 
 
@@ -468,6 +476,14 @@ struct kentry_sockets
 
 /* module related
  */
+#define MOD_LOADED	1
+
+#define MODCLASS_XIF	1
+#define MODCLASS_XDD	2
+#define MODCLASS_XFS	3
+#define MODCLASS_KM	4
+#define MODCLASS_KMDEF	5
+
 struct kentry_module
 {
 	/* Load modules with filename extension specified with 'ext' argument
@@ -480,7 +496,7 @@ struct kentry_module
 	 */
 	void _cdecl (*load_modules)(const char *path,
 				    const char *ext,
-				    long _cdecl (*loader)(struct basepage *, const char *));
+				    long _cdecl (*loader)(struct basepage *, const char *, short *, short *));
 
 	/* register VDI or AES trap handler
 	 * 
@@ -571,13 +587,16 @@ struct kentry_debug
 	 * alert - really serious errors
 	 * fatal - fatal errors
 	 */
+	int *debug_level;
 	void	_cdecl (*trace)(const char *, ...);
 	void	_cdecl (*debug)(const char *, ...);
 	void	_cdecl (*alert)(const char *, ...);
 	EXITING	_cdecl (*fatal)(const char *, ...) NORETURN;
 };
+extern int debug_level;
 #define DEFAULTS_kentry_debug \
 { \
+	&debug_level, \
 	Trace, \
 	Debug, \
 	ALERT, \
@@ -731,6 +750,122 @@ struct kentry_libkern
 	mint_bzero, \
 }
 
+struct kentry_xfs
+{
+	void _cdecl (*block) (FILESYS *fs, ushort dev, const char *func);
+	void _cdecl (*deblock) (FILESYS *fs, ushort dev, const char *func);
+
+
+	long _cdecl (*root)(FILESYS *fs, int drv, fcookie *fc);
+	long _cdecl (*lookup)(FILESYS *fs, fcookie *dir, const char *name, fcookie *fc);
+
+	DEVDRV * _cdecl (*getdev)(FILESYS *fs, fcookie *fc, long *devsp);
+
+	long _cdecl (*getxattr)(FILESYS *fs, fcookie *fc, XATTR *xattr);
+
+	long _cdecl (*chattr)(FILESYS *fs, fcookie *fc, int attr);
+	long _cdecl (*chown)(FILESYS *fs, fcookie *fc, int uid, int gid);
+	long _cdecl (*chmode)(FILESYS *fs, fcookie *fc, unsigned mode);
+
+	long _cdecl (*mkdir)(FILESYS *fs, fcookie *dir, const char *name, unsigned mode);
+	long _cdecl (*rmdir)(FILESYS *fs, fcookie *dir, const char *name);
+	long _cdecl (*creat)(FILESYS *fs, fcookie *dir, const char *name, unsigned mode, int attr, fcookie *fc);
+	long _cdecl (*remove)(FILESYS *fs, fcookie *dir, const char *name);
+	long _cdecl (*getname)(FILESYS *fs, fcookie *root, fcookie *dir, char *buf, int len);
+	long _cdecl (*rename)(FILESYS *fs, fcookie *olddir, char *oldname, fcookie *newdir, const char *newname);
+
+	long _cdecl (*opendir)(FILESYS *fs, DIR *dirh, int flags);
+	long _cdecl (*readdir)(FILESYS *fs, DIR *dirh, char *nm, int nmlen, fcookie *fc);
+	long _cdecl (*rewinddir)(FILESYS *fs, DIR *dirh);
+	long _cdecl (*closedir)(FILESYS *fs, DIR *dirh);
+
+	long _cdecl (*pathconf)(FILESYS *fs, fcookie *dir, int which);
+	long _cdecl (*dfree)(FILESYS *fs, fcookie *dir, long *buf);
+	long _cdecl (*writelabel)(FILESYS *fs, fcookie *dir, const char *name);
+	long _cdecl (*readlabel)(FILESYS *fs, fcookie *dir, char *name, int namelen);
+
+	long _cdecl (*symlink)(FILESYS *fs, fcookie *dir, const char *name, const char *to);
+	long _cdecl (*readlink)(FILESYS *fs, fcookie *fc, char *buf, int len);
+	long _cdecl (*hardlink)(FILESYS *fs, fcookie *fromdir, const char *fromname, fcookie *todir, const char *toname);
+	long _cdecl (*fscntl)(FILESYS *fs, fcookie *dir, const char *name, int cmd, long arg);
+	long _cdecl (*dskchng)(FILESYS *fs, int drv, int mode);
+
+	long _cdecl (*release)(FILESYS *fs, fcookie *fc);
+	long _cdecl (*dupcookie)(FILESYS *fs, fcookie *dst, fcookie *src);
+
+	long _cdecl (*mknod)(FILESYS *fs, fcookie *dir, const char *name, ulong mode);
+	long _cdecl (*unmount)(FILESYS *fs, int drv);
+	long _cdecl (*stat64)(FILESYS *fs, fcookie *fc, STAT *stat);
+};
+
+#define DEFAULTS_kentry_xfs	\
+{	\
+	xfs_block, \
+	xfs_deblock, \
+	\
+	xfs_root, \
+	xfs_lookup, \
+	\
+	xfs_getdev, \
+	\
+	xfs_getxattr, \
+	\
+	xfs_chattr, \
+	xfs_chown, \
+	xfs_chmode, \
+	\
+	xfs_mkdir, \
+	xfs_rmdir, \
+	xfs_creat, \
+	xfs_remove, \
+	xfs_getname, \
+	xfs_rename, \
+	\
+	xfs_opendir, \
+	xfs_readdir, \
+	xfs_rewinddir, \
+	xfs_closedir, \
+	\
+	xfs_pathconf, \
+	xfs_dfree, \
+	xfs_writelabel, \
+	xfs_readlabel, \
+	\
+	xfs_symlink, \
+	xfs_readlink, \
+	xfs_hardlink, \
+	xfs_fscntl, \
+	xfs_dskchng, \
+	\
+	xfs_release, \
+	xfs_dupcookie, \
+	\
+	xfs_mknod, \
+	xfs_unmount, \
+	xfs_stat64, \
+}
+
+struct kentry_xdd
+{
+	long _cdecl (*open)(FILEPTR *f);
+	long _cdecl (*write)(FILEPTR *f, const char *buf, long bytes);
+	long _cdecl (*read)(FILEPTR *f, char *buf, long bytes);
+	long _cdecl (*lseek)(FILEPTR *f, long where, int whence);
+	long _cdecl (*ioctl)(FILEPTR *f, int mode, void *buf);
+	long _cdecl (*datime)(FILEPTR *f, ushort *timeptr, int rwflag);
+	long _cdecl (*close)(FILEPTR *f, int pid);
+};
+#define DEFAULTS_kentry_xdd	\
+{ \
+	xdd_open, \
+	xdd_write, \
+	xdd_read, \
+	xdd_lseek, \
+	xdd_ioctl, \
+	xdd_datime, \
+	xdd_close, \
+}
+
 
 /* the complete kernel entry
  */
@@ -763,6 +898,9 @@ struct kentry
 	struct kentry_misc vec_misc;
 	struct kentry_debug vec_debug;
 	struct kentry_libkern vec_libkern;
+
+	struct kentry_xfs vec_xfs;
+	struct kentry_xdd vec_xdd;
 };
 # define DEFAULTS_kentry \
 { \
@@ -790,7 +928,9 @@ struct kentry
 	DEFAULTS_kentry_cnf, \
 	DEFAULTS_kentry_misc, \
 	DEFAULTS_kentry_debug, \
-	DEFAULTS_kentry_libkern \
+	DEFAULTS_kentry_libkern, \
+	DEFAULTS_kentry_xfs, \
+	DEFAULTS_kentry_xdd \
 }
 
 # endif /* _mint_kentry_h */

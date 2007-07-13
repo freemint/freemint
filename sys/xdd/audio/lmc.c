@@ -18,12 +18,15 @@
 static long	lmc_ioctl (short cmd, void *arg);
 static long	nomix_ioctl (short cmd, void *arg);
 
+long lmc_init(struct device *dev);
+long nomix_init (struct device *dev);
+
 long
 lmc_init (struct device *dev)
 {
 	long snd_cookie;
 
-	if (get_toscookie (COOKIE__SND, &snd_cookie) ||
+	if (get_toscookie (COOKIE__SND, (unsigned long *)&snd_cookie) ||
 	    !(snd_cookie & 2)) {
 		/*
 		 * _SND cookie not set or no Ste compatible

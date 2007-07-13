@@ -185,8 +185,7 @@ load_and_init_slb(char *name, char *path, long min_ver, SHARED_LIB **sl)
 	mr = get_region(alt, sizeof(SHARED_LIB) + strlen(name), PROT_PR);
 	if (mr == 0L)
 	{
-		mr = get_region(core, sizeof(SHARED_LIB) + strlen(name),
-			PROT_PR);
+		mr = get_region(core, sizeof(SHARED_LIB) + strlen(name), PROT_PR);
 	}
 	if (mr == 0L)
 	{

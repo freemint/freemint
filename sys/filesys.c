@@ -174,17 +174,20 @@ init_drive (int i)
 
 	assert (i >= 0 && i < NUM_DRIVES);
 
-	drives[i] = 0;		/* no file system */
+	drives[i] = NULL;		/* no file system */
 	if (dlockproc[i])
 		return;
 
 	for (fs = active_fs; fs; fs = fs->next)
 	{
+		DEBUG(("init_drive: fs %lx, drv %d", fs, i));
+
 		r = xfs_root (fs, i, &root_dir);
 		if (r == 0)
 		{
 			drives[i] = root_dir.fs;
 			release_cookie (&root_dir);
+			DEBUG(("init_drive: drv %d is fs %lx", i, fs));
 			break;
 		}
 	}
@@ -273,7 +276,14 @@ xfs_name (fcookie *fc)
 
 	buf [0] = '\0';
 
-	r = xfs_fscntl (fc->fs, fc, buf, MX_KER_XFSNAME, (long) buf);
+	TRACE(("xfs_name: call xfs_fscntl.. buf = %lx, fc %lx, fs %lx", &buf, fc, (long)fc->fs));
+	if (fc->fs)
+		r = xfs_fscntl (fc->fs, fc, buf, MX_KER_XFSNAME, (long)&buf);
+	else {
+		r = 0;
+		ksprintf(buf, sizeof(buf), "unknown fs (%lx)", fc->fs);
+	}
+	TRACE(("xfs_name: xfs_fctnl returned %lx", r));
 	if (r)
 		ksprintf (buf, sizeof (buf), "unknown (%lx -> %li)", fc->fs, r);
 
@@ -489,7 +499,7 @@ _changedrv (ushort d, const char *function)
 			{
 				TRACE (("closing search for process %d", p->pid));
 				release_cookie (&dirh->fc);
-				dirh->fc.fs = 0;
+				dirh->fc.fs = NULL;
 				fd->srchdta[i] = 0;
 			}
 		}
@@ -503,7 +513,7 @@ _changedrv (ushort d, const char *function)
 			if (dirh->fc.fs && dirh->fc.dev == d)
 			{
 				release_cookie (&dirh->fc);
-				dirh->fc.fs = 0;
+				dirh->fc.fs = NULL;
 			}
 		}
 
@@ -515,11 +525,11 @@ _changedrv (ushort d, const char *function)
 		if (fs)
 		{
 			r = xfs_root (fs, d, &dir);
-			if (r != E_OK) dir.fs = 0;
+			if (r != E_OK) dir.fs = NULL;
 		}
 		else
 		{
-			dir.fs = 0;
+			dir.fs = NULL;
 			dir.dev = d;
 		}
 
@@ -543,7 +553,7 @@ _changedrv (ushort d, const char *function)
 		if (cwd->root_dir && cwd->rootdir.dev == d)
 		{
 			release_cookie (&cwd->rootdir);
-			cwd->rootdir.fs = 0;
+			cwd->rootdir.fs = NULL;
 			kfree (cwd->root_dir);
 			cwd->root_dir = NULL;
 
@@ -690,7 +700,7 @@ disk_changed (ushort d)
  *
  */
 
-long
+long _cdecl
 relpath2cookie(struct proc *p, fcookie *relto, const char *path, char *lastname,
 	       fcookie *res, int depth)
 {
@@ -904,7 +914,7 @@ restart_mount:
 						release_cookie (&dir);
 						release_cookie (&mounteddir);
 						dup_cookie (&dir, &cwd->root[UNIDRV]);
-						TRACE (("path2cookie: restarting from mount point"));
+						DEBUG(("path2cookie: restarting from mount point"));
 						goto restart_mount;
 					}
 				}
@@ -1118,8 +1128,7 @@ restart_mount:
 					release_cookie (&dir);
 					break;
 				}
-				r = relpath2cookie (p, &dir, linkstuff, follow_links,
-						    res, depth + 1);
+				r = relpath2cookie (p, &dir, linkstuff, follow_links, res, depth + 1);
 				release_cookie (&dir);
 				if (r)
 				{
@@ -1143,7 +1152,7 @@ restart_mount:
 	return r;
 }
 
-long
+long _cdecl
 path2cookie(struct proc *p, const char *path, char *lastname, fcookie *res)
 {
 	struct cwd *cwd = p->p_cwd;
@@ -1177,7 +1186,7 @@ restart:
  * through clobber_cookie when the cache fills or is killed through the
  * routine above - EKL
  */
-void
+void _cdecl
 release_cookie (fcookie *fc)
 {
 	if (fc)

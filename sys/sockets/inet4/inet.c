@@ -353,7 +353,7 @@ inet_getname (struct socket *so, struct sockaddr *addr, short *addrlen, short pe
 	}
 	
 	todo = MIN (*addrlen, sizeof (in));
-	bzero (in.sin_zero, sizeof (in.sin_zero));
+	mint_bzero (in.sin_zero, sizeof (in.sin_zero));
 	memcpy (addr, &in, todo);
 	*addrlen = todo;
 	

@@ -42,12 +42,12 @@
 
 struct context
 {
-	long	regs[15];	/* registers d0-d7, a0-a6 */
-	long	usp;		/* user stack pointer (a7) */
-	ushort	sr;		/* status register */
-	long	pc;		/* program counter */
-	long	ssp;		/* supervisor stack pointer */
-	long	term_vec;	/* GEMDOS terminate vector (0x102) */
+	unsigned long	regs[15];	/* registers d0-d7, a0-a6 */
+	unsigned long	usp;		/* user stack pointer (a7) */
+	unsigned short	sr;		/* status register */
+	unsigned long	pc;		/* program counter */
+	unsigned long	ssp;		/* supervisor stack pointer */
+	unsigned long	term_vec;	/* GEMDOS terminate vector (0x102) */
 	
 	/* AGK: if running on a TT and the user is playing with the FPU then we
 	 * must save and restore the context. We should also consider this for
@@ -55,13 +55,13 @@ struct context
 	 * possibility of a context switch in the middle of an I/O handshaking
 	 * exchange.
 	 */
-	uchar	fstate[216];	/* FPU internal state */
-	long	fregs[3*8];	/* registers fp0-fp7 */
-	long	fctrl[3];	/* FPCR/FPSR/FPIAR */
-	char	ptrace;		/* trace exception is pending */
-	char	pad1;		/* junk */
-	long	iar;		/* unused */
-	long	res[2];		/* unused, reserved */
+	unsigned char	fstate[216];	/* FPU internal state */
+	unsigned long	fregs[3*8];	/* registers fp0-fp7 */
+	unsigned long	fctrl[3];	/* FPCR/FPSR/FPIAR */
+	char		ptrace;		/* trace exception is pending */
+	unsigned char	pad1;		/* junk */
+	unsigned long	iar;		/* unused */
+	unsigned long	res[2];		/* unused, reserved */
 	
 	/* Saved CRP and TC values. These are necessary for memory protection.
 	 */
@@ -75,8 +75,8 @@ struct context
 	 * the mid-instruction interrupt stack. We do this by saving the extra
 	 * 3 long words and the stack format word here.
 	 */
-	ushort	sfmt;		/* stack frame format identifier */
-	ushort	internal[42];	/* internal state -- see framesizes[] for size */
+	unsigned short	sfmt;		/* stack frame format identifier */
+	unsigned short	internal[42];	/* internal state -- see framesizes[] for size */
 };
 
 # define PROC_CTXTS	2

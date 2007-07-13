@@ -203,67 +203,6 @@ XA_wind_find(enum locks lock, struct xa_client *client, AESPB *pb)
 	return XAC_DONE;
 }
 
-void
-top_window(enum locks lock, bool snd_untopped, bool snd_ontop, struct xa_window *w)
-{
-// 	display("top_window %d for %s", w->handle, w->owner->proc_name); //client->proc_name);
-	DIAG((D_wind, NULL, "top_window %d for %s",  w->handle, w == root_window ? get_desktop()->owner->proc_name : w->owner->proc_name));
-	if (w == root_window)
-		return;
-
-	if (w->nolist)
-	{
-		setnew_focus(w, NULL, false, snd_ontop, false);
-	}
-	else
-	{
-		pull_wind_to_top(lock, w);
-		setnew_focus(w, NULL, true, snd_untopped, snd_ontop);
-	}
-	set_winmouse(-1, -1);
-}
-
-void
-bottom_window(enum locks lock, bool snd_untopped, bool snd_ontop, struct xa_window *w)
-{
-	bool was_top = (is_topped(w) ? true : false);
-	struct xa_window *wl = w->next, *new_focus;
-
-	DIAG((D_wind, w->owner, "bottom_window %d", w->handle));
-
-	if (w == root_window || wl == root_window)
-		/* Don't do anything if already bottom */
-		return;
-
-	if (w->nolist)
-		unset_focus(w);
-	else
-	{
-		/* Send it to the back */
-		send_wind_to_bottom(lock, w);
-		if (was_top)
-		{
-			if (!(TOP_WINDOW->window_status & XAWS_NOFOCUS))
-				new_focus = TOP_WINDOW;
-			else
-			{
-				new_focus = window_list;
-				while (new_focus && new_focus != root_window)
-				{
-					if (!(new_focus->window_status & XAWS_NOFOCUS))
-						break;
-					new_focus = new_focus->next;
-				}
-			}
-			setnew_focus(new_focus, w, true, snd_untopped, snd_ontop);
-		}
-		
-		DIAG((D_wind, w->owner, " - menu_owner %s, w_list_owner %s",
-			t_owner(get_menu()), w_owner(window_list)));
-
-		update_windows_below(lock, &w->r, NULL, wl, w);
-	}
-}
 
 #if GENERATE_DIAGS
 static char *
@@ -658,7 +597,6 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			mh = ir->h;
 			ir = cmd == WF_WORKXYWH ? (RECT *)&w->rwa : (RECT *)&w->rc;
 		#endif
-
 			if ( (m.w != w->rc.w && (w->opts & XAWO_NOBLITW)) ||
 			     (m.h != w->rc.h && (w->opts & XAWO_NOBLITH)))
 				blit = false;
@@ -1409,24 +1347,22 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 	case WF_TOOLBAR:
 	{
 		XA_TREE *wt = get_widget(w, XAW_TOOLBAR)->stuff;
-// 		OBJECT **have = (OBJECT **)&pb->intout[1];
 
 		if (wt)
-			ptr_to_shorts(wt->tree, pb->intout + 1); //*have = wt->tree;
+			ptr_to_shorts(wt->tree, pb->intout + 1);
 		else
-			ptr_to_shorts(NULL, pb->intout + 1); //*have = NULL;
+			ptr_to_shorts(NULL, pb->intout + 1);
 
 		break;
 	}
 	case WF_MENU:
 	{
 		XA_TREE *wt = get_widget(w, XAW_MENU)->stuff;
-// 		OBJECT **have = (OBJECT **)&pb->intout[1];
 
 		if (wt)
-			ptr_to_shorts(wt->tree, pb->intout + 1); //*have = wt->tree;
+			ptr_to_shorts(wt->tree, pb->intout + 1);
 		else
-			ptr_to_shorts(NULL, pb->intout + 1); //*have = NULL;
+			ptr_to_shorts(NULL, pb->intout + 1);
 		break;
 	}
 	/*
@@ -1453,21 +1389,6 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 	case WF_WORKXYWH:
 	{
 		*ro = w->rwa;
-#if 0
-		*ro = w->wa;
-		if (w->dial & created_for_TOOLBAR)
-		{
-			struct xa_widget *widg = get_widget(w, XAW_TOOLBAR);
-			rp_2_ap(w, widg, &widg->ar);
-			ro->y += widg->ar.h;
-			ro->h -= widg->ar.h;
-			if (ro->h <= 0)
-				ro->w = ro->h = 0;
-		}
-		if (w == root_window && !taskbar(client))
-			ro->h -= 24;
-#endif		
-		
 		DIAG((D_w, w->owner, "get work for %d: %d/%d,%d/%d",
 			wind ,ro->x,ro->y,ro->w,ro->h));
 		break;
@@ -1598,7 +1519,7 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 			o[3] = w->prev->handle;
 		else
 			o[3] = -1;		/* HR: dont return a valid window handle (root window is 0) */
-							/*     Some programs (Multistrip!!) get in a loop */
+						/*     Some programs (Multistrip!!) get in a loop */
 		if (w->next)	/* If there is a window below, return its handle */
 			o[4] = w->next->handle;
 		else
@@ -1635,7 +1556,7 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 	}
 	case WF_HSLSIZE:
 	{
-		if (w->active_widgets&HSLIDE)
+		if (w->active_widgets & HSLIDE)
 		{
 			slw = get_widget(w, XAW_HSLIDE)->stuff;
 			o[1] = slw->length;
@@ -1691,9 +1612,6 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 		ptrs.sp = &o[1];
 		*ptrs.lp++ = (long)client->half_screen_buffer;
 		*ptrs.lp   = (long)client->half_screen_size;
-		
-// 		*(char  **)&o[1] = client->half_screen_buffer;
-// 		*(size_t *)&o[3] = client->half_screen_size;
 		break;
 	}
 	case WF_DCOLOR:
@@ -1704,7 +1622,7 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 	case WF_COLOR:
 	{
 		DIAGS(("WF_COLOR %d for %s", o[1], c_owner(client)));
-	oeps:
+oeps:
 		if (w->active_theme->get_widgcolor)
 		{
 			if (o[1] <= W_BOTTOMER)
@@ -1734,7 +1652,8 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 	{
 		Sema_Up(desk);
 
-		*(OBJECT **)&o[1] = get_desktop()->tree;
+		ptr_to_shorts(get_desktop()->tree, o + 1);
+// 		*(OBJECT **)&o[1] = get_desktop()->tree;
 
 		Sema_Dn(desk);
 		break;
@@ -1829,74 +1748,6 @@ XA_wind_delete(enum locks lock, struct xa_client *client, AESPB *pb)
 		pb->intout[0] = 0;
 
 	return XAC_DONE;
-}
-
-/*
- * Go through and check that all windows belonging to this client are
- * closed and deleted
- */
-
-/* HR: This is an exemple of the use of the lock system.
- *     The function can be called by both server and client.
- * 
- *     If called by the server, lock will be preset to winlist,
- *     resulting in no locking (not needed).
- *     
- *     If called by the signal handler, it is unclear, so the
- *     lock is applied. (doesnt harm).
- */
-static void
-rw(enum locks lock, struct xa_window *wl, struct xa_client *client)
-{
-	struct xa_window *nwl;
-
-	while (wl)
-	{
-		DIAGS(("-- RW: %lx, next=%lx, prev=%lx",
-			wl, wl->next, wl->prev));
-
-		nwl = wl->next;
-		if (wl != root_window)
-		{
-			if (!client || wl->owner == client)
-			{
-				if ((wl->window_status & XAWS_OPEN))
-				{
-					DIAGS(("-- RW: closing %lx, client=%lx", wl, client));
-					close_window(lock, wl);
-				}
-				DIAGS(("-- RW: deleting %lx", wl));
-				delete_window(lock, wl);
-			}
-		}
-#if GENERATE_DIAGS
-		else
-			DIAGS((" -- RW: skipping root window"));
-#endif
-		wl = nwl;
-	}
-}
-
-void
-remove_windows(enum locks lock, struct xa_client *client)
-{
-	DIAG((D_wind,client,"remove_windows on open_windows list for %s", c_owner(client)));
-	rw(lock, window_list, client);
-	DIAG((D_wind,client,"remove_windows on closed_windows list for %s", c_owner(client)));
-	rw(lock, S.closed_windows.first, client);
-}
-
-void
-remove_all_windows(enum locks lock, struct xa_client *client)
-{
-	DIAG((D_wind, client,"remove_all_windows for %s", c_owner(client)));
-
-	remove_windows(lock, client);
-	DIAG((D_wind, client, "remove_all_windows on open_nlwindows for %s", c_owner(client)));
-	rw(lock, S.open_nlwindows.first, client);
-	DIAG((D_wind, client, "remove_all_windows on closed_nlwindows for %s", c_owner(client)));
-	rw(lock, S.closed_nlwindows.first, client);
-	rw(lock, S.calc_windows.first, client);
 }
 
 unsigned long

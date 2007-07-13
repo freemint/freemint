@@ -29,7 +29,10 @@ typedef struct			/* pointer to descriptor ringbuffer */
 typedef struct lnc_init		/* initblock of lance */
 {
 	u_short	mode;		/* mode word */
-	HADDR	haddr;		/* hardware address of lance */
+	union {
+		HADDR	haddr;		/* hardware address of lance */
+		u_long	laddr;
+	} haddr;
 	u_long	laf[2];		/* logical adress filter */
 	DRP		rdrp;	/* receive ring descr. pointer */
 	DRP		tdrp;	/* xmit ring descr. pointer */

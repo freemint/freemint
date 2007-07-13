@@ -110,7 +110,7 @@ extern short kbd_mpixels_fine;
 extern struct cad_def cad[3];
 
 /* Interrupt routines */
-void ikbd_scan(ushort scancode, IOREC_T *rec);
+void _cdecl ikbd_scan(ushort scancode, IOREC_T *rec);
 void autorepeat_timer(void);
 
 /* keyboard related BIOS system calls */

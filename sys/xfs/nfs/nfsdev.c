@@ -1,5 +1,5 @@
 /*
- * Copyright 1993, 1994 by Ulrich Khn. All rights reserved.
+ * Copyright 1993, 1994 by Ulrich Kï¿½hn. All rights reserved.
  *
  * THIS PROGRAM COMES WITH ABSOLUTELY NO WARRANTY, NOT
  * EVEN THE IMPLIED WARRANTIES OF MERCHANTIBILITY OR
@@ -497,7 +497,9 @@ nfs_datime (FILEPTR *f, ushort *timeptr, int flag)
 			
 			if (native_utc)
 			{
-				*((long *) timeptr) = *((long *) &(ni->attr.atime));
+			/*	*((long *) timeptr) = *((long *) &(ni->attr.atime)); */
+				timeptr[0] = ni->attr.atime;
+				timeptr[1] = ni->attr.adate;
 			}
 			else
 			{

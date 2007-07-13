@@ -241,13 +241,13 @@ okexit:
 }
 
 void
-form_center(OBJECT *form, short barsizes)
+Form_Center(OBJECT *form, short barsizes)
 {
 	form->ob_x = root_window->wa.x + (root_window->wa.w - form->ob_width) / 2;
 	form->ob_y = root_window->wa.y + barsizes + (root_window->wa.h - form->ob_height) / 2;
 }
 void
-form_center_r(OBJECT *form, short barsizes, RECT *r)
+Form_Center_r(OBJECT *form, short barsizes, RECT *r)
 {
 	r->x = root_window->wa.x + (root_window->wa.w - form->ob_width) / 2;
 	r->y = root_window->wa.y + barsizes + (root_window->wa.h - form->ob_height) / 2;
@@ -270,7 +270,7 @@ center_rect(RECT *r)
  * any of the two, its passed back in 'nxtob'.
  */
 bool
-form_button(XA_TREE *wt,
+Form_Button(XA_TREE *wt,
 	    struct xa_vdi_settings *v,
 	    struct xa_aes_object obj,
 	    const struct moose_data *md,
@@ -291,10 +291,10 @@ form_button(XA_TREE *wt,
 	if (!rl)
 		rl = &lrl;
 
-	DIAG((D_form, NULL, "form_button: wt=%lx, obtree=%lx, obj=%d",
+	DIAG((D_form, NULL, "Form_Button: wt=%lx, obtree=%lx, obj=%d",
 		wt, wt->tree, aesobj_item(&obj)));
 
-// 	display("form_button: wt=%lx, obtree=%lx, obj=%d",
+// 	display("Form_Button: wt=%lx, obtree=%lx, obj=%d",
 // 		wt, wt->tree, obj);
 	
 	flags = aesobj_ob(&obj)->ob_flags;
@@ -366,7 +366,7 @@ form_button(XA_TREE *wt,
 		}
 		else if (flags & OF_RBUTTON)
 		{
-			DIAGS(("form_button: call obj_set_radio_button"));
+			DIAGS(("Form_Button: call obj_set_radio_button"));
 			if (redraw && !(fbflags & FBF_KEYBD) && !(flags & OF_TOUCHEXIT))
 			{
 				if (!(state & OS_SELECTED))
@@ -388,12 +388,12 @@ form_button(XA_TREE *wt,
 		{
 			if (redraw && !(fbflags & FBF_KEYBD) && !(flags & OF_TOUCHEXIT))
 			{
-				DIAGS(("form_button: call obj_watch"));
+				DIAGS(("Form_Button: call obj_watch"));
 				obj_watch(wt, v, obj, state^OS_SELECTED, state, clip, *rl);
 			}
 			else
 			{
-				DIAGS(("form_button: switch state"));
+				DIAGS(("Form_Button: switch state"));
 				obj_change(wt, v, obj, -1, state^OS_SELECTED, flags, redraw, clip, *rl, 0);
 			}
 		}
@@ -415,7 +415,7 @@ form_button(XA_TREE *wt,
 		}
 	}
 
-	DIAGS(("form_button: state %x, flags %x",
+	DIAGS(("Form_Button: state %x, flags %x",
 		state, flags));
 
 	if (!(state & OS_DISABLED))
@@ -441,10 +441,10 @@ form_button(XA_TREE *wt,
 	if (newstate)
 		*newstate = state;
 
-	DIAGS(("form_button: return no_exit=%s, nxtob=%d, newstate=%x, clickmask=%x",
+	DIAGS(("Form_Button: return no_exit=%s, nxtob=%d, newstate=%x, clickmask=%x",
 		no_exit ? "yes":"no", aesobj_item(&next_obj), state, dc ? 0x8000:0));
 
-// 	display("form_button: return no_exit=%s, nxtob=%d, newstate=%x, clickmask=%x",
+// 	display("Form_Button: return no_exit=%s, nxtob=%d, newstate=%x, clickmask=%x",
 // 		no_exit ? "yes":"no", next_obj, state, dc ? 0x8000:0);
 	
 	return no_exit;
@@ -454,7 +454,7 @@ form_button(XA_TREE *wt,
  * Form Keyboard Handler for toolbars
  */
 struct xa_aes_object
-form_cursor(XA_TREE *wt,
+Form_Cursor(XA_TREE *wt,
 	    struct xa_vdi_settings *v,
 	    ushort keycode,
 	    ushort keystate,
@@ -477,7 +477,7 @@ form_cursor(XA_TREE *wt,
 	o = obj;
 
 	last_ob = ob_count_flag(obtree, OF_EDITABLE, 0, 0, &edcnt);
-	DIAG((D_form, NULL, "form_cursor: wt=%lx, obtree=%lx, obj=%d, keycode=%x, lastob=%d, editobjs=%d",
+	DIAG((D_form, NULL, "Form_Cursor: wt=%lx, obtree=%lx, obj=%d, keycode=%x, lastob=%d, editobjs=%d",
 		wt, obtree, obj.item, keycode, last_ob, edcnt));
 
 	if (ret_focus)
@@ -644,7 +644,7 @@ form_cursor(XA_TREE *wt,
 				if (ret_focus) *ret_focus = nxt;
 				if (aesobj_ob(&nxt)->ob_flags & OF_EDITABLE)
 					o = nxt;
-				DIAGS(("form_cursor: SHIFT+HOME from %d to %d", aesobj_item(&o), aesobj_item(&o)));
+				DIAGS(("Form_Cursor: SHIFT+HOME from %d to %d", aesobj_item(&o), aesobj_item(&o)));
 			}
 			break;
 		}
@@ -658,7 +658,7 @@ form_cursor(XA_TREE *wt,
 				if (ret_focus) *ret_focus = nxt;
 				if (aesobj_ob(&nxt)->ob_flags & OF_EDITABLE)
 					o = nxt;
-				DIAGS(("form_cursor: HOME from %d to %d", aesobj_item(&o), aesobj_item(&o)));
+				DIAGS(("Form_Cursor: HOME from %d to %d", aesobj_item(&o), aesobj_item(&o)));
 			}
 			break;
 		}
@@ -673,7 +673,7 @@ form_cursor(XA_TREE *wt,
 	if (keyout)
 		*keyout = kout;
 
-	DIAGS(("form_cursor: from obj=%d to obj=%d, wt-edit_obj=%d, wt->e.pos=%d",
+	DIAGS(("Form_Cursor: from obj=%d to obj=%d, wt-edit_obj=%d, wt->e.pos=%d",
 		obj.item, o, edit_item(&wt->e), wt->e.pos));
 	
 	/* At last this piece of code is on the right spot.
@@ -686,7 +686,7 @@ form_cursor(XA_TREE *wt,
  * Returns false of exit/touchexit object, true otherwise
  */
 bool
-form_keyboard(XA_TREE *wt,
+Form_Keyboard(XA_TREE *wt,
 	      struct xa_vdi_settings *v,
 	      struct xa_aes_object obj,
 	      const struct rawkey *key,
@@ -711,11 +711,11 @@ form_keyboard(XA_TREE *wt,
 
 	if (!rl) rl = &lrl;
 
-	DIAG((D_form, NULL, "form_keyboard: wt=%lx, obtree=%lx, wt->owner=%lx(%lx), obj=%d, key=%x(%x), nrmkey=%x for %s",
+	DIAG((D_form, NULL, "Form_Keyboard: wt=%lx, obtree=%lx, wt->owner=%lx(%lx), obj=%d, key=%x(%x), nrmkey=%x for %s",
 		wt, wt->tree, wt->owner, client, aesobj_item(&obj), keycode, key->aes, key->norm, wt->owner->name));
 
 	ei = wt->ei ? wt->ei : &wt->e;
-// 	display("form_keyboard: efocus=%d, wt=%lx, obtree=%lx, wt->owner=%lx(%lx), obj=%d, key=%x(%x), nrmkey=%x for %s",
+// 	display("Form_Keyboard: efocus=%d, wt=%lx, obtree=%lx, wt->owner=%lx(%lx), obj=%d, key=%x(%x), nrmkey=%x for %s",
 // 		ei->obj, wt, wt->tree, wt->owner, wt->owner, obj, keycode, key->aes, key->norm, wt->owner->name);
 	
 	fr.no_exit = true;
@@ -755,7 +755,7 @@ form_keyboard(XA_TREE *wt,
 		}
 	}
 	
-	next_obj = form_cursor(wt, v, keycode, keystate, next_obj, redraw, rl, &new_focus, &keycode);
+	next_obj = Form_Cursor(wt, v, keycode, keystate, next_obj, redraw, rl, &new_focus, &keycode);
 	
 	if (!valid_aesobj(&next_obj) && keycode)
 	{
@@ -769,21 +769,21 @@ form_keyboard(XA_TREE *wt,
 		else if (keycode == 0x1c0d || keycode == 0x720d)
 		{
 			next_obj = ob_find_flst(obtree, OF_DEFAULT, 0, 0, OS_DISABLED, 0, 0);
-			DIAG((D_keybd, NULL, "form_keyboard: Got RETRURN key - default obj=%d for %s",
+			DIAG((D_keybd, NULL, "Form_Keyboard: Got RETRURN key - default obj=%d for %s",
 				next_obj.item, client->name));
 		}
 		else if (keycode == 0x6100)	/* UNDO */
 		{
 			next_obj = ob_find_cancel(obtree);
 
-			DIAG((D_keybd, NULL, "form_keyboard: Got UNDO key - cancel obj=%d for %s",
+			DIAG((D_keybd, NULL, "Form_Keyboard: Got UNDO key - cancel obj=%d for %s",
 				next_obj.item, client->name));
 		}
 		else 
 		{
 			if ((key->raw.conin.state & K_ALT) == K_ALT)
 				next_obj = ob_find_shortcut(obtree, key->norm & 0x00ff);
-			DIAG((D_keybd, NULL, "form_keyboard: shortcut %d for %s",
+			DIAG((D_keybd, NULL, "Form_Keyboard: shortcut %d for %s",
 				next_obj.item, client->name));
 		}
 
@@ -794,7 +794,7 @@ form_keyboard(XA_TREE *wt,
 			check_mouse(wt->owner, &md.cstate, &md.x, &md.y);
 			md.state = MBS_LEFT;
 					
-			fr.no_exit = form_button(wt, v,
+			fr.no_exit = Form_Button(wt, v,
 					         next_obj,
 					         &md,
 					         FBF_REDRAW|FBF_KEYBD, //|FBF_CHANGE_FOCUS,
@@ -866,10 +866,10 @@ done:
 	if (nxtkey)
 		*nxtkey = next_key;
 
-	DIAG((D_keybd, NULL, "form_keyboard: no_exit=%s(%d), nxtobj=%d, nxtkey=%x, obstate=%x, for %s",
+	DIAG((D_keybd, NULL, "Form_Keyboard: no_exit=%s(%d), nxtobj=%d, nxtkey=%x, obstate=%x, for %s",
 		fr.no_exit ? "true" : "false", fr.no_exit, aesobj_item(&next_obj), next_key, aesobj_ob(&next_obj)->ob_state, client->name));
 
-// 	display("form_keyboard: no_exit=%s(%d), nxtobj=%d, nxteobj=%d, nxtkey=%x, obstate=%x, for %s",
+// 	display("Form_Keyboard: no_exit=%s(%d), nxtobj=%d, nxteobj=%d, nxtkey=%x, obstate=%x, for %s",
 // 		fr.no_exit ? "true" : "false", fr.no_exit, next_obj, new_eobj, next_key, wt->tree[next_obj].ob_state, wt->owner->name);
 	
 	return fr.no_exit ? 1 : 0;
@@ -1083,7 +1083,7 @@ Click_form_do(enum locks lock,
 		fr.obj = obj_find(wt, aesobj(wt->tree, 0), 10, md->x, md->y, NULL);
 		
 		if (aesobj_item(&fr.obj) >= 0 &&
-		    !form_button(wt, v,
+		    !Form_Button(wt, v,
 				 fr.obj,
 				 md,
 				 FBF_REDRAW|FBF_CHANGE_FOCUS,
@@ -1099,7 +1099,7 @@ Click_form_do(enum locks lock,
 // 				display("Click_form_do: calling exit_form");
 				fr.md = md;
 				fr.key = NULL;
-				wt->exit_form(client, wind, wt, &fr);
+				(*wt->exit_form)(client, wind, wt, &fr);
 			}
 		}
 	}
@@ -1178,7 +1178,7 @@ Key_form_do(enum locks lock,
 	{
 		fr.dblmask = 0;
 
-		fr.no_exit = form_keyboard(wt,
+		fr.no_exit = Form_Keyboard(wt,
 					   v,
 					   ei->o,
 					   key,
@@ -1188,7 +1188,7 @@ Key_form_do(enum locks lock,
 					   &fr.obj_state,
 					   &fr.aeskey);
 
-		DIAGS(("Key_form_do: form_keyboard - no_exit=%s, obj=%d, objstat=%x, aeskey %x",
+		DIAGS(("Key_form_do: Form_Keyboard - no_exit=%s, obj=%d, objstat=%x, aeskey %x",
 			fr.no_exit ? "yes":"no", aesobj_item(&fr.obj), fr.obj_state, fr.aeskey));
 
 		if (fr.no_exit)

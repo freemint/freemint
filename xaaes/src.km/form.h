@@ -49,8 +49,8 @@ bool	Setup_form_do	(struct xa_client *client,
 			 struct xa_window **ret_wind,
 			 struct xa_aes_object *ret_edobj);
 
-void	form_center	(OBJECT *obtree, short barsizes);
-void	form_center_r	(OBJECT *obtree, short barsizes, RECT *r);
+void	Form_Center	(OBJECT *obtree, short barsizes);
+void	Form_Center_r	(OBJECT *obtree, short barsizes, RECT *r);
 void	center_rect	(RECT *r);
 
 #define FBF_REDRAW	1
@@ -59,7 +59,7 @@ void	center_rect	(RECT *r);
 #define FBF_KEYBD	8
 
 
-bool	form_button	(XA_TREE *wt,
+bool	Form_Button	(XA_TREE *wt,
 			 struct xa_vdi_settings *v,
 			 struct xa_aes_object obj,
 			 const struct moose_data *md,
@@ -71,7 +71,7 @@ bool	form_button	(XA_TREE *wt,
 			 short *clickmsk);
 
 struct xa_aes_object
-	form_cursor	(XA_TREE *wt,
+	Form_Cursor	(XA_TREE *wt,
 			 struct xa_vdi_settings *v,
 			 ushort keycode,
 			 ushort keystate,
@@ -81,7 +81,7 @@ struct xa_aes_object
 			 struct xa_aes_object *ret_focus,
 			 unsigned short *keyout);
 
-bool	form_keyboard	(XA_TREE *wt,
+bool	Form_Keyboard	(XA_TREE *wt,
 			 struct xa_vdi_settings *v,
 			 struct xa_aes_object obj,
 			 const struct rawkey *key,

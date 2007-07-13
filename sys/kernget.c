@@ -643,11 +643,11 @@ kern_get_welcome (SIZEBUF **buffer)
 	if (!info)
 		return ENOMEM;
 
-	to = (uchar *) info->buf;
+	to = (unsigned char *)info->buf;
 
 	for (greet = greets; *greet != NULL; greet++)
 	{
-		from = (uchar *) *greet;
+		from = (unsigned char*)*greet;
 
 		while (*from)
 		{

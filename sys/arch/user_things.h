@@ -51,17 +51,17 @@ struct user_things
 	/* pointers to functions; they are longs for conveniency
 	 * i.e. smaller number of casts
 	 */
-	long terminateme_p;		/* a pointer to Pterm() */
-	long sig_return_p;		/* a pointer to Psigreturn() (internal use ONLY) */
-	long pc_valid_return_p;		/* this is signalling a return from a sighandler (internal use ONLY) */
+	unsigned long terminateme_p;		/* a pointer to Pterm() */
+	unsigned long sig_return_p;		/* a pointer to Psigreturn() (internal use ONLY) */
+	unsigned long pc_valid_return_p;	/* this is signalling a return from a sighandler (internal use ONLY) */
 
-	long slb_init_and_exit_p;	/* startup code for an SLB library (its `TEXT segment') */
-	long slb_open_p;		/* a pointer to a call to SLB open() function */
-	long slb_close_p;		/* a pointer to a call to SLB close() function */
-	long slb_close_and_pterm_p;	/* a pointer to a call to slb_close_and_pterm() */
-	long slb_exec_p;		/* exec an SLB function */
+	unsigned long slb_init_and_exit_p;	/* startup code for an SLB library (its `TEXT segment') */
+	unsigned long slb_open_p;		/* a pointer to a call to SLB open() function */
+	unsigned long slb_close_p;		/* a pointer to a call to SLB close() function */
+	unsigned long slb_close_and_pterm_p;	/* a pointer to a call to slb_close_and_pterm() */
+	unsigned long slb_exec_p;		/* exec an SLB function */
 
-	long user_xhdi_p;		/* call the XHDI interface */
+	unsigned long user_xhdi_p;		/* call the XHDI interface */
 # ifdef JAR_PRIVATE
 	struct cookie *user_jar_p;	/* user's copy of the Cookie Jar */
 # endif

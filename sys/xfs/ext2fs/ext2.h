@@ -94,6 +94,7 @@
 # define EXT2_MAX_BLOCK_SIZE		(4096UL)
 # define EXT2_MIN_BLOCK_LOG_SIZE	(10)
 # define EXT2_BLOCK_SIZE(s)		(EXT2_SB(s)->s_blocksize)
+// # define EXT2_BLOCK_SIZE(s)		((s)->sbi.s_blocksize)
 # define EXT2_BLOCK_SIZE_BITS(s)	(EXT2_SB(s)->s_blocksize_bits)
 # define EXT2_BLOCK_SIZE_MASK(s)	(EXT2_SB(s)->s_blocksize_mask)
 # define EXT2_ACLE_PER_BLOCK(s)		(EXT2_BLOCK_SIZE(s) / sizeof (struct ext2_acl_entry))

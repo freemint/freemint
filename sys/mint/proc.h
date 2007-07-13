@@ -70,24 +70,26 @@ struct memspace
 {
 	long links;
 
-	unsigned short memflags;	///< malloc preferences
-	unsigned short num_reg;		///< Nnumber of allocated memoryregions.
-	MEMREGION **mem;		///< Array of ptrs to allocated regions.
-	long *addr;			///< Array of addresses of regions.
-	void *page_table;		///< rounded page table pointer.
-	void *pt_mem;			///< original kmalloc'd block for above.
-	long txtsize;			///< size of text region (for fork()).
+	unsigned short	memflags;	///< malloc preferences
+	int		num_reg;	///< Nnumber of allocated memoryregions.
+	MEMREGION	**mem;		///< Array of ptrs to allocated regions.
+	unsigned long	*addr;		///< Array of addresses of regions.
+	void		*page_table;	///< rounded page table pointer.
+	void		*pt_mem;	///< original kmalloc'd block for above.
+	long		txtsize;	///< size of text region (for fork()).
 	struct user_things *tp_ptr;	///< pointer to the trampoline things
-	MEMREGION *tp_reg;		///< memregion of the trampoline code
-	BASEPAGE *base;			///< process base page
+	MEMREGION	*tp_reg;	///< memregion of the trampoline code
+	BASEPAGE	*base;		///< process base page
 };
 
 
 # define NUM_REGIONS	64	/* number of memory regions alloced at a time */
 # define MIN_HANDLE	(-5)	/* minimum handle number		*/
 # define MIN_OPEN	6	/* 0..MIN_OPEN-1 are reserved for system */
-# define SSTKSIZE	8192	/* size of supervisor stack (in bytes) 	*/
-# define ISTKSIZE	4096	/* size of interrupt stack (in bytes)	*/
+/*# define SSTKSIZE	8192*/	/* size of supervisor stack (in bytes) 	*/
+/*# define ISTKSIZE	4096*/	/* size of interrupt stack (in bytes)	*/
+#define SSTKSIZE	16384
+#define ISTKSIZE	8129
 # define STKSIZE	(ISTKSIZE + SSTKSIZE)
 
 # define STACK_MAGIC	0xfedcba98UL
@@ -96,6 +98,12 @@ struct memspace
 
 # define DOM_TOS	0	/* TOS process domain */
 # define DOM_MINT	1	/* MiNT process domain */
+
+
+struct proc_queue {
+	struct proc *head;
+	struct proc *tail;
+};
 
 /* forward declarations */
 struct pcred;
@@ -112,12 +120,12 @@ struct limits;
  */
 struct proc
 {
-	long	sysstack;		/* must be first		*/
-	CONTEXT	ctxt[PROC_CTXTS];	/* must be second		*/
+	unsigned long	sysstack;		/* must be first		*/
+	CONTEXT		ctxt[PROC_CTXTS];	/* must be second		*/
 
-	long	magic;			/* validation for proc struct	*/
+	unsigned long	magic;			/* validation for proc struct	*/
 
-	BASEPAGE *_base;		/* unused */
+	BASEPAGE * _base;		/* unused */
 	short	pid, ppid, pgrp;
 	short	_ruid;			/* unused */
 	short	_rgid;			/* unused */
@@ -240,9 +248,10 @@ struct proc
 	short	ptraceflags;		/**< flags for process tracing	*/
 
 	short	in_dos;			/**< flag: 1 = process is executing a GEMDOS call */
+	short	in_kern;
+	short	unused;
 	short	fork_flag;		/**< flag: set to 1 if process has called Pfork() */
 	short	auid;			/* XXX tesche: audit user id */
-
 	short	last_sig;		/**< Last signal received by the process	*/
 	short	signaled;		/* Non-zero if process was killed by	*
 					 * a fatal signal			*/

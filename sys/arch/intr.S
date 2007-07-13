@@ -103,7 +103,7 @@ L_no_profile:
 	
 	tst.w	(0x059e).w
 	beq.s	L_short_1
-	clr.w	-(sp)		// set up a jump to VBL emulation
+	clr.w	-(sp)			// set up a jump to VBL emulation
 L_short_1:
 	pea	_mint_vbl.w(pc)
 	move.w	sr,-(sp)
@@ -116,7 +116,7 @@ L_novbl:
 	bne.s	L_systime
 	addq.l	#5,P_USRTIME(a0)	// update curproc->usrtime
 	move.l	(sp)+,a0
-	rts			// branch to old vector
+	rts				// branch to old vector
 L_systime:
 	addq.l	#5,P_SYSTIME(a0)	// update curproc->systime
 	move.l	(sp)+,a0
@@ -235,14 +235,14 @@ L_popnout:	movem.l	(sp)+,d0-d2/a0-a2
 
 L_expired:
 	btst	#5,(sp) 		// user mode?
-	bne.s	L_out		// no -- switching is not possible
+	bne.s	L_out			// no -- switching is not possible
 	tst.w	(0x043e).w		// test floppy disk lock variable
-	bne.s	L_out		// if locked, can't switch
+	bne.s	L_out			// if locked, can't switch
 	bset	#0x07,_in_kernel	// are we doing a kernel operation?
 	bne.s	L_out
 
 L_switch:
-	clr.w	-(sp)		// no frame format needed
+	clr.w	-(sp)			// no frame format needed
 	move.l	_curproc,-(sp)
 	addq.l	#P_SYSCTXT,(sp)		// to get &curproc->ctxt[SYSCALL]
 	jsr	_build_context		// build context
@@ -388,6 +388,7 @@ _newjvec:	move.l	a0,-(sp)		// save a0 on the stack
 //	since TOS 2.0.
 
 #ifndef NO_AKP_KEYBOARD
+#ifdef MILAN
 	.globl	_newkeys
 	.globl	_oldkeys
 	.globl	_ikbd_scan
@@ -397,13 +398,14 @@ _newjvec:	move.l	a0,-(sp)		// save a0 on the stack
 _oldkeys:	dc.l	0
 _newkeys:
 	movem.l	d1-d2/a0-a2,-(sp)
-	move.l	a0,-(sp)
+	move.l	_keyrec,-(sp)
 	and.w	#0x00ff,d0
 	move.w	d0,-(sp)
 	jsr	_ikbd_scan
-	addq.l	#0x06,sp
+	addq.l	#6,sp
 	movem.l	(sp)+,d1-d2/a0-a2
 	rts
+#endif
 
 // Calling the keyclick routines. This is a helper for keyboard driver.
 
@@ -412,14 +414,14 @@ _newkeys:
 _kbdclick:
 	btst	#0,(0x0484).w	// conterm
 	beq.s	L_nocl
-	movem.l	d0-d2/a0-a2,-(sp)
+	movem.l	d0-a6,-(sp)
 	move.l	(0x05b0).w,d0	// vector to the keyclick routine
 	beq.s	L_pop
 	move.l	d0,a0
 	clr.l	d0
 	move.w	28(sp),d0	// scancode
 	jsr	(a0)
-L_pop:	movem.l	(sp)+,d0-d2/a0-a2
+L_pop:	movem.l	(sp)+,d0-a6
 L_nocl:	rts
 
 // Send mouse packet to mousevec(). This is used to emulate mouse
@@ -435,7 +437,6 @@ _send_packet:
 	jsr	(a2)
 	movem.l	(sp)+,d0-a6
 	rts
-
 #endif
 
 //
@@ -825,7 +826,10 @@ _new_priv:
 #endif
 #ifndef M68000
 	movem.l	d0-a6,-(sp)		// check_priv() relies on this!
+	move.l	sp,d0
+	move.l	d0,-(sp)
 	jsr	_check_priv
+	addq.l	#4,sp
 	tst.l	d0
 	movem.l	(sp)+,d0-a6
 	beq	Do_sig

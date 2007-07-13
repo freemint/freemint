@@ -227,8 +227,8 @@ static struct parser_item parser_tab[] =
 
 	/* These two remain the same as in the old format */
 
-	{ "GEM",	  PI_V_ATK, pCB_gem_init, INIT_IS_GEM		},
-	{ "INIT",	  PI_V_ATK, pCB_gem_init, INIT_IS_PRG		},
+	{ "GEM",	  PI_V_ATK, pCB_gem_init, {dat: INIT_IS_GEM}		},
+	{ "INIT",	  PI_V_ATK, pCB_gem_init, {dat: INIT_IS_PRG}		},
 
 	/* This is the old format */
 
@@ -433,6 +433,7 @@ pCB_gem_init(const char *path, const char *line, long val)
 {
 	init_is_gem = val;
 
+	boot_printf("GEM '%s' '%s'\r\n", path, line);
 	if (stricmp(path,"ROM") == 0)
 	{
 		init_prg = 0;
@@ -444,6 +445,8 @@ pCB_gem_init(const char *path, const char *line, long val)
 		init_tail[126] = '\0';
 		init_tail[0] = strlen(init_tail +1);
 	}
+	else
+		boot_printf(" error: no mem for init_prg\r\n");
 }
 
 /*----------------------------------------------------------------------------*/

@@ -29,6 +29,8 @@ static long		psg_wspace (void);
 static long		psg_rspace (void);
 static void		gi_init (void);
 
+long psg_init (struct device *dev);
+
 static unsigned char ta_ctrl = 0;
 static TIMEOUT *tmout = 0;
 
@@ -61,7 +63,7 @@ psg_init (struct device *dev)
 	unsigned char ctrl, data;
 	long snd_cookie;
 
-	if (!get_toscookie (COOKIE__SND, &snd_cookie) &&
+	if (!get_toscookie (COOKIE__SND, (unsigned long *)&snd_cookie) &&
 	    !(snd_cookie & 1)) {
 		/*
 		 * _SND cookie set and bit 0 (PSG sound

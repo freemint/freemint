@@ -87,9 +87,11 @@ xif_module_init(void *initfunc, struct kerinfo *k, struct netinfo *n)
 #endif
 
 static long
-load_xif (struct basepage *b, const char *name)
+load_xif (struct basepage *b, const char *name, short *class, short *subclass)
 {
+#if 0
 	long (*init)(struct kerinfo *, struct netinfo *);
+#endif
 	long r;
 	
 	DEBUG (("load_xif: enter (0x%lx, %s)", b, name));
@@ -99,14 +101,14 @@ load_xif (struct basepage *b, const char *name)
 	 * driver.
 	 */
 	netinfo.fname = name;
-	
+	*class = MODCLASS_XIF;
+	*subclass = 0;
 #if 0
 	init = (long (*)(struct kerinfo *, struct netinfo *))b->p_tbase;
 	r = (*init)(KERNEL, &netinfo);
 #else
 	r = xif_module_init((void*)b->p_tbase, KERNEL, &netinfo);
 #endif
-	
 	netinfo.fname = NULL;
 	
 	return r;
@@ -123,5 +125,5 @@ if_load (void)
 		return;
 	}
 	
-	load_modules (".xif", load_xif);
+	load_modules (".xif", (void *)load_xif);
 }

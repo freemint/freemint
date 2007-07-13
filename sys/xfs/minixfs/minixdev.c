@@ -330,7 +330,7 @@ __fio (FILEPTR *f, char *buf, long len, short mode)
 		for (i = 0; i < PRE_READ; i++)
 			fch->zones[i] = find_zone (&rip, i + chunk, f->fc.dev, 0);
 		
-		bio.pre_read (super_ptr[f->fc.dev]->di, fch->zones, PRE_READ, BLOCK_SIZE);
+		bio.pre_read (super_ptr[f->fc.dev]->di, (ulong *)fch->zones, PRE_READ, BLOCK_SIZE);
 		
 		fch->fzone = chunk;
 		fch->lzone = chunk + PRE_READ;
@@ -476,7 +476,9 @@ out:
 static long _cdecl
 m_write (FILEPTR *f, const char *buf, long len)
 {
-	long ret = __fio (f, (char *) buf, len, WRITE);
+	union { const char *c; char *nc; } b;
+	b.c = buf;
+	long ret = __fio (f, b.nc, len, WRITE);
 	
 # if 0
 	/* only in robust mode -> that means never */

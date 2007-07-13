@@ -884,7 +884,7 @@ duplicate_fnts_obtree(struct xa_client *client)
 			 */
 			wt->flags |= WTF_AUTOFREE | WTF_TREE_ALLOC;
 			obtree->ob_state &= ~OS_OUTLINED;
-			form_center(obtree, ICON_H);
+			Form_Center(obtree, ICON_H);
 			obj_init_focus(wt, OB_IF_RESET);
 		}
 		else
@@ -1723,7 +1723,7 @@ XA_fnts_do(enum locks lock, struct xa_client *client, AESPB *pb)
 		open_window(lock, wind, wind->rc);
 
 		client->status |= CS_FORM_DO;
-		Block(client, 0);
+		(*client->block)(client, 0); //Block(client, 0);
 		client->status &= ~CS_FORM_DO;
 		wt->flags &= ~WTF_FBDO_SLIST;
 		close_window(lock, wind);

@@ -29,6 +29,8 @@
 
 #include "xa_types.h"
 #include "mt_gem.h"
+#include "ob_inlines.h"
+
 bool			validate_obtree(struct xa_client *c, OBJECT *o, char *f);
 bool			object_have_spec(OBJECT *ob);
 void			object_set_spec(OBJECT *ob, unsigned long cl);
@@ -46,9 +48,9 @@ void			object_spec_wh(OBJECT *ob, short *w, short *h);
 
 CICON *			getbest_cicon(CICONBLK *ciconblk);
 
-OBJECT *	duplicate_obtree(struct xa_client *client, OBJECT *obtree, short start);
+OBJECT * _cdecl	duplicate_obtree(struct xa_client *client, OBJECT *obtree, short start);
 void		free_obtree_resources(struct xa_client *client, OBJECT *obtree);
-void		free_object_tree(struct xa_client *client, OBJECT *obtree);
+void _cdecl	free_object_tree(struct xa_client *client, OBJECT *obtree);
 
 OBJECT *	create_popup_tree(struct xa_client *client, short type, short nobjs, short mw, short mh, void *(*cb)(short item, void **data), void **data);
 
@@ -112,10 +114,11 @@ struct xa_aes_object	obj_find(XA_TREE *wt, struct xa_aes_object object, short de
 void	obj_change(XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_object obj, int transdepth, short state, short flags, bool redraw, const RECT *clip, struct xa_rect_list *r, short dflags);
 void	obj_draw(XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_object obj, int transdepth, const RECT *clip, struct xa_rect_list *r, short flags);
 short	obj_edit(XA_TREE *wt, struct xa_vdi_settings *v, short func, struct xa_aes_object obj, short keycode, short pos, char *string, bool redraw, const RECT *clip, struct xa_rect_list *rl, short *ret_pos, struct xa_aes_object *ret_obj);
-void	obj_set_radio_button(XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_object obj, bool redraw, const RECT *clip, struct xa_rect_list *rl);
-struct xa_aes_object	obj_get_radio_button(XA_TREE *wt, struct xa_aes_object parent, short state);
+void _cdecl obj_set_radio_button(XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_object obj, bool redraw, const RECT *clip, struct xa_rect_list *rl);
+struct xa_aes_object _cdecl obj_get_radio_button(XA_TREE *wt, struct xa_aes_object parent, short state);
 short	obj_watch(XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_object obj, short in_state, short out_state, const RECT *clip, struct xa_rect_list *rl);
 
+#if 0
 static inline bool
 issel(OBJECT *ob)
 {	return (ob->ob_state & OS_SELECTED); }
@@ -275,5 +278,6 @@ clean_aesobj_links(struct oblink_spec **oblink)
 		*oblink = (*oblink)->d.pmisc[1];
 	}
 }
+#endif
 
 #endif /* _obtree_h */

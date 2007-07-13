@@ -95,6 +95,7 @@ ulong memory = 0;
 struct kerinfo *kernel;
 struct dmabuf *dmab;
 
+DEVDRV * init(struct kerinfo *k);
 DEVDRV *
 init (struct kerinfo *k)
 {
@@ -178,7 +179,7 @@ audio_install (void)
 		return 1;
 	}
 
-	thedev.copyfn = memcpy;
+	thedev.copyfn = (void *)memcpy;
 
 	ksprintf (msg, "hardware: %s, %s\r\n",
 		players[i].name, mixers[i].name);
@@ -275,7 +276,7 @@ audio_ioctl (FILEPTR *fp, int mode, void *buf)
 			break;
 
 		case AFMT_S8:
-			thedev.copyfn = memcpy;
+			thedev.copyfn = (void *)memcpy;
 			thedev.ssize = 8;
 			break;
 
@@ -296,7 +297,7 @@ audio_ioctl (FILEPTR *fp, int mode, void *buf)
 			if (thedev.curchans == 1)
 				thedev.copyfn = m16copy;
 			else
-				thedev.copyfn = memcpy;
+				thedev.copyfn = (void *)memcpy;
 			thedev.ssize = 16;
 			break;
 

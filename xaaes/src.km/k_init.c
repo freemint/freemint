@@ -28,6 +28,7 @@
 
 #include "util.h"
 
+#include "k_main.h"
 #include "k_init.h"
 #include "xa_global.h"
 
@@ -70,58 +71,9 @@
 #include "cookie.h"
 
 
-static struct xa_module_api xam_api;
+struct xa_module_api xam_api;
 
 // static char *xaaes_sysfile(const char *);
-
-static char *_cdecl
-api_xaaes_sysfile(const char *f)
-{
-	return xaaes_sysfile(f);
-}
-
-static RSHDR * _cdecl
-api_load_resource(char *fname, RSHDR *rshdr, short designWidth, short designHeight, bool set_pal)
-{
-	return LoadResources(C.Aes, fname, rshdr, designWidth, designHeight, set_pal);
-}
-
-static OBJECT * _cdecl
-api_resourcetree(RSHDR *tree, long index)
-{
-	return ResourceTree(tree, index);
-}
-
-static struct widget_tree * _cdecl
-api_new_widget_tree(OBJECT *obtree)
-{
-	struct widget_tree *wt = new_widget_tree(C.Aes, obtree);
-
-	if (wt)
-	{
-		wt->flags |= WTF_AUTOFREE;
-	}
-	return wt;
-}
-
-static struct widget_tree * _cdecl
-api_obtree_to_wt(OBJECT *obtree)
-{
-	return obtree_to_wt(C.Aes, obtree);
-}
-
-static void _cdecl
-api_init_widget_tree(struct widget_tree *wt, OBJECT *obtree)
-{
-	init_widget_tree(C.Aes, wt, obtree);
-	wt->flags |= WTF_AUTOFREE;
-}
-
-static void _cdecl
-api_remove_wt(struct widget_tree *wt)
-{
-	remove_wt(wt, false);
-}
 
 static OBSPEC * _cdecl
 api_object_get_spec(OBJECT *ob)
@@ -290,18 +242,138 @@ api_load_img(char *fname, XAMFDB *img)
 {
 	load_image(fname, img);
 }	
+	
+static long _cdecl
+module_register(long mode, void *_p)
+{
+	long ret = E_OK;
+	BLOG((false, "module_register: mode = %ld, _p = %lx", mode, _p));
 
-static void
+	switch ((mode & 0xefffffff))
+	{
+		case MODREG_KERNKEY:
+		{
+			struct kernkey_entry *list;
+			
+			if (mode & MODREG_UNREGISTER)
+			{
+				struct kernkey_entry *this = _p, *prev = NULL;
+				BLOG((false, " -- unregister KERNKEY"));
+				list = C.kernkeys;
+				while (list)
+				{
+					if (list->key == this->key)
+					{
+						if (list->act == this->act)
+						{
+							if ((this = list->next_act))
+								this->next_key = list->next_key;
+							else
+								this = list->next_key;
+								
+							if (prev)
+								prev->next_key = this;
+							else
+								C.kernkeys = this;
+							
+							kfree(list);
+							break;
+						}
+						else
+						{
+							while (list && list->act != this->act)
+							{
+								prev = list;
+								list = list->next_act;
+							}
+							if (list)
+							{
+								prev->next_act = list->next_act;
+								kfree(list);
+							}
+							break;
+						}
+					}
+					prev = list;
+					list = list->next_key;
+				}
+			}
+			else
+			{
+				struct kernkey_entry *new;
+				BLOG((false, " -- register KERNKEY"));
+				new = kmalloc(sizeof(*new));
+				if (new)
+				{
+					struct kernkey_entry *p = _p;
+					
+					new->next_key = NULL;
+					new->next_act = NULL;
+					new->act = p->act;
+					new->key = p->key;
+					
+					list = C.kernkeys;
+					while (list)
+					{
+						if (list->key == new->key)
+							break;
+						list = list->next_key;
+					}
+					if (!list)
+					{
+						new->next_key = C.kernkeys;
+						C.kernkeys = new;
+					}
+					else
+					{
+						new->next_act = list;
+						new->next_key = list->next_key;
+						list->next_key = NULL;
+						if (C.kernkeys == list)
+							C.kernkeys = new;
+					}
+				}
+				else
+					ret = -1;
+			}
+			break;
+		}
+		default:
+		{
+			ret = -1;
+			break;
+		}
+	}
+	BLOG((false, " returning %ld", ret));
+	return ret;
+}
+
+void
 setup_xa_module_api(void)
 {
-	xam_api.sysfile		= api_xaaes_sysfile;
-	xam_api.load_resource	= api_load_resource;
-	xam_api.resource_tree	= api_resourcetree;
+	xam_api.cfg		= &cfg;
+	xam_api.C		= &C;
+	xam_api.S		= &S;
+	xam_api.k		= kentry;
 
-	xam_api.init_wt		= api_init_widget_tree;
-	xam_api.new_wt		= api_new_widget_tree;
-	xam_api.obtree_to_wt	= api_obtree_to_wt;
-	xam_api.remove_wt	= api_remove_wt;
+	xam_api.display		= display;
+	xam_api.ndisplay	= ndisplay;
+	xam_api.bootlog		= bootlog;
+
+	xam_api.module_register	= module_register;
+
+	xam_api.sysfile		= xaaes_sysfile;
+	xam_api.load_resource	= LoadResources;
+	xam_api.resource_tree	= ResourceTree;
+	xam_api.obfix		= obfix;
+	
+	xam_api.duplicate_obtree = duplicate_obtree;
+	xam_api.free_object_tree = free_object_tree;
+
+	xam_api.init_widget_tree = init_widget_tree;
+	xam_api.new_widget_tree	= new_widget_tree;
+	xam_api.obtree_to_wt	= obtree_to_wt;
+	xam_api.remove_wt	= remove_wt;
 
 	xam_api.object_get_spec	= api_object_get_spec;
 	xam_api.object_set_spec = api_object_set_spec;
@@ -313,6 +385,8 @@ setup_xa_module_api(void)
 	xam_api.getbest_cicon	= api_getbest_cicon;
 	xam_api.obj_offset	= api_obj_offset;
 	xam_api.obj_rectangle	= api_obj_rectangle;
+	xam_api.obj_set_radio_button = obj_set_radio_button;
+	xam_api.obj_get_radio_button = obj_get_radio_button;
 
 	xam_api.render_object	= api_render_object;
 
@@ -339,15 +413,32 @@ setup_xa_module_api(void)
 	xam_api.free_xa_data_list	= api_free_xa_data_list;
 
 	xam_api.load_img	= api_load_img;
+
+	xam_api.create_window	= create_window;
+	xam_api.open_window	= open_window;
+	xam_api.close_window	= close_window;
+	xam_api.move_window	= move_window;
+	xam_api.top_window	= top_window;
+	xam_api.bottom_window	= bottom_window;
+	xam_api.send_wind_to_bottom = send_wind_to_bottom;
+	xam_api.delete_window	= delete_window;
+	xam_api.delayed_delete_window = delayed_delete_window;
+
+	xam_api.create_dwind	= create_dwind;
+
+	xam_api.redraw_toolbar	= redraw_toolbar;
+
+	xam_api.dispatch_shutdown = dispatch_shutdown;
 }
 
 /*
  * check if file exist in Aes_home_path
  */
-char *
+char * _cdecl
 xaaes_sysfile(const char *file)
 {
-	static char *fn;
+	char *fn;
+	long err;
 	struct file *fp;
 	long len = strlen(C.Aes->home_path) + strlen(file) + 2;
 
@@ -357,7 +448,8 @@ xaaes_sysfile(const char *file)
 	{
 		strcpy(fn, C.Aes->home_path);
 		strcat(fn, file);
-		fp = kernel_open(fn, O_RDONLY, NULL, NULL);
+		fp = kernel_open(fn, O_RDONLY, &err, NULL);
+		BLOG((false, "xaaes_sysfile: check if '%s' exists - return = %li", fn, err));
 		if (fp)
 		{
 			kernel_close(fp);
@@ -450,7 +542,7 @@ k_init(unsigned long vm)
 			*t++ = -1;
 	}
 
-	setup_xa_module_api();
+// 	setup_xa_module_api();
 
 	cfg.videomode = (short)vm;
 
@@ -469,7 +561,6 @@ k_init(unsigned long vm)
 #endif
 	}
 
-	if (cfg.auto_program)
 	{
 		short mode = 1;
 		long vdo, r;
@@ -480,6 +571,7 @@ k_init(unsigned long vm)
 
 		if (cfg.videomode)
 		{
+#ifndef ST_ONLY
 			if ((vm & 0x80000000) && mvdi_api.dispatch)
 			{
 // 				long ret;
@@ -532,6 +624,10 @@ k_init(unsigned long vm)
 				work_out[45] = vcheckmode(vm & 0x0000ffff); //vm & 0x0000ffff;
 			}
 			else if ((vm & 0x80000000) && nova_data && nova_data->valid)
+#endif
+#ifdef ST_ONLY
+			if (((vm & 0x80000000) && nova_data && nova_data->valid))
+#endif
 			{
 				if (nova_data->valid)
 					nova_data->xcb->resolution = cfg.videomode;
@@ -539,6 +635,7 @@ k_init(unsigned long vm)
 				nova_data->valid = false;
 				mode = 1;
 			}
+#ifndef ST_ONLY
 			else if (vdo == 0x00030000L)
 			{
 				short nvmode;
@@ -560,6 +657,7 @@ k_init(unsigned long vm)
 // 				display("Falcon video: mode %x, %x", cfg.videomode, nvmode);
 			}
 			else
+#endif
 			{
 				if (cfg.videomode >= 1 && cfg.videomode <= 10)
 				{
@@ -579,7 +677,7 @@ k_init(unsigned long vm)
 // 		display("set mode %x", mode);
 		BLOG((false, "Screenmode is: %d", mode));
 
-
+#ifndef ST_ONLY
 		/*
 		 * Ozk: We switch off instruction, data and branch caches (where available)
 		 *	while the VDI accesses the hardware. This fixes 'black-screen'
@@ -600,12 +698,15 @@ k_init(unsigned long vm)
 			v_opnwk(work_in, &(C.P_handle), work_out);
 			s_system(S_CTRLCACHE, sc, cm);
 		}
-		
+#else
+		set_wrkin(work_in, mode);
+		v_opnwk(work_in, &(C.P_handle), work_out);
+#endif
 		BLOG((false, "Physical work station opened: %d", C.P_handle));
 
 		if (C.P_handle == 0)
 		{
-			BLOG((true, "v_opnwk failed (%i)!", C.P_handle));
+			BLOG((/* 00000001 */true, "v_opnwk failed (%i)!", C.P_handle));
 			return -1;
 		}
 // 		_b_ubconout(2, ' ');
@@ -614,16 +715,6 @@ k_init(unsigned long vm)
 		 */
 		v_exit_cur(C.P_handle);
 		BLOG((false, "v_exit_cur ok!"));	
-	}
-	else
-	{
-		/*
-		 * The GEM AES has already been started,
-		 * so get the physical workstation handle from it
-		 */
-		short junk;
-		C.P_handle = mt_graf_handle(&junk, &junk, &junk, &junk, my_global_aes);
-		BLOG((false, "graf_handle -> %d", C.P_handle));
 	}
 
 	get_syspalette(C.P_handle, screen.palette);
@@ -659,11 +750,10 @@ k_init(unsigned long vm)
 
 // 	v_show_c(C.P_handle, 0);
 // 	hidem();
-// 	graf_mouse(ARROW, NULL, NULL, false);
+// 	xa_graf_mouse(ARROW, NULL, NULL, false);
 // 	showm();
 	
-	objc_rend.dial_colours =
-		MONO ? bw_default_colours : default_colours;
+	objc_rend.dial_colours = MONO ? bw_default_colours : default_colours;
 
 	vq_extnd(v->handle, 1, work_out);	/* Get extended information */
 	screen.planes = work_out[4];		/* number of planes in the screen */
@@ -729,7 +819,7 @@ k_init(unsigned long vm)
 	BLOG((false, "Loading system resource file '%s'", cfg.rsc_name));
 	if (!(resource_name = xaaes_sysfile(cfg.rsc_name)))
 	{
-		display("ERROR: Can't find AESSYS resource file '%s'", cfg.rsc_name);
+		display(/* 00000002 */"ERROR: Can't find AESSYS resource file '%s'", cfg.rsc_name);
 		return -1;
 	}
 	else
@@ -745,7 +835,7 @@ k_init(unsigned long vm)
 	}	
 	if (!C.Aes_rsc)
 	{
-		display("ERROR: Can't load system resource file '%s'", cfg.rsc_name);
+		display(/*00000003*/"ERROR: Can't load system resource file '%s'", cfg.rsc_name);
 		return -1;
 	}
 // 	set_syspalette(C.P_handle, screen.palette);
@@ -761,7 +851,7 @@ k_init(unsigned long vm)
 		     about[RSC_VERSION].ob_type != G_TEXT     ||
 		    (strcmp(object_get_tedinfo(about + RSC_VERSION, NULL)->te_ptext, "0.0.8")))
 		{
-			display("ERROR: Outdated AESSYS resource file (%s) - update to recent version!", cfg.rsc_name);
+			display(/*00000004*/"ERROR: Outdated AESSYS resource file (%s) - update to recent version!", cfg.rsc_name);
 // 			display("       also make sure you read CHANGES.txt!!");
 			return -1;
 		}
@@ -776,12 +866,12 @@ k_init(unsigned long vm)
 	BLOG((false, "Attempt to open object render module..."));
 	if (!(*C.Aes->objcr_module->init_module)(&xam_api, &screen, cfg.gradients))
 	{
-		display("object render returned NULL");
+		BLOG((false, "object render returned NULL"));
 		return -1;
 	}
 	BLOG((false, "Attempt to open new object theme..."));
 	if (init_client_objcrend(C.Aes))
-	{	display("Opening object theme failed");
+	{	BLOG((false, "Opening object theme failed"));
 		return -1;
 	}
 	
@@ -838,12 +928,7 @@ k_init(unsigned long vm)
 	strcpy(C.Aes->mnu_clientlistname, mnu_clientlistname);
 	fix_menu(C.Aes, C.Aes->std_menu, root_window, true);
 	set_menu_widget(root_window, C.Aes, C.Aes->std_menu);
-#if 0
-	{
-		char *vs = object_get_spec(C.Aes->std_menu->tree + SYS_DESK)->free_string;
-		strcpy(vs + strlen(vs) - 3, version + 3);
-	}
-#endif
+	
 	/* Set a default desktop */
 	BLOG((false, "setting default desktop"));
 	{
@@ -856,13 +941,14 @@ k_init(unsigned long vm)
 		set_desktop_widget(root_window, C.Aes->desktop);
 		set_desktop(C.Aes, false);
 	}
-	BLOG((false, "opening root window"));
+ 	BLOG((false, "really opening now..."));
+ 	BLOG((false, "opening root window"));
 	open_window(NOLOCKING, root_window, screen.r);
 	S.open_windows.root = root_window;
-
+	BLOG((false, "..root window opened"));
 	/* Initial iconified window coords */
 	C.iconify = iconify_grid(0);
-
+	BLOG((false, "initialized iconify grid"));
 // 	v_show_c(v->handle, 1); /* 0 = reset */
 
 // 	display("Open taskman -- perhaps");
@@ -871,6 +957,7 @@ k_init(unsigned long vm)
 
 // 	display("redrawing menu");
 	redraw_menu(NOLOCKING);
+	BLOG((false, "Menu redrawn"));
 // 	display("all fine - return 0");
 	
 	/*
@@ -881,9 +968,9 @@ k_init(unsigned long vm)
 	cfg.mn_set.delay = 250;
 	cfg.mn_set.speed = 0;
 	cfg.mn_set.height = root_window->wa.h / screen.c_max_h;
-
+	BLOG((false, "mn_set for menu_settings setup"));
 	v_show_c(C.P_handle, 0);
-
+	BLOG((false, "show mouse, return sucess"));
 	return 0;
 }
 

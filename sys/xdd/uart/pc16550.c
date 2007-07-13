@@ -276,8 +276,8 @@
 	"\033p Milan UART serial driver version " MSG_VERSION " \033q\r\n"
 
 # define MSG_GREET	\
-	"½ 1998, 1999 by Rainer Mannigel, Michael Schwingen.\r\n" \
-	"½ " MSG_BUILDDATE " by Frank Naumann.\r\n\r\n"
+	"ï¿½ 1998, 1999 by Rainer Mannigel, Michael Schwingen.\r\n" \
+	"ï¿½ " MSG_BUILDDATE " by Frank Naumann.\r\n\r\n"
 
 # define MSG_MINT	\
 	"\033pMiNT too old!\033q\r\n"
@@ -428,9 +428,9 @@ INLINE void	pc16550_read_x	(IOVAR *iovar, UART *regs);
 INLINE void	pc16550_read_o	(IOVAR *iovar, UART *regs);
 INLINE void	pc16550_read	(IOVAR *iovar, UART *regs);
 INLINE void	pc16550_write	(IOVAR *iovar, UART *regs);
-static void	pc16550_int	(void);
+static void	pc16550_int	(void) __attribute__((used));
 
-static void	pc16550_intx	(void);
+static void	pc16550_intx	(void) __attribute__((used));
        void	pc16550_int0	(void);
        void	pc16550_int1	(void);
        void	pc16550_int2	(void);
@@ -1196,8 +1196,8 @@ init_uart (IOVAR **iovar, ushort base, int intr, long baudbase)
 	if (!buffer)
 		goto error;
 	
-	(*iovar)->input.buffer = buffer;
-	(*iovar)->output.buffer = buffer + IOBUFSIZE;
+	(*iovar)->input.buffer = (unsigned char *)buffer;
+	(*iovar)->output.buffer = (unsigned char *)buffer + IOBUFSIZE;
 	
 	(*iovar)->input.low_water = (*iovar)->output.low_water = 1 * (IOBUFSIZE / 4);
 	(*iovar)->input.high_water = (*iovar)->output.high_water = 3 * (IOBUFSIZE / 4);

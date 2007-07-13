@@ -24,7 +24,7 @@ long _cdecl sys_f_force (short newh, short oldh);
 long _cdecl sys_f_datime (ushort *timeptr, short fd, short wflag);
 long _cdecl sys_f_lock (short fd, short mode, long start, long length);
 long _cdecl sys_f_cntl (short fd, long arg, short cmd);
-long _cdecl sys_f_select (ushort timeout, long *rfdp, long *wfdp, long *xfdp);
+long _cdecl sys_f_select (unsigned short timeout, long *rfdp, long *wfdp, long *xfdp);
 long _cdecl sys_f_midipipe (short pid, short in, short out);
 long _cdecl sys_f_fchown (short fd, short uid, short gid);
 long _cdecl sys_f_fchmod (short fd, ushort mode);

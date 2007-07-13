@@ -1302,7 +1302,12 @@ extract_entropy (struct random_bucket *r, char * buf, ulong nbytes)
 		x = tmp[HASH_BUFFER_SIZE/2];
 		add_entropy_words (r, x, (ulong)((ulong) buf));
 		x ^= (x >> 16);		/* Fold it in half */
-		((ushort *)tmp)[HASH_BUFFER_SIZE-1] = (ushort)x;
+// 		((ushort *)tmp)[HASH_BUFFER_SIZE-1] = (ushort)x;
+		{
+			union { unsigned short *t; unsigned long *l;} ptr;
+			ptr.l = tmp;
+			ptr.t[HASH_BUFFER_SIZE - 1] = (unsigned short)x;
+		}
 # endif
 		
 		/* Copy data to destination buffer */

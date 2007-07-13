@@ -135,6 +135,8 @@
 
 #if defined(M68040) || defined(M68060)
 
+#define MP_DEBUG_INFO DEBUG_INFO
+
 #if 0
 #define MP_DEBUG(x) DEBUG(x)
 #else
@@ -279,11 +281,11 @@ is_mint_mem(ulong ri, ulong pi, ulong pgi)
 	/* Calculate start and size of the memory area */
 	start = ri << 25UL;
 	size = 1UL << 25UL;		/* root level "pages" are 32MB */
-	if (pi != -1)
+	if (pi != -1UL)
 	{
 		start |= pi << 18UL;
 		size = 1UL << 18UL;	/* pointer level "pages" are 256kB */
-		if (pgi != -1)
+		if (pgi != -1UL)
 		{
 			start |= pgi * pagesize;
 			size = pagesize;
@@ -323,7 +325,7 @@ is_mint_mem(ulong ri, ulong pi, ulong pgi)
  * pgi: Page level index for this traverse
  */
 INLINE void
-walk_page(int mode, ulong *root, ulong *pointer, ulong *page,
+walk_page(int mode, ulong *root, ulong *pointer __attribute__((unused)), ulong *page,
 	ulong *rp, ulong ri, ulong pi, ulong pgi)
 {
 	ulong	desc,
@@ -621,8 +623,8 @@ FORCE("pagesize is %lu byte", pagesize);
  * Returns:
  * Pointer to the corresponding page descriptor
  */
-INLINE ulong
-*get_page_descriptor(ulong *table, ulong addr)
+INLINE ulong *
+get_page_descriptor(ulong *table, ulong addr)
 {
 	ulong	ri,
 		pi,
@@ -712,8 +714,7 @@ init_tables(void)
      * tree, counting the number of descriptors.
      */
 	root_descriptors = pointer_descriptors = page_descriptors = 0UL;
-	page_table_size = walk_or_copy_tree(0, &root_descriptors,
-	&pointer_descriptors, &page_descriptors);
+	page_table_size = walk_or_copy_tree(0, &root_descriptors, &pointer_descriptors, &page_descriptors);
 
 	FORCE("root_descriptors: %lu", root_descriptors);
 	FORCE("pointer_descriptors: %lu", pointer_descriptors);
@@ -1045,11 +1046,11 @@ get_page_cookie(ulong *table, ulong start, ulong len)
     	 * first, we fail
     	 */
     	if ((*desc & PROTECTIONBITS) != first)
-    	    return(0);
+    	    return (0);
     	len -= pagesize;
     }
     /* All descriptors share the same protection bits, return them */
-    return(first | 0xc000UL);
+    return (first | 0xc000UL);
 }
 
 /* get_prot_mode(r): returns the type of protection region r
@@ -1183,13 +1184,14 @@ gotvals:
 finished:
 	flush_mmu();
 	cpush((void *)start, len);
+	MP_DEBUG (("mark_region: done!"));
 }
 }
 
 /* special version of mark_region, used for attaching (mode == PROT_P)
    and detaching (mode == PROT_I) a memory region to/from a process. */
 void
-mark_proc_region(struct memspace *p_mem, MEMREGION *region, short mode, short pid)
+mark_proc_region(struct memspace *p_mem, MEMREGION *region, short mode, short pid __attribute__((unused)))
 {
 	if (no_mem_prot)
 		return;
@@ -1316,71 +1318,75 @@ init_page_table (PROC *proc, struct memspace *p_mem)
 	if (no_mem_prot)
 		return;
 	{
-    ulong *table, phystable;
-    ulong addr, len, *desc;
-    ulong i;
-    MEMREGION **mr;
+	ulong *table, phystable;
+	ulong addr, len, *desc;
+	ulong i;
+	MEMREGION **mr;
 
-    assert (p_mem->page_table && !((ulong) p_mem->page_table & 0x1ffUL));
+	assert (p_mem->page_table && !((ulong) p_mem->page_table & 0x1ffUL));
 
-    MP_DEBUG(("init_page_table (p_mem = %lx)", p_mem));
+	MP_DEBUG(("init_page_table (p_mem = %lx)", p_mem));
+//     FORCE("init_page_table: 1 p_mem->mem = %lx", p_mem->mem);
 
-    table = p_mem->page_table;
+	table = p_mem->page_table;
     /*
      * Pitfall: The rootpointer registers and the pointers inside the table
      * must be physical addresses, not logical
      */
-    phystable = *get_page_descriptor(global_table,
-    	(ulong)table) & ~(pagesize - 1UL);
-    phystable += (ulong)table & (pagesize - 1UL);
+
+	phystable = *get_page_descriptor(global_table, (ulong)table) & ~(pagesize - 1UL);
+	phystable += (ulong)table & (pagesize - 1UL);
 
     /* Copy the template MMU tree */
-    quickmove(table, global_table, page_table_size);
+	quickmove(table, global_table, page_table_size);
     /* Adapt the pointer addresses */
-    for (i = 0; i < (root_descriptors + pointer_descriptors); i++)
-    {
-	/* But only those really pointing into our tree */
-	if (((table[i] & ~0x1ffUL) - (ulong)global_table) < page_table_size)
+	for (i = 0; i < (root_descriptors + pointer_descriptors); i++)
 	{
-	    table[i] -= (ulong)global_table;
-	    table[i] += phystable;
+		/* But only those really pointing into our tree */
+		if (((table[i] & ~0x1ffUL) - (ulong)global_table) < (unsigned long)page_table_size)
+		{
+			table[i] -= (ulong)global_table;
+			table[i] += phystable;
+		}
 	}
-    }
-    proc->ctxt[0].crp[0] = proc->ctxt[1].crp[0] = phystable;
+	proc->ctxt[0].crp[0] = proc->ctxt[1].crp[0] = phystable;
 
     /*
      * OK, memory tables are now there as if proc's a non-owner of every
      * page.  Now for each region it IS an owner of, mark with owner
      * modes.
      */
-    mr = p_mem->mem;
-    for (i = 0; i < p_mem->num_reg; i++, mr++)
-    {
-	if (*mr)
-	    mark_pages(p_mem->page_table, (*mr)->loc, (*mr)->len, PROT_G, 0, 0);
-    }
-    if (p_mem->tp_reg)
-	mark_pages(p_mem->page_table, p_mem->tp_reg->loc, p_mem->tp_reg->len, PROT_G, 0, 0);
+	mr = p_mem->mem;
+
+	for (i = 0; i < p_mem->num_reg; i++, mr++)
+	{
+// 		FORCE("mr = %lx, num_reg = %d", mr, p_mem->num_reg);
+// 		FORCE("mr-loc %lx, mr-len %ld", (*mr)->loc, (*mr)->len);
+		if (*mr)
+			mark_pages(p_mem->page_table, (*mr)->loc, (*mr)->len, PROT_G, 0, 0);
+	}
+	if (p_mem->tp_reg)
+		mark_pages(p_mem->page_table, p_mem->tp_reg->loc, p_mem->tp_reg->len, PROT_G, 0, 0);
 
     /*
      * As recommended in the MC68040 user's manual, we mark the table as
      * non-cacheable (it's necessary for the MC68060, anyway)
      */
-    len = (page_table_size + pagesize - 1UL) & ~(pagesize - 1UL);
-    addr = (ulong)table;
-    for (desc = get_page_descriptor(table, addr); len; desc++)
-    {
-	*desc &= ~CACHEMODEBITS;
-	*desc |= NOCACHE;
-	addr += pagesize;
-	len -= pagesize;
-    }
-    cpush(table, page_table_size);
+	len = (page_table_size + pagesize - 1UL) & ~(pagesize - 1UL);
+	addr = (ulong)table;
+	for (desc = get_page_descriptor(table, addr); len; desc++)
+	{
+		*desc &= ~CACHEMODEBITS;
+		*desc |= NOCACHE;
+		addr += pagesize;
+		len -= pagesize;
+	}
+	cpush(table, page_table_size);
 
-    if (!mmu_is_set_up) {
-	set_mmu((ulong *)phystable);
-	mmu_is_set_up = 1;
-    }
+	if (!mmu_is_set_up) {
+		set_mmu((ulong *)phystable);
+		mmu_is_set_up = 1;
+	}
 	}
 }
 
@@ -1402,7 +1408,7 @@ mem_prot_special(PROC *proc)
 
 	{
     MEMREGION **mr;
-    int i;
+    unsigned int i;
     unsigned char mode;
 
 
@@ -1435,7 +1441,7 @@ mem_prot_special(PROC *proc)
 
     mr = proc->p_mem->mem;
 
-    for (i=0; i < proc->p_mem->num_reg; i++, mr++) {
+    for (i = 0; i < proc->p_mem->num_reg; i++, mr++) {
 	if (*mr) {
 	    mode = global_mode_table[((*mr)->loc >> 13)];
 	    if (mode == PROT_P)
@@ -1469,12 +1475,12 @@ int
 mem_access_for(PROC *p, ulong start, long nbytes)
 {
 	MEMREGION **mr;
-	int i;
+	unsigned int i;
 	
 	if (no_mem_prot)
 		return -1;
 	
-	if (start >= (ulong)p && start+nbytes <= (ulong)(p+1))
+	if (start >= (ulong)p && start + nbytes <= (ulong)(p + 1))
 		return -1;
 	
 	if (p == rootproc)
@@ -1667,7 +1673,7 @@ BIG_MEM_DUMP_1 (int bigone, PROC *proc, MMAP which)
 	PROC *p;
 	ulong loc;
 	short owner;
-	short i;
+	unsigned int i;
 	short first;
 	
 	
@@ -1753,7 +1759,11 @@ gotowner:
 # endif
 
 void
+#ifdef DEBUG_INFO
 BIG_MEM_DUMP (int bigone, PROC *proc)
+#else
+BIG_MEM_DUMP (int bigone __attribute__((unused)), PROC *proc __attribute__((unused)))
+#endif
 {
 # ifdef DEBUG_INFO
 	BIG_MEM_DUMP_1 (bigone, proc, core);

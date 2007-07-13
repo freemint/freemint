@@ -1,5 +1,5 @@
 /*
- * Copyright 1993, 1994 by Ulrich KÅhn. All rights reserved.
+ * Copyright 1993, 1994 by Ulrich KÔøΩhn. All rights reserved.
  *
  * THIS PROGRAM COMES WITH ABSOLUTELY NO WARRANTY, NOT
  * EVEN THE IMPLIED WARRANTIES OF MERCHANTIBILITY OR
@@ -26,8 +26,8 @@
 	"\033p Network file system driver version " MSG_VERSION " \033q\r\n"
 
 # define MSG_GREET	\
-	"Ω 1993, 1994 by Ulrich KÅhn.\r\n" \
-	"Ω " MSG_BUILDDATE " by Frank Naumann.\r\n" \
+	"ÔøΩ 1993, 1994 by Ulrich KÔøΩhn.\r\n" \
+	"ÔøΩ " MSG_BUILDDATE " by Frank Naumann.\r\n" \
 	"See the file COPYING for copying and using conditions.\r\n"
 
 # define MSG_ALPHA	\
@@ -51,6 +51,7 @@
 
 struct kerinfo *KERNEL;
 
+FILESYS * init(struct kerinfo *k);
 
 FILESYS *
 init (struct kerinfo *k)

@@ -97,14 +97,14 @@ alert_destructor(enum locks lock, struct xa_window *wind)
  * Form_alert handler v2.1
  */
 
-static unsigned char *ln = "";	/* current line */
-static int mc; 			/* current string max */
+static char *ln = "";	/* current line */
+static int mc; 		/* current string max */
 
 static void
 ipff_init(int m, char *l)
 {
 	if (l)
-		ln = (unsigned char *)l;
+		ln = l;
 	mc = m;
 }
 
@@ -323,7 +323,7 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 	alert_icons = ResourceTree(C.Aes_rsc, ALERT_ICONS);
 
 	alert_form->ob_width = w;
-// 	form_center(alert_form, ICON_H);
+// 	Form_Center(alert_form, ICON_H);
 
 	{	/* HR */
 		int icons[7] = {ALR_IC_SYSTEM, ALR_IC_WARNING, ALR_IC_QUESTION, ALR_IC_STOP,
@@ -465,7 +465,7 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 }
 
 /*
- * Primitive version of form_center....
+ * Primitive version of xa_form_center....
  * - This ignores shadows & stuff
  *
  * HR: It seems that every app knows that :-)
@@ -514,7 +514,7 @@ _form_keybd(	struct xa_client *client,
 		struct widget_tree *wt,
 		struct xa_window *wind,
 		struct xa_aes_object nextobj,
-		short *keycode,
+		unsigned short *keycode,
 		struct xa_aes_object *newobj)
 {
 	unsigned short ks;
@@ -528,7 +528,7 @@ _form_keybd(	struct xa_client *client,
 	key.norm = normkey(ks, *keycode);
 	key.aes = *keycode;
 
-	cont = form_keyboard(wt,					/* widget tree	*/
+	cont = Form_Keyboard(wt,					/* widget tree	*/
 			     client->vdi_settings,
 			     edit_focus,				/* obj		*/
 			     &key,					/* rawkey	*/
@@ -562,7 +562,7 @@ unsigned long
 XA_form_keybd(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	OBJECT *obtree = (OBJECT *)pb->addrin[0];
-	short keyout = 0, cont = 0;
+	unsigned short keyout = 0, cont = 0;
 	struct xa_aes_object newobj = aesobj(obtree, 0);
 
 	CONTROL(3,3,1)
@@ -595,7 +595,8 @@ unsigned long
 XA_form_wkeybd(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	OBJECT *obtree = (OBJECT *)pb->addrin[0];
-	short cont = 0, keyout = 0;
+	short cont = 0;
+	unsigned short keyout = 0;
 	struct xa_aes_object newobj = aesobj(obtree, 0);
 	
 	CONTROL(4,3,1)
@@ -639,7 +640,7 @@ XA_form_alert(enum locks lock, struct xa_client *client, AESPB *pb)
 	DIAG((D_form, client, "XA_alert %s", (char *)pb->addrin[0]));
 	client->status |= CS_FORM_ALERT;
 	do_form_alert(lock, client, pb->intin[0], (char *)pb->addrin[0], NULL);
-	Block(client, 0);
+	(*client->block)(client, 0); //Block(client, 0);
 	client->status &= ~CS_FORM_ALERT;
 
 	return XAC_DONE;
@@ -746,7 +747,7 @@ XA_form_error(enum locks lock, struct xa_client *client, AESPB *pb)
 	DIAG((D_form, client, "alert_err %s", error_alert));
 	client->status |= CS_FORM_ALERT;
 	do_form_alert(lock, client, 1, error_alert, NULL);
-	Block(client, 0);
+	(*client->block)(client, 0); //Block(client, 0);
 	client->status &= ~CS_FORM_ALERT;
 	
 	return XAC_DONE;
@@ -846,7 +847,7 @@ XA_form_do(enum locks lock, struct xa_client *client, AESPB *pb)
 					display_window(lock, 4, wind, NULL);
 			}
 // 			display("wait for form_do...");
-			Block(client, 0);
+			(*client->block)(client, 0); //Block(client, 0);
 			client->status &= ~CS_FORM_DO;
 // 			display(" ... return from form_do");
 			return XAC_DONE;
@@ -857,8 +858,7 @@ XA_form_do(enum locks lock, struct xa_client *client, AESPB *pb)
 		 *  like no more memory, we need to act upon that here. Lets try
 		 *  to wait for the update_lock and force non-windowed form_do handling
 		 *  later...
-		 */
-		
+		 */	
 	}
 	else
 	{
@@ -904,7 +904,7 @@ XA_form_button(enum locks lock, struct xa_client *client, AESPB *pb)
 		 * a window, in which case we need to use that windows rectangle list
 		 * during updates of the window.
 		 */
-		retv = form_button(wt,		/* widget tree	*/
+		retv = Form_Button(wt,		/* widget tree	*/
 				   client->vdi_settings,
 				   obj,		/* obj idx	*/
 				   &md,		/* moose data	*/
@@ -962,7 +962,7 @@ XA_form_wbutton(enum locks lock, struct xa_client *client, AESPB *pb)
 			 * a window, in which case we need to use that windows rectangle list
 			 * during updates of the window.
 			 */
-			retv = form_button(wt,				/* widget tree	*/
+			retv = Form_Button(wt,				/* widget tree	*/
 					   client->vdi_settings,
 					   nextobj,			/* obj idx	*/
 					   &md,				/* moose data	*/

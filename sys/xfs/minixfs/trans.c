@@ -63,11 +63,14 @@ tosify (const char *name, int flag, char *first, int mnamlength)
 	if (name[0] == '.'
 		&& (name[1] == '\0' || (name[1] == '.' && name[2] == '\0')))
 	{
-		return (char *) name;
+		strncpy(first,name,mnamlength);
+		first[mnamlength] = '\0';
+		return first;
+// 		return (char *) name;
 	}
 	
 	strncpy (first, name, mnamlength);
-	first[mnamlength] = 0;
+	first[mnamlength] = '\0';
 	
 	if (!flag)
 		return first;

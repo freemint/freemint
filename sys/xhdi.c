@@ -79,8 +79,10 @@ long
 XHDI_init (void)
 {
 	long r;
+	unsigned long t = 0;
 	
-	r = get_toscookie (COOKIE_XHDI, (unsigned long *) &XHDI);
+	r = get_toscookie (COOKIE_XHDI, &t);
+	XHDI = (long(*)(unsigned short, ...))t;
 	if (!r && XHDI)
 	{
 		long *magic_test = (long *) XHDI;

@@ -362,13 +362,12 @@ sys_m_free (long block)
 			return E_OK;
 		}
 	}
-
 	DEBUG(("Mfree: bad address %lx", block));
 	return EFAULT;
 }
 
 long _cdecl
-sys_m_shrink (int dummy, long block, long size)
+sys_m_shrink (int dummy, unsigned long block, long size)
 {
 	struct proc *p = get_curproc();
 	struct memspace *mem = p->p_mem;
@@ -391,19 +390,23 @@ sys_m_shrink (int dummy, long block, long size)
 	 */
 	/* XXX perhaps this shouldn't be '256L', but rather 'PAGESIZE'?
 	 */
-	if (block == (long)mem->base && size < 256L)
+	if (block == (unsigned long)mem->base && size < 256L)
 		size = 256L;
 
 	for (i = 0; i < mem->num_reg; i++)
 	{
 		if (mem->addr[i] == block)
 		{
+			long r;
 			MEMREGION *m = mem->mem[i];
 
 			assert (m != NULL);
-			assert (m->loc == (long) block);
+			assert (m->loc == block);
 
-			return shrink_region (m, size);
+			DEBUG(("Mshrink - shrink region"));
+			r = shrink_region(m, size);
+			DEBUG(("Mshrink - returning %lx", r));
+			return r; //shrink_region (m, size);
 		}
 	}
 
@@ -413,7 +416,7 @@ error:
 }
 
 long _cdecl
-sys_m_validate (int pid, long addr, long size, long *flags)
+sys_m_validate (int pid, unsigned long addr, long size, long *flags)
 {
 	struct proc *p = NULL;
 	MEMREGION *m;
@@ -457,7 +460,7 @@ sys_m_validate (int pid, long addr, long size, long *flags)
 }
 
 long _cdecl
-sys_m_access (long addr, long size, int mode)
+sys_m_access(unsigned long addr, long size, int mode)
 {
 	struct proc *p = get_curproc();
 	MEMREGION *m;

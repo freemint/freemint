@@ -47,6 +47,7 @@
 # include "proc.h"
 # include "filesys.h"
 
+# include "aranym.h"
 
 void
 hw_poweroff(void)
@@ -101,7 +102,7 @@ hw_halt(void)
 	DEBUG(("halt() called, system halting...\r\n"));
 	debug_ws(MSG_system_halted);
 	
-	sys_q[READY_Q] = 0;	/* prevent context switches */
+	sysq[READY_Q].head = sysq[READY_Q].tail = NULL;	/* prevent conext switches */
 	restr_intr();		/* restore interrupts to normal */
 	
 	for (;;)
@@ -149,7 +150,7 @@ HALT (void)
 	DEBUG(("Fatal MiNT error: adjust debug level and hit a key...\r\n"));
 	debug_ws(MSG_fatal_reboot);
 	
-	sys_q[READY_Q] = 0;	/* prevent context switches */
+	sysq[READY_Q].head = sysq[READY_Q].tail = NULL; /* prevent context switches */
 	restr_intr ();		/* restore interrupts to normal */
 	
 	for (;;)

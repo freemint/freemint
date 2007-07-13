@@ -68,11 +68,11 @@ init_page_table_ptr (struct memspace *m)
 	}
 	else
 	{
-# if defined(M68040) || defined(M68060)
+# if defined (M68040) || defined (M68060)
 		extern int page_ram_type;	/* mprot040.c */
-		MEMREGION *pt;
+		MEMREGION *pt = NULL;
 		
-		pt = NULL;
+// 		FORCE("init_page_table_ptr: p_mem->mem = %lx", curproc->p_mem->mem);
 		if (page_ram_type & 2)
 			pt = get_region (alt, page_table_size + 512, PROT_S);
 		if (!pt && (page_ram_type & 1))
@@ -176,7 +176,13 @@ copy_mem (struct proc *p)
 	if (!m->tp_reg)
 		m->tp_reg = get_region(core, user_things.len + PRIV_JAR_SIZE, PROT_P);
 	
+	TRACE(("copy_mem: ptr=%lx, m->pt_mem = %lx, m->tp_reg = %lx, mp=%s", ptr, m->pt_mem, m->tp_reg, no_mem_prot ? "off":"on"));
+
+#ifdef M68000
+	if (!ptr || !m->tp_reg)
+#else
 	if ((!no_mem_prot && !m->pt_mem) || !ptr || !m->tp_reg)
+#endif
 		goto nomem;
 	
 	/* copy memory */
@@ -228,7 +234,7 @@ copy_mem (struct proc *p)
 		utj = ut->user_jar_p;
 		ctj = ct->user_jar_p;
 
-		for (i = 0; ctj->tag && i < PRIV_JAR_SLOTS-1; i++)
+		for (i = 0; ctj->tag && i < PRIV_JAR_SLOTS - 1; i++)
 		{
 			utj->tag = ctj->tag;
 
@@ -248,14 +254,16 @@ copy_mem (struct proc *p)
 	}
 
 # endif
-
+#ifndef M68000
 	cpushi(ut, sizeof(*ut));
+#endif
 	detach_region(get_curproc(), m->tp_reg);
 	
 	TRACE (("copy_mem: ok (%lx)", m));
 	return m;
 	
 nomem:
+	TRACE (("copy_mem: out of mem!"));
 	if (m->pt_mem) free_page_table_ptr (m);
 	if (ptr) kfree (ptr);
 	if (m->tp_reg) { m->tp_reg->links--; free_region(m->tp_reg); }
@@ -356,7 +364,7 @@ increase_mem(struct memspace *mem)
 	if (ptr)
 	{
 		MEMREGION **newmem = ptr;
-		long *newaddr = ptr + size;
+		unsigned long *newaddr = ptr + size;
 		int i;
 
 		/* copy over the old address mapping */
@@ -370,7 +378,7 @@ increase_mem(struct memspace *mem)
 		}
 
 		/* initialize the rest of the tables */
-		for(; i < mem->num_reg + NUM_REGIONS; i++)
+		for (; i < mem->num_reg + NUM_REGIONS; i++)
 		{
 			newmem[i] = NULL;
 			newaddr[i] = 0;
@@ -427,14 +435,14 @@ copy_fd (struct proc *p)
 # endif
 	{
 		fd->ofiles = &fd->dfiles[0];
-		fd->ofileflags = &fd->dfileflags[0];
+		fd->ofileflags = (unsigned char *)&fd->dfileflags[0];
 		i = NDFILE;
 	}
 	
 	fd->nfiles = i;
 	
-	//bcopy (org_fd->ofiles, fd->ofiles, i * sizeof (FILEPTR **));
-	//bcopy (org_fd->ofileflags, fd->ofileflags, i * sizeof (char));
+	//mint_bcopy (org_fd->ofiles, fd->ofiles, i * sizeof (FILEPTR **));
+	//mint_bcopy (org_fd->ofileflags, fd->ofileflags, i * sizeof (char));
 	
 	for (i = MIN_HANDLE; i < fd->nfiles; i++)
 	{
@@ -946,8 +954,24 @@ proc_attach_extension(struct proc *p, long ident, unsigned long flags, unsigned 
 	if (!p) p = get_curproc();
 
 	assert(size);
-
+	
 	p_ext = p->p_ext;
+
+	/* Ozk:
+	 * Check if an extension with 'ident' id already exists, and return NULL
+	 * to indicate failure if so.
+	 */
+	if (p_ext && p_ext->used) {
+		int i;
+		for (i = 0; i < p_ext->used; i++) {
+			ext = p_ext->ext[i];
+			if (ext->ident == ident) {
+				ALERT("proc_attach_extension: Extension with ident %lx already attached to %s!", ident, p->name);
+				return NULL;
+			}
+		}
+	}
+
 	if (!p_ext)
 	{
 		p_ext = kmalloc(sizeof(*p_ext));

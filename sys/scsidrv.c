@@ -107,13 +107,14 @@ long
 scsidrv_init (void)
 {
 	long r;
+	unsigned long t = 0;
 
 # ifdef SCSIDRV_MON
 	static void init_scsidrv_mon(void);
 	init_scsidrv_mon();
 # endif
-
-	r = get_toscookie (COOKIE_SCSI, (unsigned long *) &scsidrv);
+	r = get_toscookie(COOKIE_SCSI, &t);
+	scsidrv = (SCSIDRV *)t;
 	if (!r && scsidrv)
 	{
 		scsidrv_installed = scsidrv->version;

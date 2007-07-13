@@ -153,10 +153,12 @@ unqueue_key(struct xa_client *client, struct rawkey *key)
 {
 	bool ret = false;
 	struct keyqueue *kq;
-	DIAGS(("unqueue key for %s", client->proc_name));
+
 	if ((kq = client->kq_tail))
 	{
 		*key = kq->key;
+
+		DIAGS(("unqueue key for %s", client->proc_name));
 
 		if (client->kq_tail == client->kq_head)
 			client->kq_tail = client->kq_head = NULL;
@@ -247,6 +249,7 @@ XA_keyboard_event(enum locks lock, const struct rawkey *key)
 	}
 }
 
+
 static bool
 kernel_key(enum locks lock, struct rawkey *key)
 {
@@ -254,6 +257,7 @@ kernel_key(enum locks lock, struct rawkey *key)
 	if ((key->raw.conin.state & (K_CTRL|K_ALT)) == (K_CTRL|K_ALT))
 	{
 		struct xa_client *client;
+		struct kernkey_entry *kkey = C.kernkeys;
 		short nk;
 
 		key->norm = nkc_tconv(key->raw.bcon);
@@ -261,6 +265,18 @@ kernel_key(enum locks lock, struct rawkey *key)
 
 		DIAG((D_keybd, NULL,"CTRL+ALT+%04x --> %04x '%c'", key->aes, key->norm, nk));
 
+		while (kkey)
+		{
+			if (kkey->key == nk)
+				break;
+			kkey = kkey->next_key;
+		}
+		if (kkey)
+		{
+			if (kkey->act)
+				post_cevent(C.Hlp, ceExecfunc, kkey->act, NULL, 1,1, NULL, NULL);
+			return true;
+		}
 #if 0
 //#if GENERATE_DIAGS
 		/* CTRL|ALT|number key is emulate wheel. */
@@ -298,7 +314,7 @@ kernel_key(enum locks lock, struct rawkey *key)
 		}
 //#endif
 #endif
-
+		
 		switch (nk)
 		{
 		case NK_TAB:				/* TAB, switch menu bars */
@@ -431,13 +447,13 @@ otm:
 		case 'Q':
 		{
 			DIAGS(("shutdown by CtlAlt Q"));
-			dispatch_shutdown(0);
+			dispatch_shutdown(0, 0);
 			return true;
 		}
 		case 'H':
 		{
 			DIAGS(("shutdown by CtlAlt H"));
-			dispatch_shutdown(HALT_SYSTEM);
+			dispatch_shutdown(HALT_SYSTEM, 0);
 			return true;
 		}
 		case 'Y':				/* ctrl+alt+Y, hide current app. */
@@ -494,7 +510,11 @@ keyboard_input(enum locks lock)
 		struct rawkey key;
 
 		key.raw.bcon = f_getchar(C.KBD_dev, RAW);
-
+// 		display("f_getchar: 0x%08lx, AES=%x, NORM=%x", key.raw.bcon, key.aes, key.norm);
+	
+		if (eiffel_wheel((unsigned short)key.raw.conin.scan & 0xff))
+			continue;
+		
 		/* Translate the BIOS raw data into AES format */
 		key.aes = (key.raw.conin.scan << 8) | key.raw.conin.code;
 		key.norm = 0;

@@ -142,8 +142,8 @@
 	"\033p MFP serial driver version " MSG_VERSION " \033q\r\n"
 
 # define MSG_GREET	\
-	"½ 1998, 1999 by Rainer Mannigel.\r\n" \
-	"½ " MSG_BUILDDATE " by Frank Naumann.\r\n\r\n"
+	"ï¿½ 1998, 1999 by Rainer Mannigel.\r\n" \
+	"ï¿½ " MSG_BUILDDATE " by Frank Naumann.\r\n\r\n"
 
 # define MSG_MINT	\
 	"\033pMiNT too old!\033q\r\n"
@@ -287,14 +287,14 @@ DEVDRV *	_cdecl init	(struct kerinfo *k);
  */
 INLINE void	notify_top_half	(IOVAR *iovar);
 static void	wr_mfp		(IOVAR *iovar, MFP *regs);
-static void	mfp_txerror	(void);
-static void	mfp_txempty	(void);
-static void	mfp_rxavail	(void);
-static void	mfp_dcdint	(void);
-static void	mfp_ctsint	(void);
-static void	mfp_rxerror	(void);
+static void	mfp_txerror	(void) __attribute__((used));
+static void	mfp_txempty	(void) __attribute__((used));
+static void	mfp_rxavail	(void) __attribute__((used));
+static void	mfp_dcdint	(void) __attribute__((used));
+static void	mfp_ctsint	(void) __attribute__((used));
+static void	mfp_rxerror	(void) __attribute__((used));
 
-static void	mfp_intrwrap	(void);
+static void	mfp_intrwrap	(void) __attribute__((used));
 
        void	mfp1_dcdint	(void);
        void	mfp1_ctsint	(void);
@@ -960,7 +960,7 @@ continue_outer2:
 INLINE int
 init_MFP (IOVAR **iovar, MFP *regs, ushort tt_port)
 {
-	char *buffer;
+	uchar *buffer;
 
 	*iovar = kmalloc (sizeof (**iovar));
 	if (!*iovar)
@@ -1380,6 +1380,8 @@ wr_mfp (IOVAR *iovar, MFP *regs)
 	}
 }
 
+static void mfp_dcdint(void) __attribute__((used));
+
 static void
 mfp_dcdint (void)
 {
@@ -1426,6 +1428,7 @@ mfp_dcdint (void)
 	/* acknowledge */
 	regs->isrb = ~0x02;
 }
+
 
 static void
 mfp_ctsint (void)
@@ -1712,14 +1715,12 @@ mfp_intrwrap (void)
 	(void) mfp_rxavail;
 	(void) mfp_intrwrap;
 
-
 	/*
 	 * MFP port
 	 */
-
-	asm volatile
+	__asm__ volatile
 	(
-		"_mfp1_dcdint:\n\t" \
+		 "_mfp1_dcdint:\n\t" \
 		 "movem.l %%a0-%%a2/%%d0-%%d2,-(%%sp)\n\t" \
 		 "move.l  _iovar_mfp,%%a0\n\t" \
 		 "bsr     _mfp_dcdint\n\t" \

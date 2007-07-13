@@ -44,10 +44,11 @@ ext2_set_bit (long nr, void *vaddr)
 	char retval;
 	
 	__asm__ __volatile__
-	(
-		"bfset %2@{%1,#1}; sne %0"
-		: "=d" (retval)
-		: "d" (nr^7), "a" (vaddr)
+	("\
+		bfset %2@{%1:#1}; 		\
+		sne %0 "			\
+		: "=r" (retval)			\
+		: "d" (nr^7), "a" (vaddr)	\
 	);
 	
 	return (long) retval;
@@ -59,8 +60,9 @@ ext2_clear_bit (long nr, void *vaddr)
 	char retval;
 	
 	__asm__ __volatile__
-	(
-		"bfclr %2@{%1,#1}; sne %0"
+	(" \
+		bfclr %2@{%1:#1}; \
+		sne %0 "
 		: "=d" (retval)
 		: "d" (nr^7), "a" (vaddr)
 	);
@@ -74,8 +76,9 @@ ext2_test_bit (long nr, const void *addr)
 	char retval;
 	
 	__asm__ __volatile__
-	(
-		"bftst %2@{%1:#1}; sne %0"
+	("\
+		bftst %2@{%1:#1}; \
+		sne %0 "
 		: "=d" (retval)
 		: "d" (nr^7), "a" (addr)
 	);
@@ -127,36 +130,37 @@ ext2_test_bit (long nr, const void *addr)
 
 # endif
 
-
 INLINE long
 ext2_find_first_zero_bit (const void *vaddr, ulong size)
 {
-	const ulong long *p = vaddr, *addr = vaddr;
+	const unsigned long *p = vaddr, *addr = vaddr;
 	long res;
+	ulong tmp;
 	
 	if (!size)
 		return 0;
-	
-	size = (size >> 5) + ((size & 31UL) > 0);
-	while (*p++ == ~0UL)
-	{
-		if (--size == 0)
+	tmp = size >> 5;
+
+	if ((size & 31UL))
+		tmp += 1;
+
+	while (*p++ == -1UL) {
+		if (--tmp == 0)
 			return (p - addr) << 5;
 	}
-	
 	--p;
-	for (res = 0; res < 32L; res++)
-		if (!ext2_test_bit (res, p))
+	for (res = 0; res < 32L; res++)	{
+		if (!ext2_test_bit(res, p))
 			break;
-	
+	}
 	return (p - addr) * 32L + res;
 }
 
 INLINE long
 ext2_find_next_zero_bit (const void *vaddr, ulong size, ulong offset)
 {
-	const ulong long *addr = vaddr;
-	const ulong long *p = addr + (offset >> 5);
+	const unsigned long *addr = vaddr;
+	const unsigned long *p = addr + (offset >> 5);
 	long bit = offset & 31L, res;
 	
 	if (offset >= size)
@@ -176,6 +180,5 @@ ext2_find_next_zero_bit (const void *vaddr, ulong size, ulong offset)
 	
 	return (p - addr) * 32L + res;
 }
-
 
 # endif /* _bitmap_h */
