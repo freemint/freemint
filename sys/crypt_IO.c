@@ -343,8 +343,8 @@ sys_d_setkey (llong dev, char *key, int cipher)
 		uchar hash [16];
 
 		MD5Init (&md5sum);
-		MD5Update (&md5sum, (uchar *) key, strlen (key));
-		MD5Final (hash, &md5sum);
+		MD5Update (&md5sum, (unsigned char *)key, strlen (key));
+		MD5Final ((unsigned char *)hash, &md5sum);
 
 		if (!(di->mode & BIO_ENCRYPTED))
 		{
@@ -365,7 +365,7 @@ sys_d_setkey (llong dev, char *key, int cipher)
 			di->mode |= BIO_ENCRYPTED;
 		}
 
-		Blowfish_initialize (di->crypt.key, hash, 16);
+		Blowfish_initialize (di->crypt.key, (unsigned char *)hash, 16);
 	}
 	else
 	{

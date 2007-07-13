@@ -31,10 +31,10 @@
 #include "xa_types.h"
 //void dump_ra_list(struct xa_rscs *);
 
-void *LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designWidth, short designHeight, bool set_pal);
-void FreeResources(struct xa_client *client, AESPB *pb, struct xa_rscs *rscs);
-OBJECT *ResourceTree(RSHDR *base, long num);
-void obfix(OBJECT *tree, int object, short designwidth, short designheight);
+RSHDR * _cdecl LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designWidth, short designHeight, bool set_pal);
+void _cdecl FreeResources(struct xa_client *client, AESPB *pb, struct xa_rscs *rscs);
+OBJECT * _cdecl ResourceTree(RSHDR *base, long num);
+void _cdecl obfix(OBJECT *tree, short object, short designwidth, short designheight);
 
 AES_function
 	XA_rsrc_load,

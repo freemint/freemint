@@ -122,8 +122,9 @@
 #  define KM_ALIGN(x,s)	{ if ((long) x & 15) \
 			{ DEBUG (("%s, %ld: not aligned (%s, %lx)!", \
 				__FILE__, (long) __LINE__, s, (long) x)); } }
-
+#if 0
 static void km_debug (const char *fmt, ...);
+#endif
 
 #  if 1
 #  define KM_USAGE
@@ -584,23 +585,17 @@ km_malloc (ulong size, MEMREGION *descr, KM_P *page)
 	m = km_get_region (alt, size, descr, 0);
 
 	if (!m)
-	{
 		/* fall back to ST-RAM */
 		m = km_get_region (core, size, descr, 0);
-	}
 
-	if (m)
-	{
+	if (m) {
 		if (!page)
 			page = (KM_P *) m->loc;
 
 		page->self = m;
 		page->size = size >> 4;
-	}
-	else
-	{
+	} else
 		page = NULL;
-	}
 
 	return page;
 }
@@ -731,7 +726,8 @@ retry:
 # endif
 
 	m = (MEMREGION *) ((char *) new + MR_HEAD);
-
+	mint_bzero(m, sizeof(*m));
+#if 0
 	m->loc		= 0;
 	m->len		= 0;
 	m->links	= 0;
@@ -739,7 +735,7 @@ retry:
 	m->save		= NULL;
 	m->shadow	= NULL;
 	m->next		= NULL;
-
+#endif
 	if (!mr_free->s.mr.free)
 	{
 		while (mr_free && !mr_free->s.mr.free)
@@ -2181,7 +2177,7 @@ __wrap__ufree (void *place)
 # ifdef KMEMORY_DEBUG
 
 # include <stdarg.h>
-
+#if 0
 static void
 km_debug (const char *fmt, ...)
 {
@@ -2195,6 +2191,8 @@ km_debug (const char *fmt, ...)
 
 	va_end (args);
 }
+#endif
+
 # endif
 
 /* END debug infos */

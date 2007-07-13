@@ -45,7 +45,7 @@
 
 struct nf_ops *nf_init(void);
 
-const char *nf_name(void);
+char *nf_name(void);
 int  nf_debug(const char *msg);
 void nf_shutdown(void);
 

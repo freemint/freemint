@@ -161,14 +161,14 @@ lance_reset (struct netif *nif)
 	
 	rdp = RCP_RDP;
 	mem = (LNCMEM *) RCP_MEMBOT;
-	*(rdp+1) = CSR0;
+	*(rdp + 1) = CSR0;
 	*rdp = CSR0_STOP;
 	
 	if (!memcmp (nif->hwlocal.addr, "\377\377\377\377\377\377", ETH_ALEN))
 		return -1; /* hw address not set! */
 	
-	for (i = 0 ; i<ETH_ALEN ; i++)
-		mem->init.haddr[i ^ 1] = nif->hwlocal.addr[i];
+	for (i = 0 ; i < ETH_ALEN ; i++)
+		mem->init.haddr.haddr[i ^ 1] = nif->hwlocal.addr[i];
 	
 	mem->init.rdrp.drp_lo = (ushort) offsetof(LNCMEM,rmd[0]);
 # if 0
@@ -211,7 +211,17 @@ lance_reset (struct netif *nif)
 	
 	for (i = 0; i < RECVBUFFS; i++)
 	{
-		(RMD *) md = mem->rmd+i;
+#if 1
+		register volatile RMD *rmd = mem->rmd + i;
+		rmd->ladr = (ushort)(0xFFFFL & (ulong) pkt_rcv_ring[i]);
+		rmd->rmd1 = OWN_CHIP;
+		/*
+		 * 2's complement (maximum size)
+		 */
+		rmd->rmd2 = -MAXPKTLEN;
+		rmd->mcnt = 0;
+#else
+		(RMD *) md = mem->rmd + i;
 		((RMD *) md)->ladr = (ushort)(0xFFFFL & (ulong) pkt_rcv_ring[i]);
 		((RMD *) md)->rmd1 = OWN_CHIP;
 		/*
@@ -219,9 +229,10 @@ lance_reset (struct netif *nif)
 		 */
 		((RMD *) md)->rmd2 = -MAXPKTLEN;
 		((RMD *) md)->mcnt = 0;
+#endif
 	}
 	
-	*(rdp+1) = CSR3;
+	*(rdp + 1) = CSR3;
 # ifndef PAMs_INTERN
 	*rdp = CSR3_BSWP;
 # else
@@ -362,6 +373,7 @@ lance_config (struct netif *nif, struct ifopt *ifo)
 	return ENOSYS;
 }
 
+long driver_init(void);
 long
 driver_init (void)
 {
@@ -513,13 +525,15 @@ lance_probe (struct netif *nif)
 # ifdef RIEBL
 	/* .. <- This is normally 2 for MEGAs */
         /* ||    and 4 for TTs(/MEGA STes?)   */
-	if ((*(ulong *) mem->init.haddr & 0xFFFFF8FFL) != 0x00000036L)
+	if ((mem->init.haddr.laddr & 0xFFFFF8FFL) != 0x00000036L) {
 		/* Set a default hw address that is known as error condition to the */
 		/* caller.                                                          */
-		memcpy ((uchar *) mem->init.haddr, "\377\377\377\377\377\377", ETH_ALEN);
+		for (i = 0; i < ETH_ALEN; i++)
+			mem->init.haddr.haddr[i] = '\377';
+	}		
 	memcpy (nif->hwbrcst.addr, "\377\377\377\377\377\377", ETH_ALEN);
 	for (i = 0 ; i < ETH_ALEN; i++)
-		nif->hwlocal.addr[i ^ 1] = mem->init.haddr[i];
+		nif->hwlocal.addr[i ^ 1] = mem->init.haddr.haddr[i];
 # endif
 
     	/*
@@ -537,6 +551,7 @@ lance_probe (struct netif *nif)
 static void
 lance_probe_c (void)
 {
+	register union { volatile LNCMEM *v; ushort *s; uchar *c; } ptr;
 	register volatile LNCMEM *mem;
 	register long i;
 	register volatile int *rdp;
@@ -548,20 +563,20 @@ lance_probe_c (void)
 	*(volatile char *)LANCE_MEM;
 # endif
 	
-	*(rdp+1) = 0;
+	*(rdp + 1) = 0;
 	
 	*rdp = CSR0_STOP;
 	if (*rdp != CSR0_STOP)
-		goto err;
+		return;
 	*rdp = ~(CSR0_INIT | CSR0_STRT);
 	if (*rdp != CSR0_STOP)
-		goto err;
+		return;
 	
-	*(rdp+1) = 0xFFFF;
-	if (*(rdp+1) != 3)
-		goto err;
+	*(rdp + 1) = 0xFFFF;
+	if (*(rdp + 1) != 3)
+		return;
 	
-	*(rdp+1) = 1;
+	*(rdp + 1) = 1;
 	
 /* For some reason the following test does not work :-( */
 # if 0
@@ -575,23 +590,23 @@ lance_probe_c (void)
 		goto err;
 # endif
 	
-	for (i = 0; i < 0x10000L; i++)
+	for (i = 0, ptr.v = mem; i < 0x10000L; i++)
 	{
-		*(ushort *) mem = (ushort)i;
-		if (*(ushort *) mem != (ushort)i)
+		*ptr.s = (ushort)i;
+		if (*ptr.s != (ushort)i)
 			break;
-		*(uchar *) mem = (uchar)(i & 0xFF);
-		if (*(uchar *) mem != (uchar)(i & 0xFF))
+		*ptr.c = (uchar)(i & 0xFF);
+		if (*ptr.c != (uchar)(i & 0xFF))
 			break;
-		*(((uchar *) mem)+1) = (uchar)(i & 0xFF);
-		if (*(((uchar *) mem)+1) != (uchar)(i & 0xFF))
+		*(ptr.c + 1) = (uchar)(i & 0xff);
+		if (*(ptr.c + 1) != (uchar)(i & 0xFF))
 			break;
 	}
 	if (i != 0x10000L)
-		goto err;
+		return;
 	
 	found = 1;
-err:
+
 }
 
 static long
@@ -687,7 +702,9 @@ void
 lance_int (void)
 {
 # ifdef HACK
+#if 0
 	register int		i;
+#endif
 # endif
 	register ushort		csr0;
 	register int		type;
@@ -695,7 +712,8 @@ lance_int (void)
 	ushort sr; /* New since Nov/11/1998 */
 	
 	register volatile int	*rdp;
-	register volatile TMD	*md;
+	register volatile TMD	*tmd;
+	register volatile RMD	*rmd;
 	register PKTBUF 	*pkt;
 	
 	struct netif *nif = &if_lance;
@@ -716,13 +734,14 @@ again:
 	if (csr0 & CSR0_RINT)
 	{
 		*rdp = CSR0_RINT | CSR0_INEA;
-		(RMD *)md = PRMD+rcv_ring_host;
-		while ((((RMD *)md)->rmd1 & OWN) == OWN_HOST)
+// 		(RMD *)md = PRMD + rcv_ring_host;
+		rmd = PRMD + rcv_ring_host;
+		while ((rmd->rmd1 & OWN) == OWN_HOST)
 		{
 			/*
 			 * packet ok ?
 			 */
-			if ((STP|ENP) == (((RMD *)md)->rmd1 & (ERR|STP|ENP)))
+			if ((STP|ENP) == (rmd->rmd1 & (ERR|STP|ENP)))
 			{
 				pkt = pkt_rcv_ring[rcv_ring_host];
 				type = pkt->et_type;
@@ -730,8 +749,8 @@ again:
 				/*
 				 * packet length without checksum
 				 */
-				pktlen = ((RMD *)md)->mcnt - 4;
-				buf = buf_alloc (pktlen+100, 50, BUF_ATOMIC);
+				pktlen = rmd->mcnt - 4;
+				buf = buf_alloc (pktlen + 100, 50, BUF_ATOMIC);
 				if (buf == 0)
 					nif->in_errors++;
 				else
@@ -747,7 +766,7 @@ again:
 						"moveb %1@+,%2@+\n\t"
 						"dbra  %0,loop\n\t"
 						:
-						: "d"(((pktlen+1)>>1)-1), "a"(pkt), "a"(buf->dstart)
+						: "d"(((pktlen + 1) >> 1) -1), "a"(pkt), "a"(buf->dstart)
 					);
 # if 0
 					for (i = 0; i < pktlen; i++)
@@ -765,7 +784,7 @@ again:
 			}
 			else
 			{
-			  	if (((RMD *)md)->rmd1 & ERR)
+				if (rmd->rmd1 & ERR)
 			  	{
 			  		nif->in_errors++;
 					/* lance_reset (nif); */
@@ -776,13 +795,13 @@ again:
 			/*
 			 * free packet
 			 */
-			((RMD *)md)->mcnt = 0;
+			rmd->mcnt = 0;
 			/*
 			 * give packet back to lance
 			 */
-			rcv_ring_host = (rcv_ring_host+1) & (RECVBUFFS-1);
-			((RMD *)md)->rmd1 = OWN_CHIP;
-			(RMD *)md = PRMD+rcv_ring_host;
+			rcv_ring_host = (rcv_ring_host + 1) & (RECVBUFFS - 1);
+			rmd->rmd1 = OWN_CHIP;
+			rmd = PRMD + rcv_ring_host;
 		}
 	}
 	if (csr0 & CSR0_TINT)
@@ -794,13 +813,13 @@ again:
 		/*
 		 * packet given back to host ?
 		 */
-		md = PTMD+snd_ring_lance;
+		tmd = PTMD + snd_ring_lance;
 		sr = spl7(); /* New since Nov/07/1998 -> avoid race conditions with lance_output(); */
-		while (((snd_ring_lance != snd_ring_host) || snd_ring_full) && ((md->tmd1 & OWN) == OWN_HOST))
+		while (((snd_ring_lance != snd_ring_host) || snd_ring_full) && ((tmd->tmd1 & OWN) == OWN_HOST))
 		{
-			if ((md->tmd1 & (ERR | MORE | ONE)) || (md->tmd3 & ~0x3FF))
+			if ((tmd->tmd1 & (ERR | MORE | ONE)) || (tmd->tmd3 & ~0x3FF))
 			{
-				if ((md->tmd1 & (MORE | ONE)) || (md->tmd3 & (LCOL | RTRY)))
+				if ((tmd->tmd1 & (MORE | ONE)) || (tmd->tmd3 & (LCOL | RTRY)))
 				{
 					nif->collisions++;
 					nif->out_packets++;
@@ -811,16 +830,16 @@ again:
 			else
 				nif->out_packets++;
 			
-			snd_ring_lance = (snd_ring_lance+1) & (XMITBUFFS-1);
+			snd_ring_lance = (snd_ring_lance + 1) & (XMITBUFFS - 1);
 			snd_ring_full = 0;
-			md = PTMD+snd_ring_lance;
+			tmd = PTMD + snd_ring_lance;
 		}
 		while (!snd_ring_full)
 		{
 			if (!(buf = if_dequeue(&nif->snd)))
 				break;
 			
-			md = PTMD+snd_ring_host;
+			tmd = PTMD + snd_ring_host;
 			pktlen = buf->dend - buf->dstart;
 			memcpy(pkt_snd_ring[snd_ring_host], buf->dstart, pktlen);
 			if (pktlen < MIN_LEN)
@@ -835,9 +854,9 @@ again:
 			}
 			else
 			{
-				md->tmd2 = -pktlen;
-				md->tmd3 = 0;
-				md->tmd1 = STP | ENP | OWN_CHIP;
+				tmd->tmd2 = -pktlen;
+				tmd->tmd3 = 0;
+				tmd->tmd1 = STP | ENP | OWN_CHIP;
 				
 				*rdp = CSR0_TDMD | CSR0_INEA;
 				
@@ -845,7 +864,7 @@ again:
 				
 				buf_deref(buf, BUF_NORMAL);
 				
-				snd_ring_host = (snd_ring_host+1) & (XMITBUFFS-1);
+				snd_ring_host = (snd_ring_host + 1) & (XMITBUFFS - 1);
 				if (snd_ring_host == snd_ring_lance)
 					snd_ring_full = 1;
 			}
@@ -912,7 +931,7 @@ lance_install_ints (void)
 	ushort sr;
 	
 	sr = spl7 ();
-	old_v5 = Setexc (LANCEIVEC, lance_v5_int);
+	old_v5 = (long)Setexc (LANCEIVEC, lance_v5_int);
 # ifdef PAMs_INTERN
 	/*
          * This is a real dirty hack but seems to be necessary for the MiNT
@@ -929,10 +948,10 @@ lance_install_ints (void)
          * When these bug(s) are fixed the vbi can stay unchanged!
          */
 	
-	old_vbi = Setexc (HBI+2, lance_vbi_int);
+	old_vbi = (long)Setexc (HBI+2, lance_vbi_int);
 	
 	*(char *)LANCEIVECREG = LANCEIVEC;
-	old_hbl = Setexc (HBI, lance_hbi_int);
+	old_hbl = (long)Setexc (HBI, lance_hbi_int);
 # endif
 # ifdef RIEBL
 	*(char *)LANCEIVECREG = LANCEIVEC;

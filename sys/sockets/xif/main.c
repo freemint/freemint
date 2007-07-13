@@ -9,7 +9,7 @@
 
 
 long init (struct kerinfo *ker, struct netinfo *net);
-long driver_init (void);
+long driver_init(void);
 
 
 struct kerinfo *KERNEL;

@@ -17,7 +17,9 @@ struct range
 {
 	short a, b;
 };
-#define Range( a, b )   (((long)(a)<<16)|(int)(b))
+
+// #define Range( a, b )   (((long)(a)<<16)|(int)(b))
+#define Range(a,b)	{ range: {(short)a, (short)b} }
 
 struct parsinf
 {
@@ -111,7 +113,11 @@ struct parser_item
 	const char *key;
 	enum pitype type;
 	void *cb;
-	long dat;
+	union {
+		struct range range;
+		long dat;
+	} dat;
+// 	long dat;
 };
 
 

@@ -286,7 +286,7 @@ cancel_widget_active(struct xa_window *wind, int i)
 	widget_active.cont = false;
 
 	/* Restore the mouse now we've finished the action */
-	graf_mouse(wind->owner->mouse, wind->owner->mouse_form, wind->owner, false);
+	xa_graf_mouse(wind->owner->mouse, wind->owner->mouse_form, wind->owner, false);
 }
 
 void
@@ -502,11 +502,13 @@ rp_2_ap_cs(struct xa_window *wind, XA_WIDGET *widg, RECT *r)
 	}
 }
 
-XA_TREE *
+XA_TREE * _cdecl
 obtree_to_wt(struct xa_client *client, OBJECT *obtree)
 {
 	XA_TREE *wt = NULL;
 
+	if (!client) client = C.Aes;
+	
 	DIAGS(("obtree_to_wt: look for wt with obtree=%lx for %s",
 		obtree, client->name));
 
@@ -561,13 +563,19 @@ obtree_to_wt(struct xa_client *client, OBJECT *obtree)
 	return wt;
 }
 
-void
+void _cdecl
 init_widget_tree(struct xa_client *client, struct widget_tree *wt, OBJECT *obtree)
 {
 	short sx, sy;
 	RECT r;
 	struct xa_data_hdr *h;
 
+	if (!client) client = C.Aes;
+
+	if (client == C.Hlp || client == C.Aes)
+		BLOG((false, " === Init widget tree %lx, for %s",
+			wt, client->name));
+	
 	bzero(wt, sizeof(*wt));
 	
 // 	display("init_widget_tree: tree %lx", obtree);
@@ -612,15 +620,20 @@ init_widget_tree(struct xa_client *client, struct widget_tree *wt, OBJECT *obtre
 		wt->is_menu = wt->menu_line = true;
 }
 
-XA_TREE *
+XA_TREE * _cdecl
 new_widget_tree(struct xa_client *client, OBJECT *obtree)
 {
 	XA_TREE *new;
 
-	DIAGS((" === Create new widget tree - obtree=%lx, for %s",
-		obtree, client->name));
+	if (!client) client = C.Aes;
 
 	new = kmalloc(sizeof(*new));
+	
+	DIAGS((" === Create new widget tree - obtree=%lx, for %s",
+		obtree, client->name));
+	BLOG((false, " === Create new widget tree %lx - obtree=%lx, for %s",
+		new, obtree, client->name));
+
 
 	if (new)
 	{
@@ -639,13 +652,22 @@ free_wtlist(struct xa_client *client)
 {
 	XA_TREE *wt;
 
-	DIAGS(("free_wtlist for %s", client->name));
+	BLOG((false, "free_wtlist for %s", client->name));
+	
 	while (client->wtlist)
 	{
 		wt = client->wtlist;
+		
+		if (wt->owner != client)
+			BLOG((false, "THIS IS PERVERSE! wt=%lx, cl='%s', wtown='%s'", wt, client->name, wt->owner->name));
+		if (client == C.Hlp || client == C.Aes)
+			BLOG((false, "free_wtlist: %lx for %s", wt, client->name));
+
 		client->wtlist = wt->next;
 		wt->flags &= ~WTF_STATIC;
 		free_wt(wt);
+		if (client == C.Hlp || client == C.Aes)
+			BLOG((false, " done...(wtlist = %lx)", client->wtlist));
 	}
 }
 /* Unhook a widget_tree from its owners wtlist
@@ -654,6 +676,7 @@ void
 remove_from_wtlist(XA_TREE *wt)
 {
 	XA_TREE **nwt;
+	bool tst = wt->owner == C.Hlp;
 
 	if (wt->flags & WTF_STATIC)
 	{
@@ -669,67 +692,88 @@ remove_from_wtlist(XA_TREE *wt)
 		if (*nwt == wt)
 		{
 			*nwt = wt->next;
+			wt->next = NULL;
+
 			DIAGS(("remove_from_wtlist: removed wt=%lx from %s list",
 				wt, wt->owner->name));
-			break;
+			if (tst) BLOG((false, "remove_from_wtlist: removed wt=%lx from %s list",
+				wt, wt->owner->name));
+
+			return;
 		}
 		nwt = &(*nwt)->next;
 	}
-	wt->next = NULL;
+
+	if (tst)
+		BLOG((false, "remove_from_wtlist: wt=%lx not in %s wtlist",
+			wt, wt->owner->name));
+		
 	DIAGS(("remove_from_wtlist: wt=%lx not in %s wtlist",
 		wt, wt->owner->name));
 }
+
 void
 free_wt(XA_TREE *wt)
 {
+	bool tst = (wt->owner == C.Hlp || wt->owner == C.Aes);
 
 	DIAGS(("free_wt: wt=%lx", wt));
+	if (tst) BLOG((false, "free_wt: wt=%lx", wt));
 #if 1
 	if (wt->links)
 	{
-		display("free_wt: links not NULL!!!!!");
-		display("free_wt: wt=%lx, links=%d, flags=%lx, ismenu=%s, menuline=%s, owner=%s",
-			wt, wt->links, wt->flags,
+		display("free_wt: links not NULL!! on wt %lx", wt);
+		display("free_wt: links=%d, flags=%lx, ismenu=%s, menuline=%s, owner=%lx",
+			wt->links, wt->flags,
 			wt->is_menu ? "Yes" : "No",
 			wt->menu_line ? "Yes" : "No",
 			wt->owner->name);
+		display("free_wt: C.Aes = %lx, C.Hlp = %lx", C.Aes, C.Hlp);
 	}
 #endif
 	if (wt->flags & WTF_STATIC)
 	{
 		DIAGS(("free_wt: Declared as static!"));
+		if (tst) BLOG((false, "free_wt: Declared as static!"));
 		return;
 	}
 
 	if (wt->extra && (wt->flags & WTF_XTRA_ALLOC))
 	{
 		DIAGS(("  --- freed extra %lx", wt->extra));
+		if (tst) BLOG((false, "  --- freed extra %lx", wt->extra));
 		kfree(wt->extra);
 	}
-#if GENERATE_DIAGS
-	else
+// #if GENERATE_DIAGS
+	else {
 		DIAGS(("  --- extra not alloced"));
-#endif
+		if (tst) BLOG((false, "  --- extra not alloced"));
+	}
+// #endif
 	if (wt->tree && (wt->flags & WTF_TREE_ALLOC))
 	{
 		if (wt->flags & WTF_TREE_CALLOC)
 		{
 			DIAGS(("  --- kfreed obtree %lx", wt->tree));
+			if (tst) BLOG((false, "  --- kfreed obtree %lx", wt->tree));
 		
 			free_object_tree(wt->owner, wt->tree);
 		}
 		else
 		{
 			DIAGS(("  --- ufreed obtree %lx", wt->tree));
+			if (tst) BLOG((false, "  --- ufreed obtree %lx", wt->tree));
 		
 			free_object_tree(C.Aes, wt->tree);
 		}
 		wt->tree = NULL;
 	}
-#if GENERATE_DIAGS
-	else
+// #if GENERATE_DIAGS
+	else {
 		DIAGS(("  --- obtree not alloced"));
-#endif
+		if (tst) BLOG((false, "  --- obtree not alloced"));
+	}
+// #endif
 	if (wt->lbox)
 	{
 		kfree(wt->lbox);
@@ -738,6 +782,7 @@ free_wt(XA_TREE *wt)
 	if (wt->flags & WTF_ALLOC)
 	{
 		DIAGS(("  --- freed wt=%lx", wt));
+		if (tst) BLOG((false, "  --- freed wt=%lx", wt));
 	#if 0
 		if (wt->objcr_api)
 		{
@@ -754,18 +799,24 @@ free_wt(XA_TREE *wt)
 		struct xa_client *client = wt->owner;
 		void *s[2];
 		DIAGS(("  --- wt=%lx not alloced", wt));
+		if (tst) BLOG((false, "  --- wt=%lx not alloced", wt));
 		s[0] = wt->objcr_api;
 		s[1] = wt->objcr_theme;
-		bzero(wt, sizeof(*wt));
+		//bzero(wt, sizeof(*wt));
+		wt->next = NULL;
 		wt->objcr_api = s[0];
 		wt->objcr_theme = s[1];
 		wt->owner = client;
 	}
+	if (tst) BLOG((false, "free_wt: done"));
 }
 
-bool
+bool _cdecl
 remove_wt(XA_TREE *wt, bool force)
 {
+	if (wt->owner == C.Aes || wt->owner == C.Hlp)
+		BLOG((false, "remove_wt: wt %lx", wt));
+
 	if (force || (wt->flags & (WTF_STATIC|WTF_AUTOFREE)) == WTF_AUTOFREE)
 	{
 		if (force || wt->links == 0)
@@ -1084,7 +1135,7 @@ drag_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, cons
 		{
 			widget_active.cont = true;
 			/* Always have a nice consistent MOVER when dragging a box */
-			graf_mouse(XACRS_MOVER, NULL, NULL, false);
+			xa_graf_mouse(XACRS_MOVER, NULL, NULL, false);
 		}
 
 		/* If right button is used, do a classic outline drag. */
@@ -1531,7 +1582,7 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 			maxw = maxh = 0;
 
 		/* Always have a nice consistent SIZER when resizing a window */
-		graf_mouse(border_mouse[xy], NULL, NULL, false);
+		xa_graf_mouse(border_mouse[xy], NULL, NULL, false);
 
 		if (!(wind->owner->status & CS_NO_SCRNLOCK))
 			lock_screen(wind->owner->p, false);
@@ -1603,7 +1654,7 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 			{
 				widget_active.cont = true;
 				/* Always have a nice consistent SIZER when resizing a window */
-				graf_mouse(border_mouse[xy], NULL, NULL, false);
+				xa_graf_mouse(border_mouse[xy], NULL, NULL, false);
 			}
 
 			/* Has the mouse moved? */
@@ -1728,12 +1779,13 @@ static char *wctxt_main_txt[] =
 	"\255Show other app",
 	"",""
 };
-
+#if 0
 static bool
 onopen_windows(XA_MENU_ATTACHMENT *at)
 {
 	return true;
 }
+#endif
 static bool
 onopen_advanced(XA_MENU_ATTACHMENT *at)
 {
@@ -1758,12 +1810,12 @@ onopen_close(XA_MENU_ATTACHMENT *at)
 	if (wind)
 	{
 		OBJECT *t = at->wt->tree + at->item;
-		setchecked(t + WCACT_THIS, false);
-		setchecked(t + WCACT_ALL,  false);
-		setchecked(t + WCACT_OTHERS, false);
-		setchecked(t + WCACT_RALL, false);
-		disable_object(t + WCACT_RALL, true);
-		setchecked(t + WCACT_ROTHERS, false);
+		setchecked(t + WCACT_THIS,	false);
+		setchecked(t + WCACT_ALL,	false);
+		setchecked(t + WCACT_OTHERS,	false);
+		setchecked(t + WCACT_RALL,	false);
+		disable_object(t + WCACT_RALL,	true);
+		setchecked(t + WCACT_ROTHERS,	false);
 		disable_object(t + WCACT_ROTHERS, true);
 	}
 	return true;
@@ -1837,6 +1889,7 @@ static on_open_attach *onopen_wctxt[] =
 };
 
 struct parm { char **start; short num; };
+
 static void *
 next_wctxt_entry(short item, void **_data)
 {
@@ -2022,7 +2075,7 @@ build_windlist_pu(struct xa_client *client)
 			
 			p.start = pu->titles;
 			p.num = 0;
-			obtree = create_popup_tree(client, 0, pu->num, 16,16, next_wctxt_entry, (void **)&p);
+			obtree = create_popup_tree(client, 0, pu->num, 16,16, next_wctxt_entry, (void *)&p);
 			if (obtree)
 			{
 				wt = new_widget_tree(client, obtree);
@@ -2087,7 +2140,7 @@ CE_winctxt(enum locks lock, struct c_event *ce, bool cancel)
 			txt += n_entries + 1;
 			p.num = wct->entries[i] = n_entries;
 
-			obtree = create_popup_tree(ce->client, 0, n_entries, 16,16, next_wctxt_entry, (void **)&p);
+			obtree = create_popup_tree(ce->client, 0, n_entries, 16,16, next_wctxt_entry, (void *)&p);
 			
 			if (obtree)
 			{
@@ -2606,7 +2659,7 @@ click_scroll(enum locks lock, struct xa_window *wind, struct xa_widget *widg, co
 			 */
 			if (mb == md->cstate)
 			{
-				graf_mouse(XACRS_POINTSLIDE, NULL, NULL, false);
+				xa_graf_mouse(XACRS_POINTSLIDE, NULL, NULL, false);
 				check_mouse(wind->owner, &mb, NULL, NULL);
 
 				S.wm_count++;
@@ -2736,7 +2789,7 @@ drag_vslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 
 			if (!(wind->owner->status & CS_NO_SCRNLOCK))
 				lock_screen(wind->owner->p, false);
-			graf_mouse(XACRS_VERTSIZER, NULL, NULL, false);
+			xa_graf_mouse(XACRS_VERTSIZER, NULL, NULL, false);
 			drag_box(wind->owner, s, &b, rect_dist_xy(wind->owner, md->x, md->y, &s, &d), &r);
 			if (!(wind->owner->status & CS_NO_SCRNLOCK))
 				unlock_screen(wind->owner->p);
@@ -2757,7 +2810,7 @@ drag_vslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 			{
 				widget_active.cont = true;
 				/* Always have a nice consistent sizer when dragging a box */
-				graf_mouse(XACRS_VERTSIZER, NULL, NULL, false);
+				xa_graf_mouse(XACRS_VERTSIZER, NULL, NULL, false);
 				rp_2_ap(wind, widg, &widg->ar);
 				widget_active.offs = md->y - (widg->ar.y + sl->r.y);
 				widget_active.y = md->y;
@@ -2809,7 +2862,7 @@ drag_hslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 
 			if (!(wind->owner->status & CS_NO_SCRNLOCK))
 				lock_screen(wind->owner->p, false);
-			graf_mouse(XACRS_HORSIZER, NULL, NULL, false);
+			xa_graf_mouse(XACRS_HORSIZER, NULL, NULL, false);
 			drag_box(wind->owner, s, &b, rect_dist_xy(wind->owner, md->x, md->y, &s, &d), &r);
 			if (!(wind->owner->status & CS_NO_SCRNLOCK))
 				unlock_screen(wind->owner->p);
@@ -2830,7 +2883,7 @@ drag_hslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 			{
 				widget_active.cont = true;
 				/* Always have a nice consistent sizer when dragging a box */
-				graf_mouse(XACRS_HORSIZER, NULL, NULL, false);
+				xa_graf_mouse(XACRS_HORSIZER, NULL, NULL, false);
 				rp_2_ap(wind, widg, &widg->ar);
 				widget_active.offs = md->x - (widg->ar.x + sl->r.x);
 				widget_active.x = md->x;
@@ -2869,7 +2922,6 @@ display_object_widget(struct xa_window *wind, struct xa_widget *widg, const RECT
 	struct xa_vdi_settings *v = wind->vdi_settings;
 	XA_TREE *wt = widg->stuff;
 	OBJECT *root;
-
 	/* Convert relative coords and window location to absolute screen location */
 	root = rp_2_ap(wind, widg, NULL);
 
@@ -2883,8 +2935,9 @@ display_object_widget(struct xa_window *wind, struct xa_widget *widg, const RECT
 		draw_object_tree(0, wt, NULL, v, aesobj(wt->tree, widg->start), 100, NULL, 0);
 		(*v->api->clear_clip)(v);
 	}
-	else
+	else {
 		draw_object_tree(0, wt, NULL, v, aesobj(wt->tree, widg->start), 100, NULL, 0);
+	}
 
 	return true;
 }
@@ -4118,7 +4171,7 @@ display_toolbar(struct xa_window *wind, struct xa_widget *widg, const RECT *clip
 /*
  * HR: Direct display of the toolbar widget; HR 260102: over the rectangle list.
  */
-void
+void _cdecl
 redraw_toolbar(enum locks lock, struct xa_window *wind, short item)
 {
 	XA_WIDGET *widg = get_widget(wind, XAW_TOOLBAR);
@@ -4854,25 +4907,25 @@ wind_mshape(struct xa_window *wind, short x, short y)
 			if (shape != -1)
 			{
 				if (C.aesmouse == -1 || (C.aesmouse != -1 && C.aesmouse != shape))
-					graf_mouse(shape, NULL, NULL, true);
+					xa_graf_mouse(shape, NULL, NULL, true);
 			}
 			else
 			{
 				if (C.aesmouse != -1)
-					graf_mouse(-1, NULL, NULL, true);
+					xa_graf_mouse(-1, NULL, NULL, true);
 				if (C.mouse_form != wind->owner->mouse_form)
-					graf_mouse(wo->mouse, wo->mouse_form, wo, false);
+					xa_graf_mouse(wo->mouse, wo->mouse_form, wo, false);
 			}
 		}
 		else
 		{
 			C.hover_wind = NULL;
 			C.hover_widg = NULL;
-			graf_mouse(ARROW, NULL, NULL, false);
+			xa_graf_mouse(ARROW, NULL, NULL, false);
 		}	
 	}
 	else if (C.aesmouse != -1)
-		graf_mouse(-1, NULL, NULL, true);
+		xa_graf_mouse(-1, NULL, NULL, true);
 	}
 
 	return shape;

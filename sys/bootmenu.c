@@ -55,7 +55,7 @@ short load_xdd_f = 1;		/* Flag: load XDD modules (if 1) */
 short load_auto = 1;		/* Flag: load AUTO programs appearing after us (if 1) */
 
 static short save_ini = 1;	/* Flag: write new ini file while exiting bootmenu (if 1) */
-static short boot_delay = 4;	/* boot delay in seconds */
+static short boot_delay = 1;	/* boot delay in seconds */
 static const char *mint_ini = "mint.ini";
 static short use_cmdline = 0;	/* use command line (only provided by EmuTOS if bootstrapped */
 static char  *argsptr = 0L;
@@ -281,6 +281,8 @@ emit_ini_save(short fd)
 static void
 do_debug_level(char *arg)
 {
+	return;
+
 	long val;
 
 	if (!isdigit(*arg))
@@ -616,7 +618,7 @@ wait:
 					load_auto    =  option[3];
 					no_mem_prot  = !option[4];
 					step_by_step =  option[5];
-					debug_level  =  option[6];
+// 					debug_level  =  option[6];
 					out_device   =  option[7];
 					save_ini     =  option[8];
 

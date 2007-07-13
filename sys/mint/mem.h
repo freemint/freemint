@@ -25,10 +25,11 @@ typedef struct memregion MEMREGION;
  */
 struct memregion
 {
-        long	loc;		///< Base of memory region.
-        ulong	len;		///< Length of memory region.
-        ushort	links;		///< Number of users of region.
-        ushort	mflags;		///< E.g. which map this came from.
+        unsigned long	loc;		///< Base of memory region.
+        unsigned long	len;		///< Length of memory region.
+        long		links;		///< Number of users of region.
+        unsigned short	mflags;		///< E.g. which map this came from.
+	short		reservd;
         MEMREGION *save;	///< Used to save inactive shadows.
         MEMREGION *shadow;	///< Ring of shadows or 0.
         MEMREGION *next;	///< Next region in memory map.
@@ -162,16 +163,35 @@ typedef MEMREGION **MMAP;
 /* For 68000 machines (always short of RAM) we may try to decrease
  * the page size. This should save some memory per process.
  */
+#if 1
 #if 0
 # define QUANTUM	0x0800L
 # define TOS_MEM	(QUANTUM*4)
 # define KEEP_MEM	(QUANTUM*4)
 # define KERNEL_MEM	(12 * QUANTUM)
 #else
-# define QUANTUM	0x0100L
-# define TOS_MEM	(QUANTUM * 16)
-# define KEEP_MEM	(QUANTUM * 16)
-# define KERNEL_MEM	( 3L * (16L * QUANTUM)
+# define QUANTUM	0x0200L
+# define TOS_MEM	(QUANTUM*8*2)
+# define KEEP_MEM	(QUANTUM*8*2)
+# define KERNEL_MEM	(24 * QUANTUM *2)
+#endif
+#else
+# define QUANTUM	0x2000L
+
+/* MiNT leaves this much memory for TOS to use (8K)
+ */
+# define TOS_MEM	(QUANTUM)
+
+/* MiNT tries to keep this much memory available for the kernel and other
+ * programs when a program is launched (8K)
+ */
+# define KEEP_MEM	(QUANTUM)
+
+/*
+ * how much memory should be allocated to the kernel? (24K)
+ */
+# define KERNEL_MEM	(3 * QUANTUM)
+
 #endif
 
 # endif

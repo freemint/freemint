@@ -421,7 +421,7 @@ e_read (FILEPTR *f, char *buf, long bytes)
 		UNIT *u;
 		ulong data;
 		
-		u = ext2_read (c, block++, &data);
+		u = ext2_read (c, block++, (long *)&data);
 		if (!u && data)
 		{
 			DEBUG (("Ext2-FS: partial part: ext2_read failure (r = %li)", data));

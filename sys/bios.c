@@ -115,12 +115,13 @@ sys_b_mediach (int dev)
 long _cdecl
 sys_b_getbpb (int dev)
 {
-	long r;
+	union { long r; short *ptr; } r;
+// 	long r;
 
 	/* we can't trust the Getbpb routine to accurately save all registers,
 	 * so we do it ourselves
 	 */
-	r = callout1 (GETBPB, dev);
+	r.r = callout1 (GETBPB, dev);
 
 	/* There is a bug in the TOS disk handling routines (well, several
 	 * actually). If the directory size of Getbpb() is returned as zero
@@ -130,8 +131,15 @@ sys_b_getbpb (int dev)
 	 * size to '1' if it is zero. It may make some non-TOS disks look
 	 * a bit weird but that's better than killing the drive.
 	 */
-	if (r)
+	if (r.r)
 	{
+		if (r.ptr[3] == 0)
+			r.ptr[3] = 1;
+#ifdef OLDTOSFS
+		if (dev >= 0 && dev < NUM_DRIVES)
+			clsizb[dev] = (long)((unsigned long)r.ptr[0] * r.ptr[1]);
+#endif
+#if 0
 		if (((short *) r)[3] == 0)	/* 0 directory size? */
 			((short *) r)[3] = 1;
 
@@ -141,9 +149,10 @@ sys_b_getbpb (int dev)
 			/* Falcon TOS works with cluster size 65536? */
 			clsizb[dev] = (long)(((ushort *) r)[0]) * (long)(((ushort *) r)[1]);
 # endif
+#endif
 	}
 
-	return r;
+	return r.r;
 }
 
 /* rwabs: various disk stuff
@@ -943,8 +952,8 @@ _ubconstat (int dev)
 {
 	if (dev < MAX_BHANDLE)
 	{
-		FILEPTR *f = get_curproc()->p_fd->ofiles [binput [dev]];
-		if (file_instat (f))
+		FILEPTR *f = get_curproc()->p_fd->ofiles[binput [dev]];
+		if (file_instat(f))
 			goto reset;
 		else
 			goto punish;
@@ -1157,7 +1166,7 @@ bconout (int dev, int c)
 
 	/* compensate for a known BIOS bug: MIDI and IKBD are switched
 	 */
-	     if (dev == 3)	statdev = 4;
+	if      (dev == 3)	statdev = 4;
 	else if (dev == 4)	statdev = 3;
 	else			statdev = dev;
 
@@ -1479,7 +1488,6 @@ do_bconin(int dev)
  * switch where a keyboard event occured). returns 1 if a special
  * control character was eaten, 0 if not
  */
-
 int
 checkkeys (void)
 {

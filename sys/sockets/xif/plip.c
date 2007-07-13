@@ -98,6 +98,7 @@ plip_ioctl (struct netif *nif, short cmd, long arg)
 	return ENOSYS;
 }
 
+long driver_init(void);
 long
 driver_init (void)
 {

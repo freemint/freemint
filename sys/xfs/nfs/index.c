@@ -1,5 +1,5 @@
 /*
- * Copyright 1993, 1994 by Ulrich Khn. All rights reserved.
+ * Copyright 1993, 1994 by Ulrich Kï¿½hn. All rights reserved.
  *
  * THIS PROGRAM COMES WITH ABSOLUTELY NO WARRANTY, NOT
  * EVEN THE IMPLIED WARRANTIES OF MERCHANTIBILITY OR
@@ -97,11 +97,15 @@ init_mount_attr (XATTR *ap)
 	ap->blksize = 1024;
 	ap->nblocks = 0;
 	ap->rdev = 0;
-	
+
+	SET_XATTR_TD(ap,a,CURRENT_TIME);
+	SET_XATTR_TD(ap,m,CURRENT_TIME);
+	SET_XATTR_TD(ap,c,CURRENT_TIME);
+#if 0	
 	*((long *) &(ap->atime)) = CURRENT_TIME;
 	*((long *) &(ap->mtime)) = CURRENT_TIME;
 	*((long *) &(ap->ctime)) = CURRENT_TIME;
-	
+#endif
 	ap->reserved2 = 0;
 	ap->reserved3[0] = 0;
 	ap->reserved3[1] = 0;

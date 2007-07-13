@@ -1353,7 +1353,7 @@ execute(char *cmdline)
 /* XXX because of Cconrs() the command line cannot be longer than 254 bytes.
  */
 static char *
-prompt(char *buffer, long buflen)
+prompt(unsigned char *buffer, long buflen)
 {
 	char *lbuff, *cwd;
 	short idx;
@@ -1375,12 +1375,12 @@ prompt(char *buffer, long buflen)
 
 	shell_fprintf(stdout, "%s:%s#", _mint_getenv(_base, "HOSTNAME") ?: "mint", cwd ?: "");
 
-	sys_c_conrs(buffer);
+	sys_c_conrs((char *)buffer);
 
 	/* "the string is not guaranteed to be NULL terminated"
 	 * (Atari GEMDOS reference manual)
 	 */
-	lbuff = buffer + 2;
+	lbuff = (char *)buffer + 2;
 	idx = buffer[1];
 	lbuff[--idx] = 0;
 
@@ -1415,9 +1415,9 @@ shell(void *arg)
 
 	for (;;)
 	{
-		lbuff = prompt(linebuf, sizeof(linebuf));
+		lbuff = prompt((unsigned char*)linebuf, sizeof(linebuf));
 
-		r = execute(lbuff);
+		r = execute((char *)lbuff);
 
 		/* Terminate the I/O redirection */
 		if (stdout != STDOUT)

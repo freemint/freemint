@@ -1,18 +1,33 @@
+@options +z
 @tabsize 4
-
 @node XaAES
+@alias "xaaes"
 @subject "AES extensions in XaAES"
 
 
 		                  Welcome to XaAES
 		      A multitasking GEM replacement for MiNT
 
+index
+=====
+
+ 1 Preface
+ 
+ 2 History
+ 
+ 3 Installation
+
+
+
+
+@if 0
 		This document descibes the AES functions or extensions
 		   that are specific to XaAES and cannot be found in
 		        any other AES. For all AES behaviour
 		          please read the documentation on
 		        those other AES's or the documentation
 		        belonging to the standard Atari AES
+
 
 
 		 XaAES adds functionality to the following functions:
@@ -36,9 +51,29 @@
 		                  march 10 2003
 
 	                      Acknoledgment
+@endif
 
 @endnode
+##########################################################################
+@node "Preface"
+@{B}Preface@{b}
 
+@endnode
+##########################################################################
+@node "History"
+@{B}The XaAES history - written by Joakim H”gberg@{b}
+
+@include HISTORY.TXT
+@endnode
+##########################################################################
+@node "Installation"
+
+ XaAES is now integrated into the kernel. Read the @{"'XaAES'" link "freemint.hyp/XaAES"} subchapter in 
+ the @{"FreeMiNT documentation" link "freemint.hyp/FreeMiNT"}.
+
+ @{"Simple installation" link "freemint.hyp/sinst"}
+@endnode
+##########################################################################
 @node "wind_create"
 @alias MENUBAR
 
@@ -87,7 +122,7 @@
 			               /* format: 0x0964 for version V0.964 */
 
 @endnode
-
+##########################################################################
 @node "wind_set"
 
 	wind_set
@@ -97,7 +132,7 @@
 	Extended command:    WF_TOOLBAR                30
 
 @endnode
-
+##########################################################################
 @node "evnt_multi"
 
 	Message identifier     :   WM_TOOLBAR
@@ -124,26 +159,26 @@
 	value                  :   0x0200
 
 @endnode
-
+##########################################################################
 @node "WF_MENU"
 
 	WF_MENU
 
-	Usage:	
+	Usage:
 		You can attach a menu bar object tree to a MENUBAR widget
 		by calling:
-		
+
 		OBJEC *tree;
 		wind_set(handle, WF_MENU, tree)
-	
+
 		If the window was created without the MENUBAR attribute,
 		the call is ignored.
-		
+
 		You get MN_SELECTED message in the extended way adopted
 		from AES 4.1  (Involving return of object tree pointer)
 
 @endnode
-
+##########################################################################
 @node "WF_WHEEL"
 @alias "WM_ARROWED"
 @alias "WA_WHEEL"
@@ -168,7 +203,7 @@
     				horizontal wheel .. is LF or RT
 
 	For wheel aware programs additional information is provided:
-	
+
 	    m[5]   :  either 'MW' or 'Mw'
 	              'MW' (0x4d57) on the first wheel click
 	              'Mw' (0x4d77) on subsequent wheel clicks
@@ -181,11 +216,11 @@
 		   operation)
 
 	WF_WHEEL for wind_set
-	
+
 	    This command can be used to influence the behaviour of mouse
 	    wheel actions, either for all windows of a application or a
 	    particular window.
-	
+
 	Usage:
 		bool send_WA_WHEEL;
 		wind_set(handle, WF_WHEEL, send_WA_WHEEL);
@@ -212,15 +247,15 @@
 	    
 	    	m[6]   :  wheel number
 	    	m[7]   :  wheel amount
-	    	
+
 	 send_WA_WHEEL = false
 	 	compatable WM_ARROWED is sent. (see top of this page)
 	 
-		
-@endnode
 
+@endnode
+##########################################################################
 @node "MU_WHEEL"
-		
+
 	MU_WHEEL
 
 		If the event mask MU_WHEEL is passed to event_multi
@@ -243,7 +278,7 @@
 
 
 	example call:
-	
+
 		event = evnt_multi(events|MU_WHEEL, 2,3,1,
 		                      0,0,0,0,0,
 		                      0,0,0,0,0,
@@ -269,12 +304,12 @@
 	   Of course, when MU_BUTTON is received, the wheel_number and
 	   wheel_amount replies must be interpreted as buttin number
 	   and button clicks.
-		
+
 	   For ease of implementation and compatability, XaAES never
 	   sends MU_BUTTON|MU_WHEEL together.
 
 @endnode
-
+##########################################################################
 @node vex_wheel_v
 
 	prototype:
@@ -289,14 +324,14 @@
 	           6   :  handle
 	           7,8 :  pusrcode
 	           9,10:  psavcode
-	
-	
+
+
 	When pusrcode is called by the VDI, d0.w will have wheel_number,
 	                                    d1.w will have wheel_amount
 
 
 @endnode
-
+##########################################################################
 @node "WF_TOOLBAR"
 @alias "WM_TOOLBAR"
 
@@ -351,18 +386,18 @@
 	WM_TOOLBAR
 		Because a toolbar is a widget, you will get events from
 		user action on the toolbar.
-		
+
 		When the user action on the toolbar triggers a EXIT condition,
 		(clicking a exit button or toucjexit object (or press return))
 		a message is set to the application. This means that the
 		application must be waiting in a evnt_multi() or evnt_mesag()
 		AES call.
-		
+
 		The application will receive information on the event in the
 		16 byte (8 words) message buffer as follows:
-		
+
 		short mp[8];
-		
+
 		mp[0]   :    WM_TOOLBAR
 		   1    :    0 (reserved)
 		   2    :    0 (reserved)
@@ -384,16 +419,16 @@
 
 		If as a result of a toolbar interaction object(s) need to
 		be redrawn (or changed), just call again:
-		
+
 		wind_set(handle, WF_TOOLBAR, tree, start, edit_obj);
-		
+
 		tree    :  the same object tree pointer
 		start   :  object index where to start drawing
 		edit_obj:  Best thing to do is recycle m[5]
-		
+
 		XaAES will know that this toolbar is already attached and
 		hence only redraw the object and its siblings.
-		
+
 		All redrawing is done correctly over the rectangle list
 
 
@@ -402,22 +437,22 @@
 	in a similar prigram.
 
 @endnode
-
+##########################################################################
 @node "MU_MX"
 
 	MU_MX
-		
+
 		If the event mask MU_MX is passed to event_multi
 		XaAES will report ANY mouse movement to the application,
 		thus making artificial supplying of rectangles obsolete.
-		
+
 		Especially the annoying use of a 1 pixel wide rectangle 
 		can now be avoided.
-		
+
 		The new position of the mouse that caused the event is
 		returned in the usual place together with the state of
 		the keyboard.
-		
+
 	binding excerpt:
 		intin[0]   : events|MU_MX
 		....
@@ -431,18 +466,18 @@
 		if (event & MU_MX)
 			have_a_mouse_movement(/* in mx and my */);
 
-		
-@endnode
 
+@endnode
+##########################################################################
 @node "MU_NORM_KEYBD"
 
 	MU_NORM_KEYBD
-		
+
 		XaAES needed for itself normalized keycodes to be able
 		to evaluate CTRL|ALT keys smoothly.
 		So I thought it might be usefull to give applications
 		the opportunity to get those as well.
-		
+
 		If the event mask MU_NORM_KEYBD is passed to evnt_multi
 		the application will receive a normalized keycode in stead
 		of the standard AES keycode and together with the
@@ -466,11 +501,11 @@
 		For conveniemce the code is passed in both intout 4 and 5
 		4 formally received the status bits
 		5 formally received the scancode
-		
+
 		Now you can still use 4 for status bits and 5 for the keycode.
 
 @endnode
-
+##########################################################################
 @node "MU_DYNAMIC_KEYBD"
 
 	MU_DYNAMIC_KEYBD:
@@ -486,7 +521,7 @@
 		It is mostly intended for use by games.
 
 @endnode
-
+##########################################################################
 @node dialtest
 @alias DIALTEST
 
@@ -528,7 +563,7 @@ int main(void)
 		ted = db[XA_VERSION].spec.tedinfo;
 
 		menu_bar(menu, 1);
-	
+
 		sprintf(ted->text,"%04x",version);
 
 		form_center(db, &x, &y, &w, &h);
@@ -581,10 +616,10 @@ int main(void)
 						{
 							int x, y;
 							MENU mn = {0};
-							
+
 							mn.tree = pops;
 							mn.menu = FORM_POPS;
-							
+
 							objc_offset(db, LARGE_POP, &x, &y);
 							menu_popup(&mn, x, y, &mn);
 						}
@@ -608,7 +643,7 @@ int main(void)
 						cont = false;
 					}
 				}
-				
+
 			} while (cont);
 
 			wind_close(wi);
@@ -624,15 +659,15 @@ int main(void)
 }
 
 @endnode
-
+##########################################################################
 @node Acknoledgment
 
 	Thanks go to Michael Schwingen for his suggestions on
 	WF_WHEEL, WA_WHEEL and WM_ARROWED
 	and actual implementation of vex_wheel_v in TOS 4.08
-	
-@endnode
 
+@endnode
+##########################################################################
 @pnode "Henk Robbers"
 Henk Robbers.
 te Amsterdam

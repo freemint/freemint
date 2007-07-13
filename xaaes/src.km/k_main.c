@@ -24,7 +24,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include RSCHNAME
+#include "xaaes.h" /*RSCHNAME*/
 
 #include "k_main.h"
 #include "xa_global.h"
@@ -68,10 +68,18 @@ ceExecfunc(enum locks lock, struct c_event *ce, bool cancel)
 {
 	if (!cancel)
 	{
-		void (*f)(enum locks, struct xa_client *, bool);
-
-		if ((f = ce->ptr1))
-			(*f)(lock, ce->client, ce->d0);
+		if (ce->d1)
+		{
+			void _cdecl (*f)(enum locks, struct xa_client *, bool);
+			if ((f = ce->ptr1))
+				(*f)(lock, ce->client, ce->d0);
+		}
+		else
+		{
+			void (*f)(enum locks, struct xa_client *, bool);
+			if ((f = ce->ptr1))
+				(*f)(lock, ce->client, ce->d0);
+		}
 	}
 }
 
@@ -414,15 +422,26 @@ cBlock(struct xa_client *client, int which)
 static void
 iBlock(struct xa_client *client, int which)
 {
+	XAESPB *a = C.Hlp_pb;
+
 	client->usr_evnt = 0;
+
+// 	BLOG((true,"enter iBlock"));
+
+// 	if (!a->addrin[0])
+// 		BLOG((true, "iBlock: 0 NULL"));
 
 	while (!client->usr_evnt && (client->irdrw_msg || client->cevnt_count))
 	{
 		if (client->irdrw_msg)
 			exec_iredraw_queue(0, client);
 
+// 	BLOG((true, "iBlock: dispatch 0"));
 		dispatch_cevent(client);
 	}
+
+// 	if (!a->addrin[0])
+// 		BLOG((true, "iBlock: 1 NULL"));
 
 	if (client->usr_evnt)
 	{
@@ -433,23 +452,32 @@ iBlock(struct xa_client *client, int which)
 		}
 		else
 			client->usr_evnt = 0;
+// 	BLOG((true, "leave iBlock"));
 		return;
 	}
+
+// 	BLOG((true, "iBlock: 0 - a = %lx, waiting_pb = %lx", (long)a, client->waiting_pb ? client->waiting_pb->addrin[0] : -1L));
 	/*
 	 * Now check if there are any events to deliver to the
 	 * application...
 	 */
+// 	BLOG((true, "iBlock: check queued 0"));
 	if (check_queued_events(client))
 	{
-		if (C.Hlp_pb->intout[0] & MU_MESAG)
+// 		if (!a->addrin[0])
+// 			BLOG((true, "iBlock: 2 NULL"));
+		if (a->intout[0] & MU_MESAG)
 		{
 			CHlp_aesmsg(client);
 		}
+		a->addrin[0] = (long)a->msg;
 		client->usr_evnt = 0;
 		client->waiting_for = XAWAIT_MULTI|MU_MESAG;
 		client->waiting_pb = C.Hlp_pb;
 	}
 
+// 	if (!a->addrin[0])
+// 		BLOG((true, "iBlock: 3 NULL"));
 	/*
 	 * Getting here if no more client events are in the queue
 	 * Looping around doing client events until a user event
@@ -463,10 +491,15 @@ iBlock(struct xa_client *client, int which)
 		if (client->tp_term)
 		{
 // 			display("iBlock - tp_term set");
+// 	BLOG((true, "leave iBlock"));
 			return;
 		}
 		
+// 		if (!a->addrin[0])
+// 			BLOG((true, "iBlock: 4 NULL"));
 		do_block(client);
+// 		if (!a->addrin[0])
+// 			BLOG((true, "iBlock: 5 NULL"));
 
 		/*
 		 * Ozk: This is gonna be the new style of delivering events;
@@ -480,9 +513,12 @@ iBlock(struct xa_client *client, int which)
 			if (client->irdrw_msg)
 				exec_iredraw_queue(0, client);
 
+// 	BLOG((true, "iBlock: dispatch 1"));
 			dispatch_cevent(client);
 		}
 
+// 		if (!a->addrin[0])
+// 			BLOG((true, "iBlock: 6 NULL"));
 		if (client->usr_evnt)
 		{
 			if (client->usr_evnt & 1)
@@ -492,20 +528,28 @@ iBlock(struct xa_client *client, int which)
 			}
 			else
 				client->usr_evnt = 0;
+// 	BLOG((true, "leave iBlock"));
 			return;
 		}
 
+// 		if (!a->addrin[0])
+// 			BLOG((true, "iBlock: 7 NULL"));
+
+// 	BLOG((true, "iBlock: 1 - a = %lx, waiting_pb = %lx", (long)a, client->waiting_pb ? client->waiting_pb->addrin[0] : -1L));
 		if (check_queued_events(client))
 		{
-			if (C.Hlp_pb->intout[0] & MU_MESAG)
+			if (a->intout[0] & MU_MESAG)
 			{
 				CHlp_aesmsg(client);
 			}
+			a->addrin[0] = (long)a->msg;
 			client->usr_evnt = 0;
 			client->waiting_for = XAWAIT_MULTI|MU_MESAG;
 			client->waiting_pb = C.Hlp_pb;
 		}
 	}
+// 	if (!a->addrin[0])
+// 		BLOG((true, "iBlock: 8 NULL"));
 	if (client->usr_evnt & 1)
 	{
 		cancel_evnt_multi(client, 1);
@@ -513,6 +557,7 @@ iBlock(struct xa_client *client, int which)
 	}
 	else
 		client->usr_evnt = 0;
+// 	BLOG((true, "leave iBlock"));
 }
 
 void
@@ -526,7 +571,7 @@ Unblock(struct xa_client *client, unsigned long value, int which)
  	else
 	{
 		if (value == XA_OK)
-			cancel_evnt_multi(client,1);
+			cancel_evnt_multi(client, 1);
 
 		if (client->blocktype == XABT_SELECT)
 			wakeselect(client->p);
@@ -576,13 +621,13 @@ init_moose(void)
 			{
 				if (moose_version < (((long)MIN_MOOSE_VER_MAJOR << 16) | MIN_MOOSE_VER_MINOR))
 				{
-					display("init_moose: Your moose.adi is outdated, please update!");
+					display(/*0000000b*/"init_moose: Your moose.adi is outdated, please update!");
 					return false;
 				}
 			}
 			else
 			{
-				display("init_moose: Could not obtain moose.adi version, please update!");
+				display(/*0000000c*/"init_moose: Could not obtain moose.adi version, please update!");
 				return false;
 			}
 			
@@ -603,26 +648,26 @@ init_moose(void)
 				}
 
 				if (adi_ioctl(G.adi_mouse, MOOSE_DCLICK, (long)cfg.double_click_time))
-					display("Moose set dclick time failed");
+					display(/*0000000d*/"Moose set dclick time failed");
 
 				if (adi_ioctl(G.adi_mouse, MOOSE_PKT_TIMEGAP, (long)cfg.mouse_packet_timegap))
-					display("Moose set mouse-packets time-gap failed");
+					display(/*0000000e*/"Moose set mouse-packets time-gap failed");
 
 				BLOG((false, "Using moose adi"));
 				ret = true;
 			}
 			else
-				display("init_moose: MOOSE_READVECS failed (%lx)", aerr);
+				display(/*0000000f*/"init_moose: MOOSE_READVECS failed (%lx)", aerr);
 		}
 		else
 		{
-			display("init_moose: opening moose adi failed (%lx)", aerr);	
+			display(/*00000010*/"init_moose: opening moose adi failed (%lx)", aerr);	
 			G.adi_mouse = NULL;
 		}
 	}
 	else
 	{
-		display("Could not find moose.adi, please install in %s!", C.Aes->home_path);
+		display(/*00000011*/"Could not find moose.adi, please install in %s!", C.Aes->home_path);
 	}
 
 	return ret;
@@ -734,7 +779,7 @@ CE_fa(enum locks lock, struct c_event *ce, bool cancel)
 					sc.t.text = data->buf;
 					sc.t.strings = 1;
 					p.idx = -1;
-					p.arg.txt = "Alerts";
+					p.arg.txt = /*txt_alerts*/"Alerts";
 					list->get(list, NULL, SEGET_ENTRYBYTEXT, &p);
 					list->add(list, p.e, NULL, &sc, p.e ? SEADD_CHILD: 0, 0, true);
 				}
@@ -855,7 +900,7 @@ sigterm(void)
 {
 	BLOG((false, "AESSYS: sigterm received, dispatch_shutdown(0)"));
 	KERNEL_DEBUG("AESSYS: sigterm received, dispatch_shutdown(0)");
-	dispatch_shutdown(0);
+	dispatch_shutdown(0, 0);
 }
 
 static void
@@ -927,53 +972,58 @@ helpthread_entry(void *c)
 	p_domain(1);
 	setup_common();
 
-	client = init_client(0);
+	client = init_client(0, true);
 
 	if (client)
 	{
 		struct helpthread_data *htd;
-		AESPB *pb;
+		XAESPB *pb;
 		short *d;
-		long pbsize = sizeof(*pb) + ((12 + 32 + 32 + 32 + 32 + 32 + 32) * 2);
+		long pbsize = sizeof(*pb) + 4 + ((12 + 32 + 32 + 32 + 32 + 32 + 32) * 2);
 
 		if ((pb = kmalloc(pbsize)))
 		{
 			volatile short *t = &client->tp_term;
-			union msg_buf *msgb;
+// 			union msg_buf *msgb;
 
 			bzero(pb, pbsize);
 			
 			d = (short *)((long)pb + sizeof(*pb));
+			d += 2;
 			pb->control = d;
 			d += 12;
 			pb->global = d;
 			d += 32;
-			pb->intin = (const short *)d;
+			pb->intin = (short *)d;
 			d += 32;
 			pb->intout = d;
 			d += 32;
-			pb->addrin = (const long *)d;
+			pb->addrin = (long *)d;
 			d += 32;
 			pb->addrout = (long *)d;
 
 			d += 32;
-			msgb = (union msg_buf *)d;
+			pb->msg = (union msg_buf *)d;
 		
 			client_nicename(client, aeshlp_name, true);
 			C.Hlp = client;
 			client->type = APP_AESTHREAD;
-			C.Hlp_pb = client->waiting_pb = pb;
+			C.Hlp_pb = pb;
+			client->waiting_pb = (AESPB *)pb;
 			client->waiting_for = MU_MESAG;
 			client->block = iBlock;
 			client->options.app_opts |= XAAO_OBJC_EDIT;
 			client->status |= CS_NO_SCRNLOCK;
 			init_helpthread(NOLOCKING, client);
+			BLOG((false, "C.Hlp started %lx, %x", C.Hlp, *t));
 			while (!*t)
 			{
-				client->waiting_pb = C.Hlp_pb;
-				client->waiting_pb->addrin[0] = (long)msgb;
+				pb->addrin[0] = (long)pb->msg;
+				client->waiting_pb = (AESPB *)pb;
 				client->waiting_for = MU_MESAG|XAWAIT_MULTI;
+// 				BLOG((true, "enter block %lx", client->waiting_pb->addrin[0]));
 				(*client->block)(client, 0);
+// 				BLOG((true, "..."));
 				if (*t)
 				{
 // 					display("client will terminate");
@@ -1182,12 +1232,14 @@ kick_shutdn_if_last_client(void)
 /*
  * Initiate shutdown...
  */
-void
-dispatch_shutdown(int flags)
+void _cdecl
+dispatch_shutdown(short flags, unsigned long arg)
 {
 	if (!(C.shutdown & SHUTDOWN_STARTED))
 	{
 		C.shutdown = SHUTDOWN_STARTED | flags;
+		if ((flags & RESOLUTION_CHANGE))
+			next_res = arg;
 		set_shutdown_timeout(0);
 	}
 }
@@ -1302,6 +1354,9 @@ k_main(void *dummy)
 		}
 #endif
 	}
+	
+	C.reschange = NULL;
+#if 0
 	{
 		long tmp;
 		
@@ -1316,9 +1371,11 @@ k_main(void *dummy)
 				case 0 ... 2:
 					C.reschange = open_reschange;
 					break;
+#ifndef ST_ONLY
 				case 3 ... 4:
 					C.reschange = open_falcon_reschange;
 					break;
+#endif
 				default:;
 			}
 		}
@@ -1326,6 +1383,7 @@ k_main(void *dummy)
 		/*
 		 * see if we run on a Milan, in which case the _VDI cookie is present
 		 */
+#ifndef ST_ONLY	
 		mvdi_api.dispatch = NULL;
 		if (!(s_system(S_GETCOOKIE, COOKIE__VDI, (unsigned long)&tmp)))
 		{
@@ -1333,6 +1391,7 @@ k_main(void *dummy)
 			C.reschange = open_milan_reschange;
 		}
 		else
+#endif
 		{
 			/*
 			 * No _VDI cookie, how about Nova VDI?
@@ -1352,14 +1411,14 @@ k_main(void *dummy)
 				C.reschange = open_nova_reschange;
 		}
 	}
-	
+#endif
 	/*
 	 * register trap#2 handler
 	 */
 
 	if (register_trap2(XA_handler, 0, 0, 0))
 	{
-		display("ERROR: register_trap2 failed!");
+		display(/*00000012*/"ERROR: register_trap2 failed!");
 		goto leave;
 	}
 
@@ -1372,10 +1431,10 @@ k_main(void *dummy)
 
 	if (k_init(next_res) != 0)
 	{
-		display("ERROR: k_init failed!");
+		display(/*00000013*/"ERROR: k_init failed!");
 		goto leave;
 	}
-
+	BLOG((false, "k_init returned OK"));
 	/* 
 	 * Initialization I/O
 	 */
@@ -1384,7 +1443,7 @@ k_main(void *dummy)
 	C.alert_pipe = f_open(alert_pipe_name, O_CREAT|O_RDWR);
 	if (C.alert_pipe < 0)
 	{
-		display("ERROR: Can't open alert pipe '%s' :: %ld",
+		display(/*00000014*/"ERROR: Can't open alert pipe '%s' :: %ld",
 			alert_pipe_name, C.alert_pipe);
 
 		goto leave;
@@ -1395,7 +1454,7 @@ k_main(void *dummy)
 	C.KBD_dev = f_open(KBD_dev_name, O_DENYRW|O_RDONLY);
 	if (C.KBD_dev < 0)
 	{
-		display("ERROR: Can't open keyboard device '%s' :: %ld",
+		display(/*00000015*/"ERROR: Can't open keyboard device '%s' :: %ld",
 			KBD_dev_name, C.KBD_dev);
 
 		goto leave;
@@ -1434,7 +1493,7 @@ k_main(void *dummy)
 	/* initialize mouse */
 	if (!init_moose())
 	{
-		display("ERROR: init_moose failed");
+		display(/*00000016*/"ERROR: init_moose failed");
 		goto leave;
 	}
 
@@ -1451,7 +1510,7 @@ k_main(void *dummy)
 		if (tpc < 0)
 		{
 			C.Aes->tp = NULL;
-			display("ERROR: start AES thread failed");
+			display(/*00000017*/"ERROR: start AES thread failed");
 			goto leave;
 		}
 	}
@@ -1464,7 +1523,7 @@ k_main(void *dummy)
 		if (tpc < 0)
 		{
 			C.Hlp = NULL;
-			display("ERROR: start AES helper thread failed");
+			display(/*00000018*/"ERROR: start AES helper thread failed");
 			goto leave;
 		}
 	}
@@ -1473,6 +1532,8 @@ k_main(void *dummy)
 	 */
 	while (!C.Hlp)
 		yield();
+
+	xam_load(true);
 
 // 	display("C.HLP started OK");
 
@@ -1571,7 +1632,7 @@ k_main(void *dummy)
 leave:
 	if (wait)
 	{
-		display("press any key to continue ...");
+		display(/*press_any_key*/"press any key to continue ...");
 		_c_conin();
 	}
 	k_exit();

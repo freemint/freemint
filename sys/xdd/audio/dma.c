@@ -32,12 +32,13 @@ static long		dma_rspace (void);
 /*
  * install things
  */
+long dma_init(struct device *dev);
 long
 dma_init (struct device *dev)
 {
 	long snd_cookie;
 
-	if (get_toscookie (COOKIE__SND, &snd_cookie) ||
+	if (get_toscookie (COOKIE__SND, (unsigned long *)&snd_cookie) ||
 	    !(snd_cookie & 2)) {
 		/*
 		 * _SND cookie not set or no Ste

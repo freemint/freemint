@@ -43,6 +43,51 @@ get_drv(const char *p)
 	return -1;
 }
 
+void
+fix_path(char *path)
+{
+	char c;
+
+	if (!path)
+		return;
+
+	while ((c = *path)) {
+		if (c == '\\')
+			*path = '/';
+		path++;
+	}
+}
+
+void
+strip_fname(const char *path, char *newpath, char *fname)
+{
+	const char *s, *d = NULL;
+	char c;
+
+	s = path;
+	c = *s;
+
+	while (c) {
+		if (c == '/' || c == '\\') {
+			d = s + 1;
+// 			if (c == '\\')
+// 				*s = '/';
+		}
+		c = *++s;
+	}
+	if (d && d != s) {
+		int slen = d - path;
+
+		if (fname)
+			strcpy(fname, d);
+		if (newpath) {
+			if (newpath != path)
+				strncpy(newpath, path, slen);
+			newpath[slen] = '\0';
+		}
+	}
+}
+
 int
 drive_and_path(char *fname, char *path, char *name, bool n, bool set)
 {

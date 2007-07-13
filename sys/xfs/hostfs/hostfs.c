@@ -96,7 +96,7 @@ FILESYS *hostfs_mount_drives(FILESYS *fs)
 FILESYS *hostfs_mount_drives(FILESYS *fs)
 {
 	long r;
-	int succ;
+	int succ = 0;
 	int keep = 0;
 	int rollback_failed = 0;
 

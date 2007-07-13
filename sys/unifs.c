@@ -200,15 +200,15 @@ unifs_init (void)
 			default:
 				/* drives A..Z1..6 */
 				u->name[0] = i + ((i < 26) ? 'a' : '1' - 26);
-				u->name[1] = 0;
-				u->fs = 0;
+				u->name[1] = '\0';
+				u->fs = NULL;
 				break;
 		}
 	}
 
 	/* oops, we went too far */
 	u--;
-	u->next = 0;
+	u->next = NULL;
 }
 
 static long _cdecl
@@ -752,7 +752,7 @@ uni_symlink (fcookie *dir, const char *name, const char *to)
 	if (!u) return ENOMEM;
 
 	strncpy (u->name, name, UNINAME_MAX);
-	u->name[UNINAME_MAX] = 0;
+	u->name[UNINAME_MAX] = '\0';
 
 	u->data = kmalloc ((long) strlen (to) + 1);
 	if (!u->data)
@@ -831,7 +831,8 @@ uni_fscntl(fcookie *dir, const char *name, int cmd, long arg)
 	{
 		case MX_KER_XFSNAME:
 		{
-			strcpy ((char *) arg, "uni-xfs");
+			char *n = (char *)arg;
+			strcpy (n/*(char *) arg*/, "uni-xfs");
 			return E_OK;
 		}
 		case FS_INSTALL: /* install a new filesystem */
@@ -888,7 +889,7 @@ uni_fscntl(fcookie *dir, const char *name, int cmd, long arg)
 					return EACCES; /* already exists */
 			}
 			else
-			if (r != ENOENT) return r; /* some other error */
+				if (r != ENOENT) return r; /* some other error */
 
 			if (!d) return EACCES;
 			if (!d->file_system) return EACCES;
@@ -979,7 +980,7 @@ uni_fscntl(fcookie *dir, const char *name, int cmd, long arg)
 				/* this mountpoint was made with FS_MOUNT g:\[A-Z1-6] */
 				/* set the device back to the builtin number */
 				u->dev = ((long)u - (long)&u_drvs[0])/sizeof(u_drvs[0]);
-				u->fs = 0;
+				u->fs = NULL;
 
 				DEBUG (("uni_remove: removing mountpoint '%s', dev_no = %d", name, u->dev));
 

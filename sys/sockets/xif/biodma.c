@@ -104,7 +104,7 @@ static long	lance_ioctl	(struct netif *, short, long);
 
 static long	lance_probe	(struct netif *);
 static void	lance_probe_c	(void);
-static long	lance_reset	(struct netif *);
+// static long	lance_reset	(struct netif *);
 static void	lance_int	(struct netif *);
 static void	timeout_int(void);
 
@@ -232,6 +232,7 @@ lance_ioctl (struct netif *nif, short cmd, long arg)
 	return ENOSYS;
 }
 
+long driver_init(void);
 long
 driver_init (void)
 {
@@ -290,7 +291,7 @@ driver_init (void)
 	
 	return 0;
 }
-
+#if 0
 static long
 lance_reset (struct netif *nif)
 {
@@ -304,7 +305,7 @@ lance_reset (struct netif *nif)
 	
 	return i;
 }
-
+#endif
 static long
 lance_probe (struct netif *nif)
 {

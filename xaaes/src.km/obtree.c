@@ -824,7 +824,7 @@ copy_obtree(OBJECT *obtree, short start, OBJECT *dst, void **data)
 	} while ((curr = obtree[curr].ob_next) != parent);
 }
 
-OBJECT *
+OBJECT * _cdecl
 duplicate_obtree(struct xa_client *client, OBJECT *obtree, short start)
 {
 	long size;
@@ -837,10 +837,13 @@ duplicate_obtree(struct xa_client *client, OBJECT *obtree, short start)
 	DIAGS(("final obtreelen with %d objs is %ld\n", objs, size));
 // 	display("final obtreelen with %d objs is %ld\n", objs, size);
 
+	if (!client)
+		client = C.Aes;
+
 	if (client == C.Aes || client == C.Hlp)
-		new = kmalloc(size + 4096); // 1024);
+		new = kmalloc(size); // + 4096); // 1024);
 	else
-		new = umalloc(size + 1024);
+		new = umalloc(size); // + 1024);
 
 	if (new)
 	{
@@ -932,7 +935,7 @@ free_obtree_resources(struct xa_client *client, OBJECT *obtree)
 	} while (!(obtree[j++].ob_flags & OF_LASTOB));
 }
 
-void
+void _cdecl
 free_object_tree(struct xa_client *client, OBJECT *obtree)
 {
 	if (obtree)
@@ -2523,7 +2526,7 @@ obj_orectangle(XA_TREE *wt, struct xa_aes_object obj, RECT *c)
 	}
 	c->w = aesobj_ob(&obj)->ob_width;
 	c->h = aesobj_ob(&obj)->ob_height;
-	display("obj_orect: %d/%d/%d/%d", *c);
+// 	display("obj_orect: %d/%d/%d/%d", *c);
 }
 
 bool
@@ -4271,7 +4274,7 @@ obj_edit(XA_TREE *wt,
 	return ret;
 }
 
-void
+void _cdecl
 obj_set_radio_button(XA_TREE *wt,
 		      struct xa_vdi_settings *v,
 		      struct xa_aes_object obj,
@@ -4321,7 +4324,7 @@ obj_set_radio_button(XA_TREE *wt,
 	}
 }
 
-struct xa_aes_object
+struct xa_aes_object _cdecl
 obj_get_radio_button(XA_TREE *wt,
 		      struct xa_aes_object parent,
 		      short state)

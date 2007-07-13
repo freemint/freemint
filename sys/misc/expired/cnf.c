@@ -386,6 +386,7 @@ setup_init:
 		if (!t) return;
 		strcpy (t, val);
 		init_prg = t;
+		boot_printf("doset: %s = '%s'\r\n", name, t);
 		while (*t && !isspace (*t)) t++;
 		
 		/* get the command tail, too */

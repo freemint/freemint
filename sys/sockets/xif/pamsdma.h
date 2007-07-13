@@ -78,7 +78,7 @@ enum {UNKNOWN1=3, READPKT=8, UNKNOWN2, WRITEPKT=10, INQUIRY=18, START,
 #define READSECTOR  READPKT
 #define WRITESECTOR WRITEPKT
 
-u_char *inquire8="MV      PAM's NET/GK";
+u_char *inquire8 = (u_char *)"MV      PAM's NET/GK";
 
 /* Atari system variables */
 

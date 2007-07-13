@@ -6,3 +6,5 @@ include $(top_srcdir)/../CONFIGVARS
 #
 # private definitions
 #
+
+#OPTS = -DGENERATE_DIAGS

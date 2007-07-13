@@ -489,7 +489,7 @@ if_send (struct netif *nif, BUF *buf, ulong nexthop, short isbrcst)
 			 * When broadcast then use interface's broadcast address
 			 */
 			if (isbrcst)
-				return (*nif->output) (nif, buf, nif->hwbrcst.addr,
+				return (*nif->output) (nif, buf, (char *)nif->hwbrcst.addr,
 					nif->hwbrcst.len, PKTYPE_IP);
 			/*
 			 * Here we must first resolve the IP address into a hardware
@@ -504,7 +504,7 @@ if_send (struct netif *nif, BUF *buf, ulong nexthop, short isbrcst)
 			
 			if (ATF_ISCOM (are))
 			{
-				ret = (*nif->output) (nif, buf, are->hwaddr.addr,
+				ret = (*nif->output) (nif, buf, (char *)are->hwaddr.addr,
 					are->hwaddr.len, PKTYPE_IP);
 			}
 			else

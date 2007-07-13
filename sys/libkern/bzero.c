@@ -81,7 +81,13 @@ int cruft;
 	register char *place = dst;
 	register ulong cruft;
 	register ulong blocksize;
-	
+
+	if ((cruft = (unsigned long)((long)place & 3))) {
+		size -= cruft;
+		while (cruft--)
+			*place++ = '\0';
+	}
+
 	cruft = size % 256;	/* quickzero does 256 byte blocks */
 	blocksize = size / 256;	/* divide by 256 */
 	if (blocksize)

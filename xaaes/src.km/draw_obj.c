@@ -92,6 +92,7 @@ static char *pflags[] =
 	"15"
 };
 #endif
+#if 0
 static char *ob_types[] =
 {
 	"box",
@@ -116,6 +117,7 @@ static char *ob_types[] =
 	"xaaes slist",	/* 39 */
 	"40"
 };
+#endif
 #if 0
 static char *
 object_txt(OBJECT *tree, short t)			/* HR: I want to know the culprit in a glance */
@@ -597,9 +599,9 @@ display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, struct x
 	    || o.y + o.h - 1	< v->clip.y)
 		return;
 
+	/* Get display routine for this type of object from jump table */
 	if (t <= G_UNKNOWN)
-		/* Get display routine for this type of object from jump table */
-		drawer = wt->objcr_api->drawers[t]; //objc_jump_table[t];
+		drawer = wt->objcr_api->drawers[t];
 
 //	if (t >= G_SWBUTTON && t <= G_SHORTCUT)
 //		display("display %s(%d) for %s", ob_types[t], t, wt->owner->name);
@@ -740,7 +742,8 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, struct xa_vdi_setti
 	bool curson = false;
 	bool docurs = ((flags & DRW_CURSOR));
 	struct oblink_spec *oblink = NULL;
-	struct xa_aes_object current, stop;
+	struct xa_aes_object current, stop, *c;
+
 
 	if (wt == NULL)
 	{
@@ -764,7 +767,8 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, struct xa_vdi_setti
 	if (!wt->objcr_api || !wt->objcr_theme)
 		return true;
 
-	current = aesobj(wt->tree, 0);
+	c = &current;
+	*c = aesobj(wt->tree, 0);
 	stop = inv_aesobj();
 
 	/* dx,dy are provided by sliders if present. */
@@ -802,77 +806,77 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, struct xa_vdi_setti
 	//		tree[current].ob_head, tree[current].ob_tail, tree[current].ob_next,
 	//		rel_depth, start_drawing ? "yes":"no"));
 uplink:
-		if (same_aesobj(&item, &current))
+		if (same_aesobj(&item, c))
 		{
 			stop = item;
 			start_drawing = true;
 			rel_depth = 0;
 		}
 
-		if (!(aesobj_ob(&current)->ob_flags & OF_HIDETREE))
+		if (!(aesobj_flags(c) & OF_HIDETREE))
 		{
-			if (set_aesobj_uplink(&tree, &current, &stop, &oblink))
+			if (set_aesobj_uplink(&tree, c, &stop, &oblink))
 				goto uplink;
 
 			if (start_drawing)
 			{
-				display_object(lock, wt, v, current, x, y, 10);
+				display_object(lock, wt, v, *c, x, y, 10);
 				/* Display this object */
-				if (!ei && docurs && same_aesobj(&current, &wt->e.o))
+				if (!ei && docurs && same_aesobj(c, &wt->e.o))
 				{
-					if ((aesobj_ob(&current)->ob_type & 0xff) != G_USERDEF)
+					if ((aesobj_type(c) & 0xff) != G_USERDEF)
 						(*wt->objcr_api->eor_cursor)(wt, v, NULL);
 					docurs = false;	
 				}
 			}
 		}
 
-		head = aesobj_ob(&current)->ob_head;
+		head = aesobj_head(c);
 
 		/* Any non-hidden children? */
 		if (    head >= 0
-		    && !(aesobj_ob(&current)->ob_flags & OF_HIDETREE)
+		    && !(aesobj_flags(c) & OF_HIDETREE)
 		    &&  (!start_drawing || (start_drawing && rel_depth < depth)))
 		{
-			x += aesobj_ob(&current)->ob_x;
-			y += aesobj_ob(&current)->ob_y;
+			x += aesobj_getx(c);
+			y += aesobj_gety(c);
 
 			rel_depth++;
 
-			current = aesobj(aesobj_tree(&current), head);
+			*c = aesobj(aesobj_tree(c), head);
 		}
 		else
 		{
 			struct xa_aes_object next;
 downlink:
 			/* Try for a sibling */
-			next = aesobj(aesobj_tree(&current), aesobj_ob(&current)->ob_next);
+			next = aesobj(aesobj_tree(c), aesobj_next(c));
 
 			/* Trace back up tree if no more siblings */
 			while (valid_aesobj(&next) && !same_aesobj(&next, &stop))
 			{
 				struct xa_aes_object tail = aesobj(aesobj_tree(&next), aesobj_ob(&next)->ob_tail);
-				if (same_aesobj(&current, &tail))
+				if (same_aesobj(c, &tail))
 				{
-					current = next;
-					x -= aesobj_ob(&current)->ob_x;
-					y -= aesobj_ob(&current)->ob_y;
-					next = aesobj(aesobj_tree(&current), aesobj_ob(&current)->ob_next);
+					*c = next;
+					x -= aesobj_getx(c);
+					y -= aesobj_gety(c);
+					next = aesobj(aesobj_tree(c), aesobj_next(c));
 					rel_depth--;
 				}
 				else
 					break;
 			}
-			if (valid_aesobj(&next) && same_aesobj(&next, &stop) && set_aesobj_downlink(&tree, &current, &stop, &oblink))
+			if (valid_aesobj(&next) && same_aesobj(&next, &stop) && set_aesobj_downlink(&tree, c, &stop, &oblink))
 			{
-				x -= aesobj_ob(&current)->ob_x;
-				y -= aesobj_ob(&current)->ob_y;
+				x -= aesobj_getx(c);
+				y -= aesobj_gety(c);
 				goto downlink;
 			}
-			current = next;
+			*c = next;
 		}
 	}
-	while (valid_aesobj(&current) && !same_aesobj(&current, &stop)  && rel_depth > 0);
+	while (valid_aesobj(c) && !same_aesobj(c, &stop)  && rel_depth > 0);
 
 	if (curson)
 		(*wt->objcr_api->draw_cursor)(wt, v, NULL, 1);
@@ -886,9 +890,3 @@ downlink:
 
 	return true;
 }
-
-
-#if 1
-
-
-#endif

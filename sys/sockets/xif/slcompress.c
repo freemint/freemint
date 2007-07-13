@@ -450,7 +450,7 @@ slc_uncompress (BUF *b, uchar type, struct slcompress *comp)
 	
 	/* We've got a compressed packet. */
 	INCR (sls_compressedin);
-	cp = b->dstart;
+	cp = (unsigned char *)b->dstart;
 	changes = *cp++;
 	if (changes & NEW_C)
 	{
@@ -551,7 +551,7 @@ slc_uncompress (BUF *b, uchar type, struct slcompress *comp)
 	len += cs->cs_hlen;
 	cs->cs_ip.length = htons (len);
 	BCOPY (&cs->cs_ip, cp, cs->cs_hlen);
-	b->dstart = cp;
+	b->dstart = (char *)cp;
 	
 	/* recompute the ip header checksum */
 	((struct ip_dgram *)cp)->chksum = in_chksum (cp, hlen >> 1);

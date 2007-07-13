@@ -2,7 +2,6 @@
 # 
 # generic flags
 # 
-# -DSYSCALL_REENTRANT	activate reentrant syscall handler (not for 000 yet)
 # -DVERBOSE_BOOT	include extensive messages
 # -DCRYPTO_CODE		include the cryptographic filesystem stuff
 # -DSOFT_UNITABLE	loadable unicode tables
@@ -48,7 +47,6 @@ KERNELDEFAULTDEFS = -D__KERNEL__
 KERNELDEFAULTDEFS += -DLANG_ENGLISH
 
 ifneq ($(kernel),000)
-KERNELDEFAULTDEFS += -DSYSCALL_REENTRANT
 KERNELDEFAULTDEFS += -DVERBOSE_BOOT
 KERNELDEFAULTDEFS += -DCRYPTO_CODE
 KERNELDEFAULTDEFS += -DSOFT_UNITABLE
@@ -58,8 +56,9 @@ endif
 ifeq ($(kernel),000)
 MINT = mint000.prg
 CPU  = 000
-KERNELDEFS = -DM68000 -DNO_RAMFS -DNO_FAKE_SUPER 
-KERNELDEFS += -DDEBUG_INFO
+KERNELDEFS = -DM68000 -DNO_RAMFS -DNO_FAKE_SUPER -DVERBOSE_BOOT
+#KERNELDEFS += -DDEBUG_INFO
+#KERNELDEFS += -DMFP_DEBUG_DIRECT
 OPTS += -fstrength-reduce
 endif
 
@@ -71,6 +70,18 @@ endif
 
 ifeq ($(kernel),040)
 MINT = mint040.prg
+CPU  = 020-60
+KERNELDEFS = -DM68040
+endif
+
+ifeq ($(kernel),060)
+MINT = mint040.prg
+CPU  = 060
+KERNELDEFS = -DM68040
+endif
+
+ifeq ($(kernel),117)
+MINT = mint117.prg
 CPU  = 020-60
 KERNELDEFS = -DM68040
 endif
@@ -131,7 +142,7 @@ endif
 #
 # all default targets
 #
-kerneltargets = 000 030 040 deb mil ara my1 my2 my3 my4
+kerneltargets = 000 030 040 060 117 deb mil ara my1 my2 my3 my4
 cputargets = 000 030 020-60
 
 ifeq (COLDFIRE,yes)

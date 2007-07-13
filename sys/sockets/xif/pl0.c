@@ -12,7 +12,7 @@
 short
 pl0_init (void)
 {
-	pl0_old_busy_int = Setexc (0x40, pl0_busy_int);
+	pl0_old_busy_int = (long)Setexc (0x40, pl0_busy_int);
 	
 	/* enable BUSY interrupt */
 	__asm__

@@ -19,6 +19,7 @@
 #include "magic/magic.i"
 
 	.globl	_enter_gemdos
+	.globl	_enter_kernel
 	.globl	_leave_kernel
 
 	.extern	_curproc
@@ -52,7 +53,15 @@ _enter_gemdos:
 	bne.s	exit
 	move.l	_curproc,a0
 	move.w	#0x0001,P_INDOS(a0)
+	move.w	#1,P_INKERN(a0)
 exit:	rts
+
+_enter_kernel:
+	bset #0x7,_in_kernel
+	bne.s	exit
+	move.l	_curproc,a0
+	move.w	#1,P_INKERN(a0)
+	bra	exit
 
 //
 // leave_kernel: called before leaving the kernel, either back to
@@ -66,5 +75,6 @@ exit:	rts
 _leave_kernel:
 	move.l	_curproc,a0
 	clr.w	P_INDOS(a0)
+	clr.w	P_INKERN(a0)
 	clr.w	_in_kernel
 	rts

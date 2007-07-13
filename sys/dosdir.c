@@ -543,7 +543,6 @@ sys_f_getdta (void)
 /*
  * Fsfirst/next are actually implemented in terms of opendir/readdir/closedir.
  */
-
 long _cdecl
 sys_f_sfirst (const char *path, int attrib)
 {
@@ -680,8 +679,10 @@ sys_f_sfirst (const char *path, int attrib)
 
 		if (fs->fsflags & FS_EXT_3)
 		{
+			dta_UTC_local_dos(dta,xattr,m);
 			/* UTC -> localtime -> DOS style */
-			*((long *) &(dta->dta_time)) = dostime (*((long *) &(xattr.mtime)) - timezone);
+// 			*((long *) &(dta->dta_time)) = dostime (*((long *) &(xattr.mtime)) - timezone);
+// 			dta->dta_time = dostime(xattr.mtime - timezone);
 		}
 		else
 		{
@@ -925,8 +926,9 @@ baderror:
 
 	if (fs->fsflags & FS_EXT_3)
 	{
+		dta_UTC_local_dos(dta,xattr,m);
 		/* UTC -> localtime -> DOS style */
-		*((long *) &(dta->dta_time)) = dostime (*((long *) &(xattr.mtime)) - timezone);
+// 		*((long *) &(dta->dta_time)) = dostime (*((long *) &(xattr.mtime)) - timezone);
 	}
 	else
 	{
@@ -1333,10 +1335,13 @@ sys_d_xreaddir (int len, long handle, char *buf, XATTR *xattr, long *xret)
 	*xret = xfs_getxattr (fc.fs, &fc, xattr);
 	if ((*xret == E_OK) && (fc.fs->fsflags & FS_EXT_3))
 	{
+		xtime_to_local_dos(xattr, m);
+		xtime_to_local_dos(xattr, a);
+		xtime_to_local_dos(xattr, c);
 		/* UTC -> localtime -> DOS style */
-		*((long *) &(xattr->mtime)) = dostime (*((long *) &(xattr->mtime)) - timezone);
-		*((long *) &(xattr->atime)) = dostime (*((long *) &(xattr->atime)) - timezone);
-		*((long *) &(xattr->ctime)) = dostime (*((long *) &(xattr->ctime)) - timezone);
+// 		*((long *) &(xattr->mtime)) = dostime (*((long *) &(xattr->mtime)) - timezone);
+// 		*((long *) &(xattr->atime)) = dostime (*((long *) &(xattr->atime)) - timezone);
+// 		*((long *) &(xattr->ctime)) = dostime (*((long *) &(xattr->ctime)) - timezone);
 	}
 
 	release_cookie (&fc);
@@ -1428,10 +1433,13 @@ sys_f_xattr (int flag, const char *name, XATTR *xattr)
 	}
 	else if (fc.fs->fsflags & FS_EXT_3)
 	{
+		xtime_to_local_dos(xattr, m);
+		xtime_to_local_dos(xattr, a);
+		xtime_to_local_dos(xattr, c);
 		/* UTC -> localtime -> DOS style */
-		*((long *) &(xattr->mtime)) = dostime (*((long *) &(xattr->mtime)) - timezone);
-		*((long *) &(xattr->atime)) = dostime (*((long *) &(xattr->atime)) - timezone);
-		*((long *) &(xattr->ctime)) = dostime (*((long *) &(xattr->ctime)) - timezone);
+// 		*((long *) &(xattr->mtime)) = dostime (*((long *) &(xattr->mtime)) - timezone);
+// 		*((long *) &(xattr->atime)) = dostime (*((long *) &(xattr->atime)) - timezone);
+// 		*((long *) &(xattr->ctime)) = dostime (*((long *) &(xattr->ctime)) - timezone);
 	}
 
 	release_cookie (&fc);

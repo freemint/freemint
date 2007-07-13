@@ -200,7 +200,8 @@ sys_pexec(short mode, const void *ptr1, const void *ptr2, const void *ptr3)
 			display("pexec(%d) for %s", mode, pr->name);
 	}
 #endif
-	
+	DEBUG(("Pexec: mode %d, %lx,%lx,%lx", mode,ptr1,ptr2?ptr2:"NULL",ptr3));
+
 	/* the high bit of mode controls process tracing */
 	switch (mode & 0x7fff)
 	{
@@ -289,9 +290,9 @@ sys_pexec(short mode, const void *ptr1, const void *ptr2, const void *ptr3)
 	if (mkname)
 		make_name(localname, ptr1);
 
-	TRACE(("creating environment"));
 	if (mkload || mkbase)
 	{
+		TRACE(("creating environment"));
 		env = create_env((char *) ptr3, flags);
 		if (!env)
 		{
@@ -300,11 +301,11 @@ sys_pexec(short mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		}
 	}
 
-	TRACE(("creating base page"));
 	if (mkbase)
 	{
 		long r;
 
+		TRACE(("creating base page"));
 		base = create_base((char *)ptr2, env, flags, 0L, &r);
 		if (!base)
 		{
@@ -576,7 +577,7 @@ sys_pexec(short mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		newpid = p->pid;
 		for(;;)
 		{
-			r = pwaitpid(get_curproc()->pid ? newpid : -1, 0, NULL, &retval);
+			r = pwaitpid(get_curproc()->pid ? newpid : -1, 0, NULL, (short *)&retval);
 			if (r < 0)
 			{
 				ALERT("p_exec: wait error");
@@ -770,8 +771,8 @@ exec_region(struct proc *p, MEMREGION *mem, int thread)
 			 * a table walk if the alloc results in calling
 			 * get_region.)
 			 */
-			void *ptr = p->p_mem->mem;
-
+			char *ptr = (char *)p->p_mem->mem;
+			TRACE(("exec_region: shring large mem array"));
 			p->p_mem->mem = NULL;
 			p->p_mem->addr = NULL;
 			p->p_mem->num_reg = 0;
@@ -781,8 +782,8 @@ exec_region(struct proc *p, MEMREGION *mem, int thread)
 			ptr = kmalloc(NUM_REGIONS * sizeof(void *) * 2);
 			assert(ptr);
 
-			p->p_mem->mem = ptr;
-			p->p_mem->addr = ptr + NUM_REGIONS * sizeof(void *);
+			p->p_mem->mem = (MEMREGION **)ptr;
+			p->p_mem->addr = (unsigned long *)(ptr + (NUM_REGIONS * sizeof(void *)));
 			p->p_mem->num_reg = NUM_REGIONS;
 		}
 

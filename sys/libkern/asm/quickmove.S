@@ -22,26 +22,40 @@ __mint_bcopy:
 _memcpy:
 	movem.l	4(sp),a0/a1		| get dst & src
 _quickmovb1:
-	move.w	a0,d0
-	move.w	a1,d1
-	eor.w	d1,d0			| bit 0 == unaligned
-	lsr.w	#1,d0			| ...now in x flag
-	move.l	12(sp),d0		| get nbytes
-	beq	Ldone
-	roxr.w	#1,d1			| bit 0 == both odd, msb == unaligned
-#ifdef M680000
-	bmi	bytecopy		| unaligned, do the slow thing...
-#else
-	bmi	quickmov1		| alignment doesnt matter on 030
-#endif
-	bcc.s	quickmov1		| both even, ok
-	subq.l	#1,d0			| both odd, can be fixed
+	move.l 12(sp),d0
+	beq.s	done
+	moveq	#1,d1
+	and.w	6(sp),d1
+	bne.s	sodd
+	moveq	#1,d1
+	and.w	10(sp),d1
+	beq.s	quickmov1
+
+#ifdef mc68000
+bytecopy:
 	move.b	(a1)+,(a0)+
+	subq.l	#1,d0
+	bne.s	bytecopy
+	rts				| return
+#else
 	bra.s	quickmov1
+#endif
+
+sodd:	and.w	10(sp),d1
+#ifdef mc68000
+	beq.s	bytecopy
+#else
+	beq.s	quickmov1
+#endif
+	move.b	(a1)+,(a0)+
+	subq.l	#1,d0
+	bne.s	quickmov1
+done:	rts
 
 __mint_quickcpy:
 	movem.l	4(sp),a0/a1		| get dst & src
 	move.l	12(sp),d0		| get nbytes
+	beq.s	done
 quickmov1:
 	move.w	#0x1ff,d1
 	and.w	d0,d1			| d1 = nbytes % 512
@@ -102,15 +116,3 @@ L2:
 	dbra	d0,L2
 Ldone:
 	rts				| return
-
-#ifdef M68000
-bytecopy:
-	subq.l	#1,d0			| prepare for dbra loop
-	move.l	d0,d1
-	swap	d1
-L3:
-	move.b	(a1)+,(a0)+
-	dbra	d0,L3
-	dbra	d1,L3
-	rts				| return
-#endif

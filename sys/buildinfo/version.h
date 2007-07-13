@@ -22,8 +22,8 @@
  * main version macros
  */
 #define MINT_MAJ_VERSION	1
-#define MINT_MIN_VERSION	16
-#define MINT_PATCH_LEVEL	3
+#define MINT_MIN_VERSION	17
+#define MINT_PATCH_LEVEL	0
 
 /*
  * source status

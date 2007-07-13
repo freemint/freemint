@@ -624,17 +624,18 @@ del_cookie (struct cookie *cj, ulong tag)
 	if (cj)
 		cjar = cj;
 
-	while (cjar->tag)
+	while (cjar && cjar->tag)
 	{
 		if (cjar->tag == tag)
 		{
-			while (cjar->tag)
-				*cjar++ = *(cjar + 1);
+			while (cjar->tag) {
+				*cjar = *(cjar + 1);
+				cjar++;
+			}
 
 			TRACE (("del_cookie: tag removed from list"));
 			return E_OK;
 		}
-
 		cjar++;
 	}
 

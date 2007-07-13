@@ -143,9 +143,9 @@ static struct xa_ftab aes_tab[220] =
 	/*  51 */ { XA_form_dial,              0,        DESCR("form_dial")       },
 	/*  52 */ { XA_form_alert,             0,        DESCR("form_alert")      },
 	/*  53 */ { XA_form_error,             0,        DESCR("form_error")      },
-	/*  54 */ { XA_form_center,            0,        DESCR("form_center")     },
+	/*  54 */ { XA_form_center,            0,        DESCR("xa_form_center")     },
 	/*  55 */ { XA_form_keybd,             0,        DESCR("form_keybd")      },
-	/*  56 */ { XA_form_button,            0,        DESCR("form_button")     },
+	/*  56 */ { XA_form_button,            0,        DESCR("Form_Button")     },
 	/*  57 */ { NULL,                      0,        DESCR(NULL)              },
 	/*  58 */ { NULL,                      0,        DESCR(NULL)              },
 	/*  59 */ { NULL,                      0,        DESCR(NULL)              },
@@ -169,7 +169,7 @@ static struct xa_ftab aes_tab[220] =
 	/*  75 */ { XA_graf_watchbox,          0,        DESCR("graf_watchbox")   },
 	/*  76 */ { XA_graf_slidebox,          0,        DESCR("graf_slidebox")   },
 	/*  77 */ { XA_graf_handle,            NOCLIENT, DESCR("graf_hand")       },
-	/*  78 */ { XA_graf_mouse,             NOCLIENT, DESCR("graf_mouse")      },
+	/*  78 */ { XA_xa_graf_mouse,             NOCLIENT, DESCR("xa_graf_mouse")      },
 	/*  79 */ { XA_graf_mkstate,           NOCLIENT, DESCR("graf_mkstate")    },
 
 	/*  80 */ { XA_scrp_read,              0,        DESCR("scrp_read")       },
@@ -537,7 +537,7 @@ XA_handler(void *_pb)
 		{
 			if (!(aes_tab[cmd].flags & NOCLIENT))
 			{
-				client = init_client(0);
+				client = init_client(0, false);
 				if (client)
 				{
 					add_to_tasklist(client);
@@ -693,7 +693,7 @@ XA_handler(void *_pb)
 					if (client)
 					{
 						DIAG((D_trap, client, "XA_Hand: Block client %s", client->name));
-						Block(client, 1);
+						(*client->block)(client, 1); //Block(client, 1);
 						DIAG((D_trap, client, "XA_Hand: Unblocked %s", client->name));
 					}
 					break;

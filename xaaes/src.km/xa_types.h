@@ -60,6 +60,33 @@
 #define SCM_SAVE 2
 
 
+enum window_type
+{
+	created_for_CLIENT	= 0x0000,
+/* All of the following flags indicate at least that a windows workarea is compleyely
+   occupied by (part of) the dialoge root object. */
+	created_for_FMD_START	= 0x0001,
+	created_for_FORM_DO	= 0x0002,
+	created_for_POPUP	= 0x0004,
+	created_for_WDIAL	= 0x0008,
+	created_for_TOOLBAR	= 0x0010,
+	created_for_SLIST	= 0x0020,
+	created_for_AES		= 0x0100,
+	created_for_ALERT	= 0x0200,
+	created_for_CALC	= 0x0400,
+};
+typedef enum window_type WINDOW_TYPE;
+
+
+enum xa_window_class
+{
+	WINCLASS_CLIENT = 0,
+	WINCLASS_POPUP,
+	WINCLASS_ALERT,
+	WINCLASS_SLIST,
+};
+typedef enum xa_window_class WINDOW_CLASS;
+
 enum window_status
 {
 	XAWS_OPEN	 = 0x00000001L,
@@ -76,6 +103,7 @@ enum window_status
 	XAWS_SINK	 = 0x00000800L,
 	XAWS_BINDFOCUS	 = 0x00001000L,
 	XAWS_BELOWROOT	 = 0x00002000L,
+	XAWS_FIRST	 = 0x00004000L,
 	XAWS_SEMA	 = 0x80000000L,
 };
 typedef enum window_status WINDOW_STATUS;
@@ -161,6 +189,17 @@ typedef struct
 	short	*ptsout;	/**< TODO */
 } XVDIPB;
 
+typedef struct
+{
+	short	*control;   /**< aes_control[] array */
+	short	*global;    /**< aes_global[]  array */
+	short	*intin;     /**< aes_intin[]   array */
+	short	*intout;    /**< aes_intout[]  array */
+	long	*addrin;    /**< aes_addrin[]  array */
+	long	*addrout;   /**< aes_addrout[] array */
+	union msg_buf *msg;
+} XAESPB;
+
 struct xa_rsc_rgb
 {
 	short red;
@@ -222,6 +261,7 @@ typedef struct menu_attachments
 	struct menu_attachments *next;
 
 	on_open_attach *on_open;
+
 	void *data;
 
 	struct widget_tree *wt;
@@ -376,6 +416,7 @@ struct xa_wtexture
 	XAMFDB	*body;
 };
 
+#ifndef ST_ONLY
 struct xa_gradient
 {
 	struct xa_data_hdr *allocs;
@@ -386,7 +427,8 @@ struct xa_gradient
 	short steps[8];
 	struct rgb_1000 c[16];
 };
-	
+#endif
+
 struct xa_wcol
 {
 	short	c;	/* color */
@@ -397,7 +439,9 @@ struct xa_wcol
 	short	tlc;	/* Top-Left color for 3-d effect */
 	short	brc;	/* Bottom-Right color for 3-d effect */
 	struct	xa_wtexture *texture;
+#ifndef ST_ONLY
 	struct	xa_gradient *gradient;
+#endif
 };
 
 struct xa_wcol_inf
@@ -552,13 +596,20 @@ struct mbs
  *   the extra XAWAIT_MULTI bit to indicate we are waiting from evnt_multi()
  *   as opposed to one of the individual routines (as return values are different).
  */
+#if 0
 enum waiting_for
 {
-	XAWAIT_MULTI	= 0x200,	/* Waiting for an evnt_multi() */
-	XAWAIT_WDLG	= 0x400,	/* Waiting for a wdlg_xxx event to occur */
-	XAWAIT_MOUSE	= 0x800,	/* XaAES private; exclusive mouse event */
+	XAWAIT_MULTI	= 0x0200,	/* Waiting for an evnt_multi() */
+	XAWAIT_WDLG	= 0x0400,	/* Waiting for a wdlg_xxx event to occur */
+	XAWAIT_MOUSE	= 0x0800,	/* XaAES private; exclusive mouse event */
 	XAWAIT_MENU	= 0x1000,	/* XaAES private; menu rectangle event */
+	XAWAIT_NTO	= 0x2000,	/* XaAES private; timeout value NULL */
 };
+#endif
+#define XAWAIT_MULTI	0x00010000UL
+#define XAWAIT_MOUSE	0x00020000UL
+#define XAWAIT_MENU	0x00040000UL
+#define XAWAIT_NTO	0x00080000UL
 
 typedef struct task_administration_block * TASK(struct task_administration_block *tab, short item);
 
@@ -638,8 +689,9 @@ struct xa_vdi_api
 	void _cdecl (*rtopxy)		(short *p, const RECT *r);
 	void _cdecl (*ri2pxy)		(short *p, short d, short x, short y, short w, short h);
 	void _cdecl (*ritopxy)		(short *p, short x, short y, short w, short h);
-
+#ifndef ST_ONLY
 	void _cdecl (*create_gradient)	(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, short *steps, short w, short h );
+#endif
 };
 
 /*-----------------------------------------------------------------
@@ -1040,7 +1092,7 @@ struct widget_tree
 #define WTF_TREE_CALLOC 0x00000008
 #define WTF_STATIC	0x00000010
 #define WTF_AUTOFREE	0x00000020
-#define WTF_FBDO_SLIST	0x00000040	/* form_button() handles SLIST objects */
+#define WTF_FBDO_SLIST	0x00000040	/* Form_Button() handles SLIST objects */
 #define WTF_OBJCEDIT	0x00000080
 	unsigned long	flags;
 
@@ -1388,56 +1440,7 @@ struct xa_widget_theme
 	struct widget_theme *slist;
 };
 
-struct xa_module_api
-{
-	char * _cdecl	(*sysfile)		(const char *fname);
-	RSHDR * _cdecl	(*load_resource)	(char *fname, RSHDR *rshdr, short designWidth, short designHeight, bool set_pal);
-	OBJECT * _cdecl	(*resource_tree)	(RSHDR *rsc, long num);
-
-	void _cdecl			(*init_wt)	(struct widget_tree *wt, OBJECT *obtree);
-	struct widget_tree * _cdecl	(*new_wt)	(OBJECT *obtree);
-	struct widget_tree * _cdecl	(*obtree_to_wt)	(OBJECT *obtree);
-	void _cdecl			(*remove_wt)	(struct widget_tree *wt);
-
-	/* OBJECT specific functions */
-	OBSPEC * 	_cdecl (*object_get_spec)	(OBJECT *ob);
-	void 		_cdecl (*object_set_spec)	(OBJECT *ob, unsigned long cl);
-	POPINFO *	_cdecl (*object_get_popinfo)	(OBJECT *ob);
-	TEDINFO *	_cdecl (*object_get_tedinfo)	(OBJECT *ob, XTEDINFO **x);
-	void		_cdecl (*object_spec_wh)	(OBJECT *ob, short *w, short *h);
-
-	void _cdecl	(*ob_spec_xywh)		(OBJECT *tree, short obj, RECT *r);
-	void _cdecl	(*render_object)	(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_aes_object item, short px, short py);
-	CICON * _cdecl	(*getbest_cicon)	(CICONBLK *ciconblk);
-	short _cdecl	(*obj_offset)		(struct widget_tree *wt, struct xa_aes_object object, short *mx, short *my);
-	void _cdecl	(*obj_rectangle)	(struct widget_tree *wt, struct xa_aes_object object, RECT *r);
-
-	void * _cdecl	(*rp2ap)		(struct xa_window *wind, struct xa_widget *widg, RECT *r);
-	void _cdecl	(*rp2apcs)		(struct xa_window *wind, struct xa_widget *widg, RECT *r);
-
-	short _cdecl	(*rect_clip)		(RECT *s, RECT *d, RECT *r);
-
-	void * _cdecl	(*kmalloc)		(long size);
-	void * _cdecl	(*umalloc)		(long size);
-	void _cdecl	(*kfree)		(void *addr);
-	void _cdecl	(*ufree)		(void *addr);
-
-	void _cdecl	(*bclear)		(void *addr, unsigned long len);
-
-	void * _cdecl	(*lookup_xa_data)	(struct xa_data_hdr **l,    void *_data);
-	void * _cdecl	(*lookup_xa_data_byid)	(struct xa_data_hdr **l,    long id);
-	void * _cdecl	(*lookup_xa_data_byname)(struct xa_data_hdr **l,    char *name);
-	void * _cdecl	(*lookup_xa_data_byidname)(struct xa_data_hdr **l,  long id, char *name);
-	void _cdecl	(*add_xa_data)		(struct xa_data_hdr **list, void *_data, long id, char *name, void _cdecl(*destruct)(void *d));
-	void _cdecl	(*remove_xa_data)	(struct xa_data_hdr **list, void *_data);
-	void _cdecl	(*delete_xa_data)	(struct xa_data_hdr **list, void *_data);
-	void _cdecl	(*ref_xa_data)		(struct xa_data_hdr **list, void *_data, short count);
-	long _cdecl	(*deref_xa_data)	(struct xa_data_hdr **list, void *_data, short flags);
-	void _cdecl	(*free_xa_data_list)	(struct xa_data_hdr **list);
-
-	void _cdecl	(*load_img)		(char *fname, XAMFDB *result);	
-};
-
+struct xa_module_api;
 struct xa_module_widget_theme
 {
 	char		*sname;
@@ -1613,31 +1616,6 @@ typedef struct xa_slider_widget XA_SLIDER_WIDGET;
 #define ZT_C	3
 #define ZT_D	4
 
-enum window_type
-{
-	created_for_CLIENT	= 0x0000,
-/* All of the following flags indicate at least that a windows workarea is compleyely
-   occupied by (part of) the dialoge root object. */
-	created_for_FMD_START	= 0x0001,
-	created_for_FORM_DO	= 0x0002,
-	created_for_POPUP	= 0x0004,
-	created_for_WDIAL	= 0x0008,
-	created_for_TOOLBAR	= 0x0010,
-	created_for_SLIST	= 0x0020,
-	created_for_AES		= 0x0100,
-	created_for_ALERT	= 0x0200,
-	created_for_CALC	= 0x0400,
-};
-typedef enum window_type WINDOW_TYPE;
-
-enum xa_window_class
-{
-	WINCLASS_CLIENT = 0,
-	WINCLASS_POPUP,
-	WINCLASS_ALERT,
-	WINCLASS_SLIST,
-};
-typedef enum xa_window_class WINDOW_CLASS;
 
 #define XAAO_WF_SLIDE	((long)AO0_WF_SLIDE << 16)
 #define XAAO_OBJC_EDIT	((long)AO0_OBJC_EDIT << 16)
@@ -2278,7 +2256,7 @@ struct xa_popinfo
 	short	current;		/* Currently selected, or pointed to, object */
 
 	XA_MENU_ATTACHMENT *at_up;
-	XA_MENU_ATTACHMENT *at_dn;
+	XA_MENU_ATTACHMENT *at_down;
 
 // 	short	attach_parent;		/* Object number of object in parent popup that has 'this' popup attached */
 	
@@ -2444,7 +2422,8 @@ struct xa_client
 
 	long status;
 
-	enum waiting_for waiting_for;	/* What types of event(s) the client is waiting for */
+// 	enum waiting_for waiting_for;	/* What types of event(s) the client is waiting for */
+	unsigned long waiting_for;
 	AESPB *waiting_pb;		/* Parameter block for whatever the client is waiting for */
 	short *waiting_short;		/* */
 
@@ -2472,6 +2451,7 @@ struct xa_client
 	XA_MENU_ATTACHMENT *attach;	/* submenus */
 
 	Path home_path;			/* The directory that the client was started in */
+	Path start_path;		/* The directory that the started binary lives */
 	Path cmd_name;			/* The full filename used when launching the process (if launched by shell_write) */
 	char *cmd_tail;			/* The command tail of the process (if launched by shell_write) */
 	bool tail_is_heap;		/* If true, cmd_tail is a malloc */
@@ -2611,21 +2591,24 @@ valid_aesobj(struct xa_aes_object *o)
 		return false;
 	return true;
 }
-inline static short
-aesobj_item(struct xa_aes_object *o)
-{
-	return o->item;
-}
-inline static OBJECT *
-aesobj_ob(struct xa_aes_object *o)
-{
-	return o->ob;
-}
-inline static OBJECT *
-aesobj_tree(struct xa_aes_object *o)
-{
-	return o->tree;
-}
+
+inline static short	aesobj_item (struct xa_aes_object *o) { return o->item; }
+inline static OBJECT *	aesobj_ob   (struct xa_aes_object *o) { return o->ob; }
+inline static OBJECT *	aesobj_tree (struct xa_aes_object *o) { return o->tree; }
+inline static short	aesobj_type (struct xa_aes_object *o) { return o->ob->ob_type; }
+inline static short	aesobj_flags(struct xa_aes_object *o) { return o->ob->ob_flags; }
+inline static short	aesobj_head (struct xa_aes_object *o) { return o->ob->ob_head; }
+inline static short	aesobj_tail (struct xa_aes_object *o) { return o->ob->ob_tail; }
+inline static short	aesobj_next (struct xa_aes_object *o) { return o->ob->ob_next; }
+
+inline static short	aesobj_getx (struct xa_aes_object *o) { return o->ob->ob_x; }
+inline static short	aesobj_gety (struct xa_aes_object *o) { return o->ob->ob_y; }
+inline static short	aesobj_getw (struct xa_aes_object *o) { return o->ob->ob_width; }
+inline static short	aesobj_geth (struct xa_aes_object *o) { return o->ob->ob_height; }
+inline static void	aesobj_setx (struct xa_aes_object *o, short c) { o->ob->ob_x = c; }
+inline static void	aesobj_sety (struct xa_aes_object *o, short c) { o->ob->ob_y = c; }
+inline static void	aesobj_setw (struct xa_aes_object *o, short c) { o->ob->ob_width = c; }
+inline static void	aesobj_seth (struct xa_aes_object *o, short c) { o->ob->ob_height = c; }
 
 inline static struct xa_aes_object
 inv_aesobj(void)
@@ -2727,5 +2710,131 @@ editfocus(struct objc_edit_info *ei)
 {
 	return ei->o;
 }
+
+typedef void kernkey_action(enum locks lock, struct xa_client *client, bool open);
+
+struct kernkey_entry
+{
+	struct kernkey_entry *next_key;	/* Next registered key */
+	struct kernkey_entry *next_act; /* Next registered action for this key */
+	short key;			/* Key */
+	short state;			/* shiftkey state */
+	kernkey_action *act;		/* action */
+};
+
+/*
+ * module_register() modes..
+ */
+#define MODREG_UNREGISTER	0x80000000
+#define MODREG_KERNKEY		0x00000001
+
+
+struct xa_module_api
+{
+	struct config *cfg;
+	struct common *C;
+	struct shared *S;
+	struct kentry *k;
+
+	void	_cdecl		(*display)		(const char *fmt, ...);
+	void	_cdecl		(*ndisplay)		(const char *fmt, ...);
+	void	_cdecl		(*bootlog)		(bool disp, const char *fmt, ...);
+
+	long	_cdecl		(*module_register)	(long type, void *data);
+
+	char * _cdecl		(*sysfile)		(const char *fname);
+	RSHDR * _cdecl		(*load_resource)	(struct xa_client *client, char *fname, RSHDR *rshdr, short designWidth, short designHeight, bool set_pal);
+	OBJECT * _cdecl		(*resource_tree)	(RSHDR *rsc, long num);
+	void _cdecl		(*obfix)		(OBJECT *obtree, short obj, short designWidth, short desighHeight);
+
+	OBJECT * _cdecl		(*duplicate_obtree)	(struct xa_client *client, OBJECT *tree, short start);
+	void _cdecl		(*free_object_tree)	(struct xa_client *cleint, OBJECT *tree);
+
+	void _cdecl			(*init_widget_tree)	(struct xa_client *client, struct widget_tree *wt, OBJECT *obtree);
+	struct widget_tree * _cdecl	(*new_widget_tree)	(struct xa_client *client, OBJECT *obtree);
+	struct widget_tree * _cdecl	(*obtree_to_wt)		(struct xa_client *client, OBJECT *obtree);
+	bool _cdecl			(*remove_wt)		(struct widget_tree *wt, bool force);
+
+	/* OBJECT specific functions */
+	OBSPEC *	_cdecl (*object_get_spec)	(OBJECT *ob);
+	void 		_cdecl (*object_set_spec)	(OBJECT *ob, unsigned long cl);
+	POPINFO *	_cdecl (*object_get_popinfo)	(OBJECT *ob);
+	TEDINFO *	_cdecl (*object_get_tedinfo)	(OBJECT *ob, XTEDINFO **x);
+	void		_cdecl (*object_spec_wh)	(OBJECT *ob, short *w, short *h);
+
+	void		_cdecl	(*ob_spec_xywh)		(OBJECT *tree, short obj, RECT *r);
+	void		_cdecl	(*render_object)	(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_aes_object item, short px, short py);
+	CICON *		_cdecl	(*getbest_cicon)	(CICONBLK *ciconblk);
+	short		_cdecl	(*obj_offset)		(struct widget_tree *wt, struct xa_aes_object object, short *mx, short *my);
+	void		_cdecl	(*obj_rectangle)	(struct widget_tree *wt, struct xa_aes_object object, RECT *r);
+	
+	void _cdecl		(*obj_set_radio_button)	(struct widget_tree *wt,
+							 struct xa_vdi_settings *v,
+							 struct xa_aes_object obj,
+							 bool redraw,
+							 const RECT *clip,
+							 struct xa_rect_list *rl);
+	struct xa_aes_object _cdecl (*obj_get_radio_button)	(struct widget_tree *wt,
+								struct xa_aes_object parent,
+								short state);
+
+
+	void * _cdecl	(*rp2ap)		(struct xa_window *wind, struct xa_widget *widg, RECT *r);
+	void _cdecl	(*rp2apcs)		(struct xa_window *wind, struct xa_widget *widg, RECT *r);
+
+	short _cdecl	(*rect_clip)		(RECT *s, RECT *d, RECT *r);
+
+	void * _cdecl	(*kmalloc)		(long size);
+	void * _cdecl	(*umalloc)		(long size);
+	void _cdecl	(*kfree)		(void *addr);
+	void _cdecl	(*ufree)		(void *addr);
+
+	void _cdecl	(*bclear)		(void *addr, unsigned long len);
+
+	void * _cdecl	(*lookup_xa_data)	(struct xa_data_hdr **l,    void *_data);
+	void * _cdecl	(*lookup_xa_data_byid)	(struct xa_data_hdr **l,    long id);
+	void * _cdecl	(*lookup_xa_data_byname)(struct xa_data_hdr **l,    char *name);
+	void * _cdecl	(*lookup_xa_data_byidname)(struct xa_data_hdr **l,  long id, char *name);
+	void _cdecl	(*add_xa_data)		(struct xa_data_hdr **list, void *_data, long id, char *name, void _cdecl(*destruct)(void *d));
+	void _cdecl	(*remove_xa_data)	(struct xa_data_hdr **list, void *_data);
+	void _cdecl	(*delete_xa_data)	(struct xa_data_hdr **list, void *_data);
+	void _cdecl	(*ref_xa_data)		(struct xa_data_hdr **list, void *_data, short count);
+	long _cdecl	(*deref_xa_data)	(struct xa_data_hdr **list, void *_data, short flags);
+	void _cdecl	(*free_xa_data_list)	(struct xa_data_hdr **list);
+
+	void _cdecl	(*load_img)		(char *fname, XAMFDB *result);
+
+	struct xa_window * _cdecl (*create_window)	(enum locks lock,
+							SendMessage *message_handler,
+							DoWinMesag *message_doer,
+							struct xa_client *client,
+							bool nolist,
+							XA_WIND_ATTR tp,
+							WINDOW_TYPE dial,
+							int frame,
+							bool thinwork,
+							const RECT R,
+							const RECT *max,
+							RECT *remember);
+
+	int _cdecl	(*open_window)		(enum locks lock, struct xa_window *wind, RECT r);
+	bool _cdecl	(*close_window)		(enum locks lock, struct xa_window *wind);
+	void _cdecl	(*move_window)		(enum locks lock, struct xa_window *wind, bool blit, WINDOW_STATUS newstate, short x, short y, short w, short h);
+	void _cdecl	(*top_window)		(enum locks lock, bool snd_untopped, bool snd_ontop, struct xa_window *wind);
+	void _cdecl	(*bottom_window)	(enum locks lock, bool snd_untopped, bool snd_ontop, struct xa_window *wind);
+
+	void _cdecl	(*send_wind_to_bottom)	(enum locks lock, struct xa_window *wind);
+	void _cdecl	(*delete_window)	(enum locks lock, struct xa_window *wind);
+	void _cdecl	(*delayed_delete_window)(enum locks lock, struct xa_window *wind);
+
+
+
+
+	struct xa_window * _cdecl (*create_dwind)(enum locks lock, XA_WIND_ATTR tp, char *title, struct xa_client *client, struct widget_tree *wt, FormExit(*f), WindowDisplay(*d));
+	
+	void _cdecl	(*redraw_toolbar)	(enum locks lock, struct xa_window *wind, short item);
+
+	void _cdecl	(*dispatch_shutdown)	(short flags, unsigned long arg);
+};
 
 #endif /* _xa_types_h */

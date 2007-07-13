@@ -1,5 +1,5 @@
 /*
- * Copyright 1993, 1994 by Ulrich KÅhn. All rights reserved.
+ * Copyright 1993, 1994 by Ulrich KÔøΩhn. All rights reserved.
  *
  * THIS PROGRAM COMES WITH ABSOLUTELY NO WARRANTY, NOT
  * EVEN THE IMPLIED WARRANTIES OF MERCHANTIBILITY OR
@@ -76,8 +76,8 @@ bool_t	xdr_long	(xdrs *x, long *val);
 bool_t	xdr_enum	(xdrs *x, enum_t *val);
 bool_t	xdr_bool	(xdrs *x, bool_t *val);
 bool_t	xdr_ulong	(xdrs *x, unsigned long *val);
-bool_t	xdr_string	(xdrs *x, char **cpp, long maxlen);
-bool_t	xdr_opaque	(xdrs *x, opaque **opp, long *len, long maxlen);
+bool_t	xdr_string	(xdrs *x, const char **cpp, long maxlen);
+bool_t	xdr_opaque	(xdrs *x, const opaque **opp, long *len, long maxlen);
 bool_t	xdr_fixedopaq	(xdrs *x, opaque *val, long fixedlen);
 bool_t	xdr_pointer	(xdrs *x, char **objpp, long objlen, xdrproc_t proc);
 
@@ -91,8 +91,10 @@ bool_t	xdr_pointer	(xdrs *x, char **objpp, long objlen, xdrproc_t proc);
 # define IXDR_GET_ULONG(buf)      ((unsigned long) *(buf)++)
 # define IXDR_GET_ENUM(buf)       ((int) (IXDR_GET_ULONG (buf)))
 
-# define IXDR_PUT_LONG(buf, val)  ((long) *(buf)++ = (long) val)
-# define IXDR_PUT_ULONG(buf, val) ((unsigned long) *(buf)++ = (unsigned long) val)
+//# define IXDR_PUT_LONG(buf, val)  ((long) *(buf)++ = (long) val)
+# define IXDR_PUT_LONG(buf, val) { union { void *v; long *l; } p; p.v = buf; *p.l++ = (long)val; buf = p.v;}
+//# define IXDR_PUT_ULONG(buf, val) ((unsigned long) *(buf)++ = (unsigned long) val)
+# define IXDR_PUT_ULONG(buf, val) { union { void *v; unsigned long *l; } p; p.v = buf; *p.l++ = (unsigned long)val; buf = p.v;}
 # define IXDR_PUT_ENUM(buf, val)  (IXDR_PUT_ULONG (buf, (unsigned long) val))
 
 

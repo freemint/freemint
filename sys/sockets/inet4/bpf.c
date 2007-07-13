@@ -113,7 +113,7 @@ bpf_create (void)
 	if (!bpf)
 		return NULL;
 	
-	bzero (bpf, sizeof (*bpf));
+	mint_bzero (bpf, sizeof (*bpf));
 	
 	bpf->recvq.maxqlen = BPF_MAXPACKETS;
 	bpf->link = allbpfs;
@@ -364,7 +364,7 @@ bpf_input (struct netif *nif, BUF *buf)
 			continue;
 		bpf->in_pkts++;
 		pktlen = buf->dend - buf->dstart;
-		snaplen = bpf_filter (bpf->prog, buf->dstart, pktlen, pktlen);
+		snaplen = bpf_filter (bpf->prog, (unsigned char *)buf->dstart, pktlen, pktlen);
 		if (snaplen == 0)
 			continue;
 		

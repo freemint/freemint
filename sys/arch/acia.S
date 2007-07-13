@@ -43,14 +43,14 @@ _old_acia:
 _new_acia:
 	movem.l	d0-d3/a0-a3,-(sp)
 again:	move.l	_syskey,a3
-	move.l	VMIDISYS(a3),a0
-	jsr	(a0)
+//	move.l	VMIDISYS(a3),a0
+//	jsr	(a0)
 	move.l	VIKBDSYS(a3),a0
 	jsr	(a0)
-	btst	#0x04,(0xfa01).w
+	btst	#04,0xfa01.w	//(0xfa01).w
 	beq.s	again
-	move.b	#0xbf,(0xfa11).w
 	movem.l	(sp)+,d0-d3/a0-a3
+	bclr	#6,0xfa11.w	//move.b	#0xbf,(0xfa11).w
 #ifdef M68000
 	nop				// see intr.S and syscall.S
 #endif
@@ -98,8 +98,16 @@ no_error:
 	bne.s	mid_multiple
 	cmp.b	#0xf6,d0		// $f6-$ff are multibyte packets
 	bcc.s	not_keyboard
-	move.l	KBDVEC(a3),a1
-	jmp	(a1)
+	and.w	#0xff,d0
+	move.l	_keyrec,-(sp)
+	move.w	d0,-(sp)
+	jsr	_ikbd_scan
+	addq.l	#6,sp
+	rts
+
+//	jmp	_newkeys
+//	move.l	KBDVEC(a3),a1
+//	jmp	(a1)
 
 not_keyboard:
 	sub.b	#0xf6,d0
@@ -175,11 +183,11 @@ xret:	rts
 	.bss
 
 stat_buf:
-	ds.b	7
+	ds.b	7 + 1
 mouse_1_buf:
-	ds.b	5
+	ds.b	5 + 1
 mouse_2_buf:
-	ds.b	3
+	ds.b	3 + 1
 clock_buf:
 	ds.b	6
 joy_buf:
@@ -190,10 +198,9 @@ dump_buf:			// universal buffer
 	.data
 
 buffers:
-	dc.l	stat_buf,stat_buf+7,STATVEC
-	dc.l	mouse_1_buf,mouse_1_buf+5,MOUSEVEC
-	dc.l	mouse_2_buf,mouse_2_buf+3,MOUSEVEC
-	dc.l	clock_buf,clock_buf+6,CLOCKVEC
-	dc.l	joy_buf,joy_buf+2,JOYVEC
-
+	dc.l	stat_buf,       stat_buf + 7, STATVEC
+	dc.l	mouse_1_buf, mouse_1_buf + 5, MOUSEVEC
+	dc.l	mouse_2_buf, mouse_2_buf + 3, MOUSEVEC
+	dc.l	clock_buf,     clock_buf + 6, CLOCKVEC
+	dc.l	joy_buf,         joy_buf + 2, JOYVEC
 # endif

@@ -14,7 +14,7 @@
 
 
 static struct arp_entry	*arp_alloc (void);
-static short	arp_hash (char *, short);
+static short	arp_hash (uchar *, short);
 static void	arp_remove (struct arp_entry *);
 static void	rarp_remove (struct arp_entry *);
 static void	rarp_put (struct arp_entry *);
@@ -42,7 +42,7 @@ struct arp_entry *rarptab[ARP_HASHSIZE];
 
 
 INLINE short
-arp_hash (char *addr, short len)
+arp_hash (uchar *addr, short len)
 {
 	ulong v;
 	
@@ -111,7 +111,7 @@ arp_put (struct arp_entry *are)
 	short idx;
 	
 	are->links++;
-	idx = arp_hash (are->praddr.addr, are->praddr.len);
+	idx = arp_hash(are->praddr.addr, are->praddr.len);
 	are->prnext = arptab[idx];
 	arptab[idx] = are;
 }
@@ -181,7 +181,7 @@ arp_alloc (void)
 	are = kmalloc (sizeof (*are));
 	if (are)
 	{
-		bzero (are, sizeof (*are));
+		mint_bzero (are, sizeof (*are));
 		are->outq.maxqlen = IF_MAXQ;
 	}
 	else
@@ -235,7 +235,7 @@ arp_dosend (struct netif *nif, BUF *buf, short pktype)
 		return;
 	}
 	
-	(*nif->output)(nif, buf, ARP_DHW (arph), arph->hwlen, pktype);
+	(*nif->output)(nif, buf, (char *)ARP_DHW(arph), arph->hwlen, pktype);
 }
 
 /*
@@ -334,7 +334,7 @@ arp_lookup (short flags, struct netif *nif, short type, short len, char *addr)
 	struct arp_entry *are;
 	short idx;
 	
-	idx = arp_hash (addr, len);
+	idx = arp_hash ((unsigned char *)addr, len);
 	for (are = arptab[idx]; are; are = are->prnext)
 	{
 		if (are->flags & ATF_PRCOM &&
@@ -382,7 +382,7 @@ rarp_lookup (short flags, struct netif *nif, short type, short len, char *addr)
 	struct arp_entry *are;
 	short idx;
 	
-	idx = arp_hash (addr, len);
+	idx = arp_hash ((unsigned char *)addr, len);
 	for (are = rarptab[idx]; are; are = are->hwnext)
 	{
 		if (are->flags & ATF_HWCOM
@@ -418,7 +418,7 @@ arp_sendq (struct arp_entry *are)
 	 */
 	while ((b = if_dequeue (&are->outq)))
 	{
-		(*are->nif->output)(are->nif, b, are->hwaddr.addr,
+		(*are->nif->output)(are->nif, b, (char *)are->hwaddr.addr,
 			are->hwaddr.len, PKTYPE_IP);
 	}
 }
@@ -463,10 +463,10 @@ arp_input (struct netif *nif, BUF *buf)
 		return;
 	}
 	
-	spr = ARP_SPR (arphdr);
-	dpr = ARP_DPR (arphdr);
-	shw = ARP_SHW (arphdr);
-	dhw = ARP_DHW (arphdr);
+	spr = (char *)ARP_SPR (arphdr);
+	dpr = (char *)ARP_DPR (arphdr);
+	shw = (char *)ARP_SHW (arphdr);
+	dhw = (char *)ARP_DHW (arphdr);
 	forme = !memcmp (myaddr, dpr, arphdr->prlen);
 	
 	/*
@@ -577,7 +577,7 @@ rarp_input (struct netif *nif, BUF *buf)
 	 * See if we have a matching entry.
 	 */
 	are = rarp_lookup (0, nif, arphdr->hwtype, arphdr->hwlen,
-		ARP_SHW (arphdr));
+		(char *)ARP_SHW (arphdr));
 	if (are && (are->flags & (ATF_PRCOM|ATF_NORARP)) == ATF_PRCOM
 		&& are->prtype == arphdr->prtype)
 	{
@@ -722,7 +722,7 @@ arp_ioctl (short cmd, void *arg)
 			 * Lookup/create arp entry
 			 */
 			are = arp_lookup (ARLK_NORESOLV, nif, ARPRTYPE_IP, praddr.len,
-				praddr.addr);
+				(char *)praddr.addr);
 			if (!are)
 				return ENOMEM;
 			
@@ -758,7 +758,7 @@ arp_ioctl (short cmd, void *arg)
 				return EINVAL;		
 			
 			are = arp_lookup (ARLK_NOCREAT, 0, ARPRTYPE_IP, praddr.len,
-				praddr.addr);
+				(char *)praddr.addr);
 			if (!are)
 				return ENOENT;
 			
@@ -778,7 +778,7 @@ arp_ioctl (short cmd, void *arg)
 				return EINVAL;
 			
 			are = arp_lookup (ARLK_NOCREAT, 0, ARPRTYPE_IP, praddr.len,
-				praddr.addr);
+				(char *)praddr.addr);
 			if (!are || !(are->flags & ATF_HWCOM))
 			{
 				if (are) arp_deref (are);

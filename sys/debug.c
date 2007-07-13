@@ -597,7 +597,7 @@ do_func_key(int scan)
 			_s_ync();
 			break;
 		}
-		
+
 # ifdef PROFILING
 		/* shift+F6: control profiling */
 		case 0x59:

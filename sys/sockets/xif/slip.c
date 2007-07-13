@@ -77,6 +77,7 @@ static short	slip_recv	(struct slbuf *);
 
 static long	slip_init	(void);
 
+long driver_init(void);
 long
 driver_init (void)
 {

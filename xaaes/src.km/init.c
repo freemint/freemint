@@ -34,6 +34,7 @@
 #include "c_window.h"
 #include "cnf_xaaes.h"
 #include "handler.h"
+#include "k_init.h"
 #include "k_main.h"
 #include "k_shutdown.h"
 #include "nkcc.h"
@@ -47,6 +48,8 @@
 
 #include "mint/ssystem.h"
 #include "cookie.h"
+
+long module_exit(void);
 
 
 short my_global_aes[16];
@@ -135,9 +138,6 @@ bootmessage(void)
 	if (cfg.fsel_cookie)
 		display(" - FSEL cookie found");
 
-	if (cfg.auto_program)
-		BLOG((true, "auto program"));
-
 	BLOG((true, ""));
 }
 
@@ -148,14 +148,25 @@ sysfile_exists(const char *sd, char *fn)
 {
 	struct file *check;
 	bool flag = false;
-	char *buf;
+	int o = 0;
+	char *buf, *tmp;
 
 	buf = kmalloc(strlen(sd)+16);
 	if (buf)
 	{
-		strcpy(buf, sd);
-		strcat(buf, fn);
-
+		if (sd[0] == '/' || sd[0] == '\\') {
+			buf[0] = 'u';
+			buf[1] = ':';
+			o += 2;
+		}
+		strcpy(buf + o, sd);
+		tmp = buf + strlen(buf) - 1;
+		if (*tmp != '/' && *tmp != '\\') {
+			tmp[1] = '\\';
+			tmp[2] = '\0';
+		}
+		strcat(buf + o, fn);
+		display("sysfile_exits: '%s'", buf);
 		check = kernel_open(buf, O_RDONLY, NULL, NULL);
 		if (check)
 		{
@@ -168,24 +179,147 @@ sysfile_exists(const char *sd, char *fn)
 }
 
 /*
+ *  0 = USA          8 = Ger.Suisse    16 = Hungary    24 = Romania
+ *  1 = Germany      9 = Turkey        17 = Poland     25 = Bulgaria
+ *  2 = France      10 = Finnland      18 = Lituania   26 = Slovenia
+ *  3 = England     11 = Norway        19 = Latvia     27 = Croatia
+ *  4 = Spain       12 = Danmark       20 = Estonia    28 = Serbia
+ *  5 = Italy       13 = S. Arabia     21 = Bialorus   29 = Montenegro
+ *  6 = Sweden      14 = Netherlands   22 = Ukraina    30 = Macedonia
+ *  7 = Fr.Suisse   15 = Czech         23 = Slovakia   31 = Greece
+ *
+ * 32 = Russia      40 = Vietnam       48 = Bangladesh
+ * 33 = Israel      41 = India
+ * 34 = Sou. Africa 42 = Iran
+ * 35 = Portugal    43 = Mongolia
+ * 36 = Belgium     44 = Nepal
+ * 37 = Japan       45 = Laos
+ * 38 = China       46 = Kambodja
+ * 39 = Korea       47 = Indonesia
+ */
+/*
+	"us","de","fr","en","es","it","se","fs","gs","tr","fi",
+	"no","dk","sa","nl","cz","hu","pl","lt","lv","ee",
+	"by","ua","sk","ro","bg","sl","hr","cs","cs","mk",
+	"gr","ru","il","za","pt","be","jp","cn","kp","vn",
+	"in","ir","mn","np","la","kh","id","bd",
+*/
+#if 0
+#define MaX_COUNTRYCODE 48
+static char countrycodes[] = "usdefrenesitsefsgstrfinodksanlczhuplltlveebyuaskrobgslhrcscsmkgrruilzaptbejpcnkpvninirmnnplakhidbd";
+struct aes_string {
+	int lang;
+	union { char c[2]; short w; } ccode;
+	int nlen;
+	int slen;
+	char data[0];
+};
+
+static char *
+eol(char *b)
+{
+	char c;
+
+	while ((c = *b++) && c != '\n' || c != '\r')
+		;
+	if (!c)
+		b--;
+	else if (c == '\r' && *b == '\n')
+		b++;
+	return b;
+}
+
+static int
+cpytochr(char tochr, char *s, char *d)
+{
+	int chrs = 0;
+	char c, *t;
+
+	while (*s) {
+		t = to;
+		c = *s++;
+		while (*t) {
+			if (c == *t)
+				goto end;
+			t++;
+		}
+		*d++ = c;
+		chrs++;
+	}
+end:
+	*d++ = '\0';
+	return chrs;
+}
+
+static bool
+load_text(int cc)
+{
+	char *fn;
+	union { char chr[2]; short code; } c1, c2;
+
+	if (cc > MAX_COUNTRYCODE)
+		return false;
+	cc <<= 1;
+	c1.chr[0] = countrycodes[cc++];
+	c1.chr[1] = countrycodes[cc];
+
+	fn = xaaes_sysfile("strings.aes");
+	if (fn) {
+		bool success = true;
+		char *buf = NULL, *s, *d, c;
+		struct file *fp;
+		long err;
+		XATTR x;
+
+		fp = kernel_open(fn, O_RDONLY, &r, &x);
+		if (fp) buf = kmalloc(x.size);
+		if (fp && buf) {
+			r = kernel_read(f, buf, x.size);
+			if (r != x.size)
+				goto fail;
+			kernel_close(fp);
+			fp = NULL;
+
+			{
+				char nstart[] = "[", nend[] = "]";
+
+			}
+		}
+fail:		if (buf) kfree(buf);
+		if (fp) kernel_close(fp);
+		kfree(fn);
+		return false;
+	}
+	return false;
+}
+#endif
+
+/*
  * Module initialisation
  * - setup internal data
  * - start main kernel thread
  */
 static Path start_path;
+static const struct kernel_module *self = NULL;
+
 long
-init(struct kentry *k, const char *path)
+init(struct kentry *k, const struct kernel_module *km) //const char *path)
 {
 	long err = 0L;
 
 	bool first = true;
+	
 	/* setup kernel entry */
 	kentry = k;
+	self = km;
+
 	next_res = 0L;
 
 	bzero(&G, sizeof(G));
 	C.bootlog_path[0] = '\0';
 	get_drive_and_path(start_path, sizeof(start_path));
+
+	setup_xa_module_api();
 again:
 	/* zero anything out */
 	bzero(&default_options, sizeof(default_options));
@@ -206,8 +340,7 @@ again:
 		BLOG(( false, "\n~~~~~~~~~~~~ XaAES start up!! ~~~~~~~~~~~~~~~~" ));
 	else
 		BLOG((false, "\n~~~~~~~~~~~~ XaAES restarting! ~~~~~~~~~~~~~~~"));
-#endif
-	
+#endif	
 	if (check_kentry_version())
 	{
 		err = ENOSYS;
@@ -242,8 +375,8 @@ again:
 			
 		if (flag)
 		{
-			BLOG((true, "ERROR: There exist an moose.xdd in your FreeMiNT sysdir."));
-			BLOG((true, "       Please remove it before starting the XaAES kernel module!"));
+			BLOG((/*00000005*/true, "ERROR: There exist an moose.xdd in your FreeMiNT sysdir."));
+			BLOG((/*00000006*/true, "       Please remove it before starting the XaAES kernel module!"));
 			err = EINVAL;
 			goto error;
 		}
@@ -271,14 +404,13 @@ again:
 #if GENERATE_DIAGS
 	bzero(&D, sizeof(D));
 	D.debug_level = 4;
-#if 1 /*LOGDEBUG*/
+#if 0 /*LOGDEBUG*/
 	/* Set the default debug file */
 	strcpy(D.debug_path, "xaaes.log");
 	D.debug_file = kernel_open(D.debug_path, O_WRONLY|O_CREAT|O_TRUNC, NULL, NULL);
 #else
 	D.debug_file = NULL;
 #endif
-
 	sprintf(Aes_display_name, sizeof(Aes_display_name), "  XaAES(dbg) v%s", vversion);
 #else
 	sprintf(Aes_display_name, sizeof(Aes_display_name), "  XaAES v%s", vversion);
@@ -351,7 +483,7 @@ again:
 	C.Aes = kmalloc(sizeof(*C.Aes));
 	if (!C.Aes)
 	{
-		BLOG((true, "XaAES ERROR: Can't allocate memory?"));
+		BLOG((/*00000007*/true, "XaAES ERROR: Can't allocate memory?"));
 		err = ENOMEM;
 		goto error;
 	}
@@ -376,8 +508,9 @@ again:
 	strcpy(C.Aes->proc_name,"AESSYS  ");
 
 	/* Where were we started? */
-	strcpy(C.Aes->home_path, path);
-
+	strcpy(C.Aes->home_path, self->path);
+// 	strcat(C.Aes->home_path, "/");
+#if 0
 	/* strip off last element */
 	{
 		char *s = C.Aes->home_path, *name = NULL;
@@ -393,6 +526,7 @@ again:
 		if (name)
 			*name = '\0';
 	}
+#endif
 	BLOG((false, "module path: '%s'", C.Aes->home_path));
 
 	C.Aes->xdrive = d_getdrv();
@@ -410,23 +544,18 @@ again:
 		if (!flag)
 		{
 			
-			BLOG((true, "ERROR: There exist no moose.adi in your XaAES module directory."));
-			BLOG((true, "       Please install it before starting the XaAES kernel module!"));
+			BLOG((/*00000008*/true, "ERROR: There exist no moose.adi in your XaAES module directory."));
+			BLOG((true, " -> '%s'", C.Aes->home_path));
+			BLOG((/*00000009*/true, "       Please install it before starting the XaAES kernel module!"));
 			err = EINVAL;
 			goto error;
 		}
 	}
 
 
-	/* Are we an auto/mint.cnf launched program? */
-
 	/* clear my_global_aes[0] for old gemlib */
 	my_global_aes[0] = 0;
-	mt_appl_init(my_global_aes);
-	BLOG((false, "appl_init -> %i", my_global_aes[0]));
-
-	cfg.auto_program = (my_global_aes[0] == 0);
-
+	
 	/* requires mint >= 1.15.11 */
 	C.mvalidate = true;
 
@@ -497,6 +626,7 @@ again:
 	C.aesmouse = -1;
 
 	BLOG((false, "load adi modules"));
+
 	if (!G.adi_mouse)
 		adi_load(first);
 
@@ -507,8 +637,7 @@ again:
 		r = kthread_create(NULL, k_main, NULL, &(C.Aes->p), "AESSYS");
 		if (r)
 			/* XXX todo -> exit gracefully */
-			FATAL("can't create XaAES kernel thread");
-
+			FATAL(/*0000000a*/"can't create XaAES kernel thread");
 	}
 	{
 		struct proc *p = get_curproc();

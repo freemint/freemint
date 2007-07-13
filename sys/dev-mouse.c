@@ -107,7 +107,9 @@ mouse_handler (const char *buf)
 	/* FIXME:  We only get here if somebody opened "/dev/mouse" for
 	 * reading/writing.
 	 */
-	add_mouse_randomness (*((ulong *) &buf));
+	union { const char *c; ulong *ul; } ptr;
+	ptr.c = buf;
+	add_mouse_randomness( *ptr.ul);
 # endif
 	
 	mbuf = &mousebuf [mousetail];

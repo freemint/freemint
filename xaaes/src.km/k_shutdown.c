@@ -65,7 +65,6 @@ k_shutdown(void)
 	struct xa_vdi_settings *v = C.Aes->vdi_settings;
 
 	BLOG((false, "Cleaning up ready to exit...."));
-// 	display("Cleaning up ready to exit....");
 	BLOG((false, "wait for AES help thread to terminate...."));
 	cancel_reiconify_timeout();
 
@@ -84,13 +83,10 @@ k_shutdown(void)
 		FreeResources(C.Aes, NULL, NULL);
 	
 	BLOG((false, "Removing all remaining windows"));
-// 	display("Removing all remaining windows");
 	remove_all_windows(NOLOCKING, NULL);
 	BLOG((false, "Freeing delayed deleted windows"));
-// 	display("Freeing delayed delete windows");
 	do_delayed_delete_window(NOLOCKING);
 	BLOG((false, "Closing and deleting root window"));
-// 	display("Closing and deleting root window");
 		
 	if (root_window)
 	{
@@ -100,7 +96,6 @@ k_shutdown(void)
 		S.open_windows.root = NULL;
 	}
 	BLOG((false, "shutting down aes thread .."));
-// 	display("waitfor tp");
 	if (C.Aes->tp)
 	{
 		volatile struct proc **h = (volatile struct proc **)&C.Aes->tp;
@@ -111,7 +106,6 @@ k_shutdown(void)
 			yield();
 		}
 	}
-// 	display("shutting down");
 	BLOG((false, "Freeing Aes environment"));
 	if (C.env)
 	{
@@ -119,15 +113,6 @@ k_shutdown(void)
 		C.env = NULL;
 	}
 
-// 	BLOG((false, "Freeing Aes resources"));
-#if 0
-	/* To demonstrate the working on multiple resources. */
-	while (C.Aes->resources)
-		FreeResources(C.Aes, NULL, NULL);
-	
-	while (dispatch_cevent(C.Aes))
-		yield();
-#endif	
 	/* just to be sure */
 	if (C.button_waiter == C.Aes)
 		C.button_waiter = NULL;
@@ -167,16 +152,21 @@ k_shutdown(void)
 	 * Freeing the WT list is the last thing to do. Modules may attach
 	 * widget_tree's to C.Aes
 	 */
-	BLOG((false, "freeing wtlist"));
+	BLOG((false, "freeing attachments"));
 	free_attachments(C.Aes);
-	free_wtlist(C.Aes);
+
 	/*
 	 * Exit the object render module
 	 */
 	BLOG((false, "Exit object render module"));
-	exit_client_objcrend( C.Aes );
-	(*C.Aes->objcr_module->exit_module)();
+	if (C.Aes->objcr_module)
+	{
+		exit_client_objcrend( C.Aes );
+		(*C.Aes->objcr_module->exit_module)();
+	}
 
+	BLOG((false, "freeing wtlist"));
+	free_wtlist(C.Aes);
 	BLOG((false, "Free main XaAES client structure"));
 	kfree(C.Aes);
 	C.Aes = NULL;
@@ -233,21 +223,6 @@ k_shutdown(void)
 	if (C.shutdown & RESOLUTION_CHANGE)
 		BLOG((false, "RESOLUTION_CHANGE flag is set"));
 #endif
-
-// 	BLOG((false, "Bye, bye ........................!"));
-// 	BLOG((false,""));
-
-#if 0
-#if GENERATE_DIAGS
-	/* Close the debug output file */
-	if (D.debug_file)
-	{
-		kernel_close(D.debug_file);
-		D.debug_file = NULL;
-	}
-#endif
-#endif
-
 	/*
 	 * Close the virtual used by XaAES
 	 */
@@ -268,35 +243,42 @@ k_shutdown(void)
 		/* Shut down the VDI */
 		v_clrwk(C.P_handle);
 
-		if (cfg.auto_program)
-		{
-			/* v_clswk bombs with NOVA VDI 2.67 & Memory Protection.
-			 * so I moved this to the end of the xaaes_shutdown,
-			 * AFTER closing the debugfile.
-			 */
-// 			v_clsvwk(global_vdi_settings.handle);
+		/* v_clswk bombs with NOVA VDI 2.67 & Memory Protection.
+		 * so I moved this to the end of the xaaes_shutdown,
+		 * AFTER closing the debugfile.
+		 */
+// 		v_clsvwk(global_vdi_settings.handle);
 
-			/*
-			 * Ozk: We switch off instruction, data and branch caches (where available)
-			 *	while the VDI accesses the hardware. This fixes 'black-screen'
-			 *	problems on Hades with Nova VDI.
-			 */
-			{
-				unsigned long sc = 0, cm = 0;
-				cm = s_system(S_CTRLCACHE, 0L, -1L);
-				sc = s_system(S_CTRLCACHE, -1L, 0L);
-				s_system(S_CTRLCACHE, sc & ~3, cm);
-				v_enter_cur(C.P_handle);	/* Ozk: Lets enter cursor mode */
-				v_clswk(C.P_handle);		/* Auto version must close the physical workstation */
-				s_system(S_CTRLCACHE, sc, cm);
-			}
-			display("\033e\033H");		/* Cursor enable, cursor home */
-		}
-		else
+		/*
+		 * Ozk: We switch off instruction, data and branch caches (where available)
+		 *	while the VDI accesses the hardware. This fixes 'black-screen'
+		 *	problems on Hades with Nova VDI.
+		 */
+#ifndef ST_ONLY
 		{
-			v_clsvwk(global_vdi_settings.handle);
-			mt_appl_exit(my_global_aes);
+			unsigned long sc = 0, cm = 0;
+			int odbl;
+
+			cm = s_system(S_CTRLCACHE, 0L, -1L);
+			sc = s_system(S_CTRLCACHE, -1L, 0L);
+			BLOG((false, "Get current cpu cache settings... cm = %lx, sc = %lx", cm, sc));
+			s_system(S_CTRLCACHE, sc & ~7, cm);
+			BLOG((false, "Enter cursor mode"));
+			v_enter_cur(C.P_handle);	/* Ozk: Lets enter cursor mode */
+			BLOG((false, "Closing VDI workstation %d (tc = %lx)", C.P_handle));
+			odbl = DEBUG_LEVEL;
+			DEBUG_LEVEL = 4;
+			v_clswk(C.P_handle);		/* Auto version must close the physical workstation */
+			DEBUG_LEVEL = odbl;
+			BLOG((false, "Restore CPU caches"));
+			s_system(S_CTRLCACHE, sc, cm);
+			BLOG((false, "Done shutting down VDI"));
 		}
+#else
+		v_enter_cur(C.P_handle);
+		v_clswk(C.P_handle);
+#endif
+		display("\033e\033H");		/* Cursor enable, cursor home */
 	}
 	BLOG((false, "leaving k_shutdown()"));
 }

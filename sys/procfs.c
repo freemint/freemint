@@ -283,11 +283,15 @@ proc_getxattr (fcookie *fc, XATTR *xattr)
 		xattr->nlink = 1;
 		xattr->uid = xattr->gid = 0;
 		xattr->size = xattr->nblocks = 0;
-		
+
+		SET_XATTR_TD(xattr,a,xtime.tv_sec);
+		SET_XATTR_TD(xattr,m,procfs_stmp.tv_sec);
+		SET_XATTR_TD(xattr,c,rootproc->started.tv_sec);
+#if 0		
 		*((long *) &(xattr->atime)) = xtime.tv_sec;
 		*((long *) &(xattr->mtime)) = procfs_stmp.tv_sec;
 		*((long *) &(xattr->ctime)) = rootproc->started.tv_sec;
-		
+#endif	
 		xattr->mode = S_IFDIR | DEFAULT_DIRMODE;
 		xattr->attr = FA_DIR;
 		
@@ -300,11 +304,15 @@ proc_getxattr (fcookie *fc, XATTR *xattr)
 	xattr->uid = p->p_cred->ucr->euid;
 	xattr->gid = p->p_cred->ucr->egid;
 	xattr->size = xattr->nblocks = memused (p);
-	
+
+	SET_XATTR_TD(xattr,a,xtime.tv_sec);
+	SET_XATTR_TD(xattr,m,p->started.tv_sec);
+	SET_XATTR_TD(xattr,c,p->started.tv_sec);
+#if 0
 	*(long *) &xattr->atime = xtime.tv_sec;
 	*(long *) &xattr->mtime = 
 	*(long *) &xattr->ctime = p->started.tv_sec;
-	
+#endif
 	xattr->mode = S_IFMEM | S_IRUSR | S_IWUSR;
 	xattr->attr = p_attr[p->wait_q];
 	
@@ -628,7 +636,8 @@ proc_write (FILEPTR *f, const char *buf, long nbytes)
 {
 	struct proc *p = getproc (f->devinfo);
 	MEMREGION *m;
-	long where, bytes_written, txtsize;
+	unsigned long where;
+	long bytes_written, txtsize;
 	int prot_hold;
 
 	where = f->pos;
@@ -642,7 +651,7 @@ proc_write (FILEPTR *f, const char *buf, long nbytes)
 	}
 
 	/* Hmmm, maybe we are writing to the process descriptor */
-	if ((long) p <= where && where < (long)(p + 1))
+	if ((unsigned long) p <= where && where < (unsigned long)(p + 1))
 	{
 # if 1
 		return EACCES;
@@ -651,7 +660,7 @@ proc_write (FILEPTR *f, const char *buf, long nbytes)
 		ushort save_flags;
 		long save_limit[4];
 		
-		bytes_written = (long)(p + 1) - where;
+		bytes_written = (unsigned long)(p + 1) - where;
 		
 		if (bytes_written > nbytes)
 			bytes_written = nbytes;
@@ -759,9 +768,7 @@ proc_write (FILEPTR *f, const char *buf, long nbytes)
 				bytes_written = m->loc + 256 - where;
 				if (bytes_written > nbytes)
 					bytes_written = nbytes;
-				quickmovb((void *)(m->save->loc +
-					      (where - m->loc)), buf,
-					  bytes_written);
+				quickmovb((void *)(m->save->loc + (where - m->loc)), buf, bytes_written);
 				cpush((void *)where, bytes_written);
 				buf += bytes_written;
 				where += bytes_written;
@@ -783,9 +790,7 @@ proc_write (FILEPTR *f, const char *buf, long nbytes)
 				bytes_written = m->loc + m->len - where;
 				if (bytes_written > nbytes)
 					bytes_written = nbytes;
-				quickmovb((void *)(m->save->loc +
-					      (where - m->loc - txtsize)), buf,
-					  bytes_written);
+				quickmovb((void *)(m->save->loc + (where - m->loc - txtsize)), buf, bytes_written);
 				cpush((void *)where, bytes_written);
 				buf += bytes_written;
 				where += bytes_written;

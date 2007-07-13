@@ -666,7 +666,7 @@ shutdown(void)
 		for (i = 0; i < 16; i++)	/* sleep */
 			sys_s_yield();
 
-	sys_q[READY_Q] = 0;
+	sysq[READY_Q].head = sysq[READY_Q].tail = NULL;
 
 	DEBUG(("Close open files ..."));
 	close_filesys();

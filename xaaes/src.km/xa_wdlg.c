@@ -1072,7 +1072,7 @@ wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms 
 						{
 							DIAG((D_wdlg, NULL, "wdialog_event(MU_BUTTON): doing form_do on obj=%d for %s",
 								aesobj_item(&obj), client->name));
-							if ( !form_button(wt,			/* widget tree	*/
+							if ( !Form_Button(wt,			/* widget tree	*/
 									  v,			/* VDI settings & api */
 									  obj,			/* Object	*/
 									  &md,			/* moose data	*/
@@ -1150,7 +1150,7 @@ wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms 
 				unsigned short keystate;
 				struct xa_aes_object new_focus = wt->focus;
 								
-				vq_key_s(C.P_handle, &keystate);
+				vq_key_s(C.P_handle, (short *)&keystate);
 
 				obtree = wt->tree;
 				
@@ -1176,7 +1176,7 @@ wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms 
 				
 				ei = wt->ei ? wt->ei : &wt->e;
 				
-				nxtobj = form_cursor(wt, v, ev->key, keystate, ei->o, true, &wind->rect_list.start, &new_focus, &key);
+				nxtobj = Form_Cursor(wt, v, ev->key, keystate, ei->o, true, &wind->rect_list.start, &new_focus, &key);
 				
 				if (valid_aesobj(&nxtobj))
 				{
@@ -1232,9 +1232,9 @@ wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms 
 							check_mouse(client, &md.cstate, &md.x, &md.y);
 							md.state = MBS_LEFT;
 						}
-						DIAG((D_wdlg, NULL, "wdlg_event(MU_KEYBD): doing form_button on obj=%d for %s",
+						DIAG((D_wdlg, NULL, "wdlg_event(MU_KEYBD): doing Form_Button on obj=%d for %s",
 							aesobj_item(&nxtobj), client->name));
-						if ( !form_button(wt,
+						if ( !Form_Button(wt,
 								  v,
 								  nxtobj,
 								  &md,

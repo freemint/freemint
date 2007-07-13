@@ -1,6 +1,6 @@
 /*
  * $Id$
- *
+ * 
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
  *                                        2004 F.Naumann & O.Skancke
@@ -24,12 +24,40 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef _adiload_h
-#define _adiload_h
+#ifndef _vdi_parms_h_
+#define _vdi_parms_h_
 
-#include "global.h"
+#include "gemx.h"
 
-void adi_load(bool first);
-void xam_load(bool first);
+struct vdi_xfnt_info_parms
+{
+	short	flags;
+	short	id;
+	short	index;
+	XFNT_INFO *info;
+};
 
-#endif /* _adiload_h */
+#define V_XFNT_INFO(_vpb, _handle, _flags, _id, _index, _info) {	\
+	struct vdi_xfnt_info_parms *_p = (void *)_vpb->intin;		\
+	_p->flags = _flags;						\
+	_p->id = _id;							\
+	_p->index = _index;						\
+	_p->info = _info;						\
+	VDI(_vpb, 229, 0, 5, 0, _handle);				\
+}
+#define VST_POINT(_vpb, _handle, _point, _ret)		\
+	_vpb->intin[0] = _point;			\
+	VDI(vpb, 107, 0, 1, 0, handle);			\
+	_ret = _vpb->intout[0];
+
+#define V_CREATE_DRIVER_INFO(_vpb, _handle, _id, _result)		\
+	_vpb->intin[0] = _id;						\
+	_vpb->control[V_N_PTSOUT] = 0;					\
+	_vpb->control[V_N_INTOUT] = 0;					\
+	VDI(_vpb, 180, 0, 1, 0, _handle);				\
+	if (_vpb->control[V_N_INTOUT] >= 2)				\
+		_result = ptr_from_shorts(vpb->intout[0], vpb->intout[1]);	\
+	else								\
+		_result = NULL;
+
+#endif /* _vdi_parms_h_ */

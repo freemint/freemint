@@ -1228,9 +1228,9 @@ refresh_filelist(enum locks lock, struct fsel_data *fs, SCROLL_ENTRY *dir_ent)
 			list->redraw(list, NULL);
 	}
 	
-	graf_mouse(HOURGLASS, NULL, NULL, false);
+	xa_graf_mouse(HOURGLASS, NULL, NULL, false);
 	read_directory(fs, list, dir_ent);
-	graf_mouse(ARROW, NULL, NULL, false);
+	xa_graf_mouse(ARROW, NULL, NULL, false);
 }
 
 static void
@@ -1843,7 +1843,7 @@ filename_completion(struct scroll_info *list)
 	return this;
 }
 /*
- * This function is called by form_keyboard() to let G_SLIST do further keyhandling
+ * This function is called by Form_Keyboard() to let G_SLIST do further keyhandling
  */
 static unsigned short
 fs_slist_key(struct scroll_info *list, unsigned short keycode, unsigned short ks)
@@ -2670,7 +2670,7 @@ do_fsel_exinput(enum locks lock, struct xa_client *client, AESPB *pb, const char
 					cancel_fsel, NULL))
 		{
 			client->status |= CS_FSEL_INPUT;
-			Block(client, 21);
+			(*client->block)(client, 21); //Block(client, 21);
 			client->status &= ~CS_FSEL_INPUT;
 			pb->intout[0] = 1;
 			if ((pb->intout[1] = fs->ok))
@@ -2698,7 +2698,7 @@ XA_fsel_input(enum locks lock, struct xa_client *client, AESPB *pb)
 	showm();
 	do_fsel_exinput(lock, client, pb, "");
 	set_client_mouse(client, SCM_MAIN|0x8000, msave, save);
-	graf_mouse(client->mouse, client->mouse_form, client, false);
+	xa_graf_mouse(client->mouse, client->mouse_form, client, false);
 	
 	return XAC_DONE;
 }
@@ -2723,7 +2723,7 @@ XA_fsel_exinput(enum locks lock, struct xa_client *client, AESPB *pb)
 	do_fsel_exinput(lock, client, pb, t);
 	
 	set_client_mouse(client, SCM_MAIN, msave, save);
-	graf_mouse(client->mouse, client->mouse_form, client, false);
+	xa_graf_mouse(client->mouse, client->mouse_form, client, false);
 	
 	return XAC_DONE;
 }

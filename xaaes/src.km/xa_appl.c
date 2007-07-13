@@ -48,7 +48,7 @@
 #include "xa_user_things.h"
 #include "version.h"
 #include "mint/fcntl.h"
-
+#include "mint/stat.h"
 
 
 bool
@@ -164,19 +164,18 @@ init_client_mdbuff(struct xa_client *client)
  * is about to terminate...
  */
 struct xa_client *
-init_client(enum locks lock)
+init_client(enum locks lock, bool sysclient)
 {
 	struct xa_client *client;
 	struct proc *p = get_curproc();
 	long f;
-// 	bool d = (!strnicmp(p->name, "appltest", 8)) ? true : false;
+	bool d = false; //(!strnicmp(p->name, "qed", 3)) ? true : false;
 
 	/* if attach_extension succeed it returns a pointer
 	 * to kmalloc'ed and *clean* memory area of the given size
 	 */
 	client = attach_extension(NULL, XAAES_MAGIC, PEXT_NOSHARE, sizeof(*client), &xaaes_cb_vector);
-	if (!client)
-	{
+	if (!client) {
 		ALERT(("attach_extension for %u failed, out of memory?", p->pid));
 		return NULL;
 	}
@@ -194,11 +193,15 @@ init_client(enum locks lock)
 
 	client->objcr_module = C.Aes->objcr_module;
 
-	client->ut = umalloc(xa_user_things.len);
-	client->mnu_clientlistname = umalloc(strlen(mnu_clientlistname)+1);
+	if (sysclient) {
+		client->ut = kmalloc(xa_user_things.len);
+		client->mnu_clientlistname = kmalloc(strlen(mnu_clientlistname)+1);
+	} else {
+		client->ut = umalloc(xa_user_things.len);
+		client->mnu_clientlistname = umalloc(strlen(mnu_clientlistname)+1);
+	}
 
-	if (!client->ut || !client->mnu_clientlistname)
-	{
+	if (!client->ut || !client->mnu_clientlistname) {
 		ALERT(("umalloc for %u failed, out of memory?", p->pid));
 
 		if (client->ut)
@@ -244,8 +247,7 @@ init_client(enum locks lock)
 
 	strncpy(client->proc_name, client->p->name, 8);
 	f = strlen(client->proc_name);
-	while (f < 8)
-	{
+	while (f < 8) {
 		client->proc_name[f] = ' ';
 		f++;
 	}
@@ -270,12 +272,17 @@ init_client(enum locks lock)
 		struct shel_info *info;
 
 		info = lookup_extension(client->p, XAAES_MAGIC_SH);
-		if (info)
-		{
+		if (info) {
 			DIAGS(("appl_init: shel_write started"));
 			DIAGS(("appl_init: type %i", info->type));
 			DIAGS(("appl_init: cmd_name '%s'", info->cmd_name));
 			DIAGS(("appl_init: home_path '%s'", info->home_path));
+			if (d) {
+				display("appl_init: shel_write started");
+				display("appl_init: type %i", info->type);
+				display("appl_init: cmd_name '%s'", info->cmd_name);
+				display("appl_init: home_path '%s'", info->home_path);
+			}
 
 			client->type = info->type;
 			/*
@@ -296,6 +303,42 @@ init_client(enum locks lock)
 	 */
 	if (!*client->home_path)
 	{
+//		int sl;
+		char hp[PATH_MAX], tmp[PATH_MAX];
+		fcookie fc;
+		long r;
+		bool done = false;
+
+		strcpy(tmp, p->fname);
+		hp[0] = '\0';
+
+		while (!done && path2cookie(p, tmp, NULL, &fc) == 0) {
+			XATTR x;
+
+			r = xfs_getxattr(fc.fs, &fc, &x);
+			if (!r &&  S_ISLNK(x.mode)) {
+				if (d) display("%s is link", tmp);
+				r = xfs_readlink(fc.fs, &fc, tmp, PATH_MAX);
+				if (d) display(" -> %s", tmp);
+				if (r != E_OK) {
+					tmp[0] = '\0';
+					done = true;
+				}
+			} else
+				done = true;
+
+			strcpy(hp, tmp);
+			release_cookie(&fc);
+		}
+		if (d) display("REsult! '%s'", hp);
+		fix_path(hp);
+		strip_fname(hp, client->home_path, NULL);
+		if (d) display(" -- '%s'", client->home_path);
+
+// 		strcpy(client->home_path, hp);
+	}
+#if 0
+	if (!*client->home_path) {
 		int drv = d_getdrv();
 		client->home_path[0] = (char)drv + 'A';
 		client->home_path[1] = ':';
@@ -304,12 +347,14 @@ init_client(enum locks lock)
 		DIAG((D_appl, client, "[1]Client %d home path = '%s'",
 			client->p->pid, client->home_path));
 	}
+#endif
+#if GENERATE_DIAGS
 	else /* already filled out by launch() */
 	{
 		DIAG((D_appl, client, "[2]Client %d home path = '%s'",
 			client->p->pid, client->home_path));
 	}
-
+#endif
 	proc_is_now_client(client);
 	
 	init_client_objcrend(client);
@@ -345,18 +390,13 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 	
 // 	if (d) display("appl_init: client = %lx, globl = %lx for %d", client, globl, p->pid);
 
-	if (client)
-	{
-		if (client->forced_init_client)
-		{
+	if (client) {
+		if (client->forced_init_client) {
 			client->globl_ptr = globl;
 			client->forced_init_client = false;
 		}
-	}
-	else
-	{
-		if ((client = init_client(lock)))
-		{
+	} else {
+		if ((client = init_client(lock, false))) {
 			add_to_tasklist(client);
 			/* Preserve the pointer to the globl array
 			 * so we can fill in the resource address later
@@ -365,8 +405,7 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 		}
 	}
 
-	if (client)
-	{
+	if (client) {
 		/* fill out global */
 		globl->version = 0x0410;		/* Emulate AES 4.1 */
 		globl->count = -1;			/* unlimited applications XXX -> mint process limit */
@@ -382,8 +421,7 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 		globl->bvhard = 4;
 
 		pb->intout[0] = p->pid;
-	}
-	else
+	} else
 		pb->intout[0] = -1;
 
 	return XAC_DONE;
@@ -392,8 +430,7 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 static void
 send_ch_exit(struct xa_client *client, short pid, int code)
 {
-	if (client)
-	{
+	if (client) {
 		send_app_message(NOLOCKS, NULL, client, AMQ_NORM, 0,
 				 CH_EXIT, 0,0, pid,
 				 code, 0,0,0);
@@ -406,16 +443,13 @@ CE_pwaitpid(enum locks lock, struct c_event *ce, bool cancel)
 	long r;
 
 // 	display("doing pwaitpid for %s", ce->client->name);
-	while ((r = p_waitpid(-1, 1, NULL)) > 0)
-	{
+	while ((r = p_waitpid(-1, 1, NULL)) > 0) {
 
 		DIAGS(("sigchld -> %li (pid %li)", r, ((r & 0xffff0000L) >> 16)));
 // 		display("sigchld -> %li (pid %li)", r, ((r & 0xffff0000L) >> 16));
 	}
 	if (ce->d0)
-	{
 		send_ch_exit(ce->client, ce->d0, ce->d1);
-	}
 }
 
 /*
@@ -432,15 +466,13 @@ exit_proc(enum locks lock, struct proc *p, int code)
 	/* Unlock mouse & screen */
 	if (update_locked() == p)
 		free_update_lock();
-	if (C.update_lock == p)
-	{
+	if (C.update_lock == p) {
 		C.update_lock = NULL;
 		C.updatelock_count = 0;
 	}
 	if (mouse_locked() == p)
 		free_mouse_lock();
-	if (C.mouse_lock == p)
-	{
+	if (C.mouse_lock == p) {
 		C.mouse_lock = NULL;
 		C.mouselock_count = 0;
 	}
@@ -465,8 +497,7 @@ exit_proc(enum locks lock, struct proc *p, int code)
 	 * This makes us able to find out our 'real' AES parent and send it a CH_EXIT
 	 * AES message.
 	 */
-	if ((info = lookup_extension(p, XAAES_MAGIC_SH)) && (!clnt || (clnt && clnt->pexit)) )
-	{
+	if ((info = lookup_extension(p, XAAES_MAGIC_SH)) && (!clnt || (clnt && clnt->pexit)) ) {
 		struct xa_client *client = pid2client(info->rppid);
 		
 		/* Ozk:
@@ -479,22 +510,18 @@ exit_proc(enum locks lock, struct proc *p, int code)
 		 * it is defined that shel_write() should be used when AES needs
 		 * to bother.
 		 */
-		if (info->shel_write)
-		{
+		if (info->shel_write) {
 			if (client)
 				post_cevent(client, CE_pwaitpid, NULL,NULL, p->pid,code, NULL,NULL);
 // 			send_ch_exit(client, p->pid, code);
 		}
 #if GENERATE_DIAGS
-		if (client)
-		{
+		if (client) {
 			DIAGS(("Sent CH_EXIT (premature client exit) to (pid %d)%s for (pid %d)%s",
 				client->p->pid, client->name, p->pid, p->name));
 // 			display("Sent CH_EXIT (premature client exit) to (pid %d)%s for (pid %d)%s",
 // 				client->p->pid, client->name, p->pid, p->name);
-		}
-		else
-		{
+		} else {
 			DIAGS(("No real parent client"));
 // 			display("No real parent client");
 		}
@@ -510,10 +537,8 @@ remove_client_crossrefs(struct xa_client *client)
 {
 	struct xa_client *cl;
 
-	FOREACH_CLIENT(cl)
-	{
-		if (cl->nextclient == client)
-		{
+	FOREACH_CLIENT(cl) {
+		if (cl->nextclient == client) {
 			cl->nextclient = NEXT_CLIENT(client);
 			break;
 		}
@@ -552,21 +577,17 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 
 // 	if (d) display("rem from takslist");
 
-	if (client != C.Hlp)
-	{
+	if (client != C.Hlp) {
 		cancel_winctxt_popup(lock, NULL, client);
 		
 		remove_from_tasklist(client);
 		if (C.csr_client == client)
-		{
 			post_cevent(C.Hlp, CE_abort_csr, client, NULL, 0,0, NULL,NULL);
-		}
 		else
 			cancel_csr(client);
 	}
 
-	if (S.wait_mouse == client)
-	{
+	if (S.wait_mouse == client) {
 		S.wm_count = 0;
 		S.wait_mouse = NULL;
 	}
@@ -579,19 +600,13 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 	
 // 	if (d) display("0");
 
-	if (is_infront(client))
-	{
+	if (is_infront(client)) {
 		was_infront = true;
-
-		if (cfg.next_active == 1)
-		{
+		if (cfg.next_active == 1) {
 			top_owner = APP_LIST_START;
-
 			if (top_owner == client)
 				top_owner = previous_client(lock, 1);
-		}
-		else if (cfg.next_active == 0)
-		{
+		} else if (cfg.next_active == 0) {
 			struct xa_window *tw = get_topwind(lock, client, window_list, true, XAWS_OPEN|XAWS_HIDDEN, XAWS_OPEN);
 			if (!tw)
 				tw = get_topwind(lock, client, window_list, true, XAWS_OPEN, XAWS_OPEN);
@@ -618,7 +633,7 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 	 * Check and remove if client set its own mouse-form
 	 */
 	if (C.mouse_owner == client || C.realmouse_owner == client)
-		graf_mouse(ARROW, NULL, NULL, false);
+		xa_graf_mouse(ARROW, NULL, NULL, false);
 	
 // 	if (d) display("4");
 
@@ -656,8 +671,7 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 		FreeResources(client, NULL, NULL);
 
 	/* Free name *only if* it is malloced: */
-	if (client->tail_is_heap)
-	{
+	if (client->tail_is_heap) {
 		kfree(client->cmd_tail);
 		client->cmd_tail = NULL;
 		client->tail_is_heap = false;
@@ -688,8 +702,7 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 	APP_LIST_REMOVE(client);
 		
 // 	if (d) display("10");
-	if (redraws)
-	{
+	if (redraws) {
 		C.redraws -= redraws - 1;
 		kick_mousemove_timeout();
 	}
@@ -714,12 +727,17 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 	if (client->half_screen_buffer)
 		ufree(client->half_screen_buffer);
 
-	if (client->ut)
-		ufree(client->ut);
-
-	if (client->mnu_clientlistname)
-		ufree(client->mnu_clientlistname);
-
+	if (client == C.Aes || client == C.Hlp) {
+		if (client->ut)
+			kfree(client->ut);
+		if (client->mnu_clientlistname)
+			kfree(client->mnu_clientlistname);
+	} else {
+		if (client->ut)
+			ufree(client->ut);
+		if (client->mnu_clientlistname)
+			ufree(client->mnu_clientlistname);
+	}
 
 	client->cmd_tail = "\0";
 // 	if (d) display("14");
@@ -756,8 +774,7 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 // 	if (d) display("17");
 	delete_wc_cache(&client->wcc);
 
-	if (client == C.Hlp && !client->tp_term)
-	{
+	if (client == C.Hlp && !client->tp_term) {
 		kfree(C.Hlp_pb);
 		C.Hlp_pb = NULL;
 		C.Hlp = NULL;
@@ -806,9 +823,7 @@ XA_appl_exit(enum locks lock, struct xa_client *client, AESPB *pb)
 	 *  terminates, appl_init()/appl_exit() works as expected.
 	 *
 	 */
-	if (	strnicmp(client->proc_name, "wdialog", 7) == 0
-	   )
-	{
+	if (	strnicmp(client->proc_name, "wdialog", 7) == 0 ) {
 		DIAG((D_appl, client, "appl_exit ignored for %s", client->name));
 		return XAC_DONE;
 	}
@@ -816,8 +831,7 @@ XA_appl_exit(enum locks lock, struct xa_client *client, AESPB *pb)
 	/* we assume correct termination */
 	exit_client(lock, client, 0, false, true);
 
-	if (globl)
-	{
+	if (globl) {
 		globl->version = 0;
 		globl->count = 0;
 	}
@@ -863,22 +877,16 @@ XA_appl_search(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	DIAG((D_appl, client, "appl_search for %s cpid=0x%x", c_owner(client), cpid));
 
-	if (cpid < 0)
-	{
+	if (cpid < 0) {
 		cpid = -cpid;
 		if (cpid < 1 || cpid > MAXPID)
 			cpid = 1;
-
 		next = pid2client(cpid);
 		lang = true;
-	}
-	else if (cpid == APP_DESK)
-	{
+	} else if (cpid == APP_DESK) {
 		/* N.AES: short name of desktop program */
 		next = pid2client(C.DSKpid);
-	}
-	else
-	{
+	} else {
 		/* XaAES extension. */
 		spec = (cpid & APP_TASKINFO) != 0;
 		cpid &= ~APP_TASKINFO;
@@ -888,30 +896,22 @@ XA_appl_search(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		Sema_Up(clients);
 
-		if (cpid == APP_FIRST)
-		{
+		if (cpid == APP_FIRST) {
 			/* simply the first */
 			next = CLIENT_LIST_START;
 			client->nextclient = NEXT_CLIENT(next);
-		}
-		else if (cpid == APP_NEXT)
-		{
+		} else if (cpid == APP_NEXT) {
 			next = client->nextclient;
 			if (next)
-			{
 				client->nextclient = NEXT_CLIENT(next);
-			}
 		}
 		Sema_Dn(clients);
 	}
 
-	if (!next)
-	{
+	if (!next) {
 		/* No more clients or no active clients */
 		o[0] = 0;
-	}
-	else
-	{
+	} else {
 		cpid = next->p->pid;
 
 		/* replies according to the compendium */		
@@ -923,8 +923,7 @@ XA_appl_search(enum locks lock, struct xa_client *client, AESPB *pb)
 			o[1] = next->type;
 
 		/* XaAES extensions. */
-		if (spec)
-		{
+		if (spec) {
 			if (any_hidden(lock, next, NULL))
 				o[1] |= APP_HIDDEN;
 			if (focus_owner() == next)
@@ -935,13 +934,10 @@ XA_appl_search(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		o[2] = cpid;
 
-		if (lang)
-		{
+		if (lang) {
 			strcpy(fname, next->name);
 			DIAGS((" -- nicename '%s'", fname));
-		}
-		else
-		{
+		} else {
 			strncpy(fname, next->proc_name, 8);
 			fname[8] = '\0';
 			DIAGS((" -- procname '%s'", fname));
@@ -954,33 +950,28 @@ static void
 handle_XaAES_msgs(enum locks lock, union msg_buf *msg)
 {
 	union msg_buf m = *msg;
+	struct xa_client *dest_clnt;
 	int mt = m.s.msg;
 
 	DIAGS(("Message to AES %d", mt));
 	m.s.msg = 0;
 
-	switch (mt)
-	{
-		case XA_M_DESK:
-		{
+	switch (mt) {
+		case XA_M_DESK: {
 			DIAGS(("Desk %d, '%s'", m.s.m3, m.s.p2 ? m.s.p2 : "~~~"));
-			if (m.s.p2 && m.s.m3)
-			{
+			if (m.s.p2 && m.s.m3) {
 				strcpy(C.desk, m.s.p2);
 				C.DSKpid = m.s.m3;
 				m.s.msg = XA_M_OK;
 			}
+			break;
 		}
-		break;
+		default:
+			break;
 	}
-
-	{
-		struct xa_client *dest_clnt;
-
-		dest_clnt = pid2client(m.m[1]);
-		if (dest_clnt)
-			send_a_message(lock, dest_clnt, AMQ_NORM, QMF_CHKDUP, &m);
-	}
+	dest_clnt = pid2client(m.m[1]);
+	if (dest_clnt)
+		send_a_message(lock, dest_clnt, AMQ_NORM, QMF_CHKDUP, &m);
 }
 
 /*
@@ -1006,11 +997,8 @@ XA_appl_write(enum locks lock, struct xa_client *client, AESPB *pb)
 		rep = 0;
 
 	if (dest_id == C.AESpid)
-	{
 		handle_XaAES_msgs(lock, m);
-	}
-	else
-	{
+	else {
 		short i = 50;
 		struct xa_client *dest_clnt = NULL;
 
@@ -1024,15 +1012,13 @@ XA_appl_write(enum locks lock, struct xa_client *client, AESPB *pb)
 		 */ 
 		dest_clnt = pid2client(dest_id);
 
-		while (i && !dest_clnt)
-		{
+		while (!dest_clnt && i) {
 			yield();
 			dest_clnt = pid2client(dest_id);
 			i--;
 		}
 
-		if (dest_clnt)
-		{
+		if (dest_clnt) {
 			short amq = AMQ_NORM;
 			short qmf = QMF_NORM;
 
@@ -1045,36 +1031,27 @@ XA_appl_write(enum locks lock, struct xa_client *client, AESPB *pb)
 				display(" %04x, %04x, %04x, %04x, %04x, %04x, %04x, %04x", m->m[1], m->m[2], m->m[3], m->m[4], m->m[5], m->m[6], m->m[7]);
 			}
 #endif
-			if (m->m[0] == WM_REDRAW)
-			{
+			if (m->m[0] == WM_REDRAW) {
 				struct xa_window *wind = get_wind_by_handle(lock, m->m[3]);
-				if (wind)
-				{
+
+				if (wind) {
 					generate_redraws(lock, wind, (RECT *)(m->m + 4), RDRW_WA);
 					m = NULL;
-				}
-				else
-				{
+				} else {
 					amq = AMQ_REDRAW;
 					qmf = QMF_CHKDUP;
 				}
-			}
-			else
-			{
-				if (client != dest_clnt)
-				{
+			} else {
+				if (client != dest_clnt) {
 					/* message conversion */
-					switch (m->m[0])
-					{
+					switch (m->m[0]) {
 						case WM_SIZED:
 						case WM_MOVED:
 						case WM_ICONIFY ... WM_ALLICONIFY:
-						case WM_REPOSED:
-						{
+						case WM_REPOSED: {
 							struct xa_window *wind = get_wind_by_handle(lock, m->m[3]);
 
-							if (wind)
-							{
+							if (wind) {
 								short t = (client->options.wind_opts & XAWO_WCOWORK) ? 1 : 0;
 						
 								if (dest_clnt->options.wind_opts & XAWO_WCOWORK)
@@ -1092,9 +1069,7 @@ XA_appl_write(enum locks lock, struct xa_client *client, AESPB *pb)
 				}
 			}
 			if (m)
-			{
 				send_a_message(lock, dest_clnt, amq, qmf, m);
-			}
 			
 			if (dest_clnt != client)
 				yield();
@@ -1454,29 +1429,22 @@ XA_appl_getinfo(enum locks lock, struct xa_client *client, AESPB *pb)
 	else
 		DIAG((D_appl, client, "appl_getinfo %d for non AES process (pid %ld)", gi_type, p_getpid()));
 #endif	
-	if (gi_type > 14)
-	{
-		switch (gi_type)
-		{
+	if (gi_type > 14) {
+		switch (gi_type) {
 			case 64:
-			case 65:
-			{
+			case 65: {
 				gi_type -= (64 - 15);
 				break;
 			}
-			case AGI_WINX:
-			{
+			case AGI_WINX: {
 				gi_type = 17;
 				break;
 			}
-			case AES_VERSION:
-			{
-				if (pb->control[N_ADDRIN] >= 3)
-				{
+			case AES_VERSION: {
+				if (pb->control[N_ADDRIN] >= 3) {
 					char *d;
 				
-					if ((d = (char *)pb->addrin[0]))
-					{
+					if ((d = (char *)pb->addrin[0])) {
 						for (i = 0; i < 8; i++)
 							*d++ = aes_id[i];
 					}
@@ -1489,29 +1457,25 @@ XA_appl_getinfo(enum locks lock, struct xa_client *client, AESPB *pb)
 				gi_type = XA_VERSION_INFO;
 				break;
 			}
-			case AES_WOPTS ... LAST_IN_INFOTAB:
-			{
+			case AES_WOPTS ... LAST_IN_INFOTAB: {
 				gi_type = (gi_type - AES_VERSION) + XA_VERSION_INFO;
 				break;
 			}
-			default:
-			{
+			default: {
 				gi_type = -1;
 				break;
 			}
 		}
 	}
 
-	if (gi_type != -1)
-	{
+	if (gi_type != -1) {
 		if (n_intout > 5) n_intout = 5;
 
 		for (i = 1; i < n_intout; i++)
 			pb->intout[i] = info_tab[gi_type][i-1];
 		
 		gi_type = 1;
-	}
-	else
+	} else
 		gi_type = 0;
 
 	pb->intout[0] = gi_type;
@@ -1640,7 +1604,7 @@ XA_appl_find(enum locks lock, struct xa_client *client, AESPB *pb)
 		/* search in client list */
 		default:
 		{
-			if (strcmp(name, "?AGI") == 0)
+			if (!strcmp(name, "?AGI") || /* XXX hack for eb_model, looking for "AGI?" instead of "?AGI" */!strcmp(name, "AGI?"))
 			{
 				/* Tell application we understand appl_getinfo()
 				 * (Invented by Martin Osieka for his AES extension WINX;
@@ -1692,12 +1656,10 @@ XA_appl_control(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	DIAG((D_appl, client, "appl_control for %s", c_owner(client)));
 
-	if (pid == -1)
-	{
+	if (pid == -1) {
 		if (!(cl = find_focus(true, NULL, NULL, NULL)))
 			cl = get_app_infront();
-	}
-	else
+	} else
 		cl = pid2client(pid);
 
 	DIAG((D_appl, client, "  --    on %s, func %d, 0x%lx",

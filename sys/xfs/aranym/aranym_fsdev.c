@@ -756,7 +756,7 @@ __unlink (COOKIE *d, const char *name)
 
 short arafs_init(short dev)
 {
-	char initial [] = "dynamic ara-xfs ½ by [fn]";
+	char initial [] = "dynamic ara-xfs ï¿½ by [fn]";
 	STAT *s;
 
 
@@ -935,10 +935,14 @@ ara_getxattr (fcookie *fc, XATTR *xattr)
 	xattr->size 			= stat.size;
 	xattr->blksize			= stat.blksize;
 	xattr->nblocks			= (stat.size + BLOCK_SIZE) >> BLOCK_SHIFT;
+	SET_XATTR_TD(xattr,m,stat.mtime.time);
+	SET_XATTR_TD(xattr,a,stat.atime.time);
+	SET_XATTR_TD(xattr,c,stat.ctime.time);
+#if 0
 	*((long *) &(xattr->mtime))	= stat.mtime.time;
 	*((long *) &(xattr->atime))	= stat.atime.time;
 	*((long *) &(xattr->ctime))	= stat.ctime.time;
-
+#endif
 	/* fake attr field a little bit */
 	if (S_ISDIR (xattr->mode))
 	{

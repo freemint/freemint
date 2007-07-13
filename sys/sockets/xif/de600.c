@@ -230,7 +230,7 @@ de600_ioctl (struct netif *nif, short cmd, long arg)
 	
 	return ENOSYS;
 }
-
+long _cdecl driver_init(void);
 long
 driver_init (void)
 {
@@ -397,6 +397,7 @@ de600_probe (struct netif *nif)
 /*
  * Busy interrupt routine
  */
+void de600_int(void);
 void
 de600_int (void)
 {
@@ -508,7 +509,7 @@ de600_recv_packet (struct netif *nif)
 static void
 de600_install_ints (void)
 {
-	de600_old_busy_int = Setexc (0x40, de600_busy_int);
+	de600_old_busy_int = (long)Setexc (0x40, de600_busy_int);
 	
 	__asm__
 	(

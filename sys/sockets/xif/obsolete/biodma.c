@@ -199,6 +199,7 @@ lance_ioctl (nif, cmd, arg)
 	return EINVFN;
 }
 
+long driver_init(void);
 long
 driver_init (void)
 {
@@ -242,7 +243,7 @@ driver_init (void)
 
 	sprintf (message, "DP8390 driver for BIODATA DMA v%s (de%d) "
 		 "(%02x:%02x:%02x:%02x:%02x:%02x) on target %d\r\n",
-		"0.3á",
+		"0.3ï¿½",
 		if_lance.unit,
 		if_lance.hwlocal.addr[0],
 		if_lance.hwlocal.addr[1],

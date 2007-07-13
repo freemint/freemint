@@ -31,11 +31,11 @@
 #include "xa_types.h"
 
 /* Avoid a clash with the standard function name */
-#define graf_mouse xaaes_graf_mouse
+#define xa_graf_mouse xaaes_xa_graf_mouse
 
 void check_wh_cp(RECT *c, COMPASS cp, short minw, short minh, short maxw, short maxh);
 
-void graf_mouse(int m_shape, MFORM *mf, struct xa_client *client, bool aesm);
+void xa_graf_mouse(int m_shape, MFORM *mf, struct xa_client *client, bool aesm);
 void set_client_mouse(struct xa_client *client, short which, short m_form, MFORM *mf);
 
 bool rect_changed(const RECT *n, const RECT *o);
@@ -66,7 +66,7 @@ void drag_box(struct xa_client *client, RECT start,
               RECT *last);
 
 AES_function
-	XA_graf_mouse,
+	XA_xa_graf_mouse,
 	XA_graf_handle,
 	XA_graf_mkstate,
 	XA_graf_rubberbox,

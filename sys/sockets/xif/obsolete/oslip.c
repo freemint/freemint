@@ -248,6 +248,7 @@ slip_start (channel)
 	slip_kick (channel);
 }
 
+long driver_init(void);
 long
 driver_init (void)
 {

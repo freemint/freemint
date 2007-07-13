@@ -50,10 +50,12 @@ write_bootlog(char *t, short l)
 		}
 	}
 }
+#endif
 
-void
+void _cdecl
 bootlog(bool disp, const char *fmt, ...)
 {
+#if BOOTLOG
 	char buf[512];
 	va_list args;
 	long l;
@@ -80,10 +82,11 @@ bootlog(bool disp, const char *fmt, ...)
 		buf[l+2] = '\0';
 		c_conws(buf);
 	}
-}
 #endif
+}
 
-void
+
+void _cdecl
 display(const char *fmt, ...)
 {
 	char buf[512];
@@ -115,7 +118,7 @@ display(const char *fmt, ...)
 #endif
 }
 
-void
+void _cdecl
 ndisplay(const char *fmt, ...)
 {
 	char buf[512];
@@ -232,10 +235,10 @@ diags(const char *fmt, ...)
 	char buf[512];
 	va_list args;
 	long l;
-#if 0
+#if 1
 	struct proc *p = get_curproc();
 
-	if ((strnicmp(p->name, "eb_dump", 7)))
+	if ((strnicmp(p->name, "thing", 5)))
 		return;
 #endif
 
@@ -254,6 +257,27 @@ diags(const char *fmt, ...)
 #endif
 }
 
+void
+diaga(const char *fmt, ...)
+{
+	char buf[512];
+	va_list args;
+	long l;
+
+	va_start(args, fmt);
+	l = vsprintf(buf, sizeof(buf), fmt, args);
+	va_end(args);
+
+	DEBUG((buf));
+
+#if GENERATE_DIAGS
+	if (D.debug_file)
+	{
+		buf[l++] = '\n';
+		kernel_write(D.debug_file, buf, l);
+	}
+#endif
+}
 #if 0
 /* HR: once used to debug a window_list corruption.
        also a example of how to use this trace facility. */
@@ -270,10 +294,10 @@ diag(enum debug_item item, struct xa_client *client, char *t, ...)
 {
 	enum debug_item *point = client ? client->options.point : D.point;
 	short b, x, y;
-#if 0
+#if 1
 	struct proc *p = get_curproc();
 
-	if ((strnicmp(p->name, "eb_dump", 7)))
+	if ((strnicmp(p->name, "thing", 5)))
 		return;
 #endif
 	if (D.debug_level == 4

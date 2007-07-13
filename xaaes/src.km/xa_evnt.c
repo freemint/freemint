@@ -186,9 +186,9 @@ exec_iredraw_queue(enum locks lock, struct xa_client *client)
 			else
 			{
 				struct xa_widget *widg = get_widget(wind, xaw);
-				struct xa_vdi_settings *v = wind->vdi_settings;
 				if (widg->m.r.draw)
 				{
+					struct xa_vdi_settings *v = wind->vdi_settings;
 					(*v->api->set_clip)(v, r);
 					(*widg->m.r.draw)(wind, widg, r);
 					(*v->api->clear_clip)(v);
@@ -300,7 +300,7 @@ get_mbstate(struct xa_client *client, struct mbs *d)
 	short mbutts, clicks, x, y, ks;
 	struct moose_data *md;
 
-	DIAG((D_button, NULL, " -=- md: clicks=%d, head=%lx, tail=%lx, end=%lx",
+	DIAG((D_button, NULL, "get_mbstate:  md: clicks=%d, head=%lx, tail=%lx, end=%lx",
 		client->md_head->clicks, client->md_head, client->md_tail, client->md_end));
 
 #if 0
@@ -314,41 +314,32 @@ get_mbstate(struct xa_client *client, struct mbs *d)
 	md = client->md_head;
 	clicks = md->clicks;
 			
-	if (clicks == -1)
-	{
-		if (md != client->md_tail)
-		{
+	if (clicks == -1) {
+		if (md != client->md_tail) {
 			md++;
 			if (md > client->md_end)
 				md = client->mdb;
 			client->md_head = md;
 			clicks = 1;
-		}
-		else
-		{
+		} else
 			clicks = 0;
-		}
 	}
 
-	if (clicks)
-	{
+	if (clicks) {
 		clicks = md->clicks;
 		mbutts = md->state;
 		md->clicks = -1;
 		x = md->x;
 		y = md->y;
 		ks = md->kstate;
-	}
-	else
-	{
+	} else {
 		mbutts = md->cstate;
 		md->clicks = -1;
 		check_mouse(client, NULL, &x, &y);
 		vq_key_s(C.P_handle, &ks);
 	}
 
-	if (d)
-	{
+	if (d) {
 		d->b	= mbutts;
 		d->c	= clicks;
 		d->x	= x;
@@ -361,10 +352,11 @@ get_mbstate(struct xa_client *client, struct mbs *d)
 bool
 check_queued_events(struct xa_client *client)
 {
-	short events = 0, wevents = client->waiting_for;
+	short events = 0;
+	unsigned long wevents = client->waiting_for;
 	short key = 0;
 	struct mbs mbs;
-	bool multi = wevents & XAWAIT_MULTI ? true : false;
+	bool multi = wevents & XAWAIT_MULTI ? true : false, to_yield = false;
 	AESPB *pb;
 	short *out;
 	union msg_buf *m;
@@ -377,8 +369,7 @@ check_queued_events(struct xa_client *client)
 // 		display("multi=%s, wevent=%s for %s", multi ? "Yes":"No", evtxt, client->proc_name);
 // 	}
 
-	if (!(pb = client->waiting_pb))
-	{
+	if (!(pb = client->waiting_pb)) {
 		DIAG((D_appl, NULL, "WARNING: Invalid target message buffer for %s", client->name));
 		return false;
 	}
@@ -387,36 +378,27 @@ check_queued_events(struct xa_client *client)
 
 	get_mbstate(client, &mbs);
 
-	if ((wevents & MU_MESAG) && (client->msg || client->rdrw_msg || client->crit_msg))
-	{		
+	if ((wevents & MU_MESAG) && (client->msg || client->rdrw_msg || client->crit_msg)) {		
 		m = (union msg_buf *)pb->addrin[0];
-		if (m)
-		{
-			if (!pending_critical_msgs(0, client, m))
-			{
+		if (m) {
+			if (!pending_critical_msgs(0, client, m)) {
 				if (!pending_redraw_msgs(0, client, m))
 					pending_msgs(0, client, m);
 			}
 
 			if (multi)
-			{
 				events |= MU_MESAG;
-			}
-			else
-			{
+			else {
 				*out = 1;
 				goto got_evnt;
 			}
-		}
-		else
-		{
+		} else {
 			DIAG((D_m, NULL, "MU_MESAG and NO PB! for %s", client->name));
 			display("MU_MESAG and NO PB! for %s", client->name);
 			return false;
 		}
 	}
-	if ((wevents & MU_BUTTON))
-	{
+	if ((wevents & MU_BUTTON)) {
 		bool bev = false;
 		const short *in = multi ? pb->intin + 1 : pb->intin;
 
@@ -430,15 +412,13 @@ check_queued_events(struct xa_client *client)
 			client->md_head->clicks, client->md_head, client->md_tail, client->md_end));
 
 		bev = is_bevent(mbs.b, mbs.c, in, 1);	
-		if (bev)
-		{
+		if (bev) {
 			if (!mbs.c)
 				mbs.c++;
 
 			if (multi)
 				events |= MU_BUTTON;
-			else
-			{
+			else {
 				*out++ = mbs.c;
 				*out++ = mbs.x;
 				*out++ = mbs.y;
@@ -448,12 +428,10 @@ check_queued_events(struct xa_client *client)
 			}
 		}
 	}
-	if ((wevents & (MU_NORM_KEYBD|MU_KEYBD)))
-	{
+	if ((wevents & (MU_NORM_KEYBD|MU_KEYBD))) {
 		struct rawkey keys;
 
-		if (unqueue_key(client, &keys))
-		{
+		if (unqueue_key(client, &keys)) {
 			if ((wevents & MU_NORM_KEYBD))
 				key = nkc_tconv(keys.raw.bcon);
 			else
@@ -466,9 +444,7 @@ check_queued_events(struct xa_client *client)
 
 			if (multi)
 				events |= (wevents & (MU_NORM_KEYBD|MU_KEYBD));
-			else
-			{
-// 				if (d) display("we're not here, I hope?");
+			else {
 				*out = key;
 				goto got_evnt;
 			}
@@ -478,12 +454,10 @@ check_queued_events(struct xa_client *client)
 		short ev;
 		bool is_locker = (client->p == mouse_locked() || client->p == update_locked()) ? true : false;
 		
-		if ((ev = checkfor_mumx_evnt(client, is_locker, mbs.x, mbs.y)))
-		{
+		if ((ev = checkfor_mumx_evnt(client, is_locker, mbs.x, mbs.y))) {
 			if (multi)
 				events |= ev;
-			else
-			{
+			else {
 				*out++ = 1;
 				*out++ = mbs.x;
 				*out++ = mbs.y;
@@ -493,20 +467,8 @@ check_queued_events(struct xa_client *client)
 			}
 		}
 	}
-	if ((wevents & MU_TIMER) && !client->timeout)
-	{
-// 		if (d) display("mu_timer %lx (val=%ld", client->timeout, client->timer_val);
-		if (multi)
-			events |= MU_TIMER;
-		else
-		{
-			*out = 1;
-			goto got_evnt;
-		}
-	}
 	/* AES 4.09 */
-	if (wevents & MU_WHEEL)
-	{
+	if (wevents & MU_WHEEL) {
 		/*
 		 * Ozk: This has got to be rethinked.
 		 * cannot (at leat I really, REALLY!, dont like a different
@@ -515,16 +477,14 @@ check_queued_events(struct xa_client *client)
 		 * intout[4] and intout[6] is not to be used for the wheel
 		 * I think, as that would rule out normal buttons + wheel events
 		 */
-		if (client->wheel_md)
-		{ 
+		if (client->wheel_md) { 
 			struct moose_data *md = client->wheel_md;
 			
 			DIAG((D_i,client,"    MU_WHEEL"));
 			
 			client->wheel_md = NULL;
 
-			if (multi)
-			{
+			if (multi) {
 				events |= MU_WHEEL;
 				mbs.ks	= md->state;
 				mbs.c	= md->clicks;
@@ -532,8 +492,21 @@ check_queued_events(struct xa_client *client)
 			kfree(md);
 		}
 	}
-	if (events)
-	{
+	/* Ozk:
+	 *	Check for MU_TIMER must come last!!
+	*/
+	if ((wevents & MU_TIMER) && !client->timeout) {
+// 		if (d) display("mu_timer %lx (val=%ld", client->timeout, client->timer_val);
+		if (multi) {
+			if (!events && (wevents & XAWAIT_NTO))
+				to_yield = true;
+			events |= MU_TIMER;
+		} else {
+			*out = 1;
+			goto got_evnt;
+		}
+	}
+	if (events) {
 		cancel_mutimeout(client);
 // 		if (d) display("events %x - done", events);
 #if 0
@@ -570,6 +543,10 @@ check_queued_events(struct xa_client *client)
 				events, mbs.x, mbs.y, mbs.b, mbs.ks, key, mbs.c));
 		}
 #endif
+		if (to_yield)
+			yield();
+// 		else if ((events & MU_TIMER) && (wevents & XAWAIT_NTO))
+// 			display("got other events %x, no yield", events);
 
 		*out++ = events;
 		*out++ = mbs.x;
@@ -578,8 +555,7 @@ check_queued_events(struct xa_client *client)
 		*out++ = mbs.ks;
 		*out++ = key;
 		*out   = mbs.c;
-	}
-	else
+	} else
 		return false;
 
 got_evnt:
@@ -599,14 +575,13 @@ wakeme_timeout(struct proc *p, struct xa_client *client)
 	if (client->blocktype == XABT_SELECT)
 		wakeselect(client->p);
 	else if (client->blocktype == XABT_SLEEP)
-		wake(IO_Q, client->sleeplock); //(long)client);
+		wake(IO_Q, client->sleeplock);
 }
 
 void
 cancel_mutimeout(struct xa_client *client)
 {
-	if (client->timeout)
-	{
+	if (client->timeout) {
 // 		if (!strnicmp(client->proc_name, "sprite", 6))
 // 			display("cancel mutimeout");
 
@@ -624,7 +599,7 @@ cancel_mutimeout(struct xa_client *client)
 unsigned long
 XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 {
-	short events = pb->intin[0] | XAWAIT_MULTI;
+	unsigned long events = (unsigned long)pb->intin[0] | XAWAIT_MULTI;
 	
 	CONTROL(16,7,1)
 
@@ -638,8 +613,7 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 		DIAG((D_multi, client, "status %lx, %lx, C.redraws %ld", client->status, client->rdrw_msg, C.redraws));
 	}
 #endif
-	if (client->status & (CS_LAGGING | CS_MISS_RDRW))
-	{
+	if (client->status & (CS_LAGGING | CS_MISS_RDRW)) {
 		client->status &= ~(CS_LAGGING|CS_MISS_RDRW);
 		redraw_client_windows(lock, client);
 		DIAG((D_multi, client, "evnt_multi: %s flagged as lagging! - cleared", client->name));
@@ -648,22 +622,18 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 	/* here we prepare structures necessary to wait for events
 	*/
 	client->em.flags = 0;
-	if (events & (MU_M1|MU_M2|MU_MX))
-	{
-		if (events & MU_M1)
-		{
+	if (events & (MU_M1|MU_M2|MU_MX)) {
+		if (events & MU_M1) {
 			const RECT *r = (const RECT *)&pb->intin[5];
 
 			client->em.m1 = *r;
 			client->em.flags = (pb->intin[4] & 1) | MU_M1;
 
 		}
-		if (events & MU_MX)
-		{
+		if (events & MU_MX) {
 			client->em.flags = (pb->intin[4] & 1) | MU_MX;
 		}
-		if (events & MU_M2)
-		{
+		if (events & MU_M2) {
 			const RECT *r = (const RECT *)&pb->intin[10];
 
 			client->em.m2 = *r;
@@ -671,41 +641,32 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 		}
 	}
 
-	if (events & MU_TIMER)
-	{
-		
+	if (events & MU_TIMER) {	
 		/* The Intel ligent format */
 		client->timer_val = ((long)pb->intin[15] << 16) | pb->intin[14];
 		
 		DIAG((D_i,client,"Timer val: %ld(hi=%d,lo=%d)",
 			client->timer_val, pb->intin[15], pb->intin[14]));
-		if (client->timer_val)
-		{
+		if (client->timer_val > 5) {
 			client->timeout = addtimeout(client->timer_val, wakeme_timeout);
 			if (client->timeout)
-			{
 				client->timeout->arg = (long)client;
-			}
-		}
-		else
-		{
+		} else {
 			/* Is this the cause of loosing the key's at regular intervals? */
 			DIAG((D_i,client, "Done timer for %d", client->p->pid));
 
 			/* If MU_TIMER and no timer (which means, return immediately),
-			 * we yield()
+			 * we tell check_queued_events() to yield() if no other events
+			 * are pending.
 			 */
-			yield();
+			events |= XAWAIT_NTO;
+			client->timer_val = 0;
 		}
 	}
 
 	client->waiting_for = events | XAWAIT_MULTI;
 	client->waiting_pb = pb;
-#if 0
-	if (check_cevents(client) || check_queued_events(client))
-		return XAC_DONE;
-#endif
-	Block(client, 1);
+	(*client->block)(client, 1); //Block(client, 1);
 	return XAC_DONE;
 }
 
@@ -716,8 +677,7 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 void
 cancel_evnt_multi(struct xa_client *client, int which)
 {
-	if (client != C.Aes && client != C.Hlp)
-	{
+	if (client != C.Aes && client != C.Hlp) {
 		client->waiting_for = 0;
 		client->em.flags = 0;
 // 		if (client != C.Hlp)
@@ -734,8 +694,7 @@ XA_evnt_mesag(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	CONTROL(0,1,1)
 
-	if (client->status & (CS_LAGGING | CS_MISS_RDRW))
-	{
+	if (client->status & (CS_LAGGING | CS_MISS_RDRW)) {
 		client->status &= ~(CS_LAGGING|CS_MISS_RDRW);
 		redraw_client_windows(lock, client);
 		DIAG((D_multi, client, "evnt_mesag: %s flagged as lagging! - cleared", client->name));
@@ -745,7 +704,7 @@ XA_evnt_mesag(enum locks lock, struct xa_client *client, AESPB *pb)
 	client->waiting_pb = pb;
 
 	if (!check_queued_events(client))
-		Block(client, 1);
+		(*client->block)(client, 1); //Block(client, 1);
 
 	return XAC_DONE;
 }
@@ -759,8 +718,7 @@ XA_evnt_button(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	CONTROL(3,5,1)
 
-	if (client->status & (CS_LAGGING | CS_MISS_RDRW))
-	{
+	if (client->status & (CS_LAGGING | CS_MISS_RDRW)) {
 		client->status &= ~(CS_LAGGING|CS_MISS_RDRW);
 		redraw_client_windows(lock, client);
 		DIAG((D_multi, client, "evnt_button: %s flagged as lagging! - cleared", client->name));
@@ -772,7 +730,7 @@ XA_evnt_button(enum locks lock, struct xa_client *client, AESPB *pb)
 	client->waiting_for = MU_BUTTON;
 	client->waiting_pb = pb;
 	if (!check_queued_events(client))
-		Block(client, 1);
+		(*client->block)(client, 1); //Block(client, 1);
 	return XAC_DONE;
 }
 
@@ -784,8 +742,7 @@ XA_evnt_keybd(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	CONTROL(0,1,0)
 
-	if (client->status & (CS_LAGGING | CS_MISS_RDRW))
-	{
+	if (client->status & (CS_LAGGING | CS_MISS_RDRW)) {
 		client->status &= ~(CS_LAGGING|CS_MISS_RDRW);
 		redraw_client_windows(lock, client);
 		DIAG((D_multi, client, "evnt_keybd: %s flagged as lagging! - cleared", client->name));
@@ -794,7 +751,7 @@ XA_evnt_keybd(enum locks lock, struct xa_client *client, AESPB *pb)
 	client->waiting_for = MU_KEYBD;
 	client->waiting_pb = pb;
 	if (!check_queued_events(client))
-		Block(client, 1);
+		(*client->block)(client, 1); //Block(client, 1);
 	return XAC_DONE;
 }
 
@@ -806,8 +763,7 @@ XA_evnt_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	CONTROL(5,5,0)
 
-	if (client->status & (CS_LAGGING | CS_MISS_RDRW))
-	{
+	if (client->status & (CS_LAGGING | CS_MISS_RDRW)) {
 		client->status &= ~(CS_LAGGING|CS_MISS_RDRW);
 		redraw_client_windows(lock, client);
 		DIAG((D_multi, client, "evnt_mouse: %s flagged as lagging! - cleared", client->name));
@@ -823,7 +779,7 @@ XA_evnt_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 	client->waiting_pb = pb;
 
 	if (!check_queued_events(client))
-		Block(client, 1);
+		(*client->block)(client, 1); //Block(client, 1);
 
 	return XAC_DONE;
 }
@@ -836,24 +792,19 @@ XA_evnt_timer(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	CONTROL(2,1,0)
 
-//  	cancel_mutimeout(client);
-
-	if (!(client->timer_val = ((long)pb->intin[1] << 16) | pb->intin[0]))
-	{
+	if ((client->timer_val = ((long)pb->intin[1] << 16) | pb->intin[0]) <= 5) {
+		client->timer_val = 0;
 		yield();
-	}
-	else
-	{
+	} else {
 		/* Flag the app as waiting for messages */
 		client->waiting_pb = pb;
 		/* Store a pointer to the AESPB to fill when the event occurs */
 		client->waiting_for = MU_TIMER;
 		client->timeout = addtimeout(client->timer_val, wakeme_timeout);
-		if (client->timeout)
-		{
+		if (client->timeout) {
 			client->timeout->arg = (long)client;
 		}
-		Block(client, 1);
+		(*client->block)(client, 1); //Block(client, 1);
 	}
 
 	return XAC_DONE;

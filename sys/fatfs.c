@@ -2802,7 +2802,7 @@ zero_cl (register long cl, register const ushort dev)
 	u = bio_data_getunit (dev, cl);
 	if (u)
 	{
-		quickzero (u->data, CLUSTSIZE (dev) >> 8);
+		quickzero ((char *)u->data, CLUSTSIZE (dev) >> 8);
 		bio_MARK_MODIFIED ((&bio), u);
 	}
 }
@@ -3402,7 +3402,7 @@ make_shortname (COOKIE *dir, const char *src, char *dst)
 	{
 		/* copy the name (it's in correct 8+3 format) */
 
-		register const uchar *s = src;
+		register const uchar *s = (const unsigned char *)src;
 		while (*s)
 		{
 			*dst++ = TOUPPER ((int)*s & 0xff);
@@ -4281,7 +4281,7 @@ copy_to_vfat (LDIR *ldir, register const char *name)
 
 	for (i = 0; *name && i < 25; i += 2)
 	{
-		ATARI2UNI (*name, unicode + i);
+		ATARI2UNI (*name, (unsigned char *)unicode + i);
 		name++;
 	}
 	if (i < 25)
@@ -5390,6 +5390,8 @@ get_devinfo (const ushort drv, long *err)
 	_x_BPB xbpb;
 	_x_BPB *t = &xbpb;
 
+	mint_bzero(&xbpb, sizeof(xbpb));
+
 	FAT_DEBUG (("get_devinfo: enter (drv = %i -> %c)", drv, 'A'+drv));
 
 	if (BPBVALID (drv) == VALID)
@@ -6114,7 +6116,7 @@ fatfs_mkdir (fcookie *dir, const char *name, unsigned mode)
 					register _DIR *info = (_DIR *) u->data;
 					register long j;
 
-					quickzero (u->data, CLUSTSIZE (c->dev) >> 8);
+					quickzero ((char *)u->data, CLUSTSIZE (c->dev) >> 8);
 
 					info->name[0] = '.';
 					for (j = 1; j < 11; j++) info->name[j] = ' ';
@@ -6321,7 +6323,7 @@ fatfs_remove (fcookie *dir, const char *name)
 		{
 			rel_cookie (c);
 			
-			FAT_DEBUG (("fatfs_remove: leave failure (delete on . or .. ???)"));
+			FAT_DEBUG (("fatfs_remove: leave failure (delete on . or .. \?\?\?)"));
 			return EACCES;
 		}			
 		
@@ -6983,7 +6985,7 @@ fatfs_pathconf (fcookie *dir, int which)
 static long _cdecl
 fatfs_dfree (fcookie *dir, long *buf)
 {
-	return DFREE (dir, buf);
+	return DFREE (dir, (unsigned long *)buf);
 }
 
 static long _cdecl
@@ -7032,7 +7034,7 @@ fatfs_writelabel (fcookie *dir, const char *name)
 	if (r == E_OK)
 	{
 		register const char *table = DEFAULT_T (dir->dev);
-		register const uchar *src = name;
+		register const uchar *src = (uchar *)name;
 		register char *dst = odir.info->name;
 		register long i;
 
@@ -7356,7 +7358,7 @@ fatfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 				ulong buf[4];
 				long r;
 
-				r = fatfs_dfree (dir, buf);
+				r = fatfs_dfree (dir, (long *)buf);
 				if (r) return r;
 
 				usage->blocksize = buf[2] * buf[3];
@@ -8090,7 +8092,7 @@ fatfs_open (FILEPTR *f)
 	ptr->cl = 0;
 	ptr->error = 0;
 
-	if (ptr->mode & O_TRUNC && (c->flen || c->stcl))
+	if ((ptr->mode & O_TRUNC) && (c->flen || c->stcl))
 	{
 		long r;
 

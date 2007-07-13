@@ -62,10 +62,14 @@ getxattr(FILESYS *fs, fcookie *fc, XATTR *xattr)
 		xattr->nblocks	= (stat.blksize < 512) ? stat.blocks :
 					stat.blocks / (stat.blksize >> 9);
 
+		SET_XATTR_TD(xattr,m,stat.mtime.time);
+		SET_XATTR_TD(xattr,a,stat.atime.time);
+		SET_XATTR_TD(xattr,c,stat.ctime.time);
+#if 0
 		*((long *) &(xattr->mtime)) = stat.mtime.time;
 		*((long *) &(xattr->atime)) = stat.atime.time;
 		*((long *) &(xattr->ctime)) = stat.ctime.time;
-
+#endif
 		xattr->attr	= 0;
 
 		/* fake attr field a little bit */
@@ -196,7 +200,7 @@ xfs_deblock_level_1(FILESYS *fs, ushort dev, const char *func)
 static volatile ushort xfs_sema_lock = 0;
 static volatile ushort xfs_sleepers = 0;
 
-void
+void _cdecl
 xfs_block(FILESYS *fs, ushort dev, const char *func)
 {
 	if (fs->fsflags & FS_EXT_2)
@@ -217,7 +221,7 @@ xfs_block(FILESYS *fs, ushort dev, const char *func)
 	}
 }
 
-void
+void _cdecl
 xfs_deblock(FILESYS *fs, ushort dev, const char *func)
 {
 	if (fs->fsflags & FS_EXT_2)
@@ -262,13 +266,15 @@ xfs_deblock(FILESYS *fs, ushort dev, const char *func)
 
 # else /* NONBLOCKING_DMA */
 
-# define xfs_lock(fs, dev, func)
-# define xfs_unlock(fs, dev, func)
+void _cdecl xfs_block(FILESYS *fs, ushort dev, const char *func){ return; }
+void _cdecl xfs_deblock(FILESYS *fs, ushort dev, const char *func){ return; }
+#define xfs_lock(fs, dev, func)
+#define xfs_unlock(fs, dev, func)
 
 # endif /* NONBLOCKING_DMA */
 
 
-long
+long _cdecl
 xfs_root(FILESYS *fs, int drv, fcookie *fc)
 {
 	long r;
@@ -280,7 +286,7 @@ xfs_root(FILESYS *fs, int drv, fcookie *fc)
 	return r;
 }
 
-long
+long _cdecl
 xfs_lookup(FILESYS *fs, fcookie *dir, const char *name, fcookie *fc)
 {
 	long r;
@@ -292,13 +298,13 @@ xfs_lookup(FILESYS *fs, fcookie *dir, const char *name, fcookie *fc)
 	return r;
 }
 
-DEVDRV *
+DEVDRV * _cdecl
 xfs_getdev(FILESYS *fs, fcookie *fc, long *devsp)
 {
 	return (*fs->getdev)(fc, devsp);
 }
 
-long
+long _cdecl
 xfs_getxattr(FILESYS *fs, fcookie *fc, XATTR *xattr)
 {
 	if (fs->getxattr)
@@ -315,7 +321,7 @@ xfs_getxattr(FILESYS *fs, fcookie *fc, XATTR *xattr)
 	return getxattr(fs, fc, xattr);
 }
 
-long
+long _cdecl
 xfs_chattr(FILESYS *fs, fcookie *fc, int attr)
 {
 	long r;
@@ -326,7 +332,7 @@ xfs_chattr(FILESYS *fs, fcookie *fc, int attr)
 	
 	return r;
 }
-long
+long _cdecl
 xfs_chown(FILESYS *fs, fcookie *fc, int uid, int gid)
 {
 	long r;
@@ -337,7 +343,8 @@ xfs_chown(FILESYS *fs, fcookie *fc, int uid, int gid)
 	
 	return r;
 }
-long
+
+long _cdecl
 xfs_chmode(FILESYS *fs, fcookie *fc, unsigned mode)
 {
 	long r;
@@ -349,7 +356,7 @@ xfs_chmode(FILESYS *fs, fcookie *fc, unsigned mode)
 	return r;
 }
 
-long
+long _cdecl
 xfs_mkdir(FILESYS *fs, fcookie *dir, const char *name, unsigned mode)
 {
 	long r;
@@ -360,7 +367,7 @@ xfs_mkdir(FILESYS *fs, fcookie *dir, const char *name, unsigned mode)
 	
 	return r;
 }
-long
+long _cdecl
 xfs_rmdir(FILESYS *fs, fcookie *dir, const char *name)
 {
 	long r;
@@ -371,7 +378,7 @@ xfs_rmdir(FILESYS *fs, fcookie *dir, const char *name)
 	
 	return r;
 }
-long
+long _cdecl
 xfs_creat(FILESYS *fs, fcookie *dir, const char *name, unsigned mode, int attr, fcookie *fc)
 {
 	long r;
@@ -382,7 +389,7 @@ xfs_creat(FILESYS *fs, fcookie *dir, const char *name, unsigned mode, int attr, 
 	
 	return r;
 }
-long
+long _cdecl
 xfs_remove(FILESYS *fs, fcookie *dir, const char *name)
 {
 	long r;
@@ -393,7 +400,7 @@ xfs_remove(FILESYS *fs, fcookie *dir, const char *name)
 	
 	return r;
 }
-long
+long _cdecl
 xfs_getname(FILESYS *fs, fcookie *root, fcookie *dir, char *buf, int len)
 {
 	long r;
@@ -404,7 +411,7 @@ xfs_getname(FILESYS *fs, fcookie *root, fcookie *dir, char *buf, int len)
 	
 	return r;
 }
-long
+long _cdecl
 xfs_rename(FILESYS *fs, fcookie *olddir, char *oldname, fcookie *newdir, const char *newname)
 {
 	long r;
@@ -416,7 +423,7 @@ xfs_rename(FILESYS *fs, fcookie *olddir, char *oldname, fcookie *newdir, const c
 	return r;
 }
 
-long
+long _cdecl
 xfs_opendir(FILESYS *fs, DIR *dirh, int flags)
 {
 	long r;
@@ -427,7 +434,7 @@ xfs_opendir(FILESYS *fs, DIR *dirh, int flags)
 	
 	return r;
 }
-long
+long _cdecl
 xfs_readdir(FILESYS *fs, DIR *dirh, char *nm, int nmlen, fcookie *fc)
 {
 	long r;
@@ -438,7 +445,7 @@ xfs_readdir(FILESYS *fs, DIR *dirh, char *nm, int nmlen, fcookie *fc)
 	
 	return r;
 }
-long
+long _cdecl
 xfs_rewinddir(FILESYS *fs, DIR *dirh)
 {
 	long r;
@@ -449,7 +456,7 @@ xfs_rewinddir(FILESYS *fs, DIR *dirh)
 	
 	return r;
 }
-long
+long _cdecl
 xfs_closedir(FILESYS *fs, DIR *dirh)
 {
 	long r;
@@ -461,12 +468,12 @@ xfs_closedir(FILESYS *fs, DIR *dirh)
 	return r;
 }
 
-long
+long _cdecl
 xfs_pathconf(FILESYS *fs, fcookie *dir, int which)
 {
 	return (*fs->pathconf)(dir, which);
 }
-long
+long _cdecl
 xfs_dfree(FILESYS *fs, fcookie *dir, long *buf)
 {
 	long r;
@@ -477,7 +484,7 @@ xfs_dfree(FILESYS *fs, fcookie *dir, long *buf)
 	
 	return r;
 }
-long
+long _cdecl
 xfs_writelabel(FILESYS *fs, fcookie *dir, const char *name)
 {
 	long r;
@@ -488,7 +495,7 @@ xfs_writelabel(FILESYS *fs, fcookie *dir, const char *name)
 	
 	return r;
 }
-long
+long _cdecl
 xfs_readlabel(FILESYS *fs, fcookie *dir, char *name, int namelen)
 {
 	long r;
@@ -500,7 +507,7 @@ xfs_readlabel(FILESYS *fs, fcookie *dir, char *name, int namelen)
 	return r;
 }
 
-long
+long _cdecl
 xfs_symlink(FILESYS *fs, fcookie *dir, const char *name, const char *to)
 {
 	long r;
@@ -511,7 +518,7 @@ xfs_symlink(FILESYS *fs, fcookie *dir, const char *name, const char *to)
 	
 	return r;
 }
-long
+long _cdecl
 xfs_readlink(FILESYS *fs, fcookie *fc, char *buf, int len)
 {
 	long r;
@@ -522,7 +529,7 @@ xfs_readlink(FILESYS *fs, fcookie *fc, char *buf, int len)
 	
 	return r;
 }
-long
+long _cdecl
 xfs_hardlink(FILESYS *fs, fcookie *fromdir, const char *fromname, fcookie *todir, const char *toname)
 {
 	long r;
@@ -533,7 +540,7 @@ xfs_hardlink(FILESYS *fs, fcookie *fromdir, const char *fromname, fcookie *todir
 	
 	return r;
 }
-long
+long _cdecl
 xfs_fscntl(FILESYS *fs, fcookie *dir, const char *name, int cmd, long arg)
 {
 	long r;
@@ -544,7 +551,7 @@ xfs_fscntl(FILESYS *fs, fcookie *dir, const char *name, int cmd, long arg)
 	
 	return r;
 }
-long
+long _cdecl
 xfs_dskchng(FILESYS *fs, int drv, int mode)
 {
 	long r;
@@ -556,18 +563,18 @@ xfs_dskchng(FILESYS *fs, int drv, int mode)
 	return r;
 }
 
-long
+long _cdecl
 xfs_release(FILESYS *fs, fcookie *fc)
 {
 	return (*fs->release)(fc);
 }
-long
+long _cdecl
 xfs_dupcookie(FILESYS *fs, fcookie *dst, fcookie *src)
 {
 	return (*fs->dupcookie)(dst, src);
 }
 
-long
+long _cdecl
 xfs_mknod(FILESYS *fs, fcookie *dir, const char *name, ulong mode)
 {
 	long r;
@@ -578,7 +585,7 @@ xfs_mknod(FILESYS *fs, fcookie *dir, const char *name, ulong mode)
 	
 	return r;
 }
-long
+long _cdecl
 xfs_unmount(FILESYS *fs, int drv)
 {
 	long r;
@@ -589,7 +596,7 @@ xfs_unmount(FILESYS *fs, int drv)
 	
 	return r;
 }
-long
+long _cdecl
 xfs_stat64(FILESYS *fs, fcookie *fc, STAT *stat)
 {
 	if (fs->fsflags & FS_EXT_3)
@@ -607,7 +614,7 @@ xfs_stat64(FILESYS *fs, fcookie *fc, STAT *stat)
 }
 
 
-long
+long _cdecl
 xdd_open(FILEPTR *f)
 {
 	long r;
@@ -618,7 +625,7 @@ xdd_open(FILEPTR *f)
 	
 	return r;
 }
-long
+long _cdecl
 xdd_write(FILEPTR *f, const char *buf, long bytes)
 {
 	long r;
@@ -629,7 +636,7 @@ xdd_write(FILEPTR *f, const char *buf, long bytes)
 	
 	return r;
 }
-long
+long _cdecl
 xdd_read(FILEPTR *f, char *buf, long bytes)
 {
 	long r;
@@ -640,7 +647,7 @@ xdd_read(FILEPTR *f, char *buf, long bytes)
 	
 	return r;
 }
-long
+long _cdecl
 xdd_lseek(FILEPTR *f, long where, int whence)
 {
 	long r;
@@ -651,7 +658,7 @@ xdd_lseek(FILEPTR *f, long where, int whence)
 	
 	return r;
 }
-long
+long _cdecl
 xdd_ioctl(FILEPTR *f, int mode, void *buf)
 {
 	long r;
@@ -662,7 +669,7 @@ xdd_ioctl(FILEPTR *f, int mode, void *buf)
 	
 	return r;
 }
-long
+long _cdecl
 xdd_datime(FILEPTR *f, ushort *timeptr, int rwflag)
 {
 	long r;
@@ -673,7 +680,7 @@ xdd_datime(FILEPTR *f, ushort *timeptr, int rwflag)
 	
 	return r;
 }
-long
+long _cdecl
 xdd_close(FILEPTR *f, int pid)
 {
 	long r;

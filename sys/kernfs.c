@@ -358,7 +358,7 @@ search_name (KTAB *k, const char *name)
 
 
 static int
-follow_link_denied (PROC *p, char *function)
+follow_link_denied (PROC *p, const char *function)
 {
 	int deny = get_curproc()->p_cred->ucr->euid
 			&& (get_curproc()->p_cred->ucr->euid ^ p->p_cred->suid)
@@ -376,7 +376,7 @@ follow_link_denied (PROC *p, char *function)
 static long _cdecl
 kern_root (int drv, fcookie *fc)
 {
-	TRACE (("kern_root (%d)", drv));
+	DEBUG (("kern_root (%d) (KERNDRV = %d)", drv, KERNDRV));
 
 	if (drv == KERNDRV)
 	{

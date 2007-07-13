@@ -40,12 +40,12 @@ void exit_client_widget_theme(struct xa_client *client);
 
 COMPASS compass(short d, short x, short y, RECT r);
 
-void	display_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, struct xa_rect_list *rl);
-void	standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff);
-void	redraw_toolbar(enum locks lock, struct xa_window *wind, short item);
-void	set_toolbar_coords(struct xa_window *wind, const RECT *r);
+void		display_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, struct xa_rect_list *rl);
+void		standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff);
+void _cdecl	redraw_toolbar(enum locks lock, struct xa_window *wind, short item);
+void		set_toolbar_coords(struct xa_window *wind, const RECT *r);
 
-void	set_toolbar_handlers(const struct toolbar_handlers *th, struct xa_window *wind, struct xa_widget *widg, struct widget_tree *wt);
+void		set_toolbar_handlers(const struct toolbar_handlers *th, struct xa_window *wind, struct xa_widget *widg, struct widget_tree *wt);
 
 #define STW_ZEN	1
 #define STW_GOC	2 /* Get object coordinates */
@@ -57,13 +57,13 @@ void	remove_widget(enum locks lock, struct xa_window *wind, int tool);
 void	rp_2_ap_cs(struct xa_window *wind, XA_WIDGET *widg, RECT *r);
 void *	rp_2_ap(struct xa_window *wind, XA_WIDGET *widg, RECT *r);
 
-XA_TREE * obtree_to_wt(struct xa_client *client, OBJECT *obtree);
-void	  init_widget_tree(struct xa_client *client, struct widget_tree *wt, OBJECT *obtree);
-XA_TREE * new_widget_tree(struct xa_client *client, OBJECT *obtree);
+XA_TREE *	_cdecl	obtree_to_wt(struct xa_client *client, OBJECT *obtree);
+void		_cdecl 	init_widget_tree(struct xa_client *client, struct widget_tree *wt, OBJECT *obtree);
+XA_TREE *	_cdecl	new_widget_tree(struct xa_client *client, OBJECT *obtree);
 void free_wtlist(struct xa_client *client);
 void remove_from_wtlist(XA_TREE *wt);
 void free_wt(XA_TREE *wt);
-bool remove_wt(XA_TREE *wt, bool force);
+bool _cdecl	remove_wt(XA_TREE *wt, bool force);
 
 //XA_TREE *check_widget_tree(enum locks lock, struct xa_client *client, OBJECT *obtree);
 

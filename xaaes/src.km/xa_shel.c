@@ -275,23 +275,18 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 	display(" --- parm=%lx, tail=%lx", parm, tail);
 	}
 #endif
-	
 	if (!parm)
 		return -1;
 
-	real_mode = mode & 0xff;
 	x_mode = mode & 0xff00;
-
 	cpopts.mode = 0;
-
 	if (x_mode)
 	{
-		x_shell = *(const struct xshelw *) parm;
+		x_shell = *(const struct xshelw *)parm;
 
 #if GENERATE_DIAGS
 		print_x_shell(x_mode, &x_shell);
 #endif
-
 		/* Do some checks before allocating anything. */
 		if (!x_shell.newcmd)
 			return -1;
@@ -445,6 +440,8 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 	}
 
 	ext = cmd + strlen(cmd) - 4; /* Hmmmmm, OK, tos ttp and acc are really specific and always 3 */
+
+	real_mode = mode & 0xff;
 
 	if (real_mode == 0)
 	{
@@ -648,7 +645,6 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 		 */
 
 // 		p->ppid = C.Aes->p->pid;
-
 
 		if (x_mode & SW_PRENICE)
 		{
@@ -991,8 +987,9 @@ XA_shel_read(enum locks lock, struct xa_client *client, AESPB *pb)
  * this ought to be already available somewnere in MiNT ...
  */
 static int
-wc_match (const char *name, const char *template)
+wc_match (const char *name, const char *template, bool nocase)
 {
+	char c0, c1; 
 	const char *p, *q;
 	int stop;
 
@@ -1000,7 +997,13 @@ wc_match (const char *name, const char *template)
 
 	for (p = name, q = template; *p; )
 	{
-		if (*p == *q)
+		if (nocase) {
+			c0 = tolower(*p);
+			c1 = tolower(*q);
+		} else
+			c0 = *p, c1 = *q;
+
+		if (c0 == c1)
 		{
 			p++, q++;
 			continue;
@@ -1076,7 +1079,7 @@ wc_stat64(int mode, const char *node, char *fn, struct stat *st)
 	{
 		strcpy(name, fname + 4);
 
-		if (wc_match(name, fn))
+		if (wc_match(name, fn, true))
 		{
 			r = f_stat64(mode, path, st);
 			if (r == 0 && S_ISREG(st->mode))
@@ -1094,7 +1097,6 @@ char *
 shell_find(enum locks lock, struct xa_client *client, char *fn)
 {
 	char *path;
-// 	static Path path; /* XXX */
 	char cwd[256];
 
 	struct stat st;
@@ -1115,15 +1117,6 @@ shell_find(enum locks lock, struct xa_client *client, char *fn)
 
 		if (!(isalpha(*fn) && *(fn + 1) == ':'))
 		{
-			/* Check the clients home path */
-			r = wc_stat64(0, client->home_path, fn, &st);
-			DIAGS(("[1]  --   try: '%s\\%s' :: %ld", client->home_path, fn, r));
-			if (r == 0 && S_ISREG(st.mode))
-			{
-				sprintf(path, len, "%s\\%s", client->home_path, fn);
-				return path;
-			}
-
 			/* check $HOME directory */
 			if (cfg.usehome && kh)
 			{
@@ -1135,6 +1128,16 @@ shell_find(enum locks lock, struct xa_client *client, char *fn)
 					return path;
 				}
 			}
+
+			/* Check the clients home path */
+			r = wc_stat64(0, client->home_path, fn, &st);
+			DIAGS(("[1]  --   try: '%s\\%s' :: %ld", client->home_path, fn, r));
+			if (r == 0 && S_ISREG(st.mode))
+			{
+				sprintf(path, len, "%s\\%s", client->home_path, fn);
+				return path;
+			}
+
 
 			/* the PATH env could be simply absent */
 			if (kp)	
@@ -1157,7 +1160,7 @@ shell_find(enum locks lock, struct xa_client *client, char *fn)
 						n++;
 					}
 					if (cwd[n-1] == '\\')
-						cwd[n-1] = 0;
+						cwd[n-1] = '\0';
 					cwd[n] = '\0';
 
 // 					sprintf(path, sizeof(path), "%s\\%s", cwd + f, fn);

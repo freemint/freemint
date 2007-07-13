@@ -26,6 +26,7 @@
 
 #include "xa_global.h"
 #include "version.h"
+#include "vdi_parms.h"
 
 struct nova_data *nova_data = NULL;
 struct cookie_mvdi mvdi_api;
@@ -224,7 +225,7 @@ deref_xa_data(struct xa_data_hdr **list, void *_data, short flags)
 // 	ndisplay("deref_xa_data %lx - links = %ld", data, data->links);
 	data->links--;
 	if (data->links < 0)
-		display(" negative links!!");
+		display("deref_xa_data: negative links!!");
 	if (!(ret = data->links) && (flags & 1))
 	{
 // 		display("deref_xa_data - deleting!");
@@ -258,8 +259,7 @@ XVDIPB *
 create_vdipb(void)
 {
 	XVDIPB *v;
-	short *p;
-	short **e;
+	short *p, **e;
 	int i;
 	
 	v = kmalloc(sizeof(XVDIPB) + ((12 + 500 + 500 + 500 + 500) << 1) );
@@ -276,7 +276,7 @@ create_vdipb(void)
 	}
 	return v;
 }
-
+#if 0
 /*
  * callout the VDI
  */
@@ -306,7 +306,7 @@ VDI(XVDIPB *vpb, short c0, short c1, short c3, short c5, short c6)
 
 	do_vdi_trap(vpb);
 }
-
+#endif
 void
 get_vdistr(char *d, short *s, short len)
 {
@@ -328,6 +328,7 @@ xvst_font(XVDIPB *vpb, short handle, short id)
 	VDI(vpb, 21, 0, 1, 0, handle);
 }
 
+
 XFNT_INFO *
 xvqt_xfntinfo(XVDIPB *vpb, short handle, short flags, short id, short index)
 {
@@ -336,11 +337,15 @@ xvqt_xfntinfo(XVDIPB *vpb, short handle, short flags, short id, short index)
 	if ((x = kmalloc(sizeof(*x))))
 	{
 		x->size = sizeof(*x);
+		V_XFNT_INFO(vpb, handle, flags, id, index, x);
+#if 0
+		x->size = sizeof(*x);
 		vpb->intin[0] = flags;
 		vpb->intin[1] = id;
 		vpb->intin[2] = index;
 		*(XFNT_INFO **)&vpb->intin[3] = x;
 		VDI(vpb, 229, 0, 5, 0, handle);
+#endif
 	}
 	return x;
 }
@@ -348,9 +353,14 @@ xvqt_xfntinfo(XVDIPB *vpb, short handle, short flags, short id, short index)
 short
 xvst_point(XVDIPB *vpb, short handle, short point)
 {
+	short ret;
+	VST_POINT(vpb, handle, point, ret);
+	return ret;
+#if 0
 	vpb->intin[0] = point;
 	VDI(vpb, 107, 0, 1, 0, handle);
 	return vpb->intout[0];
+#endif
 }
 
 #if 0
