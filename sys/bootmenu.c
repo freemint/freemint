@@ -281,8 +281,6 @@ emit_ini_save(short fd)
 static void
 do_debug_level(char *arg)
 {
-	return;
-
 	long val;
 
 	if (!isdigit(*arg))
