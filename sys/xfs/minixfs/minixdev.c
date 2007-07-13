@@ -477,8 +477,10 @@ static long _cdecl
 m_write (FILEPTR *f, const char *buf, long len)
 {
 	union { const char *c; char *nc; } b;
+	long ret;
+
 	b.c = buf;
-	long ret = __fio (f, b.nc, len, WRITE);
+	ret = __fio (f, b.nc, len, WRITE);
 	
 # if 0
 	/* only in robust mode -> that means never */

@@ -253,7 +253,7 @@ struct km_s2
 	ushort	magic;
 	ushort	size;
 	ushort	free;
-# define USED		0
+# define INUSE		0
 # define FREE		1
 	ushort	res;
 	KM_S2	*next;
@@ -291,7 +291,7 @@ struct km_s2
 	ushort	magic;
 	ushort	size;
 	ushort	free;
-# define USED		0
+# define INUSE		0
 # define FREE		1
 	ushort	res;
 	KM_S2	*next;
@@ -1018,7 +1018,7 @@ km_s2_flist_ins (KM_S2 *item)
 INLINE void
 km_s2_flist_rem (KM_S2 *item)
 {
-	item->free = USED;
+	item->free = INUSE;
 
 	if (item->fnext)
 		item->fnext->fprev = item->fprev;
@@ -1037,7 +1037,7 @@ km_s2_flist_rem (KM_S2 *item)
  *
  * - new block is positionated at the end of KM_S2 block
  * - double linked list is updated
- * - free is initialized as USED
+ * - free is initialized as INUSE
  * - return pointer to new KM_S2 block
  *
  * conditions:
@@ -1059,7 +1059,7 @@ km_s2_split (KM_S2 *item, ushort size)
 
 	new->magic = S2_MAGIC;
 	new->size = size;
-	new->free = USED;
+	new->free = INUSE;
 
 	new->next = item->next;
 	new->prev = item;
@@ -1104,7 +1104,7 @@ km_s2_setup (KM_P *page)
 
 	temp->magic = S2_MAGIC;
 	temp->size = PAGESIZE - P__HEAD;
-	temp->free = USED;
+	temp->free = INUSE;
 	temp->next = NULL;
 	temp->prev = NULL;
 	temp->s.page = page;
