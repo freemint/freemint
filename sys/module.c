@@ -722,7 +722,7 @@ run_km(const char *path)
 		long _cdecl (*run)(struct kentry *, const struct kernel_module *);
 
 		FORCE("run_km(%s) ok (bp 0x%lx)!", path, km->b);
-		sys_c_conin();
+//		sys_c_conin();
 // 		run = (long _cdecl(*)(struct kentry *, const char *))km->b->p_tbase;
 		run = (long _cdecl(*)(struct kentry *, const struct kernel_module *))km->b->p_tbase;
 		err = (*run)(&kentry, km); //km->path);
