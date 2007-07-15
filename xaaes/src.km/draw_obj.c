@@ -747,9 +747,9 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, struct xa_vdi_setti
 
 	if (wt == NULL)
 	{
+		wt = &this;
 		clear_edit(&wt->e);
 		this = nil_wt; //nil_tree;
-		wt = &this;
 		wt->ei = NULL;
 		wt->owner = C.Aes;
 		wt->objcr_api = C.Aes->objcr_api;
@@ -813,7 +813,7 @@ uplink:
 			rel_depth = 0;
 		}
 
-		if (!(aesobj_flags(c) & OF_HIDETREE))
+		if (!aesobj_hidden(c))
 		{
 			if (set_aesobj_uplink(&tree, c, &stop, &oblink))
 				goto uplink;
@@ -835,7 +835,7 @@ uplink:
 
 		/* Any non-hidden children? */
 		if (    head >= 0
-		    && !(aesobj_flags(c) & OF_HIDETREE)
+		    && !aesobj_hidden(c)
 		    &&  (!start_drawing || (start_drawing && rel_depth < depth)))
 		{
 			x += aesobj_getx(c);
@@ -855,7 +855,7 @@ downlink:
 			/* Trace back up tree if no more siblings */
 			while (valid_aesobj(&next) && !same_aesobj(&next, &stop))
 			{
-				struct xa_aes_object tail = aesobj(aesobj_tree(&next), aesobj_ob(&next)->ob_tail);
+				struct xa_aes_object tail = aesobj(aesobj_tree(&next), aesobj_tail(&next));
 				if (same_aesobj(c, &tail))
 				{
 					*c = next;

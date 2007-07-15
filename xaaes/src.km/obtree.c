@@ -49,7 +49,6 @@ object_have_spec(OBJECT *ob)
 	}
 	return false;
 }
-
 bool
 validate_obtree(struct xa_client *client, OBJECT *obtree, char *fdesc)
 {
@@ -75,6 +74,9 @@ object_set_spec(OBJECT *ob, unsigned long cl)
 		ob->ob_spec.index = cl;
 }
 
+inline void
+aesobj_set_spec(struct xa_aes_object *o, unsigned long cl) { object_set_spec(aesobj_ob(o),cl); }
+
 inline bool
 object_has_tedinfo(OBJECT *ob)
 {
@@ -93,6 +95,10 @@ object_has_tedinfo(OBJECT *ob)
 		}
 	}
 }
+
+inline bool
+aesobj_has_tedinfo(struct xa_aes_object *o) { return object_has_tedinfo(aesobj_ob(o)); }
+
 inline bool
 object_has_freestr(OBJECT *ob)
 {
@@ -111,6 +117,10 @@ object_has_freestr(OBJECT *ob)
 		}
 	}
 }
+
+inline bool
+aesobj_has_freestr(struct xa_aes_object *o) { return object_has_freestr(aesobj_ob(o)); }
+
 inline bool
 object_is_editable(OBJECT *ob, short flags, short state)
 {
@@ -122,6 +132,16 @@ object_is_editable(OBJECT *ob, short flags, short state)
 	return false;
 }
 
+inline bool
+aesobj_is_editable(struct xa_aes_object *o, short flags, short state)
+{
+	if ((aesobj_edit(o) || (flags & OF_EDITABLE)) && !(aesobj_disabled(o) || (state & OS_DISABLED))) {
+		if (aesobj_has_tedinfo(o) || (aesobj_type(o) & 0xff) == G_USERDEF)
+			return true;
+	}
+	return false;
+}
+		
 inline TEDINFO *
 object_get_tedinfo(OBJECT *ob, XTEDINFO **x)
 {
@@ -145,6 +165,11 @@ object_get_tedinfo(OBJECT *ob, XTEDINFO **x)
 	}
 	return ted;
 }
+
+inline TEDINFO *
+aesobj_get_tedinfo(struct xa_aes_object *o, XTEDINFO **x) { return object_get_tedinfo(aesobj_ob(o), x); }
+
+
 /*
  * extract string from object, return NULL if object is of a type
  * with no string
@@ -182,7 +207,7 @@ object_get_string(OBJECT *ob)
 	}
 	return ret;
 }
- 
+
 /* A quick hack to catch *most* of the problems with transparent objects */
 bool
 obj_is_transparent(struct widget_tree *wt, OBJECT *ob, bool pdistrans)
@@ -955,7 +980,7 @@ free_object_tree(struct xa_client *client, OBJECT *obtree)
 void
 obj_change_popup_entry(struct xa_aes_object obj, short obnum, char *s)
 {
-	if (valid_aesobj(&obj) && (aesobj_ob(&obj)->ob_type & 0xff) == G_POPUP)
+	if (valid_aesobj(&obj) && (aesobj_type(&obj) & 0xff) == G_POPUP)
 	{
 		POPINFO *pinf = object_get_popinfo(aesobj_ob(&obj));
 		struct xa_aes_object this = aesobj(pinf->tree, obnum);
@@ -1331,22 +1356,22 @@ uplink:
 				break;
 		}
 
-		if (aesobj_ob(&curr)->ob_head != -1 && !(aesobj_ob(&curr)->ob_flags & OF_HIDETREE))
+		if (aesobj_head(&curr) != -1 && !aesobj_hidden(&curr))
 		{
-			curr = aesobj(aesobj_tree(&curr), aesobj_ob(&curr)->ob_head);
+			curr = aesobj(aesobj_tree(&curr), aesobj_head(&curr));
 		}
 		else
 		{
 downlink:
-			next = aesobj(aesobj_tree(&curr), aesobj_ob(&curr)->ob_next);
+			next = aesobj(aesobj_tree(&curr), aesobj_next(&curr));
 			
 			while (valid_aesobj(&next) && !same_aesobj(&next, &stop))
 			{
-				struct xa_aes_object tail = aesobj(aesobj_tree(&next), aesobj_ob(&next)->ob_tail);
+				struct xa_aes_object tail = aesobj(aesobj_tree(&next), aesobj_tail(&next));
 				if (same_aesobj(&curr, &tail))
 				{
 					curr = next;
-					next = aesobj(aesobj_tree(&curr), aesobj_ob(&curr)->ob_next);
+					next = aesobj(aesobj_tree(&curr), aesobj_next(&curr));
 				}
 				else break;
 			}
@@ -1467,23 +1492,23 @@ uplink:
 		if (set_aesobj_uplink(&tree, &curr, &stop, &oblink))
 			goto uplink;
 
-		if (aesobj_ob(&curr)->ob_head != -1 && !(aesobj_ob(&curr)->ob_flags & OF_HIDETREE))
+		if (aesobj_head(&curr) != -1 && !aesobj_hidden(&curr))
 		{
 			struct par *pn = kmalloc(sizeof(*pn));
 			
 			pn->prv = parents;
 			pn->this = curr;
 			parents = pn;
-			curr = aesobj(aesobj_tree(&curr), aesobj_ob(&curr)->ob_head);
+			curr = aesobj(aesobj_tree(&curr), aesobj_head(&curr));
 		}
 		else
 		{
 downlink:
-			next = aesobj(aesobj_tree(&curr), aesobj_ob(&curr)->ob_next);
+			next = aesobj(aesobj_tree(&curr), aesobj_next(&curr));
 			
 			while (valid_aesobj(&next) && !same_aesobj(&next, &stop))
 			{
-				struct xa_aes_object tail = aesobj(aesobj_tree(&next), aesobj_ob(&next)->ob_tail);
+				struct xa_aes_object tail = aesobj(aesobj_tree(&next), aesobj_tail(&next));
 				if (same_aesobj(&curr, &tail))
 				{
 					struct par *pn;
@@ -1494,7 +1519,7 @@ downlink:
 						parents = pn;
 					}
 					curr = next;
-					next = aesobj(aesobj_tree(&curr), aesobj_ob(&curr)->ob_next);
+					next = aesobj(aesobj_tree(&curr), aesobj_next(&curr));
 				}
 				else break;
 			}
@@ -1534,9 +1559,9 @@ ob_get_parent(OBJECT *obtree, struct xa_aes_object obj)
 		do
 		{
 			last = obj;
-			obj  = aesobj(aesobj_tree(&obj), aesobj_ob(&obj)->ob_next);
-			tail = aesobj(aesobj_tree(&obj), aesobj_ob(&obj)->ob_tail);
-		} while (valid_aesobj(&obj) && !same_aesobj(&last, &tail)); //obtree[obj].ob_tail != last);
+			obj  = aesobj(aesobj_tree(&obj), aesobj_next(&obj));
+			tail = aesobj(aesobj_tree(&obj), aesobj_tail(&obj));
+		} while (valid_aesobj(&obj) && !same_aesobj(&last, &tail));
 	}
 	else
 		obj = inv_aesobj();
@@ -1700,16 +1725,16 @@ ob_find_next_any_flagstate(struct widget_tree *wt, struct xa_aes_object parent, 
 	
 	if (aesobj_item(&start) <= 0)
 	{
-		if (aesobj_ob(&parent)->ob_head > 0)
+		if (aesobj_head(&parent) > 0)
 		{
-			start = aesobj(aesobj_tree(&parent), aesobj_ob(&parent)->ob_head);
+			start = aesobj(aesobj_tree(&parent), aesobj_head(&parent));
 			if (!(flags & OBFIND_LAST))
 				flags |= OBFIND_FIRST;
 		}
 		else goto done;
 	}
 	
-	if (aesobj_ob(&parent)->ob_head == -1)
+	if (aesobj_head(&parent) == -1)
 	{
 // 		if (d) display("parent head -1");
 		return co;
@@ -1950,29 +1975,29 @@ uplink:
 			y -= this->ob_y;
 		}
 
-		if (aesobj_ob(&curr)->ob_head != -1 && (!(aesobj_ob(&curr)->ob_flags & OF_HIDETREE) || (flags & OBFIND_HIDDEN)))
+		if (aesobj_head(&curr) != -1 && (!aesobj_hidden(&curr) || (flags & OBFIND_HIDDEN)))
 		{
 // 			if (d) display(" parent %d, head = %d", aesobj_item(&curr), aesobj_ob(&curr)->ob_head);
-			x += aesobj_ob(&curr)->ob_x;
-			y += aesobj_ob(&curr)->ob_y;
-			curr = aesobj(aesobj_tree(&curr), aesobj_ob(&curr)->ob_head);
+			x += aesobj_getx(&curr);
+			y += aesobj_gety(&curr);
+			curr = aesobj(aesobj_tree(&curr), aesobj_head(&curr));
 			rel_depth++;
 		}
 		else
 		{
 downlink:
-			next = aesobj(aesobj_tree(&curr), aesobj_ob(&curr)->ob_next);
+			next = aesobj(aesobj_tree(&curr), aesobj_next(&curr));
 			
 			while (valid_aesobj(&next) && !same_aesobj(&next, &stop))
 			{
-				struct xa_aes_object tail = aesobj(aesobj_tree(&next), aesobj_ob(&next)->ob_tail);
+				struct xa_aes_object tail = aesobj(aesobj_tree(&next), aesobj_tail(&next));
 				if (same_aesobj(&curr, &tail))
 				{
 // 					if (d) display(" childs of %d done", aesobj_item(&curr));
 					curr = next;
-					x -= aesobj_ob(&curr)->ob_x;
-					y -= aesobj_ob(&curr)->ob_y;
-					next = aesobj(aesobj_tree(&curr), aesobj_ob(&curr)->ob_next);
+					x -= aesobj_getx(&curr);
+					y -= aesobj_gety(&curr);
+					next = aesobj(aesobj_tree(&curr), aesobj_next(&curr));
 					rel_depth--;
 				}
 				else
@@ -1981,8 +2006,8 @@ downlink:
 			if (same_aesobj(&next, &stop) && set_aesobj_downlink(&tree, &curr, &stop, &oblink))
 			{
 // 				if (d) display("downlink to %d in %lx", curr.item, curr.tree);
-				x -= aesobj_ob(&curr)->ob_x;
-				y -= aesobj_ob(&curr)->ob_y;
+				x -= aesobj_getx(&curr);
+				y -= aesobj_gety(&curr);
 				goto downlink;
 			}
 			curr = next;
@@ -2298,7 +2323,7 @@ obj_init_focus(XA_TREE *wt, short flags)
 		{
 			{
 				o = ob_find_next_any_flagstate(wt, aesobj(obtree, 0), inv_aesobj(), OF_DEFAULT, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_EXACTFLAG);
-				if (valid_aesobj(&o) && (aesobj_ob(&o)->ob_flags & (OF_SELECTABLE|OF_EXIT|OF_TOUCHEXIT)))
+				if (valid_aesobj(&o) && (aesobj_flags(&o) & (OF_SELECTABLE|OF_EXIT|OF_TOUCHEXIT)))
 					wt->focus = o;
 			}
 			if (!focus_set(wt))
@@ -2316,11 +2341,11 @@ obj_set_g_popup(XA_TREE *swt, struct xa_aes_object sobj, POPINFO *pinf)
 {
 	short type;
 	
-	type = aesobj_ob(&sobj)->ob_type & 0xff;
+	type = aesobj_type(&sobj) & 0xff;
 
 	if (type == G_BUTTON || type == G_POPUP)
 	{
-		aesobj_ob(&sobj)->ob_type = G_POPUP;
+		aesobj_settype(&sobj, G_POPUP);
 		object_set_spec(aesobj_ob(&sobj), (unsigned long)pinf);
 	}
 }
@@ -2330,11 +2355,11 @@ obj_unset_g_popup(XA_TREE *swt, struct xa_aes_object sobj, char *txt)
 {
 	short type;
 	
-	type = aesobj_ob(&sobj)->ob_type & 0xff;
+	type = aesobj_type(&sobj) & 0xff;
 
 	if (type == G_POPUP)
 	{
-		aesobj_ob(&sobj)->ob_type = G_BUTTON;
+		aesobj_settype(&sobj, G_BUTTON);
 		object_set_spec(aesobj_ob(&sobj), (unsigned long)txt);
 	}
 }
@@ -2361,8 +2386,8 @@ uplink:
 		/* Found the object in the tree? cool, return the coords */
 		if (same_aesobj(&current, &object))
 		{
-			x += aesobj_ob(&current)->ob_x;
-			y += aesobj_ob(&current)->ob_y;
+			x += aesobj_getx(&current);
+			y += aesobj_gety(&current);
 			
 			*mx = x;
 			*my = y;
@@ -2377,36 +2402,36 @@ uplink:
 			goto uplink;
 
 		/* Any children? */
-		if (aesobj_ob(&current)->ob_head != -1)
+		if (aesobj_head(&current) != -1)
 		{
-			x += aesobj_ob(&current)->ob_x;
-			y += aesobj_ob(&current)->ob_y;
-			current = aesobj(aesobj_tree(&current), aesobj_ob(&current)->ob_head);
+			x += aesobj_getx(&current);
+			y += aesobj_gety(&current);
+			current = aesobj(aesobj_tree(&current), aesobj_head(&current));
 		}
 		else
 		{
 			/* Try for a sibling */
 downlink:			
-			next = aesobj(aesobj_tree(&current), aesobj_ob(&current)->ob_next);
+			next = aesobj(aesobj_tree(&current), aesobj_next(&current));
 			
 			while (valid_aesobj(&next) && !same_aesobj(&next, &stop))
 			{
-				struct xa_aes_object tail = aesobj(aesobj_tree(&next), aesobj_ob(&next)->ob_tail);
+				struct xa_aes_object tail = aesobj(aesobj_tree(&next), aesobj_tail(&next));
 				if (same_aesobj(&current, &tail))
 				{
 					/* Trace back up tree if no more siblings */
 					current = next;
-					x -= aesobj_ob(&current)->ob_x;
-					y -= aesobj_ob(&current)->ob_y;
-					next = aesobj(aesobj_tree(&current), aesobj_ob(&current)->ob_next);
+					x -= aesobj_getx(&current);
+					y -= aesobj_gety(&current);
+					next = aesobj(aesobj_tree(&current), aesobj_next(&current));
 				}
 				else
 					break;
 			}
 			if (same_aesobj(&next, &stop) && set_aesobj_downlink(&obtree, &current, &stop, &oblink))
 			{
-				x -= aesobj_ob(&current)->ob_x;
-				y -= aesobj_ob(&current)->ob_y;
+				x -= aesobj_getx(&current);
+				y -= aesobj_gety(&current);
 				goto downlink;
 			}
 			current = next;
@@ -2439,8 +2464,8 @@ uplink:
 		/* Found the object in the tree? cool, return the coords */
 		if (same_aesobj(&current, &object))
 		{
-			x += aesobj_ob(&current)->ob_x;
-			y += aesobj_ob(&current)->ob_y;
+			x += aesobj_getx(&current);
+			y += aesobj_gety(&current);
 			
 			*mx = x;
 			*my = y;
@@ -2454,36 +2479,36 @@ uplink:
 			goto uplink;
 
 		/* Any children? */
-		if (aesobj_ob(&current)->ob_head != -1)
+		if (aesobj_head(&current) != -1)
 		{
-			x += aesobj_ob(&current)->ob_x;
-			y += aesobj_ob(&current)->ob_y;
-			current = aesobj(aesobj_tree(&current), aesobj_ob(&current)->ob_head);
+			x += aesobj_getx(&current);
+			y += aesobj_gety(&current);
+			current = aesobj(aesobj_tree(&current), aesobj_head(&current));
 		}
 		else
 		{
 			/* Try for a sibling */
 downlink:			
-			next = aesobj(aesobj_tree(&current), aesobj_ob(&current)->ob_next);
+			next = aesobj(aesobj_tree(&current), aesobj_next(&current));
 			
 			while (valid_aesobj(&next) && !same_aesobj(&next, &stop))
 			{
-				struct xa_aes_object tail = aesobj(aesobj_tree(&next), aesobj_ob(&next)->ob_tail);
+				struct xa_aes_object tail = aesobj(aesobj_tree(&next), aesobj_tail(&next));
 				if (same_aesobj(&current, &tail))
 				{
 					/* Trace back up tree if no more siblings */
 					current = next;
-					x -= aesobj_ob(&current)->ob_x;
-					y -= aesobj_ob(&current)->ob_y;
-					next = aesobj(aesobj_tree(&current), aesobj_ob(&current)->ob_next);
+					x -= aesobj_getx(&current);
+					y -= aesobj_gety(&current);
+					next = aesobj(aesobj_tree(&current), aesobj_next(&current));
 				}
 				else
 					break;
 			}
 			if (same_aesobj(&next, &stop) && set_aesobj_downlink(&obtree, &current, &stop, &oblink))
 			{
-				x -= aesobj_ob(&current)->ob_x;
-				y -= aesobj_ob(&current)->ob_y;
+				x -= aesobj_getx(&current);
+				y -= aesobj_gety(&current);
 				goto downlink;
 			}
 			current = next;
@@ -2510,8 +2535,8 @@ obj_rectangle(XA_TREE *wt, struct xa_aes_object obj, RECT *c)
 		obj = aesobj(wt->tree, 0);
 		obj_offset(wt, obj, &c->x, &c->y);
 	}
-	c->w = aesobj_ob(&obj)->ob_width;
-	c->h = aesobj_ob(&obj)->ob_height;
+	c->w = aesobj_getw(&obj);
+	c->h = aesobj_geth(&obj);
 	wt->dx = sx;
 	wt->dy = sy;
 }
@@ -2524,8 +2549,8 @@ obj_orectangle(XA_TREE *wt, struct xa_aes_object obj, RECT *c)
 		obj = aesobj(aesobj_tree(&obj), 0);
 		ob_offset(aesobj_tree(&obj), obj, &c->x, &c->y);
 	}
-	c->w = aesobj_ob(&obj)->ob_width;
-	c->h = aesobj_ob(&obj)->ob_height;
+	c->w = aesobj_getw(&obj);
+	c->h = aesobj_geth(&obj);
 // 	display("obj_orect: %d/%d/%d/%d", *c);
 }
 
@@ -2541,8 +2566,8 @@ obj_area(XA_TREE *wt, struct xa_aes_object obj, RECT *c)
 		obj_offset(wt, obj, &c->x, &c->y);
 		found = false;
 	}
-	c->w = aesobj_ob(&obj)->ob_width;
-	c->h = aesobj_ob(&obj)->ob_height;
+	c->w = aesobj_getw(&obj);
+	c->h = aesobj_geth(&obj);
 	(*wt->objcr_api->obj_offsets)(wt, aesobj_ob(&obj), &r); //object_offsets(aesobj_ob(&obj), &r);
 	c->x += r.x;
 	c->y += r.y;
@@ -2672,7 +2697,7 @@ uplink:
 			rel_depth = 0;
 		}
 		
-		if (!(aesobj_ob(&current)->ob_flags & OF_HIDETREE))
+		if (!aesobj_hidden(&current))
 		{
 			if (set_aesobj_uplink(&obtree, &current, &stop, &oblink))
 				goto uplink;
@@ -2683,10 +2708,10 @@ uplink:
 				if (depth & 0x8000)
 					(*wt->objcr_api->obj_offsets)(wt, aesobj_ob(&current), &or);
 			
-				cr.x = x + aesobj_ob(&current)->ob_x + or.x;
-				cr.y = y + aesobj_ob(&current)->ob_y + or.y;
-				cr.w = aesobj_ob(&current)->ob_width - or.w;
-				cr.h = aesobj_ob(&current)->ob_height - or.h;
+				cr.x = x + aesobj_getx(&current) + or.x;
+				cr.y = y + aesobj_gety(&current) + or.y;
+				cr.w = aesobj_getw(&current) - or.w;
+				cr.h = aesobj_geth(&current) - or.h;
 			
 				if (   cr.x		<= mx
 				    && cr.y		<= my
@@ -2704,32 +2729,32 @@ uplink:
 		}
 
 		if ( ((!start_checking) || (rel_depth < depth))
-		    &&  (aesobj_ob(&current)->ob_head != -1)
-		    && !(aesobj_ob(&current)->ob_flags & OF_HIDETREE))
+		    &&  (aesobj_head(&current) != -1)
+		    &&  !aesobj_hidden(&current))
 		{
 			/* Any children? */
-			x += aesobj_ob(&current)->ob_x;
-			y += aesobj_ob(&current)->ob_y;
+			x += aesobj_getx(&current);
+			y += aesobj_gety(&current);
 			rel_depth++;
-			current = aesobj(aesobj_tree(&current), aesobj_ob(&current)->ob_head);
+			current = aesobj(aesobj_tree(&current), aesobj_head(&current));
 		}
 		else
 		{
 downlink:
 			/* Try for a sibling */
-			next = aesobj(aesobj_tree(&current), aesobj_ob(&current)->ob_next);
+			next = aesobj(aesobj_tree(&current), aesobj_next(&current));
 
 			/* Trace back up tree if no more siblings */
 			while (valid_aesobj(&next) && !same_aesobj(&next, &stop))
 			{
-				struct xa_aes_object tail = aesobj(aesobj_tree(&next), aesobj_ob(&next)->ob_tail);
+				struct xa_aes_object tail = aesobj(aesobj_tree(&next), aesobj_tail(&next));
 
 				if (same_aesobj(&current, &tail))
 				{
 					current = next;
-					x -= aesobj_ob(&current)->ob_x;
-					y -= aesobj_ob(&current)->ob_y;
-					next = aesobj(aesobj_tree(&current), aesobj_ob(&current)->ob_next);
+					x -= aesobj_getx(&current);
+					y -= aesobj_gety(&current);
+					next = aesobj(aesobj_tree(&current), aesobj_next(&current));
 					rel_depth--;
 				}
 				else
@@ -2737,8 +2762,8 @@ downlink:
 			}
 			if (same_aesobj(&next, &stop) && set_aesobj_downlink(&obtree, &current, &stop, &oblink))
 			{
-				x -= aesobj_ob(&current)->ob_x;
-				y -= aesobj_ob(&current)->ob_y;
+				x -= aesobj_getx(&current);
+				y -= aesobj_gety(&current);
 				goto downlink;
 			}
 			current = next;
@@ -2895,14 +2920,14 @@ obj_change(XA_TREE *wt,
 {
 	bool draw = false;
 
-	if (aesobj_ob(&obj)->ob_flags != flags)
+	if (aesobj_flags(&obj) != flags)
 	{
-		aesobj_ob(&obj)->ob_flags = flags;
+		aesobj_setflags(&obj, flags);
 		draw |= true;
 	}
-	if (aesobj_ob(&obj)->ob_state != state)
+	if (aesobj_state(&obj) != state)
 	{
-		aesobj_ob(&obj)->ob_state = state;
+		aesobj_setstate(&obj, state);
 		draw |= true;
 	}
 
@@ -4292,11 +4317,11 @@ obj_set_radio_button(XA_TREE *wt,
 
 	if (valid_aesobj(&parent))
 	{
-		o = aesobj(aesobj_tree(&parent), aesobj_ob(&parent)->ob_head);
+		o = aesobj(aesobj_tree(&parent), aesobj_head(&parent));
 
 		while (valid_aesobj(&o) && !same_aesobj(&o, &parent))
 		{
-			if ( aesobj_ob(&o)->ob_flags & OF_RBUTTON && aesobj_ob(&o)->ob_state & OS_SELECTED )
+			if ( (aesobj_flags(&o) & OF_RBUTTON) && aesobj_sel(&o) )
 			{
 				DIAGS(("radio: change obj %d", o));
 				if (!same_aesobj(&o, &obj))
@@ -4304,21 +4329,21 @@ obj_set_radio_button(XA_TREE *wt,
 					obj_change(wt,
 						   v,
 						   o, -1,
-						   aesobj_ob(&o)->ob_state & ~OS_SELECTED,
-						   aesobj_ob(&o)->ob_flags,
+						   aesobj_state(&o) & ~OS_SELECTED,
+						   aesobj_flags(&o),
 						   redraw,
 						   clip,
 						   rl, 0);
 				}	
 			}
-			o = aesobj(aesobj_tree(&o), aesobj_ob(&o)->ob_next);
+			o = aesobj(aesobj_tree(&o), aesobj_next(&o));
 		}
 		DIAGS(("radio: set obj %d", obj));
 		obj_change(wt,
 			   v,
 			   obj, -1,
-			   aesobj_ob(&obj)->ob_state | OS_SELECTED,
-			   aesobj_ob(&obj)->ob_flags,
+			   aesobj_state(&obj) | OS_SELECTED,
+			   aesobj_flags(&obj),
 			   redraw, clip,
 			   rl, 0);
 	}
@@ -4336,13 +4361,13 @@ obj_get_radio_button(XA_TREE *wt,
 
 	if (valid_aesobj(&parent))
 	{
-		o = aesobj(aesobj_tree(&parent), aesobj_ob(&parent)->ob_head);
+		o = aesobj(aesobj_tree(&parent), aesobj_head(&parent));
 
 		while (!same_aesobj(&o, &parent))
 		{
-			if ( aesobj_ob(&o)->ob_flags & OF_RBUTTON && (aesobj_ob(&o)->ob_state & state))
+			if ( (aesobj_flags(&o) & OF_RBUTTON) && (aesobj_state(&o) & state))
 				break;
-			o = aesobj(aesobj_tree(&o), aesobj_ob(&o)->ob_next);
+			o = aesobj(aesobj_tree(&o), aesobj_next(&o));
 		}
 	}
 	return same_aesobj(&o, &parent) ? inv_aesobj() : o;
@@ -4361,7 +4386,7 @@ obj_watch(XA_TREE *wt,
 // 	short pobf = -2;
 	struct xa_aes_object obf = obj, pobf = aesobj(wt->tree, -2);
 	short mx, my, mb, x, y, omx, omy;
-	short flags = aesobj_ob(&obj)->ob_flags;
+	short flags = aesobj_flags(&obj);
 
 	obj_offset(wt, obj, &x, &y);
 

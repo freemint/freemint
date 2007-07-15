@@ -1094,7 +1094,7 @@ wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms 
 							{
 								ei = wt->ei ? wt->ei : &wt->e;
 							
-								if ( valid_aesobj(&nxtobj) && object_is_editable(aesobj_ob(&nxtobj), 0, 0) && !same_aesobj(&nxtobj, &ei->o))
+								if (valid_aesobj(&nxtobj) && aesobj_is_editable(&nxtobj, 0, 0) && !same_aesobj(&nxtobj, &ei->o))
 								{
 								
 									if (edit_set(ei))
@@ -1156,7 +1156,7 @@ wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms 
 				
 				if (valid_aesobj(&new_focus))
 				{
-					switch (aesobj_ob(&new_focus)->ob_type & 0xff)
+					switch (aesobj_type(&new_focus) & 0xff)
 					{
 						case G_SLIST:
 						{

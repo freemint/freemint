@@ -650,7 +650,7 @@ taskmanager_form_exit(struct xa_client *Client,
 			OBJECT *obtree = wt->tree;
 
 			DIAGS(("taskmanager_form_exit: Moved the shit out of form_do() to here!"));
-			if ( fr->md && ((aesobj_ob(&fr->obj)->ob_type & 0xff) == G_SLIST))
+			if ( fr->md && ((aesobj_type(&fr->obj) & 0xff) == G_SLIST))
 			{
 				if (fr->md->clicks > 1)
 					dclick_scroll_list(lock, obtree, aesobj_item(&fr->obj), fr->md);
@@ -796,7 +796,7 @@ taskmanager_form_exit(struct xa_client *Client,
 			
 			if (C.reschange)
 				post_cevent(C.Hlp, ceExecfunc, C.reschange,NULL, 1,0, NULL,NULL);
-			obj_change(wt, v, fr->obj, -1, aesobj_ob(&fr->obj)->ob_state & ~OS_SELECTED, aesobj_ob(&fr->obj)->ob_flags, true, NULL, wind->rect_list.start, 0);
+			obj_change(wt, v, fr->obj, -1, aesobj_state(&fr->obj) & ~OS_SELECTED, aesobj_flags(&fr->obj), true, NULL, wind->rect_list.start, 0);
 			break;
 		}
 		case TM_OK:
@@ -2403,7 +2403,7 @@ sysalerts_form_exit(struct xa_client *Client,
 		case SYSALERT_LIST:
 		{
 			DIAGS(("taskmanager_form_exit: Moved the shit out of form_do() to here!"));
-			if ( fr->md && ((aesobj_ob(&fr->obj)->ob_type & 0xff) == G_SLIST))
+			if ( fr->md && ((aesobj_type(&fr->obj) & 0xff) == G_SLIST))
 			{
 				if (fr->md->clicks > 1)
 					dclick_scroll_list(lock, wt->tree, aesobj_item(&fr->obj), fr->md);
