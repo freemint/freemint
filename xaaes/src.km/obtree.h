@@ -34,11 +34,17 @@
 bool			validate_obtree(struct xa_client *c, OBJECT *o, char *f);
 bool			object_have_spec(OBJECT *ob);
 void			object_set_spec(OBJECT *ob, unsigned long cl);
+void			aesobj_set_spec(struct xa_aes_object *o, unsigned long cl);
 bool			object_has_tedinfo(OBJECT *ob);
+bool			aesobj_has_tedinfo(struct xa_aes_object *o);
 bool			object_has_freestr(OBJECT *ob);
+bool			aesobj_has_freestr(struct xa_aes_object *o);
 bool			object_is_editable(OBJECT *ob, short flags, short state);
+bool			aesobj_is_editable(struct xa_aes_object *o, short flags, short state);
 TEDINFO *		object_get_tedinfo(OBJECT *ob, XTEDINFO **x);
+TEDINFO *		aesobj_get_tedinfo(struct xa_aes_object *o, XTEDINFO **x);
 char *			object_get_string(OBJECT *ob);
+
 
 bool			obj_is_transparent(struct widget_tree *wt, OBJECT *ob, bool progdef_is_transparent);
 // short			object_thickness(OBJECT *ob);

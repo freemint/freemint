@@ -102,7 +102,7 @@ about_form_exit(struct xa_client *client,
 		}
 		case ABOUT_LIST:
 		{
-			if ( fr->md && (aesobj_ob(&fr->obj)->ob_type & 0xff) == G_SLIST)
+			if ( fr->md && (aesobj_type(&fr->obj) & 0xff) == G_SLIST)
 			{
 				if (fr->md->clicks > 1)
 					dclick_scroll_list(lock, obtree, aesobj_item(&fr->obj), fr->md);

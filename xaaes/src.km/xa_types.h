@@ -2592,14 +2592,22 @@ valid_aesobj(struct xa_aes_object *o)
 	return true;
 }
 
-inline static short	aesobj_item (struct xa_aes_object *o) { return o->item; }
-inline static OBJECT *	aesobj_ob   (struct xa_aes_object *o) { return o->ob; }
-inline static OBJECT *	aesobj_tree (struct xa_aes_object *o) { return o->tree; }
-inline static short	aesobj_type (struct xa_aes_object *o) { return o->ob->ob_type; }
-inline static short	aesobj_flags(struct xa_aes_object *o) { return o->ob->ob_flags; }
-inline static short	aesobj_head (struct xa_aes_object *o) { return o->ob->ob_head; }
-inline static short	aesobj_tail (struct xa_aes_object *o) { return o->ob->ob_tail; }
-inline static short	aesobj_next (struct xa_aes_object *o) { return o->ob->ob_next; }
+inline static short	aesobj_item	(struct xa_aes_object *o) { return o->item; }
+inline static OBJECT *	aesobj_ob	(struct xa_aes_object *o) { return o->ob; }
+inline static OBJECT *	aesobj_tree	(struct xa_aes_object *o) { return o->tree; }
+
+inline static void	aesobj_settype	(struct xa_aes_object *o, short t) { o->ob->ob_type = t; }
+inline static short	aesobj_type	(struct xa_aes_object *o) { return   o->ob->ob_type; }
+
+inline static void	aesobj_setflags	(struct xa_aes_object *o, short f) { o->ob->ob_flags = f; }
+inline static short	aesobj_flags	(struct xa_aes_object *o) { return   o->ob->ob_flags; }
+
+inline static void	aesobj_setstate	(struct xa_aes_object *o, short s) { o->ob->ob_state = s; }
+inline static short	aesobj_state	(struct xa_aes_object *o) { return   o->ob->ob_state; }
+
+inline static short	aesobj_head	(struct xa_aes_object *o) { return o->ob->ob_head; }
+inline static short	aesobj_tail	(struct xa_aes_object *o) { return o->ob->ob_tail; }
+inline static short	aesobj_next	(struct xa_aes_object *o) { return o->ob->ob_next; }
 
 inline static short	aesobj_getx (struct xa_aes_object *o) { return o->ob->ob_x; }
 inline static short	aesobj_gety (struct xa_aes_object *o) { return o->ob->ob_y; }
@@ -2609,6 +2617,22 @@ inline static void	aesobj_setx (struct xa_aes_object *o, short c) { o->ob->ob_x 
 inline static void	aesobj_sety (struct xa_aes_object *o, short c) { o->ob->ob_y = c; }
 inline static void	aesobj_setw (struct xa_aes_object *o, short c) { o->ob->ob_width = c; }
 inline static void	aesobj_seth (struct xa_aes_object *o, short c) { o->ob->ob_height = c; }
+
+inline static void	aesobj_sethidden(struct xa_aes_object *o) { o->ob->ob_flags |=  OF_HIDETREE; }
+inline static void	aesobj_clrhidden(struct xa_aes_object *o) { o->ob->ob_flags &= ~OF_HIDETREE; }
+inline static bool	aesobj_hidden(struct xa_aes_object *o) { return (o->ob->ob_flags & OF_HIDETREE); }
+
+inline static void	aesobj_setedit(struct xa_aes_object *o) { o->ob->ob_flags |=  OF_EDITABLE; }
+inline static void	aesobj_clredit(struct xa_aes_object *o) { o->ob->ob_flags &= ~OF_EDITABLE; }
+inline static bool	aesobj_edit(struct xa_aes_object *o) { return (o->ob->ob_flags & OF_EDITABLE); }
+
+inline static void	aesobj_setsel(struct xa_aes_object *o) { o->ob->ob_state |=  OS_SELECTED; }
+inline static void	aesobj_clrsel(struct xa_aes_object *o) { o->ob->ob_state &= ~OS_SELECTED; }
+inline static bool	aesobj_sel(struct xa_aes_object *o) { return (o->ob->ob_state & OS_SELECTED); }
+
+inline static void	aesobj_setdisabled (struct xa_aes_object *o) { o->ob->ob_state |=  OS_DISABLED; }
+inline static void	aesobj_clrdisabled (struct xa_aes_object *o) { o->ob->ob_state &= ~OS_DISABLED; }
+inline static bool	aesobj_disabled	   (struct xa_aes_object *o) { return (o->ob->ob_state & OS_DISABLED); }
 
 inline static struct xa_aes_object
 inv_aesobj(void)

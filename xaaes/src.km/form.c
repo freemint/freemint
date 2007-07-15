@@ -297,8 +297,8 @@ Form_Button(XA_TREE *wt,
 // 	display("Form_Button: wt=%lx, obtree=%lx, obj=%d",
 // 		wt, wt->tree, obj);
 	
-	flags = aesobj_ob(&obj)->ob_flags;
-	state = pstate = aesobj_ob(&obj)->ob_state;
+	flags = aesobj_flags(&obj);
+	state = pstate = aesobj_state(&obj);
 	dc = md->clicks > 1 ? true : false;
 
 	/* find_object can't report click on a OF_HIDETREE object. */
@@ -311,7 +311,7 @@ Form_Button(XA_TREE *wt,
 	
 	if ( (flags & OF_SELECTABLE) && !(state & OS_DISABLED) )
 	{
-		short type = aesobj_ob(&obj)->ob_type & 0xff;
+		short type = aesobj_type(&obj) & 0xff;
 			
 		if (type == G_SLIST)
 		{
@@ -372,7 +372,7 @@ Form_Button(XA_TREE *wt,
 				if (!(state & OS_SELECTED))
 				{
 					obj_watch(wt, v, obj, state^OS_SELECTED, state, clip, *rl);
-					if (aesobj_ob(&obj)->ob_state & OS_SELECTED)
+					if (aesobj_sel(&obj))
 						obj_set_radio_button(wt, v, obj, redraw, clip, *rl);
 				}
 				else
@@ -397,7 +397,7 @@ Form_Button(XA_TREE *wt,
 				obj_change(wt, v, obj, -1, state^OS_SELECTED, flags, redraw, clip, *rl, 0);
 			}
 		}
-		state = aesobj_ob(&obj)->ob_state;	
+		state = aesobj_state(&obj);	
 	}
 	
 	if (!(state & OS_DISABLED))
@@ -508,7 +508,7 @@ Form_Cursor(XA_TREE *wt,
 			{
 				if (ret_focus)
 					*ret_focus = nxt;
-				if (aesobj_ob(&nxt)->ob_flags & OF_EDITABLE)
+				if (aesobj_edit(&nxt))
 					o = nxt;
 			}
 			break;
@@ -534,7 +534,7 @@ Form_Cursor(XA_TREE *wt,
 			{
 				if (ret_focus)
 					*ret_focus = nxt;
-				if (aesobj_ob(&nxt)->ob_flags & OF_EDITABLE)
+				if (aesobj_edit(&nxt))
 					o = nxt;
 			}
 			break;
@@ -560,7 +560,7 @@ Form_Cursor(XA_TREE *wt,
 			{
 				if (ret_focus)
 					*ret_focus = nxt;
-				if (aesobj_ob(&nxt)->ob_flags & OF_EDITABLE)
+				if (aesobj_edit(&nxt))
 					o = nxt;
 			}
 			break;
@@ -588,7 +588,7 @@ Form_Cursor(XA_TREE *wt,
 				if (valid_aesobj(&nxt))
 				{
 					*ret_focus = nxt;
-					if (aesobj_ob(&nxt)->ob_flags & OF_EDITABLE)
+					if (aesobj_edit(&nxt))
 						o = nxt;
 				}
 			}
@@ -622,7 +622,7 @@ Form_Cursor(XA_TREE *wt,
 				if (valid_aesobj(&nxt))
 				{
 					*ret_focus = nxt;
-					if (aesobj_ob(&nxt)->ob_flags & OF_EDITABLE)
+					if (aesobj_edit(&nxt))
 						o = nxt;
 				}
 			}
@@ -642,7 +642,7 @@ Form_Cursor(XA_TREE *wt,
 			if (valid_aesobj(&nxt))
 			{
 				if (ret_focus) *ret_focus = nxt;
-				if (aesobj_ob(&nxt)->ob_flags & OF_EDITABLE)
+				if (aesobj_edit(&nxt))
 					o = nxt;
 				DIAGS(("Form_Cursor: SHIFT+HOME from %d to %d", aesobj_item(&o), aesobj_item(&o)));
 			}
@@ -656,7 +656,7 @@ Form_Cursor(XA_TREE *wt,
 			if (valid_aesobj(&nxt))
 			{
 				if (ret_focus) *ret_focus = nxt;
-				if (aesobj_ob(&nxt)->ob_flags & OF_EDITABLE)
+				if (aesobj_edit(&nxt))
 					o = nxt;
 				DIAGS(("Form_Cursor: HOME from %d to %d", aesobj_item(&o), aesobj_item(&o)));
 			}
@@ -862,12 +862,12 @@ done:
 	if (nxtobj)
 		*nxtobj = next_obj;
 	if (newstate)
-		*newstate = valid_aesobj(&next_obj) ? aesobj_ob(&next_obj)->ob_state : 0;
+		*newstate = valid_aesobj(&next_obj) ? aesobj_state(&next_obj) : 0;
 	if (nxtkey)
 		*nxtkey = next_key;
 
 	DIAG((D_keybd, NULL, "Form_Keyboard: no_exit=%s(%d), nxtobj=%d, nxtkey=%x, obstate=%x, for %s",
-		fr.no_exit ? "true" : "false", fr.no_exit, aesobj_item(&next_obj), next_key, aesobj_ob(&next_obj)->ob_state, client->name));
+		fr.no_exit ? "true" : "false", fr.no_exit, aesobj_item(&next_obj), next_key, aesobj_state(&next_obj), client->name));
 
 // 	display("Form_Keyboard: no_exit=%s(%d), nxtobj=%d, nxteobj=%d, nxtkey=%x, obstate=%x, for %s",
 // 		fr.no_exit ? "true" : "false", fr.no_exit, next_obj, new_eobj, next_key, wt->tree[next_obj].ob_state, wt->owner->name);
@@ -901,7 +901,7 @@ Exit_form_do( struct xa_client *client,
 			struct xa_aes_object f = fr->obj;
 			/* Is f a valid button? */
 // 			display("click alert but1 %d, but4 %d", ALERT_BUT1, ALERT_BUT1 + 3);
-			if (   aesobj_item(&f) >= ALERT_BUT1 && aesobj_item(&f) < ALERT_BUT1 + ALERT_BUTTONS && !(aesobj_ob(&f)->ob_flags & OF_HIDETREE))
+			if (   aesobj_item(&f) >= ALERT_BUT1 && aesobj_item(&f) < ALERT_BUT1 + ALERT_BUTTONS && !aesobj_hidden(&f))
 			{
 // 				display("client '%s'", client->name);
 				if (client != C.Aes /*&& client != C.Hlp*/ && client->waiting_pb)
