@@ -4283,19 +4283,15 @@ set_toolbar_handlers(const struct toolbar_handlers *th, struct xa_window *wind, 
 
 	if (wind)
 	{
-		if (wt && (wt->ei || edit_set(&wt->e) || obtree_has_default(wt->tree)))
-		{
-			if (th && th->keypress)
-			{
+		if (wt && (wt->ei || edit_set(&wt->e) || obtree_has_default(wt->tree))) {
+			if (th && th->keypress) {
 				if (th->keypress == (void *)-1L)
 					wind->keypress = NULL;
 				else
 					wind->keypress = th->keypress;
-			}
-			else
+			} else
 				wind->keypress = Key_form_do;
-		}
-		else
+		} else
 			wind->keypress = NULL;
 	}
 	

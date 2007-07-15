@@ -46,6 +46,7 @@
 
 #include "xa_user_things.h"
 #include "nkcc.h"
+#include "keycodes.h"
 #include "mint/signal.h"
 
 
@@ -1195,24 +1196,24 @@ wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms 
 				}
 				else if (key)
 				{
-					if (key == 0x3920 && focus_set(wt))
+					if (key == SC_SPACE && focus_set(wt))
 					{
 						if (!(focus_ob(wt)->ob_flags & OF_EDITABLE))
 							nxtobj = wt->focus;
 						else
 							nxtobj = inv_aesobj();
 					}
-					else if (key == 0x1c0d || key == 0x720d)
+					else if (key == SC_RETURN || key == SC_NMPAD_ENTER)
 					{
 						nxtobj = ob_find_flst(obtree, OF_DEFAULT, 0, 0, OS_DISABLED, 0, 0);
 						
 						DIAG((D_wdlg, NULL, "wdlg_event(MU_KEYBD): Got RETURN key - default obj=%d for %s",
 							aesobj_item(&nxtobj), client->name));
 					}
-					else if (key == 0x6100)
+					else if (key == SC_UNDO)
 					{
 						nxtobj = ob_find_cancel(obtree);
-						DIAG((D_wdlg, NULL, "wdlg_event(MU_KEYBD): Got TAB - cancel obj=%d for %s",
+						DIAG((D_wdlg, NULL, "wdlg_event(MU_KEYBD): Got UNDO - cancel obj=%d for %s",
 							aesobj_item(&nxtobj), client->name));
 					}
 					else
@@ -1253,7 +1254,7 @@ wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms 
 								ret = 0;
 						}
 					}
-					else if (key != 0x1c0d && key != 0x720d)
+					else if (key != SC_RETURN && key != SC_NMPAD_ENTER)
 					{
 						if (!same_aesobj(&wt->focus, &ei->o))
 							new_focus = ei->o;
