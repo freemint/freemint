@@ -90,7 +90,7 @@ struct xa_aes_object	ob_find_next_any_flag(OBJECT *obtree, short start, short f)
 short	ob_find_prev_any_flag(OBJECT *obtree, short start, short f);
 struct xa_aes_object	ob_find_cancel(OBJECT *ob);
 
-void	ob_fix_shortcuts(OBJECT *obtree, bool not_hidden);
+void			ob_fix_shortcuts(OBJECT *obtree, bool not_hidden);
 struct xa_aes_object 	ob_find_shortcut(OBJECT *tree, ushort nk);
 
 short	ob_offset(OBJECT *obtree, struct xa_aes_object object, short *mx, short *my);
