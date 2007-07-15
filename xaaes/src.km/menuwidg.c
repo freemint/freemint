@@ -40,6 +40,8 @@
 #include "messages.h"
 #include "xa_rsrc.h"
 #include "form.h"
+#include "keycodes.h"
+
 
 static void cancel_pop_timeouts(void);
 
@@ -2884,7 +2886,6 @@ menu_keyboard(Tab *tab, const struct rawkey *key)
 	{
 		short keycode = key->aes, dir;
 		MENU_TASK *k = &tab->task_data.menu;
-// 		OBJECT *obtree = k->p.wt->tree;
 		struct xa_aes_object nxt;
 
 		nxt = inv_aesobj();
@@ -2892,7 +2893,7 @@ menu_keyboard(Tab *tab, const struct rawkey *key)
 		DIAGS(("process menukey! %x", keycode));
 		switch (keycode)
 		{
-		case 0x4800:		/* UP arrow */
+		case SC_UPARROW:	/* 0x4800 */ /* UP arrow */
 		{
 			if (k->p.current > 0)
 				dir = OBFIND_VERT|OBFIND_UP|OBFIND_HIDDEN;
@@ -2910,7 +2911,7 @@ menu_keyboard(Tab *tab, const struct rawkey *key)
 			
 			break;
 		}
-		case 0x5000:		/* down arrow */
+		case SC_DNARROW:	/* 0x5000 */ /* down arrow */
 		{
 			if (k->p.current > 0)
 				dir = OBFIND_VERT|OBFIND_DOWN|OBFIND_HIDDEN;
@@ -2926,7 +2927,7 @@ menu_keyboard(Tab *tab, const struct rawkey *key)
 				goto first;
 			break;
 		}
-		case 0x4d00:		/* Right arrow */
+		case SC_RTARROW:	/* 0x4d00 */ /* Right arrow */
 		{
 			bool a = false;
 			
@@ -2956,7 +2957,7 @@ menu_keyboard(Tab *tab, const struct rawkey *key)
 			}
 			break;
 		}
-		case 0x4b00:		/* Left arrow */
+		case SC_LFARROW:	/* 0x4b00 */ /* Left arrow */
 		{
 			if (k->p.current > 0)
 			{
@@ -2988,9 +2989,9 @@ menu_keyboard(Tab *tab, const struct rawkey *key)
 			}
 			break;
 		}
-		case 0x4737:		/* SHIFT+HOME */
-		case 0x5100:		/* page down key (Milan &| emulators)   */
-		case 0x4f00:		/* END key (Milan &| emus)		*/
+		case SC_SHFT_CLRHOME:	/* 0x4737 */ /* SHIFT+HOME */
+		case SC_PGDN:		/* 0x5100 */ /* page down key (Milan &| emulators)   */
+		case SC_END:		/* 0x4f00 */ /* END key (Milan &| emus)		*/
 		{
 last:
 			nxt = ob_find_next_any_flagstate(k->p.wt, aesobj(k->p.wt->tree, k->p.parent), inv_aesobj(),
@@ -2998,8 +2999,8 @@ last:
 			DIAGS(("  found first obj %d, parent %d", nxt, k->p.parent));
 			break;
 		}
-		case 0x4700:		/* HOME */
-		case 0x4900:		/* page up key (Milan &| emulators)    */
+		case SC_CLRHOME:	/* 0x4700 */ /* HOME */
+		case SC_PGUP:		/* 0x4900 */ /* page up key (Milan &| emulators)    */
 		{
 first:
 			nxt = ob_find_next_any_flagstate(k->p.wt, aesobj(k->p.wt->tree, k->p.parent), inv_aesobj(),
@@ -3008,9 +3009,9 @@ first:
 			break;
 
 		}
-		case 0x1c0d:
-		case 0x720d:
-		case 0x3920:		/* space */
+		case SC_RETURN:		/* 0x1c0d */
+		case SC_NMPAD_ENTER:	/* 0x720d */
+		case SC_SPACE:		/* 0x3920 */ /* space */
 		{
 			if (k->p.current > 0)
 			{
@@ -3020,7 +3021,7 @@ first:
 			}
 			break;
 		}
-		case 0x011b:
+		case SC_ESC:	/* 0x011b */ /* escape */
 		{
 			if (k->entry)
 				(*k->entry)(tab, -2);

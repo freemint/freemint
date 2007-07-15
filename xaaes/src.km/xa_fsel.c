@@ -48,6 +48,7 @@
 #include "scrlobjc.h"
 #include "util.h"
 #include "widgets.h"
+#include "keycodes.h"
 
 #include "xa_graf.h"
 #include "xa_rsrc.h"
@@ -890,10 +891,13 @@ set_file(struct fsel_data *fs, char *fn, bool mark)
 
 	/* fixup the cursor edit position */
 // 	display("here, fn = %lx '%s'", fn, fn);
-	if (fn)
-	{
-		obj_edit(fs->form, fs->wind->vdi_settings, ED_MARK, aesobj(fs->form->tree, FS_FILE), 0, -1, NULL, false, NULL,NULL, NULL,NULL);
-		obj_edit(fs->form, fs->wind->vdi_settings, ED_STRING, aesobj(fs->form->tree, FS_FILE), mark ? 1 : 0, 0, fn, true, NULL, fs->wind->rect_list.start, NULL, NULL);
+	if (fn) {
+		obj_edit(fs->form, fs->wind->vdi_settings,
+			 ED_MARK, aesobj(fs->form->tree, FS_FILE),
+			0, -1, NULL, false, NULL,NULL, NULL,NULL);
+		obj_edit(fs->form, fs->wind->vdi_settings,
+			 ED_STRING, aesobj(fs->form->tree, FS_FILE),
+			mark ? 1 : 0, 0, fn, true, NULL, fs->wind->rect_list.start, NULL, NULL);
 	}
 	else
 		redraw_toolbar(0, fs->wind, FS_FILE);
@@ -1857,11 +1861,11 @@ fs_slist_key(struct scroll_info *list, unsigned short keycode, unsigned short ks
 
 	switch (keycode)
 	{
-		case 0x4800:	/* arrow up */
-		case 0x5000:	/* arrow down */
-		case 0x4b00:	/* arrow left */
-		case 0x4d00:	/* arrow right */
-		case 0x5200:	/* insert */
+		case SC_UPARROW:	/* 0x4800 */	/* arrow up */
+		case SC_DNARROW:	/* 0x5000 */	/* arrow down */
+		case SC_LFARROW:	/* 0x4b00 */	/* arrow left */
+		case SC_RTARROW:	/* 0x4d00 */	/* arrow right */
+		case SC_INSERT:		/* 0x5200 */	/* insert */
 		{
 			short xsb, xsa, kk;
 		
@@ -1875,12 +1879,12 @@ fs_slist_key(struct scroll_info *list, unsigned short keycode, unsigned short ks
 
 			list->set(list, was, SESET_CURRENT, 0, NOREDRAW);
 
-			if ((keycode == 0x4b00 || keycode == 0x4d00) && scrl_cursor(list, keycode, 0) == 0)
+			if ((keycode == SC_LFARROW || keycode == SC_RTARROW) && scrl_cursor(list, keycode, 0) == 0)
 			{
 
 				list->get(list, NULL, SEGET_CURRENT, &this);
 				
-				if (keycode == 0x4d00)
+				if (keycode == SC_RTARROW)
 				{
 					/* If right arrow and selection dont move, the
 					 * selection have children.
@@ -1906,14 +1910,14 @@ fs_slist_key(struct scroll_info *list, unsigned short keycode, unsigned short ks
 							set_file(fs, fs->ofile, false);
 							fs_updir(list);
 							if (!get_selected(list))
-								scrl_cursor(list, 0x5200, 0);
+								scrl_cursor(list, SC_INSERT, 0);
 						}
 					}
 				}
 			}
 			else
 			{
-				kk = (!was && (keycode == 0x5000 || keycode == 0x4800)) ? 0x5200 : keycode;
+				kk = (!was && (keycode == SC_DNARROW || keycode == SC_UPARROW)) ? SC_INSERT : keycode;
 				if (scrl_cursor(list, kk, 0) == 0)
 				{
 					list->get(list, NULL, SEGET_CURRENT, &this);
@@ -1963,10 +1967,10 @@ fs_slist_key(struct scroll_info *list, unsigned short keycode, unsigned short ks
 							}
 							set_file(fs, fs->ofile, false);
 						}
-						if (kk == 0x5200)
+						if (kk == SC_INSERT)
 							fs->kbdnav = true;
 					}
-					else if (kk == 0x5200)
+					else if (kk == SC_INSERT)
 					{
 						if (was)
 						{
@@ -1989,7 +1993,7 @@ fs_slist_key(struct scroll_info *list, unsigned short keycode, unsigned short ks
 			break;
 		}
 	#if 0
-		case 0x0f09:
+		case SC_TAB:
 		{
 			fs->kbdnav = true;
 			filename_completion(list);
@@ -2052,7 +2056,7 @@ fs_key_form_do(enum locks lock,
 		refresh_filelist(fsel, fs, NULL);
 		fs_prompt(list, fs->file, false);
 	}
-	else if (focus_item(wt) == FS_FILE && key->aes == 0x0f09)
+	else if (focus_item(wt) == FS_FILE && key->aes == SC_TAB)
 	{
 // 		display("eating TAB");
 		fs->kbdnav = true;

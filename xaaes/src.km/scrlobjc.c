@@ -40,6 +40,7 @@
 #include "xa_fsel.h"
 #include "xa_form.h"
 #include "c_window.h"
+#include "keycodes.h"
 
 #define ONLY_OPENED 1
 #define NO_DOWN     2
@@ -4129,7 +4130,7 @@ scrl_cursor(SCROLL_INFO *list, unsigned short keycode, unsigned short keystate)
 {
 	switch (keycode)
 	{
-	case 0x5200:			/* Insert */
+	case SC_INSERT:	/* 0x5200 */		/* Insert */
 	{
 		if (!list->cur)
 		{
@@ -4147,7 +4148,7 @@ scrl_cursor(SCROLL_INFO *list, unsigned short keycode, unsigned short keystate)
 		}
 		break;
 	}
-	case 0x4800:			/* up arrow */
+	case SC_UPARROW: /* 0x4800 */		/* up arrow */
 	{
 		if (!list->cur)
 		{
@@ -4179,7 +4180,7 @@ scrl_cursor(SCROLL_INFO *list, unsigned short keycode, unsigned short keystate)
 		}
 		break;
 	}
-	case 0x5000:			/* down arrow */
+	case SC_DNARROW: /* 0x5000 */		/* down arrow */
 	{
 		if (!list->cur)
 		{
@@ -4208,7 +4209,7 @@ scrl_cursor(SCROLL_INFO *list, unsigned short keycode, unsigned short keystate)
 		}			
 		break;
 	}
-	case 0x4B00:			/* left arrow */
+	case SC_LFARROW: /* 0x4B00 */			/* left arrow */
 	{
 		if (!list->cur)
 		{
@@ -4235,7 +4236,7 @@ scrl_cursor(SCROLL_INFO *list, unsigned short keycode, unsigned short keystate)
 		}
 		break;
 	}
-	case 0x7300:	/* CTLR + left arrow */
+	case SC_CTRL_LFARROW: /* 0x7300 */	/* CTLR + left arrow */
 	{
 		if (list->cur)
 		{
@@ -4250,7 +4251,7 @@ scrl_cursor(SCROLL_INFO *list, unsigned short keycode, unsigned short keystate)
 		}
 		break;
 	}
-	case 0x4D00:			/* Right arrow */
+	case SC_RTARROW: /* 0x4D00 */		/* Right arrow */
 	{
 		struct scroll_entry *cur;
 		if (!(cur = list->cur))
@@ -4296,8 +4297,8 @@ scrl_cursor(SCROLL_INFO *list, unsigned short keycode, unsigned short keystate)
 		}
 		break;
 	}
-	case 0x4900:			/* page up */
-	case 0x4838:			/* shift + up arrow */
+	case SC_PGUP:		/* 0x4900 */	/* page up */
+	case SC_SHFT_UPARROW:	/* 0x4838 */	/* shift + up arrow */
 	{
 		short msg[8] = { WM_ARROWED,0,0,list->wi->handle,WA_UPPAGE,0,0,0 };
 		
@@ -4314,8 +4315,8 @@ scrl_cursor(SCROLL_INFO *list, unsigned short keycode, unsigned short keystate)
 		}
 		break;
 	}
-	case 0x5032:			/* shift + down arrow */
-	case 0x5100:			/* page down */
+	case SC_SHFT_DNARROW:	/* 0x5032 */ 	/* shift + down arrow */
+	case SC_PGDN:		/* 0x5100 */	/* page down */
 	{
 		short msg[8] = { WM_ARROWED,0,0,list->wi->handle,WA_DNPAGE,0,0,0 };
 		if (list->cur)
@@ -4329,7 +4330,7 @@ scrl_cursor(SCROLL_INFO *list, unsigned short keycode, unsigned short keystate)
 		}
 		break;
 	}
-	case 0x4700:			/* home */
+	case SC_CLRHOME:	/* 0x4700 */	/* home */
 	{
 		if (list->cur)
 			list->set(list, NULL, SESET_UNSELECTED, UNSELECT_ALL, NORMREDRAW);
@@ -4349,7 +4350,7 @@ scrl_cursor(SCROLL_INFO *list, unsigned short keycode, unsigned short keystate)
 		}
 		break;
 	}
-	case 0x4737:			/* shift + home */
+	case SC_SHFT_CLRHOME:	/* 0x4737 */	/* shift + home */
 	{
 		long n = list->total_h - (list->start_y + list->wi->wa.h);
 		if (n > 0)

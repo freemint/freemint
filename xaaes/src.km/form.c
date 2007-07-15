@@ -40,6 +40,7 @@
 #include "c_window.h"
 #include "k_mouse.h"
 #include "menuwidg.h"
+#include "keycodes.h"
 
 /*
  * Attatch a MODAL form_do session to a client.
@@ -485,7 +486,7 @@ Form_Cursor(XA_TREE *wt,
 
 	switch (keycode)
 	{				/* The cursor keys are always eaten. */
-		case 0x0f09:		/* TAB moves to next field */
+		case SC_TAB:		/* TAB moves to next field */
 		{
 			dir = OBFIND_HOR | ((keystate & (K_RSHIFT|K_LSHIFT)) ? OBFIND_UP : OBFIND_DOWN);
 			
@@ -513,8 +514,8 @@ Form_Cursor(XA_TREE *wt,
 			}
 			break;
 		}
-		case 0x4838:		/* shift + up arrow */
-		case 0x4800:		/* UP ARROW moves to previous field */
+		case SC_SHFT_UPARROW:	/* 0x4838: */ /* shift + up arrow */
+		case SC_UPARROW:	/* 0x4800: */		/* UP ARROW moves to previous field */
 		{
 			dir = OBFIND_VERT | OBFIND_UP;
 			
@@ -539,8 +540,8 @@ Form_Cursor(XA_TREE *wt,
 			}
 			break;
 		}
-		case 0x5000:		/* Down ARROW moves to next object */
-		case 0x5032:		/* Shift + down arrow */
+		case SC_DNARROW:	/* 0x5000 */		/* Down ARROW moves to next object */
+		case SC_SHFT_DNARROW:	/* 0x5032 */		/* Shift + down arrow */
 		{
 			dir = OBFIND_VERT | OBFIND_DOWN;
 			
@@ -565,11 +566,11 @@ Form_Cursor(XA_TREE *wt,
 			}
 			break;
 		}
-		case 0x7300:
-		case 0x4b00:		/* Left ARROW */
-		case 0x4b34:
+		case SC_LFARROW:	/* 0x4b00 */	/* Left ARROW */
+		case SC_SHFT_LFARROW:	/* 0x4b34 */
+		case SC_CTRL_LFARROW:	/* 0x7300 */
 		{
-			if (ret_focus && (keycode == 0x7300 || !(focus_set(wt) && same_aesobj(&wt->focus, &o) && (focus_ob(wt)->ob_flags & OF_EDITABLE))) )
+			if (ret_focus && (keycode == SC_CTRL_LFARROW || !(focus_set(wt) && same_aesobj(&wt->focus, &o) && (focus_ob(wt)->ob_flags & OF_EDITABLE))) )
 			{
 				dir = OBFIND_HOR | OBFIND_UP;
 				
@@ -599,11 +600,11 @@ Form_Cursor(XA_TREE *wt,
 			}
 			break;
 		}
-		case 0x7400:
-		case 0x4d00:		/* Right ARROW */
-		case 0x4d36:
+		case SC_RTARROW:	/* 0x4d00 */	/* Right ARROW */
+		case SC_SHFT_RTARROW:	/* 0x4d36 */
+		case SC_CTRL_RTARROW:	/* 0x7400 */
 		{
-			if (ret_focus && (keycode == 0x7400 || !(focus_set(wt) && same_aesobj(&wt->focus, &o) && (focus_ob(wt)->ob_flags & OF_EDITABLE))) )
+			if (ret_focus && (keycode == SC_CTRL_RTARROW || !(focus_set(wt) && same_aesobj(&wt->focus, &o) && (focus_ob(wt)->ob_flags & OF_EDITABLE))) )
 			{
 				dir = OBFIND_HOR | OBFIND_DOWN;
 				
@@ -633,9 +634,9 @@ Form_Cursor(XA_TREE *wt,
 			}
 			break;
 		}
-		case 0x4737:		/* SHIFT+HOME */
-		case 0x5100:		/* page down key (Milan &| emulators)   */
-		case 0x4f00:		/* END key (Milan &| emus)		*/
+		case SC_SHFT_CLRHOME:	/* 0x4737 */	/* SHIFT+HOME */
+		case SC_PGDN:		/* 0x5100 */	/* page down key (Milan &| emulators)   */
+		case SC_END:		/* 0x4f00 */		/* END key (Milan &| emus)		*/
 		{
 			nxt = ob_find_next_any_flagstate(wt, aesobj(obtree, 0), focus(wt),
 				OF_EDITABLE, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_LAST);
@@ -648,8 +649,8 @@ Form_Cursor(XA_TREE *wt,
 			}
 			break;
 		}
-		case 0x4700:		/* HOME */
-		case 0x4900:		/* page up key (Milan &| emulators)    */
+		case SC_CLRHOME:	/* 0x4700 */	/* HOME */
+		case SC_PGUP:		/* 0x4900 */	/* page up key (Milan &| emulators)    */
 		{
 			nxt = ob_find_next_any_flagstate(wt, aesobj(obtree,0), focus(wt),
 				OF_EDITABLE, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_FIRST);
@@ -759,20 +760,20 @@ Form_Keyboard(XA_TREE *wt,
 	
 	if (!valid_aesobj(&next_obj) && keycode)
 	{
-		if (keycode == 0x3920 && focus_set(wt))
+		if (keycode == SC_SPACE && focus_set(wt))
 		{
 			if (!(focus_ob(wt)->ob_flags & OF_EDITABLE))
 				next_obj = wt->focus;
 			else
 				next_obj = inv_aesobj();
 		}
-		else if (keycode == 0x1c0d || keycode == 0x720d)
+		else if (keycode == SC_RETURN || keycode == SC_NMPAD_ENTER)
 		{
 			next_obj = ob_find_flst(obtree, OF_DEFAULT, 0, 0, OS_DISABLED, 0, 0);
 			DIAG((D_keybd, NULL, "Form_Keyboard: Got RETRURN key - default obj=%d for %s",
 				next_obj.item, client->name));
 		}
-		else if (keycode == 0x6100)	/* UNDO */
+		else if (keycode == SC_UNDO)	/* UNDO */
 		{
 			next_obj = ob_find_cancel(obtree);
 
@@ -803,7 +804,7 @@ Form_Keyboard(XA_TREE *wt,
 					         &fr.obj,
 					         &fr.dblmask);
 		}
-		else if (keycode != 0x1c0d && keycode != 0x720d)
+		else if (keycode != SC_RETURN && keycode != SC_NMPAD_ENTER)
 		{
 			if (!focus_set(wt) || same_aesobj(&wt->focus, &new_eobj))
 			{

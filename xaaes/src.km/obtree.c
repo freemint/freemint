@@ -30,6 +30,7 @@
 #include "rectlist.h"
 #include "xa_global.h"
 #include "k_mouse.h"
+#include "keycodes.h"
 
 #include "mint/signal.h"
 
@@ -2877,7 +2878,6 @@ obtree_is_menu(OBJECT *tree)
 
 	return m;
 }
-
 bool
 obtree_has_default(OBJECT *obtree)
 {
@@ -2889,14 +2889,13 @@ obtree_has_exit(OBJECT *obtree)
 {
 	struct xa_aes_object o = ob_find_any_flst(obtree, OF_EXIT, 0, 0, 0, 0, 0);
 	return o.item >= 0 ? true : false;
-} 
+}
 bool
 obtree_has_touchexit(OBJECT *obtree)
 {
 	struct xa_aes_object o = ob_find_any_flst(obtree, OF_TOUCHEXIT, 0, 0, 0, 0, 0);
 	return o.item >= 0 ? true : false;
 } 
-
 /* HR 120601: Objc_Change:
  * We go back thru the parents of the object until we meet a opaque object.
  *    This is to ensure that transparent objects are drawn correctly.
@@ -2920,19 +2919,16 @@ obj_change(XA_TREE *wt,
 {
 	bool draw = false;
 
-	if (aesobj_flags(&obj) != flags)
-	{
+	if (aesobj_flags(&obj) != flags) {
 		aesobj_setflags(&obj, flags);
 		draw |= true;
 	}
-	if (aesobj_state(&obj) != state)
-	{
+	if (aesobj_state(&obj) != state) {
 		aesobj_setstate(&obj, state);
 		draw |= true;
 	}
 
-	if (draw && redraw)
-	{
+	if (draw && redraw) {
 		obj_draw(wt, v, obj, transdepth, clip, rl, dflags);
 	}
 }
@@ -2952,16 +2948,13 @@ obj_draw(XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_object obj, int t
 
 	if (transdepth == -2)
 		start = aesobj(wt->tree, 0);
-	else
-	{
-		if (transdepth != -1 && (transdepth & 0x8000))
-		{
+	else {
+		if (transdepth != -1 && (transdepth & 0x8000)) {
 			transdepth &= ~0x8000;
 			pd = true;
 		}
 
-		while (obj_is_transparent(wt, aesobj_ob(&start), pd))
-		{
+		while (obj_is_transparent(wt, aesobj_ob(&start), pd)) {
 			start = ob_get_parent(wt->tree, start);
 			if (!valid_aesobj(&start) || !transdepth)
 				break;
@@ -2969,24 +2962,18 @@ obj_draw(XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_object obj, int t
 		}
 	}
 	
-	if (rl)
-	{
+	if (rl) {
 		RECT r;
-		do
-		{
+		do {
 			r = rl->r;
-			if (!clip || xa_rect_clip(clip, &r, &r))
-			{
-				if (xa_rect_clip(&or, &r, &r))
-				{
+			if (!clip || xa_rect_clip(clip, &r, &r)) {
+				if (xa_rect_clip(&or, &r, &r)) {
 					(*v->api->set_clip)(v, &r);
 					draw_object_tree(0, wt, wt->tree, v, start, MAX_DEPTH, NULL, flags);
 				}
 			}
 		} while ((rl = rl->next));
-	}
-	else
-	{
+	} else {
 		if (clip)
 			xa_rect_clip(clip, &or, &or);
 
@@ -3008,8 +2995,7 @@ delete_marked(struct objc_edit_info *ei, char *txt)
 	int x, sl = strlen(txt);
 	char *s, *d;
 	
-	if (ei->m_end > ei->m_start)
-	{
+	if (ei->m_end > ei->m_start) {
 		s = txt + ei->m_end;
 		d = txt + ei->m_start;
 		
@@ -3187,7 +3173,7 @@ obj_ed_char(XA_TREE *wt,
 		update = false;
 		break;
 	}	
-	case 0x011b:	/* ESCAPE clears the field */
+	case SC_ESC:	/* 0x011b */	/* ESCAPE clears the field */
 	{
 		txt[0] = '\0';
 		ei->pos = 0;
@@ -3196,7 +3182,7 @@ obj_ed_char(XA_TREE *wt,
 		update = true;
 		break;
 	}
-	case 0x537f:	/* DEL deletes character under cursor */
+	case SC_DEL:	/* 0x537f */	/* DEL deletes character under cursor */
 	{
 		if (txt[ei->pos])
 		{
@@ -3209,7 +3195,7 @@ obj_ed_char(XA_TREE *wt,
 		}
 		break;
 	}
-	case 0x0e08:	/* BACKSPACE deletes character left of cursor (if any) */
+	case SC_BACKSPACE: /* 0x0e08 */	/* BACKSPACE deletes character left of cursor (if any) */
 	{
 		if (!(delete_marked(ei, txt)) && ei->pos)
 		{
@@ -3220,7 +3206,7 @@ obj_ed_char(XA_TREE *wt,
 		update = true;
 		break;
 	}
-	case 0x4d00:	/* RIGHT ARROW moves cursor right */
+	case SC_RTARROW: /* 0x4d00 */	/* RIGHT ARROW moves cursor right */
 	{
 		if ((txt[ei->pos]) && (ei->pos < ted->te_txtlen - 1))
 		{
@@ -3234,7 +3220,7 @@ obj_ed_char(XA_TREE *wt,
 		}
 		break;
 	}
-	case 0x4d36:	/* SHIFT+RIGHT ARROW move cursor to far right of current text */
+	case SC_SHFT_RTARROW: /* 0x4d36 */ /* SHIFT+RIGHT ARROW move cursor to far right of current text */
 	{
 		if (xted)
 		{
@@ -3269,7 +3255,7 @@ obj_ed_char(XA_TREE *wt,
 		}
 		break;
 	}
-	case 0x4b00:	/* LEFT ARROW moves cursor left */
+	case SC_LFARROW: /* 0x4b00 */	/* LEFT ARROW moves cursor left */
 	{
 		if (ei->pos)
 		{
@@ -3283,7 +3269,7 @@ obj_ed_char(XA_TREE *wt,
 		}
 		break;
 	}
-	case 0x4b34:	/* SHIFT+LEFT ARROW move cursor to start of field */
+	case SC_SHFT_LFARROW: /* 0x4b34 */ /* SHIFT+LEFT ARROW move cursor to start of field */
 	{
 		if (xted)
 		{
@@ -3308,7 +3294,7 @@ obj_ed_char(XA_TREE *wt,
 		}
 		/* else fall through */
 	}
-	case 0x4700:	/* CLR/HOME also moves to far left */
+	case SC_CLRHOME: /* 0x4700 */	/* CLR/HOME also moves to far left */
 	{
 		if (ei->pos)
 		{
@@ -3322,17 +3308,17 @@ obj_ed_char(XA_TREE *wt,
 		}
 		break;
 	}
-	case 0x2e03:	/* CTRL+C */
+	case SC_CTRL_C:	/* 0x2e03 */	/* CTRL+C */
 	{
 		update = ed_scrap_copy(wt, ei, ted);
 		break;
 	}
-	case 0x2d18: 	/* CTRL+X */
+	case SC_CTRL_X: /* 0x2d18 */ 	/* CTRL+X */
 	{
 		update = ed_scrap_cut(wt, ei, ted);
 		break;
 	}
-	case 0x2f16: 	/* CTRL+V */
+	case SC_CTRL_V: /* 0x2f16 */ 	/* CTRL+V */
 	{
 		update = ed_scrap_paste(wt, ei, ted);
 		break;
@@ -4108,7 +4094,7 @@ obj_edit(XA_TREE *wt,
 				if (ei && same_aesobj(&ei->o, &obj))
 					xted = ei;
 				else if (valid_aesobj(&obj))
-					ted = object_get_tedinfo(aesobj_ob(&obj), &xted);
+					ted = aesobj_get_tedinfo(&obj, &xted);
 				
 				if (!ei || ei != xted)
 				{
