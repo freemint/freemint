@@ -2254,9 +2254,9 @@ draw_widg_icon(struct xa_vdi_settings *v, struct xa_widget *widg, XA_TREE *wt, s
 	ob = aesobj(wt->tree, ind);
 
 	if (widg->state & OS_SELECTED)
-		aesobj_ob(&ob)->ob_state |= OS_SELECTED;
+		aesobj_setsel(&ob);
 	else
-		aesobj_ob(&ob)->ob_state &= ~OS_SELECTED;
+		aesobj_clrsel(&ob);
 
 	x = widg->ar.x, y = widg->ar.y;
 

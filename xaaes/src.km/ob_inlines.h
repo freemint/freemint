@@ -91,6 +91,8 @@ object_get_spec(OBJECT *ob)
 		return &ob->ob_spec;
 	}
 }
+static inline OBSPEC *
+aesobj_get_spec(struct xa_aes_object *o) { return object_get_spec(aesobj_ob(o)); }
 
 static inline struct scroll_info *
 object_get_slist(OBJECT *ob)
@@ -129,15 +131,15 @@ object_deselect(OBJECT *ob)
 static inline bool
 set_aesobj_uplink(OBJECT **t, struct xa_aes_object *c, struct xa_aes_object *s, struct oblink_spec **oblink)
 {
-	if ((aesobj_ob(c)->ob_type & 0xff) == G_OBLINK)
+	if ((aesobj_type(c) & 0xff) == G_OBLINK)
 	{
 		struct oblink_spec *obl = object_get_oblink(aesobj_ob(c));
 		if (obl)
 		{
 			obl->save_to_r = *(RECT *)&obl->to.tree[obl->to.item].ob_x;
 			
-			obl->to.tree[obl->to.item].ob_x = aesobj_ob(c)->ob_x;
-			obl->to.tree[obl->to.item].ob_y = aesobj_ob(c)->ob_y;
+			obl->to.tree[obl->to.item].ob_x = aesobj_getx(c);
+			obl->to.tree[obl->to.item].ob_y = aesobj_gety(c);
 			
 			obl->d.pmisc[1] = *oblink;
 			*oblink = obl;

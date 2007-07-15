@@ -571,7 +571,7 @@ cXA_wheel_event(enum locks lock, struct c_event *ce, bool cancel)
 				if (wt && (obtree = wt->tree))
 				{
 					obj = obj_find(wt, aesobj(wt->tree, 0), 10, md->x, md->y, NULL);
-					if (valid_aesobj(&obj) && (aesobj_ob(&obj)->ob_type & 0xff) == G_SLIST)
+					if (valid_aesobj(&obj) && (aesobj_type(&obj) & 0xff) == G_SLIST)
 					{
 						struct scroll_info *list = object_get_slist(aesobj_ob(&obj));
 						

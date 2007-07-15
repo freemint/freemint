@@ -1514,7 +1514,7 @@ check_internal_objects(struct xa_fnts_info *fnts, struct xa_aes_object obj)
 	{
 		//fnts->dialog_flags ^= FNTS_DISPLAY;
 		
-		if (aesobj_ob(&obj)->ob_state & OS_SELECTED)
+		if (aesobj_sel(&obj))
 			fnts->dialog_flags |= FNTS_DISPLAY;
 		else
 			fnts->dialog_flags &= ~FNTS_DISPLAY;
@@ -1581,8 +1581,8 @@ XA_fnts_evnt(enum locks lock, struct xa_client *client, AESPB *pb)
 		}
 		else
 		{
-			if (valid_aesobj(&wep.obj) && (aesobj_ob(&wep.obj)->ob_state & OS_SELECTED))
-				obj_change(fnts->wt, wind->vdi_settings, wep.obj, -1, aesobj_ob(&wep.obj)->ob_state & ~OS_SELECTED, aesobj_ob(&wep.obj)->ob_flags, true, &wind->wa, wind->rect_list.start, 0);
+			if (valid_aesobj(&wep.obj) && aesobj_sel(&wep.obj))
+				obj_change(fnts->wt, wind->vdi_settings, wep.obj, -1, aesobj_state(&wep.obj) & ~OS_SELECTED, aesobj_flags(&wep.obj), true, &wind->wa, wind->rect_list.start, 0);
 		
 			val = get_edpoint(fnts);
 			if (val != fnts->fnt_pt)
