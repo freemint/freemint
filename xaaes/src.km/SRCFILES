@@ -19,6 +19,7 @@ HEADER = \
 	global.h \
 	handler.h \
 	init.h \
+	keycodes.h \
 	k_init.h \
 	k_keybd.h \
 	k_main.h \
