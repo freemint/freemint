@@ -20,7 +20,7 @@ endif
 ifeq ($(CROSS),yes)
 
 CROSSPREFIX=m68k-atari-mint-
-# CROSSPREFIX=ozk42-
+#CROSSPREFIX=ozk42-
 
 LANG=C
 NATIVECC = gcc
@@ -29,8 +29,8 @@ CRLF = echo crlf -s
 
 # e.g. when you don't have the mintlib/gemlib/cflib in
 #      the /usr/m68k-atari/mint
-GENERAL = $(M68K_ATARI_MINT_CFLAGS) $(M68K_ATARI_MINT_LDFLAGS) \
-	-ffreestanding -I/usr/m68k-atari-mint/include
+GENERAL = $(M68K_ATARI_MINT_CFLAGS) $(M68K_ATARI_MINT_LDFLAGS)
+#	-ffreestanding -I/usr/m68k-atari-mint/include -specs=/home/ozk/specs
 
 else
 
@@ -78,8 +78,8 @@ WARN = \
 	-Wshadow \
 	-Wpointer-arith \
 	-Wcast-qual \
-	-Waggregate-return \
-	-Werror
+	-Waggregate-return
+#	-Werror
 
 #
 # default definitions
