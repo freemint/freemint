@@ -593,7 +593,7 @@ init (struct kentry *k, struct adiinfo *ainfo, char **reason)
 	DEBUG (("%s: init ok", __FILE__));
 	return 0;
 }
-
+#if 0
 static long _cdecl
 moose_unregister(struct adif *a)
 {
@@ -602,3 +602,4 @@ moose_unregister(struct adif *a)
 	ret = (*ainf->adi_unregister)(&moose_aif);
 	return ret;
 }
+#endif
