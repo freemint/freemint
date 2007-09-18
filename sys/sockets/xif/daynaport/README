@@ -1,0 +1,89 @@
+SCSILINK.XIF
+============
+This is a driver for MintNet that supports the Daynaport SCSI/Link (a
+SCSI-to-Ethernet device).
+
+Hardware installation
+---------------------
+1. Make sure your system is powered off.
+2. Connect the Daynaport SCSI/Link into the SCSI chain of your TT or
+   Falcon.  If it is physically the last device in the chain, make sure
+   that termination is on (the 1-0 switch is set to 1), otherwise, make
+   sure that it's off (the switch is set to 0).  Set the SCSI id (the
+   rotary switch) to a value that is different from any other device in
+   the chain, and different from the id of the system itself, which is
+   normally 7.
+3. Connect the Ethernet side of the device into your Ethernet (if you
+   are using 10baseT, you will need a hub).
+4. Power on all the devices in the SCSI chain, before powering on your
+   system.
+
+Software installation
+---------------------
+1. Read carefully the "WARNING" above!
+2. Make sure that you have a SCSIDRV driver on your system; recent
+   versions of HDDRIVER provide this function.
+3. Make sure that arbitration is enabled for the SCSIDRV driver, and
+   that the id of the SCSI/Link device is being controlled by SCSIDRV.
+4. Copy SCSILINK.XIF to the same folder as your other XIF files; with
+   a current MiNT distribution, that's MINT/1-16-CUR.
+5. Update the various configuration files:
+      /etc/sysconfig/config.if
+      /etc/sysconfig/domainname
+      /etc/sysconfig/hostname
+      /etc/sysconfig/defaultroute
+      /etc/resolv.conf
+   Marc-Anton Kehr's e-nick program is a convenient way to do this.
+   Many thanks to Marc-Anton for this and his wonderful EasyMiNT
+   distribution!
+5. Reboot MiNT.  You should see two 'sign-on' messages from the driver
+   during initialisation; they should look something like this:
+      DaynaPORT SCSI/Link driver v0.50 initialising ...
+      DaynaPORT SCSI/Link driver v0.50 (en0) (xx:xx:xx:xx:xx:xx) on bus id 1/4
+
+
+PERFORMANCE
+===========
+Performance was measured by using FTP to transfer a large (~10MB) file
+between a TT and a Windoze box.  The following rates were obtained:
+a) FTP server on Windoze, client on TT
+   PC->TT     130 KB/sec
+   TT->PC     153 KB/sec
+b) FTP server on TT, client on Windoze
+   PC->TT     107 KB/sec
+   TT->PC     142 KB/sec
+Transfers *to* the TT are expected to be slower than transfers from it,
+since the TT has to poll the SCSI/Link hardware for an incoming packet,
+rather than handle an interrupt.  Polling is currently triggered via 
+the VBL interrupt; triggering from the system timer interrupt would
+improve performance at a cost of increased overhead.
+
+
+REVISION HISTORY
+================
+Version
+-------
+  0.50        First public beta release
+
+
+NOTES
+=====
+1. Testing to date has been on a TT running TOS 3.06, with the SCSI/Link
+   connected to the SCSI port; however, it should also work on the ACSI
+   port (see below), and on other TOS-compatible systems including the
+   Falcon.  Please let me know if you have had success or problems under
+   other configurations.
+
+2. If you wish to use the ACSI port of an ST, Mega, or TT, you will
+   need (at least) a host adapter that supports SCSI arbitration, i.e.
+   a Link96/Link97.  You will also need a device on that port which
+   provides TERMPWR to power the Link9x (the SCSI/Link does not).
+
+3. SCSILINK.XIF is written to support multiple devices (ethernet ports),
+   but that feature has not yet been tested.  If you connect two devices
+   to the same Atari system and it works, please let me know!
+
+
+Roger Burrows
+Anodyne Software
+11/March/2007
