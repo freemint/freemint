@@ -365,7 +365,9 @@ get_toscookie (ulong tag, ulong *val)
 		{
 			if (cookie->tag == tag)
 			{
-				*val = cookie->value;
+				if (val)
+					*val = cookie->value;
+
 				return 0;
 			}
 
@@ -373,7 +375,9 @@ get_toscookie (ulong tag, ulong *val)
 		}
 	}
 
-	*val = 0;
+	if (val)
+		*val = 0;
+
 	return 1;
 }
 

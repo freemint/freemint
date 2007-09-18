@@ -14,7 +14,9 @@
 
 # ifdef __KERNEL__
 # include "ktypes.h"
+# include "arch/timer.h"
 # else
+# include <sys/param.h>
 # include <sys/types.h>
 # endif
 
