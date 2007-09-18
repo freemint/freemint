@@ -1,0 +1,24 @@
+# This file gets included by the Makefile in this directory to determine
+# the files that should go only into source distributions.
+
+SCSILINK_SRCS = \
+	scsilink.c \
+	scsilink_func.c \
+	scsidriver.c \
+	lowlevel.s
+
+COMMON_SRCS = \
+	../main.c
+
+HEADER = \
+	scsilink.h \
+	scsilink_func.h \
+	portab.h \
+	scsidefs.h \
+	scsidriver.h
+
+COBJS = \
+	$(COMMON_SRCS) \
+	$(SCSILINK_SRCS)
+
+SRCFILES = $(HEADER) $(COBJS)

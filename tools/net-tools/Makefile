@@ -14,7 +14,7 @@ TARGETS = \
 	slattach
 
 SHELL = /bin/sh
-SUBDIRS = tests
+SUBDIRS = slinkctl tests
 
 srcdir = .
 top_srcdir = ..
