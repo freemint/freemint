@@ -14,11 +14,13 @@
 	.globl	_memset
 
 _memset:
-	move.l	4(sp),a1
-	move.l	10(sp),d2
+	move.l	d2,-(sp)	| save old value
+	
+	move.l	4+4(sp),a1
+	move.l	10+4(sp),d2
 	beq.s	L_exit
 	move.l	a1,a0
-	move.w	8(sp),d1
+	move.w	8+4(sp),d1
 #ifndef M68000
 	move.b	d1,d0		| expand d1 to longword
 	lsl.w	#0x8,d1
@@ -56,5 +58,6 @@ L_byte:
 	bne.s	L_byte
 #endif
 L_exit:
+	move.l	(sp)+,d2	| restore old value
 	move.l	a1,d0		| return value
 	rts
