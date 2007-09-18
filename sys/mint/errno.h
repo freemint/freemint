@@ -14,7 +14,7 @@
 #ifndef	_MINT_ERRNO_H
 # define _MINT_ERRNO_H 1         /* Allow multiple inclusion.  */
 
-#ifndef __KERNEL__
+#if !defined(__KERNEL__) && !defined(__KERNEL_XFS__) && !defined(__KERNEL_XDD__)
 
 /* for src integrity checking until all src is converted */
 #error no __KERNEL__

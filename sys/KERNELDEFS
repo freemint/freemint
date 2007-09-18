@@ -75,7 +75,7 @@ KERNELDEFS = -DM68040
 endif
 
 ifeq ($(kernel),060)
-MINT = mint040.prg
+MINT = mint060.prg
 CPU  = 060
 KERNELDEFS = -DM68040
 endif

@@ -592,7 +592,7 @@ boot_kernel_p (void)
 # ifndef M68000
 			option[4] ? MSG_init_menu_yesrn : MSG_init_menu_norn,
 # endif
-			( option[5] == -1 ) ? MSG_init_menu_yesrn : MSG_init_menu_norn,
+			option[5] ? MSG_init_menu_yesrn : MSG_init_menu_norn,
 			option[6], debug_levels[option[6]],
 			option[7], debug_devices[option[7]],
 			option[8] ? MSG_init_menu_yesrn : MSG_init_menu_norn );
@@ -648,7 +648,7 @@ wait:
 				int off;
 
 				off = ((c & 0x0f) - 1);
-				option[off] = option[off] ? 0 : -1;
+				option[off] = option[off] ? 0 : 1;
 
 				modified = 1;
 				break;
