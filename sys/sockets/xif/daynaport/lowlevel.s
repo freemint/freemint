@@ -86,13 +86,3 @@ _test_lock:
 	tst.b	(a0)
 	smi		d0
 	rts
-	
-|//#define __TAS_A0	"4ad0"
-|//#define __SEQ_D0	"57c0"
-|//#define __TST_B_A0	"4a10"
-|//#define __SMI_D0	"5bc0"
-|//#define __CLR_B_A0	"4210"
-
-|//#pragma inline d0=set_lock(a0)		{ __TAS_A0; __SEQ_D0; }
-|//#pragma inline d0=release_lock(a0)	{ __TST_B_A0; __SMI_D0; __CLR_B_A0; }
-|//#pragma inline d0=test_lock(a0)		{ __TST_B_A0; __SMI_D0; }

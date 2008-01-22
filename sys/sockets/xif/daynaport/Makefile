@@ -39,6 +39,5 @@ main.o:	../main.c
 $(TARGET): $(OBJS) $(LIBKERNSTMP)
 	$(LD) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
 	$(FLAGS) --mno-altram --mno-altalloc $@
-	$(STRIP) $@
 	
 include $(top_srcdir)/DEPENDENCIES
