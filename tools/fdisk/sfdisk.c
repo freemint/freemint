@@ -2270,10 +2270,10 @@ read_input(char *dev, int interactive, struct disk_desc *z) {
     z->partno = 0;
 
     if (interactive)
-      warn("
-Input in the following format; absent fields get a default value.
-<start> <size> <type [E,S,L,X,hex]> <bootable [-,*]> <c,h,s> <c,h,s>
-Usually you only need to specify <start> and <size> (and perhaps <type>).
+      warn(" \
+Input in the following format; absent fields get a default value. \
+<start> <size> <type [E,S,L,X,hex]> <bootable [-,*]> <c,h,s> <c,h,s> \
+Usually you only need to specify <start> and <size> (and perhaps <type>). \
 ");
     eof = 0;
 
@@ -2298,47 +2298,47 @@ static void version(void) {
 static void
 usage(void) {
     version();
-    printf("Usage:
-	" PROGNAME " [options] device ...
-device: something like /dev/hda or /dev/sda
-useful options:
-    -s [or --show-size]: list size of a partition
-    -c [or --id]:        print or change partition Id
-    -l [or --list]:      list partitions of each device
-    -d [or --dump]:      idem, but in a format suitable for later input
-    -i [or --increment]: number cylinders etc. from 1 instead of from 0
-    -uS, -uB, -uC, -uM:  accept/report in units of sectors/blocks/cylinders/MB
-    -T [or --list-types]:list the known partition types
-    -D [or --DOS]:       for DOS-compatibility: waste a little space
-    -R [or --re-read]:   make kernel reread partition table
-    -N# :                change only the partition with number #
-    -n :                 do not actually write to disk
-    -O file :            save the sectors that will be overwritten to file
-    -I file :            restore these sectors again
-    -v [or --version]:   print version
-    -? [or --help]:      print this message
-dangerous options:
-    -g [or --show-geometry]: print the kernel's idea of the geometry
-    -x [or --show-extended]: also list extended partitions on output
-                           or expect descriptors for them on input
-    -L  [or --Linux]:      do not complain about things irrelevant for Linux
-    -q  [or --quiet]:      suppress warning messages
-    You can override the detected geometry using:
-    -C# [or --cylinders #]:set the number of cylinders to use
-    -H# [or --heads #]:    set the number of heads to use
-    -S# [or --sectors #]:  set the number of sectors to use
-    You can disable all consistency checking with:
-    -f  [or --force]:      do what I say, even if it is stupid
+    printf("Usage: \
+	" PROGNAME " [options] device ... \
+device: something like /dev/hda or /dev/sda \
+useful options: \
+    -s [or --show-size]: list size of a partition \
+    -c [or --id]:        print or change partition Id \
+    -l [or --list]:      list partitions of each device \
+    -d [or --dump]:      idem, but in a format suitable for later input \
+    -i [or --increment]: number cylinders etc. from 1 instead of from 0 \
+    -uS, -uB, -uC, -uM:  accept/report in units of sectors/blocks/cylinders/MB \
+    -T [or --list-types]:list the known partition types \
+    -D [or --DOS]:       for DOS-compatibility: waste a little space \
+    -R [or --re-read]:   make kernel reread partition table \
+    -N# :                change only the partition with number # \
+    -n :                 do not actually write to disk \
+    -O file :            save the sectors that will be overwritten to file \
+    -I file :            restore these sectors again \
+    -v [or --version]:   print version \
+    -? [or --help]:      print this message \
+dangerous options: \
+    -g [or --show-geometry]: print the kernel's idea of the geometry \
+    -x [or --show-extended]: also list extended partitions on output \
+                           or expect descriptors for them on input \
+    -L  [or --Linux]:      do not complain about things irrelevant for Linux \
+    -q  [or --quiet]:      suppress warning messages \
+    You can override the detected geometry using: \
+    -C# [or --cylinders #]:set the number of cylinders to use \
+    -H# [or --heads #]:    set the number of heads to use \
+    -S# [or --sectors #]:  set the number of sectors to use \
+    You can disable all consistency checking with: \
+    -f  [or --force]:      do what I say, even if it is stupid \
 ");
     exit(1);
 }
 
 static void
 activate_usage(char *progn) {
-    printf("Usage:
-  %s device	 	list active partitions on device
-  %s device n1 n2 ...	activate partitions n1 ..., inactivate the rest
-  %s device		activate partition n, inactivate the other ones
+    printf("Usage: \
+  %s device	 	list active partitions on device \
+  %s device n1 n2 ...	activate partitions n1 ..., inactivate the rest \
+  %s device		activate partition n, inactivate the other ones \
 ", progn, progn, PROGNAME " -An");
     exit(1);
 }
@@ -2896,9 +2896,9 @@ do_fdisk(char *dev){
     if(!no_write && !no_reread) {
 	warn("Checking that no-one is using this disk right now ... ");
 	if(reread_ioctl(fd)) {
-	    printf("
-This disk is currently in use - repartitioning is probably a bad idea.
-Umount all file systems, and swapoff all swap partitions on this disk.
+	    printf(" \
+This disk is currently in use - repartitioning is probably a bad idea. \
+Umount all file systems, and swapoff all swap partitions on this disk. \
 Use the --no-reread flag to suppress this check.\n");
 	    if (!force) {
 		printf("Use the --force flag to overrule all checks.\n");

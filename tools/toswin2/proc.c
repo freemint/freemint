@@ -323,7 +323,7 @@ start_prog(void)
 		antw = simple_dial(argbox, ARGSTR);
 		if (antw == ARGOK)
 		{
-			get_string(argbox, ARGSTR, cfg->arg, sizeof(cfg->arg));
+			get_string(argbox, ARGSTR, cfg->arg);
 			strcat(arg, cfg->arg);
 			arg[0] = strlen(arg);
 			env = normal_env(cfg->col, cfg->row, cfg->vt_mode);

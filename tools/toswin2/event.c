@@ -93,7 +93,7 @@ void menu_help(int title, int item)
 {
 	char *p, str[50], s[50];
 	
-	get_string(menu, item, s, sizeof(s));
+	get_string(menu, item, s);
 	/* die fhrenden '  ' berspringen und das letzte auch nicht */
 	strncpy(str, s + 2, strlen(s) - 3);
 	

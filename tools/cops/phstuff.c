@@ -113,7 +113,7 @@ load_and_reloc(CPX_DESC *cpx_desc, long handle, long fsize, struct program_heade
 									code_ptr += 254;
 								else
 								{
-									(unsigned char *)code_ptr += relo_val;
+									code_ptr += relo_val;
 									*(unsigned long *)code_ptr += (unsigned long)addr;
 								}
 							}
