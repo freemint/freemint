@@ -24,18 +24,18 @@ usage (void)
 	printf ("Filesystem consistency checker. Copyright S.N. Henson 1992,1993,1994.\n");
 	printf (PROGNAME " version " VERSION " (fnaumann@freemint.de, " DATE ")\n");
 	
-	printf ("Usage:
-	" PROGNAME " [options] device ...
-device: something like k: or F
-useful options:
-    -f            : force filesystem check even if it's clean
-    -y   [or -Y]  : answer all questions with 'yes'
-    -n   [or -N]  : don't repair anything, just report errors
-    -p            : non-interactive mode, only do non-destructive repair
-    -d # [or -D #]: use # as directory increment
-    -i #,#,#,...  : print out pathnames of the # inode list
-    -s            : print out summary after check
-    -S            : same as -s but some more infos
+	printf ("Usage: \
+	" PROGNAME " [options] device ... \
+device: something like k: or F \
+useful options: \
+    -f            : force filesystem check even if it's clean \
+    -y   [or -Y]  : answer all questions with 'yes' \
+    -n   [or -N]  : don't repair anything, just report errors \
+    -p            : non-interactive mode, only do non-destructive repair \
+    -d # [or -D #]: use # as directory increment \
+    -i #,#,#,...  : print out pathnames of the # inode list \
+    -s            : print out summary after check \
+    -S            : same as -s but some more infos \
 ");
 	
 	exit (1);
