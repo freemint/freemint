@@ -163,9 +163,10 @@ static long read_packet(struct sl_device *dev,char *packet);
 static int receive_packet(struct netif *nif);
 static long write_packet(struct sl_device *dev,BUF *nbuf,int len);
 
-void install_interrupts(void);		/* in lowlevel.s */
-void interrupt_handler(void);		/* referenced by lowlevel.s */
+extern void install_interrupts(void);		/* in lowlevel.s */
+extern void interrupt_handler(void);		/* referenced by lowlevel.s */
 
+extern long driver_init(void);				/* from main.c */
 
 /********************************************************
 *														*
@@ -181,8 +182,6 @@ struct sl_device *dev;
 long n, rc;
 int i, bus, id;
 
-	long xxx;
-
 	ksprintf(message,"%s v%d.%02d initialising ...\r\n",DRIVER_DESC,MAJOR_VERSION,MINOR_VERSION);
 	c_conws(message);
 	
@@ -190,7 +189,6 @@ int i, bus, id;
 	 *	validate system
 	 */
 	if (s_system (S_GETCOOKIE, COOKIE_MiNT, NULL) == 1) {
-	//if (get_toscookie( COOKIE_MiNT, &xxx) == 1) {
 		ksprintf(message,"%s: must run under MiNT\r\n",DRIVER);
 		c_conws(message);
 		return 1L;
@@ -694,13 +692,10 @@ WORD len, euid;
 		trace(dev,TRACE_READ_1,len,rc);
 
 	if (rc == EPERM) {		/* try to bypass problem with ftpd ... */
-		//euid = Pgeteuid();		/* remember current euid */
-		euid = p_geteuid();
+		euid = p_geteuid();		/* remember current euid */
 		if (euid) {							/* if non-zero, */
-			//(void) Pseteuid((uid_t)0);		/* try to set to super-user */
-			p_seteuid(0);
+			p_seteuid(0);		/* try to set to super-user */
 			rc = scsilink_read(dev->devnum,packet);	/* retry */
-			//(void) Pseteuid((uid_t)euid);
 			p_setuid(euid);
 			len = ((SCSI_PACKET *)packet)->length;
 			trace(dev,TRACE_READ_2,len,rc);
@@ -725,13 +720,10 @@ WORD euid;
 	dev->count.scsi_writes++;
 
 	if (rc == EPERM) {		/* try to bypass problem with ftpd ... */
-		//euid = Pgeteuid();		/* remember current euid */
-		euid = p_geteuid();
+		euid = p_geteuid();		/* remember current euid */
 		if (euid) {							/* if non-zero, */
-			//(void) Pseteuid((uid_t)0);		/* try to set to super-user */
-			p_seteuid(0);
+			p_seteuid(0);		/* try to set to super-user */
 			rc = scsilink_write(dev->devnum,nbuf->dstart,len); /* retry */
-			//(void) Pseteuid((uid_t)euid);
 			p_seteuid(euid);
 			trace(dev,TRACE_WRITE_2,len,rc);
 			if (rc == 0L)					/* ok, so */
@@ -757,9 +749,7 @@ struct trace_entry *t;
 	t->len = len;
 	t->ticks = *_hz_200;
 	t->rc = rc;
-	//t->uid = Pgetuid();
 	t->uid = p_getuid();
-	//t->euid = Pgeteuid();
 	t->euid = p_geteuid();
 
 	if (++dev->current_entry >= dev->trace_entries)

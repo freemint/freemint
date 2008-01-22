@@ -127,48 +127,20 @@
 #define SCSILINK_H
 
 #include "portab.h"
-//#include "inet4/ifeth.h"
+#include "inet4/ifeth.h"
 
-/*
- *	Missing ethernet definitions
- */
+ /*
+  *	Missing ethernet definitions
+  *	(ENET_HDR is eth_dgram from ifeth.h in fact
+  *	but eth_dgram adds one pointer there and I'm
+  *	not sure if I can just change it)
+  */
  
-//typedef struct {				/* generic IP ethernet packet */
-//	eth_dgram eh;
-//	char ed[ETH_MAX_DLEN];
-//} ENET_PACKET;
-
-/*
- *	Ethernet architectural stuff
- */
-#define ETH_ALEN		6			/* HW addr length */
-#define ETH_HLEN		14			/* frame header length */
-#define ETH_MIN_DLEN	46			/* minimum data length */
-#define ETH_MAX_DLEN	1500		/* maximum data length */
-
 typedef struct {				/* packet header */
 	 char destination[ETH_ALEN];	/* Destination hardware address */
 	 char source[ETH_ALEN];			/* Source hardware address */
 	 UWORD type;					/* Ethernet protocol type */
 } ENET_HDR;
-#define ENET_TYPE_IP	0x0800
-#define ENET_TYPE_ARP	0x0806
-#define ENET_TYPE_RARP	0x8035		/* not used by us afaik */
-
-typedef struct {				/* ARP packet contents */
-	 UWORD hardware_space;			/* Hardware address space identifier */
-	 UWORD protocol_space;			/* Protocol address space identifier */
-	 char  hardware_len;			/* Length of hardware address */
-	 char  protocol_len;			/* Length of protocol address */
-	 UWORD op_code;					/* Operation Code */
-	 char  src_ether[ETH_ALEN];		/* Sender's hardware address */
-	 ULONG src_ip;					/* Sender's protocol address */
-	 char  dest_ether[ETH_ALEN];	/* Target's hardware address */
-	 ULONG dest_ip;				/* Target's protocol address */
-} ARP;
-#define	ARP_HARD_ETHER	1
-#define	ARP_OP_REQ		1
-#define	ARP_OP_ANS		2
 
 typedef struct {				/* generic IP ethernet packet */
 	ENET_HDR eh;
@@ -176,13 +148,6 @@ typedef struct {				/* generic IP ethernet packet */
 } ENET_PACKET;
 #define ETH_MIN_LEN		(ETH_HLEN+ETH_MIN_DLEN)
 #define ETH_MAX_LEN		sizeof(ENET_PACKET)
-
-typedef struct {				/* ARP ethernet packet */
-	ENET_HDR eh;
-	ARP		 arp;
-	char	 padbytes[ETH_MIN_LEN-sizeof(ENET_HDR)-sizeof(ARP)];
-} ARP_PACKET;
-
 
 /*
  *	SCSI hardware stuff
