@@ -1084,7 +1084,7 @@ e_getname (fcookie *root, fcookie *dir, char *pathname, int length)
 			register long i = de->name_len;
 			register char *src;
 			
-			len += i;
+			len += i + 1;
 			if (len < length)
 			{
 				src = de->name + i - 1;
