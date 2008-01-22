@@ -295,30 +295,30 @@ usage (void)
 	puts (MSG_GREET);
 	
 	printf (
-"Usage:
-	%s [options] device ...
-device: something like d: or L:
-useful options:
-    -a# [or --action #]:  select action (encipher, decipher, changekey)
-                          default is encipher
-    -b# [or --buffer #]:  specify buffer size in kb
-                          default is %ikb
-    -c# [or --cipher #]:  select cipher algorithm (blowfish)
-                          default is blowfish
-    -m# [or --mode #]:    select mode (robust, fast)
-                          default is robust
-    -h  [or --help]:      print this message
-    -q  [or --quiet]:     be quiet
-    -r# [or --restart #]: restart interrupted session, parameter
-                          is the generated *.sav file in robust mode
-    -t  [or --simulate]:  testing mode, simulate action without any write
-    -v  [or --version]:   print version
-dangerous options,
-for professionals only:
-    -e# [or --end #]:     set end position for action
-                          default is partition end
-    -s# [or --start #]:   set start position for action
-                          default is partition start (512)
+"Usage: \
+	%s [options] device ... \
+device: something like d: or L: \
+useful options: \
+    -a# [or --action #]:  select action (encipher, decipher, changekey) \
+                          default is encipher \
+    -b# [or --buffer #]:  specify buffer size in kb \
+                          default is %ikb \
+    -c# [or --cipher #]:  select cipher algorithm (blowfish) \
+                          default is blowfish \
+    -m# [or --mode #]:    select mode (robust, fast) \
+                          default is robust \
+    -h  [or --help]:      print this message \
+    -q  [or --quiet]:     be quiet \
+    -r# [or --restart #]: restart interrupted session, parameter \
+                          is the generated *.sav file in robust mode \
+    -t  [or --simulate]:  testing mode, simulate action without any write \
+    -v  [or --version]:   print version \
+dangerous options, \
+for professionals only: \
+    -e# [or --end #]:     set end position for action \
+                          default is partition end \
+    -s# [or --start #]:   set start position for action \
+                          default is partition start (512) \
 ", basename (myname), bufsize / 1024);
 	
 	fflush (stdout);

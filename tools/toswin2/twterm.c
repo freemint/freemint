@@ -386,6 +386,8 @@ static void vt100_esc_mode(TEXTWIN* tw, unsigned int c)
 				      (X11R6).  */
 			case 1061: /* Set Sun/PC keyboard emulation of 
 				      VT220 keyboard.  */
+			default:
+				break;
 			}
 			count++;
 		}

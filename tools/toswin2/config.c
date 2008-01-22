@@ -278,12 +278,12 @@ static void open_cfgwd(WDIALOG *wd)
 		switch (cfg->vt_mode)
 		{
 			case MODE_VT52 :
-				get_string(popups, TP52, str, sizeof(str));
+				get_string(popups, TP52, str);
 				new_term = 0;
 				break;
 
 			case MODE_VT100 :
-				get_string(popups, TP100, str, sizeof(str));
+				get_string(popups, TP100, str);
 				new_term = 1;
 				break;
 
@@ -293,7 +293,7 @@ static void open_cfgwd(WDIALOG *wd)
 		}
 		set_string(cfg_wd->tree, WTERM, str);
 
-		get_string(popups, TPATARI + cfg->char_tab, str, sizeof(str));
+		get_string(popups, TPATARI + cfg->char_tab, str);
 		set_string(cfg_wd->tree, WTAB, str);
 
 		if (cfg->vdi_colors) {
@@ -403,19 +403,19 @@ static int exit_cfgwd(WDIALOG *wd, short exit_obj)
 			break;
 
 		case WOK :
-			get_string(wd->tree, WCOL, str, sizeof(str));
+			get_string(wd->tree, WCOL, str);
 			cfg->col = atoi(str);
 			if (cfg->col < MINCOLS)
 				cfg->col = MINCOLS;
 			else if (cfg->col > MAXCOLS)
 				cfg->col = MAXCOLS;
-			get_string(wd->tree, WROW, str, sizeof(str));
+			get_string(wd->tree, WROW, str);
 			cfg->row = atoi(str);
 			if (cfg->row < MINROWS)
 				cfg->row = MINROWS;
 			else if (cfg->row > MAXROWS)
 				cfg->row = MAXROWS;
-			get_string(wd->tree, WBUFFER, str, sizeof(str));
+			get_string(wd->tree, WBUFFER, str);
 			cfg->scroll = atoi(str);
 			if (cfg->scroll < 0)
 				cfg->scroll = 0;
@@ -440,7 +440,7 @@ static int exit_cfgwd(WDIALOG *wd, short exit_obj)
 				cfg->kind |= (VSLIDE|UPARROW|DNARROW);
 			if (get_state(wd->tree, WGSIZER, OS_SELECTED))
 				cfg->kind |= SIZER;
-			get_string(wd->tree, WTITLE, cfg->title, sizeof(cfg->title));
+			get_string(wd->tree, WTITLE, cfg->title);
 
 			if (new_term == 0)
 				cfg->vt_mode = MODE_VT52;

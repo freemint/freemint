@@ -43,8 +43,8 @@ typedef enum { FALSE = (0 == 1), TRUE  = (1 == 1) } boolean;
 /*----------------------------------------------------------------------------------------*/
 /* Globale Variablen                                                                      */
 /*----------------------------------------------------------------------------------------*/
-static short app_id;
-static short vdi_handle;
+short app_id;
+short vdi_handle;
 static short work_out[57];
 			
 static WINDOW *window_list = NULL;
