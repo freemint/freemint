@@ -20,14 +20,13 @@ Hardware installation
 
 Software installation
 ---------------------
-1. Read carefully the "WARNING" above!
-2. Make sure that you have a SCSIDRV driver on your system; recent
+1. Make sure that you have a SCSIDRV driver on your system; recent 
    versions of HDDRIVER provide this function.
-3. Make sure that arbitration is enabled for the SCSIDRV driver, and
+2. Make sure that arbitration is enabled for the SCSIDRV driver, and
    that the id of the SCSI/Link device is being controlled by SCSIDRV.
-4. Copy SCSILINK.XIF to the same folder as your other XIF files; with
+3. Copy SCSILINK.XIF to the same folder as your other XIF files; with
    a current MiNT distribution, that's MINT/1-16-CUR.
-5. Update the various configuration files:
+4. Update the various configuration files:
       /etc/sysconfig/config.if
       /etc/sysconfig/domainname
       /etc/sysconfig/hostname
