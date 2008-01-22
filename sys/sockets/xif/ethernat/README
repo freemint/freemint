@@ -1,0 +1,65 @@
+Installation
+
+At the time of writing only drivers for MiNTNet exist.
+
+To install the EtherNat driver for MiNTNet, copy the file called 
+"ethernat.xif" to your MINT-directory and then create a file in the root 
+of your boot drive called "ethernat.inf". Then edit "ethernat.inf" so that 
+it contains the MAC-address for your EtherNat board. We have for example 
+chosen this one:
+
+00204358783c
+
+which is the MAC address of an ISA-card we had at home, so the risk of 
+collisions with other boards is minimal. You could follow this procedure 
+too or just copy this one and change some digits so that you get a unique 
+MAC-address.
+
+In your MiNTNet configuration files you must use "en0" as device name for 
+enabling the EtherNat.
+
+
+Source code and programming
+
+The source code for the EtherNat ethernet MiNTNet driver is included. 
+These files are coded for compilation using GCC 2.9.5 and you should only 
+need to type "make ethernat" to compile the whole thing.
+
+You'll find the necessary information about where the registers for the 
+ethernet controller are if you study the 91c111.h header file.
+
+The registers of the USB are located at 0x8000001y. Fetch the chip 
+documentation for the ISP1160 from Philips and you'll get a better picture 
+of these registers. When setting up the interrupt in the USB chip it must 
+be set to level-triggered active high.
+
+The interrupt vectors are $C3 for the USB and $C4 for the ethernet. There 
+is a kind of main control register implemented in the CPLD, which is a 
+byte at 0x80000023. In this register you'll find the following bits:
+
+	 The Ethernat control reg
+	 Bit 0:		LAN half clock mode, default 1 (on)
+	 Bit 1:		LAN interrupt enable, default 0 (off)
+	 Bit 2:		USB interrupt enable, default 0 (off)
+	 Bit 3:		unused
+	 Bit 4:		unused
+	 Bit 5:		unused
+	 Bit 6:		Led 1 active low, default 1 (off)
+	 Bit 7:		Led 2 active low, default 1 (off)
+
+A few words about this register: Bit0 must always be on if your CT60 clock 
+frequency is above 50MHz, else it should be off to get higher throughput 
+from the LAN chip. But you'll have to recompile the driver to change 
+this...
+
+Bit 1 and Bit 2 are the main interrupt enable switches for the ethernet 
+and USB respectively. If these aren't enabled then no interrupts will get 
+through to the CT60.
+
+Bit 6 and Bit 7 control the non-mounted LEDs on the EtherNat board. Look 
+for LED1 and LED2 and you'll find them. You can solder your own LEDs to 
+these pads together with a resistor that is around 200 - 300 ohm. Mind the 
+polarity of the LEDs.
+
+/Henrik Gilda
+hencox@hotmail.com
