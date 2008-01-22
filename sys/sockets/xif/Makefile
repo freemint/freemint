@@ -30,7 +30,8 @@ LIBS = $(LIBKERN) -lgcc
 CPU = 000
 
 # default definitions
-SGENFILES = *.xif
+GENFILES = *.xif
+
  
 OBJS = $(addsuffix .o, $(basename $(notdir $(COBJS))))
 
