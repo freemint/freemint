@@ -1,0 +1,20 @@
+# This file gets included by the Makefile in this directory to determine
+# the files that should go only into source distributions.
+
+ETHERNAT_SRCS = \
+	91c111.c \
+	ethernat.c \
+	ethernat_200Hzint.s
+
+COMMON_SRCS = \
+	../main.c
+
+HEADER = \
+	91c111.h \
+	ethernat_200Hzint.h
+
+COBJS = \
+	$(COMMON_SRCS) \
+	$ETHERNAT_SRCS)
+
+SRCFILES = $(HEADER) $(COBJS)
