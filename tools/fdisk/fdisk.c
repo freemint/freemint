@@ -2221,32 +2221,32 @@ static void
 usage (void)
 {
 	version ();
-	printf ("Usage:
-	" PROGNAME " [options] device ...
-device: something like /dev/hda or /dev/sda
-useful options:
-    -s [or --show-size]: list size of a partition
-    -c [or --id]:        print or change partition Id
-    -l [or --list]:      list partitions of each device
-    -d [or --dump]:      idem, but in a format suitable for later input
-    -i [or --increment]: number sectors etc. from 1 instead of from 0
-    -uS, -uM:            accept/report in units of sectors/MB
-    -T [or --list-types]:list the known partition types
-    -R [or --re-read]:   make kernel reread partition table
-    -N# :                change only the partition with number #
-    -n :                 do not actually write to disk
-    -O file :            save the sectors that will be overwritten to file
-    -I file :            restore these sectors again
-    -v [or --version]:   print version
-    -? [or --help]:      print this message
-dangerous options:
-    -x [or --show-extended]: also list extended partitions on output
-                           or expect descriptors for them on input
-    -q  [or --quiet]:      suppress warning messages
-    You can override the detected geometry using:
-    -S# [or --sectors #]:  set the number of sectors to use
-    You can disable all consistency checking with:
-    -f  [or --force]:      do what I say, even if it is stupid
+	printf ("Usage: \
+	" PROGNAME " [options] device ... \
+device: something like /dev/hda or /dev/sda \
+useful options: \
+    -s [or --show-size]: list size of a partition \
+    -c [or --id]:        print or change partition Id \
+    -l [or --list]:      list partitions of each device \
+    -d [or --dump]:      idem, but in a format suitable for later input \
+    -i [or --increment]: number sectors etc. from 1 instead of from 0 \
+    -uS, -uM:            accept/report in units of sectors/MB \
+    -T [or --list-types]:list the known partition types \
+    -R [or --re-read]:   make kernel reread partition table \
+    -N# :                change only the partition with number # \
+    -n :                 do not actually write to disk \
+    -O file :            save the sectors that will be overwritten to file \
+    -I file :            restore these sectors again \
+    -v [or --version]:   print version \
+    -? [or --help]:      print this message \
+dangerous options: \
+    -x [or --show-extended]: also list extended partitions on output \
+                           or expect descriptors for them on input \
+    -q  [or --quiet]:      suppress warning messages \
+    You can override the detected geometry using: \
+    -S# [or --sectors #]:  set the number of sectors to use \
+    You can disable all consistency checking with: \
+    -f  [or --force]:      do what I say, even if it is stupid \
 ");
 	exit(1);
 }
@@ -2254,10 +2254,10 @@ dangerous options:
 static void
 activate_usage (char *progn)
 {
-	printf ("Usage:
-  %s device	 	list active partitions on device
-  %s device n1 n2 ...	activate partitions n1 ..., inactivate the rest
-  %s device		activate partition n, inactivate the other ones
+	printf ("Usage: \
+  %s device	 	list active partitions on device \
+  %s device n1 n2 ...	activate partitions n1 ..., inactivate the rest \
+  %s device		activate partition n, inactivate the other ones \
 ", progn, progn, PROGNAME " -An");
 	exit (1);
 }
