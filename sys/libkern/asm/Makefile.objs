@@ -27,15 +27,15 @@ DEFINITIONS =
 #DEFINITIONS = -DM68030
 #endif
 
-NOCFLAGS-blockcopy.S = -mcfv4e
+NOCFLAGS-blockcopy.S = $(MODEL)
 CFLAGS-blockcopy.S = -m68000
-NOCFLAGS-memset.S = -mcfv4e
+NOCFLAGS-memset.S = $(MODEL)
 CFLAGS-memset.S = -m68000
-NOCFLAGS-quickmove.S = -mcfv4e
+NOCFLAGS-quickmove.S = $(MODEL)
 CFLAGS-quickmove.S = -m68000
-NOCFLAGS-quickswap.S = -mcfv4e
+NOCFLAGS-quickswap.S = $(MODEL)
 CFLAGS-quickswap.S = -m68000
-NOCFLAGS-quickzero.S = -mcfv4e
+NOCFLAGS-quickzero.S = $(MODEL)
 CFLAGS-quickzero.S = -m68000
 
 # default definitions
