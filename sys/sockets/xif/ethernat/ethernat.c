@@ -157,7 +157,7 @@ static volatile int initializing = 1;
 static volatile int sending = 0;
 
 //handle for all logging
-static ushort loghandle;
+//static ushort loghandle;
 
 
 //global MAC address in longword format for RX use
@@ -344,7 +344,7 @@ ethernat_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, s
 	unsigned char	littlemem;
 //	static	uchar	message[100];
 
-	unsigned long	timeval;
+//	unsigned long	timeval;
 
 
 //	Cconws("Output\n\r");		//debug
@@ -688,7 +688,7 @@ ethernat_config (struct netif *nif, struct ifopt *ifo)
 long
 driver_init (void)
 {
-	static char message[100];
+//	static char message[100];
 	//static char eth_fname[128];
 
 	long	ferror;
@@ -1091,7 +1091,8 @@ static void ethernat_service	(struct netif * nif)
 	ushort	fifo_reg;
 	ushort	status, bytecount, longcnt;
 	short		type, i;
-	char		packetnr, message[100];
+	char		packetnr;
+//	char		message[100];
 	long		tmp, *dpnt;
 	long		desttmp[2];
 	BUF		*b;

@@ -88,6 +88,14 @@ short MII_bit_cycle(short MDO_MDOE_mask);
 void	Eth_reset(void);
 short Eth_AutoNeg(long max_wait);		// Max wait in ms
 void	Waitms(long amount);
-inline short Eth_set_bank(short bank);			//returns the old bank nr
+
+static inline short Eth_set_bank(short bank)
+{
+	short tmp;
+	
+	tmp = ((*(pVUWORD)LANADDR_BANK) >> 8);				//bank nr was in upper byte
+	*(pVUWORD)LANADDR_BANK = (bank << 8) | 0x33;
+	return tmp;
+}
 
 #endif /*__91C111_H_*/

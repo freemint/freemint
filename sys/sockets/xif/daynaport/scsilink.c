@@ -174,6 +174,7 @@ extern long driver_init(void);				/* from main.c */
 *														*
 ********************************************************/
 
+long driver_init(void);
 long driver_init(void)
 {
 char message[200], macaddr[ETH_ALEN];
