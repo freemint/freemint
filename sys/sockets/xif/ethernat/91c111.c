@@ -305,14 +305,3 @@ void Waitms(long amount)
 	while (*LANREG_TIMER200 < (timer200Hz + amount));
 
 }
-
-
-
-inline short Eth_set_bank(short bank)
-{
-	short tmp;
-	
-	tmp = ((*LANREG_BANK) >> 8);				//bank nr was in upper byte
-	*LANREG_BANK = (bank << 8) | 0x33;
-	return tmp;
-}

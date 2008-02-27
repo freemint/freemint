@@ -286,7 +286,7 @@ WORD reqbuff[18/2];	/* even alignment for safety */
 	cmd.CmdLen = 6;
 	cmd.Buffer = inqdata;
 	cmd.TransferLen = 32;
-	cmd.SenseBuffer = (char *) reqbuff;
+	cmd.SenseBuffer = (BYTE *) reqbuff;
 	cmd.Timeout = 1 * CLOCKS_PER_SEC;
 	cmd.Flags = 0;
 	for (i = 0; i < 5; i++)
