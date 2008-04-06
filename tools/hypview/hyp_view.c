@@ -50,11 +50,7 @@ main(int argc, char *argv[])
 		if(_app)							/*	Als Programm gestartet?	*/
 		{
 			if (*default_file)			/*	Default-Hypertext angegeben?	*/
-/* [GS] 0.35.2c Start: */
 				OpenFileNW(default_file,NULL,0);
-/* Ende; alt:
-				OpenFileNW(default_file,NULL);
-*/
 			else
 				SelectFileLoad();		/*	Datei per Fileselector erfragen	*/
 		}
@@ -62,11 +58,7 @@ main(int argc, char *argv[])
 	else									/*	Falls Parameter angegeben...	*/
 	{
 		/*	...diese Datei (inkl. Kapitel) laden	*/
-/* [GS] 0.35.2c Start: */
 		OpenFileNW(argv[1], (argc > 2 ? argv[2]:NULL), 0);
-/* Ende; alt:
-		OpenFileNW(argv[1],(argc>2 ? argv[2]:NULL));
-*/
 	}
 
 	while(!_app || (!doneFlag && all_list))

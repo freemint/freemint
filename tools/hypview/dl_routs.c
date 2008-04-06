@@ -189,11 +189,7 @@ Debug(const char *str, ...)
 				c = *str++;
 				if(c == 'l')
 					is_l = TRUE;
-/* [GS] 0.35.2a Start */
 				else if(c == 'd' || c == 'i' )
-/* Ende; alt:
-				else if(c=='d')
-*/
 				{
 					if(is_l)
 						ltoa((*((long *)(list))++), ptr, 10);

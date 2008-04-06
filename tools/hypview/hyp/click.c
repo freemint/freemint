@@ -37,14 +37,6 @@
 #include "../include/av.h"
 #include "../hyp.h"
 
-/* [GS] 0.35.2a alt:
-short find_keyword(char *word)
-{
-	Debug("Looking for <%s>",word);
-	return(FALSE);
-}
-*/
-
 extern HYP_DOCUMENT *Hyp;
 extern WINDOW_DATA *Win;
 
@@ -133,7 +125,7 @@ void HypClick(DOCUMENT *doc, EVNTDATA *m)
 
 				src++;
 				
-				if (link_type & 1)		/*	Zeilennummer berspringen	*/
+				if (link_type & 1)		/*	Zeilennummer ueberspringen	*/
 				{
 					line_nr = DEC_255(src);
 					src += 2;
@@ -160,39 +152,27 @@ void HypClick(DOCUMENT *doc, EVNTDATA *m)
 
 				x_pos += xy[0] + xy[2];
 				
-/* printf ("Link to node %d line %d : Type is %d\r\n",dst_page,line_nr, link_type); */
 				if(x_pos > m->x)
 				{
 					short dst_type = hyp->indextable[dst_page]->type;
-/* printf ("Link 1\r\n" ); */
 					
 /*
 					Debug("Link to node %d line %d (=%s type %d): Type is %d",dst_page,line_nr,&hyp->indextable[dst_page]->name,dst_type,link_type);
 */
 					if(dst_type == INTERNAL)
 					{
-/* printf ("Link 2\r\n" ); */
 						if (m->kstate & K_CTRL || (link_type >= ALINK))
-/* [GS] 0.35.2c Start: */
 							OpenFileNW(doc->path, &hyp->indextable[dst_page]->name, 0);
-/* Ende; alt:
-							OpenFileNW(doc->path,&hyp->indextable[dst_page]->name,);
-*/
 						else
 						{
-/* printf ("Link 3\r\n" ); */
 							AddHistoryEntry(win);
-/* printf ("Link 3.1\r\n" ); */
-/* printf ("Link to node dst_page %d line %d \r\n",dst_page,line_nr ); */
 							GotoPage(doc,dst_page,line_nr);
- /* printf ("Link 3.2\r\n" ); */
 						}
 					}
 					else if (dst_type == POPUP)
 						OpenPopup(doc, dst_page, x_pos - xy[2], m->y - m->y % font_ch);
 					else if (dst_type == EXTERNAL_REF)
 					{
-/* printf ("Link 4\r\n" ); */
 						HypOpenExtRef(&hyp->indextable[dst_page]->name,
 								m->kstate & K_CTRL || (link_type>=ALINK));
 					}
@@ -247,7 +227,6 @@ void HypClick(DOCUMENT *doc, EVNTDATA *m)
 					}
 					else if ((dst_type == SYSTEM_ARGUMENT) || (dst_type == REXX_SCRIPT))
 					{
-/* printf ("Link 5\r\n" ); */
 						/*	Parameter per AV_STARTPROG vom Server starten lassen	*/
 						if (av_parameter)
 							Debug("An AV action is already running");
@@ -281,7 +260,6 @@ void HypClick(DOCUMENT *doc, EVNTDATA *m)
 					}
 					else if(dst_type == QUIT)		/*	Fenster schliessen?	*/
 					{
-/* printf ("Link 6\r\n" ); */
 						SendClose(win);
 					}
 					else
@@ -294,7 +272,6 @@ void HypClick(DOCUMENT *doc, EVNTDATA *m)
 			}
 			else
 			{
-/* printf ("Link 7\r\n" ); */
 
 				if ((*(unsigned char *)src) >= 100)		/*	Text-Attribute	*/
 				{
@@ -318,7 +295,6 @@ check_char:
 
 		if(x_pos > m->x)
 		{
-/* [GS] 0.35.2a Start */
 			if ( !refonly )
 			{
 				long ret;
@@ -335,16 +311,6 @@ check_char:
 					search_allref( buffer, TRUE );
 			}
 
-/* Ende; alt: */
-/*
-		char buffer[256];
-			get_word(last_esc,src-1,buffer);
-			if(find_keyword(buffer))
-			{*/
-				/*	Word gefunden	*/
-			/*
-			}
-*/
 			break;
 		}
 	}

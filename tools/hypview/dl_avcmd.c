@@ -37,7 +37,7 @@ void DoAV_GETSTATUS(void)
 	appl_write(server_id,16,msg);
 }
 
-/*	bermittelt einen Konfigurationsstring, den der Server speichert	*/
+/*	Uebermittelt einen Konfigurationsstring, den der Server speichert	*/
 void DoAV_STATUS(char *string)
 {
 	short msg[8]={AV_STATUS,0,0,0,0,0,0,0};
@@ -46,7 +46,7 @@ void DoAV_STATUS(char *string)
 	appl_write(server_id,16,msg);
 }
 
-/*	bermittelt dem Server einen Tastendruck, der nicht verarbeitet wurde	*/
+/*	Uebermittelt dem Server einen Tastendruck, der nicht verarbeitet wurde	*/
 void DoAV_SENDKEY(short kbd_state, short code)
 {
 	short msg[8]={AV_SENDKEY,0,0,0,0,0,0,0};
@@ -80,7 +80,7 @@ void DoAV_ASKOBJECT(void)
 	appl_write(server_id,16,msg);
 }
 
-/*	Der Server soll ein Consolenfenster ffnen	*/
+/*	Der Server soll ein Consolenfenster oeffnen	*/
 void DoAV_OPENCONSOLE(void)
 {
 	short msg[8]={AV_OPENCONSOLE,0,0,0,0,0,0,0};
@@ -88,7 +88,7 @@ void DoAV_OPENCONSOLE(void)
 	appl_write(server_id,16,msg);
 }
 
-/*	Der Server soll ein Verzeichnisfenster ffnen	*/
+/*	Der Server soll ein Verzeichnisfenster oeffnen	*/
 void DoAV_OPENWIND(char *path, char *wildcard)
 {
 	short msg[8]={AV_OPENWIND,0,0,0,0,0,0,0};
@@ -98,7 +98,7 @@ void DoAV_OPENWIND(char *path, char *wildcard)
 	appl_write(server_id,16,msg);
 }
 
-/*	Der Server soll ein Programmstarten oder eine Datei ffnen	*/
+/*	Der Server soll ein Programmstarten oder eine Datei oeffnen	*/
 void DoAV_STARTPROG(char *path, char *commandline, short id)
 {
 	short msg[8]={AV_STARTPROG,0,0,0,0,0,0,0};
@@ -109,7 +109,7 @@ void DoAV_STARTPROG(char *path, char *commandline, short id)
 	appl_write(server_id,16,msg);
 }
 
-/*	Es wird dem Server ein neues Fenster gemeldet (fr Cycling und Drag&Drop)	*/
+/*	Es wird dem Server ein neues Fenster gemeldet (fuer Cycling und Drag&Drop)	*/
 void DoAV_ACCWINDOPEN(short handle)
 {
 	short msg[8]={AV_ACCWINDOPEN,0,0,0,0,0,0,0};
@@ -177,7 +177,7 @@ void DoAV_STARTED(char *ptr)
 	appl_write(server_id,16,msg);
 }
 
-/*	Der Server soll ein bestimmtes Fenster ffnen	*/
+/*	Der Server soll ein bestimmtes Fenster oeffnen	*/
 void DoAV_XWIND(char *path, char *wild_card, short bits)
 {
 	short msg[8]={AV_XWIND,0,0,0,0,0,0,0};
@@ -188,7 +188,7 @@ void DoAV_XWIND(char *path, char *wild_card, short bits)
 	appl_write(server_id,16,msg);
 }
 
-/*	Der Server soll den passenden Viewer fr eine Datei starten	*/
+/*	Der Server soll den passenden Viewer fuer eine Datei starten	*/
 void DoAV_VIEW(char *path)
 {
 	short msg[8]={AV_VIEW,0,0,0,0,0,0,0};
@@ -217,7 +217,7 @@ void DoAV_COPYFILE(char *file_list, char *dest_path,short bits)
 	appl_write(server_id,16,msg);
 }
 
-/*	Der Server soll die Dateien/Ordner lschen	*/
+/*	Der Server soll die Dateien/Ordner loeschen	*/
 void DoAV_DELFILE(char *file_list)
 {
 	short msg[8]={AV_DELFILE,0,0,0,0,0,0,0};
@@ -226,7 +226,7 @@ void DoAV_DELFILE(char *file_list)
 	appl_write(server_id,16,msg);
 }
 
-/*	Teilt dem Server mit, wo das nchste Fenster geffnet werden soll	*/
+/*	Teilt dem Server mit, wo das naechste Fenster geffnet werden soll	*/
 void DoAV_SETWINDPOS(short x,short y,short w,short h)
 {
 	short msg[8]={AV_SETWINDPOS,0,0,0,0,0,0,0};

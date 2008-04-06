@@ -44,7 +44,7 @@ PopupWindow(WINDOW_DATA *ptr, short obj, void *data)
 
 	if (obj == WIND_INIT)
 	{
-		/*	Als Rasterweite werden die Font-Grssen benutzt	*/
+		/*	Als Rasterweite werden die Font-Groessen benutzt	*/
 		win->x_raster = font_cw;
 		win->y_raster = font_ch;
 
@@ -59,7 +59,7 @@ PopupWindow(WINDOW_DATA *ptr, short obj, void *data)
 	else if(obj == WIND_OPEN)
 	{
 	}
-	else if(obj == WIND_OPENSIZE)	/*	Fenstergrsse beim ffnen	*/
+	else if(obj == WIND_OPENSIZE)	/*	Fenstergroesse beim oeffnen	*/
 	{
 	GRECT *osize=(GRECT *)data,screen;
 		wind_get_grect(0,WF_WORKXYWH,&screen);

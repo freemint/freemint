@@ -31,11 +31,7 @@
 char path_list[512] = "*:\\GEMSYS\\GUIDES\\;*:\\GUIDES\\";
 char default_file[DL_PATHMAX];
 char catalog_file[DL_PATHMAX];
-/* [GS] 0.35.2a Start */
 char file_extensions[DL_PATHMAX]="*.HYP\0*.*\0";
-/* Ende; alt:
-char *file_extensions="*.HYP\0";
-*/
 
 /*	System spezifische Einstellungen	*/
 char dir_separator = '\\';
@@ -54,7 +50,7 @@ short win_x = 0,win_y = 0,win_w = 0,win_h = 0;
 short adjust_winsize = FALSE;
 short intelligent_fuller = TRUE;
 
-/*	ausgewhlter Zeichensatz	*/
+/*	ausgewaehlter Zeichensatz	*/
 short sel_font_id, sel_font_pt;
 short font_id = 1, font_pt = 13;
 short xfont_id = 274,xfont_pt = 13;
@@ -67,10 +63,10 @@ short link_col = G_BLUE;
 short link_effect = TF_THICKENED|TF_UNDERLINED;
 short transparent_pics = TRUE;
 
-/*	Fr AV_STARTPROG	*/
+/*	Fuer AV_STARTPROG	*/
 char *av_parameter = NULL;
 
-/*	AV_START ffnet ein neues Fenster	*/
+/*	AV_START oeffnet ein neues Fenster	*/
 short va_start_newwin = 0;
 
 /*	MiNT "fixes"	*/
@@ -82,7 +78,7 @@ short check_time = FALSE;
 char skin_path[DL_PATHMAX] = "Skins";
 GlobalArray skin_global;
 
-/*	Clipboard Inhalt in neuem Fenster ffnen	*/
+/*	Clipboard Inhalt in neuem Fenster oeffnen	*/
 short clipbrd_new_window = FALSE;
 
 /*	Global window cycling using AVSERVER	*/
@@ -95,9 +91,7 @@ short marken_save_ask = TRUE;
 /* REF Datenbank-Datei */
 char all_ref[DL_PATHMAX] = "";
 
-/* [GS] 0.35.2a Start */
 /* HypFind */
 char hypfind_path[DL_PATHMAX] = "";
 
 short refonly = 0;
-/* Ende */

@@ -1,4 +1,4 @@
-History fr HypView (v0.35.2e)
+History for HypView (v0.35.3e)
 =======================================
 10.02.2006 (v0.35.3e)
 	-Modified for gemlib. [ozk]
@@ -15,11 +15,11 @@ History fr HypView (v0.35.2e)
 14.08.2005
 	-Scrollweite mit <Bild nach oben/runter> entspricht
 	 <SHIFT> + <Pfeil nach oben/runter>  [GS]
-	-Ctrl-Cursor hoch/links    - zur vorigen Seite blttern [GS]
-	-Ctrl-Cursor runter/rechts - zur nchsten Seite blttern [GS]
+	-Ctrl-Cursor hoch/links    - zur vorigen Seite blaettern [GS]
+	-Ctrl-Cursor runter/rechts - zur nchsten Seite blaettern [GS]
 
 14.08.2005
-	-Ist das Dokument fr das erste Fenster nicht mehr vorhanden, war
+	-Ist das Dokument fuer das erste Fenster nicht mehr vorhanden, war
 	 keine Benutzung von HypView mehr mglich. [GS]
 
 12.08.2005 (v0.35.2d)
@@ -29,7 +29,7 @@ History fr HypView (v0.35.2e)
 	 mit Umlauten.
 
 10.08.2005 (v0.35.2c)
-	-Der Inhalt des letzten Fensters wird beim ffnen des ersten Fenster
+	-Der Inhalt des letzten Fensters wird beim Oeffnen des ersten Fenster
 	 wieder dargestellt.
 
 09.08.2005 (v0.35.2b)
@@ -42,17 +42,17 @@ History fr HypView (v0.35.2e)
 
 27.07.2005
 	-Bei den Marken erscheinen die Dateinamen von denen sie stammen. Dazu
-	 mssen sie aber neu gesetzt werden [GS]
+	 muessen sie aber neu gesetzt werden [GS]
 
 09.04.2005
 	-Im Info-Dialog wird das Erstellungsdatum von HypView angezeigt. [GS]
 
 03.03.2005
-	-Mit dem Schlsselwort REFONLY kann bestimmt werden ob bei einem Klick
+	-Mit dem Schluesselwort REFONLY kann bestimmt werden ob bei einem Klick
 	 mit der linken Maustaste nur Verweise verfolgt werden oder auch
 	 nicht-markierte Worte. [GS]
 	-Ist ein alternativer Skin geladen, konnte es beim Umschalten zum
-	 "Autolocator" zu einem hsslichen weien Fleck kommen. [GS]
+	 "Autolocator" zu einem haesslichen weissen Fleck kommen. [GS]
 
 02.03.2005
 	-Im Info-Dialog wird neben der Programmversion nun auch relevante
@@ -60,27 +60,27 @@ History fr HypView (v0.35.2e)
 	-Die MagiC Dateiauswahl bekommt jetzt ein sinnvolles Dateimuster. [GS]
 
 05.02.2005 (v0.35.2)
-	-Workaround: Bug in XaAES fhrte dazu dass HypView bei einer 
+	-Workaround: Bug in XaAES fuehrte dazu dass HypView bei einer 
 	 VA_START-Meldung in eine Endlos-Schleife verfiel.
-	 (In XaAES liefert wind_get(WF_OWNER) fr den "open status" immer 0).
+	 (In XaAES liefert wind_get(WF_OWNER) fuer den "open status" immer 0).
 
 30.01.2005 (v0.35.1)
-	-Marken implementiert: Damit ist es nun mglich bis zu 10 "Favoriten"
+	-Marken implementiert: Damit ist es nun moeglich bis zu 10 "Favoriten"
 	 zu speichern. Die Marken werden in der mit MARKFILE spezifizierten
 	 Datei gespeichert. Es kann die gleiche Datei wie bei ST-GUIDE
 	 verwendet werden, da das Format kompatibel ist. [GS]
-	-Mit dem MARKFILE_SAVE_ASK kann die lstige Frage, ob die Marken-Datei
+	-Mit dem MARKFILE_SAVE_ASK kann die laestige Frage, ob die Marken-Datei
 	 gespeichert werden soll, deaktiviert werden. [GS]
 	-Bugfix: Zeichenfehler bei den Popup-Mens unter XaAES.
 	-Falls der Autolocator aktiv ist kann mittels CTRL+V Text aus dem
-	 Klemmbrett eingefgt werden.
-	-Pure C-Hilfe Protokoll (AC_HELP Meldung) wird untersttzt um nach
-	 Schlsselwrtern zu suchen.
+	 Klemmbrett eingefuegt werden.
+	-Pure C-Hilfe Protokoll (AC_HELP Meldung) wird unterstuetzt um nach
+	 Schluesselwoertern zu suchen.
 	-Suche in der REF Datenbank (mittels REFLINK.TTP generiert)
 	 implementiert [PD+GS].
-	 Zur Zeit lsst sich nur mittels der Meldung "AC_HELP" eine Suche 
-	 auslsen (also z.B. HypView in QED als Hilfe-Server anmelden und 
-	 dann HELP drcken wenn sich der Cursor auf einem Wort befindet.
+	 Zur Zeit laesst sich nur mittels der Meldung "AC_HELP" eine Suche 
+	 ausloesen (also z.B. HypView in QED als Hilfe-Server anmelden und 
+	 dann HELP druecken wenn sich der Cursor auf einem Wort befindet.
 
 28.01.2005
 	-Bugfix: Falls ein Programm per VA_START eine Hilfeseite welche ein
@@ -88,28 +88,28 @@ History fr HypView (v0.35.2e)
 	 oder es kam gar zum Absturz. [GS]
 
 30.12.2004
-	-Mit CLIPBRD_NEW_WINDOW kann festgelegt werden ob beim Einfgen mit
-	 CTRL+V ein neues Fenster geffnet wird oder nicht. Bei zustzlichem
-	 Drcken von "SHIFT" wird das Gegenteil der gewhlten Funktion
-	 ausgefhrt.
+	-Mit CLIPBRD_NEW_WINDOW kann festgelegt werden ob beim Einfuegen mit
+	 CTRL+V ein neues Fenster geoeffnet wird oder nicht. Bei zusaetzlichem
+	 Druecken von "SHIFT" wird das Gegenteil der gewaehlten Funktion
+	 ausgefuehrt.
 	-"Skin Laden" funktioniert wieder. Falls kein absoluter Pfad mittels
 	 SKIN angegeben wurde, wird im Verzeichnis "Skins" danach gesucht.
 	 D.h. relative Pfade beziehen sich immer auf das Verzeichnis "Skins"
 	 im Verzeichnis, aus dem HypView gestartet wurde.
 	-AV_WINDOW_CYCLE aktiviert den globalen Fensterwechsel (via AVSERVER),
 	 d.h. das "CTRL+W" nicht von HypView sondern vom AVSERVER erledigt
-	 wird. Durch zustzliches Drcken von "SHIFT" wird das Gegenteil der
-	 Funktion ausgefhrt.
+	 wird. Durch zusaetzliches Druecken von "SHIFT" wird das Gegenteil der
+	 Funktion ausgefuehrt.
 
 19.10.2004
 	-File Errors werden in einer Alertbox ausgeben und nicht mehr ber 
 	 die Console. [GS]
 
 16.10.2004 (v0.34.1)
-	-Neues Versionsnummern Schema: die 3te Zahl steht fr die Release
+	-Neues Versionsnummern Schema: die 3te Zahl steht fuer die Release
 
 14.10.2004 (v0.34)
-	-"Zurck" im Kontext-Men. [GS]
+	-"Zurueck" im Kontext-Men. [GS]
 
 06.10.2004
 	-Wurde per VA_START ein absoluter Pfad angeben und die Datei befindet
@@ -117,10 +117,10 @@ History fr HypView (v0.35.2e)
 	 korrekt. [GS]
 
 30.09.2004
-	-Menicon aktiviert. [GS]
+	-Menueicon aktiviert. [GS]
 
 18.09.2004
-	-Bugfix: CTRL+V ldt jetzt wirklich die Datei SCRAP.TXT aus dem 
+	-Bugfix: CTRL+V laedt jetzt wirklich die Datei SCRAP.TXT aus dem 
 	 Clipboard. [GS]
 	-ALT-T Inhalts-Seite zeigen (wie Inhalt-Icon, wie ST-Guide) [GS]
 	-ALT-X Indexseite zeigen (wie Index-Icon, wie ST-Guide) [GS]
@@ -128,9 +128,9 @@ History fr HypView (v0.35.2e)
 	-Bugfix: Erkennung der REF Datei funktionierte nicht immer. [GS]
 	
 10.09.2004
-	-Gerhard Stoll interessiert sich fr den Quellcode von HypView und
-	 will das Programm erweitern. Seine nderungen sind mit [GS] markiert.
-	-Untersttzung der Ende Tasten (gibt es z.B. beim Milan). [GS]
+	-Gerhard Stoll interessiert sich fuer den Quellcode von HypView und
+	 will das Programm erweitern. Seine Aenderungen sind mit [GS] markiert.
+	-Unterstuetzung der Ende Tasten (gibt es z.B. beim Milan). [GS]
 
 29.01.2004 (v0.33)
 	-Bugfix: ASCII Texte, die nur eine Zeile ohne CR/LF enthielten, wurden
@@ -138,24 +138,24 @@ History fr HypView (v0.35.2e)
 
 14.01.2004
 	-Bugfix: HypView ignorierte die Kapitel-Angabe "Main" fr externe
-	 Referenzen. Dies fhrte dazu, dass bei Referenzen auf andere Hypertexten 
+	 Referenzen. Dies fuehrte dazu, dass bei Referenzen auf andere Hypertexten 
 	 nicht die richtige Startseite angezeigt wurde (sichtbar bei KATALOG.HYP).
 
 23.12.2003
-	-Bugfix: Falls HYP_VIEW.CFG nicht gefunden wurde, wurde flschlicherweise
+	-Bugfix: Falls HYP_VIEW.CFG nicht gefunden wurde, wurde faelschlicherweise
 	 versucht ein nicht existierender "Skin" zu laden.
 	-Bugfix: Die Bestimmung des Bootlaufwerks funktionierte bisher nicht.
 
 24.11.2003
-	-Der Test auf WDIALOG wurde (hoffentlich endgltig) beseitigt.
-	-Compiler-Einstellung war beim letzten Release flschlicherweise auf
+	-Der Test auf WDIALOG wurde (hoffentlich endgueltig) beseitigt.
+	-Compiler-Einstellung war beim letzten Release faelschlicherweise auf
 	 68020 eingestellt. Dadurch lief das Programm unter MagiC PC und auf
 	 "einfachen" STs nicht mehr.
-	-Laut TOS.HYP fhrt ein @ am Anfang eines te_ptext (=eines Textfelds) 
+	-Laut TOS.HYP fuehrt ein @ am Anfang eines te_ptext (=eines Textfelds) 
 	 dazu, dass der Rest als Platzhalter interpretiert wird.
 	 Folge: Falls bei der Suche mit dem "Autolocator" als erstes Zeichen 
 	 ein @ eingegeben wird, werden alle Eingaben nicht angezeigt (die Suche
-	 wird jedoch ausgefhrt!). (MagiC ist jedoch davon nicht betroffen!)
+	 wird jedoch ausgefuehrt!). (MagiC ist jedoch davon nicht betroffen!)
 
 23.11.2003
 	-Der "intelligente Fuller" verschiebt das Fenster (=die obere linke Ecke
@@ -170,7 +170,7 @@ History fr HypView (v0.35.2e)
 
 14.11.2003 (v0.31)
 	-Monochrome Bilder (=1 Bitplane) werden jetzt nicht mehr an die Anzahl
-	 Bitplanes der aktuellen Auflsung angepasst, sondern einfach monochrom
+	 Bitplanes der aktuellen Aufloesung angepasst, sondern einfach monochrom
 	 gelassen. Sie werden dann mittels vrt_cpyfm() wie beim Original ST-Guide
 	 transparent auf den Bildschirm kopiert. (Diese Transparenz kann nicht
 	 mehr mit TRANSPARENT_PICS=0 deaktiviert werden!)

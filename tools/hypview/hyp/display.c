@@ -317,7 +317,7 @@ HypDisplayPage(DOCUMENT *doc)
 								vst_color(vdi_handle,link_col);
 								vst_effects(vdi_handle,link_effect|curr_txt_effect);
 		
-								/*	Verknpfungstext ermitteln und ausgeben	*/
+								/*	Verknuepfungstext ermitteln und ausgeben	*/
 								if (*end == 32)		/*	Kein Text angegeben	*/
 								{
 									short ext[8];

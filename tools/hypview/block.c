@@ -37,11 +37,7 @@
 
 extern WINDOW_DATA *Win;
 
-/* [GS] 0.34 Start */
 short GetScrapPath(char *scrap_path, short clear);
-/* Ende; alt:
-short GetScrapPath(char *scrap_path);
-*/
 
 void BlockOperation(DOCUMENT *doc, short num)
 {
@@ -51,11 +47,9 @@ void BlockOperation(DOCUMENT *doc, short num)
 		case CO_SAVE:
 			SelectFileSave(doc);
 			break;
-/* [GS] 0.34 Start */
 		case CO_BACK:
 			GoBack(doc);
 			break;
-/* Ende */
 		case CO_COPY:
 			BlockCopy(doc);
 			break;
@@ -65,12 +59,10 @@ void BlockOperation(DOCUMENT *doc, short num)
 		case CO_SELECT_ALL:
 			SelectAll(doc);
 			break;
-/* [GS] 0.35.2e Start: */
 		case CO_DELETE_STACK:
 			RemoveAllHistoryEntries(win);
 			ToolbarUpdate(doc,win->toolbar,TRUE);
 			break;
-/* Ende */
 		case CO_PRINT:
 			break;
 	}
@@ -99,11 +91,7 @@ void BlockCopy(DOCUMENT *doc)
 
 	/*	Kopier-Aktion ins Clipboard	*/
 	graf_mouse(BUSYBEE,NULL);
-/* [GS] 0.34 Start */
 	if(GetScrapPath(scrap_file, TRUE))
-/* Ende; alt:
-	if(GetScrapPath(scrap_file))
-*/
 	{
 		Debug("No clipboard defined");
 	}
@@ -122,7 +110,7 @@ void BlockPaste(short new_window)
 	/* WINDOW_DATA *win = Win; */
 	char scrap_file[DL_PATHMAX];
 	
-	/*	"Einfge"-Aktion ladet SCRAP.TXT aus dem Clipboard	*/
+	/*	"Einfuege"-Aktion ladet SCRAP.TXT aus dem Clipboard	*/
 	if(GetScrapPath(scrap_file, FALSE))
 	{
 		Debug("No clipboard defined");
@@ -166,25 +154,19 @@ void BlockAsciiSave(DOCUMENT *doc, char *path)
 	}
 }
 
-/* [GS] 0.34 Start */
 short GetScrapPath(char *scrap_path, short clear)
-/* Ende; alt:
-short GetScrapPath(char *scrap_path)
-*/
 {
 	long ret;
 	if(!scrp_read(scrap_path))
 		return(TRUE);
 
-/* [GS] 0.34 Start */
-	if ( clear )			/* Klemmbrett lschen?				*/
+	if ( clear )			/* Klemmbrett loeschen?				*/
 	{
-/* Ende */
 		if(!scrp_clear())		/*	scrp_clear() nicht vorhanden?	*/
 		{
 			long dirhandle;
 	
-			/*	Verzeichnis ffnen und alle "SCRAP.*" Dateien lschen	*/
+			/*	Verzeichnis oeffnen und alle "SCRAP.*" Dateien loeschen	*/
 			dirhandle = Dopendir(scrap_path, 0);
 			if((dirhandle >> 24) != 0xff)
 			{
@@ -206,9 +188,7 @@ short GetScrapPath(char *scrap_path)
 				Dclosedir(dirhandle);
 			}
 		}
-/* [GS] 0.34 Start */
 	}
-/* Ende */
 	
 	strcat(scrap_path,"SCRAP.TXT");
 	return(FALSE);

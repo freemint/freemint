@@ -85,7 +85,7 @@ void SwitchFont(DOCUMENT *doc)
 /*		Debug("ProportsFont true => w %d",font_cw);
 */	}
 
-	/*	Alle geffneten Fenster und Dokumente anpassen	*/
+	/*	Alle geoeffneten Fenster und Dokumente anpassen	*/
 	win = (WINDOW_DATA *)all_list;
 	
 	while (win)
