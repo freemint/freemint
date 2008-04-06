@@ -36,8 +36,6 @@
 #include "../defs.h"
 #include "../hyp.h"
 
-/* [GS] 0.35.2a Start */
-
 extern WINDOW_DATA *Win;
 
 LIST_BOX *entrie_box;
@@ -52,21 +50,21 @@ RESULT_ENTRY *Result_List;
 static void free_results(RESULT_ENTRY **result_list);
 
 
-/* Objekte der Listbox */
+/* Objects of the list boxes */
 #define	NO_ENTRIE	10
 short entrie_ctrl[5] = { SR_BOX, SR_FSTL_UP, SR_FSTL_DOWN, SR_FSTL_BACK, SR_FSTL_WHITE };
 short	entrie_objs[10] = { SR_FSTL_0, SR_FSTL_1, SR_FSTL_2, SR_FSTL_3, SR_FSTL_4, SR_FSTL_5, SR_FSTL_6, SR_FSTL_7, SR_FSTL_8, SR_FSTL_9 };
 
 
 /*----------------------------------------------------------------------------------------*/ 
-/* Ein Eintrag in der Stil-Listbox ist angewhlt worden...				  */
-/* Funktionsergebnis:	-								  */
-/*	box:				Zeiger auf die Listbox-Struktur			  */
-/*	tree:				Zeiger auf den Objektbaum des Dialogs		  */
-/*	item:				Zeiger auf den angewhlten Eintrag		  */
+/* n entry in the list box has been selected...				  */
+/* Function result:	-								  */
+/*	box:				Pointer to the list box structure			  */
+/*	tree:				Pointer to the object tree		  */
+/*	item:				Pointer to the entry		  */
 /*	user_data:			...						  */
-/*	obj_index:			Index des Objekt, evtl. | 0x8000, evtl. 0 (nicht sichtbar) */
-/*	last_state:			der vorheriger Status				  */
+/*	obj_index:			Index of the object, poss. | 0x8000, poss. 0 (not visible) */
+/*	last_state:			The previous state				  */
 /*----------------------------------------------------------------------------------------*/ 
 
 static void __CDECL
@@ -102,14 +100,14 @@ select_item( struct SLCT_ITEM_args args)
 }
 
 /*----------------------------------------------------------------------------------------*/ 
-/* String und Objektstatus eines GTEXT-Objekts in der Listbox setzen					  */
-/* Funktionsresultat:	Nummer des zu zeichnenden Startobjekts							  */
-/*	box:				Zeiger auf die Listbox-Struktur									  */
-/*	tree:				Zeiger auf den Objektbaum										  */
-/*  item:				Zeiger auf den Eintrag											  */
-/*  index:				Objektnummer													  */
+/* Set string and object status of a GTEXT object in the list box					  */
+/* Function result:	Number of the start object to be drawn							  */
+/*	box:				Pointer to the list box structure 								  */
+/*	tree:				Pointer to the object tree										  */
+/*  item:				Pointer to the entry											  */
+/*  index:				Object number													  */
 /*  user_data:			...																  */
-/*	rect:				GRECT fr Selektion/Deselektion oder 0L (nicht vernderbar)		  */					
+/*	rect:				GRECT for selection/deselection or 0L (not alterable)		  */					
 /*  offset:																				  */
 /*----------------------------------------------------------------------------------------*/ 
 
@@ -119,21 +117,21 @@ set_str_item( struct SET_ITEM_args args)
 	char *ptext;
 	char *str;
 
-	ptext = args.tree[args.obj_index].ob_spec.tedinfo->te_ptext;	/* Zeiger auf String des GTEXT-Objekts */
+	ptext = args.tree[args.obj_index].ob_spec.tedinfo->te_ptext;	/* Pointer to string of the GTEXT object */
 
-	if ( args.item )										/* LBOX_ITEM vorhanden?				*/
+	if ( args.item )										/* LBOX_ITEM present?				*/
 	{
-		if ( args.item->selected )						/* selektiert? 						*/
+		if ( args.item->selected )						/* Selected? 						*/
 			args.tree[args.obj_index].ob_state |= OS_SELECTED;
 		else
 			args.tree[args.obj_index].ob_state &= ~OS_SELECTED;
 
-		str = ((RESULT_ENTRY *)args.item)->str;			/* Zeiger auf den String 			*/
+		str = ((RESULT_ENTRY *)args.item)->str;			/* Pointer to the string 			*/
 
 		if ( args.first == 0 )
 		{
 			if ( *ptext )
-				*ptext++ = ' ';						/* vorangestelltes Leerzeichen 		*/
+				*ptext++ = ' ';						/* Prefixed space character 		*/
 		}
 		else
 			args.first -= 1;
@@ -146,13 +144,13 @@ set_str_item( struct SET_ITEM_args args)
 				*ptext++ = *str++;
 		}
 	}
-	else											/* nicht benutzter Eintrag 			  */
+	else											/* Unused entry 			  */
 		args.tree[args.obj_index].ob_state &= ~OS_SELECTED;
 
 	while ( *ptext )
-		*ptext++ = ' ';								/* Stringende mit Leerzeichen auffllen */
+		*ptext++ = ' ';								/* Pad string end with space characters */
 
-	return( args.obj_index );								/* Objektnummer des Startobjekts 	*/
+	return( args.obj_index );								/* Object number of the start object 	*/
 }
 
 /*----------------------------------------------------------------------------------------*/ 
@@ -178,13 +176,13 @@ make_results(RESULT_ENTRY *ptr)
 }
 
 /*----------------------------------------------------------------------------------------*/ 
-/* Service-Routine fr Fensterdialog 													  */
-/* Funktionsergebnis:	0: Dialog schlieen 1: weitermachen								  */
-/*	dialog:				Zeiger auf die Dialog-Struktur									  */
-/*	events:				Zeiger auf EVNT-Struktur oder 0L								  */
-/*	obj:				Nummer des Objekts oder Ereignisnummer							  */
-/*	clicks:				Anzahl der Mausklicks											  */
-/*	data:				Zeiger auf zustzliche Daten									  */
+/* Service routine for window dialog 													  */
+/* Function resul:	0: Close dialog     1: Continue								  */
+/*	dialog:				Pointer to the dialog structure									  */
+/*	events:				Pointer to EVNT structure or 0L								  */
+/*	obj:				Number of the object or event number							  */
+/*	clicks:				Number of mouse clicks											  */
+/*	data:				Pointer to additional data									  */
 /*----------------------------------------------------------------------------------------*/ 
 
 static short __CDECL
@@ -252,7 +250,7 @@ SearchResultHandle( struct HNDL_OBJ_args args)
 }
 
 /*----------------------------------------------------------------------------------------*/ 
-/* Dialag fr das Suchergebnis vorbereiten        										  */
+/* Dialag fuer das Suchergebnis vorbereiten        										  */
 
 static short
 SearchResult (RESULT_ENTRY **result_list)
@@ -306,18 +304,11 @@ RESULT_ENTRY *ptr,*next;
 /*----------------------------------------------------------------------------------------*/ 
 /* Speicher in der "all.ref" Datei 														  */
 
-/* [GS] 0.35.2a Start: */
 void search_allref(char *string, short no_message )
-/* Ende; alt:
-void search_allref(char *string)
-*/
 {
 	WINDOW_DATA *win = Win;
 	long ret;
 	REF_FILE *allref;
-/* [GS] 0.35.2a alt:
-RESULT_ENTRY *result_list=NULL;
-*/
 	short results=0;
 
 #if DEBUG==ON
@@ -330,7 +321,7 @@ RESULT_ENTRY *result_list=NULL;
 		return;
 	}
 
-	/*	REF-Datei ffnen und laden	*/
+	/*	REF-Datei oeffnen und laden	*/
 	ret=Fopen(all_ref,O_RDONLY);
 	if(ret < 0)
 	{
@@ -355,8 +346,7 @@ RESULT_ENTRY *result_list=NULL;
 	print_results(Result_List);
 #endif
 
-/* [GS] 0.35.2a Start: */
-	/*	ffne Resultat	*/	
+	/*	Oeffne Resultat	*/	
 	if(results > 0)
 	{
 		/* Nur ein Ergebnis gefunden */
@@ -397,20 +387,6 @@ RESULT_ENTRY *result_list=NULL;
 			form_alert (1, ZStr );
 		}
 	}
-#if 0
-/* Ende; alt: */
-	/*	ffne erstbestes Resultat	*/
-
-	if(results > 0)
-	{
-		if(OpenFileSW(result_list->path, result_list->node_name, 0))
-		{
-			if(result_list->line > 0)
-				win->y_pos = result_list->line;
-		}
-		free_results(&result_list);
-	}
-#endif
 	
 	graf_mouse(ARROW,NULL);
 	

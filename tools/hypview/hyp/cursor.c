@@ -124,18 +124,18 @@ void HypGetCursorPosition(DOCUMENT *doc, short x, short y, TEXT_POS *pos)
 				{
 					unsigned short idx;		/*	Index auf die Zielseite	*/
 					
-					if(*src & 1)			/*	Zeilennummer berspringen	*/
+					if(*src & 1)			/*	Zeilennummer ueberspringen	*/
 						src += 2;
 
 					idx = DEC_255(&src[1]);
 					src += 3;
 
 
-					/*	Verknpfungstext mit entsprechendem Texteffekt ausgeben	*/
+					/*	Verknuepfungstext mit entsprechendem Texteffekt ausgeben	*/
 					vst_color(vdi_handle, link_col);
 					vst_effects(vdi_handle, link_effect|curr_txt_effect);
 
-					/*	Verknpfungstext ermitteln und ausgeben	*/
+					/*	Verknuepfungstext ermitteln und ausgeben	*/
 					if (*src == 32)		/*	Kein Text angegeben	*/
 					{
 						strcpy(temp, &hyp->indextable[idx]->name);

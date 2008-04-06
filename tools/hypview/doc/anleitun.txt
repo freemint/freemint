@@ -3,15 +3,10 @@
 
 - Klick auf einen gesetzten Eintrag stellt diesen im aktuellen Fenster dar.
 
-- CTRL-Klick auf einen gesetzten Eintrag ffnet diese Marke in einem
+- CTRL-Klick auf einen gesetzten Eintrag oeffnet diese Marke in einem
   neuen Fenster.
 
 - Shift-Klick auf einen Eintrag setzt stehts eine Marke. (ST-GUIDE
   kompatibel)
 
-- ALT-Klick auf einen gesetzten Eintrag fragt ob man diesen L”schen will.
-
-
-Ausserdem frage ich mich, ob wir im Marken-Popup nicht auch noch den
-Dateiname anzeigen sollten. Z.B. "Index (TOS.HYP)" anstatt "Index".
-
+- ALT-Klick auf einen gesetzten Eintrag fragt ob man diesen Loeschen will.

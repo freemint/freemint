@@ -55,7 +55,7 @@ REF_FILE *ref_load(short handle)
 	size = Fseek(0, handle, 2) - pos;
 	Fseek(pos, handle, 0);
 	
-	/*	Speicher	fr Header und Indexdaten reservieren	*/
+	/*	Speicher fuer Header und Indexdaten reservieren	*/
 	ref = (REF_FILE *)Malloc(size);
 	if(!ref)
 	{
@@ -155,7 +155,7 @@ short found_one = FALSE;
 					char *cptr;
 					strcpy(prototype.path, pos+2);
 			
-					/*	Falls Datei-Erweiterung fehlt: hyp anfgen	*/
+					/*	Falls Datei-Erweiterung fehlt: hyp anfuegen	*/
 					cptr=strrchr(prototype.path, '.');
 					if(cptr == NULL)
 						strcat(prototype.path, ".hyp" );

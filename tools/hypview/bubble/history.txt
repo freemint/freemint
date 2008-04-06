@@ -1,12 +1,12 @@
 BGH-Lade Routinen
 -----------------
 22.07.2001
-   Erste selbst geschriebene Laderoutinen fr BGH-Hilfedateien (=BubbleGEM
+   Erste selbst geschriebene Laderoutinen fuer BGH-Hilfedateien (=BubbleGEM
    Hilfedateien). (hoffentlich) Kompatibel zur BGH Definition von Armin
-   Diedering (v1.1). Keine Untersttzung der Cookie-Schnittstelle oder
-   Shared-Libraries! Kein Bin„rformat.
-   Warum? Weil ich das fr Humbug halte!
-   Untersttzt Referenzen:
+   Diedering (v1.1). Keine Unterstuetzung der Cookie-Schnittstelle oder
+   Shared-Libraries! Kein Binaerformat.
+   Warum? Weil ich das fuer Humbug halte!
+   Unterstuetzt Referenzen:
       "^" zeigt auf den Hilfetext des vorherigen Objekts
       ">" gefolgt von einer Nummer zeigt auf das Objekt mit dieser Nummer,
           welches sich in der MORE Sektion befindet!

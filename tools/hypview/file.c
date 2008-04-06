@@ -56,7 +56,7 @@ find_file(char *path, char *real_path)
 	char *list = path_list;
 	char *dst;
 
-	/*	Falls schon eine Datei/ein Fenster geffnet wurde	*/
+	/*	Falls schon eine Datei/ein Fenster geoeffnet wurde	*/
 	if (win)
 	{
 		DOCUMENT *doc = win->data;
@@ -81,7 +81,7 @@ find_file(char *path, char *real_path)
 		}
 
 
-		/*	Versuche die Datei als Link aufzuschlsseln	*/
+		/*	Versuche die Datei als Link aufzuschluesseln	*/
 		ret = Freadlink(DL_PATHMAX, real_path, doc->path);
 		if (ret == 0)
 		{
@@ -221,7 +221,7 @@ open_file(char *path)
 	else
 	{
 		XATTR attr;
-		/*	nderungsdatum und -zeit sichern	*/
+		/*	Aenderungsdatum und -zeit sichern	*/
 		if (Fxattr(0/*FXATTR_RESOLVE*/, doc->path, &attr) < 0L)
 		{
 			doc->mtime = 0;
@@ -254,7 +254,7 @@ void CloseFile(DOCUMENT *doc)
 }
 
 
-/*	ffnet eine Datei in einem neuen Fenster	*/
+/*	Oeffnet eine Datei in einem neuen Fenster	*/
 short OpenFileNW(char *path, char *chapter, long node)
 {
 	DOCUMENT *doc;
@@ -301,7 +301,7 @@ short OpenFileNW(char *path, char *chapter, long node)
 }
 
 
-/*	ffnet eine Datei im gleichen Fenster falls <new_win> < 2	*/
+/*	Oeffnet eine Datei im gleichen Fenster falls <new_win> < 2	*/
 short OpenFileSW(char *path, char *chapter, short new_win)
 {
 	WINDOW_DATA *win = Win;
@@ -384,7 +384,7 @@ short OpenFileSW(char *path, char *chapter, short new_win)
 		}
 	}
 
-	if (!doc)				/*	Wenn ntig Datei laden/initialisieren	*/
+	if (!doc)				/*	Wenn noetig Datei laden/initialisieren	*/
 		doc = open_file(real_path);
 
 	if (doc)

@@ -74,10 +74,8 @@ void HypExtRefPopup(DOCUMENT *doc, short x, short y)
 	i=m;
 	
 	len=len*pwchar;
-/* [GS] 0.35.2a Start */
 	tree[EM_BACK].ob_x = x;
 	tree[EM_BACK].ob_y = y + 5;
-/* Ende */
 	tree[EM_BACK].ob_width=(short)len;
 	tree[EM_BACK].ob_height=(i-EM_1)*phchar;
 	
@@ -87,11 +85,7 @@ void HypExtRefPopup(DOCUMENT *doc, short x, short y)
 		tree[i].ob_height=phchar;
 	}
 
-/* [GS] 0.35.2a Start */
 	i=form_popup(tree_addr[EMPTYPOPUP], 0, 0);
-/* Ende; alt:
-	i=form_popup(tree_addr[EMPTYPOPUP],x+(short)(len>>1),y+5);
-*/
 	if(i>0)
 	{
 		pos=((LOADED_NODE *)hyp->entry)->start;
@@ -118,7 +112,7 @@ void HypExtRefPopup(DOCUMENT *doc, short x, short y)
 
 
 /*
- *	ffnet einen Link <name> der als Externe Referenz angegeben wurde.
+ *	Oeffnet einen Link <name> der als Externe Referenz angegeben wurde.
  *	D.h. er hat die Form: <Datei.hyp>/<Kapitelname>
  *	Falls es sich um die Form: <absoluter Pfad zur Datei.hyp> handelt,
  *	so wird kein Kapitel-Trennzeichen (='/') umgewandelt.
@@ -145,11 +139,7 @@ char temp[DL_PATHMAX];
 	}
 
 	if(new_window)
-/* [GS] 0.35.2c Start: */
 		OpenFileNW(temp,cptr,0);
-/* Ende; alt:
-		OpenFileNW(temp,cptr);
-*/
 	else
 		OpenFileSW(temp,cptr,0);
 }

@@ -46,8 +46,8 @@ char *skip_esc(char *pos)
 	if(*pos != 27)		/*	Kein ESC-Code	*/
 		return (pos);
 
-	pos++;			/*	ESC berspringen	*/
-	switch (*pos)	/*	Was fr ein Code?	*/
+	pos++;			/*	ESC ueberspringen	*/
+	switch (*pos)	/*	Was fuer ein Code?	*/
 	{
 		case 27:		/*	ESC Zeichen	*/
 			pos++;
@@ -67,22 +67,22 @@ char *skip_esc(char *pos)
 		case ALINK:
 			pos += (pos[3] - 32 + 1) + 3;
 			break;
-		case EXTERNAL_REFS:		/*	bis zu 12 Querverweis-Datenblcke	*/
-		case 40:						/*	weitere Datenblcke	*/
-		case 41:						/*	weitere Datenblcke	*/
-		case 42:						/*	weitere Datenblcke	*/
-		case 43:						/*	weitere Datenblcke	*/
-		case 44:						/*	weitere Datenblcke	*/
-		case 45:						/*	weitere Datenblcke	*/
-		case 46:						/*	weitere Datenblcke	*/
-		case 47:						/*	weitere Datenblcke	*/
-			pos += pos[1] - 1;			/*	Daten berspringen	*/
+		case EXTERNAL_REFS:		/*	bis zu 12 Querverweis-Datenbloecke	*/
+		case 40:						/*	weitere Datenbloecke	*/
+		case 41:						/*	weitere Datenbloecke	*/
+		case 42:						/*	weitere Datenbloecke	*/
+		case 43:						/*	weitere Datenbloecke	*/
+		case 44:						/*	weitere Datenbloecke	*/
+		case 45:						/*	weitere Datenbloecke	*/
+		case 46:						/*	weitere Datenbloecke	*/
+		case 47:						/*	weitere Datenbloecke	*/
+			pos += pos[1] - 1;			/*	Daten ueberspringen	*/
 			break;
 		case WINDOWTITLE:
-			pos += strlen(pos) + 1;	/*	Daten berspringen	*/
+			pos += strlen(pos) + 1;	/*	Daten ueberspringen	*/
 			break;
 		case OBJTABLE:				/*	Tabelle mit Objekten und Seiten	*/
-			pos += 9;					/*	Daten berspringen	*/
+			pos += 9;					/*	Daten ueberspringen	*/
 			break;
 		default:
 		{

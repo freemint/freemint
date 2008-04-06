@@ -1,5 +1,5 @@
 /*
- *		Eine Sammlung wichtiger Scancodes fr Ataris
+ *		Eine Sammlung wichtiger Scancodes fuer Ataris
  *		Philipp Donz 11.08.2000
  */
 #ifndef __SCANCODES__

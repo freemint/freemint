@@ -117,10 +117,7 @@ void DoUserEvents(EVNT *event)
 			{
 /* Ende */
 				if(*default_file)
-/* [GS] 0.35.2c Start: */
 					OpenFileNW(default_file,NULL, 0);
-/* Ende; alt: */
-/*					OpenFileNW(default_file,NULL); */
 				else
 					SelectFileLoad();
 /* [GS] 0.35.2c Start: */
@@ -144,17 +141,10 @@ void DoUserEvents(EVNT *event)
 				Debug("AC_HELP from %d:",event->msg[1]);
 				Debug("  <%s>",data);
 #endif
-/* [GS] 0.35.2a Start: */
 				search_allref(data, FALSE );
-/* Ende; alt:
-				search_allref(data);
-*/
 			}
-/* [GS] 0.35.2c Start: */
 			event->mwhich&=~MU_MESAG;
-/* Ende */
 		}
-/* [GS] 0.35.2c Start: */
 		else if(event->msg[0]==WM_CLOSED)
 		{		/* Dies ist ein Hack um das letzte Fenster zufinden */
 				/* MU_MESAG darf am Ende nicht maskiert werden sonst*/
@@ -175,15 +165,12 @@ void DoUserEvents(EVNT *event)
 						doc = (DOCUMENT *) data->data;
 						last_node=doc->getNodeProc(doc);
 						strcpy ( last_path, doc->path );
-/* [GS] 0.35.2e Start: */
 						last_history = (HISTORY *)GetLastHistory();
-/* Ende */						
 					 }
 				}
 
 			}
 		}
-/* Ende */
 	}
 	else if(event->mwhich & MU_KEYBD)
 	{
@@ -270,10 +257,10 @@ short long_edit_count=(short)(sizeof(long_edit)/sizeof(LONG_EDIT));
 #if USE_DRAGDROP == YES
 void DD_Object(DIALOG *dial,GRECT *rect,OBJECT *tree,short obj, char *data, unsigned long format)
 /*
-	Hier knnen je nach Zielobjekt <obj> die D&D-Daten <data> anders
-	ausgewertet werden. <data> hat eines der gewnschten Formate
+	Hier koennen je nach Zielobjekt <obj> die D&D-Daten <data> anders
+	ausgewertet werden. <data> hat eines der gewuenschten Formate
 	(<format>).
-	Um <data> in seine Einzelbestnde zu zerlegen muss ParseData ver-
+	Um <data> in seine Einzelbestaende zu zerlegen muss ParseData ver-
 	wendet werden.
 */
 {
@@ -291,7 +278,7 @@ char *next,*ptr=data;
 void DD_DialogGetFormat(OBJECT *tree,short obj, unsigned long format[])
 /*
 	Hier kann an Hand des Objektbaumes und der Objektnummer
-	Das gewnschte Daten-Format angegeben werden.
+	Das gewuenschte Daten-Format angegeben werden.
 */
 {
 	short i;
@@ -363,11 +350,9 @@ void DoVA_START(short msg[8])
 		{
 		char arg[DL_PATHMAX];
 		char *chapter;
-/* [GS] 0.35.2e Start: */
 		short ret, count;
 
 			count=count_window ();
-/* Ende */
 #if DEBUG==ON
 			Debug("AV_START from %d:",msg[1]);
 			Debug("  <%s>",data);
@@ -378,17 +363,9 @@ void DoVA_START(short msg[8])
 			Win = get_first_window();
 
 			if (va_start_newwin == 2 || !Win)
-/* [GS] 0.35.2e Start: */
 				ret = OpenFileNW(arg,chapter,0);
-/* Ende; alt:
-				OpenFileNW(arg,chapter);
-*/
 			else
-/* [GS] 0.35.2e Start: */
 				ret = OpenFileSW(arg, chapter, va_start_newwin);
-/* Ende; alt:
-				OpenFileSW(arg,chapter,va_start_newwin);
-*/
 
 /* [GS] 0.35.2e Start: */
 			if ( count == 0 && ret==TRUE)
@@ -405,11 +382,7 @@ void DoVA_START(short msg[8])
 		else
 		{
 			if(*default_file)
-/* [GS] 0.35.2c Start: */
 				OpenFileNW(default_file,NULL,0);
-/* Ende; alt:
-				OpenFileNW(default_file,NULL);
-*/
 			else
 				SelectFileLoad();
 		}
@@ -460,11 +433,7 @@ void DoVA_Message(short msg[8])
 					Win = find_window_by_whandle(msg[3]);
 		
 					if(va_start_newwin == 2)
-/* [GS] 0.35.2c Start: */
 						OpenFileNW(arg,NULL,0);
-/* Ende; alt:
-						OpenFileNW(arg,NULL);
-*/
 					else
 						OpenFileSW(arg,NULL,va_start_newwin);
 				}

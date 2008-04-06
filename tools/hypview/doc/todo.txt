@@ -1,11 +1,11 @@
 HypView
 =======
--Tabulatorweite fr Text-Dateien einstellbar
+-Tabulatorweite fuer Text-Dateien einstellbar
  * TABSIZE
-    enthlt die gewnschte Tabulatorweite. Ist diese Variable nicht
+    enthlt die gewuenschte Tabulatorweite. Ist diese Variable nicht
     vorhanden, so wird der Wert 8 verwendet. (hcp, ST-Guide)
 
--Zeichensatztabellen fr Text-Dateien untersttzen (ISO Latin, PC, ...)
+-Zeichensatztabellen fuer Text-Dateien untersttzen (ISO Latin, PC, ...)
  via KeyTab oder so 
 
 -Fehlermeldung falls keine weiteren Fenster mehr vorhanden.
@@ -24,36 +24,36 @@ HypView
 
 -Intelligenter "Fuller" berarbeiten: die linke obere Ecke des Fensters
  sollte nur wenn absolut ntig verndert (=das Fenster verschoben) werden.
- Falls das vergrsserte Fenster platz auf dem Bildschirm hat, bleibt die
- Ecke unverndert.
+ Falls das vergroesserte Fenster platz auf dem Bildschirm hat, bleibt die
+ Ecke unveraendert.
 
--Anpassen der Fensterbreite und -hhe (=WIN_ADJUST) sollte separat
+-Anpassen der Fensterbreite und -hoehe (=WIN_ADJUST) sollte separat
  konfigurierbar sein.
 
 -bei der Selektion sind ein paar Bugs drin. Z.B. auch bei leere Zeilen
- fhren zu Redraw-Fehlern.
+ fuehren zu Redraw-Fehlern.
 
--Kontext-Men mit dem Befehl "Im Text-Editor ffnen..." erweitern
+-Kontext-Menue mit dem Befehl "Im Text-Editor oeffnen..." erweitern
 
--nach Vernderung der ASCII-Konfigurationsdatei ber einen Editor, d.h.
+-nach Veraenderung der ASCII-Konfigurationsdatei ueber einen Editor, d.h.
  direkt nach dem Abspeichern im Editor, diese Datei einzulesen und sofort
- alle nderungen in HypView zu bernehmen.
+ alle aenderungen in HypView zu uebernehmen.
 
 -Schnellerer Seitenaufbau (z.B. indem man die Text-Ausmasse nur einmal
  berechnet!)
 
 -Bug: Hintergrund Farbbilder werden falsch konvertiert mit Imagine VDI
 
-+"Zurck" ins Kontext-Men aufnehmen(erledigt).
- (evtl. Rechtsklick fr "Zurck"-Funktion anstatt Kontext-Men)
++"Zurueck" ins Kontext-Men aufnehmen(erledigt).
+ (evtl. Rechtsklick fuer "Zurueck"-Funktion anstatt Kontext-Men)
 
--Zurck via Rechtsklick (wie bei ST-Guide) einbauen. Konfigurierbar!
- Rechte Maustaste als Alternative zum Zurck-Icon, falls die Variable
+-Zurueck via Rechtsklick (wie bei ST-Guide) einbauen. Konfigurierbar!
+ Rechte Maustaste als Alternative zum Zurueck-Icon, falls die Variable
  RIGHTBACK in der ST-GUIDE.INF definiert ist und der Klick dann
  geschieht, wenn der Mauszeiger sich gerade im ST-Guide-Fenster befindet.
  Diese Funktion ist von einigen Betriebssystemen gewissermaen nicht voll
  "abgesegnet" und daher zunchst nicht aktiviert. Mausfetischisten
- mgen aber in der schnellen Rcksprungmglichkeit einen Gewinn sehen.
+ moegen aber in der schnellen Ruecksprungmoeglichkeit einen Gewinn sehen.
  Ihnen zuliebe wurde diese Funktion implementiert.
  * RIGHTBACK
    Falls diese Variable definiert ist (Wert egal), so wird das Bettigen
@@ -65,7 +65,7 @@ HypView
 
 + ALT-D - DEFHYP laden
 
-- ALT-R - Remarker ffnen, falls dieser luft oder die Variable REMARKER
+- ALT-R - Remarker oeffnen, falls dieser laeuft oder die Variable REMARKER
           definiert ist
 
 - SHIFT-CTRL-O - wie CTRL-O, nur mit *.* als Pattern im erscheinenden
@@ -80,4 +80,4 @@ HypView
 
 - Ctrl-G   Pattern erneut suchen  (wie Extra -> Weitersuchen)
 
-- BubbleGEM fr Icon
+- BubbleGEM fuer Icon

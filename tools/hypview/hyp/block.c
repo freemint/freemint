@@ -46,16 +46,16 @@ short HypBlockOperations(DOCUMENT *doc, short op, BLOCK *block, void *param)
 
 	switch (op)
 	{
-		case BLK_CHKOP:			/*	Welche Operationen werden untersttzt?	*/
+		case BLK_CHKOP:			/*	Welche Operationen werden unterstuetzt?	*/
 		{
 			switch (*(short *)param)
 			{
 				case BLK_ASCIISAVE:
-					return(TRUE);	/*	Untersttzt	*/
+					return(TRUE);	/*	Unterstuetzt	*/
 
 				case BLK_PRINT:
 				default:
-					return(FALSE);	/*	Nicht untersttzt	*/
+					return(FALSE);	/*	Nicht unterstuetzt	*/
 			}
 		}
 		case BLK_ASCIISAVE:

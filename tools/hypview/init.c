@@ -73,7 +73,7 @@ void Init(void)
 	vswr_mode(vdi_handle,MD_TRANS);
 
 	if(vq_gdos())								/*	GDOS installiert?	*/
-		vst_load_fonts(vdi_handle,0);		/*	Zeichenstze laden	*/
+		vst_load_fonts(vdi_handle,0);		/*	Zeichensaetze laden	*/
 
 	vst_font(vdi_handle,font_id);			/*	Font einstellen	*/
 	vst_point(vdi_handle,font_pt,&font_w,&font_h,&font_cw,&font_ch);
@@ -87,12 +87,12 @@ void Init(void)
 	/*	Text-Ausgabe-Ausrichtung konfigurieren	*/
 	vst_alignment(vdi_handle,TA_LEFT,TA_TOP,&dummy,&dummy);
 
-	/*	Standard-Werte fr die VDI-Fll-Funktionen	*/
+	/*	Standard-Werte fuer die VDI-Fuell-Funktionen	*/
 	vsf_color(vdi_handle,G_WHITE);
 	vsf_interior(vdi_handle,FIS_SOLID);
 	vsf_perimeter(vdi_handle,0);
 	
-	/*	Standard-Wert fr User-spezifisches Linienattribut	*/
+	/*	Standard-Wert fuer User-spezifisches Linienattribut	*/
 	vsl_udsty(vdi_handle,0xAAAA);			/*	Gepunktetes Linienmuster	*/
 
 

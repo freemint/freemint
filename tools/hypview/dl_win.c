@@ -343,7 +343,7 @@ ScrollWindow(WINDOW_DATA *ptr, short *r_x, short *r_y)
 
 	wind_get_grect(ptr->whandle, WF_WORKXYWH, &work);
 
-	/*	Zu bearbeitender Bereich auf den Bildschirm beschrnken	*/
+	/*	Zu bearbeitender Bereich auf den Bildschirm beschraenken	*/
 	wind_get_grect(0, WF_WORKXYWH, &box);
 	rc_intersect(&box, &work);
 
@@ -590,7 +590,7 @@ void WindowEvents(WINDOW_DATA *ptr, EVNT *event)
 				/*	Welches Objekt?	*/
 				num=objc_find(ptr->toolbar,0,MAX_DEPTH,event->mx,event->my);
 	
-				/*	Gltiges (>=0), selektierbares, aktives Objekt mit
+				/*	Gueltiges (>=0), selektierbares, aktives Objekt mit
 					Exit / Touchexit Flag??	*/
 			 	if((num>=0)&&(ptr->toolbar[num].ob_flags & OF_SELECTABLE)&&
 			 			!(ptr->toolbar[num].ob_state & OS_DISABLED)&&
@@ -621,7 +621,7 @@ void WindowEvents(WINDOW_DATA *ptr, EVNT *event)
 	}
 	if(event->mwhich & MU_MESAG)
 	{
-		if(event->msg[3]!=ptr->whandle)	/*	Message fr ein anderes Fenster?	*/
+		if(event->msg[3]!=ptr->whandle)	/*	Message fuer ein anderes Fenster?	*/
 			return;
 
 		event->mwhich&=~MU_MESAG;
@@ -667,7 +667,7 @@ void WindowEvents(WINDOW_DATA *ptr, EVNT *event)
 						}
 						if(ptr->x_offset)		/*	Vertikale Toolbar?	*/
 						{
-							ptr->toolbar->ob_height=toolbar.g_h;	/*	Objekthhe anpassen	*/
+							ptr->toolbar->ob_height=toolbar.g_h;	/*	Objekthoehe anpassen	*/
 							toolbar.g_w=ptr->x_offset;
 						}
 
@@ -777,7 +777,7 @@ void WindowEvents(WINDOW_DATA *ptr, EVNT *event)
 				wind_get_grect(event->msg[3],WF_WORKXYWH,&win);
 
 #if USE_TOOLBAR==YES
-				/*	Toolbar beim Scrollen bercksichtigen	*/
+				/*	Toolbar beim Scrollen beruecksichtigen	*/
 				win.g_w-=DL_WIN_XADD;
 				win.g_h-=DL_WIN_YADD;
 #endif
@@ -1066,7 +1066,7 @@ void DrawToolbar(WINDOW_DATA *win)
 		}
 		if(win->x_offset)		/*	Vertikale Toolbar?	*/
 		{
-			win->toolbar->ob_height=toolbar.g_h;	/*	Objekthhe anpassen	*/
+			win->toolbar->ob_height=toolbar.g_h;	/*	Objekthoehe anpassen	*/
 			toolbar.g_w=win->x_offset;
 		}
 
@@ -1137,7 +1137,6 @@ WINDOW_DATA *ptr=(WINDOW_DATA *)all_list;
 	return(NULL);
 }
 
-/* [GS] 0.35.2c Start: */
 short count_window ( void )
 {
 short i;
@@ -1152,5 +1151,4 @@ WINDOW_DATA *ptr=(WINDOW_DATA *)all_list;
 	};
 	return (i);
 }
-/* Ende */
 #endif

@@ -99,7 +99,6 @@ void MarkerSave ( DOCUMENT *doc, short num )
 		*dst++=' ';
 	*dst=0;
 
-/* [GS] 0.35.2a Start */
 	{
 		char ZStr[255];
 		long len;
@@ -113,7 +112,6 @@ void MarkerSave ( DOCUMENT *doc, short num )
 			marken[num].node_name[NODE_LEN - len] = '\0';
 		strcat ( marken[num].node_name, ZStr );
 	}
-/* Ende */
 
 	marken_change = 1;
     Bconout (2, 0x07);							/* Glocke							*/
@@ -134,11 +132,7 @@ void MarkerShow ( DOCUMENT *doc, short num, short new_window )
 		short open_success;
 
 		if(new_window)
-/* [GS] 0.35.2c Start: */
 			open_success = OpenFileNW( marken[num].path, NULL, marken[num].node_num );
-/* Ende; alt:
-			open_success = OpenFileNW( marken[num].path, NULL, 0 );
-*/
 		else
 			open_success = OpenFileSW( marken[num].path, NULL, 0);
 		if ( open_success )
@@ -171,10 +165,8 @@ void MarkerPopup ( DOCUMENT *doc, short x, short y)
 	len=max(len,14);
 
 	len=len*pwchar;
-/* [GS] 0.35.2a Start */
 	tree[EM_BACK].ob_x = x;
 	tree[EM_BACK].ob_y = y + 5;
-/* Ende */
 	tree[EM_BACK].ob_width=(short)len;
 	tree[EM_BACK].ob_height=(i-EM_1)*phchar;
 	
@@ -188,11 +180,7 @@ void MarkerPopup ( DOCUMENT *doc, short x, short y)
 Debug ( "len: %d; x: %d:%d, Y:%d", (short)len, x, x+(short)(len>>1), y);
 Debug ( "h: %d", tree[EM_BACK].ob_height );*/
 
-/* [GS] 0.35.2a Start */
 	i=form_popup(tree_addr[EMPTYPOPUP], 0, 0);
-/* Ende; alt:
-	i=form_popup(tree_addr[EMPTYPOPUP],x+(short)(len>>1),y+5);
-*/
 	graf_mkstate ( &event.x, &event.y, &event.bstate, &event.kstate );
 	if ( i != -1 )
 	{
@@ -269,7 +257,6 @@ void MarkerInit ( void )
 	/* Pfad vorhanden, dann diese Marken-Datei laden */
 	if ( marken_path[0] != '\0' )			
 	{
-/* [GS] 0.35.2b Start */
 		if ( strncmp ( marken_path, "$HOME\\", 6 ) == 0 )
 		{
 			char home_path[DL_PATHMAX];
@@ -296,7 +283,6 @@ void MarkerInit ( void )
 			strcpy ( add_ptr, &marken_path[6] );
 			strcpy ( marken_path, home_path );
 		}
-/* Ende */
 		ret=Fopen( marken_path, O_RDONLY);
 		if(ret >= 0)
 		{

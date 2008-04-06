@@ -112,7 +112,7 @@ void DragDrop(short msg[8])
 		return;
 	};
 
-	for (i = 0; i < MAX_DDFORMAT; i++)		/*	Alle mglichen Formate probieren	*/
+	for (i = 0; i < MAX_DDFORMAT; i++)		/*	Alle moeglichen Formate probieren	*/
 	{
 		ddrtry(pipe_handle,name,&sformat,&size);
 

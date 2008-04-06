@@ -113,7 +113,7 @@ void RemoveAllHistoryEntries(WINDOW_DATA *win)
 		entry = history;
 	}
 
-	/*	Keine weiteren Eintrge? ... Ende	*/
+	/*	Keine weiteren Eintraege? ... Ende	*/
 	if(!entry)
 		return;
 
@@ -161,7 +161,6 @@ short CountDocumentHistoryEntries(DOCUMENT *doc)
 	return(num);
 }
 
-/* [GS] 0.35.2e Start: */
 void DeletLastHistory(void *entry)
 {
 	HISTORY *previous;
@@ -230,5 +229,3 @@ void SetLastHistory(WINDOW_DATA *the_win,void *last)
 		entry=entry->next;
 	}
 }
-
-/* Ende */

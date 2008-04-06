@@ -94,7 +94,7 @@ char *read,*write=NULL;
 				while(*read)
 				{
 					read=Goto_Lineend(read);	/*	Zeilenende suchen	*/
-					read=Skip_Lineend(read);	/*	zur n„chsten Zeile gehen	*/
+					read=Skip_Lineend(read);	/*	zur naechsten Zeile gehen	*/
 
 					if(*read)
 					{

@@ -61,10 +61,10 @@ void ReInitWindow(WINDOW_DATA *win, DOCUMENT *doc)
 	wind_set_str(win->whandle,WF_NAME,win->title);
 	doc->selection.valid=FALSE;
 
-	/*	Fenstergrsse: mindestens 5 Kolonnen und eine Zeile	*/
+	/*	Fenstergroesse: mindestens 5 Kolonnen und eine Zeile	*/
 	ResizeWindow(win, max(doc->columns,5), max(doc->lines,1));
 
-	/*	Breite und Hhe des Fensters den neuen Ausmassen anpassen	*/
+	/*	Breite und Hoehe des Fensters den neuen Ausmassen anpassen	*/
 	if (adjust_winsize)
 	{
 		GRECT screen;
@@ -124,11 +124,7 @@ void ReInitWindow(WINDOW_DATA *win, DOCUMENT *doc)
 		wind_get_grect(0, WF_WORKXYWH, &win->full);
 
 	SetWindowSlider(win);
-/* [GS] v0.35.2e Start */
 	ToolbarUpdate(doc,win->toolbar, FALSE);
-/* Ende; alt:
-	ToolbarUpdate(doc,win->toolbar);
-*/
 	SendRedraw(win);
 }
 
@@ -143,7 +139,7 @@ HelpWindow(WINDOW_DATA *p, short obj, void *data)
 
 	if(obj == WIND_INIT)
 	{
-		/*	Als Rasterweite werden die Font-Grssen benutzt	*/
+		/*	Als Rasterweite werden die Font-Groessen benutzt	*/
 		win->x_raster = font_cw;
 		win->y_raster = font_ch;
 
@@ -214,8 +210,8 @@ HelpWindow(WINDOW_DATA *p, short obj, void *data)
 			open_size->g_y=win_y;
 		}
 
-		/*	Keine automatische Grssenanpassung?
-			Und Fenster-Breite oder Fensterhhe definiert?	*/
+		/*	Keine automatische Groessenanpassung?
+			Und Fenster-Breite oder Fensterhoehe definiert?	*/
 		if(!adjust_winsize && (win_w || win_h))
 		{
 			wind_calc_grect(WC_WORK, win->kind, open_size, open_size);
@@ -272,13 +268,13 @@ HelpWindow(WINDOW_DATA *p, short obj, void *data)
 
 		vs_clip(vdi_handle, 0, pxy);					/*	Clipping OFF	*/
 	}
-	else if(obj == WIND_SIZED)						/*	Fenstergrsse gendert	*/
+	else if(obj == WIND_SIZED)						/*	Fenstergroesse gendert	*/
 	{
 		GRECT *out = (GRECT *)data,in;
 		wind_calc_grect(WC_WORK,win->kind,out,&in);	/*	Arbeitsbereich berechnen	*/
 
 		in.g_w -= in.g_w % win->x_raster;	/*	Breite auf Rastergrsse "stutzen"	*/
-		in.g_h -= (in.g_h - win->y_offset) % win->y_raster;	/*	Hhe auf Rastergrsse "stutzen"	*/
+		in.g_h -= (in.g_h - win->y_offset) % win->y_raster;	/*	Hhe auf Rastergroesse "stutzen"	*/
 
 		wind_calc_grect(WC_BORDER, win->kind, &in,out);	/*	Fensterrand berechnen	*/
 	}
@@ -290,15 +286,15 @@ HelpWindow(WINDOW_DATA *p, short obj, void *data)
 	
 		wind_calc_grect(WC_WORK,win->kind,out,&in);	/*	Arbeitsbereich berechnen	*/
 
-		/*	Falls Vergrssern: Verhindern, das Toolbar unsichtbar wird	*/
+		/*	Falls Vergroessern: Verhindern, das Toolbar unsichtbar wird	*/
 		if(((win->status & WIS_FULL) == 0) &&
 				in.g_w < tree_addr[TOOLBAR][TO_SEARCHBOX].ob_width)
 		{
 			in.g_w = tree_addr[TOOLBAR][TO_SEARCHBOX].ob_width;
 		}
 
-		in.g_w-=in.g_w%win->x_raster;	/*	Breite auf Rastergrsse "stutzen"	*/
-		in.g_h-=(in.g_h-win->y_offset)%win->y_raster;	/*	Hhe auf Rastergrsse "stutzen"	*/
+		in.g_w-=in.g_w%win->x_raster;	/*	Breite auf Rastergroesse "stutzen"	*/
+		in.g_h-=(in.g_h-win->y_offset)%win->y_raster;	/*	Hhe auf Rastergroesse "stutzen"	*/
 
 		wind_calc_grect(WC_BORDER,win->kind,&in,out);	/*	Fensterrand berechnen	*/
 
@@ -327,7 +323,6 @@ HelpWindow(WINDOW_DATA *p, short obj, void *data)
 
 		event->mwhich&=~MU_KEYBD;
 
-/* [GS] 0.35.2e Start */
 		if( (event->kstate & KbSHIFT) && (event->kstate & KbCTRL))	/*	Tastenkomb. mit SHIFT + CTRL	*/
 		{
 			if(scan==KbUP || scan==KbLEFT)
@@ -340,11 +335,6 @@ HelpWindow(WINDOW_DATA *p, short obj, void *data)
 				event->mwhich|=MU_KEYBD;
 		}
 		else if (event->kstate & KbSHIFT)		/*	Tastenkomb. mit SHIFT			*/
-#if 0
-/* Ende; alt: */
-		if(event->kstate & KbSHIFT)		/*	Tastenkomb. mit SHIFT	*/
-
-#endif
 		{
 			/*	Toolbarhhe abziehen	*/
 			win->work.g_h -= win->y_offset;
@@ -377,10 +367,6 @@ HelpWindow(WINDOW_DATA *p, short obj, void *data)
 				SetWindowSlider(win);
 				SendRedraw(win);
 			}
-/* [GS] 0.35.2e alt:
-			else if((event->kstate & KbCTRL) && (ascii=='V'))
-				BlockPaste(!clipbrd_new_window);
-*/
 			else if ( scan >= KbF11 && scan <= KbF20 )
 				MarkerSave ( doc, scan-KbF11 );
 			else 
@@ -393,13 +379,11 @@ HelpWindow(WINDOW_DATA *p, short obj, void *data)
 				if(*default_file)
 					OpenFileSW(default_file,NULL, 0);
 			}
-/* [GS] 0.35.2e Start: */
 			else if(ascii=='E')
 			{
 				RemoveAllHistoryEntries(win);
 				ToolbarUpdate(doc,win->toolbar,TRUE);
 			}
-/* Ende */
 			else if(ascii=='K')
 				OpenFileSW(catalog_file,NULL,0);
 			else if(ascii=='T')
@@ -414,11 +398,7 @@ HelpWindow(WINDOW_DATA *p, short obj, void *data)
 			else if(ascii=='C')
 				BlockCopy(doc);
 			else if(ascii=='I')
-/* [GS] 0.35.2a Start */
 				ProgrammInfos( doc );
-/* Ende; alt:
-				ProgrammInfos();
-*/
 			else if(ascii=='O')
 				ToolbarClick(doc,TO_LOAD);
 			else if(ascii=='V') {
@@ -481,20 +461,12 @@ HelpWindow(WINDOW_DATA *p, short obj, void *data)
 			}
 			else if(scan==KbPAGEUP)
 			{
-/* [GS] 0.35.2e Start */
 			short val=-(win->work.g_h - win->y_offset) /win->y_raster;
-/* Ende; alt:
-			short val=-win->work.g_h/win->y_raster;
-*/
 				ScrollWindow(win,NULL,&val);
 			}
 			else if(scan==KbPAGEDOWN)
 			{
-/* [GS] 0.35.2e Start */
 			short val=(win->work.g_h - win->y_offset)/win->y_raster;
-/* Ende; alt:
-			short val=win->work.g_h/win->y_raster;
-*/
 				ScrollWindow(win,NULL,&val);
 			}
 			else if(scan==KbHOME)
@@ -580,16 +552,12 @@ HelpWindow(WINDOW_DATA *p, short obj, void *data)
 		}
 		else if(event->mbutton & 2)	/*	Rechts-Klick	*/
 		{
-/* [GS] v0.35.2d Start */
 			if ( has_wlffp!=0 )
 			{
-/* Ende */
 				short num;
 				num = form_popup(tree_addr[CONTEXT],event->mx,event->my);
 				BlockOperation(doc, num);
-/* [GS] v0.35.2d Start */
 			}
-/* Ende */
 		}
 	}
 	else if(obj == WIND_TBUPDATE)
@@ -598,11 +566,7 @@ HelpWindow(WINDOW_DATA *p, short obj, void *data)
 		if(*id == doc)
 			return(1);
 
-/* [GS] v0.35.2e Start */
 		ToolbarUpdate(doc, win->toolbar, FALSE);
-/* Ende; alt:
-		ToolbarUpdate(doc,ptr->toolbar);
-*/
 		*id=doc;
 	}
 	else if(obj==WIND_TBCLICK)
