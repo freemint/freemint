@@ -160,7 +160,6 @@ void LoadConfig(void)
 		if(*variable)
 			strncpy(all_ref,variable,DL_PATHMAX);
 
-/* [GS] 0.35.2a Start: */
 		variable=CfgGetVariable("HYPFIND=");
 		if(*variable)
 			strncpy(hypfind_path,variable,DL_PATHMAX);
@@ -168,7 +167,6 @@ void LoadConfig(void)
 		variable=CfgGetVariable("REFONLY=");
 		if(*variable)
 			refonly = TRUE;
-/* Ende */
 
 		CfgCloseFile();
 	}

@@ -103,7 +103,7 @@ MODULE mono_bitmap
 	addq.w	#1,D6			*	Bit im Monochromen Bitmap setzen
 
 .cont:
-	dbra		D4,.pixloop	*	nchstes Pixel
+	dbra		D4,.pixloop	*	naechstes Pixel
 
 	move.w	D6,(A4)+		*	Monochrom Bitmap speichern
 

@@ -97,13 +97,13 @@ char *home_ptr;
 		strcat(add_ptr,separator);
 		strcat(add_ptr,path);
 
-		/*	Versuche die Datei in $HOME\defaults\<path> zu ffnen	*/
+		/*	Versuche die Datei in $HOME\defaults\<path> zu oeffnen	*/
 		ret=Fopen(home_path,O_RDONLY);
 		if(ret<0)
 		{
 			strcpy(add_ptr,path);
 			
-			/*	Versuche die Datei in $HOME\<path> zu ffnen	*/
+			/*	Versuche die Datei in $HOME\<path> zu oeffnen	*/
 			ret=Fopen(home_path,O_RDONLY);
 		}
 	}
@@ -188,7 +188,7 @@ char *home_ptr;
 
 		strcpy(add_ptr,path);
 
-		/*	Versuche die Datei in $HOME\<path> zu ffnen	*/
+		/*	Versuche die Datei in $HOME\<path> zu oeffnen	*/
 		ret=Fopen(home_path,O_WRONLY|O_TRUNC);
 		if(ret == ENOENT)
 		{
@@ -196,7 +196,7 @@ char *home_ptr;
 			strcat(add_ptr,separator);
 			strcat(add_ptr,path);
 			
-			/*	Versuche die Datei in $HOME\defaults\<path> zu ffnen	*/
+			/*	Versuche die Datei in $HOME\defaults\<path> zu oeffnen	*/
 			ret = Fopen(home_path,O_WRONLY|O_TRUNC|O_CREAT);
 			if(ret == ENOTDIR)			/*	Pfad nicht gefunden?	*/
 			{
@@ -259,7 +259,7 @@ char *dst=cfg_var;
 	}
 	*dst=0;
 
-	/*	Leerzeichen und Tabulatoren am Anfang berspringen	*/
+	/*	Leerzeichen und Tabulatoren am Anfang ueberspringen	*/
 	dst=cfg_var;
 	while((*dst==' ')||(*dst=='\t'))
 		dst++;

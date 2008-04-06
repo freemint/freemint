@@ -67,7 +67,7 @@ void MouseSelection(DOCUMENT *doc, EVNTDATA *m_data)
 	wind_update(BEG_MCTRL);
 	wind_get_grect(win->whandle,WF_WORKXYWH,&work);
 
-	/*	VDI Fll-Attribute fr XOR-Flchen	*/
+	/*	VDI Fuell-Attribute fr XOR-Flaechen	*/
 	vsf_interior(vdi_handle,FIS_SOLID);
 	vsf_color(vdi_handle, G_BLACK);
 	vsf_perimeter(vdi_handle,0);
@@ -81,7 +81,7 @@ void MouseSelection(DOCUMENT *doc, EVNTDATA *m_data)
 	vs_clip(vdi_handle, 1, clip_rect);					/*	Clipping ON	*/
 
 
-	/*	Wird SHIFT gedrckt?	*/
+	/*	Wird SHIFT gedrueckt?	*/
 	if((m_data->kstate & KbSHIFT) && doc->selection.valid)
 	{
 		start = doc->selection.start;
@@ -109,7 +109,7 @@ void MouseSelection(DOCUMENT *doc, EVNTDATA *m_data)
 	}
 	else
 	{
-		/*	Falls noch eine Selektion aktiv ist: Neu zeichnen = lschen	*/
+		/*	Falls noch eine Selektion aktiv ist: Neu zeichnen = loeschen	*/
 		if (doc->selection.valid)
 			DrawSelection(doc);
 	
@@ -230,14 +230,14 @@ shift_entry:
 
 			DIAG(("x = %d, ox = %d, y = %d, old_y = %d", x, ox, y, oy));
 
-			if (y < oy)		/*	Selektion zurck bewegt?	*/
+			if (y < oy)		/*	Selektion zurueck bewegt?	*/
 			{
 				px1 = x;
 				py1 = y;
 				px2 = ox;
 				py2 = oy;
 			}
-			else			/*	Selektion vorwrts bewegt?	*/
+			else			/*	Selektion vorwaerts bewegt?	*/
 			{
 				px1 = ox;
 				py1 = oy;
@@ -258,7 +258,7 @@ shift_entry:
 				DIAG(("mouse to end - %d/%d/%d/%d", xy[0], xy[1], xy[2], xy[3]));
 			}
 			
-			/*	Gefllte Zeilen Zeichnen	*/
+			/*	Gefuellte Zeilen Zeichnen	*/
 			py1 += font_ch;
 
 			if (py1 < py2)
@@ -270,7 +270,7 @@ shift_entry:
 				v_bar(vdi_handle, xy);
 				DIAG(("several lines- %d/%d/%d/%d", xy[0], xy[1], xy[2], xy[3]));
 			}
-			if (px2 >= 0)			/*	berhaupt etwas selektiert?	*/
+			if (px2 >= 0)			/*	ueberhaupt etwas selektiert?	*/
 			{
 				/*	Vom Zeilen-Anfang an zeichnen	*/
 				xy[0] = work.g_x;
@@ -415,7 +415,7 @@ void DrawSelection(DOCUMENT *doc)
 	vsf_perimeter(vdi_handle,0);
 	vswr_mode(vdi_handle,MD_XOR);
 
-	if(!doc->selection.valid)				/*	Keine gltige Selektion?	*/
+	if(!doc->selection.valid)				/*	Keine gueltige Selektion?	*/
 		return;									/*	Zeichnen abbrechen	*/
 
 	wind_get_grect(win->whandle,WF_WORKXYWH,&work);
@@ -480,7 +480,7 @@ void DrawSelection(DOCUMENT *doc)
 	}
 	else	/*	Anfang und Ende auf der gleichen Zeile	*/
 	{			
-		/*	Nur die nderung zeichnen	*/
+		/*	Nur die Aenderung zeichnen	*/
 		xy[0] = work.g_x + x1;
 		xy[1] = work.g_y + win->y_offset + y1;
 		xy[2] = work.g_x + x2 - 1;

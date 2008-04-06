@@ -57,12 +57,12 @@ void GoBack(DOCUMENT *old_doc)
 	long line;
 	if(RemoveHistoryEntry(&new_doc,&page,&line))
 	{
-		/*	Bereits geschlossene Datei ffnen? => Datei wechsel	*/
+		/*	Bereits geschlossene Datei oeffnen? => Datei wechsel	*/
 		if(new_doc!=old_doc)
 		{
 		long ret;
 	
-			/*	Falls das alte Dokument nicht mehr bentigt wird...	*/
+			/*	Falls das alte Dokument nicht mehr benoetigt wird...	*/
 			if(!CountDocumentHistoryEntries(old_doc))
 			{
 				win->data = old_doc->next;

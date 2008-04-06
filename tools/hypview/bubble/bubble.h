@@ -75,9 +75,9 @@
 
 
 /*
- * Daten fÅr das Special-Word von BUBBLEGEM_SHOW
+ * Daten fuer das Special-Word von BUBBLEGEM_SHOW
  */
-#define BGS7_USRHIDE	0x0001		/*	fÅr modalen Aufruf nîtig	*/
+#define BGS7_USRHIDE	0x0001		/*	fuer modalen Aufruf noetig	*/
 #define BGS7_MOUSE 	0x0004		/*	BubbleGEM benutzt die Koordinaten nur 
 												zum Zeichnen	*/
 
@@ -88,12 +88,12 @@
 typedef struct
 {
 	long	magic;   /*	'BGEM'	*/
-	long	size;    /*	Grîûe dieser Struktur, derzeit 18	*/
+	long	size;    /*	Groesse dieser Struktur, derzeit 18	*/
 	int	release; /*	derzeit 6, nie kleiner als 5	*/
 	int	active;  /*	<>0, wenn gerade eine Hilfe angezeigt wird;
 								0  sonst	*/
 	MFORM	*mhelp;	/*	Zeiger auf Hilfe-Mausform	*/
-	int	dtimer;	/*	DÑmon-Timer; Default 200ms; ab Release 6	*/
+	int	dtimer;	/*	Daemon-Timer; Default 200ms; ab Release 6	*/
 }BGEM;
 
 
@@ -101,13 +101,13 @@ typedef struct
  * BubbleGEM wertet den Cookie "BHLP" aus. Im oberen Word ist die Dauer 
  * der Mindest-Sichtbarkeit eingetragen, Standard sind 200 Millisekunden.
  * Das untere Word ist eine Bitmap; ist Bit 0 ($0001 = BGC_FONTCHANGED) 
- * gesetzt, so bedeutet dies, daû FONT_CHANGED ausgewertet wird. Ist 
+ * gesetzt, so bedeutet dies, dass FONT_CHANGED ausgewertet wird. Ist 
  * BGC_NOWINSTYLE ($0002) (lies: no-win-style, nicht now-in-style) 
  * gesetzt, so wird die Hilfe als Sprechblase dargestellt (d.h. ein 
- * gelîschtes Bit entspricht der Windows-Hilfe!). Ein gesetztes Bit bei 
- * BGC_SENDKEY ($0004) bewirkt, daû nach Schlieûen der Hilfe durch einen 
+ * geloeschtes Bit entspricht der Windows-Hilfe!). Ein gesetztes Bit bei 
+ * BGC_SENDKEY ($0004) bewirkt, dass nach Schliessen der Hilfe durch einen 
  * Tastendruck AV_SENDKEY an den Aufrufer geschickt wird. BGC_DEMONACTIVE
- * ($0008) bewirkt, daû DÑmon eingeschaltet ist.
+ * ($0008) bewirkt, dass Daemon eingeschaltet ist.
  */
 #define	BGC_FONTCHANGED	0x0001
 #define	BGC_NOWINSTYLE		0x0002

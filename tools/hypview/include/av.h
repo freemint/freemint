@@ -1,7 +1,7 @@
 /*
  * Hinweis:
  * Dieser Text wurde automatisch aus dem beiliegenden Hypertext
- * generiert und enthÑlt die fÅr Programmierer wichtigen defines
+ * generiert und enthaelt die fuer Programmierer wichtigen defines
  * sowie zu jeder Nachricht eine Kurzbeschreibung zu deren Aufbau
  */
 
@@ -16,13 +16,13 @@
  *                Bit 3:  VA_FONTCHANGED
  *                Bit 4:  Quoting
  *                Bit 5:  VA_PATH_UPDATE
- *            Alle anderen Bits sind fÅr Erweiterungen reserviert und
+ *            Alle anderen Bits sind fuer Erweiterungen reserviert und
  *            sollten daher mit 0 vorbesetzt werden.
  * msg[4]   = 0 (reserviert)
  * msg[5]   = 0 (reserviert)
  * msg[6/7] = Pointer auf den Accessorynamen, wie er bei appl_find benutzt
- *            werden muû; also 8 Zeichen lang und nullterminiert. Wer auf
- *            der sicheren Seite sein will, trÑgt den Namen komplett in Groû-
+ *            werden muss; also 8 Zeichen lang und nullterminiert. Wer auf
+ *            der sicheren Seite sein will, traegt den Namen komplett in Gross-
  *            buchstaben ein.
  */
 #define AV_PROTOKOLL 0x4700
@@ -54,8 +54,8 @@
  *                Bit 4:  erlaubt Anlegen symbolischer Links mit AV_COPYFILE
  * msg[5]   = 0 (reserviert)
  * msg[6/7] = Pointer auf den Programmnamen, wie er bei appl_find benutzt
- *            werden muû; also 8 Zeichen lang und nullterminiert. Wer auf der
- *            sicheren Seite sein will, trÑgt den Namen komplett in Groûbuch-
+ *            werden muss; also 8 Zeichen lang und nullterminiert. Wer auf der
+ *            sicheren Seite sein will, traegt den Namen komplett in Grossbuch-
  *            staben ein.
  */
 #define VA_PROTOSTATUS 0x4701
@@ -70,7 +70,7 @@
 /*
  * AV_STATUS
  * msg[3/4] = Pointer auf einen String, der keine Steuerzeichen enthalten
- *            darf und nicht lÑnger als 256 Zeichen sein darf. Dieser
+ *            darf und nicht laenger als 256 Zeichen sein darf. Dieser
  *            Pointer darf allerdings NULL sein.
  */
 #define AV_STATUS 0x4704
@@ -78,7 +78,7 @@
 
 /*
  * VA_SETSTATUS
- * msg[3/4] = Pointer auf einen String, der keine Steuerzeichen enthÑlt.
+ * msg[3/4] = Pointer auf einen String, der keine Steuerzeichen enthaelt.
  *            Dieser Pointer kann allerdings NULL sein, dann war
  *            kein Status gespeichert.
  */
@@ -88,7 +88,7 @@
 /*
  * AV_SENDKEY
  * msg[3] = Tastaturstatus (ev_mmokstate, also SHIFT, CTRL, ALT...)
- * msg[4] = ASCII/Scancode der gedrÅckten Taste (ev_mkreturn)
+ * msg[4] = ASCII/Scancode der gedrueckten Taste (ev_mkreturn)
  */
 #define AV_SENDKEY 0x4710
 
@@ -110,7 +110,7 @@
 /*
  * VA_FILEFONT
  * msg[3] = Dateifontnummer (font id)
- * msg[4] = Dateifontgrîûe (in points)
+ * msg[4] = Dateifontgroesse (in points)
  */
 #define VA_FILEFONT 0x4713
 
@@ -124,7 +124,7 @@
 /*
  * VA_CONFONT
  * msg[3] = Consolefontnummer (font id)
- * msg[4] = Consolefontgrîûe (in points)
+ * msg[4] = Consolefontgroesse (in points)
  */
 #define VA_CONFONT 0x4715
 
@@ -152,7 +152,7 @@
 
 /*
  * VA_CONSOLEOPEN
- * msg[3] = 0            -> Console wurde nicht geîffnet
+ * msg[3] = 0            -> Console wurde nicht geoeffnet
  *          anderer Wert -> Console ist jetzt offen und liegt vorne
  */
 #define VA_CONSOLEOPEN 0x4719
@@ -160,15 +160,15 @@
 
 /*
  * AV_OPENWIND
- * msg[3/4] = Pfad fÅr das Fenster
- * msg[5/6] = Wildcard fÅr darzustellende Dateien.
+ * msg[3/4] = Pfad fuer das Fenster
+ * msg[5/6] = Wildcard fuer darzustellende Dateien.
  */
 #define AV_OPENWIND 0x4720
 
 
 /*
  * VA_WINDOPEN
- * msg[3] = 0            -> Fenster konnte nicht geîffnet werden
+ * msg[3] = 0            -> Fenster konnte nicht geoeffnet werden
  *          anderer Wert -> Fenster ist jetzt offen und liegt vorne
  */
 #define VA_WINDOPEN 0x4721
@@ -177,11 +177,11 @@
 /*
  * AV_STARTPROG
  * msg[3/4] = Programmname mit kompletten Pfad; kann auch eine beliebige
- *            Datei sein, fÅr die der EmpfÑnger dann die zugehîrige
+ *            Datei sein, fuer die der Empfaenger dann die zugehoerige
  *            Applikation startet
  * msg[5/6] = Kommandozeile (kann NULL sein)
  * msg[7]   = Beliebiges 16-Bit Wort, das in VA_PROGSTART wieder
- *            zurÅckgeliefert wird.
+ *            zurueckgeliefert wird.
  */
 #define AV_STARTPROG 0x4722
 
@@ -198,7 +198,7 @@
 
 /*
  * AV_ACCWINDOPEN
- * msg[3] = AES-Handle des geîffneten Fensters
+ * msg[3] = AES-Handle des geoeffneten Fensters
  */
 #define AV_ACCWINDOPEN 0x4724
 
@@ -208,7 +208,7 @@
  * msg[3]   = AES-Handle des Fensters
  * msg[4]   = X-Position der Maus
  * msg[5]   = Y-Position der Maus
- * msg[6/7] = Pointer auf einen String, der die Namen der Objekte enthÑlt.
+ * msg[6/7] = Pointer auf einen String, der die Namen der Objekte enthaelt.
  */
 #define VA_DRAGACCWIND 0x4725
 
@@ -224,7 +224,7 @@
  * AV_COPY_DRAGGED
  * msg[3]   = Tastaturstatus (Alternate, Control, Shift)
  * msg[4/5] = Pointer auf einen String, der den Namen des Zielobjektes
- *            enthÑlt. Dies muû ein Pfad sein!
+ *            enthaelt. Dies muss ein Pfad sein!
  */
 #define AV_COPY_DRAGGED 0x4728
 
@@ -254,17 +254,19 @@
 
 /*
  * VA_THAT_IZIT
- * msg[3]   = ID der zustÑndigen Applikation
+ * msg[3]   = ID der zustaendigen Applikation
  * msg[4]   = Typ des Objektes
- *             Unbekannt: 0
- *             MÅlleimer: 1
- *             Shredder : 2
- *             Clipboard: 3
- *             Datei    : 4
- *             Ordner   : 5
- *             Laufwerk : 6
- *             Fenster  : 7
- *             (alle anderen fÅr Erweiterungen reserviert.)
+ *             Unbekannt   : 0
+ *             Muelleimer  : 1
+ *             Shredder    : 2
+ *             Clipboard   : 3
+ *             Datei       : 4
+ *             Ordner      : 5
+ *             Laufwerk    : 6
+ *             Fenster     : 7
+ *             Notizblock  : 8
+ *             ?           : 9
+ *             (alle anderen fuer Erweiterungen reserviert.)
  * msg[5+6] = Zeiger auf den Namen des Objektes (oder NULL, falls nicht
  *            vorhanden)
  */
@@ -277,6 +279,8 @@
 #define VA_OB_FOLDER    5
 #define VA_OB_DRIVE     6
 #define VA_OB_WINDOW    7
+#define VA_OB_NOTEPAD   8
+#define VA_OB_NOTE      9
 
 
 /*
@@ -284,14 +288,14 @@
  * msg[3]   = X-Position, wohin die Maus gezogen wurde
  * msg[4]   = Y-Position, wohin die Maus gezogen wurde
  * msg[5]   = Tastaturstatus (Shift,Control,Alternate)
- * msg[6/7] = Pointer auf einen String, der die Namen der Objekte enthÑlt.
+ * msg[6/7] = Pointer auf einen String, der die Namen der Objekte enthaelt.
  */
 #define AV_DRAG_ON_WINDOW 0x4734
 
 
 /*
  * VA_DRAG_COMPLETE
- * msg[3] = Status der Aktion. (!= 0 heiût, daû wirklich etwas
+ * msg[3] = Status der Aktion. (!= 0 heisst, dass wirklich etwas
  *          kopiert oder verschoben wurde.
  */
 #define VA_DRAG_COMPLETE 0x4735
@@ -313,18 +317,18 @@
 
 /*
  * VA_FONTCHANGED
- * msg[3] = Dateifontnummer   (font id)
- * msg[4] = Dateifontgrîûe    (in points)
- * msg[5] = Consolefontnummer (font id)
- * msg[6] = Consolefontgrîûe  (in points)
+ * msg[3] = Dateifontnummer     (font id)
+ * msg[4] = Dateifontgroesse    (in points)
+ * msg[5] = Consolefontnummer   (font id)
+ * msg[6] = Consolefontgroesse  (in points)
  */
 #define VA_FONTCHANGED 0x4739
 
 
 /*
  * AV_XWIND
- * msg[3/4] = Pfad fÅr das Fenster
- * msg[5/6] = Wildcard als Filter fÅr die Anzeige
+ * msg[3/4] = Pfad fuer das Fenster
+ * msg[5/6] = Wildcard als Filter fuer die Anzeige
  * msg[7]   = Bitmaske  0x0001 - toppe evtl. vorhandenes Fenter
  *                      0x0002 - Wildcard soll nur selektieren
  *                             - alle anderen Bits auf 0 setzen!
@@ -334,7 +338,7 @@
 
 /*
  * VA_XOPEN
- * msg[3] = Gibt an, ob das Fenster geîffnet werden konnte.
+ * msg[3] = Gibt an, ob das Fenster geoeffnet werden konnte.
  *          (Word 3 == 0 (nein) != 0 (ja))
  */
 #define VA_XOPEN 0x4741
@@ -343,7 +347,7 @@
 /*
  * AV_VIEW
  * msg[3/4]: Zeiger auf den Namen der anzuzeigenden Datei (es ist nur
- *           EINE einzelne Datei zulÑssig!)
+ *           EINE einzelne Datei zulaessig!)
  * msg[5-7]: reserviert, immer 0
  */
 #define AV_VIEW 0x4751
@@ -360,8 +364,8 @@
 /*
  * AV_FILEINFO
  * msg[3/4]: Zeiger auf Datei oder Ordnernamen. Mehrere Dateien/Ordner
- *           werden durch Leerzeichen getrennt. Ordner MöSSEN mit ab-
- *           schliessendem '\' Åbergeben werden!
+ *           werden durch Leerzeichen getrennt. Ordner MUeSSEN mit ab-
+ *           schliessendem '\' uebergeben werden!
  * msg[5-7]: reserviert, immer 0
  */
 #define AV_FILEINFO 0x4753
@@ -370,11 +374,11 @@
 /*
  * VA_FILECHANGED
  * msg[3/4]: Zeiger auf die Namen der Dateien/Ordner, die bei
- *           AV_FILEINFO Åbergeben wurden, wobei natÅrlich einige
- *           Dateien/Ordner neue Namen haben kînnen
- *           Beispiel: Es wurde 'C:\ANNA.TXT C:\AUTO\' Åbergeben.
- *                     Der Benutzer Ñndert 'ANNA.TXT' in 'ANNELIE.TXT'
- *                     um. Als Ergebnis erhÑlt man dann in dieser
+ *           AV_FILEINFO uebergeben wurden, wobei natuerlich einige
+ *           Dateien/Ordner neue Namen haben koennen
+ *           Beispiel: Es wurde 'C:\ANNA.TXT C:\AUTO\' uebergeben.
+ *                     Der Benutzer aendert 'ANNA.TXT' in 'ANNELIE.TXT'
+ *                     um. Als Ergebnis erhaelt man dann in dieser
  *                     Message den String 'C:\ANNELIE.TXT C:\AUTO\'
  * msg[5-7]: reserviert, immer 0
  */
@@ -386,9 +390,9 @@
  * msg[3/4]: Zeiger auf die Quelldateie(n) und -Ordner, durch Leer-
  *           stellen getrennt, Order mit abschliessendem '\'
  * msg[5/6]: Zeiger auf den Zielordner
- * msg[7]  : Bit 0:    Originale lîschen (verschieben)
+ * msg[7]  : Bit 0:    Originale loeschen (verschieben)
  *           Bit 1:    Kopien umbenennen
- *           Bit 2:    Ziel kommentarlos Åberschreiben
+ *           Bit 2:    Ziel kommentarlos ueberschreiben
  *           Bit 3:    Nur symbolische Links der Quellen erzeugen
  *                     (Bit 0 ist dann bedeutungslos)
  *           Bit 3-15: reserviert, immer 0
@@ -406,7 +410,7 @@
 
 /*
  * AV_DELFILE
- * msg[3/4]: Zeiger auf die zu lîschenden Dateie(n)/Ordner, durch Leer-
+ * msg[3/4]: Zeiger auf die zu loeschenden Dateie(n)/Ordner, durch Leer-
  *           stellen getrennt, Order mit abschliessendem '\'
  * msg[5-7]: reserviert, immer 0
  */
@@ -426,7 +430,7 @@
  * msg[3]:  Position X
  * msg[4]:  Position Y
  * msg[5]:  Breite
- * msg[6]:  Hîhe
+ * msg[6]:  Hoehe
  * msg[7]:  reserviert, immer 0
  */
 #define AV_SETWINDPOS 0x4759

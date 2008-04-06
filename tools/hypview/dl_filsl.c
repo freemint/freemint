@@ -106,7 +106,7 @@ char *fslx_paths="C:\\\0",*fslx_pattern="*\0";
 
 		result=fsel_exinput(ptr->path,ptr->name,&ptr->button,comment);
 		if(!result)									/* Fileselectbox  */
-			return(NULL);							/* Fehler zurck  */
+			return(NULL);							/* Fehler zurueck  */
 
 		*(strrchr(ptr->path,'\\')+1)=0;		/*	Datei-Maske entfernen	*/
 		proc(ptr,1);

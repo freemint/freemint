@@ -43,7 +43,7 @@ long HypGetNode(DOCUMENT *doc);
 void HypGotoNode(DOCUMENT *doc, char *chapter,long node_num);
 
 /*
- *		berprft ob es sich um einen Hypertext handelt und ladet
+ *		Ueberprueft ob es sich um einen Hypertext handelt und ladet
  *		danach die wichtigsten Daten in den Speicher.
  */
 short
@@ -58,7 +58,7 @@ HypLoad(DOCUMENT *doc, short handle)
 	char *cptr;
 	REF_FILE *ref;
 	
-	/*	Zurck zum Dateianfang	*/
+	/*	Zurueck zum Dateianfang	*/
 	Fseek(0, handle, 0);
 
 
@@ -72,7 +72,7 @@ HypLoad(DOCUMENT *doc, short handle)
 		ret = Fopen(doc->path,O_RDONLY);
 		if(ret < 0)
 		{
-			/*	Konnte die passende HYP Datei nicht geffnet werden?	*/
+			/*	Konnte die passende HYP Datei nicht geoeffnet werden?	*/
 			strcpy(cptr,".ref");
 			if(ref > 0)
 				Mfree(ref);
@@ -122,18 +122,18 @@ HypLoad(DOCUMENT *doc, short handle)
 		return(F_UNKNOWN);
 	}
 	
-	/*	Grsse der Index-Tabelle zur Speichermenge addieren	*/
+	/*	Groesse der Index-Tabelle zur Speichermenge addieren	*/
 	memsize += (head.itable_num + 1) * sizeof(INDEX_ENTRY *);
-	/*	Grsse der Indexdaten zur Speichermenge addieren	*/
+	/*	Groesse der Indexdaten zur Speichermenge addieren	*/
 	memsize += head.itable_size;
-	/*	Grsse der Cache-Tabelle zur Speichermenge addieren	*/
+	/*	Groesse der Cache-Tabelle zur Speichermenge addieren	*/
 	cache_size = GetCacheSize(head.itable_num);
 	memsize += cache_size;
 
 	/*	Zum Anfang der Extra-Header	*/
 	Fseek(head.itable_size + sizeof(HYP_HEADER), handle, 0);
 
-	/*	Ermitteln der bentigten Speichermenge fr die Zusatzdaten	*/
+	/*	Ermitteln der benoetigten Speichermenge fuer die Zusatzdaten	*/
 	do
 	{
 		ret = Fread(handle, 4, info);	/*	Extra-Header-Info laden	*/
@@ -145,7 +145,7 @@ HypLoad(DOCUMENT *doc, short handle)
 				case 3:				/*	@hostname	*/
 				case 5:				/*	@author	*/
 				case 6:				/*	@$VER	*/
-					memsize += info[1];	/*	Speicher fr diese Infos reservieren	*/
+					memsize += info[1];	/*	Speicher fuer diese Infos reservieren	*/
 					break;
 				case 2:				/*	@default	*/
 				case 4:				/*	@options	*/
@@ -161,7 +161,7 @@ HypLoad(DOCUMENT *doc, short handle)
 	} while (info[0] && ret == 4);
 
 
-	/*	Speicher	fr Header und Indexdaten reservieren	*/
+	/*	Speicher	fuer Header und Indexdaten reservieren	*/
 	hyp = (HYP_DOCUMENT *)Malloc(memsize);
 	if(!hyp)
 	{
@@ -177,7 +177,7 @@ HypLoad(DOCUMENT *doc, short handle)
 	/*	Position der Index-Tabelle (=gerade nach dem Dokument-Kopf)	*/
 	hyp->indextable = (INDEX_ENTRY **)((long)hyp + sizeof(HYP_DOCUMENT));
 
-	/*	Zurck zu den Indexdaten	*/
+	/*	Zurueck zu den Indexdaten	*/
 	Fseek(sizeof(HYP_HEADER),handle,0);
 
 	/*	Start der einzelnen Index-Eintrge	*/
@@ -210,7 +210,7 @@ HypLoad(DOCUMENT *doc, short handle)
 	/*	Seitennummer der Hilfeseite ermitteln	*/
 	hyp->help_page = find_nr_by_title(hyp, help_entry);
 
-	/*	Standard-Werte fr die zustzlichen Infos	*/
+	/*	Standard-Werte fuer die zusaetzlichen Infos	*/
 	hyp->st_guide_flags = 0;
 	hyp->line_width = 0;
 	hyp->database = NULL;
@@ -218,7 +218,7 @@ HypLoad(DOCUMENT *doc, short handle)
 	hyp->author = NULL;
 	hyp->version = NULL;
 
-	/* Extra-Headers (wenn ntig) laden...	*/
+	/* Extra-Headers (wenn noetig) laden...	*/
 	do
 	{
 		short load_it;
@@ -262,7 +262,7 @@ HypLoad(DOCUMENT *doc, short handle)
 				break;
 			case 10:					/*	ST-Guide flags	*/
 			{
-				if(info[1] != 2)		/*	Falsche Grsse?	*/
+				if(info[1] != 2)		/*	Falsche Groesse?	*/
 					Fseek(info[1], handle, 1);
 				else
 					Fread(handle, 2, &hyp->st_guide_flags);
@@ -271,7 +271,7 @@ HypLoad(DOCUMENT *doc, short handle)
 			}
 			case 11:					/*	@width	*/
 			{
-				if(info[1] != 2)		/*	Falsche Grsse?	*/
+				if(info[1] != 2)		/*	Falsche Groesse?	*/
 					Fseek(info[1], handle, 1);
 				else
 				{
@@ -392,10 +392,10 @@ HypGotoNode(DOCUMENT *doc, char *chapter, long node_num)
 	{
 		node_num=HypFindNode(doc,chapter);
 	}
-	else if (node_num < 0)	/*	Falls keine gltige Nummer	*/
+	else if (node_num < 0)	/*	Falls keine gueltige Nummer	*/
 		node_num = hyp->default_page;
 
-	if(node_num < 0)	/*	Falls keine gltige Nummer	*/
+	if(node_num < 0)	/*	Falls keine gueltige Nummer	*/
 	{
 		node_num = 0;
 
@@ -456,7 +456,7 @@ HypGotoNode(DOCUMENT *doc, char *chapter, long node_num)
 			return;
 		}
 
-		/*	Daten vom temp. Speicher ans Ziel entpacken & entschlsseln	*/
+		/*	Daten vom temp. Speicher ans Ziel entpacken & entschluesseln	*/
 		GetEntryBytes(hyp, node_num, data, node->start, size);
 		Mfree(data);
 		

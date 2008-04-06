@@ -138,7 +138,7 @@ short DoAesInit(void)
 		has_iconify &= 0x80;
 	}
 
-	/*	berprfe ob WDLG Aufrufe vorhanden sind	*/
+	/*	ueberpruefe ob WDLG Aufrufe vorhanden sind	*/
 #if USE_DIALOG==YES
 /* [GS] 0.35.2a alt:
 	if(!(has_wlffp & 0x01))

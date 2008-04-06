@@ -49,7 +49,7 @@ Decompress(void *c_data,long c_data_size, void *u_data, long u_data_size)
 	lh5_decode(TRUE);				/*	Daten dekomprimieren	*/
 }
 
-/*	Decodiert die verschlsselten Daten	*/
+/*	Decodiert die verschluesselten Daten	*/
 static void
 Decode(unsigned char *ptr, long bytes)
 {
@@ -57,7 +57,7 @@ Decode(unsigned char *ptr, long bytes)
 		*ptr++ = *ptr ^ 127;							/*	Entschlsseln	*/
 }
 
-/*	Gibt die unkomprimierte Grsse des Eintrags <num> zurck	*/
+/*	Gibt die unkomprimierte Groesse des Eintrags <num> zurck	*/
 long GetDataSize(HYP_DOCUMENT *doc, long num)
 {
 	long data_size;
@@ -70,7 +70,7 @@ long GetDataSize(HYP_DOCUMENT *doc, long num)
 	return(data_size);
 }
 
-/*	Ladet die Daten des Eintrags <num> und bestimmt dessen Lnge	*/
+/*	Ladet die Daten des Eintrags <num> und bestimmt dessen Laenge	*/
 void *LoadData(HYP_DOCUMENT *doc,long num, long *data_size)
 {
 	INDEX_ENTRY *idxent = doc->indextable[num];
@@ -124,7 +124,7 @@ void *LoadData(HYP_DOCUMENT *doc,long num, long *data_size)
 /*
  *		Kopiert von den Eintragsdaten <src> (geladen mit LoadData())
  *		<bytes> Bytes nach <dst>.
- *		Wenn ntig werden die Daten dekomprimiert und entschlsselt.
+ *		Wenn noetig werden die Daten dekomprimiert und entschluesselt.
  */
 void GetEntryBytes(HYP_DOCUMENT *doc,long num,void *src,void *dst,long bytes)
 {
@@ -141,7 +141,7 @@ void GetEntryBytes(HYP_DOCUMENT *doc,long num,void *src,void *dst,long bytes)
 	else
 		memcpy(dst,src,bytes);
 
-	/*	Daten verschlsselt?	*/
+	/*	Daten verschluesselt?	*/
 	if(doc->st_guide_flags & STG_ENCRYPTED)
 		Decode(dst,bytes);
 }

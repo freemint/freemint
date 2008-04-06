@@ -42,11 +42,11 @@ short AsciiLoad(DOCUMENT *doc, short handle)
 	long ret,file_len;
 	FMT_ASCII *ascii;
 
-	/*	Dateilnge bestimmen	*/
+	/*	Dateilaenge bestimmen	*/
 	file_len = Fseek(0, handle, 2);
 	Fseek(0, handle, 0);
 	
-	/*	Speicher fr die gesamte (!) Datei reservieren	*/
+	/*	Speicher fuer die gesamte (!) Datei reservieren	*/
 	ascii = (FMT_ASCII *)Malloc(sizeof(FMT_ASCII) + file_len);
 	if (ascii)
 	{
@@ -75,7 +75,7 @@ short AsciiLoad(DOCUMENT *doc, short handle)
 			doc->columns = 0;
 			*end = 0;
 			
-			/*	In dieser Schleife wird bestummen ob es sich wirklich
+			/*	In dieser Schleife wird bestimmt ob es sich wirklich
 				um einen ASCII Text handelt oder ob es ein Null-Byte
 				in den Daten hat.
 				Ausserdem wird die Anzahl Linien und Kolonnen ermittelt.	*/
@@ -86,7 +86,7 @@ short AsciiLoad(DOCUMENT *doc, short handle)
 				if (columns >= ascii_break_len)
 				{
 					unsigned char *old_ptr = ptr;
-					doc->lines++;				/*	Zeile zhlen	*/
+					doc->lines++;				/*	Zeile zaehlen	*/
 					
 					/*	Suche den Wort-Anfang	*/
 					while(columns)
@@ -102,7 +102,7 @@ short AsciiLoad(DOCUMENT *doc, short handle)
 
 					if (columns--)
 					{
-						*ptr++ = '\n';		/*	knstliches Zeilen-Ende	*/
+						*ptr++ = '\n';		/*	kuenstliches Zeilen-Ende	*/
 						doc->columns = max(doc->columns, columns);
 					}
 					else
@@ -114,26 +114,26 @@ short AsciiLoad(DOCUMENT *doc, short handle)
 				}
 				else if ((val == '\r') || (val == '\n'))	/*	CR oder LF?	*/
 				{
-					doc->lines++;				/*	Zeile zhlen	*/
+					doc->lines++;				/*	Zeile zaehlen	*/
 					doc->columns = max(doc->columns,columns);
 					columns = 0;
-					ptr++;						/*	Zeilenende berspringen	*/
+					ptr++;						/*	Zeilenende ueberspringen	*/
 					if ((val == '\r')&&(*ptr == '\n'))
 						ptr++;
 				}
 				else if(val == '\t')				/*	Tab-Stopp?...	*/
 				{
 					columns += ascii_tab_size - columns % ascii_tab_size;
-					ptr++;						/*	Tabulator berspringen	*/
+					ptr++;						/*	Tabulator ueberspringen	*/
 				}
 				else if (val)
 				{
-					ptr++;							/*	Normales Zeichen berspringen	*/
+					ptr++;							/*	Normales Zeichen ueberspringen	*/
 					columns++;
 				}
 				else
 				{
-					/*	... dann handelt es sich um eine binr Datei	*/
+					/*	... dann handelt es sich um eine binaer Datei	*/
 					doc->lines = (file_len + binary_columns) / binary_columns;
 					doc->columns = binary_columns;
 					columns = 0;
@@ -166,7 +166,7 @@ short AsciiLoad(DOCUMENT *doc, short handle)
 					ascii->line_ptr[0] = (char *)ptr;
 
 				/*	Diese Schleife konvertiert alle CR/LF in 0/1 und
-					speichert zustzlich die Zeilenanfnge	*/
+					speichert zusaetzlich die Zeilenanfaenge	*/
 				ptr = start;
 				columns = 0;
 				while (ptr < end)
@@ -191,11 +191,11 @@ short AsciiLoad(DOCUMENT *doc, short handle)
 					else if (val == '\t')				/*	Tab-Stopp?...	*/
 					{
 						columns += ascii_tab_size - columns % ascii_tab_size;
-						ptr++;						/*	Tabulator berspringen	*/
+						ptr++;						/*	Tabulator ueberspringen	*/
 					}
 					else
 					{
-						ptr++;						/*	Normales Zeichen berspringen	*/
+						ptr++;						/*	Normales Zeichen ueberspringen	*/
 						columns++;
 					}
 				}
@@ -443,18 +443,18 @@ short AsciiBlockOperations(DOCUMENT *doc, short op, BLOCK *block, void *param)
 
 	switch(op)
 	{
-		case BLK_CHKOP:			/*	Welche Operationen werden untersttzt?	*/
+		case BLK_CHKOP:			/*	Welche Operationen werden unterstuetzt?	*/
 		{
 			switch(*(short *)param)
 			{
 				case BLK_ASCIISAVE:
 				{
-					return(TRUE);	/*	Untersttzt	*/
+					return(TRUE);	/*	Unterstuetzt	*/
 				}
 				case BLK_PRINT:
 				default:
 				{
-					return(FALSE);	/*	Nicht untersttzt	*/
+					return(FALSE);	/*	Nicht unterstuetzt	*/
 				}
 			}
 		}

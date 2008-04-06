@@ -42,13 +42,13 @@ extern long procAutolocator(DOCUMENT *doc,long line);
 extern short GetScrapPath(char *scrap_path, short clear);
 
 /*	Initialisiert und aktiviert den Autolocator
-	Rckgabewert ist die Position des nchsten Zeichens.
+	Rueckgabewert ist die Position des naechsten Zeichens.
 */
 static char *
 AutolocatorInit(DOCUMENT *doc)
 {
 	char *ptr;
-	/*	Noch kein Speicher fr Autolocator alloziert?	*/
+	/*	Noch kein Speicher fuer Autolocator alloziert?	*/
 	if(!doc->autolocator)
 	{
 		ptr = (char *)Malloc(AUTOLOC_SIZE);
@@ -92,12 +92,10 @@ AutolocatorUpdate(DOCUMENT *doc, long start_line)
 
 	win->toolbar[TO_STRNOTFOUND].ob_flags |= OF_HIDETREE;
 
-/* [GS] 0.35.2a Start: */
-	if ( tbar.g_w > 472 )				/* Box verger damit kein hlicher Streifen bleibt */
+	if ( tbar.g_w > 472 )				/* Box vergroessern damit kein haesslicher Streifen bleibt */
 		win->toolbar[TO_SEARCHBOX].ob_width = tbar.g_w; 
 	else
 		win->toolbar[TO_SEARCHBOX].ob_width = 472;		/* Standardwert aus Resource setzen */
-/* Ende */
 
 	wind_update(BEG_UPDATE);
 	objc_draw_grect(win->toolbar, TO_BACKGRND, MAX_DEPTH, &tbar);
@@ -131,7 +129,7 @@ AutolocatorUpdate(DOCUMENT *doc, long start_line)
 	}
 }
 
-/*	Fgt dem Autolocator ein neues Zeichen ein und aktiviert die Suche */
+/*	Fuegt dem Autolocator ein neues Zeichen ein und aktiviert die Suche */
 short AutolocatorKey(DOCUMENT *doc, short kbstate, short ascii)
 {
 	WINDOW_DATA *win = Win;
@@ -199,7 +197,7 @@ short AutolocatorKey(DOCUMENT *doc, short kbstate, short ascii)
 	return TRUE;
 }
 
-/* Fgt den Inhalt des Clipboards im Autolocator ein. */
+/* Fuegt den Inhalt des Clipboards im Autolocator ein. */
 void AutoLocatorPaste(DOCUMENT *doc)
 {
 	WINDOW_DATA *win = Win;

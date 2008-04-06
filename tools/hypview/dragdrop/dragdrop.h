@@ -42,13 +42,13 @@
 #define	DD_TIMEOUT	4000				/* Timeout in ms */
 
 #define	DD_NUMEXTS	8				/* Anzahl der Formate */
-#define	DD_EXTSIZE	32				/* Lnge des Formatfelds */
+#define	DD_EXTSIZE	32				/* Laenge des Formatfelds */
 
 
 #define	DD_FNAME	"u:\\pipe\\dragdrop.aa"
-#define	DD_NAMEMAX	128				/* maximale Lnge eines Formatnamens */
-#define	DD_HDRMIN	9				/* minmale Lnge des Drag&Drop-Headers */
-#define	DD_HDRMAX	( 8 + DD_NAMEMAX )		/* maximale Lnge des Drag&Drop-Headers */
+#define	DD_NAMEMAX	128				/* maximale Laenge eines Formatnamens */
+#define	DD_HDRMIN	9				/* minmale Laenge des Drag&Drop-Headers */
+#define	DD_HDRMAX	( 8 + DD_NAMEMAX )		/* maximale Laenge des Drag&Drop-Headers */
 
 short	ddcreate( short	app_id, short rcvr_id, short window, short mx, short my, short kbstate, unsigned long format[8], void **oldpipesig );
 short	ddstry( short handle, unsigned long format, char *name, long size );

@@ -184,7 +184,7 @@ void DoMessage(EVNT *event)
 #endif
 #if USE_AV_PROTOCOL != NO
 	#if USE_AV_PROTOCOL >= 2
-		case VA_PROTOSTATUS:			/*	Server besttigt Anmeldung	*/
+		case VA_PROTOSTATUS:			/*	Server bestaetigt Anmeldung	*/
 			DoVA_PROTOSTATUS(event->msg);
 			break;
 	#endif

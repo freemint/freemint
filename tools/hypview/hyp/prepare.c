@@ -103,7 +103,7 @@ mono_bitmap(void *src, void *dst, long planesize, short color)
  ; void mono_bitmap(void *src,void *dst,long planesize,int color);
  ; A0 - A3 Pointer auf 1. bis 4. Plane
  ; A4 - Pointer auf Zielbereich
- ; A5 - Endadresse fr Plane 1
+ ; A5 - Endadresse fuer Plane 1
  ; D0 - D3 entsprechendes Wort aus entsprechender Plane
  ; D4 Pixelcounter
  ; D5 Pixelwert
@@ -202,20 +202,11 @@ TrueColors(MFDB *src, MFDB *dst, short planes)
 		
 		pxy[0] = 0;
 		pxy[1] = 0;
-/* [GS] 0.34 Start */
 		pxy[4] = 0;
 		pxy[5] = 0;
 
 		pxy[2] = pxy[6] = dst->fd_w - 1;
 		pxy[3] = pxy[7] = dst->fd_h - 1;
-/* Ende; alt
-		pxy[2]=dst->fd_w-1;
-		pxy[3]=dst->fd_h-1;
-		pxy[4]=pxy[0];
-		pxy[5]=pxy[1];
-		pxy[6]=pxy[4]+pxy[2];
-		pxy[7]=pxy[5]+pxy[3];
-*/
 	
 		mono_bitmap(src->fd_addr, mono_plane, plane_size, 15);
 		vrt_cpyfm(vdi_handle,MD_REPLACE,pxy,&mono,dst,colors);
@@ -236,20 +227,11 @@ TrueColors(MFDB *src, MFDB *dst, short planes)
 		pxy[0] = 0;
 		pxy[1] = 0;
 
-/* [GS] 0.34 Start */
 		pxy[4] = 0;
 		pxy[5] = 0;
 
 		pxy[2] = pxy[6] = dst->fd_w - 1;
 		pxy[3] = pxy[7] = dst->fd_h - 1;
-/* Ende; alt
-		pxy[2]=dst->fd_w-1;
-		pxy[3]=dst->fd_h-1;
-		pxy[4]=pxy[0];
-		pxy[5]=pxy[1];
-		pxy[6]=pxy[4]+pxy[2];
-		pxy[7]=pxy[5]+pxy[3];
-*/
 		vrt_cpyfm(vdi_handle,MD_REPLACE,pxy,src,dst,colors);
 	}
 }
@@ -275,7 +257,7 @@ LoadPicture(HYP_DOCUMENT *hyp_doc, short num)
 	line_size = ((hyp_pic.width + 15) / 16) * 2;
 	plane_size = line_size*(long)hyp_pic.height;
 
-	/*	Volle Lnge der Daten ermitteln	*/
+	/*	Volle Laenge der Daten ermitteln	*/
 	size = GetDataSize(hyp_doc, num);
 	if(size != plane_size * hyp_pic.planes + sizeof(HYP_PICTURE))
 	{
@@ -326,7 +308,7 @@ LoadPicture(HYP_DOCUMENT *hyp_doc, short num)
 			src = (char *)((long)pic_start + plane_size);
 
 		GetEntryBytes(hyp_doc, num, data, src, size);
-		src += sizeof(HYP_PICTURE);				/*	HYP_PICTURE-Header berspringen	*/
+		src += sizeof(HYP_PICTURE);				/*	HYP_PICTURE-Header ueberspringen	*/
 
 		pic->number = num;
 
@@ -388,21 +370,11 @@ LoadPicture(HYP_DOCUMENT *hyp_doc, short num)
 	
 					pxy[0] = 0;
 					pxy[1] = 0;
-/* [GS] 0.34 Start */
 					pxy[4] = 0;
 					pxy[5] = 0;
 
 					pxy[2] = pxy[6] = pic->mfdb.fd_w - 1;
 					pxy[3] = pxy[7] = pic->mfdb.fd_h - 1;
-/* Ende; alt:
-					pxy[2]=pic->mfdb.fd_w-1;
-					pxy[3]=pic->mfdb.fd_h-1;
-
-					pxy[4]=pxy[0];
-					pxy[5]=pxy[1];
-					pxy[6]=pxy[4]+pxy[2];
-					pxy[7]=pxy[5]+pxy[3];
-*/
 	
 					/*	Farbige Pixel extrahieren...	*/
 					for (i =0 ; i < plane_size; i++)
@@ -722,30 +694,30 @@ PrepareNode(HYP_DOCUMENT *hyp, LOADED_NODE *node)
 			switch (*src)
 			{
 				case WINDOWTITLE:
-					src++;					/*	Nummer berspringen	*/
+					src++;					/*	Nummer ueberspringen	*/
 					node->window_title = src;	/*	Fenstertitel merken	*/
-					src += strlen(src) + 1;	/*	Daten berspringen	*/
-			/*****	Abfrage ob ungerade Adresse ntig???	******/
+					src += strlen(src) + 1;	/*	Daten ueberspringen	*/
+			/*****	Abfrage ob ungerade Adresse noetig???	******/
 					break;
-				case EXTERNAL_REFS:		/*	bis zu 12 Querverweis-Datenblcke	*/
+				case EXTERNAL_REFS:		/*	bis zu 12 Querverweis-Datenbloecke	*/
 				{
 /*					short node = DEC_255(&src[2]);
 					printf("ext REF: Text <%s> ",src+4);
 					printf("Node %lx <%s>, ",hyp->indextable[node],&hyp->indextable[node]->name);
 */
-					src += src[1] - 1;			/*	Daten berspringen	*/
+					src += src[1] - 1;			/*	Daten ueberspringen	*/
 					break;
 				}
-				case 40:						/*	weitere Datenblcke	*/
-				case 41:						/*	weitere Datenblcke	*/
-				case 42:						/*	weitere Datenblcke	*/
-				case 43:						/*	weitere Datenblcke	*/
-				case 44:						/*	weitere Datenblcke	*/
-				case 45:						/*	weitere Datenblcke	*/
-				case 46:						/*	weitere Datenblcke	*/
-				case 47:						/*	weitere Datenblcke	*/
+				case 40:						/*	weitere Datenbloecke	*/
+				case 41:						/*	weitere Datenbloecke	*/
+				case 42:						/*	weitere Datenbloecke	*/
+				case 43:						/*	weitere Datenbloecke	*/
+				case 44:						/*	weitere Datenbloecke	*/
+				case 45:						/*	weitere Datenbloecke	*/
+				case 46:						/*	weitere Datenbloecke	*/
+				case 47:						/*	weitere Datenbloecke	*/
 					DIAG(("tag %d, size %d", *src, src[1]));
-					src += src[1] - 1;			/*	Daten berspringen	*/
+					src += src[1] - 1;			/*	Daten ueberspringen	*/
 					break;				
 				case OBJTABLE:				/*	Tabelle mit Objekten und Seiten	*/
 				{
@@ -933,7 +905,7 @@ PrepareNode(HYP_DOCUMENT *hyp, LOADED_NODE *node)
 	/*	Beginn der ersten Zeile merken	*/	
 	line_start = src;
 
-	/*	Anzahl Zeilen Anhand der Nullbytes zhlen	*/
+	/*	Anzahl Zeilen Anhand der Nullbytes zaehlen	*/
 	while (src < end)
 	{
 		if (!*src++)		/*	Nullbyte? => Zeilenende	*/
@@ -943,7 +915,7 @@ PrepareNode(HYP_DOCUMENT *hyp, LOADED_NODE *node)
 
 	node->lines = max(p.line, p.min_lines);
 	
-	/*	Speicher fr die Zeilenanfang-Tabelle anlegen	*/
+	/*	Speicher fuer die Zeilenanfang-Tabelle anlegen	*/
 	p.line_ptr = (LINEPTR *)Malloc(sizeof(LINEPTR) * node->lines);
 	
 	if (!(node->line_ptr = p.line_ptr))
@@ -955,7 +927,7 @@ PrepareNode(HYP_DOCUMENT *hyp, LOADED_NODE *node)
 	/*	Tabelle leeren	*/
 	memset(p.line_ptr, 0, sizeof(LINEPTR) * node->lines);
 	
-	/*	<src> auf den Anfang der Textdaten zurcksetzen	*/
+	/*	<src> auf den Anfang der Textdaten zuruecksetzen	*/
 	src = line_start;
 
 	p.line = 0;
@@ -983,19 +955,19 @@ PrepareNode(HYP_DOCUMENT *hyp, LOADED_NODE *node)
 
 			if (src && *src == 27)					/*	ESC-Codes	*/
 			{
-				src++;					/*	ESC berspringen	*/
+				src++;					/*	ESC ueberspringen	*/
 
 				*dst = 0;				/*	Pufferende schreiben	*/
-				dst = line_buffer;			/*	... und zurcksetzen	*/
+				dst = line_buffer;			/*	... und zuruecksetzen	*/
 	
-				/*	Zeilenpuffer enthlt Daten?	*/
+				/*	Zeilenpuffer enthaelt Daten?	*/
 				if (*line_buffer)
 				{
 					vqt_extent(vdi_handle,line_buffer,ext);
 					x += (ext[2] + ext[4]) >> 1;
 				}
 	
-				switch (*src)				/*	Was fr ein Code?	*/
+				switch (*src)				/*	Was fuer ein Code?	*/
 				{
 					case 27:			/*	ESC Zeichen	*/
 						*dst++=27;
@@ -1007,13 +979,13 @@ PrepareNode(HYP_DOCUMENT *hyp, LOADED_NODE *node)
 					case ALINK:
 					{
 						unsigned short dest_page;
-						if(*src & 1)		/*	Zeilennummer berspringen	*/
+						if(*src & 1)		/*	Zeilennummer ueberspringen	*/
 							src += 2;
 	
 						dest_page = DEC_255(&src[1]);
 						src += 3;
 	
-						/*	Verknpfungstext ermitteln	*/
+						/*	Verknuepfungstext ermitteln	*/
 						if(*src == 32)
 							dst = &hyp->indextable[dest_page]->name;
 						else
@@ -1023,7 +995,7 @@ PrepareNode(HYP_DOCUMENT *hyp, LOADED_NODE *node)
 							src += (*(unsigned char *)src) - 32 ;
 						}
 	
-						/*	Verknpfungstext mit entsprechendem Texteffekt ausgeben	*/
+						/*	Verknuepfungstext mit entsprechendem Texteffekt ausgeben	*/
 						vst_effects(vdi_handle,link_effect);
 	
 						vqt_extent(vdi_handle, dst, ext);
@@ -1065,7 +1037,7 @@ PrepareNode(HYP_DOCUMENT *hyp, LOADED_NODE *node)
 				{
 					*dst = 0;					/*	Pufferende schreiben	*/
 					dst = line_buffer;
-				}				/*	... und zurcksetzen	*/
+				}				/*	... und zuruecksetzen	*/
 				if (!src || src == line_start)
 				{
 					DIAG((" -- EMPTY "));

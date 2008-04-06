@@ -83,14 +83,14 @@ HypGetTextLine(HYP_DOCUMENT *hyp, long line, char *dst)
 				{
 					unsigned short i;			/*	Index auf die Zielseite	*/
 
-					if (*src & 1)			/*	Zeilennummer berspringen	*/
+					if (*src & 1)			/*	Zeilennummer ueberspringen	*/
 						src += 2;
 
 					i = DEC_255(&src[1]);
 					src += 3;
 
 
-					/*	Verknpfungstext ermitteln und ausgeben	*/
+					/*	Verknuepfungstext ermitteln und ausgeben	*/
 					if(*src == 32)		/*	Kein Text angegeben	*/
 					{
 						strcpy(dst, &hyp->indextable[i]->name);

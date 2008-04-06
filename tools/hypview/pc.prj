@@ -29,8 +29,8 @@ hyp\hyp.c			(hyp.h)		[-P]
 hyp\ref.c			(hyp.h)		[-P]
 hyp\load.c			(hyp.h)		[-P]
 hyp\lh5d.c		
-hyp\prepare.c		(hyp.h)		[-P]  ; [GS] 0.35.2a
-hyp\display.c		(hyp.h)		[-P]  ; [GS] 0.35.2a
+hyp\prepare.c		(hyp.h)		[-P]
+hyp\display.c		(hyp.h)		[-P]
 hyp\gfx.s			
 hyp\click.c		(hyp.h)		[-P]
 hyp\autoloc.c	(hyp.h)
@@ -43,12 +43,12 @@ hyp\block.c		(hyp.h)
 hyp\ext_refs.c	(hyp.h)		[-P]
 hyp\search.c		(hyp.h)	[-P]
 
-DL_USER.C	(DIALLIB.H)		[-P]  ; [GS] 0.35.2a ;	Wichtige User-Routinen
+DL_USER.C	(DIALLIB.H)		[-P]  ;	Wichtige User-Routinen
 DL_INIT.C	(DIALLIB.H)		;	Sehr wichtig
 DL_EVENT.C	(DIALLIB.H)		;	Sehr wichtig
 DL_ITEMS.C	(DIALLIB.H)		;	Sehr wichtig
 ;DL_MENU.C	(DIALLIB.H)		;	fÅr Menu-Steuerung nîtig
-DL_DIAL.C	(DIALLIB.H)		;	fÅr Dialoge nîtig [GS] 0.35.2a
+DL_DIAL.C	(DIALLIB.H)		;	fÅr Dialoge nîtig
 DL_WIN.C	(DIALLIB.H)		;	fÅr Fenster nîtig
 DL_FILSL.C	(DIALLIB.H)		;	fÅr Dateiauswahl im Fenster nîtig
 ;DL_FONSL.C	(DIALLIB.H)		;	fÅr Zeichensatzauswahl im Fenster nîtig
