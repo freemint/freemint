@@ -12,6 +12,7 @@
 #define AV_GETSTATUS      0x4703
 #define AV_STATUS         0x4704
 #define VA_SETSTATUS      0x4705
+#define AV_SENDCLICK      0x4709
 #define	AV_SENDKEY        0x4710
 #define VA_START          0x4711
 #define AV_ASKFILEFONT    0x4712
@@ -70,5 +71,7 @@
 #define VA_OB_FOLDER    5
 #define VA_OB_DRIVE     6
 #define VA_OB_WINDOW    7
+#define VA_OB_NOTEPAD   8
+#define VA_OB_NOTE      9
 
 #endif
