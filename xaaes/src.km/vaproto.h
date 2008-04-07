@@ -44,6 +44,7 @@ enum av_va
 	AV_GETSTATUS      = 0x4703,
 	AV_STATUS         = 0x4704,
 	VA_SETSTATUS      = 0x4705,
+	AV_SENDCLICK      = 0x4709,
 	AV_SENDKEY        = 0x4710,
 	VA_START          = 0x4711,
 	AV_ASKFILEFONT    = 0x4712,
@@ -101,7 +102,9 @@ enum
 	VA_OB_FILE,
 	VA_OB_FOLDER,
 	VA_OB_DRIVE,
-	VA_OB_WINDOW
+	VA_OB_WINDOW,
+	VA_OB_NOTEPAD,
+	VA_OB_NOTE
 };
 
 enum av_va_give
@@ -137,7 +140,9 @@ enum av_va_have
 	AA_COPY		= 0x0001,
 	AA_DELETE	= 0x0002,
 	AA_VIEW		= 0x0004,
-	AA_SETWINDPOS	= 0x0008
+	AA_SETWINDPOS	= 0x0008,
+	AA_LINK_AV_COPYFILE = 0x0010,
+	AA_AV_SENDCLICK = 0x0020
 };
 
 /* macros for quotation test */
