@@ -52,6 +52,7 @@
  *                Bit 2:  AV_VIEW, VA_VIEWED
  *                Bit 3:  AV_SETWINDPOS
  *                Bit 4:  erlaubt Anlegen symbolischer Links mit AV_COPYFILE
+ *                Bit 5:  AV_SENDCLICK
  * msg[5]   = 0 (reserviert)
  * msg[6/7] = Pointer auf den Programmnamen, wie er bei appl_find benutzt
  *            werden muss; also 8 Zeichen lang und nullterminiert. Wer auf der
@@ -83,6 +84,12 @@
  *            kein Status gespeichert.
  */
 #define VA_SETSTATUS 0x4705
+
+/*
+ * AV_SENDCLICK
+ */
+
+#define AV_SENDCLICK 0x4709
 
 
 /*
