@@ -273,7 +273,7 @@ init (struct kerinfo *k)
 	raw_dev_descriptor.dinfo = 0;
 	
 	// install it
-	if (d_cntl (DEV_INSTALL2, "dummy", (long) &raw_dev_descriptor) >= 0)
+	if (d_cntl (DEV_INSTALL2, "u:\\dev\\dummy", (long) &raw_dev_descriptor) >= 0)
 		DEBUG (("%s: %s installed with BIOS remap", __FILE__, "dummy"));
 	
 	
