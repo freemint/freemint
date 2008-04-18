@@ -1,4 +1,4 @@
- /*  Resource C-Header-File v1.95 fr ResourceMaster ab v2.06 by ARDISOFT  */
+ /*  Resource C-Header-File v1.95 fÅr ResourceMaster ab v2.06 by ARDISOFT  */
 
 #define DIAL_LIBRARY 0  /* form/dial */
 #define DI_ICON 1  /* CICON in tree DIAL_LIBRARY */
@@ -80,6 +80,15 @@
 #define SR_FSTL_8 14  /* TEXT in tree SEARCH_RESULT */
 #define SR_FSTL_9 15  /* TEXT in tree SEARCH_RESULT */
 #define SR_ABORT 16  /* BUTTON in tree SEARCH_RESULT */
+
+#define HYPFIND 6  /* form/dial */
+#define HYPFIND_STRING 2  /* FTEXT in tree HYPFIND */
+#define HYPFIND_TEXT 3  /* BUTTON in tree HYPFIND */
+#define HYPFIND_PAGES 4  /* BUTTON in tree HYPFIND */
+#define HYPFIND_REF 5  /* BUTTON in tree HYPFIND */
+#define HYPFIND_ABORT 6  /* BUTTON in tree HYPFIND */
+#define HYPFIND_ALL_PAGE 7  /* BUTTON in tree HYPFIND */
+#define HYPFIND_ALL_HYP 8  /* BUTTON in tree HYPFIND */
 
 #define WARN_FEXIST 0  /* Alert string */
 

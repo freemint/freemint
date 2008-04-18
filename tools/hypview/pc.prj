@@ -42,6 +42,7 @@ hyp\cursor.c		(hyp.h)
 hyp\block.c		(hyp.h)
 hyp\ext_refs.c	(hyp.h)		[-P]
 hyp\search.c		(hyp.h)	[-P]
+hyp\search_d.c		(hyp.h)	[-P]
 
 DL_USER.C	(DIALLIB.H)		[-P]  ;	Wichtige User-Routinen
 DL_INIT.C	(DIALLIB.H)		;	Sehr wichtig
