@@ -399,6 +399,8 @@ HelpWindow(WINDOW_DATA *p, short obj, void *data)
 				BlockCopy(doc);
 			else if(ascii=='I')
 				ProgrammInfos( doc );
+			else if(ascii=='F')
+				Hypfind( doc );
 			else if(ascii=='O')
 				ToolbarClick(doc,TO_LOAD);
 			else if(ascii=='V') {

@@ -2,28 +2,28 @@ HypView
 =======
 -Tabulatorweite fuer Text-Dateien einstellbar
  * TABSIZE
-    enthlt die gewuenschte Tabulatorweite. Ist diese Variable nicht
+    enthaelt die gewuenschte Tabulatorweite. Ist diese Variable nicht
     vorhanden, so wird der Wert 8 verwendet. (hcp, ST-Guide)
 
--Zeichensatztabellen fuer Text-Dateien untersttzen (ISO Latin, PC, ...)
+-Zeichensatztabellen fuer Text-Dateien unterstuetzen (ISO Latin, PC, ...)
  via KeyTab oder so 
 
 -Fehlermeldung falls keine weiteren Fenster mehr vorhanden.
 
-+Window-Cycling selber machen, falls AV-Server das nicht bernimmt.
++Window-Cycling selber machen, falls AV-Server das nicht uebernimmt.
 
--ST-Guide kann bei Verwendung eines Fonts mit kleineren Ausmaen als denen 
- des Standard-Systemfonts, unter bestimmten Umstnden Texte so plazieren, 
- da Text und Grafik sich nicht berschneiden. Angenommen auf einer
+-ST-Guide kann bei Verwendung eines Fonts mit kleineren Ausmassen als denen 
+ des Standard-Systemfonts, unter bestimmten Umstaenden Texte so plazieren, 
+ da Text und Grafik sich nicht ueberschneiden. Angenommen auf einer
  Hypertextseite soll zuerst ein Bild und darunter Text erscheinen.
  Damit jetzt bei Verwendung von @image plus Leerzeilen - anstelle von
  @limage (dieser Befehl setzt ja automatisch Text unter die Grafik) -
- der Text unabhngig von der Hhe des Fonts immer unterhalb des Bildes
+ der Text unabhaengig von der Hoehe des Fonts immer unterhalb des Bildes
  erscheint, benutzt ST-Guide an der Stelle, wo die Grafik erscheint,
- Leerzeilen mit der Hhe des Standard-Systemfonts.
+ Leerzeilen mit der Hoehe des Standard-Systemfonts.
 
 -Intelligenter "Fuller" berarbeiten: die linke obere Ecke des Fensters
- sollte nur wenn absolut ntig verndert (=das Fenster verschoben) werden.
+ sollte nur wenn absolut noetig veraendert (=das Fenster verschoben) werden.
  Falls das vergroesserte Fenster platz auf dem Bildschirm hat, bleibt die
  Ecke unveraendert.
 
@@ -63,8 +63,6 @@ HypView
    mglich sind, und b) werden Rechtsklicks von den verschiedenen TOS-
    Versionen unterschiedlich behandelt (Quelle: Martin "WINX" Osieka)
 
-+ ALT-D - DEFHYP laden
-
 - ALT-R - Remarker oeffnen, falls dieser laeuft oder die Variable REMARKER
           definiert ist
 
@@ -74,7 +72,7 @@ HypView
 - Ctrl-F - Pattern suchen (wie Extra -> Suchen)
   Bei Auswahl dieser Funktion (auch aktivierbar durch  Control - F )
   erscheint ein Dialog, in dem ein Suchbegriff eingegeben werden kann.
-  Folgende Knpfe stehen zur Auswahl:
+  Folgende Knoepfe stehen zur Auswahl:
      Im Text   Als Seite   Als REFerenz   Abbruch
      In allen Seiten      ... aller Hypertexte
 
