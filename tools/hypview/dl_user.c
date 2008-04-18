@@ -171,6 +171,12 @@ void DoUserEvents(EVNT *event)
 
 			}
 		}
+		else if(event->msg[0]==CH_EXIT)
+		{
+			HypfindFinsih ( event->msg[3], event->msg[4] );
+			event->mwhich&=~MU_MESAG;
+		}
+
 	}
 	else if(event->mwhich & MU_KEYBD)
 	{
