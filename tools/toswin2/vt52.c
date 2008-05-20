@@ -170,7 +170,7 @@ static void putesc(TEXTWIN *v, unsigned int c)
 #ifdef DEBUG
 			if (do_debug) syslog (LOG_ERR, "is rmacs");
 #endif
-			v->curr_cattr = v->curr_tflags & ~TCHARSET_MASK;
+			v->curr_tflags = v->curr_tflags & ~TCHARSET_MASK;
 			break;
 
 		case 'E':		/* clear home */
