@@ -174,10 +174,8 @@ anything else.
  functions. Currently defined is;
  
  ap_gout1:
-    bit 0 - AGI_APPL_OPTIONS
-            If set, appl_options() exists.
 
-    bit 1 - AGI_WFORM
+    bit 0 - AGI_WFORM
             If set, the following MagiC 5.10 introduced functions
             exists;
                  objc_wdraw()
@@ -187,7 +185,10 @@ anything else.
                  form_wbutton()
                  form_wkeybd()
 
-            bits 2 - 15 Not yet defined, always reads 0.
+    bit 1 - AGI_AOPTS
+            If set, appl_options() exists.
+
+    bits 2 - 15 Not yet defined, always reads 0.
 
  ap_gout2, ap_gout3 and ap_gout4:
     Not yet defined, all bits reads 0
