@@ -778,7 +778,7 @@ relpath2cookie(struct proc *p, fcookie *relto, const char *path, char *lastname,
 	 * maybe "/home/ftp" then we should interpret the same filename
 	 * now as "/home/ftp/c:/auto".
 	 */
-	if (path[1] == ':' && !cwd->root_dir)
+	if (path[2] != ':' && path[1] == ':' && !cwd->root_dir)
 	{
 		char c = tolower ((int)path[0] & 0xff);
 
