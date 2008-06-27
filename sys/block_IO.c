@@ -1215,10 +1215,10 @@ bio_unit_get (DI *di, ulong sector, ulong size, long *err)
 
 	/* sector validation */
 	{
-		ulong n = size >> di->pshift;
+		ulong n1 = size >> di->pshift;
 		ulong recno = sector << di->lshift;
 
-		if (!n)
+		if (!n1)
 		{
 			BIO_ALERT (("block_IO [%c]: bio_unit_get n = 0 failure!", di->drv+'A'));
 
@@ -1226,7 +1226,7 @@ bio_unit_get (DI *di, ulong sector, ulong size, long *err)
 			return NULL;
 		}
 
-		if (di->size && (recno + n) > di->size)
+		if (di->size && (recno + n1) > di->size)
 		{
 			BIO_ALERT (("block_IO [%c]: bio_unit_get: access outside partition", di->drv+'A'));
 
@@ -1501,7 +1501,7 @@ bio_set_cache_size (long size)
 	else
 	{
 		unsigned char *c = (unsigned char *) (blocks + cache.count + count);
-		long i;
+		ulong i;
 		for (i = 0; i < cache.count + count; i++)
 		{
 			if (i < cache.count)
@@ -1516,7 +1516,7 @@ bio_set_cache_size (long size)
 
 				/* initialize block */
 				{
-					long j;
+					ulong j;
 					for (j = 0; j < cache.chunks; j++)
 					{
 						(blocks [i]).active [j] = (cache.blocks [i]).active [j];
@@ -1541,7 +1541,7 @@ bio_set_cache_size (long size)
 
 				/* initialize block */
 				{
-					long j;
+					ulong j;
 					for (j = 0; j < cache.chunks; j++)
 					{
 						(blocks [i]).active [j] = NULL;
@@ -1582,7 +1582,7 @@ bio_set_percentage (long percentage)
 	if (percentage < 0)
 		return (cache.percentage / (cache.count * cache.max_size));
 
-	if (percentage > 100UL)
+	if (percentage > 100L)
 		return EBADARG;
 
 	cache.percentage = cache.count * cache.max_size * percentage;
@@ -1753,8 +1753,10 @@ bio_get_di (ushort drv)
 
 		if (r == E_OK)
 		{
-			r = XHInqTarget2 (di->major, di->minor, &pssize, &flags, name, sizeof(name));
-			if (r) BIO_DEBUG (("bio_get_di: XHInqTarget2(%i,%i) failed (%li)", di->major, di->minor, r));
+			r = XHInqTarget2 (di->major, di->minor, &pssize, &flags, name, (ushort)sizeof(name));
+			if (r) {
+				BIO_DEBUG (("bio_get_di: XHInqTarget2(%i,%i) failed (%li)", di->major, di->minor, r));
+			}
 		}
 
 		if ((r == E_OK) && (di->start != 0xffffffffUL))
@@ -2238,7 +2240,7 @@ bio_large_write (DI *di, ulong sector, ulong size, const void *buf)
 {
 	register UNIT **table = di->table;
 	register ulong end = sector + (size >> di->p_l_shift);
-	register long i;
+	register ulong i;
 
 	BIO_DEBUG (("bio_large_write: entry (sector = %lu, drv = %u, size = %lu", sector, di->drv, size));
 
@@ -2496,7 +2498,7 @@ bio_invalidate (DI *di)
 	/* invalid all cache units for drv */
 
 	register UNIT **table = di->table;
-	register long i;
+	register ulong i;
 
 	BIO_DEBUG (("bio_invalidate: entry (di->drv = %i)", di->drv));
 	BIO_ASSERT ((table));
@@ -2714,12 +2716,12 @@ bio_dump_cache (void)
 	if (!ret)
 	{
 		CBL *b = cache.blocks;
-		long i;
+		ulong i;
 
 		for (i = 0; i < NUM_DRIVES; i++)
 		{
 			register UNIT **table = bio_di [i].table;
-			register long j;
+			register ulong j;
 
 			if (table)
 			{
@@ -2746,7 +2748,7 @@ bio_dump_cache (void)
 		(*fp->dev->write)(fp, buf, strlen (buf));
 		for (i = 0; i < cache.count; i++)
 		{
-			long j;
+			ulong j;
 			ksprintf (buf, buflen, "buffer = %lx, buffer->stat = %lu, lock = %u, free = %u\r\n", b[i].data, b[i].stat, b[i].lock, b[i].free);
 			(*fp->dev->write)(fp, buf, strlen (buf));
 			for (j = 0; j < cache.chunks; j++)

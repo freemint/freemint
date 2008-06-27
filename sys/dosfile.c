@@ -50,7 +50,7 @@ sys_f_open (const char *name, short mode)
 	struct proc *p = get_curproc();
 	FILEPTR *fp = NULL;
 	short fd = MIN_OPEN - 1;
-	int global = 0;
+	int _global = 0;
 	long ret;
 
 	TRACE (("Fopen(%s, %x)", name, mode));
@@ -74,7 +74,7 @@ sys_f_open (const char *name, short mode)
 		ALERT (MSG_global_handle, name);
 
 		p = rootproc;
-		global = 1;
+		_global = 1;
 	}
 # endif
 
@@ -102,7 +102,7 @@ sys_f_open (const char *name, short mode)
 	FP_DONE (p, fp, fd, FD_CLOEXEC);
 
 # if O_GLOBAL
-	if (global)
+	if (_global)
 		/* we just opened a global handle */
 		fd += 100;
 # endif
@@ -480,7 +480,7 @@ sys__ffstat_1_12 (struct file *f, XATTR *xattr)
 # ifdef OLDSOCKDEVEMU
 	if (f->dev == &sockdev || f->dev == &sockdevemu)
 # else
-	if (f->dev == &sockdev
+	if (f->dev == &sockdev)
 # endif
 		return so_fstat_old (f, xattr);
 
@@ -512,7 +512,7 @@ sys__ffstat_1_16 (struct file *f, struct stat *st)
 # ifdef OLDSOCKDEVEMU
 	if (f->dev == &sockdev || f->dev == &sockdevemu)
 # else
-	if (f->dev == &sockdev
+	if (f->dev == &sockdev)
 # endif
 		return so_fstat (f, st);
 
@@ -1209,7 +1209,7 @@ sys_f_seek64 (llong place, short fd, short how, llong *newpos)
 /*
  * GEMDOS extension: Fpoll (fds, nfds, timeout)
  *
- * - new Fselect() call for more than 32 filedeskriptors
+ * - new Fselect() call for more than 32 filedescriptors
  * - at the moment only a wrapper around Fselect()
  */
 
@@ -1330,7 +1330,7 @@ sys_fwritev (short fd, const struct iovec *iov, long niov)
 	}
 
 	{
-		char *p, *_p;
+		char *pt, *_p;
 		long size;
 		int i;
 
@@ -1341,13 +1341,13 @@ sys_fwritev (short fd, const struct iovec *iov, long niov)
 		/* if (size == 0)
 			return 0; */
 
-		p = _p = kmalloc (size);
-		if (!p) return ENOMEM;
+		pt = _p = kmalloc (size);
+		if (!pt) return ENOMEM;
 
 		for (i = 0; i < niov; ++i)
 		{
-			memcpy (p, iov[i].iov_base, iov[i].iov_len);
-			p += iov[i].iov_len;
+			memcpy (pt, iov[i].iov_base, iov[i].iov_len);
+			pt += iov[i].iov_len;
 		}
 
 		if (is_terminal (f))
@@ -1386,7 +1386,7 @@ sys_freadv (short fd, const struct iovec *iov, long niov)
 # ifdef OLDSOCKDEVEMU
 	if (f->dev == &sockdev || f->dev == &sockdevemu)
 # else
-	if (f->dev == &sockdev
+	if (f->dev == &sockdev)
 # endif
 	{
 		struct socket *so = (struct socket *) f->devinfo;
@@ -1395,7 +1395,7 @@ sys_freadv (short fd, const struct iovec *iov, long niov)
 	}
 
 	{
-		char *p, *_p;
+		char *pt, *_p;
 		long size;
 		int i;
 
@@ -1406,17 +1406,17 @@ sys_freadv (short fd, const struct iovec *iov, long niov)
 		/* if (size == 0)
 			return 0; */
 
-		p = _p = kmalloc (size);
-		if (!p) return ENOMEM;
+		pt = _p = kmalloc (size);
+		if (!pt) return ENOMEM;
 
 		if (is_terminal (f))
-			r = tty_read (f, p, size);
+			r = tty_read (f, pt, size);
 		else
-			r = xdd_read (f, p, size);
+			r = xdd_read (f, pt, size);
 
 		if (r <= 0)
 		{
-			kfree (p);
+			kfree (pt);
 			return r;
 		}
 
@@ -1425,9 +1425,9 @@ sys_freadv (short fd, const struct iovec *iov, long niov)
 			register long copy;
 
 			copy = size > iov[i].iov_len ? iov[i].iov_len : size;
-			memcpy (iov[i].iov_base, p, copy);
+			memcpy (iov[i].iov_base, pt, copy);
 
-			p += copy;
+			pt += copy;
 			size -= copy;
 		}
 
