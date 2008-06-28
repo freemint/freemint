@@ -322,7 +322,7 @@ sys_f_seek (long place, short fd, short how)
 	if (r) return r;
 
 	if (is_terminal (f))
-		return 0;
+		return ESPIPE;
 
 	return xdd_lseek (f, place, how);
 }
