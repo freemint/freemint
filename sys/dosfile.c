@@ -1084,6 +1084,12 @@ sys_f_fchown (short fd, short uid, short gid)
 		return ENOSYS;
 	}
 
+	if ((f->flags & O_RWMODE) == O_RDONLY)
+	{
+		DEBUG (("Ffchown: write on a read-only handle"));
+		return EPERM;
+	}
+
 	/* MiNT acts like _POSIX_CHOWN_RESTRICTED: a non-privileged process
 	 * can only change the ownership of a file that is owned by this
 	 * user, to the effective group id of the process or one of its
