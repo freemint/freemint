@@ -152,7 +152,7 @@ int main(int argc, char *argv[])
 		else
 		{
 			TEXTWIN	*t;
-			char filename[80] = "", *p, path[80] = "";
+			char filename[256] = "", *p, path[256] = "";
 			char *env, arg[125] = "";
 			int i;
 			WINCFG	*cfg;
