@@ -1,9 +1,11 @@
 
 #undef DEBUG_AV
-
+#include <support.h>
+#include <unistd.h>
 #include <osbind.h>
 
 #include "av.h"
+#include "environ.h"
 #include "toswin2.h"
 #include "proc.h"
 #include "drag.h"
@@ -133,6 +135,59 @@ debug("VA_START %s\n", p);
 #endif
 				if (strcmp(p, "-l") == 0)
 					new_shell();
+				else
+				{	char charsearch, *command=p, filename[256] = "", path[256] = "", *ptpath=path, *env, arg[125] = "";
+					int count=0;
+					WINCFG	*cfg;
+					TEXTWIN	*t;
+
+					if(*p=='\"') 
+					{
+						charsearch='"';
+						command++;
+					}
+					else charsearch=' ';
+					while((*command!=charsearch) && (*command!=0) && (count<255))
+					{
+						*ptpath++ = *command++;  /* copy name of tos application to launch */
+						count++;
+					}
+					*ptpath=0;
+					unx2dos(path, filename);
+					strcpy(path,filename);
+					ptpath = strrchr(path, '\\');
+					if (ptpath == NULL)
+						getcwd(path, (int)sizeof(path));
+					else
+					*ptpath = '\0';
+					cfg = get_wincfg(filename);
+					if(*command!=0) 
+					{
+						command++;
+						while(((*command==charsearch)||(*command==' ')) && (*command!=0)) /*search for start of arguments */
+						{
+							command++;
+						}
+						if(*command!=0) 
+						{
+							count=0;
+							p=arg;
+							*p++=' ';
+							while((*command!=charsearch) && (*command!=0) && (count<123))
+							{
+								*p++ =*command++;
+								count++;
+							}
+							*p=0;
+							arg[0] = strlen(arg);
+						}
+					}
+					env = normal_env(cfg->col, cfg->row, cfg->vt_mode);
+					t = new_proc(filename, arg, env, path, cfg, -1, NULL);
+					if (t)
+						open_window(t->win, cfg->iconified);
+					free(env);
+				}
 			}
 			send_avstarted(msg[1], msg[3], msg[4]);
 			break;
