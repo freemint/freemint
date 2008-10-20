@@ -37,6 +37,7 @@ struct dirstruct
 				/* NOTE: this must be at least 45 bytes */
 	DIR	*next;		/* linked together so we can close them
 				 * on process termination */
+	short	fd;		/* associated fd, for use with dirfd */
 };
 
 struct devdrv

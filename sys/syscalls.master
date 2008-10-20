@@ -518,9 +518,9 @@ opcode	class name	args */
 
 0x180	Fchown16	(const char *name, short uid, short gid,
 			 short follow) /* since 1.16 */
-0x181	undefined
-0x182	undefined
-0x183	undefined
+0x181	Fchdir		(short fd) /* since 1.17 */
+0x182	Ffdopendir	(short fd) /* since 1.17 */
+0x183	Fdirfd		(long handle) /* since 1.17 */
 0x184	undefined
 0x185	undefined
 0x186	undefined

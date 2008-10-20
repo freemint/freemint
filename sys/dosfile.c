@@ -248,6 +248,12 @@ sys_f_read (short fd, long count, char *buf)
 		return EACCES;
 	}
 
+	if (f->flags & O_DIRECTORY)
+	{
+		DEBUG (("Fread(%i): read on a directory", fd));
+		return EISDIR;
+	}
+
 	if (is_terminal (f))
 		return tty_read (f, buf, count);
 
@@ -1327,7 +1333,7 @@ sys_fwritev (short fd, const struct iovec *iov, long niov)
 # ifdef OLDSOCKDEVEMU
 	if (f->dev == &sockdev || f->dev == &sockdevemu)
 # else
-	if (f->dev == &sockdev
+	if (f->dev == &sockdev)
 # endif
 	{
 		struct socket *so = (struct socket *) f->devinfo;
