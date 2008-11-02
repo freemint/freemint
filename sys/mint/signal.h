@@ -87,7 +87,7 @@ struct sigaction
 
 # define SAUSER		(SA_NOCLDSTOP | SA_RESETHAND)	/* XXX signal flags which the process may set */
 # define SAPARENT	(0)		/* XXX signal flags which the parent (of ptraced) processes may set */
-# define SAKERNEL	(SA_RESET)	/* XXX kernel only flags */
+# define SAKERNEL	(0)	/* XXX kernel only flags */
 
 
 /* values for ss_flags */
