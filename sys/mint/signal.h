@@ -77,7 +77,7 @@ struct sigaction
 /* signal flags */
 # define SA_ONSTACK	0x2000		/* take signal on signal stack */
 # define SA_RESTART	0x4000		/* restart system on signal return */
-# define SA_RESET	0x8000		/* reset to SIG_DFL just before delivery */
+# define SA_RESETHAND	0x8000		/* reset to SIG_DFL just before delivery */
 # define SA_NODEFER	0x0010		/* don't mask the signal we're delivering */
 # define SA_SIGINFO	0x0040
 /* only valid for SIGCHLD */
@@ -85,7 +85,7 @@ struct sigaction
 # define SA_NOCLDWAIT	0x0002		/* do not generate zombies on unwaited child */
 # define SA_ALLBITS	0x007f
 
-# define SAUSER		(SA_NOCLDSTOP)	/* XXX signal flags which the process may set */
+# define SAUSER		(SA_NOCLDSTOP | SA_RESETHAND)	/* XXX signal flags which the process may set */
 # define SAPARENT	(0)		/* XXX signal flags which the parent (of ptraced) processes may set */
 # define SAKERNEL	(SA_RESET)	/* XXX kernel only flags */
 
