@@ -153,6 +153,8 @@ static volatile int in_use = 0;
 // If this variable equals 1, then the interrupt will do nothing until init is done (=0)
 static volatile int initializing = 1;
 
+static volatile int autoneg = 0;
+
 // Keep track of when sending so we don't get fooled by TXEMPTY
 static volatile int sending = 0;
 
@@ -724,56 +726,54 @@ driver_init (void)
 	ferror = Fopen("ethernat.inf",0);
 //	Cconws("Efter FOPEN\n\r");
 	if(ferror >= 0)
+	{
 		fhandle = (short)(ferror & 0xffff);
+		ferror = Fread(fhandle,12,macbuf);
+//		Cconws("Efter FREAD\n\r");
+		if(ferror < 0)
+		{
+			//ksprintf (message, "Error reading ethernat.inf!\n\r");
+			//Cconws (message);
+			Cconws ("Error reading ethernat.inf!\n\r");
+			Fclose(fhandle);
+			return -1;
+		}
+		if(ferror < 12)
+		{
+			//ksprintf (message, "ethernat.inf is less than 12 bytes long!\n\r");
+			//Cconws (message);
+			Cconws ("ethernat.inf is less than 12 bytes long!\n\r");
+			Fclose(fhandle);
+			return -1;
+		}
+		Fclose(fhandle);
+
+		//print what we read from ethernat.inf
+		Cconws (macbuf);
+		//ksprintf(message, "\n\r"); 
+		//Cconws(message);
+	}
 	else
 	{
 		//ksprintf (message, "Error opening ethernat.inf!\n\r");
 		//Cconws (message);
-		Cconws("Error opening ethernat.inf\n\r");
-		return -1;
+		Cconws("Could not open ethernat.inf\n\r");
+		Cconws("Using default ethernet address 01:02:03:04:05:06\n\r");
+		macbuf[0] = '0';
+		macbuf[1] = '1';
+		macbuf[2] = '0';
+		macbuf[3] = '2';
+		macbuf[4] = '0';
+		macbuf[5] = '3';
+		macbuf[6] = '0';
+		macbuf[7] = '4';
+		macbuf[8] = '0';
+		macbuf[9] = '5';
+		macbuf[10] = '0';
+		macbuf[11] = '6';
 	}
 
-	ferror = Fread(fhandle,12,macbuf);
-//	Cconws("Efter FREAD\n\r");
-	if(ferror < 0)
-	{
-		//ksprintf (message, "Error reading ethernat.inf!\n\r");
-		//Cconws (message);
-		Cconws ("Error reading ethernat.inf!\n\r");
-		Fclose(fhandle);
-		return -1;
-	}
-	if(ferror < 12)
-	{
-		//ksprintf (message, "ethernat.inf is less than 12 bytes long!\n\r");
-		//Cconws (message);
-		Cconws ("ethernat.inf is less than 12 bytes long!\n\r");
-		Fclose(fhandle);
-		return -1;
-	}
-
-	/*
-	 * NETINFO->fname is a pointer to the drivers file name
-	 * (without leading path), eg. "dummy.xif".
-	 * NOTE: the file name will be overwritten when you leave the
-	 * init function. So if you need it later make a copy!
-	 */
-/*
-	if (NETINFO->fname)
-	{
-		strncpy (eth_fname, NETINFO->fname, sizeof (eth_fname));
-		eth_fname[sizeof (eth_fname) - 1] = '\0';
-
-		ksprintf (message, "Ethernat file name is '%s'\n\r", eth_fname);
-		Cconws (message);
-	}	
-*/
-
-	//print what we read from ethernat.inf
 	macbuf[12] = 0;
-	Cconws (macbuf);
-	//ksprintf(message, "\n\r"); 
-	//Cconws(message);
 
 	// Extract MAC address from macbuf
 	if_ethernat.hwlocal.addr[0] = (uchar)(ch2i(macbuf[0]) * 16 + ch2i(macbuf[1]));
@@ -790,48 +790,7 @@ driver_init (void)
 	 *
 	 */
 
-	autoneg_succ = 0;
-	while (!(autoneg_succ = Eth_AutoNeg(2500)));
-
-	if (autoneg_succ) {
-		//ksprintf(message, "Auto-negotiation succeeded!\n\r");
-		//Cconws(message);
-		Cconws("Auto-negotiation succeeded!\n\r");
-
-
-		phytmp = MII_read_reg(18);
-		
-		// Check speed-bit (SPDDET)
-		if (phytmp & 0x0080)
-		{
-			//ksprintf(message, "Link is 100 Mbit.\n\r");
-			//Cconws(message);
-			Cconws("Link is 100 Mbit.\n\r");
-		}
-		else
-		{
-			//ksprintf(message, "Link is only 10 Mbit.\n\r");
-			//Cconws(message);
-			Cconws("Link is only 10 Mbit.\n\r");
-		}
-		// Check Duplex mode bit (DPLXDET)
-		if (phytmp & 0x0040)
-		{
-			Eth_set_bank(0);
-			*LAN_TCR = (*LAN_TCR) | 0x0080;			// Set SWFDUP
-			//ksprintf(message, "Full duplex enabled\n\r");
-			//Cconws(message);
-			Cconws("Full duplex enabled\n\r");
-		}
-		else
-		{
-			Eth_set_bank(0);
-			*LAN_TCR = (*LAN_TCR) & (~0x0080);		// Clear SWFDUP			
-			//ksprintf(message, "Half duplex enabled\n\r");
-			//Cconws(message);
-			Cconws("Half duplex enabled\n\r");
-		}
-	}
+	Eth_AutoNeg();
 
 	// Set MAC address in the controller
 	Eth_set_bank(1);
@@ -1040,9 +999,14 @@ ethernat_int (void)
 	//This to let in other interrupt sources.
 	set_old_int_lvl();
 
-	//Exit here if we're still initializing
-	if(initializing)
+	//Exit here if we're still initializing or still in autonegotiation
+	if(initializing || !autoneg)
 	{
+		short datatmp = MII_read_reg(1); //read PHY register 1
+
+		if((datatmp & 0x0020) && (datatmp & 0x0004))
+			autoneg = 1;
+
 		set_int_lvl6();
 		*ETH_REG = (*ETH_REG) | 0x02;					//Enable LAN interrupt in the CPLD
 		return;

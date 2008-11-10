@@ -86,7 +86,7 @@ void	MII_write_reg(short regad, short value);
 short MII_read_reg(short regad);
 short MII_bit_cycle(short MDO_MDOE_mask);
 void	Eth_reset(void);
-short Eth_AutoNeg(long max_wait);		// Max wait in ms
+void Eth_AutoNeg(void);
 void	Waitms(long amount);
 
 static inline short Eth_set_bank(short bank)
