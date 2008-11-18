@@ -1301,9 +1301,21 @@ sys_d_opendir (const char *name, int flag)
 long _cdecl
 sys_d_readdir (int len, long handle, char *buf)
 {
+	struct proc *p = get_curproc();
 	DIR *dirh = (DIR *) handle;
 	fcookie fc;
 	long r;
+	DIR **where;
+
+	where = &p->p_fd->searches;
+	while (*where && *where != dirh)
+		where = &((*where)->next);
+
+	if (!*where)
+	{
+		DEBUG(("Dreaddir: not an open directory"));
+		return EBADF;
+	}
 
 	if (!dirh->fc.fs)
 		return EBADF;
@@ -1323,9 +1335,21 @@ sys_d_readdir (int len, long handle, char *buf)
 long _cdecl
 sys_d_xreaddir (int len, long handle, char *buf, XATTR *xattr, long *xret)
 {
+	struct proc *p = get_curproc();
 	DIR *dirh = (DIR *) handle;
 	fcookie fc;
 	long r;
+	DIR **where;
+
+	where = &p->p_fd->searches;
+	while (*where && *where != dirh)
+		where = &((*where)->next);
+
+	if (!*where)
+	{
+		DEBUG(("Dxreaddir: not an open directory"));
+		return EBADF;
+	}
 
 	if (!dirh->fc.fs)
 		return EBADF;
@@ -1354,7 +1378,19 @@ sys_d_xreaddir (int len, long handle, char *buf, XATTR *xattr, long *xret)
 long _cdecl
 sys_d_rewind (long handle)
 {
+	struct proc *p = get_curproc();
 	DIR *dirh = (DIR *) handle;
+	DIR **where;
+
+	where = &p->p_fd->searches;
+	while (*where && *where != dirh)
+		where = &((*where)->next);
+
+	if (!*where)
+	{
+		DEBUG(("Drewinddir: not an open directory"));
+		return EBADF;
+	}
 
 	if (!dirh->fc.fs)
 		return EBADF;
@@ -1373,7 +1409,7 @@ sys_d_closedir (long handle)
 {
 	struct proc *p = get_curproc();
 	DIR *dirh = (DIR *)handle;
-	DIR **where;
+	DIR **where, **_where;
 	long r;
 
 	where = &p->p_fd->searches;
@@ -1389,28 +1425,47 @@ sys_d_closedir (long handle)
 	/* unlink the directory from the chain */
 	*where = dirh->next;
 
-	if (dirh->fc.fs)
-	{
-		/* If we've assigned a file descriptor to this cookie from
-		 * Fdirfd, then we need to ensure we close it now too.
-		 */
-		if (dirh->fd >= MIN_OPEN) {
-			FILEPTR *f;
-
-			r = GETFILEPTR (&p, &dirh->fd, &f);
-
-			if (!r) {
-				do_close(p, f);
-				DEBUG (("Removing file descriptor %d", dirh->fd));
-				FD_REMOVE (p, dirh->fd);
-			}
-		}
-
-		r = xfs_closedir (dirh->fc.fs, dirh);
-		release_cookie (&dirh->fc);
+	if (!dirh->fc.fs) {
+		kfree (dirh);
+		return E_OK;
 	}
-	else
-		r = E_OK;
+
+	/* If we've assigned a file descriptor to this cookie from
+	 * Fdirfd, then we need to ensure we close it now too.
+	 */
+	if (dirh->fd >= MIN_OPEN) {
+		FILEPTR *f;
+
+		r = GETFILEPTR (&p, &dirh->fd, &f);
+
+		if (!r) {
+			/* close dirent's for the same FD */
+			where = &p->p_fd->searches;
+			while (*where) {
+				_where = &((*where)->next);
+				if ((*where)->fd == dirh->fd) {
+
+					r = xfs_closedir ((*where)->fc.fs, (*where));
+					release_cookie (&(*where)->fc);
+
+					kfree(*where);
+
+					/* unlink the directory from the chain */
+					*where = *_where;
+				}
+				where = _where;
+			}
+
+			do_close(p, f);
+
+			DEBUG (("Removing file descriptor %d", dirh->fd));
+
+			FD_REMOVE (p, dirh->fd);
+		}
+	}
+
+	r = xfs_closedir (dirh->fc.fs, dirh);
+	release_cookie (&dirh->fc);
 
 	if (r)
 		DEBUG(("Dclosedir: error %ld", r));
