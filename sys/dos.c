@@ -576,7 +576,7 @@ sys_s_ysconf (int which)
 	{
 		case -1:	return 4;
 		case  0:	return UNLIMITED;
-		case  1:	return 126;
+		case  1:	return ENOSYS;
 		case  2:	return p->p_fd->nfiles;
 		case  3:	return p->p_cred->ucr->ngroups;
 		case  4:	return UNLIMITED;
