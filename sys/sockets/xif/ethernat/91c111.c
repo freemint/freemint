@@ -239,7 +239,7 @@ void Eth_reset(void)
 }
 
 
-short Eth_AutoNeg(long max_wait)
+void Eth_AutoNeg(void)
 {
 	unsigned long	timer200Hz, starttime;
 	short				banktmp, datatmp, autonegdone;
@@ -269,26 +269,7 @@ short Eth_AutoNeg(long max_wait)
 	/* Enable ANEG_EN and disable MII_DIS and enable ANEG_RST */
 	MII_write_reg(0,0x3200);
 
-	// During max_wait time read PHY register 1 in 50ms intervals, to check the
-	// ANEG_ACK and LINK bits.
-	// When ANEG_ACK goes high, the auto-negotiation is complete
-	starttime = *LANREG_TIMER200;
-	timer200Hz = 0;
-	autonegdone = 0;
-	while(starttime+(max_wait/5) > timer200Hz)
-	{
-		/* Wait for another 50 ms */
-		timer200Hz = *LANREG_TIMER200;
-		while (*LANREG_TIMER200 < (timer200Hz + 10));	/* 10 ticks = 50 ms */
-		
-		datatmp = MII_read_reg(1); //read PHY register 1
-		if((datatmp & 0x0020) && (datatmp & 0x0004))
-			autonegdone = 1;
-	}
-
-
 	*LANREG_BANK = banktmp;
-	return autonegdone;
 }
 
 
