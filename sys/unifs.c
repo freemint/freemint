@@ -255,18 +255,9 @@ do_ulookup (fcookie *dir, const char *name, fcookie *fc, UNIFILE **up)
 	/* special case: an empty name in a directory means that directory
 	 * so do "." and ".."
 	 */
-# ifndef M68000
-# define ___DOTNUL	0x2e00
-# define ___DOTDOT	0x2e2e
-
-	if (!*name
-		|| (*(short *)name == ___DOTNUL)
-		|| (*(short *)name == ___DOTDOT && name [2] == '\0'))
-# else
 	if (!*name
 		|| (name [0] == '.' && name [1] == '\0')
 		|| (name [0] == '.' && name [1] == '.' && name [2] == '\0'))
-# endif
 	{
 		dup_cookie (fc, dir);
 		return E_OK;
