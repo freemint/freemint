@@ -23,7 +23,6 @@ all-here: $(TARGET)
 # default definitions
 OBJS = $(COBJS:.c=.o)
 GENFILES = $(TARGET)
-LIBS += -lsocket
 
 
 $(TARGET): $(OBJS)
