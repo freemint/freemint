@@ -15,7 +15,7 @@
 #include <net/if_arp.h>
 #include <netinet/if_ether.h>
 #include <sockios.h>
-
+#include <stdlib.h>
 
 #define _PATH_DEV_ARP	"/dev/arp"
 

@@ -13,7 +13,7 @@
 #include <sys/socket.h>
 #include <net/if.h>
 #include <sockios.h>
-
+#include <stdlib.h>
 
 static void
 slcomp_stats (unsigned long *l, char *name)
@@ -96,7 +96,7 @@ main (int argc, char *argv[])
 	}
 
 	strcpy (ifr.ifr_name, argv[1]);
-	ifr.ifr_data = stats;
+	ifr.ifr_data = (caddr_t) stats;
 	if (ioctl (sockfd, SIOCGLNKSTATS, &ifr) < 0)
 	{
 		if (errno == EINVAL)
