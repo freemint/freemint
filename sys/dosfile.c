@@ -206,7 +206,7 @@ sys_f_close (short fd)
 	where = &p->p_fd->searches;
 	while (*where) {
 		_where = &((*where)->next);
-		if ((*where)->fd == fd) {
+		if (fd >= MIN_OPEN && (*where)->fd == fd) {
 
 			r = xfs_closedir ((*where)->fc.fs, (*where));
 			release_cookie (&(*where)->fc);
