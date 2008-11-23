@@ -20,6 +20,9 @@
 
 #include "ifopts.h"
 
+#ifndef LINE_MAX
+#define LINE_MAX 2048
+#endif
 
 static int line = 0;
 static char *file = "<argv>";
