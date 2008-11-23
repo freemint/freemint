@@ -249,12 +249,12 @@ recv_block (cp, len)
 		"moveb	%2@(18), d0	\n"
 		"lsrb	#4, d0		\n"
 		"subqw	#2, %0		\n"
-		"l1:			\n"
+		"1:			\n"
 		"orb	%2@(2), d0	\n"
 		"moveb	d0, %1@+	\n"
 		"moveb	%2@(18), d0	\n"
 		"lsrb	#4, d0		\n"
-		"dbra	%0, l1		\n"
+		"dbra	%0, 1b		\n"
 		"orb	%2@(18), d0	\n"
 		"moveb	d0, %1@		\n"
 		: "=d"(len), "=a"(cp)
@@ -272,7 +272,7 @@ send_block (cp, len)
 {
 	__asm__ volatile (
 		"subqw	#1, %0		\n"
-		"l2:			\n"
+		"2:			\n"
 		"moveb	%1@+, d0	\n"
 		"addw	d0, d0		\n"
 		"movew	d0, d1		\n"
@@ -282,7 +282,7 @@ send_block (cp, len)
 		"andw	%5, d0		\n"
 		"bset	#4, d0		\n"
 		"tstb	%2@(d0:w)	\n"
-		"dbra	%0, l2		\n"
+		"dbra	%0, 2b		\n"
 		: "=d"(len), "=a"(cp)
 		: "a"(de600_base), "0"(len), "1"(cp), "d"(0x1e0)
 		: "d0", "d1");
