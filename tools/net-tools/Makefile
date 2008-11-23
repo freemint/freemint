@@ -28,9 +28,6 @@ include $(top_srcdir)/PHONY
 
 all-here: $(TARGETS)
 
-# default overwrites
-LIBS = -lsocket
-
 # default definitions
 OBJS = $(COBJS:.c=.o)
 GENFILES = $(TARGETS)

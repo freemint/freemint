@@ -21,11 +21,6 @@
 #include "ifopts.h"
 
 
-/*
- * max line length
- */
-#define LINE_MAX	1024
-
 static int line = 0;
 static char *file = "<argv>";
 
@@ -147,7 +142,7 @@ opt_set (char *ifname, struct ifopt *ifo, int sock)
 	struct ifreq ifr;
 
 	strncpy (ifr.ifr_name, ifname, IFNAMSIZ);
-	ifr.ifr_data = ifo;
+	ifr.ifr_data = (caddr_t) ifo;
 	if (ioctl (sock, SIOCSIFOPT, &ifr) < 0)
 	{
 		switch (errno)
