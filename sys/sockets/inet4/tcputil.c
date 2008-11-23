@@ -431,28 +431,28 @@ tcp_checksum (struct tcp_dgram *dgram, ushort len, ulong srcadr, ulong dstadr)
 		"clrl	d0		\n\t"
 		"movew	%2, d1		\n\t"
 		"lsrw	#4, d1		\n\t"
-		"beq	l4		\n\t"
+		"beq	4f		\n\t"
 		"subqw	#1, d1		\n"	/* clears X bit */
-		"l1:			\n\t"
+		"1:			\n\t"
 		"moveml	%4@+, d0/d2-d4	\n\t"	/* 16 byte loop */
 		"addxl	d0, %0		\n\t"	/* ~5 clock ticks per byte */
 		"addxl	d2, %0		\n\t"
 		"addxl	d3, %0		\n\t"
 		"addxl	d4, %0		\n\t"
-		"dbra	d1, l1		\n\t"
+		"dbra	d1, 1b		\n\t"
 		"clrl	d0		\n\t"
 		"addxl	d0, %0		\n"
-		"l4:			\n\t"
+		"4:			\n\t"
 		"movew	%2, d1		\n\t"
 		"andiw	#0xf, d1	\n\t"
 		"lsrw	#2, d1		\n\t"
-		"beq	l2		\n\t"
+		"beq	2f		\n\t"
 		"subqw	#1, d1		\n"
-		"l3:			\n\t"
+		"3:			\n\t"
 		"addl	%4@+, %0	\n\t"	/* 4 byte loop */
 		"addxl	d0, %0		\n\t"	/* ~10 clock ticks per byte */
-		"dbra	d1, l3		\n"
-		"l2:			\n\t"
+		"dbra	d1, 3b		\n"
+		"2:			\n\t"
 		: "=d"(sum), "=a"(dgram)
 		: "g"(len), "0"(sum), "1"(dgram)
 		: "d0", "d1", "d2", "d3", "d4"
@@ -466,17 +466,17 @@ tcp_checksum (struct tcp_dgram *dgram, ushort len, ulong srcadr, ulong dstadr)
 	(
 		"clrl	d0		\n\t"
 		"btst	#1, %2		\n\t"
-		"beq	l5		\n\t"
+		"beq	5f		\n\t"
 		"addw	%4@+, %0	\n\t"	/* extra word */
 		"addxw	d0, %0		\n"
-		"l5:			\n\t"
+		"5:			\n\t"
 		"btst	#0, %2		\n\t"
-		"beq	l6		\n\t"
+		"beq	6f		\n\t"
 		"moveb	%4@+, d1	\n\t"	/* extra byte */
 		"lslw	#8, d1		\n\t"
 		"addw	d1, %0		\n\t"
 		"addxw	d0, %0		\n"
-		"l6:			\n\t"
+		"6:			\n\t"
 		"movel	%0, d1		\n\t"	/* convert to short */
 		"swap	d1		\n\t"
 		"addw	d1, %0		\n\t"
