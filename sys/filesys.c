@@ -1067,17 +1067,6 @@ restart_mount:
 		}
 		else if (r)
 		{
-#if 0
-	/* this fails for directories which are ffff/gggg/ in tar */
-	/* so let's return the true error ENOENT */
-			if (r == ENOENT && *path)
-			{
-				/* the "file" we didn't find was treated as a
-				 * directory
-				 */
-				r = ENOTDIR;
-			}
-#endif
 			release_cookie (&dir);
 			break;
 		}
