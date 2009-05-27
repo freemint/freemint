@@ -5,7 +5,7 @@
  * distribution. See the file CHANGES for a detailed log of changes.
  * 
  * 
- * Copyright 2000-2004 Frank Naumann <fnaumann@freemint.de>
+ * Copyright 2000-2005 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
  * 
  * Please send suggestions, patches or bug reports to me or
@@ -28,8 +28,8 @@
  * 
  */
 
-#ifndef _list_h
-#define _list_h
+#ifndef _syscalldefs_h
+#define _syscalldefs_h
 
 #define STRMAX 255
 
@@ -44,6 +44,7 @@ struct systab
 struct syscall
 {
 	char name[STRMAX];
+	struct arg *ret;
 	struct arg *args;
 	int status;
 #define SYSCALL_REGULAR		0
@@ -81,4 +82,4 @@ struct arg
 	char name[STRMAX];
 };
 
-#endif /* _list_h */
+#endif /* _syscalldefs_h */

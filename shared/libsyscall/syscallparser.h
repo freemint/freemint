@@ -5,7 +5,7 @@
  * distribution. See the file CHANGES for a detailed log of changes.
  * 
  * 
- * Copyright 2000-2004 Frank Naumann <fnaumann@freemint.de>
+ * Copyright 2000-2005 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
  * 
  * Please send suggestions, patches or bug reports to me or
@@ -32,6 +32,7 @@
 #define _syscallparser_h
 
 #include <stdio.h>
+#include "syscalldefs.h"
 
 struct systab *gemdos_table(void);
 struct systab *bios_table(void);
