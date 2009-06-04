@@ -22,6 +22,7 @@ all-here: $(TARGET)
 
 # default overwrites
 CFLAGS += -g
+INCLUDES = -I$(top_srcdir)/hypview
 
 # default definitions
 OBJS = $(COBJS:.c=.o)
