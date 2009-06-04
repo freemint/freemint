@@ -10,6 +10,7 @@ SUBDIRS = \
 	fdisk \
 	fsetter \
 	gluestik \
+	hypview \
 	lpflush \
 	mgw \
 	minix \
