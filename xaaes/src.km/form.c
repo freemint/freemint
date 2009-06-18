@@ -413,6 +413,14 @@ Form_Button(XA_TREE *wt,
 					obj_draw(wt, v, pf, -2, NULL, *rl, DRW_CURSOR);
 				obj_draw(wt, v, obj, -2, NULL, *rl, DRW_CURSOR);
 			}
+			if( flags & OF_EDITABLE ){
+				struct objc_edit_info *ei = (wt->ei ? wt->ei : &wt->e);
+
+				ei->pos = ei->edstart;
+				ei->c_state |= OB_CURS_ENABLED;
+				
+				ei->o = obj;
+			}
 		}
 	}
 
