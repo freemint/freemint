@@ -631,9 +631,8 @@ new_widget_tree(struct xa_client *client, OBJECT *obtree)
 	
 	DIAGS((" === Create new widget tree - obtree=%lx, for %s",
 		obtree, client->name));
-	BLOG((false, " === Create new widget tree %lx - obtree=%lx, for %s",
-		new, obtree, client->name));
-
+	//BLOG((false, " === Create new widget tree %lx - obtree=%lx, for %s",
+	//	new, obtree, client->name));
 
 	if (new)
 	{
@@ -652,7 +651,7 @@ free_wtlist(struct xa_client *client)
 {
 	XA_TREE *wt;
 
-	BLOG((false, "free_wtlist for %s", client->name));
+	//BLOG((false, "free_wtlist for %s", client->name));
 	
 	while (client->wtlist)
 	{

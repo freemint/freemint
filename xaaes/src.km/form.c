@@ -57,12 +57,16 @@ Set_form_do(struct xa_client *client,
 	XA_TREE *wt;
 	struct objc_edit_info *ei;
 
+
 	wt = obtree_to_wt(client, obtree);
+
 	if (!wt)
+	{
 		wt = new_widget_tree(client, obtree);
-	
+	}
 	DIAG((D_form, client, "Set_form_do: wt=%lx, obtree=%lx, edobj=%d for %s",
 		wt, obtree, edobj, client->name));
+	
 
 	/* XXX - We should perhaps check if the form really have an EXIT or
 	 *       TOUCHEXIT button, and act accordingly.
@@ -178,6 +182,9 @@ Setup_form_do(struct xa_client *client,
 		if (!wt)
 			wt = new_widget_tree(client, obtree);
 		assert(wt);
+
+		wt->focus = edobj;
+
 		calc_fmd_wind(wt, kind, wind->dial, (RECT *)&client->fmd.r);
 		wt = set_toolbar_widget(lock, wind, client, obtree, edobj, WIP_NOTEXT, 0, NULL, NULL);
 		move_window(lock, wind, true, -1, client->fmd.r.x, client->fmd.r.y, client->fmd.r.w, client->fmd.r.h);
@@ -189,6 +196,11 @@ Setup_form_do(struct xa_client *client,
 	{
 		DIAG((D_form, client, "Setup_form_do: nonwindowed for %s", client->name));
 // 		if (d) display("Setup_form_do: nonwindowed for %s", client->name);
+
+		/* focussed object has to be unfocussed later so dont overwrite */ 
+		/*wt = obtree_to_wt(client, obtree);*/
+		/*wt->focus = edobj;*/
+
 		Set_form_do(client, obtree, edobj, true);
 		wt = client->fmd.wt;
 		goto okexit;
@@ -200,7 +212,9 @@ Setup_form_do(struct xa_client *client,
 	{
 		wt = obtree_to_wt(client, obtree);
 		if (!wt)
+		{
 			wt = new_widget_tree(client, obtree);
+		}
 		assert(wt);
 		calc_fmd_wind(wt, kind, client->fmd.state ? created_for_FMD_START : created_for_FORM_DO, (RECT *)&client->fmd.r);
 
@@ -208,6 +222,7 @@ Setup_form_do(struct xa_client *client,
 			kind |= MOVER;
 
 		client->fmd.kind = kind;
+		wt->focus = edobj;
 	}
 
 	/*
@@ -461,6 +476,9 @@ Form_Button(XA_TREE *wt,
 
 /*
  * Form Keyboard Handler for toolbars
+ *
+ * Eat TAB, Cursor, Home, PgUp, PgDn (Navigation)
+ * Insert (Select)
  */
 struct xa_aes_object
 Form_Cursor(XA_TREE *wt,
@@ -494,7 +512,19 @@ Form_Cursor(XA_TREE *wt,
 
 	switch (keycode)
 	{				/* The cursor keys are always eaten. */
-		case SC_TAB:		/* TAB moves to next field */
+
+		case SC_INSERT:	// Todo: Use Form_Button! */
+			if( valid_aesobj( &wt->focus ) )
+			{
+				RECT *clip = NULL;
+				short state = aesobj_state(&wt->focus );
+				flags = aesobj_flags(&wt->focus );
+
+				if( (flags & OF_SELECTABLE) && !( flags & (OF_TOUCHEXIT | OF_RBUTTON | OF_DEFAULT)) )
+					obj_change(wt, v, focus(wt), -1, state^OS_SELECTED, flags, redraw, clip, *rl, 0);
+			}
+		break;
+		case SC_TAB:		/* TAB moves to next/previous field */
 		{
 			dir = OBFIND_HOR | ((keystate & (K_RSHIFT|K_LSHIFT)) ? OBFIND_UP : OBFIND_DOWN);
 			
@@ -504,13 +534,23 @@ Form_Cursor(XA_TREE *wt,
 			}
 			else
 				flags = OF_SELECTABLE|OF_EDITABLE|OF_EXIT|OF_TOUCHEXIT;
-			
+
 			nxt = ob_find_next_any_flagstate(wt, aesobj(obtree, 0), focus(wt), flags, OF_HIDETREE, 0, OS_DISABLED, 0,0, dir);
 			
 			if (!valid_aesobj(&nxt))
 			{
-				dir = OBFIND_VERT | (keystate & (K_RSHIFT|K_LSHIFT)) ? OBFIND_LAST : OBFIND_FIRST;
-				nxt = ob_find_next_any_flagstate(wt, aesobj(obtree, 0), inv_aesobj(), flags, OF_HIDETREE, 0, OS_DISABLED, 0,0, dir);
+				/* if not set start-obj of the form_do-call is selected */
+#ifndef NOT_WRAP_TO_START_ITEM
+				struct xa_client *client = wt->owner;
+				if( !(keystate & (K_RSHIFT|K_LSHIFT)) && client && client->waiting_pb && client->waiting_pb->intin[0] > 0 ){
+					nxt = aesobj(obtree, client->waiting_pb->intin[0] );	/* select initially selected item*/
+				}
+				else
+#endif
+				{
+					dir = OBFIND_VERT | (keystate & (K_RSHIFT|K_LSHIFT)) ? OBFIND_LAST : OBFIND_FIRST;
+					nxt = ob_find_next_any_flagstate(wt, aesobj(obtree, 0), inv_aesobj(), flags, OF_HIDETREE, 0, OS_DISABLED, 0,0, dir);
+				}
 			}
 			
 			if (valid_aesobj(&nxt))
@@ -722,9 +762,10 @@ Form_Keyboard(XA_TREE *wt,
 
 	DIAG((D_form, NULL, "Form_Keyboard: wt=%lx, obtree=%lx, wt->owner=%lx(%lx), obj=%d, key=%x(%x), nrmkey=%x for %s",
 		wt, wt->tree, wt->owner, client, aesobj_item(&obj), keycode, key->aes, key->norm, wt->owner->name));
-
+	
 	ei = wt->ei ? wt->ei : &wt->e;
-// 	display("Form_Keyboard: efocus=%d, wt=%lx, obtree=%lx, wt->owner=%lx(%lx), obj=%d, key=%x(%x), nrmkey=%x for %s",
+	
+// 	display("Form_Keyboard:   wt=%lx, obtree=%lx, wt->owner=%lx(%lx), obj=%d, key=%x(%x), nrmkey=%x for %s",
 // 		ei->obj, wt, wt->tree, wt->owner, wt->owner, obj, keycode, key->aes, key->norm, wt->owner->name);
 	
 	fr.no_exit = true;
@@ -765,7 +806,7 @@ Form_Keyboard(XA_TREE *wt,
 	}
 	
 	next_obj = Form_Cursor(wt, v, keycode, keystate, next_obj, redraw, rl, &new_focus, &keycode);
-	
+
 	if (!valid_aesobj(&next_obj) && keycode)
 	{
 		if (keycode == SC_SPACE && focus_set(wt))

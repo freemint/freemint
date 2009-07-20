@@ -1703,8 +1703,12 @@ ob_find_flst(OBJECT *tree, short f, short s, short mf, short ms, short stopf, sh
 	return d.ret_object;
 }
 
+#define SY_TOL	4	// sloppy y-coord-matching
+
 struct xa_aes_object
-ob_find_next_any_flagstate(struct widget_tree *wt, struct xa_aes_object parent, struct xa_aes_object start, short f, short mf, short s, short ms, short stopf, short stops, short flags)
+ob_find_next_any_flagstate(struct widget_tree *wt, struct xa_aes_object parent,
+	struct xa_aes_object start, short f, short mf, short s, short ms, short stopf, short stops,
+	short flags)
 {
 	int rel_depth = 1;
 	short x, y, w, h, ax, cx, cy, cf, flg;
@@ -1857,7 +1861,7 @@ uplink:
 						}
 					}
 				}
-				else
+				else	/*(flags & OBFIND_DOWN)*/
 				{
 					if ( ((x <= r.x && (x + w) > r.x) || (x > r.x && x < (r.x + r.w))))
 					{
@@ -1899,7 +1903,7 @@ uplink:
 			{
 				if (!(flags & OBFIND_DOWN))
 				{
-					if ( ((y <= r.y && (y + h) > r.y)) || (y > r.y && (y + h) < (r.y + r.h)))
+					if ( (y-h/2 <= r.y && y + h > (r.y + r.h/2)) || (y > r.y && (y + h/2) <= (r.y + r.h)) )
 					{
 						if ((x < r.x))
 						{
@@ -1915,27 +1919,24 @@ uplink:
 					{
 						if (y < r.y)
 						{
-							if ((r.y - y) == cy)
+							if ((r.y - y) <= cy + SY_TOL && y + h/2 < r.y )
 							{
+								if( cy == 32000 || ((r.y - y) < cy )){	/* line better: forget x */
+									cy = r.y - y;
+									ax = 32000;
+								}
 								if (ax == 32000 || x > ax)
 								{
 									ax = x;
-									cy = r.y - y;
 									co = curr;
 								}
-							}
-							else if ((r.y - y) < cy)
-							{
-								ax = x;
-								cy = r.y - y;
-								co = curr;
 							}
 						}
 					}
 				}
 				else
 				{
-					if ( (y >= r.y && y < (r.y + r.h)) || (y < r.y && (y + h) >= (r.y + r.h)))
+					if ( (y+h/2 >= r.y && y+h/2 < (r.y + r.h)) || (y < r.y && (y + h) >= (r.y + r.h/2)) )
 					{
 						if (x > r.x)
 						{
@@ -1944,15 +1945,16 @@ uplink:
 								cx = x - r.x;
 								co = curr;
 								cf = 1;
+
 							}
 						}
 					}
 
 					if (!cf)
 					{
-						if (y >= (r.y + r.h) || (y > r.y && (y + h) > (r.y + r.h)))
+						if (y >= (r.y + r.h) /*|| (y > r.y && (y + h) > (r.y + r.h))*/)
 						{
-							if ((y - r.y) == cy)
+							if ((y - r.y) <= cy + SY_TOL)
 							{
 								if (x < ax)
 								{
@@ -1961,12 +1963,6 @@ uplink:
 									co = curr;
 								}
 							}
-							else if ((y - r.y) < cy)
-							{
-								ax = x;
-								cy = y - r.y;
-								co = curr;
-							}
 						}		
 					}
 				}
@@ -1974,6 +1970,7 @@ uplink:
 			
 			x -= this->ob_x;
 			y -= this->ob_y;
+			
 		}
 
 		if (aesobj_head(&curr) != -1 && (!aesobj_hidden(&curr) || (flags & OBFIND_HIDDEN)))
@@ -1994,7 +1991,7 @@ downlink:
 				struct xa_aes_object tail = aesobj(aesobj_tree(&next), aesobj_tail(&next));
 				if (same_aesobj(&curr, &tail))
 				{
-// 					if (d) display(" childs of %d done", aesobj_item(&curr));
+// 					if (d) display(" children of %d done", aesobj_item(&curr));
 					curr = next;
 					x -= aesobj_getx(&curr);
 					y -= aesobj_gety(&curr);
@@ -2007,6 +2004,7 @@ downlink:
 			if (same_aesobj(&next, &stop) && set_aesobj_downlink(&tree, &curr, &stop, &oblink))
 			{
 // 				if (d) display("downlink to %d in %lx", curr.item, curr.tree);
+
 				x -= aesobj_getx(&curr);
 				y -= aesobj_gety(&curr);
 				goto downlink;
@@ -2020,8 +2018,10 @@ downlink:
 	if (!cf && (flags & OBFIND_NOWRAP))
 	{
 // 		if (d) display(" nowrap !");
+
 		co = inv_aesobj();
 	}
+	
 done:
 	clean_aesobj_links(&oblink);
 
@@ -2113,6 +2113,7 @@ ob_find_cancel(OBJECT *ob)
 	int f = 0;
 
 	do {
+
 		if ((ob[f].ob_type  & 0xff) == G_BUTTON &&
 		    (ob[f].ob_flags & (OF_SELECTABLE|OF_TOUCHEXIT|OF_EXIT)) != 0)
 		{
