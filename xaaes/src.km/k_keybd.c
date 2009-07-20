@@ -217,19 +217,29 @@ XA_keyboard_event(enum locks lock, const struct rawkey *key)
 			rk->norm = nkc_tconv(key->raw.bcon);
 
 			if (keywind && keywind == client->alert)
+			{
 				post_cevent(client, cXA_keypress, rk, keywind, 0,0, NULL,NULL);
+			}
 			else if (client->fmd.keypress)
+			{
 				post_cevent(client, cXA_fmdkey, rk, NULL, 0,0, NULL, NULL);
+			}
 			else if (keywind && keywind == client->fmd.wind)
+			{
 				post_cevent(client, cXA_keypress, rk, keywind, 0,0, NULL,NULL);
+			}
 			else
 			{
 				if (keywind && is_hidden(keywind))
 					unhide_window(lock, keywind, true);
 				if (keywind && keywind->keypress)
+				{
 					post_cevent(client, cXA_keypress, rk, keywind, 0,0, NULL,NULL);
+				}
 				else if (client->waiting_pb)
+				{
 					post_cevent(client, cXA_keybd_event, rk, NULL, 0,0, NULL,NULL);
+				}
 #if GENERATE_DIAGS
 				else
 					DIAGS(("XA_keyboard_event: INTERNAL ERROR: No waiting pb."));			
@@ -497,7 +507,7 @@ otm:
 #endif
 		}
 	}
-#endif
+#endif	/*/ALT_CTRL_APP_OPS	*/
 	return false;
 }
 
@@ -511,18 +521,21 @@ keyboard_input(enum locks lock)
 
 		key.raw.bcon = f_getchar(C.KBD_dev, RAW);
 // 		display("f_getchar: 0x%08lx, AES=%x, NORM=%x", key.raw.bcon, key.aes, key.norm);
-	
-		if (eiffel_wheel((unsigned short)key.raw.conin.scan & 0xff))
+
+	// this produces wheel-events on some F-keys (eg. S-F10)
+#ifdef EIFFEL_SUPPORT
+		if ( eiffel_wheel((unsigned short)key.raw.conin.scan & 0xff))
+		{
 			continue;
-		
+		}
+#endif
 		/* Translate the BIOS raw data into AES format */
 		key.aes = (key.raw.conin.scan << 8) | key.raw.conin.code;
 		key.norm = 0;
 
-		DIAGS(("f_getchar: 0x%08lx, AES=%x, NORM=%x", key.raw.bcon, key.aes, key.norm));
 // 		display("f_getchar: 0x%08lx, AES=%x, NORM=%x", key.raw.bcon, key.aes, key.norm);
 		
-		if (!kernel_key(lock, &key))
+		if (kernel_key(lock, &key) == false )
 			XA_keyboard_event(lock, &key);
 	}
 }
