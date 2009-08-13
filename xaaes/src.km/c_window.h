@@ -56,19 +56,18 @@ void change_window_attribs(enum locks lock,
 			   short noleft,
 			   RECT r, RECT *remember);
 
-void wi_remove(struct win_base *b, struct xa_window *w, bool chkfocus);
-void wi_put_first(struct win_base *b, struct xa_window *w);
+//void wi_remove(struct win_base *b, struct xa_window *w, bool chkfocus);
+//void wi_put_first(struct win_base *b, struct xa_window *w);
 void wi_move_first(struct win_base *b, struct xa_window *w);
-void wi_move_blast(struct win_base *b, struct xa_window *w);
-void wi_move_belowroot(struct win_base *b, struct xa_window *w);
+//void wi_move_blast(struct win_base *b, struct xa_window *w);
+//void wi_move_belowroot(struct win_base *b, struct xa_window *w);
 
 struct xa_window *find_window(enum locks lock, short x, short y, short flags);
 struct xa_window *get_wind_by_handle(enum locks lock, short h);
-struct xa_window *pull_wind_to_top(enum locks lock, struct xa_window *w);
 struct xa_window *top_w(enum locks lock);
 struct xa_window *root_w(enum locks lock);
 
-XA_WIND_ATTR fix_wind_kind(XA_WIND_ATTR tp);
+//XA_WIND_ATTR fix_wind_kind(XA_WIND_ATTR tp);
 
 bool _cdecl	close_window(enum locks lock, struct xa_window *wind);
 int  _cdecl	open_window(enum locks lock, struct xa_window *w, RECT r);
@@ -99,7 +98,6 @@ void	after_top(enum locks lock, bool untop);
 void	remove_windows(enum locks lock, struct xa_client *client);
 void	remove_all_windows(enum locks lock, struct xa_client *client);
 void	inside_root(RECT *r, bool noleft);
-void	fitin_root(RECT *r);
 void	inside_minmax(RECT *r, struct xa_window *wind);
 void	set_winrect(struct xa_window *wind, RECT *wr, const RECT *r);
 
@@ -112,7 +110,7 @@ void	hide_toolboxwindows(struct xa_client *client);
 void	show_toolboxwindows(struct xa_client *client);
 
 void	clear_wind_handles(void);
-void	clear_wind_rectlist(struct xa_window *wind);
+//void	clear_wind_rectlist(struct xa_window *wind);
 
 void	send_moved	(enum locks lock, struct xa_window *wind, short amq, RECT *r);
 void	send_sized	(enum locks lock, struct xa_window *wind, short amq, RECT *r);
@@ -120,11 +118,11 @@ void	send_reposed	(enum locks lock, struct xa_window *wind, short amq, RECT *r);
 void	send_vslid	(enum locks lock, struct xa_window *wind, short offs);
 void	send_hslid	(enum locks lock, struct xa_window *wind, short offs);
 void	send_closed	(enum locks lock, struct xa_window *wind);
-void	send_redraw	(enum locks lock, struct xa_window *wind, RECT *r);
+//void	send_redraw	(enum locks lock, struct xa_window *wind, RECT *r);
 void	send_iredraw	(enum locks lock, struct xa_window *wind, short xaw, RECT *r);
 void	generate_redraws(enum locks lock, struct xa_window *wind, RECT *r, short flags);
 
-void	send_ontop(enum locks lock);
+//void	send_ontop(enum locks lock);
 //void	send_untop(enum locks lock, struct xa_window *wind);
 void	send_topped(enum locks lock, struct xa_window *wind);
 void	send_bottomed(enum locks lock, struct xa_window *wind);
@@ -143,7 +141,6 @@ void	get_window_title(struct xa_window *wind, char *dst);
 void	set_window_info(struct xa_window *wind, const char *info, bool redraw);
 void	get_window_info(struct xa_window *wind, char *dst);
 
-void	set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new);
 
 XA_WIND_ATTR hide_move(struct options *o);
 

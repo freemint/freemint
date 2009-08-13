@@ -51,7 +51,7 @@ get_desktop(void)
 	return get_widget(root_window, XAW_TOOLBAR)->stuff;
 }
 
-bool
+STATIC bool
 click_desktop_widget(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
 	struct xa_client *mowner = menu_owner();
