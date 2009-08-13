@@ -47,7 +47,7 @@ is_inside(const RECT *r, const RECT *o)
 	return true;
 }
 
-struct xa_rect_list *
+STATIC struct xa_rect_list *
 build_rect_list(struct build_rl_parms *p)
 {
 	struct xa_rect_list *rl, *nrl, *rl_next, *rl_prev;
@@ -364,6 +364,7 @@ get_rect(struct xa_rectlist_entry *rle, RECT *clip, bool first, RECT *ret)
 	return rtn;
 }
 
+#if INCLUDE_UNUSED
 void
 free_rect_list(struct xa_rect_list *first)
 {
@@ -377,7 +378,7 @@ free_rect_list(struct xa_rect_list *first)
 		first = next;
 	}
 }
-
+#endif
 void
 free_rectlist_entry(struct xa_rectlist_entry *rle)
 {
@@ -391,13 +392,14 @@ free_rectlist_entry(struct xa_rectlist_entry *rle)
 	rle->next = NULL;
 }
 
+#if INCLUDE_UNUSED
 struct xa_rect_list *
 rect_get_user_first(struct xa_window *w)
 {
 	w->rect_user.next = w->rect_user.start;
 	return w->rect_user.next;
 }
-
+#endif
 struct xa_rect_list *
 rect_get_optimal_first(struct xa_window *w)
 {
@@ -405,13 +407,14 @@ rect_get_optimal_first(struct xa_window *w)
 	return w->rect_opt.next;
 }
 
+#if INCLUDE_UNUSED
 struct xa_rect_list *
 rect_get_system_first(struct xa_window *w)
 {
 	w->rect_list.next = w->rect_list.start;
 	return w->rect_list.next;
 }
-
+#endif
 struct xa_rect_list *
 rect_get_optimal_next(struct xa_window *w)
 {
@@ -420,6 +423,7 @@ rect_get_optimal_next(struct xa_window *w)
 	return w->rect_opt.next;
 }
 
+#if INCLUDE_UNUSED
 struct xa_rect_list *
 rect_get_user_next(struct xa_window *w)
 {
@@ -427,7 +431,8 @@ rect_get_user_next(struct xa_window *w)
 		w->rect_user.next = w->rect_user.next->next;
 	return w->rect_user.next;
 }
-
+#endif
+#if INCLUDE_UNUSED
 struct xa_rect_list *
 rect_get_system_next(struct xa_window *w)
 {
@@ -435,7 +440,7 @@ rect_get_system_next(struct xa_window *w)
 		w->rect_list.next = w->rect_list.next->next;
 	return w->rect_list.next;
 }
-
+#endif
 struct xa_rect_list *
 rect_get_toolbar_first(struct xa_window *w)
 {

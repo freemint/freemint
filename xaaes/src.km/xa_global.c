@@ -86,12 +86,13 @@ pid2client(short pid)
 	return client;
 }
 
+#if INCLUDE_UNUSED
 struct xa_client *
 proc2client(struct proc *p)
 {
 	return lookup_extension(p, XAAES_MAGIC);
 }
-
+#endif
 
 void *
 lookup_xa_data(struct xa_data_hdr **list, void *_data)

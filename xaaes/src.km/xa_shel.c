@@ -1460,6 +1460,7 @@ XA_shel_envrn(enum locks lock, struct xa_client *client, AESPB *pb)
 	return XAC_DONE;
 }
 
+#if INCLUDE_UNUSED
 static struct xa_client *
 lookup_proc_name(const char *name)
 {
@@ -1473,7 +1474,8 @@ lookup_proc_name(const char *name)
 
 	return client;
 }
-
+#endif
+#if INCLUDE_UNUSED
 unsigned long
 XA_shel_help(enum locks lock, struct xa_client *client, AESPB *pb)
 {
@@ -1588,3 +1590,4 @@ out:
 
 	return XAC_DONE;
 }
+#endif

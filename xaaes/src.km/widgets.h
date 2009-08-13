@@ -38,7 +38,7 @@ void init_client_widget_theme(struct xa_client *client);
 void exit_client_widget_theme(struct xa_client *client);
 
 
-COMPASS compass(short d, short x, short y, RECT r);
+//COMPASS compass(short d, short x, short y, RECT r);
 
 void		display_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, struct xa_rect_list *rl);
 void		standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff);
@@ -61,8 +61,7 @@ XA_TREE *	_cdecl	obtree_to_wt(struct xa_client *client, OBJECT *obtree);
 void		_cdecl 	init_widget_tree(struct xa_client *client, struct widget_tree *wt, OBJECT *obtree);
 XA_TREE *	_cdecl	new_widget_tree(struct xa_client *client, OBJECT *obtree);
 void free_wtlist(struct xa_client *client);
-void remove_from_wtlist(XA_TREE *wt);
-void free_wt(XA_TREE *wt);
+//void remove_from_wtlist(XA_TREE *wt);
 bool _cdecl	remove_wt(XA_TREE *wt, bool force);
 
 //XA_TREE *check_widget_tree(enum locks lock, struct xa_client *client, OBJECT *obtree);
@@ -75,7 +74,6 @@ long	sl_to_pix(long s, long p);
 int	XA_slider(struct xa_window *w, int which, long total, long visible, long start);
 bool	m_inside(short x, short y, RECT *o);
 void	redraw_menu(enum locks lock);
-short	redisplay_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, short state);
 void	done_widget_active(struct xa_window *wind, int i);
 
 void	free_xawidget_resources(struct xa_widget *widg);
