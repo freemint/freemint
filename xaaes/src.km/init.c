@@ -49,7 +49,7 @@
 #include "mint/ssystem.h"
 #include "cookie.h"
 
-long module_exit(void);
+//long module_exit(void);
 
 
 short my_global_aes[16];
@@ -293,7 +293,6 @@ fail:		if (buf) kfree(buf);
 	return false;
 }
 #endif
-
 /*
  * Module initialisation
  * - setup internal data
@@ -693,6 +692,7 @@ error:
 	return err;
 }
 
+#if INCLUDE_UNUSED
 long
 module_exit(void)
 {
@@ -706,3 +706,4 @@ module_exit(void)
 
 	return 0;
 }
+#endif

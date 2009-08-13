@@ -5319,6 +5319,7 @@ d_g_button(struct widget_tree *wt, struct xa_vdi_settings *v)
 	if ((ob->ob_state & OS_WHITEBAK) && (ob->ob_state & 0x8000))
 	{
 		short und = (short)ob->ob_state >> 8;
+
 		(*v->api->wr_mode)(v, MD_REPLACE);
 		
 		/* group frame */

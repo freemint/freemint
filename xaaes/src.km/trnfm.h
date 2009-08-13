@@ -32,11 +32,11 @@
 
 void create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, short *steps, short w, short h );
 
-void depack_img(char *name, XA_XIMG_HEAD *pic);
+//void depack_img(char *name, XA_XIMG_HEAD *pic);
 void load_image(char *name, XAMFDB *mimg);
 
-void remap_bitmap_colindexes(MFDB *map, unsigned char *cref);
-void build_pal_xref(struct rgb_1000 *src_palette, struct rgb_1000 *dst_palette, unsigned char *cref, int pens);
+//void remap_bitmap_colindexes(MFDB *map, unsigned char *cref);
+//void build_pal_xref(struct rgb_1000 *src_palette, struct rgb_1000 *dst_palette, unsigned char *cref, int pens);
 
 bool transform_bitmap(short vdih, MFDB *src, MFDB *dst, struct rgb_1000 *src_pal, struct rgb_1000 *sys_pal);
 bool transform_gem_bitmap_data(short vdih, MFDB msrc, MFDB mdest, int src_planes, int dst_planes);

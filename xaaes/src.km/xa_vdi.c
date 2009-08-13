@@ -24,6 +24,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#define PROFILING	0
+
 #include "xa_types.h"
 #include "xa_global.h"
 #include "trnfm.h"
@@ -154,7 +156,7 @@ xa_write_disable(struct xa_vdi_settings *v, RECT *r, short colour)
 	xa_f_color(v, colour);
 	vsf_udpat(v->handle, pattern, 1);
 	xa_f_interior(v, FIS_USER);
-	xa_gbar(v, 0, r);
+//	xa_gbar(v, 0, r);
 }
 
 static void _cdecl
@@ -300,10 +302,21 @@ xa_t_extent(struct xa_vdi_settings *v, const char *t, short *w, short *h)
 static void _cdecl
 xa_text_extent(struct xa_vdi_settings *v, const char *t, struct xa_fnt_info *f, short *w, short *h)
 {
-	xa_t_font(v, f->p, f->f);
-	vst_effects(v->handle, f->e);
-	xa_t_extent(v, t, w, h);
-	vst_effects(v->handle, 0);
+	PRDEF( xa_text_extent, xa_t_font );
+	PRDEF( xa_text_extent, effects );
+	PRDEF( xa_text_extent, t_extent);
+
+	PROFRECv( xa_t_font,(v, f->p, f->f));
+
+	if( f->e ){
+		PROFRECv( vst_effects,(v->handle, f->e));
+	}
+
+	PROFRECv( xa_t_extent,(v, t, w, h));
+
+	if( f->e ){
+		PROFRECv( vst_effects,(v->handle, 0));
+	}
 }
 
 static const char * _cdecl
@@ -615,6 +628,7 @@ xa_p_gbar(struct xa_vdi_settings *v, short d, const RECT *r)	/* for perimeter = 
 	l[1] = y+1;
 	l[2] = x+w-2;
 	l[3] = y+h-2;
+//	BLOG((0,"xa_p_gbar:%d/%d/%d/%d", l[0], l[1], l[2], l[3] ));
 	v_bar(v->handle, l);
 	l[0] = x;
 	l[1] = y;

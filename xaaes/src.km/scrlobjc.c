@@ -24,6 +24,12 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#define PROFILING	0
+#define USEOWNSTRLEN 1
+#define USEBUILTINMEMCPY	0
+#define ITALIC_IS_CUTOFF	1
+#define LSLINDST_PTS	2
+
 #include "xa_types.h"
 #include "xa_global.h"
 
@@ -41,6 +47,33 @@
 #include "xa_form.h"
 #include "c_window.h"
 #include "keycodes.h"
+
+#ifdef __GNUC__
+/* using builtin */
+# undef memcpy
+# if USEBUILTINMEMCPY
+# define memcpy __builtin_memcpy
+# define _Pmemcpy _P__builtin_memcpy
+# else
+void* memcpy (void*  __dest, const void*  __src, size_t __n);
+# endif
+
+#else
+typedef void * _cdecl (*memcpy_t)(void *dst, const void *src, unsigned long nbytes);
+static memcpy_t memcpy = 0;
+#endif
+
+#if USEOWNSTRLEN
+# undef strlen
+static int strlen (const char *p1 )
+{
+	const char *p = p1;
+	if( /*!p1 ||*/ !*p1 )
+		return 0;
+	for( ; *++p1; );
+	return (int)(p1-p);
+}
+#endif
 
 #define ONLY_OPENED 1
 #define NO_DOWN     2
@@ -371,7 +404,7 @@ recalc_tabs(struct scroll_info *list)
 
 			if ((listw - tmp) < 0)
 			{
-				tabs->r.w = 8;
+				tabs->r.w = 4;
 // 				listw = 0;
 			}
 			else
@@ -403,6 +436,7 @@ recalc_tabs(struct scroll_info *list)
 
 	if (list->widest < totalw)
 		list->widest = list->total_w = totalw;
+
 }
 
 static bool
@@ -412,7 +446,11 @@ calc_entry_wh(SCROLL_INFO *list, SCROLL_ENTRY *this)
 	struct se_tab *tabs = list->tabs, *tab;
 	struct se_content *c = this->content;
 	short ew, eh, tw = 0, th = 0, nx = 0/*, ny = 0*/;
+	short XW = 0;
 	char *s;
+	PRDEF( calc_entry_wh, text_extent);
+	PRDEF( calc_entry_wh, recalc_tabs);
+
 	while (c)
 	{
 		switch (c->type)
@@ -420,7 +458,35 @@ calc_entry_wh(SCROLL_INFO *list, SCROLL_ENTRY *this)
 			case SECONTENT_TEXT:
 			{
 				s = c->c.text.text;
-				(*list->vdi_settings->api->text_extent)(list->vdi_settings, s, c->fnt ? &c->fnt->n : &this->fnt->n, &c->c.text.w, &c->c.text.h);
+				/*BLOG((0, "calc_entry:s:%lx:'%s':%dc->prev:%lx c->fnt:%lx c->prev->fnt:%lx,%lx n=%lx XW=%d",
+					s, s?s:"<0>",s?*s:-1, c->prev, c->fnt, c->prev, c->prev?c->prev->fnt:NULL, this->fnt->n, XW ));
+				*/
+
+				if( XW && c->prev && c->prev->c.text.h ){
+					c->c.text.w = XW * strlen( s );	/* assuming unprop. font! */
+					c->c.text.h = c->prev->c.text.h;
+				}
+				else{
+					struct xa_fnt_info *f = c->fnt ? &c->fnt->n : &this->fnt->n;
+
+
+					if( f &&  list->start && f->p && list->start->content->c.text.h ){
+						c->c.text.h = list->start->content->c.text.h;
+						c->c.text.w = (f->p-2) * strlen( s );	/* assuming unprop. font! */
+					}
+					else{
+						PROFRECp(
+						*list->vdi_settings->api->,text_extent,(list->vdi_settings, s,
+								f, &c->c.text.w, &c->c.text.h));
+					}
+
+					if( *s )
+						XW = c->c.text.w / strlen( s );
+					/*BLOG(( 0,"c->prev:%lx f=%lx p=%d XW=%d w=%d h=%d e=%x", c->prev, f, f->p, XW,
+							c->c.text.w, c->c.text.h, f->e ));
+							*/
+							
+				}
 				ew = c->c.text.w + 2;
 				eh = c->c.text.h;
 				if (c->c.text.icon.icon)
@@ -429,6 +495,7 @@ calc_entry_wh(SCROLL_INFO *list, SCROLL_ENTRY *this)
 					if (c->c.text.icon.r.h > eh)
 						eh = c->c.text.icon.r.h;
 				}
+					
 				break;
 			}
 			case SECONTENT_ICON:
@@ -451,7 +518,7 @@ calc_entry_wh(SCROLL_INFO *list, SCROLL_ENTRY *this)
 			if (tab->r.w < ew)
 			{
 				tab->r.w = ew + 3;
-				recalc_tabs(list);
+				PROFRECv(recalc_tabs,(list));
 				fullredraw = true;
 			}
 		}
@@ -593,7 +660,8 @@ draw_nesticon(struct xa_vdi_settings *v, short width, RECT *xy, SCROLL_ENTRY *th
 }
 
 static void
-display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this, struct xa_vdi_settings *v, RECT *xy, const RECT *clip)
+display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
+	struct xa_vdi_settings *v, RECT *xy, const RECT *clip)
 {
 	bool sel = this->state & OS_SELECTED;
 	
@@ -724,6 +792,11 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this, str
 						}
 						if (tw > 0)
 						{
+							int method ;
+							if( c->index == 0/*FSLIDX_NAME*/ )
+								method = 1;
+							else
+								method = 0;
 							f = this->fnt->flags;
 					
 							if (sel)
@@ -735,7 +808,12 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this, str
 							(*v->api->t_font)(v, wtxt->p, wtxt->f);
 							(*v->api->t_effects)(v, wtxt->e);
 					
-							(*v->api->prop_clipped_name)(v, c->c.text.text, t, tw, &tw, &th, 0);
+							(*v->api->prop_clipped_name)(v, c->c.text.text, t, tw, &tw, &th, method);
+#if ITALIC_IS_CUTOFF
+							/* on some systems the last letter is cut off if italic */
+							if( wtxt->e & ITALIC )
+								strcat( t, " " );
+#endif
 // 							display("%s", c->c.text.text);
 // 							display("%s", t);
 // 							display("tab  %d/%d/%d/%d", tab->r);
@@ -767,6 +845,7 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this, str
 							}
 							(*v->api->t_color)(v, wtxt->fgc);
 							v_gtext(v->handle, dx, dy, t);
+
 						}
 					}
 					break;
@@ -840,6 +919,8 @@ draw_slist(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *entry, const RECT *
 		{
 			(*v->api->f_color)(v, G_WHITE);
 			(*v->api->bar)(v, 0, xy.x, xy.y, xy.w, xy.h);
+
+		  list->flags &= ~SIF_DIRTY;
 		}
 		(*v->api->set_clip)(v, clip);
 	}
@@ -856,15 +937,17 @@ reset_listwi_widgets(SCROLL_INFO *list, short redraw)
 
 	if (list->wi)
 	{
-		if (list->total_w > list->wi->wa.w)
+		if (list->widest/*total_w*/ > list->wi->wa.w)
 		{
-			if (as)
+			if (as){
 				tp |= (LFARROW|RTARROW|HSLIDE);
+		}
 		}
 		else
 		{
-			if (as)
+			if (as){
 				tp &= ~(LFARROW|RTARROW|HSLIDE);
+			}
 			if ((list->start_x | list->off_x))
 			{
 				list->start_x = 0;
@@ -921,7 +1004,7 @@ sliders(struct scroll_info *list, bool rdrw)
 		rm |= 1;
 
 	if (XA_slider(list->wi, XAW_HSLIDE,
-		  list->total_w,
+		  list->widest,
 		  list->wi->wa.w,
 		  list->start_x))
 		rm |= 2;
@@ -1066,12 +1149,18 @@ get_entry_lrect(struct scroll_info *l, struct scroll_entry *e, short flags, LREC
 	struct scroll_entry *this = l->start;
 	short level = 0;
 
+	PRDEF( get_entry_lrect, next_entry );
+
 	while (this)
 	{
 		if (e == this)
 			break;
 		y += this->r.h;
-		this = next_entry(this, ENT_VISIBLE, -1, NULL);
+		if( (l->flags & SIF_TREEVIEW) || this->down ){
+			PROFRECs( this =, next_entry,(this, ENT_VISIBLE, -1, NULL));
+		}
+		else
+			this = this->next;
 	}
 	if (this)
 	{
@@ -1079,7 +1168,7 @@ get_entry_lrect(struct scroll_info *l, struct scroll_entry *e, short flags, LREC
 		h = this->r.h;
 		if ((flags & 1))
 		{
-			while ((this = next_entry(this, (ENT_VISIBLE|ENT_ISROOT), -1, &level)))
+			while (PROFRECa(this =, next_entry,(this, (ENT_VISIBLE|ENT_ISROOT), -1, &level)))
 				w += this->r.w, h += this->r.h;
 #if 0
 			this = next_entry(this, (ENT_VISIBLE|ENT_ISROOT), -1, &level);
@@ -1098,18 +1187,20 @@ get_entry_lrect(struct scroll_info *l, struct scroll_entry *e, short flags, LREC
 		r->y = y;
 		r->w = w;
 		r->h = h;
+		//PROFILE(( "get_entry_lrect:return 1 r=%ld/%ld/%ld/%ld", r->x, r->y, r->w, r->h ));
 		return 1;
 	}
 	else
 	{
 		r->w = r->h = 0L;
+		//PROFILE(( "get_entry_lrect:return 0" ));
 		return 0;
 	}
 }
 /*
- * If entyr == NULL, redraw whole box,
- * else redraw only the give entry.
- * If scroll_list have no parent window, nothing is redraw,
+ * If entry == NULL, redraw whole box,
+ * else redraw only the given entry.
+ * If scroll_list has no parent window, nothing is redrawn,
  * as then we do not have a rectanlge list to use.
  */
 static void
@@ -1120,7 +1211,6 @@ slist_redraw(SCROLL_INFO *list, SCROLL_ENTRY *entry)
 
 	if (!wind)
 		wind = list->wt->wind;
-
 	if (entry)
 	{
 		LRECT r;
@@ -1141,6 +1231,9 @@ slist_redraw(SCROLL_INFO *list, SCROLL_ENTRY *entry)
 			rl = rl->next;
 		}
 		(*wind->vdi_settings->api->clear_clip)(wind->vdi_settings);
+		if (!entry){
+		  list->flags &= ~SIF_DIRTY;
+		}
 		showm();
 	}
 }
@@ -1470,26 +1563,38 @@ set_setext_icon(struct se_content *this_sc, OBJECT *icon)
 	this_sc->c.text.icon.r.h += 2;
 }
 	
+
 static struct se_content *
-new_setext(const char *t, OBJECT *icon, short type)
+new_setext(const char *t, OBJECT *icon, short type, short *sl)
 {
 	struct se_content *new = NULL;
-	short tblen, slen;
+	short slen, tblen;
+	PRDEF(new_setext,set_setext_icon);
+	PRDEF(new_setext,memcpy);
+	//PRDEF(new_setext,strlen);
 
 	/* Ozk:
 	 * On second thought, lets always copy the text
 	 */
+	//PROFRECs(slen =, strlen,(t));
 	slen = strlen(t);
 	tblen = slen < 44 ? 44 : slen + 1;
+	if( sl )
+		*sl = slen;
 	new = kmalloc(sizeof(*new) + tblen);
 	if (new)
 	{
 		bzero(new, sizeof(*new));
 		new->c.text.flags = SETEXT_TXTSTR;
 		new->c.text.text = new->c.text.txtstr;
-		strcpy(new->c.text.txtstr, t);
-		if (icon)
-			set_setext_icon(new, icon);
+		/*
+		 * this could copy more than is allocated?
+		 * strcpy(new->c.text.txtstr, t);
+		 */
+		PROFRECv(memcpy,(new->c.text.txtstr, t, tblen));
+		if (icon){
+			PROFRECv(set_setext_icon,(new, icon));
+		}
 		
 		new->type = SECONTENT_TEXT;
 		new->next = NULL;
@@ -1526,19 +1631,23 @@ static struct se_content *
 insert_strings(struct scroll_entry *this, short index, struct sc_text *t, OBJECT *icon, short type)
 {
 	struct se_content *this_sc, *ret = NULL;
-	int i;
+	int i, j = t->strings;
+	short slen;
 	const char *s = t->text;
+	PRDEF(insert_strings,insert_se_content);
+	PRDEF(insert_strings,new_setext);
 
-	for (i = 0; i < t->strings; i++)
+
+	for (i = 0; i < j; i++)
 	{
-		if ((this_sc = new_setext(s, icon, type)))
+		if (PROFRECa(this_sc =, new_setext,(s, icon, type, &slen)))
 		{
 			if (!ret) ret = this_sc;
-			insert_se_content(this, this_sc, index + i);
+			PROFRECv(insert_se_content,(this, this_sc, index + i));
 			if (icon)
 				icon = NULL;
 		}
-		s += strlen(s) + 1;
+		s += slen + 1;
 	}
 	return ret;
 }
@@ -1742,10 +1851,11 @@ m_state_done:
 										showm();
 										(*list->vdi_settings->api->clear_clip)(list->vdi_settings);
 									}
-									else
+									else{
 										list->redraw(list, NULL);
 								}
 							}
+						}
 						}
 						list->slider(list, rdrw);
 					}
@@ -1796,10 +1906,11 @@ m_state_done:
 										showm();
 										(*list->vdi_settings->api->clear_clip)(list->vdi_settings);
 									}
-									else
+									else{
 										list->redraw(list, NULL);
 								}
 							}
+						}
 						}
 						list->slider(list, rdrw);
 					}
@@ -1820,6 +1931,7 @@ m_state_done:
 				tabs[idx].v = tab->r;
 				recalc_tabs(list);
 // 				reset_tabs(list);
+
 			}
 			else
 				ret = 0;
@@ -1865,7 +1977,7 @@ m_state_done:
 						strcpy(setext->c.text.text, t->text);
 					else
 					{
-						struct se_content *new = new_setext(t->text, setext->c.text.icon.icon, 0);
+						struct se_content *new = new_setext(t->text, setext->c.text.icon.icon, 0,0);
 						if (new)
 						{
 							delete_se_content(entry, setext, NULL, NULL);
@@ -1883,7 +1995,7 @@ m_state_done:
 				}
 				else
 				{
-					struct se_content *new = new_setext(t->text, NULL, 0);
+					struct se_content *new = new_setext(t->text, NULL, 0, 0);
 					if (new)
 					{
 						insert_se_content(entry, new, t->index);
@@ -2340,21 +2452,41 @@ get(SCROLL_INFO *list, SCROLL_ENTRY *entry, short what, void *arg)
 	return ret;
 }
 
+#ifndef FLAG_FILLED	/* cmp xa_fsel.c#67 */
+#define FLAG_FILLED 0x00000001
+#define FLAG_DIR  0x00000002
+#define FLAG_EXE  0x00000004
+#define FLAG_LINK 0x00000008
+#define FLAG_SDIR 0x00000010
+#endif
 static void
 sort_entry(SCROLL_INFO *list, SCROLL_ENTRY **start, SCROLL_ENTRY *new, scrl_compare *greater)
 {
+	
 	if (*start)
 	{
-		SCROLL_ENTRY *c = *start, *here;
-		
+		SCROLL_ENTRY *c = *start, *here, *cp;
+#if 1
+		if( !(list->flags & SIF_TREEVIEW) || !(new->usr_flags & (FLAG_SDIR|FLAG_DIR)) ){
+			/* 1st check if new is greatest cmp to eolist */
+			for( here = cp = c; cp; here = cp, cp = cp->next )
+				;
+			if (greater(list, new, here) ){
+				*start = here;	/* done */
+				return;
+			}
+		}
+		else
+			here = 0;
+#endif			 
 		/* new > c */
-		if (greater(list, new, c))
+		if ( here != c && greater(list, new, c))
 		{
 			here = c;
 			c = c->next;
 			while (c)
 			{
-				/* while new < c */
+				/* while new > c */
 				if (greater(list, new, c))
 				{
 					here = c;
@@ -2388,7 +2520,6 @@ sort_entry(SCROLL_INFO *list, SCROLL_ENTRY **start, SCROLL_ENTRY *new, scrl_comp
 		*start = here;
 	}
 }
-
 /* better control over the content of scroll_entry. */
 static int
 add_scroll_entry(SCROLL_INFO *list,
@@ -2406,6 +2537,23 @@ add_scroll_entry(SCROLL_INFO *list,
 	{
 		bool fullredraw = false;
 // 		struct se_content *seicon;
+		PRDEF(add_scroll_entry,insert_strings);
+		PRDEF(add_scroll_entry,alloc_entry_wtxt);
+		PRDEF(add_scroll_entry,get_entry_lrect);
+		PRDEF(add_scroll_entry,reset_listwi_widgets);
+		PRDEF(add_scroll_entry,next_entry);
+		PRDEF(add_scroll_entry,form_copy);
+		PRDEF(add_scroll_entry,redraw);
+		PRDEF(add_scroll_entry,slider);
+		PRDEF(add_scroll_entry,calc_entry_wh);
+		PRDEF(add_scroll_entry,sort_entry);
+		PRDEF(add_scroll_entry,canredraw);
+		PRDEF(add_scroll_entry,canblit);
+
+#ifndef __GNUC__
+		if( memcpy == 0 )
+			memcpy = (*KENTRY->vec_libkern.memcpy);
+#endif
 		
 		/*
 		 * mem for the new entry...
@@ -2421,8 +2569,8 @@ add_scroll_entry(SCROLL_INFO *list,
 // 		display(" %lx", seicon);
 
 // 		ndisplay("strings");
-		insert_strings(new, 0, &sc->t, sc->icon, type);
-// 		display(" done");
+
+		PROFRECv(insert_strings,(new, 0, &sc->t, sc->icon, type));
 
 		new->usr_flags = sc->usr_flags;
 		new->data = sc->data;
@@ -2431,8 +2579,9 @@ add_scroll_entry(SCROLL_INFO *list,
 		new->xstate = sc->xstate;
 		new->xflags = sc->xflags;
 
-		if (sc->fnt)
-			alloc_entry_wtxt(new, sc->fnt);
+		if (sc->fnt){
+			PROFRECv(alloc_entry_wtxt,(new, sc->fnt));
+		}
 		else
 			new->fnt = &default_fnt;
 		
@@ -2444,7 +2593,9 @@ add_scroll_entry(SCROLL_INFO *list,
 		new->indent = list->indent;
 // 		new->r.w += new->indent;
 // 		ndisplay("calc ent wh");
-		calc_entry_wh(list, new);
+
+		PROFRECv(calc_entry_wh,(list, new));
+
 // 		display(" done");
 		
 		if (parent)
@@ -2473,7 +2624,17 @@ add_scroll_entry(SCROLL_INFO *list,
 		{
 			if (sort)
 			{
-				sort_entry(list, &here, new, sort);
+				bool usecur = false;
+
+				if( (!(list->flags & SIF_TREEVIEW) /*|| !(new->usr_flags & (FLAG_SDIR|FLAG_DIR))*/) && list->cur ){
+					usecur = true;
+					here = list->cur;
+				}
+					
+				PROFRECv(sort_entry,(list, &here, new, sort));
+				if( usecur == true )
+					list->cur = new;//here;
+
 				if (!here)
 				{
 					if (parent)
@@ -2554,10 +2715,13 @@ add_scroll_entry(SCROLL_INFO *list,
 			//new->r.w += (new->level * 16);
 		}
 
-		get_entry_lrect(list, new, 0, &r);
+		PROFRECv(get_entry_lrect,(list, new, 0, &r));
 			
 		if ((r.h | r.w))
 		{
+			/* compensate for not calling next_entry in get_entry_lrect...*/
+			if( !sort )
+				new->r.h += LSLINDST_PTS;
 
 			if (new->r.w > list->widest)
 				list->widest = new->r.w;
@@ -2566,11 +2730,11 @@ add_scroll_entry(SCROLL_INFO *list,
 // 			list->total_w = list->widest;
 			list->total_h += new->r.h;
 
-			
 			if (r.y < (list->start_y - list->off_y))
 			{
 				list->start_y += r.h;
-				reset_listwi_widgets(list, redraw);
+				PROFRECv(reset_listwi_widgets,(list, redraw));
+
 // 				if (!reset_listwi_widgets(list, redraw) && canredraw(list) && redraw)
 // 					list->redraw(list, NULL);
 			}
@@ -2583,13 +2747,14 @@ add_scroll_entry(SCROLL_INFO *list,
 					else
 						list->top = new;
 				}
-				if (!reset_listwi_widgets(list, redraw) && redraw)
+
+				if( !PROFREC( reset_listwi_widgets,(list, redraw)) && redraw)
 				{
-					if (canredraw(list))
+					if (PROFREC(canredraw,(list)))
 					{
-						if (!canblit(list) || fullredraw)
+						if (!PROFREC(canblit,(list)) || fullredraw )
 						{
-							list->redraw(list, NULL);
+							PROFRECs(list->,redraw,(list, NULL));
 							fullredraw = false;
 						}
 						else
@@ -2599,7 +2764,8 @@ add_scroll_entry(SCROLL_INFO *list,
 							{
 								struct scroll_entry *next;
 								hidem();
-								if ((next = next_entry(new, ENT_VISIBLE, -1, NULL)))
+								PROFRECs(next =, next_entry,(new, ENT_VISIBLE, -1, NULL));
+								if (next)
 								{
 									RECT d, s = list->wi->wa;
 							
@@ -2607,10 +2773,11 @@ add_scroll_entry(SCROLL_INFO *list,
 									s.h -= (sy + r.h);
 									d = s;
 									d.y += r.h;
-									if (d.h > 0)
-										(*list->vdi_settings->api->form_copy)(&s, &d);
+									if (d.h > 0){
+										PROFRECp(*list->vdi_settings->api->,form_copy,(&s, &d));
 								}
-								list->redraw(list, new);
+								}
+								PROFRECs(list->,redraw,(list, new));
 								showm();
 							}
 						}
@@ -2621,7 +2788,7 @@ add_scroll_entry(SCROLL_INFO *list,
 			}
 			else
 			{
-				reset_listwi_widgets(list, redraw);
+				PROFRECv(reset_listwi_widgets,(list, redraw));
 
 // 				if (!reset_listwi_widgets(list, redraw) && canredraw(list) && redraw)
 // 					list->redraw(list, NULL);
@@ -2633,7 +2800,7 @@ add_scroll_entry(SCROLL_INFO *list,
 					list->redraw(list, NULL);
 			}
 #endif
-			list->slider(list, redraw);
+			PROFRECs(list->,slider,(list, redraw));
 		}
 // 		display("done!");
 		return 1;
@@ -2970,7 +3137,7 @@ del_scroll_entry(struct scroll_info *list, struct scroll_entry *e, short redraw)
 
 	list->slider(list, redraw);
 	return next;
-}
+}	/*/del_scroll_entry*/
 
 /* Modified such that a choise can be made. */
 static void
@@ -3013,7 +3180,6 @@ scroll_up(SCROLL_INFO *list, long num, bool rdrw)
 		num, list->top));
 
 	n = list->total_h - (list->start_y + list->wi->wa.h);
-	
 	if (n <= 0)
 		return;
 	
@@ -3022,6 +3188,14 @@ scroll_up(SCROLL_INFO *list, long num, bool rdrw)
 
 	this = list->top;
 		
+	/* always scroll up whole lines */
+	h = this->r.h;
+	n = (n + h/2) / h;
+	if( n < 1 )
+		n = 1;
+	n *= h;
+
+	
 	while (n > 0 && (next = next_entry(this, ENT_VISIBLE, -1, NULL))) //this->next)
 	{
 		h = this->r.h;
@@ -3046,8 +3220,11 @@ scroll_up(SCROLL_INFO *list, long num, bool rdrw)
 
 	if (rdrw)
 	{
-		if (!canblit(list) || max > (list->wi->wa.h - 8))
+#if 0
+		if ( !canblit(list) || max > (list->wi->wa.h - 8)*/)
+#endif
 			list->redraw(list, NULL);
+#if 0
 		else
 		{
 		/*
@@ -3055,21 +3232,25 @@ scroll_up(SCROLL_INFO *list, long num, bool rdrw)
 		 */
 			RECT s, d;
 
+			hidem();
 			s = list->wi->wa;
 			s.h -= max;
 			d = s;
 			s.y += max;
-			hidem();
+
 			(*list->vdi_settings->api->form_copy)(&s, &d);
+
 			d.y += (d.h - 1);
 			d.h = max + 1;
 			draw_slist(0, list, NULL, &d);
 			(*list->vdi_settings->api->clear_clip)(list->vdi_settings);
 			showm();
 		}
+#endif
 		list->slider(list, true);
 	}
-}
+}	/*/scroll_up*/
+
 static void
 scroll_down(SCROLL_INFO *list, long num, bool rdrw)
 {
@@ -3144,7 +3325,7 @@ scroll_down(SCROLL_INFO *list, long num, bool rdrw)
 		}
 		list->slider(list, true);
 	}
-}
+}	/*/scroll_down*/
 
 static void
 scroll_left(SCROLL_INFO *list, long num, bool rdrw)
@@ -3282,24 +3463,28 @@ visible(SCROLL_INFO *list, SCROLL_ENTRY *s, short redraw)
 				 */
 				scroll_down(list, list->off_y, rdrw);
 			}
-			else if ((r.y + r.h) > (list->start_y + list->wi->wa.h))
+			else if ((r.y + r.h-1) > (list->start_y + list->wi->wa.h))
 			{
 				/*
 				 * The entry is partially visible at the end of the list, scroll just
 				 * enough to make it visible as the last line in the list
+				 *
+				 * now: scroll half page
 				 */
-				scroll_up(list, (r.y + r.h) - (list->start_y + list->wi->wa.h), rdrw);
+				scroll_up(list, list->wi->wa.h / 2, rdrw);
 			}
-			if (rdrw)
+			if (rdrw){
 				list->redraw(list, s);
+			}
 			
-			if (redraw == FULLREDRAW)
+			if (redraw == FULLREDRAW){
 				list->redraw(list, NULL);
+			}
 		
 			list->slider(list, redraw);
 		}
 	}	
-}
+}	/*/visible*/
 
 static SCROLL_ENTRY *
 search(SCROLL_INFO *list, SCROLL_ENTRY *start, short mode, void *data)
@@ -3731,6 +3916,8 @@ unset_G_SLIST(struct scroll_info *list)
 
 	DIAG((D_objc, NULL, "unset_G_SLIST: list=%lx, obtree=%lx, index=%d",
 		list, list->wt->tree, list->item));
+	PROFILE(("unset_G_SLIST: list=%lx, obtree=%lx, index=%d",
+		list, list->wt->tree, list->item));
 	this = list->start;
 	while (this)
 	{
@@ -3822,7 +4009,7 @@ set_slist_object(enum locks lock,
 	list->tabs = tabs;
 	list->num_tabs = 10;
 	for (i = 0; i < 10; i++)
-		tabs[i] = default_setab;
+		tabs[i] = default_setab;	/* 0 */
 
 	list->flags |= SIF_KMALLOC;
 
@@ -3942,6 +4129,33 @@ set_slist_object(enum locks lock,
 	}
 	DIAGS((" -- return new slist %lx", list));
 	return list;
+}
+
+/*
+ * set focus into window
+ * if top==true set list->cur to list->top
+ */
+static void sl_set_selected( SCROLL_INFO *list, bool top, short redraw, short key )
+{
+	if (list->cur)
+	{
+		list->set(list, NULL, SESET_UNSELECTED, UNSELECT_ONE, NORMREDRAW);
+
+		if( top == true )
+			list->cur = list->top;
+		if (list->flags & SIF_KEYBDACT)
+			entry_action(list, list->cur, NULL);
+		else
+		{
+			if( !list->keypress )
+				key = 0;
+			list->set(list, list->cur, SESET_SELECTED, 0, /*key?NOREDRAW:*/NORMREDRAW);
+			list->vis(list, list->cur, redraw );
+			/* how force the fileselector to put current into edit-field? */
+			if( key && list->keypress )
+				list->keypress( list, key, 0 );
+		}
+	}
 }
 
 /* HR: The application point of view of the list box */
@@ -4113,6 +4327,7 @@ slist_msg_handler(
 	{
 // 		display("resize slist wind");
 		move_window(0, wind, false, -1, msg[4], msg[5], msg[6], msg[7]);
+		if( (list->flags & SIF_TREEVIEW) )
 		recalc_tabs(list);
 		reset_listwi_widgets(list, false);
 		list->slider(list, false);
@@ -4124,6 +4339,7 @@ slist_msg_handler(
 	}
 	}
 }
+
 
 unsigned short
 scrl_cursor(SCROLL_INFO *list, unsigned short keycode, unsigned short keystate)
@@ -4311,7 +4527,10 @@ scrl_cursor(SCROLL_INFO *list, unsigned short keycode, unsigned short keystate)
 		{
 			list->cur = list->top;
 			list->set(list, list->cur, SESET_SELECTED, 0, NORMREDRAW);
-			list->vis(list, list->cur, NORMREDRAW);
+			list->vis(list, list->cur, /*list->keypress?NOREDRAW:*/NORMREDRAW);
+			/* how force the fileselector to put current into edit-field? */
+			if( list->keypress )
+				list->keypress( list, SC_DNARROW, 0 );
 		}
 		break;
 	}
@@ -4325,40 +4544,63 @@ scrl_cursor(SCROLL_INFO *list, unsigned short keycode, unsigned short keystate)
 		if (list->cur)
 		{		
 			list->cur = list->top;
-			list->set(list, list->cur, SESET_SELECTED, 0, NORMREDRAW);
-			list->vis(list, list->cur, NORMREDRAW);
+			list->set(list, list->cur, SESET_SELECTED, 0, NOREDRAW);
+			list->vis(list, list->cur, list->keypress?NOREDRAW:NORMREDRAW);
+			/* how force the fileselector to put current into edit-field? */
+			if( list->keypress )
+				list->keypress( list, SC_DNARROW, 0 );
 		}
 		break;
 	}
 	case SC_CLRHOME:	/* 0x4700 */	/* home */
 	{
-		if (list->cur)
-			list->set(list, NULL, SESET_UNSELECTED, UNSELECT_ALL, NORMREDRAW);
+		//if (list->cur)
+			//list->set(list, NULL, SESET_UNSELECTED, UNSELECT_ALL, NORMREDRAW);
 		
 		scroll_down(list, list->start_y, true);
 		
-		if (list->cur)
-		{
-			list->cur = list->top;
-			if (list->flags & SIF_KEYBDACT)
-				entry_action(list, list->cur, NULL);
-			else
-			{
-				list->set(list, list->cur, SESET_SELECTED, 0, NORMREDRAW);
-				list->vis(list, list->cur, NORMREDRAW);
-			}
-		}
+		sl_set_selected( list, true, NORMREDRAW, SC_DNARROW );
+		
 		break;
 	}
 	case SC_SHFT_CLRHOME:	/* 0x4737 */	/* shift + home */
 	{
 		long n = list->total_h - (list->start_y + list->wi->wa.h);
-		if (n > 0)
+		bool top = true;
+		short redraw = NOREDRAW, key;
+
+		if (n > list->start->r.h / 2){
 			scroll_up(list, n, true);
+			key = SC_DNARROW;
+		}
+		else{
+			SCROLL_ENTRY *e = get_last_entry(list, ENT_VISIBLE, -1, NULL);
+			if( !e || e == list->cur )
+				break;
+			list->cur = e;
+			top = false;
+			key = SC_UPARROW;
+			redraw = NORMREDRAW;
+		}
+		sl_set_selected( list, top, redraw, key );
 		break;
 	}
 	default:
 	{
+		if( keycode == SC_CTRL_C && list->cur->content && list->wi )
+		{			
+		/*
+		 * copy list-entry to clipboard if text and from AES
+		 */
+			char *text = list->cur->content->c.text.text;
+			if( list->cur->content->type == SECONTENT_TEXT && text )
+			{
+				if( list->wi->dial & created_for_AES )
+				{
+					copy_string_to_clipbrd( text );
+				}
+			}
+		}
 		return keycode;
 	}
 	}
