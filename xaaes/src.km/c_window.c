@@ -40,6 +40,10 @@
 
 #include "mint/signal.h"
 
+STATIC struct xa_window *pull_wind_to_top(enum locks lock, struct xa_window *w);
+STATIC void	fitin_root(RECT *r);
+STATIC void	set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new);
+
 /*
  * Window Stack Management Functions
  */
@@ -202,7 +206,7 @@ calc_shade_height(struct xa_window *wind)
 	}
 }
 
-void
+STATIC void
 clear_wind_rectlist(struct xa_window *wind)
 {
 	DIAGS(("clear_wind_rectlist: on %d of %s", wind->handle, wind->owner->name));
@@ -304,7 +308,7 @@ inside_root(RECT *r, bool noleft)
 	}
 }
 
-void
+STATIC void
 fitin_root(RECT *r)
 {
 	RECT *w = &root_window->wa;
@@ -352,7 +356,7 @@ static char *stacks[] =
 };
 #endif
 
-void
+STATIC void
 wi_remove(struct win_base *b, struct xa_window *w, bool chkfocus)
 {
 #if GENERATE_DIAGS
@@ -402,7 +406,7 @@ wi_remove(struct win_base *b, struct xa_window *w, bool chkfocus)
 	}
 }
 
-void
+STATIC void
 wi_put_first(struct win_base *b, struct xa_window *w)
 {
 	struct xa_window **wind;
@@ -562,7 +566,7 @@ wi_move_first(struct win_base *b, struct xa_window *w)
 	DIAGA(("wi_move_first: !"));
 }
 
-void
+STATIC void
 wi_move_blast(struct win_base *b, struct xa_window *w)
 {
 	DIAGA(("wi_move_blast: %d of %s", w->handle, w->owner->name));
@@ -574,7 +578,7 @@ wi_move_blast(struct win_base *b, struct xa_window *w)
 		wi_put_blast(b, w, false, false);
 	DIAGA(("wi_move_blast: !"));
 }
-void
+STATIC void
 wi_move_belowroot(struct win_base *b, struct xa_window *w)
 {
 	DIAGA(("wi_move_belowroot: %d of %s", w->handle, w->owner->name));
@@ -783,7 +787,8 @@ get_window_info(struct xa_window *wind, char *dst)
 		strcpy(dst, src);
 	}
 }
-void
+#if INCLUDE_UNUSED
+STATIC void
 send_ontop(enum locks lock)
 {
 	struct xa_window *top = TOP_WINDOW;
@@ -797,6 +802,7 @@ send_ontop(enum locks lock)
 					  0, 0, 0, 0);
 	}
 }
+#endif
 void
 send_topped(enum locks lock, struct xa_window *wind)
 {
@@ -856,7 +862,7 @@ send_reposed(enum locks lock, struct xa_window *wind, short amq, RECT *r)
 	}
 }
 
-void
+STATIC void
 send_redraw(enum locks lock, struct xa_window *wind, RECT *r)
 {
 	if (!(wind->window_status & (XAWS_SHADED|XAWS_HIDDEN)) && wind->send_message)
@@ -974,7 +980,9 @@ generate_redraws(enum locks lock, struct xa_window *wind, RECT *r, short flags)
 			struct xa_widget *widg;
 
 			if (xa_rect_clip(&wind->rwa, r, &b))
+			{
 				send_redraw(lock, wind, &b);
+			}
 
 			if ((widg = usertoolbar_installed(wind)) && xa_rect_clip(&widg->ar, r, &b))
 			{
@@ -985,7 +993,9 @@ generate_redraws(enum locks lock, struct xa_window *wind, RECT *r, short flags)
 		}
 
 		if ((flags & RDRW_EXT))
+		{
 			send_iredraw(lock, wind, 0, r);
+	}
 	}
 	DIAGS(("generate_redraws: !"));
 }
@@ -1089,7 +1099,7 @@ bottom_window(enum locks lock, bool snd_untopped, bool snd_ontop, struct xa_wind
 	}
 }
 
-XA_WIND_ATTR
+STATIC XA_WIND_ATTR
 fix_wind_kind(XA_WIND_ATTR tp)
 {
 	/* avoid confusion: if only 1 specified, give both (fail safe!) */
@@ -1156,6 +1166,7 @@ create_window(
 
 #endif
 	
+
 	w = kmalloc(sizeof(*w));
 	if (!w)	/* Unable to allocate memory for window? */
 		return NULL;
@@ -1621,6 +1632,9 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 
 		setnew_focus(wind, S.focus, true, true, false);
 
+		/* avoid second redraw (see setnew_focus) */
+		if( wind->dial != created_for_FMD_START )
+		{
 		/* Display the window using clipping rectangles from the rectangle list */
 		rl = wind->rect_list.start;
 		while (rl)
@@ -1630,7 +1644,7 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 			}
 			rl = rl->next;
 		}
-
+		}
 	}
 	else
 	{
@@ -1817,7 +1831,7 @@ get_wind_by_handle(enum locks lock, short h)
 /*
  * Pull this window to the head of the window list
  */
-struct xa_window *
+STATIC struct xa_window *
 pull_wind_to_top(enum locks lock, struct xa_window *w)
 {
 	struct xa_window *wl, *below, *above;
@@ -2397,6 +2411,7 @@ display_window(enum locks lock, int which, struct xa_window *wind, RECT *clip)
 		{
 			struct xa_rect_list *rl;
 			RECT d;
+			//int n = 0;
 
 			rl = wind->rect_list.start;
 			while (rl)
@@ -2541,7 +2556,9 @@ redraw_client_windows(enum locks lock, struct xa_client *client)
 			while (rl)
 			{
 				if (xa_rect_clip(&rl->r, (RECT *)&buf.m[4], &r))
+				{
 					generate_redraws(lock, wl, &r, RDRW_ALL);
+				}
 				rl = rl->next;
 			}
 		}
@@ -2557,7 +2574,9 @@ redraw_client_windows(enum locks lock, struct xa_client *client)
 				while (rl)
 				{
 					if (xa_rect_clip(&rl->r, (RECT *)&buf.m[4], &r))
+					{
 						generate_redraws(lock, wl, &r, RDRW_ALL);
+					}
 					rl = rl->next;
 				}
 			}
@@ -2708,7 +2727,7 @@ calc_window(enum locks lock, struct xa_client *client, int request, XA_WIND_ATTR
 	return o;
 }
 
-void
+STATIC void
 set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new)
 {
 	short dir, resize, xmove, ymove, wlock = 0;
@@ -2785,7 +2804,9 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 				(*xa_vdiapi->form_save)(0, wind->r, &(wind->background));
 
 			if (!(wind->dial & created_for_SLIST)) // && !(wind->active_widgets & STORE_BACK))
+			{
 				generate_redraws(wlock, wind, (RECT *)&wind->r, !only_wa ? RDRW_ALL : RDRW_WA);
+		}
 		}
 		
 		return;
@@ -3301,7 +3322,9 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 			 * If window was resized, redraw all window borders
 			 */
 			if (resize && !only_wa)
+			{
 				generate_redraws(wlock, wind, NULL, RDRW_EXT);
+			}
 						
 		} /* if (brl) */
 		else

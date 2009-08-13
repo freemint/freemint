@@ -32,6 +32,68 @@
 void _cdecl display(const char *fmt, ...);
 void _cdecl ndisplay(const char *fmt, ...);
 
+#ifndef PROFILING
+#define PROFILING 0
+#endif
+
+enum prof_cmd{ P_Init_All = 0, P_Init = 1, P_Start = 2, P_Stop = 3, P_Print_All = 4,
+	P_Drop_Name = 5};
+
+int prof_acc( char *name, enum prof_cmd cmd, int rv );
+void profile( char *t, ...);
+
+
+#define STRING(x)	# x
+/* makes f->_Pf */
+#define PRV(x)	_P ## x
+/* c,x -> "c:x"*/
+#define PRSTR(c,f)	# c":" #f
+
+#if PROFILING
+
+#define PRINIT	prof_acc(0,P_Init_All,0)
+#define PRPRINT	prof_acc(0,P_Print_All,0)
+#define PRCLOSE	profile(0)
+
+/* define symbol */
+#define PRDEF(c,f)	static char* PRV(f) = PRSTR(c,f)
+/* record usage of function */
+
+/* start && (f(args) ? stop->1:stop->0) */
+#define PROFREC(f,args) (prof_acc(_P ## f,P_Start,1) && ((f args) ? prof_acc(_P ## f,P_Stop,1):prof_acc(_P ## f,P_Stop,0)))
+
+/* start; f(args); stop */
+#define PROFRECv(f,args) prof_acc(_P ## f,P_Start,0) ; (f args); prof_acc(_P ## f,P_Stop,0)
+
+/* start && (a f(args) ? stop->1:stop->0) */
+#define PROFRECa(a,f,args) (prof_acc(_P ## f,P_Start,1) && ((a f args) ? prof_acc(_P ## f,P_Stop,1):prof_acc(_P ## f,P_Stop,0)))
+
+/* start; a f(args); stop */
+#define PROFRECs(a,f,args) prof_acc(_P ## f,P_Start,0); a f args; prof_acc(_P ## f,P_Stop,0)
+
+/* start; (a f)(args); stop */
+#define PROFRECp(a,f,args) prof_acc(_P ## f,P_Start,0); (a f) args; prof_acc(_P ## f,P_Stop,0)
+
+#define PROFILE(msg) profile msg 
+
+#else
+
+#define PRINIT
+#define PRPRINT
+#define PRCLOSE
+
+#define PRDEF(c,f)
+
+#define PROFILE(x)
+
+#define PROFREC(f,args)	f args
+#define PROFRECv(f,args)	f args
+#define PROFRECa(a,f,args)	(a f args)
+#define PROFRECs(a,f,args)	a f args
+#define PROFRECp(a,f,args)	(a f) args
+
+#endif
+
 #if GENERATE_DIAGS
 
 #define BOOTLOG 1
@@ -106,6 +168,7 @@ char *t_owner(struct widget_tree *t);
 
 /* debugging catagories & data */
 extern struct debugger D;
+
 
 void diags(const char *fmt, ...);
 void diaga(const char *fmt, ...);
