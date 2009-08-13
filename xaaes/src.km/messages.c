@@ -40,8 +40,7 @@
 
 static void queue_message(enum locks lock, struct xa_client *dest_client, short amq, short qmf, union msg_buf *msg);
 
-#if 1
-//GENERATE_DIAGS
+#if GENERATE_DIAGS
 static const char *xmsgs[] =
 {
 	"WM_REDRAW",		/* 0x0014    20	*/
@@ -210,6 +209,7 @@ static const char *winx_msgs[] =
 static char unknown[32];
 
 
+#if GENERATE_DIAGS
 const char *
 pmsg(short m)
 {
@@ -235,6 +235,7 @@ pmsg(short m)
 
 	return ret;
 }
+#endif
 #endif
 
 long

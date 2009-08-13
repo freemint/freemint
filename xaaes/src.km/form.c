@@ -42,6 +42,7 @@
 #include "menuwidg.h"
 #include "keycodes.h"
 
+STATIC FormMouseInput	Click_form_do;
 /*
  * Attatch a MODAL form_do session to a client.
  * client->wt (XA_TREE) is used for modal form_do.
@@ -262,6 +263,8 @@ Form_Center(OBJECT *form, short barsizes)
 	form->ob_x = root_window->wa.x + (root_window->wa.w - form->ob_width) / 2;
 	form->ob_y = root_window->wa.y + barsizes + (root_window->wa.h - form->ob_height) / 2;
 }
+
+#if INCLUDE_UNUSED
 void
 Form_Center_r(OBJECT *form, short barsizes, RECT *r)
 {
@@ -270,6 +273,7 @@ Form_Center_r(OBJECT *form, short barsizes, RECT *r)
 	r->w = form->ob_width;
 	r->h = form->ob_height;
 }
+#endif
 
 void
 center_rect(RECT *r)
@@ -317,6 +321,7 @@ Form_Button(XA_TREE *wt,
 	state = pstate = aesobj_state(&obj);
 	dc = md->clicks > 1 ? true : false;
 
+
 	/* find_object can't report click on a OF_HIDETREE object. */
 	/* HR: Unfortunately it could. Fixed that. */
 	
@@ -329,6 +334,7 @@ Form_Button(XA_TREE *wt,
 	{
 		short type = aesobj_type(&obj) & 0xff;
 			
+			
 		if (type == G_SLIST)
 		{
 			if ((wt->flags & WTF_FBDO_SLIST) || (fbflags & FBF_DO_SLIST))
@@ -339,7 +345,9 @@ Form_Button(XA_TREE *wt,
 			else
 				no_exit = false;
 		}
-		else if (type == G_POPUP)
+		else
+		{
+			if (type == G_POPUP)
 		{
 			XAMENU xmn;
 			XAMENU_RESULT result;
@@ -414,36 +422,46 @@ Form_Button(XA_TREE *wt,
 			}
 		}
 		state = aesobj_state(&obj);	
-	}
 	
-	if (!(state & OS_DISABLED))
-	{
-		if ((flags & OF_EDITABLE) || ((fbflags & FBF_CHANGE_FOCUS) && (flags & (OF_EXIT|OF_SELECTABLE|OF_TOUCHEXIT|OF_EDITABLE))))
-		{
-			if (!obj_is_focus(wt, &obj))
+			if ((flags & OF_EDITABLE) || ((fbflags & FBF_CHANGE_FOCUS) && (flags & (OF_EXIT|OF_TOUCHEXIT))))
 			{
 				struct xa_aes_object pf = focus(wt);
-				wt->focus = obj;
-				if (valid_aesobj(&pf))
-					obj_draw(wt, v, pf, -2, NULL, *rl, DRW_CURSOR);
-				obj_draw(wt, v, obj, -2, NULL, *rl, DRW_CURSOR);
-			}
 			if( flags & OF_EDITABLE ){
 				struct objc_edit_info *ei = (wt->ei ? wt->ei : &wt->e);
+					int x = 0, y = 0;
+	
+					// cmp obtree#3405
+					if( !obj_is_focus(wt, &obj) ){
+						if( obj.ob->ob_spec.tedinfo ){
+							char *txt = obj.ob->ob_spec.tedinfo->te_ptext, *ptxt = obj.ob->ob_spec.tedinfo->te_ptmplt;
+							if( !((long)txt & 1L) ){
+								for( ; txt[x]; x++ );
+								for( ; ptxt[y] && ptxt[y] != '_'; y++ );
+							}
+							else BLOG(( 0, "*Form_Button: Error: txt=%lx", txt ));
+						}
+						ei->edstart = y;
+						ei->pos = x;
 
-				ei->pos = ei->edstart;
 				ei->c_state |= OB_CURS_ENABLED;
 				
 				ei->o = obj;
 			}
 		}
+				wt->focus = obj;
+				if (valid_aesobj(&pf))
+					obj_draw(wt, v, pf, -2, NULL, *rl, DRW_CURSOR);
+				obj_draw(wt, v, obj, -2, NULL, *rl, DRW_CURSOR);
+			}
 	}
+	}	/*/if ( (flags & OF_SELECTABLE) && !(state & OS_DISABLED) )*/
 
 	DIAGS(("Form_Button: state %x, flags %x",
 		state, flags));
 
 	if (!(state & OS_DISABLED))
 	{
+		
 		if ((state & OS_SELECTED) && !(pstate & OS_SELECTED) && (flags & OF_EXIT))
 			no_exit = false;
 		
@@ -467,6 +485,9 @@ Form_Button(XA_TREE *wt,
 
 	DIAGS(("Form_Button: return no_exit=%s, nxtob=%d, newstate=%x, clickmask=%x",
 		no_exit ? "yes":"no", aesobj_item(&next_obj), state, dc ? 0x8000:0));
+	/*BLOG((0,"Form_Button: return no_exit=%s, nxtob=%d, newstate=%x, flags=%x clickmask=%x",
+		no_exit ? "yes":"no", aesobj_item(&next_obj), state, flags, dc ? 0x8000:0));
+		*/
 
 // 	display("Form_Button: return no_exit=%s, nxtob=%d, newstate=%x, clickmask=%x",
 // 		no_exit ? "yes":"no", next_obj, state, dc ? 0x8000:0);
@@ -478,7 +499,6 @@ Form_Button(XA_TREE *wt,
  * Form Keyboard Handler for toolbars
  *
  * Eat TAB, Cursor, Home, PgUp, PgDn (Navigation)
- * Insert (Select)
  */
 struct xa_aes_object
 Form_Cursor(XA_TREE *wt,
@@ -488,7 +508,7 @@ Form_Cursor(XA_TREE *wt,
 	    struct xa_aes_object obj,
 	    bool redraw,
 	    struct xa_rect_list **rl,
-	/* outout */	    
+	/* output */	    
 	    struct xa_aes_object *ret_focus,
 	    unsigned short *keyout)
 {
@@ -506,24 +526,14 @@ Form_Cursor(XA_TREE *wt,
 	last_ob = ob_count_flag(obtree, OF_EDITABLE, 0, 0, &edcnt);
 	DIAG((D_form, NULL, "Form_Cursor: wt=%lx, obtree=%lx, obj=%d, keycode=%x, lastob=%d, editobjs=%d",
 		wt, obtree, obj.item, keycode, last_ob, edcnt));
-
+	/*BLOG((0, "Form_Cursor: wt=%lx, obtree=%lx, obj=%d, keycode=%x, keystate=%x, lastob=%d, editobjs=%d focusflags=%d",
+		wt, obtree, obj.item, keycode, keystate, last_ob, edcnt, aesobj_flags(&wt->focus) ));
+*/
 	if (ret_focus)
 		*ret_focus = inv_aesobj();
 
 	switch (keycode)
 	{				/* The cursor keys are always eaten. */
-
-		case SC_INSERT:	// Todo: Use Form_Button! */
-			if( valid_aesobj( &wt->focus ) )
-			{
-				RECT *clip = NULL;
-				short state = aesobj_state(&wt->focus );
-				flags = aesobj_flags(&wt->focus );
-
-				if( (flags & OF_SELECTABLE) && !( flags & (OF_TOUCHEXIT | OF_RBUTTON | OF_DEFAULT)) )
-					obj_change(wt, v, focus(wt), -1, state^OS_SELECTED, flags, redraw, clip, *rl, 0);
-			}
-		break;
 		case SC_TAB:		/* TAB moves to next/previous field */
 		{
 			dir = OBFIND_HOR | ((keystate & (K_RSHIFT|K_LSHIFT)) ? OBFIND_UP : OBFIND_DOWN);
@@ -545,7 +555,7 @@ Form_Cursor(XA_TREE *wt,
 				if( !(keystate & (K_RSHIFT|K_LSHIFT)) && client && client->waiting_pb && client->waiting_pb->intin[0] > 0 ){
 					nxt = aesobj(obtree, client->waiting_pb->intin[0] );	/* select initially selected item*/
 				}
-				else
+				if ( !valid_aesobj(&nxt) || !(nxt.ob->ob_flags & OF_SELECTABLE))
 #endif
 				{
 					dir = OBFIND_VERT | (keystate & (K_RSHIFT|K_LSHIFT)) ? OBFIND_LAST : OBFIND_FIRST;
@@ -733,6 +743,7 @@ Form_Cursor(XA_TREE *wt,
 }
 /*
  * Returns false of exit/touchexit object, true otherwise
+ * Insert simulates left-click
  */
 bool
 Form_Keyboard(XA_TREE *wt,
@@ -787,14 +798,25 @@ Form_Keyboard(XA_TREE *wt,
 
 	if (focus_set(wt))
 	{
+
 		switch (focus_ob(wt)->ob_type & 0xff)
 		{
+g_slist:
 			case G_SLIST:
 			{
 				struct scroll_info *list = object_get_slist(focus_ob(wt));
-				if (list && list->keypress)
+				if ( list )
 				{
+					if( list->keypress )
+					{
+						/* cursor-keys */
 					if ((*list->keypress)(list, keycode, keystate) == 0)
+					{
+						goto done;
+					}
+				}
+					/* pg-up etc. */
+					if ( scrl_cursor(list, keycode, keystate) == 0)
 					{
 						goto done;
 					}
@@ -807,9 +829,28 @@ Form_Keyboard(XA_TREE *wt,
 	
 	next_obj = Form_Cursor(wt, v, keycode, keystate, next_obj, redraw, rl, &new_focus, &keycode);
 
+	/* someone help me! */
+	/* terror fills my soul */
+	if( new_focus.ob->ob_type == G_SLIST ){
+		wt->focus = new_focus;
+		keycode = key->aes;
+		/*
+		 * this is true if user uses a cursor-key right after opening of a list-window
+		 * and focus was not set to the list
+		 */
+		goto g_slist;
+	}
+
 	if (!valid_aesobj(&next_obj) && keycode)
 	{
-		if (keycode == SC_SPACE && focus_set(wt))
+		bool faked_click = false, has_focus = focus_set(wt);
+
+		if (keycode == SC_INSERT && has_focus == true )
+		{
+			next_obj = wt->focus;
+			faked_click = true;
+		}
+		else if (keycode == SC_SPACE && has_focus == true )
 		{
 			if (!(focus_ob(wt)->ob_flags & OF_EDITABLE))
 				next_obj = wt->focus;
@@ -821,6 +862,9 @@ Form_Keyboard(XA_TREE *wt,
 			next_obj = ob_find_flst(obtree, OF_DEFAULT, 0, 0, OS_DISABLED, 0, 0);
 			DIAG((D_keybd, NULL, "Form_Keyboard: Got RETRURN key - default obj=%d for %s",
 				next_obj.item, client->name));
+			/*BLOG((0, "Form_Keyboard: Got RETRURN key - default obj=%d",
+				next_obj.item));
+				*/
 		}
 		else if (keycode == SC_UNDO)	/* UNDO */
 		{
@@ -828,6 +872,9 @@ Form_Keyboard(XA_TREE *wt,
 
 			DIAG((D_keybd, NULL, "Form_Keyboard: Got UNDO key - cancel obj=%d for %s",
 				next_obj.item, client->name));
+			/*BLOG((0,"Form_Keyboard: Got UNDO key - cancel obj=%d",
+				next_obj.item));
+				*/
 		}
 		else 
 		{
@@ -843,6 +890,8 @@ Form_Keyboard(XA_TREE *wt,
 
 			check_mouse(wt->owner, &md.cstate, &md.x, &md.y);
 			md.state = MBS_LEFT;
+			if( faked_click == true )
+		    md.clicks = 1;
 					
 			fr.no_exit = Form_Button(wt, v,
 					         next_obj,
@@ -1061,7 +1110,7 @@ Click_windowed_form_do(	enum locks lock,
  * when a click happened. Also called by windowed form_do() sessions.
  *
  */
-bool
+STATIC bool
 Click_form_do(enum locks lock,
 	      struct xa_client *client,
 	      struct xa_window *wind,
@@ -1519,6 +1568,9 @@ do_formwind_msg(
 #endif
 		default:
 		{
+			/*BLOG((0, "do_formwind_msg: default:wown %s, to %s, wdig=%lx, msg %d, %d, %d, %d, %d, %d, %d, %d",
+				wind->owner->name, to_client->name, widg, msg[0], msg[1], msg[2], msg[3], msg[4], msg[5], msg[6], msg[7]));
+				*/
 			return;
 		}
 		}
@@ -1593,6 +1645,7 @@ do_formwind_msg(
 			wt->dy = dy;
 			(*v->api->save_clip)(v, &sc);
 // 			display_window(0, 120, wind, NULL);
+
 			display_widget(0, wind, get_widget(wind, XAW_VSLIDE), wind->rect_list.start);
 			dfwm_redraw(wind, widg, wt, clp_p/*NULL*/);
 			(*v->api->restore_clip)(v, &sc);

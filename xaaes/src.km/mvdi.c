@@ -26,6 +26,7 @@
 
 #include "xa_global.h"
 
+#if INCLUDE_UNUSED
 long
 mvdi_device(long d1, long a0, short cmd, long *ret)
 {
@@ -63,6 +64,7 @@ mvdi_device(long d1, long a0, short cmd, long *ret)
 	
 	return r_d0;
 }
+#endif
 
 short
 vcheckmode(short mode)
@@ -83,6 +85,7 @@ vcheckmode(short mode)
 	return ret;
 }
 
+#if INCLUDE_UNUSED
 short
 vsetmode(short mode)
 {
@@ -101,7 +104,9 @@ vsetmode(short mode)
 	);
 	return ret;
 }
+#endif
 
+#if INCLUDE_UNUSED
 void
 mSetscreen(unsigned long p1, unsigned long p2, short cmd)
 {
@@ -119,4 +124,4 @@ mSetscreen(unsigned long p1, unsigned long p2, short cmd)
 		: "d0","d1","d2","a0","a1","a2","memory"
 	);
 }
-
+#endif

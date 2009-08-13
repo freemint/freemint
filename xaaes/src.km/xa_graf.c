@@ -47,7 +47,7 @@
 
 /* HR 150202: make rubber_box omnidirectional; helper functions. */
 
-const RECT *
+STATIC const RECT *
 rect_dist(struct xa_client *client, RECT *r, RECT *d)
 {
 	short mb, x, y;
@@ -139,7 +139,7 @@ check_wh_cp(RECT *c, COMPASS cp, short minw, short minh, short maxw, short maxh)
 }
 
 /* fit rectangle r in bounding rectangle b */
-void
+STATIC void
 keep_inside(RECT *r, const RECT *b)
 {
 	if (r->x < b->x)
@@ -200,7 +200,7 @@ move_rectangle(short mx, short my, RECT r, const RECT *d)
 }
 
 
-bool
+STATIC bool
 rect_changed(const RECT *n, const RECT *o)
 {
 	return	   n->x != o->x

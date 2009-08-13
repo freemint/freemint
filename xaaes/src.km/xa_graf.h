@@ -38,11 +38,11 @@ void check_wh_cp(RECT *c, COMPASS cp, short minw, short minh, short maxw, short 
 void xa_graf_mouse(int m_shape, MFORM *mf, struct xa_client *client, bool aesm);
 void set_client_mouse(struct xa_client *client, short which, short m_form, MFORM *mf);
 
-bool rect_changed(const RECT *n, const RECT *o);
+//bool rect_changed(const RECT *n, const RECT *o);
 
-void keep_inside(RECT *r, const RECT *o);
+//void keep_inside(RECT *r, const RECT *o);
 
-const RECT *rect_dist(struct xa_client *client, RECT *r, RECT *d);
+//const RECT *rect_dist(struct xa_client *client, RECT *r, RECT *d);
 const RECT *rect_dist_xy(struct xa_client *client, short x, short y, RECT *r, RECT *d);
 
 RECT widen_rectangle(COMPASS c,

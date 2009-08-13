@@ -73,7 +73,7 @@
 
 struct xa_module_api xam_api;
 
-// static char *xaaes_sysfile(const char *);
+ STATIC char *xaaes_sysfile(const char *);
 
 static OBSPEC * _cdecl
 api_object_get_spec(OBJECT *ob)
@@ -434,7 +434,7 @@ setup_xa_module_api(void)
 /*
  * check if file exist in Aes_home_path
  */
-char * _cdecl
+STATIC char * _cdecl
 xaaes_sysfile(const char *file)
 {
 	char *fn;

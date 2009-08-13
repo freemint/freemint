@@ -40,7 +40,7 @@
 #include "xa_global.h"
 
 #include "trnfm.h"
-#if 1
+#if INCLUDE_UNUSED
 static short systempalette[] =
 {
 0x03e8, 0x03e8, 0x03e8, 0x0000, 0x0000, 0x0000, 0x03e8, 0x0000, 
@@ -562,7 +562,7 @@ toIbs32b(struct rgb_1000 *pal, void *img_ptr)
  * index into the destination palette where the color closest to the one
  * in the src palette was found.
  */
-void
+STATIC void
 build_pal_xref(struct rgb_1000 *src_palette, struct rgb_1000 *dst_palette, unsigned char *cref, int pens)
 {
 	struct rgb_1000 *dst, *src, *s, *d;
@@ -623,7 +623,7 @@ build_pal_xref(struct rgb_1000 *src_palette, struct rgb_1000 *dst_palette, unsig
 /*
  * Remap the bitmap palette referances.
  */
-void
+STATIC void
 remap_bitmap_colindexes(MFDB *map, unsigned char *cref)
 {
 	int planes, psize;
@@ -933,7 +933,7 @@ gem_rdata(struct file *fp, XA_XIMG_HEAD *pic, bool disp, long *rcnt)
 
 /* Loads & depacks IMG (0 if succeded, else error). */
 /* Bitplanes are one after another in address IMG_HEADER.addr. */
-void
+STATIC void
 depack_img(char *name, XA_XIMG_HEAD *pic)
 {
 	int width, word_aligned, pal_size;
@@ -2269,6 +2269,7 @@ get_syspalette(short vdih, struct rgb_1000 *palette)
 		}
 	}
 }
+#if INCLUDE_UNUSED
 void
 set_defaultpalette(short vdih)
 {
@@ -2277,7 +2278,7 @@ set_defaultpalette(short vdih)
 	ptrs.sp = systempalette;
 	set_syspalette(vdih, ptrs.rgb); //(struct rgb_1000 *)&systempalette);
 }
-
+#endif
 struct color_tab256
 {
 	COLOR_TAB	tab;
@@ -2285,6 +2286,8 @@ struct color_tab256
 };
 typedef struct color_tab256 COLOR_TAB256;
 
+
+#if INCLUDE_UNUSED
 static COLOR_TAB256 syscol;
 
 void
@@ -2297,6 +2300,7 @@ set_syscolor(void)
 		vs_ctab(C.P_handle, (COLOR_TAB *)&syscol);
 	}
 }
+#endif
 /*
  * Ozk: Attempt to detect pixel format in 15 bpp and above
  */

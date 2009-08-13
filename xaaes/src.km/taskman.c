@@ -395,6 +395,7 @@ addto_namelist(struct cfg_name_list **list, char *name)
 	}
 }
 
+#if INCLUDE_UNUSED
 void
 removefrom_namelist(struct cfg_name_list **list, char *name, short nlen)
 {
@@ -409,7 +410,7 @@ removefrom_namelist(struct cfg_name_list **list, char *name, short nlen)
 		kfree(this);
 	}
 }
-
+#endif
 void
 free_namelist(struct cfg_name_list **list)
 {
@@ -478,6 +479,7 @@ quit_all_apps(enum locks lock, struct xa_client *except, short reason)
 	Sema_Dn(clients);
 }
 
+#if INCLUDE_UNUSED
 void
 quit_all_clients(enum locks lock, struct cfg_name_list *except_nl, struct xa_client *except_cl, short reason)
 {
@@ -512,7 +514,7 @@ quit_all_clients(enum locks lock, struct cfg_name_list *except_nl, struct xa_cli
 	}
 	Sema_Dn(clients);
 }
-
+#endif
 void
 CHlp_aesmsg(struct xa_client *client)
 {
@@ -545,8 +547,9 @@ CHlp_aesmsg(struct xa_client *client)
 	}
 }
 
-static char sdalert[] = /*scrn_snap_what*/ "[2][What do you want to snap?][Block|Full screen|Top Window|Cancel]";
 
+#if INCLUDE_UNUSED
+static char sdalert[] = /*scrn_snap_what*/ "[2][What do you want to snap?][Block|Full screen|Top Window|Cancel]";
 void
 screen_dump(enum locks lock, struct xa_client *client, bool open)
 {
@@ -628,7 +631,7 @@ screen_dump(enum locks lock, struct xa_client *client, bool open)
 	else
 		do_form_alert(lock, client, 1, /*scrn_snap_notfound*/"[1]['xaaesnap' process not found.|Start 'xaaesnap.prg' and try again|Later XaAES will start the snapper|according to userconfiguration][OK]", "XaAES");
 }
-
+#endif
 static void
 taskmanager_form_exit(struct xa_client *Client,
 		      struct xa_window *wind,

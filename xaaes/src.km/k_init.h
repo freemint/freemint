@@ -34,6 +34,6 @@ void setup_xa_module_api(void);
 int k_init(unsigned long vm);
 void init_helpthread(enum locks lock, struct xa_client *client);
 void load_accs(void);
-char * _cdecl xaaes_sysfile(const char *f);
+//char * _cdecl xaaes_sysfile(const char *f);
 
 #endif /* _k_init_h */
