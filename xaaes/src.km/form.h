@@ -98,7 +98,7 @@ void	Exit_form_do	(struct xa_client *client,
 			 struct fmd_result *fr);
 
 WidgetBehaviour	Click_windowed_form_do;
-FormMouseInput	Click_form_do;
+//FormMouseInput	Click_form_do;
 FormKeyInput	Key_form_do;
 //SendMessage	handle_form_window;
 DoWinMesag	do_formwind_msg;

@@ -46,7 +46,6 @@ AES_function
 	XA_wdlg_event,
 	XA_wdlg_redraw;
 
-WidgetBehaviour click_wdlg_widget;
 #endif
 
 #endif /* _xa_wdlg_h */

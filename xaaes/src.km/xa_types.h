@@ -491,9 +491,9 @@ struct xa_wtxt_inf
 {
 
 	short	flags;	/* Flags */
-	struct xa_fnt_info n;
-	struct xa_fnt_info s;
-	struct xa_fnt_info h;
+	struct xa_fnt_info n;	/* normal */
+	struct xa_fnt_info s;	/* selected */
+	struct xa_fnt_info h;	/* highlighted? */
 };
 
 /*-----------------------------------------------------------------
@@ -1041,7 +1041,7 @@ struct objc_edit_info
 	struct xa_aes_object o;
 
 // 	short obj;	/* Index of editable object */
-	short pos;	/* Cursor (char) position */
+	short pos;	/* Cursor (char) position, relative to edstart */
 	short c_state;	/* Cursor state */
 
 	short edstart;	/* Offset into formatted string where first editable char begins */
@@ -1804,6 +1804,7 @@ enum scroll_info_flags
 	SIF_TREEVIEW	= 0x0080,
 	SIF_AUTOOPEN	= 0x0100,
 	SIF_KEYBDACT	= 0x0200,
+	SIF_DIRTY			= 0x0400
 
 };
 typedef enum scroll_info_flags SCROLL_INFO_FLAGS;

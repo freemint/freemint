@@ -44,7 +44,6 @@ bool CE_exists(struct xa_client *client, void *f);
 void cancel_CE(struct xa_client *client, void *f, bool(*callback)(struct c_event *ce, long arg), long arg);
 
 void post_cevent(struct xa_client *client, void (*func)(enum locks, struct c_event *, bool cancel), void *ptr1, void *ptr2, int d0, int d1, const RECT *r, const struct moose_data *md);
-short dispatch_cevent(struct xa_client *client);
 short dispatch_selcevent(struct xa_client *client, void *f, bool cancel);
 
 //short check_cevents(struct xa_client *client);

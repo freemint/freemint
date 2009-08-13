@@ -579,14 +579,14 @@ static struct appmenu *appmenu = NULL;
 static OBJECT *appmenu_ob = NULL;
 static size_t appmenusize = 0;
 
-const OBJECT drop_box =
+STATIC const OBJECT drop_box =
 {
 	-1, 1, 2,			/* Object 0  */
 	G_BOX, OF_NONE, OS_SHADOWED,
 	{ 0x00FF1100L },
 	0, 0, 12, 2
 };
-const OBJECT drop_choice =	/* Object 1 to n */
+STATIC const OBJECT drop_choice =	/* Object 1 to n */
 {
 	0,-1,-1,
 	G_STRING, OF_NONE, OS_NORMAL,
@@ -2170,8 +2170,9 @@ click_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *wid
 
 	if ( widg->stuff == get_menu())
 	{
-		if ( !lock_menustruct(client->p, true) )
+		if ( !lock_menustruct(client->p, true) ){
 			return false;
+	}
 	}
 	((XA_TREE *)widg->stuff)->owner->status |= CS_MENU_NAV;
 
@@ -2237,12 +2238,12 @@ menu_title(enum locks lock, Tab *tab, short title, struct xa_window *wind, XA_WI
 	short f, n;
 
 	DIAG((D_menu, NULL, "menu_title: tab=%lx, md=%lx", tab, md));
-	
 	if (!tab)
 	{
 		tab = nest_menutask(NULL);
-		if (!tab)
+		if (!tab){
 			return false;
+	}
 	}
 	if (md)
 	{
@@ -2645,7 +2646,9 @@ menu_scroll_up(Tab *tab)
 			
 		}
 		else
+		{
 			generate_redraws(0, pi->wind, &pi->wind->wa, RDRW_WA);
+		}
 
 	}
 	else
@@ -2746,7 +2749,9 @@ menu_scroll_down(Tab *tab)
 			
 		}
 		else
+		{
 			generate_redraws(0, pi->wind, &pi->wind->wa, RDRW_WA);
+	}
 	}
 	else
 		ret = -1;

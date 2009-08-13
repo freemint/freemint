@@ -367,7 +367,10 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 		alert_form[ALERT_BUT1 + f].ob_spec.free_string = alertxt->button[f];
 		alert_form[ALERT_BUT1 + f].ob_width = width;
 		alert_form[ALERT_BUT1 + f].ob_x = x;
+
 		alert_form[ALERT_BUT1 + f].ob_flags &= ~(OF_HIDETREE|OF_DEFAULT);
+		alert_form[ALERT_BUT1 + f].ob_flags |= (OF_EXIT);
+
 		alert_form[ALERT_BUT1 + f].ob_state = OS_WHITEBAK;
 		x += width + b;
 	}
@@ -569,7 +572,9 @@ XA_form_keybd(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	DIAG((D_keybd, client, "XA_form_keybd for %s %lx: obj:%d, k:%x, nob:%d",
 		c_owner(client), obtree, pb->intin[0], pb->intin[1], pb->intin[2]));
-
+	/*BLOG((0, "XA_form_keybd %lx: obj:%d, k:%x, nob:%d",
+		obtree, pb->intin[0], pb->intin[1], pb->intin[2]));
+*/
 	if (validate_obtree(client, obtree, "XA_form_keybd:"))
 	{
 		XA_TREE *wt;
@@ -844,7 +849,9 @@ XA_form_do(enum locks lock, struct xa_client *client, AESPB *pb)
 				else if (!wind->nolist && !is_topped(wind))
 					top_window(lock, true, false, wind);
 				else
+				{
 					display_window(lock, 4, wind, NULL);
+			}
 			}
 // 			display("wait for form_do...");
 			(*client->block)(client, 0); //Block(client, 0);
