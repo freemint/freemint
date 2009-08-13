@@ -44,7 +44,10 @@
 
 #include "mint/signal.h"
 
+STATIC struct xa_client *	find_menu(enum locks lock, struct xa_client *client, short exclude);
+STATIC struct xa_client * next_app(enum locks lock, bool with_window_or_menu, bool no_accessories);
 
+#if INCLUDE_UNUSED
 bool
 taskbar(struct xa_client *client)
 {
@@ -58,6 +61,7 @@ taskbar(struct xa_client *client)
 	return true;
 #endif
 }
+#endif
 
 struct xa_client *
 focus_owner(void)
@@ -177,6 +181,8 @@ setnew_focus(struct xa_window *wind, struct xa_window *unfocus, bool topowner, b
 	DIAGA(("setnew_focus: to %d of %s, unfocus %d of %s",
 		wind ? wind->handle : -2, wind ? wind->owner->name : "nowind",
 		unfocus ? unfocus->handle : -2, unfocus ? unfocus->owner->name : "nowind"));
+
+
 	if (!unfocus || unfocus == S.focus)
 	{
 		struct xa_client *owner;
@@ -236,6 +242,7 @@ setnew_focus(struct xa_window *wind, struct xa_window *unfocus, bool topowner, b
 
 					wind->colours = wind->ontop_cols;
 					send_iredraw(0, wind, 0, NULL);
+
 				} else
 					wind = NULL;
 			} else
@@ -429,6 +436,7 @@ find_focus(bool withlocks, bool *waiting, struct xa_client **locked_client, stru
 	return client;
 }
 
+#if INCLUDE_UNUSED
 /*
  * Attempt to recover a system that has locked up
  */
@@ -483,7 +491,7 @@ recover(void)
 	}
 	forcem();
 }
-
+#endif
 void
 set_next_menu(struct xa_client *new, bool do_topwind, bool force)
 {
@@ -809,12 +817,12 @@ cancel_reiconify_timeout(void)
 		rpi_to = NULL;
 	}
 }
-void
+STATIC void
 block_reiconify_timeout(void)
 {
 	rpi_block++;
 }
-void
+STATIC void
 unblock_reiconify_timeout(void)
 {
 	rpi_block--;
@@ -977,6 +985,7 @@ get_topwind(enum locks lock, struct xa_client *client, struct xa_window *startw,
 	return w;
 }
 
+#if INCLUDE_UNUSED
 struct xa_window *
 next_wind(enum locks lock)
 {
@@ -1020,12 +1029,13 @@ next_wind(enum locks lock)
 #endif
 	return wind;
 }
+#endif
 /*
  * wwom true == find a client "with window or menu", else any client
  * will also return clients without window or menu but is listening
  * for kbd input (MU_KEYBD)
  */
-struct xa_client *
+STATIC struct xa_client *
 next_app(enum locks lock, bool wwom, bool no_acc)
 {
 	struct xa_client *client;
@@ -1187,6 +1197,7 @@ get_app_infront(void)
 	return APP_LIST_START;
 }
 
+#if INCLUDE_UNUSED
 struct xa_client *
 get_app_by_procname(char *name)
 {
@@ -1199,6 +1210,7 @@ get_app_by_procname(char *name)
 	}
 	return client;
 }
+#endif
 void
 set_active_client(enum locks lock, struct xa_client *client)
 {
