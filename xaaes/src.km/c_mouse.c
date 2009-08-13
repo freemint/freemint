@@ -398,6 +398,7 @@ cXA_active_widget(enum locks lock, struct c_event *ce, bool cancel)
 		C.move_block = 0;
 }
 
+#if INCLUDE_UNUSED
 void
 cXA_widget_click(enum locks lock, struct c_event *ce, bool cancel)
 {
@@ -409,7 +410,7 @@ cXA_widget_click(enum locks lock, struct c_event *ce, bool cancel)
 		widg->m.click(lock, root_window, widg, &ce->md);
 	}
 }
-
+#endif
 
 static void
 wheel_arrow(struct xa_window *wind, const struct moose_data *md, XA_WIDGET **wr, short *r, short *r_amnt)

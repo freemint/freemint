@@ -36,6 +36,6 @@ OBJECT *get_xa_desktop(void);
 void set_desktop_widget(struct xa_window *wind, XA_TREE *desktop);
 WindowDisplay redraw_desktop;
 struct xa_client *desktop_owner(void);
-WidgetBehaviour click_desktop_widget;
+//WidgetBehaviour click_desktop_widget;
 
 #endif /* _desktop_h */
