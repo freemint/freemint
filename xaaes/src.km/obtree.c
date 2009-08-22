@@ -2869,7 +2869,6 @@ ob_find(OBJECT *obtree, short object, short depth, short mx, short my)
 }
 #endif
 
-#if INCLUDE_UNUSED
 bool
 obtree_is_menu(OBJECT *tree)
 {
@@ -2886,7 +2885,7 @@ obtree_is_menu(OBJECT *tree)
 
 	return m;
 }
-#endif
+
 bool
 obtree_has_default(OBJECT *obtree)
 {

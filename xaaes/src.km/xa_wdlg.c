@@ -49,7 +49,7 @@
 #include "keycodes.h"
 #include "mint/signal.h"
 
-
+STATIC WidgetBehaviour click_wdlg_widget;
 
 /*
  * WDIALOG FUNCTIONS (wdlg)
@@ -1382,7 +1382,7 @@ XA_wdlg_redraw(enum locks lock, struct xa_client *client, AESPB *pb)
 	return XAC_DONE;
 }
 
-bool
+STATIC bool
 click_wdlg_widget(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
 	struct xa_client *client = wind->owner;
