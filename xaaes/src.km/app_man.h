@@ -32,7 +32,6 @@
 
 struct xa_window * get_topwind(enum locks lock, struct xa_client *client, struct xa_window *startw, bool not, WINDOW_STATUS wsmask, WINDOW_STATUS wsvalue);
 struct xa_window * next_wind(enum locks lock);
-struct xa_client * next_app(enum locks lock, bool with_window_or_menu, bool no_accessories);
 struct xa_client * previous_client(enum locks lock, short exlude);
 
 void set_next_menu(struct xa_client *new, bool do_topwind, bool force);
@@ -50,8 +49,8 @@ void set_active_client(enum locks lock, struct xa_client *client);
 
 void set_reiconify_timeout(enum locks lock);
 void cancel_reiconify_timeout(void);
-void block_reiconify_timeout(void);
-void unblock_reiconify_timeout(void);
+//void block_reiconify_timeout(void);
+//void unblock_reiconify_timeout(void);
 
 void hide_app(enum locks lock, struct xa_client *client);
 void unhide_app(enum locks lock, struct xa_client *client);
@@ -62,7 +61,6 @@ void recover(void);
 
 //XA_TREE *find_menu_bar(enum locks lock);
 struct xa_client *	find_desktop (enum locks lock, struct xa_client *client, short exlude);
-struct xa_client *	find_menu(enum locks lock, struct xa_client *client, short exclude);
 struct xa_client *	focus_owner  (void);
 bool wind_has_focus(struct xa_window *wind);
 struct xa_client *reset_focus(struct xa_window **new_focus, short flags);

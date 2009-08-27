@@ -163,7 +163,7 @@ modify_md(struct moose_data *md)
 	}
 }
 
-bool
+STATIC bool
 add_md(struct moose_data *md)
 {
 	struct moose_data *n = md_tail;
@@ -374,7 +374,7 @@ dispatch_button_event(enum locks lock, struct xa_window *wind, const struct moos
 /*
  * at the moment widgets is always true.
  */
-void
+STATIC void
 XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 {
 	struct xa_client *client, *locker, *mw_owner;
@@ -571,7 +571,7 @@ dispatch_mu_event(struct xa_client *client, const struct moose_data *md, bool is
 		post_cevent(client, cXA_deliver_rect_event, (void *)client->status, NULL, events, 0, NULL,NULL);
 }
 
-int
+STATIC int
 XA_move_event(enum locks lock, const struct moose_data *md)
 {
 	struct xa_client *client;
@@ -690,7 +690,7 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 }
 
 
-void
+STATIC void
 XA_wheel_event(enum locks lock, const struct moose_data *md)
 {
 	struct xa_window *wind;
@@ -1188,6 +1188,7 @@ adi_wheel(struct adif *a, struct moose_data *md)
 	}
 }
 
+#ifdef EIFFEL_SUPPORT
 bool
 eiffel_wheel(unsigned short scan)
 {
@@ -1212,7 +1213,7 @@ eiffel_wheel(unsigned short scan)
 	}
 	return false;
 }
-
+#endif
 /*
  * blocks until mouse input
  * context safe; scheduler called 

@@ -1,5 +1,9 @@
 /*
+<<<<<<< syscalls.master
  * $Id$
+=======
+ * $Id$
+>>>>>>> 1.28
  *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
@@ -69,43 +73,43 @@
 [ GEMDOS ]
 
 /*
-opcode	class name	args */
+opcode	ret	class name	args */
 
-0x000	Pterm0		(void)
+0x000	void	Pterm0		(void)
 
-0x001	Cconin		(void)
-0x002	Cconout		(short c)
-0x003	Cauxin		(void)
-0x004	Cauxout		(short c)
-0x005	Cprnout		(short c)
-0x006	Crawio		(short c)
-0x007	Crawcin		(void)
-0x008	Cnecin		(void)
-0x009	Cconws		(const char *str)
-0x00a	Cconrs		(char *buf)
-0x00b	Cconis		(void)
-0x00c	undefined
-0x00d	undefined
-0x00e	Dsetdrv		(short d)
-0x00f	undefined
+0x001	long	Cconin		(void)
+0x002	void	Cconout		(short c)
+0x003	short	Cauxin		(void)
+0x004	void	Cauxout		(short c)
+0x005	short	Cprnout		(short c)
+0x006	long	Crawio		(short c)
+0x007	long	Crawcin		(void)
+0x008	long	Cnecin		(void)
+0x009	short	Cconws		(const char *str)
+0x00a	void	Cconrs		(char *buf)
+0x00b	short	Cconis		(void)
+0x00c		undefined
+0x00d		undefined
+0x00e	long	Dsetdrv		(short d)
+0x00f		undefined
 
-0x010	Cconos		(void)
-0x011	Cprnos		(void)
-0x012	Cauxis		(void)
-0x013	Cauxos		(void)
-0x014	Maddalt		(long start, long size)
-0x015	Srealloc	(long size)
-0x016	Slbopen		(char *name, char *path, long min_ver,
-			 SHARED_LIB **sl, SLB_EXEC *fn) /* since 1.15.3, MagiC 5 */
-0x017	Slbclose	(SHARED_LIB *sl)		/* since 1.15.3, MagiC 5 */
-0x018	undefined
-0x019	Dgetdrv		(void)
-0x01a	Fsetdta		(struct dtabuf *dta)
-0x01b	undefined
-0x01c	undefined
-0x01d	undefined
-0x01e	undefined
-0x01f	undefined
+0x010	short	Cconos		(void)
+0x011	short	Cprnos		(void)
+0x012	short	Cauxis		(void)
+0x013	short	Cauxos		(void)
+0x014	long	Maddalt		(long start, long size)
+0x015		Srealloc	(long size)
+0x016		Slbopen		(char *name, char *path, long min_ver,
+				 SHARED_LIB **sl, SLB_EXEC *fn) /* since 1.15.3, MagiC 5 */
+0x017		Slbclose	(SHARED_LIB *sl)		/* since 1.15.3, MagiC 5 */
+0x018		undefined
+0x019	short	Dgetdrv		(void)
+0x01a	void	Fsetdta		(struct dtabuf *dta)
+0x01b		undefined
+0x01c		undefined
+0x01d		undefined
+0x01e		undefined
+0x01f		undefined
 
 /*
  * The next binding is not quite right if used in another than the usual ways:
@@ -126,379 +130,380 @@ opcode	class name	args */
  * above (the usp is 6 to low after the first call which is not corrected by
  * the second call).
  */
-0x020	Super		(long new_ssp)
-0x021	undefined
-0x022	undefined
-0x023	undefined
-0x024	undefined
-0x025	undefined
-0x026	undefined
-0x027	undefined
-0x028	undefined
-0x029	undefined
-0x02a	Tgetdate	(void)
-0x02b	Tsetdate	(ushort date)
-0x02c	Tgettime	(void)
-0x02d	Tsettime	(ushort date)
-0x02e	undefined
-0x02f	Fgetdta		(void)
+0x020	long	Super		(long new_ssp)
+0x021		undefined
+0x022		undefined
+0x023		undefined
+0x024		undefined
+0x025		undefined
+0x026		undefined
+0x027		undefined
+0x028		undefined
+0x029		undefined
+0x02a	short	Tgetdate	(void)
+0x02b	long	Tsetdate	(ushort date)
+0x02c	short	Tgettime	(void)
+0x02d	long	Tsettime	(ushort date)
+0x02e		undefined
+0x02f	_DTA *	Fgetdta		(void)
 
-0x030	Sversion	(void)
-0x031	Ptermres	(long save, short code)
-0x032	undefined
-0x033	Sconfig		(short subfn, long flags) unsupported /* MagiC */
-0x034	undefined
-0x035	undefined
-0x036	Dfree		(long *buf, short d)
-0x037	undefined
-0x038	undefined
-0x039	Dcreate		(const char *name)
-0x03a	Ddelete		(const char *path)
-0x03b	Dsetpath	(const char *path)
-0x03c	Fcreate		(const char *name, short attrib)
-0x03d	Fopen		(const char *name, short mode)
-0x03e	Fclose		(short fh)
-0x03f	Fread		(short fh, long count, char *buf)
+0x030	short	Sversion	(void)
+0x031	void	Ptermres	(long save, short code)
+0x032		undefined
+0x033		Sconfig		(short subfn, long flags) unsupported /* MagiC */
+0x034		undefined
+0x035		undefined
+0x036	long	Dfree		(long *buf, short d)
+0x037		undefined
+0x038		undefined
+0x039	short	Dcreate		(const char *name)
+0x03a	long	Ddelete		(const char *path)
+0x03b	long	Dsetpath	(const char *path)
+0x03c	long	Fcreate		(const char *name, short attrib)
+0x03d	long	Fopen		(const char *name, short mode)
+0x03e	long	Fclose		(short fh)
+0x03f	long	Fread		(short fh, long count, char *buf)
 
-0x040	Fwrite		(short fh, long count, const char *buf)
-0x041	Fdelete		(const char *path)
-0x042	Fseek		(long place, short fh, short how)
-0x043	Fattrib		(const char *name, short rwflag, short attr)
-0x044	Mxalloc		(long size, short mode)
-0x045	Fdup		(short fh)
-0x046	Fforce		(short newh, short oldh)
-0x047	Dgetpath	(char *path, short drv)
-0x048	Malloc		(long size)
-0x049	Mfree		(long block)
-0x04a	Mshrink		(short dummy, long block, long size)
-0x04b	Pexec		(short mode, const void *ptr1, const void *ptr2, const void *ptr3)
-0x04c	Pterm		(short code)
-0x04d	undefined
-0x04e	Fsfirst		(const char *path, short attrib)
-0x04f	Fsnext		(void)
+0x040	long	Fwrite		(short fh, long count, const char *buf)
+0x041	long	Fdelete		(const char *path)
+0x042	long	Fseek		(long place, short fh, short how)
+0x043	short	Fattrib		(const char *name, short rwflag, short attr)
+0x044	long	Mxalloc		(long size, short mode)
+0x045	long	Fdup		(short fh)
+0x046	long	Fforce		(short newh, short oldh)
+0x047	long	Dgetpath	(char *path, short drv)
+0x048	long	Malloc		(long size)
+0x049	long	Mfree		(long block)
+0x04a	long	Mshrink		(short DUMMY, long block, long size) /* DUMMY is removed in trapmacro */
+0x04b	long	Pexec		(short mode, const void *ptr1, const void *ptr2, const void *ptr3)
+0x04c	void	Pterm		(short code)
+0x04d		undefined
+0x04e	long	Fsfirst		(const char *path, short attrib)
+0x04f	long	Fsnext		(void)
 
-0x050	undefined
-0x051	undefined
-0x052	undefined
-0x053	undefined
-0x054	undefined
-0x055	undefined
-0x056	Frename		(short junk, const char *old, const char *new)
-0x057	Fdatime		(short *timeptr, short fh, short wflag)
-0x058	undefined
-0x059	undefined
-0x05a	undefined
-0x05b	undefined
-0x05c	Flock		(short fh, short mode, long start, long length)
-0x05d	undefined
-0x05e	undefined
-0x05f	undefined
+0x050		undefined
+0x051		undefined
+0x052		undefined
+0x053		undefined
+0x054		undefined
+0x055		undefined
+0x056	short	Frename		(short junk, const char *old, const char *new)
+0x057	long	Fdatime		(short *timeptr, short fh, short wflag)
+0x058		undefined
+0x059		undefined
+0x05a		undefined
+0x05b		undefined
+0x05c	long	Flock		(short fh, short mode, long start, long length)
+0x05d		undefined
+0x05e		undefined
+0x05f		undefined
 
-0x060	undefined
-0x061	undefined
-0x062	undefined
-0x063	undefined
-0x064	undefined
-0x065	undefined
-0x066	undefined
-0x067	undefined
-0x068	undefined
-0x069	undefined
-0x06a	undefined
-0x06b	undefined
-0x06c	undefined
-0x06d	undefined
-0x06e	undefined
-0x06f	undefined
+0x060		undefined
+0x061		undefined
+0x062		undefined
+0x063		undefined
+0x064		undefined
+0x065		undefined
+0x066		undefined
+0x067		undefined
+0x068		undefined
+0x069		undefined
+0x06a		undefined
+0x06b		undefined
+0x06c		undefined
+0x06d		undefined
+0x06e		undefined
+0x06f		undefined
 
-0x070	undefined
-0x071	undefined
-0x072	undefined
-0x073	undefined
-0x074	undefined
-0x075	undefined
-0x076	undefined
-0x077	undefined
-0x078	undefined
-0x079	undefined
-0x07a	undefined
-0x07b	undefined
-0x07c	undefined
-0x07d	undefined
-0x07e	undefined
-0x07f	undefined
+0x070		undefined
+0x071		undefined
+0x072		undefined
+0x073		undefined
+0x074		undefined
+0x075		undefined
+0x076		undefined
+0x077		undefined
+0x078		undefined
+0x079		undefined
+0x07a		undefined
+0x07b		undefined
+0x07c		undefined
+0x07d		undefined
+0x07e		undefined
+0x07f		undefined
 
-0x080	undefined
-0x081	undefined
-0x082	undefined
-0x083	undefined
-0x084	undefined
-0x085	undefined
-0x086	undefined
-0x087	undefined
-0x088	undefined
-0x089	undefined
-0x08a	undefined
-0x08b	undefined
-0x08c	undefined
-0x08d	undefined
-0x08e	undefined
-0x08f	undefined
+0x080		undefined
+0x081		undefined
+0x082		undefined
+0x083		undefined
+0x084		undefined
+0x085		undefined
+0x086		undefined
+0x087		undefined
+0x088		undefined
+0x089		undefined
+0x08a		undefined
+0x08b		undefined
+0x08c		undefined
+0x08d		undefined
+0x08e		undefined
+0x08f		undefined
 
-0x090	undefined
-0x091	undefined
-0x092	undefined
-0x093	undefined
-0x094	undefined
-0x095	undefined
-0x096	undefined
-0x097	undefined
-0x098	undefined
-0x099	undefined
-0x09a	undefined
-0x09b	undefined
-0x09c	undefined
-0x09d	undefined
-0x09e	undefined
-0x09f	undefined
+0x090		undefined
+0x091		undefined
+0x092		undefined
+0x093		undefined
+0x094		undefined
+0x095		undefined
+0x096		undefined
+0x097		undefined
+0x098		undefined
+0x099		undefined
+0x09a		undefined
+0x09b		undefined
+0x09c		undefined
+0x09d		undefined
+0x09e		undefined
+0x09f		undefined
 
-0x0a0	undefined
-0x0a1	undefined
-0x0a2	undefined
-0x0a3	undefined
-0x0a4	undefined
-0x0a5	undefined
-0x0a6	undefined
-0x0a7	undefined
-0x0a8	undefined
-0x0a9	undefined
-0x0aa	undefined
-0x0ab	undefined
-0x0ac	undefined
-0x0ad	undefined
-0x0ae	undefined
-0x0af	undefined
+0x0a0		undefined
+0x0a1		undefined
+0x0a2		undefined
+0x0a3		undefined
+0x0a4		undefined
+0x0a5		undefined
+0x0a6		undefined
+0x0a7		undefined
+0x0a8		undefined
+0x0a9		undefined
+0x0aa		undefined
+0x0ab		undefined
+0x0ac		undefined
+0x0ad		undefined
+0x0ae		undefined
+0x0af		undefined
 
-0x0b0	undefined
-0x0b1	undefined
-0x0b2	undefined
-0x0b3	undefined
-0x0b4	undefined
-0x0b5	undefined
-0x0b6	undefined
-0x0b7	undefined
-0x0b8	undefined
-0x0b9	undefined
-0x0ba	undefined
-0x0bb	undefined
-0x0bc	undefined
-0x0bd	undefined
-0x0be	undefined
-0x0bf	undefined
+0x0b0		undefined
+0x0b1		undefined
+0x0b2		undefined
+0x0b3		undefined
+0x0b4		undefined
+0x0b5		undefined
+0x0b6		undefined
+0x0b7		undefined
+0x0b8		undefined
+0x0b9		undefined
+0x0ba		undefined
+0x0bb		undefined
+0x0bc		undefined
+0x0bd		undefined
+0x0be		undefined
+0x0bf		undefined
 
-0x0c0	undefined
-0x0c1	undefined
-0x0c2	undefined
-0x0c3	undefined
-0x0c4	undefined
-0x0c5	undefined
-0x0c6	undefined
-0x0c7	undefined
-0x0c8	undefined
-0x0c9	undefined
-0x0ca	undefined
-0x0cb	undefined
-0x0cc	undefined
-0x0cd	undefined
-0x0ce	undefined
-0x0cf	undefined
+0x0c0		undefined
+0x0c1		undefined
+0x0c2		undefined
+0x0c3		undefined
+0x0c4		undefined
+0x0c5		undefined
+0x0c6		undefined
+0x0c7		undefined
+0x0c8		undefined
+0x0c9		undefined
+0x0ca		undefined
+0x0cb		undefined
+0x0cc		undefined
+0x0cd		undefined
+0x0ce		undefined
+0x0cf		undefined
 
-0x0d0	undefined
-0x0d1	undefined
-0x0d2	undefined
-0x0d3	undefined
-0x0d4	undefined
-0x0d5	undefined
-0x0d6	undefined
-0x0d7	undefined
-0x0d8	undefined
-0x0d9	undefined
-0x0da	undefined
-0x0db	undefined
-0x0dc	undefined
-0x0dd	undefined
-0x0de	undefined
-0x0df	undefined
+0x0d0		undefined
+0x0d1		undefined
+0x0d2		undefined
+0x0d3		undefined
+0x0d4		undefined
+0x0d5		undefined
+0x0d6		undefined
+0x0d7		undefined
+0x0d8		undefined
+0x0d9		undefined
+0x0da		undefined
+0x0db		undefined
+0x0dc		undefined
+0x0dd		undefined
+0x0de		undefined
+0x0df		undefined
 
-0x0e0	undefined
-0x0e1	undefined
-0x0e2	undefined
-0x0e3	undefined
-0x0e4	undefined
-0x0e5	undefined
-0x0e6	undefined
-0x0e7	undefined
-0x0e8	undefined
-0x0e9	undefined
-0x0ea	undefined
-0x0eb	undefined
-0x0ec	undefined
-0x0ed	undefined
-0x0ee	undefined
-0x0ef	undefined
+0x0e0		undefined
+0x0e1		undefined
+0x0e2		undefined
+0x0e3		undefined
+0x0e4		undefined
+0x0e5		undefined
+0x0e6		undefined
+0x0e7		undefined
+0x0e8		undefined
+0x0e9		undefined
+0x0ea		undefined
+0x0eb		undefined
+0x0ec		undefined
+0x0ed		undefined
+0x0ee		undefined
+0x0ef		undefined
 
 /*
  * MiNT extensions to GEMDOS
  */
 
-0x0f0	undefined
-0x0f1	undefined
-0x0f2	undefined
-0x0f3	undefined
-0x0f4	undefined
-0x0f5	undefined
-0x0f6	undefined
-0x0f7	undefined
-0x0f8	undefined
-0x0f9	undefined
-0x0fa	undefined
-0x0fb	undefined
-0x0fc	undefined
-0x0fd	undefined
-0x0fe	undefined
-0x0ff	Syield		(void)
+0x0f0		undefined
+0x0f1		undefined
+0x0f2		undefined
+0x0f3		undefined
+0x0f4		undefined
+0x0f5		undefined
+0x0f6		undefined
+0x0f7		undefined
+0x0f8		undefined
+0x0f9		undefined
+0x0fa		undefined
+0x0fb		undefined
+0x0fc		undefined
+0x0fd		undefined
+0x0fe		undefined
+0x0ff		Syield		(void)
 
-0x100	Fpipe		(short *usrh)
-0x101	Ffchown		(short fh, short uid, short gid)	/* since 1.15.2  */
-0x102	Ffchmod		(short fh, ushort mode)			/* since 1.15.2  */
-0x103	Fsync		(short fh)				/* since 1.15.10 */
-0x104	Fcntl		(short fh, long arg, short cmd)
-0x105	Finstat		(short fh)
-0x106	Foutstat	(short fh)
-0x107	Fgetchar	(short fh, short mode)
-0x108	Fputchar	(short fh, long c, short mode)
-0x109	Pwait		(void)
-0x10a	Pnice		(short increment)
-0x10b	Pgetpid		(void)
-0x10c	Pgetppid	(void)
-0x10d	Pgetpgrp	(void)
-0x10e	Psetpgrp	(short pid, short newgrp)
-0x10f	Pgetuid		(void)
+0x100		Fpipe		(short *usrh)
+0x101		Ffchown		(short fh, short uid, short gid)	/* since 1.15.2  */
+0x102		Ffchmod		(short fh, ushort mode)			/* since 1.15.2  */
+0x103		Fsync		(short fh)				/* since 1.15.10 */
+0x104		Fcntl		(short fh, long arg, short cmd)
+0x105		Finstat		(short fh)
+0x106		Foutstat	(short fh)
+0x107		Fgetchar	(short fh, short mode)
+0x108		Fputchar	(short fh, long c, short mode)
+0x109		Pwait		(void)
+0x10a		Pnice		(short increment)
+0x10b		Pgetpid		(void)
+0x10c		Pgetppid	(void)
+0x10d		Pgetpgrp	(void)
+0x10e		Psetpgrp	(short pid, short newgrp)
+0x10f		Pgetuid		(void)
 
-0x110	Psetuid		(ushort id)
-0x111	Pkill		(short pid, short sig)
-0x112	Psignal		(short sig, long handler)
-0x113	Pvfork		(void)
-0x114	Pgetgid		(void)
-0x115	Psetgid		(ushort id)
-0x116	Psigblock	(ulong mask)
-0x117	Psigsetmask	(ulong mask)
-0x118	Pusrval		(long arg)
-0x119	Pdomain		(short arg)
-0x11a	Psigreturn	(void)
-0x11b	Pfork		(void)
-0x11c	Pwait3		(short nohang, long *rusage)
-0x11d	Fselect		(unsigned timeout, long *rfdp, long *wfdp, long *xfdp)
-0x11e	Prusage		(long *r)
-0x11f	Psetlimit	(short i, long v)
+0x110		Psetuid		(ushort id)
+0x111		Pkill		(short pid, short sig)
+0x112		Psignal		(short sig, long handler)
+0x113		Pvfork		(void)
+0x114		Pgetgid		(void)
+0x115		Psetgid		(ushort id)
+0x116		Psigblock	(ulong mask)
+0x117		Psigsetmask	(ulong mask)
+0x118		Pusrval		(long arg)
+0x119		Pdomain		(short arg)
+0x11a		Psigreturn	(void)
+0x11b		Pfork		(void)
+0x11c		Pwait3		(short nohang, long *rusage)
+0x11d		Fselect		(unsigned timeout, long *rfdp, long *wfdp, long *xfdp)
+0x11e		Prusage		(long *r)
+0x11f		Psetlimit	(short i, long v)
 
-0x120	Talarm		(long x)
-0x121	Ppause		(void)
-0x122	Ssysconf	(short which)
-0x123	Psigpending	(void)
-0x124	Dpathconf	(const char *name, short which)
-0x125	Pmsg		(short mode, long mbid, char *ptr)
-0x126	Fmidipipe	(short pid, short in, short out)
-0x127	Prenice		(short pid, short increment)
-0x128	Dopendir	(const char *path, short flags)
-0x129	Dreaddir	(short len, long handle, char *buf)
-0x12a	Drewind		(long handle)
-0x12b	Dclosedir	(long handle)
-0x12c	Fxattr		(short flag, const char *name, struct xattr *xattr)
-0x12d	Flink		(const char *old, const char *new)
-0x12e	Fsymlink	(const char *old, const char *new)
-0x12f	Freadlink	(short buflen, char *buf, const char *linkfile)
+0x120		Talarm		(long x)
+0x121		Pause		(void)
+0x122		Sysconf		(short which)
+0x123		Psigpending	(void)
+0x124		Dpathconf	(const char *name, short which)
+0x125		Pmsg		(short mode, long mbid, char *ptr)
+0x126		Fmidipipe	(short pid, short in, short out)
+0x127		Prenice		(short pid, short increment)
+0x128		Dopendir	(const char *path, short flags)
+0x129		Dreaddir	(short len, long handle, char *buf)
+0x12a		Drewinddir	(long handle)
+0x12b		Dclosedir	(long handle)
+0x12c		Fxattr		(short flag, const char *name, struct xattr *xattr)
+0x12d		Flink		(const char *old, const char *new)
+0x12e		Fsymlink	(const char *old, const char *new)
+0x12f		Freadlink	(short buflen, char *buf, const char *linkfile)
 
-0x130	Dcntl		(short cmd, const char *name, long arg)
-0x131	Fchown		(const char *name, short uid, short gid)
-0x132	Fchmod		(const char *name, unsigned mode)
-0x133	Pumask		(ushort mode)
-0x134	Psemaphore	(short mode, long id, long timeout)
-0x135	Dlock		(short mode, short drv)
-0x136	Psigpause	(ulong mask)
-0x137	Psigaction	(short sig, const struct sigaction *act, struct sigaction *oact)
-0x138	Pgeteuid	(void)
-0x139	Pgetegid	(void)
-0x13a	Pwaitpid	(short pid, short nohang, long *rusage)
-0x13b	Dgetcwd		(char *path, short drv, short size)
-0x13c	Salert		(char *msg)
-0x13d	Tmalarm		(long x)
-0x13e	Psigintr	(ushort vec, ushort sig) unsupported /* cancelled in 1.16 */
-0x13f	Suptime		(ulong *cur_uptim, ulong loadave[3])
+0x130		Dcntl		(short cmd, const char *name, long arg)
+0x131		Fchown		(const char *name, short uid, short gid)
+0x132		Fchmod		(const char *name, unsigned mode)
+0x133		Pumask		(ushort mode)
+0x134		Psemaphore	(short mode, long id, long timeout)
+0x135		Dlock		(short mode, short drv)
+0x136		Psigpause	(ulong mask)
+0x137		Psigaction	(short sig, const struct sigaction *act, struct sigaction *oact)
+0x138		Pgeteuid	(void)
+0x139		Pgetegid	(void)
+0x13a		Pwaitpid	(short pid, short nohang, long *rusage)
+0x13b		Dgetcwd		(char *path, short drv, short size)
+0x13c		Salert		(char *msg)
+0x13d		Tmalarm		(long x)
+0x13e		Psigintr	(ushort vec, ushort sig) unsupported /* cancelled in 1.16 */
+0x13f		Suptime		(ulong *cur_uptim, ulong loadave[3])
 
-0x140	Ptrace		(short request, short pid, void *addr, long data) /* since 1.15.11 */
-0x141	Mvalidate	(short pid, void *addr, long size, long *flags) /* since 1.15.11 */
-0x142	Dxreaddir	(short len, long handle, char *buf, struct xattr *xattr, long *xret)
-0x143	Pseteuid	(ushort id)
-0x144	Psetegid	(ushort id)
-0x145	Pgetauid	(void)
-0x146	Psetauid	(short id)
-0x147	Pgetgroups	(short gidsetlen, ushort gidset[])
-0x148	Psetgroups	(short ngroups, ushort gidset[])
-0x149	Tsetitimer	(short which, long *interval, long *value,
-			 long *ointerval, long *ovalue)
-0x14a	Dchroot		(const char *dir) /* since 1.15.3  */
-0x14b	Fstat64		(short flag, const char *name, struct stat *stat) /* since 1.15.4  */
-0x14c	Fseek64		(long hiplace, long lowplace, short fh, short how,
-			 void *newpos) /* since 1.15.10 */
-0x14d	Dsetkey		(long hidev, long lowdev, char *key, short cipher) /* since 1.15.4  */
-0x14e	Psetreuid	(ushort rid, ushort eid)
-0x14f	Psetregid	(ushort rid, ushort eid)
+0x140		Ptrace		(short request, short pid, void *addr, long data) /* since 1.15.11 */
+0x141		Mvalidate	(short pid, void *addr, long size, long *flags) /* since 1.15.11 */
+0x142		Dxreaddir	(short len, long handle, char *buf, struct xattr *xattr, long *xret)
+0x143		Pseteuid	(ushort id)
+0x144		Psetegid	(ushort id)
+0x145		Pgetauid	(void)
+0x146		Psetauid	(short id)
+0x147		Pgetgroups	(short gidsetlen, ushort gidset[])
+0x148		Psetgroups	(short ngroups, ushort gidset[])
+0x149		Tsetitimer	(short which, long *interval, long *value,
+				 long *ointerval, long *ovalue)
+0x14a		Dchroot		(const char *dir) /* since 1.15.3  */
+0x14b		Fstat64		(short flag, const char *name, struct stat *stat) /* since 1.15.4  */
+0x14c		Fseek64		(long hiplace, long lowplace, short fh, short how,
+				 void *newpos) /* since 1.15.10 */
+0x14d		Dsetkey		(long hidev, long lowdev, char *key, short cipher) /* since 1.15.4  */
+0x14e		Psetreuid	(ushort rid, ushort eid)
+0x14f		Psetregid	(ushort rid, ushort eid)
 
-0x150	Ssync		(void)
-0x151	Shutdown	(long restart)
-0x152	Dreadlabel	(const char *path, char *label, short maxlen)
-0x153	Dwritelabel	(const char *path, const char *label)
-0x154	Ssystem		(short mode, ulong arg1, ulong arg2)
-0x155	Tgettimeofday	(struct timeval *tv, struct timezone *tz)
-0x156	Tsettimeofday	(struct timeval *tv, struct timezone *tz)
-0x157	Tadjtime	(const struct timeval *delta, struct timeval *olddelta)
-0x158	Pgetpriority	(short which, short who)
-0x159	Psetpriority	(short which, short who, short prio)
-0x15a	Fpoll		(struct pollfd *fds, ulong nfds, ulong timeout) /* since 1.15.10 */
-0x15b	Fwritev		(short fd, const struct iovec *iov, long niov) /* since 1.16 */
-0x15c	Freadv		(short fd, const struct iovec *iov, long niov) /* since 1.16 */
-0x15d	Ffstat		(short fd, struct stat *st) /* since 1.16 */
-0x15e	Psysctl		(long *name, ulong namelen,
-			 void *old, ulong *oldlenp,
-			 const void *new, ulong newlen)
-0x15f	Semulation	(ushort which, ushort op,
-			 long a1, long a2, long a3, long a4,
-			 long a5, long a6, long a7) /* since 1.15.8  */
+0x150		Sync		(void)
+0x151		Shutdown	(long restart)
+0x152		Dreadlabel	(const char *path, char *label, short maxlen)
+0x153		Dwritelabel	(const char *path, const char *label)
+0x154		Ssystem		(short mode, ulong arg1, ulong arg2)
+0x155		Tgettimeofday	(struct timeval *tv, struct timezone *tz)
+0x156		Tsettimeofday	(struct timeval *tv, struct timezone *tz)
+0x157		Tadjtime	(const struct timeval *delta, struct timeval *olddelta)
+0x158		Pgetpriority	(short which, short who)
+0x159		Psetpriority	(short which, short who, short prio)
+0x15a		Fpoll		(struct pollfd *fds, ulong nfds, ulong timeout) /* since 1.15.10 */
+0x15b		Fwritev		(short fd, const struct iovec *iov, long niov) /* since 1.16 */
+0x15c		Freadv		(short fd, const struct iovec *iov, long niov) /* since 1.16 */
+0x15d		Ffstat64	(short fd, struct stat *st) /* since 1.16 */
+0x15e		Psysctl		(long *name, ulong namelen,
+				 void *old, ulong *oldlenp,
+				 const void *new, ulong newlen)
+0x15f		Semulation	(ushort which, ushort op,
+				 long a1, long a2, long a3, long a4,
+				 long a5, long a6, long a7) /* since 1.15.8  */
 
 	/* 1.16 - socket extensions */
 
-0x160	Fsocket		(long domain, long type, long protocol)
-0x161	Fsocketpair	(long domain, long type, long protocol, short fds[2])
-0x162	Faccept		(short fd, struct sockaddr *name, ulong *anamelen)
-0x163	Fconnect	(short fd, const struct sockaddr *name, ulong namelen)
-0x164	Fbind		(short fd, const struct sockaddr *name, ulong namelen)
-0x165	Flisten		(short fd, long backlog)
-0x166	Frecvmsg	(short fd, struct msghdr *msg, long flags)
-0x167	Fsendmsg	(short fd, const struct msghdr *msg, long flags)
-0x168	Frecvfrom	(short fd, void *buf, ulong len, long flags,
-			 struct sockaddr *from, ulong *fromlenaddr)
-0x169	Fsendto		(short fd, const void *buf, ulong len, long flags,
-			 const struct sockaddr *to, ulong tolen)
-0x16a	Fsetsockopt	(short fd, long level, long name, const void *val, ulong valsize)
-0x16b	Fgetsockopt	(short fd, long level, long name, void *val, ulong *avalsize)
-0x16c	Fgetpeername	(short fd, struct sockaddr *asa, ulong *alen)
-0x16d	Fgetsockname	(short fd, struct sockaddr *asa, ulong *alen)
-0x16e	Fshutdown	(short fd, long how)
-0x16f	undefined
+0x160		Fsocket		(long domain, long type, long protocol)
+0x161		Fsocketpair	(long domain, long type, long protocol, short fds[2])
+0x162		Faccept		(short fd, struct sockaddr *name, ulong *anamelen)
+0x163		Fconnect	(short fd, const struct sockaddr *name, ulong namelen)
+0x164		Fbind		(short fd, const struct sockaddr *name, ulong namelen)
+0x165		Flisten		(short fd, long backlog)
+0x166		Frecvmsg	(short fd, struct msghdr *msg, long flags)
+0x167		Fsendmsg	(short fd, const struct msghdr *msg, long flags)
+0x168		Frecvfrom	(short fd, void *buf, ulong len, long flags,
+				 struct sockaddr *from, ulong *fromlenaddr)
+0x169		Fsendto		(short fd, const void *buf, ulong len, long flags,
+				 const struct sockaddr *to, ulong tolen)
+0x16a		Fsetsockopt	(short fd, long level, long name, const void *val, ulong valsize)
+0x16b		Fgetsockopt	(short fd, long level, long name, void *val, ulong *avalsize)
+0x16c		Fgetpeername	(short fd, struct sockaddr *asa, ulong *alen)
+0x16d		Fgetsockname	(short fd, struct sockaddr *asa, ulong *alen)
+0x16e		Fshutdown	(short fd, long how)
+0x16f		undefined
 
 	/* 1.16 - svr5 IPC */
 
+<<<<<<< syscalls.master
 0x170	Pshmget		(long key, long size, long shmflg)
 0x171	Pshmctl		(long shmid, long cmd, struct shmid_ds *buf)
 0x172	Pshmat		(long shmid, const void *shmaddr, long shmflg)
@@ -533,112 +538,148 @@ opcode	class name	args */
 0x18d	undefined
 0x18e	undefined
 0x18f	undefined
+=======
+0x170		Pshmget		(long key, long size, long shmflg)
+0x171		Pshmctl		(long shmid, long cmd, struct shmid_ds *buf)
+0x172		Pshmat		(long shmid, const void *shmaddr, long shmflg)
+0x173		Pshmdt		(const void *shmaddr)
+0x174		Psemget		(long key, long nsems, long semflg)
+0x175		Psemctl		(long semid, long semnum, long cmd, union __semun *arg)
+0x176		Psemop		(long semid, struct sembuf *sops, long nsops)
+0x177		Psemconfig	(long flag)
+0x178		Pmsgget		(long key, long msgflg)
+0x179		Pmsgctl		(long msqid, long cmd, struct msqid_ds *buf)
+0x17a		Pmsgsnd		(long msqid, const void *msgp, long msgsz, long msgflg)
+0x17b		Pmsgrcv		(long msqid, void *msgp, long msgsz, long msgtyp, long msgflg)
+0x17c		undefined
+0x17d		Maccess		(void *addr, long size, short mode) /* since 1.15.12 */
+0x17e		undefined	/* mmap */
+0x17f		undefined	/* munmap */
+
+0x180		Fchown16	(const char *name, short uid, short gid,
+				 short follow) /* since 1.16 */
+0x181		Fchdir		(short fd) /* since 1.17 */
+0x182		Ffdopendir	(short fd) /* since 1.17 */
+0x183		Fdirfd		(long handle) /* since 1.17 */
+0x184		undefined
+0x185		undefined
+0x186		undefined
+0x187		undefined
+0x188		undefined
+0x189		undefined
+0x18a		undefined
+0x18b		undefined
+0x18c		undefined
+0x18d		undefined
+0x18e		undefined
+0x18f		undefined
+>>>>>>> 1.28
 
 0x190	MAX
 
 
 [ BIOS ]
 
-0x000	Getmpb		(long ptr) unsupported
-0x001	Bconstat	(short dev)
-0x002	Bconin		(short dev)
-0x003	Bconout		(short dev, short c)
-0x004	Rwabs		(short rwflag, void *buffer, short number,
-			 short recno, short dev, long lrecno)
-0x005	Setexc		(short number, long vector)
-0x006	Tickcal		(void)
-0x007	Getbpb		(short dev)
-0x008	Bcostat		(short dev)
-0x009	Mediach		(short dev)
-0x00a	Drvmap		(void)
-0x00b	Kbshift		(short mode)
-0x00c	passthrough
-0x00d	passthrough
-0x00e	passthrough
-0x00f	passthrough
+0x000	void	Getmpb		(long ptr) unsupported
+0x001	short	Bconstat	(short dev)
+0x002	long	Bconin		(short dev)
+0x003	long	Bconout		(short dev, short c)
+0x004	long	Rwabs		(short rwflag, void *buffer, short number,
+				 short recno, short dev, long lrecno)
+0x005	void *	Setexc		(short number, long vector)
+0x006	long	Tickcal		(void)
+0x007	void *	Getbpb		(short dev)
+0x008	short	Bcostat		(short dev)
+0x009	short	Mediach		(short dev)
+0x00a	long	Drvmap		(void)
+0x00b	long	Kbshift		(short mode) /* #define Getshift() Kbshift(-1) */
+0x00c		passthrough
+0x00d		passthrough
+0x00e		passthrough
+0x00f		passthrough
 
 0x010	MAX
 
 
 [ XBIOS ]
 
-0x000	Initmouse	(short type, long param, long vptr) passthrough
-0x001	Ssbrk		(short size) passthrough
-0x002	Physbase	(void) passthrough
-0x003	Logbase		(void) passthrough
-0x004	Getrez		(void) passthrough
-0x005	Vsetscreen	(long log, long phys, short rez, short mode)
-0x006	Setpalette	(long palptr) passthrough
-0x007	Setcolor	(short colornum, short mixture) passthrough
-0x008	Floprd		(long buf, long x, short d, short sect, short trk,
-			 short side, short n) passthrough
-0x009	Flopwr		(long buf, long x, short d, short sect, short trk,
-			 short side, short n) passthrough
-0x00a	Flopfmt		(long buf, long x, short d, short spt, short t,
-			 short sd, short i, long m, short v) passthrough
-0x00b	Dbmsg		(short rsrvd, short msg_num, long msg_arg) passthrough /* ATARI Debugger */
-0x00c	Midiws		(short cnt, const char *buf)
-0x00d	Mfpint		(short vnum, long vptr) passthrough
-0x00e	Iorec		(short dev)
-0x00f	Rsconf		(short baud, short flow, short uc, short rs, short ts, short sc)
+0x000	void	Initmouse	(short type, long param, long vptr) passthrough
+0x001	void *	Ssbrk		(short size) passthrough
+0x002	void *	Physbase	(void) passthrough
+0x003	void *	Logbase		(void) passthrough
+0x004	short	Getrez		(void) passthrough
+0x005	void	Vsetscreen	(long log, long phys, short rez, short mode)
+0x006	void	Setpalette	(long palptr) passthrough
+0x007	short	Setcolor	(short colornum, short mixture) passthrough
+0x008	short	Floprd		(long buf, long x, short d, short sect, short trk,
+				 short side, short n) passthrough
+0x009	short	Flopwr		(long buf, long x, short d, short sect, short trk,
+				 short side, short n) passthrough
+0x00a	short	Flopfmt		(long buf, long x, short d, short spt, short t,
+				 short sd, short i, long m, short v) passthrough
+0x00b		Dbmsg		(short rsrvd, short msg_num, long msg_arg) passthrough /* ATARI Debugger */
+0x00c	void	Midiws		(short cnt, const char *buf)
+0x00d	void	Mfpint		(short vnum, long vptr) passthrough
+0x00e	void *	Iorec		(short dev)
+0x00f	long	Rsconf		(short baud, short flow, short uc, short rs, short ts, short sc)
 
-0x010	Keytbl		(char *unshift, char *shift, char *caps)
-0x011	Random		(void)
-0x012	Protobt		(long buf, long serial, short dsktyp, short exec) passthrough
-0x013	Flopver		(long buf, long x, short d, short sect, short trk,
-			 short sd, short n) passthrough
-0x014	Scrdmp		(void) passthrough
-0x015	Cursconf	(short cmd, short op)
-0x016	Settime		(ulong datetime)
-0x017	Gettime		(void)
-0x018	Bioskeys	(void)
-0x019	Ikbdws		(short len_minus1, long ptr) passthrough
-0x01a	Jdisint		(short vnum) passthrough
-0x01b	Jenabint	(short vnum) passthrough
-0x01c	Giaccess	(short data, short reg) passthrough
-0x01d	Offgibit	(short ormask) passthrough
-0x01e	Ongibit		(short andmask) passthrough
-0x01f	Xbtimer		(short timer, short ctrl, short data, long vptr) passthrough
+0x010	void *	Keytbl		(char *unshift, char *shift, char *caps)
+0x011	long	Random		(void)
+0x012	void	Protobt		(long buf, long serial, short dsktyp, short exec) passthrough
+0x013	short	Flopver		(long buf, long x, short d, short sect, short trk,
+				 short sd, short n) passthrough
+0x014	void	Scrdmp		(void) passthrough
+0x015	short	Cursconf	(short cmd, short op)
+0x016	void	Settime		(ulong datetime)
+0x017	long	Gettime		(void)
+0x018	void	Bioskeys	(void)
+0x019	void	Ikbdws		(short len_minus1, long ptr) passthrough
+0x01a	void	Jdisint		(short vnum) passthrough
+0x01b	void	Jenabint	(short vnum) passthrough
+0x01c	short	Giaccess	(short data, short reg) passthrough
+0x01d	void	Offgibit	(short ormask) passthrough
+0x01e	void	Ongibit		(short andmask) passthrough
+0x01f	void	Xbtimer		(short timer, short ctrl, short data, long vptr) passthrough
 
-0x020	Dosound		(const char *ptr)
-0x021	Setprt		(short config) passthrough
-0x022	Kbdvbase	(void) passthrough
-0x023	Kbrate		(short delay, short reprate) passthrough
-0x024	Prtblk		(long pblkptr) passthrough
-0x025	Vsync		(void) passthrough
-0x026	Supexec		(void *funcptr, long a1, long a2, long a3, long a4, long a5)
-0x027	Puntaes		(void) passthrough
-0x028	passthrough
-0x029	Floprate	(short drive, short rate) passthrough
-0x02a	DMAread		(long sector, short count, long buffer, short devno) passthrough
-0x02b	DMAwrite	(long sector, short count, long buffer, short devno) passthrough
-0x02c	Bconmap		(short dev)
-0x02d	passthrough
-0x02e	NVMaccess	(short op, short start, short count, long buf) passthrough
-0x02f	Waketime	(ushort w_date, ushort w_time) passthrough
+0x020	void	Dosound		(const char *ptr)
+0x021	short	Setprt		(short config) passthrough
+0x022	_KBDVECS*Kbdvbase	(void) passthrough
+0x023	short	Kbrate		(short delay, short reprate) passthrough
+0x024	void	Prtblk		(long pblkptr) passthrough
+0x025	void	Vsync		(void) passthrough
+0x026	long	Supexec		(void *funcptr, long a1, long a2, long a3, long a4, long a5)
+0x027	void	Puntaes		(void) passthrough
+0x028		passthrough
+0x029	short	Floprate	(short drive, short rate) passthrough
+0x02a	long	DMAread		(long sector, short count, long buffer, short devno) passthrough
+0x02b	long	DMAwrite	(long sector, short count, long buffer, short devno) passthrough
+0x02c	long	Bconmap		(short dev)
+0x02d		passthrough
+0x02e	short	NVMaccess	(short op, short start, short count, long buf) passthrough
+0x02f	void	Waketime	(ushort w_date, ushort w_time) passthrough
 
 	/* MetaDOS XBIOS extensions (0x30 - 0x3f) */
 
-0x030	Metainit	(void *metainit) unsupported
-0x031	Metaopen	(short drive, void *metaopen) unsupported
-0x032	Metaclose	(short drive) unsupported
-0x033	Metaread	(short drive, void *buffer, ulong first,
-			 ushort count) unsupported
-0x034	Metawrite	(short drive, void *buffer, ulong first,
-			 ushort count) unsupported
-0x035	Metaseek	(short drive, ulong offset) unsupported
-0x036	Metastatus	(short drive, void *extended) unsupported
-0x037	Metaioctl	(short drive, long magic, short opcode,
-			 void *buffer) unsupported
-0x038	undefined	/* reserved for MetaDOS */
-0x039	undefined	/* reserved for MetaDOS */
-0x03a	undefined	/* reserved for MetaDOS */
-0x03b	Metastartaudio	(short drive, ushort dummy, void *tracks) unsupported
-0x03c	Metastopaudio	(short drive) unsupported
-0x03d	Metasetsongtime(short drive, ushort dummy, ulong start,
-			 ulong end) unsupported
-0x03e	Metagettoc	(short drive, ushort dummy, void *tocentry) unsupported
-0x03f	Metadiscinfo	(short drive, void *discinfo) unsupported
+0x030	void	Metainit	(void *metainit) unsupported
+0x031	long	Metaopen	(short drive, void *metaopen) unsupported
+0x032	void	Metaclose	(short drive) unsupported
+0x033	long	Metaread	(short drive, void *buffer, ulong first,
+				 ushort count) unsupported
+0x034	long	Metawrite	(short drive, void *buffer, ulong first,
+				 ushort count) unsupported
+0x035	long	Metaseek	(short drive, ulong offset) unsupported
+0x036	long	Metastatus	(short drive, void *extended) unsupported
+0x037	long	Metaioctl	(short drive, long magic, short opcode,
+				 void *buffer) unsupported
+0x038		undefined	/* reserved for MetaDOS */
+0x039		undefined	/* reserved for MetaDOS */
+0x03a		undefined	/* reserved for MetaDOS */
+0x03b	long	Metastartaudio	(short drive, ushort dummy, void *tracks) unsupported
+0x03c	long	Metastopaudio	(short drive) unsupported
+0x03d	long	Metasetsongtime	(short drive, ushort dummy, ulong start,
+				 ulong end) unsupported
+0x03e	long	Metagettoc	(short drive, ushort dummy, void *tocentry) unsupported
+0x03f	long	Metadiscinfo	(short drive, void *discinfo) unsupported
 
 /*
  * Flag:
@@ -651,132 +692,132 @@ opcode	class name	args */
  *       15      must be zero on set/returned as zero
  * blitmode (bit 0) forced to soft if no blitter(bit 1 == 0).
  */
-0x040	Blitmode	(short flag) passthrough
-0x041	passthrough
-0x042	passthrough
-0x043	passthrough
-0x044	passthrough
-0x045	passthrough
-0x046	passthrough
-0x047	passthrough
-0x048	passthrough
-0x049	passthrough
-0x04a	passthrough
-0x04b	passthrough
-0x04c	passthrough
-0x04d	passthrough
-0x04e	passthrough
-0x04f	passthrough
+0x040	short	Blitmode	(short flag) passthrough
+0x041		passthrough
+0x042		passthrough
+0x043		passthrough
+0x044		passthrough
+0x045		passthrough
+0x046		passthrough
+0x047		passthrough
+0x048		passthrough
+0x049		passthrough
+0x04a		passthrough
+0x04b		passthrough
+0x04c		passthrough
+0x04d		passthrough
+0x04e		passthrough
+0x04f		passthrough
 
-0x050	EsetShift	(short mode) passthrough
-0x051	EgetShift	(void) passthrough
-0x052	EsetBank	(short bank) passthrough
-0x053	EsetColor	(short num, short val) passthrough
-0x054	EsetPalette	(short start, short count, long ptr) passthrough
-0x055	EgetPalette	(short start, short count, long ptr) passthrough
-0x056	EsetGray	(short mode) passthrough
-0x057	EsetSmear	(short mode) passthrough
-0x058	VsetMode	(short mode) passthrough
-0x059	VgetMonitor	(void) passthrough
-0x05a	VsetSync	(short ext) passthrough
-0x05b	VgetSize	(short mode) passthrough
-0x05c	passthrough
-0x05d	VsetRGB		(short index, short count, long *array) passthrough
-0x05e	VgetRGB		(short index, short count, long *array) passthrough
-0x05f	Validmode	(short mode) passthrough
+0x050	void	EsetShift	(short mode) passthrough
+0x051	short	EgetShift	(void) passthrough
+0x052	short	EsetBank	(short bank) passthrough
+0x053	short	EsetColor	(short num, short val) passthrough
+0x054	void	EsetPalette	(short start, short count, long ptr) passthrough
+0x055	void	EgetPalette	(short start, short count, long ptr) passthrough
+0x056	short	EsetGray	(short mode) passthrough
+0x057	short	EsetSmear	(short mode) passthrough
+0x058	short	VsetMode	(short mode) passthrough
+0x059	short	VgetMonitor	(void) passthrough
+0x05a	void	VsetSync	(short ext) passthrough
+0x05b	long	VgetSize	(short mode) passthrough
+0x05c		passthrough
+0x05d	void	VsetRGB		(short index, short count, long *array) passthrough
+0x05e	void	VgetRGB		(short index, short count, long *array) passthrough
+0x05f	short	Validmode	(short mode) passthrough
 
-0x060	Dsp_DoBlock	(long data_in, long size_in, long data_out,
-			 long size_out) passthrough
-0x061	Dsp_BlkHandShake(long data_in, long size_in, long data_out,
-			 long size_out) passthrough
-0x062	Dsp_BlkUnpacked	(long data_in, long size_in, long data_out,
-			 long size_out) passthrough
-0x063	Dsp_InStream	(long data_in, long blksiz, long numblks, long blksdone) passthrough
-0x064	Dsp_OutStream	(long data_out, long blksiz, long numblks, long blksdone) passthrough
-0x065	Dsp_IOStream	(long data_in, long data_out, long blkisiz,
-			 long blkosiz, long numblks, long blksdone) passthrough
-0x066	Dsp_RemoveInterrupts(short mask) passthrough
-0x067	Dsp_GetWordSize	(void) passthrough
-0x068	Dsp_Lock	(void) passthrough
-0x069	Dsp_Unlock	(void) passthrough
-0x06a	Dsp_Available	(long xmem, long ymem) passthrough
-0x06b	Dsp_Reserve	(long xmem, long ymem) passthrough
-0x06c	Dsp_LoadProg	(long file, short ability, long buffer) passthrough
-0x06d	Dsp_ExecProg	(long codeptr, long codesiz, short ability) passthrough
-0x06e	Dsp_ExecBoot	(long codeptr, long codesiz, short ability) passthrough
-0x06f	Dsp_LodToBinary	(long file, long codeptr) passthrough
+0x060	void	Dsp_DoBlock	(long data_in, long size_in, long data_out,
+				 long size_out) passthrough
+0x061	void	Dsp_BlkHandShake(long data_in, long size_in, long data_out,
+				 long size_out) passthrough
+0x062	void	Dsp_BlkUnpacked	(long data_in, long size_in, long data_out,
+				 long size_out) passthrough
+0x063	void	Dsp_InStream	(long data_in, long blksiz, long numblks, long blksdone) passthrough
+0x064	void	Dsp_OutStream	(long data_out, long blksiz, long numblks, long blksdone) passthrough
+0x065	void	Dsp_IOStream	(long data_in, long data_out, long blkisiz,
+				 long blkosiz, long numblks, long blksdone) passthrough
+0x066	void	Dsp_RemoveInterrupts(short mask) passthrough
+0x067	short	Dsp_GetWordSize	(void) passthrough
+0x068	short	Dsp_Lock	(void) passthrough
+0x069	void	Dsp_Unlock	(void) passthrough
+0x06a	void	Dsp_Available	(long xmem, long ymem) passthrough
+0x06b	short	Dsp_Reserve	(long xmem, long ymem) passthrough
+0x06c	short	Dsp_LoadProg	(long file, short ability, long buffer) passthrough
+0x06d	void	Dsp_ExecProg	(long codeptr, long codesiz, short ability) passthrough
+0x06e	void	Dsp_ExecBoot	(long codeptr, long codesiz, short ability) passthrough
+0x06f	long	Dsp_LodToBinary	(long file, long codeptr) passthrough
 
-0x070	Dsp_TriggerHC	(short vector) passthrough
-0x071	Dsp_RequestUniqueAbility(void) passthrough
-0x072	Dsp_GetProgAbility(void) passthrough
-0x073	Dsp_FlushSubroutines(void) passthrough
-0x074	Dsp_LoadSubroutine(long ptr, long siz, short ability) passthrough
-0x075	Dsp_InqSubrAbility(short ability) passthrough
-0x076	Dsp_RunSubroutine(short handle) passthrough
-0x077	Dsp_Hf0		(short flag) passthrough
-0x078	Dsp_Hf1		(short flag) passthrough
-0x079	Dsp_Hf2		(void) passthrough
-0x07a	Dsp_Hf3		(void) passthrough
-0x07b	Dsp_BlkWords	(long data_in, long size_in, long data_out,
-			 long size_out) passthrough
-0x07c	Dsp_BlkBytes	(long data_in, long size_in, long data_out,
-			 long size_out) passthrough
-0x07d	Dsp_HStat	(void) passthrough
-0x07e	Dsp_SetVectors	(long rcvr, long xmtr) passthrough
-0x07f	Dsp_MultBlocks	(long numsend, long numrecv, long sendblks,
-			 long recvblks) passthrough
+0x070	void	Dsp_TriggerHC	(short vector) passthrough
+0x071	short	Dsp_RequestUniqueAbility(void) passthrough
+0x072	short	Dsp_GetProgAbility(void) passthrough
+0x073	void	Dsp_FlushSubroutines(void) passthrough
+0x074	short	Dsp_LoadSubroutine(long ptr, long siz, short ability) passthrough
+0x075	short	Dsp_InqSubrAbility(short ability) passthrough
+0x076	short	Dsp_RunSubroutine(short handle) passthrough
+0x077	short	Dsp_Hf0		(short flag) passthrough
+0x078	short	Dsp_Hf1		(short flag) passthrough
+0x079	short	Dsp_Hf2		(void) passthrough
+0x07a	short	Dsp_Hf3		(void) passthrough
+0x07b	void	Dsp_BlkWords	(long data_in, long size_in, long data_out,
+				 long size_out) passthrough
+0x07c	void	Dsp_BlkBytes	(long data_in, long size_in, long data_out,
+				 long size_out) passthrough
+0x07d	char	Dsp_HStat	(void) passthrough
+0x07e	void	Dsp_SetVectors	(long rcvr, long xmtr) passthrough
+0x07f	void	Dsp_MultBlocks	(long numsend, long numrecv, long sendblks,
+				 long recvblks) passthrough
 
-0x080	Locksnd		(void) passthrough
-0x081	Unlocksnd	(void) passthrough
-0x082	Soundcmd	(short mode, short data) passthrough /* NSoundcmd for MilanBlaster */
-0x083	Setbuffer	(short region, long beg, long end) passthrough
-0x084	Setmode		(short stereo_mode) passthrough
-0x085	Settracks	(short play, short rec) passthrough
-0x086	Setmontracks	(short montrack) passthrough
-0x087	Setinterrupt	(short src_inter, short cause) passthrough
-0x088	Buffoper	(short mode) passthrough
-0x089	Dsptristate	(short dspxmit, short dsprec) passthrough
-0x08a	Gpio		(short mode, short data) passthrough
-0x08b	Devconnect	(short src, short dst, short sclk, short pre, short proto) passthrough
-0x08c	Sndstatus	(short reset) passthrough
-0x08d	Buffptr		(long ptr) passthrough
-0x08e	passthrough
-0x08f	passthrough
+0x080	long	Locksnd		(void) passthrough
+0x081	long	Unlocksnd	(void) passthrough
+0x082	long	Soundcmd	(short mode, short data) passthrough /* NSoundcmd for MilanBlaster */
+0x083	long	Setbuffer	(short region, long beg, long end) passthrough
+0x084	long	Setmode		(short stereo_mode) passthrough
+0x085	long	Settracks	(short play, short rec) passthrough
+0x086	long	Setmontracks	(short montrack) passthrough
+0x087	long	Setinterrupt	(short src_inter, short cause) passthrough
+0x088	long	Buffoper	(short mode) passthrough
+0x089	long	Dsptristate	(short dspxmit, short dsprec) passthrough
+0x08a	long	Gpio		(short mode, short data) passthrough
+0x08b	long	Devconnect	(short src, short dst, short sclk, short pre, short proto) passthrough
+0x08c	long	Sndstatus	(short reset) passthrough
+0x08d	long	Buffptr		(long ptr) passthrough
+0x08e		passthrough
+0x08f		passthrough
 
-0x090	passthrough
-0x091	passthrough
-0x092	passthrough
-0x093	passthrough
-0x094	passthrough
-0x095	passthrough
-0x096	VsetMask	(short andmask, short ormask) passthrough
-0x097	passthrough
-0x098	passthrough
-0x099	passthrough
-0x09a	passthrough
-0x09b	passthrough
-0x09c	passthrough
-0x09d	passthrough
-0x09e	passthrough
-0x09f	passthrough
+0x090		passthrough
+0x091		passthrough
+0x092		passthrough
+0x093		passthrough
+0x094		passthrough
+0x095		passthrough
+0x096	short	VsetMask	(short andmask, short ormask) passthrough
+0x097		passthrough
+0x098		passthrough
+0x099		passthrough
+0x09a		passthrough
+0x09b		passthrough
+0x09c		passthrough
+0x09d		passthrough
+0x09e		passthrough
+0x09f		passthrough
 
-0x0a0	CacheCtrl	(short opcode, short param) passthrough /* Milan TOS, control CPU cache */
-0x0a1	WdgCtrl		(short opcode) passthrough /* Milan TOS, control hardware watchdog */
-0x0a2	ExtRsConf	(short command, short device, long param) passthrough
-			 /* Milan TOS, extended RsConf for RS-422/RS-485 ports */
-0x0a3	passthrough
-0x0a4	passthrough
-0x0a5	Waveplay	(short flags, long rate, long sptr, long slen) passthrough /* SAM, play a sample */
-0x0a6	passthrough
-0x0a7	passthrough
-0x0a8	passthrough
-0x0a9	passthrough
-0x0aa	passthrough
-0x0ab	passthrough
-0x0ac	passthrough
-0x0ad	passthrough
-0x0ae	passthrough
-0x0af	passthrough
+0x0a0		CacheCtrl	(short opcode, short param) passthrough /* Milan TOS, control CPU cache */
+0x0a1		WdgCtrl		(short opcode) passthrough /* Milan TOS, control hardware watchdog */
+0x0a2		ExtRsConf	(short command, short device, long param) passthrough
+				 /* Milan TOS, extended RsConf for RS-422/RS-485 ports */
+0x0a3		passthrough
+0x0a4		passthrough
+0x0a5		Waveplay	(short flags, long rate, long sptr, long slen) passthrough /* SAM, play a sample */
+0x0a6		passthrough
+0x0a7		passthrough
+0x0a8		passthrough
+0x0a9		passthrough
+0x0aa		passthrough
+0x0ab		passthrough
+0x0ac		passthrough
+0x0ad		passthrough
+0x0ae		passthrough
+0x0af		passthrough
 
 0x0b0	MAX
 

@@ -34,6 +34,8 @@
 
 #include "mint/signal.h"
 
+int copy_string_to_clipbrd( char *text );
+
 
 static inline int max(int a, int b) { return a > b ? a : b; }
 static inline int min(int a, int b) { return a < b ? a : b; }
@@ -75,7 +77,7 @@ object_set_spec(OBJECT *ob, unsigned long cl)
 		ob->ob_spec.index = cl;
 }
 
-inline void
+STATIC inline void
 aesobj_set_spec(struct xa_aes_object *o, unsigned long cl) { object_set_spec(aesobj_ob(o),cl); }
 
 inline bool
@@ -97,7 +99,7 @@ object_has_tedinfo(OBJECT *ob)
 	}
 }
 
-inline bool
+STATIC inline bool
 aesobj_has_tedinfo(struct xa_aes_object *o) { return object_has_tedinfo(aesobj_ob(o)); }
 
 inline bool
@@ -119,7 +121,7 @@ object_has_freestr(OBJECT *ob)
 	}
 }
 
-inline bool
+STATIC inline bool
 aesobj_has_freestr(struct xa_aes_object *o) { return object_has_freestr(aesobj_ob(o)); }
 
 inline bool
@@ -167,7 +169,7 @@ object_get_tedinfo(OBJECT *ob, XTEDINFO **x)
 	return ted;
 }
 
-inline TEDINFO *
+STATIC inline TEDINFO *
 aesobj_get_tedinfo(struct xa_aes_object *o, XTEDINFO **x) { return object_get_tedinfo(aesobj_ob(o), x); }
 
 
@@ -1322,7 +1324,7 @@ ob_order(OBJECT *root, short object, ushort pos)
 	}
 }
 
-void
+STATIC void
 foreach_object(OBJECT *tree,
 		struct xa_aes_object parent,
 		struct xa_aes_object start,
@@ -1572,6 +1574,7 @@ ob_get_parent(OBJECT *obtree, struct xa_aes_object obj)
 	return obj;
 }
 #endif
+#if INCLUDE_UNUSED
 /*
  * Find object whose flags is set to 'f', state set to 's' and
  * have none of 'mf' flags set and status is none of 'ms'.
@@ -1600,7 +1603,8 @@ ob_find_flag(OBJECT *tree, short f, short mf, short stopf)
 	foreach_object(tree, aesobj(tree, 0), aesobj(tree, 0), stopf, 0, anyflst, &d);
 	return d.ret_object;
 }
-struct xa_aes_object
+#endif
+STATIC struct xa_aes_object
 ob_find_any_flag(OBJECT *tree, short f, short mf, short stopf)
 {
 	struct anyflst_parms d;
@@ -1641,6 +1645,7 @@ ob_count_flag(OBJECT *tree, short f, short mf, short stopf, short *count)
 		*count = d.ret;
 	return d.ret1;
 }
+#if INCLUDE_UNUSED
 /*
  * Count objects who has any 'f' bit(s) set,
  * and have none of the flags in 'mf' set.
@@ -1668,7 +1673,7 @@ ob_count_any_flag(OBJECT *tree, short f, short mf, short stopf, short *count)
 
 	return d.ret1;	
 }
-
+#endif
 struct xa_aes_object
 ob_find_any_flst(OBJECT *tree, short f, short s, short mf, short ms, short stopf, short stops)
 {
@@ -1703,8 +1708,12 @@ ob_find_flst(OBJECT *tree, short f, short s, short mf, short ms, short stopf, sh
 	return d.ret_object;
 }
 
+#define SY_TOL	4	// sloppy y-coord-matching
+
 struct xa_aes_object
-ob_find_next_any_flagstate(struct widget_tree *wt, struct xa_aes_object parent, struct xa_aes_object start, short f, short mf, short s, short ms, short stopf, short stops, short flags)
+ob_find_next_any_flagstate(struct widget_tree *wt, struct xa_aes_object parent,
+	struct xa_aes_object start, short f, short mf, short s, short ms, short stopf, short stops,
+	short flags)
 {
 	int rel_depth = 1;
 	short x, y, w, h, ax, cx, cy, cf, flg;
@@ -1857,7 +1866,7 @@ uplink:
 						}
 					}
 				}
-				else
+				else	/*(flags & OBFIND_DOWN)*/
 				{
 					if ( ((x <= r.x && (x + w) > r.x) || (x > r.x && x < (r.x + r.w))))
 					{
@@ -1899,7 +1908,7 @@ uplink:
 			{
 				if (!(flags & OBFIND_DOWN))
 				{
-					if ( ((y <= r.y && (y + h) > r.y)) || (y > r.y && (y + h) < (r.y + r.h)))
+					if ( (y-h/2 <= r.y && y + h > (r.y + r.h/2)) || (y > r.y && (y + h/2) <= (r.y + r.h)) )
 					{
 						if ((x < r.x))
 						{
@@ -1915,27 +1924,24 @@ uplink:
 					{
 						if (y < r.y)
 						{
-							if ((r.y - y) == cy)
+							if ((r.y - y) <= cy + SY_TOL && y + h/2 < r.y )
 							{
+								if( cy == 32000 || ((r.y - y) < cy )){	/* line better: forget x */
+									cy = r.y - y;
+									ax = 32000;
+								}
 								if (ax == 32000 || x > ax)
 								{
 									ax = x;
-									cy = r.y - y;
 									co = curr;
 								}
-							}
-							else if ((r.y - y) < cy)
-							{
-								ax = x;
-								cy = r.y - y;
-								co = curr;
 							}
 						}
 					}
 				}
 				else
 				{
-					if ( (y >= r.y && y < (r.y + r.h)) || (y < r.y && (y + h) >= (r.y + r.h)))
+					if ( (y+h/2 >= r.y && y+h/2 < (r.y + r.h)) || (y < r.y && (y + h) >= (r.y + r.h/2)) )
 					{
 						if (x > r.x)
 						{
@@ -1944,15 +1950,16 @@ uplink:
 								cx = x - r.x;
 								co = curr;
 								cf = 1;
+
 							}
 						}
 					}
 
 					if (!cf)
 					{
-						if (y >= (r.y + r.h) || (y > r.y && (y + h) > (r.y + r.h)))
+						if (y >= (r.y + r.h) /*|| (y > r.y && (y + h) > (r.y + r.h))*/)
 						{
-							if ((y - r.y) == cy)
+							if ((y - r.y) <= cy + SY_TOL)
 							{
 								if (x < ax)
 								{
@@ -1961,12 +1968,6 @@ uplink:
 									co = curr;
 								}
 							}
-							else if ((y - r.y) < cy)
-							{
-								ax = x;
-								cy = y - r.y;
-								co = curr;
-							}
 						}		
 					}
 				}
@@ -1974,6 +1975,7 @@ uplink:
 			
 			x -= this->ob_x;
 			y -= this->ob_y;
+			
 		}
 
 		if (aesobj_head(&curr) != -1 && (!aesobj_hidden(&curr) || (flags & OBFIND_HIDDEN)))
@@ -1994,7 +1996,7 @@ downlink:
 				struct xa_aes_object tail = aesobj(aesobj_tree(&next), aesobj_tail(&next));
 				if (same_aesobj(&curr, &tail))
 				{
-// 					if (d) display(" childs of %d done", aesobj_item(&curr));
+// 					if (d) display(" children of %d done", aesobj_item(&curr));
 					curr = next;
 					x -= aesobj_getx(&curr);
 					y -= aesobj_gety(&curr);
@@ -2007,6 +2009,7 @@ downlink:
 			if (same_aesobj(&next, &stop) && set_aesobj_downlink(&tree, &curr, &stop, &oblink))
 			{
 // 				if (d) display("downlink to %d in %lx", curr.item, curr.tree);
+
 				x -= aesobj_getx(&curr);
 				y -= aesobj_gety(&curr);
 				goto downlink;
@@ -2020,8 +2023,10 @@ downlink:
 	if (!cf && (flags & OBFIND_NOWRAP))
 	{
 // 		if (d) display(" nowrap !");
+
 		co = inv_aesobj();
 	}
+	
 done:
 	clean_aesobj_links(&oblink);
 
@@ -2029,7 +2034,7 @@ done:
 	return co;
 }
 
-struct xa_aes_object
+STATIC struct xa_aes_object
 ob_find_next_any_flag(OBJECT *tree, short start, short f)
 {
 	short o = start;
@@ -2070,6 +2075,7 @@ ob_find_next_any_flag(OBJECT *tree, short start, short f)
 	}
 	return aesobj(tree, o);
 }
+#if INCLUDE_UNUSED
 short
 ob_find_prev_any_flag(OBJECT *tree, short start, short f)
 {
@@ -2106,7 +2112,7 @@ ob_find_prev_any_flag(OBJECT *tree, short start, short f)
 	}
 	return -1;
 }
-
+#endif
 struct xa_aes_object
 ob_find_cancel(OBJECT *ob)
 {
@@ -2542,6 +2548,7 @@ obj_rectangle(XA_TREE *wt, struct xa_aes_object obj, RECT *c)
 	wt->dy = sy;
 }
 
+#if INCLUDE_UNUSED
 void
 obj_orectangle(XA_TREE *wt, struct xa_aes_object obj, RECT *c)
 {
@@ -2554,7 +2561,7 @@ obj_orectangle(XA_TREE *wt, struct xa_aes_object obj, RECT *c)
 	c->h = aesobj_geth(&obj);
 // 	display("obj_orect: %d/%d/%d/%d", *c);
 }
-
+#endif
 bool
 obj_area(XA_TREE *wt, struct xa_aes_object obj, RECT *c)
 {
@@ -2878,24 +2885,29 @@ obtree_is_menu(OBJECT *tree)
 
 	return m;
 }
+
 bool
 obtree_has_default(OBJECT *obtree)
 {
 	struct xa_aes_object o = ob_find_any_flst(obtree, OF_DEFAULT, 0, 0, 0, 0, 0);
 	return o.item >= 0 ? true : false;
 }
+#if INCLUDE_UNUSED
 bool
 obtree_has_exit(OBJECT *obtree)
 {
 	struct xa_aes_object o = ob_find_any_flst(obtree, OF_EXIT, 0, 0, 0, 0, 0);
 	return o.item >= 0 ? true : false;
 }
+#endif
+#if INCLUDE_UNUSED
 bool
 obtree_has_touchexit(OBJECT *obtree)
 {
 	struct xa_aes_object o = ob_find_any_flst(obtree, OF_TOUCHEXIT, 0, 0, 0, 0, 0);
 	return o.item >= 0 ? true : false;
 } 
+#endif
 /* HR 120601: Objc_Change:
  * We go back thru the parents of the object until we meet a opaque object.
  *    This is to ensure that transparent objects are drawn correctly.
@@ -2984,6 +2996,7 @@ obj_draw(XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_object obj, int t
 
 	showm();
 }
+
 /*
  **************************************************************************
  * object edit functions
@@ -3010,10 +3023,11 @@ delete_marked(struct objc_edit_info *ei, char *txt)
 	return 0;
 }
 
-static bool ed_scrap_copy(XA_TREE *wt, struct objc_edit_info *ei, TEDINFO *ed_txt);
-static bool ed_scrap_cut(XA_TREE *wt, struct objc_edit_info *ei, TEDINFO *ed_txt);
-static bool ed_scrap_paste(XA_TREE *wt, struct objc_edit_info *ei, TEDINFO *ed_txt);
-static bool obj_ed_char(XA_TREE *wt, struct objc_edit_info *ei, TEDINFO *ed_txt, XTEDINFO *xted, ushort keycode);
+static bool ed_scrap_copy(struct objc_edit_info *ei, TEDINFO *ed_txt);
+static bool ed_scrap_cut(struct objc_edit_info *ei, TEDINFO *ed_txt);
+static bool ed_scrap_paste(struct objc_edit_info *ei, TEDINFO *ed_txt);
+static bool obj_ed_char(struct objc_edit_info *ei, TEDINFO *ed_txt, XTEDINFO *xted, ushort keycode);
+
 
 static char *
 ed_scrap_filename(char *scrp, size_t len)
@@ -3031,9 +3045,9 @@ ed_scrap_filename(char *scrp, size_t len)
 }
 
 static bool
-ed_scrap_cut(XA_TREE *wt, struct objc_edit_info *ei, TEDINFO *ed_txt)
+ed_scrap_cut(struct objc_edit_info *ei, TEDINFO *ed_txt)
 {
-	ed_scrap_copy(wt, ei, ed_txt);
+	ed_scrap_copy(ei, ed_txt);
 
 	if (!(delete_marked(ei, ed_txt->te_ptext)))
 	{
@@ -3044,8 +3058,11 @@ ed_scrap_cut(XA_TREE *wt, struct objc_edit_info *ei, TEDINFO *ed_txt)
 	return true;
 }
 
+/*
+ * wt unused!
+ */
 static bool
-ed_scrap_copy(XA_TREE *wt, struct objc_edit_info *ei, TEDINFO *ed_txt)
+ed_scrap_copy(struct objc_edit_info *ei, TEDINFO *ed_txt)
 {
 	int len = strlen(ed_txt->te_ptext);
 	if (len)
@@ -3069,7 +3086,7 @@ ed_scrap_copy(XA_TREE *wt, struct objc_edit_info *ei, TEDINFO *ed_txt)
 }
 
 static bool
-ed_scrap_paste(XA_TREE *wt, struct objc_edit_info *ei, TEDINFO *ed_txt)
+ed_scrap_paste(struct objc_edit_info *ei, TEDINFO *ed_txt)
 {
 	char scrp[256];
 	struct file *f;
@@ -3098,7 +3115,7 @@ ed_scrap_paste(XA_TREE *wt, struct objc_edit_info *ei, TEDINFO *ed_txt)
 				case '\t':
 					break;
 				default:
-					obj_ed_char(wt, ei, ed_txt, NULL, (unsigned short)data[i]);
+					obj_ed_char(ei, ed_txt, NULL, (unsigned short)data[i]);
 
 					if (ei->pos >= ed_txt->te_txtlen - 1)
 					{
@@ -3149,14 +3166,14 @@ static const unsigned char character_type[] =
 };
 
 static bool
-obj_ed_char(XA_TREE *wt,
+obj_ed_char(
 	    struct objc_edit_info *ei,
 	    TEDINFO *ted,
 	    XTEDINFO *xted,
 	    ushort keycode)
 {
 	char *txt;
-	int x, key, tmask, n, chg;
+	int x, key, tmask=-1, n=-1, chg;
 	bool update = false;
 
 	if (!ted)
@@ -3310,17 +3327,17 @@ obj_ed_char(XA_TREE *wt,
 	}
 	case SC_CTRL_C:	/* 0x2e03 */	/* CTRL+C */
 	{
-		update = ed_scrap_copy(wt, ei, ted);
+		update = ed_scrap_copy(ei, ted);
 		break;
 	}
 	case SC_CTRL_X: /* 0x2d18 */ 	/* CTRL+X */
 	{
-		update = ed_scrap_cut(wt, ei, ted);
+		update = ed_scrap_cut(ei, ted);
 		break;
 	}
 	case SC_CTRL_V: /* 0x2f16 */ 	/* CTRL+V */
 	{
-		update = ed_scrap_paste(wt, ei, ted);
+		update = ed_scrap_paste(ei, ted);
 		break;
 	}
 	default:	/* Just a plain key - insert character */
@@ -3434,9 +3451,14 @@ obj_ed_char(XA_TREE *wt,
 		}
 
 		update = true;
+
+		if( !tmask )
+			BLOG((0, "ed_char default:keycode=0x%04x txt=%s n=%d update=%d tmask=%x valid=%c pos=%d",
+				keycode, txt, n, update, tmask, ted->te_pvalid[n], ei->pos));
+
 		break;
 	}
-	}
+	}	/*/switch (keycode)*/
 // 	ei->pos = cursor_pos;
 	return update;
 }
@@ -3771,12 +3793,12 @@ obj_edit(XA_TREE *wt,
 							if (redraw)
 							{
 								(*wt->objcr_api->eor_cursor)(wt, v, rl);
-								if (obj_ed_char(wt, &wt->e, ted, NULL, keycode))
+								if (obj_ed_char(&wt->e, ted, NULL, keycode))
 									obj_draw(wt, v, editfocus(&wt->e), -1, clip, rl, 0);
 								(*wt->objcr_api->eor_cursor)(wt, v, rl);
 							}
 							else
-								obj_ed_char(wt, &wt->e, ted, NULL, keycode);
+								obj_ed_char(&wt->e, ted, NULL, keycode);
 								
 							pos = wt->e.pos;
 						}
@@ -3794,12 +3816,12 @@ obj_edit(XA_TREE *wt,
 						if (redraw)
 						{
 							(*wt->objcr_api->eor_cursor)(wt, v, rl);
-							if (obj_ed_char(wt, ei, ted, NULL, keycode))
+							if (obj_ed_char(ei, ted, NULL, keycode))
 								obj_draw(wt, v, obj, -1, clip, rl, 0);
 							(*wt->objcr_api->eor_cursor)(wt, v, rl);
 						}
 						else
-							obj_ed_char(wt, ei, ted, NULL, keycode);
+							obj_ed_char(ei, ted, NULL, keycode);
 					
 						pos = ei->pos;
 					}
@@ -3843,18 +3865,18 @@ obj_edit(XA_TREE *wt,
 							if (redraw)
 							{
 								(*wt->objcr_api->eor_cursor)(wt, v, rl);
-								obj_ed_char(wt, &wt->e, ted, NULL, 0x011b);
+								obj_ed_char(&wt->e, ted, NULL, 0x011b);
 								while (*string)
-									obj_ed_char(wt, &wt->e, ted, NULL, *string++);
+									obj_ed_char(&wt->e, ted, NULL, *string++);
 								
 								obj_draw(wt, v, editfocus(&wt->e), -1, clip, rl, 0);
 								(*wt->objcr_api->eor_cursor)(wt, v, rl);
 							}
 							else
 							{
-								obj_ed_char(wt, &wt->e, ted, NULL, 0x011b);
+								obj_ed_char(&wt->e, ted, NULL, 0x011b);
 								while (*string)
-									obj_ed_char(wt, &wt->e, ted, NULL, *string++);
+									obj_ed_char(&wt->e, ted, NULL, *string++);
 							}	
 							pos = wt->e.pos;
 						}
@@ -3872,18 +3894,18 @@ obj_edit(XA_TREE *wt,
 						if (redraw)
 						{
 							(*wt->objcr_api->eor_cursor)(wt, v, rl);
-							obj_ed_char(wt, ei, ted, NULL, 0x011b);
+							obj_ed_char(ei, ted, NULL, 0x011b);
 							while (*string)
-								obj_ed_char(wt, ei, ted, NULL, *string++);
+								obj_ed_char(ei, ted, NULL, *string++);
 							
 							obj_draw(wt, v, obj, -1, clip, rl, 0);
 							(*wt->objcr_api->eor_cursor)(wt, v, rl);
 						}
 						else
 						{
-							obj_ed_char(wt, ei, ted, NULL, 0x011b);
+							obj_ed_char(ei, ted, NULL, 0x011b);
 							while (*string)
-								obj_ed_char(wt, ei, ted, NULL, *string++);
+								obj_ed_char(ei, ted, NULL, *string++);
 						}
 					
 						pos = ei->pos;
@@ -4064,7 +4086,7 @@ obj_edit(XA_TREE *wt,
 					hidem();
 					if (drwcurs)
 						(*wt->objcr_api->undraw_cursor)(wt, v, rl, redraw);
-					if (obj_ed_char(wt, ei, NULL, xted, keycode))
+					if (obj_ed_char(ei, NULL, xted, keycode))
 					{
 						if (redraw)
 						{
@@ -4167,7 +4189,7 @@ obj_edit(XA_TREE *wt,
 					if (string && string != ei->ti.te_ptext && *string)
 					{
 						while (*string)
-							obj_ed_char(wt, ei, NULL, xted, *(unsigned char *)string++);
+							obj_ed_char(ei, NULL, xted, *(unsigned char *)string++);
 						if ((keycode & 1) && wt->ei == ei)
 							obj_xED_INIT(wt, ei, -1, SETMARKS);
 					}
@@ -4424,3 +4446,31 @@ obj_watch(XA_TREE *wt,
 	else
 		return 0;
 }
+
+/*
+ * copy a string to clipboard (public)
+ * return 0 on success
+ */
+int copy_string_to_clipbrd( char *text )
+{
+	int len = 0;
+	if( text )
+		len = strlen(text);
+	if (len)
+	{
+		char scrp[256];
+		struct file *f;
+
+		f = kernel_open(ed_scrap_filename(scrp, sizeof(scrp)),
+				O_WRONLY|O_CREAT|O_TRUNC, NULL, NULL);
+		if (f)
+		{
+			kernel_write(f, text, len);			
+			kernel_close(f);
+			return 0;
+		}
+		return 1;
+	}
+	return 2;
+}
+

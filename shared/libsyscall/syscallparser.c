@@ -56,7 +56,7 @@ print_head(FILE *out, const char *myname)
 		" * distribution. See the file CHANGES for a detailed log of changes.    \n"
 		" *                                                                      \n"
 		" *                                                                      \n"
-		" * Copyright 2000-2004 Frank Naumann <fnaumann@freemint.de>             \n"
+		" * Copyright 2000-2005 Frank Naumann <fnaumann@freemint.de>             \n"
 		" * All rights reserved.                                                 \n"
 		" *                                                                      \n"
 		" * Please send suggestions, patches or bug reports to me or             \n"

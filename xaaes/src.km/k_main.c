@@ -113,7 +113,7 @@ cancel_cevents(struct xa_client *client)
 	if (C.ce_menu_move == client)
 		C.ce_menu_move = NULL;
 }
-
+#if INCLUDE_UNUSED
 bool
 CE_exists(struct xa_client *client, void *f)
 {
@@ -127,7 +127,7 @@ CE_exists(struct xa_client *client, void *f)
 	}
 	return false;
 }
-
+#endif
 /*
  * cancel_CE() - search for a client event with function callback == f.
  * If found, call the 'callback' with pointer to this client event along
@@ -272,7 +272,7 @@ dispatch_selcevent(struct xa_client *client, void *f, bool cancel)
 	return 0;
 }
 
-short
+STATIC short
 dispatch_cevent(struct xa_client *client)
 {
 	struct c_event *ce;
@@ -327,12 +327,13 @@ do_block(struct xa_client *client)
 	client->sleeplock = 0;
 }
 
+#if INCLUDE_UNUSED
 void
 Block(struct xa_client *client, int which)
 {
 	(*client->block)(client, which);
 }
-
+#endif
 void
 cBlock(struct xa_client *client, int which)
 {
@@ -1694,6 +1695,7 @@ restore_sigs(void)
 
 }
 
+
 static void
 k_exit(void)
 {
@@ -1752,6 +1754,11 @@ k_exit(void)
 // 		adi_unregister(G.adi_mouse);
 // 		G.adi_mouse = NULL;
 	}
+
+	/*
+	 * close profile
+	 */
+	PRCLOSE;
 
 	if (C.KBD_dev > 0)
 	{

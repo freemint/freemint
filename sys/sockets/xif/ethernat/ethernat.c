@@ -728,6 +728,7 @@ driver_init (void)
 	if(ferror >= 0)
 	{
 		fhandle = (short)(ferror & 0xffff);
+<<<<<<< ethernat.c
 		memset(macbuf, 0, 13);
 		ferror = Fread(fhandle,12,macbuf);
 //		Cconws("Efter FREAD\n\r");
@@ -754,6 +755,33 @@ driver_init (void)
 		//ksprintf(message, "\n\r"); 
 		//Cconws(message);
 	}
+=======
+		ferror = Fread(fhandle,12,macbuf);
+//		Cconws("Efter FREAD\n\r");
+		if(ferror < 0)
+		{
+			//ksprintf (message, "Error reading ethernat.inf!\n\r");
+			//Cconws (message);
+			Cconws ("Error reading ethernat.inf!\n\r");
+			Fclose(fhandle);
+			return -1;
+		}
+		if(ferror < 12)
+		{
+			//ksprintf (message, "ethernat.inf is less than 12 bytes long!\n\r");
+			//Cconws (message);
+			Cconws ("ethernat.inf is less than 12 bytes long!\n\r");
+			Fclose(fhandle);
+			return -1;
+		}
+		Fclose(fhandle);
+
+		//print what we read from ethernat.inf
+		Cconws (macbuf);
+		//ksprintf(message, "\n\r"); 
+		//Cconws(message);
+	}
+>>>>>>> 1.3
 	else
 	{
 		//ksprintf (message, "Error opening ethernat.inf!\n\r");

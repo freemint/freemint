@@ -54,6 +54,8 @@
 // static struct xa_widget_row * get_last_row(struct xa_widget_row *row, short lmask, short lvalid, bool backwards);
 // static struct xa_widget_row * get_first_row(struct xa_widget_row *row, short lmask, short lvalid, bool backwards);
 static void rp_2_ap_row(struct xa_window *wind);
+STATIC void free_wt(XA_TREE *wt);
+STATIC short	redisplay_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, short state);
 
 //static OBJECT *def_widgets;
 
@@ -631,9 +633,6 @@ new_widget_tree(struct xa_client *client, OBJECT *obtree)
 	
 	DIAGS((" === Create new widget tree - obtree=%lx, for %s",
 		obtree, client->name));
-	BLOG((false, " === Create new widget tree %lx - obtree=%lx, for %s",
-		new, obtree, client->name));
-
 
 	if (new)
 	{
@@ -652,7 +651,6 @@ free_wtlist(struct xa_client *client)
 {
 	XA_TREE *wt;
 
-	BLOG((false, "free_wtlist for %s", client->name));
 	
 	while (client->wtlist)
 	{
@@ -672,7 +670,7 @@ free_wtlist(struct xa_client *client)
 }
 /* Unhook a widget_tree from its owners wtlist
  */
-void
+STATIC void
 remove_from_wtlist(XA_TREE *wt)
 {
 	XA_TREE **nwt;
@@ -712,7 +710,7 @@ remove_from_wtlist(XA_TREE *wt)
 		wt, wt->owner->name));
 }
 
-void
+STATIC void
 free_wt(XA_TREE *wt)
 {
 	bool tst = (wt->owner == C.Hlp || wt->owner == C.Aes);
@@ -1533,7 +1531,7 @@ click_hide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, cons
 	/* Redisplay.... (Unselect basically.) */
 	return true;
 }
-COMPASS
+STATIC COMPASS
 compass(short d, short x, short y, RECT r)
 {
 	r.x += d;
@@ -4761,7 +4759,7 @@ do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct
 	return false;
 }
 
-short
+STATIC short
 redisplay_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, short state)
 {
 	short ret = widg->state;

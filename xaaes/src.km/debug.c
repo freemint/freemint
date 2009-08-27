@@ -24,6 +24,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#define PROFILING	0
+
 #include "xa_types.h"
 #include "xa_global.h"
 
@@ -146,6 +148,227 @@ ndisplay(const char *fmt, ...)
 #endif
 }
 
+#if PROFILING
+
+#define PRFUSETRAP	1
+#if PRFUSETRAP
+#ifdef trap_14_w
+#undef trap_14_w	/* "redefined" warning */
+#endif
+
+#include <mintbind.h>	/* Tgettimeofday */
+#else
+#define Tgettimeofday	_t_gettimeofday
+#endif
+
+#include "debug.h"
+
+struct pr_info{
+	long ms, sms, calls;
+	char *name;
+	int len;
+};
+
+
+/*
+ * accumulate usages for names
+ *
+ * return rv
+ *
+ */
+#define N_PRINF	32
+int prof_acc( char *name, enum prof_cmd cmd, int rv )
+{
+	static struct pr_info PrInfo[N_PRINF];
+	static struct pr_info MePrInfo;
+	static int longest_name = 0;
+	int i, f = -1, l;
+  struct timeval tv;
+  long ms, sms;
+
+	Tgettimeofday( &tv, 0 );
+
+	if( name != NULL ){
+		for( i = 0; i < N_PRINF; i++ )
+			if( PrInfo[i].name == name )
+				break;
+
+		if( i < N_PRINF && PrInfo[i].name != 0 )
+			 f = i;
+	}
+
+	switch( cmd ){
+	case 0:	/*init all*/
+		for( i = 0; i < N_PRINF; i++ ){
+			PrInfo[i].name = 0;
+			PrInfo[i].ms = 0;
+			PrInfo[i].calls = 0;
+			longest_name = 0;
+			MePrInfo.ms = MePrInfo.calls = 0;
+		}
+	break;
+	case 1:	/*init name*/
+		if( f >= 0 ){
+			PrInfo[f].ms = 0;
+			PrInfo[f].name = name;
+			if( (l=strlen( name )) > longest_name )
+				longest_name = l;
+
+			PrInfo[f].len = l;
+			PrInfo[f].calls = 0;
+		}
+	
+	break;
+	case 2:	/* start name, init if new */
+		//profile( "prof_acc: start: %s(%lx) f=%d i=%d", name, name, f, i );
+
+		if( f == -1 ){
+
+			for( i = 0; i < N_PRINF && PrInfo[i].name; i++ );
+
+			if( i == N_PRINF ){
+				profile( "%s: list full.", name );
+				break;
+			}
+			PrInfo[i].name = name;
+			if( (l=strlen( name )) > longest_name )
+				longest_name = l;
+			PrInfo[i].len = l;
+			PrInfo[i].ms = 0;
+			PrInfo[i].calls = 0;
+			f = i;
+		}
+		if( f >= 0 ){
+			//Tgettimeofday( &tv, 0 );
+			PrInfo[f].sms = tv.tv_sec * 1000L + tv.tv_usec / 1000L;
+		}
+	break;
+	case 3:	/* stop name */
+		if( f >= 0 ){
+			//Tgettimeofday( &tv, 0 );
+			ms = tv.tv_sec * 1000L + tv.tv_usec / 1000L;
+			PrInfo[f].ms += ms - PrInfo[f].sms;
+			PrInfo[f].calls++;
+			//profile( "prof_acc: stop: %s ms=%ld", PrInfo[f].name, PrInfo[f].ms );
+		}
+	break;
+	case 4:	/* print all */
+	{
+		char nbuf[128];
+		profile( "--usage-summary---" );
+		l = longest_name + 3;
+		if( l >= sizeof(nbuf) -1)
+			l = sizeof(nbuf) - 2;
+		for( f = 4, i = 0; f < l; f++)
+			nbuf[i++] = ' ';
+		nbuf[i++] = ':';
+		nbuf[i] = 0;
+		profile( "name%susage  calls", nbuf );	/* header */
+		for( i = 0; i < N_PRINF && PrInfo[i].name; i++ ){
+			strncpy( nbuf, PrInfo[i].name, sizeof(nbuf)-1 );
+			for( f = PrInfo[i].len; f < l; )
+				nbuf[f++] = ' ';
+			nbuf[f++] = ':';
+			nbuf[f] = '\0';
+			profile( "%s%4ld%6ld", nbuf, PrInfo[i].ms, PrInfo[i].calls );
+		}
+		profile( "--\n     --profiling needed %4ldms\t%4ld calls--", MePrInfo.ms, MePrInfo.calls );
+		profile( "--end of summary--" );
+	}
+	break;
+	case 5:	/* drop name */
+		if( f >= 0 ){
+			PrInfo[f].name = 0;
+		}
+		/* update longest_name */
+	break;
+	}
+	MePrInfo.calls++;
+	sms = tv.tv_sec * 1000L + tv.tv_usec / 1000L;
+	Tgettimeofday( &tv, 0 );
+	ms = tv.tv_sec * 1000L + tv.tv_usec / 1000L;
+	MePrInfo.ms += ms - sms;
+	return rv;
+}
+
+/*
+ * simple profiling
+ * output a message along with elapsed ms since last call to "xaaesprf.log"
+ *
+ * t = 0 closes the file
+ */
+void
+profile( char *t, ...)
+{
+  static struct timeval tv1 = {0,0};
+  struct timeval tv2;
+  static struct file *fp = 0;
+  static char *Name = "xaaesprf.log";
+  char ebuf[256];
+  int l;
+  long usec, sec;
+	va_list argpoint;
+
+	Tgettimeofday( &tv2, 0 );
+
+	if( t == 0 ){
+		if( fp ){
+			char *msg = "--profile closed--\n";
+			kernel_write( fp, "--profile started--\n", strlen(msg) );
+			kernel_close(fp);
+			fp = 0;
+		}
+		return;
+	}
+
+  if( Name == 0 )
+  	return;	/* could not open */
+
+	if( !fp ){
+		char *msg = "--profile started--\n";
+		
+		sprintf( ebuf, sizeof(ebuf), "%s\\%s", C.start_path, Name );
+		fp = kernel_open( ebuf, O_RDWR, NULL,NULL);
+		if( !fp )
+			fp = kernel_open( ebuf, O_RDWR|O_CREAT|O_TRUNC, NULL,NULL);
+		else
+			kernel_lseek(fp, 0, SEEK_END);
+		if( !fp ){
+			BLOG((0, "profile: cannot open %s", ebuf ));
+			Name = 0;
+			return;
+		}
+		kernel_write( fp, msg, strlen(msg) );
+	}
+	if( tv1.tv_sec > 0 ){
+
+	  usec = (tv2.tv_usec - tv1.tv_usec) / 1000L;
+	  sec = tv2.tv_sec - tv1.tv_sec;
+	  if( usec < 0 ){
+	  	sec--;
+	  	usec += 1000L;
+	  }
+	
+	  l = sprintf( ebuf, sizeof(ebuf), "%4ld:", sec * 1000 + usec );
+	}
+	else
+		l = 0;
+
+	va_start(argpoint, t);
+	l += vsprintf( ebuf+l, sizeof(ebuf) - l, t, argpoint );
+	va_end(argpoint);
+	
+	ebuf[l++] = '\n';
+	ebuf[l] = 0;
+	
+	kernel_write( fp, ebuf, l );
+
+	tv1 = tv2;
+
+}
+
+#endif	//PROFILING
+
 #if GENERATE_DIAGS
 
 /* debugging catagories & data */
@@ -232,6 +455,7 @@ t_owner(XA_TREE *t)
 void
 diags(const char *fmt, ...)
 {
+#if GENERATE_DIAGS
 	char buf[512];
 	va_list args;
 	long l;
@@ -248,7 +472,7 @@ diags(const char *fmt, ...)
 
 	DEBUG((buf));
 
-#if GENERATE_DIAGS
+//#if GENERATE_DIAGS
 	if (D.debug_file)
 	{
 		buf[l++] = '\n';

@@ -171,12 +171,13 @@ get_mouse_locker(void)
 {
 	return get_lock_client(&mouse_lock);
 }
+#if INCLUDE_UNUSED
 struct xa_client *
 get_menustruct_locker(void)
 {
 	return get_lock_client(&ms_lock);
 }
-
+#endif
 void
 free_update_lock(void)
 {
@@ -190,13 +191,14 @@ free_mouse_lock(void)
 	ressource_semaphore_free(&mouse_lock);
 }
 
+#if INCLUDE_UNUSED
 void
 free_menustruct_lock(void)
 {
 	//free_update_lock();
 	ressource_semaphore_free(&ms_lock);
 }
-
+#endif
 bool
 lock_screen(struct proc *proc, bool try)
 {
