@@ -1,9 +1,5 @@
 /*
-<<<<<<< xa_wdlg.c
  * $Id$
-=======
- * $Id$
->>>>>>> 1.77
  * 
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers

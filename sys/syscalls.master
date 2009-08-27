@@ -1,9 +1,5 @@
 /*
-<<<<<<< syscalls.master
  * $Id$
-=======
- * $Id$
->>>>>>> 1.28
  *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
@@ -503,42 +499,6 @@ opcode	ret	class name	args */
 
 	/* 1.16 - svr5 IPC */
 
-<<<<<<< syscalls.master
-0x170	Pshmget		(long key, long size, long shmflg)
-0x171	Pshmctl		(long shmid, long cmd, struct shmid_ds *buf)
-0x172	Pshmat		(long shmid, const void *shmaddr, long shmflg)
-0x173	Pshmdt		(const void *shmaddr)
-0x174	Psemget		(long key, long nsems, long semflg)
-0x175	Psemctl		(long semid, long semnum, long cmd, union __semun *arg)
-0x176	Psemop		(long semid, struct sembuf *sops, long nsops)
-0x177	Psemconfig	(long flag)
-0x178	Pmsgget		(long key, long msgflg)
-0x179	Pmsgctl		(long msqid, long cmd, struct msqid_ds *buf)
-0x17a	Pmsgsnd		(long msqid, const void *msgp, long msgsz, long msgflg)
-0x17b	Pmsgrcv		(long msqid, void *msgp, long msgsz, long msgtyp, long msgflg)
-0x17c	undefined
-0x17d	Maccess		(void *addr, long size, short mode) /* since 1.15.12 */
-0x17e	undefined	/* mmap */
-0x17f	undefined	/* munmap */
-
-0x180	Fchown16	(const char *name, short uid, short gid,
-			 short follow) /* since 1.16 */
-0x181	Fchdir		(short fd) /* since 1.17 */
-0x182	Ffdopendir	(short fd) /* since 1.17 */
-0x183	Fdirfd		(long handle) /* since 1.17 */
-0x184	undefined
-0x185	undefined
-0x186	undefined
-0x187	undefined
-0x188	undefined
-0x189	undefined
-0x18a	undefined
-0x18b	undefined
-0x18c	undefined
-0x18d	undefined
-0x18e	undefined
-0x18f	undefined
-=======
 0x170		Pshmget		(long key, long size, long shmflg)
 0x171		Pshmctl		(long shmid, long cmd, struct shmid_ds *buf)
 0x172		Pshmat		(long shmid, const void *shmaddr, long shmflg)
@@ -573,7 +533,6 @@ opcode	ret	class name	args */
 0x18d		undefined
 0x18e		undefined
 0x18f		undefined
->>>>>>> 1.28
 
 0x190	MAX
 
