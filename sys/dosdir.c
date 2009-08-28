@@ -2327,7 +2327,7 @@ sys_f_dirfd (long handle)
 
 	/* locate previously handed fd */
 	if (dirh->fd >= MIN_OPEN) {
-		DEBUG(("Same descriptor %d found",i));
+		DEBUG(("Same descriptor %d found",dirh->fd));
 
 		return dirh->fd;
 	}
