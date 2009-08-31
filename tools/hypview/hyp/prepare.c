@@ -129,14 +129,14 @@ mono_bitmap(void *src, void *dst, long planesize, short color)
 		"movea.l a2,a3\n\t"			\
 		"adda.l d0,a3\n\t"			\
 		"move.w d1,d7\n\t"			\
-	".loop:"					\
+	"1:"					\
 		"move.w (a0)+,d0\n\t"			\
 		"move.w (a1)+,d1\n\t"			\
 		"move.w (a2)+,d2\n\t"			\
 		"move.w (a3)+,d3\n\t"			\
 		"moveq.l #0,d6\n\t"			\
 		"moveq.l #15,d4\n\t"			\
-	".pixloop:"					\
+	"2:"					\
 		"moveq.l #0,d5\n\t"			\
 		"add.w d6,d6\n\t"			\
 		"add.w d3,d3\n\t"			\
@@ -148,13 +148,13 @@ mono_bitmap(void *src, void *dst, long planesize, short color)
 		"add.w d0,d0\n\t"			\
 		"addx.w d5,d5\n\t"			\
 		"cmp.w d5,d7\n\t"			\
-		"bne .cont\n\t"				\
+		"bne 3f\n\t"				\
 		"addq.w #1,d6\n\t"			\
-	".cont:"					\
-		"dbra d4,.pixloop\n\t"			\
+	"3:"					\
+		"dbra d4,2b\n\t"			\
 		"move.w d6,(a4)+\n\t"			\
 		"cmpa.l a5,a0\n\t"			\
-		"blt .loop\n\t"				\
+		"blt 1b\n\t"				\
 		"movem.l (sp)+,a2-a5/d3-d7\n\t"		\
 		:					\
 		:"a"(src), "a"(dst), "d"(planesize), "d"(color) \

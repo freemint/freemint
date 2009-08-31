@@ -258,6 +258,10 @@ convert_localname (const char *s, char *d)
 	return d;
 }
 
+#ifndef PATH_MAX
+#define PATH_MAX 1024
+#endif
+
 int
 main (int argc, char *argv[])
 {
