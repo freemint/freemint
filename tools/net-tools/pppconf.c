@@ -104,6 +104,10 @@ getdev (char *ifname)
 		return NULL;
 	}
 
+#ifndef PATH_MAX
+#define PATH_MAX 1024
+#endif
+
 	if (!__libc_unix_names)
 		_dos2unx (ifl.device, device, PATH_MAX);
 	else

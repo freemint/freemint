@@ -170,6 +170,10 @@ opt_set (char *ifname, struct ifopt *ifo, int sock)
 	return 0;
 }
 
+#ifndef LINE_MAX
+#define LINE_MAX 2048
+#endif
+
 int
 opt_file (char *fname, char *ifname, int sock)
 {
