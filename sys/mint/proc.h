@@ -89,7 +89,7 @@ struct memspace
 /*# define SSTKSIZE	8192*/	/* size of supervisor stack (in bytes) 	*/
 /*# define ISTKSIZE	4096*/	/* size of interrupt stack (in bytes)	*/
 #define SSTKSIZE	16384
-#define ISTKSIZE	8129
+#define ISTKSIZE	8192
 # define STKSIZE	(ISTKSIZE + SSTKSIZE)
 
 # define STACK_MAGIC	0xfedcba98UL
