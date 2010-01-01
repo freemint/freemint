@@ -78,13 +78,14 @@ routedev_read (FILEPTR *f, char *buf, long nbytes)
 			break;
 		
 		bzero (&info, sizeof (info));
-		SIN (&info.rt.rt_dst)->sin_family = AF_INET;
-		SIN (&info.rt.rt_dst)->sin_addr.s_addr = rt->net;
+		
+		info.rt.dst.in.sin_family = AF_INET;
+		info.rt.dst.in.sin_addr.s_addr = rt->net;
 		
 		if (rt->flags & RTF_GATEWAY)
 		{
-			SIN (&info.rt.rt_gateway)->sin_family = AF_INET;
-			SIN (&info.rt.rt_gateway)->sin_addr.s_addr = rt->gway;
+			info.rt.gateway.in.sin_family = AF_INET;
+			info.rt.gateway.in.sin_addr.s_addr = rt->gway;
 		}
 		
 		info.rt.rt_flags  = rt->flags;
