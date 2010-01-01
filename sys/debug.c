@@ -37,16 +37,23 @@
 # include "k_fds.h"
 # include "kmemory.h"
 # include "proc.h"
+# include "module.h"
 
 # ifdef MFP_DEBUG_DIRECT
+# define DEBUG_DIRECT
 # include "xdd/mfp/kgdb_mfp.c"
+# endif
+
+# ifdef SCC_DEBUG_DIRECT
+# define DEBUG_DIRECT
+# include "xdd/scc/dbg_scc.c"
 # endif
 
 static void VDEBUGOUT(const char *, va_list, int);
 
 
 int debug_level = 1;	/* how much debugging info should we print? */
-# if MFP_DEBUG_DIRECT
+# ifdef DEBUG_DIRECT
 int out_device = 0;
 # else
 int out_device = 2;	/* BIOS device to write errors to */
@@ -97,6 +104,10 @@ safe_Bconout(short dev, int c)
 	if (dev == 0)
 		mfp_kgdb_putc(c);
 #endif
+#ifdef SCC_DEBUG_DIRECT
+	if (dev == 0)
+		scc_dbg_putc(c);
+#endif
 	if (intr_done)
 		ROM_Bconout(dev, c);
 	else
@@ -106,9 +117,14 @@ safe_Bconout(short dev, int c)
 static short
 safe_Bconstat(short dev)
 {
-#ifdef MFP_DEBUG_DIRECT
+#ifdef DEBUG_DIRECT
 	if (dev == 0)
+  #ifdef MFP_DEBUG_DIRECT
 		return mfp_kgdb_instat();
+  #else
+		return scc_dbg_instat();
+  #endif
+
 #else
 	if (dev == 0)
 		return 0;
@@ -122,9 +138,13 @@ safe_Bconstat(short dev)
 static long
 safe_Bconin(short dev)
 {
-#ifdef MFP_DEBUG_DIRECT
+#ifdef DEBUG_DIRECT
 	if (dev == 0)
+#ifdef MFP_DEBUG_DIRECT
 		return mfp_kgdb_getc();
+#else
+		return scc_dbg_getc();
+#endif
 #endif
 	if (intr_done)
 		return ROM_Bconin(dev);
@@ -237,7 +257,8 @@ _ALERT(char *s)
 {
 	FILEPTR *fp;
 	long ret;
-	
+	char *alertbuf = NULL;
+
 	/* temporarily reduce the debug level, so errors finding
 	 * u:\pipe\alert don't get reported
 	 */
@@ -267,13 +288,20 @@ _ALERT(char *s)
 		}
 		else
 		{
-			char alertbuf[SPRINTF_MAX + 10];
+// 			char alertbuf[SPRINTF_MAX + 10];
 			char *ptr;
 			char *lastspace;
 			int counter;
+			long absize;
 			
+			absize = strlen(s) + 128;
+			alertbuf = kmalloc(absize);
+			
+			if (!alertbuf)
+				goto exit;
+
 			alert = alertbuf;
-			ksprintf(alertbuf, sizeof(alertbuf), "[1][%s", s);
+			ksprintf(alertbuf, absize, "[1][%s", s);
 			
 			/* make sure no lines exceed 30 characters;
 			 * also, filter out any reserved characters
@@ -319,12 +347,16 @@ _ALERT(char *s)
 				
 				ptr++;
 			}
-			
+
 			strcpy(ptr, "][  OK  ]");
 		}
 		
 		(*fp->dev->write)(fp, alert, strlen(alert) + 1);
+
+exit:
 		do_close(rootproc, fp);
+		if (alertbuf)
+			kfree(alertbuf);
 		
 		return 1;
 	}
@@ -338,7 +370,11 @@ VDEBUGOUT(const char *s, va_list args, int alert_flag)
 	char *lp;
 	char *lptemp;
 	long len;
+	struct proc *p = get_curproc();
 	
+// 	if (p && (strnicmp("worldclk", p->name, 8)))
+// 		   return;
+
 	logtime[logptr] = (ushort)(*(long *) 0x4baL);
 	lptemp = lp = logbuf[logptr];
 	len = LB_LINE_LEN;
@@ -346,7 +382,7 @@ VDEBUGOUT(const char *s, va_list args, int alert_flag)
 	if (++logptr == LBSIZE)
 		logptr = 0;
 	
-	if (get_curproc())
+	if (p)
 	{
 		ksprintf(lp, len, "pid %3d (%s): ", get_curproc()->pid, get_curproc()->name);
 		lptemp += strlen(lp);
@@ -401,7 +437,7 @@ Trace(const char *s, ...)
 	}
 }
 
-void
+void _cdecl
 display(const char *s, ...)
 {
 	{
@@ -410,7 +446,7 @@ display(const char *s, ...)
 		va_start(args, s);
 		VDEBUGOUT(s, args, 0);
 		va_end(args);
-	}	
+	}
 }
 
 void _cdecl
@@ -594,6 +630,7 @@ do_func_key(int scan)
 		case 0x40:
 		{
 			DUMPPROC();
+			print_moduleinfo();
 			_s_ync();
 			break;
 		}
@@ -624,7 +661,14 @@ do_func_key(int scan)
 		/* F6: always print MiNT basepage */
 		case 0x40:
 		{
-			FORCE("MiNT base %lx (%lx)", rootproc->p_mem->base, _base);
+			struct basepage *b = rootproc->p_mem->base;
+// 			FORCE("MiNT base %lx (%lx)", rootproc->p_mem->base, _base);
+			FORCE("Kernel base %lx: %lx (%lx)", b, _base);
+			FORCE("     tbase/tlen: %lx/%ld", b->p_tbase, b->p_tlen);
+			FORCE("     dbase/dlen: %lx/%ld", b->p_dbase, b->p_dlen);
+			FORCE("     bbase/blen: %lx/%ld", b->p_bbase, b->p_blen);
+			print_moduleinfo();
+			DUMPPROC();
 			break;
 		}
 # endif

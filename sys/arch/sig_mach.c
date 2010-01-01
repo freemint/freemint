@@ -186,7 +186,7 @@ sendsig(ushort sig)
 	
 	call->pc = sigact->sa_handler;
 	/* don't restart FPU communication */
-	call->sfmt = call->fstate[0] = 0;
+	call->sfmt = call->fstate.bytes[0] = 0;
 	
 	if (sigact->sa_flags & SA_RESET)
 	{
@@ -549,14 +549,15 @@ sigfpe(void)
 		/* 0x1f38 is a Motorola magic cookie to detect a 68882 idle
 		 * state frame
 		 */
-		if ((*(ushort *) ctxt->fstate == 0x1f38)
+		if (ctxt->fstate.words[0] == 0x1f38 // ((*(ushort *) ctxt->fstate == 0x1f38)
 			&& ((ctxt->sfmt & 0xfff) >= 0xc0L)
 			&& ((ctxt->sfmt & 0xfff) <= 0xd8L))
 		{
 			/* fix a bug in the 68882 - Motorola call it a
 			 * feature :-)
 			 */
-			ctxt->fstate[ctxt->fstate[1]] |= 1 << 3;
+			ctxt->fstate.bytes[ctxt->fstate.bytes[1]] |= 1 << 3;
+			//ctxt->fstate[ctxt->fstate[1]] |= 1 << 3;
 		}
 	}
 	

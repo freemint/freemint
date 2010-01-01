@@ -213,7 +213,6 @@ const char *MSG_bios_kill =
 	"to \'Super\' in the program header."
 ;
 # endif
-
 /* ----------- biosfs.c --------- */
 
 const char *ERR_biosfs_aux_fptr = "Can't allocate default aux FILEPTR!";
@@ -224,8 +223,8 @@ const char *ERR_bio_cant_init_cache = "init_block_IO: can't initialize default c
 
 /* ---------- bootmenu.c ----------- */
 
-/* In German this is "Bootmen anzeigen? (j)a (n)ein "
- * In French "Afficher le menu de d‚marrage? (o)ui (n)on "
+/* In German this is "Bootmenï¿½ anzeigen? (j)a (n)ein "
+ * In French "Afficher le menu de dï¿½marrage? (o)ui (n)on "
  */
 const char *MSG_init_askmenu = "Hold down the SHIFT key to enter menu or wait %d s.\r\n";
 const char *MSG_init_menu_yes = "y";
@@ -309,12 +308,12 @@ const char *MSG_cnf_cant_open = "parse_cnf: can't open %s";
 const char *MSG_debug_syncing = "Syncing...";
 const char *MSG_debug_syncdone = "done.\r\n";
 /* The one below is in...
- * German: "FATALER FEHLER. Das System mu neu gestartet werden.\r\n"
- * French: "ERREUR FATALE. Vous devez red‚marrer le systŠme.\r\n"
+ * German: "FATALER FEHLER. Das System muï¿½ neu gestartet werden.\r\n"
+ * French: "ERREUR FATALE. Vous devez redï¿½marrer le systï¿½me.\r\n"
  */
 const char *MSG_fatal_reboot = "FATAL ERROR. You must reboot the system.\r\n";
 /* German: "System angehalten.\r\n"
- * French: "Arrˆt du systŠme.\r\n"
+ * French: "Arrï¿½t du systï¿½me.\r\n"
  */
 const char *MSG_system_halted = "System halted.\r\n";
 
