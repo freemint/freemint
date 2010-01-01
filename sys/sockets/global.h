@@ -101,7 +101,7 @@ so_xselect (struct socket *so, long proc)
 	return 0;
 }
 
-static inline void
+static inline __attribute__((always_inline)) void
 so_wakersel (struct socket *so)
 {
 	if (so->rsel)

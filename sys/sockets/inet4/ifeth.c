@@ -36,7 +36,7 @@ eth_build_hdr (BUF *buf, struct netif *nif, const char *addr, short type)
 	
 	nbuf->dstart -= sizeof (*ep);
 	ep = (struct eth_dgram *) nbuf->dstart;
-	memcpy (ep->saddr, nif->hwlocal.addr, ETH_ALEN);
+	memcpy (ep->saddr, nif->hwlocal.adr.bytes, ETH_ALEN);
 	memcpy (ep->daddr, addr, ETH_ALEN);
 	ep->proto = (type == ETHPROTO_8023) ? (short) len : type;
 	

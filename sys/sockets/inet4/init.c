@@ -111,7 +111,7 @@ inet4_init (void)
 		in.sin_addr.s_addr = 2130706687UL;
 		in.sin_port = 0;
 		
-		sa_copy (&ifa->ifu.broadaddr, (struct sockaddr *) &in);
+		sa_copy (&ifa->ifu.broadadr.sa, (struct sockaddr *) &in);
 		
 		/* up & running */
 		
