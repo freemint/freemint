@@ -12,6 +12,9 @@ srcdir = .
 top_srcdir = ../..
 subdir = xif
 
+NOCFLAGS-de600.c = -O2 -O3
+CFLAGS-de600.c = -O1
+
 default: all
 
 include $(top_srcdir)/CONFIGVARS

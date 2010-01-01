@@ -397,8 +397,8 @@ neth_config (struct netif *nif, struct ifopt *ifo)
 		 */
 		if (ifo->valtype != IFO_HWADDR)
 			return ENOENT;
-		memcpy (nif->hwlocal.addr, ifo->ifou.v_string, ETH_ALEN);
-		cp = nif->hwlocal.addr;
+		memcpy (nif->hwlocal.adr.bytes, ifo->ifou.v_string, ETH_ALEN);
+		cp = nif->hwlocal.adr.bytes;
 		DEBUG (("dummy: hwaddr is %x:%x:%x:%x:%x:%x",
 				cp[0], cp[1], cp[2], cp[3], cp[4], cp[5]));
 	}
@@ -410,8 +410,8 @@ neth_config (struct netif *nif, struct ifopt *ifo)
 		 */
 		if (ifo->valtype != IFO_HWADDR)
 			return ENOENT;
-		memcpy (nif->hwbrcst.addr, ifo->ifou.v_string, ETH_ALEN);
-		cp = nif->hwbrcst.addr;
+		memcpy (nif->hwbrcst.adr.bytes, ifo->ifou.v_string, ETH_ALEN);
+		cp = nif->hwbrcst.adr.bytes;
 		DEBUG (("dummy: braddr is %x:%x:%x:%x:%x:%x",
 				cp[0], cp[1], cp[2], cp[3], cp[4], cp[5]));
 	}
@@ -525,10 +525,10 @@ driver_init (void)
 		/*
 		 * Set interface hardware and broadcast addresses.
 		 */
-		if (! get_hw_addr(ethX, (char *)iface->hwlocal.addr, ETH_ALEN))
+		if (! get_hw_addr(ethX, (char *)iface->hwlocal.adr.bytes, ETH_ALEN))
 			continue; /* if XIF_GET_MAC returns false then skip this interface */
 
-		memcpy (iface->hwbrcst.addr, "\377\377\377\377\377\377", ETH_ALEN);
+		memcpy (iface->hwbrcst.adr.bytes, "\377\377\377\377\377\377", ETH_ALEN);
 
 		/*
 		 * Set length of send and receive queue. IF_MAXQ is a good value.
