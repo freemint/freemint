@@ -239,6 +239,10 @@ struct proc
 
 	ulong	berr;			/* the value the program tried to write */
 					/* to the bus error vector (see check_exc.c) */
+#define PROC_BUSERR	0
+#define PROC_ADRERR	1
+#define PROC_ILGERR	2
+	unsigned long vects[16];
 
 	long	_cdecl (*criticerr)(long);
 					/* critical error handler	*/
@@ -280,7 +284,6 @@ struct proc
 	ulong	exception_addr;		/* access address from stack	*/
 	ushort	exception_mmusr;	/* result from ptest insn	*/
 	ushort	exception_access;	/* cause of the bus error (read, write, read/write) */
-
 
 	ulong	stack_magic;		/* to detect stack overflows	*/
 	char	stack[STKSIZE+4];	/* stack for system calls	*/
