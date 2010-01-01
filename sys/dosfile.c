@@ -50,7 +50,7 @@ sys_f_open (const char *name, short mode)
 	struct proc *p = get_curproc();
 	FILEPTR *fp = NULL;
 	short fd = MIN_OPEN - 1;
-	int _global = 0;
+	int globl = 0;
 	long ret;
 
 	TRACE (("Fopen(%s, %x)", name, mode));
@@ -74,7 +74,7 @@ sys_f_open (const char *name, short mode)
 		ALERT (MSG_global_handle, name);
 
 		p = rootproc;
-		_global = 1;
+		globl = 1;
 	}
 # endif
 
@@ -102,7 +102,7 @@ sys_f_open (const char *name, short mode)
 	FP_DONE (p, fp, fd, FD_CLOEXEC);
 
 # if O_GLOBAL
-	if (_global)
+	if (globl)
 		/* we just opened a global handle */
 		fd += 100;
 # endif
@@ -1336,7 +1336,7 @@ sys_fwritev (short fd, const struct iovec *iov, long niov)
 	}
 
 	{
-		char *pt, *_p;
+		char *ptr, *_ptr;
 		long size;
 		int i;
 
@@ -1347,26 +1347,26 @@ sys_fwritev (short fd, const struct iovec *iov, long niov)
 		/* if (size == 0)
 			return 0; */
 
-		pt = _p = kmalloc (size);
-		if (!pt) return ENOMEM;
+		ptr = _ptr = kmalloc (size);
+		if (!ptr) return ENOMEM;
 
 		for (i = 0; i < niov; ++i)
 		{
-			memcpy (pt, iov[i].iov_base, iov[i].iov_len);
-			pt += iov[i].iov_len;
+			memcpy (ptr, iov[i].iov_base, iov[i].iov_len);
+			ptr += iov[i].iov_len;
 		}
 
 		if (is_terminal (f))
-			r = tty_write (f, _p, size);
+			r = tty_write (f, _ptr, size);
 		else
 		{
 			if (f->flags & O_APPEND)
 				xdd_lseek (f, 0L, SEEK_END);
 
-			r = xdd_write (f, _p, size);
+			r = xdd_write (f, _ptr, size);
 		}
 
-		kfree (_p);
+		kfree (_ptr);
 		return r;
 	}
 }
@@ -1401,7 +1401,7 @@ sys_freadv (short fd, const struct iovec *iov, long niov)
 	}
 
 	{
-		char *pt, *_p;
+		char *ptr, *_ptr;
 		long size;
 		int i;
 
@@ -1412,17 +1412,17 @@ sys_freadv (short fd, const struct iovec *iov, long niov)
 		/* if (size == 0)
 			return 0; */
 
-		pt = _p = kmalloc (size);
-		if (!pt) return ENOMEM;
+		ptr = _ptr = kmalloc (size);
+		if (!ptr) return ENOMEM;
 
 		if (is_terminal (f))
-			r = tty_read (f, pt, size);
+			r = tty_read (f, ptr, size);
 		else
-			r = xdd_read (f, pt, size);
+			r = xdd_read (f, ptr, size);
 
 		if (r <= 0)
 		{
-			kfree (pt);
+			kfree (ptr);
 			return r;
 		}
 
@@ -1431,13 +1431,13 @@ sys_freadv (short fd, const struct iovec *iov, long niov)
 			register long copy;
 
 			copy = size > iov[i].iov_len ? iov[i].iov_len : size;
-			memcpy (iov[i].iov_base, pt, copy);
+			memcpy (iov[i].iov_base, ptr, copy);
 
-			pt += copy;
+			ptr += copy;
 			size -= copy;
 		}
 
-		kfree (_p);
+		kfree (_ptr);
 		return r;
 	}
 }

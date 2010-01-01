@@ -149,10 +149,10 @@ tty_read(FILEPTR *f, void *buf, long nbytes)
 		&& !(f->flags & (O_NDELAY | O_HEAD))
 		&& (!(tty->state & TS_ESC) || !(rdmode & ESCSEQ)))
 	{
-		long r, bytes = 0;
+		long ret, bytes = 0;
 		
-		r = (*f->dev->select)(f, (long) get_curproc(), O_RDONLY);
-		if (r != 1)
+		ret = (*f->dev->select)(f, (long) get_curproc(), O_RDONLY);
+		if (ret != 1)
 		{
 			TIMEOUT *t;
 			
@@ -175,7 +175,7 @@ tty_read(FILEPTR *f, void *buf, long nbytes)
 		}
 		
 		(void)(*f->dev->ioctl)(f, FIONREAD, &bytes);
-		if (!r)
+		if (!ret)
 		{
 			(*f->dev->unselect)(f, (long) get_curproc(), O_RDONLY);
 			wake (SELECT_Q, (long) &select_coll);
@@ -1599,8 +1599,8 @@ tty_putchar (FILEPTR *f, long data, int mode)
 			}
 			else if (ch == tty->ltc.t_flushc)
 			{
-				long r = 2;
-				tty_ioctl (f, TIOCFLUSH, &r);
+				long ret = 2;
+				tty_ioctl (f, TIOCFLUSH, &ret);
 				return 4L;
 			}
 			else if (tty->state & TS_HOLD)

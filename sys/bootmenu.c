@@ -616,7 +616,7 @@ wait:
 					load_auto    =  option[3];
 					no_mem_prot  = !option[4];
 					step_by_step =  option[5];
-// 					debug_level  =  option[6];
+					debug_level  =  option[6];
 					out_device   =  option[7];
 					save_ini     =  option[8];
 

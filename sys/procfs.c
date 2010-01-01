@@ -560,9 +560,9 @@ proc_dfree (fcookie *dir, long *buf)
 	long size;
 	
 	/* "sector" size is the size of the smallest amount of memory that
-	 * can be allocated. see mem.h for the definition of ROUND
+	 * can be allocated. see mem.h for the definition of round_page
 	 */
-	long secsiz = ROUND(1);
+	long secsiz = round_page(1);
 	
 	UNUSED(dir);
 	

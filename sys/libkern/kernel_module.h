@@ -902,8 +902,15 @@ check_kentry_version(void)
  * kentry_module
  */
 
-# define load_modules		(*KENTRY->vec_module.load_modules)
 # define register_trap2		(*KENTRY->vec_module.register_trap2)
+
+# define load_modules		(*KENTRY->vec_module.load_modules)
+# define load_kmodules		(*KENTRY->vec_module.load_kmodules)
+# define unload_kmodule		(*KENTRY->vec_module.unload_kmodule)
+# define unload_kmodules	(*KENTRY->vec_module.unload_kmodules)
+# define find_km_bydevicename	(*KENTRY->vec_module.find_km_bydevicename)
+# define detach_child_devices	(*KENTRY->vec_module.detach_child_devices)
+# define detach_km_devices	(*KENTRY->vec_module.detach_km_devices)
 
 
 /*
@@ -940,8 +947,8 @@ check_kentry_version(void)
 # define KERNEL_DEBUG		(*KENTRY->vec_debug.debug)
 # define KERNEL_ALERT		(*KENTRY->vec_debug.alert)
 # define KERNEL_FATAL		(*KENTRY->vec_debug.fatal)
-
-
+# define KERNEL_FORCE		(*KENTRY->vec_debug.force)
+# define KERNEL_DISPLAY		(*KENTRY->vec_debug.display)
 /*
  * kentry_libkern
  */

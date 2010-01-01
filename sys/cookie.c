@@ -175,11 +175,11 @@ init_cookies (void)
 
 	/* We allocate the cookie jar in global memory so anybody can read
 	 * it or write it. This code allocates at least 16 more cookies,
-	 * then rounds up to a QUANTUM boundary (that's what ROUND does).
+	 * then rounds up to a QUANTUM boundary (that's what round_page does).
 	 * Probably, nobody will have to allocate another cookie jar :-)
 	 */
 	ncsize = (ncsize + 16) * sizeof(struct cookie);
-	ncsize = ROUND (ncsize);
+	ncsize = round_page (ncsize);
 	newjar_region = get_region (core, ncsize, PROT_G);
 	newcookie = (struct cookie *) attach_region (rootproc, newjar_region);
 # endif

@@ -34,6 +34,8 @@
 # include "mint/mint.h"
 # include "mint/module.h"
 
+void init_module_subsys(void);
+
 long _cdecl kernel_opendir(struct dirstruct *dirh, const char *name);
 long _cdecl kernel_readdir(struct dirstruct *dirh, char *buf, int len);
 void _cdecl kernel_closedir(struct dirstruct *dirh);
@@ -46,9 +48,18 @@ void _cdecl kernel_close(struct file *f);
 
 /* load all kernel modules */
 void load_all_modules(unsigned long mask);
+void print_moduleinfo(void);
 
 void _cdecl load_modules_old(const char *ext, long (*loader)(struct basepage *, const char *));
-void _cdecl load_modules(const char *path, const char *ext, long (*loader)(struct basepage *, const char *, short *, short *));
+void _cdecl load_modules(const char *path, const char *ext, long (*loader)(struct basepage *, const char *, short *));
+
+void _cdecl load_kmodules(struct kernel_module *parent, const char *path, const char *ext, void *arg, long (*loader)(struct kernel_module *, const char *));
+long _cdecl unload_kmodule(struct kernel_module *km);
+long _cdecl unload_kmodules(struct kernel_module *parent);
+long _cdecl detach_km_devices(struct kernel_module *km, bool free);
+void _cdecl detach_child_devices(struct kernel_module *parent);
+
+struct kernel_module * _cdecl find_km_bydevicename(char *name);
 
 long _cdecl register_trap2(long _cdecl (*dispatch)(void *), int mode, int flag, long extra);
 

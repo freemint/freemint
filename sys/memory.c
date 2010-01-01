@@ -352,8 +352,9 @@ init_core (void)
 # endif
 
 	if (FalconVideo) {
+		short vsm = TRAP_VsetMode(-1);
 		/* the Falcon can tell us the screen size */
-		scrnsize = TRAP_VgetSize(TRAP_VsetMode(-1));
+		scrnsize = TRAP_VgetSize(vsm);
 	} else {
 		struct screen *vscreen;
 
@@ -365,6 +366,7 @@ init_core (void)
 
 	/* check for a graphics card with fixed screen location */
 # define phys_top_st (*(ulong *) 0x42eL)
+# define membot (*(ulong *)0x432L)
 
 	if (scrnplace >= phys_top_st) {
 		/* screen isn't in ST RAM */
@@ -509,7 +511,6 @@ attach_region (PROC *p, MEMREGION *reg)
 		ALERT ("attach_region: attaching a region to an invalid proc?");
 		return 0;
 	}
-
 retry:
 	for (i = 0; i < mem->num_reg; i++) {
 		if (!mem->mem[i]) {
@@ -520,7 +521,7 @@ retry:
 
 			reg->links++;
 			mark_proc_region (p->p_mem, reg, PROT_P, p->pid);
-
+			DEBUG(("attach_region: reg %d, return loc %lx (%lx)", i, reg->loc, mem->addr[i]));
 			return mem->addr[i];
 		}
 	}
@@ -611,18 +612,22 @@ detach_region_by_addr(struct proc *p, unsigned long block)
 			MEMREGION *m = mem->mem[i];
 
 			assert(m != NULL);
-			assert(m->loc == (long) block);
+			assert(m->loc == block);
 
 			mem->mem[i] = 0;
 			mem->addr[i] = 0;
 			unref_memreg(p, m);
 #if 0
 			m->links--;
-			if (m->links == 0)
+			if (m->links == 0) {
+				TRACE(("detach_region_by_addr: Free region %lx", m));
 				free_region(m);
-			else
+			}  else {
+				TRACE(("detach_region_by_addr: mark region %lx (links %d) PROT_I", m, m->links));
 				/* cause curproc's table to be updated */
 				mark_proc_region(mem, m, PROT_I, p->pid);
+			}
+			TRACE(("detach_region_by_addr: done!"));
 #endif
 			return 0;
 		}
@@ -667,11 +672,11 @@ _get_region (MMAP map, ulong s, short mode, short cmode, MEMREGION *m, short ker
 	MEMREGION *n, *k = NULL;
 	unsigned long size = s;
 
-	size = ROUND(s);
+	size = round_page(s);
 	if (!size) {
 		DEBUG (("request for 0 or less bytes (%li)??", s));
 		size = 1;
-		size = ROUND(size);
+		size = round_page(size);
 	}
 
 	TRACE (("_get_region (%s, %li (%lx), %x) (%s)",
@@ -691,20 +696,20 @@ _get_region (MMAP map, ulong s, short mode, short cmode, MEMREGION *m, short ker
 	/* precautionary measures */
 	/* Ozk: Situation (observed with Jinnee):
 	 *	size is 0xffffffe4 (-28 signed long). Looks like Jinnee gets this from some failing system call
-	 *	ROUND adds QUANTUM - 1 (which is 8191) to this size, resulting in 8164.
+	 *	round_page adds QUANTUM - 1 (which is 8191) to this size, resulting in 8164.
 	 *	Then this is masked with ~8191 and guess what? Yeah, size turns 0!
-	 *	This went through here because the !size check was done _before_ ROUND.
+	 *	This went through here because the !size check was done _before_ round_page.
 	 *  Possible problem:
 	 *	If a prog intentionally asks for more than 4294959103 bytes of memory,
 	 *	which will create identical situation as for this Jinnee bug, it will get 8192 (QUANTUM)
 	 *	Should we return error instead for this situaion?
 	 */
 #if 0
-	size = ROUND (size);
+	size = round_page (size);
 	if (!size) {
 		DEBUG (("request for 0 or less bytes (%li)??", s));
 		size = 1;
-		size = ROUND (size);
+		size = round_page (size);
 	}
 #endif
 	n = *map;
@@ -993,7 +998,7 @@ shrink_region (MEMREGION *reg, unsigned long nsize)
 
 	SANITY_CHECK_MAPS ();
 
-	newsize = ROUND(nsize);
+	newsize = round_page(nsize);
 
 	DEBUG(("shrink_region: reg %lx, nsize %ld, newsize %ld", reg, nsize, newsize));
 
@@ -1367,6 +1372,15 @@ create_env (const char *env, unsigned long flags)
 	return m;
 }
 
+/**
+ * 
+ * @param cmd 
+ * @param env 
+ * @param flags 
+ * @param prgsize 
+ * @param err 
+ * @return 
+ */
 MEMREGION *
 create_base(const char *cmd, MEMREGION *env,
 	    unsigned long flags, unsigned long prgsize, long *err)
@@ -1396,7 +1410,6 @@ create_base(const char *cmd, MEMREGION *env,
 		minalt = len = (minalt + 1) * 128 * 1024L + prgsize + 256;
 		if ((flags & F_MINALT) == F_MINALT)
 			len = 0;
-
 
 		coresize = max_rsize (core, len);
 		altsize = max_rsize (alt, len);
@@ -1462,7 +1475,9 @@ create_base(const char *cmd, MEMREGION *env,
 		*err = ENOMEM;
 		goto leave;
 	}
-
+	
+	m->mflags |= M_BPAGE;
+	
 	/* initialize basepage */
 	{
 		BASEPAGE *b = (BASEPAGE *)(m->loc);
@@ -1557,7 +1572,8 @@ failed:
 	if (!reg)
 		goto failed;
 
-// 	if (reg && ((size + 1024L) > reg->len))
+	reg->mflags |= M_LOAD;
+
 	if ((size + 1024) > reg->len) {
 		DEBUG (("load_region: insufficient memory to load"));
 		detach_region (get_curproc(), reg);
@@ -1565,9 +1581,6 @@ failed:
 		*err = ENOMEM;
 		goto failed;
 	}
-
-// 	if (reg == NULL)
-// 		goto failed;
 
 	b = (BASEPAGE *)reg->loc;
 	b->p_flags = fh.flag;
@@ -1872,7 +1885,7 @@ error:
  * MiNT doesn't own or which is virtualized
  */
 static MEMREGION *
-addr2region1 (MMAP map, long addr)
+addr2region1 (MMAP map, unsigned long addr)
 {
 	MEMREGION *r;
 
@@ -1893,7 +1906,7 @@ addr2region1 (MMAP map, long addr)
 	return NULL;
 }
 MEMREGION *
-addr2region (long addr)
+addr2region (unsigned long addr)
 {
 	MEMREGION *r;
 
@@ -1939,7 +1952,7 @@ realloc_region (MEMREGION *reg, long newsize)
 // 		return 0;
 
 	if (newsize != -1L)
-		newsize = ROUND (newsize);
+		newsize = round_page (newsize);
 
 	/* last fit allocation: this is pretty straightforward,
 	 * we just look for the last block that would work
@@ -2370,12 +2383,12 @@ sanity_check (MMAP map, ulong line)
 				DEBUG (("%lu: Contiguous memory regions not merged!", line));
 				DEBUG (("  m %lx, loc %lx, len %lx, links %u, next %lx", m, m->loc, m->len, m->links, m->next));
 			}
-			else if (!no_mem_prot && (m->loc != ROUND(m->loc)))
+			else if (!no_mem_prot && (m->loc != round_page(m->loc)))
 			{
 				ALERT ("%lu: Memory region unaligned", line);
 				DEBUG (("%lu: Memory region unaligned", line));
 			}
-			else if (!no_mem_prot && (m->len != ROUND(m->len)))
+			else if (!no_mem_prot && (m->len != round_page(m->len)))
 			{
 				ALERT ("%lu: Memory region length unaligned", line);
 				DEBUG (("%lu: Memory region length unaligned", line));

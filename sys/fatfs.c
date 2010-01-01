@@ -3889,9 +3889,9 @@ search_cookie (COOKIE *dir, COOKIE **found, const char *name, int mode)
 			 *	and to keep consistent behavour, we need to do
 			 *	the same all over the place.
 			 */
-			short mode = is_short(name, VFAT(dir->dev) ? MSDOS_TABLE : GEMDOS_TABLE);
+			short shortmode = is_short(name, VFAT(dir->dev) ? MSDOS_TABLE : GEMDOS_TABLE);
 			
-			if (!mode && !VFAT(dir->dev))
+			if (!shortmode && !VFAT(dir->dev))
 			{
 				char fat_name[FAT_NAMEMAX];
 				
@@ -6783,8 +6783,19 @@ fatfs_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newna
 static long _cdecl
 fatfs_opendir (DIR *dirh, int flags)
 {
+	//
+	// XXX
+	// Odd Skancke:
+	//	Because I could not find a better way of casting the address
+	//	dirh->fsstuff to a oDIR ptr without triggering GCC 4.4.2's
+	//	strict-aliasing warnings, I had to go via unsigned long.
+	//	While this works on m68k and other cpu architectures where
+	//	addresses is the same as the native int type, it will break
+	//	on architectures where this is not the case.
+	//
+	unsigned long dp = (unsigned long)dirh->fsstuff;
 	COOKIE *c = (COOKIE *) dirh->fc.index;
-	oDIR *dir = (oDIR *) dirh->fsstuff;
+	oDIR *dir = (oDIR *)dp;
 	long r;
 
 	UNUSED (flags);
@@ -7033,8 +7044,9 @@ fatfs_writelabel (fcookie *dir, const char *name)
 
 	if (r == E_OK)
 	{
+		register union { const char *cc; const unsigned char *c; } nameptr; nameptr.cc = name;
 		register const char *table = DEFAULT_T (dir->dev);
-		register const uchar *src = (uchar *)name;
+		register const uchar *src = nameptr.c;// (uchar *)name;
 		register char *dst = odir.info->name;
 		register long i;
 
@@ -8139,6 +8151,8 @@ fatfs_open (FILEPTR *f)
 static long _cdecl
 fatfs_write (FILEPTR *f, const char *buf, long bytes)
 {
+	union { const char *cc; char *c; } bufptr; bufptr.cc = buf;
+	
 	FAT_DEBUG (("fatfs_write [%s]: enter (bytes = %li)", ((COOKIE *) f->fc.index)->name, bytes));
 
 	if ((((FILE *) f->devinfo)->mode & O_RWMODE) == O_RDONLY)
@@ -8148,7 +8162,7 @@ fatfs_write (FILEPTR *f, const char *buf, long bytes)
 	}
 
 	FAT_DEBUG (("fatfs_write: leave return __FIO ()"));
-	return __FIO (f, (char *) buf, bytes, WRITE);
+	return __FIO (f, bufptr.c, bytes, WRITE);
 }
 
 static long _cdecl
