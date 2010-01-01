@@ -131,6 +131,7 @@
 # include "kmemory.h"
 # include "memory.h"
 # include "mmu.h"
+# include "module.h"
 
 
 #if defined(M68040) || defined(M68060)
@@ -144,8 +145,8 @@
 #endif
 
 void get_mmuregs(ulong *regs);	/* in mmu040.spp */
-ulong read_phys(ulong *addr);	/* dito */
-
+// ulong read_phys(ulong *addr);	/* dito */
+ulong read_phys(void *addr);
 /*
  * You can turn this whole module off, and the stuff in context.s,
  * by setting no_mem_prot to 1.
@@ -939,7 +940,7 @@ mark_pages(ulong *table, ulong start, ulong len, short mode, short flush, short 
 	ulong	origlen;
 	ulong	setmode;
 	ulong	setcmode = 0;
-	int	no_templates = 0;
+	int	no_templates = 1;
 
 	if (mode & 0x4000)
 	{
@@ -974,13 +975,25 @@ mark_pages(ulong *table, ulong start, ulong len, short mode, short flush, short 
 	else
 	{
 		/* Otherwise, loop all descriptors for the memory area */
-		for (desc = get_page_descriptor(table, start); len; desc++)
+		for (desc = get_page_descriptor(table, start); len;/* desc++*/)
 		{
-			/* Clear the protection bits */
-			*desc &= ~PROTECTIONBITS;
-			/* And set the new ones */
-			*desc |= setmode;
+			ulong d;
 			
+			/* Clear the protection bits */
+// 			*desc &= ~PROTECTIONBITS;
+			/* And set the new ones */
+// 			*desc |= setmode;
+			
+			d = *desc;
+			d &= ~PROTECTIONBITS;
+			d |= setmode;
+			if (cmode) {
+				d &= ~CACHEMODEBITS;
+				d |= setcmode;
+			}
+			*desc++ = d;
+			
+#if 0
 			/* modify caching mode if requested */
 			if (cmode)
 			{
@@ -989,6 +1002,7 @@ mark_pages(ulong *table, ulong start, ulong len, short mode, short flush, short 
 				/* And set the new ones */
 				*desc |= setcmode;
 			}
+#endif
 			len -= pagesize;
 		}
 	}
@@ -1080,7 +1094,6 @@ mark_region(MEMREGION *region, short mode, short cmode)
 	PROC *proc;
 	MEMREGION **mr;
 	short int setmode;
-	ulong cmpmode;
 	int shortcut;
 	unsigned char *tbl_ptr, *tbl_end;
 
@@ -1100,24 +1113,28 @@ mark_region(MEMREGION *region, short mode, short cmode)
 #endif
 
 	/*
-	 * First, check if the global_mode_table is already "compatible" with the
-	 * new mode, i.e. the MMU-protection is the same for all affected pages
+	 * First, if no cmode request, check if the global_mode_table is already
+	 * "compatible" with the new mode, i.e. the MMU-protection is the same
+	 * for all affected pages
 	 */
 
 	shortcut = 0;
-	tbl_ptr = &global_mode_table[start >> 13];
-	tbl_end = tbl_ptr + (len >> 13);
-	cmpmode = mode_descriptors[mode];
-	while (tbl_ptr != tbl_end)
-	{
-		if (mode_descriptors[*tbl_ptr] != cmpmode)
-			break;
-		tbl_ptr++;
+	if (!cmode) {
+		unsigned long cmpmode;
+		tbl_ptr = &global_mode_table[start >> 13];
+		tbl_end = tbl_ptr + (len >> 13);
+		cmpmode = mode_descriptors[mode];
+		while (tbl_ptr != tbl_end)
+		{
+			if (mode_descriptors[*tbl_ptr] != cmpmode)
+				break;
+			tbl_ptr++;
+		}
+		/* don't shortcut if cmode request is set */
+		if (tbl_ptr == tbl_end)
+			shortcut = 1;
 	}
-	/* don't shortcut if cmode request is set */
-	if (tbl_ptr == tbl_end && !cmode)
-		shortcut = 1;
-
+	
 	/* mark the global page table */
 	memset(&global_mode_table[start >> 13], mode, (len >> 13));
 	/* mark the global template tree */
@@ -1129,7 +1146,7 @@ mark_region(MEMREGION *region, short mode, short cmode)
 	 */
 
 	if (shortcut && (mode == PROT_G))
-    		goto finished;
+		goto finished;
 
 	for (proc = proclist; proc; proc = proc->gl_next)
 	{
@@ -1199,7 +1216,9 @@ mark_proc_region(struct memspace *p_mem, MEMREGION *region, short mode, short pi
 	ulong start = region->loc;
 	ulong len = region->len;
 	short global_mode;
-
+#if 0
+	bool dbg = (!stricmp(curproc->name, "worldclk")) ? true : false;
+#endif
 
 	MP_DEBUG(("mark_proc_region %lx len %lx mode %d for pid %d",
 		start, len, mode, pid));
@@ -1207,7 +1226,13 @@ mark_proc_region(struct memspace *p_mem, MEMREGION *region, short mode, short pi
 	global_mode = global_mode_table[(start >> 13)];
 
 	assert(p_mem && p_mem->page_table);
-
+#if 0
+	if (dbg) {
+		display("mark_proc_region %lx, len %lx mode %d, globalmode %d",
+		       start, len, mode, global_mode);
+		display("                 %lx %lx", p_mem->page_table, curproc->p_mem->page_table);
+	}
+#endif
 	if (global_mode == PROT_I || global_mode == PROT_G)
 		mode = global_mode;
 	else
@@ -1278,7 +1303,7 @@ prot_temp(ulong loc, ulong len, short mode)
     /* round start down to the previous page and len up to the next one. */
     len += loc & MASKBITS;
     loc &= ~MASKBITS;
-    len = ROUND(len);
+    len = round_page(len);
 
     if (mode == 0 || mode == 1) return 0;	/* do nothing */
     if (mode == -1) {
@@ -1575,36 +1600,77 @@ QUICKDUMP(void)
  * desc: Page descriptor to dump
  * buf: Pointer to line buffer for output
  */
+
+INLINE void
+dump_uld(ulong desc, char *buf)
+{
+	switch ((desc & 0x03)) {
+		case 0:
+			_mint_strcat(buf, "  ");
+			break;
+		case 1:
+			_mint_strcat(buf, "R1");
+			break;
+		case 2:
+			_mint_strcat(buf, "R2");
+			break;
+		case 3:
+			_mint_strcat(buf, "R3");
+			break;
+	}
+	_mint_strcat(buf, (desc & (1<<2)) ? "W" : " ");
+	_mint_strcat(buf, (desc & (1<<3)) ? "U" : " ");
+}
 INLINE void
 dump_descriptor(ulong desc, char *buf)
 {
-	_mint_strcat (buf, (desc & 0x03) ? "R" : " ");
-	_mint_strcat (buf, (desc & 0x04) ? "W" : " ");
-	_mint_strcat (buf, (desc & 0x08) ? "U" : " ");
-	_mint_strcat (buf, (desc & 0x10) ? "M" : " ");
+	switch ((desc & 0x03)) {
+		case 0:
+			_mint_strcat(buf, "  ");
+			break;
+		case 1:
+			_mint_strcat(buf, "R1");
+			break;
+		case 2:
+			_mint_strcat(buf, "R2");
+			break;
+		case 3:
+			_mint_strcat(buf, "R3");
+			break;
+		default:
+			_mint_strcat(buf, "??");
+			break;
+	}
+// 	_mint_strcat (buf, (desc & 0x03) ? "R" : " ");
+	_mint_strcat (buf, (desc & (1<<2)) ? "W" : " ");
+	_mint_strcat (buf, (desc & (1<<3)) ? "U" : " ");
+	_mint_strcat (buf, (desc & (1<<4)) ? "M" : " ");
 	
 	switch (desc & CACHEMODEBITS)
 	{
 		case 0x00:
-			_mint_strcat (buf, "Cw");
+			_mint_strcat (buf, " Cw");
 			break;
 		case 0x20:
-			_mint_strcat (buf, "Cc");
+			_mint_strcat (buf, " Cc");
 			break;
 		case 0x40:
-			_mint_strcat (buf, "Ns");
+			_mint_strcat (buf, " Ns");
 			break;
 		case 0x60:
-			_mint_strcat (buf, "Nc");
+			_mint_strcat (buf, " Nc");
+			break;
+		default:;
+			_mint_strcat (buf, "   ");
 			break;
 	}
 	
-	_mint_strcat (buf, (desc & 0x080) ? "S"  : " ");
-	_mint_strcat (buf, (desc & 0x100) ? "U0" : "  ");
-	_mint_strcat (buf, (desc & 0x200) ? "U1" : "  ");
-	_mint_strcat (buf, (desc & 0x400) ? "G"  : " ");
-	
-	FORCE (buf);
+	_mint_strcat (buf, (desc & (1<< 7)) ? " S"  : "  ");
+	_mint_strcat (buf, (desc & (1<< 8)) ? " U0" : "   ");
+	_mint_strcat (buf, (desc & (1<< 9)) ? " U1" : "   ");
+	_mint_strcat (buf, (desc & (1<<10)) ? " G"  : "  ");
+
+//	FORCE (buf);
 }
 
 /*
@@ -1772,6 +1838,113 @@ BIG_MEM_DUMP (int bigone __attribute__((unused)), PROC *proc __attribute__((unus
 	UNUSED (proc);
 	UNUSED (bigone);
 # endif /* DEBUG_INFO */
+}
+/*
+RWUM Cw S U0 U1 G --
+Indirect          --
+Invalid           --
+Invalid Root desc --
+Invalid Ptr  desc --
+*/
+#define DPTPATH "u:\\e\\"
+void
+dump_proc_table(struct proc *p)
+{
+	struct file *fp;
+	unsigned long log, phys, desc, *root, *pointer, *page;
+	int a,b,c;
+	char bf[32], *buf;
+
+	buf = kmalloc(512);
+	if (!buf)
+		return;
+
+	_mint_strcpy(buf, DPTPATH);
+	_mint_strcat(buf, p->name);
+	_mint_strcat(buf, ".txt");
+	fp = kernel_open(buf, O_CREAT|O_WRONLY,NULL,NULL);
+	if (!fp)
+		return;
+
+	root = p->p_mem ? p->p_mem->page_table : NULL;
+
+	ksprintf(buf, 512, "dump_proc_table: dumping table at %08lx for %s\r\n", root, p->name);
+	kernel_write(fp, buf, _mint_strlen(buf));
+	
+	log = phys = 0;
+	
+	if (root) {
+		for (a = 0; a < 128; a++) {
+			bf[0] = '\0';
+			desc = *root++;
+			if ((desc & 0x3) >= 2) {
+				pointer = (unsigned long *)(desc & ~0x000001ffUL);
+				dump_uld(desc, bf);
+				ksprintf(buf, 512, "%s Root -> ptr %08lx\r\n", bf, pointer);
+				kernel_write(fp, buf, _mint_strlen(buf));
+				for (b = 0; b < 128; b++) {
+					bf[0] = '\0';
+					desc = *pointer++;
+					if ((desc & 0x3) >= 2) {
+						page = (unsigned long *)(desc & ~0x0000007fUL);
+						dump_uld(desc, bf);
+						ksprintf(buf, 512, "%s Ptr  -> pg  %08lx\r\n", bf, page);
+						kernel_write(fp, buf, _mint_strlen(buf));
+						for (c = 0; c < 32; c++) {
+							desc = *page++;
+//indirect:
+							switch (desc & 3) {
+								case 0: {
+// 									display("Invalid           -- log %08lx - %08lx", log, log + pagesize - 1);
+									break;
+								}
+								case 3:
+								case 1: {
+									phys = desc & ~(pagesize - 1);
+// 									if (log < (0x80000000UL - 1)) {
+										buf[0] = bf[0] = '\0';
+										dump_descriptor(desc, bf);
+										ksprintf(buf, 512, "%s -- log %08lx - %08lx -> phys %08lx - %08lx\r\n",
+											bf, log, log + pagesize - 1,
+	  										phys, phys + pagesize - 1);
+										kernel_write(fp, buf, _mint_strlen(buf));
+// 									}
+									break;
+								}
+								case 2: {
+									unsigned long *t;
+									t = (unsigned long *)(desc & ~3);
+									desc = *t;
+									ksprintf(buf, 512, "Indirect          -- %08lx\r\n", desc);
+									kernel_write(fp, buf, _mint_strlen(buf));
+									break;
+								}
+								default:;
+									break;
+							}
+							log += pagesize;
+						}
+					} else {
+						dump_uld(desc, bf);
+						ksprintf(buf, 512, "%s Invalid Ptr  desc -- log %08lx - %08lx -> phys %08lx - %08lx\r\n",
+								bf, log,  log + (1024UL * 256),
+								phys, phys + (1024UL * 256));
+						kernel_write(fp, buf, _mint_strlen(buf));
+						log += (1024UL * 256);
+					}
+				}
+			} else {
+				dump_uld(desc, bf);
+				ksprintf(buf, 512, "%s Invalid Root desc -- log %08lx- %08lx -> phys %08lx - %08lx\r\n",
+					bf, log, log + (1024UL * 1024 * 32),
+					phys, phys + (1024UL * 1024 * 32));
+				kernel_write(fp, buf, _mint_strlen(buf));
+				log += (1024UL * 1024 * 32);
+			}
+		}
+	}
+	kernel_close(fp);
+	kfree(buf);
 }
 
 # endif /* M68040 || M68060 */

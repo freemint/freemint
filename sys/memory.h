@@ -51,7 +51,7 @@ long	memused (struct proc *p);
 void	recalc_maxmem (struct proc *p, long size);
 int	valid_address (long addr);
 MEMREGION *_cdecl addr2mem (struct proc *p, long addr);
-MEMREGION *addr2region (long addr);
+MEMREGION *addr2region (unsigned long addr);
 MEMREGION *proc_addr2region (struct proc *p, unsigned long addr);
 
 long	realloc_region (MEMREGION *, long);
