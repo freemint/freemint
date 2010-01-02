@@ -310,7 +310,7 @@ _ufree(void *plac, const char *func)
 	struct proc *p = get_curproc();
 	MEMREGION *m;
 
-	DEBUG(("ufree(0x%lx, %s)", place, func));
+	DEBUG(("ufree(0x%lx, %s)", plac, func));
 
 	m = proc_addr2region(p, placeptr.l);
 	if (m)

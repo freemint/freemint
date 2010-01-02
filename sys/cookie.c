@@ -423,12 +423,12 @@ get_cookie (struct cookie *cj, ulong tag, ulong *ret)
 # endif
 	ushort slotnum = 0;		/* number of already taken slots */
 # ifdef DEBUG_INFO
-	char asc [5];
-	*(long *) asc = tag;
-	asc [4] = '\0';
+	union { char a [5]; long l; } asc;
+	asc.l = tag;
+	asc.a[4] = '\0';
 # endif
 
-	DEBUG (("get_cookie(): tag=%08lx (%s) ret=%08lx", tag, asc, ret));
+	DEBUG (("get_cookie(): tag=%08lx (%s) ret=%08lx", tag, asc.a, ret));
 
 # ifdef JAR_PRIVATE
 	ut = get_curproc()->p_mem->tp_ptr;
@@ -545,9 +545,9 @@ set_cookie (struct cookie *cj, ulong tag, ulong val)
 	struct cookie *cjar = *CJAR;
 # endif
 # ifdef DEBUG_INFO
-	char asc [5];
-	*(long *) asc = tag;
-	asc [4] = '\0';
+	union {  char a[5]; long l; } asc;
+	asc.l = tag;
+	asc.a[4] = '\0';
 # endif
 # ifdef JAR_PRIVATE
 	ut = get_curproc()->p_mem->tp_ptr;
@@ -560,13 +560,13 @@ set_cookie (struct cookie *cj, ulong tag, ulong val)
 	/* 0x0000xxxx feature of GETCOOKIE may be confusing, so
 	 * prevent users from using slotnumber HERE :)
 	 */
-	DEBUG (("set_cookie(): tag=%08lx (%s) val=%08lx", tag, asc, val));
+	DEBUG (("set_cookie(): tag=%08lx (%s) val=%08lx", tag, asc.a, val));
 	if (	((tag & 0xff000000UL) == 0) ||
 		((tag & 0x00ff0000UL) == 0) ||
 		((tag & 0x0000ff00UL) == 0) ||
 		((tag & 0x000000ffUL) == 0))
 	{
-		DEBUG (("set_cookie(): invalid tag id %08lx (%s)", tag, asc));
+		DEBUG (("set_cookie(): invalid tag id %08lx (%s)", tag, asc.a));
 		return EINVAL;
 	}
 
