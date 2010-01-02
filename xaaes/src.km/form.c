@@ -539,9 +539,7 @@ Form_Cursor(XA_TREE *wt,
 			dir = OBFIND_HOR | ((keystate & (K_RSHIFT|K_LSHIFT)) ? OBFIND_UP : OBFIND_DOWN);
 			
 			if (!ret_focus)
-			{
 				flags = OF_EDITABLE;
-			}
 			else
 				flags = OF_SELECTABLE|OF_EDITABLE|OF_EXIT|OF_TOUCHEXIT;
 
@@ -563,8 +561,7 @@ Form_Cursor(XA_TREE *wt,
 				}
 			}
 			
-			if (valid_aesobj(&nxt))
-			{
+			if (valid_aesobj(&nxt))	{
 				if (ret_focus)
 					*ret_focus = nxt;
 				if (aesobj_edit(&nxt))
@@ -810,11 +807,11 @@ g_slist:
 					if( list->keypress )
 					{
 						/* cursor-keys */
-					if ((*list->keypress)(list, keycode, keystate) == 0)
-					{
-						goto done;
+						if ((*list->keypress)(list, keycode, keystate) == 0)
+						{
+							goto done;
+						}
 					}
-				}
 					/* pg-up etc. */
 					if ( scrl_cursor(list, keycode, keystate) == 0)
 					{
@@ -828,7 +825,6 @@ g_slist:
 	}
 	
 	next_obj = Form_Cursor(wt, v, keycode, keystate, next_obj, redraw, rl, &new_focus, &keycode);
-
 	/* someone help me! */
 	/* terror fills my soul */
 	if( new_focus.ob->ob_type == G_SLIST ){
@@ -856,9 +852,7 @@ g_slist:
 				next_obj = wt->focus;
 			else
 				next_obj = inv_aesobj();
-		}
-		else if (keycode == SC_RETURN || keycode == SC_NMPAD_ENTER)
-		{
+		} else if (keycode == SC_RETURN || keycode == SC_NMPAD_ENTER) {
 			next_obj = ob_find_flst(obtree, OF_DEFAULT, 0, 0, OS_DISABLED, 0, 0);
 			DIAG((D_keybd, NULL, "Form_Keyboard: Got RETRURN key - default obj=%d for %s",
 				next_obj.item, client->name));
@@ -884,8 +878,7 @@ g_slist:
 				next_obj.item, client->name));
 		}
 
-		if (valid_aesobj(&next_obj))
-		{
+		if (valid_aesobj(&next_obj)) {
 			struct moose_data md;
 
 			check_mouse(wt->owner, &md.cstate, &md.x, &md.y);
@@ -901,25 +894,18 @@ g_slist:
 					         &fr.obj_state,
 					         &fr.obj,
 					         &fr.dblmask);
-		}
-		else if (keycode != SC_RETURN && keycode != SC_NMPAD_ENTER)
-		{
-			if (!focus_set(wt) || same_aesobj(&wt->focus, &new_eobj))
-			{
+		} else if (keycode != SC_RETURN && keycode != SC_NMPAD_ENTER) {
+			if (!focus_set(wt) || same_aesobj(&wt->focus, &new_eobj)) {
 				next_key = keycode;
 				if (same_aesobj(&new_eobj, &obj) && valid_aesobj(&new_eobj))
 					new_eobj = aesobj(wt->tree, 0);
-			}
-			else if (focus_set(wt) && valid_aesobj(&new_eobj) &&
-				(!(focus_ob(wt)->ob_flags & OF_EDITABLE) || !same_aesobj(&wt->focus, &new_eobj)))
-			{
+			} else if (   focus_set(wt) && valid_aesobj(&new_eobj) &&
+				   (!(focus_ob(wt)->ob_flags & OF_EDITABLE) || !same_aesobj(&wt->focus, &new_eobj))) {
 				new_focus = new_eobj;
 				next_key = keycode;
 				if (same_aesobj(&new_eobj, &obj) && valid_aesobj(&new_eobj))
 					new_eobj = aesobj(wt->tree, 0);
-			}
-			else
-			{
+			} else {
 				if (!same_aesobj(&new_eobj, &obj))
 					next_obj = new_eobj;
 				else if (valid_aesobj(&new_eobj))
@@ -927,9 +913,7 @@ g_slist:
 				next_key = keycode;
 			}
 		}
-	}
-	else if (!keycode)
-	{
+	} else if (!keycode) {
 		next_key = 0;
 		if (valid_aesobj(&next_obj))
 			new_eobj = next_obj;
@@ -937,10 +921,8 @@ g_slist:
 			new_eobj = aesobj(wt->tree, 0);
 	}
 
-	if (valid_aesobj(&new_focus))
-	{
-		if (!same_aesobj(&wt->focus, &new_focus))
-		{
+	if (valid_aesobj(&new_focus)) {
+		if (!same_aesobj(&wt->focus, &new_focus)) {
 			struct xa_aes_object pf = wt->focus;
 			wt->focus = new_focus;
 			if (valid_aesobj(&pf))
@@ -948,7 +930,6 @@ g_slist:
 			obj_draw(wt, v, new_focus, -2, NULL, *rl, DRW_CURSOR);
 		}
 	}
-
 done:
 	if (fr.no_exit)
 		next_obj = new_eobj;
@@ -994,18 +975,19 @@ Exit_form_do( struct xa_client *client,
 		/* XXX - Ozk: complete this someday, having most XaAES-controlled
 		 *	 dialog-windows using the same exit code..
 		 */
-		if ((wind->dial & created_for_ALERT)) //wind == client->alert)
+		if ((wind->dial & created_for_ALERT))
 		{
-// 			OBJECT *obtree = wt->tree;
 			struct xa_aes_object f = fr->obj;
-			/* Is f a valid button? */
-// 			display("click alert but1 %d, but4 %d", ALERT_BUT1, ALERT_BUT1 + 3);
-			if (   aesobj_item(&f) >= ALERT_BUT1 && aesobj_item(&f) < ALERT_BUT1 + ALERT_BUTTONS && !aesobj_hidden(&f))
+// 			display("Exit_form_do: wt %lx", wt);
+// 			wt = obtree_to_wt(wind->owner, aesobj_tree(&fr->obj));
+// 			if (!wt) display("What the moddafuckinghell??");
+// 				wt = obtree_to_wt(wind->owner, aesobj_tree(&fr->obj));
+			if (aesobj_item(&f) >= wt->extra.s[0] && aesobj_item(&f) < wt->extra.s[1] && !aesobj_hidden(&f))
 			{
 // 				display("client '%s'", client->name);
 				if (client != C.Aes /*&& client != C.Hlp*/ && client->waiting_pb)
 				{
-					client->waiting_pb->intout[0] = aesobj_item(&f) - ALERT_BUT1 + 1;
+					client->waiting_pb->intout[0] = aesobj_item(&f) - wt->extra.s[0] + 1;
 // 					display("Alert return %d", client->waiting_pb->intout[0]);
 					client->usr_evnt = 1;
 					client->waiting_pb = NULL;
@@ -1091,7 +1073,7 @@ Click_windowed_form_do(	enum locks lock,
 	struct xa_client *client = wind->owner;
 	XA_TREE *wt;
 	
-	wt = widg->stuff;
+	wt = widg->stuff.xa_tree;
 
 	DIAG((D_form, client, "Click_windowed_form_do: client=%lx, wind=%lx, wt=%lx",
 		client, wind, wt));
@@ -1147,11 +1129,12 @@ Click_form_do(enum locks lock,
 		{
 			DIAGS(("Click_form_do: using wind->toolbar"));
 // 			display("Click_form_do: using wind->toolbar");
-			wt = get_widget(wind, XAW_TOOLBAR)->stuff;
+			wt = get_widget(wind, XAW_TOOLBAR)->stuff.xa_tree;
 		}
 
 		if (wt)
 		{
+// 			struct xa_widget *widg = get_widget(wind, XAW_TOOLBAR);
 			obtree = rp_2_ap(wind, wt->widg, &r);
 // 			display("Click_form_do: wt=%lx, wt_tree=%lx, widg=%lx, obtree = %lx",
 // 				wt, wt->tree, wt->widg, obtree);
@@ -1179,8 +1162,10 @@ Click_form_do(enum locks lock,
 	{
 		struct fmd_result fr;
 
+// 		display("Click_form_do: looking for obj at %d/%d", md->x, md->y);
 		fr.obj = obj_find(wt, aesobj(wt->tree, 0), 10, md->x, md->y, NULL);
-		
+// 		display("Click_form_do: found %d", aesobj_item(&fr.obj));
+
 		if (aesobj_item(&fr.obj) >= 0 &&
 		    !Form_Button(wt, v,
 				 fr.obj,
@@ -1253,7 +1238,7 @@ Key_form_do(enum locks lock,
 	if (wind)
 	{
 		DIAGS(("Key_form_do: using wind->toolbar"));
-		wt = get_widget(wind, XAW_TOOLBAR)->stuff;
+		wt = get_widget(wind, XAW_TOOLBAR)->stuff.xa_tree;
 		obtree = rp_2_ap(wind, wt->widg, &r);
 		v = wind->vdi_settings;
 	}
@@ -1401,7 +1386,7 @@ do_formwind_msg(
 	
 	if (widg)
 	{
-		XA_TREE *wt = widg->stuff;
+		XA_TREE *wt = widg->stuff.xa_tree;
 		OBJECT *ob = wt->tree + widg->start;
 		short ww = wind->wa.w,			/* window measures */
 		      wh = wind->wa.h,

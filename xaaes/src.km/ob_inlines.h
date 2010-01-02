@@ -27,6 +27,12 @@
 #ifndef _ob_inlines_h_
 #define _ob_inlines_h_
 
+static inline bool obj_is_3d(OBJECT *ob)         { return (ob->ob_flags & OF_FL3DACT) != 0;	}
+static inline bool obj_is_indicator(OBJECT *ob)  { return (ob->ob_flags & OF_FL3DACT) == OF_FL3DIND; }
+static inline bool obj_is_foreground(OBJECT *ob) { return (ob->ob_flags & OF_FL3DIND) != 0; }
+static inline bool obj_is_background(OBJECT *ob) { return (ob->ob_flags & OF_FL3DACT) == OF_FL3DBAK; }
+static inline bool obj_is_activator(OBJECT *ob)  { return (ob->ob_flags & OF_FL3DACT) == OF_FL3DACT; }
+
 static inline bool
 issel(OBJECT *ob)
 {	return (ob->ob_state & OS_SELECTED); }
@@ -78,7 +84,9 @@ static inline bool
 object_disabled(OBJECT *ob)
 { return (ob->ob_state & OS_DISABLED); }
 
-
+#ifdef object_get_spec
+#undef object_get_spec
+#endif
 static inline OBSPEC *
 object_get_spec(OBJECT *ob)
 {
@@ -91,6 +99,7 @@ object_get_spec(OBJECT *ob)
 		return &ob->ob_spec;
 	}
 }
+
 static inline OBSPEC *
 aesobj_get_spec(struct xa_aes_object *o) { return object_get_spec(aesobj_ob(o)); }
 
@@ -109,7 +118,9 @@ object_get_oblink(OBJECT *ob)
 		obl = (struct oblink_spec *)object_get_spec(ob)->index;
 	return obl;
 }
-
+#ifdef object_get_popinfo
+#undef object_get_popinfo
+#endif
 static inline POPINFO *
 object_get_popinfo(OBJECT *ob)
 {
@@ -121,6 +132,9 @@ object_get_freestr(OBJECT *ob)
 {
 	return object_get_spec(ob)->free_string;
 }
+
+static inline char *
+aesobj_get_freestr(struct xa_aes_object *o) { return object_get_freestr(aesobj_ob(o)); }
 
 static inline void
 object_deselect(OBJECT *ob)

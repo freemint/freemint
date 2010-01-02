@@ -9,11 +9,13 @@ XAAESDEFS += -DWDIALOG_LBOX=1	# lbox_xx() extensions
 XAAESDEFS += -DWDIALOG_FNTS=1	# fnts_xx() extensions
 XAAESDEFS += -DWDIALOG_FSLX=0	# fslx_xx() extensions
 XAAESDEFS += -DWDIALOG_PDLG=1	# pdlg_xx() extensions
+XAAESDEFS += -DALT_CTRL_APP_OPS # ctrl-alt keycombos enabled
+
 #XAAESDEFS += -DBOOTLOG=1
 
 ifeq ($(xaaes),deb)
 TARGET = ../xaaesdeb.km
-CPU = 000
+CPU = 040
 XAAESDEFS += -DGENERATE_DIAGS=1 -DDEBUG_CONTROL=0 -DBOOTLOG=1
 endif
 
@@ -21,7 +23,7 @@ ifeq ($(xaaes),000)
 TARGET = ../xaaes000.km
 CPU = 000
 XAAESDEFS += -DGENERATE_DIAGS=0 -DDEBUG_CONTROL=0
-#XAAESDEFS += -DBOOTLOG
+#XAAESDEFS += -DBOOTLOG=1
 endif
 
 ifeq ($(xaaes),sto)
@@ -41,12 +43,6 @@ endif
 ifeq ($(xaaes),040)
 TARGET = ../xaaes040.km
 CPU = 040
-XAAESDEFS += -DGENERATE_DIAGS=0 -DDEBUG_CONTROL=0 -DBOOTLOG=1
-endif
-
-ifeq ($(xaaes),060)
-TARGET = ../xaaes060.km
-CPU = 060
 XAAESDEFS += -DGENERATE_DIAGS=0 -DDEBUG_CONTROL=0 -DBOOTLOG=1
 endif
 

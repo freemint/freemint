@@ -60,6 +60,8 @@ adi_unregister(struct adif *a)
 		if (a == *list)
 		{
 			*list = a->next;
+			if (a == G.adi_mouse)
+				G.adi_mouse = NULL;
 			return E_OK;
 		}
 		list = &((*list)->next);
@@ -72,7 +74,7 @@ adi_open(struct adif *a)
 {
 	long error;
 
-	error = (*a->open)(a);
+	error = (*a->open)();
 	if (error)
 	{
 		DIAGS(("adi_open: Cannot open aes device interface %s%d", a->name, a->unit));
@@ -87,7 +89,7 @@ adi_close(struct adif *a)
 {
 	long error;
 
-	error = (*a->close)(a);
+	error = (*a->close)();
 	if (error)
 	{
 		DIAGS(("adi_close: Cannot close AES device interface %s%d", a->name, a->unit));
@@ -112,7 +114,7 @@ adi_getfreeunit (char *name)
 			max = adip->unit;
 	}
 	
-	return max+1;
+	return max + 1;
 }
 
 struct adif *
@@ -134,8 +136,7 @@ adi_name2adi (char *aname)
 	}
 	
 	name[i] = '\0';
-	for (a = alladifs; a; a = a->next)
-	{
+	for (a = alladifs; a; a = a->next) {
 		if (!stricmp (a->name, name) && a->unit == unit)
 			return a;
 	}
@@ -146,5 +147,5 @@ adi_name2adi (char *aname)
 long
 adi_ioctl(struct adif *a, short cmd, long arg)
 {
-	return (*a->ioctl)(a, cmd, arg);
+	return (*a->ioctl)(cmd, arg);
 }

@@ -48,7 +48,7 @@
 XA_TREE *
 get_desktop(void)
 {
-	return get_widget(root_window, XAW_TOOLBAR)->stuff;
+	return get_widget(root_window, XAW_TOOLBAR)->stuff.xa_tree;
 }
 
 STATIC bool
@@ -102,10 +102,10 @@ set_desktop_widget(struct xa_window *wind, XA_TREE *desktop)
 	DIAG((D_widg, NULL, "set_desktop_widget(wind = %d):new@0x%lx",
 		wind->handle, desktop));
 
-	if (widg->stuff)
+	if (widg->stuff.xa_tree)
 	{
-		((XA_TREE *)widg->stuff)->widg = NULL;
-		((XA_TREE *)widg->stuff)->links--;
+		widg->stuff.xa_tree->widg = NULL;
+		widg->stuff.xa_tree->links--;
 	}
 
 	desktop->widg = widg;
@@ -135,7 +135,7 @@ set_desktop_widget(struct xa_window *wind, XA_TREE *desktop)
 	 * Set destruct, stufftype and XAWF_STUFFMALLOC and 'nt' is freed.
 	 * Set XAWF_STUFFMALLOC and nt is freed by free_xawidget()
 	 */
-	widg->stuff = desktop;
+	widg->stuff.xa_tree = desktop;
 	widg->stufftype = STUFF_IS_WT;
 	m->destruct = free_xawidget_resources;
 	
@@ -153,11 +153,11 @@ Set_desktop(XA_TREE *new_desktop)
 
 	/* Set the desktop */
 
-	if (wi->stuff)
+	if (wi->stuff.xa_tree)
 	{
-		((XA_TREE *)wi->stuff)->widg = NULL;
-		((XA_TREE *)wi->stuff)->flags &= ~WTF_STATIC;
-		((XA_TREE *)wi->stuff)->links--;
+		wi->stuff.xa_tree->widg = NULL;
+		wi->stuff.xa_tree->flags &= ~WTF_STATIC;
+		wi->stuff.xa_tree->links--;
 	}
 	
 	new_desktop->widg = wi;
@@ -182,7 +182,7 @@ Set_desktop(XA_TREE *new_desktop)
 // 	if (root_window->r.h > r.h)
 // 		ob->ob_y = root_window->r.h - r.h;
 
-	wi->stuff = new_desktop;
+	wi->stuff.xa_tree = new_desktop;
 	wi->stufftype = STUFF_IS_WT;
 	wi->m.destruct = free_xawidget_resources;
 	

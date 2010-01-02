@@ -307,6 +307,9 @@ fix_chrarray(struct xa_client *client, void *b, char **p, unsigned long n, char 
 static void
 fix_tedarray(struct xa_client *client, void *b, TEDINFO *ti, unsigned long n, char **extra)
 {
+	
+	DIAG((D_rsrc, NULL, "fix_tedarray: base=%lx, tedinfo=%lx", b, ti));
+
 	if ((client->options.app_opts & XAAO_OBJC_EDIT))
 	{
 		XTEDINFO *ei;
@@ -325,12 +328,13 @@ fix_tedarray(struct xa_client *client, void *b, TEDINFO *ti, unsigned long n, ch
 			ti->te_ptext	= (char *)-1L;
 			ti->te_ptmplt	= (char *)ei;
 			
+			DIAG((D_rsrc, NULL, "fix_tedarray: extra=%lx, ti=%lx, ptext='%s'", ei, ti, ei->ti.te_ptext));
+			DIAG((D_rsrc, NULL, "ptext=%lx, ptmpl=%lx, pvalid=%lx",
+				ti->te_ptext, ti->te_ptmplt, ti->te_pvalid));
+			
 			ti++;
 			ei++;
 			n--;
-			DIAG((D_rsrc, NULL, "fix_tedarray: ti=%lx, ptext='%s'", ti, ei->ti.te_ptext));
-			DIAG((D_rsrc, NULL, "ptext=%lx, ptmpl=%lx, pvalid=%lx",
-				ti->te_ptext, ti->te_ptmplt, ti->te_pvalid));
 		}
 		*extra = (char *)ei;
 	}
@@ -440,12 +444,12 @@ fix_cicons(struct xa_client *client, void *base, CICONBLK **cibh, char **extra)
 		
 		if (ib->ib_wtext && ib->ib_ptext)
 		{
-			short l = ib->ib_wtext/6;
+			short l = ib->ib_wtext / 6;
 			/* fix some resources */
 			ib->ib_ptext += (long)base;
 			DIAG((D_rsrc, NULL, "cicon: ib->ptext = %lx", ib->ib_ptext));
 			if (strlen(ib->ib_ptext) > l)
-				*(ib->ib_ptext + l) = 0;
+				*(ib->ib_ptext + l) = '\0';
 		}
 		else
 			/* The following word is no of planes which cannot
@@ -521,7 +525,7 @@ fix_objects(struct xa_client *client,
 	for (i = 0; i < n; i++, obj++)
 	{
 		type = obj->ob_type & 255;
-
+		DIAGS((" -- ob %lx, type %d", obj, type));
 		/* What kind of object is it? */
 		switch (type)
 		{
@@ -1020,10 +1024,25 @@ dump_ra_list(struct xa_rscs *rscs)
  * FreeResources: Dispose of a set of loaded resources
  */
 void
-FreeResources(struct xa_client *client, AESPB *pb, struct xa_rscs *rsrc)
+FreeResources(struct xa_client *client, AESPB *pb, RSHDR *thisrsc)
 {
 	struct xa_rscs *cur;
 	RSHDR *rsc = NULL;
+
+	if (!client) {
+		if (!thisrsc)
+			return;
+		FOREACH_CLIENT(client) {
+			cur = client->resources;
+			while (cur && thisrsc != (RSHDR *)cur->rsc) {
+				cur = cur->next;
+			}
+			if (cur)
+				break;
+		}
+		if (!client)
+			return;
+	}
 
 	if (pb && pb->global)
 		rsc = ((struct aes_global *)pb->global)->rshdr;
@@ -1041,7 +1060,7 @@ FreeResources(struct xa_client *client, AESPB *pb, struct xa_rscs *rsrc)
 			//bool have = rsc && (rsc == cur->rsc);
 			struct xa_rscs *nx = cur->next;
 
-			if (!rsrc || rsrc == cur)
+			if (!thisrsc || thisrsc == (RSHDR *)cur->rsc) // if (!rsrc || rsrc == cur)
 			{
 				DIAG((D_rsrc, client, "Free: test cur %lx", (long)cur));
 				DIAG((D_rsrc, client, "Free: test cur handle %d", cur->handle));

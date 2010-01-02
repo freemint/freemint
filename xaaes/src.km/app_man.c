@@ -44,8 +44,7 @@
 
 #include "mint/signal.h"
 
-STATIC struct xa_client *	find_menu(enum locks lock, struct xa_client *client, short exclude);
-STATIC struct xa_client * next_app(enum locks lock, bool with_window_or_menu, bool no_accessories);
+static struct xa_client *	find_menu(enum locks lock, struct xa_client *client, short exclude);
 
 #if INCLUDE_UNUSED
 bool
@@ -436,7 +435,7 @@ find_focus(bool withlocks, bool *waiting, struct xa_client **locked_client, stru
 	return client;
 }
 
-#if INCLUDE_UNUSED
+#ifdef ALT_CTRL_APP_OPS
 /*
  * Attempt to recover a system that has locked up
  */
@@ -517,18 +516,18 @@ set_next_menu(struct xa_client *new, bool do_topwind, bool force)
 
 				DIAG((D_appl, NULL, "swapped to %s",c_owner(new)));
 				
-				if (new->std_menu != widg->stuff)
+				if (new->std_menu != widg->stuff.xa_tree)
 				{
 					if (do_topwind && (top = TOP_WINDOW != root_window ? root_window : NULL))
 						wastop = is_topped(top) ? true : false;
 			
-					if ((wt = widg->stuff))
+					if ((wt = widg->stuff.xa_tree))
 					{
 						wt->widg = NULL;
 						wt->flags &= ~WTF_STATIC;
 						wt->links--;
 					}
-					widg->stuff = wt = new->std_menu;
+					widg->stuff.xa_tree = wt = new->std_menu;
 					wt->flags |= WTF_STATIC;
 					wt->widg = widg;
 					wt->links++;
@@ -985,7 +984,7 @@ get_topwind(enum locks lock, struct xa_client *client, struct xa_window *startw,
 	return w;
 }
 
-#if INCLUDE_UNUSED
+#ifdef ALT_CTRL_APP_OPS
 struct xa_window *
 next_wind(enum locks lock)
 {
@@ -1035,7 +1034,7 @@ next_wind(enum locks lock)
  * will also return clients without window or menu but is listening
  * for kbd input (MU_KEYBD)
  */
-STATIC struct xa_client *
+struct xa_client *
 next_app(enum locks lock, bool wwom, bool no_acc)
 {
 	struct xa_client *client;
@@ -1197,7 +1196,7 @@ get_app_infront(void)
 	return APP_LIST_START;
 }
 
-#if INCLUDE_UNUSED
+#ifdef ALT_CTRL_APP_OPS
 struct xa_client *
 get_app_by_procname(char *name)
 {

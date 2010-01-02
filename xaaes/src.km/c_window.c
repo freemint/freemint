@@ -724,7 +724,7 @@ set_window_title(struct xa_window *wind, const char *title, bool redraw)
 	*dst = '\0';
 
 	widg = get_widget(wind, XAW_TITLE);
-	widg->stuff = wind->wname;
+	widg->stuff.cptr = wind->wname;
 
 	DIAG((D_wind, wind->owner, "    -   %s", wind->wname));
 
@@ -766,7 +766,7 @@ set_window_info(struct xa_window *wind, const char *info, bool redraw)
 	*dst = '\0';
 
 	widg = get_widget(wind, XAW_INFO);
-	widg->stuff = wind->winfo;
+	widg->stuff.cptr = wind->winfo;
 
 	DIAG((D_wind, wind->owner, "    -   %s", wind->winfo));
 
@@ -1254,7 +1254,7 @@ create_window(
 	w->dial = dial;
 	w->send_message = message_handler;
 	w->do_message	= message_doer;
-	get_widget(w, XAW_TITLE)->stuff = client->name;
+	get_widget(w, XAW_TITLE)->stuff.cptr = client->name;
 
 	if (dial & created_for_POPUP)
 	{
@@ -1424,7 +1424,7 @@ change_window_attribs(enum locks lock,
 	 */
 	{
 		struct widget_tree *wt;
-		if ((wt = get_widget(w, XAW_TOOLBAR)->stuff))
+		if ((wt = get_widget(w, XAW_TOOLBAR)->stuff.xa_tree))
 		{
 			set_toolbar_coords(w, NULL);
 			if (wt->tree)
@@ -1465,7 +1465,7 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 		DIAGS(("WARNING: Attempt to open window when it was already open"));
 		return 0;
 	}
-
+	
 	if (wind->nolist || (wind->dial & created_for_SLIST))
 	{
 		DIAGS(("open_window: nolist window - SLIST wind? %s",
@@ -1546,6 +1546,7 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 	else {
 		wi_put_first(&S.open_windows, wind);
 	}
+
 	/* New top window - change the cursor to this client's choice */
 	xa_graf_mouse(wind->owner->mouse, wind->owner->mouse_form, wind->owner, false);
 
@@ -1637,6 +1638,7 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 		{
 		/* Display the window using clipping rectangles from the rectangle list */
 		rl = wind->rect_list.start;
+
 		while (rl)
 		{
 			if (xa_rect_clip(&wind->r, &rl->r, &clip)) {
@@ -1775,7 +1777,7 @@ find_window(enum locks lock, short x, short y, short flags)
 		w = nolist_list;
 		while (w)
 		{
-			if (!(w->owner->status & CS_EXITING) & m_inside(x, y, &w->r))
+			if (!(w->owner->status & CS_EXITING) && m_inside(x, y, &w->r))
 				return w;
 			w = w->next;
 		}
@@ -2248,6 +2250,8 @@ delete_window1(enum locks lock, struct xa_window *wind)
 
 //	cancel_do_winmesag(lock, wind);
 
+	remove_widget_active(client);
+
 	if (!wind->nolist)
 	{
 		DIAG((D_wind, wind->owner, "delete_window1 %d for %s: open? %s",
@@ -2265,7 +2269,6 @@ delete_window1(enum locks lock, struct xa_window *wind)
 
 		if (wind->background)
 			kfree(wind->background);
-
 	}
 	else
 	{
@@ -2772,7 +2775,7 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 		if (xmove || ymove)
 		{
 			XA_WIDGET *widg = get_widget(wind, XAW_TOOLBAR);
-			XA_TREE *wt = widg->stuff;
+			XA_TREE *wt = widg->stuff.xa_tree;
 
 			/* Temporary hack 070702 */
 			if (wt && wt->tree)

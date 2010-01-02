@@ -86,7 +86,7 @@ pid2client(short pid)
 	return client;
 }
 
-#if INCLUDE_UNUSED
+#ifdef ALT_CTRL_APP_OPS
 struct xa_client *
 proc2client(struct proc *p)
 {

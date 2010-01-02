@@ -523,7 +523,8 @@ cXA_wheel_event(enum locks lock, struct c_event *ce, bool cancel)
 	struct xa_client *client = ce->client;
 	struct xa_window *wind = ce->ptr1;
 	struct moose_data *md = &ce->md;
-	XA_WIDGET *widg;
+	struct xa_widget *widg;
+//	XA_WIDGET *widg;
 	
 	if (!cancel)
 	{
@@ -565,7 +566,7 @@ cXA_wheel_event(enum locks lock, struct c_event *ce, bool cancel)
 
 			if (wind == nolist_list || is_topped(wind))
 			{
-				XA_TREE *wt = get_widget(wind, XAW_TOOLBAR)->stuff;
+				XA_TREE *wt = get_widget(wind, XAW_TOOLBAR)->stuff.xa_tree;
 				OBJECT *obtree;
 				struct xa_aes_object obj;
 				
@@ -613,15 +614,17 @@ cXA_wheel_event(enum locks lock, struct c_event *ce, bool cancel)
 						else if (wind->active_widgets & VSLIDE)
 							w = XAW_VSLIDE, s = WM_VSLID;
 
-						if (w == -1)
+						if (w == -1) {
 							whlarrowed(wind, WA, 1, NULL);
-
-						widg = get_widget(wind, w);
+							widg = NULL;
+						} else {
+							widg = get_widget(wind, w);
+						}
 
 						if (widg)
 						{
-							XA_SLIDER_WIDGET *sl = widg->stuff;
 							short unit, wh;
+							struct xa_slider_widget *sl = widg->stuff.slider;
 
 							if (s == WM_VSLID)
 								wh = widg->r.h - sl->r.h;
