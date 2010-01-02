@@ -557,7 +557,7 @@ kmod_init(struct kernel_module *km, void *arg, struct device_methods ***devmetho
 
 	initfunc = (void *)km->b->p_tbase;
 	
-	FORCE(" dm = %lx, %lx", devmethods);
+	FORCE(" dm = %lx", devmethods);
 	FORCE("*dm = %lx", *devmethods);
 	
 	__asm__ volatile
@@ -576,7 +576,7 @@ kmod_init(struct kernel_module *km, void *arg, struct device_methods ***devmetho
 		  "d1", "d2", "a0", "a1", "a2",					/* clobbered regs */
 		  "memory"
 	);
-	
+
 	return ret;
 }
 
