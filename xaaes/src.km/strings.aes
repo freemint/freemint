@@ -1,0 +1,257 @@
+[boot_message]
+en:	"MultiTasking AES for MiNT",
+	"",
+	"(c) 1995-1999 Craig Graham, Johan Klockars, Martin Koehling, Thomas Binder",
+	"              and other assorted dodgy characters from around the world...",
+	"(c) 1999-2003 Henk Robbers @ Amsterdam",
+	"    2003-2004 Frank Naumann <fnaumann@freemint.de> and",
+	"              Odd Skancke <ozk@atari.org>",
+	"",
+	"Using Harald Siegmunds NKCC",
+	"",
+	"Date: %s, time: %s", __DATE__, __TIME__,
+	"Supports mouse wheels",
+	"Compile time switches enabled:"
+no:	"MultiTasking AES for MiNT",
+	"",
+	"(c) 1995-1999 Craig Graham, Johan Klockars, Martin Koehling, Thomas Binder",
+	"              og andre assosierte og merkelige personer fra over hele verden",
+	"(c) 1999-2003 Henk Robbers @ Amsterdam",
+	"    2003-2004 Frank Naumann <fnaumann@freemint.de> and",
+	"              Odd Skancke <ozk@atari.org>",
+	"",
+	"Bruker Harald Siegmunds NKCC",
+	"",
+	"Dato: %s, tid: %s", __DATE__, __TIME__,
+	"Støtter mus hjul",
+	"Kompilasjons opsjoner:"
+
+[compile_time_switches]
+en:	" - Diagnostics",
+	" - Logo in title bar",
+	" - Point-to-type capability",
+	" - CTRL+ALT key-combo's",
+	" - Client vector validation",
+	" - Realtime (live) window scrolling, moving and sizing",
+	" - Preserve dialog backgrounds",
+	" - Built without file selector",
+	" - FSEL cookie found",
+	""
+no:	" - Diagnostikk",
+	" - Logo på tittel linje",
+	" - Pek-for-å-skrive egenskap",
+	" - CTRL+ALT tastekombinasjoner",
+	" - Klient vektor-valisasjon",
+	" - Forandre størrelse, flytting og scrolling av vinduer i sanntid",
+	" - Preserver bakgrunn for dialoger",
+	" - Kompilert uten filvelger",
+	" - FSEL cookie funnet",
+	""
+
+[pdlg_files]
+en:	">> No file selected <<"
+no:	">> Ingen fil valgt <<"
+se:	">> Ingen fil veljat <<"
+
+[pdlg_outdev_serial]
+en:	"Serial device"
+no:	"Serial port"
+se:	"Serial port"
+
+[pdlg_outdev_parallel]
+en:	"Parallel device"
+no:	"Skriver port"
+se:	"Skriver port"
+
+[pdlg_outdev_acsi]
+en:	"ACSI device"
+no:	"ACSI port"
+se:	"ACSI port"
+
+[pdlg_outdev_scsii]
+en:	"SCSII device"
+no:	"SCSII port"
+se:	"SCSII port"
+
+[pdlg_sel_outfile]
+en:	"Select output file"
+no:	"Velg ny utfil"
+
+[pdlg_dialog_names]
+en:	"General","Paper","Raster","Interface"
+no:	"Generell","Papir","Raster","Portvalg"
+
+[pdlg_wrong_vdi]
+en:	"Print dialog unavailable with current VDI"
+no:	"Utskrift dialog ikke tilgjengelig med nåværende versjon av VDI"
+
+[pdlg_colours]
+en:	"Black/White","4 greytones","8 greytones","16 greytones","256 greytones","32k greytones","65K greytones","16M greytones",
+	"White/Black","4 colors","8 colors","16 colors","256 colors","32K colors","65K colors","16M colors"
+no:	"Svart/Hvitt","4 gråtoner","8 gråtoner","16 gråtoner","256 gråtoner","32k gråtoner","65K gråtoner","16M gråtoner",
+	"Hvitt/Svart","4 farger","8 farger","16 farger","256 farger","32K farger","65K farger","16M farger"
+
+[pdlg_def_tray]
+en:	"Standard"
+no:	"Forvalgt"
+
+[validate_obtree]
+en:	"%s: validate OBTREE for %s failed, object ptr = %lx, killing it!"
+no:	"%s: Validering av OBTREE for %s feilet, objekt peker = %lx, dreper det!"
+
+[xaaes_no_aespb]
+en:	"XaAES: No AES Parameter Block, returning"
+no:	"XaAES: Ingen AES Parameter Blokk, returerer"
+
+[non_aes_process]
+en:	"non-AES process issued AES system call %i, killing it!"
+no:	"Et program som ikke er en AES klient kalte AES funksjon %i, dreper det!"
+
+[kill_aes_thread]
+en:	"Cannot terminate AES system proccesses!"
+no:	"Kan ikke avslutte AES system tråder!"
+
+[not_yet_implemented]
+en:	"no yet implemented!"
+no:	"ikke implementert!"
+
+[shell_running]
+en:	"AES shell already running!"
+no:	"et AES skall kjører allerede!"
+
+[no_shell]
+en:	"No AES shell set; See 'shell=' configuration variable in xaaes.cnf"
+no:	"AES skall ikke spesifisert; Se 'shell=' konfigurasjonsvariabel i xaaes.cnf"
+
+[attach_ext_fail]
+en:	"attach_extension for %u failed, out of memory?"
+no:	"attach_extension for %u feilet, ikke mer hukommelse?"
+
+[umalloc_fail]
+en:	"umalloc for %u failed, out of memory?"
+no:	"umalloc for %u feilet, ikke mer hukommelse?"
+
+[no_global_ptr]
+en:	"%s: %s, client with no globl_ptr, killing it!"
+no:	"%s: %s, klient uten globl_ptr, dreper det!"
+
+[txt_alerts]
+en:	"Alerts"
+no:	"Alarmer"
+
+[txt_environment]
+en:	"Environment"
+no:	"Miljø"
+
+[txt_shutdown]
+en:	" Shutdown "
+no:	" Steng ned "
+
+[txt_launch_prg]
+en:	"Launch Program"
+no:	"Start Program"
+
+[wint_sysalert]
+en:	" System window & Alerts log"
+no:	" System vindu & Alarm historie"
+
+[press_any_key]
+en:	"Press any key to continue..."
+no:	"Trykk en tast for å fortsette..."
+
+[scrn_snap_what]
+en:	"[2][What do you want to snap?][Block|Full screen|Top Window|Cancel]"
+no:	"[2][Hva vil du ta bilde av?][Velg omerådet|Hele skjermen|Øverste vinduet|Avbryt]"
+
+[scrn_snap_serr]
+en:	"[1][ Snapper could not save snap! | ERROR: %d ][ Ok ]"
+no:	"[1][ Snapper kunne ikke lagre bilde til disk! | FEIL: %d][ Ok ]"
+
+[scrn_snap_twc]
+en:	"[1][Cannot snap topwindow as | parts of it is offscreen!][ Ok ]"
+no:	"[1][Kan ikke ta bile av øverste vindu siden | deler av det er utenfor skjermen!][ Ok ]"
+
+[scrn_snap_notfound]
+en:	"[1]['xaaesnap' process not found.|Start 'xaaesnap.prg' and try again|Later XaAES will start the snapper|according to userconfiguration][OK]"
+no:	"[1]['xaaesnap' prosessen kjører ikke.|Start 'xaaesnap.prg' og prøv igjen.][ Ok ]"
+
+[tm_client_apps]
+en:	"Client Applications"
+no:	"AES klienter"
+
+[tm_manager]
+en:	" Task Manager "
+no:	" Oppgave behandler "
+
+[00000001]
+en:	"v_opnvk() failed!"
+no:	"v_opnvk() feilet!"
+[00000002]
+en:	"ERROR: Can't find AESSYS resource file '%s'"
+no:	"FEIL: Kan ikke finne AESSYS resursfil '%s'"
+[00000003]
+en:	"ERROR: Can't load AESSYS resource file '%s'"
+no:	"FEIL: Kan ikke laste AESSYS resursfil '%s'"
+[00000004]
+en:	"ERROR: Outdated AESSYS resource file (%s) - update to recent version!"
+no:	"FEIL: AESSYS resursfilen (%s) er utdatert - oppgrader til nyeste versjon!"
+[00000005]
+en:	"ERROR: There exist an moose.xdd in your FreeMiNT sysdir."
+no:	"FEIL: Det finnes en moose.xdd fil i din FreeMiNT sysdir.\r\n"
+[00000006]
+en:	"       Please remove it before starting the XaAES kernel module!"
+no:	"      Vær vennlig og fjern denne før du starter XaAES kjerne modulen!"
+[00000007]
+en:	"ERROR: Cannot allocate memory for AES thread - out of memory?"
+no:	"FEIL: Kan ikke allokere hukommelse for AES tråd - ikke mer hukommelse?"
+[00000008]
+en:	"ERROR: There exist no moose.adi in your XaAES module directory."
+no:	"FEIL: Finner ikke moose.adi i XaAES modul mappen."
+[00000009]
+en:	"Please install it before starting XaAES module."
+no:	"Vær vennlig å installere den før du starter XaAES modulen."
+[0000000a]
+en:	"can't create XaAES kernel thread!"
+no:	"Kan ikke skape XaAES kjerne tråd!"
+[0000000b]
+en:	"Your moose.adi is outdated, please update!"
+no:	"Filen moose.adi er utdatert, vennligst oppdater!"
+[0000000c]
+en:	"Could not obtain moose.adi version, please update!"
+no:	"Kunne ikke bestemme moose.adi versjon, vennligst oppdater!"
+[0000000d]
+en:	"Moose set dclick time failed"
+no:	"Instilling av dclick tid feilet!"
+[0000000e]
+en:	"Moose set mouse-packets time-gap failed"
+no:	"Innstilling av tidsrom mellom mus-pakker feilet"
+[0000000f]
+en:	"MOOSE_READVECS failed (%lx)"
+no:	"MOOSE_READVECS feilet (%lx)"
+[00000010]
+en:	"opening moose adi failed (%lx)"
+no:	"Kunne ikke åpne moose.adi (%lx)"
+[00000011]
+en:	"Could not find moose.adi, please install in %s!"
+no:	"Kunne ikke finne moose.adi, vennligst installer den i %s!"
+[00000012]
+en:	"ERROR: register_trap2 failed!"
+no:	"FEIL: Kunne ikke registrere trap2!"
+[00000013]
+en:	"ERROR: k_init failed!"
+no:	"FEIL: k_init feilet!"
+[00000014]
+en:	"ERROR: Can't open alert pipe '%s' :: %ld"
+no:	"FEIL: Kan ikke åpne alarm pipen '%s' :: %ld"
+[00000015]
+en:	"ERROR: Can't open keyboard device '%s' :: %ld"
+no:	"FEIL: Kan ikke åpne tastatur enheten '%s' :: %ld"
+[00000016]
+en:	"ERROR: init_moose failed!"
+no:	"FEIL: init_moose feilet!"
+[00000017]
+en:	"ERROR: start AES thread failed"
+no:	"FEIL: Kunne ikke starte AES tråden!"
+[00000018]
+en:	"ERROR: start AES helper thread failed"
+no:	"FEIL: Kunne ikke start AES hjelpe tråden!"

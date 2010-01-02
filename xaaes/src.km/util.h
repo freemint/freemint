@@ -32,6 +32,7 @@
 int get_drv(const char *p);
 void fix_path(char *path);
 void strip_fname(const char *filename, char *pn, char *fn);
+char * _cdecl make_fqfname(const char *path, const char *file);
 int drive_and_path(char *fname, char *path, char *name, bool n, bool set);
 void set_drive_and_path(char *fname);
 void get_drive_and_path(char *path, short plen);

@@ -53,7 +53,10 @@ struct moose_data
 	 * iclicks[0] represents the number of clicks that happened for button
 	 * at bit 0 in state (left) and so on ...
 	*/
-	char iclicks[16];	/* Indipendant clicks */
+	union {
+		char chars[16];	/* Indipendant clicks */
+		unsigned long ulongs[4];
+	} iclicks;
 	short dbg1;
 	short dbg2;
 };
@@ -75,6 +78,7 @@ struct mooses_data
 #define MOOSE_READVECS		(('M'<< 8) | 0)	/* buf is ptr to struct moose_vecsbuf */
 #define MOOSE_DCLICK		(('M'<< 8) | 1)	/* buf is ptr to unsigned short */
 #define MOOSE_PKT_TIMEGAP	(('M'<< 8) | 2)
+#define MOOSE_SET_VDIHANDLE	(('M'<< 8) | 3) /* Tell the driver which VDI handle to use */
 
 typedef short vdi_vec(void *, ...);
 

@@ -34,15 +34,15 @@
 bool			validate_obtree(struct xa_client *c, OBJECT *o, char *f);
 bool			object_have_spec(OBJECT *ob);
 void			object_set_spec(OBJECT *ob, unsigned long cl);
-//void			aesobj_set_spec(struct xa_aes_object *o, unsigned long cl);
+void			aesobj_set_spec(struct xa_aes_object *o, unsigned long cl);
 bool			object_has_tedinfo(OBJECT *ob);
-//bool			aesobj_has_tedinfo(struct xa_aes_object *o);
+bool			aesobj_has_tedinfo(struct xa_aes_object *o);
 bool			object_has_freestr(OBJECT *ob);
-//bool			aesobj_has_freestr(struct xa_aes_object *o);
+bool			aesobj_has_freestr(struct xa_aes_object *o);
 bool			object_is_editable(OBJECT *ob, short flags, short state);
 bool			aesobj_is_editable(struct xa_aes_object *o, short flags, short state);
 TEDINFO *		object_get_tedinfo(OBJECT *ob, XTEDINFO **x);
-//TEDINFO *		aesobj_get_tedinfo(struct xa_aes_object *o, XTEDINFO **x);
+TEDINFO *		aesobj_get_tedinfo(struct xa_aes_object *o, XTEDINFO **x);
 char *			object_get_string(OBJECT *ob);
 
 
@@ -54,13 +54,14 @@ void			object_spec_wh(OBJECT *ob, short *w, short *h);
 
 CICON *			getbest_cicon(CICONBLK *ciconblk);
 
-OBJECT * _cdecl	duplicate_obtree(struct xa_client *client, OBJECT *obtree, short start);
-void		free_obtree_resources(struct xa_client *client, OBJECT *obtree);
-void _cdecl	free_object_tree(struct xa_client *client, OBJECT *obtree);
+OBJECT * _cdecl		duplicate_obtree(struct xa_client *client, OBJECT *obtree, short start);
+void			free_obtree_resources(struct xa_client *client, OBJECT *obtree);
+void _cdecl		free_object_tree(struct xa_client *client, OBJECT *obtree);
 
-OBJECT *	create_popup_tree(struct xa_client *client, short type, short nobjs, short mw, short mh, void *(*cb)(short item, void **data), void **data);
+OBJECT * _cdecl		create_popup_tree(struct xa_client *client, short type, short nobjs, short mw, short mh, void *(*cb)(short item, void **data), void **data);
+OBJECT *		create_alert_tree(struct xa_client *client, short default_button, const char *atxt, short *first_button, short *num_buttons);
 
-//void	foreach_object(OBJECT *tree, struct xa_aes_object parent, struct xa_aes_object start, short stopf, short stops, bool(*f)(OBJECT *obtree, short obj, void *ret), void *data);
+void			foreach_object(OBJECT *tree, struct xa_aes_object parent, struct xa_aes_object start, short stopf, short stops, bool(*f)(OBJECT *obtree, short obj, void *ret), void *data);
 
 short			ob_count_objs(OBJECT *obtree, short start, short depth);
 // struct xa_aes_object	ob_get_parent(OBJECT *t, struct xa_aes_object object);
@@ -69,7 +70,7 @@ short			ob_remove(OBJECT *obtree, short object);
 short			ob_add(OBJECT *obtree, short parent, short aobj);
 void			ob_order(OBJECT *obtree, short object, ushort pos);
 struct xa_aes_object	ob_find_flag(OBJECT *obtree, short f, short mf, short stopf);
-//struct xa_aes_object	ob_find_any_flag(OBJECT *obtree, short f, short mf, short stopf);
+struct xa_aes_object	ob_find_any_flag(OBJECT *obtree, short f, short mf, short stopf);
 short			ob_count_flag(OBJECT *obtree, short f, short mf, short stopf, short *count);
 short			ob_count_any_flag(OBJECT *obtree, short f, short mf, short stopf, short *count);
 struct xa_aes_object	ob_find_flst(OBJECT *obtree, short f, short s, short mf, short ms, short stopf, short stops);
@@ -86,8 +87,8 @@ struct xa_aes_object	ob_find_any_flst(OBJECT *obtree, short f, short s, short mf
 #define OBFIND_HIDDEN		0x0040	/* Dont skip hidden trees */
 #define OBFIND_NOWRAP		0x0080
 struct xa_aes_object	ob_find_next_any_flagstate(struct widget_tree *wt, struct xa_aes_object parent, struct xa_aes_object start, short f, short mf, short s, short ms, short stopf, short stops, short flags);
-//struct xa_aes_object	ob_find_next_any_flag(OBJECT *obtree, short start, short f);
-short	ob_find_prev_any_flag(OBJECT *obtree, short start, short f);
+struct xa_aes_object	ob_find_next_any_flag(OBJECT *obtree, short start, short f);
+short			ob_find_prev_any_flag(OBJECT *obtree, short start, short f);
 struct xa_aes_object	ob_find_cancel(OBJECT *ob);
 
 void			ob_fix_shortcuts(OBJECT *obtree, bool not_hidden);
@@ -107,22 +108,22 @@ bool	obtree_has_touchexit(OBJECT *obtree);
 
 #define OB_IF_RESET	1
 #define OB_IF_ONLY_EDITS 2
-void	obj_init_focus(XA_TREE *wt, short flags);
-void	obj_set_g_popup(XA_TREE *swt, struct xa_aes_object sobj, POPINFO *pinf);
-void	obj_unset_g_popup(XA_TREE *swt, struct xa_aes_object sobj, char *txt);
-void	obj_change_popup_entry(struct xa_aes_object obj, short obnum, char *s);
-short	obj_offset(XA_TREE *wt, struct xa_aes_object object, short *mx, short *my);
-void	obj_rectangle(XA_TREE *wt, struct xa_aes_object object, RECT *c);
-void	obj_orectangle(XA_TREE *wt, struct xa_aes_object object, RECT *c);
-bool	obj_area(XA_TREE *wt, struct xa_aes_object object, RECT *c);
+void		obj_init_focus(XA_TREE *wt, short flags);
+void _cdecl	obj_set_g_popup(XA_TREE *swt, struct xa_aes_object sobj, POPINFO *pinf);
+void _cdecl	obj_unset_g_popup(XA_TREE *swt, struct xa_aes_object sobj, char *txt);
+void		obj_change_popup_entry(struct xa_aes_object obj, short obnum, char *s);
+short		obj_offset(XA_TREE *wt, struct xa_aes_object object, short *mx, short *my);
+void		obj_rectangle(XA_TREE *wt, struct xa_aes_object object, RECT *c);
+void		obj_orectangle(XA_TREE *wt, struct xa_aes_object object, RECT *c);
+bool		obj_area(XA_TREE *wt, struct xa_aes_object object, RECT *c);
 struct xa_aes_object	obj_find(XA_TREE *wt, struct xa_aes_object object, short depth, short mx, short my, RECT *c);
 
-void	obj_change(XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_object obj, int transdepth, short state, short flags, bool redraw, const RECT *clip, struct xa_rect_list *r, short dflags);
-void	obj_draw(XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_object obj, int transdepth, const RECT *clip, struct xa_rect_list *r, short flags);
-short	obj_edit(XA_TREE *wt, struct xa_vdi_settings *v, short func, struct xa_aes_object obj, short keycode, short pos, char *string, bool redraw, const RECT *clip, struct xa_rect_list *rl, short *ret_pos, struct xa_aes_object *ret_obj);
-void _cdecl obj_set_radio_button(XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_object obj, bool redraw, const RECT *clip, struct xa_rect_list *rl);
+void _cdecl	obj_change(XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_object obj, int transdepth, short state, short flags, bool redraw, const RECT *clip, struct xa_rect_list *r, short dflags);
+void _cdecl	obj_draw(XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_object obj, int transdepth, const RECT *clip, struct xa_rect_list *r, short flags);
+short _cdecl	obj_edit(XA_TREE *wt, struct xa_vdi_settings *v, short func, struct xa_aes_object obj, short keycode, short pos, char *string, bool redraw, const RECT *clip, struct xa_rect_list *rl, short *ret_pos, struct xa_aes_object *ret_obj);
+void _cdecl	obj_set_radio_button(XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_object obj, bool redraw, const RECT *clip, struct xa_rect_list *rl);
 struct xa_aes_object _cdecl obj_get_radio_button(XA_TREE *wt, struct xa_aes_object parent, short state);
-short	obj_watch(XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_object obj, short in_state, short out_state, const RECT *clip, struct xa_rect_list *rl);
+short _cdecl		obj_watch(XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_object obj, short in_state, short out_state, const RECT *clip, struct xa_rect_list *rl);
 
 int copy_string_to_clipbrd( char *text );
 
@@ -155,23 +156,23 @@ static inline bool
 disable_object(OBJECT *ob, bool set)
 {
 	if (set)
-	{
+{
 		if (!(ob->ob_state & OS_DISABLED)) {
 			ob->ob_state |= OS_DISABLED;
 			return true;
-		}
+}
 		else
 			return false;
-	}
+}
 	else
-	{
+{
 		if ((ob->ob_state & OS_DISABLED)) {
 			ob->ob_state &= ~OS_DISABLED;
 			return true;
-		}
+}
 		else
 			return false;
-	}
+}
 }
 
 static inline bool
@@ -183,13 +184,13 @@ static inline OBSPEC *
 object_get_spec(OBJECT *ob)
 {
 	if (ob->ob_flags & OF_INDIRECT)
-	{
+{
 		return ob->ob_spec.indirect;
-	}
+}
 	else
-	{
+{
 		return &ob->ob_spec;
-	}
+}
 }
 
 static inline struct scroll_info *
@@ -230,10 +231,10 @@ static inline bool
 set_aesobj_uplink(OBJECT **t, struct xa_aes_object *c, struct xa_aes_object *s, struct oblink_spec **oblink)
 {
 	if ((aesobj_ob(c)->ob_type & 0xff) == G_OBLINK)
-	{
+{
 		struct oblink_spec *obl = object_get_oblink(aesobj_ob(c));
 		if (obl)
-		{
+{
 			obl->save_to_r = *(RECT *)&obl->to.tree[obl->to.item].ob_x;
 			
 			obl->to.tree[obl->to.item].ob_x = aesobj_ob(c)->ob_x;
@@ -246,15 +247,15 @@ set_aesobj_uplink(OBJECT **t, struct xa_aes_object *c, struct xa_aes_object *s, 
 			*t = obl->to.tree;
 			*c = *s = aesobj(obl->to.tree, obl->to.item);
 			return true;
-		}
-	}
+}
+}
 	return false;
 }
 static inline bool
 set_aesobj_downlink(OBJECT **t, struct xa_aes_object *c, struct xa_aes_object *s, struct oblink_spec **oblink)
 {
 	if (*oblink)
-	{
+{
 		OBJECT *tree = (*oblink)->to.tree + (*oblink)->to.item;
 		
 		tree->ob_x = (*oblink)->save_to_r.x;
@@ -267,7 +268,7 @@ set_aesobj_downlink(OBJECT **t, struct xa_aes_object *c, struct xa_aes_object *s
 		*s = (*oblink)->savestop;
 		*oblink = (*oblink)->d.pmisc[1];
 		return true;
-	}
+}
 	return false;
 }
 
@@ -275,7 +276,7 @@ static inline void
 clean_aesobj_links(struct oblink_spec **oblink)
 {
 	while (*oblink)
-	{
+{
 		OBJECT *tree = (*oblink)->to.tree + (*oblink)->to.item;
 		
 		tree->ob_x = (*oblink)->save_to_r.x;
@@ -284,7 +285,7 @@ clean_aesobj_links(struct oblink_spec **oblink)
 		tree->ob_height = (*oblink)->save_to_r.h;
 		
 		*oblink = (*oblink)->d.pmisc[1];
-	}
+}
 }
 #endif
 

@@ -334,6 +334,7 @@ Block(struct xa_client *client, int which)
 	(*client->block)(client, which);
 }
 #endif
+
 void
 cBlock(struct xa_client *client, int which)
 {
@@ -582,16 +583,11 @@ Unblock(struct xa_client *client, unsigned long value, int which)
 
 	DIAG((D_kern, client,"[%d]Unblocked %s 0x%lx", which, client->proc_name, value));
 }
-
-static void *svmotv = NULL;
-static void *svbutv = NULL;
-static void *svwhlv = NULL;
-
 /*
  * initialise the mouse device
  */
 #define MIN_MOOSE_VER_MAJOR 0
-#define MIN_MOOSE_VER_MINOR 10
+#define MIN_MOOSE_VER_MINOR 11
 
 static bool
 init_moose(void)
@@ -606,71 +602,39 @@ init_moose(void)
 	G.adi_mouse = adi_name2adi("moose_w");
 	if (!G.adi_mouse)
 		G.adi_mouse = adi_name2adi("moose");
-	
-	if (G.adi_mouse)
-	{
-		long aerr;
-
-		aerr = adi_open(G.adi_mouse);
-		if (!aerr)
-		{
-			long moose_version;
-			struct moose_vecsbuf vecs;
-
-			aerr = adi_ioctl(G.adi_mouse, FS_INFO, (long)&moose_version);
-			if (!aerr)
-			{
-				if (moose_version < (((long)MIN_MOOSE_VER_MAJOR << 16) | MIN_MOOSE_VER_MINOR))
-				{
-					display(/*0000000b*/"init_moose: Your moose.adi is outdated, please update!");
-					return false;
-				}
-			}
-			else
-			{
-				display(/*0000000c*/"init_moose: Could not obtain moose.adi version, please update!");
+	if (G.adi_mouse) {
+		long err, moose_version;
+		err = adi_ioctl(G.adi_mouse, FS_INFO, (long)&moose_version);
+		if (!err) {
+			if (moose_version < (((long)MIN_MOOSE_VER_MAJOR << 16) | MIN_MOOSE_VER_MINOR)) {
+				BLOG((true,/*0000000b*/"init_moose: Your moose.adi is outdated, please update!"));
 				return false;
 			}
-			
-			aerr = adi_ioctl(G.adi_mouse, MOOSE_READVECS, (long)&vecs);
-			if (aerr == 0 && vecs.motv)
-			{
-				vex_motv(C.P_handle, vecs.motv, &svmotv);
-				vex_butv(C.P_handle, vecs.butv, &svbutv);
-
-				if (vecs.whlv)
-				{
-					vex_wheelv(C.P_handle, vecs.whlv, &svwhlv);
-					BLOG((false, "Wheel support present"));
-				}
-				else
-				{
-					BLOG((false, "No wheel support"));
-				}
-
-				if (adi_ioctl(G.adi_mouse, MOOSE_DCLICK, (long)cfg.double_click_time))
-					display(/*0000000d*/"Moose set dclick time failed");
-
-				if (adi_ioctl(G.adi_mouse, MOOSE_PKT_TIMEGAP, (long)cfg.mouse_packet_timegap))
-					display(/*0000000e*/"Moose set mouse-packets time-gap failed");
-
-				BLOG((false, "Using moose adi"));
-				ret = true;
+		} else  {
+			BLOG((true,/*0000000c*/"init_moose: Could not obtain moose.adi version, please update!"));
+			return false;
+		}
+		/*
+		 * Give the VDI handle to use to the mouse driver
+		*/
+		err = adi_ioctl(G.adi_mouse, MOOSE_SET_VDIHANDLE, (unsigned long)C.P_handle);
+		if (!err) {
+			err = adi_open(G.adi_mouse);
+			if (err) {
+				BLOG((true, "init_moose: Error opending mouse driver!"));
+				return false;
 			}
-			else
-				display(/*0000000f*/"init_moose: MOOSE_READVECS failed (%lx)", aerr);
+		
+			if (adi_ioctl(G.adi_mouse, MOOSE_DCLICK, (long)cfg.double_click_time))
+				BLOG((true,/*0000000d*/"Moose set dclick time failed"));
+			if (adi_ioctl(G.adi_mouse, MOOSE_PKT_TIMEGAP, (long)cfg.mouse_packet_timegap))
+				BLOG((true,/*0000000e*/"Moose set mouse-packets time-gap failed"));
+			BLOG((false, "Using moose adi"));
+			ret = true;
 		}
-		else
-		{
-			display(/*00000010*/"init_moose: opening moose adi failed (%lx)", aerr);	
-			G.adi_mouse = NULL;
-		}
+	} else {
+		BLOG((true,/*00000011*/"Could not find moose.adi, please install in %s!", C.Aes->home_path));
 	}
-	else
-	{
-		display(/*00000011*/"Could not find moose.adi, please install in %s!", C.Aes->home_path);
-	}
-
 	return ret;
 }
 
@@ -745,7 +709,7 @@ CE_fa(enum locks lock, struct c_event *ce, bool cancel)
 				struct widget_tree *wt;
 				OBJECT *form, *icon;
 
-				wt = get_widget(wind, XAW_TOOLBAR)->stuff;
+				wt = get_widget(wind, XAW_TOOLBAR)->stuff.xa_tree;
 				form = wt->tree;
 				switch (c)
 				{
@@ -1356,8 +1320,8 @@ k_main(void *dummy)
 #endif
 	}
 	
-	C.reschange = NULL;
 #if 0
+	C.reschange = NULL;
 	{
 		long tmp;
 		
@@ -1477,24 +1441,31 @@ k_main(void *dummy)
 		struct sgttyb sg;
 		long r;
 
+		BLOG((false, "f_cntl.."));
 		r = f_cntl(C.KBD_dev, (long)&KBD_dev_sg, TIOCGETP);
+		BLOG((false, "fcntl(TIOCGETP) -> %li", r));
 		KERNEL_DEBUG("fcntl(TIOCGETP) -> %li", r);
 		assert(r == 0);
 
 		sg = KBD_dev_sg;
 		sg.sg_flags &= TF_FLAGS;
 		sg.sg_flags |= T_RAW;
+		BLOG((false, "sg.sg_flags 0x%x", sg.sg_flags));
 		KERNEL_DEBUG("sg.sg_flags 0x%x", sg.sg_flags);
 
+		BLOG((false, "f_cntl #1.."));
 		r = f_cntl(C.KBD_dev, (long)&sg, TIOCSETN);
+		BLOG((false, "fcntl(TIOCSETN) -> %li", r));
 		KERNEL_DEBUG("fcntl(TIOCSETN) -> %li", r);
 		assert(r == 0);
 	}
 
+	BLOG((false, "Calling init moose..."));
+
 	/* initialize mouse */
 	if (!init_moose())
 	{
-		display(/*00000016*/"ERROR: init_moose failed");
+		BLOG((true,/*00000016*/"ERROR: init_moose failed"));
 		goto leave;
 	}
 
@@ -1534,7 +1505,7 @@ k_main(void *dummy)
 	while (!C.Hlp)
 		yield();
 
-	xam_load(true);
+// 	xam_load(true);
 
 // 	display("C.HLP started OK");
 
@@ -1644,7 +1615,6 @@ leave:
 static void
 setup_common(void)
 {
-
 	/* terminating signals */
 	p_signal(SIGHUP,   (long) ignore);
 	p_signal(SIGINT,   (long) ignore);
@@ -1696,10 +1666,15 @@ restore_sigs(void)
 }
 
 
+extern struct kernel_module *self;
+
 static void
 k_exit(void)
 {
 //	display("k_exit");
+	
+	detach_child_devices(self);
+
 	C.shutdown |= QUIT_NOW;
 
 	restore_sigs();
@@ -1714,18 +1689,19 @@ k_exit(void)
 		yield();
 	}
 // 	display("after yield");
-
-	if (svmotv)
-	{
-		void *m, *b, *h;
-
-		vex_motv(C.P_handle, svmotv, &m);
-		vex_butv(C.P_handle, svbutv, &b);
-
-		if (svwhlv)
-			vex_wheelv(C.P_handle, svwhlv, &h);
+#if 0
+	/*
+	 * close input devices
+	 */
+	if (G.adi_mouse) {
+		BLOG((false, "Closing adi_mouse"));
+		adi_close(G.adi_mouse);
+		unload_kmodule(G.adi_mouse->km);
+		G.adi_mouse = NULL;
+// 		adi_unregister(G.adi_mouse);
+// 		G.adi_mouse = NULL;
 	}
-
+#endif
 // 	display("k_shutdown..");
 	k_shutdown();
 // 	display("done");
@@ -1775,12 +1751,19 @@ k_exit(void)
 		f_close(C.alert_pipe);
 
 	BLOG((false, "closed all input devices"));
-	
+
+	BLOG((false, "unloading all modules we're parenting"));
+// 	_s_ync();
+	unload_kmodules(self);
+	BLOG((false, " ... done unloading modules"));
+
 	BLOG((false, "Waking up loader"));
 	/* wakeup loader */
+// 	_s_ync();
 	wake(WAIT_Q, (long)&loader_pid);
 		
 	BLOG((false, "-> kthread_exit"));
+// 	_s_ync();
 
 	/* XXX todo -> module_exit */
 // 	display("kthread_exit...");

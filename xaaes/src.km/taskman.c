@@ -207,7 +207,7 @@ add_to_tasklist(struct xa_client *client)
 	
 	if (wind)
 	{
-		struct widget_tree *wt = get_widget(wind, XAW_TOOLBAR)->stuff;
+		struct widget_tree *wt = get_widget(wind, XAW_TOOLBAR)->stuff.xa_tree;
 		OBJECT *obtree = wt->tree; //ResourceTree(C.Aes_rsc, TASK_MANAGER);
 		SCROLL_INFO *list = object_get_slist(obtree + TM_LIST);
 		OBJECT *icon;
@@ -260,7 +260,7 @@ remove_from_tasklist(struct xa_client *client)
 
 	if (wind)
 	{
-		struct widget_tree *wt = get_widget(wind, XAW_TOOLBAR)->stuff;
+		struct widget_tree *wt = get_widget(wind, XAW_TOOLBAR)->stuff.xa_tree;
 		OBJECT *obtree = wt->tree; //ResourceTree(C.Aes_rsc, TASK_MANAGER);
 		SCROLL_INFO *list = object_get_slist(obtree + TM_LIST);
 		struct sesetget_params p = { 0 };
@@ -287,7 +287,7 @@ update_tasklist_entry(struct xa_client *client)
 
 	if (wind)
 	{
-		struct widget_tree *wt = get_widget(wind, XAW_TOOLBAR)->stuff;
+		struct widget_tree *wt = get_widget(wind, XAW_TOOLBAR)->stuff.xa_tree;
 		OBJECT *obtree = wt->tree; //ResourceTree(C.Aes_rsc, TASK_MANAGER);
 		SCROLL_INFO *list = object_get_slist(obtree + TM_LIST);
 		struct sesetget_params p = { 0 };
@@ -479,7 +479,7 @@ quit_all_apps(enum locks lock, struct xa_client *except, short reason)
 	Sema_Dn(clients);
 }
 
-#if INCLUDE_UNUSED
+#ifdef ALT_CTRL_APP_OPS
 void
 quit_all_clients(enum locks lock, struct cfg_name_list *except_nl, struct xa_client *except_cl, short reason)
 {
@@ -548,7 +548,7 @@ CHlp_aesmsg(struct xa_client *client)
 }
 
 
-#if INCLUDE_UNUSED
+#ifdef ALT_CTRL_APP_OPS
 static char sdalert[] = /*scrn_snap_what*/ "[2][What do you want to snap?][Block|Full screen|Top Window|Cancel]";
 void
 screen_dump(enum locks lock, struct xa_client *client, bool open)
@@ -795,8 +795,7 @@ taskmanager_form_exit(struct xa_client *Client,
 			break;
 		}
 		case TM_RESCHG:
-		{
-			
+		{	
 			if (C.reschange)
 				post_cevent(C.Hlp, ceExecfunc, C.reschange,NULL, 1,0, NULL,NULL);
 			obj_change(wt, v, fr->obj, -1, aesobj_state(&fr->obj) & ~OS_SELECTED, aesobj_flags(&fr->obj), true, NULL, wind->rect_list.start, 0);
@@ -968,10 +967,10 @@ create_dwind(enum locks lock, XA_WIND_ATTR tp, char *title, struct xa_client *cl
 		set_window_title(wind, title, false);
 
 	wt = set_toolbar_widget(lock, wind, client, obtree, inv_aesobj(), 0/*WIP_NOTEXT*/, STW_ZEN, NULL, &or);
-	wt->exit_form = f; //milan_reschg_form_exit;
+	wt->exit_form = f;
 
 	/* Set the window destructor */
-	wind->destructor = d; //reschg_destructor;
+	wind->destructor = d;
 
 	return wind;
 }

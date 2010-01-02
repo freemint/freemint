@@ -46,7 +46,7 @@
  * debugging stuff
  */
 
-# if 0
+# if 1
 # define DEV_DEBUG	1
 # endif
 
@@ -56,8 +56,8 @@
  */
 
 # define VER_MAJOR	0
-# define VER_MINOR	10
-# define VER_STATUS	
+# define VER_MINOR	11
+# define VER_STATUS
 
 # define MSG_VERSION	str (VER_MAJOR) "." str (VER_MINOR) str (VER_STATUS) 
 # define MSG_BUILDDATE	__DATE__
@@ -79,11 +79,11 @@
 /* BEGIN kernel interface */
 
 struct kentry	*kentry;
-struct adiinfo	*ainf;
+struct adiinfo	*adiinfo;
 
 /* END kernel interface */
 /****************************************************************************/
-
+void consout(const char *, ...);
 /****************************************************************************/
 /* BEGIN definition part */
 
@@ -117,29 +117,45 @@ static void do_button_packet(void);
  * AES device interface
  */
 
-static long _cdecl	moose_open		(struct adif *a);
-static long _cdecl	moose_ioctl		(struct adif *a, short cmd, long arg);
-static long _cdecl	moose_close		(struct adif *a);
-static long _cdecl	moose_timeout		(struct adif *a);
+static long _cdecl	moose_open		(void);
+static long _cdecl	moose_ioctl		(short cmd, long arg);
+static long _cdecl	moose_close		(void);
+static long _cdecl	moose_timeout		(void);
+
+static long _cdecl moose_probe(device_t dev);
+static long _cdecl moose_attach(device_t dev);
+static long _cdecl moose_detach(device_t dev);
 
 static char lname[] = "Moose AES Device interface for XaAES\0";
+
+struct device_methods moose_dev =
+{
+	NULL,		/* identify */
+	moose_probe,
+	moose_attach,
+	moose_detach,
+};
+
+static struct device_methods *moose_devices[] =
+{
+	&moose_dev, NULL
+};
 
 static struct adif moose_aif = 
 {
 	0,		/* *next */
+ 	NULL,		/* km    */
 	ADIC_MOUSE,	/* class */
 	lname,		/* lname */
 	"moose",	/* name */
 	0,		/* unit */
 	0,		/* flags */
-	moose_open,	/* open */
+ 	moose_open,	/* open */
 	moose_close,	/* close */
-	0,		/* resrvd1 */
 	moose_ioctl,	/* ioctl */
 	moose_timeout,	/* timeout */
 	{ NULL },
 };
-	
 
 /*
  * debugging stuff
@@ -154,7 +170,9 @@ static struct adif moose_aif =
 #  define ALERT(x)	KERNEL_ALERT x
 # endif
 
-long _cdecl		init		(struct kentry *k, struct adiinfo *ai, char **reason);
+# define display(x)	KERNEL_DISPLAY x
+
+long _cdecl init(struct kernel_module *km, void *arg, struct device_methods ***r);
 
 /* END definition part */
 /****************************************************************************/
@@ -168,7 +186,15 @@ long _cdecl		init		(struct kentry *k, struct adiinfo *ai, char **reason);
 #define SYSVBI		0x456L
 #define SYSNVBI		0x454L
 
+static void *old_butv;
+static void *old_motv;
+#ifdef HAVE_WHEEL
+static void *old_whlv;
+#endif
+
 static long *VBI_entry;
+
+static short vdi_handle;
 
 static long lpkt;
 static long time_between;
@@ -182,7 +208,11 @@ static short click_y;
 static short click_state;
 static short click_cstate;
 static short click_count;
-static char  clicks[16];
+static union {
+	char chars[16];
+	unsigned long ulongs[4];
+} clicks;
+//static char  clicks[16];
 //static short l_clicks;
 //static short r_clicks;
 
@@ -207,7 +237,6 @@ volatile short sample_x;
 volatile short sample_y;
 volatile short sample_wheel;
 volatile short sample_wclicks;
-
 
 struct mouse_pak
 {
@@ -255,8 +284,7 @@ cbutv(void)
 	long t = *(long *)(SYSTIMER);
 	long t1;
 
-	if (eval_timegap)
-	{
+	if (eval_timegap) {
 		t1 = t - lpkt;
 		lpkt = t;
 		/*
@@ -269,9 +297,7 @@ cbutv(void)
 		 */
 		if (sample_butt && (t1 <= (long)pkt_timegap))
 			return;
-	}
-	else
-	{
+	} else {
 		t1 = -1;			/* for debugging purposes */
 		eval_timegap = 2;
 		lpkt = t;
@@ -308,13 +334,13 @@ cwhlv(void)
 	md.kstate	= 0;
 	md.dbg1		= 0;
 	md.dbg2		= 0;
-	(*ainf->wheel)(&moose_aif, &md);
+	(*adiinfo->wheel)(&md);
 }
 
 void
 cmotv(void)
 {
-	(*ainf->move)(&moose_aif, sample_x, sample_y);
+	(*adiinfo->move)(sample_x, sample_y);
 }
 
 static void
@@ -356,7 +382,7 @@ timer_handler(void)
 					if (s != last_state) /* We skip identical button state events */
 					{
 						register short i;
-						register char *c = clicks;
+						register char *c = clicks.chars;
 
 						if (timeout)
 						{
@@ -446,66 +472,164 @@ do_button_packet(void)
 	md.cstate	= click_cstate;
 	md.clicks	= click_count;
 	md.kstate	= 0;		/* Not set here -- will change*/
-	s = (unsigned long *)md.iclicks;
-	d = (unsigned long *)clicks;
+	s = md.iclicks.ulongs;
+	d = clicks.ulongs;
 	*s++ = *d, *d++ = 0;
 	*s++ = *d, *d++ = 0;
 	*s++ = *d, *d++ = 0;
 	*s   = *d, *d   = 0;
 	md.dbg1	= (short)(time_between >> 16);
 	md.dbg2 = (short)time_between;
-	(*ainf->button)(&moose_aif, &md);
+	(*adiinfo->button)(&md);
 	click_count	= 0;
 	timeout		= 0;
 }
 
+#define VEX_WHLV	134
+#define VEX_MOTV	126
+#define VEX_BUTV	125
+
 static long _cdecl
-moose_open (struct adif *a)
+moose_probe(device_t dev)
 {
-	short nvbi;
-	int i;
-
-	nvbi		= *(short *)SYSNVBI;
-
-	pak_tail	= (struct mouse_pak *)&pak_buffer;
-	pak_head	= pak_tail;
-	pak_end		= pak_tail + PAK_BUFFERS;
-
-	halve		= 0;
-	inbuf		= 0;
-	rsel		= 0;
-	rptr		= 0;
-	wptr		= 0;
-	mused		= 0;
-	halve		= 4;
-
-	moose_inuse	= 0;
-	dc_time		= 50;
-	pkt_timegap	= 3;
-	click_count	= 0;
-	for (i = 0; i < 16; i++) clicks[i] = 0;
-
-	timeout		= 0;
-
-	VBI_entry = (long *) *(long *)SYSVBI;
-
-	for (i = 0; i < nvbi; i++)
-	{
-		if (*VBI_entry == 0)
-		{
-			*VBI_entry = (long)th_wrapper;
-			break;
-		}
-		VBI_entry++;
-	}
-
-	moose_inuse	= -1;
-
 	return E_OK;
 }
 
 static long _cdecl
-moose_ioctl (struct adif *a, short cmd, long arg)
+moose_attach(device_t dev)
+{
+	if (!moose_inuse && adiinfo && !strcmp("AdiInfo        ", adiinfo->name)) {
+		long ret;
+
+		vdi_handle = -1;
+
+		DEBUG (("%s: enter init", __FILE__));
+		
+		moose_aif.km = dev->km;
+		ret = (*adiinfo->adi_register)(&moose_aif);
+
+		if (ret)
+		{
+			DEBUG (("%s: init failed!", __FILE__));
+			return 1;
+		}
+		DEBUG (("%s: init ok", __FILE__));
+		return E_OK;
+	}
+	return EPERM;
+}
+
+static long _cdecl
+moose_detach(device_t dev)
+{
+	if (moose_inuse) {
+		moose_close();
+		(*adiinfo->adi_unregister)(&moose_aif);
+	}
+	return E_OK;
+}
+
+static void
+vex_xxx(short opcode, void *new, void **old)
+{
+	short i;
+	struct vdictrl {
+		short	opcode,n_ptsin,n_ptsout,n_intin,n_intout,subopcode,handle;
+		void	*new;
+		void	*old; } vc;
+	struct vdipb {short *control, *intin, *ptsin, *intout, *ptsout;} pb;
+
+	pb.control = (void *)&vc;
+	pb.intin = pb.ptsin = pb.intout = pb.ptsout = &i;
+	
+	vc.opcode = opcode;
+	vc.n_ptsin = vc.n_intin = 0;
+	vc.handle = vdi_handle;
+	vc.new = new;
+
+	__asm__ volatile
+	(
+		"movea.l	%0,a0\n\t" 		\
+		"move.l		a0,d1\n\t"		\
+		"move.w		#115,d0\n\t"		\
+		"trap		#2\n\t"			\
+		:
+		: "a"(&pb)			
+		: "a0", "a1", "a2", "d0", "d1", "d2", "memory"	
+	);
+	
+	if (old) *old = vc.old;
+}
+
+static long _cdecl
+moose_open (void)
+{
+	short nvbi;
+	int i;
+
+	if (vdi_handle != -1 && !moose_inuse) {
+		nvbi		= *(short *)SYSNVBI;
+
+		pak_tail	= (struct mouse_pak *)&pak_buffer;
+		pak_head	= pak_tail;
+		pak_end		= pak_tail + PAK_BUFFERS;
+
+		halve		= 0;
+		inbuf		= 0;
+		rsel		= 0;
+		rptr		= 0;
+		wptr		= 0;
+		mused		= 0;
+		halve		= 4;
+
+		moose_inuse	= 0;
+		dc_time		= 50;
+		pkt_timegap	= 3;
+		click_count	= 0;
+		//for (i = 0; i < 16; i++) clicks.chars[i] = 0;
+		for (i = 0; i < 4; i++) clicks.ulongs[i] = 0;
+
+		timeout		= 0;
+
+		VBI_entry = (long *) *(long *)SYSVBI;
+
+		for (i = 0; i < nvbi; i++) {
+			if (*VBI_entry == 0) {
+				*VBI_entry = (long)th_wrapper;
+				break;
+			}
+			VBI_entry++;
+		}
+		vex_xxx(VEX_MOTV, motv, &old_motv);
+		vex_xxx(VEX_BUTV, butv, &old_butv);
+#ifdef HAVE_WHEEL
+		vex_xxx(VEX_WHLV, whlv, &old_whlv);
+#endif
+		moose_inuse	= -1;
+		return E_OK;
+	}
+	return EPERM;
+}
+
+static long _cdecl
+moose_close(void)
+{
+	if (moose_inuse) {
+		vex_xxx(VEX_MOTV, old_motv, NULL);
+		vex_xxx(VEX_BUTV, old_butv, NULL);
+#ifdef HAVE_WHEEL
+		vex_xxx(VEX_WHLV, old_whlv, NULL);
+#endif
+		*VBI_entry = NULL;
+		moose_inuse = 0;
+		vdi_handle = -1;
+		dc_time = 0;
+	}
+	return E_OK;
+}
+
+static long _cdecl
+moose_ioctl (short cmd, long arg)
 {
 	switch (cmd)
 	{
@@ -514,6 +638,7 @@ moose_ioctl (struct adif *a, short cmd, long arg)
 			*(long *)arg = (((long)VER_MAJOR << 16) | VER_MINOR);
 			break;
 		}
+#if 0		
 		case MOOSE_READVECS:
 		{
 			struct moose_vecsbuf *vecs = (struct moose_vecsbuf *)arg;
@@ -528,6 +653,7 @@ moose_ioctl (struct adif *a, short cmd, long arg)
 #endif
 			break;
 		}
+#endif
 		case MOOSE_DCLICK :
 		{
 			if (arg > MAX_DC_TIME)
@@ -545,6 +671,11 @@ moose_ioctl (struct adif *a, short cmd, long arg)
 
 			break;
 		}
+		case MOOSE_SET_VDIHANDLE:
+		{
+			vdi_handle = (short)arg;
+			break;
+		}
 		default:
 		{
 			return ENOSYS;
@@ -554,45 +685,11 @@ moose_ioctl (struct adif *a, short cmd, long arg)
 }
 
 static long _cdecl
-moose_close (struct adif *a)
-{
-	*VBI_entry = NULL;
-	moose_inuse = 0;
-	dc_time = 0;
-
-	return E_OK;
-}
-
-static long _cdecl
-moose_timeout(struct adif *a)
+moose_timeout(void)
 {
 	return 0;
 }
 
-long _cdecl
-init (struct kentry *k, struct adiinfo *ainfo, char **reason)
-{
-	long ret;
-
-	kentry	= k;
-	ainf	= ainfo;
-
-	if (check_kentry_version())
-		return -1;
-
-	//c_conws (MSG_BOOT);
-	//c_conws (MSG_GREET);
-	DEBUG (("%s: enter init", __FILE__));
-
-	ret = (*ainf->adi_register)(&moose_aif);
-	if (ret)
-	{
-		DEBUG (("%s: init failed!", __FILE__));
-		return 1;
-	}
-	DEBUG (("%s: init ok", __FILE__));
-	return 0;
-}
 #if 0
 static long _cdecl
 moose_unregister(struct adif *a)
@@ -603,3 +700,42 @@ moose_unregister(struct adif *a)
 	return ret;
 }
 #endif
+
+void consout(const char *fmt, ...)
+{
+	char buf[512];
+	va_list args;
+	long l;
+
+	va_start(args, fmt);
+	l = vsprintf(buf, sizeof(buf), fmt, args);
+	va_end(args);
+
+	buf[l] = '\n';
+	
+	buf[l] = '\r';
+	buf[l+1] = '\n';
+	buf[l+2] = '\0';
+	
+	c_conws(buf);
+}
+
+long _cdecl
+init(struct kernel_module *km, void *arg, struct device_methods ***r)
+{
+	
+//	consout("Inside moose init. km = %lx, kentry = %lx", km, km->kentry);
+	
+	kentry = km->kentry;
+
+	if (check_kentry_version())
+		return 1;
+
+	if (r) {
+		adiinfo = arg;
+		*r = moose_devices;
+	} else
+		return 1;
+	
+	return 0;
+}

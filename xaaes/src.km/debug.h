@@ -31,6 +31,7 @@
 
 void _cdecl display(const char *fmt, ...);
 void _cdecl ndisplay(const char *fmt, ...);
+void _cdecl diags(const char *fmt, ...);
 
 #ifndef PROFILING
 #define PROFILING 0
@@ -169,10 +170,9 @@ char *t_owner(struct widget_tree *t);
 /* debugging catagories & data */
 extern struct debugger D;
 
-
-void diags(const char *fmt, ...);
-void diaga(const char *fmt, ...);
-void diag(enum debug_item item, struct xa_client *client, char *t, ...);
+// void _cdecl	diags(const char *fmt, ...);
+void 		diaga(const char *fmt, ...);
+void 		diag(enum debug_item item, struct xa_client *client, char *t, ...);
 
 #if DEBUG_CONTROL
 #define CONTROL(a,b,c) {short *co = pb->control; \

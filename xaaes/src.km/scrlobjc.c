@@ -668,6 +668,8 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 	if (this)
 	{
 		short indent = this->indent;
+		int charbufflen = 0;
+		char *charbuff = NULL;
 		struct se_content *c = this->content;
 		struct se_tab *tab;
 		struct xa_fnt_info *wtxt;
@@ -696,6 +698,7 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 		
 		while (c)
 		{
+
 			tab = &list->tabs[c->index];
 
 			r.x = tab->r.x;
@@ -751,7 +754,6 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 				case SECONTENT_TEXT:
 				{
 					short x2, y2, dx, dy, tw, th, f;
-					char t[200];
 
 					if (xa_rect_clip(clip, &r, &clp))
 					{
@@ -797,6 +799,14 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 								method = 1;
 							else
 								method = 0;
+							if (!charbuff || charbufflen <= c->c.text.tlen) {
+								if (charbuff)
+									kfree(charbuff);
+								charbuff = kmalloc(c->c.text.tlen);
+								if (charbuff)
+									charbufflen = c->c.text.tlen;
+							}
+							assert(charbuff);
 							f = this->fnt->flags;
 					
 							if (sel)
@@ -808,11 +818,11 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 							(*v->api->t_font)(v, wtxt->p, wtxt->f);
 							(*v->api->t_effects)(v, wtxt->e);
 					
-							(*v->api->prop_clipped_name)(v, c->c.text.text, t, tw, &tw, &th, method);
+							(*v->api->prop_clipped_name)(v, c->c.text.text, charbuff, tw, &tw, &th, method);
 #if ITALIC_IS_CUTOFF
 							/* on some systems the last letter is cut off if italic */
 							if( wtxt->e & ITALIC )
-								strcat( t, " " );
+								strcat( charbuff, " " );
 #endif
 // 							display("%s", c->c.text.text);
 // 							display("%s", t);
@@ -839,13 +849,12 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 								(*v->api->t_color)(v, wtxt->bgc);
 								dx++;
 								dy++;
-								v_gtext(v->handle, dx, dy, t);
+								v_gtext(v->handle, dx, dy, charbuff);
 								dx--;
 								dy--;
 							}
 							(*v->api->t_color)(v, wtxt->fgc);
-							v_gtext(v->handle, dx, dy, t);
-
+							v_gtext(v->handle, dx, dy, charbuff);
 						}
 					}
 					break;
@@ -874,6 +883,9 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 		(*v->api->set_clip)(v, clip);
 		/* normal */
 		(*v->api->t_effects)(v, 0);
+		
+		if (charbuff)
+			kfree(charbuff);
 	}
 }	
 
@@ -1427,8 +1439,11 @@ free_seicon(struct se_content *seicon)
 static void
 free_setext(struct se_content *setext)
 {
-	if (setext->c.text.flags & SETEXT_ALLOC)
+	if (setext->c.text.flags & SETEXT_ALLOC) {
 		kfree(setext->c.text.text);
+		setext->c.text.tblen = 0;
+		setext->c.text.tlen = 0;
+	}
 }
 
 static void
@@ -1599,6 +1614,7 @@ new_setext(const char *t, OBJECT *icon, short type, short *sl)
 		new->type = SECONTENT_TEXT;
 		new->next = NULL;
 		new->c.text.tblen = tblen;
+		new->c.text.tlen = slen + 1;
 	}
 	return new;
 }
@@ -1973,11 +1989,14 @@ m_state_done:
 				if (setext)
 				{
 					slen = strlen(t->text);
-					if (slen < setext->c.text.tblen)
+					if (slen < setext->c.text.tblen) {
 						strcpy(setext->c.text.text, t->text);
+						
+						setext->c.text.tlen = slen + 1;
+					}
 					else
 					{
-						struct se_content *new = new_setext(t->text, setext->c.text.icon.icon, 0,0);
+						struct se_content *new = new_setext(t->text, setext->c.text.icon.icon, 0, NULL);
 						if (new)
 						{
 							delete_se_content(entry, setext, NULL, NULL);
@@ -1990,6 +2009,7 @@ m_state_done:
 						{
 							strncpy(setext->c.text.text, t->text, setext->c.text.tblen);
 							setext->c.text.text[setext->c.text.tblen] = '\0';
+							setext->c.text.tlen = setext->c.text.tblen;
 						}
 					}
 				}
@@ -3740,7 +3760,7 @@ dclick_scroll_list(enum locks lock, OBJECT *form, int item, const struct moose_d
 static bool
 drag_vslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *imd)
 {
-	XA_SLIDER_WIDGET *sl = widg->stuff;
+	XA_SLIDER_WIDGET *sl = widg->stuff.slider;
 
 	DIAGS(("scroll object vslide drag!"));
 	
@@ -3826,7 +3846,7 @@ drag_vslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 static bool
 drag_hslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *imd)
 {
-	XA_SLIDER_WIDGET *sl = widg->stuff;
+	XA_SLIDER_WIDGET *sl = widg->stuff.slider;
 
 	DIAGS(("scroll object vslide drag!"));
 	
