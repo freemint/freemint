@@ -245,7 +245,7 @@ do_ulookup (fcookie *dir, const char *nam, fcookie *fc, UNIFILE **up)
 	fcookie *tmp;
 	long changed;
 
-	TRACE (("uni_lookup(%s)", name));
+	TRACE (("uni_lookup(%s)", nam));
 
 	if (dir->index != 0)
 	{
@@ -263,16 +263,12 @@ do_ulookup (fcookie *dir, const char *nam, fcookie *fc, UNIFILE **up)
 	if (!*nameptr.c ||
 	     *nameptr.s == ___DOTNUL ||
 	    (nameptr.s[0] == ___DOTDOT && nameptr.c[2] == '\0'))
-//	    (*(short *)name == ___DOTNUL) ||
-//	    (*(short *)name == ___DOTDOT && name [2] == '\0'))
 # else
 	if (!*nameptr.c ||
 	    
 	if (!*nameptr.c ||
 	     (nameptr.c[0] == '.' && nameptr.c[1]) ||
 	     (nameptr.c[0] == '.' && nameptr.c[1] == '.' && nameptr.c[2] == '\0'))
-//		|| (name [0] == '.' && name [1] == '\0')
-//		|| (name [0] == '.' && name [1] == '.' && name [2] == '\0'))
 # endif
 	{
 		dup_cookie (fc, dir);
@@ -331,7 +327,7 @@ do_ulookup (fcookie *dir, const char *nam, fcookie *fc, UNIFILE **up)
 		}
 	}
 
-	DEBUG (("uni_lookup: name (%s) not found", name));
+	DEBUG (("uni_lookup: name (%s) not found", nam));
 	return ENOENT;
 }
 

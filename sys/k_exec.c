@@ -600,7 +600,7 @@ sys_pexec(short mode, const void *p1, const void *p2, const void *p3)
 
 			if (new_pid == ((ret & 0xffff0000L) >> 16))
 			{
-				TRACE(("leaving Pexec; child return code %ld", r));
+				TRACE(("leaving Pexec; child return code %ld", ret));
 
 				/* sys_pwaitpid() strips the low word down to 8 bit,
 				 * fix that.
