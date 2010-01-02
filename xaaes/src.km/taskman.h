@@ -39,7 +39,11 @@ void remove_from_tasklist(struct xa_client *client);
 void update_tasklist_entry(struct xa_client *client);
 
 void quit_all_apps(enum locks lock, struct xa_client *except, short reason);
+
+#ifdef ALT_CTRL_APP_OPS
 void quit_all_clients(enum locks lock, struct cfg_name_list *except_nl, struct xa_client *except_cl, short reason);
+void screen_dump(enum locks lock, struct xa_client *client, bool open);
+#endif
 
 bool isin_namelist(struct cfg_name_list *list, char *name, short nlen, struct cfg_name_list **last, struct cfg_name_list **prev);
 void addto_namelist(struct cfg_name_list **list, char *name);
@@ -49,7 +53,6 @@ void free_namelist(struct cfg_name_list **list);
 void send_terminate(enum locks lock, struct xa_client *client, short reason);
 
 void CHlp_aesmsg(struct xa_client *client);
-void screen_dump(enum locks lock, struct xa_client *client, bool open);
 
 void open_taskmanager(enum locks lock, struct xa_client *client, bool open);
 void open_systemalerts(enum locks lock, struct xa_client *client, bool open);

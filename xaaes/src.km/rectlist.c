@@ -488,7 +488,7 @@ xa_rc_intersect(const RECT s, RECT *d)
  * Takes pointers to source, destination and result
  * rectangle structures.
  */
-bool
+bool _cdecl
 xa_rect_clip(const RECT *s, const RECT *d, RECT *r)
 {
 	if (s->w > 0 && s->h > 0 && d->w > 0 && d->h > 0)

@@ -29,6 +29,7 @@
 #include "xa_types.h"
 #include "xa_global.h"
 #include "trnfm.h"
+#include "rectlist.h" /* aesrect_clip -> xa_rect_clip */
 
 static void _cdecl
 r2pxy(short *p, short d, const RECT *r)
@@ -93,7 +94,7 @@ xa_clear_clip(struct xa_vdi_settings *v)
 };
 
 static void _cdecl
-xa_restore_clip(struct xa_vdi_settings *v, const RECT *s)
+xa_restore_clip(struct xa_vdi_settings *v, RECT *s)
 {
 	short r[4];
 	
@@ -527,7 +528,12 @@ xa_gbox(struct xa_vdi_settings *v, short d, const RECT *r)
 // 		pb->ptsin[7] = pb->ptsin[5];
 // 		pb->ptsin[8] = pb->ptsin[0];
 		pb->ptsin[9] = pb->ptsin[1] + 1;
+		DIAGS(("xa_gbox: call v_pline with %d/%d %d/%d %d/%d %d/%d %d/%d", 
+			pb->ptsin[0], pb->ptsin[1], pb->ptsin[2], pb->ptsin[3], pb->ptsin[4], pb->ptsin[5],
+			pb->ptsin[6], pb->ptsin[7], pb->ptsin[8], pb->ptsin[9]));
 		VDI(pb, 6, 5, 0, 0, v->handle);
+		DIAGS(("xa_gbox: return"));
+		kfree(pb);
 	}
 #else
 	short l[10];
@@ -535,17 +541,60 @@ xa_gbox(struct xa_vdi_settings *v, short d, const RECT *r)
 	short y = r->y - d;
 	short w = r->w + d+d;
 	short h = r->h + d+d;
+	
+#if 0
+	/* XXX
+	 * Odd Skancke:
+	 *	This is weird! Either there is a serios VDI-bug
+	 *	in my Milan's VDI, or in the Rage driver I'm using.
+	 *	No matter what I do, v_pline() seem to crash the VDI
+	 *	when drawing vertical lines when in monochrome mode!
+	 *      Horizontal lines seem to work.
+	 */
 	l[0] = x;
-	l[1] = y;
+	l[1] = l[3] = y;
+	l[2] = x + w -1;
+	DIAGS(("xa_gbox: 1 call v_pline with %d/%d %d/%d", 
+	       l[0], l[1], l[2], l[3]));
+	v_pline(v->handle, 2, l);
+
+	l[0] = x;
+	l[1] = l[3] = y + h - 1;
 	l[2] = x + w - 1;
+	DIAGS(("xa_gbox: 2 call v_pline with %d/%d %d/%d", 
+	       l[0], l[1], l[2], l[3]));
+	v_pline(v->handle, 2, l);
+
+	l[0] = l[2] = x;
+	l[1] = y + h - 1;
+	l[3] = y + 1;
+	DIAGS(("xa_gbox: 3 call v_pline with %d/%d %d/%d", 
+	       l[0], l[1], l[2], l[3]));
+	v_pline(v->handle, 2, l);
+
+	l[0] = l[2] = x + w - 1;
+	l[1] = y + h - 1;
+	l[3] = y + 1;
+	DIAGS(("xa_gbox: 4 call v_pline with %d/%d %d/%d", 
+	       l[0], l[1], l[2], l[3]));
+	v_pline(v->handle, 2, l);
+#endif
+	l[0] = x;			//  p0
+	l[1] = y;
+	l[2] = x + w - 1;		//  p0--p1
 	l[3] = y;
-	l[4] = x + w - 1;
-	l[5] = y + h - 1;
+	l[4] = x + w - 1;		//  p0--p1
+	l[5] = y + h - 1;		//	p2
 	l[6] = x;
 	l[7] = y + h - 1;
 	l[8] = x;
 	l[9] = y + 1;			/* for Xor mode :-) */
+// 	DIAGS(("xa_gbox: call v_pline with %d/%d %d/%d %d/%d %d/%d %d/%d", 
+// 	       l[0], l[1], l[2], l[3], l[4], l[5], l[6], l[7], l[8], l[9]));
+
 	v_pline(v->handle, 5, l);
+
+// 	DIAGS(("xa_gbox: return"));
 #endif
 }
 
@@ -944,6 +993,7 @@ static struct xa_vdi_api vdiapi =
 	xa_load_fonts,
 	xa_unload_fonts,
 	
+ 	xa_rect_clip,
 	xa_set_clip,
 	xa_clear_clip,
 	xa_restore_clip,

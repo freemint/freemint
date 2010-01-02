@@ -51,9 +51,9 @@ void wait_mouse(struct xa_client *client, short *br, short *xr, short *yr);
 /* non-blocking, context free */
 void check_mouse(struct xa_client *client, short *br, short *xr, short *yr);
 
-void adi_move(struct adif *a, short x, short y);
-void adi_button(struct adif *a, struct moose_data *md);
-void adi_wheel(struct adif *a, struct moose_data *md);
+void adi_move(short x, short y);
+void adi_button(struct moose_data *md);
+void adi_wheel(struct moose_data *md);
 
 bool eiffel_wheel(unsigned short scan);
 

@@ -1263,7 +1263,7 @@ XA_fnts_open(enum locks lock, struct xa_client *client, AESPB *pb)
 			XA_WIND_ATTR tp = wind->active_widgets | MOVER|NAME;
 		
 			widg->m.properties |= WIP_NOTEXT;
-			set_toolbar_handlers(&wdlg_th, wind, widg, widg->stuff);
+			set_toolbar_handlers(&wdlg_th, wind, widg, widg->stuff.xa_tree);
 		
 			obj_init_focus(wt, OB_IF_RESET);
 	
@@ -1565,7 +1565,7 @@ XA_fnts_evnt(enum locks lock, struct xa_client *client, AESPB *pb)
 		struct wdlg_evnt_parms wep;
 
 		wep.wind	= wind;
-		wep.wt		= get_widget(wind, XAW_TOOLBAR)->stuff;
+		wep.wt		= get_widget(wind, XAW_TOOLBAR)->stuff.xa_tree;
 		wep.ev		= (EVNT *)pb->addrin[1];
 		wep.wdlg	= NULL;
 		wep.callout	= NULL;
@@ -1633,7 +1633,7 @@ Keypress(enum locks lock,
 		struct xa_fnts_info *fnts;
 		unsigned long val;
 		
-		wt = get_widget(wind, XAW_TOOLBAR)->stuff;
+		wt = get_widget(wind, XAW_TOOLBAR)->stuff.xa_tree;
 		list = object_get_slist(wt->tree + FNTS_FNTLIST);
 		fnts = list->data;
 		val = get_edpoint(fnts);
@@ -1708,7 +1708,7 @@ XA_fnts_do(enum locks lock, struct xa_client *client, AESPB *pb)
 		change_window_attribs(lock, client, wind, tp, true, true, 2, or, NULL);
 		
 		widg->m.properties &= ~WIP_NOTEXT;
-		set_toolbar_handlers(&fnts_th, wind, widg, widg->stuff);
+		set_toolbar_handlers(&fnts_th, wind, widg, widg->stuff.xa_tree);
 		wt->flags |= WTF_FBDO_SLIST;
 
 		fnts->button_flags = pb->intin[0];

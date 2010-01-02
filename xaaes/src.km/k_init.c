@@ -27,6 +27,8 @@
 #include RSCHNAME
 
 #include "util.h"
+#include "adiload.h"
+#include "debug.h"
 
 #include "k_main.h"
 #include "k_init.h"
@@ -70,10 +72,7 @@
 #include "mint/ssystem.h"
 #include "cookie.h"
 
-
-struct xa_module_api xam_api;
-
- STATIC char *xaaes_sysfile(const char *);
+//static char *xaaes_sysfile(const char *);
 
 static OBSPEC * _cdecl
 api_object_get_spec(OBJECT *ob)
@@ -153,7 +152,7 @@ api_rect_clip(RECT *s, RECT *d, RECT *r)
 {
 	return (xa_rect_clip(s, d, r)) ? 1 : 0;
 }
-
+#if 0
 static void * _cdecl
 api_kmalloc(long size)
 {
@@ -177,7 +176,7 @@ api_ufree(void *addr)
 {
 	ufree(addr);
 }
-
+#endif
 static void _cdecl
 api_bzero(void *addr, unsigned long len)
 {
@@ -242,29 +241,37 @@ api_load_img(char *fname, XAMFDB *img)
 {
 	load_image(fname, img);
 }	
-	
+
+static long _cdecl (*f_setupvdi)(unsigned long, short *, short *, short *) = NULL;
+
 static long _cdecl
 module_register(long mode, void *_p)
 {
 	long ret = E_OK;
-	BLOG((false, "module_register: mode = %ld, _p = %lx", mode, _p));
+	bool unregister;
 
-	switch ((mode & 0xefffffff))
+	unregister = (mode & 0x80000000) ? true : false;
+	mode &= 0x7fffffff;
+
+	BLOG((false, "module_register: %s mode = %lx, _p = %lx", unregister ? "unregister" : "register", mode, _p));
+
+	switch (mode)
 	{
 		case MODREG_KERNKEY:
 		{
 			struct kernkey_entry *list;
 			
-			if (mode & MODREG_UNREGISTER)
+			if (unregister)
 			{
-				struct kernkey_entry *this = _p, *prev = NULL;
-				BLOG((false, " -- unregister KERNKEY"));
+				struct kernkey_entry *this, *prev = NULL;
+				struct register_kernkey_parms *p = _p;
+				BLOG((false, "module_register: unregister KERNKEY"));
 				list = C.kernkeys;
 				while (list)
 				{
-					if (list->key == this->key)
+					if (list->key == p->key && list->state == p->state) //if (list->key == this->key)
 					{
-						if (list->act == this->act)
+						if (list->act == p->act) //if (list->act == this->act)
 						{
 							if ((this = list->next_act))
 								this->next_key = list->next_key;
@@ -281,7 +288,7 @@ module_register(long mode, void *_p)
 						}
 						else
 						{
-							while (list && list->act != this->act)
+							while (list && list->act != p->act)
 							{
 								prev = list;
 								list = list->next_act;
@@ -301,17 +308,19 @@ module_register(long mode, void *_p)
 			else
 			{
 				struct kernkey_entry *new;
-				BLOG((false, " -- register KERNKEY"));
+				BLOG((false, "module_register: register KERNKEY"));
 				new = kmalloc(sizeof(*new));
 				if (new)
 				{
-					struct kernkey_entry *p = _p;
-					
+// 					struct kernkey_entry *p = _p;
+					struct register_kernkey_parms *p = _p;
+
 					new->next_key = NULL;
 					new->next_act = NULL;
 					new->act = p->act;
 					new->key = p->key;
-					
+					new->state = p->state;
+
 					list = C.kernkeys;
 					while (list)
 					{
@@ -334,107 +343,180 @@ module_register(long mode, void *_p)
 					}
 				}
 				else
-					ret = -1;
+					ret = EERROR;
+			}
+			break;
+		}
+		case MODREG_SETUPVDI:
+		{
+			if (unregister) {
+				BLOG((false, "module_register: unregister SETUPVDI (this %lx, current %lx)", _p, f_setupvdi));
+				if (f_setupvdi == _p)
+					f_setupvdi = NULL;
+			} else {
+				BLOG((false, "module_register: register SETUPVDI (old %lx, new %lx)", f_setupvdi, _p));
+				f_setupvdi = _p;
+			}
+			break;
+		}
+		case MODREG_RESCHANGE:
+		{
+			if (unregister) {
+				if (C.reschange == _p)
+					C.reschange = NULL;
+			} else {
+// 				if (C.reschange)
+// 					ret = EERROR;
+// 				else
+					C.reschange = _p;
 			}
 			break;
 		}
 		default:
 		{
-			ret = -1;
+			ret = EERROR;
 			break;
 		}
 	}
-	BLOG((false, " returning %ld", ret));
+	BLOG((false, "module_register: returning %ld", ret));
 	return ret;
 }
 
+#define DEFAULTS_xa_objc_api	\
+{ \
+	LoadResources,		\
+	FreeResources,		\
+	ResourceTree,		\
+	obfix,			\
+	duplicate_obtree,	\
+	free_object_tree,	\
+	init_widget_tree,	\
+	new_widget_tree,	\
+	obtree_to_wt,		\
+	remove_wt,		\
+	api_object_get_spec,	\
+	api_object_set_spec,	\
+	api_object_get_popinfo,	\
+	api_object_get_tedinfo,	\
+	api_object_spec_wh,	\
+	api_ob_spec_xywh,	\
+	api_render_object,	\
+	api_getbest_cicon,	\
+	api_obj_offset,		\
+	api_obj_rectangle,	\
+	obj_set_radio_button,	\
+	obj_get_radio_button,	\
+	obj_draw,		\
+	obj_change,		\
+	obj_edit,		\
+	obj_set_g_popup,	\
+	obj_unset_g_popup,	\
+	create_popup_tree,	\
+}
+
+#define DEFAULTS_xa_menu_api	\
+{ \
+	remove_attachments,	\
+}
+
+#define DEFAULTS_xa_debug_api	\
+{ \
+	display,		\
+	ndisplay,		\
+	bootlog,		\
+	diags,			\
+}
+
+#define DEFAULTS_xa_module_api	\
+{ \
+	module_register,	\
+}
+
+#define DEFAULTS_xa_window_api	\
+{ \
+	create_window,		\
+	open_window,		\
+	close_window,		\
+	move_window,		\
+	top_window,		\
+	bottom_window,		\
+	send_wind_to_bottom,	\
+	delete_window,		\
+	delayed_delete_window,	\
+	create_dwind,		\
+	redraw_toolbar,		\
+	api_rp2ap,		\
+	api_rp2apcs,		\
+}
+
+#define DEFAULTS_xa_rectangle_api \
+{ \
+	api_rect_clip,		\
+}
+
+#define DEFAULTS_xa_lib_api	\
+{ \
+	xaaes_sysfile,		\
+	xaaes_kmalloc,		\
+	xaaes_umalloc,		\
+	xaaes_kfree,		\
+	xaaes_ufree,		\
+	api_bzero,		\
+	make_fqfname,		\
+}
+
+#define DEFAULTS_xa_xadata_api	\
+{ \
+	api_lookup_xa_data,		\
+	api_lookup_xa_data_byid,	\
+	api_lookup_xa_data_byname,	\
+	api_lookup_xa_data_byidname,	\
+	api_add_xa_data,		\
+	api_remove_xa_data,		\
+	api_delete_xa_data,		\
+	api_ref_xa_data,		\
+	api_deref_xa_data,		\
+	api_free_xa_data_list,		\
+}
+
+#define DEFAULTS_xa_img_api	\
+{ \
+	api_load_img,		\
+}
+
+#define DEFAULTS_xa_api		\
+{ \
+	"XaAES API v0.1",	\
+	&cfg,			\
+	&C,			\
+	&S,			\
+	NULL, /*kentry*/		\
+	\
+	dispatch_shutdown,	\
+	\
+	DEFAULTS_xa_debug_api,		\
+	DEFAULTS_xa_module_api,		\
+	DEFAULTS_xa_objc_api,		\
+	DEFAULTS_xa_menu_api,		\
+	DEFAULTS_xa_rectangle_api,	\
+	DEFAULTS_xa_lib_api,		\
+	DEFAULTS_xa_xadata_api,		\
+	DEFAULTS_xa_window_api,		\
+	DEFAULTS_xa_img_api,		\
+}
+
+struct xa_api xa_api = DEFAULTS_xa_api;
+	
 void
-setup_xa_module_api(void)
+setup_xa_api(void)
 {
-	xam_api.cfg		= &cfg;
-	xam_api.C		= &C;
-	xam_api.S		= &S;
-	xam_api.k		= kentry;
-
-	xam_api.display		= display;
-	xam_api.ndisplay	= ndisplay;
-	xam_api.bootlog		= bootlog;
-
-	xam_api.module_register	= module_register;
-
-	xam_api.sysfile		= xaaes_sysfile;
-	xam_api.load_resource	= LoadResources;
-	xam_api.resource_tree	= ResourceTree;
-	xam_api.obfix		= obfix;
-	
-	xam_api.duplicate_obtree = duplicate_obtree;
-	xam_api.free_object_tree = free_object_tree;
-
-	xam_api.init_widget_tree = init_widget_tree;
-	xam_api.new_widget_tree	= new_widget_tree;
-	xam_api.obtree_to_wt	= obtree_to_wt;
-	xam_api.remove_wt	= remove_wt;
-
-	xam_api.object_get_spec	= api_object_get_spec;
-	xam_api.object_set_spec = api_object_set_spec;
-	xam_api.object_get_popinfo = api_object_get_popinfo;
- 	xam_api.object_get_tedinfo = api_object_get_tedinfo;
-	xam_api.object_spec_wh	= api_object_spec_wh;
-	
-	xam_api.ob_spec_xywh	= api_ob_spec_xywh;
-	xam_api.getbest_cicon	= api_getbest_cicon;
-	xam_api.obj_offset	= api_obj_offset;
-	xam_api.obj_rectangle	= api_obj_rectangle;
-	xam_api.obj_set_radio_button = obj_set_radio_button;
-	xam_api.obj_get_radio_button = obj_get_radio_button;
-
-	xam_api.render_object	= api_render_object;
-
-	xam_api.rp2ap		= api_rp2ap;
-	xam_api.rp2apcs		= api_rp2apcs;
-
-	xam_api.rect_clip	= api_rect_clip;
-
-	xam_api.kmalloc		= api_kmalloc;
-	xam_api.umalloc		= api_umalloc;
-	xam_api.kfree		= api_kfree;
-	xam_api.ufree		= api_ufree;
-	xam_api.bclear		= api_bzero;
-
-	xam_api.lookup_xa_data		= api_lookup_xa_data;
-	xam_api.lookup_xa_data_byid	= api_lookup_xa_data_byid;
-	xam_api.lookup_xa_data_byname	= api_lookup_xa_data_byname;
-	xam_api.lookup_xa_data_byidname = api_lookup_xa_data_byidname;
-	xam_api.add_xa_data		= api_add_xa_data;
-	xam_api.remove_xa_data		= api_remove_xa_data;
-	xam_api.delete_xa_data		= api_delete_xa_data;
-	xam_api.ref_xa_data		= api_ref_xa_data;
-	xam_api.deref_xa_data		= api_deref_xa_data;
-	xam_api.free_xa_data_list	= api_free_xa_data_list;
-
-	xam_api.load_img	= api_load_img;
-
-	xam_api.create_window	= create_window;
-	xam_api.open_window	= open_window;
-	xam_api.close_window	= close_window;
-	xam_api.move_window	= move_window;
-	xam_api.top_window	= top_window;
-	xam_api.bottom_window	= bottom_window;
-	xam_api.send_wind_to_bottom = send_wind_to_bottom;
-	xam_api.delete_window	= delete_window;
-	xam_api.delayed_delete_window = delayed_delete_window;
-
-	xam_api.create_dwind	= create_dwind;
-
-	xam_api.redraw_toolbar	= redraw_toolbar;
-
-	xam_api.dispatch_shutdown = dispatch_shutdown;
+	xa_api.k = kentry;
 }
 
 /*
  * check if file exist in Aes_home_path
  */
-STATIC char * _cdecl
+char * _cdecl
 xaaes_sysfile(const char *file)
 {
 	char *fn;
@@ -541,12 +623,12 @@ k_init(unsigned long vm)
 		for (t = (short *)v, f = 0; f < (sizeof(*v) >> 1); f++)
 			*t++ = -1;
 	}
-
-// 	setup_xa_module_api();
+	
+	xam_load(true);
 
 	cfg.videomode = (short)vm;
 
-	xa_vdiapi = v->api = init_xavdi_module();	
+	xa_vdiapi = v->api = init_xavdi_module();
 	{
 		short *p;
 
@@ -560,11 +642,15 @@ k_init(unsigned long vm)
 			BLOG((false, "could not determine nvdi version"));
 #endif
 	}
-
 	{
 		short mode = 1;
+		
+		if (f_setupvdi)
+			(*f_setupvdi)(vm, work_in, work_out, &mode);
+#if 0		
+		short mode = 1;
 		long vdo, r;
-
+	
 		r = s_system(S_GETCOOKIE, COOKIE__VDO, (unsigned long)(&vdo));
 		if (r != 0)
 			vdo = 0;
@@ -674,6 +760,7 @@ k_init(unsigned long vm)
 		{
 			BLOG((false, "Default screenmode"));
 		}
+#endif
 // 		display("set mode %x", mode);
 		BLOG((false, "Screenmode is: %d", mode));
 
@@ -864,7 +951,7 @@ k_init(unsigned long vm)
 	main_object_render(&C.Aes->objcr_module);
 	
 	BLOG((false, "Attempt to open object render module..."));
-	if (!(*C.Aes->objcr_module->init_module)(&xam_api, &screen, cfg.gradients))
+	if (!(*C.Aes->objcr_module->init_module)(&xa_api, &screen, cfg.gradients))
 	{
 		BLOG((false, "object render returned NULL"));
 		return -1;
@@ -876,7 +963,7 @@ k_init(unsigned long vm)
 	}
 	
 	BLOG((false, "Attempt to open window widget renderer..."));
-	if (!(C.Aes->wtheme_handle = (*C.Aes->xmwt->init_module)(&xam_api, &screen, (char *)&cfg.widg_name, cfg.gradients)))
+	if (!(C.Aes->wtheme_handle = (*C.Aes->xmwt->init_module)(&xa_api, &screen, (char *)&cfg.widg_name, cfg.gradients)))
 	{
 		display("Window widget module returned NULL");
 		return -1;
@@ -963,11 +1050,11 @@ k_init(unsigned long vm)
 	/*
 	 * Setup mn_set for menu_settings()
 	 */
-	cfg.mn_set.display = cfg.popup_timeout;
-	cfg.mn_set.drag = cfg.popout_timeout;
-	cfg.mn_set.delay = 250;
-	cfg.mn_set.speed = 0;
-	cfg.mn_set.height = root_window->wa.h / screen.c_max_h;
+	cfg.menu_settings.mn_set.display = cfg.popup_timeout;
+	cfg.menu_settings.mn_set.drag = cfg.popout_timeout;
+	cfg.menu_settings.mn_set.delay = 250;
+	cfg.menu_settings.mn_set.speed = 0;
+	cfg.menu_settings.mn_set.height = root_window->wa.h / screen.c_max_h;
 	BLOG((false, "mn_set for menu_settings setup"));
 	v_show_c(C.P_handle, 0);
 	BLOG((false, "show mouse, return sucess"));

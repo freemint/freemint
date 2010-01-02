@@ -80,7 +80,7 @@ k_shutdown(void)
 	}
 	/* To demonstrate the working on multiple resources. */
 	while (C.Aes->resources)
-		FreeResources(C.Aes, NULL, NULL);
+		FreeResources(C.Aes, NULL,  NULL);
 	
 	BLOG((false, "Removing all remaining windows"));
 	remove_all_windows(NOLOCKING, NULL);
@@ -267,7 +267,7 @@ k_shutdown(void)
 			v_enter_cur(C.P_handle);	/* Ozk: Lets enter cursor mode */
 			BLOG((false, "Closing VDI workstation %d (tc = %lx)", C.P_handle));
 			odbl = DEBUG_LEVEL;
-			DEBUG_LEVEL = 4;
+			DEBUG_LEVEL = 3;
 			v_clswk(C.P_handle);		/* Auto version must close the physical workstation */
 			DEBUG_LEVEL = odbl;
 			BLOG((false, "Restore CPU caches"));
