@@ -42,8 +42,11 @@
 
 #define POINT_TO_TYPE		0	/* if defined focus can be dynamically changed in the cfg (see parde*/
 
-#define ALT_CTRL_APP_OPS	0	/* Some ALT+CTRL+key combo's will perform functions relating to
-                       			 * the XaAES system */
+//
+// Odd Skancke - Moved this define into XAAESDEFS
+// 
+//#define ALT_CTRL_APP_OPS	0	/* Some ALT+CTRL+key combo's will perform functions relating to
+//                       			 * the XaAES system */
 
 #define PRESERVE_DIALOG_BGD	1	/* Preserve the background of dialogs */
 

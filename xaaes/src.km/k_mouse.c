@@ -502,7 +502,7 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 			if (C.aesmouse != -1)
 				xa_graf_mouse(-1, NULL, NULL, true);
 
-			menu = (XA_TREE *)widg->stuff;
+			menu = widg->stuff.xa_tree;
 			client = menu->owner;
 			if (!(client->status & CS_EXITING))
 			{
@@ -649,7 +649,7 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 					if (C.aesmouse != -1)
 						xa_graf_mouse(-1, NULL, NULL, true);
 
-					menu = (XA_TREE *)widg->stuff;
+					menu = widg->stuff.xa_tree;
 					client = menu->owner;
 					if (!(client->status & CS_EXITING))
 					{
@@ -1037,7 +1037,7 @@ move_timeout(struct proc *p, long arg)
  * taken whenever mouse moves.
  */
 void
-adi_move(struct adif *a, short x, short y)
+adi_move(short x, short y)
 {
 	/*
 	 * Always update these..
@@ -1115,7 +1115,7 @@ button_timeout(struct proc *p, long arg)
 			get_md(&md);
 			DIAGA(("adi_button_event: type=%d, (%d/%d - %d/%d) state=%d, cstate=%d, clks=%d, l_clks=%d, r_clks=%d (%ld)",
 				md.ty, md.x, md.y, md.sx, md.sy, md.state, md.cstate, md.clicks,
-				md.iclicks[0], md.iclicks[1], sizeof(struct moose_data) ));
+				md.iclicks.chars[0], md.iclicks.chars[1], sizeof(struct moose_data) ));
 #if 0
 			display("adi_button_event: type=%d, (%d/%d - %d/%d) state=%d, cstate=%d, clks=%d, l_clks=%d, r_clks=%d (%ld)",
 				md.ty, md.x, md.y, md.sx, md.sy, md.state, md.cstate, md.clicks,
@@ -1136,7 +1136,7 @@ button_timeout(struct proc *p, long arg)
  * mouse button packet is ready for delivery.
  */
 void
-adi_button(struct adif *a, struct moose_data *md)
+adi_button(struct moose_data *md)
 {
 	/*
 	 * Ozk: should have obtained the keyboard-shift state here,
@@ -1179,7 +1179,7 @@ adi_button(struct adif *a, struct moose_data *md)
  * adi_wheel() - The entry point taken by moose.adi when the mouse wheel turns.
  */
 void
-adi_wheel(struct adif *a, struct moose_data *md)
+adi_wheel(struct moose_data *md)
 {
 	add_md(md);
 	if (!b_to)

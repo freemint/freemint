@@ -225,7 +225,7 @@ xv_create_driver_info(XVDIPB *vpb, short handle, short id)
 static short
 xv_delete_driver_info(XVDIPB *vpb, short handle, DRV_INFO *d)
 {
-	ptr_to_shorts(d, vpb->intin);
+	ptr_to_ptr2shorts(d, vpb->intin); // ptr_to_shorts(d, vpb->intin);
 	VDI(vpb, 181, 0, 2, 0, handle);
 	return vpb->intout[0];
 }
@@ -233,7 +233,7 @@ xv_delete_driver_info(XVDIPB *vpb, short handle, DRV_INFO *d)
 static short
 xv_read_default_settings(XVDIPB *vpb, short handle, PRN_SETTINGS *p)
 {
-	ptr_to_shorts(p, vpb->intin);
+	ptr_to_ptr2shorts(p, vpb->intin); //ptr_to_shorts(p, vpb->intin);
 	vpb->control[V_N_PTSOUT] = 0;
 	vpb->control[V_N_INTOUT] = 0;
 	VDI(vpb, 182, 0, 2, 0, handle);
@@ -246,7 +246,7 @@ xv_read_default_settings(XVDIPB *vpb, short handle, PRN_SETTINGS *p)
 static short
 xv_write_default_settings(XVDIPB *vpb, short handle, PRN_SETTINGS *p)
 {
-	ptr_to_shorts(p, vpb->intin);
+	ptr_to_ptr2shorts(p, vpb->intin); //ptr_to_shorts(p, vpb->intin);
 	vpb->control[V_N_PTSOUT] = 0;
 	vpb->control[V_N_INTOUT] = 0;
 	VDI(vpb, 182, 0, 2, 1, handle);
@@ -269,9 +269,9 @@ static short
 xvq_ext_devinfo(XVDIPB *vpb, short handle, short id, char *path, char *fname, char *dname)
 {
 	vpb->intin[0] = id;
-	ptr_to_shorts(path, vpb->intin  + 1);
-	ptr_to_shorts(fname, vpb->intin + 3);
-	ptr_to_shorts(dname, vpb->intin + 5);
+	ptr_to_ptr2shorts(path, vpb->intin  + 1);
+	ptr_to_ptr2shorts(fname, vpb->intin + 3);
+	ptr_to_ptr2shorts(dname, vpb->intin + 5);
 	VDI(vpb, 248, 0, 7, 4242, handle);
 	return vpb->intout[0];
 }
@@ -2976,7 +2976,7 @@ XA_pdlg_open(enum locks lock, struct xa_client *client, AESPB *pb)
 			XA_WIND_ATTR tp = wind->active_widgets | MOVER|NAME;
 		
 			widg->m.properties |= WIP_NOTEXT;
-			set_toolbar_handlers(&wdlg_th, wind, widg, widg->stuff);
+			set_toolbar_handlers(&wdlg_th, wind, widg, widg->stuff.xa_tree);
 
 			obj_init_focus(wt, OB_IF_RESET);
 
@@ -3293,7 +3293,7 @@ XA_pdlg_evnt(enum locks lock, struct xa_client *client, AESPB *pb)
 // 		display("pdlg->settings = %lx, out = %lx", pdlg->settings, out);
 
 		wep.wind	= wind;
-		wep.wt		= get_widget(wind, XAW_TOOLBAR)->stuff;
+		wep.wt		= get_widget(wind, XAW_TOOLBAR)->stuff.xa_tree;
 		wep.ev		= (EVNT *)pb->addrin[2];
 		wep.wdlg	= NULL;
 		wep.callout	= NULL;
@@ -3351,7 +3351,7 @@ Keypress(enum locks lock,
 		struct scroll_info *list;
 		struct xa_pdlg_info *pdlg;
 		
-		wt = get_widget(wind, XAW_TOOLBAR)->stuff;
+		wt = get_widget(wind, XAW_TOOLBAR)->stuff.xa_tree;
 		list = object_get_slist(wt->tree + XPDLG_LIST);
 		pdlg = list->data;
 	}
@@ -3418,7 +3418,7 @@ XA_pdlg_do(enum locks lock, struct xa_client *client, AESPB *pb)
 		change_window_attribs(lock, client, wind, tp, true, true, 2, or, NULL);
 		
 		widg->m.properties &= ~WIP_NOTEXT;
-		set_toolbar_handlers(&pdlg_th, wind, widg, widg->stuff);
+		set_toolbar_handlers(&pdlg_th, wind, widg, widg->stuff.xa_tree);
 		wt->flags |= WTF_FBDO_SLIST;
 	/* ............. */
 		pdlg->flags |= 1;

@@ -1648,11 +1648,13 @@ load_image(char *name, XAMFDB *mimg)
 	struct ximg_header *ximg = &xa_img.ximg;
 	long bmsize;
 
-	display("load_img: '%s'", name);
+	ndisplay("loading images");
+	
+// 	display("load_img: '%s'", name);
 
-	display("load_img: file %s", name);
+// 	display("load_img: file %s", name);
 
-	ndisplay("  depacking...");
+// 	ndisplay("  depacking...");
 	depack_img(name, &xa_img);
 	mimg->mfdb.fd_addr = NULL;
 
@@ -1663,7 +1665,8 @@ load_image(char *name, XAMFDB *mimg)
 // 		display("version %d\r\n hlen    %d\r\n planes  %d\r\n pat_len %d\r\n pix_w   %d\r\n pix_h   %d\r\n img_w   %d\r\n img_h   %d\r\n magic   %lx\r\n paltype %d",
 // 			ximg->version, ximg->length, ximg->planes, ximg->pat_len, ximg->pix_w, ximg->pix_h, ximg->img_w, ximg->img_h,
 // 			ximg->magic, ximg->paltype);
-		ndisplay("OK!");
+// 		ndisplay("OK!");
+		ndisplay(".");
 		msrc.mfdb.fd_addr	= xa_img.addr;
 		msrc.mfdb.fd_w		= (ximg->img_w + 15) & ~15;
 		msrc.mfdb.fd_h		= ximg->img_h;
@@ -1676,19 +1679,24 @@ load_image(char *name, XAMFDB *mimg)
 
 		if (xa_img.palette)
 		{
-			ndisplay(", has palette");
+// 			ndisplay(", has palette");
+			ndisplay(".");
 			if (ximg->planes <= 8 && screen.planes == 8)
 			{
 				unsigned char cref[256];
-				ndisplay(",remap bitmap...");
+// 				ndisplay(",remap bitmap...");
+				ndisplay(".");
 				build_pal_xref((struct rgb_1000 *)xa_img.palette, screen.palette, (unsigned char *)&cref, (1 << msrc.mfdb.fd_nplanes));
 				remap_bitmap_colindexes(&msrc.mfdb, (unsigned char *)&cref);
-				ndisplay("OK!");
+// 				ndisplay("OK!");
+				ndisplay(".");				
 			}
 		}
-		else
-			ndisplay(", no palette");
-		
+		else {
+			ndisplay(".");
+// 			ndisplay(", no palette");
+		}
+
 		if (ximg->planes < 8 && screen.planes == 8)
 		{
 			long newsize, oldsize;
@@ -1696,7 +1704,7 @@ load_image(char *name, XAMFDB *mimg)
 
 			newsize = (long)(((msrc.mfdb.fd_w + 15) >> 4) << 1) * msrc.mfdb.fd_h * 8;
 			oldsize = (long)(((msrc.mfdb.fd_w + 15) >> 4) << 1) * msrc.mfdb.fd_h * msrc.mfdb.fd_nplanes;
-			display("oldsize = %ld, newsize = %ld", oldsize, newsize);
+// 			display("oldsize = %ld, newsize = %ld", oldsize, newsize);
 			if ((newdata = kmalloc(newsize)))
 			{
 				bzero(newdata, newsize);
@@ -1709,6 +1717,7 @@ load_image(char *name, XAMFDB *mimg)
 			{
 				kfree(xa_img.addr);
 				mimg->mfdb.fd_addr = NULL;
+				display("");
 				return;
 			}
 		}
@@ -1752,9 +1761,11 @@ load_image(char *name, XAMFDB *mimg)
 					}
 					if (from && to)
 					{
-						ndisplay(", tranform %d -> %d bpp...", msrc.mfdb.fd_nplanes, screen.planes);
+						ndisplay(".");
+// 						ndisplay(", tranform %d -> %d bpp...", msrc.mfdb.fd_nplanes, screen.planes);
 						(*from)(to, (struct rgb_1000 *)xa_img.palette, &msrc.mfdb, &mimg->mfdb);
-						ndisplay("OK!");
+// 						ndisplay("OK!");
+						ndisplay(".");
 						fail = false;
 					}
 				}
@@ -1773,15 +1784,18 @@ load_image(char *name, XAMFDB *mimg)
 			else
 #endif
 			{
-				ndisplay(", vr_trnfm()..."); 
+				ndisplay(".");
+// 				ndisplay(", vr_trnfm()..."); 
 				vr_trnfm(C.P_handle, &msrc.mfdb, &mimg->mfdb);
-				ndisplay("OK!");
+				ndisplay(".");
+// 				ndisplay("OK!");
 			}
 			kfree(xa_img.addr);	
 		}
 		else
 		{
-			ndisplay(", inline vr_trnfm() at %lx...", msrc.mfdb.fd_addr);
+			ndisplay(".");
+// 			ndisplay(", inline vr_trnfm() at %lx...", msrc.mfdb.fd_addr);
 			mimg->mfdb.fd_addr = msrc.mfdb.fd_addr;
 			vr_trnfm(C.P_handle, &msrc.mfdb, &mimg->mfdb);
 			ndisplay("OK!");

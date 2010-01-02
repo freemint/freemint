@@ -174,7 +174,8 @@ exec_iredraw_queue(enum locks lock, struct xa_client *client)
 		do {
 			short xaw = ibuf.irdrw.xaw;
 			wind = (struct xa_window *)ibuf.irdrw.ptr;
-			r = (RECT *)&ibuf.irdrw.x;
+			r = &ibuf.irdrw.coords.rect;
+			//r =  (RECT *)&ibuf.irdrw.x;
 
 			if (!xaw && (wind != root_window || (wind == root_window && get_desktop()->owner == client)))
 			{

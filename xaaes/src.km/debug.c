@@ -451,8 +451,9 @@ t_owner(XA_TREE *t)
 
 	return buf;
 }
+#endif
 
-void
+void _cdecl
 diags(const char *fmt, ...)
 {
 #if GENERATE_DIAGS
@@ -462,7 +463,7 @@ diags(const char *fmt, ...)
 #if 1
 	struct proc *p = get_curproc();
 
-	if ((strnicmp(p->name, "thing", 5)))
+	if ((strnicmp(p->name, "worldclk", 8)))
 		return;
 #endif
 
@@ -480,6 +481,8 @@ diags(const char *fmt, ...)
 	}
 #endif
 }
+
+#if GENERATE_DIAGS
 
 void
 diaga(const char *fmt, ...)
@@ -521,7 +524,7 @@ diag(enum debug_item item, struct xa_client *client, char *t, ...)
 #if 1
 	struct proc *p = get_curproc();
 
-	if ((strnicmp(p->name, "thing", 5)))
+	if ((strnicmp(p->name, "worldclk", 8)))
 		return;
 #endif
 	if (D.debug_level == 4

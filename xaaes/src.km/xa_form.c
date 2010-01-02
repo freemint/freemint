@@ -49,194 +49,12 @@
 #include "xa_graf.h"
 #include "xa_rsrc.h"
 
-#if 0
-bool
-key_alert_widget(enum locks lock, struct xa_client *client, struct xa_window *wind,
-	    struct widget_tree *wt, const struct rawkey *key, struct fmd_result *res_fmd);
-#endif
-/*
- * Create a copy of an object tree
- * - Intended for using the form templates in SYSTEM.RSC (we can't use them
- * directly as this would cause problems when (for example) two apps do a form_alert()
- * at the same time.
- */
-static OBJECT *
-CloneForm(OBJECT *form)
-{
-	int num_objs = 0;
-	OBJECT *new_form;
-
-	while ((form[num_objs++].ob_flags & OF_LASTOB) == 0)
-		;
-
-	new_form = kmalloc(sizeof(OBJECT) * num_objs);
-	DIAGS(("CloneForm: new obtree at %lx", new_form));
-	if (new_form)
-	{
-		int o;
-
-		for (o = 0; o < num_objs; o++)
-			new_form[o] = form[o];
-	}
-
-	return new_form;
-}
-
-/*
- * Free up a copy of a form template
- */
 static int
 alert_destructor(enum locks lock, struct xa_window *wind)
 {
 	DIAG((D_form, NULL, "alert_destructor"));
 	remove_widget(lock, wind, XAW_TOOLBAR);
 	return true;
-}
-
-/*
- * Form_alert handler v2.1
- */
-
-static char *ln = "";	/* current line */
-static int mc; 		/* current string max */
-
-static void
-ipff_init(int m, char *l)
-{
-	if (l)
-		ln = l;
-	mc = m;
-}
-
-/* skip white space */
-static int
-sk(void)
-{
-	int c;
-
-	while ((c = *ln) == ' ' 
-		|| c == '\t' 
-		|| c == '\r' 
-		|| c == '\n'
-             ) ++ln;
-
-	/* can be zero: end input */
-	return c;
-}
-
-/* skip analysed character and following white space */
-static int
-skc(void)
-{
-	if (*ln) ++ln;
-	return sk();
-}
-
-/* skip only analysed character */
-static int
-sk1(void)
-{
-	if (*ln)
-		return *(++ln);
-	return 0;
-}
-
-/* give delimited string */
-static int
-lstr(char *w, unsigned long lim)
-{
-	int i = 0, c = *ln;
-	char *s = (char *)&lim;
-
-	while (i < mc)
-	{
-		c = *ln;
-
-		if (c == 0     ) break;	/* einde input */
-		if (c == *(s+3)) break;
-		if (c == *(s+2)) break;
-		if (c == *(s+1)) break;
-		if (c == * s   ) break;
-
-		*w++ = c;
-		ln++;
-		i++;
-	}
-
-	*w = 0;
-
-	/* return stop ch for analysis */
-	return c;
-}
-
-/* only there to avoid long mul */
-static int
-idec(void)
-{
-	int n = 0; bool t = false;
-
-	if (*ln == '-')
-	{
-		ln++;
-		t = true;
-	}
-
-	while (*ln >= '0' && *ln <= '9')
-		n = 10 * n + *ln++ - '0';
-
-	if (t) return -n;
-	else   return  n;
-}
-
-static int
-get_parts(int m, char to[][MAX_X+1], int *retv)
-{
-	int n = 0;
-
-	while (n < m)
-	{
-		int s;
-
-		/* delimited string, no translation */
-		s = lstr(to[n++], 0x7c5d /* '|]' */);
-		if (s == '|')
-		{
-			sk1();
-		}
-		else if (s == ']')
-		{
-			skc();
-			break;
-		}
-		else
-		{
-			/* must be end of string */
-			*retv = 0;
-			break;
-		}
-	}
-
-	return n;
-}
-
-static int
-max_w(int m, char to[][MAX_X+1], int *tot)
-{
-	int n = 0, x = 2, t = 0;
-
-	while (n < m)
-	{
-		int l = strlen(to[n]);
-		if (l > x)
-			x = l;
-		t += l+3;
-		n++;
-	}
-
-	if (tot)
-		*tot = t * screen.c_max_w;
-
-	return x * screen.c_max_w;
 }
 
 /* changed thus, that a alert is always displayed, whether format error or not.
@@ -247,170 +65,35 @@ max_w(int m, char to[][MAX_X+1], int *tot)
  * If a application has locked the screen, there might be something
  * under the alert that is not a window.
  */
+/*
+ * Odd Skancke:
+ *	Use of create_alert_tree (in obtree.c) so that the normal
+ *	restrictions on alerts are lifted.
+ *	Now it can handle any number of buttons or lines.
+ */
 int
 do_form_alert(enum locks lock, struct xa_client *client, int default_button, char *alert, char *title)
 {
-	XA_WIND_ATTR kind = MOVER|NAME|TOOLBAR|USE_MAX;
+	short fbutton, nbuttons;
 	struct xa_window *alert_window;
 	XA_WIDGET *widg;
+	XA_WIND_ATTR kind = MOVER|NAME|TOOLBAR|USE_MAX;
 	XA_TREE *wt;
-	OBJECT *alert_form;
-	OBJECT *alert_icons;
-	ALERTXT *alertxt;
-	RECT or;
-	short x, w;
-	int n_lines, n_buttons, icon = 0, m_butt_w;
-	int retv = 1, b, f;
+	OBJECT *alert_form = create_alert_tree(client, default_button, alert, &fbutton, &nbuttons);
 
-	DIAG((D_form, client, "called do_form_alert(%s)", alert));
-
-	/* Create a copy of the alert box templates */
-	alert_form = CloneForm(ResourceTree(C.Aes_rsc, ALERT_BOX));
 	if (!alert_form)
-	{
-		DIAGS(("CloneForm failed, out of memory?"));
-		return 0;
-	}
-
-	alertxt = kmalloc(sizeof(*alertxt));
-	if (!alertxt)
-	{
-		kfree(alert_form);
-
-		DIAGS(("kmalloc(%i) failed, out of memory?", sizeof(*alertxt)));
-		return 0;
-	}
-
-	for (f = 0; f < ALERT_LINES; f++)
-		alertxt->text[f][0] = '\0';
-
-	ipff_init(MAX_X, alert);
-
-	if (sk() == '[')		/* skip white space and give non_white char */
-	{
-		skc();			/* skip char & following white space, give non_white char */
-		icon = idec();		/* give decimal number */
-		if (sk() == ']')
-			skc();
-	}
-
-	if (sk() != '[')
-		retv = 0;
-	else
-		sk1();
-
-	/* parse ...|...|... ... ] */
-	n_lines = get_parts(ALERT_LINES, alertxt->text, &retv);
-
-	if (sk() != '[')
-		retv = 0;
-	else
-		sk1();
-
-	ipff_init(MAX_B, NULL);
-
-	n_buttons = get_parts(ALERT_BUTTONS, alertxt->button, &retv);
-
-	w = max_w(n_lines,   alertxt->text, NULL);
-	    max_w(n_buttons, alertxt->button, &m_butt_w);
-
-	if (m_butt_w > w)
-		w = m_butt_w;
-
-	w += 66;
-/* >  */
-
-	alert_icons = ResourceTree(C.Aes_rsc, ALERT_ICONS);
-
-	alert_form->ob_width = w;
-// 	Form_Center(alert_form, ICON_H);
-
-	{	/* HR */
-		int icons[7] = {ALR_IC_SYSTEM, ALR_IC_WARNING, ALR_IC_QUESTION, ALR_IC_STOP,
-						  ALR_IC_INFO,   ALR_IC_DRIVE,   ALR_IC_BOMB};
-		if (icon > 7 || icon < 0)
-			icon = 0;
-		
-		for (f = 0; f < 7; f++)
-		{
-			ICONBLK *ai = object_get_spec(alert_icons + icons[f]    )->iconblk;
-			ICONBLK *af = object_get_spec(alert_form  + ALERT_D_ICON)->iconblk;
-			ai->ib_xicon = af->ib_xicon;
-			ai->ib_yicon = af->ib_yicon;
-		}
-
-		(alert_form + ALERT_D_ICON)->ob_spec = (alert_icons + icons[icon])->ob_spec;
-	}
-
-	/* Fill in texts */
-	for (f = 0; f < ALERT_LINES; f++)
-	{
-		alert_form[ALERT_T1 + f].ob_spec.free_string = alertxt->text[f];
-		if (*alertxt->text[f] == 0)
-			alert_form[ALERT_T1 + f].ob_flags |= OF_HIDETREE;
-		else
-			alert_form[ALERT_T1 + f].ob_flags &= ~OF_HIDETREE;
-	}
-
-	/* Space the buttons evenly */
-	x = w - m_butt_w;
-	b = x / (n_buttons + 1);	
-	x = b;
-
-	/* Fill in & show buttons */
-	for (f = 0; f < n_buttons; f++)
-	{
-		int width = strlen(alertxt->button[f])+3;
-		width *= screen.c_max_w;
-		DIAGS(("button %d, text '%s'", f, alertxt->button[f]));
-
-		alert_form[ALERT_BUT1 + f].ob_spec.free_string = alertxt->button[f];
-		alert_form[ALERT_BUT1 + f].ob_width = width;
-		alert_form[ALERT_BUT1 + f].ob_x = x;
-
-		alert_form[ALERT_BUT1 + f].ob_flags &= ~(OF_HIDETREE|OF_DEFAULT);
-		alert_form[ALERT_BUT1 + f].ob_flags |= (OF_EXIT);
-
-		alert_form[ALERT_BUT1 + f].ob_state = OS_WHITEBAK;
-		x += width + b;
-	}
-
-	{
-		int nl = n_lines, dh;
-
-		if (n_lines < 2)
-			nl = 2;
-		dh = (ALERT_LINES - nl)*screen.c_max_h;
-		alert_form[0].ob_height -= dh;
-		alert_form[ALERT_BUT1].ob_y -= dh;
-		alert_form[ALERT_BUT2].ob_y -= dh;
-		alert_form[ALERT_BUT3].ob_y -= dh;
-		alert_form[ALERT_BUT4].ob_y -= dh;
-	}
-
-	/* Set the default button if it was specified */
-	if (default_button > 0)
-	{
-		if (default_button > n_buttons)
-			default_button = n_buttons;
-
-		alert_form[ALERT_BUT1 + default_button - 1].ob_flags |= OF_DEFAULT;
-	}
-
-	for (f = n_buttons; f < ALERT_BUTTONS; f++)
-		/* Hide unused buttons */
-		alert_form[ALERT_BUT1 + f].ob_flags |= OF_HIDETREE;
+		display("could not create alert!!");
 
 	ob_fix_shortcuts(alert_form, true);
 
 	/* Create a window and attach the alert object tree centered to it */
 	{
 		bool nolist = false;
-		RECT r;
+		RECT r, or;
 
 		wt = new_widget_tree(client, alert_form);
 		assert(wt);
-		wt->flags |= WTF_XTRA_ALLOC | WTF_TREE_ALLOC | WTF_AUTOFREE;
+		wt->flags |= WTF_TREE_ALLOC | WTF_AUTOFREE;
 		obj_rectangle(wt, aesobj(alert_form, 0), &or);
 		center_rect(&or);
 		
@@ -447,7 +130,8 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 			widg = get_widget(alert_window, XAW_TOOLBAR);
 
 			set_toolbar_widget(lock, alert_window, client, alert_form, inv_aesobj(), WIP_NOTEXT, STW_ZEN, NULL, &or); //(RECT *)&alert_form->ob_x);
-			wt->extra = alertxt;
+			wt->extra.s[0] = fbutton;
+			wt->extra.s[1] = fbutton + nbuttons;
 
 			set_window_title(alert_window, title ? title : client->name, false);
 			alert_window->destructor = alert_destructor;
@@ -464,7 +148,7 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 			remove_wt(wt, false);
 	}
 
-	return retv;
+	return 1;
 }
 
 /*
@@ -542,7 +226,8 @@ _form_keybd(	struct xa_client *client,
 			     keycode);					/* nxtkey	*/
 
 	/*
-	 * Ozk: What a mess! If no exitobjects, AES should return whats passed in 'nextobj' when
+	 * Odd Skancke:
+	 *	What a mess! If no exitobjects, AES should return whats passed in 'nextobj' when
 	 *      the key was not used. XaAES will pass a new editfocus instead if the focus passed
 	 *      in intin[0] isnt a valid editable object. If the key was used, then the AES should
 	 *      either pass back a new editfocus, or the same value given to us in intin[0].
@@ -859,7 +544,7 @@ XA_form_do(enum locks lock, struct xa_client *client, AESPB *pb)
 // 			display(" ... return from form_do");
 			return XAC_DONE;
 		}
-		/* XXX - Ozk:
+		/* XXX - Odd Skancke:
 		 *  If client didnt fetch update lock calling wind_upd(), XaAES uses
 		 *  windowed dialog. If something goes wrong opening a window
 		 *  like no more memory, we need to act upon that here. Lets try
@@ -869,7 +554,7 @@ XA_form_do(enum locks lock, struct xa_client *client, AESPB *pb)
 	}
 	else
 	{
-		/* XXX - Ozk:
+		/* XXX - Odd Skancke:
 		 * Here we have another situation where the AES app passed a NULL ptr
 		 * to obtree. Dont know if this ever happens, but ....
 		 */
@@ -906,7 +591,7 @@ XA_form_button(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		obj = aesobj(wt->tree, pb->intin[0]);
 
-		/* XXX - Ozk:
+		/* XXX - Odd Skancke:
 		 * I think we need to look for this obtree to see if we have it in
 		 * a window, in which case we need to use that windows rectangle list
 		 * during updates of the window.
@@ -924,6 +609,7 @@ XA_form_button(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		pb->intout[0] = retv;
 		pb->intout[1] = aesobj_item(&nextobj) | clickmask;
+// 		display("XA_form_button: retv %x, intout[1] %x (%d)", retv, pb->intout[1], pb->intout[1]);
 	}
 	else
 		pb->intout[0] = pb->intout[1] = 0;
@@ -964,7 +650,7 @@ XA_form_wbutton(enum locks lock, struct xa_client *client, AESPB *pb)
 			if ((md.clicks = pb->intin[1]))
 				md.state = MBS_LEFT;
 	
-			/* XXX - Ozk:
+			/* XXX - Odd Skancke:
 			 * I think we need to look for this obtree to see if we have it in
 			 * a window, in which case we need to use that windows rectangle list
 			 * during updates of the window.

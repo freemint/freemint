@@ -71,7 +71,7 @@ static char *pstates[] =
 	"14",
 	"15"
 };
-#if 0
+#if 1
 static char *pflags[] =
 {
 	"S",
@@ -92,7 +92,7 @@ static char *pflags[] =
 	"15"
 };
 #endif
-#if 0
+#if 1
 static char *ob_types[] =
 {
 	"box",
@@ -118,7 +118,7 @@ static char *ob_types[] =
 	"40"
 };
 #endif
-#if 0
+#if 1
 static char *
 object_txt(OBJECT *tree, short t)			/* HR: I want to know the culprit in a glance */
 {
@@ -482,7 +482,7 @@ d_g_slist(struct widget_tree *wt, struct xa_vdi_settings *v)
 	
 	if (list->state == 0)
 	{
-		get_widget(w, XAW_TITLE)->stuff = list->title;
+		get_widget(w, XAW_TITLE)->stuff.cptr = list->title;
 		r = v->clip;
 		draw_window(list->lock, w, &r);
 		draw_slist(0, list, NULL, &r);
@@ -626,9 +626,9 @@ display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, struct x
 	/* Better do this before AND after (fail safe) */
 	(*v->api->wr_mode)(v, MD_TRANS);
 
-#if 0
+#if 1
 #if GENERATE_DIAGS
-	if (wt->tree != xobj_rsc) //get_widgets())
+// 	if (wt->tree != xobj_rsc)
 	{
 		char flagstr[128];
 		char statestr[128];
@@ -639,7 +639,7 @@ display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, struct x
 		DIAG((D_o, wt->owner, "ob=%d, %d/%d,%d/%d [%d: 0x%lx]; %s%s (%x)%s (%x)%s",
 			aesobj_item(&item),
 			 r.x, r.y, r.w, r.h,
-			 t, display_routine,
+			 t, drawer,
 			 object_type(aesobj_tree(&item), aesobj_item(&item)),
 			 object_txt(aesobj_tree(&item), aesobj_item(&item)),
 			 ob->ob_flags,flagstr,
@@ -651,6 +651,8 @@ display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, struct x
 	/* Call the appropriate display routine */
 	(*drawer)(wt, v);
 
+	DIAG((D_o, wt->owner, "... return from drawer!"));
+	
 	(*v->api->wr_mode)(v, MD_TRANS);
 
 	if (t != G_PROGDEF)
@@ -749,7 +751,7 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, struct xa_vdi_setti
 	{
 		wt = &this;
 		clear_edit(&wt->e);
-		this = nil_wt; //nil_tree;
+		this = nil_wt;
 		wt->ei = NULL;
 		wt->owner = C.Aes;
 		wt->objcr_api = C.Aes->objcr_api;
@@ -790,7 +792,7 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, struct xa_vdi_setti
 	{
 		if (ei->c_state & OB_CURS_ENABLED)
 		{
-			(*wt->objcr_api->undraw_cursor)(wt, v, NULL, 1);
+			(*wt->objcr_api->undraw_cursor)(wt, v, NULL, NULL, 1);
 			curson = true;
 		}
 // 		curson = ((ei->c_state & (OB_CURS_ENABLED | OB_CURS_DRAWN)) == (OB_CURS_ENABLED | OB_CURS_DRAWN)) ? true : false;
@@ -825,7 +827,7 @@ uplink:
 				if (!ei && docurs && same_aesobj(c, &wt->e.o))
 				{
 					if ((aesobj_type(c) & 0xff) != G_USERDEF)
-						(*wt->objcr_api->eor_cursor)(wt, v, NULL);
+						(*wt->objcr_api->eor_cursor)(wt, v, NULL,NULL);
 					docurs = false;	
 				}
 			}
@@ -879,7 +881,7 @@ downlink:
 	while (valid_aesobj(c) && !same_aesobj(c, &stop)  && rel_depth > 0);
 
 	if (curson)
-		(*wt->objcr_api->draw_cursor)(wt, v, NULL, 1);
+		(*wt->objcr_api->draw_cursor)(wt, v, NULL, NULL, 1);
 
 	(*v->api->wr_mode)(v, MD_TRANS);
 	(*v->api->f_interior)(v, FIS_SOLID);

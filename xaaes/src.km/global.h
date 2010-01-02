@@ -72,6 +72,35 @@
 #define INCLUDE_UNUSED 0
 
 static inline void *
+ptr_from_ptr2shorts(const short *s)
+{
+	union { const short *s; void **p; } cnv;
+	cnv.s = s;
+	return *cnv.p;
+}
+static inline long
+long_from_ptr2shorts(short *s)
+{
+	union { short *s; long *l; } cnv;
+	cnv.s = s;
+	return *cnv.l;
+}
+static inline void
+long_to_ptr2shorts(long v, short *s)
+{
+	union { short *s; long *l; } cnv;
+	cnv.s = s;
+	*cnv.l = v;
+}
+static inline void
+ptr_to_ptr2shorts(void *p, short *s)
+{
+	union { short *s; void **p; } cnv;
+	cnv.s = s;
+	*cnv.p = p;
+}
+#if 0
+static inline void *
 ptr_from_shorts(short hi, short lo)
 {
 	union { short word[2]; void *ptr; } p;
@@ -91,7 +120,7 @@ ptr_to_shorts(void *p, short *a)
 	a[0] = ptoa.s[0];
 	a[1] = ptoa.s[1];
 }
-
+#endif
 
 /*
  * memory management
