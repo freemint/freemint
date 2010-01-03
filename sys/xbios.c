@@ -107,9 +107,9 @@ sys_b_supexec (Func funcptr, long arg1, long arg2, long arg3, long arg4, long ar
 	/* set things up so that "signal 0" will be handled by calling the user's
 	 * function.
 	 */
-	
+
 	assert (get_curproc()->p_sigacts);
-	
+
 	usrcall = funcptr;
 	usrarg1 = arg1;
 	usrarg2 = arg2;
@@ -237,11 +237,7 @@ rsconf (int baud, int flow, int uc, int rs, int ts, int sc)
 #ifdef MFP_DEBUG_DIRECT
 	static int oldbaud = 0;
 #else
-#ifdef SCC_DEBUG_DIRECT
-	static int oldbaud = 0;
-#else
 	static int oldbaud = -1;
-#endif
 #endif
 	unsigned b = 0;
 	struct bios_tty *t = bttys;
@@ -688,7 +684,7 @@ init_xbios(void)
 {
 	/* init XBIOS Random() function */
 	init_xrandom();
-	
+
 	/* init bconmap stuff */
 	init_bconmap();
 }

@@ -49,7 +49,6 @@ adi_register(struct adif *a)
  * shutting down. This should be done automatically when
  * unloading the module
  */
-
 long
 adi_unregister(struct adif *a)
 {
@@ -107,13 +106,13 @@ adi_getfreeunit (char *name)
 {
 	struct adif *adip;
 	short max = -1;
-	
+
 	for (adip = alladifs; adip; adip = adip->next)
 	{
 		if (!strncmp (adip->name, name, ADI_NAMSIZ) && adip->unit > max)
 			max = adip->unit;
 	}
-	
+
 	return max + 1;
 }
 
@@ -124,7 +123,7 @@ adi_name2adi (char *aname)
 	short i;
 	long unit = 0;
 	struct adif *a;
-	
+
 	for (i = 0, cp = aname; i < ADI_NAMSIZ && *cp; ++cp, ++i)
 	{
 		if (*cp >= '0' && *cp <= '9')
@@ -134,13 +133,13 @@ adi_name2adi (char *aname)
 		}
 		name[i] = *cp;
 	}
-	
+
 	name[i] = '\0';
 	for (a = alladifs; a; a = a->next) {
 		if (!stricmp (a->name, name) && a->unit == unit)
 			return a;
 	}
-	
+
 	return NULL;
 }
 

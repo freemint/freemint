@@ -1,17 +1,17 @@
 /*
  * $Id$
- * 
+ *
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
- * 
- * 
+ *
+ *
  * Copyright 1990,1991,1992 Eric R. Smith.
  * Copyright 1992,1993,1994 Atari Corporation.
  * All rights reserved.
- * 
- * 
+ *
+ *
  * MiNT debugging output routines
- * 
+ *
  */
 
 # include <stdarg.h>
@@ -42,11 +42,6 @@
 # ifdef MFP_DEBUG_DIRECT
 # define DEBUG_DIRECT
 # include "xdd/mfp/kgdb_mfp.c"
-# endif
-
-# ifdef SCC_DEBUG_DIRECT
-# define DEBUG_DIRECT
-# include "xdd/scc/dbg_scc.c"
 # endif
 
 static void VDEBUGOUT(const char *, va_list, int);
@@ -104,10 +99,6 @@ safe_Bconout(short dev, int c)
 	if (dev == 0)
 		mfp_kgdb_putc(c);
 #endif
-#ifdef SCC_DEBUG_DIRECT
-	if (dev == 0)
-		scc_dbg_putc(c);
-#endif
 	if (intr_done)
 		ROM_Bconout(dev, c);
 	else
@@ -117,14 +108,9 @@ safe_Bconout(short dev, int c)
 static short
 safe_Bconstat(short dev)
 {
-#ifdef DEBUG_DIRECT
+#ifdef MFP_DEBUG_DIRECT
 	if (dev == 0)
-  #ifdef MFP_DEBUG_DIRECT
 		return mfp_kgdb_instat();
-  #else
-		return scc_dbg_instat();
-  #endif
-
 #else
 	if (dev == 0)
 		return 0;
@@ -166,7 +152,7 @@ safe_Kbshift(short data)
  * you've hit a key, then it's checked: if it's ctl-alt, do_func_key is
  * called to do what it says, and that's that.  If not, then you pause the
  * output.  If you now hit a ctl-alt key, it gets done and you're still
- * paused.  Only hitting a non-ctl-alt key will get you out of the pause. 
+ * paused.  Only hitting a non-ctl-alt key will get you out of the pause.
  * (And only a non-ctl-alt key got you into it, too!)
  *
  * When out_device isn't the screen, number keys give you the same effects
@@ -185,7 +171,7 @@ debug_ws(const char *s)
 	long key;
 	int scan;
 	int stopped;
-	
+
 # ifdef ARANYM
 	if (nf_debug(s))
 		return;
@@ -194,7 +180,7 @@ debug_ws(const char *s)
 	while (*s)
 	{
 		safe_Bconout(out_device, *s);
-		
+
 		while (*s == '\n' && safe_Bconstat(out_device))
 		{
 			stopped = 0;
@@ -208,7 +194,7 @@ debug_ws(const char *s)
 						key = safe_Bconin(out_device);
 						scan = (int)(((key >> 16) & 0xff));
 						do_func_key(scan);
-						
+
 						goto ptoggle;
 					}
 					else
@@ -264,21 +250,21 @@ _ALERT(char *s)
 	 */
 	int olddebug = debug_level;
 	int oldlogging = debug_logging;
-	
+
 	debug_level = 0;
 	debug_logging = 0;
-	
+
 	ret = FP_ALLOC(rootproc, &fp);
 	if (!ret)
 		ret = do_open(&fp, "u:\\pipe\\alert", (O_WRONLY | O_NDELAY), 0, NULL);
-	
+
 	debug_level = olddebug;
 	debug_logging = oldlogging;
-	
+
 	if (!ret)
-	{		
+	{
 		char *alert;
-		
+
 		/* format the string into an alert box
 		 */
 		if (*s == '[')
@@ -293,16 +279,16 @@ _ALERT(char *s)
 			char *lastspace;
 			int counter;
 			long absize;
-			
+
 			absize = strlen(s) + 128;
 			alertbuf = kmalloc(absize);
-			
+
 			if (!alertbuf)
 				goto exit;
 
 			alert = alertbuf;
 			ksprintf(alertbuf, absize, "[1][%s", s);
-			
+
 			/* make sure no lines exceed 30 characters;
 			 * also, filter out any reserved characters
 			 * like '[' or ']'
@@ -310,7 +296,7 @@ _ALERT(char *s)
 			ptr = alertbuf + 4;
 			counter = 0;
 			lastspace = 0;
-			
+
 			while (*ptr)
 			{
 				if (*ptr == ' ')
@@ -329,7 +315,7 @@ _ALERT(char *s)
 				{
 					*ptr = ':';
 				}
-				
+
 				if (counter++ >= 29)
 				{
 					if (lastspace)
@@ -344,23 +330,23 @@ _ALERT(char *s)
 						counter = 0;
 					}
 				}
-				
+
 				ptr++;
 			}
 
 			strcpy(ptr, "][  OK  ]");
 		}
-		
+
 		(*fp->dev->write)(fp, alert, strlen(alert) + 1);
 
 exit:
 		do_close(rootproc, fp);
 		if (alertbuf)
 			kfree(alertbuf);
-		
+
 		return 1;
 	}
-	
+
 	return 0;
 }
 
@@ -371,30 +357,30 @@ VDEBUGOUT(const char *s, va_list args, int alert_flag)
 	char *lptemp;
 	long len;
 	struct proc *p = get_curproc();
-	
+
 // 	if (p && (strnicmp("worldclk", p->name, 8)))
 // 		   return;
 
 	logtime[logptr] = (ushort)(*(long *) 0x4baL);
 	lptemp = lp = logbuf[logptr];
 	len = LB_LINE_LEN;
-	
+
 	if (++logptr == LBSIZE)
 		logptr = 0;
-	
+
 	if (p)
 	{
 		ksprintf(lp, len, "pid %3d (%s): ", get_curproc()->pid, get_curproc()->name);
 		lptemp += strlen(lp);
 		len -= strlen(lp);
 	}
-	
+
 	kvsprintf(lptemp, len, s, args);
-	
+
 	/* for alerts, try the alert pipe unconditionally */
 	if (alert_flag && _ALERT(lp))
 		return;
-	
+
 	debug_ws(lp);
 	debug_ws("\r\n");
 }
@@ -411,7 +397,7 @@ Tracelow(const char *s, ...)
 	)
 	{
 		va_list args;
-		
+
 		va_start(args, s);
 		VDEBUGOUT(s, args, 0);
 		va_end(args);
@@ -430,7 +416,7 @@ Trace(const char *s, ...)
 	)
 	{
 		va_list args;
-		
+
 		va_start(args, s);
 		VDEBUGOUT(s, args, 0);
 		va_end(args);
@@ -442,7 +428,7 @@ display(const char *s, ...)
 {
 	{
 		va_list args;
-		
+
 		va_start(args, s);
 		VDEBUGOUT(s, args, 0);
 		va_end(args);
@@ -461,15 +447,15 @@ Debug(const char *s, ...)
 	)
 	{
 		va_list args;
-		
+
 		va_start(args, s);
 		VDEBUGOUT(s, args, 0);
 		va_end(args);
 	}
-	
+
 	if (debug_logging
 	    && ((debug_level >= DEBUG_LEVEL)
-	        || (get_curproc() && (get_curproc()->debug_level >= DEBUG_LEVEL)))) 
+	        || (get_curproc() && (get_curproc()->debug_level >= DEBUG_LEVEL))))
 	{
 		DUMPLOG();
 	}
@@ -481,12 +467,12 @@ ALERT(const char *s, ...)
 	if (debug_logging || debug_level >= ALERT_LEVEL)
 	{
 		va_list args;
-		
+
 		va_start(args, s);
 		VDEBUGOUT(s, args, 1);
 		va_end(args);
 	}
-	
+
 	if (debug_logging && (debug_level >= ALERT_LEVEL))
 		DUMPLOG();
 }
@@ -497,12 +483,12 @@ FORCE(const char *s, ...)
 	if (debug_level >= FORCE_LEVEL)
 	{
 		va_list args;
-		
+
 		va_start(args, s);
 		VDEBUGOUT(s, args, 0);
 		va_end(args);
 	}
-	
+
 	/* don't dump log here - hardly ever what you mean to do. */
 }
 
@@ -513,12 +499,12 @@ DUMPLOG(void)
 	char *start;
 	ushort *timeptr;
 	char timebuf[6];
-	
+
 	/* logbuf [logptr] is the oldest string here */
-	
+
 	end = start = logbuf[logptr];
 	timeptr = &logtime[logptr];
-	
+
 	do
 	{
 		if (*start)
@@ -529,18 +515,18 @@ DUMPLOG(void)
 			debug_ws("\r\n");
 			*start = '\0';
 		}
-		
+
 		start += LB_LINE_LEN;
 		timeptr++;
-		
+
 		if (start == logbuf[LBSIZE])
-		{	
+		{
 			start = logbuf[0];
 			timeptr = &logtime[0];
 		}
         }
         while (start != end);
-	
+
         logptr = 0;
 }
 
@@ -548,14 +534,14 @@ EXITING _cdecl
 FATAL(const char *s, ...)
 {
 	va_list args;
-	
+
 	va_start(args, s);
 	VDEBUGOUT(s, args, 0);
 	va_end(args);
-	
+
 	if (debug_logging)
 		DUMPLOG();
-	
+
 	HALT();
 }
 
@@ -571,7 +557,7 @@ do_func_key(int scan)
 			debug_level++;
 			break;
 		}
-		
+
 		/* F2: reduce debugging level */
 		case 0x3c:
 		{
@@ -579,45 +565,45 @@ do_func_key(int scan)
 				--debug_level;
 			break;
 		}
-		
+
 		/* F3: cycle out_device */
 		case 0x3d:
 		{
 			out_device = out_next[out_device];
 			break;
 		}
-		
+
 		/* F4: set out_device to console */
 		case 0x3e:
 		{
 			out_device = 2;
 			break;
 		}
-		
+
 		/* shift+F4: enable/disable very depth fatfs/bio debugging (placed in /ram) */
 		case 0x57:
 		{
 			static long mode = DISABLE;
-			
+
 			if (mode == ENABLE)
 				mode = DISABLE;
 			else
 				mode = ENABLE;
-			
+
 			fatfs_config(0, FATFS_DEBUG, mode);
 			fatfs_config(0, FATFS_DEBUG_T, mode);
-			
+
 			bio.config(0, BIO_DEBUG_T, mode);
 			break;
 		}
-		
+
 		/* F5: dump memory */
 		case 0x3f:
 		{
 			DUMP_ALL_MEM();
 			break;
 		}
-		
+
 		/* shift+F5: dump kernel allocated memory (placed in /ram) */
 		case 0x58:
 		{
@@ -625,7 +611,7 @@ do_func_key(int scan)
 			km_config(KM_TRACE_DUMP, 0);
 			break;
 		}
-		
+
 		/* F6: dump processes */
 		case 0x40:
 		{
@@ -642,7 +628,7 @@ do_func_key(int scan)
 			write_profiling();
 			break;
 		}
-		
+
 		/* shift+F7: toogle profiling */
 		case 0x5A:
 		{
@@ -650,7 +636,7 @@ do_func_key(int scan)
 			break;
 		}
 # endif
-		
+
 		/* F7: toggle debug_logging */
 		case 0x41:
 		{
@@ -685,14 +671,14 @@ do_func_key(int scan)
 			QUICKDUMP();
 			break;
 		}
-		
+
 		/* shift-F9: dump the mmu tree */
 		case 0x5c:
 		{
 			BIG_MEM_DUMP(1, get_curproc());
 			break;
 		}
-		
+
 		/* F10: do an annotated dump of memory */
 		case 0x44:
 		{
