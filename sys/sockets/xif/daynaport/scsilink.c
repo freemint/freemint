@@ -65,7 +65,7 @@
  *
  *	version 0.50	march/2007 (roger burrows, anodyne software)
  *		rework trace to allow it to be started dynamically (via SLINKCTL)
- *		set maxpackets to zero 
+ *		set maxpackets to zero
  *
  *
  *	future: consider removing option -y and adding __saveds to:
@@ -185,7 +185,7 @@ int i, bus, id;
 
 	ksprintf(message,"%s v%d.%02d initialising ...\r\n",DRIVER_DESC,MAJOR_VERSION,MINOR_VERSION);
 	c_conws(message);
-	
+
 	/*
 	 *	validate system
 	 */
@@ -194,7 +194,7 @@ int i, bus, id;
 		c_conws(message);
 		return 1L;
 	}
-	
+
 	if (scsilink_modetest(FALSE) < 0L) {
 		ksprintf(message,"%s: can't disable mode testing\r\n",DRIVER);
 		c_conws(message);
@@ -224,7 +224,7 @@ int i, bus, id;
 			ksprintf(message,"%s: insufficient memory for device %d\r\n",DRIVER,i);
 			c_conws(message);
 			break;
-		} 
+		}
 
 		memset(nif,0,sizeof(struct netif));			/* must do this! */
 		memset(dev,0,sizeof(struct sl_device));
@@ -234,9 +234,9 @@ int i, bus, id;
 		nif->mtu = ETH_MAX_DLEN;
 		nif->hwtype = HWTYPE_ETH;
 		nif->hwlocal.len = ETH_ALEN;
-		memcpy(nif->hwlocal.addr,macaddr,ETH_ALEN);
+		memcpy(nif->hwlocal.adr.bytes,macaddr,ETH_ALEN);
 		nif->hwbrcst.len = ETH_ALEN;
-		memset(nif->hwbrcst.addr,0xff,ETH_ALEN);
+		memset(nif->hwbrcst.adr.bytes,0xff,ETH_ALEN);
 		nif->snd.maxqlen = IF_MAXQ;
 		nif->rcv.maxqlen = IF_MAXQ;
 
@@ -252,7 +252,7 @@ int i, bus, id;
 		 * receive in fast succession.
 		 */
 		nif->maxpackets = 0;
-			
+
 		niftab[n++] = nif;
 		dev->devnum = i;
 	}
@@ -280,8 +280,8 @@ int i, bus, id;
 
 		ksprintf(message,"%s v%d.%02d (%s%d) (%02x:%02x:%02x:%02x:%02x:%02x) on bus/id %d/%d\r\n",
 				DRIVER_DESC,MAJOR_VERSION,MINOR_VERSION,ETHERNET_NAME,nif->unit,
-				nif->hwlocal.addr[0],nif->hwlocal.addr[1],nif->hwlocal.addr[2],
-				nif->hwlocal.addr[3],nif->hwlocal.addr[4],nif->hwlocal.addr[5],bus,id);
+				nif->hwlocal.adr.bytes[0],nif->hwlocal.adr.bytes[1],nif->hwlocal.adr.bytes[2],
+				nif->hwlocal.adr.bytes[3],nif->hwlocal.adr.bytes[4],nif->hwlocal.adr.bytes[5],bus,id);
 		c_conws(message);
 	}
 
@@ -491,7 +491,7 @@ unsigned long option;
 
 		if (option == SL_STATS_LENGTH)			/*** return length of statistics data ***/
 			return sizeof(SCSILINK_STATS) + dev->trace_entries*sizeof(struct trace_entry);
-			
+
 		if (option == SL_CLEAR_COUNTS) {		/*** clear counts ***/
 			/*
 			 *	FIXME: here we should reset the hardware statistics, when we figure out how
@@ -660,7 +660,7 @@ BUF *b;
 	 */
 	if (nif->bpf)
 		bpf_input(nif,b);
-	
+
 	if (if_input(nif,b,0,eth_remove_hdr(b))) {
 		nif->in_errors++;
 		return 0;

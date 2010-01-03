@@ -121,7 +121,6 @@ ifeq ($(kernel),my2)
 MINT = mint040.prg
 CPU  = 020-60
 KERNELDEFS = -DDEBUG_INFO -DM68040
-KERNELDEFS += -DSCC_DEBUG_DIRECT
 #KERNELDEFS += -DPROFILING
 #kernel_cflags = -pg
 #kernel_nocflags = -fomit-frame-pointer

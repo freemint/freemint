@@ -6,3 +6,8 @@ lib*.a
 *.prg
 ovdi
 .project
+.directory
+.cproject
+sys.mak
+xaaes040.mak
+.settings
