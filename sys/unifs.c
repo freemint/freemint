@@ -265,8 +265,6 @@ do_ulookup (fcookie *dir, const char *nam, fcookie *fc, UNIFILE **up)
 	    (nameptr.s[0] == ___DOTDOT && nameptr.c[2] == '\0'))
 # else
 	if (!*nameptr.c ||
-	    
-	if (!*nameptr.c ||
 	     (nameptr.c[0] == '.' && nameptr.c[1]) ||
 	     (nameptr.c[0] == '.' && nameptr.c[1] == '.' && nameptr.c[2] == '\0'))
 # endif
