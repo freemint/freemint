@@ -23,7 +23,7 @@
  * along with XaAES; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
- 
+
 #include RSCHNAME
 
 #include "xa_types.h"
@@ -68,8 +68,6 @@ static char *about_lines[] =
 	NULL
 };
 
-// static struct xa_window *about_window = NULL;
-
 static int
 about_destructor(enum locks lock, struct xa_window *wind)
 {
@@ -87,8 +85,6 @@ about_form_exit(struct xa_client *client,
 {
 	enum locks lock = 0;
 	OBJECT *obtree = wt->tree;
-	
-// 	wt->current = fr->obj|fr->dblmask;
 
 	switch (aesobj_item(&fr->obj))
 	{
@@ -97,7 +93,6 @@ about_form_exit(struct xa_client *client,
 			object_deselect(obtree + ABOUT_OK);
 			redraw_toolbar(lock, wind, ABOUT_OK);
 			close_window(lock, wind);
-// 			delayed_delete_window(lock, wind);
 			break;
 		}
 		case ABOUT_LIST:
@@ -126,7 +121,7 @@ open_about(enum locks lock, struct xa_client *client, bool open)
 	htd = get_helpthread_data(client);
 	if (!htd)
 		return;
-	
+
 	if (!htd->w_about)
 	{
 		RECT remember = { 0, 0, 0, 0 };
@@ -137,13 +132,13 @@ open_about(enum locks lock, struct xa_client *client, bool open)
 		wt = new_widget_tree(client, obtree);
 		if (!wt) goto fail;
 		wt->flags |= WTF_TREE_ALLOC | WTF_AUTOFREE;
-		
+
 		set_slist_object(0, wt, NULL, ABOUT_LIST, 0,
 				 NULL, NULL, NULL, NULL, NULL, NULL,
 				 NULL, NULL, NULL, NULL,
 				 NULL, NULL, NULL, 255);
 		obj_init_focus(wt, OB_IF_RESET);
-		
+
 		obj_rectangle(wt, aesobj(obtree, 0), &or);
 
 		/* Work out sizing */
@@ -165,7 +160,7 @@ open_about(enum locks lock, struct xa_client *client, bool open)
 					created_for_AES,
 					client->options.thinframe,client->options.thinwork,
 					remember, 0, NULL);
-		
+
 		if (!wind) goto fail;
 
 		/* Set the window title */
@@ -200,14 +195,14 @@ open_about(enum locks lock, struct xa_client *client, bool open)
 				t++;
 			}
 		}
-		
+
 		list->slider(list, false);
 
 		/* Set the window destructor */
 		wind->destructor = about_destructor;
 		htd->w_about = wind;
 		if (open)
-			open_window(lock, wind, wind->r); //remember);
+			open_window(lock, wind, wind->r);
 	}
 	else
 	{
