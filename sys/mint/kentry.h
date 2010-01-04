@@ -39,7 +39,6 @@
 
 # include "kcompiler.h"
 # include "ktypes.h"
-# include "mint/module.h"
 
 /* forward declarations */
 struct basepage;
@@ -102,8 +101,8 @@ struct timeval;
  * major and minor are of type unsigned char. I hope 255 major and minor
  * versions are enough :-)
  */
-#define KENTRY_MAJ_VERSION	1
-#define KENTRY_MIN_VERSION	0
+#define KENTRY_MAJ_VERSION	0
+#define KENTRY_MIN_VERSION	16
 
 
 /* hardware dependant vector
@@ -128,8 +127,6 @@ struct kentry_mch
 
 	/* nf operation vector if available on this machine; NULL otherwise */
 	struct nf_ops *nf_ops;
-
-	long reserved[128 - 7];
 };
 #define DEFAULTS_kentry_mch \
 { \
@@ -277,8 +274,6 @@ struct kentry_proc
 	/* internal setuid/setgid */
 	long _cdecl (*proc_setuid)(struct proc *p, unsigned short uid);
 	long _cdecl (*proc_setgid)(struct proc *p, unsigned short gid);
-
-	long reserved[128 - 22];
 };
 #define DEFAULTS_kentry_proc \
 { \
@@ -348,8 +343,6 @@ struct kentry_mem
 	struct memregion *_cdecl (*addr2mem)(struct proc *p, long addr);
 	long  _cdecl (*attach_region)(struct proc *proc, struct memregion *reg);
 	void  _cdecl (*detach_region)(struct proc *proc, struct memregion *reg);
-
-	long reserved[128 - 9];
 };
 #define DEFAULTS_kentry_mem \
 { \
@@ -423,8 +416,6 @@ struct kentry_fs
 	long _cdecl (*path2cookie)(struct proc *p, const char *path, char *lastname, fcookie *res);
 	long _cdecl (*relpath2cookie)(struct proc *p, fcookie *relto, const char *path, char *lastname, fcookie *res, int depth);
 	void _cdecl (*release_cookie)(fcookie *fc);
-
-	long reserved[128 - 17];
 };
 #define DEFAULTS_kentry_fs \
 { \
@@ -468,8 +459,6 @@ struct kentry_sockets
 	long _cdecl (*so_create)(struct socket **, short, short, short);
 	long _cdecl (*so_dup)(struct socket **, struct socket *);
 	void _cdecl (*so_free)(struct socket *);
-
-	long reserved[128 - 9];
 };
 #define DEFAULTS_kentry_sockets \
 { \
@@ -487,9 +476,28 @@ struct kentry_sockets
 
 /* module related
  */
+#define MOD_LOADED	1
+
+#define MODCLASS_XIF	1
+#define MODCLASS_XDD	2
+#define MODCLASS_XFS	3
+#define MODCLASS_KM	4
+#define MODCLASS_KMDEF	5
 
 struct kentry_module
 {
+	/* Load modules with filename extension specified with 'ext' argument
+	 * from path.
+	 *
+	 * 'path' can be NULL, in this case <sysdir> is used to search for the
+	 * modules.
+	 *
+	 * 'ext' need to include the '.' that begin the filename extension.
+	 */
+	void _cdecl (*load_modules)(const char *path,
+				    const char *ext,
+				    long _cdecl (*loader)(struct basepage *, const char *, short *, short *));
+
 	/* register VDI or AES trap handler
 	 * 
 	 * mode = 0 -> install
@@ -502,45 +510,11 @@ struct kentry_module
 	 * or error number for a failure 
 	 */
 	long _cdecl (*register_trap2)(long _cdecl (*dispatch)(void *), int mode, int flag, long extra);
-
-	/* Load modules with filename extension specified with 'ext' argument
-	 * from path.
-	 *
-	 * 'path' can be NULL, in this case <sysdir> is used to search for the
-	 * modules.
-	 *
-	 * 'ext' need to include the '.' that begin the filename extension.
-	 */
-	void _cdecl (*load_modules)(const char *path,
-				    const char *ext,
-				    long _cdecl (*loader)(struct basepage *, const char *, short *));
-	void _cdecl (*load_kmodules)(struct kernel_module *parent,
-		      		     const char *path,
-		      		     const char *ext,
-				     void *arg,
-	   			     long _cdecl (*loader)(struct kernel_module *km, const char *));
-
-	long _cdecl (*unload_kmodule)(struct kernel_module *km);
-	long _cdecl (*unload_kmodules)(struct kernel_module *parent);
-
-	struct kernel_module * _cdecl (*find_km_bydevicename)(char *name);
-
-	long _cdecl (*detach_km_devices)	(struct kernel_module *km, bool free);
-	void _cdecl (*detach_child_devices)	(struct kernel_module *parent);
-
-
-	long reserved[128 - 8];
 };
 #define DEFAULTS_kentry_module \
 { \
-	register_trap2, \
 	load_modules, \
-	load_kmodules, \
-	unload_kmodule, \
-	unload_kmodules, \
-	find_km_bydevicename, \
-	detach_km_devices, \
-	detach_child_devices, \
+	register_trap2, \
 }
 
 
@@ -551,7 +525,6 @@ struct kentry_cnf
 	void _cdecl (*parse_cnf)(const char *path, struct parser_item *, void *);
 	void _cdecl (*parse_include)(const char *path, struct parsinf *, struct parser_item *);
 	void _cdecl (*parser_msg)(struct parsinf *, const char *msg);
-	long reserved[16 - 3];
 };
 #define DEFAULTS_kentry_cnf \
 { \
@@ -584,8 +557,6 @@ struct kentry_misc
 	long _cdecl (*trap_1_emu)(short fnum, ...);
 	long _cdecl (*trap_13_emu)(short fnum, ...);
 	long _cdecl (*trap_14_emu)(short fnum, ...);
-
-	long reserved[128 - 8];
 };
 #define DEFAULTS_kentry_misc \
 { \
@@ -621,10 +592,6 @@ struct kentry_debug
 	void	_cdecl (*debug)(const char *, ...);
 	void	_cdecl (*alert)(const char *, ...);
 	EXITING	_cdecl (*fatal)(const char *, ...) NORETURN;
-	void	_cdecl (*force)(const char *, ...);
-	void	_cdecl (*display)(const char *, ...);
-
-	long reserved[16 - 7];
 };
 extern int debug_level;
 #define DEFAULTS_kentry_debug \
@@ -634,8 +601,6 @@ extern int debug_level;
 	Debug, \
 	ALERT, \
 	FATAL, \
-	FORCE, \
-	display, \
 }
 
 
@@ -738,8 +703,6 @@ struct kentry_libkern
 
 	void	_cdecl (*bcopy)(const void *src, void *dst, unsigned long nbytes);
 	void	_cdecl (*bzero)(void *dst, unsigned long size);
-
-	long reserved[128 - 40];
 };
 #define DEFAULTS_kentry_libkern \
 { \
@@ -833,8 +796,6 @@ struct kentry_xfs
 	long _cdecl (*mknod)(FILESYS *fs, fcookie *dir, const char *name, ulong mode);
 	long _cdecl (*unmount)(FILESYS *fs, int drv);
 	long _cdecl (*stat64)(FILESYS *fs, fcookie *fc, STAT *stat);
-
-	long reserved[128 - 33];
 };
 
 #define DEFAULTS_kentry_xfs	\
@@ -893,8 +854,6 @@ struct kentry_xdd
 	long _cdecl (*ioctl)(FILEPTR *f, int mode, void *buf);
 	long _cdecl (*datime)(FILEPTR *f, ushort *timeptr, int rwflag);
 	long _cdecl (*close)(FILEPTR *f, int pid);
-
-	long reserved[16 - 7];
 };
 #define DEFAULTS_kentry_xdd	\
 { \

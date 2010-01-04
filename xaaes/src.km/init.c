@@ -178,23 +178,6 @@ sysfile_exists(const char *sd, char *fn)
 	return flag;
 }
 
-static void
-make_module_path ( char *result )
-{
-	char c;
-	int plen = strlen ( C.Aes->home_path );
-	strcpy ( result, C.Aes->home_path );
-	BLOG((false, "Create module path by combining (%d) '%s(%s)' and '%s'", plen, C.Aes->home_path, result, "xam"));
-	c = result[plen - 1];
-	if ( ! ( c == '/' || c == '\\' ) )
-	{
-		result[plen++] = '\\';
-		result[plen] = '\0';
-	}
-	strcat ( result, "xam" );
-	BLOG((false, "Created module path '%s'", C.Aes->module_path));
-}
-
 /*
  *  0 = USA          8 = Ger.Suisse    16 = Hungary    24 = Romania
  *  1 = Germany      9 = Turkey        17 = Poland     25 = Bulgaria
@@ -316,11 +299,10 @@ fail:		if (buf) kfree(buf);
  * - start main kernel thread
  */
 static Path start_path;
-
-struct kernel_module *self = NULL;
+static const struct kernel_module *self = NULL;
 
 long
-init(struct kentry *k, struct kernel_module *km)
+init(struct kentry *k, const struct kernel_module *km) //const char *path)
 {
 	long err = 0L;
 
@@ -336,14 +318,14 @@ init(struct kentry *k, struct kernel_module *km)
 	C.bootlog_path[0] = '\0';
 	get_drive_and_path(start_path, sizeof(start_path));
 
-	setup_xa_api();
+	setup_xa_module_api();
 again:
 	/* zero anything out */
 	bzero(&default_options, sizeof(default_options));
 	bzero(&cfg, sizeof(cfg));
 	bzero(&S, sizeof(S));
 	bzero(&C, sizeof(C));
-	
+
 	strcpy(C.start_path, start_path);
 #if BOOTLOG
 	if (!C.bootlog_path[0])
@@ -397,18 +379,17 @@ again:
 			err = EINVAL;
 			goto error;
 		}
-		
+
 		/* look is there is an moose.adi
 		 * terminate if yes; moose.adi must be in XaAES module directory
 		 */
 		flag = sysfile_exists(sysdir, "moose_w.adi");
-		if (!flag) flag = sysfile_exists(sysdir, "moose.adi");
-		if (!flag) flag = sysfile_exists(sysdir, "moose.adm");
-		if (!flag) flag = sysfile_exists(sysdir, "moose_w.adm");
+		if (!flag)
+			flag = sysfile_exists(sysdir, "moose.adi");
 		
 		if (flag)
 		{
-			BLOG((true, "ERROR: There exist an moose.adi or moose.adm in your FreeMiNT sysdir."));
+			BLOG((true, "ERROR: There exist an moose.adi in your FreeMiNT sysdir."));
 			BLOG((true, " sysdir = '%s'", sysdir));
 			BLOG((true, "       Please remove it and install it in the XaAES module directory"));
 			BLOG((true, "       before starting the XaAES kernel module!"));
@@ -422,7 +403,7 @@ again:
 #if GENERATE_DIAGS
 	bzero(&D, sizeof(D));
 	D.debug_level = 4;
-#if 1 /*LOGDEBUG*/
+#if 0 /*LOGDEBUG*/
 	/* Set the default debug file */
 	strcpy(D.debug_path, "xaaes.log");
 	D.debug_file = kernel_open(D.debug_path, O_WRONLY|O_CREAT|O_TRUNC, NULL, NULL);
@@ -525,34 +506,51 @@ again:
 	strcpy(C.Aes->name, Aes_display_name);
 	strcpy(C.Aes->proc_name,"AESSYS  ");
 
-	strcpy(C.Aes->home_path, self->fpath);
-	make_module_path(C.Aes->module_path);
-	BLOG((false, "module path: '%s'", C.Aes->module_path));
-	
+	/* Where were we started? */
+	strcpy(C.Aes->home_path, self->path);
+// 	strcat(C.Aes->home_path, "/");
+#if 0
+	/* strip off last element */
+	{
+		char *s = C.Aes->home_path, *name = NULL;
+		char c;
+
+		do {
+			c = *s++;
+			if (c == '\\' || c == '/')
+				name = s;
+		}
+		while (c);
+
+		if (name)
+			*name = '\0';
+	}
+#endif
+	BLOG((false, "module path: '%s'", C.Aes->home_path));
 
 	C.Aes->xdrive = d_getdrv();
 	d_getpath(C.Aes->xpath, 0);
 
-	/* 
-	 * check if there exist a moose.adi
-	 * We dont start without it.
-	 */
+	/* check if there exist a moose.adi */
 	if (first)
 	{
 		bool flag;
 
-		flag = sysfile_exists(C.Aes->module_path, "moose_w.adm");
-		if (!flag) flag = sysfile_exists(C.Aes->module_path, "moose.adm");
+		flag = sysfile_exists(C.Aes->home_path, "moose_w.adi");
+		if (!flag)
+			flag = sysfile_exists(C.Aes->home_path, "moose.adi");
 		
 		if (!flag)
-		{	
-			BLOG((/*00000008*/true, "ERROR: There exist no moose.adm in your XaAES module directory."));
-			BLOG((true, " -> '%s'", C.Aes->module_path));
+		{
+			
+			BLOG((/*00000008*/true, "ERROR: There exist no moose.adi in your XaAES module directory."));
+			BLOG((true, " -> '%s'", C.Aes->home_path));
 			BLOG((/*00000009*/true, "       Please install it before starting the XaAES kernel module!"));
 			err = EINVAL;
 			goto error;
 		}
 	}
+
 
 	/* clear my_global_aes[0] for old gemlib */
 	my_global_aes[0] = 0;
@@ -566,6 +564,7 @@ again:
 	BLOG((false, "bootmessage ok!"));
 
 	/* Setup the kernel OS call jump table */
+	
 	setup_handler_table();
 	
 	BLOG((false, "setup_handler_table ok!"));
@@ -682,7 +681,7 @@ again:
 	detach_extension((void *)-1L, XAAES_MAGIC_SH);
 
 	/* succeeded */
-	return E_OK;
+	return 0;
 
 error:
 #if GENERATE_DIAGS

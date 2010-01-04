@@ -93,7 +93,7 @@ short	wind_mshape(struct xa_window *wind, short x, short y);
  * inline some very simple functions
  */
 
-static inline XA_WIDGET *get_widget(struct xa_window *wind, int n) { return &wind->widgets[n]; }
+static inline XA_WIDGET *get_widget(struct xa_window *wind, int n) { return &(wind->widgets[n]); }
 static inline int bound_sl(int p) { return ((p < 0) ? 0 : ((p > SL_RANGE) ? SL_RANGE : p)); }
 
 static inline bool

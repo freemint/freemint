@@ -49,6 +49,7 @@ adi_register(struct adif *a)
  * shutting down. This should be done automatically when
  * unloading the module
  */
+
 long
 adi_unregister(struct adif *a)
 {
@@ -59,8 +60,6 @@ adi_unregister(struct adif *a)
 		if (a == *list)
 		{
 			*list = a->next;
-			if (a == G.adi_mouse)
-				G.adi_mouse = NULL;
 			return E_OK;
 		}
 		list = &((*list)->next);
@@ -73,7 +72,7 @@ adi_open(struct adif *a)
 {
 	long error;
 
-	error = (*a->open)();
+	error = (*a->open)(a);
 	if (error)
 	{
 		DIAGS(("adi_open: Cannot open aes device interface %s%d", a->name, a->unit));
@@ -88,7 +87,7 @@ adi_close(struct adif *a)
 {
 	long error;
 
-	error = (*a->close)();
+	error = (*a->close)(a);
 	if (error)
 	{
 		DIAGS(("adi_close: Cannot close AES device interface %s%d", a->name, a->unit));
@@ -106,14 +105,14 @@ adi_getfreeunit (char *name)
 {
 	struct adif *adip;
 	short max = -1;
-
+	
 	for (adip = alladifs; adip; adip = adip->next)
 	{
 		if (!strncmp (adip->name, name, ADI_NAMSIZ) && adip->unit > max)
 			max = adip->unit;
 	}
-
-	return max + 1;
+	
+	return max+1;
 }
 
 struct adif *
@@ -123,7 +122,7 @@ adi_name2adi (char *aname)
 	short i;
 	long unit = 0;
 	struct adif *a;
-
+	
 	for (i = 0, cp = aname; i < ADI_NAMSIZ && *cp; ++cp, ++i)
 	{
 		if (*cp >= '0' && *cp <= '9')
@@ -133,18 +132,19 @@ adi_name2adi (char *aname)
 		}
 		name[i] = *cp;
 	}
-
+	
 	name[i] = '\0';
-	for (a = alladifs; a; a = a->next) {
+	for (a = alladifs; a; a = a->next)
+	{
 		if (!stricmp (a->name, name) && a->unit == unit)
 			return a;
 	}
-
+	
 	return NULL;
 }
 
 long
 adi_ioctl(struct adif *a, short cmd, long arg)
 {
-	return (*a->ioctl)(cmd, arg);
+	return (*a->ioctl)(a, cmd, arg);
 }

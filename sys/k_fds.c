@@ -515,8 +515,8 @@ do_open (FILEPTR **f, const char *name, int rwmode, int attr, XATTR *x)
 			short s = tty->state & (TS_BLIND|TS_HOLD|TS_HPCL);
 			short u = tty->use_cnt;
 			short a = tty->aux_cnt;
-			long rsel = tty->rsel;
-			long wsel = tty->wsel;
+			long r = tty->rsel;
+			long w = tty->wsel;
 			*tty = default_tty;
 
 			if (!creating)
@@ -525,8 +525,8 @@ do_open (FILEPTR **f, const char *name, int rwmode, int attr, XATTR *x)
 			if ((tty->use_cnt = u) > 1 || !creating)
 			{
 				tty->aux_cnt = a;
-				tty->rsel = rsel;
-				tty->wsel = wsel;
+				tty->rsel = r;
+				tty->wsel = w;
 			}
 
 			if (!((*f)->flags & O_HEAD))

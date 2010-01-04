@@ -36,24 +36,10 @@
 
 #define ADIC_MOUSE	0
 
-struct adif;
-struct adiinfo
-{
-	char		name[16];
-	short		(*getfreeunit)		(char *);
-	long		(*adi_register)		(struct adif *);
-	long		(*adi_unregister)	(struct adif *);
-
-	void _cdecl	(*move)		(short x, short y);
-	void _cdecl	(*button)	(struct moose_data *);
-	void _cdecl	(*wheel)	(struct moose_data *);
-};
-
 struct adif
 {
-	struct adif		*next;
-	struct kernel_module	*km;
-	long			class;
+	struct adif	*next;
+	long		class;
 
 	char		*lname;
 	char		name[ADI_NAMSIZ];
@@ -61,12 +47,26 @@ struct adif
 
 	unsigned short	flags;
 
-	long	(*open)		(void);
-	long	(*close)	(void);
-	long	(*ioctl)	(short, long);
-	long	(*timeout)	(void);
+	long		(*open)		(struct adif *);
+	long		(*close)	(struct adif *);
+	long		resrvd1;	/* (*output) */
+	long		(*ioctl)	(struct adif *, short, long);
+	long		(*timeout)	(struct adif *);
 
-	long		reserved[15];
+	long		reserved[16];
+};
+
+struct adiinfo
+{
+	short		(*getfreeunit)		(char *);
+	long		(*adi_register)		(struct adif *);
+	long		(*adi_unregister)	(struct adif *);
+
+	void		(*move)		(struct adif *, short x, short y);
+	void		(*button)	(struct adif *, struct moose_data *);
+	void		(*wheel)	(struct adif *, struct moose_data *);
+
+	const char	*fname;
 };
 
 #endif /* _adidefs_h */

@@ -186,7 +186,7 @@ skip:	move.w	(0x0442).w,d0
 // keyboard autorepeat
 
 //#ifndef NO_AKP_KEYBOARD
-// Odd Skancke: Now keyboard delay/repeat is done via roottimeouts - see keyboard.c
+// Ozk: Now keyboard delay/repeat is done via roottimeouts - see keyboard.c
 //	jsr	_autorepeat_timer	// in keyboard.c
 //#endif
 
@@ -475,24 +475,13 @@ _new_bus:
 	movem.l	d0-a6,-(sp)		// check_bus() relies on this!
 	jsr	_check_bus
 	tst.l	d0
-	beq.s	Prep_for_sig
-	cmp.l	#0xffffffff,d0
-	bne.s	Do_usrbus
 	movem.l	(sp)+,d0-a6
-#ifdef M68000
-	nop
+#ifndef M68000
+	bne.s	Return_now
+#else
+	bne	Return_now
 #endif
-	rte
-
-Do_usrbus:
-	move.l	d0,-4(sp)
-	movem.l	(sp)+,d0-a6
-	move.l	-(8+8*4)(sp),-(sp)
-	rts
 #endif
-
-Prep_for_sig:
-	movem.l	(sp)+,d0-a6
 #ifdef M68000
 	move.w	#0x8,_sig_exc
 	cmp.l	#30,_mcpu
@@ -621,19 +610,6 @@ NOMMU1:
 _old_addr:
 	dc.l	0
 _new_addr:
-	move.l	a0,-(sp)
-	move.l	d0,-(sp)
-	move.l	_curproc,a0
-	move.l	P_VECTS_ADR(a0),d0
-	beq.s	No_usradr
-	move.l	d0,-4(sp)
-	move.l	(sp)+,d0
-	move.l	(sp),a0
-	move.l	-8(sp),(sp)
-	rts
-No_usradr:
-	move.l	(sp)+,d0
-	move.l	(sp)+,a0
 #ifdef M68000
 	move.w	#0xc,_sig_exc
 #endif
@@ -647,19 +623,6 @@ No_usradr:
 _old_ill:
 	dc.l	0
 _new_ill:
-	move.l	a0,-(sp)
-	move.l	d0,-(sp)
-	move.l	_curproc,a0
-	move.l	P_VECTS_ILG(a0),d0
-	beq.s	No_usrilg
-	move.l	d0,-4(sp)
-	move.l	(sp)+,d0
-	move.l	(sp),a0
-	move.l	-8(sp),(sp)
-	rts
-No_usrilg:
-	move.l	(sp)+,d0
-	move.l	(sp)+,a0
 #ifdef M68000
 	move.w	#0x10,_sig_exc
 #endif

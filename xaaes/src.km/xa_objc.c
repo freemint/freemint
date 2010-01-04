@@ -614,190 +614,104 @@ XA_objc_sysvar(enum locks lock, struct xa_client *client, AESPB *pb)
 //
 // addrout[0] - mode dependant
 
-/*
-        intin      intin[0]    index
-        intin+2    intin[1]    request
-        intin+4    intin[2]    windowhandle
-        intin+6    intin[3]    p1
-        intin+8    intin[4]    p2
-        intin+10   intin[5]    p3
-        intin+12   intin[6]    p4
-
-        addrin     addrin[0]   handle
-        addrin+4   addrin[1]   clip
-        addrin+8   addrin[2]   pin0
-        addrin+12  addrin[3]   pin1
-    
- Output:
-        intout     intout[0]   Return value (1 = OK, 0 = error)
-
-        intout+2   intout[1]  out1
-        intout+4   intout[2]  out2
-        intout+6   intout[3]  out3
-        intout+8   intout[4]  out4
-
-        addrout    addrout[0] aout0
-        addrout+4  addrout[1] aout1
-        addrout+8  addrout[2] aout2
-        addrout+12 addrout[4] aout3
-*/
 unsigned long
 XA_objc_data(enum locks lock, struct xa_client *client, AESPB *pb)
 {
-	short what = pb->intin[0] & ~0x8000;
-	short obj = pb->intin[1];
+	short what = pb->intin[1] & ~0x8000;
+	short obj = pb->intin[0];
 	short ret0 = 0, ret1 = 0;
-	bool set = pb->intin[0] & 0x8000;
+	bool set = pb->intin[1] & 0x8000;
 	OBJECT *obtree = (OBJECT *)pb->addrin[0];
-
-// 	display("XA_objc_data: obtree=%lx, obj=%d, what=%x", pb->addrin[0], pb->intin[1], pb->intin[0]);
+// 	display("XA_objc_data: obtree=%lx, obj=%d, what=%x", pb->addrin[0], pb->intin[0], pb->intin[1]);
 	if (validate_obtree(client, obtree, "XA_objc_data:"))
 	{
 		struct widget_tree *wt;
-		struct xa_window *wind;
-		struct xa_rect_list *rl;
-		RECT *clip;
+		struct xa_window *wind = NULL;
+		struct xa_rect_list *rl = NULL;
+		RECT *clip = NULL;
 		struct xa_vdi_settings *v;
 		short obt = obtree[obj].ob_type & 0xff;
-
+		
 		if (!(wt = obtree_to_wt(client, obtree)))
 			wt = new_widget_tree(client, obtree);
 		
 		assert(wt);
 		
-		if (set) {
+		if (set)
+		{
 			clip = (RECT *)pb->addrin[1];
-			wind = pb->intin[3] != -1 ? get_wind_by_handle(lock, pb->intin[3]) : NULL;
-			if (wind) {
-				rl = wind->rect_list.start;
-				v = wind->vdi_settings;
-			} else {
-				rl = NULL;
-				v = client->vdi_settings;
-			}
-		} else {
-			clip = NULL;
-			wind = NULL;
-			rl = NULL;
-			v = client->vdi_settings;
+			wind = get_wind_by_handle(lock, pb->intin[3]);
 		}
+		
+		if (wind)
+		{
+			rl = wind->rect_list.start;
+			v = wind->vdi_settings;
+		}
+		else
+			v = client->vdi_settings;
 
-		switch (what) {
-			case OBGET_OBTYPE: {
-/*
-objc_data(void *handle, short obj_idx, short request, short *type);
-objc_get_obtype(void *handle, short obj_idx, short *type);
-        control      control[0]   140        # Opcode
-        control+2    control[1]   2          # Entries in intin
-        control+4    control[2]   2          # Entries in intout
-        control+6    control[3]   1          # Entries in addrin 
-        control+8    control[4]   0          # entries in addrout 
-       
-	intin        intin[0]    request
-        intin+2      intin[1]    obj_idx
-
-        addrin      addrin[0]    handle
- Output:
-        intout       intout[0]  Return value (1 = OK, 0 = error)
-        intout+2     intout[1]  type
-
-objc_data(void *handle, short obj_idx, short request, short newtype, short *oldtype, short windowhandle, grect *clip);
-objc_set_obtype(void *handle, short obj_idx, short newtype, short *oldtype, short windowhandle, grect *clip);
-        control      control[0]   140        # Opcode
-        control+2    control[1]   5          # Entries in intin
-        control+4    control[2]   2          # Entries in intout
-        control+6    control[3]   2          # Entries in addrin 
-        control+8    control[4]   0          # entries in addrout 
-       
-	intin        intin[0]    request
-        intin+2      intin[1]    obj_idx
-        intin+4      intin[2]    flags
-	intin+6      intin[3]    windowhandle
-        intin+8      intin[4]    newtype
-
-        addrin      addrin[0]    handle
-        addrin+4    addrin[1]    clip
- Output:
-        intout      intout[0]   Return value (1 = OK, 0 = error)
-        intout+2    intout[1]   oldtype
-*/
-
+		switch (what)
+		{
+			case OBGET_OBTYPE:
+			{
+				/* objc_get_type(tree, obj_idx, what, &type); */
 // 				display(" OBGET_OBTYPE:");
 				pb->intout[1] = obtree[obj].ob_type;
-				if (set) {
+				if (set)
 					obtree[obj].ob_type = pb->intin[4];
-					if (clip || rl)
-						obj_draw(wt, v, aesobj(wt->tree, obj), -1, clip, rl, 0);
-				}
 				ret0 = 1;
 				break;
 			}
-			case OBGET_STRING: {
-/*
-objc_data(handle, obj_idx, request, flags, string, windowhandle, clip);
-objc_set_obstring(handle, obj_idx, flags, string, windowhandle, clip);
-        control    control[0]   140        # Opcode
-        control+2  control[1]   4          # Entries in intin
-        control+4  control[2]   1          # Entries in intout
-        control+6  control[3]   3          # Entries in addrin 
-        control+8  control[4]   0          # entries in addrout 
-       
-	intin      intin[0]    request
-        intin+2    intin[1]    obj_idx
-        intin+4    intin[2]    flags
-	intin+6    intin[3]    windowhandle
-
-        addrin     addrin[0]   handle
-        addrin+4   addrin[1]   clip rect ptr
-        addrin+8   addrin[2]   string
- Output:
-        intout     intout[0]  Return value (1 = OK, 0 = error)
-
-objc_data(handle, obj_idx, request, buf, buflen);
-objc_get_obstring(handle, obj_idx, buf, buflen);
-        control    control[0]   140        # Opcode
-        control+2  control[1]   3          # Entries in intin
-        control+4  control[2]   1          # Entries in intout
-        control+6  control[3]   2          # Entries in addrin 
-        control+8  control[4]   0          # entries in addrout 
-       
-	intin      intin[0]    request
-        intin+2    intin[1]    obj_idx
-	intin+4    intin[2]    buflen
-
-        addrin     addrin[0]   handle
-        addrin+4   addrin[1]   buf
- Output:
-        intout     intout[0]  Return value (1 = OK, 0 = error)
-
-*/
+			case OBGET_STRING:
+			{
+				// objc_data(tree, obj_idx, what, flags, winhand, clip, ...);
+				// objc_[s/g]et_string(tree, obj_idx, wh, blen, text, clip);
+				// intin[0] = obj_idx
+				// intin[1] = what
+				// intin[2] = flags
+				// intin[3] = winhand
+				// intin[4] = blen
+				//
+				// addrin[0] = tree
+				// addrin[1] = clip RECT ptr
+				// addrin[2] = strbuf
+				
+				// intout[0] 1 = sucess - 0 = error
+				// intout[1] = strlen when mode == get
 			/*
 			 * ozk: REMEMBER to CHANGE to object_get_string() usage!!!
 			 */
 				short blen;
 				short slen, sl;
-				char *s, *d = set ? (char *)pb->addrin[2] : (char *)pb->addrin[1];
+				char *d = (char *)pb->addrin[2];
+				char *s;
 				struct xa_aes_object object;
 				
-// 				display(" OB%s_STRING:", set ? "SET":"GET");
+// 				display(" OBGET_STRING:");
 				object = aesobj(obtree, obj);
 				
-				if (aesobj_has_tedinfo(&object)) {
+				if (object_has_tedinfo(obtree + obj))
+				{
 					TEDINFO *ted;
 					XTEDINFO *xted;
 					
-					ted = aesobj_get_tedinfo(&object, &xted);
+					ted = object_get_tedinfo(obtree + obj, &xted);
 // 					display(" -- TED = %lx, XTED = %lx", ted, xted);
 // 					display(" -- d = %lx, '%s'", d, d);
-					if (ted && d) {
-						sl = strlen(ted->te_ptext);
-						if (set) {
-							obj_edit(wt, v, ED_STRING, object, 0, 0, d, (rl || clip) ? true : false, clip,rl, NULL,NULL);
-						} else {
-							blen = pb->intin[2] - 1;
+					if (ted && d)
+					{
+						sl = strlen(ted->te_ptext) + 1;
+						if (set)
+						{
+							obj_edit(wt, v, ED_STRING, object, 0, 0, d, rl ? true : false, NULL,rl, NULL,NULL);
+						}
+						else
+						{
+							blen = pb->intin[4];
 							slen = sl;
 							s = ted->te_ptext;
-							if (blen != -2 && slen > blen)
+							if (blen != -1 && slen > blen)
 								slen = blen;
 							strncpy(d, s, slen);
 							d[slen] = '\0';
@@ -805,42 +719,49 @@ objc_get_obstring(handle, obj_idx, buf, buflen);
 						}
 						ret0 = 1;
 					}
-				} else if (aesobj_has_freestr(&object)) {
-					s = aesobj_get_freestr(&object);
+				}
+				else if (object_has_freestr(obtree + obj))
+				{
+					s = object_get_freestr(obtree + obj);
 // 					display(" -- obj has freestr at %lx(%s)", s, s);
 // 					display(" -- d = %lx(%s)", d, d);
 					if (s && d)
 					{
-						sl = strlen(s);
-						if (set) {
+						sl = strlen(s) + 1;
+						if (set)
+						{
 							strcpy(s, d);
-							if (rl || clip)
+							if (rl)
 								obj_draw(wt, v, aesobj(wt->tree, obj), -1, clip, rl, 0);
-						} else {
-							blen = pb->intin[2] - 1;
-							if (blen == -2)
+						}
+						else
+						{
+							blen = pb->intin[4];
+							if (blen == -1)
 								blen = sl;
 							strncpy(d, s, blen);
-							d[blen] = '\0';
+							d[blen - 1] = '\0';
 						}
 						ret0 = 1;
 					}
-				} else {
-					switch (obt) {
+				}
+				else
+				{
+					switch (obt)
+					{
 						case G_CICON:
-						case G_ICON: {
-							s = aesobj_get_spec(&object)->iconblk->ib_ptext;
-							sl = strlen(s);
-							if (set) {
+						case G_ICON:
+						{
+							s = object_get_spec(obtree + obj)->iconblk->ib_ptext;
+							sl = strlen(s) + 1;
+							if (set)
+							{
 								strcpy(s, d);
-								if (rl || clip)
-									obj_draw(wt, v, aesobj(wt->tree, obj), -1, clip, rl, 0);
-							} else {
-								if (pb->intin[2] == -1)
-									strcpy(d, s);
-								else
-									strncpy(d,s,pb->intin[2]);
+								if (rl)
+									obj_draw(wt, v, aesobj(wt->tree, obj), -1, NULL, rl, 0);
 							}
+							else
+								strcpy(d, s);
 							ret0 = 1;
 							break;
 						}
@@ -849,257 +770,146 @@ objc_get_obstring(handle, obj_idx, buf, buflen);
 				}
 				break;
 			}
-			case OBGET_OBSPEC: {
-/*
-objc_data(handle, obj_idx, request, flags, obspec, windowhandle, clip);
-objc_set_obspec(handle, obj_idx, obspec, windowhandle, clip);
-        control    control[0]   140        # Opcode
-        control+2  control[1]   6          # Entries in intin
-        control+4  control[2]   3          # Entries in intout
-        control+6  control[3]   2          # Entries in addrin 
-        control+8  control[4]   0          # entries in addrout 
-       
-	intin      intin[0]    request
-        intin+2    intin[1]    obj_idx
-        intin+4    intin[2]    flags
-	intin+6    intin[3]    windowhandle
-        intin+8    intin[4]    High word of new obspec
-        intin+10   intin[5]    Low  word of new obspec
-
-        addrin     addrin[0]   handle
-        addrin+4   addrin[1]   clip rect ptr
- Output:
-        intout     intout[0]   Return value (1 = OK, 0 = error)
-        intout+2   intout[1]   High word of returned obspec
-        intout+4   intout[2]   low  word of returned obspec
-
-objc_data(handle, obj_idx, request, obspec);
-objc_get_obspec(handle, obj_idx, obspec);
-        control    control[0]   140        # Opcode
-        control+2  control[1]   2          # Entries in intin
-        control+4  control[2]   3          # Entries in intout
-        control+6  control[3]   1          # Entries in addrin 
-        control+8  control[4]   0          # entries in addrout 
-       
-	intin      intin[0]    request
-        intin+2    intin[1]    obj_idx
-
-        addrin     addrin[0]   handle
- Output:
-        intout     intout[0]   Return value (1 = OK, 0 = error)
-        intout+2   intout[1]   High word of returned obspec
-        intout+4   intout[2]   low  word of returned obspec
-
-*/
-				unsigned long tmp;
+			case OBGET_OBSPEC:
+			{
+				long *obs = (long *)pb->addrin[2];
 // 				display(" OBGET_OBSPEC:");
-
-				if (obt == G_USERDEF) {
-					USERBLK *ub = object_get_spec(obtree + obj)->userblk;
-					tmp = ub->ub_parm;
-					if (set)
-						ub->ub_parm = (unsigned long)pb->intin[4] << 16 | pb->intin[5];
-				} else {
-					tmp = object_get_spec(obtree + obj)->index;
-					if (set)
-						object_set_spec(obtree + obj, (unsigned long)pb->intin[4] << 16 | pb->intin[5]);
+				// objc_get_spec(handle, obj_idx, wh, &spec, clip);
+				// intin[0] = obj_idx
+				// intin[1] = what
+				// intin[2] = flags
+				// intin[3] = winhand
+				//
+				// addrin[0] = tree
+				// addrin[1] = clip RECT ptr
+				// addrin[2] = obspec
+				//
+				// intout[0] 1 = sucess - 0 = error
+				// intout[1]
+				if (obs)
+				{
+					long tmp;
+					if (obt == G_USERDEF)
+					{
+						USERBLK *ub = object_get_spec(obtree + obj)->userblk;
+						tmp = ub->ub_parm;
+						if (set)
+							ub->ub_parm = *obs;
+					}
+					else
+					{
+						tmp = object_get_spec(obtree + obj)->index;
+						if (set)
+							object_set_spec(obtree + obj, *obs);
+					}
+					*obs = tmp;
+					ret0 = 1;
 				}
-				pb->intout[1] = tmp >> 16;
-				pb->intout[2] = (short)tmp;
-				ret0 = 1;
+				
 				break;
 			}
-			case OBGET_BFOBSPEC: {
-/*
-objc_data(handle, obj_idx, request, flags, newbfobspec, oldbfobspec, windowhandle, clip);
-objc_set_bfobspec(handle, obj_idx, flags, newbfobspec, oldbfobspec, windowhandle, clip);
-        control    control[0]   140        # Opcode
-        control+2  control[1]   6          # Entries in intin
-        control+4  control[2]   3          # Entries in intout
-        control+6  control[3]   2          # Entries in addrin 
-        control+8  control[4]   0          # entries in addrout 
-       
-	intin      intin[0]    request
-        intin+2    intin[1]    obj_idx
-        intin+4    intin[2]    flags
-	intin+6    intin[3]    windowhandle
-        intin+8    intin[4]    High word of newbfobspec
-        intin+10   intin[5]    Low  word of newbfobspec
-
-        addrin     addrin[0]   handle
-        addrin+4   addrin[1]   clip rect ptr
- Output:
-        intout     intout[0]   Return value (1 = OK, 0 = error)
-        intout+2   intout[1]   High word of oldbfobspec
-        intout+4   intout[2]   Low  word of oldbfobspec
-
-objc_data(handle, obj_idx, request, bfobspec);
-objc_get_bfobspec(handle, obj_idx, bfobspec);
-        control    control[0]   140        # Opcode
-        control+2  control[1]   2          # Entries in intin
-        control+4  control[2]   3          # Entries in intout
-        control+6  control[3]   1          # Entries in addrin 
-        control+8  control[4]   0          # entries in addrout 
-       
-	intin      intin[0]    request
-        intin+2    intin[1]    obj_idx
-
-        addrin     addrin[0]   handle
- Output:
-        intout     intout[0]  Return value (1 = OK, 0 = error)
-        intout+2   intout[1]   High word of returned bfobspec
-        intout+4   intout[2]   Low  word of returned bfobspec
-
-
-*/
+			case OBGET_BFOBSPEC:
+			{
 				BFOBSPEC tmp;
-				union { short s[2]; unsigned long l; BFOBSPEC o; } o;
+				BFOBSPEC *o  = (BFOBSPEC *)pb->addrin[2];
 // 				display(" OBGET_BFOBSPEC:");
-				tmp = object_get_spec(obtree + obj)->obspec;
-				if (set) {
-					o.s[0] = pb->intin[4];
-					o.s[1] = pb->intin[5];
-					object_set_spec(obtree + obj, o.l);
+				// objc_get_bfobspec(handle, obj_idx, wh, clip, &bfobspec);
+				// intin[0] = obj_idx
+				// intin[1] = what
+				// intin[2] = flags
+				// intin[3] = winhand
+				//
+				// addrin[0] = tree
+				// addrin[1] = clip RECT ptr
+				// addrin[2] = obspec ptr
+				//
+				// intout[0] 1 = sucess - 0 = error
+				
+				if (o)
+				{
+					tmp = object_get_spec(obtree + obj)->obspec;
+					if (set)
+						object_set_spec(obtree + obj, *(unsigned long *)o);
+					*o = tmp;
+					ret0 = 1;
 				}
-				o.o = tmp;
-				pb->intout[1] = o.s[0];
-				pb->intout[2] = o.s[1];
-				ret0 = 1;
 				break;
 			}
-			case OBGET_OBFLAGS: {
-/*
-objc_data(handle, obj_idx, request, flags, obmask, obflags, oldobflags, windowhandle, clip);
-objc_set_obflags(handle, obj_idx, flags, obmask, obflags, oldobflags, windowhandle, clip);
-        control    control[0]   140        # Opcode
-        control+2  control[1]   6          # Entries in intin
-        control+4  control[2]   3          # Entries in intout
-        control+6  control[3]   2          # Entries in addrin 
-        control+8  control[4]   0          # entries in addrout 
-       
-	intin      intin[0]    request
-        intin+2    intin[1]    obj_idx
-        intin+4    intin[2]    flags
-	intin+6    intin[3]    windowhandle
-        intin+8    intin[4]    obmask
-        intin+10   intin[5]    obflags
-
-        addrin     addrin[0]   handle
-        addrin+4   addrin[1]   clip rect ptr
- Output:
-        intout     intout[0]   Return value (1 = OK, 0 = error)
-        intout+2   intout[1]   Resulting obflags
-
-objc_data(handle, obj_idx, request, obflags);
-objc_get_obflags(handle, obj_idx, obflags);
-        control    control[0]   140        # Opcode
-        control+2  control[1]   2          # Entries in intin
-        control+4  control[2]   2          # Entries in intout
-        control+6  control[3]   1          # Entries in addrin 
-        control+8  control[4]   0          # entries in addrout 
-       
-	intin      intin[0]    request
-        intin+2    intin[1]    obj_idx
-
-        addrin     addrin[0]   handle
- Output:
-        intout     intout[0]   Return value (1 = OK, 0 = error)
-        intout+2   intout[1]   Return obflags
-
-
-*/
+			case OBGET_OBFLAGS:
+			{
 // 				display(" OBGET_OBFLAGS:");
+				//objc_get_obflags(handle, obj_idx, wh, clip, flags);
+				//objc_set_obflags(handle, obj_idx, wh, clip, flags);
+				// intin[0] = obj_idx
+				// intin[1] = what
+				// intin[2] = flags
+				// intin[3] = winhand
+				// intin[4] = obflags
+				//
+				// addrin[0] = tree
+				// addrin[1] = clip RECT ptr
+				//
+				// intout[0] 1 = sucess - 0 = error
+				// intout[1] = obflags
 				ret1 = obtree[obj].ob_flags;
-				if (set) {
+				if (set)
+				{
 					short f = (ret1 & ~pb->intin[4]) | pb->intin[5];
-					if (ret1 != f) {
-						obtree[obj].ob_flags = ret1 = f;
+					if (ret1 != f)
+					{
+						obtree[obj].ob_flags = f;
 						if (clip || rl)
 							obj_draw(wt, v, aesobj(obtree, obj), -1, clip, rl, 0);
 					}
+				}
+				else
+				{
+					ret1 = obtree[obj].ob_flags;
 				}
 				ret0 = 1;
 				pb->intout[1] = ret1;
 				break;
 			}
-			case OBGET_OBSTATE: {
-/*
-objc_data(handle, obj_idx, request, flags, obmask, obstate, oldobstate, windowhandle, clip);
-objc_set_obflags(handle, obj_idx, flags, obmask, obstate, oldobstate, windowhandle, clip);
-        control    control[0]   140        # Opcode
-        control+2  control[1]   6          # Entries in intin
-        control+4  control[2]   3          # Entries in intout
-        control+6  control[3]   2          # Entries in addrin 
-        control+8  control[4]   0          # entries in addrout 
-       
-	intin      intin[0]    request
-        intin+2    intin[1]    obj_idx
-        intin+4    intin[2]    flags
-	intin+6    intin[3]    windowhandle
-        intin+8    intin[4]    obmask
-        intin+10   intin[5]    obstate
-
-        addrin     addrin[0]   handle
-        addrin+4   addrin[1]   clip rect ptr
- Output:
-        intout     intout[0]   Return value (1 = OK, 0 = error)
-        intout+2   intout[1]   Resulting obstate
-
-objc_data(handle, obj_idx, request, obstate);
-objc_get_obflags(handle, obj_idx, obstate);
-        control    control[0]   140        # Opcode
-        control+2  control[1]   2          # Entries in intin
-        control+4  control[2]   2          # Entries in intout
-        control+6  control[3]   1          # Entries in addrin 
-        control+8  control[4]   0          # entries in addrout 
-       
-	intin      intin[0]    request
-        intin+2    intin[1]    obj_idx
-
-        addrin     addrin[0]   handle
- Output:
-        intout     intout[0]   Return value (1 = OK, 0 = error)
-        intout+2   intout[1]   Return obstate
-
-
-*/
+			case OBGET_OBSTATE:
+			{
 // 				display(" OBGET_OBSTATE:");
+
+				//objc_get_obstate(handle, obj_idx, wh, clip, flags);
+				//objc_set_obstate(handle, obj_idx, wh, clip, flags);
+				// intin[0] = obj_idx
+				// intin[1] = what
+				// intin[2] = flags
+				// intin[3] = winhand
+				// intin[4] = obstate
+				//
+				// addrin[0] = tree
+				// addrin[1] = clip RECT ptr
+				//
+				// intout[0] 1 = sucess - 0 = error
+				// intout[1] = obstate
 				ret1 = obtree[obj].ob_state;
-				if (set) {
-					short s = (ret1 & ~pb->intin[4]) | pb->intin[5];
-					if (ret1 != s) {
-						obtree[obj].ob_state = ret1 = s;
+				if (set)
+				{
+					short s = (obtree[obj].ob_state & ~pb->intin[4]) | pb->intin[5];
+					if (ret1 != s)
+					{
+						obtree[obj].ob_state = s;
 						if (clip || rl)
 							obj_draw(wt, v, aesobj(obtree, obj), -1, clip, rl, 0);
 					}
+				}
+				else
+				{
+					ret1 = obtree[obj].ob_state;
 				}
 				ret0 = 1;
 				pb->intout[1] = ret1;
 				break;
 			}
-			case OBGET_AREA: {
-/*
-objc_data(void *handle, short obj_idx, short request, grect *rect);
-objc_get_obarea(void *handle, short obj_idx, grect *obstate);
-        control    control[0]   140        # Opcode
-        control+2  control[1]   2          # Entries in intin
-        control+4  control[2]   5          # Entries in intout
-        control+6  control[3]   1          # Entries in addrin 
-        control+8  control[4]   0          # entries in addrout 
-       
-	intin      intin[0]    request
-        intin+2    intin[1]    obj_idx
-
-        addrin     addrin[0]   handle
- Output:
-        intout     intout[0]   Return value (1 = OK, 0 = error)
-        intout+2   intout[1]   x
-        intout+2   intout[1]   y
-        intout+2   intout[1]   w
-        intout+2   intout[1]   h
-
-*/
-				if (!set) {
+			case OBGET_AREA:
+			{
+				if (!set)
+				{
 					obj_area(wt, aesobj(obtree, obj), (RECT *)(pb->intout + 1));
 					ret0 = 1;
 				}

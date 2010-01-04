@@ -236,16 +236,15 @@ uni_lookup (fcookie *dir, const char *name, fcookie *fc)
  * pointer for the root directory
  */
 static long
-do_ulookup (fcookie *dir, const char *nam, fcookie *fc, UNIFILE **up)
+do_ulookup (fcookie *dir, const char *name, fcookie *fc, UNIFILE **up)
 {
-	union { const char *cc; char *c; short *s; } nameptr; nameptr.cc = nam;
 	UNIFILE *u;
 	long drvs;
 	FILESYS *fs;
 	fcookie *tmp;
 	long changed;
 
-	TRACE (("uni_lookup(%s)", nam));
+	TRACE (("uni_lookup(%s)", name));
 
 	if (dir->index != 0)
 	{
@@ -260,13 +259,13 @@ do_ulookup (fcookie *dir, const char *nam, fcookie *fc, UNIFILE **up)
 # define ___DOTNUL	0x2e00
 # define ___DOTDOT	0x2e2e
 
-	if (!*nameptr.c ||
-	     *nameptr.s == ___DOTNUL ||
-	    (nameptr.s[0] == ___DOTDOT && nameptr.c[2] == '\0'))
+	if (!*name
+		|| (*(short *)name == ___DOTNUL)
+		|| (*(short *)name == ___DOTDOT && name [2] == '\0'))
 # else
-	if (!*nameptr.c ||
-	     (nameptr.c[0] == '.' && nameptr.c[1]) ||
-	     (nameptr.c[0] == '.' && nameptr.c[1] == '.' && nameptr.c[2] == '\0'))
+	if (!*name
+		|| (name [0] == '.' && name [1] == '\0')
+		|| (name [0] == '.' && name [1] == '.' && name [2] == '\0'))
 # endif
 	{
 		dup_cookie (fc, dir);
@@ -280,7 +279,7 @@ do_ulookup (fcookie *dir, const char *nam, fcookie *fc, UNIFILE **up)
 	 */
 	for (u = u_root; u; u = u->next)
 	{
-		if (!strnicmp (nameptr.c, u->name, UNINAME_MAX))
+		if (!strnicmp (name, u->name, UNINAME_MAX))
 		{
 			if (S_ISDIR(u->mode))
 			{
@@ -325,7 +324,7 @@ do_ulookup (fcookie *dir, const char *nam, fcookie *fc, UNIFILE **up)
 		}
 	}
 
-	DEBUG (("uni_lookup: name (%s) not found", nam));
+	DEBUG (("uni_lookup: name (%s) not found", name));
 	return ENOENT;
 }
 

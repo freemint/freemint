@@ -15,6 +15,6 @@ long _cdecl	build_context	(CONTEXT *sav, int fmt);
 long _cdecl	save_context	(CONTEXT *sav);
 void _cdecl	restore_context	(CONTEXT *sav);
 void _cdecl	change_context	(CONTEXT *sav);
-void _cdecl	proc_access	(CONTEXT *sav, void *save);
+
 
 # endif /* _m68k_context_h */

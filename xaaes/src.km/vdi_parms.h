@@ -56,7 +56,7 @@ struct vdi_xfnt_info_parms
 	_vpb->control[V_N_INTOUT] = 0;					\
 	VDI(_vpb, 180, 0, 1, 0, _handle);				\
 	if (_vpb->control[V_N_INTOUT] >= 2)				\
-		_result = ptr_from_ptr2shorts(vpb->intout);		\
+		_result = ptr_from_shorts(vpb->intout[0], vpb->intout[1]);	\
 	else								\
 		_result = NULL;
 

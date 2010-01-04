@@ -10,11 +10,6 @@ srcdir = .
 top_srcdir = ../..
 subdir = 
 
-NOCFLAGS-tcputil.c = -O2 -O3
-CFLAGS-tcputil.c = -O1
-NOCFLAGS-udp.c = -O2 -O3
-CFLAGS-udp.c = -O1
-
 default: all
 
 include $(top_srcdir)/CONFIGVARS

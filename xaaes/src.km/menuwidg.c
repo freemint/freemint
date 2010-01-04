@@ -1020,7 +1020,7 @@ popup_inside(Tab *tab, RECT r)
 	{
 		Tab *tx = NEXT_TAB(tab);
 
-		if (tx && (tx->ty == POP_UP || tx->ty == ROOT_MENU || tx->ty == MENU_BAR))
+		if (tx && tx->ty == POP_UP)
 		{
 			MENU_TASK *kx = &tx->task_data.menu;
 
@@ -1295,7 +1295,7 @@ menu_client(Tab *tab)
 	if (tab->widg)
 	{
 		XA_TREE *wt;
-		wt = tab->widg->stuff.xa_tree;
+		wt = tab->widg->stuff;
 		return wt->owner;
 	}
 	return tab->client;
@@ -2053,7 +2053,7 @@ click_form_popup_entry(struct task_administration_block *tab, short item)
 static void
 Display_menu_widg(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 {
-	XA_TREE *wt = widg->stuff.xa_tree;
+	XA_TREE *wt = widg->stuff;
 	OBJECT *obtree;
 	 
 	assert(wt);
@@ -2108,7 +2108,7 @@ static bool
 display_menu_widget(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 {
 	struct xa_client *rc = lookup_extension(NULL, XAAES_MAGIC);
-	XA_TREE *wt = widg->stuff.xa_tree;
+	XA_TREE *wt = widg->stuff;
 
 	DIAG((D_menu,wt->owner,"display_menu_widget on %d for %s%s (%lx)",
 		wind->handle, t_owner(wt), wt->menu_line ? "; with menu_line" : "", rc));
@@ -2155,7 +2155,7 @@ click_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *wid
 		return false;
 	}
 
-	client = widg->stuff.xa_tree->owner;
+	client = ((XA_TREE *)widg->stuff)->owner;
 
 	/*
 	 * Make sure we're in the right context
@@ -2168,12 +2168,13 @@ click_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *wid
 	else if (client->p != p)
 		return false;
 
-	if ( widg->stuff.xa_tree == get_menu())
+	if ( widg->stuff == get_menu())
 	{
-		if ( !lock_menustruct(client->p, true) )
+		if ( !lock_menustruct(client->p, true) ){
 			return false;
 	}
-	widg->stuff.xa_tree->owner->status |= CS_MENU_NAV;
+	}
+	((XA_TREE *)widg->stuff)->owner->status |= CS_MENU_NAV;
 
 	if (!menu_title(lock, NULL, -1, wind, widg, client->p->pid, md))
 	{
@@ -2192,7 +2193,7 @@ keyboard_menu_widget(enum  locks lock, struct xa_window *wind, struct xa_widget 
 		struct xa_client *client; //, *rc = lookup_extension(NULL, XAAES_MAGIC);
 		struct proc *p = get_curproc();
 	
-		client = widg->stuff.xa_tree->owner;
+		client = ((XA_TREE *)widg->stuff)->owner;
 
 		/*
 		 * Make sure we're in the right context
@@ -2205,12 +2206,12 @@ keyboard_menu_widget(enum  locks lock, struct xa_window *wind, struct xa_widget 
 		else if (client->p != p)
 			return false;
 
-		if ( widg->stuff.xa_tree == get_menu())
+		if ( widg->stuff == get_menu())
 		{
 			if ( !lock_menustruct(client->p, true) )
 				return false;
 		}
-		widg->stuff.xa_tree->owner->status |= CS_MENU_NAV;
+		((XA_TREE *)widg->stuff)->owner->status |= CS_MENU_NAV;
 
 		if (!menu_title(lock, NULL, -2, wind, widg, client->p->pid, NULL))
 		{
@@ -2259,7 +2260,7 @@ menu_title(enum locks lock, Tab *tab, short title, struct xa_window *wind, XA_WI
 	tab->locker = locker;
 	tab->wind = wind;
 	tab->widg = widg;
-	wt = widg->stuff.xa_tree;
+	wt = widg->stuff;
 	tab->client = wt->owner;
 
 	/* Convert relative coords and window location to absolute screen location */
@@ -2380,10 +2381,10 @@ set_menu_widget(struct xa_window *wind, struct xa_client *owner, XA_TREE *menu)
 	DIAG((D_widg, wind->owner, "set_menu_widget on %d for %s",
 		wind->handle, w_owner(wind)));
 
-	if (widg->stuff.xa_tree)
+	if (widg->stuff)
 	{
-		widg->stuff.xa_tree->widg = NULL;
-		widg->stuff.xa_tree->links--;
+		((XA_TREE *)widg->stuff)->widg = NULL;
+		((XA_TREE *)widg->stuff)->links--;
 	}
 
 	if (owner)
@@ -2407,7 +2408,7 @@ set_menu_widget(struct xa_window *wind, struct xa_client *owner, XA_TREE *menu)
 	widg->m.drag = NULL /* drag_menu_widget */;
 	widg->m.properties |= WIP_INSTALLED|WIP_ACTIVE|WIP_NODRAG;
 	widg->state = OS_NORMAL;
-	widg->stuff.xa_tree = menu;
+	widg->stuff = menu;
 	widg->stufftype = STUFF_IS_WT;
 	widg->m.destruct = free_xawidget_resources;
 	widg->start = 0;
@@ -2430,10 +2431,10 @@ set_popup_widget(Tab *tab, struct xa_window *wind, int obj)
 	DrawWidg display_object_widget;
 	int frame = wind->frame;
 
-	if ( widg->stuff.xa_tree)
+	if ( widg->stuff)
 	{
-		widg->stuff.xa_tree->widg = NULL;
-		widg->stuff.xa_tree->links--;
+		((XA_TREE *)widg->stuff)->widg = NULL;
+		((XA_TREE *)widg->stuff)->links--;
 	}
 	
 	
@@ -2461,7 +2462,7 @@ set_popup_widget(Tab *tab, struct xa_window *wind, int obj)
 	widg->r.h = wt->tree->ob_height;
 
 	widg->state = OS_NORMAL;
-	widg->stuff.xa_tree = wt;
+	widg->stuff = wt;
 	widg->stufftype = STUFF_IS_WT;
 	widg->m.destruct = free_xawidget_resources;
 	widg->start = obj;
@@ -2778,7 +2779,7 @@ CE_do_menu_scroll(enum locks lock, struct c_event *ce, bool cancel)
 			
 			if (mb && ret == 1)
 			{
-				t = addroottimeout(cfg.menu_settings.mn_set.speed, !ce->d0 ? menu_scrld_to : menu_scrlu_to, 1);
+				t = addroottimeout(cfg.mn_set.speed, !ce->d0 ? menu_scrld_to : menu_scrlu_to, 1);
 				if (t)
 					t->arg = (long)tab;
 			}
@@ -2838,7 +2839,7 @@ menuclick(Tab *tab, short item)
 				if (mb)
 				{
 					TIMEOUT *t;
-					t = addroottimeout(cfg.menu_settings.mn_set.delay, menu_scrld_to, 1);
+					t = addroottimeout(cfg.mn_set.delay, menu_scrld_to, 1);
 					if (t)
 						t->arg = (long)tab;
 					S.menuscroll_timeout = t;
@@ -2857,7 +2858,7 @@ menuclick(Tab *tab, short item)
 				if (mb)
 				{
 					TIMEOUT *t;
-					t = addroottimeout(cfg.menu_settings.mn_set.delay, menu_scrlu_to, 1);
+					t = addroottimeout(cfg.mn_set.delay, menu_scrlu_to, 1);
 					if (t)
 						t->arg = (long)tab;
 					S.menuscroll_timeout = t;
