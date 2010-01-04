@@ -72,7 +72,7 @@ struct moose_data mainmd;	// ozk: Have to take the most recent moose packet into
 /*
  * This moose_data buffer is used when delivering exlusive
  * mouse input.
- */ 
+ */
 static int md_buff_head = 0;
 static int md_buff_tail = 0;
 static int md_lmvalid = 0;
@@ -90,13 +90,13 @@ static struct moose_data *md_end = mdb + MDBUF_SIZE;
 static struct moose_data mdb[MDBUF_SIZE + 1];
 
 /*
- * Mouse button click handler 
+ * Mouse button click handler
  * - MOUSESRV server process passes us click events
  *   No, it's the Moose device driver via the kernel nowadays.
  *
  * The real button click handler is here :)
  * Excerpt from nkcc.doc, courtesy Harald Siegmund:
- * 
+ *
  * Note: the NKCC button event handler supports the (undocumented)
  * negation flag, which is passed in bit 8 of the parameter <bclicks>
  * (maximum # of mouse clicks to wait for). You don't know this flag?
@@ -105,18 +105,18 @@ static struct moose_data mdb[MDBUF_SIZE + 1];
  * documentation. This flag opens the way to check BOTH mouse buttons
  * at the same time without any problems. When set, the return
  * condition is inverted. Let's have a look at an example:
- * 
+ *
  * mask = evnt_multi(MU_BUTTON,2,3,3,...
- * 
+ *
  * This doesn't work the way we want: the return condition is
  * "button #0 pressed AND button #1 pressed". But look at this:
- * 
+ *
  * mask = evnt_multi(MU_BUTTON,0x102,3,0,...
- * 
+ *
  * Now the condition is "NOT (button #0 released AND button #1
  * released)". Or in other words: "button #0 pressed OR button #1
  * pressed". Nice, isn't it?!
- * 
+ *
  */
 
 /*
@@ -285,7 +285,7 @@ void
 button_event(enum locks lock, struct xa_client *client, const struct moose_data *md)
 {
 	bool exiting = client->status & CS_EXITING ? true : false;
-	
+
 	DIAG((D_button, NULL, "button_event: for %s, exiting? %s", c_owner(client), exiting ? "Yes" : "No"));
 	DIAG((D_button, NULL, "button_event: md: clicks=%d, head=%lx, tail=%lx, end=%lx",
 		client->md_head->clicks, client->md_head, client->md_tail, client->md_end));
@@ -293,7 +293,7 @@ button_event(enum locks lock, struct xa_client *client, const struct moose_data 
 	if (!exiting)
 	{
 		add_client_md(client, md);
-		
+
 		/*
 		 * If this is a click-hold event, moose.adi will send a
 		 * released event later, and this event belongs to the
@@ -322,7 +322,7 @@ button_event(enum locks lock, struct xa_client *client, const struct moose_data 
 */
 static void
 deliver_button_event(struct xa_window *wind, struct xa_client *target, const struct moose_data *md)
-{	
+{
 	if (wind && wind->owner != target)
 	{
 		DIAG((D_mouse, target, "deliver_button_event: Send cXA_button_event (rootwind) to %s", target->name));
@@ -335,7 +335,7 @@ deliver_button_event(struct xa_window *wind, struct xa_client *target, const str
 		 */
 		DIAG((D_mouse, target, "deliver_button_event: Send cXA_deliver_button_event to %s", target->name));
 		post_cevent(target, cXA_deliver_button_event, wind,NULL, 0,0, NULL,md);
-	}	
+	}
 }
 
 static void
@@ -363,7 +363,7 @@ dispatch_button_event(enum locks lock, struct xa_window *wind, const struct moos
 	{
 		DIAG((D_mouse, target, "XA_button_event: Send cXA_do_widgets (untopped widgets) to %s", target->name));
 		post_cevent(target, cXA_do_widgets, wind,NULL, 0,0, NULL,md);
-	}			
+	}
 	else if (wind->send_message && md->state)
 	{
 		DIAG((D_mouse, target, "XA_button_event: Sending WM_TOPPED to %s", target->name));
@@ -445,11 +445,14 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 			post_cevent(locker, cXA_form_do, NULL,NULL, 0, 0, NULL, md);
 			return;
 		}
+		/* not sure if the if 0 is correct but it helps at least taskbar with taskmanager-window below ... */
+#if 0
 		else if (mouse_wind && mw_owner && (mw_owner->status & CS_NO_SCRNLOCK))
 		{
 			dispatch_button_event(lock, mouse_wind, md);
 			return;
 		}
+#endif
 		/*
 		 * Unconditionally deliver the button event to the mouse-lock holder..
 		 */
@@ -477,7 +480,7 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 			return;
 		}
 	}
-	
+
 	if (mouse_wind && !mouse_wind->nolist && (md->state & MBS_RIGHT) && (md->kstate & (K_CTRL|K_ALT)) == (K_CTRL|K_ALT) )
 	{
 		if (!(mw_owner->status & CS_EXITING))
@@ -511,7 +514,7 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 				post_cevent(client, cXA_open_menu, widg, menu, 0,0, NULL,md);
 			}
 			return;
-		}			
+		}
 	}
 
 	locker = C.mouse_lock ? get_mouse_locker() : NULL;
@@ -539,7 +542,7 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 		{
 			dispatch_button_event(lock, mouse_wind, md);
 		}
-		
+
 		return;
 	}
 	else if (locker)
@@ -576,12 +579,12 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 {
 	struct xa_client *client;
 	bool chlp_lock = update_locked() == C.Hlp->p;
-	
+
 	DIAG((D_mouse, NULL, "XA_move_event: menulocker = %s, ce_open_menu = %s, tablist = %lx, actwidg = %lx",
 		menustruct_locked() ? menustruct_locked()->name : "NONE",
 		C.ce_open_menu ? C.ce_open_menu->name : "NONE",
 		TAB_LIST_START, widget_active.widg));
-	
+
 
 	/* Ozk 040503: Moved the continuing handling of widgets actions here
 	 * so we dont have to msg the client to make real-time stuff
@@ -606,7 +609,7 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 		if (TAB_LIST_START)
 		{
 			client = TAB_LIST_START->client;
-		
+
 			if (!(client->status & CS_EXITING) && !C.ce_menu_move && !C.ce_menu_click)
 			{
 				client = TAB_LIST_START->client;
@@ -617,7 +620,7 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 			}
 			return false;
 		}
-	
+
 // 		Sema_Up(clients);
 #if 0
 		{
@@ -812,7 +815,7 @@ new_moose_pkt(enum locks lock, int internal, struct moose_data *md /*imd*/)
 		{
 			/* a client wait exclusivly for the mouse */
 			short *data = S.wait_mouse->waiting_short;
-			
+
 			if (C.button_waiter == S.wait_mouse && md->ty == MOOSE_BUTTON_PREFIX)
 			{
 				add_client_md(C.button_waiter, md);
@@ -902,7 +905,7 @@ static void move_timeout(struct proc *, long arg);
  * its either because clients didnt have enough time to
  * process all WM_REDRAWS, or a client (or more) does not
  * respond to AES messages. Clients may be "lagging" due to
- * heavy work or the a client may have crashed. 
+ * heavy work or the a client may have crashed.
 */
 static void
 move_rtimeout(struct proc *p, long arg)
@@ -954,9 +957,9 @@ move_timeout(struct proc *p, long arg)
 {
 // 	bool ur_lock = (C.updatelock_count); // || C.rect_lock);
 	struct moose_data md;
-	
+
 	m_to = NULL;
-	
+
 	if (!S.clients_exiting) // && !ur_lock)
 	{
 		/*
@@ -1074,7 +1077,7 @@ void
 kick_mousemove_timeout(void)
 {
 	C.redraws--;
-	
+
 	if (!C.redraws)
 	{
 		C.move_block = 0;
@@ -1120,7 +1123,7 @@ button_timeout(struct proc *p, long arg)
 			display("adi_button_event: type=%d, (%d/%d - %d/%d) state=%d, cstate=%d, clks=%d, l_clks=%d, r_clks=%d (%ld)",
 				md.ty, md.x, md.y, md.sx, md.sy, md.state, md.cstate, md.clicks,
 				md.iclicks[0], md.iclicks[1], sizeof(struct moose_data) );
-#endif			
+#endif
 			vq_key_s(C.P_handle, &md.kstate);
 
 			new_moose_pkt(0, 0, &md);
@@ -1129,7 +1132,7 @@ button_timeout(struct proc *p, long arg)
 				b_to = addroottimeout(0L, button_timeout, 1);
 		}
 	}
-}	
+}
 
 /*
  * adi_button() - the entry point taken by moose.adi whenever
@@ -1143,7 +1146,7 @@ adi_button(struct adif *a, struct moose_data *md)
 	 * but I dont think it is safe. So we get that in button_timeout()
 	 * instead. Eventually, moose.adi will provide this info...
 	 */
-	 
+
 	/*
 	 * Modify moose_data according to configuration (swap l/r buttons, etc)
 	 */
@@ -1156,7 +1159,7 @@ adi_button(struct adif *a, struct moose_data *md)
 	 * Update mainmd, always containing the latest BUTTON moose_data
 	 */
 	new_mu_mouse(md);
-	
+
 	new_active_widget_mouse(md);
 
 	/*
@@ -1216,7 +1219,7 @@ eiffel_wheel(unsigned short scan)
 #endif
 /*
  * blocks until mouse input
- * context safe; scheduler called 
+ * context safe; scheduler called
  */
 void
 wait_mouse(struct xa_client *client, short *br, short *xr, short *yr)
@@ -1224,7 +1227,7 @@ wait_mouse(struct xa_client *client, short *br, short *xr, short *yr)
 	short data[3];
 	struct moose_data md;
 
-	/* wait for input from AESSYS */	
+	/* wait for input from AESSYS */
 	DIAGS(("wait_mouse for %s", client->name));
 
 	if (client->md_head != client->md_tail || client->md_head->clicks != -1)
@@ -1243,10 +1246,10 @@ wait_mouse(struct xa_client *client, short *br, short *xr, short *yr)
 		data[2] = md.y;
 	}
 	else
-	{	
+	{
 		client->waiting_for |= XAWAIT_MOUSE;
 		client->waiting_short = data;
-		
+
 		/* only one client can exclusivly wait for the mouse */
 		assert(S.wait_mouse == NULL);
 

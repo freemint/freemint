@@ -45,6 +45,7 @@ all-targets:
 	done && test -z "$$fail"
 
 $(xaaestargets):
+	sh xversion.sh
 	$(MAKE) buildxaaes xaaes=$@
 
 

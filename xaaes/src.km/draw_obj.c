@@ -144,7 +144,7 @@ object_txt(OBJECT *tree, short t)			/* HR: I want to know the culprit in a glanc
 		case G_SHORTCUT:
 			sprintf(nother, sizeof(nother), " '%s'", object_get_spec(tree + t)->free_string);
 			break;
-	}	
+	}
 	return nother;
 }
 
@@ -340,6 +340,7 @@ disable_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_r
  * Draw a box (respecting 3d flags)
  */
 
+extern void *wd;
 
 #define userblk(ut) (*(USERBLK **)(ut->userblk_pp))
 #define ret(ut)     (     (long *)(ut->ret_p     ))
@@ -369,7 +370,7 @@ d_g_progdef(struct widget_tree *wt, struct xa_vdi_settings *v)
 
 	if ((client->status & CS_EXITING))
 		return;
-		
+
 	p = parmblk(client->ut);
 	p->pb_tree = wt->current.tree;
 	p->pb_obj = wt->current.item;
@@ -394,7 +395,7 @@ d_g_progdef(struct widget_tree *wt, struct xa_vdi_settings *v)
 #endif
 	act.sa_handler = client->ut->progdef_p;
 	act.sa_mask = 0xffffffff;
-	act.sa_flags = SA_RESET;
+	act.sa_flags = SA_RESETHAND;
 
 	/* set new signal handler; remember old */
 	p_sigaction(SIGUSR2, &act, &oact);
@@ -405,7 +406,7 @@ d_g_progdef(struct widget_tree *wt, struct xa_vdi_settings *v)
 
 	/* restore old handler */
 	p_sigaction(SIGUSR2, &oact, NULL);
-	
+
 	/* The PROGDEF function returns the ob_state bits that
 	 * remain to be handled by the AES:
 	 */
@@ -416,12 +417,12 @@ d_g_progdef(struct widget_tree *wt, struct xa_vdi_settings *v)
 	 * HR: Yes I would call that correct, cause in color mode
 	 *     selected appearance is object specific.
 	 *     I even think that it shouldnt be done at ALL.
-	 * 		
+	 *
 	 * The whole state_mask returning mechanism of progdefs should
          * be taken into account.
          * So we actually dont need to do anything special here.
          * But for progdef'd menu separators it is nicer to check here
-         * and use bg_col.	              
+         * and use bg_col.
 	 */
 
 #if GENERATE_DIAGS
@@ -442,7 +443,7 @@ d_g_progdef(struct widget_tree *wt, struct xa_vdi_settings *v)
 // 	r[3] += (r[1] - 1);
 // 	vs_clip(v->handle, 1, (short *)&r);
 	(*v->api->set_clip)(v, &save_clip);
-	
+
 	if (*wt->state_mask & OS_DISABLED)
 	{
 		(*v->api->write_disable)(v, &wt->r, objc_rend.dial_colours.bg_col);
@@ -479,8 +480,8 @@ d_g_slist(struct widget_tree *wt, struct xa_vdi_settings *v)
 	this = list->top;
 
 	(*v->api->t_color)(v, G_BLACK);
-	
-	if (list->state == 0)
+
+	//if (list->state == 0)
 	{
 		get_widget(w, XAW_TITLE)->stuff = list->title;
 		r = v->clip;
@@ -584,7 +585,7 @@ display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, struct x
 
 	r.x = parent_x + ob->ob_x;
 	r.y = parent_y + ob->ob_y;
-	r.w = ob->ob_width; 
+	r.w = ob->ob_width;
 	r.h = ob->ob_height;
 	sr = r;
 
@@ -592,7 +593,7 @@ display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, struct x
 	o.y = r.y + o.y;
 	o.w = r.w - o.w;
 	o.h = r.h - o.h;
-	
+
 	if (   o.x		> (v->clip.x + v->clip.w - 1)
 	    || o.x + o.w - 1	< v->clip.x
 	    || o.y		> (v->clip.y + v->clip.h - 1)
@@ -651,7 +652,10 @@ display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, struct x
 	/* Call the appropriate display routine */
 	(*drawer)(wt, v);
 
-	(*v->api->wr_mode)(v, MD_TRANS);
+	if( screen.planes > 1 )	/* else on TT/ST-high checked is not visible if selected */
+		(*v->api->wr_mode)(v, MD_TRANS);
+	else
+		(*v->api->wr_mode)(v, MD_REPLACE);
 
 	if (t != G_PROGDEF)
 	{
@@ -708,12 +712,14 @@ display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, struct x
 		}
 
 		if ((ob->ob_state & state_mask) & OS_SELECTED)
+		{
 			(*wt->objcr_api->write_selection)(v, 0, &r);
+		}
 	}
 
 	if (focus_ob(wt) == ob)
 	{
-		(*v->api->wr_mode)(v, MD_TRANS);
+		(*v->api->wr_mode)(v, MD_REPLACE);
 		(*v->api->l_color)(v, G_RED);
 		(*v->api->l_type)(v, 7);
 		(*v->api->l_udsty)(v, 0xaaaa); //0xe0e0); //0xaaaa);
@@ -732,17 +738,28 @@ display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, struct x
 
 /* draw_object_tree */
 short
-draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, struct xa_vdi_settings *v, struct xa_aes_object item, short depth, short *xy, short flags)
+draw_object_tree(
+enum locks lock,
+XA_TREE *wt,
+OBJECT *tree,
+struct xa_vdi_settings *v,
+struct xa_aes_object item,
+short depth,
+short *xy,
+short flags)
 {
 	XA_TREE this;
 	short /*current = 0, stop = -1, */rel_depth = 1, head;
-	short x, y;
-	struct objc_edit_info *ei = wt->ei;
+	short x, y, dw = 0, dh = 0;
+	struct objc_edit_info *ei = 0;
 	bool start_drawing = false;
 	bool curson = false;
+	bool resized = false;
 	bool docurs = ((flags & DRW_CURSOR));
 	struct oblink_spec *oblink = NULL;
 	struct xa_aes_object current, stop, *c;
+	struct scroll_info *list = 0;
+	struct xa_window *lwind = 0;
 
 
 	if (wt == NULL)
@@ -755,6 +772,8 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, struct xa_vdi_setti
 		wt->objcr_api = C.Aes->objcr_api;
 		wt->objcr_theme = C.Aes->objcr_theme;
 	}
+	else
+		ei = wt->ei;
 
 	if (tree == NULL)
 		tree = wt->tree;
@@ -771,6 +790,16 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, struct xa_vdi_setti
 	*c = aesobj(wt->tree, 0);
 	stop = inv_aesobj();
 
+	if( wt->wind && (wt->wind->window_status & XAWS_RESIZED ) ){
+		set_toolbar_coords(wt->wind, NULL);
+
+		/* used to move/resize objects inside the window */
+		dw = wt->wind->r.w - wt->wind->min.x;
+		dh = wt->wind->r.h - wt->wind->min.y;
+		resized = true;
+		wt->wind->window_status &= ~XAWS_RESIZED;
+		wt->dx = wt->dy = 0;
+	}
 	/* dx,dy are provided by sliders if present. */
 	x = -wt->dx;
 	y = -wt->dy;
@@ -781,6 +810,7 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, struct xa_vdi_setti
 		tree->ob_width, tree->ob_height, tree, item, depth));
 	DIAG((D_objc, wt->owner, "  -   (%d)%s%s",
 		wt->is_menu, obtree_is_menu(tree) ? "menu" : "object", wt->zen ? " with zen" : " no zen"));
+
 // 	DIAG((D_objc, wt->owner, "  -   clip: %d.%d/%d.%d    %d/%d,%d/%d",
 // 		cl[0], cl[1], cl[2], cl[3], cl[0], cl[1], cl[2] - cl[0] + 1, cl[3] - cl[1] + 1));
 
@@ -801,6 +831,70 @@ draw_object_tree(enum locks lock, XA_TREE *wt, OBJECT *tree, struct xa_vdi_setti
 
 	do {
 
+		if( resized == true ){
+			switch( c->ob->ob_type ){
+			case G_SLIST:
+			{
+
+				c->ob->ob_width += dw;
+				c->ob->ob_height += dh;
+
+				list =
+					object_get_slist(((XA_TREE *)get_widget(wt->wind, XAW_TOOLBAR)->stuff)->tree + c->item);
+
+				if( list ){
+					lwind = list->wi;
+
+					/* resize the list-window */
+					if( lwind && lwind->send_message ){
+						short amq = 0;
+						RECT dr = v->clip;	/* send_message may change clipping */
+
+						lwind->send_message(0, lwind, NULL, amq, QMF_CHKDUP,
+							WM_SIZED, 0,0, lwind->handle,
+							lwind->r.x, lwind->r.y, lwind->r.w + dw, lwind->r.h + dh);
+						(*v->api->set_clip)(v, &dr);	/* restore clip */
+
+					}
+				}
+			}
+			break;
+			case G_CICON:
+			case G_BUTTON:
+			//case G_FBOXTEXT:
+			case G_STRING:
+
+				/* relocate: move objects on resizing
+				 * origin (upper left) of the window is set in set_and_update
+				 */
+				if( dh || dw )
+				{
+					if( (c->ob->ob_y + c->ob->ob_height) > (wt->wind->min.h) / 2 )
+					{
+						/* keep distance from lower border constant */
+						c->ob->ob_y += dh;
+					}
+
+					{
+						if( c->ob->ob_y < wt->wind->min.h / 2 && c->ob->ob_height > wt->wind->min.h / 2 )
+							/* resize height for high objects */
+							c->ob->ob_height += dh;
+						if( c->ob->ob_x < wt->wind->min.w / 2 && c->ob->ob_width > wt->wind->min.w / 2 )
+							/* resize width for wide objects */
+							c->ob->ob_width += dw;
+						else if( c->ob->ob_x + dw > wt->wind->r.w / 2 && c->ob->ob_x > wt->wind->min.w / 2 )
+						{
+							/* keep distance from right border constant */
+							c->ob->ob_x += dw;
+							if( c->ob->ob_x + c->ob->ob_width > wt->wind->r.w )
+								c->ob->ob_x = wt->wind->r.w - c->ob->ob_width - 1;
+						}
+					}
+				}
+			break;
+			}
+		}
+
 	//	DIAG((D_objc, NULL, " ~~~ obj=%d(%d/%d), flags=%x, state=%x, head=%d, tail=%d, next=%d, depth=%d, draw=%s",
 	//		current, x, y, tree[current].ob_flags, tree[current].ob_state,
 	//		tree[current].ob_head, tree[current].ob_tail, tree[current].ob_next,
@@ -820,13 +914,15 @@ uplink:
 
 			if (start_drawing)
 			{
-				display_object(lock, wt, v, *c, x, y, 10);
 				/* Display this object */
+				display_object(lock, wt, v, *c, x, y, 10);
 				if (!ei && docurs && same_aesobj(c, &wt->e.o))
 				{
 					if ((aesobj_type(c) & 0xff) != G_USERDEF)
+					{
 						(*wt->objcr_api->eor_cursor)(wt, v, NULL);
-					docurs = false;	
+					}
+					docurs = false;
 				}
 			}
 		}

@@ -151,12 +151,11 @@ xa_write_disable(struct xa_vdi_settings *v, RECT *r, short colour)
 		0x5555, 0xaaaa, 0x5555, 0xaaaa,
 		0x5555, 0xaaaa, 0x5555, 0xaaaa
 	};
-
 	xa_wr_mode(v, MD_TRANS);
 	xa_f_color(v, colour);
 	vsf_udpat(v->handle, pattern, 1);
 	xa_f_interior(v, FIS_USER);
-//	xa_gbar(v, 0, r);
+	xa_gbar(v, 0, r);
 }
 
 static void _cdecl
@@ -420,6 +419,9 @@ xa_prop_clipped_name(struct xa_vdi_settings *v, const char *s, char *d, int w, s
 			}
 			break;
 		}
+		case -1:
+			strcpy( d, s );
+		break;
 	}			
 	
 	if (ret_w && ret_h)
@@ -629,7 +631,7 @@ xa_p_gbar(struct xa_vdi_settings *v, short d, const RECT *r)	/* for perimeter = 
 	l[2] = x+w-2;
 	l[3] = y+h-2;
 //	BLOG((0,"xa_p_gbar:%d/%d/%d/%d", l[0], l[1], l[2], l[3] ));
-	v_bar(v->handle, l);
+ 	v_bar(v->handle, l);
 	l[0] = x;
 	l[1] = y;
 	l[2] = x+w-1;
@@ -852,6 +854,10 @@ xa_form_save(short d, RECT r, void **area)
 	
 	if (r.w > 0 && r.h > 0)
 	{
+		short xd = r.x & 0x000f;
+		r.x &= ~0x000f;		/* set x to word-boundary */
+		r.w += xd;
+
 		rtopxy(pnt, &r);
 		ritopxy(pnt + 4, 0, 0, r.w, r.h);
 
@@ -907,6 +913,10 @@ xa_form_restore(short d, RECT r, void **area)
 
 		if (r.w > 0 && r.h > 0)
 		{
+			short xd = r.x & 0x000f;
+			r.x &= ~0x000f;		/* set x to word-boundary */
+			r.w += xd;
+
 			rtopxy(pnt+4, &r);
 			ritopxy(pnt,0,0,r.w,r.h);
 

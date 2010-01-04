@@ -589,3 +589,4 @@ diag(enum debug_item item, struct xa_client *client, char *t, ...)
 }
 
 #endif /* GENERATE_DIAGS */
+

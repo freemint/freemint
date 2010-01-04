@@ -74,6 +74,9 @@ void profile( char *t, ...);
 /* start; (a f)(args); stop */
 #define PROFRECp(a,f,args) prof_acc(_P ## f,P_Start,0); (a f) args; prof_acc(_P ## f,P_Stop,0)
 
+/* start; a stop(f(args)) */
+#define PROFRECr(a,f,args) prof_acc(_P ## f,P_Start,1); a prof_acc(_P ## f,P_Stop,f args)
+
 #define PROFILE(msg) profile msg 
 
 #else
@@ -91,6 +94,7 @@ void profile( char *t, ...);
 #define PROFRECa(a,f,args)	(a f args)
 #define PROFRECs(a,f,args)	a f args
 #define PROFRECp(a,f,args)	(a f) args
+#define PROFRECr(a,f,args)	a f args
 
 #endif
 

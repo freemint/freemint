@@ -24,6 +24,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#define PROFILING	0
 #include "xaaes.h" /*RSCHNAME*/
 
 #include "k_main.h"
@@ -33,6 +34,7 @@
 #include "adiload.h"
 #include "c_window.h"
 #include "desktop.h"
+#include "debug.h"
 #include "handler.h"
 #include "init.h"
 #include "k_init.h"
@@ -62,6 +64,19 @@
 
 
 #include "c_mouse.h"
+void set_tty_mode( short md );
+
+/* add time to alerts in syslog */
+#if ALERTTIME
+#ifdef trap_14_w
+#undef trap_14_w	/* "redefined" warning */
+#endif
+#include <mintbind.h>	/* Tgettimeofday */
+#define MAXALERTLEN	196
+#endif
+/* ask before shutting down (does not work yet) */
+#define ALERT_SHUTDOWN 0
+#define AESSYS_TIMEOUT	2000;	/* s/1000 */
 
 void
 ceExecfunc(enum locks lock, struct c_event *ce, bool cancel)
@@ -94,7 +109,7 @@ cancel_cevents(struct xa_client *client)
 
 		DIAG((D_kern, client, "Cancel evnt %lx (next %lx) for %s",
 			ce, ce->next, client->name));
-		
+
 		(*ce->funct)(0, ce, true);
 
 		if (!(nxt = ce->next))
@@ -209,7 +224,7 @@ post_cevent(struct xa_client *client,
 				c->r = *r;
 			if (md)
 				c->md = *md;
-			
+
 			if (!client->cevnt_head)
 			{
 				client->cevnt_head = c;
@@ -258,7 +273,7 @@ dispatch_selcevent(struct xa_client *client, void *f, bool cancel)
 				client->cevnt_tail = p;
 
 			client->cevnt_count--;
-			
+
 			(*ce->funct)(0, ce, cancel);
 
 			DIAGS(("---------- freeing CE %lx with function %lx", ce, f));
@@ -285,8 +300,8 @@ dispatch_cevent(struct xa_client *client)
 
 		DIAG((D_kern, client, "Dispatch evnt %lx (head %lx, tail %lx, count %d) for %s",
 			ce, client->cevnt_head, client->cevnt_tail, client->cevnt_count, client->name));
-		
-		
+
+
 // 		(*ce->funct)(0, ce, false);
 
 		if (!(nxt = ce->next))
@@ -294,7 +309,7 @@ dispatch_cevent(struct xa_client *client)
 
 		client->cevnt_head = nxt;
 		client->cevnt_count--;
-	
+
 		(*ce->funct)(0, ce, false);
 		kfree(ce);
 
@@ -327,7 +342,7 @@ do_block(struct xa_client *client)
 	client->sleeplock = 0;
 }
 
-#if INCLUDE_UNUSED
+#if ALT_CTRL_APP_OPS
 void
 Block(struct xa_client *client, int which)
 {
@@ -375,7 +390,7 @@ cBlock(struct xa_client *client, int which)
 	while (!client->usr_evnt)
 	{
 		DIAG((D_kern, client, "[%d]Blocked %s", which, c_owner(client)));
-		
+
 		do_block(client);
 
 		/*
@@ -488,14 +503,14 @@ iBlock(struct xa_client *client, int which)
 	while (!client->usr_evnt)
 	{
 		DIAG((D_kern, client, "[%d]Blocked %s", which, c_owner(client)));
-		
+
 		if (client->tp_term)
 		{
 // 			display("iBlock - tp_term set");
 // 	BLOG((true, "leave iBlock"));
 			return;
 		}
-		
+
 // 		if (!a->addrin[0])
 // 			BLOG((true, "iBlock: 4 NULL"));
 		do_block(client);
@@ -606,7 +621,7 @@ init_moose(void)
 	G.adi_mouse = adi_name2adi("moose_w");
 	if (!G.adi_mouse)
 		G.adi_mouse = adi_name2adi("moose");
-	
+
 	if (G.adi_mouse)
 	{
 		long aerr;
@@ -631,7 +646,7 @@ init_moose(void)
 				display(/*0000000c*/"init_moose: Could not obtain moose.adi version, please update!");
 				return false;
 			}
-			
+
 			aerr = adi_ioctl(G.adi_mouse, MOOSE_READVECS, (long)&vecs);
 			if (aerr == 0 && vecs.motv)
 			{
@@ -662,7 +677,7 @@ init_moose(void)
 		}
 		else
 		{
-			display(/*00000010*/"init_moose: opening moose adi failed (%lx)", aerr);	
+			display(/*00000010*/"init_moose: opening moose adi failed (%lx)", aerr);
 			G.adi_mouse = NULL;
 		}
 	}
@@ -730,6 +745,9 @@ CE_fa(enum locks lock, struct c_event *ce, bool cancel)
 			struct helpthread_data *htd = lookup_xa_data_byname(&client->xa_data, HTDNAME);
 			struct xa_window *wind = NULL;
 			char c;
+#if ALERTTIME
+		  char b[MAXALERTLEN];
+#endif
 			unsigned short amask;
 
 			if (!htd || !htd->w_sysalrt)
@@ -737,9 +755,9 @@ CE_fa(enum locks lock, struct c_event *ce, bool cancel)
 
 			if (htd)
 				wind = htd->w_sysalrt;
-			
+
 			c = data->buf[1];
-			
+
 			if (wind)
 			{
 				struct widget_tree *wt;
@@ -770,14 +788,38 @@ CE_fa(enum locks lock, struct c_event *ce, bool cancel)
 					amask = alert_masks[0];
 					break;
 				}
+
+				strcpy( b, data->buf );
+
 				/* Add the log entry */
 				{
 					struct scroll_info *list = object_get_slist(form + SYSALERT_LIST);
 					struct sesetget_params p = { 0 }; //seget_entrybyarg p = { 0 };
 					struct scroll_content sc = {{ 0 }};
-			
-					sc.icon = icon;
+
+#if ALERTTIME
+					/* from libkern/unix2xbios.c */
+					struct dostim
+					{
+						unsigned year: 7;
+						unsigned month: 4;
+						unsigned day: 5;
+						unsigned hour: 5;
+						unsigned minute: 6;
+						unsigned sec2: 5;
+					};
+					struct timeval tv;
+					struct timezone tz;
+					struct dostim dtim;
+					long dt;
+
+					Tgettimeofday( &tv, &tz );
+					dt = unix2xbios( tv.tv_sec );
+					dtim = *(struct dostim*)&dt;
+					sprintf( data->buf, MAXALERTLEN, "%02d:%02d:%02d: %s", dtim.hour, dtim.minute, dtim.sec2, b + 4 );
+#endif
 					sc.t.text = data->buf;
+					sc.icon = icon;
 					sc.t.strings = 1;
 					p.idx = -1;
 					p.arg.txt = /*txt_alerts*/"Alerts";
@@ -811,7 +853,11 @@ CE_fa(enum locks lock, struct c_event *ce, bool cancel)
 			{
 				/* if an app left the mouse off */
 				forcem();
+#if ALERTTIME
+				do_form_alert(data->lock, client, 1, b, "XaAES");
+#else
 				do_form_alert(data->lock, client, 1, data->buf, "XaAES");
+#endif
 			}
 			kfree(data);
 		}
@@ -819,7 +865,7 @@ CE_fa(enum locks lock, struct c_event *ce, bool cancel)
 	else
 		kfree(ce->ptr1);
 }
-		
+
 static void
 display_alert(struct proc *p, long arg)
 {
@@ -836,7 +882,7 @@ display_alert(struct proc *p, long arg)
 	{
 		struct display_alert_data *data = (struct display_alert_data *)arg;
 
-		/* Bring up an alert */		
+		/* Bring up an alert */
 		post_cevent(C.Hlp, CE_fa, data,NULL, 0,0, NULL,NULL);
 	}
 }
@@ -853,7 +899,11 @@ alert_input(enum locks lock)
 	{
 		struct display_alert_data *data;
 
+#if ALERTTIME
+		data = kmalloc(sizeof(*data) + n + 4 + 10);
+#else
 		data = kmalloc(sizeof(*data) + n + 4);
+#endif
 		if (!data)
 		{
 			DIAGS(("kmalloc(%i) failed, out of memory?", sizeof(*data)));
@@ -892,16 +942,35 @@ ignore(void)
 static void
 fatal(void)
 {
-	KERNEL_DEBUG("AESSYS: fatal error, try to cleaning up");
+	KERNEL_DEBUG("AESSYS: fatal error, trying to clean up");
 	k_exit();
 }
 #endif
+
+#if ALERT_SHUTDOWN
+int xaaes_do_form_alert( enum locks lock, int def_butt, char al_text[], char title[] );
+extern char XAAESNAME[];
+extern char ASK_SHUTDOWN_ALERT[];
+#endif
+
 static void
 sigterm(void)
 {
-	BLOG((false, "AESSYS: sigterm received, dispatch_shutdown(0)"));
-	KERNEL_DEBUG("AESSYS: sigterm received, dispatch_shutdown(0)");
+	struct proc *p = get_curproc();
+	BLOG((false, "%s(%d:AES:%d): sigterm received", p->name, p->pid, C.AESpid ));
+#if 1
+	BLOG((false, "(ignored)" ));
+		return;
+#else
+	if( p->pid != C.AESpid ){
+		BLOG((false, "(ignored)" ));
+		return;
+
+	}
+	BLOG((false, "dispatch_shutdown(0)" ));
+	/*KERNEL_DEBUG("AESSYS: sigterm received, dispatch_shutdown(0)");*/
 	dispatch_shutdown(0, 0);
+#endif
 }
 
 static void
@@ -934,12 +1003,12 @@ aesthread_block(struct xa_client *client, int which)
 
 		dispatch_cevent(client);
 	}
-	
+
 	if (client->status & (CS_LAGGING | CS_MISS_RDRW))
 	{
 		client->status &= ~(CS_LAGGING|CS_MISS_RDRW);
 	}
-	
+
 	if (!client->tp_term)
 		do_block(client);
 }
@@ -969,7 +1038,7 @@ static void
 helpthread_entry(void *c)
 {
 	struct xa_client *client;
-	
+
 	p_domain(1);
 	setup_common();
 
@@ -988,7 +1057,7 @@ helpthread_entry(void *c)
 // 			union msg_buf *msgb;
 
 			bzero(pb, pbsize);
-			
+
 			d = (short *)((long)pb + sizeof(*pb));
 			d += 2;
 			pb->control = d;
@@ -1005,7 +1074,7 @@ helpthread_entry(void *c)
 
 			d += 32;
 			pb->msg = (union msg_buf *)d;
-		
+
 			client_nicename(client, aeshlp_name, true);
 			C.Hlp = client;
 			client->type = APP_AESTHREAD;
@@ -1016,7 +1085,6 @@ helpthread_entry(void *c)
 			client->options.app_opts |= XAAO_OBJC_EDIT;
 			client->status |= CS_NO_SCRNLOCK;
 			init_helpthread(NOLOCKING, client);
-			BLOG((false, "C.Hlp started %lx, %x", C.Hlp, *t));
 			while (!*t)
 			{
 				pb->addrin[0] = (long)pb->msg;
@@ -1038,16 +1106,16 @@ helpthread_entry(void *c)
 		htd = lookup_xa_data_byname(&client->xa_data, HTDNAME);
 		if (htd)
 			delete_xa_data(&client->xa_data, htd);
-		
+
 		while (dispatch_cevent(client))
 			;
-		
+
 // 		display(" exit client");
 		exit_client(0, client, 0, false, false);
 
 // 		display("detach extension");
 		detach_extension(NULL, XAAES_MAGIC);
-// 		display(" .. done");	
+// 		display(" .. done");
 	}
 	if (C.Hlp_pb)
 	{
@@ -1082,10 +1150,20 @@ static N_AESINFO naes_cookie =
 };
 
 
+#define SD_TIMEOUT	1000	// s/100
+
 static void
 sshutdown_timeout(struct proc *p, long arg)
 {
+	struct helpthread_data *htd;
+
 	C.sdt = NULL;
+#if ALERT_SHUTDOWN
+	if ( xaaes_do_form_alert( 0, 1, ASK_SHUTDOWN_ALERT, XAAESNAME ) != 2 )
+		return;
+#endif
+
+	htd = get_helpthread_data(C.Aes);
 
 	if (/*C.update_lock ||*/ S.clients_exiting)
 	{
@@ -1118,9 +1196,9 @@ sshutdown_timeout(struct proc *p, long arg)
 					ikill(client->p->pid, SIGKILL);
 				}
 			}
-			
+
 			quit_all_apps(NOLOCKING, NULL, (C.shutdown & RESOLUTION_CHANGE) ? AP_RESCHG : AP_TERM);
-			set_shutdown_timeout(1000);
+			set_shutdown_timeout(SD_TIMEOUT);
 		}
 		else
 		{
@@ -1153,7 +1231,7 @@ sshutdown_timeout(struct proc *p, long arg)
 				if (flag)
 				{
 					C.shutdown_step = 1;
-					set_shutdown_timeout(1000); //(4000);
+					set_shutdown_timeout(SD_TIMEOUT); //(4000);
 				}
 			}
 			else
@@ -1163,6 +1241,12 @@ sshutdown_timeout(struct proc *p, long arg)
 				 *         the kill-without-question list, and ask the user what to
 				 *         do with other clients that havent termianted yet.
 				 */
+#if 1
+				if (htd && htd->w_taskman)
+				{
+					force_window_top( 0, htd->w_taskman);
+				}
+#endif
 				FOREACH_CLIENT(client)
 				{
 					if (!(client->status & (CS_EXITING|CS_SIGKILLED)) && client != C.Aes && client != C.Hlp)
@@ -1177,7 +1261,7 @@ sshutdown_timeout(struct proc *p, long arg)
 						}
 					}
 				}
-				if (flag)
+				if (flag && !ikill(flag->p->pid, 0) )
 				{
 					post_cevent(C.Hlp, CE_open_csr, flag, NULL, 0,0, NULL,NULL);
 				}
@@ -1227,7 +1311,7 @@ kick_shutdn_if_last_client(void)
 		if (!f) /* If last client, complete shutdown now! */
 			set_shutdown_timeout(0);
 		else /* Else reset the timeout giving the next app new chances */
-			set_shutdown_timeout(1000);
+			set_shutdown_timeout(SD_TIMEOUT);
 	}
 }
 /*
@@ -1253,20 +1337,20 @@ CE_start_apps(enum locks lock, struct c_event *ce, bool cancel)
 		Path parms;
 		int i;
 		lock = winlist|envstr|pending;
-		
+
 		/*
 		 * Load Accessories
 		 */
 		BLOG((false, "loading accs ---------------------------"));
 		load_accs();
-		
+
 		/*
 		 * startup shell and autorun
 		 */
 		BLOG((false, "loading shell and autorun ---------------"));
-		
+
 		C.DSKpid = -1;
-		
+
 		for (i = sizeof(cfg.cnf_run)/sizeof(cfg.cnf_run[0]) - 1; i >= 0; i--)
 		{
 			if (cfg.cnf_run[i])
@@ -1294,15 +1378,53 @@ CE_start_apps(enum locks lock, struct c_event *ce, bool cancel)
 	}
 }
 
+	/* forcing to be a pty master
+	 * - pty master ignore job control
+	 * - pty master always read in raw mode
+	 *
+	 * XXX it's just very ugly todo this so
+	 */
+// 	get_curproc()->p_fd->ofiles[C.KBD_dev]->flags |= O_HEAD;
+
+	/* next try
+	 * switching tty device into RAW mode
+	 */
+void set_tty_mode( short md )
+{
+#if 0
+	return;
+#else
+	struct sgttyb sg;
+	long r;
+	r = f_cntl(C.KBD_dev, (long)&KBD_dev_sg, TIOCGETP);
+	KERNEL_DEBUG("fcntl(TIOCGETP) -> %li", r);
+	assert(r == 0);
+
+	sg = KBD_dev_sg;
+	sg.sg_flags &= TF_FLAGS;
+	if( md == RAW )
+		sg.sg_flags |= T_RAW;
+	else
+	{
+		sg.sg_flags &= ~T_RAW;
+		sg.sg_flags |= T_CRMOD;
+	}
+	KERNEL_DEBUG("sg.sg_flags 0x%x", sg.sg_flags);
+
+	r = f_cntl(C.KBD_dev, (long)&sg, TIOCSETN);
+	KERNEL_DEBUG("fcntl(TIOCSETN) -> %li", r);
+	assert(r == 0);
+#endif
+}
 /*
  * Main AESSYS thread...
  */
 /*
  * our XaAES server kernel thread
- * 
+ *
  * It have it's own context and can use all syscalls like a normal
  * process (except that it don't go through the syscall handler).
- * 
+ *
  * It run in kernel mode and share the kernel memspace, cwd, files
  * and sigs with all other kernel threads (mainly the idle thread
  * alias rootproc).
@@ -1311,6 +1433,9 @@ void
 k_main(void *dummy)
 {
 	int wait = 1;
+	unsigned long default_input_channels;
+	struct tty *tty;
+	//long n = 0;
 
 	/*
 	 * setup kernel thread
@@ -1321,17 +1446,16 @@ k_main(void *dummy)
 	 * Set MiNT domain, else keyboard stuff dont work correctly
 	 */
 	p_domain(1);
-	
+
 	setup_common();
-	
+
 	/* join process group of loader */
 	p_setpgrp(0, loader_pgrp);
 
 	c_naes = NULL;
-	
+
 	if (cfg.naes_cookie)
 	{
-		BLOG((false, "Install 'nAES' cookie.."));
 		if ( (c_naes = (N_AESINFO *)m_xalloc(sizeof(*c_naes), (4<<4)|(1<<3)|3) ))
 		{
 			memcpy(c_naes, &naes_cookie, sizeof(*c_naes));
@@ -1355,12 +1479,12 @@ k_main(void *dummy)
 		}
 #endif
 	}
-	
+
 	C.reschange = NULL;
 #if 0
 	{
 		long tmp;
-		
+
 		C.reschange = NULL;
 		/*
 		 * Detect video hardware..
@@ -1380,11 +1504,11 @@ k_main(void *dummy)
 				default:;
 			}
 		}
-		
+
 		/*
 		 * see if we run on a Milan, in which case the _VDI cookie is present
 		 */
-#ifndef ST_ONLY	
+#ifndef ST_ONLY
 		mvdi_api.dispatch = NULL;
 		if (!(s_system(S_GETCOOKIE, COOKIE__VDI, (unsigned long)&tmp)))
 		{
@@ -1401,7 +1525,7 @@ k_main(void *dummy)
 			{
 				if (!(s_system(S_GETCOOKIE, COOKIE_NOVA, (unsigned long)&tmp)))
 					nova_data = kmalloc(sizeof(struct nova_data));
-				
+
 				if (nova_data)
 				{
 					nova_data->xcb = (struct xcb *)tmp;
@@ -1435,8 +1559,7 @@ k_main(void *dummy)
 		display(/*00000013*/"ERROR: k_init failed!");
 		goto leave;
 	}
-	BLOG((false, "k_init returned OK"));
-	/* 
+	/*
 	 * Initialization I/O
 	 */
 
@@ -1449,7 +1572,6 @@ k_main(void *dummy)
 
 		goto leave;
 	}
-	BLOG((false, "Opened alert pipe '%s' to %ld", alert_pipe_name, C.alert_pipe));
 
 	/* Open the u:/dev/console device to get keyboard input */
 	C.KBD_dev = f_open(KBD_dev_name, O_DENYRW|O_RDONLY);
@@ -1460,36 +1582,8 @@ k_main(void *dummy)
 
 		goto leave;
 	}
-	BLOG((false, "Opened keyboard device '%s' to %ld", KBD_dev_name, C.KBD_dev));
 
-	/* forcing to be a pty master
-	 * - pty master ignore job control
-	 * - pty master always read in raw mode
-	 *
-	 * XXX it's just very ugly todo this so
-	 */
-// 	get_curproc()->p_fd->ofiles[C.KBD_dev]->flags |= O_HEAD;
-
-	/* next try
-	 * switching tty device into RAW mode
-	 */
-	{
-		struct sgttyb sg;
-		long r;
-
-		r = f_cntl(C.KBD_dev, (long)&KBD_dev_sg, TIOCGETP);
-		KERNEL_DEBUG("fcntl(TIOCGETP) -> %li", r);
-		assert(r == 0);
-
-		sg = KBD_dev_sg;
-		sg.sg_flags &= TF_FLAGS;
-		sg.sg_flags |= T_RAW;
-		KERNEL_DEBUG("sg.sg_flags 0x%x", sg.sg_flags);
-
-		r = f_cntl(C.KBD_dev, (long)&sg, TIOCSETN);
-		KERNEL_DEBUG("fcntl(TIOCSETN) -> %li", r);
-		assert(r == 0);
-	}
+	//set_tty_mode( RAW );
 
 	/* initialize mouse */
 	if (!init_moose())
@@ -1498,7 +1592,6 @@ k_main(void *dummy)
 		goto leave;
 	}
 
-	BLOG((false, "Handles: KBD %ld, ALERT %ld", C.KBD_dev, C.alert_pipe));
 
 	/*
 	 * Start AES thread
@@ -1540,19 +1633,24 @@ k_main(void *dummy)
 
 	add_to_tasklist(C.Aes);
 	add_to_tasklist(C.Hlp);
-	
+
 	if (cfg.opentaskman)
 		post_cevent(C.Hlp, ceExecfunc, open_taskmanager,NULL, 1,0, NULL,NULL);
-	
+
 	post_cevent(C.Hlp, CE_start_apps, NULL,NULL, 0,0, NULL,NULL);
-	
+
+	set_tty_mode( COOKED );
 	C.Aes->waiting_for |= XAWAIT_MENU;
 
-	BLOG((false, " Entering main loop ------------------------------------"));
+	default_input_channels = 1UL << C.KBD_dev;	/* We are waiting on all these channels */
+	default_input_channels |= 1UL << C.alert_pipe;	/* Monitor the system alert pipe */
+	tty = (struct tty *)C.Aes->p->p_fd->ofiles[C.KBD_dev]->devinfo;
+
 	/*
 	 * Main kernel loop
 	 */
-	do {
+	do
+	{
 		/* The root of all locking under AES pid. */
 		/* how about this? It means that these
 	         * semaphores are not needed and are effectively skipped.
@@ -1561,13 +1659,16 @@ k_main(void *dummy)
 		unsigned long input_channels;
 		long fs_rtn;
 
-		input_channels = 1UL << C.KBD_dev;	/* We are waiting on all these channels */
-		input_channels |= 1UL << C.alert_pipe;	/* Monitor the system alert pipe */
+		input_channels = default_input_channels;
 
 		/* The pivoting point of XaAES!
 		 * Wait via Fselect() for keyboard and alerts.
 		 */
-		fs_rtn = f_select(aessys_timeout, (long *) &input_channels, 0L, 0L);	
+		PROFILE(("main:fselect:%ld", n++ ));
+		if( aessys_timeout == 0 )
+			aessys_timeout = AESSYS_TIMEOUT;
+
+		fs_rtn = f_select(aessys_timeout, (long *) &input_channels, 0L, 0L);
 
 		DIAG((D_kern, NULL,">>Fselect -> %d, channels: 0x%08lx, update_lock %d(%s), mouse_lock %d(%s)",
 			fs_rtn,
@@ -1577,6 +1678,7 @@ k_main(void *dummy)
 			mouse_locked() ? mouse_locked()->pid : 0,
 			mouse_locked() ? mouse_locked()->name : ""));
 
+#if 0
 		if (!C.Hlp)
 		{
 			/*
@@ -1597,17 +1699,24 @@ k_main(void *dummy)
 					yield(), to--;
 			}
 		}
-				
+#endif
 		if (fs_rtn > 0)
 		{
 			if (input_channels & (1UL << C.KBD_dev))
+			{
 				keyboard_input(lock);
+			}
 
 			if (input_channels & (1UL << C.alert_pipe))
+			{
 				alert_input(lock);
+			}
 		}
-
-		if (aessys_timeout)
+		else if( aessys_timeout > 1 )
+		{
+			tty->state &= ~TS_COOKED;	/* we are kernel ... */
+		}
+		if (aessys_timeout == 1)
 		{
 			/* some regular thing todo */
 
@@ -1651,6 +1760,7 @@ setup_common(void)
 	p_signal(SIGQUIT,  (long) ignore);
 	p_signal(SIGPIPE,  (long) ignore);
 	p_signal(SIGALRM,  (long) ignore);
+	p_signal(SIGSTOP,  (long) ignore);
 	p_signal(SIGTSTP,  (long) ignore);
 	p_signal(SIGTTIN,  (long) ignore);
 	p_signal(SIGTTOU,  (long) ignore);
@@ -1664,7 +1774,6 @@ setup_common(void)
 #if !GENERATE_DIAGS
 	/* fatal signals */
 	p_signal(SIGILL,   (long) fatal);
-	p_signal(SIGTRAP,  (long) fatal);
 	p_signal(SIGTRAP,  (long) fatal);
 	p_signal(SIGABRT,  (long) fatal);
 	p_signal(SIGFPE,   (long) fatal);
@@ -1694,7 +1803,6 @@ restore_sigs(void)
 	p_signal(SIGSEGV,  SIG_DFL);
 
 }
-
 
 static void
 k_exit(void)
@@ -1740,8 +1848,8 @@ k_exit(void)
 	/*
 	 * deinstall trap #2 handler
 	 */
-	register_trap2(XA_handler, 1, 0, 0);
-	BLOG((false, "unregistered trap handler"));
+	if(register_trap2(XA_handler, 1, 0, 0))
+		BLOG((false, "unregister trap handler failed"));
 // 	display("done");
 
 	/*
@@ -1760,29 +1868,31 @@ k_exit(void)
 	 */
 	PRCLOSE;
 
+	BLOG((false, "Closing alert pipe"));
+	if (C.alert_pipe > 0)
+		f_close(C.alert_pipe);
+
+	{
+	struct proc *lp = pid2proc( loader_pid );
+	BLOG((false, "Waking up loader: pid=%ld wait_cond=%lx wait_q=%d", loader_pid, lp->wait_cond, lp->wait_q));
+	/* wakeup loader */
+
+	//wake(WAIT_Q, (long)&loader_pid);
+	wake(WAIT_Q, lp->wait_cond );
+	}
+
+	/* XXX todo -> module_exit */
+// 	display("kthread_exit...");
+
 	if (C.KBD_dev > 0)
 	{
 		long r;
-		BLOG((false, "Closing kbd dev"));
+		BLOG((false, "Closing kbd dev:%ld", C.KBD_dev));
 		r = f_cntl(C.KBD_dev, (long)&KBD_dev_sg, TIOCSETN);
 		KERNEL_DEBUG("fcntl(TIOCSETN) -> %li", r);
 
 		f_close(C.KBD_dev);
 	}
 
-	BLOG((false, "Closing alert pipe"));
-	if (C.alert_pipe > 0)
-		f_close(C.alert_pipe);
-
-	BLOG((false, "closed all input devices"));
-	
-	BLOG((false, "Waking up loader"));
-	/* wakeup loader */
-	wake(WAIT_Q, (long)&loader_pid);
-		
-	BLOG((false, "-> kthread_exit"));
-
-	/* XXX todo -> module_exit */
-// 	display("kthread_exit...");
-// 	kthread_exit(0);
+ 	kthread_exit(0);
 }

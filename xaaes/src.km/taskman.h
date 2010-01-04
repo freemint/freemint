@@ -34,9 +34,13 @@ struct xa_window * _cdecl create_dwind(enum locks lock, XA_WIND_ATTR tp, char *t
 
 struct helpthread_data * get_helpthread_data(struct xa_client *client);
 
+void add_window_to_tasklist(struct xa_window *wi, const char *title);
 void add_to_tasklist(struct xa_client *client);
 void remove_from_tasklist(struct xa_client *client);
-void update_tasklist_entry(struct xa_client *client);
+
+#define NO_AES_CLIENT	0
+#define AES_CLIENT	1
+void update_tasklist_entry(int md, void *app, int redraw);
 
 void quit_all_apps(enum locks lock, struct xa_client *except, short reason);
 void quit_all_clients(enum locks lock, struct cfg_name_list *except_nl, struct xa_client *except_cl, short reason);
@@ -51,8 +55,12 @@ void send_terminate(enum locks lock, struct xa_client *client, short reason);
 void CHlp_aesmsg(struct xa_client *client);
 void screen_dump(enum locks lock, struct xa_client *client, bool open);
 
+void force_window_top( enum locks lock, struct xa_window *wind );
+void wakeup_client(struct xa_client *client);
+void app_or_acc_in_front( enum locks lock, struct xa_client *client );
 void open_taskmanager(enum locks lock, struct xa_client *client, bool open);
 void open_systemalerts(enum locks lock, struct xa_client *client, bool open);
+void open_launcher(enum locks lock, struct xa_client *client);
 // void open_reschange(enum locks lock, struct xa_client *client, bool open);
 // void open_milan_reschange(enum locks lock, struct xa_client *client, bool open);
 // void open_nova_reschange(enum locks lock, struct xa_client *client, bool open);

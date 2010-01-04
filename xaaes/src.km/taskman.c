@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
  *                                        2004 F.Naumann & O.Skancke
@@ -62,6 +62,73 @@
 #include "mint/stat.h"
 #include "mint/fcntl.h"
 
+#define NEWLOAD 1
+#ifndef USE_Suptime
+#define USE_Suptime 1
+#endif
+#ifndef ASK_BEFORE_SHUTDOWN
+#define ASK_BEFORE_SHUTDOWN 0
+#endif
+
+#define ADDPROCINFO	0
+
+char XAAESNAME[] = "XaAES";
+
+static void add_kerinfo( char *path, struct scroll_info *list, struct scroll_entry *this, struct scroll_entry *to, struct scroll_content *sc, int maxlen, int startline, int redraw, long *pinfo );
+static int ker_stat( int pid, char *what, long pinfo[] );
+
+
+	/* text-len for lists seems to be limited */
+#define PROCINFLEN	148
+
+/* wait for non-aes-process to be killed */
+#define TM_KILLLOOPS	2000
+#define TM_KILLWAIT		15000
+/* dont signal these pids */
+#define TM_MAXPID		1000
+#define TM_MINPID		3
+
+#define TM_WINDOW		0x01L	/* window-entry */
+#define TM_MEMINFO	0x02L	/* extra line for memory-info */
+#define TM_UPDATED	0x04L	/* was updated */
+#define TM_NOAES		0x08L	/* not an aes-client */
+#define TM_PROCINFO	0x10L	/* process-info (if def'd) */
+#define TM_HEADER		0x20L	/* header */
+#define TM_CLIENT		0x40L	/* aes-client-entry in taskman-list */
+
+#define SYSLOGMINH	MINOBJMVH	/* syslog cannot have smaller height */
+
+#if USE_Suptime
+#ifdef trap_14_w
+#undef trap_14_w	/* "redefined" warning */
+#endif
+#include <mintbind.h>	/* Suptime */
+#endif
+
+#if ASK_BEFORE_SHUTDOWN
+static	AESPB axx;
+char ASK_SHUTDOWN_ALERT[] = "[2][leave XaAES][Cancel|Ok]";
+static char ASK_QUITALL_ALERT[] = "[2][Quit All][Cancel|Ok]";
+int xaaes_do_form_alert( enum locks lock, int def_butt, char al_text[], char title[] );
+/*
+ * form_alert for XaAES-thread internal
+ */
+int xaaes_do_form_alert( enum locks lock, int def_butt, char al_text[], char title[] )
+{
+	C.Aes->waiting_pb = &axx;
+	C.update_lock = C.Aes->p;
+	C.updatelock_count++;
+
+	do_form_alert( lock, C.Aes, def_butt, al_text, title );
+	Block(C.Aes, 0);
+	C.updatelock_count--;
+	C.update_lock = NULL;
+	C.Aes->waiting_pb = NULL;
+	Unblock(C.Aes, 0, 0);
+	return axx.intout[0];
+}
+#endif
+
 static struct xa_wtxt_inf norm_txt =
 {
  WTXT_NOCLIP,
@@ -77,7 +144,7 @@ static struct xa_wtxt_inf acc_txt =
  WTXT_NOCLIP,
 /* id  pnts  flags wrm,     efx   fgc      bgc   banner x_3dact y_3dact texture */
  {  -1,  -1, 0, MD_TRANS, 0, G_BLUE, G_LBLUE, G_WHITE,   0,      0,     NULL  },	/* Normal */
- {  -1,  -1, 0, MD_TRANS, 0, G_BLUE, G_LBLUE, G_WHITE,   0,      0,     NULL  },	/* Selected */
+ {  -1,  -1, 0, MD_TRANS, 0, G_WHITE/*BLUE*/, G_LBLUE, G_WHITE,   0,      0,     NULL  },	/* Selected */
  {  -1,  -1, 0, MD_TRANS, 0, G_BLACK, G_WHITE, G_WHITE,   0,      0,     NULL  },	/* Highlighted */
 
 };
@@ -87,7 +154,7 @@ static struct xa_wtxt_inf prg_txt =
  WTXT_NOCLIP,
 /* id  pnts  flags wrm,     efx   fgc      bgc   banner x_3dact y_3dact texture */
  {  -1,  -1, 0, MD_TRANS, 0, G_LRED, G_WHITE, G_WHITE,   0,      0,     NULL  },	/* Normal */
- {  -1,  -1, 0, MD_TRANS, 0, G_LRED, G_WHITE, G_WHITE,   0,      0,     NULL  },	/* Selected */
+ {  -1,  -1, 0, MD_TRANS, 0, G_WHITE/*RED*/, G_WHITE, G_WHITE,   0,      0,     NULL  },	/* Selected */
  {  -1,  -1, 0, MD_TRANS, 0, G_BLACK, G_WHITE, G_WHITE,   0,      0,     NULL  },	/* Highlighted */
 
 };
@@ -149,7 +216,17 @@ delete_htd(void *_htd)
 	}
 	kfree(htd);
 }
-	
+
+/*
+ * simulate click on list
+ */
+static void init_list_focus( OBJECT *obtree, short item, short y )
+{
+	struct moose_data md = {0};
+	md.y = y;
+	click_scroll_list(0, obtree, item, &md);
+}
+
 struct helpthread_data *
 get_helpthread_data(struct xa_client *client)
 {
@@ -167,33 +244,210 @@ get_helpthread_data(struct xa_client *client)
 	return htd;
 }
 
+static long uptime = 99;	/* system-uptime */
+
+/*
+ * md = 1: aes-client
+ * md = 0: no aes-client
+ */
+
 static char *
-build_tasklist_string(struct xa_client *client)
+build_tasklist_string( int md, void *app)
 {
-	long tx_len = 128;
+	long tx_len = 148;
 	char *tx;
- 
+
 	tx = kmalloc(tx_len);
 
 	if (tx)
 	{
-		long prio = p_getpriority(0, client->p->pid);
+		struct proc *p;
+		unsigned char *name, c=0, *cp;
+		long pinfo[4], utim, ptim;
+		static char *state_str = "CRWIZTSs";
 
-		if (prio >= 0)
+		if( md == AES_CLIENT  )
 		{
-			prio -= 20;
-
-			if (prio < 0 && prio > -10)
-				sprintf(tx, tx_len, " %3d/ %2ld%s", client->p->pid, prio, client->name);
-			else
-				sprintf(tx, tx_len, " %3d/%3ld%s", client->p->pid, prio, client->name);
+			p = ((struct xa_client *)app)->p;
+			name = ((struct xa_client *)app)->name;
+			c = name[15];
+			name[15] = 0;
 		}
 		else
-			sprintf(tx, tx_len, " %3d/    %s", client->p->pid, 0, client->name);
+		{
+			p = app;
+			name = p->name;
+		}
+
+		if( p->pid )
+		{
+			pinfo[0] = 23;
+			pinfo[1] = 0;
+
+			if( ker_stat( p->pid, "stat", pinfo ) )
+				pinfo[0] = 0;
+		}
+		else
+			pinfo[0] = 0;	/* how to get size of kernel? */
+
+		utim = p->systime + p->usrtime;
+		if( uptime )
+		{
+			if( uptime > 1000000L )
+			{
+				ptim = utim * 10L / (uptime/10L);
+			}
+			else
+				ptim = utim * 100L / uptime;
+		}
+		else
+			ptim = 0L;
+
+		for( cp = p->cmdlin; *cp > ' '; )
+			if( *cp++ == 0x7f )
+				break;
+		for( ; *cp && *cp <= ' '; cp++ )
+		;
+
+		sprintf(tx, tx_len, "%16s %4d %4d %4d %3d   %c    %c %8ld %11ld %2ld %s",
+			name, p->pid, p->ppid, p->pgrp, p->curpri, p->domain == 0?'T':'M',
+			state_str[p->wait_q], pinfo[0],
+			utim, ptim,
+			cp
+		);
+
+		if( md == 1 )
+			name[15] = c;
 	}
 	return tx;
-};
+}
 
+void add_window_to_tasklist(struct xa_window *wi, const char *title)
+{
+	if (wi && (wi->window_status & XAWS_OPEN)
+		&& !( wi->dial
+			& ( created_for_SLIST
+			| created_for_TOOLBAR
+			| created_for_CALC
+			| created_for_POPUP
+			| created_for_ALERT
+			))
+	)
+	{
+		struct helpthread_data *htd = lookup_xa_data_byname(&C.Hlp->xa_data, HTDNAME);
+		struct scroll_entry *this;
+		struct xa_window *wind;
+
+		if (!htd)
+			return;
+		wind = htd->w_taskman;
+
+		if (wind && wind != wi)
+		{
+			struct widget_tree *wt = get_widget(wind, XAW_TOOLBAR)->stuff;
+			OBJECT *obtree = wt->tree; //ResourceTree(C.Aes_rsc, TASK_MANAGER);
+			SCROLL_INFO *list = object_get_slist(obtree + TM_LIST);
+			struct sesetget_params p = { 0 };
+
+			/* search owner in list */
+			p.idx = -1;
+			p.arg.data = wi->owner;
+			p.level.flags = 0;
+			p.level.curlevel = 0;
+			p.level.maxlevel = 0;
+			list->get(list, NULL, SEGET_ENTRYBYDATA, &p);
+			this = p.e;
+			if( this )
+			{
+				struct scroll_entry *thiswi = 0;
+
+				p.idx = -1;
+				p.arg.data = wi;
+				p.level.flags = 0;
+				p.level.curlevel = 0;
+				p.level.maxlevel = 1;
+				list->get(list, NULL, SEGET_ENTRYBYDATA, &p);
+				thiswi = p.e;
+				if( title == (const char*)-1 )
+				{
+					if( !thiswi )
+						return;
+					/* window closed: delete list-entry */
+					if( thiswi->prev )
+						list->cur = thiswi->prev;
+					else
+						list->cur = this;
+					list->del(list, thiswi, true);
+					list->set(list, this, SESET_OPEN, 1, NORMREDRAW);
+					list->set(list, list->cur, SESET_SELECTED, 0, NORMREDRAW);
+				}
+				else
+				{
+					if( thiswi /*&& wi->wname[0]*/ )
+					{
+						/* change title */
+						struct setcontent_text t = { 0 };
+
+						title = wi->wname;
+						if( title && *title )
+						{
+							(const char *)t.text = title;
+							list->set(list, thiswi, SESET_TEXT, (long)&t, true);
+						}
+					}
+					else
+					{
+						/* new window */
+						struct scroll_content sc = {{ 0 }};
+						bool redraw = (wind->window_status & XAWS_OPEN) ? true : false;
+						sc.t.text = wi->wname;
+						if( !*sc.t.text )
+							sc.t.text = (long)title & 1L ? 0 : title;
+						if( !sc.t.text || !*sc.t.text )
+							return;
+						sc.t.strings = 1;
+						sc.data = wi;
+						sc.usr_flags = TM_WINDOW;	/* window */
+						list->add(list, this, NULL, &sc, SEADD_CHILD, 0, redraw);
+
+						list->set(list, this, SESET_OPEN, 1, NORMREDRAW);
+						list->set(list, list->cur, SESET_SELECTED, 0, NORMREDRAW);
+					}
+				}
+			}
+		}
+	}
+	else	/* if dial changed delete from list? */
+	{
+	}
+}
+
+
+#if ADDPROCINFO
+static void
+add_proc_info( int md, void *app,
+	SCROLL_INFO *list,
+	struct scroll_entry *this,
+	struct scroll_content *sc
+)
+{
+	char path[128];
+	//struct scroll_content sc;
+	struct scroll_entry *to;
+	int pid;
+	if( md == AES_CLIENT )
+		pid = ((struct xa_client *)app)->p->pid;
+	else if( md == NO_AES_CLIENT )
+		pid = ((struct proc *)app)->pid;
+	else
+		return;
+	sprintf( path, sizeof(path), "u:/kern/%d/status", pid );
+	sc->usr_flags = TM_PROCINFO;
+	sc->fnt = &norm_txt;
+	to = this->down;
+	add_kerinfo( path, list, this, to, sc, PROCINFLEN, 0, NORMREDRAW, NULL );
+}
+#endif
 void
 add_to_tasklist(struct xa_client *client)
 {
@@ -202,16 +456,16 @@ add_to_tasklist(struct xa_client *client)
 
 	if (!htd)
 		return;
-	
+
 	wind = htd->w_taskman;
-	
+
 	if (wind)
 	{
 		struct widget_tree *wt = get_widget(wind, XAW_TOOLBAR)->stuff;
 		OBJECT *obtree = wt->tree; //ResourceTree(C.Aes_rsc, TASK_MANAGER);
 		SCROLL_INFO *list = object_get_slist(obtree + TM_LIST);
 		OBJECT *icon;
-		char *tx;
+		char *tx, *cp;
 		struct scroll_content sc = {{ 0 }};
 
 // 		display("add2tl: wt = %lx, obtree = %lx, list =%lx", wt, obtree, list);
@@ -238,13 +492,60 @@ add_to_tasklist(struct xa_client *client)
 		else
 			icon = obtree + TM_ICN_XAAES;
 
-		tx = build_tasklist_string(client);
+		tx = build_tasklist_string(1, client);
 		sc.icon = icon;
-		sc.t.text = tx ? tx : client->name;
+		cp = tx ? tx : client->name;
+		sc.t.text = cp;
 		sc.t.strings = 1;
 		sc.data = client;
-		list->add(list, NULL, NULL, &sc, false, 0, true);
+		sc.xflags = OF_AUTO_OPEN|OF_OPENABLE;
+		sc.usr_flags = TM_CLIENT;	/* client */
+
+		/* append at end of this type */
+
+		{
+			struct scroll_entry *this = 0, *last;
+
+			for( last = 0, this = list->start; this; this = this->next )
+				if( this->usr_flags & TM_CLIENT )
+					last = this;
+
+			this = last;
+			list->add(list, this, NULL, &sc, false, 0, NORMREDRAW);
+			list->set(list, list->cur, SESET_SELECTED, 0, NORMREDRAW);
+		}
+
 		if (tx) kfree(tx);
+
+#if ADDPROCINFO
+		{
+			struct sesetget_params p = { 0 };
+			struct scroll_entry *this;
+			/* search owner in list */
+			p.idx = -1;
+			p.arg.data = client;
+			p.level.flags = 0;
+			p.level.curlevel = 0;
+			p.level.maxlevel = 0;
+			list->get(list, NULL, SEGET_ENTRYBYDATA, &p);
+			this = p.e;
+
+			sc.t.text = "<proc>";
+			sc.t.strings = 1;
+			sc.data = client;
+			sc.usr_flags = TM_PROCINFO;	/* proc-info */
+			sc.fnt = &norm_txt;
+			list->add(list, this, NULL, &sc, SEADD_CHILD|SEADD_PRIOR, 0, true);
+
+			p.level.maxlevel = 1;
+			(const char*)p.arg.txt = sc.t.text;
+			list->get(list, this, SEGET_ENTRYBYTEXT, &p);
+			this = p.e;
+		if( this )
+				add_proc_info( 1, client, list, this, &sc );
+
+		}
+#endif
 	}
 }
 
@@ -270,13 +571,30 @@ remove_from_tasklist(struct xa_client *client)
 			p.arg.data = client;
 			list->get(list, NULL, SEGET_ENTRYBYDATA, &p);
 			if (p.e)
+			{
+#if 0	//debugging-info: dont delete
+				struct scroll_entry *this = p.e;
+				BLOG((0,"remove_from_tasklist: flags=%lx", this->usr_flags ));
+				if( this->usr_flags & TM_NOAES )
+				{
+					struct proc *pr = (struct proc *)client;
+					BLOG((0,"remove_from_tasklist: delete: NOAES:%lx:%s:%lx", pr, this->content->c.text.text, p.e ));
+				}
+				else if( this->usr_flags == TM_CLIENT )
+					BLOG((0,"remove_from_tasklist: delete CLIENT:%d:%s(%s):%lx", client->p->pid, client->name, client->p->name, p.e ));
+#endif
 				list->del(list, p.e, true);
+			}
 		}
 	}
 }
 
+/*
+ * md = 1: aes-client
+ * md = 0: no aes-client
+ */
 void
-update_tasklist_entry(struct xa_client *client)
+update_tasklist_entry( int md, void *app, int redraw )
 {
 	struct helpthread_data *htd = lookup_xa_data_byname(&C.Hlp->xa_data, HTDNAME);
 	struct xa_window *wind;
@@ -291,26 +609,78 @@ update_tasklist_entry(struct xa_client *client)
 		OBJECT *obtree = wt->tree; //ResourceTree(C.Aes_rsc, TASK_MANAGER);
 		SCROLL_INFO *list = object_get_slist(obtree + TM_LIST);
 		struct sesetget_params p = { 0 };
-	
+		struct scroll_content sc = {{ 0 }};
+
 		if (list)
 		{
-			char *tx;
-			p.arg.data = client;
+			char *tx = 0;
+			struct setcontent_text t = { 0 };
+
+			p.arg.data = app;
 			list->get(list, NULL, SEGET_ENTRYBYDATA, &p);
 			if (p.e)
 			{
-				struct setcontent_text t = { 0 };
+				struct scroll_entry *this = p.e;
+				struct se_content *sec = this->content;
 
-				if ((tx = build_tasklist_string(client)))
+				if( md == AES_CLIENT )
+				{
+					if( *(((struct xa_client *)app)->name+2) <= ' ' )
+					{
+						remove_from_tasklist( app );
+						return;
+					}
+				}
+
+				if ((tx = build_tasklist_string(md, app)))
 					t.text = tx;
 				else
-					t.text = client->name;
-			
-				list->set(list, p.e, SESET_TEXT, (long)&t, true);
-			
-				if (tx)
-					kfree(tx);
+				{
+					if( md == AES_CLIENT )
+						t.text = ((struct xa_client *)app)->name;
+					else
+						t.text = ((struct proc *)app)->name;
+				}
+
+				/* set only if changed */
+				if( !sec || strcmp( t.text, sec->c.text.text ) )
+				{
+					list->set(list, this, SESET_TEXT, (long)&t, NORMREDRAW);
+				}
+				this->usr_flags |= TM_UPDATED;
+
+#if ADDPROCINFO
+				p.level.maxlevel = 1;
+				(const char*)p.arg.txt = "<proc>";
+				list->get(list, p.e, SEGET_ENTRYBYTEXT, &p);
+
+				if( p.e )
+				{
+					struct scroll_content sc = {{ 0 }};
+					sc.t.strings = 1;
+					add_proc_info( md, app, list, p.e, &sc );
+				}
+#endif
 			}
+			else if( md == 0 )	/* add non-client */
+			{
+				//p.arg.data = app;
+
+				sc.t.strings = 1;
+				sc.data = app;
+				sc.xflags = 0;
+				sc.usr_flags = TM_UPDATED | TM_NOAES;
+				//sc.icon = obtree + TM_ICN_MENU;
+				if ((tx = build_tasklist_string(md, app)))
+					t.text = tx;
+				else if( md == AES_CLIENT )
+					t.text = ((struct xa_client *)app)->name;
+				sc.t.text = t.text;
+
+				list->add(list, NULL, NULL, &sc, false, 0, NORMREDRAW);
+			}
+			if (tx)
+				kfree(tx);
 		}
 	}
 }
@@ -334,7 +704,7 @@ isin_namelist(struct cfg_name_list *list, char *name, short nlen, struct cfg_nam
 		*last = NULL;
 	if (prev)
 		*prev = NULL;
-	
+
 	while (list)
 	{
 		DIAGS((" -- checking list=%lx, name=(%d)'%s'",
@@ -347,19 +717,19 @@ isin_namelist(struct cfg_name_list *list, char *name, short nlen, struct cfg_nam
 		}
 		if (prev)
 			*prev = list;
-		
+
 		list = list->next;
 	}
 
 	if (last)
 		*last = list;
-	
+
 	DIAGS((" -- ret=%s, last=%lx, prev=%lx",
 		ret ? "true":"false", last, prev));
 
 	return ret;
 }
-			
+
 void
 addto_namelist(struct cfg_name_list **list, char *name)
 {
@@ -367,11 +737,11 @@ addto_namelist(struct cfg_name_list **list, char *name)
 	short nlen = strlen(name);
 
 	DIAGS(("addto_namelist: add '%s' to list=%lx(%lx)", name, *list, list));
-	
+
 	if (nlen && !isin_namelist(*list, name, 0, NULL, &prev))
 	{
 		new = kmalloc(sizeof(*new));
-	
+
 		if (new)
 		{
 			if (nlen > 32)
@@ -479,7 +849,7 @@ quit_all_apps(enum locks lock, struct xa_client *except, short reason)
 	Sema_Dn(clients);
 }
 
-#if INCLUDE_UNUSED
+#if ALT_CTRL_APP_OPS && HOTKEYQUIT
 void
 quit_all_clients(enum locks lock, struct cfg_name_list *except_nl, struct xa_client *except_cl, short reason)
 {
@@ -499,7 +869,7 @@ quit_all_clients(enum locks lock, struct cfg_name_list *except_nl, struct xa_cli
 		DIAGS((" -- _aes_shell_ defined: pid=%d, client=%lx, name=%s",
 			C.DSKpid, dsk, dsk ? dsk->name : "no shell loaded"));
 	}
-	
+
 	FOREACH_CLIENT(client)
 	{
 		if (is_client(client) &&
@@ -533,12 +903,12 @@ CHlp_aesmsg(struct xa_client *client)
 					C.update_lock = NULL;
 					C.updatelock_count--;
 					unlock_screen(client->p);
-// 					do_form_alert(0, client, 1, "[1][Snapper got videodata, screen unlocked][OK]", "XaAES");
+// 					do_form_alert(0, client, 1, "[1][Snapper got videodata, screen unlocked][OK]", XAAESNAME);
 				}
 				else if (m->m[3] != 0)
 				{
 					sprintf(alert, sizeof(alert), /*scrn_snap_serr*/"[1][ Snapper could not save snap! | ERROR: %d ][ Ok ]", m->m[3]);
-					do_form_alert(0, client, 1, alert, "XaAES");
+					do_form_alert(0, client, 1, alert, XAAESNAME);
 				}
 				break;
 			}
@@ -548,14 +918,14 @@ CHlp_aesmsg(struct xa_client *client)
 }
 
 
-#if INCLUDE_UNUSED
+#if ALT_CTRL_APP_OPS
 static char sdalert[] = /*scrn_snap_what*/ "[2][What do you want to snap?][Block|Full screen|Top Window|Cancel]";
 void
 screen_dump(enum locks lock, struct xa_client *client, bool open)
 {
 	struct xa_client *dest_client;
 
-	if ((dest_client = get_app_by_procname("xaaesnap")))
+	if ((dest_client = get_app_by_procname("xaaesnap")) || cfg.snapper[0] )
 	{
 // 		display("send dump message to %s", dest_client->proc_name);
 		if (update_locked() != client->p && lock_screen(client->p, true))
@@ -563,15 +933,15 @@ screen_dump(enum locks lock, struct xa_client *client, bool open)
 			short msg[8] = {0x5354, client->p->pid, 0, 0, 0,0,200,200};
 			RECT r, d = {0};
 			short b = 0, x, y;
-			bool doit = true;
+			bool doit = true, snapmsg = false;
 			AESPB *a = C.Hlp_pb;
 
 			C.update_lock = client->p;
 			C.updatelock_count++;
 
-			do_form_alert(lock, client, 4, sdalert, "XaAES");
+			do_form_alert(lock, client, 4, sdalert, XAAESNAME);
 			Block(client, 0);
-			
+
 // 			display("intout %d", C.Hlp_pb->intout[0]);
 
 			if (a->intout[0] == 1) //(open)
@@ -580,28 +950,29 @@ screen_dump(enum locks lock, struct xa_client *client, bool open)
 				while (!b)
 					check_mouse(client, &b, &x, &y);
 
-				r.x = x; 
+				r.x = x;
 				r.y = y;
 				r.w = 0;
 				r.h = 0;
 				rubber_box(client, SE, r, &d, 0,0, root_window->r.h, root_window->r.w, &r);
 			}
-			else if (a->intout[0] == 2)
+			else if (a->intout[0] == 2)	/* full */
 				r = root_window->r;
-			else if (a->intout[0] == 3)
+			else if (a->intout[0] == 3)	/* top */
 			{
 				struct xa_window *wind = TOP_WINDOW;
 
-				if (wind->r.x > 0 && wind->r.y > 0 &&
+				if ( !dest_client ||
+						(wind->r.x > 0 && wind->r.y > 0 &&
 				   (wind->r.x + wind->r.w) < root_window->r.w &&
-				   (wind->r.y + wind->r.h) < root_window->r.h)
+				   (wind->r.y + wind->r.h) < root_window->r.h) )
 					r = wind->r;
 				else
 				{
 					C.updatelock_count--;
 					C.update_lock = NULL;
 					unlock_screen(client->p);
-					do_form_alert(lock, client, 1, /*scrn_snap_twc*/"[1][Cannot snap topwindow as | parts of it is offscreen!][OK]", "XaAES");
+					do_form_alert(lock, client, 1, /*scrn_snap_twc*/"[1][Cannot snap topwindow as | parts of it is offscreen!][OK]", XAAESNAME);
 					doit = false;
 				}
 			}
@@ -614,24 +985,107 @@ screen_dump(enum locks lock, struct xa_client *client, bool open)
 				msg[5] = r.y;
 				msg[6] = r.w;
 				msg[7] = r.h;
-				send_a_message(lock, dest_client, AMQ_NORM, 0, (union msg_buf *)msg);
+				if( dest_client )
+				{
+					send_a_message(lock, dest_client, AMQ_NORM, 0, (union msg_buf *)msg);
+					snapmsg = true;
+				}
+				else
+				{
+					struct proc *p;
+					long ret;
+					char cmdlin[32] = "x0 0 1\0";
+					*cmdlin = 6;
+					*(cmdlin + 6) = 0;
+					/* <wait> <key> <verbose>
+					 * key: 0 -> screen
+					 	      2 -> top-window: work-area
+					 	      6 -> top-window: whole-area
+					 */
+					if (a->intout[0] == 3)	/* top window */
+						*(cmdlin + 3) = '2';
+					else if (a->intout[0] == 1)	/* box */
+					{
+						int i = sprintf( cmdlin + 6, sizeof(cmdlin)-1, " %d %d %d %d\0", r.x, r.y, r.w, r.h );
+						*(cmdlin + 3) = '8';
+						*cmdlin = i + 6;
+					}
+					else
+						*(cmdlin + 3) = '0';	/* full screen */
+
+					ret = create_process(cfg.snapper, cmdlin, NULL,
+						     &p, 0, NULL);
+
+				}
 // 				xa_graf_mouse(ARROW, NULL,NULL, false);
 			}
-			else
+			if( snapmsg == false )
 			{
 				C.updatelock_count--;
 				C.update_lock = NULL;
 				unlock_screen(client->p);
 			}
-			client->usr_evnt = 0;
-			client->waiting_for = XAWAIT_MULTI|MU_MESAG;
-			client->waiting_pb = a;
+			if( dest_client )
+			{
+				client->usr_evnt = 0;
+				client->waiting_for = XAWAIT_MULTI|MU_MESAG;
+				client->waiting_pb = a;
+			}
 		}
 	}
 	else
-		do_form_alert(lock, client, 1, /*scrn_snap_notfound*/"[1]['xaaesnap' process not found.|Start 'xaaesnap.prg' and try again|Later XaAES will start the snapper|according to userconfiguration][OK]", "XaAES");
+		do_form_alert(lock, client, 1, /*scrn_snap_notfound*/
+"[1]['xaaesnap' process not found.|Start 'xaaesnap.prg' and try again|or define snapshot in xaaes.cnf][OK]",
+	XAAESNAME);
 }
 #endif
+
+void force_window_top( enum locks lock, struct xa_window *wind )
+{
+	if( S.focus )
+	{
+		setwin_untopped( lock, S.focus, true );
+		S.focus->colours = S.focus->untop_cols;
+		send_iredraw(lock, S.focus, 0, NULL);
+		S.focus = 0;	/* force focus to new top */
+	}
+	TOP_WINDOW = 0;
+	top_window( lock, true, true, wind );
+}
+
+/*
+ * if client is STOPPED, send SIGCONT
+ */
+void wakeup_client(struct xa_client *client)
+{
+	if( client->p->wait_q == STOP_Q )
+	{
+		ikill( client->p->pid, SIGCONT );
+	}
+}
+
+void app_or_acc_in_front( enum locks lock, struct xa_client *client )
+{
+	/* stolen from k_keybd.c#390: made a function for this */
+	if ( client )
+	{
+		if( client->name[1] == '*' )
+			hide_app( lock, client );
+		app_in_front(lock, client, true, true, true);
+
+		if (client->type & APP_ACCESSORY)
+		{
+			//wakeup_client(client);
+			send_app_message(lock, NULL, client, AMQ_NORM, QMF_CHKDUP,
+					 AC_OPEN, 0, 0, 0,
+					 client->p->pid, 0, 0, 0);
+		}
+	}
+}
+
+/*
+ * todo: if fileselector is open during shutdown there's a problem
+ */
 static void
 taskmanager_form_exit(struct xa_client *Client,
 		      struct xa_window *wind,
@@ -639,14 +1093,37 @@ taskmanager_form_exit(struct xa_client *Client,
 		      struct fmd_result *fr)
 {
 	enum locks lock = 0;
-	struct xa_vdi_settings *v = wind->vdi_settings;
-	
+	short item = aesobj_item(&fr->obj);
+	struct xa_client *client = NULL; //cur_client(list);
+	OBJECT *ob;
+	SCROLL_INFO *list;
+
 	Sema_Up(clients);
 	lock |= clients;
-	
+
 	wt->which = 0;
 
-	switch (aesobj_item(&fr->obj))
+	ob = wt->tree + TM_LIST;
+	list = object_get_slist(ob);
+
+	if( item != TM_LIST )
+	{
+		object_deselect(wt->tree + item);
+		redraw_toolbar(lock, wind, item);
+		if( item < XAAES_32 )
+		{
+			if (list && list->cur)
+			{
+				client = list->cur->data;
+				if( (list->cur->usr_flags & TM_WINDOW) )
+					client = ((struct xa_window*)client)->owner;
+			}
+			else
+				return;
+		}
+	}
+
+	switch (item)
 	{
 		case TM_LIST:
 		{
@@ -656,160 +1133,268 @@ taskmanager_form_exit(struct xa_client *Client,
 			if ( fr->md && ((aesobj_type(&fr->obj) & 0xff) == G_SLIST))
 			{
 				if (fr->md->clicks > 1)
-					dclick_scroll_list(lock, obtree, aesobj_item(&fr->obj), fr->md);
+					dclick_scroll_list(lock, obtree, item, fr->md);
 				else
-					click_scroll_list(lock, obtree, aesobj_item(&fr->obj), fr->md);
+					click_scroll_list(lock, obtree, item, fr->md);
 			}
 			break;
 		}
 		case TM_KILL:
 		{
-			OBJECT *ob = wt->tree + TM_LIST;
-			SCROLL_INFO *list = object_get_slist(ob);
-			struct xa_client *client = NULL; //= cur_client(list);
+			if( (list->cur->usr_flags & TM_WINDOW) )
+				break;
 
-			if (list->cur)
-				client = list->cur->data;
+			if( list->cur->usr_flags & TM_NOAES )
+			{
+				long i, k = 0;
+				int pid = ((struct proc*)client)->pid;
+				if( pid <= TM_MINPID || pid >= TM_MAXPID || pid == C.Aes->tp->pid )
+					break;
+				ikill(pid, SIGKILL);
+				for( i = 0; i < TM_KILLLOOPS && !k; i++ )
+				{
+					nap( TM_KILLWAIT );
+					k = ikill(pid, 0);
+				}
+				if( k )
+					remove_from_tasklist( client );
+			break;
+			}
+
 			DIAGS(("taskmanager: KILL for %s", c_owner(client)));
 			if (client && is_client(client))
 			{
 				if (client->type & (APP_AESTHREAD|APP_AESSYS))
 				{
-					ALERT(/*kill_aes_thread*/("Not a good idea, I tell you!"));
+					break;
 				}
 				else
 					ikill(client->p->pid, SIGKILL);
 			}
 
-			object_deselect(wt->tree + TM_KILL);
-			redraw_toolbar(lock, wind, TM_KILL);
 			break;
 		}
 		case TM_TERM:
 		{
-			OBJECT *ob = wt->tree + TM_LIST;
-			SCROLL_INFO *list = object_get_slist(ob);
-			struct xa_client *client = NULL; //cur_client(list);
 
-			DIAGS(("taskmanager: TM_TERM for %s", c_owner(client)));
-
-			if (list->cur)
-				client = list->cur->data;
-
-			if (client && is_client(client))
+			if( list->cur->usr_flags & TM_NOAES )
 			{
-				if (client->type & (APP_AESTHREAD|APP_AESSYS))
+				int pid = ((struct proc*)client)->pid;
+				if( pid <= TM_MINPID || pid >= TM_MAXPID || pid == C.Aes->tp->pid )
+					break;
+				ikill(pid, SIGTERM);
+			}
+			else{
+				if (client && is_client(client))
 				{
-					ALERT((/*kill_aes_thread*/"Cannot terminate AES system proccesses!"));
+					DIAGS(("taskmanager: TM_TERM for %s", c_owner(client)));
+					if (client->type & (APP_AESTHREAD|APP_AESSYS))
+					{
+						break;
+					}
+					else
+					{
+						send_terminate(lock, client, AP_TERM);
+					}
 				}
-				else
-					send_terminate(lock, client, AP_TERM);
 			}
 
+			/*
 			object_deselect(wt->tree + TM_TERM);
 			redraw_toolbar(lock, wind, TM_TERM);
+			*/
 			break;
 		}
 		case TM_SLEEP:
 		{
-			OBJECT *ob = wt->tree + TM_LIST;
-			SCROLL_INFO *list = object_get_slist(ob);
-			struct xa_client *client = NULL;
 
-			if (list->cur)
-				client = list->cur->data;
-
-			DIAGS(("taskmanager: TM_SLEEP for %s", c_owner(client)));
-			ALERT(("taskmanager: TM_SLEEP not yet implemented!"));
-			if (client && is_client(client) && client != C.Hlp)
+			if( list->cur->usr_flags & TM_NOAES )
 			{
+				int pid = ((struct proc*)client)->pid;
+				if( pid <= TM_MINPID || pid >= TM_MAXPID || pid == C.Aes->tp->pid )
+					break;
+				ikill(pid, SIGSTOP);
+				update_tasklist_entry( NO_AES_CLIENT, client, true);
 			}
-
-			object_deselect(wt->tree + TM_SLEEP);
-			redraw_toolbar(lock, wind, TM_SLEEP);
-			break;
+			else if (client && is_client(client))
+			{
+				DIAGS(("taskmanager: TM_SLEEP for %s", c_owner(client)));
+				if (client->type & (APP_AESTHREAD|APP_AESSYS|APP_ACCESSORY))
+				{
+					break;
+					//ALERT(/*kill_aes_thread*/("Not a good idea, I tell you!"));
+				}
+				app_in_front(lock, C.Aes, true, true, true);
+				ikill(client->p->pid, SIGSTOP);
+				update_tasklist_entry( AES_CLIENT, client, true);
+			}
+		break;
 		}
 		case TM_WAKE:
 		{
-			OBJECT *ob = wt->tree + TM_LIST;
-			SCROLL_INFO *list = object_get_slist(ob);
-			struct xa_client *client = NULL;
-
-			if (list->cur)
-				client = list->cur->data;
-
-			DIAGS(("taskmanager: TM_WAKE for %s", c_owner(client)));
-			ALERT(("taskmanager: TM_WAKE not yet implemented!"));
-			if (client && is_client(client) && client != C.Hlp)
+			if( list->cur->usr_flags & TM_NOAES )
 			{
+				int pid = ((struct proc*)client)->pid;
+				if( pid <= TM_MINPID || pid >= TM_MAXPID )
+					break;
+				ikill(pid, SIGCONT);
+				update_tasklist_entry( NO_AES_CLIENT, client, true);
 			}
-
-			object_deselect(wt->tree + TM_WAKE);
-			redraw_toolbar(lock, wind, TM_WAKE);
-			break;
+			else if (client && is_client(client))
+			{
+				if (client->type & (APP_AESTHREAD|APP_AESSYS))
+				{
+					break;
+				}
+				ikill(client->p->pid, SIGCONT);
+				update_tasklist_entry( AES_CLIENT, client, true);
+			}
+		break;
 		}
 
 		/* the bottom action buttons */
 		case TM_QUITAPPS:
 		{
-			DIAGS(("taskmanager: quit all apps"));
-			quit_all_apps(lock, NULL, AP_TERM);
 
+		/*
 			object_deselect(wt->tree + TM_QUITAPPS);
 			redraw_toolbar(lock, wind, TM_QUITAPPS);
+			*/
+#if ASK_BEFORE_SHUTDOWN
+			if ( xaaes_do_form_alert( lock, 1, ASK_QUITALL_ALERT, XAAESNAME ) != 2 )
+				goto lb_TM_OK;//break;
+#endif
+			DIAGS(("taskmanager: quit all apps"));
+			quit_all_apps(lock, NULL, AP_TERM);
+			force_window_top( lock, wind );
 			break;
 		}
 		case TM_QUIT:
 		{
-			DIAGS(("taskmanager: quit XaAES"));
-			dispatch_shutdown(0,0);
-
+			/*
 			object_deselect(wt->tree + TM_QUIT);
 			redraw_toolbar(lock, wind, TM_QUIT);
+			*/
+#if ASK_BEFORE_SHUTDOWN
+			if ( xaaes_do_form_alert( lock, 1, ASK_SHUTDOWN_ALERT, XAAESNAME ) != 2 )
+				goto lb_TM_OK;//break;
+#endif
+			DIAGS(("taskmanager: quit XaAES"));
+			dispatch_shutdown(0,0);
+			force_window_top( lock, wind );
+
 			break;
 		}
 		case TM_REBOOT:
 		{
-			DIAGS(("taskmanager: reboot system"));
-			dispatch_shutdown(REBOOT_SYSTEM,0);
-
+			/*
 			object_deselect(wt->tree + TM_REBOOT);
 			redraw_toolbar(lock, wind, TM_REBOOT);
+			*/
+#if ASK_BEFORE_SHUTDOWN
+			if ( xaaes_do_form_alert( lock, 1, ASK_SHUTDOWN_ALERT, XAAESNAME ) != 2 )
+				goto lb_TM_OK;//break;
+#endif
+			DIAGS(("taskmanager: reboot system"));
+			dispatch_shutdown(REBOOT_SYSTEM,0);
+			force_window_top( lock, wind );
+
 			break;
 		}
 		case TM_HALT:
 		{
-			DIAGS(("taskmanager: halt system"));
-			dispatch_shutdown(HALT_SYSTEM, 0);
-
+			/*
 			object_deselect(wt->tree + TM_HALT);
 			redraw_toolbar(lock, wind, TM_HALT);
+			*/
+#if ASK_BEFORE_SHUTDOWN
+			Sema_Dn(clients);
+			close_window(lock, wind);
+			if ( xaaes_do_form_alert( 0, 1, ASK_SHUTDOWN_ALERT, XAAESNAME ) != 2 )
+				goto lb_TM_OK;//break;
+#endif
+			DIAGS(("taskmanager: halt system"));
+			dispatch_shutdown(HALT_SYSTEM, 0);
+			force_window_top( 0, wind );
+
 			break;
 		}
 		case TM_COLD:
 		{
-			DIAGS(("taskmanager: coldstart system"));
-			dispatch_shutdown(COLDSTART_SYSTEM, 0);
+			/*
 			object_deselect(wt->tree + TM_COLD);
 			redraw_toolbar(lock, wind, TM_COLD);
+			*/
+#if ASK_BEFORE_SHUTDOWN
+			if ( xaaes_do_form_alert( lock, 1, ASK_SHUTDOWN_ALERT, XAAESNAME ) != 2 )
+				goto lb_TM_OK;//break;
+#endif
+			DIAGS(("taskmanager: coldstart system"));
+			dispatch_shutdown(COLDSTART_SYSTEM, 0);
+			force_window_top( lock, wind );
 			break;
 		}
-		case TM_RESCHG:
+#if 0
+		case TM_RESCHG:	/* now: windows-submenu */
 		{
-			
-			if (C.reschange)
+			struct xa_vdi_settings *v = wind->vdi_settings;
+			struct moose_data md;
+
+			/* init moose_data */
+			md.x = wind->r.x + wind->r.w/2;
+			md.y = wind->r.y + wind->r.h/2;
+			post_cevent(C.Hlp, CE_winctxt, wind, NULL, 0,0, NULL, &md);
+			/*if (C.reschange)
 				post_cevent(C.Hlp, ceExecfunc, C.reschange,NULL, 1,0, NULL,NULL);
+				*/
 			obj_change(wt, v, fr->obj, -1, aesobj_state(&fr->obj) & ~OS_SELECTED, aesobj_flags(&fr->obj), true, NULL, wind->rect_list.start, 0);
 			break;
 		}
+#endif
+#if ASK_BEFORE_SHUTDOWN
+lb_TM_OK:
+#endif
 		case TM_OK:
 		{
-			object_deselect(wt->tree + TM_OK);
-			redraw_toolbar(lock, wind, TM_OK);
 
-			/* and release */
-			close_window(lock, wind);
+			if (list->cur && !(list->cur->usr_flags & (TM_MEMINFO | TM_NOAES)) && (long)list->cur->data > 1L )
+			{
+				TOP_WINDOW = 0;	/* ignore clwtna */
+				/* and release */
+				close_window(lock, wind);
+
+				if( !(list->cur->usr_flags & TM_WINDOW) )
+				{
+					app_or_acc_in_front( lock, list->cur->data );
+				}
+				else
+				{
+					struct xa_window *wi = list->cur->data;
+					if( list->cur->data != wind )
+					{
+						if( !(wi->window_status & XAWS_OPEN)
+							|| wi->dial
+								& ( created_for_SLIST
+								| created_for_TOOLBAR
+								| created_for_CALC
+								| created_for_POPUP
+								| created_for_ALERT
+							) )
+						{
+							app_or_acc_in_front( lock, wi->owner );
+						}
+						else
+						{
+							wakeup_client(wi->owner);
+							force_window_top( lock, wi );
+						}
+					}
+				}
+			}
+			else
+				close_window(lock, wind);
 // 			delayed_delete_window(lock, wind);
+
 			break;
 		}
 		default:
@@ -821,6 +1406,97 @@ taskmanager_form_exit(struct xa_client *Client,
 	Sema_Dn(clients);
 }
 
+/*
+ * return true if AES-client AND valid client->name
+ */
+static bool is_aes_client( struct proc *p )
+{
+	struct xa_client *client;
+	FOREACH_CLIENT(client)
+	{
+		if( client->p == p )
+		{
+			if( *(client->name+2) > ' ' )
+				return true;
+			else
+				return false;
+		}
+	}
+	return false;
+}
+
+#define OLD_MAXLOAD	4095L	/* ?? */
+#define MAXLOAD	234L
+#define WITH_ACTLD  0x4143544CL /* 'ACTL' */
+
+static bool calc_tm_bar( OBJECT *obtree, short item, short ind, long pinfo[] )
+{
+
+	obtree[item].ob_height = (short)(pinfo[ind] * (long)obtree[TM_CHART].ob_height / MAXLOAD);
+
+	/* if height = 0 a bar is drawn anyway!? */
+	if( obtree[item].ob_height <= 0 )
+		obtree[item].ob_height = 1;
+
+	obtree[item].ob_y =
+		obtree[TM_CHART].ob_y + obtree[TM_CHART].ob_height - obtree[item].ob_height;
+
+	return true;
+}
+
+static void make_tm_ticks( OBJECT *obtree, int ticks[] )
+{
+	int i;
+	for( i = 0; ticks[i]; i += 3 )
+	{
+		obtree[ticks[i]].ob_y = 10 * (obtree[TM_CHART].ob_height * ticks[i+1] + 5) / 1000;
+		obtree[ticks[i]].ob_x = -2;
+		if(	(obtree[ticks[i]].ob_height = ticks[i+2] ) > 1 )
+			obtree[ticks[i]].ob_width = 5;
+		else
+			obtree[ticks[i]].ob_width = 4;
+	}
+}
+/*
+ * calculate actual load by the relation of time-difference and kernel-systime
+ *
+ * return load with maximum 234
+ */
+#ifdef trap_14_w
+#undef trap_14_w	/* "redefined" warning */
+#endif
+
+#include <mintbind.h>	/* Tgettimeofday */
+
+static long calc_new_ld(struct proc *rootproc)
+{
+	static long systime = 0, old_tim = 0, new_ld=0;
+	long ud, utim, rsystime = rootproc->systime;
+	struct timeval tv;
+
+	Tgettimeofday( &tv, 0 );
+	utim = tv.tv_sec * 1000L + tv.tv_usec / 1000L;
+	ud = utim - old_tim;
+	old_tim = utim;
+
+	if( ud > 0 )
+	{
+		new_ld = 5000L * (ud - (rsystime - systime)) / ud;
+		if( new_ld > 0 )
+		{
+			/* maximum new_ld=234 */
+			new_ld >>= 4;	 /* 5000/16=312 */
+			new_ld -= (new_ld >> 2);  /* 312 - (312/4=78) */
+			if( new_ld > 234 )
+				new_ld = 234;
+		}
+		else
+			new_ld = 0;
+	}
+	systime = rsystime;
+	return new_ld;
+}
+
 void
 open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 {
@@ -830,31 +1506,34 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 	XA_TREE *wt = NULL;
 	OBJECT *obtree = NULL;
 	RECT or;
+	int redraw = NOREDRAW;
 
 	htd = get_helpthread_data(client);
 	if (!htd)
 		return;
-	
+
 	if (!htd->w_taskman) //(!task_man_win)
 	{
 		struct scroll_info *list;
-/* ********** */
+		struct scroll_content sc = {{ 0 }};
+		int tm_ticks[] = {TM_TICK1, 25, 1, TM_TICK2, 50, 2, TM_TICK3, 75, 1, 0, 0, 0};
+
 		obtree = duplicate_obtree(client, ResourceTree(C.Aes_rsc, TASK_MANAGER), 0);
 		if (!obtree) goto fail;
+
 		wt = new_widget_tree(client, obtree);
 		if (!wt) goto fail;
 		wt->flags |= WTF_TREE_ALLOC | WTF_AUTOFREE;
-		
+
 		list = set_slist_object(0, wt, NULL, TM_LIST,
-				 SIF_SELECTABLE|SIF_AUTOSELECT|SIF_ICONINDENT,
+				 SIF_SELECTABLE|SIF_AUTOSELECT|SIF_TREEVIEW|SIF_ICONINDENT|SIF_AUTOOPEN|SIF_AUTOSLIDERS,
 				 NULL, NULL, NULL, NULL, NULL, NULL,
 				 NULL, NULL, NULL, NULL,
-				 /*tm_client_apps*/"Client Applications", NULL, NULL, 255);
+				 /*tm_client_apps*/"Applications", NULL, NULL, 255);
 
 		if (!list) goto fail;
 
-		obj_init_focus(wt, OB_IF_RESET);
-/* ********** */
+		/*!obj_init_focus(wt, OB_IF_RESET);*/
 		obj_rectangle(wt, aesobj(obtree, 0), &or);
 		obtree[TM_ICONS].ob_flags |= OF_HIDETREE;
 
@@ -863,50 +1542,200 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 		{
 			center_rect(&or);
 			remember = calc_window(lock, client, WC_BORDER,
-						CLOSER|NAME, created_for_AES,
-						client->options.thinframe,
-						client->options.thinwork,
+						BORDER|CLOSER|NAME|TOOLBAR, created_for_AES,
+						C.Aes->options.thinframe,
+						C.Aes->options.thinwork,
 						*(RECT *)&or);
 		}
 
 		/* Create the window */
 		wind = create_window(lock,
 					do_winmesag, do_formwind_msg,
-					client,
+					client,//C.Aes,
 					false,
-					CLOSER|NAME|TOOLBAR|hide_move(&(client->options)),
+					BORDER|CLOSER|NAME|TOOLBAR|hide_move(&(C.Aes->options)),
 					created_for_AES,
-					client->options.thinframe,
-					client->options.thinwork,
+					C.Aes->options.thinframe,
+					C.Aes->options.thinwork,
 					remember, NULL, NULL);
-		
+
 		if (!wind) goto fail;
-		
+
+		wind->min.h = remember.h * 2 / 3;	/* minimum height for this window */
+		wind->min.w = obtree[TM_OK].ob_x * 2;	/* minimum width for this window */
 		list->set(list, NULL, SESET_PRNTWIND, (long)wind, NOREDRAW);
 		wind->window_status |= XAWS_NODELETE;
-		
+
 		/* Set the window title */
 		set_window_title(wind, /*tm_manager*/" Task Manager ", false);
 
 		wt = set_toolbar_widget(lock, wind, client, obtree, inv_aesobj(), 0/*WIP_NOTEXT*/, STW_ZEN, NULL, &or);
 		wt->exit_form = taskmanager_form_exit;
+		wt->focus = aesobj( obtree, TM_LIST );	/*cursor on list */
+		init_list_focus( obtree, TM_LIST, 0 );
+
+		make_tm_ticks( obtree, tm_ticks );
 
 		/* Set the window destructor */
 		wind->destructor = taskmanager_destructor;
-	
+
 		htd->w_taskman = wind;
-		
+
+		{
+		long uinfo[4];
+		sc.t.strings = 1;
+		sc.data = (void*)1;
+		sc.xflags = 0;
+		sc.usr_flags = TM_MEMINFO;
+		uinfo[0] = 1;
+		uinfo[1] = (long)"used: ";
+		uinfo[2] = 2;
+		uinfo[3] = 0;
+		add_kerinfo( "u:/kern/meminfo", list, NULL, NULL, &sc, PROCINFLEN, 5, NOREDRAW, uinfo );
+		}
+
+		sc.data = 0;
+		sc.usr_flags = TM_HEADER;
+		/* ! no tabs! */
+		sc.t.text = "       name          pid  ppid pgrp pri DOM STATE    SZ         CPU  % args";
+		list->add(list, NULL, NULL, &sc, false, 0, NOREDRAW);
+
 		if (open)
-			open_window(lock, wind, wind->r);	
+		{
+			open_window(lock, wind, wind->r);
+		}
 	}
 	else
 	{
 		wind = htd->w_taskman;
 		if (open)
 		{
+			SCROLL_INFO *list;
+			long pinfo[5];
+			struct scroll_content sc = {{ 0 }};
+			static int has_new_uptime = -1;
+
+			wt = get_widget(wind, XAW_TOOLBAR)->stuff;
+			list = object_get_slist(wt->tree + TM_LIST);
+
+			if( TOP_WINDOW == wind )
+				redraw = NORMREDRAW;
+
+			if( list )
+			{
+				struct sesetget_params p = { 0 };
+				struct scroll_entry *this;
+				struct proc *rootproc = pid2proc(0);
+				long u = 0;
+
+				for( this = list->start; this; this = this->next )
+					this->usr_flags &= ~TM_UPDATED;
+
+				sc.t.strings = 1;
+				sc.data = (void*)1;
+				sc.xflags = 0;
+				sc.usr_flags = TM_UPDATED;
+				p.arg.data = (void*)1;
+				list->get(list, NULL, SEGET_ENTRYBYDATA, &p);
+				if (p.e)
+				{
+					long uinfo[4];
+					uinfo[0] = 1;
+					uinfo[1] = (long)"used: ";
+					uinfo[2] = 2;
+					uinfo[3] = 0;
+					add_kerinfo( "u:/kern/meminfo", list, NULL, p.e, &sc, PROCINFLEN, 5, redraw, uinfo );
+				}
+
+				pinfo[0] = 1;
+				pinfo[1] = 2;
+				pinfo[2] = 0;
+				/*
+				pinfo[3] = 4;
+				pinfo[4] = 0;
+				*/
+#if !USE_Suptime
+				if( ker_stat( 0, "uptime", pinfo )
+					|| ((u = pinfo[0] * 1000L + pinfo[1]) < uptime	/* /kern/uptime not always correct! :-*/
+					))
+				{
+					uptime = 0L;
+				}
+				else
+					uptime = u;
+				//idle = pinfo[2] * 1000L + pinfo[3];
+#else
+				if( has_new_uptime == -1 )
+				{
+					pinfo[3] = WITH_ACTLD;	/* magic */
+					pinfo[0] = WITH_ACTLD;
+				}
+				Suptime( &u, pinfo );	/* this is sometimes all 0 or constant max. on aranym ! :-( */
+				if( has_new_uptime == -1 )
+				{
+					if( pinfo[3] == WITH_ACTLD )
+						has_new_uptime = 0;
+					else
+						has_new_uptime = 1;
+				}
+				uptime = u * 1000L;
+				if( has_new_uptime == 0 )
+				{
+					int i;
+					for( i = 0; i < 3; i++ )
+						pinfo[i] = (pinfo[i] * MAXLOAD) / OLD_MAXLOAD;
+				}
+				calc_tm_bar( wt->tree, TM_LOAD1, 0, pinfo );
+				calc_tm_bar( wt->tree, TM_LOAD2, 1, pinfo );
+				calc_tm_bar( wt->tree, TM_LOAD3, 2, pinfo );
+				pinfo[3] = calc_new_ld( rootproc );
+				calc_tm_bar( wt->tree, TM_ACTLD, 3, pinfo );
+
+				redraw_toolbar( lock, wind, TM_CHART );
+#endif
+
+				FOREACH_CLIENT(client)
+				{				/* */
+					update_tasklist_entry( AES_CLIENT, client, redraw);
+				}
+				/* add non-client-procs */
+				{
+					long i = d_opendir("u:/kern", 0);
+					if (i > 0)
+					{
+						char nm[128];
+						struct proc *pr;
+
+						update_tasklist_entry( NO_AES_CLIENT, rootproc, redraw );	/* kernel */
+
+						while( d_readdir(127, i, nm) == 0)
+						{
+							if( isdigit( nm[4] ) )
+							{
+								pr = pid2proc( atol(nm+4) );
+								if( pr )
+								{
+									if( !is_aes_client(pr) )
+									{
+										update_tasklist_entry( NO_AES_CLIENT, pr, redraw );
+									}
+								}
+							}
+						}
+						d_closedir(i);
+						for( this = list->start; this; this = this->next )
+						{
+							if( !(this->usr_flags & (TM_MEMINFO|TM_UPDATED|TM_HEADER) ) )
+							{
+								list->del( list, this, true );
+							}
+						}
+					}
+				}
+			}	/* /if( list ) */
+
 			open_window(lock, wind, wind->r);
-			if (wind != TOP_WINDOW)
-				top_window(lock, true, false, wind);
+			force_window_top( lock, wind );
 		}
 	}
 	return;
@@ -935,6 +1764,7 @@ reschg_destructor(enum locks lock, struct xa_window *wind)
 	return true;
 }
 #endif
+
 struct xa_window * _cdecl
 create_dwind(enum locks lock, XA_WIND_ATTR tp, char *title, struct xa_client *client, struct widget_tree *wt, FormExit(*f), WindowDisplay(*d))
 {
@@ -975,1185 +1805,6 @@ create_dwind(enum locks lock, XA_WIND_ATTR tp, char *title, struct xa_client *cl
 
 	return wind;
 }
-/* ************************************************************ */
-/*     Atari resolution mode change functions			*/
-/* ************************************************************ */
-#if 0
-static void
-set_resmode_obj(XA_TREE *wt, short res)
-{
-	short obj;
-	struct xa_vdi_settings *v = wt->owner->vdi_settings;
-
-	if (res < 1)
-		res = 1;
-	if (res > 10)
-		res = 9;
-
-	obj = RC_MODES + res;
-	obj_set_radio_button(wt, v, aesobj(wt->tree, obj), false, NULL, NULL);
-}
-
-static short
-get_resmode_obj(XA_TREE *wt)
-{
-	struct xa_aes_object o;
-	short obj;
-
-	o = obj_get_radio_button(wt, aesobj(wt->tree, RC_MODES), OS_SELECTED);
-
-	obj = aesobj_item(&o);
-
-	if (obj > 0)
-		obj -= RC_MODES;
-	else
-		obj = 1;
-
-	return obj;
-}
-	
-static void
-resmode_form_exit(struct xa_client *Client,
-		      struct xa_window *wind,
-		      struct widget_tree *wt,
-		      struct fmd_result *fr)
-{
-	enum locks lock = 0;
-	Sema_Up(clients);
-	lock |= clients;
-	
-	wt->which = 0;
-
-	switch (aesobj_item(&fr->obj))
-	{
-		case RC_OK:
-		{
-			DIAGS(("reschange: restart"));
-
-			object_deselect(aesobj_ob(&fr->obj));
-			redraw_toolbar(lock, wind, RC_OK);
-			next_res = get_resmode_obj(wt);
-			next_res |= 0x80000000;
-			/* and release */
-			close_window(lock, wind);
-			delayed_delete_window(lock, wind);
-			dispatch_shutdown(RESOLUTION_CHANGE/*0*/, next_res);
-			break;
-		}
-		case RC_CANCEL:
-		{
-			object_deselect(wt->tree + RC_CANCEL);
-			redraw_toolbar(lock, wind, RC_CANCEL);
-
-			/* and release */
-			close_window(lock, wind);
-			delayed_delete_window(lock, wind);
-			break;
-		}
-		default:
-		{
-			DIAGS(("taskmanager: unhandled event %i", fr->obj));
-			break;
-		}
-	}
-	Sema_Dn(clients);
-}
-
-static char t_reschg[] = " Change Resolution ";
-
-void
-open_reschange(enum locks lock, struct xa_client *client, bool open)
-{
-	struct xa_window *wind;
-	struct helpthread_data *htd;
-	XA_TREE *wt = NULL;
-	OBJECT *obtree = NULL;
-
-	htd = get_helpthread_data(client);
-
-	if (!htd->w_reschg) //(!reschg_win)
-	{
-		obtree = duplicate_obtree(client, ResourceTree(C.Aes_rsc, RES_CHATARI), 0);
-		if (!obtree) goto fail;
-		wt = new_widget_tree(client, obtree);
-		if (!wt) goto fail;		
-		wt->flags |= WTF_TREE_ALLOC | WTF_AUTOFREE;
-		wind = create_dwind(lock, CLOSER, t_reschg, client, wt, resmode_form_exit, reschg_destructor);
-		if (!wind) goto fail;
-		
-		set_resmode_obj(wt, cfg.videomode);
-		if (open)
-			open_window(lock, wind, wind->r);
-		htd->w_reschg = wind; //reschg_win = wind;
-	}
-	else
-	{
-		wind = htd->w_reschg;
-		if (open)
-		{
-			open_window(lock, wind, wind->r);
-			if (wind != TOP_WINDOW/*window_list*/)
-				top_window(lock, true, false, wind);
-		}
-	}
-	return;
-fail:
-	if (wt)
-	{
-		remove_wt(wt, false);
-		obtree = NULL;
-	}
-	if (obtree)
-		free_object_tree(client, obtree);
-}
-#ifndef ST_ONLY
-/* ************************************************************ */
-/*     Falcon resolution mode change functions			*/
-/* ************************************************************ */
-static void
-set_reschg_obj(XA_TREE *wt, unsigned long res)
-{
-	OBJECT *obtree = wt->tree;
-	short obj;
-	struct xa_vdi_settings *v = wt->owner->vdi_settings;
-
-	obj = res & 0x7;
-	if (obj > 4)
-		obj = 4;
-	obj += RC_COLOURS + 1;
-	obj_set_radio_button(wt, v, aesobj(wt->tree, obj), false, NULL, NULL);
-
-	obj = RC_COLUMNS + 1 + ((res & (1<<3)) ? 1 : 0);
-	obj_set_radio_button(wt, v, aesobj(wt->tree, obj), false, NULL, NULL);
-
-	obj = RC_VGA + 1 + ((res & (1<<4)) ? 1 : 0);
-	obj_set_radio_button(wt, v, aesobj(wt->tree, obj), false, NULL, NULL);
-
-	obj = RC_TVSEL + 1 + ((res & (1<<5)) ? 1 : 0);
-	obj_set_radio_button(wt, v, aesobj(wt->tree, obj), false, NULL, NULL);
-
-	setsel(obtree + RC_OVERSCAN, (res & (1<<6)));
-	setsel(obtree + RC_ILACE, (res & (1<<7)));
-	setsel(obtree + RC_BIT15, (res & 0x8000));
-}
-
-static unsigned long
-get_reschg_obj(XA_TREE *wt)
-{
-	OBJECT *obtree = wt->tree;
-	struct xa_aes_object obj;
-	unsigned long res = 0L;
-
-	obj = obj_get_radio_button(wt, aesobj(wt->tree, RC_COLOURS), OS_SELECTED);
-	if (valid_aesobj(&obj))
-		res |= aesobj_item(&obj) - 1 - RC_COLOURS;
-	obj = obj_get_radio_button(wt, aesobj(wt->tree, RC_COLUMNS), OS_SELECTED);
-	if (valid_aesobj(&obj))
-		res |= (aesobj_item(&obj) - 1 - RC_COLUMNS) << 3;
-	obj = obj_get_radio_button(wt, aesobj(wt->tree, RC_VGA), OS_SELECTED);
-	if (valid_aesobj(&obj))
-		res |= (aesobj_item(&obj) - 1 - RC_VGA) << 4;
-	obj = obj_get_radio_button(wt, aesobj(wt->tree, RC_TVSEL), OS_SELECTED);
-	if (valid_aesobj(&obj))
-		res |= (aesobj_item(&obj) - 1 - RC_TVSEL) << 5;
-
-	if (issel(obtree + RC_OVERSCAN)) res |= (1<<6);
-	if (issel(obtree + RC_ILACE))	res |= (1<<7);
-	if (issel(obtree + RC_BIT15))	res |= 0x8000;
-
-	return res;
-}
-
-static void
-reschg_form_exit(struct xa_client *Client,
-		      struct xa_window *wind,
-		      struct widget_tree *wt,
-		      struct fmd_result *fr)
-{
-	enum locks lock = 0;
-	Sema_Up(clients);
-	lock |= clients;
-	
-// 	wt->current = fr->obj;
-	wt->which = 0;
-
-	switch (aesobj_item(&fr->obj))
-	{
-		case RC_OK:
-		{
-			DIAGS(("reschange: restart"));
-
-			object_deselect(wt->tree + RC_OK);
-			redraw_toolbar(lock, wind, RC_OK);
-			next_res = get_reschg_obj(wt);
-			next_res |= 0x80000000;
-			/* and release */
-			close_window(lock, wind);
-			delayed_delete_window(lock, wind);
-			dispatch_shutdown(RESOLUTION_CHANGE, next_res);
-			break;
-		}
-		case RC_CANCEL:
-		{
-			object_deselect(wt->tree + RC_CANCEL);
-			redraw_toolbar(lock, wind, RC_CANCEL);
-
-			/* and release */
-			close_window(lock, wind);
-			delayed_delete_window(lock, wind);
-			break;
-		}
-		default:
-		{
-			DIAGS(("taskmanager: unhandled event %i", fr->obj));
-			break;
-		}
-	}
-
-	Sema_Dn(clients);
-}
-
-void
-open_falcon_reschange(enum locks lock, struct xa_client *client, bool open)
-{
-	struct xa_window *wind;
-	struct helpthread_data *htd;
-	XA_TREE *wt = NULL;
-	OBJECT *obtree = NULL;
-
-	htd = get_helpthread_data(client);
-
-	if (!htd->w_reschg) //(!reschg_win)
-	{
-		obtree = duplicate_obtree(client, ResourceTree(C.Aes_rsc, RES_CHFALC), 0);
-		if (!obtree) goto fail;
-		wt = new_widget_tree(client, obtree);
-		if (!wt) goto fail;		
-		wt->flags |= WTF_TREE_ALLOC | WTF_AUTOFREE;
-		wind = create_dwind(lock, CLOSER, t_reschg, client, wt, reschg_form_exit, reschg_destructor);
-		if (!wind) goto fail;
-		
-		set_reschg_obj(wt, (unsigned long)cfg.videomode);
-		if (open)
-			open_window(lock, wind, wind->r);
-		htd->w_reschg = wind; //reschg_win = wind;
-	}
-	else
-	{
-		wind = htd->w_reschg;
-		if (open)
-		{
-			open_window(lock, wind, wind->r);
-			if (wind != TOP_WINDOW/*window_list*/)
-				top_window(lock, true, false, wind);
-		}
-	}
-	return;
-fail:
-	if (wt)
-	{
-		remove_wt(wt, false);
-		obtree = NULL;
-	}
-	if (obtree)
-		free_object_tree(client, obtree);
-}
-#endif
-/* ************************************************************ */
-/*     Milan resolution mode change functions			*/
-/* ************************************************************ */
-static char *coldepths[] =
-{
-	"Monochrome",
-	"4 colors",
-	"16 colors",
-	"256 colors",
-	"15 bpp (32K)",
-	"16 bpp (64K)",
-	"24 bpp (16M)",
-	"32 bpp (16M)",
-};
-
-static char whatthehell[] = "What the hell!";
-
-struct resinf
-{
-	short id;
-	short x;
-	short y;
-};
-struct milres_parm
-{
-	struct xa_data_hdr h;
-	
-	void *modes;
-	short curr_devid;
-	
-	short current[2];
-	long misc[4];
-	short count[8];
-	
-	short num_depths;
-	struct widget_tree *depth_wt;
-	struct widget_tree *col_wt[8];
-	struct resinf *resinf[8];
-// 	short *devids[8];
-
-	POPINFO pinf_depth;
-	POPINFO pinf_res;
-};
-#ifndef ST_ONLY
-static void
-milan_reschg_form_exit(struct xa_client *Client,
-		      struct xa_window *wind,
-		      struct widget_tree *wt,
-		      struct fmd_result *fr)
-{
-	enum locks lock = 0;
-	short new_devid = -1;
-	struct milres_parm *p = lookup_xa_data_byname(&wind->xa_data, "milres_parm");
-
-	Sema_Up(clients);
-	lock |= clients;
-	
-// 	wt->current = fr->obj;
-	wt->which = 0;
-
-	switch (aesobj_item(&fr->obj))
-	{
-		case RCHM_COL:
-		{
-			int i, o, newres = 1;
-			POPINFO *pinf = object_get_popinfo(aesobj_ob(&fr->obj));
-			struct widget_tree *pu_wt = NULL;
-
-			for (i = 0, o = pinf->obnum; i < 8 && o >= 0; i++)
-			{
-				if (p->col_wt[i])
-				{
-					o--;
-					if (!o)
-					{
-						int j;
-						struct resinf *old, *new = NULL;
-						
-						old = p->resinf[p->current[0]];
-						for (j = 0; j < p->count[p->current[0]]; j++, old++)
-						{
-							if (old->id == p->current[1])
-							{
-								new = old;
-								break;
-							}
-						}
-						if (new)
-						{
-							old = new;
-						
-							new = p->resinf[i];
-							for (j = 0; j < p->count[i]; j++)
-							{
-								if (new[j].x == old->x && new[j].y == old->y)
-								{
-									newres = j + 1;
-									break;
-								}
-							}
-						}
-						
-						pu_wt = p->col_wt[i];
-						new_devid = new[newres - 1].id;
-						
-						p->current[0] = i;
-						break;
-					}
-				}
-			}
-			if (pu_wt)
-			{
-				pinf = &p->pinf_res;
-				pinf->tree = pu_wt->tree;
-				pinf->obnum = newres;
-				obj_set_g_popup(wt, aesobj(wt->tree, RCHM_RES), pinf);
-				obj_draw(wt, wind->vdi_settings, aesobj(wt->tree, RCHM_RES), -1, NULL, wind->rect_list.start, 0);
-				p->current[1] = new_devid;
-			}
-			break;
-		}
-		case RCHM_RES:
-		{
-			POPINFO *pinf = object_get_popinfo(aesobj_ob(&fr->obj));
-			struct widget_tree *pu_wt = p->col_wt[p->current[0]];
-
-			if (pu_wt)
-			{
-				struct resinf *r = p->resinf[p->current[0]];
-				
-				new_devid = r[pinf->obnum - 1].id;
-
-				p->current[1] = new_devid;
-			}
-			break;
-		}
-		case RCHM_OK:
-		{
-			DIAGS(("reschange: restart"));
-
-			object_deselect(wt->tree + RC_OK);
-			redraw_toolbar(lock, wind, RC_OK);
-			next_res = p->current[1];
-			next_res |= 0x80000000;
-			close_window(lock, wind);
-			delayed_delete_window(lock, wind);
-			dispatch_shutdown(RESOLUTION_CHANGE, next_res);
-			break;
-		}
-		case RCHM_CANCEL:
-		{
-			object_deselect(wt->tree + RC_CANCEL);
-			redraw_toolbar(lock, wind, RC_CANCEL);
-
-			/* and release */
-			close_window(lock, wind);
-			delayed_delete_window(lock, wind);
-			break;
-		}
-		default:
-		{
-			DIAGS(("taskmanager: unhandled event %i", fr->obj));
-			break;
-		}
-	}
-
-	Sema_Dn(clients);
-}
-
-static short
-count_milan_res(long num_modes, short planes, struct videodef *modes)
-{
-	short count = 0;
-// 	bool p = false;
-
-	while (num_modes--)
-	{
-		if (modes->planes == planes)
-			count++;
-#if 0
-		if (count == 1 && !p)
-		{
-			short i, *m;
-			display("Planes %d", planes);
-			m = (short *)modes;
-			for (i = (66/2); i < (106/2); i++)
-				display("%02d, %04x, %05d", i, m[i], m[i]);
-			p = true;
-		}
-#endif
-		modes++;
-	}
-	return count;
-}
-#endif
-
-static void *
-nxt_mdepth(short item, void **data)
-{
-	int i;
-	struct milres_parm *p = *data;
-	short current = -1;
-	void *ret;
-
-	if (!item)
-	{
-		p->current[1] = p->current[0];
-	}
-	
-	for (i = p->current[1]; i < 8; i++)
-	{
-		if (p->count[i])
-		{
-			current = i;
-			break;
-		}
-	}
-	if (current == -1)
-	{
-		return whatthehell;
-	}
-	else
-	{	
-		ret = coldepths[current];
-		p->current[1] = current + 1;
-	}
-	
-	return ret;
-};
-
-static char idx2planes[] =
-{
-	1,2,4,8,15,16,24,32
-};
-#ifndef ST_ONLY
-static void *
-nxt_mres(short item, void **data)
-{
-	struct milres_parm *p = *data;
-	struct videodef *modes;
-	short planes;
-	long num_modes;
-	void *ret = NULL;
-
-	if (!item)
-	{
-		p->misc[2] = p->misc[0];
-		p->misc[3] = p->misc[1];
-		p->current[1] = p->current[0];
-	}
-
-	planes = idx2planes[p->current[1]];
-
-	modes = (struct videodef *)p->misc[2];
-	num_modes = p->misc[3];
-
-	while (num_modes > 0)
-	{
-		if (modes->planes == planes)
-		{
-			struct resinf *r = p->resinf[p->current[1]];
-			
-			p->misc[2] = (long)(modes + 1);
-			p->misc[3] = num_modes - 1;
-			r[item].id = modes->devid;
-			r[item].x  = modes->res_x;
-			r[item].y  = modes->res_y;
-			ret = modes->name;
-			break;
-		}
-		num_modes--;
-		modes++;
-	}
-	return ret;
-}
-#endif
-static int
-instchrm_wt(struct xa_client *client, struct widget_tree **wt, OBJECT *obtree)
-{
-	int ret = 0;
-	
-	if (obtree)
-	{
-		*wt = new_widget_tree(client, obtree);
-		if (*wt)
-		{
-			(*wt)->flags |= WTF_AUTOFREE | WTF_TREE_ALLOC;
-			ret = 1;
-		}
-		else
-		{
-			free_object_tree(C.Aes, obtree);
-		}
-	}
-	else
-		*wt = NULL;
-
-	return ret;
-}
-
-static void _cdecl
-delete_milres_parm(void *_p)
-{
-	struct milres_parm *p = _p;
-	int i;
-
-	if (p)
-	{
-		if (p->depth_wt)
-		{
-			remove_attachments(0, p->depth_wt->owner, p->depth_wt);
-			p->depth_wt->links--;
-			remove_wt(p->depth_wt, false);
-			p->depth_wt = NULL;
-		}
-		for (i = 0; i < 8; i++)
-		{
-			if (p->col_wt[i])
-			{
-				p->col_wt[i]->links--;
-				remove_wt(p->col_wt[i], false);
-				p->col_wt[i] = NULL;
-			}
-		}
-		kfree(p);
-	}
-}
-#ifndef ST_ONLY
-static struct milres_parm *
-check_milan_res(struct xa_client *client, short mw)
-{
-	int i, j;
-	short currmode = 0;
-	struct milres_parm *p = NULL;
-	long num_modes, ret;
-
-	num_modes = mvdi_device(0, 0, DEVICE_GETDEVICE, &ret);
-
-	if (num_modes >= 0)
-	{
-		currmode = ((struct videodef *)ret)->devid;
-	}
-	
-	num_modes = mvdi_device(0, 0, DEVICE_GETDEVICELIST, &ret);
-
-	if (num_modes > 0)
-	{
-		struct videodef *modes = (struct videodef *)ret;
-		short depths = 0, devids = 0;
-		OBJECT *obtree;
-		short count[8];
-
-		count[0] = count_milan_res(num_modes,  1, modes);
-		count[1] = count_milan_res(num_modes,  2, modes);
-		count[2] = count_milan_res(num_modes,  4, modes);
-		count[3] = count_milan_res(num_modes,  8, modes);
-		count[4] = count_milan_res(num_modes, 15, modes);
-		count[5] = count_milan_res(num_modes, 16, modes);
-		count[6] = count_milan_res(num_modes, 24, modes);
-		count[7] = count_milan_res(num_modes, 32, modes);
-	
-		for (i = 0; i < 8; i++)
-		{
-			if (count[i])
-			{	
-				devids += count[i] + 1;
-				depths++;
-			}
-		}
-		
-		if (depths)
-		{
-			union { void **vp; struct milres_parm **mp;} ptrs;
-			struct resinf *r;
-			
-			if (!(p = kmalloc(sizeof(*p) + (sizeof(*r) * devids))))
-				goto exit;
-
-			bzero(p, sizeof(*p));
-
-			ptrs.mp = &p;
-
-			p->curr_devid = currmode;
-			r = (struct resinf *)((char *)p + sizeof(*p));
-			for (i = 0; i < 8; i++)
-			{
-				if ((p->count[i] = count[i]))
-				{
-					p->resinf[i] = r;
-					r += p->count[i];
-				}
-			}
-			p->num_depths = depths;
-			p->current[0] = 0;
-			obtree = create_popup_tree(client, 0, depths, mw, 4, &nxt_mdepth, ptrs.vp);
-			if (!instchrm_wt(client, &p->depth_wt, obtree))
-				goto exit;
-			
-			p->depth_wt->links++;
-
-			for (i = 0,j = 1; i < 8; i++)
-			{
-				if (p->count[i])
-				{
-					p->current[0] = i;
-					p->misc[0] = (long)modes;
-					p->misc[1] = num_modes;
-					obtree = create_popup_tree(client, 0, p->count[i], mw, 4, &nxt_mres, ptrs.vp);
-					if (instchrm_wt(client, &p->col_wt[i], obtree))
-					{
-						p->col_wt[i]->links++;
-					}
-					else
-						goto exit;
-					j++;
-				}
-			}
-		}
-	}
-	else
-	{
-exit:
-		delete_milres_parm(p);
-		p = NULL;
-	}	
-	return p;
-}
-#endif
-
-static short
-milan_setdevid(struct widget_tree *wt, struct milres_parm *p, short devid)
-{
-	int i, j, depth_idx = 0, res_idx = -1;
-	short found_devid = 0, current;
-	struct widget_tree *first = NULL, *pu_wt = NULL;
-
-	for (i = 0; i < 8; i++)
-	{
-		if (p->col_wt[i])
-		{
-			if (!first)
-			{
-				first = p->col_wt[i];
-				found_devid = (*p->resinf[i]).id;
-				current = i;
-			}
-			
-			for (j = 0; j < p->count[i]; j++)
-			{
-				struct resinf *r = p->resinf[i];
-				
-				if (r[j].id == devid)
-				{
-					pu_wt = p->col_wt[i];
-					res_idx = j + 1;
-					found_devid = devid;
-					current = i;
-				}
-			}
-			if (res_idx != -1)
-				break;
-			
-			depth_idx++;
-		}
-	}
-	p->pinf_depth.tree = p->depth_wt->tree;
-	p->current[0] = i;
-	if (res_idx != -1)
-	{
-		p->pinf_depth.obnum = depth_idx + 1;
-		p->pinf_res.tree = pu_wt->tree;
-		p->pinf_res.obnum = res_idx;
-	}
-	else
-	{
-		p->pinf_depth.obnum = 1;
-		p->pinf_res.tree = first->tree;
-		p->pinf_res.obnum = 1;
-	}
-	obj_set_g_popup(wt, aesobj(wt->tree, RCHM_COL), &p->pinf_depth);
-	obj_set_g_popup(wt, aesobj(wt->tree, RCHM_RES), &p->pinf_res);
-	return found_devid;
-}
-#ifndef ST_ONLY
-void
-open_milan_reschange(enum locks lock, struct xa_client *client, bool open)
-{
-	struct xa_window *wind;
-	struct helpthread_data *htd;
-	XA_TREE *wt = NULL;
-	OBJECT *obtree = NULL;
-	struct milres_parm *p = NULL;
-
-	if (!(htd = get_helpthread_data( client )))
-		return;
-
-	if (!htd->w_reschg) //reschg_win)
-	{
-		obtree = duplicate_obtree(client, ResourceTree(C.Aes_rsc, RES_CHMIL), 0);
-		if (!obtree) goto fail;
-		wt = new_widget_tree(client, obtree);
-		if (!wt) goto fail;		
-		wt->flags |= WTF_TREE_ALLOC | WTF_AUTOFREE;
-		p = check_milan_res(client, obtree[RCHM_RES].ob_width);
-		if (!p) goto fail;
-		
-		p->current[1] = milan_setdevid(wt, p, p->curr_devid);
-			
-		wind = create_dwind(lock, CLOSER, t_reschg, client, wt, milan_reschg_form_exit, reschg_destructor);
-		if (!wind) goto fail;
-
-		add_xa_data(&wind->xa_data, p, 0, "milres_parm", delete_milres_parm);
-		if (open)
-			open_window(lock, wind, wind->r);
-		htd->w_reschg = wind; //reschg_win = wind;
-	}
-	else
-	{
-		wind = htd->w_reschg;
-		if (open)
-		{
-			open_window(lock, wind, wind->r);
-			if (wind != TOP_WINDOW/*window_list*/)
-				top_window(lock, true, false, wind);
-		}
-	}
-	return;
-fail:
-	delete_milres_parm(p);
-
-	if (wt)
-	{
-		remove_wt(wt, false);
-		obtree = NULL;
-	}
-	if (obtree)
-		free_object_tree(client, obtree);
-}
-#endif
-/* ************************************************************ */
-/*     Nova resolution mode change functions			*/
-/* ************************************************************ */
-static char fn_novabib[] = "c:\\auto\\sta_vdi.bib\0";
-static void
-nova_reschg_form_exit(struct xa_client *Client,
-		      struct xa_window *wind,
-		      struct widget_tree *wt,
-		      struct fmd_result *fr)
-{
-	enum locks lock = 0;
-	short new_devid = -1;
-	struct milres_parm *p = lookup_xa_data_byname(&wind->xa_data, "milres_parm");
-
-	Sema_Up(clients);
-	lock |= clients;
-	
-	wt->which = 0;
-
-	switch (aesobj_item(&fr->obj))
-	{
-		case RCHM_COL:
-		{
-			int i, o, newres = 1;
-			POPINFO *pinf = object_get_popinfo(aesobj_ob(&fr->obj));
-			struct widget_tree *pu_wt = NULL;
-
-			for (i = 0, o = pinf->obnum; i < 8 && o >= 0; i++)
-			{
-				if (p->col_wt[i])
-				{
-					o--;
-					if (!o)
-					{
-						int j;
-						struct resinf *old, *new = NULL;
-						
-						old = p->resinf[p->current[0]];
-						for (j = 0; j < p->count[p->current[0]]; j++, old++)
-						{
-							if (old->id == p->current[1])
-							{
-								new = old;
-								break;
-							}
-						}
-						if (new)
-						{
-							old = new;
-						
-							new = p->resinf[i];
-							for (j = 0; j < p->count[i]; j++)
-							{
-								if (new[j].x == old->x && new[j].y == old->y)
-								{
-									newres = j + 1;
-									break;
-								}
-							}
-						}
-						
-						pu_wt = p->col_wt[i];
-						new_devid = new[newres - 1].id;
-						
-						p->current[0] = i;
-						break;
-					}
-				}
-			}
-			if (pu_wt)
-			{
-				pinf = &p->pinf_res;
-				pinf->tree = pu_wt->tree;
-				pinf->obnum = newres;
-				obj_set_g_popup(wt, aesobj(wt->tree, RCHM_RES), pinf);
-				obj_draw(wt, wind->vdi_settings, aesobj(wt->tree, RCHM_RES), -1, NULL, wind->rect_list.start, 0);
-				p->current[1] = new_devid;
-			}
-			break;
-		}
-		case RCHM_RES:
-		{
-			POPINFO *pinf = object_get_popinfo(aesobj_ob(&fr->obj));
-			struct widget_tree *pu_wt = p->col_wt[p->current[0]];
-
-			if (pu_wt)
-			{
-				struct resinf *r = p->resinf[p->current[0]];
-				
-				new_devid = r[pinf->obnum - 1].id;
-				p->current[1] = new_devid;
-			}
-			break;
-		}
-		case RCHM_OK:
-		{
-			DIAGS(("reschange: restart"));
-
-			object_deselect(wt->tree + RC_OK);
-			redraw_toolbar(lock, wind, RC_OK);
-			next_res = p->current[1];
-			next_res |= 0x80000000;
-			nova_data->next_res = ((struct nova_res *)p->modes)[p->current[1]];
-			nova_data->valid = true;
-			close_window(lock, wind);
-			delayed_delete_window(lock, wind);
-			kfree(p->modes);
-			dispatch_shutdown(RESOLUTION_CHANGE, next_res);
-			break;
-		}
-		case RCHM_CANCEL:
-		{
-			object_deselect(wt->tree + RC_CANCEL);
-			redraw_toolbar(lock, wind, RC_CANCEL);
-
-			/* and release */
-			close_window(lock, wind);
-			delayed_delete_window(lock, wind);
-			kfree(p->modes);
-			break;
-		}
-		default:
-		{
-			DIAGS(("taskmanager: unhandled event %i", fr->obj));
-			break;
-		}
-	}
-
-	Sema_Dn(clients);
-}
-
-static void *
-nxt_novares(short item, void **data)
-{
-	struct milres_parm *p = *data;
-	struct nova_res *modes;
-	short planes;
-	long num_modes;
-	char *ret = NULL;
-
-	if (!item)
-	{
-		p->misc[2] = p->misc[0];
-		p->misc[3] = p->misc[1];
-		p->current[1] = p->current[0];
-	}
-
-	planes = idx2planes[p->current[1]];
-
-	modes = (struct nova_res *)p->misc[2];
-	num_modes = p->misc[3];
-
-	while (num_modes > 0)
-	{
-		if (modes->planes == planes)
-		{
-			struct resinf *r = p->resinf[p->current[1]];
-			
-			p->misc[2] = (long)(modes + 1);
-			p->misc[3] = num_modes - 1;
-			r[item].id = ((long)modes - p->misc[0]) / sizeof(*modes);
-			r[item].x = modes->max_x;
-			r[item].y = modes->max_y;
-			ret = (char *)modes->name;
-			ret[32] = '\0';
-			break;
-		}
-		num_modes--;
-		modes++;
-	}
-	return ret;
-}
-
-static short
-count_nova_res(long num_modes, short planes, struct nova_res *modes)
-{
-	short count = 0;
-
-	while (num_modes--)
-	{
-		if (modes->planes == planes)
-			count++;
-		modes++;
-	}
-	return count;
-}
-static struct milres_parm *
-check_nova_res(struct xa_client *client, short mw)
-{
-	int i, j;
-	unsigned short currmode = 0;
-	struct nova_res *modes;
-	struct milres_parm *p = NULL;
-	long num_modes;
-	struct file *fp;
-	XATTR x;
-
-	currmode = nova_data->xcb->resolution;
-	
-	fp = kernel_open(fn_novabib, O_RDONLY, NULL, &x);
-	if (fp)
-	{
-		modes = kmalloc(x.size);
-		if (modes)
-		{
-			OBJECT *obtree;
-			short depths = 0, devids = 0;
-			short count[8];
-
-			num_modes = kernel_read(fp, modes, x.size);
-			kernel_close(fp);
-			if (num_modes != x.size)
-				goto exit;
-			
-			num_modes = x.size / sizeof(struct nova_res);
-			
-			count[0] = count_nova_res(num_modes,  1, modes);
-			count[1] = count_nova_res(num_modes,  2, modes);
-			count[2] = count_nova_res(num_modes,  4, modes);
-			count[3] = count_nova_res(num_modes,  8, modes);
-			count[4] = count_nova_res(num_modes, 15, modes);
-			count[5] = count_nova_res(num_modes, 16, modes);
-			count[6] = count_nova_res(num_modes, 24, modes);
-			count[7] = count_nova_res(num_modes, 32, modes);
-
-			for (i = 0; i < 8; i++)
-			{
-				if (count[i])
-				{	
-					devids += count[i] + 1;
-					depths++;
-				}
-			}
-		
-			if (depths)
-			{
-				union { void **vp; struct milres_parm **mp;} ptrs;
-				struct resinf *r;
-			
-				if (!(p = kmalloc(sizeof (*p) + (sizeof(*r) * devids))))
-					goto exit;
-
-				bzero(p, sizeof(*p));
-				
-				ptrs.mp = &p;
-
-				p->modes = modes;
-				p->curr_devid = currmode;
-				
-				r = (struct resinf *)((char *)p + sizeof(*p));
-
-				for (i = 0; i < 8; i++)
-				{
-					if ((p->count[i] = count[i]))
-					{
-						p->resinf[i] = r;
-						r += p->count[i];
-					}
-				}
-				p->num_depths = depths;
-				p->current[0] = 0;
-				obtree = create_popup_tree(client, 0, depths, mw, 4, &nxt_mdepth, ptrs.vp);
-				if (!instchrm_wt(client, &p->depth_wt, obtree))
-					goto exit;
-			
-				p->depth_wt->links++;
-
-				for (i = 0,j = 1; i < 8; i++)
-				{
-					if (p->count[i])
-					{						
-						p->current[0] = i;
-						p->misc[0] = (long)modes;
-						p->misc[1] = num_modes;
-						obtree = create_popup_tree(client, 0, p->count[i], mw, 4, &nxt_novares, ptrs.vp);
-						if (instchrm_wt(client, &p->col_wt[i], obtree))
-						{
-							p->col_wt[i]->links++;
-						}
-						else
-							goto exit;
-						j++;
-					}
-				}
-			}	
-		}
-		else
-			kernel_close(fp);
-	}
-	
-	return p;
-exit:
-	if (modes)
-		kfree(modes);
-	if (p)
-		delete_milres_parm(p);
-	
-	return NULL;
-}
-
-void
-open_nova_reschange(enum locks lock, struct xa_client *client, bool open)
-{
-	struct xa_window *wind;
-	struct helpthread_data *htd;
-	XA_TREE *wt = NULL;
-	OBJECT *obtree = NULL;
-	struct milres_parm *p = NULL;
-
-	if (!(htd = get_helpthread_data(client)))
-		return;
-
-	if (!htd->w_reschg) // !reschg_win)
-	{
-		obtree = duplicate_obtree(client, ResourceTree(C.Aes_rsc, RES_CHMIL), 0);
-		if (!obtree) goto fail;
-		wt = new_widget_tree(client, obtree);
-		if (!wt) goto fail;
-		wt->flags |= WTF_TREE_ALLOC | WTF_AUTOFREE;
-		p = check_nova_res(client, obtree[RCHM_RES].ob_width);
-		if (!p) goto fail;
-
-		p->current[1] = milan_setdevid(wt, p, p->curr_devid);
-			
-		wind = create_dwind(lock, CLOSER, t_reschg, client, wt, nova_reschg_form_exit, reschg_destructor);
-		if (!wind) goto fail;
-
-		add_xa_data(&wind->xa_data, p, 0, "milres_parm", delete_milres_parm);
-		if (open)
-			open_window(lock, wind, wind->r);
-		htd->w_reschg = wind; //reschg_win = wind;
-	}
-	else
-	{
-		wind = htd->w_reschg;
-		if (open)
-		{
-			open_window(lock, wind, wind->r);
-			if (wind != TOP_WINDOW/*window_list*/)
-				top_window(lock, true, false, wind);
-		}
-	}
-	return;
-fail:
-	delete_milres_parm(p);
-
-	if (wt)
-	{
-		remove_wt(wt, false);
-		obtree = NULL;
-	}
-	if (obtree)
-		free_object_tree(client, obtree);
-	
-}
-#endif
 
 /*
  * client still running dialog
@@ -2180,7 +1831,7 @@ csr_form_exit(struct xa_client *Client,
 
 	Sema_Up(clients);
 	lock |= clients;
-	
+
 // 	wt->current = fr->obj;
 	wt->which = 0;
 
@@ -2210,6 +1861,7 @@ csr_form_exit(struct xa_client *Client,
 
 			close_window(lock, wind);
 			delayed_delete_window(lock, wind);
+			csr_destructor( lock, wind );	/* window is deleted ... */
 			if (C.csr_client)
 			{
 				C.csr_client->status |= CS_SIGKILLED;
@@ -2245,17 +1897,18 @@ open_csr(enum locks lock, struct xa_client *client, struct xa_client *running)
 	if (!(htd = get_helpthread_data(client)))
 		return;
 
+
 	if (!htd->w_csr) // !csr_win)
 	{
 		TEDINFO *t;
-		
+
 		obtree = duplicate_obtree(client, ResourceTree(C.Aes_rsc, KILL_OR_WAIT), 0);
 		if (!obtree) goto fail;
 		wt = new_widget_tree(client, obtree);
 		if (!wt) goto fail;
 		wt->flags |= WTF_TREE_ALLOC | WTF_AUTOFREE;
 		C.csr_client = running;
-		
+
 		t = object_get_tedinfo(obtree + KORW_APPNAME, NULL);
 		if (running->name[0])
 		{
@@ -2273,21 +1926,22 @@ open_csr(enum locks lock, struct xa_client *client, struct xa_client *running)
 			strncpy(t->te_ptext, running->proc_name, 8);
 			t->te_ptext[8] = '\0';
 		}
-			
+
 		wind = create_dwind(lock, 0, /*txt_shutdown*/" Shutdown ", client, wt, csr_form_exit, csr_destructor);
 		if (!wind)
 			goto fail;
 		htd->w_csr = wind;
 		wind->window_status |= XAWS_FLOAT;
-		open_window(lock, wind, wind->r);		
+		open_window(lock, wind, wind->r);
 	}
 	else
 	{
 		wind = htd->w_csr;
 		open_window(lock, wind, wind->r);
-		if (wind != TOP_WINDOW/*window_list*/)
-			top_window(lock, true, false, wind);
 	}
+	if( wind )
+		force_window_top( lock, wind );
+
 	return;
 fail:
 	if (wt)
@@ -2314,7 +1968,7 @@ CE_abort_csr(enum locks lock, struct c_event *ce, bool cancel)
 	if (!cancel)
 	{
 		struct helpthread_data *htd = lookup_xa_data_byname(&ce->client->xa_data, HTDNAME);
-		
+
 		if (htd && htd->w_csr)
 		{
 			close_window(lock, htd->w_csr);
@@ -2352,7 +2006,7 @@ handle_launcher(enum locks lock, struct fsel_data *fs, const char *path, const c
 	{
 		if (*t == '/')
 			*t = '\\';
-	}		
+	}
 
 	close_fileselector(lock, fs);
 
@@ -2365,11 +2019,25 @@ handle_launcher(enum locks lock, struct fsel_data *fs, const char *path, const c
 
 static struct fsel_data aes_fsel_data;
 
-static void
+void
 open_launcher(enum locks lock, struct xa_client *client)
 {
 	struct fsel_data *fs;
 
+	/* if lauchpath defined but is no path discard it */
+	if (*cfg.launch_path)
+	{
+		struct stat st;
+		long r;
+		char *p = strchr( cfg.launch_path, '*' );
+		if( p )
+			*(p-1) = 0;
+		r = f_stat64(0, cfg.launch_path, &st);
+		if (r != 0 || !S_ISDIR(st.mode) )
+			*cfg.launch_path = 0;
+		else if( p )
+			*p = '*';
+	}
 	if (!*cfg.launch_path)
 	{
 		cfg.launch_path[0] = d_getdrv() + 'a';
@@ -2420,7 +2088,7 @@ sysalerts_form_exit(struct xa_client *Client,
 		{
 			struct scroll_info *list = object_get_slist(wt->tree + SYSALERT_LIST);
 			struct sesetget_params p = { 0 };
-			
+
 			p.arg.txt = /*txt_alerts*/"Alerts";
 			list->get(list, NULL, SEGET_ENTRYBYTEXT, &p);
 			if (p.e)
@@ -2435,7 +2103,7 @@ sysalerts_form_exit(struct xa_client *Client,
 			object_deselect(wt->tree + item);
 			redraw_toolbar(lock, wind, item);
 			close_window(lock, wind);
-// 			delayed_delete_window(lock, wind);	
+// 			delayed_delete_window(lock, wind);
 			break;
 		}
 	}
@@ -2460,6 +2128,210 @@ refresh_systemalerts(OBJECT *form)
 	list->slider(list, true);
 }
 
+/*
+ * convert a file in /kern into a single line
+ * delete tabs
+ * replace \n->,
+ *
+ */
+static void kerinfo2line( char *in, char *out )
+{
+	char *pi = in, *po = out;
+
+	for( ; *pi; pi++ )
+	{
+		if( *pi > ' ' /*!= '\t'*/ )
+		{
+			if( *pi == '\n' )
+				*po++ = ',';
+			else
+				*po++ = *pi;
+		}
+		else if( !(*(po-1) == ' ' || *(po-1) == ':') )
+			*po++ = ' ';
+	}
+	*--po = 0;
+}
+
+/*
+ *	stat/: kernget.c:
+
+   info->len = ksprintf (info->buf, len,
+    "%d (%s) %c %d %d %d %d %u "
+    "%lu %lu %lu %lu %lu %lu %ld %ld %d %d "
+     "%ld %ld %ld %ld %lu %lu %lu %lu %lu %lu "
+     "%lu %lu %lu %lu %lu %lu %lu\n",
+
+   p->pid,
+   p->name,
+   state,
+   p->ppid,
+   p->pgrp,
+   get_session_id (p),
+   ttypgrp,
+   memflags,
+   0UL, 0UL, 0UL, 0UL, * Page faults *
+   p->systime, p->usrtime, p->chldstime, p->chldutime,
+   (int) (p->slices * time_slice * 20),
+   (int) -(p->pri),
+   (long) timeout / 5,
+   p->alarmtim->when / 5,
+   (long) p->itimer->timeout->when / 5,
+   (long) starttime.tv_sec * 200L + (long) starttime.tv_usec / 5000L,
+   (ulong) memused (p),
+   (ulong) memused (p),  * rss *
+   0x7fffffffUL,   * rlim *
+   base + 256UL,
+   endcode,
+   startcode,
+   0UL, 0UL,
+   (ulong) (p->sigpending >> 1),
+   (ulong) (p->p_sigmask >> 1),
+   (ulong) sigign,
+   (ulong) sigcgt,
+   (ulong) p->wait_q
+   );
+*/
+/*
+ * read a file in /kern and grab selected values controlled by pinfo
+ * output goes to pinfo
+ */
+static int ker_stat( int pid, char *what, long pinfo[] )
+{
+	char path[256];
+	struct file *fp;
+	long err;
+	if( pid )
+		sprintf( path, sizeof(path), "u:/kern/%d/%s", pid, what );
+	else
+		sprintf( path, sizeof(path), "u:/kern/%s",what );
+	fp = kernel_open( path, O_RDONLY, &err, NULL );
+	if( !fp )
+	{
+		return 1;
+	}
+
+	err = kernel_read( fp, path, sizeof(path) );
+	if( err > 0 )
+	{
+		int i, j;
+		char *p = path;
+		path[err] = 0;
+		for( j = 0, i = 1; *p && pinfo[j]; i++ )
+		{
+			if( i == pinfo[j] )
+			{
+				if( !isdigit( *p ) )
+					return 3;
+				pinfo[j++] = atol( p );
+			}
+			for( ; *p && !(*p == ' ' || *p == '.'); p++ );
+			if( *p )
+				p++;
+		}
+		if( !*p && pinfo[j] )
+			return 4;
+	}
+	kernel_close(fp);
+	if( err <= 0 )
+	{
+		return 2;
+	}
+	return 0;
+}
+
+/*
+ * grab words from a file up to startline into pinfo
+ * pinfo[n]: # of word pinfo[n+1]: title pinfo[n+2]: # of words to add
+ *
+ * convert all from startline into a single line, appended to the above
+ * add resulting line to list
+ */
+static void add_kerinfo(
+	char *path,
+	struct scroll_info *list,
+	struct scroll_entry *this, struct scroll_entry *to,
+	struct scroll_content *sc, int maxlen, int startline,
+	int redraw, long *pinfo
+)
+{
+	long err;
+	struct file *fp;
+	fp = kernel_open( path, O_RDONLY, &err, NULL );
+	if(fp)
+	{
+		char line[256], sstr[1024];
+
+		err = kernel_read( fp, sstr, sizeof(sstr) );
+		kernel_close(fp);
+		if( err >= sizeof(sstr) )
+			*(sstr + sizeof(sstr) - 1) = 0;
+
+		if( err > 0 )
+		{
+			int i, j = 0, p=0, l;
+			char *sp;
+			for( sp = sstr, l = i = 0; l < startline && i < err; i++ )
+			{
+				if( sstr[i] == '\n' )
+				{
+					/* grab words from lines before startline */
+					if( pinfo && pinfo[p] && pinfo[p] == l )
+					{
+						char *cp, *cpx;
+						int k;
+						for( cp = sp, k = 0; k < pinfo[p+2]; k++ )
+						{
+							for( ; *cp > ' '; cp++ );
+							for( ; *cp && *cp <= ' '; cp++ );
+						}
+						for( cpx = cp; *cpx > ' '; cpx++ );
+						*cpx = 0;
+						if( cp && *cp )
+							j += sprintf( line+j, sizeof(line)-j, "%s%s ", pinfo[p+1], cp );
+						p += 3;
+						*cpx = ' ';
+					}
+					l++;
+					sp = sstr+i+1;
+				}
+			}
+			if( l < startline )
+			{
+				return;
+			}
+			err -= i;
+			if( maxlen && err > maxlen )
+				err = maxlen;
+			if( err >= sizeof(line) -1 )
+				err = sizeof(line)-1;
+			sstr[err+i] = 0;
+
+			kerinfo2line( sstr+i, line+j );
+
+
+			if( to )
+			{
+				struct setcontent_text t = { 0 };
+				struct se_content *sec = to->content;
+				t.text = line;
+				/* set only if changed */
+				if( !sec || strcmp( t.text, sec->c.text.text ) )
+				{
+					list->set(list, to, SESET_TEXT, (long)&t, redraw);
+				}
+			}
+			else
+			{
+				sc->t.text = line;
+				list->add(list, this, 0, sc, this ? (SEADD_CHILD) : SEADD_PRIOR, 0, redraw);
+			}
+		}
+	}
+	else
+		BLOG((0,"add_kerinfo:could not open %s err=%ld", path, err ));
+}
+
 void
 open_systemalerts(enum locks lock, struct xa_client *client, bool open)
 {
@@ -2476,7 +2348,10 @@ open_systemalerts(enum locks lock, struct xa_client *client, bool open)
 	{
 		struct scroll_info *list;
 		RECT or;
-		
+		char a[] = /*txt_alerts*/"Alerts";
+		char e[] = /*txt_environment*/"Environment";
+		char s[] = /*txt_environment*/"System";
+
 		obtree = duplicate_obtree(client, ResourceTree(C.Aes_rsc, SYS_ERROR), 0);
 		if (!obtree) goto fail;
 		wt = new_widget_tree(client, obtree);
@@ -2484,31 +2359,36 @@ open_systemalerts(enum locks lock, struct xa_client *client, bool open)
 		wt->flags |= WTF_TREE_ALLOC | WTF_AUTOFREE;
 
 		list = set_slist_object(0, wt, NULL, SYSALERT_LIST,
-				 SIF_SELECTABLE|SIF_AUTOSELECT|SIF_TREEVIEW|SIF_AUTOOPEN,
+				 SIF_SELECTABLE|SIF_AUTOSELECT|SIF_TREEVIEW|SIF_AUTOOPEN|SIF_AUTOSLIDERS,
 				 NULL, NULL, NULL, NULL, NULL, NULL,
 				 NULL, NULL, NULL, NULL,
 				 NULL, NULL, NULL, 255);
-		
+
 		if (!list) goto fail;
-		
+
+		/* todo: set focus into list (?) */
 		obj_init_focus(wt, OB_IF_RESET);
-		
+
 		{
 // 			struct scroll_info *list = object_get_slist(obtree + SYSALERT_LIST);
 			struct scroll_content sc = {{ 0 }};
-			char a[] = /*txt_alerts*/"Alerts";
-			char e[] = /*txt_environment*/"Environment";
 
 			sc.t.text = a;
 			sc.t.strings = 1;
 			sc.icon = obtree + SALERT_IC1;
 			sc.usr_flags = 1;
-			sc.xflags = OF_AUTO_OPEN;
+			sc.xflags = OF_AUTO_OPEN|OF_OPENABLE;
 			DIAGS(("Add Alerts entry..."));
 			list->add(list, NULL, NULL, &sc, 0, SETYP_STATIC, NOREDRAW);
 			sc.t.text = e;
 			sc.icon = obtree + SALERT_IC2;
+			list->set(list, list->cur, SESET_SELECTED, 0, NORMREDRAW);
+
 			DIAGS(("Add Environment entry..."));
+			list->add(list, NULL, NULL, &sc, 0, SETYP_STATIC, NOREDRAW);
+			sc.t.text = s;
+			sc.icon = obtree + SALERT_IC2;
+			DIAGS(("Add System entry..."));
 			list->add(list, NULL, NULL, &sc, 0, SETYP_STATIC, NOREDRAW);
 		}
 		{
@@ -2518,9 +2398,10 @@ open_systemalerts(enum locks lock, struct xa_client *client, bool open)
 			int i;
 			struct sesetget_params p = { 0 };
 			struct scroll_content sc = {{ 0 }};
+			char sstr[1024];
 
 			p.idx = -1;
-			p.arg.txt = /*txt_environment*/"Environment";
+			p.arg.txt = e;	// /*txt_environment*/"Environment";
 			p.level.flags = 0;
 			p.level.curlevel = 0;
 			p.level.maxlevel = 0;
@@ -2528,10 +2409,33 @@ open_systemalerts(enum locks lock, struct xa_client *client, bool open)
 			list->empty(list, p.e, 0);
 			this = p.e;
 			sc.t.strings = 1;
+
+			/* todo?: define sort (name/value) */
 			for (i = 0; strings[i]; i++)
-			{	sc.t.text = strings[i];
-				list->add(list, this, NULL, &sc, this ? (SEADD_CHILD|SEADD_PRIOR) : SEADD_PRIOR, 0, true);		
+			{
+				sc.t.text = strings[i];
+				list->add(list, this, sortbyname, &sc, this ? (SEADD_CHILD|SEADD_PRIOR) : SEADD_PRIOR, 0, true);
 			}
+			p.arg.txt = s;
+			list->get(list, NULL, SEGET_ENTRYBYTEXT, &p);
+			list->empty(list, p.e, 0);
+			this = p.e;
+			sc.t.strings = 1;
+
+			/* ? alloc sstr? */
+			/* video */
+			sprintf( sstr, sizeof(sstr), "Video: %dx%dx%d,%d colours",
+				screen.r.w, screen.r.h, screen.planes, screen.colours );
+			sc.t.text = sstr;
+			list->add(list, this, 0, &sc, this ? (SEADD_CHILD) : SEADD_PRIOR, 0, true);
+			/* cpuinfo */
+			add_kerinfo( "u:/kern/cpuinfo", list, this, NULL, &sc, 0, 0, false, NULL );
+
+			add_kerinfo( "u:/kern/version", list, this, NULL, &sc, 0, 0, false, NULL );
+
+			add_kerinfo( "u:/kern/buildinfo", list, this, NULL, &sc, 0, 1, false, NULL );
+
+			init_list_focus( obtree, SYSALERT_LIST, 0 );
 		}
 
 		obj_rectangle(wt, aesobj(obtree, 0), &or);
@@ -2543,9 +2447,10 @@ open_systemalerts(enum locks lock, struct xa_client *client, bool open)
 		{
 			center_rect(&or);
 			remember = calc_window(lock, client, WC_BORDER,
-						CLOSER|NAME, created_for_AES,
-						client->options.thinframe,
-						client->options.thinwork,
+						BORDER|CLOSER|NAME|TOOLBAR|hide_move(&(C.Aes->options)),
+						created_for_AES,
+						C.Aes->options.thinframe,
+						C.Aes->options.thinwork,
 						*(RECT *)&or);
 		}
 
@@ -2555,20 +2460,24 @@ open_systemalerts(enum locks lock, struct xa_client *client, bool open)
 					do_formwind_msg,
 					client,
 					false,
-					CLOSER|NAME|TOOLBAR|hide_move(&(client->options)),
+					BORDER|CLOSER|NAME|TOOLBAR|hide_move(&(C.Aes->options)),
 					created_for_AES,
-					client->options.thinframe,
-					client->options.thinwork,
-					remember, NULL, NULL);
+					C.Aes->options.thinframe,
+						C.Aes->options.thinwork,
+						remember,
+					NULL, NULL);
 		if (!wind) goto fail;
-		
+
+		wind->min.h = SYSLOGMINH;
+		wind->min.w = SYSLOGMINH * 2;	/* minimum width for this window */
 		list->set(list, NULL, SESET_PRNTWIND, (long)wind, NOREDRAW);
-		
+
 		/* Set the window title */
-		set_window_title(wind, /*wint_sysalert*/" System window & Alerts log", false);
+		set_window_title(wind, " System window & Alerts log", false);
 
 		wt = set_toolbar_widget(lock, wind, client, obtree, inv_aesobj(), 0/*WIP_NOTEXT*/, STW_ZEN, NULL, &or);
 		wt->exit_form = sysalerts_form_exit;
+		wt->focus = aesobj( obtree, SYSALERT_LIST );	/*cursor on list */
 		/* Set the window destructor */
 		wind->destructor = systemalerts_destructor;
 
@@ -2585,8 +2494,7 @@ open_systemalerts(enum locks lock, struct xa_client *client, bool open)
 		if (open)
 		{
 			open_window(lock, wind, wind->r);
-			if (wind != TOP_WINDOW/*window_list*/)
-				top_window(lock, true, false, wind);
+			force_window_top( lock, wind );
 		}
 	}
 	return;
@@ -2662,7 +2570,7 @@ do_system_menu(enum locks lock, int clicked_title, int menu_item)
 			sc.t.strings = 1;
 			for (i = 0; strings[i]; i++)
 			{	sc.t.text = strings[i];
-				list->add(list, this, NULL, &sc, this ? (SEADD_CHILD|SEADD_PRIOR) : SEADD_PRIOR, 0, true);		
+				list->add(list, this, NULL, &sc, this ? (SEADD_CHILD|SEADD_PRIOR) : SEADD_PRIOR, 0, true);
 			}
 			post_cevent(C.Hlp, ceExecfunc, open_systemalerts,NULL, 1,0, NULL,NULL);
 #endif

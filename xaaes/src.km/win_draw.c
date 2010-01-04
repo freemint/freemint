@@ -2263,6 +2263,7 @@ draw_widg_icon(struct xa_vdi_settings *v, struct xa_widget *widg, XA_TREE *wt, s
 	(*api->object_spec_wh)(aesobj_ob(&ob), &w, &h);
 	x += (widg->ar.w - w) >> 1;
 	y += (widg->ar.h - h) >> 1;
+	//if( ob.ob->ob_type == G_SLIST )BLOG((0,"draw_widg_icon:x=%d y=%d", x, y ));
 	(*api->render_object)(wt, v, ob, x, y); //display_object(0, wt, v, ob, x, y, 0);
 }
 

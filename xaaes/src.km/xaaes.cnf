@@ -513,7 +513,7 @@ redraw_timeout = 2000
 #
 # These are goot app_otions settings that I (ozk) use atm.
 #app_options = default,thinwork = true, winframe_size = 0, xa_nomove = false
-#app_options = aessys, thinwork = true, winframe_size = 0, xa_nomove = false
+app_options = aessys, thinwork = true, winframe_size = 2, xa_nomove = false
 #app_options = autos401,xa_nomove = true
 #app_options = ataricq,thinwork = true, winframe_size = 0
 #app_options = jinnee, naesff = true
@@ -584,7 +584,7 @@ redraw_timeout = 2000
 #
 clipboard = c:\clipbrd\
 accpath   = c:\
-#launcher  = u:\opt\toswin2\tw-call.prg
+launpath  = i:\usr\gem
 
 #####################################################################
 # widgets  = <file>

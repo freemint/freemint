@@ -82,8 +82,10 @@ static PCB_TAx  pCB_run;
 static struct parser_item parser_tab[] =
 {
 	/* config variables */
-	{ "LAUNCHER",              PI_R_T,     cfg.launch_path         , { dat: sizeof(cfg.launch_path) } },
+	//{ "LAUNCHER",              PI_R_T,     cfg.launch_path         , { dat: sizeof(cfg.launch_path) } },
+	{ "LAUNCHPATH",              PI_R_T,     cfg.launch_path         , { dat: sizeof(cfg.launch_path) } },
 	{ "CLIPBOARD",             PI_R_T,     cfg.scrap_path          , { dat: sizeof(cfg.scrap_path)  } },
+	{ "SNAPSHOT",  	           PI_R_T,     cfg.snapper  		        , { dat: sizeof(cfg.snapper)  } },
 	{ "ACCPATH",               PI_R_T,     cfg.acc_path            , { dat: sizeof(cfg.acc_path)    } },
 	{ "WIDGETS",               PI_R_T,     cfg.widg_name           , { dat: sizeof(cfg.widg_name)   } },
 	{ "RESOURCE",              PI_R_T,     cfg.rsc_name            , { dat: sizeof(cfg.rsc_name)    } },
@@ -490,6 +492,7 @@ pCB_app_options(char *line)
 {
 	struct opt_list *op = S.app_options;
 	struct options *opts = NULL;
+	short a;
 	char *s;
 
 	if ((s = get_string(&line)))
@@ -575,7 +578,15 @@ pCB_app_options(char *line)
 			else if (!strnicmp(s, "inhibit_hide", 12))
 				get_boolarg(s + 12, &opts->inhibit_hide);
 			else if (!strnicmp(s, "clwtna", 6))
-				get_argument(s + 6, &opts->clwtna); //get_boolarg(s + 6, &opts->clwtna);
+			{
+				get_argument(s + 6, &a); //get_boolarg(s + 6, &opts->clwtna);
+				opts->clwtna = a;
+			}
+			else if (!strnicmp(s, "alt_shortcuts", 13))
+			{
+				get_argument(s + 13, &a); //get_boolarg(s + 6, &opts->clwtna);
+				opts->alt_shortcuts = a;
+			}
 
 #if GENERATE_DIAGS
 			else
@@ -928,6 +939,7 @@ load_config(void)
 	strcat(path, CNF_NAME);
 
 	DIAGS(("Loading config %s", path));
+	BLOG((0,"Loading config %s", path));
 	parse_cnf(path, parser_tab, &mydata);
 
 #if GENERATE_DIAGS

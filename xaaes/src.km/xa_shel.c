@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
  *                                        2004 F.Naumann & O.Skancke
@@ -25,7 +25,7 @@
  */
 
 #include "xa_types.h"
-#include "xa_global.h" 
+#include "xa_global.h"
 
 #include "xa_appl.h"
 #include "xa_shel.h"
@@ -92,7 +92,7 @@ parse_tail(char *to, char *ti)
 		}
 		else
 			sep = ' ';
-	
+
 		while(*t && *t != sep)
 			*to++ = *t++;		/* transfer (in place) between seperator */
 
@@ -119,9 +119,9 @@ make_argv(char *p_tail, long tailsize, char *command, char *argvtail)
 	int i = strlen(command);
 	long l;
 	char *argtail;
-	
+
 	DIAGS(("make_argv: %lx, %ld, %lx, %lx", p_tail, tailsize, command, argvtail));
-	
+
 	l = count_env(strings, 0);
 	DIAG((D_shel, NULL, "count_env: %ld", l));
 
@@ -221,7 +221,7 @@ default_path(struct xa_client *caller, char *cmd, char *path, char *name, char *
 			strcpy(defdir + 2, path);
 	//		display("use path in cmd as defdir '%s'", defdir);
 		}
-		
+
 		cpopts->mode |= CREATE_PROCESS_OPTS_DEFDIR;
 		cpopts->defdir = defdir;
 	//	display("Set defdir to '%s' for %s", defdir, caller ? caller->name : "no caller");
@@ -327,7 +327,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 	defdir[0] = d_getdrv() + 'a';
 	defdir[1] = ':';
 	d_getpath(defdir + 2, 0);
-	
+
 	argvtail[0] = 0;
 	argvtail[1] = 0;
 
@@ -350,7 +350,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 				longtail = 124;
 			DIAG((D_shel, NULL, "ARGV!  longtail = %ld", longtail));
 		}
-	
+
 		if (longtail)
 		{
 			DIAG((D_shel, NULL, " -- longtailsize=%ld", longtail));
@@ -484,7 +484,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 
 					f = kernel_open("u:\\pipe\\tosrun", O_WRONLY, NULL, NULL);
 					if (f)
-					{		
+					{
 						kernel_write(f, cmd, strlen(cmd));
 						kernel_write(f, " ", 1);
 						kernel_write(f, tail + 1, *tail);
@@ -502,7 +502,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 				{
 					char *new_tail;
 					long new_tailsize;
-					
+
 					new_tail = kmalloc(tailsize + 1 + strlen(cmd) + 1);
 					if (!new_tail)
 					{
@@ -547,7 +547,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 
 			if (wisgr != 0)
 			{
-				
+
 				ret = create_process(cmd, *argvtail ? argvtail : tail,
 						     (x_mode & SW_ENVIRON) ? x_shell.env : *strings,
 						     &p, 0, cpopts.mode ? &cpopts : NULL);
@@ -557,12 +557,16 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 
 					type = APP_APPLICATION;
 					ret = p->pid;
-					p_setpgrp(p->pid, loader_pgrp);
+					/* create new pgrp for launched app so killgroup cannot affect XaAES */
+					p_setgid(ret);
+					p_setpgrp(ret, ret);
 				}
+				else
+					ret = -ret;
 			}
 			break;
 		}
-		case 3:
+		case 3:	/* ACC */
 		{
 			struct proc *curproc = get_curproc();
 			struct memregion *m;
@@ -570,15 +574,16 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 			long size;
 
 			drv = default_path(caller, cmd, path, name, defdir, &cpopts);
-			
+
 			DIAG((D_shel, 0, "[3]drive_and_path %d,'%s','%s'", drv, path, name));
 
-			
+
 			ret = create_process(cmd, *argvtail ? argvtail : tail,
 					     (x_mode & SW_ENVIRON) ? x_shell.env : *strings,
 					     &p, 256, cpopts.mode ? &cpopts : NULL);
 			if (ret < 0)
 			{
+				BLOG((0, "acc launch failed: error %i", ret));
 				DIAG((D_shel, 0, "acc launch failed: error %i", ret));
 				break;
 			}
@@ -630,7 +635,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 
 		/*
 		 * reparent child
-		 * 
+		 *
 		 * This is very, very ugly; we are forced todo so because all
 		 * other AES implementations for FreeMiNT (and the old XaAES)
 		 * use something like an server that handle most of the
@@ -640,7 +645,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 		 * shel_write(). That's why most AES programs don't handle
 		 * this correctly, e.g. not calling Pwaitpid() and zombies
 		 * appear (or is there something in AES I oversee here?).
-		 * 
+		 *
 		 * TODO: add XaAES extension that don't do this.
 		 */
 
@@ -667,17 +672,17 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 		DIAGS((" -- attaching extension"));
 		info = attach_extension(p, XAAES_MAGIC_SH, PEXT_COPYONSHARE | PEXT_SHAREONCE, sizeof(*info),
 					&info_cb); //xaaes_cb_vector_sh_info);
-		
+
 // 		if (!(strnicmp(p->name, "qed", 3)))
 // 		{
 // 			struct module_callback *cb = &info_cb; //xaaes_cb_vector_sh_info;
 // 			disp_cb(cb);
 // 		}
-		
+
 		if (info)
 		{
 			info->type = type;
-			
+
 			if (caller)
 				info->rppid = caller->p->pid;
 			else
@@ -717,6 +722,7 @@ out:
 	put_env(lock, ARGV);
 
 	/* and go out */
+
 	return ret;
 }
 
@@ -740,10 +746,10 @@ XA_shel_write(enum locks lock, struct xa_client *client, AESPB *pb)
 		DIAG((D_shel, NULL, "shel_write(0x%x,%d,%d) for non AES process (pid %ld)",
 			wdoex, wisgr, wiscr, p_getpid()));
 	}
-#endif	
+#endif
 //	display("shel_write(0x%x,%d,%d) for %s",
 //		wdoex, wisgr, wiscr, client ? client->name : "no client");
-	
+
 	if ((wdoex & 0xff) < SWM_SHUTDOWN) /* SWM_LANUCH, SWM_LAUNCHNOW or SWM_LAUNCACC */
 	{
 		Sema_Up(envstr);
@@ -822,7 +828,7 @@ XA_shel_write(enum locks lock, struct xa_client *client, AESPB *pb)
 				break;
 
 			/* broadcast message */
-			case SWM_BROADCAST:	
+			case SWM_BROADCAST:
 			{
 				struct xa_client *cl;
 
@@ -923,7 +929,7 @@ XA_shel_write(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 
-/* I think that the description if shell_read in the compendium is 
+/* I think that the description if shell_read in the compendium is
  * rubbish. At least on Atari GEM the processes own command must be
  * given, NOT that of the parent.
  */
@@ -989,7 +995,7 @@ XA_shel_read(enum locks lock, struct xa_client *client, AESPB *pb)
 static int
 wc_match (const char *name, const char *template, bool nocase)
 {
-	char c0, c1; 
+	char c0, c1;
 	const char *p, *q;
 	int stop;
 
@@ -1025,8 +1031,10 @@ wc_match (const char *name, const char *template, bool nocase)
 			return 0;
 		}
 	}
-	if (!*q || strcmp(q,"*") == 0)
+	if (!*q || (*q == '*' && *(q+1) == 0))
+	{
 		return 1;
+	}
 
 	return 0;
 }
@@ -1055,17 +1063,17 @@ wc_stat64(int mode, const char *node, char *fn, struct stat *st)
 		else
 			return -1;
 	}
-	
+
 	path = buf;
 	strcpy(buf, node);
 	len = strlen(buf);
 	if (buf[len] != '\\')
 		buf[len++] = '\\';
-	
+
 	buf[len] = '\0';
 
 	r = kernel_opendir(&dirh, buf);
-	
+
 	if (r)
 	{
 		DIAGS(("Error %lx opening dir %s", r, buf));
@@ -1074,7 +1082,7 @@ wc_stat64(int mode, const char *node, char *fn, struct stat *st)
 
 	name = buf + len;
 	len = sizeof(buf) - len;
-	
+
 	while(!(r = kernel_readdir(&dirh, fname, sizeof(fname))))
 	{
 		strcpy(name, fname + 4);
@@ -1096,64 +1104,75 @@ wc_stat64(int mode, const char *node, char *fn, struct stat *st)
 char *
 shell_find(enum locks lock, struct xa_client *client, char *fn)
 {
-	char *path;
+	char *path, pathsep;
 	char cwd[256];
 
 	struct stat st;
 	long r;
 
-	const char *kp, *kh;
+	const char *kh;
 	int f = 0, l, n;
 	long len = PATH_MAX * 2;
 
 	path = kmalloc(len);
 	if (path)
 	{
-		kp = get_env(lock, "PATH=");
-		kh = get_env(lock, "HOME=");
 
-	
-		DIAGS(("shell_find for %s '%s', PATH= '%s'", client->name, fn ? fn : "~", kp ? kp : "~"));
-
-		if (!(isalpha(*fn) && *(fn + 1) == ':'))
+		if ( !( ( isalpha(*fn) && *(fn + 1) == ':' )
+			|| *fn == '/' || *fn == '\\' ) )	/* no absolute path given */
 		{
+
+			DIAGS(("shell_find for %s '%s', PATH= '%s'", client->name, fn ? fn : "~", kp ? kp : "~"));
+
 			/* check $HOME directory */
-			if (cfg.usehome && kh)
+			if (cfg.usehome )
 			{
-				r = wc_stat64(0, kh, fn, &st);
-				DIAGS(("[2]  --   try: '%s\\%s' :: %ld", kh, fn, r));
-				if (r == 0 && S_ISREG(st.mode))
+				kh = get_env(lock, "HOME=");
+				if( kh )
 				{
-					sprintf(path, len, "%s\\%s", kh, fn);
-					return path;
+					r = wc_stat64(0, kh, fn, &st);
+					DIAGS(("[2]  --   try: '%s\\%s' :: %ld", kh, fn, r));
+					if (r == 0)
+					{
+						sprintf(path, len, "%s\\%s", kh, fn);
+						//sprintf(path, len, "%s/%s", kh, fn);
+						return path;
+					}
 				}
 			}
 
-			/* Check the clients home path */
-			r = wc_stat64(0, client->home_path, fn, &st);
-			DIAGS(("[1]  --   try: '%s\\%s' :: %ld", client->home_path, fn, r));
-			if (r == 0 && S_ISREG(st.mode))
+			/* try the file spec in the apps' dir */
+			kh = client->home_path;
+			r = wc_stat64(0, kh, fn, &st); //r = f_stat64(0, fn, &st);
+			DIAGS(("[0]  --    try: '%s' :: %ld", fn, r));
+			if (r == 0 )
 			{
-				sprintf(path, len, "%s\\%s", client->home_path, fn);
+				sprintf(path, len, "%s\\%s", kh, fn);
 				return path;
 			}
 
-
+			kh = get_env(lock, "PATH=");
 			/* the PATH env could be simply absent */
-			if (kp)	
+			if (kh)
 			{
 				/* Check our PATH environment variable */
 				/* l = strlen(cwd); */
-				/* cwd uninitialized; after sprintf? or is it kp? or is it sizeof? */
-				l = strlen(kp);
-				strcpy(cwd, kp);
+				/* cwd uninitialized; after sprintf? or is it kh? or is it sizeof? */
+				l = strlen(kh);
+
+					/* eval path seperator */
+				if( strchr( kh, ',' ) )
+					pathsep = ',';
+				else if( strchr( kh, ';' ) )
+					pathsep = ';';
+				else
+					pathsep = ':';
+
+				strcpy(cwd, kh);
 				while (f < l)
 				{
-					/* We understand ';' and ',' as path seperators */
 					n = f;
-					while (   cwd[n]
-					       && cwd[n] != ';'
-					       && cwd[n] != ',')
+					while ( cwd[n] && cwd[n] != pathsep )
 					{
 						if (cwd[n] == '/')
 							cwd[n] = '\\';
@@ -1166,7 +1185,7 @@ shell_find(enum locks lock, struct xa_client *client, char *fn)
 // 					sprintf(path, sizeof(path), "%s\\%s", cwd + f, fn);
 					r = wc_stat64(0, cwd + f, fn, &st);
 					DIAGS(("[3]  --   try: '%s\\%s' :: %ld", cwd + f, fn, r));
-					if (r == 0 && S_ISREG(st.mode))
+					if (r == 0)
 					{
 						sprintf(path, len, "%s\\%s", cwd + f, fn);
 						return path;
@@ -1180,7 +1199,7 @@ shell_find(enum locks lock, struct xa_client *client, char *fn)
 			sprintf(cwd, sizeof(cwd), "%c:%s", client->xdrive + 'a', client->xpath);
 			r = wc_stat64(0, cwd, fn, &st);
 			DIAGS(("[4]  --   try: '%s\\%s' :: %ld", cwd, fn, r));
-			if (r == 0 && S_ISREG(st.mode))
+			if (r == 0)
 			{
 				sprintf(path, len, "%c:%s\\%s", client->xdrive + 'a', client->xpath, fn);
 				return path;
@@ -1190,12 +1209,12 @@ shell_find(enum locks lock, struct xa_client *client, char *fn)
 		/* Last ditch - try the file spec on its own */
 		r = wc_stat64(0, NULL, fn, &st); //r = f_stat64(0, fn, &st);
 		DIAGS(("[5]  --    try: '%s' :: %ld", fn, r));
-		if (r == 0 && S_ISREG(st.mode))
+		if (r == 0)
 		{
 			strncpy(path, fn, len);
 			return path;
 		}
-		
+
 		kfree(path);
 		path = NULL;
 	}
@@ -1374,7 +1393,7 @@ put_env(enum locks lock, const char *cmd)
 
 		DIAG((D_shel, NULL, " -- change; '%s'", cmd ? cmd : "~~"));
 		/* count without */
-		ct = count_env(strings, cmd);	
+		ct = count_env(strings, cmd);
 		/* ct is including the extra \0 at the end! */
 
 		/* ends with '=': remove */
@@ -1446,7 +1465,7 @@ XA_shel_envrn(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		*p = NULL;
 
-		DIAGS(("shell_env for %s: '%s' :: '%s'", client ? c_owner(client) : "non-aes process", name, pf ? pf : "~~~"));	
+		DIAGS(("shell_env for %s: '%s' :: '%s'", client ? c_owner(client) : "non-aes process", name, pf ? pf : "~~~"));
 		if (pf)
 		{
 			*p = umalloc(strlen(pf) + 1);
@@ -1456,7 +1475,7 @@ XA_shel_envrn(enum locks lock, struct xa_client *client, AESPB *pb)
 	}
 
 	pb->intout[0] = 1;
-	
+
 	return XAC_DONE;
 }
 

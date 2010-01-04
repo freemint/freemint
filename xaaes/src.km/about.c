@@ -23,7 +23,7 @@
  * along with XaAES; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
- 
+
 #include RSCHNAME
 
 #include "xa_types.h"
@@ -40,13 +40,20 @@
 #include "xa_rsrc.h"
 #include "version.h"
 #include "about.h"
+void file_to_list( SCROLL_INFO *list, char *path, char *fn);
 
-
+/*
+#undef DISPCREDITS
+#undef LONG_LICENSE
+#define DISPCREDITS	1
+#define LONG_LICENSE	1
+*/
 static char *about_lines[] =
 {
   /*          1         2         3         4         5         6
      123456789012345678901234567890123456789012345678901234567890 */
 	"",
+#if DISPCREDITS
 	"Copyright (c) 1992 - 1998 C.Graham",
 	"              1999 - 2003 H.Robbers",
 	"                from 2004 F.Naumann & O.Skancke",
@@ -59,11 +66,19 @@ static char *about_lines[] =
 	"to Joakim H for his 3D test program.",
 	"Using Harald Siegmunds NKCC.",
 	"",
+#else
+	"Part of freemint ("SPAREMINT_URL").",
+#endif
+#if LONG_LICENSE
 	"XaAES is free software; you can redistribute it",
 	"and/or modify it under the terms of the GNU",
 	"General Public License as published by the Free",
 	"Software Foundation; either version 2 of the",
 	"License, or (at your option) any later version.",
+#else
+	"",
+	"The terms of the GPL version 2 or later apply.",
+#endif
 	"",
 	NULL
 };
@@ -87,7 +102,7 @@ about_form_exit(struct xa_client *client,
 {
 	enum locks lock = 0;
 	OBJECT *obtree = wt->tree;
-	
+
 // 	wt->current = fr->obj|fr->dblmask;
 
 	switch (aesobj_item(&fr->obj))
@@ -114,6 +129,77 @@ about_form_exit(struct xa_client *client,
 	}
 }
 
+#if HELPINABOUT
+/*
+ * insert lines of a text-file into a list
+ * if first non-white char is '#' line is skipped
+ *
+ * currently used only in about-window
+ */
+void file_to_list( SCROLL_INFO *list, char *path, char *fn)
+{
+	char ebuf[196], *p, *p1, *p2;
+	struct file *fp;
+	struct scroll_content sc = {{ 0 }};
+	long err;
+	int state = 0, offs = 0;
+
+	sprintf( ebuf, sizeof(ebuf), "%s\\%s", path, fn );
+	fp = kernel_open( ebuf, O_RDONLY, &err, NULL );
+	if( fp )
+	{
+		sc.t.strings = 1;
+		p2 = 0;
+		state = 0;
+		for( ;; )
+		{
+			if( offs > 0 )
+				memcpy( ebuf, p2 + 1, offs );
+			err = kernel_read( fp, ebuf+offs, sizeof(ebuf)-offs-1 );
+
+			if( err <= 0 )
+				break;
+			ebuf[err+offs] = 0;
+			if( offs == 0 && ebuf[offs] == '#' )
+				state = 1;
+			for( p2 = 0, p1 = ebuf, p = ebuf+offs; *p; p++ )
+			{
+				if( state == 2 && *p > ' ' )
+				{
+					if( *p == '#' )
+						state = 1;
+					else
+						state = 0;
+				}
+				if( *p == '\n' )
+				{
+					*p = 0;
+					if( state != 1 )
+					{
+						sc.t.text = p1;
+						list->add(list, NULL, NULL, &sc, false, 0, false);
+					}
+					p2 = p;
+					*p = '\n';
+					p1 = p+1;
+					if( *p1 == '#' )
+						state = 1;
+					else if( *p1 <= ' ' )
+						state = 2;
+					else
+						state = 0;
+				}
+			}
+			if( p2 && p > p2 )
+				offs = p - p2 - 1;
+			else
+				offs = 0;
+		}
+		kernel_close(fp);
+	}
+}
+#endif
+
 void
 open_about(enum locks lock, struct xa_client *client, bool open)
 {
@@ -126,7 +212,7 @@ open_about(enum locks lock, struct xa_client *client, bool open)
 	htd = get_helpthread_data(client);
 	if (!htd)
 		return;
-	
+
 	if (!htd->w_about)
 	{
 		RECT remember = { 0, 0, 0, 0 };
@@ -137,48 +223,58 @@ open_about(enum locks lock, struct xa_client *client, bool open)
 		wt = new_widget_tree(client, obtree);
 		if (!wt) goto fail;
 		wt->flags |= WTF_TREE_ALLOC | WTF_AUTOFREE;
-		
-		set_slist_object(0, wt, NULL, ABOUT_LIST, 0,
+
+		set_slist_object(0, wt, NULL, ABOUT_LIST, SIF_AUTOSLIDERS,
 				 NULL, NULL, NULL, NULL, NULL, NULL,
 				 NULL, NULL, NULL, NULL,
 				 NULL, NULL, NULL, 255);
 		obj_init_focus(wt, OB_IF_RESET);
-		
+
 		obj_rectangle(wt, aesobj(obtree, 0), &or);
+
 
 		/* Work out sizing */
 		if (!remember.w)
 		{
 			center_rect(&or);
-			remember = calc_window(lock, client, WC_BORDER, CLOSER|NAME, created_for_AES,
-						client->options.thinframe,
-						client->options.thinwork, *(RECT *)&or);
+			remember = calc_window(lock, C.Aes, WC_BORDER,
+				BORDER|CLOSER|NAME|TOOLBAR|(C.Aes->options.xa_nomove ? 0 : MOVER),
+				created_for_AES,
+				C.Aes->options.thinframe,
+				C.Aes->options.thinwork, *(RECT *)&or);
 		}
 
 		/* Create the window */
 		wind = create_window(lock,
 					do_winmesag,
 					do_formwind_msg,
-					client,
+					client,//C.Aes,
 					false,
-					CLOSER|NAME|TOOLBAR|(client->options.xa_nomove ? 0 : MOVER),
+					BORDER|CLOSER|NAME|TOOLBAR|(C.Aes->options.xa_nomove ? 0 : MOVER),
 					created_for_AES,
-					client->options.thinframe,client->options.thinwork,
+					C.Aes->options.thinframe, C.Aes->options.thinwork,
 					remember, 0, NULL);
-		
+
 		if (!wind) goto fail;
 
+		wind->min.h = wind->r.h;//MINOBJMVH * 3;	/* minimum height for this window */
+		wind->min.w = wind->r.w;//MINOBJMVH;	/* minimum width for this window */
 		/* Set the window title */
 		set_window_title(wind, "  About  ", true);
+
+		(obtree + ABOUT_INFOSTR)->ob_spec.free_string = "\0";
+#if XAAES_RELEASE
 		/* set version */
 		(obtree + ABOUT_VERSION)->ob_spec.free_string = vversion;
 		/* Set version date */
 		(obtree + ABOUT_DATE)->ob_spec.free_string = __DATE__;
 		(obtree + ABOUT_TARGET)->ob_spec.free_string = arch_target;
-#if XAAES_RELEASE
-		(obtree + ABOUT_INFOSTR)->ob_spec.free_string = '\0';
 #else
-		(obtree + ABOUT_INFOSTR)->ob_spec.free_string = info_string;
+		(obtree + ABOUT_VERSION)->ob_spec.free_string = vversion;
+		/* Set version date */
+		(obtree + ABOUT_DATE)->ob_spec.free_string = info_string;
+		(obtree + ABOUT_TARGET)->ob_spec.free_string = arch_target;
+		//(obtree + ABOUT_INFOSTR)->ob_spec.free_string = info_string;
 #endif
 
 		wt = set_toolbar_widget(lock, wind, wind->owner, obtree, inv_aesobj(), 0/*WIP_NOTEXT*/, STW_ZEN, NULL, &or);
@@ -199,8 +295,11 @@ open_about(enum locks lock, struct xa_client *client, bool open)
 				list->add(list, NULL, NULL, &sc, false, 0, false);
 				t++;
 			}
+#if HELPINABOUT
+			file_to_list( list, C.start_path, "xa_help.txt" );
+#endif
 		}
-		
+
 		list->slider(list, false);
 
 		/* Set the window destructor */

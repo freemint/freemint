@@ -222,6 +222,7 @@ struct common
 {
 	Path	start_path;
 	unsigned short nvdi_version;
+	unsigned short fvdi_version;
 	unsigned long gdos_version;
 
 	void (*reschange)(enum locks lock, struct xa_client *client, bool open);
@@ -341,6 +342,7 @@ struct config
 
 	Path launch_path;		/* Initial path for launcher */
 	Path scrap_path;		/* Path to the scrap directory */
+	Path snapper;				/* if !0 this is launched on C-A-D */
 	Path acc_path;			/* Path to desk accessory directory */
 
 	Path widg_name;			/* Path to XaAES widget rsc */
@@ -473,6 +475,8 @@ void	free_xa_data_list	(struct xa_data_hdr **list);
 
 /* Global VDI calls */
 XVDIPB *	create_vdipb(void);
+// void		do_vdi_trap (XVDIPB * vpb);
+// void		VDI(XVDIPB *vpb, short c0, short c1, short c3, short c5, short c6);
 void		get_vdistr(char *d, short *s, short len);
 void		xvst_font(XVDIPB *vpb, short handle, short id);
 XFNT_INFO *	xvqt_xfntinfo(XVDIPB *vpb, short handle, short flags, short id, short index);
@@ -483,12 +487,13 @@ do_vdi_trap (XVDIPB * vpb)
 {
 	__asm__ volatile
 	(
-		"move.l		%0,d1\n\t" 		\
+		"movea.l	%0,a0\n\t" 		\
+		"move.l		a0,d1\n\t"		\
 		"move.w		#115,d0\n\t"		\
 		"trap		#2\n\t"			\
 		:
-		: "g"(vpb)			
-		: "a0", "a1", "a2", "d0", "d1", "a2", "memory"
+		: "a"(vpb)			
+		: "a0", "d0", "d1", "memory"	
 	);
 }
 

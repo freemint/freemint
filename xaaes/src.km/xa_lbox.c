@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
  *                                        2004 F.Naumann & O.Skancke
@@ -66,7 +66,7 @@ callout_select(struct xa_lbox_info *lbox, OBJECT *tree, struct lbox_item *item, 
 {
 	struct sigaction oact, act;
 	struct xa_callout_head *u;
-	
+
 	if (lbox->slct)
 	{
 		u = umalloc(xa_callout_user.len + sizeof(struct co_lboxsel_parms));
@@ -76,7 +76,7 @@ callout_select(struct xa_lbox_info *lbox, OBJECT *tree, struct lbox_item *item, 
 			struct co_lboxsel_parms *lp;
 
 			bcopy(&xa_callout_user, u, xa_callout_user.len);
-			
+
 			u->sighand_p	+= (long)u;
 			u->parm_p	 = (void *)((char *)u->parm_p + (long)u);
 
@@ -92,12 +92,12 @@ callout_select(struct xa_lbox_info *lbox, OBJECT *tree, struct lbox_item *item, 
 			lp->user_data	= (long)user_data;
 			lp->obj_index	= obj_index;
 			lp->last_state	= last_state;
-			
+
 			cpushi(u, xa_callout_user.len);
 
 			act.sa_handler	= u->sighand_p;
 			act.sa_mask	= 0xffffffff;
-			act.sa_flags	= SA_RESET;
+			act.sa_flags	= SA_RESETHAND;
 
 			p_sigaction(SIGUSR2, &act, &oact);
 			DIAGS(("raise(SIGUSR2)"));
@@ -108,7 +108,7 @@ callout_select(struct xa_lbox_info *lbox, OBJECT *tree, struct lbox_item *item, 
 
 			ufree(u);
 		}
-	}	
+	}
 }
 
 static short
@@ -123,7 +123,7 @@ callout_set(struct xa_lbox_info *lbox,
 	struct sigaction oact, act;
 	struct xa_callout_head *u;
 	short ret = 0;
-	
+
 	if (lbox->set)
 	{
 		u = umalloc(xa_callout_user.len + sizeof(struct co_lboxset_parms));
@@ -133,7 +133,7 @@ callout_set(struct xa_lbox_info *lbox,
 			struct co_lboxset_parms *lp;
 
 			bcopy(&xa_callout_user, u, xa_callout_user.len);
-			
+
 			u->sighand_p	+= (long)u;
 			u->parm_p	 = (void *)((char *)u->parm_p + (long)u);
 
@@ -150,12 +150,12 @@ callout_set(struct xa_lbox_info *lbox,
 			lp->user_data	= (long)user_data;
 			lp->rect	= (long)rect;
 			lp->first	= first;
-						
+
 			cpushi(u, xa_callout_user.len);
 
 			act.sa_handler	= u->sighand_p;
 			act.sa_mask	= 0xffffffff;
-			act.sa_flags	= SA_RESET;
+			act.sa_flags	= SA_RESETHAND;
 
 			p_sigaction(SIGUSR2, &act, &oact);
 			DIAGS(("raise(SIGUSR2)"));
@@ -165,7 +165,7 @@ callout_set(struct xa_lbox_info *lbox,
 			p_sigaction(SIGUSR2, &oact, NULL);
 
 			ret = (short)p->ret;
-			
+
 			ufree(u);
 		}
 	}
@@ -213,7 +213,7 @@ new_lbox(struct widget_tree *wt, struct xa_vdi_settings *v)
 	if (lbox)
 	{
 		bzero(lbox, sizeof(*lbox));
-			
+
 		lbox->next = wt->lbox;
 		wt->lbox = lbox;
 		lbox->wt = wt;
@@ -246,7 +246,7 @@ delete_lbox(struct xa_lbox_info *lbox)
 
 /*
  * Find the first visible item
- */		
+ */
 static struct lbox_item *
 get_first_visible_item(struct xa_lbox_info *lbox)
 {
@@ -350,7 +350,7 @@ redraw_lbox(struct xa_lbox_info *lbox, short o, short depth, RECT *r)
 
 /*
  * Setup LBOX objects
- */	
+ */
 static void
 setup_lbox_objects(struct xa_lbox_info *lbox)
 {
@@ -358,7 +358,7 @@ setup_lbox_objects(struct xa_lbox_info *lbox)
 	OBJECT *obtree = wt->tree;
 	struct lbox_item *item;
 	short x, y, i, ent, first, index, obj, prev, parent = lbox->parent;
-	
+
 	DIAG((D_lbox, NULL, "setup_lbox_objects: wt=%lx, wt->lbox=%lx, entries=%d",
 		wt, wt->lbox, wt->lbox ? wt->lbox->aslide.entries : -1));
 
@@ -415,7 +415,7 @@ setup_lbox_objects(struct xa_lbox_info *lbox)
 					    lbox->user_data,
 					    NULL,
 					    lbox->bslide.first_visible);
-			
+
 				item->selected = obtree[obj].ob_state;
 				index++;
 			}
@@ -569,7 +569,7 @@ scroll_right(struct xa_lbox_info *lbox, struct lbox_slide *s, short num)
 			}
 			return true;
 		}
-			
+
 	}
 	return false;
 }
@@ -611,7 +611,7 @@ scroll_left(struct xa_lbox_info *lbox, struct lbox_slide *s, short num)
 	return false;
 }
 
-	
+
 static void
 set_slide_size(struct xa_lbox_info *lbox, struct lbox_slide *s)
 {
@@ -634,7 +634,7 @@ set_slide_size(struct xa_lbox_info *lbox, struct lbox_slide *s)
 		if (relsize > 1000)
 			relsize = 1000;
 
-	
+
 		if (s->flags & LBOX_VERT)
 		{
 			w = obtree[parent].ob_width;
@@ -672,7 +672,7 @@ get_slider_relpos(OBJECT *obtree, short sc, short parent, short child, short ori
 			return (long)(((long)(obtree[child].ob_y + ofs->y) * 1000) / tmp);
 		else
 			return (long)(((long)sc * 1000) / tmp);
-			
+
 	}
 	else
 	{
@@ -724,6 +724,7 @@ drag_slide(struct xa_lbox_info *lbox, struct lbox_slide *s)
 {
 	short mb, sx, sy;
 
+	//BLOG((0,"xa_lbox:drag_slide"));
 	check_mouse(lbox->wt->owner, &mb, &sx, &sy);
 
 	if (mb)
@@ -763,7 +764,7 @@ drag_slide(struct xa_lbox_info *lbox, struct lbox_slide *s)
 			if (mb && (sx != mx || sy != mx))
 			{
 				short nc, oc;
-				
+
 				if (s->flags & LBOX_VERT)
 				{
 					oc = obtree[child].ob_y + s->ofs.y;
@@ -893,7 +894,7 @@ clear_all_selected(struct xa_lbox_info *lbox, short skip, RECT *r)
 		{
 			DIAGS((" --- out of visible range idx=%d, item=%lx",
 				i, item));
-		
+
 			item->selected = 0;
 		}
 
@@ -940,7 +941,7 @@ item_to_obj(struct xa_lbox_info *lbox, struct lbox_item *item)
 	}
 	return obj;
 }
-	
+
 static bool
 move_page(struct xa_lbox_info *lbox, struct lbox_slide *s, bool upd, RECT *lbox_r, RECT *slide_r)
 {
@@ -1007,13 +1008,13 @@ move_slider(struct xa_lbox_info *lbox, struct lbox_slide *s, short num, bool upd
 	}
 	return ret;
 }
-	
+
 
 unsigned long
 XA_lbox_create(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	OBJECT *obtree;
-	
+
 	CONTROL(4,0,8)
 
 	DIAG((D_lbox, client, "XA_lbox_create"));
@@ -1033,7 +1034,7 @@ XA_lbox_create(enum locks lock, struct xa_client *client, AESPB *pb)
 		assert(wt);
 
 		lbox = new_lbox(wt, client->vdi_settings);
-		
+
 		if (lbox)
 		{
 			short *in, *dst;
@@ -1096,7 +1097,7 @@ XA_lbox_create(enum locks lock, struct xa_client *client, AESPB *pb)
 			 */
 			lbox->slct	= pb->addrin[1];
 			lbox->set	= pb->addrin[2];
-			
+
 			/*
 			 * Address of initial items and the list of object indexes
 			 * making up the visible entries in the lbox.
@@ -1184,11 +1185,11 @@ click_lbox_obj(struct xa_lbox_info *lbox, struct lbox_item *item, short obj, sho
 	short ks;
 	short last_state;
 	OBJECT *obtree = lbox->wt->tree;
-	
+
 
 	last_state = obtree[obj].ob_state;
 	vq_key_s(C.P_handle, &ks);
-	
+
 	//hidem();
 
 	if (   lbox->flags & LBOX_SNGL  ||
@@ -1196,7 +1197,7 @@ click_lbox_obj(struct xa_lbox_info *lbox, struct lbox_item *item, short obj, sho
 	{
 		clear_all_selected(lbox, obj, r);
 	}
-				
+
 
 	if (lbox->flags & LBOX_TOGGLE)
 		obtree[obj].ob_state ^= OS_SELECTED;
@@ -1223,6 +1224,7 @@ XA_lbox_do(enum locks lock, struct xa_client *client, AESPB *pb)
 	CONTROL(1,1,1)
 
 	DIAG((D_lbox, client, "XA_lbox_do, lbox_hand=%lx, obj=%d", pb->addrin[0], pb->intin[0]));
+	//BLOG((0, "XA_lbox_do, lbox_hand=%lx, obj=%d", pb->addrin[0], pb->intin[0]));
 
 	pb->intout[0] = pb->intin[0] & ~0x8000;
 
@@ -1236,7 +1238,7 @@ XA_lbox_do(enum locks lock, struct xa_client *client, AESPB *pb)
 		short dc = obj & 0x8000;
 		short ks, mb;
 		RECT r, asr, bsr;
-		
+
 		vq_key_s(C.P_handle, &ks);
 		obj &= ~0x8000;
 		obj_area(lbox->wt, aesobj(lbox->wt->tree, lbox->parent), &r);
@@ -1296,7 +1298,7 @@ XA_lbox_do(enum locks lock, struct xa_client *client, AESPB *pb)
 					//nap((long)(lbox->aslide.pause));
 					check_mouse(client, &mb, NULL, NULL);
 				}
-			} while (mb);	
+			} while (mb);
 		}
 		else if (obj == lbox->bslide.dr)
 		{
@@ -1349,7 +1351,7 @@ XA_lbox_do(enum locks lock, struct xa_client *client, AESPB *pb)
 			} while (mb);
 		}
 		else if ((item = obj_to_item(lbox, obj)))
-		{			
+		{
 			struct lbox_item *nitem;
 			short nobj, x2, y2, nx, ny;
 			struct lbox_slide *v, *h;
@@ -1398,7 +1400,7 @@ XA_lbox_do(enum locks lock, struct xa_client *client, AESPB *pb)
 						nobj = aesobj_item(&nobject);
 						if (nobj == obj)
 							nobj = -1;
-					
+
 						if (nobj != -1)
 						{
 							nitem = obj_to_item(lbox, nobj);
@@ -1431,7 +1433,7 @@ XA_lbox_do(enum locks lock, struct xa_client *client, AESPB *pb)
 									showm();
 									if (v->pause)
 										f_select(v->pause, NULL, 0, 0);
-								}	
+								}
 								check_mouse(client, &mb, &nx, &ny);
 							}
 						}
@@ -1535,7 +1537,7 @@ get_selected(struct xa_lbox_info *lbox, short start, short *ret_obj, short *ret_
 
 	item = get_first_visible_item(lbox);
 	objs = lbox->objs;
-	
+
 	DIAG((D_lbox, NULL, "get_selected: entries=%d, start=%d, obtree=%lx, item=%lx, objs=%lx",
 		lbox->aslide.entries, start, obtree, item, objs));
 
@@ -1586,7 +1588,7 @@ XA_lbox_get(enum locks lock, struct xa_client *client, AESPB *pb)
 	{
 		struct lbox_item *item, *find;
 		short index = -1, i = 0;
-				
+
 		item = (struct lbox_item *)pb->addrin[0];
 		find = (struct lbox_item *)pb->addrin[1];
 		while (item)

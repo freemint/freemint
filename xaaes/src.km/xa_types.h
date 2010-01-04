@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
  *                                        2004 F.Naumann & O.Skancke
@@ -104,6 +104,7 @@ enum window_status
 	XAWS_BINDFOCUS	 = 0x00001000L,
 	XAWS_BELOWROOT	 = 0x00002000L,
 	XAWS_FIRST	 = 0x00004000L,
+	XAWS_RESIZED	 = 0x00008000L,		/* if WM_SIZED to XaAES-(list-)window, evaluate in draw_object_tree() */
 	XAWS_SEMA	 = 0x80000000L,
 };
 typedef enum window_status WINDOW_STATUS;
@@ -325,7 +326,7 @@ struct xa_vdi_settings
 	short	handle;
 
 	short	wr_mode;
-	
+
 	RECT	clip;
 	RECT	screen;
 
@@ -486,7 +487,7 @@ struct xa_fnt_info
 	struct		xa_wtexture *texture;
 	void		*misc;
 };
-	
+
 struct xa_wtxt_inf
 {
 
@@ -501,9 +502,13 @@ struct xa_wtxt_inf
  *-----------------------------------------------------------------*/
 struct widget_theme;
 
+#define ALTSC_ALERT	1
+#define ALTSC_DIALOG	2
+
 struct options
 {
-	short clwtna;			/* Close Last Window Tops Next App */
+	uchar clwtna;			/* Close Last Window Tops Next App:  */
+	uchar alt_shortcuts;	/* add shortcuts 1: alert, 2: dialog, 3: both, 0: none */
 	bool windowner;			/* display window owner in title. */
 	bool nohide;
 	bool xa_nohide;
@@ -636,7 +641,7 @@ struct xa_vdi_api
 	void _cdecl (*wr_mode)		(struct xa_vdi_settings *v, short m);
 	void _cdecl (*load_fonts)	(struct xa_vdi_settings *v);
 	void _cdecl (*unload_fonts)	(struct xa_vdi_settings *v);
-	
+
 	void _cdecl (*set_clip)		(struct xa_vdi_settings *v, const RECT *clip);
 	void _cdecl (*clear_clip)	(struct xa_vdi_settings *v);
 	void _cdecl (*restore_clip)	(struct xa_vdi_settings *v, const RECT *s);
@@ -648,7 +653,7 @@ struct xa_vdi_api
 	void _cdecl (*l_udsty)		(struct xa_vdi_settings *v, unsigned short ty);
 	void _cdecl (*l_ends)		(struct xa_vdi_settings *v, short s, short e);
 	void _cdecl (*l_width)		(struct xa_vdi_settings *v, short w);
-	
+
 	void _cdecl (*t_color)		(struct xa_vdi_settings *v, short col);
 	void _cdecl (*t_effects)	(struct xa_vdi_settings *v, short efx);
 	void _cdecl (*t_font)		(struct xa_vdi_settings *v, short point, short id);
@@ -662,13 +667,13 @@ struct xa_vdi_api
 	void _cdecl (*f_perimeter)	(struct xa_vdi_settings *v, short m);
 	void _cdecl (*draw_texture)	(struct xa_vdi_settings *v, XAMFDB *texture, RECT *r, RECT *anchor);
 
-	void _cdecl (*box)		(struct xa_vdi_settings *v, short d, short x, short y, short w, short h);	
+	void _cdecl (*box)		(struct xa_vdi_settings *v, short d, short x, short y, short w, short h);
 	void _cdecl (*gbox)		(struct xa_vdi_settings *v, short d, const RECT *r);
 	void _cdecl (*rgbox)		(struct xa_vdi_settings *v, short d, short rnd, const RECT *r);
 	void _cdecl (*bar)		(struct xa_vdi_settings *v, short d, short x, short y, short w, short h);
 	void _cdecl (*gbar)		(struct xa_vdi_settings *v, short d, const RECT *r);
 	void _cdecl (*p_gbar)		(struct xa_vdi_settings *v, short d, const RECT *r);
-	
+
 	void _cdecl (*top_line)		(struct xa_vdi_settings *v, short d, const RECT *r, short col);
 	void _cdecl (*bottom_line)	(struct xa_vdi_settings *v, short d, const RECT *r, short col);
 	void _cdecl (*left_line)	(struct xa_vdi_settings *v, short d, const RECT *r, short col);
@@ -707,7 +712,7 @@ struct xa_vdi_api
 /* HR: Well, it appeared to be handy as well. */
 /* HR: 070101  completely combined with XA_TREE. */
 
-/* A function of the type used for widget behaviours is a 
+/* A function of the type used for widget behaviours is a
    'WidgetBehaviour'. */
 typedef bool WidgetBehaviour	(enum locks lock,
 				 struct xa_window *wind,
@@ -831,7 +836,7 @@ struct lbox_slide
 	lbox_scroll *dr_scroll;
 	lbox_scroll *ul_scroll;
 };
-	
+
 struct xa_lbox_info
 {
 	struct xa_data_hdr	h;
@@ -876,7 +881,7 @@ struct xa_fnts_info
 	void	*handle;
 	struct	xa_window *wind;
 	struct	widget_tree *wt;
-	
+
 	short	vdi_handle;
 	short	fnts_loaded;
 
@@ -887,7 +892,7 @@ struct xa_fnts_info
 
 	struct	xa_fnts_item *fnts_ring;
 	struct	xa_fnts_item *fnts_list;
-	
+
 	struct	xa_fnts_item *fnts_selected;
 	short	exit_button;
 	short	resrvd;
@@ -897,7 +902,7 @@ struct xa_fnts_info
 
 	char	*sample_text;
 	char	*opt_button;
-	
+
 };
 
 struct wdlg_evnt_parms
@@ -960,35 +965,35 @@ struct xa_pdlg_info
 
 	short	n_drivers;
 	short	n_printers;
-	
+
 	POPINFO drv_pinf;
 	short	drv_obnum;
 	struct widget_tree *drv_wt;
-	
+
 	POPINFO mode_pinf;
 	short	mode_obnum;
 	struct widget_tree *mode_wt;
-	
+
 	POPINFO color_pinf;
 	short	color_obnum;
 	struct widget_tree *color_wt;
-	
+
 	POPINFO dither_pinf;
 	short	dither_obnum;
 	struct widget_tree *dither_wt;
-	
+
 	POPINFO type_pinf;
 	short	type_obnum;
 	struct widget_tree *type_wt;
-	
+
 	POPINFO size_pinf;
 	short	size_obnum;
 	struct widget_tree *size_wt;
-	
+
 	POPINFO itray_pinf;
 	short	itray_obnum;
 	struct widget_tree *itray_wt;
-	
+
 	POPINFO otray_pinf;
 	short	otray_obnum;
 	struct widget_tree *otray_wt;
@@ -1004,7 +1009,7 @@ struct xa_pdlg_info
 
 	short	nxt_subdlgid;
 	PDLG_SUB *current_subdlg;
-	
+
 	PRN_SETTINGS *settings;
 
 	DRV_INFO *curr_drv;
@@ -1015,18 +1020,18 @@ struct xa_pdlg_info
 	MEDIA_SIZE *curr_size;
 	PRN_TRAY *curr_itray;
 	PRN_TRAY *curr_otray;
-	
+
 	char *outfile;
 	char *outpath;
-	
+
 	char *outfiles[(PDLG_OUTFILES + 1) * 2];
-	
+
 	short n_colmodes;
 	long colormodes[32];
 
 	PRN_SETTINGS current_settings;
 	PRN_SETTINGS default_settings;
-	
+
 	char document_name[256];
 	char filesel[256];
 };
@@ -1059,7 +1064,7 @@ struct xated
 	long	id;			// char		*te_ptext;
 	struct objc_edit_info *ei;	// char		*te_ptmplt;	/**< ptr to template */
 	void *p1;			// char		*te_pvalid;	/**< ptr to validation chrs. */
-	
+
 	short flags;			// short	te_font; 	/**< font */
 	short res0;			// short	te_fontid;	/**< font id */
 	short resrvd1;			// short	te_just; 	/**< justification */
@@ -1080,7 +1085,7 @@ struct xa_tedinfo
 	}x;
 };
 typedef struct xa_tedinfo XATEDINFO;
-	
+
 struct widget_tree
 {
 	struct widget_tree *next;	/* Next widget tree */
@@ -1112,7 +1117,7 @@ struct widget_tree
 	void *objcr_data;		/* object renderer private ptr */
 
 	OBJECT *tree;			/* The object tree */
-	struct xa_aes_object current;	
+	struct xa_aes_object current;
 	RECT r;				/* Why not do the addition (parent_x+ob_x) once in the caller? */
 					/* And set a usefull RECT as soon as possible, ready for use in
 					 * all kind of functions. */
@@ -1163,7 +1168,7 @@ struct remember_alloc
 	struct remember_alloc *next;
 	void *addr;
 };
-	
+
 struct xa_rscs
 {
 	struct xa_rscs	*next, *prior;
@@ -1253,36 +1258,36 @@ typedef enum
 	/* Bit 0 - 0 = top,	1 = bottom	*/
 	/* bit 1 - 0 = left,	1 = right	*/
 	/* bit 2 - 0 = no Center 1 = center	*/
-	
+
 	R_BOTTOM	= 0x0001,
 	R_RIGHT		= 0x0002,
 	R_CENTER	= 0x0004,
 	R_VERTICAL	= 0x0008,
 	R_VARIABLE	= 0x0010,
 	R_NONE		= 0x8000,
-	
+
 	LT = 0,		/* 0000 */	/* Top right */
 	LB,		/* 0001 */	/* Bottom right */
 	RT,		/* 0010 */	/* Top left */
 	RB,		/* 0011 */	/* Bottom left */
-	
+
 	CT,		/* 0100 */	/* Top centred */
 	CB,		/* 0101 */	/* Bottom Centered */
-	
+
 	CR,		/* 0110 */	/* Right centered */
 	CL,		/* 0111 */	/* Left centered */
-	
+
 	HLT,		/* 0000 */	/* Top right */
 	HLB,		/* 0001 */	/* Bottom right */
 	HRT,		/* 0010 */	/* Top left */
 	HRB,		/* 0011 */	/* Bottom left */
 	HCT,		/* 0100 */	/* Top centred */
 	HCB,		/* 0101 */	/* Bottom Centered */
-	
+
 	HCR,		/* 0110 */	/* Right centered */
 	HCL,		/* 0111 */	/* Left centered */
 
-	
+
 	NO = 0x8000,	/* */
 
 } XA_RELATIVE;
@@ -1324,7 +1329,7 @@ enum xa_widgets
 	XAW_HSLIDE,
 	XAW_ICONIFY,
 	XAW_HIDE,			/* 17 (was 13) */
- 
+
  /*
   * The widget types above this comment MUST be context indipendant.
   * The widget types blow this comment are considered context-dependant
@@ -1334,7 +1339,7 @@ enum xa_widgets
  */
 	XAW_TOOLBAR,			/* 18 ( was 14) Extended XaAES widget */
 	XAW_MENU,			/* 19 ( was 15) Extended XaAES widget, must be drawn last. */
-	
+
 	XAW_MOVER,			/* Not actually used like the others */
 	XAW_UPPAGE,
 	XAW_DNPAGE,
@@ -1374,7 +1379,7 @@ struct nwidget_row
 	XA_WIND_ATTR	tp_mask;
 	struct render_widget **w;
 };
-	
+
 struct xa_widget_row;
 struct xa_widget_row
 {
@@ -1406,7 +1411,7 @@ struct widget_theme
 	DrawFrame		*draw_waframe;
 
 	struct render_widget	exterior;
-	
+
 	struct render_widget	border;
 	struct render_widget	title;
 	struct render_widget	wcontext;
@@ -1503,7 +1508,7 @@ struct xa_widget_methods
 {
 	short		properties;
 	WINDOW_STATUS	statusmask;
-	
+
 	struct render_widget	r;
 
 #define WIP_NOTEXT	0x0001		/* Widget is NOT part of window exterior, will not be automatically redrawn */
@@ -1523,7 +1528,7 @@ struct xa_widget_methods
 	WidgetBehaviour *drag;
 	WidgetBehaviour *release;
 	WidgetBehaviour *wheel;
-	
+
 	WidgetKeyInput	*key;
 
 	void (*destruct)(struct xa_widget *w);
@@ -1537,7 +1542,7 @@ struct xa_widget_methods
  */
 
 struct toolbar_handlers
-{	
+{
 	FormExit	*exitform;
 	FormKeyInput	*keypress;
 
@@ -1558,7 +1563,7 @@ struct xa_widget
 	struct xa_widget_methods m;
 
 	short		state;		/* Current status (selected, etc) */
-	
+
 	RECT		r;		/* Relative position */
 	RECT		ar;		/* Absolute position */
 	RECT		prevr;		/* Prevsioiu position - free to use for modules */
@@ -1721,7 +1726,7 @@ struct xa_window
 	RECT ba;			/* border area for use by border sizing facility. */
 	RECT pr;			/* previous dimensions */
 	RECT t;				/* Temporary coordinates used internally */
-	
+
 	RECT outer;
 	RECT inner;
 
@@ -1735,10 +1740,10 @@ struct xa_window
 	struct xa_rectlist_entry rect_user;
 	struct xa_rectlist_entry rect_opt;
 	struct xa_rectlist_entry rect_toolbar;
-	
+
 	bool use_rlc;
 	RECT rl_clip;
-	
+
 	void *background;		/* Pointer to a buffer containing the saved background */
 
 	WindowDisplay *redraw;		/* Pointer to the window's auto-redraw function (if any) */
@@ -1820,7 +1825,7 @@ struct se_tab
 	short flags;
 	short uflags;
 	RECT v;
-	
+
 	RECT r;
 	short widest;
 	short highest;
@@ -1871,7 +1876,7 @@ struct setcontent_text
 	char *text;
 // 	struct xa_fnt_info f;
 };
-	
+
 struct sc_text
 {
 	short index;
@@ -2080,7 +2085,7 @@ struct seget_entrybyarg
 		}typ;
 		struct se_arg_level level;
 	}arg;
-	
+
 	union
 	{
 		long	ret;
@@ -2093,7 +2098,7 @@ struct sesetget_params
 	int idx;
 	struct scroll_entry *e;
 	struct scroll_entry *e1;
-	
+
 	struct se_arg_level level;
 
 	union
@@ -2105,7 +2110,7 @@ struct sesetget_params
 		void *data;
 // 		long usr_flag;
 	}arg;
-	
+
 	union
 	{
 		long ret;
@@ -2124,7 +2129,7 @@ struct sesetget_params
 struct scroll_entry
 {
 	struct scroll_entry *list;	/* list we belong to */
-	
+
 	struct scroll_entry *root;
 	struct scroll_entry *next;	/* Next element */
 	struct scroll_entry *prev;	/* Previous element */
@@ -2147,7 +2152,7 @@ struct scroll_entry
 	long usr_flags;
 	void *data;
 	void (*data_destruct)(void *);
-	
+
 // 	struct scroll_entry_content c;
 };
 typedef struct scroll_entry SCROLL_ENTRY;
@@ -2166,7 +2171,7 @@ struct scroll_info
 	XA_TREE *wt;
 	short item;
 	OBJECT prev_ob;			/* Original object contents */
-	
+
 	short indent_upto;
 	short num_tabs;
 	struct se_tab *tabs;
@@ -2176,14 +2181,14 @@ struct scroll_info
 	SCROLL_ENTRY *start;		/* Pointer to first element */
 	SCROLL_ENTRY *cur;		/*            current selected element */
 	SCROLL_ENTRY *top;		/*            top-most displayed element */
-	
+
 	char *title;			/* Title of the list */
 
 	short nesticn_w;
 	short nesticn_h;
+	short icon_w;		/* width of icon: for display list-elements with and without icons */
 
 	short indent;
-// 	short icon_w, icon_h;
 	short widest, highest;		/* Width and hight of the widgest and highest element; */
 	long start_x;
 	long off_x;
@@ -2192,12 +2197,13 @@ struct scroll_info
 	long total_w;
 	long total_h;
 
-	short state;			/* Extended status info for scroll list */
+	//short state;			/* Extended status info for scroll list */
+	short char_width;		/* remember char-width for this list */
 
 	scrl_click *dclick;		/* Callback function for double click behaviour */
 	scrl_click *click;		/* Callback function for single click behaviour */
 	scrl_click *click_nesticon;
-	
+
 	scrl_keybd *keypress;
 
 	scrl_widget *slider;		/* slider calc function */
@@ -2213,7 +2219,7 @@ struct scroll_info
 	scrl_del	*del;
 	scrl_empty	*empty;
 	scrl_list	*destroy;
-	
+
 	void	*data;
 
 };
@@ -2245,7 +2251,7 @@ struct xa_popinfo
 {
 	struct xa_window *wind;
 	XA_TREE *wt;
-	
+
 	short	parent;			/* Object index of popup parent */
 	short	count;			/* Number of objects in popup */
 	short	scrl_start_row;		/* Row in popup at which scrolling starts */
@@ -2260,7 +2266,7 @@ struct xa_popinfo
 	XA_MENU_ATTACHMENT *at_down;
 
 // 	short	attach_parent;		/* Object number of object in parent popup that has 'this' popup attached */
-	
+
 // 	XA_TREE	*attach_wt;
 // 	short	attach_item;
 // 	short	attached_to;
@@ -2275,14 +2281,14 @@ struct xa_menuinfo
 {
 	struct xa_window *wind;
 	XA_TREE	*wt;
-	
+
 	short	titles;
 	short	popups;
 	short	about;
 
 	short	current;
 };
-	
+
 struct menu_task
 {
 	TASK_STAGE stage;
@@ -2292,18 +2298,18 @@ struct menu_task
 
 	struct xa_menuinfo m;
 	struct xa_popinfo  p;
-	
+
 	short attach_select;
-	
+
 	short clicks, x, y;
 	RECT bar, drop;
-	
+
 	struct xa_mouse_rect em;
 	void *Mpreserve;
 	TASK *outof;
 	TASK *entry;
 	TASK *select;
-	
+
 	/* root displacements */
 	short rdx, rdy;
 	short pdx, pdy;
@@ -2314,9 +2320,9 @@ typedef struct menu_task MENU_TASK;
 struct task_administration_block
 {
 	LIST_ENTRY(task_administration_block) tab_entry;
-	
+
 	struct task_administration_block	*root;
-	
+
 	TASK_TY ty;	/* NO_TASK, ROOT_MENU, MENU_BAR, POP_UP... */
 
 	enum locks lock;
@@ -2330,7 +2336,7 @@ struct task_administration_block
 
 	short exit_mb;
 	short scroll;
-	
+
 	int usr_evnt;
 	void *data;
 
@@ -2348,7 +2354,7 @@ struct task_administration_block
 typedef struct task_administration_block Tab;
 
 
-/* 
+/*
  * definitions for form_alert.
  * The object tree was cloned, but NOT the texts.
  */
@@ -2512,7 +2518,7 @@ struct xa_client
 	int	blocktype;
 	int	sleepqueue;
 	long	sleeplock;
-	
+
 	int	usr_evnt;
 
 	short	cevnt_count;
@@ -2537,7 +2543,7 @@ struct helpthread_data
 	struct xa_window *w_sysalrt;
 	struct xa_window *w_reschg;
 	struct xa_window *w_csr;
-	
+
 };
 
 
@@ -2792,7 +2798,7 @@ struct xa_module_api
 	CICON *		_cdecl	(*getbest_cicon)	(CICONBLK *ciconblk);
 	short		_cdecl	(*obj_offset)		(struct widget_tree *wt, struct xa_aes_object object, short *mx, short *my);
 	void		_cdecl	(*obj_rectangle)	(struct widget_tree *wt, struct xa_aes_object object, RECT *r);
-	
+
 	void _cdecl		(*obj_set_radio_button)	(struct widget_tree *wt,
 							 struct xa_vdi_settings *v,
 							 struct xa_aes_object obj,
@@ -2856,7 +2862,7 @@ struct xa_module_api
 
 
 	struct xa_window * _cdecl (*create_dwind)(enum locks lock, XA_WIND_ATTR tp, char *title, struct xa_client *client, struct widget_tree *wt, FormExit(*f), WindowDisplay(*d));
-	
+
 	void _cdecl	(*redraw_toolbar)	(enum locks lock, struct xa_window *wind, short item);
 
 	void _cdecl	(*dispatch_shutdown)	(short flags, unsigned long arg);

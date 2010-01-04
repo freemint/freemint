@@ -348,7 +348,7 @@ XA_menu_register(enum locks lock, struct xa_client *client, AESPB *pb)
 			client_nicename(client, n, false);
 			
 			/* refresh the name change in the taskmanager */
-			update_tasklist_entry(client);
+			update_tasklist_entry(AES_CLIENT, client, NOREDRAW);
 
 			DIAGS(("menu_register 'nice' for %d: '%s'",
 				client->p->pid, client->name));
@@ -369,7 +369,7 @@ XA_menu_register(enum locks lock, struct xa_client *client, AESPB *pb)
 			strnupr(client->proc_name, 8);
 
 			/* refresh the name change in the taskmanager */
-			update_tasklist_entry(client);
+			update_tasklist_entry(AES_CLIENT, client, NOREDRAW);
 			DIAGS(("menu_register 'proc' for %d: '%s'",
 				client->p->pid, client->proc_name));
 		}

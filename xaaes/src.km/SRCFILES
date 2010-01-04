@@ -87,6 +87,7 @@ COBJS = \
 	global.c \
 	handler.c \
 	init.c \
+	info.c \
 	k_init.c \
 	k_keybd.c \
 	k_main.c \

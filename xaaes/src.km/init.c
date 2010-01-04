@@ -72,7 +72,7 @@ static int
 imp_msg(void)
 {
 	long ci;
-	
+
 	display(" ---=== IMPORTNAT!! ===---");
 	display("");
 	display("If you have read the CHANGES.txt, you");
@@ -94,6 +94,7 @@ bootmessage(void)
 {
 	BLOG((true, "%s", Aes_display_name));
 	BLOG((true, "MultiTasking AES for MiNT"));
+#if DISPCREDITS
 	BLOG((true, ""));
 	BLOG((true, "(c) 1995-1999 Craig Graham, Johan Klockars, Martin Koehling, Thomas Binder"));
 	BLOG((true, "              and other assorted dodgy characters from around the world..."));
@@ -103,7 +104,10 @@ bootmessage(void)
 	BLOG((true, ""));
 	BLOG((true, "Using Harald Siegmunds NKCC"));
 	BLOG((true, ""));
-	BLOG((true, "Date: %s, time: %s", __DATE__, __TIME__));
+#else
+	BLOG((true,"Part of freemint ("SPAREMINT_URL")." ));
+
+#endif
 	BLOG((true, "Supports mouse wheels"));
 	BLOG((true, "Compile time switches enabled:"));
 
@@ -293,6 +297,32 @@ fail:		if (buf) kfree(buf);
 	return false;
 }
 #endif
+#define XA_SEM 0x58414553L	/*"XAES"*/
+#define SEMCREATE	0
+#define SEMDESTROY	1
+#define SEMGET	2
+#define SEMRELEASE	3
+
+/*
+* kernel-code:
+*
+*  MODE  ACTION
+*    0 Create and get a semaphore with the given ID.
+*    1 Destroy.
+*    2 Get (blocks until it's available or destroyed, or timeout).
+*    3 Release.
+*
+* RETURNS
+*
+*  CODE  MEANING
+*    0 OK.  Created/obtained/released/destroyed, depending on mode.
+*  ERROR You asked for a semaphore that you already own.
+*  EBADARG That semaphore doesn't exist (modes 1, 2, 3, 4),
+*    or out of slots for new semaphores (0).
+*  EACCES  That semaphore exists already, so you can't create it (mode 0),
+*    or the semaphore is busy (returned from mode 3 if you lose),
+*    or you don't own it (modes 1 and 4).
+*/
 /*
  * Module initialisation
  * - setup internal data
@@ -307,10 +337,21 @@ init(struct kentry *k, const struct kernel_module *km) //const char *path)
 	long err = 0L;
 
 	bool first = true;
-	
+
 	/* setup kernel entry */
 	kentry = k;
 	self = km;
+
+	/* test if already running */
+	if( p_semaphore( SEMGET, XA_SEM, 0 ) != EBADARG )
+	{
+		display("XaAES already running!" );
+		/* release */
+		p_semaphore( SEMRELEASE, XA_SEM, 0 );
+		return 1;
+	}
+	/* create semaphore, gets released at exit */
+	p_semaphore( SEMCREATE, XA_SEM, 0 );
 
 	next_res = 0L;
 
@@ -339,7 +380,7 @@ again:
 		BLOG(( false, "\n~~~~~~~~~~~~ XaAES start up!! ~~~~~~~~~~~~~~~~" ));
 	else
 		BLOG((false, "\n~~~~~~~~~~~~ XaAES restarting! ~~~~~~~~~~~~~~~"));
-#endif	
+#endif
 	if (check_kentry_version())
 	{
 		err = ENOSYS;
@@ -347,7 +388,7 @@ again:
 	}
 
 	/* remember loader */
-	
+
 	loader_pid = p_getpid();
 	loader_pgrp = p_getpgrp();
 
@@ -371,7 +412,7 @@ again:
 		}
 		else
 			flag = sysfile_exists(sysdir, "moose.xdd");
-			
+
 		if (flag)
 		{
 			BLOG((/*00000005*/true, "ERROR: There exist an moose.xdd in your FreeMiNT sysdir."));
@@ -386,7 +427,7 @@ again:
 		flag = sysfile_exists(sysdir, "moose_w.adi");
 		if (!flag)
 			flag = sysfile_exists(sysdir, "moose.adi");
-		
+
 		if (flag)
 		{
 			BLOG((true, "ERROR: There exist an moose.adi in your FreeMiNT sysdir."));
@@ -507,7 +548,11 @@ again:
 	strcpy(C.Aes->proc_name,"AESSYS  ");
 
 	/* Where were we started? */
+#if MiNT_ENH
 	strcpy(C.Aes->home_path, self->path);
+#else
+	strcpy(C.Aes->home_path, self->fpath);
+#endif
 // 	strcat(C.Aes->home_path, "/");
 #if 0
 	/* strip off last element */
@@ -526,7 +571,7 @@ again:
 			*name = '\0';
 	}
 #endif
-	BLOG((false, "module path: '%s'", C.Aes->home_path));
+	BLOG((false, "home_path: '%s'", C.Aes->home_path));
 
 	C.Aes->xdrive = d_getdrv();
 	d_getpath(C.Aes->xpath, 0);
@@ -539,10 +584,10 @@ again:
 		flag = sysfile_exists(C.Aes->home_path, "moose_w.adi");
 		if (!flag)
 			flag = sysfile_exists(C.Aes->home_path, "moose.adi");
-		
+
 		if (!flag)
 		{
-			
+
 			BLOG((/*00000008*/true, "ERROR: There exist no moose.adi in your XaAES module directory."));
 			BLOG((true, " -> '%s'", C.Aes->home_path));
 			BLOG((/*00000009*/true, "       Please install it before starting the XaAES kernel module!"));
@@ -554,20 +599,18 @@ again:
 
 	/* clear my_global_aes[0] for old gemlib */
 	my_global_aes[0] = 0;
-	
+
 	/* requires mint >= 1.15.11 */
 	C.mvalidate = true;
 
 	/* Print a text boot message */
 	if (first)
 		bootmessage();
-	BLOG((false, "bootmessage ok!"));
 
 	/* Setup the kernel OS call jump table */
-	
+
 	setup_handler_table();
-	
-	BLOG((false, "setup_handler_table ok!"));
+
 
 	/* set bit 3 in conterm, so Bconin returns state of ALT and CTRL in upper 8 bit */
 	{
@@ -613,9 +656,10 @@ again:
 	default_options.wheel_mode = WHL_AROWWHEEL;
 
 	default_options.clwtna = 1;
+	default_options.alt_shortcuts = 3;
 
 	C.Aes->options = default_options;
-	
+
 	/* Parse the config file */
 	load_config();
 
@@ -647,10 +691,9 @@ again:
 
 		while (!(C.shutdown & QUIT_NOW))
 			sleep(WAIT_Q, (long)&loader_pid);
-		
+
 // 		display("AESSYS kthread exited - C.shutdown = %x", C.shutdown);
-		BLOG((false, "AESSYS kthread exited - C.shutdown = %x", C.shutdown));
-	
+
 #if GENERATE_DIAGS
 		/* Close the debug output file */
 		if (D.debug_file)
@@ -680,6 +723,13 @@ again:
 	detach_extension((void *)-1L, XAAES_MAGIC);
 	detach_extension((void *)-1L, XAAES_MAGIC_SH);
 
+	/* delete semaphore */
+	{
+		int e = p_semaphore( SEMDESTROY, XA_SEM, 0 );
+		if( e )
+			BLOG((0,"init:could not destroy semaphore:%d", e ));
+	}
+	BLOG((0,"init:return 0"));
 	/* succeeded */
 	return 0;
 

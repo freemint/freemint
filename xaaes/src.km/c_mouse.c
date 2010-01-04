@@ -614,9 +614,12 @@ cXA_wheel_event(enum locks lock, struct c_event *ce, bool cancel)
 							w = XAW_VSLIDE, s = WM_VSLID;
 
 						if (w == -1)
+						{
 							whlarrowed(wind, WA, 1, NULL);
-
-						widg = get_widget(wind, w);
+							widg = 0;
+						}							
+						else
+							widg = get_widget(wind, w);
 
 						if (widg)
 						{

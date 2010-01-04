@@ -47,10 +47,110 @@
  * Ozk: Added a flag 'auto_wc' which, when true, automatically appends a
  *	wildcard to the pattern. This allows us to use match_pattern for
  *	filenamecompletion.
+ *
+ * HK: comparing now case-sensitive.
  */
 
 #include "global.h"
 #include "matchpat.h"
+
+#define CASESENS 1
+
+#if CASESENS
+int
+match_pattern(char *t, char *pat, bool auto_wc)
+{
+	int valid = 1;
+	int len = 0;
+	char *p = pat;
+
+	//if (!stricmp(t, pat))
+	if( pat[0] != '*' && !strcmp(t, pat) )
+		return 2;
+
+	if (auto_wc)
+	{
+		len = strlen(p);
+		if (p[len - 1] != '*')
+		{
+			p[len] = '*';
+			p[len + 1] = '\0';
+		}
+		else
+			auto_wc = false;
+	}
+
+	while (valid && ((*t && *pat) || (!*t && *pat == '*')))
+	{
+		switch (*pat)
+		{
+			/* Any character */
+			case '?':
+			{
+				t++;
+				pat++;
+				break;
+			}
+			/* String of any character */
+			case '*':
+			{
+				pat++;
+				//while (*t && (toupper(*t) != toupper(*pat)))
+				while (*t && *t != *pat)
+					t++;
+				break;
+			}
+			/* !X means any character but X */
+			case '!':
+			{
+				//if (pat[1] && toupper(*t) != toupper(pat[1]))
+				if (pat[1] && *t != pat[1])
+				{
+					t++;
+					pat += 2;
+				}
+				else
+					valid = 0;
+				break;
+			}
+			/* [<chars>] means any one of <chars> */
+			case '[':
+			{
+				//while (*++pat && (*(pat) != ']') && (toupper(*t) != toupper(*pat)))
+				while (*++pat && (*(pat) != ']') && (*t != *pat))
+					;
+
+				if (!*pat || *pat == ']')
+					valid = 0;
+				else
+				{
+					while (*++pat && *pat != ']')
+						;
+					if (!*pat)
+						valid = 0;
+				}
+				pat++;
+				t++;
+				break;
+			}
+			default:
+			{
+				//if (toupper(*t++) != toupper(*pat++))
+				if (*t++ != *pat++)
+					valid = 0;
+				break;
+			}
+		}
+	}
+	//valid = (valid && (toupper(*t) == toupper(*pat)));
+	valid = (valid && (*t == *pat));
+	
+	if (auto_wc)
+		p[len] = '\0';
+	
+	return valid;
+}
+#else
 
 int
 match_pattern(char *t, char *pat, bool auto_wc)
@@ -139,3 +239,4 @@ match_pattern(char *t, char *pat, bool auto_wc)
 	
 	return valid;
 }
+#endif

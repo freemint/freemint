@@ -30,6 +30,7 @@
 #include "c_keybd.h"
 #include "xa_global.h"
 
+#include "about.h"
 #include "app_man.h"
 #include "c_window.h"
 #include "cnf_xaaes.h"
@@ -130,7 +131,7 @@ queue_key(struct xa_client *client, const struct rawkey *key)
 	DIAGS(("queue key for %s", client->proc_name));
 	if (client->kq_count < MAX_KEYQUEUE)
 	{
-		kq = kmalloc(sizeof(*kq));	
+		kq = kmalloc(sizeof(*kq));
 		if (kq)
 		{
 			kq->next = NULL;
@@ -164,14 +165,14 @@ unqueue_key(struct xa_client *client, struct rawkey *key)
 			client->kq_tail = client->kq_head = NULL;
 		else
 			client->kq_tail = kq->next;
-		
+
 		client->kq_count--;
 		kfree(kq);
 		ret = true;
 	}
 	return ret;
 }
-		
+
 
 static void
 XA_keyboard_event(enum locks lock, const struct rawkey *key)
@@ -192,7 +193,7 @@ XA_keyboard_event(enum locks lock, const struct rawkey *key)
 		}
 		return;
 	}
-	
+
 	if (!(client = find_focus(true, &waiting, &locked_client, &keywind)))
 	{
 // 		display("no focus?!");
@@ -202,11 +203,11 @@ XA_keyboard_event(enum locks lock, const struct rawkey *key)
 	DIAG((D_keybd,client,"XA_keyboard_event: %s; update_lock:%d, focus: %s, window_list: %s",
 		waiting ? "waiting" : "", update_locked() ? update_locked()->pid : 0,
 		c_owner(client), keywind ? w_owner(keywind) : "no keywind"));
-	
+
 // 	display("XA_keyboard_event: %s; update_lock:%d, focus: %s, window_list: %s, waiting_pb=%lx",
 // 		waiting ? "waiting" : "", update_locked() ? update_locked()->pid : 0,
 // 		client->name, keywind ? keywind->owner->name : "no keywind", client->waiting_pb);
-	
+
 	/* Found either (MU_KEYBD|MU_NORM_KEYBD) or keypress handler. */
 	if (waiting)
 	{
@@ -242,7 +243,7 @@ XA_keyboard_event(enum locks lock, const struct rawkey *key)
 				}
 #if GENERATE_DIAGS
 				else
-					DIAGS(("XA_keyboard_event: INTERNAL ERROR: No waiting pb."));			
+					DIAGS(("XA_keyboard_event: INTERNAL ERROR: No waiting pb."));
 #endif
 			}
 		}
@@ -260,10 +261,47 @@ XA_keyboard_event(enum locks lock, const struct rawkey *key)
 }
 
 
+/******************************************************************************
+ from "unofficial XaAES":
+
++----------------------------------------------------------------------------------------------------------------------------+
+|Key combo             |Action                                                                                               |
+|----------------------+-----------------------------------------------------------------------------------------------------|
+|CTRL+ALT+CLRHOME      |Redraw screen                                                                                        |
+|----------------------+-----------------------------------------------------------------------------------------------------|
+|CTRL+ALT+A            |Terminates all applications (A list of exceptions can be specified)                                  |
+|----------------------+-----------------------------------------------------------------------------------------------------|
+|CTRL+ALT+D            |Open the screenshot dialog (XAAESNAP.PRG is required. See 6.6.2)                                     |
+|----------------------+-----------------------------------------------------------------------------------------------------|
+|CTRL+ALT+H            |Halt the system                                                                                      |
+|----------------------+-----------------------------------------------------------------------------------------------------|
+|CTRL+ALT+L            |Open task manager                                                                                    |
+|----------------------+-----------------------------------------------------------------------------------------------------|
+|CTRL+ALT+P            |Restore palette in colour depth of 8-bits or less                                                    |
+|----------------------+-----------------------------------------------------------------------------------------------------|
+|CTRL+ALT+Q            |Quit XaAES                                                                                           |
+|----------------------+-----------------------------------------------------------------------------------------------------|
+|CTRL+ALT+R            |Change resolution                                                                                    |
+|----------------------+-----------------------------------------------------------------------------------------------------|
+|CTRL+ALT+V            |Unhide all applications                                                                              |
+|----------------------+-----------------------------------------------------------------------------------------------------|
+|CTRL+ALT+W            |Global window cycling                                                                                |
+|----------------------+-----------------------------------------------------------------------------------------------------|
+|CTRL+ALT+X            |Hide all except the currently focused application                                                    |
+|----------------------+-----------------------------------------------------------------------------------------------------|
+|CTRL+ALT+Y            |Hide currently focused application                                                                   |
+|----------------------+-----------------------------------------------------------------------------------------------------|
+|CTRL+ALT+SPACE        |Open main menu bar                                                                                   |
+|----------------------+-----------------------------------------------------------------------------------------------------|
+|CTRL+ALT+SHIFT+SPACE  |Open menu in current window if it has one, else open main menu bar                                   |
+|----------------------+-----------------------------------------------------------------------------------------------------|
+|CTRL+ALT+TAB          |Cycle open applications                                                                              |
++----------------------------------------------------------------------------------------------------------------------------+
+********************************************************************************/
 static bool
 kernel_key(enum locks lock, struct rawkey *key)
 {
-#if ALT_CTRL_APP_OPS	
+#if ALT_CTRL_APP_OPS
 	if ((key->raw.conin.state & (K_CTRL|K_ALT)) == (K_CTRL|K_ALT))
 	{
 		struct xa_client *client;
@@ -284,7 +322,9 @@ kernel_key(enum locks lock, struct rawkey *key)
 		if (kkey)
 		{
 			if (kkey->act)
+			{
 				post_cevent(C.Hlp, ceExecfunc, kkey->act, NULL, 1,1, NULL, NULL);
+			}
 			return true;
 		}
 #if 0
@@ -324,23 +364,13 @@ kernel_key(enum locks lock, struct rawkey *key)
 		}
 //#endif
 #endif
-		
+
 		switch (nk)
 		{
 		case NK_TAB:				/* TAB, switch menu bars */
 		{
 			client = next_app(lock, false, false);  /* including the AES for its menu bar. */
-			if (client)
-			{
-				DIAGS(("next_app() :: %s", c_owner(client)));
-				app_in_front(lock, client, true, true, true);
-				if (client->type & APP_ACCESSORY)
-				{
-					send_app_message(lock, NULL, client, AMQ_NORM, QMF_CHKDUP,
-							 AC_OPEN, 0, 0, 0,
-							 client->p->pid, 0, 0, 0);
-				}
-			}
+			app_or_acc_in_front( lock, client );
 			return true;
 		}
 		case NK_ESC:
@@ -348,7 +378,7 @@ kernel_key(enum locks lock, struct rawkey *key)
 		{
 			struct xa_window *wind;
 			struct xa_widget *widg;
-			
+
 			if (nk == NK_ESC && !TAB_LIST_START)
 				goto otm;
 
@@ -367,10 +397,10 @@ kernel_key(enum locks lock, struct rawkey *key)
 							client = NULL;
 					}
 					else
-						client = NULL;						
+						client = NULL;
 				}
 			}
-			
+
 			if (!client)
 			{
 				if (TAB_LIST_START)
@@ -390,9 +420,8 @@ kernel_key(enum locks lock, struct rawkey *key)
 				post_cevent(client, cXA_open_menubykbd, wind,widg, 0,0, NULL,NULL);
 			return true;
 		}
-#if 1
 #if GENERATE_DIAGS == 0
-		case 'D':
+		case 'D':	/* screen-dump */
 		{
 			short mode;
 			if (key->raw.conin.state & (K_RSHIFT|K_LSHIFT))
@@ -404,27 +433,63 @@ kernel_key(enum locks lock, struct rawkey *key)
 			return true;
 		}
 #endif
-#endif
 		case 'R':				/* attempt to recover a hung system */
 		{
-			if (key->raw.conin.state & (K_RSHIFT|K_LSHIFT))
+			if ((key->raw.conin.state & (K_RSHIFT|K_LSHIFT)))
+			{
+				if (C.reschange )
+					post_cevent(C.Hlp, ceExecfunc, C.reschange, NULL, 1,0, NULL, NULL);
+			}
+			else
 			{
 				recover();
-			}
-			else if (C.reschange)
-			{
-				post_cevent(C.Hlp, ceExecfunc, C.reschange, NULL, 1,0, NULL, NULL);
 			}
 // 			recover();
 			return true;
 		}
+		case 'F':				/* open the task manager */
 		case 'L':				/* open the task manager */
 // 		case NK_ESC:
+
+		if( !C.update_lock )
 		{
 otm:
 			post_cevent(C.Hlp, ceExecfunc, open_taskmanager,NULL, 1,0, NULL,NULL);
-			return true;
 		}
+		return true;
+		case 'E':	/* open windows-submenu on top-window */
+
+		if( TOP_WINDOW && !C.update_lock )
+		{
+			struct moose_data md;
+
+			/* init moose_data */
+			memset( &md, 0, sizeof(md) );
+			md.x = TOP_WINDOW->r.x + TOP_WINDOW->r.w/2;
+			md.y = TOP_WINDOW->r.y + TOP_WINDOW->r.h/2;
+			md.state = 1;//MBS_RIGHT;
+			post_cevent(C.Hlp, CE_winctxt, TOP_WINDOW, NULL, 0,0, NULL, &md);
+		}
+		return true;
+		break;
+		case 'B':	/* system-window ('S' eaten by MiNT?)*/
+		if( !C.update_lock )
+		{
+			post_cevent(C.Hlp, ceExecfunc, open_systemalerts,NULL, 1, 0, NULL,NULL);
+		}
+		return true;
+		case NK_HELP:
+		if( !C.update_lock )
+		{
+			post_cevent(C.Hlp, ceExecfunc, open_about,NULL, 1,0, NULL,NULL);
+		}
+		return true;
+		case 'K':	/* about-window */
+		if( !C.update_lock )
+		{
+			post_cevent(C.Hlp, ceExecfunc, open_launcher,NULL, 1,0, NULL,NULL);
+		}
+		return true;
 		case 'T':				/* ctrl+alt+T    Tidy screen */
 		case NK_HOME:				/*     "    Home       "     */
 		{
@@ -436,17 +501,19 @@ otm:
 			forcem();
 			return true;
 		}
+#if HOTKEYQUIT
 		case 'A':
 		{
 			struct cfg_name_list *nl = NULL;
 
 			if (!(key->raw.conin.state & (K_RSHIFT|K_LSHIFT)))
 				nl = cfg.ctlalta;
-			
+
 			DIAGS(("Quit all apps by CtlAlt A"));
 			quit_all_clients(lock, nl, NULL, AP_TERM);
 			return true;
 		}
+#endif
 		case 'P':
 		{
 			DIAGS(("Recover palette"));
@@ -454,6 +521,7 @@ otm:
 				set_syspalette(C.P_handle, screen.palette);
 			return true;
 		}
+#if HOTKEYQUIT
 		case 'Q':
 		{
 			DIAGS(("shutdown by CtlAlt Q"));
@@ -466,6 +534,7 @@ otm:
 			dispatch_shutdown(HALT_SYSTEM, 0);
 			return true;
 		}
+#endif
 		case 'Y':				/* ctrl+alt+Y, hide current app. */
 		{
 			hide_app(lock, focus_owner());
@@ -490,9 +559,9 @@ otm:
 				top_window(lock, true, true, wind);
 			}
 			return true;
-		}	
+		}
 #if GENERATE_DIAGS
-		case 'D':				/* ctrl+alt+D, turn on debugging output */
+		case 'L':				/* ctrl+alt+L, turn on debugging output */
 		{
 			D.debug_level = 4;
 			return true;
@@ -515,8 +584,8 @@ void
 keyboard_input(enum locks lock)
 {
 	/* Did we get some keyboard input? */
-	while (f_instat(C.KBD_dev))
-	{
+	/*while (f_instat(C.KBD_dev))
+	{*/
 		struct rawkey key;
 
 		key.raw.bcon = f_getchar(C.KBD_dev, RAW);
@@ -534,8 +603,8 @@ keyboard_input(enum locks lock)
 		key.norm = 0;
 
 // 		display("f_getchar: 0x%08lx, AES=%x, NORM=%x", key.raw.bcon, key.aes, key.norm);
-		
+
 		if (kernel_key(lock, &key) == false )
 			XA_keyboard_event(lock, &key);
-	}
+	/*}*/
 }

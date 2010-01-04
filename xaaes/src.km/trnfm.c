@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
  *                                        2004 F.Naumann & O.Skancke
@@ -25,8 +25,8 @@
  */
 
 /*
- * This code is from Mario Becroft.  Thanks a lot Mario! 
- * 
+ * This code is from Mario Becroft.  Thanks a lot Mario!
+ *
  * modifications:
  * - use C.vh
  * - call kmalloc for temps
@@ -39,106 +39,109 @@
 #include "xa_types.h"
 #include "xa_global.h"
 
+/* define this 1 if vs_color works */
+#define  HAVE_VS_COLOR	0
+
 #include "trnfm.h"
 #if INCLUDE_UNUSED
 static short systempalette[] =
 {
-0x03e8, 0x03e8, 0x03e8, 0x0000, 0x0000, 0x0000, 0x03e8, 0x0000, 
-0x0000, 0x0000, 0x03e8, 0x0000, 0x0000, 0x0000, 0x03e8, 0x0066, 
-0x031c, 0x0301, 0x03e8, 0x03e8, 0x0000, 0x0386, 0x00c8, 0x0258, 
-0x0310, 0x0310, 0x0310, 0x01ee, 0x01ee, 0x01ee, 0x01f6, 0x0000, 
-0x0000, 0x0000, 0x01f6, 0x0000, 0x0000, 0x0000, 0x01f6, 0x0000, 
-0x01f6, 0x01f6, 0x02ca, 0x027b, 0x00e0, 0x01f6, 0x0000, 0x01f6, 
-0x0000, 0x0000, 0x00c8, 0x0000, 0x0000, 0x0190, 0x0000, 0x0000, 
-0x0258, 0x0000, 0x0000, 0x0320, 0x0000, 0x0000, 0x03e8, 0x0000, 
-0x00c8, 0x0000, 0x0000, 0x00c8, 0x00c8, 0x0000, 0x00c8, 0x0190, 
-0x0000, 0x00c8, 0x0258, 0x0000, 0x00c8, 0x0320, 0x0000, 0x00c8, 
-0x03e8, 0x0000, 0x0190, 0x0000, 0x0000, 0x0190, 0x00c8, 0x0000, 
-0x0190, 0x0190, 0x0000, 0x0190, 0x0258, 0x0000, 0x0190, 0x0320, 
-0x0000, 0x0190, 0x03e8, 0x0000, 0x0258, 0x0000, 0x0000, 0x0258, 
-0x00c8, 0x0000, 0x0258, 0x0190, 0x0000, 0x0258, 0x0258, 0x0000, 
-0x0258, 0x0320, 0x0000, 0x0258, 0x03e8, 0x0000, 0x0320, 0x0000, 
-0x0000, 0x0320, 0x00c8, 0x0000, 0x0320, 0x0190, 0x0000, 0x0320, 
-0x0258, 0x0000, 0x0320, 0x0320, 0x0000, 0x0320, 0x03e8, 0x0000, 
-0x03e8, 0x0000, 0x0000, 0x03e8, 0x00c8, 0x0000, 0x03e8, 0x0190, 
-0x0000, 0x03e8, 0x0258, 0x0000, 0x03e8, 0x0320, 0x0000, 0x03e8, 
-0x03e8, 0x00c8, 0x0000, 0x0000, 0x00c8, 0x0000, 0x00c8, 0x00c8, 
-0x0000, 0x0190, 0x00c8, 0x0000, 0x0258, 0x00c8, 0x0000, 0x0320, 
-0x00c8, 0x0000, 0x03e8, 0x00c8, 0x00c8, 0x0000, 0x00c8, 0x00c8, 
-0x00c8, 0x00c8, 0x00c8, 0x0190, 0x0000, 0x0000, 0x02f1, 0x00c8, 
-0x00c8, 0x0320, 0x00c8, 0x00c8, 0x03e8, 0x00c8, 0x0190, 0x0000, 
-0x00c8, 0x0190, 0x00c8, 0x00c8, 0x0190, 0x0190, 0x00c8, 0x0190, 
-0x0258, 0x00c8, 0x0190, 0x0320, 0x00c8, 0x0190, 0x03e8, 0x00c8, 
-0x0258, 0x0000, 0x00c8, 0x0258, 0x00c8, 0x00c8, 0x0258, 0x0190, 
-0x00c8, 0x0258, 0x0258, 0x00c8, 0x0258, 0x0320, 0x00c8, 0x0258, 
-0x03e8, 0x00c8, 0x0320, 0x0000, 0x00c8, 0x0320, 0x00c8, 0x00c8, 
-0x0320, 0x0190, 0x00c8, 0x0320, 0x0258, 0x00c8, 0x0320, 0x0320, 
-0x00c8, 0x0320, 0x03e8, 0x00c8, 0x03e8, 0x0000, 0x00c8, 0x03e8, 
-0x00c8, 0x00c8, 0x03e8, 0x0190, 0x00c8, 0x03e8, 0x0258, 0x00c8, 
-0x03e8, 0x0320, 0x00c8, 0x03e8, 0x03e8, 0x0190, 0x0000, 0x0000, 
-0x0190, 0x0000, 0x00c8, 0x0190, 0x0000, 0x0190, 0x0190, 0x0000, 
-0x0258, 0x0190, 0x0000, 0x0320, 0x0190, 0x0000, 0x03e8, 0x0190, 
-0x00c8, 0x0000, 0x0190, 0x00c8, 0x00c8, 0x0190, 0x00c8, 0x0190, 
-0x0190, 0x00c8, 0x0258, 0x0190, 0x00c8, 0x0320, 0x0190, 0x00c8, 
-0x03e8, 0x0190, 0x0190, 0x0000, 0x0190, 0x0190, 0x00c8, 0x0190, 
-0x0190, 0x0190, 0x0190, 0x0190, 0x0258, 0x0190, 0x0190, 0x0320, 
-0x0190, 0x0190, 0x03e8, 0x0190, 0x0258, 0x0000, 0x0190, 0x0258, 
-0x00c8, 0x0190, 0x0258, 0x0190, 0x0190, 0x0258, 0x0258, 0x0190, 
-0x0258, 0x0320, 0x0190, 0x0258, 0x03e8, 0x0190, 0x0320, 0x0000, 
-0x0190, 0x0320, 0x00c8, 0x0190, 0x0320, 0x0190, 0x0190, 0x0320, 
-0x0258, 0x0190, 0x0320, 0x0320, 0x0190, 0x0320, 0x03e8, 0x0190, 
-0x03e8, 0x0000, 0x0190, 0x03e8, 0x00c8, 0x0190, 0x03e8, 0x0190, 
-0x0190, 0x03e8, 0x0258, 0x0190, 0x03e8, 0x0320, 0x0190, 0x03e8, 
-0x03e8, 0x0258, 0x0000, 0x0000, 0x0258, 0x0000, 0x00c8, 0x0258, 
-0x0000, 0x0190, 0x0258, 0x0000, 0x0258, 0x0258, 0x0000, 0x0320, 
-0x0258, 0x0000, 0x03e8, 0x0258, 0x00c8, 0x0000, 0x0258, 0x00c8, 
-0x00c8, 0x0258, 0x00c8, 0x0190, 0x0258, 0x00c8, 0x0258, 0x0258, 
-0x00c8, 0x0320, 0x0258, 0x00c8, 0x03e8, 0x0258, 0x0190, 0x0000, 
-0x0258, 0x0190, 0x00c8, 0x0258, 0x0190, 0x0190, 0x0258, 0x0190, 
-0x0258, 0x0258, 0x0190, 0x0320, 0x0258, 0x0190, 0x03e8, 0x0258, 
-0x0258, 0x0000, 0x0258, 0x0258, 0x00c8, 0x0258, 0x0258, 0x0190, 
-0x0258, 0x0258, 0x0258, 0x0258, 0x0258, 0x0320, 0x0258, 0x0258, 
-0x03e8, 0x0258, 0x0320, 0x0000, 0x0258, 0x0320, 0x00c8, 0x0258, 
-0x0320, 0x0190, 0x0258, 0x0320, 0x0258, 0x0258, 0x0320, 0x0320, 
-0x0258, 0x0320, 0x03e8, 0x0258, 0x03e8, 0x0000, 0x0258, 0x03e8, 
-0x00c8, 0x0258, 0x03e8, 0x0190, 0x0258, 0x03e8, 0x0258, 0x0258, 
-0x03e8, 0x0320, 0x0258, 0x03e8, 0x03e8, 0x0320, 0x0000, 0x0000, 
-0x0320, 0x0000, 0x00c8, 0x0320, 0x0000, 0x0190, 0x0320, 0x0000, 
-0x0258, 0x0320, 0x0000, 0x0320, 0x0320, 0x0000, 0x03e8, 0x0320, 
-0x00c8, 0x0000, 0x0320, 0x00c8, 0x00c8, 0x0320, 0x00c8, 0x0190, 
-0x0320, 0x00c8, 0x0258, 0x0320, 0x00c8, 0x0320, 0x0320, 0x00c8, 
-0x03e8, 0x0320, 0x0190, 0x0000, 0x0320, 0x0190, 0x00c8, 0x0320, 
-0x0190, 0x0190, 0x0320, 0x0190, 0x0258, 0x0320, 0x0190, 0x0320, 
-0x0320, 0x0190, 0x03e8, 0x0320, 0x0258, 0x0000, 0x0320, 0x0258, 
-0x00c8, 0x0320, 0x0258, 0x0190, 0x0320, 0x0258, 0x0258, 0x0320, 
-0x0258, 0x0320, 0x0320, 0x0258, 0x03e8, 0x0320, 0x0320, 0x0000, 
-0x0320, 0x0320, 0x00c8, 0x0320, 0x0320, 0x0190, 0x0320, 0x0320, 
-0x0258, 0x0320, 0x0320, 0x0320, 0x0320, 0x0320, 0x03e8, 0x0320, 
-0x03e8, 0x0000, 0x0320, 0x03e8, 0x00c8, 0x0320, 0x03e8, 0x0190, 
-0x0320, 0x03e8, 0x0258, 0x0320, 0x03e8, 0x0320, 0x0320, 0x03e8, 
-0x03e8, 0x03e8, 0x0000, 0x0000, 0x03e8, 0x0000, 0x00c8, 0x03e8, 
-0x0000, 0x0190, 0x03e8, 0x0000, 0x0258, 0x03e8, 0x0000, 0x0320, 
-0x03e8, 0x0000, 0x03e8, 0x03e8, 0x00c8, 0x0000, 0x03e8, 0x00c8, 
-0x00c8, 0x03e8, 0x00c8, 0x0190, 0x03e8, 0x00c8, 0x0258, 0x03e8, 
-0x00c8, 0x0320, 0x03e8, 0x00c8, 0x03e8, 0x03e8, 0x0190, 0x0000, 
-0x03e8, 0x0190, 0x00c8, 0x03e8, 0x0190, 0x0190, 0x03e8, 0x0190, 
-0x0258, 0x03e8, 0x0190, 0x0320, 0x03e8, 0x0190, 0x03e8, 0x03e8, 
-0x0258, 0x0000, 0x03e8, 0x0258, 0x00c8, 0x03e8, 0x0258, 0x0190, 
-0x03e8, 0x0258, 0x0258, 0x03e8, 0x0258, 0x0320, 0x03e8, 0x0258, 
-0x03e8, 0x03e8, 0x0320, 0x0000, 0x03e8, 0x0320, 0x00c8, 0x03e8, 
-0x0320, 0x0190, 0x03e8, 0x0320, 0x0258, 0x03e8, 0x0320, 0x0320, 
-0x03e8, 0x0320, 0x03e8, 0x03e8, 0x03e8, 0x0000, 0x03e8, 0x03e8, 
-0x00c8, 0x03e8, 0x03e8, 0x0190, 0x03e8, 0x03e8, 0x0258, 0x03e8, 
-0x03e8, 0x0320, 0x03b5, 0x0000, 0x0000, 0x0386, 0x0000, 0x0000, 
-0x02f1, 0x0000, 0x0000, 0x02be, 0x0000, 0x0000, 0x01f6, 0x0000, 
-0x0000, 0x012e, 0x0000, 0x0000, 0x0066, 0x0000, 0x0000, 0x0000, 
-0x03b5, 0x0000, 0x0000, 0x0386, 0x0000, 0x0000, 0x02f1, 0x0000, 
-0x0000, 0x02be, 0x0000, 0x0000, 0x01f6, 0x0000, 0x0000, 0x012e, 
-0x0000, 0x0000, 0x0066, 0x0000, 0x0000, 0x0000, 0x0066, 0x0000, 
-0x0000, 0x012e, 0x0000, 0x0000, 0x01f6, 0x0000, 0x0000, 0x02be, 
-0x00c8, 0x00c8, 0x0258, 0x0000, 0x0000, 0x0386, 0x03b5, 0x03b5, 
-0x03b5, 0x0386, 0x0386, 0x0386, 0x02f1, 0x02f1, 0x02f1, 0x02be, 
-0x02be, 0x02be, 0x012e, 0x012e, 0x012e, 0x0066, 0x0066, 0x0066, 
+0x03e8, 0x03e8, 0x03e8, 0x0000, 0x0000, 0x0000, 0x03e8, 0x0000,
+0x0000, 0x0000, 0x03e8, 0x0000, 0x0000, 0x0000, 0x03e8, 0x0066,
+0x031c, 0x0301, 0x03e8, 0x03e8, 0x0000, 0x0386, 0x00c8, 0x0258,
+0x0310, 0x0310, 0x0310, 0x01ee, 0x01ee, 0x01ee, 0x01f6, 0x0000,
+0x0000, 0x0000, 0x01f6, 0x0000, 0x0000, 0x0000, 0x01f6, 0x0000,
+0x01f6, 0x01f6, 0x02ca, 0x027b, 0x00e0, 0x01f6, 0x0000, 0x01f6,
+0x0000, 0x0000, 0x00c8, 0x0000, 0x0000, 0x0190, 0x0000, 0x0000,
+0x0258, 0x0000, 0x0000, 0x0320, 0x0000, 0x0000, 0x03e8, 0x0000,
+0x00c8, 0x0000, 0x0000, 0x00c8, 0x00c8, 0x0000, 0x00c8, 0x0190,
+0x0000, 0x00c8, 0x0258, 0x0000, 0x00c8, 0x0320, 0x0000, 0x00c8,
+0x03e8, 0x0000, 0x0190, 0x0000, 0x0000, 0x0190, 0x00c8, 0x0000,
+0x0190, 0x0190, 0x0000, 0x0190, 0x0258, 0x0000, 0x0190, 0x0320,
+0x0000, 0x0190, 0x03e8, 0x0000, 0x0258, 0x0000, 0x0000, 0x0258,
+0x00c8, 0x0000, 0x0258, 0x0190, 0x0000, 0x0258, 0x0258, 0x0000,
+0x0258, 0x0320, 0x0000, 0x0258, 0x03e8, 0x0000, 0x0320, 0x0000,
+0x0000, 0x0320, 0x00c8, 0x0000, 0x0320, 0x0190, 0x0000, 0x0320,
+0x0258, 0x0000, 0x0320, 0x0320, 0x0000, 0x0320, 0x03e8, 0x0000,
+0x03e8, 0x0000, 0x0000, 0x03e8, 0x00c8, 0x0000, 0x03e8, 0x0190,
+0x0000, 0x03e8, 0x0258, 0x0000, 0x03e8, 0x0320, 0x0000, 0x03e8,
+0x03e8, 0x00c8, 0x0000, 0x0000, 0x00c8, 0x0000, 0x00c8, 0x00c8,
+0x0000, 0x0190, 0x00c8, 0x0000, 0x0258, 0x00c8, 0x0000, 0x0320,
+0x00c8, 0x0000, 0x03e8, 0x00c8, 0x00c8, 0x0000, 0x00c8, 0x00c8,
+0x00c8, 0x00c8, 0x00c8, 0x0190, 0x0000, 0x0000, 0x02f1, 0x00c8,
+0x00c8, 0x0320, 0x00c8, 0x00c8, 0x03e8, 0x00c8, 0x0190, 0x0000,
+0x00c8, 0x0190, 0x00c8, 0x00c8, 0x0190, 0x0190, 0x00c8, 0x0190,
+0x0258, 0x00c8, 0x0190, 0x0320, 0x00c8, 0x0190, 0x03e8, 0x00c8,
+0x0258, 0x0000, 0x00c8, 0x0258, 0x00c8, 0x00c8, 0x0258, 0x0190,
+0x00c8, 0x0258, 0x0258, 0x00c8, 0x0258, 0x0320, 0x00c8, 0x0258,
+0x03e8, 0x00c8, 0x0320, 0x0000, 0x00c8, 0x0320, 0x00c8, 0x00c8,
+0x0320, 0x0190, 0x00c8, 0x0320, 0x0258, 0x00c8, 0x0320, 0x0320,
+0x00c8, 0x0320, 0x03e8, 0x00c8, 0x03e8, 0x0000, 0x00c8, 0x03e8,
+0x00c8, 0x00c8, 0x03e8, 0x0190, 0x00c8, 0x03e8, 0x0258, 0x00c8,
+0x03e8, 0x0320, 0x00c8, 0x03e8, 0x03e8, 0x0190, 0x0000, 0x0000,
+0x0190, 0x0000, 0x00c8, 0x0190, 0x0000, 0x0190, 0x0190, 0x0000,
+0x0258, 0x0190, 0x0000, 0x0320, 0x0190, 0x0000, 0x03e8, 0x0190,
+0x00c8, 0x0000, 0x0190, 0x00c8, 0x00c8, 0x0190, 0x00c8, 0x0190,
+0x0190, 0x00c8, 0x0258, 0x0190, 0x00c8, 0x0320, 0x0190, 0x00c8,
+0x03e8, 0x0190, 0x0190, 0x0000, 0x0190, 0x0190, 0x00c8, 0x0190,
+0x0190, 0x0190, 0x0190, 0x0190, 0x0258, 0x0190, 0x0190, 0x0320,
+0x0190, 0x0190, 0x03e8, 0x0190, 0x0258, 0x0000, 0x0190, 0x0258,
+0x00c8, 0x0190, 0x0258, 0x0190, 0x0190, 0x0258, 0x0258, 0x0190,
+0x0258, 0x0320, 0x0190, 0x0258, 0x03e8, 0x0190, 0x0320, 0x0000,
+0x0190, 0x0320, 0x00c8, 0x0190, 0x0320, 0x0190, 0x0190, 0x0320,
+0x0258, 0x0190, 0x0320, 0x0320, 0x0190, 0x0320, 0x03e8, 0x0190,
+0x03e8, 0x0000, 0x0190, 0x03e8, 0x00c8, 0x0190, 0x03e8, 0x0190,
+0x0190, 0x03e8, 0x0258, 0x0190, 0x03e8, 0x0320, 0x0190, 0x03e8,
+0x03e8, 0x0258, 0x0000, 0x0000, 0x0258, 0x0000, 0x00c8, 0x0258,
+0x0000, 0x0190, 0x0258, 0x0000, 0x0258, 0x0258, 0x0000, 0x0320,
+0x0258, 0x0000, 0x03e8, 0x0258, 0x00c8, 0x0000, 0x0258, 0x00c8,
+0x00c8, 0x0258, 0x00c8, 0x0190, 0x0258, 0x00c8, 0x0258, 0x0258,
+0x00c8, 0x0320, 0x0258, 0x00c8, 0x03e8, 0x0258, 0x0190, 0x0000,
+0x0258, 0x0190, 0x00c8, 0x0258, 0x0190, 0x0190, 0x0258, 0x0190,
+0x0258, 0x0258, 0x0190, 0x0320, 0x0258, 0x0190, 0x03e8, 0x0258,
+0x0258, 0x0000, 0x0258, 0x0258, 0x00c8, 0x0258, 0x0258, 0x0190,
+0x0258, 0x0258, 0x0258, 0x0258, 0x0258, 0x0320, 0x0258, 0x0258,
+0x03e8, 0x0258, 0x0320, 0x0000, 0x0258, 0x0320, 0x00c8, 0x0258,
+0x0320, 0x0190, 0x0258, 0x0320, 0x0258, 0x0258, 0x0320, 0x0320,
+0x0258, 0x0320, 0x03e8, 0x0258, 0x03e8, 0x0000, 0x0258, 0x03e8,
+0x00c8, 0x0258, 0x03e8, 0x0190, 0x0258, 0x03e8, 0x0258, 0x0258,
+0x03e8, 0x0320, 0x0258, 0x03e8, 0x03e8, 0x0320, 0x0000, 0x0000,
+0x0320, 0x0000, 0x00c8, 0x0320, 0x0000, 0x0190, 0x0320, 0x0000,
+0x0258, 0x0320, 0x0000, 0x0320, 0x0320, 0x0000, 0x03e8, 0x0320,
+0x00c8, 0x0000, 0x0320, 0x00c8, 0x00c8, 0x0320, 0x00c8, 0x0190,
+0x0320, 0x00c8, 0x0258, 0x0320, 0x00c8, 0x0320, 0x0320, 0x00c8,
+0x03e8, 0x0320, 0x0190, 0x0000, 0x0320, 0x0190, 0x00c8, 0x0320,
+0x0190, 0x0190, 0x0320, 0x0190, 0x0258, 0x0320, 0x0190, 0x0320,
+0x0320, 0x0190, 0x03e8, 0x0320, 0x0258, 0x0000, 0x0320, 0x0258,
+0x00c8, 0x0320, 0x0258, 0x0190, 0x0320, 0x0258, 0x0258, 0x0320,
+0x0258, 0x0320, 0x0320, 0x0258, 0x03e8, 0x0320, 0x0320, 0x0000,
+0x0320, 0x0320, 0x00c8, 0x0320, 0x0320, 0x0190, 0x0320, 0x0320,
+0x0258, 0x0320, 0x0320, 0x0320, 0x0320, 0x0320, 0x03e8, 0x0320,
+0x03e8, 0x0000, 0x0320, 0x03e8, 0x00c8, 0x0320, 0x03e8, 0x0190,
+0x0320, 0x03e8, 0x0258, 0x0320, 0x03e8, 0x0320, 0x0320, 0x03e8,
+0x03e8, 0x03e8, 0x0000, 0x0000, 0x03e8, 0x0000, 0x00c8, 0x03e8,
+0x0000, 0x0190, 0x03e8, 0x0000, 0x0258, 0x03e8, 0x0000, 0x0320,
+0x03e8, 0x0000, 0x03e8, 0x03e8, 0x00c8, 0x0000, 0x03e8, 0x00c8,
+0x00c8, 0x03e8, 0x00c8, 0x0190, 0x03e8, 0x00c8, 0x0258, 0x03e8,
+0x00c8, 0x0320, 0x03e8, 0x00c8, 0x03e8, 0x03e8, 0x0190, 0x0000,
+0x03e8, 0x0190, 0x00c8, 0x03e8, 0x0190, 0x0190, 0x03e8, 0x0190,
+0x0258, 0x03e8, 0x0190, 0x0320, 0x03e8, 0x0190, 0x03e8, 0x03e8,
+0x0258, 0x0000, 0x03e8, 0x0258, 0x00c8, 0x03e8, 0x0258, 0x0190,
+0x03e8, 0x0258, 0x0258, 0x03e8, 0x0258, 0x0320, 0x03e8, 0x0258,
+0x03e8, 0x03e8, 0x0320, 0x0000, 0x03e8, 0x0320, 0x00c8, 0x03e8,
+0x0320, 0x0190, 0x03e8, 0x0320, 0x0258, 0x03e8, 0x0320, 0x0320,
+0x03e8, 0x0320, 0x03e8, 0x03e8, 0x03e8, 0x0000, 0x03e8, 0x03e8,
+0x00c8, 0x03e8, 0x03e8, 0x0190, 0x03e8, 0x03e8, 0x0258, 0x03e8,
+0x03e8, 0x0320, 0x03b5, 0x0000, 0x0000, 0x0386, 0x0000, 0x0000,
+0x02f1, 0x0000, 0x0000, 0x02be, 0x0000, 0x0000, 0x01f6, 0x0000,
+0x0000, 0x012e, 0x0000, 0x0000, 0x0066, 0x0000, 0x0000, 0x0000,
+0x03b5, 0x0000, 0x0000, 0x0386, 0x0000, 0x0000, 0x02f1, 0x0000,
+0x0000, 0x02be, 0x0000, 0x0000, 0x01f6, 0x0000, 0x0000, 0x012e,
+0x0000, 0x0000, 0x0066, 0x0000, 0x0000, 0x0000, 0x0066, 0x0000,
+0x0000, 0x012e, 0x0000, 0x0000, 0x01f6, 0x0000, 0x0000, 0x02be,
+0x00c8, 0x00c8, 0x0258, 0x0000, 0x0000, 0x0386, 0x03b5, 0x03b5,
+0x03b5, 0x0386, 0x0386, 0x0386, 0x02f1, 0x02f1, 0x02f1, 0x02be,
+0x02be, 0x02be, 0x012e, 0x012e, 0x012e, 0x0066, 0x0066, 0x0066,
 };
 #endif
 
@@ -214,7 +217,7 @@ fgetc(struct file *fp, long *count)
 		display("read error! %lx(%ld)", r, r);
 	else
 		*count += 1;
-	
+
 	return (volatile char)ret;
 }
 
@@ -336,7 +339,7 @@ toM16b(struct rgb_1000 *pal, void *img_ptr)
 
 	r |= ((g & 7) << 5);
 	r |= b;
-	
+
 	*img++ = r;
 	return img;
 
@@ -348,7 +351,7 @@ toI16b(struct rgb_1000 *pal, void *img_ptr)
 	unsigned long register r, g, b;
 
 // 	img = *img_ptr;
-	
+
 	r = pal->red;
 	r <<= 5;		//*= 32;
 	r += 500;
@@ -374,9 +377,9 @@ toI16b(struct rgb_1000 *pal, void *img_ptr)
 
 	r <<= 3;
 	r |= (g >> 3);
-	
+
 	r |= (((g & 7) << 5) | b) << 8;
-	
+
 	*img++ = r;
 	return img;
 };
@@ -568,7 +571,7 @@ build_pal_xref(struct rgb_1000 *src_palette, struct rgb_1000 *dst_palette, unsig
 	struct rgb_1000 *dst, *src, *s, *d;
 	unsigned long closest, this;
 	int i, j, c;
-	
+
 	if (pens > 256)
 		pens = 256;
 
@@ -614,7 +617,7 @@ build_pal_xref(struct rgb_1000 *src_palette, struct rgb_1000 *dst_palette, unsig
 			c = vditodev4[c];
 		}
 		cref[i] = c;
-	
+
 // 		if (D) display("src %03d, %03d, %03d, dst %03d, %03d, %03d",
 // 			src->red, src->green, src->blue, dst->red, dst->green, dst->blue);
 // 		if (D) display(" %04lx xref %d to %d(%d)", closest, i, c, j, cref[i]);
@@ -635,7 +638,7 @@ remap_bitmap_colindexes(MFDB *map, unsigned char *cref)
 	planes = map->fd_nplanes;
 	psize = map->fd_wdwidth * map->fd_h;
 	data = map->fd_addr;
-	
+
 	DIAGS(("remap_bitmap_colindex: planes = %d, psize = %d, data = %lx",
 		planes, psize, data));
 
@@ -657,7 +660,7 @@ remap_bitmap_colindexes(MFDB *map, unsigned char *cref)
 				*d_ptr <<= 1;
 				d_ptr += psize;
 			}
-			cref_ind = cref[cref_ind >> (16 - planes)];			
+			cref_ind = cref[cref_ind >> (16 - planes)];
 			for (j = 0; j < planes; j++)
 			{
 				d[j] |= (cref_ind & 1) << bit;
@@ -687,7 +690,7 @@ read_gem_line( struct file *fp, unsigned char *line, unsigned long scan, int pat
 	do //while (scan)
 	{
 		short b1 = fgetc(fp, rcnt);
-		
+
 		b1 &= 0xff;
 		if (d) display("read %d", b1);
 
@@ -695,7 +698,7 @@ read_gem_line( struct file *fp, unsigned char *line, unsigned long scan, int pat
 		/* Literal run */
 		{
 			short len = fgetc(fp, rcnt) & 0x00ff;
-			
+
 			if (d) display("litteral %d bytes (scan = %ld)", len, scan);
 			if (len > 0)
 			{
@@ -731,7 +734,7 @@ read_gem_line( struct file *fp, unsigned char *line, unsigned long scan, int pat
 			else if (rep)/* PATTERN REPEAT */
 			{
 				int i;
-				
+
 				if (d) display("repeat pat_len %d %d times (%d bytes) scan %ld", patlen, rep, patlen * rep, scan);
 				scan -= patlen * rep;
 				if (d) display("scan %ld", scan);
@@ -780,7 +783,7 @@ read_gem_line( struct file *fp, unsigned char *line, unsigned long scan, int pat
 		allow_vrep = false;
 	}
 	while (line < endline);
-	
+
 	if (line != endline)
 		display("ERROR4: past buffer!");
 
@@ -812,7 +815,7 @@ gem_rdata(struct file *fp, XA_XIMG_HEAD *pic, bool disp, long *rcnt)
 			int y;
 			unsigned long vrep = 0L;
 			unsigned char *dst;
-			
+
 			for (y = 0; y < pic->ximg.img_h; y++)
 			{
 				dst = data + (y * wscan);
@@ -845,7 +848,7 @@ gem_rdata(struct file *fp, XA_XIMG_HEAD *pic, bool disp, long *rcnt)
 				for (i = 0; i < pic->ximg.planes; i++)
 				{
 					dst = data + (long)((long)y + ((long)i * pic->ximg.img_h)) * wscan;
-					
+
 					readcount = 0;
 // 					if (disp) display("LINE %d, plane %d", y, i);
 					if (!(read_gem_line(fp, dst, scan, pic->ximg.pat_len, &vrep, true, true, false/*disp*/, &readcount)))
@@ -888,7 +891,7 @@ gem_rdata(struct file *fp, XA_XIMG_HEAD *pic, bool disp, long *rcnt)
 			sl = (long)((pic->ximg.img_w + 15) & ~15) * 3;
 			rsl = (long)((pic->ximg.img_w + 7) & ~7) * 3;
 			remain = sl - rsl;
-// 			sl = (long)pic->ximg.img_w * 3;			
+// 			sl = (long)pic->ximg.img_w * 3;
 // 			display("stride %ld, sl %ld, scan %ld, wscan %ld", stride, sl, scan, wscan);
 
 			for (y = 0, dst = data; y < pic->ximg.img_h; y++, dst += sl)
@@ -948,7 +951,7 @@ depack_img(char *name, XA_XIMG_HEAD *pic)
 	{
 		int slen = strlen(name);
 		char *fname = name + slen;
-		
+
 		while (*fname != '/' && *fname != '\\')
 			fname--;
 		fname++;
@@ -977,7 +980,7 @@ depack_img(char *name, XA_XIMG_HEAD *pic)
 		{
 			word_aligned = (pic->ximg.img_w + 15) >> 4;
 			word_aligned <<= 1;
-			
+
 			/* width byte aligned */
 			width = (pic->ximg.img_w + 7) >> 3;
 			size = (long)((long)word_aligned * pic->ximg.img_h * pic->ximg.planes);
@@ -1013,7 +1016,7 @@ depack_img(char *name, XA_XIMG_HEAD *pic)
 					ximg->version, ximg->length, ximg->planes, ximg->pat_len, ximg->pix_w, ximg->pix_h, ximg->img_w, ximg->img_h,
 					ximg->magic, ximg->paltype);
 			}
-#endif			
+#endif
 			if (gem_rdata(fp, pic, disp, &rcnt) == -1L)
 			{
 				if (disp) display("read %ld bytes from file", rcnt);
@@ -1021,7 +1024,7 @@ depack_img(char *name, XA_XIMG_HEAD *pic)
 			}
 			else if (disp)
 				display("read %ld bytes from file", rcnt);
-			
+
 		}
 	}
 	else
@@ -1062,7 +1065,7 @@ static struct TrNfo from1_8[] =
 	{8 + 1,  63, 127},	/* 7 */
 	{8 + 0, 127, 255},	/* 8 */
 };
-	
+
 static void
 from8b(void *(*to)(struct rgb_1000 *, void *), struct rgb_1000 *pal, MFDB *src, MFDB *dst)
 {
@@ -1075,7 +1078,7 @@ from8b(void *(*to)(struct rgb_1000 *, void *), struct rgb_1000 *pal, MFDB *src, 
 
 	d_ptr = &p;
 	*d_ptr = dst->fd_addr;
-	
+
 	psize = src->fd_wdwidth * src->fd_h;
 	src_ptr = src->fd_addr;
 	planes = src->fd_nplanes;
@@ -1111,7 +1114,7 @@ from8b(void *(*to)(struct rgb_1000 *, void *), struct rgb_1000 *pal, MFDB *src, 
 			{
 				if (src->fd_r1 && palidx < 15)
 					palidx = devtovdi8[palidx];
-					
+
 				col = pal + palidx;
 				*d_ptr = (*to)(col, *d_ptr);
 			}
@@ -1142,13 +1145,13 @@ from24b(void *(*to)(struct rgb_1000 *, void *), struct rgb_1000 *pal, MFDB *src,
 			val += 127;
 			val >>= 8;
 			ppal.red = val > 1000 ? 1000 : val;
-		
+
 			val = *(unsigned char *)src_ptr++;
 			val *= 1000;
 			val += 127;
 			val >>= 8;
 			ppal.green = val > 1000 ? 1000 : val;
-		
+
 			val = *(unsigned char *)src_ptr++;
 			val *= 1000;
 			val += 127;
@@ -1300,7 +1303,7 @@ repeat_24bpixel(void *_pixel, void *_dest, int count)
 			*pptr.sp++ = pixel;
 			*pptr.bp = pxl.b[3];
 		}
-	}	
+	}
 }
 static void
 repeat_32bpixel(void *_pixel, void *_dest, int count)
@@ -1329,7 +1332,7 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 			void * (*to)(struct rgb_1000 *pal, void *imgdata);
 			void (*rp)(void *, void *, int);
 			struct rgb_1000 col;
-			
+
 			wdwidth = (w + 15) >> 4;
 // 			size = 2L * (long)wdwidth * (long)(screen.planes == 15 ? 16 : screen.planes) * h;
 // 			display("size0 %ld", size);
@@ -1344,7 +1347,7 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 			scanlen = (long)pixelsize * ((w + 15) & ~15);
 			size = (long)scanlen * h;
 // 			display("size1 %ld, scanlen = %ld", size, scanlen);
-			
+
 			if (!to || !(data = kmalloc(size)))
 				return;
 // 			display("data %lx, size %ld, to = %lx", data, size, to);
@@ -1358,22 +1361,22 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 			pm->mfdb.fd_stand = 0;
 			pm->mfdb.fd_nplanes = screen.planes == 15 ? 16 : screen.planes;
 			pm->mfdb.fd_r1 = pm->mfdb.fd_r2 = pm->mfdb.fd_r3 = 0;
-			
+
 			scanlen = pm->mfdb.fd_w * pixelsize;
 
-			
+
 			data = pm->mfdb.fd_addr;
 			ed = data + size;
 
 			switch (method)
 			{
-			
+
 			case 0:
 			{
 				ired = ((long)(c[1].red - c[0].red) << 16) / h;
 				igreen = ((long)(c[1].green - c[0].green) << 16) / h;
 				iblue = ((long)(c[1].blue - c[0].blue) << 16) / h;
-				
+
 				red = (long)c[0].red << 16;
 				green = (long)c[0].green << 16;
 				blue = (long)c[0].blue << 16;
@@ -1396,7 +1399,7 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 					red += ired;
 					green += igreen;
 					blue += iblue;
-				
+
 					data += scanlen;
 				}
 				break;
@@ -1404,14 +1407,14 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 			case 1:
 			{
 				long rgb[3];
-			
+
 				ired = ((long)(c[1].red - c[0].red) << 16) / w;
 				igreen = ((long)(c[1].green - c[0].green) << 16) / w;
 				iblue = ((long)(c[1].blue - c[0].blue) << 16) / w;
 				red = (long)c[0].red << 16;
 				green = (long)c[0].green << 16;
 				blue = (long)c[0].blue << 16;
-			
+
 				rgb[0] = red;
 				rgb[1] = green;
 				rgb[2] = blue;
@@ -1433,7 +1436,7 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 					green = rgb[1];
 					blue = rgb[2];
 					col = c[0];
-					
+
 					data += scanlen;
 				}
 				break;
@@ -1447,13 +1450,13 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 				yred = ((long)(c[1].red - c[0].red) << 16)  / h;
 				ygreen = ((long)(c[1].green - c[0].green) << 16) / h;
 				yblue = ((long)(c[1].blue - c[0].blue) << 16) / h;
-								
-				
+
+
 				col = strt = c[0]; //*start;
 				rgb[0] = (long)strt.red << 16;
 				rgb[1] = (long)strt.green << 16;
 				rgb[2] = (long)strt.blue << 16;
-				
+
 				for (i = 0; i < h; i++)
 				{
 					d = data;
@@ -1461,11 +1464,11 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 					ired = ((long)(c[1].red - strt.red) << 16) / w;
 					igreen = ((long)(c[1].green - strt.green) << 16) / w;
 					iblue = ((long)(c[1].blue - strt.blue) << 16) / w;
-					
+
 					red = (long)strt.red << 16;
 					green = (long)strt.green << 16;
 					blue = (long)strt.blue << 16;
-			
+
 					for (j = 0; j < w; j++)
 					{
 						col.red = red >> 16;
@@ -1477,15 +1480,15 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 						green += igreen;
 						blue += iblue;
 					}
-					
+
 					rgb[0] += yred;
 					rgb[1] += ygreen;
 					rgb[2] += yblue;
-					
+
 					strt.red = rgb[0] >> 16;
 					strt.green = rgb[1] >> 16;
 					strt.blue = rgb[2] >> 16;
-					
+
 					data += scanlen;
 				}
 				break;
@@ -1493,7 +1496,7 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 			case 3:
 			{
 				short h1, h2, step = steps[0];
-				
+
 				if (step < 0)
 				{
 					step = -step;
@@ -1507,26 +1510,26 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 					h1 = step;
 					h2 = h - step;
 				}
-				
+
 				ired = ((long)(c[1].red - c[0].red) << 16) / h1;
 				igreen = ((long)(c[1].green - c[0].green) << 16) / h1;
 				iblue = ((long)(c[1].blue - c[0].blue) << 16) / h1;
-				
+
 				red = (long)c[0].red << 16;
 				green = (long)c[0].green << 16;
 				blue = (long)c[0].blue << 16;
-					
+
 					col.red = red >> 16;
 					col.green = green >> 16;
 					col.blue = blue >> 16;
-				
+
 				for (i = 0; i < h1; i++)
 				{
 // 					d = data;
-					
+
 					(*to)(&col, &pixel);
 					(*rp)(&pixel, data, w);
-					
+
 // 					for (j = 0; j < w; j++)
 // 					{
 // 						d = (*to)(&col, d);
@@ -1538,14 +1541,14 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 					col.red = red >> 16;
 					col.green = green >> 16;
 					col.blue = blue >> 16;
-				
+
 					data += scanlen;
 				}
-				
+
 				ired = ((long)(c[2].red - col.red) << 16) / h2;
 				igreen = ((long)(c[2].green - col.green) << 16) / h2;
 				iblue = ((long)(c[2].blue - col.blue) << 16) / h2;
-			
+
 				red = (long)col.red << 16;
 				green = (long)col.green << 16;
 				blue = (long)col.blue << 16;
@@ -1567,7 +1570,7 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 					col.red = red >> 16;
 					col.green = green >> 16;
 					col.blue = blue >> 16;
-				
+
 					data += scanlen;
 				}
 				break;
@@ -1588,7 +1591,7 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 					w1 = step;
 					w2 = w - step;
 				}
-				
+
 				for (i = 0; i < h; i++)
 				{
 					d = data;
@@ -1596,32 +1599,32 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 					ired =   ((long)(c[1].red - c[0].red) << 16) / w1;
 					igreen = ((long)(c[1].green - c[0].green) << 16) / w1;
 					iblue =  ((long)(c[1].blue - c[0].blue) << 16) / w1;
-					
+
 					red =	(long)c[0].red << 16;
 					green =	(long)c[0].green << 16;
 					blue =	(long)c[0].blue << 16;
 					for (j = 0; j < w1; j++)
 					{
 						col.red = red >> 16;
-						col.green = green >> 16; 
+						col.green = green >> 16;
 						col.blue = blue >> 16;
 						d = (*to)(&col, d);
 						red += ired;
 						green += igreen;
 						blue += iblue;
 					}
-					
+
 					ired =   ((long)(c[2].red - col.red) << 16) / w2;
 					igreen = ((long)(c[2].green - col.green) << 16) / w2;
 					iblue =  ((long)(c[2].blue - col.blue) << 16) / w2;
-					
+
 					red =   (long)col.red << 16;
 					green = (long)col.green << 16;
 					blue =  (long)col.blue << 16;
 					for (j = 0; j < w2; j++)
 					{
 						col.red = red >> 16;
-						col.green = green >> 16; 
+						col.green = green >> 16;
 						col.blue = blue >> 16;
 						d = (*to)(&col, d);
 						red += ired;
@@ -1629,7 +1632,7 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 						blue += iblue;
 					}
 					data += scanlen;
-				}		
+				}
 				break;
 				default:;
 				}
@@ -1659,7 +1662,7 @@ load_image(char *name, XAMFDB *mimg)
 	if (xa_img.addr)
 	{
 		XAMFDB msrc;
-		
+
 // 		display("version %d\r\n hlen    %d\r\n planes  %d\r\n pat_len %d\r\n pix_w   %d\r\n pix_h   %d\r\n img_w   %d\r\n img_h   %d\r\n magic   %lx\r\n paltype %d",
 // 			ximg->version, ximg->length, ximg->planes, ximg->pat_len, ximg->pix_w, ximg->pix_h, ximg->img_w, ximg->img_h,
 // 			ximg->magic, ximg->paltype);
@@ -1688,7 +1691,7 @@ load_image(char *name, XAMFDB *mimg)
 		}
 		else
 			ndisplay(", no palette");
-		
+
 		if (ximg->planes < 8 && screen.planes == 8)
 		{
 			long newsize, oldsize;
@@ -1730,7 +1733,8 @@ load_image(char *name, XAMFDB *mimg)
 
 				to = (void *)-1L;
 				from = (void *)-1L;
-				
+
+				BLOG((0,"\r\npixel format:screen:planes=%d pixel-format=%d src:%d", screen.planes, screen.pixel_fmt, msrc.mfdb.fd_nplanes));
 				if (screen.pixel_fmt >= 0)
 				{
 					switch (screen.planes)
@@ -1741,7 +1745,7 @@ load_image(char *name, XAMFDB *mimg)
 						case 32: to = f_to32[screen.pixel_fmt]; break; //toM32b; break;
 						default: to = NULL; break;
 					}
-					
+
 					switch (msrc.mfdb.fd_nplanes)
 					{
 						case 1 ... 8: from = from8b;  break;
@@ -1765,7 +1769,8 @@ load_image(char *name, XAMFDB *mimg)
 					if (!to)
 						display("\r\n  cannot handle %d bpp screen modes!", screen.planes);
 					if (screen.pixel_fmt < 0)
-						display("\r\n unknown pixel format - cannot transform");
+						display("\r\n unknown pixel format:screen:planes=%d pixel-format=%d src:%d- cannot transform from=%lx to=%lx",
+							screen.planes, screen.pixel_fmt, msrc.mfdb.fd_nplanes, from, to);
 					kfree(mimg->mfdb.fd_addr);
 					mimg->mfdb.fd_addr = NULL;
 				}
@@ -1773,11 +1778,11 @@ load_image(char *name, XAMFDB *mimg)
 			else
 #endif
 			{
-				ndisplay(", vr_trnfm()..."); 
+				ndisplay(", vr_trnfm()...");
 				vr_trnfm(C.P_handle, &msrc.mfdb, &mimg->mfdb);
 				ndisplay("OK!");
 			}
-			kfree(xa_img.addr);	
+			kfree(xa_img.addr);
 		}
 		else
 		{
@@ -1787,10 +1792,10 @@ load_image(char *name, XAMFDB *mimg)
 			ndisplay("OK!");
 		}
 		mimg->mfdb.fd_stand = 0;
-	
+
 		if (xa_img.palette)
 			kfree(xa_img.palette);
-		
+
 		display("");
 // 		display("  %s!", name, mimg->fd_addr ?"OK":"NotOK");
 	}
@@ -1868,8 +1873,8 @@ transform_bitmap(short vdih, MFDB *src, MFDB *dst, struct rgb_1000 *src_pal, str
 			void (*from)(void (*)(struct rgb_1000 *, void **), struct rgb_1000 *, MFDB *, MFDB *);
 
 			to = (void *)-1L;
-			from = (void *)-1L;			
-#if 1			
+			from = (void *)-1L;
+#if 1
 			if (src->fd_nplanes <= 8 && src_pal && sys_pal)
 			{
 				unsigned char cref[256];
@@ -1877,7 +1882,7 @@ transform_bitmap(short vdih, MFDB *src, MFDB *dst, struct rgb_1000 *src_pal, str
 				remap_bitmap_colindexes(src, (unsigned char *)&cref);
 // 				yield();
 			}
-#endif			
+#endif
 			if (screen.pixel_fmt >= 0)
 			{
 				switch (dst->fd_nplanes)
@@ -1888,7 +1893,7 @@ transform_bitmap(short vdih, MFDB *src, MFDB *dst, struct rgb_1000 *src_pal, str
 					case 32: to = f_to32[screen.pixel_fmt]; break;
 					default: to = NULL; break;
 				}
-				
+
 				switch (src->fd_nplanes)
 				{
 					case 1 ... 8: from = from8b;  break;
@@ -1912,7 +1917,7 @@ transform_bitmap(short vdih, MFDB *src, MFDB *dst, struct rgb_1000 *src_pal, str
 		kfree(newdata);
 
 	return ret;
-/* ************************************************* */		
+/* ************************************************* */
 }
 #else
 bool
@@ -1979,7 +1984,7 @@ transform_gem_bitmap(short vdih, MFDB msrc, MFDB mdest, short planes, struct rgb
 
 		DIAGS(("mdest planes %d", mdest.fd_nplanes));
 		bzero(mdest.fd_addr, map_size(&mdest,3));
-		
+
 		switch (src_planes)
 		{
 			case 8:	colour_lut = devtovdi8;	break;
@@ -2007,14 +2012,14 @@ transform_gem_bitmap(short vdih, MFDB msrc, MFDB mdest, short planes, struct rgb
 			bzero(tmp.fd_addr, map_size(&tmp, 4));
 			bzero(used_colours, sizeof(used_colours));
 			for (x = 0; x < msrc.fd_wdwidth; x++)
-			{		
+			{
 				short *ptr = (short *)((char *)msrc.fd_addr + (y * msrc.fd_wdwidth * 2) + (x << 1));
 				/* Get the 16 bit from each plane in words[8] */
 				i = 0;
 				while (i < src_planes)
 					words[i++] = *ptr,
 					ptr += plane_int_size;
-			
+
 				/* Now built the colour index number from them
 				 * by taking 1 bit from each words[j]. */
 				for (i = 0; i < 16; i++)
@@ -2112,7 +2117,7 @@ transform_gem_bitmap_data(short vdih, MFDB msrc, MFDB mdest, int src_planes, int
 
 		DIAGS(("mdest planes %d", mdest.fd_nplanes));
 		bzero(mdest.fd_addr, map_size(&mdest,3));
-		
+
 		switch (src_planes)
 		{
 			case 8:	colour_lut = devtovdi8;	break;
@@ -2140,14 +2145,14 @@ transform_gem_bitmap_data(short vdih, MFDB msrc, MFDB mdest, int src_planes, int
 			bzero(tmp.fd_addr, map_size(&tmp, 4));
 			bzero(used_colours, sizeof(used_colours));
 			for (x = 0; x < msrc.fd_wdwidth; x++)
-			{		
+			{
 				short *ptr = (short *)((char *)msrc.fd_addr + (y * msrc.fd_wdwidth * 2) + (x << 1));
 				/* Get the 16 bit from each plane in words[8] */
 				i = 0;
 				while (i < src_planes)
 					words[i++] = *ptr,
 					ptr += plane_int_size;
-			
+
 				/* Now built the colour index number from them
 				 * by taking 1 bit from each words[j]. */
 				for (i = 0; i < 16; i++)
@@ -2231,7 +2236,8 @@ void
 set_syspalette(short vdih, struct rgb_1000 *palette)
 {
 	int i, pens;
-	
+	//if( C.fvdi_version == 0 )	return;	/* as long as this doesn't work reliable */
+
 	if (screen.planes > 8)
 		pens = 256;
 	else
@@ -2240,7 +2246,7 @@ set_syspalette(short vdih, struct rgb_1000 *palette)
 // 	display("set syspal - %d pens", pens);
 	for (i = 0; i < pens; i++)
 	{
-// 		display("%03d - %04d, %04d, %04d", i, palette[i].red, palette[i].green, palette[i].blue);
+		//display("%03d - %04d, %04d, %04d", i, palette[i].red, palette[i].green, palette[i].blue);
 		vs_color(vdih, i, (short *)&(palette[i]));
 	}
 }
@@ -2249,7 +2255,7 @@ void
 get_syspalette(short vdih, struct rgb_1000 *palette)
 {
 	int i, pens;
-	
+
 	switch (screen.planes)
 	{
 		case 1:	pens =  2; break;
@@ -2274,7 +2280,7 @@ void
 set_defaultpalette(short vdih)
 {
 	union { short *sp; struct rgb_1000 *rgb;} ptrs;
-	
+
 	ptrs.sp = systempalette;
 	set_syspalette(vdih, ptrs.rgb); //(struct rgb_1000 *)&systempalette);
 }
@@ -2301,6 +2307,7 @@ set_syscolor(void)
 	}
 }
 #endif
+
 /*
  * Ozk: Attempt to detect pixel format in 15 bpp and above
  */
@@ -2312,7 +2319,9 @@ detect_pixel_format(struct xa_vdi_settings *v)
 	if (screen.planes > 8)
 	{
 		MFDB scr, dst;
+#if HAVE_VS_COLOR
 		struct rgb_1000 srgb, rgb;
+#endif
 		short pxy[8];
 		union { unsigned short w[64]; unsigned long l[32];} b;
 
@@ -2320,7 +2329,7 @@ detect_pixel_format(struct xa_vdi_settings *v)
 		(*v->api->l_type)(v, 1);
 		(*v->api->l_ends)(v, 0, 0);
 		(*v->api->l_width)(v, 1);
-
+#if HAVE_VS_COLOR
 		vq_color(v->handle, 0, 1, (short *)&srgb);
 // 		display("saved %04d, %04d, %04d", srgb.red, srgb.green, srgb.blue);
 		rgb.red = 1000;
@@ -2328,8 +2337,13 @@ detect_pixel_format(struct xa_vdi_settings *v)
 		rgb.blue = 0;
 		vs_color(v->handle, 0, (short *)&rgb);
 		(*v->api->line)(v, 0, 0, 0, 0, 0);
-	
-	
+#else
+		{
+		RECT r = {0,0,v->screen.w,v->screen.h};
+		(*v->api->f_color)(v, 6 );	/* yellow */
+		(*v->api->gbar)( v, 0, &r );
+		}
+#endif
 		scr.fd_addr = NULL;
 
 		dst.fd_addr = &b;
@@ -2348,16 +2362,17 @@ detect_pixel_format(struct xa_vdi_settings *v)
 		pxy[5] = 0;
 		pxy[6] = 0;
 		pxy[7] = 0;
-	
+
 		vro_cpyfm(v->handle, S_ONLY, pxy, &scr, &dst);
 
+#if HAVE_VS_COLOR
 		vs_color(v->handle, 0, (short *)&srgb);
-
+#endif
 		switch (screen.planes)
 		{
 	/* pixelformat E07F */
 
-						/* 12345678.12345678 */			
+						/* 12345678.12345678 */
 			case 15:
 			{
 				unsigned short pix = b.w[0]; //*(unsigned short *)(&b[0]);
@@ -2420,7 +2435,7 @@ detect_pixel_format(struct xa_vdi_settings *v)
 					ret = 0;
 					display(" is moto format");
 				}
-				else if (pix == 0xffffL)		/* bbbbbbbb.gggggggg.rrrrrrrr */
+				else if (pix == 0xffffL)		/* gggggggg.rrrrrrrrbbbbbbbb */
 				{
 					ret = 1;
 					display(" is intel format");
@@ -2461,7 +2476,7 @@ detect_pixel_format(struct xa_vdi_settings *v)
 			default:
 			{
 				display("unsupported color depth!");
-				ret = -1;
+				ret = -2;
 				break;
 			}
 		}

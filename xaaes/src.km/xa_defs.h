@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
  *                                        2004 F.Naumann & O.Skancke
@@ -33,19 +33,46 @@
 #define	abs(x)		((x)<0?(-(x)):(x))
 #endif
 
+
 /*----------------------------------------------------------------- */
 /* COMPILE TIME SWITCHES */
 /* - define as 1 to turn on, 0 to turn off */
 /*----------------------------------------------------------------- */
 
+#define MiNT_ENH	1
+/* put switches for enhancement-branch and MAIN here */
+#ifdef MiNT_ENH
+#define SA_RESET	SA_RESETHAND
+#else
+#define SA_RESETHAND	SA_RESET
+#endif
+
+/* define 1 if CTRL-ALT-keys shall shutdown system or term apps */
+#define HOTKEYQUIT	0
+
+/* define 1 if credits shall be displayed in 'about' and at bootup, 0 for only freemint-url */
+#define DISPCREDITS	0
+
+/* define 1 if GPL shall be quoted in 'about' 0 if only mentioned */
+#define LONG_LICENSE	0
+
+/* define 1 if unused code shall be included */
+#define INCLUDE_UNUSED	0
+
+/* define 1 if xa_help.txt shall be displayed in about-window */
+#define HELPINABOUT	1
+
+/* define 1 if alerts in syslog shall have a timestamp */
+#define ALERTTIME	1
+
 #define DISPLAY_LOGO_IN_TITLE	0	/* Display the XaAES logo in the title bar of each window */
 
 #define POINT_TO_TYPE		0	/* if defined focus can be dynamically changed in the cfg (see parde*/
 
-#define ALT_CTRL_APP_OPS	0	/* Some ALT+CTRL+key combo's will perform functions relating to
+#define ALT_CTRL_APP_OPS	1	/* Some ALT+CTRL+key combo's will perform functions relating to
                        			 * the XaAES system */
 
-#define PRESERVE_DIALOG_BGD	1	/* Preserve the background of dialogs */
+#define PRESERVE_DIALOG_BGD	0	/* Preserve the background of dialogs */
 
 #define FILESELECTOR		1	/* Build a XaAES with fileselector */
 
@@ -53,6 +80,12 @@
 
 
 /*----------------------------------------------------------------- */
+
+#define SPAREMINT_URL	"http://sparemint.org"
+
+/* minimum height of internal resizeable windows except fileselector */
+#define MINOBJMVH	240
+
 /* Maximum space for 'nice name' for app's (menu_register) */
 #define NICE_NAME		64
 

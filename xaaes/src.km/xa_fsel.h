@@ -79,4 +79,8 @@ AES_function
 	XA_fsel_input,
 	XA_fsel_exinput;
 
+/* exported helper functions */
+bool
+sortbyname(struct scroll_info *list, struct scroll_entry *e1, struct scroll_entry *e2);	/* xa_fsel.c */
+
 #endif /* _xa_fsel_h */

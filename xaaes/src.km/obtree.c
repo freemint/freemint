@@ -144,19 +144,19 @@ aesobj_is_editable(struct xa_aes_object *o, short flags, short state)
 	}
 	return false;
 }
-		
+
 inline TEDINFO *
 object_get_tedinfo(OBJECT *ob, XTEDINFO **x)
 {
 	TEDINFO *ted = NULL;
-	
+
 	if (x)
 		*x = NULL;
 
 	if (object_has_tedinfo(ob))
 	{
 		ted = object_get_spec(ob)->tedinfo;
-	
+
 		if (ted->te_ptext == (char *)-1L)
 		{
 			if (x)
@@ -234,7 +234,7 @@ getbest_cicon(CICONBLK *ciconblk)
 		{
 			best_cicon = c;
 		}
-		c = c->next_res;	
+		c = c->next_res;
 	}
 	/* No matching icon, so use the mono one instead */
 	return best_cicon;
@@ -244,7 +244,7 @@ static long
 sizeof_tedinfo(TEDINFO *ted)
 {
 	long size = sizeof(TEDINFO);
-	
+
 	if (ted->te_ptext == (char *)-1L)
 	{
 		XTEDINFO *xt = (XTEDINFO *)ted->te_ptmplt;
@@ -274,11 +274,11 @@ static long
 sizeof_iconblk(ICONBLK *ib)
 {
 	long size = 2L * calc_back((RECT *)&ib->ib_xicon, 1);
-	
+
 	size += sizeof(ICONBLK);
 	if (ib->ib_ptext)
 		size += strlen(ib->ib_ptext) + 1;
-	
+
 	size = (size + 1) & 0xfffffffe;
 	DIAGS(("sizeof_iconblk: %ld", size));
 // 	display("sizeof_iconblk: %ld", size);
@@ -347,25 +347,25 @@ static short
 count_them(OBJECT *obtree, short parent, short start, short depth)
 {
 	short curr = start, objs = 0;
-	
+
 	DIAGS((" -- count_them: enter, parent %d", parent));
-	
+
 	do
 	{
 		OBJECT *ob = obtree + curr;
 
 		objs++;
-		
+
 		DIAGS((" -- obj %d, type %x (n=%d, h=%d, t=%d)",
 			curr, ob->ob_type, ob->ob_next, ob->ob_head, ob->ob_tail));
-		
+
 		if (ob->ob_head != -1 && depth)
 			objs += count_them(obtree, curr, ob->ob_head, depth - 1);
-			
+
 		curr = obtree[curr].ob_next;
-	
+
 	} while (curr != parent && curr != -1);
-	
+
 	DIAGS((" -- count_them: return %d", objs));
 	return objs;
 }
@@ -374,14 +374,14 @@ short
 ob_count_objs(OBJECT *obtree, short parent, short depth)
 {
 	short objs = 0, start = obtree[parent].ob_head;
-	
+
 	DIAG((D_rsrc, NULL, "ob_count_objs: tree %lx, parent %d", obtree, parent));
 
 	DIAGS((" -- parent = %d", parent));
 
 	if (depth && start != -1)
 		objs = count_them(obtree, parent, start, depth - 1);
-	
+
 	DIAGS(("ob_count_objs: return %d", objs));
 
 	return objs;
@@ -472,15 +472,15 @@ obtree_len(OBJECT *obtree, short start, short *num_objs)
 			size += obtree_len(obtree, ob->ob_head, &no);
 			objs += no;
 		}
-	
+
 	} while ((curr = obtree[curr].ob_next) != parent);
 
 	DIAGS(("return obtreelen = %ld, objs = %d", size, objs));
 // 	display("return obtreelen = %ld, objs = %d", size, objs);
-	
+
 	if (num_objs)
 		*num_objs = objs;
-	
+
 	return size;
 }
 static void *
@@ -490,19 +490,19 @@ copy_tedinfo(OBJECT *root_tree, TEDINFO *src, TEDINFO *dst)
 
  	DIAGS(("copy_tedinfo: copy from %lx, to %lx", src, dst));
 //  	display("copy_tedinfo: copy from %lx, to %lx", src, dst);
-	
+
 	*dst = *src;
 	if (src->te_ptext == (char *)-1L)
 	{
 		XTEDINFO *xdst, *xsrc = (XTEDINFO *)src->te_ptmplt;
-		
+
 		xdst = (XTEDINFO *)s;
 		s += sizeof(*xsrc);
-		
+
 		*xdst = *xsrc;
 		xdst->o = aesobj(root_tree, aesobj_item(&xdst->o));
 		dst->te_ptmplt = (char *)xdst;
-		
+
 		src = &xsrc->ti;
 		dst = &xdst->ti;
 	}
@@ -518,7 +518,7 @@ copy_tedinfo(OBJECT *root_tree, TEDINFO *src, TEDINFO *dst)
 	dst->te_pvalid = s;
 	strcpy(s, src->te_pvalid);
 	s += strlen(src->te_pvalid) + 1;
-	
+
  	DIAGS((" --- return %lx", ((long)s + 1) & 0xfffffffe));
 //  	display(" --- return %lx", ((long)s + 1) & 0xfffffffe);
 
@@ -532,9 +532,9 @@ copy_bitblk(BITBLK *src, BITBLK *dst)
 
 	DIAGS(("copy_bitblk: from %lx, to %lx", src, dst));
 // 	display("copy_bitblk: from %lx, to %lx", src, dst);
-	
+
 	*dst = *src;
-	
+
 	s = src->bi_pdata;
  	d = (short *)((char *)dst + sizeof(BITBLK));
 	dst->bi_pdata = d;
@@ -562,7 +562,7 @@ copy_iconblk(ICONBLK *src, ICONBLK *dst)
 // 	display("words = %d", words);
 	{
 		short *fr, *dr = (short *)d;
-		
+
 		fr = src->ib_pdata;
 		dst->ib_pdata = dr;
 		for (i = 0; i < words; i++)
@@ -575,18 +575,18 @@ copy_iconblk(ICONBLK *src, ICONBLK *dst)
 
 		d = (char *)dr;
 	}
-	
+
 	dst->ib_ptext = d;
 	for (i = 0; i < 12; i++)
 	{
 		if (!(*d++ = src->ib_ptext[i]))
 			break;
 	}
-	
+
 	DIAGS((" --- return %lx", ((long)d + 1) & 0xfffffffe));
 // 	display(" --- return %lx", ((long)d + 1) & 0xfffffffe);
 
-	return (void *)(((long)d + 1) & 0xfffffffe);	
+	return (void *)(((long)d + 1) & 0xfffffffe);
 }
 
 static void *
@@ -645,7 +645,7 @@ copy_cicon(CICON *src, CICON *dst, long words)
 
 	DIAGS(("copy_cicon: return %lx", d));
 // 	display("copy_cicon: return %lx", d);
-	
+
 	return (void *)d;
 }
 
@@ -661,11 +661,11 @@ copy_ciconblk(CICONBLK *src, CICONBLK *dst, CICON *cicon)
 	*dst = *src;
 
 	d = (char *)dst + sizeof(CICONBLK);
-	
+
 	words = ((src->monoblk.ib_wicon + 15) >> 4) * src->monoblk.ib_hicon;
 	{
 		short *fr, *dr = (short *)d;
-		
+
 		fr = src->monoblk.ib_pdata;
 		if (fr)
 		{
@@ -685,7 +685,7 @@ copy_ciconblk(CICONBLK *src, CICONBLK *dst, CICON *cicon)
 		}
 		else
 			dst->monoblk.ib_pmask = NULL;
-		
+
 		d = (char *)dr;
 	}
 
@@ -697,7 +697,7 @@ copy_ciconblk(CICONBLK *src, CICONBLK *dst, CICON *cicon)
 	}
 
 	d = (char *)(((long)d + 1) & 0xfffffffe);
-	
+
 	/*
 	 * If a cicon is passed to us, we only take that one into the copy,
 	 * ignoring the others in the source.
@@ -725,25 +725,25 @@ copy_ciconblk(CICONBLK *src, CICONBLK *dst, CICON *cicon)
 				*nxt_dci = dst_ci;
 				nxt_sci = &((*nxt_sci)->next_res);
 				nxt_dci = &dst_ci->next_res;
-			
+
 			#if 0
 				dst_ci = (CICON *)d;
 				d = copy_cicon(*nxt_sci, dst_ci, words);
 				*nxt_dci = dst_ci;
-			
+
 				nxt_sci = &((*nxt_sci)->next_res);
 				nxt_dci = &((*nxt_dci)->next_res);
 			#endif
 			}
 		}
 	}
-	
+
 	DIAGS((" --- return %lx", d));
 // 	display(" --- return %lx", d);
 
-	return (void *)d;	
+	return (void *)d;
 }
-	
+
 static void
 copy_obtree(OBJECT *obtree, short start, OBJECT *dst, void **data)
 {
@@ -790,7 +790,7 @@ copy_obtree(OBJECT *obtree, short start, OBJECT *dst, void **data)
 			case G_PROGDEF:
 			{
 				USERBLK *s, *d;
-				
+
 				d = *data;
 				s = object_get_spec(ob)->userblk;
 				*d = *s;
@@ -807,7 +807,7 @@ copy_obtree(OBJECT *obtree, short start, OBJECT *dst, void **data)
 				char *d = *data;
 				on->ob_spec.free_string = d;
 				strcpy(d, s);
-				d += strlen(s) + 1;				
+				d += strlen(s) + 1;
 				*data = (void *)(((long)d + 1) & 0xfffffffe);
 				break;
 			}
@@ -825,7 +825,7 @@ copy_obtree(OBJECT *obtree, short start, OBJECT *dst, void **data)
 				CICON *i;
 
 				i = NULL; //getbest_cicon(object_get_spec(ob)->ciconblk);
-				
+
 				on->ob_spec.ciconblk = *data;
 				*data = copy_ciconblk(object_get_spec(ob)->ciconblk, *data, i);
 // 				display("CICONCPY %ld bytes", *(long *)data - before);
@@ -848,7 +848,7 @@ copy_obtree(OBJECT *obtree, short start, OBJECT *dst, void **data)
 		{
 			copy_obtree(obtree, ob->ob_head, dst, data);
 		}
-	
+
 	} while ((curr = obtree[curr].ob_next) != parent);
 }
 
@@ -892,7 +892,7 @@ free_obtree_resources(struct xa_client *client, OBJECT *obtree)
 {
 	int j = 0;
 	short type;
-	
+
 	do
 	{
 		OBJECT *ob = obtree + j;
@@ -988,9 +988,9 @@ obj_change_popup_entry(struct xa_aes_object obj, short obnum, char *s)
 		POPINFO *pinf = object_get_popinfo(aesobj_ob(&obj));
 		struct xa_aes_object this = aesobj(pinf->tree, obnum);
 		char *obtxt;
-		
+
 		obtxt = object_get_string(aesobj_ob(&this));
-		
+
 		if (obtxt)
 		{
 			strcpy(obtxt + 2, s);
@@ -1012,23 +1012,23 @@ create_popup_tree(struct xa_client *client, short type, short nobjs, short min_w
 		for (i = 0; i < nobjs; i++)
 		{
 			long l = strlen((*cb)(i, data)) + 4;
-			
+
 			if (l > longest)
 				longest = l;
 			sl += l;
 		}
 
 		ol = sizeof(*new) * (nobjs + 1);
-		
+
 		new = kmalloc(ol + sl + longest);
 
 		if (new)
 		{
 			short x, y, w, h;
 			char *entry, *this, *sepstr;
-			
+
 			this = (char *)new + ol;
-			
+
 			sepstr = this + sl;
 			for (i = 0; i < longest; i++)
 				sepstr[i] = '-';
@@ -1038,11 +1038,11 @@ create_popup_tree(struct xa_client *client, short type, short nobjs, short min_w
 			new->ob_next = -1;
 			new->ob_head = 1;
 			new->ob_tail = nobjs;
-			
+
 			new->ob_type = G_BOX;
 			new->ob_flags = OF_NONE;
 			new->ob_state = OS_NORMAL;
-			
+
 			new->ob_spec.index = 0x00FF1100L;
 			new->ob_x = new->ob_y = 0;
 			new->ob_width = min_w;
@@ -1056,12 +1056,12 @@ create_popup_tree(struct xa_client *client, short type, short nobjs, short min_w
 				entry = (*cb)(i - 1, data);
 
 				if (entry)
-				{					
+				{
 					new[i].ob_next = i + 1;
 					new[i].ob_head = new[i].ob_tail = -1;
 					new[i].ob_type = G_STRING;
 					new[i].ob_flags = OF_NONE;
-					
+
 					if (*entry == '-')
 					{
 						new[i].ob_state = OS_DISABLED;
@@ -1075,13 +1075,13 @@ create_popup_tree(struct xa_client *client, short type, short nobjs, short min_w
 						new[i].ob_state = OS_NORMAL;
 						new[i].ob_spec.free_string = this;
 						strcpy(this + 2, entry);
-						
+
 						entry = this;
 						this += strlen(this);
 						*this++ = ' ';
 						*this++ = '\0';
 						(*v->api->t_extent)(v, entry/*this*/, &w, &h);
-					
+
 // 						this += strlen(entry) + 2;
 // 						*this++ = ' ';
 // 						*this++ = '\0';
@@ -1089,12 +1089,12 @@ create_popup_tree(struct xa_client *client, short type, short nobjs, short min_w
 					if (new->ob_width < w)
 						new->ob_width = w;
 					new->ob_height += h;
-						
+
 					new[i].ob_y = y;
 					new[i].ob_x = x;
 					new[i].ob_width = 0;
 					new[i].ob_height = h;
-					
+
 					y += h;
 				}
 			}
@@ -1103,7 +1103,7 @@ create_popup_tree(struct xa_client *client, short type, short nobjs, short min_w
 			w = new->ob_width;
 			for (i = 1; i <= nobjs; i++)
 				new[i].ob_width = w;
-			
+
 			if (new->ob_height < min_h)
 				new->ob_height = min_h;
 		}
@@ -1155,7 +1155,7 @@ object_offsets(OBJECT *ob, RECT *c)
 {
 	short dx = 0, dy = 0, dw = 0, dh = 0, db = 0;
 	short thick;
-	
+
 	if (ob->ob_type != G_PROGDEF)
 	{
 		thick = object_thickness(ob);   /* type dependent */
@@ -1164,7 +1164,7 @@ object_offsets(OBJECT *ob, RECT *c)
 			db = thick;
 
 		/* HR 0080801: oef oef oef, if foreground any thickness has the 3d enlargement!! */
-		if (obj_is_foreground(ob)) 
+		if (obj_is_foreground(ob))
 			db -= 2;
 
 		dx = db;
@@ -1191,7 +1191,7 @@ object_offsets(OBJECT *ob, RECT *c)
 	c->y = dy;
 	c->w = dw;
 	c->h = dh;
-}	
+}
 #endif
 
 static short
@@ -1219,7 +1219,7 @@ ob_remove(OBJECT *obtree, short obj)
 {
 	int parent, next, prev;
 	struct xa_aes_object object;
-	
+
 	if (obj <= 0)
 		return -1;
 
@@ -1253,7 +1253,7 @@ ob_remove(OBJECT *obtree, short obj)
 
 short
 ob_add(OBJECT *obtree, short parent, short aobj)
-{		
+{
 	short last_child;
 
 	if (aobj == parent || aobj == -1 || parent == -1)
@@ -1268,8 +1268,8 @@ ob_add(OBJECT *obtree, short parent, short aobj)
 		else
 			obtree[last_child].ob_next = aobj;
 
-/* 
-	JH: 04/15/2003 Incompatible with N.AES, TOS, etc... 
+/*
+	JH: 04/15/2003 Incompatible with N.AES, TOS, etc...
 	regarding to the objc_add documentation ob_head, ob_tail
 	has to be initialized by the application
 
@@ -1303,7 +1303,7 @@ ob_order(OBJECT *root, short object, ushort pos)
 		if (pos == -1)
 		{
 			current = root[parent].ob_tail;
-			
+
 			root[object ].ob_next = parent;
 			root[current].ob_next = object;
 			root[parent ].ob_tail = object;
@@ -1328,8 +1328,8 @@ STATIC void
 foreach_object(OBJECT *tree,
 		struct xa_aes_object parent,
 		struct xa_aes_object start,
-		short stopf,
-		short stops,
+		//short stopf,	/* unused! */
+		//short stops,	/* unused! */
 		bool(*f)(OBJECT *obtree, short obj, void *ret), void *data)
 {
 	struct xa_aes_object curr, next, stop;
@@ -1352,7 +1352,7 @@ uplink:
 
 		if (set_aesobj_uplink(&tree, &curr, &stop, &oblink))
 			goto uplink;
-		
+
 		if (dothings)
 		{
 			if ((*f)(aesobj_tree(&curr), aesobj_item(&curr), data))
@@ -1367,7 +1367,7 @@ uplink:
 		{
 downlink:
 			next = aesobj(aesobj_tree(&curr), aesobj_next(&curr));
-			
+
 			while (valid_aesobj(&next) && !same_aesobj(&next, &stop))
 			{
 				struct xa_aes_object tail = aesobj(aesobj_tree(&next), aesobj_tail(&next));
@@ -1383,13 +1383,13 @@ downlink:
 			curr = next;
 		}
 	} while (valid_aesobj(&curr) && !same_aesobj(&curr, &stop));
-	
+
 	clean_aesobj_links(&oblink);
 }
 
 struct anyflst_parms
 {
-	short	flags, f, s, mf, ms, ret, ret1;
+	short	flags, f, s, mf, ms, t, ret, ret1;
 	struct	xa_aes_object ret_object;
 };
 
@@ -1398,7 +1398,7 @@ count_flst(OBJECT *tree, short o, void *_data)
 {
 	struct anyflst_parms *d = _data;
 	short flg = 0;
-	
+
 	if ((!d->mf || !(tree[o].ob_flags & d->mf)) && (!d->ms || !(tree[o].ob_state & d->ms)))
 	{
 		if (d->flags & OBFIND_EXACTFLAG)
@@ -1432,7 +1432,7 @@ anyflst(OBJECT *tree, short o, void *_data)
 {
 	struct anyflst_parms *d = _data;
 	short flg = 0;
-	
+
 	if ((!d->mf || !(tree[o].ob_flags & d->mf)) && (!d->ms || !(tree[o].ob_state & d->ms)))
 	{
 		if (d->flags & OBFIND_EXACTFLAG)
@@ -1450,6 +1450,9 @@ anyflst(OBJECT *tree, short o, void *_data)
 		}
 		else if (!d->s || (tree[o].ob_state))
 			flg |= 2;
+
+		if( d->t && tree[o].ob_type != d->t )
+			flg = 0;
 	}
 
 	if (flg == 3)
@@ -1476,14 +1479,14 @@ ob_get_parent(OBJECT *tree, struct xa_aes_object obj)
 
 	curr = aesobj(tree, 0);
 	stop = inv_aesobj();
-	
+
 	parents = kmalloc(sizeof(*parents));
 	if (!parents)
 		return inv_aesobj();
 
 	parents->prv = NULL;
 	parents->this = inv_aesobj();
-	
+
 	do
 	{
 uplink:
@@ -1498,7 +1501,7 @@ uplink:
 		if (aesobj_head(&curr) != -1 && !aesobj_hidden(&curr))
 		{
 			struct par *pn = kmalloc(sizeof(*pn));
-			
+
 			pn->prv = parents;
 			pn->this = curr;
 			parents = pn;
@@ -1508,14 +1511,14 @@ uplink:
 		{
 downlink:
 			next = aesobj(aesobj_tree(&curr), aesobj_next(&curr));
-			
+
 			while (valid_aesobj(&next) && !same_aesobj(&next, &stop))
 			{
 				struct xa_aes_object tail = aesobj(aesobj_tree(&next), aesobj_tail(&next));
 				if (same_aesobj(&curr, &tail))
 				{
 					struct par *pn;
-					 
+
 					if ((pn = parents->prv))
 					{
 						kfree(parents);
@@ -1533,21 +1536,21 @@ downlink:
 	} while (valid_aesobj(&curr) && !same_aesobj(&curr, &stop));
 
 	curr = parents->this;
-	
+
 	while (parents)
 	{
 		struct par *pn = parents->prv;
 		kfree(parents);
 		parents = pn;
 	}
-	
+
 	DIAG((D_rsrc, NULL, "ob_get_parent: parent of %d in %lx is %d in %lx",
 		aesobj_item(&obj), aesobj_tree(&obj), aesobj_item(&curr), aesobj_tree(&curr)));
-	
+
 	clean_aesobj_links(&oblink);
 
 	return curr;
-	
+
 }
 #if 0
 struct xa_aes_object
@@ -1594,29 +1597,31 @@ ob_find_flag(OBJECT *tree, short f, short mf, short stopf)
 
 	d.flags = OBFIND_EXACTFLAG;
 	d.f = f;
+	d.t = 0;
 	d.s = 0;
 	d.mf = mf;
 	d.ms = 0;
 	d.ret = -1;
 	d.ret_object = inv_aesobj();
 
-	foreach_object(tree, aesobj(tree, 0), aesobj(tree, 0), stopf, 0, anyflst, &d);
+	foreach_object(tree, aesobj(tree, 0), aesobj(tree, 0), /*stopf, 0,*/ anyflst, &d);
 	return d.ret_object;
 }
 #endif
 STATIC struct xa_aes_object
-ob_find_any_flag(OBJECT *tree, short f, short mf, short stopf)
+ob_find_any_flag(OBJECT *tree, short f, short mf/*, short stopf*/)
 {
 	struct anyflst_parms d;
 
 	d.flags = 0;
 	d.f = f;
+	d.t = 0;
 	d.s = 0;
 	d.mf = mf;
 	d.ms = 0;
 	d.ret = -1;
 	d.ret_object = inv_aesobj();
-	foreach_object(tree, aesobj(tree, 0), aesobj(tree, 0), stopf, 0, anyflst, &d);
+	foreach_object(tree, aesobj(tree, 0), aesobj(tree, 0), /*stopf, 0,*/ anyflst, &d);
 	return d.ret_object;
 }
 /*
@@ -1634,12 +1639,13 @@ ob_count_flag(OBJECT *tree, short f, short mf, short stopf, short *count)
 	d.flags = OBFIND_EXACTFLAG;
 	d.f = f;
 	d.s = 0;
+	d.t = 0;
 	d.mf = mf;
 	d.ms = 0;
 	d.ret = 0;
 	d.ret1 = -1;
 
-	foreach_object(tree, aesobj(tree, 0), aesobj(tree, 0), stopf, 0, count_flst, &d);
+	foreach_object(tree, aesobj(tree, 0), aesobj(tree, 0), /*stopf, 0,*/ count_flst, &d);
 
 	if (count)
 		*count = d.ret;
@@ -1657,37 +1663,39 @@ short
 ob_count_any_flag(OBJECT *tree, short f, short mf, short stopf, short *count)
 {
 	struct anyflst_parms d;
-	
+
 	d.flags = 0;
 	d.f = f;
+	d.t = 0;
 	d.s = 0;
 	d.mf = mf;
 	d.ms = 0;
 	d.ret = 0;
 	d.ret1 = -1;
 
-	foreach_object(tree, aesobj(tree, 0), aesobj(tree, 0), stopf, 0, count_flst, &d);
+	foreach_object(tree, aesobj(tree, 0), aesobj(tree, 0), /*stopf, 0,*/ count_flst, &d);
 
 	if (count)
 		*count = d.ret;
 
-	return d.ret1;	
+	return d.ret1;
 }
 #endif
 struct xa_aes_object
-ob_find_any_flst(OBJECT *tree, short f, short s, short mf, short ms, short stopf, short stops)
+ob_find_any_flst(OBJECT *tree, short f, short s, short mf, short ms/*, short stopf, short stops*/)
 {
 	struct anyflst_parms d;
 
 	d.flags = 0;
 	d.f = f;
+	d.t = 0;
 	d.s = s;
 	d.mf = mf;
 	d.ms = ms;
 	d.ret = -1;
 	d.ret_object = inv_aesobj();
 
-	foreach_object(tree, aesobj(tree, 0), aesobj(tree, 0), stopf, stops, anyflst, &d);
+	foreach_object(tree, aesobj(tree, 0), aesobj(tree, 0), /*stopf, stops,*/ anyflst, &d);
 	return d.ret_object;
 }
 
@@ -1695,16 +1703,38 @@ struct xa_aes_object
 ob_find_flst(OBJECT *tree, short f, short s, short mf, short ms, short stopf, short stops)
 {
 	struct anyflst_parms d;
-	
+
 	d.flags = OBFIND_EXACTFLAG|OBFIND_EXACTSTATE;
 	d.f = f;
+	d.t = 0;
 	d.s = s;
 	d.mf = mf;
 	d.ms = ms;
 	d.ret = -1;
 	d.ret_object = inv_aesobj();
 
-	foreach_object(tree, aesobj(tree, 0), aesobj(tree, 0), stopf, stops, anyflst, &d);
+	foreach_object(tree, aesobj(tree, 0), aesobj(tree, 0), /*stopf, stops,*/ anyflst, &d);
+	return d.ret_object;
+}
+
+/*
+ * find object with type t
+ */
+struct xa_aes_object
+ob_find_type(OBJECT *tree, short t )
+{
+	struct anyflst_parms d;
+
+	d.flags = 0;
+	d.f = 0;
+	d.t = t;
+	d.s = 0;
+	d.mf = 0;
+	d.ms = 0;
+	d.ret = -1;
+	d.ret_object = inv_aesobj();
+
+	foreach_object(tree, aesobj(tree, 0), aesobj(tree, 0), /*0, 0,*/ anyflst, &d);
 	return d.ret_object;
 }
 
@@ -1723,16 +1753,16 @@ ob_find_next_any_flagstate(struct widget_tree *wt, struct xa_aes_object parent,
 	struct oblink_spec *oblink = NULL;
 	struct xa_aes_object curr, next, stop, co;
 	RECT r;
-	
+
 	cx = cy = ax = 32000;
 
 	co = stop = inv_aesobj();
 	cf = 0;
-	
+
 // 	if (d) display(" ob_find_any_next_flagstate, parent %d, start %d", aesobj_item(&parent), aesobj_item(&start));
-	
+
 	DIAG((D_rsrc, NULL,"ob_find_any_next_flagstate, parent %d, start %d", aesobj_item(&parent), aesobj_item(&start)));
-	
+
 	if (aesobj_item(&start) <= 0)
 	{
 		if (aesobj_head(&parent) > 0)
@@ -1743,7 +1773,7 @@ ob_find_next_any_flagstate(struct widget_tree *wt, struct xa_aes_object parent,
 		}
 		else goto done;
 	}
-	
+
 	if (aesobj_head(&parent) == -1)
 	{
 // 		if (d) display("parent head -1");
@@ -1753,7 +1783,7 @@ ob_find_next_any_flagstate(struct widget_tree *wt, struct xa_aes_object parent,
 	curr = aesobj(tree, 0);
 	x = 0;
 	y = 0;
-	
+
 	if ((flags & OBFIND_FIRST))
 	{
 		r.x = r.y = -1;
@@ -1774,9 +1804,9 @@ ob_find_next_any_flagstate(struct widget_tree *wt, struct xa_aes_object parent,
 	}
 	else
 		obj_rectangle(wt/*tree*/, start, &r);
-	
+
 // 	if (d) display("  realstart %d (%d/%d/%d/%d)", aesobj_item(&start), r);
-	
+
 	do
 	{
 		flg = 0;
@@ -1802,9 +1832,9 @@ uplink:
 // 			}
 			goto uplink;
 		}
-		
+
 		this = aesobj_ob(&curr);
-		
+
 		if (dothings && rel_depth > 0 && (!mf || !(this->ob_flags & mf)) && (!ms || !(this->ob_state & ms)))
 		{
 			if (flags & OBFIND_EXACTFLAG)
@@ -1856,7 +1886,7 @@ uplink:
 							cx = x - r.x;
 							if (cx < 0)
 								cx = -cx;
-					
+
 							if (cx < ax || (cx == ax && (r.y - y) < cy))
 							{
 								ax = cx;
@@ -1902,7 +1932,7 @@ uplink:
 						}
 					}
 				}
-				
+
 			}
 			else
 			{
@@ -1968,14 +1998,14 @@ uplink:
 									co = curr;
 								}
 							}
-						}		
+						}
 					}
 				}
 			}
-			
+
 			x -= this->ob_x;
 			y -= this->ob_y;
-			
+
 		}
 
 		if (aesobj_head(&curr) != -1 && (!aesobj_hidden(&curr) || (flags & OBFIND_HIDDEN)))
@@ -1990,7 +2020,7 @@ uplink:
 		{
 downlink:
 			next = aesobj(aesobj_tree(&curr), aesobj_next(&curr));
-			
+
 			while (valid_aesobj(&next) && !same_aesobj(&next, &stop))
 			{
 				struct xa_aes_object tail = aesobj(aesobj_tree(&next), aesobj_tail(&next));
@@ -2015,7 +2045,7 @@ downlink:
 				goto downlink;
 			}
 			curr = next;
-			
+
 // 			if (d) display(" next %d", aesobj_item(&curr));
 		}
 	} while (valid_aesobj(&curr) && !same_aesobj(&curr, &stop) && rel_depth > 0);
@@ -2026,7 +2056,7 @@ downlink:
 
 		co = inv_aesobj();
 	}
-	
+
 done:
 	clean_aesobj_links(&oblink);
 
@@ -2038,7 +2068,7 @@ STATIC struct xa_aes_object
 ob_find_next_any_flag(OBJECT *tree, short start, short f)
 {
 	short o = start;
-	struct xa_aes_object object = ob_find_any_flag(tree, OF_LASTOB, 0, 0);
+	struct xa_aes_object object = ob_find_any_flag(tree, OF_LASTOB, 0/*, 0*/);
 
 	DIAGS(("ob_find_next_any_flag: start=%d, flags=%x, lastob=%d",
 		start, f, object.item));
@@ -2049,7 +2079,7 @@ ob_find_next_any_flag(OBJECT *tree, short start, short f)
 	{
 		return inv_aesobj();
 	}
-	
+
 	/*
 	 * Start at last object in tree? Wrap if so
 	 */
@@ -2080,7 +2110,7 @@ short
 ob_find_prev_any_flag(OBJECT *tree, short start, short f)
 {
 	short o = start;
-	struct xa_aes_object object = ob_find_any_flag(tree, OF_LASTOB, 0, 0);
+	struct xa_aes_object object = ob_find_any_flag(tree, OF_LASTOB, 0/*, 0*/);
 
 	/*
 	 * If start == -1, start at last object.
@@ -2092,7 +2122,7 @@ ob_find_prev_any_flag(OBJECT *tree, short start, short f)
 	 */
 	if (object.item < 0 || object.item < start)
 		return -1;
-	
+
 	/*
 	 * Start at first object in tree? Wrap if so
 	 */
@@ -2137,7 +2167,7 @@ ob_find_cancel(OBJECT *ob)
 				e = t + l;
 				while (*s == ' ')
 					s++;
-				while (*--e == ' ') 
+				while (*--e == ' ')
 					;
 				*++e = '\0';
 
@@ -2160,6 +2190,9 @@ ob_find_cancel(OBJECT *ob)
 	return inv_aesobj();
 }
 
+/*
+ * define '_'-shortcuts
+ */
 void
 ob_fix_shortcuts(OBJECT *obtree, bool not_hidden)
 {
@@ -2174,84 +2207,97 @@ ob_fix_shortcuts(OBJECT *obtree, bool not_hidden)
 	char nk;
 
 	DIAG((D_rsrc, NULL, "ob_fix_shortcuts: tree=%lx)", obtree));
-	
+
 	objs = ob_count_objs(obtree, 0, -1);
 	DIAGS((" -- %d objects", objs));
-	
 	len = ((long)objs + 1) * sizeof(struct sc);
 
 	sc = kmalloc(len);
-	
+
 	DIAGS((" -- sc = %lx", sc));
 
 	if (sc)
 	{
-		int i = 0;
+		int i, k;
+		short flag = 0, flag2 = 0;
 		bzero(sc, len);
-		
-		do {
-			OBJECT *ob = obtree + i;
-			
-			DIAGS((" -- obj %d, type %x (n=%d, h=%d, t=%d)",
-				i, ob->ob_type, ob->ob_next, ob->ob_head, ob->ob_tail));
 
-			if ((ob->ob_state & OS_WHITEBAK) && (!not_hidden || !(ob->ob_flags & OF_HIDETREE)))
+		/* touchexit first */
+		for( k = 0; k < 2; k++ )
+		{
+			if( k == 0 )
+				flag = OF_TOUCHEXIT | OF_DEFAULT | OF_EXIT;
+			else{
+				flag2 = flag;
+				flag = OF_SELECTABLE | OF_EDITABLE;
+			}
+			for( i = 1; i <= objs; i++ )
 			{
-				short ty = ob->ob_type & 0xff;
-			
-				if (ty == G_BUTTON || ty == G_STRING)
+				OBJECT *ob = obtree + i;
+
+				DIAGS((" -- obj %d, type %x (n=%d, h=%d, t=%d)",
+					i, ob->ob_type, ob->ob_next, ob->ob_head, ob->ob_tail));
+
+				/* look for any buttons match flag and not flag2 - WHITEBAK? */
+				if ((ob->ob_flags & flag) && !(ob->ob_flags & flag2) && (!not_hidden || !(ob->ob_flags & OF_HIDETREE)))
 				{
-					int j = (ob->ob_state >> 8) & 0x7f;
-// 					int nc = 0;
-					DIAGS((" -- obj %d, und = %d", i, j));
-					if (j < 126)
+					short ty = ob->ob_type & 0xff;
+
+					if (ty == G_BUTTON || ty == G_STRING )
 					{
-						char *s = object_get_spec(ob)->free_string;
-// 						display(" '%s'", s);
-						if (s)
+						int j = (ob->ob_state >> 8) & 0x7f;
+						DIAGS((" -- obj %d, und = %d", i, j));
+						if (j < 126)
 						{
-							int slen = strlen(s);
-							int nc = 0;
-							
-							if (j < slen)
+							char *s = object_get_spec(ob)->free_string;
+							if (s)
 							{
-								scuts = sc;
-								nk = toupper(*(s + j));
-								
-// 								ndisplay("got %c '", nk);
-								
-								while (scuts->c && nc < slen)
+								int slen = strlen(s);
+								int nc;
+
+								/* skip non-alpha-numeric-chars in start of free_string
+								*/
+								for( nc = 0; nc < slen && !isalnum(s[nc]); nc++/*,s++*/ );
+								if( j == 0 )
+									j = nc;
+								if (j < slen)
 								{
-// 									ndisplay(",%c", scuts->c);
-									if (scuts->c == nk)
+									scuts = sc;
+									nk = toupper(*(s + j));
+
+									while (scuts->c )
 									{
-										nk = toupper(*(s + nc));
-										nc++;
-										scuts = sc;
-// 										ndisplay("-u->nk=%c(%d)", nk, nc);
+										if (scuts->c == nk )
+										{
+											/* remove // to intentionally freeze XaAES! */
+											//if( j == 0 || nc > 0 )
+											//	nc++;
+											if( nc < slen )
+												nk = toupper(*(s + nc++));
+											else
+												break;
+											scuts = sc;
+										}
+										else
+											scuts++;
 									}
-									else
-										scuts++;
-								}
-// 								display("'");
-								if (!scuts->c)
-								{
-// 									display(" free");
-									scuts->c = nk;
-									scuts->o = i;
-								}
-								if (nc)
-								{
-									if (nc <= slen)
+									if (!scuts->c )
 									{
-// 										display(" remaped from %d(%c) to %d(%c)", j, *(s + j), nc - 1, *(s + (nc - 1)));
-										nc--;
-										ob->ob_state = (ob->ob_state & 0x80ff) | ((nc & 0x7f) << 8);
-									}
-									else
-									{
-// 										display(" no free keys");
-										ob->ob_state &= (~OS_WHITEBAK & 0x80ff);
+										scuts->c = nk;
+										scuts->o = i;
+										if( nc <= j )
+											nc = j;	/* first non-white or preselected char */
+										else
+											if( nc > 0 )
+												nc--;		/* if searched and found nc is 1 char too far */
+										if (nc < slen)
+										{
+											ob->ob_state = (ob->ob_state & 0x80ff) | ((nc & 0x7f) << 8) | OS_WHITEBAK;// | 0x8000;
+										}
+										else
+										{
+											ob->ob_state &= (~OS_WHITEBAK & 0x80ff);
+										}
 									}
 								}
 							}
@@ -2259,11 +2305,11 @@ ob_fix_shortcuts(OBJECT *obtree, bool not_hidden)
 					}
 				}
 			}
-		} while ( !(obtree[i++].ob_flags & OF_LASTOB));
+		}
 
 		kfree(sc);
 	}
-	DIAGS((" -- ob_fix_shortcuts: done"));	
+	DIAGS((" -- ob_fix_shortcuts: done"));
 }
 
 struct xa_aes_object
@@ -2322,22 +2368,28 @@ obj_init_focus(XA_TREE *wt, short flags)
 	{
 		struct xa_aes_object o;
 		OBJECT *obtree = wt->tree;
-		
+
 		o = ob_find_next_any_flagstate(wt, aesobj(obtree, 0), inv_aesobj(), OF_EDITABLE, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_EXACTFLAG);
 		if (valid_aesobj(&o))
+		{
 			wt->focus = o;
+		}
 		else if (!(flags & OB_IF_ONLY_EDITS))
 		{
 			{
 				o = ob_find_next_any_flagstate(wt, aesobj(obtree, 0), inv_aesobj(), OF_DEFAULT, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_EXACTFLAG);
 				if (valid_aesobj(&o) && (aesobj_flags(&o) & (OF_SELECTABLE|OF_EXIT|OF_TOUCHEXIT)))
+				{
 					wt->focus = o;
+				}
 			}
 			if (!focus_set(wt))
 			{
 				o = ob_find_next_any_flagstate(wt, aesobj(obtree, 0), inv_aesobj(), OF_SELECTABLE|OF_EXIT|OF_TOUCHEXIT, OF_HIDETREE, 0, OS_DISABLED, 0, 0, 0);
 				if (valid_aesobj(&o))
+				{
 					wt->focus = o;
+				}
 			}
 		}
 	}
@@ -2347,7 +2399,7 @@ void
 obj_set_g_popup(XA_TREE *swt, struct xa_aes_object sobj, POPINFO *pinf)
 {
 	short type;
-	
+
 	type = aesobj_type(&sobj) & 0xff;
 
 	if (type == G_BUTTON || type == G_POPUP)
@@ -2361,7 +2413,7 @@ void
 obj_unset_g_popup(XA_TREE *swt, struct xa_aes_object sobj, char *txt)
 {
 	short type;
-	
+
 	type = aesobj_type(&sobj) & 0xff;
 
 	if (type == G_POPUP)
@@ -2373,6 +2425,9 @@ obj_unset_g_popup(XA_TREE *swt, struct xa_aes_object sobj, char *txt)
 
 /*
  * Get the true screen coords of an object
+ *
+ * todo: make this and ob_offset one
+ *
  */
 short
 obj_offset(XA_TREE *wt, struct xa_aes_object object, short *mx, short *my)
@@ -2381,7 +2436,7 @@ obj_offset(XA_TREE *wt, struct xa_aes_object object, short *mx, short *my)
 	struct xa_aes_object current = aesobj(obtree, 0), stop = inv_aesobj(), next;
 	struct oblink_spec *oblink = NULL;
 	short x = -wt->dx, y = -wt->dy;
-	
+
 	DIAG((D_objc, NULL, "obj_offset: obtree=%lx, obj=%d, xret=%lx, yret=%lx",
 		obtree, aesobj_item(&object), mx, my));
 	DIAG((D_objc, NULL, " ---- --  : dx=%d, dy=%d", wt->dx, wt->dy));
@@ -2395,7 +2450,7 @@ uplink:
 		{
 			x += aesobj_getx(&current);
 			y += aesobj_gety(&current);
-			
+
 			*mx = x;
 			*my = y;
 
@@ -2404,7 +2459,7 @@ uplink:
 			clean_aesobj_links(&oblink);
 			return 1;
 		}
-		
+
 		if (set_aesobj_uplink(&obtree, &current, &stop, &oblink))
 			goto uplink;
 
@@ -2418,9 +2473,9 @@ uplink:
 		else
 		{
 			/* Try for a sibling */
-downlink:			
+downlink:
 			next = aesobj(aesobj_tree(&current), aesobj_next(&current));
-			
+
 			while (valid_aesobj(&next) && !same_aesobj(&next, &stop))
 			{
 				struct xa_aes_object tail = aesobj(aesobj_tree(&next), aesobj_tail(&next));
@@ -2460,7 +2515,7 @@ ob_offset(OBJECT *obtree, struct xa_aes_object object, short *mx, short *my)
 	struct xa_aes_object current = aesobj(obtree, 0), stop = inv_aesobj();
 	struct oblink_spec *oblink = NULL;
 	short x = 0, y = 0;
-	
+
 	DIAG((D_objc, NULL, "ob_offset: obtree=%lx, obj=%d, xret=%lx, yret=%lx",
 		obtree, aesobj_item(&object), mx, my));
 
@@ -2473,7 +2528,7 @@ uplink:
 		{
 			x += aesobj_getx(&current);
 			y += aesobj_gety(&current);
-			
+
 			*mx = x;
 			*my = y;
 
@@ -2495,9 +2550,9 @@ uplink:
 		else
 		{
 			/* Try for a sibling */
-downlink:			
+downlink:
 			next = aesobj(aesobj_tree(&current), aesobj_next(&current));
-			
+
 			while (valid_aesobj(&next) && !same_aesobj(&next, &stop))
 			{
 				struct xa_aes_object tail = aesobj(aesobj_tree(&next), aesobj_tail(&next));
@@ -2567,7 +2622,7 @@ obj_area(XA_TREE *wt, struct xa_aes_object obj, RECT *c)
 {
 	bool found = true;
 	RECT r;
-	
+
 	if (!obj_offset(wt, obj, &c->x, &c->y))
 	{
 		obj = aesobj(wt->tree, 0);
@@ -2587,7 +2642,7 @@ obj_area(XA_TREE *wt, struct xa_aes_object obj, RECT *c)
 /*
  * Calculate the differance between border corrections for two
  * objects. For example a slider where the slide parent is a non-3d
- * object while the slider is, we need to take 3d border offsets 
+ * object while the slider is, we need to take 3d border offsets
  * into accrount when positioning/sizing the slider.
  */
 void
@@ -2614,7 +2669,7 @@ ob_spec_xywh(OBJECT *obtree, short obj, RECT *r)
 		case G_IMAGE:
 		{
 			BITBLK *bb = object_get_spec(obtree + obj)->bitblk;
-			
+
 			r->x = bb->bi_x;
 			r->y = bb->bi_y;
 			r->w = bb->bi_wb;
@@ -2648,7 +2703,7 @@ object_spec_wh(OBJECT *ob, short *w, short *h)
 		case G_IMAGE:
 		{
 			BITBLK *bb = object_get_spec(ob)->bitblk;
-			
+
 			*w = bb->bi_wb;
 			*h = bb->bi_hl;
 			break;
@@ -2697,30 +2752,30 @@ obj_find(XA_TREE *wt, struct xa_aes_object object, short depth, short mx, short 
 		object, depth, obtree, obtree->ob_x, obtree->ob_y, obtree->ob_width, obtree->ob_height,
 		mx, my));
 	do {
-	
+
 uplink:
 		if (same_aesobj(&current, &object))	/* We can start considering objects at this point */
 		{
 			start_checking = true;
 			rel_depth = 0;
 		}
-		
+
 		if (!aesobj_hidden(&current))
 		{
 			if (set_aesobj_uplink(&obtree, &current, &stop, &oblink))
 				goto uplink;
-			
+
 			if (start_checking)
 			{
 				RECT cr;
 				if (depth & 0x8000)
 					(*wt->objcr_api->obj_offsets)(wt, aesobj_ob(&current), &or);
-			
+
 				cr.x = x + aesobj_getx(&current) + or.x;
 				cr.y = y + aesobj_gety(&current) + or.y;
 				cr.w = aesobj_getw(&current) - or.w;
 				cr.h = aesobj_geth(&current) - or.h;
-			
+
 				if (   cr.x		<= mx
 				    && cr.y		<= my
 				    && cr.x + cr.w	> mx
@@ -2775,7 +2830,7 @@ downlink:
 				goto downlink;
 			}
 			current = next;
-		}	
+		}
 	}
 	while (valid_aesobj(&current) && !same_aesobj(&current, &stop) && (rel_depth > 0));
 
@@ -2786,7 +2841,7 @@ downlink:
 		if (!xa_rect_clip(c, &r, &r))
 			pos_object = inv_aesobj();
 	}
-	
+
 	DIAG((D_objc, NULL, "obj_find: found %d", aesobj_item(&pos_object)));
 
 	return pos_object;
@@ -2811,19 +2866,19 @@ ob_find(OBJECT *obtree, short object, short depth, short mx, short my)
 			start_checking = true;
 			rel_depth = 0;
 		}
-		
+
 		if (start_checking && !(obtree[current].ob_flags & OF_HIDETREE))
 		{
 			RECT cr;
-			
+
 			if (depth & 0x8000)
 				object_offsets(obtree + current, &or);
-			
+
 			cr.x = x + obtree[current].ob_x + or.x;
 			cr.y = y + obtree[current].ob_y + or.y;
 			cr.w = obtree[current].ob_width - or.w;
 			cr.h = obtree[current].ob_height - or.h;
-			
+
 			if (   cr.x		<= mx
 			    && cr.y		<= my
 			    && cr.x + cr.w	> mx
@@ -2859,7 +2914,7 @@ ob_find(OBJECT *obtree, short object, short depth, short mx, short my)
 				rel_depth--;
 			}
 			current = next;
-		}	
+		}
 	}
 	while ((current != -1) && (rel_depth > 0));
 
@@ -2869,6 +2924,7 @@ ob_find(OBJECT *obtree, short object, short depth, short mx, short my)
 }
 #endif
 
+#if INCLUDE_UNUSED
 bool
 obtree_is_menu(OBJECT *tree)
 {
@@ -2885,18 +2941,18 @@ obtree_is_menu(OBJECT *tree)
 
 	return m;
 }
-
+#endif
 bool
 obtree_has_default(OBJECT *obtree)
 {
-	struct xa_aes_object o = ob_find_any_flst(obtree, OF_DEFAULT, 0, 0, 0, 0, 0);
+	struct xa_aes_object o = ob_find_any_flst(obtree, OF_DEFAULT, 0, 0, 0/*, 0, 0*/);
 	return o.item >= 0 ? true : false;
 }
 #if INCLUDE_UNUSED
 bool
 obtree_has_exit(OBJECT *obtree)
 {
-	struct xa_aes_object o = ob_find_any_flst(obtree, OF_EXIT, 0, 0, 0, 0, 0);
+	struct xa_aes_object o = ob_find_any_flst(obtree, OF_EXIT, 0, 0, 0/*, 0, 0*/);
 	return o.item >= 0 ? true : false;
 }
 #endif
@@ -2904,9 +2960,9 @@ obtree_has_exit(OBJECT *obtree)
 bool
 obtree_has_touchexit(OBJECT *obtree)
 {
-	struct xa_aes_object o = ob_find_any_flst(obtree, OF_TOUCHEXIT, 0, 0, 0, 0, 0);
+	struct xa_aes_object o = ob_find_any_flst(obtree, OF_TOUCHEXIT, 0, 0, 0/*, 0, 0*/);
 	return o.item >= 0 ? true : false;
-} 
+}
 #endif
 /* HR 120601: Objc_Change:
  * We go back thru the parents of the object until we meet a opaque object.
@@ -2955,7 +3011,7 @@ obj_draw(XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_object obj, int t
 
 	if (!obj_area(wt, obj, &or))
 		return;
-	
+
 	hidem();
 
 	if (transdepth == -2)
@@ -2973,7 +3029,7 @@ obj_draw(XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_object obj, int t
 			transdepth--;
 		}
 	}
-	
+
 	if (rl) {
 		RECT r;
 		do {
@@ -3007,11 +3063,11 @@ delete_marked(struct objc_edit_info *ei, char *txt)
 {
 	int x, sl = strlen(txt);
 	char *s, *d;
-	
+
 	if (ei->m_end > ei->m_start) {
 		s = txt + ei->m_end;
 		d = txt + ei->m_start;
-		
+
 		for ( x = sl - ei->m_end + 1; x > 0; x--)
 			*d++ = *s++;
 
@@ -3078,7 +3134,7 @@ ed_scrap_copy(struct objc_edit_info *ei, TEDINFO *ed_txt)
 				kernel_write(f, ed_txt->te_ptext + ei->m_start, ei->m_end - ei->m_start);
 			else
 				kernel_write(f, ed_txt->te_ptext, len);
-			
+
 			kernel_close(f);
 		}
 	}
@@ -3121,7 +3177,7 @@ ed_scrap_paste(struct objc_edit_info *ei, TEDINFO *ed_txt)
 					{
 						cnt = 0;
 						break;
-					}					
+					}
 				}
 			}
 		}
@@ -3134,7 +3190,7 @@ ed_scrap_paste(struct objc_edit_info *ei, TEDINFO *ed_txt)
 	return false;
 }
 
-/* Johan's versions of these didn't work on my system, so I've redefined them 
+/* Johan's versions of these didn't work on my system, so I've redefined them
    - This is faster anyway */
 
 static const unsigned char character_type[] =
@@ -3180,7 +3236,7 @@ obj_ed_char(
 		ted = &xted->ti;
 
 	txt = ted->te_ptext;
-	
+
 	DIAG((D_objc, NULL, "ed_char keycode=0x%04x", keycode));
 
 	switch (keycode)
@@ -3189,7 +3245,7 @@ obj_ed_char(
 	{
 		update = false;
 		break;
-	}	
+	}
 	case SC_ESC:	/* 0x011b */	/* ESCAPE clears the field */
 	{
 		txt[0] = '\0';
@@ -3244,7 +3300,7 @@ obj_ed_char(
 			if (txt[ei->pos])
 			{
 				short npos = ei->pos + 1;
-			
+
 				if (ei->m_start == ei->m_end)
 				{
 					ei->m_start = ei->pos;
@@ -3254,7 +3310,7 @@ obj_ed_char(
 					ei->m_end = npos;
 				else
 					ei->m_start = npos;
-			
+
 				ei->pos++;
 				update = true;
 			}
@@ -3293,7 +3349,7 @@ obj_ed_char(
 			if (ei->pos)
 			{
 				short npos = ei->pos - 1;
-		
+
 				if (ei->m_start == ei->m_end)
 				{
 					ei->m_end = ei->pos;
@@ -3303,7 +3359,7 @@ obj_ed_char(
 					ei->m_end = npos;
 				else
 					ei->m_start = npos;
-			
+
 				ei->pos--;
 				update = true;
 			}
@@ -3414,9 +3470,9 @@ obj_ed_char(
 			break;
 		default:
 			tmask = 0;
-			break;			
+			break;
 		}
-		
+
 		if (!tmask)
 		{
 			for (n = x = 0; ted->te_ptmplt[n]; n++)
@@ -3452,12 +3508,8 @@ obj_ed_char(
 
 		update = true;
 
-		if( !tmask )
-			BLOG((0, "ed_char default:keycode=0x%04x txt=%s n=%d update=%d tmask=%x valid=%c pos=%d",
-				keycode, txt, n, update, tmask, ted->te_pvalid[n], ei->pos));
-
 		break;
-	}
+	}	/*/default*/
 	}	/*/switch (keycode)*/
 // 	ei->pos = cursor_pos;
 	return update;
@@ -3524,32 +3576,32 @@ obj_xED_INIT(struct widget_tree *wt,
 	 *       applications.
 	 */
 	{
-		/* Ozk: 
+		/* Ozk:
 		 * do things here to end edit of current obj...
 		 */
 		/* --- */
-		
+
 // 		display("xED_INIT: ei=%lx", ei);
 // 		display(" -- ted %lx, xted %lx, oted %lx", ted, ei, ei->p_ti);
 // 		display(" -- ptext %lx, txtlen %d", ted->te_ptext, ted->te_txtlen);
 // 		display(" -- text '%s'", ted->te_ptext);
-		
+
 		if (*(ted->te_ptext) == '@')
 			*(ted->te_ptext) = 0;
 
 		p = strlen(ted->te_ptext);
 		if (pos && (pos == -1 || pos > p))
 			pos = p;
-		
+
 		ei->m_start = 0;
-			
+
 		if (flags & SETMARKS)
 			ei->m_end = pos;
 		else
 			ei->m_end = 0;
 		ei->t_offset = 0;
 		ei->p_offset = 0;
-		
+
 		ei->pos = pos;
 
 		if (flags & SETACTIVE)
@@ -3589,7 +3641,7 @@ obj_ED_INIT(struct widget_tree *wt,
 	 */
 	if ( chk_edobj(obtree, obj, last) && (ted = object_get_tedinfo(obtree + obj, &xted)) )
 	{
-		/* Ozk: 
+		/* Ozk:
 		 * do things here to end edit of current obj...
 		 */
 		/* --- */
@@ -3600,7 +3652,7 @@ obj_ED_INIT(struct widget_tree *wt,
 		 * of the text to edit.
 		 */
 		set_edit(ei, wt->tree, obj);
-		
+
 		if (*(ted->te_ptext) == '@')
 			*(ted->te_ptext) = 0;
 
@@ -3608,11 +3660,11 @@ obj_ED_INIT(struct widget_tree *wt,
 
 		if (pos && (pos == -1 || pos > p))
 			pos = p;
-		
+
 		if (xted_ret && xted)
 		{
 			ei->m_start = 0;
-			
+
 			if (flags & SETMARKS)
 				ei->m_end = pos;
 			else
@@ -3622,7 +3674,7 @@ obj_ED_INIT(struct widget_tree *wt,
 		}
 		else
 			ei->m_start = ei->m_end = 0;
-		
+
 		ei->pos = pos;
 
 		DIAGS(("ED_INIT: type %d, te_ptext='%s', %lx", obtree[obj].ob_type, ted->te_ptext, (long)ted->te_ptext));
@@ -3743,13 +3795,13 @@ obj_edit(XA_TREE *wt,
 			case ED_INIT:
 			{
 				hidem();
-				
+
 				obj_ED_INIT(wt, &wt->e, obj.item, -1, last, CLRMARKS, NULL, NULL, &old_ed_obj);
-				
+
 				if (redraw)
 					(*wt->objcr_api->eor_cursor)(wt, v, rl);
 				wt->e.c_state ^= OB_CURS_EOR;
-				
+
 				showm();
 				pos = wt->e.pos;
 				break;
@@ -3779,7 +3831,7 @@ obj_edit(XA_TREE *wt,
 					 * obtree and perform edit on that one. This fixes BoinkOut2's
 					 * 'set timing value' dialog. Wondering if we should do automatic
 					 * ED_INIT in this case.... ?
-					 * 
+					 *
 					 */
 
 						if (!valid_aesobj(&obj))
@@ -3799,7 +3851,7 @@ obj_edit(XA_TREE *wt,
 							}
 							else
 								obj_ed_char(&wt->e, ted, NULL, keycode);
-								
+
 							pos = wt->e.pos;
 						}
 					}
@@ -3822,7 +3874,7 @@ obj_edit(XA_TREE *wt,
 						}
 						else
 							obj_ed_char(ei, ted, NULL, keycode);
-					
+
 						pos = ei->pos;
 					}
 					showm();
@@ -3833,7 +3885,7 @@ obj_edit(XA_TREE *wt,
 			{
 // 				if (!string)
 // 					break;
-				
+
 // 				if (!keycode)
 // 					obj_ED_INIT(wt, &wt->e, obj.item, -1, last, CLRMARKS, NULL, NULL, &old_ed_obj);
 // 				else
@@ -3851,7 +3903,7 @@ obj_edit(XA_TREE *wt,
 					 * obtree and perform edit on that one. This fixes BoinkOut2's
 					 * 'set timing value' dialog. Wondering if we should do automatic
 					 * ED_INIT in this case.... ?
-					 * 
+					 *
 					 */
 
 						if (!valid_aesobj(&obj))
@@ -3868,7 +3920,7 @@ obj_edit(XA_TREE *wt,
 								obj_ed_char(&wt->e, ted, NULL, 0x011b);
 								while (*string)
 									obj_ed_char(&wt->e, ted, NULL, *string++);
-								
+
 								obj_draw(wt, v, editfocus(&wt->e), -1, clip, rl, 0);
 								(*wt->objcr_api->eor_cursor)(wt, v, rl);
 							}
@@ -3877,7 +3929,7 @@ obj_edit(XA_TREE *wt,
 								obj_ed_char(&wt->e, ted, NULL, 0x011b);
 								while (*string)
 									obj_ed_char(&wt->e, ted, NULL, *string++);
-							}	
+							}
 							pos = wt->e.pos;
 						}
 					}
@@ -3897,7 +3949,7 @@ obj_edit(XA_TREE *wt,
 							obj_ed_char(ei, ted, NULL, 0x011b);
 							while (*string)
 								obj_ed_char(ei, ted, NULL, *string++);
-							
+
 							obj_draw(wt, v, obj, -1, clip, rl, 0);
 							(*wt->objcr_api->eor_cursor)(wt, v, rl);
 						}
@@ -3907,7 +3959,7 @@ obj_edit(XA_TREE *wt,
 							while (*string)
 								obj_ed_char(ei, ted, NULL, *string++);
 						}
-					
+
 						pos = ei->pos;
 					}
 					showm();
@@ -3917,13 +3969,13 @@ obj_edit(XA_TREE *wt,
 			case ED_CRSR:
 			{
 				hidem();
-				
+
 				obj_ED_INIT(wt, &wt->e, obj.item, pos, last, CLRMARKS, NULL, NULL, &old_ed_obj);
-				
+
 				if (redraw)
 					(*wt->objcr_api->eor_cursor)(wt, v, rl);
 				wt->e.c_state ^= OB_CURS_EOR;
-				
+
 				showm();
 				pos = wt->e.pos;
 				break;
@@ -3953,21 +4005,21 @@ obj_edit(XA_TREE *wt,
 			case ED_INIT:
 			{
 				ei = wt->ei;
-				
+
 				if (ei && same_aesobj(&ei->o, &obj))
 					xted = ei;
 				else if (valid_aesobj(&obj))
 					ted = object_get_tedinfo(aesobj_ob(&obj), &xted);
-				
+
 				if (!ei || ei != xted)
 				{
 					hidem();
-					
+
 					if (ei)
 					{
 						obj_xED_END(wt, v, ei, redraw, clip, rl);
 					}
-						
+
 					/* Ozk:
 					 * If xted is NULL, obj is not a valid object.
 					 * We then check if obj is -1, in which case we
@@ -3991,7 +4043,7 @@ obj_edit(XA_TREE *wt,
 					else
 					{
 						ei = xted;
-					
+
 						obj_xED_INIT(wt, ei, pos, SETMARKS|SETACTIVE);
 						(*wt->objcr_api->set_cursor)(wt, v, ei);
 // 						enable_objcursor(wt, v);
@@ -4036,7 +4088,7 @@ obj_edit(XA_TREE *wt,
 			}
 		#endif
 			case ED_CRSROFF:
-			{	
+			{
 				if ((ei = wt->ei))
 					(*wt->objcr_api->undraw_cursor)(wt, v, rl, redraw);
 				break;
@@ -4057,16 +4109,16 @@ obj_edit(XA_TREE *wt,
 				 */
 
 				ei = wt->ei;
-				
+
 				if (ei && same_aesobj(&ei->o, &obj))
 					xted = ei;
 				else if (valid_aesobj(&obj))
 					ted = object_get_tedinfo(aesobj_ob(&obj), &xted);
-				
+
 				if (!ei || ei != xted)
 				{
 					DIAGS((" -- obj_edit: on object=%d without cursor focus", obj));
-					
+
 					if ((ei = xted))
 					{
 						obj_xED_INIT(wt, ei, pos, CLRMARKS);
@@ -4078,11 +4130,11 @@ obj_edit(XA_TREE *wt,
 
 				if (ei)
 				{
-				
+
 					DIAGS((" -- obj_edit: ted=%lx", (long)&xted->ti));
 
 					if (ei != wt->ei)
-					
+
 					hidem();
 					if (drwcurs)
 						(*wt->objcr_api->undraw_cursor)(wt, v, rl, redraw);
@@ -4112,12 +4164,12 @@ obj_edit(XA_TREE *wt,
 			case ED_MARK:
 			{
 				ei = wt->ei;
-				
+
 				if (ei && same_aesobj(&ei->o, &obj))
 					xted = ei;
 				else if (valid_aesobj(&obj))
 					ted = aesobj_get_tedinfo(&obj, &xted);
-				
+
 				if (!ei || ei != xted)
 				{
 					if ((ei = xted))
@@ -4125,11 +4177,11 @@ obj_edit(XA_TREE *wt,
 				}
 				else
 					drwcurs = true; //redraw;
-				
+
 				if (ei)
 				{
 					unsigned short sl = strlen(ei->ti.te_ptext);
-					
+
 					if (sl > keycode && (pos == -1 || pos > keycode))
 					{
 						ei->m_start = keycode;
@@ -4140,7 +4192,7 @@ obj_edit(XA_TREE *wt,
 					}
 					else
 						ei->m_start = ei->m_end = 0;
-						
+
 					if (drwcurs)
 						(*wt->objcr_api->undraw_cursor)(wt, v, rl, redraw);
 					if (redraw)
@@ -4150,7 +4202,7 @@ obj_edit(XA_TREE *wt,
 				}
 				else
 					ret = 0;
-				
+
 				break;
 			}
 			case ED_STRING:
@@ -4167,7 +4219,7 @@ obj_edit(XA_TREE *wt,
 					xted = ei;
 				else if (valid_aesobj(&obj))
 					ted = object_get_tedinfo(aesobj_ob(&obj), &xted);
-				
+
 				if (!ei || ei != xted)
 				{
 					if ((ei = xted))
@@ -4185,7 +4237,7 @@ obj_edit(XA_TREE *wt,
 					hidem();
 					if (drwcurs)
 						(*wt->objcr_api->undraw_cursor)(wt, v, rl, redraw);
-				
+
 					if (string && string != ei->ti.te_ptext && *string)
 					{
 						while (*string)
@@ -4225,20 +4277,20 @@ obj_edit(XA_TREE *wt,
 					xted = ei;
 				else if (valid_aesobj(&obj))
 					ted = object_get_tedinfo(aesobj_ob(&obj), &xted);
-				
+
 				if (!ei || ei != xted)
 				{
 					ei = xted;
 				}
 				else
 					drwcurs = true;
-				
+
 				if (ei)
 				{
 					if (string)
 					{
 						int chrs;
-						
+
 						if (pos == 1)
 						{
 							chrs = strlen(xted->ti.te_ptext) + 1;
@@ -4246,16 +4298,16 @@ obj_edit(XA_TREE *wt,
 								chrs = xted->ti.te_txtlen - 1;
 							if (chrs > keycode)
 								chrs = keycode;
-	
+
 							xted->ti.te_ptext[chrs] = '\0';
 							strcpy(string, xted->ti.te_ptext);
 						}
 						xted->ti.te_ptext = string;
 						xted->ti.te_txtlen = keycode;
-						
+
 						obj_xED_INIT(wt, ei, -1, CLRMARKS);
 						(*wt->objcr_api->set_cursor)(wt, v, ei);
-					
+
 						if (redraw)
 						{
 							if (drwcurs)
@@ -4295,7 +4347,7 @@ obj_edit(XA_TREE *wt,
 			}
 		}
 	}
-		
+
 	if (ret_pos)
 		*ret_pos = pos;
 	if (ret_obj)
@@ -4317,9 +4369,9 @@ obj_set_radio_button(XA_TREE *wt,
 {
 	OBJECT *obtree = wt->tree;
 	struct xa_aes_object parent, o;
-	
+
 	parent = ob_get_parent(obtree, obj);
-	
+
 	DIAG((D_objc, NULL, "obj_set_radio_button: wt=%lx, obtree=%lx, obj=%d, parent=%d",
 		wt, obtree, obj, parent));
 
@@ -4342,7 +4394,7 @@ obj_set_radio_button(XA_TREE *wt,
 						   redraw,
 						   clip,
 						   rl, 0);
-				}	
+				}
 			}
 			o = aesobj(aesobj_tree(&o), aesobj_next(&o));
 		}
@@ -4363,7 +4415,7 @@ obj_get_radio_button(XA_TREE *wt,
 		      short state)
 {
 	struct xa_aes_object o = parent;
-	
+
 	DIAG((D_objc, NULL, "obj_set_radio_button: wt=%lx, obtree=%lx, parent=%d",
 		wt, aesobj_tree(&parent), aesobj_item(&parent)));
 
@@ -4465,7 +4517,7 @@ int copy_string_to_clipbrd( char *text )
 				O_WRONLY|O_CREAT|O_TRUNC, NULL, NULL);
 		if (f)
 		{
-			kernel_write(f, text, len);			
+			kernel_write(f, text, len);
 			kernel_close(f);
 			return 0;
 		}

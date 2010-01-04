@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
  *                                        2004 F.Naumann & O.Skancke
@@ -124,7 +124,7 @@ client_nicename(struct xa_client *client, const char *n, bool autonice)
 
 	if (autonice)
 		l += 2;
-	
+
 	if (l >= NICE_NAME)
 	{
 		if (autonice)
@@ -214,7 +214,7 @@ init_client(enum locks lock, bool sysclient)
 		return NULL;
 	}
 
-	/* 
+	/*
 	 * add to client list
 	 * add to app list
 	 */
@@ -356,7 +356,7 @@ init_client(enum locks lock, bool sysclient)
 	}
 #endif
 	proc_is_now_client(client);
-	
+
 	init_client_objcrend(client);
 
 //	app_in_front(lock, client, true, false);
@@ -370,7 +370,6 @@ init_client(enum locks lock, bool sysclient)
 	client->mouse_form = NULL;
 	client->save_mouse = client->mouse;
 	client->save_mouse_form = client->mouse_form;
-
 	return client;
 }
 
@@ -387,7 +386,7 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 	CONTROL(0,1,0);
 
 	DIAG((D_appl, client, "appl_init for %d", p->pid));
-	
+
 // 	if (d) display("appl_init: client = %lx, globl = %lx for %d", client, globl, p->pid);
 
 	if (client) {
@@ -476,8 +475,8 @@ exit_proc(enum locks lock, struct proc *p, int code)
 		C.mouse_lock = NULL;
 		C.mouselock_count = 0;
 	}
-	
-	
+
+
 	/* NOT FINISHED WITH THESE COMMENTS, THEY ARE INCORRECT NOW */
 	/* If both xaaes and shel_info extensions are attached, we rely on
 	 * the facts that either;
@@ -499,7 +498,7 @@ exit_proc(enum locks lock, struct proc *p, int code)
 	 */
 	if ((info = lookup_extension(p, XAAES_MAGIC_SH)) && (!clnt || (clnt && clnt->pexit)) ) {
 		struct xa_client *client = pid2client(info->rppid);
-		
+
 		/* Ozk:
 		 * If process was started via shel_write, we need to perform
 		 * pwaitpid on behalf of the parent client.
@@ -547,7 +546,7 @@ remove_client_crossrefs(struct xa_client *client)
 
 /*
  * close and free all client resources
- * 
+ *
  * Called on appl_exit() or on process termination (if app crashed
  * or exit without appl_exit). With other words, this is the final
  * routine *before* the process becomes invalid and should do any
@@ -563,7 +562,7 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 // 	bool d = (client == C.Hlp) ? true : false; //(!strnicmp(client->proc_name, "xasys", 6)) ? true : false;
 
 	DIAG((D_appl, NULL, "XA_client_exit: %s", c_owner(client)));
-	
+
 // 	display("info=%lx for %s", info, client->name);
 // 	if (d) display(" exit C.HLP");
 	S.clients_exiting++;
@@ -579,7 +578,7 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 
 	if (client != C.Hlp) {
 		cancel_winctxt_popup(lock, NULL, client);
-		
+
 		remove_from_tasklist(client);
 		if (C.csr_client == client)
 			post_cevent(C.Hlp, CE_abort_csr, client, NULL, 0,0, NULL,NULL);
@@ -597,7 +596,7 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 	 * Figure out which client to make active
 	 */
 	top_owner = C.Aes;
-	
+
 // 	if (d) display("0");
 
 	if (is_infront(client)) {
@@ -622,7 +621,7 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 
 	exit_proc(lock, client->p, code);
 // 	if (d) display("3");
-	
+
 	/*
 	 * It is no longer interested in button released packet
 	 */
@@ -634,7 +633,7 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 	 */
 	if (C.mouse_owner == client || C.realmouse_owner == client)
 		xa_graf_mouse(ARROW, NULL, NULL, false);
-	
+
 // 	if (d) display("4");
 
 	remove_widget_active(client);
@@ -680,7 +679,7 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 	/* Ozk:
 	 * sending CH_EXIT is done by proc_exit()
 	 */
-	 
+
 //	app_in_front(lock, top_owner, true, true);
 
 	/*
@@ -700,13 +699,13 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 	 */
 	CLIENT_LIST_REMOVE(client);
 	APP_LIST_REMOVE(client);
-		
+
 // 	if (d) display("10");
 	if (redraws) {
 		C.redraws -= redraws - 1;
 		kick_mousemove_timeout();
 	}
-	
+
 // 	if (d) display("11");
 
 // 	if (d) display("12");
@@ -720,7 +719,7 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 	 */
 	free_attachments(client);
 	free_wtlist(client);
-	
+
 
 	/* free the quart screen buffer */
 // 	if (d) display("13");
@@ -751,8 +750,8 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 	if (client->pexit)
 	{
 		struct proc *p = client->p;
-		
-		
+
+
 		DIAG((D_appl, NULL, "Process terminating - detaching extensions..."));
 		/* Ozk:
 		 * We trust the kernel to detach the client extension.
@@ -786,13 +785,13 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 		C.DSKpid = -1;
 
 	exit_client_objcrend( client );
-	
+
 	if (detach)
 		detach_extension(NULL, XAAES_MAGIC);
 
 // 	if (d) display("18");
 	S.clients_exiting--;
-	
+
 	kick_shutdn_if_last_client();
 
 	DIAG((D_appl, NULL, "client exit done"));
@@ -827,7 +826,7 @@ XA_appl_exit(enum locks lock, struct xa_client *client, AESPB *pb)
 		DIAG((D_appl, client, "appl_exit ignored for %s", client->name));
 		return XAC_DONE;
 	}
-	
+
 	/* we assume correct termination */
 	exit_client(lock, client, 0, false, true);
 
@@ -853,7 +852,7 @@ XA_appl_yield(enum locks lock, struct xa_client *client, AESPB *pb)
 	yield();
 
 	pb->intout[0] = 1; /* OK */
-	
+
 	return XAC_DONE;
 }
 
@@ -914,7 +913,7 @@ XA_appl_search(enum locks lock, struct xa_client *client, AESPB *pb)
 	} else {
 		cpid = next->p->pid;
 
-		/* replies according to the compendium */		
+		/* replies according to the compendium */
 		if (cpid == C.AESpid)
 			o[1] = APP_SYSTEM;
 		else if (cpid == C.DSKpid)
@@ -1008,8 +1007,8 @@ XA_appl_write(enum locks lock, struct xa_client *client, AESPB *pb)
 		 *               3. Since asock didnt get the chance to do appl_init() yet,
 		 *                  this message ends up in the great big void.
 		 *     Solution; If pid2client returns NULL, we yield() and try again upto 50
-		 *               times before giving up. Anyone else got better ideas? 
-		 */ 
+		 *               times before giving up. Anyone else got better ideas?
+		 */
 		dest_clnt = pid2client(dest_id);
 
 		while (!dest_clnt && i) {
@@ -1053,7 +1052,7 @@ XA_appl_write(enum locks lock, struct xa_client *client, AESPB *pb)
 
 							if (wind) {
 								short t = (client->options.wind_opts & XAWO_WCOWORK) ? 1 : 0;
-						
+
 								if (dest_clnt->options.wind_opts & XAWO_WCOWORK)
 									t |= 2;
 
@@ -1070,7 +1069,7 @@ XA_appl_write(enum locks lock, struct xa_client *client, AESPB *pb)
 			}
 			if (m)
 				send_a_message(lock, dest_clnt, amq, qmf, m);
-			
+
 			if (dest_clnt != client)
 				yield();
 		}
@@ -1082,7 +1081,7 @@ XA_appl_write(enum locks lock, struct xa_client *client, AESPB *pb)
 /*
  * Data table for appl_getinfo
  */
-static short info_tab[][4] =
+short info_tab[][4] =
 {
 	/* 0 large font */
 	{
@@ -1167,10 +1166,10 @@ static short info_tab[][4] =
 		1		/* ARGV style via wiscr to shel_write supported */
 	},
 	/*11 window functions
-	 * 
+	 *
 	 * WF_COLOR and WF_DCOLOR are not completely supported. Especially not changing them.
 	 * So the bits are off, although wind_get() will supply default values.
-	 * 
+	 *
 	 * These values are'nt bits, so I dont think this is correct
 	 * WF_TOP + WF_NEWDESK + WF_OWNER + WF_BEVENT + WF_BOTTOM + WF_ICONIFY + WF_UNICONIFY
 	 * bit 9 WF_WHEEL */
@@ -1315,7 +1314,7 @@ static short info_tab[][4] =
 	{
 		VER_MAJOR,	/* Major */
 		VER_MINOR,	/* Minor */
-		DEV_STATUS,	/* Status */ 
+		DEV_STATUS,	/* Status */
 		ARCH_TARGET	/* Target */
 	},
 	/* 19 <-- 97 AES_WOPTS */
@@ -1348,70 +1347,14 @@ static short info_tab[][4] =
 #define XA_VERSION_INFO	18
 #define LAST_IN_INFOTAB AES_AOPTS
 
-/*
- * appl_getinfo() handler
- *
- * Ozk: appl_getinfo() may be called by processes not yet called
- * appl_init(). So, it must not depend on client being valid!
- */
 #ifndef AGI_WINX
 #define AGI_WINX WF_WINX
 #endif
 
-static char *
-mcs(char *d, char *s)
-{
-	while ((*d++ = *s++))
-		;
-
-	return d - 1;
-}
-
-void
-init_apgi_infotab(void)
-{
-	char *s = info_string;
-	
-	info_tab[0][0] = screen.standard_font_height;
- 	info_tab[0][1] = screen.standard_font_id;
-	info_tab[1][0] = screen.small_font_height;
-	info_tab[1][1] = screen.small_font_id;
-	
-	info_tab[2][0] = xbios_getrez();
-	info_tab[2][1] = 256;
-	info_tab[2][2] = 1;
-	info_tab[2][3] = 1; // + 2;
-
-	/*
-	 * Build status string
-	 */
-	s = mcs(s, version);
-	*s++ = 0x7c;
-
-	if (DEV_STATUS & AES_FDEVSTATUS_STABLE)
-		s = mcs(s, "Stable ");
-	else
-		s = mcs(s, "");
-		
-	s = mcs(s, ASCII_DEV_STATUS);
-	*s++ = 0x7c;
-	s = mcs(s, ASCII_ARCH_TARGET);
-	*s++ = 0x7c;
-	s = mcs(s, BDATE);*s++ = 0x20;s = mcs(s, BTIME);
-	*s++ = 0x7c;
-	s = mcs(s, BCOMPILER);
-#if 0
-	s = mcs(s, BC_MAJ);
-	s = mcs(s, ".");
-	s = mcs(s, BC_MIN);
-#endif
-	*s++ = 0;
-
-	DIAGS(("Build status-string '%s'", info_string));
-}
-
 /*
- * Ozk: XA_appl_getinfo() may be called by processes not yet called
+ * appl_getinfo() handler
+ *
+ * Ozk: appl_getinfo() may be called by processes not yet called
  * appl_init(). So, it must not depend on client being valid!
  */
 unsigned long
@@ -1428,7 +1371,7 @@ XA_appl_getinfo(enum locks lock, struct xa_client *client, AESPB *pb)
 		DIAG((D_appl, client, "appl_getinfo %d for %s", gi_type, c_owner(client)));
 	else
 		DIAG((D_appl, client, "appl_getinfo %d for non AES process (pid %ld)", gi_type, p_getpid()));
-#endif	
+#endif
 	if (gi_type > 14) {
 		switch (gi_type) {
 			case 64:
@@ -1443,7 +1386,7 @@ XA_appl_getinfo(enum locks lock, struct xa_client *client, AESPB *pb)
 			case AES_VERSION: {
 				if (pb->control[N_ADDRIN] >= 3) {
 					char *d;
-				
+
 					if ((d = (char *)pb->addrin[0])) {
 						for (i = 0; i < 8; i++)
 							*d++ = aes_id[i];
@@ -1451,7 +1394,7 @@ XA_appl_getinfo(enum locks lock, struct xa_client *client, AESPB *pb)
 					if ((d = (char *)pb->addrin[1]))
 						strcpy(d, long_name);
 					if ((d = (char *)pb->addrin[2]))
-						strcpy(d, info_string);					
+						strcpy(d, info_string);
 				}
 				n_intout = pb->control[N_INTOUT];
 				gi_type = XA_VERSION_INFO;
@@ -1473,7 +1416,7 @@ XA_appl_getinfo(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		for (i = 1; i < n_intout; i++)
 			pb->intout[i] = info_tab[gi_type][i-1];
-		
+
 		gi_type = 1;
 	} else
 		gi_type = 0;
@@ -1489,20 +1432,20 @@ XA_appl_options(enum locks lock, struct xa_client *client, AESPB *pb)
 	short ret = 1, mode = pb->intin[0];
 
 	CONTROL(5,5,0)
-	
+
 	switch (mode)
 	{
 		case 0:
 		{
 			unsigned long ao = (unsigned long)pb->intin[1] << 16 | pb->intin[2];
-		
+
 			client->options.app_opts &= ~ao;
 			goto ret_aopts;
 		}
 		case 1:
 		{
 			unsigned long ao = (unsigned long)pb->intin[1] << 16 | pb->intin[2];
-			
+
 			client->options.app_opts |= ao;
 ret_aopts:
 			ao = client->options.app_opts;
@@ -1668,7 +1611,7 @@ XA_appl_control(enum locks lock, struct xa_client *client, AESPB *pb)
 	/*
 	 * note: When extending this switch be sure to update
                 *       the appl_getinfo(65) mode corresponding structure
-	 *  tip: grep APC_ * 
+	 *  tip: grep APC_ *
 	 */
 
 	ret = 1;
@@ -1743,7 +1686,7 @@ XA_appl_control(enum locks lock, struct xa_client *client, AESPB *pb)
 					*ii = 0;
 					if (any_hidden(lock, cl, NULL))
 						*ii |= APCI_HIDDEN;
-					if (cl->std_menu || cl->nxt_menu) 
+					if (cl->std_menu || cl->nxt_menu)
 						*ii |= APCI_HASMBAR;
 					if (cl->desktop)
 						*ii |= APCI_HASDESK;
@@ -1756,7 +1699,7 @@ XA_appl_control(enum locks lock, struct xa_client *client, AESPB *pb)
 		case APC_MENU:
 		{
 			OBJECT **m = (OBJECT **)pb->addrin[0];
-			
+
 			if (cl && m)
 				*m = cl->nxt_menu ? cl->nxt_menu->tree : (cl->std_menu ? cl->std_menu->tree : NULL);
 			else if (m)

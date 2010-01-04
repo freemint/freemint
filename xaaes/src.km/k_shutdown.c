@@ -71,23 +71,27 @@ k_shutdown(void)
 	if (C.Hlp)
 	{
 		volatile struct xa_client **h = (volatile struct xa_client **)&C.Hlp;
+		long l = 0;
 		post_cevent(C.Hlp, CE_at_terminate, NULL, NULL, 0,0, NULL, NULL);
-		while (*h)
+		while (*h && l++ < 1500)
 		{
 			Unblock(C.Hlp, 0, 0);
-			yield();
+			nap( 1500 );
+			//yield();
 		}
+		if( *h )
+			BLOG((0,"failed!" ));
 	}
 	/* To demonstrate the working on multiple resources. */
 	while (C.Aes->resources)
 		FreeResources(C.Aes, NULL, NULL);
-	
+
 	BLOG((false, "Removing all remaining windows"));
 	remove_all_windows(NOLOCKING, NULL);
 	BLOG((false, "Freeing delayed deleted windows"));
 	do_delayed_delete_window(NOLOCKING);
 	BLOG((false, "Closing and deleting root window"));
-		
+
 	if (root_window)
 	{
 		close_window(NOLOCKING, root_window);
@@ -95,7 +99,7 @@ k_shutdown(void)
 		root_window = NULL;
 		S.open_windows.root = NULL;
 	}
-	BLOG((false, "shutting down aes thread .."));
+	BLOG((false, "shutting down aes thread .. tp=%lx", C.Aes->tp));
 	if (C.Aes->tp)
 	{
 		volatile struct proc **h = (volatile struct proc **)&C.Aes->tp;
@@ -220,8 +224,9 @@ k_shutdown(void)
 		BLOG((false, "HALT_SYSTEM flag is set"));
 	if (C.shutdown & REBOOT_SYSTEM)
 		BLOG((false, "REBOOT_SYSTEM flag is set"));
-	if (C.shutdown & RESOLUTION_CHANGE)
+	/*if (C.shutdown & RESOLUTION_CHANGE)
 		BLOG((false, "RESOLUTION_CHANGE flag is set"));
+		*/
 #endif
 	/*
 	 * Close the virtual used by XaAES
@@ -255,6 +260,7 @@ k_shutdown(void)
 		 *	problems on Hades with Nova VDI.
 		 */
 #ifndef ST_ONLY
+		//if( C.fvdi_version == 0 )
 		{
 			unsigned long sc = 0, cm = 0;
 			int odbl;
@@ -265,19 +271,24 @@ k_shutdown(void)
 			s_system(S_CTRLCACHE, sc & ~7, cm);
 			BLOG((false, "Enter cursor mode"));
 			v_enter_cur(C.P_handle);	/* Ozk: Lets enter cursor mode */
-			BLOG((false, "Closing VDI workstation %d (tc = %lx)", C.P_handle));
+			BLOG((false, "Closing VDI workstation %d", C.P_handle));
 			odbl = DEBUG_LEVEL;
 			DEBUG_LEVEL = 4;
 			v_clswk(C.P_handle);		/* Auto version must close the physical workstation */
+			BLOG((false, "VDI workstation closed" ));
 			DEBUG_LEVEL = odbl;
 			BLOG((false, "Restore CPU caches"));
 			s_system(S_CTRLCACHE, sc, cm);
 			BLOG((false, "Done shutting down VDI"));
 		}
 #else
-		v_enter_cur(C.P_handle);
-		v_clswk(C.P_handle);
+		//if( C.fvdi_version == 0 )
+		{
+			v_enter_cur(C.P_handle);
+			v_clswk(C.P_handle);
+		}
 #endif
+
 		display("\033e\033H");		/* Cursor enable, cursor home */
 	}
 	BLOG((false, "leaving k_shutdown()"));

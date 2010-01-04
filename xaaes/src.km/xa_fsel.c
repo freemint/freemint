@@ -1,9 +1,9 @@
 /*
  * $Id$
- * 
+ *
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
- *                                 1999 - 2003 H.Robbers
- *                                        2004 F.Naumann & O.Skancke
+ *																 1999 - 2003 H.Robbers
+ *																				2004 F.Naumann & O.Skancke
  *
  * A multitasking AES replacement for FreeMiNT
  *
@@ -26,7 +26,7 @@
 
 /*
  * FILE SELECTOR IMPLEMENTATION
- * 
+ *
  * This give a non-modal windowed file selector for internal
  * and exported use, with slightly extended pattern matching
  * from the basic GEM spec.
@@ -38,7 +38,7 @@
 /*
  * has gnu-c builtin strcmp or not?
  */
-#define OWNSTRCMP	1
+#define OWNSTRCMP 1
 /* experentimental */
 #define BEAUTY_ROOT_NAME	1
 
@@ -47,6 +47,7 @@
 #include "xa_fsel.h"
 #include "xa_global.h"
 
+#include "c_keybd.h"
 #include "c_window.h"
 #include "form.h"
 #include "k_main.h"
@@ -67,18 +68,22 @@
 #include "mint/stat.h"
 
 
-#define FLAG_FILLED	0x00000001
+#define FLAG_FILLED 0x00000001
 #define FLAG_DIR	0x00000002
 #define FLAG_EXE	0x00000004
-#define FLAG_LINK	0x00000008
-#define FLAG_SDIR	0x00000010
+#define FLAG_LINK 0x00000008
+#define FLAG_SDIR 0x00000010
 
-#define FSLIDX_NAME	0
-#define FSLIDX_SIZE	1
-#define FSLIDX_TIME	2
-#define FSLIDX_DATE	3
-#define FSLIDX_FLAG	4
-#define FSLIDX_RIGHT	5
+#define FSLIDX_NAME 0
+#define FSLIDX_SIZE 1
+#define FSLIDX_TIME 2
+#define FSLIDX_DATE 3
+#define FSLIDX_FLAG 4
+/*#define FSLIDX_RIGHT	5*/
+
+/* fcase */
+#define FS_FSNOCASE 1 	/* fs is uppercase */
+#define FS_PATNOCASE	2 /* pattern is caseinsensitive */
 
 /* needed for tab-calculation... */
 #define MINWIDTH	20
@@ -109,44 +114,44 @@ static char *faccess[] =
 	"r-x",
 	"rw-",
 	"rwx",
-};					
+};
 
 static struct xa_wtxt_inf norm_txt =
 {
  WTXT_NOCLIP,
-/* id  pnts  flags wrm,     efx   fgc      bgc   banner x_3dact y_3dact texture */
- {  -1,  -1,  0,  MD_TRANS, 0, G_BLACK, G_WHITE, G_WHITE, 0,      0,     NULL},	/* Normal */
- {  -1,  -1,  0,  MD_TRANS, 0, G_WHITE, G_BLACK, G_WHITE, 0,      0,     NULL},/* Selected */
- {  -1,  -1,  0,  MD_TRANS, 0, G_BLACK, G_WHITE, G_WHITE, 0,      0,     NULL},	/* Highlighted */
+/* id  pnts  flags wrm, 		efx 	fgc 		 bgc	 banner x_3dact y_3dact texture */
+ {	-1,  -1,	0,	MD_TRANS, 0, G_BLACK, G_WHITE, G_WHITE, 0,			0,		 NULL}, /* Normal */
+ {	-1,  -1,	0,	MD_TRANS, 0, G_WHITE, G_BLACK, G_WHITE, 0,			0,		 NULL},/* Selected */
+ {	-1,  -1,	0,	MD_TRANS, 0, G_BLACK, G_WHITE, G_WHITE, 0,			0,		 NULL}, /* Highlighted */
 
 };
 
 static struct xa_wtxt_inf exe_txt =
 {
  WTXT_NOCLIP,
-/* id  pnts  flags wrm,     efx   fgc      bgc   banner x_3dact y_3dact texture */
- {  -1,  -1, 0,   MD_TRANS, 0, G_RED,    G_WHITE, G_WHITE, 0,      0,     NULL},	/* Normal */
- {  -1,  -1, 0,   MD_TRANS, 0, G_YELLOW, G_WHITE, G_WHITE, 0,      0,     NULL},/* Selected */
- {  -1,  -1, 0,   MD_TRANS, 0, G_BLACK,  G_WHITE, G_WHITE, 0,      0,     NULL},	/* Highlighted */
+/* id  pnts  flags wrm, 		efx 	fgc 		 bgc	 banner x_3dact y_3dact texture */
+ {	-1,  -1, 0, 	MD_TRANS, 0, G_RED, 	 G_WHITE, G_WHITE, 0, 		 0, 		NULL},	/* Normal */
+ {	-1,  -1, 0, 	MD_TRANS, 0, G_YELLOW, G_WHITE, G_WHITE, 0, 		 0, 		NULL},/* Selected */
+ {	-1,  -1, 0, 	MD_TRANS, 0, G_BLACK,  G_WHITE, G_WHITE, 0, 		 0, 		NULL},	/* Highlighted */
 
 };
 static struct xa_wtxt_inf dexe_txt =
 {
  WTXT_NOCLIP,
-/* id  pnts  flags wrm,     efx   fgc      bgc   banner x_3dact y_3dact texture */
- {  -1,  -1, 0,   MD_TRANS, 0, G_LRED,  G_WHITE, G_WHITE, 0,      0,     NULL },	/* Normal */
- {  -1,  -1, 0,   MD_TRANS, 0, G_RED,   G_WHITE, G_WHITE, 0,      0,     NULL },	/* Selected */
- {  -1,  -1, 0,   MD_TRANS, 0, G_BLACK, G_WHITE, G_WHITE, 0,      0,     NULL },	/* Highlighted */
+/* id  pnts  flags wrm, 		efx 	fgc 		 bgc	 banner x_3dact y_3dact texture */
+ {	-1,  -1, 0, 	MD_TRANS, 0, G_LRED,	G_WHITE, G_WHITE, 0,			0,		 NULL },	/* Normal */
+ {	-1,  -1, 0, 	MD_TRANS, 0, G_RED, 	G_WHITE, G_WHITE, 0,			0,		 NULL },	/* Selected */
+ {	-1,  -1, 0, 	MD_TRANS, 0, G_BLACK, G_WHITE, G_WHITE, 0,			0,		 NULL },	/* Highlighted */
 
 };
 
 static struct xa_wtxt_inf dir_txt =
 {
  WTXT_NOCLIP,
-/* id  pnts  flags wrm,     efx   fgc      bgc   banner x_3dact y_3dact texture */
- {  -1,  -1, 0,   MD_TRANS, 0, G_LCYAN, G_WHITE, G_WHITE, 0,      0,     NULL },/* Normal */
- {  -1,  -1, 0,   MD_TRANS, 0, G_CYAN,  G_WHITE, G_WHITE, 0,      0,     NULL },	/* Selected */
- {  -1,  -1, 0,   MD_TRANS, 0, G_BLACK, G_WHITE, G_WHITE, 0,      0,     NULL },	/* Highlighted */
+/* id  pnts  flags wrm, 		efx 	fgc 		 bgc	 banner x_3dact y_3dact texture */
+ {	-1,  -1, 0, 	MD_TRANS, 0, G_LCYAN, G_WHITE, G_WHITE, 0,			0,		 NULL },/* Normal */
+ {	-1,  -1, 0, 	MD_TRANS, 0, G_CYAN,	G_WHITE, G_WHITE, 0,			0,		 NULL },	/* Selected */
+ {	-1,  -1, 0, 	MD_TRANS, 0, G_BLACK, G_WHITE, G_WHITE, 0,			0,		 NULL },	/* Highlighted */
 
 };
 
@@ -226,11 +231,11 @@ getsuf(char *f)
 	if ((p = strrchr(f, '.')) != 0L)
 	{
 		if (strchr(p, '/') == 0L
-		    && strchr(p, '\\') == 0L)
+				&& strchr(p, '\\') == 0L)
 			/* didnt ran over slash? */
 			return p+1;
 	}
-	/* no suffix  */
+	/* no suffix	*/
 	return 0L;
 }
 static void
@@ -239,7 +244,7 @@ strins(char *d, const char *s, long here)
 	long slen = strlen(s);
 	long dlen = strlen(d);
 	char t[512];
-	
+
 	if (here > dlen)
 		here = dlen;
 
@@ -254,7 +259,7 @@ fs_cwd(struct scroll_info *list, char *cwd, short incsel)
 	struct fsel_data *fs = list->data;
 	struct scroll_entry *dir_ent = NULL;
 	struct sesetget_params p; //seget_entrybyarg p;
-	
+
 	if (cwd)
 		strcpy(cwd, fs->root);
 
@@ -274,7 +279,7 @@ fs_cwd(struct scroll_info *list, char *cwd, short incsel)
 				break;
 			}
 			/*
-			 * 
+			 *
 			 */
 			case 1:
 			{
@@ -290,13 +295,13 @@ fs_cwd(struct scroll_info *list, char *cwd, short incsel)
 			case 2:
 			default:;
 		}
-			
+
 		dir_ent = this;
 
 		if (cwd)
 		{
 			long len = strlen(cwd);
-			p.idx = -1;		
+			p.idx = -1;
 			while (this)
 			{
 				if (list->get(list, this, SEGET_TEXTPTR, &p))
@@ -352,11 +357,13 @@ modify_mult_state(struct scroll_info *list, void *parent, short bits, short mask
 	p.level.curlevel = 0;
 	list->set(list, parent, SESET_M_STATE, (long)&p, NORMREDRAW);
 }
+#if INCLUDE_UNUSED
 static void
 set_selected(struct scroll_info *list, struct scroll_entry *this)
 {
 	list->set(list, this, SESET_SELECTED, 0, NORMREDRAW);
 }
+#endif
 static struct scroll_entry *
 get_selected(struct scroll_info *list)
 {
@@ -382,6 +389,7 @@ fs_prompt(SCROLL_INFO *list, char *file, bool typing)
 	bool ret = false;
 	struct sesetget_params seget, p; //seget_entrybyarg seget, p;
 
+
 	if (!(parent = fs_cwd(list, NULL, 1)))
 	{
 		parent = NULL;
@@ -390,7 +398,7 @@ fs_prompt(SCROLL_INFO *list, char *file, bool typing)
 	else
 		s = parent->down;
 
-// 	display("selected %lx, s %lx, parent %lx", fs->selected_dir, s, parent);
+//	display("selected %lx, s %lx, parent %lx", fs->selected_dir, s, parent);
 
 	/* Not if filename empty or list empty */
 	if (*file && s)
@@ -402,28 +410,32 @@ fs_prompt(SCROLL_INFO *list, char *file, bool typing)
 		seget.level.maxlevel = -1; //-1;
 		seget.level.curlevel = 0;
 		p.idx = -1;
-// 		display("file '%s'", file);
+//		display("file '%s'", file);
+
 		while (seget.e)
 		{
 			list->get(list, seget.e, SEGET_TEXTPTR, &p);
-// 			display(" and '%s'", p.ret.ptr ? p.ret.ptr : "Heh!?");
-			if (p.ret.ptr && (match = match_pattern(p.ret.ptr, file, true)))
-				break;
+//			display(" and '%s'", p.ret.ptr ? p.ret.ptr : "Heh!?");
+			if (p.ret.ptr )
+			{
+				if( (match = match_pattern(p.ret.ptr, file, true)))
+					break;
+			}
 			list->get(list, seget.e, SEGET_NEXTENT, &seget);
 		}
 		s = seget.e;
-// 		display("matched %d agains '%s' (%lx)", match, (long)s ? p.ret.ptr : "none", list->cur);
+//		display("matched %d agains '%s' (%lx)", match, (long)s ? p.ret.ptr : "none", list->cur);
 		if (s)
 		{
 			long uf;
 
-			list->get(list, s, SEGET_USRFLAGS, &uf);
+			uf = s->usr_flags;
 
 			list->set(list, s, SESET_CURRENT, 0, NOREDRAW);
 			list->set(list, NULL, SESET_MULTISEL, 0, NOREDRAW);
 
-			list->set(list, NULL, SESET_STATE, ((long)(OS_BOXED|OS_SELECTED) << 16), NORMREDRAW);
-			
+			list->set(list, NULL, SESET_SELECTED, 0, NORMREDRAW);
+
 			if (match == 1)
 			{
 				if ((uf & FLAG_DIR))
@@ -434,9 +446,9 @@ fs_prompt(SCROLL_INFO *list, char *file, bool typing)
 				else
 				{
 					fs->selected_dir = s->up;
-					fs->selected_file = NULL;
+					fs->selected_file = s;//NULL;
 				}
-				list->set(list, s, SESET_STATE, ((long)(OS_BOXED|OS_SELECTED) << 16) | OS_BOXED, NORMREDRAW);	
+				list->set(list, s, SESET_SELECTED, 0, NORMREDRAW);
 			}
 			else if (match == 2)
 			{
@@ -450,7 +462,7 @@ fs_prompt(SCROLL_INFO *list, char *file, bool typing)
 					fs->selected_dir = s->up;
 					fs->selected_file = s;
 				}
-				list->set(list, s, SESET_STATE, ((long)(OS_BOXED|OS_SELECTED) << 16) | OS_SELECTED, NORMREDRAW);
+				list->set(list, s, SESET_SELECTED, 0, NORMREDRAW);
 			}
 			list->vis(list, s, NORMREDRAW);
 			set_dir(list);
@@ -497,12 +509,6 @@ fs_prompt(SCROLL_INFO *list, char *file, bool typing)
 					list->set(list, NULL, SESET_CURRENT, 0, NOREDRAW);
 			}
 		}
-    
-    /*if( list->flags & SIF_DIRTY ){
-      BLOG((0,"prompt:redraw4"));
-      list->redraw(list, NULL);
-    }*/
-
 	}
 	else
 	{
@@ -538,15 +544,17 @@ fs_prompt(SCROLL_INFO *list, char *file, bool typing)
 					ret = true;
 				}
 				else
+				{
 					list->set(list, NULL, SESET_CURRENT, 0, NOREDRAW);
+				}
 			}
 		}
 	}
-  if( list->flags & SIF_DIRTY ){
-	  list->redraw(list, NULL);
-}
-  return ret;
-}	/*/fs_prompt*/
+	if( list->flags & SIF_DIRTY ){
+		list->redraw(list, NULL);
+	}
+	return ret;
+} /*/fs_prompt*/
 
 static short
 sort_by_date(struct xattr *x1, struct xattr *x2)
@@ -557,10 +565,10 @@ sort_by_date(struct xattr *x1, struct xattr *x2)
 	 * return -1 if x1 is greater (newer, after) than x2
 	 * return  1 if x1 is less (older, before) than x2
 	 * return  0 if x1 and x2 has exact same date.
-	 */	
-	if ((tmp = ((x1->mdate >> 9) & 127) - ((x2->mdate >> 9) & 127) ))	/* Year */
+	 */
+	if ((tmp = ((x1->mdate >> 9) & 127) - ((x2->mdate >> 9) & 127) )) /* Year */
 		return (tmp > 0) ? 1 : -1;
-	if ((tmp = ((x1->mdate >> 5) & 15) - ((x2->mdate >> 5) & 15) ))		/* Month */
+	if ((tmp = ((x1->mdate >> 5) & 15) - ((x2->mdate >> 5) & 15) )) 	/* Month */
 		return tmp > 0 ? 1 : -1;
 	if ((tmp = (x1->mdate & 31) - (x2->mdate & 31)))			/* day */
 		return tmp > 0 ? 1 : -1;
@@ -586,7 +594,7 @@ sort_by_ext(char *n1, char *n2)
 	 */
 	n1 = getsuf(n1);
 	n2 = getsuf(n2);
-	
+
 	if (n1 && n2)
 		ret = stricmp(n1, n2);
 	else if (!n1 && !n2)
@@ -598,11 +606,19 @@ sort_by_ext(char *n1, char *n2)
 
 	return ret;
 }
+#if INCLUDE_CINSENS
 static short
 sort_by_name(char *n1, char *n2)
-{	
-	return stricmp(n1, n2);
+{
+	return cfg.casesort ? strcmp(n1, n2) : stricmp(n1, n2);
 }
+#else
+static short
+sort_by_name(char *n1, char *n2)
+{
+	return strcmp(n1, n2);
+}
+#endif
 
 // typedef bool sort_compare(SCROLL_ENTRY *s1, SCROLL_ENTRY *s2);
 /*
@@ -622,7 +638,7 @@ sortbydate(struct scroll_info *list, struct scroll_entry *e1, struct scroll_entr
 	p1.idx = p2.idx = -1;
 	list->get(list, e1, SEGET_TEXTPTR, &p1);
 	list->get(list, e2, SEGET_TEXTPTR, &p2);
-	
+
 	if ((uf1 & FLAG_SDIR) || (uf2 & FLAG_SDIR))
 	{
 		if ((uf1 & FLAG_SDIR) && (uf2 & FLAG_SDIR))
@@ -642,15 +658,15 @@ sortbydate(struct scroll_info *list, struct scroll_entry *e1, struct scroll_entr
 		/* folders in front */
 		return true;
 	}
-	
+
 	if (uf1 == uf2)
 	{
 		list->get(list, e1, SEGET_USRDATA, &x1);
 		list->get(list, e2, SEGET_USRDATA, &x2);
-		
+
 		if ((tmp = sort_by_date(x1, x2)))
 			return tmp > 0 ? false : true;
-		
+
 		if ((tmp = sort_by_ext(p1.ret.ptr, p2.ret.ptr)))
 			return tmp > 0 ? true : false;
 
@@ -670,39 +686,41 @@ sortbydate(struct scroll_info *list, struct scroll_entry *e1, struct scroll_entr
 }
 
 
-//#if PROFILING
-#undef strcmp
-#if KERNELSTRCMP
-typedef long _cdecl (*strcmp_t)(const char *str1, const char *str2);
-static strcmp_t strcmp = 0;
-#else
-/* using builtin */
-#if !defined( __GNUC__) || (OWNSTRCMP==1)
-
 /*
- * strcmp
+ * int bstrcmp( char *t1, char *t2 );
+ * bstrcmp
+ * return true if t1 > t2 else false
+ *
  */
-static int strcmp( char *t1, char *t2 )
+static int bstrcmp( char *t1, char *t2 )
 {
 	for( ; *t1 && *t1 == *t2; t1++, t2++);
 
-	if( !*t1 )
-		return -1;
-	if( !*t2 )
-		return 1;
+	if( *t1 > *t2 ){
+		return true;
+	}
+	return false;
+}
+#if 0
+/*
+ * sstrcmp
+ * return 1 if t1 > t2 -1 if t1 < t2 else 0
+ *
+ */
+static int sstrcmp( char *t1, char *t2 )
+{
+	for( ; *t1 && *t1 == *t2; t1++, t2++);
 
 	if( *t1 > *t2 )
 		return 1;
 	if( *t1 < *t2 )
 		return -1;
-
 	return 0;
 }
 #endif
-#endif
 
-#ifndef SHRT_MAX 
-#  define SHRT_MAX  32767
+#ifndef SHRT_MAX
+#  define SHRT_MAX	32767
 #endif
 /*
  * like strncmp
@@ -749,65 +767,59 @@ static int strnccmp( char *t1, char *t2, int n, char *t3 )
 }
 
 
-static bool
+bool
 sortbyname(struct scroll_info *list, struct scroll_entry *e1, struct scroll_entry *e2)
 {
-  long uf1, uf2, d1, d2;
+	long uf1, uf2, d1, d2;
+#if 0
 	short tmp = 0;
 	struct xattr *x1, *x2;
+#endif
 	struct sesetget_params p1, p2; //seget_entrybyarg p1, p2;
 
-  PRDEF(sortbyname,get);
-  PRDEF(sortbyname,strcmp);
-  
-  /*list->get(list, e1, SEGET_USRFLAGS, &uf1);
+	PRDEF(sortbyname,get);
+	PRDEF(sortbyname,bstrcmp);
+
+	/*list->get(list, e1, SEGET_USRFLAGS, &uf1);
 	list->get(list, e2, SEGET_USRFLAGS, &uf2);
-  */
-  uf1 = e1->usr_flags;
-  uf2 = e2->usr_flags;
+	*/
+	uf1 = e1->usr_flags;
+	uf2 = e2->usr_flags;
 
-	
-  p1.idx = p2.idx = -1; /* get FIRST */
 
-  /*if ((uf1 & FLAG_SDIR) || (uf2 & FLAG_SDIR))
-	{
-		if ((uf1 & FLAG_SDIR) && (uf2 & FLAG_SDIR))
-   */
-  d1=(uf1 & FLAG_SDIR);
+	p1.idx = p2.idx = -1; /* get FIRST */
+
+	d1=(uf1 & FLAG_SDIR);
 	d2=(uf2 & FLAG_SDIR);
-  if ( d1 || d2 )
+	if ( d1 || d2 )
+	{
+		if (d1 && d2)
 		{
-    if (d1 && d2)
-    {
 
-      if( !e1 || !e1->content || !e2 || !e2->content ){
-        PROFILE(( "sort_by_name(SDIR): text not first %lx/%lx/%lx/%lx", e1, e1?e1->content:0, e2, e2?e2->content:0 ));
-      }
-      else{
-        if( !(e1->content->type == SECONTENT_TEXT && e2->content->type == SECONTENT_TEXT) ){
-          if( e1->content->type == SECONTENT_TEXT )
-            PROFILE(( "sort_by_name(SDIR): e2 != TEXT" ));
-          else
-            PROFILE(( "sort_by_name(SDIR): e1 != TEXT" ));
-        }
-        else{
-          char *t1;
-          char *t2;
-          t1 = e1->content->c.text.text;
-          t2 = e2->content->c.text.text;
-          //PROFILE(( "sort_by_name: SDIR: %s <-> %s", t1, t2 ));
-          return sort_by_name( t1, t2 ) > 0 ? true : false;
-        }
-      }
-      PROFRECs(list->,get,(list, e1, SEGET_TEXTPTR, &p1));
-      PROFRECs(list->,get,(list, e2, SEGET_TEXTPTR, &p2));
+			if( !e1 || !e1->content || !e2 || !e2->content ){
+				PROFILE(( "sort_by_name(SDIR): text not first %lx/%lx/%lx/%lx", e1, e1?e1->content:0, e2, e2?e2->content:0 ));
+			}
+			else{
+				if( !(e1->content->type == SECONTENT_TEXT && e2->content->type == SECONTENT_TEXT) ){
+					if( e1->content->type == SECONTENT_TEXT )
+						PROFILE(( "sort_by_name(SDIR): e2 != TEXT" ));
+					else
+						PROFILE(( "sort_by_name(SDIR): e1 != TEXT" ));
+				}
+				else{
+					char *t1;
+					char *t2;
+					t1 = e1->content->c.text.text;
+					t2 = e2->content->c.text.text;
+					return sort_by_name( t1, t2 ) > 0 ? true : false;
+				}
+			}
+			PROFRECs(list->,get,(list, e1, SEGET_TEXTPTR, &p1));
+			PROFRECs(list->,get,(list, e2, SEGET_TEXTPTR, &p2));
 
-    //if ((tmp = sort_by_name(p1.ret.ptr, p2.ret.ptr)))
-      //return tmp > 0 ? true : false;
 			return sort_by_name(p1.ret.ptr, p2.ret.ptr) > 0 ? true : false;
 		}
-    //else if (!(uf2 & FLAG_SDIR))
-    else if (d1)
+		else if (d1)
 			return false;
 		else
 			return true;
@@ -820,66 +832,30 @@ sortbyname(struct scroll_info *list, struct scroll_entry *e1, struct scroll_entr
 		/* folders in front */
 		return true;
 	}
-	
+
 	if (uf1 == uf2)
 	{
-		
-    /*if( !e1 || !e1->content || !e2 || !e2->content ){
-      PROFILE(( "sort_by_name: text not first %lx/%lx/%lx/%lx", e1, e1?e1->content:0, e2, e2?e2->content:0 ));
-    }
-    else
-    */
-    if( e1->content->type == SECONTENT_TEXT && e2->content->type == SECONTENT_TEXT ){
-#if 0
-       return strcmp(e1->content->c.text.text, e2->content->c.text.text ) > 0 ? true: false;
-#else
-      char *t1 = e1->content->c.text.text;
-      char *t2 = e2->content->c.text.text;
-      if( *t1 == *t2 ){
-      	int i;
-      	PROFRECs( i=,strcmp,(t1+1, t2+1 ));
-        return i > 0 ? true: false;
-      }
-      return *t1 > *t2;
-#endif      
-      //return sort_by_name(e1->content->c.text.text; e2->content->c.text.text ) > 0 ? true: false;
-#if 0
-      char *t1;
-      char *t2;
-		
-      t2 = e2->content->c.text.text;
-			return sort_by_name(t1, t2 ) > 0 ? true: false;
-#endif
-		}
-		else{
-			if( e1->content->type == SECONTENT_TEXT )
-				PROFILE(( "sort_by_name: e2 != TEXT" ));
-			else
-				PROFILE(( "sort_by_name: e1 != TEXT" ));
-		}
-		PROFRECs(list->,get,(list, e1, SEGET_TEXTPTR, &p1));
-		PROFRECs(list->,get,(list, e2, SEGET_TEXTPTR, &p2));
 
-		return sort_by_name(p1.ret.ptr, p2.ret.ptr) > 0 ? true: false;
-		
-		return sort_by_ext(p1.ret.ptr, p2.ret.ptr) > 0 ? true: false;
-		/*if ((tmp = sort_by_ext(p1.ret.ptr, p2.ret.ptr)))
-			return tmp > 0 ? true : false;
+		/*if( !e1 || !e1->content || !e2 || !e2->content ){
+			PROFILE(( "sort_by_name: text not first %lx/%lx/%lx/%lx", e1, e1?e1->content:0, e2, e2?e2->content:0 ));
+		}
+		else
 		*/
 
-		PROFRECs(list->,get,(list, e1, SEGET_USRDATA, &x1));
-		PROFRECs(list->,get,(list, e2, SEGET_USRDATA, &x2));
-		if ((tmp = sort_by_date(x1, x2)))
-			return tmp > 0 ? false : true;
-
-		/*
-		 * If same date, suffix and name, we let size decide...
-		 */
-		if (!S_ISDIR(x1->mode) && !S_ISDIR(x2->mode))
+		if( e1->content->type == SECONTENT_TEXT && e2->content->type == SECONTENT_TEXT )
 		{
-			if (x1->size > x2->size)
-				return true;
+			char *t1 = e1->content->c.text.text;
+			char *t2 = e2->content->c.text.text;
+#if INCLUDE_CINSENS
+			return sort_by_name(t1, t2) > 0 ? true : false;
+#else
+			if( *t1 == *t2 ){
+				PROFRECr( return, bstrcmp,(t1+1, t2+1 ));
+			}
+			return *t1 > *t2;
+#endif
 		}
+		/* same dir&same name => same file! */
 	}
 	return false;
 }
@@ -897,7 +873,7 @@ sortbyext(struct scroll_info *list, struct scroll_entry *e1, struct scroll_entry
 	p1.idx = p2.idx = -1;
 	list->get(list, e1, SEGET_TEXTPTR, &p1);
 	list->get(list, e2, SEGET_TEXTPTR, &p2);
-	
+
 	if ((uf1 & FLAG_SDIR) || (uf2 & FLAG_SDIR))
 	{
 		if ((uf1 & FLAG_SDIR) && (uf2 & FLAG_SDIR))
@@ -917,15 +893,15 @@ sortbyext(struct scroll_info *list, struct scroll_entry *e1, struct scroll_entry
 		/* folders in front */
 		return true;
 	}
-	
+
 	if (uf1 == uf2)
 	{
 		list->get(list, e1, SEGET_USRDATA, &x1);
 		list->get(list, e2, SEGET_USRDATA, &x2);
-		
+
 		if ((tmp = sort_by_ext(p1.ret.ptr, p2.ret.ptr)))
 			return tmp > 0 ? true : false;
-		
+
 		if ((tmp = sort_by_name(p1.ret.ptr, p2.ret.ptr)))
 			return tmp > 0 ? true : false;
 
@@ -957,7 +933,7 @@ sortbysize(struct scroll_info *list, struct scroll_entry *e1, struct scroll_entr
 	p1.idx = p2.idx = -1;
 	list->get(list, e1, SEGET_TEXTPTR, &p1);
 	list->get(list, e2, SEGET_TEXTPTR, &p2);
-	
+
 	if ((uf1 & FLAG_SDIR) || (uf2 & FLAG_SDIR))
 	{
 		if ((uf1 & FLAG_SDIR) && (uf2 & FLAG_SDIR))
@@ -977,12 +953,12 @@ sortbysize(struct scroll_info *list, struct scroll_entry *e1, struct scroll_entr
 		/* folders in front */
 		return true;
 	}
-	
+
 	if (uf1 == uf2)
 	{
 		list->get(list, e1, SEGET_USRDATA, &x1);
 		list->get(list, e2, SEGET_USRDATA, &x2);
-		
+
 		if (!S_ISDIR(x1->mode) && !S_ISDIR(x2->mode))
 		{
 			if (x1->size > x2->size)
@@ -1012,7 +988,7 @@ sortbynothing(struct scroll_info *list, struct scroll_entry *e1, struct scroll_e
 	p1.idx = p2.idx = -1;
 	list->get(list, e1, SEGET_TEXTPTR, &p1);
 	list->get(list, e2, SEGET_TEXTPTR, &p2);
-	
+
 	if ((uf1 & FLAG_SDIR) || (uf2 & FLAG_SDIR))
 	{
 		if ((uf1 & FLAG_SDIR) && (uf2 & FLAG_SDIR))
@@ -1039,21 +1015,26 @@ static scrl_compare *sorters[] =
 /* yields true if case sensitive */
 static bool
 inq_xfs(struct fsel_data *fs, char *p, char *dsep)
-{	
+{
 	long c, t;
 
-	c = fs->fcase = d_pathconf(p, DP_CASE);
+	c = d_pathconf(p, DP_CASE);
 	t = fs->trunc = d_pathconf(p, DP_TRUNC);
 
 	DIAG((D_fsel, NULL, "inq_xfs '%s': case = %ld, trunc = %ld", p, c, t));
 
 	if (dsep)
 	{
-		* dsep    = fs->fslash[0];//'\\';
+		* dsep		= fs->fslash[0];//'\\';
 		*(dsep+1) = 0;
 	}
 
-	return !(c == 1 && t == 2);
+	if(c == DP_CASECONV)	/* case always converted */
+		fs->fcase |= FS_FSNOCASE;
+	else
+		fs->fcase &= ~FS_FSNOCASE;
+
+	return !(c == DP_CASECONV && t == DP_DOSTRUNC);
 }
 
 static void
@@ -1072,36 +1053,35 @@ disabled_exe(char *nam)
 
 	return (ext
 		/* The mintlib does almost the same :-) */
-		&& (   !stricmp(ext, "prx")
-		    || !stricmp(ext, "gtx") || !stricmp(ext, "apx")
-		    || !stricmp(ext, "acx")));
+		&& (	 !stricmp(ext, "prx")
+				|| !stricmp(ext, "gtx") || !stricmp(ext, "apx")
+				|| !stricmp(ext, "acx")));
 }
 static void
 set_file(struct fsel_data *fs, char *fn, bool mark)
 {
-// 	XA_TREE *wt = get_widget(fs->wind, XAW_TOOLBAR)->stuff;
-
 	DIAG((D_fsel, NULL, "set_file: fs.file='%s', wh=%d", fn ? fn : fs->file, fs->wind->handle));
 
 	/* fixup the cursor edit position */
-// 	display("here, fn = %lx '%s'", fn, fn);
+//	display("here, fn = %lx '%s'", fn, fn);
 
 	if (fn) {
+		struct xa_aes_object ob = aesobj(fs->form->tree, FS_FILE);
 		obj_edit(fs->form, fs->wind->vdi_settings,
-			 ED_MARK, aesobj(fs->form->tree, FS_FILE),
+			 ED_MARK, ob,
 			0, -1, NULL, false, NULL,NULL, NULL,NULL);
 		obj_edit(fs->form, fs->wind->vdi_settings,
-			 ED_STRING, aesobj(fs->form->tree, FS_FILE),
+			 ED_STRING, ob,
 			mark ? 1 : 0, 0, fn, true, NULL, fs->wind->rect_list.start, NULL, NULL);
 	}
 	else
 		redraw_toolbar(0, fs->wind, FS_FILE);
 
-// 	if (fn)
-// 		strcpy(fs->file, fn); /* set the edit field text */
-// 	wt->e.pos = strlen(fs->file);
+//	if (fn)
+//		strcpy(fs->file, fn); /* set the edit field text */
+//	wt->e.pos = strlen(fs->file);
 	/* redraw the toolbar file object */
-// 	redraw_toolbar(0, fs->wind, FS_FILE);
+//	redraw_toolbar(0, fs->wind, FS_FILE);
 }
 #define FSIZE_MAX 20
 
@@ -1117,7 +1097,7 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 {
 	bool csens;
 	OBJECT *obtree = fs->form->tree;
-	char nm[NAME_MAX+2 + FSIZE_MAX+2  + 40 + 12];
+	char nm[NAME_MAX+2 + FSIZE_MAX+2	+ 40 + 12], pattern[NAME_MAX*2], lower_pattern[16];
 	short xstate;
 	long i, rep;
 
@@ -1152,7 +1132,7 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 		set_dir(list);
 		dir_ent = NULL;
 		return;
-	} 
+	}
 	else
 	{
 		if (dir_ent)
@@ -1160,7 +1140,7 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 			long here;
 			SCROLL_ENTRY *this;
 			struct sesetget_params p; //seget_entrybyarg p;
-			
+
 			strcpy(fs->path, fs->root);
 			here = strlen(fs->path);
 			this = dir_ent;
@@ -1170,7 +1150,7 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 				list->get(list, this, SEGET_TEXTPTR, &p);
 				strins(fs->path, "\\", here);
 				strins(fs->path, p.ret.ptr, here);
-				
+
 				this = this->up;
 			}
 			/* If realtime build, open entry here */
@@ -1188,11 +1168,20 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 			strcpy(fs->path, fs->root);
 
 		csens = inq_xfs(fs, fs->path, fs->fslash);
+		strcpy( pattern, fs->fs_pattern );
+		lower_pattern[0] = 0;
+		if( (fs->fcase & FS_FSNOCASE) ){
+			strupr( pattern );
+		}
+		else if( fs->fcase & FS_PATNOCASE ){
+			strcpy( lower_pattern, pattern );
+			strlwr( lower_pattern );
+		}
 		i = d_opendir(fs->path, 0);
-		
+
 		PROFILE(("fsel:Dopendir %s", fs->path ));
 		//DIAG((D_fsel, NULL, "Dopendir -> %lx", i));
-	
+
 		if (i > 0)
 		{
 			struct xattr xat, *x;
@@ -1215,7 +1204,7 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 				if (!csens)
 					strupr(nam);
 
-				if (sln) 
+				if (sln)
 				{
 					char fulln[NAME_MAX+2];
 
@@ -1231,7 +1220,9 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 				*x = xat;
 
 				if (!dir){
-					PROFRECs(match=, match_pattern,(nam, fs->fs_pattern, false));
+					PROFRECs(match=, match_pattern,(nam, pattern, false));
+					if( !match && lower_pattern[0] )
+						PROFRECs(match=, match_pattern,(nam, lower_pattern, false));
 				}
 				else
 				{
@@ -1253,9 +1244,9 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 					char *s = nam + (l=strlen(nam)) + 1;//, *st = s;
 
 					if( l > max_namlen )
-						max_namlen  = l;
+						max_namlen	= l;
 					sc.t.text = nam;
-					
+
 					if (dir)
 					{
 						sc.xflags = OF_OPENABLE;
@@ -1265,7 +1256,7 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 					else
 					{
 						sc.xflags = 0;
-						
+
 						if (/*executable(nam) ||*/ (xat.mode & S_IXUGO))
 						{
 							if (sln)
@@ -1295,7 +1286,7 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 						sc.fnt->n.e &= ~ITALIC;
 						sc.fnt->s.e &= ~ITALIC;
 					}
-					
+
 					if (!dir)
 					{
 						if (xat.size < (1024UL * 1024) )
@@ -1312,30 +1303,30 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 
 					if( l > max_szlen )
 						max_szlen = l;
-					
+
 					s += l + 1;
-		
+
 					l = sprintf(s, 20, " %02d:%02d:%02d", (xat.mtime >> 11) & 31, (xat.mtime >> 5) & 63, xat.mtime & 63);
 					s += l + 1;
-		
+
 					{
 						unsigned short year, month, day;
 
 						year = ((xat.mdate >> 9) & 127) + 1980;
-			
-			
+
+
 						month = ((xat.mdate >> 5) & 15) - 1;
 						if (month < 0 || month > 11)
 							month = 0;
-						
+
 						day = xat.mdate & 31;
-						
+
 						l = sprintf(s, 20, " %02d %s %04d", day, months[month], year);
 					}
 
 					s += l + 1;
 					sprintf(s, 12, "%s%s%s", faccess[(xat.mode >> 6) & 7], faccess[(xat.mode >> 3) & 7], faccess[xat.mode & 7]);
-					
+
 					if (xat.mode & S_ISUID)
 					{
 						if (s[2] == 'x')
@@ -1357,13 +1348,12 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 						else
 							s[8] = 'T';
 					}
-// 					display("%s", s);
+//					display("%s", s);
 
 					sc.icon = icon;
 					sc.t.strings = 5;
 					sc.data = x;
 					sc.data_destruct = destroy_xattr;
-					//PROFILE(( "read_directory: %s %s", sc.t.text, st ));
 
 					PROFRECs(list->,add,(list, dir_ent, sorters[fs->sort], &sc,
 						dir_ent ? SEADD_PRIOR|SEADD_CHILD : SEADD_PRIOR, 0,
@@ -1373,7 +1363,7 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 			d_closedir(i);
 
 			/* this is not elaborated
-			 * try to adapt the 1st distance 
+			 * try to adapt the 1st distance
 			 */
 			//if (!fs->treeview)
 			{
@@ -1407,7 +1397,7 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 			list->set(list, dir_ent, SESET_USRFLAGS, uf, 0);
 		}
 	}
-	
+
 	if (!fs->rtbuild)
 	{
 		if (dir_ent)
@@ -1421,7 +1411,7 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 				list->set(list, list->cur, SESET_STATE, ((long)(OS_BOXED|OS_SELECTED) << 16) | OS_SELECTED, NOREDRAW);
 			}
 		#endif
-			list->slider(list, NORMREDRAW);
+			list->slider(list, NOREDRAW);
 			list->flags |= SIF_DIRTY;
 			//list->redraw(list, NULL);
 		}
@@ -1438,8 +1428,8 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 /*
  * Re-load a file_selector listbox
  * HR: version without the big overhead of separate dir/file lists
-       and 2 quicksorts + the moving around of all that.
-       Also no need for the Mintlib. (Mintbind only).
+			 and 2 quicksorts + the moving around of all that.
+			 Also no need for the Mintlib. (Mintbind only).
  */
 
 static void
@@ -1462,7 +1452,7 @@ refresh_filelist(enum locks lock, struct fsel_data *fs, SCROLL_ENTRY *dir_ent)
 		TEDINFO *tx;
 
 		tx = object_get_tedinfo(form + FS_CASE, NULL);
-		sprintf(tx->te_ptext, 32, "%ld", fs->fcase);
+		sprintf(tx->te_ptext, 32, "%ld", fs->fcase&FS_FSNOCASE);
 
 		tx = object_get_tedinfo(form + FS_TRUNC, NULL);
 		sprintf(tx->te_ptext, 32, "%ld", fs->trunc);
@@ -1484,7 +1474,9 @@ refresh_filelist(enum locks lock, struct fsel_data *fs, SCROLL_ENTRY *dir_ent)
 		if (fs->rtbuild)
 			list->redraw(list, NULL);
 	}
-	
+	if (!fs->treeview)
+		list->widest = list->total_w = 0;
+
 	xa_graf_mouse(HOURGLASS, NULL, NULL, false);
 	read_directory(fs, list, dir_ent);
 	xa_graf_mouse(ARROW, NULL, NULL, false);
@@ -1502,10 +1494,9 @@ CE_refresh_filelist(enum locks lock, struct c_event *ce, bool cancel)
 		refresh_filelist(lock, fs, NULL);
 		fs_prompt(list, fs->file, false);
 
-    if( list->flags & SIF_DIRTY ){
-			BLOG((0,"refresh:redraw"));
-  	  list->redraw(list, NULL);
-  	}
+		if( list->flags & SIF_DIRTY ){
+			list->redraw(list, NULL);
+		}
 	}
 }
 
@@ -1528,7 +1519,8 @@ fsel_drives(OBJECT *m, int drive, long *dmapp)
 			if (drv == drive)
 				m[d].ob_state |= OS_CHECKED;
 
-			sprintf(m[d++].ob_spec.free_string, 32, "  %c:", DRIVELETTER(drv));
+			/* The " "" is to prevent some stupid program from replacing 2 blanks by "\t" */
+			sprintf(m[d++].ob_spec.free_string, 32, " "" %c:", DRIVELETTER(drv));
 			drvs++;
 		}
 		dmap >>= 1;
@@ -1550,7 +1542,7 @@ fsel_drives(OBJECT *m, int drive, long *dmapp)
 	sprintf(m[FSEL_DRV].ob_spec.free_string, 32, " %c:", DRIVELETTER(drive));
 	return drvs;
 }
-			
+
 static void
 fsel_filters(OBJECT *m, char *pattern)
 {
@@ -1566,13 +1558,13 @@ fsel_filters(OBJECT *m, char *pattern)
 		{
 			//fs_patterns[i][15] = 0;
 			m[d].ob_state &= ~OS_CHECKED;
-			if (stricmp(pattern, fs_patterns[i]) == 0)
+			if (strcmp(pattern, fs_patterns[i]) == 0)
 			{
 				m[d].ob_state |= OS_CHECKED;
 			}
-			sprintf(m[d++].ob_spec.free_string, 128, "  %s", fs_patterns[i++]);
+			sprintf(m[d++].ob_spec.free_string, 128, " "" %s", fs_patterns[i++]);
 		}
-	
+
 		do
 		{
 			m[d].ob_flags |= OF_HIDETREE;
@@ -1605,26 +1597,26 @@ fs_updir(struct scroll_info *list)
 		if (fs->root[s] == '/' || fs->root[s] == '\\')
 			fs->root[s--] = '\0';
 
-		DIAG((D_fsel, NULL, "fs_updir '%s'", fs->root));	
+		DIAG((D_fsel, NULL, "fs_updir '%s'", fs->root));
 
 		while (  s
-		      && fs->root[s] != ':'
-		      && fs->root[s] != '/'
-		      && fs->root[s] != '\\')
+					&& fs->root[s] != ':'
+					&& fs->root[s] != '/'
+					&& fs->root[s] != '\\')
 			s--;
 
 		if (fs->root[s] == ':')
 		{
 			if (fs->root[s + 1] == '\0')
 				atroot = true;
-		
+
 			fs->root[++s] = *fs->fslash;
 		}
 		if (!atroot)
 			strcpy(outof, &fs->root[s + 1]);
 
 		fs->root[++s] = 0;
-		DIAG((D_fsel,NULL,"   -->   '%s'", fs->root));
+		DIAG((D_fsel,NULL," 	--> 	'%s'", fs->root));
 	}
 
 	if (!atroot)
@@ -1647,8 +1639,8 @@ fs_closer(struct scroll_info *list, bool rdrw)
 {
 	struct fsel_data *fs = list->data;
 
-// 	if ( /*fs->clear_on_folder_change &&*/ !fs->tfile)
-// 		set_file(fs, "");
+//	if ( /*fs->clear_on_folder_change &&*/ !fs->tfile)
+//		set_file(fs, "");
 
 	set_file(fs, fs->ofile, false);
 	fs_updir(list);
@@ -1661,7 +1653,7 @@ fs_enter_dir(struct fsel_data *fs, struct scroll_info *list, struct scroll_entry
 	int drv;
 
 	add_slash(fs->root, fs->fslash);
-	
+
 	if (!fs->treeview)
 	{
 		p.idx = -1;
@@ -1669,12 +1661,13 @@ fs_enter_dir(struct fsel_data *fs, struct scroll_info *list, struct scroll_entry
 		strcat(fs->root, p.ret.ptr);
 		fs->selected_dir = NULL;
 	}
-	
+
 	if ((drv = get_drv(fs->root)) >= 0)
 		strcpy(fs_paths[drv], fs->root);
 
+	add_slash( fs->root, fs->fslash );
 	set_file(fs, fs->ofile,false);
-	
+
 	fs->selected_file = NULL;
 	refresh_filelist(fsel, fs, fs->treeview ? dir_ent : NULL);
 	if (fs->treeview && dir_ent)
@@ -1698,7 +1691,7 @@ fs_item_action(struct scroll_info *list, struct scroll_entry *this, const struct
 	short state, xstate;
 
 	DIAG((D_fsel, NULL, "fs_item_action %lx, fs=%lx", list->cur, fs));
-	
+
 	if (this)
 	{
 		list->get(list, this, SEGET_USRFLAGS, &uf);
@@ -1708,8 +1701,7 @@ fs_item_action(struct scroll_info *list, struct scroll_entry *this, const struct
 		if (!(uf & FLAG_DIR))
 		{
 			DIAG((D_fsel, NULL, " --- nodir '%s'", this->content->c.text.text));
-			//BLOG((0, "fs_item_action nodir '%s' state=%x", this->content->c.text.text, state));
-				
+
 			/*
 			 * If not already selected, or if double-clicked, make selection
 			*/
@@ -1751,9 +1743,9 @@ fs_item_action(struct scroll_info *list, struct scroll_entry *this, const struct
 					fs->selected_file = NULL;
 					fs->tfile = false;
 					list->set(list, NULL, SESET_CURRENT, 0, NOREDRAW); //list->cur = NULL;
-// 					fs->kbdnav = false;
+//					fs->kbdnav = false;
 					set_file(fs, fs->ofile, false); //set_file(fs, "");
-				}				
+				}
 				else if (!flags && (!md || md->clicks > 1))
 				{
 					fs_done = true;
@@ -1766,7 +1758,7 @@ fs_item_action(struct scroll_info *list, struct scroll_entry *this, const struct
 			DIAG((D_fsel, NULL, " --- folder '%s'", this->content->c.text.text));
 			p.idx = -1;
 			p.arg.txt = "..";
-			
+
 			if (list->get(list, this, SEGET_TEXTCMP, &p) && !p.ret.ret)
 			{
 			//	if (!md)
@@ -1785,7 +1777,7 @@ fs_item_action(struct scroll_info *list, struct scroll_entry *this, const struct
 				if (!md && !fs->kbdnav)
 				{
 					fs->tfile = false;
-// 					set_file(fs, "");
+//					set_file(fs, "");
 				}
 			}
 			else
@@ -1846,13 +1838,13 @@ fs_item_action(struct scroll_info *list, struct scroll_entry *this, const struct
 						else
 						{
 							fs->kbdnav = false;
-							
+
 							if (xstate & OS_OPENED)
 							{
 								if ((md->state & MBS_LEFT) && fs->tfile)
 									fs_done = true;
 							}
-							
+
 							if (!fs_done)
 							{
 								fs_enter_dir(fs, list, this);
@@ -1877,7 +1869,7 @@ fs_item_action(struct scroll_info *list, struct scroll_entry *this, const struct
 							fs->selected_dir = this;
 						}
 						set_dir(list);
-						
+
 						set_file(fs, fs->ofile, false); //if (!fs->tfile) set_file(fs, "");
 					}
 				}
@@ -1886,21 +1878,23 @@ fs_item_action(struct scroll_info *list, struct scroll_entry *this, const struct
 			}
 		}
 	}
-		
+
 	DIAG((D_fsel, NULL, "fs_item_action: %s%s", fs->root, fs->file));
 
 	if (fs_done)
 	{
 	//	if (!fs->selected_file && !fs->tfile)
 	//		fs->file[0] = '\0';
-		
+
 		fs_cwd(list, fs->path, 2);
 
+		if( this && this->content )
+			strncpy( fs->file, this->content->c.text.text, NAME_MAX);
 		if (fs->selected)
 		{
 			fs->selected(list->lock, fs, fs->path, fs->file);
 		}
-// 		display("select path '%s', file '%s'", fs->path, fs->file);
+//		display("select path '%s', file '%s'", fs->path, fs->file);
 	}
 
 	return true;
@@ -1912,7 +1906,7 @@ fs_click(struct scroll_info *list, struct scroll_entry *this, const struct moose
 
 	/* since mouse click we should _not_ clear the file field */
 	/*fs->clear_on_folder_change = 0;*/
-	//fs->tfile = true;
+
 	if (this)
 		fs_item_action(list, this, md, 0);
 	return true;
@@ -1949,18 +1943,18 @@ static void fs_set_shortcut_letter( OBJECT *o, long dmap )
 		if( !( ( 1 << (tolower(*text) - 'a') ) & dmap) )
 			break;
 	if( !*text )
-		b = 0x7f;	// no Alt-shortcut!
-	o->ob_state |= (b << 8);	// set unused char
-
+		o->ob_state &= (~OS_WHITEBAK & 0x80ff);
+	else
+		o->ob_state |= (b << 8);	// set unused char
 }
 /*
  * FormExit()
  */
 static void
 fileselector_form_exit(struct xa_client *client,
-		       struct xa_window *wind,
-		       XA_TREE *wt,
-		       struct fmd_result *fr)
+					 struct xa_window *wind,
+					 XA_TREE *wt,
+					 struct fmd_result *fr)
 {
 	enum locks lock = 0;
 	OBJECT *obtree = wt->tree;
@@ -1969,13 +1963,13 @@ fileselector_form_exit(struct xa_client *client,
 #ifdef FS_FILTER
 	TEDINFO *filter = object_get_tedinfo(obtree + FS_FILTER, NULL);
 #endif
-	
+
 	wt->which = 0;
-	
+
 	switch (aesobj_item(&fr->obj))
 	{
 	/*
-	 * 
+	 *
 	 */
 	case FS_LIST:
 	{
@@ -2015,10 +2009,9 @@ fileselector_form_exit(struct xa_client *client,
 #endif
 		{
 			struct scroll_entry *sel = get_selected(list);
-			
+
 			if (sel)
 			{
-				//BLOG((0, "fileselector_form_exit:txtstr=%s", sel->content->c.text.txtstr ));
 				fs_item_action(list, sel, NULL, 0);
 			}
 			else if (fs->selected_dir && !*fs->file)
@@ -2033,7 +2026,7 @@ fileselector_form_exit(struct xa_client *client,
 				fs_item_action(list, fs->selected_dir, NULL, 0);
 			else
 				fs_item_action(list, fs->selected_dir, NULL, 0);
-#endif	
+#endif
 		}
 		break;
 	}
@@ -2044,7 +2037,7 @@ fileselector_form_exit(struct xa_client *client,
 		redraw_toolbar(lock, wind, FS_CANCEL);
 		fs->selected_file = NULL;
 		if (fs->canceled)
-	 		fs->canceled(lock, fs, fs->root, "");
+			fs->canceled(lock, fs, fs->root, "");
 		else
 			close_fileselector(lock, fs);
 		break;
@@ -2074,41 +2067,43 @@ find_drive(int a, struct fsel_data *fs)
 	return -1;
 }
 
+#define FS_OFFS	2
+
 static void
 fs_change(enum locks lock, struct fsel_data *fs, OBJECT *m, int p, int title, int d, char *t)
 {
 	XA_WIDGET *widg = get_widget(fs->wind, XAW_MENU);
 	int bx = d - 1;
-	
+
 	do
 		m[d].ob_state &= ~OS_CHECKED;
 	while (m[d++].ob_next != bx);
 
 	m[p].ob_state |= OS_CHECKED;
-	sprintf(m[title].ob_spec.free_string, 128, " %s", m[p].ob_spec.free_string + 2);
+	sprintf(m[title].ob_spec.free_string, 128, " %s", m[p].ob_spec.free_string + FS_OFFS);
 	widg->start = 0;
 	m[title].ob_state &= ~OS_SELECTED;
 	display_widget(lock, fs->wind, widg, NULL);
-	strcpy(t, m[p].ob_spec.free_string + 2);
+	strcpy(t, m[p].ob_spec.free_string + FS_OFFS);
 }
 
 static struct scroll_entry *
 filename_completion(struct scroll_info *list)
-{			
+{
 	struct sesetget_params p; //seget_entrybyarg p;
 	struct scroll_entry *this;
 	struct fsel_data *fs = list->data;
 	long uf;
-	
+
 	p.idx = 0;
 	p.arg.state.method = ANYBITS;
 	p.arg.state.mask = p.arg.state.bits = OS_BOXED;
 	p.level.flags = 0;
 	p.level.maxlevel = -1;
 	p.level.curlevel = 0;
-	
+
 	list->get(list, NULL, SEGET_ENTRYBYSTATE, &p);
-	
+
 	if ((this = p.e))
 	{
 		list->get(list, this, SEGET_USRFLAGS, &uf);
@@ -2127,7 +2122,7 @@ filename_completion(struct scroll_info *list)
 			fs->selected_file = NULL;
 		}
 		set_dir(list);
-		set_file(fs, fs->file, true);		/* update filename */
+		set_file(fs, fs->file, true); 	/* update filename */
 		fs->tfile = false;
 	}
 	return this;
@@ -2151,10 +2146,10 @@ fs_slist_key(struct scroll_info *list, unsigned short keycode, unsigned short ks
 		case SC_DNARROW:	/* 0x5000 */	/* arrow down */
 		case SC_LFARROW:	/* 0x4b00 */	/* arrow left */
 		case SC_RTARROW:	/* 0x4d00 */	/* arrow right */
-		case SC_INSERT:		/* 0x5200 */	/* insert */
+		case SC_INSERT: 	/* 0x5200 */	/* insert */
 		{
 			short xsb, xsa, kk;
-		
+
 			fs->kbdnav = true;
 
 			if (!(was = filename_completion(list)))
@@ -2165,27 +2160,36 @@ fs_slist_key(struct scroll_info *list, unsigned short keycode, unsigned short ks
 
 			list->set(list, was, SESET_CURRENT, 0, NOREDRAW);
 
-			if ((keycode == SC_LFARROW || keycode == SC_RTARROW)
-				&& (list->start == NULL || scrl_cursor(list, keycode, 0) == 0) )
+			if ((keycode == SC_LFARROW || keycode == SC_RTARROW))
 			{
 
 				list->get(list, NULL, SEGET_CURRENT, &this);
-				
+
 				if (keycode == SC_RTARROW)
 				{
-					/* If right arrow and selection dont move, the
-					 * selection have children.
-					 */
-					if (was && was == this)
-						fs_item_action(list, was, NULL, 3);
+					if (this /*&& (!(was->usr_flags & FLAG_DIR) || was == this ) */)
+					{
+						if( !(this->usr_flags & FLAG_DIR) )
+						{
+							fs->kbdnav = false;
+							list->wt->focus = aesobj(fs->form->tree, FS_FILE);
+							set_file( fs, fs->file, false );
+						}
+						else
+							fs_item_action(list, was, NULL, 3);
+					}
+					/*
 					else
+					{
 						set_selected(list, this);
+					}
+					*/
 				}
 				else
 				{
 					if (was && was == this)
 					{
-						/* If current didtn change, we check if current was opened
+						/* If current didnt change, we check if current was opened
 						 * before, in which case we dont do anything, because it was
 						 * automatically closed.
 						 * If current was closed already, we're at root, and this
@@ -2204,11 +2208,12 @@ fs_slist_key(struct scroll_info *list, unsigned short keycode, unsigned short ks
 			}
 			else
 			{
-				kk = (!was && (keycode == SC_DNARROW || keycode == SC_UPARROW)) ? SC_INSERT : keycode;
+				list->cur = was;
+				kk = (!was && (keycode == SC_DNARROW || keycode == SC_UPARROW)) ? SC_SPACE : keycode;
 				if (scrl_cursor(list, kk, 0) == 0)
 				{
 					list->get(list, NULL, SEGET_CURRENT, &this);
-		
+
 					if (this)
 					{
 						fs->kbdnav = true;
@@ -2226,13 +2231,13 @@ fs_slist_key(struct scroll_info *list, unsigned short keycode, unsigned short ks
 								list->set(list, p.e, SESET_STATE, ((long)OS_BOXED << 16), NORMREDRAW);
 							}
 						}
-			
+
 						list->get(list, this, SEGET_USRFLAGS, &uf);
-			
+
 						if (!(uf & FLAG_DIR))
 						{
 							struct sesetget_params p; //seget_entrybyarg p;
-			
+
 							if (this->up != fs->selected_dir)
 							{
 								fs->selected_dir = this->up;
@@ -2276,7 +2281,7 @@ fs_slist_key(struct scroll_info *list, unsigned short keycode, unsigned short ks
 					}
 				}
 			}
-			keyout = 0;			
+			keyout = 0;
 			break;
 		}
 	#if 0
@@ -2292,20 +2297,18 @@ fs_slist_key(struct scroll_info *list, unsigned short keycode, unsigned short ks
 	return keyout;
 }
 
-void
-cXA_open_menubykbd(enum locks lock, struct c_event *ce, bool cancel);	/*c_keybd.c*/
 
 /*
  * FormKeyInput()
  */
 static bool
 fs_key_form_do(enum locks lock,
-	       struct xa_client *client,
-	       struct xa_window *wind,
-	       XA_TREE *wt,
-	       const struct rawkey *key,
-	       
-	       struct fmd_result *res_fr)
+				 struct xa_client *client,
+				 struct xa_window *wind,
+				 XA_TREE *wt,
+				 const struct rawkey *key,
+
+				 struct fmd_result *res_fr)
 {
 	unsigned short nkcode = key->norm, nk;
 	struct scroll_info *list = object_get_slist(((XA_TREE *)get_widget(wind, XAW_TOOLBAR)->stuff)->tree + FS_LIST);
@@ -2313,21 +2316,21 @@ fs_key_form_do(enum locks lock,
 	//SCROLL_ENTRY *old_entry = list->cur;
 
 	wt = ((XA_TREE *)get_widget(wind, XAW_TOOLBAR)->stuff);
-// 	display("focus = %d (FS_FILE=%d), aeskey=%x", wt->focus, FS_FILE, key->aes);
-	
+//	display("focus = %d (FS_FILE=%d), aeskey=%x", wt->focus, FS_FILE, key->aes);
+
 
 	if (nkcode == 0)
 		nkcode = nkc_tconv(key->raw.bcon);
 	nk = tolower(nkcode & 0xff);
 
 	/* HR 310501: ctrl|alt + letter :: select drive */
-	if ((key->raw.conin.state & K_ALT) && ((nk >= 'a' && nk <= 'z') || (nk >= '0' && nk <= '9')))
+	if ((key->raw.conin.state == K_ALT) && ((nk >= 'a' && nk <= 'z') || (nk >= '0' && nk <= '9')))
 	{
 		int drive_object_index = find_drive(nk, fs);
 		if (drive_object_index >= FSEL_DRVA){
 			wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
-					   MN_SELECTED, 0, 0, FSEL_DRV,
-					   drive_object_index, 0, 0, 0);
+						 MN_SELECTED, 0, 0, FSEL_DRV,
+						 drive_object_index, 0, 0, 0);
 
 			return true;
 		}
@@ -2337,10 +2340,10 @@ fs_key_form_do(enum locks lock,
 	{
 	/* ctrl + backspace :: fs_updir() */
 		if( (nkcode & NKF_CTRL) && nk == NK_BS)
-	{
-		set_file(fs, fs->ofile, false);
-		fs_updir(list);
-	}
+		{
+			set_file(fs, fs->ofile, false);
+			fs_updir(list);
+		}
 		/* Ctrl-c: copy path/file to clipbrd */
 		else if( nk == 'c' && fs->path && *fs->path )
 		{
@@ -2355,17 +2358,17 @@ fs_key_form_do(enum locks lock,
 			return true;
 		}
 		else if (nk == '*')
-	{
-		/* change the filter to '*'
-		 * - this should always be the FSEL_PATA entry IIRC
-		 */
-		fs_change(lock, fs, fs->menu->tree,
-				FSEL_PATA, FSEL_FILTER, FSEL_PATA, fs->fs_pattern);
-		fs->selected_dir = fs->selected_file = NULL;
-		/* apply the change to the filelist */
-		refresh_filelist(fsel, fs, NULL);
-		fs_prompt(list, fs->file, false);
-	}
+		{
+			/* change the filter to '*'
+			 * - this should always be the FSEL_PATA entry IIRC
+			 */
+			fs_change(lock, fs, fs->menu->tree,
+					FSEL_PATA, FSEL_FILTER, FSEL_PATA, fs->fs_pattern);
+			fs->selected_dir = fs->selected_file = NULL;
+			/* apply the change to the filelist */
+			refresh_filelist(fsel, fs, NULL);
+			fs_prompt(list, fs->file, false);
+		}
 		else if( nk == 'o' )	// open menu
 		{
 			XA_WIDGET *widg = get_widget(wind, XAW_MENU);
@@ -2378,25 +2381,32 @@ fs_key_form_do(enum locks lock,
 	}
 	else if (focus_item(wt) == FS_FILE && key->aes == SC_TAB)
 	{
-// 		display("eating TAB");
+//		display("eating TAB");
 		fs->kbdnav = true;
 		filename_completion(list);
 	}
 	else
 	{
 		struct fmd_result fr;
-// 		char old[NAME_MAX+2];
-// 		obj_edit(wt, wind->vdi_settings, ED_GETTEXT, FS_EDIT, 0, 0, old, false, NULL, NULL, NULL,NULL);
-// 		strcpy(old, fs->file);
-		
-		if (Key_form_do(lock, client, wind, wt, key, &fr))
+		struct rawkey k = *key;
+
+		/* letter on uppercase fs: make uppercase */
+		if( (fs->fcase & FS_FSNOCASE) && (k.aes & 0x00ff) && k.norm >= 'a' && k.norm <= 'z' )
 		{
+			unsigned char c = k.norm - ('a' - 'A');
+			k.aes = (k.aes & 0xff00) | c;
+			k.norm = c;
+		}
+
+		if (Key_form_do(lock, client, wind, wt, &k, &fr))
+		{
+			//aesobj( fs->form->tree, FS_FILE).ob->ob_state &= ~OS_SELECTED;
 			/* Ozk:
 			 * If key went into the editable, we check if we need to prompt
 			 */
-			if ((fr.flags & FMDF_EDIT)) // && strcmp(old, fs->file) != 0)
+			if ((fr.flags & FMDF_EDIT))
 			{
-				strcpy(fs->ofile, ""); //fs->file);
+				fs->ofile[0] = 0;
 				fs->tfile = true;
 				fs->kbdnav = true;
 				fs_prompt(list, fs->file, true);
@@ -2407,7 +2417,7 @@ fs_key_form_do(enum locks lock,
 }
 
 /* HR: make a start */
-/* dest_pid, msg, source_pid, mp3, mp4,  ....    */
+/* dest_pid, msg, source_pid, mp3, mp4,  .... 	 */
 static void
 fs_msg_handler(
 	struct xa_window *wind,
@@ -2456,26 +2466,26 @@ fs_msg_handler(
 				if (sort >= 0 && sort < 5)
 				{
 					obtree[FSM_SORTBYNAME + fs->sort].ob_state &= ~OS_CHECKED;
-					obtree[FSM_SORTBYNAME + sort    ].ob_state |= OS_CHECKED;
+					obtree[FSM_SORTBYNAME + sort		].ob_state |= OS_CHECKED;
 					fs->sort = sort;
 				}
 			}
-			
+
 			obtree[FSEL_OPTS].ob_state &= ~OS_SELECTED;
 			display_widget(lock, fs->wind, get_widget(fs->wind, XAW_MENU), NULL);
 			fs->selected_dir = NULL;
 			fs->selected_file = NULL;
 			set_file(fs, fs->ofile, false);
-// 			if (!fs->tfile)
-// 				set_file(fs, "");
+//			if (!fs->tfile)
+//				set_file(fs, "");
 		}
 		else if (msg[3] == FSEL_FILTER)
 		{
 			fs_change(lock, fs, fs->menu->tree, msg[4], FSEL_FILTER, FSEL_PATA, fs->fs_pattern);
 			fs->selected_dir = fs->selected_file = NULL;
 			set_file(fs, fs->ofile, false);
-// 			if (!fs->tfile)
-// 				set_file(fs, "");
+//			if (!fs->tfile)
+//				set_file(fs, "");
 		}
 		else if (msg[3] == FSEL_DRV)
 		{
@@ -2489,18 +2499,18 @@ fs_msg_handler(
 			else
 				strcpy(fs_paths[drv], fs->root);
 			/* remove the name from the edit field on drive change */
-// 			if ( !fs->tfile ) //fs->clear_on_folder_change )
-// 				set_file(fs, "");
+//			if ( !fs->tfile ) //fs->clear_on_folder_change )
+//				set_file(fs, "");
 			set_file(fs, fs->ofile, false);
 			fs->selected_dir = fs->selected_file = NULL;
 		}
-// 		display("cur0 %lx", list->cur);
+//		display("cur0 %lx", list->cur);
 		set_dir(list);
-// 		display("cur1 %lx", list->cur);
+//		display("cur1 %lx", list->cur);
 		refresh_filelist(lock, fs, NULL);
-// 		display("cur2 %lx", list->cur);
+//		display("cur2 %lx", list->cur);
 		fs_prompt(list, fs->file, false);
-// 		display("cur3 %lx", list->cur);
+//		display("cur3 %lx", list->cur);
 		break;
 	}
 	case WM_MOVED:
@@ -2510,7 +2520,7 @@ fs_msg_handler(
 		break;
 		/* fall through */
 	}
-// 	case WM_REPOSED:
+//	case WM_REPOSED:
 	case WM_SIZED:
 	{
 		short dh, dw;
@@ -2519,21 +2529,21 @@ fs_msg_handler(
 
 		dw = msg[6] - wind->r.w; //root_window->wa.h - 7 * screen.c_max_h - form->ob_height;
 		dh = msg[7] - wind->r.h; //root_window->wa.w - (form->ob_width + (screen.c_max_w * 4));
-// 		display("resize dw %d, dh %d", dw, dh);
+//		display("resize dw %d, dh %d", dw, dh);
 		obtree->ob_height += dh;
 		obtree->ob_width += dw;
 		obtree[FS_LIST ].ob_height += dh;
 		obtree[FS_LIST ].ob_width += dw;
 		obtree[FS_UNDER].ob_y += dh;
 		obtree[FS_UNDER].ob_x += dw;
-		
+
 		if ((lwind = list->wi) && lwind->send_message)
 		{
 			lwind->send_message(0, lwind, NULL, amq, QMF_CHKDUP,
 				WM_SIZED, 0,0, lwind->handle,
 				lwind->r.x, lwind->r.y, lwind->r.w + dw, lwind->r.h + dh);
 		}
-// 		display("do fsel wind resize");
+//		display("do fsel wind resize");
 		move_window(0, wind, false, -1, msg[4], msg[5], msg[6], msg[7]);
 		set_toolbar_coords(wind, NULL);
 
@@ -2581,30 +2591,30 @@ fs_init_menu(struct fsel_data *fs)
 /*
  * char *
  * path
- * fs_einpath   Name of the default access path (absolute) with appended search
- *              mask; after the call it contains the new pathname
+ * fs_einpath 	Name of the default access path (absolute) with appended search
+ *							mask; after the call it contains the new pathname
 
  * char *
  * file
- * fs_einsel    Name of the default file; after the call it contains the newly
- *              selected filename
+ * fs_einsel		Name of the default file; after the call it contains the newly
+ *							selected filename
  *
  * short*
  * intout[1]
  * fs_eexbutton Exit button:
  *
- *             0 = 'Cancel' was selected
- *             1 = 'OK' was selected
+ *						 0 = 'Cancel' was selected
+ *						 1 = 'OK' was selected
  * char *
  * title
- * fs_elabel    titelline
+ * fs_elabel		titelline
  *
  * (see http://toshyp.atari.org/008004.htm)
- */             
+ */
 static bool
 open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *fs,
-		   const char *path, const char *file, const char *title,
-		   fsel_handler *s, fsel_handler *c, void *data)
+			 const char *path, const char *file, const char *title,
+			 fsel_handler *s, fsel_handler *c, void *data)
 {
 	bool nolist;
 	XA_WIND_ATTR kind;
@@ -2619,8 +2629,6 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 
 	DIAG((D_fsel,NULL,"open_fileselector for %s on '%s', fn '%s', '%s', %lx,%lx)",
 			c_owner(client), path, file, title, s, c));
-	//BLOG((0,"open_fileselector on '%s', fn '%s', '%s', %lx,%lx)",	path, file, title, s, c));
-	
 
 	if (fs)
 	{
@@ -2628,7 +2636,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 
 		fs->data = data;
 		fs->owner = client;
-		
+
 		form = duplicate_obtree(C.Aes, ResourceTree(C.Aes_rsc, FILE_SELECT), 0);
 		if (!form)
 			goto memerr;
@@ -2645,7 +2653,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 		if (!fs->menu)
 			goto memerr;
 		fs->menu->flags |= WTF_TREE_ALLOC | WTF_AUTOFREE;
-				
+
 		fs->selected = s;
 		fs->canceled = c;
 		if (file && *file)
@@ -2659,24 +2667,25 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 			fs->file[0] = '\0';
 			fs->tfile = false;
 		}
-		
-		strcpy(fs->ofile, fs->file);
-		
 
-// 		object_get_tedinfo(form + FS_FILE, NULL)->te_ptext = fs->file;
+		strcpy(fs->ofile, fs->file);
+
+
+//		object_get_tedinfo(form + FS_FILE, NULL)->te_ptext = fs->file;
 		form[FS_ICONS].ob_flags |= OF_HIDETREE;
 
-		if (path && *path != '\0' && ((*path == '\\' || *path == '/') || (path[1] == ':' && (path[2] == '\\' || path[2] == '/'))))
+		if (path && *path != '\0' && ((*path == '\\' || *path == '/')
+			|| (path[1] == ':' && (path[2] == '\\' || path[2] == '/'))))
 		{
 			char *p, *p1;
-// 			display("legal path '%s'", path);
+//			display("legal path '%s'", path);
 
 			if( *path == '/' ){
 				int drv = d_getdrv() + 'a';
 				sprintf( fs->root, PATH_MAX, "%c:%s", drv, path );
 			}
 			else
-			strcpy(fs->root, path);
+				strcpy(fs->root, path);
 
 #if BEAUTY_ROOT_NAME
 			p = strchr( fs->root, '/' );
@@ -2687,6 +2696,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 				fs->fslash[0] = '/';
 				fs->fslash[1] = '\\';
 			}
+
 			else{
 				fs->fslash[1] = '/';
 				fs->fslash[0] = '\\';
@@ -2697,9 +2707,24 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 				//if( *(p+1) != '*' )
 					*p = fs->fslash[0];
 			}
+			/* get rid of "/../" */
+			for( p = fs->root; (p = strstr( p+1, ".." )); )
+			{
+				if( (*(p-1) == fs->fslash[0]) && (*(p+2) == fs->fslash[0]) )
+				{
+					p1 = p-2;
+					for( ; p1 > fs->root && *p1 != fs->fslash[0]; p1-- );
+					if( *p1 == fs->fslash[0] )
+					{
+						strcpy( p1, p+2 );
+						p = p1;
+					}
+					else
+						break;
+				}
+			}
 
 			fs->fslash[1] = 0;	/* would be handy to keep the other slash but fslash is used as string */
-			//BLOG((0,"root=%s fslash=%c", fs->root, fs->fslash[0] ));
 #endif
 		}
 		else
@@ -2709,17 +2734,28 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 			fs->root[0] = drv + 'a';
 			fs->root[1] = ':';
 			d_getcwd(fs->root + 2, drv + 1, sizeof(fs->root));
-			/* */ 
-// 			display("no path passed, building '%s'", fs->root);
+			if( fs->root[1] == ':' && fs->root[2] == 0 )
+			{
+				fs->root[2] = '/';
+				fs->root[3] = 0;
+				fs->fslash[0] = '/';
+				fs->fslash[1] = 0;
+			}
+			else{
+				fs->fslash[0] = '\\';
+				fs->fslash[1] = 0;
+			}
+			/* */
+//			display("no path passed, building '%s'", fs->root);
 		}
 		{
 			int cwdl;
 			char chr=0;
-			
+
 			pat = strrchr(fs->root, '\\');
 			pbt = strrchr(fs->root, '/');
 			if (!pat) pat = pbt;
-			
+
 			if( pat && *(pat + 1) && !strrchr(pat + 1, '*'))
 			{
 				if ((chr = fs->root[2]))
@@ -2735,8 +2771,8 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 					fs->root[2] = fs->fslash[0]/*'\\'*/, fs->root[3] = '\0';
 			}
 
-// 			display("illegal path '%s'", path ? path : "nopath");
-// 			display("set path to  '%s'", fs->root);
+//			display("illegal path '%s'", path ? path : "nopath");
+//			display("set path to	'%s'", fs->root);
 		#if 0
 			fs->root[2] = '\\';
 			fs->root[3] = '*';
@@ -2747,6 +2783,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 		/* Strip out the pattern description */
 		fs->fs_pattern[0] = '*';
 		fs->fs_pattern[1] = '\0';
+		fs->fcase = 0;
 		pat = strrchr(fs->root, '\\');
 		pbt = strrchr(fs->root, '/');
 		if (!pat) pat = pbt;
@@ -2758,8 +2795,30 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 				strcpy(fs->fs_pattern, pat + 1);
 				strcpy(fs->fs_origpattern, fs->fs_pattern);
 				*(pat + 1) = 0;
-				if (strcmp(fs->fs_pattern, "*.*") == 0)
+
+				/* should *.* be *? */
+				/*if (strcmp(fs->fs_pattern, "*.*") == 0)
 					*(fs->fs_pattern + 1) = 0;
+				else
+				*/
+
+				{
+					//int i;
+					if( fs->fs_pattern[0] == '*' && fs->fs_pattern[1] == '.' )
+					{
+						char *p = fs->fs_pattern + 2;
+						if( *p == '[' )
+							p++;
+						for( ; *p; p++ )
+							if( isalpha(*p) && !isupper( *p ) )
+								break;
+						/* pattern is uppercase: make it caseinsensitive */
+						if( !*p || *p == ']' )
+						{
+							fs->fcase = FS_PATNOCASE;
+						}
+					}
+				}
 			}
 		}
 
@@ -2768,7 +2827,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 			*fs->file = 0;
 		}
 		else if( !strnccmp( fs->file, fs->root, strlen(fs->file), "/\\" ) )
-		{		/* in case some buggy app gives "path/file/pattern" in path */
+		{ 	/* in case some buggy app gives "path/file/pattern" in path */
 			char *p = strrchr( fs->root, fs->fslash[0] );
 			if( p )
 			{
@@ -2776,7 +2835,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 					*p = 0;
 					p = strrchr( fs->root, fs->fslash[0] );
 				}
-				if( p  ){
+				if( p ){
 					*p = 0;
 					strcpy( fs->file, p+1 );
 				}
@@ -2787,16 +2846,16 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 			if (drv >= 0)
 				strcpy(fs_paths[drv], fs->root);
 		}
-		
+
 		strcpy(fs->path, fs->root);
 
 		{
 			short dh, dw;
 
-			
+
 			dh = root_window->wa.h - 7 * screen.c_max_h - form->ob_height;
 			dw = root_window->wa.w - (form->ob_width + (screen.c_max_w * 4));
-			
+
 			if ((dw + form->ob_width) > 560)
 				dw = 560 - form->ob_width;
 
@@ -2817,14 +2876,14 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 			center_rect(&or);
 			remember =
 			calc_window(lock, client, WC_BORDER,
-				    kind, created_for_AES,
-				    4, /*C.Aes->options.thinframe,*/
-				    C.Aes->options.thinwork,
-				    *(RECT*)&or); //form->ob_x);
+						kind, created_for_AES,
+						C.Aes->options.thinframe,
+						C.Aes->options.thinwork,
+						*(RECT*)&or); //form->ob_x);
 		}
-		
+
 		if (C.update_lock == client->p ||
-		    C.mouse_lock  == client->p)
+				C.mouse_lock	== client->p)
 		{
 			nolist = true;
 			kind |= STORE_BACK;
@@ -2836,19 +2895,19 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 		}
 
 		/* Create the window */
-		dialog_window = create_window(  lock,
+		dialog_window = create_window(	lock,
 						do_winmesag,
 						fs_msg_handler,
 						client,
 						nolist,
 						kind,
 						created_for_AES,
-						4, /*C.Aes->options.thinframe,*/
+						C.Aes->options.thinframe,
 						C.Aes->options.thinwork,
 						remember,
 						NULL,
 						NULL); //&remember);
-		
+
 		if (!dialog_window)
 			goto memerr;
 
@@ -2857,14 +2916,14 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 
 		/* Set the window title */
 		/* XXX - pointer into user space, correct here? */
-		/*   ozk: no, absolutely not right here! */
+		/*	 ozk: no, absolutely not right here! */
 		set_window_title(dialog_window, title, true);
 
 		set_menu_widget(dialog_window, client, fs->menu);
 
 		fs->drives = fsel_drives(fs->menu->tree,
 					*(fs->root+1) == ':' ? tolower(*fs->root) - 'a' : d_getdrv(), &dmap);
-		
+
 		fsel_filters(fs->menu->tree, fs->fs_pattern);
 
 		fs->clear_on_folder_change = 0;
@@ -2879,7 +2938,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 		wt->exit_form = fileselector_form_exit;
 
 		/* HR: We need to do some specific things with the key's,
-		 *     so we supply our own handler,
+		 *		 so we supply our own handler,
 		 */
 		dialog_window->keypress = fs_key_form_do; //fs_key_handler;
 
@@ -2890,7 +2949,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 				 FS_LIST,
 				 SIF_SELECTABLE | SIF_ICONINDENT | (fs->treeview ? SIF_TREEVIEW : 0) | SIF_AUTOSLIDERS,
 				 fs_closer, NULL,
-				 /*dclick,               click    click_nesticon      key */
+				 /*dclick,							 click		click_nesticon			key */
 				 fs_click/*was dclick*/, fs_click, fs_click_nesticon, fs_slist_key,
 				 /*add,del,empty,destroy*/
 				 NULL, NULL, NULL, NULL/*free_scrollist*/,
@@ -2898,8 +2957,8 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 				 fs->path, NULL, fs, 30);
 		{
 			struct seset_tab tab;
-// 			RECT r;
-// 			short w;
+//			RECT r;
+//			short w;
 
 			tab.index = FSLIDX_NAME;
 			tab.flags = 0;
@@ -2908,43 +2967,43 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 				tab.r.w = -MINWIDTH;
 
 			list->set(list, NULL, SESET_TAB, (long)&tab, false);
-			
+
 			tab.index = FSLIDX_SIZE;
 			tab.flags |= SETAB_RJUST;
 			tab.r.w = 0; //-10; //(RECT){0,0,-10,0};
 			list->set(list, NULL, SESET_TAB, (long)&tab, false);
-			
+
 			tab.index = FSLIDX_TIME;
 			tab.flags = 0;	//SETAB_CJUST;
 			tab.r.w = 0; //-10;
 			list->set(list, NULL, SESET_TAB, (long)&tab, false);
-			
+
 			tab.index = FSLIDX_DATE;
 			tab.flags = 0;
 			tab.r.w = 0; //-20;
 			list->set(list, NULL, SESET_TAB, (long)&tab, false);
-			
+
 			tab.index = FSLIDX_FLAG;
 			tab.flags = 0;
 			tab.r.w = 0; //-10;
 			list->set(list, NULL, SESET_TAB, (long)&tab, false);
 
-// 			tab.index = 3;
-// 			tab.flags = 0;
-// 			tab.r = (RECT){0,0,-2,0};
-// 			list->set(list, NULL, SESET_TAB, (long)&tab, false);
+//			tab.index = 3;
+//			tab.flags = 0;
+//			tab.r = (RECT){0,0,-2,0};
+//			list->set(list, NULL, SESET_TAB, (long)&tab, false);
 
-			
-#if 0		
+
+#if 0
 			list->get(list, NULL, SEGET_LISTXYWH, &r);
 
 			w = r.w >> 2;
-			
+
 			tab.index = 1;
 			list->get(list, NULL, SEGET_TEXTTAB, &tab);
 			tab.r.w = w * 3;
 			list->set(list, NULL, SESET_TEXTTAB, (long)&tab, false);
-			
+
 			tab.index = 2;
 			list->get(list, NULL, SEGET_TEXTTAB, &tab);
 			tab.r.w = w;
@@ -2953,7 +3012,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 #endif
 		}
 		/* HR: after set_menu_widget (fs_destructor must cover what is in menu_destructor())
-		 *     Set the window destructor
+		 *		 Set the window destructor
 		 */
 		dialog_window->destructor = fs_destructor;
 
@@ -2969,14 +3028,14 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 		if( fs->tfile == true ){
 			/*
 			 * try to set focus to pre-selected item
-			 * 
+			 *
 			 */
 
 			struct xa_aes_object o = aesobj(list->wt->tree,FS_LIST);
 
 			//o = ob_find_next_any_flagstate( list->wt, o, list->wt->focus,
 			//	OF_SELECTABLE,OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_VERT | OBFIND_DOWN);
-			
+
 
 			if( o.ob && o.ob->ob_type == G_SLIST )
 				list->wt->focus = o;
@@ -2989,7 +3048,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 		list, (list && list->wt) ? list->wt->tree:(void*)-1L, wt, list->wt, list?list->start:(void*)-1,
 			list->cur, list->wt->focus.ob,list->wt->focus.ob->ob_type ));
 			*/
-		
+
 		DIAG((D_fsel,NULL,"done."));
 		return true;
 	}
@@ -3017,6 +3076,8 @@ memerr:
 	}
 }
 
+static bool aes_has_fsel = false;
+
 void
 close_fileselector(enum locks lock, struct fsel_data *fs)
 {
@@ -3029,12 +3090,14 @@ close_fileselector(enum locks lock, struct fsel_data *fs)
 	fs->form = NULL;
 	fs->selected = NULL;
 	fs->canceled = NULL;
+
+	aes_has_fsel = false;
 }
 
 static void
 handle_fsel(enum locks lock, struct fsel_data *fs, const char *path, const char *file)
 {
-	DIAG((D_fsel, NULL, "fsel OK: path=%s, file=%s", path, file));
+	DIAG((D_fsel, NULL, "fsel OK: path=%s, file=%s:%s", path, file, fs->file));
 
 	PROFILE(( "fsel: handle_fsel" ));
 	close_fileselector(lock, fs);
@@ -3057,11 +3120,13 @@ cancel_fsel(enum locks lock, struct fsel_data *fs, const char *path, const char 
 static int locked = 0;
 void
 open_fileselector(enum locks lock, struct xa_client *client, struct fsel_data *fs,
-		  const char *path, const char *file, const char *title,
-		  fsel_handler *s, fsel_handler *c, void *data)
+			const char *path, const char *file, const char *title,
+			fsel_handler *s, fsel_handler *c, void *data)
 {
-	if (!locked)
+	if (!locked && !aes_has_fsel)
 	{
+		if( client == C.Hlp )
+			aes_has_fsel = true;
 		open_fileselector1(lock, client, fs, path, file, title, s, c, data);
 	}
 }
@@ -3078,16 +3143,16 @@ do_fsel_exinput(enum locks lock, struct xa_client *client, AESPB *pb, const char
 
 	pb->intout[0] = 0;
 
-// 	display("do_fsel_exinput for %s", client->proc_name);
-// 	display("path %lx '%s'", path, path ? path : "nopath");
-// 	display("file %lx '%s'", file, file ? file : "nofile");
-	
+//	display("do_fsel_exinput for %s", client->proc_name);
+//	display("path %lx '%s'", path, path ? path : "nopath");
+//	display("file %lx '%s'", file, file ? file : "nofile");
+
 #if KERNELSTRCMP
 	if( strcmp == 0 )
 		strcmp = (*KENTRY->vec_libkern.strcmp);
 #endif
 	fs = kmalloc(sizeof(*fs));
-	
+
 	if (fs)
 	{
 
@@ -3095,7 +3160,7 @@ do_fsel_exinput(enum locks lock, struct xa_client *client, AESPB *pb, const char
 			text, path, file, fs));
 	//	display("fsel_(ex)input: title=(%lx)%s, path=(%lx)%s, file=(%lx)%s, fs=%lx",
 	//		text, text, path, path, file, file, fs);
-			
+
 		if (open_fileselector1( lock|fsel,
 					client,
 					fs,
@@ -3127,11 +3192,10 @@ do_fsel_exinput(enum locks lock, struct xa_client *client, AESPB *pb, const char
 					sprintf( path, PATH_MAX, "/%c%s", drv, fs->path );
 				else
 #endif
-				strcpy(path, fs->path);
+					strcpy(path, fs->path);
 				strcat(path, fs->fs_origpattern);
 				strcpy(file, fs->file);
 			//	display("return file '%s', path '%s'", file, path);
-				//BLOG((0,"fsel:return file '%s', drv=%c, path '%s' root='%s' ofile='%s'", file, drv, path, fs->root, fs->ofile));
 			}
 		}
 		kfree(fs);
@@ -3152,7 +3216,7 @@ XA_fsel_input(enum locks lock, struct xa_client *client, AESPB *pb)
 	do_fsel_exinput(lock, client, pb, "");
 	set_client_mouse(client, SCM_MAIN|0x8000, msave, save);
 	xa_graf_mouse(client->mouse, client->mouse_form, client, false);
-	
+
 	return XAC_DONE;
 }
 
@@ -3171,12 +3235,12 @@ XA_fsel_exinput(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	if (pb->control[N_ADDRIN] <= 2 || t == NULL)
 		t = "";
-	
+
 	showm();
 	do_fsel_exinput(lock, client, pb, t);
-	
+
 	set_client_mouse(client, SCM_MAIN, msave, save);
 	xa_graf_mouse(client->mouse, client->mouse_form, client, false);
-	
+
 	return XAC_DONE;
 }

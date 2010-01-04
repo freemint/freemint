@@ -91,7 +91,9 @@ obfix(OBJECT *tree, short object, short designWidth, short designHeight)
 	if (ob->ob_width == 80)
 		ob->ob_width = screen.r.w;
 	else
+	{
 		fixupobj(&ob->ob_width, x_fact, designWidth);
+	}
 	
 	fixupobj(&ob->ob_height, y_fact, designHeight);
 }
@@ -677,7 +679,9 @@ fix_trees(struct xa_client *client, void *b, OBJECT **trees, unsigned long n, sh
 					k++;
 				}
 				while (!(obj++->ob_flags & OF_LASTOB));
-				ob_fix_shortcuts(*trees, false);
+				
+				if( (client->options.alt_shortcuts & ALTSC_DIALOG) )
+					ob_fix_shortcuts(*trees, false);
 			}
 			else
 			{
@@ -766,6 +770,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 		DIAG((D_rsrc, client, "LoadResources(%s)", fname));
 
 		f = kernel_open(fname, O_RDONLY, &err, &x);
+
 		if (!f)
 		{
 			DIAG((D_rsrc, client, "LoadResources(): file not found"));

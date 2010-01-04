@@ -191,7 +191,7 @@ free_mouse_lock(void)
 	ressource_semaphore_free(&mouse_lock);
 }
 
-#if INCLUDE_UNUSED
+#if ALT_CTRL_APP_OPS
 void
 free_menustruct_lock(void)
 {

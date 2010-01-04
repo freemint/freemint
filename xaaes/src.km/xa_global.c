@@ -31,7 +31,7 @@
 struct nova_data *nova_data = NULL;
 struct cookie_mvdi mvdi_api;
 
-unsigned long next_res;
+unsigned long next_res = 0;
 
 char version[32];
 char vversion[128];
@@ -86,7 +86,7 @@ pid2client(short pid)
 	return client;
 }
 
-#if INCLUDE_UNUSED
+#if ALT_CTRL_APP_OPS
 struct xa_client *
 proc2client(struct proc *p)
 {
@@ -277,7 +277,37 @@ create_vdipb(void)
 	}
 	return v;
 }
+#if 0
+/*
+ * callout the VDI
+ */
+void
+do_vdi_trap (XVDIPB * vpb)
+{
+	__asm__ volatile
+	(
+		"movea.l	%0,a0\n\t" 	\
+		"move.l		a0,d1\n\t"	\
+		"move.w		#115,d0\n\t"	\
+		"trap		#2\n\t"		\
+		:
+		: "a"(vpb)			
+		: "a0", "d0", "d1", "memory"	
+	);
+}
 
+void
+VDI(XVDIPB *vpb, short c0, short c1, short c3, short c5, short c6)
+{
+	vpb->control[V_OPCODE   ] = c0;
+	vpb->control[V_N_PTSIN  ] = c1;
+	vpb->control[V_N_INTIN  ] = c3;
+	vpb->control[V_SUBOPCODE] = c5;
+	vpb->control[V_HANDLE   ] = c6;
+
+	do_vdi_trap(vpb);
+}
+#endif
 void
 get_vdistr(char *d, short *s, short len)
 {
@@ -368,3 +398,4 @@ dump_devstuff(XVDIPB *vpb, short handle)
 }
 /* ***************************************************** */
 #endif
+
