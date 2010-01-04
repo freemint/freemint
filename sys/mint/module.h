@@ -63,6 +63,7 @@ struct kernel_module
 	struct km_api *kmapi;
 	char path[PATH_MAX];
 	char name[64];
+	struct proc *caller;
 };
 
 #endif	/* _mint_module_h_ */
