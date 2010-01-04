@@ -28,6 +28,7 @@ HEADER = \
 	matchpat.h \
 	menuwidg.h \
 	messages.h \
+	mvdi.h \
 	nkcc.h \
 	ob_inlines.h \
 	obtree.h \
@@ -67,7 +68,7 @@ HEADER = \
 	xa_vdi.h \
 	xa_wdlg.h \
 	xa_wind.h \
-	xaaes_module.h
+	xcb.h
 
 COBJS = \
 	about.c \

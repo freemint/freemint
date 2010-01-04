@@ -87,7 +87,7 @@ xif_module_init(void *initfunc, struct kerinfo *k, struct netinfo *n)
 #endif
 
 static long
-load_xif (struct basepage *b, const char *name, short *class)
+load_xif (struct basepage *b, const char *name, short *class, short *subclass)
 {
 #if 0
 	long (*init)(struct kerinfo *, struct netinfo *);
@@ -102,6 +102,7 @@ load_xif (struct basepage *b, const char *name, short *class)
 	 */
 	netinfo.fname = name;
 	*class = MODCLASS_XIF;
+	*subclass = 0;
 #if 0
 	init = (long (*)(struct kerinfo *, struct netinfo *))b->p_tbase;
 	r = (*init)(KERNEL, &netinfo);

@@ -50,7 +50,7 @@ short dispatch_selcevent(struct xa_client *client, void *f, bool cancel);
 
 void do_block(struct xa_client *client);
 void cBlock(struct xa_client *client, int which);
-static inline void Block(struct xa_client *client, int which) { (*client->block)(client, which); }
+void Block(struct xa_client *client, int which);
 void Unblock(struct xa_client *client, unsigned long value, int which);
 
 void multi_intout(struct xa_client *client, short *o, int evnt);

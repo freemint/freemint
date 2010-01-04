@@ -48,11 +48,7 @@ union msg_buf
 		short msg;
 		short xaw;
 		void *ptr;
-		union
-		{
-			short x, y, w, h;
-			RECT rect;
-		} coords;
+		short x, y, w, h;
 	} irdrw;
 };
 

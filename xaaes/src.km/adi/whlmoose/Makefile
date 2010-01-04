@@ -23,7 +23,7 @@ DEFINITIONS = -D__KERNEL_MODULE__ -DMODULE_NAME=whlmoose $(XDD_DEFINITIONS)
 XDD_DEFINITIONS = 
 
 LD = $(CC) -nostdlib -Wl,--entry -Wl,_init
-LIBS = $(LIBKERN) -lgcc16
+LIBS = $(LIBKERN) -lgcc
 CPU = 000
 
 # default definitions

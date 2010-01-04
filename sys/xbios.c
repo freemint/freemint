@@ -107,9 +107,9 @@ sys_b_supexec (Func funcptr, long arg1, long arg2, long arg3, long arg4, long ar
 	/* set things up so that "signal 0" will be handled by calling the user's
 	 * function.
 	 */
-
+	
 	assert (get_curproc()->p_sigacts);
-
+	
 	usrcall = funcptr;
 	usrarg1 = arg1;
 	usrarg2 = arg2;
@@ -424,23 +424,21 @@ sys_b_cursconf (int cmd, int op)
 
 
 long _cdecl
-sys_b_dosound (const char *p)
+sys_b_dosound (const char *ptr)
 {
-	union { volatile char *vc; const char *cc; long l; } ptr; ptr.cc = p;
-	if (!no_mem_prot && ptr.l >= 0)
+	if (!no_mem_prot && ((long) ptr >= 0))
 	{
 		MEMREGION *r;
 
 		/* check that this process has access to the memory
 		 * (if not, the next line will cause a bus error)
 		 */
-		(void)*ptr.vc;
-		//(void)(*((volatile char *) ptr));
+		(void)(*((volatile char *) ptr));
 
 		/* OK, now make sure that interrupt routines will have access,
 		 * too
 		 */
-		r = addr2region (ptr.l);// (unsigned long)ptr);
+		r = addr2region ((long) ptr);
 		if (r && get_prot_mode (r) == PROT_P)
 		{
 			DEBUG (("Dosound: changing protection to Super"));
@@ -448,7 +446,7 @@ sys_b_dosound (const char *p)
 		}
 	}
 
-	ROM_Dosound (ptr.cc);
+	ROM_Dosound (ptr);
 
 	return E_OK;
 }
@@ -684,7 +682,7 @@ init_xbios(void)
 {
 	/* init XBIOS Random() function */
 	init_xrandom();
-
+	
 	/* init bconmap stuff */
 	init_bconmap();
 }

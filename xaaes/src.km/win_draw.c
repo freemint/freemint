@@ -24,15 +24,13 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-// #include "xa_types.h"
-#include "xaaes_module.h"
-
+#include "xa_types.h"
 #include "xaaeswdg.h"
 #include "win_draw.h"
 
 #define MONO (scrninf->colours < 16)
 
-static const struct xa_api *XAPI;
+static const struct xa_module_api *api;
 static const struct xa_screen *scrninf;
 
 static struct widget_theme *current_theme;
@@ -488,7 +486,7 @@ duplicate_theme(struct widget_theme *theme)
 
 	len = ((sizeof(wr) * n_widgets)) + sizeof(*new_theme) + ((sizeof(*rows) * n_rows));
 
-	new_theme = kmalloc(len);
+	new_theme = (*api->kmalloc)(len);
 	
 	if (new_theme)
 	{
@@ -536,7 +534,7 @@ duplicate_theme(struct widget_theme *theme)
 static void _cdecl
 delete_theme(void *_theme)
 {
-	kfree(_theme);
+	(*api->kfree)(_theme);
 }
 
 /*
@@ -2262,10 +2260,10 @@ draw_widg_icon(struct xa_vdi_settings *v, struct xa_widget *widg, XA_TREE *wt, s
 
 	x = widg->ar.x, y = widg->ar.y;
 
-	object_spec_wh(aesobj_ob(&ob), &w, &h);
+	(*api->object_spec_wh)(aesobj_ob(&ob), &w, &h);
 	x += (widg->ar.w - w) >> 1;
 	y += (widg->ar.h - h) >> 1;
-	render_object(wt, v, ob, x, y); //display_object(0, wt, v, ob, x, y, 0);
+	(*api->render_object)(wt, v, ob, x, y); //display_object(0, wt, v, ob, x, y, 0);
 }
 
 static void
@@ -2309,7 +2307,7 @@ static bool _cdecl
 d_unused(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 {
 	struct xa_wcol_inf *wc = &((struct window_colours *)wind->colours)->win;
-	relpos2abspos(wind, widg, &widg->ar);
+	(*api->rp2ap)(wind, widg, &widg->ar);
 	draw_widg_box(wind->vdi_settings, 0, wc, NULL, 0, &widg->ar, &wind->r);
 	return true;
 }
@@ -2414,7 +2412,7 @@ free_priv_gradients(struct xa_window *wind, struct xa_widget *widg)
 	for (i = 0; i < 4; i++)
 	{
 		if (widg->m.r.priv[i])
-			free_xa_data_list((struct xa_data_hdr **)&widg->m.r.priv[i]);
+			(*api->free_xa_data_list)((struct xa_data_hdr **)&widg->m.r.priv[i]);
 	}
 }
 
@@ -2431,7 +2429,7 @@ d_title(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	bool dial = (wind->dial & (created_for_FORM_DO|created_for_FMD_START)) != 0;
 
 	/* Convert relative coords and window location to absolute screen location */
-	relpos2abspos(wind, widg, &widg->ar);
+	(*api->rp2ap)(wind, widg, &widg->ar);
 #if 0
 	if (MONO)
 	{
@@ -2548,7 +2546,7 @@ d_title(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 			sprintf(tn, sizeof(tn), "(%d) %s", wind->owner->p->pid, widg->stuff);
 	}
 	else
-		strcpy(tn, widg->stuff.cptr);
+		strcpy(tn, widg->stuff);
 
 	draw_widget_text(v, widg, wti, tn, 4, 0);
 	return true;
@@ -2561,7 +2559,7 @@ d_wcontext(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	struct xa_wcol_inf *wci = &wc->closer;
 	struct xa_wtexture *t = NULL;
 	
-	relpos2abspos(wind, widg, &widg->ar);
+	(*api->rp2ap)(wind, widg, &widg->ar);
 #ifndef ST_ONLY
 	if (scrninf->planes > 8)
 	{
@@ -2595,7 +2593,7 @@ d_wappicn(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	struct xa_wcol_inf *wci = &wc->closer;
 	struct xa_wtexture *t = NULL;
 	
-	relpos2abspos(wind, widg, &widg->ar);
+	(*api->rp2ap)(wind, widg, &widg->ar);
 #ifndef ST_ONLY
 	if (scrninf->planes > 8)
 	{
@@ -2629,7 +2627,7 @@ d_closer(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	struct xa_wcol_inf *wci = &wc->closer;
 	struct xa_wtexture *t = NULL;
 	
-	relpos2abspos(wind, widg, &widg->ar);
+	(*api->rp2ap)(wind, widg, &widg->ar);
 #ifndef ST_ONLY	
 	if (scrninf->planes > 8)
 	{
@@ -2663,7 +2661,7 @@ d_fuller(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	struct xa_wcol_inf *wci = &wc->fuller;
 	struct xa_wtexture *t = NULL;
 	
-	relpos2abspos(wind, widg, &widg->ar);
+	(*api->rp2ap)(wind, widg, &widg->ar);
 #ifndef ST_ONLY	
 	if (scrninf->planes > 8)
 	{
@@ -2699,7 +2697,7 @@ d_info(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	struct xa_wtexture *t = NULL;
 
 	/* Convert relative coords and window location to absolute screen location */
-	relpos2abspos(wind, widg, &widg->ar);
+	(*api->rp2ap)(wind, widg, &widg->ar);
 #ifndef ST_ONLY		
 	if (scrninf->planes > 8)
 	{
@@ -2724,7 +2722,7 @@ d_info(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 
 
 	draw_widg_box(wind->vdi_settings, 0, wci, t, widg->state, &widg->ar, t ? &widg->ar : &wind->r);
-	draw_widget_text(wind->vdi_settings, widg, wti, widg->stuff.cptr, 4, 0); 
+	draw_widget_text(wind->vdi_settings, widg, wti, widg->stuff, 4, 0); 
 	return true;
 }
 
@@ -2735,7 +2733,7 @@ d_sizer(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	struct xa_wcol_inf *wci = &wc->sizer;
 	struct xa_wtexture *t = NULL;
 	
-	relpos2abspos(wind, widg, &widg->ar);
+	(*api->rp2ap)(wind, widg, &widg->ar);
 #ifndef ST_ONLY	
 	if (scrninf->planes > 8)
 	{
@@ -2769,7 +2767,7 @@ d_uparrow(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	struct xa_wcol_inf *wci = &wc->uparrow;
 	struct xa_wtexture *t = NULL;
 	
-	relpos2abspos(wind, widg, &widg->ar);
+	(*api->rp2ap)(wind, widg, &widg->ar);
 #ifndef ST_ONLY	
 	if (scrninf->planes > 8)
 	{
@@ -2802,7 +2800,7 @@ d_dnarrow(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	struct xa_wcol_inf *wci = &wc->dnarrow;
 	struct xa_wtexture *t = NULL;
 	
-	relpos2abspos(wind, widg, &widg->ar);
+	(*api->rp2ap)(wind, widg, &widg->ar);
 #ifndef ST_ONLY	
 	if (scrninf->planes > 8)
 	{
@@ -2835,7 +2833,7 @@ d_lfarrow(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	struct xa_wcol_inf *wci = &wc->lfarrow;
 	struct xa_wtexture *t = NULL;
 	
-	relpos2abspos(wind, widg, &widg->ar);
+	(*api->rp2ap)(wind, widg, &widg->ar);
 #ifndef ST_ONLY
 	if (scrninf->planes > 8)
 	{
@@ -2868,7 +2866,7 @@ d_rtarrow(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	struct xa_wcol_inf *wci = &wc->rtarrow;
 	struct xa_wtexture *t = NULL;
 	
-	relpos2abspos(wind, widg, &widg->ar);
+	(*api->rp2ap)(wind, widg, &widg->ar);
 #ifndef ST_ONLY
 	if (scrninf->planes > 8)
 	{
@@ -2926,7 +2924,7 @@ static bool _cdecl
 d_vslide(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 {
 	int len, offs;
-	XA_SLIDER_WIDGET *sl = widg->stuff.slider;
+	XA_SLIDER_WIDGET *sl = widg->stuff;
 	RECT cl;
 	struct window_colours *wc = wind->colours;
 	struct xa_wtexture *t;
@@ -2934,7 +2932,7 @@ d_vslide(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	sl->flags &= ~SLIDER_UPDATE;
 
 	/* Convert relative coords and window location to absolute screen location */
-	relpos2abspos(wind, widg, &widg->ar);
+	(*api->rp2ap)(wind, widg, &widg->ar);
 
 	if (sl->length >= SL_RANGE)
 	{
@@ -2978,14 +2976,14 @@ static bool _cdecl
 d_hslide(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 {
 	int len, offs;
-	XA_SLIDER_WIDGET *sl = widg->stuff.slider;
+	XA_SLIDER_WIDGET *sl = widg->stuff;
 	struct window_colours *wc = wind->colours;
 	struct xa_wtexture *t;
 	RECT cl;
 
 	sl->flags &= ~SLIDER_UPDATE;
 
-	relpos2abspos(wind, widg, &widg->ar);
+	(*api->rp2ap)(wind, widg, &widg->ar);
 
 	if (sl->length >= SL_RANGE)
 	{
@@ -3031,7 +3029,7 @@ d_iconifier(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	struct xa_wcol_inf *wci = &wc->iconifier;
 	struct xa_wtexture *t = NULL;
 	
-	relpos2abspos(wind, widg, &widg->ar);
+	(*api->rp2ap)(wind, widg, &widg->ar);
 #ifndef ST_ONLY	
 	if (scrninf->planes > 8)
 	{
@@ -3064,8 +3062,8 @@ d_hider(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	struct window_colours *wc = wind->colours;
 	struct xa_wcol_inf *wci = &wc->hider;
 	struct xa_wtexture *t = NULL;
-
-	relpos2abspos(wind, widg, &widg->ar);
+	
+	(*api->rp2ap)(wind, widg, &widg->ar);
 #ifndef ST_ONLY	
 	if (scrninf->planes > 8)
 	{
@@ -3182,7 +3180,7 @@ set_widg_size(struct xa_window *wind, struct xa_widget *widg, struct xa_wcol_inf
 
 	f = wci->flags;
 
-	object_spec_wh(ob, &w, &h);
+	(*api->object_spec_wh)(ob, &w, &h);
  	if (f & WCOL_DRAW3D)
  		h += 2, w += 2;
  	if (f & WCOL_BOXED)
@@ -3451,7 +3449,7 @@ fix_default_widgets(void *rsc)
 	OBJECT *def_widgets;
 	int i;
 
-	def_widgets = resource_tree(rsc, WIDGETS);
+	def_widgets = (*api->resource_tree)(rsc, WIDGETS);
 	DIAGS(("widget set at %lx", def_widgets));
 
 	for (i = 1; i < WIDG_CFG; i++)
@@ -3468,7 +3466,7 @@ set_texture(struct module *m, struct xa_wcol_inf *wcol, struct widg_texture *t) 
 		wcol->h.texture = &t->t;
 		wcol->n.texture = &t->t;
 		wcol->s.texture = &t->t;
-		ref_xa_data(&m->allocs, t, 3);
+		(*api->ref_xa_data)(&m->allocs, t, 3);
 	}
 	else
 	{
@@ -3488,21 +3486,21 @@ free_texture(struct module *m, struct xa_wcol_inf *wcol)
 // 	display("free texture");
 	if ((wtext = wcol->h.texture))
 	{
-		t = lookup_xa_data_byid(&m->allocs, (long)wtext);
+		t = (*api->lookup_xa_data_byid)(&m->allocs, (long)wtext);
 		if (t)
-			deref_xa_data(&m->allocs, t, 1);
+			(*api->deref_xa_data)(&m->allocs, t, 1);
 	}
 	if ((wtext = wcol->n.texture))
 	{
-		t = lookup_xa_data_byid(&m->allocs, (long)wtext);
+		t = (*api->lookup_xa_data_byid)(&m->allocs, (long)wtext);
 		if (t)
-			deref_xa_data(&m->allocs, t, 1);
+			(*api->deref_xa_data)(&m->allocs, t, 1);
 	}
 	if ((wtext = wcol->s.texture))
 	{
-		t = lookup_xa_data_byid(&m->allocs, (long)wtext);
+		t = (*api->lookup_xa_data_byid)(&m->allocs, (long)wtext);
 		if (t)
-			deref_xa_data(&m->allocs, t, 1);
+			(*api->deref_xa_data)(&m->allocs, t, 1);
 	}
 	set_texture(m, wcol, NULL);
 // 	display("free texture done");
@@ -3524,20 +3522,20 @@ ref_colortheme_resources(struct module *m, struct window_colours *wc)
 	{
 		if ((wtexture = wci[i].h.texture))
 		{
-			t = lookup_xa_data_byid(&m->allocs, (long)wtexture);
-			if (t) ref_xa_data(&m->allocs, t, 1);
+			t = (*api->lookup_xa_data_byid)(&m->allocs, (long)wtexture);
+			if (t) (*api->ref_xa_data)(&m->allocs, t, 1);
 			else display("WARNING!!");
 		}
 		if ((wtexture = wci[i].n.texture))
 		{
-			t = lookup_xa_data_byid(&m->allocs, (long)wtexture);
-			if (t) ref_xa_data(&m->allocs, t, 1);
+			t = (*api->lookup_xa_data_byid)(&m->allocs, (long)wtexture);
+			if (t) (*api->ref_xa_data)(&m->allocs, t, 1);
 			else display("WARNING!!");
 		}
 		if ((wtexture = wci[i].s.texture))
 		{
-			t = lookup_xa_data_byid(&m->allocs, (long)wtexture);
-			if (t) ref_xa_data(&m->allocs, t, 1);
+			t = (*api->lookup_xa_data_byid)(&m->allocs, (long)wtexture);
+			if (t) (*api->ref_xa_data)(&m->allocs, t, 1);
 			else display("WARNING!!");
 		}
 	}
@@ -3558,33 +3556,33 @@ deref_colortheme_resources(struct module *m, struct window_colours *wc)
 	{
 		if ((wtexture = wci[i].h.texture))
 		{
-			t = lookup_xa_data_byid(&m->allocs, (long)wtexture);
+			t = (*api->lookup_xa_data_byid)(&m->allocs, (long)wtexture);
 			if (t)
 			{
-				unref_xa_data(&m->allocs, t, 1);
-// 				if (!deref_xa_data(&m->allocs, t, 1))
+				(*api->deref_xa_data)(&m->allocs, t, 1);
+// 				if (!(*api->deref_xa_data)(&m->allocs, t, 1))
 // 					display("freeing %lx", wci[i].h.texture);
 			}
 			else display("free: WARNING!!");
 		}
 		if ((wtexture = wci[i].n.texture))
 		{
-			t = lookup_xa_data_byid(&m->allocs, (long)wtexture);
+			t = (*api->lookup_xa_data_byid)(&m->allocs, (long)wtexture);
 			if (t)
 			{
-				unref_xa_data(&m->allocs, t, 1);
-// 				if (!deref_xa_data(&m->allocs, t, 1))
+				(*api->deref_xa_data)(&m->allocs, t, 1);
+// 				if (!(*api->deref_xa_data)(&m->allocs, t, 1))
 // 					display("freeing %lx", wci[i].n.texture);
 			}
 			else display("free: WARNING!!");
 		}
 		if ((wtexture = wci[i].s.texture))
 		{
-			t = lookup_xa_data_byid(&m->allocs, (long)wtexture);
+			t = (*api->lookup_xa_data_byid)(&m->allocs, (long)wtexture);
 			if (t)
 			{
-				unref_xa_data(&m->allocs, t, 1);
-// 				if (!deref_xa_data(&m->allocs, t, 1))
+				(*api->deref_xa_data)(&m->allocs, t, 1);
+// 				if (!(*api->deref_xa_data)(&m->allocs, t, 1))
 // 					display("freeing %lx", wci[i].s.texture);
 			}
 			else display("free: WARNING!!");
@@ -3633,8 +3631,8 @@ delete_texture(void *_t)
 	struct widg_texture *t = _t;
 
 	if (t->xamfdb.mfdb.fd_addr)
-		kfree(t->xamfdb.mfdb.fd_addr);
-	kfree(t);
+		(*api->kfree)(t->xamfdb.mfdb.fd_addr);
+	(*api->kfree)(t);
 }
 
 static struct widg_texture *
@@ -3644,16 +3642,16 @@ load_texture(struct module *m, char *fn)
 
 	imgpath[imgpath_file] = '\0';
 	strcat(imgpath, fn);
-	if ((fn = sysfile(imgpath)))
+	if ((fn = (*api->sysfile)(imgpath)))
 	{
-		if ((t = kmalloc(sizeof(*t))))
+		if ((t = (*api->kmalloc)(sizeof(*t))))
 		{
-			bzero(t, sizeof(*t));
+			(*api->bclear)(t, sizeof(*t));
 			
-			load_img(fn, &t->xamfdb);
+			(*api->load_img)(fn, &t->xamfdb);
 			if (t->xamfdb.mfdb.fd_addr)
 			{
-				add_xa_data(&m->allocs, t, (long)&t->t, NULL, delete_texture);
+				(*api->add_xa_data)(&m->allocs, t, (long)&t->t, NULL, delete_texture);
 				t->t.flags = 0;
 				t->t.anchor = 0;
 				t->t.left = t->t.right = t->t.top = t->t.bottom = NULL;
@@ -3661,11 +3659,11 @@ load_texture(struct module *m, char *fn)
 			}
 			else
 			{
-				kfree(t);
+				(*api->kfree)(t);
 				t = NULL;
 			}
 		}
-		kfree(fn);
+		(*api->kfree)(fn);
 	}
 	return t;
 }
@@ -3676,8 +3674,8 @@ delete_pmap(void *_t)
 	struct widg_texture *t = _t;
 
 	if (t->xamfdb.mfdb.fd_addr)
-		kfree(t->xamfdb.mfdb.fd_addr);
-	kfree(t);
+		(*api->kfree)(t->xamfdb.mfdb.fd_addr);
+	(*api->kfree)(t);
 }
 static struct xa_wtexture *
 find_gradient(struct xa_vdi_settings *v, struct xa_wcol *wcol, bool free, struct xa_data_hdr **allocs, short w, short h)
@@ -3695,27 +3693,27 @@ find_gradient(struct xa_vdi_settings *v, struct xa_wcol *wcol, bool free, struct
 		w |= g->w;
 		h &= g->hmask;
 		h |= g->h;
-		t =  lookup_xa_data_byid(allocs, (((long)w << 16) | h) );
+		t =  (*api->lookup_xa_data_byid)(allocs, (((long)w << 16) | h) );
 
 		if (!t)
 		{
 			if (free)
 			{
 // 				display("free prev");
-				free_xa_data_list(allocs);
+				(*api->free_xa_data_list)(allocs);
 			}
 
 			t = kmalloc(sizeof(*t));
 			if (t)
 			{
 // 				display("new");
-				bzero(t, sizeof(*t));
+				(*api->bclear)(t, sizeof(*t));
 				
 				(*v->api->create_gradient)(&t->xamfdb, g->c, g->method, g->n_steps, g->steps, w, h);
 			
 				if (t->xamfdb.mfdb.fd_addr)
 				{
-					add_xa_data(allocs, t, (((long)w << 16) | h), NULL, delete_pmap);
+					(*api->add_xa_data)(allocs, t, (((long)w << 16) | h), NULL, delete_pmap);
 					t->t.flags = 0;
 					t->t.anchor = 0;
 					t->t.left = t->t.right = t->t.top = t->t.bottom = NULL;
@@ -3724,7 +3722,7 @@ find_gradient(struct xa_vdi_settings *v, struct xa_wcol *wcol, bool free, struct
 				}
 				else
 				{
-					kfree(t);
+					(*api->kfree)(t);
 					t = NULL;
 				}
 			}
@@ -3883,7 +3881,7 @@ test_img_stuff(struct module *m)
  * This function is called by XaAES to have the module initialize itself
  */
 static void * _cdecl
-init_module(const struct xa_api *xapi, const struct xa_screen *screen, char *widg_name, bool grads)
+init_module(const struct xa_module_api *xmapi, const struct xa_screen *screen, char *widg_name, bool grads)
 {
 	char *rscfile;
 	RSHDR *rsc;
@@ -3892,44 +3890,44 @@ init_module(const struct xa_api *xapi, const struct xa_screen *screen, char *wid
 // 	display("wind_draw: initmodule:");
 	use_gradients = grads;
 
-	XAPI	= xapi;
+	api	= xmapi;
 	scrninf	= screen;
 
 	current_theme = &def_theme;
 	current_pu_theme = &pu_def_theme;
 	current_slist_theme = &sl_def_theme;
 
-	m = kmalloc(sizeof(*m));
+	m = (*api->kmalloc)(sizeof(*m));
 	if (m)
 	{
-		bzero(m, sizeof(*m));
+		(*api->bclear)(m, sizeof(*m));
 
 		/* Load the widget resource files */
-		if (!(rscfile = sysfile(widg_name)))
+		if (!(rscfile = (*api->sysfile)(widg_name)))
 		{
 			display("ERROR: Can't find widget resource file '%s'", widg_name);
 			goto error;
 		}
 		else
 		{
-			rsc = load_resource(NULL, rscfile, NULL, DU_RSX_CONV, DU_RSY_CONV, false);
+			rsc = (*api->load_resource)(NULL, rscfile, NULL, DU_RSX_CONV, DU_RSY_CONV, false);
 			DIAGS(("widget_resources = %lx (%s)", rsc, widg_name));
-			kfree(rscfile);
+			(*api->kfree)(rscfile);
 		}
 		if (!rsc)
 		{
 			display("ERROR: Can't find/load widget resource file '%s'", widg_name);
 			goto error;
-			kfree(m);
+			(*api->kfree)(m);
 			return NULL;
 		}
 
 		/* get widget object parameters. */
 		{
 			RECT c;
-			OBJECT *tree = resource_tree(rsc, 0);
-			ob_spec_xywh(tree, 1, &c);
-			init_widget_tree(NULL, &m->wwt, tree);
+			OBJECT *tree = (*api->resource_tree)(rsc, 0);
+			(*api->ob_spec_xywh)(tree, 1, &c);
+			(*api->init_widget_tree)(NULL, &m->wwt, tree);
 			
 // 			display(" -- init widget_tree=%lx", (long)&m->wwt);
 			
@@ -3979,10 +3977,10 @@ init_module(const struct xa_api *xapi, const struct xa_screen *screen, char *wid
 error:
 		if (m)
 		{
-			kfree(m);
+			(*api->kfree)(m);
 			m = NULL;
 		}
-		XAPI = NULL;
+		api = NULL;
 	}
 
 // 	display(" -- module init done!");
@@ -4007,13 +4005,13 @@ exit_module(void *_module)
 	cleanup_colortheme(m, &slist_def_otop_cols, "slist default ontop");
 	cleanup_colortheme(m, &slist_def_utop_cols, "slist default untop");
 #endif
-	free_xa_data_list(&m->allocs);
+	(*api->free_xa_data_list)(&m->allocs);
 	/*
 	 * for now, the resource loaded is attached to AESSYS
 	 * and cannot be freed here..
 	 */
-	remove_wt(&m->wwt, true);
-	kfree(m);
+	(*api->remove_wt)(&m->wwt, true);
+	(*api->kfree)(m);
 }
 	
 /*
@@ -4051,7 +4049,7 @@ new_theme(void *_module, short win_type, struct widget_theme **ret_theme)
 	if (new)
 	{
 		new->module = m;
-		add_xa_data(&m->allocs, new, 0, NULL, delete_theme);
+		(*api->add_xa_data)(&m->allocs, new, 0, NULL, delete_theme);
 		*ret_theme = new;
 	}
 	else
@@ -4069,9 +4067,9 @@ free_theme(void *_module, struct widget_theme **theme)
 	struct widget_theme *t;
 	long ret = -1;
 
-	if ((t = lookup_xa_data(&m->allocs, *theme)))
+	if ((t = (*api->lookup_xa_data)(&m->allocs, *theme)))
 	{
-		delete_xa_data(&m->allocs, t);
+		(*api->delete_xa_data)(&m->allocs, t);
 		ret = 0;
 	}
 	return ret;
@@ -4081,7 +4079,7 @@ free_theme(void *_module, struct widget_theme **theme)
 static void _cdecl
 delete_color_theme(void *_ctheme)
 {
-	kfree(_ctheme);
+	(*api->kfree)(_ctheme);
 }
 
 
@@ -4093,8 +4091,8 @@ new_color_theme(void *_module, short win_class, void **ontop, void **untop)
 	long ret;
 
 // 	display("new_color_theme:");
-	new_ontop = kmalloc(sizeof(*new_ontop));
-	new_untop = kmalloc(sizeof(*new_untop));
+	new_ontop = (*api->kmalloc)(sizeof(*new_ontop));
+	new_untop = (*api->kmalloc)(sizeof(*new_untop));
 	
 	if (new_ontop && new_untop)
 	{
@@ -4137,17 +4135,17 @@ new_color_theme(void *_module, short win_class, void **ontop, void **untop)
 		ref_colortheme_resources(m, new_ontop);
 		ref_colortheme_resources(m, new_untop);
 		
-		add_xa_data(&m->allocs, new_ontop, 0, NULL, delete_color_theme);
-		add_xa_data(&m->allocs, new_untop, 0, NULL, delete_color_theme);
+		(*api->add_xa_data)(&m->allocs, new_ontop, 0, NULL, delete_color_theme);
+		(*api->add_xa_data)(&m->allocs, new_untop, 0, NULL, delete_color_theme);
 
 		ret = 1L;
 	}
 	else
 	{
 		if (new_ontop)
-			kfree(new_ontop);
+			(*api->kfree)(new_ontop);
 		if (new_untop)
-			kfree(new_untop);
+			(*api->kfree)(new_untop);
 		new_ontop = new_untop = NULL;
 		ret = 0L;
 	}
@@ -4164,10 +4162,10 @@ free_color_theme(void *_module, void *ctheme)
 	struct window_colours *wc;
 
 // 	display("free_color_theme");
-	if ((wc = lookup_xa_data(&m->allocs, ctheme)))
+	if ((wc = (*api->lookup_xa_data)(&m->allocs, ctheme)))
 	{
 		deref_colortheme_resources(m, wc);
-		delete_xa_data(&m->allocs, wc);
+		(*api->delete_xa_data)(&m->allocs, wc);
 	}
 }
 

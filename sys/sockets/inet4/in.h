@@ -66,6 +66,7 @@ struct sockaddr_in
 	struct in_addr	sin_addr;
 	char		sin_zero[8];
 };
+# define SIN(x)		((struct sockaddr_in *) x)
 
 /* options for use with [s|g]etsockopt' call at the IPPROTO_IP level */
 # define IP_OPTIONS	1

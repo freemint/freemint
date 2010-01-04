@@ -232,7 +232,7 @@ XA_slider(struct xa_window *w, int which, long total, long visible, long start)
 
 	if (w->active_widgets & widg->m.r.tp)
 	{
-		XA_SLIDER_WIDGET *sl = widg->stuff.slider;
+		XA_SLIDER_WIDGET *sl = widg->stuff;
 		short old_pos = sl->position;
 		short old_len = sl->length;
 
@@ -323,7 +323,7 @@ rp2ap_obtree(struct xa_window *wind, struct xa_widget *widg, RECT *r)
 	{
  		if (!(widg->m.properties & WIP_NOTEXT))
  			widg->r.w = wind->wa.w;
-		if ((wt = widg->stuff.xa_tree))
+		if ((wt = widg->stuff))
 		{
 			obtree = wt->tree;
 			if (obtree && wind != root_window)
@@ -356,8 +356,8 @@ rp_2_ap(struct xa_window *wind, XA_WIDGET *widg, RECT *r)
 	int frame = wind->frame;
 
 	DIAG((D_form, NULL, "rp_2_ap: type=%s, widg=%lx, wt=%lx, obtree=%lx",
-		t_widg[widg->m.r.xaw_idx], widg, widg->stuff.cptr,
-		widg->m.r.xaw_idx == XAW_TOOLBAR ? (long)widg->stuff.xa_tree->tree : -1 ));
+		t_widg[widg->m.r.xaw_idx], widg, widg->stuff,
+		widg->m.r.xaw_idx == XAW_TOOLBAR ? (long)((XA_TREE *)widg->stuff)->tree : -1 ));
 
 	if (widg->m.r.xaw_idx != XAW_TOOLBAR )
 	{
@@ -437,8 +437,8 @@ rp_2_ap_cs(struct xa_window *wind, XA_WIDGET *widg, RECT *r)
 	int frame = wind->frame;
 
 	DIAG((D_form, NULL, "rp_2_ap: type=%s, widg=%lx, wt=%lx, obtree=%lx",
-		t_widg[widg->m.r.xaw_idx], widg, widg->stuff.cptr,
-		widg->m.r.xaw_idx == XAW_TOOLBAR ? (long)widg->stuff.xa_tree->tree : -1 ));
+		t_widg[widg->m.r.xaw_idx], widg, widg->stuff,
+		widg->m.r.xaw_idx == XAW_TOOLBAR ? (long)((XA_TREE *)widg->stuff)->tree : -1 ));
 
 	if (widg->m.r.xaw_idx != XAW_TOOLBAR)
 	{
@@ -524,11 +524,11 @@ obtree_to_wt(struct xa_client *client, OBJECT *obtree)
 	{
 		XA_WIDGET *widg = get_widget(client->fmd.wind, XAW_TOOLBAR);
 
-		if (obtree == widg->stuff.xa_tree->tree)
+		if (obtree == ((XA_TREE *)widg->stuff)->tree)
 		{
 			DIAGS((" -- found in XAW_TOOLBAR fmd wind %d - %s",
 				client->fmd.wind->handle, client->name));
-			wt = widg->stuff.xa_tree;
+			wt = widg->stuff;
 		}
 	}
 
@@ -536,11 +536,11 @@ obtree_to_wt(struct xa_client *client, OBJECT *obtree)
 	{
 		XA_WIDGET *widg = get_widget(client->alert, XAW_TOOLBAR);
 
-		if (obtree == widg->stuff.xa_tree->tree)
+		if (obtree == ((XA_TREE *)widg->stuff)->tree)
 		{
 			DIAGS((" -- found in XAW_TOOLBAR fmd wind %d - %s",
 				client->alert->handle, client->name));
-			wt = widg->stuff.xa_tree;
+			wt = widg->stuff;
 		}
 	}
 
@@ -600,6 +600,7 @@ init_widget_tree(struct xa_client *client, struct widget_tree *wt, OBJECT *obtre
 	obtree->ob_x = 100;
 	obtree->ob_y = 100;
 	
+// 	ob_area(obtree, aesobj(obtree, 0), &r);
 	obj_area(wt, aesobj(obtree, 0), &r);
 
 	wt->ox = obtree->ob_x - r.x;
@@ -615,6 +616,7 @@ init_widget_tree(struct xa_client *client, struct widget_tree *wt, OBJECT *obtre
 
 	wt->next = client->wtlist;
 	client->wtlist = wt;
+
 	
 	if ((obtree[3].ob_type & 0xff) == G_TITLE)
 		wt->is_menu = wt->menu_line = true;
@@ -734,12 +736,11 @@ free_wt(XA_TREE *wt)
 		return;
 	}
 
-	if ((wt->flags & WTF_XTRA_ALLOC) && wt->extra.ptr)
+	if (wt->extra && (wt->flags & WTF_XTRA_ALLOC))
 	{
-		DIAGS(("  --- freed extra %lx", wt->extra.ptr));
-		if (tst) BLOG((false, "  --- freed extra %lx", wt->extra.ptr));
-		kfree(wt->extra.ptr);
-		wt->extra.ptr = NULL;
+		DIAGS(("  --- freed extra %lx", wt->extra));
+		if (tst) BLOG((false, "  --- freed extra %lx", wt->extra));
+		kfree(wt->extra);
 	}
 // #if GENERATE_DIAGS
 	else {
@@ -925,7 +926,7 @@ CE_redraw_menu(enum locks lock, struct c_event *ce, bool cancel)
 		struct xa_client *mc;
 		struct xa_widget *widg = get_menu_widg();
 
-		mc = widg->stuff.xa_tree->owner;
+		mc = ((XA_TREE *)widg->stuff)->owner;
 		if (ce->client == mc)
 		{
 			display_widget(lock, root_window, widg, NULL);
@@ -964,7 +965,7 @@ redraw_menu(enum locks lock)
 
 	widg = get_menu_widg();
 	DIAGS(("redaw_menu: widg = %lx", widg));
-	mc = widg->stuff.xa_tree->owner;
+	mc = ((XA_TREE *)widg->stuff)->owner;
 	DIAGS(("redaw_menu: widg owner = %s", mc->name));
 
 	if (mc == rc || mc == C.Aes)
@@ -2643,8 +2644,8 @@ click_scroll(enum locks lock, struct xa_window *wind, struct xa_widget *widg, co
 
 	if (!(   widget_active.widg
 	      && slider
-	      && slider->stuff.slider
-	      && slider->stuff.slider->position == (reverse ? widg->xlimit : widg->limit)))
+	      && slider->stuff
+	      && ((XA_SLIDER_WIDGET *)slider->stuff)->position == (reverse ? widg->xlimit : widg->limit)))
 	{
 		if (md->kstate & 3)
 		{
@@ -2671,7 +2672,7 @@ click_scroll(enum locks lock, struct xa_window *wind, struct xa_widget *widg, co
 			inside = m_inside(mx, my, &slider->ar);
 			if (inside)
 			{
-				XA_SLIDER_WIDGET *sl = slider->stuff.slider;
+				XA_SLIDER_WIDGET *sl = slider->stuff;
 				int offs;
 				
 				if (widg->slider_type == XAW_VSLIDE)
@@ -2766,7 +2767,7 @@ click_scroll(enum locks lock, struct xa_window *wind, struct xa_widget *widg, co
 static bool
 drag_vslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
-	XA_SLIDER_WIDGET *sl = widg->stuff.slider;
+	XA_SLIDER_WIDGET *sl = widg->stuff;
 
 	if (widget_active.m.cstate)
 	{
@@ -2838,7 +2839,7 @@ drag_vslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 static bool
 drag_hslide(enum locks lock, struct xa_window *wind, struct xa_widget *widg, const struct moose_data *md)
 {
-	XA_SLIDER_WIDGET *sl = widg->stuff.slider;
+	XA_SLIDER_WIDGET *sl = widg->stuff;
 
 	if (widget_active.m.cstate)
 	{
@@ -2917,7 +2918,7 @@ bool
 display_object_widget(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 {
 	struct xa_vdi_settings *v = wind->vdi_settings;
-	XA_TREE *wt = widg->stuff.xa_tree;
+	XA_TREE *wt = widg->stuff;
 	OBJECT *root;
 	/* Convert relative coords and window location to absolute screen location */
 	root = rp_2_ap(wind, widg, NULL);
@@ -3077,13 +3078,13 @@ void
 free_xawidget_resources(struct xa_widget *widg)
 {
 	DIAGS(("free_xawidget_resources: widg=%lx", widg));
-	if (widg->stuff.xa_tree)
+	if (widg->stuff)
 	{
 		switch (widg->stufftype)
 		{
 			case STUFF_IS_WT:
 			{					
-				XA_TREE *wt = widg->stuff.xa_tree;
+				XA_TREE *wt = widg->stuff;
 				DIAGS(("  --- stuff is wt=%lx in widg=%lx",
 					wt, widg));
 
@@ -3111,8 +3112,8 @@ free_xawidget_resources(struct xa_widget *widg)
 				{
 					DIAGS(("  --- release stuff=%lx in widg=%lx",
 						widg->stuff, widg));
-					kfree(widg->stuff.cptr);
-					widg->stuff.xa_tree = NULL;
+					kfree(widg->stuff);
+					widg->stuff = NULL;
 				}
 			}
 		}
@@ -3123,12 +3124,12 @@ free_xawidget_resources(struct xa_widget *widg)
 		DIAGS(("  --- stuff=%lx not alloced in widg=%lx",
 			widg->stuff, widg));
 #endif
-	widg->stufftype		= 0;
-	widg->stuff.xa_tree	= NULL;
- 	widg->m.r.draw		= NULL;
-	widg->m.click		= NULL;
-	widg->m.drag		= NULL;
-	widg->m.properties 	= 0;
+	widg->stufftype	= 0;
+	widg->stuff	= NULL;
+ 	widg->m.r.draw	= NULL;
+	widg->m.click	= NULL;
+	widg->m.drag	= NULL;
+	widg->m.properties = 0;
 }
 
 #if 0
@@ -3412,7 +3413,7 @@ rp_2_ap_row(struct xa_window *wind)
 						}
 						if (widg->m.r.xaw_idx == XAW_MENU)
 						{
-							XA_TREE *wt = widg->stuff.xa_tree;
+							XA_TREE *wt = widg->stuff;
 							if (wt && wt->tree)
 							{
 								wt->tree->ob_x = widg->ar.x;
@@ -3483,7 +3484,7 @@ rp_2_ap_row(struct xa_window *wind)
 						}
 						if (widg->m.r.xaw_idx == XAW_MENU)
 						{
-							XA_TREE *wt = widg->stuff.xa_tree;
+							XA_TREE *wt = widg->stuff;
 							if (wt && wt->tree)
 							{
 								wt->tree->ob_x = widg->ar.x;
@@ -3812,12 +3813,12 @@ static inline void
 zwidg(struct xa_window *wind, short n, bool keepstuff)
 {
 	XA_WIDGET *widg = wind->widgets + n;
-	char *stuff = NULL;
+	void *stuff = NULL;
 	short st = 0;
 
 	if (keepstuff)
 	{
-		stuff = widg->stuff.cptr;
+		stuff = widg->stuff;
 		st = widg->stufftype;
 	}
 	else if (widg->m.destruct)
@@ -3829,7 +3830,7 @@ zwidg(struct xa_window *wind, short n, bool keepstuff)
 
 	if (stuff)
 	{
-		widg->stuff.cptr = stuff;
+		widg->stuff = stuff;
 		widg->stufftype = st;
 	}
 }
@@ -3925,12 +3926,12 @@ init_slider_widget(struct xa_window *wind, struct xa_widget *widg, short slider_
 
 	/* Ozk: Bad mem leak here. If widget got slider info, we keep this
 	 */
-	if (!widg->stuff.slider)
+	if (!widg->stuff)
 	{
 		sl = kmalloc(sizeof(*sl));
 	
 		assert(sl);
-		widg->stuff.slider = sl;
+		widg->stuff = sl;
 		sl->length = SL_RANGE;
 		widg->flags |= XAWF_STUFFKMALLOC;
 							
@@ -4152,7 +4153,7 @@ standard_widgets(struct xa_window *wind, XA_WIND_ATTR tp, bool keep_stuff)
 static bool
 display_toolbar(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 {
-	XA_TREE *wt = widg->stuff.xa_tree;
+	XA_TREE *wt = widg->stuff;
 
 	/* Convert relative coords and window location to absolute screen location */
 	rp_2_ap(wind, widg, NULL);
@@ -4330,9 +4331,9 @@ set_toolbar_widget(enum locks lock,
 	DIAG((D_wind, wind->owner, "set_toolbar_widget for %d (%s): obtree %lx, %d",
 		wind->handle, wind->owner->name, obtree, edobj));
 
-	if (widg->stuff.xa_tree)
+	if (widg->stuff)
 	{
-		struct widget_tree *owt = widg->stuff.xa_tree;
+		struct widget_tree *owt = widg->stuff;
 
 		set_toolbar_handlers(NULL, NULL, NULL, owt);
 		owt->widg = NULL;
@@ -4390,11 +4391,11 @@ set_toolbar_widget(enum locks lock,
 	/* HR 280801: clicks are now put in the widget struct.
 	      NB! use this property only when there is very little difference between the 2 */
 
-	widg->state		= OS_NORMAL;
-	widg->stuff.xa_tree	= wt;
-	widg->stufftype		= STUFF_IS_WT;
-	widg->start		= 0;
-	wind->tool		= widg;
+	widg->state	= OS_NORMAL;
+	widg->stuff	= wt;
+	widg->stufftype	= STUFF_IS_WT;
+	widg->start	= 0;
+	wind->tool	= widg;
 
 	widg->m.statusmask = XAWS_SHADED;
 	widg->m.r.pos_in_row = LT;
@@ -4428,7 +4429,7 @@ remove_widget(enum locks lock, struct xa_window *wind, int tool)
 	else
 	{
 		widg->stufftype	= 0;
-		widg->stuff.xa_tree   = NULL;
+		widg->stuff   = NULL;
  		widg->m.r.draw = NULL;
 		widg->m.click   = NULL;
 		widg->m.drag    = NULL;
@@ -4458,7 +4459,7 @@ static inline int
 is_H_arrow(struct xa_window *w, XA_WIDGET *widg, int click)
 {
 	/* but are we in the slider itself, the slidable one :-) */
-	XA_SLIDER_WIDGET *sl = widg->stuff.slider;
+	XA_SLIDER_WIDGET *sl = widg->stuff;
 	short x  = widg->ar.x + sl->r.x;
 	short x2 = x + sl->r.w;
 
@@ -4490,7 +4491,7 @@ is_H_arrow(struct xa_window *w, XA_WIDGET *widg, int click)
 static inline int
 is_V_arrow(struct xa_window *w, XA_WIDGET *widg, int click)
 {
-	XA_SLIDER_WIDGET *sl = widg->stuff.slider;
+	XA_SLIDER_WIDGET *sl = widg->stuff;
 	short y  = widg->ar.y + sl->r.y;
 	short y2 = y + sl->r.h;
 

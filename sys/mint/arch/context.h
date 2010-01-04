@@ -39,6 +39,7 @@
 /*
  * a process context consists, for now, of its registers
  */
+
 struct context
 {
 	unsigned long	regs[15];	/* registers d0-d7, a0-a6 */
@@ -47,18 +48,14 @@ struct context
 	unsigned long	pc;		/* program counter */
 	unsigned long	ssp;		/* supervisor stack pointer */
 	unsigned long	term_vec;	/* GEMDOS terminate vector (0x102) */
-
+	
 	/* AGK: if running on a TT and the user is playing with the FPU then we
 	 * must save and restore the context. We should also consider this for
 	 * I/O based co-processors, although this may be difficult due to
 	 * possibility of a context switch in the middle of an I/O handshaking
 	 * exchange.
 	 */
-	union {
-		unsigned char	bytes[216];	/* FPU internal state */
-		unsigned short  words[108];
-		unsigned long	longs[54];
-	} fstate;
+	unsigned char	fstate[216];	/* FPU internal state */
 	unsigned long	fregs[3*8];	/* registers fp0-fp7 */
 	unsigned long	fctrl[3];	/* FPCR/FPSR/FPIAR */
 	char		ptrace;		/* trace exception is pending */

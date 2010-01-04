@@ -721,7 +721,7 @@ prot_temp(ulong loc, ulong len, short mode)
     /* round start down to the previous page and len up to the next one. */
     len += loc & MASKBITS;
     loc &= ~MASKBITS;
-    len = round_page(len);
+    len = ROUND(len);
 
     if (mode == 0 || mode == 1) return 0;	/* do nothing */
     if (mode == -1) {

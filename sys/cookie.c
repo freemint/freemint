@@ -175,11 +175,11 @@ init_cookies (void)
 
 	/* We allocate the cookie jar in global memory so anybody can read
 	 * it or write it. This code allocates at least 16 more cookies,
-	 * then rounds up to a QUANTUM boundary (that's what round_page does).
+	 * then rounds up to a QUANTUM boundary (that's what ROUND does).
 	 * Probably, nobody will have to allocate another cookie jar :-)
 	 */
 	ncsize = (ncsize + 16) * sizeof(struct cookie);
-	ncsize = round_page (ncsize);
+	ncsize = ROUND (ncsize);
 	newjar_region = get_region (core, ncsize, PROT_G);
 	newcookie = (struct cookie *) attach_region (rootproc, newjar_region);
 # endif
@@ -423,12 +423,12 @@ get_cookie (struct cookie *cj, ulong tag, ulong *ret)
 # endif
 	ushort slotnum = 0;		/* number of already taken slots */
 # ifdef DEBUG_INFO
-	union { char a [5]; long l; } asc;
-	asc.l = tag;
-	asc.a[4] = '\0';
+	char asc [5];
+	*(long *) asc = tag;
+	asc [4] = '\0';
 # endif
 
-	DEBUG (("get_cookie(): tag=%08lx (%s) ret=%08lx", tag, asc.a, ret));
+	DEBUG (("get_cookie(): tag=%08lx (%s) ret=%08lx", tag, asc, ret));
 
 # ifdef JAR_PRIVATE
 	ut = get_curproc()->p_mem->tp_ptr;
@@ -545,9 +545,9 @@ set_cookie (struct cookie *cj, ulong tag, ulong val)
 	struct cookie *cjar = *CJAR;
 # endif
 # ifdef DEBUG_INFO
-	union {  char a[5]; long l; } asc;
-	asc.l = tag;
-	asc.a[4] = '\0';
+	char asc [5];
+	*(long *) asc = tag;
+	asc [4] = '\0';
 # endif
 # ifdef JAR_PRIVATE
 	ut = get_curproc()->p_mem->tp_ptr;
@@ -560,13 +560,13 @@ set_cookie (struct cookie *cj, ulong tag, ulong val)
 	/* 0x0000xxxx feature of GETCOOKIE may be confusing, so
 	 * prevent users from using slotnumber HERE :)
 	 */
-	DEBUG (("set_cookie(): tag=%08lx (%s) val=%08lx", tag, asc.a, val));
+	DEBUG (("set_cookie(): tag=%08lx (%s) val=%08lx", tag, asc, val));
 	if (	((tag & 0xff000000UL) == 0) ||
 		((tag & 0x00ff0000UL) == 0) ||
 		((tag & 0x0000ff00UL) == 0) ||
 		((tag & 0x000000ffUL) == 0))
 	{
-		DEBUG (("set_cookie(): invalid tag id %08lx (%s)", tag, asc.a));
+		DEBUG (("set_cookie(): invalid tag id %08lx (%s)", tag, asc));
 		return EINVAL;
 	}
 

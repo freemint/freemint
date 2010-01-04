@@ -45,8 +45,6 @@ struct memregion
 # define M_FSAVED	0x0040	///< Region is saved memory of a forked process
 # define M_SHARED	0x0080	///< Region is shared memory region
 # define M_KEEP		0x0100	///< don't free region on process termination
-# define M_BPAGE	0x0200  ///< Region is a basepage
-# define M_LOAD		0x0400	///< Region is a loaded program, when M_LOAD and M_BPAGE are set
                      /* 0x0200  unused */
                      /* 0x0400  unused */
                      /* 0x0800  unused */
@@ -205,7 +203,7 @@ typedef MEMREGION **MMAP;
  * that holds the screen boundary stuff.
  */
 # define MASKBITS	(QUANTUM - 1)
-# define round_page(size)	(((size) + MASKBITS) & ~MASKBITS)
+# define ROUND(size)	(((size) + MASKBITS) & ~MASKBITS)
 
 /* interesting memory constants */
 

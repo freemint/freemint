@@ -633,8 +633,7 @@ kern_get_welcome (SIZEBUF **buffer)
 		NULL
 	};
 	const char **greet;
-	union { const char *cc; unsigned char *c; } from;
-	//const uchar *from;
+	const uchar *from;
 	uchar *to;
 
 	for (greet = greets; *greet != NULL; greet++)
@@ -648,20 +647,19 @@ kern_get_welcome (SIZEBUF **buffer)
 
 	for (greet = greets; *greet != NULL; greet++)
 	{
-		from.cc = *greet;
-		//from = (unsigned char*)*greet;
+		from = (unsigned char*)*greet;
 
-		while (*from.c)
+		while (*from)
 		{
 			/* MiNT is Now TOS */
-			if (*from.c == '\r')
+			if (*from == '\r')
 			{
-				from.c++;
+				from++;
 				len--;
 				continue;
 			}
 
-			*to++ = (uchar) atarist_to_latin1 [*from.c++];
+			*to++ = (uchar) atarist_to_latin1 [*from++];
 		}
 	}
 

@@ -191,7 +191,7 @@ free_mouse_lock(void)
 	ressource_semaphore_free(&mouse_lock);
 }
 
-#ifdef ALT_CTRL_APP_OPS
+#if INCLUDE_UNUSED
 void
 free_menustruct_lock(void)
 {
@@ -199,7 +199,6 @@ free_menustruct_lock(void)
 	ressource_semaphore_free(&ms_lock);
 }
 #endif
-
 bool
 lock_screen(struct proc *proc, bool try)
 {
