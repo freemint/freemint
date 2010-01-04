@@ -88,31 +88,6 @@ strip_fname(const char *path, char *newpath, char *fname)
 	}
 }
 
-char * _cdecl
-make_fqfname(const char *path, const char *file)
-{
-	int o = 0;
-	char *buf, *tmp;
-
-	buf = kmalloc(strlen(path) + strlen(file) + 8);
-	if (buf)
-	{
-		if (path[0] == '/' || path[0] == '\\') {
-			buf[0] = 'u';
-			buf[1] = ':';
-			o += 2;
-		}
-		strcpy(buf + o, path);
-		tmp = buf + strlen(buf) - 1;
-		if (*tmp != '/' && *tmp != '\\') {
-			tmp[1] = '\\';
-			tmp[2] = '\0';
-		}
-		strcat(buf + o, file);
-	}
-	return buf;
-}
-
 int
 drive_and_path(char *fname, char *path, char *name, bool n, bool set)
 {

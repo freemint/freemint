@@ -112,7 +112,7 @@ MODULEDIRS = xfs/hostfs
 endif
 
 ifeq ($(kernel),my1)
-MINT = mint040.prg
+MINT = mintnp.prg
 CPU  = 020-60
 KERNELDEFS = -DDEBUG_INFO -DM68040
 endif
@@ -120,7 +120,8 @@ endif
 ifeq ($(kernel),my2)
 MINT = mint040.prg
 CPU  = 020-60
-KERNELDEFS = -DDEBUG_INFO -DM68040
+KERNELDEFS = -DDEBUG_INFO -DM68040 -DMILAN
+KERNELDEFS += -DMFP_DEBUG_DIRECT
 #KERNELDEFS += -DPROFILING
 #kernel_cflags = -pg
 #kernel_nocflags = -fomit-frame-pointer
@@ -135,13 +136,13 @@ endif
 ifeq ($(kernel),my4)
 MINT = mintmdbg.prg
 CPU = 020-60
-KERNELDEFS = -DDEBUG_INFO -DM68040 -DMILAN -DMFP_DEBUG_DIRECT
+KERNELDEFS = -DDEBUG_INFO -DM68040 -DMILAN
 endif
 
 #
 # all default targets
 #
-kerneltargets = 000 030 040 060 117 deb mil ara my1 my2 my3 my4 col
+kerneltargets = 000 030 040 060 117 deb mil ara my1 my2 my3 my4
 cputargets = 000 030 020-60
 
 ifeq (COLDFIRE,yes)

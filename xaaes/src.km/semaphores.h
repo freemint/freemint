@@ -41,9 +41,7 @@ struct xa_client *get_menustruct_locker(void);
 
 void free_update_lock(void);
 void free_mouse_lock(void);
-#ifdef ALT_CTRL_APP_OPS
 void free_menustruct_lock(void);
-#endif
 
 bool   lock_screen(struct proc *proc, bool try);
 bool unlock_screen(struct proc *proc);

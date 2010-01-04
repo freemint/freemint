@@ -210,47 +210,6 @@ sys_b_rwabs (int rwflag, void *buffer, int number, int recno, int dev, long lrec
 
 /* setexc: set exception vector
  */
-#ifndef VEC_BUS
-#define VEC_BUS		0x0002
-#endif
-
-#ifndef VEC_ADDRESS
-#define VEC_ADDRESS	0x0003
-#endif
-
-#ifndef VEC_ILLEGAL
-#define VEC_ILLEGAL	0x0004
-#endif
-
-#ifndef VEC_GEMDOS
-#define VEC_GEMDOS	0x0021
-#endif
-
-#ifndef VEC_GEM
-#define VEC_GEM		0x0022
-#endif
-
-#ifndef VEC_BIOS
-#define VEC_BIOS	0x002d
-#endif
-
-#ifndef VEC_XBIOS
-#define VEC_XBIOS	0x002e
-#endif
-
-#ifndef VEC_ETVTIMER
-#define VEC_ETVTIMER	0x0100
-#endif
-
-#ifndef VEC_ETVCRITICAL
-#define VEC_ETVCRITICAL	0x0101
-#endif
-
-#ifndef VEC_ETVTERM
-#define VEC_ETVTERM	0x0102
-#endif
-
-#define VEC_CJAR	0x0168
 long _cdecl
 sys_b_setexc (int number, long vector)
 {
@@ -270,16 +229,11 @@ sys_b_setexc (int number, long vector)
 	 * because these are private for each process
 	 */
 # ifdef JAR_PRIVATE
-	if (vector != -1 &&
-	    number != VEC_ETVCRITICAL &&
-	    number != VEC_ETVTERM &&
-	    number != VEC_CJAR &&
-	    secure_mode && !p->in_dos)
+	if (vector != -1 && number != 0x0101 && number != 0x0102 && number != 0x0168 && \
+		secure_mode && p->in_dos == 0)
 # else
-	if (vector != -1 &&
-	    number != VEC_ETVCRITICAL &&
-	    number != VEC_ETVTERM &&
-	    secure_mode && !p->in_dos)
+	if (vector != -1 && number != 0x0101 && number != 0x0102 && \
+		secure_mode && p->in_dos == 0)
 # endif
 	{
 		if (!suser (p->p_cred->ucr))
@@ -319,33 +273,6 @@ sys_b_setexc (int number, long vector)
 
 	place = (long *)(((long) number) << 2);
 
-	switch (number) {
-		case VEC_ETVTERM: {
-		/* Note: critical error handler (0x0101) is kernel private now
-		 * and programs cannot really use it.
-		 */
-			old = p->ctxt[SYSCALL].term_vec;
-			break;
-		}
-#ifdef JAR_PRIVATE
-		case VEC_CJAR: {
-			old = (long)ut->user_jar_p;
-			break;
-		}
-#endif
-		case VEC_BUS ... VEC_ILLEGAL: {
-			if (p == rootproc || !p->vects[number - VEC_BUS])
-				old = *place;
-			else
-				old = p->vects[number - VEC_BUS];
-			break;
-		}
-		default: {
-			old = *place;
-			break;
-		}
-	}
-#if 0
 	/* Note: critical error handler (0x0101) is kernel private now
 	 * and programs cannot really use it.
 	 */
@@ -359,10 +286,9 @@ sys_b_setexc (int number, long vector)
 # endif
 	else
 		old = *place;
-#endif
+
 	if (vector > 0)
 	{
-
 		/* validate vector; this will cause a bus error if mem
 		 * protection is on and the current process doesn't have
 		 * access to the memory
@@ -373,93 +299,75 @@ sys_b_setexc (int number, long vector)
 		 *          rewrite to check if the address is inside a
 		 *          memregion of the process
 		 */
-// 		if (!proc_addr2region(p, vector)) {
-// 			ALERT("
+		if (*((long *) vector) == 0xDEADBEEFL)
+			return old;
 
-// 		if (*((long *)vector) == 0xDEADBEEFL)
-// 			return old;
-
-		/* Odd Skancke:
-		 *	Check for vectors that are process private...
-		 */
-		switch (number) {
-			case VEC_ETVTERM: {
-				p->ctxt[SYSCALL].term_vec = vector;
-				break;
-			}
-#ifdef JAR_PRIVATE
-			case VEC_CJAR: {
-				ut->user_jar_p = (struct cookie *)vector;
-				break;
-			}
-#endif
-			case VEC_ETVCRITICAL: {
-				long mintcerr;
-				/* XXX
-				 * Odd Skancke:
-				 *	TOS dependancy! This needs to to die soon!
-				 */
-				/* problem:
-				 * lots of TSR's look for the Setexc (0x101,...)
-		 		 * that the AES does at startup time; so we have
-				 * to pass it along.
-				 */
-				mintcerr = (long)ROM_Setexc(VEC_ETVCRITICAL, (void (*)())vector);
-				*place = mintcerr;
-				break;
-			}
-			case VEC_BUS ... VEC_ILLEGAL: {
-				if (p != rootproc) {
-					if (vector == *place)
-						p->vects[number - VEC_BUS] = 0;
-					else
-						p->vects[number - VEC_BUS] = vector;
-				} else
-					goto do_default;
-				break;
-			}
-			default: {
-do_default:
-				/* We would do just *place = vector except that
-				 * someone else might be intercepting Setexc looking
-				 * for something in particular...
-				 *
-				 * psigintr() exception shadow area.
-				 * if curproc->in_dos varies from a zero,
-				 * it may be a call from psigintr() and shadow
-				 * must not be updated that time.
-				 */
-# if 0
-				if (intr_shadow && number < 0x0100 && p->in_dos == 0)
-					intr_shadow[number] = vector;
+		if (number == 0x102)
+		{
+			p->ctxt[SYSCALL].term_vec = vector;
+		}
+# ifdef JAR_PRIVATE
+		else if (number == 0x0168)
+			ut->user_jar_p = (struct cookie *)vector;
 # endif
-				if (!no_mem_prot)
-				{
-					/* if memory protection is on, the vector
-					 * should be pointing at supervisor or
-					 * global memory
-					 */
-					MEMREGION *r;
+		else if (number == 0x101)
+		{
+			/* problem:
+			 * lots of TSR's look for the Setexc (0x101,...)
+	 		 * that the AES does at startup time; so we have
+			 * to pass it along.
+			 */
+			long mintcerr;
 
-					r = proc_addr2region(p, vector);
-					if (r && get_prot_mode(r) == PROT_P) {
-						ALERT("Setexc: WARNING! %s not allowed to set %04x to %08lx: Memory must be GLOBAL! Request IGNORED!", p->name, number, vector);
-						display("Setexc: WARNING! %s not allowed to set %04x to %08lx: Memory must be GLOBAL! Request IGNORED!", p->name, number, vector);
-						goto exit;
-// 						raise(SIGKILL);
-					} else if (vector != *place && !r && p != rootproc) {
-						ALERT("Setexc: WARNING! %s not allowed to set %04x to %08lx: Does not own that memory! Request IGNORED!", p->name, number, vector);
-						display("Setexc: WARNING! %s not allowed to set %04x to %08lx: Does not own that memory! Request IGNORED!", p->name, number, vector);
-						goto exit;
-// 						raise(SIGKILL);
-					}
+			mintcerr = (long)ROM_Setexc (0x101, (void (*)()) vector);
+			*place = mintcerr;
+		}
+		else
+		{
+# if 0
+			/* This code below is a nonsense. Of course, an exception vector
+			 * should point to a supervisor or global memory, but an exception
+			 * handler rarely consists of a code, that does not read/write
+			 * memory. So, if a program installs an exception handler, this
+			 * code below converts the handler code to Super, but does not
+			 * convert the protection status of the DATA/BSS segments, which
+			 * are possibly accessed by the handler. If they are, and they are
+			 * `private' --> instant crash (draco)
+			 */
+			if (!no_mem_prot)
+			{
+				/* if memory protection is on, the vector
+				 * should be pointing at supervisor or
+				 * global memory
+				 */
+				MEMREGION *r;
+
+				r = addr2region (vector);
+				if (r && get_prot_mode (r) == PROT_P)
+				{
+					DEBUG (("Changing protection to Supervisor because of Setexc"));
+					mark_region (r, PROT_S, 0);
 				}
-				old = (long)ROM_Setexc (number, (void (*)()) vector);
-				break;
 			}
+# endif
+
+			/* We would do just *place = vector except that
+			 * someone else might be intercepting Setexc looking
+			 * for something in particular...
+			 *
+			 * psigintr() exception shadow area.
+			 * if curproc->in_dos varies from a zero,
+			 * it may be a call from psigintr() and shadow
+			 * must not be updated that time.
+			 */
+# if 0
+			if (intr_shadow && number < 0x0100 && p->in_dos == 0)
+				intr_shadow[number] = vector;
+# endif
+			old = (long)ROM_Setexc (number, (void (*)()) vector);
 		}
 	}
-exit:
+
 	TRACE (("Setexc %d, %lx -> %lx", number, vector, old));
 	return old;
 }
@@ -479,9 +387,9 @@ void
 init_bios(void)
 {
 	int i;
-
+	
 	keyrec = (IOREC_T *)TRAP_Iorec(1);
-
+	
 	for (i = 0; i < BDEVMAP_MAX; i++)
 	{
 		BDEVMAP *map = &(bdevmap[i]);
@@ -1636,13 +1544,13 @@ checkkeys (void)
 				keyrec->head = oldktail;
 				continue;
 			}
-
+			
 			if (sig)
 			{
 				tty->state &= ~TS_HOLD;
 				if (!(tty->sg.sg_flags & T_NOFLSH))
 				    oldktail = keyrec->head = keyrec->tail;
-
+				
 				DEBUG(("checkkeys: killgroup(%i, %i, 1)", tty->pgrp, sig, 1));
 				killgroup(tty->pgrp, sig, 1);
 				ret = 1;

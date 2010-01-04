@@ -56,7 +56,6 @@
 	.globl 	_save_context
 	.globl	_restore_context
 	.globl	_change_context
-	.globl	_proc_access
 
 	.globl	_mcpu
 	.globl	_fpu
@@ -375,53 +374,3 @@ short6:
 	jmp	_new_trace
 notrace2:
 	rte				// jump back to old context
-
-
-// void proc_access(CONTEXT *ctxt, void *save);
-_proc_access:
-#ifndef M68000
-	tst.w	_no_mem_prot
-	beq.s	doit
-	rts
-doit:	move.l	8(sp),a1
-	move.l	4(sp),d0
-	beq.s	reset2old
-	move.l	d0,a0
-
-#if defined (M68040) || defined (M68060)
-	dc.w	0x4e7a,0x0806		// movec urp,d0
-	move.l	d0,(a1)
-#else
-	pmove	crp,(a1)
-	pmove	tc,8(a1)
-#endif
-
-// Set memory context now
-	move.w	sr,d1
-#if defined(M68040) || defined(M68060)
-	move.l	C_CRP(a0),d0
-	dc.w	0xf518			// pflusha
-	dc.w	0x4e7b,0x0806		// movec d0,urp
-	dc.w	0x4e7b,0x0807		// movec d0,srp
-#else
-	pflusha
-	pmove	C_CRP(a0),crp		// restore MMU root pointer
-	pmove	C_TC(a0),tc		// restore MMU control register
-#endif
-	move.w	d1,sr
-	rts
-reset2old:
-	move.w	sr,d1
-#if defined(M68040) || defined(M68060)
-	move.l	(a1),d0
-	dc.w	0xf518			// pflusha
-	dc.w	0x4e7b,0x0806		// movec d0,urp
-	dc.w	0x4e7b,0x0807		// movec d0,srp
-#else
-	pflusha
-	pmove	(a1),crp		// restore MMU root pointer
-	pmove	8(a1),tc		// restore MMU control register
-#endif
-	move.w	d1,sr
-#endif
-	rts

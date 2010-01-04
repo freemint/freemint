@@ -6,7 +6,7 @@
 
 # include "global.h"
 # include "buf.h"
-# include "in.h"
+
 
 /* net interface flags */
 # define IFF_UP			0x0001	/* if is up */
@@ -41,19 +41,10 @@ struct netif;
 /* structure for holding address information, assumes internet style */
 struct ifaddr
 {
+	struct sockaddr	addr;		/* local address */
 	union {
-		struct sockaddr		sa;
-		struct sockaddr_in	in;
-	} adr;
-	union {
-		union {
-			struct sockaddr		sa;
-			struct sockaddr_in	in;
-		} broadadr;
-		union {
-			struct sockaddr		sa;
-			struct sockaddr_in	in;
-		} dstadr;
+		struct sockaddr	broadaddr;	/* broadcast address */
+		struct sockaddr	dstaddr;	/* point2point dst address */
 	} ifu;
 	struct netif	*ifp;		/* interface this belongs to */
 	struct ifaddr	*next;		/* next ifaddr */
@@ -82,12 +73,7 @@ struct ifq
 struct hwaddr
 {
 	short		len;
-	union
-	{
-		uchar		bytes[10];
-		unsigned short	words[5];
-		unsigned long	longs[2];
-	} adr;
+	uchar		addr[10];
 };
 
 /* structure describing a net interface */
@@ -162,28 +148,10 @@ struct ifreq
 {
 	char	ifr_name[IF_NAMSIZ];		/* interface name */
 	union {
-		union {
-			struct sockaddr		sa;
-			struct sockaddr_in	in;
-			struct sockaddr_hw	hw;
-		} adr;
-		union {
-			struct sockaddr		sa;
-			struct sockaddr_in	in;
-		} dstadr;
-		union {
-			struct sockaddr		sa;
-			struct sockaddr_in	in;
-		} broadadr;
-		union {
-			struct sockaddr		sa;
-			struct sockaddr_in	in;
-		} netmsk;
-		
-		//struct	sockaddr addr;		/* local address */
-		//struct	sockaddr dstaddr;	/* p2p dst address */
-		//struct	sockaddr broadaddr;	/* broadcast addr */
-		//struct	sockaddr netmask;	/* network mask */
+		struct	sockaddr addr;		/* local address */
+		struct	sockaddr dstaddr;	/* p2p dst address */
+		struct	sockaddr broadaddr;	/* broadcast addr */
+		struct	sockaddr netmask;	/* network mask */
 		short	flags;			/* if flags, IFF_* */
 		long	metric;			/* routing metric */
 		long	mtu;			/* max transm. unit */

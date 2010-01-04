@@ -59,6 +59,7 @@
 #define SCM_PREV 1
 #define SCM_SAVE 2
 
+
 enum window_type
 {
 	created_for_CLIENT	= 0x0000,
@@ -120,6 +121,18 @@ struct lbox_slide;
 struct menu_attachements;
 
 struct keyqueue;
+
+static inline bool obj_is_3d(OBJECT *ob)         { return (ob->ob_flags & OF_FL3DACT) != 0;	}
+static inline bool obj_is_indicator(OBJECT *ob)  { return (ob->ob_flags & OF_FL3DACT) == OF_FL3DIND; }
+static inline bool obj_is_foreground(OBJECT *ob) { return (ob->ob_flags & OF_FL3DIND) != 0; }
+static inline bool obj_is_background(OBJECT *ob) { return (ob->ob_flags & OF_FL3DACT) == OF_FL3DBAK; }
+static inline bool obj_is_activator(OBJECT *ob)  { return (ob->ob_flags & OF_FL3DACT) == OF_FL3DACT; }
+
+static inline bool is_3d(short flags)         { return (flags & OF_FL3DACT) != 0;	}
+static inline bool is_indicator(short flags)  { return (flags & OF_FL3DACT) == OF_FL3DIND; }
+static inline bool is_foreground(short flags) { return (flags & OF_FL3DIND) != 0; }
+static inline bool is_background(short flags) { return (flags & OF_FL3DACT) == OF_FL3DBAK; }
+static inline bool is_activator(short flags)  { return (flags & OF_FL3DACT) == OF_FL3DACT; }
 
 #define XIMG      0x58494D47
 struct img_header
@@ -624,10 +637,9 @@ struct xa_vdi_api
 	void _cdecl (*load_fonts)	(struct xa_vdi_settings *v);
 	void _cdecl (*unload_fonts)	(struct xa_vdi_settings *v);
 	
-	bool _cdecl (*aesrect_clip)	(const RECT *src, const RECT *dst, RECT *result);
 	void _cdecl (*set_clip)		(struct xa_vdi_settings *v, const RECT *clip);
 	void _cdecl (*clear_clip)	(struct xa_vdi_settings *v);
-	void _cdecl (*restore_clip)	(struct xa_vdi_settings *v, RECT *s);
+	void _cdecl (*restore_clip)	(struct xa_vdi_settings *v, const RECT *s);
 	void _cdecl (*save_clip)	(struct xa_vdi_settings *v, RECT *s);
 
 	void _cdecl (*line)		(struct xa_vdi_settings *v, short x1, short y1, short x2, short y2, short col);
@@ -1137,11 +1149,7 @@ struct widget_tree
 	FormExit *exit_form;		/* Called if exit condition occurs
 					 * while handling a form_do or a toolbar
 					 * or anything the like ;-) */
-	union {
-		short s[2];
-		void *ptr;
-	} extra;
-// 	void *extra;			/* Extra info if needed (texts for alert) */
+	void *extra;			/* Extra info if needed (texts for alert) */
 	struct xa_lbox_info *lbox;
 };
 typedef struct widget_tree XA_TREE;
@@ -1432,14 +1440,13 @@ struct xa_widget_theme
 	struct widget_theme *slist;
 };
 
-struct xa_api;
-
+struct xa_module_api;
 struct xa_module_widget_theme
 {
 	char		*sname;
 	char		*lname;
 
-	void * _cdecl	(*init_module)(const struct xa_api *, const struct xa_screen *screen, char *widg_name, bool grads);
+	void * _cdecl	(*init_module)(const struct xa_module_api *, const struct xa_screen *screen, char *widg_name, bool grads);
 	void _cdecl	(*exit_module)(void *module);
 
 	long _cdecl	(*new_theme)(void *module, short win_type, struct widget_theme **);
@@ -1468,9 +1475,9 @@ struct object_render_api
 	void _cdecl  (*write_selection)	(struct xa_vdi_settings *v, short d, RECT *r);
 
 	void _cdecl  (*set_cursor)	(struct widget_tree *wt, struct xa_vdi_settings *v, struct objc_edit_info *ei);
-	void _cdecl  (*eor_cursor)	(struct widget_tree *wt, struct xa_vdi_settings *v, const RECT *clip, struct xa_rect_list *rl);
-	void _cdecl  (*draw_cursor)	(struct widget_tree *wt, struct xa_vdi_settings *v, const RECT *clip, struct xa_rect_list *rl, short flags);
-	void _cdecl  (*undraw_cursor)	(struct widget_tree *wt, struct xa_vdi_settings *v, const RECT *clip, struct xa_rect_list *rl, short flags);
+	void _cdecl  (*eor_cursor)	(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_rect_list *rl);
+	void _cdecl  (*draw_cursor)	(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_rect_list *rl, short flags);
+	void _cdecl  (*undraw_cursor)	(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_rect_list *rl, short flags);
 
 	DrawObject	*drawers[256];
 };
@@ -1480,7 +1487,7 @@ struct xa_module_object_render
 	char	*sname;
 	char	*lname;
 
-	void * _cdecl	(*init_module)(const struct xa_api *, const struct xa_screen *, bool grads);
+	void * _cdecl	(*init_module)(const struct xa_module_api *, const struct xa_screen *, bool grads);
 	long   _cdecl	(*exit_module)(void);
 
 	long _cdecl	(*open)	(struct object_render_api **ptr_api);
@@ -1541,34 +1548,6 @@ struct toolbar_handlers
 	void (*destruct)(struct xa_widget *w);
 };
 
-struct xa_widget;
-/* Pending action from a widget */
-struct xa_pending_widget
-{
-	struct xa_widget *widg;		/* Pointer to widget for which this action is pending */
-	struct xa_window *wind;		/* Window to which the widget is connected */
-	WidgetBehaviour *action;	/* Function to call */
-	short x, y;
-	struct moose_data m;
-	int offs;			/* slider information */
-	RECT d;				/* distance information */
-	int xy;				/* compass when border sizing */
-	bool cont;
-};
-typedef struct xa_pending_widget XA_PENDING_WIDGET;
-
-/* Extra details for a slider widget */
-#define SLIDER_UPDATE	1
-struct xa_slider_widget
-{
-	short flags;
-	short position;			/* Actual position of the slider (0-1000(SL_RANGE)) */
-	short length;			/* Length (0-1000(SL_RANGE)) */
-	short rpos;
-	RECT r;				/* physical */
-};
-typedef struct xa_slider_widget XA_SLIDER_WIDGET;
-
 /* Window Widget */
 struct xa_widget
 {
@@ -1599,16 +1578,38 @@ struct xa_widget
 #define STUFF_IS_WT 1
 
 	short stufftype;		/* type of widget dependant pointer */
-	union
-	{
-		char 			*cptr;			/* Pointer to widget dependant context data, if any */
-		struct xa_slider_widget	*slider;
-		XA_TREE			*xa_tree;
-	} stuff;
+	void *stuff;			/* Pointer to widget dependant context data, if any */
 
 	short  start;			/* If stuff is a OBJECT tree, we want start drawing here */
 };
 typedef struct xa_widget XA_WIDGET;
+
+/* Pending action from a widget */
+struct xa_pending_widget
+{
+	XA_WIDGET *widg;		/* Pointer to widget for which this action is pending */
+	struct xa_window *wind;		/* Window to which the widget is connected */
+	WidgetBehaviour *action;	/* Function to call */
+	short x, y;
+	struct moose_data m;
+	int offs;			/* slider information */
+	RECT d;				/* distance information */
+	int xy;				/* compass when border sizing */
+	bool cont;
+};
+typedef struct xa_pending_widget XA_PENDING_WIDGET;
+
+/* Extra details for a slider widget */
+#define SLIDER_UPDATE	1
+struct xa_slider_widget
+{
+	short flags;
+	short position;			/* Actual position of the slider (0-1000(SL_RANGE)) */
+	short length;			/* Length (0-1000(SL_RANGE)) */
+	short rpos;
+	RECT r;				/* physical */
+};
+typedef struct xa_slider_widget XA_SLIDER_WIDGET;
 
 #define ZT_A	1
 #define ZT_B	2
@@ -1770,16 +1771,9 @@ struct xa_window
 };
 
 extern struct xa_window *root_window;
-
-#ifdef XAAES_MODULE
-#define window_list	XAPI->S->open_windows.first
-#define TOP_WINDOW	XAPI->S->open_windows.top
-#define nolist_list	XAPI->S->open_nlwindows.first
-#else
-#define window_list	S.open_windows.first
-#define TOP_WINDOW	S.open_windows.top
-#define nolist_list	S.open_nlwindows.first
-#endif
+#define window_list S.open_windows.first
+#define TOP_WINDOW S.open_windows.top
+#define nolist_list S.open_nlwindows.first
 
 struct scroll_info;
 
@@ -1854,7 +1848,6 @@ struct se_text
 // 	struct se_text *next;
 	short flags;
 	unsigned short tblen;
-	unsigned short tlen;
 	char *text;
 	short w;
 	short h;
@@ -2427,6 +2420,7 @@ struct xa_client
 #define CS_NO_SCRNLOCK		0x00001000
 #define CS_CLIENT_EXIT		0x00002000
 
+
 	long status;
 
 // 	enum waiting_for waiting_for;	/* What types of event(s) the client is waiting for */
@@ -2458,7 +2452,6 @@ struct xa_client
 	XA_MENU_ATTACHMENT *attach;	/* submenus */
 
 	Path home_path;			/* The directory that the client was started in */
-	Path module_path;		/* The directory from which modules are loaded */
 	Path start_path;		/* The directory that the started binary lives */
 	Path cmd_name;			/* The full filename used when launching the process (if launched by shell_write) */
 	char *cmd_tail;			/* The command tail of the process (if launched by shell_write) */
@@ -2745,13 +2738,6 @@ editfocus(struct objc_edit_info *ei)
 
 typedef void kernkey_action(enum locks lock, struct xa_client *client, bool open);
 
-struct register_kernkey_parms
-{
-	short key;
-	short state;
-	kernkey_action *act;
-};
-
 struct kernkey_entry
 {
 	struct kernkey_entry *next_key;	/* Next registered key */
@@ -2761,282 +2747,29 @@ struct kernkey_entry
 	kernkey_action *act;		/* action */
 };
 
-struct win_base
-{
-	struct xa_window *first;
-	struct xa_window *last;
-	struct xa_window *top;
-	struct xa_window *root;
-};
-
-
-struct shared
-{
-	struct win_base open_windows;		/* list of all open windows */
-	struct win_base closed_windows;		/* list of all closed windows */
-	struct win_base hidden_windows;
-	struct win_base deleted_windows;	/* list of windows to be deleted (delayed action) */
-	
-	struct win_base open_nlwindows;
-	struct win_base closed_nlwindows;
-	struct win_base calc_windows;		/* list of open nolist windows - fmd, alerts, etc. */
-
-	struct xa_window *focus;
-
-	LIST_HEAD(xa_client) client_list;
-	LIST_HEAD(xa_client) app_list;
-
-	LIST_HEAD(task_administration_block) menu_base;
-
-	TIMEOUT *menuscroll_timeout;
-
-	TIMEOUT *popin_timeout;
-	struct xa_client *popin_timeout_ce;
-	TIMEOUT *popout_timeout;
-	struct xa_client *popout_timeout_ce;
-
-	struct xa_client *wait_mouse;	/* This client need mouse events exclusivly */
-	struct opt_list *app_options;	/* individual option settings. */
-
-	short wm_count;			/* XXX ??? */
-	short clients_exiting;		/* Increased by exit_client() upon enry and decreased upon exit
-					 * used to prevent interrupt-handling during shutdown of a client
-					 */
-};
-
-struct shel_info
-{
-	short type;
-	short rppid;		/* Real parent pid, that is, the pid of app that called of shel_write() */
-	short reserved;
-	bool shel_write;
-
-	char *cmd_tail;
-	bool tail_is_heap;
-
-	Path cmd_name;
-	Path home_path;
-};
-
-struct common
-{
-	Path	start_path;
-	unsigned short nvdi_version;
-	unsigned long gdos_version;
-
-	void (*reschange)(enum locks lock, struct xa_client *client, bool open);
-	struct kernkey_entry *kernkeys;
-	
-	short AESpid;			/* The AES's MiNT process ID */
-	short DSKpid;			/* The desktop programs pid, if any */
-
-	short P_handle;			/* Physical workstation handle used by the AES */
-	short global_clip[4];
-	short prev_clip[4];
-
-	struct xa_client *Aes;		/* */
-	struct xa_client *Hlp;
-	void 	*Hlp_pb;
-// 	enum waiting_for Aes_waiting_for;
-	unsigned long	Aes_waiting_for;
-	
-	short move_block;		/* 0 = movement allowed
-					 * 1 = internal movement cevent sent to client - no move
-					 * 2 = WM_MOVED AES message sent to client - no move
-					 * 3 = client did a wind_set(WF_CURRXYWH) and we got WM_REDRAWS
-					 *     in the queue. 'move_block' is then reset when all WM_REDRAWS
-					 *     are serviced
-					 */
-	short rect_lock;
-	long redraws;			/* Counting WM_REDRAWS being sent and dispatched */
-	struct xa_client *button_waiter;/* Client which is getting the next moose_data packet, */
-					/* most probably a button released one */
-	struct xa_client *ce_open_menu;	/* If set, this client has been sent a open_menu client event */
-	struct xa_client *ce_menu_move; /* If set, this client has been sent a menu_move client event */
-	struct xa_client *ce_menu_click;
-	
-	struct xa_client *next_menu;
-	struct widget_tree *next_menu_wt;
-	
-	struct xa_client *csr_client;	/* Client current in query by the Kill or Wait dialog */
-	
-	short shutdown;			/* flags for shutting down xaaes */
-#define SHUTDOWN_STARTED	0x0001
-#define SHUTTING_DOWN		0x0002
-#define QUIT_NOW		0x0004		/* - enter shutdown the next possible time */
-#define HALT_SYSTEM		0x0008		/* - halt system after xaaes shutdown */
-#define REBOOT_SYSTEM		0x0010		/* - reboot system after xaaes shutdown */
-#define COLDSTART_SYSTEM	0x0020		/* - cold reboot */
-#define RESOLUTION_CHANGE	0x0040
-#define KILLEM_ALL		0x0080
-#define EXIT_MAINLOOP		0x8000
-	short shutdown_step;
-	struct timeout *sdt;		/* Shutdown Timeout */
-
-	bool mvalidate;
-
-	long alert_pipe;		/* AESSYS: The MiNT Salert() pipe's file handle */
-	long KBD_dev;			/* AESSYS: The MiNT keyboard device's file handle */
-	
-	RECT iconify;			/* Positioning information for iconifying windows */
-	void *Aes_rsc;			/* Pointer to the XaAES resources */
-	char *env;			/* new environment */
-
-	struct xa_window *hover_wind;
-	struct xa_widget *hover_widg;
-
-	struct proc *update_lock;
-	struct proc *mouse_lock;
-	struct proc *menu_lock;
-
-	short updatelock_count;
-	short mouselock_count;
-	short menulock_count;
-	
-	Path desk;			/* Remember the desk path for Launch desk. */
-	short mouse;			/* Remember mouse shape */
-	MFORM *mouse_form;		/* Remember mouse form */
-	struct xa_client *mouse_owner;
-
-	short aesmouse;
-	MFORM *aesmouse_form;
-
-	short realmouse;
-	MFORM *realmouse_form;
-	struct xa_client *realmouse_owner;
-
-	struct xa_client	*do_widget_repeat_client;
-	enum locks		 do_widget_repeat_lock;
-	char bootlog_path[200];
-};
-
-struct aesys_global
-{
-	struct adif *adi_mouse;
-};
-
-struct helpserver
-{
-	struct helpserver *next;
-
-	char *ext;
-	char *name;
-	char *path; /* optional */
-};
-
-struct cfg_name_list;
-struct cfg_name_list
-{
-	struct cfg_name_list *next;
-	short nlen;
-	char name[32];
-};
-	
-struct config
-{
-	short gradients;
-
-	Path launch_path;		/* Initial path for launcher */
-	Path scrap_path;		/* Path to the scrap directory */
-	Path acc_path;			/* Path to desk accessory directory */
-
-	Path widg_name;			/* Path to XaAES widget rsc */
-	Path rsc_name;			/* Path to XaAES rsc */
-	Path xobj_name;
-
-	/* display modes of window title */
-	short topname;
-	short backname;
-	
-	short next_active;		/* 0 = set previous active client active upon client termination */
-					/* 1 = set owner of previous topped (or only) window upon client termination */
-//	short last_wind;		/* 0 = Put owner of window ontop of window_list infront. */
-//					/* 1 = Keep client whose last window was closed infront. */
-
-	bool lrmb_swap;			/* Swap left and right mouse-button status bits */
-	bool widg_auto_highlight;	/* WIDGET Highligh when Mouse Hovers */
-	bool remap_cicons;
-	bool set_rscpalette;
-	bool no_xa_fsel;
-	bool point_to_type;
-	bool fsel_cookie;
-	bool usehome;			/* use $HOME in shell_find */
-	bool naes_cookie;		/* If true, install fake nAES cookie */
-	bool menupop_pids;		/* If true, add PIDs to clients listed in menupop clientlist */
-	bool menu_locking;		/* menus run in a window.
-	                                 * See lines.app run underneath the pulldown menu. :-) */
-	bool opentaskman;		/* open taskmanager at boot. */
-	
-	short alert_winds;		/* If set, alert windows are shown */
-
-	char cancel_buttons[NUM_CB][CB_L];
-#if FILESELECTOR
-	char Filters[23][16];
-#endif
-
-	enum menu_behave menu_behave;	/* pull, push or leave */
-
-//	short widg_w, widg_h;
-//	short widg_dw, widg_dh;		/* flexible widget object types. */
-
-	short ted_filler;
-	short font_id;			/* Font id to use */
-	short double_click_time;	/* Double click timing */
-	short mouse_packet_timegap;	
-	short redraw_timeout;
-
-	union {
-		MN_SET mn_set;
-		struct xa_menu_settings	xamn_set;
-	} menu_settings;
-
-	short popup_timeout;
-	short popout_timeout;
-
-	short have_wheel_vector;	/* If vex_whlv changed its save_ptr,
-					   we have a VDI that supports mouse wheels. */
-	short ver_wheel_id;		/* ID of horizontal wheel */
-	short ver_wheel_amount;
-	short hor_wheel_id;		/* ID of vertical wheel */
-	short hor_wheel_amount;
-	//short wheel_amount;		/* amount of lines for a wheel click. */
-
-	short icnfy_orient;
-	short icnfy_l_x;
-	short icnfy_r_x;
-	short icnfy_t_y;
-	short icnfy_b_y;
-	short icnfy_w;
-	short icnfy_h;
-	short icnfy_reorder_to;
-
-	short standard_font_point;	/* Size for normal text */
-	short medium_font_point;	/* The same, but for low resolution screens */
-	short small_font_point;		/* Size for small text */
-	short popscroll;		/* number of lines of a popup above which it will be made scrollable. */
-
-	short videomode;		/* ID of screen device opened by v_opnwk() */
-
-	struct helpserver *helpservers;	/* configured helpservers */
-	struct cfg_name_list *ctlalta;
-	struct cfg_name_list *kwq;	/* Apps listed here are killed without question upon shutdowns */
-
-	/* postponed cnf things */
-	char *cnf_shell;		/* SHELL= */
-	char *cnf_shell_arg;		/* args for SHELL cnf directive */
-	char *cnf_run[32];		/* RUN directives */
-	char *cnf_run_arg[32];		/* args for RUN cnf directives */
-};
-
 /*
  * module_register() modes..
  */
-struct xa_objc_api
-{
-	RSHDR * _cdecl		(*load_resource)	(struct xa_client *client, char *fname, RSHDR *rshdr, short designWidth, short designHeight, bool set_pal);
-	void _cdecl		(*free_resource)	(struct xa_client *client, AESPB *pb, RSHDR *thisrsc);
-	OBJECT * _cdecl		(*resource_tree)	(RSHDR *rsc, long num);
+#define MODREG_UNREGISTER	0x80000000
+#define MODREG_KERNKEY		0x00000001
 
+
+struct xa_module_api
+{
+	struct config *cfg;
+	struct common *C;
+	struct shared *S;
+	struct kentry *k;
+
+	void	_cdecl		(*display)		(const char *fmt, ...);
+	void	_cdecl		(*ndisplay)		(const char *fmt, ...);
+	void	_cdecl		(*bootlog)		(bool disp, const char *fmt, ...);
+
+	long	_cdecl		(*module_register)	(long type, void *data);
+
+	char * _cdecl		(*sysfile)		(const char *fname);
+	RSHDR * _cdecl		(*load_resource)	(struct xa_client *client, char *fname, RSHDR *rshdr, short designWidth, short designHeight, bool set_pal);
+	OBJECT * _cdecl		(*resource_tree)	(RSHDR *rsc, long num);
 	void _cdecl		(*obfix)		(OBJECT *obtree, short obj, short designWidth, short desighHeight);
 
 	OBJECT * _cdecl		(*duplicate_obtree)	(struct xa_client *client, OBJECT *tree, short start);
@@ -3060,7 +2793,7 @@ struct xa_objc_api
 	short		_cdecl	(*obj_offset)		(struct widget_tree *wt, struct xa_aes_object object, short *mx, short *my);
 	void		_cdecl	(*obj_rectangle)	(struct widget_tree *wt, struct xa_aes_object object, RECT *r);
 	
-	void 		_cdecl	(*obj_set_radio_button)	(struct widget_tree *wt,
+	void _cdecl		(*obj_set_radio_button)	(struct widget_tree *wt,
 							 struct xa_vdi_settings *v,
 							 struct xa_aes_object obj,
 							 bool redraw,
@@ -3070,175 +2803,63 @@ struct xa_objc_api
 								struct xa_aes_object parent,
 								short state);
 
-	void 		_cdecl	(*obj_draw)		(XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_object obj,
-				  			 int transdepth, const RECT *clip, struct xa_rect_list *rl, short flags);
 
-	void 		_cdecl	(*obj_change)		(XA_TREE *wt,
-				  			 struct xa_vdi_settings *v,
-	  						 struct xa_aes_object obj,
-							 int transdepth, short state, short flags,
-							 bool redraw,
-							 const RECT *clip,
-							 struct xa_rect_list *rl, short dflags);
-	short 		_cdecl	(*obj_edit)		(XA_TREE *wt,
-							 struct xa_vdi_settings *v,
-							 short func,
-							 struct xa_aes_object obj,
-							 short keycode,
-							 short pos,	/* -1 sets position to end of text */
-							 char *string,
-							 bool redraw,
-							 const RECT *clip,
-							 struct xa_rect_list *rl,
-							/* outputs */
-							 short *ret_pos,
-							 struct xa_aes_object *ret_obj);
+	void * _cdecl	(*rp2ap)		(struct xa_window *wind, struct xa_widget *widg, RECT *r);
+	void _cdecl	(*rp2apcs)		(struct xa_window *wind, struct xa_widget *widg, RECT *r);
 
-	void _cdecl	(*obj_set_g_popup)		(XA_TREE *swt, struct xa_aes_object sobj, POPINFO *pinf);
-	void _cdecl	(*obj_unset_g_popup)		(XA_TREE *swt, struct xa_aes_object sobj, char *txt);
+	short _cdecl	(*rect_clip)		(RECT *s, RECT *d, RECT *r);
 
-	OBJECT * _cdecl	(*create_popup_tree)		(struct xa_client *client, short type, short nobjs,
-							 short min_w, short min_h,
-							 void *(*cb)(short item, void **data), void **data);
+	void * _cdecl	(*kmalloc)		(long size);
+	void * _cdecl	(*umalloc)		(long size);
+	void _cdecl	(*kfree)		(void *addr);
+	void _cdecl	(*ufree)		(void *addr);
 
-	void *		reserved[64 - 28];
-};
-struct xa_menu_api
-{
-	
-	void _cdecl	(*remove_attachments)(enum locks lock, struct xa_client *client, XA_TREE *wt);
+	void _cdecl	(*bclear)		(void *addr, unsigned long len);
 
-	void *		reserved[64 - 1];
-};
-	
-struct xa_debug_api
-{
-	void	_cdecl		(*display)		(const char *fmt, ...);
-	void	_cdecl		(*ndisplay)		(const char *fmt, ...);
-	void	_cdecl		(*bootlog)		(bool disp, const char *fmt, ...);
+	void * _cdecl	(*lookup_xa_data)	(struct xa_data_hdr **l,    void *_data);
+	void * _cdecl	(*lookup_xa_data_byid)	(struct xa_data_hdr **l,    long id);
+	void * _cdecl	(*lookup_xa_data_byname)(struct xa_data_hdr **l,    char *name);
+	void * _cdecl	(*lookup_xa_data_byidname)(struct xa_data_hdr **l,  long id, char *name);
+	void _cdecl	(*add_xa_data)		(struct xa_data_hdr **list, void *_data, long id, char *name, void _cdecl(*destruct)(void *d));
+	void _cdecl	(*remove_xa_data)	(struct xa_data_hdr **list, void *_data);
+	void _cdecl	(*delete_xa_data)	(struct xa_data_hdr **list, void *_data);
+	void _cdecl	(*ref_xa_data)		(struct xa_data_hdr **list, void *_data, short count);
+	long _cdecl	(*deref_xa_data)	(struct xa_data_hdr **list, void *_data, short flags);
+	void _cdecl	(*free_xa_data_list)	(struct xa_data_hdr **list);
 
-	void	_cdecl		(*diags)		(const char *t, ...);
-	
-	void *			reserved[16 - 4];
-};
+	void _cdecl	(*load_img)		(char *fname, XAMFDB *result);
+
+	struct xa_window * _cdecl (*create_window)	(enum locks lock,
+							SendMessage *message_handler,
+							DoWinMesag *message_doer,
+							struct xa_client *client,
+							bool nolist,
+							XA_WIND_ATTR tp,
+							WINDOW_TYPE dial,
+							int frame,
+							bool thinwork,
+							const RECT R,
+							const RECT *max,
+							RECT *remember);
+
+	int _cdecl	(*open_window)		(enum locks lock, struct xa_window *wind, RECT r);
+	bool _cdecl	(*close_window)		(enum locks lock, struct xa_window *wind);
+	void _cdecl	(*move_window)		(enum locks lock, struct xa_window *wind, bool blit, WINDOW_STATUS newstate, short x, short y, short w, short h);
+	void _cdecl	(*top_window)		(enum locks lock, bool snd_untopped, bool snd_ontop, struct xa_window *wind);
+	void _cdecl	(*bottom_window)	(enum locks lock, bool snd_untopped, bool snd_ontop, struct xa_window *wind);
+
+	void _cdecl	(*send_wind_to_bottom)	(enum locks lock, struct xa_window *wind);
+	void _cdecl	(*delete_window)	(enum locks lock, struct xa_window *wind);
+	void _cdecl	(*delayed_delete_window)(enum locks lock, struct xa_window *wind);
 
 
-struct xa_module_api
-{
-#define MODREG_UNREGISTER	0x80000000
-#define MODREG_KERNKEY		0x00000001
-#define MODREG_SETUPVDI		0x00000002
-#define MODREG_RESCHANGE	0x00000003
 
-	long	_cdecl		(*module_register)	(long type, void *data);
-	
-	void *			reserved[16 - 1];
-
-};
-
-struct xa_window_api
-{
-	struct xa_window * _cdecl (*create) (enum locks lock,
-						SendMessage *message_handler,
-						DoWinMesag *message_doer,
-						struct xa_client *client,
-						bool nolist,
-						XA_WIND_ATTR tp,
-						WINDOW_TYPE dial,
-						int frame,
-						bool thinwork,
-						const RECT R,
-						const RECT *max,
-						RECT *remember);
-
-	int _cdecl	(*open)			(enum locks lock, struct xa_window *wind, RECT r);
-	bool _cdecl	(*close)		(enum locks lock, struct xa_window *wind);
-	void _cdecl	(*move)			(enum locks lock, struct xa_window *wind, bool blit, WINDOW_STATUS newstate, short x, short y, short w, short h);
-	void _cdecl	(*top)			(enum locks lock, bool snd_untopped, bool snd_ontop, struct xa_window *wind);
-	void _cdecl	(*bottom)		(enum locks lock, bool snd_untopped, bool snd_ontop, struct xa_window *wind);
-
-	void _cdecl	(*send_to_bottom)	(enum locks lock, struct xa_window *wind);
-	void _cdecl	(*delete)		(enum locks lock, struct xa_window *wind);
-	void _cdecl	(*delayed_delete)	(enum locks lock, struct xa_window *wind);
 
 	struct xa_window * _cdecl (*create_dwind)(enum locks lock, XA_WIND_ATTR tp, char *title, struct xa_client *client, struct widget_tree *wt, FormExit(*f), WindowDisplay(*d));
 	
 	void _cdecl	(*redraw_toolbar)	(enum locks lock, struct xa_window *wind, short item);
 
-	void * _cdecl	(*rp2ap)		(struct xa_window *wind, struct xa_widget *widg, RECT *r);
-	void   _cdecl	(*rp2apcs)		(struct xa_window *wind, struct xa_widget *widg, RECT *r);
-	
-	void *		reserved[64 - 13];
-};
-
-
-struct xa_rectangle_api
-{
-	short _cdecl	(*clip)		(RECT *s, RECT *d, RECT *r);
-};
-
-
-struct xa_lib_api
-{
-	char * _cdecl	(*sysfile)		(const char *fname);
-	void * _cdecl	(*kmalloc)		(size_t size, const char *f);
-	void * _cdecl	(*umalloc)		(size_t size, const char *f);
-	void _cdecl	(*kfree)		(void *addr, const char *f);
-	void _cdecl	(*ufree)		(void *addr, const char *f);
-
-	void _cdecl	(*bclear)		(void *addr, unsigned long len);
-
-	char * _cdecl	(*make_fqfname)		(const char *path, const char *file);
-
-	void *		reserved[64 - 7];
-};
-
-struct xa_xadata_api
-{
-	void * _cdecl	(*lookup)		(struct xa_data_hdr **l,    void *_data);
-	void * _cdecl	(*lookup_byid)		(struct xa_data_hdr **l,    long id);
-	void * _cdecl	(*lookup_byname)	(struct xa_data_hdr **l,    char *name);
-	void * _cdecl	(*lookup_byidname)	(struct xa_data_hdr **l,  long id, char *name);
-	void _cdecl	(*add)			(struct xa_data_hdr **list, void *_data, long id, char *name, void _cdecl(*destruct)(void *d));
-	void _cdecl	(*remove)		(struct xa_data_hdr **list, void *_data);
-	void _cdecl	(*delete)		(struct xa_data_hdr **list, void *_data);
-	void _cdecl	(*ref)			(struct xa_data_hdr **list, void *_data, short count);
-	long _cdecl	(*unref)		(struct xa_data_hdr **list, void *_data, short flags);
-	void _cdecl	(*free_list)		(struct xa_data_hdr **list);
-	
-	void *		reserved[16 - 10];
-	
-};
-
-struct xa_img_api
-{
-	void _cdecl	(*load_img)		(char *fname, XAMFDB *result);
-	
-	void *		reserved[16 - 1];
-};
-
-struct xa_api
-{
-	char name[32];
-
-	struct config *cfg;
-	struct common *C;
-	struct shared *S;
-	struct kentry *k;
-	
 	void _cdecl	(*dispatch_shutdown)	(short flags, unsigned long arg);
-
-	struct xa_debug_api	debug;
-	struct xa_module_api	module;
-	struct xa_objc_api	objc;
-	struct xa_menu_api	menu;
-	struct xa_rectangle_api	rect;
-	struct xa_lib_api	lib;
-	struct xa_xadata_api	xadata;
-	struct xa_window_api	wind;
-
-	struct xa_img_api	img;
 };
-
 
 #endif /* _xa_types_h */

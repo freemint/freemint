@@ -95,7 +95,7 @@ cXA_open_menubykbd(enum locks lock, struct c_event *ce, bool cancel)
 	{
 		if (wind == root_window)
 		{
-			struct widget_tree *wt = widg->stuff.xa_tree;
+			struct widget_tree *wt = widg->stuff;
 
 			if (wt->owner == ce->client)
 			{
