@@ -140,15 +140,14 @@ init_proc(void)
 	rootproc->p_mem->memflags = F_PROT_S; /* default prot mode: super-only */
 	rootproc->p_mem->num_reg = NUM_REGIONS;
 	{
-		union { char *c; void *v; } ptr;
 		unsigned long size = rootproc->p_mem->num_reg * sizeof(void *);
-		ptr.v = kmalloc(size * 2);
+		void *ptr = kmalloc(size * 2);
 		/* make sure kmalloc was successful */
-		assert(ptr.v);
-		rootproc->p_mem->mem = ptr.v;
-		rootproc->p_mem->addr = (void *)(ptr.c + size);
+		assert(ptr);
+		rootproc->p_mem->mem = ptr;
+		rootproc->p_mem->addr = ptr + size;
 		/* make sure it's filled with zeros */
-		mint_bzero(ptr.c, size * 2L); 
+		mint_bzero(ptr, size * 2L); 
 	}
 	rootproc->p_mem->base = _base;
 	
@@ -824,20 +823,6 @@ static const char *qstring[] =
 
 /* UNSAFE macro for qname, evaluates x 1, 2, or 3 times */
 # define qname(x) ((x >= 0 && x < NUM_QUEUES) ? qstring[x] : "unkn")
-# else
-static const char *qstring[] =
-{
-	"run   ",
-	"ready ",
-	"wait  ",
-	"iowait",
-	"zombie",
-	"tsr   ",
-	"stop  ",
-	"select"
-};
-
-# define qname(x) ((x >= 0 && x < NUM_QUEUES) ? qstring[x] : "unkn")
 # endif
 
 unsigned long uptime = 0;
@@ -849,7 +834,7 @@ static unsigned short number_running;
 void
 DUMPPROC(void)
 {
-// #ifdef DEBUG_INFO
+#ifdef DEBUG_INFO
 	struct proc *p = curproc;
 
 	FORCE("Uptime: %ld seconds Loads: %ld %ld %ld Processes running: %d",
@@ -859,55 +844,16 @@ DUMPPROC(void)
 
 	for (curproc = proclist; curproc; curproc = curproc->gl_next)
 	{
-		BASEPAGE *b;
-		struct memspace *mem;
-		MEMREGION *m;
-
-		b = curproc->p_mem ? curproc->p_mem->base : NULL;
-
-		FORCE("state %s sys %s, inkern %s PC: %08lx/08%lx BP: %08lx (pgrp %i)",
+		FORCE("state %s sys %s, inkern %s PC: %lx/%lx BP: %lx (pgrp %i)",
 			qname(curproc->wait_q),
 			curproc->p_flag & P_FLAG_SYS ? "yes":" no",
 			curproc->in_kern ? "yes":" no",
 			curproc->ctxt[CURRENT].pc, curproc->ctxt[SYSCALL].pc,
-			b,
+			curproc->p_mem ? curproc->p_mem->base : NULL,
 			curproc->pgrp);
-		if (b) {
-			
-			ulong s[6];
-			ulong cts[8];
-			
-			proc_access(&(curproc->ctxt[CURRENT]), cts);
-			s[0] = b->p_tbase;
-			s[1] = b->p_tlen;
-			s[2] = b->p_dbase;
-			s[3] = b->p_dlen;
-			s[4] = b->p_bbase;
-			s[5] = b->p_blen;
-			proc_access(NULL, cts);
-
-			FORCE("    p_tbase %08lx, tlen %08lx, tend %08lx", s[0], s[1], s[0]+s[1]);
-			FORCE("    p_dbase %08lx, dlen %08lx, dend %08lx", s[2], s[3], s[2]+s[3]);
-			FORCE("    p_bbase %08lx, blen %08lx, bend %08lx", s[4], s[5], s[4]+s[5]);
-		}
-		
-		mem = curproc->p_mem;
-		if (mem && mem->mem) {
-			int i;
-			for (i = 0; i < mem->num_reg; i++) {
-				m = mem->mem[i];
-				if (m)
-					FORCE("     reg %03d: %08lx -> %08lx flags %04x len %ld", i, m->loc, m->loc + m->len, m->mflags, m->len);
-			}
-		} else
-			FORCE("     No memory used!");
-#if 0
-		if (!stricmp(curproc->name, "strngsrv"))
-			dump_proc_table(curproc);
-#endif
 	}
 	curproc = p;	/* restore the real curproc */
-// # endif
+# endif
 }
 
 INLINE unsigned long

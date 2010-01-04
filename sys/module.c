@@ -57,9 +57,6 @@
 
 # include "proc.h"
 
-static struct kernel_module * load_module(struct kernel_module *parent, const char *path, const char *filename, long *err);
-long _cdecl sys_c_conin(void);
-
 long _cdecl
 kernel_opendir(struct dirstruct *dirh, const char *name)
 {
@@ -158,8 +155,8 @@ kernel_close(struct file *f)
 }
 
 
-static long load_xfs (struct basepage *b, const char *name, short *class);
-static long load_xdd (struct basepage *b, const char *name, short *class);
+static long load_xfs (struct basepage *b, const char *name, short *class, short *subclass);
+static long load_xdd (struct basepage *b, const char *name, short *class, short *subclass);
 
 static const char *_types[] =
 {
@@ -167,7 +164,7 @@ static const char *_types[] =
 	".xfs"
 };
 
-static long (*_loads[])(struct basepage *, const char *, short *) =
+static long (*_loads[])(struct basepage *, const char *, short *, short *) =
 {
 	load_xdd,
 	load_xfs
@@ -192,94 +189,24 @@ load_all_modules(unsigned long mask)
 	}
 }
 
-struct kernel_module root_module;
-static char *classtypes[]    = { "Root", "Bus driver", "eXtended InterFace","eXtended Device Driver","eXtended FileSystem","KernelModule","KernelModule defined" };
-
-void
-print_moduleinfo(void)
-{
-	struct kernel_module *km = &root_module;
-	int i;
-
-	if (!km) {
-		FORCE("No modules loaded!");
-		return;
-	}
-	FORCE("Loaded modules;");
-	i = 0;
-	
-	do {
-		FORCE(" module #%d", i);
-		FORCE("       Name: %s", km->name);
-		FORCE("   filename: %s", km->fname);
-		FORCE("   filepath: %s", km->fpath);
-		FORCE("      Class: %s", km->class < MAX_MODCLASS ? classtypes[km->class]       : "unknown");
-		FORCE("      flags: %lx", km->flags);
-		FORCE("       bp  : %lx", km->b);
-		if (km->b) {
-			FORCE(" tbase/tlen: %lx/%ld", km->b->p_tbase, km->b->p_tlen);
-			FORCE(" dbase/dlen: %lx/%ld", km->b->p_dbase, km->b->p_dlen);
-			FORCE(" bbase/blen: %lx/%ld", km->b->p_bbase, km->b->p_blen);
-		} else
-			FORCE(" No basepage - psudodriver");
-		i++;
-		
-		if (km->children) {
-			km = km->children;
-		} else {
-			if (!km->next)
-				km = km->parent;
-			if (km)
-				km = km->next;
-		}
-	} while (km);
-
-	FORCE("In total %d modules loaded", i);
-}
-
-void
-init_module_subsys(void)
-{
-	struct kernel_module *root = &root_module;
-
-	mint_bzero(root, sizeof(*root));
-	strcpy(root->name, "atari bus");
-}
+static struct kernel_module *loaded_modules = NULL;
 
 static void
-add_km(struct kernel_module *parent, struct kernel_module *child)
-{
-	child->parent = parent;
-	child->prev = NULL;
-	
-	if ((child->next = parent->children))
-		child->next->prev = child;
-
-	parent->children = child;
-}
-
-static long
 free_km(struct kernel_module *km)
 {
-// 	struct kernel_module *parent = km->parent;
+	if (km->prev)
+		km->prev->next = km->next;
+	else
+		loaded_modules = km->next;
 
-	if (km->children) {
-		FORCE("free_km: cannot free %s, it has children!", km->fname);
-		return EERROR;
-	} else {
-		if (km->next)
-			km->next->prev = km->prev;
-		if (km->prev)
-			km->prev->next = km->next;
-		else
-			km->parent->children = km->next;
-		kfree(km);
-		return E_OK;
-	}
+	if (km->next)
+		km->next->prev = km->prev;
+
+	kfree(km);
 }
 
 static struct kernel_module *
-load_module(struct kernel_module *parent, const char *path, const char *filename, long *err)
+load_module(const char *path, const char *filename, long *err)
 {
 	struct basepage *b;
 	struct kernel_module *km = NULL;
@@ -347,20 +274,21 @@ load_module(struct kernel_module *parent, const char *path, const char *filename
 		DEBUG(("load_and_reloc: failed"));
 		goto failed;
 	}
-	
+
+	km->next = loaded_modules;
 	km->b = b;
 	km->flags = MOD_LOADED;
 	if (path)
 	{
-		strcpy(km->fname, filename);
-		strcpy(km->fpath, path);
+		strcpy(km->name, filename);
+		strcpy(km->path, path);
 	}
 	else
 	{
 		char *sa, *sb;
-		strcpy(km->fpath, filename);
-		sa = strrchr(km->fpath, '\\');
-		sb = strrchr(km->fpath, '/');
+		strcpy(km->path, filename);
+		sa = strrchr(km->path, '\\');
+		sb = strrchr(km->path, '/');
 		if (sa && sb)
 		{
 			if (sa < sb)
@@ -371,17 +299,14 @@ load_module(struct kernel_module *parent, const char *path, const char *filename
 		if (sa)
 		{
 			sa++;
-			strcpy(km->fname, sa);
+			strcpy(km->name, sa);
 			*sa = '\0';
 		}
 	}
-	
+	loaded_modules = km;
 	kernel_close(f);
-	
-	add_km(parent ? parent : &root_module, km);
-	
 
-	DEBUG(("load_module: name '%s', path '%s'", km->fname, km->fpath));
+	DEBUG(("load_module: name '%s', path '%s'", km->name, km->path));
 	DEBUG(("load_module: basepage = %lx", b));
 	return km;
 failed:
@@ -412,7 +337,7 @@ dont_load(const char *name)
 void _cdecl
 load_modules_old(const char *ext, long (*loader)(struct basepage *, const char *))
 {
-	long (*l)(struct basepage *, const char *, short *);
+	long (*l)(struct basepage *, const char *, short *, short *);
 
 	l = (void *)loader;
 
@@ -420,7 +345,7 @@ load_modules_old(const char *ext, long (*loader)(struct basepage *, const char *
 }
 
 void _cdecl
-load_modules(const char *path, const char *ext, long (*loader)(struct basepage *, const char *, short *))
+load_modules(const char *path, const char *ext, long (*loader)(struct basepage *, const char *, short *, short *))
 {
 	struct dirstruct dirh;
 	char buf[128];
@@ -453,17 +378,17 @@ load_modules(const char *path, const char *ext, long (*loader)(struct basepage *
 
 		while (r == 0)
 		{
-			r = strlen(name + 4) - 4;
+			r = strlen(name+4) - 4;
 			if ((r > 0) &&
-			    stricmp(name + 4 + r, ext) == 0 &&
-			    !dont_load(name + 4))
+			    stricmp(name+4 + r, ext) == 0 &&
+			    !dont_load(name+4))
 			{
 				struct kernel_module *km;
 
 				/* remove the 4 byte index from readdir */
 				{
 					char *ptr1 = name;
-					char *ptr2 = name + 4;
+					char *ptr2 = name+4;
 					long len2 = len - 1;
 
 					while (*ptr2)
@@ -475,11 +400,11 @@ load_modules(const char *path, const char *ext, long (*loader)(struct basepage *
 					*ptr1 = '\0';
 				}
 
-				km = load_module(&root_module, NULL, buf, &r); //(path, buf, &r);
+				km = load_module(path, buf, &r);
 				if (km)
 				{
 					DEBUG(("load_modules: load \"%s\"", buf));
-					r = loader(km->b, name, &km->class);
+					r = loader(km->b, name, &km->class, &km->subclass);
 					DEBUG(("load_modules: load done \"%s\" (%li)", buf, r));
 
 					if (r)
@@ -497,291 +422,6 @@ load_modules(const char *path, const char *ext, long (*loader)(struct basepage *
 		kernel_closedir(&dirh);
 	}
 }
-
-static device_t
-new_device(struct kernel_module *km, struct device_methods *dm)
-{
-	device_t dev;
-
-	dev = kmalloc(sizeof(*dev));
-	if (dev) {
-		bzero(dev, sizeof(*dev));
-		dev->km = km;
-		dev->methods = dm;
-	}
-	return dev;
-}
-
-static void
-free_device(device_t dev)
-{
-	kfree(dev);
-}
-
-long _cdecl
-detach_km_devices(struct kernel_module *km, bool free)
-{
-	long error = E_OK;
-	device_t dev, dev1;
-
-	if (KM_HAVEDEVICE(km)) {
-		dev = TAILQ_FIRST(&km->devices);
-		while (dev) {
-			bool f = free;
-
-			dev1 = TAILQ_NEXT(dev, next);
-			if (DEVICE_ENABLED(dev)) {
-				FORCE("call device_detach for %s, dev %lx", km->fname, dev);
-				error = device_detach(dev);
-				dev->flags &= ~DF_ENABLED;
-				if (error)
-					f = false;
-			}
-			if (f == true) {
-				TAILQ_REMOVE(&km->devices, dev, next);
-				free_device(dev);
-			}
-			dev = dev1;
-		}
-		error = (!TAILQ_FIRST(&km->devices)) ? E_OK : EERROR;
-	}
-	return error;
-}
-
-#if 1
-static long
-kmod_init(struct kernel_module *km, void *arg, struct device_methods ***devmethods)
-{
-	register long ret __asm__("d0");
-	void *initfunc;
-
-	initfunc = (void *)km->b->p_tbase;
-	
-	FORCE(" dm = %lx", devmethods);
-	FORCE("*dm = %lx", *devmethods);
-	
-	__asm__ volatile
-	(
-		"movem.l d3-d7/a3-a6,-(sp)\n\t"
-		"move.l %4,-(sp)\n\t"
-		"move.l	%3,-(sp)\n\t"
-		"move.l	%2,-(sp)\n\t"
-		"move.l	%1,a0\n\t"
-		"jsr	(a0)\n\t"
-		"lea	12(sp),sp\n\t"
-		"movem.l (sp)+,d3-d7/a3-a6\n\t"
-		: "=r"(ret)							/* outputs */
-		: "r"(initfunc), "r"(km), "r"(arg), "r"(devmethods)		/* inputs  */
-		: __CLOBBER_RETURN("d0")
-		  "d1", "d2", "a0", "a1", "a2",					/* clobbered regs */
-		  "memory"
-	);
-
-	return ret;
-}
-
-void _cdecl
-load_kmodules(struct kernel_module *parent, const char *path, const char *ext, void *arg, long (*loader)(struct kernel_module *, const char *))
-{
-	struct dirstruct dirh;
-	char buf[128];
-	char *name;
-	long len, r;
-
-	DEBUG(("load_kmodules: enter(\"%s\", \"%s\", 0x%lx)", path ? path : sysdir, ext, loader));
-
-	strcpy(buf, path ? path : sysdir);
-	len = strlen(buf);
-
-	/* add path delimiter if missing */
-	if (buf[len - 1] != '/' && buf[len-1] != '\\')
-	{
-		DEBUG(("load_kmodules: path separator is missing, adding it"));
-		buf[len++] = '\\';
-		buf[len] = '\0';
-	}
-
-	name = buf + len;
-	len = sizeof(buf) - len;
-
-	r = kernel_opendir(&dirh, buf);
-	DEBUG(("load_modules: d_opendir (%s) = %li", buf, r));
-
-	if (r == 0)
-	{
-		r = kernel_readdir(&dirh, name, len);
-		DEBUG(("load_modules: d_readdir = %li (%s)", r, name+4));
-
-		while (r == 0)
-		{
-			r = strlen(name + 4) - 4;
-			if ((r > 0) &&
-			    stricmp(name + 4 + r, ext) == 0 &&
-			    !dont_load(name + 4))
-			{
-				struct kernel_module *km;
-
-				/* remove the 4 byte index from readdir */
-				{
-					char *ptr1 = name;
-					char *ptr2 = name + 4;
-					long len2 = len - 1;
-
-					while (*ptr2)
-					{
-						*ptr1++ = *ptr2++;
-						len2--; assert(len2);
-					}
-
-					*ptr1 = '\0';
-				}
-				km = load_module(parent, NULL, buf, &r);
-				if (km) {
-					struct device_methods **devmethods;
-					device_t dev;
-
-					DEBUG(("load_kmodules: load \"%s\"", buf));
-					
-					devmethods = NULL;
-					
-					km->kentry = &kentry;
-					kmod_init(km, arg, &devmethods);
-					TAILQ_INIT(&km->devices);
-					if (devmethods) {
-						while (*devmethods) {
-							dev = new_device(km, *devmethods);
-							if (dev) {
-								long error;
-								device_identify(dev);
-								error = device_probe(dev);
-								if (error >= 0)
-									TAILQ_INSERT_TAIL(&km->devices, dev, next);
-								else
-									free_device(dev);
-							}
-							devmethods++;
-						}
-						if (!TAILQ_FIRST(&km->devices)) {
-							free_km(km);
-							km = NULL;
-						} else
-							km->flags |= KMF_HAVEDEVICE;
-					}
-					if (km) {
-						r = loader(km, name);
-
-						DEBUG(("load_kmodules: load done \"%s\" (%li)", buf, r));
-
-						if (r) {
-							if (!detach_km_devices(km, true))
-								free_km(km);
-						}
-					}
-				} else
-					FORCE("load_kmodule of \"%s\" failed (%li)", buf, r);
-			}
-
-			r = kernel_readdir(&dirh, name, len);
-			DEBUG(("load_kmodules: d_readdir = %li (%s)", r, name+4));
-// 			FORCE(" Press key 1");
-// 			sys_c_conin();
-		}
-		kernel_closedir(&dirh);
-	}
-}
-
-long _cdecl
-unload_kmodule(struct kernel_module *km)
-{
-	
-	FORCE("unload_kmodule: unloading %s", km->fname);
-	
-	if (!detach_km_devices(km, true)) {
-		free_km(km);
-		return E_OK;
-	}
-	return EERROR;
-}
-
-long _cdecl
-unload_kmodules(struct kernel_module *parent)
-{
-	struct kernel_module *this, *next;
-
-	next = parent->children;
-	
-	FORCE("unload_kmodules: parent (%lx) %s", parent, parent->fname);
-	
-	if (next) {
-		do {
-			this = next;
-			if (this->children) {
-				next = this->children;
-				continue;
-			} else {
-				if (this->next)
-					next = this->next;
-				else
-					next = this->parent;
-			}
-			FORCE("unload_kmodules: unload (%lx) %s", this, this->fname);
-			unload_kmodule(this);
-			FORCE("unload_kmodules: next   (%lx) %s", next, next->fname);
-		} while (next && next != parent);
-	}
-	return E_OK;
-}
-
-void _cdecl
-detach_child_devices(struct kernel_module *parent)
-{
-	struct kernel_module *this, *next;
-
-	if (!(next = parent->children))
-		return;
-
-	do {
-		this = next;
-		if (this->children) {
-			next = this->children;
-			continue;
-		} else {
-			if (this->next)
-				next = this->next;
-			else
-				next = this->parent;
-		}
-		detach_km_devices(this, false);
-	} while (next && next != parent);
-}
-
-struct kernel_module * _cdecl
-find_km_bydevicename(char *name)
-{
-	struct kernel_module *this = &root_module;
-	device_t dev;
-
-	while (this) {
-		dev = TAILQ_FIRST(&this->devices);
-		while (dev) {
-			if (!strncmp(name, dev->name, 32))
-				return this;
-			dev = TAILQ_NEXT(dev, next);
-		}
-		if (this->children)
-			this = this->children;
-		else if (this->next)
-			this = this->next;
-		else {
-			this = this->parent;
-			if (this)
-				this = this->next;
-		}
-	}
-	return this;
-}
-
-#endif
 
 #if 0
 /*
@@ -838,7 +478,7 @@ module_init(void *initfunc, struct kerinfo *k)
  * processes are run
  */
 long
-load_xfs(struct basepage *b, const char *name, short *class)
+load_xfs(struct basepage *b, const char *name, short *class, short *subclass)
 {
 	void *initfunc = (void *)b->p_tbase;
 	FILESYS *fs;
@@ -852,6 +492,7 @@ load_xfs(struct basepage *b, const char *name, short *class)
 		DEBUG(("load_xfs: %s loaded OK (%lx)", name, fs));
 
 		*class = MODCLASS_XFS;
+		*subclass = 0;
 		/* link it into the list of drivers
 		 *
 		 * uk: but only if it has not installed itself
@@ -900,7 +541,7 @@ load_xfs(struct basepage *b, const char *name, short *class)
  * so they can make use of external device drivers
  */
 long
-load_xdd(struct basepage *b, const char *name, short *class)
+load_xdd(struct basepage *b, const char *name, short *class, short *subclass)
 {
 	void *initfunc = (void *)b->p_tbase;
 	DEVDRV *dev;
@@ -914,6 +555,7 @@ load_xdd(struct basepage *b, const char *name, short *class)
 		DEBUG(("load_xdd: %s loaded OK", name));
 
 		*class = MODCLASS_XDD;
+		*subclass = 0;
 		if ((DEVDRV *) 1L != dev)
 		{
 			/* we need to install the device driver ourselves */
@@ -941,6 +583,7 @@ load_xdd(struct basepage *b, const char *name, short *class)
 			r = sys_d_cntl(DEV_INSTALL, dev_name, (long) &the_dev);
 			return r;
 		}
+
 		return 0;
 	}
 
@@ -1008,9 +651,11 @@ load_km(const char *path, struct kernel_module **res_km)
 	struct kernel_module *km;
 	long err;
 
-	km = load_module(&root_module, NULL, path, &err);
-	if (km) {
+	km = load_module(NULL, path, &err);
+	if (km)
+	{
 		km->class = MODCLASS_KM;
+		km->subclass = 0;
 	}
 	if (res_km)
 		*res_km = km;
@@ -1020,28 +665,18 @@ load_km(const char *path, struct kernel_module **res_km)
 static bool _cdecl
 km_loaded(struct kernel_module *km)
 {
-	struct kernel_module *list = &root_module;
+	struct kernel_module *list = loaded_modules;
 
-	do {
+	if (!km)
+		return false;
+
+	while (list)
+	{
 		if (list == km)
-			return true;
-
-		if (list->children) {
-			if (list->children == km)
-				return true;
-			else
-				list = list->children;
-			continue;
-		}
-		if (list->next == km)
-			return true;
-		else if (!list->next)
-			list = list->parent;
-		if (list)
-			list = list->next;
-	} while (list);
-	
-	return false;
+			break;
+		list = list->next;
+	}
+	return list ? true : false;
 }
 #if 0
 static long _cdecl
@@ -1072,6 +707,8 @@ probe_km(struct kernel_module *km)
  * run a kernel module
  * kernel module init is to be intended to block until finished
  */
+long _cdecl sys_c_conin(void);
+
 static long _cdecl
 run_km(const char *path)
 {
@@ -1092,13 +729,6 @@ run_km(const char *path)
 	}
 	else
 		err = EBADARG;
-
-	if (km) {
-		if (km->children)
-			FORCE("km %s still have children!!", km->fname);
-		else
-			free_km(km);
-	}
 
 	return err;
 }

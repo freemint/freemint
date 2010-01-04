@@ -151,7 +151,7 @@ wdialog_redraw(enum locks lock, struct xa_window *wind, struct xa_aes_object sta
 	struct xa_rect_list *rl;
 	struct widget_tree *wt;
 
-	if (wind && (wt = get_widget(wind, XAW_TOOLBAR)->stuff.xa_tree) && (rl = wind->rect_list.start))
+	if (wind && (wt = get_widget(wind, XAW_TOOLBAR)->stuff) && (rl = wind->rect_list.start))
 	{
 		OBJECT *obtree;
 		RECT dr;
@@ -620,7 +620,7 @@ XA_wdlg_open(enum locks lock, struct xa_client *client, AESPB *pb)
 			for (i = 0; i < (sizeof(wind->wname)-1) && (*d++ = *b++ = *s++); i++)
 				;
 			*d = *b = 0;
-			get_widget(wind, XAW_TITLE)->stuff.cptr = wind->wname;
+			get_widget(wind, XAW_TITLE)->stuff = wind->wname;
 		}
 
 		obj_init_focus(wdlg->std_wt, OB_IF_RESET);
@@ -823,7 +823,7 @@ XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	{
 		pb->intout[0] = 1;
 
-		wt = get_widget(wind, XAW_TOOLBAR)->stuff.xa_tree;
+		wt = get_widget(wind, XAW_TOOLBAR)->stuff;
 		
 		switch(pb->intin[0])
 		{
@@ -946,7 +946,7 @@ XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 						for (i = 0; i < (sizeof(wdlg->ify_name)-1) && (*d++ = *t++); i++)
 							;
 						*d = 0;
-						get_widget(wind, XAW_TITLE)->stuff.cptr = wdlg->ify_name;
+						get_widget(wind, XAW_TITLE)->stuff = wdlg->ify_name;
 					}
 
 					if (!nr || (nr && nr->w == -1 && nr->h == -1))
@@ -980,7 +980,7 @@ XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 						d = wind->wname;
 						for (i = 0; i < (sizeof(wind->wname)-1) && (*d++ = *t++); i++)
 							;
-						get_widget(wind, XAW_TITLE)->stuff.cptr = wind->wname;
+						get_widget(wind, XAW_TITLE)->stuff = wind->wname;
 					}
 
 					if (obtree)
@@ -993,7 +993,7 @@ XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 					else
 						wt = wdlg->std_wt;
 					
-					if (wt != get_widget(wind, XAW_TOOLBAR)->stuff.xa_tree)
+					if (wt != get_widget(wind, XAW_TOOLBAR)->stuff)
 					{
 // 						RECT or;
 // 						ob_rectangle(obtree, aesobj(obtree, 0), &or);
@@ -1323,7 +1323,7 @@ XA_wdlg_event(enum locks lock, struct xa_client *client, AESPB *pb)
 		struct wdlg_evnt_parms wep;
 
 		wep.wind	= wind;
-		wep.wt		= get_widget(wind, XAW_TOOLBAR)->stuff.xa_tree;
+		wep.wt		= get_widget(wind, XAW_TOOLBAR)->stuff;
 		wep.ev		= (EVNT *)pb->addrin[1];
 		wep.wdlg	= wdlg;
 		wep.callout	= callout_exit;

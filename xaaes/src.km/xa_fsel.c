@@ -2056,7 +2056,7 @@ fileselector_form_exit(struct xa_client *client,
 static int
 find_drive(int a, struct fsel_data *fs)
 {
-	XA_TREE *wt = get_widget(fs->wind, XAW_MENU)->stuff.xa_tree;
+	XA_TREE *wt = get_widget(fs->wind, XAW_MENU)->stuff;
 	OBJECT *m = wt->tree;
 	int d = FSEL_DRVA;
 
@@ -2308,11 +2308,11 @@ fs_key_form_do(enum locks lock,
 	       struct fmd_result *res_fr)
 {
 	unsigned short nkcode = key->norm, nk;
-	struct scroll_info *list = object_get_slist(get_widget(wind, XAW_TOOLBAR)->stuff.xa_tree->tree + FS_LIST);
+	struct scroll_info *list = object_get_slist(((XA_TREE *)get_widget(wind, XAW_TOOLBAR)->stuff)->tree + FS_LIST);
 	struct fsel_data *fs = list->data;
 	//SCROLL_ENTRY *old_entry = list->cur;
 
-	wt = get_widget(wind, XAW_TOOLBAR)->stuff.xa_tree;
+	wt = ((XA_TREE *)get_widget(wind, XAW_TOOLBAR)->stuff);
 // 	display("focus = %d (FS_FILE=%d), aeskey=%x", wt->focus, FS_FILE, key->aes);
 	
 
@@ -2416,7 +2416,7 @@ fs_msg_handler(
 	short *msg)
 {
 	enum locks lock = 0;
-	struct scroll_info *list = object_get_slist(get_widget(wind, XAW_TOOLBAR)->stuff.xa_tree->tree + FS_LIST);
+	struct scroll_info *list = object_get_slist(((XA_TREE *)get_widget(wind, XAW_TOOLBAR)->stuff)->tree + FS_LIST);
 	struct fsel_data *fs = list->data;
 
 
@@ -2514,7 +2514,7 @@ fs_msg_handler(
 	case WM_SIZED:
 	{
 		short dh, dw;
-		OBJECT *obtree = get_widget(wind, XAW_TOOLBAR)->stuff.xa_tree->tree;
+		OBJECT *obtree = ((struct widget_tree *)get_widget(wind, XAW_TOOLBAR)->stuff)->tree;
 		struct xa_window *lwind;
 
 		dw = msg[6] - wind->r.w; //root_window->wa.h - 7 * screen.c_max_h - form->ob_height;

@@ -143,7 +143,7 @@ __extension__								\
 	: "=r"(retvalue)						\
 	: "g"(n), "r"(_a), "r"(_b), "r"(_c)				\
 	: __CLOBBER_RETURN("d0")					\
-	  "d1", "d2", "a0", "a1", "a2", "memory");			\
+	  "d1", "d2", "a0", "a1", "a2", "memory");		\
 	retvalue;							\
 })
 #endif

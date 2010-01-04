@@ -31,12 +31,7 @@
 #include "xa_types.h"
 
 struct xa_window * get_topwind(enum locks lock, struct xa_client *client, struct xa_window *startw, bool not, WINDOW_STATUS wsmask, WINDOW_STATUS wsvalue);
-#ifdef ALT_CTRL_APP_OPS
 struct xa_window * next_wind(enum locks lock);
-struct xa_client * next_app(enum locks lock, bool with_window_or_menu, bool no_accessories);
-void recover(void);
-struct xa_client * get_app_by_procname(char *name);
-#endif
 struct xa_client * previous_client(enum locks lock, short exlude);
 
 void set_next_menu(struct xa_client *new, bool do_topwind, bool force);
@@ -49,6 +44,7 @@ void swap_menu(enum locks lock, struct xa_client *, struct widget_tree *, short)
 void app_in_front(enum locks lock, struct xa_client *client, bool snd_untopped, bool snd_ontop, bool all_winds);
 bool is_infront(struct xa_client *client);
 struct xa_client * get_app_infront(void);
+struct xa_client * get_app_by_procname(char *name);
 void set_active_client(enum locks lock, struct xa_client *client);
 
 void set_reiconify_timeout(enum locks lock);
@@ -61,6 +57,7 @@ void unhide_app(enum locks lock, struct xa_client *client);
 void hide_other(enum locks lock, struct xa_client *client);
 void unhide_all(enum locks lock, struct xa_client *client);
 void set_unhidden(enum locks lock, struct xa_client *client);
+void recover(void);
 
 //XA_TREE *find_menu_bar(enum locks lock);
 struct xa_client *	find_desktop (enum locks lock, struct xa_client *client, short exlude);
