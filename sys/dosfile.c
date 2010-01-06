@@ -441,20 +441,6 @@ sys_f_datime (ushort *timeptr, short fd, short wflag)
 			timeptr[0] = (unsigned short)ut;
 		}
 		return r;
-#if 0
-		ulong t = 0;
-		long r;
-
-		if (wflag)
-			t = unixtime (timeptr [0], timeptr [1]) + timezone;
-
-		r = xdd_datime (f, (ushort *) &t, wflag);
-
-		if (!r && !wflag)
-			*(long *) timeptr = dostime (t - timezone);
-
-		return r;
-#endif
 	}
 
 	return xdd_datime (f, timeptr, wflag);
@@ -517,11 +503,6 @@ sys__ffstat_1_12 (struct file *f, XATTR *xattr)
 		xtime_to_local_dos(xattr,m);
 		xtime_to_local_dos(xattr,a);
 		xtime_to_local_dos(xattr,c);
-
-		/* UTC -> localtime -> DOS style */
-// 		*((long *) &(xattr->mtime)) = dostime (*((long *) &(xattr->mtime)) - timezone);
-// 		*((long *) &(xattr->atime)) = dostime (*((long *) &(xattr->atime)) - timezone);
-// 		*((long *) &(xattr->ctime)) = dostime (*((long *) &(xattr->ctime)) - timezone);
 	}
 
 	return ret;

@@ -680,9 +680,6 @@ sys_f_sfirst (const char *path, int attrib)
 		if (fs->fsflags & FS_EXT_3)
 		{
 			dta_UTC_local_dos(dta,xattr,m);
-			/* UTC -> localtime -> DOS style */
-// 			*((long *) &(dta->dta_time)) = dostime (*((long *) &(xattr.mtime)) - timezone);
-// 			dta->dta_time = dostime(xattr.mtime - timezone);
 		}
 		else
 		{
@@ -927,8 +924,6 @@ baderror:
 	if (fs->fsflags & FS_EXT_3)
 	{
 		dta_UTC_local_dos(dta,xattr,m);
-		/* UTC -> localtime -> DOS style */
-// 		*((long *) &(dta->dta_time)) = dostime (*((long *) &(xattr.mtime)) - timezone);
 	}
 	else
 	{
@@ -1364,10 +1359,6 @@ sys_d_xreaddir (int len, long handle, char *buf, XATTR *xattr, long *xret)
 		xtime_to_local_dos(xattr, m);
 		xtime_to_local_dos(xattr, a);
 		xtime_to_local_dos(xattr, c);
-		/* UTC -> localtime -> DOS style */
-// 		*((long *) &(xattr->mtime)) = dostime (*((long *) &(xattr->mtime)) - timezone);
-// 		*((long *) &(xattr->atime)) = dostime (*((long *) &(xattr->atime)) - timezone);
-// 		*((long *) &(xattr->ctime)) = dostime (*((long *) &(xattr->ctime)) - timezone);
 	}
 
 	release_cookie (&fc);
@@ -1508,10 +1499,6 @@ sys_f_xattr (int flag, const char *name, XATTR *xattr)
 		xtime_to_local_dos(xattr, m);
 		xtime_to_local_dos(xattr, a);
 		xtime_to_local_dos(xattr, c);
-		/* UTC -> localtime -> DOS style */
-// 		*((long *) &(xattr->mtime)) = dostime (*((long *) &(xattr->mtime)) - timezone);
-// 		*((long *) &(xattr->atime)) = dostime (*((long *) &(xattr->atime)) - timezone);
-// 		*((long *) &(xattr->ctime)) = dostime (*((long *) &(xattr->ctime)) - timezone);
 	}
 
 	release_cookie (&fc);
