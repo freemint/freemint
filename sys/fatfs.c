@@ -6560,6 +6560,13 @@ fatfs_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newna
 					break;
 				}
 
+				/* clear the negative lookup cache */
+				if (traverse->lastlookup)
+				{
+					kfree (traverse->lastlookup);
+					traverse->lastlookup = NULL;
+				}
+
 				r = search_cookie (traverse, &check, "..", 0);
 				if (r)
 				{
