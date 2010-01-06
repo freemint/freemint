@@ -2847,6 +2847,23 @@ str2dir (register const char *src, register char *nm)
 # endif
 	register long i;
 
+	if (strlen(src) == 1 && *src == '.') {
+		*nm++ = *src++;
+		i = 10;
+		while (i--)
+			*nm++ = ' ';
+		return;
+	}
+
+	if (strlen(src) == 2 && src[0] == '.' && src[1] == '.') {
+		*nm++ = *src++;
+		*nm++ = *src++;
+		i = 9;
+		while (i--)
+			*nm++ = ' ';
+		return;
+	}
+
 	i = 8;
 	while (i--)
 	{
@@ -3077,8 +3094,18 @@ is_short (register const char *src, register const char *table)
 
 	FAT_DEBUG (("is_short: enter (src = %s, len = %li)", src, i));
 
-	/* verify length and leading point/space */
-	if (i > 12 || *src == '.' || *src == ' ')
+	/* . == current directory */
+	if (i == 1 && src[0] == '.') {
+		return TOS_SEARCH;
+	}
+
+	/* .. == previous directory */
+	if (i == 2 && src[0] == '.' && src[1] == '.') {
+		return TOS_SEARCH;
+	}
+
+	/* verify length */
+	if (i > 12)
 	{
 		FAT_DEBUG (("is_short: leave islong 0 (src = %s)", src));
 		return 0;
@@ -6558,6 +6585,13 @@ fatfs_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newna
 				{
 					rel_cookie (traverse);
 					break;
+				}
+
+				/* clear the negative lookup cache */
+				if (traverse->lastlookup)
+				{
+					kfree (traverse->lastlookup);
+					traverse->lastlookup = NULL;
 				}
 
 				r = search_cookie (traverse, &check, "..", 0);
