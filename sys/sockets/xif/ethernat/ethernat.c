@@ -182,14 +182,13 @@ ethernat_open (struct netif *nif)
 
 	in_use = 1;
 
-//	c_conws("Ethernat up!\n\r");
-	Cconws("Ethernat up!\n\r");
+	c_conws("Ethernat up!\n\r");
 
 
 	// Enable interrupts in the LAN91C111
 /*
 	ksprintf (message, "Enable interrupts in the LAN91C111... ");
-	Cconws (message);
+	c_conws (message);
 */
 
 #ifdef USE_I6
@@ -199,7 +198,7 @@ ethernat_open (struct netif *nif)
 
 /*
 	ksprintf (message, "OK\n\r");
-	Cconws (message);
+	c_conws (message);
 */
 
 
@@ -219,7 +218,7 @@ ethernat_open (struct netif *nif)
 static long
 ethernat_close (struct netif *nif)
 {
-	Cconws("Ethernat down!\n\r");
+	c_conws("Ethernat down!\n\r");
 	initializing = 1;
 	return 0;
 }
@@ -349,7 +348,7 @@ ethernat_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, s
 //	unsigned long	timeval;
 
 
-//	Cconws("Output\n\r");		//debug
+//	c_conws("Output\n\r");		//debug
 
 
 	/*
@@ -367,7 +366,7 @@ ethernat_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, s
 	nbuf = eth_build_hdr (buf, nif, hwaddr, pktype);
 	if (nbuf == NULL)
 	{
-		Cconws("eth_build_hdr() failed!\n\r");
+		c_conws("eth_build_hdr() failed!\n\r");
 		nif->out_errors++;
 		return ENOMEM;
 	}
@@ -393,7 +392,7 @@ ethernat_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, s
 	littlemem = (*LAN_MIR) & 0x00ff;
 //	if (len == 0)
 //	{
-//		Cconws("Insufficient memory in LAN91C111!\n\r");
+//		c_conws("Insufficient memory in LAN91C111!\n\r");
 //	}
 
 	// Allocate buffer in 91C111
@@ -408,7 +407,7 @@ ethernat_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, s
 		{
 			if (littlemem > 0)
 			{
-				Cconws("Waiting too long for ALLOC_INT but we had memory before!\n\r");
+				c_conws("Waiting too long for ALLOC_INT but we had memory before!\n\r");
 			}
 			return ENOMEM;
 		}
@@ -448,7 +447,7 @@ send_packet(struct netif *nif, BUF *nbuf)
 	unsigned char	packetnr;
 	unsigned short	len, origlen, bytecount;
 
-//	Cconws("sendpacket\n\r");		//debug
+//	c_conws("sendpacket\n\r");		//debug
 
 
 
@@ -459,7 +458,7 @@ send_packet(struct netif *nif, BUF *nbuf)
 	{
 		//no free buffer, destroy the nbuf (this should never happen)
 		buf_deref (nbuf, BUF_NORMAL);
-		Cconws("No free buffer in 91C111!\n\r");
+		c_conws("No free buffer in 91C111!\n\r");
 		return ENOMEM;
 
 	}
@@ -483,10 +482,10 @@ send_packet(struct netif *nif, BUF *nbuf)
 	bytecount = len + 6;
 	tmp = (((long)bytecount) << 16) | 0x0000;
 
-//	Cconws(upperleft);
+//	c_conws(upperleft);
 
 //	ksprintf(message, "Status: 0x%08lx\n\r", cpu2le32(tmp));
-//	Cconws(message);
+//	c_conws(message);
 
 	*LAN_DATA = cpu2le32(tmp);						//write statusword and bytecount
 
@@ -499,7 +498,7 @@ send_packet(struct netif *nif, BUF *nbuf)
 //		tmp = *datapnt++;
 //		*LAN_DATA = tmp;
 //		ksprintf(message, "Sent: 0x%08lx\n\r", tmp);
-//		Cconws(message);
+//		c_conws(message);
 	}
 
 		//Write last odd bytes together with control byte (that signals odd/even data)
@@ -518,7 +517,7 @@ send_packet(struct netif *nif, BUF *nbuf)
 		}
 
 //		ksprintf(message, "Last: 0x%08lx\n\r", tmp);
-//		Cconws(message);
+//		c_conws(message);
 
 		*LAN_DATA = tmp;									//DONE!
 //	}
@@ -546,7 +545,7 @@ send_packet(struct netif *nif, BUF *nbuf)
 	sending = 1;
 	in_use = 0;
 
-//	Cconws("Packet queued successfully!\n\r");
+//	c_conws("Packet queued successfully!\n\r");
 	Eth_set_bank(bank);
 
 	return E_OK;
@@ -571,7 +570,7 @@ ethernat_ioctl (struct netif *nif, short cmd, long arg)
 	struct ifreq *ifr;
 
 
-//	Cconws("ioctl\n\r");		//debug
+//	c_conws("ioctl\n\r");		//debug
 
 
 	switch (cmd)
@@ -621,7 +620,7 @@ ethernat_ioctl (struct netif *nif, short cmd, long arg)
 static long
 ethernat_config (struct netif *nif, struct ifopt *ifo)
 {
-//	Cconws("Config\n\r");
+//	c_conws("Config\n\r");
 
 # define STRNCMP(s)	(strncmp ((s), ifo->option, sizeof (ifo->option)))
 
@@ -696,11 +695,10 @@ driver_init (void)
 	long	ferror;
 	short	fhandle;
 	char	macbuf[13];
-	unsigned short	autoneg_succ, phytmp;
 
 
 
-//	Cconws("Driver init\n\r");
+//	c_conws("Driver init\n\r");
 
 	// Lock out interrupt function
 	initializing = 1;
@@ -710,55 +708,55 @@ driver_init (void)
 	if((*LAN_BANK & 0x00ff) != 0x0033)
 	{
 //		ksprintf (message, "EtherNat not found! \n\r");
-//		Cconws (message);
+//		c_conws (message);
 
 		return -1;
 	}
 
-//	Cconws("Efter koll av ethernat\n\r");
+//	c_conws("Efter koll av ethernat\n\r");
 
 
-	//Cconws("*********************************\n\r");
-	//Cconws("******* EtherNat driver *********\n\r");
-	//Cconws("*********************************\n\r");
+	//c_conws("*********************************\n\r");
+	//c_conws("******* EtherNat driver *********\n\r");
+	//c_conws("*********************************\n\r");
 
 	// Open ethernat.inf to read the MAC address
 	ferror = Fopen("ethernat.inf",0);
-//	Cconws("Efter FOPEN\n\r");
+//	c_conws("Efter FOPEN\n\r");
 	if(ferror >= 0)
 	{
 		fhandle = (short)(ferror & 0xffff);
 		ferror = Fread(fhandle,12,macbuf);
-//		Cconws("Efter FREAD\n\r");
+//		c_conws("Efter FREAD\n\r");
 		if(ferror < 0)
 		{
 			//ksprintf (message, "Error reading ethernat.inf!\n\r");
-			//Cconws (message);
-			Cconws ("Error reading ethernat.inf!\n\r");
+			//c_conws (message);
+			c_conws ("Error reading ethernat.inf!\n\r");
 			Fclose(fhandle);
 			return -1;
 		}
 		if(ferror < 12)
 		{
 			//ksprintf (message, "ethernat.inf is less than 12 bytes long!\n\r");
-			//Cconws (message);
-			Cconws ("ethernat.inf is less than 12 bytes long!\n\r");
+			//c_conws (message);
+			c_conws ("ethernat.inf is less than 12 bytes long!\n\r");
 			Fclose(fhandle);
 			return -1;
 		}
 		Fclose(fhandle);
 
 		//print what we read from ethernat.inf
-		Cconws (macbuf);
+		c_conws (macbuf);
 		//ksprintf(message, "\n\r");
-		//Cconws(message);
+		//c_conws(message);
 	}
 	else
 	{
 		//ksprintf (message, "Error opening ethernat.inf!\n\r");
-		//Cconws (message);
-		Cconws("Could not open ethernat.inf\n\r");
-		Cconws("Using default ethernet address 01:02:03:04:05:06\n\r");
+		//c_conws (message);
+		c_conws("Could not open ethernat.inf\n\r");
+		c_conws("Using default ethernet address 01:02:03:04:05:06\n\r");
 		macbuf[0] = '0';
 		macbuf[1] = '1';
 		macbuf[2] = '0';
@@ -921,31 +919,31 @@ driver_init (void)
 	 * And say we are alive...
 	 */
 	//ksprintf (message, "EtherNat driver v0.1 (en%d)\n\r", if_ethernat.unit);
-	//Cconws (message);
+	//c_conws (message);
 
 
 	// Install interrupt handler
 	//ksprintf (message, "Installing interrupt handler... ");
-	//Cconws (message);
+	//c_conws (message);
 
 	ethernat_install_int();
 
 	//ksprintf (message, "OK\n\r");
-	//Cconws (message);
+	//c_conws (message);
 
 
 #ifdef USE_I6
 	// Enable LAN interrupts in the Ethernat control register
 	//ksprintf (message, "Enable LAN interrupts in the Ethernat... ");
-	//Cconws (message);
+	//c_conws (message);
 
 	*ETH_REG = (*ETH_REG) | 0x82;			//Disable Led2, enable led 1
 
 	//ksprintf (message, "OK\n\r");
-	//Cconws (message);
+	//c_conws (message);
 #endif
 
-	Cconws("Init succeeded\n\r");
+	c_conws("Init succeeded\n\r");
 	return 0;
 }
 
@@ -955,7 +953,7 @@ driver_init (void)
 static void
 ethernat_install_int (void)
 {
-	Cconws("install int\n\r");		//debug
+	c_conws("install int\n\r");		//debug
 
 
 #ifdef USE_I6
@@ -1013,7 +1011,7 @@ ethernat_int (void)
 	}
 #endif
 
-//	Cconws("Interrupt!\n\r");
+//	c_conws("Interrupt!\n\r");
 
 	banktmp = Eth_set_bank(2);
 	pnttmp = *LAN_POINTER;
@@ -1084,7 +1082,7 @@ static void ethernat_service	(struct netif * nif)
 		packetnr = (unsigned char)((*LAN_FIFO) & 0x00ff);
 /*
 		ksprintf(message, "Packet nr: 0x%X\n", packetnr);
-		Cconws(message);
+		c_conws(message);
 */
 		*LAN_POINTER = 0x00e0;								//RCV, RD, AUTOINC
 
@@ -1095,7 +1093,7 @@ static void ethernat_service	(struct netif * nif)
 		bytecount = (short)(tmp >> 16);
 
 //		col40[2] = 32;
-//		Cconws(col40);
+//		c_conws(col40);
 
 
 		//Look ahead at the destination address
@@ -1119,7 +1117,7 @@ static void ethernat_service	(struct netif * nif)
 			if(!b)
 			{
 				nif->in_errors++;
-				Cconws("buf_alloc failed when receiving!\n\r");
+				c_conws("buf_alloc failed when receiving!\n\r");
 
 				*LAN_MMU = 0x8000;									//release received packet
 				while((*LAN_MMU) & 0x0100);						//wait till MMU not busy
@@ -1137,7 +1135,7 @@ static void ethernat_service	(struct netif * nif)
 //				tmp = *LAN_DATA;
 //				*dpnt++ = tmp;
 //				ksprintf(message, "RX: 0x%08lx\n\r", tmp);
-//				Cconws(message);
+//				c_conws(message);
 
 				*dpnt++ = *LAN_DATA;							//read a longword into our buffer
 			}
@@ -1168,7 +1166,7 @@ static void ethernat_service	(struct netif * nif)
 			else
 				nif->in_errors++;
 
-//			Cconws("Received packet\n\r");
+//			c_conws("Received packet\n\r");
 		}
 
 		*LAN_MMU = 0x8000;									//release received packet
@@ -1199,7 +1197,7 @@ static void ethernat_service	(struct netif * nif)
 	}
 	else if(intstat & 0x02)				// TXINT set => failed!
 	{
-		Cconws("Failed to transmit a packet, resending...\n\r");
+		c_conws("Failed to transmit a packet, resending...\n\r");
 
 		nif->out_errors++;
 
@@ -1209,7 +1207,7 @@ static void ethernat_service	(struct netif * nif)
 
 		if(failpnr & 0x80)		// TX FIFO empty even though TXINT was set!
 		{
-			Cconws("No packets to resend!!!!\n\r");
+			c_conws("No packets to resend!!!!\n\r");
 //			in_use = 0;
 			return;
 		}
@@ -1227,7 +1225,7 @@ static void ethernat_service	(struct netif * nif)
 		status = *LAN_DATA_L;
 /*
 		ksprintf(message, "Status word: %X\n", status);
-		Cconws(message);
+		c_conws(message);
 */
 
 		// Acknowledge TXINT
@@ -1241,7 +1239,7 @@ static void ethernat_service	(struct netif * nif)
 	{
 		if (sending)
 		{
-//			Cconws("Successfully transmitted all queued packets!\n\r");
+//			c_conws("Successfully transmitted all queued packets!\n\r");
 			sending = 0;
 		}
 

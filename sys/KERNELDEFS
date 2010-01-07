@@ -141,7 +141,7 @@ endif
 #
 # all default targets
 #
-kerneltargets = 000 030 040 060 117 deb mil ara my1 my2 my3 my4 col
+kerneltargets = 000 030 040 060 117 deb mil ara my1 my2 my3 my4
 cputargets = 000 030 020-60
 
 ifeq (COLDFIRE,yes)

@@ -241,8 +241,8 @@ void Eth_reset(void)
 
 void Eth_AutoNeg(void)
 {
-	unsigned long	timer200Hz, starttime;
-	short				banktmp, datatmp, autonegdone;
+	unsigned long	timer200Hz;
+	short banktmp;
 
 
 	banktmp = *LANREG_BANK; 					// Save old Bank nr
