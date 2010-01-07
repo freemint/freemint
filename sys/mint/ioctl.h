@@ -104,6 +104,7 @@ struct mutimbuf
  */
 
 # define KM_RUN		(('K'<< 8) | 1)		/* 1.16 */
+# define KM_FREE	(('K'<< 8) | 2)		/* 1.17.1 */
 
 
 /*
