@@ -33,12 +33,20 @@
  * - Ozk: 4 June 2005.
  *        Moved handling of keyboard delay/repeat from VBL interrupt to
  *        roottimeouts.
+ * - joska: 15 December 2009.
+ *        Added handling of deadkeys.
  *
  * UNRESOLVED:
  * - Ozk: Since we cannot completely take over the keyboard interrupt when
  *   running on Milan hardware, and that Milan TOS calls ikbdsys vector
  *   for each repeated key, we cannot control those things by ourselves.
  *   So, we need to pass calls to Kbrate() to the ROM.
+ * - joska: I'm not 100% sure what Ozk really means here. Milan TOS does
+ *   not call anything when a key is repeated - the PS/2 keyboard handles
+ *   key repeat itself so the Milan actually doesn't know the difference
+ *   between a normal keypress and a repeated one. On Milan, Kbrate() informs
+ *   the keyboard of the new repeat-rate. I don't see any need to change
+ *   this.
  *
  */
 
@@ -144,7 +152,6 @@ long	iso_8859_code;	/* this is 2 for ISO-8859-2, 3 for ISO-8859-3 etc., or 0 for
 short	kbd_pc_style_caps = 0;	/* PC-style vs. Atari-style for Caps operation */
 short	kbd_mpixels = 8;	/* mouse pixel steps */
 short	kbd_mpixels_fine = 1;	/* mouse pixel steps in 'fine' mode */
-short	kbd_deadkey = -1;	/* ASCII code for deadkey */
 struct	cad_def cad[3];		/* for halt, warm and cold resp. */
 #define MAKES_BLEN	16
 static char makes[MAKES_BLEN + 1 * 2];
@@ -153,7 +160,6 @@ static char makes[MAKES_BLEN + 1 * 2];
 static	short cad_lock;		/* semaphore to avoid scheduling shutdown() twice */
 static	short kbd_lock;		/* semaphore to temporarily block the keyboard processing */
 static	long hz_ticks;		/* place for saving the hz_200 timer value */
-//static	short dead_lock;	/* flag for deakdey processing */
 
 /* Alt/numpad */
 static	uchar numin[8];		/* buffer for storing ASCII code typed in via numpad */
@@ -1267,8 +1273,70 @@ IkbdScan(PROC *p, long arg)
 		 */
 		if (make)
 		{
+			/* Deadkeys.
+			 * The deadkey table structure is as follows:
+			 * dd,bb,aa,dd,bb,aa,...,aa,bb,aa,0
+			 * Where dd is the deadkey character, aa is the base
+			 * character and aa the accented character.
+			 * So '^','a','ƒ' means that '^' followed by 'a' results
+			 * in an 'ƒ'.
+			 */
+			uchar *vec = user_keytab->deadkeys;
 			ascii = scan2asc((uchar)scan);
-			put_key_into_buf(iorec, shift, (uchar)scan, 0, ascii);
+	
+			if (vec)
+			{
+				static unsigned int last_deadkey_scan = 0;
+				static uchar last_deadkey = 0;
+				uchar deadkey, base, accented = 0;
+				int is_deadkey = 0;
+
+				while (*vec)
+				{
+					deadkey = *vec++;
+					base = *vec++;
+					accented = *vec++;
+					
+					if (ascii == deadkey)
+					{
+						is_deadkey = 1;
+						accented = 0;
+						break;
+					}
+					
+					if (deadkey == last_deadkey && ascii == base)
+						break;
+					
+					accented = 0;
+				}
+				
+				if (last_deadkey)
+				{
+					if (accented)
+						put_key_into_buf(iorec, shift, (uchar)scan, 0, accented);
+					else
+					{
+						put_key_into_buf(iorec, shift, (uchar)last_deadkey_scan, 0, last_deadkey);
+
+						if (ascii && ascii != ' ' && ascii != '\t' && (ascii == last_deadkey ? 0:1))
+							put_key_into_buf(iorec, shift, (uchar)scan, 0, ascii);
+					}
+					
+					last_deadkey = 0;
+				}
+				else
+				{
+					if (is_deadkey)
+					{
+						last_deadkey = ascii;
+						last_deadkey_scan = scan;
+					}
+					else
+						put_key_into_buf(iorec, shift, (uchar)scan, 0, ascii);
+				}
+			}
+			else
+				put_key_into_buf(iorec, shift, (uchar)scan, 0, ascii);
 		}
 #ifndef MILAN
 		set_keyrepeat_timeout(make);
@@ -1445,6 +1513,9 @@ sys_b_bioskeys(void)
 	pointers->altcaps = tbl_scan_fwd(pointers->altshift);
 	pointers->altgr = tbl_scan_fwd(pointers->altcaps);
 
+	/* and the deadkeys */
+	pointers->deadkeys = tbl_scan_fwd(pointers->altgr);
+
 	/* Fix the _AKP cookie, gl_kbd may get changed in load_table().
 	 *
 	 * XXX must be changed for -DJAR_PRIVATE (forward to all processes).
@@ -1513,7 +1584,7 @@ load_external_table(FILEPTR *fp, const char *name, long size)
 		return EFTYPE;
 	}
 
-	kbuf = kmalloc(size+1); /* Append a zero (if the table is missing the altgr part) */
+	kbuf = kmalloc(size+2); /* Append a zero (if the table is missing the altgr + deadkey part) */
 	if (!kbuf)
 	{
 		DEBUG(("%s(): out of memory", __FUNCTION__));
@@ -1625,6 +1696,7 @@ load_internal_table(void)
 			size += strlen((char *)tos_keytab->altgr) + 1;
 		else
 			size += 2;
+		size += 2; /* For the empty deadkey table */
 	}
 	else
 		size += 16; /* a byte for each missing part plus a NUL plus some space */
@@ -1636,6 +1708,7 @@ load_internal_table(void)
 	size += strlen(tos_keytab->altshift) + 1;
 	size += strlen(tos_keytab->altcaps) + 1;
 	size += strlen(tos_keytab->altgr) + 1;
+	size += strlen(tos_keytab->deadkeys) + 1;
 
 	size += 8; /* add some space */
 # endif
@@ -1659,8 +1732,8 @@ load_internal_table(void)
 
 	assert(kbuf);
 
-
 	p = kbuf;
+	mint_bzero(p, size);
 
 	quickmove(p, tos_keytab->unshift, 128);
 	p += 128;
@@ -1713,6 +1786,10 @@ load_internal_table(void)
 
 	len = strlen((char *)tos_keytab->altgr) + 1;
 	quickmove(p, tos_keytab->altgr, len);
+	p += len;
+	
+	len = strlen((char *)tos_keytab->deadkeys) + 1;
+	quickmove(p, tos_keytab->deadkeys, len);
 
 	gl_kbd = default_akp;
 # endif

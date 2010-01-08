@@ -86,6 +86,7 @@ struct keytab
 	uchar *altshift;	/* TOS 4.0x and above */
 	uchar *altcaps;		/* TOS 4.0x and above */
 	uchar *altgr;		/* Milan TOS */
+	uchar *deadkeys;	/* FreeMiNT 1.17 */
 };
 
 /* Struct for the default action on C/A/D
