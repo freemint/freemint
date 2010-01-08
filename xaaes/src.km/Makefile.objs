@@ -31,7 +31,7 @@ WARN = 	-Wall \
 	-Wcast-qual
 
 LD = $(CC) -nostdlib -Wl,--entry -Wl,_init
-LIBS = -lgem16 $(LIBKERN) -lgcc
+LIBS = -lgem16 $(LIBKERN) -lgcc16
 STRIPFLAGS = 
 
 # default definitions

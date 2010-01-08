@@ -26,7 +26,7 @@ LDFLAGS = -nostdlib
 LDFLAGS += -Wl,-Map -Wl,map.txt
 # XXX should be come from arch/
 LDFLAGS += -Wl,--entry -Wl,_main
-LIBS = $(LIBKERN) -lgcc
+LIBS = $(LIBKERN) -lgcc16
 
 ifeq ($(KMEMDEBUG),yes)
 LDFLAGS += \
