@@ -448,7 +448,9 @@ kernel_key(enum locks lock, struct rawkey *key)
 			return true;
 		}
 		case 'F':				/* open the task manager */
+#if !GENERATE_DIAGS
 		case 'L':				/* open the task manager */
+#endif
 // 		case NK_ESC:
 
 		if( !C.update_lock )

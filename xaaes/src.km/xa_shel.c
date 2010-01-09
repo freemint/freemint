@@ -1122,7 +1122,7 @@ shell_find(enum locks lock, struct xa_client *client, char *fn)
 			|| *fn == '/' || *fn == '\\' ) )	/* no absolute path given */
 		{
 
-			DIAGS(("shell_find for %s '%s', PATH= '%s'", client->name, fn ? fn : "~", kp ? kp : "~"));
+			//DIAGS(("shell_find for %s '%s', PATH= '%s'", client->name, fn ? fn : "~", kp ? kp : "~"));
 
 			/* check $HOME directory */
 			if (cfg.usehome )
