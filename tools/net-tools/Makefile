@@ -22,7 +22,7 @@ subdir = net-tools
 
 default: all
 
-include $(top_srcdir)/CONFIGVARS
+include $(top_srcdir)/net-tools/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 

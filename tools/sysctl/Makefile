@@ -12,7 +12,7 @@ subdir = sysctl
 
 default: all
 
-include $(top_srcdir)/CONFIGVARS
+include $(top_srcdir)/sysctl/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 

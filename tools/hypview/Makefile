@@ -24,6 +24,15 @@ all-here: $(TARGET)
 CFLAGS += -D_GNU_SOURCE
 CFLAGS += -g
 
+WARN = \
+	-Wall \
+	-Wmissing-prototypes \
+	-Winline \
+	-Wshadow \
+	-Wpointer-arith \
+	-Wno-strict-aliasing \
+	-Werror
+
 # default definitions
 OBJS = $(COBJS:.c=.o)
 LIBS += -Lplain -lplain -Lhyp -lhyp -Ldragdrop -ldgdp -liio -lgem

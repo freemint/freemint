@@ -1,0 +1,17 @@
+#
+# use global definitions
+#
+include $(top_srcdir)/CONFIGVARS
+
+#
+# private definitions
+#
+
+WARN = \
+	-Wall \
+	-Wmissing-prototypes \
+	-Winline \
+	-Wshadow \
+	-Wpointer-arith \
+	-Wno-strict-aliasing \
+	-Werror

@@ -14,7 +14,7 @@ installdir =
 
 default: all
 
-include $(top_srcdir)/CONFIGVARS
+include $(top_srcdir)/hypview/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
