@@ -548,10 +548,10 @@ again:
 	strcpy(C.Aes->proc_name,"AESSYS  ");
 
 	/* Where were we started? */
-#if MiNT_ENH
-	strcpy(C.Aes->home_path, self->path);
-#else
+#if OZK_ENH /* or was it MINT_ENH? */
 	strcpy(C.Aes->home_path, self->fpath);
+#else
+	strcpy(C.Aes->home_path, self->path);
 #endif
 // 	strcat(C.Aes->home_path, "/");
 #if 0
