@@ -2924,7 +2924,7 @@ ob_find(OBJECT *obtree, short object, short depth, short mx, short my)
 }
 #endif
 
-#if INCLUDE_UNUSED
+#if GENERATE_DIAGS
 bool
 obtree_is_menu(OBJECT *tree)
 {

@@ -805,9 +805,9 @@ short flags)
 	y = -wt->dy;
 
 	DIAG((D_objc, wt->owner, "dx = %d, dy = %d", x, y));
-/*	DIAG((D_objc, wt->owner, "draw_object_tree for %s to %d/%d,%d/%d; %lx + %d depth:%d",
+	DIAG((D_objc, wt->owner, "draw_object_tree for %s to %d/%d,%d/%d; %lx + %d depth:%d",
 		t_owner(wt), x + tree->ob_x, y + tree->ob_y,
-		tree->ob_width, tree->ob_height, tree, item, depth)); */
+		tree->ob_width, tree->ob_height, tree, item, depth)); 
 	DIAG((D_objc, wt->owner, "  -   (%d)%s%s",
 		wt->is_menu, obtree_is_menu(tree) ? "menu" : "object", wt->zen ? " with zen" : " no zen"));
 
