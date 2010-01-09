@@ -13,7 +13,7 @@ typedef size_t socklen_t;
 # endif
 
 #define SERVER	"/tmp/fort"
-#define OFFSET	((short)((struct sockaddr_un *) 0)->sun_path)
+#define OFFSET	((socklen_t)((struct sockaddr_un *) 0)->sun_path)
 
 int
 main (int argc, char *argv[])
@@ -22,7 +22,7 @@ main (int argc, char *argv[])
 	void *buf;
 	long bufsize;
 	int fd, r;
-	
+
 	if (argc != 3)
 	{
 		printf ("give buffersize and rcv buffersize the args\n");
@@ -46,7 +46,7 @@ main (int argc, char *argv[])
 
 	server_un.sun_family = AF_UNIX;
 	strcpy (server_un.sun_path, SERVER);
-	
+
 	r = connect (fd, (struct sockaddr *) &server_un, OFFSET + strlen (SERVER));
 
 	if (r < 0)
@@ -81,7 +81,7 @@ main (int argc, char *argv[])
 			return 0;
 		}
 		printf ("Rcv buffer: %ld bytes\n", optval);
-		
+
 		size = sizeof (long);
 		r = getsockopt (fd, SOL_SOCKET, SO_SNDBUF, &optval, &size);
 		if (r < 0)

@@ -6,7 +6,9 @@
 	#include <fcntl.h>
 
 	/* Mxalloc mode: global memory */
+#ifndef MX_GLOBAL
 	#define MX_GLOBAL	(2<<4)
+#endif
 #else
 	#include <tos.h>
 #endif
@@ -68,14 +70,14 @@ char *read,*write=NULL;
 	ret=Fopen(Name,O_RDONLY);
 	if(ret<0)
 		return NULL;
-	
+
 	handle=(int)ret;
 	len=Fseek(0,handle,2);
 	Fseek(0,handle,0);
-	
+
 	if(len<sizeof(BGH_head))
 		return NULL;
-	
+
 	head=(BGH_head *)Mxalloc(2*len+2, MX_GLOBAL);
 	if(head)
 	{
@@ -90,7 +92,7 @@ char *read,*write=NULL;
 				write=(char *)head+sizeof(BGH_head);
 				for(i=0;i<4;i++)
 					head->section[i]=NULL;
-				
+
 				while(*read)
 				{
 					read=Goto_Lineend(read);	/*	Zeilenende suchen	*/
@@ -109,14 +111,14 @@ char *read,*write=NULL;
 								{
 									new_obj=(BGH_object *)write;
 									write+=sizeof(BGH_object);
-	
+
 									new_obj->next=NULL;
 									new_obj->help_string=NULL;
 									new_obj->index=atoi(read);
-									
+
 									read=Skip_Number(read);
 									read=Skip_Spaces(read);
-									
+
 									if(obj && *read=='^')
 									/*	Referenz zum vorherigen Objekt ?	*/
 									{
@@ -128,7 +130,7 @@ char *read,*write=NULL;
 									BGH_group *ref_group=head->section[3];
 										while(ref_group && ref_group->index!=0)
 											ref_group=ref_group->next;
-										
+
 										if(ref_group)
 										{
 										BGH_object *ref_obj=ref_group->first;
@@ -140,7 +142,7 @@ char *read,*write=NULL;
 
 											if(ref_obj)
 												new_obj->help_string=ref_obj->help_string;
-										}							
+										}
 									}
 									else if(!IS_EOL(*read))
 									/*	Normaler Hilfe-String folgt	*/
@@ -150,12 +152,12 @@ char *read,*write=NULL;
 											*write++=*read++;
 										*write++=0;
 
-										/* 68000er Bug (keine WORD/LONG Zugriffe 
+										/* 68000er Bug (keine WORD/LONG Zugriffe
 											auf ungerade Adressen)	*/
 										if((long)write & 1)
 											write++;
 									}
-									
+
 									if(group->first)
 									{
 										obj=group->first;
@@ -204,10 +206,10 @@ char *read,*write=NULL;
 								{
 									read+=i;
 									read=Skip_Spaces(read);
-	
+
 									new_group=(BGH_group *)write;
 									write+=sizeof(BGH_group);
-	
+
 									new_group->next=NULL;
 									new_group->first=NULL;
 									new_group->index=atoi(read);
@@ -220,14 +222,14 @@ char *read,*write=NULL;
 											*write++=*read++;
 										*write++=0;
 
-										/* 68000er Bug (keine WORD/LONG Zugriffe 
+										/* 68000er Bug (keine WORD/LONG Zugriffe
 											auf ungerade Adressen)	*/
 										if((long)write & 1)
 											write++;
 									}
 									else
 										new_group->help_string=NULL;
-									
+
 									if(head->section[sect])
 									{
 										group=head->section[sect];
@@ -247,7 +249,7 @@ char *read,*write=NULL;
 			}
 			else
 				not_good=TRUE;
-			
+
 		}
 		else
 			not_good=TRUE;
@@ -276,7 +278,7 @@ BGH_group *group;
 char *help_string=NULL;
 	if(typ<0 || typ>3)
 		return NULL;
-	
+
 	group=head->section[typ];
 	while(group && group->index!=gruppe)
 		group=group->next;

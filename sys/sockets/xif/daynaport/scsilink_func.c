@@ -129,7 +129,7 @@ unsigned long busses, b;
 long i, j;
 
 	busses = SCSI_Init(NULL);
-	
+
 	if (!busses)
 		return -1L;
 

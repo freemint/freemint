@@ -6,7 +6,7 @@
 #include <sys/un.h>
 
 #define SERVER	"/tmp/dgramd"
-#define OFFSET	((short)((struct sockaddr_un *)0)->sun_path)
+#define OFFSET	((socklen_t)((struct sockaddr_un *)0)->sun_path)
 
 /*#define CONNECT*/
 
@@ -20,14 +20,14 @@ main (void)
 	int r, fd;
 
 	unlink (SERVER);
-	
+
 	fd = socket (AF_UNIX, SOCK_DGRAM, 0);
 	if (fd < 0)
 	{
 		perror ("socket");
 		return 0;
 	}
-	
+
 	sun.sun_family = AF_UNIX;
 	strcpy (sun.sun_path, SERVER);
 
@@ -49,15 +49,14 @@ main (void)
 	msg.msg_iovlen = 2;
 	msg.msg_control = 0;
 	msg.msg_controllen = 0;
-	
+
 	for (;;)
 	{
 		char scratch[1];
-		size_t addrlen = sizeof (sun);
+		socklen_t addrlen = sizeof (sun);
 		int i;
-		
-		r = recvfrom (fd, scratch, sizeof (scratch), 0,
-			(struct sockaddr *) &sun, &addrlen);
+
+		r = recvfrom (fd, scratch, sizeof (scratch), 0, (struct sockaddr *) &sun, &addrlen);
 		if (r < 0)
 		{
 			perror ("recvfrom");
@@ -76,7 +75,7 @@ main (void)
 #else
 		msg.msg_name = &sun;
 		msg.msg_namelen = addrlen;
-#endif		
+#endif
 		for (i = 0; i < 500; ++i)
 		{
 			r = sendmsg (fd, &msg, 0);

@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * HypView - (c)      - 2006 Philipp Donze
  *               2006 -      Philipp Donze & Odd Skancke
  *
@@ -29,16 +29,18 @@
 #include "diallib.h"
 #include "defs.h"
 #include "hyp.h"
+#include "search_d.h"
 
-static DIALOG *Hypfind_Dialog;
+//static DIALOG *Hypfind_Dialog;
 static short HypfindID;
 static char filename[DL_PATHMAX];
 
+#if 0
 static short __CDECL
 HypfindHandle ( struct HNDL_OBJ_args args)
 {
 	char ZStr[1024];
-	
+
 	switch ( args.obj )
 	{
 		case HNDL_CLSD:
@@ -73,12 +75,13 @@ HypfindHandle ( struct HNDL_OBJ_args args)
 
 	return 1;
 }
+#endif
 
 void Hypfind( DOCUMENT *doc )
 {
 	static short first = 0;
     OBJECT *tree = tree_addr[HYPFIND];
-   
+
     if ( !first )
     {
     	strcpy ( tree[HYPFIND_STRING].ob_spec.tedinfo->te_ptext, "" );
@@ -136,7 +139,7 @@ void Hypfind( DOCUMENT *doc )
 			break;
 		}
 	}
-	
+
 }
 
 void HypfindFinsih ( short AppID, short ret )
@@ -144,7 +147,7 @@ void HypfindFinsih ( short AppID, short ret )
 	if ( AppID == HypfindID )
 	{
 		char ZStr[1024];
-		
+
 		HypfindID = -1;
 		strcpy ( ZStr, path_list );
 		strcat ( ZStr, "hypfind.hyp" );

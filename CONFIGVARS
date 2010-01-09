@@ -27,8 +27,8 @@ CRLF = echo crlf -s
 
 # e.g. when you don't have the mintlib/gemlib/cflib in
 #      the /usr/m68k-atari/mint
-GENERAL = $(M68K_ATARI_MINT_CFLAGS) $(M68K_ATARI_MINT_LDFLAGS) -ffreestanding 
-#	-I/usr/local/cross-mint/m68k-atari-mint/include -B/usr/local/cross-mint/m68k-atari-mint/lib
+GENERAL = $(M68K_ATARI_MINT_CFLAGS) $(M68K_ATARI_MINT_LDFLAGS) -ffreestanding \
+	-I/usr/local/cross-mint/m68k-atari-mint/include -B/usr/local/cross-mint/m68k-atari-mint/lib
 
 else
 
@@ -75,8 +75,8 @@ WARN = \
 	-Winline \
 	-Wshadow \
 	-Wpointer-arith \
-	-Wcast-qual \
-	-Waggregate-return \
+	-Wno-cast-qual \
+	-Wno-strict-aliasing \
 	-Werror
 
 #

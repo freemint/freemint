@@ -1098,7 +1098,7 @@ app_in_front(enum locks lock, struct xa_client *client, bool snd_untopped, bool 
 					wl->window_status |= XAWS_SEMA;
 					if ((wl->window_status & XAWS_OPEN))
 					{
-						if (is_hdden(wl))
+						if (is_hidden(wl))
 						{
 							unhide_window(lock|winlist, wl, false);
 							was_hidden = true;

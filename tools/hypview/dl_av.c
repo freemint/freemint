@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * HypView - (c)      - 2006 Philipp Donze
  *               2006 -      Philipp Donze & Odd Skancke
  *
@@ -70,7 +70,7 @@ void DoVA_PROTOSTATUS(short msg[8])
 		Mfree(av_name);	/*	Speicher freigeben	*/
 		av_name = NULL;
 	}
-	
+
 	*(short *)&server_cfg = msg[4];
 	*((short *)&server_cfg+1) = msg[3];
 #if DEBUG == ON
@@ -86,7 +86,7 @@ void DoVA_PROTOSTATUS(short msg[8])
 void DoAV_PROTOKOLL(short flags)
 {
 	char *avserver = NULL;
-	
+
 	if(shel_envrn(&avserver,"AVSERVER=") && avserver)
 	{
 		short msg[8] = {AV_PROTOKOLL,0,0,0,0,0};
@@ -107,10 +107,10 @@ void DoAV_PROTOKOLL(short flags)
 		{
 			if(!av_name)
 			{
-				av_name = (char *)Mxalloc(16, MX_PREFTT|MX_MPROT|MX_READABLE);
+				av_name = (char *)Mxalloc(16, MX_PREFTTRAM|MX_MPROT|MX_READABLE);
 				if(!av_name)
 					return;
-				
+
 				strcpy(av_name, PROGRAM_UNAME);
 			}
 
@@ -137,7 +137,7 @@ void DoAV_PROTOKOLL(short flags)
 void DoAV_EXIT(void)
 {
 	short msg[8] = {AV_EXIT,0,0,0,0,0,0,0};
-		
+
 	msg[1] = ap_id;
 	msg[3] = ap_id;
 	appl_write(server_id, 16, msg);

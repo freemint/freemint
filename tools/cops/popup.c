@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * COPS (c) 1995 - 2003 Sven & Wilfried Behne
  *                 2004 F.Naumann & O.Skancke
  *
@@ -34,9 +34,9 @@
 static void _cdecl strs_init(struct POPUP_INIT_args);
 static short _cdecl draw_arrow(PARMBLK *parmblock);
 
-/*----------------------------------------------------------------------------------------*/ 
+/*----------------------------------------------------------------------------------------*/
 /* BITBLKs fuer Pfeile nach oben und unten */
-/*----------------------------------------------------------------------------------------*/ 
+/*----------------------------------------------------------------------------------------*/
 static short up_arrow_data[] = { 0x0000, 0x0100, 0x0380, 0x07C0, 0x0FE0, 0x1FF0, 0x3FF8, 0x0000 };
 static short dn_arrow_data[] = { 0x0000, 0x3FF8, 0x1FF0, 0x0FE0, 0x07C0, 0x0380, 0x0100, 0x0000 };
 
@@ -70,7 +70,7 @@ do_obj_popup(OBJECT *parent_tree, short parent_obj, char **strs, short no_strs, 
 	return do_popup(&button_rect, strs, no_strs, no_spaces, slct);
 }
 
-/*----------------------------------------------------------------------------------------*/ 
+/*----------------------------------------------------------------------------------------*/
 /* Popup behandeln */
 /* Funktionsresultat:	Index des angewaehlten Strings */
 /*	button_rect:	Ausmasse des Buttons */
@@ -78,7 +78,7 @@ do_obj_popup(OBJECT *parent_tree, short parent_obj, char **strs, short no_strs, 
 /*	no_strs:	Anzahl der Strings */
 /*	spaces:		Anzahl der vor den Strings einzufuegenden Leerzeichen */
 /*	slct:		Index des selektierten Strings */
-/*----------------------------------------------------------------------------------------*/ 
+/*----------------------------------------------------------------------------------------*/
 short
 do_popup(GRECT *button_rect, char **strs, short no_strs, short spaces, short slct)
 {
@@ -99,9 +99,9 @@ do_popup(GRECT *button_rect, char **strs, short no_strs, short spaces, short slc
 	for (i = 0; i < no_strs; i++) /* breitesten String bestimmen */
 	{
 		long len;
-		
+
 		len = strlen(strs[i]);
-		
+
 		if (len > max_width)
 			max_width = (short) len;
 	}
@@ -141,7 +141,7 @@ do_popup(GRECT *button_rect, char **strs, short no_strs, short spaces, short slc
 		tree->ob_flags = OF_NONE;
 		tree->ob_state = OS_NORMAL|OS_SHADOWED;
 		tree->ob_spec.index = 0x00ff1000L;
-		
+
 		tree->ob_x = button_rect->g_x; /* Buttonposition */
 		tree->ob_y = button_rect->g_y;
 		tree->ob_width = max_width; /* Breite der Box */
@@ -189,14 +189,14 @@ do_popup(GRECT *button_rect, char **strs, short no_strs, short spaces, short slc
 	return slct;
 }
 
-/*----------------------------------------------------------------------------------------*/ 
+/*----------------------------------------------------------------------------------------*/
 /* Strings in scrollendem Popup besetzen */
 /* Funktionsresultat:	1 */
 /*	tree:		Objektbaum */
 /*	scroll_pos:	augenblickliche Scrollposition */
 /*	nlines:		Anzahl aller vorhandenen Zeilen */
 /*	param:		Zeiger auf Parameterstruktur */
-/*----------------------------------------------------------------------------------------*/ 
+/*----------------------------------------------------------------------------------------*/
 static void _cdecl
 strs_init(struct POPUP_INIT_args args)
 {
@@ -271,25 +271,25 @@ strs_init(struct POPUP_INIT_args args)
 	}
 }
 
-/*----------------------------------------------------------------------------------------*/ 
+/*----------------------------------------------------------------------------------------*/
 /* USERDEF-Funktion fuer Scrollpfeil im Popup */
 /* Funktionsresultat:	nicht aktualisierte Objektstati */
 /* parmblock:		Zeiger auf die Parameter-Block-Struktur */
-/*----------------------------------------------------------------------------------------*/ 
+/*----------------------------------------------------------------------------------------*/
 static short _cdecl
 draw_arrow(PARMBLK *parmblock)
 {
 	BITBLK *image;
 	MFDB src;
 	MFDB des;
-	short clip[4];
+	union { GRECT r; short a[4]; } clip;
 	short xy[8];
 	short image_colors[2];
 
-	*(GRECT *) clip = *(GRECT *) &parmblock->pb_xc; /* Clipping-Rechteck... */
-	clip[2] += clip[0] - 1;
-	clip[3] += clip[1] - 1;
-	vs_clip(vdi_handle, 1, clip); /* Zeichenoperationen auf gegebenen Bereich beschraenken */
+	clip.r = *(GRECT *) &parmblock->pb_xc; /* Clipping-Rechteck... */
+	clip.r.g_w += clip.r.g_x - 1;
+	clip.r.g_h += clip.r.g_y - 1;
+	vs_clip(vdi_handle, 1, clip.a); /* Zeichenoperationen auf gegebenen Bereich beschraenken */
 
 	image = (BITBLK *) parmblock->pb_parm;
 

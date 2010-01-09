@@ -79,7 +79,7 @@ int opt_list = 0;
 char *save_sector_file = NULL;
 char *restore_sector_file = NULL;
 
-void
+static void
 warn(char *s, ...) {
     va_list p;
 
@@ -90,7 +90,7 @@ warn(char *s, ...) {
     va_end(p);
 }
 
-void
+static void
 error(char *s, ...) {
     va_list p;
 
@@ -101,7 +101,7 @@ error(char *s, ...) {
     va_end(p);
 }
 
-void
+static void
 fatal(char *s, ...) {
     va_list p;
 
@@ -155,19 +155,19 @@ static long
 rwabs_xhdi (ushort rw, void *buf, ulong size, ulong recno)
 {
 	register ulong n = size / xhdi_ssize;
-	
+
 	if (!n || n > xhdi_sectors)
 	{
 		printf ("rwabs_xhdi: access outside partition (drv = %c:)\n", 'A'+xhdi_drv);
 		exit (2);
 	}
-	
+
 	if (n > 65535UL)
 	{
 		printf ("rwabs_xhdi: n to large (drv = %c)\n", 'A'+xhdi_drv);
 		exit (2);
 	}
-	
+
 	return XHReadWrite (xhdi_major, xhdi_minor, rw, recno, n, buf);
 }
 
@@ -176,40 +176,40 @@ _my_open (const char *_dev, int iomode)
 {
 	int16_t dev = toupper (_dev[0]) - 'A';
 	long r;
-	
+
 	init_XHDI ();
-	
+
 	if (dev < 0 || dev > 31)
 	{
 		printf ("invalid device!\n");
 		return -1;
 	}
-	
+
 	if (xhdi_drv != -1)
 	{
 		printf ("can only open one device at a time!\n");
 		return -1;
 	}
-	
+
 	r = Dlock (1, dev);
 	if (r && r != -32)
 	{
 		printf ("Can't lock %c:, drive in use?\n", 'A'+dev);
 		return -1;
 	}
-	
+
 	(void) Getbpb (dev);
-	
+
 	r = XHInqDev2 (dev, &xhdi_major, &xhdi_minor, NULL, NULL, NULL, NULL);
 	if ((r == -1) && (errno == EBUSY)) r = 0; /* major and minor are ok */
 	if (!r) r = XHGetCapacity (xhdi_major, xhdi_minor, &xhdi_sectors, &xhdi_ssize);
-	
+
 	if (r)
 	{
 		printf ("unable to get geometry for '%c' (%li)\n", 'A'+dev, r);
 		return -1;
 	}
-	
+
 # if 0
 	printf ("Information about %c:\n", 'A'+dev);
 	printf ("---------------------\n");
@@ -219,10 +219,10 @@ _my_open (const char *_dev, int iomode)
 	printf ("sector size       : %ld bytes\n", xhdi_ssize);
 	printf ("\n");
 # endif
-	
+
 	/* mark as open */
 	xhdi_drv = dev;
-	
+
 # if 0
 	{
 		char buf [512];
@@ -238,7 +238,7 @@ _my_open (const char *_dev, int iomode)
 					printf ("error\n");
 				else
 					printf ("OK\n");
-				
+
 				close (fd);
 			}
 			else
@@ -246,7 +246,7 @@ _my_open (const char *_dev, int iomode)
 		}
 	}
 # endif
-	
+
 	return xhdi_drv;
 }
 
@@ -254,13 +254,13 @@ static int
 _my_close (int fd)
 {
 	long ret;
-	
+
 	if (fd != xhdi_drv)
 		return -1;
-	
+
 	ret = Dlock (0, xhdi_drv);
 	xhdi_drv = -1;
-	
+
 	return 0;
 }
 
@@ -269,18 +269,18 @@ _my_ioctl (int fd, int cmd, void *arg)
 {
 	if (fd != xhdi_drv)
 		return -1;
-	
+
 	switch (cmd)
 	{
 		case HDIO_GETGEO:
 		{
     			struct hd_geometry *g = arg;
-			
+
 			g->heads = 255;
 			g->sectors = 63;
 			g->cylinders = xhdi_sectors / 255 / 63;
 			g->start = 0;
-			
+
 			return 0;
 		}
 		case BLKRRPART:
@@ -293,7 +293,7 @@ _my_ioctl (int fd, int cmd, void *arg)
 			return 0;
 		}
 	}
-	
+
 	__set_errno (ENOSYS);
 	return -1;
 }
@@ -301,24 +301,25 @@ _my_ioctl (int fd, int cmd, void *arg)
 static ssize_t
 _my_write (int fd, const void *buf, size_t size)
 {
+	union { const void *cv; void *v; } bufptr; bufptr.cv = buf;
 	u_int32_t recno;
 	int32_t ret;
-	
+
 	if (fd != xhdi_drv)
 		return -1;
-	
+
 	assert ((size % xhdi_ssize) == 0);
 	assert ((xhdi_pos % xhdi_ssize) == 0);
-	
+
 	recno = xhdi_pos / xhdi_ssize;
-	
-	ret = rwabs_xhdi (1, buf, size, recno);
+
+	ret = rwabs_xhdi (1, bufptr.v, size, recno);
 	if (!ret)
 	{
 		xhdi_pos += size;
 		return size;
 	}
-	
+
 	return -1;
 }
 
@@ -327,31 +328,31 @@ _my_read (int fd, void *buf, size_t size)
 {
 	u_int32_t recno;
 	int32_t ret;
-	
+
 	if (fd != xhdi_drv)
 		return -1;
-	
+
 	assert ((size % xhdi_ssize) == 0);
 	assert ((xhdi_pos % xhdi_ssize) == 0);
-	
+
 	recno = xhdi_pos / xhdi_ssize;
-	
+
 	ret = rwabs_xhdi (0, buf, size, recno);
 	if (!ret)
 	{
 		xhdi_pos += size;
 		return size;
 	}
-	
+
 	return -1;
 }
 
-int64_t
+static int64_t
 io_seek (int fd, int64_t where, int64_t *out, int whence)
 {
 	if (fd != xhdi_drv)
 		return -1;
-	
+
 	switch (whence)
 	{
 		case SEEK_SET:
@@ -365,13 +366,13 @@ io_seek (int fd, int64_t where, int64_t *out, int whence)
 		default:
 			return -1;
 	}
-	
+
 	if (where % xhdi_ssize)
 		return -1;
-	
+
 	if (where > (int64_t) xhdi_sectors * xhdi_ssize)
 		return -1;
-	
+
 	*out = xhdi_pos = where;
 	return 0;
 }
@@ -382,14 +383,14 @@ sseek (char *dev, unsigned int fd, unsigned long s)
 	int64_t in, out;
 	in = ((int64_t) s << 9);
 	out = 1;
-	
+
 	if (io_seek (fd, in, &out, SEEK_SET) != 0)
 	{
 		perror("llseek");
 		error("seek error on %s - cannot seek to %lu\n", dev, s);
 		return 0;
 	}
-	
+
 	if (in != out)
 	{
 		error ("seek error: wanted 0x%08x%08x, got 0x%08x%08x\n",
@@ -397,7 +398,7 @@ sseek (char *dev, unsigned int fd, unsigned long s)
 			(uint)(out>>32), (uint)(out & 0xffffffff));
 		return 0;
 	}
-	
+
 	return 1;
 }
 # else
@@ -442,7 +443,7 @@ struct sector {
     char data[512];
 } *sectorhead;
 
-void
+static void
 free_sectors(void) {
     struct sector *s;
 
@@ -453,7 +454,7 @@ free_sectors(void) {
     }
 }
 
-struct sector *
+static struct sector *
 get_sector(char *dev, int fd, unsigned long sno) {
     struct sector *s;
 
@@ -482,7 +483,7 @@ get_sector(char *dev, int fd, unsigned long sno) {
     return s;
 }
 
-int
+static int
 msdos_signature (struct sector *s) {
     if (*(unsigned short *) (s->data + 0x1fe) != BSWAP16 (0xaa55)) {
 	error("ERROR: sector %lu does not have an msdos signature\n",
@@ -492,7 +493,7 @@ msdos_signature (struct sector *s) {
     return 1;
 }
 
-int
+static int
 write_sectors(char *dev, int fd) {
     struct sector *s;
 
@@ -511,7 +512,7 @@ write_sectors(char *dev, int fd) {
     return 1;
 }
 
-void
+static void
 ulong_to_chars(unsigned long u, char *uu) {
     int i;
 
@@ -521,7 +522,7 @@ ulong_to_chars(unsigned long u, char *uu) {
     }
 }
 
-unsigned long
+static unsigned long
 chars_to_ulong(unsigned char *uu) {
     int i;
     unsigned long u = 0;
@@ -531,7 +532,7 @@ chars_to_ulong(unsigned char *uu) {
     return u;
 }
 
-int
+static int
 save_sectors(char *dev, int fdin) {
     struct sector *s;
     char ss[516];
@@ -567,7 +568,7 @@ save_sectors(char *dev, int fdin) {
 
 void reread_disk_partition(char *dev, int fd);
 
-int
+static int
 restore_sectors(char *dev) {
     int fdin, fdout, ct;
     struct stat statbuf;
@@ -611,7 +612,7 @@ restore_sectors(char *dev) {
     ss0 = ss;
     ct = statbuf.st_size/516;
     while(ct--) {
-	sno = chars_to_ulong(ss);
+	sno = chars_to_ulong((unsigned char *)ss);
 	if (!sseek(dev, fdout, sno))
 	  return 0;
 	if (_my_write(fdout, ss+4, 512) != 512) {
@@ -646,7 +647,7 @@ unsigned long cylindersize;
 unsigned long heads, sectors, cylinders;
 unsigned long specified_heads, specified_sectors, specified_cylinders;
 
-void
+static void
 get_cylindersize(char *dev, int fd, int silent) {
     struct hd_geometry g;
     int ioctl_ok = 0;
@@ -705,7 +706,7 @@ chs zero_chs = { 0,0,0 };
 typedef struct { unsigned long h,s,c; } longchs;
 longchs zero_longchs;
 
-chs
+static chs
 longchs_to_chs (longchs aa) {
     chs a;
 
@@ -722,7 +723,7 @@ longchs_to_chs (longchs aa) {
     return a;
 }
 
-longchs
+static longchs
 chs_to_longchs (chs a) {
     longchs aa;
 
@@ -733,7 +734,7 @@ chs_to_longchs (chs a) {
     return aa;
 }
 
-longchs
+static longchs
 ulong_to_longchs (unsigned long sno) {
     longchs aa;
 
@@ -747,27 +748,30 @@ ulong_to_longchs (unsigned long sno) {
     }
 }
 
-unsigned long
+#if 0
+static unsigned long
 longchs_to_ulong (longchs aa) {
     return (aa.c*cylindersize + aa.h*sectors + aa.s - 1);
 }
+#endif
 
-chs
+static chs
 ulong_to_chs (unsigned long sno) {
     return longchs_to_chs(ulong_to_longchs(sno));
 }
-
-unsigned long
+#if 0
+static unsigned long
 chs_to_ulong (chs a) {
     return longchs_to_ulong(chs_to_longchs(a));
 }
+#endif
 
-int
+static int
 is_equal_chs (chs a, chs b) {
     return (a.h == b.h && a.s == b.s && a.c == b.c);
 }
 
-int
+static int
 chs_ok (chs a, char *v, char *w) {
     longchs aa = chs_to_longchs(a);
     int ret = 1;
@@ -890,7 +894,7 @@ struct systypes {
 };
 
 
-const char *
+static const char *
 sysname(unsigned char type) {
     struct systypes *s;
 
@@ -900,7 +904,7 @@ sysname(unsigned char type) {
     return "Unknown";
 }
 
-void
+static void
 list_types(void) {
     struct systypes *s;
 
@@ -909,7 +913,7 @@ list_types(void) {
       printf("%2x  %s\n", s->type, s->name);
 }
 
-int
+static int
 is_extended(unsigned char type) {
 	return (type == EXTENDED_PARTITION || type == LINUX_EXTENDED);
 }
@@ -934,7 +938,7 @@ struct partition
 	__u32	nr_sects;		/* nr of sectors in partition */
 };
 
-chs
+static chs
 get_begin_chs (struct partition *p)
 {
 	chs a;
@@ -944,7 +948,7 @@ get_begin_chs (struct partition *p)
 	return a;
 }
 
-chs
+static chs
 get_end_chs (struct partition *p)
 {
 	chs a;
@@ -954,7 +958,7 @@ get_end_chs (struct partition *p)
 	return a;
 }
 
-void
+static void
 put_begin_chs (struct partition *p, chs a)
 {
 	p->begin_head = a.h;
@@ -962,7 +966,7 @@ put_begin_chs (struct partition *p, chs a)
 	p->begin_cyl = a.c;
 }
 
-void
+static void
 put_end_chs (struct partition *p, chs a)
 {
 	p->end_head = a.h;
@@ -984,14 +988,14 @@ struct part_desc {
     struct part_desc *ep;	  /* extended partition containing this one */
 } zero_part_desc;
 
-struct part_desc *
+static struct part_desc *
 outer_extended_partition(struct part_desc *p) {
     while (p->ep)
       p = p->ep;
     return p;
 }
 
-int
+static int
 is_parent(struct part_desc *pp, struct part_desc *p) {
     while (p) {
 	if (pp == p)
@@ -1007,7 +1011,7 @@ struct disk_desc {
 } oldp, newp;
 
 /* determine where on the disk this information goes */
-void
+static void
 add_sector_and_offset(struct disk_desc *z) {
     int pno;
     struct part_desc *p;
@@ -1020,7 +1024,8 @@ add_sector_and_offset(struct disk_desc *z) {
 }
 
 /* tell the kernel to reread the partition tables */
-int reread_ioctl(int fd) {
+static int
+reread_ioctl(int fd) {
     if(_my_ioctl(fd, BLKRRPART, NULL)) {
 	perror("BLKRRPART");
 	return -1;
@@ -1048,7 +1053,7 @@ reread_disk_partition(char *dev, int fd) {
 }
 
 /* find Linux name of this partition, assuming that it will have a name */
-int
+static int
 index_to_linux(int pno, struct disk_desc *z) {
     int i, ct = 1;
     struct part_desc *p = &(z->partitions[0]);
@@ -1058,7 +1063,7 @@ index_to_linux(int pno, struct disk_desc *z) {
     return ct;
 }
 
-int
+static int
 linux_to_index(int lpno, struct disk_desc *z) {
     int i, ct = 0;
     struct part_desc *p = &(z->partitions[0]);
@@ -1069,7 +1074,7 @@ linux_to_index(int lpno, struct disk_desc *z) {
     return -1;
 }
 
-int
+static int
 asc_to_index(char *pnam, struct disk_desc *z) {
     int pnum, pno;
 
@@ -1099,7 +1104,7 @@ int one_only = 0;
 int one_only_pno;
 int increment = 0;
 
-void
+static void
 set_format(char c) {
     switch(c) {
       default:
@@ -1111,7 +1116,7 @@ set_format(char c) {
     }
 }
 
-unsigned long
+static unsigned long
 unitsize(int format) {
     default_format = (cylindersize ? F_CYLINDER : F_MEGABYTE);
     if (!format && !(format = specified_format))
@@ -1130,7 +1135,7 @@ unitsize(int format) {
     }
 }
 
-unsigned long
+static unsigned long
 get_disksize(int format) {
     unsigned long cs = cylinders;
     if (cs && leave_last)
@@ -1138,7 +1143,7 @@ get_disksize(int format) {
     return (cs * cylindersize) / unitsize(format);
 }
 
-void
+static void
 out_partition_header(char *dev, int format) {
     if (dump) {
 	printf("# partition table of %s\n", dev);
@@ -1208,7 +1213,7 @@ out_roundup_size(int width, unsigned long n, unsigned long unit) {
     putchar(' ');
 }
 
-void
+static void
 out_partition(char *dev, int format, struct part_desc *p, struct disk_desc *z) {
     unsigned long start, end, size;
     int pno, lpno;
@@ -1306,7 +1311,7 @@ out_partition(char *dev, int format, struct part_desc *p, struct disk_desc *z) {
     }
 }
 
-void
+static void
 out_partitions(char *dev, struct disk_desc *z) {
     int pno, format = 0;
 
@@ -1330,7 +1335,7 @@ disj(struct part_desc *p, struct part_desc *q) {
 	    && q->start + q->size <= p->start + p->size));
 }
 
-char *
+static char *
 pnumber(struct part_desc *p, struct disk_desc *z) {
     static char buf[20];
     int this, next;
@@ -1346,7 +1351,7 @@ pnumber(struct part_desc *p, struct disk_desc *z) {
     return buf;
 }
 
-int
+static int
 partitions_ok(struct disk_desc *z) {
     struct part_desc *partitions = &(z->partitions[0]), *p, *q;
     int partno = z->partno;
@@ -1628,7 +1633,7 @@ osf_partition(char *dev, int fd, unsigned long start, struct disk_desc *z) {
 	return 0;
 }
 
-void
+static void
 get_partitions(char *dev, int fd, struct disk_desc *z) {
     z->partno = 0;
 
@@ -1638,7 +1643,7 @@ get_partitions(char *dev, int fd, struct disk_desc *z) {
     }
 }
 
-int
+static int
 write_partitions(char *dev, int fd, struct disk_desc *z) {
     struct sector *s;
     struct part_desc *partitions = &(z->partitions[0]), *p;
@@ -1721,9 +1726,10 @@ struct dumpfld {
 #define RD_EOF (-1)
 #define RD_CMD (-2)
 
-int
+static int
 read_stdin(unsigned char **fields, unsigned char *line, int fieldssize, int linesize) {
-    unsigned char *lp, *ip;
+
+    union { unsigned char *uc; char *sc; } lp, ip; // *lp, *ip;
     int c, fno;
 
     /* boolean true and empty string at start */
@@ -1734,86 +1740,86 @@ read_stdin(unsigned char **fields, unsigned char *line, int fieldssize, int line
     fno = 0;
 
     /* read a line from stdin */
-    lp = fgets(line+2, linesize, stdin);
-    if (lp == NULL) {
+    lp.sc = fgets((char *)line + 2, linesize, stdin);
+    if (lp.sc == NULL) {
 	eof = 1;
 	return RD_EOF;
     }
-    if (!(lp = index(lp, '\n')))
+    if (!(lp.sc = index(lp.sc, '\n')))
       fatal("long or incomplete input line - quitting\n");
-    *lp = 0;
+    *lp.sc = 0;
 
     /* remove comments, if any */
-    if ((lp = index(line+2, '#')) != 0)
-      *lp = 0;
+    if ((lp.sc = index((char *)line+2, '#')) != 0)
+      *lp.sc = '\0';
 
     /* recognize a few commands - to be expanded */
-    if (!strcmp(line+2, "unit: sectors")) {
+    if (!strcmp((char *)line+2, "unit: sectors")) {
 	specified_format = F_SECTOR;
 	return RD_CMD;
     }
 
     /* dump style? - then bad input is fatal */
-    if ((ip = index(line+2, ':')) != 0) {
+    if ((ip.sc = index((char *)line+2, ':')) != 0) {
 	struct dumpfld *d;
 
       nxtfld:
-	    ip++;
-	    while(isspace(*ip))
-	      ip++;
-	    if (*ip == 0)
+	    ip.sc++;
+	    while(isspace(*ip.sc))
+	      ip.sc++;
+	    if (*ip.sc == '\0')
 	      return fno;
 	    for(d = dumpflds; d-dumpflds < SIZE(dumpflds); d++) {
-		if(!strncmp(ip, d->fldname, strlen(d->fldname))) {
-		    ip += strlen(d->fldname);
-		    while(isspace(*ip))
-		      ip++;
+		if(!strncmp(ip.sc, d->fldname, strlen(d->fldname))) {
+		    ip.sc += strlen(d->fldname);
+		    while(isspace(*ip.sc))
+		      ip.sc++;
 		    if (d->is_bool)
 			fields[d->fldno] = line;
-		    else if (*ip == '=') {
-			while(isspace(*++ip)) ;
-			fields[d->fldno] = ip;
-			while(isalnum(*ip)) 	/* 0x07FF */
-			  ip++;
+		    else if (*ip.sc == '=') {
+			while(isspace(*++ip.sc)) ;
+			fields[d->fldno] = ip.uc;
+			while(isalnum(*ip.sc)) 	/* 0x07FF */
+			  ip.sc++;
 		    } else
 		      fatal("input error: `=' expected after %s field\n",
 			    d->fldname);
 		    if (fno <= d->fldno)
 		      fno = d->fldno + 1;
-		    if(*ip == 0)
+		    if(*ip.sc == '\0')
 		      return fno;
-		    if(*ip != ',' && *ip != ';')
+		    if(*ip.sc != ',' && *ip.sc != ';')
 		      fatal("input error: unexpected character %c after %s field\n",
-			    *ip, d->fldname);
-		    *ip = 0;
+			    *ip.sc, d->fldname);
+		    *ip.sc = '\0';
 		    goto nxtfld;
 		}
 	    }
-	    fatal("unrecognized input: %s\n", ip);
+	    fatal("unrecognized input: %s\n", ip.sc);
     }
 
     /* split line into fields */
-    lp = ip = line+2;
-    fields[fno++] = lp;
-    while((c = *ip++) != 0) {
-	if (!lp[-1] && (c == '\t' || c == ' '))
+    lp.uc = ip.uc = line+2;
+    fields[fno++] = lp.uc;
+    while((c = *ip.sc++) != 0) {
+	if (!lp.sc[-1] && (c == '\t' || c == ' '))
 	  ;
 	else if (c == '\t' || c == ' ' || c == ',' || c == ';') {
-	    *lp++ = 0;
+	    *lp.sc++ = 0;
 	    if (fno < fieldssize)
-		fields[fno++] = lp;
+		fields[fno++] = lp.uc;
 	    continue;
 	} else
-	  *lp++ = c;
+	  *lp.sc++ = c;
     }
 
-    if (lp == fields[fno-1])
+    if (lp.uc == (unsigned char *)fields[fno-1])
       fno--;
     return fno;
 }
 
 /* read a number, use default if absent */
-int
+static int
 get_ul(char *u, unsigned long *up, unsigned long def, int base) {
     char *nu;
 
@@ -1850,8 +1856,8 @@ int all_logicals_inside_outermost_extended = 1;
 enum { NESTED, CHAINED, ONESECTOR } boxes = NESTED;
 
 /* find the default value for <start> - assuming entire units */
-unsigned long
-first_free(int pno, int is_extended, struct part_desc *ep, int format,
+static unsigned long
+first_free(int pno, int isextended, struct part_desc *ep, int format,
 	   unsigned long mid, struct disk_desc *z) {
     unsigned long ff, fff;
     unsigned long unit = unitsize(format);
@@ -1862,7 +1868,7 @@ first_free(int pno, int is_extended, struct part_desc *ep, int format,
       ep = ep->ep;
 
     if (ep) {
-	if (boxes == NESTED || (boxes == CHAINED && !is_extended))
+	if (boxes == NESTED || (boxes == CHAINED && !isextended))
 	  pp = ep;
 	else if (all_logicals_inside_outermost_extended)
 	  pp = outer_extended_partition(ep);
@@ -1894,8 +1900,8 @@ first_free(int pno, int is_extended, struct part_desc *ep, int format,
 }
 
 /* find the default value for <size> - assuming entire units */
-unsigned long
-max_length(int pno, int is_extended, struct part_desc *ep, int format,
+static unsigned long
+max_length(int pno, int isextended, struct part_desc *ep, int format,
 	   unsigned long start, struct disk_desc *z) {
     unsigned long fu;
     unsigned long unit = unitsize(format);
@@ -1906,7 +1912,7 @@ max_length(int pno, int is_extended, struct part_desc *ep, int format,
       ep = ep->ep;
 
     if (ep) {
-	if (boxes == NESTED || (boxes == CHAINED && !is_extended))
+	if (boxes == NESTED || (boxes == CHAINED && !isextended))
 	  pp = ep;
 	else if (all_logicals_inside_outermost_extended)
 	  pp = outer_extended_partition(ep);
@@ -1922,7 +1928,7 @@ max_length(int pno, int is_extended, struct part_desc *ep, int format,
 
 /* compute starting sector of a partition inside an extended one */
 /* ep is 0 or points to surrounding extended partition */
-int
+static int
 compute_start_sect(struct part_desc *p, struct part_desc *ep) {
     unsigned long base;
     int inc = (DOS && sectors) ? sectors : 1;
@@ -1959,10 +1965,10 @@ compute_start_sect(struct part_desc *p, struct part_desc *ep) {
     }
     p->p.nr_sects = BSWAP32 (p->size);
     return 1;
-}    
+}
 
 /* build the extended partition surrounding a given logical partition */
-int
+static int
 build_surrounding_extended(struct part_desc *p, struct part_desc *ep,
 			   struct disk_desc *z) {
     int inc = (DOS && sectors) ? sectors : 1;
@@ -1996,7 +2002,7 @@ build_surrounding_extended(struct part_desc *p, struct part_desc *ep,
     return 1;
 }
 
-int
+static int
 read_line(int pno, struct part_desc *ep, char *dev, int interactive,
 	  struct disk_desc *z) {
     unsigned char line[1000];
@@ -2028,7 +2034,7 @@ read_line(int pno, struct part_desc *ep, char *dev, int interactive,
 	return 0;
     }
 
-    if (fno == 1 && !strcmp(fields[0], ".")) {
+    if (fno == 1 && !strcmp((char *)fields[0], ".")) {
 	eob = 1;
 	return -1;
     }
@@ -2066,15 +2072,15 @@ read_line(int pno, struct part_desc *ep, char *dev, int interactive,
       ul = orig ? orig->p.sys_type :
 	   (is_extd || (pno > 3 && pct == 1 && show_extended))
 	     ? EXTENDED_PARTITION : LINUX_NATIVE;
-    else if(!strcmp(fields[2], "L"))
+    else if(!strcmp((char *)fields[2], "L"))
       ul = LINUX_NATIVE;
-    else if(!strcmp(fields[2], "S"))
+    else if(!strcmp((char *)fields[2], "S"))
       ul = LINUX_SWAP;
-    else if(!strcmp(fields[2], "E"))
+    else if(!strcmp((char *)fields[2], "E"))
       ul = EXTENDED_PARTITION;
-    else if(!strcmp(fields[2], "X"))
+    else if(!strcmp((char *)fields[2], "X"))
       ul = LINUX_EXTENDED;
-    else if (get_ul(fields[2], &ul, LINUX_NATIVE, 16))
+    else if (get_ul((char *)fields[2], &ul, LINUX_NATIVE, 16))
       return 0;
     if (ul > 255) {
 	warn("Illegal type\n");
@@ -2090,7 +2096,7 @@ read_line(int pno, struct part_desc *ep, char *dev, int interactive,
     if (fno < 1 || !*(fields[0]))
       p.start = def;
     else {
-	if (get_ul(fields[0], &ul, def / unitsize(0), 0))
+	if (get_ul((char *)fields[0], &ul, def / unitsize(0), 0))
 	  return 0;
 	p.start = ul * unitsize(0);
 	p.start -= (p.start % unitsize(format));
@@ -2104,7 +2110,7 @@ read_line(int pno, struct part_desc *ep, char *dev, int interactive,
     if (fno < 2 || !*(fields[1]))
       p.size = def;
     else {
-	if (get_ul(fields[1], &ul, def / unitsize(0), 0))
+	if (get_ul((char *)fields[1], &ul, def / unitsize(0), 0))
 	  return 0;
 	p.size = ul * unitsize(0) + unitsize(format) - 1;
 	p.size -= (p.size % unitsize(format));
@@ -2137,9 +2143,9 @@ read_line(int pno, struct part_desc *ep, char *dev, int interactive,
 
     if (fno < 4 || !*(fields[3]))
       ul = (orig ? orig->p.bootable : 0);
-    else if (!strcmp(fields[3], "-"))
+    else if (!strcmp((char *)fields[3], "-"))
       ul = 0;
-    else if (!strcmp(fields[3], "*") || !strcmp(fields[3], "+"))
+    else if (!strcmp((char *)fields[3], "*") || !strcmp((char *)fields[3], "+"))
       ul = 0x80;
     else {
     	warn("unrecognized bootable flag - choose - or *\n");
@@ -2161,9 +2167,9 @@ read_line(int pno, struct part_desc *ep, char *dev, int interactive,
       } else if (fno < 7) {
 	  warn("partial c,h,s specification?\n");
 	  return 0;
-      } else if(get_ul(fields[4], &bb.c, aa.c, 0) ||
-		get_ul(fields[5], &bb.h, aa.h, 0) ||
-		get_ul(fields[6], &bb.s, aa.s, 0))
+      } else if(get_ul((char *)fields[4], &bb.c, aa.c, 0) ||
+		get_ul((char *)fields[5], &bb.h, aa.h, 0) ||
+		get_ul((char *)fields[6], &bb.s, aa.s, 0))
 	return 0;
       put_begin_chs (&p.p, longchs_to_chs(bb));
     }
@@ -2174,9 +2180,9 @@ read_line(int pno, struct part_desc *ep, char *dev, int interactive,
       } else if (fno < 10) {
 	  warn("partial c,h,s specification?\n");
 	  return 0;
-      } else if(get_ul(fields[7], &bb.c, aa.c, 0) ||
-		get_ul(fields[8], &bb.h, aa.h, 0) ||
-		get_ul(fields[9], &bb.s, aa.s, 0))
+      } else if(get_ul((char *)fields[7], &bb.c, aa.c, 0) ||
+		get_ul((char *)fields[8], &bb.h, aa.h, 0) ||
+		get_ul((char *)fields[9], &bb.s, aa.s, 0))
 	return 0;
       put_end_chs (&p.p, longchs_to_chs(bb));
     }
@@ -2200,7 +2206,7 @@ read_line(int pno, struct part_desc *ep, char *dev, int interactive,
 
 /* ep either points to the extended partition to contain this one,
    or to the empty partition that may become extended or is 0 */
-int
+static int
 read_partition(char *dev, int interactive, int pno, struct part_desc *ep,
 	       struct disk_desc *z) {
     struct part_desc *p = &(z->partitions[pno]);
@@ -2228,7 +2234,7 @@ read_partition(char *dev, int interactive, int pno, struct part_desc *ep,
     return 1;
 }
 
-void
+static void
 read_partition_chain(char *dev, int interactive, struct part_desc *ep,
 		     struct disk_desc *z) {
     int i, base;
@@ -2260,7 +2266,7 @@ read_partition_chain(char *dev, int interactive, struct part_desc *ep,
     }
 }
 
-void
+static void
 read_input(char *dev, int interactive, struct disk_desc *z) {
     int i;
     struct part_desc *partitions = &(z->partitions[0]), *ep;
@@ -2595,7 +2601,7 @@ main(int argc, char **argv) {
 		     (optind == argc-2) ? 0 : argv[optind+2]);
 	exit(exit_status);
     }
-      
+
     if (optind != argc-1)
       fatal("can specify only one device (except with -l or -s)\n");
     dev = argv[optind];
@@ -2614,7 +2620,7 @@ main(int argc, char **argv) {
  *  H. Listing the current situation
  */
 
-int
+static int
 my_open (char *dev, int rw, int silent) {
     int fd, mode;
 
@@ -2720,7 +2726,7 @@ do_size (char *dev, int silent) {
  * The present syntax was chosen to be (somewhat) compatible with the
  * activate from the LILO package.
  */
-void
+static void
 set_active (struct disk_desc *z, char *pnam) {
     int pno;
 
@@ -2784,7 +2790,7 @@ do_activate (char **av, int ac, char *arg) {
 	   "but the DOS MBR will only boot a disk with 1 active partition.\n", i);
 }
 
-void
+static void
 set_unhidden (struct disk_desc *z, char *pnam) {
     int pno;
     unsigned char id;
@@ -2967,11 +2973,11 @@ Use the --no-reread flag to suppress this check.\n");
       exit_status = 1;
 
     reread_disk_partition(dev, fd);
-    
+
     warn("If you created or changed a DOS partition, /dev/foo7, say, then use dd(1)\n"
 	 "to zero the first 512 bytes:  dd if=/dev/zero of=/dev/foo7 bs=512 count=1\n"
 	 "(See fdisk(8).)\n");
-    
+
     sync();			/* superstition */
     sleep(3);
     exit(exit_status);

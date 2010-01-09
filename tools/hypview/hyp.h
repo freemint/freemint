@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * HypView - (c) 2001 - 2006 Philipp Donze
  *               2006 -      Philipp Donze & Odd Skancke
  *
@@ -119,7 +119,7 @@ typedef struct
  *	Definitions used by loading routines
  */
 
-enum 
+enum
 {
 	REF_FILENAME = 0, REF_NODENAME, REF_ALIASNAME, REF_LABELNAME,
 	REF_DATABASE, REF_OS
@@ -201,7 +201,7 @@ struct prepnode
 	short start_idx;
 	short start_y;
 	short start_line;
-	
+
 	short between;
 	long y_start;
 
@@ -210,7 +210,7 @@ struct prepnode
 	long last_y;
 
 	short width;
-	
+
 };
 
 
@@ -218,22 +218,24 @@ struct prepnode
 /*	Decode MACRO	*/
 #define DEC_255(ptr)	(unsigned short) ((((unsigned char *)ptr)[1] - 1 ) * 255 + ((unsigned char *)ptr)[0] - 1)
 static inline short
-dec_from_chars(unsigned char *ptr)
+dec_from_chars(char *ptr)
 {
+	unsigned char *uptr = (unsigned char *)ptr;
 	unsigned short val;
 
-	val = (ptr[1] - 1) * 255;
-	val += ptr[0];
+	val = (uptr[1] - 1) * 255;
+	val += uptr[0];
 	val--;
 	return val;
 }
 
 static inline void
-dec_to_chars(unsigned short _val, unsigned char *ptr)
+dec_to_chars(unsigned short _val, char *ptr)
 {
-	ptr[0] = (unsigned char)(_val);
-	ptr[1] = (unsigned char)((unsigned long)_val / 255) + 1;
-	ptr[0] += ptr[1];
+	unsigned char *uptr = (unsigned char *)ptr;
+	uptr[0] = (unsigned char)(_val);
+	uptr[1] = (unsigned char)((unsigned long)_val / 255) + 1;
+	uptr[0] += uptr[1];
 }
 static inline void
 long_to_chars(long _val, char *p)
@@ -350,7 +352,7 @@ short HypBlockOperations(DOCUMENT *doc, short op, BLOCK *block, void *param);
 /*
  *		Ref.c
  */
-typedef struct _result_entry_ 
+typedef struct _result_entry_
 {
 	struct _result_entry_ *next;
 	short selected;

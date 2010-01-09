@@ -1,24 +1,24 @@
 /*
  * Filename:     gs_stik.c
  * Project:      GlueSTiK
- * 
+ *
  * Note:         Please send suggestions, patches or bug reports to me
  *               or the MiNT mailing list <mint@fishpool.com>.
- * 
+ *
  * Copying:      Copyright 1999 Frank Naumann <fnaumann@freemint.de>
- * 
+ *
  * Portions copyright 1997, 1998, 1999 Scott Bigham <dsb@cs.duke.edu>
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
  * any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
@@ -38,7 +38,7 @@
 
 
 /* STIK global configuration structure.
- * 
+ *
  * STinG's <transprt.h> doesn't
  * define this, so we define it here.
  */
@@ -145,19 +145,19 @@ do_get_err_text (struct get_err_text_param p)
 {
 	if (p.code < 0)
 		p.code = -p.code;
-	
+
 	if (p.code > 2000)
 		return err_unknown;
-	
+
 	if (p.code > 1000)
 	{
 		/* Encoded GEMDOS errors */
 		return strerror (p.code - 1000);
 	}
-	
+
 	if (p.code > E_LASTERROR)
 		return err_unknown;
-	
+
 	return err_list [p.code];
 }
 
@@ -184,9 +184,9 @@ do_TCP_open (struct TCP_open_param p)
 	uint32 lhost; int16 lport;
 	int fd;
 	long ret;
-	
+
 	DEBUG (("do_TCP_open: rhost = %lu, rport = %i", p.rhost, p.rport));
-	
+
 	if (p.rhost == 0)
 	{
 		p.rhost = 0;
@@ -197,7 +197,7 @@ do_TCP_open (struct TCP_open_param p)
 	else if (p.rport == 0)
 	{
 		CIB *cib = (CIB *) p.rhost;
-		
+
 		p.rhost = cib->rhost;
 		p.rport = cib->rport;
 		lhost = cib->lhost;
@@ -210,18 +210,18 @@ do_TCP_open (struct TCP_open_param p)
 		lhost = INADDR_ANY;
 		lport = 0;
 	}
-	
+
 	fd = gs_open ();
 	if (fd < 0)
 		return fd;
-	
+
 	/* The TCP_OPEN_CMD command transmogrifies this descriptor into an
 	 * actual connection.
 	 */
 	ret = gs_connect (fd, p.rhost, p.rport, lhost, lport);
 	if (ret < 0)
 		return ret;
-	
+
 	DEBUG (("do_TCP_open: fd = %i", fd));
 	return fd;
 }
@@ -259,18 +259,18 @@ do_UDP_open (struct UDP_open_param p)
 {
 	int fd;
 	int ret;
-	
+
 	fd = gs_open ();
 	if (fd < 0)
 		return fd;
-	
+
 	/* The UDP_OPEN_CMD command transmogrifies this descriptor into an
 	 * actual connection.
 	 */
 	ret = gs_udp_open (fd, p.rhost, p.rport);
 	if (ret < 0)
 		return ret;
-	
+
 	return fd;
 }
 
@@ -307,14 +307,14 @@ do_CNget_char (struct CNget_char_param p)
 {
 	char c;
 	long ret;
-	
+
 	ret = gs_read (p.fd, &c, 1L);
 	if (ret < 0)
 		return ret;
-	
+
 	if (ret == 0)
 		return E_NODATA;
-	
+
 	return c;
 }
 
@@ -358,10 +358,10 @@ static int16
 do_set_flag (struct set_flag_param p)
 {
 	int flg_val;
-	
+
 	if (p.flag < 0 || p.flag >= 64)
 		return E_PARAMETER;
-	
+
 	/* This is probably not necessary, since a MiNT process currently
 	 * can't be preempted in supervisor mode, but I'm not taking any
 	 * chances...
@@ -370,7 +370,7 @@ do_set_flag (struct set_flag_param p)
 	flg_val = flags [p.flag];
 	flags [p.flag] = 1;
 	Psemaphore (3, FLG_SEM, 0);
-	
+
 	return flg_val;
 }
 
@@ -379,7 +379,7 @@ do_clear_flag (struct clear_flag_param p)
 {
 	if (p.flag < 0 || p.flag >= 64)
 		return;
-	
+
 	/* This is probably not necessary, since a MiNT process currently
 	 * can't be preempted in supervisor mode, but I'm not taking any
 	 * chances...
@@ -393,10 +393,10 @@ static CIB *
 do_CNgetinfo (struct CNgetinfo_param p)
 {
 	GS *gs = gs_get (p.fd);
-	
+
 	if (!gs)
 		return (CIB *) E_BADHANDLE;
-	
+
 	return &(gs->cib);
 }
 
@@ -482,7 +482,7 @@ do_get_dftab (char *tpl_name)
 	 */
 	if (strcmp (tpl_name, trampoline.module) != 0)
 		return 0;
-	
+
 	return (DRV_HDR *) &trampoline;
 }
 
@@ -508,10 +508,10 @@ init_stik_if (void)
 {
 	if (Psemaphore (0, FLG_SEM, 0) < 0)
 	{
-		Cconws ("Unable to obtain STiK flag semaphore\r\n");
+		(void)Cconws ("Unable to obtain STiK flag semaphore\r\n");
 		return 0;
 	}
-	
+
 	stik_cfg.client_ip = INADDR_LOOPBACK;
 	return 1;
 }

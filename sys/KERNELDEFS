@@ -93,7 +93,7 @@ KERNELDEFS = -DDEBUG_INFO -DM68040
 endif
 
 ifeq ($(kernel),col)
-MINT = mintnp.prg
+MINT = mintcnp.prg
 CPU  = v4e
 KERNELDEFS = -DDEBUG_INFO -DM68040 -DNO_AKP_KEYBOARD -DNO_RAMFS -DNO_FAKE_SUPER -DCOLDFIRE -DC_ONLY -DVERBOSE_BOOT
 endif
@@ -105,20 +105,20 @@ KERNELDEFS = -DMILAN -DM68040
 endif
 
 ifeq ($(kernel),ara)
-MINT = mint.prg
+MINT = mintara.prg
 CPU  = 020-60
 KERNELDEFS = -DARANYM -DM68040 -DWITH_HOSTFS -DBOOTSTRAPABLE -DC_ONLY
 MODULEDIRS = xfs/hostfs
 endif
 
 ifeq ($(kernel),my1)
-MINT = mint040.prg
+MINT = mintmy1.prg
 CPU  = 020-60
 KERNELDEFS = -DDEBUG_INFO -DM68040
 endif
 
 ifeq ($(kernel),my2)
-MINT = mint040.prg
+MINT = mintmy2.prg
 CPU  = 020-60
 KERNELDEFS = -DDEBUG_INFO -DM68040
 #KERNELDEFS += -DPROFILING
@@ -127,13 +127,13 @@ KERNELDEFS = -DDEBUG_INFO -DM68040
 endif
 
 ifeq ($(kernel),my3)
-MINT = mint030.prg
+MINT = mintmy3.prg
 CPU  = 030
 KERNELDEFS = -DDEBUG_INFO -DM68030
 endif
 
 ifeq ($(kernel),my4)
-MINT = mintmdbg.prg
+MINT = mintmy4.prg
 CPU = 020-60
 KERNELDEFS = -DDEBUG_INFO -DM68040 -DMILAN -DMFP_DEBUG_DIRECT
 endif
@@ -141,8 +141,8 @@ endif
 #
 # all default targets
 #
-kerneltargets = 000 030 040 060 117 deb mil ara my1 my2 my3 my4
-cputargets = 000 030 020-60
+kerneltargets = 000 030 040 deb mil ara
+cputargets = 000 030 040 020-60
 
 ifeq (COLDFIRE,yes)
 kerneltargets += col

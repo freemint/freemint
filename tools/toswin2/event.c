@@ -61,7 +61,7 @@ static void about_open(WDIALOG *dial)
 
 	get_patchlev (__Ident_cflib, pl);
 	set_string (dial->tree, ACF, pl);
-	
+
 	wdial_open (dial);
 }
 
@@ -77,7 +77,7 @@ static void update_menu(void)
 {
 	/* Fenster */
 	menu_ienable(menu, MCYCLE, ((gl_winanz >= 2) || gl_avcycle));
-	menu_ienable(menu, MCLOSE, ((gl_topwin != NULL) 
+	menu_ienable(menu, MCLOSE, ((gl_topwin != NULL)
 										&& !(gl_topwin->flags & WICONIFIED)
 										&& !(gl_topwin->flags & WSHADED)));
 
@@ -92,11 +92,11 @@ static void update_menu(void)
 void menu_help(int title, int item)
 {
 	char *p, str[50], s[50];
-	
-	get_string(menu, item, s);
+
+	get_string(menu, item, s, sizeof(s));
 	/* die fhrenden '  ' berspringen und das letzte auch nicht */
 	strncpy(str, s + 2, strlen(s) - 3);
-	
+
 	p = str;
 	while (TRUE)
 	{
@@ -113,7 +113,7 @@ void menu_help(int title, int item)
 static void handle_menu(int title, int item, bool help)
 {
 	bool	old, new;
-	
+
 	if (!help)
 	{
 		switch (item)
@@ -122,36 +122,36 @@ static void handle_menu(int title, int item, bool help)
 			case MABOUT :
 				open_wdial(about, -1, -1);
 				break;
-				
+
 /* Datei */
 			case MPROG :
 				start_prog();
 				break;
-	
+
 			case MSHELL :
 				new_shell();
 				break;
-				
+
 			case MENDE :
 				gl_done = TRUE;
 				break;
 
-/* Fenster */			
+/* Fenster */
 			case MCONSOLE :
 				open_console();
 				break;
-	
+
 			case MCYCLE :
 				if ((gl_avcycle) && (send_avkey(4, 0x1117)))	/* ^W */
 					break;
 				cycle_window();
 				break;
-	
+
 			case MCLOSE :
 				(*gl_topwin->closed)(gl_topwin);
 				break;
 
-/* Optionen */	
+/* Optionen */
 			case MAVCYCLE :
 				old = gl_avcycle;
 				new = !gl_avcycle;
@@ -178,15 +178,15 @@ static void handle_menu(int title, int item, bool help)
 			case MCCONFIG :
 				conconfig_open();
 				break;
-	
+
 			case MWCONFIG :
 				winconfig_open();
 				break;
-	
+
 			case MSAVE :
 				config_save();
 				break;
-	
+
 			default:
 				break;
 		}
@@ -208,7 +208,7 @@ static void handle_msg(short *msgbuff)
 	{
 		if (!window_msg(msgbuff))
 		{
-			switch (msgbuff[0]) 
+			switch (msgbuff[0])
 			{
 				case TWSTART:
 					handle_share(msgbuff[1]);
@@ -243,12 +243,12 @@ static void handle_msg(short *msgbuff)
 					if ((msgbuff[3] == 4) && (msgbuff[4] == 0x1117))	/* ^W */
 						cycle_window();
 					break;
-			
+
 
 				case 0x7A18 :	/* FONT_CHANGE */
 					{
 						WINDOW	*winp;
-						
+
 						winp = find_window(msx, msy);
 						update_font(winp, msgbuff[4], msgbuff[5]);
 					}
@@ -256,13 +256,13 @@ static void handle_msg(short *msgbuff)
 
 				case 72 :		/* von Freedom */
 					break;
-					
+
 				default:
 					if (gl_debug)
 					{
 						char str[12];
 						short i, id;
-			
+
 						i = appl_search(0, str, &d, &id);
 						while (i != 0)
 						{
@@ -303,13 +303,13 @@ void event_loop(void)
 	short msgbuff[8], item, title;
 
 	evset = (MU_MESAG | MU_BUTTON | MU_KEYBD);
-	do 
+	do
 	{
 		if (gl_winanz > 0)
 			evset |= MU_TIMER;
 		else
 			evset &= ~MU_TIMER;
-			
+
 		event = evnt_multi(evset,
 				0x0101, 3, 0,
 				0, 0, 0, 0, 0,
@@ -319,10 +319,10 @@ void event_loop(void)
 				&msx, &msy, &mbutton, &kstate,
 				&kreturn, &mbreturn);
 
-		if (event & MU_MESAG) 
+		if (event & MU_MESAG)
 			handle_msg(msgbuff);
-		
-		if (event & MU_KEYBD) 
+
+		if (event & MU_KEYBD)
 		{
 			if (!key_wdial(kreturn, kstate))
 			{
@@ -332,7 +332,7 @@ void event_loop(void)
 #ifdef DEBUG
 				{
 					if (do_debug)
-						syslog (LOG_ERR, "Got key 0x%04x | 0x%04x", 
+						syslog (LOG_ERR, "Got key 0x%04x | 0x%04x",
 							(unsigned) kreturn, (unsigned) kstate);
 #endif
 					window_key(kreturn, kstate);
@@ -342,7 +342,7 @@ void event_loop(void)
 			}
 		}
 
-		if (event & MU_BUTTON) 
+		if (event & MU_BUTTON)
 			if (!click_wdial(mbreturn, msx, msy, kstate, mbutton))
 				window_click(mbreturn, msx, msy, kstate, mbutton);
 
@@ -351,7 +351,7 @@ void event_loop(void)
 			if (curs_ticks % 6 == 0)
 				window_timer ();
 		}
-		
+
 		++draw_ticks;
 		++curs_ticks;
 		if (draw_ticks > MAX_DRAW_TICKS)
@@ -367,20 +367,20 @@ void event_loop(void)
 void event_init(void)
 {
 	OBJECT	*tmp;
-	
+
 	rsrc_gaddr(R_TREE, MENUTREE, &menu);
 	create_menu(menu);
 
 	rsrc_gaddr(R_TREE, ABOUT, &tmp);
 	fix_dial(tmp);
 	about = create_wdial(tmp, winicon, 0, about_open, about_close);
-	
+
 	if (!file_exists("u:\\etc\\passwd"))
 	{
 		menu_ienable(menu, MSHELL, FALSE);
 		menu_ienable(menu, MALLOGIN, FALSE);
 	}
-	
+
 	if (!file_exists(XCONNAME))
 	{
 		menu_ienable(menu, MCONSOLE, FALSE);
@@ -391,9 +391,9 @@ void event_init(void)
 	/* for debugging under MagiC :-) */
 	if (gl_debug && gl_magx)
 		menu_ienable(menu, MCCONFIG, TRUE);
-	
+
 	/* fr Alerts und Fontauswahl im Fenster */
 	set_mdial_wincb(handle_msg);
-	
+
 	update_menu();
 }

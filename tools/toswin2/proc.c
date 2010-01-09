@@ -33,34 +33,34 @@ static OBJECT	*argbox;
 static int
 open_pty(char *name)
 {
-	char *c; 
-	
-	for (c = "0123456789abcdef"; *c; c++) 
+	char *c;
+
+	for (c = "0123456789abcdef"; *c; c++)
 	{
 		char line[] = "u:\\pipe\\ttypX";
-		
+
 		line[12] = *c;
-		
+
 		if (!file_exists(line))
 		{
 			int fd;
-			
+
 			fd = (int)Fcreate(line, FA_SYSTEM|FA_HIDDEN);
-			if (fd < 0) 
+			if (fd < 0)
 				return -ENOENT;
-			else 
+			else
 			{
 				char lnk[] = "u:\\dev\\ttypX";
-				
+
 				lnk[11] = *c;
-				
+
 				(void)Fsymlink(line, lnk);
 				if (name)
 					strcpy(name, line);
-				
+
 				/* set to non-delay mode, so Fread() won't block */
 				Fcntl(fd, (long)O_NDELAY, F_SETFL);
-				
+
 				return fd;
 			}
 		}
@@ -69,7 +69,7 @@ open_pty(char *name)
 }
 
 TEXTWIN *
-new_proc(char *progname, char *arg, char *env, char *progdir, 
+new_proc(char *progname, char *arg, char *env, char *progdir,
 	 WINCFG *cfg, int talkID, struct passwd *pw)
 {
 	TEXTWIN *t;
@@ -85,7 +85,7 @@ new_proc(char *progname, char *arg, char *env, char *progdir,
 		strcpy(str, cfg->title);
 
 	t = create_textwin(str, cfg);
-	if (!t) 
+	if (!t)
 	{
 		alert(1, 0, NOTEXT);
 		return NULL;
@@ -110,9 +110,9 @@ new_proc(char *progname, char *arg, char *env, char *progdir,
 		refresh_textwin(t, FALSE);
 		return t;
 	}
-	
+
 	ourfd = open_pty(termname);
-	if (ourfd < 0) 
+	if (ourfd < 0)
 	{
 		alert(1, 0, NOPTY);
 		destroy_textwin(t);
@@ -142,7 +142,7 @@ new_proc(char *progname, char *arg, char *env, char *progdir,
 	{
 		(void)Psetpgrp(0, 0);
 		kidfd = (int)Fopen(termname, 2);
-		if (kidfd < 0) 
+		if (kidfd < 0)
 			_exit(998);
 
 		if (!gl_magx)
@@ -151,27 +151,27 @@ new_proc(char *progname, char *arg, char *env, char *progdir,
 		Fforce(1, kidfd);
 		Fforce(2, kidfd);
 		Fclose(kidfd);
-		
+
 # ifndef _OLD_UTMP
 		if (pw && ((shell_cnt == 0) || gl_allogin))
 		{
 				struct utmp ut;
-				
+
 				bzero(&ut, sizeof(ut));
-				
+
 				/* fill out line name */
 				strncpy(ut.ut_line, t->pty, sizeof(ut.ut_line));
 				ut.ut_line[sizeof(ut.ut_line)-1] = '\0';
-				
+
 				/* fill out user name */
 				strncpy(ut.ut_user, pw->pw_name, sizeof(ut.ut_user));
-				
+
 				/* fill out hostname */
 				gethostname(ut.ut_host, sizeof(ut.ut_host));
-				
+
 				/* fill out timestamp */
 				gettimeofday (&ut.ut_tv, NULL);
-				
+
 				login(&ut);
 		}
 # endif
@@ -179,7 +179,7 @@ new_proc(char *progname, char *arg, char *env, char *progdir,
 	//	sprintf(str, "\r\n progdir '%s'\r\n", progdir);
 	//	Cconws(str);
 		i = (int)Pexec(200, progname, arg, env);
-		
+
 		sprintf(str, "\r\n  Pexec failed (err = %d)!\r\n", i);
 		write_text(t, str, -1);
 		_exit(i);
@@ -214,13 +214,13 @@ term_proc(TEXTWIN *t)
 		}
 		t->fd = 0;
 	}
-	
+
 	if (t->pgrp > 0)
 	{
 		(void)Pkill(-t->pgrp, SIGHUP);
 		t->pgrp = 0;
 	}
-	
+
 	if (t->shell != NO_SHELL)
 	{
 		if (t->shell == LOGIN_SHELL)
@@ -233,14 +233,14 @@ term_proc(TEXTWIN *t)
 			logwtmp (t->pty, "", "");
 # endif
 		}
-		
+
 		t->shell = 0;
 		shell_cnt--;
 	}
-	
+
 	handle_exit(t->talkID);
 	t->talkID = -1;
-	
+
 	exit_code = 0;
 }
 
@@ -253,13 +253,13 @@ new_shell(void)
 	char arg[] = "";	/* 127 -> ARGV */
 	char shell[80];
 	WINCFG *cfg;
-	
+
 	shel_envrn(&p, "LOGNAME=");
 	if (p != NULL)
 		pw = getpwnam(p);
 	else
 		pw = getpwuid(geteuid());
-  	
+
   	if (pw && pw->pw_shell[0])
 	{
 		graf_mouse(BEE, NULL);
@@ -274,9 +274,9 @@ new_shell(void)
 			{
 # ifdef _OLD_UTMP
 				char hostname[128];
-				
+
 				gethostname(hostname, sizeof(hostname));
-				
+
 				_write_utmp(t->pty, pw->pw_name, hostname, time(NULL));
 				_write_wtmp(t->pty, pw->pw_name, hostname, time(NULL));
 # endif
@@ -284,17 +284,17 @@ new_shell(void)
 			}
 			else
 				t->shell = NORM_SHELL;
-			
+
 			shell_cnt++;
 			open_window(t->win, cfg->iconified);
 		}
-		
+
 		free(env);
 		graf_mouse(ARROW, NULL);
 	}
 	else
 		alert(1, 0, NOPWD);
-	
+
 	return t;
 }
 
@@ -306,7 +306,7 @@ start_prog(void)
 	TEXTWIN	*t = NULL;
 	WINCFG	*cfg;
 	int antw;
-	
+
 	if (select_file(path, tmp, "", rsc_string(STRPROGSEL), FSCB_NULL))
 	{
 		strcpy(filename, path);
@@ -323,7 +323,7 @@ start_prog(void)
 		antw = simple_dial(argbox, ARGSTR);
 		if (antw == ARGOK)
 		{
-			get_string(argbox, ARGSTR, cfg->arg);
+			get_string(argbox, ARGSTR, cfg->arg, sizeof(cfg->arg));
 			strcat(arg, cfg->arg);
 			arg[0] = strlen(arg);
 			env = normal_env(cfg->col, cfg->row, cfg->vt_mode);
@@ -341,26 +341,26 @@ rebuild_fdmask(long which)
 {
 	int i;
 
-	for (i = 0; i < 32; i++) 
+	for (i = 0; i < 32; i++)
 	{
-		if ((which & (1L << i)) && (Finstat(i) < 0)) 
+		if ((which & (1L << i)) && (Finstat(i) < 0))
 		{
 			WINDOW *w, *wnext;
-			
+
 			/* window has died now */
 			fdmask &= ~(1L << i);
-			
-			for (w = gl_winlist; w; w = wnext) 
+
+			for (w = gl_winlist; w; w = wnext)
 			{
 				TEXTWIN *t = w->extra;
-				
+
 				wnext = w->next;
-				
-				if (t && t->fd == i) 
+
+				if (t && t->fd == i)
 				{
 					if (t->cfg->autoclose)
 						(*w->closed)(w);
-					else 
+					else
 					{
 						write_text(t, "\r\n Process terminated.\r\n", -1);
 						write_text(t, " Hit Return to close window.\r\n\r\n", -1);
@@ -401,20 +401,20 @@ fd_input(void)
 	lasthz = newhz;
 #endif
 
-	if (fdmask) 
+	if (fdmask)
 	{
 		readfds = fdmask;
-		if ((r = Fselect(1, &readfds, 0L, 0L)) > 0) 
+		if ((r = Fselect(1, &readfds, 0L, 0L)) > 0)
 		{
-			for (w = gl_winlist; w; w = w->next) 
+			for (w = gl_winlist; w; w = w->next)
 			{
 				if (w->flags & WISDIAL)
 					continue;
 
 				t = w->extra;
-				if (!t || !t->fd) 
+				if (!t || !t->fd)
 					continue;
-				if (readfds & (1L << t->fd)) 
+				if (readfds & (1L << t->fd))
 				{
 					long int read_bytes =
 						Fread(t->fd, (long)READBUFSIZ, buf);
@@ -432,17 +432,17 @@ fd_input(void)
 		if (checkdead)
 			rebuild_fdmask(checkdead);
 	}
-	if (r == -EBADF) 
+	if (r == -EBADF)
 		rebuild_fdmask(fdmask);
 
 	/* for all windows on screen, see if it's time to refresh them */
-	for (w = gl_winlist; w; w = w->next) 
+	for (w = gl_winlist; w; w = w->next)
 	{
 		if (w->flags & WISDIAL)
 			continue;
 
 		t = w->extra;
-		if (!t || !t->fd || !t->nbytes) 
+		if (!t || !t->fd || !t->nbytes)
 			continue;
 #if 0
 		t->draw_time += updtime;
@@ -481,7 +481,7 @@ printf("dead_kid: pid=%ld, exit=%ld\n", ((r>>16) & 0x0000ffff),(r & 0x0000ffff))
 static void
 send_sig(long sig)
 {
-	if (gl_topwin) 
+	if (gl_topwin)
 	{
 		TEXTWIN *t;
 
@@ -506,7 +506,7 @@ proc_init(void)
 	(void)Psignal(SIGTSTP, (long)send_sig);
 	(void)Psignal(SIGTTIN, (long)ignore);
 	(void)Psignal(SIGTTOU, (long)ignore);
-	
+
 	rsrc_gaddr(R_TREE, ARG, &argbox);
 	fix_dial(argbox);
 }

@@ -13,7 +13,7 @@
 #define SENDING	10000000
 
 #define SERVER	"/tmp/fort"
-#define OFFSET	((short)((struct sockaddr_un *) 0)->sun_path)
+#define OFFSET	((socklen_t)((struct sockaddr_un *) 0)->sun_path)
 
 static int run = 1;
 static int fd = 0;
@@ -47,10 +47,10 @@ main (int argc, char *argv[])
 		printf ("out of mem");
 		return 0;
 	}
-	
+
 	printf ("Send bufsize is %ld\n", bufsize);
 	memset (buf, 'A', bufsize);
-	
+
 	fd = socket (AF_UNIX, SOCK_STREAM, 0);
 	if (fd < 0)
 	{
@@ -75,7 +75,7 @@ main (int argc, char *argv[])
 		perror ("listen");
 		close (fd);
 		return 0;
-	}	
+	}
 
 	signal (SIGQUIT, sig_handler);
 	signal (SIGINT, sig_handler);

@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
 
 	/* Stimmt die RSC-Version? */
 	rsrc_gaddr(R_TREE, VERSION, &tmp);
-	get_string(tmp, RSC_VERSION, str);
+	get_string(tmp, RSC_VERSION, str, sizeof(str));
 	if (strcmp(str, TWVERSION) != 0)
 	{
 		do_alert(1, 0, "[3][Falsche RSC-Version!|Wrong RSC version!][Exit]");
@@ -73,13 +73,13 @@ int main(int argc, char *argv[])
 
 
 	global_init();
-	
+
 	if (!gl_mint || gl_gem <= 0x400)
 	{
 		if (alert(1, 0, NOAES41) == 2)
 			term_tw(1);
 	}
-	
+
 	appl_xgetinfo(11, &gi_wind, &d, &d, &d);
 	appl_xgetinfo(12, &gi_msgs, &d, &d, &d);
 
@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
 		short wopts, new_wopts = 0;
 
 		appl_xgetinfo(97, &wopts, &d, &d, &d);
-		
+
 		if (gi_msgs & 0x0400) /* WM_REPOSED */
 			new_wopts |= WO0_SENDREPOS; //wind_set(-1, WF_OPTS, 1, WO0_SENDREPOS, 0, 0);
 		if (wopts & 0x0020) /* WCOWORK */
@@ -105,15 +105,15 @@ int main(int argc, char *argv[])
 		do_alert(1, 0, "[3][This version of TosWin2 needs WCOWORK,|only provided by XaAES atm!][Exit]");
 		return FALSE;
 	}
-#endif	
-	
+#endif
+
 	if (gi_msgs & 0x0008) /* AP_TERM */
 		shel_write(9, 1, 1, 0L, 0L);
-	
+
 	menu_register(-1, TW2NAME);	/* damit tw-call immer fndig wird. */
 	if (gl_debug)
 		menu_register(gl_apid, "  TosWin2 (debug)");
-	else	
+	else
 		menu_register(gl_apid, "  TosWin2");
 
 	config_init();
@@ -125,23 +125,23 @@ int main(int argc, char *argv[])
 
 	if (gl_con_auto)
 		open_console();
-	
+
 	if (gl_debug)
 	{
 		if (gl_magx)
 		{
 			WINCFG	*cfg;
 			TEXTWIN	*t;
-			
+
 			cfg = get_wincfg("C:\\TMP\\DUM.TOS");
 			t = new_proc("C:\\TMP\\DUM.TOS", "", NULL, "C:\\TMP", cfg, -1, NULL);
 			if (t)
 				open_window(t->win, FALSE);
-		}	
+		}
 		else
-			new_shell();	
+			new_shell();
 	}
-	
+
 	if (argc >= 2)
 	{
 		if (argv[1][0] == '-')		/* filter options */
@@ -156,7 +156,7 @@ int main(int argc, char *argv[])
 			char *env, arg[125] = "";
 			int i;
 			WINCFG	*cfg;
-			
+
 			unx2dos(argv[1], filename);
 			strcpy(path, filename);
 			p = strrchr(path, '\\');
@@ -180,7 +180,7 @@ int main(int argc, char *argv[])
 	}
 
 	event_loop();
-	
+
 	term_tw(0);
 
 	return 0;

@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * HypView - (c)      - 2006 Philipp Donze
  *               2006 -      Philipp Donze & Odd Skancke
  *
@@ -37,7 +37,7 @@
 #include "defs.h"
 #include "hyp.h"
 #include "bubble/bgh.h"
- 
+#include "hyp/search_d.h"
 #define AC_HELP		1025	/*	PureC Hilfe-Protokoll */
 
 extern WINDOW_DATA *Win;
@@ -87,7 +87,7 @@ void DoUserEvents(EVNT *event)
 		{
 /* [GS] 0.35.2e Start: */
 			short ret=0;
-			
+
 			if ( count_window () == 0 && last_path[0] != '\0' )
 			{
 				ret=OpenFileNW(last_path, NULL, last_node);
@@ -150,7 +150,7 @@ void DoUserEvents(EVNT *event)
 				/* MU_MESAG darf am Ende nicht maskiert werden sonst*/
 				/* wird das Fenster nicht geschlossen!				*/
 			CHAIN_DATA *ptr;
-			
+
 			ptr=find_ptr_by_whandle(event->msg[3]);
 			if(ptr && (ptr->status & WIS_OPEN) && ptr->type==WIN_WINDOW )
 			{
@@ -161,7 +161,7 @@ void DoUserEvents(EVNT *event)
 					 if ( data!=NULL )
 					 {
 						DOCUMENT *doc;
-						
+
 						doc = (DOCUMENT *) data->data;
 						last_node=doc->getNodeProc(doc);
 						strcpy ( last_path, doc->path );
@@ -193,7 +193,7 @@ void DoUserEvents(EVNT *event)
 			if(ascii == 'W')
 			{
 				short global_cycle = (kstate & KbSHIFT ? !av_window_cycle : av_window_cycle);
-				
+
 				if(server_cfg && global_cycle)	/*	AV initialisiert?	*/
 				{
 					DoAV_SENDKEY(event->kstate, event->key);
@@ -288,7 +288,7 @@ void DD_DialogGetFormat(OBJECT *tree,short obj, unsigned long format[])
 */
 {
 	short i;
-	
+
 	for(i = 0; i < MAX_DDFORMAT; i++)
 		format[i] = 0L;
 
@@ -309,7 +309,7 @@ char *GetTopic(void)
 	short handle;
 	short typ = BGH_USER, gruppe = 0, index = -1;
 	extern void *Help;
-	
+
 	wind_get_int(0,WF_TOP,&handle);
 
 	chain_ptr=find_ptr_by_whandle(handle);
@@ -435,15 +435,15 @@ void DoVA_Message(short msg[8])
 #endif
 					strcpy(arg, data);
 					ParseData(arg);
-		
+
 					Win = find_window_by_whandle(msg[3]);
-		
+
 					if(va_start_newwin == 2)
 						OpenFileNW(arg,NULL,0);
 					else
 						OpenFileSW(arg,NULL,va_start_newwin);
 				}
-			}	
+			}
 			break;
 		}
 		default:

@@ -35,7 +35,7 @@ INLINE void *
 setstack (register void *sp)
 {
 	register void *osp __asm__("d0") = 0;
-	
+
 	__asm__ volatile
 	(
 		"movel sp,%0;"
@@ -43,7 +43,7 @@ setstack (register void *sp)
 		: "=a" (osp)
 		: "0" (osp), "a" (sp)
 	);
-	
+
 	return osp;
 }
 
@@ -51,16 +51,16 @@ short
 if_enqueue (struct ifq *q, BUF *buf, short pri)
 {
 	register ushort sr;
-	
+
 	sr = spl7 ();
-	
+
 	if (q->qlen >= q->maxqlen)
 	{
 		/*
 		 * queue full, dropping packet
 		 */
 		buf_deref (buf, BUF_ATOMIC);
-		
+
 		spl (sr);
 		return ENOMEM;
 	}
@@ -68,7 +68,7 @@ if_enqueue (struct ifq *q, BUF *buf, short pri)
 	{
 		if ((ushort) pri >= IF_PRIORITIES)
 			pri = IF_PRIORITIES-1;
-		
+
 		buf->link3 = NULL;
 		if (q->qlast[pri])
 		{
@@ -77,12 +77,12 @@ if_enqueue (struct ifq *q, BUF *buf, short pri)
 		}
 		else
 			q->qlast[pri] = q->qfirst[pri] = buf;
-		
+
 		q->qlen++;
 	}
-	
+
 	spl (sr);
-	
+
 	return 0;
 }
 
@@ -90,16 +90,16 @@ short
 if_putback (struct ifq *q, BUF *buf, short pri)
 {
 	register ushort sr;
-	
+
 	sr = spl7 ();
-	
+
 	if (q->qlen >= q->maxqlen)
 	{
 		/*
 		 * queue full, dropping packet
 		 */
 		buf_deref (buf, BUF_ATOMIC);
-		
+
 		spl (sr);
 		return ENOMEM;
 	}
@@ -107,17 +107,17 @@ if_putback (struct ifq *q, BUF *buf, short pri)
 	{
 		if ((ushort)pri >= IF_PRIORITIES)
 			pri = IF_PRIORITIES-1;
-		
+
 		buf->link3 = q->qfirst[pri];
 		q->qfirst[pri] = buf;
 		if (!q->qlast[pri])
 			q->qlast[pri] = buf;
-		
+
 		q->qlen++;
 	}
-	
+
 	spl (sr);
-	
+
 	return 0;
 }
 
@@ -131,13 +131,13 @@ if_dequeue (struct ifq *q)
 	register BUF *buf = NULL;
 	register ushort sr;
 	register short i;
-	
+
 	sr = spl7 ();
-	
+
 	if (q->qlen > 0)
 	{
 		register short que;
-		
+
 		que = GET_QUEUE (q);
 		for (i = IF_PRIORITIES; i > 0; --i)
 		{
@@ -146,21 +146,21 @@ if_dequeue (struct ifq *q)
 				q->qfirst[que] = buf->link3;
 				if (!buf->link3)
 					q->qlast[que] = NULL;
-				
+
 				if (i < IF_PRIORITIES)
 					SET_QUEUE (q, que);
-				
+
 				INC_QUEUE (q, que);
 				q->qlen--;
-				
+
 				break;
 			}
 			que = (que+1) & (IF_PRIORITIES-1);
 		}
 	}
-	
+
 	spl (sr);
-	
+
 	return buf;
 }
 
@@ -169,14 +169,14 @@ if_flushq (struct ifq *q)
 {
 	register ushort sr;
 	register short i;
-	
+
 	sr = spl7();
-	
+
 	for (i = 0; i < IF_PRIORITIES; ++i)
 	{
 		register BUF *buf;
 		register BUF *next;
-		
+
 		for (buf = q->qfirst[i]; buf; buf = next)
 		{
 			next = buf->link3;
@@ -185,7 +185,7 @@ if_flushq (struct ifq *q)
 		q->qfirst[i] = q->qlast[i] = 0;
 	}
 	q->qlen = 0;
-	
+
 	spl (sr);
 }
 
@@ -195,39 +195,39 @@ if_doinput (long proc)
 	register struct netif *nif;
 	register char *sp;
 	short comeagain = 0;
-	
+
 	tmout = 0;
 	sp = setstack (stack + sizeof (stack));
-	
+
 	for (nif = allinterfaces; nif; nif = nif->next)
 	{
 		register short todo;
-		
+
 		if ((nif->flags & (IFF_UP|IFF_RUNNING)) != (IFF_UP|IFF_RUNNING))
 			continue;
-		
+
 		for (todo = nif->rcv.maxqlen; todo; --todo)
 		{
 			register BUF *buf;
-			
+
 			buf = if_dequeue (&nif->rcv);
 			if (!buf)
 				break;
-			
+
 			switch ((short) buf->info)
 			{
 				case PKTYPE_IP:
 					ip_input (nif, buf);
 					break;
-				
+
 				case PKTYPE_ARP:
 					arp_input (nif, buf);
 					break;
-				
+
 				case PKTYPE_RARP:
 					rarp_input (nif, buf);
 					break;
-				
+
 				default:
 					DEBUG (("if_input: unknown pktype 0x%x",
 						(short)buf->info));
@@ -235,11 +235,11 @@ if_doinput (long proc)
 					break;
 			}
 		}
-		
+
 		if (!todo)
 			comeagain = 1;
 	}
-	
+
 	if (comeagain)
 	{
 		/*
@@ -249,7 +249,7 @@ if_doinput (long proc)
 		 */
 		if_input (0, 0, 100, 0);
 	}
-	
+
 	setstack (sp);
 }
 
@@ -258,20 +258,20 @@ if_input (struct netif *nif, BUF *buf, long delay, short type)
 {
 	register ushort sr;
 	register short r = 0;
-	
+
 	sr = spl7 ();
-	
+
 	if (buf)
 	{
 		buf->info = type;
 		r = if_enqueue (&nif->rcv, buf, IF_PRIORITIES-1);
 	}
-	
+
 	if (tmout == 0)
 		tmout = addroottimeout (delay, if_doinput, 1);
-	
+
 	spl (sr);
-	
+
 	return r;
 }
 
@@ -279,13 +279,13 @@ static void
 if_slowtimeout (long proc)
 {
 	struct netif *nif;
-	
+
 	for (nif = allinterfaces; nif; nif = nif->next)
 	{
 		if (nif->flags & IFF_UP && nif->timeout)
 			(*nif->timeout) (nif);
 	}
-	
+
 	addroottimeout (IF_SLOWTIMEOUT, if_slowtimeout, 0);
 }
 
@@ -294,31 +294,31 @@ if_register (struct netif *nif)
 {
 	static short have_timeout = 0;
 	short i;
-	
+
 	nif->addrlist = 0;
 	nif->snd.qlen = 0;
 	nif->rcv.qlen = 0;
 	nif->snd.curr = 0;
 	nif->rcv.curr = 0;
-	
+
 	for (i = 0; i < IF_PRIORITIES; ++i)
 	{
 		nif->snd.qfirst[i] = nif->snd.qlast[i] = 0;
 		nif->rcv.qfirst[i] = nif->rcv.qlast[i] = 0;
 	}
-	
+
 	if (nif->hwtype >= HWTYPE_NONE)
 	{
 		nif->hwlocal.len = 0;
 		nif->hwbrcst.len = 0;
 	}
-	
+
 	nif->in_packets = 0;
 	nif->in_errors = 0;
 	nif->out_packets = 0;
 	nif->out_errors = 0;
 	nif->collisions = 0;
-	
+
 	nif->next = allinterfaces;
 	allinterfaces = nif;
 	if (nif->timeout && !have_timeout)
@@ -326,7 +326,7 @@ if_register (struct netif *nif)
 		addroottimeout (IF_SLOWTIMEOUT, if_slowtimeout, 0);
 		have_timeout = 1;
 	}
-	
+
 	return 0;
 }
 
@@ -338,13 +338,13 @@ if_getfreeunit (char *name)
 {
 	struct netif *ifp;
 	short max = -1;
-	
+
 	for (ifp = allinterfaces; ifp; ifp = ifp->next)
 	{
 		if (!strncmp (ifp->name, name, IF_NAMSIZ) && ifp->unit > max)
 			max = ifp->unit;
 	}
-	
+
 	return max+1;
 }
 
@@ -353,7 +353,7 @@ if_open (struct netif *nif)
 {
 	struct ifaddr *ifa;
 	long error;
-	
+
 	error = (*nif->open) (nif);
 	if (error)
 	{
@@ -361,7 +361,7 @@ if_open (struct netif *nif)
 		return error;
 	}
 	nif->flags |= (IFF_UP|IFF_RUNNING);
-	
+
 	/*
 	 * Make sure lo0 is always reachable as 127.0.0.1
 	 */
@@ -370,7 +370,7 @@ if_open (struct netif *nif)
 		route_add (nif, 0x7f000000L, IN_CLASSA_NET, INADDR_ANY,
 			RTF_STATIC|RTF_UP|RTF_LOCAL, 999, 0);
 	}
-	
+
 	ifa = if_af2ifaddr (nif, AF_INET);
 	if (!ifa)
 	{
@@ -378,7 +378,7 @@ if_open (struct netif *nif)
 			nif->name, nif->unit));
 		return 0;
 	}
-	
+
 	/*
 	 * This route is necessary for IP to deliver incoming packets
 	 * to the local software. It routes the incoming packet and
@@ -391,14 +391,14 @@ if_open (struct netif *nif)
 		route_add (if_lo, ifa->adr.in.sin_addr.s_addr, 0xffffffffL,
 			INADDR_ANY, RTF_STATIC|RTF_UP|RTF_HOST|RTF_LOCAL, 999, 0);
 	}
-	
+
 	/*
 	 * Want the new interface to become primary one.
 	 *
 	 * This is usefull to broadcast packets.
 	 */
 	rt_primary.nif = nif;
-	
+
 	DEBUG (("if_open: primary_nif = %s", rt_primary.nif->name));
 
 	return 0;
@@ -409,29 +409,29 @@ if_close (struct netif *nif)
 {
 	struct ifaddr *ifa;
 	long error;
-	
+
 	error = (*nif->close) (nif);
 	if (error)
 	{
 		DEBUG (("if_close: cannot close if %s%d", nif->name, nif->unit));
 		return error;
 	}
-	
+
 	if_flushq (&nif->snd);
 	if_flushq (&nif->rcv);
-	
+
 	route_flush (nif);
 	arp_flush (nif);
-	
+
 	ifa = if_af2ifaddr (nif, AF_INET);
 	if (ifa)
 		route_del (ifa->adr.in.sin_addr.s_addr, 0xffffffff);
-	
+
 	if (nif->flags & IFF_LOOPBACK)
 		route_del (0x7f000000L, IN_CLASSA_NET);
-	
+
 	nif->flags &= ~(IFF_UP|IFF_RUNNING);
-	
+
 	/*
 	 * Want a running primary interface
 	 */
@@ -448,7 +448,7 @@ if_close (struct netif *nif)
 	}
 
 	DEBUG (("if_close: primary_nif = %s", rt_primary.nif->name));
-	
+
 	return 0;
 }
 
@@ -465,7 +465,7 @@ if_send (struct netif *nif, BUF *buf, ulong nexthop, short isbrcst)
 		buf_deref (buf, BUF_NORMAL);
 		return ENETUNREACH;
 	}
-	
+
 	if (nif->hwtype >= HWTYPE_NONE)
 	{
 		DEBUG (("if_send(%s): >= HWTYPE_NONE", nif->name));
@@ -501,7 +501,7 @@ if_send (struct netif *nif, BUF *buf, ulong nexthop, short isbrcst)
 				buf_deref (buf, BUF_NORMAL);
 				return ENOMEM;
 			}
-			
+
 			if (ATF_ISCOM (are))
 			{
 				ret = (*nif->output) (nif, buf, (char *)are->hwaddr.adr.bytes,
@@ -509,7 +509,7 @@ if_send (struct netif *nif, BUF *buf, ulong nexthop, short isbrcst)
 			}
 			else
 				ret = if_enqueue (&are->outq, buf, IF_PRIORITIES-1);
-			
+
 			arp_deref (are);
 			return ret;
 		}
@@ -527,7 +527,7 @@ if_ioctl (short cmd, long arg)
 {
 	struct ifreq *ifr;
 	struct netif *nif;
-	
+
 	switch (cmd)
 	{
 		case SIOCSIFLINK:
@@ -542,7 +542,7 @@ if_ioctl (short cmd, long arg)
 		case SIOCGIFNAME:
 		{
 			struct iflink *ifl;
-			
+
 			ifl = (struct iflink *) arg;
 			nif = if_name2if (ifl->ifname);
 			if (!nif)
@@ -557,7 +557,7 @@ if_ioctl (short cmd, long arg)
 			return if_config ((struct ifconf *) arg);
 		}
 	}
-	
+
 	ifr = (struct ifreq *) arg;
 	nif = if_name2if (ifr->ifr_name);
 	if (!nif)
@@ -565,19 +565,18 @@ if_ioctl (short cmd, long arg)
 		DEBUG (("if_ioctl: %s: no such interface", ifr->ifr_name));
 		return ENOENT;
 	}
-	
+
 	switch (cmd)
 	{
 		case SIOCGIFHWADDR:
 		{
 			struct sockaddr_hw *shw = &ifr->ifru.adr.hw;
-			
+
 			shw->shw_family = AF_LINK;
 			shw->shw_type = nif->hwtype;
 			shw->shw_len = nif->hwlocal.len;
-			memcpy (shw->shw_addr, nif->hwlocal.adr.bytes,
-				MIN (shw->shw_len, sizeof (shw->shw_addr)));
-			
+			memcpy (shw->shw_adr.bytes, nif->hwlocal.adr.bytes, MIN (shw->shw_len, sizeof (shw->shw_adr)));
+
 			return 0;
 		}
 		case SIOCSLNKFLAGS:
@@ -609,13 +608,13 @@ if_ioctl (short cmd, long arg)
 		{
 			short nflags = ifr->ifru.flags & IFF_MASK;
 			long error;
-			
+
 			if (p_geteuid ())
 			{
 				DEBUG (("if_ioctl: permission denied"));
 				return EACCES;
 			}
-			
+
 			if (nif->flags & IFF_UP && !(nflags & IFF_UP))
 			{
 				error = if_close (nif);
@@ -628,10 +627,10 @@ if_ioctl (short cmd, long arg)
 				if (error)
 					return error;
 			}
-			
+
 			nif->flags &= ~IFF_MASK;
 			nif->flags |= nflags;
-			
+
 			return (*nif->ioctl) (nif, cmd, arg);
 		}
 		case SIOCGIFMETRIC:
@@ -668,19 +667,19 @@ if_ioctl (short cmd, long arg)
 		case SIOCSIFDSTADDR:
 		{
 			struct ifaddr *ifa;
-			
+
 			if (p_geteuid ())
 			{
 				DEBUG (("if_ioctl: permission denied"));
 				return EACCES;
 			}
-			
+
 			if (!(nif->flags & IFF_POINTOPOINT))
 			{
 				DEBUG (("if_ioctl: nif is not p2p"));
 				return EACCES;
 			}
-			
+
 			ifa = if_af2ifaddr (nif, ifr->ifru.dstadr.sa.sa_family);
 			if (!ifa)
 			{
@@ -689,20 +688,20 @@ if_ioctl (short cmd, long arg)
 					ifr->ifru.dstaddr.sa_family));
 				return EINVAL;
 			}
-			
+
 			sa_copy (&ifa->ifu.dstadr.sa, &ifr->ifru.dstadr.sa);
 			return 0;
-		}		
+		}
 		case SIOCGIFDSTADDR:
 		{
 			struct ifaddr *ifa;
-			
+
 			if (!(nif->flags & IFF_POINTOPOINT))
 			{
 				DEBUG (("if_ioctl: nif is not p2p"));
 				return EACCES;
 			}
-			
+
 			ifa = if_af2ifaddr (nif, ifr->ifru.dstadr.sa.sa_family);
 			if (!ifa)
 			{
@@ -711,30 +710,30 @@ if_ioctl (short cmd, long arg)
 					ifr->ifru.dstaddr.sa_family));
 				return EINVAL;
 			}
-			
+
 			sa_copy (&ifr->ifru.dstadr.sa, &ifa->ifu.dstadr.sa);
 			return 0;
 		}
 		case SIOCSIFADDR:
 		{
 			long error;
-			
+
 			if (p_geteuid ())
 			{
 				DEBUG (("if_ioctl: permission denied"));
 				return EACCES;
 			}
-			
+
 			error = if_setifaddr (nif, &ifr->ifru.adr.sa);
 			if (error)
 				return error;
-			
+
 			return (*nif->ioctl) (nif, cmd, arg);
 		}
 		case SIOCGIFADDR:
 		{
 			struct ifaddr *ifa;
-			
+
 			ifa = if_af2ifaddr (nif, ifr->ifru.dstadr.sa.sa_family);
 			if (!ifa)
 			{
@@ -743,26 +742,26 @@ if_ioctl (short cmd, long arg)
 					ifr->ifru.addr.sa_family));
 				return EINVAL;
 			}
-			
+
 			sa_copy (&ifr->ifru.adr.sa, &ifa->adr.sa);
 			return 0;
 		}
 		case SIOCSIFBRDADDR:
 		{
 			struct ifaddr *ifa;
-			
+
 			if (p_geteuid ())
 			{
 				DEBUG (("if_ioctl: permission denied"));
 				return EACCES;
 			}
-			
+
 			if (!(nif->flags & IFF_BROADCAST))
 			{
 				DEBUG (("if_ioctl: nif is not broadcast"));
 				return EACCES;
 			}
-			
+
 			ifa = if_af2ifaddr (nif, ifr->ifru.broadadr.sa.sa_family);
 			if (!ifa)
 			{
@@ -771,20 +770,20 @@ if_ioctl (short cmd, long arg)
 					ifr->ifru.broadaddr.sa_family));
 				return EINVAL;
 			}
-			
+
 			sa_copy (&ifa->ifu.broadadr.sa, &ifr->ifru.broadadr.sa);
 			return 0;
 		}
 		case SIOCGIFBRDADDR:
 		{
 			struct ifaddr *ifa;
-			
+
 			if (!(nif->flags & IFF_BROADCAST))
 			{
 				DEBUG (("if_ioctl: nif is not broadcast"));
 				return EACCES;
 			}
-			
+
 			ifa = if_af2ifaddr (nif, ifr->ifru.broadadr.sa.sa_family);
 			if (!ifa)
 			{
@@ -793,26 +792,26 @@ if_ioctl (short cmd, long arg)
 					ifr->ifru.broadaddr.sa_family));
 				return EINVAL;
 			}
-			
+
 			sa_copy (&ifr->ifru.broadadr.sa, &ifa->ifu.broadadr.sa);
 			return 0;
 		}
 		case SIOCSIFNETMASK:
 		{
 			struct ifaddr *ifa;
-			
+
 			if (p_geteuid ())
 			{
 				DEBUG (("if_ioctl: permission denied"));
 				return EACCES;
 			}
-			
+
 			if (ifr->ifru.broadadr.sa.sa_family != AF_INET)
 			{
 				DEBUG (("if_ioctl: address family != AF_INET"));
 				return EAFNOSUPPORT;
 			}
-			
+
 			ifa = if_af2ifaddr (nif, AF_INET);
 			if (!ifa)
 			{
@@ -821,17 +820,17 @@ if_ioctl (short cmd, long arg)
 					ifr->ifru.netmask.sa_family));
 				return EINVAL;
 			}
-			
+
 			ifa->subnetmask = ifr->ifru.netmsk.in.sin_addr.s_addr;
 			ifa->subnet = ifa->subnetmask & ifa->adr.in.sin_addr.s_addr;
-			
+
 			return (*nif->ioctl) (nif, cmd, arg);
 		}
 		case SIOCGIFNETMASK:
 		{
 			struct sockaddr_in in;
 			struct ifaddr *ifa;
-			
+
 			ifa = if_af2ifaddr (nif, ifr->ifru.broadadr.sa.sa_family);
 			if (!ifa)
 			{
@@ -840,16 +839,16 @@ if_ioctl (short cmd, long arg)
 					ifr->ifru.netmask.sa_family));
 				return EINVAL;
 			}
-			
+
 			in.sin_family = AF_INET;
 			in.sin_addr.s_addr = ifa->subnetmask;
 			in.sin_port = 0;
-			
+
 			sa_copy (&ifr->ifru.netmsk.sa, (struct sockaddr *) &in);
 			return 0;
 		}
 	}
-	
+
 	return ENOSYS;
 }
 
@@ -860,7 +859,7 @@ if_name2if (char *ifname)
 	short i;
 	long unit = 0;
 	struct netif *nif;
-	
+
 	for (i = 0, cp = ifname; i < IF_NAMSIZ && *cp; ++cp, ++i)
 	{
 		if (*cp >= '0' && *cp <= '9')
@@ -870,14 +869,14 @@ if_name2if (char *ifname)
 		}
 		name[i] = *cp;
 	}
-	
+
 	name[i] = '\0';
 	for (nif = allinterfaces; nif; nif = nif->next)
 	{
 		if (!stricmp (nif->name, name) && nif->unit == unit)
 			return nif;
 	}
-	
+
 	return NULL;
 }
 
@@ -892,18 +891,18 @@ if_net2if (ulong addr)
 	{
 		if (!(nif->flags & IFF_UP))
 			continue;
-		
+
 		ifa = if_af2ifaddr (nif, AF_INET);
 		if (!ifa)
 			continue;
-		
+
 		if (nif->flags & IFF_POINTOPOINT &&
 		    addr == ifa->ifu.dstadr.in.sin_addr.s_addr)
 		{
 			DEBUG(("if_net2if: nif '%s' p2p", nif->name));
 			return nif;
 		}
-		
+
 		if (nif->flags & IFF_BROADCAST &&
 		    addr == ifa->ifu.broadadr.in.sin_addr.s_addr)
 		{
@@ -911,23 +910,23 @@ if_net2if (ulong addr)
 			return nif;
 		}
 	}
-	
+
 	for (nif = allinterfaces; nif; nif = nif->next)
 	{
 		if (!(nif->flags & IFF_UP))
 			continue;
-		
+
 		ifa = if_af2ifaddr (nif, AF_INET);
 		if (!ifa)
 			continue;
-		
+
 		if ((addr & ifa->netmask) == ifa->net)
 		{
 			DEBUG(("if_net2if: nif '%s' netmask match", nif->name));
 			return nif;
 		}
 	}
-	
+
 	DEBUG(("if_net2if: no match"));
 	return NULL;
 }
@@ -937,14 +936,14 @@ if_setifaddr (struct netif *nif, struct sockaddr *sa)
 {
 	struct ifaddr *ifa, *ifa2;
 	short error = 0;
-	
+
 	ifa = kmalloc (sizeof (*ifa));
 	if (!ifa)
 	{
 		DEBUG (("if_newaddr: out of memory"));
 		return ENOMEM;
 	}
-	
+
 	sa_copy (&ifa->adr.sa, sa);
 	ifa->family = sa->sa_family;
 	ifa->ifp = nif;
@@ -956,7 +955,7 @@ if_setifaddr (struct netif *nif, struct sockaddr *sa)
 		{
 			struct sockaddr_in *in = (struct sockaddr_in *) sa;
 			ulong netmask;
-			
+
 			netmask = ip_netmask (in->sin_addr.s_addr);
 			if (netmask == 0 && in->sin_addr.s_addr != INADDR_ANY)
 			{
@@ -969,18 +968,18 @@ if_setifaddr (struct netif *nif, struct sockaddr *sa)
 			ifa->netmask       =
 			ifa->subnetmask    = netmask;
 			ifa->net_broadaddr = ifa->net | ~netmask;
-			
+
 			in = &ifa->ifu.broadadr.in;
 			in->sin_family = AF_INET;
 			in->sin_port = 0;
 			in->sin_addr.s_addr = (nif->flags & IFF_BROADCAST)
 				? ifa->net_broadaddr
 				: INADDR_ANY;
-			
+
 			route_flush (nif);
 			ifa2 = if_af2ifaddr (nif, AF_INET);
 			if (ifa2) route_del (ifa2->adr.in.sin_addr.s_addr, 0xffffffff);
-			
+
 			/*
 			 * Make sure lo0 is always reachable as 127.0.0.1
 			 */
@@ -1014,13 +1013,13 @@ if_setifaddr (struct netif *nif, struct sockaddr *sa)
 			break;
 		}
 	}
-	
+
 	if (error)
 	{
 		kfree (ifa);
 		return error;
 	}
-	
+
 	ifa2 = if_af2ifaddr (nif, ifa->family);
 	if (ifa2)
 	{
@@ -1033,7 +1032,7 @@ if_setifaddr (struct netif *nif, struct sockaddr *sa)
 		ifa->next = nif->addrlist;
 		nif->addrlist = ifa;
 	}
-	
+
 	return 0;
 }
 
@@ -1045,7 +1044,7 @@ if_config (struct ifconf *ifconf)
 	struct ifaddr *ifa;
 	char name[100];
 	long len;
-	
+
 	len = ifconf->len;
 	ifr = ifconf->ifcu.req;
 	nif = allinterfaces;
@@ -1056,7 +1055,7 @@ if_config (struct ifconf *ifconf)
 		if (!ifa)
 		{
 			struct sockaddr_in in;
-			
+
 			in.sin_family = AF_INET;
 			in.sin_addr.s_addr = INADDR_ANY;
 			in.sin_port = 0;
@@ -1084,7 +1083,7 @@ struct ifaddr *
 if_af2ifaddr (struct netif *nif, short family)
 {
 	struct ifaddr *ifa = NULL;
-	
+
 	if (nif)
 	{
 		for (ifa = nif->addrlist; ifa; ifa = ifa->next)
@@ -1093,7 +1092,7 @@ if_af2ifaddr (struct netif *nif, short family)
 				break;
 		}
 	}
-	
+
 	return ifa;
 }
 
@@ -1101,11 +1100,11 @@ long
 if_init (void)
 {
 	struct netif *nif;
-	
+
 	if_load ();
 	loopback_init (); /* must be last */
 	arp_init ();
-	
+
 	/*
 	 * Look for primary and loopback interface
 	 */
@@ -1117,9 +1116,9 @@ if_init (void)
 			break;
 		}
 	}
-	
+
 	if (!if_lo)
 		FATAL ("if_init: no loopback interface");
-	
+
 	return 0;
 }

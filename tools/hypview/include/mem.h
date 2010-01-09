@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * HypView - (c)      - 2006 Philipp Donze
  *               2006 -      Philipp Donze & Odd Skancke
  *
@@ -26,18 +26,37 @@
 #ifndef _mem_h
 #define _mem_h
 
-/*	Mxalloc()-Modus	*/
-#define MX_STRAM	0
-#define MX_TTRAM	1
-#define	MX_PREFST	2
-#define MX_PREFTT	3
-
-/* Protection bits.  */
-#define MX_MPROT	(1<<3)
-
-#define MX_PRIVATE	(1<<4)
-#define MX_GLOBAL	(2<<4) 			/*	globaler Speicher anfordern	*/
-#define MX_SUPER	(3<<4)
-#define MX_READABLE	(4<<4)
-
+#ifndef MX_STRAM
+#define MX_STRAM		0x00
 #endif
+
+#ifndef MX_TTRAM
+#define MX_TTRAM		0x01
+#endif
+#ifndef MX_PREFSTRAM
+#define MX_PREFSTRAM		0x02
+#endif
+#ifndef MX_PREFTTRAM
+#define MX_PREFTTRAM		0x03
+#endif
+#ifndef MX_MPROT
+#define MX_MPROT		0x04
+#endif
+/* if bit #3 is set, then */
+#ifndef MX_HEADER
+#define MX_HEADER		0x00
+#endif
+#ifndef MX_PRIVATE
+#define MX_PRIVATE		0x10
+#endif
+#ifndef MX_GLOBAL
+#define MX_GLOBAL		0x20
+#endif
+#ifndef MX_SUPERVISOR
+#define MX_SUPERVISOR	0x30
+#endif
+#ifndef MX_READABLE
+#define MX_READABLE		0x40
+#endif
+
+#endif /* _mem_h */

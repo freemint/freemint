@@ -14,7 +14,11 @@
 
 
 # define INLINE		inline
+# ifdef __GNUC__
+# define FASTFN		static inline __attribute__((always_inline))
+#else
 # define FASTFN		static inline
+#endif
 
 
 extern char lfname [];
@@ -76,7 +80,7 @@ extern ushort *zbitmap;		/* Zone bitmap */
 extern ushort *szbitmap;	/* Shadow zone bitmap */
 extern ushort *ibitmap;		/* Inode Bitmap */
 
-extern int cdirty;	
+extern int cdirty;
 
 extern super_block *Super;
 

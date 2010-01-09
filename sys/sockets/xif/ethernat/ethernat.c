@@ -184,7 +184,6 @@ ethernat_open (struct netif *nif)
 
 	c_conws("Ethernat up!\n\r");
 
-
 	// Enable interrupts in the LAN91C111
 /*
 	ksprintf (message, "Enable interrupts in the LAN91C111... ");
@@ -696,8 +695,6 @@ driver_init (void)
 	short	fhandle;
 	char	macbuf[13];
 
-
-
 //	c_conws("Driver init\n\r");
 
 	// Lock out interrupt function
@@ -733,6 +730,7 @@ driver_init (void)
 			//ksprintf (message, "Error reading ethernat.inf!\n\r");
 			//c_conws (message);
 			c_conws ("Error reading ethernat.inf!\n\r");
+
 			Fclose(fhandle);
 			return -1;
 		}
@@ -954,7 +952,6 @@ static void
 ethernat_install_int (void)
 {
 	c_conws("install int\n\r");		//debug
-
 
 #ifdef USE_I6
 	old_i6_int = Setexc (0xC4, (long) interrupt_i6);

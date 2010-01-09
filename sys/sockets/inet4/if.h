@@ -6,7 +6,7 @@
 
 # include "global.h"
 # include "buf.h"
-# include "in.h"
+# include "sockaddr_in.h"
 
 /* net interface flags */
 # define IFF_UP			0x0001	/* if is up */
@@ -33,7 +33,10 @@ struct sockaddr_hw
 	ushort		shw_family;
 	ushort		shw_type;
 	ushort		shw_len;
-	uchar		shw_addr[8];
+	union {
+		uchar		bytes[8];
+		ulong		lwords[2];
+	}shw_adr;
 };
 
 struct netif;
@@ -109,14 +112,14 @@ struct netif
 # define HWTYPE_SLIP	201
 # define HWTYPE_PPP	202
 # define HWTYPE_PLIP	203
-	
+
 	struct hwaddr	hwlocal;	/* local hardware address */
 	struct hwaddr	hwbrcst;	/* broadcast hardware address */
-	
+
 	struct ifaddr	*addrlist;	/* addresses for this interf. */
 	struct ifq	snd;		/* send and recv queue */
 	struct ifq	rcv;
-	
+
 	long		(*open)(struct netif *);
 	long		(*close)(struct netif *);
 	long		(*output)(struct netif *, BUF *, const char *, short, short);
@@ -124,15 +127,15 @@ struct netif
 	void		(*timeout)(struct netif *);
 
 	void		*data;		/* extra data the if may want */
-	
+
 	ulong		in_packets;	/* # input packets */
 	ulong		in_errors;	/* # input errors */
 	ulong		out_packets;	/* # output packets */
 	ulong		out_errors;	/* # output errors */
 	ulong		collisions;	/* # collisions */
-	
+
 	struct netif	*next;		/* next interface */
-	
+
 	short		maxpackets;	/* max. number of packets the harware
 					 * can receive in fast succession.
 					 * 0 means unlimited. (this is used
@@ -179,7 +182,7 @@ struct ifreq
 			struct sockaddr		sa;
 			struct sockaddr_in	in;
 		} netmsk;
-		
+
 		//struct	sockaddr addr;		/* local address */
 		//struct	sockaddr dstaddr;	/* p2p dst address */
 		//struct	sockaddr broadaddr;	/* broadcast addr */

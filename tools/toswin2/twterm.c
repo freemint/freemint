@@ -171,7 +171,7 @@ popescbuf (TEXTWIN* tw, unsigned char* escbuf)
 	char *sp = s;
 	char *ep1, *ep2;
 
-	ep2 = ep1 = escbuf;
+	ep2 = ep1 = (char *)escbuf;
 	while (*ep1 != '\0' && *ep1 != ';')
 		*sp++ = *ep1++;
 	*sp = '\0';
@@ -286,17 +286,17 @@ static void vt100_esc_mode(TEXTWIN* tw, unsigned int c)
 			case 1:	/* Application Cursor Keys (DECCKM).  */
 				tw->curs_mode = CURSOR_TRANSMIT;
 				break;
-			case 2: /* Designate USASCII for character 
+			case 2: /* Designate USASCII for character
 				   sets G0-G3 (DECANM), and set VT100
 				   mode.  */
-				memcpy (tw->gsets, "BBBB", 
+				memcpy (tw->gsets, "BBBB",
 					sizeof tw->gsets);
 				break;
 			case 3:	/* 132 column mode (DECCOLM).  */
 				/* The original VT100
 				   also did a clear/home on that.  */
 				if (tw->curr_tflags & TDECCOLM) {
-					resize_textwin (tw, 132, 
+					resize_textwin (tw, 132,
 							NROWS (tw),
 							SCROLLBACK (tw));
 					clear (tw);
@@ -324,11 +324,11 @@ static void vt100_esc_mode(TEXTWIN* tw, unsigned int c)
 				break;
 			case 18: /* Print Form Feed (DECPFF).  */
 				/* Not yet implemented */
-				break;				
-			case 19: /* Set print extent to full screen 
+				break;
+			case 19: /* Set print extent to full screen
 				    (DECPEX).  */
 				/* Not yet implemented */
-				break;				
+				break;
 			case 25: /* Show Cursor (DECTCEM).  */
 				tw->curr_tflags |= TCURS_ON;
 				break;
@@ -359,7 +359,7 @@ static void vt100_esc_mode(TEXTWIN* tw, unsigned int c)
 				/* Not yet implemented.  */
 				break;
 			case 66: /* Application Keypad (DECNKM).  */
-			case 67: /* Backarrow key sends delete 
+			case 67: /* Backarrow key sends delete
 				    (DECBKM).  */
 				/* Not yet implemented.  */
 			case 1001: /* Use Hilite Mouse Tracking.  */
@@ -378,13 +378,13 @@ static void vt100_esc_mode(TEXTWIN* tw, unsigned int c)
 			case 1047: /* Use Alternate Screen Buffer.  */
 			case 1048: /* Save cursor as in DECSC.  */
 			case 1049: /* Save cursor as in DECSC and
-				      use Alternate Screen Buffer, 
+				      use Alternate Screen Buffer,
 				      clearing it first.  */
 			case 1051: /* Set Sun function-key mode.  */
 			case 1052: /* Set HP function-key mode.  */
-			case 1060: /* Set legacy keyboard emulation 
+			case 1060: /* Set legacy keyboard emulation
 				      (X11R6).  */
-			case 1061: /* Set Sun/PC keyboard emulation of 
+			case 1061: /* Set Sun/PC keyboard emulation of
 				      VT220 keyboard.  */
 			default:
 				break;
@@ -769,7 +769,7 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 	case 'T':		/* Scroll down Ps (line(s) (default = 1)
 				   (SD).  */
 		/* Not yet implemented.  */
-		/* If CSI Ps ; Ps ; Ps ; Ps ; Ps T then mouse 
+		/* If CSI Ps ; Ps ; Ps ; Ps ; Ps T then mouse
 		   tracking is requested.  */
 		break;
 	case 'X':		/* Erase Ps character(s) (default = 1)
@@ -783,7 +783,7 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 		} while (tw->cx < tw->maxx && count > 1);
 		tw->cx = ei;
 		break;
-	case 'Z':		/* Cursor Backward Tabulation Ps tab 
+	case 'Z':		/* Cursor Backward Tabulation Ps tab
 				   stops (default = 1) (CBT).  */
 		/* Not yet implemented.  */
 		break;
@@ -801,11 +801,11 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 			++count;
 		} while (ei >= 0);
 		break;
-	case 'c':		/* Send Device Attributes 
+	case 'c':		/* Send Device Attributes
 				   (Primary DA).  */
 		ei = popescbuf (tw, tw->escbuf);
 		if (ei < 1) {
-			/* 2 = base vt100 with advanced video 
+			/* 2 = base vt100 with advanced video
 			   option (AVO) */
 			sendstr (tw, "\033[?1;2c");
 			/* FIXME: Should be configurable.  */
@@ -822,7 +822,7 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 		gotoxy (tw, count, tw->cy - RELOFFSET (tw));
 		break;
 	case 'f':		/* Horizontal and Vertical Position
-				   [row;column] (default = [1,1]) 
+				   [row;column] (default = [1,1])
 				   (HVP).  */
 		vt100_esc_attr (tw, 'H');
 		break;
@@ -894,11 +894,11 @@ static void vt100_esc_attr(TEXTWIN* tw, unsigned int c)
 			if (ei == -1 && count == 0)
 				ei = 0;
 			switch (ei) {
-			case 0:	/* All attributes off.  
+			case 0:	/* All attributes off.
 				   FIXME: Is this too much?  */
 				tw->curr_cattr &=
-					~(CE_BOLD | CE_LIGHT | 
-					  CE_ITALIC | CE_UNDERLINE | 
+					~(CE_BOLD | CE_LIGHT |
+					  CE_ITALIC | CE_UNDERLINE |
 					  CINVERSE | CPROTECTED |
 					  CINVISIBLE);
 				original_colors (tw);
@@ -1049,7 +1049,7 @@ debug ("window modification: %lu %lu %lu\n", param1, param2, param3);
 						         tw->win->prev.g_h);
 				break;
 			case 2:  /* Iconify.  */
-				(*(tw->win)).iconify (tw->win, 
+				(*(tw->win)).iconify (tw->win,
 						       -1, -1, -1, -1);
 				break;
 			case 3:  /* Position.  */
@@ -1083,7 +1083,7 @@ debug ("window modification: %lu %lu %lu\n", param1, param2, param3);
 					param3 /= tw->cmaxwidth;
 				}
 debug ("resize to %d x %d (%d)\n", param3, param2, SCROLLBACK (tw));
-				resize_textwin (tw, param3, param2, 
+				resize_textwin (tw, param3, param2,
 						SCROLLBACK (tw));
 				refresh_textwin (tw, 1);
 				break;
@@ -1125,15 +1125,15 @@ vt100_esc_ansi (TEXTWIN* tw, unsigned int c)
 	case 'G':		/* 8-bit controls (S8CIT).  */
 		/* Not yet implemented.  */
 		break;
-	case 'L':		/* Set ANSI conformance level 1 
+	case 'L':		/* Set ANSI conformance level 1
 				   (vt100, 7-bit controls).  */
 		/* Not yet implemented.  */
 		break;
-	case 'M':		/* Set ANSI conformance level 2 
+	case 'M':		/* Set ANSI conformance level 2
 				   (vt200).  */
 		/* Not yet implemented.  */
 		break;
-	case 'N':		/* Set ANSI conformance level 3 
+	case 'N':		/* Set ANSI conformance level 3
 				   (vt300).  */
 		/* Not yet implemented.  */
 		break;
@@ -1241,12 +1241,12 @@ vt100_esc_codeset (TEXTWIN* tw, unsigned int c)
 }
 
 /* vt100_esc_charset (tw, c): handle control sequences ESC '(',
-   ESC ')', ESC '*', or ESC '+'.  */  
+   ESC ')', ESC '*', or ESC '+'.  */
 static void
 vt100_esc_charset (TEXTWIN* tw, unsigned int c)
 {
 	int g;
-	
+
 #ifdef DEBUG_VT
 	debug ("vt100_esc_codeset: %c (%d)\n", c, c);
 #endif
@@ -1319,7 +1319,7 @@ vt100_esc_charset (TEXTWIN* tw, unsigned int c)
 		tw->output = vt100_putch;
 		return;
 	}
-	
+
 	tw->gsets[g] = c;
 	tw->output = vt100_putch;
 }
@@ -1380,13 +1380,13 @@ vt100_putesc (TEXTWIN* tw, unsigned int c)
 	case '%':		/* ISO codeset selection.  */
 		tw->output = vt100_esc_codeset;
 		return;
-	case '(': 		/* Designate G0 Character 
+	case '(': 		/* Designate G0 Character
 				   Set (ISO 2022).  */
-	case ')': 		/* Designate G0 Character 
+	case ')': 		/* Designate G0 Character
 				   Set (ISO 2022).  */
-	case '*': 		/* Designate G0 Character 
+	case '*': 		/* Designate G0 Character
 				   Set (ISO 2022).  */
-	case '+': 		/* Designate G0 Character 
+	case '+': 		/* Designate G0 Character
 				   Set (ISO 2022).  */
 		tw->escbuf[0] = '\000';
 		pushescbuf (tw->escbuf, c);
@@ -1488,7 +1488,7 @@ vt100_putesc (TEXTWIN* tw, unsigned int c)
 					   (DCS: 0x90).  */
 		/* Not yet implemented.  */
 		/* FIXME: Eat following characters until ST.  */
-		break;		
+		break;
 	case 'R':		/* TW extension: set window size */
 		tw->captsiz = 0;
 		tw->output = capture;
@@ -1506,7 +1506,7 @@ vt100_putesc (TEXTWIN* tw, unsigned int c)
 	case 'W':			/* END of Guarded Area
 					   (EPA: 0x97).  */
 		/* Not yet implemented.  */
-		break;					  
+		break;
 	case 'X':			/* Start of String
 					   (SOS: 0x98).  */
 		/* Not yet implemented.  */
@@ -1582,14 +1582,14 @@ vt100_putesc (TEXTWIN* tw, unsigned int c)
 	case '\\':		/* String Terminator (ST: 0x9c).  */
 		/* Not yet implemented.  */
 		break;
-	case ']':		/* Operating System Command 
+	case ']':		/* Operating System Command
 				   (OSC: 0x9d).  */
 		/* Not yet implemented.  */
 		break;
 	case '^':		/* Privacy Message (PM: 0x9e).  */
 		/* Not yet implemented.  */
 		break;
-	case '_':		/* Application Program Command 
+	case '_':		/* Application Program Command
 				   (APC: 0x9f).  */
 		/* Not yet implemented.  */
 		/* FIXME: Eat following characters until ST.  */
@@ -1659,9 +1659,9 @@ vt100_putch (TEXTWIN* tw, unsigned int c)
 	/* control characters */
 	if (c < ' ') {
 		switch (c) {
-		case '\005':	/* ENQ - Return Terminal Status 
+		case '\005':	/* ENQ - Return Terminal Status
 				   (Ctrl-E).  Default response is
-				   the terminal name, e. g., 
+				   the terminal name, e. g.,
 				   "tw100".  Should later be
 				   possible to be overridden by
 				   the answerback string.  */
@@ -1693,23 +1693,23 @@ vt100_putch (TEXTWIN* tw, unsigned int c)
 				   same as LF.  */
 			new_line (tw);
 			break;
-			
+
 		/* FIXME: Handle newline mode!  */
 		case '\015':	/* Carriage Return - CR (Ctrl-M).  */
 			gotoxy (tw, 0, cy - RELOFFSET (tw));
 			break;
-			
-		case '\016':	/* Shift Out (SO) (Ctrl-N) -> Switch 
-				   to Alternate Character Set.  
+
+		case '\016':	/* Shift Out (SO) (Ctrl-N) -> Switch
+				   to Alternate Character Set.
 				   Invokes the G1 character set.  */
-			tw->curr_tflags = 
+			tw->curr_tflags =
 				(tw->curr_tflags & ~TCHARSET_MASK) | 1;
 			break;
 
-		case '\017':	/* Shift In (SI) (Ctrl-O) -> Switch 
-				   to Standard Character Set.  
+		case '\017':	/* Shift In (SI) (Ctrl-O) -> Switch
+				   to Standard Character Set.
 				   Invokes the G0 character set.  */
-			tw->curr_tflags = 
+			tw->curr_tflags =
 				(tw->curr_tflags & ~TCHARSET_MASK);
 			break;
 

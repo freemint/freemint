@@ -68,7 +68,7 @@ slip_stats (long *l, char *name)
 	printf ("%10lu input packets dropped while queue full\n", *l++);
 	printf ("%10lu output packets\n", *l++);
 	printf ("%10lu output packets dropped while queue full\n", *l++);
-	slcomp_stats (l, name);
+	slcomp_stats ((unsigned long *)l, name);
 }
 
 static void
@@ -110,7 +110,7 @@ main (int argc, char *argv[])
 	if (!strncmp (argv[1], "en", 2))
 		ether_stats (stats, argv[1]);
 	else if (!strncmp (argv[1], "sl", 2))
-		slip_stats (stats, argv[1]);
+		slip_stats ((long *)stats, argv[1]);
 	else if (!strncmp (argv[1], "ppp", 3))
 		ppp_stats (stats, argv[1]);
 	else

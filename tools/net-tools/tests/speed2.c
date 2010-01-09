@@ -16,9 +16,9 @@ typedef size_t socklen_t;
 #define SENDING	10000000
 
 #define SERVER	"/tmp/fort"
-#define OFFSET	((short)((struct sockaddr_un *) 0)->sun_path)
+#define OFFSET	((socklen_t)((struct sockaddr_un *) 0)->sun_path)
 
-static int run = 1;
+//static int run = 1;
 static int fd = 0;
 
 static void
@@ -34,7 +34,7 @@ main (int argc, char *argv[])
 {
 	long bufsize;
 	int r;
-	
+
 	if (argc != 3)
 	{
 		printf ("give buffersize and rcv buffersize as arguments\n");
@@ -50,14 +50,14 @@ main (int argc, char *argv[])
 		perror ("fork");
 		return 0;
 	}
-	
+
 	if (r == 0)
 	{
 		/* child */
-		
+
 		struct sockaddr_un un;
 		void *buf;
-		
+
 		buf = malloc (bufsize);
 		if (!buf)
 		{
@@ -66,17 +66,17 @@ main (int argc, char *argv[])
 			return 0;
 		}
 		memset (buf, 'A', bufsize);
-		
+
 		fd = socket (AF_UNIX, SOCK_STREAM, 0);
 		if (fd < 0)
 		{
 			perror ("socket");
 			return 0;
 		}
-		
+
 		un.sun_family = AF_UNIX;
 		strcpy (un.sun_path, SERVER);
-		
+
 		r = bind (fd, (struct sockaddr *) &un, OFFSET + strlen (un.sun_path));
 		if (r < 0)
 		{
@@ -84,32 +84,32 @@ main (int argc, char *argv[])
 			close (fd);
 			return 0;
 		}
-		
+
 		r = listen (fd, 2);
 		if (r < 0)
 		{
 			perror ("listen");
 			close (fd);
 			return 0;
-		}	
-		
+		}
+
 		signal (SIGQUIT, sig_handler);
 		signal (SIGINT, sig_handler);
 		signal (SIGTERM, sig_handler);
 		signal (SIGHUP, sig_handler);
-		
+
 		// while (run)
 		{
 			int client;
 			long nbytes;
-			
+
 			client = accept (fd, NULL, NULL);
 			if (client < 0)
 			{
 				perror ("accept");
 				// break;
 			}
-			
+
 			nbytes = 0;
 			while (nbytes < SENDING)
 			{
@@ -119,19 +119,19 @@ main (int argc, char *argv[])
 				else
 					nbytes += r;
 			}
-			
+
 			close (client);
 		}
-		
+
 		unlink (SERVER);
 	}
 	else
 	{
 		/* parent */
-		
+
 		struct sockaddr_un un;
 		void *buf;
-		
+
 		buf = malloc (bufsize);
 		if (!buf)
 		{
@@ -139,20 +139,20 @@ main (int argc, char *argv[])
 			close (fd);
 			return 0;
 		}
-		
+
 		/* schedule */
 		sleep (2);
-		
+
 		fd = socket (AF_UNIX, SOCK_STREAM, 0);
 		if (fd < 0)
 		{
 			perror ("socket");
 			return 0;
 		}
-		
+
 		un.sun_family = AF_UNIX;
 		strcpy (un.sun_path, SERVER);
-		
+
 		r = connect (fd, (struct sockaddr *) &un, OFFSET + strlen (un.sun_path));
 		if (r < 0)
 		{
@@ -168,7 +168,7 @@ main (int argc, char *argv[])
 			long optval;
 			long long bytes_per_second;
 			long long nbytes;
-			
+
 			size = sizeof (long);
 			optval = atol (argv[2]);
 			r = setsockopt (fd, SOL_SOCKET, SO_RCVBUF, &optval, size);
@@ -177,7 +177,7 @@ main (int argc, char *argv[])
 				perror ("setsockopt");
 				return 0;
 			}
-			
+
 			size = sizeof (long);
 			r = getsockopt (fd, SOL_SOCKET, SO_RCVBUF, &optval, &size);
 			if (r < 0)
@@ -186,7 +186,7 @@ main (int argc, char *argv[])
 				return 0;
 			}
 			printf ("Rcv buffer: %ld bytes\n", optval);
-			
+
 			size = sizeof (long);
 			r = getsockopt (fd, SOL_SOCKET, SO_SNDBUF, &optval, &size);
 			if (r < 0)
@@ -195,7 +195,7 @@ main (int argc, char *argv[])
 				return 0;
 			}
 			printf ("Snd buffer: %ld bytes\n\n", optval);
-			
+
 			nbytes = 0;
 			start = clock ();
 			do {
@@ -210,16 +210,16 @@ main (int argc, char *argv[])
 			}
 			while (r > 0);
 			end = clock ();
-			
+
 			printf ("received %qd bytes (%qd kb) total in %li ticks\n",
 				nbytes, nbytes / 1024, (long)(end - start));
-			
+
 			bytes_per_second = nbytes * CLK_TCK / (end - start);
 			printf ("%qd bytes per second (%qd kb/s)\n",
 				bytes_per_second, bytes_per_second / 1024);
 		}
 	}
-	
+
 	close (fd);
 	return 0;
 }

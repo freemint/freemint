@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * HypView - (c)      - 2006 Philipp Donze
  *               2006 -      Philipp Donze & Odd Skancke
  *
@@ -54,7 +54,10 @@ static void
 Decode(unsigned char *ptr, long bytes)
 {
 	while (bytes--)
-		*ptr++ = *ptr ^ 127;							/*	Entschlsseln	*/
+	{
+		*ptr = *ptr ^ 127;							/*	Entschlsseln	*/
+		ptr++;
+	}
 }
 
 /*	Gibt die unkomprimierte Groesse des Eintrags <num> zurck	*/
@@ -63,7 +66,7 @@ long GetDataSize(HYP_DOCUMENT *doc, long num)
 	long data_size;
 	data_size =  doc->indextable[num + 1]->seek_offset - doc->indextable[num]->seek_offset;
 	data_size += doc->indextable[num]->comp_diff;
-	
+
 	if(doc->indextable[num]->type == PICTURE)
 		data_size += ((long)doc->indextable[num]->next) << 16;
 

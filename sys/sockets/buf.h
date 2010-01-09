@@ -25,7 +25,7 @@ struct buf
 	BUF	*link3;		/* another next pointer */
 	short	links;		/* usage counter */
 	long	info;		/* aux info */
-	
+
 	BUF	*_n;		/* next buf in memory */
 	BUF	*_p;		/* previous buf memory */
 	BUF	*_nfree;	/* next free buf of same size */

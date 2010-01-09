@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * COPS (c) 1995 - 2003 Sven & Wilfried Behne
  *                 2004 F.Naumann & O.Skancke
  *
@@ -46,7 +46,7 @@ typedef enum { FALSE = (0 == 1), TRUE  = (1 == 1) } boolean;
 short app_id;
 short vdi_handle;
 static short work_out[57];
-			
+
 static WINDOW *window_list = NULL;
 
 /*----------------------------------------------------------------------------------------*/
@@ -63,7 +63,7 @@ init_wlib(short id)
 {
 	short work_in[11];
 	short i;
-			
+
 	app_id = id; /* AES-Programm-ID */
 	window_list = NULL;
 
@@ -141,7 +141,7 @@ create_window(short kind, GRECT *border, short *handle, char *name, char *iconif
 		}
 		else
 			size = sizeof(WINDOW);
-			
+
 		new = malloc(size);
 		assert(new);
 
@@ -178,7 +178,7 @@ create_window(short kind, GRECT *border, short *handle, char *name, char *iconif
 		new->wflags.limit_wsize = 0;	/* maximale Fenstergroesse nicht begrenzen */
 		new->wflags.fuller = 0;		/* Fuller wurde noch nicht betaetigt */
 		new->wflags.iconified = 0;	/* Iconifier wurde noch nicht betaetigt */
-	
+
 		new->redraw = 0L;
 
 		new->interior_flags = 0L;
@@ -203,7 +203,7 @@ create_window(short kind, GRECT *border, short *handle, char *name, char *iconif
 		new->vslsize = 0;		/* Groesse des ver. Sliders in Promille */
 
 		new->next = 0L;			/* keine Folgestruktur vorhanden */
-	
+
 		list_insert((void **) &window_list, new, offsetof(WINDOW, next));
 	}
 
@@ -228,10 +228,10 @@ redraw_window(short handle, GRECT *area)
 		wind_update(BEG_UPDATE); /* Bildschirm fuer andere Apps sperren */
 		if (window->wflags.hide_cursor)
 			graf_mouse(M_OFF, 0L); /* Maus ausschalten */
-		
+
 		wind_get_grect(0, WF_WORKXYWH, &desk); /* Groesse des Hintergrunds erfragen */
 		wind_get_grect(window->handle, WF_FIRSTXYWH, &box); /* erstes Element der Rechteckliste erfragen */
-		
+
 		while (box.g_w && box.g_h) /* noch gueltige Rechtecke vorhanden? */
 		{
 			if (rc_intersect(&desk, &box)) /* sichtbar? */
@@ -281,7 +281,7 @@ delete_window(short handle)
 	WINDOW *window;
 
 	window = search_struct(handle);
-	if (window)	
+	if (window)
 	{
 		list_remove((void **) &window_list, window, offsetof(WINDOW, next));
 
@@ -319,9 +319,9 @@ move_window(short handle, GRECT *area)
 
 		wind_calc_grect(WC_WORK, kind, area, &window->workarea);
 
-		if (window->wflags.snap_x)				
+		if (window->wflags.snap_x)
 		{
-			WWORK.g_x += window->snap_dx - 2;	
+			WWORK.g_x += window->snap_dx - 2;
 			if (WWORK.g_x > (desk.g_x + desk.g_w - 32))
 				WWORK.g_x = desk.g_x + desk.g_w - 32;
 			WWORK.g_x -= WWORK.g_x % window->snap_dx;
@@ -363,7 +363,7 @@ arr_window(short handle, short command)
 		case WA_UPPAGE: up_window(window, window->workarea.g_h); break;
 		case WA_DNPAGE: dn_window(window, window->workarea.g_h); break;
 		case WA_UPLINE: up_window(window, window->dy); break;
-		case WA_DNLINE: dn_window(window, window->dy); break; 
+		case WA_DNLINE: dn_window(window, window->dy); break;
 		case WA_LFPAGE: lf_window(window, window->workarea.g_w); break;
 		case WA_RTPAGE: rt_window(window, window->workarea.g_w); break;
 		case WA_LFLINE: lf_window(window, window->dx); break;
@@ -523,7 +523,7 @@ void
 vslid_window(short handle, short vslid)
 {
 	WINDOW *window;
-	
+
 	wind_update(BEG_UPDATE); /* Bildschirm fuer andere Apps sperren */
 	graf_mouse(M_OFF, 0L); /* Maus ausschalten */
 
@@ -531,9 +531,9 @@ vslid_window(short handle, short vslid)
 	if (window)
 	{
 		long	old_y;
-		
+
 		old_y = window->y;
-		
+
 		if ((WWORK.g_h + window->y) > window->h) /* Fenster hoeher als der sichtbare Inhalt? */
 		{
 			window->y = vslid * window->y / 1000;
@@ -541,7 +541,7 @@ vslid_window(short handle, short vslid)
 		}
 		else
 			window->y =  vslid * (window->h - window->workarea.g_h) / 1000;
-	
+
 		if (window->wflags.snap_height)
 			window->y -= window->y % window->snap_dh;
 
@@ -559,13 +559,18 @@ vslid_window(short handle, short vslid)
 /*	window:		Fensterstruktur */
 /*	dx:		horizontale Verschiebung (< 0: nach links > 0: nach rechts) */
 /*----------------------------------------------------------------------------------------*/
+struct r16
+{
+	union { GRECT gr; RECT16 r; short a[4]; } rect;
+};
+
 static void
 scroll_horizontal(WINDOW *window, short dx)
 {
 	GRECT box;
 	GRECT desk;
 	MFDB screen;
-	RECT16 rect[2];
+	struct r16 rect[2];
 
 	if (dx)
 	{
@@ -575,43 +580,43 @@ scroll_horizontal(WINDOW *window, short dx)
 		while (box.g_w && box.g_h) /* Ende der Rechteckliste? */
 		{
 			if (rc_intersect(&desk, &box)) /* Rechteck innerhalb des Schirms? */
-			{			
+			{
 				if (rc_intersect(&window->workarea, &box)) /* Rechteck innerhalb des Fensters? */
-				{			
+				{
 					if (ABS(dx) < box.g_w) /* kann verschoben werden? */
 					{
 						screen.fd_addr = 0L; /* Bildschirm */
-					
-						*(GRECT *)rect = box;
-						rect[0].x2 += box.g_x - 1;
-						rect[0].y2 += box.g_y - 1;
-		
-						vs_clip(vdi_handle, 1, (short *) rect);	/* Clipping-Rechteck setzen */
-					
+
+						rect[0].rect.gr = box;
+						rect[0].rect.r.x2 += box.g_x - 1;
+						rect[0].rect.r.y2 += box.g_y - 1;
+
+						vs_clip(vdi_handle, 1, rect[0].rect.a);	/* Clipping-Rechteck setzen */
+
 						rect[1] = rect[0];
-						
+
 						if (dx >= 0)
 						{
-							rect[0].x1 += dx;
-							rect[1].x2 -= dx;
-						
+							rect[0].rect.r.x1 += dx;
+							rect[1].rect.r.x2 -= dx;
+
 						   box.g_x += box.g_w - dx;
 						}
 						else
 						{
-							rect[0].x2 += dx;
-							rect[1].x1 -= dx;
+							rect[0].rect.r.x2 += dx;
+							rect[1].rect.r.x1 -= dx;
 						}
 				  		box.g_w = ABS(dx);
-					
-						vro_cpyfm(vdi_handle, S_ONLY, (short *) rect, &screen, &screen);
-					   
+
+						vro_cpyfm(vdi_handle, S_ONLY, rect[0].rect.a, &screen, &screen);
+
 					}
 					window->redraw(window, &box); /* Bereich box zeichnen */
-				}	
-			}	
+				}
+			}
 			wind_get_grect(window->handle, WF_NEXTXYWH, &box); /* naechstes Element der Rechteckliste holen */
-		}		
+		}
 
 		if ((WWORK.g_w + window->x) > window->w) /* Fenster breiter als der sichtbare Inhalt? */
 			set_slsize(window);
@@ -632,7 +637,7 @@ scroll_vertical(WINDOW *window, short dy)
 	GRECT box;
 	GRECT desk;
 	MFDB screen;
-	RECT16 rect[2];
+	struct r16 rect[2];
 
 	if (dy) /* Sliderposition veraendert? */
 	{
@@ -642,43 +647,43 @@ scroll_vertical(WINDOW *window, short dy)
 		while (box.g_w && box.g_h) /* Ende der Rechteckliste? */
 		{
 			if (rc_intersect(&desk, &box)) /* Rechteck innerhalb des Schirms? */
-			{			
+			{
 				if (rc_intersect(&window->workarea, &box)) /* Rechteck innerhalb des Fensters? */
-				{			
+				{
 					if (ABS(dy) < box.g_h) /* kann verschoben werden? */
 					{
 						screen.fd_addr = 0L; /* Bildschirm */
 
-						*(GRECT *)rect = box;
-						rect[0].x2 += box.g_x - 1;
-						rect[0].y2 += box.g_y - 1;
+						rect[0].rect.gr = box;
+						rect[0].rect.r.x2 += box.g_x - 1;
+						rect[0].rect.r.y2 += box.g_y - 1;
 
-						vs_clip(vdi_handle, 1, (short *) rect);	/* Clipping-Rechteck setzen */
+						vs_clip(vdi_handle, 1, rect[0].rect.a);	/* Clipping-Rechteck setzen */
 
 						rect[1] = rect[0];
 
 						if (dy >= 0) /* nach unten scrollen? */
 						{
-							rect[0].y1 += dy;
-							rect[1].y2 -= dy;
+							rect[0].rect.r.y1 += dy;
+							rect[1].rect.r.y2 -= dy;
 
 							box.g_y += box.g_h - dy;
 						}
 						else /* nach oben scrollen */
 						{
-							rect[0].y2 += dy;
-							rect[1].y1 -= dy;
+							rect[0].rect.r.y2 += dy;
+							rect[1].rect.r.y1 -= dy;
 						}
 
 				  		box.g_h = ABS(dy);
 
-						vro_cpyfm(vdi_handle, S_ONLY, (short *) rect, &screen, &screen);
+						vro_cpyfm(vdi_handle, S_ONLY, rect[0].rect.a, &screen, &screen);
 					}
 					window->redraw(window, &box); /* Bereich box zeichnen */
-				}	
-			}	
+				}
+			}
 			wind_get_grect(window->handle, WF_NEXTXYWH, &box); /* naechstes Element der Rechteckliste holen */
-		}		
+		}
 
 		if ((WWORK.g_h + window->y) > window->h) /* Fenster hoeher als der sichtbare Inhalt? */
 			set_slsize(window);
@@ -698,18 +703,18 @@ void
 size_window(short handle, GRECT *size)
 {
 	WINDOW *window;
-	short buf[8];
+//	short buf[8];
 	GRECT desk;
-	
+
 	window = search_struct(handle);
 	if (window)
 	{
 		boolean	full_redraw;
-		
+
 		full_redraw = FALSE;
-		
+
 		if (window->wflags.smart_size == 0) /* gesamtes Fenster neuzeichnen? */
-			full_redraw = TRUE;	
+			full_redraw = TRUE;
 
 		wind_update(BEG_UPDATE); /* Bildschirm sperren */
 
@@ -717,15 +722,15 @@ size_window(short handle, GRECT *size)
 
 		window->border = *size; /* Groesse von Fensteraussen und -Innenflaeche bestimmen */
 		wind_calc_grect(WC_WORK, window->kind, &window->border, &window->workarea);
-	
+
 		if (window->wflags.snap_x) /* x-Koordinate snappen? */
 		{
-			WWORK.g_x += window->snap_dx - 2;	
+			WWORK.g_x += window->snap_dx - 2;
 			if (WWORK.g_x > (desk.g_x + desk.g_w - 32))
 				WWORK.g_x = desk.g_x + desk.g_w - 32;
 			WWORK.g_x -= WWORK.g_x % window->snap_dx;
 		}
-		
+
 		if (window->wflags.snap_y) /* y-Koordinate snappen? */
 		{
 			WWORK.g_y += window->snap_dy - 1;
@@ -733,7 +738,7 @@ size_window(short handle, GRECT *size)
 				WWORK.g_y = desk.g_y + desk.g_h - 2;
 			WWORK.g_y -= WWORK.g_y % window->snap_dy;
 		}
-		
+
 		if (window->wflags.snap_width) /* Breite snappen? */
 		{
 			WWORK.g_w += window->snap_dw - 1;
@@ -741,7 +746,7 @@ size_window(short handle, GRECT *size)
 				WWORK.g_h = desk.g_w;
 			WWORK.g_w -= WWORK.g_w % window->snap_dw;
 		}
-		
+
 		if (window->wflags.snap_height) /* Hoehe snappen? */
 		{
 			WWORK.g_h += window->snap_dh - 1;
@@ -749,22 +754,22 @@ size_window(short handle, GRECT *size)
 				WWORK.g_h = desk.g_h;
 			WWORK.g_h -= WWORK.g_h % window->snap_dh;
 		}
-		
+
 		window->wflags.fuller = 0; /* das Fenster hat nicht mehr die volle Groesse */
 		if (window->wflags.limit_wsize) 	/* Groesse begrenzt? */
 		{
 			short max_w, max_h;
-			
+
 			if (window->limit_w) /* sichtbare Breite zusaetzlich begrenzt? */
 				max_w = window->limit_w;
 			else
 				max_w = (short) window->w;
-				
+
 			if (window->limit_h) /* sichtbare Hoehe zusaetzlich begrenzt? */
 				max_h = window->limit_h;
 			else
 				max_h = (short) window->h;
-			
+
 			if (WWORK.g_w >= max_w)
 			{
 				window->border.g_w -= WWORK.g_w - max_w;
@@ -791,20 +796,31 @@ size_window(short handle, GRECT *size)
 
 		wind_calc_grect(WC_BORDER, window->kind, &window->workarea, &window->border);
 		wind_set_grect(handle, WF_CURRXYWH, &window->border);
-		
+
 		set_slsize(window); /* Slidergroesse setzen */
 		set_slpos(window); /* Sliderposition setzen */
 
 		if (full_redraw) /* gesamtes Fenster neuzeichnen? */
 		{
-			buf[0] = WM_REDRAW;		/* Nachrichtennummer */
-			buf[1] = app_id;		/* Absender der Nachricht */
-		 	buf[2] = 0;			/* Ueberlaenge in Bytes */
-			buf[3] = handle;		/* Fensternummer */
-			*(GRECT *)&buf[4] = *size;	/* Fensterkoordinaten */
-			appl_write(app_id, 16, buf);	/* Redraw-Meldung an sich selber schicken */
+			union { short buf[8];
+				union
+				{
+					short msg_id;
+					short sender_apl_id;
+					short sz;
+					short whandle;
+					GRECT coords;
+				} wm_redraw;
+			} msg;
+
+			msg.wm_redraw.msg_id = WM_REDRAW;	/* Nachrichtennummer */
+			msg.wm_redraw.sender_apl_id = app_id;	/* Absender der Nachricht */
+			msg.wm_redraw.sz = 0;			/* Ueberlaenge in Bytes */
+			msg.wm_redraw.whandle = handle;		/* Fensternummer */
+			msg.wm_redraw.coords = *size;		/* Fensterkoordinaten */
+			appl_write(app_id, 16, msg.buf);	/* Redraw-Meldung an sich selber schicken */
 		}
-		
+
 		wind_update(END_UPDATE); /* Bildschirm freigeben */
 	}
 }
@@ -829,7 +845,7 @@ set_slpos(WINDOW *window)
 		if (old_pos != window->hslide) /* Sliderposition veraendert? */
 			wind_set(window->handle, WF_HSLIDE, window->hslide, 0, 0, 0);
 	}
-	
+
 	if (window->kind & VSLIDE) /* vertikaler Slider vorhanden? */
 	{
 		short old_pos = window->vslide;
@@ -860,16 +876,16 @@ set_slsize(WINDOW *window)
 			window->hslsize = (short) ((long) WWORK.g_w * 1000 / (WWORK.g_w + window->x));
 		else
 			window->hslsize = (short) ((long) window->workarea.g_w * 1000 / window->w);
-		
+
 		if (window->hslsize == 0)
 			window->hslsize = -1;
 		if (window->hslsize > 1000)
 			window->hslsize = 1000;
-			
+
 		if (old_size != window->hslsize) /* Slidergroesse veraendert? */
 			wind_set(window->handle, WF_HSLSIZE, window->hslsize, 0, 0, 0);
 	}
-	
+
 	if (window->kind & VSLIDE) /* vertikaler Slider vorhanden? */
 	{
 		short old_size = window->vslsize;
@@ -878,12 +894,12 @@ set_slsize(WINDOW *window)
 			window->vslsize = (short) ((long) WWORK.g_h * 1000 / (WWORK.g_h + window->y));
 		else
 			window->vslsize = (short) ((long) window->workarea.g_h * 1000 / window->h);
-		
+
 		if (window->vslsize == 0)
 			window->vslsize = -1;
 		if (window->vslsize > 1000)
 			window->vslsize = 1000;
-			
+
 		if (old_size != window->vslsize) /* Slidergroesse veraendert? */
 			wind_set(window->handle, WF_VSLSIZE, window->vslsize, 0, 0, 0);
 	}
@@ -902,13 +918,13 @@ full_window(short handle, short max_width, short max_height)
 	WINDOW *window;
 	GRECT area;
 	GRECT desk;
-	
+
 	window = search_struct(handle);
 	if (window)
 	{
 		if (window->wflags.fuller) /* bereits maximale Groesse? */
 		{
-			wind_get_grect(handle, WF_PREVXYWH, &area); 
+			wind_get_grect(handle, WF_PREVXYWH, &area);
 			size_window(handle, &area);
 			window->wflags.fuller = 0;
 		}
@@ -916,7 +932,7 @@ full_window(short handle, short max_width, short max_height)
 		{
 			wind_get_grect(0, WF_WORKXYWH, &desk); /* Groesse des Desktops */
 			wind_calc_grect(WC_WORK, window->kind, &desk, &desk);	/* Groesse der Fensterinnenflaeche */
-			
+
 			area = desk;
 
 			area.g_x = window->workarea.g_x; /* die Position nicht veraendern */
@@ -931,7 +947,7 @@ full_window(short handle, short max_width, short max_height)
 					max_w = window->limit_w;
 				else
 					max_w = (short) window->w;
-					
+
 				if (window->limit_h) /* sichtbare Hoehe zusaetzlich begrenzt? */
 					max_h = window->limit_h;
 				else
@@ -950,19 +966,19 @@ full_window(short handle, short max_width, short max_height)
 				if (area.g_h > max_height)
 					area.g_h = max_height;
 			}
-			
+
 			if ((area.g_x + area.g_w) > (desk.g_x + desk.g_w))
 				area.g_x = desk.g_x + desk.g_w - area.g_w;
-			
+
 			if (area.g_x < desk.g_x)
 				area.g_x = desk.g_x;
 
 			if ((area.g_y + area.g_h) > (desk.g_y + desk.g_h))
 				area.g_y = desk.g_y + desk.g_h - area.g_h;
-			
+
 			if (area.g_y < desk.g_y)
 				area.g_y = desk.g_y;
-			
+
 			wind_calc_grect(WC_BORDER, window->kind, &area, &area);
 			size_window(handle, &area);
 			window->wflags.fuller = 1;
@@ -985,18 +1001,18 @@ iconify_window(short handle, GRECT *size)
 	if (window)
 	{
 		GRECT area;
-	
+
 		window->saved_border = window->border;
-	
+
 		if ((size == 0L) || (size->g_w < 1) || (size->g_h < 1))
 		{
 			GRECT unknown = { -1, -1, -1, -1 };
-	
+
 			wind_close(window->handle);
 			wind_set_grect(window->handle, WF_ICONIFY, &unknown);
-			wind_get_grect(window->handle, WF_CURRXYWH, &area); 
+			wind_get_grect(window->handle, WF_CURRXYWH, &area);
 			size = &area;
-	
+
 			wind_open_grect(window->handle, &area);
 		}
 		else
@@ -1004,7 +1020,7 @@ iconify_window(short handle, GRECT *size)
 			graf_shrinkbox_grect(size , &window->border);
 			wind_set_grect(window->handle, WF_ICONIFY, size);
 		}
-	
+
 		window->border = *size;
 		wind_get_grect(window->handle, WF_WORKXYWH, &window->workarea);
 

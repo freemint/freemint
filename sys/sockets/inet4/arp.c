@@ -45,11 +45,11 @@ INLINE short
 arp_hash (uchar *addr, short len)
 {
 	ulong v;
-	
+
 	v = *(ulong *) addr;
 	if (len < 4)
 		v >>= (32 - (len << 3));
-	
+
 	return v % ARP_HASHSIZE;
 }
 
@@ -62,10 +62,10 @@ arp_remove (struct arp_entry *are)
 {
 	struct arp_entry *curr, **prev;
 	short idx;
-	
+
 	if (!(are->flags & ATF_PRCOM))
 		return;
-	
+
 	idx = arp_hash (are->praddr.adr.bytes, are->praddr.len);
 	prev = &arptab[idx];
 	for (curr = *prev; curr; prev = &curr->prnext, curr = *prev)
@@ -84,10 +84,10 @@ rarp_remove (struct arp_entry *are)
 {
 	struct arp_entry *curr, **prev;
 	short idx;
-	
+
 	if (!(are->flags & ATF_HWCOM))
 		return;
-	
+
 	idx = arp_hash (are->hwaddr.adr.bytes, are->hwaddr.len);
 	prev = &rarptab[idx];
 	for (curr = *prev; curr; prev = &curr->hwnext, curr = *prev)
@@ -109,7 +109,7 @@ static void
 arp_put (struct arp_entry *are)
 {
 	short idx;
-	
+
 	are->links++;
 	idx = arp_hash(are->praddr.addr, are->praddr.len);
 	are->prnext = arptab[idx];
@@ -121,7 +121,7 @@ static void
 rarp_put (struct arp_entry *are)
 {
 	short idx;
-	
+
 	are->links++;
 	idx = arp_hash (are->hwaddr.adr.bytes, are->hwaddr.len);
 	are->hwnext = rarptab[idx];
@@ -136,7 +136,7 @@ arp_flush (struct netif *nif)
 {
 	struct arp_entry **prev, *curr, *next;
 	short i;
-	
+
 	for (i = 0; i < ARP_HASHSIZE; i++)
 	{
 		/*
@@ -154,7 +154,7 @@ arp_flush (struct netif *nif)
 			else
 				prev = &curr->prnext;
 		}
-		
+
 		/*
 		 * delete from rarptab
 		 */
@@ -177,7 +177,7 @@ static struct arp_entry *
 arp_alloc (void)
 {
 	struct arp_entry *are;
-	
+
 	are = kmalloc (sizeof (*are));
 	if (are)
 	{
@@ -186,7 +186,7 @@ arp_alloc (void)
 	}
 	else
 		DEBUG (("arp_alloc: out of memory"));
-	
+
 	return are;
 }
 
@@ -211,15 +211,15 @@ arp_myaddr (struct netif *nif, short type)
 		case ARPRTYPE_IP:
 		{
 			struct ifaddr *ifa;
-			
+
 			ifa = if_af2ifaddr (nif, AF_INET);
 			if (!ifa)
 				break;
-			
+
 			return (char *)&ifa->adr.in.sin_addr.s_addr;
 		}
 	}
-	
+
 	DEBUG (("arp_myaddr: unkown ARP protocol type: %d", type));
 	return 0;
 }
@@ -228,13 +228,13 @@ static void
 arp_dosend (struct netif *nif, BUF *buf, short pktype)
 {
 	struct arp_dgram *arph = (struct arp_dgram *) buf->dstart;
-	
+
 	if ((nif->flags & (IFF_UP|IFF_RUNNING)) != (IFF_UP|IFF_RUNNING))
 	{
 		buf_deref (buf, BUF_NORMAL);
 		return;
 	}
-	
+
 	(*nif->output)(nif, buf, (char *)ARP_DHW(arph), arph->hwlen, pktype);
 }
 
@@ -248,7 +248,7 @@ arp_sendreq (struct arp_entry *are)
 	long hwlen, prlen, size;
 	char *myaddr;
 	BUF *arpbuf;
-	
+
 	if (++are->retries > ARP_RETRIES)
 	{
 		short flags = are->flags;
@@ -261,18 +261,18 @@ arp_sendreq (struct arp_entry *are)
 	myaddr = arp_myaddr (are->nif, are->prtype);
 	if (!myaddr)
 		return;
-	
+
 	hwlen = are->hwaddr.len;
 	prlen = are->praddr.len;
 	size = sizeof (*arphdr) + 2 * (prlen + hwlen);
-	
+
 	arpbuf = buf_alloc (size + ARP_RESERVE, ARP_RESERVE/2, BUF_NORMAL);
 	if (!arpbuf)
 	{
 		DEBUG (("arp_send: no memory for arp request"));
 		return;
 	}
-	
+
 	arpbuf->dend += size;
 	arphdr = (struct arp_dgram *)arpbuf->dstart;
 	arphdr->hwtype = are->hwtype;
@@ -280,12 +280,12 @@ arp_sendreq (struct arp_entry *are)
 	arphdr->hwlen = hwlen;
 	arphdr->prlen = prlen;
 	arphdr->op = AROP_ARPREQ;
-	
+
 	memcpy (ARP_SPR(arphdr), myaddr, prlen);
 	memcpy (ARP_SHW(arphdr), are->nif->hwlocal.adr.bytes, hwlen);
 	memcpy (ARP_DPR(arphdr), are->praddr.adr.bytes, prlen);
 	memcpy (ARP_DHW(arphdr), are->nif->hwbrcst.adr.bytes, hwlen);
-	
+
 	event_del (&are->tmout);
 	event_add (&are->tmout, ARP_RETRANS, arp_timeout, (long)are);
 	arp_dosend (are->nif, arpbuf, PKTYPE_ARP);
@@ -295,7 +295,7 @@ void
 arp_timeout (long arg)
 {
 	struct arp_entry *are = (struct arp_entry *) arg;
-	
+
 	if (ATF_ISCOM (are))
 	{
 		/*
@@ -333,7 +333,7 @@ arp_lookup (short flags, struct netif *nif, short type, short len, char *addr)
 {
 	struct arp_entry *are;
 	short idx;
-	
+
 	idx = arp_hash ((unsigned char *)addr, len);
 	for (are = arptab[idx]; are; are = are->prnext)
 	{
@@ -343,32 +343,32 @@ arp_lookup (short flags, struct netif *nif, short type, short len, char *addr)
 		    !memcmp (addr, are->praddr.adr.bytes, len))
 			break;
 	}
-	
+
 	if ((are && (++are->links, 1)) || flags & ARLK_NOCREAT || !nif)
 		return are;
-	
+
 	are = arp_alloc ();
 	if (!are)
 		return NULL;
-	
+
 	are->links = 2;
 	are->flags = ATF_PRCOM;
-	
+
 	are->hwtype = nif->hwtype;
 	are->hwaddr.len = nif->hwlocal.len;
-	
+
 	are->prtype = type;
 	are->praddr.len = len;
 	memcpy (are->praddr.adr.bytes, addr, len);
-	
+
 	are->nif = nif;
-	
+
 	are->prnext = arptab[idx];
 	arptab[idx] = are;
-	
+
 	if (!(flags & ARLK_NORESOLV))
 		arp_sendreq (are);
-	
+
 	return are;
 }
 
@@ -381,7 +381,7 @@ rarp_lookup (short flags, struct netif *nif, short type, short len, char *addr)
 {
 	struct arp_entry *are;
 	short idx;
-	
+
 	idx = arp_hash ((unsigned char *)addr, len);
 	for (are = rarptab[idx]; are; are = are->hwnext)
 	{
@@ -394,7 +394,7 @@ rarp_lookup (short flags, struct netif *nif, short type, short len, char *addr)
 			break;
 		}
 	}
-	
+
 	return are;
 }
 
@@ -405,14 +405,14 @@ static void
 arp_sendq (struct arp_entry *are)
 {
 	BUF *b;
-	
+
 	if ((are->nif->flags & (IFF_UP|IFF_RUNNING)) != (IFF_UP|IFF_RUNNING))
 	{
 		DEBUG (("arp_sendq: if down, flushing arp queue"));
 		if_flushq (&are->outq);
 		return;
 	}
-	
+
 	/*
 	 * XXX: We should not assume PKTYPE_IP here ...
 	 */
@@ -434,10 +434,10 @@ arp_input (struct netif *nif, BUF *buf)
 	struct arp_entry *are;
 	short forme;
 	long len;
-	
+
 	len = buf->dend - buf->dstart;
 	arphdr = (struct arp_dgram *)buf->dstart;
-	
+
 	DEBUG (("arp_input..."));
 	/*
 	 * Validate incoming packet.
@@ -448,7 +448,7 @@ arp_input (struct netif *nif, BUF *buf)
 		buf_deref (buf, BUF_NORMAL);
 		return;
 	}
-	
+
 	/*
 	 * Check if we can handle this packet, if not discard.
 	 */
@@ -462,13 +462,13 @@ arp_input (struct netif *nif, BUF *buf)
 		buf_deref (buf, BUF_NORMAL);
 		return;
 	}
-	
+
 	spr = (char *)ARP_SPR (arphdr);
 	dpr = (char *)ARP_DPR (arphdr);
 	shw = (char *)ARP_SHW (arphdr);
 	dhw = (char *)ARP_DHW (arphdr);
 	forme = !memcmp (myaddr, dpr, arphdr->prlen);
-	
+
 	/*
 	 * If my address is requested then create an entry if non is found,
 	 * otherwise only look for a pending entry but don't create a new
@@ -526,12 +526,12 @@ arp_input (struct netif *nif, BUF *buf)
 				buf_ref (buf);
 				arp_dosend (nif, buf, PKTYPE_ARP);
 			}
-			
+
 			if (are)
 				arp_deref (are);
 		}
 	}
-	
+
 	buf_deref (buf, BUF_NORMAL);
 }
 
@@ -545,10 +545,10 @@ rarp_input (struct netif *nif, BUF *buf)
 	struct arp_entry *are;
 	char *myaddr;
 	long len;
-	
+
 	len = buf->dend - buf->dstart;
 	arphdr = (struct arp_dgram *) buf->dstart;
-	
+
 	/*
 	 * Validate incoming packet
 	 */
@@ -558,7 +558,7 @@ rarp_input (struct netif *nif, BUF *buf)
 		buf_deref (buf, BUF_NORMAL);
 		return;
 	}
-	
+
 	/*
 	 * Check if we can handle it
 	 */
@@ -572,7 +572,7 @@ rarp_input (struct netif *nif, BUF *buf)
 		buf_deref (buf, BUF_NORMAL);
 		return;
 	}
-	
+
 	/*
 	 * See if we have a matching entry.
 	 */
@@ -593,10 +593,10 @@ rarp_input (struct netif *nif, BUF *buf)
 		buf_ref (buf);
 		arp_dosend (nif, buf, PKTYPE_RARP);
 	}
-	
+
 	if (are)
 		arp_deref (are);
-	
+
 	buf_deref (buf, BUF_NORMAL);
 }
 
@@ -611,16 +611,16 @@ get_praddr (struct hwaddr *hwaddr, struct sockaddr *sockaddr, short *type)
 		case AF_INET:
 		{
 			struct sockaddr_in *in;
-			
+
 			in = (struct sockaddr_in *)sockaddr;
 			hwaddr->len = 4;
 			memcpy (hwaddr->adr.bytes, &in->sin_addr.s_addr, 4);
 			*type = ARPRTYPE_IP;
-			
+
 			return 0;
 		}
 	}
-	
+
 	return EINVAL;
 }
 
@@ -633,16 +633,16 @@ put_praddr (struct hwaddr *hwaddr, struct sockaddr *sockaddr, short type)
 		case ARPRTYPE_IP:
 		{
 			struct sockaddr_in *sin;
-			
+
 			sin = (struct sockaddr_in *)sockaddr;
 			sin->sin_family = AF_INET;
 			sin->sin_port = 0;
 			sin->sin_addr.s_addr = *(ulong *)hwaddr->addr;
-			
+
 			return 0;
 		}
 	}
-	
+
 	return EINVAL;
 }
 # endif
@@ -651,17 +651,17 @@ static long
 get_hwaddr (struct hwaddr *hwaddr, struct sockaddr *sockaddr, short *type)
 {
 	struct sockaddr_hw *shw = (struct sockaddr_hw *) sockaddr;
-	
+
 	if (shw->shw_family == AF_LINK &&
 	    shw->shw_len <= sizeof (hwaddr->adr.bytes))
 	{
 		hwaddr->len = shw->shw_len;
-		memcpy (hwaddr->adr.bytes, shw->shw_addr, shw->shw_len);
+		memcpy (hwaddr->adr.bytes, shw->shw_adr.bytes, shw->shw_len);
 		*type = shw->shw_type;
-		
+
 		return 0;
 	}
-	
+
 	return EINVAL;
 }
 
@@ -669,12 +669,12 @@ static long
 put_hwaddr (struct hwaddr *hwaddr, struct sockaddr *sockaddr, short type)
 {
 	struct sockaddr_hw *shw = (struct sockaddr_hw *) sockaddr;
-	
+
 	shw->shw_family = AF_LINK;
 	shw->shw_type = type;
 	shw->shw_len = hwaddr->len;
-	memcpy (shw->shw_addr, hwaddr->adr.bytes, MIN (sizeof (shw->shw_addr), hwaddr->len));
-	
+	memcpy (shw->shw_adr.bytes, hwaddr->adr.bytes, MIN (sizeof (shw->shw_adr), hwaddr->len));
+
 	return 0;
 }
 
@@ -685,7 +685,7 @@ long
 arp_ioctl (short cmd, void *arg)
 {
 	struct arp_req *areq = (struct arp_req *) arg;
-	
+
 	switch (cmd)
 	{
 		case SIOCSARP:
@@ -695,14 +695,14 @@ arp_ioctl (short cmd, void *arg)
 			struct route *rt;
 			struct hwaddr praddr, hwaddr;
 			short prtype, hwtype;
-			
+
 			if (p_geteuid ())
 				return EACCES;
-			
+
 			if (get_praddr (&praddr, &areq->praddr, &prtype) ||
 			    get_hwaddr (&hwaddr, &areq->hwaddr, &hwtype))
 				return EINVAL;
-			
+
 			if (prtype != ARPRTYPE_IP)
 				return EAFNOSUPPORT;
 			/*
@@ -716,14 +716,14 @@ arp_ioctl (short cmd, void *arg)
 			}
 			nif = rt->nif;
 			route_deref (rt);
-			
+
 			/*
 			 * Lookup/create arp entry
 			 */
 			are = arp_lookup (ARLK_NORESOLV, nif, ARPRTYPE_IP, praddr.len, (char *)praddr.adr.bytes);
 			if (!are)
 				return ENOMEM;
-			
+
 			rarp_remove (are);
 			are->hwtype = hwtype;
 			are->hwaddr = hwaddr;
@@ -740,7 +740,7 @@ arp_ioctl (short cmd, void *arg)
 			 */
 			arp_sendq (are);
 			arp_deref (are);
-			
+
 			return 0;
 		}
 		case SIOCDARP:
@@ -748,21 +748,21 @@ arp_ioctl (short cmd, void *arg)
 			struct arp_entry *are;
 			struct hwaddr praddr;
 			short prtype;
-			
+
 			if (p_geteuid ())
 				return EACCES;
-			
+
 			if (get_praddr (&praddr, &areq->praddr, &prtype))
-				return EINVAL;		
-			
+				return EINVAL;
+
 			are = arp_lookup (ARLK_NOCREAT, 0, ARPRTYPE_IP, praddr.len, (char *)praddr.adr.bytes);
 			if (!are)
 				return ENOENT;
-			
+
 			arp_remove (are);
 			rarp_remove (are);
 			arp_deref (are);
-			
+
 			return 0;
 		}
 		case SIOCGARP:
@@ -770,25 +770,25 @@ arp_ioctl (short cmd, void *arg)
 			struct arp_entry *are;
 			struct hwaddr praddr;
 			short prtype;
-			
+
 			if (get_praddr (&praddr, &areq->praddr, &prtype))
 				return EINVAL;
-			
+
 			are = arp_lookup (ARLK_NOCREAT, 0, ARPRTYPE_IP, praddr.len, (char *)praddr.adr.bytes);
 			if (!are || !(are->flags & ATF_HWCOM))
 			{
 				if (are) arp_deref (are);
 				return ENOENT;
 			}
-			
+
 			put_hwaddr (&are->hwaddr, &areq->hwaddr, are->hwtype);
 			areq->flags = are->flags;
 			arp_deref (are);
-			
+
 			return 0;
 		}
 	}
-	
+
 	return ENOSYS;
 }
 
@@ -806,17 +806,17 @@ void
 arp_dump (struct arp_entry *are)
 {
 	uchar *cp;
-	
+
 	DEBUG (("flags = 0x%x, links = %d", are->flags, are->links));
 	DEBUG (("pr = 0x%x, hw = 0x%x", are->prtype, are->hwtype));
-	
+
 	if (are->flags & ATF_PRCOM)
 	{
 		cp = are->praddr.addr;
 		DEBUG (("praddr = %x:%x:%x:%x:%x:%x", cp[0],cp[1],cp[2],cp[3],
 			cp[4],cp[5]));
 	}
-	
+
 	if (are->flags & ATF_HWCOM)
 	{
 		cp = are->hwaddr.addr;

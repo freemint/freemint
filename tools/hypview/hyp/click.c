@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * HypView - (c)      - 2006 Philipp Donze
  *               2006 -      Philipp Donze & Odd Skancke
  *
@@ -60,7 +60,7 @@ get_word(char *min,char *src,char *dst)
 	if((char *)ptr!=src)
 	{
 		ptr++;
-	
+
 		do
 		{
 			*dst++=*ptr++;
@@ -74,9 +74,9 @@ get_word(char *min,char *src,char *dst)
 	}
 	else
 		*dst++=*ptr;
-	*dst=0;	
+	*dst=0;
 }
-	
+
 void HypClick(DOCUMENT *doc, EVNTDATA *m)
 {
 	WINDOW_DATA *win = Win;
@@ -101,7 +101,7 @@ void HypClick(DOCUMENT *doc, EVNTDATA *m)
 
 	if(!src)
 		return;
-	
+
 	last_esc = src;
 	test_mem[1] = 0;
 	vst_effects(vdi_handle, curr_txt_effect);
@@ -124,7 +124,7 @@ void HypClick(DOCUMENT *doc, EVNTDATA *m)
 				short link_len;
 
 				src++;
-				
+
 				if (link_type & 1)		/*	Zeilennummer ueberspringen	*/
 				{
 					line_nr = DEC_255(src);
@@ -133,11 +133,11 @@ void HypClick(DOCUMENT *doc, EVNTDATA *m)
 
 				dst_page = DEC_255(src);	/*	Index	*/
 				src += 2;
-				
+
 				vst_effects(vdi_handle, link_effect);
 
 				link_len = (*(unsigned char *)src++) - 32;
-				
+
 				if (link_len)
 				{
 					*test_mem = src[link_len];
@@ -151,11 +151,11 @@ void HypClick(DOCUMENT *doc, EVNTDATA *m)
 				vst_effects(vdi_handle, curr_txt_effect);
 
 				x_pos += xy[0] + xy[2];
-				
+
 				if(x_pos > m->x)
 				{
 					short dst_type = hyp->indextable[dst_page]->type;
-					
+
 /*
 					Debug("Link to node %d line %d (=%s type %d): Type is %d",dst_page,line_nr,&hyp->indextable[dst_page]->name,dst_type,link_type);
 */
@@ -186,7 +186,7 @@ void HypClick(DOCUMENT *doc, EVNTDATA *m)
 							Cconout(7);
 							break;			/*	... Abbruch	*/
 						}
-							
+
 						/*	Parameter per VA_START an Host senden	*/
 						if (av_parameter)
 							Debug("An AV action is already running");
@@ -195,7 +195,7 @@ void HypClick(DOCUMENT *doc, EVNTDATA *m)
 							char temp[DL_PATHMAX];
 							char *prog = &hyp->indextable[dst_page]->name;
 							char *fn = hyp->file, *dfn = temp;
-	
+
 							/*	Suche die Datei im Verzeichnis des Hypertexts	*/
 							while (*fn)
 								*dfn++ = *fn++;
@@ -211,8 +211,8 @@ void HypClick(DOCUMENT *doc, EVNTDATA *m)
 	/*							Debug("temp2=%s",temp);
 	*/						}
 
-							av_parameter = (char *)Mxalloc(strlen(temp) + 1, MX_PREFTT|MX_MPROT|MX_READABLE);
-							
+							av_parameter = (char *)Mxalloc(strlen(temp) + 1, MX_PREFTTRAM|MX_MPROT|MX_READABLE);
+
 							if (av_parameter)
 							{
 								short msg[8] = {VA_START,0,0,0,0,0,0,0};
@@ -235,7 +235,7 @@ void HypClick(DOCUMENT *doc, EVNTDATA *m)
 							char temp[DL_PATHMAX];
 							char *prog = &hyp->indextable[dst_page]->name;
 							char *fn = hyp->file, *dfn = temp;
-	
+
 							/*	Suche die Datei im Verzeichnis des Hypertexts	*/
 							while (*fn)
 								*dfn++ = *fn++;
@@ -243,14 +243,14 @@ void HypClick(DOCUMENT *doc, EVNTDATA *m)
 								*dfn = 0;
 							strcpy(++dfn, prog);
 /*							Debug("temp=%s",temp);
-*/	
+*/
 							if(!shel_find(temp))		/*	Datei nicht auffindbar?	*/
 							{
 								strcpy(temp, prog);
 /*								Debug("temp2=%s",temp);
 */							}
-	
-							av_parameter = (char *)Mxalloc(strlen(temp)+1,  MX_PREFTT|MX_MPROT|MX_READABLE);
+
+							av_parameter = (char *)Mxalloc(strlen(temp)+1,  MX_PREFTTRAM|MX_MPROT|MX_READABLE);
 							if(av_parameter)
 							{
 								strcpy(av_parameter,temp);
@@ -299,7 +299,7 @@ check_char:
 			{
 				long ret;
 				char buffer[256];
-				
+
 				get_word(last_esc, src - 1, buffer);
 				ret = HypFindNode(doc, buffer);
 				if ( ret >= 0 )

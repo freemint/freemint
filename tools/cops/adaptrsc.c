@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * COPS (c) 1995 - 2003 Sven & Wilfried Behne
  *                 2004 F.Naumann & O.Skancke
  *
@@ -104,14 +104,14 @@ get_aes_info(short *font_id, short *font_height, short *hor_3d, short *ver_3d)
 	short attrib[10];
 	short pens;
 	short flags;
-	
+
 	vq_extnd(vdi_handle, 0, work_out);
 	vqt_attributes(vdi_handle, attrib);
 
 	flags = 0;
 	pens = work_out[13];		/* Anzahl der Farbstifte */
 	*font_id = attrib[0];		/* Standardfont */
-	*font_height = attrib[7];	/* Standardh”he */
+	*font_height = attrib[7];	/* Standardhï¿½he */
 	*hor_3d = 0;
 	*ver_3d = 0;
 	radio_bgcol = 0;
@@ -133,7 +133,7 @@ get_aes_info(short *font_id, short *font_height, short *hor_3d, short *ver_3d)
 			flags |= GAI_MAGIC + GAI_INFO;
 		}
 	}
-		
+
 	if (flags & GAI_INFO)		/* ist appl_getinfo() vorhanden? */
 	{
 		short ag1;
@@ -160,10 +160,10 @@ get_aes_info(short *font_id, short *font_height, short *hor_3d, short *ver_3d)
 		{
 			if (flags & GAI_MAGIC) /* MagiC spezifische Funktion! */
 			{
-				if (ag4 & 0x08) /* G_SHORTCUT untersttzt ? */
+				if (ag4 & 0x08) /* G_SHORTCUT unterstï¿½tzt ? */
 					flags |= GAI_GSHORTCUT;
 			}
-				
+
 			if (ag1 && ag2) /* 3D-Objekte und objc_sysvar() vorhanden? */
 			{
 				if (objc_sysvar(0, AD3DVALUE, 0, 0, hor_3d, ver_3d)) /* 3D-Look eingeschaltet? */
@@ -171,7 +171,7 @@ get_aes_info(short *font_id, short *font_height, short *hor_3d, short *ver_3d)
 					if (pens >= 16) /* mindestens 16 Farben? */
 					{
 						short dummy;
-						
+
 						flags |= GAI_3D;
 						objc_sysvar(0, BACKGRCOL, 0, 0, &radio_bgcol, &dummy);
 					}
@@ -179,7 +179,7 @@ get_aes_info(short *font_id, short *font_height, short *hor_3d, short *ver_3d)
 			}
 		}
 	}
-	
+
 	return flags;
 }
 
@@ -219,7 +219,7 @@ void
 no3d_rsrc(OBJECT *objs, unsigned short no_objs, short ftext_to_fboxtext)
 {
 	radio_bgcol = 0; /* Annahme: Hintergrundfarbe bei 2D ist weiss */
-	
+
 	while (no_objs > 0)
 	{
 		if (ftext_to_fboxtext) /* FTEXT-Objekte in FBOXTEXT umwandeln? */
@@ -239,7 +239,7 @@ no3d_rsrc(OBJECT *objs, unsigned short no_objs, short ftext_to_fboxtext)
 		}
 
 		objs->ob_flags &= ~FL3DMASK; /* 3D-Flags loeschen */
-		
+
 		objs++; /* naechstes Objekt */
 		no_objs--;
 	}
@@ -258,9 +258,9 @@ is_userdef_title(OBJECT *obj)
 		if (obj->ob_type == G_USERDEF)
 		{
 			USERBLK	*ublk;
-			
+
 			ublk = obj->ob_spec.userblk;
-			
+
 			if (ublk->ub_code == title) /* ersetzte Ueberschrift? */
 				return ((char *) ublk->ub_parm); /* Zeiger auf den String zurueckliefern */
 		}
@@ -283,11 +283,11 @@ substitute_objects(OBJECT *objs, unsigned short no_objs, short aesflags, OBJECT 
 	OBJECT	*obj;
 	unsigned short	i;
 	unsigned short	no_subs;
-	
+
 	if ((aesflags & GAI_MAGIC) && (magic_version >= 0x0300)) /* MagiC-AES? */
 	{
 		substitute_ublks = 0L;
-		return;	
+		return;
 	}
 
 	obj = objs; /* Zeiger auf die Objekte */
@@ -325,24 +325,24 @@ substitute_objects(OBJECT *objs, unsigned short no_objs, short aesflags, OBJECT 
 		substitute_ublks = (void *)Malloc(no_subs * sizeof(USERBLK));
 		radio_slct = rslct;
 		radio_deslct = rdeslct;
-		
+
 		if (substitute_ublks) /* Speicher vorhanden? */
 		{
 			USERBLK	*tmp;
-			
+
 			tmp = substitute_ublks;
-	
+
 			obj = objs; /* Zeiger auf die Objekte */
 			i = no_objs; /* Anzahl der Objekte im gesamten Resource */
-			
+
 			while (i > 0)
 			{
 				short type;
 				unsigned short state;
-				
+
 				type = obj->ob_type & 0x00ff;
 				state = (unsigned short) obj->ob_state;
-				
+
 				if ((state & OS_WHITEBAK) && (state & 0x8000)) /* MagiC-Objekt? */
 				{
 					state &= 0xff00; /* nur das obere Byte ist interessant */
@@ -353,11 +353,11 @@ substitute_objects(OBJECT *objs, unsigned short no_objs, short aesflags, OBJECT 
 						{
 							tmp->ub_parm = (long) obj->ob_spec.free_string; /* Zeiger auf den Text */
 							tmp->ub_code = group;
-						
+
 							obj->ob_type = G_USERDEF;
 							obj->ob_flags &= ~FL3DMASK; /* 3D-Flags loeschen */
 							obj->ob_spec.userblk = tmp; /* Zeiger auf den USERBLK */
-							
+
 							tmp++;
 						}
 					}
@@ -370,7 +370,7 @@ substitute_objects(OBJECT *objs, unsigned short no_objs, short aesflags, OBJECT 
 							{
 								/* Zeiger auf den Text */
 								tmp->ub_parm = (long) obj->ob_spec.free_string;
-			
+
 								if (state == 0xfe00) /* Gruppenrahmen? */
 									tmp->ub_code = group;
 								else if (obj->ob_flags & OF_RBUTTON) /* Radio-Button? */
@@ -381,14 +381,14 @@ substitute_objects(OBJECT *objs, unsigned short no_objs, short aesflags, OBJECT 
 								obj->ob_type = G_USERDEF;
 								obj->ob_flags &= ~FL3DMASK; /* 3D-Flags loeschen */
 								obj->ob_spec.userblk = tmp; /* Zeiger auf den USERBLK */
-								
+
 								tmp++;
 								break;
 							}
 							/* Ueberschrift */
 							case G_STRING:
 							{
-								if (state == 0xff00) /* Unterstreichung auf voller L„nge? */
+								if (state == 0xff00) /* Unterstreichung auf voller Lï¿½nge? */
 								{
 									/* Zeiger auf den Text */
 									tmp->ub_parm = (long) obj->ob_spec.free_string;
@@ -402,7 +402,7 @@ substitute_objects(OBJECT *objs, unsigned short no_objs, short aesflags, OBJECT 
 							}
 						}
 					}
-				}	
+				}
 				obj++; /* naechstes Objekt */
 				i--;
 			}
@@ -419,7 +419,7 @@ substitute_free(void)
 {
 	if (substitute_ublks) /* Speicher vorhanden? */
 		Mfree(substitute_ublks);
-	
+
 	substitute_ublks = NULL;
 }
 
@@ -431,59 +431,58 @@ substitute_free(void)
 static short _cdecl
 check_button(PARMBLK *parmblock)
 {
-	short rect[4];
-	short clip[4];
+	union { GRECT r; short a[4]; } clp, rect;
 	short xy[10];
 	char *string;
-	
+
 	string = (char *) parmblock->pb_parm;
 
-	*(GRECT *) clip = *(GRECT *) &parmblock->pb_xc; /* Clipping-Rechteck... */
-	clip[2] += clip[0] - 1;
-	clip[3] += clip[1] - 1;
-	vs_clip(vdi_handle, 1, clip); /* Zeichenoperationen auf gegebenen Bereich beschraenken */
+	clp.r = *(GRECT *) &parmblock->pb_xc; /* Clipping-Rechteck... */
+	clp.r.g_w += clp.r.g_x - 1;
+	clp.r.g_h += clp.r.g_y - 1;
+	vs_clip(vdi_handle, 1, clp.a);
 
-	*(GRECT *) rect = *(GRECT *) &parmblock->pb_x; /* Objekt-Rechteck... */
-	rect[2] = rect[0] + phchar - 2;
-	rect[3] = rect[1] + phchar - 2;
+	rect.r = *(GRECT *) &parmblock->pb_x; /* Objekt-Rechteck... */
+	rect.r.g_w = rect.r.g_x + phchar - 2;
+	rect.r.g_h = rect.r.g_y + phchar - 2;
 
 	vswr_mode(vdi_handle, 1); /* Ersetzend */
 
 	vsl_color(vdi_handle, 1); /* schwarz */
 
-	xy[0] = rect[0];
-	xy[1] = rect[1];
-	xy[2] = rect[2];
-	xy[3] = rect[1];
-	xy[4] = rect[2];
-	xy[5] = rect[3];
-	xy[6] = rect[0];
-	xy[7] = rect[3];
-	xy[8] = rect[0];
-	xy[9] = rect[1];
+	xy[0] = rect.r.g_x;
+	xy[1] = rect.r.g_y;
+	xy[2] = rect.r.g_w;
+	xy[3] = rect.r.g_y; /* Bug here? was [1] */
+	xy[4] = rect.r.g_w;
+	xy[5] = rect.r.g_h;
+	xy[6] = rect.r.g_x;
+	xy[7] = rect.r.g_h;
+	xy[8] = rect.r.g_x;
+	xy[9] = rect.r.g_y;
 	v_pline(vdi_handle, 5, xy); /* schwarzen Rahmen zeichnen */
 
 	vsf_color(vdi_handle, 0); /* weiss */
-	
-	xy[0] = rect[0] + 1;
-	xy[1] = rect[1] + 1;
-	xy[2] = rect[2] - 1;
-	xy[3] = rect[3] - 1;
+
+	xy[0] = rect.r.g_x + 1;
+	xy[1] = rect.r.g_y + 1;
+	xy[2] = rect.r.g_w - 1;
+	xy[3] = rect.r.g_h - 1;
 	vr_recfl(vdi_handle, xy); /* weisse Box zeichnen */
 
 	if (parmblock->pb_currstate & OS_SELECTED)
 	{
 		parmblock->pb_currstate &= ~OS_SELECTED; /* Bit loeschen */
-		
+
 		vsl_color(vdi_handle, 1); /* schwarz - fuer das Kreuz */
-		xy[0] = rect[0] + 2;
-		xy[1] = rect[1] + 2;
-		xy[2] = rect[2] - 2;
-		xy[3] = rect[3] - 2;
+		xy[0] = rect.r.g_x + 2;
+		xy[1] = rect.r.g_y + 2;
+		xy[2] = rect.r.g_w - 2;
+		xy[3] = rect.r.g_h - 2;
 		v_pline(vdi_handle, 2, xy);
-		
-		xy[1] = rect[3] - 2;
-		xy[3] = rect[1] + 2;
+
+		xy[1] = rect.r.g_h - 2;
+		xy[3] = rect.r.g_y + 2;
 		v_pline(vdi_handle, 2, xy);
 	}
 	userdef_text(parmblock->pb_x + phchar + pwchar, parmblock->pb_y, string);
@@ -502,15 +501,15 @@ radio_button(PARMBLK *parmblock)
 	BITBLK *image;
 	MFDB src;
 	MFDB des;
-	short clip[4];
+	union { GRECT r; short a[4]; } clip;
 	short xy[8];
 	short image_colors[2];
 	char *string;
 
-	*(GRECT *) clip = *(GRECT *) &parmblock->pb_xc; /* Clipping-Rechteck... */
-	clip[2] += clip[0] - 1;
-	clip[3] += clip[1] - 1;
-	vs_clip(vdi_handle, 1, clip); /* Zeichenoperationen auf gegebenen Bereich beschr„nken */
+	clip.r = *(GRECT *) &parmblock->pb_xc; /* Clipping-Rechteck... */
+	clip.r.g_w += clip.r.g_x - 1;
+	clip.r.g_h += clip.r.g_y - 1;
+	vs_clip(vdi_handle, 1, clip.a); /* Zeichenoperationen auf gegebenen Bereich beschrï¿½nken */
 
 	string = (char *) parmblock->pb_parm;
 
@@ -560,42 +559,42 @@ radio_button(PARMBLK *parmblock)
 static short _cdecl
 group(PARMBLK *parmblock)
 {
-	short clip[4];
-	short obj[4];
+	union { GRECT r; short a[4]; } clip, obj;
 	short xy[12];
 	char *string;
 
 	string = (char *) parmblock->pb_parm;
 
-	*(GRECT *) &clip = *(GRECT *) &parmblock->pb_xc; /* Clipping-Rechteck... */
-	clip[2] += clip[0] - 1;
-	clip[3] += clip[1] - 1;
-	vs_clip(vdi_handle, 1, clip); /* Zeichenoperationen auf gegebenen Bereich beschraenken */
+
+	clip.r = *(GRECT *) &parmblock->pb_xc; /* Clipping-Rechteck... */
+	clip.r.g_w += clip.r.g_x - 1;
+	clip.r.g_h += clip.r.g_y - 1;
+	vs_clip(vdi_handle, 1, clip.a); /* Zeichenoperationen auf gegebenen Bereich beschraenken */
 
 	vswr_mode(vdi_handle, MD_TRANS);
 	vsl_color(vdi_handle, 1);
 	vsl_type(vdi_handle, 1);
 
-	*(GRECT *) obj = *(GRECT *) &parmblock->pb_x; /* Objekt-Rechteck... */
-	obj[2] += obj[0] - 1;
-	obj[3] += obj[1] - 1;
+	obj.r = *(GRECT *) &parmblock->pb_x; /* Objekt-Rechteck... */
+	obj.r.g_w += obj.r.g_x - 1;
+	obj.r.g_h += obj.r.g_y - 1;
 
-	xy[0] = obj[0] + pwchar;
-	xy[1] = obj[1] + phchar / 2;
-	xy[2] = obj[0];
+	xy[0] = obj.r.g_x + pwchar;
+	xy[1] = obj.r.g_y + phchar / 2;
+	xy[2] = obj.r.g_x;
 	xy[3] = xy[1];
-	xy[4] = obj[0];
-	xy[5] = obj[3];
-	xy[6] = obj[2];
-	xy[7] = obj[3];
-	xy[8] = obj[2];
+	xy[4] = obj.r.g_x;
+	xy[5] = obj.r.g_h;
+	xy[6] = obj.r.g_w;
+	xy[7] = obj.r.g_h;
+	xy[8] = obj.r.g_w;
 	xy[9] = xy[1];
 	xy[10] = (short) (xy[0] + strlen(string) * pwchar);
 	xy[11] = xy[1];
-	
+
 	v_pline(vdi_handle, 6, xy);
 
-	userdef_text(obj[0] + pwchar, obj[1], string);
+	userdef_text(obj.r.g_x + pwchar, obj.r.g_y, string);
 
 	return parmblock->pb_currstate;
 }
@@ -608,16 +607,16 @@ group(PARMBLK *parmblock)
 static short _cdecl
 title(PARMBLK *parmblock)
 {
-	short clip[4];
+	union { GRECT r; short a[4]; } clip;
 	short xy[4];
 	char *string;
 
 	string = (char *) parmblock->pb_parm;
 
-	*(GRECT *) &clip = *(GRECT *) &parmblock->pb_xc; /* Clipping-Rechteck... */
-	clip[2] += clip[0] - 1;
-	clip[3] += clip[1] - 1;
-	vs_clip(vdi_handle, 1, clip); /* Zeichenoperationen auf gegebenen Bereich beschraenken */
+	clip.r = *(GRECT *) &parmblock->pb_xc; /* Clipping-Rechteck... */
+	clip.r.g_w += clip.r.g_x - 1;
+	clip.r.g_h += clip.r.g_y - 1;
+	vs_clip(vdi_handle, 1, clip.a); /* Zeichenoperationen auf gegebenen Bereich beschraenken */
 
 	vswr_mode(vdi_handle, MD_TRANS);
 	vsl_color(vdi_handle, 1);
@@ -638,13 +637,13 @@ static void
 userdef_text(short x, short y, char *string)
 {
 	short tmp;
-	
+
 	vswr_mode(vdi_handle, MD_TRANS);
 	vst_font(vdi_handle, aes_font); /* Font einstellen */
 	vst_color(vdi_handle, 1); /* schwarz */
 	vst_effects(vdi_handle, 0); /* keine Effekte */
 	vst_alignment(vdi_handle, 0, 5, &tmp, &tmp); /* an der Zeichenzellenoberkante ausrichten */
 	vst_height(vdi_handle, aes_height, &tmp, &tmp, &tmp, &tmp);
-	
+
 	v_gtext(vdi_handle, x, y, string);
 }

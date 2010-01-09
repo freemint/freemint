@@ -1,31 +1,31 @@
 /*
  * $Id$
- * 
+ *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
- * 
- * 
+ *
+ *
  * Copyright 2000-2004 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
- * 
+ *
  * Please send suggestions, patches or bug reports to me or
  * the MiNT mailing list.
- * 
- * 
+ *
+ *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
  * any later version.
- * 
+ *
  * This file is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  */
 
 #include <ctype.h>
@@ -34,13 +34,14 @@
 #include <string.h>
 
 #include <sys/ptrace.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/un.h>
+#include <netinet/in.h>
+#include <sys/time.h>
 
-/* XXX -> mintlib */
 typedef long long llong;
-#include "../../sys/mint/socket.h"
-#include "../../sys/mint/stat.h"
-#include "../../sys/mint/un.h"
-#include "../../sys/sockets/inet4/in.h"
+
 
 #include "print.h"
 
@@ -87,7 +88,7 @@ copy_character(char *dst, char *end, int c)
 	}
 	else
 		dst = NULL;
-	
+
 	return dst;
 }
 
@@ -96,34 +97,34 @@ print_string(pid_t pid, const char *data)
 {
 	char *buf;
 	size_t buflen;
-	
+
 	buflen = 1024;
 	buf = malloc(buflen);
 	if (buf)
 	{
 		char *dst, *end;
 		size_t i;
-		
+
 		memset(buf, 0, buflen);
-		
+
 		dst = buf;
 		end = buf + buflen;
 		i = 0;
-		
+
 		for (;;)
 		{
 			long r = ptrace(PTRACE_PEEKDATA, pid, (caddr_t)(data+i), 0);
 			i += 4;
-			
+
 			dst = copy_character(dst, end, (r >> 24) & 0xff);
 			dst = copy_character(dst, end, (r >> 16) & 0xff);
 			dst = copy_character(dst, end, (r >>  8) & 0xff);
 			dst = copy_character(dst, end, (r      ) & 0xff);
-			
+
 			if (!dst)
 				break;
 		}
-		
+
 		printf("\"%s\"", buf);
 		free(buf);
 	}
@@ -136,12 +137,12 @@ static void
 copy_bytes(pid_t pid, const char *start, unsigned char *buf, size_t len)
 {
 	size_t i = 0, ibuf = 0;
-	
+
 	for (;;)
 	{
 		long r = ptrace(PTRACE_PEEKDATA, pid, (caddr_t)(start+i), 0);
 		i += 4;
-		
+
 		buf[ibuf++] = (r >> 24) & 0xff; if (ibuf == len) break;
 		buf[ibuf++] = (r >> 16) & 0xff; if (ibuf == len) break;
 		buf[ibuf++] = (r >>  8) & 0xff; if (ibuf == len) break;
@@ -177,9 +178,9 @@ void
 print_struct_timeval(pid_t pid, const void *data)
 {
 	struct timeval tv;
-	
-	copy_bytes(pid, data, (char *)(&tv), sizeof(tv));
-	
+
+	copy_bytes(pid, data, (unsigned char *)(&tv), sizeof(tv));
+
 	printf("struct timeval { %li, %li }", tv.tv_sec, tv.tv_usec);
 }
 
@@ -207,23 +208,23 @@ void
 print_struct_sockaddr(pid_t pid, const void *data)
 {
 	struct sockaddr sa;
-	
+
 	if (!data)
 	{
 		printf("NULL");
 		return;
 	}
-	
+
 	copy_bytes(pid, data, (unsigned char *)(&sa), sizeof(sa));
-	
+
 	switch (sa.sa_family)
 	{
 		case AF_INET:
 		{
 			struct sockaddr_in sin;
-			
+
 			copy_bytes(pid, data, (unsigned char *)(&sin), sizeof(sin));
-			
+
 			printf("struct sockaddr_in { port %i, addr %s }",
 				sin.sin_port, inet_ntoa(sin.sin_addr));
 			break;
@@ -231,9 +232,9 @@ print_struct_sockaddr(pid_t pid, const void *data)
 		case AF_UNIX:
 		{
 			struct sockaddr_un sun;
-			
+
 			copy_bytes(pid, data, (unsigned char *)(&sun), sizeof(sun));
-			
+
 			printf("struct sockaddr_un { \"%s\" }", sun.sun_path);
 			break;
 		}

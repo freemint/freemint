@@ -1,4 +1,5 @@
 
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -13,7 +14,7 @@
 #define NONBLOCK
 
 #define SERVER	"/tmp/fort"
-#define OFFSET ((short)((struct sockaddr_un *)0)->sun_path)
+#define OFFSET ((socklen_t)((struct sockaddr_un *)0)->sun_path)
 
 static int run = 1;
 static int fd = 0;
@@ -23,7 +24,7 @@ sig_handler (int sig)
 {
 	close (fd);
 	unlink (SERVER);
-	exit (0);
+	exit(0);
 }
 
 int
@@ -73,7 +74,7 @@ main (void)
 		perror ("listen");
 		close (fd);
 		return 0;
-	}	
+	}
 
 	signal (SIGQUIT, sig_handler);
 	signal (SIGINT, sig_handler);
@@ -88,7 +89,7 @@ main (void)
 		char message3[] = "running down...\n";
 		struct msghdr msg;
 		struct iovec iov[3];
-		
+
 #ifdef NONBLOCK
 		fd_set sel;
 
@@ -97,7 +98,7 @@ main (void)
 
 		while (!select (32, &sel, NULL, NULL, NULL))
 			FD_SET(fd, &sel);
-#endif		
+#endif
 		client = accept (fd, NULL, NULL);
 		if (client < 0)
 		{

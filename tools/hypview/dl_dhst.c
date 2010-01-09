@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * HypView - (c)      - 2006 Philipp Donze
  *               2006 -      Philipp Donze & Odd Skancke
  *
@@ -51,8 +51,8 @@ void DhstAddFile(char *path)
 		char *ptr;
 		long ret;
 		DHSTINFO *info;
-		
-		ret = Mxalloc(sizeof(DHSTINFO) + DL_PATHMAX * 2,  MX_PREFTT|MX_MPROT|MX_READABLE);
+
+		ret = Mxalloc(sizeof(DHSTINFO) + DL_PATHMAX * 2,  MX_PREFTTRAM|MX_MPROT|MX_READABLE);
 		if(!ret)
 		{
 			form_alert(1,tree_addr[DIAL_LIBRARY][DI_MEMORY_ERROR].ob_spec.free_string);

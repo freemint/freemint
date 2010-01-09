@@ -12,14 +12,14 @@
 typedef size_t socklen_t;
 # endif
 
-#define OFFSET	((short)((struct sockaddr_un *)0)->sun_path)
+#define OFFSET	((socklen_t)((struct sockaddr_un *)0)->sun_path)
 
 int
 main (void)
 {
 	struct sockaddr_un server_un;
 	int fd, r;
-	
+
 	fd = socket (AF_UNIX, SOCK_STREAM, 0);
 	if (fd < 0)
 	{
@@ -44,9 +44,8 @@ main (void)
 		return 0;
 	}
 #endif /* NONBLOCK */
-	
-	r = connect (fd, (struct sockaddr *)&server_un,
-			OFFSET + strlen (server_un.sun_path));
+
+	r = connect (fd, (struct sockaddr *)&server_un, OFFSET + strlen (server_un.sun_path));
 
 #ifdef NONBLOCK
 	if (0)
@@ -71,7 +70,7 @@ main (void)
 		FD_ZERO(&sel);
 		FD_SET(fd, &sel);
 		while (!select (32, NULL, &sel, NULL, NULL))
-			FD_SET(fd, &sel);		
+			FD_SET(fd, &sel);
 #endif
 		size = sizeof (long);
 		optval = 7000;
@@ -81,7 +80,7 @@ main (void)
 			perror ("setsockopt");
 			return 0;
 		}
-		
+
 		size = sizeof (long);
 		r = getsockopt (fd, SOL_SOCKET, SO_RCVBUF, &optval, &size);
 		if (r < 0)
@@ -90,7 +89,7 @@ main (void)
 			return 0;
 		}
 		printf ("Rcv buffer: %ld bytes\n", optval);
-		
+
 		size = sizeof (long);
 		r = getsockopt (fd, SOL_SOCKET, SO_SNDBUF, &optval, &size);
 		if (r < 0)

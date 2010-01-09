@@ -1,30 +1,30 @@
 /*
  * Copyright 2000 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
  * any later version.
- * 
+ *
  * This file is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
- * 
+ *
+ *
  * Started:      2000-05-02
- * 
+ *
  * Changes:
- * 
+ *
  * 2000-05-02:
- * 
+ *
  * - inital version
- * 
+ *
  */
 
 # include "blowfish.h"
@@ -90,7 +90,7 @@ byte_copy (char *to, char *from, short bytes)
 {
 	/* This should produce dbra loop
 	 */
-	
+
 	do {
 		*to++ = *from++;
 	}
@@ -99,7 +99,7 @@ byte_copy (char *to, char *from, short bytes)
 
 /*
  * blow_doblock
- * 
+ *
  * This is the function that is called from crypt_rwabs() to en- or decrypt one
  * or more disk blocks. Blowfish is used in CBC mode (CipherBlock Chaining),
  * with the physical record number as the initial value for the feedback
@@ -122,34 +122,34 @@ blow_doblock (BF_KEY *bfk,
 	ulong count;
 	ulong block;
 	ulong blocksize;
-	
+
 	/* Paranoia */
 	assert (((size % p_secsize) == 0));
-	
+
 	/* Initialize local variables, and the CBC feedback register */
 	feedback[0] = 0;
 	feedback[1] = block = rec;
 	count = 0;
 	blocksize = p_secsize;
-	
+
 # ifdef __M68000__
 	if (((ulong) buf & 1L) /* && (mcpu < 20) */)
 	{
 		/* Unfortunately, the block isn't word aligned ...
 		 */
 		register ulong i;
-		
+
 		for (i = 0; i < size; i += 8)
 		{
 			ulong lr[2];
-			
+
 			byte_copy ((char *) lr, (char *) buf, 7);
 			(*crypt)(bfk, lr, feedback);
 			byte_copy ((char *) buf, (char *) lr, 7);
-			
+
 			buf += 8;
 			count += 8;
-			
+
 			/* After each physical diskblock, re-initialize the
 			 * feedback register
 			 */
@@ -168,13 +168,13 @@ blow_doblock (BF_KEY *bfk,
 		 */
 		register ulong *left = (ulong *) buf;
 		register ulong i;
-		
+
 		for (i = 0; i < size; i += 8)
 		{
 			(*crypt)(bfk, left, feedback);
 			left += 2;
 			count += 8;
-			
+
 			/* After each physical diskblock, re-initialize the
 			 * feedback register
 			 */
@@ -191,12 +191,12 @@ static void
 blow_keyinit (BF_KEY *key, char *passphrase)
 {
 	struct MD5Context md5sum;
-	char hash [16];
-	
+	unsigned char hash [16];
+
 	MD5Init (&md5sum);
-	MD5Update (&md5sum, passphrase, strlen (passphrase));
+	MD5Update (&md5sum, (unsigned char *)passphrase, (unsigned short)strlen (passphrase));
 	MD5Final (hash, &md5sum);
-	
+
 	InitializeBlowfish (key, hash, 16);
 }
 
@@ -212,11 +212,11 @@ void *
 make_key (char *passphrase, int cipher)
 {
 	KEY *key = malloc (sizeof (*key));
-	
+
 	if (key)
 	{
 		key->cipher = cipher;
-		
+
 		switch (cipher)
 		{
 			/* blowfish */
@@ -225,18 +225,18 @@ make_key (char *passphrase, int cipher)
 				blow_keyinit (&(key->blowfish), passphrase);
 				break;
 			}
-			
+
 			/* unknown */
 			default:
 			{
 				free (key);
 				key = NULL;
-				
+
 				break;
 			}
 		}
 	}
-	
+
 	return key;
 }
 
@@ -245,9 +245,9 @@ encrypt_block (void *_key, void *_buf, int32_t bufsize, int32_t recno, int32_t p
 {
 	KEY *key = _key;
 	char *buf = _buf;
-	
+
 	assert (bufsize > p_secsize);
-	
+
 	if (recno == 0)
 	{
 		/* skip first sector */
@@ -255,16 +255,16 @@ encrypt_block (void *_key, void *_buf, int32_t bufsize, int32_t recno, int32_t p
 		buf += p_secsize;
 		bufsize -= p_secsize;
 	}
-	
+
 	if (bufsize)
 	{
 		if (key->cipher)
 			return -1;
-		
+
 		blow_doblock (&(key->blowfish), blow_cbc_encipher,
 				buf, bufsize, recno, p_secsize);
 	}
-	
+
 	return 0;
 }
 
@@ -273,9 +273,9 @@ decrypt_block (void *_key, void *_buf, int32_t bufsize, int32_t recno, int32_t p
 {
 	KEY *key = _key;
 	char *buf = _buf;
-	
+
 	assert (bufsize > p_secsize);
-	
+
 	if (recno == 0)
 	{
 		/* skip first sector */
@@ -283,15 +283,15 @@ decrypt_block (void *_key, void *_buf, int32_t bufsize, int32_t recno, int32_t p
 		buf += p_secsize;
 		bufsize -= p_secsize;
 	}
-	
+
 	if (bufsize)
 	{
 		if (key->cipher)
 			return -1;
-		
+
 		blow_doblock (&(key->blowfish), blow_cbc_decipher,
 				buf, bufsize, recno, p_secsize);
 	}
-	
+
 	return 0;
 }

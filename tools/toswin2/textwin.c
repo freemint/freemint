@@ -13,7 +13,7 @@
  *
  * This would probably even be faster, because it would be a lot easier
  * to stuff multiple update operations into one single call to the
- * 
+ *
  */
 #include <mintbind.h>
 #include <signal.h>
@@ -201,7 +201,7 @@ draw_acs_text(TEXTWIN* t, short textcolor, short x, short y, char* buf)
 				letter[0] = t->cfg->char_tab == TAB_ATARI ?
 					'\243' : '\234';
 				set_textcolor (textcolor);
-				v_gtext (vdi_handle, x, y + t->cbase, letter);
+				v_gtext (vdi_handle, x, y + t->cbase, (char *)letter);
 				break;
 
 			case '.': /* ACS_DARROW */
@@ -212,7 +212,7 @@ draw_acs_text(TEXTWIN* t, short textcolor, short x, short y, char* buf)
 				letter[0] = t->cfg->char_tab == TAB_ATARI ?
 					'v' : '\002';
 				set_textcolor (textcolor);
-				v_gtext (vdi_handle, x, y + t->cbase, letter);
+				v_gtext (vdi_handle, x, y + t->cbase, (char *)letter);
 				break;
 
 			case ',': /* ACS_LARROW */
@@ -223,7 +223,7 @@ draw_acs_text(TEXTWIN* t, short textcolor, short x, short y, char* buf)
 				letter[0] = t->cfg->char_tab == TAB_ATARI ?
 					'<' : '\004';
 				set_textcolor (textcolor);
-				v_gtext (vdi_handle, x, y + t->cbase, letter);
+				v_gtext (vdi_handle, x, y + t->cbase, (char *)letter);
 				break;
 
 			case '+': /* ACS_RARROW */
@@ -234,7 +234,7 @@ draw_acs_text(TEXTWIN* t, short textcolor, short x, short y, char* buf)
 				letter[0] = t->cfg->char_tab == TAB_ATARI ?
 					'>' : '\003';
 				set_textcolor (textcolor);
-				v_gtext (vdi_handle, x, y + t->cbase, letter);
+				v_gtext (vdi_handle, x, y + t->cbase, (char *)letter);
 				break;
 
 			case '-': /* ACS_UARROW */
@@ -245,7 +245,7 @@ draw_acs_text(TEXTWIN* t, short textcolor, short x, short y, char* buf)
 				letter[0] = t->cfg->char_tab == TAB_ATARI ?
 					'^' : '\001';
 				set_textcolor (textcolor);
-				v_gtext (vdi_handle, x, y + t->cbase, letter);
+				v_gtext (vdi_handle, x, y + t->cbase, (char *)letter);
 				break;
 
 			case 'h': /* ACS_BOARD */
@@ -267,7 +267,7 @@ draw_acs_text(TEXTWIN* t, short textcolor, short x, short y, char* buf)
 				letter[0] = t->cfg->char_tab == TAB_ATARI ?
 					'o' : '\372';
 				set_textcolor (textcolor);
-				v_gtext (vdi_handle, x, y + t->cbase, letter);
+				v_gtext (vdi_handle, x, y + t->cbase, (char *)letter);
 				break;
 
 			case 'a': /* ACS_CKBOARD */
@@ -290,7 +290,7 @@ draw_acs_text(TEXTWIN* t, short textcolor, short x, short y, char* buf)
 					'\260' : '\370';
 				set_textcolor (textcolor);
 				set_texteffects (0);
-				v_gtext(vdi_handle, x, y + t->cbase, letter);
+				v_gtext(vdi_handle, x, y + t->cbase, (char *)letter);
 				break;
 
 			case '`': /* ACS_DIAMOND */
@@ -315,10 +315,10 @@ draw_acs_text(TEXTWIN* t, short textcolor, short x, short y, char* buf)
 				letter[0] = t->cfg->char_tab == TAB_ATARI ?
 					'>' : '\362';
 				set_textcolor (textcolor);
-				v_gtext (vdi_handle, x, y + t->cbase, letter);
+				v_gtext (vdi_handle, x, y + t->cbase, (char *)letter);
 				if (t->cfg->char_tab != TAB_ATARI) {
 					letter[0] = '_';
-					v_gtext (vdi_handle, x, y + t->cbase, letter);
+					v_gtext (vdi_handle, x, y + t->cbase, (char *)letter);
 				}
 				break;
 
@@ -330,12 +330,12 @@ draw_acs_text(TEXTWIN* t, short textcolor, short x, short y, char* buf)
 				if (t->cfg->char_tab != TAB_ATARI) {
 					letter[0] = '\343';
 					set_textcolor (textcolor);
-					v_gtext (vdi_handle, x, y + t->cbase, letter);
+					v_gtext (vdi_handle, x, y + t->cbase, (char *)letter);
 				} else {
 					/* FIXME: Paint greek letter pi.  */
 					letter[0] = '*';
 					set_textcolor (textcolor);
-					v_gtext (vdi_handle, x, y + t->cbase, letter);
+					v_gtext (vdi_handle, x, y + t->cbase, (char *)letter);
 				}
 				break;
 
@@ -406,10 +406,10 @@ draw_acs_text(TEXTWIN* t, short textcolor, short x, short y, char* buf)
 				letter[0] = t->cfg->char_tab == TAB_ATARI ?
 					'y' : '\363';
 				set_textcolor (textcolor);
-				v_gtext (vdi_handle, x, y + t->cbase, letter);
+				v_gtext (vdi_handle, x, y + t->cbase, (char *)letter);
 				if (t->cfg->char_tab != TAB_ATARI) {
 					letter[0] = '_';
-					v_gtext (vdi_handle, x, y + t->cbase, letter);
+					v_gtext (vdi_handle, x, y + t->cbase, (char *)letter);
 				}
 				break;
 
@@ -440,9 +440,9 @@ draw_acs_text(TEXTWIN* t, short textcolor, short x, short y, char* buf)
 			case '|': /* ACS_NEQUAL */
 				letter[0] = '=';
 				set_textcolor (textcolor);
-				v_gtext (vdi_handle, x, y + t->cbase, letter);
+				v_gtext (vdi_handle, x, y + t->cbase, (char *)letter);
 				letter[0] = '/';
-				v_gtext (vdi_handle, x, y + t->cbase, letter);
+				v_gtext (vdi_handle, x, y + t->cbase, (char *)letter);
 				break;
 
 			case 'g': /* ACS_PLMINUS */
@@ -453,7 +453,7 @@ draw_acs_text(TEXTWIN* t, short textcolor, short x, short y, char* buf)
 				letter[0] = t->cfg->char_tab == TAB_ATARI ?
 					'\261' : '\361';
 				set_textcolor (textcolor);
-				v_gtext (vdi_handle, x, y + t->cbase, letter);
+				v_gtext (vdi_handle, x, y + t->cbase, (char *)letter);
 				break;
 
 			case 'o': /* ACS_S1 */
@@ -709,7 +709,7 @@ update_chars (TEXTWIN *t, short firstcol, short lastcol, short firstline,
 #define flushbuf()	\
 	{ 		\
 		buf[i] = 0;	\
-		draw_buf(t, buf, px, py, flag, lineforce); \
+		draw_buf(t, (char *)buf, px, py, flag, lineforce); \
 		px += bufwidth; \
 		i = bufwidth = 0; \
 	}
@@ -827,10 +827,10 @@ update_cursor (WINDOW* win, int top)
 	bool off = FALSE;
 	unsigned long old_flag = 0;
 	unsigned long new_flag = 0;
-	
+
 	if (win->redraw)
 		return;
-	
+
 	if (top == 1)
 		tw->wintop = 1;
 	else if (top == 0) {
@@ -905,7 +905,7 @@ update_cursor (WINDOW* win, int top)
 
 	tw->dirty[tw->cy] |= SOMEDIRTY;
 	tw->cflags[tw->cy][tw->cx] |= CDIRTY;
-	
+
 	if (win->redraw)
 		fprintf (stderr, "ALERT: Another redraw is already in progress!\n");
 	win->redraw = 1;
@@ -941,7 +941,7 @@ update_cursor (WINDOW* win, int top)
 				if (!off)
 					off = mouse_hide_if_needed (&curr);
 
-				if ((tw->curr_tflags & TCURS_VVIS) 
+				if ((tw->curr_tflags & TCURS_VVIS)
 				    || !tw->curs_drawn) {
 					char buf[2] = {
 						tw->cdata[tw->cy][tw->cx],
@@ -1126,7 +1126,7 @@ void refresh_textwin(TEXTWIN *t, short force)
 
 	t2 = v->work;
 	rc_intersect(&gl_desk, &t2);
-	
+
 	if (v->redraw)
 		fprintf (stderr, "ALERT: Another redraw is already in progress!\n");
 	v->redraw = 1;
@@ -1183,7 +1183,7 @@ static void full_textwin(WINDOW *v)
 #ifndef ONLY_XAAES
 	if (v->wco)
 	{
-#endif	
+#endif
 		wind_get_grect(v->handle, m, &new);
 		snap(NULL, &new, t->cmaxwidth, t->cheight);
 		wind_xset_grect(v->handle, WF_CURRXYWH, &new, &v->work);
@@ -1192,7 +1192,7 @@ static void full_textwin(WINDOW *v)
 	else
 	{
 		wind_get_grect(v->handle, m, &new);
-	
+
 		wind_calc_grect(WC_WORK, v->kind, &new, &v->work);
 
 		/* Snap */
@@ -1214,7 +1214,7 @@ resnap_rect(GRECT *m, GRECT *r, short ncw, short nch, short ocw, short och, long
 		r->g_w = max_w;
 	if (r->g_w > m->g_w)
 		r->g_w = m->g_w;
-	
+
 	r->g_h = (r->g_h / och) * nch;
 	if (r->g_h > m->g_h)
 		r->g_h = m->g_h;
@@ -1254,7 +1254,7 @@ resnap_textwin_rects(WINDOW *w, short new_cw, short new_ch)
  	t->cheight = new_ch;
 	t->win->max_w = NCOLS(t) * t->cmaxwidth;
 	t->win->max_h = NROWS(t) * t->cheight;
-	
+
 	t->offy = ((t->maxy * new_ch) - w->work.g_h);
 	refresh_textwin(t, TRUE);
 }
@@ -1278,7 +1278,7 @@ static void move_textwin(WINDOW *v, short x, short y, short w, short h)
 			w = full.g_w;
 		if (h > full.g_h)
 			h = full.g_h;
-	
+
 		wind_calc(WC_WORK, v->kind, x, y, w, h, &new.g_x, &new.g_y, &new.g_w, &new.g_h);
 	}
 #endif
@@ -1291,7 +1291,7 @@ static void move_textwin(WINDOW *v, short x, short y, short w, short h)
 			new.g_h = v->full.g_h;
 
 		snap(&v->work, &new, t->cmaxwidth, t->cheight);
-	}	
+	}
 #ifndef ONLY_XAAES
 	if (v->wco)
 #endif
@@ -1314,7 +1314,7 @@ static void move_textwin(WINDOW *v, short x, short y, short w, short h)
 		t->cfg->ypos = new.g_y;
 	}
 	t->windirty = 1;
-	
+
 }
 static void repos_textwin(WINDOW *v, short x, short y, short w, short h)
 {
@@ -1362,12 +1362,12 @@ scrollupdn (TEXTWIN *t, short off, short direction)
 
 	t2 = v->work;
 	rc_intersect(&gl_desk, &t2);
-	
+
 	if (v->redraw)
 		fprintf (stderr, "ALERT: Another redraw is already in progress!\n");
 	v->redraw = 1;
 	update_window_lock();
-	
+
 	get_window_rect(v, WF_FIRSTXYWH, &t1);
 	while (t1.g_w && t1.g_h) {
 		if (rc_intersect(&t2, &t1)) {
@@ -1447,7 +1447,7 @@ static void arrow_textwin(WINDOW *v, short msg)
 	}
 	refresh_textwin(t, TRUE);
 }
-	
+
 static void vslid_textwin(WINDOW *v, short vpos)
 {
 	TEXTWIN	*t = (TEXTWIN *)v->extra;
@@ -1897,7 +1897,7 @@ TEXTWIN *create_textwin(char *title, WINCFG *cfg)
 			   cfg->col * t->cmaxwidth, cfg->row * t->cheight,
 			   &dummy, &dummy, &bwidth, &bheight);
 
-		v = create_window(title, cfg->kind, cfg->xpos, cfg->ypos, 
+		v = create_window(title, cfg->kind, cfg->xpos, cfg->ypos,
 				  bwidth, bheight, SHRT_MAX >> 1, SHRT_MAX >> 1, -1L);
 	}
 #endif
@@ -2073,7 +2073,7 @@ void textwin_setfont(TEXTWIN *t, short font, short points)
 #ifndef ONLY_XAAES
 	if (w->wco)
 	{
-		
+
 #endif
 		resnap_textwin_rects(w, maxwidth, distances[0] + distances[4] + 1);
 #ifndef ONLY_XAAES
@@ -2084,7 +2084,7 @@ void textwin_setfont(TEXTWIN *t, short font, short points)
 		t->cheight = distances[0]+distances[4]+1;
 		t->win->max_w = width = NCOLS(t) * t->cmaxwidth;
 		t->win->max_h = height = NROWS(t) * t->cheight;
-	
+
 		wind_calc(WC_BORDER, w->kind, w->full.g_x, w->full.g_y, width, height, &dummy, &dummy, &w->full.g_w, &w->full.g_h);
 		if (w->full.g_w > gl_desk.g_w)
 			w->full.g_w = gl_desk.g_w;
@@ -2292,7 +2292,7 @@ change_height (TEXTWIN* tw, short rows)
 	tw->scroll_bottom = tw->maxy;
 	tw->scroll_top = tw->miny;
 	tw->curr_tflags &= ~TORIGIN;
-	
+
 	/* Dunno why this is necessary.  */
 	tw->offy += diff * tw->cheight;
 
@@ -2357,7 +2357,7 @@ change_width (TEXTWIN* tw, short cols)
 	}
 
 	tw->maxx += diff;
-	
+
 	if (tw->cx >= NCOLS (tw))
 		tw->cx = NCOLS (tw) - 1;
 

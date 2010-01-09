@@ -1,24 +1,24 @@
 /*
  * Filename:     main.c
  * Project:      GlueSTiK
- * 
+ *
  * Note:         Please send suggestions, patches or bug reports to me
  *               or the MiNT mailing list <mint@fishpool.com>.
- * 
+ *
  * Copying:      Copyright 1999 Frank Naumann <fnaumann@freemint.de>
- * 
+ *
  * Portions copyright 1997, 1998, 1999 Scott Bigham <dsb@cs.duke.edu>
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
  * any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
@@ -91,7 +91,7 @@ static void
 cleanup (void)
 {
 	int i;
-	
+
 	for (i = 0; cleanup_funcs [i]; i++)
 		(*cleanup_funcs [i])();
 }
@@ -104,24 +104,24 @@ static int
 install_cookie (void)
 {
 	long dummy;
-	
+
 	if (Ssystem (-1, 0, 0) == -32)
 	{
-		Cconws (MSG_MINT);
+		(void)Cconws (MSG_MINT);
 		return 1;
 	}
-	
+
 	if (Ssystem (S_GETCOOKIE, C_STiK, &dummy) == 0)
 	{
-		Cconws (MSG_ALREADY);
+		(void)Cconws (MSG_ALREADY);
 		return 1;
 	}
-	
+
 	if (Ssystem (S_SETCOOKIE, C_STiK, (long) &stik_driver) != 0)
 	{
 		return 1;
 	}
-	
+
 	return 0;
 }
 
@@ -149,10 +149,10 @@ static void
 end (long sig)
 {
 	Psigreturn ();
-	
+
 	cleanup ();
 	uninstall_cookie ();
-	
+
 	exit (0);
 }
 
@@ -162,33 +162,33 @@ main (void)
 	if (fork () == 0)
 	{
 		int i;
-		
-		Cconws (MSG_BOOT);
-		Cconws (MSG_GREET);
+
+		(void)Cconws (MSG_BOOT);
+		(void)Cconws (MSG_GREET);
 # ifdef ALPHA
 		Cconws (MSG_ALPHA);
 # endif
-		Cconws ("\r\n");
-		
+		(void)Cconws ("\r\n");
+
 		for (i = 0; init_funcs [i]; ++i)
 		{
 			if (!(*init_funcs [i])())
 			{
-				Cconws (MSG_FAILURE);
-				
+				(void)Cconws (MSG_FAILURE);
+
 				cleanup ();
 				exit (1);
 			}
 		}
-		
+
 		if (install_cookie ())
 		{
-			Cconws (MSG_FAILURE);
-			
+			(void)Cconws (MSG_FAILURE);
+
 			cleanup ();
 			exit (1);
 		}
-		
+
 		Psignal (SIGALRM, nothing);
 		Psignal (SIGTERM, end);
 		Psignal (SIGQUIT, end);
@@ -198,19 +198,19 @@ main (void)
 		Psignal (SIGABRT, nothing);
 		Psignal (SIGUSR1, nothing);
 		Psignal (SIGUSR2, nothing);
-		
+
 		for (;;)
 		{
 			PMSG pmsg;
 			long r;
-			
+
 			r = Pmsg (0, GS_GETHOSTBYNAME, &pmsg);
 			if (r)
 			{
 				/* printf ("Pmsg wait fail!\n"); */
 				break;
 			}
-			
+
 			switch (pmsg.msg1)
 			{
 				case 1:
@@ -226,20 +226,20 @@ main (void)
 					//pmsg.msg2 = realloc ((void *) pmsg.msg2);
 					break;
 				case 5:
-					
+
 					break;
 			}
-			
+
 			r = Pmsg (1, 0xffff0000L | pmsg.pid, &pmsg);
 			if (r)
 			{
 				/* printf ("Pmsg back fail!\n"); */
 			}
 		}
-		
+
 		cleanup ();
 		uninstall_cookie ();
 	}
-	
+
 	return 0;
 }

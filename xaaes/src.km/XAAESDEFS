@@ -35,7 +35,7 @@ XAAESDEFS += -DST_ONLY
 endif
 
 ifeq ($(xaaes),030)
-TARGET = ../xaaes.km
+TARGET = ../xaaes030.km
 CPU = 020-60
 XAAESDEFS += -DGENERATE_DIAGS=0 -DDEBUG_CONTROL=0 -DBOOTLOG=1
 endif
@@ -55,4 +55,4 @@ endif
 #
 # all default targets
 #
-xaaestargets = deb 000 sto 030 040 060 ozk
+xaaestargets = deb 000 sto 030 040 ozk

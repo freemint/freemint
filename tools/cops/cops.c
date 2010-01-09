@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * COPS (c) 1995 - 2003 Sven & Wilfried Behne
  *                 2004 F.Naumann & O.Skancke
  *
@@ -416,7 +416,7 @@ init_cpx(char *file_path, char *file_name, short inactive)
 		cpx_desc->window_y = -1;
 		cpx_desc->icon_x = -1; /* Iconposition undefiniert */
 		cpx_desc->icon_y = -1;
-	
+
 		cpx_desc->obfix_cnt = 0;
 		cpx_desc->box_width = -1;
 		cpx_desc->box_height = -1;
@@ -430,7 +430,7 @@ init_cpx(char *file_path, char *file_name, short inactive)
 
 		cpx_desc->old.next = 0L;
 		strncpy(cpx_desc->old.f_name, file_name, 13); /* aus Kompatibilitaetsgruenden */
-		cpx_desc->old.segm = &cpx_desc->segm;						
+		cpx_desc->old.segm = &cpx_desc->segm;
 
 		DEBUG(("load_cpx(%s)\n", cpx_desc->file_name));
 
@@ -517,7 +517,7 @@ static short
 cmp_cpx_id(long id, void *entry)
 {
 	id -= ((CPX_DESC *) entry)->old.header.cpx_id;
-	
+
 	if (id < 0)
 		return 1;
 	if (id > 0)
@@ -575,7 +575,7 @@ update_cpx_list(void)
 			long err_xr;
 			char buf[256+4];
 			#define	name	(buf + 4)
-			
+
 			err = Dxreaddir(256 + 4, dir_handle, buf, &xattr, &err_xr);
 			if (err_xr)
 				err = err_xr;
@@ -588,16 +588,16 @@ update_cpx_list(void)
 				else
 				{
 					long	len;
-					
+
 					len = strlen(name);
-					
+
 					if (len > 4)
 					{
 						char tmp[256];
 
 						strcpy(tmp, name + len - 4); /* die letzten 4 Zeichen kopieren */
 						strupr(tmp);
-						
+
 						cpx_desc = list_search(cpx_desc_list, (long) name, offsetof(CPX_DESC, next), search_cpx_name);
 
 						/* CPX bereits vorhanden? */
@@ -655,7 +655,7 @@ update_cpx_list(void)
 		while (err == 0);
 
 		Dclosedir(dir_handle);
-	}	
+	}
 
 	cpx_desc = cpx_desc_list;
 
@@ -683,7 +683,7 @@ update_cpx_list(void)
 	{
 		CPX_DESC *test;
 		CPX_DESC *next;
-		
+
 		next = cpx_desc->next;
 		test = list_search(next, cpx_desc->old.header.cpx_id, offsetof(CPX_DESC, next), cmp_cpx_id);
 
@@ -707,7 +707,7 @@ update_cpx_list(void)
 				}
 				else
 					remove_cpx(cpx_desc);
-			}			
+			}
 		}
 		cpx_desc = next;
 	}
@@ -798,7 +798,7 @@ sort_cpx_icons(short x, short y, short window_width)
 		{
 			cpx_desc->icon_x = x + 32;
 			cpx_desc->icon_y = y;
-			
+
 			x += 96;
 			if (x + 96 > window_width)
 			{
@@ -843,10 +843,10 @@ tidy_up_icons(void)
 			/* Verkettung aendern */
 			for (i = 1; i < entries; i++)
 				cpxd_array[i - 1]->next = cpxd_array[i];
-			
+
 			cpxd_array[entries - 1]->next = NULL; /* letzter CPX_DESC hat keinen Nachfolger */
 			cpx_desc_list = cpxd_array[0]; /* Zeiger auf den ersten CPX_DESC */
-	
+
 			free(cpxd_array);
 		}
 
@@ -873,7 +873,7 @@ tidy_up_icons(void)
 		{
 			sort_cpx_icons(0, 0, window->workarea.g_w);
 			get_cpx_bbox(&bbox);
-	
+
 			window->w = bbox.g_x + bbox.g_w;
 			window->h = bbox.g_y + bbox.g_h;
 			if ((window->w <= 0) || (window->h <= 0))
@@ -998,12 +998,12 @@ save_inf(void)
 	if (ret < 0L)
 	{
 		strcpy(inf_name, home);
-		strcat(inf_name, "COPS.inf");		
+		strcat(inf_name, "COPS.inf");
 		ret = Fcreate(inf_name, 0);
 
 		if (ret < 0L)
 		{
-			strcpy(inf_name, "COPS.inf");		
+			strcpy(inf_name, "COPS.inf");
 			ret = Fcreate(inf_name, 0);
 		}
 	}
@@ -1058,22 +1058,34 @@ call_help(void)
 	short help_id;
 
 	help_id = get_help_id();
+
 	if (help_id >= 0)
 	{
-		short msg[8];
+		union {
+			short a[8];
+			union {
+				short msg_id;
+				short sender_apl_id;
+				short sz;
+				char *buf;
+				short data0;
+				short data1;
+				short data2;
+			} va_start;
+		} msg;
 
 		strcpy(help_buf, home);
 		strcat(help_buf, "COPS.hyp");
 
-		msg[0] = VA_START;
-		msg[1] = app_id;
-		msg[2] = 0;
-		*(char **) &msg[3] = help_buf;
-		msg[5] = 0;
-		msg[6] = 0;
-		msg[7] = 0;
+		msg.va_start.msg_id = VA_START;
+		msg.va_start.sender_apl_id = app_id;
+		msg.va_start.sz = 0;
+		msg.va_start.buf = help_buf;
+		msg.va_start.data0 = 0;
+		msg.va_start.data1 = 0;
+		msg.va_start.data2 = 0;
 
-		appl_write(help_id, 16, msg);
+		appl_write(help_id, 16, msg.a);
 	}
 }
 
@@ -1095,11 +1107,11 @@ open_main_window(void)
 			read_inf(); /* CPXe nochmals anordnen */
 			must_read_inf = 0;
 		}
-		
+
 		if (tidy_up)
 			/* Icons neu anordnen */
 			tidy_up_icons();
-			
+
 		window = create_window(MAINWINDOWSTYLE, &settings.mw, &handle,
 				       fstring_addr[MENUTITLE_STR], fstring_addr[ICNFTITLE_STR]);
 
@@ -1135,7 +1147,7 @@ open_main_window(void)
 			window->vslide = -32767;
 			window->hslsize = -32767;
 			window->vslsize = -32767;
-	
+
 			set_slsize(window); /* Slidergroesse berechnen */
 			set_slpos(window); /* Sliderposition berechnen */
 
@@ -1186,15 +1198,15 @@ find_cpx(short mx, short my)
 	while (cpx_desc)
 	{
 		GRECT	m;
-		
+
 		m.g_x = mx;
 		m.g_y = my;
 		m.g_w = 1;
 		m.g_h = 1;
-		
-		if (cpx_in_rect(cpx_desc, &m))	
+
+		if (cpx_in_rect(cpx_desc, &m))
 			return cpx_desc;
-		
+
 		cpx_desc = cpx_desc->next;
 	}
 	return NULL;
@@ -1213,13 +1225,13 @@ cpx_in_rect(CPX_DESC *cpx_desc, GRECT *rect)
 	box.g_y = cpx_desc->icon_y + w->workarea.g_y - w->y;
 	box.g_w = 32;
 	box.g_h = 24;
-	
+
 	if (rc_intersect(rect, &box))
 		return 1;
 
 	vst_point(vdi_handle, 8, &dummy, &dummy, &dummy, &dummy);
 	vqt_extent(vdi_handle, cpx_desc->old.header.text, extent);
-	
+
 	box.g_w = extent[2] - extent[0];
 	box.g_x = cpx_desc->icon_x + w->workarea.g_x - w->x;
 	box.g_y = cpx_desc->icon_y + w->workarea.g_y - w->y;
@@ -1229,7 +1241,7 @@ cpx_in_rect(CPX_DESC *cpx_desc, GRECT *rect)
 
 	if (rc_intersect(rect, &box))
 		return 1;
-	
+
 	return 0;
 }
 
@@ -1257,7 +1269,7 @@ get_cpximg_size(CPX_DESC *cpx_desc, GRECT *area)
 	short extent[8];
 	short dummy;
 	short tw;
-	
+
 	vst_point(vdi_handle, 8, &dummy, &dummy, &dummy, &dummy);
 	vqt_extent(vdi_handle, cpx_desc->old.header.text, extent);
 	tw = extent[2] - extent[0];
@@ -1342,7 +1354,7 @@ redraw_main_window(WINDOW *w, GRECT *area)
 	if (w->wflags.iconified)
 	{
 		OBJECT *tree;
-		
+
 		tree = tree_addr[ICONIFIED_DIALOG];
 		*(GRECT *) &tree->ob_x = w->workarea;
 		tree[ICFDLG_ICON].ob_x = (tree->ob_width - tree[ICFDLG_ICON].ob_width) / 2;
@@ -1384,34 +1396,34 @@ redraw_main_window(WINDOW *w, GRECT *area)
 		{
 			struct cpxlist *cpx;
 			short mode;
-			
+
 			cpx = &cpx_desc->old;
 			pxy[4] = w->workarea.g_x + cpx_desc->icon_x - w->x;
 			pxy[5] = w->workarea.g_y + cpx_desc->icon_y - w->y;
 			pxy[6] = pxy[4] + 31;
 			pxy[7] = pxy[5] + 23;
-			
+
 			src.fd_addr = &cpx->header.icon;
-	
+
 			if (cpx_desc->selected)
 			{
 				short extent[8];
 				short xy[4];
-				
+
 				vqt_extent(vdi_handle, cpx_desc->old.header.text, extent);
-				
+
 				vswr_mode(vdi_handle, MD_REPLACE);
 				vsf_color(vdi_handle, 1);
 				vsf_interior(vdi_handle, 1);
 				vr_recfl(vdi_handle, pxy + 4);
-	
+
 				xy[0] = pxy[4] + 16 - ((extent[2] - extent[0]) / 2) - 1;
 				xy[1] = pxy[5] + 24 + 1;
 				xy[2] = xy[0] + extent[2] - extent[0] + 1;
 				xy[3] = xy[1] + 2 + extent[7] - extent[1] - 1;
-	
+
 				vr_recfl(vdi_handle, xy);
-	
+
 				colors[0] = G_WHITE;
 				colors[1] = G_BLACK;
 				mode = MD_TRANS;
@@ -1422,29 +1434,29 @@ redraw_main_window(WINDOW *w, GRECT *area)
 					colors[0] = G_LBLACK;
 				else
 					colors[0] = cpx_desc->old.header.i_info.i_color;
-	
+
 				colors[1] = G_WHITE;
 				mode = MD_REPLACE;
 			}
-	
+
 			vswr_mode(vdi_handle, mode);
 			vrt_cpyfm(vdi_handle, mode, pxy, &src, &des, colors);
 			vst_color(vdi_handle, colors[0]);
 			v_gtext(vdi_handle, pxy[4] + 16, pxy[5] + 24 + 2, cpx->header.text);
-	
+
 			if (cpx_desc->flags & CPXD_INACTIVE)
 			{
 				BITBLK *inactive;
-	
+
 				inactive = tree_addr[ICON_DIALOG][INACTIVE_IMG].ob_spec.bitblk;
-				
+
 				colors[0] = G_RED;
 				colors[1] = G_WHITE;
-				
+
 				src.fd_addr = inactive->bi_pdata;
 				vrt_cpyfm(vdi_handle, MD_TRANS, pxy, &src, &des, colors);
 			}
-			
+
 			cpx_desc = cpx_desc->next;
 		}
 	}
@@ -1566,7 +1578,7 @@ open_cpx(CPX_DESC *cpx_desc)
 
 	g_open_cpx = cpx_desc;
 }
-	
+
 /*----------------------------------------------------------------------------------------*/
 /* cpx_init() und cpx_call() aufrufen (Kontext und Stack gehoeren dem CPX) */
 /* Funktionsergebnis:	- */
@@ -1847,17 +1859,17 @@ cpx_info(CPX_DESC *cpx_desc)
 	char txt[34];
 	struct cpxlist *cpx;
 	char *str;
-	
+
 	cpx = &cpx_desc->old;
 	cpxinfo = tree_addr[INFO_DIALOG];
-	
+
 	str = is_userdef_title(cpxinfo + CITITLE);
 
 	if (str == 0L)
 		str = cpxinfo[CITITLE].ob_spec.free_string;
 
 	strcpy(str, cpx->header.text);
-	
+
 	if (strlen(cpx_desc->file_name) > 20)
 	{
 		strncpy(cpxinfo[CIFILE].ob_spec.free_string, cpx_desc->file_name, 17);
@@ -1869,7 +1881,7 @@ cpx_info(CPX_DESC *cpx_desc)
 	/*
 	 * XXX
 	 * is this replacement correct?
-	 * 
+	 *
 	 * ltoa(cpx->header.cpx_version, txt, 16);
 	 */
 	snprintf(txt, sizeof(txt), "%x", cpx->header.cpx_version);
@@ -1909,7 +1921,7 @@ cpx_info(CPX_DESC *cpx_desc)
 			cpx_desc->flags |= CPXD_AUTOSTART;
 		else
 			cpx_desc->flags &= ~CPXD_AUTOSTART;
-	
+
 		if (is_obj_SELECTED(cpxinfo, CIRAM))
 			cpx->header.flags.ram_resident = 1;
 		else
@@ -2130,7 +2142,7 @@ handle_keyboard(short kstate, short key)
 					msg[2] = 0;
 					msg[3] = main_window->handle;
 					msg[4] = -1;
-	
+
 					switch (key)
 					{
 						case KbUP: /* nach oben scrollen */
@@ -2154,7 +2166,7 @@ handle_keyboard(short kstate, short key)
 							break;
 						}
 					}
-	
+
 					if (msg[4] >= 0)
 						handle_message(msg);
 				}
@@ -2185,20 +2197,20 @@ handle_keyboard(short kstate, short key)
 				if (main_window && (main_window->wflags.iconified == 0))
 				{
 					short	msg[8];
-	
+
 					msg[0] = WM_ARROWED;
 					msg[1] = app_id;
 					msg[2] = 0;
 					msg[3] = main_window->handle;
 					msg[4] = -1;
-	
+
 					switch (key)
 					{
 						case 56: /* Seite nach oben scrollen */
 						{
 							msg[4] = WA_UPPAGE;
 							break;
-						}	
+						}
 						case 50: /* Seite nach unten scrollen */
 						{
 							msg[4] = WA_DNPAGE;
@@ -2215,7 +2227,7 @@ handle_keyboard(short kstate, short key)
 							break;
 						}
 					}
-	
+
 					if (msg[4] >= 0)
 						handle_message(msg);
 				}
@@ -2237,7 +2249,7 @@ handle_keyboard(short kstate, short key)
 								cpx_info(cpx_desc);
 						}
 						break;
-					}	
+					}
 					case 'a': /* alles markieren */
 					{
 						if (main_window->wflags.iconified == 0)
@@ -2267,7 +2279,7 @@ handle_keyboard(short kstate, short key)
 						if (_app)
 							/* COPS laeuft als Applikation */
 							return 1; /* Beenden moeglich */
-				
+
 						if ((_app == 0) && (aes_flags & GAI_MAGIC)) /* Accessory und MagiC als OS?  */
 						{
 							if (form_alert(1, fstring_addr[QUIT_ALERT]) == 1)
@@ -2281,7 +2293,7 @@ handle_keyboard(short kstate, short key)
 						if (main_window)
 						{
 							short msg[8];
-							
+
 							msg[0] = WM_CLOSED;
 							msg[1] = app_id;
 							msg[2] = 0;
@@ -2317,7 +2329,7 @@ handle_keyboard(short kstate, short key)
 						if (main_window && (main_window->wflags.iconified == 0))
 						{
 							short msg[8];
-							
+
 							msg[0] = WM_FULLED;
 							msg[1] = app_id;
 							msg[2] = 0;
@@ -2373,7 +2385,7 @@ drag_icons(void)
 			short y;
 
 			draw_cpx_frames(x_offset, y_offset); /* Iconrahmen zeichnen */
-			
+
 			x = n.x; /* Mauskoordinaten merken */
 			y = n.y;
 
@@ -2388,7 +2400,7 @@ drag_icons(void)
 			y_offset = n.y - m.y;
 		}
 
-		if (((n.x != m.x) || (n.y != m.y)) && 
+		if (((n.x != m.x) || (n.y != m.y)) &&
 			(between(n.x, w->workarea.g_x, w->workarea.g_x + w->workarea.g_w - 1) &&
 			  between(n.y, w->workarea.g_y, w->workarea.g_y + w->workarea.g_h - 1)))
 		{
@@ -2406,7 +2418,7 @@ drag_icons(void)
 				if (cpx_desc->selected)
 				{
 					GRECT area;
-				
+
 					get_cpximg_size(cpx_desc, &area);
 					area.g_x += w->workarea.g_x - w->x;
 					area.g_y += w->workarea.g_y - w->y;
@@ -2421,7 +2433,7 @@ drag_icons(void)
 
 			/* neues umgebendes Iconrechteck */
 			get_cpx_bbox(&bbox);
-	
+
 			/* Icon nach links herausgeschoben? */
 			if (bbox.g_x < 0)
 				x_offset = bbox.g_x;
@@ -2454,13 +2466,13 @@ drag_icons(void)
 			{
 				cpx_desc->icon_x -= x_offset;
 				cpx_desc->icon_y -= y_offset;
-	
+
 				cpx_desc = cpx_desc->next;
 			}
-	
+
 			w->x -= x_offset; /* Sliderposition korrigieren */
 			w->y -= y_offset;
-	
+
 			get_cpx_bbox(&bbox); /* umgebendes Iconrechteck */
 			w->w = bbox.g_x + bbox.g_w; /* Breite des Fensterinhalts */
 			w->h = bbox.g_y + bbox.g_h; /* Hoehe des Fensterinhalts */
@@ -2475,7 +2487,7 @@ drag_icons(void)
 					redraw_cpximg(cpx_desc);
 				cpx_desc = cpx_desc->next;
 			}
-	
+
 		}
 		graf_mouse(ARROW, 0L);
 	}
@@ -2598,7 +2610,7 @@ handle_bt1(CPX_DESC *cpx_desc, int kstate, int clicks)
 				}
 			}
 			break;
-		}	
+		}
 		case 2: /* Doppelklick */
 		{
 			/* Klick auf CPX-Icon? */
@@ -2654,7 +2666,7 @@ handle_button(int mx, int my, int bstate, int kstate, int clicks)
 						if (cpx)
 						{
 							OBJECT *tree;
-							
+
 							deselect_all_cpx_draw();
 							cpx->selected = 1;
 							redraw_cpximg(cpx);
@@ -2675,7 +2687,7 @@ handle_button(int mx, int my, int bstate, int kstate, int clicks)
 								tree[CP_DISABLE].ob_state &= ~OS_DISABLED;
 								tree[CP_ENABLE].ob_state |= OS_DISABLED;
 							}
-							
+
 							switch (form_popup(tree, 0, 0))
 							{
 								case CP_OPEN:
@@ -2689,7 +2701,7 @@ handle_button(int mx, int my, int bstate, int kstate, int clicks)
 									/* den Desktop ueber Veraenderungen informieren */
 									update_cpx_path();
 									break;
-								}	
+								}
 								case CP_ENABLE:
 								{
 									activate_cpx(cpx);
@@ -2707,11 +2719,11 @@ handle_button(int mx, int my, int bstate, int kstate, int clicks)
 						else
 						{
 							OBJECT *tree;
-							
+
 							deselect_all_cpx_draw();
 
 							tree = tree_addr[GNL_POPUP];
-							
+
 							tree->ob_x = mx;
 							tree->ob_y = my;
 
@@ -2732,7 +2744,7 @@ handle_button(int mx, int my, int bstate, int kstate, int clicks)
 								tree[PG_HELP].ob_state &= ~OS_DISABLED;
 							else
 								tree[PG_HELP].ob_state |= OS_DISABLED;;
-							
+
 							switch (form_popup(tree, 0, 0))
 							{
 								case PG_ABOUT:
@@ -2770,7 +2782,7 @@ handle_button(int mx, int my, int bstate, int kstate, int clicks)
 							}
 						}
 						break;
-					}	
+					}
 					case 2:
 						break;
 				}
@@ -2808,7 +2820,7 @@ handle_message(short msg[8])
 		case WM_FULLED:
 		{
 			GRECT bbox;
-			
+
 			get_cpx_bbox(&bbox);
 			full_window(msg[3], bbox.g_x + bbox.g_w + 8, bbox.g_y + bbox.g_h + 8);
 			break;
@@ -2873,7 +2885,7 @@ handle_message(short msg[8])
 			{
 				char *args;
 				short len;
-	
+
 				len = (short) strlen(*(char **)&msg[3]);
 				args = malloc(len + 2);
 				if (args)
@@ -2933,7 +2945,7 @@ do_args(char *args)
 		else if (b == '\'' && (path == args - 1)) /* Hochkomma? */
 		{
 			path++;
-			
+
 			while ((b = *args++) != 0)
 			{
 				len--;
@@ -2992,11 +3004,11 @@ top_cpx(void)
 {
 	CPX_DESC *cpx_desc;
 	short top_window;
-	
+
 	/* oberstes Fenster */
 	top_window = top_whdl();
 	cpx_desc = cpx_desc_list;
-	
+
 	while (cpx_desc)
 	{
 		/* Fenster geoeffnet? */
@@ -3147,7 +3159,7 @@ cpx_main_loop(void)
 		}
 
 		cpx_desc = cpx_desc_list;
-		
+
 		/* CPX-Liste durchlaufen */
 		while (cpx_desc)
 		{
@@ -3155,7 +3167,7 @@ cpx_main_loop(void)
 			if (cpx_desc->dialog)
 			{
 				OBJECT	*dummy;
-				
+
 				wdlg_get_tree(cpx_desc->dialog, &dummy, &cpx_desc->size);
 
 				/* Event-CPX? */
@@ -3198,9 +3210,9 @@ cpx_main_loop(void)
 							if (cpx_desc->whdl == top_whdl())
 							{
 								short key;
-								
+
 								key = MapKey(events.kstate, events.key);
-	
+
 								/* ALT-Kombination oder nicht druckbaren Scancode auswerten? */
 								if (key & (KbSCAN + KbALT))
 								{
@@ -3267,8 +3279,8 @@ cpx_main_loop(void)
 		{
 			if (main_window && (top_whdl() == main_window->handle))	/* liegt das Hauptfenster oben? */
 			{
-				short key;			
-			
+				short key;
+
 				key = MapKey(events.kstate, events.key);
 				/* Tastaturbehandlung fuer das Hauptfenster */
 				quit |= handle_keyboard(key & 0xff00,key & 0x00ff);
@@ -3303,7 +3315,7 @@ cpx_main_loop(void)
 
 	/* never reached */
 	assert(0);
-}	
+}
 
 static short
 MapKey(short keystate, short key)
@@ -3358,7 +3370,7 @@ handle_evnt_cpx(CPX_DESC *cpx_desc, EVNT *events)
 {
 	OBJECT *tree;
 	short mwhich;
-	
+
 	/* angefallene Ereignisse merken */
 	mwhich = events->mwhich;
 	/* ggf. Dummydialog verschieben */
@@ -3473,7 +3485,7 @@ static void
 fix_tree(OBJECT *obj)
 {
 	obj--;
-	
+
 	do {
 		obj++;
 		rsrc_obfix(obj, 0);
@@ -3491,17 +3503,17 @@ fix_popup_strings(OBJECT *obj)
 	{
 		/* G_SHORTCUT-Objekt (z.Zt. nur unter MagiC) vorhanden */
 		obj--;
-	
+
 		do {
 			obj++;
-	
+
 			if (obj->ob_type == G_STRING)
 				obj->ob_type = G_SHORTCUT;
 		}
 		while ((obj->ob_flags & OF_LASTOB) == 0);
 	}
 }
-	
+
 /*----------------------------------------------------------------------------------------*/
 /* Voreinstellungen setzen, Header der COPS.inf einlesen */
 /* Funktionsresultat:	- */
@@ -3566,7 +3578,7 @@ std_settings(void)
 			strcpy(inf_name, home);
 			strcat(inf_name, "defaults\\COPS.inf");
 			header_size =  read_file(inf_name, &settings, 0L, sizeof(struct alphaheader));
-			
+
 			if (header_size != sizeof(struct alphaheader))
 			{
 				if (header_size != sizeof(struct old_alphaheader))
@@ -3644,7 +3656,7 @@ init_rsrc(void)
 
 	fix_popup_strings(tree_addr[GNL_POPUP]);
 	fix_popup_strings(tree_addr[CPX_POPUP]);
-	
+
 	if ((aes_flags & GAI_CICN) && (aes_flags & GAI_MAGIC)
 		&& (aes_global[10] > 1)/* XXX */)
 	{
@@ -3698,14 +3710,14 @@ init_vwork(void)
 	short work_out[57];
 	short work_in[11];
 	int i;
-	
+
 	for (i = 0; i < 10; i++)
 		work_in[i] = 1;
-	
+
 	work_in[10] = 2;
 	vdi_handle = aes_handle;
 	v_opnvwk(work_in, &vdi_handle, work_out);
-	
+
 	return vdi_handle;
 }
 
@@ -3717,7 +3729,7 @@ main(int argc, char *argv[])
 		argc = 0;
 
 	app_id = appl_init();
- 
+
 	/* alles in Ordnung, AES vorhanden? */
 	if (app_id >= 0)
 	{
@@ -3732,7 +3744,7 @@ main(int argc, char *argv[])
 		else
 			/* als Applikation gestartet */
 			graf_mouse(ARROW, 0L);
-		
+
 		aes_handle = graf_handle(&pwchar, &phchar, &pwbox, &phbox);
 
 		if (init_vwork())
@@ -3740,7 +3752,7 @@ main(int argc, char *argv[])
 			/* Voreinstellungen vornehmen */
 			std_settings();
 			init_rsrc();
-			/* Checkboxen und šberschriften anpassen */
+			/* Checkboxen und ï¿½berschriften anpassen */
 			substitute_objects(rsc_rs_object, NUM_OBS, aes_flags, 0L, 0L);
 
 			/* Fensterdialoge vorhanden? */
@@ -3767,7 +3779,7 @@ main(int argc, char *argv[])
 								iconify_window(main_window->handle, 0L);
 						}
 					}
-					
+
 					/* Fenster noch nicht offen und CPXe noch nicht gescannt? */
 					if (main_window == NULL)
 					{
@@ -3788,14 +3800,14 @@ main(int argc, char *argv[])
 						if (path)
 						{
 							CPX_DESC *cpx_desc;
-							
+
 							cpx_desc = list_search(cpx_desc_list,
 									       (long)path,
 									       offsetof(CPX_DESC, next), search_cpx_name);
 							if (cpx_desc)
 							{
 								struct auto_start *auto_start;
-								
+
 								auto_start = malloc(sizeof(*auto_start));
 								if (auto_start)
 								{
@@ -3831,7 +3843,7 @@ main(int argc, char *argv[])
 				}
 			}
 			else
-			{			
+			{
 				form_alert(1, fstring_addr[NOWDIALOG_ALERT]);
 
 				/* Accessory? */
@@ -3850,7 +3862,7 @@ main(int argc, char *argv[])
 						if ((msg[0] == AC_OPEN) && (msg[4] == menu_id))
 							form_alert(1, fstring_addr[NOWDIALOG_ALERT]);
 					}
-				}	
+				}
 			}
 
 			/* Speicher fuer ersetzte Objekttypen freigeben */
@@ -3866,7 +3878,7 @@ main(int argc, char *argv[])
 		appl_exit();
 	}
 	else
-		Cconws(fstring_addr[NOAES_STR]);
+		(void)Cconws(fstring_addr[NOAES_STR]);
 
 	return 0;
 }

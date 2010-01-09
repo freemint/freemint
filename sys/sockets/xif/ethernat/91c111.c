@@ -214,7 +214,7 @@ short MII_bit_cycle(short MDO_MDOE_mask)
 	tmp = tmp & MII_MDI;									// Keep only MDI bit
 	MDO_MDOE_mask = MDO_MDOE_mask | tmp;			// OR in the read MDI bit
 */
-	
+
 	return tmp;
 }
 

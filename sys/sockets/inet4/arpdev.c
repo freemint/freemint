@@ -72,7 +72,7 @@ arpdev_read (FILEPTR *fp, char *buf, long nbytes)
 	struct arp_entry *are = 0;
 	long space, t;
 	int i, j;
-	
+
 	for (space = nbytes; space >= sizeof (info); fp->pos++)
 	{
 		i = fp->pos;
@@ -81,12 +81,12 @@ arpdev_read (FILEPTR *fp, char *buf, long nbytes)
 			are = arptab[j];
 			for (; are && --i >= 0; are = are->prnext);
 		}
-		
+
 		if (j >= ARP_HASHSIZE)
 			break;
-		
+
 		mint_bzero (&info, sizeof (info));
-		
+
 		/*
 		 * Protocoll address
 		 */
@@ -94,9 +94,8 @@ arpdev_read (FILEPTR *fp, char *buf, long nbytes)
 		info.praddr.shw_len = are->praddr.len;
 		info.praddr.shw_type = are->prtype;
 		if (are->flags & ATF_PRCOM)
-			memcpy (info.praddr.shw_addr, are->praddr.adr.bytes,
-				are->praddr.len);
-		
+			memcpy (info.praddr.shw_adr.bytes, are->praddr.adr.bytes, are->praddr.len);
+
 		/*
 		 * Hardware address
 		 */
@@ -104,17 +103,17 @@ arpdev_read (FILEPTR *fp, char *buf, long nbytes)
 		info.hwaddr.shw_len = are->hwaddr.len;
 		info.hwaddr.shw_type = are->hwtype;
 		if (are->flags & ATF_HWCOM)
-			memcpy (info.hwaddr.shw_addr, are->hwaddr.adr.bytes,
+			memcpy (info.hwaddr.shw_adr.bytes, are->hwaddr.adr.bytes,
 				are->hwaddr.len);
-		
+
 		info.flags = are->flags;
 		info.links = are->links;
 		t = event_delta (&are->tmout);
 		info.tmout = (t < 0) ? 0 : t * EVTGRAN;
-		
+
 		*infop++ = info;
 		space -= sizeof (info);
 	}
-	
+
 	return (nbytes - space);
 }

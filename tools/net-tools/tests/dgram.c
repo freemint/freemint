@@ -8,7 +8,7 @@
 
 #define SERVER	"/tmp/dgramd"
 #define CLIENT	"/tmp/dgram"
-#define OFFSET	((short)((struct sockaddr_un *)0)->sun_path)
+#define OFFSET	((socklen_t)((struct sockaddr_un *)0)->sun_path)
 
 int
 main (void)
@@ -20,14 +20,14 @@ main (void)
 	struct msghdr msg;
 
 	unlink (CLIENT);
-	
+
 	fd = socket (AF_UNIX, SOCK_DGRAM, 0);
 	if (fd < 0)
 	{
 		perror ("socket");
 		return 0;
 	}
-	
+
 	un.sun_family = AF_UNIX;
 	strcpy (un.sun_path, CLIENT);
 
@@ -59,11 +59,11 @@ main (void)
 	msg.msg_iovlen = 3;
 	msg.msg_control = 0;
 	msg.msg_controllen = 0;
-	
+
 	for (;;)
 	{
 		long nread;
-		
+
 		r = ioctl (fd, FIONREAD, &nread);
 		if (r < 0)
 		{

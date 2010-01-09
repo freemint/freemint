@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * HypView - (c)      - 2006 Philipp Donze
  *               2006 -      Philipp Donze & Odd Skancke
  *
@@ -65,7 +65,7 @@ static unsigned char c_len[NC];				/* 1FE */
 static unsigned char pt_len[NPT];			/* 13 */
 static unsigned short c_table[4096];		/* 2000 */
 static unsigned short pt_table[256];		/* 200 */
-	          
+
 static unsigned short bitbuf;
 #define BITBUFSIZ	(CHAR_BIT * (short)sizeof( bitbuf))
 
@@ -79,7 +79,7 @@ char *lh5_packedMem;
 long lh5_packedLen;
 char *lh5_unpackedMem;
 long lh5_unpackedLen;
-  
+
 /* Local prototype */
 void lh5_decode( short reset);
 
@@ -138,7 +138,10 @@ make_table( short nchar, unsigned char bitlen[], short tablebits, unsigned short
 		start[i] >>= jutbits;
 		weight[i] = 1U << (tablebits - i);
 	}
-	while (i <= 16) weight[i++] = 1U << (16 - i);
+	while (i <= 16) {
+		weight[i] = 1U << (16 - i);
+		i++;
+	}
 
 	i = start[tablebits + 1] >> jutbits;
 	if (i != (unsigned short)(1U << 16)) {

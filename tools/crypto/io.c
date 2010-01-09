@@ -1,30 +1,30 @@
 /*
  * Copyright 2000 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
- * 
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
  * any later version.
- * 
+ *
  * This file is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
- * 
+ *
+ *
  * Started:      2000-05-02
- * 
+ *
  * Changes:
- * 
+ *
  * 2000-05-02:
- * 
+ *
  * - inital version
- * 
+ *
  */
 
 # include "io.h"
@@ -52,19 +52,19 @@ static long
 rwabs_xhdi (ushort rw, void *buf, ulong size, ulong recno)
 {
 	register ulong n = size / ssize;
-	
+
 	if (!n || (recno + n) > sectors)
 	{
 		printf ("rwabs_xhdi: access outside partition (drv = %c:)\n", 'A'+drv);
 		exit (2);
 	}
-	
+
 	if (n > 65535UL)
 	{
 		printf ("rwabs_xhdi: n to large (drv = %c)\n", 'A'+drv);
 		exit (2);
 	}
-	
+
 	return XHReadWrite (major, minor, rw, start + recno, n, buf);
 }
 
@@ -77,7 +77,7 @@ io_init (void)
 		printf ("No XHDI installed (or to old)!\n");
 		return -1;
 	}
-	
+
 	//printf ("Found XHDI level %x.%x (%x).\n\n", (XHDI_installed >> 8), (XHDI_installed & 0x00ff), XHDI_installed);
 	return 0;
 }
@@ -87,33 +87,33 @@ io_open (int64_t _dev)
 {
 	short dev;
 	long r;
-	
+
 	if (_dev < 0 || _dev > 31)
 	{
 		printf ("invalid device!\n");
 		return -1;
 	}
-	
+
 	if (drv != -1)
 	{
 		printf ("can only open one device at a time!\n");
 		return -1;
 	}
-	
+
 	dev = _dev;
-	
-	r = XHInqDev2 (dev, &major, &minor, &start, NULL, &sectors, NULL);
+
+	r = XHInqDev2 (dev, &major, &minor, (unsigned long *)&start, NULL, (unsigned long *)&sectors, NULL);
 	if (r == 0)
-		r = XHInqTarget2 (major, minor, &ssize, NULL, NULL, 0);
+		r = XHInqTarget2 (major, minor, (unsigned long *)&ssize, NULL, NULL, 0);
 	else
 		printf ("XHInqDev2 = %li", r);
-	
+
 	if (r)
 	{
 		printf ("unable to get geometry for '%c' (%li)\n", 'A'+dev, r);
 		return -1;
 	}
-	
+
 # if 0
 	printf ("Information about %c:\n", 'A'+dev);
 	printf ("---------------------\n");
@@ -124,17 +124,17 @@ io_open (int64_t _dev)
 	printf ("physical sector size : %ld bytes\n", ssize);
 	printf ("\n");
 # endif
-	
+
 	r = Dlock (1, dev);
 	if (r && r != -32)
 	{
 		printf ("Can't lock %c:, drive in use?\n", 'A'+dev);
 		return -1;
 	}
-	
+
 	/* mark as open */
 	drv = dev;
-	
+
 	return drv;
 }
 
@@ -142,13 +142,13 @@ int
 io_close (int handle)
 {
 	long ret;
-	
+
 	if (handle != drv)
 		return -1;
-	
+
 	ret = Dlock (0, drv);
 	drv = -1;
-	
+
 	return 0;
 }
 
@@ -172,7 +172,7 @@ io_ioctrl (int handle, int mode, void *buf)
 		default:
 			return -1;
 	}
-	
+
 	return 0;
 }
 
@@ -181,22 +181,22 @@ io_read (int handle, void *buf, long size)
 {
 	long recno;
 	long ret;
-	
+
 	if (handle != drv)
 		return -1;
-	
+
 	assert ((size % ssize) == 0);
 	assert ((pos % ssize) == 0);
-	
+
 	recno = pos / ssize;
-	
+
 	ret = rwabs_xhdi (0, buf, size, recno);
 	if (!ret)
 	{
 		pos += size;
 		return size;
 	}
-	
+
 	return -1;
 }
 
@@ -205,22 +205,22 @@ io_write (int handle, void *buf, long size)
 {
 	long recno;
 	long ret;
-	
+
 	if (handle != drv)
 		return -1;
-	
+
 	assert ((size % ssize) == 0);
 	assert ((pos % ssize) == 0);
-	
+
 	recno = pos / ssize;
-	
+
 	ret = rwabs_xhdi (1, buf, size, recno);
 	if (!ret)
 	{
 		pos += size;
 		return size;
 	}
-	
+
 	return -1;
 }
 
@@ -229,7 +229,7 @@ io_seek (int handle, int whence, int64_t where)
 {
 	if (handle != drv)
 		return -1;
-	
+
 	switch (whence)
 	{
 		case SEEK_SET:
@@ -243,13 +243,13 @@ io_seek (int handle, int whence, int64_t where)
 		default:
 			return -1;
 	}
-	
+
 	if (where % ssize)
 		return -1;
-	
+
 	if (where > (int64_t) sectors * ssize)
 		return -1;
-	
+
 	pos = where;
 	return pos;
 }

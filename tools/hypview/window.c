@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * HypView - (c) 2001 - 2006 Philipp Donze
  *               2006 -      Philipp Donze & Odd Skancke
  *
@@ -27,6 +27,7 @@
 #include "include/scancode.h"
 #include "diallib.h"
 #include "defs.h"
+#include "hyp/search_d.h"
 
 extern WINDOW_DATA *Win;
 
@@ -53,7 +54,7 @@ void ReInitWindow(WINDOW_DATA *win, DOCUMENT *doc)
 	short old_ry = win->y_raster;
 	short visible_lines;
 	GRECT curr;
-	
+
 	win->data = doc;
 	win->title = doc->window_title;
 	win->x_raster = font_cw;
@@ -71,7 +72,7 @@ void ReInitWindow(WINDOW_DATA *win, DOCUMENT *doc)
 
 		wind_get_grect(0,WF_WORKXYWH, &screen);
 		wind_get_grect(win->whandle,WF_CURRXYWH, &curr);
-		
+
 		curr.g_w = win->full.g_w;
 		curr.g_h = win->full.g_h;
 
@@ -111,10 +112,10 @@ void ReInitWindow(WINDOW_DATA *win, DOCUMENT *doc)
 		wind_calc_grect(WC_BORDER, win->kind, &curr, &curr);
 		wind_set_grect(win->whandle, WF_CURRXYWH, &curr);
 	}
-	
+
 	wind_get_grect(win->whandle,WF_WORKXYWH, &curr);
 	visible_lines = (curr.g_h - win->y_offset) / win->y_raster;
-	
+
 	win->y_pos = min(doc->lines - visible_lines, doc->start_line);
 	win->y_pos = max(0, win->y_pos);
 	win->x_pos = 0;
@@ -215,7 +216,7 @@ HelpWindow(WINDOW_DATA *p, short obj, void *data)
 		if(!adjust_winsize && (win_w || win_h))
 		{
 			wind_calc_grect(WC_WORK, win->kind, open_size, open_size);
-			
+
 			if(win_w && (win_w*font_cw<open_size->g_w))
 				open_size->g_w=win_w*font_cw;
 			else
@@ -283,7 +284,7 @@ HelpWindow(WINDOW_DATA *p, short obj, void *data)
 		GRECT *out = (GRECT *)data,in;
 		GRECT screen;
 		wind_get_grect(0,WF_WORKXYWH,&screen);
-	
+
 		wind_calc_grect(WC_WORK,win->kind,out,&in);	/*	Arbeitsbereich berechnen	*/
 
 		/*	Falls Vergroessern: Verhindern, das Toolbar unsichtbar wird	*/
@@ -369,7 +370,7 @@ HelpWindow(WINDOW_DATA *p, short obj, void *data)
 			}
 			else if ( scan >= KbF11 && scan <= KbF20 )
 				MarkerSave ( doc, scan-KbF11 );
-			else 
+			else
 				event->mwhich|=MU_KEYBD;
 		}
 		else if(event->kstate & KbALT)		/*	Tastenkomb. mit Alt		*/
