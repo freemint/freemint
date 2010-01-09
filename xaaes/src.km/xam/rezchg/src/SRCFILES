@@ -1,0 +1,16 @@
+# This file gets included by the Makefile in this directory to determine
+# the files that should go only into source distributions.
+
+HEADER = xcb.h mvdi.h
+
+RCVIDEL_SRCS = videl.c
+RCNOVA_SRCS  = nova.c
+RCMILAN_SRCS = milan.c mvdi.c
+
+COBJC = $(RCVIDEL_SRCS) \
+	$(RCNOVA_SRCS)
+
+SOBJS =
+
+SRCFILES = $(HEADER) $(COBJS) $(SOBJS)
+
