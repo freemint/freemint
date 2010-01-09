@@ -207,7 +207,7 @@ print_moduleinfo(void)
 	}
 	FORCE("Loaded modules;");
 	i = 0;
-	
+
 	do {
 		FORCE(" module #%d", i);
 		FORCE("       Name: %s", km->name);
@@ -223,7 +223,7 @@ print_moduleinfo(void)
 		} else
 			FORCE(" No basepage - psudodriver");
 		i++;
-		
+
 		if (km->children) {
 			km = km->children;
 		} else {
@@ -251,7 +251,7 @@ add_km(struct kernel_module *parent, struct kernel_module *child)
 {
 	child->parent = parent;
 	child->prev = NULL;
-	
+
 	if ((child->next = parent->children))
 		child->next->prev = child;
 
@@ -301,21 +301,21 @@ load_module(struct kernel_module *parent, const char *path, const char *filename
 
 	size = fh.ftext + fh.fdata + fh.fbss;
 	size += 256; /* sizeof (struct basepage) */
-	
+
 	kmsize = ((sizeof(*km) + 15) & 0xfffffff0);
 
 	km = kmalloc(size + kmsize);
 	if (!km)
 	{
 		DEBUG(("load_module: out of memory?"));
-		
+
 		*err = ENOMEM;
 		goto failed;
 	}
 
 	mint_bzero(km, size + kmsize);
 	b = (struct basepage *)((char *)km + kmsize);
-	
+
 	b->p_lowtpa = (long) b;
 	b->p_hitpa = (long)((char *)b + size);
 
@@ -347,7 +347,7 @@ load_module(struct kernel_module *parent, const char *path, const char *filename
 		DEBUG(("load_and_reloc: failed"));
 		goto failed;
 	}
-	
+
 	km->b = b;
 	km->flags = MOD_LOADED;
 	if (path)
@@ -375,11 +375,11 @@ load_module(struct kernel_module *parent, const char *path, const char *filename
 			*sa = '\0';
 		}
 	}
-	
+
 	kernel_close(f);
-	
+
 	add_km(parent ? parent : &root_module, km);
-	
+
 
 	DEBUG(("load_module: name '%s', path '%s'", km->fname, km->fpath));
 	DEBUG(("load_module: basepage = %lx", b));
@@ -549,6 +549,7 @@ detach_km_devices(struct kernel_module *km, bool free)
 }
 
 #if 1
+
 static long
 kmod_init(struct kernel_module *km, void *arg, struct device_methods ***devmethods)
 {
@@ -556,10 +557,10 @@ kmod_init(struct kernel_module *km, void *arg, struct device_methods ***devmetho
 	void *initfunc;
 
 	initfunc = (void *)km->b->p_tbase;
-	
+
 	FORCE(" dm = %lx", devmethods);
 	FORCE("*dm = %lx", *devmethods);
-	
+
 	__asm__ volatile
 	(
 		"movem.l d3-d7/a3-a6,-(sp)\n\t"
@@ -635,24 +636,45 @@ load_kmodules(struct kernel_module *parent, const char *path, const char *ext, v
 
 					*ptr1 = '\0';
 				}
+				/*
+				 * Load the module into memory
+				 */
 				km = load_module(parent, NULL, buf, &r);
 				if (km) {
 					struct device_methods **devmethods;
 					device_t dev;
 
 					DEBUG(("load_kmodules: load \"%s\"", buf));
-					
+
 					devmethods = NULL;
-					
+					/*
+					 * Call out to the modules init function.
+					 * This just gives the module information it needs,
+					 * such as the kentry and any arguments the overlaying
+					 * module-loading framework needs to give it.
+					 * The module in turn returns a list of device_method
+					 * structures.
+					 */
 					km->kentry = &kentry;
 					kmod_init(km, arg, &devmethods);
 					TAILQ_INIT(&km->devices);
 					if (devmethods) {
+						/*
+						 * Iterate over the modules device_methods, and create
+						 * a device_t structure for each device_method structure
+						 */
 						while (*devmethods) {
 							dev = new_device(km, *devmethods);
 							if (dev) {
 								long error;
+								/*
+								 * Call identify function.
+								 */
 								device_identify(dev);
+								/*
+								 * Call device probe function.
+								 * The device will return error if it cannot run.
+								 */
 								error = device_probe(dev);
 								if (error >= 0)
 									TAILQ_INSERT_TAIL(&km->devices, dev, next);
@@ -661,6 +683,10 @@ load_kmodules(struct kernel_module *parent, const char *path, const char *ext, v
 							}
 							devmethods++;
 						}
+						/*
+						 * If none of the modules devices could load,
+						 * we unload it.
+						 */
 						if (!TAILQ_FIRST(&km->devices)) {
 							free_km(km);
 							km = NULL;
@@ -668,6 +694,9 @@ load_kmodules(struct kernel_module *parent, const char *path, const char *ext, v
 							km->flags |= KMF_HAVEDEVICE;
 					}
 					if (km) {
+						/*
+						 * Call the callers module framework loader.
+						 */
 						r = loader(km, name);
 
 						DEBUG(("load_kmodules: load done \"%s\" (%li)", buf, r));
@@ -693,9 +722,9 @@ load_kmodules(struct kernel_module *parent, const char *path, const char *ext, v
 long _cdecl
 unload_kmodule(struct kernel_module *km)
 {
-	
+
 	FORCE("unload_kmodule: unloading %s", km->fname);
-	
+
 	if (!detach_km_devices(km, true)) {
 		free_km(km);
 		return E_OK;
@@ -709,9 +738,9 @@ unload_kmodules(struct kernel_module *parent)
 	struct kernel_module *this, *next;
 
 	next = parent->children;
-	
+
 	FORCE("unload_kmodules: parent (%lx) %s", parent, parent->fname);
-	
+
 	if (next) {
 		do {
 			this = next;
@@ -803,18 +832,18 @@ module_init(void *initfunc, struct kerinfo *k)
 # if __GNUC__ >= 3
    /* gcc 3 does not want a clobbered register to be input or output */
 #  define LOCAL_CLOBBER_LIST	__CLOBBER_RETURN("d0") "d1", "d2", "a0", "a1", "a2", "memory"
-# else	
+# else
 #  define LOCAL_CLOBBER_LIST	__CLOBBER_RETURN("d0") "d1", "d2", "a0", "a1", "a2", "memory"
 # endif
 #else
 # define LOCAL_CLOBBER_LIST
 #endif
 
-static void *	 
+static void *
 module_init(void *initfunc, struct kerinfo *k)
 {
 	register void *ret __asm__("d0");
-	
+
 	__asm__ volatile
 	(
 		"movem.l d3-d7/a3-a6,-(sp)\r\n"
@@ -1040,7 +1069,7 @@ km_loaded(struct kernel_module *km)
 		if (list)
 			list = list->next;
 	} while (list);
-	
+
 	return false;
 }
 #if 0
@@ -1108,26 +1137,26 @@ run_km(const char *path)
 {
 	struct kernel_module *km;
 	long err;
-	
+
 	km = load_module(NULL, path, &err);
 	if (km)
 	{
 		long _cdecl (*run)(struct kentry *, const char *path);
-		
+
 		FORCE("run_km(%s) ok (bp 0x%lx)!", path, km->b);
-		
+
 		//sys_c_conin();
 		km->class = MODCLASS_KM;
 		km->subclass = 0;
 
 		run = (long _cdecl (*)(struct kentry *, const char *))km->b->p_tbase;
 		err = (*run)(&kentry, path);
-		
+
 		free_km(km);
 	}
 	else
 		FORCE("run_km(%s) failed -> %li", path, err);
-	
+
 	return err;
 }
 #endif
@@ -1141,10 +1170,10 @@ static long _cdecl
 module_open(FILEPTR *f)
 {
 	DEBUG(("module_open [%i]: enter (%lx)", f->fc.aux, f->flags));
-	
+
 	if (!suser(get_curproc()->p_cred->ucr))
 		return EPERM;
-	
+
 	return 0;
 }
 
@@ -1152,7 +1181,7 @@ static long _cdecl
 module_close(FILEPTR *f, int pid)
 {
 	DEBUG(("module_close [%i]: enter", f->fc.aux));
-	
+
 	return E_OK;
 }
 
@@ -1178,10 +1207,10 @@ static long _cdecl
 module_ioctl(FILEPTR *f, int mode, void *buf)
 {
 	long r = ENOSYS;
-	
+
 	DEBUG(("module_ioctl [%i]: (%x, (%c %i), %lx)",
 		f->fc.aux, mode, (char)(mode >> 8), (mode & 0xff), buf));
-	
+
 	switch (mode)
 	{
 		case KM_RUN:
@@ -1190,7 +1219,7 @@ module_ioctl(FILEPTR *f, int mode, void *buf)
 			break;
 		}
 	}
-	
+
 	DEBUG (("module_ioctl: return %li", r));
 	return r;
 }
@@ -1200,10 +1229,10 @@ module_datime(FILEPTR *f, ushort *timeptr, int rwflag)
 {
 	if (rwflag)
 		return EACCES;
-	
+
 	*timeptr++ = timestamp;
 	*timeptr = datestamp;
-	
+
 	return E_OK;
 }
 
