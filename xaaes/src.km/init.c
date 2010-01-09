@@ -24,7 +24,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include RSCHNAME
 #include "util.h"
 
 #include "init.h"
@@ -40,6 +39,7 @@
 #include "nkcc.h"
 #include "draw_obj.h"
 #include "semaphores.h"
+#include "xa_api.h"
 #include "xa_shel.h"
 #include "xa_appl.h"
 #include "taskman.h"
@@ -54,12 +54,6 @@
 
 short my_global_aes[16];
 
-/* XXX gemlib */
-//short	mt_appl_init    (short *global_aes);
-//short	mt_appl_exit    (short *global_aes);
-//short	mt_graf_handle	(short *Wchar, short *Hchar, short *Wbox, short *Hbox, short *global_aes);
-
-
 long loader_pid = 0;
 long loader_pgrp = 0;
 
@@ -72,7 +66,7 @@ static int
 imp_msg(void)
 {
 	long ci;
-	
+
 	display(" ---=== IMPORTNAT!! ===---");
 	display("");
 	display("If you have read the CHANGES.txt, you");
@@ -325,7 +319,7 @@ init(struct kentry *k, struct kernel_module *km)
 	long err = 0L;
 
 	bool first = true;
-	
+
 	/* setup kernel entry */
 	kentry = k;
 	self = km;
@@ -343,7 +337,7 @@ again:
 	bzero(&cfg, sizeof(cfg));
 	bzero(&S, sizeof(S));
 	bzero(&C, sizeof(C));
-	
+
 	strcpy(C.start_path, start_path);
 #if BOOTLOG
 	if (!C.bootlog_path[0])
@@ -357,7 +351,7 @@ again:
 		BLOG(( false, "\n~~~~~~~~~~~~ XaAES start up!! ~~~~~~~~~~~~~~~~" ));
 	else
 		BLOG((false, "\n~~~~~~~~~~~~ XaAES restarting! ~~~~~~~~~~~~~~~"));
-#endif	
+#endif
 	if (check_kentry_version())
 	{
 		err = ENOSYS;
@@ -365,7 +359,7 @@ again:
 	}
 
 	/* remember loader */
-	
+
 	loader_pid = p_getpid();
 	loader_pgrp = p_getpgrp();
 
@@ -389,7 +383,7 @@ again:
 		}
 		else
 			flag = sysfile_exists(sysdir, "moose.xdd");
-			
+
 		if (flag)
 		{
 			BLOG((/*00000005*/true, "ERROR: There exist an moose.xdd in your FreeMiNT sysdir."));
@@ -397,7 +391,7 @@ again:
 			err = EINVAL;
 			goto error;
 		}
-		
+
 		/* look is there is an moose.adi
 		 * terminate if yes; moose.adi must be in XaAES module directory
 		 */
@@ -405,7 +399,7 @@ again:
 		if (!flag) flag = sysfile_exists(sysdir, "moose.adi");
 		if (!flag) flag = sysfile_exists(sysdir, "moose.adm");
 		if (!flag) flag = sysfile_exists(sysdir, "moose_w.adm");
-		
+
 		if (flag)
 		{
 			BLOG((true, "ERROR: There exist an moose.adi or moose.adm in your FreeMiNT sysdir."));
@@ -528,12 +522,12 @@ again:
 	strcpy(C.Aes->home_path, self->fpath);
 	make_module_path(C.Aes->module_path);
 	BLOG((false, "module path: '%s'", C.Aes->module_path));
-	
+
 
 	C.Aes->xdrive = d_getdrv();
 	d_getpath(C.Aes->xpath, 0);
 
-	/* 
+	/*
 	 * check if there exist a moose.adi
 	 * We dont start without it.
 	 */
@@ -543,9 +537,9 @@ again:
 
 		flag = sysfile_exists(C.Aes->module_path, "moose_w.adm");
 		if (!flag) flag = sysfile_exists(C.Aes->module_path, "moose.adm");
-		
+
 		if (!flag)
-		{	
+		{
 			BLOG((/*00000008*/true, "ERROR: There exist no moose.adm in your XaAES module directory."));
 			BLOG((true, " -> '%s'", C.Aes->module_path));
 			BLOG((/*00000009*/true, "       Please install it before starting the XaAES kernel module!"));
@@ -556,7 +550,7 @@ again:
 
 	/* clear my_global_aes[0] for old gemlib */
 	my_global_aes[0] = 0;
-	
+
 	/* requires mint >= 1.15.11 */
 	C.mvalidate = true;
 
@@ -567,7 +561,7 @@ again:
 
 	/* Setup the kernel OS call jump table */
 	setup_handler_table();
-	
+
 	BLOG((false, "setup_handler_table ok!"));
 
 	/* set bit 3 in conterm, so Bconin returns state of ALT and CTRL in upper 8 bit */
@@ -616,7 +610,7 @@ again:
 	default_options.clwtna = 1;
 
 	C.Aes->options = default_options;
-	
+
 	/* Parse the config file */
 	load_config();
 
@@ -648,10 +642,10 @@ again:
 
 		while (!(C.shutdown & QUIT_NOW))
 			sleep(WAIT_Q, (long)&loader_pid);
-		
+
 // 		display("AESSYS kthread exited - C.shutdown = %x", C.shutdown);
 		BLOG((false, "AESSYS kthread exited - C.shutdown = %x", C.shutdown));
-	
+
 #if GENERATE_DIAGS
 		/* Close the debug output file */
 		if (D.debug_file)

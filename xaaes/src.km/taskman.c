@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
  *                                        2004 F.Naumann & O.Skancke
@@ -29,9 +29,7 @@
  * Error message dialog
  * System menu handling
  */
-
 #include RSCHNAME
-
 #include "xa_types.h"
 #include "xa_global.h"
 
@@ -149,7 +147,7 @@ delete_htd(void *_htd)
 	}
 	kfree(htd);
 }
-	
+
 struct helpthread_data *
 get_helpthread_data(struct xa_client *client)
 {
@@ -172,7 +170,7 @@ build_tasklist_string(struct xa_client *client)
 {
 	long tx_len = 128;
 	char *tx;
- 
+
 	tx = kmalloc(tx_len);
 
 	if (tx)
@@ -202,9 +200,9 @@ add_to_tasklist(struct xa_client *client)
 
 	if (!htd)
 		return;
-	
+
 	wind = htd->w_taskman;
-	
+
 	if (wind)
 	{
 		struct widget_tree *wt = get_widget(wind, XAW_TOOLBAR)->stuff.xa_tree;
@@ -291,7 +289,7 @@ update_tasklist_entry(struct xa_client *client)
 		OBJECT *obtree = wt->tree; //ResourceTree(C.Aes_rsc, TASK_MANAGER);
 		SCROLL_INFO *list = object_get_slist(obtree + TM_LIST);
 		struct sesetget_params p = { 0 };
-	
+
 		if (list)
 		{
 			char *tx;
@@ -305,9 +303,9 @@ update_tasklist_entry(struct xa_client *client)
 					t.text = tx;
 				else
 					t.text = client->name;
-			
+
 				list->set(list, p.e, SESET_TEXT, (long)&t, true);
-			
+
 				if (tx)
 					kfree(tx);
 			}
@@ -334,7 +332,7 @@ isin_namelist(struct cfg_name_list *list, char *name, short nlen, struct cfg_nam
 		*last = NULL;
 	if (prev)
 		*prev = NULL;
-	
+
 	while (list)
 	{
 		DIAGS((" -- checking list=%lx, name=(%d)'%s'",
@@ -347,19 +345,19 @@ isin_namelist(struct cfg_name_list *list, char *name, short nlen, struct cfg_nam
 		}
 		if (prev)
 			*prev = list;
-		
+
 		list = list->next;
 	}
 
 	if (last)
 		*last = list;
-	
+
 	DIAGS((" -- ret=%s, last=%lx, prev=%lx",
 		ret ? "true":"false", last, prev));
 
 	return ret;
 }
-			
+
 void
 addto_namelist(struct cfg_name_list **list, char *name)
 {
@@ -367,11 +365,11 @@ addto_namelist(struct cfg_name_list **list, char *name)
 	short nlen = strlen(name);
 
 	DIAGS(("addto_namelist: add '%s' to list=%lx(%lx)", name, *list, list));
-	
+
 	if (nlen && !isin_namelist(*list, name, 0, NULL, &prev))
 	{
 		new = kmalloc(sizeof(*new));
-	
+
 		if (new)
 		{
 			if (nlen > 32)
@@ -499,7 +497,7 @@ quit_all_clients(enum locks lock, struct cfg_name_list *except_nl, struct xa_cli
 		DIAGS((" -- _aes_shell_ defined: pid=%d, client=%lx, name=%s",
 			C.DSKpid, dsk, dsk ? dsk->name : "no shell loaded"));
 	}
-	
+
 	FOREACH_CLIENT(client)
 	{
 		if (is_client(client) &&
@@ -571,7 +569,7 @@ screen_dump(enum locks lock, struct xa_client *client, bool open)
 
 			do_form_alert(lock, client, 4, sdalert, "XaAES");
 			Block(client, 0);
-			
+
 // 			display("intout %d", C.Hlp_pb->intout[0]);
 
 			if (a->intout[0] == 1) //(open)
@@ -580,7 +578,7 @@ screen_dump(enum locks lock, struct xa_client *client, bool open)
 				while (!b)
 					check_mouse(client, &b, &x, &y);
 
-				r.x = x; 
+				r.x = x;
 				r.y = y;
 				r.w = 0;
 				r.h = 0;
@@ -640,10 +638,10 @@ taskmanager_form_exit(struct xa_client *Client,
 {
 	enum locks lock = 0;
 	struct xa_vdi_settings *v = wind->vdi_settings;
-	
+
 	Sema_Up(clients);
 	lock |= clients;
-	
+
 	wt->which = 0;
 
 	switch (aesobj_item(&fr->obj))
@@ -795,7 +793,7 @@ taskmanager_form_exit(struct xa_client *Client,
 			break;
 		}
 		case TM_RESCHG:
-		{	
+		{
 			if (C.reschange)
 				post_cevent(C.Hlp, ceExecfunc, C.reschange,NULL, 1,0, NULL,NULL);
 			obj_change(wt, v, fr->obj, -1, aesobj_state(&fr->obj) & ~OS_SELECTED, aesobj_flags(&fr->obj), true, NULL, wind->rect_list.start, 0);
@@ -833,7 +831,7 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 	htd = get_helpthread_data(client);
 	if (!htd)
 		return;
-	
+
 	if (!htd->w_taskman) //(!task_man_win)
 	{
 		struct scroll_info *list;
@@ -843,7 +841,7 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 		wt = new_widget_tree(client, obtree);
 		if (!wt) goto fail;
 		wt->flags |= WTF_TREE_ALLOC | WTF_AUTOFREE;
-		
+
 		list = set_slist_object(0, wt, NULL, TM_LIST,
 				 SIF_SELECTABLE|SIF_AUTOSELECT|SIF_ICONINDENT,
 				 NULL, NULL, NULL, NULL, NULL, NULL,
@@ -878,12 +876,12 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 					client->options.thinframe,
 					client->options.thinwork,
 					remember, NULL, NULL);
-		
+
 		if (!wind) goto fail;
-		
+
 		list->set(list, NULL, SESET_PRNTWIND, (long)wind, NOREDRAW);
 		wind->window_status |= XAWS_NODELETE;
-		
+
 		/* Set the window title */
 		set_window_title(wind, /*tm_manager*/" Task Manager ", false);
 
@@ -892,11 +890,11 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 
 		/* Set the window destructor */
 		wind->destructor = taskmanager_destructor;
-	
+
 		htd->w_taskman = wind;
-		
+
 		if (open)
-			open_window(lock, wind, wind->r);	
+			open_window(lock, wind, wind->r);
 	}
 	else
 	{
@@ -1010,7 +1008,7 @@ get_resmode_obj(XA_TREE *wt)
 
 	return obj;
 }
-	
+
 static void
 resmode_form_exit(struct xa_client *Client,
 		      struct xa_window *wind,
@@ -1020,7 +1018,7 @@ resmode_form_exit(struct xa_client *Client,
 	enum locks lock = 0;
 	Sema_Up(clients);
 	lock |= clients;
-	
+
 	wt->which = 0;
 
 	switch (aesobj_item(&fr->obj))
@@ -1075,11 +1073,11 @@ open_reschange(enum locks lock, struct xa_client *client, bool open)
 		obtree = duplicate_obtree(client, ResourceTree(C.Aes_rsc, RES_CHATARI), 0);
 		if (!obtree) goto fail;
 		wt = new_widget_tree(client, obtree);
-		if (!wt) goto fail;		
+		if (!wt) goto fail;
 		wt->flags |= WTF_TREE_ALLOC | WTF_AUTOFREE;
 		wind = create_dwind(lock, CLOSER, t_reschg, client, wt, resmode_form_exit, reschg_destructor);
 		if (!wind) goto fail;
-		
+
 		set_resmode_obj(wt, cfg.videomode);
 		if (open)
 			open_window(lock, wind, wind->r);
@@ -1172,7 +1170,7 @@ reschg_form_exit(struct xa_client *Client,
 	enum locks lock = 0;
 	Sema_Up(clients);
 	lock |= clients;
-	
+
 // 	wt->current = fr->obj;
 	wt->which = 0;
 
@@ -1227,11 +1225,11 @@ open_falcon_reschange(enum locks lock, struct xa_client *client, bool open)
 		obtree = duplicate_obtree(client, ResourceTree(C.Aes_rsc, RES_CHFALC), 0);
 		if (!obtree) goto fail;
 		wt = new_widget_tree(client, obtree);
-		if (!wt) goto fail;		
+		if (!wt) goto fail;
 		wt->flags |= WTF_TREE_ALLOC | WTF_AUTOFREE;
 		wind = create_dwind(lock, CLOSER, t_reschg, client, wt, reschg_form_exit, reschg_destructor);
 		if (!wind) goto fail;
-		
+
 		set_reschg_obj(wt, (unsigned long)cfg.videomode);
 		if (open)
 			open_window(lock, wind, wind->r);
@@ -1284,14 +1282,14 @@ struct resinf
 struct milres_parm
 {
 	struct xa_data_hdr h;
-	
+
 	void *modes;
 	short curr_devid;
-	
+
 	short current[2];
 	long misc[4];
 	short count[8];
-	
+
 	short num_depths;
 	struct widget_tree *depth_wt;
 	struct widget_tree *col_wt[8];
@@ -1314,7 +1312,7 @@ milan_reschg_form_exit(struct xa_client *Client,
 
 	Sema_Up(clients);
 	lock |= clients;
-	
+
 // 	wt->current = fr->obj;
 	wt->which = 0;
 
@@ -1335,7 +1333,7 @@ milan_reschg_form_exit(struct xa_client *Client,
 					{
 						int j;
 						struct resinf *old, *new = NULL;
-						
+
 						old = p->resinf[p->current[0]];
 						for (j = 0; j < p->count[p->current[0]]; j++, old++)
 						{
@@ -1348,7 +1346,7 @@ milan_reschg_form_exit(struct xa_client *Client,
 						if (new)
 						{
 							old = new;
-						
+
 							new = p->resinf[i];
 							for (j = 0; j < p->count[i]; j++)
 							{
@@ -1359,10 +1357,10 @@ milan_reschg_form_exit(struct xa_client *Client,
 								}
 							}
 						}
-						
+
 						pu_wt = p->col_wt[i];
 						new_devid = new[newres - 1].id;
-						
+
 						p->current[0] = i;
 						break;
 					}
@@ -1387,7 +1385,7 @@ milan_reschg_form_exit(struct xa_client *Client,
 			if (pu_wt)
 			{
 				struct resinf *r = p->resinf[p->current[0]];
-				
+
 				new_devid = r[pinf->obnum - 1].id;
 
 				p->current[1] = new_devid;
@@ -1466,7 +1464,7 @@ nxt_mdepth(short item, void **data)
 	{
 		p->current[1] = p->current[0];
 	}
-	
+
 	for (i = p->current[1]; i < 8; i++)
 	{
 		if (p->count[i])
@@ -1480,11 +1478,11 @@ nxt_mdepth(short item, void **data)
 		return whatthehell;
 	}
 	else
-	{	
+	{
 		ret = coldepths[current];
 		p->current[1] = current + 1;
 	}
-	
+
 	return ret;
 };
 
@@ -1519,7 +1517,7 @@ nxt_mres(short item, void **data)
 		if (modes->planes == planes)
 		{
 			struct resinf *r = p->resinf[p->current[1]];
-			
+
 			p->misc[2] = (long)(modes + 1);
 			p->misc[3] = num_modes - 1;
 			r[item].id = modes->devid;
@@ -1538,7 +1536,7 @@ static int
 instchrm_wt(struct xa_client *client, struct widget_tree **wt, OBJECT *obtree)
 {
 	int ret = 0;
-	
+
 	if (obtree)
 	{
 		*wt = new_widget_tree(client, obtree);
@@ -1600,7 +1598,7 @@ check_milan_res(struct xa_client *client, short mw)
 	{
 		currmode = ((struct videodef *)ret)->devid;
 	}
-	
+
 	num_modes = mvdi_device(0, 0, DEVICE_GETDEVICELIST, &ret);
 
 	if (num_modes > 0)
@@ -1618,21 +1616,21 @@ check_milan_res(struct xa_client *client, short mw)
 		count[5] = count_milan_res(num_modes, 16, modes);
 		count[6] = count_milan_res(num_modes, 24, modes);
 		count[7] = count_milan_res(num_modes, 32, modes);
-	
+
 		for (i = 0; i < 8; i++)
 		{
 			if (count[i])
-			{	
+			{
 				devids += count[i] + 1;
 				depths++;
 			}
 		}
-		
+
 		if (depths)
 		{
 			union { void **vp; struct milres_parm **mp;} ptrs;
 			struct resinf *r;
-			
+
 			if (!(p = kmalloc(sizeof(*p) + (sizeof(*r) * devids))))
 				goto exit;
 
@@ -1655,7 +1653,7 @@ check_milan_res(struct xa_client *client, short mw)
 			obtree = create_popup_tree(client, 0, depths, mw, 4, &nxt_mdepth, ptrs.vp);
 			if (!instchrm_wt(client, &p->depth_wt, obtree))
 				goto exit;
-			
+
 			p->depth_wt->links++;
 
 			for (i = 0,j = 1; i < 8; i++)
@@ -1682,7 +1680,7 @@ check_milan_res(struct xa_client *client, short mw)
 exit:
 		delete_milres_parm(p);
 		p = NULL;
-	}	
+	}
 	return p;
 }
 #endif
@@ -1704,11 +1702,11 @@ milan_setdevid(struct widget_tree *wt, struct milres_parm *p, short devid)
 				found_devid = (*p->resinf[i]).id;
 				current = i;
 			}
-			
+
 			for (j = 0; j < p->count[i]; j++)
 			{
 				struct resinf *r = p->resinf[i];
-				
+
 				if (r[j].id == devid)
 				{
 					pu_wt = p->col_wt[i];
@@ -1719,7 +1717,7 @@ milan_setdevid(struct widget_tree *wt, struct milres_parm *p, short devid)
 			}
 			if (res_idx != -1)
 				break;
-			
+
 			depth_idx++;
 		}
 	}
@@ -1759,13 +1757,13 @@ open_milan_reschange(enum locks lock, struct xa_client *client, bool open)
 		obtree = duplicate_obtree(client, ResourceTree(C.Aes_rsc, RES_CHMIL), 0);
 		if (!obtree) goto fail;
 		wt = new_widget_tree(client, obtree);
-		if (!wt) goto fail;		
+		if (!wt) goto fail;
 		wt->flags |= WTF_TREE_ALLOC | WTF_AUTOFREE;
 		p = check_milan_res(client, obtree[RCHM_RES].ob_width);
 		if (!p) goto fail;
-		
+
 		p->current[1] = milan_setdevid(wt, p, p->curr_devid);
-			
+
 		wind = create_dwind(lock, CLOSER, t_reschg, client, wt, milan_reschg_form_exit, reschg_destructor);
 		if (!wind) goto fail;
 
@@ -1813,7 +1811,7 @@ nova_reschg_form_exit(struct xa_client *Client,
 
 	Sema_Up(clients);
 	lock |= clients;
-	
+
 	wt->which = 0;
 
 	switch (aesobj_item(&fr->obj))
@@ -1833,7 +1831,7 @@ nova_reschg_form_exit(struct xa_client *Client,
 					{
 						int j;
 						struct resinf *old, *new = NULL;
-						
+
 						old = p->resinf[p->current[0]];
 						for (j = 0; j < p->count[p->current[0]]; j++, old++)
 						{
@@ -1846,7 +1844,7 @@ nova_reschg_form_exit(struct xa_client *Client,
 						if (new)
 						{
 							old = new;
-						
+
 							new = p->resinf[i];
 							for (j = 0; j < p->count[i]; j++)
 							{
@@ -1857,10 +1855,10 @@ nova_reschg_form_exit(struct xa_client *Client,
 								}
 							}
 						}
-						
+
 						pu_wt = p->col_wt[i];
 						new_devid = new[newres - 1].id;
-						
+
 						p->current[0] = i;
 						break;
 					}
@@ -1885,7 +1883,7 @@ nova_reschg_form_exit(struct xa_client *Client,
 			if (pu_wt)
 			{
 				struct resinf *r = p->resinf[p->current[0]];
-				
+
 				new_devid = r[pinf->obnum - 1].id;
 				p->current[1] = new_devid;
 			}
@@ -1954,7 +1952,7 @@ nxt_novares(short item, void **data)
 		if (modes->planes == planes)
 		{
 			struct resinf *r = p->resinf[p->current[1]];
-			
+
 			p->misc[2] = (long)(modes + 1);
 			p->misc[3] = num_modes - 1;
 			r[item].id = ((long)modes - p->misc[0]) / sizeof(*modes);
@@ -1995,7 +1993,7 @@ check_nova_res(struct xa_client *client, short mw)
 	XATTR x;
 
 	currmode = nova_data->xcb->resolution;
-	
+
 	fp = kernel_open(fn_novabib, O_RDONLY, NULL, &x);
 	if (fp)
 	{
@@ -2010,9 +2008,9 @@ check_nova_res(struct xa_client *client, short mw)
 			kernel_close(fp);
 			if (num_modes != x.size)
 				goto exit;
-			
+
 			num_modes = x.size / sizeof(struct nova_res);
-			
+
 			count[0] = count_nova_res(num_modes,  1, modes);
 			count[1] = count_nova_res(num_modes,  2, modes);
 			count[2] = count_nova_res(num_modes,  4, modes);
@@ -2025,27 +2023,27 @@ check_nova_res(struct xa_client *client, short mw)
 			for (i = 0; i < 8; i++)
 			{
 				if (count[i])
-				{	
+				{
 					devids += count[i] + 1;
 					depths++;
 				}
 			}
-		
+
 			if (depths)
 			{
 				union { void **vp; struct milres_parm **mp;} ptrs;
 				struct resinf *r;
-			
+
 				if (!(p = kmalloc(sizeof (*p) + (sizeof(*r) * devids))))
 					goto exit;
 
 				bzero(p, sizeof(*p));
-				
+
 				ptrs.mp = &p;
 
 				p->modes = modes;
 				p->curr_devid = currmode;
-				
+
 				r = (struct resinf *)((char *)p + sizeof(*p));
 
 				for (i = 0; i < 8; i++)
@@ -2061,13 +2059,13 @@ check_nova_res(struct xa_client *client, short mw)
 				obtree = create_popup_tree(client, 0, depths, mw, 4, &nxt_mdepth, ptrs.vp);
 				if (!instchrm_wt(client, &p->depth_wt, obtree))
 					goto exit;
-			
+
 				p->depth_wt->links++;
 
 				for (i = 0,j = 1; i < 8; i++)
 				{
 					if (p->count[i])
-					{						
+					{
 						p->current[0] = i;
 						p->misc[0] = (long)modes;
 						p->misc[1] = num_modes;
@@ -2081,19 +2079,19 @@ check_nova_res(struct xa_client *client, short mw)
 						j++;
 					}
 				}
-			}	
+			}
 		}
 		else
 			kernel_close(fp);
 	}
-	
+
 	return p;
 exit:
 	if (modes)
 		kfree(modes);
 	if (p)
 		delete_milres_parm(p);
-	
+
 	return NULL;
 }
 
@@ -2120,7 +2118,7 @@ open_nova_reschange(enum locks lock, struct xa_client *client, bool open)
 		if (!p) goto fail;
 
 		p->current[1] = milan_setdevid(wt, p, p->curr_devid);
-			
+
 		wind = create_dwind(lock, CLOSER, t_reschg, client, wt, nova_reschg_form_exit, reschg_destructor);
 		if (!wind) goto fail;
 
@@ -2150,7 +2148,7 @@ fail:
 	}
 	if (obtree)
 		free_object_tree(client, obtree);
-	
+
 }
 #endif
 
@@ -2179,7 +2177,7 @@ csr_form_exit(struct xa_client *Client,
 
 	Sema_Up(clients);
 	lock |= clients;
-	
+
 // 	wt->current = fr->obj;
 	wt->which = 0;
 
@@ -2247,14 +2245,14 @@ open_csr(enum locks lock, struct xa_client *client, struct xa_client *running)
 	if (!htd->w_csr) // !csr_win)
 	{
 		TEDINFO *t;
-		
+
 		obtree = duplicate_obtree(client, ResourceTree(C.Aes_rsc, KILL_OR_WAIT), 0);
 		if (!obtree) goto fail;
 		wt = new_widget_tree(client, obtree);
 		if (!wt) goto fail;
 		wt->flags |= WTF_TREE_ALLOC | WTF_AUTOFREE;
 		C.csr_client = running;
-		
+
 		t = object_get_tedinfo(obtree + KORW_APPNAME, NULL);
 		if (running->name[0])
 		{
@@ -2272,13 +2270,13 @@ open_csr(enum locks lock, struct xa_client *client, struct xa_client *running)
 			strncpy(t->te_ptext, running->proc_name, 8);
 			t->te_ptext[8] = '\0';
 		}
-			
+
 		wind = create_dwind(lock, 0, /*txt_shutdown*/" Shutdown ", client, wt, csr_form_exit, csr_destructor);
 		if (!wind)
 			goto fail;
 		htd->w_csr = wind;
 		wind->window_status |= XAWS_FLOAT;
-		open_window(lock, wind, wind->r);		
+		open_window(lock, wind, wind->r);
 	}
 	else
 	{
@@ -2313,7 +2311,7 @@ CE_abort_csr(enum locks lock, struct c_event *ce, bool cancel)
 	if (!cancel)
 	{
 		struct helpthread_data *htd = lookup_xa_data_byname(&ce->client->xa_data, HTDNAME);
-		
+
 		if (htd && htd->w_csr)
 		{
 			close_window(lock, htd->w_csr);
@@ -2351,7 +2349,7 @@ handle_launcher(enum locks lock, struct fsel_data *fs, const char *path, const c
 	{
 		if (*t == '/')
 			*t = '\\';
-	}		
+	}
 
 	close_fileselector(lock, fs);
 
@@ -2419,7 +2417,7 @@ sysalerts_form_exit(struct xa_client *Client,
 		{
 			struct scroll_info *list = object_get_slist(wt->tree + SYSALERT_LIST);
 			struct sesetget_params p = { 0 };
-			
+
 			p.arg.txt = /*txt_alerts*/"Alerts";
 			list->get(list, NULL, SEGET_ENTRYBYTEXT, &p);
 			if (p.e)
@@ -2434,7 +2432,7 @@ sysalerts_form_exit(struct xa_client *Client,
 			object_deselect(wt->tree + item);
 			redraw_toolbar(lock, wind, item);
 			close_window(lock, wind);
-// 			delayed_delete_window(lock, wind);	
+// 			delayed_delete_window(lock, wind);
 			break;
 		}
 	}
@@ -2475,7 +2473,7 @@ open_systemalerts(enum locks lock, struct xa_client *client, bool open)
 	{
 		struct scroll_info *list;
 		RECT or;
-		
+
 		obtree = duplicate_obtree(client, ResourceTree(C.Aes_rsc, SYS_ERROR), 0);
 		if (!obtree) goto fail;
 		wt = new_widget_tree(client, obtree);
@@ -2487,11 +2485,11 @@ open_systemalerts(enum locks lock, struct xa_client *client, bool open)
 				 NULL, NULL, NULL, NULL, NULL, NULL,
 				 NULL, NULL, NULL, NULL,
 				 NULL, NULL, NULL, 255);
-		
+
 		if (!list) goto fail;
-		
+
 		obj_init_focus(wt, OB_IF_RESET);
-		
+
 		{
 // 			struct scroll_info *list = object_get_slist(obtree + SYSALERT_LIST);
 			struct scroll_content sc = {{ 0 }};
@@ -2529,7 +2527,7 @@ open_systemalerts(enum locks lock, struct xa_client *client, bool open)
 			sc.t.strings = 1;
 			for (i = 0; strings[i]; i++)
 			{	sc.t.text = strings[i];
-				list->add(list, this, NULL, &sc, this ? (SEADD_CHILD|SEADD_PRIOR) : SEADD_PRIOR, 0, true);		
+				list->add(list, this, NULL, &sc, this ? (SEADD_CHILD|SEADD_PRIOR) : SEADD_PRIOR, 0, true);
 			}
 		}
 
@@ -2560,9 +2558,9 @@ open_systemalerts(enum locks lock, struct xa_client *client, bool open)
 					client->options.thinwork,
 					remember, NULL, NULL);
 		if (!wind) goto fail;
-		
+
 		list->set(list, NULL, SESET_PRNTWIND, (long)wind, NOREDRAW);
-		
+
 		/* Set the window title */
 		set_window_title(wind, /*wint_sysalert*/" System window & Alerts log", false);
 
@@ -2661,7 +2659,7 @@ do_system_menu(enum locks lock, int clicked_title, int menu_item)
 			sc.t.strings = 1;
 			for (i = 0; strings[i]; i++)
 			{	sc.t.text = strings[i];
-				list->add(list, this, NULL, &sc, this ? (SEADD_CHILD|SEADD_PRIOR) : SEADD_PRIOR, 0, true);		
+				list->add(list, this, NULL, &sc, this ? (SEADD_CHILD|SEADD_PRIOR) : SEADD_PRIOR, 0, true);
 			}
 			post_cevent(C.Hlp, ceExecfunc, open_systemalerts,NULL, 1,0, NULL,NULL);
 #endif

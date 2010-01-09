@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
  *                                        2004 F.Naumann & O.Skancke
@@ -27,8 +27,6 @@
 /*
  * FORM HANDLERS INTERFACE
  */
-
-#include RSCHNAME
 
 #include "xa_form.h"
 #include "xa_global.h"
@@ -60,7 +58,7 @@ alert_destructor(enum locks lock, struct xa_window *wind)
 /* changed thus, that a alert is always displayed, whether format error or not.
  * otherwise the app is suspended and the screen & keyb are locked,
  * and you can do nothing but a reset. :-(
- * 
+ *
  * reactivated the STORE_BACK facility for form_alert only.
  * If a application has locked the screen, there might be something
  * under the alert that is not a window.
@@ -96,13 +94,13 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 		wt->flags |= WTF_TREE_ALLOC | WTF_AUTOFREE;
 		obj_rectangle(wt, aesobj(alert_form, 0), &or);
 		center_rect(&or);
-		
+
 		if (update_locked() == client->p) //(C.update_lock && C.update_lock == client->p)
 		{
 			kind |= STORE_BACK;
 			nolist = true;
 		}
-			
+
 		//if (client->fmd.lock)
 		//	kind |= STORE_BACK;
 
@@ -140,7 +138,7 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 				client->alert = alert_window;
 
 			open_window(lock, alert_window, alert_window->r);
-	
+
 			/* For if the app has hidden the mouse */
 			forcem();
 		}
@@ -268,12 +266,12 @@ XA_form_keybd(enum locks lock, struct xa_client *client, AESPB *pb)
 			wt = new_widget_tree(client, obtree);
 
 // 	 	display("XA_form_keybd: intin0=%d, intin1=%d, intin2=%d", pb->intin[0], pb->intin[1], pb->intin[2]);
-		
+
 		newobj = aesobj(wt->tree, pb->intin[0]);
 		keyout = pb->intin[1];
-		cont = _form_keybd(client, wt, NULL, aesobj(wt->tree,pb->intin[2]), &keyout, &newobj);	
+		cont = _form_keybd(client, wt, NULL, aesobj(wt->tree,pb->intin[2]), &keyout, &newobj);
 	}
-	
+
 	pb->intout[0] = cont;
 	pb->intout[1] = aesobj_item(&newobj);
 	pb->intout[2] = keyout;
@@ -288,7 +286,7 @@ XA_form_wkeybd(enum locks lock, struct xa_client *client, AESPB *pb)
 	short cont = 0;
 	unsigned short keyout = 0;
 	struct xa_aes_object newobj = aesobj(obtree, 0);
-	
+
 	CONTROL(4,3,1)
 
 	DIAG((D_keybd, client, "XA_form_wkeybd for %s %lx: obj:%d, k:%x, nob:%d",
@@ -309,10 +307,10 @@ XA_form_wkeybd(enum locks lock, struct xa_client *client, AESPB *pb)
 // 		 	display("XA_form_wkeybd: intin0=%d, intin1=%d, intin2=%d", pb->intin[0], pb->intin[1], pb->intin[2]);
 			newobj = aesobj(obtree, pb->intin[0]);
 			keyout = pb->intin[1];
-			cont = _form_keybd(client, wt, wind, aesobj(obtree, pb->intin[2]), &keyout, &newobj);	
+			cont = _form_keybd(client, wt, wind, aesobj(obtree, pb->intin[2]), &keyout, &newobj);
 		}
 	}
-	
+
 	pb->intout[0] = cont;
 	pb->intout[1] = aesobj_item(&newobj);
 	pb->intout[2] = keyout;
@@ -326,7 +324,7 @@ XA_form_alert(enum locks lock, struct xa_client *client, AESPB *pb)
 	CONTROL(1,1,1)
 
 	client->waiting_pb = pb;
-	
+
 	DIAG((D_form, client, "XA_alert %s", (char *)pb->addrin[0]));
 	client->status |= CS_FORM_ALERT;
 	do_form_alert(lock, client, pb->intin[0], (char *)pb->addrin[0], NULL);
@@ -439,7 +437,7 @@ XA_form_error(enum locks lock, struct xa_client *client, AESPB *pb)
 	do_form_alert(lock, client, 1, error_alert, NULL);
 	(*client->block)(client, 0); //Block(client, 0);
 	client->status &= ~CS_FORM_ALERT;
-	
+
 	return XAC_DONE;
 }
 
@@ -450,11 +448,11 @@ XA_form_error(enum locks lock, struct xa_client *client, AESPB *pb)
  */
 unsigned long
 XA_form_dial(enum locks lock, struct xa_client *client, AESPB *pb)
-{	
+{
 	struct xa_window *wind;
 
 	CONTROL(9,1,0)
-	
+
 	switch(pb->intin[0])
 	{
 	case FMD_START:
@@ -493,9 +491,9 @@ XA_form_dial(enum locks lock, struct xa_client *client, AESPB *pb)
 		break;
 	}
 	}
-	
+
 	pb->intout[0] = 1;
-	
+
 	return XAC_DONE;
 }
 
@@ -513,7 +511,7 @@ XA_form_do(enum locks lock, struct xa_client *client, AESPB *pb)
 	CONTROL(1,1,1)
 
 	DIAG((D_form, client, "XA_form_do() for %s. obtree %lx", client->name, obtree));
-	
+
 	if (validate_obtree(client, obtree, "XA_form_do:"))
 	{
 		struct xa_window *wind;
@@ -523,7 +521,7 @@ XA_form_do(enum locks lock, struct xa_client *client, AESPB *pb)
 		client->waiting_pb = pb;
 
 // 		if (d) display("obtree rect = %d/%d/%d/%d", *(RECT *)&obtree->ob_x);
-	
+
 		if (Setup_form_do(client, obtree, nextobj, &wind, &nextobj))
 		{
 			client->status |= CS_FORM_DO;
@@ -550,7 +548,7 @@ XA_form_do(enum locks lock, struct xa_client *client, AESPB *pb)
 		 *  like no more memory, we need to act upon that here. Lets try
 		 *  to wait for the update_lock and force non-windowed form_do handling
 		 *  later...
-		 */	
+		 */
 	}
 	else
 	{
@@ -638,10 +636,10 @@ XA_form_wbutton(enum locks lock, struct xa_client *client, AESPB *pb)
 		if ((wind = get_wind_by_handle(lock, pb->intin[2])))
 		{
 			struct xa_aes_object nextobj;
-			
+
 			if (!(wt = obtree_to_wt(client, obtree)))
 				wt = new_widget_tree(client, obtree);
-			
+
 			nextobj = aesobj(obtree, obj);
 			/*
 			 * Create a moose_data packet...
@@ -649,7 +647,7 @@ XA_form_wbutton(enum locks lock, struct xa_client *client, AESPB *pb)
 			check_mouse(client, &md.cstate, &md.x, &md.y);
 			if ((md.clicks = pb->intin[1]))
 				md.state = MBS_LEFT;
-	
+
 			/* XXX - Odd Skancke:
 			 * I think we need to look for this obtree to see if we have it in
 			 * a window, in which case we need to use that windows rectangle list

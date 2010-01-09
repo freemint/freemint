@@ -24,8 +24,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include RSCHNAME
-
 #include "k_keybd.h"
 #include "c_keybd.h"
 #include "xa_global.h"
@@ -130,7 +128,7 @@ queue_key(struct xa_client *client, const struct rawkey *key)
 	DIAGS(("queue key for %s", client->proc_name));
 	if (client->kq_count < MAX_KEYQUEUE)
 	{
-		kq = kmalloc(sizeof(*kq));	
+		kq = kmalloc(sizeof(*kq));
 		if (kq)
 		{
 			kq->next = NULL;
@@ -164,14 +162,14 @@ unqueue_key(struct xa_client *client, struct rawkey *key)
 			client->kq_tail = client->kq_head = NULL;
 		else
 			client->kq_tail = kq->next;
-		
+
 		client->kq_count--;
 		kfree(kq);
 		ret = true;
 	}
 	return ret;
 }
-		
+
 
 static void
 XA_keyboard_event(enum locks lock, const struct rawkey *key)
@@ -192,7 +190,7 @@ XA_keyboard_event(enum locks lock, const struct rawkey *key)
 		}
 		return;
 	}
-	
+
 	if (!(client = find_focus(true, &waiting, &locked_client, &keywind)))
 	{
 // 		display("no focus?!");
@@ -202,11 +200,11 @@ XA_keyboard_event(enum locks lock, const struct rawkey *key)
 	DIAG((D_keybd,client,"XA_keyboard_event: %s; update_lock:%d, focus: %s, window_list: %s",
 		waiting ? "waiting" : "", update_locked() ? update_locked()->pid : 0,
 		c_owner(client), keywind ? w_owner(keywind) : "no keywind"));
-	
+
 // 	display("XA_keyboard_event: %s; update_lock:%d, focus: %s, window_list: %s, waiting_pb=%lx",
 // 		waiting ? "waiting" : "", update_locked() ? update_locked()->pid : 0,
 // 		client->name, keywind ? keywind->owner->name : "no keywind", client->waiting_pb);
-	
+
 	/* Found either (MU_KEYBD|MU_NORM_KEYBD) or keypress handler. */
 	if (waiting)
 	{
@@ -242,7 +240,7 @@ XA_keyboard_event(enum locks lock, const struct rawkey *key)
 				}
 #if GENERATE_DIAGS
 				else
-					DIAGS(("XA_keyboard_event: INTERNAL ERROR: No waiting pb."));			
+					DIAGS(("XA_keyboard_event: INTERNAL ERROR: No waiting pb."));
 #endif
 			}
 		}
@@ -263,7 +261,7 @@ XA_keyboard_event(enum locks lock, const struct rawkey *key)
 static bool
 kernel_key(enum locks lock, struct rawkey *key)
 {
-#if ALT_CTRL_APP_OPS	
+#if ALT_CTRL_APP_OPS
 	if ((key->raw.conin.state & (K_CTRL|K_ALT)) == (K_CTRL|K_ALT))
 	{
 		struct xa_client *client;
@@ -324,7 +322,7 @@ kernel_key(enum locks lock, struct rawkey *key)
 		}
 //#endif
 #endif
-		
+
 		switch (nk)
 		{
 		case NK_TAB:				/* TAB, switch menu bars */
@@ -348,7 +346,7 @@ kernel_key(enum locks lock, struct rawkey *key)
 		{
 			struct xa_window *wind;
 			struct xa_widget *widg;
-			
+
 			if (nk == NK_ESC && !TAB_LIST_START)
 				goto otm;
 
@@ -367,10 +365,10 @@ kernel_key(enum locks lock, struct rawkey *key)
 							client = NULL;
 					}
 					else
-						client = NULL;						
+						client = NULL;
 				}
 			}
-			
+
 			if (!client)
 			{
 				if (TAB_LIST_START)
@@ -442,7 +440,7 @@ otm:
 
 			if (!(key->raw.conin.state & (K_RSHIFT|K_LSHIFT)))
 				nl = cfg.ctlalta;
-			
+
 			DIAGS(("Quit all apps by CtlAlt A"));
 			quit_all_clients(lock, nl, NULL, AP_TERM);
 			return true;
@@ -490,7 +488,7 @@ otm:
 				top_window(lock, true, true, wind);
 			}
 			return true;
-		}	
+		}
 #if GENERATE_DIAGS
 		case 'D':				/* ctrl+alt+D, turn on debugging output */
 		{
@@ -534,7 +532,7 @@ keyboard_input(enum locks lock)
 		key.norm = 0;
 
 // 		display("f_getchar: 0x%08lx, AES=%x, NORM=%x", key.raw.bcon, key.aes, key.norm);
-		
+
 		if (kernel_key(lock, &key) == false )
 			XA_keyboard_event(lock, &key);
 	}

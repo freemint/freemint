@@ -24,8 +24,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "xaaes.h" /*RSCHNAME*/
-
+#include RSCHNAME
 #include "k_main.h"
 #include "xa_global.h"
 
@@ -94,7 +93,7 @@ cancel_cevents(struct xa_client *client)
 
 		DIAG((D_kern, client, "Cancel evnt %lx (next %lx) for %s",
 			ce, ce->next, client->name));
-		
+
 		(*ce->funct)(0, ce, true);
 
 		if (!(nxt = ce->next))
@@ -209,7 +208,7 @@ post_cevent(struct xa_client *client,
 				c->r = *r;
 			if (md)
 				c->md = *md;
-			
+
 			if (!client->cevnt_head)
 			{
 				client->cevnt_head = c;
@@ -258,7 +257,7 @@ dispatch_selcevent(struct xa_client *client, void *f, bool cancel)
 				client->cevnt_tail = p;
 
 			client->cevnt_count--;
-			
+
 			(*ce->funct)(0, ce, cancel);
 
 			DIAGS(("---------- freeing CE %lx with function %lx", ce, f));
@@ -285,8 +284,8 @@ dispatch_cevent(struct xa_client *client)
 
 		DIAG((D_kern, client, "Dispatch evnt %lx (head %lx, tail %lx, count %d) for %s",
 			ce, client->cevnt_head, client->cevnt_tail, client->cevnt_count, client->name));
-		
-		
+
+
 // 		(*ce->funct)(0, ce, false);
 
 		if (!(nxt = ce->next))
@@ -294,7 +293,7 @@ dispatch_cevent(struct xa_client *client)
 
 		client->cevnt_head = nxt;
 		client->cevnt_count--;
-	
+
 		(*ce->funct)(0, ce, false);
 		kfree(ce);
 
@@ -376,7 +375,7 @@ cBlock(struct xa_client *client, int which)
 	while (!client->usr_evnt)
 	{
 		DIAG((D_kern, client, "[%d]Blocked %s", which, c_owner(client)));
-		
+
 		do_block(client);
 
 		/*
@@ -489,14 +488,14 @@ iBlock(struct xa_client *client, int which)
 	while (!client->usr_evnt)
 	{
 		DIAG((D_kern, client, "[%d]Blocked %s", which, c_owner(client)));
-		
+
 		if (client->tp_term)
 		{
 // 			display("iBlock - tp_term set");
 // 	BLOG((true, "leave iBlock"));
 			return;
 		}
-		
+
 // 		if (!a->addrin[0])
 // 			BLOG((true, "iBlock: 4 NULL"));
 		do_block(client);
@@ -624,7 +623,7 @@ init_moose(void)
 				BLOG((true, "init_moose: Error opending mouse driver!"));
 				return false;
 			}
-		
+
 			if (adi_ioctl(G.adi_mouse, MOOSE_DCLICK, (long)cfg.double_click_time))
 				BLOG((true,/*0000000d*/"Moose set dclick time failed"));
 			if (adi_ioctl(G.adi_mouse, MOOSE_PKT_TIMEGAP, (long)cfg.mouse_packet_timegap))
@@ -701,9 +700,9 @@ CE_fa(enum locks lock, struct c_event *ce, bool cancel)
 
 			if (htd)
 				wind = htd->w_sysalrt;
-			
+
 			c = data->buf[1];
-			
+
 			if (wind)
 			{
 				struct widget_tree *wt;
@@ -739,7 +738,7 @@ CE_fa(enum locks lock, struct c_event *ce, bool cancel)
 					struct scroll_info *list = object_get_slist(form + SYSALERT_LIST);
 					struct sesetget_params p = { 0 }; //seget_entrybyarg p = { 0 };
 					struct scroll_content sc = {{ 0 }};
-			
+
 					sc.icon = icon;
 					sc.t.text = data->buf;
 					sc.t.strings = 1;
@@ -783,7 +782,7 @@ CE_fa(enum locks lock, struct c_event *ce, bool cancel)
 	else
 		kfree(ce->ptr1);
 }
-		
+
 static void
 display_alert(struct proc *p, long arg)
 {
@@ -800,7 +799,7 @@ display_alert(struct proc *p, long arg)
 	{
 		struct display_alert_data *data = (struct display_alert_data *)arg;
 
-		/* Bring up an alert */		
+		/* Bring up an alert */
 		post_cevent(C.Hlp, CE_fa, data,NULL, 0,0, NULL,NULL);
 	}
 }
@@ -898,12 +897,12 @@ aesthread_block(struct xa_client *client, int which)
 
 		dispatch_cevent(client);
 	}
-	
+
 	if (client->status & (CS_LAGGING | CS_MISS_RDRW))
 	{
 		client->status &= ~(CS_LAGGING|CS_MISS_RDRW);
 	}
-	
+
 	if (!client->tp_term)
 		do_block(client);
 }
@@ -933,7 +932,7 @@ static void
 helpthread_entry(void *c)
 {
 	struct xa_client *client;
-	
+
 	p_domain(1);
 	setup_common();
 
@@ -952,7 +951,7 @@ helpthread_entry(void *c)
 // 			union msg_buf *msgb;
 
 			bzero(pb, pbsize);
-			
+
 			d = (short *)((long)pb + sizeof(*pb));
 			d += 2;
 			pb->control = d;
@@ -969,7 +968,7 @@ helpthread_entry(void *c)
 
 			d += 32;
 			pb->msg = (union msg_buf *)d;
-		
+
 			client_nicename(client, aeshlp_name, true);
 			C.Hlp = client;
 			client->type = APP_AESTHREAD;
@@ -1002,16 +1001,16 @@ helpthread_entry(void *c)
 		htd = lookup_xa_data_byname(&client->xa_data, HTDNAME);
 		if (htd)
 			delete_xa_data(&client->xa_data, htd);
-		
+
 		while (dispatch_cevent(client))
 			;
-		
+
 // 		display(" exit client");
 		exit_client(0, client, 0, false, false);
 
 // 		display("detach extension");
 		detach_extension(NULL, XAAES_MAGIC);
-// 		display(" .. done");	
+// 		display(" .. done");
 	}
 	if (C.Hlp_pb)
 	{
@@ -1082,7 +1081,7 @@ sshutdown_timeout(struct proc *p, long arg)
 					ikill(client->p->pid, SIGKILL);
 				}
 			}
-			
+
 			quit_all_apps(NOLOCKING, NULL, (C.shutdown & RESOLUTION_CHANGE) ? AP_RESCHG : AP_TERM);
 			set_shutdown_timeout(1000);
 		}
@@ -1217,20 +1216,20 @@ CE_start_apps(enum locks lock, struct c_event *ce, bool cancel)
 		Path parms;
 		int i;
 		lock = winlist|envstr|pending;
-		
+
 		/*
 		 * Load Accessories
 		 */
 		BLOG((false, "loading accs ---------------------------"));
 		load_accs();
-		
+
 		/*
 		 * startup shell and autorun
 		 */
 		BLOG((false, "loading shell and autorun ---------------"));
-		
+
 		C.DSKpid = -1;
-		
+
 		for (i = sizeof(cfg.cnf_run)/sizeof(cfg.cnf_run[0]) - 1; i >= 0; i--)
 		{
 			if (cfg.cnf_run[i])
@@ -1263,10 +1262,10 @@ CE_start_apps(enum locks lock, struct c_event *ce, bool cancel)
  */
 /*
  * our XaAES server kernel thread
- * 
+ *
  * It have it's own context and can use all syscalls like a normal
  * process (except that it don't go through the syscall handler).
- * 
+ *
  * It run in kernel mode and share the kernel memspace, cwd, files
  * and sigs with all other kernel threads (mainly the idle thread
  * alias rootproc).
@@ -1285,14 +1284,14 @@ k_main(void *dummy)
 	 * Set MiNT domain, else keyboard stuff dont work correctly
 	 */
 	p_domain(1);
-	
+
 	setup_common();
-	
+
 	/* join process group of loader */
 	p_setpgrp(0, loader_pgrp);
 
 	c_naes = NULL;
-	
+
 	if (cfg.naes_cookie)
 	{
 		BLOG((false, "Install 'nAES' cookie.."));
@@ -1319,12 +1318,12 @@ k_main(void *dummy)
 		}
 #endif
 	}
-	
+
 #if 0
 	C.reschange = NULL;
 	{
 		long tmp;
-		
+
 		C.reschange = NULL;
 		/*
 		 * Detect video hardware..
@@ -1344,11 +1343,11 @@ k_main(void *dummy)
 				default:;
 			}
 		}
-		
+
 		/*
 		 * see if we run on a Milan, in which case the _VDI cookie is present
 		 */
-#ifndef ST_ONLY	
+#ifndef ST_ONLY
 		mvdi_api.dispatch = NULL;
 		if (!(s_system(S_GETCOOKIE, COOKIE__VDI, (unsigned long)&tmp)))
 		{
@@ -1365,7 +1364,7 @@ k_main(void *dummy)
 			{
 				if (!(s_system(S_GETCOOKIE, COOKIE_NOVA, (unsigned long)&tmp)))
 					nova_data = kmalloc(sizeof(struct nova_data));
-				
+
 				if (nova_data)
 				{
 					nova_data->xcb = (struct xcb *)tmp;
@@ -1400,7 +1399,7 @@ k_main(void *dummy)
 		goto leave;
 	}
 	BLOG((false, "k_init returned OK"));
-	/* 
+	/*
 	 * Initialization I/O
 	 */
 
@@ -1511,12 +1510,12 @@ k_main(void *dummy)
 
 	add_to_tasklist(C.Aes);
 	add_to_tasklist(C.Hlp);
-	
+
 	if (cfg.opentaskman)
 		post_cevent(C.Hlp, ceExecfunc, open_taskmanager,NULL, 1,0, NULL,NULL);
-	
+
 	post_cevent(C.Hlp, CE_start_apps, NULL,NULL, 0,0, NULL,NULL);
-	
+
 	C.Aes->waiting_for |= XAWAIT_MENU;
 
 	BLOG((false, " Entering main loop ------------------------------------"));
@@ -1538,7 +1537,7 @@ k_main(void *dummy)
 		/* The pivoting point of XaAES!
 		 * Wait via Fselect() for keyboard and alerts.
 		 */
-		fs_rtn = f_select(aessys_timeout, (long *) &input_channels, 0L, 0L);	
+		fs_rtn = f_select(aessys_timeout, (long *) &input_channels, 0L, 0L);
 
 		DIAG((D_kern, NULL,">>Fselect -> %d, channels: 0x%08lx, update_lock %d(%s), mouse_lock %d(%s)",
 			fs_rtn,
@@ -1568,7 +1567,7 @@ k_main(void *dummy)
 					yield(), to--;
 			}
 		}
-				
+
 		if (fs_rtn > 0)
 		{
 			if (input_channels & (1UL << C.KBD_dev))
@@ -1672,7 +1671,7 @@ static void
 k_exit(void)
 {
 //	display("k_exit");
-	
+
 	detach_child_devices(self);
 
 	C.shutdown |= QUIT_NOW;
@@ -1761,7 +1760,7 @@ k_exit(void)
 	/* wakeup loader */
 // 	_s_ync();
 	wake(WAIT_Q, (long)&loader_pid);
-		
+
 	BLOG((false, "-> kthread_exit"));
 // 	_s_ync();
 

@@ -25,7 +25,6 @@
  */
 
 #include RSCHNAME
-
 #include "xa_types.h"
 #include "xa_global.h"
 

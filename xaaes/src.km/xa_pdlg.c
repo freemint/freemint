@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
  *                                        2004 F.Naumann & O.Skancke
@@ -25,7 +25,6 @@
  */
 
 #include RSCHNAME
-
 #include "global.h"
 #include "xa_global.h"
 #include "vdi_parms.h"
@@ -50,7 +49,7 @@
 #include "xa_user_things.h"
 #include "nkcc.h"
 #include "mint/signal.h"
-	
+
 /*
  * WDIALOG FUNCTIONS (pdlg)
  *
@@ -70,7 +69,7 @@ extern struct toolbar_handlers wdlg_th;
 
 static char selafile[] = ">> No file selected <<";
 
-static char *outfiles[] = 
+static char *outfiles[] =
 {
 	"FILE:", selafile,
 	"AUX:", "Serial device",
@@ -114,7 +113,7 @@ display_pset(PRN_SETTINGS *p)
 	display("brightness   %ld", p->brightness);
 	display("device       '%s'", p->device);
 	display("-------------------------------------------");
-	
+
 }
 #endif
 
@@ -146,7 +145,7 @@ callout_pdlg_sub(struct xa_pdlg_info *pdlg, short which, PDLG_SUB *sub, PRN_SETT
 	if (function)
 	{
 		long structlen = sizeof(struct co_pdlg_sub_parms);
-		
+
 		if (sub->tree)
 		{
 			RECT r;
@@ -157,7 +156,7 @@ callout_pdlg_sub(struct xa_pdlg_info *pdlg, short which, PDLG_SUB *sub, PRN_SETT
 
 		if (which != CALL_DO_DLG)
 			structlen -= 2;
-		
+
 		u = umalloc(xa_callout_user.len + structlen);
 		if (u)
 		{
@@ -165,7 +164,7 @@ callout_pdlg_sub(struct xa_pdlg_info *pdlg, short which, PDLG_SUB *sub, PRN_SETT
 			struct co_pdlg_sub_parms *lp;
 
 			bcopy(&xa_callout_user, u, xa_callout_user.len);
-			
+
 			u->sighand_p	+= (long)u;
 			u->parm_p	 = (void *)((char *)u->parm_p + (long)u);
 
@@ -177,10 +176,10 @@ callout_pdlg_sub(struct xa_pdlg_info *pdlg, short which, PDLG_SUB *sub, PRN_SETT
 
 			lp->settings	= (long)pset;
 			lp->sub		= (long)sub;
-			
+
 			if (which == CALL_DO_DLG)
 				lp->obj = obj;
-			
+
 			cpushi(u, xa_callout_user.len);
 
 			act.sa_handler	= u->sighand_p;
@@ -195,12 +194,12 @@ callout_pdlg_sub(struct xa_pdlg_info *pdlg, short which, PDLG_SUB *sub, PRN_SETT
 			p_sigaction(SIGUSR2, &oact, NULL);
 
 			ret = p->ret;
-			
+
 			ufree(u);
 		}
 	}
 // 	display("function called returns %ld", ret);
-	return ret;	
+	return ret;
 }
 
 static DRV_INFO *
@@ -221,7 +220,7 @@ xv_create_driver_info(XVDIPB *vpb, short handle, short id)
 	return d;
 #endif
 }
-	
+
 static short
 xv_delete_driver_info(XVDIPB *vpb, short handle, DRV_INFO *d)
 {
@@ -281,7 +280,7 @@ static short
 xv_trays(XVDIPB *vpb, short handle, short in, short out, short *r_in, short *r_out)
 {
 	short ret = 0;
-	
+
 	vpb->intin[0] = in;
 	vpb->intin[1] = out;
 	vpb->control[V_N_PTSOUT] = 0;
@@ -323,7 +322,7 @@ delete_driver_list(struct xa_pdlg_info *pdlg)
 	while ((p = pdlg->drivers))
 	{
 		pdlg->drivers = p->next;
-		
+
 		if (!(p->flags & DRVINFO_KMALLOC))
 			xv_delete_driver_info(pdlg->vpb, C.P_handle, p->d);
 		else
@@ -347,13 +346,13 @@ display_driver_list(struct xa_pdlg_info *pdlg)
 		display(" dname : '%s'", p->dname);
 		display(" path / file : '%s'/'%s'", p->path, p->fname);
 		display("drvinf at %lx, id=%d, type=%d, format=%ld, device '%s'", p->d, p->d->driver_id, p->d->driver_type, p->d->format, p->d->device);
-		
+
 		printer = p->d->printers;
-		
+
 		while (printer)
 		{
 			PRN_TRAY *tray;
-			
+
 			display("  printer '%s'", printer->name);
 			display("  -- subdlg %lx, setup_panel=%lx, close_panel=%lx", printer->sub_dialogs, printer->setup_panel, printer->close_panel);
 			tray = printer->input_trays;
@@ -413,11 +412,11 @@ get_driver_list(struct xa_pdlg_info *pdlg)
 	char path[128], fname[32], dname[128];
 	DRV_INFO *drvinf;
 	struct xa_prndrv_info *start, *prev, *xad;
-	 
+
 	delete_driver_list(pdlg);
 	start = prev = xad = NULL;
 	pdlg->n_drivers = 0;
-	
+
 	for (i = 21; i < 100; i++)
 	{
 		if (xvq_ext_devinfo(vpb, C.P_handle, i, path, fname, dname))
@@ -425,13 +424,13 @@ get_driver_list(struct xa_pdlg_info *pdlg)
 			long flags = 0L;
 
 			drvinf = xv_create_driver_info(vpb, C.P_handle, i);
-			
+
 			if (!drvinf && i == 31)	/* Metafile */
 			{
 				if ((drvinf = kmalloc(sizeof(*drvinf))))
 				{
 					bzero(drvinf, sizeof(*drvinf));
-					
+
 					drvinf->magic = 0x70626e66;
 					drvinf->length = sizeof(*drvinf);
 					drvinf->format = 0L;
@@ -441,7 +440,7 @@ get_driver_list(struct xa_pdlg_info *pdlg)
 					flags |= DRVINFO_KMALLOC;
 				}
 			}
-				
+
 			if (drvinf)
 			{
 				xad = kmalloc(sizeof(*xad));
@@ -453,7 +452,7 @@ get_driver_list(struct xa_pdlg_info *pdlg)
 					prev->next = xad;
 					prev = xad;
 				}
-				
+
 				bzero(xad, sizeof(*xad));
 				xad->flags = flags;
 				strncpy(xad->path, path, 127);
@@ -461,15 +460,15 @@ get_driver_list(struct xa_pdlg_info *pdlg)
 				strncpy(xad->dname, dname, 127);
 				xad->d = drvinf;
 				pdlg->n_drivers++;
-			}				
+			}
 		}
 		/* Ozk: Memory drivers have IDs 61 - 70,
 		 *	and I promise, everyone, this _will_ skip ALL memory drivers!!! */
 		if (i == 60) i = 70;
 	}
-	
+
 	pdlg->drivers = start;
-	
+
 	count_printers(pdlg);
 
 // 	display_driver_list(pdlg);
@@ -479,7 +478,7 @@ struct xa_window *
 get_pdlg_wind(struct xa_client *client, void *pdlg_ptr)
 {
 	struct xa_pdlg_info *pdlg = lookup_xa_data(&client->xa_data, pdlg_ptr);
-	
+
 	if (pdlg)
 		return pdlg->wind;
 	else
@@ -494,7 +493,7 @@ delete_pdlg_info(void *_pdlg)
 	if (pdlg)
 	{
 		delete_driver_list(pdlg);
-		
+
 		if (pdlg->dwt)
 		{
 			pdlg->dwt->links--;
@@ -512,13 +511,13 @@ delete_pdlg_info(void *_pdlg)
 			kfree(pdlg->vpb);
 			pdlg->vpb = NULL;
 		}
-		
+
 		if (pdlg->drv_wt)
 		{
 			pdlg->drv_wt->links--;
 			remove_wt(pdlg->drv_wt, false);
 		}
-		
+
 		if (pdlg->mode_wt)
 		{
 			pdlg->mode_wt->links--;
@@ -584,27 +583,27 @@ set_oblink(struct xa_pdlg_info *pdlg, OBJECT *to_tree, short to_obj)
 		obl = kmalloc(sizeof(*obl));
 		init = true;
 	}
-	
+
 	if (obl)
 	{
 		struct xa_aes_object to = aesobj(to_tree, to_obj);
 		RECT r;
-		
+
 		if (init || !same_aesobj(&obl->to, &to))
 		{
-			
+
 			obj_rectangle(wt, to, &r);
-			
+
 			if (aesobj_ob(&to)->ob_width < pdlg->min_w)
 				aesobj_ob(&to)->ob_width = pdlg->min_w;
-				
+
 			if (aesobj_ob(&to)->ob_width != wt->tree[XPDLG_DIALOG].ob_width)
 			{
 				wt->tree[XPDLG_DIALOG].ob_width = aesobj_ob(&to)->ob_width;
 				wt->tree->ob_width = wt->tree[XPDLG_DIALOG].ob_x + aesobj_ob(&to)->ob_width + 4;
 				resize = true;
 			}
-			
+
 			if (aesobj_ob(&to)->ob_height < pdlg->min_h)
 				aesobj_ob(&to)->ob_height = pdlg->min_h;
 
@@ -612,12 +611,12 @@ set_oblink(struct xa_pdlg_info *pdlg, OBJECT *to_tree, short to_obj)
 			{
 				wt->tree[XPDLG_DIALOG].ob_height = aesobj_ob(&to)->ob_height;
 				wt->tree->ob_height = wt->tree[XPDLG_DIALOG].ob_y + wt->tree[XPDLG_DIALOG].ob_height + wt->tree[XPDLG_PRINT].ob_height + 16;
-				
+
 				wt->tree[XPDLG_PRINT].ob_y = wt->tree[XPDLG_DIALOG].ob_y + wt->tree[XPDLG_DIALOG].ob_height + 8;
 				wt->tree[XPDLG_CANCEL].ob_y = wt->tree[XPDLG_PRINT].ob_y;
 				resize = true;
 			}
-			
+
 			obl->to   = to;
 			upd = true;
 		}
@@ -636,13 +635,13 @@ set_oblink(struct xa_pdlg_info *pdlg, OBJECT *to_tree, short to_obj)
 				wt->widg->r.w = r.w;
 				wt->widg->r.h = r.h;
 			}
-			
+
 			if (!pdlg->flags & 1)
 				r = w2f(&pdlg->wind->delta, &r, true);
 			else
 				r = w2f(&pdlg->wind->wadelta, &r, true);
 
-			
+
 			move_window(0, pdlg->wind, false, -1, r.x, r.y, r.w, r.h);
 			upd = false;
 		}
@@ -666,14 +665,14 @@ click_list(SCROLL_INFO *list, SCROLL_ENTRY *this, const struct moose_data *md)
 		struct xa_pdlg_info *pdlg = list->data;
 		struct xa_window *wind = pdlg->wind;
 		PDLG_SUB *sub = this->data;
-		
+
 		if (sub && pdlg->current_subdlg != sub)
 		{
 			if (pdlg->current_subdlg)
 				callout_pdlg_sub(pdlg, CALL_RESET_DLG, pdlg->current_subdlg, pdlg->settings, 0);
 
 			callout_pdlg_sub(pdlg, CALL_INIT_DLG, sub, pdlg->settings, 0);
-		
+
 			if (set_oblink(pdlg, sub->tree, sub->index_offset))
 			{
 				sub->dialog = pdlg->handle;
@@ -703,7 +702,7 @@ set_driver_pset(DRV_INFO *driver, PRN_SETTINGS *ps)
 // 		ps->driver_mode
 	}
 }
-		
+
 static void
 set_size_pset(MEDIA_SIZE *size, PRN_SETTINGS *ps)
 {
@@ -913,7 +912,7 @@ d_set_outfile(struct xa_pdlg_info *pdlg, char *tofile)
 		if (!strcmp(*files, "FILE:"))
 		{
 			char *t;
-		
+
 			if (!(t = files[1]))
 				t = *files;
 			else
@@ -925,7 +924,7 @@ d_set_outfile(struct xa_pdlg_info *pdlg, char *tofile)
 	{
 		idx = 1;
 		files = pdlg->outfiles;
-		
+
 		while (*files)
 		{
 			if (!strcmp(*files, "FILE:"))
@@ -940,18 +939,18 @@ d_set_outfile(struct xa_pdlg_info *pdlg, char *tofile)
 			txt = pdlg->filesel;
 		}
 	}
-	
+
 	if (txt)
 	{
 		int len0, len1;
 
 		len0 = strlen(selafile);
 		len1 = strlen(txt);
-			
+
 		if (len1 > len0)
 		{
 			char nt[len0];
-				
+
 			strncpy(nt, txt, len0);
 			txt = &nt[len0];
 			*txt-- = '\0';
@@ -1016,9 +1015,9 @@ build_prn_settings(struct xa_pdlg_info *pdlg, PRN_SETTINGS *ps)
 	ps->magic	= 0x70736574;		/* 'pset' */
 	ps->length	= sizeof(*ps);
 	ps->format	= 1;
-	
+
 	ps->page_flags	= d_get_page_sel(pdlg);
-	
+
 	ps->first_page = d_get_fromto_page(pdlg, 0);
 	ps->last_page = d_get_fromto_page(pdlg, 1);
 
@@ -1028,7 +1027,7 @@ build_prn_settings(struct xa_pdlg_info *pdlg, PRN_SETTINGS *ps)
 	ps->scale = d_get_scale(pdlg);
 
 	set_driver_pset(pdlg->curr_drv, ps);
-	
+
 	ps->driver_mode &= ~1L;
 	ps->driver_mode |= d_get_prn_fgbg(pdlg);
 
@@ -1037,9 +1036,9 @@ build_prn_settings(struct xa_pdlg_info *pdlg, PRN_SETTINGS *ps)
 
 	ps->quality_id	= 0;
 	ps->plane_flags = d_get_plane_flags(pdlg);
-	
+
 	set_dither_pset(pdlg->curr_dither, ps);
-	
+
 	set_size_pset(pdlg->curr_size, ps);
 	set_type_pset(pdlg->curr_type, ps);
 
@@ -1075,7 +1074,7 @@ next_printer(short item, void **data)
 		parm->curr_drv = pdlg->drivers;
 		parm->curr_prn = pdlg->drivers->d->printers;
 	}
-	
+
 	/*
 	 * If device have no printer entries, use dname
 	 */
@@ -1086,7 +1085,7 @@ next_printer(short item, void **data)
 		parm->curr_prn = parm->curr_drv->d->printers;
 	}
 	/*
-	 * else use the individual printer entry names 
+	 * else use the individual printer entry names
 	 */
 	else
 	{
@@ -1100,7 +1099,7 @@ next_printer(short item, void **data)
 		else
 			parm->curr_prn = printer;
 	}
-	
+
 	return ret;
 }
 
@@ -1116,7 +1115,7 @@ build_printer_popup(struct xa_pdlg_info *pdlg)
 	parms.pdlg = pdlg;
 
 	tree = create_popup_tree(pdlg->client, 0, pdlg->n_printers, pdlg->mwt->tree[XPDLG_DRIVER].ob_width, 4, &next_printer, &p);
-	
+
 	if (tree)
 	{
 		struct widget_tree *nwt = new_widget_tree(pdlg->client, tree);
@@ -1153,7 +1152,7 @@ next_mode(short item, void **data)
 
 	if (!item)
 		parm->curr = parm->first;
-	
+
 	mode = parm->curr;
 	ret = mode->name;
 	parm->curr = mode->next;
@@ -1174,12 +1173,12 @@ build_mode_popup(struct xa_pdlg_info *pdlg, PRN_SETTINGS *pset)
 	if (printer)
 	{
 		PRN_MODE *mode = printer->modes;
-		
+
 		pdlg->curr_mode = mode;
 
 		parm.first = mode;
 		parm.curr = mode;
-		
+
 		count = 0;
 		while (mode)
 		{
@@ -1205,9 +1204,9 @@ build_mode_popup(struct xa_pdlg_info *pdlg, PRN_SETTINGS *pset)
 		remove_wt(pdlg->mode_wt, false);
 		pdlg->mode_wt = NULL;
 	}
-		
+
 	tree = create_popup_tree(pdlg->client, 0, count, pdlg->dwt->tree[PDLG_G_QUALITY].ob_width, 4, &next_mode, &p);
-	
+
 	if (tree)
 	{
 		pdlg->mode_wt = new_widget_tree(pdlg->client, tree);
@@ -1223,7 +1222,7 @@ build_mode_popup(struct xa_pdlg_info *pdlg, PRN_SETTINGS *pset)
 	if (!tree || !pdlg->mode_wt)
 	{
 		obj_unset_g_popup(pdlg->dwt, aesobj(pdlg->dwt->tree, PDLG_G_QUALITY), errtxt);
-		
+
 		if (tree)
 			free_object_tree(pdlg->client, tree);
 	}
@@ -1255,7 +1254,7 @@ static char *colornames[] =
 	"Unknown 19",
 	"Unknown 20",
 	"Unknown 21",
-	"Unknown 22",	
+	"Unknown 22",
 	"Unknown 23",
 
 	"24 - What is this?",
@@ -1315,12 +1314,12 @@ next_color(short item, void **data)
 
 	if (!item)
 		parm->curr = 0;
-	
+
 	i = (long)parm->curr;
 	names = (char **)parm->first;
 	ret = names[i++];
 	parm->curr = (void *)i;
-	
+
 	return ret;
 }
 
@@ -1338,7 +1337,7 @@ build_color_popup(struct xa_pdlg_info *pdlg, PRN_SETTINGS *pset)
 	{
 		short i = 0;
 		unsigned long cols = (unsigned long)mode->color_capabilities;
-			
+
 		count = 0;
 		for (i = 0; (i < 32) && cols; i++)
 		{
@@ -1352,27 +1351,27 @@ build_color_popup(struct xa_pdlg_info *pdlg, PRN_SETTINGS *pset)
 			cols >>= 1;
 		}
 	}
-	
+
 	pdlg->n_colmodes = count;
-	
+
 	if (!count)
 		coln[count++] = nosel;
-	
-	coln[count] = NULL;				
-	
+
+	coln[count] = NULL;
+
 	parm.first = &coln;
 	parm.curr = 0;
 	p = &parm;
-		
+
 	if (pdlg->color_wt)
 	{
 		pdlg->color_wt->links--;
 		remove_wt(pdlg->color_wt, false);
 		pdlg->color_wt = NULL;
 	}
-	
+
 	tree = create_popup_tree(pdlg->client, 0, count, pdlg->dwt->tree[PDLG_G_COLOR].ob_width, 4, &next_color, &p);
-	
+
 	if (tree)
 	{
 		pdlg->color_wt = new_widget_tree(pdlg->client, tree);
@@ -1388,7 +1387,7 @@ build_color_popup(struct xa_pdlg_info *pdlg, PRN_SETTINGS *pset)
 	if (!tree || !pdlg->color_wt)
 	{
 		obj_unset_g_popup(pdlg->dwt, aesobj(pdlg->dwt->tree, PDLG_G_COLOR), errtxt);
-		
+
 		if (tree)
 			free_object_tree(pdlg->client, tree);
 	}
@@ -1406,7 +1405,7 @@ next_size(short item, void **data)
 
 	if (!item)
 		parm->curr = parm->first;
-	
+
 	paper = parm->curr;
 	ret = paper->name;
 	parm->curr = paper->next;
@@ -1428,12 +1427,12 @@ build_size_popup(struct xa_pdlg_info *pdlg, PRN_SETTINGS *pset)
 	if (printer && printer->papers)
 	{
 		MEDIA_SIZE *paper = printer->papers;
-		
+
 		pdlg->curr_size = paper;
 
 		parm.first = paper;
 		parm.curr = paper;
-		
+
 		count = 0;
 		while (paper)
 		{
@@ -1452,17 +1451,17 @@ build_size_popup(struct xa_pdlg_info *pdlg, PRN_SETTINGS *pset)
 		count = 1;
 		parm.first = NULL;
 	}
-	
+
 	if (pdlg->size_wt)
 	{
 		pdlg->size_wt->links--;
 		remove_wt(pdlg->size_wt, false);
 		pdlg->size_wt = NULL;
 	}
-		
+
 	p = &parm;
 	tree = create_popup_tree(pdlg->client, 0, count, pdlg->dwt->tree[PDLG_P_FORMAT].ob_width, 4, &next_size, &p);
-	
+
 	if (tree)
 	{
 		pdlg->size_wt = new_widget_tree(pdlg->client, tree);
@@ -1478,7 +1477,7 @@ build_size_popup(struct xa_pdlg_info *pdlg, PRN_SETTINGS *pset)
 	if (!tree || !pdlg->size_wt)
 	{
 		obj_unset_g_popup(pdlg->dwt, aesobj(pdlg->dwt->tree, PDLG_P_FORMAT), errtxt);
-		
+
 		if (tree)
 			free_object_tree(pdlg->client, tree);
 	}
@@ -1497,7 +1496,7 @@ next_type(short item, void **data)
 
 	if (!item)
 		parm->curr = parm->first;
-	
+
 	type = parm->curr;
 	ret = type->name;
 	parm->curr = type->next;
@@ -1519,12 +1518,12 @@ build_type_popup(struct xa_pdlg_info *pdlg, PRN_SETTINGS *pset)
 	if (mode && mode->paper_types)
 	{
 		MEDIA_TYPE *type = mode->paper_types;
-		
+
 		pdlg->curr_type = type;
 
 		parm.first = type;
 		parm.curr = type;
-		
+
 		count = 0;
 		while (type)
 		{
@@ -1550,10 +1549,10 @@ build_type_popup(struct xa_pdlg_info *pdlg, PRN_SETTINGS *pset)
 		remove_wt(pdlg->type_wt, false);
 		pdlg->type_wt = NULL;
 	}
-		
+
 	p = &parm;
 	tree = create_popup_tree(pdlg->client, 0, count, pdlg->dwt->tree[PDLG_P_TYPE].ob_width, 4, &next_type, &p);
-	
+
 	if (tree)
 	{
 		pdlg->type_wt = new_widget_tree(pdlg->client, tree);
@@ -1569,7 +1568,7 @@ build_type_popup(struct xa_pdlg_info *pdlg, PRN_SETTINGS *pset)
 	if (!tree || !pdlg->type_wt)
 	{
 		obj_unset_g_popup(pdlg->dwt, aesobj(pdlg->dwt->tree, PDLG_P_TYPE), errtxt);
-		
+
 		if (tree)
 			free_object_tree(pdlg->client, tree);
 	}
@@ -1590,7 +1589,7 @@ next_tray(short item, void **data)
 
 	if (!item)
 		parm->curr = parm->first;
-	
+
 	tray = parm->curr;
 	ret = tray->name;
 	if (ret[0] == '-')
@@ -1618,12 +1617,12 @@ build_tray_popup(struct xa_pdlg_info *pdlg, short which, PRN_SETTINGS *pset)
 	if (printer && (which ? printer->input_trays : printer->output_trays))
 	{
 		PRN_TRAY *tray = ((!which) ? printer->input_trays : printer->output_trays);
-		
+
 		*tptr = tray;
-			
+
 		parm.first = tray;
 		parm.curr = tray;
-		
+
 		count = 0;
 		while (tray)
 		{
@@ -1646,17 +1645,17 @@ build_tray_popup(struct xa_pdlg_info *pdlg, short which, PRN_SETTINGS *pset)
 		count = 1;
 		parm.first = NULL;
 	}
-				
+
 	if (*pwt)
 	{
 		(*pwt)->links--;
 		remove_wt(*pwt, false);
 		*pwt = NULL;
 	}
-		
+
 	p = &parm;
 	tree = create_popup_tree(pdlg->client, 0, count, pdlg->dwt->tree[obidx].ob_width, 4, &next_tray, &p);
-	
+
 	if (tree)
 	{
 		*pwt = new_widget_tree(pdlg->client, tree);
@@ -1672,7 +1671,7 @@ build_tray_popup(struct xa_pdlg_info *pdlg, short which, PRN_SETTINGS *pset)
 	if (!tree || !*pwt)
 	{
 		obj_unset_g_popup(pdlg->dwt, aesobj(pdlg->dwt->tree, obidx), errtxt);
-		
+
 		if (tree)
 			free_object_tree(pdlg->client, tree);
 	}
@@ -1691,7 +1690,7 @@ next_dither(short item, void **data)
 
 	if (!item)
 		parm->curr = parm->first;
-	
+
 	dither = parm->curr;
 	ret = dither->name;
 	parm->curr = dither->next;
@@ -1713,17 +1712,17 @@ build_dither_popup(struct xa_pdlg_info *pdlg, PRN_SETTINGS *pset)
 	if (drv && drv->dither_modes)
 	{
 		DITHER_MODE *dither = drv->dither_modes;
-		
+
 		pdlg->curr_dither = dither;
 
 		parm.first = dither;
 		parm.curr = dither;
-		
+
 		count = 0;
 		while (dither)
 		{
 			if (pset && pset->dither_mode == dither->dither_id)
-			{	
+			{
 				pdlg->curr_dither = dither;
 				obnum = count + 1;
 			}
@@ -1737,17 +1736,17 @@ build_dither_popup(struct xa_pdlg_info *pdlg, PRN_SETTINGS *pset)
 		count = 1;
 		parm.first = NULL;
 	}
-	
+
 	if (pdlg->dither_wt)
 	{
 		pdlg->dither_wt->links--;
 		remove_wt(pdlg->dither_wt, false);
 		pdlg->dither_wt = NULL;
 	}
-		
+
 	p = &parm;
 	tree = create_popup_tree(pdlg->client, 0, count, pdlg->dwt->tree[PDLG_R_RASTER].ob_width, 4, &next_dither, &p);
-	
+
 	if (tree)
 	{
 		pdlg->dither_wt = new_widget_tree(pdlg->client, tree);
@@ -1763,7 +1762,7 @@ build_dither_popup(struct xa_pdlg_info *pdlg, PRN_SETTINGS *pset)
 	if (!tree || !pdlg->dither_wt)
 	{
 		obj_unset_g_popup(pdlg->dwt, aesobj(pdlg->dwt->tree, PDLG_R_RASTER), errtxt);
-		
+
 		if (tree)
 			free_object_tree(pdlg->client, tree);
 	}
@@ -1782,7 +1781,7 @@ next_outfile(short item, void **data)
 
 	if (!item)
 		parm->curr = parm->first;
-	
+
 	outfile = parm->curr;
 
 	if (!strcmp(*outfile, "FILE:"))
@@ -1794,7 +1793,7 @@ next_outfile(short item, void **data)
 		else
 			ret = *outfile;
 	}
-	
+
 	outfile += 2;
 
 	parm->curr = outfile;
@@ -1819,7 +1818,7 @@ build_outfile_popup(struct xa_pdlg_info *pdlg, DRV_INFO *drv, PRN_ENTRY *prn, PR
 	count = 0;
 	outcapabilities = prn ? prn->printer_capabilities : PC_FILE;
 	outcapabilities &= (PC_FILE|PC_SERIAL|PC_PARALLEL|PC_ACSI|PC_SCSI);
-	
+
 	if (!outcapabilities)
 	{
 		*ourfiles++ = nosel;
@@ -1834,13 +1833,13 @@ build_outfile_popup(struct xa_pdlg_info *pdlg, DRV_INFO *drv, PRN_ENTRY *prn, PR
 			{
 				if (!strcmp(*files, "FILE:"))
 					sel_obnum = count + 1;
-			
+
 				if (pset && !strcmp(*files, pset->device))
 					obnum = count + 1;
-			
+
 				if (obnum == -1 && drv && !strcmp(*files, drv->device))
 					obnum = count + 1;
-			
+
 				*ourfiles++ = files[0];
 				*ourfiles++ = files[1];
 				count++;
@@ -1849,10 +1848,10 @@ build_outfile_popup(struct xa_pdlg_info *pdlg, DRV_INFO *drv, PRN_ENTRY *prn, PR
 			files += 2;
 		}
 	}
-	
+
 	ourfiles[0] = NULL;
 	ourfiles[1] = NULL;
-	
+
 	if (obnum == -1)
 		obnum = 1;
 
@@ -1862,11 +1861,11 @@ build_outfile_popup(struct xa_pdlg_info *pdlg, DRV_INFO *drv, PRN_ENTRY *prn, PR
 		remove_wt(pdlg->outfile_wt, false);
 		pdlg->outfile_wt = NULL;
 	}
-	
+
 	parm.first = &pdlg->outfiles;
 	p = &parm;
 	tree = create_popup_tree(pdlg->client, 0, count, pdlg->dwt->tree[PDLG_I_PORT].ob_width, 4, &next_outfile, &p);
-	
+
 	if (tree)
 	{
 		pdlg->outfile_wt = new_widget_tree(pdlg->client, tree);
@@ -1883,7 +1882,7 @@ build_outfile_popup(struct xa_pdlg_info *pdlg, DRV_INFO *drv, PRN_ENTRY *prn, PR
 	if (!tree || !pdlg->outfile_wt)
 	{
 		obj_unset_g_popup(pdlg->dwt, aesobj(pdlg->dwt->tree, PDLG_I_PORT), errtxt);
-		
+
 		if (tree)
 			free_object_tree(pdlg->client, tree);
 	}
@@ -1912,7 +1911,7 @@ change_mode(struct xa_pdlg_info *pdlg, short idx)
 				mode = pdlg->curr_prn->modes;
 		}
 	}
-	
+
 	if (mode != pdlg->curr_mode)
 	{
 		pdlg->curr_mode = mode;
@@ -1923,7 +1922,7 @@ change_mode(struct xa_pdlg_info *pdlg, short idx)
 		set_color_mode_pset(pdlg->colormodes[pdlg->color_obnum - 1], &pdlg->current_settings);
 	}
 }
-	
+
 static void
 change_color(struct xa_pdlg_info *pdlg, short idx)
 {
@@ -1931,7 +1930,7 @@ change_color(struct xa_pdlg_info *pdlg, short idx)
 	set_color_mode_pset(pdlg->colormodes[idx], &pdlg->current_settings);
 }
 
-static void	
+static void
 change_size(struct xa_pdlg_info *pdlg, short idx)
 {
 	MEDIA_SIZE *size = NULL;
@@ -1943,24 +1942,24 @@ change_size(struct xa_pdlg_info *pdlg, short idx)
 		if ((size = pdlg->curr_prn->papers))
 		{
 			short i;
-			
+
 			for (i = 0; i < idx; i++)
 			{
 				if (!(size = size->next))
 					break;
 			}
-			
+
 			if (!size)
 				size = pdlg->curr_prn->papers;
 		}
 	}
-	
+
 	if (size != pdlg->curr_size)
 	{
 		pdlg->curr_size = size;
 		set_size_pset(size, &pdlg->current_settings);
 	}
-}	
+}
 static void
 change_type(struct xa_pdlg_info *pdlg, short idx)
 {
@@ -1973,7 +1972,7 @@ change_type(struct xa_pdlg_info *pdlg, short idx)
 		if ((type = pdlg->curr_mode->paper_types))
 		{
 			short i;
-			
+
 			for (i = 0; i < idx; i++)
 			{
 				if (!(type = type->next))
@@ -2003,7 +2002,7 @@ change_tray(struct xa_pdlg_info *pdlg, short idx, short which)
 			if ((tray = pdlg->curr_prn->input_trays))
 			{
 				short i;
-				
+
 				for (i = 0; i < idx; i++)
 				{
 					if (!(tray = tray->next))
@@ -2028,7 +2027,7 @@ change_tray(struct xa_pdlg_info *pdlg, short idx, short which)
 			if ((tray = pdlg->curr_prn->output_trays))
 			{
 				short i;
-				
+
 				for (i = 0; i < idx; i++)
 				{
 					if (!(tray = tray->next))
@@ -2057,7 +2056,7 @@ change_dither(struct xa_pdlg_info *pdlg, short idx)
 		if ((dither = pdlg->curr_drv->dither_modes))
 		{
 			short i;
-			
+
 			for (i = 0; i < idx; i++)
 			{
 				if (!(dither = dither->next))
@@ -2082,7 +2081,7 @@ handle_fs(enum locks lock, struct fsel_data *fs, const char *path, const char *f
 	strcpy(pdlg->filesel, file);
 
 	close_fileselector(lock, fs);
-	pdlg->client->usr_evnt = 2;	
+	pdlg->client->usr_evnt = 2;
 }
 static void
 cancel_fs(enum locks lock, struct fsel_data *fs, const char *p, const char *f)
@@ -2117,7 +2116,7 @@ change_outfile(struct xa_pdlg_info *pdlg, short idx)
 			pdlg->client->status |= CS_FSEL_INPUT;
 			(*pdlg->client->block)(pdlg->client, 21); //Block(pdlg->client, 21);
 			pdlg->client->status &= ~CS_FSEL_INPUT;
-			
+
 			if (pdlg->filesel[0])
 			{
 				files[index + 1] = pdlg->filesel;
@@ -2139,7 +2138,7 @@ change_outfile(struct xa_pdlg_info *pdlg, short idx)
 	if (*files)
 	{
 		d_set_outfile(pdlg, *files);
-		
+
 		if (!strcmp(*files, "FILE:"))
 		{
 			pdlg->outfile = files[1];
@@ -2242,14 +2241,14 @@ change_printer(struct xa_pdlg_info *pdlg, short idx, PRN_SETTINGS *pset)
 	DRV_INFO *curr_drv;
 
 	pdlg->drv_obnum = idx + 1;
-	
+
 	if (p)
 	{
 		PRN_ENTRY *curr_prn;
-		
+
 		curr_drv = p->d;
 		curr_prn = curr_drv->printers;
-		
+
 		for (i = 0; i < idx; i++)
 		{
 			if (!curr_drv->printers || !(curr_prn = curr_prn->next))
@@ -2267,7 +2266,7 @@ change_printer(struct xa_pdlg_info *pdlg, short idx, PRN_SETTINGS *pset)
 		 */
 		pdlg->curr_drv = curr_drv;
 		pdlg->curr_prn = curr_prn;
-		
+
 		set_driver_pset(pdlg->curr_drv, &pdlg->current_settings);
 		set_printer_pset(pdlg->curr_prn, &pdlg->current_settings);
 
@@ -2276,21 +2275,21 @@ change_printer(struct xa_pdlg_info *pdlg, short idx, PRN_SETTINGS *pset)
 
 		build_color_popup(pdlg, pset);
 		set_color_mode_pset(pdlg->colormodes[pdlg->color_obnum - 1], &pdlg->current_settings);
-		
+
 		build_size_popup(pdlg, pset);
 		set_size_pset(pdlg->curr_size, &pdlg->current_settings);
 
 		build_type_popup(pdlg, pset);
 		set_type_pset(pdlg->curr_type, &pdlg->current_settings);
-		
+
 		build_tray_popup(pdlg, 0, pset);
 		build_tray_popup(pdlg, 1, pset);
 		set_trays_pset(pdlg->curr_itray, pdlg->curr_otray, &pdlg->current_settings);
-		
+
 		build_dither_popup(pdlg, pset);
 		set_dither_pset(pdlg->curr_dither, &pdlg->current_settings);
 
-		
+
 		build_outfile_popup(pdlg, curr_drv, curr_prn, pset);
 		set_outfile_pset(curr_drv->device, &pdlg->current_settings);
 		d_set_outfile(pdlg, curr_drv->device);
@@ -2299,13 +2298,13 @@ change_printer(struct xa_pdlg_info *pdlg, short idx, PRN_SETTINGS *pset)
 		mode_cap = 0L;
 		if (curr_prn)
 			prn_cap = curr_prn->printer_capabilities;
-		
+
 		if (disable_object(pdlg->dwt->tree + PDLG_I_BG, !(prn_cap & PC_BACKGROUND)))
 			obj_draw(pdlg->mwt, pdlg->wind->vdi_settings, aesobj(pdlg->dwt->tree, PDLG_I_BG), -1, NULL, pdlg->wind->rect_list.start, 0);
-		
+
 		if (disable_object(pdlg->dwt->tree + PDLG_R_FG, !(prn_cap & PC_BACKGROUND)))
 			obj_draw(pdlg->mwt, pdlg->wind->vdi_settings, aesobj(pdlg->dwt->tree, PDLG_R_FG), -1, NULL, pdlg->wind->rect_list.start, 0);
-		
+
 		if (disable_object(pdlg->dwt->tree + PDLG_P_SCALE, !(prn_cap & PC_SCALING)))
 			obj_draw(pdlg->mwt, pdlg->wind->vdi_settings, aesobj(pdlg->dwt->tree, PDLG_P_SCALE), -1, NULL, pdlg->wind->rect_list.start, 0);
 
@@ -2319,7 +2318,7 @@ change_printer(struct xa_pdlg_info *pdlg, short idx, PRN_SETTINGS *pset)
 			if (disable_object(pdlg->dwt->tree + PDLG_R_C + i, !(mode_cap & MC_SLCT_CMYK)))
 				obj_draw(pdlg->mwt, pdlg->wind->vdi_settings, aesobj(pdlg->dwt->tree, PDLG_R_C + i), -1, NULL, pdlg->wind->rect_list.start, 0);
 		}
-		
+
 // 		display_pset(&pdlg->current_settings);
 	}
 }
@@ -2410,7 +2409,7 @@ check_internal_objects(struct xa_pdlg_info *pdlg, struct xa_aes_object obj)
 			callout_pdlg_sub(pdlg, CALL_DO_DLG, pdlg->current_subdlg, pdlg->settings, aesobj_item(&obj));
 			ret = 1;
 		}
-		
+
 // 		if (ret == 1)
 // 			display_pset(&pdlg->current_settings);
 	}
@@ -2438,13 +2437,13 @@ add_dialog(struct xa_pdlg_info *pdlg, PDLG_SUB *new, char *name, OBJECT *to_tree
 		pdlg->nxt_subdlgid++;
 		sub->tree = sub->sub_tree;
 		sub->index_offset = 0;
-		
+
 		sc.t.strings = 1;
 		sc.t.text = name;
 		sc.data = sub;
 		sc.usr_flags = 1L;
-		
-		list->add(list, NULL, NULL, &sc, 0,0, NOREDRAW);	
+
+		list->add(list, NULL, NULL, &sc, 0,0, NOREDRAW);
 	}
 	else
 	{
@@ -2475,7 +2474,7 @@ get_entry_bytext(struct scroll_info *list, char *txt)
 	p.level.curlevel = 0;
 
 	list->get(list, NULL, SEGET_ENTRYBYTEXT, &p);
-	
+
 	return p.e;
 }
 
@@ -2507,24 +2506,24 @@ remove_app_dialogs(struct xa_pdlg_info *pdlg)
 		list->del(list, this, NORMREDRAW);
 	}
 }
-	
+
 
 static struct xa_pdlg_info *
 create_new_pdlg(struct xa_client *client, XA_WIND_ATTR tp) //, struct xa_window *wind)
 {
 	struct xa_window *wind = NULL;
 	struct xa_pdlg_info *pdlg;
-	
+
 	DIAG((D_pdlg, client, "create_new_pdlg"));
-	
+
 	if (C.nvdi_version < 0x0410)
 	{
 		DIAGS((" -- VDI not capable of PRN_SETTINGS!"));
 		return (void *)-1L;
 	}
-	
+
 	pdlg = kmalloc(sizeof(*pdlg));
-	
+
 	if (pdlg)
 	{
 		OBJECT *mtree = NULL, *dtree = NULL;
@@ -2532,7 +2531,7 @@ create_new_pdlg(struct xa_client *client, XA_WIND_ATTR tp) //, struct xa_window 
 		struct scroll_info *list = NULL;
 
 		bzero(pdlg, sizeof(*pdlg));
-		
+
 		if (!(pdlg->vpb = create_vdipb()))
 			goto fail;
 
@@ -2548,7 +2547,7 @@ create_new_pdlg(struct xa_client *client, XA_WIND_ATTR tp) //, struct xa_window 
 			}
 			else goto fail;
 		}
-		
+
 		dtree = duplicate_obtree(C.Aes, ResourceTree(C.Aes_rsc, PDLG_DIALOGS), 0);
 		if (dtree)
 		{
@@ -2563,7 +2562,7 @@ create_new_pdlg(struct xa_client *client, XA_WIND_ATTR tp) //, struct xa_window 
 			RECT r, or;
 
 			obj_rectangle(mwt, aesobj(mwt->tree, 0), &or);
-	
+
 			r = calc_window(0, client, WC_BORDER,
 					tp, created_for_WDIAL,
 					client->options.thinframe,
@@ -2581,11 +2580,11 @@ create_new_pdlg(struct xa_client *client, XA_WIND_ATTR tp) //, struct xa_window 
 					     client->options.thinwork,
 					     r, NULL, NULL)))
 				goto fail;
-		
+
 			set_toolbar_widget(0, wind, client, mwt->tree, aesobj(mwt->tree, -2), 0, STW_ZEN, &wdlg_th, &or);
 		}
 		if (mwt && dwt)
-		{			
+		{
 			pdlg->handle = (void *)((unsigned long)pdlg >> 16 | (unsigned long)pdlg << 16);
 			pdlg->client = client;
 			pdlg->wind = wind;
@@ -2605,18 +2604,18 @@ create_new_pdlg(struct xa_client *client, XA_WIND_ATTR tp) //, struct xa_window 
 						 NULL, NULL, pdlg, 1);		/* title, info, data, lmax */
 			if (!list)
 				goto fail;
-			
+
 			pdlg->list = list;
-			
+
 			add_dialog(pdlg, NULL, "General", pdlg->dwt->tree, PDLG_GENERAL);
 			add_dialog(pdlg, NULL, "Paper", pdlg->dwt->tree, PDLG_PAPER);
 			add_dialog(pdlg, NULL, "Raster", pdlg->dwt->tree, PDLG_RASTER);
 			add_dialog(pdlg, NULL, "Interface", pdlg->dwt->tree, PDLG_PORT);
-		
+
 			set_oblink(pdlg, pdlg->dwt->tree, PDLG_GENERAL);
-			
+
 			get_driver_list(pdlg);
-			
+
 			add_xa_data(&client->xa_data, pdlg, 0, NULL, delete_pdlg_info);
 		}
 		else
@@ -2632,14 +2631,14 @@ fail:
 			}
 			else if (mtree)
 				free_object_tree(client, mtree);
-			
+
 			if (dwt)
 			{
 				dwt->links--;
 				remove_wt(dwt, false);
 			}
 			else if (dtree)
-				free_object_tree(client, dtree);		
+				free_object_tree(client, dtree);
 
 			if (pdlg)
 			{
@@ -2677,7 +2676,7 @@ memerr:
 		else
 			kfree(pdlg);
 	}
-	
+
 // 	display(" -- exit error");
 	return XAC_DONE;
 
@@ -2691,7 +2690,7 @@ XA_pdlg_delete(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	DIAG((D_pdlg, client, "XA_pdlg_delete"));
 // 	display("XA_pdlg_delete: %s", client->name);
-	
+
 	pb->intout[0] = 0;
 
 	pdlg = (struct xa_pdlg_info *)((unsigned long)pb->addrin[0] >> 16 | (unsigned long)pb->addrin[0] << 16);
@@ -2723,10 +2722,10 @@ apply_option_flags(struct xa_pdlg_info *pdlg, short options)
 	OBJECT *tree = pdlg->dwt->tree;
 
 	disable_object(tree + PDLG_G_COPIES, (options & PDLG_ALWAYS_COPIES) ? false : true);
-	
+
 	disable_object(tree + PDLG_P_LETTER, (options & PDLG_ALWAYS_ORIENT) ? false : true);
 	disable_object(tree + PDLG_G_LAND, (options & PDLG_ALWAYS_ORIENT) ? false : true);
-	
+
 	disable_object(tree + PDLG_P_SCALE, (options & PDLG_ALWAYS_SCALE) ? false : true);
 
 	disable_object(tree + PDLG_G_EVEN, (options & PDLG_EVENODD) ? false : true);
@@ -2867,15 +2866,15 @@ validate_settings(struct xa_pdlg_info *pdlg, PRN_SETTINGS *pset)
 			PRN_MODE *mode;
 			MEDIA_SIZE *size;
 			PRN_TRAY *itray, *otray;
-			
+
 			pset->printer_id = prn->printer_id;
-			
+
 			find_mode(prn, pset->mode_id, NULL, &mode);
 			if (mode)
 			{
 				MEDIA_TYPE *type;
-				
-				set_mode_pset(mode, pset);				
+
+				set_mode_pset(mode, pset);
 				find_type(mode, pset->type_id, NULL, &type);
 				set_type_pset(type, pset);
 			}
@@ -2884,13 +2883,13 @@ validate_settings(struct xa_pdlg_info *pdlg, PRN_SETTINGS *pset)
 				set_mode_pset(NULL, pset);
 				set_type_pset(NULL, pset);
 			}
-			
+
 			find_size(prn, pset->size_id, NULL, &size);
 			set_size_pset(size, pset);
-			
+
 			find_tray(prn, 0, pset->input_id,  NULL, &itray);
 			find_tray(prn, 1, pset->output_id, NULL, &otray);
-			set_trays_pset(itray, otray, pset);	
+			set_trays_pset(itray, otray, pset);
 		}
 		else
 		{
@@ -2902,7 +2901,7 @@ validate_settings(struct xa_pdlg_info *pdlg, PRN_SETTINGS *pset)
 		}
 		if (!(pset->page_flags & 3))
 			pset->page_flags = (PG_EVEN_PAGES|PG_ODD_PAGES);
-		
+
 		if (pset->first_page < PG_MIN_PAGE)
 			pset->first_page = PG_MIN_PAGE;
 		else if (pset->first_page > PG_MAX_PAGE)
@@ -2912,13 +2911,13 @@ validate_settings(struct xa_pdlg_info *pdlg, PRN_SETTINGS *pset)
 			pset->last_page = PG_MIN_PAGE;
 		else if (pset->last_page > PG_MAX_PAGE)
 			pset->last_page = PG_MAX_PAGE;
-		
+
 		if (pset->no_copies < 1)
 			pset->no_copies = 1;
 		else if (pset->no_copies > 999)
 			pset->no_copies = 999;
-		
-		
+
+
 	}
 // 	display("--------- after ------------");
 // 	display_pset(pset);
@@ -2943,7 +2942,7 @@ init_dialog(struct xa_pdlg_info *pdlg)
 	d_set_fromto_page(pdlg, 0, ps->first_page);
 	d_set_fromto_page(pdlg, 1, ps->last_page);
 	d_set_copies(pdlg, ps->no_copies);
-			
+
 	d_set_scale(pdlg, ps->scale);
 	d_set_orientation(pdlg, ps->orientation);
 	d_set_allfrom_sel(pdlg, 0);
@@ -2962,7 +2961,7 @@ XA_pdlg_open(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	DIAG((D_pdlg, client, "XA_pdlg_open"));
 // 	display("XA_pdlg_open: %s", client->name);
-	
+
 	pb->intout[0] = 0;
 
 	pdlg = (struct xa_pdlg_info *)((unsigned long)pb->addrin[0] >> 16 | (unsigned long)pb->addrin[0] << 16);
@@ -2974,7 +2973,7 @@ XA_pdlg_open(enum locks lock, struct xa_client *client, AESPB *pb)
 			struct widget_tree *wt = pdlg->mwt;
 			RECT r = wind->wa;
 			XA_WIND_ATTR tp = wind->active_widgets | MOVER|NAME;
-		
+
 			widg->m.properties |= WIP_NOTEXT;
 			set_toolbar_handlers(&wdlg_th, wind, widg, widg->stuff.xa_tree);
 
@@ -2999,15 +2998,15 @@ XA_pdlg_open(enum locks lock, struct xa_client *client, AESPB *pb)
 				change_window_attribs(lock, client, wind, tp, true, true, 2, or, NULL);
 			}
 
-			
+
 			pdlg->option_flags = pb->intin[0];
 			pdlg->settings = (PRN_SETTINGS *)pb->addrin[1];
 			get_document_name(pdlg, (const char *)pb->addrin[2]);
 
 			init_dialog(pdlg);
-			
+
 			set_window_title(pdlg->wind, pdlg->document_name, false);
-			
+
 			wt->tree->ob_x = wind->wa.x;
 			wt->tree->ob_y = wind->wa.y;
 			if (!wt->zen)
@@ -3039,7 +3038,7 @@ XA_pdlg_close(enum locks lock, struct xa_client *client, AESPB *pb)
 		pb->intout[0] = 1;
 		pb->intout[1] = pdlg->mwt->tree->ob_x;
 		pb->intout[2] = pdlg->mwt->tree->ob_y;
-		close_window(lock, wind);			
+		close_window(lock, wind);
 	}
 // 	display(" -- exit %d", pb->intout[0]);
 	return XAC_DONE;
@@ -3049,9 +3048,9 @@ unsigned long
 XA_pdlg_get(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	long *o = (long *)&pb->intout[0];
-	
+
 	DIAG((D_pdlg, client, "XA_pdlg_get"));
-	
+
 // 	display("XA_pdlg_get: %d %s", pb->intin[0], client->name);
 
 	pb->intout[0] = 1;
@@ -3068,7 +3067,7 @@ XA_pdlg_get(enum locks lock, struct xa_client *client, AESPB *pb)
 			*o = 0L;
 		}
 	}
-// 	display(" -- exit %x/%x", pb->intout[0], pb->intout[1]);	
+// 	display(" -- exit %x/%x", pb->intout[0], pb->intout[1]);
 	return XAC_DONE;
 }
 
@@ -3097,29 +3096,29 @@ XA_pdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	DIAG((D_pdlg, client, "XA_pdlg_set"));
 
 // 	display("XA_pdlg_set: %d %s", pb->intin[0], client->name);
-	
+
 	switch (pb->intin[0])
 	{
 		case 6:		/* pdlg_free_settings	*/
 		{
 			struct xa_usr_prn_settings *us;
 			PRN_SETTINGS *s = (PRN_SETTINGS *)pb->addrin[0];
-			
+
 			us = lookup_xa_data_byid(&client->xa_data, (long)s);
-			
+
 			ret = 0;
-			
+
 			if (us)
 			{
 				delete_xa_data(&client->xa_data, us);
 				ret = 1;
 			}
-			
+
 			break;
 		}
 		default:;
 	}
-	
+
 	if (ret == -1)
 	{
 		pdlg = (struct xa_pdlg_info *)((unsigned long)pb->addrin[0] >> 16 | (unsigned long)pb->addrin[0] << 16);
@@ -3147,16 +3146,16 @@ XA_pdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				case 3:		/* pdlg_add_dialogs	*/
 				{
 					PDLG_SUB *sub;
-					
+
 					sub = (PDLG_SUB *)pb->addrin[1];
-					
+
 					while (sub)
 					{
 						char *txt = object_get_string(sub->sub_icon);
 						char t[14];
-						
+
 						strncpy(t, txt, 14);
-						
+
 						add_dialog(pdlg, sub, t/*"App added"*/, NULL, 0);
 						sub = sub->next;
 					}
@@ -3173,16 +3172,16 @@ XA_pdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				{
 					struct xa_usr_prn_settings *us;
 					PRN_SETTINGS *new;
-				
+
 					us = kmalloc(sizeof(*us));
 					new = umalloc(sizeof(*new));
 					if (us && new)
 					{
 						us->flags = 1;
 						us->settings = new;
-						
+
 						memcpy(new, &pdlg->current_settings, sizeof(PRN_SETTINGS));
-						
+
 						add_xa_data(&client->xa_data, us, (long)new, "pdlg_usersett", delete_usr_settings);
 					}
 					else if (us)
@@ -3200,16 +3199,16 @@ XA_pdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				}
 				case 7:		/* pdlg_dflt_settings	*/
 				{
-			
+
 					PRN_SETTINGS *pset = (PRN_SETTINGS *)pb->addrin[1];
-				
+
 					xv_read_default_settings(pdlg->vpb, C.P_handle, pset);
 					break;
 				}
 				case 8:		/* pdlg_validate_settings */
 				{
 					PRN_SETTINGS *pset = (PRN_SETTINGS *)pb->addrin[1];
-					
+
 					validate_settings(pdlg, pset);
 					ret = 1;
 					break;
@@ -3217,7 +3216,7 @@ XA_pdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				case 9:		/* pdlg_use_settings	*/
 				{
 					PRN_SETTINGS *pset = (PRN_SETTINGS *)pb->addrin[1];
-					
+
 					if (pset)
 					{
 						validate_settings(pdlg, pset);
@@ -3231,7 +3230,7 @@ XA_pdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				case 10:	/* pdlg_save_default_settings */
 				{
 					PRN_SETTINGS *pset = (PRN_SETTINGS *)pb->addrin[1];
-					
+
 					if (pset)
 					{
 						validate_settings(pdlg, pset);
@@ -3266,7 +3265,7 @@ XA_pdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			}
 		}
 	}
-	
+
 	if (ret != -1)
 		pb->intout[0] = ret;
 
@@ -3301,7 +3300,7 @@ XA_pdlg_evnt(enum locks lock, struct xa_client *client, AESPB *pb)
 		wep.obj		= inv_aesobj();
 
 		ret = wdialog_event(lock, client, &wep);
-		
+
 		if (check_internal_objects(pdlg, wep.obj))
 		{
 			wep.obj = inv_aesobj();
@@ -3316,7 +3315,7 @@ XA_pdlg_evnt(enum locks lock, struct xa_client *client, AESPB *pb)
 			/* prepare return stuff here */
 		}
 		pb->intout[1] = valid_aesobj(&wep.obj) ? aesobj_item(&wep.obj) : 0;
-		
+
 		if (pb->intout[1] == 2 && out)
 		{
 			build_prn_settings(pdlg, &pdlg->current_settings);
@@ -3328,7 +3327,7 @@ XA_pdlg_evnt(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	DIAG((D_pdlg, client, " --- return %d, obj=%d",
 		pb->intout[0], pb->intout[1]));
-	
+
 // 	display(" -- exit %d obj %d", pb->intout[0], pb->intout[1]);
 
 	return XAC_DONE;
@@ -3350,12 +3349,12 @@ Keypress(enum locks lock,
 	{
 		struct scroll_info *list;
 		struct xa_pdlg_info *pdlg;
-		
+
 		wt = get_widget(wind, XAW_TOOLBAR)->stuff.xa_tree;
 		list = object_get_slist(wt->tree + XPDLG_LIST);
 		pdlg = list->data;
 	}
-	return no_exit;	
+	return no_exit;
 }
 
 static void
@@ -3365,7 +3364,7 @@ Formexit( struct xa_client *client,
 	  struct fmd_result *fr)
 {
 	struct xa_pdlg_info *pdlg = (struct xa_pdlg_info *)(object_get_slist(wt->tree + XPDLG_LIST))->data;
-	
+
 	if (!check_internal_objects(pdlg, fr->obj))
 	{
 		if (aesobj_item(&fr->obj) == 2 || aesobj_item(&fr->obj) == 1)
@@ -3401,7 +3400,7 @@ XA_pdlg_do(enum locks lock, struct xa_client *client, AESPB *pb)
 	DIAG((D_pdlg, client, "XA_pdlg_do"));
 
 	pb->intout[0] = 0;
-	
+
 	pdlg = (struct xa_pdlg_info *)((unsigned long)pb->addrin[0] >> 16 | (unsigned long)pb->addrin[0] << 16);
 	if (pdlg && (wind = get_pdlg_wind(client, pdlg)))
 	{
@@ -3416,7 +3415,7 @@ XA_pdlg_do(enum locks lock, struct xa_client *client, AESPB *pb)
 		center_rect(&or);
 
 		change_window_attribs(lock, client, wind, tp, true, true, 2, or, NULL);
-		
+
 		widg->m.properties &= ~WIP_NOTEXT;
 		set_toolbar_handlers(&pdlg_th, wind, widg, widg->stuff.xa_tree);
 		wt->flags |= WTF_FBDO_SLIST;
@@ -3432,13 +3431,13 @@ XA_pdlg_do(enum locks lock, struct xa_client *client, AESPB *pb)
 		client->status |= CS_FORM_DO;
 		(*client->block)(client, 0); //Block(client, 0);
 		client->status &= ~CS_FORM_DO;
-		
+
 		pdlg->flags &= ~1;
 
 		wt->flags &= ~WTF_FBDO_SLIST;
 
 		close_window(lock, wind);
-		
+
 		if (pdlg->exit_button == 2)
 		{
 			build_prn_settings(pdlg, &pdlg->current_settings);

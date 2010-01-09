@@ -24,8 +24,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include RSCHNAME
-
 #include "k_shutdown.h"
 #include "xa_global.h"
 
@@ -81,13 +79,13 @@ k_shutdown(void)
 	/* To demonstrate the working on multiple resources. */
 	while (C.Aes->resources)
 		FreeResources(C.Aes, NULL,  NULL);
-	
+
 	BLOG((false, "Removing all remaining windows"));
 	remove_all_windows(NOLOCKING, NULL);
 	BLOG((false, "Freeing delayed deleted windows"));
 	do_delayed_delete_window(NOLOCKING);
 	BLOG((false, "Closing and deleting root window"));
-		
+
 	if (root_window)
 	{
 		close_window(NOLOCKING, root_window);

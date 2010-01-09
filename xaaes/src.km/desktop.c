@@ -29,7 +29,6 @@
  */
 
 #include RSCHNAME
-
 #include "desktop.h"
 #include "xa_global.h"
 
@@ -112,7 +111,7 @@ set_desktop_widget(struct xa_window *wind, XA_TREE *desktop)
 	desktop->links++;
 
 	widg->r = wind->wa;
-#if 0	
+#if 0
 	widg->r = wind->r;
 	widg->r.y += get_menu_widg()->r.h;
 	widg->r.h -= get_menu_widg()->r.h;
@@ -123,7 +122,7 @@ set_desktop_widget(struct xa_window *wind, XA_TREE *desktop)
 	m->r.xaw_idx = XAW_TOOLBAR;
 	m->r.pos_in_row = LT;
 	m->r.tp = TOOLBAR;
-	
+
 	m->r.draw = display_object_widget;
 	m->r.setsize = NULL;
 	m->properties = WIP_INSTALLED|WIP_WACLIP;
@@ -138,12 +137,12 @@ set_desktop_widget(struct xa_window *wind, XA_TREE *desktop)
 	widg->stuff.xa_tree = desktop;
 	widg->stufftype = STUFF_IS_WT;
 	m->destruct = free_xawidget_resources;
-	
+
 	widg->start = 0;
 }
 
 /*
- * Set a new object tree for the desktop 
+ * Set a new object tree for the desktop
  */
 static void
 Set_desktop(XA_TREE *new_desktop)
@@ -159,18 +158,18 @@ Set_desktop(XA_TREE *new_desktop)
 		wi->stuff.xa_tree->flags &= ~WTF_STATIC;
 		wi->stuff.xa_tree->links--;
 	}
-	
+
 	new_desktop->widg = wi;
 	wi->owner = new_desktop->owner;
 	new_desktop->flags |= WTF_STATIC;
 	new_desktop->links++;
 
 	ob = new_desktop->tree;
-	*(RECT *)&ob->ob_x = root_window->wa;	
+	*(RECT *)&ob->ob_x = root_window->wa;
 	r = *(RECT*)&ob->ob_x;
 
 	/* Now use the root window's auto-redraw function to redraw it
-	 * 
+	 *
 	 * HR: 110601 fixed erroneous use owner->wt.
          *     The desktop can of course be handled by tool_bar widget stuff!!!
 	 */
@@ -185,7 +184,7 @@ Set_desktop(XA_TREE *new_desktop)
 	wi->stuff.xa_tree = new_desktop;
 	wi->stufftype = STUFF_IS_WT;
 	wi->m.destruct = free_xawidget_resources;
-	
+
 	//send_iredraw(0, root_window, 0, NULL);
 }
 static void
@@ -256,7 +255,7 @@ set_desktop(struct xa_client *client, bool remove)
 				    NULL);
 		}
 	}
-}	
+}
 struct xa_client *
 desktop_owner(void)
 {

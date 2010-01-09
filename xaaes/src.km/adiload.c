@@ -45,7 +45,12 @@ static struct adiinfo ai =
 	adi_button,
 	adi_wheel,
 };
-
+/*
+ * This is called by the kernels module framework when the module is loaded
+ * and all (or some) of the modules devices have been probed.
+ * We call the attach method now to make the modules register itself with
+ * XaAES.
+ */
 static long
 load_adi(struct kernel_module *km, const char *name)
 {
@@ -63,7 +68,6 @@ load_adi(struct kernel_module *km, const char *name)
 	return r;
 }
 
-
 /*
  * Called by AESSYS itself (init.c) to load AES Device drivers (moose.adm)
  */
@@ -77,7 +81,9 @@ adi_load(bool first)
 }
 
 /*
- * Called by AESSYS when its time to load AES modules
+ * Called by AESSYS when its time to load AES modules.
+ * This invokes the kernels module framework to load
+ * modules for us.
  */
 void
 xam_load(bool first)

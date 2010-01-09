@@ -27,7 +27,7 @@
 #ifndef _xaaes_module_h_
 #define _xaaes_module_h_
 
-#include "xa_types.h"
+#include "xaapi.h"
 
 #define dispatch_shutdown	(*XAPI->dispatch_shutdown)
 

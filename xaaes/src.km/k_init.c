@@ -30,488 +30,35 @@
 #include "adiload.h"
 #include "debug.h"
 
-#include "k_main.h"
 #include "k_init.h"
 #include "xa_global.h"
 
-#include "app_man.h"
+
 #include "c_window.h"
 #include "desktop.h"
-#include "init.h"
-#include "nkcc.h"
-#include "rectlist.h"
-#include "scrlobjc.h"
 #include "taskman.h"
 #include "widgets.h"
 
 #include "xa_appl.h"
-#include "xa_evnt.h"
-#include "xa_form.h"
 #include "xa_fsel.h"
 #include "xa_rsrc.h"
 #include "xa_shel.h"
 
-#include "mint/dcntl.h"
-#include "mint/fcntl.h"
-#include "mint/signal.h"
-
 #include "obtree.h"
 #include "draw_obj.h"
 #include "menuwidg.h"
-#include "xa_graf.h"
 #include "trnfm.h"
 
 #include "win_draw.h"
 #include "render_obj.h"
 
-#include "xa_xtobj.h"
-
-#include "mvdi.h"
-#include "mt_gem.h"
 /* kernel header */
 #include "mint/ssystem.h"
 #include "cookie.h"
 
-//static char *xaaes_sysfile(const char *);
+#include "xa_api.h"
 
-static OBSPEC * _cdecl
-api_object_get_spec(OBJECT *ob)
-{
-	return object_get_spec(ob);
-}
-
-static void _cdecl
-api_object_set_spec(OBJECT *ob, unsigned long cl)
-{
-	object_set_spec(ob, cl);
-}
-
-static POPINFO * _cdecl
-api_object_get_popinfo(OBJECT *ob)
-{
-	return object_get_popinfo(ob);
-}
-static TEDINFO * _cdecl
-api_object_get_tedinfo(OBJECT *ob, XTEDINFO **x)
-{
-	return object_get_tedinfo(ob, x);
-}
-
-static void _cdecl
-api_ob_spec_xywh(OBJECT *obtree, short obj, RECT *r)
-{
-	ob_spec_xywh(obtree, obj, r);
-}
-
-static void _cdecl 
-api_object_spec_wh(OBJECT *ob, short *w, short *h)
-{
-	object_spec_wh(ob, w, h);
-}
-
-static void _cdecl
-api_render_object(XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_object item, short px, short py)
-{
-	display_object(0, wt, v, item, px, py, 0);
-}
-
-static CICON * _cdecl
-api_getbest_cicon(CICONBLK *ciconblk)
-{
-	return getbest_cicon(ciconblk);
-}
-
-static short _cdecl
-api_obj_offset(struct widget_tree *wt, struct xa_aes_object object, short *mx, short *my)
-{
-	return obj_offset(wt, object, mx, my);
-}
-
-static void _cdecl
-api_obj_rectangle(struct widget_tree *wt, struct xa_aes_object object, RECT *r)
-{
-	obj_rectangle(wt, object, r);
-}
-
-// static short _cdecl
-// api_object_thickness(OBJECT *ob){return object_thickness(ob);}
-
-static void * _cdecl
-api_rp2ap(struct xa_window *wind, struct xa_widget *widg, RECT *r)
-{
-	return rp_2_ap(wind, widg, r);
-}
-static void _cdecl
-api_rp2apcs(struct xa_window *wind, struct xa_widget *widg, RECT *r)
-{
-	rp_2_ap_cs(wind, widg, r);
-}
-
-static short _cdecl
-api_rect_clip(RECT *s, RECT *d, RECT *r)
-{
-	return (xa_rect_clip(s, d, r)) ? 1 : 0;
-}
-#if 0
-static void * _cdecl
-api_kmalloc(long size)
-{
-	return kmalloc(size);
-}
-
-static void * _cdecl
-api_umalloc(long size)
-{
-	return umalloc(size);
-}
-
-static void _cdecl
-api_kfree(void *addr)
-{
-	kfree(addr);
-}
-
-static void _cdecl
-api_ufree(void *addr)
-{
-	ufree(addr);
-}
-#endif
-static void _cdecl
-api_bzero(void *addr, unsigned long len)
-{
-	bzero(addr, len);
-}
-
-static void * _cdecl
-api_lookup_xa_data(struct xa_data_hdr **l, void *data)
-{
-	return lookup_xa_data(l, data);
-}
-
-static void * _cdecl
-api_lookup_xa_data_byid(struct xa_data_hdr **l, long id)
-{
-	return lookup_xa_data_byid(l, id);
-}
-static void * _cdecl
-api_lookup_xa_data_byname(struct xa_data_hdr **l, char *name)
-{
-	return lookup_xa_data_byname(l, name);
-}
-static void * _cdecl
-api_lookup_xa_data_byidname(struct xa_data_hdr **l, long id, char *name)
-{
-	return lookup_xa_data_byidname(l, id, name);
-}
-
-static void _cdecl
-api_add_xa_data(struct xa_data_hdr **list, void *data, long id, char *name, void _cdecl(*destruct)(void *d))
-{
-	add_xa_data(list, data, id, name, destruct);
-}
-static void _cdecl
-api_remove_xa_data(struct xa_data_hdr **list, void *data)
-{
-	remove_xa_data(list, data);
-}
-static void _cdecl
-api_delete_xa_data(struct xa_data_hdr **list, void *data)
-{
-	delete_xa_data(list, data);
-}
-static void _cdecl
-api_ref_xa_data(struct xa_data_hdr **list, void *data, short count)
-{
-	ref_xa_data(list, data, count);
-}
-static long _cdecl
-api_deref_xa_data(struct xa_data_hdr **list, void *data, short flags)
-{
-	return deref_xa_data(list, data, flags);
-}
-static void _cdecl
-api_free_xa_data_list(struct xa_data_hdr **list)
-{
-	free_xa_data_list(list);
-}
-
-static void _cdecl
-api_load_img(char *fname, XAMFDB *img)
-{
-	load_image(fname, img);
-}	
-
-static long _cdecl (*f_setupvdi)(unsigned long, short *, short *, short *) = NULL;
-
-static long _cdecl
-module_register(long mode, void *_p)
-{
-	long ret = E_OK;
-	bool unregister;
-
-	unregister = (mode & 0x80000000) ? true : false;
-	mode &= 0x7fffffff;
-
-	BLOG((false, "module_register: %s mode = %lx, _p = %lx", unregister ? "unregister" : "register", mode, _p));
-
-	switch (mode)
-	{
-		case MODREG_KERNKEY:
-		{
-			struct kernkey_entry *list;
-			
-			if (unregister)
-			{
-				struct kernkey_entry *this, *prev = NULL;
-				struct register_kernkey_parms *p = _p;
-				BLOG((false, "module_register: unregister KERNKEY"));
-				list = C.kernkeys;
-				while (list)
-				{
-					if (list->key == p->key && list->state == p->state) //if (list->key == this->key)
-					{
-						if (list->act == p->act) //if (list->act == this->act)
-						{
-							if ((this = list->next_act))
-								this->next_key = list->next_key;
-							else
-								this = list->next_key;
-								
-							if (prev)
-								prev->next_key = this;
-							else
-								C.kernkeys = this;
-							
-							kfree(list);
-							break;
-						}
-						else
-						{
-							while (list && list->act != p->act)
-							{
-								prev = list;
-								list = list->next_act;
-							}
-							if (list)
-							{
-								prev->next_act = list->next_act;
-								kfree(list);
-							}
-							break;
-						}
-					}
-					prev = list;
-					list = list->next_key;
-				}
-			}
-			else
-			{
-				struct kernkey_entry *new;
-				BLOG((false, "module_register: register KERNKEY"));
-				new = kmalloc(sizeof(*new));
-				if (new)
-				{
-// 					struct kernkey_entry *p = _p;
-					struct register_kernkey_parms *p = _p;
-
-					new->next_key = NULL;
-					new->next_act = NULL;
-					new->act = p->act;
-					new->key = p->key;
-					new->state = p->state;
-
-					list = C.kernkeys;
-					while (list)
-					{
-						if (list->key == new->key)
-							break;
-						list = list->next_key;
-					}
-					if (!list)
-					{
-						new->next_key = C.kernkeys;
-						C.kernkeys = new;
-					}
-					else
-					{
-						new->next_act = list;
-						new->next_key = list->next_key;
-						list->next_key = NULL;
-						if (C.kernkeys == list)
-							C.kernkeys = new;
-					}
-				}
-				else
-					ret = EERROR;
-			}
-			break;
-		}
-		case MODREG_SETUPVDI:
-		{
-			if (unregister) {
-				BLOG((false, "module_register: unregister SETUPVDI (this %lx, current %lx)", _p, f_setupvdi));
-				if (f_setupvdi == _p)
-					f_setupvdi = NULL;
-			} else {
-				BLOG((false, "module_register: register SETUPVDI (old %lx, new %lx)", f_setupvdi, _p));
-				f_setupvdi = _p;
-			}
-			break;
-		}
-		case MODREG_RESCHANGE:
-		{
-			if (unregister) {
-				if (C.reschange == _p)
-					C.reschange = NULL;
-			} else {
-// 				if (C.reschange)
-// 					ret = EERROR;
-// 				else
-					C.reschange = _p;
-			}
-			break;
-		}
-		default:
-		{
-			ret = EERROR;
-			break;
-		}
-	}
-	BLOG((false, "module_register: returning %ld", ret));
-	return ret;
-}
-
-#define DEFAULTS_xa_objc_api	\
-{ \
-	LoadResources,		\
-	FreeResources,		\
-	ResourceTree,		\
-	obfix,			\
-	duplicate_obtree,	\
-	free_object_tree,	\
-	init_widget_tree,	\
-	new_widget_tree,	\
-	obtree_to_wt,		\
-	remove_wt,		\
-	api_object_get_spec,	\
-	api_object_set_spec,	\
-	api_object_get_popinfo,	\
-	api_object_get_tedinfo,	\
-	api_object_spec_wh,	\
-	api_ob_spec_xywh,	\
-	api_render_object,	\
-	api_getbest_cicon,	\
-	api_obj_offset,		\
-	api_obj_rectangle,	\
-	obj_set_radio_button,	\
-	obj_get_radio_button,	\
-	obj_draw,		\
-	obj_change,		\
-	obj_edit,		\
-	obj_set_g_popup,	\
-	obj_unset_g_popup,	\
-	create_popup_tree,	\
-}
-
-#define DEFAULTS_xa_menu_api	\
-{ \
-	remove_attachments,	\
-}
-
-#define DEFAULTS_xa_debug_api	\
-{ \
-	display,		\
-	ndisplay,		\
-	bootlog,		\
-	diags,			\
-}
-
-#define DEFAULTS_xa_module_api	\
-{ \
-	module_register,	\
-}
-
-#define DEFAULTS_xa_window_api	\
-{ \
-	create_window,		\
-	open_window,		\
-	close_window,		\
-	move_window,		\
-	top_window,		\
-	bottom_window,		\
-	send_wind_to_bottom,	\
-	delete_window,		\
-	delayed_delete_window,	\
-	create_dwind,		\
-	redraw_toolbar,		\
-	api_rp2ap,		\
-	api_rp2apcs,		\
-}
-
-#define DEFAULTS_xa_rectangle_api \
-{ \
-	api_rect_clip,		\
-}
-
-#define DEFAULTS_xa_lib_api	\
-{ \
-	xaaes_sysfile,		\
-	xaaes_kmalloc,		\
-	xaaes_umalloc,		\
-	xaaes_kfree,		\
-	xaaes_ufree,		\
-	api_bzero,		\
-	make_fqfname,		\
-}
-
-#define DEFAULTS_xa_xadata_api	\
-{ \
-	api_lookup_xa_data,		\
-	api_lookup_xa_data_byid,	\
-	api_lookup_xa_data_byname,	\
-	api_lookup_xa_data_byidname,	\
-	api_add_xa_data,		\
-	api_remove_xa_data,		\
-	api_delete_xa_data,		\
-	api_ref_xa_data,		\
-	api_deref_xa_data,		\
-	api_free_xa_data_list,		\
-}
-
-#define DEFAULTS_xa_img_api	\
-{ \
-	api_load_img,		\
-}
-
-#define DEFAULTS_xa_api		\
-{ \
-	"XaAES API v0.1",	\
-	&cfg,			\
-	&C,			\
-	&S,			\
-	NULL, /*kentry*/		\
-	\
-	dispatch_shutdown,	\
-	\
-	DEFAULTS_xa_debug_api,		\
-	DEFAULTS_xa_module_api,		\
-	DEFAULTS_xa_objc_api,		\
-	DEFAULTS_xa_menu_api,		\
-	DEFAULTS_xa_rectangle_api,	\
-	DEFAULTS_xa_lib_api,		\
-	DEFAULTS_xa_xadata_api,		\
-	DEFAULTS_xa_window_api,		\
-	DEFAULTS_xa_img_api,		\
-}
-
-struct xa_api xa_api = DEFAULTS_xa_api;
-	
-void
-setup_xa_api(void)
-{
-	xa_api.k = kentry;
-}
+extern struct xa_api xa_api;
 
 /*
  * check if file exist in Aes_home_path
@@ -555,8 +102,6 @@ struct xa_window *root_window;
  */
 
 /* Pointer to the widget resource (icons) */
-//static void *widget_resources = NULL;
-//static void *xobj_rsc = NULL;
 extern void *xobj_rshdr;
 extern void *xobj_rsc;
 
@@ -573,7 +118,7 @@ set_wrkin(short *in, short dev)
 		in[i] = 1;
 	in[10] = 2;
 	for (i = 11; i < 16; i++)
-		in[i] = 0;	
+		in[i] = 0;
 }
 
 static void
@@ -582,7 +127,7 @@ calc_average_fontsize(struct xa_vdi_settings *v, short *maxw, short *maxh, short
 	short i, j, count = 0, cellw, tmp;
 	short temp[8];
 	unsigned long wch = 0;
-	
+
 	for (i = 0; i < 256; i++)
 	{
 		j = vqt_width(v->handle, i, &cellw, &tmp, &tmp);
@@ -616,14 +161,16 @@ k_init(unsigned long vm)
 	struct xa_vdi_settings *v = &global_vdi_settings;
 
 // 	display("\033H");		/* cursor home */
-	
+
 	{
 		short f, *t;
 
 		for (t = (short *)v, f = 0; f < (sizeof(*v) >> 1); f++)
 			*t++ = -1;
 	}
-	
+	/*
+	 * Load AES modules
+	 */
 	xam_load(true);
 
 	cfg.videomode = (short)vm;
@@ -644,13 +191,13 @@ k_init(unsigned long vm)
 	}
 	{
 		short mode = 1;
-		
-		if (f_setupvdi)
-			(*f_setupvdi)(vm, work_in, work_out, &mode);
-#if 0		
+
+		if (C.set_resolution)
+			(*C.set_resolution)(vm, work_in, work_out, &mode);
+#if 0
 		short mode = 1;
 		long vdo, r;
-	
+
 		r = s_system(S_GETCOOKIE, COOKIE__VDO, (unsigned long)(&vdo));
 		if (r != 0)
 			vdo = 0;
@@ -662,7 +209,7 @@ k_init(unsigned long vm)
 			{
 // 				long ret;
 				/* Ozk:  Resolution Change on the Milan;
-				 * 
+				 *
 				 * I'm guessing like never before here; I found out that one can select
 				 * the resolution by stuffing the device ID in work_out[45] and then
 				 * open VDI device 5, just like we do it for the Falcon. However, this
@@ -675,7 +222,7 @@ k_init(unsigned long vm)
 				 * Hopefully this will work on all Milans!
 				 * Update: Ofcourse this didnt work on all Milans!
 				 */
-				
+
 				/*
 				 * First try...
 				 */
@@ -686,7 +233,7 @@ k_init(unsigned long vm)
 				 *				 * Didnt work on Vido's Milan - 060 w/rage. System freeze!
 				 */
 // 				vsetmode(vm & 0xffff);
-				
+
 				/*
 				 * Third try...			 * Works with some resolutio on my Milan - VERY unstable. Whe
 				 * This is the same as		 * it freezes, it freezes so good I have to use reset to recover
@@ -700,7 +247,7 @@ k_init(unsigned long vm)
 				 *				* other machines yet... didnt work with nvdi 5.03 installed!
 				 */
 // 				mvdi_device(vm & 0x0000ffff, 0L, DEVICE_SETDEVICE, (long *)&ret);
-				
+
 				/*
 				 * Fifth try...
 				 * this is the same method as used on the Falcon,
@@ -737,7 +284,7 @@ k_init(unsigned long vm)
 				{
 					nvmode &= ~(1 << 3);		/* Set 320 pixels */
 				}
-				
+
 				work_out[45] = nvmode;
 				mode = 5;
 // 				display("Falcon video: mode %x, %x", cfg.videomode, nvmode);
@@ -801,7 +348,7 @@ k_init(unsigned long vm)
 		 * We need to get rid of the cursor
 		 */
 		v_exit_cur(C.P_handle);
-		BLOG((false, "v_exit_cur ok!"));	
+		BLOG((false, "v_exit_cur ok!"));
 	}
 
 	get_syspalette(C.P_handle, screen.palette);
@@ -832,19 +379,19 @@ k_init(unsigned long vm)
 	C.Aes->vdi_settings = v;
 	vs_clip(C.P_handle, 1, (short *)&screen.r);
 	(*v->api->set_clip)(v, &screen.r);
-	
+
 	(*v->api->f_perimeter)(v, 0);
 
 // 	v_show_c(C.P_handle, 0);
 // 	hidem();
 // 	xa_graf_mouse(ARROW, NULL, NULL, false);
 // 	showm();
-	
+
 	objc_rend.dial_colours = MONO ? bw_default_colours : default_colours;
 
 	vq_extnd(v->handle, 1, work_out);	/* Get extended information */
 	screen.planes = work_out[4];		/* number of planes in the screen */
-	
+
 // 	if (screen.planes > 8)
 // 		set_defaultpalette(v->handle);
 // 	get_syspalette(C.P_handle, screen.palette);
@@ -857,7 +404,7 @@ k_init(unsigned long vm)
 // 	display("Video info: width(%d/%d), planes :%d, colours %d, pixelfmt = %d",
 // 		screen.r.w, screen.r.h, screen.planes, screen.colours, screen.pixel_fmt);
 
-	
+
 	/*
 	 * If we are using anything apart from the system font for windows,
 	 * better check for GDOS and load the fonts.
@@ -899,7 +446,7 @@ k_init(unsigned long vm)
 	BLOG((false, "Display Device: Phys_handle=%d, Virt_handle=%d", C.P_handle, v->handle));
 	BLOG((false, " size=[%d,%d], colours=%d, bitplanes=%d", screen.r.w, screen.r.h, screen.colours, screen.planes));
 
-	
+
 // 	get_syspalette(C.P_handle, screen.palette);
 
 	/* Load the system resource files */
@@ -919,7 +466,7 @@ k_init(unsigned long vm)
 					  true);
 		kfree(resource_name);
 		BLOG((false, "system resource = %lx (%s)", C.Aes_rsc, cfg.rsc_name));
-	}	
+	}
 	if (!C.Aes_rsc)
 	{
 		display(/*00000003*/"ERROR: Can't load system resource file '%s'", cfg.rsc_name);
@@ -933,7 +480,7 @@ k_init(unsigned long vm)
 	 */
 	{
 		OBJECT *about = ResourceTree(C.Aes_rsc, ABOUT_XAAES);
-		
+
 		if ((ob_count_objs(about, 0, -1) < RSC_VERSION)   ||
 		     about[RSC_VERSION].ob_type != G_TEXT     ||
 		    (strcmp(object_get_tedinfo(about + RSC_VERSION, NULL)->te_ptext, "0.0.8")))
@@ -946,10 +493,10 @@ k_init(unsigned long vm)
 	/*
 	 *  ---------        prepare the window widgets renderer module  --------------
 	 */
-	 
+
 	main_xa_theme(&C.Aes->xmwt);
 	main_object_render(&C.Aes->objcr_module);
-	
+
 	BLOG((false, "Attempt to open object render module..."));
 	if (!(*C.Aes->objcr_module->init_module)(&xa_api, &screen, cfg.gradients))
 	{
@@ -961,7 +508,7 @@ k_init(unsigned long vm)
 	{	BLOG((false, "Opening object theme failed"));
 		return -1;
 	}
-	
+
 	BLOG((false, "Attempt to open window widget renderer..."));
 	if (!(C.Aes->wtheme_handle = (*C.Aes->xmwt->init_module)(&xa_api, &screen, (char *)&cfg.widg_name, cfg.gradients)))
 	{
@@ -972,7 +519,7 @@ k_init(unsigned long vm)
 	/*
 	 *  ---------        prepare the AES object renderer module  --------------
 	 */
-	
+
 	/*
 	 * Setup default widget theme
 	 */
@@ -984,7 +531,7 @@ k_init(unsigned long vm)
 	init_fsel();
 #endif
 	init_client_mdbuff(C.Aes);		/* In xa_appl.c */
-	
+
 	/* Create the root (desktop) window
 	 * - We don't want messages from it, so make it a NO_MESSAGES window
 	 */
@@ -1015,7 +562,7 @@ k_init(unsigned long vm)
 	strcpy(C.Aes->mnu_clientlistname, mnu_clientlistname);
 	fix_menu(C.Aes, C.Aes->std_menu, root_window, true);
 	set_menu_widget(root_window, C.Aes, C.Aes->std_menu);
-	
+
 	/* Set a default desktop */
 	BLOG((false, "setting default desktop"));
 	{
@@ -1024,7 +571,7 @@ k_init(unsigned long vm)
 		(ob + DESKTOP_LOGO)->ob_x = (root_window->wa.w - (ob + DESKTOP_LOGO)->ob_width) / 2;
 		(ob + DESKTOP_LOGO)->ob_y = (root_window->wa.h - (ob + DESKTOP_LOGO)->ob_height) / 2;
 		C.Aes->desktop = new_widget_tree(C.Aes, ob);
-		
+
 		set_desktop_widget(root_window, C.Aes->desktop);
 		set_desktop(C.Aes, false);
 	}
@@ -1046,7 +593,7 @@ k_init(unsigned long vm)
 	redraw_menu(NOLOCKING);
 	BLOG((false, "Menu redrawn"));
 // 	display("all fine - return 0");
-	
+
 	/*
 	 * Setup mn_set for menu_settings()
 	 */
@@ -1106,7 +653,7 @@ load_accs(void)
 	if (len)
 	{
 		int i = 0;
-		
+
 		while (buf[i])
 		{
 			if (buf[i] == '/')

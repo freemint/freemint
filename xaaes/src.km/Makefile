@@ -3,7 +3,7 @@
 #
 
 SHELL = /bin/sh
-SUBDIRS = adi xaloader
+SUBDIRS = adi xaloader xam
 
 srcdir = .
 top_srcdir = .

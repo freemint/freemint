@@ -44,7 +44,9 @@ HEADER = \
 	vdi_parms.h \
 	widgets.h \
 	win_draw.h \
+	xaapi.h \
 	xa_aes.h \
+	xa_api.h \
 	xa_appl.h \
 	xa_defs.h \
 	xa_evnt.h \
@@ -107,6 +109,7 @@ COBJS = \
 	util.c \
 	widgets.c \
 	win_draw.c \
+	xa_api.c \
 	xa_appl.c \
 	xa_evnt.c \
 	xa_fnts.c \
