@@ -1,3 +1,4 @@
 .deps
 qed_new.app
 main.cpp
+*.xam

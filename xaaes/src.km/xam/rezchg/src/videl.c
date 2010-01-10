@@ -381,11 +381,13 @@ open_falcon_reschange(enum locks lock, struct xa_client *client, bool open)
 
 	if (!our_wind)
 	{
-		if (!our_rshdr) {
-		char *rsc_fn;
+		if (!our_rshdr)
+		{
+			char *rsc_fn;
 
 			rsc_fn = make_fqfname(our_path, RSCFILE);
-			if (!rsc_fn) {
+			if (!rsc_fn)
+			{
 				BLOG((true, "rcvidel: Could not locate 'rcvidel.rsc'!"));
 				goto fail;
 			}

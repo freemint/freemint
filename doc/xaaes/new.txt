@@ -1,0 +1,67 @@
+
+News in the ozk-enhancements CVS branch
+ 
+10-Jan-2010
+
+WARNING:
+ You can not mix binaries from this source-tree with other binaries!
+
+FreeMiNT kernel
+
+ A new module framework is under development. This framework is meant to be
+ versatile enough to enable other module frameworks to extend it. One example
+ of this is how XaAES's module framework uses the kernel to do most work, still
+ allowing it to define own functionality.
+ 
+  NOTE: This is very experimental!
+ 
+ 
+XaAES kernel
+
+ Modules:
+ 
+  XaAES now use two different kinds of modules. Both kinds of modules
+ must be put into a directory called 'xam'. This directory must be
+ located in the same directory as the xaaes.km binary.
+ The module framework is far from 'settled' yet, and very experimental.
+  
+  XAD - XaAesDevice modules
+  
+  This type has extension 'xad' and means XaAesDevice. These are device
+ drivers that must be loaded before XaAES starts its helpthreads. XaAES
+ thus loads these kinds of modules before all its core functions and
+ threads are started, since these may depend on xad functionality being
+ present.
+  Right now there is only one such driver, moose.xad and moose_w.xad.
+  This means the previous .adi drivers are obsolete. Also the 'adi'
+  directory under 'src.km' in the sourcethree have changed name to 'xad'.
+
+  XAM - XaAes Module
+  
+  This type has extension 'xam' and is more like an AES extension.
+ These kinds of modules can count on XaAES's systems being fully
+ operational, therefore XaAES loads these modules after all
+ subsystems are up and running. The goal is to have XaAES load/unload
+ these kinds of modules on demand, but now they are loaded when XaAES
+ starts and unloaded when XaAES quits.
+  Currently there are xam modules that handle resolution changes for
+ Videl, Nova and Milan VDI's. There is a new directory in the sourcetree,
+ under src.km, called 'xam' where such modulesource are found.
+
+  So, in order to test this version of XaAES the following changes have
+ to be made;
+
+  In your xaaes directory (where xaaes.km resides), you create a new
+ directory called 'xam'. Into this directory you must copy the XaAES
+ modules you intend to use. Either moose.xad or moose_w.xad MUST be
+ located here.
+ 
+  Changing resolution have been taken out of the XaAES kernel and put
+ into own adm modules. You will find these under xaaes/src.km/xam/rezchg
+ in the sourcetree. As of now you must build these and place them
+ (or the one you want) in the 'adm' directory. There are currently 
+ resolution change modules for Videl, Nova and Milan.
+ 
+ 
+  Odd Skancke
+  
