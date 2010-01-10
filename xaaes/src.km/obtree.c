@@ -52,12 +52,15 @@ object_have_spec(OBJECT *ob)
 	}
 	return false;
 }
+/*
+ * Check if the given object tree is valid.
+ */
 bool
 validate_obtree(struct xa_client *client, OBJECT *obtree, char *fdesc)
 {
 	if (obtree <= (OBJECT *)0x1000L)
 	{
-			/* inform user what's going on */
+		/* inform user what's going on */
 		ALERT(("%s: validate OBTREE for %s failed, object ptr = %lx, killing it!", fdesc, client->proc_name, obtree));
 		raise(SIGKILL);
 		return false;
@@ -725,15 +728,6 @@ copy_ciconblk(CICONBLK *src, CICONBLK *dst, CICON *cicon)
 				*nxt_dci = dst_ci;
 				nxt_sci = &((*nxt_sci)->next_res);
 				nxt_dci = &dst_ci->next_res;
-
-			#if 0
-				dst_ci = (CICON *)d;
-				d = copy_cicon(*nxt_sci, dst_ci, words);
-				*nxt_dci = dst_ci;
-
-				nxt_sci = &((*nxt_sci)->next_res);
-				nxt_dci = &((*nxt_dci)->next_res);
-			#endif
 			}
 		}
 	}

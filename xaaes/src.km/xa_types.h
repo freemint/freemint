@@ -38,7 +38,7 @@
 #include "messages.h"
 
 #include "mint/proc.h"
-#include "adi/moose.h"
+#include "xad/moose.h"
 
 #include "xa_list.h"
 
@@ -2807,7 +2807,7 @@ struct common
 
 struct aesys_global
 {
-	struct adif *adi_mouse;
+	struct xad *adi_mouse;
 };
 
 struct helpserver
@@ -2922,6 +2922,5 @@ struct config
 	char *cnf_run[32];		/* RUN directives */
 	char *cnf_run_arg[32];		/* args for RUN cnf directives */
 };
-
 
 #endif /* _xa_types_h */

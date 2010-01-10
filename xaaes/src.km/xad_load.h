@@ -23,9 +23,13 @@
  * along with XaAES; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-#ifndef _XA_API_H_
-#define _XA_API_H_
 
-void setup_xa_api(void);
+#ifndef _xad_load_h
+#define _xad_load_h
 
-#endif /* _XA_API_H_ */
+#include "global.h"
+
+void xad_load(bool first);
+void xam_load(bool first);
+
+#endif /* _xad_load_h */

@@ -27,6 +27,7 @@
 #ifndef _xaaes_module_h_
 #define _xaaes_module_h_
 
+#include "xad_defs.h"
 #include "xaapi.h"
 
 #define dispatch_shutdown	(*XAPI->dispatch_shutdown)
@@ -90,7 +91,22 @@
  * Module functions.. *
  *********************/
 #define module_register		(*XAPI->module.module_register)
-
+/****************************
+ * Device Input functions.. *
+ ***************************/
+#define mouse_move		(*XAPI->device_input.mouse_move)
+#define mouse_button		(*XAPI->device_input.mouse_button)
+#define mouse_wheel		(*XAPI->device_input.mouse_wheel)
+/****************************
+ * XAD functions.. *
+ ***************************/
+#define xad_name2xad		(*XAPI->xad.xad_name2xad)
+#define xad_getfreeunit		(*XAPI->xad.xad_getfreeunit)
+#define xad_register		(*XAPI->xad.xad_register)
+#define xad_unregister		(*XAPI->xad.xad_unregister)
+#define xad_open		(*XAPI->xad.xad_open)
+#define xad_close		(*XAPI->xad.xad_close)
+#define xad_ioctl		(*XAPI->xad.xad_ioctl)
 /*********************
  * window functions.. *
  *********************/

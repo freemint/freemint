@@ -23,7 +23,7 @@
  * along with XaAES; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
- 
+
 /*
  * This file contains the client side of mouse event processing
  */
@@ -63,7 +63,7 @@ cXA_button_event(enum locks lock, struct c_event *ce, bool cancel)
 	{
 		if (C.ce_menu_click == client)
 			C.ce_menu_click = NULL;
-		
+
 		return;
 	}
 
@@ -79,7 +79,7 @@ cXA_button_event(enum locks lock, struct c_event *ce, bool cancel)
 		{
 			Tab *tab;
 			bool in_pop;
-						
+
 			in_pop = find_pop(md->x, md->y, &tab);
 
 			if (tab)
@@ -91,8 +91,8 @@ cXA_button_event(enum locks lock, struct c_event *ce, bool cancel)
 				}
 			}
 			else
-				tab = root_tab;				
-			
+				tab = root_tab;
+
 		#if 0
 			if (tab &&  !tab->task_data.menu.entry)
 				tab = collapse(root_tab, tab);
@@ -117,15 +117,14 @@ cXA_button_event(enum locks lock, struct c_event *ce, bool cancel)
 				/* HR 161101: widgets in scrolling popups */
 				if (wind)
 				{
-					set_winmouse(md->x, md->y); //wind_mshape(wind, md->x, md->y);
+					set_winmouse(md->x, md->y);
 					if (wind->owner != client)
 					{
 						DIAG((D_button, client, "cXA_button_event: Wrong client %s, should be %s", wind->owner->name, client->name));
 						goto endmenu;
 					}
-					if (   (wind->dial & created_for_POPUP) != 0
-					    && (wind->active_widgets & V_WIDG) != 0
-					   )
+					if ((wind->dial & created_for_POPUP) != 0 &&
+					    (wind->active_widgets & V_WIDG) != 0)
 					{
 						if (do_widgets(lock, wind, XaMENU, md))
 							goto endmenu;
@@ -150,7 +149,7 @@ cXA_button_event(enum locks lock, struct c_event *ce, bool cancel)
 endmenu:	C.ce_menu_click = NULL;
 		return;
 	}
-	
+
 	if ( is_topped(wind) || wind == root_window || (!is_topped(wind) && wind->active_widgets & NO_TOPPED) )
 	{
 		DIAG((D_button, client, "cXA_button_event: Topped win"));
@@ -183,7 +182,7 @@ cXA_deliver_button_event(enum locks lock, struct c_event *ce, bool cancel)
 {
 	struct xa_window *wind;
 	struct xa_widget *widg = NULL;
-	
+
 	if (!cancel)
 	{
 		wind = ce->ptr1;
@@ -283,82 +282,82 @@ cXA_open_menu(enum locks lock, struct c_event *ce, bool cancel)
 static void
 menu_move(struct xa_client *client, struct moose_data *md, bool f)
 {
-		if (TAB_LIST_START->client == client && !C.move_block)
+	if (TAB_LIST_START->client == client && !C.move_block)
+	{
+		Tab *tab = TAB_LIST_START;
+		MENU_TASK *k;
+		short x = md->x;
+		short y = md->y;
+
+		DIAG((D_mouse, client, "cXA_menu_move for %s", client->name));
+
+		/*
+		 * Ozk: Cannot use FOREACH_TAB() here, since there may be additions to the top (start)
+		 *      of the list during our wander down towards the bottom of it.
+		 */
+		while (tab)
 		{
-			Tab *tab = TAB_LIST_START;
-			MENU_TASK *k;
-			short x = md->x;
-			short y = md->y;
+			k = &tab->task_data.menu;
 
-			DIAG((D_mouse, client, "cXA_menu_move for %s", client->name));
-		
-			/*
-			 * Ozk: Cannot use FOREACH_TAB() here, since there may be additions to the top (start)
-			 *      of the list during our wander down towards the bottom of it.
-			 */
-			while (tab)
+			if (k->em.flags & MU_MX)
 			{
-				k = &tab->task_data.menu;
+				/* XaAES internal flag: report any mouse movement. */
 
-				if (k->em.flags & MU_MX)
+				k->em.flags &= ~MU_MX;
+				k->x = x;
+				k->y = y;
+				tab = k->em.t1(tab, -1);	/* call the function */
+				break;
+			}
+			if ((k->em.flags & MU_M1))
+			{
+				if (is_rect(x, y, k->em.m1_flag & 1, &k->em.m1))
 				{
-					/* XaAES internal flag: report any mouse movement. */
-
-					k->em.flags &= ~MU_MX;
+					k->em.flags &= ~MU_M1;
 					k->x = x;
 					k->y = y;
 					tab = k->em.t1(tab, -1);	/* call the function */
 					break;
 				}
-				if ((k->em.flags & MU_M1))
-				{
-					if (is_rect(x, y, k->em.m1_flag & 1, &k->em.m1))
-					{
-						k->em.flags &= ~MU_M1;
-						k->x = x;
-						k->y = y;
-						tab = k->em.t1(tab, -1);	/* call the function */
-						break;
-					}
-					if (m_inside(x, y, &k->bar))
-						break;
-				}
-				if ((k->em.flags & MU_M2))
-				{
-					if (f || (is_rect(x, y, k->em.m2_flag & 1, &k->em.m2)))
-					{
-						k->em.flags &= ~MU_M2;
-						k->x = x;
-						k->y = y;
-						tab = k->em.t2(tab, -1);
-						break;
-					}
-					if (m_inside(x, y, &k->drop))
-						break;
-				}
-
-				if (m_inside(x, y, &k->p.wind->r))
+				if (m_inside(x, y, &k->bar))
 					break;
-				tab = tab->tab_entry.next;
 			}
-			
-			if (tab)
+			if ((k->em.flags & MU_M2))
 			{
-				if (tab->task_data.menu.p.wind)
-					wind_mshape(tab->task_data.menu.p.wind, x, y);
-				tab = tab->tab_entry.next;
+				if (f || (is_rect(x, y, k->em.m2_flag & 1, &k->em.m2)))
+				{
+					k->em.flags &= ~MU_M2;
+					k->x = x;
+					k->y = y;
+					tab = k->em.t2(tab, -1);
+					break;
+				}
+				if (m_inside(x, y, &k->drop))
+					break;
 			}
-			else
-				set_winmouse(x, y); //wind_mshape(find_window(lock, x, y, FNDW_NOLIST|FNDW_NORMAL), x,y);
 
-			while (tab)
-			{
-				k = &tab->task_data.menu;
-				if (k->outof)
-					k->outof(tab, -1);
-				tab = tab->tab_entry.next;
-			}
+			if (m_inside(x, y, &k->p.wind->r))
+				break;
+			tab = tab->tab_entry.next;
 		}
+
+		if (tab)
+		{
+			if (tab->task_data.menu.p.wind)
+				wind_mshape(tab->task_data.menu.p.wind, x, y);
+			tab = tab->tab_entry.next;
+		}
+		else
+			set_winmouse(x, y); //wind_mshape(find_window(lock, x, y, FNDW_NOLIST|FNDW_NORMAL), x,y);
+
+		while (tab)
+		{
+			k = &tab->task_data.menu;
+			if (k->outof)
+				k->outof(tab, -1);
+			tab = tab->tab_entry.next;
+		}
+	}
 }
 void
 cXA_menu_move(enum locks lock, struct c_event *ce, bool cancel)
@@ -381,7 +380,7 @@ cXA_do_widgets(enum locks lock, struct c_event *ce, bool cancel)
 		do_widgets(lock, (struct xa_window *)ce->ptr1, 0, &ce->md);
 	}
 }
- 
+
 void
 cXA_active_widget(enum locks lock, struct c_event *ce, bool cancel)
 {
@@ -525,7 +524,7 @@ cXA_wheel_event(enum locks lock, struct c_event *ce, bool cancel)
 	struct moose_data *md = &ce->md;
 	struct xa_widget *widg;
 //	XA_WIDGET *widg;
-	
+
 	if (!cancel)
 	{
 		if (client->waiting_for & MU_WHEEL)
@@ -548,15 +547,15 @@ cXA_wheel_event(enum locks lock, struct c_event *ce, bool cancel)
 		{
 			bool slist = false;
 			short orient, amount = 0, WA = WA_UPPAGE;
-			
+
 			wheel_arrow(wind, md, &widg, &orient, &amount);
-			
+
 			if ((md->kstate & K_ALT))
 				orient ^= 2;
 
 			if (orient & 2)
 				WA = WA_LFPAGE;
-			
+
 			if (!(md->kstate & (K_RSHIFT|K_LSHIFT)))
 				WA += WA_UPLINE;
 			else
@@ -569,14 +568,14 @@ cXA_wheel_event(enum locks lock, struct c_event *ce, bool cancel)
 				XA_TREE *wt = get_widget(wind, XAW_TOOLBAR)->stuff.xa_tree;
 				OBJECT *obtree;
 				struct xa_aes_object obj;
-				
+
 				if (wt && (obtree = wt->tree))
 				{
 					obj = obj_find(wt, aesobj(wt->tree, 0), 10, md->x, md->y, NULL);
 					if (valid_aesobj(&obj) && (aesobj_type(&obj) & 0xff) == G_SLIST)
 					{
 						struct scroll_info *list = object_get_slist(aesobj_ob(&obj));
-						
+
 						amount *= (md->clicks < 0 ? -md->clicks : md->clicks);
 						whlarrowed(list->wi, WA, amount, md);
 						slist = true;
@@ -630,14 +629,14 @@ cXA_wheel_event(enum locks lock, struct c_event *ce, bool cancel)
 								wh = widg->r.h - sl->r.h;
 							else
 								wh = widg->r.w - sl->r.w;
-					
+
 							unit = pix_to_sl(2L, wh) - pix_to_sl(1L, wh);
 
 							if (md->clicks < 0)
 								sl->rpos = bound_sl(sl->rpos - (unit * -md->clicks));
 							else
 								sl->rpos = bound_sl(sl->rpos + (unit * md->clicks));
-					
+
 							{
 								wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 										   s, 0,0, wind->handle,
@@ -658,7 +657,7 @@ cXA_wheel_event(enum locks lock, struct c_event *ce, bool cancel)
 				if (TAB_LIST_START)
 				{
 					client = TAB_LIST_START->client;
-		
+
 					if (!(client->status & CS_EXITING) && !C.ce_menu_move && !C.ce_menu_click)
 					{
 						client = TAB_LIST_START->client;

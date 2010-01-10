@@ -27,7 +27,7 @@
 #include RSCHNAME
 
 #include "util.h"
-#include "adiload.h"
+#include "xad_load.h"
 #include "debug.h"
 
 #include "k_init.h"

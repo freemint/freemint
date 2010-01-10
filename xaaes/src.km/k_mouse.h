@@ -28,11 +28,11 @@
  * Kernal Message Handler
  */
 
-#ifndef _k_mouse_h 
+#ifndef _k_mouse_h
 #define _k_mouse_h
 
 #include "global.h"
-#include "adi.h"
+#include "xad.h"
 #include "xa_types.h"
 
 bool is_bevent(int gotbut, int gotcl, const short *o, int which);

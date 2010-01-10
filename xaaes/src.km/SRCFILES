@@ -4,8 +4,6 @@
 HEADER = \
 	about.h \
 	accstart.h \
-	adi.h \
-	adiload.h \
 	app_man.h \
 	c_keybd.h \
 	c_message.h \
@@ -44,7 +42,6 @@ HEADER = \
 	vdi_parms.h \
 	widgets.h \
 	win_draw.h \
-	xaapi.h \
 	xa_aes.h \
 	xa_api.h \
 	xa_appl.h \
@@ -69,12 +66,15 @@ HEADER = \
 	xa_vdi.h \
 	xa_wdlg.h \
 	xa_wind.h \
-	xaaes_module.h
+	xaaes_module.h \
+	xaapi.h \
+	xad_defs.h \
+	xad_load.h \
+	xad.h
+	
 
 COBJS = \
 	about.c \
-	adi.c \
-	adiload.c \
 	app_man.c \
 	cnf_xaaes.c \
 	c_keybd.c \
@@ -127,7 +127,9 @@ COBJS = \
 	xa_shel.c \
 	xa_vdi.c \
 	xa_wdlg.c \
-	xa_wind.c
+	xa_wind.c \
+	xad_load.c \
+	xad.c
 
 SOBJS = \
 	accstart.s \

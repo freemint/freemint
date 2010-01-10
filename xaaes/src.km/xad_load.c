@@ -24,10 +24,10 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "adiload.h"
+#include "xad_load.h"
 #include "xa_global.h"
 
-#include "adi.h"
+#include "xad.h"
 #include "k_mouse.h"
 
 #include "mint/basepage.h"
@@ -35,16 +35,6 @@
 extern struct kernel_module *self;
 extern struct xa_api xa_api;
 
-static struct adiinfo ai =
-{
-	"AdiInfo        \0",
-	adi_getfreeunit,
-	adi_register,
-	adi_unregister,
-	adi_move,
-	adi_button,
-	adi_wheel,
-};
 /*
  * This is called by the kernels module framework when the module is loaded
  * and all (or some) of the modules devices have been probed.
@@ -52,7 +42,7 @@ static struct adiinfo ai =
  * XaAES.
  */
 static long
-load_adi(struct kernel_module *km, const char *name)
+load_xam(struct kernel_module *km, const char *name)
 {
 	long r = E_OK;
 	device_t dev;
@@ -69,15 +59,15 @@ load_adi(struct kernel_module *km, const char *name)
 }
 
 /*
- * Called by AESSYS itself (init.c) to load AES Device drivers (moose.adm)
+ * Called by AESSYS itself (init.c) to load AES Device drivers (moose.xad)
  */
 void
-adi_load(bool first)
+xad_load(bool first)
 {
 	if (first)
 		display("Loading AES Device Drivers:");
 
-	load_kmodules(self, C.Aes->home_path, ".adm", &ai, load_adi);
+	load_kmodules(self, C.Aes->module_path, ".xad", &xa_api, load_xam);
 }
 
 /*
@@ -88,26 +78,8 @@ adi_load(bool first)
 void
 xam_load(bool first)
 {
-	char *path;
-	short plen;
+	if (first)
+		BLOG((false, "Loading AES modules..."));
 
-	plen = strlen(C.Aes->home_path);
-	path = kmalloc(plen + 10);
-	if (path)
-	{
-		char c;
-
-		strcpy(path, C.Aes->home_path);
-		c = path[plen - 1];
-		if (!(c == '/' || c == '\\')) {
-			path[plen++] = '\\';
-			path[plen] = '\0';
-		}
-		strcat(path, "xam");
-
-		if (first)
-			BLOG((false, "Loading AES modules..."));
-		load_kmodules(self, path, ".xam", &xa_api, load_adi);
-		kfree(path);
-	}
+	load_kmodules(self, C.Aes->module_path, ".xam", &xa_api, load_xam);
 }

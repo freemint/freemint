@@ -24,77 +24,95 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "adi.h"
+#include "xad.h"
 #include "xa_global.h"
 
+struct loaded_xad
+{
+	struct loaded_xad	*next;
+	struct xad		*this;
+};
 
-static struct adif *alladifs = NULL;
+static struct loaded_xad *current_xads = NULL;
 
 /*
  * Called by adi upon init to register itself
  */
 long
-adi_register(struct adif *a)
+xad_register(struct xad *a)
 {
-	DIAGS(("adi_register: Registered device %s (%s)", a->name, a->lname));
-	a->next = alladifs;
-	alladifs = a;
-
-	return 0;
-}
-
-/*
- * Called by adi upon unloading to unregister itself
- * XXX this is called from k_main, after adi_close when
- * shutting down. This should be done automatically when
- * unloading the module
- */
-long
-adi_unregister(struct adif *a)
-{
-	struct adif **list = &alladifs;
-
-	while (*list)
+	DIAGS(("xad_register: Registered device %s (%s)", a->name, a->description));
+	struct loaded_xad *lxad = kmalloc(sizeof(*lxad));
+	if (lxad)
 	{
-		if (a == *list)
-		{
-			*list = a->next;
-			if (a == G.adi_mouse)
-				G.adi_mouse = NULL;
-			return E_OK;
-		}
-		list = &((*list)->next);
+		lxad->next = current_xads;
+		lxad->this = a;
+		current_xads = lxad;
+		return 0;
 	}
 	return -1L;
 }
 
+/*
+ * Called by adi upon unloading to unregister itself
+ * XXX this is called from k_main, after xad_close when
+ * shutting down. This should be done automatically when
+ * unloading the module
+ */
 long
-adi_open(struct adif *a)
+xad_unregister(struct xad *a)
+{
+	struct loaded_xad **list = &current_xads;
+	struct loaded_xad *this = NULL;
+
+	while (*list)
+	{
+		if ((*list)->this == a) {
+			this = *list;
+			*list = this->next;
+			break;
+		}
+		list = (&(*list)->next);
+	}
+
+	if (this)
+	{
+		if (this->this == G.adi_mouse)
+			G.adi_mouse = NULL;
+		kfree(this);
+		return E_OK;
+	}
+
+	return -1L;
+}
+
+long
+xad_open(struct xad *a)
 {
 	long error;
 
 	error = (*a->open)();
 	if (error)
 	{
-		DIAGS(("adi_open: Cannot open aes device interface %s%d", a->name, a->unit));
+		DIAGS(("xad_open: Cannot open aes device interface %s%d", a->name, a->unit));
 		return error;
 	}
-	a->flags |= ADI_OPEN;
+	a->flags |= XAD_OPEN;
 	return 0;
 }
 
 long
-adi_close(struct adif *a)
+xad_close(struct xad *a)
 {
 	long error;
 
 	error = (*a->close)();
 	if (error)
 	{
-		DIAGS(("adi_close: Cannot close AES device interface %s%d", a->name, a->unit));
+		DIAGS(("xad_close: Cannot close AES device interface %s%d", a->name, a->unit));
 		return error;
 	}
-	a->flags &= ~ADI_OPEN;
+	a->flags &= ~XAD_OPEN;
 	return 0;
 }
 
@@ -102,29 +120,30 @@ adi_close(struct adif *a)
  * Get an unused unit number for interface name 'name'
  */
 short
-adi_getfreeunit (char *name)
+xad_getfreeunit (char *name)
 {
-	struct adif *adip;
+	struct loaded_xad *lxad;
 	short max = -1;
 
-	for (adip = alladifs; adip; adip = adip->next)
+	for (lxad = current_xads; lxad; lxad = lxad->next)
 	{
-		if (!strncmp (adip->name, name, ADI_NAMSIZ) && adip->unit > max)
-			max = adip->unit;
+		if (!strncmp(lxad->this->name, name, XAD_NAMSIZ) && lxad->this->unit > max)
+		{
+			max = lxad->this->unit;
+		}
 	}
-
 	return max + 1;
 }
 
-struct adif *
-adi_name2adi (char *aname)
+struct xad *
+xad_name2adi (char *aname)
 {
-	char name[ADI_NAMSIZ+1], *cp;
+	char name[XAD_NAMSIZ+1], *cp;
 	short i;
 	long unit = 0;
-	struct adif *a;
+	struct loaded_xad *lxad;
 
-	for (i = 0, cp = aname; i < ADI_NAMSIZ && *cp; ++cp, ++i)
+	for (i = 0, cp = aname; i < XAD_NAMSIZ && *cp; ++cp, ++i)
 	{
 		if (*cp >= '0' && *cp <= '9')
 		{
@@ -135,16 +154,18 @@ adi_name2adi (char *aname)
 	}
 
 	name[i] = '\0';
-	for (a = alladifs; a; a = a->next) {
-		if (!stricmp (a->name, name) && a->unit == unit)
-			return a;
-	}
 
+	for (lxad = current_xads; lxad; lxad = lxad->next )
+	{
+		if (!stricmp(lxad->this->name, name) && lxad->this->unit == unit)
+			return lxad->this;
+
+	}
 	return NULL;
 }
 
 long
-adi_ioctl(struct adif *a, short cmd, long arg)
+xad_ioctl(struct xad *a, short cmd, long arg)
 {
 	return (*a->ioctl)(cmd, arg);
 }

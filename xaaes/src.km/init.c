@@ -28,22 +28,16 @@
 
 #include "init.h"
 #include "xa_global.h"
-#include "adiload.h"
+#include "xad_load.h"
 
 #include "c_window.h"
 #include "cnf_xaaes.h"
 #include "handler.h"
-#include "k_init.h"
 #include "k_main.h"
-#include "k_shutdown.h"
 #include "nkcc.h"
 #include "draw_obj.h"
-#include "semaphores.h"
 #include "xa_api.h"
 #include "xa_shel.h"
-#include "xa_appl.h"
-#include "taskman.h"
-#include "win_draw.h"
 #include "version.h"
 
 #include "mint/ssystem.h"
@@ -535,12 +529,12 @@ again:
 	{
 		bool flag;
 
-		flag = sysfile_exists(C.Aes->module_path, "moose_w.adm");
-		if (!flag) flag = sysfile_exists(C.Aes->module_path, "moose.adm");
+		flag = sysfile_exists(C.Aes->module_path, "moose_w.xad");
+		if (!flag) flag = sysfile_exists(C.Aes->module_path, "moose.xad");
 
 		if (!flag)
 		{
-			BLOG((/*00000008*/true, "ERROR: There exist no moose.adm in your XaAES module directory."));
+			BLOG((/*00000008*/true, "ERROR: There exist no moose.xad in your XaAES module directory."));
 			BLOG((true, " -> '%s'", C.Aes->module_path));
 			BLOG((/*00000009*/true, "       Please install it before starting the XaAES kernel module!"));
 			err = EINVAL;
@@ -622,7 +616,7 @@ again:
 	BLOG((false, "load adi modules"));
 
 	if (!G.adi_mouse)
-		adi_load(first);
+		xad_load(first);
 
 	BLOG((false, "Creating XaAES kernel thread"));
 	{
@@ -630,8 +624,10 @@ again:
 
 		r = kthread_create(NULL, k_main, NULL, &(C.Aes->p), "AESSYS");
 		if (r)
+		{
 			/* XXX todo -> exit gracefully */
 			FATAL(/*0000000a*/"can't create XaAES kernel thread");
+		}
 	}
 	{
 		struct proc *p = get_curproc();

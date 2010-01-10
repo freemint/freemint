@@ -25,40 +25,31 @@
  */
 
 #include RSCHNAME
+
 #include "k_main.h"
 #include "xa_global.h"
 
 #include "app_man.h"
-#include "adiload.h"
 #include "c_window.h"
-#include "desktop.h"
 #include "handler.h"
 #include "init.h"
 #include "k_init.h"
 #include "k_keybd.h"
 #include "k_mouse.h"
 #include "k_shutdown.h"
-#include "nkcc.h"
-#include "scrlobjc.h"
-#include "taskman.h"
-#include "widgets.h"
 #include "obtree.h"
 #include "taskman.h"
 
 #include "xa_appl.h"
 #include "xa_evnt.h"
 #include "xa_form.h"
-#include "xa_rsrc.h"
 #include "xa_shel.h"
 
 #include "mint/dcntl.h"
 #include "mint/fcntl.h"
-#include "mint/filedesc.h"
 #include "mint/ioctl.h"
 #include "mint/signal.h"
 #include "mint/ssystem.h"
-#include "cookie.h"
-
 
 #include "c_mouse.h"
 
@@ -598,12 +589,12 @@ init_moose(void)
 	C.move_block = 0;
 	C.rect_lock = 0;
 
-	G.adi_mouse = adi_name2adi("moose_w");
+	G.adi_mouse = xad_name2adi("moose_w");
 	if (!G.adi_mouse)
-		G.adi_mouse = adi_name2adi("moose");
+		G.adi_mouse = xad_name2adi("moose");
 	if (G.adi_mouse) {
 		long err, moose_version;
-		err = adi_ioctl(G.adi_mouse, FS_INFO, (long)&moose_version);
+		err = xad_ioctl(G.adi_mouse, FS_INFO, (long)&moose_version);
 		if (!err) {
 			if (moose_version < (((long)MIN_MOOSE_VER_MAJOR << 16) | MIN_MOOSE_VER_MINOR)) {
 				BLOG((true,/*0000000b*/"init_moose: Your moose.adi is outdated, please update!"));
@@ -616,17 +607,17 @@ init_moose(void)
 		/*
 		 * Give the VDI handle to use to the mouse driver
 		*/
-		err = adi_ioctl(G.adi_mouse, MOOSE_SET_VDIHANDLE, (unsigned long)C.P_handle);
+		err = xad_ioctl(G.adi_mouse, MOOSE_SET_VDIHANDLE, (unsigned long)C.P_handle);
 		if (!err) {
-			err = adi_open(G.adi_mouse);
+			err = xad_open(G.adi_mouse);
 			if (err) {
 				BLOG((true, "init_moose: Error opending mouse driver!"));
 				return false;
 			}
 
-			if (adi_ioctl(G.adi_mouse, MOOSE_DCLICK, (long)cfg.double_click_time))
+			if (xad_ioctl(G.adi_mouse, MOOSE_DCLICK, (long)cfg.double_click_time))
 				BLOG((true,/*0000000d*/"Moose set dclick time failed"));
-			if (adi_ioctl(G.adi_mouse, MOOSE_PKT_TIMEGAP, (long)cfg.mouse_packet_timegap))
+			if (xad_ioctl(G.adi_mouse, MOOSE_PKT_TIMEGAP, (long)cfg.mouse_packet_timegap))
 				BLOG((true,/*0000000e*/"Moose set mouse-packets time-gap failed"));
 			BLOG((false, "Using moose adi"));
 			ret = true;
@@ -1688,19 +1679,7 @@ k_exit(void)
 		yield();
 	}
 // 	display("after yield");
-#if 0
-	/*
-	 * close input devices
-	 */
-	if (G.adi_mouse) {
-		BLOG((false, "Closing adi_mouse"));
-		adi_close(G.adi_mouse);
-		unload_kmodule(G.adi_mouse->km);
-		G.adi_mouse = NULL;
-// 		adi_unregister(G.adi_mouse);
-// 		G.adi_mouse = NULL;
-	}
-#endif
+
 // 	display("k_shutdown..");
 	k_shutdown();
 // 	display("done");
@@ -1724,9 +1703,9 @@ k_exit(void)
 	 */
 	if (G.adi_mouse)
 	{
-		BLOG((false, "Closing adi_mouse"));
-		adi_close(G.adi_mouse);
-// 		adi_unregister(G.adi_mouse);
+		BLOG((false, "Closing xad_mouse"));
+		xad_close(G.adi_mouse);
+// 		xad_unregister(G.adi_mouse);
 // 		G.adi_mouse = NULL;
 	}
 

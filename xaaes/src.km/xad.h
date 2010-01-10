@@ -24,12 +24,18 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef _adiload_h
-#define _adiload_h
+#ifndef _xad_h
+#define _xad_h
 
 #include "global.h"
+#include "xad_defs.h"
 
-void adi_load(bool first);
-void xam_load(bool first);
+struct xad *	xad_name2adi	(char *aname);
+short		xad_getfreeunit	(char *name);
+long		xad_register	(struct xad *a);
+long		xad_unregister	(struct xad *a);
+long		xad_close	(struct xad *a);
+long		xad_open	(struct xad *a);
+long		xad_ioctl	(struct xad *a, short cmd, long arg);
 
-#endif /* _adiload_h */
+#endif /* _xad_h */

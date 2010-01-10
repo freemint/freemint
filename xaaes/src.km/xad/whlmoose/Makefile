@@ -27,22 +27,20 @@ LIBS = $(LIBKERN) -lgcc16
 CPU = 000
 
 # default definitions
-SGENFILES = moose.adi moose_w.adi
+SGENFILES = moose.xad moose_w.xad
 OBJS = $(SOBJS:.s=.o)
 
-
 entry:
-	$(MAKE) XDD_DEFINITIONS="" moose.adi
-	$(MAKE) XDD_DEFINITIONS="-DHAVE_WHEEL=1" moose_w.adi
+	$(MAKE) XDD_DEFINITIONS="" moose.xad
+	$(MAKE) XDD_DEFINITIONS="-DHAVE_WHEEL=1" moose_w.xad
 	
-moose.adi: whlmoose.o $(OBJS) $(LIBKERNTARGET)
+moose.xad: whlmoose.o $(OBJS) $(LIBKERNTARGET)
 	$(LD) $(CFLAGS) -o $@ $< $(OBJS) $(LIBS)
 
-moose_w.adi: whlmoose_w.o $(OBJS) $(LIBKERNTARGET)
+moose_w.xad: whlmoose_w.o $(OBJS) $(LIBKERNTARGET)
 	$(LD) $(CFLAGS) -o $@ $< $(OBJS) $(LIBS)
 
 whlmoose_w.c: whlmoose.c
 	ln -s $< $@
-
 
 include $(top_srcdir)/DEPENDENCIES

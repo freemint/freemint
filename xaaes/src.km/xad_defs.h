@@ -23,19 +23,30 @@
  * along with XaAES; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
+#ifndef _XAD_DEFS_H_
+#define _XAD_DEFS_H_
 
-#ifndef _adi_h
-#define _adi_h
+#define XAD_OPEN	1
+#define XAD_NAMSIZ	128
 
-#include "global.h"
-#include "adi/adidefs.h"
+#define XAD_CLASS_MOUSE	0
+/*
+ * Structure that identifies the class of xad device.
+ */
+struct xad
+{
+	short		xad_class;
+	short		unit;
+	unsigned short	flags;
+	char		name[XAD_NAMSIZ];
+	char		*description;
 
-struct adif *	adi_name2adi	(char *aname);
-short		adi_getfreeunit	(char *name);
-long		adi_register	(struct adif *a);
-long		adi_unregister	(struct adif *a);
-long		adi_close	(struct adif *a);
-long		adi_open	(struct adif *a);
-long		adi_ioctl	(struct adif *a, short cmd, long arg);
+	long	(*open)		(void);
+	long	(*close)	(void);
+	long	(*ioctl)	(short, long);
+	long	(*timeout)	(void);
 
-#endif /* _adi_h */
+	long	reserved[16 - 4];
+};
+
+#endif /* XAD_DEFS_H_ */

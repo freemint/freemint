@@ -1,3 +1,28 @@
+/*
+ * $Id$
+ *
+ * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
+ *                                 1999 - 2003 H.Robbers
+ *                                        2004 F.Naumann & O.Skancke
+ *
+ * A multitasking AES replacement for FreeMiNT
+ *
+ * This file is part of XaAES.
+ *
+ * XaAES is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * XaAES is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with XaAES; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ */
 
 #ifndef _XAAPI_H_
 #define _XAAPI_H_
@@ -107,6 +132,32 @@ struct xa_module_api
 	long	_cdecl		(*module_register)	(long type, void *data);
 	void *			reserved[16 - 1];
 };
+/*
+ * This api provides entrypoints for device drivers.
+ * This is the interface to extend for other devices
+ * such as keyboard, etc.
+ */
+struct xa_device_input_api
+{
+	void (*mouse_move)		(short x, short y);
+	void (*mouse_button)		(struct moose_data *md);
+	void (*mouse_wheel)		(struct moose_data *md);
+
+	void *				reserved[64 - 1];
+};
+
+struct xa_xad_api
+{
+	struct xad *	(*xad_name2adi)		(char *aname);
+	short		(*xad_getfreeunit)	(char *name);
+	long		(*xad_register)		(struct xad *a);
+	long		(*xad_unregister)	(struct xad *a);
+	long		(*xad_open)		(struct xad *a);
+	long		(*xad_close)		(struct xad *a);
+	long		(*xad_ioctl)		(struct xad *a, short cmd, long arg);
+
+	void *		reserved[32 - 7];
+};
 
 struct xa_window_api
 {
@@ -203,16 +254,18 @@ struct xa_api
 
 	void _cdecl	(*dispatch_shutdown)	(short flags, unsigned long arg);
 
-	struct xa_debug_api	debug;
-	struct xa_module_api	module;
-	struct xa_objc_api	objc;
-	struct xa_menu_api	menu;
-	struct xa_rectangle_api	rect;
-	struct xa_lib_api	lib;
-	struct xa_xadata_api	xadata;
-	struct xa_window_api	wind;
+	struct xa_debug_api		debug;
+	struct xa_module_api		module;
+	struct xa_device_input_api	device_input;
+	struct xa_xad_api		xad;
+	struct xa_objc_api		objc;
+	struct xa_menu_api		menu;
+	struct xa_rectangle_api		rect;
+	struct xa_lib_api		lib;
+	struct xa_xadata_api		xadata;
+	struct xa_window_api		wind;
 
-	struct xa_img_api	img;
+	struct xa_img_api		img;
 };
 
 #define DEFAULTS_xa_objc_api	\
@@ -263,6 +316,24 @@ struct xa_api
 #define DEFAULTS_xa_module_api	\
 { \
 	module_register,	\
+}
+
+#define DEFAULTS_xa_devinput_api \
+{				\
+	adi_move,		\
+	adi_button,		\
+	adi_wheel,		\
+}
+
+#define DEFAULTS_xa_xad_api 	\
+{				\
+	xad_name2adi,		\
+	xad_getfreeunit,	\
+	xad_register,		\
+	xad_unregister,		\
+	xad_open,		\
+	xad_close,		\
+	xad_ioctl,		\
 }
 
 #define DEFAULTS_xa_window_api	\
@@ -332,6 +403,8 @@ struct xa_api
 	\
 	DEFAULTS_xa_debug_api,		\
 	DEFAULTS_xa_module_api,		\
+	DEFAULTS_xa_devinput_api,	\
+	DEFAULTS_xa_xad_api,		\
 	DEFAULTS_xa_objc_api,		\
 	DEFAULTS_xa_menu_api,		\
 	DEFAULTS_xa_rectangle_api,	\

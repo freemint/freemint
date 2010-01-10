@@ -1,33 +1,33 @@
 /*
  * $Id$
- * 
+ *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
- * 
- * 
+ *
+ *
  * Copyright 2003 Odd Skancke <ozk@atari.org>
  * Copyright 1998, 2000 Frank Naumann <fnaumann@freemint.de>
  * Copyright 1995 Torsten Scherer <itschere@techfak.uni-bielefeld.de>
  * All rights reserved.
- * 
+ *
  * Please send suggestions, patches or bug reports to me or
  * the MiNT mailing list.
- * 
- * 
+ *
+ *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
  * any later version.
- * 
+ *
  * This file is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  */
 
 # include "mint/mint.h"
@@ -38,9 +38,8 @@
 # include "mint/ioctl.h"
 # include "mint/proc.h"
 # include "mint/stat.h"
-
-# include "../adidefs.h"
-
+# include "../moose.h"
+# include "../../xaaes_module.h"
 
 /*
  * debugging stuff
@@ -50,7 +49,6 @@
 # define DEV_DEBUG	1
 # endif
 
-
 /*
  * version
  */
@@ -59,7 +57,7 @@
 # define VER_MINOR	11
 # define VER_STATUS
 
-# define MSG_VERSION	str (VER_MAJOR) "." str (VER_MINOR) str (VER_STATUS) 
+# define MSG_VERSION	str (VER_MAJOR) "." str (VER_MINOR) str (VER_STATUS)
 # define MSG_BUILDDATE	__DATE__
 
 # define MSG_BOOT	\
@@ -76,10 +74,10 @@
 	"\7\r\nSorry, Moose NOT installed (Dcntl(...) failed)!\r\n\r\n"
 
 /****************************************************************************/
-/* BEGIN kernel interface */
+/* BEGIN kernel interfaces */
 
+struct xa_api *XAPI = NULL;
 struct kentry	*kentry;
-struct adiinfo	*adiinfo;
 
 /* END kernel interface */
 /****************************************************************************/
@@ -114,63 +112,42 @@ void timer_handler(void);
 static void do_button_packet(void);
 
 /*
- * AES device interface
+ * XaAES device interface
  */
 
 static long _cdecl	moose_open		(void);
 static long _cdecl	moose_ioctl		(short cmd, long arg);
 static long _cdecl	moose_close		(void);
 static long _cdecl	moose_timeout		(void);
-
+/*
+ * Device Methods interface
+ */
 static long _cdecl moose_probe(device_t dev);
 static long _cdecl moose_attach(device_t dev);
 static long _cdecl moose_detach(device_t dev);
 
-static char lname[] = "Moose AES Device interface for XaAES\0";
+static char lname[] = "Moose AES Device driver for XaAES\0";
 
-struct device_methods moose_dev =
-{
-	NULL,		/* identify */
-	moose_probe,
-	moose_attach,
-	moose_detach,
-};
+DEVICE_METHODS(moose_dev, NULL, moose_probe, moose_attach, moose_detach);
 
 static struct device_methods *moose_devices[] =
 {
 	&moose_dev, NULL
 };
 
-static struct adif moose_aif = 
+static struct xad xadmouse =
 {
-	0,		/* *next */
- 	NULL,		/* km    */
-	ADIC_MOUSE,	/* class */
-	lname,		/* lname */
-	"moose",	/* name */
-	0,		/* unit */
-	0,		/* flags */
- 	moose_open,	/* open */
-	moose_close,	/* close */
-	moose_ioctl,	/* ioctl */
-	moose_timeout,	/* timeout */
-	{ NULL },
+	 XAD_CLASS_MOUSE,
+	 0,
+	 0,
+	 "moose",
+	 lname,
+	 moose_open,
+	 moose_close,
+	 moose_ioctl,
+	 moose_timeout,
+	 { 0 },
 };
-
-/*
- * debugging stuff
- */
-# ifdef DEV_DEBUG
-#  define DEBUG(x)	KERNEL_DEBUG x
-#  define TRACE(x)	KERNEL_TRACE x
-#  define ALERT(x)	KERNEL_ALERT x
-# else
-#  define DEBUG(x)
-#  define TRACE(x)
-#  define ALERT(x)	KERNEL_ALERT x
-# endif
-
-# define display(x)	KERNEL_DISPLAY x
 
 long _cdecl init(struct kernel_module *km, void *arg, struct device_methods ***r);
 
@@ -212,9 +189,6 @@ static union {
 	char chars[16];
 	unsigned long ulongs[4];
 } clicks;
-//static char  clicks[16];
-//static short l_clicks;
-//static short r_clicks;
 
 static short timeout;
 static short dc_time;
@@ -253,13 +227,13 @@ struct mouse_pak
 			unsigned char state;
 			short time;
 		} but;
-		
+
 		struct
 		{
 			unsigned char wheel;
 			short clicks;
 		} whl;
-		
+
 		struct
 		{
 			char state;
@@ -309,7 +283,7 @@ cbutv(void)
 	pak_tail->t.but.time	= (short)t;
 	pak_tail->x		= sample_x;
 	pak_tail->y		= sample_y;
-	pak_tail->dbg		= t1; //0;
+	pak_tail->dbg		= t1;
 
 	pak_tail++;
 
@@ -328,19 +302,19 @@ cwhlv(void)
 	md.ty		= MOOSE_WHEEL_PREFIX;
 	md.x = md.sx	= sample_x;
 	md.y = md.sy	= sample_y;
-	md.state	= (unsigned char)sample_wheel; //pak_head->t.whl.wheel;
+	md.state	= (unsigned char)sample_wheel;
 	md.cstate	= md.state;
-	md.clicks	= sample_wclicks; //pak_head->t.whl.clicks;
+	md.clicks	= sample_wclicks;
 	md.kstate	= 0;
 	md.dbg1		= 0;
 	md.dbg2		= 0;
-	(*adiinfo->wheel)(&md);
+	mouse_wheel(&md);
 }
 
 void
 cmotv(void)
 {
-	(*adiinfo->move)(sample_x, sample_y);
+	mouse_move(sample_x, sample_y);
 }
 
 static void
@@ -374,7 +348,7 @@ timer_handler(void)
 			if (inbuf)
 			{
 				if (pak_head->ty == BUT_PAK)
-				{	
+				{
 					register short tm = pak_head->t.but.time;
 					register unsigned short s = (unsigned char)pak_head->t.but.state;
 					time_between = pak_head->dbg;
@@ -428,7 +402,7 @@ timer_handler(void)
 										c[i]++;
 										click_count++;
 									}
-								
+
 									s >>= 1;
 								}
 							}
@@ -480,7 +454,7 @@ do_button_packet(void)
 	*s   = *d, *d   = 0;
 	md.dbg1	= (short)(time_between >> 16);
 	md.dbg2 = (short)time_between;
-	(*adiinfo->button)(&md);
+	mouse_button(&md);
 	click_count	= 0;
 	timeout		= 0;
 }
@@ -488,7 +462,9 @@ do_button_packet(void)
 #define VEX_WHLV	134
 #define VEX_MOTV	126
 #define VEX_BUTV	125
-
+/*
+ * Device Methods implementation
+ */
 static long _cdecl
 moose_probe(device_t dev)
 {
@@ -498,15 +474,15 @@ moose_probe(device_t dev)
 static long _cdecl
 moose_attach(device_t dev)
 {
-	if (!moose_inuse && adiinfo && !strcmp("AdiInfo        ", adiinfo->name)) {
+	if (!moose_inuse && XAPI)
+	{
 		long ret;
 
 		vdi_handle = -1;
 
 		DEBUG (("%s: enter init", __FILE__));
-		
-		moose_aif.km = dev->km;
-		ret = (*adiinfo->adi_register)(&moose_aif);
+
+		ret = xad_register(&xadmouse);
 
 		if (ret)
 		{
@@ -522,9 +498,10 @@ moose_attach(device_t dev)
 static long _cdecl
 moose_detach(device_t dev)
 {
-	if (moose_inuse) {
+	if (moose_inuse)
+	{
 		moose_close();
-		(*adiinfo->adi_unregister)(&moose_aif);
+		xad_unregister(&xadmouse);
 	}
 	return E_OK;
 }
@@ -533,15 +510,17 @@ static void
 vex_xxx(short opcode, void *new, void **old)
 {
 	short i;
-	struct vdictrl {
+	struct vdictrl
+	{
 		short	opcode,n_ptsin,n_ptsout,n_intin,n_intout,subopcode,handle;
 		void	*new;
-		void	*old; } vc;
+		void	*old;
+	} vc;
 	struct vdipb {short *control, *intin, *ptsin, *intout, *ptsout;} pb;
 
 	pb.control = (void *)&vc;
 	pb.intin = pb.ptsin = pb.intout = pb.ptsout = &i;
-	
+
 	vc.opcode = opcode;
 	vc.n_ptsin = vc.n_intin = 0;
 	vc.handle = vdi_handle;
@@ -554,10 +533,10 @@ vex_xxx(short opcode, void *new, void **old)
 		"move.w		#115,d0\n\t"		\
 		"trap		#2\n\t"			\
 		:
-		: "a"(&pb)			
-		: "a0", "a1", "a2", "d0", "d1", "d2", "memory"	
+		: "a"(&pb)
+		: "a0", "a1", "a2", "d0", "d1", "d2", "memory"
 	);
-	
+
 	if (old) *old = vc.old;
 }
 
@@ -567,7 +546,8 @@ moose_open (void)
 	short nvbi;
 	int i;
 
-	if (vdi_handle != -1 && !moose_inuse) {
+	if (vdi_handle != -1 && !moose_inuse)
+	{
 		nvbi		= *(short *)SYSNVBI;
 
 		pak_tail	= (struct mouse_pak *)&pak_buffer;
@@ -586,15 +566,16 @@ moose_open (void)
 		dc_time		= 50;
 		pkt_timegap	= 3;
 		click_count	= 0;
-		//for (i = 0; i < 16; i++) clicks.chars[i] = 0;
 		for (i = 0; i < 4; i++) clicks.ulongs[i] = 0;
 
 		timeout		= 0;
 
 		VBI_entry = (long *) *(long *)SYSVBI;
 
-		for (i = 0; i < nvbi; i++) {
-			if (*VBI_entry == 0) {
+		for (i = 0; i < nvbi; i++)
+		{
+			if (*VBI_entry == 0)
+			{
 				*VBI_entry = (long)th_wrapper;
 				break;
 			}
@@ -620,7 +601,7 @@ moose_close(void)
 #ifdef HAVE_WHEEL
 		vex_xxx(VEX_WHLV, old_whlv, NULL);
 #endif
-		*VBI_entry = NULL;
+		*VBI_entry = 0;
 		moose_inuse = 0;
 		vdi_handle = -1;
 		dc_time = 0;
@@ -638,11 +619,11 @@ moose_ioctl (short cmd, long arg)
 			*(long *)arg = (((long)VER_MAJOR << 16) | VER_MINOR);
 			break;
 		}
-#if 0		
+#if 0
 		case MOOSE_READVECS:
 		{
 			struct moose_vecsbuf *vecs = (struct moose_vecsbuf *)arg;
-			
+
 			vecs->motv = (vdi_vec *) motv;
 			vecs->butv = (vdi_vec *) butv;
 			vecs->timv = (vdi_vec *) timv;
@@ -680,7 +661,7 @@ moose_ioctl (short cmd, long arg)
 		{
 			return ENOSYS;
 		}
-	}	
+	}
 	return E_OK;
 }
 
@@ -690,52 +671,16 @@ moose_timeout(void)
 	return 0;
 }
 
-#if 0
-static long _cdecl
-moose_unregister(struct adif *a)
-{
-	long ret;
-	(void)moose_close(a);
-	ret = (*ainf->adi_unregister)(&moose_aif);
-	return ret;
-}
-#endif
-
-void consout(const char *fmt, ...)
-{
-	char buf[512];
-	va_list args;
-	long l;
-
-	va_start(args, fmt);
-	l = vsprintf(buf, sizeof(buf), fmt, args);
-	va_end(args);
-
-	buf[l] = '\n';
-	
-	buf[l] = '\r';
-	buf[l+1] = '\n';
-	buf[l+2] = '\0';
-	
-	c_conws(buf);
-}
-
 long _cdecl
 init(struct kernel_module *km, void *arg, struct device_methods ***r)
 {
-	
-//	consout("Inside moose init. km = %lx, kentry = %lx", km, km->kentry);
-	
 	kentry = km->kentry;
 
 	if (check_kentry_version())
 		return 1;
 
-	if (r) {
-		adiinfo = arg;
-		*r = moose_devices;
-	} else
-		return 1;
-	
+	XAPI = arg;
+	*r = moose_devices;
+
 	return 0;
 }
