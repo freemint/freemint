@@ -362,9 +362,9 @@ do_open (FILEPTR **f, const char *name, int rwmode, int attr, XATTR *x)
 
 	DEBUG(("do_open(%s): mode 0x%x", name, xattr.mode));
 
-	/* we don't do directories
+	/* we don't do directories other than read-only
 	 */
-	if (S_ISDIR(xattr.mode))
+	if (S_ISDIR(xattr.mode) && ((rwmode & O_RWMODE) != O_RDONLY))
 	{
 		DEBUG(("do_open(%s): file is a directory", name));
 		release_cookie (&dir);

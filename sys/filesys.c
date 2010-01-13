@@ -979,20 +979,6 @@ restart_mount:
 		while (DIRSEP (*path))
 			path++;
 
-		/* if there's nothing left in the path, we can break here
-		 *
-		 * fna: I think this is an error, e.g.
-		 *      looking up: /foo/bar/ should result in an error, or?
-		 *      at least there is no lastname, so clear it
-		 */
-		if (!*path)
-		{
-			PATH2COOKIE_DB (("relpath2cookie: no more path, breaking (1)"));
-			*lastname = '\0'; /* no lastname */
-			*res = dir;
-			break;
-		}
-
 		/* next, peel off the next name in the path
 		 */
 		{
@@ -1009,18 +995,25 @@ restart_mount:
 				c = *++path;
 			}
 
-			*s = 0;
+			*s = '\0';
 		}
 
 		/* if there are no more names in the path, and we don't want
 		 * to actually look up the last name, then we're done
 		 */
-		if (dolast == 0 && !*path)
+		if (dolast == 0)
 		{
-			PATH2COOKIE_DB (("relpath2cookie: no more path, breaking (2)"));
-			*res = dir;
-			PATH2COOKIE_DB (("relpath2cookie: *res = [%lx, %i]", res->fs, res->dev));
-			break;
+			register const char *s = path;
+
+			while (DIRSEP (*s))
+				s++;
+				
+			if (!*s) {
+				PATH2COOKIE_DB (("relpath2cookie: no more path, breaking"));
+				*res = dir;
+				PATH2COOKIE_DB (("relpath2cookie: *res = [%lx, %i]", res->fs, res->dev));
+				break;
+			}
 		}
 
 		if (cwd->root_dir)
@@ -1074,13 +1067,6 @@ restart_mount:
 		}
 		else if (r)
 		{
-			if (r == ENOENT && *path)
-			{
-				/* the "file" we didn't find was treated as a
-				 * directory
-				 */
-				r = ENOTDIR;
-			}
 			release_cookie (&dir);
 			break;
 		}

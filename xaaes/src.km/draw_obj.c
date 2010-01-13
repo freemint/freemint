@@ -394,7 +394,7 @@ d_g_progdef(struct widget_tree *wt, struct xa_vdi_settings *v)
 #endif
 	act.sa_handler = client->ut->progdef_p;
 	act.sa_mask = 0xffffffff;
-	act.sa_flags = SA_RESET;
+	act.sa_flags = SA_RESETHAND;
 
 	/* set new signal handler; remember old */
 	p_sigaction(SIGUSR2, &act, &oact);

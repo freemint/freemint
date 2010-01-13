@@ -184,7 +184,7 @@ callout_pdlg_sub(struct xa_pdlg_info *pdlg, short which, PDLG_SUB *sub, PRN_SETT
 
 			act.sa_handler	= u->sighand_p;
 			act.sa_mask	= 0xffffffff;
-			act.sa_flags	= SA_RESET;
+			act.sa_flags	= SA_RESETHAND;
 
 			p_sigaction(SIGUSR2, &act, &oact);
 			DIAGS(("raise(SIGUSR2)"));

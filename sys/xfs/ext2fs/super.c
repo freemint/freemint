@@ -35,8 +35,8 @@
 # include "inode.h"
 
 
-static ulong
-find_shift (ulong value)
+INLINE ulong
+_log2 (ulong value)
 {
 	register ulong shift = 0;
 	
@@ -49,8 +49,11 @@ find_shift (ulong value)
 	return shift;
 }
 
-# define log2(n)	find_shift (n)
-
+INLINE __attribute__ ((const))
+bool is_power_of_2(unsigned long n)
+{
+	return (n != 0 && ((n & (n - 1)) == 0));
+}
 
 INLINE void
 ext2_setup_super (SI *s)
@@ -75,13 +78,12 @@ ext2_setup_super (SI *s)
 		{
 			ALERT (("Ext2-FS [%c]: WARNING: mounting fs with errors, running e2fsck is recommended", s->dev+'A'));
 		}
-		else if (le2cpu16 (sb->s_max_mnt_count) >= 0
-			&& le2cpu16 (sb->s_mnt_count) >= le2cpu16 (sb->s_max_mnt_count))
+		else if (le2cpu16 (sb->s_mnt_count) >= le2cpu16 (sb->s_max_mnt_count))
 		{
 			ALERT (("Ext2-FS [%c]: WARNING: maximal mount count reached, running e2fsck is recommended", s->dev+'A'));
 		}
 		else if (le2cpu32 (sb->s_checkinterval) &&
-			(le2cpu32 (sb->s_lastcheck) + le2cpu32 (sb->s_checkinterval) <= CURRENT_TIME))
+			(le2cpu32 (sb->s_lastcheck) + le2cpu32 (sb->s_checkinterval) <= (ulong)CURRENT_TIME))
 		{
 			ALERT (("Ext2-FS [%c]: WARNING: checktime reached, running e2fsck is recommended", s->dev+'A'));
 		}
@@ -408,7 +410,8 @@ read_ext2_sb_info (ushort drv)
 			s->sbi.s_first_ino = le2cpu32 (sb->s_first_ino);
 			s->sbi.s_inode_size = le2cpu16 (sb->s_inode_size);
 			
-			if (s->sbi.s_inode_size != EXT2_GOOD_OLD_INODE_SIZE)
+			if ((s->sbi.s_inode_size < EXT2_GOOD_OLD_INODE_SIZE) ||
+			     !is_power_of_2(s->sbi.s_inode_size))
 			{
 				ALERT (("Ext2-FS [%c]: unsupported inode size: %d",
 					drv+'A', s->sbi.s_inode_size));
@@ -449,7 +452,7 @@ read_ext2_sb_info (ushort drv)
 		
 		s->sbi.s_desc_per_block  = s->sbi.s_blocksize;
 		s->sbi.s_desc_per_block /= sizeof (ext2_gd);
-		s->sbi.s_desc_per_block_bits = log2 (s->sbi.s_desc_per_block);
+		s->sbi.s_desc_per_block_bits = _log2 (s->sbi.s_desc_per_block);
 		s->sbi.s_desc_per_block_mask = s->sbi.s_desc_per_block - 1;
 		
 		s->sbi.s_groups_count  = s->sbi.s_blocks_count;
@@ -465,7 +468,7 @@ read_ext2_sb_info (ushort drv)
 		
 		s->sbi.s_addr_per_block  = s->sbi.s_blocksize;
 		s->sbi.s_addr_per_block /= sizeof (__u32);
-		s->sbi.s_addr_per_block_bits = log2 (s->sbi.s_addr_per_block);
+		s->sbi.s_addr_per_block_bits = _log2 (s->sbi.s_addr_per_block);
 		
 		
 		/* do some sanity checks

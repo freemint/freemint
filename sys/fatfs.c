@@ -8085,9 +8085,9 @@ fatfs_open (FILEPTR *f)
 		return EACCES;
 	}
 
-	if (c->info.attr & FA_LABEL || c->info.attr & FA_DIR)
+	if (c->info.attr & FA_LABEL || ((c->info.attr & FA_DIR) && ((f->flags & O_RWMODE) != O_RDONLY)))
 	{
-		FAT_DEBUG (("fatfs_open: leave failure, not a valid file"));
+		FAT_DEBUG (("fatfs_open: leave failure, not a valid file or read-only directory"));
 		return EACCES;
 	}
 
@@ -8168,7 +8168,12 @@ fatfs_write (FILEPTR *f, const char *buf, long bytes)
 static long _cdecl
 fatfs_read (FILEPTR *f, char *buf, long bytes)
 {
+	COOKIE *c = (COOKIE *) f->fc.index;
+
 	FAT_DEBUG (("fatfs_read [%s]: enter (bytes = %li)", ((COOKIE *) f->fc.index)->name, bytes));
+
+	if (c->info.attr & FA_DIR)
+		return EISDIR;
 
 	if ((((FILE *) f->devinfo)->mode & O_RWMODE) == O_WRONLY)
 	{
