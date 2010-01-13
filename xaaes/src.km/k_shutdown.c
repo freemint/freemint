@@ -233,7 +233,7 @@ k_shutdown(void)
 	 */
 	if (v && v->handle && v->handle != C.P_handle)
 	{
-		BLOG((false, "Closing down vwk"));
+		BLOG((false, "Closing down vwk %d", v->handle));
 		v_clsvwk(v->handle);
 	}
 	/*
@@ -241,7 +241,7 @@ k_shutdown(void)
 	 */
 	if (C.P_handle)
 	{
-		BLOG((false, "Closing down physical vdi workstation"));
+		BLOG((false, "Closing down physical vdi workstation %d", C.P_handle));
 		vst_color(C.P_handle, G_BLACK);
 		vswr_mode(C.P_handle, MD_REPLACE);
 
@@ -261,6 +261,7 @@ k_shutdown(void)
 		 */
 #ifndef ST_ONLY
 		//if( C.fvdi_version == 0 )
+		if( C.P_handle > 0 && C.P_handle != v->handle )
 		{
 			unsigned long sc = 0, cm = 0;
 			int odbl;

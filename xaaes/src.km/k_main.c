@@ -925,7 +925,7 @@ alert_input(enum locks lock)
 	}
 }
 
-static void k_exit(void);
+static void k_exit(int);
 static void restore_sigs(void);
 static void setup_common(void);
 
@@ -943,7 +943,7 @@ static void
 fatal(void)
 {
 	KERNEL_DEBUG("AESSYS: fatal error, trying to clean up");
-	k_exit();
+	k_exit(0);
 }
 #endif
 
@@ -960,7 +960,7 @@ sigterm(void)
 	BLOG((false, "%s(%d:AES:%d): sigterm received", p->name, p->pid, C.AESpid ));
 #if 1
 	BLOG((false, "(ignored)" ));
-		return;
+	return;
 #else
 	if( p->pid != C.AESpid ){
 		BLOG((false, "(ignored)" ));
@@ -1450,7 +1450,8 @@ k_main(void *dummy)
 	setup_common();
 
 	/* join process group of loader */
-	p_setpgrp(0, loader_pgrp);
+	/* this breaks shutdown on my TT - XaAES has pgrp 0 now */
+	//p_setpgrp(0, loader_pgrp);
 
 	c_naes = NULL;
 
@@ -1740,12 +1741,7 @@ k_main(void *dummy)
 		cancelroottimeout(C.sdt);
 	C.sdt = NULL;
 leave:
-	if (wait)
-	{
-		display(/*press_any_key*/"press any key to continue ...");
-		_c_conin();
-	}
-	k_exit();
+	k_exit(wait);
 
 	kthread_exit(0);
 }
@@ -1805,7 +1801,7 @@ restore_sigs(void)
 }
 
 static void
-k_exit(void)
+k_exit(int wait)
 {
 //	display("k_exit");
 	C.shutdown |= QUIT_NOW;
@@ -1836,6 +1832,11 @@ k_exit(void)
 
 // 	display("k_shutdown..");
 	k_shutdown();
+	if (wait)
+	{
+		display(/*press_any_key*/"press any key to continue ...");
+		_c_conin();
+	}
 // 	display("done");
 
 	if (c_naes)
@@ -1868,26 +1869,25 @@ k_exit(void)
 	 */
 	PRCLOSE;
 
-	BLOG((false, "Closing alert pipe"));
 	if (C.alert_pipe > 0)
 		f_close(C.alert_pipe);
-
+#if 0
 	{
 	struct proc *lp = pid2proc( loader_pid );
-	BLOG((false, "Waking up loader: pid=%ld wait_cond=%lx wait_q=%d", loader_pid, lp->wait_cond, lp->wait_q));
+	BLOG((false, "Waking up loader: pid=%ld:%lx wait_cond=%lx wait_q=%d", loader_pid, &loader_pid, lp->wait_cond, lp->wait_q));
 	/* wakeup loader */
 
-	//wake(WAIT_Q, (long)&loader_pid);
 	wake(WAIT_Q, lp->wait_cond );
 	}
-
+#else
+	wake(WAIT_Q, (long)&loader_pid);
+#endif
 	/* XXX todo -> module_exit */
 // 	display("kthread_exit...");
 
 	if (C.KBD_dev > 0)
 	{
 		long r;
-		BLOG((false, "Closing kbd dev:%ld", C.KBD_dev));
 		r = f_cntl(C.KBD_dev, (long)&KBD_dev_sg, TIOCSETN);
 		KERNEL_DEBUG("fcntl(TIOCSETN) -> %li", r);
 

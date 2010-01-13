@@ -77,7 +77,7 @@
 
 struct xa_module_api xam_api;
 
- STATIC char *xaaes_sysfile(const char *);
+STATIC char *xaaes_sysfile(const char *);
 
 static OBSPEC * _cdecl
 api_object_get_spec(OBJECT *ob)
@@ -570,7 +570,20 @@ k_init(unsigned long vm)
 			BLOG((false, "could not determine fvdi version"));
 #endif
 	}
+	/* try to open virtual wk - necessary when physical wk is already open
+	 * ? how to know if physical wk is open and its handle without AES?
+	 */
+	if( C.fvdi_version == 0 /*&& cfg.videomode == 0*/ )
+	{
+		v->handle = 0;
+		C.P_handle = 0;
+		set_wrkin(work_in, cfg.videomode);
+		BLOG((0,"1st v_opnvwk" ));
+		v_opnvwk(work_in, &v->handle, work_out);
+		BLOG((0,"->%d, wh=%d/%d %d colors", v->handle, work_out[0], work_out[1], work_out[13]));
 
+	}
+	if ( v->handle <= 0 )
 	{
 		short mode = 1;
 		long vdo, r;
@@ -579,7 +592,9 @@ k_init(unsigned long vm)
 		if (r != 0)
 			vdo = 0;
 
-		if (cfg.videomode)
+		BLOG((0,"k_init:vdo=%ld vm=%lx video=%d", vdo, vm, cfg.videomode ));
+
+		if ( cfg.videomode)
 		{
 #ifndef ST_ONLY
 			if ((vm & 0x80000000) && mvdi_api.dispatch)
@@ -711,8 +726,9 @@ k_init(unsigned long vm)
 			sc = s_system(S_CTRLCACHE, -1L, 0L);
 			s_system(S_CTRLCACHE, sc & ~3, cm);
 			set_wrkin(work_in, mode);
-			BLOG((0,"k_init: v_opnwk()" ));
+			BLOG((0,"k_init: v_opnwk() mode=%d", mode ));
 			v_opnwk(work_in, &(C.P_handle), work_out);
+			BLOG((0,"k_init: v_opnwk() handle=%d", C.P_handle ));
 			s_system(S_CTRLCACHE, sc, cm);
 		}
 #else
@@ -731,16 +747,17 @@ k_init(unsigned long vm)
 		 * We need to get rid of the cursor
 		 */
 		v_exit_cur(C.P_handle);
-	}
 
-	get_syspalette(C.P_handle, screen.palette);
+		get_syspalette(C.P_handle, screen.palette);
 // 	set_defaultpalette(C.P_handle);
-	/*
-	 * Open us a virtual workstation for XaAES to play with
-	 */
-	v->handle = C.P_handle;
-	set_wrkin(work_in, 1);
-	v_opnvwk(work_in, &v->handle, work_out);
+		/*
+		 * Open us a virtual workstation for XaAES to play with
+		 */
+		//v->handle = C.P_handle;
+
+		set_wrkin(work_in, 1);
+		v_opnvwk(work_in, &v->handle, work_out);
+	}
 
 	if (v->handle == 0)
 	{
@@ -752,6 +769,8 @@ k_init(unsigned long vm)
 	/*
 	 * Setup the screen parameters
 	 */
+	if( C.P_handle == 0 )
+		C.P_handle = v->handle;	/* why is phys-handle used at all? */
 	screen.r.x = screen.r.y = 0;
 	screen.r.w = work_out[0] + 1;
 	screen.r.h = work_out[1] + 1;
@@ -759,7 +778,7 @@ k_init(unsigned long vm)
 	screen.display_type = D_LOCAL;
 	v->screen = screen.r;
 	C.Aes->vdi_settings = v;
-	vs_clip(C.P_handle, 1, (short *)&screen.r);
+	vs_clip(/*C.P_*/v->handle, 1, (short *)&screen.r);
 	(*v->api->set_clip)(v, &screen.r);
 
 	(*v->api->f_perimeter)(v, 0);
@@ -774,8 +793,20 @@ k_init(unsigned long vm)
 	vq_extnd(v->handle, 1, work_out);	/* Get extended information */
 	screen.planes = work_out[4];		/* number of planes in the screen */
 
-	//BLOG((0,"lookup-support:%d", work_out[5] ));
+	BLOG((0,"lookup-support:%d, planes:%d", work_out[5], work_out[4] ));
 
+	/* WARNING: This is halfway nonsense! */
+	if( screen.planes > 32 || screen.planes < 1 )
+	{
+		BLOG((1,"planes wrong: %d", screen.planes ));
+		screen.planes = screen.colours >> 8;
+		BLOG((1,"planes now: %d", screen.planes ));
+		if( screen.planes > 32 || screen.planes < 1 )
+		{
+			BLOG((1,"planes still wrong: %d", screen.planes ));
+			return 1;
+		}
+	}
 // 	if (screen.planes > 8)
 // 		set_defaultpalette(v->handle);
 // 	get_syspalette(C.P_handle, screen.palette);
@@ -861,18 +892,20 @@ k_init(unsigned long vm)
 	}
 // 	set_syspalette(C.P_handle, screen.palette);
 // 	set_syscolor();
-
+#define RSCFILE_VERSION	"0.0.9"
 	/*
 	 * Version check the aessys resouce
 	 */
 	{
 		OBJECT *about = ResourceTree(C.Aes_rsc, ABOUT_XAAES);
+		int gt = 0;
 
 		if ((ob_count_objs(about, 0, -1) < RSC_VERSION)   ||
 		     about[RSC_VERSION].ob_type != G_TEXT     ||
-		    (strcmp(object_get_tedinfo(about + RSC_VERSION, NULL)->te_ptext, "0.0.9")))
+		    ( gt = strcmp(object_get_tedinfo(about + RSC_VERSION, NULL)->te_ptext, RSCFILE_VERSION)))
 		{
-			display(/*00000004*/"ERROR: Outdated AESSYS resource file (%s) - update to recent version!", cfg.rsc_name);
+			char *s = gt > 0 ? "too new" : gt < 0 ? "too old" : "wrong";
+			display("ERROR: %s resource file (%s) - use version "RSCFILE_VERSION"!", s, cfg.rsc_name);
 // 			display("       also make sure you read CHANGES.txt!!");
 			return -1;
 		}
@@ -886,17 +919,18 @@ k_init(unsigned long vm)
 
 	if (!(*C.Aes->objcr_module->init_module)(&xam_api, &screen, cfg.gradients))
 	{
-		BLOG((false, "object render returned NULL"));
+		BLOG((true, "object render returned NULL"));
 		return -1;
 	}
 	if (init_client_objcrend(C.Aes))
-	{	BLOG((false, "Opening object theme failed"));
+	{
+		BLOG((true, "Opening object theme failed"));
 		return -1;
 	}
 
 	if (!(C.Aes->wtheme_handle = (*C.Aes->xmwt->init_module)(&xam_api, &screen, (char *)&cfg.widg_name, cfg.gradients)))
 	{
-		display("Window widget module returned NULL");
+		BLOG((true,"Window widget module returned NULL"));
 		return -1;
 	}
 
