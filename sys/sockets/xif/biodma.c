@@ -189,11 +189,11 @@ lance_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, shor
 	}
 	
 	len = nbuf->dend - nbuf->dstart;
-	memcpy ((uchar *)((ulong)dma_buffer.data | 0xFF000000l), nbuf->dstart, len);
+	memcpy ((uchar *)((ulong)dma_buffer.data.bytes | 0xFF000000l), nbuf->dstart, len);
 	if (len < MIN_LEN)
 		len = MIN_LEN;
 	buf_deref (nbuf, BUF_NORMAL);
-	if ((j = sendpkt (lance_target, dma_buffer.data, len)))
+	if ((j = sendpkt (lance_target, dma_buffer.data.bytes, len)))
 		nif->out_errors++;
 	else
 	{
@@ -280,12 +280,12 @@ driver_init (void)
 		 "(%02x:%02x:%02x:%02x:%02x:%02x) on target %d\r\n",
 		"1.1",
 		if_lance.unit,
-		if_lance.hwlocal.addr[0],
-		if_lance.hwlocal.addr[1],
-		if_lance.hwlocal.addr[2],
-		if_lance.hwlocal.addr[3],
-		if_lance.hwlocal.addr[4],
-		if_lance.hwlocal.addr[5],
+		if_lance.hwlocal.adr.bytes[0],
+		if_lance.hwlocal.adr.bytes[1],
+		if_lance.hwlocal.adr.bytes[2],
+		if_lance.hwlocal.adr.bytes[3],
+		if_lance.hwlocal.adr.bytes[4],
+		if_lance.hwlocal.adr.bytes[5],
 		lance_target);
 	c_conws (message);
 	
@@ -364,8 +364,8 @@ lance_probe (struct netif *nif)
 		return -1;
 	}
 	
-	memcpy (nif->hwbrcst.addr, "\377\377\377\377\377\377", ETH_ALEN);
-	memcpy (nif->hwlocal.addr, hwaddr, ETH_ALEN);
+	memcpy (nif->hwbrcst.adr.bytes, "\377\377\377\377\377\377", ETH_ALEN);
+	memcpy (nif->hwlocal.adr.bytes, hwaddr, ETH_ALEN);
 	
 	send = 1;
 	lance_int (nif);
@@ -384,7 +384,7 @@ lance_probe_c (void)
 	register volatile ulong *address;
 	COOKIE *cookie = COOKIEBASE;
 	
-	address = (ulong *)dma_buffer.data;
+	address = dma_buffer.data.longs;
 	saveval = *address;
 	*address = 0xFFAA5500l;
 	if (*(ulong *)((ulong)address | 0xFF000000l) == 0xFFAA5500l)
@@ -456,7 +456,7 @@ again:
 			if ((buf = buf_alloc (len+100, 50, BUF_NORMAL)))
 			{
 				buf->dend = buf->dstart + len;
-				memcpy (buf->dstart, (uchar *)((ulong)dma_buffer.data | 0xFF000000l), len);
+				memcpy (buf->dstart, (uchar *)((ulong)dma_buffer.data.bytes | 0xFF000000l), len);
 				if (nif->bpf)
 					bpf_input (nif, buf);
 				if (!if_input (nif, buf, 0, eth_remove_hdr (buf)))
@@ -470,11 +470,11 @@ again:
 		if ((buf = if_dequeue (&nif->snd)))
 		{
 			len = buf->dend - buf->dstart;
-			memcpy ((uchar *)((ulong)dma_buffer.data | 0xFF000000l), buf->dstart, len);
+			memcpy ((uchar *)((ulong)dma_buffer.data.bytes | 0xFF000000l), buf->dstart, len);
 			if (len < MIN_LEN)
 				len = MIN_LEN;
 			buf_deref (buf, BUF_NORMAL);
-			if (sendpkt (lance_target, dma_buffer.data, len))
+			if (sendpkt (lance_target, dma_buffer.data.bytes, len))
 				nif->out_errors++;
 			else
 			{
@@ -561,8 +561,8 @@ inquiry (int target)
 	
 	if (send_first (target, TUR, NORMAL))
 		goto hwaddr;
-	dma_buffer.data[0] = dma_buffer.data[1] = dma_buffer.data[2] = dma_buffer.data[3] = dma_buffer.data[4] = 0;
-	if (send_1_5 (0, dma_buffer.data, NODMA) ||
+	dma_buffer.data.longs[0] = dma_buffer.data.longs[1] = 0;
+	if (send_1_5 (0, dma_buffer.data.bytes, NODMA) ||
 	    timeout (TIMEOUTDMA) ||
 	    (get_status () == 0xFF))
 		goto hwaddr;
@@ -585,8 +585,8 @@ read_hw_addr (int target)
 {
 	if (!send_first (target, GETETH, BIOMODE))
 	{
-		if (!get_1_6 (dma_buffer.data))
-			return ((HADDR *)dma_buffer.data);
+		if (!get_1_6 (dma_buffer.data.bytes))
+			return ((HADDR *)dma_buffer.data.bytes);
 	}
 	return 0;
 }

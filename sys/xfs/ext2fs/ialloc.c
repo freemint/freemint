@@ -174,7 +174,7 @@ ext2_new_inode (COOKIE *dir, long mode, long *err)
 	ext2_gd *tmp;
 	
 	UNIT *u;
-	UNIT *u2;
+	UNIT *u2 = 0;
 	
 	COOKIE *inode;
 	

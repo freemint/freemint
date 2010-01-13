@@ -92,7 +92,7 @@ _crtinit(void)
 	Pterm(m);
 
 notenough:
-	Cconws("Fatal error: insufficient memory\r\n");
+	(void) Cconws("Fatal error: insufficient memory\r\n");
 	Pterm(-1);
 }
 

@@ -2,11 +2,8 @@
 # ifndef _in_h
 # define _in_h
 
-#ifdef __KERNEL__
 # include <mint/ktypes.h>
-#else
-# include <sys/types.h>
-#endif
+# include <mint/endian.h>
 
 
 /* well-defined IP protocols */
@@ -66,7 +63,6 @@ struct sockaddr_in
 	struct in_addr	sin_addr;
 	char		sin_zero[8];
 };
-# define SIN(x)		((struct sockaddr_in *) x)
 
 /* options for use with [s|g]etsockopt' call at the IPPROTO_IP level */
 # define IP_OPTIONS	1
@@ -84,12 +80,5 @@ struct ip_opts
 	struct in_addr	ip_dst;
 	char		ip_opts[40];
 };
-
-/* functions to convert between host and network byte order (big endian) */
-# define ntohl(x)	(x)
-# define ntohs(x)	(x)
-# define htonl(x)	(x)
-# define htons(x)	(x)
-
 
 # endif	/* _in_h */

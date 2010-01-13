@@ -352,8 +352,9 @@ init_core (void)
 # endif
 
 	if (FalconVideo) {
+		short vsm = TRAP_VsetMode(-1);
 		/* the Falcon can tell us the screen size */
-		scrnsize = TRAP_VgetSize(TRAP_VsetMode(-1));
+		scrnsize = TRAP_VgetSize(vsm);
 	} else {
 		struct screen *vscreen;
 
@@ -509,7 +510,6 @@ attach_region (PROC *p, MEMREGION *reg)
 		ALERT ("attach_region: attaching a region to an invalid proc?");
 		return 0;
 	}
-
 retry:
 	for (i = 0; i < mem->num_reg; i++) {
 		if (!mem->mem[i]) {
@@ -520,7 +520,7 @@ retry:
 
 			reg->links++;
 			mark_proc_region (p->p_mem, reg, PROT_P, p->pid);
-
+			DEBUG(("attach_region: reg %d, return loc %lx (%lx)", i, reg->loc, mem->addr[i]));
 			return mem->addr[i];
 		}
 	}
@@ -611,18 +611,22 @@ detach_region_by_addr(struct proc *p, unsigned long block)
 			MEMREGION *m = mem->mem[i];
 
 			assert(m != NULL);
-			assert(m->loc == (long) block);
+			assert(m->loc == block);
 
 			mem->mem[i] = 0;
 			mem->addr[i] = 0;
 			unref_memreg(p, m);
 #if 0
 			m->links--;
-			if (m->links == 0)
+			if (m->links == 0) {
+				TRACE(("detach_region_by_addr: Free region %lx", m));
 				free_region(m);
-			else
+			}  else {
+				TRACE(("detach_region_by_addr: mark region %lx (links %d) PROT_I", m, m->links));
 				/* cause curproc's table to be updated */
 				mark_proc_region(mem, m, PROT_I, p->pid);
+			}
+			TRACE(("detach_region_by_addr: done!"));
 #endif
 			return 0;
 		}
@@ -1872,7 +1876,7 @@ error:
  * MiNT doesn't own or which is virtualized
  */
 static MEMREGION *
-addr2region1 (MMAP map, long addr)
+addr2region1 (MMAP map, unsigned long addr)
 {
 	MEMREGION *r;
 
@@ -1893,7 +1897,7 @@ addr2region1 (MMAP map, long addr)
 	return NULL;
 }
 MEMREGION *
-addr2region (long addr)
+addr2region (unsigned long addr)
 {
 	MEMREGION *r;
 

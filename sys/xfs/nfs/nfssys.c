@@ -690,17 +690,15 @@ nfs_stat64 (fcookie *fc, STAT *stat)
 		stat->rdev	= xattr.rdev;
 		
 		stat->atime.high_time	= 0;
-		stat->atime.time	= XATTRL_TD(xattr,a); //*((long *) &(xattr.atime));
+		stat->atime.time	= XATTRL_TD(xattr,a);
 		stat->atime.nanoseconds	= 0;
 		
 		stat->mtime.high_time	= 0;
 		SHORT2LONG(xattr.mtime, xattr.mdate, stat->mtime.time);
-//		stat->mtime.time	= *((long *) &(xattr.mtime));
 		stat->mtime.nanoseconds	= 0;
 		
 		stat->ctime.high_time	= 0;
 		SHORT2LONG(xattr.ctime, xattr.cdate, stat->ctime.time);
-// 		stat->ctime.time	= *((long *) &(xattr.ctime));
 		stat->ctime.nanoseconds	= 0;
 		
 		stat->size	= xattr.size;
@@ -1183,7 +1181,8 @@ typedef struct
 static long _cdecl
 nfs_opendir (DIR *dirh, int flags)
 {
-	NETFS_STUFF *stuff = (NETFS_STUFF *) &dirh->fsstuff;
+	union { char *c; NETFS_STUFF *nf; long *l; } stuff; stuff.c = dirh->fsstuff;
+	union { long *l; void *v; } ptr;
 	NFS_INDEX *ni = (NFS_INDEX *) dirh->fc.index;
 	
 	if (ROOT_INDEX != ni)
@@ -1194,19 +1193,20 @@ nfs_opendir (DIR *dirh, int flags)
 			return ENOTDIR;
 		}
 		
-		stuff->buffer = kmalloc (MAX_READDIR_LEN + ADD_BUF_LEN);
-		if (!stuff->buffer)
+		stuff.nf->buffer = kmalloc (MAX_READDIR_LEN + ADD_BUF_LEN);
+		if (!stuff.nf->buffer)
 		{
 			DEBUG (("nfs_opendir: out of memory -> ENOMEM"));
 			return ENOMEM;
 		}
 	}
 	else
-		stuff->buffer = NULL;
+		stuff.nf->buffer = NULL;
 	
-	stuff->curr_entry = NULL;
-	*(long *) &stuff->lastcookie[0] = 0L;
-	stuff->eof = 0;
+	stuff.nf->curr_entry = NULL;
+	ptr.v = &stuff.nf->lastcookie[0];
+	*ptr.l = 0L;
+	stuff.nf->eof = 0;
 	dirh->index = 0;
 	
 	TRACE (("nfs_opendir(%s) -> ok", (ni) ? ni->name : "root"));
@@ -1216,13 +1216,15 @@ nfs_opendir (DIR *dirh, int flags)
 static long _cdecl
 nfs_rewinddir (DIR *dirh)
 {
-	NETFS_STUFF *stuff = (NETFS_STUFF *) &dirh->fsstuff;
+	union { char *c; NETFS_STUFF *nf; long *l; } stuff; stuff.c = dirh->fsstuff;
+	union { long *l; void *v; } ptr;
 	
 	if (ROOT_INDEX != (NFS_INDEX *) dirh->fc.index)
 	{
-		stuff->curr_entry = NULL;
-		*(long *) &stuff->lastcookie[0] = 0L;
-		stuff->eof = 0;
+		stuff.nf->curr_entry = NULL;
+		ptr.v = &stuff.nf->lastcookie[0];
+		*ptr.l = 0L;
+		stuff.nf->eof = 0;
 	}
 	
 	dirh->index = 0;
@@ -1582,7 +1584,7 @@ nfs_writelabel (fcookie *dir, const char *name)
 			return EBADARG;
 		
 		strncpy (nfs_label, name, MAX_LABEL);
-		nfs_label[MAX_LABEL + 1] = '\0';
+		nfs_label[MAX_LABEL] = '\0';
 		
 		return E_OK;
 	}

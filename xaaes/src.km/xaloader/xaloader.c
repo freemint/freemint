@@ -78,7 +78,7 @@ loader_init(int argc, char **argv, char **env)
 	 */
 	(void)Pdomain(1);
 
-	Cconws("XaAES loader starting...\r\n");
+	(void)Cconws("XaAES loader starting...\r\n");
 
 	/*
 	 * first make sure we are on FreeMiNT's '/'
@@ -92,18 +92,18 @@ loader_init(int argc, char **argv, char **env)
 	fh = Fopen("/kern/sysdir", O_RDONLY);
 	if (fh < 0)
 	{
-		Cconws("XaAES loader: Fopen(\"/kern/sysdir\") failed!\r\n");
+		(void)Cconws("XaAES loader: Fopen(\"/kern/sysdir\") failed!\r\n");
 		goto error;
 	}
 	r = Fread((int)fh, sizeof(path), path);
 	if (r <= 0)
 	{
-		Cconws("XaAES loader: Fread(\"/kern/sysdir\") failed!\r\n");
+		(void)Cconws("XaAES loader: Fread(\"/kern/sysdir\") failed!\r\n");
 		goto error;
 	}
 	if (r >= sizeof(path))
 	{
-		Cconws("XaAES loader: buffer for Fread(\"/kern/sysdir\") to small!\r\n");
+		(void)Cconws("XaAES loader: buffer for Fread(\"/kern/sysdir\") to small!\r\n");
 		goto error;
 	}
 	Fclose((int)fh);
@@ -156,9 +156,9 @@ loader_init(int argc, char **argv, char **env)
 	r = Dsetpath(path);
 	if (r)
 	{
-		Cconws("XaAES loader: No such directory: \"");
-		Cconws(path);
-		Cconws("\"\r\n");
+		(void)Cconws("XaAES loader: No such directory: \"");
+		(void)Cconws(path);
+		(void)Cconws("\"\r\n");
 		goto error;
 	}
 
@@ -166,7 +166,7 @@ loader_init(int argc, char **argv, char **env)
 	r = Dgetpath(path, 0);
 	if (r)
 	{
-		Cconws("XaAES loader: Dgetpath() failed???\r\n");
+		(void)Cconws("XaAES loader: Dgetpath() failed???\r\n");
 		goto error;
 	}
 
@@ -178,28 +178,28 @@ loader_init(int argc, char **argv, char **env)
 	fh = Fopen(path, O_RDONLY);
 	if (fh < 0)
 	{
-		Cconws("XaAES loader: No such file: \"");
-		Cconws(path);
-		Cconws("\"\r\n");
+		(void)Cconws("XaAES loader: No such file: \"");
+		(void)Cconws(path);
+		(void)Cconws("\"\r\n");
 		goto error;
 	}
 	Fclose((int)fh);
 
-	Cconws("Load kernel module: ");
-	Cconws(path);
-	Cconws("\r\n");
+	(void)Cconws("Load kernel module: ");
+	(void)Cconws(path);
+	(void)Cconws("\r\n");
 
 	fh = Fopen("/dev/km", O_RDONLY);
 	if (fh < 0)
 	{
-		Cconws("XaAES loader: no /dev/km, please update your kernel!\r\n");
+		(void)Cconws("XaAES loader: no /dev/km, please update your kernel!\r\n");
 		goto error;
 	}
 
 	r = Fcntl((int)fh, path, KM_RUN);
 	if (r)
 	{
-		Cconws("XaAES loader: Fcntl(KM_RUN) failed!\r\n");
+		(void)Cconws("XaAES loader: Fcntl(KM_RUN) failed!\r\n");
 		goto error;
 	}
 
@@ -207,7 +207,7 @@ loader_init(int argc, char **argv, char **env)
 	return 0;
 
 error:
-	Cconws("press any key to continue ...\r\n");
-	Cconin();
+	(void)Cconws("press any key to continue ...\r\n");
+	(void)Cconin();
 	return 1;
 }

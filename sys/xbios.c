@@ -424,21 +424,23 @@ sys_b_cursconf (int cmd, int op)
 
 
 long _cdecl
-sys_b_dosound (const char *ptr)
+sys_b_dosound (const char *p)
 {
-	if (!no_mem_prot && ((long) ptr >= 0))
+	union { volatile char *vc; const char *cc; long l; } ptr; ptr.cc = p;
+	if (!no_mem_prot && ptr.l >= 0)
 	{
 		MEMREGION *r;
 
 		/* check that this process has access to the memory
 		 * (if not, the next line will cause a bus error)
 		 */
-		(void)(*((volatile char *) ptr));
+		(void)*ptr.vc;
+		//(void)(*((volatile char *) ptr));
 
 		/* OK, now make sure that interrupt routines will have access,
 		 * too
 		 */
-		r = addr2region ((long) ptr);
+		r = addr2region (ptr.l);// (unsigned long)ptr);
 		if (r && get_prot_mode (r) == PROT_P)
 		{
 			DEBUG (("Dosound: changing protection to Super"));
@@ -446,7 +448,7 @@ sys_b_dosound (const char *ptr)
 		}
 	}
 
-	ROM_Dosound (ptr);
+	ROM_Dosound (ptr.cc);
 
 	return E_OK;
 }

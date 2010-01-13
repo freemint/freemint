@@ -70,7 +70,7 @@
 
 /* define to mark a function as inline: */
 # ifdef __GNUC__
-# define INLINE		static inline
+# define INLINE		static inline __attribute__((always_inline))
 # endif
 
 /* default: */

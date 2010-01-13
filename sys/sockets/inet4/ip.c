@@ -49,7 +49,7 @@ ip_local_addr (ulong dstaddr)
 		}
 	}
 	
-	return ifa ? SIN (&ifa->addr)->sin_addr.s_addr : INADDR_ANY;
+	return ifa ? ifa->adr.in.sin_addr.s_addr : INADDR_ANY;
 }
 
 short
@@ -72,7 +72,7 @@ ip_is_brdcst_addr (ulong addr)
 			return 1;
 		
 		if (nif->flags & IFF_BROADCAST &&
-		    addr == SIN (&ifa->ifu.broadaddr)->sin_addr.s_addr)
+		    addr == ifa->ifu.broadadr.in.sin_addr.s_addr)
 			return 1;
 	}
 	
@@ -91,7 +91,7 @@ ip_is_local_addr (ulong addr)
 	for (nif = allinterfaces; nif; nif = nif->next)
 	{
 		ifa = if_af2ifaddr (nif, AF_INET);
-		if (ifa && addr == SIN (&ifa->addr)->sin_addr.s_addr)
+		if (ifa && addr == ifa->adr.in.sin_addr.s_addr)
 			return 1;
 	}
 	
@@ -115,7 +115,7 @@ ip_chk_addr (ulong addr, struct route *rt)
 	ifa = if_af2ifaddr (rt->nif, AF_INET);
 	if (ifa)
 	{
-		if (addr == SIN (&ifa->addr)->sin_addr.s_addr)
+		if (addr == ifa->adr.in.sin_addr.s_addr)
 			return IPADDR_LOCAL;
 		
 		if (addr == ifa->net ||
@@ -124,7 +124,7 @@ ip_chk_addr (ulong addr, struct route *rt)
 			return IPADDR_BRDCST;
 		
 		if (rt->nif->flags & IFF_BROADCAST &&
-		    addr == SIN (&ifa->ifu.broadaddr)->sin_addr.s_addr)
+		    addr == ifa->ifu.broadadr.in.sin_addr.s_addr)
 			return IPADDR_BRDCST;
 	}
 	
@@ -174,7 +174,7 @@ ip_dst_addr (ulong addr)
 
 		DEBUG (("ip_dst_addr: nif = %s any", ifa ? ifa->ifp->name : "??"));
 
-		return ifa ? SIN (&ifa->addr)->sin_addr.s_addr
+		return ifa ? ifa->adr.in.sin_addr.s_addr
 			   : INADDR_LOOPBACK;
 	}
 	else if (addr == INADDR_BROADCAST)
@@ -187,7 +187,7 @@ ip_dst_addr (ulong addr)
 
 		DEBUG (("ip_dst_addr: nif = %s brcst", ifa ? ifa->ifp->name : "??"));
 
-		return ifa ? SIN (&ifa->ifu.broadaddr)->sin_addr.s_addr
+		return ifa ? ifa->ifu.broadadr.in.sin_addr.s_addr
 			   : INADDR_BROADCAST;
 	}
 	
@@ -304,7 +304,7 @@ ip_output (BUF *buf)
 			return EADDRNOTAVAIL;
 		}
 		
-		iph->saddr = SIN (&ifa->addr)->sin_addr.s_addr;
+		iph->saddr = ifa->adr.in.sin_addr.s_addr;
 	}
 	
 	nbuf2 = ip_brdcst_copy (buf, rt->nif, rt, addrtype);
@@ -413,7 +413,7 @@ ip_send (ulong saddr, ulong daddr, BUF *buf, short proto, short flags, struct ip
 			return EADDRNOTAVAIL;
 		}
 		
-		iph->saddr = SIN (&ifa->addr)->sin_addr.s_addr;
+		iph->saddr = ifa->adr.in.sin_addr.s_addr;
 	}
 	
 	nbuf2 = ip_brdcst_copy (nbuf, rt->nif, rt, addrtype);
