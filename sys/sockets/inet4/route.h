@@ -5,7 +5,7 @@
 # include "global.h"
 
 # include "if.h"
-# include "in.h"
+# include "sockaddr_in.h"
 
 
 # define RT_HASH_SIZE		256
