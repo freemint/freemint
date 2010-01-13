@@ -111,12 +111,12 @@ sendsig(ushort sig)
 		DEBUG(("system process, calling signal handler 0x%lx (%d)(%s) directly", sigact->sa_handler, sig, curproc->name));
 		((void (*)(short)) sigact->sa_handler)(sig);
 		
-		if (sigact->sa_flags & SA_RESET)
+		if (sigact->sa_flags & SA_RESETHAND)
 		{
 			TRACE(("resetting sa_handler"));
 			
 			sigact->sa_handler = SIG_DFL;
-			sigact->sa_flags &= ~SA_RESET;
+			sigact->sa_flags &= ~SA_RESETHAND;
 		}
 		
 		return 0;
@@ -188,12 +188,12 @@ sendsig(ushort sig)
 	/* don't restart FPU communication */
 	call->sfmt = call->fstate[0] = 0;
 	
-	if (sigact->sa_flags & SA_RESET)
+	if (sigact->sa_flags & SA_RESETHAND)
 	{
 		TRACE(("resetting sa_handler"));
 		
 		sigact->sa_handler = SIG_DFL;
-		sigact->sa_flags &= ~SA_RESET;
+		sigact->sa_flags &= ~SA_RESETHAND;
 	}
 	
 	if (save_context(&newcurrent) == 0)
@@ -493,7 +493,7 @@ exception(ushort sig)
 	DEBUG(("signal #%d raised [syscall_pc 0x%lx, exception_pc 0x%lx]",
 		sig, curproc->ctxt[SYSCALL].pc, curproc->exception_pc));
 	
-	SIGACTION(curproc, sig).sa_flags |= SA_RESET;
+	SIGACTION(curproc, sig).sa_flags |= SA_RESETHAND;
 	raise(sig);
 }
 

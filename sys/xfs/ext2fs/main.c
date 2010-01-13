@@ -27,6 +27,7 @@
 
 # include "ext2sys.h"
 # include "version.h"
+# include "buildinfo/version.h"
 
 
 # define MSG_VERSION	str (VER_MAJOR) "." str (VER_MINOR)
@@ -45,8 +46,8 @@
 # define MSG_BETA	\
 	"\033p WARNING: This is a test version - BETA! \033q\7\r\n"
 
-# define MSG_OLDMINT	\
-	"\033pMiNT too old, this module requires at least a FreeMiNT 1.15!\033q\r\n"
+# define MSG_INCVERS	\
+	"\033pIncorrect MiNT kernel version!\033q\r\n"
 
 # define MSG_BIOVERSION	\
 	"\033pIncompatible FreeMiNT buffer cache version!\033q\r\n"
@@ -56,6 +57,9 @@
 
 # define MSG_FAILURE	\
 	"\7Sorry, module NOT installed!\r\n\r\n"
+
+static int maj_version = MINT_MAJ_VERSION;
+static int min_version = MINT_MIN_VERSION;
 
 FILESYS * init(struct kerinfo *k);
 
@@ -78,9 +82,9 @@ init (struct kerinfo *k)
 	KERNEL_DEBUG ("ext2 (%s): init", __FILE__);
 	
 	/* version check */
-	if (MINT_MAJOR < 1 || (MINT_MAJOR == 1 && MINT_MINOR < 15))
+	if (MINT_MAJOR != maj_version && MINT_MINOR != min_version)
 	{
-		c_conws (MSG_OLDMINT);
+		c_conws (MSG_INCVERS);
 		c_conws (MSG_FAILURE);
 		
 		return NULL;

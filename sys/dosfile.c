@@ -194,12 +194,30 @@ sys_f_close (short fd)
 {
 	struct proc *p = get_curproc();
 	FILEPTR *f;
+	DIR **where, **_where;
 	long r;
 
 	TRACE (("Fclose: %d", fd));
 
 	r = GETFILEPTR (&p, &fd, &f);
 	if (r) return r;
+
+	/* close dirent's for the same FD */
+	where = &p->p_fd->searches;
+	while (*where) {
+		_where = &((*where)->next);
+		if (fd >= MIN_OPEN && (*where)->fd == fd) {
+
+			r = xfs_closedir ((*where)->fc.fs, (*where));
+			release_cookie (&(*where)->fc);
+
+			kfree(*where);
+
+			/* unlink the directory from the chain */
+			*where = *_where;
+		}
+		where = _where;
+	}
 
 	r = do_close (p, f);
 
@@ -246,6 +264,12 @@ sys_f_read (short fd, long count, char *buf)
 	{
 		DEBUG (("Fread: read on a write-only handle"));
 		return EACCES;
+	}
+
+	if (f->flags & O_DIRECTORY)
+	{
+		DEBUG (("Fread(%i): read on a directory", fd));
+		return EISDIR;
 	}
 
 	if (is_terminal (f))
@@ -356,14 +380,10 @@ sys_f_force (short newfd, short oldfd)
 		return EBADF;
 	}
 
-	do_close (get_curproc(), get_curproc()->p_fd->ofiles[newfd]);
-	get_curproc()->p_fd->ofiles[newfd] = fp;
+	do_close (p, p->p_fd->ofiles[newfd]);
 
-	/* set default file descriptor flags */
-	if (newfd >= MIN_OPEN)
-		get_curproc()->p_fd->ofileflags[newfd] = FD_CLOEXEC;
-	else if (newfd >= 0)
-		get_curproc()->p_fd->ofileflags[newfd] = 0;
+	p->p_fd->ofiles[newfd] = fp;
+	p->p_fd->ofileflags[newfd] = 0;
 
 	fp->links++;
 
@@ -377,7 +397,7 @@ sys_f_force (short newfd, short oldfd)
 
 		if (!tty->pgrp)
 		{
-			tty->pgrp = get_curproc()->pgrp;
+			tty->pgrp = p->pgrp;
 			DEBUG (("f_force: assigned tty->pgrp = %i", tty->pgrp));
 
 			if (!(fp->flags & O_NDELAY) && (tty->state & TS_BLIND))
@@ -420,20 +440,6 @@ sys_f_datime (ushort *timeptr, short fd, short wflag)
 			timeptr[0] = (unsigned short)ut;
 		}
 		return r;
-#if 0
-		ulong t = 0;
-		long r;
-
-		if (wflag)
-			t = unixtime (timeptr [0], timeptr [1]) + timezone;
-
-		r = xdd_datime (f, (ushort *) &t, wflag);
-
-		if (!r && !wflag)
-			*(long *) timeptr = dostime (t - timezone);
-
-		return r;
-#endif
 	}
 
 	return xdd_datime (f, timeptr, wflag);
@@ -496,11 +502,6 @@ sys__ffstat_1_12 (struct file *f, XATTR *xattr)
 		xtime_to_local_dos(xattr,m);
 		xtime_to_local_dos(xattr,a);
 		xtime_to_local_dos(xattr,c);
-
-		/* UTC -> localtime -> DOS style */
-// 		*((long *) &(xattr->mtime)) = dostime (*((long *) &(xattr->mtime)) - timezone);
-// 		*((long *) &(xattr->atime)) = dostime (*((long *) &(xattr->atime)) - timezone);
-// 		*((long *) &(xattr->ctime)) = dostime (*((long *) &(xattr->ctime)) - timezone);
 	}
 
 	return ret;
@@ -737,7 +738,7 @@ sys_f_select (ushort timeout, long *rfdp, long *wfdp, long *xfdp)
  * closed one of the handles.
  */
 
-	get_curproc()->wait_cond = (long)wakeselect;		/* flag */
+	p->wait_cond = (long)wakeselect;		/* flag */
 
 retry_after_collision:
 	mask = 1L;
@@ -830,7 +831,7 @@ retry_after_collision:
  * see a profiler...
  *
  */
-	if (!strcmp (get_curproc()->name, "AESSYS")) {
+	if (!strcmp (p->name, "AESSYS")) {
 	/* pointer to gems etv_timer handler */
 		char *foo = *(char **)(lineA0()-0x42);
 		long *bar;
@@ -850,15 +851,15 @@ retry_after_collision:
 		/* no data is ready yet */
 		if (timeout && !t)
 		{
-			t = addtimeout (get_curproc(), (long)timeout, unselectme);
+			t = addtimeout (p, (long)timeout, unselectme);
 			timeout = 0;
 		}
 
 		/* curproc->wait_cond changes when data arrives or the timeout happens */
 		sr = spl7 ();
-		while (get_curproc()->wait_cond == (long)wakeselect)
+		while (p->wait_cond == (long)wakeselect)
 		{
-			get_curproc()->wait_cond = wait_cond;
+			p->wait_cond = wait_cond;
 			spl (sr);
 			/*
 			 * The 0x100 tells sleep() to return without sleeping
@@ -870,12 +871,12 @@ retry_after_collision:
 			 * to wakeselect causing curproc to sleep forever.
 			 */
 			if (sleep (SELECT_Q|0x100, wait_cond))
-				get_curproc()->wait_cond = 0;
+				p->wait_cond = 0;
 			sr = spl7 ();
 		}
-		if (get_curproc()->wait_cond == (long)&select_coll)
+		if (p->wait_cond == (long)&select_coll)
 		{
-			get_curproc()->wait_cond = (long)wakeselect;
+			p->wait_cond = (long)wakeselect;
 			spl (sr);
 			goto retry_after_collision;
 		}
@@ -1110,7 +1111,7 @@ sys_f_fchown (short fd, short uid, short gid)
 			return r;
 		}
 
-		if (xattr.uid != get_curproc()->p_cred->ucr->euid || xattr.uid != uid)
+		if (xattr.uid != p->p_cred->ucr->euid || xattr.uid != uid)
 		{
 			DEBUG (("Ffchown(%i): not the file's owner", fd));
 			return EACCES;
@@ -1327,7 +1328,7 @@ sys_fwritev (short fd, const struct iovec *iov, long niov)
 # ifdef OLDSOCKDEVEMU
 	if (f->dev == &sockdev || f->dev == &sockdevemu)
 # else
-	if (f->dev == &sockdev
+	if (f->dev == &sockdev)
 # endif
 	{
 		struct socket *so = (struct socket *) f->devinfo;
