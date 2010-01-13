@@ -773,8 +773,8 @@ rtl8012_probe (struct netif *nif)
 	 */
 	for (i = 0; i < ETH_ALEN; i++)
 	{
-		nif->hwlocal.addr[i] = address[i];
-		nif->hwbrcst.addr[i] = 0xff;
+		nif->hwlocal.adr.bytes[i] = address[i];
+		nif->hwbrcst.adr.bytes[i] = 0xff;
 	}
 	
 	return 0;
@@ -1116,12 +1116,12 @@ driver_init (void)
 	
 	ksprintf (message, "interface: en%d (%x:%x:%x:%x:%x:%x)\r\n\r\n",
 		if_RTL12.unit,
-		if_RTL12.hwlocal.addr[0],
-		if_RTL12.hwlocal.addr[1],
-		if_RTL12.hwlocal.addr[2],
-		if_RTL12.hwlocal.addr[3],
-		if_RTL12.hwlocal.addr[4],
-		if_RTL12.hwlocal.addr[5]);
+		  if_RTL12.hwlocal.adr.bytes[0],
+		  if_RTL12.hwlocal.adr.bytes[1],
+		  if_RTL12.hwlocal.adr.bytes[2],
+		  if_RTL12.hwlocal.adr.bytes[3],
+		  if_RTL12.hwlocal.adr.bytes[4],
+		  if_RTL12.hwlocal.adr.bytes[5]);
 	
 	c_conws (message);
 	return 0;

@@ -53,7 +53,10 @@ struct moose_data
 	 * iclicks[0] represents the number of clicks that happened for button
 	 * at bit 0 in state (left) and so on ...
 	*/
-	char iclicks[16];	/* Indipendant clicks */
+	union {
+		char chars[16];	/* Indipendant clicks */
+		unsigned long ulongs[4];
+	} iclicks;
 	short dbg1;
 	short dbg2;
 };

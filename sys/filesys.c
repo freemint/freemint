@@ -212,8 +212,10 @@ init_filesys (void)
 	}
 
 	/* get the vector of connected GEMDOS drives */
-	dosdrvs = TRAP_Dsetdrv (TRAP_Dgetdrv ()) | sys_b_drvmap ();
-
+	{
+		short drv = TRAP_Dgetdrv();
+		dosdrvs = TRAP_Dsetdrv(drv) | sys_b_drvmap();
+	}
 
 # ifdef OLDTOSFS
 	xfs_add (&tos_filesys);

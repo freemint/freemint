@@ -234,9 +234,9 @@ int i, bus, id;
 		nif->mtu = ETH_MAX_DLEN;
 		nif->hwtype = HWTYPE_ETH;
 		nif->hwlocal.len = ETH_ALEN;
-		memcpy(nif->hwlocal.addr,macaddr,ETH_ALEN);
+		memcpy(nif->hwlocal.adr.bytes,macaddr,ETH_ALEN);
 		nif->hwbrcst.len = ETH_ALEN;
-		memset(nif->hwbrcst.addr,0xff,ETH_ALEN);
+		memset(nif->hwbrcst.adr.bytes,0xff,ETH_ALEN);
 		nif->snd.maxqlen = IF_MAXQ;
 		nif->rcv.maxqlen = IF_MAXQ;
 
@@ -280,8 +280,8 @@ int i, bus, id;
 
 		ksprintf(message,"%s v%d.%02d (%s%d) (%02x:%02x:%02x:%02x:%02x:%02x) on bus/id %d/%d\r\n",
 				DRIVER_DESC,MAJOR_VERSION,MINOR_VERSION,ETHERNET_NAME,nif->unit,
-				nif->hwlocal.addr[0],nif->hwlocal.addr[1],nif->hwlocal.addr[2],
-				nif->hwlocal.addr[3],nif->hwlocal.addr[4],nif->hwlocal.addr[5],bus,id);
+				nif->hwlocal.adr.bytes[0],nif->hwlocal.adr.bytes[1],nif->hwlocal.adr.bytes[2],
+				nif->hwlocal.adr.bytes[3],nif->hwlocal.adr.bytes[4],nif->hwlocal.adr.bytes[5],bus,id);
 		c_conws(message);
 	}
 

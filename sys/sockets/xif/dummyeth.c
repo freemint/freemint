@@ -183,8 +183,8 @@ dummy_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, shor
 	 * hw or our broadcast address, because we loop the packets
 	 * back only then.
 	 */
-	if (memcmp (hwaddr, nif->hwlocal.addr, ETH_ALEN)
-		&& memcmp (hwaddr, nif->hwbrcst.addr, ETH_ALEN))
+	if (memcmp (hwaddr, nif->hwlocal.adr.bytes, ETH_ALEN) &&
+	    memcmp (hwaddr, nif->hwbrcst.adr.bytes, ETH_ALEN))
 	{
 		/*
 		 * Not for me.
@@ -339,8 +339,8 @@ dummy_config (struct netif *nif, struct ifopt *ifo)
 		 */
 		if (ifo->valtype != IFO_HWADDR)
 			return ENOENT;
-		memcpy (nif->hwlocal.addr, ifo->ifou.v_string, ETH_ALEN);
-		cp = nif->hwlocal.addr;
+		memcpy (nif->hwlocal.adr.bytes, ifo->ifou.v_string, ETH_ALEN);
+		cp = nif->hwlocal.adr.bytes;
 		DEBUG (("dummy: hwaddr is %x:%x:%x:%x:%x:%x",
 			cp[0], cp[1], cp[2], cp[3], cp[4], cp[5]));
 	}
@@ -352,8 +352,8 @@ dummy_config (struct netif *nif, struct ifopt *ifo)
 		 */
 		if (ifo->valtype != IFO_HWADDR)
 			return ENOENT;
-		memcpy (nif->hwbrcst.addr, ifo->ifou.v_string, ETH_ALEN);
-		cp = nif->hwbrcst.addr;
+		memcpy (nif->hwbrcst.adr.bytes, ifo->ifou.v_string, ETH_ALEN);
+		cp = nif->hwbrcst.adr.bytes;
 		DEBUG (("dummy: braddr is %x:%x:%x:%x:%x:%x",
 			cp[0], cp[1], cp[2], cp[3], cp[4], cp[5]));
 	}
@@ -439,8 +439,8 @@ driver_init (void)
 	 * Set interface hardware and broadcast addresses. For real ethernet
 	 * drivers you must get them from the hardware of course!
 	 */
-	memcpy (if_dummy.hwlocal.addr, "\001\002\003\004\005\006", ETH_ALEN);
-	memcpy (if_dummy.hwbrcst.addr, "\377\377\377\377\377\377", ETH_ALEN);
+	memcpy (if_dummy.hwlocal.adr.bytes, "\001\002\003\004\005\006", ETH_ALEN);
+	memcpy (if_dummy.hwbrcst.adr.bytes, "\377\377\377\377\377\377", ETH_ALEN);
 	
 	/*
 	 * Set length of send and receive queue. IF_MAXQ is a good value.

@@ -55,7 +55,11 @@ struct context
 	 * possibility of a context switch in the middle of an I/O handshaking
 	 * exchange.
 	 */
-	unsigned char	fstate[216];	/* FPU internal state */
+	union {
+		unsigned char	bytes[216];	/* FPU internal state */
+		unsigned short  words[108];
+		unsigned long	longs[54];
+	} fstate;
 	unsigned long	fregs[3*8];	/* registers fp0-fp7 */
 	unsigned long	fctrl[3];	/* FPCR/FPSR/FPIAR */
 	char		ptrace;		/* trace exception is pending */

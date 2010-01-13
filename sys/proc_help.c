@@ -132,7 +132,7 @@ copy_mem (struct proc *p)
 {
 	struct user_things *ut;
 	struct memspace *m;
-	void *ptr;
+	union { char *c; void *v; } ptr;
 	int i;
 	
 	TRACE (("copy_mem: pid %i (%lx)", p->pid, p));
@@ -152,9 +152,9 @@ copy_mem (struct proc *p)
 	
 	init_page_table_ptr (m);
 	
-	ptr = kmalloc (m->num_reg * sizeof (void *) * 2);
-	m->mem = ptr;
-	m->addr = ptr + m->num_reg * sizeof (void *);
+	ptr.v = kmalloc (m->num_reg * sizeof (void *) * 2);
+	m->mem = ptr.v;
+	m->addr = (void *)(ptr.c + m->num_reg * sizeof (char *));
 	
 	/* Trampoline. Space is added for user cookie jar */
 
@@ -179,9 +179,9 @@ copy_mem (struct proc *p)
 	TRACE(("copy_mem: ptr=%lx, m->pt_mem = %lx, m->tp_reg = %lx, mp=%s", ptr, m->pt_mem, m->tp_reg, no_mem_prot ? "off":"on"));
 
 #ifdef M68000
-	if (!ptr || !m->tp_reg)
+	if (!ptr.c || !m->tp_reg)
 #else
-	if ((!no_mem_prot && !m->pt_mem) || !ptr || !m->tp_reg)
+	if ((!no_mem_prot && !m->pt_mem) || !ptr.c || !m->tp_reg)
 #endif
 		goto nomem;
 	
@@ -265,7 +265,7 @@ copy_mem (struct proc *p)
 nomem:
 	TRACE (("copy_mem: out of mem!"));
 	if (m->pt_mem) free_page_table_ptr (m);
-	if (ptr) kfree (ptr);
+	if (ptr.c) kfree (ptr.c);
 	if (m->tp_reg) { m->tp_reg->links--; free_region(m->tp_reg); }
 	kfree (m);
 	
@@ -356,15 +356,15 @@ long
 increase_mem(struct memspace *mem)
 {
 	unsigned long size;
-	void *ptr;
+	union { char *c; void *v; } ptr;
 
 	size = (mem->num_reg + NUM_REGIONS) * sizeof(void *);
-	ptr = kmalloc(size * 2);
+	ptr.v = kmalloc(size * 2);
 
-	if (ptr)
+	if (ptr.v)
 	{
-		MEMREGION **newmem = ptr;
-		unsigned long *newaddr = ptr + size;
+		MEMREGION **newmem = ptr.v;
+		unsigned long *newaddr = (void *)(ptr.c + size);
 		int i;
 
 		/* copy over the old address mapping */
@@ -385,13 +385,13 @@ increase_mem(struct memspace *mem)
 		}
 
 		/* free the old tables (carefully for memory protection!) */
-		ptr = mem->mem;
+		ptr.v = mem->mem;
 
 		mem->mem = newmem;
 		mem->addr = newaddr;
 		mem->num_reg += NUM_REGIONS;
 
-		kfree(ptr);
+		kfree(ptr.c);
 
 		return 0;
 	}

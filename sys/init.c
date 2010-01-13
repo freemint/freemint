@@ -93,7 +93,7 @@ boot_print (const char *s)
 	if (intr_done)
 		sys_c_conws(s);
 	else
-		TRAP_Cconws (s);
+		(void)TRAP_Cconws (s);
 }
 
 void
@@ -686,13 +686,13 @@ init (void)
 		rootproc->ctxt[SYSCALL].regs[r] = 0;
 	}
 
-	rootproc->ctxt[CURRENT].fstate[0] = 0;
+	rootproc->ctxt[CURRENT].fstate.bytes[0] = 0;
 	rootproc->ctxt[CURRENT].pc = (long) mint_thread;
 	rootproc->ctxt[CURRENT].usp = rootproc->sysstack;
 	rootproc->ctxt[CURRENT].ssp = rootproc->sysstack;
 	rootproc->ctxt[CURRENT].term_vec = (long) rts;
 
-	rootproc->ctxt[SYSCALL].fstate[0] = 0;
+	rootproc->ctxt[SYSCALL].fstate.bytes[0] = 0;
 	rootproc->ctxt[SYSCALL].pc = (long) mint_thread;
 	rootproc->ctxt[SYSCALL].usp = rootproc->sysstack;
 	rootproc->ctxt[SYSCALL].ssp = (long)(rootproc->stack + ISTKSIZE);

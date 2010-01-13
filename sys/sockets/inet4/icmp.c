@@ -456,8 +456,7 @@ do_time (BUF *b, struct netif *nif, long len)
 	 * time as RFC 792 says?
 	 */
 	tm = (unixtime (t_gettime (), t_getdate ()) % (60*60*24L)) * 1000L;
-	((long *)icmph->data)[1] =
-	((long *)icmph->data)[2] = tm;
+	icmph->data.longs[1] = icmph->data.longs[2] = tm;
 	icmp_send (ICMPT_TIMERP, 0, IP_SADDR (b), b, 0);
 	
 	return 0;
@@ -503,7 +502,7 @@ do_mask (BUF *b, struct netif *nif, long len)
 		return -1;
 	}
 	
-	((long *)icmph->data)[0] = ifa->subnetmask;
+	icmph->data.longs[0] = ifa->subnetmask;
 	icmp_send (ICMPT_MASKRP, 0, IP_SADDR (b), b, 0);
 	
 	return 0;

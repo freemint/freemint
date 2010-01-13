@@ -92,8 +92,6 @@ struct cmd09_data {		/* returned by 0x09 SCSI command */
 /*
  *	globals
  */
-static char *version = "SCSILINK.LIB " VERSION " by Roger Burrows, Anodyne Software";
-
 static long num_devices = 0L;			/* count of entries in following table */
 static struct {
 	long bus_id;						/* actually 16-bit bus number || 16-bit id number */

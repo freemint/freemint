@@ -370,7 +370,7 @@ sys_p_trace (short request, short pid, void *addr, long data)
 		{
 			MEMREGION *m;
 
-			m = proc_addr2region (t, (long) addr);
+			m = proc_addr2region (t, (unsigned long)addr);
 			if (m)
 			{
 				int prot_hold;
