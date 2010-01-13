@@ -728,6 +728,7 @@ driver_init (void)
 	if(ferror >= 0)
 	{
 		fhandle = (short)(ferror & 0xffff);
+		memset(macbuf, 0, 13);
 		ferror = Fread(fhandle,12,macbuf);
 //		Cconws("Efter FREAD\n\r");
 		if(ferror < 0)

@@ -250,7 +250,7 @@ sys_p_domain (int arg)
 
 	r = p->domain;
 	if (arg >= 0)
-		p->domain = arg ? 1 : 0;
+		p->domain = arg ? DOM_MINT : DOM_TOS;
 
 	return r;
 }
@@ -562,11 +562,17 @@ foundtimer:
  *	 2	max. number of open files per process	{OPEN_MAX}
  *	 3	number of supplementary group id's	{NGROUPS_MAX}
  *	 4	max. number of processes per uid	{CHILD_MAX}
+ *	 5	HZ					{CLK_TCK}
+ *	 6	pagesize				{PAGE_SIZE}
+ *	 7	phys pages				{PHYS_PAGES}
  *
  * unlimited values (e.g. CHILD_MAX) are returned as 0x7fffffffL
  *
  * See also Dpathconf() in dosdir.c.
  */
+
+#define PAGESIZE 8192 /* header file ?? */
+
 long _cdecl
 sys_s_ysconf (int which)
 {
@@ -576,10 +582,13 @@ sys_s_ysconf (int which)
 	{
 		case -1:	return 4;
 		case  0:	return UNLIMITED;
-		case  1:	return 126;
+		case  1:	return 32767; /* matches ARG_MAX */
 		case  2:	return p->p_fd->nfiles;
 		case  3:	return p->p_cred->ucr->ngroups;
 		case  4:	return UNLIMITED;
+		case  5:	return HZ;
+		case  6:	return PAGESIZE;
+		case  7:	return freephysmem() / PAGESIZE;
 		default:	return ENOSYS;
 	}
 }

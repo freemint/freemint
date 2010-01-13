@@ -603,7 +603,7 @@ block_bmap (COOKIE *inode, long block, long nr)
 	
 	if ((block < inode->s->sbi.s_first_data_block) || (block >= inode->s->sbi.s_blocks_count))
 	{
-		ALERT (("Ext2-FS: block_getblk: block (%li) outside range!", block));
+		ALERT (("Ext2-FS: block_bmap: block (%li) outside range!", block));
 		return 0;
 	}
 	
@@ -799,7 +799,7 @@ inode_getblk (COOKIE *inode, long nr, long new_block, long *err, ushort clear_fl
 	
 	if ((nr < 0) || (nr >= EXT2_N_BLOCKS))
 	{
-		ALERT (("Ext2-FS: block_getblk: nr (%li) outside range!", nr));
+		ALERT (("Ext2-FS: inode_getblk: nr (%li) outside range!", nr));
 		return 0;
 	}
 	

@@ -63,8 +63,10 @@ m_open (FILEPTR *f)
 	
 	if (!IS_REG (rip))
 	{
-		DEBUG (("Minix-FS (%c): m_open: not a regular file.", f->fc.dev+'A'));
-		return EACCES;
+		if (!(IS_DIR (rip) && ((f->flags & O_RWMODE) == O_RDONLY))) {
+			DEBUG (("Minix-FS (%c): m_open: not a regular file.", f->fc.dev+'A'));
+			return EACCES;
+		}
 	}
 	
 	/* Set up f_cache structure */
@@ -306,7 +308,10 @@ __fio (FILEPTR *f, char *buf, long len, short mode)
 	}
 	
 	read_inode (f->fc.index, &rip, f->fc.dev);
-	
+
+	if (IS_DIR (rip))
+		return EISDIR;
+
 	if (mode == READ)
 	{
 		todo = MIN (rip.i_size - f->pos, len);
@@ -468,7 +473,8 @@ cont:
 	}
 	
 out:
-	__update_rip (f->fc.index, &rip, f->fc.dev, f->pos, mode);
+	if (!(f->flags & O_NOATIME))
+		__update_rip (f->fc.index, &rip, f->fc.dev, f->pos, mode);
 	
 	return done;	
 }

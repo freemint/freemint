@@ -72,8 +72,11 @@ e_open (FILEPTR *f)
 	
 	if (!EXT2_ISREG (le2cpu16 (c->in.i_mode)))
 	{
-		DEBUG (("Ext2-FS [%c]: e_open: not a regular file (#%ld)", f->fc.dev+'A', c->inode));
-		return EACCES;
+		if (!(EXT2_ISDIR (le2cpu16 (c->in.i_mode)) && 
+		     ((f->flags & O_RWMODE) == O_RDONLY))) {
+			DEBUG (("Ext2-FS [%c]: e_open: not a regular file or read-only directory (#%ld)", f->fc.dev+'A', c->inode));
+			return EACCES;
+		}
 	}
 	
 	if (((f->flags & O_RWMODE) == O_WRONLY)
@@ -392,13 +395,16 @@ e_read (FILEPTR *f, char *buf, long bytes)
 	
 	long todo;		/* characters remaining */
 	long done;		/* characters processed */
-	
+
 	ulong block = f->pos >> EXT2_BLOCK_SIZE_BITS (s);
 	ulong offset = f->pos & EXT2_BLOCK_SIZE_MASK (s);
-	
+
 	DEBUG (("Ext2-FS [%c]: e_read: enter (#%li: pos = %li, bytes = %li [%lu, %lu])", f->fc.dev+'A', c->inode, f->pos, bytes, block, offset));
+
+	if (EXT2_ISDIR (le2cpu16 (c->in.i_mode)))
+		return EISDIR;
 	
-	todo = MIN (c->i_size - f->pos, bytes);
+	todo = MIN ((long)(c->i_size - f->pos), bytes);
 	done = 0;
 	
 	if (todo == 0)
@@ -516,7 +522,10 @@ e_read (FILEPTR *f, char *buf, long bytes)
 	}
 	
 out:
-	if (!((s->s_flags & MS_NOATIME) || (s->s_flags & MS_RDONLY) || IS_IMMUTABLE (c)))
+	if (!((f->flags & O_NOATIME) 
+	     || (s->s_flags & MS_NOATIME) 
+	     || (s->s_flags & MS_RDONLY) 
+	     || IS_IMMUTABLE (c)))
 	{
 		c->in.i_atime = cpu2le32 (CURRENT_TIME);
 		mark_inode_dirty (c);

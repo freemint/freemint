@@ -725,6 +725,7 @@ run_km(const char *path)
 //		sys_c_conin();
 // 		run = (long _cdecl(*)(struct kentry *, const char *))km->b->p_tbase;
 		run = (long _cdecl(*)(struct kentry *, const struct kernel_module *))km->b->p_tbase;
+		km->caller = curproc;
 		err = (*run)(&kentry, km); //km->path);
 	}
 	else
@@ -808,20 +809,73 @@ static long _cdecl
 module_ioctl(FILEPTR *f, int mode, void *buf)
 {
 	long r = ENOSYS;
+	char *p1, *p2;
+	struct kernel_module *km;
 	
 	DEBUG(("module_ioctl [%i]: (%x, (%c %i), %lx)",
 		f->fc.aux, mode, (char)(mode >> 8), (mode & 0xff), buf));
-	
+
+	if( !buf )
+		return EINVAL;
+
+	/* only root may */
+	if( !suser (curproc->p_cred->ucr) )
+		return EPERM;
+
+	/* stored name may have path or not */
+	p1 = strrchr( buf, '/');
+	p2 = strrchr( buf, '\\');
+	if( p2 > p1 )
+		p1 = p2;
+	if( !p1 )
+		p1 = buf;
+	else
+		p1++;
+
 	switch (mode)
 	{
 		case KM_RUN:
 		{
-			r = run_km(buf);
+			/* check if module already loaded */
+			for( km = loaded_modules; km; km = km->next )
+			{
+				DEBUG(("module_ioctl: run_km: looking(%s,%s)", km->name, p1));
+				if( km->class == MODCLASS_KM && !(strcmp( p1, km->name ) && strcmp( buf, km->name )) )
+				{
+					DEBUG(("module_ioctl: module_ioctl:KM_RUN:(%s) already loaded",p1));
+					r = EACCES;	/* ELOCKED? */
+					break;
+				}
+			}
+			if( !km )	/* not found -> run */
+				r = run_km(buf);
+			break;
+		}
+
+		case KM_FREE:
+		{
+			/* check if module loaded */
+			for( km = loaded_modules; km; km = km->next )
+			{
+				DEBUG(("module_ioctl: free_km: looking(%s) cur:%lx caller:%lx", km->name, curproc, km->caller));
+				if( km->class == MODCLASS_KM && km->caller == curproc && !strcmp( buf, km->name ) )
+				{
+					DEBUG(("module_ioctl: free_km(%s)",km->name));
+					free_km( km );
+					r = 0;
+					break;
+				}
+				if( !km )
+				{
+					r = ENOENT;
+					DEBUG(("module_ioctl: free_km(%s) not found",buf));
+				}
+			}
 			break;
 		}
 	}
 	
-	DEBUG (("module_ioctl: return %li", r));
+	DEBUG (("module_ioctl(%d): return %li", mode&0xff, r));
 	return r;
 }
 

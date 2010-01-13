@@ -52,6 +52,9 @@ long _cdecl sys_d_readlabel	(const char *path, char *label, int maxlen);
 long _cdecl sys_d_writelabel 	(const char *path, const char *label);
 long _cdecl sys_d_chroot	(const char *dir);
 long _cdecl sys_f_stat64	(int flag, const char *name, STAT *stat);
+long _cdecl sys_f_chdir		(short fd);
+long _cdecl sys_f_opendir	(short fd);
+long _cdecl sys_f_dirfd		(long handle);
 
 
 # endif /* _dosdir_h */
