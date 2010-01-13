@@ -484,6 +484,21 @@ redraw_timeout = 2000
 #         have any windows, it will get topped.
 #
 #--------------------------------------------------------------------
+#	alt_shortcuts = <value>
+# (Add shortcuts to dialog/alert)
+#
+#     0: no shortcuts
+#     1: shortcuts for alerts
+#     2: shortcuts for dialog
+#     3: 1+2
+# 
+#     default: 3
+# 
+#  example:
+#  app_options = diskus, alt_shortcuts = 0
+# 
+#  For teradesk >= 4 you need: app_options = DESKTOP, alt_shortcuts = 1
+#--------------------------------------------------------------------
 #
 # This default setting will make XaAES look closer to n.aes, but
 # will require precision when grabbing the window border for
@@ -511,9 +526,19 @@ redraw_timeout = 2000
 #
 #app_options = taskbar, inhibit_hide = yes, clwtna = yes
 #
-# These are goot app_otions settings that I (ozk) use atm.
-#app_options = default,thinwork = true, winframe_size = 0, xa_nomove = false
-app_options = aessys, thinwork = true, winframe_size = 2, xa_nomove = false
+#simple
+#app_options = default,xa_nomove = false
+#real
+app_options = default,thinwork = true, winframe_size = 2, xa_nomove = false, clwtna = 0, nolive = true
+app_options = xasys, thinwork = true, winframe_size = 3, xa_nomove = false, clwtna = 1, nolive = false
+app_options = aessys, thinwork = true, winframe_size = 3, xa_nomove = false, clwtna = 1, nolive = false
+#
+
+app_options = toswin2, nohide = true,noleft=true
+#app_options = pc_help, alt_shortcuts = 0
+app_options = diskus, alt_shortcuts = 0
+app_options = DESKTOP, alt_shortcuts = 1
+app_options = jaygrpii, alt_shortcuts = 0
 #app_options = autos401,xa_nomove = true
 #app_options = ataricq,thinwork = true, winframe_size = 0
 #app_options = jinnee, naesff = true
@@ -575,16 +600,19 @@ app_options = aessys, thinwork = true, winframe_size = 2, xa_nomove = false
 #
 #kill_wo_question = "procalc", "mintsett"
 # 
-#kill_wo_question = "procalc ","mintsett"
+kill_wo_question = "ST-Guide"
 
 #####################################################################
 # clipboard = <path>   # path to clipboard
 # accpath   = <path>   # path from which accs are loaded
-# launcher  = <path>   # path to tos program launcher
+# launchpath = <path>   # initial path for launcher
 #
 clipboard = c:\clipbrd\
 accpath   = c:\
-launpath  = i:\usr\gem
+launchpath  = u:\usr\gem
+#####################################################################
+# define external snapshot-program to be executed if xaaesnap is not loaded
+#snapshot=u:/usr/local/bin/snapshot
 
 #####################################################################
 # widgets  = <file>
@@ -653,7 +681,8 @@ filters = *.*, *.[atpg]*, *.[chs]*, *.l*, *.o*
 #run <path>\<application>
 #run u:\opt\taskbar\taskbar.prg
 #run u:\c\system\strngsrv\strngsrv.prg
-#run u:\opt\toswin2\toswin2.app
+
+run u:\usr\gem\toswin2.app
 
 #####################################################################
 # system shell
@@ -685,5 +714,5 @@ filters = *.*, *.[atpg]*, *.[chs]*, *.l*, *.o*
 #setenv AVSERVER   "DESKTOP "
 #setenv FONTSELECT "DESKTOP "
 #
-#shell = c:\teradesk.350\desktop.prg
-#shell = c:\teradesk.360\desktop.prg
+
+#shell = c:\teradesk\desktop.prg
