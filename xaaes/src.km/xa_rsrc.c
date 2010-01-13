@@ -751,6 +751,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 	RSHDR *hdr = NULL;
 	CICONBLK **cibh = NULL;
 	unsigned long osize = 0, size = 0, extra = 0;
+	unsigned long sz;
 	char *base = NULL, *end = NULL;
 	char *extra_ptr = NULL;
 	struct xa_rscs *rscs = NULL; 
@@ -813,7 +814,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 			extra_ptr = base + fsize + sizeof(RSXHDR);
 		}
 
-		size = kernel_read(f, base, fsize);
+		sz = size = kernel_read(f, base, fsize);
 		kernel_close(f);
 		if (size != fsize)
 		{
@@ -832,6 +833,17 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 		if (hdr->rsh_vrsn & 4)
 		{
 			size = *(unsigned long *)(base + osize);
+		}
+		BLOG((0,"LoadResources:%s: size: (%ld,%ld)", fname, sz, size ));
+		if( size != sz )
+		{
+			DIAG((D_rsrc, client, "LoadResource(): Error loading file (size mismatch)"));
+			BLOG((1,"LoadResources:%s: wrong size (%ld,%ld)!", fname, sz, size ));
+			if (client == C.Aes || client == C.Hlp)
+				kfree(base);
+			else
+				ufree(base);
+			return NULL;
 		}
 		end = base + size;
 		/*
@@ -863,6 +875,15 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 			osize = (size + 1UL) & 0xfffffffeUL;
 			if (hdr->rsh_vrsn & 4)
 				size = *(unsigned long *)(base + osize);
+
+			/*	no chance to check for correct rsc-size if loaded from memory!
+			BLOG((0,"LoadResources:%s: size (%ld,%ld)!", fname, sz, size ));
+			if( size > sz )
+			{
+				BLOG((1,"LoadResources:%s: wrong size (%ld,%ld)!", fname, sz, size ));
+				return NULL;
+			}
+			*/
 			client->rsct++;
 			rscs = list_resource(client, base, 0);
 			end = base + size;
@@ -979,7 +1000,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 	fix_objects(client, rscs, cibh, vdih, base, (OBJECT *)(base + hdr->rsh_object), hdr->rsh_nobs);
 
 	fix_trees(client, base, (OBJECT **)(base + hdr->rsh_trindex), hdr->rsh_ntree, designWidth, designHeight);
-	
+
 	return (RSHDR *)base;
 }
 
