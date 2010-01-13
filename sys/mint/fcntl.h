@@ -47,7 +47,7 @@
 # define O_EXEC		0x00000003	/* execute file; used by kernel only */
 # endif
 
-/* 0x04 is for future expansion */
+# define O_NOATIME	0x00000004	/* Do not set atime.  */
 # define O_APPEND	0x00000008	/* all writes go to end of file */
 
 /* file sharing modes (not POSIX) */
@@ -64,6 +64,8 @@
 # define O_CREAT	0x00000200	/* create new file if needed */
 # define O_TRUNC	0x00000400	/* truncate file to 0 bytes if it does exist */
 # define O_EXCL		0x00000800	/* error if file exists */
+
+# define O_DIRECTORY	0x00010000	/* a directory */
 
 # if 0
 /* XXX missing */

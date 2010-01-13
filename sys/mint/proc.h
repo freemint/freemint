@@ -94,7 +94,7 @@ struct memspace
 
 # define STACK_MAGIC	0xfedcba98UL
 				/* magic for the stack barrier */
-# define PNAMSIZ	8	/* no. of characters in a process name */
+# define PNAMSIZ	32	/* no. of characters in a process name */
 
 # define DOM_TOS	0	/* TOS process domain */
 # define DOM_MINT	1	/* MiNT process domain */

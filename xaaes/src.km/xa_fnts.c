@@ -181,7 +181,7 @@ callout_display(struct xa_fnts_item *f, short vdih, long pt, long ratio, RECT *c
 
 				act.sa_handler	= u->sighand_p;
 				act.sa_mask	= 0xffffffff;
-				act.sa_flags	= SA_RESET;
+				act.sa_flags	= SA_RESETHAND;
 
 				p_sigaction(SIGUSR2, &act, &oact);
 				DIAGS(("raise(SIGUSR2)"));

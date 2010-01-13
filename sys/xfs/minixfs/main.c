@@ -15,6 +15,10 @@
 # include "inode.h"
 # include "zone.h"
 # include "version.h"
+# include "buildinfo/version.h"
+
+static int maj_version = MINT_MAJ_VERSION;
+static int min_version = MINT_MIN_VERSION;
 
 
 /*
@@ -39,9 +43,9 @@ init (struct kerinfo *k)
 	c_conws ("½ " __DATE__ " by Frank Naumann.\r\n\r\n");
 	
 	/* check MiNT version */
-	if ((k->maj_version < 1) || (k->maj_version == 1 && k->min_version < 15))
+	if (MINT_MAJOR != maj_version && MINT_MINOR != min_version)
 	{
-		c_conws ("\033pThis version requires at least FreeMiNT 1.15!\033q\r\n");
+		c_conws ("\033pIncorrect MiNT kernel version!\033q\r\n");
 		c_conws ("\7Minix-FS not installed.\r\n\r\n");
 		return NULL;
 	}

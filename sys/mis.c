@@ -1397,7 +1397,7 @@ shell(void *arg)
 	char *lbuff;
 	long r;
 
-	(void)sys_p_domain(1);			/* switch to MiNT domain */
+	(void)sys_p_domain(DOM_MINT);		/* switch to MiNT domain */
 	(void)sys_f_force(STDERR, -1);		/* redirect the stderr to console */
 	(void)sys_p_umask(SHELL_UMASK);		/* files created should be rwxr-xr-x */
 

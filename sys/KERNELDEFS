@@ -105,7 +105,7 @@ KERNELDEFS = -DMILAN -DM68040
 endif
 
 ifeq ($(kernel),ara)
-MINT = mint.prg
+MINT = mintara.prg
 CPU  = 020-60
 KERNELDEFS = -DARANYM -DM68040 -DWITH_HOSTFS -DBOOTSTRAPABLE -DC_ONLY
 MODULEDIRS = xfs/hostfs
