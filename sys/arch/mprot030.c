@@ -104,7 +104,9 @@
 #define MP_DEBUG(x)
 #endif
 
+#ifdef DEBUG_INFO
 static void _dump_tree (long_desc tbl, int level);
+#endif
 
 /*
  * You can turn this whole module off, and the stuff in context.s,
@@ -1016,6 +1018,7 @@ mem_prot_special(PROC *proc)
 
 #include "mprot.x"
 
+#ifdef DEBUG_INFO
 /*----------------------------------------------------------------------------
  * DEBUGGING SECTION
  *--------------------------------------------------------------------------*/
@@ -1065,6 +1068,7 @@ _dump_tree(long_desc tbl, int level)
 	}
     }
 }
+#endif
 
 static const char modesym[] = { 'p', 'g', 's', 'r', 'i' };
 

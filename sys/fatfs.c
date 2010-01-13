@@ -926,7 +926,6 @@ typedef struct
 	long	real_index;	/* index there normal & vfat point */
 	UNIT	*u;		/* the locked UNIT */
 	_DIR	*info;		/* points to the current _DIR */
-
 } oDIR;
 
 /* extended open file descriptor */
@@ -3916,9 +3915,9 @@ search_cookie (COOKIE *dir, COOKIE **found, const char *name, int mode)
 			 *	and to keep consistent behavour, we need to do
 			 *	the same all over the place.
 			 */
-			short mode = is_short(name, VFAT(dir->dev) ? MSDOS_TABLE : GEMDOS_TABLE);
+			short shortmode = is_short(name, VFAT(dir->dev) ? MSDOS_TABLE : GEMDOS_TABLE);
 			
-			if (!mode && !VFAT(dir->dev))
+			if (!shortmode && !VFAT(dir->dev))
 			{
 				char fat_name[FAT_NAMEMAX];
 				
@@ -6818,14 +6817,16 @@ static long _cdecl
 fatfs_opendir (DIR *dirh, int flags)
 {
 	COOKIE *c = (COOKIE *) dirh->fc.index;
-	oDIR *dir = (oDIR *) dirh->fsstuff;
+	oDIR dir;
 	long r;
 
 	UNUSED (flags);
 
 	dirh->index = 0;
 
-	r = __opendir (dir, c->stcl, c->dev);
+	memcpy(&dir, dirh->fsstuff, sizeof(oDIR));
+
+	r = __opendir (&dir, c->stcl, c->dev);
 	if (!r)
 		c->links++;
 
@@ -7067,8 +7068,9 @@ fatfs_writelabel (fcookie *dir, const char *name)
 
 	if (r == E_OK)
 	{
+		register union { const char *cc; const unsigned char *c; } nameptr; nameptr.cc = name;
 		register const char *table = DEFAULT_T (dir->dev);
-		register const uchar *src = (uchar *)name;
+		register const uchar *src = nameptr.c;
 		register char *dst = odir.info->name;
 		register long i;
 
@@ -8173,6 +8175,8 @@ fatfs_open (FILEPTR *f)
 static long _cdecl
 fatfs_write (FILEPTR *f, const char *buf, long bytes)
 {
+	union { const char *cc; char *c; } bufptr; bufptr.cc = buf;
+	
 	FAT_DEBUG (("fatfs_write [%s]: enter (bytes = %li)", ((COOKIE *) f->fc.index)->name, bytes));
 
 	if ((((FILE *) f->devinfo)->mode & O_RWMODE) == O_RDONLY)
@@ -8182,7 +8186,7 @@ fatfs_write (FILEPTR *f, const char *buf, long bytes)
 	}
 
 	FAT_DEBUG (("fatfs_write: leave return __FIO ()"));
-	return __FIO (f, (char *) buf, bytes, WRITE);
+	return __FIO (f, bufptr.c, bytes, WRITE);
 }
 
 static long _cdecl

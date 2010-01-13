@@ -19,7 +19,10 @@ typedef struct			/* DMA buffer structure for reading */
 {
 	u_short	header;		/* Intel format! */
 	u_short	length;		/* Intel format! */
-	u_char	data[2044];	/* data buffer   */
+	union {
+		u_char	bytes[2044];	/* data buffer   */
+		u_long  longs[510];
+	} data;
 } DMABUFFER;
 
 #define MIN_LEN 60

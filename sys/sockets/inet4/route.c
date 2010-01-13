@@ -279,14 +279,14 @@ route_ioctl (short cmd, long arg)
 	if (p_geteuid ())
 		return EACCES;
 	
-	if (rte->rt_dst.sa_family != AF_INET)
+	if (rte->dst.sa.sa_family != AF_INET)
 	{
 		DEBUG (("route_ioctl: dst not AF_INET"));
 		return EAFNOSUPPORT;
 	}
 	
 	flags = rte->rt_flags;
-	net = SIN (&rte->rt_dst)->sin_addr.s_addr;
+	net = rte->dst.in.sin_addr.s_addr;
 	
 	mask = ip_netmask (net);
 	if (mask == 0)
@@ -311,12 +311,12 @@ route_ioctl (short cmd, long arg)
 			
 			if (flags & RTF_GATEWAY)
 			{
-				if (rte->rt_gateway.sa_family != AF_INET)
+				if (rte->gateway.sa.sa_family != AF_INET)
 				{
 					DEBUG (("route_ioctl: gateway not AF_INET"));
 					return EAFNOSUPPORT;
 				}
-				gway = SIN (&rte->rt_gateway)->sin_addr.s_addr;
+				gway = rte->gateway.in.sin_addr.s_addr;
 				nif = if_net2if (gway);
 			}
 			else

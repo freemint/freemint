@@ -302,12 +302,12 @@ driver_init (void)
 		 "(%02x:%02x:%02x:%02x:%02x:%02x) on target %d\r\n",
 		"1.2",
 		if_lance.unit,
-		if_lance.hwlocal.addr[0],
-		if_lance.hwlocal.addr[1],
-		if_lance.hwlocal.addr[2],
-		if_lance.hwlocal.addr[3],
-		if_lance.hwlocal.addr[4],
-		if_lance.hwlocal.addr[5],
+		if_lance.hwlocal.adr.bytes[0],
+		if_lance.hwlocal.adr.bytes[1],
+		if_lance.hwlocal.adr.bytes[2],
+		if_lance.hwlocal.adr.bytes[3],
+		if_lance.hwlocal.adr.bytes[4],
+		if_lance.hwlocal.adr.bytes[5],
 		lance_target);
 	c_conws (message);
 	
@@ -434,8 +434,8 @@ lance_probe (struct netif *nif)
 		return -1;
 	}
 	
-	memcpy (nif->hwbrcst.addr, "\377\377\377\377\377\377", ETH_ALEN);
-	memcpy (nif->hwlocal.addr, hwaddr, ETH_ALEN);
+	memcpy (nif->hwbrcst.adr.bytes, "\377\377\377\377\377\377", ETH_ALEN);
+	memcpy (nif->hwlocal.adr.bytes, hwaddr, ETH_ALEN);
 	
 	UNLOCK;
 	return(0);

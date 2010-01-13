@@ -59,7 +59,11 @@ struct icmp_dgram
 		ulong		redir_gw; /* ICMPT_REDIR, gateway address */
 		long		zero;	/* must be zero */
 	} u;
-	char		data[0];	/* start of data */
+	union
+	{
+		char		bytes[0];	/* start of data */
+		long		longs[0];
+	} data;
 };
 
 long	icmp_errno (short, short);

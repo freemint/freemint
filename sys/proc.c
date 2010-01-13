@@ -140,14 +140,15 @@ init_proc(void)
 	rootproc->p_mem->memflags = F_PROT_S; /* default prot mode: super-only */
 	rootproc->p_mem->num_reg = NUM_REGIONS;
 	{
+		union { char *c; void *v; } ptr;
 		unsigned long size = rootproc->p_mem->num_reg * sizeof(void *);
-		void *ptr = kmalloc(size * 2);
+		ptr.v = kmalloc(size * 2);
 		/* make sure kmalloc was successful */
-		assert(ptr);
-		rootproc->p_mem->mem = ptr;
-		rootproc->p_mem->addr = ptr + size;
+		assert(ptr.v);
+		rootproc->p_mem->mem = ptr.v;
+		rootproc->p_mem->addr = (void *)(ptr.c + size);
 		/* make sure it's filled with zeros */
-		mint_bzero(ptr, size * 2L); 
+		mint_bzero(ptr.c, size * 2L); 
 	}
 	rootproc->p_mem->base = _base;
 	

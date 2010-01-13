@@ -99,7 +99,7 @@ masq_ip_input (struct netif *nif, BUF *buf)
 	if (rt)
 	{
 		addrtype = ip_chk_addr (iph->daddr, rt);
-		in = (struct sockaddr_in *)(&(if_af2ifaddr (rt->nif, AF_INET)->addr));
+		in = &(if_af2ifaddr(rt->nif, AF_INET)->adr.in);
 		localaddr = in->sin_addr.s_addr;
 		route_deref (rt);
 	}
