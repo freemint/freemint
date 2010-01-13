@@ -656,7 +656,7 @@ get_hwaddr (struct hwaddr *hwaddr, struct sockaddr *sockaddr, short *type)
 	    shw->shw_len <= sizeof (hwaddr->adr.bytes))
 	{
 		hwaddr->len = shw->shw_len;
-		memcpy (hwaddr->adr.bytes, shw->shw_addr, shw->shw_len);
+		memcpy (hwaddr->adr.bytes, shw->shw_adr.bytes, shw->shw_len);
 		*type = shw->shw_type;
 		
 		return 0;
@@ -673,7 +673,7 @@ put_hwaddr (struct hwaddr *hwaddr, struct sockaddr *sockaddr, short type)
 	shw->shw_family = AF_LINK;
 	shw->shw_type = type;
 	shw->shw_len = hwaddr->len;
-	memcpy (shw->shw_addr, hwaddr->adr.bytes, MIN (sizeof (shw->shw_addr), hwaddr->len));
+	memcpy (shw->shw_adr.bytes, hwaddr->adr.bytes, MIN (sizeof (shw->shw_adr), hwaddr->len));
 	
 	return 0;
 }

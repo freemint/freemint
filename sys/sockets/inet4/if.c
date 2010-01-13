@@ -575,8 +575,7 @@ if_ioctl (short cmd, long arg)
 			shw->shw_family = AF_LINK;
 			shw->shw_type = nif->hwtype;
 			shw->shw_len = nif->hwlocal.len;
-			memcpy (shw->shw_addr, nif->hwlocal.adr.bytes,
-				MIN (shw->shw_len, sizeof (shw->shw_addr)));
+			memcpy (shw->shw_adr.bytes, nif->hwlocal.adr.bytes, MIN (shw->shw_len, sizeof (shw->shw_adr)));
 			
 			return 0;
 		}
