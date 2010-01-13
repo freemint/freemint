@@ -6,7 +6,7 @@
 
 # include "global.h"
 # include "buf.h"
-# include "in.h"
+# include "sockaddr_in.h"
 
 /* net interface flags */
 # define IFF_UP			0x0001	/* if is up */
@@ -33,7 +33,10 @@ struct sockaddr_hw
 	ushort		shw_family;
 	ushort		shw_type;
 	ushort		shw_len;
-	uchar		shw_addr[8];
+	union {
+		uchar		bytes[8];
+		ulong		lwords[2];
+	}shw_adr;
 };
 
 struct netif;

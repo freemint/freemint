@@ -5,6 +5,7 @@
 # include <mint/ktypes.h>
 # include <mint/endian.h>
 
+# include "sockaddr_in.h"
 
 /* well-defined IP protocols */
 # define IPPROTO_IP	0
@@ -20,12 +21,6 @@
 /* well-known IP ports */
 # define IPPORT_RESERVED	1024
 # define IPPORT_USERRESERVED	5000
-
-/* internet address */
-struct in_addr
-{
-	ulong s_addr;
-};
 
 /* definitions for classifying an internet address */
 # define IN_CLASSA(a)		((((long)(a)) & 0x80000000) == 0)
@@ -54,15 +49,6 @@ struct in_addr
 # define INADDR_LOOPBACK	((ulong) 0x7f000001)
 
 # define IN_LOOPBACKNET		127
-
-/* structure describing an Internet socket address */
-struct sockaddr_in
-{
-	short		sin_family;
-	unsigned short	sin_port;
-	struct in_addr	sin_addr;
-	char		sin_zero[8];
-};
 
 /* options for use with [s|g]etsockopt' call at the IPPROTO_IP level */
 # define IP_OPTIONS	1
