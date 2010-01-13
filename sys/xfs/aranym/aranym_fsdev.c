@@ -1243,6 +1243,7 @@ ara_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newname
 static long _cdecl
 ara_opendir (DIR *dirh, int flags)
 {
+	union { char *c; DIRLST **dir; } ptr; ptr.c = dirh->fsstuff;
 	COOKIE *c = (COOKIE *) dirh->fc.index;
 	DIRLST *l;
 
@@ -1255,7 +1256,7 @@ ara_opendir (DIR *dirh, int flags)
 	l = __dir_next (c, NULL);
 	if (l) l->lock = 1;
 
-	*(DIRLST **) (&dirh->fsstuff) = l;
+	*ptr.dir = l;
 
 	c->links++;
 
@@ -1266,10 +1267,11 @@ ara_opendir (DIR *dirh, int flags)
 static long _cdecl
 ara_readdir (DIR *dirh, char *nm, int nmlen, fcookie *fc)
 {
+	union { char *c; DIRLST **dir; } dirptr; dirptr.c = dirh->fsstuff;
 	DIRLST *l;
 	long r = ENMFILES;
 
-	l = *(DIRLST **) (&dirh->fsstuff);
+	l = *dirptr.dir;
 	if (l)
 	{
 		RAM_DEBUG (("arafs: ara_readdir: %s", l->name));
@@ -1311,7 +1313,7 @@ ara_readdir (DIR *dirh, char *nm, int nmlen, fcookie *fc)
 		l = __dir_next ((COOKIE *) dirh->fc.index, l);
 		if (l) l->lock = 1;
 
-		*(DIRLST **) (&dirh->fsstuff) = l;
+		*dirptr.dir = l;
 	}
 
 	return r;
@@ -1320,16 +1322,17 @@ ara_readdir (DIR *dirh, char *nm, int nmlen, fcookie *fc)
 static long _cdecl
 ara_rewinddir (DIR *dirh)
 {
+	union { char *c; DIRLST **dir; } ptr; ptr.c = dirh->fsstuff;
 	COOKIE *c = (COOKIE *) dirh->fc.index;
 	DIRLST *l;
 
-	l = *(DIRLST **) (&dirh->fsstuff);
+	l = *ptr.dir;
 	if (l) l->lock = 0;
 
 	l = __dir_next (c, NULL);
 	if (l) l->lock = 1;
 
-	*(DIRLST **) (&dirh->fsstuff) = l;
+	*ptr.dir = l;
 
 	dirh->index = 0;
 	return E_OK;
@@ -1338,10 +1341,11 @@ ara_rewinddir (DIR *dirh)
 static long _cdecl
 ara_closedir (DIR *dirh)
 {
+	union { char *c; DIRLST **dir; } ptr; ptr.c = dirh->fsstuff;
 	COOKIE *c = (COOKIE *) dirh->fc.index;
 	DIRLST *l;
 
-	l = *(DIRLST **) (&dirh->fsstuff);
+	l = *ptr.dir;
 	if (l) l->lock = 0;
 
 	c->links--;

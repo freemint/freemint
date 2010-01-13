@@ -295,9 +295,9 @@ XHInqDev (ushort bios_device, ushort *major, ushort *minor, ulong *start_sector,
 }
 
 long
-XHInqDriver (ushort bios_device, char *name, char *version, char *company, ushort *ahdi_version, ushort *maxIPL)
+XHInqDriver (ushort bios_device, char *name, char *ver, char *company, ushort *ahdi_version, ushort *maxIPL)
 {
-	return XHDI (8, bios_device, name, version, company, ahdi_version, maxIPL);
+	return XHDI (8, bios_device, name, ver, company, ahdi_version, maxIPL);
 }
 
 long

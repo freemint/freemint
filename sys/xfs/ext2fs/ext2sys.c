@@ -346,11 +346,6 @@ e_getxattr (fcookie *fc, XATTR *ptr)
 		SET_XATTR_TD(ptr,m,le2cpu32(c->in.i_mtime));
 		SET_XATTR_TD(ptr,a,le2cpu32(c->in.i_atime));
 		SET_XATTR_TD(ptr,c,le2cpu32(c->in.i_ctime));
-#if 0
-		*((long *) &(ptr->mtime)) = le2cpu32 (c->in.i_mtime);
-		*((long *) &(ptr->atime)) = le2cpu32 (c->in.i_atime);
-		*((long *) &(ptr->ctime)) = le2cpu32 (c->in.i_ctime);
-#endif
 	}
 	else
 	{
@@ -358,11 +353,6 @@ e_getxattr (fcookie *fc, XATTR *ptr)
 		SET_XATTR_TD(ptr,m,dostime(le2cpu32(c->in.i_mtime)));
 		SET_XATTR_TD(ptr,a,dostime(le2cpu32(c->in.i_atime)));
 		SET_XATTR_TD(ptr,c,dostime(le2cpu32(c->in.i_ctime)));
-#if 0
-		*((long *) &(ptr->mtime)) = dostime (le2cpu32 (c->in.i_mtime));
-		*((long *) &(ptr->atime)) = dostime (le2cpu32 (c->in.i_atime));
-		*((long *) &(ptr->ctime)) = dostime (le2cpu32 (c->in.i_ctime));
-#endif
 	}
 	
 	DEBUG (("Ext2-FS [%c]: e_getxattr: #%li -> ok", fc->dev+'A', c->inode));
@@ -1337,7 +1327,12 @@ end_rename:
 	return retval;
 }
 
-
+struct dirinfo
+{
+	long pos;
+	long size;
+	long version;
+};
 # define DIR_pos(d)	(*(long *) &(d)->fsstuff [0])
 # define DIR_size(d)	(*(long *) &(d)->fsstuff [4])
 # define DIR_version(d) (*(long *) &(d)->fsstuff [8])
@@ -1345,15 +1340,16 @@ end_rename:
 static long _cdecl
 e_opendir (DIR *dirh, int flag)
 {
+	union { char *c; struct dirinfo *dirinfo; } dirptr; dirptr.c = dirh->fsstuff;
 	COOKIE *c = (COOKIE *) dirh->fc.index;
 	
 	DEBUG (("Ext2-FS [%c]: e_opendir: #%li", dirh->fc.dev+'A', c->inode));
 	
 	c->links++;
 	
-	DIR_pos (dirh) = 0;
-	DIR_size (dirh) = le2cpu32 (c->in.i_size);
-	DIR_version (dirh) = c->in.i_version;
+	dirptr.dirinfo->pos = 0;
+	dirptr.dirinfo->size = le2cpu32 (c->in.i_size);
+	dirptr.dirinfo->version = c->in.i_version;
 	
 	DEBUG (("Ext2-FS [%c]: e_opendir: leave ok", dirh->fc.dev+'A'));
 	return E_OK;
@@ -1362,24 +1358,25 @@ e_opendir (DIR *dirh, int flag)
 static long _cdecl
 e_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 {
+	union { char *c; struct dirinfo *dirinfo; } dirptr; dirptr.c = dirh->fsstuff;
 	COOKIE *c = (COOKIE *) dirh->fc.index;
 	SI *s = super [dirh->fc.dev];
 	ext2_d2 *de;
 	
-	ulong offset = DIR_pos (dirh) & EXT2_BLOCK_SIZE_MASK (s);
+	ulong offset = dirptr.dirinfo->pos & EXT2_BLOCK_SIZE_MASK (s);
 	
 	DEBUG (("Ext2-FS [%c]: e_readdir: #%li", dirh->fc.dev+'A', c->inode));
 	
-	while (DIR_pos (dirh) < DIR_size (dirh))
+	while (dirptr.dirinfo->pos < dirptr.dirinfo->size)
 	{
 		UNIT *u;
 		
-		u = ext2_read (c, DIR_pos (dirh) >> EXT2_BLOCK_SIZE_BITS (s), NULL);
+		u = ext2_read (c, dirptr.dirinfo->pos >> EXT2_BLOCK_SIZE_BITS (s), NULL);
 		if (!u)
 		{
-			ALERT (("Ext2-FS: ext2_readdir: directory #%li contains a hole at offset %li", c->inode, DIR_pos (dirh)));
+			ALERT (("Ext2-FS: ext2_readdir: directory #%li contains a hole at offset %li", c->inode, dirptr.dirinfo->pos));
 			
-			DIR_pos (dirh) += EXT2_BLOCK_SIZE (s) - offset;
+			dirptr.dirinfo->pos += EXT2_BLOCK_SIZE (s) - offset;
 			continue;
 		}
 		
@@ -1388,7 +1385,7 @@ e_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 		 * dirent right now. Scan from the start of the block
 		 * to make sure.
 		 */
-		if (DIR_version (dirh) != c->in.i_version)
+		if (dirptr.dirinfo->version != c->in.i_version)
 		{
 			long i;
 			
@@ -1410,11 +1407,11 @@ e_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 			}
 			
 			offset = i;
-			DIR_pos (dirh) = (DIR_pos (dirh) & ~(EXT2_BLOCK_SIZE_MASK (s))) | offset;
-			DIR_version (dirh) = c->in.i_version;
+			dirptr.dirinfo->pos = (dirptr.dirinfo->pos & ~(EXT2_BLOCK_SIZE_MASK (s))) | offset;
+			dirptr.dirinfo->version = c->in.i_version;
 		}
 		
-		while (DIR_pos (dirh) < DIR_size (dirh) && offset < EXT2_BLOCK_SIZE (s))
+		while (dirptr.dirinfo->pos < dirptr.dirinfo->size && offset < EXT2_BLOCK_SIZE (s))
 		{
 			de = (ext2_d2 *) (u->data + offset);
 			
@@ -1423,8 +1420,7 @@ e_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 				/* On error, skip the DIR_pos to the
                                  * next block.
                                  */
-				DIR_pos (dirh) += (EXT2_BLOCK_SIZE (s)
-					- (DIR_pos (dirh) & EXT2_BLOCK_SIZE_MASK (s)));
+				dirptr.dirinfo->pos += (EXT2_BLOCK_SIZE (s) - (dirptr.dirinfo->pos & EXT2_BLOCK_SIZE_MASK (s)));
 				
 				break;
 			}
@@ -1433,7 +1429,7 @@ e_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 			{
 				register ushort tmp = le2cpu16 (de->rec_len);
 				
-				DIR_pos (dirh) += tmp;
+				dirptr.dirinfo->pos += tmp;
 				
 				/* if we found a entry
 				 * we must leave here
@@ -1507,9 +1503,10 @@ found:
 static long _cdecl
 e_rewinddir (DIR *dirh)
 {
+	union { char *c; struct dirinfo *dirinfo; } dirptr; dirptr.c = dirh->fsstuff;	
 	DEBUG (("Ext2-FS [%c]: e_rewinddir: #%li", dirh->fc.dev+'A', ((COOKIE *) dirh->fc.index)->inode));
 	
-	DIR_pos (dirh) = 0;
+	dirptr.dirinfo->pos = 0;
 	
 	return E_OK;
 }

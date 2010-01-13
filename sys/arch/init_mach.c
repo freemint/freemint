@@ -201,7 +201,8 @@ _getmch (void)
 		return -1;
 	}
 	
-	/* Ozk: If protect_page0 == 0, we check if we should tell the pmmu code
+	/* Odd Skancke:
+	 *	If protect_page0 == 0, we check if we should tell the pmmu code
 	 *	to set SUPER on the first descriptor by placing a value of 1 here.
 	 *	The pmmu code checks for a value of 1 here in which case it sets
 	 *	SUPER. Any other value will make the pmmu code use existing
@@ -210,6 +211,9 @@ _getmch (void)
 	 *	will disable this whole check. That is unimplemented yet. I think
 	 *	this must be a boot option, since pmmu code intializes things
 	 *	long before mint.cnf is read->parsed... or?
+	 * Odd Skancke:
+	 *	Turns out that my CT63 Falcon also needs to have this protected
+	 *	by the pmmu, so we _always_ do it.
 	 */
 	if (protect_page0 == 0 && (mch == MILAN_C || add_info == hades))
 	{

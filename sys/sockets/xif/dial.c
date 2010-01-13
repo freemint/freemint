@@ -209,8 +209,8 @@ dial_timeout (struct netif *nif)
 			{
 				ifa1 = if_af2ifaddr(nif, AF_INET);
 				ifa2 = if_af2ifaddr((struct netif *)nif->data, AF_INET);
-				if (memcmp(ifa1, ifa2, sizeof(ifa1->addr)))
-					memcpy(ifa1, ifa2, sizeof(ifa1->addr));
+				if (memcmp(ifa1, ifa2, sizeof(ifa1->adr)))
+					memcpy(ifa1, ifa2, sizeof(ifa1->adr));
 				else
 					if_states[nif->unit] = online;
 			}
@@ -220,7 +220,7 @@ dial_timeout (struct netif *nif)
 				{
 					while ((buf = if_dequeue (&nif->snd)))
 					{
-						IP_SADDR(buf) = ((struct sockaddr_in *)&ifa1->addr)->sin_addr.s_addr;
+						IP_SADDR(buf) = ifa1->adr.in.sin_addr.s_addr;
 						dial_output(nif, buf, NULL, 0, PKTYPE_IP);
 					}
 				}
@@ -315,8 +315,8 @@ do_enqueue:
 		
 		ifa1 = if_af2ifaddr (nif, AF_INET);
 		ifa2 = if_af2ifaddr ((struct netif *) nif->data, AF_INET);
-		if (memcmp (ifa1, ifa2, sizeof (ifa1->addr)))
-			memcpy (ifa1, ifa2, sizeof(ifa1->addr));
+		if (memcmp (ifa1, ifa2, sizeof (ifa1->adr)))
+			memcpy (ifa1, ifa2, sizeof(ifa1->adr));
 		else
 			if_states[nif->unit] = online;
 		

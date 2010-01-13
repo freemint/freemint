@@ -164,11 +164,11 @@ lance_reset (struct netif *nif)
 	*(rdp + 1) = CSR0;
 	*rdp = CSR0_STOP;
 	
-	if (!memcmp (nif->hwlocal.addr, "\377\377\377\377\377\377", ETH_ALEN))
+	if (!memcmp (nif->hwlocal.adr.bytes, "\377\377\377\377\377\377", ETH_ALEN))
 		return -1; /* hw address not set! */
 	
 	for (i = 0 ; i < ETH_ALEN ; i++)
-		mem->init.haddr.haddr[i ^ 1] = nif->hwlocal.addr[i];
+		mem->init.haddr.haddr[i ^ 1] = nif->hwlocal.adr.bytes[i];
 	
 	mem->init.rdrp.drp_lo = (ushort) offsetof(LNCMEM,rmd[0]);
 # if 0
@@ -331,8 +331,8 @@ lance_config (struct netif *nif, struct ifopt *ifo)
 		 */
 		if (ifo->valtype != IFO_HWADDR)
 			return ENOENT;
-		memcpy (nif->hwlocal.addr, ifo->ifou.v_string, ETH_ALEN);
-		cp = nif->hwlocal.addr;
+		memcpy (nif->hwlocal.adr.bytes, ifo->ifou.v_string, ETH_ALEN);
+		cp = nif->hwlocal.adr.bytes;
 		DEBUG (("LANCE: hwaddr is %02x:%02x:%02x:%02x:%02x:%02x",
 			cp[0], cp[1], cp[2], cp[3], cp[4], cp[5]));
 	}
@@ -346,8 +346,8 @@ lance_config (struct netif *nif, struct ifopt *ifo)
 		 */
 		if (ifo->valtype != IFO_HWADDR)
 			return ENOENT;
-		memcpy (nif->hwbrcst.addr, ifo->ifou.v_string, ETH_ALEN);
-		cp = nif->hwbrcst.addr;
+		memcpy (nif->hwbrcst.adr.bytes, ifo->ifou.v_string, ETH_ALEN);
+		cp = nif->hwbrcst.adr.bytes;
 		DEBUG (("LANCE: braddr is %02x:%02x:%02x:%02x:%02x:%02x",
 			cp[0], cp[1], cp[2], cp[3], cp[4], cp[5]));
 	}
@@ -451,7 +451,7 @@ driver_init (void)
 	
 	if_register (&if_lance);
 	
-	if (!memcmp(&if_lance.hwlocal.addr, "\377\377\377\377\377\377", ETH_ALEN))
+	if (!memcmp(&if_lance.hwlocal.adr.bytes, "\377\377\377\377\377\377", ETH_ALEN))
 		ksprintf (message, "AM7990: driver v%s (%s%d) for %s (no valid hw address!)\r\n",
 			"1.2",
 			__ifname,
@@ -463,12 +463,12 @@ driver_init (void)
                         __ifname,
 			if_lance.unit,
 			lance_type,
-			if_lance.hwlocal.addr[0],
-			if_lance.hwlocal.addr[1],
-			if_lance.hwlocal.addr[2],
-			if_lance.hwlocal.addr[3],
-			if_lance.hwlocal.addr[4],
-			if_lance.hwlocal.addr[5]);
+			if_lance.hwlocal.adr.bytes[0],
+			if_lance.hwlocal.adr.bytes[1],
+			if_lance.hwlocal.adr.bytes[2],
+			if_lance.hwlocal.adr.bytes[3],
+			if_lance.hwlocal.adr.bytes[4],
+			if_lance.hwlocal.adr.bytes[5]);
 	c_conws (message);
 	return 0;
 }
@@ -506,9 +506,9 @@ lance_probe (struct netif *nif)
 # ifdef PAMs_INTERN
 	eemem = (ushort *)RCP_MEMBOT;
 	*(volatile char *)LANCE_EEPROM;
-	memcpy (nif->hwbrcst.addr, "\377\377\377\377\377\377", ETH_ALEN);
+	memcpy (nif->hwbrcst.adr.bytes, "\377\377\377\377\377\377", ETH_ALEN);
 	for (i = 0 ; i < ETH_ALEN; i++)
-		nif->hwlocal.addr[i] = 
+		nif->hwlocal.adr.bytes[i] = 
 			((eemem[i<<1] & 0xf) << 4) | (eemem[(i<<1)+1] & 0xf); 
 	*(volatile char *)LANCE_MEM;
 # endif
@@ -531,9 +531,9 @@ lance_probe (struct netif *nif)
 		for (i = 0; i < ETH_ALEN; i++)
 			mem->init.haddr.haddr[i] = '\377';
 	}		
-	memcpy (nif->hwbrcst.addr, "\377\377\377\377\377\377", ETH_ALEN);
+	memcpy (nif->hwbrcst.adr.bytes, "\377\377\377\377\377\377", ETH_ALEN);
 	for (i = 0 ; i < ETH_ALEN; i++)
-		nif->hwlocal.addr[i ^ 1] = mem->init.haddr.haddr[i];
+		nif->hwlocal.adr.bytes[i ^ 1] = mem->init.haddr.haddr[i];
 # endif
 
     	/*

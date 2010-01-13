@@ -1,5 +1,6 @@
 /* defines and type declarations to access the */
 /* DP8390 of the BIODATA DMA adaptor */
+#ifdef _DIODMA_OBSOLETE_H_
 
 #define u_char  unsigned char
 #define u_short unsigned short
@@ -121,3 +122,5 @@ enum {TUR=0, READPKT=8, WRITEPKT=10, SETSTAT=14, GETETH=15};
 #define TIMEOUTCMD 2 /* ca. 400ms */
 #define TIMEOUTDMA 2000 /* ca. 10s */
 #define TIMEOUTCOUNTER 256 /* Counter for timeout function (in ms) */
+
+#endif

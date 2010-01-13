@@ -309,7 +309,7 @@ get_slot (NFS_INDEX *dir, const char *name, int dom)
 	NFS_INDEX *ni;
 	int i, j, n;
 	long sval;
-	char buf[5];
+	union { char c[5]; long l; } buf;
 	long (*cmp)(const char *, const char *);
 	
 	if (!dir)
@@ -320,11 +320,11 @@ get_slot (NFS_INDEX *dir, const char *name, int dom)
 	
 	/* search through all indices to find an already allocated index
 	 */
-	*(long *) buf = 0L;
-	strncpy (buf, name, 4);
-	buf[4] = 0;
-	strlwr (buf);
-	sval = *(long *) buf;
+	buf.l = 0;
+	strncpy (buf.c, name, 4);
+	buf.c[4] = 0;
+	strlwr (buf.c);
+	sval = buf.l;
 	
 	if (dom == 0)
 		/* set comparision function, kludge for tos-domain */
