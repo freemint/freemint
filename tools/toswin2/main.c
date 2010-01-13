@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
 
 	/* Stimmt die RSC-Version? */
 	rsrc_gaddr(R_TREE, VERSION, &tmp);
-	get_string(tmp, RSC_VERSION, str, sizeof(str));
+	get_string(tmp, RSC_VERSION, str);
 	if (strcmp(str, TWVERSION) != 0)
 	{
 		do_alert(1, 0, "[3][Falsche RSC-Version!|Wrong RSC version!][Exit]");

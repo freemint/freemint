@@ -20,8 +20,11 @@
 #include <support.h>
 #include <limits.h>
 #include <mntent.h>
-
 #include <sys/stat.h>
+
+#ifndef PATH_MAX
+#define PATH_MAX 1024
+#endif
 
 #include "mount.h"
 #include "nfsmnt.h"
