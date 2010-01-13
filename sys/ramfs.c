@@ -2036,8 +2036,10 @@ ram_open (FILEPTR *f)
 
 	if (!IS_REG (c))
 	{
-		RAM_DEBUG (("ramfs: ram_open: leave failure, not a valid file"));
-		return EACCES;
+		if (!(IS_DIR (c) && ((f->flags & O_RWMODE) == O_RDONLY))) {
+			RAM_DEBUG (("ramfs: ram_open: leave failure, not a valid file"));
+			return EACCES;
+		}
 	}
 
 	if (((f->flags & O_RWMODE) == O_WRONLY)
@@ -2277,6 +2279,9 @@ ram_read (FILEPTR *f, char *buf, long bytes)
 	register long chunk;
 	register long done = 0;		/* processed characters */
 
+	if (IS_DIR (c))
+		return EISDIR;
+
 	if (!table)
 	{
 		RAM_DEBUG (("ramfs: ram_read: table doesn't exist!"));
@@ -2368,7 +2373,8 @@ ram_read (FILEPTR *f, char *buf, long bytes)
 		f->pos += bytes;
 	}
 
-	if (!((c->s->flags & MS_NOATIME)
+	if (!((f->flags & O_NOATIME) 
+	        || (c->s->flags & MS_NOATIME)
 		|| (c->s->flags & MS_RDONLY)
 		|| IS_IMMUTABLE (c)))
 	{

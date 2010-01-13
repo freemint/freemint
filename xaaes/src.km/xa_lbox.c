@@ -97,7 +97,7 @@ callout_select(struct xa_lbox_info *lbox, OBJECT *tree, struct lbox_item *item, 
 
 			act.sa_handler	= u->sighand_p;
 			act.sa_mask	= 0xffffffff;
-			act.sa_flags	= SA_RESET;
+			act.sa_flags	= SA_RESETHAND;
 
 			p_sigaction(SIGUSR2, &act, &oact);
 			DIAGS(("raise(SIGUSR2)"));
@@ -155,7 +155,7 @@ callout_set(struct xa_lbox_info *lbox,
 
 			act.sa_handler	= u->sighand_p;
 			act.sa_mask	= 0xffffffff;
-			act.sa_flags	= SA_RESET;
+			act.sa_flags	= SA_RESETHAND;
 
 			p_sigaction(SIGUSR2, &act, &oact);
 			DIAGS(("raise(SIGUSR2)"));
