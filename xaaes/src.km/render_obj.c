@@ -6265,7 +6265,6 @@ init_module(const struct xa_module_api *xmapi, const struct xa_screen *xa_screen
 	{
 		xobj_rshdr = (*api->load_resource)(NULL, resource_name, NULL, DU_RSX_CONV, DU_RSY_CONV, false);
 		(*api->kfree)(resource_name);
-		DIAGS(("xobj_rsc = %lx (%s)", xobj_rsc, xobj_name));
 	}
 	if (!xobj_rshdr)
 	{

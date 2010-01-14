@@ -254,18 +254,17 @@ k_shutdown(void)
 		 */
 // 		v_clsvwk(global_vdi_settings.handle);
 
+		if( C.P_handle > 0 && C.P_handle != v->handle )
+		{
+#ifndef ST_ONLY
+			unsigned long sc = 0, cm = 0;
+			int odbl;
+
 		/*
 		 * Ozk: We switch off instruction, data and branch caches (where available)
 		 *	while the VDI accesses the hardware. This fixes 'black-screen'
 		 *	problems on Hades with Nova VDI.
 		 */
-#ifndef ST_ONLY
-		//if( C.fvdi_version == 0 )
-		if( C.P_handle > 0 && C.P_handle != v->handle )
-		{
-			unsigned long sc = 0, cm = 0;
-			int odbl;
-
 			cm = s_system(S_CTRLCACHE, 0L, -1L);
 			sc = s_system(S_CTRLCACHE, -1L, 0L);
 			BLOG((false, "Get current cpu cache settings... cm = %lx, sc = %lx", cm, sc));
@@ -281,14 +280,11 @@ k_shutdown(void)
 			BLOG((false, "Restore CPU caches"));
 			s_system(S_CTRLCACHE, sc, cm);
 			BLOG((false, "Done shutting down VDI"));
-		}
 #else
-		//if( C.fvdi_version == 0 )
-		{
 			v_enter_cur(C.P_handle);
 			v_clswk(C.P_handle);
-		}
 #endif
+		}
 
 		display("\033e\033H");		/* Cursor enable, cursor home */
 	}

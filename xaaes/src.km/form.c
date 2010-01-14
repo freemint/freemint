@@ -1583,7 +1583,6 @@ do_formwind_msg(
 		if (dy != wt->dy)
 		{
 			draw = true;
-			//BLOG((0,"form_wind: VSLIDE %ld %ld %ld", oh, wh, dy));
 			XA_slider(wind, XAW_VSLIDE, oh, wh, dy);
 		}
 
@@ -1646,9 +1645,7 @@ do_formwind_msg(
 			(*v->api->save_clip)(v, &sc);
 // 			display_window(0, 120, wind, NULL);
 
-			//BLOG((0,"form:display_widget(0, wind, get_widget(wind, XAW_VSLIDE), wind->rect_list.start);" ));
 			display_widget(0, wind, get_widget(wind, XAW_VSLIDE), wind->rect_list.start);
-			//BLOG((0,"dfwm_redraw(wind, widg, wt, clp_p/*NULL*/);"));
 			dfwm_redraw(wind, widg, wt, clp_p/*NULL*/);
 			(*v->api->restore_clip)(v, &sc);
 			showm();

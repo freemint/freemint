@@ -40,6 +40,7 @@
 #include "xa_global.h"
 
 /* define this 1 if vs_color works */
+/* vs_color needs phys-handle??? */
 #define  HAVE_VS_COLOR	0
 
 #include "trnfm.h"

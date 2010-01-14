@@ -133,6 +133,7 @@ about_form_exit(struct xa_client *client,
 /*
  * insert lines of a text-file into a list
  * if first non-white char is '#' line is skipped
+ * line-endings must be unix-style
  *
  * currently used only in about-window
  */
@@ -160,7 +161,7 @@ void file_to_list( SCROLL_INFO *list, char *path, char *fn)
 			if( err <= 0 )
 				break;
 			ebuf[err+offs] = 0;
-			if( offs == 0 && ebuf[offs] == '#' )
+			if( offs == 0 && ebuf[0] == '#' )
 				state = 1;
 			for( p2 = 0, p1 = ebuf, p = ebuf+offs; *p; p++ )
 			{

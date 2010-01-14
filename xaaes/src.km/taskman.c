@@ -388,11 +388,9 @@ void add_window_to_tasklist(struct xa_window *wi, const char *title)
 						/* change title */
 						struct setcontent_text t = { 0 };
 
-						title = wi->wname;
-						if( title && *title )
+						if( wi->wname && wi->wname[0] )
 						{
-							char *tx = wi->wname;
-							t.text = tx;
+							t.text = wi->wname;
 							list->set(list, thiswi, SESET_TEXT, (long)&t, true);
 						}
 					}

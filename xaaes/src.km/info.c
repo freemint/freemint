@@ -3,8 +3,6 @@
  *
  * In non-release-version build status-string
  *
- * file is updated on every build
- *
  */
 
 #include "xa_global.h"

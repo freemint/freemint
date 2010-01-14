@@ -391,6 +391,7 @@ again:
 
 	loader_pid = p_getpid();
 	loader_pgrp = p_getpgrp();
+	BLOG((0,"loader:pgrp=%ld, pid=%ld", loader_pgrp, loader_pid ));
 
 	/* do some sanity checks of the installation
 	 * that are a common source of user problems
@@ -690,8 +691,12 @@ again:
 		p->p_sigmask = 0xffffffffUL;
 
 		while (!(C.shutdown & QUIT_NOW))
+		{
+			BLOG((0,"init:sleep:%lx", &loader_pid));
 			sleep(WAIT_Q, (long)&loader_pid);
+		}
 
+		BLOG((1,"AESSYS kthread exited - C.shutdown = %x", C.shutdown));
 // 		display("AESSYS kthread exited - C.shutdown = %x", C.shutdown);
 
 #if GENERATE_DIAGS

@@ -724,7 +724,6 @@ drag_slide(struct xa_lbox_info *lbox, struct lbox_slide *s)
 {
 	short mb, sx, sy;
 
-	//BLOG((0,"xa_lbox:drag_slide"));
 	check_mouse(lbox->wt->owner, &mb, &sx, &sy);
 
 	if (mb)
@@ -1224,7 +1223,6 @@ XA_lbox_do(enum locks lock, struct xa_client *client, AESPB *pb)
 	CONTROL(1,1,1)
 
 	DIAG((D_lbox, client, "XA_lbox_do, lbox_hand=%lx, obj=%d", pb->addrin[0], pb->intin[0]));
-	//BLOG((0, "XA_lbox_do, lbox_hand=%lx, obj=%d", pb->addrin[0], pb->intin[0]));
 
 	pb->intout[0] = pb->intin[0] & ~0x8000;
 
