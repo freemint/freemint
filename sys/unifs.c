@@ -257,7 +257,7 @@ do_ulookup (fcookie *dir, const char *nam, fcookie *fc, UNIFILE **up)
 	 * so do "." and ".."
 	 */
 	if (!*nameptr.c ||
-	     (nameptr.c[0] == '.' && nameptr.c[1]) ||
+	     (nameptr.c[0] == '.' && nameptr.c[1] == '\0') ||
 	     (nameptr.c[0] == '.' && nameptr.c[1] == '.' && nameptr.c[2] == '\0'))
 	{
 		dup_cookie (fc, dir);
