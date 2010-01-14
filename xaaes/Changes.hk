@@ -1,0 +1,535 @@
+11.1.10
+
+	- xa_rsrc.c
+
+		- added another sanity-check while loading a resource-file
+
+		- todo: name resource-file with version, e.g. xaaes009.rsc
+
+8.1.10
+
+	todo:
+
+		- find places in the code where phys-handle or virtual handle is required
+
+		- add Ssystem(OS_FEATURES) to System-window
+
+		- C-A for Fuller, Iconifier
+
+		- don't use the color cyan (fileselector)
+
+		- initial slider wrong (fileselector)
+
+6.1.10
+
+	- opening of vdi-workstation
+
+		- if a physical workstation is already open at startup, it is used.
+			This is tested by trying to open a virtual workstation. If this succeeds this virtual
+			workstation is used and no phyiscal is opened.
+
+			This allows for example XaAES to be launched by the atari-desktop and thus be used with
+			nvdi-et4000 (under MiNT > 1.15).
+
+			It would also be possible to implement an external app to execute the resolution-change, which
+			would reduce code-size in XaAES and make it easier to develop the resolution-change-app.
+
+		- tested on:
+
+			- TT-High
+
+			- win-aranym 0.9.9
+
+			- TT+crazy-dots+nvdi-et4000
+
+			- CT60
+
+17.12.09
+
+	- fileselector not moved any more when sized by top border
+		if window is sized it cannot be moved at the same time (reposed?)
+
+(note)
+I'm not sure if what I did is 100% - there was a possibility to send
+sized and moved at the same time - I just told it to only move if both.
+This size&move is called reposed, I don't know what this is, but didn't
+notice anything not working.
+ 
+In realtime-mode you may still notice some funny things, but it stays where it where.
+
+14.12.09
+
+	- avoid multiple start by implementing a semaphore-test
+
+10.12.09
+
+	- syslog-window
+
+		-fixed a bug that caused a crash when a file in /kern was too big
+
+	- scrolllists
+
+		- jumping vertical slider fixed
+
+29.11.09
+
+	- pixel-format-detection
+
+		- now uses color-index 6 (yellow) to set the color for pixel-format-detection instead of rgb(1000,1000,0).
+
+28.11.09
+
+	- blitting
+
+		- blitted rectangles are word-aligned, for in 8 bit-pixel-depth there was a redraw-error at least with fvdi
+
+25.11.09
+
+	- alternative snapshot-feature
+
+		- new config-variable: snapshot
+
+			snapshot=<path/name>, e.g. snapshot=u:/usr/local/bin/snapshot
+
+			The external snapshot is called with the arguments: '0 T 1 [x y w h]'
+			where T=0: full screen, T=2: top window
+			if x, y, w, h are provided, this rectangle should be snapped.
+
+		- if XaAESSnap is not loaded, the external program that is defined in xaaes.cnf for snapshots
+			is called, if present
+
+21.11.09
+		
+	- fileselector
+
+		- if an entry is selected in the list-box, Cursor-Right focusses the edit-field,
+			so the selection can be edited
+
+19.11.09
+
+	- taskmanager
+
+		- display actual load and load-average. To use this completely, a patched MiNT is necessary.
+
+12.11.09
+
+	- added fvdi_version to the common-structure
+
+	- shutdown
+
+		- if fvdi is used, the physical workstation is not closed because it would crash (fixed in my fvdi)
+
+		- XaAES now cleanly exits to the calling process (not if standard fvdi)
+
+5.11.09
+
+	- fileselector 
+
+		- improved keyboard-navigation in fileselector again
+
+		- if fileselector finds a match while typing that match is returned on OK
+
+	- main-menu
+
+		- launcher now opens only once at a time: its not reentrant
+
+3.11.09
+
+	- sliders are switched off in XaAES-windows if not needed
+
+	- fixed: if the taskmanager-window was below a popup, it received mouse clicks (k_mouse.c#455)
+
+2.11.09
+
+	- selecting OK in the taskmanager unhides the selected client
+
+	- Buttons in XaAES-windows are now moved horizontally when window is resized
+
+	- removed a bug that triggered when a list-entry-text was changed and the new text was longer than before
+
+1.11.09
+
+	- about
+
+		- window is resizable
+
+	- taskmanager
+
+		- kill on all process-entries possible with some restrictions to system-processes
+
+		- sleep/wake cause SIGSTOP/SIGCONT-signals to be sent to the selected process
+
+			-todo: allow Delete-key for kill/terminate
+
+	- scrlobjc.c
+
+		- added icon_w and char_width to scroll_info, removed the static variables
+
+29.10.09
+
+	- taskmanager
+
+		- enlarged initial size of window in resource
+
+28.10.09
+
+	- taskmanager
+
+		- also lists non-AES-apps
+
+		- displays more process-information in a table
+
+		- displays memory-statistics
+
+27.10.09
+
+	- new C-A-shortcuts
+
+		- Help: about, K: launch, B: open syslog
+			tofix: no AES-internal window if fileselector open possible when menu is locked ?
+
+	- user-supplied file xa_help.txt located in the xaaes-start-directory is displayed in about-window
+
+26.10.09
+
+	- taskmanager
+
+		- additional information of clients and memory	(very experimental, off by default)
+
+25.10.09
+
+	- syslog-window
+
+		- now also contains informations about the computer and MiNT-version.
+
+		- alerts have a timestamp
+
+	- in main-menu the syslog-window-entry is named System. Disabled the other one as well as Resolution-change.
+
+24.10.09
+
+	- unset TS_COOKED of console-tty-state in main-loop once a second if no input arrived
+		This should avoid Control-keys to be handled as terminal-control-chars by MiNT.
+
+22.10.09
+
+- taskmanager
+
+	- displays current priority instead of base-priority
+
+- main
+
+	- set tty into COOKED and CRMOD before the main-loop to have correct console-output
+
+- display_object
+
+	- if screen has 1 plane, wr_mode for state-display is set to MD_REPLACE,
+		so checked-symbol is visible, especially in the windows-submenu
+
+- top_window
+
+	- does nothing if window is already top and has focus, else it would be untopped
+
+19.10.09
+
+- fixed bugs
+
+	- if open taskmanager is topped by ctrl-alt top-window now gets unfocussed
+
+	- process with no name not listed in taskmanager and submenu (if tw-call runs a prog in toswin-window)
+
+- new feature
+
+	- priority of clients in taskmanager gets updated on every (re-)open, e.g. C-A-F
+
+29.09.09
+
+- ALT-shortcuts also if resource is compiled into program
+ 
+- new config-variable: alt_shortcuts
+
+  0: no shortcuts
+  1: shortcuts for alerts
+  2: shortcuts for dialog
+  3: 1+2
+ 
+  default: 3
+ 
+  example:
+  app_options = diskus, alt_shortcuts = 0
+ 
+	For teradesk >= 4 you need: app_options = DESKTOP, alt_shortcuts = 1
+
+- launcher is now called launchpath in the config, for this is what it does
+ 
+- improved keyboard-navigation in windows with list-windows
+    blank enters/exits the list-window if focus is not EDITABLE
+    (works ok if one list-window in the window, if more not so good)
+ 
+
+20.9.09
+
+- taskmanager also lists windows
+
+- Ctrl-Alt-shortcuts: F|L: open taskmanager, E: open windows-submenu
+
+
+<------------everything below is in all current versions ------------------------->
+
+13.08.09
+
+- New features
+
+	- Form_do-dialogues
+
+		- Insert-key selects/deselects an object (dialog, alert-box)
+
+			If an object is SELECTABLE, pressing the Insert-key now toggles the SELECTED-state.
+			This should not interfere with any application, because Insert had no meaning in form_do before.
+			If you want to use the "feature" to delete to eol of previous versions, you can press any F-key.
+
+			The old behaviour (select with Space) has been removed for objects can be SELECTABLE and
+			EDITABLE at the same time
+
+	-List-Windows
+
+		- Copy List-Entry to Clipboard
+
+			By pressing Ctrl-C the marked List-Entry is copied  to Clipboard
+
+			Press Cursor-key Up or Down before using this.
+
+	- Fileselector
+
+		- Shortcut to open menu
+
+			The menu is opened by Ctrl-o.
+
+		- Copy Path/File to Clipboard
+
+			By pressing Ctrl-C the path and the marked file (if any) is copied  to Clipboard.
+
+	- Syslog-window
+
+		- It is resizeable now
+
+		- Entries are sorted by name
+
+		- Keyboard-navigation in list is working (Cursor-right:open tree,Cursor-left:collapse up/down: the obvious)
+
+	- Taskmanager
+
+		- It is resizeable now
+
+		- List is a tree, whereas clients are parent and their windows the children
+
+		- If exited with Ok, and a client is selected, this client is topped. Unselect with Space.
+
+		- If exited with Ok, and a window is selected, this window is topped. Unselect with Space.
+
+- Fixes/Changes
+
+	- Syslog-window, Taskmanager
+
+		- List (de-)selected with Space
+
+	- Form_do-dialogues
+
+		- Sightly changed the search algorithm in ob_find_next_any_flagstate()
+
+			The items do not have to be placed in a perfect grid but may have more deliberate coordinates.
+			This affects horizontal moves between the dialog-items.
+
+		- Consistance between focus and edited object on first open of a dialog.
+
+			Sometimes the focus pointed to another object than keyboard input went to.
+
+			In windowed mode, if the focussed object is EDITABLE, keyboard-input now goes to it.
+			In nonwindowed dialogs this is not guaranteed (see below).
+
+		- Alt-shortcuts enabled.
+
+	- Fileselector
+
+		- now creates ALT-shortcuts that dont conflict with drive-letters, if possible.
+			
+		- PageUp/Down(Shift-CU/CD) pages the filelist.
+
+		- Shift-Home(Shift-Pos1) goes to the end, another one sets the cursor to the file 
+				before the last file (This should be the last - I'm working on it).
+
+		- on entry focus is in the filelist, so the first Cursor Up/Down moves the Cursor there.
+				Use Shift-TAB or mouse to focus on the edit-field.
+
+		- italic text is now displayed completely (even if fvdi is used).
+
+		- Path-Beautifying
+
+				No mixure of / and \ in the Path. The first / or \ is used for all sparators.
+
+		-Menu
+
+			- Sort by Art is now called Sort by Ext. (new resource-file needed)
+
+		- Sorting is now case-sensitive, i.e. Z is placed before a (like ls does).
+
+		- File-Pattern is now case-sensitive, except an all-uppercase pattern is given by the caller
+			or the filesystem is uppercase (like FAT)
+
+		- non-visible changes
+
+			- increase in rendering-speed (Sort by Name-mode mainly)
+				This is most obvious on a slow computer like Atari TT (>5 times faster at ~250 files).
+
+	- Fontselector
+
+		- Displays all available fonts
+
+		- Return closes and accepts (new resource-file needed)
+
+	- Shell
+
+		- give launched apps their own pgrp so killgroup cannot affect XaAES
+
+	- General
+
+		- removed several unused global symbols, made others that where used in one file ony, static.
+			This saves some Kb in the executable.
+
+
+-------------------------------------------------------------------------------------------------
+
+
+- Todo/Wishlist:
+
+ - Fixes
+
+	- windows-submenu
+
+		If actual top-window is selected, it should not get untopped
+
+	- Copy List-Entry to Clipboard
+
+		Selected item should be copied without using any key before.
+
+	- Form_do-dialog
+
+		- Respect form_do-Parameter (non-windowed mode)
+
+		At open of a dialog, the first focussed object is quite arbitrary. It should be the one given
+		in the form_do( tree, ob ) - call by the client, at least on the first opening.
+		In effect keyboard-input correctly goes to the first item, but this is not always the one
+		that is focussed.
+
+	- form_do, alerts
+
+		If there are more TOUCHEXIT-buttons and a DEFAULT, the DEFAULT should be changed if another
+		TOUCHEXIT is focussed by TAB to the one focussed.
+
+	- Fileselector
+
+		- add a pattern at runtime
+
+			- if user types *.<pattern> in the edit-field this should be the new pattern and be
+				added to the patterns-list
+
+		- Horizontal slider
+
+			- does not always recognize clicks
+				-> Go one dir up, enter again to scroll
+
+			- size is sometimes incorrect
+
+			- often drawn unnessecarily
+
+		- Rendering
+		
+			- The distance between the columns is not perfect if the layout changed due to longer names.
+
+			- Background-Color is not really white (on win-aranym).
+
+
+		- Selected item not always in edit-field
+
+			Same as for clipbrd-copy: Cursor-Up/Down nessecary to copy the filename to the edit-field.
+			(fixed?)
+
+		- Keyboard-movement
+
+			- no way to select the last entry directly
+				-> go to first (Pos1/Home), press Cursor up
+			(nearly fixed)
+
+		- Special directories
+
+			- if trying to go back up from a non existing or special system-directory (/shm, /nfs),
+				Cursor-left noes not work.
+				Mouse and Ctrl-Backspace do.
+				
+		- Further speed-improvement.
+
+
+	- Fontselector
+
+		- mouse-click does not set focus into list-window
+
+		- set cursor to current font in font-list at startup
+
+	- List-Windows
+
+		- sometimes wrong selection of widgets.
+
+	-	General
+
+		- Resources
+				
+			The memory-usage can possibly be reduced (it uses ~500kb more than version 0.997).
+
+		- Usability
+
+			If a program is very busy and does not respond, the menu is inaccassible. One can only
+			kill this program via the task-manager or wait until it is finished (try Highwire on a very
+			big html-file)
+
+
+	- Main-menu
+
+		- Resolution-Change
+
+			- This feature is disabled (as it was in the original)
+				-> Remove from menu or implement it
+
+-
+	
+ - New features
+
+	- More Editing features in form_do
+
+		Many special-keys for editing could be used to make it still more comfortable to use (old good)
+		form_do (End, Beg, Next Word, Delete Word, Overwrite ...).
+
+	- Fileselector
+
+		-	Select the columns to be displayed
+
+		- Specify sort-direction (ascending/descending)
+
+		-	Remember settings (global - for all apps)
+
+		-	Select the font to be used
+
+	- Taskmanager
+
+		- Display memory/CPU-usage as graph for each client/prog
+
+		- Display memory/CPU-usage as graph for the whole system
+
+		- Display network-traffic as graph (for each client/prog?)
+
+	-	xaaes.cnf
+
+		- configure shortcuts to launch any process by hotkey
+
+
+
+helmut.karlowski@ish.de
