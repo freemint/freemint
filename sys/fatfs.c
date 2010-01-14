@@ -6824,11 +6824,15 @@ fatfs_opendir (DIR *dirh, int flags)
 
 	dirh->index = 0;
 
+	/* workaround strict aliasing */
 	memcpy(&dir, dirh->fsstuff, sizeof(oDIR));
 
 	r = __opendir (&dir, c->stcl, c->dev);
 	if (!r)
 		c->links++;
+
+	/* workaround strict aliasing */
+	memcpy(dirh->fsstuff, &dir, sizeof(oDIR));
 
 	FAT_DEBUG_COOKIE ((c));
 	FAT_DEBUG (("fatfs_opendir [%s]: (%li, %li), %li -> r = %li", c->name, c->dir, c->offset, c->stcl, r));
