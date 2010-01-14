@@ -1,0 +1,21 @@
+#place this file in the xaaes-boot directory
+Ctrl-Alt-Shortcuts:
+#A             Terminates all applications (A list of exceptions can be specified)
+B             open System-window
+E             open windows-submenu
+F,L           open task-manager
+K             launch program
+Help          open about
+Home          Redraw screen
+D             Open the screenshot dialog (XAAESNAP.PRG is required)
+P             Restore palette in colour depth of 8-bits or less
+Q             Quit XaAES
+R             Attempt to recover a system that has locked up
+V             Unhide all applications
+W             Global window cycling
+X             Hide all except the currently focused application
+Y             Hide currently focused application
+space         Open main menu bar
+Shift-space   Open menu in current window if it has one, else open main menubar
+TAB           Cycle open applications
+-------------------------------------
