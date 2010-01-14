@@ -473,20 +473,19 @@ otm:
 			post_cevent(C.Hlp, CE_winctxt, TOP_WINDOW, NULL, 0,0, NULL, &md);
 		}
 		return true;
-		break;
 		case 'B':	/* system-window ('S' eaten by MiNT?)*/
 		if( !C.update_lock )
 		{
 			post_cevent(C.Hlp, ceExecfunc, open_systemalerts,NULL, 1, 0, NULL,NULL);
 		}
 		return true;
-		case NK_HELP:
+		case NK_HELP:	/* about-window */
 		if( !C.update_lock )
 		{
 			post_cevent(C.Hlp, ceExecfunc, open_about,NULL, 1,0, NULL,NULL);
 		}
 		return true;
-		case 'K':	/* about-window */
+		case 'K':	/* launcher */
 		if( !C.update_lock )
 		{
 			post_cevent(C.Hlp, ceExecfunc, open_launcher,NULL, 1,0, NULL,NULL);
@@ -497,6 +496,7 @@ otm:
 		{
 			update_windows_below(lock, &screen.r, NULL, window_list, NULL);
 			redraw_menu(lock);
+			return true;
 		}
 		case 'M':				/* ctrl+alt+M  recover mouse */
 		{
