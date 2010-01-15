@@ -7,9 +7,9 @@ F,L           open task-manager
 K             launch program
 Help          open about
 Home          Redraw screen
-D             Open the screenshot dialog (XAAESNAP.PRG is required)
+D             Open the screenshot dialog
 P             Restore palette in colour depth of 8-bits or less
-Q             Quit XaAES
+#Q             Quit XaAES
 R             Attempt to recover a system that has locked up
 V             Unhide all applications
 W             Global window cycling
