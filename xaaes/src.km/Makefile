@@ -44,8 +44,9 @@ all-targets:
 		|| case "$$amf" in *=*) exit 1;; *k*) fail=yes;; *) exit 1;; esac; \
 	done && test -z "$$fail"
 
-$(xaaestargets):
-	sh xversion.sh
+xversion.h: .
+	$(SHELL) xversion.sh
+$(xaaestargets): xversion.h
 	$(MAKE) buildxaaes xaaes=$@
 
 
