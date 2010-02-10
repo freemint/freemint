@@ -558,7 +558,6 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 					type = APP_APPLICATION;
 					ret = p->pid;
 					/* create new pgrp for launched app so killgroup cannot affect XaAES */
-					p_setgid(ret);
 					p_setpgrp(ret, ret);
 				}
 				else
