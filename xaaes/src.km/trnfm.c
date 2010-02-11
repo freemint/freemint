@@ -40,8 +40,8 @@
 #include "xa_global.h"
 
 /* define this 1 if vs_color works */
-/* vs_color needs phys-handle??? */
-#define  HAVE_VS_COLOR	0
+/* vs_color in libgem broken? */
+#define  HAVE_VS_COLOR	1
 
 #include "trnfm.h"
 #if INCLUDE_UNUSED
@@ -2236,8 +2236,7 @@ fix_rsc_palette(struct xa_rsc_rgb *palette)
 void
 set_syspalette(short vdih, struct rgb_1000 *palette)
 {
-	int i, pens;
-	//if( C.fvdi_version == 0 )	return;	/* as long as this doesn't work reliable */
+	short i, pens;
 
 	if (screen.planes > 8)
 		pens = 256;
@@ -2315,7 +2314,7 @@ set_syscolor(void)
 short
 detect_pixel_format(struct xa_vdi_settings *v)
 {
-	short ret = -1;
+	short ret = 8;	/* generic */
 
 	if (screen.planes > 8)
 	{
@@ -2331,6 +2330,7 @@ detect_pixel_format(struct xa_vdi_settings *v)
 		(*v->api->l_ends)(v, 0, 0);
 		(*v->api->l_width)(v, 1);
 #if HAVE_VS_COLOR
+		BLOG((0,"detect_pixel: using vs_color"));
 		vq_color(v->handle, 0, 1, (short *)&srgb);
 // 		display("saved %04d, %04d, %04d", srgb.red, srgb.green, srgb.blue);
 		rgb.red = 1000;
@@ -2341,6 +2341,7 @@ detect_pixel_format(struct xa_vdi_settings *v)
 #else
 		{
 		RECT r = {0,0,v->screen.w,v->screen.h};
+		BLOG((0,"detect_pixel: using vsf_color"));
 		(*v->api->f_color)(v, 6 );	/* yellow */
 		(*v->api->gbar)( v, 0, &r );
 		}
