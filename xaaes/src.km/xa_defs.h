@@ -39,14 +39,6 @@
 /* - define as 1 to turn on, 0 to turn off */
 /*----------------------------------------------------------------- */
 
-#define MiNT_ENH	0
-/* put switches for enhancement-branch and MAIN here */
-#if MiNT_ENH
-#define SA_RESET	SA_RESETHAND
-#else
-#define SA_RESETHAND	SA_RESET
-#endif
-
 /* define 1 if CTRL-ALT-keys shall shutdown system or term apps */
 #define HOTKEYQUIT	0
 
