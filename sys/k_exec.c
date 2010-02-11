@@ -171,12 +171,13 @@ make_fname(struct proc *p, const char *source)
 }
 
 long _cdecl
-sys_pexec(short mode, const void *ptr1, const void *ptr2, const void *ptr3)
+sys_pexec(short mode, const void *p1, const void *p2, const void *p3)
 {
+	union { const void *v; const char *cc; char *c; long l; } ptr_1, ptr_2, ptr_3;
 	MEMREGION *base;
 	MEMREGION *env = NULL;	/* assignment suppresses spurious warning */
 	struct proc *p = NULL;
-	long r, flags = 0;
+	long flags = 0;
 	char mkbase = 0, mkload = 0, mkgo = 0, mkwait = 0, mkfree = 0;
 	char overlay = 0;
 	char thread = 0;
@@ -184,8 +185,12 @@ sys_pexec(short mode, const void *ptr1, const void *ptr2, const void *ptr3)
 	char mkname = 0;
 	char localname[PNAMSIZ+1];
 	XATTR xattr;
-	int newpid;
+	int new_pid;
 	int aes_hack = 0;
+
+	ptr_1.v = p1;
+	ptr_2.v = p2;
+	ptr_3.v = p3;
 
 # ifdef DEBUG_INFO
 	/* tfmt and tail_offs are used for debugging only */
@@ -200,7 +205,7 @@ sys_pexec(short mode, const void *ptr1, const void *ptr2, const void *ptr3)
 			display("pexec(%d) for %s", mode, pr->name);
 	}
 #endif
-	DEBUG(("Pexec: mode %d, %lx,%lx,%lx", mode,ptr1,ptr2?ptr2:"NULL",ptr3));
+	DEBUG(("Pexec: mode %d, %lx,%lx,%lx", mode, ptr_1.c, ptr_2.c ? ptr_2.c : "NULL", ptr_3.c));
 
 	/* the high bit of mode controls process tracing */
 	switch (mode & 0x7fff)
@@ -235,7 +240,7 @@ sys_pexec(short mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		case 104:
 			thread = (mode == 104);
 			mkgo = 1;
-			mkname = (ptr1 != 0);
+			mkname = (ptr_1.v != NULL);
 # ifdef DEBUG_INFO
 			tfmt = "Pexec(%d,%s,BP:%lx,%lx)";
 			tail_offs = 0;
@@ -253,14 +258,14 @@ sys_pexec(short mode, const void *ptr1, const void *ptr2, const void *ptr3)
 			/* fall through */
 		case 204:
 			mkgo = overlay = 1;
-			mkname = (ptr1 != 0);
+			mkname = (ptr_1.v != NULL);
 # ifdef DEBUG_INFO
 			tfmt = "Pexec(%d,%s,BP:%lx,%lx)";
 			tail_offs = 0;
 # endif
 			break;
 		case 7:
-			flags = (long)ptr1;	/* set program flags */
+			flags = ptr_1.l;	/* set program flags */
 			if (((flags & F_PROTMODE) >> F_PROTSHIFT) > PROT_MAX_MODE)
 			{
 				DEBUG(("Pexec: invalid protection mode changed to private"));
@@ -276,24 +281,24 @@ sys_pexec(short mode, const void *ptr1, const void *ptr2, const void *ptr3)
 			break;
 		default:
 		{
-			DEBUG(("Pexec(%d,%lx,%lx,%lx): bad mode", mode, ptr1, ptr2, ptr3));
+			DEBUG(("Pexec(%d,%lx,%lx,%lx): bad mode", mode, ptr_1.l, ptr_2.l, ptr_3.l));
 			return ENOSYS;
 		}
 	}
 
-	TRACE((tfmt, mode, ptr1, (char *) ptr2 + tail_offs, ptr3));
+	TRACE((tfmt, mode, ptr_1.l, ptr_2.c + tail_offs, ptr_3.c));
 
 	/* Pexec with mode 0x8000 indicates tracing should be active */
 	ptrace = (!mkwait && (mode & 0x8000));
 
 	/* Was there passed a filename? */
 	if (mkname)
-		make_name(localname, ptr1);
+		make_name(localname, ptr_1.c);
 
 	if (mkload || mkbase)
 	{
 		TRACE(("creating environment"));
-		env = create_env((char *) ptr3, flags);
+		env = create_env(ptr_3.c, flags);
 		if (!env)
 		{
 			DEBUG(("Pexec: unable to create environment"));
@@ -303,15 +308,15 @@ sys_pexec(short mode, const void *ptr1, const void *ptr2, const void *ptr3)
 
 	if (mkbase)
 	{
-		long r;
+		long ret;
 
 		TRACE(("creating base page"));
-		base = create_base((char *)ptr2, env, flags, 0L, &r);
+		base = create_base(ptr_2.c, env, flags, 0L, &ret);
 		if (!base)
 		{
 			DEBUG(("Pexec: unable to create basepage"));
 			detach_region(get_curproc(), env);
-			return r;
+			return ret;
 		}
 
 		TRACELOW (("Pexec: basepage region(%lx) is %ld bytes at %lx", base, base->len, base->loc));
@@ -319,23 +324,24 @@ sys_pexec(short mode, const void *ptr1, const void *ptr2, const void *ptr3)
 	else if (mkload)
 	{
 		char cbuf[128];
-		const char *tail = ptr2;
-		long r;
+		long ret;
+		union { const char *cc; char *c; } tail; tail.cc = ptr_2.cc;
+		//const char *tail = ptr_2.cc;
 
 		if (overlay)
 		{
 			static char fbuf[PATH_MAX];
 			cbuf[127] = 0;
-			ptr1 = strncpy(fbuf, ptr1, PATH_MAX-2);
-			tail = strncpy(cbuf, ptr2, 127);
+			ptr_1.c = strncpy(fbuf, ptr_1.c, PATH_MAX-2);
+			tail.cc = strncpy(cbuf, ptr_2.cc, 127);
 		}
 
-		base = load_region(ptr1, env, (char *)tail, &xattr, &flags, &r);
+		base = load_region(ptr_1.c, env, tail.c, &xattr, &flags, &ret);
 		if (!base)
 		{
 			DEBUG(("Pexec: load_region failed"));
 			detach_region(get_curproc(), env);
-			return r;
+			return ret;
 		}
 
 		TRACE(("Pexec: basepage region(%lx) is %ld bytes at %lx", base, base->len, base->loc));
@@ -347,7 +353,7 @@ sys_pexec(short mode, const void *ptr1, const void *ptr2, const void *ptr3)
 	{
 		/* mode == 4, 6, 104, 106, 204, or 206 -- just go */
 
-		base = addr2mem(get_curproc(), (long) ptr2);
+		base = addr2mem(get_curproc(), ptr_2.l);
 		if (base)
 			env = addr2mem(get_curproc(), *(long *)(base->loc + 0x2c));
 		else
@@ -407,9 +413,9 @@ sys_pexec(short mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		/* jr: add Pexec information to PROC struct */
 		strncpy(p->cmdlin, b->p_cmdlin, 128);
 
-		if (mkload || (thread && ptr1))
+		if (mkload || (thread && ptr_1.c))
 		{
-			r = make_fname(p, ptr1);
+			r = make_fname(p, ptr_1.c);
 			if (r)
 			{
 				if (mkload || mkbase)
@@ -565,6 +571,7 @@ sys_pexec(short mode, const void *ptr1, const void *ptr2, const void *ptr3)
 	{
 		long oldsigint, oldsigquit;
 		unsigned short retval;
+		long ret;
 
 		assert(get_curproc()->p_sigacts);
 
@@ -574,27 +581,27 @@ sys_pexec(short mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		SIGACTION(get_curproc(), SIGINT).sa_handler = SIG_IGN;
 		SIGACTION(get_curproc(), SIGQUIT).sa_handler = SIG_IGN;
 
-		newpid = p->pid;
+		new_pid = p->pid;
 		for(;;)
 		{
-			r = pwaitpid(get_curproc()->pid ? newpid : -1, 0, NULL, (short *)&retval);
-			if (r < 0)
+			ret = pwaitpid(get_curproc()->pid ? new_pid : -1, 0, NULL, (short *)&retval);
+			if (ret < 0)
 			{
 				ALERT("p_exec: wait error");
-				r = EINTERNAL;
+				ret = EINTERNAL;
 				break;
 			}
 
-			if (newpid == ((r & 0xffff0000L) >> 16))
+			if (new_pid == ((ret & 0xffff0000L) >> 16))
 			{
-				TRACE(("leaving Pexec; child return code %ld", r));
+				TRACE(("leaving Pexec; child return code %ld", ret));
 
 				/* sys_pwaitpid() strips the low word down to 8 bit,
 				 * fix that.
 				 * Ozk: thats not enough, gotta pass back all 16 bits.
 				 */
-				r = retval;
-				r &= 0x0000ffffL;
+				ret = retval;
+				ret &= 0x0000ffffL;
 				break;
 			}
 
@@ -607,16 +614,16 @@ sys_pexec(short mode, const void *ptr1, const void *ptr2, const void *ptr3)
 		SIGACTION(get_curproc(), SIGINT).sa_handler = oldsigint;
 		SIGACTION(get_curproc(), SIGQUIT).sa_handler = oldsigquit;
 
-		return r;
+		return ret;
 	}
 	else if (mkgo)
 	{
 		/* warning: after the yield() the "p" structure may not
 		 * exist any more (if the child exits right away)
 		 */
-		newpid = p->pid;
+		new_pid = p->pid;
 		yield();	/* let the new process run */
-		return newpid;
+		return new_pid;
 	}
 	else
 	{
@@ -746,8 +753,8 @@ exec_region(struct proc *p, MEMREGION *mem, int thread)
 				{
 					/* Update curproc's mmu table, but not
 					 * for basepage and environment */
-					if ((m->loc != (long) b) &&
-					    (m->loc != (long) b->p_env) &&
+					if ((m->loc != (unsigned long) b) &&
+					    (m->loc != (unsigned long) b->p_env) &&
 					    (mem_prot_flags & MPF_STRICT))
 					{
 						mark_proc_region(p->p_mem, m, PROT_I, p->pid);
@@ -812,7 +819,7 @@ exec_region(struct proc *p, MEMREGION *mem, int thread)
 		p->ctxt[CURRENT].regs[i] = 0;
 
 	p->ctxt[CURRENT].sr = 0;
-	p->ctxt[CURRENT].fstate[0] = 0;
+	p->ctxt[CURRENT].fstate.bytes[0] = 0;
 
 	/* set PC, stack registers, etc. appropriately */
 	p->ctxt[CURRENT].pc = b->p_tbase;
