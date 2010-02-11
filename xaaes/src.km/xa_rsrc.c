@@ -834,7 +834,6 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 		{
 			size = *(unsigned long *)(base + osize);
 		}
-		BLOG((0,"LoadResources:%s: size: (%ld,%ld)", fname, sz, size ));
 		if( size != sz )
 		{
 			DIAG((D_rsrc, client, "LoadResource(): Error loading file (size mismatch)"));
@@ -891,7 +890,9 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 	}
 	
 	if (!rscs)
+	{
 		return NULL;
+	}
 
 	fix_chrarray(client, base, (char **)	(base + hdr->rsh_frstr),   hdr->rsh_nstring, &extra_ptr);
 	fix_chrarray(client, base, (char **)	(base + hdr->rsh_frimg),   hdr->rsh_nimages, &extra_ptr);
