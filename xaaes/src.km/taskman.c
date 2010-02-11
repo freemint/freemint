@@ -383,12 +383,12 @@ void add_window_to_tasklist(struct xa_window *wi, const char *title)
 				}
 				else
 				{
-					if( thiswi /*&& wi->wname[0]*/ )
+					if( thiswi )
 					{
 						/* change title */
 						struct setcontent_text t = { 0 };
 
-						if( wi->wname && wi->wname[0] )
+						if( wi->wname[0] )
 						{
 							t.text = wi->wname;
 							list->set(list, thiswi, SESET_TEXT, (long)&t, true);
@@ -1333,20 +1333,15 @@ taskmanager_form_exit(struct xa_client *Client,
 			force_window_top( lock, wind );
 			break;
 		}
-#if 0
-		case TM_RESCHG:	/* now: windows-submenu */
+#if 1
+		case TM_RESCHG:	/* now: toggle load-display */
 		{
-			struct xa_vdi_settings *v = wind->vdi_settings;
-			struct moose_data md;
-
-			/* init moose_data */
-			md.x = wind->r.x + wind->r.w/2;
-			md.y = wind->r.y + wind->r.h/2;
-			post_cevent(C.Hlp, CE_winctxt, wind, NULL, 0,0, NULL, &md);
-			/*if (C.reschange)
-				post_cevent(C.Hlp, ceExecfunc, C.reschange,NULL, 1,0, NULL,NULL);
-				*/
-			obj_change(wt, v, fr->obj, -1, aesobj_state(&fr->obj) & ~OS_SELECTED, aesobj_flags(&fr->obj), true, NULL, wind->rect_list.start, 0);
+			OBJECT *obtree = wt->tree;
+			if( (obtree[TM_CHART].ob_flags ^= OF_HIDETREE) )
+			{
+				close_window(lock, wind);
+			}
+			post_cevent(C.Hlp, ceExecfunc, open_taskmanager,NULL, 1,0, NULL,NULL);
 			break;
 		}
 #endif
@@ -1570,6 +1565,8 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 
 		wt = set_toolbar_widget(lock, wind, client, obtree, inv_aesobj(), 0/*WIP_NOTEXT*/, STW_ZEN, NULL, &or);
 		wt->exit_form = taskmanager_form_exit;
+
+		strcpy( wt->tree[TM_RESCHG].ob_spec.free_string, " toggle load" );
 		wt->focus = aesobj( obtree, TM_LIST );	/*cursor on list */
 		init_list_focus( obtree, TM_LIST, 0 );
 
@@ -1646,53 +1643,51 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 					add_kerinfo( "u:/kern/meminfo", list, NULL, p.e, &sc, PROCINFLEN, 5, redraw, uinfo );
 				}
 
-				pinfo[0] = 1;
-				pinfo[1] = 2;
-				pinfo[2] = 0;
-				/*
-				pinfo[3] = 4;
-				pinfo[4] = 0;
-				*/
+				if( !( wt->tree[TM_CHART].ob_flags & OF_HIDETREE) )
+				{
+					pinfo[0] = 1;
+					pinfo[1] = 2;
+					pinfo[2] = 0;
 #if !USE_Suptime
-				if( ker_stat( 0, "uptime", pinfo )
-					|| ((u = pinfo[0] * 1000L + pinfo[1]) < uptime	/* /kern/uptime not always correct! :-*/
-					))
-				{
-					uptime = 0L;
-				}
-				else
-					uptime = u;
-				//idle = pinfo[2] * 1000L + pinfo[3];
-#else
-				if( has_new_uptime == -1 )
-				{
-					pinfo[3] = WITH_ACTLD;	/* magic */
-					pinfo[0] = WITH_ACTLD;
-				}
-				Suptime( &u, pinfo );	/* this is sometimes all 0 or constant max. on aranym ! :-( */
-				if( has_new_uptime == -1 )
-				{
-					if( pinfo[3] == WITH_ACTLD )
-						has_new_uptime = 0;
+					if( ker_stat( 0, "uptime", pinfo )
+						|| ((u = pinfo[0] * 1000L + pinfo[1]) < uptime	/* /kern/uptime not always correct! :-*/
+						))
+					{
+						uptime = 0L;
+					}
 					else
-						has_new_uptime = 1;
-				}
-				uptime = u * 1000L;
-				if( has_new_uptime == 0 )
-				{
-					int i;
-					for( i = 0; i < 3; i++ )
-						pinfo[i] = (pinfo[i] * MAXLOAD) / OLD_MAXLOAD;
-				}
-				calc_tm_bar( wt->tree, TM_LOAD1, 0, pinfo );
-				calc_tm_bar( wt->tree, TM_LOAD2, 1, pinfo );
-				calc_tm_bar( wt->tree, TM_LOAD3, 2, pinfo );
-				pinfo[3] = calc_new_ld( rootproc );
-				calc_tm_bar( wt->tree, TM_ACTLD, 3, pinfo );
-
-				redraw_toolbar( lock, wind, TM_CHART );
+						uptime = u;
+					//idle = pinfo[2] * 1000L + pinfo[3];
+#else
+					if( has_new_uptime == -1 )
+					{
+						pinfo[3] = WITH_ACTLD;	/* magic */
+						pinfo[0] = WITH_ACTLD;
+					}
+					Suptime( &u, pinfo );	/* this is sometimes all 0 or constant max. on aranym ! :-( */
+					if( has_new_uptime == -1 )
+					{
+						if( pinfo[3] == WITH_ACTLD )
+							has_new_uptime = 0;
+						else
+							has_new_uptime = 1;
+					}
+					uptime = u * 1000L;
+					if( has_new_uptime == 0 )
+					{
+						int i;
+						for( i = 0; i < 3; i++ )
+							pinfo[i] = (pinfo[i] * MAXLOAD) / OLD_MAXLOAD;
+					}
+					calc_tm_bar( wt->tree, TM_LOAD1, 0, pinfo );
+					calc_tm_bar( wt->tree, TM_LOAD2, 1, pinfo );
+					calc_tm_bar( wt->tree, TM_LOAD3, 2, pinfo );
+					pinfo[3] = calc_new_ld( rootproc );
+					calc_tm_bar( wt->tree, TM_ACTLD, 3, pinfo );
+	
+					redraw_toolbar( lock, wind, TM_CHART );
 #endif
-
+				}
 				FOREACH_CLIENT(client)
 				{				/* */
 					update_tasklist_entry( AES_CLIENT, client, redraw);
@@ -2398,6 +2393,7 @@ open_systemalerts(enum locks lock, struct xa_client *client, bool open)
 			struct sesetget_params p = { 0 };
 			struct scroll_content sc = {{ 0 }};
 			char sstr[1024];
+			extern unsigned short stack_align;
 
 			p.idx = -1;
 			p.arg.txt = e;	// /*txt_environment*/"Environment";
@@ -2415,6 +2411,8 @@ open_systemalerts(enum locks lock, struct xa_client *client, bool open)
 				sc.t.text = strings[i];
 				list->add(list, this, sortbyname, &sc, this ? (SEADD_CHILD|SEADD_PRIOR) : SEADD_PRIOR, 0, true);
 			}
+			{
+			char *pformats[] = {"MOT", "INT", "FMOT", "INT15", "Generic", "Unknown"}, *fs;
 			p.arg.txt = s;
 			list->get(list, NULL, SEGET_ENTRYBYTEXT, &p);
 			list->empty(list, p.e, 0);
@@ -2423,16 +2421,28 @@ open_systemalerts(enum locks lock, struct xa_client *client, bool open)
 
 			/* ? alloc sstr? */
 			/* video */
-			sprintf( sstr, sizeof(sstr), "Video: %dx%dx%d,%d colours",
-				screen.r.w, screen.r.h, screen.planes, screen.colours );
+
+			if( screen.pixel_fmt <= 3 )
+				fs = pformats[screen.pixel_fmt];
+			else if( screen.pixel_fmt == 8 )
+				fs = pformats[4];
+			else
+				fs = pformats[5];
+
+			sprintf( sstr, sizeof(sstr), "Video: %dx%dx%d,%d colours, format: %s, Stack: %x",
+				screen.r.w, screen.r.h, screen.planes, screen.colours, fs, stack_align );
+			}
 			sc.t.text = sstr;
 			list->add(list, this, 0, &sc, this ? (SEADD_CHILD) : SEADD_PRIOR, 0, true);
 			/* cpuinfo */
 			add_kerinfo( "u:/kern/cpuinfo", list, this, NULL, &sc, 0, 0, false, NULL );
+			BLOG((0,"cpuinfo:%s", sc.t.text ));
 
 			add_kerinfo( "u:/kern/version", list, this, NULL, &sc, 0, 0, false, NULL );
+			BLOG((0,"version:%s", sc.t.text ));
 
 			add_kerinfo( "u:/kern/buildinfo", list, this, NULL, &sc, 0, 1, false, NULL );
+			BLOG((0,"buildinfo:%s", sc.t.text ));
 
 			init_list_focus( obtree, SYSALERT_LIST, 0 );
 		}
