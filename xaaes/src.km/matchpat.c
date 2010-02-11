@@ -56,6 +56,18 @@
 
 #define CASESENS 1
 
+static char *strmrchr( char *s, char *p )
+{
+	char *p1, *sx = s + strlen(s) - 1;
+	for( ; sx >= s; sx-- )
+	{
+		for( p1 = p; *p1 && *p1 != *sx; p1++ );
+		if( *p1 )
+			return sx;	/* found */
+	}
+	return 0;
+}
+
 #if CASESENS
 int
 match_pattern(char *t, char *pat, bool auto_wc)
@@ -63,6 +75,7 @@ match_pattern(char *t, char *pat, bool auto_wc)
 	int valid = 1;
 	int len = 0;
 	char *p = pat;
+	char *last_magic = strmrchr( pat, "*[]!" );
 
 	//if (!stricmp(t, pat))
 	if( pat[0] != '*' && !strcmp(t, pat) )
@@ -94,10 +107,25 @@ match_pattern(char *t, char *pat, bool auto_wc)
 			/* String of any character */
 			case '*':
 			{
-				pat++;
-				//while (*t && (toupper(*t) != toupper(*pat)))
-				while (*t && *t != *pat)
-					t++;
+				while( *++pat == '*' );
+
+				if( *pat )
+				{
+					if( (pat-1) == last_magic )
+					{
+						char *tp = t + strlen(t) - strlen(pat);
+						if( tp >= t )	/* '*x' matches 'x' */
+							t = tp;
+						else
+							valid = false;
+					}
+					else	/* pat has more magic: search from beg */
+						if( !strchr( "?[!", *pat ) )	/* next is not magic */
+							if( !(t = strchr( t, *pat )) )
+								valid = false;
+				}
+				else
+					t += strlen(t);
 				break;
 			}
 			/* !X means any character but X */
@@ -188,9 +216,11 @@ match_pattern(char *t, char *pat, bool auto_wc)
 			/* String of any character */
 			case '*':
 			{
+				char *s = t;
 				pat++;
-				while (*t && (toupper(*t) != toupper(*pat)))
-					t++;
+				/* match from end */
+				t = t + strlen(t);
+				for( t--; t >= s && toupper(*t) != toupper(*pat); t-- );
 				break;
 			}
 			/* !X means any character but X */
