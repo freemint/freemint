@@ -51,6 +51,7 @@
 
 //long module_exit(void);
 
+short check_stack_alignment( long e );
 
 short my_global_aes[16];
 
@@ -297,6 +298,23 @@ fail:		if (buf) kfree(buf);
 	return false;
 }
 #endif
+
+/*
+ * return alignment-value
+ *
+ * do not inline!
+ */
+short check_stack_alignment( long stk )
+{
+	/* Read the current stack pointer value */
+
+	if( stk & 1L )
+		return 1;
+	if( stk & 2L )
+		return 2;
+	return 4;
+}
+
 #define XA_SEM 0x58414553L	/*"XAES"*/
 #define SEMCREATE	0
 #define SEMDESTROY	1
@@ -328,12 +346,14 @@ fail:		if (buf) kfree(buf);
  * - setup internal data
  * - start main kernel thread
  */
+unsigned short stack_align = 0;
 static Path start_path;
 static const struct kernel_module *self = NULL;
 
 long
 init(struct kentry *k, const struct kernel_module *km) //const char *path)
 {
+	long stk = (long)get_sp();
 	long err = 0L;
 
 	bool first = true;
@@ -381,6 +401,19 @@ again:
 	else
 		BLOG((false, "\n~~~~~~~~~~~~ XaAES restarting! ~~~~~~~~~~~~~~~"));
 #endif
+
+	/**** check if stack is sane ****/
+	stack_align |= check_stack_alignment(stk);
+	if( stack_align == 1 )
+	{
+		BLOG(( 0,"WARNING: stack is odd:%lx!", stk ));
+	}
+	else if( stack_align == 4 )
+			BLOG(( 0,"stack is long-aligned:%lx", stk ));
+	else
+			BLOG(( 0,"stack is word-aligned:%lx", stk ));
+
+
 	if (check_kentry_version())
 	{
 		err = ENOSYS;
@@ -416,8 +449,9 @@ again:
 
 		if (flag)
 		{
-			BLOG((/*00000005*/true, "ERROR: There exist an moose.xdd in your FreeMiNT sysdir."));
-			BLOG((/*00000006*/true, "       Please remove it before starting the XaAES kernel module!"));
+			BLOG((true,
+"ERROR: There exist an moose.xdd in your FreeMiNT sysdir.\n"
+"       Please remove it before starting the XaAES kernel module!"));
 			err = EINVAL;
 			goto error;
 		}
@@ -431,10 +465,12 @@ again:
 
 		if (flag)
 		{
-			BLOG((true, "ERROR: There exist an moose.adi in your FreeMiNT sysdir."));
-			BLOG((true, " sysdir = '%s'", sysdir));
-			BLOG((true, "       Please remove it and install it in the XaAES module directory"));
-			BLOG((true, "       before starting the XaAES kernel module!"));
+			BLOG((true,
+"ERROR: There exists a moose.adi in your FreeMiNT sysdir.\n"
+" sysdir = '%s'\n"
+"       Please remove it and install it in the XaAES module directory\n"
+"       before starting the XaAES kernel module!\n",
+			sysdir));
 			err = EINVAL;
 			goto error;
 		}
@@ -589,9 +625,11 @@ again:
 		if (!flag)
 		{
 
-			BLOG((/*00000008*/true, "ERROR: There exist no moose.adi in your XaAES module directory."));
-			BLOG((true, " -> '%s'", C.Aes->home_path));
-			BLOG((/*00000009*/true, "       Please install it before starting the XaAES kernel module!"));
+			BLOG((true,
+"ERROR: There exist no moose.adi in your XaAES module directory.\n"
+"	  -> '%s'"
+"   Please install it before starting the XaAES kernel module!",
+				C.Aes->home_path));
 			err = EINVAL;
 			goto error;
 		}
@@ -620,7 +658,7 @@ again:
 		helper = (s_system(S_GETBVAL, 0x0484, 0)) | 8;
 		s_system(S_SETBVAL, 0x0484, (char)helper);
 	}
-	BLOG((false, "set bit 3 in conterm ok!"));
+//	BLOG((false, "set bit 3 in conterm ok!"));
 
 #if GENERATE_DIAGS
 	{ short nkc_vers = nkc_init(); DIAGS(("nkc_init: version %x", nkc_vers)); }
@@ -692,7 +730,6 @@ again:
 
 		while (!(C.shutdown & QUIT_NOW))
 		{
-			BLOG((0,"init:sleep:%lx", &loader_pid));
 			sleep(WAIT_Q, (long)&loader_pid);
 		}
 
@@ -728,22 +765,22 @@ again:
 	detach_extension((void *)-1L, XAAES_MAGIC);
 	detach_extension((void *)-1L, XAAES_MAGIC_SH);
 
+error:
 	/* delete semaphore */
 	{
-		int e = p_semaphore( SEMDESTROY, XA_SEM, 0 );
-		if( e )
-			BLOG((0,"init:could not destroy semaphore:%d", e ));
+		int r = p_semaphore( SEMDESTROY, XA_SEM, 0 );
+		if( r )
+			BLOG((0,"init:could not destroy semaphore:%d", r ));
 	}
-	BLOG((0,"init:return 0"));
 	/* succeeded */
-	return 0;
+	//return 0;
 
-error:
 #if GENERATE_DIAGS
 	/* Close the debug output file */
 	if (D.debug_file)
 		kernel_close(D.debug_file);
 #endif
+	BLOG((0,"init:return %ld", err));
 	return err;
 }
 

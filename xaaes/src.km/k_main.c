@@ -62,6 +62,7 @@
 #include "mint/ssystem.h"
 #include "cookie.h"
 
+short check_stack_alignment( long e );
 
 #include "c_mouse.h"
 void set_tty_mode( short md );
@@ -947,9 +948,9 @@ fatal(void)
 }
 #endif
 
+extern char XAAESNAME[];
 #if ALERT_SHUTDOWN
 int xaaes_do_form_alert( enum locks lock, int def_butt, char al_text[], char title[] );
-extern char XAAESNAME[];
 extern char ASK_SHUTDOWN_ALERT[];
 #endif
 
@@ -1012,6 +1013,9 @@ aesthread_block(struct xa_client *client, int which)
 	if (!client->tp_term)
 		do_block(client);
 }
+
+extern short stack_align;
+
 /*
  * AES thread
  */
@@ -1037,7 +1041,10 @@ aesthread_entry(void *c)
 static void
 helpthread_entry(void *c)
 {
+	long stk = (long)get_sp();
 	struct xa_client *client;
+
+	stack_align |= (check_stack_alignment(stk) << 8);
 
 	p_domain(1);
 	setup_common();
@@ -1432,10 +1439,12 @@ void set_tty_mode( short md )
 void
 k_main(void *dummy)
 {
+	long stk = (long)get_sp();
 	int wait = 1;
 	unsigned long default_input_channels;
 	struct tty *tty;
-	//long n = 0;
+
+	stack_align |= (check_stack_alignment(stk) << 4);
 
 	/*
 	 * setup kernel thread
@@ -1637,6 +1646,11 @@ k_main(void *dummy)
 
 	if (cfg.opentaskman)
 		post_cevent(C.Hlp, ceExecfunc, open_taskmanager,NULL, 1,0, NULL,NULL);
+
+	if( stack_align & 0x111 )
+	{
+		ALERT(( "WARNING:your stack is odd!" ));
+	}
 
 	post_cevent(C.Hlp, CE_start_apps, NULL,NULL, 0,0, NULL,NULL);
 
@@ -1871,17 +1885,8 @@ k_exit(int wait)
 
 	if (C.alert_pipe > 0)
 		f_close(C.alert_pipe);
-#if 0
-	{
-	struct proc *lp = pid2proc( loader_pid );
-	BLOG((false, "Waking up loader: pid=%ld:%lx wait_cond=%lx wait_q=%d", loader_pid, &loader_pid, lp->wait_cond, lp->wait_q));
-	/* wakeup loader */
-
-	wake(WAIT_Q, lp->wait_cond );
-	}
-#else
 	wake(WAIT_Q, (long)&loader_pid);
-#endif
+
 	/* XXX todo -> module_exit */
 // 	display("kthread_exit...");
 
