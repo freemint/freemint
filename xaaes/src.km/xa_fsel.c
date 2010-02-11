@@ -149,7 +149,7 @@ static struct xa_wtxt_inf dir_txt =
 {
  WTXT_NOCLIP,
 /* id  pnts  flags wrm, 		efx 	fgc 		 bgc	 banner x_3dact y_3dact texture */
- {	-1,  -1, 0, 	MD_TRANS, 0, G_LCYAN, G_WHITE, G_WHITE, 0,			0,		 NULL },/* Normal */
+ {	-1,  -1, 0, 	MD_TRANS, 0, G_BLUE, G_WHITE, G_WHITE, 0,			0,		 NULL },/* Normal */
  {	-1,  -1, 0, 	MD_TRANS, 0, G_CYAN,	G_WHITE, G_WHITE, 0,			0,		 NULL },	/* Selected */
  {	-1,  -1, 0, 	MD_TRANS, 0, G_BLACK, G_WHITE, G_WHITE, 0,			0,		 NULL },	/* Highlighted */
 
