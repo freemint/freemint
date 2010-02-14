@@ -107,7 +107,7 @@ match_pattern(char *t, char *pat, bool auto_wc)
 			/* String of any character */
 			case '*':
 			{
-				while( *++pat == '*' );
+				while( *++pat == '*' || *pat == '?' );
 
 				if( *pat )
 				{
@@ -120,7 +120,7 @@ match_pattern(char *t, char *pat, bool auto_wc)
 							valid = false;
 					}
 					else	/* pat has more magic: search from beg */
-						if( !strchr( "?[!", *pat ) )	/* next is not magic */
+						if( !strchr( "[!", *pat ) )	/* next is not magic */
 							if( !(t = strchr( t, *pat )) )
 								valid = false;
 				}
@@ -157,7 +157,8 @@ match_pattern(char *t, char *pat, bool auto_wc)
 					if (!*pat)
 						valid = 0;
 				}
-				pat++;
+				if( *pat )
+					pat++;
 				t++;
 				break;
 			}

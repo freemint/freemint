@@ -520,7 +520,9 @@ otm:
 		{
 			DIAGS(("Recover palette"));
 			if (screen.planes <= 8)
-				set_syspalette(C.P_handle, screen.palette);
+			{
+				set_syspalette( /*C.P_handle */C.Aes->vdi_settings->handle, screen.palette);
+			}
 			return true;
 		}
 #if HOTKEYQUIT
