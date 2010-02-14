@@ -340,8 +340,6 @@ disable_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_r
  * Draw a box (respecting 3d flags)
  */
 
-extern void *wd;
-
 #define userblk(ut) (*(USERBLK **)(ut->userblk_pp))
 #define ret(ut)     (     (long *)(ut->ret_p     ))
 #define parmblk(ut) (  (PARMBLK *)(ut->parmblk_p ))
@@ -846,15 +844,19 @@ short flags)
 					lwind = list->wi;
 
 					/* resize the list-window */
-					if( lwind && lwind->send_message ){
-						short amq = 0;
+					/*
+					 * bug: if not top list-window-borders may get redrawn
+					 *	over other window if sized from top
+					 */
+					if( lwind && lwind->send_message )
+					{
+						short amq = AMQ_REDRAW;
 						RECT dr = v->clip;	/* send_message may change clipping */
 
 						lwind->send_message(0, lwind, NULL, amq, QMF_CHKDUP,
 							WM_SIZED, 0,0, lwind->handle,
 							lwind->r.x, lwind->r.y, lwind->r.w + dw, lwind->r.h + dh);
 						(*v->api->set_clip)(v, &dr);	/* restore clip */
-
 					}
 				}
 			}

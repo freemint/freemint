@@ -3379,10 +3379,11 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 		} /* if (brl) */
 		else
 		{
+			short flags = only_wa ? RDRW_WA : RDRW_ALL;
 			newrl = wind->rect_list.start;
 			while (newrl)
 			{
-				generate_redraws(wlock, wind, &newrl->r, !only_wa ? RDRW_ALL : RDRW_WA);
+				generate_redraws(wlock, wind, &newrl->r, flags);
 				newrl = newrl->next;
 			}
 		}
