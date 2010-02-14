@@ -2326,6 +2326,7 @@ static void add_kerinfo(
 		BLOG((0,"add_kerinfo:could not open %s err=%ld", path, err ));
 }
 
+
 void
 open_systemalerts(enum locks lock, struct xa_client *client, bool open)
 {
@@ -2429,7 +2430,7 @@ open_systemalerts(enum locks lock, struct xa_client *client, bool open)
 			else
 				fs = pformats[5];
 
-			sprintf( sstr, sizeof(sstr), "Video: %dx%dx%d,%d colours, format: %s, Stack: %x",
+			sprintf( sstr, sizeof(sstr)-1, "Video: %dx%dx%d,%d colours, format: %s, Stack: %x",
 				screen.r.w, screen.r.h, screen.planes, screen.colours, fs, stack_align );
 			}
 			sc.t.text = sstr;

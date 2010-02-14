@@ -525,6 +525,7 @@ calc_average_fontsize(struct xa_vdi_settings *v, short *maxw, short *maxh, short
 // 	display("effex %d, %d, %d", temp[0], temp[1], temp[2]);
 }
 
+
 int
 k_init(unsigned long vm)
 {
@@ -573,7 +574,7 @@ k_init(unsigned long vm)
 	/* try to open virtual wk - necessary when physical wk is already open
 	 * ? how to know if physical wk is open and its handle without AES?
 	 */
-	if( C.fvdi_version == 0 /*&& cfg.videomode == 0*/ )
+	if( C.fvdi_version == 0 && C.nvdi_version != 0 /*&& cfg.videomode == 0*/ )
 	{
 		v->handle = 0;
 		C.P_handle = 0;
@@ -592,7 +593,7 @@ k_init(unsigned long vm)
 		if (r != 0)
 			vdo = 0;
 
-		BLOG((0,"k_init:vdo=%ld vm=%lx video=%d", vdo, vm, cfg.videomode ));
+		BLOG((0,"k_init:vdo=%lx vm=%lx video=%d", vdo, vm, cfg.videomode ));
 
 		if ( cfg.videomode)
 		{
@@ -748,14 +749,12 @@ k_init(unsigned long vm)
 		 */
 		v_exit_cur(C.P_handle);
 
-		get_syspalette(C.P_handle, screen.palette);
-// 	set_defaultpalette(C.P_handle);
 		/*
 		 * Open us a virtual workstation for XaAES to play with
 		 */
 		//v->handle = C.P_handle;
 
-		set_wrkin(work_in, 1);
+		set_wrkin(work_in, C.P_handle);
 		v_opnvwk(work_in, &v->handle, work_out);
 	}
 
@@ -766,6 +765,8 @@ k_init(unsigned long vm)
 	}
 	BLOG((false, "Virtual work station opened: %d", v->handle));
 
+		get_syspalette(v->handle/*C.P_handle*/, screen.palette);
+// 	set_defaultpalette(C.P_handle);
 	/*
 	 * Setup the screen parameters
 	 */
@@ -812,11 +813,8 @@ k_init(unsigned long vm)
 // 	get_syspalette(C.P_handle, screen.palette);
 
 	screen.pixel_fmt = detect_pixel_format(v);
-	if( screen.pixel_fmt == -1 )
-		screen.pixel_fmt = 0; 			/* use motorola as default (until the error is found) */
-
-	BLOG((false, "Video info: width(%d/%d), planes :%d, colours %d pixel-format %d",
-		screen.r.w, screen.r.h, screen.planes, screen.colours, screen.pixel_fmt));
+	BLOG((false, "Video info: width(%d/%d), planes :%d, colours %d pixel-format %d palsz=%ld",
+		screen.r.w, screen.r.h, screen.planes, screen.colours, screen.pixel_fmt, sizeof(screen.palette)));
 
 // 	display("Video info: width(%d/%d), planes :%d, colours %d, pixelfmt = %d",
 // 		screen.r.w, screen.r.h, screen.planes, screen.colours, screen.pixel_fmt);

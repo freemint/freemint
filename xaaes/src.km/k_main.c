@@ -1593,7 +1593,7 @@ k_main(void *dummy)
 		goto leave;
 	}
 
-	//set_tty_mode( RAW );
+	BLOG((0,"alert:%d, KDB:%d", C.alert_pipe, C.KBD_dev ));
 
 	/* initialize mouse */
 	if (!init_moose())
@@ -1660,6 +1660,7 @@ k_main(void *dummy)
 	default_input_channels = 1UL << C.KBD_dev;	/* We are waiting on all these channels */
 	default_input_channels |= 1UL << C.alert_pipe;	/* Monitor the system alert pipe */
 	tty = (struct tty *)C.Aes->p->p_fd->ofiles[C.KBD_dev]->devinfo;
+
 
 	/*
 	 * Main kernel loop
@@ -1895,6 +1896,7 @@ k_exit(int wait)
 		long r;
 		r = f_cntl(C.KBD_dev, (long)&KBD_dev_sg, TIOCSETN);
 		KERNEL_DEBUG("fcntl(TIOCSETN) -> %li", r);
+		//r = f_cntl(C.KBD_dev, NULL, TIOCFLUSH);
 
 		f_close(C.KBD_dev);
 	}
