@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
  *                                        2004 F.Naumann & O.Skancke
@@ -70,7 +70,7 @@ struct shared
 	struct win_base closed_windows;		/* list of all closed windows */
 	struct win_base hidden_windows;
 	struct win_base deleted_windows;	/* list of windows to be deleted (delayed action) */
-	
+
 	struct win_base open_nlwindows;
 	struct win_base closed_nlwindows;
 	struct win_base calc_windows;		/* list of open nolist windows - fmd, alerts, etc. */
@@ -227,7 +227,7 @@ struct common
 
 	void (*reschange)(enum locks lock, struct xa_client *client, bool open);
 	struct kernkey_entry *kernkeys;
-	
+
 	short AESpid;			/* The AES's MiNT process ID */
 	short DSKpid;			/* The desktop programs pid, if any */
 
@@ -240,7 +240,7 @@ struct common
 	void 	*Hlp_pb;
 // 	enum waiting_for Aes_waiting_for;
 	unsigned long	Aes_waiting_for;
-	
+
 	short move_block;		/* 0 = movement allowed
 					 * 1 = internal movement cevent sent to client - no move
 					 * 2 = WM_MOVED AES message sent to client - no move
@@ -255,12 +255,12 @@ struct common
 	struct xa_client *ce_open_menu;	/* If set, this client has been sent a open_menu client event */
 	struct xa_client *ce_menu_move; /* If set, this client has been sent a menu_move client event */
 	struct xa_client *ce_menu_click;
-	
+
 	struct xa_client *next_menu;
 	struct widget_tree *next_menu_wt;
-	
+
 	struct xa_client *csr_client;	/* Client current in query by the Kill or Wait dialog */
-	
+
 	short shutdown;			/* flags for shutting down xaaes */
 #define SHUTDOWN_STARTED	0x0001
 #define SHUTTING_DOWN		0x0002
@@ -278,7 +278,7 @@ struct common
 
 	long alert_pipe;		/* AESSYS: The MiNT Salert() pipe's file handle */
 	long KBD_dev;			/* AESSYS: The MiNT keyboard device's file handle */
-	
+
 	RECT iconify;			/* Positioning information for iconifying windows */
 	void *Aes_rsc;			/* Pointer to the XaAES resources */
 	char *env;			/* new environment */
@@ -293,7 +293,7 @@ struct common
 	short updatelock_count;
 	short mouselock_count;
 	short menulock_count;
-	
+
 	Path desk;			/* Remember the desk path for Launch desk. */
 	short mouse;			/* Remember mouse shape */
 	MFORM *mouse_form;		/* Remember mouse form */
@@ -335,7 +335,7 @@ struct cfg_name_list
 	short nlen;
 	char name[32];
 };
-	
+
 struct config
 {
 	short gradients;
@@ -352,7 +352,7 @@ struct config
 	/* display modes of window title */
 	short topname;
 	short backname;
-	
+
 	short next_active;		/* 0 = set previous active client active upon client termination */
 					/* 1 = set owner of previous topped (or only) window upon client termination */
 //	short last_wind;		/* 0 = Put owner of window ontop of window_list infront. */
@@ -371,12 +371,12 @@ struct config
 	bool menu_locking;		/* menus run in a window.
 	                                 * See lines.app run underneath the pulldown menu. :-) */
 	bool opentaskman;		/* open taskmanager at boot. */
-	
+
 	short alert_winds;		/* If set, alert windows are shown */
 
 	char cancel_buttons[NUM_CB][CB_L];
 #if FILESELECTOR
-	char Filters[23][16];
+	char Filters[FS_NPATTERNS][FS_PATLEN];
 #endif
 
 	enum menu_behave menu_behave;	/* pull, push or leave */
@@ -387,7 +387,7 @@ struct config
 	short ted_filler;
 	short font_id;			/* Font id to use */
 	short double_click_time;	/* Double click timing */
-	short mouse_packet_timegap;	
+	short mouse_packet_timegap;
 	short redraw_timeout;
 
 	struct xa_menu_settings	mn_set;
@@ -492,8 +492,8 @@ do_vdi_trap (XVDIPB * vpb)
 		"move.w		#115,d0\n\t"		\
 		"trap		#2\n\t"			\
 		:
-		: "a"(vpb)			
-		: "a0", "d0", "d1", "memory"	
+		: "a"(vpb)
+		: "a0", "d0", "d1", "memory"
 	);
 }
 
