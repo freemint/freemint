@@ -156,7 +156,8 @@ static struct xa_wtxt_inf dir_txt =
 };
 
 static char fs_paths[DRV_MAX][NAME_MAX+2];
-static char fs_patterns[23][16];
+static char fs_patterns[FS_NPATTERNS][FS_PATLEN];
+static int prover = 0, provermin = 0;
 
 
 static void
@@ -165,19 +166,28 @@ add_pattern(char *pattern)
 	int i;
 	if (pattern && *pattern)
 	{
-		for (i = 0; i < 23; i++)
+		for (i = 0; ; i++)
 		{
 			if (fs_patterns[i][0])
 			{
-				if (!stricmp(pattern, fs_patterns[i]))
+				//if (!stricmp(pattern, fs_patterns[i]))
+				if (!strcmp(pattern, fs_patterns[i]))
 				{
 					break;
+				}
+				if( prover && i == FS_NPATTERNS )
+				{
+					if( prover == FS_NPATTERNS )
+							prover = provermin;	/* skip patterns from config */
+					i = prover;
+					fs_patterns[i][0] = 0;
+					prover++;
 				}
 			}
 			else
 			{
-				strncpy(fs_patterns[i], pattern, 16);
-				fs_patterns[i][15] = '\0';
+				strncpy(fs_patterns[i], pattern, FS_PATLEN-1);
+				fs_patterns[i][FS_PATLEN-1] = '\0';
 				break;
 			}
 		}
@@ -200,16 +210,19 @@ init_fsel(void)
 	for (i = 0; i < DRV_MAX; i++)
 		fs_paths[i][0] = 0;
 
-	for (i = 0; i < 23; i++)
+	for (i = 0; i < FS_NPATTERNS; i++)
 		fs_patterns[i][0] = '\0';
 
 	add_pattern("*");
 
-	for (i = 0; i < 23; i++)
+	for (i = 0; i < FS_NPATTERNS && cfg.Filters[i][0]; i++)
 	{
-		if (cfg.Filters[i])
 			add_pattern(cfg.Filters[i]);
 	}
+	/* todo: free Filters */
+
+	if( i < FS_NPATTERNS -1 )
+		prover = provermin = i + 1;	/* + "*" */
 	if (screen.planes < 4)
 	{
 		exe_txt = dexe_txt = dir_txt = norm_txt;
@@ -306,7 +319,7 @@ fs_cwd(struct scroll_info *list, char *cwd, short incsel)
 			{
 				if (list->get(list, this, SEGET_TEXTPTR, &p))
 				{
-					strins(cwd, "\\", len);
+					strins(cwd, /*fs->fslash*/"\\", len);
 					strins(cwd, p.ret.ptr, len);
 				}
 				this = this->up;
@@ -389,7 +402,6 @@ fs_prompt(SCROLL_INFO *list, char *file, bool typing)
 	bool ret = false;
 	struct sesetget_params seget, p; //seget_entrybyarg seget, p;
 
-
 	if (!(parent = fs_cwd(list, NULL, 1)))
 	{
 		parent = NULL;
@@ -446,7 +458,7 @@ fs_prompt(SCROLL_INFO *list, char *file, bool typing)
 				else
 				{
 					fs->selected_dir = s->up;
-					fs->selected_file = s;//NULL;
+					fs->selected_file = s;
 				}
 				list->set(list, s, SESET_SELECTED, 0, NORMREDRAW);
 			}
@@ -1062,6 +1074,9 @@ set_file(struct fsel_data *fs, char *fn, bool mark)
 {
 	DIAG((D_fsel, NULL, "set_file: fs.file='%s', wh=%d", fn ? fn : fs->file, fs->wind->handle));
 
+	if( strmchr( fs->file, "*!?[" ) )
+		fn = fs->file;	/* keep pattern in edit-field */
+
 	/* fixup the cursor edit position */
 //	display("here, fn = %lx '%s'", fn, fn);
 
@@ -1177,6 +1192,8 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 			strcpy( lower_pattern, pattern );
 			strlwr( lower_pattern );
 		}
+		match_pattern( 0, pattern, false);	/* init */
+
 		i = d_opendir(fs->path, 0);
 
 		PROFILE(("fsel:Dopendir %s", fs->path ));
@@ -1361,6 +1378,7 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 				}
 			}
 			d_closedir(i);
+			match_pattern( 0, 0, false);	/* de-init */
 
 			/* this is not elaborated
 			 * try to adapt the 1st distance
@@ -1554,7 +1572,7 @@ fsel_filters(OBJECT *m, char *pattern)
 
 	if (pattern && *pattern && fs_patterns[0][0])
 	{
-		while (i < 23 && fs_patterns[i][0])
+		while (i < FS_NPATTERNS && fs_patterns[i][0])
 		{
 			//fs_patterns[i][15] = 0;
 			m[d].ob_state &= ~OS_CHECKED;
@@ -1562,19 +1580,21 @@ fsel_filters(OBJECT *m, char *pattern)
 			{
 				m[d].ob_state |= OS_CHECKED;
 			}
-			sprintf(m[d++].ob_spec.free_string, 128, " "" %s", fs_patterns[i++]);
+			m[d].ob_flags &= ~OF_HIDETREE;	/* may be a new pattern */
+			sprintf(m[d].ob_spec.free_string, 128, " "" %s", fs_patterns[i++]);
+			m[d++].ob_spec.free_string[15] = 0;
 		}
-
-		do
-		{
-			m[d].ob_flags |= OF_HIDETREE;
-		}
-		while (m[d++].ob_next != FSEL_PATBOX);
 
 		m[FSEL_PATBOX].ob_height = i * screen.c_max_h;
+
+		for( ; i < FS_NPATTERNS; i++ )
+		{
+			m[d++].ob_flags |= OF_HIDETREE;
+		}
+
 	}
-	strncpy(p, pattern, 15);
-	p[15] = 0;
+	strncpy(p, pattern, sizeof(p)-1);
+	p[sizeof(p)-1] = 0;
 	sprintf(m[FSEL_FILTER].ob_spec.free_string, 128, " %s", p);
 }
 
@@ -2005,6 +2025,20 @@ fileselector_form_exit(struct xa_client *client,
 			refresh_filelist(fsel, fs, NULL);
 			fs_prompt(list, fs->file, false);
 		}
+#else
+		if( strmchr( fs->file, "*!?[|" ) )
+		{
+			strncpy(fs->fs_pattern, fs->file, sizeof(fs->fs_pattern)-1);
+			/* copy new pattern into filters */
+			fsel_filters(fs->menu->tree, fs->fs_pattern);
+			display_widget(lock, fs->wind, get_widget(fs->wind, XAW_MENU), NULL);
+
+			//if( fs->treeview == false )
+				fs->selected_dir = 0;	//??
+			refresh_filelist(fsel, fs, fs->selected_dir);
+			fs_prompt(list, fs->file, false);
+			list->set(list, NULL, SESET_UNSELECTED, UNSELECT_ALL, NORMREDRAW);
+		}
 		else
 #endif
 		{
@@ -2073,18 +2107,25 @@ static void
 fs_change(enum locks lock, struct fsel_data *fs, OBJECT *m, int p, int title, int d, char *t)
 {
 	XA_WIDGET *widg = get_widget(fs->wind, XAW_MENU);
-	int bx = d - 1;
+	int bx = d - 1, tlen = FS_PATLEN -1;
 
 	do
 		m[d].ob_state &= ~OS_CHECKED;
 	while (m[d++].ob_next != bx);
 
 	m[p].ob_state |= OS_CHECKED;
-	sprintf(m[title].ob_spec.free_string, 128, " %s", m[p].ob_spec.free_string + FS_OFFS);
+	if( title == FSEL_FILTER )
+		tlen = 15;
+	sprintf(m[title].ob_spec.free_string, tlen, " %s", m[p].ob_spec.free_string + FS_OFFS);
+	if( title == FSEL_FILTER )
+		m[title].ob_spec.free_string[tlen]  = 0;
 	widg->start = 0;
 	m[title].ob_state &= ~OS_SELECTED;
 	display_widget(lock, fs->wind, widg, NULL);
-	strcpy(t, m[p].ob_spec.free_string + FS_OFFS);
+	if( title == FSEL_FILTER )
+		strcpy(t, fs_patterns[p-FSEL_PATA]);	/* copy from pattern-list not from menu-text */
+	else
+		strcpy(t, m[p].ob_spec.free_string + FS_OFFS);
 }
 
 static struct scroll_entry *
@@ -2160,9 +2201,9 @@ fs_slist_key(struct scroll_info *list, unsigned short keycode, unsigned short ks
 
 			list->set(list, was, SESET_CURRENT, 0, NOREDRAW);
 
-			if ((keycode == SC_LFARROW || keycode == SC_RTARROW))
+			if ((keycode == SC_LFARROW || keycode == SC_RTARROW)
+					&& (!fs->treeview || list->start == NULL || scrl_cursor(list, keycode, 0) == 0) )
 			{
-
 				list->get(list, NULL, SEGET_CURRENT, &this);
 
 				if (keycode == SC_RTARROW)
@@ -2246,6 +2287,7 @@ fs_slist_key(struct scroll_info *list, unsigned short keycode, unsigned short ks
 							}
 							p.idx = -1;
 							list->get(list, this, SEGET_TEXTPTR, &p);
+							strcpy( fs->file, p.ret.ptr );	/* remove pattern */
 							set_file(fs, p.ret.ptr, true);
 							fs->tfile = false;
 						}
@@ -2391,7 +2433,8 @@ fs_key_form_do(enum locks lock,
 		struct rawkey k = *key;
 
 		/* letter on uppercase fs: make uppercase */
-		if( (fs->fcase & FS_FSNOCASE) && (k.aes & 0x00ff) && k.norm >= 'a' && k.norm <= 'z' )
+		if( (fs->fcase & FS_FSNOCASE) && (k.aes & 0x00ff) && k.norm >= 'a' && k.norm <= 'z'
+				&& !strmchr( fs->file, "*!?[|" ) )
 		{
 			unsigned char c = k.norm - ('a' - 'A');
 			k.aes = (k.aes & 0xff00) | c;
@@ -2482,8 +2525,13 @@ fs_msg_handler(
 		else if (msg[3] == FSEL_FILTER)
 		{
 			fs_change(lock, fs, fs->menu->tree, msg[4], FSEL_FILTER, FSEL_PATA, fs->fs_pattern);
-			fs->selected_dir = fs->selected_file = NULL;
-			set_file(fs, fs->ofile, false);
+			//if( fs->treeview == false )
+				fs->selected_dir = NULL;
+			fs->selected_file = NULL;
+			/* put pattern into edit-field */
+			strcpy( fs->file, fs->fs_pattern );
+			set_file(fs, fs->file, false);
+			//set_file(fs, fs->ofile, false);
 //			if (!fs->tfile)
 //				set_file(fs, "");
 		}
@@ -2510,6 +2558,7 @@ fs_msg_handler(
 		refresh_filelist(lock, fs, NULL);
 //		display("cur2 %lx", list->cur);
 		fs_prompt(list, fs->file, false);
+		list->set(list, NULL, SESET_UNSELECTED, UNSELECT_ALL, NORMREDRAW);
 //		display("cur3 %lx", list->cur);
 		break;
 	}
@@ -2593,7 +2642,7 @@ fs_init_menu(struct fsel_data *fs)
  * path
  * fs_einpath 	Name of the default access path (absolute) with appended search
  *							mask; after the call it contains the new pathname
-
+ *
  * char *
  * file
  * fs_einsel		Name of the default file; after the call it contains the newly
