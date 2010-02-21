@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
  *                                        2004 F.Naumann & O.Skancke
@@ -46,12 +46,12 @@ struct cnfdata
 
 /*
  * setenv name val ..... set up environment
- * 
+ *
  * toppage=bold|faint
  * cancel=string,string
  * filters=
  * menu=pull,push,leave,nolocking
- * 
+ *
  * shell=
  * run=
  */
@@ -111,7 +111,7 @@ static struct parser_item parser_tab[] =
 
 	/* config settings */
 	{ "SETENV",                PI_C_TT,  pCB_setenv		},
-	
+
 	{ "TOPPAGE",               PI_V_T,   pCB_toppage		},
 	{ "NEXT_ACTIVE",           PI_V_T,   pCB_next_active		},
 //	{ "CLOSE_LASTWIND",        PI_V_T,   pCB_close_lastwind		},
@@ -123,13 +123,13 @@ static struct parser_item parser_tab[] =
 	{ "KILL_WO_QUESTION",	   PI_V_A,   pCB_kill_without_question	},
 	{ "MENU",                  PI_V_T,   pCB_menu			},
 	{ "HELPSERVER",            PI_V_A,   pCB_helpserver		},
-	
+
 	/* Mouse wheel settings */
 	{ "VERTICAL_WHEEL_ID",       PI_R_S,   & cfg.ver_wheel_id         },
 	{ "HORIZONTAL_WHEEL_ID",     PI_R_S,   & cfg.hor_wheel_id         },
 	{ "VERTICAL_WHEEL_AMOUNT",   PI_R_S,   & cfg.ver_wheel_amount, Range(1, 20) },
 	{ "HORIZONTAL_WHEEL_AMOUNT", PI_R_S,   & cfg.hor_wheel_amount, Range(1, 20) },
-	
+
 	/* Iconify options */
 	{ "ICNFY_ORIENT",	PI_R_S, &cfg.icnfy_orient		},
 	{ "ICNFY_LEFT",		PI_R_S, &cfg.icnfy_l_x			},
@@ -145,9 +145,9 @@ static struct parser_item parser_tab[] =
 	/* startup things */
 	{ "SHELL",                 PI_V_ATK, pCB_shell			},
 	{ "RUN",                   PI_C_TA,  pCB_run			},
-	
+
 	/* debug */
-	
+
 	{ NULL }
 };
 
@@ -179,7 +179,7 @@ get_delim_string(char **line)
 		&& *s != '\r'
 		&& *s != '\n'
 		&& *s != ','
-		&& *s != '|') s++;
+		/*&& *s != '|'*/) s++;
 
 	if (s == *line)
 		return NULL;
@@ -262,7 +262,7 @@ get_argval(char *wfarg, short *result)
 	}
 
 	end = wfarg;
-					
+
 	while (isdigit(*end))
 		end++;
 
@@ -326,7 +326,7 @@ get_boolarg(char *s, bool *result)
 	{
 		while (isdigit(*end))
 			end++;
-					
+
 		if (end == s)
 		{
 			DIAGS(("get_boolarg: no argument!"));
@@ -364,7 +364,7 @@ get_boolarg(char *s, bool *result)
 			*result = ret ? true : false;
 		ret = 0;
 	}
-	
+
 	return ret;
 }
 
@@ -536,7 +536,7 @@ pCB_app_options(char *line)
 				strcpy(op->name, s);
 				opts = &op->options;
 				*opts = default_options;
-				
+
 			}
 		}
 
@@ -618,7 +618,7 @@ pCB_filters(char *line)
 
 		if (strlen(s) < sizeof(cfg.Filters[0]))
 		{
-			strcpy(cfg.Filters[i++], s);
+			strcpy(cfg.Filters[i++], s);	/* todo: malloc this */
 			DIAGS(("pCB_filters[%i]: %s", i-1, s));
 		}
 	}
@@ -634,9 +634,9 @@ isolate_strarg(char **str)
 	s = *str;
 
 	s = skip(s);
-	
+
 	DIAGS((" -- remaining='%s'", s));
-	
+
 	if (*s == 0x22 || *s == 0x27)
 	{
 		s++;
@@ -648,7 +648,7 @@ isolate_strarg(char **str)
 				DIAGS(("isolate_string: missing end quote!"));
 				break;
 			}
-			
+
 			if (*e != 0x5c && (*e == 0x22 || *e == 0x27))
 			{
 				ret = s;
@@ -675,14 +675,14 @@ isolate_strarg(char **str)
 			&& *e != '\r'
 			&& *e != '\n'
 			&& *e != ',') e++;
-	
+
 		if (s != e)
 		{
 			ret = s;
 			if (*e)
 				*e++ = 0;
 		}
-		
+
 #if GENERATE_DIAGS
 		if (ret)
 		{
@@ -690,14 +690,14 @@ isolate_strarg(char **str)
 		}
 		else
 			DIAGS((" -- some unquote error"));
-#endif		
+#endif
 	}
-	
+
 	if (ret)
 	{
 		*str = e;
 	}
-	
+
 	return ret;
 }
 
@@ -723,7 +723,7 @@ pCB_kill_without_question(char *line)
 		DIAGS(("pCB_kill_without_question: Got string '%s'", s));
 		addto_namelist(&cfg.kwq, s);
 	}
-}	
+}
 /*----------------------------------------------------------------------------*/
 static void
 pCB_menu(char *line)
@@ -951,7 +951,7 @@ load_config(void)
 		diags_opts(&C.Aes->options);
 		DIAGS(("    DEFAULT"));
 		diags_opts(&default_options);
-		
+
 		while (op)
 		{
 			DIAGS(("    '%s'", op->name));
