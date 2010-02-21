@@ -2,6 +2,7 @@
 #include <mint/cookie.h>
 #include <mint/mintbind.h>
 #include <mint/ssystem.h>
+#include <signal.h>
 #include <sys/fcntl.h>
 #include <string.h>
 
@@ -66,12 +67,39 @@ my_strlcat(char *dst, const char *src, size_t n)
 
 int loader_init(int argc, char **argv, char **env);
 
+static void ignore(long sig)
+{
+	char sign[4];
+	if( sig > 29 )
+	{
+		sign[0] = '3';
+		sig -= 30;
+	}
+	else if( sig > 19 )
+	{
+		sign[0] = '2';
+		sig -= 20;
+	}
+	else if( sig > 9 )
+	{
+		sign[0] = '1';
+		sig -= 10;
+	}
+	else
+		sign[0] = ' ';
+	sign[1] = sig + '0';
+	sign[2] = 0;
+	Cconws( "XaAES loader: SIGNAL ");
+	Cconws( sign );
+	Cconws( " ignored\r\n");
+}
+
 int
 loader_init(int argc, char **argv, char **env)
 {
 	char path[384];
 	char *name;
-	long fh, r;
+	long fh, r = 1;
 
 	/*
 	 *  Go into MiNT domain
@@ -85,7 +113,7 @@ loader_init(int argc, char **argv, char **env)
 	 */
 	Dsetdrv('u' - 'a');
 	Dsetpath("/");
-	
+
 	/*
 	 * now lookup FreeMiNT's sysdir
 	 */
@@ -141,9 +169,9 @@ loader_init(int argc, char **argv, char **env)
 	else
 	{
 		long cpu;
-		
+
 		name = DEFAULT;
-		
+
 		/* if the system have a 68000 CPU we use the 68000 compiled
 		 * module
 		 */
@@ -195,6 +223,13 @@ loader_init(int argc, char **argv, char **env)
 		Cconws("XaAES loader: no /dev/km, please update your kernel!\r\n");
 		goto error;
 	}
+	/* if mint waits for xaloader it should not exit */
+	Psignal( SIGINT, ignore );
+	Psignal( SIGQUIT, ignore );
+	Psignal( SIGSTOP, ignore );
+	Psignal( SIGTSTP, ignore );
+	Psignal( SIGTERM, ignore );
+	//Psignal( SIGKILL, ignore );
 
 	//Cconws( "XaAES loader: KM_RUN \r\n");
 	//Cconin();
@@ -204,7 +239,6 @@ loader_init(int argc, char **argv, char **env)
 	if (r)
 	{
 		Cconws("XaAES loader: Fcntl(KM_RUN) failed!\r\n");
-		//goto error;
 	}
 
 	Cconws( "XaAES loader: KM_FREE\r\n");
