@@ -315,32 +315,6 @@ short check_stack_alignment( long stk )
 	return 4;
 }
 
-#define XA_SEM 0x58414553L	/*"XAES"*/
-#define SEMCREATE	0
-#define SEMDESTROY	1
-#define SEMGET	2
-#define SEMRELEASE	3
-
-/*
-* kernel-code:
-*
-*  MODE  ACTION
-*    0 Create and get a semaphore with the given ID.
-*    1 Destroy.
-*    2 Get (blocks until it's available or destroyed, or timeout).
-*    3 Release.
-*
-* RETURNS
-*
-*  CODE  MEANING
-*    0 OK.  Created/obtained/released/destroyed, depending on mode.
-*  ERROR You asked for a semaphore that you already own.
-*  EBADARG That semaphore doesn't exist (modes 1, 2, 3, 4),
-*    or out of slots for new semaphores (0).
-*  EACCES  That semaphore exists already, so you can't create it (mode 0),
-*    or the semaphore is busy (returned from mode 3 if you lose),
-*    or you don't own it (modes 1 and 4).
-*/
 /*
  * Module initialisation
  * - setup internal data
@@ -361,18 +335,6 @@ init(struct kentry *k, const struct kernel_module *km) //const char *path)
 	/* setup kernel entry */
 	kentry = k;
 	self = km;
-
-	/* test if already running */
-	if( p_semaphore( SEMGET, XA_SEM, 0 ) != EBADARG )
-	{
-		display("XaAES already running!" );
-		/* release */
-		p_semaphore( SEMRELEASE, XA_SEM, 0 );
-		return 1;
-	}
-	/* create semaphore, gets released at exit */
-	p_semaphore( SEMCREATE, XA_SEM, 0 );
-
 	next_res = 0L;
 
 	bzero(&G, sizeof(G));
@@ -423,6 +385,7 @@ again:
 	/* remember loader */
 
 	loader_pid = p_getpid();
+	//get_curproc()->pgrp = 0;
 	loader_pgrp = p_getpgrp();
 	BLOG((0,"loader:pgrp=%ld, pid=%ld", loader_pgrp, loader_pid ));
 
@@ -766,12 +729,6 @@ again:
 	detach_extension((void *)-1L, XAAES_MAGIC_SH);
 
 error:
-	/* delete semaphore */
-	{
-		int r = p_semaphore( SEMDESTROY, XA_SEM, 0 );
-		if( r )
-			BLOG((0,"init:could not destroy semaphore:%d", r ));
-	}
 	/* succeeded */
 	//return 0;
 

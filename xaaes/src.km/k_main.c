@@ -1423,6 +1423,8 @@ void set_tty_mode( short md )
 	assert(r == 0);
 #endif
 }
+
+
 /*
  * Main AESSYS thread...
  */
@@ -1446,6 +1448,18 @@ k_main(void *dummy)
 
 	stack_align |= (check_stack_alignment(stk) << 4);
 
+	/* test if already running */
+	if( p_semaphore( SEMGET, XA_SEM, 0 ) != EBADARG )
+	{
+		display("XaAES already running!" );
+		/* release */
+		p_semaphore( SEMRELEASE, XA_SEM, 0 );
+		goto leave;
+	}
+	/* create semaphore, gets released at exit */
+	BLOG((0,"k_main:SEMCREATE"));
+	p_semaphore( SEMCREATE, XA_SEM, 0 );
+
 	/*
 	 * setup kernel thread
 	 */
@@ -1459,8 +1473,7 @@ k_main(void *dummy)
 	setup_common();
 
 	/* join process group of loader */
-	/* this breaks shutdown on my TT - XaAES has pgrp 0 now */
-	//p_setpgrp(0, loader_pgrp);
+	p_setpgrp(0, loader_pgrp);
 
 	c_naes = NULL;
 
@@ -1593,7 +1606,7 @@ k_main(void *dummy)
 		goto leave;
 	}
 
-	BLOG((0,"alert:%d, KDB:%d", C.alert_pipe, C.KBD_dev ));
+	BLOG((0,"alert:%ld, KBD:%ld", C.alert_pipe, C.KBD_dev ));
 
 	/* initialize mouse */
 	if (!init_moose())
@@ -1755,6 +1768,16 @@ k_main(void *dummy)
 	if (C.sdt)
 		cancelroottimeout(C.sdt);
 	C.sdt = NULL;
+
+	/* delete semaphore */
+	{
+		int r;
+		BLOG((0,"k_main:SEMDESTROY"));
+		r = p_semaphore( SEMDESTROY, XA_SEM, 0 );
+		if( r )
+			BLOG((0,"k_main:could not destroy semaphore:%d", r ));
+	}
+
 leave:
 	k_exit(wait);
 
@@ -1900,6 +1923,5 @@ k_exit(int wait)
 
 		f_close(C.KBD_dev);
 	}
-
  	kthread_exit(0);
 }
