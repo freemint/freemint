@@ -28,7 +28,7 @@
  * Kernal Message Handler
  */
 
-#ifndef _k_keybd_h 
+#ifndef _k_keybd_h
 #define _k_keybd_h
 
 #include "global.h"

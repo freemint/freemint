@@ -44,7 +44,7 @@
 
 /*
  * initialize trap handler table
- * 
+ *
  * lockscreen flag for AES functions that are writing the screen
  * and are supposed to be locking
  */
@@ -353,7 +353,7 @@ setup_handler_table(void)
 	aes_tab[ 71].flags |= DO_LOCKSCREEN; /* XA_GRAF_DRAGBOX */
 	aes_tab[ 75].flags |= DO_LOCKSCREEN; /* XA_GRAF_WATCHBOX */
 	aes_tab[ 76].flags |= DO_LOCKSCREEN; /* XA_GRAF_SLIDEBOX */
-	
+
 	//aes_tab[ 90].flags |= DO_LOCKSCREEN; /* XA_FSEL_INPUT */
 	//aes_tab[ 91].flags |= DO_LOCKSCREEN; /* XA_FSEL_EXINPUT */
 
@@ -376,10 +376,10 @@ setup_handler_table(void)
 
 	aes_tab[161].f		=  XA_wdlg_open;
 	aes_tab[161].flags 	|= DO_LOCKSCREEN;
-	
+
 	aes_tab[162].f		=  XA_wdlg_close;
 	aes_tab[162].flags	|= DO_LOCKSCREEN;
-	
+
 	aes_tab[163].f		=  XA_wdlg_delete;
 
 	aes_tab[164].f		=  XA_wdlg_get;
@@ -503,7 +503,7 @@ XA_handler(void *_pb)
 #if 0
 		/* inform user what's going on */
 		ALERT(("XaAES: No AES Parameter Block, killing it", p_getpid()));
-	
+
 		exit_proc(0, get_curproc(), 0);
 
 		raise(SIGKILL);
@@ -574,7 +574,7 @@ XA_handler(void *_pb)
 			return 0;
 		}
 
-		/* 
+		/*
 		 * default paths are kept per process by MiNT ??
 		 * so we need to get them here when we run under the process id.
 		 */
@@ -588,7 +588,7 @@ XA_handler(void *_pb)
 				client->xdrive = d_getdrv();
 				d_getpath(client->xpath, 0);
 			}
-			
+
 			while (client->irdrw_msg)
 				exec_iredraw_queue(0, client);
 		}
@@ -626,7 +626,7 @@ XA_handler(void *_pb)
 			struct proc *p = get_curproc();
 
 			/* The root of all locking under client pid.
-			 * 
+			 *
 			 * how about this? It means that these
 			 * semaphores are not needed and are effectively skipped.
 			 */
@@ -637,7 +637,7 @@ XA_handler(void *_pb)
 #endif
 			if (aes_tab[cmd].flags & DO_LOCKSCREEN)
 				lock_screen(p, false);
-			
+
 			/* callout the AES function */
 
 			/* Ozk:
@@ -686,7 +686,7 @@ XA_handler(void *_pb)
 			{
 				case XAC_DONE:
 					break;
-				
+
 				/* block indefinitly */
 				case XAC_BLOCK:
 				{
@@ -716,7 +716,7 @@ XA_handler(void *_pb)
 			}
 			else
 				DIAG((D_kern, NULL, "Leaving AES non AES process (pid %ld)", p_getpid()));
-			
+
 #endif
 			return 0;
 		}

@@ -263,7 +263,7 @@ lock_mouse(struct proc *proc, bool try)
 	{
 		if (ressource_semaphore_try(&mouse_lock, proc))
 			return true;
-		
+
 		return false;
 	}
 

@@ -96,7 +96,7 @@ reset_focus(struct xa_window **new_focus, short flags)
 	if (!fw && 0)
 	{
 		short x, y;
-		 
+
 		check_mouse(NULL, NULL, &x, &y);
 		fw = find_window(0, x, y, FNDW_NOLIST|FNDW_NORMAL);
 		if (fw && fw != root_window && !(fw->window_status & XAWS_NOFOCUS))
@@ -171,7 +171,7 @@ reset_focus(struct xa_window **new_focus, short flags)
 		client = fw == root_window ? get_desktop()->owner : fw->owner;
 	if (new_focus)
 		*new_focus = fw;
-	
+
 	return client;
 }
 
@@ -189,7 +189,7 @@ setnew_focus(struct xa_window *wind, struct xa_window *unfocus, bool topowner, b
 
 		if ((S.focus && (S.focus->window_status & XAWS_STICKYFOCUS)))
 			return;
-		
+
 		if (wind)
 		{
 			if (!(wind->window_status & XAWS_OPEN))
@@ -248,7 +248,7 @@ setnew_focus(struct xa_window *wind, struct xa_window *unfocus, bool topowner, b
 			} else
 				wind = NULL;
 		}
-		
+
 		if (S.focus) {
 			if (wind && wind != S.focus) {
 				setwin_untopped(0, S.focus, snd_untopped);
@@ -411,7 +411,7 @@ find_focus(bool withlocks, bool *waiting, struct xa_client **locked_client, stru
 		struct xa_client *c;
 
 		c = get_app_infront();
-		
+
 		if (c->blocktype == XABT_NONE || (c->waiting_for & (MU_KEYBD | MU_NORM_KEYBD)))
 		{
 			client = c;
@@ -507,7 +507,7 @@ set_next_menu(struct xa_client *new, bool do_topwind, bool force)
 			new->std_menu = new->nxt_menu;
 			new->nxt_menu = NULL;
 		}
-		
+
 		if (force || (is_infront(new) || (!infront->std_menu && !infront->nxt_menu)))
 		{
 			if (new->std_menu)
@@ -516,12 +516,12 @@ set_next_menu(struct xa_client *new, bool do_topwind, bool force)
 				bool wastop = false;
 
 				DIAG((D_appl, NULL, "swapped to %s",c_owner(new)));
-				
+
 				if (new->std_menu != widg->stuff)
 				{
 					if (do_topwind && (top = TOP_WINDOW != root_window ? root_window : NULL))
 						wastop = is_topped(top) ? true : false;
-			
+
 					if ((wt = widg->stuff))
 					{
 						wt->widg = NULL;
@@ -534,7 +534,7 @@ set_next_menu(struct xa_client *new, bool do_topwind, bool force)
 					wt->links++;
 
 					DIAG((D_appl, NULL, "top: %s", w_owner(top)));
-			
+
 					if (do_topwind && top)
 					{
 						if ((wastop && !is_topped(top)) || (!wastop && is_topped(top)))
@@ -602,10 +602,10 @@ swap_menu(enum locks lock, struct xa_client *new, struct widget_tree *new_menu, 
 			struct proc *update_lock = C.update_lock;
 			DIAG((D_appl, NULL, "swap_menu: now. std=%lx, new_menu=%lx, nxt_menu = %lx for %s",
 				new->std_menu, new_menu, new->nxt_menu, new->name));
-			
+
 		//	display("swap_menu: now. std=%lx, new_menu=%lx, nxt_menu = %lx for %s",
 		//		new->std_menu, new_menu, new->nxt_menu, new->name);
-			
+
 			if (new_menu)
 				new->nxt_menu = new_menu;
 			C.update_lock = 0;	/* allow main-menu to get redrawn */
@@ -623,7 +623,7 @@ swap_menu(enum locks lock, struct xa_client *new, struct widget_tree *new_menu, 
 			 */
 			DIAG((D_appl, NULL, "swap_menu: later. std=%lx, new_menu=%lx, nxt_menu = %lx for %s",
 				new->std_menu, new_menu, new->nxt_menu, new->name));
-			
+
 			if (new_menu)
 				new->nxt_menu = new_menu;
 			C.next_menu = new;
@@ -712,9 +712,9 @@ unhide_app(enum locks lock, struct xa_client *client)
 
 		w = w->next;
 	}
-	
+
 	client->name[1] = ' ';
-	
+
 	app_in_front(lock, client, true, true, true);
 }
 
@@ -733,7 +733,7 @@ repos_iconified(struct proc *p, long arg)
 		int i = 0;
 		short cx, cy;
 		struct xa_window *cw;
-		
+
 		while (1)
 		{
 			ir = iconify_grid(i++);
@@ -750,7 +750,7 @@ repos_iconified(struct proc *p, long arg)
 						r = f2w(&w->save_delta, &ir, true);
 					else
 						r = ir;
-					
+
 					if (w->t.x == r.x && w->t.y == r.y && !(w->window_status & XAWS_SEMA))
 					{
 						w->window_status |= XAWS_SEMA;
@@ -782,11 +782,11 @@ repos_iconified(struct proc *p, long arg)
 				send_moved(lock, cw, AMQ_NORM, &r);
 				w->t = r;
 			}
-			
+
 			if (!cw && (!w || w == root_window))
 				break;
 		}
-		
+
 		w = window_list;
 		while (w)
 		{
@@ -846,7 +846,7 @@ hide_app(enum locks lock, struct xa_client *client)
 	    (!nxtclient || nxtclient == client) ||
 	    (client->swm_newmsg & NM_INHIBIT_HIDE))
 		return;
-	
+
 	block_reiconify_timeout();
 
 	w = window_list;
@@ -867,9 +867,9 @@ hide_app(enum locks lock, struct xa_client *client)
 
 	if (hidden)
 		client->name[1] = '*';
-	
+
 	DIAG((D_appl, NULL, "   focus now %s", c_owner(infocus)));
-	
+
 	if (client == infocus)
 		app_in_front(lock, nxtclient, true, true, true);
 
@@ -996,7 +996,7 @@ next_wind(enum locks lock)
 
 	DIAG((D_appl, NULL, "next_window"));
 	wind = window_list;
-	
+
 	if (!wind || (wind == root_window || wind->next == root_window))
 		return NULL;
 
@@ -1074,7 +1074,7 @@ next_app(enum locks lock, bool wwom, bool no_acc)
 				break;
 			client = PREV_APP(client);
 		}
-				
+
 		if (client == APP_LIST_START)
 			client = NULL;
 	}
@@ -1094,7 +1094,7 @@ previous_client(enum locks lock, short exlude)
 
 	if (client)
 		client = NEXT_APP(client);
-	
+
 	if (client == C.Aes && (exlude & 1))
 	{
 		if (!(client = NEXT_APP(client)))
@@ -1114,10 +1114,10 @@ app_in_front(enum locks lock, struct xa_client *client, bool snd_untopped, bool 
 		bool was_hidden = false, upd = false;
 		struct xa_client *infront;
 		struct xa_window *topped = NULL;
-		
-		wakeup_client(client);		
+
+		wakeup_client(client);
 		DIAG((D_appl, client, "app_in_front: %s", c_owner(client)));
-		
+
 		infront = get_app_infront();
 		if (infront != client)
 			set_active_client(lock, client);
@@ -1152,7 +1152,7 @@ app_in_front(enum locks lock, struct xa_client *client, bool snd_untopped, bool 
 					}
 				}
 				if (wl == wf)
-					break;			
+					break;
 				wl = wp;
 			}
 			wl = window_list;
@@ -1176,7 +1176,7 @@ app_in_front(enum locks lock, struct xa_client *client, bool snd_untopped, bool 
 				upd = true;
 			}
 		}
-		
+
 		if (was_hidden)
 			set_unhidden(lock, client);
 

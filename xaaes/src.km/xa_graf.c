@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
  *                                        2004 F.Naumann & O.Skancke
@@ -72,7 +72,7 @@ rect_dist_xy(struct xa_client *client, short x, short y, RECT *r, RECT *d)
 
 	return d;
 }
-	
+
 void
 check_wh_cp(RECT *c, COMPASS cp, short minw, short minh, short maxw, short maxh)
 {
@@ -239,7 +239,7 @@ new_box(struct xa_vdi_settings *v, const RECT *r, RECT *o)
 /* HR 150202: complete redesign of the functions drag_box and rubberbox.
               By removing the mouse distance calculation from these functions
               and widely use of the RECT structure, they now look rediculously
-              simple. (Which is what they are, whether in a computer or not). 
+              simple. (Which is what they are, whether in a computer or not).
 */
 /* HR 150202: make rubber_box omnidirectional. ;-) */
 
@@ -254,7 +254,7 @@ rubber_box(struct xa_client *client, COMPASS cp,
 	struct xa_vdi_settings *v = client->vdi_settings;
 	short x, y, mb;
 	RECT old = r;
-	
+
 	(*v->api->l_color)(v, G_BLACK);
 
 	(*v->api->wr_mode)(v, MD_XOR);
@@ -365,7 +365,7 @@ XA_graf_rubberbox(enum locks lock, struct xa_client *client, AESPB *pb)
 	pb->intout[1] = r.w;
 	pb->intout[2] = r.h;
 
-	DIAG((D_graf,client,"_rubbox x=%d, y=%d, w=%d, h=%d",pb->intin[0],pb->intin[1],r.w,r.h));	
+	DIAG((D_graf,client,"_rubbox x=%d, y=%d, w=%d, h=%d",pb->intin[0],pb->intin[1],r.w,r.h));
 
 	return XAC_DONE;
 }
@@ -490,7 +490,7 @@ XA_graf_growbox(enum locks lock, struct xa_client *client, AESPB *pb)
 	int he = pb->intin[7];
 	short dx, dy, dw, dh;
 	int f;
-	
+
 	dx = (xe - x) / GRAF_STEPS;
 	dy = (ye - y) / GRAF_STEPS;
 	dw = (we - w) / GRAF_STEPS;
@@ -512,7 +512,7 @@ XA_graf_growbox(enum locks lock, struct xa_client *client, AESPB *pb)
 			Vsync();
 #endif
 	}
-	
+
 	x = pb->intin[0];						/* Reset to initial area */
 	y = pb->intin[1];
 	w = pb->intin[2];
@@ -534,9 +534,9 @@ XA_graf_growbox(enum locks lock, struct xa_client *client, AESPB *pb)
 	showm();
 
 	wr_mode(MD_TRANS);
-	
+
 	pb->intout[0] = 1;
-	
+
 DIAG((D_graf,client->pid,"_growbox"));
 
 	return XAC_DONE;
@@ -554,7 +554,7 @@ XA_graf_movebox(enum locks lock, struct xa_client *client, AESPB *pb)
 	int ye = pb->intin[5];
 	short dx, dy;
 	int f;
-	
+
 	CONTROL(6,1,0)
 
 	dx = (xe - x) / GRAF_STEPS;
@@ -574,7 +574,7 @@ XA_graf_movebox(enum locks lock, struct xa_client *client, AESPB *pb)
 			Vsync();
 #endif
 	}
-	
+
 	x = pb->intin[2];					/* Reset to go back over same area */
 	y = pb->intin[3];
 
@@ -592,9 +592,9 @@ XA_graf_movebox(enum locks lock, struct xa_client *client, AESPB *pb)
 	showm();
 
 	wr_mode(MD_TRANS);
-	
+
 	pb->intout[0] = 1;
-	
+
 DIAG((D_graf,client->pid,"_movebox"));
 
 	return XAC_DONE;
@@ -656,19 +656,19 @@ static MFORM M_HAND_MOUSE =
 	0x3000, 0x0E00, 0x01C0, 0x0030 }
 };
 #else
-/* non standard sliding hand */ 
+/* non standard sliding hand */
 static MFORM M_HAND_MOUSE =
 {
 	4,4,1,0,1,
 	{ /* Mask data */
-	0x7A00, 0x7F40, 0xFFE0, 0xFFF0, 
-	0xFFF8, 0x3FFC, 0x0FFE, 0xC7FF, 
-	0xEFFF, 0xFFFF, 0xFFFF, 0x7FFF, 
+	0x7A00, 0x7F40, 0xFFE0, 0xFFF0,
+	0xFFF8, 0x3FFC, 0x0FFE, 0xC7FF,
+	0xEFFF, 0xFFFF, 0xFFFF, 0x7FFF,
 	0x3FFF, 0x0FFF, 0x03FE, 0x00FC },
 	{ /* Cursor data */
-	0x5000, 0x2A00, 0x1540, 0xCAA0, 
-	0x3550, 0x0AA8, 0x0404, 0x0252, 
-	0xC402, 0xAA01, 0x5001, 0x3001, 
+	0x5000, 0x2A00, 0x1540, 0xCAA0,
+	0x3550, 0x0AA8, 0x0404, 0x0252,
+	0xC402, 0xAA01, 0x5001, 0x3001,
 	0x0C01, 0x0300, 0x00C0, 0x0000 }
 };
 #endif
@@ -894,14 +894,14 @@ static MFORM M_POINTSLIDE_MOUSE =
 {
 	0x0008, 0x0007, 0x0001, 0x0000, 0x0001,
 	{ /* Mask data */
-	0x03C0, 0x03C0, 0x3FFC, 0x3FFC, 
-	0x1FF8, 0x0FF0, 0x07E0, 0x03C0, 
-	0x03C0, 0x07E0, 0x0FF0, 0x1FF8, 
+	0x03C0, 0x03C0, 0x3FFC, 0x3FFC,
+	0x1FF8, 0x0FF0, 0x07E0, 0x03C0,
+	0x03C0, 0x07E0, 0x0FF0, 0x1FF8,
 	0x3FFC, 0x3FFC, 0x03C0, 0x03C0 },
 	{ /* Cursor data */
-	0x0000, 0x0180, 0x0180, 0x1FF8, 
-	0x0FF0, 0x07E0, 0x03C0, 0x0180, 
-	0x0180, 0x03C0, 0x07E0, 0x0FF0, 
+	0x0000, 0x0180, 0x0180, 0x1FF8,
+	0x0FF0, 0x07E0, 0x03C0, 0x0180,
+	0x0180, 0x03C0, 0x07E0, 0x0FF0,
 	0x1FF8, 0x0180, 0x0180, 0x0000 }
 };
 
@@ -1082,7 +1082,7 @@ set_client_mouse(struct xa_client *client, short which, short m_shape, MFORM *mf
 	short *m;
 	MFORM **dmf;
 	bool set = which & 0x8000;
-	
+
 	which &= ~0x8000;
 // 	display("set client mouse %x, set=%s", which, set ? "true":"false");
 	switch (which)
@@ -1194,13 +1194,13 @@ XA_xa_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 		else
 		{
 			MFORM *ud = NULL;
-			
+
 			if (m == USER_DEF && (ud = (MFORM *)pb->addrin[0]))
 			{
 				client->user_def = *ud;
 				ud = &client->user_def;
 			}
-			
+
 			set_client_mouse(client, SCM_PREV, client->mouse, client->mouse_form);
 // 			xa_graf_mouse(m, ud, client, false);
 			set_client_mouse(client, SCM_MAIN|0x8000, m, ud);
@@ -1258,7 +1258,7 @@ XA_xa_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 			 */
 			client->prev_mouse = client->save_mouse;
 			client->prev_mouse_form = client->save_mouse_form;
-			
+
 			xa_graf_mouse(client->save_mouse, client->save_mouse_form, client, false);
 			DIAG((D_f,client,"M_RESTORE; mouse_form from %d to %d", client->mouse, client->save_mouse));
 			client->mouse       = client->save_mouse;
@@ -1286,13 +1286,13 @@ XA_xa_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 		else
 		{
 			MFORM *ud = NULL; //(MFORM *)pb->addrin[0];
-			
+
 			if (m == USER_DEF && (ud = (MFORM *)pb->addrin[0]))
 			{
 				client->user_def = *ud;
 				ud = &client->user_def;
 			}
-			
+
 			client->prev_mouse = client->mouse;
 			client->prev_mouse_form = client->mouse_form;
 
@@ -1354,13 +1354,13 @@ XA_graf_mkstate(enum locks lock, struct xa_client *client, AESPB *pb)
 	if (client)
 	{
 		struct mbs mbs;
-			
+
 		/* Ozk:
 		 * Make sure button events are delivered here .. eb_model doesnt
 		 * enter evnt_multi() inside of its own popup implementation.
 		 * Why, oh WHY! cannot programmers use the OS's functions!?
 		 */
-		
+
 // 		while (dispatch_selcevent(client, cXA_deliver_button_event))
 // 			;
 #if 1
@@ -1368,7 +1368,7 @@ XA_graf_mkstate(enum locks lock, struct xa_client *client, AESPB *pb)
 		{
 			if (!dispatch_selcevent(client, cXA_deliver_button_event, false))
 				dispatch_selcevent(client, cXA_button_event, false);
-			
+
 // 			if (client->md_head->clicks == -1 && client->md_head == client->md_tail)
 // 				check_mouse(client, &client->md_head->cstate, NULL,NULL);
 

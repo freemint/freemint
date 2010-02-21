@@ -23,7 +23,7 @@
  * along with XaAES; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
- 
+
 /*
  * This file contains the client side of mouse event processing
  */
@@ -63,7 +63,7 @@ cXA_button_event(enum locks lock, struct c_event *ce, bool cancel)
 	{
 		if (C.ce_menu_click == client)
 			C.ce_menu_click = NULL;
-		
+
 		return;
 	}
 
@@ -79,7 +79,7 @@ cXA_button_event(enum locks lock, struct c_event *ce, bool cancel)
 		{
 			Tab *tab;
 			bool in_pop;
-						
+
 			in_pop = find_pop(md->x, md->y, &tab);
 
 			if (tab)
@@ -91,8 +91,8 @@ cXA_button_event(enum locks lock, struct c_event *ce, bool cancel)
 				}
 			}
 			else
-				tab = root_tab;				
-			
+				tab = root_tab;
+
 		#if 0
 			if (tab &&  !tab->task_data.menu.entry)
 				tab = collapse(root_tab, tab);
@@ -150,7 +150,7 @@ cXA_button_event(enum locks lock, struct c_event *ce, bool cancel)
 endmenu:	C.ce_menu_click = NULL;
 		return;
 	}
-	
+
 	if ( is_topped(wind) || wind == root_window || (!is_topped(wind) && wind->active_widgets & NO_TOPPED) )
 	{
 		DIAG((D_button, client, "cXA_button_event: Topped win"));
@@ -183,7 +183,7 @@ cXA_deliver_button_event(enum locks lock, struct c_event *ce, bool cancel)
 {
 	struct xa_window *wind;
 	struct xa_widget *widg = NULL;
-	
+
 	if (!cancel)
 	{
 		wind = ce->ptr1;
@@ -291,7 +291,7 @@ menu_move(struct xa_client *client, struct moose_data *md, bool f)
 			short y = md->y;
 
 			DIAG((D_mouse, client, "cXA_menu_move for %s", client->name));
-		
+
 			/*
 			 * Ozk: Cannot use FOREACH_TAB() here, since there may be additions to the top (start)
 			 *      of the list during our wander down towards the bottom of it.
@@ -341,7 +341,7 @@ menu_move(struct xa_client *client, struct moose_data *md, bool f)
 					break;
 				tab = tab->tab_entry.next;
 			}
-			
+
 			if (tab)
 			{
 				if (tab->task_data.menu.p.wind)
@@ -381,7 +381,7 @@ cXA_do_widgets(enum locks lock, struct c_event *ce, bool cancel)
 		do_widgets(lock, (struct xa_window *)ce->ptr1, 0, &ce->md);
 	}
 }
- 
+
 void
 cXA_active_widget(enum locks lock, struct c_event *ce, bool cancel)
 {
@@ -524,7 +524,7 @@ cXA_wheel_event(enum locks lock, struct c_event *ce, bool cancel)
 	struct xa_window *wind = ce->ptr1;
 	struct moose_data *md = &ce->md;
 	XA_WIDGET *widg;
-	
+
 	if (!cancel)
 	{
 		if (client->waiting_for & MU_WHEEL)
@@ -547,15 +547,15 @@ cXA_wheel_event(enum locks lock, struct c_event *ce, bool cancel)
 		{
 			bool slist = false;
 			short orient, amount = 0, WA = WA_UPPAGE;
-			
+
 			wheel_arrow(wind, md, &widg, &orient, &amount);
-			
+
 			if ((md->kstate & K_ALT))
 				orient ^= 2;
 
 			if (orient & 2)
 				WA = WA_LFPAGE;
-			
+
 			if (!(md->kstate & (K_RSHIFT|K_LSHIFT)))
 				WA += WA_UPLINE;
 			else
@@ -568,14 +568,14 @@ cXA_wheel_event(enum locks lock, struct c_event *ce, bool cancel)
 				XA_TREE *wt = get_widget(wind, XAW_TOOLBAR)->stuff;
 				OBJECT *obtree;
 				struct xa_aes_object obj;
-				
+
 				if (wt && (obtree = wt->tree))
 				{
 					obj = obj_find(wt, aesobj(wt->tree, 0), 10, md->x, md->y, NULL);
 					if (valid_aesobj(&obj) && (aesobj_type(&obj) & 0xff) == G_SLIST)
 					{
 						struct scroll_info *list = object_get_slist(aesobj_ob(&obj));
-						
+
 						amount *= (md->clicks < 0 ? -md->clicks : md->clicks);
 						whlarrowed(list->wi, WA, amount, md);
 						slist = true;
@@ -617,7 +617,7 @@ cXA_wheel_event(enum locks lock, struct c_event *ce, bool cancel)
 						{
 							whlarrowed(wind, WA, 1, NULL);
 							widg = 0;
-						}							
+						}
 						else
 							widg = get_widget(wind, w);
 
@@ -630,14 +630,14 @@ cXA_wheel_event(enum locks lock, struct c_event *ce, bool cancel)
 								wh = widg->r.h - sl->r.h;
 							else
 								wh = widg->r.w - sl->r.w;
-					
+
 							unit = pix_to_sl(2L, wh) - pix_to_sl(1L, wh);
 
 							if (md->clicks < 0)
 								sl->rpos = bound_sl(sl->rpos - (unit * -md->clicks));
 							else
 								sl->rpos = bound_sl(sl->rpos + (unit * md->clicks));
-					
+
 							{
 								wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 										   s, 0,0, wind->handle,
@@ -658,7 +658,7 @@ cXA_wheel_event(enum locks lock, struct c_event *ce, bool cancel)
 				if (TAB_LIST_START)
 				{
 					client = TAB_LIST_START->client;
-		
+
 					if (!(client->status & CS_EXITING) && !C.ce_menu_move && !C.ce_menu_click)
 					{
 						client = TAB_LIST_START->client;

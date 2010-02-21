@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
  *                                        2004 F.Naumann & O.Skancke
@@ -79,7 +79,7 @@ pid2client(short pid)
 
 	if (!client && pid == C.Aes->p->pid)
 		client = C.Aes;
-	
+
 	DIAGS(("pid2client(%i) -> p %lx client %s",
 		pid, p, client ? client->name : "NULL"));
 
@@ -160,7 +160,7 @@ add_xa_data(struct xa_data_hdr **list, void *_data, long id, char *name, void (*
 		(*list)->next = data;
 	else
 		*list = data;
-	
+
 	data->next = NULL;
 
 	if (name)
@@ -202,9 +202,9 @@ delete_xa_data(struct xa_data_hdr **list, void *_data)
 {
 	struct xa_data_hdr *data = _data;
 // 	display("delete_xa_data: %lx (destruct=%lx)", data, (long)data->destruct);
-	
+
 	remove_xa_data(list, data);
-	
+
 	if (data->destruct)
 		(*data->destruct)(data);
 }
@@ -262,7 +262,7 @@ create_vdipb(void)
 	XVDIPB *v;
 	short *p, **e;
 	int i;
-	
+
 	v = kmalloc(sizeof(XVDIPB) + ((12 + 500 + 500 + 500 + 500) << 1) );
 
 	p = (short *)((long)v + sizeof(XVDIPB));
@@ -291,8 +291,8 @@ do_vdi_trap (XVDIPB * vpb)
 		"move.w		#115,d0\n\t"	\
 		"trap		#2\n\t"		\
 		:
-		: "a"(vpb)			
-		: "a0", "d0", "d1", "memory"	
+		: "a"(vpb)
+		: "a0", "d0", "d1", "memory"
 	);
 }
 
@@ -389,7 +389,7 @@ dump_devstuff(XVDIPB *vpb, short handle)
 				rn[j] = *(char *)((long)vpb->ptsout + j + 2), rn[j+1] = '\0';
 			for (j = 0; j < vpb->control[4] && j < 200 && vpb->intout[j]; j++)
 				fn[j] = (char)vpb->intout[j], fn[j + 1] = '\0';
-		
+
 			display("driver %d is %s, name %s, file %s", i, vpb->ptsout[0] ? "Open" : "Closed", rn, fn);
 		}
 		else

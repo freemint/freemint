@@ -44,7 +44,7 @@ rtopxy(short *p, const RECT *r)
 {
 	*p++ = r->x;
 	*p++ = r->y;
-	*p++ = r->x + r->w - 1; 
+	*p++ = r->x + r->w - 1;
 	*p   = r->y + r->h - 1;
 }
 
@@ -55,14 +55,14 @@ ri2pxy(short *p, short d, short x, short y, short w, short h)
 	*p++ = y - d;
 	*p++ = x + w + d - 1;
 	*p   = y + h + d - 1;
-} 
-	
+}
+
 static void _cdecl
 ritopxy(short *p, short x, short y, short w, short h)
 {
 	*p++ = x;
 	*p++ = y;
-	*p++ = x + w - 1; 
+	*p++ = x + w - 1;
 	*p   = y + h - 1;
 }
 
@@ -82,7 +82,7 @@ xa_unload_fonts(struct xa_vdi_settings *v)
 		v->fonts_loaded = -1;
 	}
 }
-	
+
 static void _cdecl
 xa_clear_clip(struct xa_vdi_settings *v)
 {
@@ -96,7 +96,7 @@ static void _cdecl
 xa_restore_clip(struct xa_vdi_settings *v, const RECT *s)
 {
 	short r[4];
-	
+
 	v->clip = *s;
 	rtopxy(r, s);
 	vs_clip(v->handle, 1, r);
@@ -422,12 +422,12 @@ xa_prop_clipped_name(struct xa_vdi_settings *v, const char *s, char *d, int w, s
 		case -1:
 			strcpy( d, s );
 		break;
-	}			
-	
+	}
+
 	if (ret_w && ret_h)
 		xa_t_extent(v, d, ret_w, ret_h);
 
-	return d;	
+	return d;
 }
 
 static void _cdecl
@@ -452,10 +452,10 @@ xa_wtxt_output(struct xa_vdi_settings *v, struct xa_wtxt_inf *wtxti, char *txt, 
 		strncpy(t, txt, sizeof(t));
 	else
 		xa_prop_clipped_name(v, txt, t, r->w - (xoff << 1), &x, &y, 1);
-	
+
 	xa_t_extent(v, t, &x, &y);
 	y = yoff + r->y + ((r->h - y) >> 1);
-	
+
 	if (f & WTXT_CENTER)
 	{
 		x = r->x + ((r->w - x) >> 1);
@@ -469,7 +469,7 @@ xa_wtxt_output(struct xa_vdi_settings *v, struct xa_wtxt_inf *wtxti, char *txt, 
 	{
 		if (sel && (f & WTXT_ACT3D))
 			x++, y++;
-	
+
 		xa_t_color(v, wtxt->bgc);
 		x++;
 		y++;
@@ -766,13 +766,13 @@ xa_draw_texture(struct xa_vdi_settings *v, XAMFDB *msrc, RECT *r, RECT *anch)
 	sh = msrc->d_h - sy;
 	dy = r->y;
 	dh = r->h;
-	
+
 	width = r->w;
 	while (width > 0)
 	{
 		pnt[0] = x;
 		pnt[4] = r->x;
-		
+
 		width -= w;
 		if (width <= 0)
 			w += width;
@@ -783,7 +783,7 @@ xa_draw_texture(struct xa_vdi_settings *v, XAMFDB *msrc, RECT *r, RECT *anch)
 		}
 		pnt[2] = pnt[0] + w - 1;
 		pnt[6] = pnt[4] + w - 1;
-		
+
 		y = sy;
 		h = sh;
 		r->y = dy;
@@ -795,7 +795,7 @@ xa_draw_texture(struct xa_vdi_settings *v, XAMFDB *msrc, RECT *r, RECT *anch)
 			pnt[1] = y;
 			//pnt[4] = r.x;
 			pnt[5] = r->y;
-			
+
 			height -= h;
 			if (height <= 0)
 				h += height;
@@ -804,16 +804,16 @@ xa_draw_texture(struct xa_vdi_settings *v, XAMFDB *msrc, RECT *r, RECT *anch)
 				r->y += h;
 				y = 0;
 			}
-			
+
 			//pnt[2] = x + w - 1;
 			pnt[3] = pnt[1] + h - 1;
-			
+
 			//pnt[6] = r.x + w - 1;
 			pnt[7] = pnt[5] + h - 1;
 
 			vro_cpyfm(v->handle, S_ONLY, pnt, &msrc->mfdb, &mscreen);
-			
-			h = msrc->d_h;	
+
+			h = msrc->d_h;
 		}
 		w = msrc->d_w;
 	}
@@ -851,7 +851,7 @@ xa_form_save(short d, RECT r, void **area)
 		r.h += r.y;
 		r.y = 0;
 	}
-	
+
 	if (r.w > 0 && r.h > 0)
 	{
 		short xd = r.x & 0x000f;
@@ -874,7 +874,7 @@ xa_form_save(short d, RECT r, void **area)
 			kfree(*area);
 
 		*area = kmalloc(calc_back(&r,screen.planes));
-		
+
 		if (*area)
 		{
 			DIAG((D_menu, NULL, "form_save: to %lx", *area));
@@ -953,7 +953,7 @@ static struct xa_vdi_api vdiapi =
 	xa_wr_mode,
 	xa_load_fonts,
 	xa_unload_fonts,
-	
+
 	xa_set_clip,
 	xa_clear_clip,
 	xa_restore_clip,
@@ -992,7 +992,7 @@ static struct xa_vdi_api vdiapi =
 	xa_right_line,
 	xa_tl_hook,
 	xa_br_hook,
-	
+
 	xa_write_disable,
 
 	xa_prop_clipped_name,

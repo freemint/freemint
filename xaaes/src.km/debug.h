@@ -77,7 +77,7 @@ void profile( char *t, ...);
 /* start; a stop(f(args)) */
 #define PROFRECr(a,f,args) prof_acc(_P ## f,P_Start,1); a prof_acc(_P ## f,P_Stop,f args)
 
-#define PROFILE(msg) profile msg 
+#define PROFILE(msg) profile msg
 
 #else
 

@@ -75,7 +75,7 @@ load_adi(struct basepage *b, const char *name, short *class, short *subclass)
 	void *initfunc = (void *)b->p_tbase;
 	char *reason = no_reason;
 	long r;
-	
+
 	display("load_adi: enter (0x%lx, 0x%lx, %s)", initfunc, b, name);
 	DIAGS(("load_adi: enter (0x%lx, %s)", b, name));
 	DIAGS(("load_adi: init 0x%lx, size %li", initfunc, (b->p_tlen + b->p_dlen + b->p_blen)));
@@ -85,10 +85,10 @@ load_adi(struct basepage *b, const char *name, short *class, short *subclass)
 	 * driver.
 	 */
 	ai.fname = name;
-	
+
 	*class = MODCLASS_KMDEF;
 	*subclass = 0;
-	
+
 	r = module_init(initfunc, KENTRY, &ai, (long)&reason);
 
 	if (r == -1L)
@@ -96,7 +96,7 @@ load_adi(struct basepage *b, const char *name, short *class, short *subclass)
 		display("Module %s error, reason: %s", name, reason);
 // 		display("kentry updated, %s too old! Please update it", name);
 	}
-	
+
 	ai.fname = NULL;
 	display("load_adi: return %ld", r);
 	return r;
@@ -107,7 +107,7 @@ adi_load(bool first)
 {
 	if (first)
 		display("Loading AES Device Drivers:");
-	
+
 	load_modules(C.Aes->home_path, ".adi", load_adi);
 	display("adi_load: done");
 }
@@ -145,7 +145,7 @@ load_xam(struct basepage *b, const char *name, short *class, short *subclass)
 	void *initfunc = (void *)b->p_tbase;
 	long r;
 	char *reason = no_reason;
-	
+
 	DIAGS(("load_xam: enter (0x%lx, %s)", b, name));
 	DIAGS(("load_xam: init 0x%lx, size %li", initfunc, (b->p_tlen + b->p_dlen + b->p_blen)));
 	BLOG((false, "load_xam: '%s' - text=%lx, data=%lx, bss=%lx", name, b->p_tbase, b->p_dbase, b->p_bbase));
@@ -181,7 +181,7 @@ xam_load(bool first)
 			path[plen] = '\0';
 		}
 		strcat(path, "xam");
-		
+
 		if (first)
 			BLOG((false, "Loading AES modules..."));
 		load_modules(path, ".xam", load_xam);

@@ -27,7 +27,7 @@ init_apgi_infotab(void)
 {
 #if !XAAES_RELEASE
 	char *s = info_string;
-	
+
 
 	/*
 	 * Build status string
@@ -36,13 +36,13 @@ init_apgi_infotab(void)
 #if 0
 	s = mcs(s, version);
 	*s++ = 0x7c;
-	
+
 
 	if (DEV_STATUS & AES_FDEVSTATUS_STABLE)
 		s = mcs(s, "Stable ");
 	else
 		s = mcs(s, "");
-		
+
 	s = mcs(s, ASCII_DEV_STATUS);
 	*s++ = 0x7c;
 	s = mcs(s, ASCII_ARCH_TARGET);
@@ -69,7 +69,7 @@ init_apgi_infotab(void)
  	info_tab[0][1] = screen.standard_font_id;
 	info_tab[1][0] = screen.small_font_height;
 	info_tab[1][1] = screen.small_font_id;
-	
+
 	info_tab[2][0] = xbios_getrez();
 	info_tab[2][1] = 256;
 	info_tab[2][2] = 1;

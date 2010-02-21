@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
  *                                        2004 F.Naumann & O.Skancke
@@ -182,8 +182,8 @@ static void _cdecl
 info_on_exit(void *_info, struct proc *p, int nr)
 {
  	struct xa_client *c = lookup_extension(p, XAAES_MAGIC);
-	
-// 	display("info_on_exit: nr=%d, c=%lx, %s", nr, c, p ? p->name : "What?");	
+
+// 	display("info_on_exit: nr=%d, c=%lx, %s", nr, c, p ? p->name : "What?");
 	DIAGS(("info_on_exit for %u (signal %u)", p->pid, nr));
 
 	/* Ozk:
@@ -203,7 +203,7 @@ info_on_exec(void *_info, struct proc *p)
 static void _cdecl
 info_on_fork(void *_info, struct proc *p, long flags, struct proc *child)
 {
-// 	display("info_on_fork: (info = %lx) %d forks to %d (new = %lx)", _info, p->pid, child->pid, new);	
+// 	display("info_on_fork: (info = %lx) %d forks to %d (new = %lx)", _info, p->pid, child->pid, new);
 }
 
 static void _cdecl

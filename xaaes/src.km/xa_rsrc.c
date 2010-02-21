@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
  *                                        2004 F.Naumann & O.Skancke
@@ -40,9 +40,9 @@
 
 /*
  * RESOURCE FILE HANDLER
- * 
+ *
  * Simulate the standard GEM AES resource access functions.
- * 	
+ *
  * I've added these to Steve's routines to act as a bit of an interface
  * to his routines. Each application has its own rsrc as part
  * of the xa_client structure. As Steve's resource loader is happy to
@@ -94,7 +94,7 @@ obfix(OBJECT *tree, short object, short designWidth, short designHeight)
 	{
 		fixupobj(&ob->ob_width, x_fact, designWidth);
 	}
-	
+
 	fixupobj(&ob->ob_height, y_fact, designHeight);
 }
 
@@ -147,8 +147,8 @@ transform_icon_bitmap(struct xa_client *client, struct xa_rscs *rscs, CICONBLK *
 			ra->addr = new_data;
 			ra->next = rscs->ra;
 			rscs->ra = ra;
-			
-// 			memcpy(new_data, map, icon_len);	
+
+// 			memcpy(new_data, map, icon_len);
 		}
 		else
 			return map;
@@ -161,7 +161,7 @@ transform_icon_bitmap(struct xa_client *client, struct xa_rscs *rscs, CICONBLK *
 	src.fd_stand = 1;
 	src.fd_r1 = src.fd_r2 = src.fd_r3 = 0;
 	src.fd_nplanes = planes;
-	
+
 	dst = src;
 
 	dst.fd_addr = new_data;
@@ -212,13 +212,13 @@ transform_icon_bitmap(struct xa_client *client, struct xa_rscs *rscs, CICONBLK *
 			ra->addr = new_data;
 			ra->next = rscs->ra;
 			rscs->ra = ra;
-			
-			memcpy(new_data, map, icon_len);	
+
+			memcpy(new_data, map, icon_len);
 		}
 		else
 			return map;
 	}
-	
+
 	tmp = kmalloc(new_len);
 	if (tmp)
 	{
@@ -229,13 +229,13 @@ transform_icon_bitmap(struct xa_client *client, struct xa_rscs *rscs, CICONBLK *
 		src.fd_stand	= 1;
 		src.fd_r1	= src.fd_r2 = src.fd_r3 = 0;
 		src.fd_nplanes	= screen.planes;
-		
+
 		dst = src;
 
 		dst.fd_addr	= new_data;
 		dst.fd_stand	= 0;
 		dst.fd_nplanes	= screen.planes;
-	
+
 		memcpy(tmp, new_data, new_len);
 		transform_gem_bitmap(vdih, src, dst, planes, cfg.remap_cicons ? rscs->palette : NULL, screen.palette);
 		kfree(tmp);
@@ -264,7 +264,7 @@ FixColourIconData(struct xa_client *client, CICONBLK *icon, struct xa_rscs *rscs
 	while (c)
 	{
 		DIAG((D_rsrc,client,"[1]probe cicon 0x%lx", c));
-		
+
 		if (    c->num_planes <= screen.planes
 		    && (!best_cicon || (best_cicon && c->num_planes > best_cicon->num_planes)))
 		{
@@ -272,7 +272,7 @@ FixColourIconData(struct xa_client *client, CICONBLK *icon, struct xa_rscs *rscs
 		}
 		c = c->next_res;
 	}
-	
+
 	if (best_cicon)
 	{
 		/* DIAG((D_rsrc,client,"[1]best_cicon planes: %d", best_cicon->num_planes)); */
@@ -299,7 +299,7 @@ fix_chrarray(struct xa_client *client, void *b, char **p, unsigned long n, char 
 		DIAG((D_rsrc, NULL, " -- %lx, value %lx", p, *p));
 		*p += (unsigned long)b;
 		DIAG((D_rsrc, NULL, " -- to %lx", *p));
-		
+
 		p++;
 		n--;
 	}
@@ -312,9 +312,9 @@ fix_tedarray(struct xa_client *client, void *b, TEDINFO *ti, unsigned long n, ch
 	if ((client->options.app_opts & XAAO_OBJC_EDIT))
 	{
 		XTEDINFO *ei;
-		
+
 		ei = *(XTEDINFO **)extra;
-		
+
 		while (n)
 		{
 			bzero(ei, sizeof(*ei));
@@ -326,7 +326,7 @@ fix_tedarray(struct xa_client *client, void *b, TEDINFO *ti, unsigned long n, ch
 			ei->ti = *ti;
 			ti->te_ptext	= (char *)-1L;
 			ti->te_ptmplt	= (char *)ei;
-			
+
 			ti++;
 			ei++;
 			n--;
@@ -343,11 +343,11 @@ fix_tedarray(struct xa_client *client, void *b, TEDINFO *ti, unsigned long n, ch
 			ti->te_ptext	+= (long)b;
 			ti->te_ptmplt	+= (long)b;
 			ti->te_pvalid	+= (long)b;
-			
+
 			DIAG((D_rsrc, NULL, "fix_tedarray: ti=%lx, ptext='%s'", ti, ti->te_ptext));
 			DIAG((D_rsrc, NULL, "ptext=%lx, ptmpl=%lx, pvalid=%lx",
 				ti->te_ptext, ti->te_ptmplt, ti->te_pvalid));
-		
+
 			ti++;
 			n--;
 		}
@@ -364,14 +364,14 @@ fix_icnarray(struct xa_client *client, void *b, ICONBLK *ib, unsigned long n, ch
 		ib->ib_pmask = (void *)((char *)ib->ib_pmask + (long)b);
 		ib->ib_pdata = (void *)((char *)ib->ib_pdata + (long)b);
 		ib->ib_ptext += (long)b;
-		
+
 		DIAG((D_rsrc, NULL, "fix_icnarray: ib=%lx, ib->ib_pmask=%lx, ib->ib_pdata=%lx, ib->ib_ptext=%lx",
 			ib, ib->ib_pmask, ib->ib_pdata, ib->ib_ptext));
-		
+
 		ib++;
 		n--;
 	}
-	
+
 	DIAG((D_rsrc, NULL, "fixed up %ld iconblk's", n));
 }
 
@@ -409,7 +409,7 @@ fix_cicons(struct xa_client *client, void *base, CICONBLK **cibh, char **extra)
 		numCibs++;
 
 	DIAG((D_rsrc, NULL, "fix_cicons: got %d cicons at %lx(first=%lx)", numCibs, cibh, cibh[0]));
-	
+
 	/*
 	 * Pointer to the first CICONBLK (went past the -1L above)
 	 */
@@ -439,7 +439,7 @@ fix_cicons(struct xa_client *client, void *base, CICONBLK **cibh, char **extra)
 			i, cibh[i], isize, addr, numRez));
 		DIAG((D_rsrc, NULL, "ib = %lx, ib_pdata=%lx, ib_pmask=%lx",
 			ib, ib->ib_pdata, ib->ib_pmask));
-		
+
 		if (ib->ib_wtext && ib->ib_ptext)
 		{
 			short l = ib->ib_wtext/6;
@@ -470,7 +470,7 @@ fix_cicons(struct xa_client *client, void *base, CICONBLK **cibh, char **extra)
 
 			if (planes > maxplanes)
 				maxplanes = planes;
-			
+
 			pdata = (short *)((char *)pdata + sizeof(CICON));
 			cicn->col_data = pdata;
 			pdata = (short *)((char *)pdata + psize);
@@ -590,7 +590,7 @@ fix_objects(struct xa_client *client,
 
 #define resWidth (screen.c_max_w)
 #define resHeight (screen.c_max_h)
-	
+
 static void
 fix_trees(struct xa_client *client, void *b, OBJECT **trees, unsigned long n, short designWidth, short designHeight)
 {
@@ -610,9 +610,9 @@ fix_trees(struct xa_client *client, void *b, OBJECT **trees, unsigned long n, sh
 		if (*trees != (OBJECT *)-1)
 		{
 			*trees = (OBJECT *)(*(char **)trees + (long)b);
-			
+
 			DIAGS((" -- tree[%ld]>%ld = %lx", i, (unsigned long)*trees-(unsigned long)b, *trees));
-			
+
 			obj = *trees;
 			k = 0;
 
@@ -626,9 +626,9 @@ fix_trees(struct xa_client *client, void *b, OBJECT **trees, unsigned long n, sh
 					unsigned long temp;
 					DIAGS((" -- obj %d, type %x (n=%d, h=%d, t=%d)",
 						k, obj->ob_type, obj->ob_next, obj->ob_head, obj->ob_tail));
-					
+
 					c = (unsigned short *)&obj->ob_x;
-				
+
 					switch (obj->ob_type & 0xff)
 					{
 						case G_TEXT:
@@ -637,7 +637,7 @@ fix_trees(struct xa_client *client, void *b, OBJECT **trees, unsigned long n, sh
 						case G_FBOXTEXT:
 						{
 							TEDINFO *ted;
-				
+
 							ted = (TEDINFO *)obj->ob_spec.index;
 							if (ted->te_ptext == (char *)-1L)
 							{
@@ -679,13 +679,13 @@ fix_trees(struct xa_client *client, void *b, OBJECT **trees, unsigned long n, sh
 					k++;
 				}
 				while (!(obj++->ob_flags & OF_LASTOB));
-				
+
 				if( (client->options.alt_shortcuts & ALTSC_DIALOG) )
 					ob_fix_shortcuts(*trees, false);
 			}
 			else
 			{
-				/* Standard AES menu */	
+				/* Standard AES menu */
 				j = 0;
 				do {
 					DIAGS((" -- obj %d, type %x (n=%d, h=%d, t=%d)",
@@ -754,7 +754,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 	unsigned long sz;
 	char *base = NULL, *end = NULL;
 	char *extra_ptr = NULL;
-	struct xa_rscs *rscs = NULL; 
+	struct xa_rscs *rscs = NULL;
 	short vdih;
 
 	if (!client)
@@ -777,9 +777,9 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 			DIAG((D_rsrc, client, "LoadResources(): file not found"));
 			return NULL;
 		}
-		
+
 		fsize = x.size;
-		
+
 		if ((client->options.app_opts & XAAO_OBJC_EDIT))
 		{
 			hdr = kmalloc(sizeof(*hdr));
@@ -888,7 +888,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 			end = base + size;
 		}
 	}
-	
+
 	if (!rscs)
 	{
 		return NULL;
@@ -899,7 +899,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 	fix_tedarray(client, base, (TEDINFO *)	(base + hdr->rsh_tedinfo), hdr->rsh_nted, &extra_ptr);
 	fix_icnarray(client, base, (ICONBLK *)	(base + hdr->rsh_iconblk), hdr->rsh_nib, &extra_ptr);
 	fix_bblarray(client, base, (BITBLK *)	(base + hdr->rsh_bitblk),  hdr->rsh_nbb, &extra_ptr);
-	
+
 	if (hdr->rsh_vrsn & 4)
 	{
 		/* It's an enhanced RSC file */
@@ -975,12 +975,12 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 					break;
 				}
 			}
-			
+
 			if (pal && mask == 0xffff)
 			{
 				DIAG((D_rsrc, client, "%s got palette", fname ? fname : "noname"));
 				rscs->palette = (void *)(base + *earray);
-								
+
 				fix_rsc_palette((struct xa_rsc_rgb *)rscs->palette);
 				if (set_pal && cfg.set_rscpalette)
 				{
@@ -1056,7 +1056,7 @@ FreeResources(struct xa_client *client, AESPB *pb, struct xa_rscs *rsrc)
 		rsc = ((struct aes_global *)pb->global)->rshdr;
 
 	cur = client->resources;
-	
+
 	DIAG((D_rsrc,client,"FreeResources: %lx for %d, ct=%d, pb->global->rsc=%lx",
 		cur, client->p->pid, client->rsct, rsc));
 
@@ -1097,14 +1097,14 @@ FreeResources(struct xa_client *client, AESPB *pb, struct xa_rscs *rsrc)
 					}
 					else
 						client->resources = cur->next;
-				
+
 					if (cur->next)
 					{
 						if (!nxt_active)
 							nxt_active = cur->next;
 						cur->next->prior = cur->prior;
 					}
-				
+
 					if (client->rsrc == hdr)
 					{
 						RSHDR *nxt_hdr = NULL;
@@ -1116,7 +1116,7 @@ FreeResources(struct xa_client *client, AESPB *pb, struct xa_rscs *rsrc)
 						client->rsrc = nxt_hdr;
 						o = nxt_hdr ? (OBJECT **)((char *)nxt_hdr + nxt_hdr->rsh_trindex) : (OBJECT **)NULL;
 						client->trees = o;
-						
+
 						Rsrc_setglobal(client->rsrc, client->globl_ptr);
 						if (pb && pb->global && (struct aes_global *)pb->global != client->globl_ptr)
 							Rsrc_setglobal(client->rsrc, (struct aes_global *)pb->global);
@@ -1129,7 +1129,7 @@ FreeResources(struct xa_client *client, AESPB *pb, struct xa_rscs *rsrc)
 					if (client == C.Aes || client == C.Hlp)
 					{
 						struct remember_alloc *ra;
-					
+
 						while (cur->ra)
 						{
 							ra = cur->ra;
@@ -1138,14 +1138,14 @@ FreeResources(struct xa_client *client, AESPB *pb, struct xa_rscs *rsrc)
 							kfree(ra->addr);
 							kfree(ra);
 						}
-					
+
 						if (cur->flags & RSRC_ALLOC)
 						{
 							DIAG((D_rsrc, client, "kFree: cur->rsc %lx", cur->rsc));
 							kfree(cur->rsc);
 						}
 						DIAG((D_rsrc, client, "kFree: cur %lx", cur));
-						
+
 						kfree(cur);
 					}
 					else
@@ -1166,7 +1166,7 @@ FreeResources(struct xa_client *client, AESPB *pb, struct xa_rscs *rsrc)
 							ufree(cur->rsc);
 						}
 						DIAG((D_rsrc, client, "uFree: cur %lx", cur));
-						
+
 						ufree(cur);
 					}
 					nx = NULL;
@@ -1174,7 +1174,7 @@ FreeResources(struct xa_client *client, AESPB *pb, struct xa_rscs *rsrc)
 				}
 			}
 			cur = nx;
-		}			
+		}
 	}
 }
 
@@ -1231,9 +1231,9 @@ ResourceTedinfo(RSHDR *hdr, int num)
 		return NULL;
 
 	index = (TEDINFO *)((char *)hdr + hdr->rsh_tedinfo); //start(tedinfo);
-	
+
 	index += num;
-	
+
 	if (index->te_ptext == (char *)-1L)
 		index = &((XTEDINFO *)index->te_ptmplt)->ti;
 
@@ -1429,7 +1429,7 @@ XA_rsrc_free(enum locks lock, struct xa_client *client, AESPB *pb)
 	}
 	else /* ozk: if no client, or global paramblock, we assume everythings OK */
 		pb->intout[0] = 1;
-		
+
 	return XAC_DONE;
 }
 
@@ -1453,12 +1453,12 @@ XA_rsrc_gaddr(enum locks lock, struct xa_client *client, AESPB *pb)
 	/* For multiple resource, first look at the supplied global ptr. */
 	if (pb->global)
 	{
-		
+
 		rsc = ((struct aes_global *)pb->global)->rshdr;
 		trees = ((struct aes_global *)pb->global)->ptree;
 		DIAG((D_rsrc,client,"  --  pb->gl  rsc %lx, ptree %lx", rsc, trees));
 	}
-	
+
 	/* The below represents the last resource loaded */
 	if (!rsc && !trees)
 	{
@@ -1484,7 +1484,7 @@ XA_rsrc_gaddr(enum locks lock, struct xa_client *client, AESPB *pb)
 					*addr = trees[index];
 					break;
 			}
-			DIAG((D_s,client,"  from pb->global --> %ld",*addr));		
+			DIAG((D_s,client,"  from pb->global --> %ld",*addr));
 			pb->intout[0] = 1;
 		}
 		else
@@ -1492,7 +1492,7 @@ XA_rsrc_gaddr(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		return XAC_DONE;
 	}
-	
+
 	if (!rsc && !client->rsrc)
 	{
 		pb->intout[0] = 0;
@@ -1564,7 +1564,7 @@ XA_rsrc_gaddr(enum locks lock, struct xa_client *client, AESPB *pb)
 			*addr = ResourceFrimg(client->rsrc, index);
 			break;
 		}
-		DIAG((D_s,client,"  --> %lx",*addr));		
+		DIAG((D_s,client,"  --> %lx",*addr));
 		pb->intout[0] = 1;
 	}
 	else
@@ -1602,7 +1602,7 @@ XA_rsrc_rcfix(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	RSHDR *rsc;
 	CONTROL(0,1,1)
-	
+
 	DIAG((D_rsrc, client, "rsrc_rcfix for %s on %ld(%lx)",
 		c_owner(client), pb->addrin[0], pb->addrin[0]));
 

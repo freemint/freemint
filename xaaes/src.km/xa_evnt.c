@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
  *                                        2004 F.Naumann & O.Skancke
@@ -165,7 +165,7 @@ exec_iredraw_queue(enum locks lock, struct xa_client *client)
 	RECT *r;
 	long rdrws = -1L;
 	union msg_buf ibuf;
-	
+
 	if (pending_iredraw_msgs(lock, client, &ibuf))
 	{
 		if (!(client->status & CS_NO_SCRNLOCK))
@@ -180,7 +180,7 @@ exec_iredraw_queue(enum locks lock, struct xa_client *client)
 			{
 				if (!(r->w | r->h))
 					r = NULL;
-		
+
 				display_window(lock, 0, wind, r);
 			}
 			else
@@ -196,7 +196,7 @@ exec_iredraw_queue(enum locks lock, struct xa_client *client)
 			}
 			rdrws++;
 		} while (pending_iredraw_msgs(lock, client, &ibuf));
-		
+
 		showm();
 		C.redraws -= rdrws;
 
@@ -273,7 +273,7 @@ checkfor_mumx_evnt(struct xa_client *client, bool is_locker, short x, short y)
 
 		if (events)
 		{
-			
+
 			DIAG((D_mouse, client, "Post deliver M1/M2 events %d to %s", events, client->name));
 
 			if (!is_locker)
@@ -282,7 +282,7 @@ checkfor_mumx_evnt(struct xa_client *client, bool is_locker, short x, short y)
 				struct xa_client *wo = NULL;
 
 				wind = find_window(0, x, y, FNDW_NOLIST|FNDW_NORMAL);
-			
+
 				if (wind)
 					wo = wind == root_window ? get_desktop()->owner : wind->owner;
 
@@ -313,7 +313,7 @@ get_mbstate(struct xa_client *client, struct mbs *d)
 
 	md = client->md_head;
 	clicks = md->clicks;
-			
+
 	if (clicks == -1) {
 		if (md != client->md_tail) {
 			md++;
@@ -361,7 +361,7 @@ check_queued_events(struct xa_client *client)
 	short *out;
 	union msg_buf *m;
 // 	bool d = (strnicmp(client->proc_name, "atarirc", 7)) ? false : true;
-	
+
 // 	if (d)
 // 	{
 // 		char evtxt[128];
@@ -378,7 +378,7 @@ check_queued_events(struct xa_client *client)
 
 	get_mbstate(client, &mbs);
 
-	if ((wevents & MU_MESAG) && (client->msg || client->rdrw_msg || client->crit_msg)) {		
+	if ((wevents & MU_MESAG) && (client->msg || client->rdrw_msg || client->crit_msg)) {
 		m = (union msg_buf *)pb->addrin[0];
 		if (m) {
 			if (!pending_critical_msgs(0, client, m)) {
@@ -411,7 +411,7 @@ check_queued_events(struct xa_client *client)
 		DIAG((D_button, NULL, " -=- md: clicks=%d, head=%lx, tail=%lx, end=%lx",
 			client->md_head->clicks, client->md_head, client->md_tail, client->md_end));
 
-		bev = is_bevent(mbs.b, mbs.c, in, 1);	
+		bev = is_bevent(mbs.b, mbs.c, in, 1);
 		if (bev) {
 			if (!mbs.c)
 				mbs.c++;
@@ -453,7 +453,7 @@ check_queued_events(struct xa_client *client)
 	{
 		short ev;
 		bool is_locker = (client->p == mouse_locked() || client->p == update_locked()) ? true : false;
-		
+
 		if ((ev = checkfor_mumx_evnt(client, is_locker, mbs.x, mbs.y))) {
 			if (multi)
 				events |= ev;
@@ -477,11 +477,11 @@ check_queued_events(struct xa_client *client)
 		 * intout[4] and intout[6] is not to be used for the wheel
 		 * I think, as that would rule out normal buttons + wheel events
 		 */
-		if (client->wheel_md) { 
+		if (client->wheel_md) {
 			struct moose_data *md = client->wheel_md;
-			
+
 			DIAG((D_i,client,"    MU_WHEEL"));
-			
+
 			client->wheel_md = NULL;
 
 			if (multi) {
@@ -571,7 +571,7 @@ wakeme_timeout(struct proc *p, struct xa_client *client)
 // 		display("wake");
 
 	client->timeout = NULL;
-	
+
 	if (client->blocktype == XABT_SELECT)
 		wakeselect(client->p);
 	else if (client->blocktype == XABT_SLEEP)
@@ -600,7 +600,7 @@ unsigned long
 XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	unsigned long events = (unsigned long)pb->intin[0] | XAWAIT_MULTI;
-	
+
 	CONTROL(16,7,1)
 
 #if GENERATE_DIAGS
@@ -618,7 +618,7 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 		redraw_client_windows(lock, client);
 		DIAG((D_multi, client, "evnt_multi: %s flagged as lagging! - cleared", client->name));
 	}
-	
+
 	/* here we prepare structures necessary to wait for events
 	*/
 	client->em.flags = 0;
@@ -641,10 +641,10 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 		}
 	}
 
-	if (events & MU_TIMER) {	
+	if (events & MU_TIMER) {
 		/* The Intel ligent format */
 		client->timer_val = ((long)pb->intin[15] << 16) | pb->intin[14];
-		
+
 		DIAG((D_i,client,"Timer val: %ld(hi=%d,lo=%d)",
 			client->timer_val, pb->intin[15], pb->intin[14]));
 		if (client->timer_val > 5) {

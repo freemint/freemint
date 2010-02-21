@@ -175,9 +175,9 @@ static const char *va_msgs[] =
 	"474d",
 	"474e",
 	"474f",
-	
+
 	/* new messages since 26.06.1995 */
-	
+
 	"4750",
 	"AV_VIEW",			/* 0x4751 */
 	"VA_VIEWED",			/* 0x4752 */
@@ -200,12 +200,12 @@ static const char *va_msgs[] =
 
 #define WINX_HIGH (WM_UNSHADED + 1)
 
-static const char *winx_msgs[] = 
+static const char *winx_msgs[] =
 {
 	"WM_SHADED",
 	"WM_UNSHADED"
 };
-	
+
 static char unknown[32];
 
 
@@ -293,7 +293,7 @@ static void
 CE_do_winmesag(enum locks lock, struct c_event *ce, bool cancel)
 {
 	struct CE_do_winmesag_data *args = ce->ptr1;
-	
+
 	if (!cancel)
 	{
 		struct xa_window *wind = args->wind;
@@ -344,7 +344,7 @@ do_winmesag(enum locks lock,
 		struct xa_client *wo;
 		short msg[8] = { mp0,mp1,mp2,mp3,mp4,mp5,mp6,mp7 };
 		wo = wind == root_window ? get_desktop()->owner : wind->owner;
-		
+
 		if ((wind->dial & created_for_SLIST))
 			wind->do_message(wind, wo, amq, qmf, msg);
 		else if (!(wind->owner->status & CS_EXITING))
@@ -353,7 +353,7 @@ do_winmesag(enum locks lock,
 
 			if (mp0 == WM_REDRAW)
 				C.redraws++, C.move_block = 3;
-		
+
 			p = kmalloc(sizeof(*p));
 			if (p)
 			{
@@ -384,16 +384,16 @@ add_msg_2_queue(struct xa_aesmsg_list **queue, union msg_buf *msg, short qmflags
 {
 	short *new = msg->m;
 	struct xa_aesmsg_list **next, *new_msg;
-	
+
 	if (new[0] == WM_REDRAW)
 	{
 		short *old;
 
 		DIAG((D_m, NULL, "WM_REDRAW for %s, rect %d/%d,%d/%d", client->name, new[4], new[5], new[6], new[7]));
-		
+
 		if (!new[3])
 			display("WM_REDRAW on root-window???");
-		
+
 		next = queue;
 
 		if (qmflags & QMF_CHKDUP)
@@ -474,7 +474,7 @@ add_msg_2_queue(struct xa_aesmsg_list **queue, union msg_buf *msg, short qmflags
 			while (*next)
 			{
 				short *old = (*next)->message.m;
-					
+
 				if (old[0] == new[0] && old[3] == new[3])
 				{
 					old[4] = new[4];
@@ -492,7 +492,7 @@ add_msg_2_queue(struct xa_aesmsg_list **queue, union msg_buf *msg, short qmflags
 			while (*next)
 			{
 				short *old = (*next)->message.m;
-					
+
 				if (old[0] == new[0] && old[3] == new[3])
 				{
 					old[4] = new[4];
@@ -507,7 +507,7 @@ add_msg_2_queue(struct xa_aesmsg_list **queue, union msg_buf *msg, short qmflags
 			while (*next)
 			{
 				short *old = (*next)->message.m;
-					
+
 				if (old[0] == new[0] && old[3] == new[3])
 				{
 					old[4] = new[4];
@@ -522,7 +522,7 @@ add_msg_2_queue(struct xa_aesmsg_list **queue, union msg_buf *msg, short qmflags
 			while (*next)
 			{
 				short *old = (*next)->message.m;
-					
+
 				if (old[0] == new[0] && old[3] == new[3])
 				{
 					short old_t = old[4] & 0xf, new_t = new[4] & 0xf;
@@ -530,7 +530,7 @@ add_msg_2_queue(struct xa_aesmsg_list **queue, union msg_buf *msg, short qmflags
 					if (old_t == new_t)
 					{
 						short old_a = old[4] >> 8, new_a = new[4] >> 8;
-						
+
 						if ((old_a | new_a))
 						{
 							if (!old_a)
@@ -543,7 +543,7 @@ add_msg_2_queue(struct xa_aesmsg_list **queue, union msg_buf *msg, short qmflags
 							old[6] = new[6];
 							old[7] = new[7];
 // 							display("replace old WM_ARROWED old_a %d, new_a %d, sum %d", old_a, new_a-new_a, new_a);
-						}	
+						}
 						msg = NULL;
 						break;
 					}
@@ -593,7 +593,7 @@ add_msg_2_queue(struct xa_aesmsg_list **queue, union msg_buf *msg, short qmflags
 static void
 queue_message(enum locks lock, struct xa_client *client, short amq, short qmf, union msg_buf *msg)
 {
-	
+
 	amq &= ~AMQ_ANYCASE;
 
 	switch (amq)
@@ -609,7 +609,7 @@ queue_message(enum locks lock, struct xa_client *client, short amq, short qmf, u
 		}
 		case AMQ_REDRAW:
 		{
-			
+
 #if GENERATE_DIAGS
 			add_msg_2_queue(client, &client->rdrw_msg, msg, qmf);
 #else
@@ -618,14 +618,14 @@ queue_message(enum locks lock, struct xa_client *client, short amq, short qmf, u
 			break;
 		}
 		case AMQ_LOSTRDRW:
-		{	
+		{
 #if GENERATE_DIAGS
 			add_msg_2_queue(client, &client->lost_rdrw_msg, msg, qmf);
 #else
 			add_msg_2_queue(&client->lost_rdrw_msg, msg, qmf);
 #endif
 			break;
-		}		
+		}
 		case AMQ_CRITICAL:
 		{
 #if GENERATE_DIAGS
@@ -654,7 +654,7 @@ add_lost_rect(struct xa_client *client, RECT *r)
 
 	while (rl)
 	{
-		
+
 }
 #endif
 
@@ -662,7 +662,7 @@ add_lost_rect(struct xa_client *client, RECT *r)
  * Context indipendant.
  * Send an AES message to a client application.
  * generalized version, which now can be used by appl_write. :-)
- * 
+ *
  * Ozk: Okie, new semantics now; If the caller of send_a_message is NOT the receiver
  * of the message, ALWAYS queue it on behalf of the receiver. Then Unblock() receiver.
  * The receiver, when it is woken up, will then call check_queued_events() and detect
@@ -678,7 +678,7 @@ send_a_message(enum locks lock, struct xa_client *dest_client, short amq, short 
 		DIAG((D_appl, NULL, "WARNING: Invalid target for send_a_message()"));
 		return;
 	}
-	
+
 	if (amq != AMQ_IREDRAW  && !(amq & AMQ_ANYCASE))
 	{
 		if (dest_client->status & (CS_LAGGING | CS_FORM_ALERT | CS_FORM_DO | CS_FSEL_INPUT)) // | CS_BLOCK_MENU_NAV))
@@ -696,7 +696,7 @@ send_a_message(enum locks lock, struct xa_client *dest_client, short amq, short 
 				{
 					hidem();
 					(*v->api->set_clip)(v, r);
-			
+
 					(*v->api->f_color)(v, 9);
 					(*v->api->wr_mode)(v, MD_REPLACE);
 					(*v->api->f_interior)(v, FIS_SOLID);

@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
  *                                        2004 F.Naumann & O.Skancke
@@ -55,7 +55,7 @@ XA_wind_create(enum locks lock, struct xa_client *client, AESPB *pb)
 // 	bool d = (!strnicmp("cops", client->proc_name, 4));
 
 	CONTROL(5,1,0)
-	
+
 	if (pb->control[N_INTIN] >= 6)
 	{
 		kind |= (long)pb->intin[5] << 16;
@@ -78,7 +78,7 @@ XA_wind_create(enum locks lock, struct xa_client *client, AESPB *pb)
 				   client->options.thinwork,
 				   r,
 				   &r,
-				   NULL);	
+				   NULL);
 
 	if (new_window)
 	{
@@ -144,7 +144,7 @@ XA_wind_open(enum locks lock, struct xa_client *client, AESPB *pb)
 				w->max.h = r.h;
 		}
 #endif
-	
+
 // 		if (w->opts & XAWO_WCOWORK)
 // 			r = w2f(&w->delta, &r, true);
 		pb->intout[0] = open_window(lock, w, r);
@@ -159,7 +159,7 @@ XA_wind_close(enum locks lock, struct xa_client *client, AESPB *pb)
 	struct xa_window *w;
 // 	bool d = (!strnicmp("cops", client->proc_name, 4));
 
-	CONTROL(1,1,0)	
+	CONTROL(1,1,0)
 
 	DIAG((D_wind,client,"XA_wind_close"));
 
@@ -194,7 +194,7 @@ XA_wind_find(enum locks lock, struct xa_client *client, AESPB *pb)
 	/* Is there a window under the mouse? */
 	struct xa_window *w = find_window(lock, pb->intin[0], pb->intin[1], FNDW_NOLIST|FNDW_NORMAL);
 
-	CONTROL(2,1,0)	
+	CONTROL(2,1,0)
 
 	pb->intout[0] = w ? w->handle : 0;
 
@@ -270,7 +270,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	int cmd = pb->intin[1];
 // 	bool d = (!strnicmp("cops", client->proc_name, 4));
 
-	CONTROL(6,1,0)	
+	CONTROL(6,1,0)
 
 	w = get_wind_by_handle(lock, wind);
 
@@ -338,7 +338,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	{
 		unsigned long o = 0, om = ~(XAWO_WHEEL);
 		short mode = -1;
-		
+
 		if (pb->intin[2] == 1)	/* Enable */
 		{
 			o |= XAWO_WHEEL;
@@ -346,13 +346,13 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			if (mode < 0 || mode > MAX_WHLMODE)
 				mode = DEF_WHLMODE;
 		}
-		
+
 		if (wind == -1)
 		{
 			client->options.wind_opts &= om;
 			client->options.wind_opts |= o;
 			if (mode != -1)
-				client->options.wheel_mode = mode;	
+				client->options.wheel_mode = mode;
 		}
 		else if (w)
 		{
@@ -361,7 +361,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			if (mode != -1)
 				w->wheel_mode = mode;
 		}
-		
+
 		if (mode != -1)
 			client->options.app_opts |= XAAO_WF_SLIDE;
 
@@ -377,7 +377,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		if (widg->stuff)
 		{
 			short newpos = bound_sl(pb->intin[2]);
-			
+
 			XA_SLIDER_WIDGET *slw = widg->stuff;
 			if (client->options.app_opts & XAAO_WF_SLIDE)
 			{
@@ -407,11 +407,11 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		XA_WIDGET *widg;
 
 		widg = get_widget(w, XAW_VSLIDE);
-		
+
 		if (widg->stuff)
 		{
 			short newpos = bound_sl(pb->intin[2]);
-			
+
 			XA_SLIDER_WIDGET *slw = widg->stuff;
 			if (client->options.app_opts & XAAO_WF_SLIDE)
 			{
@@ -510,21 +510,21 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		{
 			DIAGS(("wind_set: WF_PREVXYWH"));
 			set_winrect(w, &w->pr, (const RECT *)(pb->intin + 2));
-			
+
 			if (pb->control[N_INTOUT] >= 5)
 			{
 				if (w->opts & XAWO_WCOWORK)
 					*(RECT *)(pb->intout + 1) = f2w(&w->delta, &w->pr, true);
 				else
 					*(RECT *)(pb->intout + 1) = w->pr;
-				DIAGS(("wind_set: WF_PREVXYWH return %d/%d/%d/%d", *(RECT *)(pb->intout + 1))); 
+				DIAGS(("wind_set: WF_PREVXYWH return %d/%d/%d/%d", *(RECT *)(pb->intout + 1)));
 			}
 			break;
 		}
 		else if (cmd == WF_FULLXYWH)
 		{
 			DIAGS(("wind_set: WF_FULLXYWH"));
-			
+
 			set_winrect(w, &w->max, (const RECT *)(pb->intin + 2));
 
 			if (pb->control[N_INTOUT] >= 5)
@@ -533,7 +533,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 					*(RECT *)(pb->intout + 1) = f2w(&w->delta, &w->max, true);
 				else
 					*(RECT *)(pb->intout + 1) = w->max;
-				DIAGS(("wind_set: WF_FULLXYWH return %d/%d/%d/%d", *(RECT *)(pb->intout + 1))); 
+				DIAGS(("wind_set: WF_FULLXYWH return %d/%d/%d/%d", *(RECT *)(pb->intout + 1)));
 			}
 			break;
 		}
@@ -554,7 +554,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 					r = *(const RECT *)(pb->intin + 2);
 				ir = &r;
 			}
-			
+
 			DIAGS(("wind_set: WF_CURRXYWH - (%d/%d/%d/%d) blit=%s, ir=%lx",
 				*(const RECT *)(pb->intin + 2), blit ? "yes":"no", ir));
 
@@ -600,7 +600,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			if ( (m.w != w->rc.w && (w->opts & XAWO_NOBLITW)) ||
 			     (m.h != w->rc.h && (w->opts & XAWO_NOBLITH)))
 				blit = false;
-			
+
 			DIAGS(("wind_set: move to %d/%d/%d/%d for %s",
 				m.x, m.y, m.w, m.h, client->name));
 
@@ -686,7 +686,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			if (!ir)
 				ir = (RECT *)&w->rc;
 			*(RECT *)(pb->intout + 1) = *ir;
-			DIAGS(("wind_set: WF_CURRXYWH return %d/%d/%d/%d", *ir)); 
+			DIAGS(("wind_set: WF_CURRXYWH return %d/%d/%d/%d", *ir));
 		}
 		break;
 	}
@@ -755,7 +755,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 
 				if (wt)
 				{
-					DIAGS(("  desktop for %s to (%d/%d,%d/%d)", 
+					DIAGS(("  desktop for %s to (%d/%d,%d/%d)",
 						c_owner(client), ob->ob_x, ob->ob_y, ob->ob_width, ob->ob_height));
 
 					/*
@@ -789,12 +789,12 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		else
 		{
 			RECT in; // = *((const RECT *)(pb->intin+2));
-			
+
 			if (w->opts & XAWO_WCOWORK)
 				in = w2f(&w->delta, (const RECT *)(pb->intin + 2), true);
 			else
 				in = *((const RECT *)(pb->intin + 2));
-			
+
 			iconify_window(lock, w, &in);
 		}
 		if (pb->control[N_INTOUT] >= 5)
@@ -804,7 +804,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			else
 				*(RECT *)(pb->intout + 1) = w->rc;
 
-			DIAGS(("wind_set: WF_ICONIFY return %d/%d/%d/%d", *(RECT *)(pb->intout + 1))); 
+			DIAGS(("wind_set: WF_ICONIFY return %d/%d/%d/%d", *(RECT *)(pb->intout + 1)));
 		}
 		break;
 	}
@@ -846,8 +846,8 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			else
 				*(RECT *)(pb->intout + 1) = w->rc;
 
-// 			display("wind_set: WF_UNICONIFY return %d/%d/%d/%d", *(RECT *)(pb->intout + 1)); 
-			DIAGS(("wind_set: WF_UNICONIFY return %d/%d/%d/%d", *(RECT *)(pb->intout + 1))); 
+// 			display("wind_set: WF_UNICONIFY return %d/%d/%d/%d", *(RECT *)(pb->intout + 1));
+			DIAGS(("wind_set: WF_UNICONIFY return %d/%d/%d/%d", *(RECT *)(pb->intout + 1)));
 		}
 		break;
 	}
@@ -871,11 +871,11 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			ob, widg->stuff));
 // 		if (d) display("  wind_set(WF_TOOLBAR): obtree=%lx, current wt=%lx",
 // 			ob, widg->stuff);
-		
+
 		if (ob)
 		{
 			XA_TREE *wt = obtree_to_wt(client, ob);
-			
+
 			if (wt && wt == widg->stuff)
 			{
 				DIAGS((" --- Same toolbar installed"));
@@ -912,6 +912,13 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 					w->active_widgets |= TOOLBAR;
 				}
 				w->dial |= created_for_TOOLBAR;
+				/***/
+				redraw_toolbar(lock, w, 0);
+				/*
+				wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_NORM,
+						WM_TOOLBAR, 0, 0, wind->handle,
+						aesobj_item(&fr->obj), 1, 0, 0);
+						*/
 			}
 		}
 		else if (widg->stuff)
@@ -933,7 +940,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	case WF_MENU:
 	{
 // 		bool d = (!strnicmp(client->proc_name, "ergo_hlp", 8));
-		
+
 		if (w->handle != 0 && (w->active_widgets & XaMENU))
 		{
 			OBJECT *ob = ptr_from_shorts(pb->intin[2], pb->intin[3]);
@@ -944,14 +951,14 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 
 // 			if (d) display("  wind_set(WF_MENU) obtree=%lx, current wt=%lxfor %s",
 // 				ob, widg->stuff, client->name);
-			
+
 			if (ob)
 			{
 				XA_TREE *wt = obtree_to_wt(client, ob);
 
 				if (!wt || (wt != widg->stuff))
 				{
-	
+
 					DIAGS(("  --- install new menu"));
 					//fix_menu(client, ob, false);
 					if (!wt)
@@ -1022,7 +1029,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				msg = WM_SHADED;
 			}
 		}
-	
+
 		DIAGS(("wind_set: WF_SHADE, wind %d, status %x for %s",
 			w->handle, status, client->name));
 
@@ -1167,7 +1174,7 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 	int wind = pb->intin[0];
 	int cmd = pb->intin[1];
 
-	CONTROL(2,5,0)	
+	CONTROL(2,5,0)
 
 	w = get_wind_by_handle(lock, wind);
 
@@ -1212,7 +1219,7 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 	case WF_NAME:		/* new since N.Aes */
 	{
 		/* -Wcast-qual doesn't work as expected in gcc 2.95.x
-		 * the worning is not valid here (seems to be fixed in 3.3.2 at least) 
+		 * the worning is not valid here (seems to be fixed in 3.3.2 at least)
 		 * warns here: char *s = *(char **)&pb->intin[2];
 		 */
 		if (w->active_widgets & NAME)
@@ -1234,7 +1241,7 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 	{
 		long opt = w ? w->opts : client->options.wind_opts;
 		short mode = w ? w->wheel_mode : client->options.wheel_mode;
-		
+
 		o[1] = (opt & XAWO_WHEEL) ? 1 : 0;
 		o[2] = mode;
 		break;
@@ -1254,7 +1261,7 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 			w->use_rlc = true;
 			make_rect_list(w, true, RECT_OPT);
 			rl = rect_get_optimal_first(w);
-		
+
 			if (rl)
 				*ro = rl->r;
 			else
@@ -1283,7 +1290,7 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 			else
 				rl = rect_get_toolbar_next(w);
 		}
-		
+
 		if (rl)
 		{
 			*ro = rl->r;
@@ -1295,7 +1302,7 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 			ro->w = ro->h = 0;
 		}
 		break;
-		
+
 	}
 	case WF_FIRSTXYWH:	/* Generate a rectangle list and return the first entry */
 	{
@@ -1322,7 +1329,7 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 			if (w->use_rlc)
 			{
 				struct xa_rect_list *rl = rect_get_optimal_next(w);
-			
+
 				if (rl)
 					*ro = rl->r;
 				else
@@ -1404,7 +1411,7 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 			*ro = w->pr;
 		DIAG((D_w, w->owner, "get prev for %d: %d/%d,%d/%d",
 			wind ,ro->x,ro->y,ro->w,ro->h));
-		break;			
+		break;
 	}
 	/*
 	 * Get maximum window dimensions specified in wind_create() call
@@ -1418,7 +1425,7 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 		if (!w || w == root_window)
 		{
 			/* Ensure the windows don't overlay the menu bar */
-			ro->x = root_window->wa.x; 
+			ro->x = root_window->wa.x;
 			ro->y = root_window->wa.y;
 			ro->w = root_window->wa.w;
 			ro->h = root_window->wa.h;
@@ -1511,10 +1518,10 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 		else
 			/* The window owners AESid (==app_id == MiNT pid) */
 			o[1] = w->owner->p->pid;
-		
+
 		/* Is the window open? */
 		o[2] = (w->window_status & XAWS_OPEN) ? 1 : 0;
-		
+
 		if (w->prev)	/* If there is a window above, return its handle */
 			o[3] = w->prev->handle;
 		else
@@ -1540,7 +1547,7 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 		else
 			o[0] = o[1] = 0;
 		break;
-	}	
+	}
 	case WF_HSLIDE:
 	{
 		if (w->active_widgets & HSLIDE)
@@ -1579,7 +1586,7 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 	case WF_SCREEN:
 	{
 		union { long *lp; short *sp;} ptrs;
-		
+
 		/* HR return a very small area :-) hope app's      */
 		/*    then decide to allocate a buffer themselves. */
 		/*    This worked for SELECTRIC.  */
@@ -1628,7 +1635,7 @@ oeps:
 			if (o[1] <= W_BOTTOMER)
 			{
 				union { short c[8]; BFOBSPEC cw[4]; } col;
-				
+
 				(*w->active_theme->get_widgcolor)(w, o[1], col.cw);
 				/*
 				 * Colorword is the last 16 bits of BFOBSPEC (low word)
@@ -1690,7 +1697,7 @@ oeps:
 	case WF_OPTS:
 	{
 		unsigned long *optr = (w ? &w->opts : &client->options.wind_opts);
-		
+
 		o[1] = *optr >> 16;
 		o[2] = *optr;
 		break;
@@ -1736,7 +1743,7 @@ XA_wind_delete(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	struct xa_window *w;
 
-	CONTROL(1,1,0)	
+	CONTROL(1,1,0)
 
 	w = get_wind_by_handle(lock, pb->intin[0]);
 	if (w && !(w->window_status & XAWS_OPEN))
@@ -1753,7 +1760,7 @@ XA_wind_delete(enum locks lock, struct xa_client *client, AESPB *pb)
 unsigned long
 XA_wind_new(enum locks lock, struct xa_client *client, AESPB *pb)
 {
-	CONTROL(0,0,0)	
+	CONTROL(0,0,0)
 
 	remove_windows(lock, client);
 
@@ -1771,7 +1778,7 @@ XA_wind_calc(enum locks lock, struct xa_client *client, AESPB *pb)
 // 	bool d = (!strnicmp(client->proc_name, "stzip", 5)) ? true : false;
 	XA_WIND_ATTR tp;
 
-	CONTROL(6,5,0)	
+	CONTROL(6,5,0)
 
 // 	if (d) 	display("wind_calc: req=%d, kind=%d", pb->intin[0], pb->intin[1]);
 
@@ -1783,7 +1790,7 @@ XA_wind_calc(enum locks lock, struct xa_client *client, AESPB *pb)
 	else
 	{
 		tp = (unsigned short)pb->intin[1];
-	
+
 		if (!client->options.nohide)
 			tp |= HIDE;
 

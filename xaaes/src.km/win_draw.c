@@ -104,11 +104,11 @@ static XA_WIND_ATTR border_dep[] =
 	0
 };
 
-static struct widget_theme def_theme = 
+static struct widget_theme def_theme =
 {
 	{ 0 },		/* xa_data_hdr */
 	0L,		/* Links */
-	
+
 	&def_layout[0],
 
 	get_wcol,
@@ -224,11 +224,11 @@ static XA_WIND_ATTR pu_border_dep[] =
 	0
 };
 
-static struct widget_theme pu_def_theme = 
+static struct widget_theme pu_def_theme =
 {
 	{ 0 },		/* xa_data_hdr */
 	0L,		/* Links */
-	
+
 	&pu_def_layout[0],
 
 	get_wcol,
@@ -356,11 +356,11 @@ static XA_WIND_ATTR sl_border_dep[] =
 	0
 };
 
-static struct widget_theme sl_def_theme = 
+static struct widget_theme sl_def_theme =
 {
 	{ 0 },		/* xa_data_hdr */
 	0L,		/* Links */
-	
+
 	&sl_def_layout[0],
 
 	get_wcol,
@@ -454,7 +454,7 @@ static struct xa_wtexture * find_gradient(struct xa_vdi_settings *, struct xa_wc
 #endif
 /* ------------------------------------------------------------------------- */
 /* ------------------------------------------------------------------------- */
- 
+
 static struct widget_theme *
 duplicate_theme(struct widget_theme *theme)
 {
@@ -467,7 +467,7 @@ duplicate_theme(struct widget_theme *theme)
 	 * Count rows and widgets
 	 */
 	rows = theme->layout;
-	
+
 	while (rows->tp_mask != -1)
 	{
 		if ((wr = rows->w))
@@ -487,7 +487,7 @@ duplicate_theme(struct widget_theme *theme)
 	len = ((sizeof(wr) * n_widgets)) + sizeof(*new_theme) + ((sizeof(*rows) * n_rows));
 
 	new_theme = (*api->kmalloc)(len);
-	
+
 	if (new_theme)
 	{
 		*new_theme = *theme;
@@ -496,7 +496,7 @@ duplicate_theme(struct widget_theme *theme)
 
 		new_theme->layout = new_rows;
 		rows = theme->layout;
-		
+
 		while (rows->tp_mask != -1)
 		{
 			XA_WIND_ATTR utp, ntp;
@@ -568,7 +568,7 @@ struct window_colours
 	struct xa_wcol_inf	closer;
 	struct xa_wcol_inf	hider;
 	struct xa_wcol_inf	iconifier;
-	struct xa_wcol_inf	fuller;	
+	struct xa_wcol_inf	fuller;
 	struct xa_wcol_inf	sizer;
 	struct xa_wcol_inf	uparrow;
 	struct xa_wcol_inf	dnarrow;
@@ -657,7 +657,7 @@ struct xa_gradient utop_hslider_gradient =
 	{{800,800,800},{500,500,500}},
 };
 
-static struct xa_gradient otop_title_gradient = 
+static struct xa_gradient otop_title_gradient =
 {
 #if 0
 	NULL,
@@ -682,7 +682,7 @@ static struct xa_gradient utop_title_gradient =
 	NULL,
 	-1, -1,
 	0, 0,
-	
+
 	2, 0, {0},
 	{{500,500,500},{800,800,800}},
 /*	{{500,500,500},{900,900,900}}, */
@@ -696,7 +696,7 @@ static struct xa_gradient utop_title_gradient =
 #endif
 };
 
-static struct xa_gradient otop_info_gradient = 
+static struct xa_gradient otop_info_gradient =
 {
 	NULL,
 	0, -1,
@@ -707,7 +707,7 @@ static struct xa_gradient otop_info_gradient =
 // 	3, 1, {3, 0},
 // 	{{200,200,200},{600,600,600},{900,900,900}},
 };
-static struct xa_gradient utop_info_gradient = 
+static struct xa_gradient utop_info_gradient =
 {
 	NULL,
 	0, -1,
@@ -718,7 +718,7 @@ static struct xa_gradient utop_info_gradient =
 };
 
 #if 0
-static struct xa_gradient otop_green_gradient = 
+static struct xa_gradient otop_green_gradient =
 {
 	NULL,
 	-1, -1,
@@ -733,7 +733,7 @@ static struct xa_gradient otop_grey_gradient =
 	NULL,
 	-1, -1,
 	0, 0,
-	
+
 	2, 0, {0},
 	{{600,600,700},{900,900,1000}},
 };
@@ -742,13 +742,13 @@ static struct xa_gradient utop_grey_gradient =
 	NULL,
 	-1, -1,
 	0, 0,
-	
+
 	2, 0, {0},
 	{{500,500,500},{800,800,800}},
 /*	{{500,500,500},{900,900,900}}, */
 };
 #endif
-		
+
 struct window_colours def_otop_cols =
 {
  { 0 },	/* data header */
@@ -768,7 +768,7 @@ struct window_colours def_otop_cols =
         {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},
         {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},
         {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* window areas not covered by a widget/ unused widgets*/
-#endif 
+#endif
 #ifdef ST_ONLY
   { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
         {G_CYAN,   FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_CYAN, NULL},	/* Normal */
@@ -779,7 +779,7 @@ struct window_colours def_otop_cols =
         {G_CYAN,   FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_CYAN, NULL},	/* Normal */
         {G_CYAN,   FIS_SOLID,   8,   G_BLACK,     1,    G_CYAN, G_WHITE, NULL},		/* Selected */
         {G_BLUE,   FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}},	/* Highlighted */
-#endif 
+#endif
 /* Horizontal Slider */
 #ifdef ST_ONLY
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
@@ -803,7 +803,7 @@ struct window_colours def_otop_cols =
         {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_hslide_gradient},	/* Normal */
         {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL, &otop_hslide_gradient},	/* Selected */
         {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_hslide_gradient}}, /* Highlighted */
-#endif 
+#endif
  /* Vertical Slider */
 #ifdef ST_ONLY
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
@@ -815,7 +815,7 @@ struct window_colours def_otop_cols =
         {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_vslider_gradient},	/* Normal */
         {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL, &otop_vslider_gradient},	/* Selected */
         {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL, &otop_vslider_gradient}}, /* Highlighted */
-#endif 
+#endif
  /* Vertical Slide */
 #ifdef ST_ONLY
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
@@ -827,7 +827,7 @@ struct window_colours def_otop_cols =
         {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_vslide_gradient},	/* Normal */
         {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL, &otop_vslide_gradient},	/* Selected */
         {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_vslide_gradient}}, /* Highlighted */
-#endif 
+#endif
 /* Title */
 #ifdef ST_ONLY
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED|WCOL_GRADIENT, MD_REPLACE,
@@ -839,7 +839,7 @@ struct window_colours def_otop_cols =
              {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_title_gradient},	/* Normal */
              {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,     1,    G_BLACK, G_WHITE,  NULL, &otop_title_gradient},	/* Selected */
              {G_LWHITE, FIS_SOLID,   8,   G_BLACK,      1,    G_WHITE, G_LBLACK, NULL, &otop_title_gradient}}, /* Highlighted */
-#endif 
+#endif
  /* Info */
 #ifdef ST_ONLY
  { WCOL_DRAW3D|WCOL_DRAWBKG|WCOL_GRADIENT, MD_REPLACE,
@@ -851,7 +851,7 @@ struct window_colours def_otop_cols =
              {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL, &otop_info_gradient},	/* Normal */
              {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL, &otop_info_gradient},	/* Selected */
              {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL, &otop_info_gradient}}, /* Highlighted */
-#endif 
+#endif
  /* Closer */
 #ifdef ST_ONLY
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
@@ -863,7 +863,7 @@ struct window_colours def_otop_cols =
              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_title_gradient},	/* Normal */
              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &otop_title_gradient},	/* Selected */
              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_title_gradient}}, /* Highlighted */
-#endif 
+#endif
  /* Hider */
 #ifdef ST_ONLY
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
@@ -875,7 +875,7 @@ struct window_colours def_otop_cols =
               {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_title_gradient},	/* Normal */
               {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &otop_title_gradient},	/* Selected */
               {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_title_gradient}}, /* Highlighted */
-#endif 
+#endif
  /* Iconifier */
 #ifdef ST_ONLY
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
@@ -887,7 +887,7 @@ struct window_colours def_otop_cols =
               {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_title_gradient},	/* Normal */
               {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &otop_title_gradient},	/* Selected */
               {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_title_gradient}}, /* Highlighted */
-#endif 
+#endif
  /* Fuller */
 #ifdef ST_ONLY
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
@@ -899,7 +899,7 @@ struct window_colours def_otop_cols =
               {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_title_gradient},	/* Normal */
               {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &otop_title_gradient},	/* Selected */
               {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_title_gradient}}, /* Highlighted */
-#endif 
+#endif
  /* Sizer */
 #ifdef ST_ONLY
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
@@ -911,19 +911,19 @@ struct window_colours def_otop_cols =
               {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_grey_gradient},	/* Normal */
               {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &otop_grey_gradient},	/* Selected */
               {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_grey_gradient}}, /* Highlighted */
-#endif 
+#endif
  /* UP Arrow */
 #ifdef ST_ONLY
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE, 
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
               {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
               {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL},	/* Selected */
               {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
 #else
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE, 
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
               {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_grey_gradient},	/* Normal */
               {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &otop_grey_gradient},	/* Selected */
               {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_grey_gradient}}, /* Highlighted */
-#endif 
+#endif
  /* DN Arrow */
 #ifdef ST_ONLY
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
@@ -935,7 +935,7 @@ struct window_colours def_otop_cols =
               {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_grey_gradient},	/* Normal */
               {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &otop_grey_gradient},	/* Selected */
               {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_grey_gradient}}, /* Highlighted */
-#endif 
+#endif
  /* LF Arrow */
 #ifdef ST_ONLY
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
@@ -947,7 +947,7 @@ struct window_colours def_otop_cols =
               {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_grey_gradient},	/* Normal */
               {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &otop_grey_gradient},	/* Selected */
               {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &otop_grey_gradient}}, /* Highlighted */
-#endif 
+#endif
  /* RT Arrow */
 #ifdef ST_ONLY
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
@@ -975,12 +975,12 @@ struct window_colours def_otop_cols =
                                       {0,  9,   0, MD_TRANS, 0,        G_BLACK,	G_WHITE, G_WHITE,  1,       1,     NULL}},	/* Highlighted */
 
 };
-	
+
 struct window_colours def_utop_cols =
 {
  { 0 },	/* data header */
  0,
- 
+
  G_LBLACK,	/* Window work area frame color */
  G_LBLACK,	/* window frame color */
 /*          flags                        wrmode      color       fill    fill    box       box        tl      br		*/
@@ -996,7 +996,7 @@ struct window_colours def_utop_cols =
           {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,     1,    G_WHITE, G_LBLACK, NULL},
           {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,     1,    G_WHITE, G_LBLACK, NULL},
           {G_LWHITE, FIS_SOLID,   8,   G_BLACK,      1,    G_WHITE, G_LBLACK, NULL}},	/* window areas not covered by a widget/ unused widgets*/
-#endif 
+#endif
 #ifdef ST_ONLY
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
 	{G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LWHITE, NULL},	/* Normal */
@@ -1007,7 +1007,7 @@ struct window_colours def_utop_cols =
 	{G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LWHITE, NULL},	/* Normal */
 	{G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_LWHITE, G_WHITE,  NULL},	/* Selected */
 	{G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL}},	/* Highlighted */
-#endif 
+#endif
  /* H Slider */
 #ifdef ST_ONLY
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
@@ -1019,7 +1019,7 @@ struct window_colours def_utop_cols =
         {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_hslider_gradient},	/* Normal */
         {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL, &utop_hslider_gradient},	/* Selected */
         {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL, &utop_hslider_gradient}},	/* Highlighted */
-#endif 
+#endif
  /* H Slide */
 #ifdef ST_ONLY
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
@@ -1031,7 +1031,7 @@ struct window_colours def_utop_cols =
         {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_hslide_gradient},	/* Normal */
         {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &utop_hslide_gradient},	/* Selected */
         {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_hslide_gradient}}, /* Highlighted */
-#endif 
+#endif
   /* V Slider */
 #ifdef ST_ONLY
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
@@ -1043,7 +1043,7 @@ struct window_colours def_utop_cols =
         {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_vslider_gradient},	/* Normal */
         {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE,  NULL, &utop_vslider_gradient},	/* Selected */
         {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK,  NULL, &utop_vslider_gradient}},	/* Highlighted */
-#endif 
+#endif
  /* V Slide */
 #ifdef ST_ONLY
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
@@ -1055,7 +1055,7 @@ struct window_colours def_utop_cols =
         {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_vslide_gradient},	/* Normal */
         {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &utop_vslide_gradient},	/* Selected */
         {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_vslide_gradient}}, /* Highlighted */
-#endif 
+#endif
  /* Title */
 #ifdef ST_ONLY
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_GRADIENT, MD_REPLACE,
@@ -1067,7 +1067,7 @@ struct window_colours def_utop_cols =
              {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_title_gradient},	/* Normal */
              {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &utop_title_gradient},	/* Selected */
              {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_title_gradient}}, /* Highlighted */
-#endif 
+#endif
  /* Info */
 #ifdef ST_ONLY
  { WCOL_DRAWBKG|WCOL_GRADIENT,		MD_REPLACE,
@@ -1079,7 +1079,7 @@ struct window_colours def_utop_cols =
              {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,    1,    G_LBLACK,G_BLACK, NULL, &utop_info_gradient},	/* Normal */
              {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,    1,    G_LBLACK,G_BLACK, NULL, &utop_info_gradient},	/* Selected */
              {G_WHITE,  FIS_SOLID,   8,   G_BLACK,     1,    G_LBLACK,G_BLACK, NULL, &utop_info_gradient}}, /* Highlighted */
-#endif 
+#endif
  /* Closer */
 #ifdef ST_ONLY
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
@@ -1091,7 +1091,7 @@ struct window_colours def_utop_cols =
              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient},	/* Normal */
              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &utop_grey_gradient},	/* Selected */
              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient}}, /* Highlighted */
-#endif 
+#endif
  /* Hider */
 #ifdef ST_ONLY
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
@@ -1103,7 +1103,7 @@ struct window_colours def_utop_cols =
              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient},	/* Normal */
              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &utop_grey_gradient},	/* Selected */
              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient}}, /* Highlighted */
-#endif 
+#endif
  /* Iconifier */
 #ifdef ST_ONLY
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
@@ -1115,7 +1115,7 @@ struct window_colours def_utop_cols =
              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient},	/* Normal */
              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &utop_grey_gradient},	/* Selected */
              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient}}, /* Highlighted */
-#endif 
+#endif
  /* Fuller */
 #ifdef ST_ONLY
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
@@ -1127,7 +1127,7 @@ struct window_colours def_utop_cols =
              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient},	/* Normal */
              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &utop_grey_gradient},	/* Selected */
              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient}}, /* Highlighted */
-#endif 
+#endif
  /* Sizer */
 #ifdef ST_ONLY
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
@@ -1139,7 +1139,7 @@ struct window_colours def_utop_cols =
              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient},	/* Normal */
              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &utop_grey_gradient},	/* Selected */
              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient}}, /* Highlighted */
-#endif 
+#endif
  /* UP Arrow */
 #ifdef ST_ONLY
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
@@ -1151,7 +1151,7 @@ struct window_colours def_utop_cols =
              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient},	/* Normal */
              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &utop_grey_gradient},	/* Selected */
              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient}}, /* Highlighted */
-#endif 
+#endif
  /* DN Arrow */
 #ifdef ST_ONLY
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
@@ -1163,7 +1163,7 @@ struct window_colours def_utop_cols =
              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient},	/* Normal */
              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &utop_grey_gradient},	/* Selected */
              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient}}, /* Highlighted */
-#endif 
+#endif
  /* LF Arrow */
 #ifdef ST_ONLY
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
@@ -1175,7 +1175,7 @@ struct window_colours def_utop_cols =
              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient},	/* Normal */
              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &utop_grey_gradient},	/* Selected */
              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient}}, /* Highlighted */
-#endif 
+#endif
  /* RT Arrow */
 #ifdef ST_ONLY
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG, MD_REPLACE,
@@ -1187,7 +1187,7 @@ struct window_colours def_utop_cols =
              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient},	/* Normal */
              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &utop_grey_gradient},	/* Selected */
              {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &utop_grey_gradient}}, /* Highlighted */
-#endif 
+#endif
 
 /* flags	                     fontId  size wrmode    Effect      forground       background	*/
 /*								           col	          col		*/
@@ -1207,7 +1207,7 @@ struct window_colours def_utop_cols =
 /* ---------------- Alert window colour theme --------------------------------------- */
 /* ---------------------------------------------------------------------------------- */
 #ifndef ST_ONLY
-static struct xa_gradient alert_otop_title_gradient = 
+static struct xa_gradient alert_otop_title_gradient =
 {
 	NULL,
 	-1, -1,
@@ -1221,7 +1221,7 @@ static struct xa_gradient alert_utop_title_gradient =
 	NULL,
 	-1, -1,
 	0, 0,
-	
+
 	2, 0, {0},
 	{{500,500,500},{700,700,700}},
 /*	{{500,500,500},{900,900,900}}, */
@@ -1232,7 +1232,7 @@ static struct xa_gradient alert_utop_grey_gradient =
 	NULL,
 	-1, -1,
 	0, 0,
-	
+
 	2, 0, {0},
 	{{300,300,300},{700,700,700}},
 /*	{{500,500,500},{900,900,900}}, */
@@ -1250,7 +1250,7 @@ struct window_colours alert_def_otop_cols =
                                                     {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},
                                                     {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},
                                                     {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* window areas not covered by a widget/ unused widgets*/
- 
+
   { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
                                                     {G_CYAN,   FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_CYAN, NULL},	/* Normal */
                                                     {G_CYAN,   FIS_SOLID,   8,   G_BLACK,     1,    G_CYAN, G_WHITE, NULL},		/* Selected */
@@ -1265,7 +1265,7 @@ struct window_colours alert_def_otop_cols =
                                                     {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
                                                     {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
                                                     {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* Highlighted */
- 
+
  /* Vertical Slider */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
                                                     {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},	/* Normal */
@@ -1312,7 +1312,7 @@ struct window_colours alert_def_otop_cols =
               {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, NULL},	/* Selected */
               {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL}}, /* Highlighted */
  /* UP Arrow */
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE, 
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
               {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL},	/* Normal */
               {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, NULL},	/* Selected */
               {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, NULL}}, /* Highlighted */
@@ -1352,7 +1352,7 @@ struct window_colours alert_def_utop_cols =
 {
  { 0 },	/* data header */
  0,
- 
+
  G_LBLACK,	/* Window work area frame color */
  G_LBLACK,	/* window frame color */
 /*          flags                        wrmode      color       fill    fill    box       box        tl      br		*/
@@ -1362,7 +1362,7 @@ struct window_colours alert_def_utop_cols =
                                                     {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,     1,    G_WHITE, G_LBLACK, NULL},
                                                     {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,     1,    G_WHITE, G_LBLACK, NULL},
                                                     {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}},	/* window areas not covered by a widget/ unused widgets*/
- 
+
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
                                                     {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LWHITE, NULL},	/* Normal */
                                                     {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_LWHITE, G_WHITE,  NULL},	/* Selected */
@@ -1467,7 +1467,7 @@ struct xa_gradient slist_otop_vslide_gradient =
 struct xa_gradient slist_otop_hslide_gradient =
 {
 	NULL,
-	0, -1, 
+	0, -1,
 	16, 0,
 
 	0, 0, {0},
@@ -1485,7 +1485,7 @@ struct xa_gradient slist_otop_vslider_gradient =
 struct xa_gradient slist_otop_hslider_gradient =
 {
 	NULL,
-	0, -1, 
+	0, -1,
 	16, 0,
 
 	0, 0, {0},
@@ -1503,7 +1503,7 @@ struct xa_gradient slist_utop_vslide_gradient =
 struct xa_gradient slist_utop_hslide_gradient =
 {
 	NULL,
-	0, -1, 
+	0, -1,
 	16, 0,
 
 	0, 0, {0},
@@ -1521,14 +1521,14 @@ struct xa_gradient slist_utop_vslider_gradient =
 struct xa_gradient slist_utop_hslider_gradient =
 {
 	NULL,
-	0, -1, 
+	0, -1,
 	16, 0,
 
 	0, 0, {0},
 	{{800,800,800},{500,500,500}},
 };
 
-static struct xa_gradient slist_otop_title_gradient = 
+static struct xa_gradient slist_otop_title_gradient =
 {
 	NULL,
 	-1, -1,
@@ -1542,13 +1542,13 @@ static struct xa_gradient slist_utop_title_gradient =
 	NULL,
 	-1, -1,
 	0, 0,
-	
+
 	2, 0, {0},
 	{{500,500,500},{700,700,700}},
 /*	{{500,500,500},{900,900,900}}, */
 };
 
-static struct xa_gradient slist_otop_info_gradient = 
+static struct xa_gradient slist_otop_info_gradient =
 {
 	NULL,
 	0, -1,
@@ -1557,7 +1557,7 @@ static struct xa_gradient slist_otop_info_gradient =
 	3, 1, {3, 0},
 	{{200,200,200},{600,600,600},{900,900,900}},
 };
-static struct xa_gradient slist_utop_info_gradient = 
+static struct xa_gradient slist_utop_info_gradient =
 {
 	NULL,
 	0, -1,
@@ -1571,7 +1571,7 @@ static struct xa_gradient slist_otop_grey_gradient =
 	NULL,
 	-1, -1,
 	0, 0,
-	
+
 	2, 0, {0},
 	{{500,500,500},{900,900,900}},
 };
@@ -1580,7 +1580,7 @@ static struct xa_gradient slist_utop_grey_gradient =
 	NULL,
 	-1, -1,
 	0, 0,
-	
+
 	2, 0, {0},
 	{{300,300,300},{700,700,700}},
 /*	{{500,500,500},{900,900,900}}, */
@@ -1599,7 +1599,7 @@ struct window_colours slist_def_otop_cols =
                                                     {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},
                                                     {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL},
                                                     {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}}, /* window areas not covered by a widget/ unused widgets*/
- 
+
   { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
                                                     {G_CYAN,   FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_CYAN, NULL},	/* Normal */
                                                     {G_CYAN,   FIS_SOLID,   8,   G_BLACK,     1,    G_CYAN, G_WHITE, NULL},		/* Selected */
@@ -1614,7 +1614,7 @@ struct window_colours slist_def_otop_cols =
              {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_hslide_gradient},	/* Normal */
              {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL, &slist_otop_hslide_gradient},	/* Selected */
              {G_LBLACK, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_hslide_gradient}}, /* Highlighted */
- 
+
  /* Vertical Slider */
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
              {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_vslider_gradient},	/* Normal */
@@ -1661,7 +1661,7 @@ struct window_colours slist_def_otop_cols =
               {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &slist_otop_grey_gradient},	/* Selected */
               {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_grey_gradient}}, /* Highlighted */
  /* UP Arrow */
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE, 
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
               {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_grey_gradient},	/* Normal */
               {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_LBLACK, G_WHITE, NULL, &slist_otop_grey_gradient},	/* Selected */
               {G_LWHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL, &slist_otop_grey_gradient}}, /* Highlighted */
@@ -1701,7 +1701,7 @@ struct window_colours slist_def_utop_cols =
 {
  { 0 },	/* data header */
  0,
- 
+
  G_LBLACK,	/* Window work area frame color */
  G_LBLACK,	/* window frame color */
 /*          flags                        wrmode      color       fill    fill    box       box        tl      br		*/
@@ -1711,7 +1711,7 @@ struct window_colours slist_def_utop_cols =
                                                     {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,     1,    G_WHITE, G_LBLACK, NULL},
                                                     {G_LWHITE, FIS_SOLID,   8,   G_LBLACK,     1,    G_WHITE, G_LBLACK, NULL},
                                                     {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LBLACK, NULL}},	/* window areas not covered by a widget/ unused widgets*/
- 
+
  { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
                                                     {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_LWHITE, NULL},	/* Normal */
                                                     {G_LWHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_LWHITE, G_WHITE,  NULL},	/* Selected */
@@ -1823,7 +1823,7 @@ struct window_colours mono_def_otop_cols =
                                                     {G_WHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},
                                                     {G_WHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},
                                                     {G_WHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* window areas not covered by a widget/ unused widgets*/
- 
+
   { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
                                                     {G_WHITE,   FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
                                                     {G_WHITE,   FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
@@ -1884,7 +1884,7 @@ struct window_colours mono_def_otop_cols =
                                                     {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
                                                     {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
  /* UP Arrow */
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE, 
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
                                                     {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
                                                     {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
                                                     {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
@@ -1932,7 +1932,7 @@ struct window_colours mono_def_utop_cols =
                                                     {G_WHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},
                                                     {G_WHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},
                                                     {G_WHITE, FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* window areas not covered by a widget/ unused widgets*/
- 
+
   { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
                                                     {G_BLACK,   FIS_SOLID,   8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
                                                     {G_BLACK,   FIS_SOLID,   8,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
@@ -1993,7 +1993,7 @@ struct window_colours mono_def_utop_cols =
                                                     {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
                                                     {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
  /* UP Arrow */
- { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE, 
+ { WCOL_DRAW3D|WCOL_ACT3D|WCOL_DRAWBKG|WCOL_BOXED, MD_REPLACE,
                                                     {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL},	/* Normal */
                                                     {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_BLACK, G_WHITE, NULL},	/* Selected */
                                                     {G_WHITE,	FIS_SOLID, 8,   G_BLACK,     1,    G_WHITE, G_BLACK, NULL}}, /* Highlighted */
@@ -2063,29 +2063,29 @@ draw_canvas(struct xa_window *wind, RECT *outer, RECT *inner, const RECT *clip)
 		size = -3;
 
 		(*v->api->wr_mode)(v, MD_REPLACE);
-		
+
 		(*v->api->br_hook)(v, 0, outer, G_BLACK);
 		(*v->api->br_hook)(v, -1, outer, G_LBLACK);
 // 		(*v->api->br_hook)(v, -2, outer, G_LWHITE);
 // 		(*v->api->br_hook)(v, -3, outer, G_LWHITE);
 // 		(*v->api->br_hook)(v, -4, outer, G_LWHITE);
 // 		(*v->api->br_hook)(v, -5, outer, G_LWHITE);
-		
-		
+
+
 		(*v->api->tl_hook)(v, 0, outer, G_BLACK);
 		(*v->api->tl_hook)(v, -1, outer, G_WHITE);
 // 		(*v->api->tl_hook)(v, -2, outer, G_LWHITE);
 // 		(*v->api->tl_hook)(v, -3, outer, G_LWHITE);
 // 		(*v->api->tl_hook)(v, -4, outer, G_LWHITE);
 // 		(*v->api->tl_hook)(v, -5, outer, G_LWHITE);
-		
+
 // 		(*v->api->tl_hook)(v, 1, inner, G_LBLACK);
 // 		(*v->api->tl_hook)(v, 2, inner, G_LBLACK);
 // 		(*v->api->tl_hook)(v, 3, inner, G_LWHITE);
 // 		(*v->api->tl_hook)(v, 4, inner, G_LWHITE);
 // 		(*v->api->tl_hook)(v, 5, inner, G_LWHITE);
 // 		(*v->api->tl_hook)(v, 6, inner, G_LWHITE);
-		
+
 // 		(*v->api->br_hook)(v, 1, inner, G_WHITE);
 // 		(*v->api->br_hook)(v, 2, inner, G_LWHITE);
 // 		(*v->api->br_hook)(v, 3, inner, G_LWHITE);
@@ -2093,17 +2093,17 @@ draw_canvas(struct xa_window *wind, RECT *outer, RECT *inner, const RECT *clip)
 // 		(*v->api->br_hook)(v, 5, inner, G_LWHITE);
 // 		(*v->api->br_hook)(v, 6, inner, G_LWHITE);
 
-#if 0		
+#if 0
 		(*v->api->top_line)(v, 0, outer, G_BLUE);
 		(*v->api->left_line)(v, 0, outer, G_BLUE);
 		(*v->api->bottom_line)(v, 0, outer, G_LBLUE);
 		(*v->api->right_line)(v, 0, outer, G_LBLUE);
-	
+
 		(*v->api->top_line)(v, 1, inner, G_GREEN);
 		(*v->api->left_line)(v, 1, inner, G_GREEN);
 		(*v->api->bottom_line)(v, 1, inner, G_LGREEN);
 		(*v->api->right_line)(v, 1, inner, G_LGREEN);
-		
+
 
 		(*v->api->f_color)(v, G_LBLACK);
 		r.x = outer->x;
@@ -2111,7 +2111,7 @@ draw_canvas(struct xa_window *wind, RECT *outer, RECT *inner, const RECT *clip)
 		r.w = outer->w;
 		r.h = inner->y - outer->y;
 		(*v->api->gbar)(v, size, &r);
-		
+
 		r.x = outer->x;
 		r.w = inner->x - outer->x;
 		r.y = inner->y - 2;
@@ -2149,19 +2149,19 @@ draw_pu_canvas(struct xa_window *wind, RECT *outer, RECT *inner, const RECT *cli
 		{
 			(*v->api->br_hook)(v, 0, outer, G_BLACK);
 			(*v->api->br_hook)(v, -1, outer, G_WHITE);
-		
+
 			(*v->api->tl_hook)(v, 0, outer, G_BLACK);
 			(*v->api->tl_hook)(v, -1, outer, G_WHITE);
 		}
 		else
 		{
-		
+
 			size = -3;
 
-		
+
 			(*v->api->br_hook)(v, 0, outer, G_BLACK);
 			(*v->api->br_hook)(v, -1, outer, G_LBLACK);
-		
+
 			(*v->api->tl_hook)(v, 0, outer, G_BLACK);
 			(*v->api->tl_hook)(v, -1, outer, G_WHITE);
 		}
@@ -2180,7 +2180,7 @@ draw_widg_box(struct xa_vdi_settings *v, short d, struct xa_wcol_inf *wcoli, str
 	RECT r = *wr;
 
 	(*v->api->wr_mode)(v, wcoli->wrm);
-	
+
 	if (sel)
 		wcol = &wcoli->s;
 	else
@@ -2203,7 +2203,7 @@ draw_widg_box(struct xa_vdi_settings *v, short d, struct xa_wcol_inf *wcoli, str
 		while (i > 0)
 			(*v->api->gbox)(v, o, &r), o--, i--;
 	}
-		
+
 	if (f & WCOL_DRAW3D)
 	{
 		if (sel)
@@ -2224,11 +2224,11 @@ draw_widg_box(struct xa_vdi_settings *v, short d, struct xa_wcol_inf *wcoli, str
 		(*v->api->f_interior)(v, wcol->i);
 		if (wcol->i > 1)
 			(*v->api->f_style)(v, wcol->f);
-	
+
 		(*v->api->f_color)(v, wcol->c);
 		(*v->api->gbar)(v, o, &r);
 	}
-	
+
 	if (wext)
 	{
 		r.x -= o;
@@ -2236,7 +2236,7 @@ draw_widg_box(struct xa_vdi_settings *v, short d, struct xa_wcol_inf *wcoli, str
 		r.w += o + o;
 		r.h += o + o;
 		(*v->api->draw_texture)(v, wext->body, &r, anch);
-	}	
+	}
 }
 
 static void
@@ -2278,7 +2278,7 @@ d_waframe(struct xa_window *wind, const RECT *clip)
 		if (wind->wa_frame && wind->wa_borders)
 		{
 			short waframe_col = ((struct window_colours *)wind->colours)->waframe_col;
-			
+
 			if (wind->wa_borders & WAB_LEFT)
 				(*v->api->left_line)(v, 1, wa, waframe_col); //wind->colours->frame_col);
 			if (wind->wa_borders & WAB_RIGHT)
@@ -2320,7 +2320,7 @@ d_borders(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	struct xa_vdi_settings *v = wind->vdi_settings;
 	short size = wind->frame;
 	RECT r;
-	
+
 	if (wind->frame > 0)
 	{
 		if (wind->frame >= 4)
@@ -2448,7 +2448,7 @@ d_title(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 			struct xa_data_hdr **allocs;
 // 			struct module *m = wind->active_theme->module;
 			struct xa_wcol *wcol;
-			
+
 			if (wc->flags & WCF_TOP)
 			{
 				wcol = &wci->n;
@@ -2470,9 +2470,9 @@ d_title(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 			struct module *m;
 			struct widg_texture *t;
 			struct rgb_1000 s[2];
-			
+
 			m = wind->active_theme->module; //&((struct module *)wind->active_theme->module)
-			
+
 			if (wc->flags & WCF_TOP)
 			{
 // 				s[0] = (struct rgb_1000){400, 400, 600};
@@ -2522,7 +2522,7 @@ d_title(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	}
 
 // 	(*v->api->wr_mode)(v, MD_TRANS);
-	
+
 	if (o->windowner && wind->owner && !wind->winob && !dial)
 	{
 		char *ow = NULL;
@@ -2559,7 +2559,7 @@ d_wcontext(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	struct window_colours *wc = wind->colours;
 	struct xa_wcol_inf *wci = &wc->closer;
 	struct xa_wtexture *t = NULL;
-	
+
 	(*api->rp2ap)(wind, widg, &widg->ar);
 #ifndef ST_ONLY
 	if (scrninf->planes > 8)
@@ -2567,7 +2567,7 @@ d_wcontext(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 		struct xa_data_hdr **allocs;
 // 		struct module *m = wind->active_theme->module;
 		struct xa_wcol *wcol;
-			
+
 		if (wc->flags & WCF_TOP)
 		{
 			wcol = &wci->n;
@@ -2593,7 +2593,7 @@ d_wappicn(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	struct window_colours *wc = wind->colours;
 	struct xa_wcol_inf *wci = &wc->closer;
 	struct xa_wtexture *t = NULL;
-	
+
 	(*api->rp2ap)(wind, widg, &widg->ar);
 #ifndef ST_ONLY
 	if (scrninf->planes > 8)
@@ -2601,7 +2601,7 @@ d_wappicn(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 		struct xa_data_hdr **allocs;
 // 		struct module *m = wind->active_theme->module;
 		struct xa_wcol *wcol;
-			
+
 		if (wc->flags & WCF_TOP)
 		{
 			wcol = &wci->n;
@@ -2627,15 +2627,15 @@ d_closer(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	struct window_colours *wc = wind->colours;
 	struct xa_wcol_inf *wci = &wc->closer;
 	struct xa_wtexture *t = NULL;
-	
+
 	(*api->rp2ap)(wind, widg, &widg->ar);
-#ifndef ST_ONLY	
+#ifndef ST_ONLY
 	if (scrninf->planes > 8)
 	{
 		struct xa_data_hdr **allocs;
 // 		struct module *m = wind->active_theme->module;
 		struct xa_wcol *wcol;
-			
+
 		if (wc->flags & WCF_TOP)
 		{
 			wcol = &wci->n;
@@ -2661,15 +2661,15 @@ d_fuller(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	struct window_colours *wc = wind->colours;
 	struct xa_wcol_inf *wci = &wc->fuller;
 	struct xa_wtexture *t = NULL;
-	
+
 	(*api->rp2ap)(wind, widg, &widg->ar);
-#ifndef ST_ONLY	
+#ifndef ST_ONLY
 	if (scrninf->planes > 8)
 	{
 		struct xa_data_hdr **allocs;
 // 		struct module *m = wind->active_theme->module;
 		struct xa_wcol *wcol;
-			
+
 		if (wc->flags & WCF_TOP)
 		{
 			wcol = &wci->n;
@@ -2699,13 +2699,13 @@ d_info(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 
 	/* Convert relative coords and window location to absolute screen location */
 	(*api->rp2ap)(wind, widg, &widg->ar);
-#ifndef ST_ONLY		
+#ifndef ST_ONLY
 	if (scrninf->planes > 8)
 	{
 		struct xa_data_hdr **allocs;
 // 		struct module *m = wind->active_theme->module;
 		struct xa_wcol *wcol;
-			
+
 		if (wc->flags & WCF_TOP)
 		{
 			wcol = &wci->n;
@@ -2723,7 +2723,7 @@ d_info(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 
 
 	draw_widg_box(wind->vdi_settings, 0, wci, t, widg->state, &widg->ar, t ? &widg->ar : &wind->r);
-	draw_widget_text(wind->vdi_settings, widg, wti, widg->stuff, 4, 0); 
+	draw_widget_text(wind->vdi_settings, widg, wti, widg->stuff, 4, 0);
 	return true;
 }
 
@@ -2733,15 +2733,15 @@ d_sizer(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	struct window_colours *wc = wind->colours;
 	struct xa_wcol_inf *wci = &wc->sizer;
 	struct xa_wtexture *t = NULL;
-	
+
 	(*api->rp2ap)(wind, widg, &widg->ar);
-#ifndef ST_ONLY	
+#ifndef ST_ONLY
 	if (scrninf->planes > 8)
 	{
 		struct xa_data_hdr **allocs;
 // 		struct module *m = wind->active_theme->module;
 		struct xa_wcol *wcol;
-			
+
 		if (wc->flags & WCF_TOP)
 		{
 			wcol = &wci->n;
@@ -2767,15 +2767,15 @@ d_uparrow(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	struct window_colours *wc = wind->colours;
 	struct xa_wcol_inf *wci = &wc->uparrow;
 	struct xa_wtexture *t = NULL;
-	
+
 	(*api->rp2ap)(wind, widg, &widg->ar);
-#ifndef ST_ONLY	
+#ifndef ST_ONLY
 	if (scrninf->planes > 8)
 	{
 		struct xa_data_hdr **allocs;
 // 		struct module *m = wind->active_theme->module;
 		struct xa_wcol *wcol;
-			
+
 		if (wc->flags & WCF_TOP)
 		{
 			wcol = &wci->n;
@@ -2800,15 +2800,15 @@ d_dnarrow(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	struct window_colours *wc = wind->colours;
 	struct xa_wcol_inf *wci = &wc->dnarrow;
 	struct xa_wtexture *t = NULL;
-	
+
 	(*api->rp2ap)(wind, widg, &widg->ar);
-#ifndef ST_ONLY	
+#ifndef ST_ONLY
 	if (scrninf->planes > 8)
 	{
 		struct xa_data_hdr **allocs;
 // 		struct module *m = wind->active_theme->module;
 		struct xa_wcol *wcol;
-			
+
 		if (wc->flags & WCF_TOP)
 		{
 			wcol = &wci->n;
@@ -2833,7 +2833,7 @@ d_lfarrow(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	struct window_colours *wc = wind->colours;
 	struct xa_wcol_inf *wci = &wc->lfarrow;
 	struct xa_wtexture *t = NULL;
-	
+
 	(*api->rp2ap)(wind, widg, &widg->ar);
 #ifndef ST_ONLY
 	if (scrninf->planes > 8)
@@ -2841,7 +2841,7 @@ d_lfarrow(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 		struct xa_data_hdr **allocs;
 // 		struct module *m = wind->active_theme->module;
 		struct xa_wcol *wcol;
-			
+
 		if (wc->flags & WCF_TOP)
 		{
 			wcol = &wci->n;
@@ -2866,7 +2866,7 @@ d_rtarrow(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	struct window_colours *wc = wind->colours;
 	struct xa_wcol_inf *wci = &wc->rtarrow;
 	struct xa_wtexture *t = NULL;
-	
+
 	(*api->rp2ap)(wind, widg, &widg->ar);
 #ifndef ST_ONLY
 	if (scrninf->planes > 8)
@@ -2874,7 +2874,7 @@ d_rtarrow(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 		struct xa_data_hdr **allocs;
 // 		struct module *m = wind->active_theme->module;
 		struct xa_wcol *wcol;
-			
+
 		if (wc->flags & WCF_TOP)
 		{
 			wcol = &wci->n;
@@ -2904,7 +2904,7 @@ get_widg_gradient(struct xa_vdi_settings *v, struct xa_widget *widg, struct wind
 		struct xa_data_hdr **allocs;
 // 		struct module *m = wind->active_theme->module;
 		struct xa_wcol *wcol;
-			
+
 		if (wc->flags & WCF_TOP)
 		{
 			wcol = &wci->n;
@@ -2948,7 +2948,7 @@ d_vslide(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	len = sl_2_pix(widg->ar.h, sl->length);
 	if (len < widg_h - 3)
 		len = widg_h - 3;
-	
+
 	offs = widg->ar.y + sl_2_pix(widg->ar.h - len, sl->position);
 
 	if (offs < widg->ar.y)
@@ -2958,7 +2958,7 @@ d_vslide(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 
 	t = get_widg_gradient(wind->vdi_settings, widg, wc, &wc->vslide, 0, widg->ar.w, widg->ar.h);
 	draw_widg_box(wind->vdi_settings, 0, &wc->vslide, t, 0, &widg->ar, &widg->ar);
-	
+
 	sl->r.y = offs - widg->ar.y;
 	sl->r.h = len;
 	sl->r.w = widg->ar.w;
@@ -2998,17 +2998,17 @@ d_hslide(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	len = sl_2_pix(widg->ar.w, sl->length);
 	if (len < widg_w - 3)
 		len = widg_w - 3;
-	
+
 	offs = widg->ar.x + sl_2_pix(widg->ar.w - len, sl->position);
 
 	if (offs < widg->ar.x)
 		offs = widg->ar.x;
 	if (offs + len > widg->ar.x + widg->ar.w)
 		len = widg->ar.x + widg->ar.w - offs;
-	
+
 	t = get_widg_gradient(wind->vdi_settings, widg, wc, &wc->hslide, 0, widg->ar.w, widg->ar.h);
-	draw_widg_box(wind->vdi_settings, 0, &wc->hslide, t, 0, &widg->ar, &widg->ar/*&wind->r*/);	
-	
+	draw_widg_box(wind->vdi_settings, 0, &wc->hslide, t, 0, &widg->ar, &widg->ar/*&wind->r*/);
+
 	sl->r.x = offs - widg->ar.x;
 	sl->r.w = len;
 	sl->r.h = widg->ar.h;
@@ -3017,7 +3017,7 @@ d_hslide(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	cl.y = sl->r.y + widg->ar.y;
 	cl.w = sl->r.w;
 	cl.h = sl->r.h;
-	
+
 	t = get_widg_gradient(wind->vdi_settings, widg, wc, &wc->hslider, 2, cl.w, cl.h);
 	draw_widg_box(wind->vdi_settings, 0/*-1*/, &wc->hslider, t, widg->state, &cl, &cl/*&wind->r*/);
 	return true;
@@ -3029,15 +3029,15 @@ d_iconifier(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	struct window_colours *wc = wind->colours;
 	struct xa_wcol_inf *wci = &wc->iconifier;
 	struct xa_wtexture *t = NULL;
-	
+
 	(*api->rp2ap)(wind, widg, &widg->ar);
-#ifndef ST_ONLY	
+#ifndef ST_ONLY
 	if (scrninf->planes > 8)
 	{
 		struct xa_data_hdr **allocs;
 // 		struct module *m = wind->active_theme->module;
 		struct xa_wcol *wcol;
-			
+
 		if (wc->flags & WCF_TOP)
 		{
 			wcol = &wci->n;
@@ -3063,15 +3063,15 @@ d_hider(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	struct window_colours *wc = wind->colours;
 	struct xa_wcol_inf *wci = &wc->hider;
 	struct xa_wtexture *t = NULL;
-	
+
 	(*api->rp2ap)(wind, widg, &widg->ar);
-#ifndef ST_ONLY	
+#ifndef ST_ONLY
 	if (scrninf->planes > 8)
 	{
 		struct xa_data_hdr **allocs;
 // 		struct module *m = wind->active_theme->module;
 		struct xa_wcol *wcol;
-			
+
 		if (wc->flags & WCF_TOP)
 		{
 			wcol = &wci->n;
@@ -3110,12 +3110,12 @@ s_title_size(struct xa_window *wind, struct xa_widget *widg)
 // 		if (v->font_rid != v->font_sid)
 			(*v->api->t_font)(v, wti->n.p, 1);
 		wti->n.f = wti->s.f = wti->h.f = wtu->n.f = wtu->s.f = wtu->h.f = v->font_sid;
-	}	
+	}
 	(*v->api->t_font)(v, wti->n.p, wti->n.f);
 	(*v->api->t_effects)(v, wti->n.e);
 	(*v->api->t_extent)(v, "A", &w, &h);
 	(*v->api->t_effects)(v, 0);
-	
+
 	if ((wci->flags & (WCOL_DRAW3D|WCOL_BOXED)) || (wti->flags & WTXT_DRAW3D))
 		h += 4;
 	if ((wci->flags & WCOL_ACT3D) || (wti->flags & WTXT_ACT3D))
@@ -3133,7 +3133,7 @@ s_info_size(struct xa_window *wind, struct xa_widget *widg)
 	short w, h;
 
 	widg->r.w = widg_w;
-		
+
 	if (!wti->n.f)
 	{
 		(*v->api->t_font)(v, wti->n.p, 1); // 103);
@@ -3142,8 +3142,8 @@ s_info_size(struct xa_window *wind, struct xa_widget *widg)
 		if (v->font_rid != v->font_sid)
 			(*v->api->t_font)(v, wti->n.p, 1);
 		wti->n.f = wti->s.f = wti->h.f = wtu->n.f = wtu->s.f = wtu->h.f = v->font_sid;
-	}	
-	
+	}
+
 	(*v->api->t_font)(v, wti->n.p, wti->n.f);
 	(*v->api->t_effects)(v, wti->n.e);
 	(*v->api->t_extent)(v, "A", &w, &h);
@@ -3168,7 +3168,7 @@ s_menu_size(struct xa_window *wind, struct xa_widget *widg)
 	(*v->api->t_font)(v, scrninf->standard_font_point, scrninf->standard_font_id);
 	(*v->api->t_effects)(v, 0);
 	(*v->api->t_extent)(v, "A", &w, &h);
-	
+
 	widg->r.h = h + 1 + 1;
 	widg->r.w = wind->r.w;
 }
@@ -3268,7 +3268,7 @@ static void
 build_bfobspec(struct xa_wcol_inf *wci, struct xa_wtxt_inf *wti, BFOBSPEC *ret)
 {
 	union { unsigned long l[2]; BFOBSPEC o[2]; } b;
-	
+
 	b.l[0] = b.l[1] = 0L;
 
 	if (wci)
@@ -3277,7 +3277,7 @@ build_bfobspec(struct xa_wcol_inf *wci, struct xa_wtxt_inf *wti, BFOBSPEC *ret)
 		b.o[0].framecol		= wci->n.box_c;
 		b.o[0].fillpattern	= (wci->n.i == FIS_PATTERN && wci->n.f < 9) ? wci->n.f : 7;
 		b.o[0].interiorcol	= wci->n.c;
-	
+
 		b.o[1].framesize	= wci->s.box_th;
 		b.o[1].framecol		= wci->s.box_c;
 		b.o[1].fillpattern	= (wci->s.i == FIS_PATTERN && wci->s.f < 9) ? wci->s.f : 7;
@@ -3305,7 +3305,7 @@ get_wcol(struct xa_window *wind, short gem_widget, BFOBSPEC *ret)
 	struct window_colours *ontop_cols = wind->ontop_cols;
 	struct window_colours *untop_cols = wind->untop_cols;
 	BFOBSPEC c[4];
- 
+
  	/*
  	 * Builds 4 BFOBSPECs,
  	 *  0 = colors for normal   widget when window ontop
@@ -3356,7 +3356,7 @@ get_wcol(struct xa_window *wind, short gem_widget, BFOBSPEC *ret)
 		case W_DATA:
 		{
 			BFOBSPEC ot, ut;
-		 
+
 		 	ot = ut = (BFOBSPEC){0};
 
 			ot.framesize = ut.framesize = wind->thinwork ? 1 : 2;
@@ -3483,7 +3483,7 @@ free_texture(struct module *m, struct xa_wcol_inf *wcol)
 {
 	struct widg_texture *t;
 	struct xa_wtexture *wtext;
-	
+
 // 	display("free texture");
 	if ((wtext = wcol->h.texture))
 	{
@@ -3514,7 +3514,7 @@ ref_colortheme_resources(struct module *m, struct window_colours *wc)
 	struct xa_wcol_inf *wci;
 	struct widg_texture *t;
 	struct xa_wtexture *wtexture;
-	
+
 	wcols = ( (long)&wc->rtarrow - (long)&wc->win) / sizeof(struct  xa_wcol_inf);
 // 	display(" wcols = %d", wcols);
 	wci = &wc->win;
@@ -3548,7 +3548,7 @@ deref_colortheme_resources(struct module *m, struct window_colours *wc)
 	struct xa_wcol_inf *wci;
 	struct widg_texture *t;
 	struct xa_wtexture *wtexture;
-	
+
 	wcols = ((long)&wc->rtarrow - (long)&wc->win) / sizeof(struct xa_wcol_inf);
 	wci = &wc->win;
 // 	display("wcols = %d", wcols);
@@ -3596,7 +3596,7 @@ foreach_widget(struct module *m, struct window_colours *wc, void(*f)(struct modu
 {
 	int i, wcols;
 	struct xa_wcol_inf *wci;
-	
+
 	wcols = ((long)&wc->rtarrow - (long)&wc->win) / sizeof(struct xa_wcol_inf);
 	wci = &wc->win;
 
@@ -3611,9 +3611,9 @@ cleanup_colortheme(struct module *m, struct window_colours *wc, char *txt)
 {
 	int i, wcols;
 	struct xa_wcol_inf *wci;
-	
+
 	deref_colortheme_resources(m, wc);
-	
+
 	wcols = ((long)&wc->rtarrow - (long)&wc->win) / sizeof(struct xa_wcol_inf);
 	wci = &wc->win;
 
@@ -3648,7 +3648,7 @@ load_texture(struct module *m, char *fn)
 		if ((t = (*api->kmalloc)(sizeof(*t))))
 		{
 			(*api->bclear)(t, sizeof(*t));
-			
+
 			(*api->load_img)(fn, &t->xamfdb);
 			if (t->xamfdb.mfdb.fd_addr)
 			{
@@ -3709,9 +3709,9 @@ find_gradient(struct xa_vdi_settings *v, struct xa_wcol *wcol, bool free, struct
 			{
 // 				display("new");
 				(*api->bclear)(t, sizeof(*t));
-				
+
 				(*v->api->create_gradient)(&t->xamfdb, g->c, g->method, g->n_steps, g->steps, w, h);
-			
+
 				if (t->xamfdb.mfdb.fd_addr)
 				{
 					(*api->add_xa_data)(allocs, t, (((long)w << 16) | h), NULL, delete_pmap);
@@ -3799,7 +3799,7 @@ title_texture(struct module *m)
 	struct widg_texture *t;
 
 	t = load_texture(m, "wtitle.img");
-	
+
 	if (t) //((t = load_texture(m, "wtitle.img")))
 	{
 		set_texture(m, &def_otop_cols.title, t);
@@ -3842,7 +3842,7 @@ test_img_stuff(struct module *m)
 		foreach_widget(m, &slist_def_utop_cols, installtexture, t);
 #endif
 	}
-#if 0		
+#if 0
 		set_texture(m, &def_otop_cols.win, t);
 		set_texture(m, &def_otop_cols.borders, t);
 // 		set_texture(m, &def_otop_cols.slider, t);
@@ -3858,7 +3858,7 @@ test_img_stuff(struct module *m)
 		set_texture(m, &def_otop_cols.dnarrow, t);
 		set_texture(m, &def_otop_cols.lfarrow, t);
 		set_texture(m, &def_otop_cols.rtarrow, t);
-	
+
 		set_texture(m, &def_utop_cols.win, t);
 		set_texture(m, &def_utop_cols.borders, t);
 // 		set_texture(m, &def_utop_cols.slider, t);
@@ -3929,9 +3929,9 @@ init_module(const struct xa_module_api *xmapi, const struct xa_screen *screen, c
 			OBJECT *tree = (*api->resource_tree)(rsc, 0);
 			(*api->ob_spec_xywh)(tree, 1, &c);
 			(*api->init_widget_tree)(NULL, &m->wwt, tree);
-			
+
 // 			display(" -- init widget_tree=%lx", (long)&m->wwt);
-			
+
 			widg_w = c.w;
 			widg_h = c.h;
 
@@ -3946,7 +3946,7 @@ init_module(const struct xa_module_api *xmapi, const struct xa_screen *screen, c
 			imgpath_file = strlen(imgpath);
 			test_img_stuff(m);
 		}
-		
+
 		if (screen->planes > 8 && use_gradients)
 		{
 			def_otop_cols.title_txt.n.fgc = G_WHITE;
@@ -3971,7 +3971,7 @@ init_module(const struct xa_module_api *xmapi, const struct xa_screen *screen, c
 			def_utop_cols.title_txt.s.f = 9;
 			def_utop_cols.title_txt.h.f = 9;
 		}
-	
+
 	}
 	else
 	{
@@ -3992,7 +3992,7 @@ static void _cdecl
 exit_module(void *_module)
 {
 	struct module *m = _module;
-	
+
 // 	display("exit win draw");
 	/*
 	 * This will free all allocs done by this module
@@ -4014,7 +4014,7 @@ exit_module(void *_module)
 	(*api->remove_wt)(&m->wwt, true);
 	(*api->kfree)(m);
 }
-	
+
 /*
  * This is called by XaAES whenever a new widget_theme structure needs
  * filling in
@@ -4094,7 +4094,7 @@ new_color_theme(void *_module, short win_class, void **ontop, void **untop)
 // 	display("new_color_theme:");
 	new_ontop = (*api->kmalloc)(sizeof(*new_ontop));
 	new_untop = (*api->kmalloc)(sizeof(*new_untop));
-	
+
 	if (new_ontop && new_untop)
 	{
 		switch (win_class)
@@ -4132,10 +4132,10 @@ new_color_theme(void *_module, short win_class, void **ontop, void **untop)
 				break;
 			}
 		}
-		
+
 		ref_colortheme_resources(m, new_ontop);
 		ref_colortheme_resources(m, new_untop);
-		
+
 		(*api->add_xa_data)(&m->allocs, new_ontop, 0, NULL, delete_color_theme);
 		(*api->add_xa_data)(&m->allocs, new_untop, 0, NULL, delete_color_theme);
 
@@ -4180,7 +4180,7 @@ static struct xa_module_widget_theme module =
 {
 	short_name,
 	long_name,
-	
+
 	init_module,
 	exit_module,
 

@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
  *                                        2004 F.Naumann & O.Skancke
@@ -65,7 +65,7 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 	pb->intout[0] = 0;
 
 	DIAG((D_menu, NULL, "menu_bar for %s, %lx", c_owner(client), mnu));
-	
+
 // 	if (d) display("menu_bar mode %d for %s, %lx %lx(%lx (%lx(%lx))", pb->intin[0], client->name, mnu, menu, menu->tree, menu_bar, menu_bar->tree);
 
 	switch (pb->intin[0])
@@ -87,9 +87,9 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 			{
 				if (!mwt)
 					mwt = new_widget_tree(client, mnu);
-				
+
 				assert(mwt);
-				
+
 				/* Do a special fix on the menu  */
 				fix_menu(client, mwt/*mnu*/, root_window, true);
 				DIAG((D_menu,NULL,"fixed menu"));
@@ -109,7 +109,7 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 				if (swap)
 				{
 					top_owner = get_app_infront();
-					
+
 					if (menu && (client == top_owner || !top_owner->std_menu))
 						swap_menu(lock|winlist, client, mwt, SWAPM_TOPW);
 					else
@@ -140,7 +140,7 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 	case MENU_REMOVE:
 	{
 		DIAG((D_menu,NULL,"MENU_REMOVE"));
-		
+
 		if (!menu)
 			menu = client->nxt_menu;
 
@@ -155,7 +155,7 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 	case MENU_INQUIRE:
 	{
 		DIAG((D_menu, NULL, "MENU_INQUIRE := %d", menu_bar->owner->p->pid));
-		
+
 		pb->intout[0] = menu_bar->owner->p->pid;
 	//	if (d) display("MENU_INQ: owner %s, %lx(%lx)", menu_bar->owner->name, menu_bar, menu_bar->tree);
 		break;
@@ -185,27 +185,27 @@ upd_menu(enum locks lock, struct xa_client *client, OBJECT *tree, short item, bo
 		}
 	}
 }
-	
+
 /*
  * Highlight / un-highlight a menu title
  * - Actually, this isn't really needed as XaAES cancels the highlight itself...
- * ...it's only here for compatibility. 
+ * ...it's only here for compatibility.
  */
 unsigned long
 XA_menu_tnormal(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	OBJECT *tree = (OBJECT *)pb->addrin[0];
 	short i = pb->intin[0], obj, state;
-	
+
 	CONTROL(2,1,1)
 
 	if (!validate_obtree(client, tree, "XA_menu_tnormal:"))
 		return XAC_DONE;
 
 	obj = i & ~0x8000;
-	
+
 	state = tree[obj].ob_state;
-	
+
 	if (state & OS_DISABLED)
 	{
 		pb->intout[0] = 0;
@@ -239,19 +239,19 @@ XA_menu_ienable(enum locks lock, struct xa_client *client, AESPB *pb)
 	OBJECT *tree = (OBJECT *)pb->addrin[0];
 	short i = pb->intin[0], obj, state;
 	bool redraw;
-	
+
 	CONTROL(2,1,1)
-	
+
 	if (!validate_obtree(client, tree, "XA_menu_ienable:"))
 		return XAC_DONE;
-	
+
 	redraw = i & 0x8000 ? true : false;
 	obj = i & ~0x8000;
 	state = tree[obj].ob_state;
 
 	DIAG((D_menu, client, "menu_ienable: tree=%lx, obj=%d(%d), state=%d",
 		tree, obj, i, pb->intin[1]));
-	
+
 	/* Change the disabled status of a menu item */
 	if (pb->intin[1])
 		state &= ~OS_DISABLED;
@@ -263,7 +263,7 @@ XA_menu_ienable(enum locks lock, struct xa_client *client, AESPB *pb)
 		tree[obj].ob_state = state;
 		upd_menu(lock, client, tree, obj, redraw);
 	}
-	
+
 	pb->intout[0] = 1;
 	return XAC_DONE;
 }
@@ -284,7 +284,7 @@ XA_menu_icheck(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	obj = i & ~0x8000;
 	state = tree[obj].ob_state;
-	
+
 	DIAG((D_menu, client, "menu_icheck: tree=%lx, obj=%d(%d), state=%d",
 		tree, obj, i, pb->intin[1]));
 	/* Change the disabled status of a menu item */
@@ -298,9 +298,9 @@ XA_menu_icheck(enum locks lock, struct xa_client *client, AESPB *pb)
 		tree[obj].ob_state = state;
 		upd_menu(lock, client, tree, obj, false);
 	}
-	
+
 	pb->intout[0] = 1;
-	
+
 	return XAC_DONE;
 }
 
@@ -318,15 +318,15 @@ XA_menu_text(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	if (!validate_obtree(client, tree, "XA_menu_text:"))
 		return XAC_DONE;
-	
+
 	obj = i & ~0x8000;
-	
+
 	strcpy(object_get_spec(&tree[obj])->free_string, text);
 
 	upd_menu(lock, client, tree, obj, false);
-	
+
 	pb->intout[0] = 1;
-	
+
 	return XAC_DONE;
 }
 /*
@@ -346,7 +346,7 @@ XA_menu_register(enum locks lock, struct xa_client *client, AESPB *pb)
 		if (pb->intin[0] != -1)
 		{
 			client_nicename(client, n, false);
-			
+
 			/* refresh the name change in the taskmanager */
 			update_tasklist_entry(AES_CLIENT, client, NOREDRAW);
 
@@ -421,13 +421,13 @@ init_popinfo(XAMENU *mn, struct xa_popinfo *pi)
 // 				display(" premature end of object tree");
 				break;
 			}
-			
+
 			*objs++ = this;
-			
+
 			if (mn->menu.mn_scroll == i)
 			{
 				/*
-				 * mn_scroll == row in popup at which scrolling starts 
+				 * mn_scroll == row in popup at which scrolling starts
 				 */
 				flag |= 1;
 				if (flag & 2)
@@ -452,7 +452,7 @@ init_popinfo(XAMENU *mn, struct xa_popinfo *pi)
 			}
 			this = obtree[this].ob_next;
 		}
-// 		display("flag %x, startrow %d, startobj %d",	flag, pi->scrl_start_row, pi->scrl_start_obj); 
+// 		display("flag %x, startrow %d, startobj %d",	flag, pi->scrl_start_row, pi->scrl_start_obj);
 // 		display("pop height %d, scroll height %d", pop_h, pi->scrl_height);
 // 		display("Last obj in scrl %d(%d)", pi->scrl_start_row + pi->scrl_height, pi->objs[pi->scrl_start_row + pi->scrl_height]);
 #if 1
@@ -470,7 +470,7 @@ noscroll:
 			{
 				pi->scrl_start_obj = pi->scrl_start_row;
 			}
-			
+
 			if ( (pi->scrl_start_obj + pi->scrl_height) > pi->count)
 			{
 				short corr = (pi->scrl_start_obj + pi->scrl_height) - pi->count;
@@ -487,34 +487,34 @@ noscroll:
 
 			strcpy(pi->scrl_start_txt, "  \1\1\1 ");
 			strcpy(pi->scrl_end_txt, "  \2\2\2 ");
-			
+
 			pi->save_start_txt = object_get_spec(obtree + pi->objs[pi->scrl_start_row])->free_string;
 			pi->save_end_txt = object_get_spec(obtree + pi->objs[pi->count - 1])->free_string;
 
 			if (pi->scrl_start_row != pi->scrl_curr_obj)
 			{
-				object_set_spec(obtree + pi->objs[pi->scrl_start_row], (long)pi->scrl_start_txt);	
+				object_set_spec(obtree + pi->objs[pi->scrl_start_row], (long)pi->scrl_start_txt);
 			}
-			
+
 			if ((pi->scrl_start_obj + pi->scrl_height) != pi->count)
 			{
 				object_set_spec(obtree + pi->objs[pi->count - 1], (long)pi->scrl_end_txt);
 			}
-			
+
 			{
 				short obj, y, first, last;
-				
+
 				first = pi->scrl_curr_obj + 1;
 				last = first + pi->scrl_height - 2;
-				
-				obtree[parent].ob_height = screen.c_max_h * pop_h;			
+
+				obtree[parent].ob_height = screen.c_max_h * pop_h;
 				obj = pi->objs[pi->count - 1];
 				obtree[obj].ob_y = screen.c_max_h * (pop_h - 1);
-				
+
 				obj = pi->objs[pi->scrl_start_row];
 				obtree[obj].ob_next = pi->objs[first];
 				y = obtree[obj].ob_y + obtree[obj].ob_height;
-				
+
 				for (i = first; i < last; i++)
 				{
 					obj = pi->objs[i];
@@ -526,10 +526,10 @@ noscroll:
 
 				obtree[pi->objs[last - 1]].ob_next = pi->objs[pi->count - 1];
 			}
-	
+
 		}
 #endif
-		
+
 	}
 	else
 	{
@@ -565,7 +565,7 @@ menu_popup(enum locks lock, struct xa_client *client, XAMENU *mn, XAMENU_RESULT 
 		ob = mn->menu.mn_tree;
 
 		if (tab && validate_obtree(client, ob, "_menu_popup:"))		/* else already locked */
-		{	
+		{
 			XA_TREE *wt;
 			short old_x, old_y;
 
@@ -576,7 +576,7 @@ menu_popup(enum locks lock, struct xa_client *client, XAMENU *mn, XAMENU_RESULT 
 				return 0;
 
 			mn->wt = wt;
-			
+
 			init_popinfo(mn, &tab->task_data.menu.p);
 
 			result->menu = mn->menu;
@@ -587,7 +587,7 @@ menu_popup(enum locks lock, struct xa_client *client, XAMENU *mn, XAMENU_RESULT 
 			tab->locker = client->p->pid;
 			tab->client = client;
 			tab->lock = lock;
-			
+
 			old_x = ob->ob_x;
 			old_y = ob->ob_y;
 
@@ -611,7 +611,7 @@ menu_popup(enum locks lock, struct xa_client *client, XAMENU *mn, XAMENU_RESULT 
 // 				tab->scroll = 0;
 
 // 			tab->scroll = (mn->menu.mn_scroll == -1) ? 8 : 0;
-			
+
 			tab->usr_evnt = usr_evnt;
 			tab->data = result;
 			result->menu.mn_item = -1;
@@ -643,7 +643,7 @@ menu_popup(enum locks lock, struct xa_client *client, XAMENU *mn, XAMENU_RESULT 
  * since the lock_screen() call from XA_handler was done under the
  * clients pid, while the unlock_screen() happens under the kernel
  * pid. Guess the results - total LOCKUP until offending client killed!
-*/ 
+*/
 unsigned long
 XA_menu_popup(enum locks lock, struct xa_client *client, AESPB *pb)
 {
@@ -655,7 +655,7 @@ XA_menu_popup(enum locks lock, struct xa_client *client, AESPB *pb)
 	XAMENU_RESULT tmp;
 
 	tmp.menu = *result;
-	
+
 	xmn.menu = *(MENU *)pb->addrin[0];
 	xmn.mn_selected = -1;
 
@@ -680,7 +680,7 @@ XA_form_popup(enum locks lock, struct xa_client *client, AESPB *pb)
 	CONTROL(2,1,1)
 
 	pb->intout[0] = -1;
-	
+
 	if (validate_obtree(client, ob, "XA_form_popup:"))
 	{
 		Tab *tab;
@@ -774,7 +774,7 @@ XA_menu_attach(enum locks lock, struct xa_client *client, AESPB *pb)
 		if (!wt)
 			wt = new_widget_tree(client, (OBJECT *)pb->addrin[0]);
 		assert(wt);
-		
+
 		switch (pb->intin[0])
 		{
 		case ME_ATTACH:
@@ -818,7 +818,7 @@ XA_menu_attach(enum locks lock, struct xa_client *client, AESPB *pb)
 						     wt,
 						     pb->intin[1],
 						     &xamn);
-			
+
 			*mn = xamn.menu;
 			break;
 		}
@@ -851,9 +851,9 @@ unsigned long
 XA_menu_settings(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	union { MN_SET *mn; struct xa_menu_settings *cfgmn;} cfgmnptr;
-	
+
 	cfgmnptr.cfgmn = &cfg.mn_set;
-	
+
 	CONTROL(1,1,1)
 
 	DIAG((D_menu,client,"menu_settings %d", pb->intin[0]));
@@ -871,7 +871,7 @@ XA_menu_settings(enum locks lock, struct xa_client *client, AESPB *pb)
 		case 1:
 		{
 			MN_SET *mn = (MN_SET *)pb->addrin[0];
-			
+
  			*cfgmnptr.mn = *mn;
 			cfg.popup_timeout = cfg.mn_set.display;
 			cfg.popout_timeout = cfg.mn_set.drag;

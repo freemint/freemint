@@ -525,7 +525,6 @@ calc_average_fontsize(struct xa_vdi_settings *v, short *maxw, short *maxh, short
 // 	display("effex %d, %d, %d", temp[0], temp[1], temp[2]);
 }
 
-
 int
 k_init(unsigned long vm)
 {

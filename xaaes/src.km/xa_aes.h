@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
  *                                        2004 F.Naumann & O.Skancke
@@ -103,7 +103,7 @@ typedef struct
 typedef struct { short x, y, w, h; } RECT;
 
 /*
- * XaAES/oAESis Extended Shell Write structure 
+ * XaAES/oAESis Extended Shell Write structure
  * Extra fields for UID/GID setting of spawned clients.
  * Different naming.
  */

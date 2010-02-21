@@ -2618,7 +2618,7 @@ add_scroll_entry(SCROLL_INFO *list,
 		if (!new)
 			return 0;
 
-		/*bzero(new, sizeof(*new)); xaaes_kmalloc zeros */
+		//bzero(new, sizeof(*new)); /* xaaes_kmalloc zeros */
 // 		ndisplay("icon");
 // 		seicon = insert_icon(new, 0, sc->icon);
 // 		display(" %lx", seicon);

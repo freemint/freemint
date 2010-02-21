@@ -37,7 +37,7 @@ __BEGIN_DECLS
  * The version of the gem-lib
  */
 
-/* Major and minor version number of the GEMLib package.  Use these macros 
+/* Major and minor version number of the GEMLib package.  Use these macros
    to test for features in specific releases.  */
 #define __GEMLIB__			 __GEMLIB_MAJOR__
 #define	__GEMLIB_MAJOR__     0
@@ -225,19 +225,19 @@ typedef struct pEvntrec
 #define WM_SHADED			22360	/* [WM_SHADED apid 0 win 0 0 0 0] */
 #define WM_UNSHADED 		22361	/* [WM_UNSHADED apid 0 win 0 0 0 0] */
 
-/* subcodes for SM_M_SPECIAL message for the SCREENMGR 
+/* subcodes for SM_M_SPECIAL message for the SCREENMGR
 	used:
 	INT16 msg[8];
 
-	msg[0] = SM_M_SPECIAL;	 101 
-	msg[1] = ap_id;	 ap_id, with SMC_TIDY_UP and SMC_UNHIDEALL own 
-	msg[2] = 0;		 No overrun 
+	msg[0] = SM_M_SPECIAL;	 101
+	msg[1] = ap_id;	 ap_id, with SMC_TIDY_UP and SMC_UNHIDEALL own
+	msg[2] = 0;		 No overrun
 	msg[3] = 0;
 	msg[4] = 'MA';
 	msg[5] = 'GX';
 	msg[6] = ..subcode..;
 	msg[7] = 0;
-	appl_write(msg, 16, 1);		 apid #1 is the SCREENMGR 
+	appl_write(msg, 16, 1);		 apid #1 is the SCREENMGR
 */
 #define SMC_TIDY_UP		0			/* MagiC 2  */
 #define SMC_TERMINATE	1			/* MagiC 2  */
@@ -338,7 +338,7 @@ typedef struct pEvntrec
 
 /** menu_settings uses a new structure for setting and inquiring the submenu
     delay values and the menu scroll height.*/
-typedef struct _mn_set 
+typedef struct _mn_set
 {
 	long  display;		/**< the submenu display delay in milliseconds */
 	long  drag;		/**< the submenu drag delay in milliseconds */
@@ -384,11 +384,11 @@ typedef struct
 /** TODO */
 typedef  struct
 {
-	int   dummy;		/**< a null  word 			   */ 
-	long  magic;		/**< 'SHEL', if it's a Shell   */ 
-	int   isfirst;		/**< first call of the Shell   */ 
-	long  lasterr;		/**< last error  			   */ 
-	int   wasgr;		/**< Program was a grafic app. */ 
+	int   dummy;		/**< a null  word 			   */
+	long  magic;		/**< 'SHEL', if it's a Shell   */
+	int   isfirst;		/**< first call of the Shell   */
+	long  lasterr;		/**< last error  			   */
+	int   wasgr;		/**< Program was a grafic app. */
 } SHELTAIL;
 
 
@@ -909,7 +909,7 @@ typedef struct graphic_rectangle
 #endif
 
 /** TODO */
-typedef struct objc_colorword 
+typedef struct objc_colorword
 {
 	unsigned	borderc : 4;			/**< TODO */
 	unsigned	textc   : 4;			/**< TODO */
@@ -1064,7 +1064,7 @@ typedef struct user_block
 typedef struct rshdr
 {
 	short		rsh_vrsn;			/**< TODO */
-	
+
 	unsigned short	rsh_object;			/**< TODO */
 	unsigned short	rsh_tedinfo;		/**< TODO */
 	unsigned short	rsh_iconblk;		/**< list of ICONBLKS */
@@ -1074,7 +1074,7 @@ typedef struct rshdr
 	unsigned short	rsh_imdata;			/**< image data */
 	unsigned short	rsh_frimg;			/**< TODO */
 	unsigned short	rsh_trindex;		/**< TODO */
-	
+
 	short		rsh_nobs;			/**< counts of various structs */
 	short		rsh_ntree;			/**< TODO */
 	short		rsh_nted;			/**< TODO */
@@ -1089,7 +1089,7 @@ typedef struct rsxhdr
 {
 	unsigned short	rsh_vrsn;     /* should be 3                                 */
 	unsigned short	rsh_extvrsn;  /* not used, initialised to 'IN' for Interface */
-	
+
 	unsigned long	rsh_object;
 	unsigned long	rsh_tedinfo;
 	unsigned long	rsh_iconblk;  /* list of ICONBLKS                            */
@@ -1099,7 +1099,7 @@ typedef struct rsxhdr
 	unsigned long	rsh_imdata;   /* image data                                  */
 	unsigned long	rsh_frimg;
 	unsigned long	rsh_trindex;
-	
+
 	unsigned long	rsh_nobs;     /* counts of various structs                   */
 	unsigned long	rsh_ntree;
 	unsigned long	rsh_nted;
@@ -1113,7 +1113,7 @@ typedef struct rsxhdr
 /** MENU structure, used by a_menu functions */
 typedef struct _menu
 {
-	OBJECT *mn_tree;    /**< Points to the OBJECT tree of the sub-menu */ 
+	OBJECT *mn_tree;    /**< Points to the OBJECT tree of the sub-menu */
 	short  mn_menu;     /**< Is an index to the parent object of the menu
                              items. */
 	short  mn_item;     /**< Is the starting menu item */
@@ -1287,7 +1287,7 @@ short	mt_objc_change	(OBJECT *, short Object, short Res,
 short	mt_objc_delete	(OBJECT *, short Object, short *global_aes);
 short	mt_objc_draw	(OBJECT *, short Start, short Depth,
 						 short Cx, short Cy, short Cw, short Ch, short *global_aes);
-short	mt_objc_edit	(OBJECT *, short Object, short Char, short *Index, short Kind, short *global_aes); 
+short	mt_objc_edit	(OBJECT *, short Object, short Char, short *Index, short Kind, short *global_aes);
 short	mt_objc_find	(OBJECT *, short Start, short Depth, short Mx, short My, short *global_aes);
 short	mt_objc_xfind	(OBJECT *, short Start, short Depth, short Mx, short My, short *global_aes);
 short	mt_objc_offset	(OBJECT *, short Object, short *X, short *Y, short *global_aes);
@@ -1333,7 +1333,7 @@ short	mt_shel_write	(short Exit, short Graphic, short Aes, void *Command, char *
  */
 short	mt_wind_calc 	(short Type, short Parts, short InX, short InY, short InW, short InH, short *OutX, short *OutY, short *OutW, short *OutH, short *global_aes);
 short	mt_wind_close 	(short WindowHandle, short *global_aes);
-short	mt_wind_create 	(short Parts, short Wx, short Wy, short Ww, short Wh, short *global_aes); 
+short	mt_wind_create 	(short Parts, short Wx, short Wy, short Ww, short Wh, short *global_aes);
 short	mt_wind_delete 	(short WindowHandle, short *global_aes);
 short	mt_wind_draw 	(short WindowHandle, short startob, short *global_aes);
 short	mt_wind_find 	(short X, short Y, short *global_aes);
@@ -1346,8 +1346,8 @@ short	mt_wind_update 	(short Code, short *global_aes);
 /*
  * Some useful extensions
  */
-short	mt_wind_calc_grect   (short Type, short Parts, const GRECT *In, GRECT *Out, short *global_aes);  
-short	mt_wind_create_grect (short Parts, const GRECT *r, short *global_aes); 
+short	mt_wind_calc_grect   (short Type, short Parts, const GRECT *In, GRECT *Out, short *global_aes);
+short	mt_wind_create_grect (short Parts, const GRECT *r, short *global_aes);
 short	mt_wind_get_grect    (short WindowHandle, short What, GRECT *r, short *global_aes);
 short	mt_wind_open_grect   (short WindowHandle, const GRECT *r, short *global_aes);
 short	mt_wind_set_grect    (short WindowHandle, short What, const GRECT *r, short *global_aes);
@@ -1631,13 +1631,13 @@ typedef struct memory_form
 
 /** RGB intesities in promille */
 typedef struct rgb_1000
-{ 
+{
 	short  red;    /**< Red-Intensity in range [0..1000] */
  	short  green;  /**< Green-Intensity in range [0..1000] */
  	short  blue;   /**< Blue-Intensity in range [0..1000] */
 } RGB1000;
 
-#endif 
+#endif
 
 #ifdef __GEMLIB_VDI
 
@@ -1649,7 +1649,7 @@ typedef short VdiHdl;   /**< for better readability */
 
 
 /*
- * attribute functions 
+ * attribute functions
  */
 
 /** @addtogroup v_attr
@@ -1789,7 +1789,7 @@ void vs_curaddress (VdiHdl , short row, short col);
 /* alternative name for vs_curaddress */
 #define v_curaddress vs_curaddress
 /**@}*/
- 
+
 
 /*
  * inquiry functions

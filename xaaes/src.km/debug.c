@@ -41,7 +41,7 @@ write_bootlog(char *t, short l)
 	if (C.bootlog_path[0])
 	{
 		fp = kernel_open(C.bootlog_path, O_RDWR, NULL,NULL);
-		
+
 		if (!fp)
 			fp = kernel_open(C.bootlog_path, O_RDWR|O_CREAT|O_TRUNC, NULL,NULL);
 		else
@@ -217,7 +217,7 @@ int prof_acc( char *name, enum prof_cmd cmd, int rv )
 			PrInfo[f].len = l;
 			PrInfo[f].calls = 0;
 		}
-	
+
 	break;
 	case 2:	/* start name, init if new */
 		//profile( "prof_acc: start: %s(%lx) f=%d i=%d", name, name, f, i );
@@ -326,7 +326,7 @@ profile( char *t, ...)
 
 	if( !fp ){
 		char *msg = "--profile started--\n";
-		
+
 		sprintf( ebuf, sizeof(ebuf), "%s\\%s", C.start_path, Name );
 		fp = kernel_open( ebuf, O_RDWR, NULL,NULL);
 		if( !fp )
@@ -348,7 +348,7 @@ profile( char *t, ...)
 	  	sec--;
 	  	usec += 1000L;
 	  }
-	
+
 	  l = sprintf( ebuf, sizeof(ebuf), "%4ld:", sec * 1000 + usec );
 	}
 	else
@@ -357,10 +357,10 @@ profile( char *t, ...)
 	va_start(argpoint, t);
 	l += vsprintf( ebuf+l, sizeof(ebuf) - l, t, argpoint );
 	va_end(argpoint);
-	
+
 	ebuf[l++] = '\n';
 	ebuf[l] = 0;
-	
+
 	kernel_write( fp, ebuf, l );
 
 	tv1 = tv2;
@@ -559,7 +559,7 @@ diag(enum debug_item item, struct xa_client *client, char *t, ...)
 		{
 			struct proc *update_lock = update_locked();
 			struct proc *mouse_lock = mouse_locked();
-			
+
 			l += sprintf(line+l, sizeof(line)-l, "(Pid %ld)", p_getpid());
 
 			if (mouse_lock)
