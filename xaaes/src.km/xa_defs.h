@@ -67,6 +67,10 @@
 #define PRESERVE_DIALOG_BGD	0	/* Preserve the background of dialogs */
 
 #define FILESELECTOR		1	/* Build a XaAES with fileselector */
+#if FILESELECTOR
+#define FS_PATLEN	48	/* max. len of each pattern */
+#define FS_NPATTERNS	16	/* # of patterns */
+#endif
 
 #define NAES3D			1	/* ??? */
 
@@ -150,5 +154,33 @@
 #define MX_SUPERVISOR	((1 << 3) | (3 << 4))
 #define MX_READABLE	((1 << 3) | (4 << 4))
 #endif
+
+/* MiNT-semaphores */
+#define XA_SEM 0x58414553L	/*"XAES"*/
+#define SEMCREATE	0
+#define SEMDESTROY	1
+#define SEMGET	2
+#define SEMRELEASE	3
+
+/*
+* kernel-code:
+*
+*  MODE  ACTION
+*    0 Create and get a semaphore with the given ID.
+*    1 Destroy.
+*    2 Get (blocks until it's available or destroyed, or timeout).
+*    3 Release.
+*
+* RETURNS
+*
+*  CODE  MEANING
+*    0 OK.  Created/obtained/released/destroyed, depending on mode.
+*  ERROR You asked for a semaphore that you already own.
+*  EBADARG That semaphore doesn't exist (modes 1, 2, 3, 4),
+*    or out of slots for new semaphores (0).
+*  EACCES  That semaphore exists already, so you can't create it (mode 0),
+*    or the semaphore is busy (returned from mode 3 if you lose),
+*    or you don't own it (modes 1 and 4).
+*/
 
 #endif /* _xa_defs_h */
