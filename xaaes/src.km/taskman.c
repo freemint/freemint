@@ -1684,7 +1684,7 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 					calc_tm_bar( wt->tree, TM_LOAD3, 2, pinfo );
 					pinfo[3] = calc_new_ld( rootproc );
 					calc_tm_bar( wt->tree, TM_ACTLD, 3, pinfo );
-	
+
 					redraw_toolbar( lock, wind, TM_CHART );
 #endif
 				}
@@ -2023,14 +2023,22 @@ open_launcher(enum locks lock, struct xa_client *client)
 	{
 		struct stat st;
 		long r;
-		char *p = strchr( cfg.launch_path, '*' );
+		//char *p = strchr( cfg.launch_path, '*' );
+		char *p = strrchr( cfg.launch_path, '\\' ), c=0;
+
+		if( !p )
+			p = strrchr( cfg.launch_path, '/' );
 		if( p )
-			*(p-1) = 0;
+		{
+			c = *p;
+			*p = 0;
+		}
+
 		r = f_stat64(0, cfg.launch_path, &st);
 		if (r != 0 || !S_ISDIR(st.mode) )
 			*cfg.launch_path = 0;
 		else if( p )
-			*p = '*';
+			*p = c;
 	}
 	if (!*cfg.launch_path)
 	{
