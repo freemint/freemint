@@ -1,5 +1,18 @@
-20.2.10
+22.2.10
+
+system-resource-file:
+
+The system-resource-file now has a version-number (currently 0.0.9), which gives xaaes009.rsc.
+If this file is not found the name defined in xaaes.cnf by
+
+resource = <name>
+
+is used if present. So no copying/renaming of resource-files when switching
+between xaaes-versions is necessary.
+
 ---------------------------------------------------------------------
+20.2.10
+
 config:
 
 | is no longer word-separator.
