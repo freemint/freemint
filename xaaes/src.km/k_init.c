@@ -864,46 +864,66 @@ k_init(unsigned long vm)
 
 // 	get_syspalette(C.P_handle, screen.palette);
 
-	/* Load the system resource files */
-	BLOG((false, "Loading system resource file '%s'", cfg.rsc_name));
-	if (!(resource_name = xaaes_sysfile(cfg.rsc_name)))
-	{
-		display(/* 00000002 */"ERROR: Can't find AESSYS resource file '%s'", cfg.rsc_name);
-		return -1;
-	}
-	else
-	{
-		C.Aes_rsc = LoadResources(C.Aes,
-					  resource_name,
-					  NULL,
-					  DU_RSX_CONV, // screen.c_max_w, // < 8 ? 8 : screen.c_max_w,
-					  DU_RSY_CONV, //screen.c_max_h, // < 16 ? 16 : screen.c_max_h); //DU_RSX_CONV, DU_RSY_CONV);
-					  true);
-		kfree(resource_name);
-		BLOG((false, "system resource = %lx (%s)", C.Aes_rsc, cfg.rsc_name));
-	}
-	if (!C.Aes_rsc)
-	{
-		display(/*00000003*/"ERROR: Can't load system resource file '%s'", cfg.rsc_name);
-		return -1;
-	}
-// 	set_syspalette(C.P_handle, screen.palette);
-// 	set_syscolor();
-#define RSCFILE_VERSION	"0.0.9"
-	/*
-	 * Version check the aessys resouce
+	/* Load the system resource files
+	 * 1. try: xaaes<version>.rsc
+	 * 2. try: name from xaaes.cnf
 	 */
 	{
-		OBJECT *about = ResourceTree(C.Aes_rsc, ABOUT_XAAES);
-		int gt = 0;
-
-		if ((ob_count_objs(about, 0, -1) < RSC_VERSION)   ||
-		     about[RSC_VERSION].ob_type != G_TEXT     ||
-		    ( gt = strcmp(object_get_tedinfo(about + RSC_VERSION, NULL)->te_ptext, RSCFILE_VERSION)))
+		char *RscFiles[4] = {RSCNAME, cfg.rsc_name, 0};
+		int i;
+		for(i=0; RscFiles[i]; i++)
 		{
-			char *s = gt > 0 ? "too new" : gt < 0 ? "too old" : "wrong";
-			display("ERROR: %s resource file (%s) - use version "RSCFILE_VERSION"!", s, cfg.rsc_name);
-// 			display("       also make sure you read CHANGES.txt!!");
+			if( RscFiles[i][0] )
+			{
+				BLOG((false, "Loading system resource file '%s'", RscFiles[i]));
+				if ( !(resource_name = xaaes_sysfile(RscFiles[i] ) ) )
+				{
+					display(/* 00000002 */"ERROR: Can't find AESSYS resource file '%s'", RscFiles[i]);
+					continue;
+					//return -1;
+				}
+				else
+				{
+					C.Aes_rsc = LoadResources(C.Aes,
+								  resource_name,
+								  NULL,
+								  DU_RSX_CONV, // screen.c_max_w, // < 8 ? 8 : screen.c_max_w,
+								  DU_RSY_CONV, //screen.c_max_h, // < 16 ? 16 : screen.c_max_h); //DU_RSX_CONV, DU_RSY_CONV);
+								  true);
+					BLOG((false, "system resource = %lx (%s)", C.Aes_rsc, resource_name));
+					kfree(resource_name);
+				}
+				if (!C.Aes_rsc)
+				{
+					display(/*00000003*/"ERROR: Can't load system resource file '%s'", RscFiles[i]);
+					continue;
+					//return -1;
+				}
+			// 	set_syspalette(C.P_handle, screen.palette);
+			// 	set_syscolor();
+				/*
+				 * Version check the aessys resouce
+				 */
+				{
+					OBJECT *about = ResourceTree(C.Aes_rsc, ABOUT_XAAES);
+					int gt = 0;
+
+					if ((ob_count_objs(about, 0, -1) < RSC_VERSION)   ||
+					     about[RSC_VERSION].ob_type != G_TEXT     ||
+					    ( gt = strcmp(object_get_tedinfo(about + RSC_VERSION, NULL)->te_ptext, RSCFILE_VERSION)))
+					{
+						char *s = gt > 0 ? "too new" : gt < 0 ? "too old" : "wrong";
+						display("ERROR: %s resource file (%s) - use version "RSCFILE_VERSION"!", s, RscFiles[i]);
+						//return -1;
+					}
+					else
+						break;
+				}
+			}
+		}
+		if( !RscFiles[i] )
+		{
+			display( "unable to find resource. stop." );
 			return -1;
 		}
 	}

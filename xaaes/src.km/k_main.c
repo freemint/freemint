@@ -1769,6 +1769,7 @@ k_main(void *dummy)
 		cancelroottimeout(C.sdt);
 	C.sdt = NULL;
 
+leave:
 	/* delete semaphore */
 	{
 		int r;
@@ -1778,7 +1779,6 @@ k_main(void *dummy)
 			BLOG((0,"k_main:could not destroy semaphore:%d", r ));
 	}
 
-leave:
 	k_exit(wait);
 
 	kthread_exit(0);

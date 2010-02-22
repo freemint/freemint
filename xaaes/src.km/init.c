@@ -468,7 +468,7 @@ again:
 	 */
 	strcpy(cfg.xobj_name, "xa_xtobj.rsc");
 
-	strcpy(cfg.rsc_name, RSCNAME);
+	//strcpy(cfg.rsc_name, RSCNAME);
 
 	cfg.font_id = STANDARD_AES_FONTID;		/* Font id to use */
 	cfg.double_click_time = DOUBLE_CLICK_TIME;
