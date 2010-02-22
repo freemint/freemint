@@ -1,3 +1,56 @@
+20.2.10
+---------------------------------------------------------------------
+config:
+
+| is no longer word-separator.
+---------------------------------------------------------------------
+init:
+
+Moved the semaphore-test from init() to k_main(). init() runs on behalf
+of xaloader. If xaloader get killed the semaphore never will be
+destroyed.
+
+Moved the #defines for p_semaphore to xa_defs.h
+
+---------------------------------------------------------------------
+launcher:
+
+Last path-separator is used to split path and pattern instead of * while
+checking for existing launchpath.
+---------------------------------------------------------------------
+xa_defs:
+
+Created #defines for number and length of patterns.
+
+Moved #defines for p_semaphore to xa_defs.h
+---------------------------------------------------------------------
+matching:
+
+Extended pattern-matching: Now matching *[], *!, *![], !<whole pattern>
+possible. Patterns concatenated with | will result in any pattern to be
+tested for a match. This allows for example
+launchpath=<somepath>\*.prg|*.app|*.tos|*.ttp|*.acc|!*.*
+to filter for extensions typical for executable files.
+---------------------------------------------------------------------
+xaloader:
+
+Some signals are catched. xaloader should not exit for MiNT may be
+waiting for xaloader.
+---------------------------------------------------------------------
+fsel:
+
+If the filename in the edit-field contains meta-characters (one of
+*?![|), it is interpreted as a pattern. In this case <return> results in
+refreshing the file-list using this pattern and adding the pattern to
+the pattern-list, not in entering a directory. The patterns defined in
+xaaes.cnf remain unchanged.
+
+Now 16 patterns of 48 bytes each are possible instead of 23 patterns of
+16 bytes.
+global:
+Replaced numbers for array-size with #defined values from xa_defs.h for cfg.Filters.
+---------------------------------------------------------------------
+
 11.1.10
 
 	- xa_rsrc.c
@@ -54,7 +107,7 @@ I'm not sure if what I did is 100% - there was a possibility to send
 sized and moved at the same time - I just told it to only move if both.
 This size&move is called reposed, I don't know what this is, but didn't
 notice anything not working.
- 
+
 In realtime-mode you may still notice some funny things, but it stays where it where.
 
 14.12.09
@@ -99,7 +152,7 @@ In realtime-mode you may still notice some funny things, but it stays where it w
 			is called, if present
 
 21.11.09
-		
+
 	- fileselector
 
 		- if an entry is selected in the list-box, Cursor-Right focusses the edit-field,
@@ -123,7 +176,7 @@ In realtime-mode you may still notice some funny things, but it stays where it w
 
 5.11.09
 
-	- fileselector 
+	- fileselector
 
 		- improved keyboard-navigation in fileselector again
 
@@ -245,27 +298,27 @@ In realtime-mode you may still notice some funny things, but it stays where it w
 29.09.09
 
 - ALT-shortcuts also if resource is compiled into program
- 
+
 - new config-variable: alt_shortcuts
 
   0: no shortcuts
   1: shortcuts for alerts
   2: shortcuts for dialog
   3: 1+2
- 
+
   default: 3
- 
+
   example:
   app_options = diskus, alt_shortcuts = 0
- 
+
 	For teradesk >= 4 you need: app_options = DESKTOP, alt_shortcuts = 1
 
 - launcher is now called launchpath in the config, for this is what it does
- 
+
 - improved keyboard-navigation in windows with list-windows
     blank enters/exits the list-window if focus is not EDITABLE
     (works ok if one list-window in the window, if more not so good)
- 
+
 
 20.9.09
 
@@ -352,10 +405,10 @@ In realtime-mode you may still notice some funny things, but it stays where it w
 	- Fileselector
 
 		- now creates ALT-shortcuts that dont conflict with drive-letters, if possible.
-			
+
 		- PageUp/Down(Shift-CU/CD) pages the filelist.
 
-		- Shift-Home(Shift-Pos1) goes to the end, another one sets the cursor to the file 
+		- Shift-Home(Shift-Pos1) goes to the end, another one sets the cursor to the file
 				before the last file (This should be the last - I'm working on it).
 
 		- on entry focus is in the filelist, so the first Cursor Up/Down moves the Cursor there.
@@ -443,7 +496,7 @@ In realtime-mode you may still notice some funny things, but it stays where it w
 			- often drawn unnessecarily
 
 		- Rendering
-		
+
 			- The distance between the columns is not perfect if the layout changed due to longer names.
 
 			- Background-Color is not really white (on win-aranym).
@@ -465,7 +518,7 @@ In realtime-mode you may still notice some funny things, but it stays where it w
 			- if trying to go back up from a non existing or special system-directory (/shm, /nfs),
 				Cursor-left noes not work.
 				Mouse and Ctrl-Backspace do.
-				
+
 		- Further speed-improvement.
 
 
@@ -482,7 +535,7 @@ In realtime-mode you may still notice some funny things, but it stays where it w
 	-	General
 
 		- Resources
-				
+
 			The memory-usage can possibly be reduced (it uses ~500kb more than version 0.997).
 
 		- Usability
@@ -500,7 +553,7 @@ In realtime-mode you may still notice some funny things, but it stays where it w
 				-> Remove from menu or implement it
 
 -
-	
+
  - New features
 
 	- More Editing features in form_do
