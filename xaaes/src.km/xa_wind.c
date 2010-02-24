@@ -876,6 +876,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		{
 			XA_TREE *wt = obtree_to_wt(client, ob);
 
+#if 0
 			if (wt && wt == widg->stuff)
 			{
 				DIAGS((" --- Same toolbar installed"));
@@ -886,13 +887,33 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 					obj_edit(wt, w->vdi_settings, ED_INIT, edobj, 0,0, NULL, false, NULL,NULL, NULL,NULL);
 					redraw_toolbar(lock, w, pb->intin[4]);
 					widg->start = 0;
+					));
 				}
 			}
-			else if (!widg->stuff)
+			else
+#endif
+			/*if (wt || !widg->stuff)*/	/* new or changed toolbar */
 			{
 				RECT or;
+				int md = widg->stuff ? 1 : 0;
+				short d;
 
 				DIAGS(("  --- Set new toolbar"));
+
+				if( md == 1 )
+				{
+					OBJECT *o = ((XA_TREE*)widg->stuff)->tree;
+
+					d = o->ob_height - ob->ob_height;
+					remove_widget(lock, w, XAW_TOOLBAR);
+				}
+				else
+				{
+					d = -ob->ob_height;
+				}
+				/* correct real work-area */
+				w->rwa.h += d;
+				w->rwa.y -= d;
 				wt = obtree_to_wt(client, ob);
 				if (!wt)
 					wt = new_widget_tree(client, ob);
@@ -912,13 +933,15 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 					w->active_widgets |= TOOLBAR;
 				}
 				w->dial |= created_for_TOOLBAR;
+
 				/***/
-				redraw_toolbar(lock, w, 0);
-				/*
-				wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_NORM,
-						WM_TOOLBAR, 0, 0, wind->handle,
-						aesobj_item(&fr->obj), 1, 0, 0);
-						*/
+				if( md == 1 )
+				{
+					generate_redraws(lock, w, &w->wa, RDRW_ALL);
+					break;
+				}
+				if( md == 0 )
+					redraw_toolbar(lock, w, 0);
 			}
 		}
 		else if (widg->stuff)
@@ -926,6 +949,12 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			DIAGS(("  --- Remove toolbar"));
 			remove_widget(lock, w, XAW_TOOLBAR);
 			w->active_widgets &= ~TOOLBAR;
+
+			/* correct real work-area */
+			w->rwa = w->wa;
+			generate_redraws(lock, w, &w->r, RDRW_ALL);
+			break;
+
 		}
 		if ((w->window_status & (XAWS_OPEN|XAWS_SHADED|XAWS_HIDDEN)) == XAWS_OPEN)
 		{

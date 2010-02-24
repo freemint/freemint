@@ -960,14 +960,19 @@ send_iredraw(enum locks lock, struct xa_window *wind, short xaw, RECT *r)
 		if (r)
 		{
  			if (!is_inside(r, &wind->rwa))
+ 			{
 				send_app_message(lock, wind, NULL, AMQ_IREDRAW, QMF_NORM,
 					WM_REDRAW, xaw, ((long)wind) >> 16, ((long)wind) & 0xffff,
 					r->x, r->y, r->w, r->h);
+			}
+			//else
 		}
 		else
+		{
 			send_app_message(lock, wind, NULL, AMQ_IREDRAW, QMF_NORM,
 				WM_REDRAW, xaw, ((long)wind) >> 16, ((long)wind) & 0xffff,
 				0,0,0,0);
+		}
 	}
 }
 
@@ -1763,13 +1768,13 @@ draw_window(enum locks lock, struct xa_window *wind, const RECT *clip)
 					wind->handle, f, widg->m.r.draw));
 
 
-
 				if (widg->m.properties & WIP_WACLIP)
 				{
 					if (xa_rect_clip(clip, &wind->wa, &r))
 					{
 						(*v->api->set_clip)(v, &r);
 // 						if (f == XAW_TOOLBAR) display("drawing toolbar (waclip) for %s", wind->owner->name);
+ 						//if (f == XAW_TOOLBAR) BLOG((0,"drawing toolbar (waclip) for %s", wind->owner->name));
 						(*widg->m.r.draw)(wind, widg, &r);
 						(*v->api->set_clip)(v, clip);
 					}
@@ -1777,6 +1782,7 @@ draw_window(enum locks lock, struct xa_window *wind, const RECT *clip)
 				else
 				{
 // 					if (f == XAW_TOOLBAR) display("drawing toolbar for %s", wind->owner->name);
+ 					//if (f == XAW_TOOLBAR) BLOG((0,"drawing toolbar for %s", wind->owner->name));
 					widg->m.r.draw(wind, widg, clip);
 				}
 			}
@@ -2431,6 +2437,8 @@ do_delayed_delete_window(enum locks lock)
 
 /*
  * Context dependant !!!
+ *
+ * which unused!
  */
 void
 display_window(enum locks lock, int which, struct xa_window *wind, RECT *clip)
@@ -2459,6 +2467,7 @@ display_window(enum locks lock, int which, struct xa_window *wind, RECT *clip)
 				rl = rl->next;
 			}
 		}
+
 		(*wind->vdi_settings->api->clear_clip)(wind->vdi_settings);
 	}
 }

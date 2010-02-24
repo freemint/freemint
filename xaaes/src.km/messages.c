@@ -365,6 +365,10 @@ do_winmesag(enum locks lock,
 				p->qmf = qmf;
 				for (i = 0; i < 8; i++)
 					p->msg[i] = msg[i];
+
+				//if (mp0 == WM_REDRAW)
+				//	BLOG((0,"do_winmesag: WM_REDRAW %s %d/%d/%d/%d/%d/%d/%d/%d", wind->wname, mp0,mp1,mp2,mp3,mp4,mp5,mp6,mp7));
+
 				post_cevent(wo, CE_do_winmesag, p, NULL, 0,0, NULL, NULL);
 			}
 		}

@@ -565,6 +565,7 @@ obtree_to_wt(struct xa_client *client, OBJECT *obtree)
 	DIAGS((" obtree_to_wt: return %lx for %s",
 		wt, client->name));
 
+
 	return wt;
 }
 
@@ -4457,6 +4458,9 @@ remove_widget(enum locks lock, struct xa_window *wind, int tool)
 	XA_WIDGET *widg = get_widget(wind, tool);
 
 	DIAG((D_form, NULL, "remove_widget %d: 0x%lx", tool, widg->stuff));
+	if( widg->stuff )
+	{
+	}
 	//display("remove_widget %d: 0x%lx", tool, widg->stuff);
 
 	if (widg->m.r.freepriv)
