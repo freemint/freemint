@@ -439,14 +439,11 @@ Form_Button(XA_TREE *wt,
 					// cmp obtree#3405
 					if( !obj_is_focus(wt, &obj) ){
 						if( obj.ob->ob_spec.tedinfo ){
-							char *txt = obj.ob->ob_spec.tedinfo->te_ptext, *ptxt = obj.ob->ob_spec.tedinfo->te_ptmplt;
-							if( !((long)txt & 1L) ){
-								for( ; txt[x]; x++ );
+							TEDINFO *ted = object_get_tedinfo(aesobj_ob(&obj), NULL);
+							char *txt = ted->te_ptext, *ptxt = ted->te_ptmplt;
+							for( ; txt[x]; x++ );
+							{
 								for( ; ptxt[y] && ptxt[y] != '_'; y++ );
-							}
-							else{
-								/* strange things going on here: txt=-1! (this happens if FS_FILE of fsel is clicked) */
-								obj.ob->ob_state &= ~OS_SELECTED;
 							}
 						}
 						ei->edstart = y;
@@ -494,9 +491,7 @@ Form_Button(XA_TREE *wt,
 
 	DIAGS(("Form_Button: return no_exit=%s, nxtob=%d, newstate=%x, clickmask=%x",
 		no_exit ? "yes":"no", aesobj_item(&next_obj), state, dc ? 0x8000:0));
-	/*BLOG((0,"Form_Button: return no_exit=%s, nxtob=%d, newstate=%x, flags=%x clickmask=%x",
-		no_exit ? "yes":"no", aesobj_item(&next_obj), state, flags, dc ? 0x8000:0));
-		*/
+
 
 // 	display("Form_Button: return no_exit=%s, nxtob=%d, newstate=%x, clickmask=%x",
 // 		no_exit ? "yes":"no", next_obj, state, dc ? 0x8000:0);
@@ -549,9 +544,7 @@ Form_Cursor(XA_TREE *wt,
 	last_ob = ob_count_flag(obtree, OF_EDITABLE, 0, 0, &edcnt);
 	DIAG((D_form, NULL, "Form_Cursor: wt=%lx, obtree=%lx, obj=%d, keycode=%x, lastob=%d, editobjs=%d",
 		wt, obtree, obj.item, keycode, last_ob, edcnt));
-	/*BLOG((0, "Form_Cursor: wt=%lx, obtree=%lx, obj=%d, keycode=%x, keystate=%x, lastob=%d, editobjs=%d focusflags=%d",
-		wt, obtree, obj.item, keycode, keystate, last_ob, edcnt, aesobj_flags(&wt->focus) ));
-*/
+
 	if (ret_focus)
 		*ret_focus = inv_aesobj();
 
@@ -1266,6 +1259,7 @@ Key_form_do(enum locks lock,
 	}
 
 	ei = wt->ei ? wt->ei : &wt->e;
+
 
 	if (obtree)
 	{
