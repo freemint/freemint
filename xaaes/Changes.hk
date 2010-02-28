@@ -1,3 +1,51 @@
+27.2.10
+
+xa_wdlg:
+
+call obj_edit if same obj also in wdialog_event to allow keyboard-input
+for edit-fields
+---------------------------------------------------------------------
+
+form:
+
+Can also handle XTEDINFO-method now when determining start and pos for edit-opjects.
+---------------------------------------------------------------------
+
+26.2.10
+---------------------------------------------------------------------
+
+c_window:
+
+If a widget is set but not installed draw a bar to avoid transparence of window.
+---------------------------------------------------------------------
+
+xa_wind:
+
+Avoid multiple redraws of toolbar, always redraw work-area.
+---------------------------------------------------------------------
+
+25.2.10
+
+init:
+
+use "xaaes.cnf" as default in case resource is not defined in xaaes.cnf.
+
+---------------------------------------------------------------------
+taskman:
+
+Use standard redraw instead of close/open taskmanager to remove load-display.
+
+---------------------------------------------------------------------
+xa_wind:
+
+Fixed toolbar-operations
+
+	- remove toolbar on an open window
+	- add toolbar to an open window
+	- change toolbar on an open window
+
+---------------------------------------------------------------------
+
 22.2.10
 
 system-resource-file:
@@ -20,7 +68,7 @@ config:
 init:
 
 Moved the semaphore-test from init() to k_main(). init() runs on behalf
-of xaloader. If xaloader get killed the semaphore never will be
+of xaloader. If xaloader gets killed the semaphore never will be
 destroyed.
 
 Moved the #defines for p_semaphore to xa_defs.h
