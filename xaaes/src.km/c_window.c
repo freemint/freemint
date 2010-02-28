@@ -965,7 +965,6 @@ send_iredraw(enum locks lock, struct xa_window *wind, short xaw, RECT *r)
 					WM_REDRAW, xaw, ((long)wind) >> 16, ((long)wind) & 0xffff,
 					r->x, r->y, r->w, r->h);
 			}
-			//else
 		}
 		else
 		{
@@ -1149,6 +1148,8 @@ fix_wind_kind(XA_WIND_ATTR tp)
  * calc_work_area and center.
  *
  * needed a dynamiccally sized frame
+ *
+ * ? what if older prgs set HOTCLOSEBOX which is in fact MENUBAR ?
  */
 struct xa_window * _cdecl
 create_window(
@@ -1170,6 +1171,7 @@ create_window(
 	RECT r;
 
 	r = R;
+
 
 #if GENERATE_DIAGS
 	if (max)
@@ -1774,7 +1776,6 @@ draw_window(enum locks lock, struct xa_window *wind, const RECT *clip)
 					{
 						(*v->api->set_clip)(v, &r);
 // 						if (f == XAW_TOOLBAR) display("drawing toolbar (waclip) for %s", wind->owner->name);
- 						//if (f == XAW_TOOLBAR) BLOG((0,"drawing toolbar (waclip) for %s", wind->owner->name));
 						(*widg->m.r.draw)(wind, widg, &r);
 						(*v->api->set_clip)(v, clip);
 					}
@@ -1782,9 +1783,12 @@ draw_window(enum locks lock, struct xa_window *wind, const RECT *clip)
 				else
 				{
 // 					if (f == XAW_TOOLBAR) display("drawing toolbar for %s", wind->owner->name);
- 					//if (f == XAW_TOOLBAR) BLOG((0,"drawing toolbar for %s", wind->owner->name));
 					widg->m.r.draw(wind, widg, clip);
 				}
+			}
+			else if( widg->r.w && widg->r.h )	/* draw a bar to avoid transparence */
+			{
+				(*v->api->gbar)(v, 0, &widg->ar);
 			}
 		}
 	}
