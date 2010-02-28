@@ -1619,7 +1619,9 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 				if (move)
 					send_moved(lock, wind, AMQ_NORM, &r);
 				if (size)
+				{
 					send_sized(lock, wind, AMQ_NORM, &r);
+				}
 			}
 		}
 	}
@@ -3741,6 +3743,7 @@ position_widget(struct xa_window *wind, struct xa_widget *widg, RECT *offsets)
 						}
 						wind->bd.y += diff;
 						wind->bd.h += diff;
+
 						break;
 					}
 					case XAR_END:
@@ -4458,9 +4461,6 @@ remove_widget(enum locks lock, struct xa_window *wind, int tool)
 	XA_WIDGET *widg = get_widget(wind, tool);
 
 	DIAG((D_form, NULL, "remove_widget %d: 0x%lx", tool, widg->stuff));
-	if( widg->stuff )
-	{
-	}
 	//display("remove_widget %d: 0x%lx", tool, widg->stuff);
 
 	if (widg->m.r.freepriv)
