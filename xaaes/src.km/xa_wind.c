@@ -887,7 +887,6 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 					obj_edit(wt, w->vdi_settings, ED_INIT, edobj, 0,0, NULL, false, NULL,NULL, NULL,NULL);
 					redraw_toolbar(lock, w, pb->intin[4]);
 					widg->start = 0;
-					));
 				}
 			}
 			else
@@ -900,7 +899,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 
 				DIAGS(("  --- Set new toolbar"));
 
-				if( md == 1 )
+				if( md == 1 )	/* changed toolbar */
 				{
 					OBJECT *o = ((XA_TREE*)widg->stuff)->tree;
 
@@ -920,6 +919,12 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				assert(wt);
 				obj_rectangle(wt, aesobj(ob, 0), &or);
 				wt = set_toolbar_widget(lock, w, client, ob, aesobj(ob, pb->intin[5]), 0, STW_ZEN, NULL, &or);
+				//if( md == 1 )	/* changed */
+				{
+					/* send redraw for wa anyway! */
+					w->active_widgets &= ~TOOLBAR;
+					generate_redraws(lock, w, &w->rwa, RDRW_WA);
+				}
 				rp_2_ap_cs(w, widg, NULL);
 				if (wt && wt->tree)
 				{
@@ -934,14 +939,19 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				}
 				w->dial |= created_for_TOOLBAR;
 
-				/***/
-				if( md == 1 )
+				if ( md == 1 && (w->window_status & (XAWS_OPEN|XAWS_HIDDEN|XAWS_SHADED)) == XAWS_OPEN)
 				{
-					generate_redraws(lock, w, &w->wa, RDRW_ALL);
-					break;
+					struct xa_aes_object edobj = aesobj(wt->tree, pb->intin[5]);
+					widg->start = pb->intin[4];
+					obj_edit(wt, w->vdi_settings, ED_INIT, edobj, 0,0, NULL, false, NULL,NULL, NULL,NULL);
 				}
-				if( md == 0 )
-					redraw_toolbar(lock, w, 0);
+				redraw_toolbar(lock, w, 0);
+				widg->start = 0;
+
+				w->send_message(lock, w, NULL, AMQ_NORM, QMF_NORM,
+						WM_TOOLBAR, 0, 0, w->handle, 1, 0, 0, 0);
+
+				break;
 			}
 		}
 		else if (widg->stuff)
