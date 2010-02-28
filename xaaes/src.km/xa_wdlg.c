@@ -1028,7 +1028,6 @@ XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	return XAC_DONE;
 }
-
 short
 wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms *wep)
 {
@@ -1223,9 +1222,11 @@ wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms 
 						short nk = normkey(ks, key);
 
 						if ( (ks & (K_CTRL|K_ALT)) == K_ALT )
+						{
 							nxtobj = ob_find_shortcut(obtree, nk);
-						DIAG((D_wdlg, NULL, "wdlg_event(MU_KEYBD): shortcut %d for %s",
-							aesobj_item(&nxtobj), client->name));
+							DIAG((D_wdlg, NULL, "wdlg_event(MU_KEYBD): shortcut %d for %s",
+								aesobj_item(&nxtobj), client->name));
+						}
 					}
 					if (valid_aesobj(&nxtobj))
 					{
@@ -1257,7 +1258,8 @@ wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms 
 					}
 					else if (key != SC_RETURN && key != SC_NMPAD_ENTER)
 					{
-						if (!same_aesobj(&wt->focus, &ei->o))
+						/* new: call obj_edit if same obj also */
+						//if (!same_aesobj(&wt->focus, &ei->o))
 						{
 							DIAG((D_wdlg, NULL, "wdlg_event(MU_KEYBD): HNDL_EDIT exit(%lx) with key=%x for %s",
 								wep->wdlg ? wep->wdlg->exit : NULL, key, client->name));
@@ -1274,7 +1276,9 @@ wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms 
 							 NULL);
 						}
 						if (wep->callout)
+						{
 							ret = (*wep->callout)(client, wep->wdlg, ev, HNDL_EDIT, 0, NULL, &key);
+						}
 
 						ev->mwhich &= ~MU_KEYBD;
 					}
