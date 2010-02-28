@@ -1337,11 +1337,8 @@ taskmanager_form_exit(struct xa_client *Client,
 		case TM_RESCHG:	/* now: toggle load-display */
 		{
 			OBJECT *obtree = wt->tree;
-			if( (obtree[TM_CHART].ob_flags ^= OF_HIDETREE) )
-			{
-				close_window(lock, wind);
-			}
-			post_cevent(C.Hlp, ceExecfunc, open_taskmanager,NULL, 1,0, NULL,NULL);
+			obtree[TM_CHART].ob_flags ^= OF_HIDETREE;
+			generate_redraws(lock, wind, &wind->r, RDRW_ALL);
 			break;
 		}
 #endif
