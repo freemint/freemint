@@ -322,7 +322,8 @@ rp2ap_obtree(struct xa_window *wind, struct xa_widget *widg, RECT *r)
 	if (widg->m.r.xaw_idx == XAW_TOOLBAR || widg->m.r.xaw_idx == XAW_MENU)
 	{
  		if (!(widg->m.properties & WIP_NOTEXT))
- 			widg->r.w = wind->wa.w;
+ 			widg->r.w = wind->r.w;
+ 			//widg->r.w = wind->wa.w;
 		if ((wt = widg->stuff))
 		{
 			obtree = wt->tree;
@@ -1612,6 +1613,7 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 			if (wind->opts & XAWO_WCOWORK)
 				r = f2w(&wind->delta, &r, true);
 
+
 			if (move && size && (wind->opts & XAWO_SENDREPOS))
 				send_reposed(lock, wind, AMQ_NORM, &r);
 			else
@@ -1619,9 +1621,7 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 				if (move)
 					send_moved(lock, wind, AMQ_NORM, &r);
 				if (size)
-				{
 					send_sized(lock, wind, AMQ_NORM, &r);
-				}
 			}
 		}
 	}
