@@ -964,7 +964,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				if( vsl )	/* restore vslider */
 				{
 					w->active_widgets |= VS_WIDGETS;//vsl;
-					//w->wa.w -= vslw;
+					w->wa.w -= vslw;
 					w->rwa.w -= vslw;
 				}
 
