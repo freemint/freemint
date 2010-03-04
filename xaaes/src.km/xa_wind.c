@@ -874,56 +874,69 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		if (ob)
 		{
-			XA_TREE *wt = obtree_to_wt(client, ob);
+			XA_TREE *wt;
+			short vsl = 0, vslw = 0;
 
-#if 0
-			if (wt && wt == widg->stuff)
-			{
-				DIAGS((" --- Same toolbar installed"));
-				if ((w->window_status & (XAWS_OPEN|XAWS_HIDDEN|XAWS_SHADED)) == XAWS_OPEN)
-				{
-					struct xa_aes_object edobj = aesobj(wt->tree, pb->intin[5]);
-					widg->start = pb->intin[4];
-					obj_edit(wt, w->vdi_settings, ED_INIT, edobj, 0,0, NULL, false, NULL,NULL, NULL,NULL);
-					redraw_toolbar(lock, w, pb->intin[4]);
-					widg->start = 0;
-				}
-			}
-			else
-#endif
 			/*if (wt || !widg->stuff)*/	/* new or changed toolbar */
 			{
 				RECT or;
 				int md = widg->stuff ? 1 : 0;
 				short d;
+				OBJECT *o = ((XA_TREE*)widg->stuff)->tree;
 
 				DIAGS(("  --- Set new toolbar"));
 
-				if( md == 1 )	/* changed toolbar */
+				if( md == 1 /*&& ob != o*/ )	/* changed toolbar */
 				{
-					OBJECT *o = ((XA_TREE*)widg->stuff)->tree;
-
 					d = o->ob_height - ob->ob_height;
 					remove_widget(lock, w, XAW_TOOLBAR);
 				}
-				else
+				else	/* new toolbar */
 				{
 					d = -ob->ob_height;
 				}
 				/* correct real work-area */
 				w->rwa.h += d;
 				w->rwa.y -= d;
+
+				/*
+				 * correct vslider to new wa
+				 */
+				if ( (w->active_widgets & VSLIDE) )
+				{
+					XA_WIDGET *widg2 = get_widget(w, XAW_VSLIDE);
+					/* disable slider, redraw wa, enable new slider */
+					vsl = w->active_widgets & VS_WIDGETS;
+					w->active_widgets &= ~VS_WIDGETS;
+
+					if( o == ob )
+						d = -ob->ob_height;
+					widg2->r.h += d;
+					widg2->ar.h += d;
+					widg2->r.y -= d;
+					widg2->ar.y -= d;
+
+					vslw = widg2->r.w;
+					w->wa.w += vslw;
+					w->rwa.w += vslw;
+
+					widg2 = get_widget(w, XAW_UPLN1);
+					widg2->r.y -= d;
+					widg2->ar.y -= d;
+				}
 				wt = obtree_to_wt(client, ob);
 				if (!wt)
 					wt = new_widget_tree(client, ob);
 				assert(wt);
 				obj_rectangle(wt, aesobj(ob, 0), &or);
 				wt = set_toolbar_widget(lock, w, client, ob, aesobj(ob, pb->intin[5]), 0, STW_ZEN, NULL, &or);
+				widg->r.w = widg->ar.w = ob->ob_width = or.w = w->r.w;
 				//if( md == 1 )	/* changed */
 				{
 					/* send redraw for wa anyway! */
 					w->active_widgets &= ~TOOLBAR;
-					generate_redraws(lock, w, &w->rwa, RDRW_WA);
+					/* redraw window without toolbar&vslider */
+					generate_redraws(lock, w, &w->r, RDRW_ALL);
 				}
 				rp_2_ap_cs(w, widg, NULL);
 				if (wt && wt->tree)
@@ -948,14 +961,37 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				redraw_toolbar(lock, w, 0);
 				widg->start = 0;
 
+				if( vsl )	/* restore vslider */
+				{
+					w->active_widgets |= VS_WIDGETS;//vsl;
+					//w->wa.w -= vslw;
+					w->rwa.w -= vslw;
+				}
+
 				w->send_message(lock, w, NULL, AMQ_NORM, QMF_NORM,
 						WM_TOOLBAR, 0, 0, w->handle, 1, 0, 0, 0);
 
-				break;
 			}
-		}
-		else if (widg->stuff)
+		}	/*/if (ob)*/
+		else if (widg->stuff)	/* remove toolbar */
 		{
+			/*
+			 * correct vslider
+			 */
+			if ( (w->active_widgets & VSLIDE) )
+			{
+				XA_WIDGET *widg2 = get_widget(w, XAW_VSLIDE);
+				short d = widg->r.h;
+
+				widg2->r.h += d;
+				widg2->ar.h += d;
+				widg2->r.y -= d;
+				widg2->ar.y -= d;
+
+				widg2 = get_widget(w, XAW_UPLN1);
+				widg2->r.y -= d;
+				widg2->ar.y -= d;
+			}
 			DIAGS(("  --- Remove toolbar"));
 			remove_widget(lock, w, XAW_TOOLBAR);
 			w->active_widgets &= ~TOOLBAR;
@@ -963,13 +999,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			/* correct real work-area */
 			w->rwa = w->wa;
 			generate_redraws(lock, w, &w->r, RDRW_ALL);
-			break;
 
-		}
-		if ((w->window_status & (XAWS_OPEN|XAWS_SHADED|XAWS_HIDDEN)) == XAWS_OPEN)
-		{
-			DIAGS(("  --- send WM_REDRAW"));
-			generate_redraws(lock, w, &w->r, RDRW_EXT);
 		}
 		DIAGS(("  wind_set(WF_TOOLBAR) done"));
 		break;
