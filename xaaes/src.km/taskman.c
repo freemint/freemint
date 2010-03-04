@@ -1888,10 +1888,14 @@ open_csr(enum locks lock, struct xa_client *client, struct xa_client *running)
 	if (!(htd = get_helpthread_data(client)))
 		return;
 
+	if( running->p->pid == 0 )	/*!??*/
+		return;
+
 
 	if (!htd->w_csr) // !csr_win)
 	{
 		TEDINFO *t;
+		int i = 0;
 
 		obtree = duplicate_obtree(client, ResourceTree(C.Aes_rsc, KILL_OR_WAIT), 0);
 		if (!obtree) goto fail;
@@ -1903,20 +1907,25 @@ open_csr(enum locks lock, struct xa_client *client, struct xa_client *running)
 		t = object_get_tedinfo(obtree + KORW_APPNAME, NULL);
 		if (running->name[0])
 		{
-			int i;
 			char *s = running->name;
 
 			while (*s && *s == ' ')
 				s++;
 
-			for (i = 0; i < 32 && (t->te_ptext[i] = *s++); i++)
+			for (; i < 32 && (t->te_ptext[i] = *s++); i++)
 				;
 		}
-		else
+		if( i == 0 )
 		{
-			strncpy(t->te_ptext, running->proc_name, 8);
-			t->te_ptext[8] = '\0';
+			if( running->proc_name[0] > ' ' )
+			{
+				strncpy(t->te_ptext, running->proc_name, 8);
+			}
+			else
+				strncpy(t->te_ptext, running->p->name, 8);
+			i = 8;
 		}
+		sprintf( t->te_ptext +i, 32 - i, "(%d)", running->p->pid );
 
 		wind = create_dwind(lock, 0, /*txt_shutdown*/" Shutdown ", client, wt, csr_form_exit, csr_destructor);
 		if (!wind)
