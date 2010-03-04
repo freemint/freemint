@@ -5,6 +5,7 @@ do
 	if [ $i -nt $N ]
 	then
 		N=$i
+		break
 	fi
 done
 echo $N
