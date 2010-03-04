@@ -987,20 +987,38 @@ generate_redraws(enum locks lock, struct xa_window *wind, RECT *r, short flags)
 		if (wind != root_window && r && (flags & RDRW_WA) && !is_shaded(wind))
 		{
 			struct xa_widget *widg;
-
 			if (xa_rect_clip(&wind->rwa, r, &b))
 			{
 				send_redraw(lock, wind, &b);
 			}
 
-			if ((widg = usertoolbar_installed(wind)) && xa_rect_clip(&widg->ar, r, &b))
+			if ((widg = usertoolbar_installed(wind)) )
 			{
-				send_app_message(lock, wind, NULL, AMQ_IREDRAW, QMF_NORM,
-					WM_REDRAW, widg->m.r.xaw_idx, ((long)wind) >> 16, ((long)wind) & 0xffff,
-						b.x, b.y, b.w, b.h);
+				if ( xa_rect_clip(&widg->ar, r, &b))
+				{
+					/* hack to force redrawing the area above vslider
+					 * (fails if moved from top-border because in set_and_update
+					 * "we only redraw window borders here if wind moves"
+					 * and toolbar-rect is not redrawn (Blitted?))
+					 */
+					if ( (wind->active_widgets & VSLIDE) )
+					{
+						XA_WIDGET *widg2 = get_widget(wind, XAW_VSLIDE);
+
+						if( (b.x + b.w + widg2->ar.w > (wind->rwa.x + wind->rwa.w + wind->frame)) )
+						{
+							short d = wind->r.x + wind->r.w - wind->frame - (b.x + b.w);
+							if( d > 0 )
+								b.w += d;
+						}
+
+					}
+					send_app_message(lock, wind, NULL, AMQ_IREDRAW, QMF_NORM,
+						WM_REDRAW, widg->m.r.xaw_idx, ((long)wind) >> 16, ((long)wind) & 0xffff,
+							b.x, b.y, b.w, b.h);
+				}
 			}
 		}
-
 		if ((flags & RDRW_EXT))
 		{
 			send_iredraw(lock, wind, 0, r);
@@ -1029,11 +1047,16 @@ remove_from_iredraw_queue(enum locks lock, struct xa_window *wind)
 	}
 }
 
+
+unsigned long
+XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb);
+
 void
 iconify_window(enum locks lock, struct xa_window *wind, RECT *r)
 {
 	if ((r->w == -1 && r->h == -1) || (!r->w && !r->h))
 		*r = free_icon_pos(lock, NULL);
+
 	move_window(lock, wind, true, XAWS_ICONIFIED, r->x, r->y, r->w, r->h);
 	wind->window_status &= ~XAWS_CHGICONIF;
 }
@@ -1050,6 +1073,25 @@ uniconify_window(enum locks lock, struct xa_window *wind, RECT *r)
 		XA_WIDGET *widg = get_widget( wind, XAW_MENU );
 		if( widg && widg->stuff )
 			set_menu_widget( wind, wind->owner, widg->stuff );
+	}
+
+	/*
+	 * re-install toolbar to achieve correct vslider
+	 */
+	if( (wind->active_widgets & TOOLBAR) && (wind->active_widgets & VSLIDE) )
+	{
+		XA_WIDGET *widg = get_widget( wind, XAW_TOOLBAR );
+		AESPB pb;
+		short intin[8], intout[8];
+
+		intin[0] = wind->handle;
+		intin[1] = WF_TOOLBAR;
+		ptr_to_shorts( ((XA_TREE*)widg->stuff)->tree, intin + 2 );
+		pb.intin = intin;
+		pb.intout = intout;
+
+		/* install toolbar */
+		XA_wind_set( lock, wind->owner, &pb );
 	}
 
 	set_reiconify_timeout(lock);
@@ -1319,7 +1361,6 @@ create_window(
 		if (tp & STORE_BACK)
 		{
 			DIAG((D_wind,client," allocating background storage buffer"));
-			BLOG((0," allocating background storage buffer"));
 
 			/* XXX the store back code is not failsafe if kmalloc fail */
 
@@ -1761,34 +1802,38 @@ draw_window(enum locks lock, struct xa_window *wind, const RECT *clip)
 				continue;
 			}
 
-			if (!(status & widg->m.statusmask) && wdg_is_inst(widg))
+			if (!(status & widg->m.statusmask) )
 			{
+				if( wdg_is_inst(widg) )
+				{
 // 				if (f == XAW_TOOLBAR)
 // 					display("wdg_is_inst return %s", wdg_is_inst(widg) ? "true":"false");
 
-				DIAG((D_wind, wind->owner, "draw_window %d: display widget %d (func=%lx)",
-					wind->handle, f, widg->m.r.draw));
+					DIAG((D_wind, wind->owner, "draw_window %d: display widget %d (func=%lx)",
+						wind->handle, f, widg->m.r.draw));
 
-
-				if (widg->m.properties & WIP_WACLIP)
-				{
-					if (xa_rect_clip(clip, &wind->wa, &r))
+					if (widg->m.properties & WIP_WACLIP)
 					{
-						(*v->api->set_clip)(v, &r);
-// 						if (f == XAW_TOOLBAR) display("drawing toolbar (waclip) for %s", wind->owner->name);
-						(*widg->m.r.draw)(wind, widg, &r);
-						(*v->api->set_clip)(v, clip);
+						if (xa_rect_clip(clip, &wind->wa, &r))
+						{
+							(*v->api->set_clip)(v, &r);
+	// 						if (f == XAW_TOOLBAR) display("drawing toolbar (waclip) for %s", wind->owner->name);
+							(*widg->m.r.draw)(wind, widg, &r);
+							(*v->api->set_clip)(v, clip);
+						}
+					}
+					else
+					{
+	// 					if (f == XAW_TOOLBAR) display("drawing toolbar for %s", wind->owner->name);
+						widg->m.r.draw(wind, widg, clip);
 					}
 				}
-				else
+				else if( widg->r.w && widg->r.h )	/* draw a bar to avoid transparence */
 				{
-// 					if (f == XAW_TOOLBAR) display("drawing toolbar for %s", wind->owner->name);
-					widg->m.r.draw(wind, widg, clip);
+					(*v->api->gbar)(v, 0, &widg->ar);
 				}
-			}
-			else if( widg->r.w && widg->r.h )	/* draw a bar to avoid transparence */
-			{
-				(*v->api->gbar)(v, 0, &widg->ar);
+				//else if( wind->wname[0] )
+				// BLOG((0,"%s: widget %d not installed", wind->wname, f ));
 			}
 		}
 	}
@@ -3358,7 +3403,7 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 					else
 						flags = RDRW_WA;
 
-					//if( flags )
+					if( flags )
 					{
 						generate_redraws(wlock, wind, &nrl->r, flags);
 					}
