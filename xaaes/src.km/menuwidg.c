@@ -1156,11 +1156,17 @@ display_popup(Tab *tab, short rdx, short rdy)
 		r.h = root_window->wa.h - r.y;
 	}
 
+	/* if client blocked (e.g. nonwindowed dialog) restore background on exit */
+	if( C.update_lock == tab->client->p )
+		tp |= STORE_BACK;
+
 	if (mod_h)
 	{
 
 		r = calc_window(tab->lock, tab->client, WC_WORK, tp, created_for_AES|created_for_POPUP, mg, true, r);
+
 		tp |= TOOLBAR|VSLIDE|UPARROW|DNARROW;
+
 		r = calc_window(tab->lock, tab->client, WC_BORDER, tp, created_for_AES|created_for_POPUP, mg, true, r);
 
 		r = popup_inside(tab, r);
