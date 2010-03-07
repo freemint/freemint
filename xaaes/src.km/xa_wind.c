@@ -867,8 +867,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		XA_WIDGET *widg = get_widget(w, XAW_TOOLBAR);
 // 		bool d = (!strnicmp(client->proc_name, "ergo_hlp", 8));
 
-		DIAGS(("  wind_set(WF_TOOLBAR): obtree=%lx, current wt=%lx",
-			ob, widg->stuff));
+		DIAGS(("  wind_set(WF_TOOLBAR): obtree=%lx, current wt=%lx",ob, widg->stuff));
 // 		if (d) display("  wind_set(WF_TOOLBAR): obtree=%lx, current wt=%lx",
 // 			ob, widg->stuff);
 
@@ -895,7 +894,8 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				{
 					d = -ob->ob_height;
 				}
-				/* correct real work-area */
+				/* correct real work-area and min.h */
+				w->min.h -= d;
 				w->rwa.h += d;
 				w->rwa.y -= d;
 
@@ -968,13 +968,16 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 					w->rwa.w -= vslw;
 				}
 
+				if( w->r.h < w->min.h )	/* height may too small for toolbar */
+					move_window(lock, w, true, -1L, w->r.x, w->r.y, w->r.w, w->min.h);
+
 				w->send_message(lock, w, NULL, AMQ_NORM, QMF_NORM,
 						WM_TOOLBAR, 0, 0, w->handle, 1, 0, 0, 0);
-
 			}
 		}	/*/if (ob)*/
 		else if (widg->stuff)	/* remove toolbar */
 		{
+			w->min.h -= widg->ar.h;
 			/*
 			 * correct vslider
 			 */
