@@ -1,6 +1,11 @@
 07-03-2010
 ----------
 
+scrlobjc:
+
+call draw_window only if top when resetting widgets for list-window to
+avoid clipping-error.
+---------------------------------------------------------------------
 xversion:
 
 if xversion.h does not exist don't break out of loop.
@@ -47,9 +52,6 @@ c_window:
 - redraw if toolbar and vertical slider installed
 
 	- force redrawing the area above vslider
-	  (fails if sized from top-border because in set_and_update
-	  "we only redraw window borders here if wind moves"
-	  and toolbar-rect is not redrawn (Blitted?))
 
 - uniconify with toolbar and vertical slider installed
 
@@ -57,8 +59,6 @@ c_window:
 
 ---------------------------------------------------------------------
 taskman:
-
-	- Use standard redraw instead of close/open taskmanager to remove load-display.
 
 	- kill-clients-during-shutdown-dialog
 
