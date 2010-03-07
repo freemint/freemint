@@ -1773,7 +1773,9 @@ draw_window(enum locks lock, struct xa_window *wind, const RECT *clip)
 	/* XXX - Ozk: Extremely not good if draw_window() is to be context indipendant!!!
 	 */
 	if (wind->redraw)
+	{
 		wind->redraw(lock, wind);
+	}
 
 	{
 		int f;
@@ -1802,7 +1804,7 @@ draw_window(enum locks lock, struct xa_window *wind, const RECT *clip)
 				continue;
 			}
 
-			if (!(status & widg->m.statusmask) )
+			if ( !(status & widg->m.statusmask) )
 			{
 				if( wdg_is_inst(widg) )
 				{
@@ -1828,9 +1830,9 @@ draw_window(enum locks lock, struct xa_window *wind, const RECT *clip)
 						widg->m.r.draw(wind, widg, clip);
 					}
 				}
-				else if( widg->r.w && widg->r.h )	/* draw a bar to avoid transparence */
+				else if( f == XAW_MENU && widg->r.w && widg->r.h )	/* draw a bar to avoid transparence */
 				{
-					(*v->api->gbar)(v, 0, &widg->ar);
+						(*v->api->gbar)(v, 0, &widg->ar);
 				}
 				//else if( wind->wname[0] )
 				// BLOG((0,"%s: widget %d not installed", wind->wname, f ));
@@ -2941,6 +2943,12 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 		wa.x = wind->wa.x - new->x;
 		wa.y = wind->wa.y - new->y;
 		wa.w = wind->wa.w;
+		/* increase width of workarea by vslider-width if toolbar installed */
+		if( (wind->active_widgets & TOOLBAR) && (wind->active_widgets & VSLIDE) )
+		{
+			XA_WIDGET *widg = get_widget(wind, XAW_VSLIDE);
+			wa.w += widg->ar.w;
+		}
 		wa.h = wind->wa.h;
 
 		/*
@@ -2995,8 +3003,7 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 
 			while (orl)
 			{
-				//DIAGS(("Check for common areas (newrl=%d/%d/%d/%d, oldrl=%d/%d/%d/%d)",
-				//	bs, orl->r));
+				//DIAGS(("Check for common areas (newrl=%d/%d/%d/%d, oldrl=%d/%d/%d/%d)", bs, orl->r));
 				if (xa_rect_clip(&bs, &orl->r, &bd))
 				{
 // 					if (dir == 3)
