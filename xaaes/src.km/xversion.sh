@@ -1,20 +1,24 @@
 #find newest source-file and generate xversion.h with BDATETIME accordingly
-N=xversion.h
+HFILE=xversion.h
+N=$HFILE
 for i in *.c *.h
 do
 	if [ $i -nt $N ]
 	then
 		N=$i
-		break
+		if [ -f $HFILE ]
+		then
+			break
+		fi
 	fi
 done
 echo $N
 
 #set BDATETIME to date of .
 #N=.
-if [ $N -nt xversion.h ]
+if [ $N -nt $HFILE ]
 then
 	D=`date -r $N "+%b %e %Y %H:%M"`
-	echo \#define BDATETIME \"$D\" >xversion.h
+	echo \#define BDATETIME \"$D\" >$HFILE
 fi
 
