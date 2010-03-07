@@ -1000,7 +1000,9 @@ reset_listwi_widgets(SCROLL_INFO *list, short redraw)
 			recalc_tabs(list);
 			if (canredraw(list))
 			{
-				draw_window(0, list->wi, &list->wi->r);
+				/* no rectlist-clip here! is draw_window really necessary at all? */
+				if( !list->pw || list->pw == TOP_WINDOW )
+					draw_window(0, list->wi, &list->wi->r);
 				if (redraw)
 				{
 					list->redraw(list, NULL);
@@ -1038,7 +1040,9 @@ sliders(struct scroll_info *list, bool rdrw)
 		{
 			check_movement(list);
 			if (rm & 1)
+			{
 				display_widget(0, list->wi, get_widget(list->wi, XAW_VSLIDE), wind->rect_list.start);
+			}
 			if (rm & 2)
 				display_widget(0, list->wi, get_widget(list->wi, XAW_HSLIDE), wind->rect_list.start);
 		}
@@ -4435,7 +4439,7 @@ slist_msg_handler(
 	{
 		return;
 	}
-	}
+	}	/*/switch (msg[0])		message number */
 }
 
 
