@@ -853,7 +853,7 @@ short flags)
 						short amq = AMQ_REDRAW;
 						RECT dr = v->clip;	/* send_message may change clipping */
 
-						lwind->send_message(0, lwind, NULL, amq, QMF_CHKDUP,
+						lwind->send_message(lock, lwind, NULL, amq, QMF_CHKDUP,
 							WM_SIZED, 0,0, lwind->handle,
 							lwind->r.x, lwind->r.y, lwind->r.w + dw, lwind->r.h + dh);
 						(*v->api->set_clip)(v, &dr);	/* restore clip */
