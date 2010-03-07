@@ -1168,38 +1168,22 @@ display_popup(Tab *tab, short rdx, short rdy)
 		tp |= TOOLBAR|VSLIDE|UPARROW|DNARROW;
 
 		r = calc_window(tab->lock, tab->client, WC_BORDER, tp, created_for_AES|created_for_POPUP, mg, true, r);
-
-		r = popup_inside(tab, r);
-		obtree->ob_x = k->pdx;
-		obtree->ob_y = k->pdy;
-
-		wind = create_window(	tab->lock,
-					do_winmesag,
-					do_formwind_msg,
-					tab->client,
-					true, //cfg.menu_locking,	/* yields nolist if locking. */
-					tp,
-					created_for_AES|created_for_POPUP,
-					mg, true,
-					r,
-					&r, NULL);
 	}
-	else
-	{
-		r = popup_inside(tab, r);
-		obtree->ob_x = k->pdx;
-		obtree->ob_y = k->pdy;
-		wind = create_window(	tab->lock,
-					do_winmesag,
-					do_formwind_msg,
-					tab->client,
-					true, //cfg.menu_locking,	/* yields nolist if locking. */
-					tp, //TOOLBAR|STORE_BACK,
-					created_for_AES|created_for_POPUP,
-					mg, true,
-					r,
-					NULL, NULL);
-	}
+
+	r = popup_inside(tab, r);
+	obtree->ob_x = k->pdx;
+	obtree->ob_y = k->pdy;
+
+	wind = create_window(	tab->lock,
+				do_winmesag,
+				do_formwind_msg,
+				tab->client,
+				true, //cfg.menu_locking,	/* yields nolist if locking. */
+				tp,
+				created_for_AES|created_for_POPUP,
+				mg, true,
+				r,
+				&r, NULL);
 
 	if (wind)
 	{
