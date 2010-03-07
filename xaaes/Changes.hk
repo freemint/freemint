@@ -1,6 +1,18 @@
 07-03-2010
 ----------
 
+c_window:
+
+	- removed previous change to force redrawing the area above vslider (now
+		in set_and_update_window).
+
+	- better calculation of minimum-window-height
+---------------------------------------------------------------------
+xa_wind:
+
+change minimum-window-height according to toolbar
+---------------------------------------------------------------------
+
 scrlobjc:
 
 call draw_window only if top when resetting widgets for list-window to
