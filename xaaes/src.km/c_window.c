@@ -997,10 +997,8 @@ generate_redraws(enum locks lock, struct xa_window *wind, RECT *r, short flags)
 				if ( xa_rect_clip(&widg->ar, r, &b))
 				{
 					/* hack to force redrawing the area above vslider
-					 * (fails if moved from top-border because in set_and_update
-					 * "we only redraw window borders here if wind moves"
-					 * and toolbar-rect is not redrawn (Blitted?))
 					 */
+#if 0
 					if ( (wind->active_widgets & VSLIDE) )
 					{
 						XA_WIDGET *widg2 = get_widget(wind, XAW_VSLIDE);
@@ -1013,6 +1011,7 @@ generate_redraws(enum locks lock, struct xa_window *wind, RECT *r, short flags)
 						}
 
 					}
+#endif
 					send_app_message(lock, wind, NULL, AMQ_IREDRAW, QMF_NORM,
 						WM_REDRAW, widg->m.r.xaw_idx, ((long)wind) >> 16, ((long)wind) & 0xffff,
 							b.x, b.y, b.w, b.h);
@@ -1262,10 +1261,15 @@ create_window(
 	{
 		w->min.x = w->min.y = -1;
 		w->min.w = 6 * 16; //cfg.widg_w;
-		w->min.h = 6 * 16; //cfg.widg_h;
+		w->min.h = 7 * 16; //cfg.widg_h;
 	}
 	else
 		w->min.w = w->min.h = 0;
+
+	if (tp & (MENUBAR))
+		w->min.h += 20;
+	if (tp & (INFO))
+		w->min.h += 10;
 
 	w->rc = w->r = w->pr = r;
 
