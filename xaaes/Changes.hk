@@ -1,3 +1,84 @@
+07-03-2010
+----------
+
+xversion:
+
+if xversion.h does not exist don't break out of loop.
+---------------------------------------------------------------------
+c_window:
+
+- redraw-corrections
+
+	- draw additional bar only for MENU
+
+	- increase width of workarea by vslider-width if toolbar installed on resize-redraw
+
+
+---------------------------------------------------------------------
+draw_obj:
+
+use passed lock-value for WM_SIZED-message for list-window on resize.
+---------------------------------------------------------------------
+form:
+
+disabled unreached code.
+---------------------------------------------------------------------
+menuwidg:
+
+minor optimization
+---------------------------------------------------------------------
+05-03-2010
+--------
+
+xa_wind:
+
+corrected work-area for WF_TOOLBAR
+---------------------------------------------------------------------
+menuwidg:
+
+If client of a popup blocked AES (e.g. nonwindowed dialog) set
+STORE_BACK for the popup-window.
+---------------------------------------------------------------------
+04/03/10
+--------
+
+c_window:
+
+- redraw if toolbar and vertical slider installed
+
+	- force redrawing the area above vslider
+	  (fails if sized from top-border because in set_and_update
+	  "we only redraw window borders here if wind moves"
+	  and toolbar-rect is not redrawn (Blitted?))
+
+- uniconify with toolbar and vertical slider installed
+
+	- re-install the toolbar to achieve correct vslider
+
+---------------------------------------------------------------------
+taskman:
+
+	- Use standard redraw instead of close/open taskmanager to remove load-display.
+
+	- kill-clients-during-shutdown-dialog
+
+		- If client-name cannot be obtained use proc-name from kernel
+
+		- Print also pid of client
+---------------------------------------------------------------------
+widgets:
+
+toolbar obtains whole width of window.
+---------------------------------------------------------------------
+xa_wind:
+
+	- set correct size for vertical slider if toolbar installed (below toolbar)
+
+---------------------------------------------------------------------
+xversion:
+
+break out of loop if a newer file is found (speedup)
+---------------------------------------------------------------------
 27.2.10
 
 xa_wdlg:
@@ -8,7 +89,7 @@ for edit-fields
 
 form:
 
-Can also handle XTEDINFO-method now when determining start and pos for edit-opjects.
+Can also handle XTEDINFO-method now when determining start and pos for edit-objects.
 ---------------------------------------------------------------------
 
 26.2.10
@@ -108,6 +189,7 @@ xaaes.cnf remain unchanged.
 
 Now 16 patterns of 48 bytes each are possible instead of 23 patterns of
 16 bytes.
+---------------------------------------------------------------------
 global:
 Replaced numbers for array-size with #defined values from xa_defs.h for cfg.Filters.
 ---------------------------------------------------------------------
