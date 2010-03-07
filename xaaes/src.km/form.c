@@ -65,7 +65,7 @@ Set_form_do(struct xa_client *client,
 		wt = new_widget_tree(client, obtree);
 	}
 	DIAG((D_form, client, "Set_form_do: wt=%lx, obtree=%lx, edobj=%d for %s",
-		wt, obtree, edobj, client->name));
+		wt, obtree, edobj.item, client->name));
 
 
 	/* XXX - We should perhaps check if the form really have an EXIT or
@@ -77,6 +77,7 @@ Set_form_do(struct xa_client *client,
 	 * If the first obj_edit call fails, we call it again passing the
 	 * object it returned, which obj_edit() looked up. See obj_edit()
 	 */
+
 	if (edobj.item == -2)
 	{
 		edobj = ob_find_any_flst(obtree, OF_EDITABLE, 0, 0, OS_DISABLED/*, 0, 0*/);
@@ -111,13 +112,13 @@ create_fmd_wind(enum locks lock, struct xa_client *client, XA_WIND_ATTR kind, WI
 	bool nolist = false;
 
 	DIAGS(("Setup_form_do: create window"));
-
+#if 0
 	if (C.update_lock && C.update_lock == client->p)
 	{
 		kind |= STORE_BACK;
 		nolist = true;
 	}
-
+#endif
 	kind |= (TOOLBAR | USE_MAX | BACKDROP);
 	wind = create_window(lock,
 			     do_winmesag,
@@ -491,7 +492,6 @@ Form_Button(XA_TREE *wt,
 
 	DIAGS(("Form_Button: return no_exit=%s, nxtob=%d, newstate=%x, clickmask=%x",
 		no_exit ? "yes":"no", aesobj_item(&next_obj), state, dc ? 0x8000:0));
-
 
 // 	display("Form_Button: return no_exit=%s, nxtob=%d, newstate=%x, clickmask=%x",
 // 		no_exit ? "yes":"no", next_obj, state, dc ? 0x8000:0);
