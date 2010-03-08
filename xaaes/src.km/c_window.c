@@ -2947,13 +2947,14 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 		wa.x = wind->wa.x - new->x;
 		wa.y = wind->wa.y - new->y;
 		wa.w = wind->wa.w;
+		wa.h = wind->wa.h;
+
 		/* increase width of workarea by vslider-width if toolbar installed */
 		if( (wind->active_widgets & TOOLBAR) && (wind->active_widgets & VSLIDE) )
 		{
 			XA_WIDGET *widg = get_widget(wind, XAW_VSLIDE);
 			wa.w += widg->ar.w;
-		}
-		wa.h = wind->wa.h;
+ 		}
 
 		/*
 		 * Convert to relative coords

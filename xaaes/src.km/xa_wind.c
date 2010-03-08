@@ -924,6 +924,16 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 					widg2->r.y -= d;
 					widg2->ar.y -= d;
 				}
+
+				/* draw correct borders around wa */
+				if( !w->thinwork && md == 0 )
+				{
+					w->wa.x -= 2;
+					w->wa.y -= 2;
+					w->wa.w += 2;
+					w->wa.h += 2;
+				}
+
 				wt = obtree_to_wt(client, ob);
 				if (!wt)
 					wt = new_widget_tree(client, ob);

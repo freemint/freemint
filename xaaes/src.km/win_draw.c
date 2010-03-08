@@ -2267,11 +2267,13 @@ draw_widg_icon(struct xa_vdi_settings *v, struct xa_widget *widg, XA_TREE *wt, s
 	(*api->render_object)(wt, v, ob, x, y); //display_object(0, wt, v, ob, x, y, 0);
 }
 
+#include "widgets.h"
+
 static void
 d_waframe(struct xa_window *wind, const RECT *clip)
 {
 	struct xa_vdi_settings *v = wind->vdi_settings;
-	RECT *wa = &wind->wa;
+	RECT wa = wind->rwa;//wa
 
 	if (wind->thinwork)
 	{
@@ -2280,13 +2282,13 @@ d_waframe(struct xa_window *wind, const RECT *clip)
 			short waframe_col = ((struct window_colours *)wind->colours)->waframe_col;
 
 			if (wind->wa_borders & WAB_LEFT)
-				(*v->api->left_line)(v, 1, wa, waframe_col); //wind->colours->frame_col);
+				(*v->api->left_line)(v, 1, &wa, waframe_col); //wind->colours->frame_col);
 			if (wind->wa_borders & WAB_RIGHT)
-				(*v->api->right_line)(v, 1, wa, waframe_col); //wind->colours->frame_col);
+				(*v->api->right_line)(v, 1, &wa, waframe_col); //wind->colours->frame_col);
 			if (wind->wa_borders & WAB_TOP)
-				(*v->api->top_line)(v, 1, wa, waframe_col); //wind->colours->frame_col);
+				(*v->api->top_line)(v, 1, &wa, waframe_col); //wind->colours->frame_col);
 			if (wind->wa_borders & WAB_BOTTOM)
-				(*v->api->bottom_line)(v, 1, wa, waframe_col); //wind->colours->frame_col);
+				(*v->api->bottom_line)(v, 1, &wa, waframe_col); //wind->colours->frame_col);
 		}
 	}
 	/*
@@ -2297,10 +2299,29 @@ d_waframe(struct xa_window *wind, const RECT *clip)
 	{
 		short sc = G_LBLACK, lc = G_WHITE;
 
-		(*v->api->br_hook)(v, 2, wa, sc);
-		(*v->api->tl_hook)(v, 2, wa, lc);
-		(*v->api->br_hook)(v, 1, wa, lc);
-		(*v->api->tl_hook)(v, 1, wa, sc);
+		(*v->api->tl_hook)(v, 2, &wa, sc);
+		(*v->api->tl_hook)(v, 1, &wa, lc);
+
+		(*v->api->br_hook)(v, 2, &wa, sc);
+		(*v->api->br_hook)(v, 1, &wa, lc);
+
+		/* fill gap between upper toolbar and wa */
+		if( (wind->active_widgets & TOOLBAR) )
+		{
+			if( (wind->active_widgets & VSLIDE) )
+			{
+				XA_WIDGET *widg = get_widget(wind, XAW_VSLIDE);
+				wa.w += widg->ar.w;
+			}
+
+			wa.y = wind->wa.y;
+			wa.h = wind->wa.h;
+
+			(*v->api->br_hook)(v, 2, &wa, sc);
+			(*v->api->tl_hook)(v, 2, &wa, lc);
+			(*v->api->br_hook)(v, 1, &wa, lc);
+			(*v->api->tl_hook)(v, 1, &wa, sc);
+		}
 	}
 }
 
