@@ -1,3 +1,22 @@
+10-03-2010
+----------
+
+xa_menu:
+
+When menu_attach is called with ME_ATTACH(1) and a NULL-pointer for mdata,
+ME_REMOVE(2) is performed instead.
+---------------------------------------------------------------------
+mousepointer:
+
+Add N.AES-numbers X_UPDOWN(10) and X_LFTRT(9) for mouse-form. Reported by zorro.
+---------------------------------------------------------------------
+08-03-2010
+----------
+
+thinwork:
+
+apply some corrections for toolbar-windows if thinwork=false.
+---------------------------------------------------------------------
 07-03-2010
 ----------
 
