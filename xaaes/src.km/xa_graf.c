@@ -1019,9 +1019,11 @@ get_mform(short m_shape)
 		case XACRS_MOVER:			/* The 'move window' cursor */
 			ret_mf = &M_MOVER_MOUSE;
 			break;
+		case X_UPDOWN:
 		case XACRS_VERTSIZER:			/* The 'vertical size window' cursor */
 			ret_mf = &M_VERTSIZER_MOUSE;
 			break;
+		case X_LFTRT:
 		case XACRS_HORSIZER:			/* The 'horizontal size window' cursor */
 			ret_mf = &M_HORSIZER_MOUSE;
 			break;
