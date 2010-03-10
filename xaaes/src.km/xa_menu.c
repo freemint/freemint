@@ -753,18 +753,30 @@ XA_form_popup(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 /*
- * Attach a submenu to a menu item.  HR: march 2000
+ * Attach, remove or inquire a submenu to a menu item.  HR: march 2000
+ * attach with NULL is remove
  */
 unsigned long
 XA_menu_attach(enum locks lock, struct xa_client *client, AESPB *pb)
 {
+	short md;
 	CONTROL(2,1,2)
+
+	md = pb->intin[0];
 
 	DIAG((D_menu, client, "menu_attach %d", pb->intin[0]));
 
 	pb->intout[0] = 0;
 
-	if (validate_obtree(client, (OBJECT *)pb->addrin[0], "XA_menu_attach:") && pb->addrin[1])
+	if (pb->addrin[1] == 0)
+	{
+		if (md != ME_INQUIRE)
+			md = ME_REMOVE;
+		else
+			pb->intout[0] = 1;
+	}
+
+	if (validate_obtree(client, (OBJECT *)pb->addrin[0], "XA_menu_attach:") && pb->intout[0] == 0)
 	{
 		XA_TREE *wt;
 		MENU *mn;
@@ -775,7 +787,7 @@ XA_menu_attach(enum locks lock, struct xa_client *client, AESPB *pb)
 			wt = new_widget_tree(client, (OBJECT *)pb->addrin[0]);
 		assert(wt);
 		
-		switch (pb->intin[0])
+		switch (md)
 		{
 		case ME_ATTACH:
 		{
