@@ -1429,8 +1429,7 @@ static bool calc_tm_bar( OBJECT *obtree, short item, short ind, long pinfo[] )
 	if( obtree[item].ob_height <= 0 )
 		obtree[item].ob_height = 1;
 
-	obtree[item].ob_y =
-		obtree[TM_CHART].ob_y + obtree[TM_CHART].ob_height - obtree[item].ob_height;
+	obtree[item].ob_y = obtree[TM_CHART].ob_height - obtree[item].ob_height;
 
 	return true;
 }
@@ -1551,9 +1550,8 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 					remember, NULL, NULL);
 
 		if (!wind) goto fail;
-
-		wind->min.h = remember.h * 2 / 3;	/* minimum height for this window */
-		wind->min.w = obtree[TM_OK].ob_x * 2;	/* minimum width for this window */
+		wind->min.h = remember.h * 2/3;	/* minimum height for this window */
+		wind->min.w = remember.w;	/* minimum width for this window */
 		list->set(list, NULL, SESET_PRNTWIND, (long)wind, NOREDRAW);
 		wind->window_status |= XAWS_NODELETE;
 
