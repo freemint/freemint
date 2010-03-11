@@ -1,3 +1,25 @@
+11-03-2010
+----------
+
+draw_obj:
+
+BOXTEXT-objects also moved when resizing xaaes-windows
+
+---------------------------------------------------------------------
+form:
+
+Alert-shortcuts may be entered without pressing ALT.
+---------------------------------------------------------------------
+taskman:
+
+	- fixed a bug in bar-size-calculation in load-display
+
+	- OK-Button no more used to calc minimum witdh of taskmanager-window
+---------------------------------------------------------------------
+xa_graf:
+
+in check_wh_cp maxw is also checked on horizontal resizing
+---------------------------------------------------------------------
 10-03-2010
 ----------
 
