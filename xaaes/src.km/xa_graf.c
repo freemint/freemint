@@ -88,7 +88,7 @@ check_wh_cp(RECT *c, COMPASS cp, short minw, short minh, short maxw, short maxh)
 		}
 		case N_:
 		{
-			if (minh && minh && c->h < minh)
+			if (minh && c->h < minh)
 			{
 				c->y -= (minh - c->h);
 				c->h = minh;
@@ -130,8 +130,12 @@ check_wh_cp(RECT *c, COMPASS cp, short minw, short minh, short maxw, short maxh)
 		}
 		case E_:
 		{
+			if (maxw && c->w > maxw)
+				c->w = maxw;
+
 			if (minw && c->w < minw)
 				c->w = minw;
+
 			break;
 		}
 		default:{};
