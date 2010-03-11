@@ -860,10 +860,14 @@ g_slist:
 		}
 		else
 		{
-			if ((key->raw.conin.state & K_ALT) == K_ALT)
-				next_obj = ob_find_shortcut(obtree, key->norm & 0x00ff);
-			DIAG((D_keybd, NULL, "Form_Keyboard: shortcut %d for %s",
-				next_obj.item, client->name));
+			if ( (key->raw.conin.state & K_ALT)// == K_ALT
+				|| (wt->wind && (wt->wind->dial & created_for_ALERT))	)
+			{
+				char c = toupper(key->norm & 0x00ff);
+				next_obj = ob_find_shortcut(obtree, c);
+				DIAG((D_keybd, NULL, "Form_Keyboard: shortcut %d for %s",
+					next_obj.item, client->name));
+			}
 		}
 
 		if (valid_aesobj(&next_obj))
@@ -1561,9 +1565,7 @@ do_formwind_msg(
 		}
 		default:
 		{
-			/*BLOG((0, "do_formwind_msg: default:wown %s, to %s, wdig=%lx, msg %d, %d, %d, %d, %d, %d, %d, %d",
-				wind->owner->name, to_client->name, widg, msg[0], msg[1], msg[2], msg[3], msg[4], msg[5], msg[6], msg[7]));
-				*/
+
 			return;
 		}
 		}
