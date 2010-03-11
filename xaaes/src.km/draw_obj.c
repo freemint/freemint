@@ -844,10 +844,6 @@ short flags)
 					lwind = list->wi;
 
 					/* resize the list-window */
-					/*
-					 * bug: if not top list-window-borders may get redrawn
-					 *	over other window if sized from top
-					 */
 					if( lwind && lwind->send_message )
 					{
 						short amq = AMQ_REDRAW;
@@ -864,6 +860,7 @@ short flags)
 			case G_CICON:
 			case G_BUTTON:
 			//case G_FBOXTEXT:
+			case G_BOXTEXT:
 			case G_STRING:
 
 				/* relocate: move objects on resizing
