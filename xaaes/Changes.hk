@@ -1,3 +1,49 @@
+14-03-2010
+----------
+
+k_keybd:
+
+call queue_key without checking waiting_pb.
+---------------------------------------------------------------------
+nap:
+
+	- give every call to cancel_evnt_multi in k_main a different second parameter (eases debugging)
+
+	- EXPERIMENTAL:
+		if focussed client doesn't wait for any event
+		give it some cpu (nap()) to read keyboard (see anyplayer:"whithout
+		GEM"). I encountered anyplayer crashes sometimes if F9 is pressed not reproducible.
+
+
+---------------------------------------------------------------------
+scrlobjc:
+
+call draw_window always if window has nolist set
+---------------------------------------------------------------------
+taskman:
+
+windows created for TOOLBAR now listed in taskmanager
+---------------------------------------------------------------------
+win_draw:
+
+if window has a TOOLBAR real workarea is used to draw window-frames,
+else workarea.
+---------------------------------------------------------------------
+xa_graf:
+
+improved boundary-cheking when resizing windows.
+---------------------------------------------------------------------
+xa_shel:
+
+clients get pgrp of loader again as now the loader catches SIGTERM. This
+allows clients to read the keyboard.
+---------------------------------------------------------------------
+xa_fsel:
+
+	- added experimental code for never blocking fileselector
+
+	- removed unused variable 'locked'
+---------------------------------------------------------------------
 11-03-2010
 ----------
 
