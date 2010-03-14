@@ -349,17 +349,25 @@ get_mbstate(struct xa_client *client, struct mbs *d)
 	}
 }
 
+unsigned long wevents = 0xffffffff;
+char *wclientname = 0;	/* for debugging output only */
 bool
 check_queued_events(struct xa_client *client)
 {
 	short events = 0;
-	unsigned long wevents = client->waiting_for;
 	short key = 0;
 	struct mbs mbs;
-	bool multi = wevents & XAWAIT_MULTI ? true : false, to_yield = false;
 	AESPB *pb;
 	short *out;
 	union msg_buf *m;
+	bool multi, to_yield = false;
+
+	if( !(wevents = client->waiting_for) )
+	{
+		wclientname = client->name;
+	}
+
+	multi = wevents & XAWAIT_MULTI ? true : false;
 // 	bool d = (strnicmp(client->proc_name, "atarirc", 7)) ? false : true;
 
 // 	if (d)
@@ -645,8 +653,7 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 		/* The Intel ligent format */
 		client->timer_val = ((long)pb->intin[15] << 16) | pb->intin[14];
 
-		DIAG((D_i,client,"Timer val: %ld(hi=%d,lo=%d)",
-			client->timer_val, pb->intin[15], pb->intin[14]));
+		DIAG((D_i,client,"Timer val: %ld(hi=%d,lo=%d)",	client->timer_val, pb->intin[15], pb->intin[14]));
 		if (client->timer_val > 5) {
 			client->timeout = addtimeout(client->timer_val, wakeme_timeout);
 			if (client->timeout)

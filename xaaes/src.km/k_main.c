@@ -77,7 +77,7 @@ void set_tty_mode( short md );
 #endif
 /* ask before shutting down (does not work yet) */
 #define ALERT_SHUTDOWN 0
-#define AESSYS_TIMEOUT	2000;	/* s/1000 */
+#define AESSYS_TIMEOUT	2000	/* s/1000 */
 
 void
 ceExecfunc(enum locks lock, struct c_event *ce, bool cancel)
@@ -241,6 +241,7 @@ post_cevent(struct xa_client *client,
 			DIAG((D_mouse, client, "added cevnt %lx(%d) (head %lx, tail %lx) for %s",
 				c, client->cevnt_count, client->cevnt_head, client->cevnt_tail,
 				client->name));
+
 		}
 		else
 		{
@@ -413,7 +414,7 @@ cBlock(struct xa_client *client, int which)
 		{
 			if (client->usr_evnt & 1)
 			{
-				cancel_evnt_multi(client, 1);
+				cancel_evnt_multi(client, 2);
  				cancel_mutimeout(client);
 			}
 			else
@@ -429,7 +430,7 @@ cBlock(struct xa_client *client, int which)
 	}
 	if (client->usr_evnt & 1)
 	{
-		cancel_evnt_multi(client, 1);
+		cancel_evnt_multi(client, 3);
 		cancel_mutimeout(client);
 	}
 	else
@@ -464,7 +465,7 @@ iBlock(struct xa_client *client, int which)
 	{
 		if (client->usr_evnt & 1)
 		{
-			cancel_evnt_multi(client, 1);
+			cancel_evnt_multi(client, 4);
 			cancel_mutimeout(client);
 		}
 		else
@@ -540,7 +541,7 @@ iBlock(struct xa_client *client, int which)
 		{
 			if (client->usr_evnt & 1)
 			{
-				cancel_evnt_multi(client, 1);
+				cancel_evnt_multi(client, 5);
  				cancel_mutimeout(client);
 			}
 			else
@@ -569,7 +570,7 @@ iBlock(struct xa_client *client, int which)
 // 		BLOG((true, "iBlock: 8 NULL"));
 	if (client->usr_evnt & 1)
 	{
-		cancel_evnt_multi(client, 1);
+		cancel_evnt_multi(client, 6);
 		cancel_mutimeout(client);
 	}
 	else
@@ -588,7 +589,7 @@ Unblock(struct xa_client *client, unsigned long value, int which)
  	else
 	{
 		if (value == XA_OK)
-			cancel_evnt_multi(client, 1);
+			cancel_evnt_multi(client, 7);
 
 		if (client->blocktype == XABT_SELECT)
 			wakeselect(client->p);
@@ -1421,6 +1422,7 @@ void set_tty_mode( short md )
 	r = f_cntl(C.KBD_dev, (long)&sg, TIOCSETN);
 	KERNEL_DEBUG("fcntl(TIOCSETN) -> %li", r);
 	assert(r == 0);
+ 	get_curproc()->p_fd->ofiles[C.KBD_dev]->flags |= O_HEAD;
 #endif
 }
 
@@ -1690,13 +1692,27 @@ k_main(void *dummy)
 
 		input_channels = default_input_channels;
 
+#if 1
+		{
+			/*
+			 * EXPERIMENTAL:
+			 * if focussed client doesn't wait for any event
+			 * give it some cpu to read keyboard (see anyplayer:"whithout GEM")
+			 */
+			extern unsigned long wevents;	/* from xa_evnt.c (check_queued_events) */
+			if( wevents == 0 )
+			{
+				//extern char *wclientname;
+				nap( 2000 );
+			}
+		}
+#endif
 		/* The pivoting point of XaAES!
 		 * Wait via Fselect() for keyboard and alerts.
 		 */
 		PROFILE(("main:fselect:%ld", n++ ));
 		if( aessys_timeout == 0 )
 			aessys_timeout = AESSYS_TIMEOUT;
-
 		fs_rtn = f_select(aessys_timeout, (long *) &input_channels, 0L, 0L);
 
 		DIAG((D_kern, NULL,">>Fselect -> %d, channels: 0x%08lx, update_lock %d(%s), mouse_lock %d(%s)",
