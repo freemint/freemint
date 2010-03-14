@@ -1000,8 +1000,9 @@ reset_listwi_widgets(SCROLL_INFO *list, short redraw)
 			recalc_tabs(list);
 			if (canredraw(list))
 			{
-				/* no rectlist-clip here! is draw_window really necessary at all? */
-				if( !list->pw || list->pw == TOP_WINDOW )
+				/* no rectlist-clip here! */
+				/* only redraw if top (nolist is never TOP_WINDOW .. why?)*/
+				if( !list->pw || list->pw == TOP_WINDOW || list->pw->nolist )
 					draw_window(0, list->wi, &list->wi->r);
 				if (redraw)
 				{
