@@ -124,6 +124,7 @@ cancel_keyqueue(struct xa_client *client)
 	client->kq_count = 0;
 }
 
+//#include "mint/filedesc.h"
 void
 queue_key(struct xa_client *client, const struct rawkey *key)
 {
@@ -250,13 +251,16 @@ XA_keyboard_event(enum locks lock, const struct rawkey *key)
 	}
 	else
 	{
+		/*!!!TEST!!!*/
+		queue_key(client, key);
 		/*
 		 * We dont queue the key when we are sure the client dont want it
 		 */
-		if ( !client->waiting_pb )
+		/*if ( !client->waiting_pb )
 			queue_key(client, key);
 		else
 			cancel_keyqueue(client);
+			*/
 	}
 }
 
@@ -588,8 +592,8 @@ void
 keyboard_input(enum locks lock)
 {
 	/* Did we get some keyboard input? */
-	/*while (f_instat(C.KBD_dev))
-	{*/
+	//while (f_instat(C.KBD_dev))
+	{
 		struct rawkey key;
 
 		key.raw.bcon = f_getchar(C.KBD_dev, RAW);
@@ -609,6 +613,8 @@ keyboard_input(enum locks lock)
 // 		display("f_getchar: 0x%08lx, AES=%x, NORM=%x", key.raw.bcon, key.aes, key.norm);
 
 		if (kernel_key(lock, &key) == false )
+		{
 			XA_keyboard_event(lock, &key);
-	/*}*/
+		}
+	}
 }
