@@ -2273,7 +2273,7 @@ static void
 d_waframe(struct xa_window *wind, const RECT *clip)
 {
 	struct xa_vdi_settings *v = wind->vdi_settings;
-	RECT wa = wind->rwa;//wa
+	RECT wa = (wind->dial & created_for_TOOLBAR) ? wind->rwa : wind->wa;	/*(?)*/
 
 	if (wind->thinwork)
 	{
