@@ -2636,7 +2636,16 @@ fs_init_menu(struct fsel_data *fs)
 	fs->rtbuild = rtbuild;
 }
 
+/* fsel opened by launcher */
+static struct xa_client *aes_has_fsel = 0;
 
+/* ignore updatelocks for fsel (does not work) */
+#define NONBLOCK_FSEL 0
+#if NONBLOCK_FSEL
+/* sav-values */
+static struct proc *fs_update_lock;	/* wind_update() locks */
+static struct proc *fs_mouse_lock;
+#endif
 /*
  * char *
  * path
@@ -2934,10 +2943,20 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 		if (C.update_lock == client->p ||
 				C.mouse_lock	== client->p)
 		{
+#if NONBLOCK_FSEL
+			fs_update_lock = C.update_lock;
+			fs_mouse_lock	= C.mouse_lock;
+			aes_has_fsel = client;
+			C.update_lock = 0;
+			C.mouse_lock	= 0;
+#else
 			nolist = true;
 			kind |= STORE_BACK;
+#endif
 		}
+#if !NONBLOCK_FSEL
 		else
+#endif
 		{
 			kind |= hide_move(&(client->options));
 			nolist = false;
@@ -3125,8 +3144,6 @@ memerr:
 	}
 }
 
-static bool aes_has_fsel = false;
-
 void
 close_fileselector(enum locks lock, struct fsel_data *fs)
 {
@@ -3140,7 +3157,13 @@ close_fileselector(enum locks lock, struct fsel_data *fs)
 	fs->selected = NULL;
 	fs->canceled = NULL;
 
-	aes_has_fsel = false;
+	if( fs->owner == aes_has_fsel )
+		aes_has_fsel = 0;
+
+#if NONBLOCK_FSEL
+	C.update_lock  = fs_update_lock;
+	C.mouse_lock = fs_mouse_lock;
+#endif
 }
 
 static void
@@ -3166,16 +3189,15 @@ cancel_fsel(enum locks lock, struct fsel_data *fs, const char *path, const char 
 	fs->owner->usr_evnt = 1;
 }
 
-static int locked = 0;
 void
 open_fileselector(enum locks lock, struct xa_client *client, struct fsel_data *fs,
 			const char *path, const char *file, const char *title,
 			fsel_handler *s, fsel_handler *c, void *data)
 {
-	if (!locked && !aes_has_fsel)
+	if (!aes_has_fsel)
 	{
 		if( client == C.Hlp )
-			aes_has_fsel = true;
+			aes_has_fsel = C.Hlp;
 		open_fileselector1(lock, client, fs, path, file, title, s, c, data);
 	}
 }
