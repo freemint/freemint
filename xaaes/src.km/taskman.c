@@ -327,7 +327,6 @@ void add_window_to_tasklist(struct xa_window *wi, const char *title)
 	if (wi && (wi->window_status & XAWS_OPEN)
 		&& !( wi->dial
 			& ( created_for_SLIST
-			| created_for_TOOLBAR
 			| created_for_CALC
 			| created_for_POPUP
 			| created_for_ALERT
@@ -357,6 +356,7 @@ void add_window_to_tasklist(struct xa_window *wi, const char *title)
 			p.level.maxlevel = 0;
 			list->get(list, NULL, SEGET_ENTRYBYDATA, &p);
 			this = p.e;
+
 			if( this )
 			{
 				struct scroll_entry *thiswi = 0;
@@ -399,6 +399,7 @@ void add_window_to_tasklist(struct xa_window *wi, const char *title)
 						/* new window */
 						struct scroll_content sc = {{ 0 }};
 						bool redraw = (wind->window_status & XAWS_OPEN) ? true : false;
+
 						sc.t.text = wi->wname;
 						if( !*sc.t.text )
 							sc.t.text = (long)title & 1L ? 0 : title;
@@ -415,9 +416,6 @@ void add_window_to_tasklist(struct xa_window *wi, const char *title)
 				}
 			}
 		}
-	}
-	else	/* if dial changed delete from list? */
-	{
 	}
 }
 
@@ -1366,7 +1364,6 @@ lb_TM_OK:
 						if( !(wi->window_status & XAWS_OPEN)
 							|| wi->dial
 								& ( created_for_SLIST
-								| created_for_TOOLBAR
 								| created_for_CALC
 								| created_for_POPUP
 								| created_for_ALERT
