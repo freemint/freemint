@@ -174,11 +174,11 @@ exec_iredraw_queue(enum locks lock, struct xa_client *client)
 		do {
 			short xaw = ibuf.irdrw.xaw;
 			wind = (struct xa_window *)ibuf.irdrw.ptr;
-			r = (RECT *)&ibuf.irdrw.x;
+			r = &ibuf.irdrw.rect;
 
 			if (!xaw && (wind != root_window || (wind == root_window && get_desktop()->owner == client)))
 			{
-				if (!(r->w | r->h))
+				if (!(r->w || r->h))
 					r = NULL;
 
 				display_window(lock, 0, wind, r);
@@ -328,16 +328,15 @@ get_mbstate(struct xa_client *client, struct mbs *d)
 	if (clicks) {
 		clicks = md->clicks;
 		mbutts = md->state;
-		md->clicks = -1;
 		x = md->x;
 		y = md->y;
 		ks = md->kstate;
 	} else {
 		mbutts = md->cstate;
-		md->clicks = -1;
 		check_mouse(client, NULL, &x, &y);
 		vq_key_s(C.P_handle, &ks);
 	}
+	md->clicks = -1;
 
 	if (d) {
 		d->b	= mbutts;

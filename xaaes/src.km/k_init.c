@@ -1024,11 +1024,11 @@ k_init(unsigned long vm)
 	/*
 	 * Setup mn_set for menu_settings()
 	 */
-	cfg.mn_set.display = cfg.popup_timeout;
-	cfg.mn_set.drag = cfg.popout_timeout;
-	cfg.mn_set.delay = 250;
-	cfg.mn_set.speed = 0;
-	cfg.mn_set.height = root_window->wa.h / screen.c_max_h;
+	cfg.menu_settings.mn_set.display = cfg.popup_timeout;
+	cfg.menu_settings.mn_set.drag = cfg.popout_timeout;
+	cfg.menu_settings.mn_set.delay = 250;
+	cfg.menu_settings.mn_set.speed = 0;
+	cfg.menu_settings.mn_set.height = root_window->wa.h / screen.c_max_h;
 	v_show_c(C.P_handle, 0);
 	return 0;
 }

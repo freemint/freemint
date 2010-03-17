@@ -51,52 +51,6 @@ extern char aes_id[];
 
 extern char info_string[256];
 
-/*
- * GLOBAL VARIABLES AND DATA STRUCTURES
- */
-
-/* open and closed windows in separate lists. */
-struct win_base
-{
-	struct xa_window *first;
-	struct xa_window *last;
-	struct xa_window *top;
-	struct xa_window *root;
-};
-
-struct shared
-{
-	struct win_base open_windows;		/* list of all open windows */
-	struct win_base closed_windows;		/* list of all closed windows */
-	struct win_base hidden_windows;
-	struct win_base deleted_windows;	/* list of windows to be deleted (delayed action) */
-
-	struct win_base open_nlwindows;
-	struct win_base closed_nlwindows;
-	struct win_base calc_windows;		/* list of open nolist windows - fmd, alerts, etc. */
-
-	struct xa_window *focus;
-
-	LIST_HEAD(xa_client) client_list;
-	LIST_HEAD(xa_client) app_list;
-
-	LIST_HEAD(task_administration_block) menu_base;
-
-	TIMEOUT *menuscroll_timeout;
-
-	TIMEOUT *popin_timeout;
-	struct xa_client *popin_timeout_ce;
-	TIMEOUT *popout_timeout;
-	struct xa_client *popout_timeout_ce;
-
-	struct xa_client *wait_mouse;	/* This client need mouse events exclusivly */
-	struct opt_list *app_options;	/* individual option settings. */
-
-	short wm_count;			/* XXX ??? */
-	short clients_exiting;		/* Increased by exit_client() upon enry and decreased upon exit
-					 * used to prevent interrupt-handling during shutdown of a client
-					 */
-};
 
 /* Area's shared between server and client, subject to locking. */
 extern struct shared S;
@@ -204,230 +158,11 @@ tab_list_size(void)
 	return length;
 }
 
-struct shel_info
-{
-	short type;
-	short rppid;		/* Real parent pid, that is, the pid of app that called of shel_write() */
-	short reserved;
-	bool shel_write;
-
-	char *cmd_tail;
-	bool tail_is_heap;
-
-	Path cmd_name;
-	Path home_path;
-};
-
-struct common
-{
-	Path	start_path;
-	unsigned short nvdi_version;
-	unsigned short fvdi_version;
-	unsigned long gdos_version;
-
-	void (*reschange)(enum locks lock, struct xa_client *client, bool open);
-	struct kernkey_entry *kernkeys;
-
-	short AESpid;			/* The AES's MiNT process ID */
-	short DSKpid;			/* The desktop programs pid, if any */
-
-	short P_handle;			/* Physical workstation handle used by the AES */
-	short global_clip[4];
-	short prev_clip[4];
-
-	struct xa_client *Aes;		/* */
-	struct xa_client *Hlp;
-	void 	*Hlp_pb;
-// 	enum waiting_for Aes_waiting_for;
-	unsigned long	Aes_waiting_for;
-
-	short move_block;		/* 0 = movement allowed
-					 * 1 = internal movement cevent sent to client - no move
-					 * 2 = WM_MOVED AES message sent to client - no move
-					 * 3 = client did a wind_set(WF_CURRXYWH) and we got WM_REDRAWS
-					 *     in the queue. 'move_block' is then reset when all WM_REDRAWS
-					 *     are serviced
-					 */
-	short rect_lock;
-	long redraws;			/* Counting WM_REDRAWS being sent and dispatched */
-	struct xa_client *button_waiter;/* Client which is getting the next moose_data packet, */
-					/* most probably a button released one */
-	struct xa_client *ce_open_menu;	/* If set, this client has been sent a open_menu client event */
-	struct xa_client *ce_menu_move; /* If set, this client has been sent a menu_move client event */
-	struct xa_client *ce_menu_click;
-
-	struct xa_client *next_menu;
-	struct widget_tree *next_menu_wt;
-
-	struct xa_client *csr_client;	/* Client current in query by the Kill or Wait dialog */
-
-	short shutdown;			/* flags for shutting down xaaes */
-#define SHUTDOWN_STARTED	0x0001
-#define SHUTTING_DOWN		0x0002
-#define QUIT_NOW		0x0004		/* - enter shutdown the next possible time */
-#define HALT_SYSTEM		0x0008		/* - halt system after xaaes shutdown */
-#define REBOOT_SYSTEM		0x0010		/* - reboot system after xaaes shutdown */
-#define COLDSTART_SYSTEM	0x0020		/* - cold reboot */
-#define RESOLUTION_CHANGE	0x0040
-#define KILLEM_ALL		0x0080
-#define EXIT_MAINLOOP		0x8000
-	short shutdown_step;
-	struct timeout *sdt;		/* Shutdown Timeout */
-
-	bool mvalidate;
-
-	long alert_pipe;		/* AESSYS: The MiNT Salert() pipe's file handle */
-	long KBD_dev;			/* AESSYS: The MiNT keyboard device's file handle */
-
-	RECT iconify;			/* Positioning information for iconifying windows */
-	void *Aes_rsc;			/* Pointer to the XaAES resources */
-	char *env;			/* new environment */
-
-	struct xa_window *hover_wind;
-	struct xa_widget *hover_widg;
-
-	struct proc *update_lock;
-	struct proc *mouse_lock;
-	struct proc *menu_lock;
-
-	short updatelock_count;
-	short mouselock_count;
-	short menulock_count;
-
-	Path desk;			/* Remember the desk path for Launch desk. */
-	short mouse;			/* Remember mouse shape */
-	MFORM *mouse_form;		/* Remember mouse form */
-	struct xa_client *mouse_owner;
-
-	short aesmouse;
-	MFORM *aesmouse_form;
-
-	short realmouse;
-	MFORM *realmouse_form;
-	struct xa_client *realmouse_owner;
-
-	struct xa_client	*do_widget_repeat_client;
-	enum locks		 do_widget_repeat_lock;
-	char bootlog_path[200];
-};
 /* All areas that are common. */
 extern struct common C;
 
-struct aesys_global
-{
-	struct adif *adi_mouse;
-};
 extern struct aesys_global G;
 
-struct helpserver
-{
-	struct helpserver *next;
-
-	char *ext;
-	char *name;
-	char *path; /* optional */
-};
-
-struct cfg_name_list;
-struct cfg_name_list
-{
-	struct cfg_name_list *next;
-	short nlen;
-	char name[32];
-};
-
-struct config
-{
-	short gradients;
-
-	Path launch_path;		/* Initial path for launcher */
-	Path scrap_path;		/* Path to the scrap directory */
-	Path snapper;				/* if !0 this is launched on C-A-D */
-	Path acc_path;			/* Path to desk accessory directory */
-
-	Path widg_name;			/* Path to XaAES widget rsc */
-	Path rsc_name;			/* Path to XaAES rsc */
-	Path xobj_name;
-
-	/* display modes of window title */
-	short topname;
-	short backname;
-
-	short next_active;		/* 0 = set previous active client active upon client termination */
-					/* 1 = set owner of previous topped (or only) window upon client termination */
-//	short last_wind;		/* 0 = Put owner of window ontop of window_list infront. */
-//					/* 1 = Keep client whose last window was closed infront. */
-
-	bool lrmb_swap;			/* Swap left and right mouse-button status bits */
-	bool widg_auto_highlight;	/* WIDGET Highligh when Mouse Hovers */
-	bool remap_cicons;
-	bool set_rscpalette;
-	bool no_xa_fsel;
-	bool point_to_type;
-	bool fsel_cookie;
-	bool usehome;			/* use $HOME in shell_find */
-	bool naes_cookie;		/* If true, install fake nAES cookie */
-	bool menupop_pids;		/* If true, add PIDs to clients listed in menupop clientlist */
-	bool menu_locking;		/* menus run in a window.
-	                                 * See lines.app run underneath the pulldown menu. :-) */
-	bool opentaskman;		/* open taskmanager at boot. */
-
-	short alert_winds;		/* If set, alert windows are shown */
-
-	char cancel_buttons[NUM_CB][CB_L];
-#if FILESELECTOR
-	char Filters[FS_NPATTERNS][FS_PATLEN];
-#endif
-
-	enum menu_behave menu_behave;	/* pull, push or leave */
-
-//	short widg_w, widg_h;
-//	short widg_dw, widg_dh;		/* flexible widget object types. */
-
-	short ted_filler;
-	short font_id;			/* Font id to use */
-	short double_click_time;	/* Double click timing */
-	short mouse_packet_timegap;
-	short redraw_timeout;
-
-	struct xa_menu_settings	mn_set;
-	short popup_timeout;
-	short popout_timeout;
-
-	short have_wheel_vector;	/* If vex_whlv changed its save_ptr,
-					   we have a VDI that supports mouse wheels. */
-	short ver_wheel_id;		/* ID of horizontal wheel */
-	short ver_wheel_amount;
-	short hor_wheel_id;		/* ID of vertical wheel */
-	short hor_wheel_amount;
-	//short wheel_amount;		/* amount of lines for a wheel click. */
-
-	short icnfy_orient;
-	short icnfy_l_x;
-	short icnfy_r_x;
-	short icnfy_t_y;
-	short icnfy_b_y;
-	short icnfy_w;
-	short icnfy_h;
-	short icnfy_reorder_to;
-
-	short standard_font_point;	/* Size for normal text */
-	short medium_font_point;	/* The same, but for low resolution screens */
-	short small_font_point;		/* Size for small text */
-	short popscroll;		/* number of lines of a popup above which it will be made scrollable. */
-
-	short videomode;		/* ID of screen device opened by v_opnwk() */
-
-	struct helpserver *helpservers;	/* configured helpservers */
-	struct cfg_name_list *ctlalta;
-	struct cfg_name_list *kwq;	/* Apps listed here are killed without question upon shutdowns */
-
-	/* postponed cnf things */
-	char *cnf_shell;		/* SHELL= */
-	char *cnf_shell_arg;		/* args for SHELL cnf directive */
-	char *cnf_run[32];		/* RUN directives */
-	char *cnf_run_arg[32];		/* args for RUN cnf directives */
-};
 
 /* Global config data */
 extern struct config cfg;
@@ -455,10 +190,16 @@ extern const char mnu_clientlistname[];
 // extern XA_TREE nil_tree;
 
 /* shortcuts */
-static inline void hidem(void)  { v_hide_c(C.P_handle);    }
-static inline void showm(void)  { v_show_c(C.P_handle, 1); }
-static inline void forcem(void) { v_show_c(C.P_handle, 0); }
-
+#if AGGRESSIVE_INLINING
+static inline __attribute__((always_inline)) void hidem(void)  { v_hide_c(C.P_handle);    }
+static inline __attribute__((always_inline)) void showm(void)  { v_show_c(C.P_handle, 1); }
+static inline __attribute__((always_inline)) void forcem(void) { v_show_c(C.P_handle, 0); }
+#else
+/* mscall.c */
+void hidem(void);
+void showm(void);
+void forcem(void);
+#endif
 struct xa_client *pid2client(short pid);
 struct xa_client *proc2client(struct proc *p);
 

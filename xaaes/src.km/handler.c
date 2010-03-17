@@ -73,7 +73,7 @@ struct xa_ftab
 	int flags;
 #define DO_LOCKSCREEN	0x1	/* if set syscall is enclosed with lock/unclock_screen */
 #define NOCLIENT	0x2	/* if set syscall is callable without appl_init() */
-#if 1	/*GENERATE_DIAGS*/
+#if 1	/*GENERATE_DIAGS*/ // -> would save mem!
 	const char *descr;
 #define DESCR(x) x
 #else
@@ -517,6 +517,7 @@ XA_handler(void *_pb)
 	DIAGS((" -- pb=%lx, control=%lx, intin=%lx, intout=%lx, addrin=%lx, addrout=%lx",
 		pb, pb->control, pb->intin, pb->intout, pb->addrin, pb->addrout));
 #endif
+
 	cmd = pb->control[0];
 
 	if ((cmd >= 0) && (cmd < aes_tab_size))
@@ -618,6 +619,9 @@ XA_handler(void *_pb)
 				aes_tab[cmd].descr, cmd, p_getpid()));
 		}
 #endif
+//		if( client )
+//			BLOG((0, "%s[%d] made by %s",	aes_tab[cmd].descr, cmd, client->name));
+
 		cmd_routine = aes_tab[cmd].f;
 
 		/* if opcode is implemented, call it */

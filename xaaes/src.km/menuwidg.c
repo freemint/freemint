@@ -899,7 +899,7 @@ menu_pop(Tab *tab)
 }
 
 /*
- * This is always called to end a menu navigation sesstion
+ * This is always called to end a menu navigation session
 */
 static void
 menu_finish(struct task_administration_block *tab)
@@ -1653,6 +1653,7 @@ open_attach(Tab *tab, short asel, bool instant)
 
 	dis = (k->p.wt->tree[k->p.current].ob_state & OS_DISABLED);
 
+
 	if (   !dis
 	    && is_attach(menu_client(tab), k->p.wt, k->p.current, &at))
 	{
@@ -1781,7 +1782,9 @@ popup(struct task_administration_block *tab, short item)
 			if (!dis)
 				change_entry(tab, 1);
 			if (item == -1)
+			{
 				open_attach(tab, -1, false);
+			}
 		}
 
 		menu_area(k->p.wt, m, k->pdx, k->pdy, &r);
@@ -2775,7 +2778,7 @@ CE_do_menu_scroll(enum locks lock, struct c_event *ce, bool cancel)
 
 			if (mb && ret == 1)
 			{
-				t = addroottimeout(cfg.mn_set.speed, !ce->d0 ? menu_scrld_to : menu_scrlu_to, 1);
+				t = addroottimeout(cfg.menu_settings.mn_set.speed, !ce->d0 ? menu_scrld_to : menu_scrlu_to, 1);
 				if (t)
 					t->arg = (long)tab;
 			}
@@ -2835,7 +2838,7 @@ menuclick(Tab *tab, short item)
 				if (mb)
 				{
 					TIMEOUT *t;
-					t = addroottimeout(cfg.mn_set.delay, menu_scrld_to, 1);
+					t = addroottimeout(cfg.menu_settings.mn_set.delay, menu_scrld_to, 1);
 					if (t)
 						t->arg = (long)tab;
 					S.menuscroll_timeout = t;
@@ -2854,7 +2857,7 @@ menuclick(Tab *tab, short item)
 				if (mb)
 				{
 					TIMEOUT *t;
-					t = addroottimeout(cfg.mn_set.delay, menu_scrlu_to, 1);
+					t = addroottimeout(cfg.menu_settings.mn_set.delay, menu_scrlu_to, 1);
 					if (t)
 						t->arg = (long)tab;
 					S.menuscroll_timeout = t;
@@ -2937,7 +2940,9 @@ menu_keyboard(Tab *tab, const struct rawkey *key)
 				nxt = ob_find_next_any_flagstate(k->p.wt, aesobj(k->p.wt->tree, k->p.parent), aesobj(k->p.wt->tree, k->p.current),
 					0, OF_HIDETREE, 0, OS_DISABLED, 0,0, OBFIND_HOR|OBFIND_DOWN|OBFIND_HIDDEN|OBFIND_NOWRAP);
 				if (!valid_aesobj(&nxt))
+				{
 					a = open_attach(tab, -2, true);
+				}
 			}
 			if (!a && !valid_aesobj(&nxt))
 			{

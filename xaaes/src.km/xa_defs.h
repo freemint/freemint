@@ -74,13 +74,19 @@
 
 #define NAES3D			1	/* ??? */
 
+#if __GNUC__ > 2
+/* set 1 if you wish more inlinig
+ * increases size but maybe faster
+ */
+#define AGGRESSIVE_INLINING	0
+#else
+/* always 0 on gcc2 and others */
+#define AGGRESSIVE_INLINING	0
+#endif
 
 /*----------------------------------------------------------------- */
 
 #define SPAREMINT_URL	"http://sparemint.org"
-
-/* minimum height of internal resizeable windows except fileselector */
-#define MINOBJMVH	240
 
 /* Maximum space for 'nice name' for app's (menu_register) */
 #define NICE_NAME		64
@@ -124,7 +130,7 @@
 #define MOUSE_PACKET_TIMEGAP	 3	/* Amount of time that have to pass between two packets received from the VDI */
 #define RT_SCROLL_STEP		10	/* Step when doing a real-time scroll (0-1000) */
 
-#define MENU_H	(screen.c_max_h + 2)	/* Standard hight od a menu bar */
+#define MENU_H	(screen.c_max_h + 2)	/* Standard hight of a menu bar */
 #define MG	1 /*2*/			/* standard frame size for windows */
 
 

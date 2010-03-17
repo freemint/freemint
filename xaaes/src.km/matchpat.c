@@ -111,7 +111,6 @@ static char *strmrchr( char *s, char *p )
  *
  * return true if match else false
  *
- * todo: array of patterns: pat1,pat2,...
  */
 
 int
@@ -199,7 +198,7 @@ match_pattern(char *t, char *pat, bool auto_wc)
 
 					if( *pat )
 					{
-						if( (pat-p-1) == last_magic[i] || ((pat-p) == last_magic[i] && *pat == '!') )
+						if( (pat-p-1) == last_magic[i] || (*pat == '!' && (pat-p) == last_magic[i]) )
 						{
 							char *tp = t + strlen(t) - strlen(pat);
 							if( *pat == '!' )

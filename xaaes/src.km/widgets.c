@@ -1621,7 +1621,9 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 				if (move)
 					send_moved(lock, wind, AMQ_NORM, &r);
 				if (size)
+				{
 					send_sized(lock, wind, AMQ_NORM, &r);
+				}
 			}
 		}
 	}
@@ -1677,7 +1679,6 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 					maxw = maxh = 0;
 
 				r = widen_rectangle(xy, widget_active.m.x, widget_active.m.y, r, &d);
-
 				check_wh_cp(&r, xy,
 					    wind->min.w,
 					    wind->min.h,
@@ -1703,7 +1704,9 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 					if (move)
 						send_moved(lock, wind, AMQ_NORM, &r);
 					if (size)
+					{
 						send_sized(lock, wind, AMQ_NORM, &r);
+					}
 				}
 			}
 			/* We return false here so the widget display status

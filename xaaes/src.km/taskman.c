@@ -96,7 +96,7 @@ static int ker_stat( int pid, char *what, long pinfo[] );
 #define TM_HEADER		0x20L	/* header */
 #define TM_CLIENT		0x40L	/* aes-client-entry in taskman-list */
 
-#define SYSLOGMINH	MINOBJMVH	/* syslog cannot have smaller height */
+#define SYSLOGMINH	240	/* syslog cannot have smaller height */
 
 #if USE_Suptime
 #ifdef trap_14_w
@@ -262,7 +262,7 @@ build_tasklist_string( int md, void *app)
 	if (tx)
 	{
 		struct proc *p;
-		unsigned char *name, c=0, *cp;
+		/*unsigned*/ char *name, c=0, *cp;
 		long pinfo[4], utim, ptim;
 		static char *state_str = "CRWIZTSs";
 

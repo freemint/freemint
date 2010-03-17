@@ -632,7 +632,9 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 	 * Check and remove if client set its own mouse-form
 	 */
 	if (C.mouse_owner == client || C.realmouse_owner == client)
+	{
 		xa_graf_mouse(ARROW, NULL, NULL, false);
+	}
 
 // 	if (d) display("4");
 
@@ -666,8 +668,11 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 // 	if (d) display("8");
 
 	client->rsrc = NULL;
+
 	while (client->resources)
+	{
 		FreeResources(client, NULL, NULL);
+	}
 
 	/* Free name *only if* it is malloced: */
 	if (client->tail_is_heap) {
@@ -691,7 +696,9 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 		set_desktop(client, true);
 // 	if (d) display("9.1");
 	if (was_infront && top_owner != client)
+	{
 		app_in_front(lock, top_owner, true, true, false);
+	}
 
 	/*
 	 * remove from client list
@@ -839,6 +846,7 @@ XA_appl_exit(enum locks lock, struct xa_client *client, AESPB *pb)
 	//detach_extension(NULL, XAAES_MAGIC);
 
 	return XAC_DONE;
+
 }
 
 /*

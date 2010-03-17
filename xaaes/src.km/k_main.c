@@ -746,11 +746,13 @@ CE_fa(enum locks lock, struct c_event *ce, bool cancel)
 			struct xa_client *client = ce->client;
 			struct helpthread_data *htd = lookup_xa_data_byname(&client->xa_data, HTDNAME);
 			struct xa_window *wind = NULL;
-			char c;
+			int c;
 #if ALERTTIME
 		  char b[MAXALERTLEN];
 #endif
 			unsigned short amask;
+				struct widget_tree *wt;
+				OBJECT *form=0, *icon=0;		/* gcc4 isnt that clever? */
 
 			if (!htd || !htd->w_sysalrt)
 				open_systemalerts(0, client, false);
@@ -758,67 +760,60 @@ CE_fa(enum locks lock, struct c_event *ce, bool cancel)
 			if (htd)
 				wind = htd->w_sysalrt;
 
-			c = data->buf[1];
+			c = data->buf[1] - '0';
 
 			if (wind)
 			{
-				struct widget_tree *wt;
-				OBJECT *form, *icon;
-
 				wt = get_widget(wind, XAW_TOOLBAR)->stuff;
 				form = wt->tree;
-				switch (c)
+			}
+#if SALERT_IC4 != SALERT_IC3+1 || SALERT_IC3 != SALERT_IC2+1 ||SALERT_IC2 != SALERT_IC1+1
+#error "false xaaes.h: SALERT_IC? not consecutive"
+#endif
+				if( c >= 1 && c <= 4 )
 				{
-				case '1':
-					icon = form + SALERT_IC1;
-					amask = alert_masks[1];
-					break;
-				case '2':
-					icon = form + SALERT_IC2;
-					amask = alert_masks[2];
-					break;
-				case '3':
-					icon = form + SALERT_IC3;
-					amask = alert_masks[3];
-					break;
-				case '4':
-					icon = form + SALERT_IC4;
-					amask = alert_masks[4];
-					break;
-				default:
-					icon = NULL;
-					amask = alert_masks[0];
-					break;
+					if( wind )
+						icon = form + SALERT_IC1 + c - 1;	/* numbers for SALERT_IC? are consecutive */
+					amask = alert_masks[c];
 				}
-
+				else
+				{
+					//icon = NULL;
+					amask = alert_masks[0];
+				}
+			if (wind)
+			{
 				strcpy( b, data->buf );
 
 				/* Add the log entry */
 				{
 					struct scroll_info *list = object_get_slist(form + SYSALERT_LIST);
-					struct sesetget_params p = { 0 }; //seget_entrybyarg p = { 0 };
+					struct sesetget_params p = { 0 };
 					struct scroll_content sc = {{ 0 }};
 
 #if ALERTTIME
-					/* from libkern/unix2xbios.c */
-					struct dostim
+					union udostim
 					{
-						unsigned year: 7;
-						unsigned month: 4;
-						unsigned day: 5;
-						unsigned hour: 5;
-						unsigned minute: 6;
-						unsigned sec2: 5;
+						long l;
+						/* from libkern/unix2xbios.c */
+						struct dostim
+						{
+							unsigned year: 7;
+							unsigned month: 4;
+							unsigned day: 5;
+							unsigned hour: 5;
+							unsigned minute: 6;
+							unsigned sec2: 5;
+						}t;
 					};
 					struct timeval tv;
 					struct timezone tz;
-					struct dostim dtim;
-					long dt;
+					union udostim dtim;
 
 					Tgettimeofday( &tv, &tz );
-					dt = unix2xbios( tv.tv_sec );
-					dtim = *(struct dostim*)&dt;
-					sprintf( data->buf, MAXALERTLEN, "%02d:%02d:%02d: %s", dtim.hour, dtim.minute, dtim.sec2, b + 4 );
+					dtim.l = unix2xbios( tv.tv_sec );
+					sprintf( data->buf, MAXALERTLEN, "%02d:%02d:%02d: %s", dtim.t.hour, dtim.t.minute, dtim.t.sec2, b + 4 );
+					BLOG((0,data->buf));
 #endif
 					sc.t.text = data->buf;
 					sc.icon = icon;
@@ -827,27 +822,6 @@ CE_fa(enum locks lock, struct c_event *ce, bool cancel)
 					p.arg.txt = /*txt_alerts*/"Alerts";
 					list->get(list, NULL, SEGET_ENTRYBYTEXT, &p);
 					list->add(list, p.e, NULL, &sc, p.e ? SEADD_CHILD: 0, 0, true);
-				}
-			}
-			else
-			{
-				switch (c)
-				{
-				case '1':
-					amask = alert_masks[1];
-					break;
-				case '2':
-					amask = alert_masks[2];
-					break;
-				case '3':
-					amask = alert_masks[3];
-					break;
-				case '4':
-					amask = alert_masks[4];
-					break;
-				default:
-					amask = alert_masks[0];
-					break;
 				}
 			}
 

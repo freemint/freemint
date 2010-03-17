@@ -401,7 +401,7 @@ init_popinfo(XAMENU *mn, struct xa_popinfo *pi)
 	struct widget_tree *wt = mn->wt;
 	OBJECT *obtree = wt->tree;
 
-	pop_h = cfg.mn_set.height;
+	pop_h = cfg.menu_settings.mn_set.height;
 
 	pi->count = count = ob_count_objs(obtree, mn->menu.mn_menu, 1);
 	pi->objs = kmalloc(sizeof(short) * count);
@@ -603,7 +603,7 @@ menu_popup(enum locks lock, struct xa_client *client, XAMENU *mn, XAMENU_RESULT 
 			if (mn->menu.mn_scroll == -1)
 				tab->scroll = 8;
 			else if (mn->menu.mn_scroll == 1)
-				tab->scroll = cfg.mn_set.height;
+				tab->scroll = cfg.menu_settings.mn_set.height;
 			else
 				tab->scroll = 0;
 // 			else if (mn->menu.mn_scroll > 1)
@@ -868,10 +868,6 @@ XA_menu_istart(enum locks lock, struct xa_client *client, AESPB *pb)
 unsigned long
 XA_menu_settings(enum locks lock, struct xa_client *client, AESPB *pb)
 {
-	union { MN_SET *mn; struct xa_menu_settings *cfgmn;} cfgmnptr;
-
-	cfgmnptr.cfgmn = &cfg.mn_set;
-
 	CONTROL(1,1,1)
 
 	DIAG((D_menu,client,"menu_settings %d", pb->intin[0]));
@@ -883,16 +879,17 @@ XA_menu_settings(enum locks lock, struct xa_client *client, AESPB *pb)
 		case 0:
 		{
 			MN_SET *mn = (MN_SET *)pb->addrin[0];
-			*mn = *cfgmnptr.mn;
+
+			*mn = *(MN_SET *)&cfg.menu_settings.mn_set;
 			break;
 		}
 		case 1:
 		{
 			MN_SET *mn = (MN_SET *)pb->addrin[0];
 
- 			*cfgmnptr.mn = *mn;
-			cfg.popup_timeout = cfg.mn_set.display;
-			cfg.popout_timeout = cfg.mn_set.drag;
+			*(MN_SET *)&cfg.menu_settings.mn_set = *mn;
+			cfg.popup_timeout = cfg.menu_settings.mn_set.display;
+			cfg.popout_timeout = cfg.menu_settings.mn_set.drag;
 			break;
 		}
 	}
