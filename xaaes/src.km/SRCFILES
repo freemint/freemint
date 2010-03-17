@@ -96,6 +96,7 @@ COBJS = \
 	matchpat.c \
 	menuwidg.c \
 	messages.c \
+	mscall.c \
 	mvdi.c \
 	nkcc.c \
 	obtree.c \
@@ -133,6 +134,6 @@ SOBJS = \
 	nkcc-gc.s \
 	xa_user_things.s
 
-SSOBJS = 
+SSOBJS =
 
 SRCFILES = $(HEADER) $(COBJS) $(SOBJS) $(SSOBJS)
