@@ -322,8 +322,10 @@ rp2ap_obtree(struct xa_window *wind, struct xa_widget *widg, RECT *r)
 	if (widg->m.r.xaw_idx == XAW_TOOLBAR || widg->m.r.xaw_idx == XAW_MENU)
 	{
  		if (!(widg->m.properties & WIP_NOTEXT))
+ 		{
  			widg->r.w = wind->r.w;
  			//widg->r.w = wind->wa.w;
+ 		}
 		if ((wt = widg->stuff))
 		{
 			obtree = wt->tree;
@@ -4248,8 +4250,19 @@ set_toolbar_coords(struct xa_window *wind, const RECT *r)
 	}
 	else
 	{
-		widg->r.w = wind->wa.w;
-		widg->r.h = wind->wa.h;
+		XA_TREE *wt = widg->stuff;
+
+		if( wt && (wind->dial & created_for_FMD_START))
+		{
+			/* use wt-coords for dialog */
+			widg->r.w = wt->tree->ob_width;
+			widg->r.h = wt->tree->ob_height;
+		}
+		else
+		{
+			widg->r.w = wind->wa.w;
+			widg->r.h = wind->wa.h;
+		}
 	}
 }
 
@@ -4411,7 +4424,18 @@ set_toolbar_widget(enum locks lock,
 		r = &wr;
 	}
 	else
-		or = *r;
+	{
+		/*
+		 * 'or' is not used if flags=0 but form_do does not work if compiled with gcc4
+		 * and the assignment is made. widg-wh then comes from or!
+		 * This shows up when a windowed classic dialog (form_do without block)
+		 * is opend the second time.
+		 *
+		 * *0 seems to be no problem?
+		 */
+		if( r )
+			or = *r;
+	}
 
 	if (flags & (STW_COC))
 		center_rect(&or);
