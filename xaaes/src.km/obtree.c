@@ -2422,6 +2422,96 @@ obj_unset_g_popup(XA_TREE *swt, struct xa_aes_object sobj, char *txt)
 		object_set_spec(aesobj_ob(&sobj), (unsigned long)txt);
 	}
 }
+/*************************/
+
+bool
+disable_object(OBJECT *ob, bool set)
+{
+	if (set)
+	{
+		if (!(ob->ob_state & OS_DISABLED)) {
+			ob->ob_state |= OS_DISABLED;
+			return true;
+		}
+		else
+			return false;
+	}
+	else
+	{
+		if ((ob->ob_state & OS_DISABLED)) {
+			ob->ob_state &= ~OS_DISABLED;
+			return true;
+		}
+		else
+			return false;
+	}
+}
+
+
+bool
+set_aesobj_uplink(OBJECT **t, struct xa_aes_object *c, struct xa_aes_object *s, struct oblink_spec **oblink)
+{
+	if ((aesobj_type(c) & 0xff) == G_OBLINK)
+	{
+		struct oblink_spec *obl = object_get_oblink(aesobj_ob(c));
+		if (obl)
+		{
+			obl->save_to_r = *(RECT *)&obl->to.tree[obl->to.item].ob_x;
+
+			obl->to.tree[obl->to.item].ob_x = aesobj_getx(c);
+			obl->to.tree[obl->to.item].ob_y = aesobj_gety(c);
+
+			obl->d.pmisc[1] = *oblink;
+			*oblink = obl;
+
+			obl->savestop = *s;
+			*t = obl->to.tree;
+			*c = *s = aesobj(obl->to.tree, obl->to.item);
+			return true;
+		}
+	}
+	return false;
+}
+bool
+set_aesobj_downlink(OBJECT **t, struct xa_aes_object *c, struct xa_aes_object *s, struct oblink_spec **oblink)
+{
+	if (*oblink)
+	{
+		OBJECT *tree = (*oblink)->to.tree + (*oblink)->to.item;
+
+		//*(RECT*)&tree->ob_x = *(RECT*)&(*oblink)->save_to_r.x;
+		tree->ob_x = (*oblink)->save_to_r.x;
+		tree->ob_y = (*oblink)->save_to_r.y;
+		tree->ob_width = (*oblink)->save_to_r.w;
+		tree->ob_height = (*oblink)->save_to_r.h;
+
+
+		*t = (*oblink)->from.tree;
+		*c = aesobj((*oblink)->from.tree, (*oblink)->from.item);
+		*s = (*oblink)->savestop;
+		*oblink = (*oblink)->d.pmisc[1];
+		return true;
+	}
+	return false;
+}
+
+void
+clean_aesobj_links(struct oblink_spec **oblink)
+{
+	while (*oblink)
+	{
+		OBJECT *tree = (*oblink)->to.tree + (*oblink)->to.item;
+
+		tree->ob_x = (*oblink)->save_to_r.x;
+		tree->ob_y = (*oblink)->save_to_r.y;
+		tree->ob_width = (*oblink)->save_to_r.w;
+		tree->ob_height = (*oblink)->save_to_r.h;
+
+		*oblink = (*oblink)->d.pmisc[1];
+	}
+}
+
+/*********************************/
 
 /*
  * Get the true screen coords of an object
@@ -2456,7 +2546,8 @@ uplink:
 
 			DIAG((D_objc, NULL, "obj_offset: return found obj=%d at x=%d, y=%d",
 				aesobj_item(&object), x, y));
-			clean_aesobj_links(&oblink);
+			if( oblink )
+				clean_aesobj_links(&oblink);
 			return 1;
 		}
 
@@ -2490,7 +2581,7 @@ downlink:
 				else
 					break;
 			}
-			if (same_aesobj(&next, &stop) && set_aesobj_downlink(&obtree, &current, &stop, &oblink))
+			if (same_aesobj(&next, &stop) && oblink && set_aesobj_downlink(&obtree, &current, &stop, &oblink))
 			{
 				x -= aesobj_getx(&current);
 				y -= aesobj_gety(&current);

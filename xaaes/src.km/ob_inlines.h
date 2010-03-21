@@ -52,29 +52,6 @@ setchecked(OBJECT *ob, bool set)
 }
 
 static inline bool
-disable_object(OBJECT *ob, bool set)
-{
-	if (set)
-	{
-		if (!(ob->ob_state & OS_DISABLED)) {
-			ob->ob_state |= OS_DISABLED;
-			return true;
-		}
-		else
-			return false;
-	}
-	else
-	{
-		if ((ob->ob_state & OS_DISABLED)) {
-			ob->ob_state &= ~OS_DISABLED;
-			return true;
-		}
-		else
-			return false;
-	}
-}
-
-static inline bool
 object_disabled(OBJECT *ob)
 { return (ob->ob_state & OS_DISABLED); }
 
@@ -126,6 +103,30 @@ static inline void
 object_deselect(OBJECT *ob)
 {
 	ob->ob_state &= ~OS_SELECTED;
+}
+
+#if AGGRESSIVE_INLINING
+static inline bool
+disable_object(OBJECT *ob, bool set)
+{
+	if (set)
+	{
+		if (!(ob->ob_state & OS_DISABLED)) {
+			ob->ob_state |= OS_DISABLED;
+			return true;
+		}
+		else
+			return false;
+	}
+	else
+	{
+		if ((ob->ob_state & OS_DISABLED)) {
+			ob->ob_state &= ~OS_DISABLED;
+			return true;
+		}
+		else
+			return false;
+	}
 }
 
 static inline bool
@@ -188,4 +189,16 @@ clean_aesobj_links(struct oblink_spec **oblink)
 		*oblink = (*oblink)->d.pmisc[1];
 	}
 }
+#else
+bool
+disable_object(OBJECT *ob, bool set);
+bool
+set_aesobj_uplink(OBJECT **t, struct xa_aes_object *c, struct xa_aes_object *s, struct oblink_spec **oblink);
+short
+ob_offset(OBJECT *obtree, struct xa_aes_object object, short *mx, short *my);
+bool
+set_aesobj_downlink(OBJECT **t, struct xa_aes_object *c, struct xa_aes_object *s, struct oblink_spec **oblink);
+void
+clean_aesobj_links(struct oblink_spec **oblink);
+#endif
 #endif /* _ob_inlines_h_ */
