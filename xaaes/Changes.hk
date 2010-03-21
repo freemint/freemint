@@ -1,3 +1,34 @@
+21-03-2010
+----------
+
+debug:
+
+added conditional BLOG: BLOGif.
+---------------------------------------------------------------------
+inlining:
+
+obtree.c ob_inlines.h:
+
+de-inlined disable_object, set_aesobj_uplink, ob_offset, clean_aesobj_links.
+---------------------------------------------------------------------
+nap:
+
+k_main.c xa_evnt.c:
+
+disabled the keyboard-access-patch, it works without it.
+---------------------------------------------------------------------
+widgets:
+
+- Use wt-area for dialog, else window-area for widget-area in rp2ap_obtree.
+
+- removed a bug that did read from address 0.
+---------------------------------------------------------------------
+xa_lbox:
+
+- don't inline f_select (no gain).
+
+- minor optimization
+---------------------------------------------------------------------
 14-03-2010
 ----------
 
