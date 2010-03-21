@@ -201,6 +201,7 @@ void diag(enum debug_item item, struct xa_client *client, char *t, ...);
 #if BOOTLOG
 void _cdecl bootlog(bool disp, const char *fmt, ...);
 #define BLOG(x)	bootlog x
+#define BLOGif(c,x)	if(c)bootlog x
 #else
 void _cdecl bootlog(bool disp, const char *fmt, ...);
 #define BLOG(x)
