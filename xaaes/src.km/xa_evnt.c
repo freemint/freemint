@@ -348,7 +348,7 @@ get_mbstate(struct xa_client *client, struct mbs *d)
 	}
 }
 
-unsigned long wevents = 0xffffffff;
+//unsigned long wevents = 0xffffffff;
 char *wclientname = 0;	/* for debugging output only */
 bool
 check_queued_events(struct xa_client *client)
@@ -360,6 +360,7 @@ check_queued_events(struct xa_client *client)
 	short *out;
 	union msg_buf *m;
 	bool multi, to_yield = false;
+	unsigned long wevents;
 
 	if( !(wevents = client->waiting_for) )
 	{

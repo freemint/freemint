@@ -1664,23 +1664,38 @@ k_main(void *dummy)
 		unsigned long input_channels;
 		long fs_rtn;
 
-		input_channels = default_input_channels;
 
-#if 1
+#if 0
 		{
+/* set 1 if you want CTRL_APP_OPS when no pending events
+ * -> "single task"
+ */
+#define ALWAYS_CTRL_APP_OPS 0
 			/*
 			 * EXPERIMENTAL:
 			 * if focussed client doesn't wait for any event
 			 * give it some cpu to read keyboard (see anyplayer:"whithout GEM")
 			 */
 			extern unsigned long wevents;	/* from xa_evnt.c (check_queued_events) */
+			//BLOG((1,"%ld:wevents=%lx", cnt++, wevents));
 			if( wevents == 0 )
 			{
+				//BLOG((1,"nap"));
 				//extern char *wclientname;
-				nap( 2000 );
+#if ALWAYS_CTRL_APP_OPS && ALT_CTRL_APP_OPS
+				/* Ctrl-Alt? */
+				if( Getshift() == 0 )
+#endif
+				{
+					nap( 10000 );
+					continue;	/* nothing to do for us .. */
+				}
 			}
 		}
 #endif
+
+		input_channels = default_input_channels;
+
 		/* The pivoting point of XaAES!
 		 * Wait via Fselect() for keyboard and alerts.
 		 */
@@ -1697,28 +1712,6 @@ k_main(void *dummy)
 			mouse_locked() ? mouse_locked()->pid : 0,
 			mouse_locked() ? mouse_locked()->name : ""));
 
-#if 0
-		if (!C.Hlp)
-		{
-			/*
-			 * Start AES help thread - will be dealing with AES windows.
-			 */
-			long tpc;
-			display("What the hell!?");
-			tpc = kthread_create(C.Aes->p, helpthread_entry, NULL, NULL, "%s", aeshlp_name);
-			if (tpc < 0)
-			{
-				C.Hlp = NULL;
-// 				display("XaAES ERROR: start AES thread failed");
-			}
-			else
-			{
-				long to = 0x0000ffff;
-				while (!C.Hlp && to)
-					yield(), to--;
-			}
-		}
-#endif
 		if (fs_rtn > 0)
 		{
 			if (input_channels & (1UL << C.KBD_dev))
