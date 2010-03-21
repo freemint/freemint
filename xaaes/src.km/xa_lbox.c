@@ -389,15 +389,15 @@ setup_lbox_objects(struct xa_lbox_info *lbox)
 				if (prev == parent)
 				{
 					obtree[parent].ob_head = obj;
-					obtree[parent].ob_tail = obj;
-					obtree[obj   ].ob_next = parent;
+
 				}
 				else
 				{
 					obtree[prev  ].ob_next = obj;
-					obtree[parent].ob_tail = obj;
-					obtree[obj   ].ob_next = parent;
+
 				}
+				obtree[parent].ob_tail = obj;
+				obtree[obj   ].ob_next = parent;
 
 				prev = obj;
 
@@ -1308,7 +1308,7 @@ XA_lbox_do(enum locks lock, struct xa_client *client, AESPB *pb)
 				check_mouse(client, &mb, NULL, NULL);
 				if (mb && lbox->bslide.pause)
 				{
-					f_select((long)(lbox->bslide.pause), NULL, 0, 0);
+					_f_select((long)(lbox->bslide.pause), NULL, 0, 0);
 					//nap((long)(lbox->aslide.pause));
 					check_mouse(client, &mb, NULL, NULL);
 				}
@@ -1324,7 +1324,7 @@ XA_lbox_do(enum locks lock, struct xa_client *client, AESPB *pb)
 				check_mouse(client, &mb, NULL, NULL);
 				if (mb && lbox->bslide.pause)
 				{
-					f_select((long)(lbox->bslide.pause), NULL, 0, 0);
+					_f_select((long)(lbox->bslide.pause), NULL, 0, 0);
 					//nap((long)(lbox->aslide.pause));
 					check_mouse(client, &mb, NULL, NULL);
 				}
@@ -1342,7 +1342,7 @@ XA_lbox_do(enum locks lock, struct xa_client *client, AESPB *pb)
 				check_mouse(client, &mb, NULL, NULL);
 				if (mb && lbox->bslide.pause)
 				{
-					f_select((long)(lbox->bslide.pause), NULL, 0, 0);
+					_f_select((long)(lbox->bslide.pause), NULL, 0, 0);
 					//nap((long)(lbox->aslide.pause));
 					check_mouse(client, &mb, NULL, NULL);
 				}
@@ -1430,7 +1430,7 @@ XA_lbox_do(enum locks lock, struct xa_client *client, AESPB *pb)
 									redraw_lbox(lbox, v->bkg, 2, vsr);
 									showm();
 									if (v->pause)
-										f_select(v->pause, NULL, 0, 0);
+										_f_select(v->pause, NULL, 0, 0);
 								}
 								check_mouse(client, &mb, &nx, &ny);
 							}
@@ -1452,7 +1452,7 @@ XA_lbox_do(enum locks lock, struct xa_client *client, AESPB *pb)
 									redraw_lbox(lbox, v->bkg, 2, vsr);
 									showm();
 									if (v->pause)
-										f_select(v->pause, NULL, 0, 0);
+										_f_select(v->pause, NULL, 0, 0);
 								}
 								check_mouse(client, &mb, &nx, &ny);
 							}
@@ -1468,7 +1468,7 @@ XA_lbox_do(enum locks lock, struct xa_client *client, AESPB *pb)
 									redraw_lbox(lbox, h->bkg, 2, hsr);
 									showm();
 									if (h->pause)
-										f_select(h->pause, NULL, 0, 0);
+										_f_select(h->pause, NULL, 0, 0);
 								}
 								check_mouse(client, &mb, &nx, &ny);
 							}
@@ -1484,7 +1484,7 @@ XA_lbox_do(enum locks lock, struct xa_client *client, AESPB *pb)
 									redraw_lbox(lbox, h->bkg, 2, hsr);
 									showm();
 									if (h->pause)
-										f_select(h->pause, NULL, 0, 0);
+										_f_select(h->pause, NULL, 0, 0);
 								}
 								check_mouse(client, &mb, &nx, &ny);
 							}
