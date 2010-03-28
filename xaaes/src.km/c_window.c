@@ -38,6 +38,7 @@
 #include "scrlobjc.h"
 #include "widgets.h"
 #include "xa_graf.h"
+#include "xa_wind.h"
 
 #include "mint/signal.h"
 
@@ -1046,10 +1047,6 @@ remove_from_iredraw_queue(enum locks lock, struct xa_window *wind)
 	}
 }
 
-
-unsigned long
-XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb);
-
 void
 iconify_window(enum locks lock, struct xa_window *wind, RECT *r)
 {
@@ -1228,7 +1225,6 @@ create_window(
 
 #endif
 
-
 	w = kmalloc(sizeof(*w));
 	if (!w)	/* Unable to allocate memory for window? */
 		return NULL;
@@ -1359,7 +1355,6 @@ create_window(
 
 		/* Attach the appropriate widgets to the window */
 		standard_widgets(w, tp, false);
-
 #if INCLUDE_UNUSED
 		/* If STORE_BACK extended attribute is used, window preserves its own background */
 		if (tp & STORE_BACK)
@@ -1376,7 +1371,6 @@ create_window(
 			w->background = NULL;
 
 	}
-
 	calc_work_area(w);
 
 	if (max)
@@ -2790,7 +2784,8 @@ calc_window(enum locks lock, struct xa_client *client, int request, XA_WIND_ATTR
 	else
 		class = WINCLASS_CLIENT;
 
-	if (!(wcc = lookup_wcc_entry(client, class, tp)))
+	wcc = lookup_wcc_entry(client, class, tp);
+	if (!wcc)
 	{
 		w_temp = create_window(lock, NULL, NULL, client, true, tp, dial, thinframe, thinwork, r, 0,0);
 		wcc = add_wcc_entry(w_temp);
