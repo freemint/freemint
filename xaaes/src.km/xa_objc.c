@@ -64,7 +64,10 @@ XA_objc_draw(enum locks lock, struct xa_client *client, AESPB *pb)
 		assert(wt);
 
 		obj_init_focus(wt, OB_IF_ONLY_EDITS);
-		wt->e.c_state &= ~OB_CURS_EOR;
+		/* if form_do object-cursor off */
+		if (client->fmd.state & 1)
+			wt->e.c_state &= ~OB_CURS_EOR;
+
 		{
 			hidem();
 			(*v->api->set_clip)(v, r);		/* HR 110601: checks for special case? w <= 0 or h <= 0 */

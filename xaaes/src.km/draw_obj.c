@@ -717,13 +717,16 @@ display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, struct x
 
 	if (focus_ob(wt) == ob)
 	{
-		(*v->api->wr_mode)(v, MD_REPLACE);
-		(*v->api->l_color)(v, G_RED);
-		(*v->api->l_type)(v, 7);
-		(*v->api->l_udsty)(v, 0xaaaa); //0xe0e0); //0xaaaa);
+		if (wt->e.c_state || wt->wind )	/* wt->wind is for wdialogs */
+		{
+			(*v->api->wr_mode)(v, MD_REPLACE);
+			(*v->api->l_color)(v, G_RED);
+			(*v->api->l_type)(v, 7);
+			(*v->api->l_udsty)(v, 0xaaaa); //0xe0e0); //0xaaaa);
 
-		(*v->api->gbox)(v, 0, &sr);
-		(*v->api->l_type)(v, 0);
+			(*v->api->gbox)(v, 0, &sr);
+			(*v->api->l_type)(v, 0);
+		}
 	}
 
 	(*v->api->wr_mode)(v, MD_TRANS);

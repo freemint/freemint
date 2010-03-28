@@ -143,6 +143,7 @@ calc_fmd_wind(struct widget_tree *wt, XA_WIND_ATTR kind, WINDOW_TYPE dial, RECT 
 
 	obj_area(wt, aesobj(wt->tree, 0), r); //ob_rectangle(obtree, 0, r);
 
+
 	*r = calc_window(0,
 			 wt->owner,
 			 WC_BORDER,
@@ -179,14 +180,21 @@ Setup_form_do(struct xa_client *client,
 	{
 		DIAG((D_form, client, "Setup_form_do: wind %d for %s", client->fmd.wind->handle, client->name));
 		wind = client->fmd.wind;
+	 	wt = get_widget(wind, XAW_TOOLBAR)->stuff;
+	 	//wt = widg->stuff;
+
+	 	if( wt->tree == obtree )
+	 	{
+	 		goto okexit;	/* already installed */
+	 	}
 		wt = obtree_to_wt(client, obtree);
 		if (!wt)
 			wt = new_widget_tree(client, obtree);
 		assert(wt);
 
-		wt->focus = edobj;
+		//wt->focus = edobj;
 
-		calc_fmd_wind(wt, kind, wind->dial, (RECT *)&client->fmd.r);
+		calc_fmd_wind(wt, kind, wind->dial, &client->fmd.r);
 		wt = set_toolbar_widget(lock, wind, client, obtree, edobj, WIP_NOTEXT, 0, NULL, NULL);
 		move_window(lock, wind, true, -1, client->fmd.r.x, client->fmd.r.y, client->fmd.r.w, client->fmd.r.h);
 	}
@@ -197,10 +205,6 @@ Setup_form_do(struct xa_client *client,
 	{
 		DIAG((D_form, client, "Setup_form_do: nonwindowed for %s", client->name));
 // 		if (d) display("Setup_form_do: nonwindowed for %s", client->name);
-
-		/* focussed object has to be unfocussed later so dont overwrite */
-		/*wt = obtree_to_wt(client, obtree);*/
-		/*wt->focus = edobj;*/
 
 		Set_form_do(client, obtree, edobj, true);
 		wt = client->fmd.wt;
@@ -220,17 +224,16 @@ Setup_form_do(struct xa_client *client,
 		calc_fmd_wind(wt, kind, client->fmd.state ? created_for_FMD_START : created_for_FORM_DO, (RECT *)&client->fmd.r);
 
 		if (!client->options.xa_nomove)
-			kind |= MOVER;
-
+		{
+			kind |= MOVER;//|STORE_BACK;
+		}
 		client->fmd.kind = kind;
-		wt->focus = edobj;
 	}
 
+	wt->focus = edobj;
 	/*
 	 * If we get here and have no window pointer, this is the first time
 	 * the client uses form_do.
-	 *
-	 * /hk: not true: fmd.wind=NULL in Exit_form_do!
 	 *
 	 */
 	if (!wind)
@@ -239,10 +242,6 @@ Setup_form_do(struct xa_client *client,
 		{
 			client->fmd.wind = wind;
 			wt = set_toolbar_widget(lock, wind, client, obtree, edobj, WIP_NOTEXT, 0, NULL, NULL);
-
-			/* draw 1st cursor */
-			if( aesobj_edit( &edobj ) )
-				obj_draw(wt, client->vdi_settings, edobj, -2, NULL, wind->rect_list.start, DRW_CURSOR);
 		}
 		else
 		{
@@ -252,6 +251,24 @@ Setup_form_do(struct xa_client *client,
 	}
 okexit:
 	ei = wt->ei ? wt->ei : &wt->e;
+	ei->o = edobj;
+
+	if( !valid_aesobj(&wt->focus)/*aesobj_edit( &edobj )*/ )
+	{
+		wt->focus = edobj;
+	}
+	/* first draw edit-cursor */
+	if( valid_aesobj( &edobj ) )
+	{
+		/* draw 1st cursor */
+		obj_draw(wt, client->vdi_settings, edobj, -2, NULL, NULL, DRW_CURSOR);
+	}
+	/* if edit-object != focus draw focus-cursor */
+	if( !same_aesobj( &wt->focus, &edobj ) )
+	{
+		/* draw 1st cursor */
+		obj_draw(wt, client->vdi_settings, wt->focus, -2, NULL, NULL, DRW_CURSOR);
+	}
 
 	DIAGS(("Setup_form_do: returning - edobj=%d, wind %lx",
 		edit_item(ei), wind));
@@ -452,10 +469,9 @@ Form_Button(XA_TREE *wt,
 
 						ei->c_state |= OB_CURS_ENABLED;
 
-						ei->o = obj;
+						wt->focus = ei->o = obj;
 					}
 				}
-				wt->focus = obj;
 				if (valid_aesobj(&pf))
 					obj_draw(wt, v, pf, -2, NULL, *rl, DRW_CURSOR);
 				obj_draw(wt, v, obj, -2, NULL, *rl, DRW_CURSOR);
@@ -470,7 +486,9 @@ Form_Button(XA_TREE *wt,
 	{
 
 		if ((state & OS_SELECTED) && !(pstate & OS_SELECTED) && (flags & OF_EXIT))
+		{
 			no_exit = false;
+		}
 
 		if (!no_exit || ((flags & OF_EDITABLE) && (!(flags & OF_SELECTABLE) || ((state & OS_SELECTED) != (pstate & OS_SELECTED)) )))
 			next_obj = obj;
@@ -479,8 +497,8 @@ Form_Button(XA_TREE *wt,
 	{
 		next_obj = aesobj(wt->tree, 0);
 		no_exit = true;
-	}
 
+	}
 	if (clickmsk)
 		*clickmsk = dc ? 0x8000 : 0;
 
@@ -844,9 +862,6 @@ g_slist:
 			next_obj = ob_find_flst(obtree, OF_DEFAULT, 0, 0, OS_DISABLED, 0, 0);
 			DIAG((D_keybd, NULL, "Form_Keyboard: Got RETRURN key - default obj=%d for %s",
 				next_obj.item, client->name));
-			/*BLOG((0, "Form_Keyboard: Got RETRURN key - default obj=%d",
-				next_obj.item));
-				*/
 		}
 		else if (keycode == SC_UNDO)	/* UNDO */
 		{
@@ -854,14 +869,12 @@ g_slist:
 
 			DIAG((D_keybd, NULL, "Form_Keyboard: Got UNDO key - cancel obj=%d for %s",
 				next_obj.item, client->name));
-			/*BLOG((0,"Form_Keyboard: Got UNDO key - cancel obj=%d",
-				next_obj.item));
-				*/
+
 		}
 		else
 		{
-			if ( (key->raw.conin.state & K_ALT)// == K_ALT
-				|| (wt->wind && (wt->wind->dial & created_for_ALERT))	)
+			if ( (key->raw.conin.state & K_ALT)
+				|| (wt->owner->status & CS_FORM_ALERT))
 			{
 				char c = toupper(key->norm & 0x00ff);
 				next_obj = ob_find_shortcut(obtree, c);
@@ -914,35 +927,33 @@ g_slist:
 	}
 	else
 	{
-		if (!keycode)
-		{
-			if (valid_aesobj(&next_obj))
-				new_eobj = next_obj;
-			if (same_aesobj(&new_eobj, &obj) && valid_aesobj(&new_eobj))
-				new_eobj = aesobj(wt->tree, 0);
-		}
-		else
-			keycode = 0;
+		if (valid_aesobj(&next_obj))
+			new_eobj = next_obj;
+		if (same_aesobj(&new_eobj, &obj) && valid_aesobj(&new_eobj))
+			new_eobj = aesobj(wt->tree, 0);
 	}
 
 	if (valid_aesobj(&new_focus))
 	{
 		if (!same_aesobj(&wt->focus, &new_focus))
 		{
+			short md = 0;
 			struct xa_aes_object pf = wt->focus;
 			wt->focus = new_focus;
+			if (aesobj_edit(&new_focus))
+				md = DRW_CURSOR;
+			wt->e.c_state |= OB_CURS_EOR;
 			if (valid_aesobj(&pf))
 			{
-				obj_draw(wt, v, pf, -2, NULL, *rl, DRW_CURSOR);
+				obj_draw(wt, v, pf, -2, NULL, *rl, DRW_CURSOR/*md*/);		/* remove cursor */
 			}
-			obj_draw(wt, v, new_focus, -2, NULL, *rl, DRW_CURSOR);
+			obj_draw(wt, v, new_focus, -2, NULL, *rl, md);
 		}
 	}
 
 done:
 	if (fr.no_exit)
 		next_obj = new_eobj;
-
 	/* Ozk: We return a 'next object' value of -1 when the key was
 	 *	not used by form_keybaord() function
 	 */
@@ -1284,7 +1295,7 @@ Key_form_do(enum locks lock,
 
 		if (fr.no_exit)
 		{
-			if (fr.aeskey)
+			if (fr.aeskey && ei->o.item >= 0)
 			{
 				obj_edit(wt,
 					  v,
