@@ -1,3 +1,37 @@
+28-03-2010
+----------
+
+c_window:
+
+include xa_wind.h for XA_wind_set
+---------------------------------------------------------------------
+cursor (draw_obj.c form.c xa_objc.c):
+
+improved display of object-cursor and edit-cursor.
+---------------------------------------------------------------------
+obtree:
+
+improved alt-shortcuts: added a pass for shortcuts defined in the
+resource ahead to avoid conflicts. Preference now is:
+
+1. predefined shortcuts (>0!)
+2. touchexit
+3. other
+
+
+---------------------------------------------------------------------
+shortcuts (k_keybd.c widgets.c):
+
+new ctrl-alt-shortcuts:
+
+	- I: (un-)iconify top window
+
+	- Cursor right: full top window
+---------------------------------------------------------------------
+xa_help:
+
+update for new shortcuts
+---------------------------------------------------------------------
 21-03-2010
 ----------
 
