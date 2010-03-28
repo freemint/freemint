@@ -75,6 +75,7 @@ int	XA_slider(struct xa_window *w, int which, long total, long visible, long sta
 bool	m_inside(short x, short y, RECT *o);
 void	redraw_menu(enum locks lock);
 void	done_widget_active(struct xa_window *wind, int i);
+bool iconify_action(enum locks lock, struct xa_window *wind, const struct moose_data *md);
 
 void	free_xawidget_resources(struct xa_widget *widg);
 
