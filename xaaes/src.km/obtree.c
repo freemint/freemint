@@ -2222,18 +2222,31 @@ ob_fix_shortcuts(OBJECT *obtree, bool not_hidden)
 		short flag = 0, flag2 = 0;
 		bzero(sc, len);
 
-		/* touchexit first */
-		for( k = 0; k < 2; k++ )
+		/*
+		 * 1. predefined shortcuts (>0!)
+		 * 2. touchexit
+		 * 3. other
+		 */
+		for( k = 0; k < 3; k++ )
 		{
-			if( k == 0 )
+			switch( k )
+			{
+			case 0:
+				flag = OF_SELECTABLE;// | OF_EDITABLE;
+			break;
+			case 1:
+				//flag2 = flag;
 				flag = OF_TOUCHEXIT | OF_DEFAULT | OF_EXIT;
-			else{
+			break;
+			case 2:
 				flag2 = flag;
-				flag = OF_SELECTABLE | OF_EDITABLE;
+				flag = OF_SELECTABLE;// | OF_EDITABLE;
+			break;
 			}
 			for( i = 1; i <= objs; i++ )
 			{
 				OBJECT *ob = obtree + i;
+				bool predef = false;
 
 				DIAGS((" -- obj %d, type %x (n=%d, h=%d, t=%d)",
 					i, ob->ob_type, ob->ob_next, ob->ob_head, ob->ob_tail));
@@ -2257,9 +2270,16 @@ ob_fix_shortcuts(OBJECT *obtree, bool not_hidden)
 
 								/* skip non-alpha-numeric-chars in start of free_string
 								*/
-								for( nc = 0; nc < slen && !isalnum(s[nc]); nc++/*,s++*/ );
+								for( nc = 0; nc < slen && !isalnum(s[nc]); nc++ );
 								if( j == 0 )
+								{
+									if( k == 0 )
+										continue;	/* only predfined -> WHITEBAK? */
 									j = nc;
+								}
+								else
+									predef = true;
+
 								if (j < slen)
 								{
 									scuts = sc;
@@ -2267,11 +2287,8 @@ ob_fix_shortcuts(OBJECT *obtree, bool not_hidden)
 
 									while (scuts->c )
 									{
-										if (scuts->c == nk )
+										if (i != scuts->o && scuts->c == nk )
 										{
-											/* remove // to intentionally freeze XaAES! */
-											//if( j == 0 || nc > 0 )
-											//	nc++;
 											if( nc < slen )
 												nk = toupper(*(s + nc++));
 											else
@@ -2285,8 +2302,12 @@ ob_fix_shortcuts(OBJECT *obtree, bool not_hidden)
 									{
 										scuts->c = nk;
 										scuts->o = i;
+										if( predef && k > 0 )
+											continue;		/* no predefined */
 										if( nc <= j )
+										{
 											nc = j;	/* first non-white or preselected char */
+										}
 										else
 											if( nc > 0 )
 												nc--;		/* if searched and found nc is 1 char too far */
@@ -2372,7 +2393,7 @@ obj_init_focus(XA_TREE *wt, short flags)
 		o = ob_find_next_any_flagstate(wt, aesobj(obtree, 0), inv_aesobj(), OF_EDITABLE, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_EXACTFLAG);
 		if (valid_aesobj(&o))
 		{
-			wt->focus = o;
+			wt->e.o = wt->focus = o;
 		}
 		else if (!(flags & OB_IF_ONLY_EDITS))
 		{
@@ -2422,7 +2443,9 @@ obj_unset_g_popup(XA_TREE *swt, struct xa_aes_object sobj, char *txt)
 		object_set_spec(aesobj_ob(&sobj), (unsigned long)txt);
 	}
 }
+
 /*************************/
+#if !AGGRESSIVE_INLINING
 
 bool
 disable_object(OBJECT *ob, bool set)
@@ -2510,7 +2533,7 @@ clean_aesobj_links(struct oblink_spec **oblink)
 		*oblink = (*oblink)->d.pmisc[1];
 	}
 }
-
+#endif
 /*********************************/
 
 /*
@@ -3101,7 +3124,9 @@ obj_draw(XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_object obj, int t
 // 	struct xa_aes_object object;
 
 	if (!obj_area(wt, obj, &or))
+	{
 		return;
+	}
 
 	hidem();
 
