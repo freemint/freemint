@@ -1466,7 +1466,7 @@ click_full(enum locks lock, struct xa_window *wind, struct xa_widget *widg, cons
 	ICONIFY WIDGET BEHAVIOUR
 ========================================================*/
 /* Displayed by display_def_widget */
-static bool
+bool
 iconify_action(enum locks lock, struct xa_window *wind, const struct moose_data *md)
 {
 	if (!wind->send_message)

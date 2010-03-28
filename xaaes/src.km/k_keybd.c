@@ -263,8 +263,6 @@ XA_keyboard_event(enum locks lock, const struct rawkey *key)
 			*/
 	}
 }
-
-
 /******************************************************************************
  from "unofficial XaAES":
 
@@ -463,6 +461,23 @@ otm:
 			post_cevent(C.Hlp, ceExecfunc, open_taskmanager,NULL, 1,0, NULL,NULL);
 		}
 		return true;
+
+		case 'I':	/* (un-)iconify window */
+			return 	iconify_action(lock, TOP_WINDOW, 0);
+
+		case NK_RIGHT:				/* full window */
+		if( TOP_WINDOW )
+		{
+			if (TOP_WINDOW->send_message)
+			{
+				struct xa_window *wind = TOP_WINDOW;
+				wind->send_message(lock, TOP_WINDOW, NULL, AMQ_NORM, QMF_CHKDUP,
+						   WM_FULLED, 0, 0, wind->handle,
+						   0, 0, 0, 0);
+				return true;
+			}
+		}
+		break;
 		case 'E':	/* open windows-submenu on top-window */
 
 		if( TOP_WINDOW && !C.update_lock )
