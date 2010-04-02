@@ -2594,7 +2594,7 @@ same_aesobj(struct xa_aes_object *a, struct xa_aes_object *b)
 inline static bool
 valid_aesobj(struct xa_aes_object *o)
 {
-	if (o->item == -1 || !o->tree)
+	if (o->item < 0 || !o->tree)
 		return false;
 	return true;
 }
