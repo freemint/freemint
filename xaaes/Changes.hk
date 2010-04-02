@@ -1,3 +1,29 @@
+02-04-2010
+----------
+
+mt_gem:
+
+added comments for PARMBLK.
+---------------------------------------------------------------------
+xa_types:
+
+An AES-object is only valid if item is >= 0 (was != -1).
+---------------------------------------------------------------------
+xa_fnts:
+
+corrected the font-selector: List all fonts, style and family only valid for outline-fonts.
+---------------------------------------------------------------------
+k_main:
+
+force killing a client that caused a memory-violation.
+---------------------------------------------------------------------
+obj-cursor (draw_obj.c draw_obj.h form.c scrlobjc.c)
+
+use different method to display/remove obejct-cursor. Now it is removed
+by drawing a rectangle with the assumed background-color and displaying
+the previously focussed object.
+
+---------------------------------------------------------------------
 28-03-2010
 ----------
 
