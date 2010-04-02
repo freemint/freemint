@@ -31,7 +31,8 @@
 #include "xa_types.h"
 #include "mt_gem.h"
 
-#define DRW_CURSOR	1
+#define DRW_CURSOR		1
+#define UNDRAW_FOCUS	2
 
 long init_client_objcrend(struct xa_client *client);
 void exit_client_objcrend(struct xa_client *client);

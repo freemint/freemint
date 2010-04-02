@@ -352,7 +352,6 @@ d_g_progdef(struct widget_tree *wt, struct xa_vdi_settings *v)
 	PARMBLK *p;
 	//short r[4];
 	RECT save_clip;
-
 #if GENERATE_DIAGS
 	struct proc *curproc = get_curproc();
 
@@ -365,6 +364,7 @@ d_g_progdef(struct widget_tree *wt, struct xa_vdi_settings *v)
 //	KERNEL_DEBUG("ut->userblk_p = 0x%lx", ut->userblk_p);
 //	KERNEL_DEBUG("ut->ret_p     = 0x%lx", ut->ret_p    );
 //	KERNEL_DEBUG("ut->parmblk_p = 0x%lx", ut->parmblk_p);
+
 
 	if ((client->status & CS_EXITING))
 		return;
@@ -391,6 +391,7 @@ d_g_progdef(struct widget_tree *wt, struct xa_vdi_settings *v)
 		DIAG((D_o, wt->owner, "progdef before %s %04x", statestr, *wt->state_mask & ob->ob_state));
 	}
 #endif
+
 	act.sa_handler = client->ut->progdef_p;
 	act.sa_mask = 0xffffffff;
 	act.sa_flags = SA_RESETHAND;
@@ -399,12 +400,14 @@ d_g_progdef(struct widget_tree *wt, struct xa_vdi_settings *v)
 	p_sigaction(SIGUSR2, &act, &oact);
 
 	DIAGS(("raise(SIGUSR2)"));
+	/* todo: some buggy apps dont return here (bus-error), which may cause XaAES to freeze
+	 * inside raise another signal (bus-error) occurs.
+	*/
 	raise(SIGUSR2);
 	DIAGS(("handled SIGUSR2 progdef callout"));
 
 	/* restore old handler */
 	p_sigaction(SIGUSR2, &oact, NULL);
-
 	/* The PROGDEF function returns the ob_state bits that
 	 * remain to be handled by the AES:
 	 */
@@ -561,10 +564,37 @@ init_objects(void)
 #define G_SHORTCUT		38
 
 /*
+ * display or remove object-cursor
+ * sr: corrds of object
+ * md: 1: show, 0: remove
+ */
+static void do_object_cursor( struct xa_vdi_settings *v, RECT *sr, short md)
+{
+	/* this should in fact be the parent-color */
+	short color = md ? G_RED : (screen.planes > 1 ? G_LWHITE : G_WHITE);
+	(*v->api->wr_mode)(v, MD_REPLACE);
+	(*v->api->l_color)(v, color);
+	(*v->api->l_width)(v, 1);
+	if( md == 1 )
+	{
+		(*v->api->l_type)(v, USERLINE);
+		(*v->api->l_udsty)(v, 0xaaaa);
+	}
+	else
+	{
+		(*v->api->l_type)(v, SOLID);
+	}
+
+	(*v->api->gbox)(v, 0, sr);
+	(*v->api->l_type)(v, SOLID);
+
+}
+
+/*
  * Display a primitive object
  */
 void
-display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_object item, short parent_x, short parent_y, short which)
+display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, struct xa_aes_object item, short parent_x, short parent_y, short flags)
 {
 	RECT r, o, sr;
 	OBJECT *ob = aesobj_ob(&item);
@@ -596,7 +626,9 @@ display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, struct x
 	    || o.x + o.w - 1	< v->clip.x
 	    || o.y		> (v->clip.y + v->clip.h - 1)
 	    || o.y + o.h - 1	< v->clip.y)
+	{
 		return;
+	}
 
 	/* Get display routine for this type of object from jump table */
 	if (t <= G_UNKNOWN)
@@ -647,13 +679,17 @@ display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, struct x
 #endif
 #endif
 
-	/* Call the appropriate display routine */
-	(*drawer)(wt, v);
-
-	if( screen.planes > 1 )	/* else on TT/ST-high checked is not visible if selected */
+	if( !(flags & UNDRAW_FOCUS) && screen.planes > 1 )	/* else on TT/ST-high checked is not visible if selected */
 		(*v->api->wr_mode)(v, MD_TRANS);
 	else
-		(*v->api->wr_mode)(v, MD_REPLACE);
+	{
+		if (flags & UNDRAW_FOCUS)
+			do_object_cursor(v, &sr, 0);
+		else
+			(*v->api->wr_mode)(v, MD_REPLACE);
+	}
+	/* Call the appropriate display routine */
+	(*drawer)(wt, v);
 
 	if (t != G_PROGDEF)
 	{
@@ -715,17 +751,11 @@ display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, struct x
 		}
 	}
 
-	if (focus_ob(wt) == ob)
+	if ( focus_ob(wt) == ob && !(flags & UNDRAW_FOCUS) )
 	{
-		if (wt->e.c_state || wt->wind )	/* wt->wind is for wdialogs */
+		if (wt->e.c_state || wt->wind )		/* wt->wind is for wdialogs */
 		{
-			(*v->api->wr_mode)(v, MD_REPLACE);
-			(*v->api->l_color)(v, G_RED);
-			(*v->api->l_type)(v, 7);
-			(*v->api->l_udsty)(v, 0xaaaa); //0xe0e0); //0xaaaa);
-
-			(*v->api->gbox)(v, 0, &sr);
-			(*v->api->l_type)(v, 0);
+			do_object_cursor(v, &sr, 1);
 		}
 	}
 
@@ -917,7 +947,7 @@ uplink:
 			if (start_drawing)
 			{
 				/* Display this object */
-				display_object(lock, wt, v, *c, x, y, 10);
+				display_object(lock, wt, v, *c, x, y, flags);
 				if (!ei && docurs && same_aesobj(c, &wt->e.o))
 				{
 					if ((aesobj_type(c) & 0xff) != G_USERDEF)

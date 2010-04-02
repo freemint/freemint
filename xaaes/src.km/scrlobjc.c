@@ -743,7 +743,7 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 						list->nil_wt->owner = list->wt->owner;
 						list->nil_wt->objcr_api = list->wt->owner->objcr_api;
 						list->nil_wt->objcr_theme = list->wt->owner->objcr_theme;
-						display_object(lock, list->nil_wt, v, aesobj(list->nil_wt->tree, 0), ix, iy, 12);
+						display_object(lock, list->nil_wt, v, aesobj(list->nil_wt->tree, 0), ix, iy, 0);
 					}
 					break;
 				}
@@ -785,7 +785,7 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 							list->nil_wt->owner = list->wt->owner;
 							list->nil_wt->objcr_api = list->wt->owner->objcr_api;
 							list->nil_wt->objcr_theme = list->wt->owner->objcr_theme;
-							display_object(lock, list->nil_wt, v, aesobj(list->nil_wt->tree, 0), ix, iy, 12);
+							display_object(lock, list->nil_wt, v, aesobj(list->nil_wt->tree, 0), ix, iy, 0);
 							dx += c->c.text.icon.r.w;
 							if( list->icon_w == 0 )
 								list->icon_w = c->c.text.icon.r.w;
