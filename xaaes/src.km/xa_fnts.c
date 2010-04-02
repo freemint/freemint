@@ -576,7 +576,7 @@ get_font_items(struct xa_fnts_info *fnts)
 	}
 
 	id = 0;
-	for (i = 0; i < (fnts->fnts_loaded); i++)
+	for (i = 0; i <= (fnts->fnts_loaded); i++)
 	{
 		if (!(new = new_fnts_item()))
 			break;
@@ -594,10 +594,6 @@ get_font_items(struct xa_fnts_info *fnts)
 			last->link = new;
 			last = new;
 		}
-
-
-
-
 	}
 
 	DIAGS(("get_font_items: free vdipb at %lx, returning fitem=%lx", vpb, fitem));
@@ -650,6 +646,7 @@ set_points_list(struct xa_fnts_info *fnts, struct xa_fnts_item *f)
 	struct scroll_content sc = {{ 0 }};
 
 	list->empty(list, NULL, -1);
+	list->redraw(list, NULL);
 
 	if (f)
 	{
@@ -660,7 +657,7 @@ set_points_list(struct xa_fnts_info *fnts, struct xa_fnts_item *f)
 			sc.data = f;
 			sprintf(b, sizeof(b), "%d", f->f.pts[i]);
 			DIAGS(("set_point_list: add '%s'", b));
-			list->add(list, NULL, NULL, &sc, false, 0, false);
+			list->add(list, NULL, NULL, &sc, false, 0, NORMREDRAW);
 		}
 	}
 
@@ -692,7 +689,7 @@ set_name_list(struct xa_fnts_info *fnts, struct xa_fnts_item *selstyle)
 			sc.fnt = &wtxt;
 
 		f = list->cur->data;
-		if (*f->f.style_name != '\0')
+		if (f->f.outline && *f->f.style_name != '\0')
 		{
 			sc.t.strings = 1;
 			while (f)
@@ -760,6 +757,7 @@ update_slists(struct xa_fnts_info *fnts)
 	SCROLL_INFO *list_name, *list_style;
 	struct scroll_content sc = {{ 0 }};
 	struct xa_wtxt_inf wtxt;
+	char last_font[64] = {0};
 
 	list_name  = object_get_slist(obtree + FNTS_FNTLIST);
 	list_style = object_get_slist(obtree + FNTS_TYPE);
@@ -790,10 +788,13 @@ update_slists(struct xa_fnts_info *fnts)
 	{
 		wtxt.n.f = wtxt.s.f = wtxt.h.f = f->f.id;
 
-		//sc.t.text = *f->f.family_name != '\0' ? f->f.family_name : f->f.full_name;
-		sc.t.text = f->f.full_name;
+		sc.t.text = f->f.outline ? f->f.family_name : f->f.full_name;
 		sc.data = f;
-		list_name->add(list_name, NULL, sort_names, &sc, false, 0, NORMREDRAW);
+		if( strcmp( sc.t.text, last_font ) )
+		{
+			list_name->add(list_name, NULL, sort_names, &sc, false, 0, NORMREDRAW);
+			strcpy( last_font, sc.t.text );
+		}
 		f = f->link;//nxt_family;
 	}
 
@@ -801,7 +802,6 @@ update_slists(struct xa_fnts_info *fnts)
 	list_name->redraw(list_name, NULL);
 
 	set_name_list(fnts, NULL);
-
 }
 
 /*
