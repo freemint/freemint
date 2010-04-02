@@ -12,7 +12,7 @@ do
 		fi
 	fi
 done
-echo $N
+echo $i
 
 #set BDATETIME to date of .
 #N=.
