@@ -1038,19 +1038,19 @@ typedef struct object
 /** TODO */
 typedef struct parm_block
 {
-	OBJECT	*pb_tree;		/**< TODO */
-	short	pb_obj;			/**< TODO */
-	short	pb_prevstate;	/**< TODO */
-	short	pb_currstate;	/**< TODO */
-	short	pb_x;			/**< TODO */
-	short	pb_y;			/**< TODO */
-	short	pb_w;			/**< TODO */
-	short	pb_h;			/**< TODO */
-	short	pb_xc;			/**< TODO */
-	short	pb_yc;			/**< TODO */
-	short	pb_wc;			/**< TODO */
-	short	pb_hc;			/**< TODO */
-	long	pb_parm;		/**< TODO */
+	OBJECT	*pb_tree;		/* Pointer to the object tree         */
+	short	pb_obj;				/* Index of the object                */
+	short	pb_prevstate;	/* Previous object status             */
+	short	pb_currstate;	/* New object status            			*/
+	short	pb_x;					/* X-position of the object           */
+	short	pb_y;					/* Y-position of the object           */
+	short	pb_w;					/* Width of the object                */
+	short	pb_h;					/* Height of the object               */
+	short	pb_xc;				/* X-position of the clipping region  */
+	short	pb_yc;				/* Y-position of the clipping region  */
+	short	pb_wc;				/* Width of the clipping region       */
+	short	pb_hc;				/* Height of the clipping region      */
+	long	pb_parm;			/* Parameter of USERBLK structure     */
 } PARMBLK;
 
 /** TODO */
