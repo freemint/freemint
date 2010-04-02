@@ -261,13 +261,13 @@ okexit:
 	if( valid_aesobj( &edobj ) )
 	{
 		/* draw 1st cursor */
-		obj_draw(wt, client->vdi_settings, edobj, -2, NULL, NULL, DRW_CURSOR);
+		obj_draw(wt, client->vdi_settings, edobj, 0, NULL, NULL, DRW_CURSOR);
 	}
 	/* if edit-object != focus draw focus-cursor */
 	if( !same_aesobj( &wt->focus, &edobj ) )
 	{
 		/* draw 1st cursor */
-		obj_draw(wt, client->vdi_settings, wt->focus, -2, NULL, NULL, DRW_CURSOR);
+		obj_draw(wt, client->vdi_settings, wt->focus, 0, NULL, NULL, DRW_CURSOR);
 	}
 
 	DIAGS(("Setup_form_do: returning - edobj=%d, wind %lx",
@@ -474,7 +474,7 @@ Form_Button(XA_TREE *wt,
 				if (valid_aesobj(&pf))
 					obj_draw(wt, v, pf, 0, NULL, *rl, UNDRAW_FOCUS|DRW_CURSOR);
 				wt->focus = obj;
-				obj_draw(wt, v, obj, -2, NULL, *rl, DRW_CURSOR);
+				obj_draw(wt, v, obj, 0, NULL, *rl, DRW_CURSOR);
 			}
 		}
 	}	/*/if ( (flags & OF_SELECTABLE) && !(state & OS_DISABLED) )*/
