@@ -734,6 +734,20 @@ CE_fa(enum locks lock, struct c_event *ce, bool cancel)
 	{
 		struct display_alert_data *data = ce->ptr1;
 
+		/* make sure the evil process really goes away */
+		long pid = 0;
+		char *ps = strstr( data->buf, "(PID ");
+
+		if( ps )
+			pid = atol( ps + 4 );
+
+		if( pid && strstr( data->buf, "KILLED:" ) )
+		{
+			while( !ikill(pid, SIGKILL) )
+				nap(2000);
+		}
+		/***********************************************/
+
 		if (C.update_lock)
 		{
 			struct timeout *t;
@@ -751,8 +765,8 @@ CE_fa(enum locks lock, struct c_event *ce, bool cancel)
 		  char b[MAXALERTLEN];
 #endif
 			unsigned short amask;
-				struct widget_tree *wt;
-				OBJECT *form=0, *icon=0;		/* gcc4 isnt that clever? */
+			struct widget_tree *wt;
+			OBJECT *form=0, *icon=0;		/* gcc4 isnt that clever? */
 
 			if (!htd || !htd->w_sysalrt)
 				open_systemalerts(0, client, false);
@@ -845,6 +859,7 @@ CE_fa(enum locks lock, struct c_event *ce, bool cancel)
 static void
 display_alert(struct proc *p, long arg)
 {
+	BLOG((0,"display_alert:%s:%lx-%lx",p->name, p, C.update_lock));
 	if (C.update_lock)
 	{
 		/* we need to delay */
@@ -1677,10 +1692,8 @@ k_main(void *dummy)
 			 * give it some cpu to read keyboard (see anyplayer:"whithout GEM")
 			 */
 			extern unsigned long wevents;	/* from xa_evnt.c (check_queued_events) */
-			//BLOG((1,"%ld:wevents=%lx", cnt++, wevents));
 			if( wevents == 0 )
 			{
-				//BLOG((1,"nap"));
 				//extern char *wclientname;
 #if ALWAYS_CTRL_APP_OPS && ALT_CTRL_APP_OPS
 				/* Ctrl-Alt? */
