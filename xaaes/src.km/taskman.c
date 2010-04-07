@@ -1996,17 +1996,17 @@ handle_launcher(enum locks lock, struct fsel_data *fs, const char *path, const c
 
 	sprintf(parms+1, sizeof(parms)-1, "%s%s", path, file);
 	parms[0] = '\0';
-
+#if 0
 	for(t = parms + 1; *t; t++)
 	{
 		if (*t == '/')
 			*t = '\\';
 	}
-
+#endif
 	close_fileselector(lock, fs);
 
 	DIAGS(("launch: \"%s\"", parms+1));
-	sprintf(cfg.launch_path, sizeof(cfg.launch_path), "%s%s", path, fs->fs_pattern);
+	//sprintf(cfg.launch_path, sizeof(cfg.launch_path), "%s%s", path, fs->fs_pattern);
 	launch(lock, 0, 0, 0, parms+1, parms, C.Aes);
 }
 
