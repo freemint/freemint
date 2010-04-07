@@ -238,7 +238,7 @@ uni_lookup (fcookie *dir, const char *name, fcookie *fc)
 static long
 do_ulookup (fcookie *dir, const char *nam, fcookie *fc, UNIFILE **up)
 {
-	union { const char *cc; char *c; short *s; } nameptr; nameptr.cc = nam;
+	union { const char *cc; char *c; } nameptr; nameptr.cc = nam;
 	UNIFILE *u;
 	long drvs;
 	FILESYS *fs;
