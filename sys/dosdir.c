@@ -2174,18 +2174,21 @@ sys_f_chdir (short fd)
 	if (r)
 	{
 		DEBUG (("Ffchdir(%i): couldn't get directory attributes", fd));
+		release_cookie (&(f->fc));
 		return r;
 	}
 
 	if (!(xattr.attr & FA_DIR))
 	{
 		DEBUG (("Ffchdir(%i): not a directory", fd));
+		release_cookie (&(f->fc));
 		return ENOTDIR;
 	}
 
 	if (denyaccess (p->p_cred->ucr, &xattr, S_IXOTH))
 	{
 		DEBUG (("Ffchdir(%i): access denied", fd));
+		release_cookie (&(f->fc));
 		return EACCES;
 	}
 
@@ -2263,6 +2266,7 @@ sys_f_opendir (short fd)
 	if (r)
 	{
 		DEBUG (("Ffdopendir(%i): fdopendir returned %ld", fd, r));
+		release_cookie (&dirh->fc);
 		kfree (dirh);
 		return r;
 	}
@@ -2329,28 +2333,22 @@ sys_f_dirfd (long handle)
 	r = FD_ALLOC (p, &fd, MIN_OPEN);
 	if (r) goto error;
 
-	r = FP_ALLOC (p, &fp);
-	if (r) goto error;
-
 	if (dev == &fakedev)
 	{
 		/* fake BIOS devices */
-		FILEPTR *fpfake;
-
 		assert (p->p_fd);
 
-		fpfake = p->p_fd->ofiles[devsp];
-		if (!fpfake || fpfake == (FILEPTR *) 1) {
-			r = EBADF;
-			goto error;
+		fp = p->p_fd->ofiles[devsp];
+		if (!fp || fp == (FILEPTR *) 1) {
+			FD_REMOVE (p, fd);
+			return EBADF;
 		}
 
-		fpfake->links--;
-		FP_FREE (fp);
-
-		fp = fpfake;
-		fpfake->links++;
+		fp->links++;
 	} else {
+		r = FP_ALLOC (p, &fp);
+		if (r) goto error;
+
 		fp->links = 1;
 		fp->flags = O_RDONLY;
 		fp->pos = 0;
