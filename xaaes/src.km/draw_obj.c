@@ -40,6 +40,9 @@
 #include "scrlobjc.h"
 #include "xa_user_things.h"
 
+/* call progdef-function via SIGUSR2 (not good because of possible VDI-calls inside signal-handler) */
+#define PROGDEF_BY_SIGNAL	0
+
 #include "mint/signal.h"
 
 #define done(x) (*wt->state_mask &= ~(x))
@@ -328,6 +331,9 @@ disable_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_r
 #endif
 
 
+#if !PROGDEF_BY_SIGNAL
+typedef short __CDECL (*p_handler)(PARMBLK *pb);
+#endif
 
 /* HR: implement wt->x,y in all ObjectDisplay functions */
 /* HR 290101: OBSPEC union & BFOBSPEC structure now fully implemented
@@ -340,13 +346,16 @@ disable_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_r
  * Draw a box (respecting 3d flags)
  */
 
+
 #define userblk(ut) (*(USERBLK **)(ut->userblk_pp))
 #define ret(ut)     (     (long *)(ut->ret_p     ))
 #define parmblk(ut) (  (PARMBLK *)(ut->parmblk_p ))
 static void
 d_g_progdef(struct widget_tree *wt, struct xa_vdi_settings *v)
 {
+#if PROGDEF_BY_SIGNAL
 	struct sigaction oact, act;
+#endif
 	struct xa_client *client = lookup_extension(NULL, XAAES_MAGIC);
 	OBJECT *ob = wt->current.ob;
 	PARMBLK *p;
@@ -392,6 +401,34 @@ d_g_progdef(struct widget_tree *wt, struct xa_vdi_settings *v)
 	}
 #endif
 
+#if !PROGDEF_BY_SIGNAL
+	{
+	BASEPAGE *base = client->p->p_mem->base;
+	//USERBLK *userblk = object_get_spec(ob)->userblk;
+	p_handler	pfunc;
+	long pret;
+
+	pfunc = (p_handler)userblk(client->ut)->ub_code;//userblk->ub_code;
+
+	/* check if callback-address is inside client-text */
+	if( (long)pfunc < base->p_tbase || (long)pfunc >= base->p_tbase+base->p_tlen)
+	{
+		BLOG((0,"PROGDEF: %s: user-func(%lx) outside TEXT:%lx-%lx", client->name, pfunc, base->p_tbase, base->p_tbase + base->p_tbase+base->p_tlen));
+		return;
+	}
+
+	pret = pfunc(p);
+
+
+	if( wt->state_mask && !((long)wt->state_mask & 1) )
+		*wt->state_mask = pret;
+	else
+	{
+		BLOG((0,"d_g_progdef:%s:invalid state_mask-pointer:%lx", client->name, wt->state_mask));
+		return;
+	}
+	}
+#else
 	act.sa_handler = client->ut->progdef_p;
 	act.sa_mask = 0xffffffff;
 	act.sa_flags = SA_RESETHAND;
@@ -404,14 +441,17 @@ d_g_progdef(struct widget_tree *wt, struct xa_vdi_settings *v)
 	 * inside raise another signal (bus-error) occurs.
 	*/
 	raise(SIGUSR2);
+
 	DIAGS(("handled SIGUSR2 progdef callout"));
 
 	/* restore old handler */
 	p_sigaction(SIGUSR2, &oact, NULL);
+
 	/* The PROGDEF function returns the ob_state bits that
 	 * remain to be handled by the AES:
 	 */
 	*wt->state_mask = *ret(client->ut);
+#endif
 
 	/* BUG: OS_SELECTED bit only handled in non-color mode!!!
 	 * (Not too serious I believe... <mk>)
@@ -570,6 +610,15 @@ init_objects(void)
  */
 static void do_object_cursor( struct xa_vdi_settings *v, RECT *sr, short md)
 {
+#if 0
+		union { BFOBSPEC c; unsigned long l; } conv;
+		struct extbox_parms *p = (struct extbox_parms *)(*api->object_get_spec)(ob)->index;
+		short ty = ob->ob_type;
+
+// 		c = *(BFOBSPEC *)&p->obspec;
+		conv.l = p->obspec;
+		c = conv.c;
+#endif
 	/* this should in fact be the parent-color */
 	short color = md ? G_RED : (screen.planes > 1 ? G_LWHITE : G_WHITE);
 	(*v->api->wr_mode)(v, MD_REPLACE);
@@ -688,6 +737,7 @@ display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, struct x
 		else
 			(*v->api->wr_mode)(v, MD_REPLACE);
 	}
+
 	/* Call the appropriate display routine */
 	(*drawer)(wt, v);
 
