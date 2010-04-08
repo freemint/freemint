@@ -712,7 +712,6 @@ multi_intout(struct xa_client *client, short *o, int evnt)
 		o[5] = o[6] = 0;
 	}
 }
-
 struct display_alert_data
 {
 	enum locks lock;
@@ -859,7 +858,6 @@ CE_fa(enum locks lock, struct c_event *ce, bool cancel)
 static void
 display_alert(struct proc *p, long arg)
 {
-	BLOG((0,"display_alert:%s:%lx-%lx",p->name, p, C.update_lock));
 	if (C.update_lock)
 	{
 		/* we need to delay */

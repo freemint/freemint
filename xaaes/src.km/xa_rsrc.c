@@ -265,7 +265,7 @@ FixColourIconData(struct xa_client *client, CICONBLK *icon, struct xa_rscs *rscs
 	{
 		DIAG((D_rsrc,client,"[1]probe cicon 0x%lx", c));
 
-		if (    c->num_planes <= screen.planes
+		if (c->num_planes <= screen.planes
 		    && (!best_cicon || (best_cicon && c->num_planes > best_cicon->num_planes)))
 		{
 			best_cicon = c;
@@ -680,8 +680,10 @@ fix_trees(struct xa_client *client, void *b, OBJECT **trees, unsigned long n, sh
 				}
 				while (!(obj++->ob_flags & OF_LASTOB));
 
-				if( (client->options.alt_shortcuts & ALTSC_DIALOG) )
+				if (client->options.alt_shortcuts & ALTSC_DIALOG)
+				{
 					ob_fix_shortcuts(*trees, false);
+				}
 			}
 			else
 			{
@@ -834,7 +836,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 		{
 			size = *(unsigned long *)(base + osize);
 		}
-		if( size != sz )
+		if (size != sz)
 		{
 			DIAG((D_rsrc, client, "LoadResource(): Error loading file (size mismatch)"));
 			BLOG((1,"LoadResources:%s: wrong size (%ld,%ld)!", fname, sz, size ));

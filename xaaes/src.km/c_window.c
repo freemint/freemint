@@ -997,22 +997,6 @@ generate_redraws(enum locks lock, struct xa_window *wind, RECT *r, short flags)
 			{
 				if ( xa_rect_clip(&widg->ar, r, &b))
 				{
-					/* hack to force redrawing the area above vslider
-					 */
-#if 0
-					if ( (wind->active_widgets & VSLIDE) )
-					{
-						XA_WIDGET *widg2 = get_widget(wind, XAW_VSLIDE);
-
-						if( (b.x + b.w + widg2->ar.w > (wind->rwa.x + wind->rwa.w + wind->frame)) )
-						{
-							short d = wind->r.x + wind->r.w - wind->frame - (b.x + b.w);
-							if( d > 0 )
-								b.w += d;
-						}
-
-					}
-#endif
 					send_app_message(lock, wind, NULL, AMQ_IREDRAW, QMF_NORM,
 						WM_REDRAW, widg->m.r.xaw_idx, ((long)wind) >> 16, ((long)wind) & 0xffff,
 							b.x, b.y, b.w, b.h);

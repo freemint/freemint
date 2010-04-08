@@ -437,11 +437,7 @@ d_g_progdef(struct widget_tree *wt, struct xa_vdi_settings *v)
 	p_sigaction(SIGUSR2, &act, &oact);
 
 	DIAGS(("raise(SIGUSR2)"));
-	/* todo: some buggy apps dont return here (bus-error), which may cause XaAES to freeze
-	 * inside raise another signal (bus-error) occurs.
-	*/
 	raise(SIGUSR2);
-
 	DIAGS(("handled SIGUSR2 progdef callout"));
 
 	/* restore old handler */

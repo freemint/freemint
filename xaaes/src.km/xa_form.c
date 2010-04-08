@@ -402,7 +402,9 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 		alert_form[ALERT_BUT1 + f].ob_flags |= OF_HIDETREE;
 
 	if( client->options.alt_shortcuts & ALTSC_ALERT )
+	{
 		ob_fix_shortcuts(alert_form, true);
+	}
 
 	/* Create a window and attach the alert object tree centered to it */
 	{
@@ -881,7 +883,7 @@ XA_form_do(enum locks lock, struct xa_client *client, AESPB *pb)
 		 * to obtree. Dont know if this ever happens, but ....
 		 */
 	}
-		return XAC_DONE;
+	return XAC_DONE;
 }
 
 unsigned long

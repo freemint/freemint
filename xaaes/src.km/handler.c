@@ -591,7 +591,9 @@ XA_handler(void *_pb)
 			}
 
 			while (client->irdrw_msg)
+			{
 				exec_iredraw_queue(0, client);
+			}
 		}
 #if 0
 #error external fileselectors not yet supported
@@ -731,7 +733,9 @@ XA_handler(void *_pb)
 		if (client)
 		{
 			while (client->irdrw_msg)
+			{
 				exec_iredraw_queue(0, client);
+			}
 		}
 	}
 	else

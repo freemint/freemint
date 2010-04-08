@@ -557,9 +557,8 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 
 					type = APP_APPLICATION;
 					ret = p->pid;
-					/* create new pgrp for launched app so killgroup cannot affect XaAES */
-					/* now all signals are caught: use launcher-pgrp for keyboard-access for clients */
-					p_setpgrp(ret, loader_pgrp/*ret*/);
+					/* now signals are caught: use launcher-pgrp for keyboard-access for clients */
+					p_setpgrp(ret, loader_pgrp);
 				}
 				else
 					ret = -ret;
