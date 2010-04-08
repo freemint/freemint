@@ -1,3 +1,16 @@
+08-04-2010
+----------
+
+draw_obj:
+
+d_g_progdef: call progdef-function directly, not via signal.
+
+---------------------------------------------------------------------
+
+taskman:
+
+handle_launcher: do not overwrite cfg.launchpath.
+---------------------------------------------------------------------
 02-04-2010
 ----------
 
