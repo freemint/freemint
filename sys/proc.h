@@ -28,6 +28,12 @@ extern struct proc_queue sysq[NUM_QUEUES];
 # define SAMPS_PER_5MIN		SAMPS_PER_MIN * 5
 # define SAMPS_PER_15MIN	SAMPS_PER_MIN * 15
 
+/*
+ * use alternative method for load-calculation
+ * use time not spent in kernel to get load
+*/
+# define NEWLOAD	1
+
 # define LOAD_SCALE		2048
 
 extern ulong uptime;
