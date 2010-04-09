@@ -1,24 +1,24 @@
 /*
  * $Id$
- * 
+ *
  * This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
  * distribution.  See the file Changes.MH for a detailed log of changes.
  *
  *
  * @(#)XHDI/xhdi.h
- * 
+ *
  * Julian F. Reschke, Rainer Seitel, 1997-07-28
- * 
+ *
  * Bindings for the XHDI functions
  * --- NOT FULLY TESTED, USE AT YOUR OWN RISK ---
- * 
- * 
+ *
+ *
  * Author: Frank Naumann <fnaumann@freemint.de>
  * Started: 1999-01-01
- * 
+ *
  * please send suggestions, patches or bug reports to me or
  * the MiNT mailing list
- * 
+ *
  */
 
 
@@ -44,7 +44,7 @@ typedef struct
 	short	datrec;		/* first data sector */
 	ushort	numcl;		/* total number of clusters */
 	short	bflags;		/* some flags */
-	
+
 } __BPB;
 
 
@@ -66,7 +66,7 @@ typedef struct
 				 * bit 1: 0 = 2 FATs, 1 = 1 FAT
 				 * bit 2: 0 = BPB, 1 = EXTENDED_BPB
 				 */
-	
+
 	/* Ab hier undokumentiert, nur A: und B:! */
 	short	ntracks;	/* Anzahl Spuren */
 	short	nsides;		/* Anzahl Seiten */
@@ -76,7 +76,7 @@ typedef struct
 	uchar	ser[3];		/* Seriennummer */
 	uchar	serms[4];	/* ab TOS 2.06: MS-DOS-4.0-Seriennummer */
 	char	unused;
-	
+
 	/* if bit 2 of bflags are set */
 	long	l_recsiz;	/* bytes per sector */
 	long	l_clsiz;	/* sectors per cluster */
@@ -132,7 +132,7 @@ long	XHStop		(ushort major, ushort minor, ushort do_stop, ushort key);
 long	XHEject		(ushort major, ushort minor, ushort do_eject, ushort key);
 long	XHDrvMap	(void);
 long	XHInqDev	(ushort bios_device, ushort *major, ushort *minor, ulong *start_sector, __BPB *bpb);
-long	XHInqDriver	(ushort bios_device, char *name, char *version, char *company, ushort *ahdi_version, ushort *maxIPL);
+long	XHInqDriver	(ushort bios_device, char *name, char *drversion, char *company, ushort *ahdi_version, ushort *maxIPL);
 long	XHNewCookie	(void *newcookie);
 long	XHReadWrite	(ushort major, ushort minor, ushort rwflag, ulong recno, ushort count, void *buf);
 long	XHInqTarget2	(ushort major, ushort minor, ulong *block_size, ulong *device_flags, char *product_name, ushort stringlen);

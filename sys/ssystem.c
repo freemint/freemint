@@ -651,7 +651,7 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 		/* XXX only for testing */
 		case 3000:
 		{
-			long _cdecl register_trap2(long _cdecl (*dispatch)(void *), int mode, int flag, long extra);
+			long _cdecl register_trap2(long _cdecl (*dispatch)(void *), int smode, int flag, long extra);
 
 			if (!isroot)
 				r = EPERM;
