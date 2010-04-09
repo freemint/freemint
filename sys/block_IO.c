@@ -803,6 +803,7 @@ bio_readin (DI *di, void *buffer, ulong size, ulong sector)
 INLINE long
 bio_writeout (DI *di, const void *buffer, ulong size, ulong sector)
 {
+	union { const void *cvb; void *b;} ptr = {buffer};	// ptr.cvb = buffer;
 	register long r;
 
 /* NASTY HACK, FIXME */
@@ -810,7 +811,7 @@ bio_writeout (DI *di, const void *buffer, ulong size, ulong sector)
 	if (di->drv < 2 ) r = floppy_block_io (di, 1, buffer, size, sector);
 	else
 #endif
-	r = BIO_RWABS (di, 1, (void *) buffer, size, sector);
+	r = BIO_RWABS (di, 1, ptr.b, size, sector);
 	if (r)
 	{
 		BIO_ALERT (("block_IO [%c]: bio_writeout: RWABS fail (ignored, %li))", di->drv+'A', r));
@@ -1215,10 +1216,10 @@ bio_unit_get (DI *di, ulong sector, ulong size, long *err)
 
 	/* sector validation */
 	{
-		ulong n1 = size >> di->pshift;
+		ulong num = size >> di->pshift;
 		ulong recno = sector << di->lshift;
 
-		if (!n1)
+		if (!num)
 		{
 			BIO_ALERT (("block_IO [%c]: bio_unit_get n = 0 failure!", di->drv+'A'));
 
@@ -1226,7 +1227,7 @@ bio_unit_get (DI *di, ulong sector, ulong size, long *err)
 			return NULL;
 		}
 
-		if (di->size && (recno + n1) > di->size)
+		if (di->size && (recno + num) > di->size)
 		{
 			BIO_ALERT (("block_IO [%c]: bio_unit_get: access outside partition", di->drv+'A'));
 
@@ -1473,7 +1474,7 @@ bio_set_cache_size (long size)
 	count = (size * 1024L) / cache.max_size;
 	if (!count)
 	{
-		BIO_ALERT (("block_IO []: %s, %ld: Specified cache size too small (%li).", __FILE__, __LINE__, size));
+		BIO_ALERT (("block_IO []: %s, %ld: Specified cache size too small (%li).", __FILE__, (long)__LINE__, size));
 		return EBADARG;
 	}
 

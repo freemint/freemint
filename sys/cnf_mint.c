@@ -407,6 +407,7 @@ pCB_echo(char *line)
 static void
 pCB_exec(const char *path, const char *line, struct parsinf *inf)
 {
+	union { const char *cc; char *c;} pathptr = {path};	// pathptr.cc = path;
 	char cmdline[128];
 	int i;
 
@@ -416,7 +417,7 @@ pCB_exec(const char *path, const char *line, struct parsinf *inf)
 	strncpy(cmdline+1, line, i);
 	cmdline[i+1] = 0;
 
-	i = (int) sys_pexec(0, (char*) path, cmdline, _base->p_env);
+	i = (int) sys_pexec(0,  pathptr.c, cmdline, _base->p_env);
 	if (i < 0)
 	{
 		parser_msg(inf, NULL);

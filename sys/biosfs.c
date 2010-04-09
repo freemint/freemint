@@ -1287,12 +1287,13 @@ bios_topen (FILEPTR *f)
 static long _cdecl
 bios_twrite (FILEPTR *f, const char *buf, long bytes)
 {
+	union { const char *b; long *l;} ptr = {buf};// ptr.b = buf;
 	long *r;
 	long ret = 0;
 	int bdev = f->fc.aux;
 	struct bios_file *b = (struct bios_file *) f->fc.index;
 
-	r = (long *) buf;
+	r = ptr.l;// (long *) buf;
 
 /* Check for control characters on any newline output.
  * Note that newlines are always output through tty_putchar,
