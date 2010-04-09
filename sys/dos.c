@@ -250,7 +250,7 @@ sys_p_domain (int arg)
 
 	r = p->domain;
 	if (arg >= 0)
-		p->domain = arg ? 1 : 0;
+		p->domain = arg ? DOM_MINT : DOM_TOS;
 
 	return r;
 }
@@ -562,11 +562,17 @@ foundtimer:
  *	 2	max. number of open files per process	{OPEN_MAX}
  *	 3	number of supplementary group id's	{NGROUPS_MAX}
  *	 4	max. number of processes per uid	{CHILD_MAX}
+ *	 5	HZ					{CLK_TCK}
+ *	 6	pagesize				{PAGE_SIZE}
+ *	 7	phys pages				{PHYS_PAGES}
  *
  * unlimited values (e.g. CHILD_MAX) are returned as 0x7fffffffL
  *
  * See also Dpathconf() in dosdir.c.
  */
+
+#define PAGESIZE 8192 /* header file ?? */
+
 long _cdecl
 sys_s_ysconf (int which)
 {
@@ -576,10 +582,13 @@ sys_s_ysconf (int which)
 	{
 		case -1:	return 4;
 		case  0:	return UNLIMITED;
-		case  1:	return 126;
+		case  1:	return 32767; /* matches ARG_MAX */
 		case  2:	return p->p_fd->nfiles;
 		case  3:	return p->p_cred->ucr->ngroups;
 		case  4:	return UNLIMITED;
+		case  5:	return HZ;
+		case  6:	return PAGESIZE;
+		case  7:	return freephysmem() / PAGESIZE;
 		default:	return ENOSYS;
 	}
 }
@@ -602,6 +611,30 @@ sys_s_alert (char *str)
 	return E_OK;
 }
 
+
+#ifdef DEBUG_INFO
+extern unsigned short proc_clock;
+unsigned short pc;
+#endif
+#if NEWLOAD
+#define WITH_ACTLD	0x4143544CL	/* 'ACTL' */
+extern unsigned short new_ld;
+extern unsigned short uptimetick;
+
+void vbl_on(void);
+
+#ifdef ARANYM
+#define TEST_TICK	1
+#else
+#define TEST_TICK	0
+#endif
+
+
+#if TEST_TICK
+extern unsigned short uptime_ovfl;
+extern unsigned short uptime_ovfl1, uptime_ovfl2, modwr, mint_vblcnt;
+#endif
+#endif
 /*
  * Suptime: get time in seconds since boot and current load averages from
  * kernel.
@@ -611,6 +644,27 @@ sys_s_uptime (ulong *cur_uptime, ulong loadaverage[3])
 {
 	*cur_uptime = uptime;
 
+#if NEWLOAD
+
+#ifdef DEBUG_INFO
+	/*
+	DEBUG(("ld=%d uptime=%ld tick=%u overfl=%d/%d/%d modwr=%d vbl=%d", act_ld, uptime, uptimetick,
+		uptime_ovfl, uptime_ovfl1, uptime_ovfl2, modwr, mint_vblcnt));
+	*/
+	if( uptimetick > 200 || uptime_ovfl1 || uptime_ovfl2 )
+	{
+		DEBUG(("uptime():ld=%d tick=%u overfl=%d/%d/%d vbl=%d:%d:%d",
+			new_ld, uptimetick, uptime_ovfl, uptime_ovfl1, uptime_ovfl2, mint_vblcnt, proc_clock, pc));
+		uptimetick = 200;
+		uptime_ovfl = uptime_ovfl1 = uptime_ovfl2 = 0;
+
+	}
+#endif
+	if( loadaverage[0] == WITH_ACTLD )
+	{
+		loadaverage[3] = new_ld;
+	}
+#endif
 	loadaverage[0] = avenrun[0];
 	loadaverage[1] = avenrun[1];
 	loadaverage[2] = avenrun[2];
@@ -618,6 +672,7 @@ sys_s_uptime (ulong *cur_uptime, ulong loadaverage[3])
 	return E_OK;
 }
 
+#define GEM 0x47454D00L	/* "GEM" */
 /*
  * shut down processes; this involves waking them all up, and sending
  * them SIGTERM to give them a chance to clean up after themselves.
@@ -628,6 +683,7 @@ shutdown(void)
 	struct proc *p;
 	int posts = 0;
 	int i;
+	union { long l; char *s; } ls;
 
 	DEBUG(("shutdown() entered"));
 	assert(get_curproc()->p_sigacts);
@@ -641,8 +697,10 @@ shutdown(void)
 
 	for (p = proclist; p; p = p->gl_next)
 	{
-		/* Skip MiNT, curproc and AES */
-		if (p->pid && (p != get_curproc()) && ((p->p_mem->memflags & F_OS_SPECIAL) == 0))
+		ls.s = p->name;
+		FORCE("p->name=%s:%lx pgrp=%d", p->name, ls.l, p->pgrp);
+		/* Skip MiNT, curproc and AES (and GEM: this is a quick hack only!) */
+		if (p->pgrp && (p != get_curproc()) && ((p->p_mem->memflags & F_OS_SPECIAL) == 0) && ls.l != GEM )
 		{
 			if (p->wait_q != ZOMBIE_Q && p->wait_q != TSR_Q)
 			{
@@ -654,7 +712,7 @@ shutdown(void)
 					spl(sr);
 				}
 
-				DEBUG(("SIGTERM -> %s (pid %i)", p->name, p->pid));
+				FORCE("SIGTERM -> %s (pid %i)", p->name, p->pid);
 				post_sig(p, SIGTERM);
 
 				posts++;
@@ -668,13 +726,13 @@ shutdown(void)
 
 	sysq[READY_Q].head = sysq[READY_Q].tail = NULL;
 
-	DEBUG(("Close open files ..."));
+	FORCE("Close open files ...");
 	close_filesys();
-	DEBUG(("done"));
+	FORCE("done");
 
-	DEBUG(("Syncing file systems ..."));
+	FORCE("Syncing file systems ...");
 	sys_s_ync();
-	DEBUG(("done"));
+	FORCE("done");
 
 	for (i = 0; i < NUM_DRIVES; i++)
 	{
@@ -684,7 +742,7 @@ shutdown(void)
 		{
 			if (fs->fsflags & FS_EXT_1)
 			{
-				DEBUG(("Unmounting %c: ...", 'A'+i));
+				FORCE("Unmounting %c: ...", 'A'+i);
 				xfs_unmount(fs, i);
 			}
 			else
@@ -695,9 +753,9 @@ shutdown(void)
 		}
 	}
 
-	DEBUG(("Syncing file systems ..."));
+	FORCE("Syncing file systems ...");
 	sys_s_ync();
-	DEBUG(("done"));
+	FORCE("done");
 
 	/* Wait for the disks to flush their write cache */
 	delay_seconds(2);
@@ -715,12 +773,25 @@ shutdown(void)
 long _cdecl
 sys_s_hutdown(long restart)
 {
+	static short shutting_down = 0;
 	PROC *p = get_curproc();
 
+	if( shutting_down == 1 )
+	{
+		FORCE( "sys_s_hutdown reentered!");
+		return EPERM;
+	}
+	shutting_down = 1;
+	FORCE("sys_s_hutdown: %ld", restart);
 	/* only root may shut down the system */
 	if ((p->p_cred->ucr->euid == 0) || (p->p_cred->ruid == 0))
 	{
-		shutdown();
+
+		FORCE("sys_s_hutdown: restart=%ld", restart);
+		//sys_c_conin();
+ 		shutdown();
+		FORCE("sys_s_hutdown:shutting down restart=%ld", restart);
+		/*sys_c_conin();*/
 
 		switch (restart)
 		{
@@ -731,7 +802,7 @@ sys_s_hutdown(long restart)
 			}
 			case  SHUT_HALT:
 			{
-				DEBUG(("Halting system ..."));
+				FORCE("Halting system ...");
 				hw_halt();
 			}
 			case  SHUT_COLD:
@@ -741,7 +812,7 @@ sys_s_hutdown(long restart)
 			case  SHUT_BOOT:
 			default:
 			{
-				DEBUG(("Rebooting ..."));
+				TRACELOW(("Rebooting ..."));
 				hw_warmboot();
 			}
 		}
