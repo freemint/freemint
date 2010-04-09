@@ -1992,7 +1992,7 @@ cancel_csr(struct xa_client *running)
 static void
 handle_launcher(enum locks lock, struct fsel_data *fs, const char *path, const char *file)
 {
-	char parms[200], *t;
+	char parms[200];//, *t;
 
 	sprintf(parms+1, sizeof(parms)-1, "%s%s", path, file);
 	parms[0] = '\0';
@@ -2137,11 +2137,12 @@ refresh_systemalerts(OBJECT *form)
  * replace \n->,
  *
  */
-static void kerinfo2line( char *in, char *out )
+static void kerinfo2line( char *in, char *out, size_t maxlen )
 {
 	char *pi = in, *po = out;
+	size_t i;
 
-	for( ; *pi; pi++ )
+	for( i = 0; i < maxlen && *pi; i++, pi++ )
 	{
 		if( *pi > ' ' /*!= '\t'*/ )
 		{
@@ -2265,7 +2266,7 @@ static void add_kerinfo(
 	{
 		char line[256], sstr[1024];
 
-		err = kernel_read( fp, sstr, sizeof(sstr) );
+		err = kernel_read( fp, sstr, sizeof(sstr)-1 );
 		kernel_close(fp);
 		if( err >= sizeof(sstr) )
 			*(sstr + sizeof(sstr) - 1) = 0;
@@ -2291,7 +2292,7 @@ static void add_kerinfo(
 						for( cpx = cp; *cpx > ' '; cpx++ );
 						*cpx = 0;
 						if( cp && *cp )
-							j += sprintf( line+j, sizeof(line)-j, "%s%s ", pinfo[p+1], cp );
+							j += sprintf( line+j, sizeof(line)-j-1, "%s%s ", pinfo[p+1], cp );
 						p += 3;
 						*cpx = ' ';
 					}
@@ -2301,7 +2302,8 @@ static void add_kerinfo(
 			}
 			if( l < startline )
 			{
-				return;
+				BLOG((0,"add_kerinfo: invalid entry: %s.", sstr ));
+				return;	/* error */
 			}
 			err -= i;
 			if( maxlen && err > maxlen )
@@ -2310,8 +2312,7 @@ static void add_kerinfo(
 				err = sizeof(line)-1;
 			sstr[err+i] = 0;
 
-			kerinfo2line( sstr+i, line+j );
-
+			kerinfo2line( sstr+i, line+j, sizeof(line)-j-1 );
 
 			if( to )
 			{
@@ -2516,6 +2517,7 @@ open_systemalerts(enum locks lock, struct xa_client *client, bool open)
 			force_window_top( lock, wind );
 		}
 	}
+	//BLOG((0,"open_systemalerts:return ok."));
 	return;
 fail:
 	if (wt)
@@ -2525,7 +2527,7 @@ fail:
 	}
 	if (obtree)
 		free_object_tree(client, obtree);
-
+	//BLOG((0,"open_systemalerts:return fail."));
 }
 
 /*
