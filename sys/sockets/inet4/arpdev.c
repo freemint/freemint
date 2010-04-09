@@ -94,8 +94,7 @@ arpdev_read (FILEPTR *fp, char *buf, long nbytes)
 		info.praddr.shw_len = are->praddr.len;
 		info.praddr.shw_type = are->prtype;
 		if (are->flags & ATF_PRCOM)
-			memcpy (info.praddr.shw_addr, are->praddr.addr,
-				are->praddr.len);
+			memcpy (info.praddr.shw_adr.bytes, are->praddr.adr.bytes, are->praddr.len);
 		
 		/*
 		 * Hardware address
@@ -104,7 +103,7 @@ arpdev_read (FILEPTR *fp, char *buf, long nbytes)
 		info.hwaddr.shw_len = are->hwaddr.len;
 		info.hwaddr.shw_type = are->hwtype;
 		if (are->flags & ATF_HWCOM)
-			memcpy (info.hwaddr.shw_addr, are->hwaddr.addr,
+			memcpy (info.hwaddr.shw_adr.bytes, are->hwaddr.adr.bytes,
 				are->hwaddr.len);
 		
 		info.flags = are->flags;

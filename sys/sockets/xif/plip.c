@@ -333,13 +333,13 @@ inc_timeout (struct plip_private *plp)
 static short
 plip_collision (struct plip_private *plp)
 {
-# define SADDR(x)	(((struct sockaddr_in *) &(x))->sin_addr.s_addr)
+# define SADDR(x)	(x.in.sin_addr.s_addr)
 	struct ifaddr *ina;
 	
 	for (ina = plp->nif->addrlist; ina; ina = ina->next)
 	{
 		if (ina->family == AF_INET)
-			return (SADDR (ina->addr) < SADDR (ina->ifu.dstaddr));
+			return (SADDR (ina->adr) < SADDR (ina->ifu.dstadr));
 	}
 	
 	return 1;

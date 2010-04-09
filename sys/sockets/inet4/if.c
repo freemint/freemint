@@ -386,9 +386,9 @@ if_open (struct netif *nif)
 	 * interfaces' local address. If they match, the packet is
 	 * delivered to the local software.
 	 */
-	if (SIN (&ifa->addr)->sin_addr.s_addr != INADDR_ANY)
+	if (ifa->adr.in.sin_addr.s_addr != INADDR_ANY)
 	{
-		route_add (if_lo, SIN (&ifa->addr)->sin_addr.s_addr, 0xffffffffL,
+		route_add (if_lo, ifa->adr.in.sin_addr.s_addr, 0xffffffffL,
 			INADDR_ANY, RTF_STATIC|RTF_UP|RTF_HOST|RTF_LOCAL, 999, 0);
 	}
 	
@@ -425,7 +425,7 @@ if_close (struct netif *nif)
 	
 	ifa = if_af2ifaddr (nif, AF_INET);
 	if (ifa)
-		route_del (SIN (&ifa->addr)->sin_addr.s_addr, 0xffffffff);
+		route_del (ifa->adr.in.sin_addr.s_addr, 0xffffffff);
 	
 	if (nif->flags & IFF_LOOPBACK)
 		route_del (0x7f000000L, IN_CLASSA_NET);
@@ -489,7 +489,7 @@ if_send (struct netif *nif, BUF *buf, ulong nexthop, short isbrcst)
 			 * When broadcast then use interface's broadcast address
 			 */
 			if (isbrcst)
-				return (*nif->output) (nif, buf, (char *)nif->hwbrcst.addr,
+				return (*nif->output) (nif, buf, (char *)nif->hwbrcst.adr.bytes,
 					nif->hwbrcst.len, PKTYPE_IP);
 			/*
 			 * Here we must first resolve the IP address into a hardware
@@ -504,7 +504,7 @@ if_send (struct netif *nif, BUF *buf, ulong nexthop, short isbrcst)
 			
 			if (ATF_ISCOM (are))
 			{
-				ret = (*nif->output) (nif, buf, (char *)are->hwaddr.addr,
+				ret = (*nif->output) (nif, buf, (char *)are->hwaddr.adr.bytes,
 					are->hwaddr.len, PKTYPE_IP);
 			}
 			else
@@ -570,14 +570,12 @@ if_ioctl (short cmd, long arg)
 	{
 		case SIOCGIFHWADDR:
 		{
-			struct sockaddr_hw *shw =
-				(struct sockaddr_hw *)&ifr->ifru.addr;
+			struct sockaddr_hw *shw = &ifr->ifru.adr.hw;
 			
 			shw->shw_family = AF_LINK;
 			shw->shw_type = nif->hwtype;
 			shw->shw_len = nif->hwlocal.len;
-			memcpy (shw->shw_addr, nif->hwlocal.addr,
-				MIN (shw->shw_len, sizeof (shw->shw_addr)));
+			memcpy (shw->shw_adr.bytes, nif->hwlocal.adr.bytes, MIN (shw->shw_len, sizeof (shw->shw_adr)));
 			
 			return 0;
 		}
@@ -682,7 +680,7 @@ if_ioctl (short cmd, long arg)
 				return EACCES;
 			}
 			
-			ifa = if_af2ifaddr (nif, ifr->ifru.dstaddr.sa_family);
+			ifa = if_af2ifaddr (nif, ifr->ifru.dstadr.sa.sa_family);
 			if (!ifa)
 			{
 				DEBUG (("if_ioctl: %d: interface has no addr "
@@ -691,7 +689,7 @@ if_ioctl (short cmd, long arg)
 				return EINVAL;
 			}
 			
-			sa_copy (&ifa->ifu.dstaddr, &ifr->ifru.dstaddr);
+			sa_copy (&ifa->ifu.dstadr.sa, &ifr->ifru.dstadr.sa);
 			return 0;
 		}		
 		case SIOCGIFDSTADDR:
@@ -704,7 +702,7 @@ if_ioctl (short cmd, long arg)
 				return EACCES;
 			}
 			
-			ifa = if_af2ifaddr (nif, ifr->ifru.dstaddr.sa_family);
+			ifa = if_af2ifaddr (nif, ifr->ifru.dstadr.sa.sa_family);
 			if (!ifa)
 			{
 				DEBUG (("if_ioctl: %d: interface has no addr "
@@ -713,7 +711,7 @@ if_ioctl (short cmd, long arg)
 				return EINVAL;
 			}
 			
-			sa_copy (&ifr->ifru.dstaddr, &ifa->ifu.dstaddr);
+			sa_copy (&ifr->ifru.dstadr.sa, &ifa->ifu.dstadr.sa);
 			return 0;
 		}
 		case SIOCSIFADDR:
@@ -726,7 +724,7 @@ if_ioctl (short cmd, long arg)
 				return EACCES;
 			}
 			
-			error = if_setifaddr (nif, &ifr->ifru.addr);
+			error = if_setifaddr (nif, &ifr->ifru.adr.sa);
 			if (error)
 				return error;
 			
@@ -736,7 +734,7 @@ if_ioctl (short cmd, long arg)
 		{
 			struct ifaddr *ifa;
 			
-			ifa = if_af2ifaddr (nif, ifr->ifru.dstaddr.sa_family);
+			ifa = if_af2ifaddr (nif, ifr->ifru.dstadr.sa.sa_family);
 			if (!ifa)
 			{
 				DEBUG (("if_ioctl: %d: interface has no addr "
@@ -745,7 +743,7 @@ if_ioctl (short cmd, long arg)
 				return EINVAL;
 			}
 			
-			sa_copy (&ifr->ifru.addr, &ifa->addr);
+			sa_copy (&ifr->ifru.adr.sa, &ifa->adr.sa);
 			return 0;
 		}
 		case SIOCSIFBRDADDR:
@@ -764,7 +762,7 @@ if_ioctl (short cmd, long arg)
 				return EACCES;
 			}
 			
-			ifa = if_af2ifaddr (nif, ifr->ifru.broadaddr.sa_family);
+			ifa = if_af2ifaddr (nif, ifr->ifru.broadadr.sa.sa_family);
 			if (!ifa)
 			{
 				DEBUG (("if_ioctl: %d: interface has no addr "
@@ -773,7 +771,7 @@ if_ioctl (short cmd, long arg)
 				return EINVAL;
 			}
 			
-			sa_copy (&ifa->ifu.broadaddr, &ifr->ifru.broadaddr);
+			sa_copy (&ifa->ifu.broadadr.sa, &ifr->ifru.broadadr.sa);
 			return 0;
 		}
 		case SIOCGIFBRDADDR:
@@ -786,7 +784,7 @@ if_ioctl (short cmd, long arg)
 				return EACCES;
 			}
 			
-			ifa = if_af2ifaddr (nif, ifr->ifru.broadaddr.sa_family);
+			ifa = if_af2ifaddr (nif, ifr->ifru.broadadr.sa.sa_family);
 			if (!ifa)
 			{
 				DEBUG (("if_ioctl: %d: interface has no addr "
@@ -795,7 +793,7 @@ if_ioctl (short cmd, long arg)
 				return EINVAL;
 			}
 			
-			sa_copy (&ifr->ifru.broadaddr, &ifa->ifu.broadaddr);
+			sa_copy (&ifr->ifru.broadadr.sa, &ifa->ifu.broadadr.sa);
 			return 0;
 		}
 		case SIOCSIFNETMASK:
@@ -808,7 +806,7 @@ if_ioctl (short cmd, long arg)
 				return EACCES;
 			}
 			
-			if (ifr->ifru.broadaddr.sa_family != AF_INET)
+			if (ifr->ifru.broadadr.sa.sa_family != AF_INET)
 			{
 				DEBUG (("if_ioctl: address family != AF_INET"));
 				return EAFNOSUPPORT;
@@ -823,10 +821,8 @@ if_ioctl (short cmd, long arg)
 				return EINVAL;
 			}
 			
-			ifa->subnetmask =
-				SIN (&ifr->ifru.netmask)->sin_addr.s_addr;
-			ifa->subnet = ifa->subnetmask &
-				SIN (&ifa->addr)->sin_addr.s_addr;
+			ifa->subnetmask = ifr->ifru.netmsk.in.sin_addr.s_addr;
+			ifa->subnet = ifa->subnetmask & ifa->adr.in.sin_addr.s_addr;
 			
 			return (*nif->ioctl) (nif, cmd, arg);
 		}
@@ -835,7 +831,7 @@ if_ioctl (short cmd, long arg)
 			struct sockaddr_in in;
 			struct ifaddr *ifa;
 			
-			ifa = if_af2ifaddr (nif, ifr->ifru.broadaddr.sa_family);
+			ifa = if_af2ifaddr (nif, ifr->ifru.broadadr.sa.sa_family);
 			if (!ifa)
 			{
 				DEBUG (("if_ioctl: %d: interface has no addr "
@@ -848,7 +844,7 @@ if_ioctl (short cmd, long arg)
 			in.sin_addr.s_addr = ifa->subnetmask;
 			in.sin_port = 0;
 			
-			sa_copy (&ifr->ifru.netmask, (struct sockaddr *) &in);
+			sa_copy (&ifr->ifru.netmsk.sa, (struct sockaddr *) &in);
 			return 0;
 		}
 	}
@@ -901,14 +897,14 @@ if_net2if (ulong addr)
 			continue;
 		
 		if (nif->flags & IFF_POINTOPOINT &&
-		    addr == SIN (&ifa->ifu.dstaddr)->sin_addr.s_addr)
+		    addr == ifa->ifu.dstadr.in.sin_addr.s_addr)
 		{
 			DEBUG(("if_net2if: nif '%s' p2p", nif->name));
 			return nif;
 		}
 		
 		if (nif->flags & IFF_BROADCAST &&
-		    addr == SIN (&ifa->ifu.broadaddr)->sin_addr.s_addr)
+		    addr == ifa->ifu.broadadr.in.sin_addr.s_addr)
 		{
 			DEBUG(("if_net2if: nif '%s' broadcast", nif->name));
 			return nif;
@@ -948,7 +944,7 @@ if_setifaddr (struct netif *nif, struct sockaddr *sa)
 		return ENOMEM;
 	}
 	
-	sa_copy (&ifa->addr, sa);
+	sa_copy (&ifa->adr.sa, sa);
 	ifa->family = sa->sa_family;
 	ifa->ifp = nif;
 	ifa->flags = 0;
@@ -973,7 +969,7 @@ if_setifaddr (struct netif *nif, struct sockaddr *sa)
 			ifa->subnetmask    = netmask;
 			ifa->net_broadaddr = ifa->net | ~netmask;
 			
-			in = (struct sockaddr_in *)&ifa->ifu.broadaddr;
+			in = &ifa->ifu.broadadr.in;
 			in->sin_family = AF_INET;
 			in->sin_port = 0;
 			in->sin_addr.s_addr = (nif->flags & IFF_BROADCAST)
@@ -982,7 +978,7 @@ if_setifaddr (struct netif *nif, struct sockaddr *sa)
 			
 			route_flush (nif);
 			ifa2 = if_af2ifaddr (nif, AF_INET);
-			if (ifa2) route_del (SIN (&ifa2->addr)->sin_addr.s_addr, 0xffffffff);
+			if (ifa2) route_del (ifa2->adr.in.sin_addr.s_addr, 0xffffffff);
 			
 			/*
 			 * Make sure lo0 is always reachable as 127.0.0.1
@@ -998,8 +994,8 @@ if_setifaddr (struct netif *nif, struct sockaddr *sa)
 			 * interfaces' local address. If they match, the packet is
 			 * delivered to the local software.
 			 */
-			if (SIN (&ifa->addr)->sin_addr.s_addr != INADDR_ANY) {
-				route_add (if_lo, SIN (&ifa->addr)->sin_addr.s_addr,
+			if (ifa->adr.in.sin_addr.s_addr != INADDR_ANY) {
+				route_add (if_lo, ifa->adr.in.sin_addr.s_addr,
 					0xffffffff, INADDR_ANY,
 					RTF_STATIC|RTF_UP|RTF_HOST|RTF_LOCAL, 999, 0);
 			} else {
@@ -1064,7 +1060,7 @@ if_config (struct ifconf *ifconf)
 			in.sin_addr.s_addr = INADDR_ANY;
 			in.sin_port = 0;
 			strncpy (ifr->ifr_name, name, IF_NAMSIZ);
-			sa_copy (&ifr->ifru.addr, (struct sockaddr *) &in);
+			sa_copy (&ifr->ifru.adr.sa, (struct sockaddr *) &in);
 			len -= sizeof (*ifr);
 			ifr++;
 		}
@@ -1073,7 +1069,7 @@ if_config (struct ifconf *ifconf)
 			for (; len >= sizeof (*ifr) && ifa; ifa = ifa->next)
 			{
 				strncpy (ifr->ifr_name, name, IF_NAMSIZ);
-				sa_copy (&ifr->ifru.addr, &ifa->addr);
+				sa_copy (&ifr->ifru.adr.sa, &ifa->adr.sa);
 				len -= sizeof (*ifr);
 				ifr++;
 			}

@@ -285,12 +285,12 @@ driver_init (void)
 	ksprintf (message, "DE600 driver v%s (en%d) (%x:%x:%x:%x:%x:%x)\r\n",
 		DE600_VERSION,
 		if_de600.unit,
-		if_de600.hwlocal.addr[0],
-		if_de600.hwlocal.addr[1],
-		if_de600.hwlocal.addr[2],
-		if_de600.hwlocal.addr[3],
-		if_de600.hwlocal.addr[4],
-		if_de600.hwlocal.addr[5]);
+		if_de600.hwlocal.adr.bytes[0],
+		if_de600.hwlocal.adr.bytes[1],
+		if_de600.hwlocal.adr.bytes[2],
+		if_de600.hwlocal.adr.bytes[3],
+		if_de600.hwlocal.adr.bytes[4],
+		if_de600.hwlocal.adr.bytes[5]);
 	c_conws (message);
 	
 	return 0;
@@ -322,7 +322,7 @@ de600_reset (struct netif *nif)
 	 */
 	send_addr (RW_ADDR, MEM_ROM);
 	for (i = 0; i < ETH_ALEN; i++)
-		send_byte (WRITE_DATA, nif->hwlocal.addr[i]);
+		send_byte (WRITE_DATA, nif->hwlocal.adr.bytes[i]);
 	
 	bzero (pr, sizeof (*pr));
 	pr->rx_page = RX_BP | RX_PAGE1;
@@ -367,14 +367,14 @@ de600_probe (struct netif *nif)
 	wait ();
 	for (i = 0; i < ETH_ALEN; ++i)
 	{
-		nif->hwlocal.addr[i] = recv_byte (READ_DATA);
-		nif->hwbrcst.addr[i] = 0xff;
+		nif->hwlocal.adr.bytes[i] = recv_byte (READ_DATA);
+		nif->hwbrcst.adr.bytes[i] = 0xff;
 	}
 	
 	/*
 	 * Check magic
 	 */
-	cp = nif->hwlocal.addr;
+	cp = nif->hwlocal.adr.bytes;
 	if (cp[1] != 0xde || cp[2] != 0x15)
 	{
 		c_conws ("de600: magic check failed.\r\n");

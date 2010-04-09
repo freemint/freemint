@@ -86,12 +86,12 @@ mfp_kgdb_init(void)
 	unsigned char reg;
 
 	{
-		static short init = 0;
+		static short minit = 0;
 
-		if (init)
+		if (minit)
 			return;
 
-		init = 1;
+		minit = 1;
 	}
 
 	/* reset the MFP to default values */

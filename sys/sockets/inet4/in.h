@@ -2,12 +2,10 @@
 # ifndef _in_h
 # define _in_h
 
-#ifdef __KERNEL__
 # include <mint/ktypes.h>
-#else
-# include <sys/types.h>
-#endif
+# include <mint/endian.h>
 
+# include "sockaddr_in.h"
 
 /* well-defined IP protocols */
 # define IPPROTO_IP	0
@@ -23,12 +21,6 @@
 /* well-known IP ports */
 # define IPPORT_RESERVED	1024
 # define IPPORT_USERRESERVED	5000
-
-/* internet address */
-struct in_addr
-{
-	ulong s_addr;
-};
 
 /* definitions for classifying an internet address */
 # define IN_CLASSA(a)		((((long)(a)) & 0x80000000) == 0)
@@ -58,16 +50,6 @@ struct in_addr
 
 # define IN_LOOPBACKNET		127
 
-/* structure describing an Internet socket address */
-struct sockaddr_in
-{
-	short		sin_family;
-	unsigned short	sin_port;
-	struct in_addr	sin_addr;
-	char		sin_zero[8];
-};
-# define SIN(x)		((struct sockaddr_in *) x)
-
 /* options for use with [s|g]etsockopt' call at the IPPROTO_IP level */
 # define IP_OPTIONS	1
 # define IP_HDRINCL	2
@@ -84,12 +66,5 @@ struct ip_opts
 	struct in_addr	ip_dst;
 	char		ip_opts[40];
 };
-
-/* functions to convert between host and network byte order (big endian) */
-# define ntohl(x)	(x)
-# define ntohs(x)	(x)
-# define htonl(x)	(x)
-# define htons(x)	(x)
-
 
 # endif	/* _in_h */

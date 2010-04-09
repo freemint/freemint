@@ -5,6 +5,7 @@
 # include "global.h"
 
 # include "if.h"
+# include "sockaddr_in.h"
 
 
 # define RT_HASH_SIZE		256
@@ -45,8 +46,14 @@ route_deref (struct route *rt)
 struct rtentry
 {
 	ulong		rt_hash;	/* hash key */
-	struct sockaddr	rt_dst;		/* key */
-	struct sockaddr	rt_gateway;	/* value */
+	union {
+		struct sockaddr		sa;
+		struct sockaddr_in	in;
+	} dst;
+	union {
+		struct sockaddr		sa;
+		struct sockaddr_in	in;
+	} gateway;
 	short		rt_flags;	/* up/down?, host/net */
 	ulong		rt_metric;	/* distance metric */
 	short		rt_refcnt;	/* # held references */
