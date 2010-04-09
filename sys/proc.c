@@ -68,6 +68,10 @@ short time_slice = 2;
 
 struct proc *_cdecl get_curproc(void) { return curproc; }
 
+/* used in calc_load_average */
+static unsigned char one_min [SAMPS_PER_MIN];
+static unsigned char five_min [SAMPS_PER_5MIN];
+static unsigned char fifteen_min [SAMPS_PER_15MIN];
 
 /*
  * initialize the process table
@@ -86,6 +90,11 @@ init_proc(void)
 	static struct sigacts	sigacts0;
 	static struct plimit	limits0;
 
+	/* init averun-buffers */
+	mint_bzero( one_min, sizeof(one_min) );
+	mint_bzero( five_min, sizeof(five_min) );
+	mint_bzero( fifteen_min, sizeof(fifteen_min) );
+
 	mint_bzero(&sysq, sizeof(sysq));
 
 	/* XXX */
@@ -96,7 +105,7 @@ init_proc(void)
 	mint_bzero(&fd0, sizeof(fd0));
 	mint_bzero(&cwd0, sizeof(cwd0));
 	mint_bzero(&sigacts0, sizeof(sigacts0));
-	mint_bzero(&limits0, sizeof(limits0)); 
+	mint_bzero(&limits0, sizeof(limits0));
 
 	pcred0.ucr = &ucred0;			ucred0.links = 1;
 
@@ -116,8 +125,8 @@ init_proc(void)
 
 	curproc = rootproc = &rootproc0;
 	rootproc0.links = 1;
-	
-	
+
+
 	/* set the stack barrier */
 	rootproc->stack_magic = STACK_MAGIC;
 
@@ -140,17 +149,18 @@ init_proc(void)
 	rootproc->p_mem->memflags = F_PROT_S; /* default prot mode: super-only */
 	rootproc->p_mem->num_reg = NUM_REGIONS;
 	{
+		union { char *c; void *v; } ptr;
 		unsigned long size = rootproc->p_mem->num_reg * sizeof(void *);
-		void *ptr = kmalloc(size * 2);
+		ptr.v = kmalloc(size * 2);
 		/* make sure kmalloc was successful */
-		assert(ptr);
-		rootproc->p_mem->mem = ptr;
-		rootproc->p_mem->addr = ptr + size;
+		assert(ptr.v);
+		rootproc->p_mem->mem = ptr.v;
+		rootproc->p_mem->addr = (void *)(ptr.c + size);
 		/* make sure it's filled with zeros */
-		mint_bzero(ptr, size * 2L); 
+		mint_bzero(ptr.c, size * 2L);
 	}
 	rootproc->p_mem->base = _base;
-	
+
 	/* init trampoline things */
 	rootproc->p_mem->tp_ptr = &kernel_things;
 	rootproc->p_mem->tp_reg = NULL;
@@ -485,6 +495,27 @@ do_wakeup_things(short sr, int newslice, long cond)
 }
 
 static long sleepcond, iwakecond;
+
+#define NEWLOAD2 1
+
+#if NEWLOAD2
+short new_ld;
+#endif
+
+#ifdef ARANYM
+#define TEST_TICK	1
+#else
+#define TEST_TICK	1
+#endif
+
+#if TEST_TICK
+unsigned short uptime_ovfl2 = 0;
+#ifdef DEBUG_INFO
+unsigned short uptime_ovfl = 0;
+unsigned short uptime_ovfl1 = 0, mint_vblcnt = 0;
+#endif
+
+#endif
 
 /*
  * sleep: returns 1 if no signals have happened since our last sleep, 0
@@ -866,15 +897,17 @@ gen_average(unsigned long *sum, unsigned char *load_ptr, unsigned long max_size)
 
 	*sum += (new_load - old_load) * LOAD_SCALE;
 
+#if NEWLOAD2
+	*sum += (new_load - old_load);
+#else
+ 	*sum += (new_load - old_load) * LOAD_SCALE;
+#endif
 	return (*sum / max_size);
 }
 
 void
 calc_load_average(void)
 {
-	static unsigned char one_min [SAMPS_PER_MIN];
-	static unsigned char five_min [SAMPS_PER_5MIN];
-	static unsigned char fifteen_min [SAMPS_PER_15MIN];
 
 	static unsigned short one_min_ptr = 0;
 	static unsigned short five_min_ptr = 0;
@@ -884,7 +917,12 @@ calc_load_average(void)
 	static unsigned long sum5 = 0;
 	static unsigned long sum15 = 0;
 
-	register struct proc *p;
+#if !NEWLOAD2
+ 	register struct proc *p;
+#else
+	static unsigned long systime = 0, usrtime = 0, old_uptime = 0;
+	unsigned long ud;
+#endif
 
 # if 0	/* moved to intr.spp */
 	uptime++;
@@ -893,6 +931,7 @@ calc_load_average(void)
 	if (uptime % 5) return;
 # endif
 
+#if !NEWLOAD2
 	number_running = 0;
 
 	for (p = proclist; p; p = p->gl_next)
@@ -912,6 +951,55 @@ calc_load_average(void)
 		if (p->stack_magic != STACK_MAGIC)
 			FATAL("proc %lx has invalid stack_magic %lx", (long) p, p->stack_magic);
 	}
+#else
+
+	ud = uptime - old_uptime;
+	if( ud != 5 )
+	{
+		FORCE("calc_load():%ld-%ld:%d - ud=%ld %d running ld=%d %d",
+			rootproc->systime, systime, new_ld,
+			ud, number_running, new_ld, proc_clock );
+
+		new_ld = ud * 1000L - (rootproc->systime - systime);
+		//new_ld = 5L * (5000L - (rootproc->systime - systime)) / ud;
+	}
+	else
+		new_ld = 5000 - (rootproc->systime - systime);
+	systime = rootproc->systime;
+	old_uptime = uptime;
+	usrtime = rootproc->usrtime;
+
+	if( new_ld > 0 )
+	{
+		/* maximum new_ld=234 */
+		new_ld >>= 4;		/* 312 */
+		new_ld -= (new_ld >> 2);	/* 312 - 78 */
+		if( new_ld > 255 )
+			new_ld = 255;
+	}
+	else
+		new_ld = 0;
+#endif
+
+#ifdef DEBUG_INFO
+	DEBUG(("%d running ld=%d uptime=%ld tick=%u overfl=%d/%d",
+		number_running, new_ld, uptime, uptimetick,
+		uptime_ovfl1, uptime_ovfl2 ));
+
+
+	if( uptimetick > 200 || uptime_ovfl1 || uptime_ovfl2 )
+	{
+		DEBUG(("calc_load():ld=%d tick=%u uptime=%ld overfl=%d/%d vbl=%d",
+			new_ld, uptimetick, uptime, uptime_ovfl1, uptime_ovfl2, mint_vblcnt));
+		if( uptimetick > 200 )
+			uptimetick = 200;
+		uptime_ovfl1 = uptime_ovfl2 = 0;
+	}
+#endif
+
+#if NEWLOAD2
+	number_running = new_ld;
+#endif	/* NEWLOAD */
 
 	if (one_min_ptr == SAMPS_PER_MIN)
 		one_min_ptr = 0;
