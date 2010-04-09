@@ -191,10 +191,11 @@ init_mem (void)
 		}
 
 		TRAP_Setscreen((void *)newbase, (void *)newbase, -1);
-		boot_print ("\r\n");
+		boot_print ("\r\nSetscreen()\r\n");
 	}
 
 	SANITY_CHECK_MAPS ();
+	boot_printf( "\r\nscrensize=%ld scrnplace=%lx newbase=%lx\r\n", scrnsize, scrnplace, newbase);
 }
 
 /*
@@ -341,6 +342,15 @@ init_core (void)
 	 */
 	scrnplace = (long) TRAP_Physbase();
 
+	/* check for a graphics card with fixed screen location */
+# define phys_top_st (*(ulong *) 0x42eL)
+
+	if (scrnplace >= phys_top_st) {
+		/* screen isn't in ST RAM */
+		scrnsize = 0x7fffffffUL;
+		scrndone = 1;
+	}
+	else{
 # if 1
 	/* kludge: some broken graphics card drivers (notably, some versions of
 	 * NVDI's REDIRECT.PRG) return the base of the ST screen from Physbase(),
@@ -352,8 +362,9 @@ init_core (void)
 # endif
 
 	if (FalconVideo) {
+		short vsm = TRAP_VsetMode(-1);
 		/* the Falcon can tell us the screen size */
-		scrnsize = TRAP_VgetSize(TRAP_VsetMode(-1));
+		scrnsize = TRAP_VgetSize(vsm);
 	} else {
 		struct screen *vscreen;
 
@@ -363,14 +374,6 @@ init_core (void)
 		scrnsize = (vscreen->maxy+1)*(long)vscreen->linelen;
 	}
 
-	/* check for a graphics card with fixed screen location */
-# define phys_top_st (*(ulong *) 0x42eL)
-
-	if (scrnplace >= phys_top_st) {
-		/* screen isn't in ST RAM */
-		scrnsize = 0x7fffffffUL;
-		scrndone = 1;
-	} else {
 		temp = (ulong)core_malloc(scrnsize+256L, 0);
 		if (temp) {
 			TRAP_Setscreen((void *)-1L, (void *)((temp + 511) & (0xffffff00L)), -1);
@@ -509,7 +512,6 @@ attach_region (PROC *p, MEMREGION *reg)
 		ALERT ("attach_region: attaching a region to an invalid proc?");
 		return 0;
 	}
-
 retry:
 	for (i = 0; i < mem->num_reg; i++) {
 		if (!mem->mem[i]) {
@@ -520,7 +522,7 @@ retry:
 
 			reg->links++;
 			mark_proc_region (p->p_mem, reg, PROT_P, p->pid);
-
+			DEBUG(("attach_region: reg %d, return loc %lx (%lx)", i, reg->loc, mem->addr[i]));
 			return mem->addr[i];
 		}
 	}
@@ -611,18 +613,22 @@ detach_region_by_addr(struct proc *p, unsigned long block)
 			MEMREGION *m = mem->mem[i];
 
 			assert(m != NULL);
-			assert(m->loc == (long) block);
+			assert(m->loc == block);
 
 			mem->mem[i] = 0;
 			mem->addr[i] = 0;
 			unref_memreg(p, m);
 #if 0
 			m->links--;
-			if (m->links == 0)
+			if (m->links == 0) {
+				TRACE(("detach_region_by_addr: Free region %lx", m));
 				free_region(m);
-			else
+			}  else {
+				TRACE(("detach_region_by_addr: mark region %lx (links %d) PROT_I", m, m->links));
 				/* cause curproc's table to be updated */
 				mark_proc_region(mem, m, PROT_I, p->pid);
+			}
+			TRACE(("detach_region_by_addr: done!"));
 #endif
 			return 0;
 		}
@@ -1655,7 +1661,7 @@ load_and_reloc (FILEPTR *f, FILEHEAD *fh, char *where, long start, long nbytes, 
 		/* no relocation to be performed */
 		return E_OK;
 	}
-#if 0		
+#if 0
 	if (fh->reloc != 0 || xdd_read(f, (char *)&fixup, 4L) != 4L || fixup == 0)
 	{
 		TRACE(("load_and_reloc: cpushi %ld bytes, nofixup", base->p_tlen));
@@ -1872,7 +1878,7 @@ error:
  * MiNT doesn't own or which is virtualized
  */
 static MEMREGION *
-addr2region1 (MMAP map, long addr)
+addr2region1 (MMAP map, unsigned long addr)
 {
 	MEMREGION *r;
 
@@ -1893,7 +1899,7 @@ addr2region1 (MMAP map, long addr)
 	return NULL;
 }
 MEMREGION *
-addr2region (long addr)
+addr2region (unsigned long addr)
 {
 	MEMREGION *r;
 
