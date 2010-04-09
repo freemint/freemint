@@ -57,6 +57,10 @@
 
 # include "proc.h"
 
+#if STACKCHECK
+short check_stack_alignment( void );
+#endif
+
 long _cdecl
 kernel_opendir(struct dirstruct *dirh, const char *name)
 {
@@ -228,21 +232,21 @@ load_module(const char *path, const char *filename, long *err)
 
 	size = fh.ftext + fh.fdata + fh.fbss;
 	size += 256; /* sizeof (struct basepage) */
-	
+
 	kmsize = ((sizeof(*km) + 15) & 0xfffffff0);
 
 	km = kmalloc(size + kmsize);
 	if (!km)
 	{
 		DEBUG(("load_module: out of memory?"));
-		
+
 		*err = ENOMEM;
 		goto failed;
 	}
 
 	mint_bzero(km, size + kmsize);
 	b = (struct basepage *)((char *)km + kmsize);
-	
+
 	b->p_lowtpa = (long) b;
 	b->p_hitpa = (long)((char *)b + size);
 
@@ -443,18 +447,18 @@ module_init(void *initfunc, struct kerinfo *k)
 # if __GNUC__ >= 3
    /* gcc 3 does not want a clobbered register to be input or output */
 #  define LOCAL_CLOBBER_LIST	__CLOBBER_RETURN("d0") "d1", "d2", "a0", "a1", "a2", "memory"
-# else	
+# else
 #  define LOCAL_CLOBBER_LIST	__CLOBBER_RETURN("d0") "d1", "d2", "a0", "a1", "a2", "memory"
 # endif
 #else
 # define LOCAL_CLOBBER_LIST
 #endif
 
-static void *	 
+static void *
 module_init(void *initfunc, struct kerinfo *k)
 {
 	register void *ret __asm__("d0");
-	
+
 	__asm__ volatile
 	(
 		"movem.l d3-d7/a3-a6,-(sp)\r\n"
@@ -721,12 +725,24 @@ run_km(const char *path)
 	{
 		long _cdecl (*run)(struct kentry *, const struct kernel_module *);
 
-		FORCE("run_km(%s) ok (bp 0x%lx)!", path, km->b);
+#if STACKCHECK
+		FORCE("run_km(%s) ok (bp 0x%lx)! &err=%lx STACK:%d", path, km->b, &err, check_stack_alignment());
+#endif
 //		sys_c_conin();
 // 		run = (long _cdecl(*)(struct kentry *, const char *))km->b->p_tbase;
 		run = (long _cdecl(*)(struct kentry *, const struct kernel_module *))km->b->p_tbase;
-		km->caller = curproc;
+#if STACKCHECK
+		FORCE("STACK:%d", check_stack_alignment());
+#endif
+		km->caller = curproc;	/* save caller for KM_FREE */
+#if STACKCHECK
+		FORCE("+STACK:%d", check_stack_alignment());
+#endif
+		//FORCE("run_km run(%lx,%lx)", &kentry, km );
 		err = (*run)(&kentry, km); //km->path);
+#if STACKCHECK
+		FORCE("-STACK:%d", check_stack_alignment());
+#endif
 	}
 	else
 		err = EBADARG;
@@ -739,26 +755,26 @@ run_km(const char *path)
 {
 	struct kernel_module *km;
 	long err;
-	
+
 	km = load_module(NULL, path, &err);
 	if (km)
 	{
 		long _cdecl (*run)(struct kentry *, const char *path);
-		
+
 		FORCE("run_km(%s) ok (bp 0x%lx)!", path, km->b);
-		
+
 		//sys_c_conin();
 		km->class = MODCLASS_KM;
 		km->subclass = 0;
 
 		run = (long _cdecl (*)(struct kentry *, const char *))km->b->p_tbase;
 		err = (*run)(&kentry, path);
-		
+
 		free_km(km);
 	}
 	else
 		FORCE("run_km(%s) failed -> %li", path, err);
-	
+
 	return err;
 }
 #endif
@@ -772,10 +788,10 @@ static long _cdecl
 module_open(FILEPTR *f)
 {
 	DEBUG(("module_open [%i]: enter (%lx)", f->fc.aux, f->flags));
-	
+
 	if (!suser(get_curproc()->p_cred->ucr))
 		return EPERM;
-	
+
 	return 0;
 }
 
@@ -783,7 +799,7 @@ static long _cdecl
 module_close(FILEPTR *f, int pid)
 {
 	DEBUG(("module_close [%i]: enter", f->fc.aux));
-	
+
 	return E_OK;
 }
 
@@ -805,13 +821,18 @@ module_lseek(FILEPTR *f, long where, int whence)
 	return 0;
 }
 
+/* 1 if all km  must have different names */
+#define NAMELOADCHECK	1
+
 static long _cdecl
 module_ioctl(FILEPTR *f, int mode, void *buf)
 {
 	long r = ENOSYS;
+#if NAMELOADCHECK
 	char *p1, *p2;
+#endif
 	struct kernel_module *km;
-	
+
 	DEBUG(("module_ioctl [%i]: (%x, (%c %i), %lx)",
 		f->fc.aux, mode, (char)(mode >> 8), (mode & 0xff), buf));
 
@@ -822,6 +843,7 @@ module_ioctl(FILEPTR *f, int mode, void *buf)
 	if( !suser (curproc->p_cred->ucr) )
 		return EPERM;
 
+#if NAMELOADCHECK
 	/* stored name may have path or not */
 	p1 = strrchr( buf, '/');
 	p2 = strrchr( buf, '\\');
@@ -831,11 +853,13 @@ module_ioctl(FILEPTR *f, int mode, void *buf)
 		p1 = buf;
 	else
 		p1++;
+#endif
 
 	switch (mode)
 	{
 		case KM_RUN:
 		{
+#if NAMELOADCHECK
 			/* check if module already loaded */
 			for( km = loaded_modules; km; km = km->next )
 			{
@@ -848,13 +872,19 @@ module_ioctl(FILEPTR *f, int mode, void *buf)
 				}
 			}
 			if( !km )	/* not found -> run */
+#endif
+			{
+#if STACKCHECK
+				FORCE("module_ioctl:run:STACK:%d", check_stack_alignment());
+#endif
 				r = run_km(buf);
+			}
 			break;
 		}
 
 		case KM_FREE:
 		{
-			/* check if module loaded */
+			/* check if module started by caller is loaded */
 			for( km = loaded_modules; km; km = km->next )
 			{
 				DEBUG(("module_ioctl: free_km: looking(%s) cur:%lx caller:%lx", km->name, curproc, km->caller));
@@ -874,7 +904,7 @@ module_ioctl(FILEPTR *f, int mode, void *buf)
 			break;
 		}
 	}
-	
+
 	DEBUG (("module_ioctl(%d): return %li", mode&0xff, r));
 	return r;
 }
@@ -884,10 +914,10 @@ module_datime(FILEPTR *f, ushort *timeptr, int rwflag)
 {
 	if (rwflag)
 		return EACCES;
-	
+
 	*timeptr++ = timestamp;
 	*timeptr = datestamp;
-	
+
 	return E_OK;
 }
 
