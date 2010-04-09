@@ -33,12 +33,20 @@
  * - Ozk: 4 June 2005.
  *        Moved handling of keyboard delay/repeat from VBL interrupt to
  *        roottimeouts.
+ * - joska: 15 December 2009.
+ *        Added handling of deadkeys.
  *
  * UNRESOLVED:
  * - Ozk: Since we cannot completely take over the keyboard interrupt when
  *   running on Milan hardware, and that Milan TOS calls ikbdsys vector
  *   for each repeated key, we cannot control those things by ourselves.
  *   So, we need to pass calls to Kbrate() to the ROM.
+ * - joska: I'm not 100% sure what Ozk really means here. Milan TOS does
+ *   not call anything when a key is repeated - the PS/2 keyboard handles
+ *   key repeat itself so the Milan actually doesn't know the difference
+ *   between a normal keypress and a repeated one. On Milan, Kbrate() informs
+ *   the keyboard of the new repeat-rate. I don't see any need to change
+ *   this.
  *
  */
 
@@ -131,6 +139,10 @@ static const uchar modifiers[] =
 	ALTGR, 0
 };
 
+/* why should insert be a modifyer?? */
+#undef MM_INSERT
+#define MM_INSERT	0
+
 /* Masks correspond to the above modifier scancodes */
 static const uchar mmasks[] =
 {
@@ -144,7 +156,6 @@ long	iso_8859_code;	/* this is 2 for ISO-8859-2, 3 for ISO-8859-3 etc., or 0 for
 short	kbd_pc_style_caps = 0;	/* PC-style vs. Atari-style for Caps operation */
 short	kbd_mpixels = 8;	/* mouse pixel steps */
 short	kbd_mpixels_fine = 1;	/* mouse pixel steps in 'fine' mode */
-short	kbd_deadkey = -1;	/* ASCII code for deadkey */
 struct	cad_def cad[3];		/* for halt, warm and cold resp. */
 #define MAKES_BLEN	16
 static char makes[MAKES_BLEN + 1 * 2];
@@ -153,7 +164,6 @@ static char makes[MAKES_BLEN + 1 * 2];
 static	short cad_lock;		/* semaphore to avoid scheduling shutdown() twice */
 static	short kbd_lock;		/* semaphore to temporarily block the keyboard processing */
 static	long hz_ticks;		/* place for saving the hz_200 timer value */
-//static	short dead_lock;	/* flag for deakdey processing */
 
 /* Alt/numpad */
 static	uchar numin[8];		/* buffer for storing ASCII code typed in via numpad */
@@ -850,7 +860,7 @@ scan2asc(uchar scancode)
 
 	/* Ctrl key works as this regardless of the Alt/AltGr state.
 	 * Otherwise the keyboard shortcuts (like Ctrl/Alt/Q) don't work
-	 * anymore in N.AES. 
+	 * anymore in N.AES.
 	 */
 	if (shift & MM_CTRL)
 	{
@@ -904,7 +914,7 @@ void _cdecl
 ikbd_scan(ushort scancode, IOREC_T *rec)
 {
 	int tail = (scanb_tail + 1) & 0xf;
-	
+
 	if (tail != scanb_head)
 	{
 		scanb[scanb_tail].iorec = rec;
@@ -926,14 +936,14 @@ IkbdScan(PROC *p, long arg)
 		ushort scancode;
 		ushort mod = 0, clk = 0, x = 0, scan, make;
 		uchar shift = *kbshft, ascii;
-	
+
 		iorec      = scanb[scanb_head].iorec;
 		scancode   = scanb[scanb_head].scan;
 		scanb_head = (scanb_head + 1) & 0xf;
-	
+
 		DEBUG(("ikbd_scan: scancode=%x, rec=%lx, h=%i, t=%i", scancode, iorec, scanb_head, scanb_tail));
 // 		display("ikbd_scan: scancode=%x, rec=%lx, h=%i, t=%i", scancode, iorec, scanb_head, scanb_tail);
-	
+
 		scan = scancode & 0xff;
 
 		switch (scan)
@@ -947,7 +957,7 @@ IkbdScan(PROC *p, long arg)
 				continue; //goto again;
 			}
 		}
-			
+
 		/* This is set during various keyboard table initializations
 		 * e.g. when the user calls Bioskeys(), to prevent processing
 		 * go according to incomplete keyboard translation tables.
@@ -1177,7 +1187,7 @@ IkbdScan(PROC *p, long arg)
 			/* Ozk:
 			 * Scan codes between 0x02 -> 0x0d are modified by 0x76
 			 */
-			if (scan >= 0x02 && scan <= 0x0d)	
+			if (scan >= 0x02 && scan <= 0x0d)
 				scan += 0x76;
 		}
 
@@ -1267,8 +1277,70 @@ IkbdScan(PROC *p, long arg)
 		 */
 		if (make)
 		{
+			/* Deadkeys.
+			 * The deadkey table structure is as follows:
+			 * dd,bb,aa,dd,bb,aa,...,aa,bb,aa,0
+			 * Where dd is the deadkey character, aa is the base
+			 * character and aa the accented character.
+			 * So '^','a','ƒ' means that '^' followed by 'a' results
+			 * in an 'ƒ'.
+			 */
+			uchar *vec = user_keytab->deadkeys;
 			ascii = scan2asc((uchar)scan);
-			put_key_into_buf(iorec, shift, (uchar)scan, 0, ascii);
+
+			if (vec)
+			{
+				static unsigned int last_deadkey_scan = 0;
+				static uchar last_deadkey = 0;
+				uchar deadkey, base, accented = 0;
+				int is_deadkey = 0;
+
+				while (*vec)
+				{
+					deadkey = *vec++;
+					base = *vec++;
+					accented = *vec++;
+
+					if (ascii == deadkey)
+					{
+						is_deadkey = 1;
+						accented = 0;
+						break;
+					}
+
+					if (deadkey == last_deadkey && ascii == base)
+						break;
+
+					accented = 0;
+				}
+
+				if (last_deadkey)
+				{
+					if (accented)
+						put_key_into_buf(iorec, shift, (uchar)scan, 0, accented);
+					else
+					{
+						put_key_into_buf(iorec, shift, (uchar)last_deadkey_scan, 0, last_deadkey);
+
+						if (ascii && ascii != ' ' && ascii != '\t' && (ascii == last_deadkey ? 0:1))
+							put_key_into_buf(iorec, shift, (uchar)scan, 0, ascii);
+					}
+
+					last_deadkey = 0;
+				}
+				else
+				{
+					if (is_deadkey)
+					{
+						last_deadkey = ascii;
+						last_deadkey_scan = scan;
+					}
+					else
+						put_key_into_buf(iorec, shift, (uchar)scan, 0, ascii);
+				}
+			}
+			else
+				put_key_into_buf(iorec, shift, (uchar)scan, 0, ascii);
 		}
 #ifndef MILAN
 		set_keyrepeat_timeout(make);
@@ -1356,7 +1428,7 @@ set_kbrate_ms(short delay, short rate)
 	if (rate >= 0)
 		keyrep_time = rate ? ((long)((long)(rate & 0x00ff) * 1000) / 50) : 20;
 }
-	
+
 /*
  * The XBIOS' Kbrate() function
  */
@@ -1378,7 +1450,7 @@ sys_b_kbrate(short delay, short rate)
 	ret |= (mrate = (unsigned short)((keyrep_time * 50) / 1000) & 0x00ff);
 #else
 	ret |= (unsigned short)((keyrep_time * 50) / 1000) & 0x00ff;
-#endif	
+#endif
 	set_kbrate_ms(delay, rate);
 
 #ifdef MILAN
@@ -1444,6 +1516,9 @@ sys_b_bioskeys(void)
 	pointers->altshift = tbl_scan_fwd(pointers->alt);
 	pointers->altcaps = tbl_scan_fwd(pointers->altshift);
 	pointers->altgr = tbl_scan_fwd(pointers->altcaps);
+
+	/* and the deadkeys */
+	pointers->deadkeys = tbl_scan_fwd(pointers->altgr);
 
 	/* Fix the _AKP cookie, gl_kbd may get changed in load_table().
 	 *
@@ -1513,7 +1588,7 @@ load_external_table(FILEPTR *fp, const char *name, long size)
 		return EFTYPE;
 	}
 
-	kbuf = kmalloc(size+1); /* Append a zero (if the table is missing the altgr part) */
+	kbuf = kmalloc(size+2); /* Append a zero (if the table is missing the altgr + deadkey part) */
 	if (!kbuf)
 	{
 		DEBUG(("%s(): out of memory", __FUNCTION__));
@@ -1625,6 +1700,7 @@ load_internal_table(void)
 			size += strlen((char *)tos_keytab->altgr) + 1;
 		else
 			size += 2;
+		size += 2; /* For the empty deadkey table */
 	}
 	else
 		size += 16; /* a byte for each missing part plus a NUL plus some space */
@@ -1636,6 +1712,7 @@ load_internal_table(void)
 	size += strlen(tos_keytab->altshift) + 1;
 	size += strlen(tos_keytab->altcaps) + 1;
 	size += strlen(tos_keytab->altgr) + 1;
+	size += strlen(tos_keytab->deadkeys) + 1;
 
 	size += 8; /* add some space */
 # endif
@@ -1659,8 +1736,8 @@ load_internal_table(void)
 
 	assert(kbuf);
 
-
 	p = kbuf;
+	mint_bzero(p, size);
 
 	quickmove(p, tos_keytab->unshift, 128);
 	p += 128;
@@ -1713,6 +1790,10 @@ load_internal_table(void)
 
 	len = strlen((char *)tos_keytab->altgr) + 1;
 	quickmove(p, tos_keytab->altgr, len);
+	p += len;
+
+	len = strlen((char *)tos_keytab->deadkeys) + 1;
+	quickmove(p, tos_keytab->deadkeys, len);
 
 	gl_kbd = default_akp;
 # endif
@@ -1816,11 +1897,11 @@ init_keybd(void)
 	TRACE(("%s(): BIOS keyboard table at 0x%08lx", __FUNCTION__, tos_keytab));
 
 # ifndef WITHOUT_TOS
-	delayrate = TRAP_Kbrate(-1, -1);	
+	delayrate = TRAP_Kbrate(-1, -1);
 # else
 	delayrate = 0x0f02;	/* this is what TRAP_Kbrate() normally returns */
 # endif
-	
+
 	set_kbrate_ms(delayrate >> 8, delayrate & 0x00ff);
 
 	TRACE(("%s(): delay 0x%04ld, rate 0x%04ld", __FUNCTION__, keydel_time, keyrep_time));
@@ -1835,6 +1916,30 @@ init_keybd(void)
 	boot_printf(MSG_keytable_loaded, gl_kbd, iso_8859_code);
 	boot_printf("\r\n");
 # endif
+
+#if 0
+	{
+		IOREC_T *keyrec = (IOREC_T *)TRAP_Iorec(1);
+		short c, i;
+		char buf[128];
+
+		ksprintf( buf, sizeof(buf), "head:%d tail:%d low=%d high=%d\r\n", keyrec->head, keyrec->tail,keyrec->low_water,keyrec->hi_water);
+		boot_print(buf);
+		keyrec->head = keyrec->tail = 0;
+	for( i = 0; i < 16; i++ )
+	{
+		ksprintf( buf, sizeof(buf), "i=%d\r\n", i );
+		boot_print(buf);
+		/*scanb[i].iorec->head = 0;
+		scanb[i].iorec->tail = 0;
+		*/
+		scanb[i].scan = 0;
+	}
+	scanb_head = 0;
+	scanb_tail = 0;
+	}
+
+#endif
 }
 
 # else
