@@ -549,7 +549,7 @@ static SUPER super_struct;
 static SUPER *super = &super_struct;
 
 static COOKIE root_inode;
-static COOKIE *root = &root_inode;
+static COOKIE *Root = &root_inode;
 
 # define CURRENT_TIME	xtime.tv_sec
 
@@ -983,7 +983,7 @@ ramfs_init (void)
 	/* clear super struct */
 	mint_bzero (super, sizeof (*super));
 
-	super->root	= root;
+	super->root	= Root;
 
 	/* initial label */
 	super->label = kmalloc (strlen (initial) + 1);
@@ -991,15 +991,15 @@ ramfs_init (void)
 		strcpy (super->label, initial);
 
 	/* clear root cookie */
-	mint_bzero (root, sizeof (*root));
+	mint_bzero (Root, sizeof (*Root));
 
-	root->s		= super;
-	root->links	= 1;
+	Root->s		= super;
+	Root->links	= 1;
 
 	/* setup root stat data */
-	s		= &(root->stat);
+	s		= &(Root->stat);
 	s->dev		= RAM_DRV;
-	s->ino		= (long) root;
+	s->ino		= (long) Root;
 	s->mode		= S_IFDIR | DEFAULT_DMODE;
 	s->nlink	= 1;
 	/* uid		= 0; */
@@ -1015,13 +1015,12 @@ ramfs_init (void)
 	/* gen		= 0; */
 	/* res [0]..[6]	= 0; */
 
-	if (__dir_insert (root, root, ".")
-		|| __dir_insert (root, root, ".."))
+	if (__dir_insert (Root, Root, ".") || __dir_insert (Root, Root, ".."))
 	{
 		FATAL ("ramfs: out of memory");
 	}
 
-	RAM_DEBUG (("ramfs: ok (dev_no = %i)", root->stat.dev));
+	RAM_DEBUG (("ramfs: ok (dev_no = %i)", Root->stat.dev));
 
 	boot_print (MSG_BOOT);
 	boot_print (MSG_GREET);
@@ -1037,16 +1036,16 @@ ramfs_init (void)
 static long _cdecl
 ram_root (int drv, fcookie *fc)
 {
-	if (drv == root->stat.dev)
+	if (drv == Root->stat.dev)
 	{
 		RAM_DEBUG (("ramfs: ram_root E_OK (%i)", drv));
 
 		fc->fs = &ramfs_filesys;
-		fc->dev = root->stat.dev;
+		fc->dev = Root->stat.dev;
 		fc->aux = 0;
-		fc->index = (long) root;
+		fc->index = (long) Root;
 
-		root->links++;
+		Root->links++;
 
 		return E_OK;
 	}
@@ -1449,6 +1448,7 @@ ram_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newname
 static long _cdecl
 ram_opendir (DIR *dirh, int flags)
 {
+	union { char *c; DIRLST **d; } ptr = {dirh->fsstuff};	// ptr.c = dirh->fsstuff;
 	COOKIE *c = (COOKIE *) dirh->fc.index;
 	DIRLST *l;
 
@@ -1461,7 +1461,7 @@ ram_opendir (DIR *dirh, int flags)
 	l = __dir_next (c, NULL);
 	if (l) l->lock = 1;
 
-	*(DIRLST **) (&dirh->fsstuff) = l;
+	*ptr.d = l; //*(DIRLST **) (&dirh->fsstuff) = l;
 
 	c->links++;
 
@@ -1472,10 +1472,11 @@ ram_opendir (DIR *dirh, int flags)
 static long _cdecl
 ram_readdir (DIR *dirh, char *nm, int nmlen, fcookie *fc)
 {
+	union { char *c; DIRLST **d;} ptr = {dirh->fsstuff};	// ptr.c = dirh->fsstuff;
 	DIRLST *l;
 	long r = ENMFILES;
 
-	l = *(DIRLST **) (&dirh->fsstuff);
+	l = *ptr.d; // *(DIRLST **) (&dirh->fsstuff);
 	if (l)
 	{
 		RAM_DEBUG (("ramfs: ram_readdir: %s", l->name));
@@ -1517,7 +1518,7 @@ ram_readdir (DIR *dirh, char *nm, int nmlen, fcookie *fc)
 		l = __dir_next ((COOKIE *) dirh->fc.index, l);
 		if (l) l->lock = 1;
 
-		*(DIRLST **) (&dirh->fsstuff) = l;
+		*ptr.d = l; //*(DIRLST **) (&dirh->fsstuff) = l;
 	}
 
 	return r;
@@ -1526,16 +1527,20 @@ ram_readdir (DIR *dirh, char *nm, int nmlen, fcookie *fc)
 static long _cdecl
 ram_rewinddir (DIR *dirh)
 {
+	union { char *c; DIRLST **d;} ptr;
 	COOKIE *c = (COOKIE *) dirh->fc.index;
 	DIRLST *l;
 
-	l = *(DIRLST **) (&dirh->fsstuff);
+	ptr.c = dirh->fsstuff;
+	l = *ptr.d;
+	//l = *(DIRLST **) (&dirh->fsstuff);
 	if (l) l->lock = 0;
 
 	l = __dir_next (c, NULL);
 	if (l) l->lock = 1;
 
-	*(DIRLST **) (&dirh->fsstuff) = l;
+	*ptr.d = l;
+	//*(DIRLST **) (&dirh->fsstuff) = l;
 
 	dirh->index = 0;
 	return E_OK;
@@ -1544,10 +1549,13 @@ ram_rewinddir (DIR *dirh)
 static long _cdecl
 ram_closedir (DIR *dirh)
 {
+	union { char *c; DIRLST **d;} ptr;
 	COOKIE *c = (COOKIE *) dirh->fc.index;
 	DIRLST *l;
 
-	l = *(DIRLST **) (&dirh->fsstuff);
+	// *(DIRLST **) (&dirh->fsstuff);
+	ptr.c = dirh->fsstuff;
+	l = *ptr.d;
 	if (l) l->lock = 0;
 
 	c->links--;
@@ -1596,18 +1604,18 @@ ram_pathconf (fcookie *dir, int which)
 static long _cdecl
 ram_dfree (fcookie *dir, long *buf)
 {
-	long memfree;
-	long memused;
+	long mem_free;
+	long mem_used;
 
 	RAM_DEBUG (("ramfs: ram_dfree called"));
 
 # define FreeMemory	(tot_rsize (core, 0) + tot_rsize (alt, 0))
 
-	memfree = FreeMemory;
-	memused = memory + BLOCK_SIZE - 1;
+	mem_free = FreeMemory;
+	mem_used = memory + BLOCK_SIZE - 1;
 
-	*buf++	= memfree >> BLOCK_SHIFT;
-	*buf++	= (memfree + memused) >> BLOCK_SHIFT;
+	*buf++	= mem_free >> BLOCK_SHIFT;
+	*buf++	= (mem_free + mem_used) >> BLOCK_SHIFT;
 	*buf++	= BLOCK_SIZE;
 	*buf	= 1;
 
@@ -2036,8 +2044,10 @@ ram_open (FILEPTR *f)
 
 	if (!IS_REG (c))
 	{
-		RAM_DEBUG (("ramfs: ram_open: leave failure, not a valid file"));
-		return EACCES;
+		if (!(IS_DIR (c) && ((f->flags & O_RWMODE) == O_RDONLY))) {
+			RAM_DEBUG (("ramfs: ram_open: leave failure, not a valid file"));
+			return EACCES;
+		}
 	}
 
 	if (((f->flags & O_RWMODE) == O_WRONLY)
@@ -2277,6 +2287,9 @@ ram_read (FILEPTR *f, char *buf, long bytes)
 	register long chunk;
 	register long done = 0;		/* processed characters */
 
+	if (IS_DIR (c))
+		return EISDIR;
+
 	if (!table)
 	{
 		RAM_DEBUG (("ramfs: ram_read: table doesn't exist!"));
@@ -2368,7 +2381,8 @@ ram_read (FILEPTR *f, char *buf, long bytes)
 		f->pos += bytes;
 	}
 
-	if (!((c->s->flags & MS_NOATIME)
+	if (!((f->flags & O_NOATIME)
+	        || (c->s->flags & MS_NOATIME)
 		|| (c->s->flags & MS_RDONLY)
 		|| IS_IMMUTABLE (c)))
 	{

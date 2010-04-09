@@ -1007,7 +1007,7 @@ tos_getname(fcookie *root, fcookie *dir, char *pathname, int size)
 static long _cdecl 
 tos_rename(fcookie *olddir, char *oldname, fcookie *newdir, const char *newname)
 {
-	char newbuf[128];
+	char newbuf[PATH_MAX];
 	struct tindex *ti;
 	long r;
 

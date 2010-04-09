@@ -148,20 +148,21 @@ umem_verify(MEMREGION *m, struct umem_descriptor *descr)
 static struct umem_descriptor *
 umem_split(struct umem_descriptor *descr, unsigned long n, unsigned long size)
 {
+	union { struct umem_descriptor *d; char *c; } ptr = {descr};	// ptr.d = descr;
 	struct umem_descriptor *descr1;
 
-	descr1 = (void *)descr + (n - size);
+	descr1 = (void *)(ptr.c + (n - size));
 
 	descr1->head_magic = UMEM_HEAD_MAGIC;
-	descr1->next = descr->next;
-	descr1->prev = descr;
+	descr1->next = ptr.d->next;
+	descr1->prev = ptr.d;
 	descr1->free = 0;
 	descr1->tail_magic = UMEM_TAIL_MAGIC;
 
 	if (descr1->next)
 		descr1->next->prev = descr1;
 
-	descr->next = descr1;
+	ptr.d->next = descr1;
 
 	return descr1;
 }
@@ -170,9 +171,9 @@ static int
 umem_lookup(struct proc *p, MEMREGION *m, unsigned long size, void **result)
 {
 	struct umem_descriptor *descr;
-
+	union { char **c; void **v; } resultptr; resultptr.v = result;
 	/* default is nothing found */
-	*result = NULL;
+	*resultptr.v = NULL;
 
 	descr = (struct umem_descriptor *)m->loc;
 
@@ -199,15 +200,15 @@ umem_lookup(struct proc *p, MEMREGION *m, unsigned long size, void **result)
 			{
 				if ((n - size) > (2 * sizeof(*descr)))
 				{
-					*result = umem_split(descr, n, size);
-					*result += sizeof(*descr);
+					*resultptr.v = umem_split(descr, n, size);
+					*resultptr.c += sizeof(*descr);
 				}
 				else
 				{
 					descr->free = 0;
 
-					*result = descr;
-					*result += sizeof(*descr);
+					*resultptr.v = descr;
+					*resultptr.c += sizeof(*descr);
 				}
 
 				break;
@@ -261,7 +262,7 @@ _umalloc(unsigned long size, const char *func)
 
 			if (ptr)
 			{
-				DEBUG(("umalloc: found something in managed region %i", i));
+				DEBUG(("umalloc: found %lx in managed region %i", ptr, i));
 				return ptr;
 			}
 		}
@@ -290,7 +291,7 @@ _umalloc(unsigned long size, const char *func)
 
 			if (ptr)
 			{
-				DEBUG(("umalloc: allocated new region %i", i));
+				DEBUG(("umalloc: allocated new region %i, return %lx", i, ptr));
 				return ptr;
 			}
 		}
@@ -303,22 +304,22 @@ _umalloc(unsigned long size, const char *func)
 }
 
 void _cdecl
-_ufree(void *place, const char *func)
+_ufree(void *plac, const char *func)
 {
+	union { void *v; char *c; long l; struct umem_descriptor *descr; } placeptr = {plac};	// placeptr.v = plac;
 	struct proc *p = get_curproc();
 	MEMREGION *m;
 
-	DEBUG(("ufree(0x%lx, %s)", place, func));
+	DEBUG(("ufree(0x%lx, %s)", plac, func));
 
-	m = proc_addr2region(p, (unsigned long)place);
+	m = proc_addr2region(p, placeptr.l);
 	if (m)
 	{
-		struct umem_descriptor *descr;
+		placeptr.c -= sizeof(*placeptr.descr);
 
-		descr = place - sizeof(*descr);
-		if ((long)descr >= m->loc)
+		if (placeptr.l >= m->loc)
 		{
-			if (!umem_verify(m, descr))
+			if (!umem_verify(m, placeptr.descr))
 			{
 				ALERT(MSG_umem_mem_corrupted);
 
@@ -327,16 +328,16 @@ _ufree(void *place, const char *func)
 			}
 
 			/* mark as free */
-			descr->free = 1;
+			placeptr.descr->free = 1;
 
-			if (descr->prev && descr->prev->free)
-				descr = descr->prev;
+			if (placeptr.descr->prev && placeptr.descr->prev->free)
+				placeptr.descr = placeptr.descr->prev;
 
-			while (descr->next && descr->next->free)
+			while (placeptr.descr->next && placeptr.descr->next->free)
 			{
-				descr->next = descr->next->next;
-				if (descr->next)
-					descr->next->prev = descr;
+				placeptr.descr->next = placeptr.descr->next->next;
+				if (placeptr.descr->next)
+					placeptr.descr->next->prev = placeptr.descr;
 			}
 
 			/* todo: free m if totally free */
@@ -347,7 +348,7 @@ _ufree(void *place, const char *func)
 	else
 	{
 invalid_address:
-		FATAL("ufree: invalid address (0x%lx) for pid %i", place, p->pid);
+		FATAL("ufree: invalid address (0x%lx) for pid %i", placeptr.l, p->pid);
 	}
 }
 

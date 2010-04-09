@@ -1,14 +1,14 @@
 /*
  * $Id$
- * 
+ *
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
- * 
- * 
+ *
+ *
  * Copyright 1990,1991,1992 Eric R. Smith.
  * Copyright 1992,1993,1994 Atari Corporation.
  * All rights reserved.
- * 
+ *
  */
 
 # include "timeout.h"
@@ -44,7 +44,7 @@ newtimeout (short fromlist)
 	if (!fromlist)
 	{
 		register TIMEOUT *t;
-		
+
 		t = kmalloc (sizeof (*t));
 		if (t)
 		{
@@ -53,11 +53,11 @@ newtimeout (short fromlist)
 			return t;
 		}
 	}
-	
+
 	{
 		register long i;
 		register short sr;
-		
+
 		sr = spl7 ();
 		for (i = 0; i < TIMEOUTS; i++)
 		{
@@ -71,7 +71,7 @@ newtimeout (short fromlist)
 		}
 		spl (sr);
 	}
-	
+
 	return 0;
 }
 
@@ -88,7 +88,7 @@ dispose_old_timeouts (void)
 	register TIMEOUT *t, **prev, *old;
 	register long now = *hz_200;
 	register short sr = spl7 ();
-	
+
 	for (prev = &expire_list, t = *prev; t; prev = &t->next, t = *prev)
 	{
 		if (t->when < now)
@@ -96,7 +96,7 @@ dispose_old_timeouts (void)
 			/* This and the following timeouts are too old.
 			 * Throw them away.
 			 */
-			
+
 			*prev = 0;
 			spl (sr);
 			while (t)
@@ -108,7 +108,7 @@ dispose_old_timeouts (void)
 			return;
 		}
 	}
-	
+
 	spl (sr);
 }
 
@@ -117,7 +117,7 @@ inserttimeout (TIMEOUT *t, long delta)
 {
 	register TIMEOUT **prev, *cur;
 	register short sr = spl7 ();
-	
+
 	cur = tlist;
 	prev = &tlist;
 	while (cur)
@@ -135,12 +135,12 @@ inserttimeout (TIMEOUT *t, long delta)
 		prev = &cur->next;
 		cur = cur->next;
 	}
-	
+
 	assert (delta >= 0);
 	t->when = delta;
 	t->next = cur;
 	*prev = t;
-	
+
 	spl (sr);
 }
 
@@ -160,13 +160,13 @@ static TIMEOUT *
 __addtimeout (PROC *p, long delta, void _cdecl (*func)(PROC *), ushort flags)
 {
 	TIMEOUT *t;
-	
+
 	{
 		register TIMEOUT **prev;
 		register ushort sr;
-		
+
 		sr = spl7 ();
-		
+
 		/* Try to reuse an already expired timeout that had the
 		 * same function attached
 		 */
@@ -181,19 +181,19 @@ __addtimeout (PROC *p, long delta, void _cdecl (*func)(PROC *), ushort flags)
 				return t;
 			}
 		}
-		
+
 		spl (sr);
 	}
-	
+
 	t = newtimeout (flags & 1);
-	
+
 	if (t)
 	{
 		t->proc = p;
 		t->func = func;
 		inserttimeout (t, delta);
 	}
-	
+
 	return t;
 }
 
@@ -259,7 +259,7 @@ cancelalltimeouts (void)
 			spl (sr);
 			disposetimeout (old);
 			sr = spl7();
-			
+
 			/* ++kay: just in case an interrupt handler installed a
 			 * timeout right after `prev' and before `cur'
 			 */
@@ -271,7 +271,7 @@ cancelalltimeouts (void)
 			cur = cur->next;
 		}
 	}
-	
+
 	prev = &expire_list;
 	for (cur = *prev; cur; cur = *prev)
 	{
@@ -285,7 +285,7 @@ cancelalltimeouts (void)
 		else
 			prev = &cur->next;
 	}
-	
+
 	spl (sr);
 }
 
@@ -304,7 +304,7 @@ __canceltimeout (TIMEOUT *this, struct proc *p)
 {
 	TIMEOUT *cur, **prev;
 	short sr = spl7 ();
-	
+
 	/* First look at the list of expired timeouts */
 	prev = &expire_list;
 	for (cur = *prev; cur; cur = *prev)
@@ -335,7 +335,7 @@ __canceltimeout (TIMEOUT *this, struct proc *p)
 		}
 		prev = &cur->next;
 	}
-	
+
 	spl (sr);
 }
 
@@ -371,17 +371,17 @@ void _cdecl
 timeout (void)
 {
 	register short ms;
-	
+
 	c20ms++;
-	
+
 	kintr = keyrec->head != keyrec->tail;
-	
+
 	if (proc_clock)
 		proc_clock--;
-	
+
 	ms = *((short *) 0x442L);
 	our_clock -= ms;
-	
+
 	if (tlist)
 		tlist->when -= ms;
 }
@@ -397,21 +397,21 @@ checkalarms (void)
 {
 	register ushort sr;
 	register long delta;
-	
+
 	/* do the once per second things */
 	while (our_clock < 0)
 	{
 		our_clock += 1000;
-		
+
 		/* Updates timestamp and datestamp. */
 		synch_timers ();
-		
+
 		searchtime++;
 		reset_priorities ();
 	}
-	
+
 	sr = spl7 ();
-	
+
 	/* see if there are outstanding timeout requests to do */
 	while (tlist && ((delta = tlist->when) <= 0))
 	{
@@ -421,11 +421,11 @@ checkalarms (void)
 		 */
 		register long arg = tlist->arg;
 		register PROC *p = tlist->proc;
-		void (*evnt)(PROC *, long arg) = (void (*)(PROC *, long)) tlist->func;
+		void (*evnt)(PROC *, long evarg) = (void (*)(PROC *, long)) tlist->func;
 		register TIMEOUT *old = tlist;
-		
+
 		tlist = tlist->next;
-		
+
 		/* if delta < 0, it's possible that the time has come for the
 		 * next timeout to occur.
 		 * ++kay: moved this before the timeout fuction is called, in
@@ -433,26 +433,26 @@ checkalarms (void)
 		 */
 		if (tlist)
 			tlist->when += delta;
-		
+
 		old->next = expire_list;
 		old->when = *(long *) 0x4ba + TIMEOUT_EXPIRE_LIMIT;
 		expire_list = old;
-		
+
 		spl (sr);
-		
+
 		/* ++kay: debug output at spl7 hangs the system, so moved it
 		 * here
 		 */
 		TRACE (("doing timeout code for pid %d", p->pid));
-		
+
 		/* call the timeout function */
 		(*evnt)(p, arg);
-		
+
 		sr = spl7 ();
 	}
-	
+
 	spl (sr);
-	
+
 	/* Now look at the expired timeouts if some are getting old */
 	dispose_old_timeouts ();
 }
@@ -470,22 +470,22 @@ static void _cdecl
 unnapme (PROC *p)
 {
 	register short sr = spl7 ();
-	
+
 	if (p->wait_q == SELECT_Q && p->wait_cond == (long) nap)
 	{
 		rm_q (SELECT_Q, p);
 		add_q (READY_Q, p);
 		p->wait_cond = 0;
 	}
-	
+
 	spl (sr);
 }
 
-void _cdecl 
+void _cdecl
 nap (unsigned n)
 {
 	TIMEOUT *t;
-	
+
 	t = addtimeout (get_curproc(), n, unnapme);
 	sleep (SELECT_Q, (long) nap);
 	canceltimeout (t);

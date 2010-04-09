@@ -164,7 +164,7 @@ has_opened (SHARED_LIB *sl, int pid)
 static long
 load_and_init_slb(char *name, char *path, long min_ver, SHARED_LIB **sl)
 {
-	int newpid, prot_cookie;
+	int new_pid, prot_cookie;
 	long r, hitpa, oldsigint, oldsigquit, oldcmdlin, *exec_longs;
 	char *fullpath;
 	BASEPAGE *b;
@@ -295,7 +295,11 @@ slb_error:
 	 * to be executed by a program with ordinary Pexec().
 	 */
 
-	oldcmdlin = *(long *)b->p_cmdlin;
+	{
+	union { char *c; long *l;} ptr;
+	ptr.c = b->p_cmdlin;
+
+	oldcmdlin = *ptr.l;
 
 	get_curproc()->p_flag |= P_FLAG_SLO;
 	r = sys_pexec(106, name, b, 0L);
@@ -317,15 +321,15 @@ slb_error:
 	SIGACTION(get_curproc(), SIGINT).sa_handler =
 	SIGACTION(get_curproc(), SIGQUIT).sa_handler = SIG_IGN;
 
-	newpid = (int) r;
-	r = sys_pwaitpid (newpid, 2, NULL);
+	new_pid = (int) r;
+	r = sys_pwaitpid (new_pid, 2, NULL);
 
 	SIGACTION(get_curproc(), SIGINT).sa_handler = oldsigint;
 	SIGACTION(get_curproc(), SIGQUIT).sa_handler = oldsigquit;
 
 	if (r < 0)
 	{
-		sys_p_kill(newpid, SIGKILL);
+		sys_p_kill(new_pid, SIGKILL);
 		/* Not `goto slb_error' because Pexec(106)
 		 * releases the basepage and env
 		 */
@@ -336,7 +340,7 @@ slb_error:
 	if ((r & 0x0000ff00L) != (SIGSTOP << 8))
 	{
 		DEBUG(("Slbopen: child died"));
-		sys_p_kill(newpid, SIGKILL);
+		sys_p_kill(new_pid, SIGKILL);
 		if (--mr->links == 0)
 			free_region(mr);
 		return(EXCPT);
@@ -350,14 +354,15 @@ slb_error:
 	 */
 	prot_cookie = prot_temp((ulong)b, sizeof(BASEPAGE), -1);
 	assert(prot_cookie < 0);
-	r = *(long *)b->p_cmdlin;
-	*(long *)b->p_cmdlin = oldcmdlin;
+	r = *ptr.l;
+	*ptr.l = oldcmdlin;
+	}
 	if (prot_cookie != -1)
 		prot_temp((ulong)b, sizeof(BASEPAGE), prot_cookie);
 	if (r < 0L)
 	{
 		DEBUG(("Slbopen: slb_init() returned %ld", r));
-		sys_p_kill(newpid, SIGKILL);
+		sys_p_kill(new_pid, SIGKILL);
 		if (--mr->links == 0)
 			free_region(mr);
 		return(r);
@@ -367,7 +372,7 @@ slb_error:
 	 * Fill the shared library structure and insert it into the global list
 	 */
 	strcpy((*sl)->slb_name, name);
-	(*sl)->slb_proc = pid2proc(newpid);
+	(*sl)->slb_proc = pid2proc(new_pid);
 	assert((*sl)->slb_proc);
 	(*sl)->slb_proc->p_flag |= P_FLAG_SLB;	/* mark as SLB */
 	(*sl)->slb_next = slb_list;
@@ -722,7 +727,7 @@ sys_s_lbclose(SHARED_LIB *sl)
  *     users
  */
 int
-slb_close_on_exit (int terminate)
+slb_close_on_exit (int term)
 {
 	struct user_things *ut;
 	SHARED_LIB *slb;
@@ -746,7 +751,7 @@ slb_close_on_exit (int terminate)
 	 * library (or never open()ed it).
 	 */
 	mark_proc_region (get_curproc()->p_mem, slb->slb_region, PROT_G, get_curproc()->pid);
-	if (terminate || (get_curproc()->ctxt[SYSCALL].sr & 0x2000) ||
+	if (term || (get_curproc()->ctxt[SYSCALL].sr & 0x2000) ||
 		!has_opened(slb, get_curproc()->pid))
 	{
 		mark_users(slb, get_curproc()->pid, 0);

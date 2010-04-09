@@ -519,9 +519,9 @@ Func dos_tab [DOS_MAX] =
 	/* 0x17f */		sys_enosys,		/* sys_munmap */
 
 	/* 0x180 */		sys_f_chown16,	/* 1.16 */
-	/* 0x181 */		sys_enosys,		/* reserved */
-	/* 0x182 */		sys_enosys,		/* reserved */
-	/* 0x183 */		sys_enosys,		/* reserved */
+	/* 0x181 */	(Func)	sys_f_chdir,	/* 1.17 */
+	/* 0x182 */	(Func)	sys_f_opendir,	/* 1.17 */
+	/* 0x183 */		sys_f_dirfd,	/* 1.17 */
 	/* 0x184 */		sys_enosys,		/* reserved */
 	/* 0x185 */		sys_enosys,		/* reserved */
 	/* 0x186 */		sys_enosys,		/* reserved */
