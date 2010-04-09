@@ -926,7 +926,6 @@ typedef struct
 	long	real_index;	/* index there normal & vfat point */
 	UNIT	*u;		/* the locked UNIT */
 	_DIR	*info;		/* points to the current _DIR */
-
 } oDIR;
 
 /* extended open file descriptor */
@@ -1612,7 +1611,7 @@ c_hash_remove  (register COOKIE *c)
  * Get new cookie from cookie cache by searching an unused cache entry.
  * If a cookie is found (normal case) it's initialized with the name
  * argument and installed in the hash table.
- * 
+ *
  * NOTE: If the function succeed ownership of the argument is moved into the
  *       newly allocated cookie.
  */
@@ -2892,7 +2891,7 @@ is_special_name(const char *name)
 	if (name[0] == '.')
 		if (name[1] == '\0' || (name[1] == '.' && name[2] == '\0'))
 			return 1;
-	
+
 	return 0;
 }
 
@@ -3262,7 +3261,7 @@ fat_trunc (register char *dst, const char *src, register long len, COOKIE *dir)
 	 * 5: check for existing filename
 	 */
 	register long i;
-	
+
 	ftrunc(dst, src, len, dir);
 
 	/* step 5 */
@@ -3906,7 +3905,7 @@ search_cookie (COOKIE *dir, COOKIE **found, const char *name, int mode)
 		FAT_DEBUG (("search_cookie: looking for: %s", temp));
 
 		search = c_hash_lookup (temp, dir->dev); kfree (temp);
-		
+
 		if (!search)
 		{
 			/*
@@ -3916,12 +3915,12 @@ search_cookie (COOKIE *dir, COOKIE **found, const char *name, int mode)
 			 *	and to keep consistent behavour, we need to do
 			 *	the same all over the place.
 			 */
-			short mode = is_short(name, VFAT(dir->dev) ? MSDOS_TABLE : GEMDOS_TABLE);
-			
-			if (!mode && !VFAT(dir->dev))
+			short shortmode = is_short(name, VFAT(dir->dev) ? MSDOS_TABLE : GEMDOS_TABLE);
+
+			if (!shortmode && !VFAT(dir->dev))
 			{
 				char fat_name[FAT_NAMEMAX];
-				
+
 				ftrunc(fat_name, name, strlen(name), dir);
 				temp = fullname (dir, fat_name);
 				if (!temp)
@@ -3933,7 +3932,7 @@ search_cookie (COOKIE *dir, COOKIE **found, const char *name, int mode)
 				search = c_hash_lookup (temp, dir->dev); kfree (temp);
 			}
 		}
-		
+
 		if (search)
 		{
 			if (found)
@@ -3977,7 +3976,7 @@ search_cookie (COOKIE *dir, COOKIE **found, const char *name, int mode)
 	{
 		/* FAT search on FAT or VFAT */
 		char fat_name[FAT_NAMEMAX];
-		
+
 		if (!mode)
 		{
 			/*
@@ -5356,8 +5355,8 @@ get_bpb (_x_BPB *xbpb, DI *di)
 
 			break;
 		}
-		default: 
-		{		
+		default:
+		{
 			xbpb->fsiz =0;
 			xbpb->datrec = 0;
 			xbpb->rdrec = 0;
@@ -5388,10 +5387,10 @@ get_bpb (_x_BPB *xbpb, DI *di)
 			xbpb->info = 0;
 		}
 	}
-	else 
-	{	
+	else
+	{
 		xbpb->info = 0;
-		xbpb->fflag = 0; 
+		xbpb->fflag = 0;
 	}
 
 	xbpb->fats--;
@@ -6217,7 +6216,7 @@ fatfs_rmdir (fcookie *dir, const char *name)
 	{
 		COOKIE *c = (COOKIE *) dirh.fc.index;
 		char *s;
-		
+
 		FAT_DEBUG (("fatfs_rmdir: found: dev = %i", dirh.fc.dev));
 
 		/* Ordner muss leer sein, ansonsten EACCES
@@ -6264,10 +6263,10 @@ fatfs_rmdir (fcookie *dir, const char *name)
 		if (is_special_name(s))
 		{
 			fatfs_release (&(dirh.fc));
-			
+
 			FAT_DEBUG (("fatfs_rmdir: leave failure (rmdir on . or ..)"));
 			return EACCES;
-		}			
+		}
 
 		r = unlink_cookie (c);
 		if (r)
@@ -6349,11 +6348,11 @@ fatfs_remove (fcookie *dir, const char *name)
 		if (is_special_name(s))
 		{
 			rel_cookie (c);
-			
+
 			FAT_DEBUG (("fatfs_remove: leave failure (delete on . or .. \?\?\?)"));
 			return EACCES;
-		}			
-		
+		}
+
 		r = unlink_cookie (c);
 		if (r)
 		{
@@ -6421,15 +6420,15 @@ fatfs_getname (fcookie *root, fcookie *dir, char *pathname, int size)
 /*
  * recursivly clean inode cache for all cached entries
  * of a moved directory
- * 
+ *
  * XXX this is only neccessary for cached childs of
  *     the moved directory I think (now the complete
  *     hierachy is cleaned) -> todo
- * 
+ *
  * XXX most likely it's also enough to just correct the
  *     c->dir back pointer to the parent directory;
  *     but I'm not sure about the side effects
- * 
+ *
  * btw. the inode cache design is wrong :-/
  */
 static long
@@ -6464,7 +6463,7 @@ clean_cache_hierachy (COOKIE *parent)
 					if (!is_special_name(s))
 					{
 						FAT_ASSERT ((c->dir != c->stcl));
-						
+
 						if (clean_cache_hierachy (c))
 							return EACCES;
 					}
@@ -6517,7 +6516,7 @@ fatfs_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newna
 	if (newd->dir == 0)
 	{
 		/* newdir is root directory */
-		
+
 		if (is_special_name(newname))
 		{
 			FAT_DEBUG (("fatfs_rename: leave failure, rename to '.' or '..'"));
@@ -6546,7 +6545,7 @@ fatfs_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newna
 	{
 		/* check if directory move violate the
 		 * directory hierachy
-		 * 
+		 *
 		 * we need todo this only if the new directory is not
 		 * the root directory (there can't be a violation against
 		 * the root directory :-))
@@ -6818,16 +6817,22 @@ static long _cdecl
 fatfs_opendir (DIR *dirh, int flags)
 {
 	COOKIE *c = (COOKIE *) dirh->fc.index;
-	oDIR *dir = (oDIR *) dirh->fsstuff;
+	oDIR dir;
 	long r;
 
 	UNUSED (flags);
 
 	dirh->index = 0;
 
-	r = __opendir (dir, c->stcl, c->dev);
+	/* workaround strict aliasing */
+	memcpy(&dir, dirh->fsstuff, sizeof(oDIR));
+
+	r = __opendir (&dir, c->stcl, c->dev);
 	if (!r)
 		c->links++;
+
+	/* workaround strict aliasing */
+	memcpy(dirh->fsstuff, &dir, sizeof(oDIR));
 
 	FAT_DEBUG_COOKIE ((c));
 	FAT_DEBUG (("fatfs_opendir [%s]: (%li, %li), %li -> r = %li", c->name, c->dir, c->offset, c->stcl, r));
@@ -7067,8 +7072,9 @@ fatfs_writelabel (fcookie *dir, const char *name)
 
 	if (r == E_OK)
 	{
+		register union { const char *cc; const unsigned char *c; } nameptr = {name};// nameptr.cc = name;
 		register const char *table = DEFAULT_T (dir->dev);
-		register const uchar *src = (uchar *)name;
+		register const uchar *src = nameptr.c;
 		register char *dst = odir.info->name;
 		register long i;
 
@@ -8107,9 +8113,9 @@ fatfs_open (FILEPTR *f)
 		return EACCES;
 	}
 
-	if (c->info.attr & FA_LABEL || c->info.attr & FA_DIR)
+	if (c->info.attr & FA_LABEL || ((c->info.attr & FA_DIR) && ((f->flags & O_RWMODE) != O_RDONLY)))
 	{
-		FAT_DEBUG (("fatfs_open: leave failure, not a valid file"));
+		FAT_DEBUG (("fatfs_open: leave failure, not a valid file or read-only directory"));
 		return EACCES;
 	}
 
@@ -8173,6 +8179,8 @@ fatfs_open (FILEPTR *f)
 static long _cdecl
 fatfs_write (FILEPTR *f, const char *buf, long bytes)
 {
+	union { const char *cc; char *c; } bufptr = {buf};// bufptr.cc = buf;
+
 	FAT_DEBUG (("fatfs_write [%s]: enter (bytes = %li)", ((COOKIE *) f->fc.index)->name, bytes));
 
 	if ((((FILE *) f->devinfo)->mode & O_RWMODE) == O_RDONLY)
@@ -8182,13 +8190,18 @@ fatfs_write (FILEPTR *f, const char *buf, long bytes)
 	}
 
 	FAT_DEBUG (("fatfs_write: leave return __FIO ()"));
-	return __FIO (f, (char *) buf, bytes, WRITE);
+	return __FIO (f, bufptr.c, bytes, WRITE);
 }
 
 static long _cdecl
 fatfs_read (FILEPTR *f, char *buf, long bytes)
 {
+	COOKIE *c = (COOKIE *) f->fc.index;
+
 	FAT_DEBUG (("fatfs_read [%s]: enter (bytes = %li)", ((COOKIE *) f->fc.index)->name, bytes));
+
+	if (c->info.attr & FA_DIR)
+		return EISDIR;
 
 	if ((((FILE *) f->devinfo)->mode & O_RWMODE) == O_WRONLY)
 	{

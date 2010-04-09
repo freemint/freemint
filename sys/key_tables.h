@@ -115,6 +115,9 @@ static const uchar usa_kbd[] =
 	0x00,
 
 /* Alternate Gr */
+	0x00,
+
+/* Deadkeys */
 	0x00
 };
 
@@ -128,7 +131,8 @@ static struct keytab sys_keytab =
 	(uchar *)usa_kbd + 384,
 	(uchar *)usa_kbd + 385,
 	(uchar *)usa_kbd + 386,
-	(uchar *)usa_kbd + 387
+	(uchar *)usa_kbd + 387,
+	(uchar *)usa_kbd + 388
 };
 
 # endif

@@ -362,9 +362,9 @@ do_open (FILEPTR **f, const char *name, int rwmode, int attr, XATTR *x)
 
 	DEBUG(("do_open(%s): mode 0x%x", name, xattr.mode));
 
-	/* we don't do directories
+	/* we don't do directories other than read-only
 	 */
-	if (S_ISDIR(xattr.mode))
+	if (S_ISDIR(xattr.mode) && ((rwmode & O_RWMODE) != O_RDONLY))
 	{
 		DEBUG(("do_open(%s): file is a directory", name));
 		release_cookie (&dir);
@@ -515,8 +515,8 @@ do_open (FILEPTR **f, const char *name, int rwmode, int attr, XATTR *x)
 			short s = tty->state & (TS_BLIND|TS_HOLD|TS_HPCL);
 			short u = tty->use_cnt;
 			short a = tty->aux_cnt;
-			long r = tty->rsel;
-			long w = tty->wsel;
+			long rsel = tty->rsel;
+			long wsel = tty->wsel;
 			*tty = default_tty;
 
 			if (!creating)
@@ -525,8 +525,8 @@ do_open (FILEPTR **f, const char *name, int rwmode, int attr, XATTR *x)
 			if ((tty->use_cnt = u) > 1 || !creating)
 			{
 				tty->aux_cnt = a;
-				tty->rsel = r;
-				tty->wsel = w;
+				tty->rsel = rsel;
+				tty->wsel = wsel;
 			}
 
 			if (!((*f)->flags & O_HEAD))

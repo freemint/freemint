@@ -254,7 +254,7 @@ long _cdecl
 sys_pvfork (void)
 {
 	PROC *p;
-	int newpid;
+	int new_pid;
 	long p_sigmask;
 	long r;
 
@@ -307,9 +307,9 @@ sys_pvfork (void)
 	/* note that the PROC structure pointed to by p may be freed during
 	 * the check_sigs call!
 	 */
-	newpid = p->pid;
+	new_pid = p->pid;
 	check_sigs ();	/* did we get any signals while sleeping? */
-	return newpid;
+	return new_pid;
 }
 
 /*
@@ -331,7 +331,7 @@ sys_pfork (void)
 	MEMREGION *m, *n;
 	BASEPAGE *b;
 	long txtsize;
-	int i, j, newpid;
+	int i, j, new_pid;
 	long r;
 
 	p = fork_proc(FORK_SHAREEXT, &r); //fork_proc (0, &r);
@@ -443,8 +443,8 @@ sys_pfork (void)
 	 * not exist any more.
 	 */
 	run_next(p, 3);
-	newpid = p->pid;
+	new_pid = p->pid;
 	yield();
 
-	return newpid;
+	return new_pid;
 }
