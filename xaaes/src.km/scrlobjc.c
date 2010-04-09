@@ -750,7 +750,7 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 				case SECONTENT_TEXT:
 				{
 					short x2, y2, dx, dy, tw, th, f;
-					char t[200];
+					char t[512];
 
 					if (xa_rect_clip(clip, &r, &clp))
 					{
@@ -799,6 +799,7 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 						if (tw > 0)
 						{
 							int method;
+
 							if( c->index == 0/*FSLIDX_NAME*/ )
 							{
 								if( c->next /*|| !c->prev*/ )
@@ -821,16 +822,21 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 
 							/* opt: const width for prop_... */
 							if( method >= 0 && c->c.text.tblen * list->char_width > tw )
+							{
+								if( c->c.text.tblen > sizeof(t)-1 )
+									c->c.text.tblen = sizeof(t)-1;
 								(*v->api->prop_clipped_name)(v, c->c.text.text, t, tw, &tw, &th, method);
+							}
 							else
 							{
-								strcpy( t, c->c.text.text );
+								strncpy( t, c->c.text.text, sizeof(t)-1 );
+								t[sizeof(t)-1] = 0;
 								th = c->c.text.h;
 							}
 
 #if ITALIC_IS_CUTOFF
 							/* on some systems the last letter is cut off if italic */
-							if( wtxt->e & ITALIC )
+							if( (wtxt->e & ITALIC) && strlen(t) < sizeof(t)-1 )
 								strcat( t, " " );
 #endif
 // 							display("%s", c->c.text.text);
