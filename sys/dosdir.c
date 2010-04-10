@@ -680,9 +680,6 @@ sys_f_sfirst (const char *path, int attrib)
 		if (fs->fsflags & FS_EXT_3)
 		{
 			dta_UTC_local_dos(dta,xattr,m);
-			/* UTC -> localtime -> DOS style */
-// 			*((long *) &(dta->dta_time)) = dostime (*((long *) &(xattr.mtime)) - timezone);
-// 			dta->dta_time = dostime(xattr.mtime - timezone);
 		}
 		else
 		{
@@ -927,8 +924,6 @@ baderror:
 	if (fs->fsflags & FS_EXT_3)
 	{
 		dta_UTC_local_dos(dta,xattr,m);
-		/* UTC -> localtime -> DOS style */
-// 		*((long *) &(dta->dta_time)) = dostime (*((long *) &(xattr.mtime)) - timezone);
 	}
 	else
 	{
@@ -1292,6 +1287,8 @@ sys_d_opendir (const char *name, int flag)
 	dirh->next = p->p_fd->searches;
 	p->p_fd->searches = dirh;
 
+	dirh->fd = 0; /* less than MIN_OPEN */
+
 	assert(((long) dirh) > 0);
 	return (long) dirh;
 }
@@ -1299,9 +1296,21 @@ sys_d_opendir (const char *name, int flag)
 long _cdecl
 sys_d_readdir (int len, long handle, char *buf)
 {
+	struct proc *p = get_curproc();
 	DIR *dirh = (DIR *) handle;
 	fcookie fc;
 	long r;
+	DIR **where;
+
+	where = &p->p_fd->searches;
+	while (*where && *where != dirh)
+		where = &((*where)->next);
+
+	if (!*where)
+	{
+		DEBUG(("Dreaddir: not an open directory"));
+		return EBADF;
+	}
 
 	if (!dirh->fc.fs)
 		return EBADF;
@@ -1321,9 +1330,21 @@ sys_d_readdir (int len, long handle, char *buf)
 long _cdecl
 sys_d_xreaddir (int len, long handle, char *buf, XATTR *xattr, long *xret)
 {
+	struct proc *p = get_curproc();
 	DIR *dirh = (DIR *) handle;
 	fcookie fc;
 	long r;
+	DIR **where;
+
+	where = &p->p_fd->searches;
+	while (*where && *where != dirh)
+		where = &((*where)->next);
+
+	if (!*where)
+	{
+		DEBUG(("Dxreaddir: not an open directory"));
+		return EBADF;
+	}
 
 	if (!dirh->fc.fs)
 		return EBADF;
@@ -1338,10 +1359,6 @@ sys_d_xreaddir (int len, long handle, char *buf, XATTR *xattr, long *xret)
 		xtime_to_local_dos(xattr, m);
 		xtime_to_local_dos(xattr, a);
 		xtime_to_local_dos(xattr, c);
-		/* UTC -> localtime -> DOS style */
-// 		*((long *) &(xattr->mtime)) = dostime (*((long *) &(xattr->mtime)) - timezone);
-// 		*((long *) &(xattr->atime)) = dostime (*((long *) &(xattr->atime)) - timezone);
-// 		*((long *) &(xattr->ctime)) = dostime (*((long *) &(xattr->ctime)) - timezone);
 	}
 
 	release_cookie (&fc);
@@ -1352,7 +1369,19 @@ sys_d_xreaddir (int len, long handle, char *buf, XATTR *xattr, long *xret)
 long _cdecl
 sys_d_rewind (long handle)
 {
+	struct proc *p = get_curproc();
 	DIR *dirh = (DIR *) handle;
+	DIR **where;
+
+	where = &p->p_fd->searches;
+	while (*where && *where != dirh)
+		where = &((*where)->next);
+
+	if (!*where)
+	{
+		DEBUG(("Drewinddir: not an open directory"));
+		return EBADF;
+	}
 
 	if (!dirh->fc.fs)
 		return EBADF;
@@ -1371,7 +1400,7 @@ sys_d_closedir (long handle)
 {
 	struct proc *p = get_curproc();
 	DIR *dirh = (DIR *)handle;
-	DIR **where;
+	DIR **where, **_where;
 	long r;
 
 	where = &p->p_fd->searches;
@@ -1387,13 +1416,47 @@ sys_d_closedir (long handle)
 	/* unlink the directory from the chain */
 	*where = dirh->next;
 
-	if (dirh->fc.fs)
-	{
-		r = xfs_closedir (dirh->fc.fs, dirh);
-		release_cookie (&dirh->fc);
+	if (!dirh->fc.fs) {
+		kfree (dirh);
+		return E_OK;
 	}
-	else
-		r = E_OK;
+
+	/* If we've assigned a file descriptor to this cookie from
+	 * Fdirfd, then we need to ensure we close it now too.
+	 */
+	if (dirh->fd >= MIN_OPEN) {
+		FILEPTR *f;
+
+		r = GETFILEPTR (&p, &dirh->fd, &f);
+
+		if (!r) {
+			/* close dirent's for the same FD */
+			where = &p->p_fd->searches;
+			while (*where) {
+				_where = &((*where)->next);
+				if ((*where)->fd == dirh->fd) {
+
+					r = xfs_closedir ((*where)->fc.fs, (*where));
+					release_cookie (&(*where)->fc);
+
+					kfree(*where);
+
+					/* unlink the directory from the chain */
+					*where = *_where;
+				}
+				where = _where;
+			}
+
+			do_close(p, f);
+
+			DEBUG (("Removing file descriptor %d", dirh->fd));
+
+			FD_REMOVE (p, dirh->fd);
+		}
+	}
+
+	r = xfs_closedir (dirh->fc.fs, dirh);
+	release_cookie (&dirh->fc);
 
 	if (r)
 		DEBUG(("Dclosedir: error %ld", r));
@@ -1436,10 +1499,6 @@ sys_f_xattr (int flag, const char *name, XATTR *xattr)
 		xtime_to_local_dos(xattr, m);
 		xtime_to_local_dos(xattr, a);
 		xtime_to_local_dos(xattr, c);
-		/* UTC -> localtime -> DOS style */
-// 		*((long *) &(xattr->mtime)) = dostime (*((long *) &(xattr->mtime)) - timezone);
-// 		*((long *) &(xattr->atime)) = dostime (*((long *) &(xattr->atime)) - timezone);
-// 		*((long *) &(xattr->ctime)) = dostime (*((long *) &(xattr->ctime)) - timezone);
 	}
 
 	release_cookie (&fc);
@@ -2084,5 +2143,236 @@ sys_f_stat64 (int flag, const char *name, STAT *stat)
 	if (r) DEBUG (("Fstat64(%s): returning %ld", name, r));
 
 	release_cookie (&fc);
+	return r;
+}
+
+/*
+ * GEMDOS extension: Fchdir(fd)
+ *
+ * sets the current directory from a file descriptor
+ */
+long _cdecl
+sys_f_chdir (short fd)
+{
+	struct proc *p = get_curproc();
+	FILEPTR	*f;
+	XATTR xattr;
+	int drv;
+	struct cwd *cwd = p->p_cwd;
+	long r;
+
+	r = GETFILEPTR (&p, &fd, &f);
+	if (r) return r;
+
+	if (!(f->fc.fs))
+	{
+		DEBUG (("Ffchdir: not a valid filesystem"));
+		return ENOSYS;
+	}
+
+	r = xfs_getxattr (f->fc.fs, &(f->fc), &xattr);
+	if (r)
+	{
+		DEBUG (("Ffchdir(%i): couldn't get directory attributes", fd));
+		release_cookie (&(f->fc));
+		return r;
+	}
+
+	if (!(xattr.attr & FA_DIR))
+	{
+		DEBUG (("Ffchdir(%i): not a directory", fd));
+		release_cookie (&(f->fc));
+		return ENOTDIR;
+	}
+
+	if (denyaccess (p->p_cred->ucr, &xattr, S_IXOTH))
+	{
+		DEBUG (("Ffchdir(%i): access denied", fd));
+		release_cookie (&(f->fc));
+		return EACCES;
+	}
+
+	/* watch out for symbolic links; if c:\foo is a link to d:\bar, then
+	 * "cd c:\foo" should also change the drive to d:
+	 */
+	drv = cwd->curdrv;
+	if (drv != UNIDRV && f->fc.dev != cwd->root[drv].dev)
+	{
+		int i;
+
+		for (i = 0; i < NUM_DRIVES; i++)
+		{
+			if (cwd->root[i].dev == f->fc.dev
+				&& cwd->root[i].fs == f->fc.fs)
+			{
+				if (cwd->curdrv == drv)
+					cwd->curdrv = i;
+
+				drv = i;
+				break;
+			}
+		}
+	}
+
+	release_cookie (&cwd->curdir[drv]);
+	dup_cookie(&cwd->curdir[drv], &f->fc);
+
+	return E_OK;
+}
+
+/*
+ * GEMDOS extension: fdopendir
+ *
+ * opendir with a file descriptor
+ */
+long _cdecl
+sys_f_opendir (short fd)
+{
+	struct proc *p = get_curproc();
+	FILEPTR	*f;
+	fcookie *dir;
+	long r;
+	DIR *dirh;
+	ushort mode;
+
+	r = GETFILEPTR (&p, &fd, &f);
+	if (r) return r;
+
+	if (!(f->fc.fs))
+	{
+		DEBUG (("Ffdopendir: not a valid filesystem"));
+		return ENOSYS;
+	}
+
+	dir = &(f->fc);
+	r = dir_access (p->p_cred->ucr, dir, S_IROTH, &mode);
+	if (r)
+	{
+		DEBUG (("Ffdopendir(%i): read permission denied", fd));
+		return r;
+	}
+
+	dirh = kmalloc (sizeof (*dirh));
+	if (!dirh)
+	{
+		DEBUG (("Ffdopendir(%i): out of memory", fd));
+		return ENOMEM;
+	}
+
+	dup_cookie(&dirh->fc, dir);
+	dirh->index = 0;
+	dirh->flags = 0;
+	r = xfs_opendir (dirh->fc.fs, dirh, dirh->flags);
+	if (r)
+	{
+		DEBUG (("Ffdopendir(%i): fdopendir returned %ld", fd, r));
+		release_cookie (&dirh->fc);
+		kfree (dirh);
+		return r;
+	}
+
+	/* we keep a chain of open directories so that if a process
+	 * terminates without closing them all, we can clean up
+	 */
+	dirh->next = p->p_fd->searches;
+	p->p_fd->searches = dirh;
+
+	dirh->fd = fd;
+
+	assert(((long) dirh) > 0);
+	return (long) dirh;
+}
+
+/*
+ * GEMDOS extension: fdirfd
+ *
+ * a file descriptor from DIR*
+ */
+long _cdecl
+sys_f_dirfd (long handle)
+{
+	struct proc *p = get_curproc();
+	DIR *dirh = (DIR *)handle;
+	FILEPTR *fp = NULL;
+	short fd = MIN_OPEN;
+	DIR **where;
+	long r;
+	long devsp;
+	DEVDRV *dev;
+
+	where = &p->p_fd->searches;
+	while (*where && *where != dirh)
+		where = &((*where)->next);
+
+	if (!*where)
+	{
+		DEBUG (("Fdirfd: not an open directory"));
+		return EBADF;
+	}
+
+	if (!dirh->fc.fs)
+	{
+		DEBUG (("Fdirfd: not a valid filesystem"));
+		return EBADF;
+	}
+
+	/* locate previously handed fd */
+	if (dirh->fd >= MIN_OPEN) {
+		DEBUG(("Same descriptor %d found",dirh->fd));
+
+		return dirh->fd;
+	}
+
+	dev = xfs_getdev (dirh->fc.fs, &dirh->fc, &devsp);
+	if (!dev)
+	{
+		DEBUG (("Fdirfd: device driver not found (%li)", devsp));
+		return devsp ? devsp : EINTERNAL;
+	}
+
+	r = FD_ALLOC (p, &fd, MIN_OPEN);
+	if (r) goto error;
+
+	if (dev == &fakedev)
+	{
+		/* fake BIOS devices */
+		assert (p->p_fd);
+
+		fp = p->p_fd->ofiles[devsp];
+		if (!fp || fp == (FILEPTR *) 1) {
+			FD_REMOVE (p, fd);
+			return EBADF;
+		}
+
+		fp->links++;
+	} else {
+		r = FP_ALLOC (p, &fp);
+		if (r) goto error;
+
+		fp->links = 1;
+		fp->flags = O_RDONLY;
+		fp->pos = 0;
+		fp->devinfo = devsp;
+		fp->dev = dev;
+		dup_cookie(&fp->fc, &dirh->fc);
+		r = xdd_open (fp);
+		if (r < E_OK)
+		{
+			release_cookie(&fp->fc);
+			goto error;
+		}
+	}
+
+	dirh->fd = fd;	/* associate this dirp with this fd */
+
+	/* activate the fp, default is to close non-standard files on exec */
+	FP_DONE (p, fp, fd, FD_CLOEXEC);
+
+	return fd;
+
+error:
+	if (fd >= MIN_OPEN) FD_REMOVE (p, fd);
+	if (fp) { fp->links--; FP_FREE (fp); }
+
 	return r;
 }
