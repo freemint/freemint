@@ -496,9 +496,7 @@ do_wakeup_things(short sr, int newslice, long cond)
 
 static long sleepcond, iwakecond;
 
-#define NEWLOAD2 1
-
-#if NEWLOAD2
+#if NEWLOAD
 short new_ld;
 #endif
 
@@ -895,9 +893,7 @@ gen_average(unsigned long *sum, unsigned char *load_ptr, unsigned long max_size)
 
 	*load_ptr = (unsigned char) new_load;
 
-	*sum += (new_load - old_load) * LOAD_SCALE;
-
-#if NEWLOAD2
+#if NEWLOAD
 	*sum += (new_load - old_load);
 #else
  	*sum += (new_load - old_load) * LOAD_SCALE;
@@ -917,7 +913,7 @@ calc_load_average(void)
 	static unsigned long sum5 = 0;
 	static unsigned long sum15 = 0;
 
-#if !NEWLOAD2
+#if !NEWLOAD
  	register struct proc *p;
 #else
 	static unsigned long systime = 0, usrtime = 0, old_uptime = 0;
@@ -931,7 +927,7 @@ calc_load_average(void)
 	if (uptime % 5) return;
 # endif
 
-#if !NEWLOAD2
+#if !NEWLOAD
 	number_running = 0;
 
 	for (p = proclist; p; p = p->gl_next)
@@ -997,7 +993,7 @@ calc_load_average(void)
 	}
 #endif
 
-#if NEWLOAD2
+#if NEWLOAD
 	number_running = new_ld;
 #endif	/* NEWLOAD */
 
