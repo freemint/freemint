@@ -1,3 +1,26 @@
+11-04-2010
+----------
+
+taskman:
+
+avoid buffer-overflow while reading /kern.
+
+---------------------------------------------------------------------
+scrlobjc:
+
+avoid buffer-overflow while displaying text-item.
+
+---------------------------------------------------------------------
+xa_shel:
+
+launch:
+
+	- if a client is launched from launch_path, and the entry is a
+symlink, home_path for that client is set to the directory of the
+link-target. It behaves then as if started from that directory, and
+finds its resource- and other files.
+
+---------------------------------------------------------------------
 08-04-2010
 ----------
 
