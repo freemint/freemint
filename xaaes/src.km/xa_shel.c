@@ -230,6 +230,36 @@ default_path(struct xa_client *caller, char *cmd, char *path, char *name, char *
 	return drv;
 }
 
+static bool is_same_file( char *f1, char *f2 )
+{
+	struct stat st1, st2;
+	long r = f_stat64(0, f1, &st1);
+	if( !r )
+		r = f_stat64(0, f2, &st2);
+	if( !r )
+		return st1.dev == st2.dev && st1.ino == st2.ino;
+	return false;
+}
+static bool is_launch_path( char *path )
+{
+	char *p = strrchr( cfg.launch_path, '\\' );
+	bool ret;
+	if( p )
+		*p = 0;
+	ret = is_same_file( cfg.launch_path, path );
+	if( p )
+		*p = '\\';
+	return ret;
+}
+
+static char *get_full_curpath( char *dir )
+{
+	dir[0] = d_getdrv() + 'a';
+	dir[1] = ':';
+	d_getpath(dir + 2, 0);
+	return dir;
+}
+
 int
 launch(enum locks lock, short mode, short wisgr, short wiscr,
        const char *parm, char *p_tail, struct xa_client *caller)
@@ -250,6 +280,8 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 	struct proc *p = NULL;
 	int type = 0;
 // 	bool d = (caller && !strnicmp(caller->proc_name, "guitar", 6)) ? true : false;
+
+
 
 #if GENERATE_DIAGS
 	if (caller)
@@ -548,6 +580,29 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 			if (wisgr != 0)
 			{
 
+				char linkname[PATH_MAX+1], *ps;
+				XATTR xat;
+				long r;
+
+				r = f_xattr(1, cmd, &xat);
+				if( !r && S_ISLNK( xat.mode ) )
+				{
+					_f_readlink( PATH_MAX, linkname, cmd );
+					if( strcmp( cmd, linkname ) )
+					{
+						Path cur;
+						ps = strrchr( linkname, '\\' );
+						//if( !ps )
+							//ps = strrchr( linkname, '/' );
+						if( ps )
+							*ps = 0;
+						cpopts.defdir = linkname;
+						/* if started from launch_path set home to link-target path */
+						if( is_launch_path( get_full_curpath(cur) ) )
+							strcpy( path, linkname );	/* this gets shel_info.home_path in init_client */
+					}
+				}
+
 				ret = create_process(cmd, *argvtail ? argvtail : tail,
 						     (x_mode & SW_ENVIRON) ? x_shell.env : *strings,
 						     &p, 0, cpopts.mode ? &cpopts : NULL);
@@ -557,6 +612,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 
 					type = APP_APPLICATION;
 					ret = p->pid;
+
 					/* now signals are caught: use launcher-pgrp for keyboard-access for clients */
 					p_setpgrp(ret, loader_pgrp);
 				}
@@ -680,6 +736,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 
 		if (info)
 		{
+			int i = 0;
 			info->type = type;
 
 			if (caller)
@@ -695,9 +752,13 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 
 			strcpy(info->cmd_name, save_cmd);
 
-			*(info->home_path) = drv + 'a';
-			*(info->home_path + 1) = ':';
-			strcpy(info->home_path+2, path);
+			if( !path[0] || path[1] != ':' )
+			{
+				*(info->home_path) = drv + 'a';
+				*(info->home_path + 1) = ':';
+				i = 2;
+			}
+			strcpy(info->home_path+i, path);
 		}
 		else
 		{
