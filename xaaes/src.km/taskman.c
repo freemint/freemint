@@ -2517,7 +2517,6 @@ open_systemalerts(enum locks lock, struct xa_client *client, bool open)
 			force_window_top( lock, wind );
 		}
 	}
-	//BLOG((0,"open_systemalerts:return ok."));
 	return;
 fail:
 	if (wt)
@@ -2527,7 +2526,6 @@ fail:
 	}
 	if (obtree)
 		free_object_tree(client, obtree);
-	//BLOG((0,"open_systemalerts:return fail."));
 }
 
 /*

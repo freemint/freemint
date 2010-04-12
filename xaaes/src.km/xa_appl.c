@@ -169,7 +169,7 @@ init_client(enum locks lock, bool sysclient)
 	struct xa_client *client;
 	struct proc *p = get_curproc();
 	long f;
-	bool d = false; //(!strnicmp(p->name, "qed", 3)) ? true : false;
+	//bool d = false; //(!strnicmp(p->name, "qed", 3)) ? true : false;
 
 	/* if attach_extension succeed it returns a pointer
 	 * to kmalloc'ed and *clean* memory area of the given size
@@ -267,7 +267,7 @@ init_client(enum locks lock, bool sysclient)
 	/* awaiting menu_register */
 	sprintf(client->name, sizeof(client->name), "  %s", client->proc_name);
 
-	DIAGS(("appl_init: checking shel info (pid %i)", client->p->pid));
+	DIAGS(("init_client: checking shel info (pid %i) home=%s, fname=%s", client->p->pid, client->home_path, p->fname));
 	{
 		struct shel_info *info;
 
@@ -277,12 +277,13 @@ init_client(enum locks lock, bool sysclient)
 			DIAGS(("appl_init: type %i", info->type));
 			DIAGS(("appl_init: cmd_name '%s'", info->cmd_name));
 			DIAGS(("appl_init: home_path '%s'", info->home_path));
-			if (d) {
+			/*if (d) {
 				display("appl_init: shel_write started");
 				display("appl_init: type %i", info->type);
 				display("appl_init: cmd_name '%s'", info->cmd_name);
 				display("appl_init: home_path '%s'", info->home_path);
 			}
+			*/
 
 			client->type = info->type;
 			/*
@@ -317,9 +318,9 @@ init_client(enum locks lock, bool sysclient)
 
 			r = xfs_getxattr(fc.fs, &fc, &x);
 			if (!r &&  S_ISLNK(x.mode)) {
-				if (d) display("%s is link", tmp);
+				//if (d) display("%s is link", tmp);
 				r = xfs_readlink(fc.fs, &fc, tmp, PATH_MAX);
-				if (d) display(" -> %s", tmp);
+				//if (d) display(" -> %s", tmp);
 				if (r != E_OK) {
 					tmp[0] = '\0';
 					done = true;
@@ -330,10 +331,10 @@ init_client(enum locks lock, bool sysclient)
 			strcpy(hp, tmp);
 			release_cookie(&fc);
 		}
-		if (d) display("REsult! '%s'", hp);
+		//if (d) display("REsult! '%s'", hp);
 		fix_path(hp);
 		strip_fname(hp, client->home_path, NULL);
-		if (d) display(" -- '%s'", client->home_path);
+		//if (d) display(" -- '%s'", client->home_path);
 
 // 		strcpy(client->home_path, hp);
 	}
