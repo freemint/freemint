@@ -623,7 +623,7 @@ extern unsigned short uptimetick;
 
 void vbl_on(void);
 
-#ifdef ARANYM
+#if defined(ARANYM) || defined(DEBUG_INFO)
 #define TEST_TICK	1
 #else
 #define TEST_TICK	0
