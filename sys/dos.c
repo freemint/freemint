@@ -623,7 +623,7 @@ extern unsigned short uptimetick;
 
 void vbl_on(void);
 
-#if defined(ARANYM) || defined(DEBUG_INFO)
+#ifdef DEBUG_INFO
 #define TEST_TICK	1
 #else
 #define TEST_TICK	0
@@ -646,7 +646,7 @@ sys_s_uptime (ulong *cur_uptime, ulong loadaverage[3])
 
 #if NEWLOAD
 
-#ifdef DEBUG_INFO
+#if TEST_TICK
 	/*
 	DEBUG(("ld=%d uptime=%ld tick=%u overfl=%d/%d/%d modwr=%d vbl=%d", act_ld, uptime, uptimetick,
 		uptime_ovfl, uptime_ovfl1, uptime_ovfl2, modwr, mint_vblcnt));
