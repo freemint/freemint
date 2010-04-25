@@ -1,3 +1,27 @@
+25-04-2010
+----------
+
+single-task-mode (app_man.c k_init.c taskman.c widgets.c xa_appl.c xa_appl.h xa_shel.c):
+
+
+First version of a single-task-mode in XaAES.
+
+This implies:
+
+Stop all AES-Clients except the console-owner if any (e.g. toswin)
+
+Call ikbd_scan in the kernel directly not via addroottimeout in case
+the single-task-client disabled the timer-interrupt.
+
+To control this currently there has to be the bit 16 (0x10000) set in
+p_flags of the relevant binary.
+
+Any client that has bit 17 (0x20000) set, is not stopped except when the
+single-task-app has this bit also set, i.e. when it has 0x3xxxx.
+This may important because the single-task-client possibly does tty-IO,
+and needs the toswin (or another) console.
+
+---------------------------------------------------------------------
 11-04-2010
 ----------
 
@@ -335,7 +359,7 @@ Avoid multiple redraws of toolbar, always redraw work-area.
 
 init:
 
-use "xaaes.cnf" as default in case resource is not defined in xaaes.cnf.
+use "xaaes.rsc" as default in case resource is not defined in xaaes.cnf.
 
 ---------------------------------------------------------------------
 taskman:
