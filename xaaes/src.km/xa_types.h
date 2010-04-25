@@ -2826,6 +2826,7 @@ struct common
 
 	short AESpid;			/* The AES's MiNT process ID */
 	short DSKpid;			/* The desktop programs pid, if any */
+	short SingleTaskPid;	/* The pid of the single-task-client, if any */
 
 	short P_handle;			/* Physical workstation handle used by the AES */
 	short global_clip[4];
