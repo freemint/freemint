@@ -534,7 +534,6 @@ CE_pwaitpid(enum locks lock, struct c_event *ce, bool cancel)
 	long r;
 
 // 	display("doing pwaitpid for %s", ce->client->name);
-	BLOG((0,"%s:doing pwaitpid for %s", get_curproc()->name, ce->client->name));
 
 	while ((r = p_waitpid(-1, 1, NULL)) > 0) {
 
@@ -635,7 +634,6 @@ exit_proc(enum locks lock, struct proc *p, int code)
 		 */
 		if( p->p_mem->base->p_flags & F_SINGLE_TASK )
 			ikill( client->p->pid, SIGCONT );
-		//BLOG((0,"exit_proc:info=%lx shel_write=%d client=%lx:%s p=%s:%d", info, info->shel_write, client, client->name, p->name, p->pid));
 
 		if (info->shel_write) {
 			if (client)
