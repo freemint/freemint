@@ -348,6 +348,7 @@ again:
 	bzero(&cfg, sizeof(cfg));
 	bzero(&S, sizeof(S));
 	bzero(&C, sizeof(C));
+	C.SingleTaskPid = -1;	/* just for sure */
 
 	strcpy(C.start_path, start_path);
 #if BOOTLOG
@@ -387,7 +388,6 @@ again:
 	loader_pid = p_getpid();
 	//get_curproc()->pgrp = 0;
 	loader_pgrp = p_getpgrp();
-	BLOG((0,"loader:pgrp=%ld, pid=%ld", loader_pgrp, loader_pid ));
 
 	/* do some sanity checks of the installation
 	 * that are a common source of user problems
