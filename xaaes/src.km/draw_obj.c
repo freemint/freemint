@@ -403,22 +403,23 @@ d_g_progdef(struct widget_tree *wt, struct xa_vdi_settings *v)
 
 #if !PROGDEF_BY_SIGNAL
 	{
+#if CHECK_PROGDEF_ADDR
 	BASEPAGE *base = client->p->p_mem->base;
-	//USERBLK *userblk = object_get_spec(ob)->userblk;
+#endif
 	p_handler	pfunc;
 	long pret;
 
 	pfunc = (p_handler)userblk(client->ut)->ub_code;//userblk->ub_code;
-
+#if CHECK_PROGDEF_ADDR
 	/* check if callback-address is inside client-text */
-	if( (long)pfunc < base->p_tbase || (long)pfunc >= base->p_tbase+base->p_tlen)
+	if( !(client->p->p_mem->base->p_flags & F_SINGLE_TASK)
+		&& ((long)pfunc < base->p_tbase || (long)pfunc >= base->p_tbase+base->p_tlen) )
 	{
 		BLOG((0,"PROGDEF: %s: user-func(%lx) outside TEXT:%lx-%lx", client->name, pfunc, base->p_tbase, base->p_tbase + base->p_tbase+base->p_tlen));
 		return;
 	}
-
+#endif
 	pret = pfunc(p);
-
 
 	if( wt->state_mask && !((long)wt->state_mask & 1) )
 		*wt->state_mask = pret;
