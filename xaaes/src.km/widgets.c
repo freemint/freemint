@@ -337,11 +337,12 @@ rp2ap_obtree(struct xa_window *wind, struct xa_widget *widg, RECT *r)
  				obtree->ob_width = widg->r.w;
  				obtree->ob_height = widg->r.h;
 
+ 				/* is it a good idea to change the object-coords incrementally? */
 				if (!wt->zen)
 				{
 					obtree->ob_x += wt->ox;
 					obtree->ob_y += wt->oy;
-					obtree->ob_width -= (wt->ox + wt->ox);
+					//obtree->ob_width -= (wt->ox + wt->ox);
 				}
 			}
 		}
@@ -935,6 +936,11 @@ CE_redraw_menu(enum locks lock, struct c_event *ce, bool cancel)
 		struct xa_widget *widg = get_menu_widg();
 
 		mc = ((XA_TREE *)widg->stuff)->owner;
+
+		/* in single-mode display only menu of single-app */
+		if( C.SingleTaskPid > 0 && mc->p->pid != C.SingleTaskPid )
+			return;
+
 		if (ce->client == mc)
 		{
 			display_widget(lock, root_window, widg, NULL);
@@ -974,7 +980,15 @@ redraw_menu(enum locks lock)
 	widg = get_menu_widg();
 	DIAGS(("redaw_menu: widg = %lx", widg));
 	mc = ((XA_TREE *)widg->stuff)->owner;
+	if( !mc )
+	{
+		mc = C.Aes;
+	}
 	DIAGS(("redaw_menu: widg owner = %s", mc->name));
+
+	/* in single-mode display only menu of single-app */
+	if( C.SingleTaskPid > 0 && mc->p->pid != C.SingleTaskPid )
+		return;
 
 	if (mc == rc || mc == C.Aes)
 	{

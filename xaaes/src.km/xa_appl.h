@@ -36,7 +36,7 @@ void	client_nicename(struct xa_client *client, const char *n, bool autonice);
 struct xa_client *init_client(enum locks lock, bool sysclient);
 
 bool is_client(struct xa_client *client);
-void exit_proc(enum locks lock, struct proc *proc, int code);
+int exit_proc(enum locks lock, struct proc *proc, int code);
 void exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, bool detach);
 
 

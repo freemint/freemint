@@ -1066,6 +1066,8 @@ void app_or_acc_in_front( enum locks lock, struct xa_client *client )
 	/* stolen from k_keybd.c#390: made a function for this */
 	if ( client )
 	{
+		if( C.SingleTaskPid > 0 && client->p->pid != C.SingleTaskPid )
+			return;
 		if( client->name[1] == '*' )
 			hide_app( lock, client );
 		app_in_front(lock, client, true, true, true);
@@ -1720,8 +1722,11 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 				}
 			}	/* /if( list ) */
 
-			open_window(lock, wind, wind->r);
-			force_window_top( lock, wind );
+			if( TOP_WINDOW != htd->w_taskman )
+			{
+				open_window(lock, wind, wind->r);
+				force_window_top( lock, wind );
+			}
 		}
 	}
 	return;

@@ -579,7 +579,6 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 
 			if (wisgr != 0)
 			{
-
 				char linkname[PATH_MAX+1], *ps;
 				XATTR xat;
 				long r;
@@ -591,18 +590,20 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 					if( strcmp( cmd, linkname ) )
 					{
 						Path cur;
+
 						ps = strrchr( linkname, '\\' );
 						//if( !ps )
 							//ps = strrchr( linkname, '/' );
+
 						if( ps )
 							*ps = 0;
 						cpopts.defdir = linkname;
+
 						/* if started from launch_path set home to link-target path */
 						if( is_launch_path( get_full_curpath(cur) ) )
 							strcpy( path, linkname );	/* this gets shel_info.home_path in init_client */
 					}
 				}
-
 				ret = create_process(cmd, *argvtail ? argvtail : tail,
 						     (x_mode & SW_ENVIRON) ? x_shell.env : *strings,
 						     &p, 0, cpopts.mode ? &cpopts : NULL);
@@ -612,12 +613,17 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 
 					type = APP_APPLICATION;
 					ret = p->pid;
-
-					/* now signals are caught: use launcher-pgrp for keyboard-access for clients */
-					p_setpgrp(ret, loader_pgrp);
 				}
 				else
+				{
+					if( ret == EPERM )
+					{
+						struct proc *s = pid2proc(C.SingleTaskPid);
+						ALERT(("launch: cannot enter single-task-mode: already in single-task-mode: %s(%d).",
+							s->name, s->pid));
+					}
 					ret = -ret;
+				}
 			}
 			break;
 		}

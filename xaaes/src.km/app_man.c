@@ -502,6 +502,10 @@ set_next_menu(struct xa_client *new, bool do_topwind, bool force)
 		struct xa_widget *widg = get_menu_widg();
 		struct xa_window *top = NULL;
 
+		/* in single-mode display only menu of single-app */
+		if( C.SingleTaskPid > 0
+			&& !(new->p->pid == C.SingleTaskPid/* || new->p->pid == C.AESpid || new->p->pid == C.Hlp->p->pid*/) )
+			return;
 		if (new->nxt_menu)
 		{
 			new->std_menu = new->nxt_menu;
@@ -562,6 +566,10 @@ swap_menu(enum locks lock, struct xa_client *new, struct widget_tree *new_menu, 
 	struct proc *p = get_curproc();
 
 	DIAG((D_appl, NULL, "swap_menu: %s, flags=%lx", new->name, flags));
+
+	/* in single-mode display only menu of single-app */
+	if( C.SingleTaskPid > 0 && new->p->pid != C.SingleTaskPid )
+		return;
 
 	/* If the new client has no menu bar, no need for a change */
 	if (new->std_menu || new_menu || new->nxt_menu)
@@ -1114,6 +1122,9 @@ app_in_front(enum locks lock, struct xa_client *client, bool snd_untopped, bool 
 		bool was_hidden = false, upd = false;
 		struct xa_client *infront;
 		struct xa_window *topped = NULL;
+
+		if( C.SingleTaskPid > 0 && client->p->pid != C.SingleTaskPid )
+			return;
 
 		wakeup_client(client);
 		DIAG((D_appl, client, "app_in_front: %s", c_owner(client)));

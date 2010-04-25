@@ -47,8 +47,11 @@
 #include "xa_rsrc.h"
 #include "xa_user_things.h"
 #include "version.h"
+//#include <mint/mintbind.h>
 #include "mint/fcntl.h"
 #include "mint/stat.h"
+//#include "mint/ioctl.h"	/*f_cntl*/
+#include "mint/signal.h"
 
 
 bool
@@ -169,6 +172,8 @@ init_client(enum locks lock, bool sysclient)
 	struct xa_client *client;
 	struct proc *p = get_curproc();
 	long f;
+	extern long loader_pgrp;
+
 	//bool d = false; //(!strnicmp(p->name, "qed", 3)) ? true : false;
 
 	/* if attach_extension succeed it returns a pointer
@@ -299,6 +304,11 @@ init_client(enum locks lock, bool sysclient)
 // 			display("no shel_info");
 	}
 
+	{long r;
+	/* use loader-pgrp for keyboard-access for clients */
+	r = p_setpgrp(client->p->pid, loader_pgrp);
+	}
+
 	/* Get the client's home directory (where it was started)
 	 * - we use this later to load resource files, etc
 	 */
@@ -374,6 +384,43 @@ init_client(enum locks lock, bool sysclient)
 	return client;
 }
 
+#include "mint/pathconf.h"
+
+/*
+ * make X:\Y from u:/x/y
+ *
+ * return TOS-compliant path
+ */
+static char  *strip_uni_drive( char *in )
+{
+	char *p = in, *p1 = in;
+	long c;
+	bool cconv;
+
+	c = d_pathconf(in, DP_CASE);
+	cconv = c == DP_CASECONV;
+
+
+#if 1
+	if( (*in == 'u' || *in == 'U') && in[1] == ':' && (in[2] == '/' || in[2] == '\\')
+		&& isalpha( in[3] ) && (in[4] == '/' || in[4] == '\\') )
+	{
+		p1 += 4;
+		p += 2;
+		in[0] = toupper(in[3]);
+	}
+#endif
+	for(; *p; p++, p1++ )
+		if( *p == '/' )
+			*p = '\\';
+		else
+			*p = cconv ? toupper(*p1) : *p1;
+
+	return in;
+
+}
+
+struct file *xconout_dev = 0;
 /*
  * Application initialise - appl_init()
  */
@@ -397,6 +444,50 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 		}
 	} else {
 		if ((client = init_client(lock, false))) {
+			BASEPAGE *base = p->p_mem->base;
+
+			if( base->p_flags & F_SINGLE_TASK )
+			{
+				struct proc *k = pid2proc(0);	/* MiNT */
+
+				//xconout_dev = kernel_open( "u:/dev/xconout2", O_RDWR, 0, 0);
+
+				/* todo: get owner of xconout2: how? */
+
+				BLOG((0,"%s(%d): enter single-mode.", p->name, p->pid));
+				if( k )
+				{
+					struct xa_client *c;
+
+					k->p_mem->base->p_flags |= F_SINGLE_TASK;
+					C.SingleTaskPid = p->pid;
+
+					/*
+					 * stop other AES-clients
+					 * dont stop if F_DONT_STOP is set and F_DONT_STOP of singletask-app is not set
+					 */
+					FOREACH_CLIENT(c)
+					{
+						if( c->p->pid && c != C.Aes && c != C.Hlp && c != client
+							&& ( (base->p_flags & F_DONT_STOP) || !(c->p->p_mem->base->p_flags & F_DONT_STOP)) )
+						{
+							BLOG((0,"stopping %s(%d)", c->name, c->p->pid));
+							ikill(c->p->pid, SIGSTOP);
+						}
+					}
+				}
+				/* else: shutdown! */
+			}
+
+			if( p->domain == 0 )
+			{
+				strip_uni_drive( client->home_path );
+				if( isalpha( *client->home_path ) && client->home_path[1] == ':' )
+				{
+					d_setdrv(toupper(*client->home_path) - 'A');
+					d_setpath(client->home_path+2);
+				}
+			}
 			add_to_tasklist(client);
 			/* Preserve the pointer to the globl array
 			 * so we can fill in the resource address later
@@ -443,25 +534,51 @@ CE_pwaitpid(enum locks lock, struct c_event *ce, bool cancel)
 	long r;
 
 // 	display("doing pwaitpid for %s", ce->client->name);
+
 	while ((r = p_waitpid(-1, 1, NULL)) > 0) {
 
 		DIAGS(("sigchld -> %li (pid %li)", r, ((r & 0xffff0000L) >> 16)));
-// 		display("sigchld -> %li (pid %li)", r, ((r & 0xffff0000L) >> 16));
+// 		/	display("sigchld -> %li (pid %li)", r, ((r & 0xffff0000L) >> 16));
 	}
-	if (ce->d0)
-		send_ch_exit(ce->client, ce->d0, ce->d1);
-}
 
+	/* if single-mode-task exited: continue clients, reset flag */
+	if( ce->d0 && ce->d0 == C.SingleTaskPid )
+	{
+		struct proc *k = pid2proc(0);
+		struct xa_client *c;
+
+		FOREACH_CLIENT(c)
+		{
+			if( c->p->pid && c != C.Aes && c != C.Hlp )
+			{
+				BLOG((0,"continue %s(%d)", c->name, c->p->pid));
+				ikill(c->p->pid, SIGCONT);
+			}
+		}
+		BLOG((0,"%s: leaving single-mode.", get_curproc()->name));
+		k->p_mem->base->p_flags &= ~F_SINGLE_TASK;
+		C.SingleTaskPid = -1;
+
+		/* menubar may be corrupted */
+		app_in_front( lock, C.Aes, 0, true, true);
+	}
+
+	if (ce->d0)
+	{
+		send_ch_exit(ce->client, ce->d0, ce->d1);
+	}
+}
 /*
  * Clean up client-indipendant stuff, since XaAES must handle
  * some things even when the process is not yet (or ever) a
  * client.
  */
-void
+int
 exit_proc(enum locks lock, struct proc *p, int code)
 {
 	struct shel_info *info;
 	struct xa_client *clnt = lookup_extension(p, XAAES_MAGIC);
+	int ret = 0;
 
 	/* Unlock mouse & screen */
 	if (update_locked() == p)
@@ -497,7 +614,7 @@ exit_proc(enum locks lock, struct proc *p, int code)
 	 * This makes us able to find out our 'real' AES parent and send it a CH_EXIT
 	 * AES message.
 	 */
-	if ((info = lookup_extension(p, XAAES_MAGIC_SH)) && (!clnt || (clnt && clnt->pexit)) ) {
+	if ((info = lookup_extension(p, XAAES_MAGIC_SH)) && (!clnt || clnt->pexit) ) {
 		struct xa_client *client = pid2client(info->rppid);
 
 		/* Ozk:
@@ -512,7 +629,11 @@ exit_proc(enum locks lock, struct proc *p, int code)
 		 */
 		if (info->shel_write) {
 			if (client)
+			{
 				post_cevent(client, CE_pwaitpid, NULL,NULL, p->pid,code, NULL,NULL);
+				ret = 1;
+			}
+
 // 			send_ch_exit(client, p->pid, code);
 		}
 #if GENERATE_DIAGS
@@ -527,6 +648,7 @@ exit_proc(enum locks lock, struct proc *p, int code)
 		}
 #endif
 	}
+	return ret;
 }
 
 /*
@@ -559,7 +681,7 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 	struct xa_client *top_owner;
 	long redraws;
 	bool was_infront = false;
-// 	struct shel_info *info = lookup_extension(client->p, XAAES_MAGIC_SH);
+	//int really_exited;
 // 	bool d = (client == C.Hlp) ? true : false; //(!strnicmp(client->proc_name, "xasys", 6)) ? true : false;
 
 	DIAG((D_appl, NULL, "XA_client_exit: %s", c_owner(client)));
@@ -574,8 +696,6 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 	 * Clear if client was exclusively waiting for mouse input
 	 */
 	client->status |= CS_EXITING;
-
-// 	if (d) display("rem from takslist");
 
 	if (client != C.Hlp) {
 		cancel_winctxt_popup(lock, NULL, client);
@@ -598,8 +718,6 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 	 */
 	top_owner = C.Aes;
 
-// 	if (d) display("0");
-
 	if (is_infront(client)) {
 		was_infront = true;
 		if (cfg.next_active == 1) {
@@ -615,13 +733,10 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 		}
 	}
 
-// 	if (d) display("1");
-
 	swap_menu(lock, client, NULL, SWAPM_REMOVE);
-// 	if (d) display("2");
 
+	//really_exited = exit_proc(lock, client->p, code) || !(client->p->p_mem->base->p_flags & F_SINGLE_TASK);
 	exit_proc(lock, client->p, code);
-// 	if (d) display("3");
 
 	/*
 	 * It is no longer interested in button released packet
@@ -637,18 +752,14 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 		xa_graf_mouse(ARROW, NULL, NULL, false);
 	}
 
-// 	if (d) display("4");
-
 	remove_widget_active(client);
 
-// 	if (d) display("5");
 	/*
 	 * Go through and check that all windows belonging to this
 	 * client are closed
 	 */
 	remove_all_windows(lock, client);
 
-// 	if (d) display("6");
 	/*
 	 * Cancel, and count, all redraw messages that this
 	 * client may have received
@@ -659,15 +770,13 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 	 * set CS_BLOCK_CE to stop any new client events from being
 	 * queued..
 	 */
-// 	if (d) display("7");
+
 	cancel_cevents(client);
 	client->status |= CS_BLOCK_CE;
 	/*
 	 * Clear any queued key events
-	 */
+ 	*/
 	cancel_keyqueue(client);
-// 	if (d) display("8");
-
 	client->rsrc = NULL;
 
 	while (client->resources)
@@ -676,7 +785,7 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 	}
 
 	/* Free name *only if* it is malloced: */
-	if (client->tail_is_heap) {
+	if ( client->tail_is_heap) {
 		kfree(client->cmd_tail);
 		client->cmd_tail = NULL;
 		client->tail_is_heap = false;
@@ -692,15 +801,12 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 	 * remove any references
 	 */
 
-// 	if (d) display("9");
 	if (client->desktop)
 		set_desktop(client, true);
-// 	if (d) display("9.1");
 	if (was_infront && top_owner != client)
 	{
 		app_in_front(lock, top_owner, true, true, false);
 	}
-
 	/*
 	 * remove from client list
 	 * remove from app list
@@ -708,15 +814,11 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 	CLIENT_LIST_REMOVE(client);
 	APP_LIST_REMOVE(client);
 
-// 	if (d) display("10");
 	if (redraws) {
 		C.redraws -= redraws - 1;
 		kick_mousemove_timeout();
 	}
 
-// 	if (d) display("11");
-
-// 	if (d) display("12");
 	/*
 	 * free remaining resources
 	 */
@@ -730,7 +832,6 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 
 
 	/* free the quart screen buffer */
-// 	if (d) display("13");
 	if (client->half_screen_buffer)
 		ufree(client->half_screen_buffer);
 
@@ -747,7 +848,6 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 	}
 
 	client->cmd_tail = "\0";
-// 	if (d) display("14");
 
 #if 0
 	/* Ozk:
@@ -769,16 +869,14 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 	}
 #endif
 
+
 	/* zero out; just to be sure */
 	//bzero(client, sizeof(*client));
 
-// 	if (d) display("15");
 	remove_client_crossrefs(client);
 
-// 	if (d) display("16");
 	exit_client_widget_theme(client);
 
-// 	if (d) display("17");
 	delete_wc_cache(&client->wcc);
 
 	if (client == C.Hlp && !client->tp_term) {
@@ -797,13 +895,11 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 	if (detach)
 		detach_extension(NULL, XAAES_MAGIC);
 
-// 	if (d) display("18");
 	S.clients_exiting--;
 
 	kick_shutdn_if_last_client();
 
 	DIAG((D_appl, NULL, "client exit done"));
-// 	if (d) display("end");
 }
 
 /*
@@ -1171,7 +1267,7 @@ short info_tab[][4] =
 	{
 		0x3f07,		/* supported extended bits + highest mode */
 		0,		/* 0 launch mode */
-		0,		/* 1 launch mode */
+		0,		/* 1 launch mode <-- */
 		1		/* ARGV style via wiscr to shel_write supported */
 	},
 	/*11 window functions
