@@ -613,14 +613,18 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 
 					type = APP_APPLICATION;
 					ret = p->pid;
+
 				}
 				else
 				{
 					if( ret == EPERM )
 					{
-						struct proc *s = pid2proc(C.SingleTaskPid);
-						ALERT(("launch: cannot enter single-task-mode: already in single-task-mode: %s(%d).",
-							s->name, s->pid));
+						if( C.SingleTaskPid > 0 )
+						{
+							struct proc *s = pid2proc(C.SingleTaskPid);
+							ALERT(("launch: cannot enter single-task-mode: already in single-task-mode: %s(%d).",
+								s->name, s->pid));
+						}
 					}
 					ret = -ret;
 				}
