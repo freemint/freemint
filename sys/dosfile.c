@@ -197,7 +197,17 @@ sys_f_close (short fd)
 	DIR **where, **_where;
 	long r;
 
-	TRACE (("Fclose: %d", fd));
+	DEBUG (("Fclose: %d", fd));
+
+	/* this is for pure-debugger:
+	 * some progs call Fclose(-1) when they exit which would
+	 * cause pd to lose keyboard
+	 */
+	if( fd < 0 && (p->p_mem->base->p_flags & F_SINGLE_TASK) )
+	{
+		DEBUG(("Fclose:return 0 for negative fd in singletask-mode."));
+		return 0;
+	}
 
 	r = GETFILEPTR (&p, &fd, &f);
 	if (r) return r;
@@ -219,6 +229,7 @@ sys_f_close (short fd)
 		where = _where;
 	}
 
+	DEBUG(("Fclose: do_close %lx flags=%x", f, f->flags));
 	r = do_close (p, f);
 
 	/* XXX do this before do_close? */
@@ -380,6 +391,7 @@ sys_f_force (short newfd, short oldfd)
 		return EBADF;
 	}
 
+	DEBUG(("sys_f_dup: do_close %x fp->flags=%x", p->p_fd->ofiles[newfd], fp->flags ));
 	do_close (p, p->p_fd->ofiles[newfd]);
 
 	p->p_fd->ofiles[newfd] = fp;

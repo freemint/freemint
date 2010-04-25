@@ -439,7 +439,7 @@ sys_pexec(short mode, const void *p1, const void *p2, const void *p3)
 		if (!strcmp(get_curproc()->name, "AESSYS"))
 		{
 			struct pcred *cred = p->p_cred;
-			
+
 			assert(cred && cred->ucr);
 
 			aes_hack = 1;
@@ -679,6 +679,7 @@ exec_region(struct proc *p, MEMREGION *mem, int thread)
 		if (f && (fd->ofileflags[i] & FD_CLOEXEC))
 		{
 			FD_REMOVE(p, i);
+			DEBUG(("exec_region:do_close(%d): %x", i, f));
 			do_close(p, f);
 		}
 	}
@@ -892,6 +893,13 @@ create_process(const void *filename, const void *cmdline, const void *newenv,
 	TRACE(("create_process: basepage region(%lx) is %ld bytes at %lx", base, base->len, base->loc));
 
 	b = (BASEPAGE *) base->loc;
+
+	if( (b->p_flags & F_SINGLE_TASK) && (rootproc->p_mem->base->p_flags & F_SINGLE_TASK) )
+	{
+		DEBUG(("create_process(single-task):already in single-task-mode."));
+		r = EPERM;
+		goto leave;
+	}
 
 	if (stack)
 	{

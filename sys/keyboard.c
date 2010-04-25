@@ -910,19 +910,33 @@ static int scanb_tail = 0;
 static struct scanb_entry scanb[16];
 static void _cdecl IkbdScan(PROC *, long);
 
+//extern long ikbd_cnt;
+
 void _cdecl
 ikbd_scan(ushort scancode, IOREC_T *rec)
 {
 	int tail = (scanb_tail + 1) & 0xf;
 
+	//FORCE("ikbd_scan: cnt=%ld rec=%lx scancode=%x scanb[].iorec=%lx tail=%d scanb_head=%d", ikbd_cnt, rec, scancode, scanb[scanb_head].iorec, tail, scanb_head);
+	//FORCE("ikbd_scan: iorec=%lx %d %d %d %d %d", *rec );
+	//ikbd_cnt--;
 	if (tail != scanb_head)
 	{
 		scanb[scanb_tail].iorec = rec;
 		scanb[scanb_tail].scan = scancode;
 		scanb_tail = tail;
 	}
-	if (!ikbd_to)
+
+	if( curproc->p_mem->base->p_flags & F_SINGLE_TASK	/*_memflags & 0x4000*/ )
 	{
+		//FORCE("ikbd_scan directly for '%s' head=%d", curproc->name, scanb_head );
+		DEBUG(("ikbd_scan directly for '%s' head=%d", curproc->name, scanb_head ));
+		IkbdScan( curproc, 1);
+	}
+	else if (!ikbd_to)
+	{
+		//DEBUG(("ikbd_scan for '%s' head=%d _memflags=%x", curproc->name, scanb_head, curproc->_memflags ));
+		//FORCE("ikbd_scan for '%s' head=%d _memflags=%x", curproc->name, scanb_head, curproc->_memflags );
 		ikbd_to = addroottimeout(0L, (void _cdecl(*)(PROC *))IkbdScan, 1);
 	}
 }
@@ -941,7 +955,7 @@ IkbdScan(PROC *p, long arg)
 		scancode   = scanb[scanb_head].scan;
 		scanb_head = (scanb_head + 1) & 0xf;
 
-		DEBUG(("ikbd_scan: scancode=%x, rec=%lx, h=%i, t=%i", scancode, iorec, scanb_head, scanb_tail));
+		//FORCE("IkbdScan: scancode=%x, rec=%lx, h=%i, t=%i", scancode, iorec, scanb_head, scanb_tail);
 // 		display("ikbd_scan: scancode=%x, rec=%lx, h=%i, t=%i", scancode, iorec, scanb_head, scanb_tail);
 
 		scan = scancode & 0xff;

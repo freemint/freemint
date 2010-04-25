@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
  */
@@ -99,6 +99,8 @@ typedef struct fileheader FILEHEAD;
 # define F_MEMFLAGS	0xf0		/* reserved for future use */
 /* obsolete F_SHTEXT	0x800		 * program's text may be shared */
 
+
+
 # define F_MINALT	0xf0000000L	/* used to decide which type of RAM to load in */
 
 # define F_ALLOCZERO	0x2000		/* zero mem, for bugged (GEM...) programs */
@@ -107,6 +109,9 @@ typedef struct fileheader FILEHEAD;
 # define F_KEEP		0x4000
 
 # define F_OS_SPECIAL	0x8000		/* mark as a special process */
+
+# define F_SINGLE_TASK	0x10000		/* XaAES: if set (in p_flags) it's "single-task-mode" */
+# define F_DONT_STOP	0x20000		/* XaAES: if set do not stop when entering single-task-mode */
 
 /* flags for curproc->memflags (that is, PRGFLAGS) and also Mxalloc mode.  */
 /* (Actually, when users call Mxalloc, they add 0x10 to what you see here) */
