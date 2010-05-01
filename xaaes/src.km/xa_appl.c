@@ -47,7 +47,6 @@
 #include "xa_rsrc.h"
 #include "xa_user_things.h"
 #include "version.h"
-//#include <mint/mintbind.h>
 #include "mint/fcntl.h"
 #include "mint/stat.h"
 //#include "mint/ioctl.h"	/*f_cntl*/
@@ -173,8 +172,6 @@ init_client(enum locks lock, bool sysclient)
 	struct proc *p = get_curproc();
 	long f;
 	extern long loader_pgrp;
-
-	//bool d = false; //(!strnicmp(p->name, "qed", 3)) ? true : false;
 
 	/* if attach_extension succeed it returns a pointer
 	 * to kmalloc'ed and *clean* memory area of the given size
@@ -420,6 +417,7 @@ static char  *strip_uni_drive( char *in )
 
 }
 
+#define F_FORCE_MINT	0x40000
 struct file *xconout_dev = 0;
 /*
  * Application initialise - appl_init()
@@ -444,22 +442,36 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 		}
 	} else {
 		if ((client = init_client(lock, false))) {
-			BASEPAGE *base = p->p_mem->base;
+			extern long loader_pgrp;
 
-			if( base->p_flags & F_SINGLE_TASK )
+			//if( base->p_flags & F_FORCE_MINT )
+				//p_domain(1);
+			if( p->_memflags & M_SINGLE_TASK )
 			{
+				struct shel_info *info = lookup_extension(p, XAAES_MAGIC_SH);
 				struct proc *k = pid2proc(0);	/* MiNT */
+				//long KBD_dev;
 
 				//xconout_dev = kernel_open( "u:/dev/xconout2", O_RDWR, 0, 0);
 
 				/* todo: get owner of xconout2: how? */
+
+				if( !info )
+				{
+					//ALERT((0,"can execute singletask-app %s only by shel_write.", p->name));
+					//pb->intout[0] = -1;
+					BLOG((0,"can execute singletask-app %s only by shel_write (killing it).", p->name));
+					ikill(p->pid, SIGTERM);
+					return XAC_DONE;
+				}
+				//KBD_dev = f_open("u:/dev/kbd", O_DENYRW|O_RDONLY);
 
 				BLOG((0,"%s(%d): enter single-mode.", p->name, p->pid));
 				if( k )
 				{
 					struct xa_client *c;
 
-					k->p_mem->base->p_flags |= F_SINGLE_TASK;
+					k->_memflags |= M_SINGLE_TASK;
 					C.SingleTaskPid = p->pid;
 
 					/*
@@ -469,7 +481,7 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 					FOREACH_CLIENT(c)
 					{
 						if( c->p->pid && c != C.Aes && c != C.Hlp && c != client
-							&& ( (base->p_flags & F_DONT_STOP) || !(c->p->p_mem->base->p_flags & F_DONT_STOP)) )
+							&& ( (p->_memflags & M_DONT_STOP) || !(c->p->_memflags & M_DONT_STOP)) )
 						{
 							BLOG((0,"stopping %s(%d)", c->name, c->p->pid));
 							ikill(c->p->pid, SIGSTOP);
@@ -556,7 +568,7 @@ CE_pwaitpid(enum locks lock, struct c_event *ce, bool cancel)
 			}
 		}
 		BLOG((0,"%s: leaving single-mode.", get_curproc()->name));
-		k->p_mem->base->p_flags &= ~F_SINGLE_TASK;
+		k->_memflags &= ~M_SINGLE_TASK;
 		C.SingleTaskPid = -1;
 
 		/* menubar may be corrupted */
@@ -630,9 +642,9 @@ exit_proc(enum locks lock, struct proc *p, int code)
 
 		/*
 		 * in single-task-mode wake client that called single-task-app
-		 * to execute XA_pwaitpid()
+		 * to execute CE_pwaitpid()
 		 */
-		if( p->p_mem->base->p_flags & F_SINGLE_TASK )
+		if( C.SingleTaskPid > 0 )
 			ikill( client->p->pid, SIGCONT );
 
 		if (info->shel_write) {
@@ -743,7 +755,6 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 
 	swap_menu(lock, client, NULL, SWAPM_REMOVE);
 
-	//really_exited = exit_proc(lock, client->p, code) || !(client->p->p_mem->base->p_flags & F_SINGLE_TASK);
 	exit_proc(lock, client->p, code);
 
 	/*
