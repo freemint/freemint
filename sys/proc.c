@@ -952,10 +952,11 @@ calc_load_average(void)
 	ud = uptime - old_uptime;
 	if( ud != 5 )
 	{
+#ifdef DEBUG_INFO
 		FORCE("calc_load():%ld-%ld:%d - ud=%ld %d running ld=%d %d",
 			rootproc->systime, systime, new_ld,
 			ud, number_running, new_ld, proc_clock );
-
+#endif
 		new_ld = ud * 1000L - (rootproc->systime - systime);
 		//new_ld = 5L * (5000L - (rootproc->systime - systime)) / ud;
 	}
