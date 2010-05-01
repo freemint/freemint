@@ -29,7 +29,7 @@ CPU = 000
 DEFINITIONS = -D__KERNEL__ -D__KERNEL_MODULE__ -DMODULE_NAME=tEst
 INCLUDES += -I$(top_srcdir)/src.km
 INCLUDES += -I$(top_srcdir)/../../sys
-LIBS += -lc -lgcc16
+LIBS += -lc -lgcc
 
 SGENFILES = *.xam
 

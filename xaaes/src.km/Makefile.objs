@@ -32,7 +32,7 @@ WARN = 	-Wall \
 	-Werror
 
 LD = $(CC) -nostdlib -Wl,--entry -Wl,_init
-LIBS = -lgem16 $(LIBKERN) -lgcc16
+LIBS = -lgem16 $(LIBKERN) -lgcc
 STRIPFLAGS = 
 
 # default definitions
