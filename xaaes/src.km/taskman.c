@@ -1356,7 +1356,10 @@ lb_TM_OK:
 
 				if( !(list->cur->usr_flags & TM_WINDOW) )
 				{
-					app_or_acc_in_front( lock, list->cur->data );
+					client = list->cur->data;
+					if( client == C.Hlp )
+						client = C.Aes;
+					app_or_acc_in_front( lock, client );
 				}
 				else
 				{
@@ -2354,7 +2357,7 @@ open_systemalerts(enum locks lock, struct xa_client *client, bool open)
 	if (!(htd = get_helpthread_data(client)))
 		return;
 
-	if (!htd->w_sysalrt) //(!systemalerts_win)
+	if (!htd->w_sysalrt)
 	{
 		struct scroll_info *list;
 		RECT or;
@@ -2422,20 +2425,20 @@ open_systemalerts(enum locks lock, struct xa_client *client, bool open)
 			sc.t.strings = 1;
 
 			/* todo?: define sort (name/value) */
+			sc.t.text = sstr;
 			for (i = 0; strings[i]; i++)
 			{
-				sc.t.text = strings[i];
+				strncpy( sstr, strings[i], sizeof(sstr)-1);
 				list->add(list, this, sortbyname, &sc, this ? (SEADD_CHILD|SEADD_PRIOR) : SEADD_PRIOR, 0, true);
 			}
 			{
-			char *pformats[] = {"MOT", "INT", "FMOT", "INT15", "Generic", "Unknown"}, *fs;
+			char *pformats[] = {"MOT", "INT", "FMOT", "INT15", "Atari", "Unknown"}, *fs;
 			p.arg.txt = s;
 			list->get(list, NULL, SEGET_ENTRYBYTEXT, &p);
 			list->empty(list, p.e, 0);
 			this = p.e;
 			sc.t.strings = 1;
 
-			/* ? alloc sstr? */
 			/* video */
 
 			if( screen.pixel_fmt <= 3 )
@@ -2531,6 +2534,7 @@ fail:
 	}
 	if (obtree)
 		free_object_tree(client, obtree);
+
 }
 
 /*
