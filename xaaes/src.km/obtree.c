@@ -127,7 +127,7 @@ object_has_freestr(OBJECT *ob)
 inline bool
 aesobj_has_freestr(struct xa_aes_object *o) { return object_has_freestr(aesobj_ob(o)); }
 
-inline bool
+/* inline */ bool
 object_is_editable(OBJECT *ob, short flags, short state)
 {
 	if (((ob->ob_flags & OF_EDITABLE) || (flags & OF_EDITABLE)) && !(ob->ob_state & OS_DISABLED || state & OS_DISABLED))
