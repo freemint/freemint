@@ -927,10 +927,10 @@ ikbd_scan(ushort scancode, IOREC_T *rec)
 		scanb_tail = tail;
 	}
 
-	if( curproc->p_mem->base->p_flags & F_SINGLE_TASK	/*_memflags & 0x4000*/ )
+	if( curproc->_memflags & M_SINGLE_TASK )
 	{
 		//FORCE("ikbd_scan directly for '%s' head=%d", curproc->name, scanb_head );
-		DEBUG(("ikbd_scan directly for '%s' head=%d", curproc->name, scanb_head ));
+		DEBUG(("ikbd_scan directly for '%s' head=%d p_flags=%lx", curproc->name, scanb_head, curproc->p_mem->base->p_flags ));
 		IkbdScan( curproc, 1);
 	}
 	else if (!ikbd_to)

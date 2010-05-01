@@ -203,7 +203,7 @@ sys_f_close (short fd)
 	 * some progs call Fclose(-1) when they exit which would
 	 * cause pd to lose keyboard
 	 */
-	if( fd < 0 && (p->p_mem->base->p_flags & F_SINGLE_TASK) )
+	if( fd < 0 && (p->_memflags & M_SINGLE_TASK) )
 	{
 		DEBUG(("Fclose:return 0 for negative fd in singletask-mode."));
 		return 0;

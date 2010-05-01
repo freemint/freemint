@@ -894,7 +894,9 @@ create_process(const void *filename, const void *cmdline, const void *newenv,
 
 	b = (BASEPAGE *) base->loc;
 
-	if( (b->p_flags & F_SINGLE_TASK) && (rootproc->p_mem->base->p_flags & F_SINGLE_TASK) )
+	DEBUG(("create_process: p_flags=%lx", b->p_flags));
+
+	if ((b->p_flags & F_SINGLE_TASK) && (rootproc->_memflags & M_SINGLE_TASK))
 	{
 		DEBUG(("create_process(single-task):already in single-task-mode."));
 		r = EPERM;
@@ -915,6 +917,18 @@ create_process(const void *filename, const void *cmdline, const void *newenv,
 	p = fork_proc(0, &r);
 	if (!p)
 		goto leave;
+
+	if (b->p_flags & F_SINGLE_TASK)
+	{
+		DEBUG(("create_process: setting M_SINGLE_TASK"));
+		p->_memflags |= M_SINGLE_TASK;
+	}
+	if (b->p_flags & F_DONT_STOP)
+	{
+		DEBUG(("create_process: setting M_DONT_STOP"));
+		p->_memflags |= M_DONT_STOP;
+	}
+	b->p_flags &= ~(F_SINGLE_TASK | F_DONT_STOP);
 
 	/* jr: add Pexec information to PROC struct */
 	strncpy(p->cmdlin, b->p_cmdlin, 128);
