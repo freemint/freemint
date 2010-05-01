@@ -1,3 +1,26 @@
+01-05-2010
+----------
+
+single-task2 (draw_obj.c xa_appl.c):
+
+
+Dont reference the basepage of other processes to avoid a
+memory-violation. Now uses _memflags instead to control the
+single-task-operation.
+
+---------------------------------------------------------------------
+taskman:
+
+- top Main-Thread instead of Help-Thread when selecting XaSYS.
+
+- pass local buffer not env-string to list->add
+
+- 'Chunky' pixel-format is now called "Atari" (was "Generic")
+---------------------------------------------------------------------
+k_init:
+
+try to open virtual wk also if nvdi not present.
+---------------------------------------------------------------------
 25-04-2010
 ----------
 
@@ -18,7 +41,7 @@ p_flags of the relevant binary.
 
 Any client that has bit 17 (0x20000) set, is not stopped except when the
 single-task-app has this bit also set, i.e. when it has 0x3xxxx.
-This may important because the single-task-client possibly does tty-IO,
+This may be important because the single-task-client possibly does tty-IO,
 and needs the toswin (or another) console.
 
 ---------------------------------------------------------------------
