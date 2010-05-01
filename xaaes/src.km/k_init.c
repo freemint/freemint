@@ -573,7 +573,7 @@ k_init(unsigned long vm)
 	/* try to open virtual wk - necessary when physical wk is already open
 	 * ? how to know if physical wk is open and its handle without AES?
 	 */
-	if( C.fvdi_version == 0 && C.nvdi_version != 0 /*&& cfg.videomode == 0*/ )
+	if( C.fvdi_version == 0 /*&& C.nvdi_version != 0 && cfg.videomode == 0*/ )
 	{
 		v->handle = 0;
 		C.P_handle = 0;
