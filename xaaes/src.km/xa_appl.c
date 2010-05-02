@@ -572,7 +572,9 @@ CE_pwaitpid(enum locks lock, struct c_event *ce, bool cancel)
 		C.SingleTaskPid = -1;
 
 		/* menubar may be corrupted */
+		C.Aes->nxt_menu = C.Aes->std_menu;	/* kludge to run swap_menu() */
 		app_in_front( lock, C.Aes, 0, true, true);
+		C.Aes->nxt_menu = 0;
 	}
 
 	if (ce->d0)
