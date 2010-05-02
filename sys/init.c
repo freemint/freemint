@@ -86,31 +86,9 @@ void mint_thread(void *arg);
 /* print an additional boot message
  */
 short intr_done = 0;
-#if 0
-#include "dosfile.h"
-#define iFopen(h,s,l) if (intr_done) h=sys_f_open(s,l); else h=TRAP_Fopen(s,l)
-#define iFwrite(h,l,s) if (intr_done) h=sys_f_write(h,l,s); else h=TRAP_Fwrite(h,l,s)
-#define iFclose(h) if (intr_done) h=sys_f_close(h); else h=TRAP_Fclose(h)
-#endif
 void
 boot_print (const char *s)
 {
-#if 0
-	{
-	long hd;
-	iFopen(hd, "MBOOT.LOG",1);
-	if(hd > 0)
-	{
-		char temp[1024];
-		int l = strlen(s);
-		strcpy(temp,s);
-		temp[l++] = '\n';
-		temp[l] = 0;
-		iFwrite(hd, l, temp);
-		iFclose(hd);
-	}
-	}
-#endif
 	if (intr_done)
 		sys_c_conws(s);
 	else
@@ -430,11 +408,6 @@ init (void)
 	init_mem ();
 	DEBUG (("init_mem() ok!"));
 	boot_print("init_mem() ok!");
-	/*{short s = step_by_step;
-	step_by_step=-1;
-	stop_and_ask ();
-	step_by_step=s;
-	}*/
 
 	/* Initialize high-resolution calendar time */
 	init_time ();
