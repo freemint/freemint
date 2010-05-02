@@ -227,7 +227,7 @@ check_for_gem (void)
 	return aes_globl[0];
 }
 
-static long GEMmodeflags = F_FASTLOAD | F_ALTLOAD | F_ALTALLOC | F_PROT_S | F_OS_SPECIAL /*?*/;
+static long GEM_memflags = F_FASTLOAD | F_ALTLOAD | F_ALTALLOC | F_PROT_S | F_OS_SPECIAL /*?*/;
 extern int debug_level;
 void
 init (void)
@@ -1085,7 +1085,7 @@ mint_thread(void *arg)
 		{
 			BASEPAGE *bp;
 
-			bp = (BASEPAGE *)sys_pexec(7, (char *)GEMmodeflags, (char *)"\0", _base->p_env);
+			bp = (BASEPAGE *)sys_pexec(7, (char *)GEM_memflags, (char *)"\0", _base->p_env);
 			bp->p_tbase = *((long *) EXEC_OS);
 
 			r = sys_pexec(106, (char *)"GEM", bp, 0L);
@@ -1108,7 +1108,7 @@ mint_thread(void *arg)
 			boot_print(MSG_init_rom_AES);
 # endif
 			entry = *((long *) EXEC_OS);
-			bp = (BASEPAGE *) sys_pexec(7, (char *) GEMmodeflags, (char *) "\0", _base->p_env);
+			bp = (BASEPAGE *) sys_pexec(7, (char *) GEM_memflags, (char *) "\0", _base->p_env);
 			bp->p_tbase = entry;
 
 			r = sys_pexec(106, (char *) "GEM", bp, 0L);
