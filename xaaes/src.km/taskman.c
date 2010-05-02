@@ -61,6 +61,7 @@
 #include "mint/signal.h"
 #include "mint/stat.h"
 #include "mint/fcntl.h"
+#include "mint/ssystem.h"
 
 #define NEWLOAD 1
 #ifndef USE_Suptime
@@ -2252,6 +2253,42 @@ static int ker_stat( int pid, char *what, long pinfo[] )
 	return 0;
 }
 
+
+static struct scroll_entry *add_title_string( struct scroll_info *list, struct scroll_entry *this, char *str)
+{
+	struct scroll_content sc = {{ 0 }};
+	struct sesetget_params p = { 0 };
+
+	sc.t.text = str;
+	sc.t.strings = 1;
+	sc.xflags = OF_AUTO_OPEN|OF_OPENABLE;
+
+	if( !list->add(list, this, 0, &sc, SEADD_CHILD, SETYP_STATIC, 0) )
+		return 0;
+
+	p.idx = -1;
+	p.arg.txt = str;
+	p.level.maxlevel = 2;
+	list->get(list, NULL, SEGET_ENTRYBYTEXT, &p);
+
+	return p.e;
+}
+
+static void add_os_features(struct scroll_info *list, struct scroll_entry *this, struct scroll_content *sc)
+{
+	char s[128];
+	long has_mprot = Ssystem(S_OSFEATURES,0,0);
+	extern unsigned short stack_align;
+
+	sprintf( s, sizeof(s)-1, "MEMPROT:%s, Stack: %x", has_mprot ? "ON" : "OFF", stack_align );
+	BLOG((0,s));
+
+	sc->t.text = s;
+
+	list->add(list, this, 0, sc, SEADD_CHILD, 0, 0);
+}
+
+
 /*
  * grab words from a file up to startline into pinfo
  * pinfo[n]: # of word pinfo[n+1]: title pinfo[n+2]: # of words to add
@@ -2432,30 +2469,37 @@ open_systemalerts(enum locks lock, struct xa_client *client, bool open)
 				list->add(list, this, sortbyname, &sc, this ? (SEADD_CHILD|SEADD_PRIOR) : SEADD_PRIOR, 0, true);
 			}
 			{
-			char *pformats[] = {"MOT", "INT", "FMOT", "INT15", "Atari", "Unknown"}, *fs;
-			p.arg.txt = s;
-			list->get(list, NULL, SEGET_ENTRYBYTEXT, &p);
-			list->empty(list, p.e, 0);
-			this = p.e;
-			sc.t.strings = 1;
+				char *pformats[] = {"MOT", "INT", "FMOT", "INT15", "Atari", "Unknown"}, *fs;
 
-			/* video */
+				p.arg.txt = s;
+				list->get(list, NULL, SEGET_ENTRYBYTEXT, &p);
+				list->empty(list, p.e, 0);
+				this = p.e;
+				sc.t.strings = 1;
 
-			if( screen.pixel_fmt <= 3 )
-				fs = pformats[screen.pixel_fmt];
-			else if( screen.pixel_fmt == 8 )
-				fs = pformats[4];
-			else
-				fs = pformats[5];
+				/* video */
 
-			sprintf( sstr, sizeof(sstr)-1, "Video: %dx%dx%d,%d colours, format: %s, Stack: %x",
-				screen.r.w, screen.r.h, screen.planes, screen.colours, fs, stack_align );
+				if( screen.pixel_fmt <= 3 )
+					fs = pformats[screen.pixel_fmt];
+				else if( screen.pixel_fmt == 8 )
+					fs = pformats[4];
+				else
+					fs = pformats[5];
+
+				sprintf( sstr, sizeof(sstr)-1, "Video:%dx%dx%d,%d colours, format: %s",
+					screen.r.w, screen.r.h, screen.planes, screen.colours, fs );
 			}
+
 			sc.t.text = sstr;
 			list->add(list, this, 0, &sc, this ? (SEADD_CHILD) : SEADD_PRIOR, 0, true);
+
 			/* cpuinfo */
 			add_kerinfo( "u:/kern/cpuinfo", list, this, NULL, &sc, 0, 0, false, NULL );
 			BLOG((0,"cpuinfo:%s", sc.t.text ));
+			add_os_features(list, this, &sc);
+
+
+			this = add_title_string(list, this, "Kernel");
 
 			add_kerinfo( "u:/kern/version", list, this, NULL, &sc, 0, 0, false, NULL );
 			BLOG((0,"version:%s", sc.t.text ));
