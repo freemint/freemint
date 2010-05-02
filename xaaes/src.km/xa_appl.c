@@ -446,7 +446,7 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 
 			//if( base->p_flags & F_FORCE_MINT )
 				//p_domain(1);
-			if( p->_memflags & M_SINGLE_TASK )
+			if( p->modeflags & M_SINGLE_TASK )
 			{
 				struct shel_info *info = lookup_extension(p, XAAES_MAGIC_SH);
 				struct proc *k = pid2proc(0);	/* MiNT */
@@ -471,7 +471,7 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 				{
 					struct xa_client *c;
 
-					k->_memflags |= M_SINGLE_TASK;
+					k->modeflags |= M_SINGLE_TASK;
 					C.SingleTaskPid = p->pid;
 
 					/*
@@ -481,7 +481,7 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 					FOREACH_CLIENT(c)
 					{
 						if( c->p->pid && c != C.Aes && c != C.Hlp && c != client
-							&& ( (p->_memflags & M_DONT_STOP) || !(c->p->_memflags & M_DONT_STOP)) )
+							&& ( (p->modeflags & M_DONT_STOP) || !(c->p->modeflags & M_DONT_STOP)) )
 						{
 							BLOG((0,"stopping %s(%d)", c->name, c->p->pid));
 							ikill(c->p->pid, SIGSTOP);
@@ -568,7 +568,7 @@ CE_pwaitpid(enum locks lock, struct c_event *ce, bool cancel)
 			}
 		}
 		BLOG((0,"%s: leaving single-mode.", get_curproc()->name));
-		k->_memflags &= ~M_SINGLE_TASK;
+		k->modeflags &= ~M_SINGLE_TASK;
 		C.SingleTaskPid = -1;
 
 		/* menubar may be corrupted */

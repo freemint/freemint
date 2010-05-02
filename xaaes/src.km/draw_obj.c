@@ -412,7 +412,7 @@ d_g_progdef(struct widget_tree *wt, struct xa_vdi_settings *v)
 	pfunc = (p_handler)userblk(client->ut)->ub_code;//userblk->ub_code;
 #if CHECK_PROGDEF_ADDR
 	/* check if callback-address is inside client-text */
-	if( !(client->p->_memflags & M_SINGLE_TASK)
+	if( !(client->p->modeflags & M_SINGLE_TASK)
 		&& ((long)pfunc < base->p_tbase || (long)pfunc >= base->p_tbase+base->p_tlen) )
 	{
 		BLOG((0,"PROGDEF: %s: user-func(%lx) outside TEXT:%lx-%lx", client->name, pfunc, base->p_tbase, base->p_tbase + base->p_tbase+base->p_tlen));
