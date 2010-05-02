@@ -726,6 +726,16 @@ static unsigned short alert_masks[] =
 	0x0010, 0x0020, 0x0040, 0x0080
 };
 
+static char *strrpl( char *s, char in, char out )
+{
+	char *ret = s;
+	for( ; *s; s++ )
+		if( *s == in )
+			*s = out;
+
+	return ret;
+}
+
 static void
 CE_fa(enum locks lock, struct c_event *ce, bool cancel)
 {
@@ -768,7 +778,9 @@ CE_fa(enum locks lock, struct c_event *ce, bool cancel)
 			OBJECT *form=0, *icon=0;		/* gcc4 isnt that clever? */
 
 			if (!htd || !htd->w_sysalrt)
+			{
 				open_systemalerts(0, client, false);
+			}
 
 			if (htd)
 				wind = htd->w_sysalrt;
@@ -826,7 +838,10 @@ CE_fa(enum locks lock, struct c_event *ce, bool cancel)
 					Tgettimeofday( &tv, &tz );
 					dtim.l = unix2xbios( tv.tv_sec );
 					sprintf( data->buf, MAXALERTLEN, "%02d:%02d:%02d: %s", dtim.t.hour, dtim.t.minute, dtim.t.sec2, b + 4 );
-					BLOG((0,data->buf));
+#endif
+#if ALERTTIME	// b is used for form_alert
+					strrpl( data->buf, '|', ' ' );
+					data->buf[strlen(data->buf)-9] = 0;	/* strip off [ OK ] */
 #endif
 					sc.t.text = data->buf;
 					sc.icon = icon;
@@ -853,6 +868,7 @@ CE_fa(enum locks lock, struct c_event *ce, bool cancel)
 	}
 	else
 		kfree(ce->ptr1);
+
 }
 
 static void
@@ -904,7 +920,9 @@ alert_input(enum locks lock)
 		data->buf[n] = '\0';
 // 		display("alert_intput %s", data->buf);
 		if (C.Hlp)
+		{
 			post_cevent(C.Hlp, CE_fa, data, NULL, 0,0, NULL,NULL);
+		}
 		else
 			kfree(data);
 	}
@@ -1446,7 +1464,6 @@ k_main(void *dummy)
 		goto leave;
 	}
 	/* create semaphore, gets released at exit */
-	BLOG((0,"k_main:SEMCREATE"));
 	p_semaphore( SEMCREATE, XA_SEM, 0 );
 
 	/*
@@ -1692,7 +1709,8 @@ k_main(void *dummy)
 			extern unsigned long wevents;	/* from xa_evnt.c (check_queued_events) */
 			if( wevents == 0 )
 			{
-				//extern char *wclientname;
+ 				extern char *wclientname;
+				BLOG((0,"k_main:yield for %s", wclientname));
 #if ALWAYS_CTRL_APP_OPS && ALT_CTRL_APP_OPS
 				/* Ctrl-Alt? */
 				if( Getshift() == 0 )
@@ -1722,6 +1740,7 @@ k_main(void *dummy)
 			update_locked() ? update_locked()->name : "",
 			mouse_locked() ? mouse_locked()->pid : 0,
 			mouse_locked() ? mouse_locked()->name : ""));
+
 
 		if (fs_rtn > 0)
 		{
