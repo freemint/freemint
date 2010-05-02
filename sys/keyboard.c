@@ -927,7 +927,7 @@ ikbd_scan(ushort scancode, IOREC_T *rec)
 		scanb_tail = tail;
 	}
 
-	if( curproc->_memflags & M_SINGLE_TASK )
+	if( curproc->modeflags & M_SINGLE_TASK )
 	{
 		//FORCE("ikbd_scan directly for '%s' head=%d", curproc->name, scanb_head );
 		DEBUG(("ikbd_scan directly for '%s' head=%d p_flags=%lx", curproc->name, scanb_head, curproc->p_mem->base->p_flags ));
@@ -935,8 +935,8 @@ ikbd_scan(ushort scancode, IOREC_T *rec)
 	}
 	else if (!ikbd_to)
 	{
-		//DEBUG(("ikbd_scan for '%s' head=%d _memflags=%x", curproc->name, scanb_head, curproc->_memflags ));
-		//FORCE("ikbd_scan for '%s' head=%d _memflags=%x", curproc->name, scanb_head, curproc->_memflags );
+		//DEBUG(("ikbd_scan for '%s' head=%d modeflags=%x", curproc->name, scanb_head, curproc->modeflags ));
+		//FORCE("ikbd_scan for '%s' head=%d modeflags=%x", curproc->name, scanb_head, curproc->modeflags );
 		ikbd_to = addroottimeout(0L, (void _cdecl(*)(PROC *))IkbdScan, 1);
 	}
 }

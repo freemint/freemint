@@ -896,7 +896,7 @@ create_process(const void *filename, const void *cmdline, const void *newenv,
 
 	DEBUG(("create_process: p_flags=%lx", b->p_flags));
 
-	if ((b->p_flags & F_SINGLE_TASK) && (rootproc->_memflags & M_SINGLE_TASK))
+	if ((b->p_flags & F_SINGLE_TASK) && (rootproc->modeflags & M_SINGLE_TASK))
 	{
 		DEBUG(("create_process(single-task):already in single-task-mode."));
 		r = EPERM;
@@ -921,12 +921,12 @@ create_process(const void *filename, const void *cmdline, const void *newenv,
 	if (b->p_flags & F_SINGLE_TASK)
 	{
 		DEBUG(("create_process: setting M_SINGLE_TASK"));
-		p->_memflags |= M_SINGLE_TASK;
+		p->modeflags |= M_SINGLE_TASK;
 	}
 	if (b->p_flags & F_DONT_STOP)
 	{
 		DEBUG(("create_process: setting M_DONT_STOP"));
-		p->_memflags |= M_DONT_STOP;
+		p->modeflags |= M_DONT_STOP;
 	}
 	b->p_flags &= ~(F_SINGLE_TASK | F_DONT_STOP);
 

@@ -86,10 +86,31 @@ void mint_thread(void *arg);
 /* print an additional boot message
  */
 short intr_done = 0;
-
+#if 0
+#include "dosfile.h"
+#define iFopen(h,s,l) if (intr_done) h=sys_f_open(s,l); else h=TRAP_Fopen(s,l)
+#define iFwrite(h,l,s) if (intr_done) h=sys_f_write(h,l,s); else h=TRAP_Fwrite(h,l,s)
+#define iFclose(h) if (intr_done) h=sys_f_close(h); else h=TRAP_Fclose(h)
+#endif
 void
 boot_print (const char *s)
 {
+#if 0
+	{
+	long hd;
+	iFopen(hd, "MBOOT.LOG",1);
+	if(hd > 0)
+	{
+		char temp[1024];
+		int l = strlen(s);
+		strcpy(temp,s);
+		temp[l++] = '\n';
+		temp[l] = 0;
+		iFwrite(hd, l, temp);
+		iFclose(hd);
+	}
+	}
+#endif
 	if (intr_done)
 		sys_c_conws(s);
 	else
@@ -206,14 +227,14 @@ check_for_gem (void)
 	return aes_globl[0];
 }
 
-static long GEM_memflags = F_FASTLOAD | F_ALTLOAD | F_ALTALLOC | F_PROT_S;
+static long GEMmodeflags = F_FASTLOAD | F_ALTLOAD | F_ALTALLOC | F_PROT_S | F_OS_SPECIAL /*?*/;
 extern int debug_level;
 void
 init (void)
 {
 	long r, *sysbase;
 	FILEPTR *f;
-	
+
 	/* greetings (placed here 19960610 cpbs to allow me to get version
 	 * info by starting MINT.PRG, even if MiNT's already installed.)
 	 */
@@ -405,8 +426,15 @@ init (void)
 # endif
 
 	/* initialize memory */
+	boot_print("init_mem()");
 	init_mem ();
 	DEBUG (("init_mem() ok!"));
+	boot_print("init_mem() ok!");
+	/*{short s = step_by_step;
+	step_by_step=-1;
+	stop_and_ask ();
+	step_by_step=s;
+	}*/
 
 	/* Initialize high-resolution calendar time */
 	init_time ();
@@ -575,7 +603,7 @@ init (void)
 		strcpy(sysdir, "\\mint\\" MINT_VERS_PATH_STRING "\\");
 	else if (sys_d_setpath("\\mint\\") == 0)
 		strcpy(sysdir, "\\mint\\");
-	else 
+	else
 	{
 		boot_printf(MSG_init_no_mint_folder, MINT_VERS_PATH_STRING);
 		step_by_step = -1; stop_and_ask(); /* wait for a key */
@@ -1057,7 +1085,7 @@ mint_thread(void *arg)
 		{
 			BASEPAGE *bp;
 
-			bp = (BASEPAGE *)sys_pexec(7, (char *)GEM_memflags, (char *)"\0", _base->p_env);
+			bp = (BASEPAGE *)sys_pexec(7, (char *)GEMmodeflags, (char *)"\0", _base->p_env);
 			bp->p_tbase = *((long *) EXEC_OS);
 
 			r = sys_pexec(106, (char *)"GEM", bp, 0L);
@@ -1080,7 +1108,7 @@ mint_thread(void *arg)
 			boot_print(MSG_init_rom_AES);
 # endif
 			entry = *((long *) EXEC_OS);
-			bp = (BASEPAGE *) sys_pexec(7, (char *) GEM_memflags, (char *) "\0", _base->p_env);
+			bp = (BASEPAGE *) sys_pexec(7, (char *) GEMmodeflags, (char *) "\0", _base->p_env);
 			bp->p_tbase = entry;
 
 			r = sys_pexec(106, (char *) "GEM", bp, 0L);
@@ -1177,10 +1205,12 @@ mint_thread(void *arg)
 	/* If init program exited, reboot the system.
 	 * Never go back to TOS.
 	 */
+	FORCE("init:sys_s_hutdown:COLD");
 	(void) sys_s_hutdown(SHUT_COLD);	/* cold reboot is more efficient ;-) */
 # else
 	/* With debug kernels, always halt
 	 */
+	FORCE("init:sys_s_hutdown:HALT");
 	(void) sys_s_hutdown(SHUT_HALT);
 # endif
 
