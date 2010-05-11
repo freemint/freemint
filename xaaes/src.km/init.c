@@ -329,8 +329,8 @@ init(struct kentry *k, const struct kernel_module *km) //const char *path)
 {
 	long stk = (long)get_sp();
 	long err = 0L;
-
 	bool first = true;
+	struct proc *rootproc;
 
 	/* setup kernel entry */
 	kentry = k;
@@ -364,6 +364,10 @@ again:
 	else
 		BLOG((false, "\n~~~~~~~~~~~~ XaAES restarting! ~~~~~~~~~~~~~~~"));
 #endif
+
+	/* reset single-flags in case of previous fault */
+	rootproc = pid2proc(0);
+	rootproc->modeflags &= ~(M_SINGLE_TASK|M_DONT_STOP);
 
 	/**** check if stack is sane ****/
 	stack_align |= check_stack_alignment(stk);
@@ -413,7 +417,7 @@ again:
 		if (flag)
 		{
 			BLOG((true,
-"ERROR: There exist an moose.xdd in your FreeMiNT sysdir.\n"
+"ERROR: There exists a moose.xdd in your FreeMiNT sysdir.\n"
 "       Please remove it before starting the XaAES kernel module!"));
 			err = EINVAL;
 			goto error;
