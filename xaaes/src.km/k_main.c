@@ -842,6 +842,7 @@ CE_fa(enum locks lock, struct c_event *ce, bool cancel)
 #if ALERTTIME	// b is used for form_alert
 					strrpl( data->buf, '|', ' ' );
 					data->buf[strlen(data->buf)-9] = 0;	/* strip off [ OK ] */
+					BLOG((0,data->buf));
 #endif
 					sc.t.text = data->buf;
 					sc.icon = icon;
@@ -1936,5 +1937,9 @@ k_exit(int wait)
 
 		f_close(C.KBD_dev);
 	}
+
+	/* reset single-flags in case of previous fault */
+	pid2proc(0)->modeflags &= ~(M_SINGLE_TASK|M_DONT_STOP);
+
  	kthread_exit(0);
 }
