@@ -122,13 +122,21 @@ display_pset(PRN_SETTINGS *p)
 #define CALL_DO_DLG	1
 #define CALL_RESET_DLG	2
 
+/* call callback-function via SIGUSR2 (what for? this runs in userspace anyway) */
+#define CALLBACK_BY_SIGNAL	0
+
 static long
 callout_pdlg_sub(struct xa_pdlg_info *pdlg, short which, PDLG_SUB *sub, PRN_SETTINGS *pset, short obj)
 {
+#if CALLBACK_BY_SIGNAL
 	struct sigaction oact, act;
 	struct xa_callout_head *u;
 	long ret = 0, function;
+#else
+	long ret = 0;
+#endif
 
+#if CALLBACK_BY_SIGNAL
 	switch (which)
 	{
 		case CALL_INIT_DLG:
@@ -140,13 +148,15 @@ callout_pdlg_sub(struct xa_pdlg_info *pdlg, short which, PDLG_SUB *sub, PRN_SETT
 		default:
 			function = 0L;				break;
 	}
-
 // 	display("function to call at %lx", function);
 
 	if (function)
+#endif
+	if ( *(((long*)&sub->init_dlg)+which) )	/* :) ... */
 	{
+#if CALLBACK_BY_SIGNAL
 		long structlen = sizeof(struct co_pdlg_sub_parms);
-
+#endif
 		if (sub->tree)
 		{
 			RECT r;
@@ -155,8 +165,13 @@ callout_pdlg_sub(struct xa_pdlg_info *pdlg, short which, PDLG_SUB *sub, PRN_SETT
 			sub->tree->ob_y = r.y;
 		}
 
+#if CALLBACK_BY_SIGNAL
 		if (which != CALL_DO_DLG)
+		{
 			structlen -= 2;
+			if (which == CALL_INIT_DLG && pdlg->n_printers <= 0 )
+				return 0;
+		}
 
 		u = umalloc(xa_callout_user.len + structlen);
 		if (u)
@@ -189,15 +204,38 @@ callout_pdlg_sub(struct xa_pdlg_info *pdlg, short which, PDLG_SUB *sub, PRN_SETT
 
 			p_sigaction(SIGUSR2, &act, &oact);
 			DIAGS(("raise(SIGUSR2)"));
+			{
+
 			raise(SIGUSR2);
 			DIAGS(("handled SIGUSR2 pdlgsub_xxx callout"));
 			/* restore old handler */
 			p_sigaction(SIGUSR2, &oact, NULL);
-
+			}
 			ret = p->ret;
-
 			ufree(u);
 		}
+#else
+		{
+		//BASEPAGE *base = get_curproc()->p_mem->base;
+		if( pdlg->n_printers <= 0 )
+			return ret;
+		switch( which )
+		{
+			case CALL_INIT_DLG:
+				if( sub->init_dlg && pdlg->n_printers > 0 )	// 0 would qed or fvdi (and XaAES) crash
+					ret = sub->init_dlg( pset, sub );
+			break;
+			case CALL_DO_DLG:
+				if( sub->do_dlg )
+					ret = sub->do_dlg( pset, sub, obj );
+			break;
+			case CALL_RESET_DLG:
+				if( sub->reset_dlg )
+					ret = sub->reset_dlg( pset, sub );
+			break;
+		}
+		}
+#endif
 	}
 // 	display("function called returns %ld", ret);
 	return ret;
@@ -206,9 +244,9 @@ callout_pdlg_sub(struct xa_pdlg_info *pdlg, short which, PDLG_SUB *sub, PRN_SETT
 static DRV_INFO *
 xv_create_driver_info(XVDIPB *vpb, short handle, short id)
 {
-	DRV_INFO *d = NULL;
+	DRV_INFO *d;
 
-	V_CREATE_DRIVER_INFO(vpb, handle, id, d);
+	V_CREATE_DRIVER_INFO(vpb, handle, id, d);	// macro!
 	return d;
 
 #if 0
@@ -265,6 +303,7 @@ xvq_devinfo(XVDIPB *vpb, short handle, short dev_id)
 	return vpb->intout[0];
 }
 #endif
+
 static short
 xvq_ext_devinfo(XVDIPB *vpb, short handle, short id, char *path, char *fname, char *dname)
 {
@@ -275,7 +314,6 @@ xvq_ext_devinfo(XVDIPB *vpb, short handle, short id, char *path, char *fname, ch
 	VDI(vpb, 248, 0, 7, 4242, handle);
 	return vpb->intout[0];
 }
-
 #if 0
 static short
 xv_trays(XVDIPB *vpb, short handle, short in, short out, short *r_in, short *r_out)
