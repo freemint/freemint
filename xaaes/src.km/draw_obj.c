@@ -40,7 +40,9 @@
 #include "scrlobjc.h"
 #include "xa_user_things.h"
 
-/* call progdef-function via SIGUSR2 (not good because of possible VDI-calls inside signal-handler) */
+/* call progdef-function via SIGUSR2
+ * (not good because of possible VDI-calls inside signal-handler)
+ */
 #define PROGDEF_BY_SIGNAL	0
 
 #include "mint/signal.h"
@@ -332,6 +334,29 @@ disable_objcursor(struct widget_tree *wt, struct xa_vdi_settings *v, struct xa_r
 
 
 #if !PROGDEF_BY_SIGNAL
+
+static inline long
+do_callout ( void *f, PARMBLK *p)
+{
+	register long ret __asm__("d0");
+	__asm__ volatile (
+		"movem.l d3-d7/a3-a6,-(sp)\n\t"
+	  "move.l %2,-(sp)\n\t"
+	  "move.l %1,a0\n\t"
+	  "jsr	(a0)\n\t"
+		"lea	4(sp),sp\n\t"
+		"movem.l (sp)+,d3-d7/a3-a6\n\t"
+			: "=r"(ret)					/* outputs */
+			: "g"(f),"g"(p)
+			: __CLOBBER_RETURN("d0")
+		  "d1", "d2", "a0", "a1", "a2",		/* clobbered regs */
+		  "memory"
+	 );
+	return ret;
+}
+
+#define CHECK_PROGDEF_ADDR 0
+
 typedef short __CDECL (*p_handler)(PARMBLK *pb);
 #endif
 
@@ -368,6 +393,7 @@ d_g_progdef(struct widget_tree *wt, struct xa_vdi_settings *v)
 	DIAGS(("XaAES d_g_progdef: client  - pid %i, name %s", client->p->pid, client->name));
 #endif
 
+
 //	KERNEL_DEBUG("ut = 0x%lx", ut);
 //	KERNEL_DEBUG("ut->progdef_p = 0x%lx", ut->progdef_p);
 //	KERNEL_DEBUG("ut->userblk_p = 0x%lx", ut->userblk_p);
@@ -403,31 +429,33 @@ d_g_progdef(struct widget_tree *wt, struct xa_vdi_settings *v)
 
 #if !PROGDEF_BY_SIGNAL
 	{
-#if CHECK_PROGDEF_ADDR
-	BASEPAGE *base = client->p->p_mem->base;
-#endif
-	p_handler	pfunc;
-	long pret;
+		BASEPAGE *base = client->p->p_mem->base;
+		p_handler	pfunc;
+		long pret = 0;
 
-	pfunc = (p_handler)userblk(client->ut)->ub_code;//userblk->ub_code;
+		pfunc = (p_handler)userblk(client->ut)->ub_code;
 #if CHECK_PROGDEF_ADDR
-	/* check if callback-address is inside client-text */
-	if( !(client->p->modeflags & M_SINGLE_TASK)
-		&& ((long)pfunc < base->p_tbase || (long)pfunc >= base->p_tbase+base->p_tlen) )
-	{
-		BLOG((0,"PROGDEF: %s: user-func(%lx) outside TEXT:%lx-%lx", client->name, pfunc, base->p_tbase, base->p_tbase + base->p_tbase+base->p_tlen));
-		return;
-	}
+		/* check if callback-address is inside client-text */
+		if( !(client->p->modeflags & M_SINGLE_TASK)
+			&& ((long)pfunc < base->p_tbase || (long)pfunc >= base->p_tbase+base->p_tlen) )
+		{
+			BLOG((0,"PROGDEF: %s: user-func(%lx) outside TEXT:%lx-%lx", client->name, pfunc, base->p_tbase, base->p_tbase + base->p_tbase+base->p_tlen));
+			return;
+		}
 #endif
-	pret = pfunc(p);
 
-	if( wt->state_mask && !((long)wt->state_mask & 1) )
-		*wt->state_mask = pret;
-	else
-	{
-		BLOG((0,"d_g_progdef:%s:invalid state_mask-pointer:%lx", client->name, wt->state_mask));
-		return;
-	}
+
+
+		pret = do_callout(pfunc,p);
+
+		if( wt->state_mask && !((long)wt->state_mask & 1) )
+			*wt->state_mask = pret;
+		else
+		{
+			BLOG((0,"d_g_progdef:%s(%s):invalid state_mask-pointer:%lx\n\
+	user-func:%lx TEXT:%lx-%lx", client->name, get_curproc()->name, wt->state_mask, pfunc, base->p_tbase, base->p_tbase + base->p_tbase+base->p_tlen));
+			return;
+		}
 	}
 #else
 	act.sa_handler = client->ut->progdef_p;
