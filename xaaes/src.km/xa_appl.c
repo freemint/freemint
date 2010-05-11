@@ -442,54 +442,6 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 		}
 	} else {
 		if ((client = init_client(lock, false))) {
-			extern long loader_pgrp;
-
-			//if( base->p_flags & F_FORCE_MINT )
-				//p_domain(1);
-			if( p->modeflags & M_SINGLE_TASK )
-			{
-				struct shel_info *info = lookup_extension(p, XAAES_MAGIC_SH);
-				struct proc *k = pid2proc(0);	/* MiNT */
-				//long KBD_dev;
-
-				//xconout_dev = kernel_open( "u:/dev/xconout2", O_RDWR, 0, 0);
-
-				/* todo: get owner of xconout2: how? */
-
-				if( !info )
-				{
-					//ALERT((0,"can execute singletask-app %s only by shel_write.", p->name));
-					//pb->intout[0] = -1;
-					BLOG((0,"can execute singletask-app %s only by shel_write (killing it).", p->name));
-					ikill(p->pid, SIGTERM);
-					return XAC_DONE;
-				}
-				//KBD_dev = f_open("u:/dev/kbd", O_DENYRW|O_RDONLY);
-
-				BLOG((0,"%s(%d): enter single-mode.", p->name, p->pid));
-				if( k )
-				{
-					struct xa_client *c;
-
-					k->modeflags |= M_SINGLE_TASK;
-					C.SingleTaskPid = p->pid;
-
-					/*
-					 * stop other AES-clients
-					 * dont stop if F_DONT_STOP is set and F_DONT_STOP of singletask-app is not set
-					 */
-					FOREACH_CLIENT(c)
-					{
-						if( c->p->pid && c != C.Aes && c != C.Hlp && c != client
-							&& ( (p->modeflags & M_DONT_STOP) || !(c->p->modeflags & M_DONT_STOP)) )
-						{
-							BLOG((0,"stopping %s(%d)", c->name, c->p->pid));
-							ikill(c->p->pid, SIGSTOP);
-						}
-					}
-				}
-				/* else: shutdown! */
-			}
 
 			if( p->domain == 0 )
 			{
@@ -506,6 +458,69 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 			 */
 			client->globl_ptr = globl;
 		}
+	}
+
+	//if( base->p_flags & F_FORCE_MINT )
+		//p_domain(1);
+	if( (p->modeflags & M_SINGLE_TASK) )
+	{
+		if( C.SingleTaskPid <= 0 )
+		{
+			struct shel_info *info = lookup_extension(p, XAAES_MAGIC_SH);
+			struct proc *k = pid2proc(0);	/* MiNT */
+			//long KBD_dev;
+
+			//xconout_dev = kernel_open( "u:/dev/xconout2", O_RDWR, 0, 0);
+
+			/* todo: get owner of xconout2: how? */
+
+			if( !info )
+			{
+				//ALERT((0,"can execute singletask-app %s only by shel_write.", p->name));
+				//pb->intout[0] = -1;
+				BLOG((0,"can execute singletask-app %s only by shel_write (killing it).", p->name));
+				ikill(p->pid, SIGTERM);
+				return XAC_DONE;
+			}
+			//KBD_dev = f_open("u:/dev/kbd", O_DENYRW|O_RDONLY);
+
+			BLOG((0,"%s(%d): enter single-mode.", p->name, p->pid));
+			if( k )
+			{
+				struct xa_client *c;
+
+				k->modeflags |= M_SINGLE_TASK;
+				C.SingleTaskPid = p->pid;
+
+				/*
+				 * stop other AES-clients
+				 * dont stop if F_DONT_STOP is set and F_DONT_STOP of singletask-app is not set
+				 */
+				FOREACH_CLIENT(c)
+				{
+					if( c->p->pid && c != C.Aes && c != C.Hlp && c != client
+						&& ( (p->modeflags & M_DONT_STOP) || !(c->p->modeflags & M_DONT_STOP)) )
+					{
+						BLOG((0,"stopping %s(%d)", c->name, c->p->pid));
+						ikill(c->p->pid, SIGSTOP);
+					}
+				}
+			}
+			/* else: shutdown! */
+		}
+		else if( C.SingleTaskPid == p->ppid )
+		{
+			BLOG((0,"appl_init: SingleTask launched child" ));
+			C.SingleTaskPid = p->pid;
+		}
+		else if( C.SingleTaskPid != p->pid )
+		{
+			BLOG((0,"appl_init: Cannot launch in singletask-mode, single-task=%d p=%d", C.SingleTaskPid, p->pid ));
+			ikill(p->pid, SIGTERM);
+			return XAC_DONE;
+		}
+# define _f_sync			(*KENTRY->vec_dos[0x103]) 	/* f_sync */
+		_f_sync();
 	}
 
 	if (client) {
@@ -594,6 +609,7 @@ exit_proc(enum locks lock, struct proc *p, int code)
 	struct xa_client *clnt = lookup_extension(p, XAAES_MAGIC);
 	int ret = 0;
 
+
 	/* Unlock mouse & screen */
 	if (update_locked() == p)
 		free_update_lock();
@@ -646,18 +662,22 @@ exit_proc(enum locks lock, struct proc *p, int code)
 		 * in single-task-mode wake client that called single-task-app
 		 * to execute CE_pwaitpid()
 		 */
-		if( C.SingleTaskPid > 0 )
-			ikill( client->p->pid, SIGCONT );
+		if (client)
+		{
+			if( C.SingleTaskPid > 0 )
+				ikill( client->p->pid, SIGCONT );
 
-		if (info->shel_write) {
-			if (client)
+			if( client->p->pid == p->ppid && (client->p->modeflags & M_SINGLE_TASK) )
 			{
+				BLOG((0,"child launched by single-task has exited."));
+				C.SingleTaskPid = client->p->pid;
+			}
+			if (info->shel_write) {
 				post_cevent(client, CE_pwaitpid, NULL,NULL, p->pid,code, NULL,NULL);
 				ret = 1;
 			}
-
-// 			send_ch_exit(client, p->pid, code);
 		}
+
 #if GENERATE_DIAGS
 		if (client) {
 			DIAGS(("Sent CH_EXIT (premature client exit) to (pid %d)%s for (pid %d)%s",
@@ -669,7 +689,9 @@ exit_proc(enum locks lock, struct proc *p, int code)
 // 			display("No real parent client");
 		}
 #endif
+
 	}
+
 	return ret;
 }
 
