@@ -345,6 +345,7 @@ Form_Button(XA_TREE *wt,
 	state = pstate = aesobj_state(&obj);
 	dc = md->clicks > 1 ? true : false;
 
+
 	/* find_object can't report click on a OF_HIDETREE object. */
 	/* HR: Unfortunately it could. Fixed that. */
 
@@ -456,11 +457,20 @@ Form_Button(XA_TREE *wt,
 					// cmp obtree#3405
 					if( !obj_is_focus(wt, &obj) ){
 						if( obj.ob->ob_spec.tedinfo ){
-							TEDINFO *ted = object_get_tedinfo(aesobj_ob(&obj), NULL);
-							char *txt = ted->te_ptext, *ptxt = ted->te_ptmplt;
-							for( ; txt[x]; x++ );
+							TEDINFO *ted;
+							char *txt, *ptxt;
+
+							ted = object_get_tedinfo(aesobj_ob(&obj), NULL);
+
+							if( ted )
 							{
-								for( ; ptxt[y] && ptxt[y] != '_'; y++ );
+								txt = ted->te_ptext;
+								ptxt = ted->te_ptmplt;
+
+								for( ; txt[x]; x++ );
+								{
+									for( ; ptxt[y] && ptxt[y] != '_'; y++ );
+								}
 							}
 						}
 						ei->edstart = y;
@@ -472,7 +482,9 @@ Form_Button(XA_TREE *wt,
 					}
 				}
 				if (valid_aesobj(&pf))
+				{
 					obj_draw(wt, v, pf, 0, NULL, *rl, UNDRAW_FOCUS|DRW_CURSOR);
+				}
 				wt->focus = obj;
 				obj_draw(wt, v, obj, 0, NULL, *rl, DRW_CURSOR);
 			}
