@@ -1491,7 +1491,7 @@ sys_b_bioskeys(void)
 	}
 
 	/* Reserve one region for both keytable and its vectors */
-	user_keytab_region = get_region(core, keytab_size + sizeof(struct keytab), PROT_PR);
+	user_keytab_region = get_region(core, keytab_size + sizeof(struct keytab), PROT_G);
 
 	buf = (unsigned char *)attach_region(rootproc, user_keytab_region);
 	pointers = (struct keytab *)buf;
