@@ -47,6 +47,7 @@
 #include "xa_user_things.h"
 #include "nkcc.h"
 #include "keycodes.h"
+#include "k_keybd.h"
 #include "mint/signal.h"
 
 STATIC WidgetBehaviour click_wdlg_widget;
@@ -1199,7 +1200,7 @@ wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms 
 				}
 				else if (key)
 				{
-					if (key == SC_INSERT && focus_set(wt))
+					if (key_conv( client, key) == SC_INSERT && focus_set(wt))
 					{
 						nxtobj = wt->focus;
 					}
