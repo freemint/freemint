@@ -341,17 +341,17 @@ do_callout ( void *f, PARMBLK *p)
 	register long ret __asm__("d0");
 	__asm__ volatile (
 		"movem.l d3-d7/a3-a6,-(sp)\n\t"
-	  "move.l %2,-(sp)\n\t"
-	  "move.l %1,a0\n\t"
-	  "jsr	(a0)\n\t"
+		"move.l %2,-(sp)\n\t"
+		"move.l %1,a0\n\t"
+		"jsr	(a0)\n\t"
 		"lea	4(sp),sp\n\t"
 		"movem.l (sp)+,d3-d7/a3-a6\n\t"
-			: "=r"(ret)					/* outputs */
+			: "=r"(ret) 				/* outputs */
 			: "g"(f),"g"(p)
 			: __CLOBBER_RETURN("d0")
-		  "d1", "d2", "a0", "a1", "a2",		/* clobbered regs */
-		  "memory"
-	 );
+			"d1", "d2", "a0", "a1", "a2", 	/* clobbered regs */
+			"memory"
+	);
 	return ret;
 }
 
@@ -380,6 +380,8 @@ d_g_progdef(struct widget_tree *wt, struct xa_vdi_settings *v)
 {
 #if PROGDEF_BY_SIGNAL
 	struct sigaction oact, act;
+#else
+ 	ushort *sstate_mask;
 #endif
 	struct xa_client *client = lookup_extension(NULL, XAAES_MAGIC);
 	OBJECT *ob = wt->current.ob;
@@ -430,8 +432,8 @@ d_g_progdef(struct widget_tree *wt, struct xa_vdi_settings *v)
 #if !PROGDEF_BY_SIGNAL
 	{
 		BASEPAGE *base = client->p->p_mem->base;
-		p_handler	pfunc;
-		long pret = 0;
+		p_handler pfunc;
+		long pret;
 
 		pfunc = (p_handler)userblk(client->ut)->ub_code;
 #if CHECK_PROGDEF_ADDR
@@ -444,16 +446,21 @@ d_g_progdef(struct widget_tree *wt, struct xa_vdi_settings *v)
 		}
 #endif
 
-
-
+		sstate_mask = wt->state_mask;
 		pret = do_callout(pfunc,p);
 
-		if( wt->state_mask && !((long)wt->state_mask & 1) )
+		if( wt->state_mask == sstate_mask && wt->state_mask && !((long)wt->state_mask & 1) )
 			*wt->state_mask = pret;
 		else
 		{
-			BLOG((0,"d_g_progdef:%s(%s):invalid state_mask-pointer:%lx\n\
-	user-func:%lx TEXT:%lx-%lx", client->name, get_curproc()->name, wt->state_mask, pfunc, base->p_tbase, base->p_tbase + base->p_tbase+base->p_tlen));
+#if 0
+			BLOG(("d_g_progdef:%s(%s):invalid state_mask-pointer:%lx, \
+user-func:%lx TEXT:%lx-%lx (killed)", client->name, get_curproc()->name, wt->state_mask, pfunc, base->p_tbase, base->p_tbase + base->p_tlen));
+#endif
+			ALERT(("d_g_progdef:invalid state_mask-pointer:%lx/%lx", wt->state_mask, sstate_mask));
+			client->status |= (CS_EXITING | CS_SIGKILLED);
+			raise(SIGKILL);
+			yield();
 			return;
 		}
 	}
@@ -630,7 +637,7 @@ init_objects(void)
 
 /*
  * display or remove object-cursor
- * sr: corrds of object
+ * sr: coords of object
  * md: 1: show, 0: remove
  */
 static void do_object_cursor( struct xa_vdi_settings *v, RECT *sr, short md)
