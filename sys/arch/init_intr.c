@@ -107,7 +107,7 @@ init_intr (void)
 			 * to disable its key repetition routine
 			 * if a key is held at startup.
 			 */
-			boot_print("disable repeat\r\n");
+			//boot_print("disable repeat\r\n");
 			__asm__ volatile
 			(
 				"move.l	%0,a0\n\t"
