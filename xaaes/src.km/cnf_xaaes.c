@@ -582,11 +582,8 @@ pCB_app_options(char *line)
 			{
 				bool b;
 				get_boolarg(s + 12, &b);
-				if( b )
-				{
-					opts->insert_key = SC_SPACE;
-					opts->space_key = SC_INSERT;
-				}
+				opts->insert_key = b ? SC_SPACE : SC_INSERT;
+				opts->space_key = b ? SC_INSERT : SC_SPACE;
 			}
 			else if (!strnicmp(s, "clwtna", 6))
 			{
