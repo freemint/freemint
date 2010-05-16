@@ -1,3 +1,26 @@
+16-05-2010
+----------
+
+select (cnf_xaaes.c form.c k_keybd.c k_keybd.h menuwidg.c scrlobjc.c xa_fsel.c xa_types.h xa_wdlg.c):
+
+
+New config-variable: spaceXinsert[true,false] in app_options, default
+false, exchanges space/insert-behaviour in dialogs.
+---------------------------------------------------------------------
+draw_obj:
+
+- improved sanity-check for state_mask: compare to saved value
+
+- emit an ALERT instead of boot-logging
+
+- kill the client that has an invalid state_mask
+---------------------------------------------------------------------
+k_init:
+
+try to open virtual wk check only if nvdi (reverted previous change):
+emutos 0.8.5 would crash
+
+---------------------------------------------------------------------
 11-05-2010
 ----------
 
