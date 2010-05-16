@@ -3,14 +3,14 @@
  *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
- * 
+ *
  * Copyright 1990,1991,1992 Eric R. Smith.
  * Copyright 1992,1993,1994 Atari Corporation.
  * All rights reserved.
- * 
+ *
  * Please send suggestions, patches or bug reports to
  * the MiNT mailing list.
- * 
+ *
  */
 
 # include "mint/mint.h"
@@ -74,7 +74,7 @@ new_xbra_install (long *xv, long addr, long _cdecl (*func)())
 
 	/* better to be safe... */
 # ifndef M68000
-	cpush ((long *) addr, sizeof (addr)); 
+	cpush ((long *) addr, sizeof (addr));
 	cpush (xv, sizeof (xv));
 # endif
 }
@@ -96,7 +96,30 @@ init_intr (void)
 
 # ifndef NO_AKP_KEYBOARD
 	{
-#ifndef MILAN
+
+# ifndef MILAN
+
+		//boot_printf("tosvers=%x\r\n", tosvers);
+# ifdef ARANYM
+		if (tosvers >= 0x200)
+		{
+			/* Send a key release to the TOS 2.x keyboard handler
+			 * to disable its key repetition routine
+			 * if a key is held at startup.
+			 */
+			boot_print("disable repeat\r\n");
+			__asm__ volatile
+			(
+				"move.l	%0,a0\n\t"
+				"move.w	#0x80,d0\n\t"
+				"jsr	(a0)"
+			:					/* outputs */
+			: "g"(*(((long*)syskey)-1))		/* inputs  */
+			: "d0", "d1", "d2", "a0", "a1", "a2"    /* clobbered regs */
+			);
+		}
+# endif
+
 		savesr = splhigh();
 		syskey->ikbdsys = (long)ikbdsys_handler;
 #ifndef M68000
@@ -133,7 +156,7 @@ init_intr (void)
 	long dummy;
 
 	new_xbra_install (&dummy, 0x80L, unused_trap);		/* trap #0 */
-	new_xbra_install (&old_dos, 0x84L, mint_dos);		/* trap #1, GEMDOS */	
+	new_xbra_install (&old_dos, 0x84L, mint_dos);		/* trap #1, GEMDOS */
 # if 0	/* we only install this on request yet */
 	new_xbra_install (&old_trap2, 0x88L, mint_trap2);	/* trap #2, GEM */
 # endif
