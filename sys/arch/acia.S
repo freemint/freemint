@@ -1,18 +1,18 @@
 /*
  * $Id$
- * 
+ *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution.
- * 
+ *
  * This is the IKBD/MIDI ACIA interrupt service routine. We use it
  * on TOS < 2.0 to replace the original handler, which provides
  * too few vectors to handle our AKP routines.
  *
  * Routines are based on what TOS 4.04 does.
- * 
+ *
  * please send suggestions, patches or bug reports to me or
  * the MiNT mailing list
- * 
+ *
  */
 
 # ifndef NO_AKP_KEYBOARD
@@ -34,6 +34,7 @@ IKBDTODO	=	IKBDSTATE+1
 
 	.globl	_syskey,_keyrec
 	.globl	_old_acia,_new_acia
+
 
 	dc.l	0x58425241		// XBRA
 	dc.l	0x4d694e54		// MiNT
@@ -69,6 +70,13 @@ again:	move.l	_syskey,a3
 type:	dc.b	1,2,3,3,3,3,4,5,6,7
 todo:	dc.b	7,5,2,2,2,2,6,2,1,1
 
+# ifdef DEBUG_INFO
+	.globl	_ikbd_cnt
+# endif
+	.globl	_ikbd_ovr
+
+_ikbd_cnt: dc.l	0
+
 	.text
 
 	.globl	_ikbdsys_handler
@@ -76,6 +84,9 @@ todo:	dc.b	7,5,2,2,2,2,6,2,1,1
 // We only replace ikbdsys, midisys will be handled in ROM.
 
 _ikbdsys_handler:
+# ifdef DEBUG_INFO
+	add.l	#1,_ikbd_cnt
+# endif
 	move.b	(0xfc00).w,d1		// ACIA control
 	move.l	_keyrec,a0
 	btst	#0x07,d1		// interrupt request
@@ -116,7 +127,7 @@ not_keyboard:
 // the type of the packet, and not the number of bytes transmitted.
 
 	lea	type,a1
-	move.b	(a1,d0.w),IKBDSTATE(a3)	
+	move.b	(a1,d0.w),IKBDSTATE(a3)
 	lea	todo,a1
 	move.b	(a1,d0.w),IKBDTODO(a3)
 	add.b	#0xf6,d0
