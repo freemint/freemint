@@ -403,11 +403,24 @@ set_mouse_timeout( void _cdecl (*f)(PROC *), short make, short delta, long to)
 	}
 }
 
+# ifdef DEBUG_INFO
+extern long ikbd_cnt;
+# endif
+
 # ifndef MILAN
 static void put_key_into_buf(IOREC_T *iorec, uchar c0, uchar c1, uchar c2, uchar c3);
 static void
 kbd_repeat(PROC *p, long arg)
 {
+	//FORCE("kbd_repeat:last_iorec=%lx %d %d %d %d %d last_key=%d/%d/%d/%d lock=%d cnt=%ld", *last_iorec, last_key[0], last_key[1], last_key[2], last_key[3], kbd_lock, ikbd_cnt);
+	/* in case sys_b_bioskeys crashed and did not reset kbd_lock, do it now */
+	if( kbd_lock )
+	{
+		FORCE("kbd_repeat:reset kbd_lock");
+		yield();
+		kbd_lock = 0;
+		return;
+	}
 	put_key_into_buf(last_iorec, last_key[0], last_key[1], last_key[2], last_key[3]);
 	k_to = addroottimeout(keyrep_time, (void _cdecl (*)(PROC *))kbd_repeat, 1);
 }
@@ -580,6 +593,7 @@ put_key_into_buf(IOREC_T *iorec, uchar c0, uchar c1, uchar c2, uchar c3)
 		c0 = 0;
 # endif
 // 	display("c0 %x, c1 %x, c2 %x, c3 %x", c0, c1, c2, c3);
+	//FORCE("put_key_into_buf:c0 %x, c1 %x, c2 %x, c3 %x", c0, c1, c2, c3);
 
 	iorec->tail += 4;
 	if (iorec->tail >= iorec->buflen)
@@ -910,27 +924,50 @@ static int scanb_tail = 0;
 static struct scanb_entry scanb[16];
 static void _cdecl IkbdScan(PROC *, long);
 
-//extern long ikbd_cnt;
+
+void leave_kernel(void);
 
 void _cdecl
 ikbd_scan(ushort scancode, IOREC_T *rec)
 {
 	int tail = (scanb_tail + 1) & 0xf;
 
-	//FORCE("ikbd_scan: cnt=%ld rec=%lx scancode=%x scanb[].iorec=%lx tail=%d scanb_head=%d", ikbd_cnt, rec, scancode, scanb[scanb_head].iorec, tail, scanb_head);
-	//FORCE("ikbd_scan: iorec=%lx %d %d %d %d %d", *rec );
-	//ikbd_cnt--;
+	/* in case sys_b_bioskeys crashed and did not reset kbd_lock, do it now */
+	if( kbd_lock )
+	{
+		FORCE("ikbd_scan:reset kbd_lock");
+		yield();
+		kbd_lock = 0;
+		return;
+	}
+	//FORCE("ikbd_scan: cnt=%ld rec=%lx scancode=%x scanb[].iorec=%lx:%lx tail=%d scanb_head=%d lock=%d ikbd_to=%lx", ikbd_cnt, rec, scancode, scanb[scanb_head].iorec, scanb[scanb_tail].iorec, tail, scanb_head, kbd_lock, ikbd_to);
+
+# ifdef DEBUG_INFO
+	ikbd_cnt--;
+# endif
 	if (tail != scanb_head)
 	{
 		scanb[scanb_tail].iorec = rec;
 		scanb[scanb_tail].scan = scancode;
 		scanb_tail = tail;
 	}
+#if 0
+	if( scanb[scanb_head].iorec == NULL )
+	{
+		int i;
+		for( i = 0; i < 16; i++ )
+			FORCE("scanb[%i].iorec=%lx", scanb[i].iorec);
+	}
+#endif
+	//FORCE("ikbd_scan: iorec=%lx %d %d %d %d %d", *rec );
 
 	if( curproc->modeflags & M_SINGLE_TASK )
 	{
+# ifdef DEBUG_INFO
+		extern short in_kernel;
 		//FORCE("ikbd_scan directly for '%s' head=%d", curproc->name, scanb_head );
-		DEBUG(("ikbd_scan directly for '%s' head=%d p_flags=%lx", curproc->name, scanb_head, curproc->p_mem->base->p_flags ));
+		DEBUG(("ikbd_scan directly for '%s' head=%d p_flags=%lx slices=%d in_kernel=%x", curproc->name, scanb_head, curproc->p_mem->base->p_flags, curproc->slices, in_kernel ));
+# endif
 		IkbdScan( curproc, 1);
 	}
 	else if (!ikbd_to)
@@ -1508,10 +1545,11 @@ sys_b_bioskeys(void)
 		free_region(user_keytab_region);
 	}
 
-	/* Reserve one region for both keytable and its vectors */
-	user_keytab_region = get_region(core, keytab_size + sizeof(struct keytab), PROT_PR);
+	/* Reserve one region for both keytable and its vectors (globally accessible!) */
+	user_keytab_region = get_region(core, keytab_size + sizeof(struct keytab), PROT_G);
 
 	buf = (unsigned char *)attach_region(rootproc, user_keytab_region);
+
 	pointers = (struct keytab *)buf;
 	tables = buf + sizeof(struct keytab);
 
@@ -1884,6 +1922,7 @@ load_keyboard_table(const char *path, short flag)
 	return ret;
 }
 
+void init_checkkeys(void);
 /* Pre-initialize the built-in keyboard tables.
  * This must be done before init_intr()!
  */
@@ -1931,29 +1970,6 @@ init_keybd(void)
 	boot_printf("\r\n");
 # endif
 
-#if 0
-	{
-		IOREC_T *keyrec = (IOREC_T *)TRAP_Iorec(1);
-		short c, i;
-		char buf[128];
-
-		ksprintf( buf, sizeof(buf), "head:%d tail:%d low=%d high=%d\r\n", keyrec->head, keyrec->tail,keyrec->low_water,keyrec->hi_water);
-		boot_print(buf);
-		keyrec->head = keyrec->tail = 0;
-	for( i = 0; i < 16; i++ )
-	{
-		ksprintf( buf, sizeof(buf), "i=%d\r\n", i );
-		boot_print(buf);
-		/*scanb[i].iorec->head = 0;
-		scanb[i].iorec->tail = 0;
-		*/
-		scanb[i].scan = 0;
-	}
-	scanb_head = 0;
-	scanb_tail = 0;
-	}
-
-#endif
 }
 
 # else
