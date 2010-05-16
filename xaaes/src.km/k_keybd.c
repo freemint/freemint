@@ -50,12 +50,29 @@
 #include "xa_rsrc.h"
 #include "xa_shel.h"
 #include "trnfm.h"
+#include "keycodes.h"
 
 #include "mint/dcntl.h"
 #include "mint/fcntl.h"
 #include "mint/ioctl.h"
 #include "mint/signal.h"
 
+short key_conv( struct xa_client *client, short key )
+{
+	switch( key )
+	{
+		case SC_INSERT:
+			if( client->options.insert_key )
+				key = client->options.insert_key;
+		break;
+		case SC_SPACE:
+			if( client->options.space_key )
+				key = client->options.space_key;
+		break;
+	}
+
+	return key;
+}
 
 /* Keystrokes must be put in a queue if no apps are waiting yet.
  * There also may be an error in the timer event code.

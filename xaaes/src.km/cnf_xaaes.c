@@ -31,6 +31,7 @@
 #include "taskman.h"
 
 #include "cnf_xaaes.h"
+#include "keycodes.h"
 #include "init.h"
 
 #include "mint/fcntl.h"
@@ -577,6 +578,16 @@ pCB_app_options(char *line)
 				get_argument(s + 13, &opts->thinframe);
 			else if (!strnicmp(s, "inhibit_hide", 12))
 				get_boolarg(s + 12, &opts->inhibit_hide);
+			else if (!strncmp(s, "spaceXinsert", 12))
+			{
+				bool b;
+				get_boolarg(s + 12, &b);
+				if( b )
+				{
+					opts->insert_key = SC_SPACE;
+					opts->space_key = SC_INSERT;
+				}
+			}
 			else if (!strnicmp(s, "clwtna", 6))
 			{
 				get_argument(s + 6, &a); //get_boolarg(s + 6, &opts->clwtna);

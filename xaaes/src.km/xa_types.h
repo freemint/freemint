@@ -536,6 +536,7 @@ struct options
 #if GENERATE_DIAGS
 	enum debug_item point[D_max];
 #endif
+	short insert_key, space_key;
 };
 
 struct opt_list

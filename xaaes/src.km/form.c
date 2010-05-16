@@ -41,6 +41,7 @@
 #include "k_mouse.h"
 #include "menuwidg.h"
 #include "keycodes.h"
+#include "k_keybd.h"
 
 STATIC FormMouseInput	Click_form_do;
 /*
@@ -565,6 +566,7 @@ Form_Cursor(XA_TREE *wt,
 	struct xa_rect_list *lrl = NULL;
 	struct xa_aes_object nxt, o;
 	struct xa_aes_object st = aesobj(obtree, 0);
+	struct xa_client *client = wt->owner;
 #define START st
 
 	if (!rl) rl = &lrl;
@@ -578,7 +580,7 @@ Form_Cursor(XA_TREE *wt,
 	if (ret_focus)
 		*ret_focus = inv_aesobj();
 
-	switch (keycode)
+	switch (key_conv( client, keycode ) )
 	{				/* The cursor keys are always eaten. */
 		case SC_TAB:		/* TAB moves to next/previous field */
 		{
@@ -597,7 +599,6 @@ Form_Cursor(XA_TREE *wt,
 			{
 				/* if not set start-obj of the form_do-call is selected */
 #ifndef NOT_WRAP_TO_START_ITEM
-				struct xa_client *client = wt->owner;
 				if( !(keystate & (K_RSHIFT|K_LSHIFT)) && client && client->waiting_pb && client->waiting_pb->intin[0] > 0 ){
 					nxt = aesobj(obtree, client->waiting_pb->intin[0] );	/* select initially selected item*/
 				}
@@ -777,9 +778,7 @@ Form_Keyboard(XA_TREE *wt,
 	      short *newstate,
 	      unsigned short *nxtkey)
 {
-#if GENERATE_DIAGS
 	struct xa_client *client = wt->owner;
-#endif
 	ushort keycode	= key->aes,
 	       keystate = key->raw.conin.state;
 	struct fmd_result fr;
@@ -865,7 +864,7 @@ g_slist:
 		bool has_focus = focus_set(wt);
 
 		/* space-select removed (now: insert) */
-		if (keycode == SC_INSERT && has_focus == true )
+		if (key_conv( client, keycode ) == SC_INSERT && has_focus == true )
 		{
 			next_obj = wt->focus;
 		}

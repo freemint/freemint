@@ -41,6 +41,7 @@
 #include "xa_rsrc.h"
 #include "form.h"
 #include "keycodes.h"
+#include "k_keybd.h"
 
 
 static void cancel_pop_timeouts(void);
@@ -2895,7 +2896,7 @@ menu_keyboard(Tab *tab, const struct rawkey *key)
 		nxt = inv_aesobj();
 
 		DIAGS(("process menukey! %x", keycode));
-		switch (keycode)
+		switch (key_conv(tab->client, keycode))
 		{
 		case SC_UPARROW:	/* 0x4800 */ /* UP arrow */
 		{

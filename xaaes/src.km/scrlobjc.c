@@ -47,6 +47,7 @@
 #include "xa_form.h"
 #include "c_window.h"
 #include "keycodes.h"
+#include "k_keybd.h"
 
 #ifdef __GNUC__
 /* using builtin */
@@ -4453,7 +4454,7 @@ slist_msg_handler(
 unsigned short
 scrl_cursor(SCROLL_INFO *list, unsigned short keycode, unsigned short keystate)
 {
-	switch (keycode)
+	switch (key_conv(list->wi->owner, keycode))
 	{
 	case SC_SPACE:
 	{

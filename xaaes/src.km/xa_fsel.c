@@ -48,6 +48,7 @@
 #include "xa_global.h"
 
 #include "c_keybd.h"
+#include "k_keybd.h"
 #include "c_window.h"
 #include "form.h"
 #include "k_main.h"
@@ -2250,7 +2251,11 @@ fs_slist_key(struct scroll_info *list, unsigned short keycode, unsigned short ks
 			else
 			{
 				list->cur = was;
-				kk = (!was && (keycode == SC_DNARROW || keycode == SC_UPARROW)) ? SC_SPACE : keycode;
+
+				kk = (!was
+					&& (keycode == SC_DNARROW || keycode == SC_UPARROW)) ?
+						key_conv( fs->owner, SC_SPACE) : keycode;
+
 				if (scrl_cursor(list, kk, 0) == 0)
 				{
 					list->get(list, NULL, SEGET_CURRENT, &this);
