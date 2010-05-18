@@ -260,7 +260,7 @@ build_tasklist_string( int md, void *app)
 
 	tx = kmalloc(tx_len);
 
-	if (tx)
+	if (tx && app)
 	{
 		struct proc *p;
 		/*unsigned*/ char *name, c=0, *cp;
@@ -280,6 +280,8 @@ build_tasklist_string( int md, void *app)
 			name = p->name;
 		}
 
+		if( !p )
+			return NULL;
 		if( p->pid )
 		{
 			pinfo[0] = 23;
@@ -601,7 +603,7 @@ update_tasklist_entry( int md, void *app, int redraw )
 		return;
 	wind = htd->w_taskman;
 
-	if (wind)
+	if (wind && app)
 	{
 		struct widget_tree *wt = get_widget(wind, XAW_TOOLBAR)->stuff;
 		OBJECT *obtree = wt->tree; //ResourceTree(C.Aes_rsc, TASK_MANAGER);
@@ -639,6 +641,8 @@ update_tasklist_entry( int md, void *app, int redraw )
 					else
 						t.text = ((struct proc *)app)->name;
 				}
+				if( !t.text )
+					return;
 
 				/* set only if changed */
 				if( !sec || strcmp( t.text, sec->c.text.text ) )
@@ -1697,6 +1701,7 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 					{
 						char nm[128];
 						struct proc *pr;
+						long pid;
 
 						update_tasklist_entry( NO_AES_CLIENT, rootproc, redraw );	/* kernel */
 
@@ -1704,12 +1709,17 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 						{
 							if( isdigit( nm[4] ) )
 							{
-								pr = pid2proc( atol(nm+4) );
-								if( pr )
+								pid = atol(nm+4);
+								/* check if prog really exists */
+								if( !ikill( pid, 0 ) )
 								{
-									if( !is_aes_client(pr) )
+									pr = pid2proc( pid );
+									if( pr )
 									{
-										update_tasklist_entry( NO_AES_CLIENT, pr, redraw );
+										if( !is_aes_client(pr) )
+										{
+											update_tasklist_entry( NO_AES_CLIENT, pr, redraw );
+										}
 									}
 								}
 							}
@@ -2449,7 +2459,6 @@ open_systemalerts(enum locks lock, struct xa_client *client, bool open)
 			struct sesetget_params p = { 0 };
 			struct scroll_content sc = {{ 0 }};
 			char sstr[1024];
-			extern unsigned short stack_align;
 
 			p.idx = -1;
 			p.arg.txt = e;	// /*txt_environment*/"Environment";
