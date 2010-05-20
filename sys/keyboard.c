@@ -1532,7 +1532,10 @@ sys_b_bioskeys(void)
 	struct keytab *pointers;
 
 	/* First block the keyboard processing code */
+	DEBUG(("*sys_b_bioskeys:enter"));
 	kbd_lock = 1;
+
+	set_keyrepeat_timeout(0);
 
 	/* Release old user keytables and vectors */
 	if (user_keytab_region)
@@ -1590,6 +1593,7 @@ sys_b_bioskeys(void)
 
 	/* Done! */
 	kbd_lock = 0;
+	DEBUG(("*sys_b_bioskeys:return"));
 }
 
 /* Kbdvbase() */
