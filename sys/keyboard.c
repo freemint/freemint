@@ -158,7 +158,7 @@ short	kbd_mpixels = 8;	/* mouse pixel steps */
 short	kbd_mpixels_fine = 1;	/* mouse pixel steps in 'fine' mode */
 struct	cad_def cad[3];		/* for halt, warm and cold resp. */
 #define MAKES_BLEN	16
-static char makes[MAKES_BLEN + 1 * 2];
+static char makes[MAKES_BLEN * 2 + 1];	// actually - 1 ...
 
 /* Auxiliary variables for ikbd_scan() */
 static	short cad_lock;		/* semaphore to avoid scheduling shutdown() twice */
@@ -414,13 +414,14 @@ kbd_repeat(PROC *p, long arg)
 {
 	//FORCE("kbd_repeat:last_iorec=%lx %d %d %d %d %d last_key=%d/%d/%d/%d lock=%d cnt=%ld", *last_iorec, last_key[0], last_key[1], last_key[2], last_key[3], kbd_lock, ikbd_cnt);
 	/* in case sys_b_bioskeys crashed and did not reset kbd_lock, do it now */
+#if 1
 	if( kbd_lock )
 	{
-		FORCE("kbd_repeat:reset kbd_lock");
-		yield();
-		kbd_lock = 0;
+		FORCE("kbd_repeat: kbd locked");
+		//FORCE("kbd_repeat:reset kbd_lock:%d:%lx", kbd_lock, &kbd_lock);
 		return;
 	}
+#endif
 	put_key_into_buf(last_iorec, last_key[0], last_key[1], last_key[2], last_key[3]);
 	k_to = addroottimeout(keyrep_time, (void _cdecl (*)(PROC *))kbd_repeat, 1);
 }
@@ -931,15 +932,15 @@ void _cdecl
 ikbd_scan(ushort scancode, IOREC_T *rec)
 {
 	int tail = (scanb_tail + 1) & 0xf;
-
+#if 1
 	/* in case sys_b_bioskeys crashed and did not reset kbd_lock, do it now */
 	if( kbd_lock )
 	{
-		FORCE("ikbd_scan:reset kbd_lock");
-		yield();
-		kbd_lock = 0;
+		FORCE("ikbd_scan1:kbd locked");
+		//FORCE("ikbd_scan2:reset kbd_lock:%d:%lx", kbd_lock, &kbd_lock);
 		return;
 	}
+#endif
 	//FORCE("ikbd_scan: cnt=%ld rec=%lx scancode=%x scanb[].iorec=%lx:%lx tail=%d scanb_head=%d lock=%d ikbd_to=%lx", ikbd_cnt, rec, scancode, scanb[scanb_head].iorec, scanb[scanb_tail].iorec, tail, scanb_head, kbd_lock, ikbd_to);
 
 # ifdef DEBUG_INFO
@@ -1401,7 +1402,7 @@ keepscan:
 		if (make)
 		{
 			int i;
-			for (i = 0; i < 32; i += 2)
+			for (i = 0; i < MAKES_BLEN * 2; i += 2)
 			{
 				if (!makes[i])
 				{
@@ -1533,9 +1534,14 @@ sys_b_bioskeys(void)
 
 	/* First block the keyboard processing code */
 	DEBUG(("*sys_b_bioskeys:enter"));
+	if( kbd_lock )
+	{
+		FORCE("sys_b_bioskeys: re-entered!!");
+		return;
+	}
 	kbd_lock = 1;
 
-	set_keyrepeat_timeout(0);
+	//set_keyrepeat_timeout(0);
 
 	/* Release old user keytables and vectors */
 	if (user_keytab_region)
@@ -1590,9 +1596,9 @@ sys_b_bioskeys(void)
 	set_cookie(NULL, COOKIE__ISO, iso_8859_code);
 
 	user_keytab = pointers;
-
 	/* Done! */
 	kbd_lock = 0;
+
 	DEBUG(("*sys_b_bioskeys:return"));
 }
 
