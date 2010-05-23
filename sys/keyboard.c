@@ -154,7 +154,7 @@ short	kbd_mpixels = 8;	/* mouse pixel steps */
 short	kbd_mpixels_fine = 1;	/* mouse pixel steps in 'fine' mode */
 struct	cad_def cad[3];		/* for halt, warm and cold resp. */
 #define MAKES_BLEN	16
-static char makes[MAKES_BLEN + 1 * 2];
+static char makes[MAKES_BLEN * 2 + 1];
 
 /* Auxiliary variables for ikbd_scan() */
 static	short cad_lock;		/* semaphore to avoid scheduling shutdown() twice */
@@ -1346,7 +1346,7 @@ keepscan:
 		if (make)
 		{
 			int i;
-			for (i = 0; i < 32; i += 2)
+			for (i = 0; i < MAKES_BLEN * 2; i += 2)
 			{
 				if (!makes[i])
 				{
