@@ -153,8 +153,6 @@ short	kbd_pc_style_caps = 0;	/* PC-style vs. Atari-style for Caps operation */
 short	kbd_mpixels = 8;	/* mouse pixel steps */
 short	kbd_mpixels_fine = 1;	/* mouse pixel steps in 'fine' mode */
 struct	cad_def cad[3];		/* for halt, warm and cold resp. */
-#define MAKES_BLEN	16
-static char makes[MAKES_BLEN * 2 + 1];
 
 /* Auxiliary variables for ikbd_scan() */
 static	short cad_lock;		/* semaphore to avoid scheduling shutdown() twice */
@@ -1050,11 +1048,7 @@ IkbdScan(PROC *p, long arg)
 			 * ClrHome and Insert must be handled as other keys.
 			 */
 			if ((scan != CLRHOME) && (scan != INSERT))
-#ifndef MILAN
-				goto keepscan;
-#else
 				continue;
-#endif
 		}
 
 		/* Here we handle keys of `system wide' meaning. These are:
@@ -1118,13 +1112,7 @@ IkbdScan(PROC *p, long arg)
 							}
 						}
 					}
-
-#ifndef MILAN
-					goto keepscan;
-#else
 					continue;
-#endif
-// 					goto keepscan;
 				}
 				/* Function keys */
 				case 0x003b ... 0x0044:
@@ -1141,13 +1129,7 @@ IkbdScan(PROC *p, long arg)
 
 						kbdclick(scan);
 					}
-
-#ifndef MILAN
-					goto keepscan;
-#else
 					continue;
-#endif
-// 					goto keepscan;
 				}
 				/* This is in case the keyboard has real F11-F20 keys on it */
 				case 0x0054 ... 0x005d:
@@ -1161,13 +1143,7 @@ IkbdScan(PROC *p, long arg)
 
 						kbdclick(scan);
 					}
-
-#ifndef MILAN
-					goto keepscan;
-#else
 					continue;
-#endif
-// 					goto keepscan;
 				}
 			}
 		}
@@ -1220,13 +1196,7 @@ IkbdScan(PROC *p, long arg)
 						addroottimeout(ROOT_TIMEOUT, (void _cdecl (*)(PROC *))alt_help, 1);
 						kbdclick(scan);
 					}
-
-#ifndef MILAN
-					goto keepscan;
-#else
 					continue;
-#endif
-// 					goto keepscan;
 				}
 				/* Alt/Numpad generates ASCII codes like in TOS 2.0x.
 				 */
@@ -1340,41 +1310,7 @@ IkbdScan(PROC *p, long arg)
 		}
 #ifndef MILAN
 		set_keyrepeat_timeout(make);
-keepscan:
 #endif
-#ifndef MILAN
-		if (make)
-		{
-			int i;
-			for (i = 0; i < MAKES_BLEN * 2; i += 2)
-			{
-				if (!makes[i])
-				{
-					makes[i    ] = 1;
-					makes[i + 1] = scan;
-					break;
-				}
-			}
-		}
-		else
-		{
-			int i;
-			for (i = 0; i < MAKES_BLEN * 2; i += 2)
-			{
-				if (makes[i] && makes[i+1] == scan)
-				{
-					do
-					{
-						makes[i]   = makes[i+2];
-						makes[i+1] = makes[i+3];
-						i += 2;
-					} while (i < MAKES_BLEN);
-				}
-			}
-		}
-#endif
-// again:
-
 	} while (scanb_head != scanb_tail);
 
 	ikbd_to = NULL;
@@ -1872,7 +1808,6 @@ load_keyboard_table(const char *path, short flag)
 void
 init_keybd(void)
 {
-	int i;
 	ushort delayrate;
 
 	/* Call the underlying XBIOS to get some defaults.
@@ -1881,10 +1816,6 @@ init_keybd(void)
 	 * static pointer to an initialized struct in
 	 * key_tables.h
 	 */
-
-	i = 0;
-	while (i < MAKES_BLEN)
-		makes[i++] = 0, makes[i++] = 0;
 
 # ifndef WITHOUT_TOS
 	tos_keytab = TRAP_Keytbl(-1, -1, -1);
