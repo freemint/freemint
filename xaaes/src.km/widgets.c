@@ -2016,13 +2016,20 @@ struct windlist_pu
 
 
 static struct windlist_pu *
-build_windlist_pu(struct xa_client *client)
+build_windlist_pu(struct xa_client *client, struct moose_data *md)
 {
-	int an_len = 0, wn_len = 0, winds = 0, i, j;
+	int an_len = 0, wn_len = 0, max_wn_len = 256, winds = 0, i, j;
 	long msize = 0L;
 	struct windlist_pu *pu = NULL;
 	struct xa_window *wind;
 
+	if( screen.r.w < 800 )
+	{
+		if( md->x > screen.r.w / 4 && md->x < screen.r.w * 3 / 4 )
+			max_wn_len = 12;
+		else
+			max_wn_len = 32;
+	}
 	wind = window_list;
 
 	while (wind && wind != root_window)
@@ -2047,6 +2054,8 @@ build_windlist_pu(struct xa_client *client)
 				len = strlen(t) + 1;
 				if (len > wn_len)
 					wn_len = len;
+				if( wn_len > max_wn_len )
+					wn_len = max_wn_len;
 
 				winds++;
 			}
@@ -2247,7 +2256,7 @@ CE_winctxt(enum locks lock, struct c_event *ce, bool cancel)
 			XAMENU_RESULT result;
 			short obnum = -1, dowhat = -1;
 
-			wlpu = build_windlist_pu(ce->client);
+			wlpu = build_windlist_pu(ce->client, &ce->md);
 			if (wlpu)
 			{
 				attach_menu(0, ce->client, wct->wt[0], 1, &wlpu->xmn, NULL, NULL);
