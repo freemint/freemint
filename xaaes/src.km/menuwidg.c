@@ -1258,12 +1258,12 @@ do_popup(Tab *tab, XA_TREE *wt, short item, short entry, TASK *click, short rdx,
 			x = rdx, y = rdy;
 #endif
 
-			if (m_inside(x, y, &k->drop))
+			/*if (m_inside(x, y, &k->drop))
 			{
 				k->x = x;
 				k->y = y;
 				popup(tab, -1);
-			}
+			}*/
 		}
 		else
 			popup(tab, entry);
