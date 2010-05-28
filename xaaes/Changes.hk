@@ -1,3 +1,34 @@
+28-05-2010
+----------
+
+taskman:
+
+fix numeric overflow when calculating vertical position of ticks in load-display.
+---------------------------------------------------------------------
+26-05-2010
+----------
+
+xversion (xversion.sh Makefile):
+
+
+use ls to find latest source avoiding -nt to be independant
+of the installed shell.
+---------------------------------------------------------------------
+taskman:
+
+taskmanager
+- in creating non-client-list first check if pid still valid.
+- add some additional NULL-pointer-checks.
+---------------------------------------------------------------------
+menuwidg:
+
+dont popup submenu at initial open of a popup.
+---------------------------------------------------------------------
+widgets:
+
+build_windlist_pu uses shorter entries now if screen-width < 800, depending on
+mouse-position 12 or 32 bytes, to avoid submenu overwriting popup.
+---------------------------------------------------------------------
 16-05-2010
 ----------
 
