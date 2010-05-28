@@ -14,7 +14,7 @@
 # -DM68000		build for 68000 (no mmu, no caches)
 # -DM68030		build for 68030
 # -DM68040		build for 68040-060
-# -DM68060		build for 68060 (same as M68040, currently)
+# -DM68060		build for 68060
 # -DMILAN		build Milan kernel
 # -DARANYM		build Aranym kernel
 # -DCOLDFIRE		build coldfire kernel
@@ -77,7 +77,7 @@ endif
 ifeq ($(kernel),060)
 MINT = mint060.prg
 CPU  = 060
-KERNELDEFS = -DM68040
+KERNELDEFS = -DM68060
 endif
 
 ifeq ($(kernel),117)
