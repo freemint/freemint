@@ -1444,9 +1444,10 @@ static bool calc_tm_bar( OBJECT *obtree, short item, short ind, long pinfo[] )
 static void make_tm_ticks( OBJECT *obtree, int ticks[] )
 {
 	int i;
+	ulong height = obtree[TM_CHART].ob_height;
 	for( i = 0; ticks[i]; i += 3 )
 	{
-		obtree[ticks[i]].ob_y = 10 * (obtree[TM_CHART].ob_height * ticks[i+1] + 5) / 1000;
+		obtree[ticks[i]].ob_y = (short)(10L * (height * (ulong)ticks[i+1] + 5L) / 1000L);
 		obtree[ticks[i]].ob_x = -2;
 		if(	(obtree[ticks[i]].ob_height = ticks[i+2] ) > 1 )
 			obtree[ticks[i]].ob_width = 5;
