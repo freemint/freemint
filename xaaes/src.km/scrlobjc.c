@@ -1912,7 +1912,8 @@ m_state_done:
 								}
 							}
 						}
-						list->slider(list, rdrw);
+						if (rdrw)
+							list->slider(list, true);
 					}
 				}
 			}
