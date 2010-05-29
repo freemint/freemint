@@ -1912,8 +1912,8 @@ m_state_done:
 								}
 							}
 						}
-						if (rdrw)
-							list->slider(list, true);
+						if (rdrw != NOREDRAW)
+							list->slider(list, rdrw);
 					}
 				}
 			}

@@ -191,7 +191,9 @@ info_on_exit(void *_info, struct proc *p, int nr)
 	 * else CH_EXIT wont get sent correctly
 	 */
 	if (!c)
+	{
 		exit_proc(0, p, nr);
+	}
 }
 
 static void _cdecl

@@ -431,7 +431,9 @@ d_g_progdef(struct widget_tree *wt, struct xa_vdi_settings *v)
 
 #if !PROGDEF_BY_SIGNAL
 	{
+#if CHECK_PROGDEF_ADDR
 		BASEPAGE *base = client->p->p_mem->base;
+#endif
 		p_handler pfunc;
 		long pret;
 

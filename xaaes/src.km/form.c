@@ -962,6 +962,8 @@ g_slist:
 			obj_draw(wt, v, new_focus, 0, NULL, *rl, md);
 		}
 	}
+	//else
+		//wt->focus.item = -1;
 
 done:
 	if (fr.no_exit)

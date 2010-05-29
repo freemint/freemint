@@ -621,8 +621,10 @@ XA_handler(void *_pb)
 				aes_tab[cmd].descr, cmd, p_getpid()));
 		}
 #endif
+
 //		if( client )
 //			BLOG((0, "%s[%d] made by %s",	aes_tab[cmd].descr, cmd, client->name));
+
 
 		cmd_routine = aes_tab[cmd].f;
 

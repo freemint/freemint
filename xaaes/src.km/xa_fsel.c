@@ -1430,7 +1430,7 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 				list->set(list, list->cur, SESET_STATE, ((long)(OS_BOXED|OS_SELECTED) << 16) | OS_SELECTED, NOREDRAW);
 			}
 		#endif
-			list->slider(list, true);
+			list->slider(list, NORMREDRAW);
 			list->flags |= SIF_DIRTY;
 		}
 	}
