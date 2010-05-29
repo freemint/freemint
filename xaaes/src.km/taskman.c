@@ -1449,7 +1449,7 @@ static void make_tm_ticks( OBJECT *obtree, int ticks[] )
 	{
 		obtree[ticks[i]].ob_y = (short)(10L * (height * (ulong)ticks[i+1] + 5L) / 1000L);
 		obtree[ticks[i]].ob_x = -2;
-		if(	(obtree[ticks[i]].ob_height = ticks[i+2] ) > 1 )
+		if( (obtree[ticks[i]].ob_height = ticks[i+2] ) > 1 )
 			obtree[ticks[i]].ob_width = 5;
 		else
 			obtree[ticks[i]].ob_width = 4;
@@ -1569,7 +1569,7 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 		wt = set_toolbar_widget(lock, wind, client, obtree, inv_aesobj(), 0/*WIP_NOTEXT*/, STW_ZEN, NULL, &or);
 		wt->exit_form = taskmanager_form_exit;
 
-		strcpy( wt->tree[TM_RESCHG].ob_spec.free_string, " toggle load" );
+		strcpy( wt->tree[TM_RESCHG].ob_spec.free_string, "toggle load" );
 		wt->focus = aesobj( obtree, TM_LIST );	/*cursor on list */
 		init_list_focus( obtree, TM_LIST, 0 );
 
