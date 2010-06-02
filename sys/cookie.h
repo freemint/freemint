@@ -67,6 +67,7 @@ long	del_rsvfentry	(char *name);
 # define COOKIE_XHDI	0x58484449L
 # define COOKIE_SCSI	0x53435349L
 # define COOKIE_NVDI	0x4e564449L
+# define COOKIE_fVDI	0x66564449L
 # define COOKIE_NOVA	0x4e4f5641L
 # define COOKIE_FSMC	0x46534d43L
 # define COOKIE_RSVF	0x52535646L
