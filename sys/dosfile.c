@@ -197,8 +197,19 @@ sys_f_close (short fd)
 	DIR **where, **_where;
 	long r;
 
-	TRACE (("Fclose: %d", fd));
+	DEBUG (("Fclose: %d", fd));
 
+# ifdef WITH_SINGLE_TASK_SUPPORT
+	/* this is for pure-debugger:
+	 * some progs call Fclose(-1) when they exit which would
+	 * cause pd to lose keyboard
+	 */
+	if( fd < 0 && (p->modeflags & M_SINGLE_TASK) )
+	{
+		DEBUG(("Fclose:return 0 for negative fd in singletask-mode."));
+		return 0;
+	}
+# endif
 	r = GETFILEPTR (&p, &fd, &f);
 	if (r) return r;
 
