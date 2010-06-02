@@ -397,6 +397,7 @@ set_mouse_timeout( void _cdecl (*f)(PROC *), short make, short delta, long to)
 	}
 }
 
+
 # ifndef MILAN
 static void put_key_into_buf(IOREC_T *iorec, uchar c0, uchar c1, uchar c2, uchar c3);
 static void
@@ -854,7 +855,7 @@ scan2asc(uchar scancode)
 
 	/* Ctrl key works as this regardless of the Alt/AltGr state.
 	 * Otherwise the keyboard shortcuts (like Ctrl/Alt/Q) don't work
-	 * anymore in N.AES. 
+	 * anymore in N.AES.
 	 */
 	if (shift & MM_CTRL)
 	{
@@ -908,13 +909,26 @@ void _cdecl
 ikbd_scan(ushort scancode, IOREC_T *rec)
 {
 	int tail = (scanb_tail + 1) & 0xf;
-	
+
 	if (tail != scanb_head)
 	{
 		scanb[scanb_tail].iorec = rec;
 		scanb[scanb_tail].scan = scancode;
 		scanb_tail = tail;
 	}
+
+# ifdef WITH_SINGLE_TASK_SUPPORT
+	if( curproc->modeflags & M_SINGLE_TASK )
+	{
+# ifdef DEBUG_INFO
+		extern short in_kernel;
+		DEBUG(("ikbd_scan directly for '%s' head=%d p_flags=%lx slices=%d in_kernel=%x", curproc->name, scanb_head, curproc->p_mem->base->p_flags, curproc->slices, in_kernel ));
+# endif
+		IkbdScan( curproc, 1);
+	}
+	else
+# endif
+
 	if (!ikbd_to)
 	{
 		ikbd_to = addroottimeout(0L, (void _cdecl(*)(PROC *))IkbdScan, 1);
@@ -930,14 +944,14 @@ IkbdScan(PROC *p, long arg)
 		ushort scancode;
 		ushort mod = 0, clk = 0, x = 0, scan, make;
 		uchar shift = *kbshft, ascii;
-	
+
 		iorec      = scanb[scanb_head].iorec;
 		scancode   = scanb[scanb_head].scan;
 		scanb_head = (scanb_head + 1) & 0xf;
-	
+
 		DEBUG(("ikbd_scan: scancode=%x, rec=%lx, h=%i, t=%i", scancode, iorec, scanb_head, scanb_tail));
 // 		display("ikbd_scan: scancode=%x, rec=%lx, h=%i, t=%i", scancode, iorec, scanb_head, scanb_tail);
-	
+
 		scan = scancode & 0xff;
 
 		switch (scan)
@@ -951,7 +965,7 @@ IkbdScan(PROC *p, long arg)
 				continue; //goto again;
 			}
 		}
-			
+
 		/* This is set during various keyboard table initializations
 		 * e.g. when the user calls Bioskeys(), to prevent processing
 		 * go according to incomplete keyboard translation tables.
@@ -1143,6 +1157,7 @@ IkbdScan(PROC *p, long arg)
 
 						kbdclick(scan);
 					}
+
 					continue;
 				}
 			}
@@ -1159,7 +1174,7 @@ IkbdScan(PROC *p, long arg)
 			/* Ozk:
 			 * Scan codes between 0x02 -> 0x0d are modified by 0x76
 			 */
-			if (scan >= 0x02 && scan <= 0x0d)	
+			if (scan >= 0x02 && scan <= 0x0d)
 				scan += 0x76;
 		}
 
@@ -1253,7 +1268,7 @@ IkbdScan(PROC *p, long arg)
 			 */
 			uchar *vec = user_keytab->deadkeys;
 			ascii = scan2asc((uchar)scan);
-	
+
 			if (vec)
 			{
 				static unsigned int last_deadkey_scan = 0;
@@ -1266,20 +1281,20 @@ IkbdScan(PROC *p, long arg)
 					deadkey = *vec++;
 					base = *vec++;
 					accented = *vec++;
-					
+
 					if (ascii == deadkey)
 					{
 						is_deadkey = 1;
 						accented = 0;
 						break;
 					}
-					
+
 					if (deadkey == last_deadkey && ascii == base)
 						break;
-					
+
 					accented = 0;
 				}
-				
+
 				if (last_deadkey)
 				{
 					if (accented)
@@ -1291,7 +1306,7 @@ IkbdScan(PROC *p, long arg)
 						if (ascii && ascii != ' ' && ascii != '\t' && (ascii == last_deadkey ? 0:1))
 							put_key_into_buf(iorec, shift, (uchar)scan, 0, ascii);
 					}
-					
+
 					last_deadkey = 0;
 				}
 				else
@@ -1360,7 +1375,7 @@ set_kbrate_ms(short delay, short rate)
 	if (rate >= 0)
 		keyrep_time = rate ? ((long)((long)(rate & 0x00ff) * 1000) / 50) : 20;
 }
-	
+
 /*
  * The XBIOS' Kbrate() function
  */
@@ -1382,7 +1397,7 @@ sys_b_kbrate(short delay, short rate)
 	ret |= (mrate = (unsigned short)((keyrep_time * 50) / 1000) & 0x00ff);
 #else
 	ret |= (unsigned short)((keyrep_time * 50) / 1000) & 0x00ff;
-#endif	
+#endif
 	set_kbrate_ms(delay, rate);
 
 #ifdef MILAN
@@ -1723,7 +1738,7 @@ load_internal_table(void)
 	len = strlen((char *)tos_keytab->altgr) + 1;
 	quickmove(p, tos_keytab->altgr, len);
 	p += len;
-	
+
 	len = strlen((char *)tos_keytab->deadkeys) + 1;
 	quickmove(p, tos_keytab->deadkeys, len);
 
@@ -1824,11 +1839,11 @@ init_keybd(void)
 	TRACE(("%s(): BIOS keyboard table at 0x%08lx", __FUNCTION__, tos_keytab));
 
 # ifndef WITHOUT_TOS
-	delayrate = TRAP_Kbrate(-1, -1);	
+	delayrate = TRAP_Kbrate(-1, -1);
 # else
 	delayrate = 0x0f02;	/* this is what TRAP_Kbrate() normally returns */
 # endif
-	
+
 	set_kbrate_ms(delayrate >> 8, delayrate & 0x00ff);
 
 	TRACE(("%s(): delay 0x%04ld, rate 0x%04ld", __FUNCTION__, keydel_time, keyrep_time));
