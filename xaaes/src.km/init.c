@@ -51,6 +51,7 @@
 
 //long module_exit(void);
 
+short check_stack_alignment( long e );
 
 short my_global_aes[16];
 
@@ -72,7 +73,7 @@ static int
 imp_msg(void)
 {
 	long ci;
-	
+
 	display(" ---=== IMPORTNAT!! ===---");
 	display("");
 	display("If you have read the CHANGES.txt, you");
@@ -94,6 +95,7 @@ bootmessage(void)
 {
 	BLOG((true, "%s", Aes_display_name));
 	BLOG((true, "MultiTasking AES for MiNT"));
+#if DISPCREDITS
 	BLOG((true, ""));
 	BLOG((true, "(c) 1995-1999 Craig Graham, Johan Klockars, Martin Koehling, Thomas Binder"));
 	BLOG((true, "              and other assorted dodgy characters from around the world..."));
@@ -103,7 +105,10 @@ bootmessage(void)
 	BLOG((true, ""));
 	BLOG((true, "Using Harald Siegmunds NKCC"));
 	BLOG((true, ""));
-	BLOG((true, "Date: %s, time: %s", __DATE__, __TIME__));
+#else
+	BLOG((true,"Part of freemint ("SPAREMINT_URL")." ));
+
+#endif
 	BLOG((true, "Supports mouse wheels"));
 	BLOG((true, "Compile time switches enabled:"));
 
@@ -293,25 +298,43 @@ fail:		if (buf) kfree(buf);
 	return false;
 }
 #endif
+
+/*
+ * return alignment-value
+ *
+ * do not inline!
+ */
+short check_stack_alignment( long stk )
+{
+	/* Read the current stack pointer value */
+
+	if( stk & 1L )
+		return 1;
+	if( stk & 2L )
+		return 2;
+	return 4;
+}
+
 /*
  * Module initialisation
  * - setup internal data
  * - start main kernel thread
  */
+unsigned short stack_align = 0;
 static Path start_path;
 static const struct kernel_module *self = NULL;
 
 long
 init(struct kentry *k, const struct kernel_module *km) //const char *path)
 {
+	long stk = (long)get_sp();
 	long err = 0L;
-
 	bool first = true;
-	
+	struct proc *rootproc;
+
 	/* setup kernel entry */
 	kentry = k;
 	self = km;
-
 	next_res = 0L;
 
 	bzero(&G, sizeof(G));
@@ -325,6 +348,7 @@ again:
 	bzero(&cfg, sizeof(cfg));
 	bzero(&S, sizeof(S));
 	bzero(&C, sizeof(C));
+	C.SingleTaskPid = -1;	/* just for sure */
 
 	strcpy(C.start_path, start_path);
 #if BOOTLOG
@@ -339,7 +363,24 @@ again:
 		BLOG(( false, "\n~~~~~~~~~~~~ XaAES start up!! ~~~~~~~~~~~~~~~~" ));
 	else
 		BLOG((false, "\n~~~~~~~~~~~~ XaAES restarting! ~~~~~~~~~~~~~~~"));
-#endif	
+#endif
+
+	/* reset single-flags in case of previous fault */
+	rootproc = pid2proc(0);
+	rootproc->modeflags &= ~(M_SINGLE_TASK|M_DONT_STOP);
+
+	/**** check if stack is sane ****/
+	stack_align |= check_stack_alignment(stk);
+	if( stack_align == 1 )
+	{
+		BLOG(( 0,"WARNING: stack is odd:%lx!", stk ));
+	}
+	else if( stack_align == 4 )
+			BLOG(( 0,"stack is long-aligned:%lx", stk ));
+	else
+			BLOG(( 0,"stack is word-aligned:%lx", stk ));
+
+
 	if (check_kentry_version())
 	{
 		err = ENOSYS;
@@ -347,8 +388,9 @@ again:
 	}
 
 	/* remember loader */
-	
+
 	loader_pid = p_getpid();
+	//get_curproc()->pgrp = 0;
 	loader_pgrp = p_getpgrp();
 
 	/* do some sanity checks of the installation
@@ -371,11 +413,12 @@ again:
 		}
 		else
 			flag = sysfile_exists(sysdir, "moose.xdd");
-			
+
 		if (flag)
 		{
-			BLOG((/*00000005*/true, "ERROR: There exist an moose.xdd in your FreeMiNT sysdir."));
-			BLOG((/*00000006*/true, "       Please remove it before starting the XaAES kernel module!"));
+			BLOG((true,
+"ERROR: There exists a moose.xdd in your FreeMiNT sysdir.\n"
+"       Please remove it before starting the XaAES kernel module!"));
 			err = EINVAL;
 			goto error;
 		}
@@ -386,13 +429,15 @@ again:
 		flag = sysfile_exists(sysdir, "moose_w.adi");
 		if (!flag)
 			flag = sysfile_exists(sysdir, "moose.adi");
-		
+
 		if (flag)
 		{
-			BLOG((true, "ERROR: There exist an moose.adi in your FreeMiNT sysdir."));
-			BLOG((true, " sysdir = '%s'", sysdir));
-			BLOG((true, "       Please remove it and install it in the XaAES module directory"));
-			BLOG((true, "       before starting the XaAES kernel module!"));
+			BLOG((true,
+"ERROR: There exists a moose.adi in your FreeMiNT sysdir.\n"
+" sysdir = '%s'\n"
+"       Please remove it and install it in the XaAES module directory\n"
+"       before starting the XaAES kernel module!\n",
+			sysdir));
 			err = EINVAL;
 			goto error;
 		}
@@ -427,7 +472,7 @@ again:
 	 */
 	strcpy(cfg.xobj_name, "xa_xtobj.rsc");
 
-	strcpy(cfg.rsc_name, RSCNAME);
+	strcpy(cfg.rsc_name, "xaaes.rsc");
 
 	cfg.font_id = STANDARD_AES_FONTID;		/* Font id to use */
 	cfg.double_click_time = DOUBLE_CLICK_TIME;
@@ -507,7 +552,11 @@ again:
 	strcpy(C.Aes->proc_name,"AESSYS  ");
 
 	/* Where were we started? */
+#if OZK_ENH /* or was it MINT_ENH? */
+	strcpy(C.Aes->home_path, self->fpath);
+#else
 	strcpy(C.Aes->home_path, self->path);
+#endif
 // 	strcat(C.Aes->home_path, "/");
 #if 0
 	/* strip off last element */
@@ -526,7 +575,7 @@ again:
 			*name = '\0';
 	}
 #endif
-	BLOG((false, "module path: '%s'", C.Aes->home_path));
+	BLOG((false, "home_path: '%s'", C.Aes->home_path));
 
 	C.Aes->xdrive = d_getdrv();
 	d_getpath(C.Aes->xpath, 0);
@@ -539,13 +588,15 @@ again:
 		flag = sysfile_exists(C.Aes->home_path, "moose_w.adi");
 		if (!flag)
 			flag = sysfile_exists(C.Aes->home_path, "moose.adi");
-		
+
 		if (!flag)
 		{
-			
-			BLOG((/*00000008*/true, "ERROR: There exist no moose.adi in your XaAES module directory."));
-			BLOG((true, " -> '%s'", C.Aes->home_path));
-			BLOG((/*00000009*/true, "       Please install it before starting the XaAES kernel module!"));
+
+			BLOG((true,
+"ERROR: There exist no moose.adi in your XaAES module directory.\n"
+"	  -> '%s'"
+"   Please install it before starting the XaAES kernel module!",
+				C.Aes->home_path));
 			err = EINVAL;
 			goto error;
 		}
@@ -554,20 +605,18 @@ again:
 
 	/* clear my_global_aes[0] for old gemlib */
 	my_global_aes[0] = 0;
-	
+
 	/* requires mint >= 1.15.11 */
 	C.mvalidate = true;
 
 	/* Print a text boot message */
 	if (first)
 		bootmessage();
-	BLOG((false, "bootmessage ok!"));
 
 	/* Setup the kernel OS call jump table */
-	
+
 	setup_handler_table();
-	
-	BLOG((false, "setup_handler_table ok!"));
+
 
 	/* set bit 3 in conterm, so Bconin returns state of ALT and CTRL in upper 8 bit */
 	{
@@ -576,7 +625,7 @@ again:
 		helper = (s_system(S_GETBVAL, 0x0484, 0)) | 8;
 		s_system(S_SETBVAL, 0x0484, (char)helper);
 	}
-	BLOG((false, "set bit 3 in conterm ok!"));
+//	BLOG((false, "set bit 3 in conterm ok!"));
 
 #if GENERATE_DIAGS
 	{ short nkc_vers = nkc_init(); DIAGS(("nkc_init: version %x", nkc_vers)); }
@@ -613,9 +662,10 @@ again:
 	default_options.wheel_mode = WHL_AROWWHEEL;
 
 	default_options.clwtna = 1;
+	default_options.alt_shortcuts = 3;
 
 	C.Aes->options = default_options;
-	
+
 	/* Parse the config file */
 	load_config();
 
@@ -646,11 +696,13 @@ again:
 		p->p_sigmask = 0xffffffffUL;
 
 		while (!(C.shutdown & QUIT_NOW))
+		{
 			sleep(WAIT_Q, (long)&loader_pid);
-		
+		}
+
+		BLOG((1,"AESSYS kthread exited - C.shutdown = %x", C.shutdown));
 // 		display("AESSYS kthread exited - C.shutdown = %x", C.shutdown);
-		BLOG((false, "AESSYS kthread exited - C.shutdown = %x", C.shutdown));
-	
+
 #if GENERATE_DIAGS
 		/* Close the debug output file */
 		if (D.debug_file)
@@ -680,15 +732,16 @@ again:
 	detach_extension((void *)-1L, XAAES_MAGIC);
 	detach_extension((void *)-1L, XAAES_MAGIC_SH);
 
-	/* succeeded */
-	return 0;
-
 error:
+	/* succeeded */
+	//return 0;
+
 #if GENERATE_DIAGS
 	/* Close the debug output file */
 	if (D.debug_file)
 		kernel_close(D.debug_file);
 #endif
+	BLOG((0,"init:return %ld", err));
 	return err;
 }
 

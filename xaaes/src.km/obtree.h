@@ -69,11 +69,10 @@ short			ob_remove(OBJECT *obtree, short object);
 short			ob_add(OBJECT *obtree, short parent, short aobj);
 void			ob_order(OBJECT *obtree, short object, ushort pos);
 struct xa_aes_object	ob_find_flag(OBJECT *obtree, short f, short mf, short stopf);
-//struct xa_aes_object	ob_find_any_flag(OBJECT *obtree, short f, short mf, short stopf);
 short			ob_count_flag(OBJECT *obtree, short f, short mf, short stopf, short *count);
 short			ob_count_any_flag(OBJECT *obtree, short f, short mf, short stopf, short *count);
 struct xa_aes_object	ob_find_flst(OBJECT *obtree, short f, short s, short mf, short ms, short stopf, short stops);
-struct xa_aes_object	ob_find_any_flst(OBJECT *obtree, short f, short s, short mf, short ms, short stopf, short stops);
+struct xa_aes_object	ob_find_any_flst(OBJECT *obtree, short f, short s, short mf, short ms/*, short stopf, short stops*/);
 /* Definitions for 'flags' parameter to ob_find_next_any_flagstate() */
 #define OBFIND_VERT		0x0000	/* To make source more readable */
 #define OBFIND_HOR		0x0001	/* horizontal search, else vertical search */
@@ -89,6 +88,7 @@ struct xa_aes_object	ob_find_next_any_flagstate(struct widget_tree *wt, struct x
 //struct xa_aes_object	ob_find_next_any_flag(OBJECT *obtree, short start, short f);
 short	ob_find_prev_any_flag(OBJECT *obtree, short start, short f);
 struct xa_aes_object	ob_find_cancel(OBJECT *ob);
+struct xa_aes_object ob_find_type(OBJECT *tree, short t );
 
 void			ob_fix_shortcuts(OBJECT *obtree, bool not_hidden);
 struct xa_aes_object 	ob_find_shortcut(OBJECT *tree, ushort nk);
@@ -235,13 +235,13 @@ set_aesobj_uplink(OBJECT **t, struct xa_aes_object *c, struct xa_aes_object *s, 
 		if (obl)
 		{
 			obl->save_to_r = *(RECT *)&obl->to.tree[obl->to.item].ob_x;
-			
+
 			obl->to.tree[obl->to.item].ob_x = aesobj_ob(c)->ob_x;
 			obl->to.tree[obl->to.item].ob_y = aesobj_ob(c)->ob_y;
-			
+
 			obl->d.pmisc[1] = *oblink;
 			*oblink = obl;
-			
+
 			obl->savestop = *s;
 			*t = obl->to.tree;
 			*c = *s = aesobj(obl->to.tree, obl->to.item);
@@ -256,7 +256,7 @@ set_aesobj_downlink(OBJECT **t, struct xa_aes_object *c, struct xa_aes_object *s
 	if (*oblink)
 	{
 		OBJECT *tree = (*oblink)->to.tree + (*oblink)->to.item;
-		
+
 		tree->ob_x = (*oblink)->save_to_r.x;
 		tree->ob_y = (*oblink)->save_to_r.y;
 		tree->ob_width = (*oblink)->save_to_r.w;
@@ -277,12 +277,12 @@ clean_aesobj_links(struct oblink_spec **oblink)
 	while (*oblink)
 	{
 		OBJECT *tree = (*oblink)->to.tree + (*oblink)->to.item;
-		
+
 		tree->ob_x = (*oblink)->save_to_r.x;
 		tree->ob_y = (*oblink)->save_to_r.y;
 		tree->ob_width = (*oblink)->save_to_r.w;
 		tree->ob_height = (*oblink)->save_to_r.h;
-		
+
 		*oblink = (*oblink)->d.pmisc[1];
 	}
 }

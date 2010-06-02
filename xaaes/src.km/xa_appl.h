@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
  *                                        2004 F.Naumann & O.Skancke
@@ -36,10 +36,9 @@ void	client_nicename(struct xa_client *client, const char *n, bool autonice);
 struct xa_client *init_client(enum locks lock, bool sysclient);
 
 bool is_client(struct xa_client *client);
-void exit_proc(enum locks lock, struct proc *proc, int code);
+int exit_proc(enum locks lock, struct proc *proc, int code);
 void exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, bool detach);
 
-void init_apgi_infotab(void);
 
 AES_function
 	XA_appl_init,

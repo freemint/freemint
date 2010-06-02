@@ -43,6 +43,7 @@
 #include "widgets.h"
 
 #include "xa_appl.h"
+#include "info.h"
 #include "xa_evnt.h"
 #include "xa_form.h"
 #include "xa_fsel.h"
@@ -70,10 +71,13 @@
 #include "mint/ssystem.h"
 #include "cookie.h"
 
+#ifndef COOKIE_fVDI
+# define COOKIE_fVDI	0x66564449L
+#endif
 
 struct xa_module_api xam_api;
 
- STATIC char *xaaes_sysfile(const char *);
+STATIC char *xaaes_sysfile(const char *);
 
 static OBSPEC * _cdecl
 api_object_get_spec(OBJECT *ob)
@@ -104,7 +108,7 @@ api_ob_spec_xywh(OBJECT *obtree, short obj, RECT *r)
 	ob_spec_xywh(obtree, obj, r);
 }
 
-static void _cdecl 
+static void _cdecl
 api_object_spec_wh(OBJECT *ob, short *w, short *h)
 {
 	object_spec_wh(ob, w, h);
@@ -241,24 +245,22 @@ static void _cdecl
 api_load_img(char *fname, XAMFDB *img)
 {
 	load_image(fname, img);
-}	
-	
+}
+
 static long _cdecl
 module_register(long mode, void *_p)
 {
 	long ret = E_OK;
-	BLOG((false, "module_register: mode = %ld, _p = %lx", mode, _p));
 
 	switch ((mode & 0xefffffff))
 	{
 		case MODREG_KERNKEY:
 		{
 			struct kernkey_entry *list;
-			
+
 			if (mode & MODREG_UNREGISTER)
 			{
 				struct kernkey_entry *this = _p, *prev = NULL;
-				BLOG((false, " -- unregister KERNKEY"));
 				list = C.kernkeys;
 				while (list)
 				{
@@ -270,12 +272,12 @@ module_register(long mode, void *_p)
 								this->next_key = list->next_key;
 							else
 								this = list->next_key;
-								
+
 							if (prev)
 								prev->next_key = this;
 							else
 								C.kernkeys = this;
-							
+
 							kfree(list);
 							break;
 						}
@@ -301,17 +303,16 @@ module_register(long mode, void *_p)
 			else
 			{
 				struct kernkey_entry *new;
-				BLOG((false, " -- register KERNKEY"));
 				new = kmalloc(sizeof(*new));
 				if (new)
 				{
 					struct kernkey_entry *p = _p;
-					
+
 					new->next_key = NULL;
 					new->next_act = NULL;
 					new->act = p->act;
 					new->key = p->key;
-					
+
 					list = C.kernkeys;
 					while (list)
 					{
@@ -344,7 +345,6 @@ module_register(long mode, void *_p)
 			break;
 		}
 	}
-	BLOG((false, " returning %ld", ret));
 	return ret;
 }
 
@@ -366,7 +366,7 @@ setup_xa_module_api(void)
 	xam_api.load_resource	= LoadResources;
 	xam_api.resource_tree	= ResourceTree;
 	xam_api.obfix		= obfix;
-	
+
 	xam_api.duplicate_obtree = duplicate_obtree;
 	xam_api.free_object_tree = free_object_tree;
 
@@ -380,7 +380,7 @@ setup_xa_module_api(void)
 	xam_api.object_get_popinfo = api_object_get_popinfo;
  	xam_api.object_get_tedinfo = api_object_get_tedinfo;
 	xam_api.object_spec_wh	= api_object_spec_wh;
-	
+
 	xam_api.ob_spec_xywh	= api_ob_spec_xywh;
 	xam_api.getbest_cicon	= api_getbest_cicon;
 	xam_api.obj_offset	= api_obj_offset;
@@ -491,7 +491,7 @@ set_wrkin(short *in, short dev)
 		in[i] = 1;
 	in[10] = 2;
 	for (i = 11; i < 16; i++)
-		in[i] = 0;	
+		in[i] = 0;
 }
 
 static void
@@ -500,7 +500,7 @@ calc_average_fontsize(struct xa_vdi_settings *v, short *maxw, short *maxh, short
 	short i, j, count = 0, cellw, tmp;
 	short temp[8];
 	unsigned long wch = 0;
-	
+
 	for (i = 0; i < 256; i++)
 	{
 		j = vqt_width(v->handle, i, &cellw, &tmp, &tmp);
@@ -534,7 +534,7 @@ k_init(unsigned long vm)
 	struct xa_vdi_settings *v = &global_vdi_settings;
 
 // 	display("\033H");		/* cursor home */
-	
+
 	{
 		short f, *t;
 
@@ -542,11 +542,12 @@ k_init(unsigned long vm)
 			*t++ = -1;
 	}
 
-// 	setup_xa_module_api();
+//	setup_xa_module_api();
 
 	cfg.videomode = (short)vm;
+	BLOG((0,"k_init: videomode=%d",cfg.videomode ));
 
-	xa_vdiapi = v->api = init_xavdi_module();	
+	xa_vdiapi = v->api = init_xavdi_module();
 	{
 		short *p;
 
@@ -559,8 +560,30 @@ k_init(unsigned long vm)
 		else
 			BLOG((false, "could not determine nvdi version"));
 #endif
+		if (!(s_system(S_GETCOOKIE, COOKIE_fVDI, (unsigned long)&p)))
+		{
+			C.fvdi_version = *p;
+			BLOG((false, "fvdi version = %x", C.fvdi_version));
+		}
+#if BOOTLOG
+		else
+			BLOG((false, "could not determine fvdi version"));
+#endif
 	}
+	/* try to open virtual wk - necessary when physical wk is already open
+	 * ? how to know if physical wk is open and its handle without AES?
+	 */
+	if( C.fvdi_version == 0 && C.nvdi_version != 0 /* && cfg.videomode == 0*/ )
+	{
+		v->handle = 0;
+		C.P_handle = 0;
+		set_wrkin(work_in, cfg.videomode);
+		BLOG((0,"1st v_opnvwk" ));
+		v_opnvwk(work_in, &v->handle, work_out);
+		BLOG((0,"->%d, wh=%d/%d %d colors", v->handle, work_out[0], work_out[1], work_out[13]));
 
+	}
+	if ( v->handle <= 0 )
 	{
 		short mode = 1;
 		long vdo, r;
@@ -569,14 +592,16 @@ k_init(unsigned long vm)
 		if (r != 0)
 			vdo = 0;
 
-		if (cfg.videomode)
+		BLOG((0,"k_init:vdo=%lx vm=%lx video=%d", vdo, vm, cfg.videomode ));
+
+		if ( cfg.videomode)
 		{
 #ifndef ST_ONLY
 			if ((vm & 0x80000000) && mvdi_api.dispatch)
 			{
 // 				long ret;
 				/* Ozk:  Resolution Change on the Milan;
-				 * 
+				 *
 				 * I'm guessing like never before here; I found out that one can select
 				 * the resolution by stuffing the device ID in work_out[45] and then
 				 * open VDI device 5, just like we do it for the Falcon. However, this
@@ -589,7 +614,7 @@ k_init(unsigned long vm)
 				 * Hopefully this will work on all Milans!
 				 * Update: Ofcourse this didnt work on all Milans!
 				 */
-				
+
 				/*
 				 * First try...
 				 */
@@ -600,7 +625,7 @@ k_init(unsigned long vm)
 				 *				 * Didnt work on Vido's Milan - 060 w/rage. System freeze!
 				 */
 // 				vsetmode(vm & 0xffff);
-				
+
 				/*
 				 * Third try...			 * Works with some resolutio on my Milan - VERY unstable. Whe
 				 * This is the same as		 * it freezes, it freezes so good I have to use reset to recover
@@ -614,7 +639,7 @@ k_init(unsigned long vm)
 				 *				* other machines yet... didnt work with nvdi 5.03 installed!
 				 */
 // 				mvdi_device(vm & 0x0000ffff, 0L, DEVICE_SETDEVICE, (long *)&ret);
-				
+
 				/*
 				 * Fifth try...
 				 * this is the same method as used on the Falcon,
@@ -651,7 +676,7 @@ k_init(unsigned long vm)
 				{
 					nvmode &= ~(1 << 3);		/* Set 320 pixels */
 				}
-				
+
 				work_out[45] = nvmode;
 				mode = 5;
 // 				display("Falcon video: mode %x, %x", cfg.videomode, nvmode);
@@ -669,12 +694,18 @@ k_init(unsigned long vm)
 					BLOG((false, "must be between 1 and 10"));
 				}
 			}
-		}
+		}	/*/if (cfg.videomode)*/
 		else
 		{
 			BLOG((false, "Default screenmode"));
 		}
 // 		display("set mode %x", mode);
+
+		/*{
+		short w, h, wb, hb, hdl = graf_handle(&w,&h,&wb,&hb);
+		BLOG((false, "Screenmode is: %d hdl=%d", mode, hdl));
+
+		}*/
 		BLOG((false, "Screenmode is: %d", mode));
 
 #ifndef ST_ONLY
@@ -695,7 +726,9 @@ k_init(unsigned long vm)
 			sc = s_system(S_CTRLCACHE, -1L, 0L);
 			s_system(S_CTRLCACHE, sc & ~3, cm);
 			set_wrkin(work_in, mode);
+			BLOG((0,"k_init: v_opnwk() mode=%d", mode ));
 			v_opnwk(work_in, &(C.P_handle), work_out);
+			BLOG((0,"k_init: v_opnwk() handle=%d", C.P_handle ));
 			s_system(S_CTRLCACHE, sc, cm);
 		}
 #else
@@ -714,17 +747,15 @@ k_init(unsigned long vm)
 		 * We need to get rid of the cursor
 		 */
 		v_exit_cur(C.P_handle);
-		BLOG((false, "v_exit_cur ok!"));	
-	}
 
-	get_syspalette(C.P_handle, screen.palette);
-// 	set_defaultpalette(C.P_handle);
-	/*
-	 * Open us a virtual workstation for XaAES to play with
-	 */
-	v->handle = C.P_handle;
-	set_wrkin(work_in, 1);
-	v_opnvwk(work_in, &v->handle, work_out);
+		/*
+		 * Open us a virtual workstation for XaAES to play with
+		 */
+		//v->handle = C.P_handle;
+
+		set_wrkin(work_in, C.P_handle);
+		v_opnvwk(work_in, &v->handle, work_out);
+	}
 
 	if (v->handle == 0)
 	{
@@ -733,9 +764,13 @@ k_init(unsigned long vm)
 	}
 	BLOG((false, "Virtual work station opened: %d", v->handle));
 
+		get_syspalette(v->handle/*C.P_handle*/, screen.palette);
+// 	set_defaultpalette(C.P_handle);
 	/*
 	 * Setup the screen parameters
 	 */
+	if( C.P_handle == 0 )
+		C.P_handle = v->handle;	/* why is phys-handle used at all? */
 	screen.r.x = screen.r.y = 0;
 	screen.r.w = work_out[0] + 1;
 	screen.r.h = work_out[1] + 1;
@@ -743,34 +778,47 @@ k_init(unsigned long vm)
 	screen.display_type = D_LOCAL;
 	v->screen = screen.r;
 	C.Aes->vdi_settings = v;
-	vs_clip(C.P_handle, 1, (short *)&screen.r);
+	vs_clip(/*C.P_*/v->handle, 1, (short *)&screen.r);
 	(*v->api->set_clip)(v, &screen.r);
-	
+
 	(*v->api->f_perimeter)(v, 0);
 
 // 	v_show_c(C.P_handle, 0);
 // 	hidem();
 // 	xa_graf_mouse(ARROW, NULL, NULL, false);
 // 	showm();
-	
+
 	objc_rend.dial_colours = MONO ? bw_default_colours : default_colours;
 
 	vq_extnd(v->handle, 1, work_out);	/* Get extended information */
 	screen.planes = work_out[4];		/* number of planes in the screen */
-	
+
+	BLOG((0,"lookup-support:%d, planes:%d", work_out[5], work_out[4] ));
+
+	/* WARNING: This is halfway nonsense! */
+	if( screen.planes > 32 || screen.planes < 1 )
+	{
+		BLOG((1,"planes wrong: %d", screen.planes ));
+		screen.planes = screen.colours >> 8;
+		BLOG((1,"planes now: %d", screen.planes ));
+		if( screen.planes > 32 || screen.planes < 1 )
+		{
+			BLOG((1,"planes still wrong: %d", screen.planes ));
+			return 1;
+		}
+	}
 // 	if (screen.planes > 8)
 // 		set_defaultpalette(v->handle);
 // 	get_syspalette(C.P_handle, screen.palette);
 
 	screen.pixel_fmt = detect_pixel_format(v);
-
-	BLOG((false, "Video info: width(%d/%d), planes :%d, colours %d",
-		screen.r.w, screen.r.h, screen.planes, screen.colours));
+	BLOG((false, "Video info: width(%d/%d), planes :%d, colours %d pixel-format %d palsz=%ld",
+		screen.r.w, screen.r.h, screen.planes, screen.colours, screen.pixel_fmt, sizeof(screen.palette)));
 
 // 	display("Video info: width(%d/%d), planes :%d, colours %d, pixelfmt = %d",
 // 		screen.r.w, screen.r.h, screen.planes, screen.colours, screen.pixel_fmt);
 
-	
+
 	/*
 	 * If we are using anything apart from the system font for windows,
 	 * better check for GDOS and load the fonts.
@@ -795,11 +843,12 @@ k_init(unsigned long vm)
 	screen.c_max_h = v->cell_h;
 	calc_average_fontsize(v, &screen.c_max_w, &screen.c_max_h, &screen.c_max_dist[0]);
 
+	/*
 	BLOG((false, "stdfont: id = %d, size = %d, cw=%d, ch=%d",
  		screen.standard_font_id, screen.standard_font_point, screen.c_max_w, screen.c_max_h));
 	BLOG((false, "smlfont: id = %d, size = %d, cw=%d, ch=%d",
 		screen.small_font_id, screen.small_font_point, screen.c_min_w, screen.c_min_h));
-
+	*/
 	/*
 	 * Init certain things in the info_tab used by appl_getinfo()
 	 */
@@ -812,84 +861,103 @@ k_init(unsigned long vm)
 	BLOG((false, "Display Device: Phys_handle=%d, Virt_handle=%d", C.P_handle, v->handle));
 	BLOG((false, " size=[%d,%d], colours=%d, bitplanes=%d", screen.r.w, screen.r.h, screen.colours, screen.planes));
 
-	
+
 // 	get_syspalette(C.P_handle, screen.palette);
 
-	/* Load the system resource files */
-	BLOG((false, "Loading system resource file '%s'", cfg.rsc_name));
-	if (!(resource_name = xaaes_sysfile(cfg.rsc_name)))
-	{
-		display(/* 00000002 */"ERROR: Can't find AESSYS resource file '%s'", cfg.rsc_name);
-		return -1;
-	}
-	else
-	{
-		C.Aes_rsc = LoadResources(C.Aes,
-					  resource_name,
-					  NULL,
-					  DU_RSX_CONV, // screen.c_max_w, // < 8 ? 8 : screen.c_max_w,
-					  DU_RSY_CONV, //screen.c_max_h, // < 16 ? 16 : screen.c_max_h); //DU_RSX_CONV, DU_RSY_CONV);
-					  true);
-		kfree(resource_name);
-		BLOG((false, "system resource = %lx (%s)", C.Aes_rsc, cfg.rsc_name));
-	}	
-	if (!C.Aes_rsc)
-	{
-		display(/*00000003*/"ERROR: Can't load system resource file '%s'", cfg.rsc_name);
-		return -1;
-	}
-// 	set_syspalette(C.P_handle, screen.palette);
-// 	set_syscolor();
-
-	/*
-	 * Version check the aessys resouce
+	/* Load the system resource files
+	 * 1. try: xaaes<version>.rsc
+	 * 2. try: name from xaaes.cnf
 	 */
 	{
-		OBJECT *about = ResourceTree(C.Aes_rsc, ABOUT_XAAES);
-		
-		if ((ob_count_objs(about, 0, -1) < RSC_VERSION)   ||
-		     about[RSC_VERSION].ob_type != G_TEXT     ||
-		    (strcmp(object_get_tedinfo(about + RSC_VERSION, NULL)->te_ptext, "0.0.8")))
+		char *RscFiles[4] = {RSCNAME, cfg.rsc_name, 0};
+		int i;
+		for(i=0; RscFiles[i]; i++)
 		{
-			display(/*00000004*/"ERROR: Outdated AESSYS resource file (%s) - update to recent version!", cfg.rsc_name);
-// 			display("       also make sure you read CHANGES.txt!!");
+			if( RscFiles[i][0] )
+			{
+				BLOG((false, "Loading system resource file '%s'", RscFiles[i]));
+				if ( !(resource_name = xaaes_sysfile(RscFiles[i] ) ) )
+				{
+					display(/* 00000002 */"ERROR: Can't find AESSYS resource file '%s'", RscFiles[i]);
+					continue;
+					//return -1;
+				}
+				else
+				{
+					C.Aes_rsc = LoadResources(C.Aes,
+								  resource_name,
+								  NULL,
+								  DU_RSX_CONV, // screen.c_max_w, // < 8 ? 8 : screen.c_max_w,
+								  DU_RSY_CONV, //screen.c_max_h, // < 16 ? 16 : screen.c_max_h); //DU_RSX_CONV, DU_RSY_CONV);
+								  true);
+					BLOG((false, "system resource = %lx (%s)", C.Aes_rsc, resource_name));
+					kfree(resource_name);
+				}
+				if (!C.Aes_rsc)
+				{
+					display(/*00000003*/"ERROR: Can't load system resource file '%s'", RscFiles[i]);
+					continue;
+					//return -1;
+				}
+			// 	set_syspalette(C.P_handle, screen.palette);
+			// 	set_syscolor();
+				/*
+				 * Version check the aessys resouce
+				 */
+				{
+					OBJECT *about = ResourceTree(C.Aes_rsc, ABOUT_XAAES);
+					int gt = 0;
+
+					if ((ob_count_objs(about, 0, -1) < RSC_VERSION)   ||
+					     about[RSC_VERSION].ob_type != G_TEXT     ||
+					    ( gt = strcmp(object_get_tedinfo(about + RSC_VERSION, NULL)->te_ptext, RSCFILE_VERSION)))
+					{
+						char *s = gt > 0 ? "too new" : gt < 0 ? "too old" : "wrong";
+						display("ERROR: %s resource file (%s) - use version "RSCFILE_VERSION"!", s, RscFiles[i]);
+						//return -1;
+					}
+					else
+						break;
+				}
+			}
+		}
+		if( !RscFiles[i] )
+		{
+			display( "unable to find resource. stop." );
 			return -1;
 		}
 	}
 	/*
 	 *  ---------        prepare the window widgets renderer module  --------------
 	 */
-	 
+
 	main_xa_theme(&C.Aes->xmwt);
 	main_object_render(&C.Aes->objcr_module);
-	
-	BLOG((false, "Attempt to open object render module..."));
+
 	if (!(*C.Aes->objcr_module->init_module)(&xam_api, &screen, cfg.gradients))
 	{
-		BLOG((false, "object render returned NULL"));
+		BLOG((true, "object render returned NULL"));
 		return -1;
 	}
-	BLOG((false, "Attempt to open new object theme..."));
 	if (init_client_objcrend(C.Aes))
-	{	BLOG((false, "Opening object theme failed"));
+	{
+		BLOG((true, "Opening object theme failed"));
 		return -1;
 	}
-	
-	BLOG((false, "Attempt to open window widget renderer..."));
+
 	if (!(C.Aes->wtheme_handle = (*C.Aes->xmwt->init_module)(&xam_api, &screen, (char *)&cfg.widg_name, cfg.gradients)))
 	{
-		display("Window widget module returned NULL");
+		BLOG((true,"Window widget module returned NULL"));
 		return -1;
 	}
 
 	/*
 	 *  ---------        prepare the AES object renderer module  --------------
 	 */
-	
+
 	/*
 	 * Setup default widget theme
 	 */
-	BLOG((false, "Setting up default window widget theme..."));
 	init_client_widget_theme(C.Aes);
 
 #if FILESELECTOR
@@ -897,11 +965,10 @@ k_init(unsigned long vm)
 	init_fsel();
 #endif
 	init_client_mdbuff(C.Aes);		/* In xa_appl.c */
-	
+
 	/* Create the root (desktop) window
 	 * - We don't want messages from it, so make it a NO_MESSAGES window
 	 */
-	BLOG((false, "creating root window"));
 // 	display("creating root window");
 	root_window = create_window(
 				NOLOCKING,
@@ -928,27 +995,22 @@ k_init(unsigned long vm)
 	strcpy(C.Aes->mnu_clientlistname, mnu_clientlistname);
 	fix_menu(C.Aes, C.Aes->std_menu, root_window, true);
 	set_menu_widget(root_window, C.Aes, C.Aes->std_menu);
-	
+
 	/* Set a default desktop */
-	BLOG((false, "setting default desktop"));
 	{
 		OBJECT *ob = get_xa_desktop();
 		*(RECT*)&ob->ob_x = root_window->r;
 		(ob + DESKTOP_LOGO)->ob_x = (root_window->wa.w - (ob + DESKTOP_LOGO)->ob_width) / 2;
 		(ob + DESKTOP_LOGO)->ob_y = (root_window->wa.h - (ob + DESKTOP_LOGO)->ob_height) / 2;
 		C.Aes->desktop = new_widget_tree(C.Aes, ob);
-		
+
 		set_desktop_widget(root_window, C.Aes->desktop);
 		set_desktop(C.Aes, false);
 	}
- 	BLOG((false, "really opening now..."));
- 	BLOG((false, "opening root window"));
 	open_window(NOLOCKING, root_window, screen.r);
 	S.open_windows.root = root_window;
-	BLOG((false, "..root window opened"));
 	/* Initial iconified window coords */
 	C.iconify = iconify_grid(0);
-	BLOG((false, "initialized iconify grid"));
 // 	v_show_c(v->handle, 1); /* 0 = reset */
 
 // 	display("Open taskman -- perhaps");
@@ -957,29 +1019,24 @@ k_init(unsigned long vm)
 
 // 	display("redrawing menu");
 	redraw_menu(NOLOCKING);
-	BLOG((false, "Menu redrawn"));
 // 	display("all fine - return 0");
-	
+
 	/*
 	 * Setup mn_set for menu_settings()
 	 */
-	cfg.mn_set.display = cfg.popup_timeout;
-	cfg.mn_set.drag = cfg.popout_timeout;
-	cfg.mn_set.delay = 250;
-	cfg.mn_set.speed = 0;
-	cfg.mn_set.height = root_window->wa.h / screen.c_max_h;
-	BLOG((false, "mn_set for menu_settings setup"));
+	cfg.menu_settings.mn_set.display = cfg.popup_timeout;
+	cfg.menu_settings.mn_set.drag = cfg.popout_timeout;
+	cfg.menu_settings.mn_set.delay = 250;
+	cfg.menu_settings.mn_set.speed = 0;
+	cfg.menu_settings.mn_set.height = root_window->wa.h / screen.c_max_h;
 	v_show_c(C.P_handle, 0);
-	BLOG((false, "show mouse, return sucess"));
 	return 0;
 }
 
 void
 init_helpthread(enum locks lock, struct xa_client *client)
 {
-	BLOG((false, "init_helpthread"));
 	open_taskmanager(0, client, 0);
-	BLOG((false, "init_helpthread done"));
 }
 static const char *dont_load_list[] =
 {
@@ -1019,7 +1076,7 @@ load_accs(void)
 	if (len)
 	{
 		int i = 0;
-		
+
 		while (buf[i])
 		{
 			if (buf[i] == '/')
@@ -1045,7 +1102,6 @@ load_accs(void)
 		strcpy(nenv, accpath);
 		strcpy(nenv + strlen(accpath), buf);
 		put_env(0, nenv);
-		BLOG((false, "ACCPATH= not existing, creating %s", nenv));
 	}
 	strcpy(cfg.acc_path, buf);
 
@@ -1056,7 +1112,6 @@ load_accs(void)
 	name = buf + len;
 	len = sizeof(buf) - len;
 
-	BLOG((false, "load_accs: enter (%s)", buf));
 
 	r = kernel_opendir(&dirh, buf);
 	if (r == 0)

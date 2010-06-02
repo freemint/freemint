@@ -79,7 +79,7 @@ struct co_pdlg_sub_parms
 	short obj;
 };
 
-	
+
 struct xa_callout_parms
 {
 	long	ret;

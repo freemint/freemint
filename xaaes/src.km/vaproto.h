@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
  *                                        2004 F.Naumann & O.Skancke
@@ -26,7 +26,7 @@
 
 /*
  * AV-protocol, extended definitions from 26.06.1995
- * 
+ *
  * You can find a detailed description of these messages
  * in the Thing documentation (thing.hyp, starting from version 0.54)
  */
