@@ -56,7 +56,7 @@
 #define SC_SHFT_DNARROW		0x5032
 #define SC_SHFT_LFARROW		0x4b34
 #define SC_SHFT_RTARROW		0x4d36
-/* 
+/*
  * Left/Right arrows have different scan with ctrl,
  * while up/down arrows are unaffected by ctrl
  */

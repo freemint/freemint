@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
  *                                        2004 F.Naumann & O.Skancke
@@ -31,13 +31,13 @@
 
 /* Version numbers */
 #define VER_MAJOR	0
-#define VER_MINOR	998
+#define VER_MINOR	999
 #define ARCH_TARGET	AES_ARCH_M68K
 /*#define DEV_STATUS	(AES_DEVSTATUS_ALPHA|AES_FDEVSTATUS_STABLE)*/
 #define DEV_STATUS	AES_DEVSTATUS_ALPHA
 
 /* This is only used in wind_get(WF_XAAES) which will be removed */
-#define HEX_VERSION	0x0998
+#define HEX_VERSION	0x09
 
 #define SHORT_NAME		"XaAES"
 #define AES_ID		"   " SHORT_NAME

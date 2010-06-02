@@ -143,7 +143,6 @@ found1:
 _nkc_init:
 |------------- fetch addresses of TOS' key scan code translation tables
 
-	moveml	d2/a2,sp@-		| backup registers
 	moveql	#-1,d0			| the function is also used to
 	movel	d0,sp@- 		| change the addresses| values
 	movel	d0,sp@- 		| of -1 as new addresses tell
@@ -157,8 +156,8 @@ _nkc_init:
 	movel	a0@+,pkey_shift 	| get ^shifted table
 	movel	a0@,pkey_caps		| get ^CapsLock table
 
+exit1:
 	movew	#VERSION,d0		| load version #
-	moveml	sp@+,d2/a2		| restore registers
 	rts				| bye
 
 |***************************************************************************
