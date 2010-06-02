@@ -38,7 +38,7 @@
 # define FATAL KERNEL_FATAL
 
 /* XXX -> dynamic mapping from kernel */
-# define XAAES_MAGIC    0x58614145L 
+# define XAAES_MAGIC    0x58614145L
 # define XAAES_MAGIC_SH 0x58614146L
 
 /*

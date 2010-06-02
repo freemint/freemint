@@ -27,6 +27,7 @@
 #ifndef _matchpat_h
 #define _matchpat_h
 
+char *strmchr( char *s, char *p );
 int match_pattern(char *t, char *pat, bool auto_wc);
 
 #endif /* _matchpat_h */

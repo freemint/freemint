@@ -1,5 +1,7 @@
 
-XAAESDEFS += -DRSCNAME="\"xaaes.rsc\""
+XAAESDEFS += -DRSCNAME="\"xaaes009.rsc\""
+XAAESDEFS += -DRSCFILE_VERSION=\"0.0.9\"
+
 XAAESDEFS += -DWIDGNAME="\"xaaeswdg.rsc\""
 XAAESDEFS += -DRSCHNAME="\"xaaes.h\""
 XAAESDEFS += -DWIDGHNAME="\"xaaeswdg.h\""

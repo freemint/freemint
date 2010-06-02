@@ -52,29 +52,6 @@ setchecked(OBJECT *ob, bool set)
 }
 
 static inline bool
-disable_object(OBJECT *ob, bool set)
-{
-	if (set)
-	{
-		if (!(ob->ob_state & OS_DISABLED)) {
-			ob->ob_state |= OS_DISABLED;
-			return true;
-		}
-		else
-			return false;
-	}
-	else
-	{
-		if ((ob->ob_state & OS_DISABLED)) {
-			ob->ob_state &= ~OS_DISABLED;
-			return true;
-		}
-		else
-			return false;
-	}
-}
-
-static inline bool
 object_disabled(OBJECT *ob)
 { return (ob->ob_state & OS_DISABLED); }
 
@@ -128,6 +105,30 @@ object_deselect(OBJECT *ob)
 	ob->ob_state &= ~OS_SELECTED;
 }
 
+#if AGGRESSIVE_INLINING
+static inline bool
+disable_object(OBJECT *ob, bool set)
+{
+	if (set)
+	{
+		if (!(ob->ob_state & OS_DISABLED)) {
+			ob->ob_state |= OS_DISABLED;
+			return true;
+		}
+		else
+			return false;
+	}
+	else
+	{
+		if ((ob->ob_state & OS_DISABLED)) {
+			ob->ob_state &= ~OS_DISABLED;
+			return true;
+		}
+		else
+			return false;
+	}
+}
+
 static inline bool
 set_aesobj_uplink(OBJECT **t, struct xa_aes_object *c, struct xa_aes_object *s, struct oblink_spec **oblink)
 {
@@ -137,13 +138,13 @@ set_aesobj_uplink(OBJECT **t, struct xa_aes_object *c, struct xa_aes_object *s, 
 		if (obl)
 		{
 			obl->save_to_r = *(RECT *)&obl->to.tree[obl->to.item].ob_x;
-			
+
 			obl->to.tree[obl->to.item].ob_x = aesobj_getx(c);
 			obl->to.tree[obl->to.item].ob_y = aesobj_gety(c);
-			
+
 			obl->d.pmisc[1] = *oblink;
 			*oblink = obl;
-			
+
 			obl->savestop = *s;
 			*t = obl->to.tree;
 			*c = *s = aesobj(obl->to.tree, obl->to.item);
@@ -158,7 +159,7 @@ set_aesobj_downlink(OBJECT **t, struct xa_aes_object *c, struct xa_aes_object *s
 	if (*oblink)
 	{
 		OBJECT *tree = (*oblink)->to.tree + (*oblink)->to.item;
-		
+
 		tree->ob_x = (*oblink)->save_to_r.x;
 		tree->ob_y = (*oblink)->save_to_r.y;
 		tree->ob_width = (*oblink)->save_to_r.w;
@@ -179,13 +180,25 @@ clean_aesobj_links(struct oblink_spec **oblink)
 	while (*oblink)
 	{
 		OBJECT *tree = (*oblink)->to.tree + (*oblink)->to.item;
-		
+
 		tree->ob_x = (*oblink)->save_to_r.x;
 		tree->ob_y = (*oblink)->save_to_r.y;
 		tree->ob_width = (*oblink)->save_to_r.w;
 		tree->ob_height = (*oblink)->save_to_r.h;
-		
+
 		*oblink = (*oblink)->d.pmisc[1];
 	}
 }
+#else
+bool
+disable_object(OBJECT *ob, bool set);
+bool
+set_aesobj_uplink(OBJECT **t, struct xa_aes_object *c, struct xa_aes_object *s, struct oblink_spec **oblink);
+short
+ob_offset(OBJECT *obtree, struct xa_aes_object object, short *mx, short *my);
+bool
+set_aesobj_downlink(OBJECT **t, struct xa_aes_object *c, struct xa_aes_object *s, struct oblink_spec **oblink);
+void
+clean_aesobj_links(struct oblink_spec **oblink);
+#endif
 #endif /* _ob_inlines_h_ */

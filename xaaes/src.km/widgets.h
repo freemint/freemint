@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
  *                                        2004 F.Naumann & O.Skancke
@@ -75,6 +75,7 @@ int	XA_slider(struct xa_window *w, int which, long total, long visible, long sta
 bool	m_inside(short x, short y, RECT *o);
 void	redraw_menu(enum locks lock);
 void	done_widget_active(struct xa_window *wind, int i);
+bool iconify_action(enum locks lock, struct xa_window *wind, const struct moose_data *md);
 
 void	free_xawidget_resources(struct xa_widget *widg);
 

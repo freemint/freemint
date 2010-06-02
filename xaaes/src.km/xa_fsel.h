@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
  *                                        2004 F.Naumann & O.Skancke
@@ -78,5 +78,9 @@ void init_fsel(void);
 AES_function
 	XA_fsel_input,
 	XA_fsel_exinput;
+
+/* exported helper functions */
+bool
+sortbyname(struct scroll_info *list, struct scroll_entry *e1, struct scroll_entry *e2);	/* xa_fsel.c */
 
 #endif /* _xa_fsel_h */

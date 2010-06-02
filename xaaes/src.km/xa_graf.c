@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
  *                                        2004 F.Naumann & O.Skancke
@@ -37,7 +37,7 @@
 #include "xa_evnt.h"
 
 
-#define THICKNESS	2
+#define THICKNESS 2
 
 /*
  *	Ghost outline dragging routines.
@@ -72,7 +72,7 @@ rect_dist_xy(struct xa_client *client, short x, short y, RECT *r, RECT *d)
 
 	return d;
 }
-	
+
 void
 check_wh_cp(RECT *c, COMPASS cp, short minw, short minh, short maxw, short maxh)
 {
@@ -86,9 +86,10 @@ check_wh_cp(RECT *c, COMPASS cp, short minw, short minh, short maxw, short maxh)
 				c->w = minw;
 			}
 		}
+		/* fallthrough */
 		case N_:
 		{
-			if (minh && minh && c->h < minh)
+			if (minh && c->h < minh)
 			{
 				c->y -= (minh - c->h);
 				c->h = minh;
@@ -100,9 +101,15 @@ check_wh_cp(RECT *c, COMPASS cp, short minw, short minh, short maxw, short maxh)
 			if (minh && c->h < minh)
 				c->h = minh;
 		}
+		/* fallthrough */
 		case W_:
 		{
-			if (minw && c->w < minw)
+			if (maxw && c->w > maxw)
+			{
+				c->x -= (c->w - maxw);
+				c->w = maxw;
+			}
+			else if (minw && c->w < minw)
 			{
 				c->x -= (minw - c->w);
 				c->w = minw;
@@ -114,6 +121,7 @@ check_wh_cp(RECT *c, COMPASS cp, short minw, short minh, short maxw, short maxh)
 			if (minw && c->w < minw)
 				c->w = minw;
 		}
+		/* fallthrough */
 		case S_:
 		{
 			if (minh && c->h < minh)
@@ -128,10 +136,18 @@ check_wh_cp(RECT *c, COMPASS cp, short minw, short minh, short maxw, short maxh)
 				c->h = minh;
 			}
 		}
+		/* fallthrough */
 		case E_:
 		{
+			if (maxw && c->w > maxw)
+			{
+				c->x += (c->w - maxw);
+				c->w = maxw;
+			}
 			if (minw && c->w < minw)
+			{
 				c->w = minw;
+			}
 			break;
 		}
 		default:{};
@@ -160,29 +176,35 @@ widen_rectangle(COMPASS xy, short mx, short my, RECT start, const RECT *d)
 {
 	RECT r = start;
 
+	if( xy < E_ && my + d->y < MENU_H ) /* cannot go above main-menubar */
+		my = MENU_H - d->y;
 	switch (xy)
 	{
 	case NW:
 		r.x = mx + d->x;
 		r.w = (start.x + start.w) - r.x;
+	/* v */
 	case N_:
 		r.y = my + d->y;
 		r.h = (start.y + start.h) - r.y;
 		break;
 	case SW:
 		r.h = my - r.y + d->h;
+	/* v */
 	case W_:
 		r.x = mx + d->x;
 		r.w = (start.x + start.w) - r.x;
 		break;
 	case SE:
 		r.w = mx - r.x + d->w;
+	/* v */
 	case S_:
 		r.h = my - r.y + d->h;
 		break;
 	case NE:
 		r.y = my + d->y;
 		r.h = (start.y + start.h) - r.y;
+	/* v */
 	case E_:
 		r.w = mx - r.x + d->w;
 		break;
@@ -203,7 +225,7 @@ move_rectangle(short mx, short my, RECT r, const RECT *d)
 STATIC bool
 rect_changed(const RECT *n, const RECT *o)
 {
-	return	   n->x != o->x
+	return		 n->x != o->x
 		|| n->y != o->y
 		|| n->w != o->w
 		|| n->h != o->h;
@@ -239,22 +261,22 @@ new_box(struct xa_vdi_settings *v, const RECT *r, RECT *o)
 /* HR 150202: complete redesign of the functions drag_box and rubberbox.
               By removing the mouse distance calculation from these functions
               and widely use of the RECT structure, they now look rediculously
-              simple. (Which is what they are, whether in a computer or not). 
+              simple. (Which is what they are, whether in a computer or not).
 */
 /* HR 150202: make rubber_box omnidirectional. ;-) */
 
 void
 rubber_box(struct xa_client *client, COMPASS cp,
-	   RECT r,
-	   const RECT *dist,
-	   int minw, int minh,
-	   int maxw, int maxh,
-	   RECT *last)
+		 RECT r,
+		 const RECT *dist,
+		 int minw, int minh,
+		 int maxw, int maxh,
+		 RECT *last)
 {
 	struct xa_vdi_settings *v = client->vdi_settings;
 	short x, y, mb;
 	RECT old = r;
-	
+
 	(*v->api->l_color)(v, G_BLACK);
 
 	(*v->api->wr_mode)(v, MD_XOR);
@@ -319,7 +341,7 @@ XA_graf_dragbox(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	CONTROL(8,3,0)
 
-	r.x = pb->intin[2];	/* Strange binding. */
+	r.x = pb->intin[2]; /* Strange binding. */
 	r.y = pb->intin[3];
 	r.w = pb->intin[0];
 	r.h = pb->intin[1];
@@ -355,9 +377,9 @@ XA_graf_rubberbox(enum locks lock, struct xa_client *client, AESPB *pb)
 		r.h = 0;
 
 	rubber_box(client, SE, r, &d,
-		pb->intin[2],		/* minimum */
+		pb->intin[2], 	/* minimum */
 		pb->intin[3],
-		screen.r.w,		/* maximum */
+		screen.r.w, 	/* maximum */
 		screen.r.h,
 		&r);
 
@@ -365,7 +387,7 @@ XA_graf_rubberbox(enum locks lock, struct xa_client *client, AESPB *pb)
 	pb->intout[1] = r.w;
 	pb->intout[2] = r.h;
 
-	DIAG((D_graf,client,"_rubbox x=%d, y=%d, w=%d, h=%d",pb->intin[0],pb->intin[1],r.w,r.h));	
+	DIAG((D_graf,client,"_rubbox x=%d, y=%d, w=%d, h=%d",pb->intin[0],pb->intin[1],r.w,r.h));
 
 	return XAC_DONE;
 }
@@ -386,12 +408,12 @@ XA_graf_watchbox(enum locks lock, struct xa_client *client, AESPB *pb)
 			wt = new_widget_tree(client, obtree);
 
 		pb->intout[0] = obj_watch( wt,
-					   C.Aes->vdi_settings,
-					   aesobj(wt->tree, pb->intin[1]),
-					   pb->intin[2],
-					   pb->intin[3],
-					   NULL,
-					   NULL);
+						C.Aes->vdi_settings,
+						aesobj(wt->tree, pb->intin[1]),
+						pb->intin[2],
+						pb->intin[3],
+						NULL,
+						NULL);
 
 		DIAG((D_graf,client,"_watchbox"));
 	}
@@ -440,10 +462,10 @@ XA_graf_slidebox(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	short d;
 	RECT p, c,				/* parent/child rectangles. */
-	     dist, last;			/* mouse distance, result. */
+			 dist, last;			/* mouse distance, result. */
 	OBJECT *tree = (OBJECT*)pb->addrin[0];
-	int   pi = pb->intin[0],
-	      ci = pb->intin[1];
+	int 	pi = pb->intin[0],
+				ci = pb->intin[1];
 
 	CONTROL(3,1,1)
 	if (validate_obtree(client, tree, "XA_graf_slidebox:"))
@@ -453,7 +475,7 @@ XA_graf_slidebox(enum locks lock, struct xa_client *client, AESPB *pb)
 		c = *(RECT *)&tree[ci].ob_x;
 		ob_offset(tree, aesobj(tree, ci), &c.x, &c.y);
 
-		rect_dist(client, &c, &dist);		/* relative position of mouse in child rectangle */
+		rect_dist(client, &c, &dist); 	/* relative position of mouse in child rectangle */
 
 		DIAG((D_graf,client,"XA_graf_slidebox dx:%d, dy:%d, p:%d/%d,%d/%d c:%d/%d,%d/%d",
 			dist.x, dist.y, p, c));
@@ -467,7 +489,7 @@ XA_graf_slidebox(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		pb->intout[0] = d < 0 ? 0 : (d > SL_RANGE ? SL_RANGE : d);
 
-		DIAG((D_graf,client,"    --     d:%d last.x%d, last.y%d  p:%d/%d,%d/%d c:%d/%d,%d/%d",
+		DIAG((D_graf,client," 	 -- 		d:%d last.x%d, last.y%d  p:%d/%d,%d/%d c:%d/%d,%d/%d",
 			d, last.x, last.y, p, c));
 	}
 	return XAC_DONE;
@@ -490,7 +512,7 @@ XA_graf_growbox(enum locks lock, struct xa_client *client, AESPB *pb)
 	int he = pb->intin[7];
 	short dx, dy, dw, dh;
 	int f;
-	
+
 	dx = (xe - x) / GRAF_STEPS;
 	dy = (ye - y) / GRAF_STEPS;
 	dw = (we - w) / GRAF_STEPS;
@@ -512,8 +534,8 @@ XA_graf_growbox(enum locks lock, struct xa_client *client, AESPB *pb)
 			Vsync();
 #endif
 	}
-	
-	x = pb->intin[0];						/* Reset to initial area */
+
+	x = pb->intin[0]; 					/* Reset to initial area */
 	y = pb->intin[1];
 	w = pb->intin[2];
 	h = pb->intin[3];
@@ -534,9 +556,9 @@ XA_graf_growbox(enum locks lock, struct xa_client *client, AESPB *pb)
 	showm();
 
 	wr_mode(MD_TRANS);
-	
+
 	pb->intout[0] = 1;
-	
+
 DIAG((D_graf,client->pid,"_growbox"));
 
 	return XAC_DONE;
@@ -554,7 +576,7 @@ XA_graf_movebox(enum locks lock, struct xa_client *client, AESPB *pb)
 	int ye = pb->intin[5];
 	short dx, dy;
 	int f;
-	
+
 	CONTROL(6,1,0)
 
 	dx = (xe - x) / GRAF_STEPS;
@@ -574,8 +596,8 @@ XA_graf_movebox(enum locks lock, struct xa_client *client, AESPB *pb)
 			Vsync();
 #endif
 	}
-	
-	x = pb->intin[2];					/* Reset to go back over same area */
+
+	x = pb->intin[2]; 				/* Reset to go back over same area */
 	y = pb->intin[3];
 
 	for (f = 0; f < GRAF_STEPS; f++)	/* Erase them again */
@@ -592,9 +614,9 @@ XA_graf_movebox(enum locks lock, struct xa_client *client, AESPB *pb)
 	showm();
 
 	wr_mode(MD_TRANS);
-	
+
 	pb->intout[0] = 1;
-	
+
 DIAG((D_graf,client->pid,"_movebox"));
 
 	return XAC_DONE;
@@ -656,19 +678,19 @@ static MFORM M_HAND_MOUSE =
 	0x3000, 0x0E00, 0x01C0, 0x0030 }
 };
 #else
-/* non standard sliding hand */ 
+/* non standard sliding hand */
 static MFORM M_HAND_MOUSE =
 {
 	4,4,1,0,1,
 	{ /* Mask data */
-	0x7A00, 0x7F40, 0xFFE0, 0xFFF0, 
-	0xFFF8, 0x3FFC, 0x0FFE, 0xC7FF, 
-	0xEFFF, 0xFFFF, 0xFFFF, 0x7FFF, 
+	0x7A00, 0x7F40, 0xFFE0, 0xFFF0,
+	0xFFF8, 0x3FFC, 0x0FFE, 0xC7FF,
+	0xEFFF, 0xFFFF, 0xFFFF, 0x7FFF,
 	0x3FFF, 0x0FFF, 0x03FE, 0x00FC },
 	{ /* Cursor data */
-	0x5000, 0x2A00, 0x1540, 0xCAA0, 
-	0x3550, 0x0AA8, 0x0404, 0x0252, 
-	0xC402, 0xAA01, 0x5001, 0x3001, 
+	0x5000, 0x2A00, 0x1540, 0xCAA0,
+	0x3550, 0x0AA8, 0x0404, 0x0252,
+	0xC402, 0xAA01, 0x5001, 0x3001,
 	0x0C01, 0x0300, 0x00C0, 0x0000 }
 };
 #endif
@@ -894,14 +916,14 @@ static MFORM M_POINTSLIDE_MOUSE =
 {
 	0x0008, 0x0007, 0x0001, 0x0000, 0x0001,
 	{ /* Mask data */
-	0x03C0, 0x03C0, 0x3FFC, 0x3FFC, 
-	0x1FF8, 0x0FF0, 0x07E0, 0x03C0, 
-	0x03C0, 0x07E0, 0x0FF0, 0x1FF8, 
+	0x03C0, 0x03C0, 0x3FFC, 0x3FFC,
+	0x1FF8, 0x0FF0, 0x07E0, 0x03C0,
+	0x03C0, 0x07E0, 0x0FF0, 0x1FF8,
 	0x3FFC, 0x3FFC, 0x03C0, 0x03C0 },
 	{ /* Cursor data */
-	0x0000, 0x0180, 0x0180, 0x1FF8, 
-	0x0FF0, 0x07E0, 0x03C0, 0x0180, 
-	0x0180, 0x03C0, 0x07E0, 0x0FF0, 
+	0x0000, 0x0180, 0x0180, 0x1FF8,
+	0x0FF0, 0x07E0, 0x03C0, 0x0180,
+	0x0180, 0x03C0, 0x07E0, 0x0FF0,
 	0x1FF8, 0x0180, 0x0180, 0x0000 }
 };
 
@@ -1007,21 +1029,23 @@ get_mform(short m_shape)
 		case OUTLN_CROSS:
 			ret_mf = &M_OCRS_MOUSE;
 			break;
-		case XACRS_BUBBLE_DISC:			/* The Data Uncertain logo */
+		case XACRS_BUBBLE_DISC: 		/* The Data Uncertain logo */
 			ret_mf = &M_BUBD_MOUSE;
 			break;
-		case XACRS_RESIZER:			/* The 'resize window' cursor */
+		case XACRS_RESIZER: 		/* The 'resize window' cursor */
 			ret_mf = &M_SE_SIZER_MOUSE;
 			break;
 		case XACRS_NE_SIZER:
 			ret_mf = &M_NE_SIZER_MOUSE;
 			break;
-		case XACRS_MOVER:			/* The 'move window' cursor */
+		case XACRS_MOVER: 		/* The 'move window' cursor */
 			ret_mf = &M_MOVER_MOUSE;
 			break;
-		case XACRS_VERTSIZER:			/* The 'vertical size window' cursor */
+		case X_UPDOWN:
+		case XACRS_VERTSIZER: 		/* The 'vertical size window' cursor */
 			ret_mf = &M_VERTSIZER_MOUSE;
 			break;
+		case X_LFTRT:
 		case XACRS_HORSIZER:			/* The 'horizontal size window' cursor */
 			ret_mf = &M_HORSIZER_MOUSE;
 			break;
@@ -1082,9 +1106,9 @@ set_client_mouse(struct xa_client *client, short which, short m_shape, MFORM *mf
 	short *m;
 	MFORM **dmf;
 	bool set = which & 0x8000;
-	
+
 	which &= ~0x8000;
-// 	display("set client mouse %x, set=%s", which, set ? "true":"false");
+//	display("set client mouse %x, set=%s", which, set ? "true":"false");
 	switch (which)
 	{
 		case SCM_MAIN:
@@ -1170,7 +1194,7 @@ XA_xa_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 			 * it is correct
 			 */
 			set_client_mouse(client, SCM_PREV, client->save_mouse, client->save_mouse_form);
-// 			xa_graf_mouse(client->save_mouse, client->save_mouse_form, client, false);
+//			xa_graf_mouse(client->save_mouse, client->save_mouse_form, client, false);
 			DIAG((D_f,client,"M_RESTORE; mouse_form from %d to %d", client->mouse, client->save_mouse));
 			set_client_mouse(client, SCM_MAIN|0x8000, client->save_mouse, client->save_mouse_form);
 		}
@@ -1184,25 +1208,25 @@ XA_xa_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 			 * mouse cursor, the current becomes new previous. Consecutive M_PREVIOUS calls
 			 * will then toggle between the two last used mouse shapes.
 			 */
-// 			xa_graf_mouse(client->prev_mouse, client->prev_mouse_form, client, false);
+//			xa_graf_mouse(client->prev_mouse, client->prev_mouse_form, client, false);
 			DIAG((D_f,client,"M_PREVIOUS; mouse_form from %d to %d", client->mouse, C.mouse));
 			pm			= client->mouse;
-			pmf			= client->mouse_form;
+			pmf 		= client->mouse_form;
 			set_client_mouse(client, SCM_MAIN|0x8000, client->prev_mouse, client->prev_mouse_form);
 			set_client_mouse(client, SCM_PREV, pm, pmf);
 		}
 		else
 		{
 			MFORM *ud = NULL;
-			
+
 			if (m == USER_DEF && (ud = (MFORM *)pb->addrin[0]))
 			{
 				client->user_def = *ud;
 				ud = &client->user_def;
 			}
-			
+
 			set_client_mouse(client, SCM_PREV, client->mouse, client->mouse_form);
-// 			xa_graf_mouse(m, ud, client, false);
+//			xa_graf_mouse(m, ud, client, false);
 			set_client_mouse(client, SCM_MAIN|0x8000, m, ud);
 			DIAG((D_f,client,"mouse_form to %d(%lx)", m, ud));
 		}
@@ -1245,7 +1269,7 @@ XA_xa_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 	{
 		if (m == M_SAVE)
 		{
-			client->save_mouse      = client->mouse;
+			client->save_mouse			= client->mouse;
 			client->save_mouse_form = client->mouse_form;
 			DIAG((D_f,client,"M_SAVE; mouse_form %d", client->mouse));
 		}
@@ -1258,11 +1282,11 @@ XA_xa_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 			 */
 			client->prev_mouse = client->save_mouse;
 			client->prev_mouse_form = client->save_mouse_form;
-			
+
 			xa_graf_mouse(client->save_mouse, client->save_mouse_form, client, false);
 			DIAG((D_f,client,"M_RESTORE; mouse_form from %d to %d", client->mouse, client->save_mouse));
-			client->mouse       = client->save_mouse;
-			client->mouse_form  = client->save_mouse_form;
+			client->mouse 			= client->save_mouse;
+			client->mouse_form	= client->save_mouse_form;
 		}
 		else if (m == M_PREVIOUS)
 		{
@@ -1277,22 +1301,22 @@ XA_xa_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 			xa_graf_mouse(client->prev_mouse, client->prev_mouse_form, client, false);
 			DIAG((D_f,client,"M_PREVIOUS; mouse_form from %d to %d", client->mouse, C.mouse));
 			pm			= client->mouse;
-			pmf			= client->mouse_form;
-			client->mouse		= client->prev_mouse;
+			pmf 		= client->mouse_form;
+			client->mouse 	= client->prev_mouse;
 			client->mouse_form	= client->prev_mouse_form;
 			client->prev_mouse	= pm;
-			client->prev_mouse_form	= pmf;
+			client->prev_mouse_form = pmf;
 		}
 		else
 		{
 			MFORM *ud = NULL; //(MFORM *)pb->addrin[0];
-			
+
 			if (m == USER_DEF && (ud = (MFORM *)pb->addrin[0]))
 			{
 				client->user_def = *ud;
 				ud = &client->user_def;
 			}
-			
+
 			client->prev_mouse = client->mouse;
 			client->prev_mouse_form = client->mouse_form;
 
@@ -1354,35 +1378,35 @@ XA_graf_mkstate(enum locks lock, struct xa_client *client, AESPB *pb)
 	if (client)
 	{
 		struct mbs mbs;
-			
+
 		/* Ozk:
 		 * Make sure button events are delivered here .. eb_model doesnt
 		 * enter evnt_multi() inside of its own popup implementation.
 		 * Why, oh WHY! cannot programmers use the OS's functions!?
 		 */
-		
-// 		while (dispatch_selcevent(client, cXA_deliver_button_event))
-// 			;
+
+//		while (dispatch_selcevent(client, cXA_deliver_button_event))
+//			;
 #if 1
 		if (client->md_head->clicks == -1 && client->md_head == client->md_tail)
 		{
 			if (!dispatch_selcevent(client, cXA_deliver_button_event, false))
 				dispatch_selcevent(client, cXA_button_event, false);
-			
-// 			if (client->md_head->clicks == -1 && client->md_head == client->md_tail)
-// 				check_mouse(client, &client->md_head->cstate, NULL,NULL);
 
-// 			check_mouse(client, &pb->intout[3], &pb->intout[1], &pb->intout[2]);
-// 			vq_key_s(C.P_handle, &pb->intout[4]);
+//			if (client->md_head->clicks == -1 && client->md_head == client->md_tail)
+//				check_mouse(client, &client->md_head->cstate, NULL,NULL);
+
+//			check_mouse(client, &pb->intout[3], &pb->intout[1], &pb->intout[2]);
+//			vq_key_s(C.P_handle, &pb->intout[4]);
 		}
-// 		else
-// 		{
+//		else
+//		{
 		get_mbstate(client, &mbs);
 		pb->intout[1] = mbs.x;
 		pb->intout[2] = mbs.y;
 		pb->intout[3] = mbs.b;
 		pb->intout[4] = mbs.ks;
-// 		}
+//		}
 #else
 		get_mbstate(client, &mbs);
 		pb->intout[1] = mbs.x;
