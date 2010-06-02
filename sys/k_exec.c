@@ -438,7 +438,7 @@ sys_pexec(short mode, const void *p1, const void *p2, const void *p3)
 		if (!strcmp(get_curproc()->name, "AESSYS"))
 		{
 			struct pcred *cred = p->p_cred;
-			
+
 			assert(cred && cred->ucr);
 
 			aes_hack = 1;
@@ -892,6 +892,17 @@ create_process(const void *filename, const void *cmdline, const void *newenv,
 
 	b = (BASEPAGE *) base->loc;
 
+	DEBUG(("create_process: p_flags=%lx", b->p_flags));
+
+# ifdef WITH_SINGLE_TASK_SUPPORT
+	if ((b->p_flags & F_SINGLE_TASK) && (rootproc->modeflags & M_SINGLE_TASK))
+	{
+		DEBUG(("create_process(single-task):already in single-task-mode."));
+		r = EPERM;
+		goto leave;
+	}
+# endif
+
 	if (stack)
 	{
 		stack += 256 + b->p_tlen + b->p_dlen + b->p_blen;
@@ -906,6 +917,20 @@ create_process(const void *filename, const void *cmdline, const void *newenv,
 	p = fork_proc(0, &r);
 	if (!p)
 		goto leave;
+
+# ifdef WITH_SINGLE_TASK_SUPPORT
+	if (b->p_flags & F_SINGLE_TASK)
+	{
+		DEBUG(("create_process: setting M_SINGLE_TASK for %s", filename));
+		p->modeflags |= M_SINGLE_TASK;
+	}
+	if (b->p_flags & F_DONT_STOP)
+	{
+		DEBUG(("create_process: setting M_DONT_STOP for %s", filename));
+		p->modeflags |= M_DONT_STOP;
+	}
+	b->p_flags &= ~(F_SINGLE_TASK | F_DONT_STOP);
+# endif
 
 	/* jr: add Pexec information to PROC struct */
 	strncpy(p->cmdlin, b->p_cmdlin, 128);
