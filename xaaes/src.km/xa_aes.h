@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
  *                                        2004 F.Naumann & O.Skancke
@@ -103,7 +103,7 @@ typedef struct
 typedef struct { short x, y, w, h; } RECT;
 
 /*
- * XaAES/oAESis Extended Shell Write structure 
+ * XaAES/oAESis Extended Shell Write structure
  * Extra fields for UID/GID setting of spawned clients.
  * Different naming.
  */
@@ -234,7 +234,10 @@ enum xa_mouse
 	XACRS_MOVER,		/* The 'move window' cursor */
 	XACRS_VERTSIZER,	/* The 'resize vertically' cursor */
 	XACRS_HORSIZER,		/* The 'resize horizontally' cursor */
-	XACRS_POINTSLIDE	/* ozk: The 'two-arrows pointing inwards' cursor to pinpoint slider position */
+	XACRS_POINTSLIDE,	/* ozk: The 'two-arrows pointing inwards' cursor to pinpoint slider position */
+
+	X_LFTRT = 9,			/* Horizontal arrows (N.AES) */
+	X_UPDOWN = 10			/* Vertical arrows (N.AES) */
 };
 
 #define	CGd		0x01	/* Numeric digit */

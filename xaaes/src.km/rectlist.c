@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
  *                                        2004 F.Naumann & O.Skancke
@@ -52,7 +52,7 @@ build_rect_list(struct build_rl_parms *p)
 {
 	struct xa_rect_list *rl, *nrl, *rl_next, *rl_prev;
 	RECT r_ours, r_win;
-	
+
 	nrl = kmalloc(sizeof(*nrl));
 	assert(nrl);
 	nrl->next = NULL;
@@ -82,7 +82,7 @@ build_rect_list(struct build_rl_parms *p)
 		if (wy2 > sy2)
 			nrl->r.h -= wy2 - sy2;
 	}
-	
+
 	DIAGS(("build_rect_list: area=(%d/%d/%d/%d), nrl=(%d/%d/%d/%d)",
 		*p->area, nrl->r));
 
@@ -144,7 +144,7 @@ build_rect_list(struct build_rl_parms *p)
 
 						r_ours.y += h;
 						r_ours.h -= h;
-					
+
 						flag = 1;
 					}
 					if (our_x2 > win_x2)
@@ -219,7 +219,7 @@ nextwind_rect(struct build_rl_parms *p)
 	int ret = 0;
 	struct xa_window *wind = p->ptr1;
 
-	
+
 	while (wind && !ret)
 	{
 		/*
@@ -252,7 +252,7 @@ make_rect_list(struct xa_window *wind, bool swap, short which)
 
 	if ((wind->owner->status & CS_EXITING))
 		return NULL;
-	
+
 	DIAGS(("Freeing old rect_list for %d", wind->handle));
 	switch (which)
 	{
@@ -312,7 +312,7 @@ make_rect_list(struct xa_window *wind, bool swap, short which)
 	nrl = build_rect_list(&p);
 	if (swap)
 		rle->start = rle->next = nrl;
-	
+
 	return nrl;
 }
 
@@ -341,7 +341,7 @@ get_rect(struct xa_rectlist_entry *rle, RECT *clip, bool first, RECT *ret)
 		rl = get_rect_first(rle);
 	else
 		rl = get_rect_next(rle);
-		
+
 	if (clip)
 	{
 		while (rl)

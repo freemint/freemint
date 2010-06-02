@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
  *                                        2004 F.Naumann & O.Skancke
@@ -56,12 +56,12 @@ mvdi_device(long d1, long a0, short cmd, long *ret)
 		else
 			*ret = 0L;
 	}
-	
+
 	if (r_d0 >= 0)
 		*ret = r_a0;
 	else
 		*ret = 0L;
-	
+
 	return r_d0;
 }
 #endif

@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
  *                                        2004 F.Naumann & O.Skancke
@@ -31,6 +31,7 @@
 #include "taskman.h"
 
 #include "cnf_xaaes.h"
+#include "keycodes.h"
 #include "init.h"
 
 #include "mint/fcntl.h"
@@ -46,12 +47,12 @@ struct cnfdata
 
 /*
  * setenv name val ..... set up environment
- * 
+ *
  * toppage=bold|faint
  * cancel=string,string
  * filters=
  * menu=pull,push,leave,nolocking
- * 
+ *
  * shell=
  * run=
  */
@@ -82,8 +83,10 @@ static PCB_TAx  pCB_run;
 static struct parser_item parser_tab[] =
 {
 	/* config variables */
-	{ "LAUNCHER",              PI_R_T,     cfg.launch_path         , { dat: sizeof(cfg.launch_path) } },
+	//{ "LAUNCHER",              PI_R_T,     cfg.launch_path         , { dat: sizeof(cfg.launch_path) } },
+	{ "LAUNCHPATH",              PI_R_T,     cfg.launch_path         , { dat: sizeof(cfg.launch_path) } },
 	{ "CLIPBOARD",             PI_R_T,     cfg.scrap_path          , { dat: sizeof(cfg.scrap_path)  } },
+	{ "SNAPSHOT",  	           PI_R_T,     cfg.snapper  		        , { dat: sizeof(cfg.snapper)  } },
 	{ "ACCPATH",               PI_R_T,     cfg.acc_path            , { dat: sizeof(cfg.acc_path)    } },
 	{ "WIDGETS",               PI_R_T,     cfg.widg_name           , { dat: sizeof(cfg.widg_name)   } },
 	{ "RESOURCE",              PI_R_T,     cfg.rsc_name            , { dat: sizeof(cfg.rsc_name)    } },
@@ -109,7 +112,7 @@ static struct parser_item parser_tab[] =
 
 	/* config settings */
 	{ "SETENV",                PI_C_TT,  pCB_setenv		},
-	
+
 	{ "TOPPAGE",               PI_V_T,   pCB_toppage		},
 	{ "NEXT_ACTIVE",           PI_V_T,   pCB_next_active		},
 //	{ "CLOSE_LASTWIND",        PI_V_T,   pCB_close_lastwind		},
@@ -121,13 +124,13 @@ static struct parser_item parser_tab[] =
 	{ "KILL_WO_QUESTION",	   PI_V_A,   pCB_kill_without_question	},
 	{ "MENU",                  PI_V_T,   pCB_menu			},
 	{ "HELPSERVER",            PI_V_A,   pCB_helpserver		},
-	
+
 	/* Mouse wheel settings */
 	{ "VERTICAL_WHEEL_ID",       PI_R_S,   & cfg.ver_wheel_id         },
 	{ "HORIZONTAL_WHEEL_ID",     PI_R_S,   & cfg.hor_wheel_id         },
 	{ "VERTICAL_WHEEL_AMOUNT",   PI_R_S,   & cfg.ver_wheel_amount, Range(1, 20) },
 	{ "HORIZONTAL_WHEEL_AMOUNT", PI_R_S,   & cfg.hor_wheel_amount, Range(1, 20) },
-	
+
 	/* Iconify options */
 	{ "ICNFY_ORIENT",	PI_R_S, &cfg.icnfy_orient		},
 	{ "ICNFY_LEFT",		PI_R_S, &cfg.icnfy_l_x			},
@@ -143,9 +146,9 @@ static struct parser_item parser_tab[] =
 	/* startup things */
 	{ "SHELL",                 PI_V_ATK, pCB_shell			},
 	{ "RUN",                   PI_C_TA,  pCB_run			},
-	
+
 	/* debug */
-	
+
 	{ NULL }
 };
 
@@ -177,7 +180,7 @@ get_delim_string(char **line)
 		&& *s != '\r'
 		&& *s != '\n'
 		&& *s != ','
-		&& *s != '|') s++;
+		/*&& *s != '|'*/) s++;
 
 	if (s == *line)
 		return NULL;
@@ -260,7 +263,7 @@ get_argval(char *wfarg, short *result)
 	}
 
 	end = wfarg;
-					
+
 	while (isdigit(*end))
 		end++;
 
@@ -324,7 +327,7 @@ get_boolarg(char *s, bool *result)
 	{
 		while (isdigit(*end))
 			end++;
-					
+
 		if (end == s)
 		{
 			DIAGS(("get_boolarg: no argument!"));
@@ -362,7 +365,7 @@ get_boolarg(char *s, bool *result)
 			*result = ret ? true : false;
 		ret = 0;
 	}
-	
+
 	return ret;
 }
 
@@ -490,6 +493,7 @@ pCB_app_options(char *line)
 {
 	struct opt_list *op = S.app_options;
 	struct options *opts = NULL;
+	short a;
 	char *s;
 
 	if ((s = get_string(&line)))
@@ -533,7 +537,7 @@ pCB_app_options(char *line)
 				strcpy(op->name, s);
 				opts = &op->options;
 				*opts = default_options;
-				
+
 			}
 		}
 
@@ -574,8 +578,23 @@ pCB_app_options(char *line)
 				get_argument(s + 13, &opts->thinframe);
 			else if (!strnicmp(s, "inhibit_hide", 12))
 				get_boolarg(s + 12, &opts->inhibit_hide);
+			else if (!strncmp(s, "spaceXinsert", 12))
+			{
+				bool b;
+				get_boolarg(s + 12, &b);
+				opts->insert_key = b ? SC_SPACE : SC_INSERT;
+				opts->space_key = b ? SC_INSERT : SC_SPACE;
+			}
 			else if (!strnicmp(s, "clwtna", 6))
-				get_argument(s + 6, &opts->clwtna); //get_boolarg(s + 6, &opts->clwtna);
+			{
+				get_argument(s + 6, &a); //get_boolarg(s + 6, &opts->clwtna);
+				opts->clwtna = a;
+			}
+			else if (!strnicmp(s, "alt_shortcuts", 13))
+			{
+				get_argument(s + 13, &a); //get_boolarg(s + 6, &opts->clwtna);
+				opts->alt_shortcuts = a;
+			}
 
 #if GENERATE_DIAGS
 			else
@@ -607,7 +626,7 @@ pCB_filters(char *line)
 
 		if (strlen(s) < sizeof(cfg.Filters[0]))
 		{
-			strcpy(cfg.Filters[i++], s);
+			strcpy(cfg.Filters[i++], s);	/* todo: malloc this */
 			DIAGS(("pCB_filters[%i]: %s", i-1, s));
 		}
 	}
@@ -623,9 +642,9 @@ isolate_strarg(char **str)
 	s = *str;
 
 	s = skip(s);
-	
+
 	DIAGS((" -- remaining='%s'", s));
-	
+
 	if (*s == 0x22 || *s == 0x27)
 	{
 		s++;
@@ -637,7 +656,7 @@ isolate_strarg(char **str)
 				DIAGS(("isolate_string: missing end quote!"));
 				break;
 			}
-			
+
 			if (*e != 0x5c && (*e == 0x22 || *e == 0x27))
 			{
 				ret = s;
@@ -664,14 +683,14 @@ isolate_strarg(char **str)
 			&& *e != '\r'
 			&& *e != '\n'
 			&& *e != ',') e++;
-	
+
 		if (s != e)
 		{
 			ret = s;
 			if (*e)
 				*e++ = 0;
 		}
-		
+
 #if GENERATE_DIAGS
 		if (ret)
 		{
@@ -679,14 +698,14 @@ isolate_strarg(char **str)
 		}
 		else
 			DIAGS((" -- some unquote error"));
-#endif		
+#endif
 	}
-	
+
 	if (ret)
 	{
 		*str = e;
 	}
-	
+
 	return ret;
 }
 
@@ -712,7 +731,7 @@ pCB_kill_without_question(char *line)
 		DIAGS(("pCB_kill_without_question: Got string '%s'", s));
 		addto_namelist(&cfg.kwq, s);
 	}
-}	
+}
 /*----------------------------------------------------------------------------*/
 static void
 pCB_menu(char *line)
@@ -928,6 +947,7 @@ load_config(void)
 	strcat(path, CNF_NAME);
 
 	DIAGS(("Loading config %s", path));
+	BLOG((0,"Loading config %s", path));
 	parse_cnf(path, parser_tab, &mydata);
 
 #if GENERATE_DIAGS
@@ -939,7 +959,7 @@ load_config(void)
 		diags_opts(&C.Aes->options);
 		DIAGS(("    DEFAULT"));
 		diags_opts(&default_options);
-		
+
 		while (op)
 		{
 			DIAGS(("    '%s'", op->name));

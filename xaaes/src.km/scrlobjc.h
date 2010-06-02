@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
  *                                        2004 F.Naumann & O.Skancke
@@ -51,7 +51,7 @@ SCROLL_INFO *set_slist_object(
 		scrl_del	*del,
 		scrl_empty	*empty,
 		scrl_list	*destroy,
-		
+
 		char *title, char *info,
 		void *data,
 		short line_max);

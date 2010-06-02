@@ -81,6 +81,19 @@
 #define TM_OK            18  /* BUTTON in Baum TASK_MANAGER */
 #define TM_COLD          19  /* BUTTON in Baum TASK_MANAGER */
 #define TM_RESCHG        20  /* BUTTON in Baum TASK_MANAGER */
+#define TM_CHART         21  /* BOXTEXT in Baum TASK_MANAGER */
+#define TM_ACTLD         22  /* BOXTEXT in Baum TASK_MANAGER */
+#define TM_LOAD1         23  /* BOXTEXT in Baum TASK_MANAGER */
+#define TM_LOAD2         24  /* BOXTEXT in Baum TASK_MANAGER */
+#define TM_LOAD3         25  /* BOXTEXT in Baum TASK_MANAGER */
+#define TMMEM            26  /* BOXTEXT in Baum TASK_MANAGER */
+#define TM_CORE          27  /* BOXTEXT in Baum TASK_MANAGER */
+#define TM_LDTTL         28  /* TEXT in Baum TASK_MANAGER */
+#define TM_MEMTTL        29  /* TEXT in Baum TASK_MANAGER */
+#define TM_FAST          30  /* BOXTEXT in Baum TASK_MANAGER */
+#define TM_TICK1         31  /* BOXTEXT in Baum TASK_MANAGER */
+#define TM_TICK2         32  /* BOXTEXT in Baum TASK_MANAGER */
+#define TM_TICK3         33  /* BOXTEXT in Baum TASK_MANAGER */
 
 #define SYS_ERROR        7   /* Formular/Dialog */
 #define SYSALERT_LIST    1   /* BOX in Baum SYS_ERROR */

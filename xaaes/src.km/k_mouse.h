@@ -28,7 +28,7 @@
  * Kernal Message Handler
  */
 
-#ifndef _k_mouse_h 
+#ifndef _k_mouse_h
 #define _k_mouse_h
 
 #include "global.h"
