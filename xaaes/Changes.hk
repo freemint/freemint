@@ -1,3 +1,12 @@
+08-06-2010
+----------
+
+xa_fsel:
+
+- make pattern only caseinsensitive if TOS-domain-client
+
+- fix bug in uppercase-detection
+---------------------------------------------------------------------
 30-05-2010
 ----------
 
@@ -590,21 +599,11 @@ Replaced numbers for array-size with #defined values from xa_defs.h for cfg.Filt
 
 		- added another sanity-check while loading a resource-file
 
-		- todo: name resource-file with version, e.g. xaaes009.rsc
-
 8.1.10
 
 	todo:
 
 		- find places in the code where phys-handle or virtual handle is required
-
-		- add Ssystem(OS_FEATURES) to System-window
-
-		- C-A for Fuller, Iconifier
-
-		- don't use the color cyan (fileselector)
-
-		- initial slider wrong (fileselector)
 
 6.1.10
 
@@ -990,34 +989,12 @@ In realtime-mode you may still notice some funny things, but it stays where it w
 
  - Fixes
 
-	- windows-submenu
-
-		If actual top-window is selected, it should not get untopped
-
-	- Copy List-Entry to Clipboard
-
-		Selected item should be copied without using any key before.
-
-	- Form_do-dialog
-
-		- Respect form_do-Parameter (non-windowed mode)
-
-		At open of a dialog, the first focussed object is quite arbitrary. It should be the one given
-		in the form_do( tree, ob ) - call by the client, at least on the first opening.
-		In effect keyboard-input correctly goes to the first item, but this is not always the one
-		that is focussed.
-
 	- form_do, alerts
 
 		If there are more TOUCHEXIT-buttons and a DEFAULT, the DEFAULT should be changed if another
 		TOUCHEXIT is focussed by TAB to the one focussed.
 
 	- Fileselector
-
-		- add a pattern at runtime
-
-			- if user types *.<pattern> in the edit-field this should be the new pattern and be
-				added to the patterns-list
 
 		- Horizontal slider
 
@@ -1040,12 +1017,6 @@ In realtime-mode you may still notice some funny things, but it stays where it w
 			Same as for clipbrd-copy: Cursor-Up/Down nessecary to copy the filename to the edit-field.
 			(fixed?)
 
-		- Keyboard-movement
-
-			- no way to select the last entry directly
-				-> go to first (Pos1/Home), press Cursor up
-			(nearly fixed)
-
 		- Special directories
 
 			- if trying to go back up from a non existing or special system-directory (/shm, /nfs),
@@ -1056,8 +1027,6 @@ In realtime-mode you may still notice some funny things, but it stays where it w
 
 
 	- Fontselector
-
-		- mouse-click does not set focus into list-window
 
 		- set cursor to current font in font-list at startup
 
@@ -1107,8 +1076,6 @@ In realtime-mode you may still notice some funny things, but it stays where it w
 	- Taskmanager
 
 		- Display memory/CPU-usage as graph for each client/prog
-
-		- Display memory/CPU-usage as graph for the whole system
 
 		- Display network-traffic as graph (for each client/prog?)
 
