@@ -2865,19 +2865,29 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 				*/
 
 				{
-					//int i;
-					if( fs->fs_pattern[0] == '*' && fs->fs_pattern[1] == '.' )
+					// if TOS-domain client passes all upper-case pattern make it caseinsensitive
+					if( client->p->domain == 0 )
 					{
-						char *p = fs->fs_pattern + 2;
-						if( *p == '[' )
-							p++;
-						for( ; *p; p++ )
-							if( isalpha(*p) && !isupper( *p ) )
-								break;
-						/* pattern is uppercase: make it caseinsensitive */
-						if( !*p || *p == ']' )
+						bool had_alpha = false;
+						if( fs->fs_pattern[0] == '*' && fs->fs_pattern[1] == '.' )
 						{
-							fs->fcase = FS_PATNOCASE;
+							char *p = fs->fs_pattern + 2;
+							if( *p == '[' )
+								p++;
+							for( ; *p; p++ )
+							{
+								if( isalpha(*p) )
+								{
+									had_alpha = true;
+									if( !isupper( *p ) )
+										break;
+								}
+							}
+							/* pattern is uppercase: make it caseinsensitive */
+							if( had_alpha &&  (!*p || *p == ']') )
+							{
+								fs->fcase = FS_PATNOCASE;
+							}
 						}
 					}
 				}
