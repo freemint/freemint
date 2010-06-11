@@ -1497,7 +1497,6 @@ refresh_filelist(enum locks lock, struct fsel_data *fs, SCROLL_ENTRY *dir_ent)
 		list->widest = list->total_w = 0;
 
 	xa_graf_mouse(HOURGLASS, NULL, NULL, false);
-	BLOG((0,"refresh_filelist:fs->fcase & FS_PATNOCASE=%lx", fs->fcase & FS_PATNOCASE));
 	read_directory(fs, list, dir_ent);
 	xa_graf_mouse(ARROW, NULL, NULL, false);
 
@@ -2031,7 +2030,6 @@ fileselector_form_exit(struct xa_client *client,
 		if( strmchr( fs->file, "*!?[|" ) )
 		{
 			char *pat = fs->file;
-			BLOG((0,"fsel:FS_OK:pat=%s", pat));
 			/* if | is first char in pat pattern is caseinsensitive */
 			if (*pat == '|')
 			{
