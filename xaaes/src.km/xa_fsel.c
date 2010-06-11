@@ -1113,7 +1113,7 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 {
 	bool csens;
 	OBJECT *obtree = fs->form->tree;
-	char nm[NAME_MAX+2 + FSIZE_MAX+2	+ 40 + 12], pattern[NAME_MAX*2], lower_pattern[16];
+	char nm[NAME_MAX+2 + FSIZE_MAX+2	+ 40 + 12], pattern[NAME_MAX*2];
 	short xstate;
 	long i, rep;
 
@@ -1185,13 +1185,8 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 
 		csens = inq_xfs(fs, fs->path, fs->fslash);
 		strcpy( pattern, fs->fs_pattern );
-		lower_pattern[0] = 0;
-		if( (fs->fcase & FS_FSNOCASE) ){
+		if( fs->fcase ){
 			strupr( pattern );
-		}
-		else if( fs->fcase & FS_PATNOCASE ){
-			strcpy( lower_pattern, pattern );
-			strlwr( lower_pattern );
 		}
 		match_pattern( 0, pattern, false);	/* init */
 
@@ -1238,9 +1233,15 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 				*x = xat;
 
 				if (!dir){
-					PROFRECs(match=, match_pattern,(nam, pattern, false));
-					if( !match && lower_pattern[0] )
-						PROFRECs(match=, match_pattern,(nam, lower_pattern, false));
+					if( fs->fcase & FS_PATNOCASE ){
+						char upnam[NAME_MAX];
+						strncpy( upnam, nam, NAME_MAX-1 );
+						upnam[NAME_MAX-1] = 0;
+						strupr( upnam );
+						PROFRECs(match=, match_pattern,(upnam, pattern, false));
+					}
+					else
+						PROFRECs(match=, match_pattern,(nam, pattern, false));
 				}
 				else
 				{
@@ -1496,6 +1497,7 @@ refresh_filelist(enum locks lock, struct fsel_data *fs, SCROLL_ENTRY *dir_ent)
 		list->widest = list->total_w = 0;
 
 	xa_graf_mouse(HOURGLASS, NULL, NULL, false);
+	BLOG((0,"refresh_filelist:fs->fcase & FS_PATNOCASE=%lx", fs->fcase & FS_PATNOCASE));
 	read_directory(fs, list, dir_ent);
 	xa_graf_mouse(ARROW, NULL, NULL, false);
 
@@ -2028,9 +2030,20 @@ fileselector_form_exit(struct xa_client *client,
 #else
 		if( strmchr( fs->file, "*!?[|" ) )
 		{
-			strncpy(fs->fs_pattern, fs->file, sizeof(fs->fs_pattern)-1);
+			char *pat = fs->file;
+			BLOG((0,"fsel:FS_OK:pat=%s", pat));
+			/* if | is first char in pat pattern is caseinsensitive */
+			if (*pat == '|')
+			{
+				pat++;
+				fs->fcase |= FS_PATNOCASE;
+			}
+			else
+				fs->fcase &= ~FS_PATNOCASE;
+
+			strncpy(fs->fs_pattern, pat, sizeof(fs->fs_pattern)-1);
 			/* copy new pattern into filters */
-			fsel_filters(fs->menu->tree, fs->fs_pattern);
+			fsel_filters(fs->menu->tree, fs->file);
 			display_widget(lock, fs->wind, get_widget(fs->wind, XAW_MENU), NULL);
 
 			//if( fs->treeview == false )
@@ -2846,48 +2859,48 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 		fs->fs_pattern[0] = '*';
 		fs->fs_pattern[1] = '\0';
 		fs->fcase = 0;
-		pat = strrchr(fs->root, '\\');
-		pbt = strrchr(fs->root, '/');
-		if (!pat) pat = pbt;
+		//pat = strrchr(fs->root, '\\');
+		//pbt = strrchr(fs->root, '/');
+		//if (!pat) pat = pbt;
 
 		if (pat)
 		{
-			if (*(pat + 1))
+			if (*++pat)
 			{
-				strcpy(fs->fs_pattern, pat + 1);
-				strcpy(fs->fs_origpattern, fs->fs_pattern);
-				*(pat + 1) = 0;
-
-				/* should *.* be *? */
-				/*if (strcmp(fs->fs_pattern, "*.*") == 0)
-					*(fs->fs_pattern + 1) = 0;
-				else
-				*/
-
+				fsel_filters(fs->menu->tree, pat );
+				/* if | is first char in pat pattern is caseinsensitive */
+				if (*pat == '|')
 				{
-					// if TOS-domain client passes all upper-case pattern make it caseinsensitive
-					if( client->p->domain == 0 )
+					*pat = 0;	/* finish launchpath */
+					pat++;
+					fs->fcase = FS_PATNOCASE;
+				}
+				strcpy(fs->fs_pattern, pat);
+				strcpy(fs->fs_origpattern, fs->fs_pattern);
+				*pat = 0;	/* finish launchpath */
+
+				/* if TOS-domain client passes all upper-case pattern make it caseinsensitive */
+				if( fs->fcase != FS_PATNOCASE && client->p->domain == 0 )
+				{
+					bool had_alpha = false;
+					if( fs->fs_pattern[0] == '*' && fs->fs_pattern[1] == '.' )
 					{
-						bool had_alpha = false;
-						if( fs->fs_pattern[0] == '*' && fs->fs_pattern[1] == '.' )
+						char *p = fs->fs_pattern + 2;
+						if( *p == '[' )
+							p++;
+						for( ; *p; p++ )
 						{
-							char *p = fs->fs_pattern + 2;
-							if( *p == '[' )
-								p++;
-							for( ; *p; p++ )
+							if( isalpha(*p) )
 							{
-								if( isalpha(*p) )
-								{
-									had_alpha = true;
-									if( !isupper( *p ) )
-										break;
-								}
+								had_alpha = true;
+								if( !isupper( *p ) )
+									break;
 							}
-							/* pattern is uppercase: make it caseinsensitive */
-							if( had_alpha &&  (!*p || *p == ']') )
-							{
-								fs->fcase = FS_PATNOCASE;
-							}
+						}
+						/* pattern is uppercase: make it caseinsensitive */
+						if( had_alpha &&  (!*p || *p == ']') )
+						{
+							fs->fcase = FS_PATNOCASE;
 						}
 					}
 				}
@@ -3006,7 +3019,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 		fs->drives = fsel_drives(fs->menu->tree,
 					*(fs->root+1) == ':' ? tolower(*fs->root) - 'a' : d_getdrv(), &dmap);
 
-		fsel_filters(fs->menu->tree, fs->fs_pattern);
+		//fsel_filters(fs->menu->tree, fs->fs_pattern);
 
 		fs->clear_on_folder_change = 0;
 
