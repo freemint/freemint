@@ -353,7 +353,7 @@ long
 bpf_input (struct netif *nif, BUF *buf)
 {
 	struct bpf *bpf;
-	long caplen, pktlen, snaplen, ticks, align;
+	ulong caplen, pktlen, snaplen, ticks, align;
 	struct bpf_hdr *hp;
 	BUF *buf2;
 	ushort sr;
