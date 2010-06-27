@@ -840,11 +840,6 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 							if( (wtxt->e & ITALIC) && strlen(t) < sizeof(t)-1 )
 								strcat( t, " " );
 #endif
-// 							display("%s", c->c.text.text);
-// 							display("%s", t);
-// 							display("tab  %d/%d/%d/%d", tab->r);
-// 							display("this %d/%d/%d/%d", this->r);
-// 							display("ent %d/%d", c->c.text.w, c->c.text.h);
 
 							if (tab->flags & SETAB_RJUST)
 							{
@@ -857,20 +852,80 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 
 							dy += ((this->r.h - th) >> 1);
 
-							if (f & WTXT_DRAW3D)
-							{
-								if (sel && (f & WTXT_ACT3D))
-									dx++, dy++;
-
-								(*v->api->t_color)(v, wtxt->bgc);
-								dx++;
-								dy++;
-								v_gtext(v->handle, dx, dy, t);
-								dx--;
-								dy--;
-							}
 							(*v->api->t_color)(v, wtxt->fgc);
-							v_gtext(v->handle, dx, dy, t);
+
+							if( list->flags & SIF_INLINE_EFFECTS )
+							{
+								bool cont = true;
+								char *tp = t, *tpp = t, cp;
+								while( cont )
+								{
+									for( ; *tp && *tp != '<'; tp++ )
+										if( *tp == '\\' )
+											tp++;
+
+									if( !(cp = *tp) )
+										cont = false;
+
+									*tp = 0;
+									v_gtext(v->handle, dx, dy, tpp);
+									dx += (tp - tpp) * list->char_width;
+
+									tpp = tp;
+
+									switch( cp )
+									{
+									case '<':
+										switch( *++tp )
+										{
+										case 'i':
+											(*v->api->t_effects)(v, wtxt->e | ITALIC);
+										break;
+										case 'b':
+											(*v->api->t_effects)(v, wtxt->e | BOLD);
+										break;
+										case '/':
+											switch( *++tp )
+											{
+											case 'i':
+												(*v->api->t_effects)(v, wtxt->e & ~ITALIC);
+											break;
+											case 'b':
+												(*v->api->t_effects)(v, wtxt->e & ~BOLD);
+											break;
+											}
+										break;
+										}
+										if( *++tp != '>' )
+										{
+											BLOG((0,"list_add: missing '>' in %s", t ));
+										}
+									break;
+									}
+
+									*tpp = cp;
+									if( cont )
+										tpp = tp + 1;
+								}
+								v_gtext(v->handle, dx, dy, tpp);
+
+							}
+							else
+							{
+								if (f & WTXT_DRAW3D)
+								{
+									if (sel && (f & WTXT_ACT3D))
+										dx++, dy++;
+
+									(*v->api->t_color)(v, wtxt->bgc);
+									dx++;
+									dy++;
+									v_gtext(v->handle, dx, dy, t);
+									dx--;
+									dy--;
+								}
+								v_gtext(v->handle, dx, dy, t);
+							}
 
 						}
 					}
@@ -2871,7 +2926,8 @@ add_scroll_entry(SCROLL_INFO *list,
 					list->redraw(list, NULL);
 			}
 #endif
-			PROFRECs(list->,slider,(list, redraw));
+			if( redraw != NOREDRAW )
+				PROFRECs(list->,slider,(list, redraw));
 		}
 // 		display("done!");
 		return 1;
