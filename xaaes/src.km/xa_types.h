@@ -504,6 +504,7 @@ struct widget_theme;
 
 #define ALTSC_ALERT	1
 #define ALTSC_DIALOG	2
+#define ALTSC_ONLY_PREDEF	4
 
 struct options
 {
@@ -1810,7 +1811,8 @@ enum scroll_info_flags
 	SIF_TREEVIEW	= 0x0080,
 	SIF_AUTOOPEN	= 0x0100,
 	SIF_KEYBDACT	= 0x0200,
-	SIF_DIRTY			= 0x0400
+	SIF_DIRTY			= 0x0400,
+	SIF_INLINE_EFFECTS	=	0x800
 
 };
 typedef enum scroll_info_flags SCROLL_INFO_FLAGS;
