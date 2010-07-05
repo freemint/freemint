@@ -1674,7 +1674,16 @@ k_main(void *dummy)
 
 	post_cevent(C.Hlp, CE_start_apps, NULL,NULL, 0,0, NULL,NULL);
 
-	set_tty_mode( COOKED );
+	/*
+	 * console-output:
+	 * if RAW Ctrl-S is not eaten by the kernel, but \n is not translated to \r\n
+	 * if COOKED Ctrl-S may confuse XaAES but \n is translated to \r\n
+	 *
+	 * set RAW for maximum TOS-compatibility - toswin-clients have to use their own settings
+	 *
+	 */
+	set_tty_mode( RAW/*COOKED*/ );
+
 	C.Aes->waiting_for |= XAWAIT_MENU;
 
 	default_input_channels = 1UL << C.KBD_dev;	/* We are waiting on all these channels */
