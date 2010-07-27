@@ -85,7 +85,6 @@
 /* fcase */
 #define FS_FSNOCASE 1 	/* fs is uppercase */
 #define FS_PATNOCASE	2 /* pattern is caseinsensitive */
-#define FS_PATNOCASE	2 /* pattern is caseinsensitive */
 
 /* needed for tab-calculation... */
 #define MINWIDTH	20
@@ -2141,7 +2140,9 @@ fs_change(enum locks lock, struct fsel_data *fs, OBJECT *m, int p, int title, in
 	m[title].ob_state &= ~OS_SELECTED;
 	display_widget(lock, fs->wind, widg, NULL);
 	if( title == FSEL_FILTER )
+	{
 		strcpy(t, fs_patterns[p-FSEL_PATA]);	/* copy from pattern-list not from menu-text */
+	}
 	else
 		strcpy(t, m[p].ob_spec.free_string + FS_OFFS);
 }
@@ -2693,7 +2694,7 @@ static struct proc *fs_mouse_lock;
  */
 static bool
 open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *fs,
-			 const char *path, const char *file, const char *title,
+			 char *path, const char *file, const char *title,
 			 fsel_handler *s, fsel_handler *c, void *data)
 {
 	bool nolist;
@@ -2701,7 +2702,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 	OBJECT *form = NULL, *menu = NULL;
 	struct xa_window *dialog_window = NULL;
 	XA_TREE *wt;
-	char *pat,*pbt;
+	char *pat=0,*pbt;
 	struct scroll_info *list;
 	struct xa_vdi_settings *v = client->vdi_settings;
 	RECT remember = {0,0,0,0}, or;
@@ -2811,6 +2812,8 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 		{
 			int drv = d_getdrv();
 
+			pat = path;
+
 			fs->root[0] = drv + 'a';
 			fs->root[1] = ':';
 			d_getcwd(fs->root + 2, drv + 1, sizeof(fs->root));
@@ -2832,9 +2835,14 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 			int cwdl;
 			char chr=0;
 
-			pat = strrchr(fs->root, '\\');
-			pbt = strrchr(fs->root, '/');
-			if (!pat) pat = pbt;
+			if( !pat )
+			{
+				pat = strrchr(fs->root, '\\');
+				pbt = strrchr(fs->root, '/');
+				if (!pat) pat = pbt;
+				if( pat )
+					pat++;
+			}
 
 			if( pat && *(pat + 1) && !strrchr(pat + 1, '*'))
 			{
@@ -2864,13 +2872,18 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 		fs->fs_pattern[0] = '*';
 		fs->fs_pattern[1] = '\0';
 		fs->fcase = 0;
-		pat = strrchr(fs->root, '\\');
-		pbt = strrchr(fs->root, '/');
-		if (!pat) pat = pbt;
+		if( !pat )
+		{
+			pat = strrchr(fs->root, '\\');
+			pbt = strrchr(fs->root, '/');
+			if (!pat) pat = pbt;
+			if( pat )
+				pat++;
+		}
 
 		if (pat)
 		{
-			if (*++pat)
+			if (*pat)
 			{
 				fsel_filters(fs->menu->tree, pat );
 				strcpy(fs->fs_pattern, pat);
@@ -3214,7 +3227,7 @@ cancel_fsel(enum locks lock, struct fsel_data *fs, const char *path, const char 
 
 void
 open_fileselector(enum locks lock, struct xa_client *client, struct fsel_data *fs,
-			const char *path, const char *file, const char *title,
+			char *path, const char *file, const char *title,
 			fsel_handler *s, fsel_handler *c, void *data)
 {
 	if (!aes_has_fsel)
