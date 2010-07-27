@@ -59,7 +59,7 @@ struct fsel_data
 	int drives;
 	int clear_on_folder_change;
 	int ok;
-	int done;
+	int initial;	/* 1 if first call */
 	bool tfile;
 	bool kbdnav;
 	bool treeview;
@@ -68,7 +68,7 @@ struct fsel_data
 
 
 void open_fileselector(enum locks lock, struct xa_client *client, struct fsel_data *fs,
-		       const char *path, const char *file, const char *title,
+		       char *path, const char *file, const char *title,
 		       fsel_handler *s, fsel_handler *c, void *data);
 
 void close_fileselector(enum locks lock, struct fsel_data *fs);
