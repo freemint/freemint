@@ -85,6 +85,7 @@
 /* fcase */
 #define FS_FSNOCASE 1 	/* fs is uppercase */
 #define FS_PATNOCASE	2 /* pattern is caseinsensitive */
+#define FS_PATNOCASE	2 /* pattern is caseinsensitive */
 
 /* needed for tab-calculation... */
 #define MINWIDTH	20
@@ -165,6 +166,7 @@ static void
 add_pattern(char *pattern)
 {
 	int i;
+
 	if (pattern && *pattern)
 	{
 		for (i = 0; ; i++)
@@ -1184,7 +1186,21 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 			strcpy(fs->path, fs->root);
 
 		csens = inq_xfs(fs, fs->path, fs->fslash);
-		strcpy( pattern, fs->fs_pattern );
+
+		/* if | is first char in pat pattern is caseinsensitive */
+		if (*fs->fs_pattern == '|')
+		{
+			strcpy( pattern, fs->fs_pattern + 1 );
+			fs->fcase |= FS_PATNOCASE;
+		}
+		else
+		{
+			if( fs->initial != 1 )
+				fs->fcase &= ~FS_PATNOCASE;
+			strcpy( pattern, fs->fs_pattern );
+		}
+		fs->initial = 0;
+
 		if( fs->fcase ){
 			strupr( pattern );
 		}
@@ -1510,6 +1526,7 @@ CE_refresh_filelist(enum locks lock, struct c_event *ce, bool cancel)
 		struct fsel_data *fs = ce->ptr1;
 		struct scroll_info *list = ce->ptr2;
 
+		fs->initial = 1;	// flag init
 		refresh_filelist(lock, fs, NULL);
 		fs_prompt(list, fs->file, false);
 
@@ -2029,17 +2046,7 @@ fileselector_form_exit(struct xa_client *client,
 #else
 		if( strmchr( fs->file, "*!?[|" ) )
 		{
-			char *pat = fs->file;
-			/* if | is first char in pat pattern is caseinsensitive */
-			if (*pat == '|')
-			{
-				pat++;
-				fs->fcase |= FS_PATNOCASE;
-			}
-			else
-				fs->fcase &= ~FS_PATNOCASE;
-
-			strncpy(fs->fs_pattern, pat, sizeof(fs->fs_pattern)-1);
+			strncpy(fs->fs_pattern, fs->file, sizeof(fs->fs_pattern)-1);
 			/* copy new pattern into filters */
 			fsel_filters(fs->menu->tree, fs->file);
 			display_widget(lock, fs->wind, get_widget(fs->wind, XAW_MENU), NULL);
@@ -2857,28 +2864,21 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 		fs->fs_pattern[0] = '*';
 		fs->fs_pattern[1] = '\0';
 		fs->fcase = 0;
-		//pat = strrchr(fs->root, '\\');
-		//pbt = strrchr(fs->root, '/');
-		//if (!pat) pat = pbt;
+		pat = strrchr(fs->root, '\\');
+		pbt = strrchr(fs->root, '/');
+		if (!pat) pat = pbt;
 
 		if (pat)
 		{
 			if (*++pat)
 			{
 				fsel_filters(fs->menu->tree, pat );
-				/* if | is first char in pat pattern is caseinsensitive */
-				if (*pat == '|')
-				{
-					*pat = 0;	/* finish launchpath */
-					pat++;
-					fs->fcase = FS_PATNOCASE;
-				}
 				strcpy(fs->fs_pattern, pat);
 				strcpy(fs->fs_origpattern, fs->fs_pattern);
 				*pat = 0;	/* finish launchpath */
 
 				/* if TOS-domain client passes all upper-case pattern make it caseinsensitive */
-				if( fs->fcase != FS_PATNOCASE && client->p->domain == 0 )
+				if( client->p->domain == 0 )
 				{
 					bool had_alpha = false;
 					if( fs->fs_pattern[0] == '*' && fs->fs_pattern[1] == '.' )
@@ -3199,7 +3199,6 @@ handle_fsel(enum locks lock, struct fsel_data *fs, const char *path, const char 
 	PROFILE(( "fsel: handle_fsel" ));
 	close_fileselector(lock, fs);
 	fs->ok = 1;
-	fs->done = 1;
 	fs->owner->usr_evnt = 1;
 }
 
@@ -3210,7 +3209,6 @@ cancel_fsel(enum locks lock, struct fsel_data *fs, const char *path, const char 
 
 	close_fileselector(lock, fs);
 	fs->ok = 0;
-	fs->done = 1;
 	fs->owner->usr_evnt = 1;
 }
 
