@@ -1,17 +1,17 @@
 /*
  * $Id$
- * 
+ *
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
- * 
- * 
+ *
+ *
  * Copyright 1990,1991,1992 Eric R. Smith.
  * Copyright 1992,1993,1994 Atari Corporation.
  * All rights reserved.
- * 
- * 
+ *
+ *
  * read/write routines for TTY devices
- * 
+ *
  */
 
 # include "tty.h"
@@ -108,12 +108,12 @@ tty_read(FILEPTR *f, void *buf, long nbytes)
 	long r;
 	long bytes_read = 0;
 	unsigned char ch, *ptr;
-	int rdmode, mode;
+	int rdmode, mode, delayflg = 0;
 	struct tty *tty;
-	
+
 	tty = (struct tty *) f->devinfo;
 	assert (tty != 0);
-	
+
 	if (f->flags & O_HEAD)
 	{
 		/* pty server side - always raw mode */
@@ -124,12 +124,12 @@ tty_read(FILEPTR *f, void *buf, long nbytes)
 	{
 		/* MiNT domain process */
 		mode = tty->sg.sg_flags;
-		
+
 		if (mode & (T_RAW | T_CBREAK))
 			rdmode = (mode & T_RAW) ? RAW : COOKED;
 		else
 			rdmode = COOKED | NOECHO;
-		
+
 		if (mode & T_XKEY)
 			rdmode |= ESCSEQ;
 	}
@@ -138,10 +138,12 @@ tty_read(FILEPTR *f, void *buf, long nbytes)
 		rdmode = COOKED | NOECHO;
 		mode = T_TOS | T_ECHO | T_ECHOCTL;
 	}
-	
+
+	DEBUG(("tty_read: pgrp=%d state=%x %ld bytes", tty->pgrp, tty->state, nbytes ));
+
 	if (nbytes == 0)
 		return bytes_read;
-	
+
 	/* if RAW or CBREAK do VTIME:  select for input, return on timeout
 	 */
 	if (tty->vtime
@@ -150,12 +152,12 @@ tty_read(FILEPTR *f, void *buf, long nbytes)
 		&& (!(tty->state & TS_ESC) || !(rdmode & ESCSEQ)))
 	{
 		long ret, bytes = 0;
-		
+
 		ret = (*f->dev->select)(f, (long) get_curproc(), O_RDONLY);
 		if (ret != 1)
 		{
 			TIMEOUT *t;
-			
+
 			get_curproc()->wait_cond = (long) wakeselect;	/* flag */
 			t = addtimeout (get_curproc(), (long) tty->vtime, (to_func *) wakeselect);
 			if (!t)
@@ -163,26 +165,29 @@ tty_read(FILEPTR *f, void *buf, long nbytes)
 				(*f->dev->unselect)(f, (long) get_curproc(), O_RDONLY);
 				return ENOMEM;
 			}
-			
+
 			while (get_curproc()->wait_cond == (long) wakeselect)
 			{
 				TRACE (("sleeping in tty_read (VTIME)"));
 				if (sleep (SELECT_Q | 0x100, (long) wakeselect))
 					break;
 			}
-			
+
 			canceltimeout (t);
 		}
-		
+
 		(void)(*f->dev->ioctl)(f, FIONREAD, &bytes);
 		if (!ret)
 		{
 			(*f->dev->unselect)(f, (long) get_curproc(), O_RDONLY);
 			wake (SELECT_Q, (long) &select_coll);
 		}
-		
+
 		if (!bytes)
+		{
+			DEBUG(("tty_read: return %ld *buf=%x", bytes_read, *(char*)buf));
 			return bytes_read;
+		}
 	}
 # if 1
 	/* see if we can do fast RAW byte IO thru the device driver...
@@ -202,40 +207,55 @@ tty_read(FILEPTR *f, void *buf, long nbytes)
 		&& !(tty->state & TS_BLIND)
 		&& (r = (*f->dev->readb)(f, buf, nbytes)) != ENODEV)
 	{
+		DEBUG(("tty_read(2): return %ld *buf=%x", r, *(char*)buf));
 		return r;
 	}
 # endif
-	
+
 	ptr = buf;
-	
+
 	while (bytes_read < nbytes)
 	{
+		/* if the caller expects more than 2 bytes use blocking read */
+		if( (f->flags & O_NDELAY) && nbytes > 2 )
+		{
+			delayflg = 1;
+			f->flags &= ~ O_NDELAY;
+		}
 		r = tty_getchar (f, rdmode);
+
+		if( delayflg )
+			f->flags |= O_NDELAY;
+
 		if (r < E_OK)
 		{
 tty_error:
-			DEBUG (("tty_read: tty_getchar returned %ld", r));
+			DEBUG (("tty_read-error: tty_getchar returned %ld", r));
 			return (bytes_read) ? bytes_read : r;
 		}
 		else if (r == MiNTEOF)
+		{
+			DEBUG(("tty_read(EOF,NDELAY): return %ld *buf=%x nbytes=%ld", bytes_read, *(char*)buf, nbytes));
 			return bytes_read;
-		
+		}
+
 		ch = r & 0xff;
-		
+
 		if ((rdmode & COOKED) && (mode & T_CRMOD) && (ch == '\r'))
 			ch = '\n';
-		
+
 		/* 1 character reads in TOS mode are always raw */
 		if (nbytes == 1 && (mode & T_TOS))
 		{
 			put (f, ch);
 			*ptr = ch;
+			DEBUG(("tty_read(3): return 1 *buf=%x", *(char*)buf));
 			return 1;
 		}
-		
+
 		/* T_CBREAK mode doesn't do erase or kill processing */
 		/* also note that setting a special character to UNDEF disables it */
-		
+
 		if ((rdmode & COOKED) && !(mode & T_CBREAK) && (ch != UNDEF))
 		{
 			if ((char) ch == tty->sg.sg_erase)
@@ -259,7 +279,7 @@ tty_error:
 				}
 				continue;
 			}
-			else if ((char)ch == tty->ltc.t_rprntc || 
+			else if ((char)ch == tty->ltc.t_rprntc ||
 				 (char)ch == tty->sg.sg_kill)
 			{
 				if (mode & T_TOS)
@@ -308,19 +328,25 @@ tty_error:
 					tty->state |= TS_COOKED;
 				else
 					tty->state &= ~TS_COOKED;
-				
+
 				if (r < E_OK)
 					goto tty_error;
 				else if (r == MiNTEOF)
+				{
+					DEBUG(("tty_read(MINTEOF2): return %ld *buf=%x", bytes_read, *(char*)buf));
 					return bytes_read;
-				
+				}
+
 				ch = r & 0xff;
 				goto stuff_it;
 			}
 			else if ((char)ch == tty->tc.t_eofc && !(mode & T_TOS))
+			{
+				DEBUG(("tty_read(4): return %ld *buf=%x", bytes_read, *(char*)buf));
 				return bytes_read;
+			}
 		}
-		
+
 		/* both T_CBREAK and T_COOKED modes have to do signals, though
 		 */
 		if ((rdmode & COOKED) && ch != UNDEF)
@@ -360,12 +386,13 @@ tty_error:
 					tty->state |= TS_COOKED;
 				else
 					tty->state &= ~TS_COOKED;
-				
+
+				DEBUG(("tty_read(5): return %ld *buf=%x ch=%x", bytes_read, *(char*)buf, ch));
 				return bytes_read;
 			}
 
 		}
-		
+
 		/* do the following for both RAW and COOKED mode
 		 */
 stuff_it:
@@ -378,9 +405,9 @@ stuff_it:
 		}
 		else
 			put (f, ch);
-		
+
 		bytes_read++;
-		
+
 		/* for RAW mode, if there are no more characters then break */
 		if ((mode & (T_RAW|T_CBREAK)) && !(tty->state & TS_ESC))
 		{
@@ -390,21 +417,22 @@ stuff_it:
 				break;
 		}
 	}
-	
+
 	if (rdmode & COOKED)
 		tty->state |= TS_COOKED;
 	else
 		tty->state &= ~TS_COOKED;
-	
+
+	DEBUG(("tty_read(6): return %ld *buf=%x", bytes_read, *(char*)buf));
 	return bytes_read;
 }
 
 /* job control checks
  * AKP: added T_TOSTOP; don't stop BG output if T_TOSTOP is clear
- * 
+ *
  * entropy: only do the job control if SIGTTOU is neither blocked nor ignored,
  * and only for the controlling tty (IEEE 1003.1-1990 7.1.1.4 79-87).
- * 
+ *
  * BUG: if the process group is orphaned and SIGTTOU *is not* blocked
  *      or ignored, we should return EIO instead of signalling.
  */
@@ -437,10 +465,10 @@ tty_write (FILEPTR *f, const void *buf, long nbytes)
 	static long cr_char = '\r';
 # define LBUFSIZ 128
 	long lbuf[LBUFSIZ];
-	
+
 	tty = (struct tty *) f->devinfo;
 	assert (tty != 0);
-	
+
 	ptr = (unsigned const char *) buf;
 	if (f->flags & O_HEAD)
 	{
@@ -452,11 +480,11 @@ tty_write (FILEPTR *f, const void *buf, long nbytes)
 		mode = (nbytes == 1) ? T_RAW : T_TOS;
 	else
 		mode = tty->sg.sg_flags;
-	
+
 	rwmode = (mode & T_RAW) ? RAW : COOKED;
-	
+
 	bytes_written = 0;
-	
+
 	/*
 	 * "mode" can now be reduced to just T_CRMODE or not
 	 */
@@ -464,9 +492,13 @@ tty_write (FILEPTR *f, const void *buf, long nbytes)
 		mode = T_CRMOD;
 	else
 		mode = 0;
-	
+
 	if (nbytes == 0)
 		return bytes_written;
+
+	DEBUG(("tty_write: pgrp=%d state=%x %ld bytes ext=%lx", tty->pgrp, tty->state, nbytes, get_curproc()->p_ext));
+
+
 # if 1
 	/* see if we can do fast RAW byte IO thru the device driver... */
 	if (!use_putchar && HAS_WRITEB(f))
@@ -502,7 +534,7 @@ tty_write (FILEPTR *f, const void *buf, long nbytes)
 							{
 								if (c < 0)
 									bytes_written = c;
-								
+
 								return bytes_written;
 							}
 						}
@@ -512,12 +544,12 @@ tty_write (FILEPTR *f, const void *buf, long nbytes)
 						{
 							if (c < 0)
 								bytes_written = c;
-							
+
 							return bytes_written;
 						}
 					}
 				}
-				
+
 				if (0 != (bytes_to_write = ptr - s))
 				{
 					c = (*f->dev->writeb)(f, (const char *)s, bytes_to_write);
@@ -525,7 +557,7 @@ tty_write (FILEPTR *f, const void *buf, long nbytes)
 					if (c < 0)
 						bytes_written = c;
 				}
-				
+
 				return bytes_written;
 			}
 		}
@@ -537,25 +569,25 @@ tty_write (FILEPTR *f, const void *buf, long nbytes)
 		}
 	}
 # endif
-	
+
 	/*
 	 * we always write at least 1 byte with tty_putchar, since that takes
 	 * care of job control and terminal states. After that, we may be able
 	 * to use (*f->dev->write) directly.
 	 */
-	
+
 	c = *ptr++;
-	
+
 	if (c == '\n' && mode)
 	{
 		/* remember, "mode" now means CRMOD */
 		tty_putchar (f, cr_char, rwmode);
 	}
-	
+
 	tty_putchar (f, c, rwmode);
 	nbytes--;
 	bytes_written++;
-	
+
 	if (use_putchar)
 	{
 		while (nbytes-- > 0)
@@ -574,7 +606,7 @@ tty_write (FILEPTR *f, const void *buf, long nbytes)
 		 */
 		long bytes_to_write = 0;
 		long *s = lbuf;
-		
+
 		while (nbytes-- > 0)
 		{
 			c = *ptr++;
@@ -604,11 +636,11 @@ tty_write (FILEPTR *f, const void *buf, long nbytes)
 				}
 			}
 		}
-		
+
 		if (bytes_to_write)
 			(*f->dev->write)(f, (char *) lbuf, bytes_to_write);
 	}
-	
+
 	return bytes_written;
 }
 
@@ -692,13 +724,13 @@ static char
 unxbaud (ulong baud)
 {
 	int i;
-	
+
 	for (i = 1; i < EXTA; i++)
 	{
 		if (ubaud [i] == baud)
 			break;
 	}
-	
+
 	return i;
 }
 
@@ -708,65 +740,65 @@ long
 tty_ioctl (FILEPTR *f, int mode, void *arg)
 {
 	struct tty *tty;
-	
+
 	if (!is_terminal (f))
 	{
 		DEBUG (("tty_ioctl(mode %x): file is not a tty", mode));
 		return ENOSYS;
 	}
-	
+
 	tty = (struct tty *)f->devinfo;
 	assert (tty);
-	
+
 	switch (mode)
 	{
 		case FIONREAD:
 		{
 			long r;
-			
+
 			r = (*f->dev->ioctl)(f, FIONREAD, (void *)arg);
 			if (r || (f->flags & O_HEAD))
 				return r;
-			
+
 			if (tty->state & TS_BLIND)
 				*(long *)arg = 0;
-			
+
 			if ((tty->sg.sg_flags & T_XKEY) && (tty->state & TS_ESC) && !*(long *)arg)
 				*(long *)arg = 1;
-			
+
 			return E_OK;
 		}
 		case FIONWRITE:
 		{
 			long r;
-			
+
 			r = (*f->dev->ioctl)(f, FIONWRITE, (void *)arg);
 			if (r || (f->flags & O_HEAD))
 				return r;
-			
+
 			if ((tty->state & (TS_BLIND | TS_HOLD)))
 				*(long *)arg = 0;
-			
+
 			return E_OK;
 		}
 		case TIOCSBRK:
 		{
 			if (!(tty->state & TS_BLIND) || (f->flags & O_HEAD))
 				return (*f->dev->ioctl)(f, TIOCSBRK, (void *)arg);
-			
+
 			return E_OK;
 		}
 		case TIOCFLUSH:
 		{
 			long r;
-			
+
 			r = (*f->dev->ioctl)(f, TIOCFLUSH, (void *)arg);
 			if (r || (f->flags & O_HEAD))
 				return r;
-			
+
 			if (!arg || (*(long *)arg & 1))
 				tty->state &= ~TS_ESC;
-			
+
 			return E_OK;
 		}
 		case TIOCGETP:
@@ -775,19 +807,19 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 			ulong bits[2] = { -1, TF_FLAGS };
 			long baud;
 			short flags;
-			
+
 			/* get input and output baud rates from the terminal
 			 * device
 			 */
-			
+
 			baud = -1L;
 			(*f->dev->ioctl)(f, TIOCIBAUD, &baud);
 			tty->sg.sg_ispeed = unxbaud (baud);
-			
+
 			baud = -1L;
 			(*f->dev->ioctl)(f, TIOCOBAUD, &baud);
 			tty->sg.sg_ospeed = unxbaud (baud);
-			
+
 			/* get terminal flags */
 			flags = 0;
 			if ((*f->dev->ioctl)(f, TIOCSFLAGSB, &bits) == 0)
@@ -800,17 +832,17 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 				tty->sg.sg_flags &= ~TF_FLAGS;
 				tty->sg.sg_flags |= (flags & TF_FLAGS);
 			}
-			
+
 			*sg = tty->sg;
 			return E_OK;
 		}
 		case TIOCSETP:
 		{
 			long outq;
-			
+
 			while (((*f->dev->ioctl)(f, TIOCOUTQ, &outq) == 0) && outq)
 				nap (200);
-			
+
 			/* FALL THROUGH */
 		}
 		case TIOCSETN:
@@ -820,58 +852,58 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 			ushort oflags = tty->sg.sg_flags;
 			long baud;
 			short flags;
-			
+
 			struct sgttyb *sg = (struct sgttyb *) arg;
 			tty->sg = *sg;
-			
+
 			/* change tty state */
 			if (sg->sg_flags & T_RAW)
 				tty->state &= ~TS_COOKED;
 			else
 				tty->state |= TS_COOKED;
-			
+
 			if (!(sg->sg_flags & T_XKEY))
 				tty->state &= ~TS_ESC;
-			
+
 			/* set baud rates */
 			baud = tosbaud (sg->sg_ispeed);
 			(*f->dev->ioctl)(f, TIOCIBAUD, &baud);
 			baud = tosbaud (sg->sg_ospeed);
 			(*f->dev->ioctl)(f, TIOCOBAUD, &baud);
-			
+
 			/* reset VMIN/VTIME */
 			if ((*f->dev->ioctl)(f, TIOCSVMIN, &v) < 0)
 			{
 				tty->vmin = 1;
 				tty->vtime = 0;
 			}
-			
+
 			/* set parity, etc. */
 			flags = TF_8BIT;
 			if (sg->sg_flags & (T_EVENP | T_ODDP))
 				flags = TF_7BIT;
-			
+
 			flags |= (sg->sg_flags & TF_FLAGS);
-			
+
 			/* default allow breaks to SIGINT unless RAW and no echo... */
 			if (!(sg->sg_flags & T_RAW) || (sg->sg_flags & T_ECHO))
 				flags |= TF_BRKINT;
-			
+
 			/* leave local mode bit alone */
 			bits[0] = (unsigned) flags;
 			bits[1] = ~TF_CAR;
 			if ((*f->dev->ioctl)(f, TIOCSFLAGSB, &bits) >= 0)
 				return 0;
-			
+
 			/* if TIOCSFLAGSB failed clear TF_CAR, assume the
 			 * device doesn't know about carrier anyway...
 			 */
 			if ((*f->dev->ioctl)(f, TIOCSFLAGS, &flags) >= 0)
 				return E_OK;
-			
+
 			/* cannot set flags, don't save them */
 			tty->sg.sg_flags = (tty->sg.sg_flags & ~TF_FLAGS) | (oflags & TF_FLAGS);
-			
+
 			return E_OK;
 		}
 		case TIOCGETC:
@@ -908,7 +940,7 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 		{
 			struct winsize *sz = (struct winsize *)arg;
 			int i;
-			
+
 			if (sz->ws_row != tty->wsiz.ws_row
 				|| sz->ws_col != tty->wsiz.ws_col
 				|| sz->ws_xpixel != tty->wsiz.ws_xpixel
@@ -916,12 +948,12 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 				i = 1;
 			else
 				i = 0;
-			
+
 			tty->wsiz = *sz;
-			
+
 			if (i && tty->pgrp)
 				killgroup(tty->pgrp, SIGWINCH, 1);
-			
+
 			return E_OK;
 		}
 		case TIOCGPGRP:
@@ -934,13 +966,13 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 			if (!tty->pgrp)
 			{
 				tty->pgrp = (*((long *) arg) & 0x00007fffL);
-				
+
 				if (!(f->flags & O_NDELAY) && (tty->state & TS_BLIND))
 					(*f->dev->ioctl)(f, TIOCWONLINE, 0);
 			}
 			else
 				tty->pgrp = (*((long *) arg) & 0x00007fffL);
-			
+
 			DEBUG (("TIOCSPGRP: assigned tty->pgrp = %i", tty->pgrp));
 			return E_OK;
 		}
@@ -949,7 +981,7 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 			/* tty in the middle of a hangup? */
 			if (tty->hup_ospeed)
 				return E_OK;
-			
+
 			/* if the device has writeb writers may sleep for
 			 * TS_HOLD (instead of polling), tell the device and
 			 * wake them up
@@ -963,21 +995,21 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 			if (tty->wsel)
 			{
 				long r = 0;
-				
+
 				(void)(*f->dev->ioctl)(f, FIONWRITE, &r);
 				if (r && !(tty->state & TS_BLIND))
 					wakeselect ((PROC *)tty->wsel);
 			}
-			
+
 			return E_OK;
 		}
 		case TIOCSTOP:
 		{
 			if (HAS_WRITEB (f))
 				(void)(*f->dev->ioctl)(f, TIOCSTOP, &tty->state);
-			
+
 			tty->state |= TS_HOLD;
-			
+
 			return E_OK;
 		}
 		case TIOCGXKEY:
@@ -985,7 +1017,7 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 			struct xkey *xk = (struct xkey *)arg;
 			const char *xktab;
 			int i;
-			
+
 			i = xk->xk_num;
 			if (i < 0 || i > 31) return EBADARG;
 			xktab = tty->xkey;
@@ -993,7 +1025,7 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 			xktab += i*8;
 			for (i = 0; i < 8; i++)
 				xk->xk_def[i] = *xktab++;
-			
+
 			return E_OK;
 		}
 		case TIOCSXKEY:
@@ -1001,29 +1033,29 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 			struct xkey *xk = (struct xkey *)arg;
 			char *xktab;
 			int i;
-			
+
 			xktab = tty->xkey;
 			if (!xktab)
 			{
 				xktab = kmalloc (256);
 				if (!xktab)
 					return ENOMEM;
-				
+
 				for (i = 0; i < 256; i++)
 					xktab[i] = vt52xkey[i];
-				
+
 				tty->xkey = xktab;
 			}
-			
+
 			i = xk->xk_num;
 			if (i < 0 || i > 31)
 				return EBADARG;
-			
+
 			xktab += i*8;
 			for (i = 0; i < 7; i++)
 				xktab[i] = xk->xk_def[i];
 			xktab[7] = 0;
-			
+
 			return E_OK;
 		}
 		case TIOCSSTATEB:
@@ -1033,15 +1065,15 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 			 * (TS_HOLD is already handled by TIOCSTART/STOP)
 			 */
 			long mask = ((long *)arg)[1] & ~(TS_HOLD|TS_BLIND);
-			
+
 			if (!(tty->sg.sg_flags & T_XKEY))
 				mask &= ~TS_ESC;
-			
+
 			if (*(long *)arg != -1)
 				tty->state = (tty->state & ~mask) | (*((long *)arg) & mask);
-			
+
 			*(long *)arg = tty->state;
-			
+
 			return E_OK;
 		}
 		case TIOCGSTATE:
@@ -1062,12 +1094,12 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 		case TIOCCAR:
 		{
 			ulong bits[2] = { 0, TF_CAR };
-			
+
 			if (mode == TIOCCAR)
 				*bits = TF_CAR;
-			
+
 			(*f->dev->ioctl)(f, TIOCSFLAGSB, &bits);
-			
+
 			/* if the ioctl failed the device does not know about
 			 * carrier but don't return an error then since its
 			 * the same as carrier always on (and anyway who puts
@@ -1076,7 +1108,7 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 			 */
 			return E_OK;
 		}
-		
+
 		/* emulate some new calls, they only get here when a device
 		 * does not know them:
 		 */
@@ -1085,19 +1117,19 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 			long mask = ((ulong *)arg)[1];
 			long fnew;
 			short flags;
-			
+
 			if (*(long *)arg < 0)
 			{
 				(*f->dev->ioctl)(f, TIOCGFLAGS, &flags);
 				*((ulong *)arg) = flags;
-				
+
 				return E_OK;
 			}
-			
+
 			flags = 0;
 			if (mask != -1)
 				(*f->dev->ioctl)(f, TIOCGFLAGS, &flags);
-			
+
 			fnew = (flags & ~mask) | (*((ulong *)arg) & mask);
 			if (mask == -1 || fnew != flags)
 			{
@@ -1105,11 +1137,11 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 				(*f->dev->ioctl)(f, TIOCSFLAGS, &flags);
 				(*f->dev->ioctl)(f, TIOCGFLAGS, &flags);
 			}
-			
+
 			*(ulong *) arg = flags;
 			return E_OK;
 		}
-		
+
 		/*
 		 * tty_read handles VTIME itself but doing VMIN > 1 without support
 		 * from the device won't be very efficient
@@ -1126,7 +1158,7 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 			tty->vtime = ((ushort *)arg)[1];
 			return E_OK;
 		}
-		
+
 		case TIOCWONLINE:
 		{
 			/* devices that don't know about carrier are always
@@ -1134,7 +1166,7 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 			 */
 			return E_OK;
 		}
-		
+
 		/*
 		 * if the device didn't do TIOC[GS]FLAGS try transforming into
 		 * TIOCSFLAGSB
@@ -1144,27 +1176,27 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 		{
 			ulong bits[2] = { -1, (ushort) -1 };
 			long r;
-			
+
 			if (mode == TIOCSFLAGS)
 				bits[0] = *(ushort *)arg;
-			
+
 			r = (*f->dev->ioctl)(f, TIOCSFLAGSB, &bits);
 			if (!r && mode == TIOCGFLAGS)
 				*((ushort *)arg) = *bits;
-			
+
 			return r;
 		}
-		
+
 		case TIOCNOTTY:
 		{
 			/* Disassociate from controlling tty.  */
 			if (get_curproc()->p_fd->control == NULL)
 				return ENOTTY;
-				
+
 			if (get_curproc()->p_fd->control->fc.index != f->fc.index ||
 			    get_curproc()->p_fd->control->fc.dev != f->fc.dev)
 		    		return ENOTTY;
-		    	
+
 		    	/* Session leader.  Disassociate from controlling
 		    	 * tty.
 		    	 */
@@ -1175,40 +1207,40 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 					killgroup (tty->pgrp, SIGHUP, 0);
 					killgroup (tty->pgrp, SIGCONT, 0);
 				}
-				
+
 			}
-			
+
 			tty->pgrp = 0;
 			DEBUG (("TIOCNOTTY: assigned tty->pgrp = %i", tty->pgrp));
-			
+
 			do_close (get_curproc(), get_curproc()->p_fd->control);
 			get_curproc()->p_fd->control = NULL;
-			
+
 			return 0;
 		}
-			
+
 		/* Set controlling tty to file descriptor.  The process
 		 * must be a session leader and not have a controlling
-		 * tty already.  
+		 * tty already.
 		 */
 		case TIOCSCTTY:
 		{
 			if (get_curproc()->pgrp == get_curproc()->pid &&
 			    get_curproc()->pgrp == tty->pgrp)
 				return 0;
-			
+
 			if (f->flags & O_HEAD)
 				return ENOTTY;
-				
+
 			if (get_curproc()->pgrp != get_curproc()->pid || get_curproc()->p_fd->control)
 				return EPERM;
 
 			f->links++;
 			tty->use_cnt++;
-			
+
 			/* If the tty is already the controlling tty of
 			 * another session than the behavior depends on
-			 * arg.  
+			 * arg.
 			 */
 			if (tty->pgrp > 0)
 			{
@@ -1227,25 +1259,27 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 						    if (!suser (get_curproc()->p_cred->ucr) ||
 							(long)arg != 1)
 						    {
+									DEBUG (("TIOCSCTTY: do_close %lx", f));
 							    do_close (get_curproc(), f);
 							    return EPERM;
 						    }
+								DEBUG (("TIOCSCTTY: do_close(control) %lx", p->p_fd->control));
 						    do_close (get_curproc(), p->p_fd->control);
 						    p->p_fd->control = NULL;
 					}
 				}
 			}
-			
+
 			get_curproc()->p_fd->control = f;
 			tty->pgrp = get_curproc()->pgrp;
 			DEBUG (("TIOCSCTTY: assigned tty->pgrp = %i", tty->pgrp));
-			
+
 			if (!(f->flags & O_NDELAY) && (tty->state & TS_BLIND))
 				(*f->dev->ioctl)(f, TIOCWONLINE, 0);
-			
+
 			return 0;
 		}
-			
+
 		/*
 		 * transform mdm0 ioctls, to allow old binaries run on new
 		 * devices note this does nothing for the other way around
@@ -1259,28 +1293,28 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 		case TIOCSHUPCL:
 		{
 			short flags;
-			
+
 			flags = *(short *)arg;
 			*(short *)arg = tty->state & TS_HPCL ? 1 : 0;
 			if (flags)
 				tty->state |= TS_HPCL;
 			else
 				tty->state &= ~TS_HPCL;
-			
+
 			return E_OK;
 		}
 		case TIOCGSOFTCAR:
 		{
 			long bits[2];
 			short flags;
-			
+
 			flags = 1;
 			bits[0] = -1;
 			bits[1] = TF_CAR;
-			
+
 			if ((*f->dev->ioctl)(f, TIOCSFLAGSB, &bits) >= 0)
 				flags = bits[0] & TF_CAR ? 0 : 1;
-			
+
 			*(short *)arg = flags;
 			return E_OK;
 		}
@@ -1288,25 +1322,25 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 		{
 			long bits[2];
 			short flags;
-			
+
 			flags = 1;
 			bits[0] = *(short *)arg ? 0 : TF_CAR;
 			bits[1] = TF_CAR;
-			
+
 			if ((*f->dev->ioctl)(f, TIOCSFLAGSB, &bits) >= 0)
 				flags = bits[0] & TF_CAR ? 0 : 1;
-			
+
 			*(short *)arg = flags;
 			return E_OK;
 		}
-		
+
 		default:
 		{
 			DEBUG (("tty_ioctl: bad function call"));
 			return ENOSYS;
 		}
 	}
-	
+
 	/* not reached */
 	return ENOSYS;
 }
@@ -1348,44 +1382,44 @@ escseq (struct tty *tty, int scan)
 			else
 				i = -1;
 	}
-	
+
 	if (i >= 0)
 	{
 		/* an extended escape sequence */
-		
+
 		tab = tty->xkey;
 		if (!tab)
 			tab = vt52xkey;
-		
+
 		i *= 8;
-		
+
 		scan = tab[i++];
 		if (scan)
 		{
 			if (tab[i] == 0) i = 0;
 			tty->state = (tty->state & ~TS_ESC) | i;
 		}
-		
+
 		return scan;
 	}
-	
+
 	if (scan >= ALT_1 && scan <= ALT_0)
 	{
 		scan -= (ALT_1-1);
 		if (scan == 10) scan = 0;
 		return (scan + '0') | 0x80;
 	}
-	
+
 # ifdef NO_AKP_KEYBOARD
 	tab = *(((const char **) ROM_Keytbl((void *) -1UL, (void *) -1UL, (void *) -1UL)) + 2 );
 # else
 	tab = (char *)get_keytab()->caps;
 # endif
 	scan = tab[scan];
-	
+
 	if (scan >= 'A' && scan <= 'Z')
 		return scan | 0x80;
-	
+
 	return 0;
 }
 
@@ -1394,9 +1428,9 @@ tty_getchar (FILEPTR *f, int mode)
 {
 	struct tty *tty = (struct tty *) f->devinfo;
 	long r; int scan; char c;
-	
+
 	assert (tty);
-	
+
 	/* pty masters never worry about job control and always read in
 	 * raw mode
 	 */
@@ -1412,16 +1446,16 @@ tty_getchar (FILEPTR *f, int mode)
 		long ret = (*f->dev->read)(f, (char *)&r, 4L);
 		return (ret != 4L) ? MiNTEOF : r;
 	}
-	
+
 	/* job control check */
-	
+
 	/*
 	 * entropy: only do the job control if SIGTTIN is neither blocked nor
 	 * ignored, and only for the controlling tty (IEEE 1003.1-1990 7.1.1.4 70-78).
 	 * BUG:  if the process group is orphaned or SIGTTIN *is* blocked or ignored,
 	 * we should return EIO instead of signalling.
 	 */
-	
+
 	if ((tty->pgrp && tty->pgrp != get_curproc()->pgrp)
 		&& (f->fc.dev == get_curproc()->p_fd->control->fc.dev)
 		&& (f->fc.index == get_curproc()->p_fd->control->fc.index))
@@ -1430,14 +1464,14 @@ tty_getchar (FILEPTR *f, int mode)
 		killgroup (get_curproc()->pgrp, SIGTTIN, 1);
 		check_sigs ();
 	}
-	
+
 	if (mode & COOKED)
 		tty->state |= TS_COOKED;
 	else
 		tty->state &= ~TS_COOKED;
-	
+
 	c = UNDEF + 1;	/* set to UNDEF when we successfully read a character */
-	
+
 	/* we may be in the middle of an escape sequence */
 	scan = (tty->state & TS_ESC);
 	if (scan != 0)
@@ -1451,27 +1485,26 @@ tty_getchar (FILEPTR *f, int mode)
 		}
 		else
 			scan = 0;
-		
+
 		tty->state = (tty->state & ~TS_ESC) | scan;
 	}
-	
+
 	while (c != UNDEF)
 	{
 		long ret;
-		
+
 		if (tty->state & TS_BLIND)
 		{
 			TRACE (("tty_getchar: offline"));
 			return MiNTEOF;
 		}
-		
 		ret = (*f->dev->read)(f, (char *) &r, 4L);
 		if (ret != 4L)
 		{
-			DEBUG (("EOF on tty device (%li)", ret));
+			DEBUG (("tty_getchar: EOF on tty device (%li) flags:%x,NDELAY:%x", ret, f->flags, f->flags & O_NDELAY));
 			return MiNTEOF;
 		}
-		
+
 		c = r & 0x00ff;
 		scan = (int)((r & 0x00ff0000L) >> 16);
 		if ((c == 0) && (mode & ESCSEQ) && scan)
@@ -1522,10 +1555,10 @@ tty_getchar (FILEPTR *f, int mode)
 		else
 				c = UNDEF;
 	}
-	
+
 	if (mode & ECHO)
 		tty_putchar (f, r, mode);
-	
+
 	return r;
 }
 
@@ -1538,9 +1571,9 @@ tty_putchar (FILEPTR *f, long data, int mode)
 {
 	struct tty *tty = (struct tty *) f->devinfo;
 	char ch;
-	
+
 	assert (tty);
-#if 0	
+#if 0
 	if (f->dev == &bios_tdevice && f->fc.aux == 2)
 	{
 		display("tty_putchar: tty->pgrp = %d, curproc->pgrp = %d HEAD = %s",
@@ -1552,11 +1585,11 @@ tty_putchar (FILEPTR *f, long data, int mode)
 	if (f->flags & O_HEAD)
 	{
 		ch = data & 0xff;
-		
+
 		if ((tty->state & TS_COOKED) && ch != UNDEF)
 		{
 			long r = 1;
-			
+
 			/* see if we're putting control characters into the
 			 * buffer
 			 */
@@ -1610,16 +1643,16 @@ tty_putchar (FILEPTR *f, long data, int mode)
 		}
 		goto do_putchar;
 	}
-	
+
 	tty_checkttou (f, tty);
-	
+
 	if (mode & COOKED)
 	{
 		tty->state |= TS_COOKED;
 		while (tty->state & (TS_HOLD|TS_BLIND))
 		{
 			short bdev;
-			
+
 			if (tty->state & TS_BLIND)
 			{
 				TRACE (("tty_putchar: offline"));
@@ -1668,14 +1701,14 @@ tty_putchar (FILEPTR *f, long data, int mode)
 				sleep (IO_Q, (long) &tty->state);
 				continue;
 			}
-			
+
 			/* sleep for 60 milliseconds */
 			nap (60);
 		}
 	}
 	else
 		tty->state &= ~TS_COOKED;
-	
+
 do_putchar:
 	return (*f->dev->write)(f, (char *)&data, 4L);
 }
@@ -1689,11 +1722,11 @@ tty_select(FILEPTR *f, long proc, int mode)
 	if (mode == O_RDONLY)
 	{
 		struct tty *tty = (struct tty *) f->devinfo;
-		
+
 		if ((tty->sg.sg_flags & T_XKEY) && (tty->state & TS_ESC))
 			return 1;
 	}
-	
+
 	return (*f->dev->select)(f, proc, mode);
 }
 

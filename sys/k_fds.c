@@ -244,7 +244,7 @@ do_open (FILEPTR **f, const char *name, int rwmode, int attr, XATTR *x)
 	char temp1[PATH_MAX];
 	short cur_gid, cur_egid;
 
-	TRACE (("do_open(%s)", name));
+	TRACE (("do_open(%s) mode=%x", name, rwmode));
 
 	/*
 	 * first step: get a cookie for the directory
@@ -471,11 +471,17 @@ do_open (FILEPTR **f, const char *name, int rwmode, int attr, XATTR *x)
 		FP_FREE (*f);
 
 		*f = fp;
+		if( rwmode & O_NDELAY )
+			(*f)->flags |= O_NDELAY;
+		else
+			(*f)->flags &= ~O_NDELAY;
+
 		fp->links++;
 
 		release_cookie (&dir);
 		release_cookie (&fc);
 
+		DEBUG(("do_open: fakedev -> 0"));
 		return 0;
 	}
 
@@ -648,6 +654,16 @@ do_close (struct proc *p, FILEPTR *f)
 // XXX		return 0;
 	}
 
+
+	if (is_terminal (f))
+	{
+		struct tty *tty = (struct tty *) f->devinfo;
+		DEBUG(("do_close(terminal): flags=%x links=%d pgrp=%d/%d", f->flags, f->links, tty->pgrp, get_curproc()->pgrp));
+
+		/* reset O_NDELAY if tty is not bound to a pgrp */
+		if( tty->pgrp != get_curproc()->pgrp )
+			f->flags &= ~O_NDELAY;
+	}
 	/* TTY manipulation must be done *before* calling the device close routine,
 	 * since afterwards the TTY structure may no longer exist
 	 */
@@ -674,6 +690,7 @@ do_close (struct proc *p, FILEPTR *f)
 				tty->hup_ospeed = -1;
 			/* stop output, flush buffers, drop DTR... */
 				tty_ioctl(f, TIOCSTOP, 0);
+				//FORCE("TIOCFLUSH for %lx", f);
 				tty_ioctl(f, TIOCFLUSH, 0);
 				if (ospeed > 0) {
 					tty->hup_ospeed = ospeed;
