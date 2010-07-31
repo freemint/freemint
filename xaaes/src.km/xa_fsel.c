@@ -2761,6 +2761,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 			char *p, *p1;
 //			display("legal path '%s'", path);
 
+
 			if( *path == '/' ){
 				int drv = d_getdrv() + 'a';
 				sprintf( fs->root, PATH_MAX, "%c:%s", drv, path );
@@ -2777,7 +2778,6 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 				fs->fslash[0] = '/';
 				fs->fslash[1] = '\\';
 			}
-
 			else{
 				fs->fslash[1] = '/';
 				fs->fslash[0] = '\\';
@@ -2841,10 +2841,10 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 				pbt = strrchr(fs->root, '/');
 				if (!pat) pat = pbt;
 				if( pat )
-					pat++;
+					*pat++ = 0;
 			}
 
-			if( pat && *(pat + 1) && !strrchr(pat + 1, '*'))
+			if( pat && *pat && !strrchr(pat, '*'))
 			{
 				if ((chr = fs->root[2]))
 				{
@@ -2878,41 +2878,38 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 			pbt = strrchr(fs->root, '/');
 			if (!pat) pat = pbt;
 			if( pat )
-				pat++;
+				*pat++ = 0;
+
 		}
 
 		if (pat)
 		{
-			if (*pat)
-			{
-				fsel_filters(fs->menu->tree, pat );
-				strcpy(fs->fs_pattern, pat);
-				strcpy(fs->fs_origpattern, fs->fs_pattern);
-				*pat = 0;	/* finish launchpath */
+			fsel_filters(fs->menu->tree, pat );
+			strcpy(fs->fs_pattern, pat);
+			strcpy(fs->fs_origpattern, fs->fs_pattern);
 
-				/* if TOS-domain client passes all upper-case pattern make it caseinsensitive */
-				if( client->p->domain == 0 )
+			/* if TOS-domain client passes all upper-case pattern make it caseinsensitive */
+			if( client->p->domain == 0 )
+			{
+				bool had_alpha = false;
+				if( fs->fs_pattern[0] == '*' && fs->fs_pattern[1] == '.' )
 				{
-					bool had_alpha = false;
-					if( fs->fs_pattern[0] == '*' && fs->fs_pattern[1] == '.' )
+					char *p = fs->fs_pattern + 2;
+					if( *p == '[' )
+						p++;
+					for( ; *p; p++ )
 					{
-						char *p = fs->fs_pattern + 2;
-						if( *p == '[' )
-							p++;
-						for( ; *p; p++ )
+						if( isalpha(*p) )
 						{
-							if( isalpha(*p) )
-							{
-								had_alpha = true;
-								if( !isupper( *p ) )
-									break;
-							}
+							had_alpha = true;
+							if( !isupper( *p ) )
+								break;
 						}
-						/* pattern is uppercase: make it caseinsensitive */
-						if( had_alpha &&  (!*p || *p == ']') )
-						{
-							fs->fcase = FS_PATNOCASE;
-						}
+					}
+					/* pattern is uppercase: make it caseinsensitive */
+					if( had_alpha &&  (!*p || *p == ']') )
+					{
+						fs->fcase = FS_PATNOCASE;
 					}
 				}
 			}
@@ -3150,10 +3147,6 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 		fs_set_shortcut_letter( wt->tree + FS_CANCEL, dmap );
 		fs_set_shortcut_letter( wt->tree + FS_OK, dmap );
 
-		/*BLOG(( 0, "fsel: open_fileselector: return list=%lx tree=%lx wt=%lx/%lx start=%lx cur=%lx focus=%lx:%d",
-		list, (list && list->wt) ? list->wt->tree:(void*)-1L, wt, list->wt, list?list->start:(void*)-1,
-			list->cur, list->wt->focus.ob,list->wt->focus.ob->ob_type ));
-			*/
 
 		DIAG((D_fsel,NULL,"done."));
 		return true;
@@ -3207,7 +3200,7 @@ close_fileselector(enum locks lock, struct fsel_data *fs)
 static void
 handle_fsel(enum locks lock, struct fsel_data *fs, const char *path, const char *file)
 {
-	DIAG((D_fsel, NULL, "fsel OK: path=%s, file=%s:%s", path, file, fs->file));
+	DIAG((D_fsel, NULL, "fsel OK: path%s, file=%s:%s", path, file, fs->file));
 
 	PROFILE(( "fsel: handle_fsel" ));
 	close_fileselector(lock, fs);
