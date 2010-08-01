@@ -627,6 +627,7 @@ sys_s_uptime (ulong *cur_uptime, ulong loadaverage[3])
 	return E_OK;
 }
 
+#define GEM 0x47454D00L	/* "GEM" */
 /*
  * shut down processes; this involves waking them all up, and sending
  * them SIGTERM to give them a chance to clean up after themselves.
@@ -637,6 +638,7 @@ shutdown(void)
 	struct proc *p;
 	int posts = 0;
 	int i;
+	union { long l; char *s; } ls;
 
 	DEBUG(("shutdown() entered"));
 	assert(get_curproc()->p_sigacts);
@@ -650,8 +652,10 @@ shutdown(void)
 
 	for (p = proclist; p; p = p->gl_next)
 	{
-		/* Skip MiNT, curproc and AES */
-		if (p->pid && (p != get_curproc()) && ((p->p_mem->memflags & F_OS_SPECIAL) == 0))
+		ls.s = p->name;
+		DEBUG(("p->name=%s:%lx pgrp=%d", p->name, ls.l, p->pgrp));
+		/* Skip MiNT, curproc and AES, and GEM */
+		if (p->pgrp && (p != get_curproc()) && ((p->p_mem->memflags & F_OS_SPECIAL) == 0) && ls.l != GEM )
 		{
 			if (p->wait_q != ZOMBIE_Q && p->wait_q != TSR_Q)
 			{
@@ -724,8 +728,16 @@ shutdown(void)
 long _cdecl
 sys_s_hutdown(long restart)
 {
+	static short shutting_down = 0;
 	PROC *p = get_curproc();
 
+	if( shutting_down == 1 )
+	{
+		FORCE( "sys_s_hutdown reentered!");
+		return EPERM;
+	}
+	shutting_down = 1;
+	DEBUG(("sys_s_hutdown: %ld", restart));
 	/* only root may shut down the system */
 	if ((p->p_cred->ucr->euid == 0) || (p->p_cred->ruid == 0))
 	{
