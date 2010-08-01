@@ -265,7 +265,7 @@ build_tasklist_string( int md, void *app)
 		struct proc *p;
 		/*unsigned*/ char *name, c=0, *cp;
 		long pinfo[4], utim, ptim;
-		static char *state_str = "CRWIZTSs";
+		static char *state_str[] = {"Cur ", "Run ", "Wait", "IO  ", "Zomb", "TSR ", "STOP", "Slct"};
 
 		if( md == AES_CLIENT  )
 		{
@@ -312,7 +312,7 @@ build_tasklist_string( int md, void *app)
 		for( ; *cp && *cp <= ' '; cp++ )
 		;
 
-		sprintf(tx, tx_len, "%16s %4d %4d %4d %3d   %c    %c %8ld %11ld %2ld %s",
+		sprintf(tx, tx_len, "%16s %4d %4d %4d %3d   %c   %s %8ld %11ld %2ld %s",
 			name, p->pid, p->ppid, p->pgrp, p->curpri, p->domain == 0?'T':'M',
 			state_str[p->wait_q], pinfo[0],
 			utim, ptim,
