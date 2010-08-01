@@ -3762,6 +3762,8 @@ static void
 init_sliders(struct module *m)
 {
 	struct widg_texture *t;
+
+ /* slide and slider (scrollbars) */
 	if ((t = load_texture(m, "slider.img")))
 	{
 		set_texture(m, &def_otop_cols.vslider, t);
@@ -3789,16 +3791,63 @@ init_sliders(struct module *m)
 		set_texture(m, &slist_def_utop_cols.hslide, t);
 #endif
 	}
-#if 0
-	if ((t = load_texture(m, "slider.img")))
+
+ /* allow seperate slider textures */
+	if ((t = load_texture(m, "vslider.img")))
 	{
-		set_texture(m, &def_otop_cols.hslider, t);
-		set_texture(m, &def_utop_cols.hslider, t);
+		set_texture(m, &def_otop_cols.vslider, t);
+		set_texture(m, &def_utop_cols.vslider, t);
+#ifndef ST_ONLY
+		set_texture(m, &slist_def_otop_cols.vslide, t);
+		set_texture(m, &slist_def_utop_cols.vslide, t);
+#endif
 	}
-	if ((t = load_texture(m, "slide.img")))
+
+	if ((t = load_texture(m, "vslide.img")))
 	{
-		set_texture(m, &def_otop_cols.hslide, t);
+		set_texture(m, &def_otop_cols.vslide, t);
+		set_texture(m, &def_utop_cols.vslide, t);
+#ifndef ST_ONLY
+		set_texture(m, &slist_def_otop_cols.vslide, t);
+		set_texture(m, &slist_def_utop_cols.vslide, t);
+#endif
+	}
+
+ /* allow seperate unfocused textures */
+	if ((t = load_texture(m, "slideru.img")))
+	{
+		set_texture(m, &def_utop_cols.vslider, t);
+		set_texture(m, &def_utop_cols.hslider, t);
+#ifndef ST_ONLY
+		set_texture(m, &slist_def_utop_cols.vslider, t);
+		set_texture(m, &slist_def_utop_cols.hslider, t);
+#endif
+	}
+
+	if ((t = load_texture(m, "slideu.img")))
+	{
+		set_texture(m, &def_utop_cols.vslide, t);
 		set_texture(m, &def_utop_cols.hslide, t);
+#ifndef ST_ONLY
+		set_texture(m, &slist_def_utop_cols.vslide, t);
+		set_texture(m, &slist_def_utop_cols.hslide, t);
+#endif
+	}
+
+ /* allow seperate unfocused slider textures */
+	if ((t = load_texture(m, "vslideru.img")))
+	{
+		set_texture(m, &def_utop_cols.vslider, t);
+#ifndef ST_ONLY
+		set_texture(m, &slist_def_utop_cols.vslider, t);
+#endif
+	}
+
+	if ((t = load_texture(m, "vslideu.img")))
+	{
+		set_texture(m, &def_utop_cols.vslide, t);
+#ifndef ST_ONLY
+		set_texture(m, &slist_def_utop_cols.vslide, t);
 	}
 #endif
 }
@@ -3808,12 +3857,20 @@ info_texture(struct module *m)
 {
 	struct widg_texture *t;
 
+ /* info bar */
 	if ((t = load_texture(m, "info.img"))) //"lgrey008.img")))
 	{
 		set_texture(m, &def_otop_cols.info, t);
 		set_texture(m, &def_utop_cols.info, t);
 	}
+
+ /* unfocused info bar */
+	if ((t = load_texture(m, "infou.img")))
+	{
+		set_texture(m, &def_utop_cols.info, t);
+	}
 }
+
 static void
 title_texture(struct module *m)
 {
@@ -3821,16 +3878,33 @@ title_texture(struct module *m)
 
 	t = load_texture(m, "wtitle.img");
 
+ /* window title bar */
 	if (t) //((t = load_texture(m, "wtitle.img")))
 	{
 		set_texture(m, &def_otop_cols.title, t);
 		set_texture(m, &def_utop_cols.title, t);
 	}
+
+ /* unfocused window title bar */
+	t = load_texture(m, "wtitleu.img");
+	if (t) //((t = load_texture(m, "wtitle.img")))
+	{
+		set_texture(m, &def_utop_cols.title, t);
+	}
+
 #ifndef ST_ONLY
+ /* scroll list title (fileselector) bar */
 	t = load_texture(m, "slwtitle.img");
 	if (t)
 	{
 		set_texture(m, &slist_def_otop_cols.title, t);
+		set_texture(m, &slist_def_utop_cols.title, t);
+	}
+
+ /* unfocused scroll list title (fileselector) bar */
+	t = load_texture(m, "ulwtitle.img");
+	if (t)
+	{
 		set_texture(m, &slist_def_utop_cols.title, t);
 	}
 #endif
@@ -3853,6 +3927,7 @@ test_img_stuff(struct module *m)
 	info_texture(m);
 	title_texture(m);
 
+ /* background texture */
 	if ((t = load_texture(m, "exterior.img"))) //grey8b.img")))
 	{
 		// foreach_widget(struct module *m, struct window_colours *wc, void(*f)(struct xa_wcol_inf *wci, void *d), void *parms)
@@ -3863,6 +3938,16 @@ test_img_stuff(struct module *m)
 		foreach_widget(m, &slist_def_utop_cols, installtexture, t);
 #endif
 	}
+
+ /* unfocused background texture */
+	if ((t = load_texture(m, "uxterior.img")))
+	{
+		foreach_widget(m, &def_utop_cols, installtexture, t);
+#ifndef ST_ONLY
+		foreach_widget(m, &slist_def_utop_cols, installtexture, t);
+#endif
+	}
+
 #if 0
 		set_texture(m, &def_otop_cols.win, t);
 		set_texture(m, &def_otop_cols.borders, t);
