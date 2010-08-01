@@ -42,12 +42,8 @@
 #include "about.h"
 void file_to_list( SCROLL_INFO *list, char *path, char *fn);
 
-/*
-#undef DISPCREDITS
-#undef LONG_LICENSE
-#define DISPCREDITS	1
-#define LONG_LICENSE	1
-*/
+#define FN_CRED	0
+
 static char *about_lines[] =
 {
   /*          1         2         3         4         5         6
@@ -77,8 +73,12 @@ static char *about_lines[] =
 	"License, or (at your option) any later version.",
 #else
 	"",
-	"The terms of the GPL version 2 or later apply.",
+	"The terms of the <b>GPL version 2</b> or later apply.",
 #endif
+#if FN_CRED
+	"This version is dedicated to <i>Frank Naumann </i>\xbb.",
+#endif
+
 	"",
 	NULL
 };
@@ -225,7 +225,7 @@ open_about(enum locks lock, struct xa_client *client, bool open)
 		if (!wt) goto fail;
 		wt->flags |= WTF_TREE_ALLOC | WTF_AUTOFREE;
 
-		set_slist_object(0, wt, NULL, ABOUT_LIST, SIF_AUTOSLIDERS,
+		set_slist_object(0, wt, NULL, ABOUT_LIST, SIF_AUTOSLIDERS | SIF_INLINE_EFFECTS,
 				 NULL, NULL, NULL, NULL, NULL, NULL,
 				 NULL, NULL, NULL, NULL,
 				 NULL, NULL, NULL, 255);
