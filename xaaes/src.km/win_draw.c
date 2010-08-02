@@ -3848,8 +3848,8 @@ init_sliders(struct module *m)
 		set_texture(m, &def_utop_cols.vslide, t);
 #ifndef ST_ONLY
 		set_texture(m, &slist_def_utop_cols.vslide, t);
-	}
 #endif
+	}
 }
 
 static void
