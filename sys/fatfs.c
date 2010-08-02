@@ -6498,7 +6498,7 @@ fatfs_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newna
 		return EXDEV;
 	}
 
-	/* check if the file exist */
+	/* check if the new file exists */
 	r = search_cookie (newd, NULL, newname, 0);
 	if (r == E_OK)
 	{
@@ -6531,7 +6531,9 @@ fatfs_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newna
 		return r;
 	}
 
-# if 1
+#define RENAME_IN_USE 1
+
+# if !RENAME_IN_USE
 	if (old->links > 1)
 	{
 		rel_cookie (old);
@@ -6694,7 +6696,7 @@ fatfs_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newna
 	}
 	else
 	{
-# if 1
+# if RENAME_IN_USE
 		/* normal renaming
 		 *
 		 * if a directory is moved the '..' entry must be
