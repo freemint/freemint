@@ -3798,8 +3798,8 @@ init_sliders(struct module *m)
 		set_texture(m, &def_otop_cols.vslider, t);
 		set_texture(m, &def_utop_cols.vslider, t);
 #ifndef ST_ONLY
-		set_texture(m, &slist_def_otop_cols.vslide, t);
-		set_texture(m, &slist_def_utop_cols.vslide, t);
+		set_texture(m, &slist_def_otop_cols.vslider, t);
+		set_texture(m, &slist_def_utop_cols.vslider, t);
 #endif
 	}
 
