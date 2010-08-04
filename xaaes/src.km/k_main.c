@@ -62,7 +62,10 @@
 #include "mint/ssystem.h"
 #include "cookie.h"
 
+#if CHECK_STACK
 short check_stack_alignment( long e );
+extern short stack_align;
+#endif
 
 #include "c_mouse.h"
 void set_tty_mode( short md );
@@ -1021,8 +1024,6 @@ aesthread_block(struct xa_client *client, int which)
 		do_block(client);
 }
 
-extern short stack_align;
-
 /*
  * AES thread
  */
@@ -1048,11 +1049,12 @@ aesthread_entry(void *c)
 static void
 helpthread_entry(void *c)
 {
-	long stk = (long)get_sp();
 	struct xa_client *client;
 
+#if CHECK_STACK
+	long stk = (long)get_sp();
 	stack_align |= (check_stack_alignment(stk) << 8);
-
+#endif
 	p_domain(1);
 	setup_common();
 
@@ -1449,13 +1451,14 @@ void set_tty_mode( short md )
 void
 k_main(void *dummy)
 {
-	long stk = (long)get_sp();
 	int wait = 1;
 	unsigned long default_input_channels;
 	struct tty *tty;
 
+#if CHECK_STACK
+	long stk = (long)get_sp();
 	stack_align |= (check_stack_alignment(stk) << 4);
-
+#endif
 	/* test if already running */
 	if( p_semaphore( SEMGET, XA_SEM, 0 ) != EBADARG )
 	{
@@ -1667,11 +1670,12 @@ k_main(void *dummy)
 	if (cfg.opentaskman)
 		post_cevent(C.Hlp, ceExecfunc, open_taskmanager,NULL, 1,0, NULL,NULL);
 
+#if CHECK_STACK
 	if( stack_align & 0x111 )
 	{
 		ALERT(( "WARNING:your stack is odd!" ));
 	}
-
+#endif
 	post_cevent(C.Hlp, CE_start_apps, NULL,NULL, 0,0, NULL,NULL);
 
 	/*

@@ -2289,11 +2289,14 @@ static void add_os_features(struct scroll_info *list, struct scroll_entry *this,
 {
 	char s[128];
 	long has_mprot = Ssystem(S_OSFEATURES,0,0);
-	extern unsigned short stack_align;
 
+#if CHECK_STACK
+	extern unsigned short stack_align;
 	sprintf( s, sizeof(s)-1, "MEMPROT:%s, Stack: %x", has_mprot ? "ON" : "OFF", stack_align );
 	BLOG((0,s));
-
+#else
+	sprintf( s, sizeof(s)-1, "MEMPROT:%s", has_mprot ? "ON" : "OFF" );
+#endif
 	sc->t.text = s;
 
 	list->add(list, this, 0, sc, SEADD_CHILD, 0, 0);
@@ -2513,10 +2516,10 @@ open_systemalerts(enum locks lock, struct xa_client *client, bool open)
 
 			add_kerinfo( "u:/kern/version", list, this, NULL, &sc, 0, 0, false, NULL );
 			BLOG((0,"version:%s", sc.t.text ));
-
+#if XAAES_RELEASE > 0
 			add_kerinfo( "u:/kern/buildinfo", list, this, NULL, &sc, 0, 1, false, NULL );
 			BLOG((0,"buildinfo:%s", sc.t.text ));
-
+#endif
 			init_list_focus( obtree, SYSALERT_LIST, 0 );
 		}
 

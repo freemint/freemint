@@ -51,8 +51,9 @@
 
 //long module_exit(void);
 
+#if CHECK_STACK
 short check_stack_alignment( long e );
-
+#endif
 short my_global_aes[16];
 
 /* XXX gemlib */
@@ -299,6 +300,7 @@ fail:		if (buf) kfree(buf);
 }
 #endif
 
+#if CHECK_STACK
 /*
  * return alignment-value
  *
@@ -315,19 +317,24 @@ short check_stack_alignment( long stk )
 	return 4;
 }
 
+unsigned short stack_align = 0;
+
+#endif
+
 /*
  * Module initialisation
  * - setup internal data
  * - start main kernel thread
  */
-unsigned short stack_align = 0;
 static Path start_path;
 static const struct kernel_module *self = NULL;
 
 long
 init(struct kentry *k, const struct kernel_module *km) //const char *path)
 {
+#if CHECK_STACK
 	long stk = (long)get_sp();
+#endif
 	long err = 0L;
 	bool first = true;
 	struct proc *rootproc;
@@ -369,6 +376,7 @@ again:
 	rootproc = pid2proc(0);
 	rootproc->modeflags &= ~(M_SINGLE_TASK|M_DONT_STOP);
 
+#if CHECK_STACK
 	/**** check if stack is sane ****/
 	stack_align |= check_stack_alignment(stk);
 	if( stack_align == 1 )
@@ -379,7 +387,7 @@ again:
 			BLOG(( 0,"stack is long-aligned:%lx", stk ));
 	else
 			BLOG(( 0,"stack is word-aligned:%lx", stk ));
-
+#endif
 
 	if (check_kentry_version())
 	{
