@@ -1855,7 +1855,7 @@ struct se_text
 {
 // 	struct se_text *next;
 	short flags;
-	unsigned short tblen;
+	unsigned short tblen, slen;
 	char *text;
 	short w;
 	short h;
