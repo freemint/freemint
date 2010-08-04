@@ -42,12 +42,21 @@
 #include "about.h"
 void file_to_list( SCROLL_INFO *list, char *path, char *fn);
 
+#if XAAES_RELEASE
+#define FN_CRED	1
+#else
 #define FN_CRED	0
+#endif
 
 static char *about_lines[] =
 {
   /*          1         2         3         4         5         6
      123456789012345678901234567890123456789012345678901234567890 */
+#if FN_CRED
+	"",
+	"          <u>Dedicated to <i>Frank Naumann </i></u>\xbb",
+	"<u>                                                                  </u>",
+#endif
 	"",
 #if DISPCREDITS
 	"Copyright (c) 1992 - 1998 C.Graham",
@@ -74,9 +83,6 @@ static char *about_lines[] =
 #else
 	"",
 	"The terms of the <b>GPL version 2</b> or later apply.",
-#endif
-#if FN_CRED
-	"This version is dedicated to <i>Frank Naumann </i>\xbb.",
 #endif
 
 	"",
