@@ -72,6 +72,16 @@
 #define FS_NPATTERNS	16	/* # of patterns */
 #endif
 
+
+/* check stack-alignment for all xaaes-threads and display the result in the
+ * system-window
+ */
+#if XAAES_RELEASE
+#define CHECK_STACK	1
+#else
+#define CHECK_STACK	0
+#endif
+
 #define NAES3D			1	/* ??? */
 
 #if __GNUC__ > 2
