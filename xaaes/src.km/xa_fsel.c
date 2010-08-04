@@ -2840,8 +2840,13 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 				pat = strrchr(fs->root, '\\');
 				pbt = strrchr(fs->root, '/');
 				if (!pat) pat = pbt;
+				//BLOG((0,"fsel:pat=%lx:%s", pat, pat));
 				if( pat )
+				{
 					*pat++ = 0;
+					if( !*pat )
+						pat = "*";
+				}
 			}
 
 			if( pat && *pat && !strrchr(pat, '*'))
@@ -2872,6 +2877,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 		fs->fs_pattern[0] = '*';
 		fs->fs_pattern[1] = '\0';
 		fs->fcase = 0;
+		//BLOG((0,"fsel:pat=%lx:%s", pat, pat));
 		if( !pat )
 		{
 			pat = strrchr(fs->root, '\\');
