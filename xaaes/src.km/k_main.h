@@ -67,11 +67,13 @@ void k_main(void *);
 
 extern int aessys_timeout;
 
+#if CHECK_STACK
 /* Read the current stack pointer value */
 static __inline__ void* get_sp(void)
 {
      register void* ret __asm__("sp");
      return ret;
 }
+#endif
 
 #endif /* _k_main_h */
