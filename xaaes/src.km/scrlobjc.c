@@ -461,7 +461,7 @@ calc_entry_wh(SCROLL_INFO *list, SCROLL_ENTRY *this)
 				short l = 0;
 				s = c->c.text.text;
 				if( s )
-					l = strlen(s);
+					l = c->c.text.slen;
 
 				if( list->char_width && c->prev && c->prev->c.text.h ){
 					c->c.text.w = list->char_width * l;	/* assuming unprop. font! */
@@ -799,7 +799,7 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 						}
 						if (tw > 0)
 						{
-							int method;
+							int method, w;
 
 							if( c->index == 0/*FSLIDX_NAME*/ )
 							{
@@ -821,8 +821,9 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 							(*v->api->t_font)(v, wtxt->p, wtxt->f);
 							(*v->api->t_effects)(v, wtxt->e);
 
+							w = c->c.text.tblen * list->char_width;
 							/* opt: const width for prop_... */
-							if( method >= 0 && c->c.text.tblen * list->char_width > tw )
+							if( method >= 0 && w > tw )
 							{
 								if( c->c.text.tblen > sizeof(t)-1 )
 									c->c.text.tblen = sizeof(t)-1;
@@ -833,21 +834,72 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 								strncpy( t, c->c.text.text, sizeof(t)-1 );
 								t[sizeof(t)-1] = 0;
 								th = c->c.text.h;
+								tw = c->c.text.slen * list->char_width;;
 							}
 
 #if ITALIC_IS_CUTOFF
 							/* on some systems the last letter is cut off if italic */
-							if( (wtxt->e & ITALIC) && strlen(t) < sizeof(t)-1 )
-								strcat( t, " " );
+							if( C.fvdi_version > 0 && (wtxt->e & ITALIC) && c->c.text.slen < sizeof(t)-1 )
+							{
+								t[c->c.text.slen] = ' ';
+								t[c->c.text.slen+1] = 0;
+								//tw += list->char_width;
+							}
 #endif
 
+							{
+							char *tp = t;
+#if 0
+							short flags = tab->flags;
+							/* support for inlined centered and right-bound text (not yet used) */
+							if( list->flags & SIF_INLINE_EFFECTS )
+							{
+								bool cmd = false, not = false;
+
+								if( *tp == '<' )
+								{
+									if( *(tp+1) == '/' )
+									{
+										not = true;
+										tp++;
+									}
+									switch( *(tp+1) )
+									{
+									case 'r':
+										if( not == true )
+											tab->flags &= ~SETAB_RJUST;
+										else
+											tab->flags |= SETAB_RJUST;
+										cmd = true;
+									break;
+									case 'c':
+										if( not == true )
+											tab->flags &= ~SETAB_CJUST;
+										else
+											tab->flags |= SETAB_CJUST;
+										cmd = true;
+									break;
+									}
+									if( cmd == true )
+									{
+										tp += 2;
+										if( *tp != '>' )
+											BLOG((0,"list_add: missing '>' in %s", t ));
+										else
+											tp++;
+										tw -= list->char_width * (tp - t);
+									}
+								}
+							}
+#endif
 							if (tab->flags & SETAB_RJUST)
 							{
 								dx = x2 - tw;
 							}
-							else if (tab->flags & SETAB_CJUST)
+							else if ( tab->flags & SETAB_CJUST)
 							{
-								dx = x2 - (tw >> 1);
+								dx += list->char_width * c->c.text.tblen - (tw >> 1);
+								//dx = x2 - (tw >> 1);
 							}
 
 							dy += ((this->r.h - th) >> 1);
@@ -857,7 +909,9 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 							if( list->flags & SIF_INLINE_EFFECTS )
 							{
 								bool cont = true;
-								char *tp = t, *tpp = t, cp;
+								char *tpp = tp, cp;
+								short te = wtxt->e;
+
 								while( cont )
 								{
 									for( ; *tp && *tp != '<'; tp++ )
@@ -879,27 +933,39 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 										switch( *++tp )
 										{
 										case 'i':
-											(*v->api->t_effects)(v, wtxt->e | ITALIC);
+											te |= ITALIC;
+										break;
+										case 'u':
+											te |= UNDERLINED;
 										break;
 										case 'b':
-											(*v->api->t_effects)(v, wtxt->e | BOLD);
+											te |= BOLD;
 										break;
 										case '/':
 											switch( *++tp )
 											{
 											case 'i':
-												(*v->api->t_effects)(v, wtxt->e & ~ITALIC);
+												te &= ~ITALIC;
+											break;
+											case 'u':
+												te &= ~UNDERLINED;
 											break;
 											case 'b':
-												(*v->api->t_effects)(v, wtxt->e & ~BOLD);
+												te &= ~BOLD;
 											break;
 											}
 										break;
+
 										}
 										if( *++tp != '>' )
 										{
-											BLOG((0,"list_add: missing '>' in %s", t ));
+											BLOG((0,"display_list_element: missing '>' in %s", c->c.text.text ));
 										}
+										else
+										{
+											(*v->api->t_effects)(v, te);
+										}
+
 									break;
 									}
 
@@ -907,8 +973,10 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 									if( cont )
 										tpp = tp + 1;
 								}
+								wtxt->e = te;	// effect valid for one line?
 								v_gtext(v->handle, dx, dy, tpp);
-
+								/* restore flags changed by <c>, <r> */
+								//tab->flags = flags;
 							}
 							else
 							{
@@ -926,8 +994,9 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 								}
 								v_gtext(v->handle, dx, dy, t);
 							}
+							}
 
-						}
+						}	/*/if (tw > 0)*/
 					}
 					break;
 				}
@@ -1702,6 +1771,7 @@ new_setext(const char *t, OBJECT *icon, short type, short *sl)
 		new->type = SECONTENT_TEXT;
 		new->next = NULL;
 		new->c.text.tblen = tblen;
+		new->c.text.slen = slen;
 	}
 	return new;
 }
