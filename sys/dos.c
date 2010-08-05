@@ -653,7 +653,7 @@ shutdown(void)
 	for (p = proclist; p; p = p->gl_next)
 	{
 		ls.s = p->name;
-		DEBUG(("p->name=%s:%lx pgrp=%d", p->name, ls.l, p->pgrp));
+		FORCE("p->name=%s:%lx pgrp=%d", p->name, ls.l, p->pgrp);
 		/* Skip MiNT, curproc and AES, and GEM */
 		if (p->pgrp && (p != get_curproc()) && ((p->p_mem->memflags & F_OS_SPECIAL) == 0) && ls.l != GEM )
 		{
@@ -667,7 +667,7 @@ shutdown(void)
 					spl(sr);
 				}
 
-				DEBUG(("SIGTERM -> %s (pid %i)", p->name, p->pid));
+				FORCE("SIGTERM -> %s (pid %i)", p->name, p->pid);
 				post_sig(p, SIGTERM);
 
 				posts++;
@@ -681,13 +681,13 @@ shutdown(void)
 
 	sysq[READY_Q].head = sysq[READY_Q].tail = NULL;
 
-	DEBUG(("Close open files ..."));
+	FORCE("Close open files ...");
 	close_filesys();
-	DEBUG(("done"));
+	FORCE("done");
 
-	DEBUG(("Syncing file systems ..."));
+	FORCE("Syncing file systems ...");
 	sys_s_ync();
-	DEBUG(("done"));
+	FORCE("done");
 
 	for (i = 0; i < NUM_DRIVES; i++)
 	{
@@ -697,7 +697,7 @@ shutdown(void)
 		{
 			if (fs->fsflags & FS_EXT_1)
 			{
-				DEBUG(("Unmounting %c: ...", 'A'+i));
+				FORCE("Unmounting %c: ...", 'A'+i);
 				xfs_unmount(fs, i);
 			}
 			else
@@ -708,9 +708,9 @@ shutdown(void)
 		}
 	}
 
-	DEBUG(("Syncing file systems ..."));
+	FORCE("Syncing file systems ...");
 	sys_s_ync();
-	DEBUG(("done"));
+	FORCE("done");
 
 	/* Wait for the disks to flush their write cache */
 	delay_seconds(2);
