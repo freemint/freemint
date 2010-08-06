@@ -708,8 +708,8 @@ again:
 			sleep(WAIT_Q, (long)&loader_pid);
 		}
 
-		BLOG((1,"AESSYS kthread exited - C.shutdown = %x", C.shutdown));
-// 		display("AESSYS kthread exited - C.shutdown = %x", C.shutdown);
+		BLOG((1,"AESSYS kthread exited - C.shutdown = %lx", C.shutdown));
+// 		display("AESSYS kthread exited - C.shutdown = %lx", C.shutdown);
 
 #if GENERATE_DIAGS
 		/* Close the debug output file */
