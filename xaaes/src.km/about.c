@@ -54,7 +54,7 @@ static char *about_lines[] =
      123456789012345678901234567890123456789012345678901234567890 */
 #if FN_CRED
 	"",
-	"          <u>Dedicated to <i>Frank Naumann </i></u>\xbb",
+	"           <u>Dedicated to <i>Frank Naumann </i></u>\xbb",
 	"<u>                                                                  </u>",
 #endif
 	"",
