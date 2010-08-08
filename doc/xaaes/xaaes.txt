@@ -31,28 +31,31 @@ Contents
 
  5  XaAES Main-menu
     5.1  About
-    5.2  System-Window
-    5.3  Taskmanager
+    5.2  The Launcher
+    5.3  System-Window
+    5.4  Taskmanager
 
- 6  Fileselector
-    6.1  Keyboard
-    6.2  File-Listing and Matching
+ 6  Environment
 
- 7  XaAES-Pattern-Matching
+ 7  Fileselector
+    7.1  Keyboard
+    7.2  File-Listing and Matching
 
- 8  Video-Modes
+ 8  XaAES-Pattern-Matching
 
- 9  Iconifying
+ 9  Video-Modes
 
-10  Miscellaneous
-   10.1  Features for XaAES-internal windows
-   10.2  Single-Task Mode
-   10.3  Mousewheel-Configuration
-   10.4  Comparison to TOS-AES
+10  Iconifying
 
-11  download
+11  Miscellaneous
+   11.1  Features for XaAES-internal windows
+   11.2  Single-Task Mode
+   11.3  Mousewheel-Configuration
+   11.4  Comparison to TOS-AES
 
-12  Contact
+12  download
+
+13  Contact
 
 
 
@@ -124,6 +127,10 @@ directory:
 You can choose other resource-files for the first two in xaaes.cnf  to
 get different widgets for example (some are in the 'widgets'-folder).
 
+The system-resource-file has a version-number (currently 0.0.9), which
+gives xaaes009.rsc. If this file is not  found  the  name  defined  in
+xaaes.cnf is used if present. If not, xaaes.rsc is used.
+
 There is  also  a  resource-file for monochrome display (xa_mono.rsc),
 that reportedly saves memory, but it has not yet been updated for  the
 latest XaAES-version.
@@ -185,9 +192,11 @@ If a command isn't understood, it gets ignored.
 Default values are false for bool, 0 for numbers or empty for  strings
 unless otherwise mentioned.
 
- LAUNCHPATH <character-sequence> Define   directory   from  where  the
-     XaAES-launcher starts  programs.  A  pattern  to  select  typical
-     executable files may be appended.
+ LAUNCHPATH <character-sequence>
+
+     Define the initial directory that is opened by the XaAES-launcher
+     to start programs. A pattern to select typical  executable  files
+     may be appended.
 
      Example: launchpath = u:\usr\gem\|*.prg|*.app|!*.*|*.acc
 
@@ -206,15 +215,12 @@ unless otherwise mentioned.
      xaaes.cnf for snapshots is called, if present.
 
  ACCPATH <character-sequence> Set  the location that XaAES will try to
-     load accessories from (default is c:\).
+     load accessories from (default is c:\). When ACCPATH  is  present
+     in the environment this precedes the config-variable.
 
  RESOURCE <character-
-     sequence> main resource filename (default xaaes009.rsc)
-
-     The system-resource-file has a version-number (currently  0.0.9),
-     which  gives  xaaes009.rsc.  If  this  file is not found the name
-     defined in xaaes.cnf is used if present.  If  not,  xaaes.rsc  is
-     used.
+     sequence> main resource filename (default xaaes009.rsc) See
+     Resource-Files
 
  WIDGETS <character-
      sequence> widgets resource filename (default xaaeswdg.rsc)
@@ -540,7 +546,21 @@ copyright are mentioned.
 Additionally the file 'xa_help.txt' is displayed if present.
 
 
-5.2  System-Window
+5.2  The Launcher
+=================
+
+There is no desktop needed to launch programs  as  XaAES  is  able  to
+start  them  itself  using  the Launcher. It opens the fileselector in
+LAUNCHPATH. You may also select any  other  directory  from  where  to
+start a program.
+
+If a  client  is launched from launchpath, and the entry is a symlink,
+home_path for that client is set to the directory of the  link-target.
+It  behaves  then  as  if  started  from that directory, and finds its
+resource- and other files.
+
+
+5.3  System-Window
 ==================
 
 In addition to the features described in
@@ -564,7 +584,7 @@ the following has been added:
         - Kernel-version from /kern/version
 
 
-5.3  Taskmanager
+5.4  Taskmanager
 ================
 
 In addition to the features described in
@@ -580,7 +600,7 @@ the following has been added:
      this client is topped. If a window is selected,  this  window  is
      topped. Unselect with Space (or Insert).
 
- All processes Also lists non-AES-apps (not toppable, of course)
+ Pocesses Also lists non-AES-apps (not toppable, of course)
 
  Memory Displays memory-statistics found in /kern/meminfo
 
@@ -617,13 +637,28 @@ the following has been added:
 
            STOP: Stopped
 
-           Slct: Waiting for IO in Fselect
+           Slct: Waiting in Fselect
 
           For more details refer to programmer/mint.txt
 
 
 
-6  Fileselector
+6  Environment
+**************
+
+XaAES uses the following environment-variables:
+
+ ACCPATH See Global Commands.
+
+ TOSRUN Define application for running text-mode programs.
+
+ HOME See USEHOME
+
+ PATH Used in shel_find for locating applications.
+
+
+
+7  Fileselector
 ***************
 
 Only changes from version 0.998 to 0.999 will be described here. For a
@@ -636,7 +671,7 @@ is recommended.
 The changes are mainly:
 
 
-6.1  Keyboard
+7.1  Keyboard
 =============
 
    . PageUp/Down(Shift-CU/CD) pages the filelist.
@@ -650,7 +685,7 @@ The changes are mainly:
      copied to the Clipboard.
 
 
-6.2  File-Listing and Matching
+7.2  File-Listing and Matching
 ==============================
 
    . Sorting  is  case-sensitive,  i.e.  Z is placed before a (like ls
@@ -665,7 +700,7 @@ The changes are mainly:
 
 
 
-7  XaAES-Pattern-Matching
+8  XaAES-Pattern-Matching
 *************************
 
 XaAES supports the following meta-characters for pattern-matching:
@@ -696,21 +731,21 @@ caseinsensitive.
 
 
 
-8  Video-Modes
+9  Video-Modes
 **************
 
 
 
-9  Iconifying
-*************
+10  Iconifying
+**************
 
 
 
-10  Miscellaneous
+11  Miscellaneous
 *****************
 
 
-10.1  Features for XaAES-internal windows
+11.1  Features for XaAES-internal windows
 =========================================
 
    . By pressing Ctrl-C the  selected  list-entry  is  copied  to  the
@@ -726,7 +761,7 @@ caseinsensitive.
 
              * Cursor-left: collapse
 
-             * up/down: move the cursor
+             * Cursor up/down: move the cursor
 
         - List is not selected
 
@@ -734,10 +769,10 @@ caseinsensitive.
 
              * Cursor-left: scroll left
 
-             * up/down: scroll up/down
+             * Cursor up/down: scroll up/down
 
 
-10.2  Single-Task Mode
+11.2  Single-Task Mode
 ======================
 
 This has  been  introduced  to  be  able  to run some old but valuable
@@ -783,16 +818,16 @@ If a program shall not be stopped do the same but with
 on that program-file.
 
 
-10.3  Mousewheel-Configuration
+11.3  Mousewheel-Configuration
 ==============================
 
 
-10.4  Comparison to TOS-AES
+11.4  Comparison to TOS-AES
 ===========================
 
 
 
-11  download
+12  download
 ************
 
    . Daily builds: http://www.freemint.org/builds
@@ -801,7 +836,7 @@ on that program-file.
 
 
 
-12  Contact
+13  Contact
 ***********
 
    . Author  of  this  document  and  some  enhancements   to   XaAES:
@@ -809,8 +844,8 @@ on that program-file.
 
    . MiNT-mailinglist: http://sparemint.org/mailinglist/
 
-If you  found  errors  in  or want to contribute to this document feel
-free to contact me or even better join the mintlist.
+If you find errors in or want to contribute to this document feel free
+to contact me or even better join the mintlist.
 
 
 
