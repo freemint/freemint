@@ -5,13 +5,6 @@
 !language english
 
 !ifdest [asc]
-	!define see_also See (!1)
-!else
-	!define see_also See <a href="#(!1)">(!1)</a>
-!endif
-
-
-!ifdest [asc]
 	!define weblink (!2)
 !else
 	!define weblink <a href="(!2)">(!1)</a>
@@ -24,13 +17,11 @@
 
 #special preamble for dvipdfm, dvips
 !no_preamble [tex]
+!use_label_inside_index [html]
 !html_merge_nodes
 !html_merge_subnodes
 !html_merge_subsubnodes
 
-!ifdest [tex]
-!rinclude tex_preamble.u
-!endif
 #
 !tex_tetex
 !tex_2e
@@ -121,6 +112,10 @@ xaaes-startup-directory:
 You can choose other resource-files for the first two in xaaes.cnf to get
 different widgets for example (some are in the 'widgets'-folder).
 
+The system-resource-file has a version-number (currently 0.0.9), which
+gives xaaes009.rsc. If this file is not found the name defined in
+xaaes.cnf is used if present. If not, xaaes.rsc is used.
+
 There is also a resource-file for monochrome display (xa_mono.rsc), that
 reportedly saves memory, but it has not yet been updated for the latest
 XaAES-version.
@@ -172,10 +167,13 @@ Default values are false for bool, 0 for numbers or empty for strings unless oth
 
 !begin_description
 
+!label LAUNCHPATH
+
 !item [LAUNCHPATH	<character-sequence>]
-	Define directory from where the
-	XaAES-launcher starts programs. A pattern to select
-	typical executable files may be appended.
+
+Define the initial directory that is opened by the
+XaAES-launcher to start programs. A pattern to select
+typical executable files may be appended.
 
 		Example:
 		launchpath  = u:\usr\gem\|*.prg|*.app|!*.*|*.acc
@@ -203,17 +201,15 @@ T=0: full screen, T=2: top window
 
 !item [ACCPATH 	<character-sequence>]
         Set the location that XaAES will try to load accessories
-        from (default is c:\).
+        from (default is c:\). When ACCPATH is present in the
+environment this precedes the config-variable.
 
 !item [RESOURCE 	<character-sequence>	main resource filename (default xaaes009.rsc)]
-
-	The system-resource-file has a version-number (currently 0.0.9), which
-	gives xaaes009.rsc. If this file is not found the name defined in
-	xaaes.cnf is used if present. If not, xaaes.rsc is used.
-
+	See Resource-Files
 
 !item [WIDGETS 	<character-sequence>	widgets resource filename (default xaaeswdg.rsc)]
 
+!label USEHOME
 !item [USEHOME		<bool>]		use $HOME in shell_find
 
 !item [NAES_COOKIE	<bool>]         	fake nAES cookie
@@ -508,6 +504,17 @@ GPL-copyright are mentioned.
 Additionally the file 'xa_help.txt' is displayed if present.
 
 
+!subnode The Launcher
+
+There is no desktop needed to launch programs as XaAES is able to start
+them itself using the Launcher. It opens the fileselector in LAUNCHPATH.
+You may also select any other directory from where to start a program.
+
+If a client is launched from launchpath, and the entry is a symlink,
+home_path for that client is set to the directory of the link-target. It
+behaves then as if started from that directory, and finds its resource-
+and other files.
+
 !subnode System-Window
 
 In addition to the features described in
@@ -544,7 +551,7 @@ the following has been added:
 If a window  is selected, this window is topped. Unselect with
 Space (or Insert).
 
-!item [All processes] Also lists non-AES-apps (not toppable, of course)
+!item [Pocesses] Also lists non-AES-apps (not toppable, of course)
 
 !item [Memory] Displays memory-statistics found in /kern/meminfo
 
@@ -570,12 +577,28 @@ load"-button this can be switched off and on.
 !item [Zomb]: Zombie
 !item [TSR]: Terminated and resident
 !item [STOP]: Stopped
-!item [Slct]: Waiting for IO in Fselect
+!item [Slct]: Waiting in Fselect
 !end_description
 
 For more details refer to programmer/mint.txt
 
 !end_description
+
+!end_description
+
+!node Environment
+
+XaAES uses the following environment-variables:
+
+!begin_description
+
+!item [ACCPATH]	See Global Commands.
+
+!item [TOSRUN] Define application for running text-mode programs.
+
+!item [HOME] See USEHOME
+
+!item [PATH] Used in shel_find for locating applications.
 
 !end_description
 
@@ -738,7 +761,7 @@ on that program-file.
 !item MiNT-mailinglist: (!weblink [mintlist] [http://sparemint.org/mailinglist/])
 !end_itemize
 
-If you found errors in or want to contribute to this document feel free to contact me or even
+If you find errors in or want to contribute to this document feel free to contact me or even
 better join the mintlist.
 
 !end_document
