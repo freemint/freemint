@@ -35,12 +35,11 @@
 
 #include <sys/ptrace.h>
 
-/* XXX -> mintlib */
 typedef long long llong;
-#include "../../sys/mint/socket.h"
-#include "../../sys/mint/stat.h"
-#include "../../sys/mint/un.h"
-#include "../../sys/sockets/inet4/in.h"
+#include <sys/socket.h>
+#include <sys/time.h>
+#include <netinet/in.h>
+#include <sys/un.h>
 
 #include "print.h"
 
