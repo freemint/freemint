@@ -149,7 +149,7 @@ void file_to_list( SCROLL_INFO *list, char *path, char *fn)
 	struct file *fp;
 	struct scroll_content sc = {{ 0 }};
 	long err;
-	int state = 0, offs = 0;
+	int state = 0, offs = 0, cr = 0;
 
 	sprintf( ebuf, sizeof(ebuf), "%s\\%s", path, fn );
 	fp = kernel_open( ebuf, O_RDONLY, &err, NULL );
@@ -178,9 +178,14 @@ void file_to_list( SCROLL_INFO *list, char *path, char *fn)
 					else
 						state = 0;
 				}
-				if( *p == '\n' )
+				if( *p == '\n' || (cr=(*p == '\r')) )
 				{
 					*p = 0;
+					if( cr )
+					{
+						cr = 0;
+						p++;
+					}
 					if( state != 1 )
 					{
 						sc.t.text = p1;
