@@ -59,7 +59,7 @@ struct cnfdata
 
 static PCB_TTx	pCB_setenv;		/* setenv name val	*/
 
-static PCB_T	pCB_toppage;
+//static PCB_T	pCB_toppage;
 static PCB_T	pCB_next_active;
 //static PCB_T	pCB_close_lastwind;
 static PCB_A	pCB_app_options;
@@ -113,7 +113,7 @@ static struct parser_item parser_tab[] =
 	/* config settings */
 	{ "SETENV",                PI_C_TT,  pCB_setenv		},
 
-	{ "TOPPAGE",               PI_V_T,   pCB_toppage		},
+//	{ "TOPPAGE",               PI_V_T,   pCB_toppage		},
 	{ "NEXT_ACTIVE",           PI_V_T,   pCB_next_active		},
 //	{ "CLOSE_LASTWIND",        PI_V_T,   pCB_close_lastwind		},
 	{ "FOCUS",                 PI_V_T,   pCB_point_to_type		},
@@ -394,7 +394,7 @@ pCB_setenv(const char *var, const char *arg, struct parsinf *inf)
 	else
 		DIAGS(("pCB_setenv: len %lu > sizeof(p) %lu", len, sizeof(p)));
 }
-
+#if 0
 /*----------------------------------------------------------------------------*/
 static void
 pCB_toppage(char *str)
@@ -417,7 +417,7 @@ pCB_toppage(char *str)
 	DIAGS(("pCB_toppage: %s (topname %i, backname %i)",
 		str, cfg.topname, cfg.backname));
 }
-
+#endif
 static void
 pCB_next_active(char *str)
 {
