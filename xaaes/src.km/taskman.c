@@ -1596,7 +1596,7 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 		sc.data = 0;
 		sc.usr_flags = TM_HEADER;
 		/* ! no tabs! */
-		sc.t.text = "       name          pid  ppid pgrp pri DOM STATE    SZ         CPU  % args";
+		sc.t.text = "       name          pid  ppid pgrp pri DOM STATE    SZ           CPU  % args";
 		list->add(list, NULL, NULL, &sc, false, 0, NOREDRAW);
 
 		if (open)
