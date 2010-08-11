@@ -678,6 +678,8 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 		(*v->api->f_interior)(v, FIS_SOLID);
 		(*v->api->bar)(v, 0, xy->x, xy->y, xy->w, this->r.h);
 
+		//(*v->api->t_effects)(v, 0);	/* restore just in case */
+
 		if (list->flags & SIF_TREEVIEW)
 		{
 			r.x = xy->x;
@@ -909,7 +911,7 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 							if( list->flags & SIF_INLINE_EFFECTS )
 							{
 								bool cont = true;
-								char *tpp = tp, cp;
+								char *tpp = tp, cp = 0;
 								short te = wtxt->e;
 
 								while( cont )
@@ -957,13 +959,13 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 										break;
 
 										}
-										if( *++tp != '>' )
+										if( *++tp == '>' )
 										{
-											BLOG((0,"display_list_element: missing '>' in %s", c->c.text.text ));
+											(*v->api->t_effects)(v, te);
+											//wtxt->e = te;	// effect valid for one line?
 										}
 										else
 										{
-											(*v->api->t_effects)(v, te);
 										}
 
 									break;
@@ -973,8 +975,8 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 									if( cont )
 										tpp = tp + 1;
 								}
-								wtxt->e = te;	// effect valid for one line?
 								v_gtext(v->handle, dx, dy, tpp);
+								//wtxt->e = te;	// effect valid for one line? todo: save te in scroll_info
 								/* restore flags changed by <c>, <r> */
 								//tab->flags = flags;
 							}
