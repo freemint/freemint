@@ -2,7 +2,7 @@
 
             XaAES: A multitasking AES replacement for MiNT
 
-                            August 8, 2010
+                           August 12, 2010
 
                                   by
 
@@ -63,32 +63,40 @@ Contents
 **********
 
 Parts of this document have been copied from the sample xaaes.cnf, the
-old usrguide, the wiki (http://wiki.sparemint.org/index.php/XaAES) and
-the xaaes-sources.
+old usrguide, and the xaaes-sources.
 
 As not everything is clear, some items have been marked with ?.
 
-Currently there  is  a  lot  stuff  missing  in this documentation but
-things that are new to the user since version 0.998 should  be  mostly
+Currently there is a lot  stuff  missing  in  this  documentation  but
+things  that  are new to the user since version 0.998 should be mostly
 there.
+
+You may find additional information here:
+
+   . http://wiki.sparemint.org/index.php/XaAES
+
+   . http://xaaes.atariforge.net/docs.php
 
 
 
 2  Installation
 ***************
 
-See also the XaAES-wiki
-
 XaAES is normally included in the standard FreeMiNT distribution. It's
-files are located in the subdirectory xaaes  in  the  FreeMiNT  system
-folder.  To start XaAES you need to run the program xaloader.prg which
-you can find in the XaAES folder.  There  are  three  common  ways  of
+files  are  located  in  the subdirectory xaaes in the FreeMiNT system
+folder. To start XaAES you need to run the program xaloader.prg  which
+you  can  find  in  the  XaAES  folder. There are three common ways of
 starting XaAES.
 
- From mint.cnf The  keyword  GEM points to xaloader.prg. FreeMiNT will
+ From mint.cnf The keyword GEM points to xaloader.prg.  FreeMiNT  will
      now start XaAES automatically. Example:
 
-     GEM=c:\mint\1-17-cur\xaaes\xaloader.prg
+     GEM=<sysdir>\xaaes\xaloader.prg
+
+     <sysdir> defaults  to  "<bootdrive>/mint/<VERSION>"  or,  if this
+     directory doesn't exist,  "<bootdrive>/mint".  <VERSION>  is  the
+     version  of  the  kernel  where  dots are replaced by minus, e.g.
+     1.17.0 gives 1-17-0.
 
  By init
 
@@ -97,8 +105,7 @@ starting XaAES.
 
  By the TOS desktop Sometimes quitting XaAES also works here.
 
-Xaloader runs  <sysdir>/xaaes/xaaes.km  by  default, where <sysdir> is
-the directory where MiNT finds its files, normally c:\mint\1-17-cur.
+Xaloader runs <sysdir>/xaaes/xaaes.km by default.
 
 You may specify any km-file on the commandline, e.g.:
 
@@ -114,7 +121,7 @@ On startup XaAES needs the following files:
 2.1.1  Resource-Files
 ---------------------
 
-There are 3 mandatory resource-files  located  in  the  xaaes-startup-
+There are  3  mandatory  resource-files  located in the xaaes-startup-
 directory:
 
  xaaes[n].rsc - standard resource-file, n: resource-version, currently
@@ -124,23 +131,25 @@ directory:
 
  xa_xtobj.rsc - resource containing the extended AES object icons
 
-You can choose other resource-files for the first two in xaaes.cnf  to
+You can  choose other resource-files for the first two in xaaes.cnf to
 get different widgets for example (some are in the 'widgets'-folder).
 
 The system-resource-file has a version-number (currently 0.0.9), which
-gives xaaes009.rsc. If this file is not  found  the  name  defined  in
+gives  xaaes009.rsc.  If  this  file  is not found the name defined in
 xaaes.cnf is used if present. If not, xaaes.rsc is used.
 
-There is  also  a  resource-file for monochrome display (xa_mono.rsc),
-that reportedly saves memory, but it has not yet been updated for  the
+There is also a resource-file for  monochrome  display  (xa_mono.rsc),
+that  reportedly saves memory, but it has not yet been updated for the
 latest XaAES-version.
+
+There are alternatives to xa_xtobj.rsc in the directory xobj.
 
 
 2.1.2  Img-Files
 ----------------
 
 XaAES also reads img-files from a folder called img. This is needed if
-you want a  textured  look.  If  not  present,  you  get  the  default
+you  want  a  textured  look.  If  not  present,  you  get the default
 rendering.
 
 
@@ -151,8 +160,8 @@ rendering.
 
  moose_w.adi
 
-For mouse-control  one  of  moose.adi  or moose_w.adi is needed in the
-xaaes-folder. The _w-version is needed  for  mouse-wheel-support,  but
+For mouse-control one of moose.adi or moose_w.adi  is  needed  in  the
+xaaes-folder.  The  _w-version  is needed for mouse-wheel-support, but
 also works if there is no wheel-mouse.
 
      Note: If there are both present moose_w.adi is used.
@@ -161,7 +170,7 @@ also works if there is no wheel-mouse.
 2.1.4  Help-File
 ----------------
 
-If a  file  named xa_help.txt is found its content is displayed in the
+If a file named xa_help.txt is found its content is displayed  in  the
 About-window.
 
 
@@ -177,8 +186,8 @@ This contains the configuration for XaAES. See below.
 3  xaaes.cnf
 ************
 
-This lets you set several runtime-options for XaAES  and  its  clients
-and  start  programs at start-up. It uses mostly the same syntax as is
+This lets  you  set  several runtime-options for XaAES and its clients
+and start programs at start-up. It uses mostly the same syntax  as  is
 used in mint.cnf.
 
 Commands are not case sensitive unless otherwise mentioned.
@@ -189,13 +198,13 @@ If a command isn't understood, it gets ignored.
 3.1  Global Commands
 ====================
 
-Default values are false for bool, 0 for numbers or empty for  strings
+Default values  are false for bool, 0 for numbers or empty for strings
 unless otherwise mentioned.
 
  LAUNCHPATH <character-sequence>
 
      Define the initial directory that is opened by the XaAES-launcher
-     to start programs. A pattern to select typical  executable  files
+     to  start  programs. A pattern to select typical executable files
      may be appended.
 
      Example: launchpath = u:\usr\gem\|*.prg|*.app|!*.*|*.acc
@@ -210,13 +219,13 @@ unless otherwise mentioned.
 
      T=0: full screen, T=2: top window
 
-     If x,  y, w, h are provided, this rectangle should be snapped. If
-     XaAESSnap is not loaded, the external program that is defined  in
+     If x, y, w, h are provided, this rectangle should be snapped.  If
+     XaAESSnap  is not loaded, the external program that is defined in
      xaaes.cnf for snapshots is called, if present.
 
- ACCPATH <character-sequence> Set  the location that XaAES will try to
-     load accessories from (default is c:\). When ACCPATH  is  present
-     in the environment this precedes the config-variable.
+ ACCPATH <character-sequence> Set the location that XaAES will try  to
+     load  accessories  from (default is c:\). When ACCPATH is present
+     in the Environment this precedes the config-variable.
 
  RESOURCE <character-
      sequence> main resource filename (default xaaes009.rsc) See
@@ -229,88 +238,88 @@ unless otherwise mentioned.
 
  NAES_COOKIE <bool> fake nAES cookie
 
- MENUPOP_PIDS <bool> Setting  menupop_pids = true makes XaAES list its
+ MENUPOP_PIDS <bool> Setting menupop_pids = true makes XaAES list  its
      clients in the client-list- menupopup using the following format;
 
      " PPID(RPPID) -> PID Client nice name"
 
-     where 'PPID' is the physical parent-pid of the Client  (which  is
+     where 'PPID'  is  the physical parent-pid of the Client (which is
      the AESSYS). 'RPPID' is the Process ID of the process that called
-     shel_write() to start it, it is the "Real Parent PID".  'PID'  is
-     the  Process ID of the client. If set to 'no' (the default), only
-     the client's nice name (when available, else its 'proc_name')  is
+     shel_write()  to  start it, it is the "Real Parent PID". 'PID' is
+     the Process ID of the client. If set to 'no' (the default),  only
+     the  client's nice name (when available, else its 'proc_name') is
      listed.
 
- LRMB_SWAP <bool> Swap   left   and   right   mouse  buttons.  Setting
-     'lrmb_swap = true' will make XaAES swap the left and right  mouse
+ LRMB_SWAP <bool> Swap  left  and   right   mouse   buttons.   Setting
+     'lrmb_swap  = true' will make XaAES swap the left and right mouse
      buttons.
 
- WIDGET_AUTO_HIGHLIGHT <bool> When  widget_auto_highlight is set true,
-     standard window widget are automatically highlighted  when  mouse
-     hovers  over  them.  This is still very experimental, and widgets
-     are not actually highlighted, they are just animated  -  that  is
+ WIDGET_AUTO_HIGHLIGHT <bool> When widget_auto_highlight is set  true,
+     standard  window  widget are automatically highlighted when mouse
+     hovers over them. This is still very  experimental,  and  widgets
+     are  not  actually  highlighted, they are just animated - that is
      redrawn in SELECTED status.
 
- REMAP_CICONS <bool> Use  the palette defined in the resource to remap
+ REMAP_CICONS <bool> Use the palette defined in the resource to  remap
      icons.
 
- SET_RSC_PALETTE <bool> Use the palette defined  in  the  resource  as
+ SET_RSC_PALETTE <bool> Use  the  palette  defined  in the resource as
      screen-palette.
 
- ALERT_WINDOWS <bitmask> default 0xffff alert_window   is   a  bitmask
-     indicating which alerts coming via the alert pipe will  be  shown
-     in  a  window. The idea is that this mask is used to tell the AES
+ ALERT_WINDOWS <bitmask> default 0xffff alert_window  is   a   bitmask
+     indicating  which  alerts coming via the alert pipe will be shown
+     in a window. The idea is that this mask is used to tell  the  AES
      which alerts you want like this; bit 0 set -> show alerts with no
-     icon  bit  1  set -> show alerts with INFO icon bit 2 set -> show
+     icon bit 1 set -> show alerts with INFO icon bit 2  set  ->  show
      alerts with QUESTION icon bit 3 set -> show alerts with STOP icon
      etc., etc.
 
-     Because there  is  no consideration as to which icon is used (for
+     Because there is no consideration as to which icon is  used  (for
      example, kernel's PROCESS KILLED alerts have icon #1, the same as
-     used  for other warnings/informative ALERTS), the implemention is
+     used for other warnings/informative ALERTS), the implemention  is
      not complete. So for now use this to either turn off or on alerts
-     altogether.  To  turn on alert windows, use a mask where all bits
+     altogether. To turn on alert windows, use a mask where  all  bits
      are set, y0xffff, and to turn off clear all bits, 0x0000
 
      THE IMPLEMENTATION IS NOT DEFINATE AND ONLY PARTIAL AS OF NOW
 
  FONT_ID <number> (default 1) Standard GDOS fontid for windows & stuff
 
- STANDARD_POINT <number> (default 10) Size of the 'standard' AES  font
+ STANDARD_POINT <number> (default 10) Size  of the 'standard' AES font
      (for window titles, etc), high resolution
 
- MEDIUM_POINT <number> (default 9) Size  of  the  'standard'  AES font
+ MEDIUM_POINT <number> (default 9) Size of  the  'standard'  AES  font
      (for window titles, etc), low resolution
 
  SMALL_POINT <number> (default 8) Size of the 'small' AES font.
 
- POPSCROLL <number> (default 0) Set number of lines of a  popup  above
+ POPSCROLL <number> (default 0) Set  number  of lines of a popup above
      which it will be made scrollable
 
  DC_TIME <number/ms> (default 50) double click time (ms)
 
  MP_TIMEGAP <number/ms> (default 3) Mouse packet time-gap. This is the
      time (in 200hz timer ticks) that must pass after a button-release
-     event  before  a new button-press event is accepted by moose.adi.
-     Because of unstable  mouse-buttons,  a  button-press  may  follow
-     immediately  after  a  button-release, creating an "extra" mouse-
-     click. This is especially  annoying  when  releasing  the  right-
-     button   after  a  drag-session  (Thing's  directory-window,  for
+     event before a new button-press event is accepted  by  moose.adi.
+     Because  of  unstable  mouse-buttons,  a  button-press may follow
+     immediately after a button-release, creating  an  "extra"  mouse-
+     click.  This  is  especially  annoying  when releasing the right-
+     button  after  a  drag-session  (Thing's  directory-window,   for
      example), and the "extra-click" fires some unwanted action.
 
  VIDEO <number> (default 1) See Video-Modes
 
  REDRAW_TIMEOUT <number/ms> (default 500) This is the time in ms XaAES
-     will  wait  for  clients  to  service  WM_REDRAW messages between
-     actions that generate redraws,  like  moving/closing/opening/etc.
-     windows.  If  a  client is busy and this 'timeout' happens, it is
+     will wait for  clients  to  service  WM_REDRAW  messages  between
+     actions  that  generate redraws, like moving/closing/opening/etc.
+     windows. If a client is busy and this 'timeout'  happens,  it  is
      marked as lagging and XaAES will service the redraws for it. When
-     this  happens,  XaAES just draws the areas not serviced with dark
-     gray color until the  client  re-enters  evnt_multi().  For  slow
-     machines,  this  timeout  must  be higher (longer) than on faster
+     this happens, XaAES just draws the areas not serviced  with  dark
+     gray  color  until  the  client  re-enters evnt_multi(). For slow
+     machines, this timeout must be higher  (longer)  than  on  faster
      machines.
 
- POPUP_TIMEOUT <number/ms> (default = 10) Time in milliseconds  before
+ POPUP_TIMEOUT <number/ms> (default = 10) Time  in milliseconds before
      popups open.
 
  POPOUT_TIMEOUT <number/ms> (default 1000) Time in milliseconds before
@@ -319,55 +328,55 @@ unless otherwise mentioned.
  SETENV same as for mint.cnf
 
  NEXT_ACTIVE <'client' or 'window'> (default 'window') Selects  wether
-     the  previous  active  application  or  the owner of the previous
+     the previous active application or  the  owner  of  the  previous
      topped  (or  only)  window  should  be  set  active  upon  client
      termination.
 
  CLOSE_LASTWIND <'client' or 'window'> (default 'window') DEPRECIATED
-     -  OBSOLETE  close_lastwind  =  'client'  or 'window' (default is
+     - OBSOLETE close_lastwind =  'client'  or  'window'  (default  is
      'window')
 
      Selects what to do when the last window of a client is closed.
 
-     Setting to 'client' will keep the application whose  last  window
-     is  closed  as  the  top  application.  This  prevents XaAES from
-     putting infront another application when the last window  of  the
+     Setting to  'client'  will keep the application whose last window
+     is closed as  the  top  application.  This  prevents  XaAES  from
+     putting  infront  another application when the last window of the
      application currently infront is closed.
 
-     Setting to  'window' will make XaAES put the application who owns
+     Setting to 'window' will make XaAES put the application who  owns
      the foremost window infront, making it active. This is the normal
      behaviour done by other AES's we thinks.
 
  APP_OPTIONS <string> See Commands for XaAES-clients.
 
  CANCEL <comma-separated string-list> List   of   words   that   XaAES
-     interpretes as Cancel. A button containing a word from this  list
+     interpretes  as Cancel. A button containing a word from this list
      in a dialog or alert will be selected if Undo is pressed.
 
- FILTERS <comma-separated string-list> List  of  patterns that will be
-     contained in the  filter-menu  of  the  fileselector.  See  also:
+ FILTERS <comma-separated string-list> List of patterns that  will  be
+     contained  in  the  filter-menu  of  the  fileselector. See also:
      XaAES-Pattern-Matching.
 
- CTLALTA_SURVIVORS <comma-separated string-list> The  strings  are the
-     filename part of the program file, padded with spaces  to  fit  8
-     characters.  This  is  NOT  the  'nice' name. So, if your Toswin2
-     binary is named "tw2.app", you  use  "tw2  ".  Each  app-name  is
-     separated  with  comma.  This  will  allow  you  to specify which
-     applications XaAES  does  not  attempt  to  terminate  when  user
-     presses  CTRL-ALT-A  to  quit  all  applications.  Normally, this
-     keycombo quits  all  running  applications  leaving  only  XaAES.
-     However,  most  of the time, keeping certain applications running
+ CTLALTA_SURVIVORS <comma-separated string-list> The strings  are  the
+     filename  part  of  the program file, padded with spaces to fit 8
+     characters. This is NOT the 'nice'  name.  So,  if  your  Toswin2
+     binary  is  named  "tw2.app",  you  use  "tw2 ". Each app-name is
+     separated with comma.  This  will  allow  you  to  specify  which
+     applications  XaAES  does  not  attempt  to  terminate  when user
+     presses CTRL-ALT-A  to  quit  all  applications.  Normally,  this
+     keycombo  quits  all  running  applications  leaving  only XaAES.
+     However, most of the time, keeping certain  applications  running
      is  preferred,  such  as  the  desktop,  the  taskbar,  av-server
-     application,  etc,  etc. One special name is '_aes_shell_', which
+     application, etc, etc. One special name is  '_aes_shell_',  which
      will prevent XaAES from terminating the desktop loaded via "shell
-     =  "  configuration  variable.  One can still use the name of the
-     desktop program if it is konwn, but  an  easier  way  is  to  use
-     '_aes_shell_',  as  that  will work without further configuration
-     modifications when  one  changes  desktop  from,  say,  Thing  to
-     Jinnee.  If  you  want  to  bypass  this  setting,  and  quit ALL
+     = " configuration variable. One can still use  the  name  of  the
+     desktop  program  if  it  is  konwn,  but an easier way is to use
+     '_aes_shell_', as that will work  without  further  configuration
+     modifications  when  one  changes  desktop  from,  say,  Thing to
+     Jinnee. If  you  want  to  bypass  this  setting,  and  quit  ALL
      applications, leaving only XaAES, you can press ctrl-alt-shift-a.
 
-     The following will keep the desktop, taskbar and toswin2  running
+     The following  will keep the desktop, taskbar and toswin2 running
      after a ctrl-alt-a action:
 
                           cltalta_survivors = "_aes_shell_", "taskbar ", "toswin2 "
@@ -375,13 +384,13 @@ unless otherwise mentioned.
 
      Applications that do not act on AP_TERM will also survive.
 
- KILL_WO_QUESTION <comma-separated string-list> Applications  found in
-     this list will be killed immediately during  shutdown.  The  same
+ KILL_WO_QUESTION <comma-separated string-list> Applications found  in
+     this  list  will  be killed immediately during shutdown. The same
      rule as for CTLALTA_SURVIVORS applies to the strings
 
  ?MENU <'pull', 'push', 'leave', or 'nolocking'> (default 'leave')
-     Determines  whether  a menu opens by hovering or clicking. If set
-     to push menus have to be clicked to open. pull  is  the  same  as
+     Determines whether a menu opens by hovering or clicking.  If  set
+     to  push  menus  have  to be clicked to open. pull is the same as
      leave, nolocking has no effect.
 
  ?HELPSERVER <comma-separated string-list> List  of  apps  to  display
@@ -397,10 +406,10 @@ unless otherwise mentioned.
 
  ICNFY_... See Iconifying
 
- GRADIENTS <number> (default 0) setting gradients to a  nonzero  value
-     turns  on  use  of  color  gradients in the window widget and aes
-     object renderer in hc/tc color modes. This is  only  a  temporary
-     configuration  that  will  be gone later on. Only turn this on if
+ GRADIENTS <number> (default 0) setting  gradients  to a nonzero value
+     turns on use of color gradients in  the  window  widget  and  aes
+     object  renderer  in  hc/tc color modes. This is only a temporary
+     configuration that will be gone later on. Only turn  this  on  if
      you have a fast machine.
 
  SHELL <string> Names the desktop-program
@@ -458,8 +467,8 @@ For option-name see below. Value may be a number or true/false.
  inhibit_hide
 
  spaceXinsert <bool> (default false) exchanges  space/insert-behaviour
-     in  dialogs and lists. If false, Insert will select a button in a
-     dialog, space will select a list. This option  is  casesensitive,
+     in dialogs and lists. If false, Insert will select a button in  a
+     dialog,  space  will select a list. This option is casesensitive,
      so for example SPACEXINSERT will not be recognized.
 
  clwtna
@@ -474,10 +483,13 @@ For option-name see below. Value may be a number or true/false.
 
         . 3: shortcuts for dialogs and alerts
 
-     Controls how  XaAES  handles  Alt-shortcuts.  Since version 0.999
-     every standard GEM-application  gets  Alt-shortcuts  for  dialogs
-     that  use  form_do, even when there are no shortcuts defined with
+     Controls how XaAES handles  Alt-shortcuts.  Since  version  0.999
+     every  standard  GEM-application  gets  Alt-shortcuts for dialogs
+     that use form_do, even when there are no shortcuts  defined  with
      WHITEBAK in the resource-file.
+
+     The shortcuts  that are defined in the clients' resource-file are
+     always there.
 
 
 
@@ -544,6 +556,14 @@ in  previous  versions,  the  main  web-address for MiNT, and the GPL-
 copyright are mentioned.
 
 Additionally the file 'xa_help.txt' is displayed if present.
+
+This file may contain some special tags:
+
+   . Italic: <i> text </i>
+
+   . Bold: <b> text </b>
+
+   . Underlined: <u> text </u>
 
 
 5.2  The Launcher
@@ -641,6 +661,19 @@ the following has been added:
 
           For more details refer to programmer/mint.txt
 
+ SZ Size. This is the total amount of memory the process uses.
+
+ CPU Total count of 5ms-Ticks of CPU-usage of the process.
+
+ % Percentage of the above. Note that this will not sum up to 100 most
+     of  the  time  because  terminated processes do not appear in the
+     list.
+
+ args The commandline minus process-name.
+
+The display of the taskmanager is updated on every open, or, when it's
+open, by pressing Ctrl-Alt-F or Ctrl-Alt-L.
+
 
 
 6  Environment
@@ -678,24 +711,24 @@ The changes are mainly:
 
    . The menu is opened by Ctrl-o.
 
-   . If  an  entry  is selected in the list-box, Cursor-Right focusses
+   . If an entry is selected in the  list-box,  Cursor-Right  focusses
      the edit-field, so the selection can be edited.
 
-   . By pressing Ctrl-C the path and  the  marked  file  (if  any)  is
+   . By  pressing  Ctrl-C  the  path  and  the marked file (if any) is
      copied to the Clipboard.
 
 
 7.2  File-Listing and Matching
 ==============================
 
-   . Sorting  is  case-sensitive,  i.e.  Z is placed before a (like ls
+   . Sorting is case-sensitive, i.e. Z is placed  before  a  (like  ls
      does on many systems).
 
    . File-Pattern is case-sensitive except the filesystem is uppercase
-     (like  FAT)  or  the  caller runs in TOS-domain. See also: XaAES-
+     (like FAT) or the caller runs in  TOS-domain.  See  also:  XaAES-
      Pattern-Matching.
 
-   . If the fileselector finds a match  while  typing  that  match  is
+   . If  the  fileselector  finds  a  match while typing that match is
      returned to the caller on OK (Return).
 
 
@@ -717,8 +750,8 @@ XaAES supports the following meta-characters for pattern-matching:
 
    . case-insensitivity of pattern: '|' first character
 
-Matching *[],   *!,  *![],  !<whole  pattern>  is  possible.  Patterns
-concatenated with | will result in any pattern  to  be  tested  for  a
+Matching *[],  *!,  *![],  !<whole  pattern>  is  possible.   Patterns
+concatenated  with  |  will  result  in any pattern to be tested for a
 match. This allows for example
 
      launchpath=<somepath>\*.prg|*.app|*.tos|*.ttp|*.acc|!*.*
@@ -726,7 +759,7 @@ match. This allows for example
 
 to filter for extensions typical for executable files.
 
-If '|'  is  the  first  character  the  whole  pattern-list is handled
+If '|' is the  first  character  the  whole  pattern-list  is  handled
 caseinsensitive.
 
 
@@ -748,7 +781,7 @@ caseinsensitive.
 11.1  Features for XaAES-internal windows
 =========================================
 
-   . By pressing Ctrl-C the  selected  list-entry  is  copied  to  the
+   . By  pressing  Ctrl-C  the  selected  list-entry  is copied to the
      Clipboard.
 
    . All XaAES-windows are resizable.
@@ -775,25 +808,25 @@ caseinsensitive.
 11.2  Single-Task Mode
 ======================
 
-This has  been  introduced  to  be  able  to run some old but valuable
-software that did not work with MiNT since  version  1.16  (and  maybe
+This has been introduced to be able  to  run  some  old  but  valuable
+software  that  did  not  work with MiNT since version 1.16 (and maybe
 earlier), especially the pure-debugger.
 
 This implies:
 
    . Stop all AES-Clients.
 
-   . Call  ikbd_scan  in the kernel directly not via addroottimeout in
+   . Call ikbd_scan in the kernel directly not via  addroottimeout  in
      case the single-task-client disabled the timer-interrupt.
 
    . No main-menu of any other app is activated.
 
-To control this currently there has to be the bit 16 (0x10000) set  in
+To control  this currently there has to be the bit 16 (0x10000) set in
 p_flags of the relevant binary.
 
-Any client  that  has bit 17 (0x20000) set, is not stopped except when
-the single-task-app has this bit also set, i.e. when it  has  0x3xxxx.
-This  may  be  important  because the single-task-client possibly does
+Any client that has bit 17 (0x20000) set, is not stopped  except  when
+the  single-task-app  has this bit also set, i.e. when it has 0x3xxxx.
+This may be important because  the  single-task-client  possibly  does
 tty-IO, and needs the toswin (or another) console.
 
 To setup an application for this run
@@ -839,13 +872,13 @@ on that program-file.
 13  Contact
 ***********
 
-   . Author  of  this  document  and  some  enhancements   to   XaAES:
+   . Author   of   this  document  and  some  enhancements  to  XaAES:
      helmut.karlowski[at]ish.de
 
    . MiNT-mailinglist: http://sparemint.org/mailinglist/
 
-If you find errors in or want to contribute to this document feel free
-to contact me or even better join the mintlist.
+If you find errors or bad english in or want  to  contribute  to  this
+document feel free to contact me or even better join the mintlist.
 
 
 
