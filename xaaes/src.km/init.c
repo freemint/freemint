@@ -491,7 +491,7 @@ again:
 	cfg.small_font_point = SMALL_FONT_POINT;	/* Size for small text */
 	cfg.ted_filler = '_';
 	cfg.menu_locking = true;
-	cfg.backname = FAINT;
+	//cfg.backname = FAINT;
 	cfg.next_active = 0;
 // 	cfg.widg_w = ICON_W;
 // 	cfg.widg_h = ICON_H;
