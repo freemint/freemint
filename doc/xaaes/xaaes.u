@@ -17,7 +17,14 @@
 
 #special preamble for dvipdfm, dvips
 !no_preamble [tex]
-!use_label_inside_index [html]
+
+#!use_label_inside_index [html]
+
+#!use_udo_index           [all]
+#!use_nodes_inside_index  [all]
+#!use_label_inside_index  [all]
+!use_alias_inside_index  [all]
+
 !html_merge_nodes
 !html_merge_subnodes
 !html_merge_subsubnodes
@@ -52,17 +59,21 @@
 !node Preface
 
 Parts of this document have been copied from the sample xaaes.cnf, the
-old usrguide, the wiki (http://wiki.sparemint.org/index.php/XaAES) and the xaaes-sources.
+old usrguide, and the xaaes-sources.
 
 As not everything is clear, some items have been marked with ?.
 
 Currently there is a lot stuff missing in this documentation but things that are
 new to the user since version 0.998 should be mostly there.
 
+You may find additional information here:
+
+!begin_itemize
+!item (!weblink [the spamint-wiki] [http://wiki.sparemint.org/index.php/XaAES])
+!item (!weblink [Unofficial XaAES] [http://xaaes.atariforge.net/docs.php])
+!end_itemize
+
 !node Installation
-
-
-See also the (!url [XaAES-wiki] [http://wiki.sparemint.org/index.php/XaAES])
 
 XaAES is normally included in the standard FreeMiNT distribution. It's
 files are located in the subdirectory xaaes in the FreeMiNT system
@@ -75,7 +86,11 @@ starting XaAES.
 !item [From mint.cnf] The keyword GEM points to xaloader.prg. FreeMiNT will now
 	start XaAES automatically. Example:
 
-		GEM=c:\mint\1-17-cur\xaaes\xaloader.prg
+		GEM=<sysdir>\xaaes\xaloader.prg
+
+<sysdir> defaults to "<bootdrive>/mint/<VERSION>" or, if this
+directory doesn't exist, "<bootdrive>/mint". <VERSION> is the version
+of the kernel where dots are replaced by minus, e.g. 1.17.0 gives 1-17-0.
 
 !item [By init]
 
@@ -86,8 +101,7 @@ starting XaAES.
 
 !end_description
 
-Xaloader runs <sysdir>/xaaes/xaaes.km by default, where <sysdir> is the
-directory where MiNT finds its files, normally c:\mint\1-17-cur.
+Xaloader runs <sysdir>/xaaes/xaaes.km by default.
 
 You may specify any km-file on the commandline, e.g.:
 
@@ -119,6 +133,8 @@ xaaes.cnf is used if present. If not, xaaes.rsc is used.
 There is also a resource-file for monochrome display (xa_mono.rsc), that
 reportedly saves memory, but it has not yet been updated for the latest
 XaAES-version.
+
+There are alternatives to xa_xtobj.rsc in the directory xobj.
 
 !subsubnode Img-Files
 XaAES also reads img-files from a folder called img. This is needed if you
@@ -202,7 +218,7 @@ T=0: full screen, T=2: top window
 !item [ACCPATH 	<character-sequence>]
         Set the location that XaAES will try to load accessories
         from (default is c:\). When ACCPATH is present in the
-environment this precedes the config-variable.
+Environment this precedes the config-variable.
 
 !item [RESOURCE 	<character-sequence>	main resource filename (default xaaes009.rsc)]
 	See Resource-Files
@@ -463,6 +479,8 @@ Controls how XaAES handles Alt-shortcuts. Since version 0.999 every standard
 GEM-application gets Alt-shortcuts for dialogs that use form_do, even
 when there are no shortcuts defined with WHITEBAK in the resource-file.
 
+The shortcuts that are defined in the clients' resource-file are always there.
+
 !end_description
 
 !node Ctrl-Alt-Shortcuts
@@ -502,6 +520,20 @@ in previous versions, the main web-address for MiNT, and the
 GPL-copyright are mentioned.
 
 Additionally the file 'xa_help.txt' is displayed if present.
+
+This file may contain some special tags:
+
+!begin_itemize
+!item Italic:
+	<i> text </i>
+
+!item Bold:
+	<b> text </b>
+
+!item Underlined:
+	<u> text </u>
+!end_itemize
+
 
 
 !subnode The Launcher
@@ -584,7 +616,15 @@ For more details refer to programmer/mint.txt
 
 !end_description
 
+!item [SZ] Size. This is the total amount of memory the process uses.
+!item [CPU] Total count of 5ms-Ticks of CPU-usage of the process.
+!item [%] Percentage of the above. Note that this will not sum up to 100
+most of the time because terminated processes do not appear in the list.
+!item [args] The commandline minus process-name.
 !end_description
+
+The display of the taskmanager is updated on every open, or, when it's
+open, by pressing Ctrl-Alt-F or Ctrl-Alt-L.
 
 !node Environment
 
@@ -761,8 +801,8 @@ on that program-file.
 !item MiNT-mailinglist: (!weblink [mintlist] [http://sparemint.org/mailinglist/])
 !end_itemize
 
-If you find errors in or want to contribute to this document feel free to contact me or even
-better join the mintlist.
+If you find errors or bad english in or want to contribute to this
+document feel free to contact me or even better join the mintlist.
 
 !end_document
 

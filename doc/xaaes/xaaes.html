@@ -25,7 +25,7 @@ XaAES User Manual XaAES: A multitasking AES replacement for MiNT
 <h2 align="center">XaAES User Manual</h2>
 <h1 align="center">XaAES: A multitasking AES replacement for MiNT</h1>
 <p align="center">
-August 8, 2010<br>
+August 12, 2010<br>
 <br>by<br>
 Helmut Karlowski et.al.<br>
 <p>
@@ -134,8 +134,7 @@ Helmut Karlowski et.al.<br>
 <h1><a name="Preface">1 Preface</a></h1>
 
 <p>Parts of this document have been copied from the sample <a href="xaaes.html#xaaes.cnf">xaaes.cnf</a>,
-the old usrguide, the wiki (http://wiki.sparemint.org/index.php/XaAES)
-and the xaaes-sources.</p>
+the old usrguide, and the xaaes-sources.</p>
 
 <p>As not everything is clear, some items have been marked with ?.</p>
 
@@ -143,12 +142,19 @@ and the xaaes-sources.</p>
 things that are new to the user since version 0.998 should be mostly
 there.</p>
 
+<p>You may find additional information here:</p>
+
+<ul>
+<li><p><a href="http://wiki.sparemint.org/index.php/XaAES">the
+spamint-wiki</a></p></li>
+<li><p><a href="http://xaaes.atariforge.net/docs.php">Unofficial
+XaAES</a></p></li>
+</ul>
+
 <hr>
 
 
 <h1><a name="Installation">2 Installation</a></h1>
-
-<p>See also the <a href="http://wiki.sparemint.org/index.php/XaAES">XaAES-wiki</a></p>
 
 <p>XaAES is normally included in the standard FreeMiNT distribution.
 It's files are located in the subdirectory xaaes in the FreeMiNT
@@ -162,7 +168,13 @@ starting XaAES.</p>
 <p>The keyword GEM points to xaloader.prg. FreeMiNT will now start
 XaAES automatically. Example:</p>
 
-<p>GEM=c:\mint\1-17-cur\xaaes\xaloader.prg</p>
+<p>GEM=&lt;sysdir&gt;\xaaes\xaloader.prg</p>
+
+<p>&lt;sysdir&gt; defaults to
+&quot;&lt;bootdrive&gt;/mint/&lt;VERSION&gt;&quot; or, if this
+directory doesn't exist, &quot;&lt;bootdrive&gt;/mint&quot;.
+&lt;VERSION&gt; is the version of the kernel where dots are replaced
+by minus, e.g. 1.17.0 gives 1-17-0.</p>
 
 </dd>
 <dt><b>By init</b></dt>
@@ -183,9 +195,7 @@ to return to the commandline.</p>
 </dd>
 </dl>
 
-<p>Xaloader runs &lt;sysdir&gt;/xaaes/xaaes.km by default, where
-&lt;sysdir&gt; is the directory where MiNT finds its files, normally
-c:\mint\1-17-cur.</p>
+<p>Xaloader runs &lt;sysdir&gt;/xaaes/xaaes.km by default.</p>
 
 <p>You may specify any km-file on the commandline, e.g.:</p>
 
@@ -227,6 +237,8 @@ in <a href="xaaes.html#xaaes.cnf">xaaes.cnf</a> is used if present. If not, xaae
 <p>There is also a resource-file for monochrome display
 (xa_mono.rsc), that reportedly saves memory, but it has not yet been
 updated for the latest XaAES-version.</p>
+
+<p>There are alternatives to xa_xtobj.rsc in the directory xobj.</p>
 
 <h3><a name="Img-Files">2.1.2 Img-Files</a></h3>
 <p>XaAES also reads img-files from a folder called img. This is
@@ -270,7 +282,6 @@ the <a href="#About">About</a>-window.</p>
 
 <p>This contains the configuration for XaAES. See below.</p>
 
-<a name="xaaes.cnf"></a>
 <hr>
 
 
@@ -289,7 +300,6 @@ as is used in mint.cnf.</p>
 strings unless otherwise mentioned.</p>
 
 <dl>
-<dd><a name="LAUNCHPATH"></a></dd>
 <dt><b>LAUNCHPATH &lt;character-sequence&gt;</b></dt>
 <dd>
 <p></p>
@@ -307,7 +317,6 @@ appended.</p>
 <dd>
 <p>Set the GEM clipboard to be in &lt;directory&gt;</p>
 
-<a name="snapshot"></a>
 </dd>
 <dt><b>SNAPSHOT &lt;character-sequence&gt; define snapshot-program</b></dt>
 <dd>
@@ -324,7 +333,7 @@ XaAESSnap is not loaded, the external program that is defined in
 <dt><b>ACCPATH &lt;character-sequence&gt;</b></dt>
 <dd>
 <p>Set the location that XaAES will try to load accessories from
-(default is c:\). When ACCPATH is present in the environment this
+(default is c:\). When ACCPATH is present in the <a href="#Environment">Environment</a> this
 precedes the config-variable.</p>
 
 </dd>
@@ -337,7 +346,6 @@ precedes the config-variable.</p>
 <dd>
 <p></p>
 
-<a name="USEHOME"></a>
 </dd>
 <dt><b>USEHOME &lt;bool&gt;</b></dt>
 <dd>
@@ -741,6 +749,9 @@ standard GEM-application gets Alt-shortcuts for dialogs that use
 form_do, even when there are no shortcuts defined with WHITEBAK in the
 resource-file.</p>
 
+<p>The shortcuts that are defined in the clients' resource-file are
+always there.</p>
+
 </dd>
 </dl>
 
@@ -789,6 +800,16 @@ GPL in previous versions, the main web-address for MiNT, and the
 GPL-copyright are mentioned.</p>
 
 <p>Additionally the file 'xa_help.txt' is displayed if present.</p>
+
+<p>This file may contain some special tags:</p>
+
+</p>
+
+<ul>
+<li><p>Italic: &lt;i&gt; text &lt;/i&gt;</p></li>
+<li><p>Bold: &lt;b&gt; text &lt;/b&gt;</p></li>
+<li><p>Underlined: &lt;u&gt; text &lt;/u&gt;</p></li>
+</ul>
 
 <h2><a name="The_20Launcher">5.2 The Launcher</a></h2>
 <p>There is no desktop needed to launch programs as XaAES is able to
@@ -946,8 +967,32 @@ process by clicking on the right bed (the one with the alarm)</p>
 </dd>
 </dl>
 
+<dt><b>SZ</b></dt>
+<dd>
+<p>Size. This is the total amount of memory the process uses.</p>
+
+</dd>
+<dt><b>CPU</b></dt>
+<dd>
+<p>Total count of 5ms-Ticks of CPU-usage of the process.</p>
+
+</dd>
+<dt><b>%</b></dt>
+<dd>
+<p>Percentage of the above. Note that this will not sum up to 100
+most of the time because terminated processes do not appear in the
+list.</p>
+
+</dd>
+<dt><b>args</b></dt>
+<dd>
+<p>The commandline minus process-name.</p>
+
 </dd>
 </dl>
+
+<p>The display of the taskmanager is updated on every open, or, when
+it's open, by pressing Ctrl-Alt-F or Ctrl-Alt-L.</p>
 
 <hr>
 
@@ -1179,8 +1224,8 @@ href="mailto:helmut.karlowski[at]ish.de">Helmut Karlowski</a></p></li>
 href="http://sparemint.org/mailinglist/">mintlist</a></p></li>
 </ul>
 
-<p>If you find errors in or want to contribute to this document feel
-free to contact me or even better join the mintlist.</p>
+<p>If you find errors or bad english in or want to contribute to this
+document feel free to contact me or even better join the mintlist.</p>
 
 <span class="page-break"></span>
 <hr>
@@ -1267,7 +1312,6 @@ free to contact me or even better join the mintlist.</p>
 
 <p class="UDO_index_group">
 <a name="L"></a>
-<a href="xaaes.html#LAUNCHPATH">LAUNCHPATH</a><br>
 </p>
 
 <p class="UDO_index_group">
@@ -1291,7 +1335,6 @@ free to contact me or even better join the mintlist.</p>
 
 <p class="UDO_index_group">
 <a name="S"></a>
-<a href="xaaes.html#snapshot">snapshot</a><br>
 </p>
 
 <p class="UDO_index_group">
@@ -1302,7 +1345,6 @@ free to contact me or even better join the mintlist.</p>
 
 <p class="UDO_index_group">
 <a name="U"></a>
-<a href="xaaes.html#USEHOME">USEHOME</a><br>
 </p>
 
 <p class="UDO_index_group">
@@ -1319,7 +1361,6 @@ free to contact me or even better join the mintlist.</p>
 <p class="UDO_index_group">
 <a name="Y"></a>
 <a href="xaaes.html">xaaes.cnf</a><br>
-<a href="xaaes.html#xaaes.cnf">xaaes.cnf</a><br>
 </p>
 
 <div class="UDO_index_list">
