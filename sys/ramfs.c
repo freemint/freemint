@@ -1067,7 +1067,7 @@ ram_lookup (fcookie *dir, const char *name, fcookie *fc)
 	}
 
 	/* 1 - itself */
-	if (!name || (name[0] == '.' && name[1] == '\0'))
+	if (!name || (name[0] == '.' && name[1] == '\0') || (name[0] == '\0'))
 	{
 		c->links++;
 		*fc = *dir;
