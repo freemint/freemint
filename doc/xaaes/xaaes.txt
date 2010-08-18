@@ -2,7 +2,7 @@
 
             XaAES: A multitasking AES replacement for MiNT
 
-                           August 12, 2010
+                           August 18, 2010
 
                                   by
 
@@ -88,15 +88,15 @@ folder. To start XaAES you need to run the program xaloader.prg  which
 you  can  find  in  the  XaAES  folder. There are three common ways of
 starting XaAES.
 
- From mint.cnf The keyword GEM points to xaloader.prg.  FreeMiNT  will
+<sysdir> defaults  to   "<bootdrive>/mint/<VERSION>"   or,   if   this
+directory  doesn't exist, "<bootdrive>/mint". <VERSION> is the version
+of the kernel where dots are replaced  by  minus,  e.g.  1.17.0  gives
+1-17-0.
+
+ From mint.cnf The  keyword  GEM points to xaloader.prg. FreeMiNT will
      now start XaAES automatically. Example:
 
      GEM=<sysdir>\xaaes\xaloader.prg
-
-     <sysdir> defaults  to  "<bootdrive>/mint/<VERSION>"  or,  if this
-     directory doesn't exist,  "<bootdrive>/mint".  <VERSION>  is  the
-     version  of  the  kernel  where  dots are replaced by minus, e.g.
-     1.17.0 gives 1-17-0.
 
  By init
 
@@ -109,7 +109,8 @@ Xaloader runs <sysdir>/xaaes/xaaes.km by default.
 
 You may specify any km-file on the commandline, e.g.:
 
-xaloader.prg [optional directory/]some.km
+     xaloader.prg [optional directory/]some.km
+
 
 
 2.1  Files
@@ -424,11 +425,12 @@ These may also affect XaAES itself.
 
 The syntax is:
 
-<app_option>: app_options = <app-name>, <options-list>
+     <app_option>: app_options = <app-name>, <options-list>
+     
+     <options-list>: <options-list>, <option>
+     
+     <option>: <option-name> = <value>
 
-<options-list>: <options-list>, <option>
-
-<option>: <option-name> = <value>
 
 For option-name see below. Value may be a number or true/false.
 
@@ -559,24 +561,36 @@ Additionally the file 'xa_help.txt' is displayed if present.
 
 This file may contain some special tags:
 
-   . Italic: <i> text </i>
+   . Italic:
 
-   . Bold: <b> text </b>
+                  <i> <text> </i>
 
-   . Underlined: <u> text </u>
+
+   . Bold:
+
+                  <b> <text> </b>
+
+
+   . Underlined:
+
+                  <u> <text> </u>
+
+
+If a <-bracket is preceeded by backslash,  is  gets  printed  and  not
+interpreted.
 
 
 5.2  The Launcher
 =================
 
-There is no desktop needed to launch programs  as  XaAES  is  able  to
-start  them  itself  using  the Launcher. It opens the fileselector in
-LAUNCHPATH. You may also select any  other  directory  from  where  to
+There is  no  desktop  needed  to  launch programs as XaAES is able to
+start them itself using the Launcher. It  opens  the  fileselector  in
+LAUNCHPATH.  You  may  also  select  any other directory from where to
 start a program.
 
-If a  client  is launched from launchpath, and the entry is a symlink,
-home_path for that client is set to the directory of the  link-target.
-It  behaves  then  as  if  started  from that directory, and finds its
+If a client is launched from launchpath, and the entry is  a  symlink,
+home_path  for that client is set to the directory of the link-target.
+It behaves then as if started  from  that  directory,  and  finds  its
 resource- and other files.
 
 
@@ -616,21 +630,21 @@ the following has been added:
  List List is a tree, whereas clients are parent and their windows the
      children
 
- Select window or client If  exited with Ok, and a client is selected,
-     this client is topped. If a window is selected,  this  window  is
+ Select window or client If exited with Ok, and a client is  selected,
+     this  client  is  topped. If a window is selected, this window is
      topped. Unselect with Space (or Insert).
 
  Pocesses Also lists non-AES-apps (not toppable, of course)
 
  Memory Displays memory-statistics found in /kern/meminfo
 
- Stop/Continue Similar  to  killing a process by clicking on the skull
+ Stop/Continue Similar to killing a process by clicking on  the  skull
      it may be stopped by clicking on the bed (the left one). Continue
-     a  stopped process by clicking on the right bed (the one with the
+     a stopped process by clicking on the right bed (the one with  the
      alarm)
 
- Load Display     actual     load      and      load-average      (see
-     /doc/programmer/newcall.html/suptime.html).   By   selecting  the
+ Load Display      actual      load      and     load-average     (see
+     /doc/programmer/newcall.html/suptime.html).  By   selecting   the
      "toggle load"-button this can be switched off and on.
 
  Process-Information Displays more process-information in a table:
@@ -666,7 +680,7 @@ the following has been added:
  CPU Total count of 5ms-Ticks of CPU-usage of the process.
 
  % Percentage of the above. Note that this will not sum up to 100 most
-     of  the  time  because  terminated processes do not appear in the
+     of the time because terminated processes do  not  appear  in  the
      list.
 
  args The commandline minus process-name.
@@ -711,24 +725,24 @@ The changes are mainly:
 
    . The menu is opened by Ctrl-o.
 
-   . If an entry is selected in the  list-box,  Cursor-Right  focusses
+   . If  an  entry  is selected in the list-box, Cursor-Right focusses
      the edit-field, so the selection can be edited.
 
-   . By  pressing  Ctrl-C  the  path  and  the marked file (if any) is
+   . By pressing Ctrl-C the path and  the  marked  file  (if  any)  is
      copied to the Clipboard.
 
 
 7.2  File-Listing and Matching
 ==============================
 
-   . Sorting is case-sensitive, i.e. Z is placed  before  a  (like  ls
+   . Sorting  is  case-sensitive,  i.e.  Z is placed before a (like ls
      does on many systems).
 
    . File-Pattern is case-sensitive except the filesystem is uppercase
-     (like FAT) or the caller runs in  TOS-domain.  See  also:  XaAES-
+     (like  FAT)  or  the  caller runs in TOS-domain. See also: XaAES-
      Pattern-Matching.
 
-   . If  the  fileselector  finds  a  match while typing that match is
+   . If the fileselector finds a match  while  typing  that  match  is
      returned to the caller on OK (Return).
 
 
@@ -750,8 +764,8 @@ XaAES supports the following meta-characters for pattern-matching:
 
    . case-insensitivity of pattern: '|' first character
 
-Matching *[],  *!,  *![],  !<whole  pattern>  is  possible.   Patterns
-concatenated  with  |  will  result  in any pattern to be tested for a
+Matching *[],   *!,  *![],  !<whole  pattern>  is  possible.  Patterns
+concatenated with | will result in any pattern  to  be  tested  for  a
 match. This allows for example
 
      launchpath=<somepath>\*.prg|*.app|*.tos|*.ttp|*.acc|!*.*
@@ -759,7 +773,7 @@ match. This allows for example
 
 to filter for extensions typical for executable files.
 
-If '|' is the  first  character  the  whole  pattern-list  is  handled
+If '|'  is  the  first  character  the  whole  pattern-list is handled
 caseinsensitive.
 
 
@@ -781,7 +795,7 @@ caseinsensitive.
 11.1  Features for XaAES-internal windows
 =========================================
 
-   . By  pressing  Ctrl-C  the  selected  list-entry  is copied to the
+   . By pressing Ctrl-C the  selected  list-entry  is  copied  to  the
      Clipboard.
 
    . All XaAES-windows are resizable.
@@ -808,25 +822,25 @@ caseinsensitive.
 11.2  Single-Task Mode
 ======================
 
-This has been introduced to be able  to  run  some  old  but  valuable
-software  that  did  not  work with MiNT since version 1.16 (and maybe
+This has  been  introduced  to  be  able  to run some old but valuable
+software that did not work with MiNT since  version  1.16  (and  maybe
 earlier), especially the pure-debugger.
 
 This implies:
 
    . Stop all AES-Clients.
 
-   . Call ikbd_scan in the kernel directly not via  addroottimeout  in
+   . Call  ikbd_scan  in the kernel directly not via addroottimeout in
      case the single-task-client disabled the timer-interrupt.
 
    . No main-menu of any other app is activated.
 
-To control  this currently there has to be the bit 16 (0x10000) set in
+To control this currently there has to be the bit 16 (0x10000) set  in
 p_flags of the relevant binary.
 
-Any client that has bit 17 (0x20000) set, is not stopped  except  when
-the  single-task-app  has this bit also set, i.e. when it has 0x3xxxx.
-This may be important because  the  single-task-client  possibly  does
+Any client  that  has bit 17 (0x20000) set, is not stopped except when
+the single-task-app has this bit also set, i.e. when it  has  0x3xxxx.
+This  may  be  important  because the single-task-client possibly does
 tty-IO, and needs the toswin (or another) console.
 
 To setup an application for this run
@@ -872,13 +886,13 @@ on that program-file.
 13  Contact
 ***********
 
-   . Author   of   this  document  and  some  enhancements  to  XaAES:
+   . Author  of  this  document  and  some  enhancements   to   XaAES:
      helmut.karlowski[at]ish.de
 
    . MiNT-mailinglist: http://sparemint.org/mailinglist/
 
-If you find errors or bad english in or want  to  contribute  to  this
-document feel free to contact me or even better join the mintlist.
+If you find errors, bad english or want to contribute to this document
+feel free to contact me or even better join the mintlist.
 
 
 

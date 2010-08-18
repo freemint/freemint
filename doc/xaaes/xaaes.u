@@ -19,12 +19,13 @@
 !no_preamble [tex]
 
 #!use_label_inside_index [html]
-
 #!use_udo_index           [all]
-#!use_nodes_inside_index  [all]
-#!use_label_inside_index  [all]
+
+!use_nodes_inside_index  [all]
+!use_label_inside_index  [all]
 !use_alias_inside_index  [all]
 
+!no_headlines [html]
 !html_merge_nodes
 !html_merge_subnodes
 !html_merge_subsubnodes
@@ -81,16 +82,16 @@ folder. To start XaAES you need to run the program xaloader.prg which
 you can find in the XaAES folder. There are three common ways of
 starting XaAES.
 
+<sysdir> defaults to "<bootdrive>/mint/<VERSION>" or, if this
+directory doesn't exist, "<bootdrive>/mint". <VERSION> is the version
+of the kernel where dots are replaced by minus, e.g. 1.17.0 gives 1-17-0.
+
 !begin_description
 
 !item [From mint.cnf] The keyword GEM points to xaloader.prg. FreeMiNT will now
 	start XaAES automatically. Example:
 
 		GEM=<sysdir>\xaaes\xaloader.prg
-
-<sysdir> defaults to "<bootdrive>/mint/<VERSION>" or, if this
-directory doesn't exist, "<bootdrive>/mint". <VERSION> is the version
-of the kernel where dots are replaced by minus, e.g. 1.17.0 gives 1-17-0.
 
 !item [By init]
 
@@ -105,7 +106,9 @@ Xaloader runs <sysdir>/xaaes/xaaes.km by default.
 
 You may specify any km-file on the commandline, e.g.:
 
+!begin_sourcecode
 xaloader.prg [optional directory/]some.km
+!end_sourcecode
 
 !subnode Files
 
@@ -195,11 +198,6 @@ typical executable files may be appended.
 		launchpath  = u:\usr\gem\|*.prg|*.app|!*.*|*.acc
 
 		See also: XaAES-Pattern-Matching
-#!ifdest [asc]
-#	 (!link [] [XaAES-Pattern-Matching] ).
-#!else
-#		See also: (!link [XaAES-Pattern-Matching] [XaAES-Pattern-Matching] ).
-#!endif
 
 !item [CLIPBOARD	<character-sequence>	(default c:\clipbrd)]
 	Set the GEM clipboard to be in <directory>
@@ -432,11 +430,13 @@ These may also affect XaAES itself.
 
 The syntax is:
 
+!begin_sourcecode
 <app_option>: app_options = <app-name>, <options-list>
 
 <options-list>: <options-list>, <option>
 
 <option>: <option-name> = <value>
+!end_sourcecode
 
 For option-name see below. Value may be a number or true/false.
 
@@ -525,16 +525,22 @@ This file may contain some special tags:
 
 !begin_itemize
 !item Italic:
-	<i> text </i>
+!begin_sourcecode
+	<i> <text> </i>
+!end_sourcecode
 
 !item Bold:
-	<b> text </b>
+!begin_sourcecode
+	<b> <text> </b>
+!end_sourcecode
 
 !item Underlined:
-	<u> text </u>
+!begin_sourcecode
+	<u> <text> </u>
+!end_sourcecode
 !end_itemize
 
-
+If a <-bracket is preceeded by backslash, is gets printed and not interpreted.
 
 !subnode The Launcher
 
@@ -801,7 +807,7 @@ on that program-file.
 !item MiNT-mailinglist: (!weblink [mintlist] [http://sparemint.org/mailinglist/])
 !end_itemize
 
-If you find errors or bad english in or want to contribute to this
+If you find errors, bad english or want to contribute to this
 document feel free to contact me or even better join the mintlist.
 
 !end_document
