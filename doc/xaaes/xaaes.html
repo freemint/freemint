@@ -9,23 +9,16 @@ XaAES User Manual XaAES: A multitasking AES replacement for MiNT
 <meta http-equiv="Content-Language" content="en">
 <meta http-equiv="Content-Style-Type" content="text/css">
 <meta http-equiv="Content-Script-Type" content="text/javascript">
-<meta name="Generator" content="UDO 7.01 (1151) for Win32">
+<meta name="Generator" content="UDO 7.01 (1167) for Win32">
 <meta name="Author" content="Helmut Karlowski et.al.">
 </head>
 <body>
-
-<img src="udo_nohm.gif" alt="Home" title="Home" border="0" width="24" height="24">
-<img src="udo_noup.gif" alt="" title="" border="0" width="24" height="24">
-<img src="udo_nolf.gif" alt="" title="" border="0" width="24" height="24">
-<img src="udo_norg.gif" alt="" title="" border="0" width="24" height="24">
-
-<hr>
 
 <div id="udo_titlepage">
 <h2 align="center">XaAES User Manual</h2>
 <h1 align="center">XaAES: A multitasking AES replacement for MiNT</h1>
 <p align="center">
-August 12, 2010<br>
+August 18, 2010<br>
 <br>by<br>
 Helmut Karlowski et.al.<br>
 <p>
@@ -162,6 +155,12 @@ system folder. To start XaAES you need to run the program xaloader.prg
 which you can find in the XaAES folder. There are three common ways of
 starting XaAES.</p>
 
+<p>&lt;sysdir&gt; defaults to
+&quot;&lt;bootdrive&gt;/mint/&lt;VERSION&gt;&quot; or, if this
+directory doesn't exist, &quot;&lt;bootdrive&gt;/mint&quot;.
+&lt;VERSION&gt; is the version of the kernel where dots are replaced
+by minus, e.g. 1.17.0 gives 1-17-0.</p>
+
 <dl>
 <dt><b>From mint.cnf</b></dt>
 <dd>
@@ -169,12 +168,6 @@ starting XaAES.</p>
 XaAES automatically. Example:</p>
 
 <p>GEM=&lt;sysdir&gt;\xaaes\xaloader.prg</p>
-
-<p>&lt;sysdir&gt; defaults to
-&quot;&lt;bootdrive&gt;/mint/&lt;VERSION&gt;&quot; or, if this
-directory doesn't exist, &quot;&lt;bootdrive&gt;/mint&quot;.
-&lt;VERSION&gt; is the version of the kernel where dots are replaced
-by minus, e.g. 1.17.0 gives 1-17-0.</p>
 
 </dd>
 <dt><b>By init</b></dt>
@@ -199,7 +192,10 @@ to return to the commandline.</p>
 
 <p>You may specify any km-file on the commandline, e.g.:</p>
 
-<p>xaloader.prg [optional directory/]some.km</p>
+<blockquote>
+<pre>xaloader.prg [optional directory/]some.km
+</pre>
+</blockquote>
 
 <h2><a name="Files">2.1 Files</a></h2>
 <p>On startup XaAES needs the following files:</p>
@@ -282,6 +278,7 @@ the <a href="#About">About</a>-window.</p>
 
 <p>This contains the configuration for XaAES. See below.</p>
 
+<a name="xaaes.cnf"></a>
 <hr>
 
 
@@ -300,6 +297,7 @@ as is used in mint.cnf.</p>
 strings unless otherwise mentioned.</p>
 
 <dl>
+<dd><a name="LAUNCHPATH"></a></dd>
 <dt><b>LAUNCHPATH &lt;character-sequence&gt;</b></dt>
 <dd>
 <p></p>
@@ -317,6 +315,7 @@ appended.</p>
 <dd>
 <p>Set the GEM clipboard to be in &lt;directory&gt;</p>
 
+<a name="snapshot"></a>
 </dd>
 <dt><b>SNAPSHOT &lt;character-sequence&gt; define snapshot-program</b></dt>
 <dd>
@@ -346,6 +345,7 @@ precedes the config-variable.</p>
 <dd>
 <p></p>
 
+<a name="USEHOME"></a>
 </dd>
 <dt><b>USEHOME &lt;bool&gt;</b></dt>
 <dd>
@@ -634,12 +634,14 @@ on. Only turn this on if you have a fast machine.</p>
 
 <p>The syntax is:</p>
 
-<p>&lt;app_option&gt;: app_options = &lt;app-name&gt;,
-&lt;options-list&gt;</p>
+<blockquote>
+<pre>&lt;app_option&gt;: app_options = &lt;app-name&gt;, &lt;options-list&gt;
 
-<p>&lt;options-list&gt;: &lt;options-list&gt;, &lt;option&gt;</p>
+&lt;options-list&gt;: &lt;options-list&gt;, &lt;option&gt;
 
-<p>&lt;option&gt;: &lt;option-name&gt; = &lt;value&gt;</p>
+&lt;option&gt;: &lt;option-name&gt; = &lt;value&gt;
+</pre>
+</blockquote>
 
 <p>For option-name see below. Value may be a number or true/false.</p>
 
@@ -806,10 +808,28 @@ GPL-copyright are mentioned.</p>
 </p>
 
 <ul>
-<li><p>Italic: &lt;i&gt; text &lt;/i&gt;</p></li>
-<li><p>Bold: &lt;b&gt; text &lt;/b&gt;</p></li>
-<li><p>Underlined: &lt;u&gt; text &lt;/u&gt;</p></li>
+<li><p>Italic:<blockquote>
+<pre>        &lt;i&gt; &lt;text&gt; &lt;/i&gt;
+</pre>
+</blockquote>
+
+</p></li>
+<li><p>Bold:<blockquote>
+<pre>        &lt;b&gt; &lt;text&gt; &lt;/b&gt;
+</pre>
+</blockquote>
+
+</p></li>
+<li><p>Underlined:<blockquote>
+<pre>        &lt;u&gt; &lt;text&gt; &lt;/u&gt;
+</pre>
+</blockquote>
+
+</p></li>
 </ul>
+
+<p>If a &lt;-bracket is preceeded by backslash, is gets printed and
+not interpreted.</p>
 
 <h2><a name="The_20Launcher">5.2 The Launcher</a></h2>
 <p>There is no desktop needed to launch programs as XaAES is able to
@@ -1224,7 +1244,7 @@ href="mailto:helmut.karlowski[at]ish.de">Helmut Karlowski</a></p></li>
 href="http://sparemint.org/mailinglist/">mintlist</a></p></li>
 </ul>
 
-<p>If you find errors or bad english in or want to contribute to this
+<p>If you find errors, bad english or want to contribute to this
 document feel free to contact me or even better join the mintlist.</p>
 
 <span class="page-break"></span>
@@ -1257,110 +1277,114 @@ document feel free to contact me or even better join the mintlist.</p>
 
 <p class="UDO_index_group">
 <a name="A"></a>
-<a href="xaaes.html">About</a><br>
+<a href="xaaes.html#About">About</a><br>
 </p>
 
 <p class="UDO_index_group">
 <a name="C"></a>
-<a href="xaaes.html">Client-options</a><br>
-<a href="xaaes.html">Commands for XaAES-clients</a><br>
-<a href="xaaes.html">Comparison to TOS-AES</a><br>
-<a href="xaaes.html">Config-Files</a><br>
-<a href="xaaes.html">Contact</a><br>
-<a href="xaaes.html">Ctrl-Alt-Shortcuts</a><br>
+<a href="xaaes.html#Client-options">Client-options</a><br>
+<a href="xaaes.html#Commands for XaAES-clients">Commands for XaAES-clients</a><br>
+<a href="xaaes.html#Comparison to TOS-AES">Comparison to TOS-AES</a><br>
+<a href="xaaes.html#Config-Files">Config-Files</a><br>
+<a href="xaaes.html#Contact">Contact</a><br>
+<a href="xaaes.html#Ctrl-Alt-Shortcuts">Ctrl-Alt-Shortcuts</a><br>
 </p>
 
 <p class="UDO_index_group">
 <a name="D"></a>
-<a href="xaaes.html">download</a><br>
+<a href="xaaes.html#download">download</a><br>
 </p>
 
 <p class="UDO_index_group">
 <a name="E"></a>
-<a href="xaaes.html">Environment</a><br>
+<a href="xaaes.html#Environment">Environment</a><br>
 </p>
 
 <p class="UDO_index_group">
 <a name="F"></a>
-<a href="xaaes.html">Features for XaAES-internal windows</a><br>
-<a href="xaaes.html">File-Listing and Matching</a><br>
-<a href="xaaes.html">Files</a><br>
-<a href="xaaes.html">Fileselector</a><br>
+<a href="xaaes.html#Features for XaAES-internal windows">Features for XaAES-internal windows</a><br>
+<a href="xaaes.html#File-Listing and Matching">File-Listing and Matching</a><br>
+<a href="xaaes.html#Files">Files</a><br>
+<a href="xaaes.html#Fileselector">Fileselector</a><br>
 </p>
 
 <p class="UDO_index_group">
 <a name="G"></a>
-<a href="xaaes.html">Global Commands</a><br>
+<a href="xaaes.html#Global Commands">Global Commands</a><br>
 </p>
 
 <p class="UDO_index_group">
 <a name="H"></a>
-<a href="xaaes.html">Help-File</a><br>
+<a href="xaaes.html#Help-File">Help-File</a><br>
 </p>
 
 <p class="UDO_index_group">
 <a name="I"></a>
-<a href="xaaes.html">Iconifying</a><br>
-<a href="xaaes.html">Img-Files</a><br>
-<a href="xaaes.html">Installation</a><br>
+<a href="xaaes.html#Iconifying">Iconifying</a><br>
+<a href="xaaes.html#Img-Files">Img-Files</a><br>
+<a href="xaaes.html#Installation">Installation</a><br>
 </p>
 
 <p class="UDO_index_group">
 <a name="K"></a>
-<a href="xaaes.html">Keyboard</a><br>
+<a href="xaaes.html#Keyboard">Keyboard</a><br>
 </p>
 
 <p class="UDO_index_group">
 <a name="L"></a>
+<a href="xaaes.html#LAUNCHPATH">LAUNCHPATH</a><br>
 </p>
 
 <p class="UDO_index_group">
 <a name="M"></a>
-<a href="xaaes.html">Miscellaneous</a><br>
-<a href="xaaes.html">Mouse-Driver</a><br>
-<a href="xaaes.html">Mousewheel-Configuration</a><br>
+<a href="xaaes.html#Miscellaneous">Miscellaneous</a><br>
+<a href="xaaes.html#Mouse-Driver">Mouse-Driver</a><br>
+<a href="xaaes.html#Mousewheel-Configuration">Mousewheel-Configuration</a><br>
 </p>
 
 <p class="UDO_index_group">
 <a name="O"></a>
-<a href="xaaes.html">Resource-Files</a><br>
-<a href="xaaes.html">Single-Task Mode</a><br>
-<a href="xaaes.html">System-Window</a><br>
+<a href="xaaes.html#Resource-Files">Resource-Files</a><br>
+<a href="xaaes.html#Single-Task Mode">Single-Task Mode</a><br>
+<a href="xaaes.html#System-Window">System-Window</a><br>
 </p>
 
 <p class="UDO_index_group">
 <a name="P"></a>
-<a href="xaaes.html">Preface</a><br>
+<a href="xaaes.html#Preface">Preface</a><br>
 </p>
 
 <p class="UDO_index_group">
 <a name="S"></a>
+<a href="xaaes.html#snapshot">snapshot</a><br>
 </p>
 
 <p class="UDO_index_group">
 <a name="T"></a>
-<a href="xaaes.html">Taskmanager</a><br>
-<a href="xaaes.html">The Launcher</a><br>
+<a href="xaaes.html#Taskmanager">Taskmanager</a><br>
+<a href="xaaes.html#The Launcher">The Launcher</a><br>
 </p>
 
 <p class="UDO_index_group">
 <a name="U"></a>
+<a href="xaaes.html#USEHOME">USEHOME</a><br>
 </p>
 
 <p class="UDO_index_group">
 <a name="V"></a>
-<a href="xaaes.html">Video-Modes</a><br>
+<a href="xaaes.html#Video-Modes">Video-Modes</a><br>
 </p>
 
 <p class="UDO_index_group">
 <a name="X"></a>
-<a href="xaaes.html">XaAES Main-menu</a><br>
-<a href="xaaes.html">XaAES-Pattern-Matching</a><br>
+<a href="xaaes.html#XaAES Main-menu">XaAES Main-menu</a><br>
+<a href="xaaes.html#XaAES-Pattern-Matching">XaAES-Pattern-Matching</a><br>
 </p>
 
 <p class="UDO_index_group">
 <a name="Y"></a>
-<a href="xaaes.html">xaaes.cnf</a><br>
+<a href="xaaes.html#xaaes.cnf">xaaes.cnf</a><br>
+<a href="xaaes.html#xaaes.cnf">xaaes.cnf</a><br>
 </p>
 
 <div class="UDO_index_list">
