@@ -1,3 +1,192 @@
+22-08-2010
+----------
+
+build (Makefile.objs RULES XAAESDEFS):
+
+
+- Enable coldfire-build
+- Don't build ozk-version
+- use 030 instead of 020-60 for 030-CPU
+---------------------------------------------------------------------
+about:
+
+ignore cr in file_to_list
+---------------------------------------------------------------------
+cnf_xaaes:
+
+remove unused code
+
+---------------------------------------------------------------------
+init:
+
+remove unused code
+
+---------------------------------------------------------------------
+scrlobjc:
+
+text-effects only valid for one line (todo)
+---------------------------------------------------------------------
+taskman:
+
+fix process-list-layout
+---------------------------------------------------------------------
+xaaes009:
+
+slightly improved resource-file. Contributed by Lars Schmidbauer.
+---------------------------------------------------------------------
+render_obj:
+
+- fixed a bug in edit fields with a mask that contains non-editable characters
+
+- added missing paranthesises
+
+---------------------------------------------------------------------
+about:
+
+- use new function xa_readline to read xa_help.txt
+- re-read xa_help.txt if it changed
+- force redraw if open but not top when selected
+- use xaw_point for font-size
+---------------------------------------------------------------------
+cnf_xaaes:
+
+new config-variable: xaw_point: define font-size for xaaes-windows in point.
+---------------------------------------------------------------------
+init:
+
+default-value for xaw_point(10)
+---------------------------------------------------------------------
+scrlobjc:
+
+- fix text-effects for variable font-size
+- better backslash-handling
+---------------------------------------------------------------------
+taskman (taskman.c taskman.h xa_types.h):
+
+
+allow usage of different font-sizes (xaw_point)
+remove unused code
+---------------------------------------------------------------------
+util (util.c util.h):
+
+
+new function xa_readline similar to fgets, reads DOS- and Unix-line-endings
+---------------------------------------------------------------------
+xa_fsel:
+
+allow usage of different font-sizes (xaw_point)
+---------------------------------------------------------------------
+07-08-2010
+----------
+
+about:
+
+move the FN-dedication 1 char to the right.
+---------------------------------------------------------------------
+init:
+
+display address of C.shutdown in long-format (not short).
+---------------------------------------------------------------------
+xa_fsel:
+
+remove outcommented BLOGs.
+---------------------------------------------------------------------
+
+05-08-2010
+----------
+
+xaaes009:
+
+resource-file with better taskmanager-design. Contributed by Lars Schmidbauer.
+---------------------------------------------------------------------
+about:
+
+Show Frank Naumann-dedication in the release-version.
+---------------------------------------------------------------------
+stack-check (init.c k_init.c k_main.c k_main.h taskman.c xa_defs.h):
+
+
+Don't perform stack-checking and don't display kernel-compiletime-flags in the release-version.
+
+---------------------------------------------------------------------
+text-effects (scrlobjc.c xa_types.h):
+
+
+add underlined style to inlined text-effects.
+text-effects may be combined.
+add code for centered/right-bound text (#ifdefed out - not used)
+new item in struct se_text: slen - length of text, saves some calls to strlen
+---------------------------------------------------------------------
+version:
+
+make it a release-version
+---------------------------------------------------------------------
+xa_fsel:
+
+if no pattern is passed use '*'.
+---------------------------------------------------------------------
+01-08-2010
+----------
+
+xa_fsel:
+
+- improved caseinsensitive pattern-matching
+
+- new feature: if the first char in pattern is the pipe-sysmbol (|) the
+pattern-list is caseinsensitive.
+---------------------------------------------------------------------
+txt-effect (scrlobjc.c xa_types.h):
+
+
+Implement text-effects for list-text.
+
+Italic:
+	<i> text </i>
+
+Bold:
+	<b> text </b>
+
+Underlined:
+	<u> text </u>
+
+---------------------------------------------------------------------
+k_main:
+
+set console RAW not COOKED for maximum TOS-compatibility.
+---------------------------------------------------------------------
+xa_fsel:
+
+- moved '|' - parsing for caseinsensitive pattern from
+  fileselector_form_exit to read_directory.
+
+- fixed a bug that caused a wrong pattern to be added when '*.*'
+  was passed as path.
+
+fsel (xa_fsel.c xa_fsel.h):
+
+
+---------------------------------------------------------------------
+avoid fileselector using the patterns from the resource-file by using
+'path' as pattern if no path passed.
+---------------------------------------------------------------------
+xa_fsel:
+
+fix a bug in splitting the path-argument into pattern and path.
+---------------------------------------------------------------------
+taskman:
+
+Display process-states in a more verbose manner.
+---------------------------------------------------------------------
+win_draw:
+
+Implement extended textures. See doc/xaaes/themes.txt. Contributed by
+Paul Wratt. Yet untested.
+---------------------------------------------------------------------
+about:
+
+Display the license-hint in bold.
+If FN_CRED is 1 display Frank-Naumann-dedication (italic).
+---------------------------------------------------------------------
 08-06-2010
 ----------
 
@@ -836,7 +1025,7 @@ In realtime-mode you may still notice some funny things, but it stays where it w
   0: no shortcuts
   1: shortcuts for alerts
   2: shortcuts for dialog
-  3: 1+2
+  3: shortcuts for dialog and alerts
 
   default: 3
 
@@ -900,7 +1089,7 @@ In realtime-mode you may still notice some funny things, but it stays where it w
 
 		- Entries are sorted by name
 
-		- Keyboard-navigation in list is working (Cursor-right:open tree,Cursor-left:collapse up/down: the obvious)
+		- Keyboardnavigation in list is working (Cursor-right:open tree,Cursor-left:collapse up/down: the obvious)
 
 	- Taskmanager
 
@@ -958,8 +1147,7 @@ In realtime-mode you may still notice some funny things, but it stays where it w
 
 		- Sorting is now case-sensitive, i.e. Z is placed before a (like ls does).
 
-		- File-Pattern is now case-sensitive, except an all-uppercase pattern is given by the caller
-			or the filesystem is uppercase (like FAT)
+		- File-Pattern is now case-sensitive except the filesystem is uppercase (like FAT)
 
 		- non-visible changes
 
