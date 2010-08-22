@@ -483,6 +483,7 @@ again:
 	strcpy(cfg.rsc_name, "xaaes.rsc");
 
 	cfg.font_id = STANDARD_AES_FONTID;		/* Font id to use */
+	cfg.xaw_point = 10;	/* fnt-sz for xaaes-windows */
 	cfg.double_click_time = DOUBLE_CLICK_TIME;
 	cfg.mouse_packet_timegap = MOUSE_PACKET_TIMEGAP;
 	cfg.redraw_timeout = 500;
