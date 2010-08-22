@@ -886,7 +886,6 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 									{
 										tp += 2;
 										if( *tp != '>' )
-											BLOG((0,"list_add: missing '>' in %s", t ));
 										else
 											tp++;
 										tw -= list->char_width * (tp - t);
@@ -912,25 +911,33 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 							{
 								bool cont = true;
 								char *tpp = tp, cp = 0;
-								short te = wtxt->e;
+								short te = wtxt->e, wd, h, cwd;
 
 								while( cont )
 								{
-									for( ; *tp && *tp != '<'; tp++ )
-										if( *tp == '\\' )
-											tp++;
+									bool unknown = false;
+
+									for( ; *tp && !(*tp == '<' || (*tp == '\\' && *(tp+1) == '<')); tp++ )
+									;
 
 									if( !(cp = *tp) )
 										cont = false;
 
 									*tp = 0;
 									v_gtext(v->handle, dx, dy, tpp);
-									dx += (tp - tpp) * list->char_width;
+									list->vdi_settings->api->t_extent(list->vdi_settings, tpp, &wd, &h);
+									dx += wd;
+									cwd = wd / (tp-tpp);
 
 									tpp = tp;
 
 									switch( cp )
 									{
+									case '\\':
+										*tp = '\\';
+										tp += 2;
+										tpp++;
+									continue;
 									case '<':
 										switch( *++tp )
 										{
@@ -955,28 +962,36 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 											case 'b':
 												te &= ~BOLD;
 											break;
+											default:
+												unknown = true;
 											}
 										break;
+										default:
+											unknown = true;
 
 										}
-										if( *++tp == '>' )
+
+										if( unknown == false && *++tp == '>' )
 										{
 											(*v->api->t_effects)(v, te);
-											//wtxt->e = te;	// effect valid for one line?
+											break;
 										}
 										else
 										{
+											tp = tpp + 1;	/* reset tp to 1 after the < */
+											*tpp = cp;	/* next output-string */
+											continue;
 										}
 
-									break;
 									}
 
 									*tpp = cp;
 									if( cont )
 										tpp = tp + 1;
-								}
-								v_gtext(v->handle, dx, dy, tpp);
+								}	// while( cont )
+
 								//wtxt->e = te;	// effect valid for one line? todo: save te in scroll_info
+
 								/* restore flags changed by <c>, <r> */
 								//tab->flags = flags;
 							}
@@ -2779,6 +2794,7 @@ add_scroll_entry(SCROLL_INFO *list,
 		}
 		else
 			new->fnt = &default_fnt;
+
 
 		if (!(new->col = sc->col))
 			new->col = &default_col;
