@@ -80,10 +80,10 @@ CPU  = 060
 KERNELDEFS = -DM68060
 endif
 
-ifeq ($(kernel),117)
-MINT = mint117.prg
-CPU  = 020-60
-KERNELDEFS = -DM68040
+ifeq ($(kernel),020)
+MINT = mint020.prg
+CPU  = 020
+KERNELDEFS = -DM68000
 endif
 
 ifeq ($(kernel),deb)
@@ -142,8 +142,8 @@ endif
 #
 # all default targets
 #
-kerneltargets = 000 030 040 060 117 deb mil ara
-cputargets = 000 030 020-60
+kerneltargets = 000 020 030 040 060 deb mil ara
+cputargets = 000 020 030 040 060 020-60
 
 ifeq ($(COLDFIRE),yes)
 kerneltargets += col
