@@ -34,6 +34,9 @@ struct xa_window * _cdecl create_dwind(enum locks lock, XA_WIND_ATTR tp, char *t
 
 struct helpthread_data * get_helpthread_data(struct xa_client *client);
 
+extern struct xa_wtxt_inf norm_txt;
+void	set_xa_fnt( int pt, struct xa_wtxt_inf *wp[], OBJECT *obtree, int objs[], SCROLL_INFO *list );
+
 void add_window_to_tasklist(struct xa_window *wi, const char *title);
 void add_to_tasklist(struct xa_client *client);
 void remove_from_tasklist(struct xa_client *client);

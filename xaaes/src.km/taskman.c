@@ -130,7 +130,7 @@ int xaaes_do_form_alert( enum locks lock, int def_butt, char al_text[], char tit
 }
 #endif
 
-static struct xa_wtxt_inf norm_txt =
+/*static*/ struct xa_wtxt_inf norm_txt =
 {
  WTXT_NOCLIP,
 /* id  pnts  flags wrm,     efx   fgc      bgc   banner x_3dact y_3dact texture */
@@ -226,6 +226,31 @@ static void init_list_focus( OBJECT *obtree, short item, short y )
 	struct moose_data md = {0};
 	md.y = y;
 	click_scroll_list(0, obtree, item, &md);
+}
+
+void	set_xa_fnt( int pt, struct xa_wtxt_inf *wp[], OBJECT *obtree, int objs[], SCROLL_INFO *list )
+{
+	short i, w, h;
+
+	if( wp )
+	{
+		for( i = 0; wp[i]; i++ )
+		{
+			wp[i]->n.p = wp[i]->s.p = wp[i]->h.p = pt;
+		}
+	}
+
+	C.Aes->vdi_settings->api->text_extent(C.Aes->vdi_settings, "X", &norm_txt.n, &w, &h);
+
+	/* todo: need smaller icons */
+	if( objs && obtree )
+		for( i = 0; objs[i]; i++ )
+			object_get_spec(obtree + objs[i])->iconblk->ib_hicon = h;
+
+	list->nesticn_h = h;// + 2;
+	//if( list->nesticn_h < 10 )
+		//list->nesticn_h = 10;
+	list->char_width = 0;
 }
 
 struct helpthread_data *
@@ -411,6 +436,7 @@ void add_window_to_tasklist(struct xa_window *wi, const char *title)
 						sc.t.strings = 1;
 						sc.data = wi;
 						sc.usr_flags = TM_WINDOW;	/* window */
+						sc.fnt = &norm_txt;
 						list->add(list, this, NULL, &sc, SEADD_CHILD, 0, redraw);
 
 						list->set(list, this, SESET_OPEN, 1, NORMREDRAW);
@@ -664,7 +690,7 @@ update_tasklist_entry( int md, void *app, int redraw )
 				}
 #endif
 			}
-			else if( md == 0 )	/* add non-client */
+			else if( md == NO_AES_CLIENT )	/* add non-client */
 			{
 				//p.arg.data = app;
 
@@ -675,9 +701,9 @@ update_tasklist_entry( int md, void *app, int redraw )
 				//sc.icon = obtree + TM_ICN_MENU;
 				if ((tx = build_tasklist_string(md, app)))
 					t.text = tx;
-				else if( md == AES_CLIENT )
-					t.text = ((struct xa_client *)app)->name;
 				sc.t.text = t.text;
+
+				sc.fnt = &norm_txt;
 
 				list->add(list, NULL, NULL, &sc, false, 0, NORMREDRAW);
 			}
@@ -1505,6 +1531,8 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 	OBJECT *obtree = NULL;
 	RECT or;
 	int redraw = NOREDRAW;
+	struct xa_wtxt_inf *wp[] = {&norm_txt, &acc_txt, &prg_txt, &sys_txt, &sys_thrd, &desk_txt, 0};
+	int objs[] = {TM_ICN_MENU, TM_ICN_XAAES, 0};
 
 	htd = get_helpthread_data(client);
 	if (!htd)
@@ -1515,6 +1543,8 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 		struct scroll_info *list;
 		struct scroll_content sc = {{ 0 }};
 		int tm_ticks[] = {TM_TICK1, 25, 1, TM_TICK2, 50, 2, TM_TICK3, 75, 1, 0, 0, 0};
+
+
 
 		obtree = duplicate_obtree(client, ResourceTree(C.Aes_rsc, TASK_MANAGER), 0);
 		if (!obtree) goto fail;
@@ -1530,6 +1560,8 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 				 /*tm_client_apps*/"Applications", NULL, NULL, 255);
 
 		if (!list) goto fail;
+
+		set_xa_fnt( cfg.xaw_point, wp, obtree, objs, list);
 
 		/*!obj_init_focus(wt, OB_IF_RESET);*/
 		obj_rectangle(wt, aesobj(obtree, 0), &or);
@@ -1597,6 +1629,7 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 		sc.usr_flags = TM_HEADER;
 		/* ! no tabs! */
 		sc.t.text = "       name          pid  ppid pgrp pri DOM STATE    SZ           CPU  % args";
+		sc.fnt = &norm_txt;
 		list->add(list, NULL, NULL, &sc, false, 0, NOREDRAW);
 
 		if (open)
@@ -1626,6 +1659,9 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 				struct scroll_entry *this;
 				struct proc *rootproc = pid2proc(0);
 				long u = 0;
+
+				/* todo: to change fnt-size at runtime font-info for each list-entry would have to be updated */
+				//set_xa_fnt( cfg.xaw_point, wp, obtree, objs, list);
 
 				for( this = list->start; this; this = this->next )
 					this->usr_flags &= ~TM_UPDATED;
@@ -2274,6 +2310,8 @@ static struct scroll_entry *add_title_string( struct scroll_info *list, struct s
 	sc.t.strings = 1;
 	sc.xflags = OF_AUTO_OPEN|OF_OPENABLE;
 
+	sc.fnt = &norm_txt;
+
 	if( !list->add(list, this, 0, &sc, SEADD_CHILD, SETYP_STATIC, 0) )
 		return 0;
 
@@ -2298,6 +2336,8 @@ static void add_os_features(struct scroll_info *list, struct scroll_entry *this,
 	sprintf( s, sizeof(s)-1, "MEMPROT:%s", has_mprot ? "ON" : "OFF" );
 #endif
 	sc->t.text = s;
+
+	sc->fnt = &norm_txt;
 
 	list->add(list, this, 0, sc, SEADD_CHILD, 0, 0);
 }
@@ -2387,6 +2427,7 @@ static void add_kerinfo(
 			else
 			{
 				sc->t.text = line;
+				sc->fnt = &norm_txt;
 				list->add(list, this, 0, sc, this ? (SEADD_CHILD) : SEADD_PRIOR, 0, redraw);
 			}
 		}
@@ -2415,6 +2456,7 @@ open_systemalerts(enum locks lock, struct xa_client *client, bool open)
 		char a[] = /*txt_alerts*/"Alerts";
 		char e[] = /*txt_environment*/"Environment";
 		char s[] = /*txt_environment*/"System";
+		int objs[] = {SALERT_IC1, SALERT_IC2, 0};
 
 		obtree = duplicate_obtree(client, ResourceTree(C.Aes_rsc, SYS_ERROR), 0);
 		if (!obtree) goto fail;
@@ -2430,6 +2472,8 @@ open_systemalerts(enum locks lock, struct xa_client *client, bool open)
 
 		if (!list) goto fail;
 
+		set_xa_fnt( cfg.xaw_point, 0, obtree, objs, list);
+
 		/* todo: set focus into list (?) */
 		obj_init_focus(wt, OB_IF_RESET);
 
@@ -2443,6 +2487,7 @@ open_systemalerts(enum locks lock, struct xa_client *client, bool open)
 			sc.usr_flags = 1;
 			sc.xflags = OF_AUTO_OPEN|OF_OPENABLE;
 			DIAGS(("Add Alerts entry..."));
+			sc.fnt = &norm_txt;
 			list->add(list, NULL, NULL, &sc, 0, SETYP_STATIC, NOREDRAW);
 			sc.t.text = e;
 			sc.icon = obtree + SALERT_IC2;
@@ -2453,6 +2498,7 @@ open_systemalerts(enum locks lock, struct xa_client *client, bool open)
 			sc.t.text = s;
 			sc.icon = obtree + SALERT_IC2;
 			DIAGS(("Add System entry..."));
+			sc.fnt = &norm_txt;
 			list->add(list, NULL, NULL, &sc, 0, SETYP_STATIC, NOREDRAW);
 		}
 		{
@@ -2473,6 +2519,7 @@ open_systemalerts(enum locks lock, struct xa_client *client, bool open)
 			list->empty(list, p.e, 0);
 			this = p.e;
 			sc.t.strings = 1;
+			sc.fnt = &norm_txt;
 
 			/* todo?: define sort (name/value) */
 			sc.t.text = sstr;

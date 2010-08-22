@@ -2946,9 +2946,10 @@ struct config
 	Path rsc_name;			/* Path to XaAES rsc */
 	Path xobj_name;
 
-	/* display modes of window title */
-	short topname;
+	/* display modes of window title (unimplemented)*/
+	/*short topname;
 	short backname;
+	*/
 
 	short next_active;		/* 0 = set previous active client active upon client termination */
 					/* 1 = set owner of previous topped (or only) window upon client termination */
@@ -2982,7 +2983,8 @@ struct config
 //	short widg_dw, widg_dh;		/* flexible widget object types. */
 
 	short ted_filler;
-	short font_id;			/* Font id to use */
+	short font_id;			/* Font id to use (buttons, menus) */
+	short xaw_point;	/* Font id to use (XaAES-window-content) */
 	short double_click_time;	/* Double click timing */
 	short mouse_packet_timegap;
 	short redraw_timeout;
