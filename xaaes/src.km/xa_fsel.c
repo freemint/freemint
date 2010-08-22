@@ -50,6 +50,7 @@
 #include "c_keybd.h"
 #include "k_keybd.h"
 #include "c_window.h"
+#include "taskman.h"	//set_xa_fnt
 #include "form.h"
 #include "k_main.h"
 #include "matchpat.h"
@@ -117,7 +118,7 @@ static char *faccess[] =
 	"rwx",
 };
 
-static struct xa_wtxt_inf norm_txt =
+static struct xa_wtxt_inf fs_norm_txt =
 {
  WTXT_NOCLIP,
 /* id  pnts  flags wrm, 		efx 	fgc 		 bgc	 banner x_3dact y_3dact texture */
@@ -227,7 +228,7 @@ init_fsel(void)
 		prover = provermin = i + 1;	/* + "*" */
 	if (screen.planes < 4)
 	{
-		exe_txt = dexe_txt = dir_txt = norm_txt;
+		exe_txt = dexe_txt = dir_txt = fs_norm_txt;
 	}
 
 #if SKEWED_TEXT_SCRAMBLED
@@ -1307,7 +1308,7 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 						else
 						{
 							icon = obtree + FS_ICN_FILE;
-							sc.fnt = &norm_txt;
+							sc.fnt = &fs_norm_txt;
 						}
 					}
 					if (sln)
@@ -1414,7 +1415,7 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 				if( fs->treeview )
 					h += 10;
 
-				/*list->vdi_settings->api->text_extent(list->vdi_settings, T, &norm_txt.n, &w, &h);*/
+				/*list->vdi_settings->api->text_extent(list->vdi_settings, T, &fs_norm_txt.n, &w, &h);*/
 				tab.r = (RECT){0,0,-h, 0};
 				//list->tabs[FSLIDX_NAME].v = tab.r;
 				list->set(list, NULL, SESET_TAB, (long)&tab, false);
@@ -1472,6 +1473,8 @@ refresh_filelist(enum locks lock, struct fsel_data *fs, SCROLL_ENTRY *dir_ent)
 	OBJECT *form = fs->form->tree;
 	OBJECT *sl;
 	SCROLL_INFO *list;
+	struct xa_wtxt_inf *wp[] = {&fs_norm_txt, &exe_txt, &dexe_txt, &dir_txt, 0};
+	int objs[] = {FS_ICN_EXE, FS_ICN_DIR, FS_ICN_PRG, FS_ICN_FILE, FS_ICN_SYMLINK, 0};
 
 	//PROFILE(("fsel:refresh_file:entry" ));
 
@@ -1479,6 +1482,7 @@ refresh_filelist(enum locks lock, struct fsel_data *fs, SCROLL_ENTRY *dir_ent)
 	DIAG((D_fsel, NULL, "refresh_filelist: fs = %lx, obtree = %lx, sl = %lx",
 		fs, fs->form->tree, sl));
 	list = object_get_slist(sl);
+	set_xa_fnt( cfg.xaw_point, wp, form, objs, list );
 	add_slash(fs->root, fs->fslash);
 
 #ifdef FS_DBAR
