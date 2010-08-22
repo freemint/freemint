@@ -189,6 +189,126 @@ strnupr(char *s, int n)
 		s[f] = toupper(s[f]);
 }
 
+
+struct xa_file{
+	struct file *k_fp;
+	char buf[1024];
+	char *p, *p1;
+};
+
+XA_FILE *xa_fopen( char *fn, int rwmd )
+{
+	XA_FILE *ret;
+	long err;
+	struct file *fp = kernel_open( fn, rwmd, &err, NULL );
+	if( !fp )
+	{
+		BLOG((0,"xa_fopen: cannot open %s", fn));
+		return 0;
+	}
+	ret = kmalloc( sizeof( XA_FILE ) );
+	if( !ret )
+	{
+		BLOG((0,"xa_fopen: malloc for %s", fn));
+		return 0;
+	}
+	ret->k_fp = fp;
+	ret->p1 = ret->p = 0;//ret->buf;
+
+	return ret;
+}
+
+void xa_fclose( XA_FILE *fp )
+{
+	if( !fp )
+		return;
+	kernel_close( fp->k_fp );
+	kfree( fp );
+}
+
+char *xa_readline( char *buf, long size, XA_FILE *fp )
+{
+	long err = 1;
+	int cr = 0, offs;
+	char *ret = 0;
+
+
+	if( fp->k_fp )
+	{
+
+		if( !fp->p /*|| fp->p >= fp->buf + sizeof(fp->buf) - 1*/)
+		{
+			err = kernel_read( fp->k_fp, fp->buf, sizeof(fp->buf)-1 );
+
+
+			if( err <= 0 )
+			{
+				return 0;
+			}
+
+			fp->buf[err] = 0;
+
+			fp->p1 = fp->p = fp->buf;
+		}
+		else fp->p++;
+
+		for( ;; fp->p++ )
+		{
+			if( !*fp->p )
+			{
+				offs = fp->p - fp->p1;
+				if( offs > 0 )
+				{
+					memcpy( fp->buf, fp->p1, offs );
+				}
+				fp->p1 = fp->buf;
+
+				fp->p = fp->buf + offs;
+
+				err = kernel_read( fp->k_fp, fp->p, sizeof(fp->buf) - ( fp->p - fp->buf ) - 1 );
+				if( err <= 0 )
+					break;
+				fp->p[err] = 0;
+			}
+			if( *fp->p == '\n' || (cr=(*fp->p == '\r')) )
+				break;
+		}
+
+		*fp->p = 0;
+
+		if( size > 0 && buf )
+			strncpy( buf, fp->p1, size );
+
+		ret = fp->p1;	/* !! */
+
+
+		if( cr )
+		{
+			cr = 0;
+			if( !*(fp->p+1) )
+			{
+				kernel_read( fp->k_fp, fp->p, 1 );	// skip the \n
+				*fp->p = 0;
+				err = 0;
+			}
+			else{
+				fp->p++;
+			}
+		}
+
+		if( err )
+			fp->p1 = fp->p+1;
+
+		if( err <= 0 )
+			fp->p = 0;
+		return ret;
+
+	}
+
+	return 0;
+}
+
+
 #if 0
 bool
 xa_invalid(int which, int pid, void *addr, long size, bool allowNULL)
