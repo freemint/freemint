@@ -211,8 +211,7 @@ enum montypes {STmono=0, STcolor, VGAcolor, TVcolor};
 #define	SND_16BIT	0x04	/* 16 bit CODEC */
 #define	SND_DSP		0x08	/* DSP */
 #define	SND_MATRIX	0x10	/* Connection Matrix */
-
-/* XXX Docs say Falcon shows 0x3f. What does bit 0x20 mean ??? */
+#define SND_XBIOS	0x20	/* XBIOS / XGSB */
 
 /*
  * Sound data memory layout - samples are all signed values
