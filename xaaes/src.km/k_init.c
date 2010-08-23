@@ -798,8 +798,11 @@ k_init(unsigned long vm)
 	/* WARNING: This is halfway nonsense! */
 	if( screen.planes > 32 || screen.planes < 1 )
 	{
-		BLOG((1,"planes wrong: %d", screen.planes ));
-		screen.planes = screen.colours >> 8;
+		long b, s = 0;
+		BLOG((1,"planes wrong: %d (colors=%d)", screen.planes, screen.colours ));
+		for( b = screen.colours; b>1; b >>= 1 )
+			s++;
+		screen.planes = s;
 		BLOG((1,"planes now: %d", screen.planes ));
 		if( screen.planes > 32 || screen.planes < 1 )
 		{
