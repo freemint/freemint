@@ -1,3 +1,240 @@
+2010-08-23 11:51  alanh
+
+	* sys/mint/falcon.h: #define SND_XBIOS 0x20
+
+2010-08-22 21:41  hek
+
+	* xaaes/Changes.hk: ,
+
+2010-08-22 21:24  hek
+
+	* xaaes/src.km/xa_fsel.c: allow usage of different font-sizes
+	  (xaw_point)
+
+2010-08-22 21:24  hek
+
+	* xaaes/src.km/: util.c, util.h: util.c util.h:
+
+	  new function xa_readline similar to fgets, reads DOS- and
+	  Unix-line-endings
+
+2010-08-22 21:23  hek
+
+	* xaaes/src.km/: taskman.c, taskman.h, xa_types.h: taskman.c
+	  taskman.h xa_types.h:
+
+	  allow usage of different font-sizes (xaw_point) remove unused
+	  code
+
+2010-08-22 21:23  hek
+
+	* xaaes/src.km/scrlobjc.c: - fix text-effects for variable
+	  font-size - better backslash-handling
+
+2010-08-22 21:23  hek
+
+	* xaaes/src.km/init.c: default-value for xaw_point(10)
+
+2010-08-22 21:23  hek
+
+	* xaaes/src.km/cnf_xaaes.c: new config-variable: xaw_point: define
+	  font-size for xaaes-windows in point.
+
+2010-08-22 21:22  hek
+
+	* xaaes/src.km/about.c: - use new function xa_readline to read
+	  xa_help.txt - re-read xa_help.txt if it changed - force redraw if
+	  open but not top when selected - use xaw_point for font-size
+
+2010-08-22 11:03  alanh
+
+	* sys/KERNELDEFS: mint117.prg -> mint020.prg and build as a 68020
+	  binary
+
+2010-08-18 21:47  hek
+
+	* doc/xaaes/: xaaes.html, xaaes.txt, xaaes.u: cosmetic changes
+
+2010-08-18 21:38  hek
+
+	* xaaes/src.km/render_obj.c: - fixed a bug in edit fields with a
+	  mask that contains non-editable characters
+
+	  - added missing paranthesises
+
+2010-08-13 21:54  hek
+
+	* sys/ramfs.c: Fix RAMFS search bug (from trunk)
+
+2010-08-12 00:10  hek
+
+	* doc/xaaes/: xaaes.html, xaaes.txt, xaaes.u: minor additions
+
+2010-08-12 00:10  hek
+
+	* doc/xaaes/Makefile: Makefile for xaaes.html and xaaes.txt
+
+2010-08-11 19:56  hek
+
+	* xaaes/src.km/: taskman.c: fix process-list-layout
+
+2010-08-11 19:56  hek
+
+	* xaaes/src.km/: scrlobjc.c: text-effects only valid for one line
+	  (todo)
+
+2010-08-11 19:56  hek
+
+	* xaaes/src.km/: cnf_xaaes.c, init.c: remove unused code
+
+2010-08-11 19:55  hek
+
+	* xaaes/src.km/: about.c: ignore cr in file_to_list
+
+2010-08-11 13:46  alanh
+
+	* sys/ramfs.c: Fix RAMFS search bug
+
+2010-08-10 21:31  hek
+
+	* xaaes/src.km/: Makefile.objs, RULES, XAAESDEFS: Makefile.objs
+	  RULES XAAESDEFS:
+
+	  - Enable coldfire-build - Don't build ozk-version - use 030
+	  instead of 020-60 for 030-CPU
+
+2010-08-09 21:36  alanh
+
+	* doc/readme.1.17.0: Correct date.
+
+2010-08-09 15:56  alanh
+
+	* tools/strace/print.c: Fix strace build
+
+2010-08-09 15:29  alanh
+
+	* sys/buildinfo/version.h: Now mark as BETA, will only search for
+	  the 1-17-0 directory now.
+
+2010-08-09 13:28  alanh
+
+	* doc/readme.1.17.0: add 1.17.0 readme.
+
+	  This should be updated in-line with what was in readme.1.16.0
+
+2010-08-09 09:46  alanh
+
+	* doc/kernels.txt: kernels update
+
+2010-08-09 09:27  alanh
+
+	* doc/kernels.txt: add documentation about kernels available
+
+2010-08-08 18:35  hek
+
+	* doc/xaaes/xaaes.html: html-version of xaaes.txt
+
+2010-08-08 18:33  hek
+
+	* doc/xaaes/: xaaes.u, xaaes.txt: minor modifications
+
+2010-08-08 09:49  hek
+
+	* doc/xaaes/xaaes.u: udo-source for xaaes.txt
+
+2010-08-08 09:49  hek
+
+	* doc/xaaes/xaaes.txt: documentation for current XaAES
+
+2010-08-06 19:35  hek
+
+	* xaaes/src.km/: xa_fsel.c: remove outcommented BLOGs.
+
+2010-08-06 19:34  hek
+
+	* xaaes/src.km/: init.c: display address of C.shutdown in
+	  long-format (not short).
+
+2010-08-06 19:34  hek
+
+	* xaaes/src.km/: about.c: move the FN-dedication 1 char to the
+	  right.
+
+2010-08-05 19:52  hek
+
+	* sys/dos.c: verbose shutdown
+
+2010-08-04 21:09  hek
+
+	* xaaes/src.km/: xa_fsel.c: if no pattern is passed use '*'.
+
+2010-08-04 21:09  hek
+
+	* xaaes/src.km/: version.h: make it a release-version
+
+2010-08-04 21:08  hek
+
+	* xaaes/src.km/: scrlobjc.c, xa_types.h: scrlobjc.c xa_types.h:
+
+	  add underlined style to inlined text-effects.  text-effects may
+	  be combined.	add code for centered/right-bound text (#ifdefed
+	  out - not used) new item in struct se_text: slen - length of
+	  text, saves some calls to strlen
+
+2010-08-04 21:04  hek
+
+	* xaaes/src.km/: init.c, k_main.c, k_main.h, taskman.c, xa_defs.h,
+	  k_init.c: init.c k_init.c k_main.c k_main.h taskman.c xa_defs.h:
+
+	  Don't perform stack-checking and don't display
+	  kernel-compiletime-flags in the release-version.
+
+2010-08-04 21:03  hek
+
+	* xaaes/src.km/: about.c: Show Frank Naumann-dedication in the
+	  release-version.
+
+2010-08-03 16:34  hek
+
+	* xaaes/src.km/win_draw.c: update from trunk
+
+2010-08-03 08:50  alanh
+
+	* xaaes/src.km/win_draw.c: fixed vertical scrollbar textures in
+	  scroll list objects (typo=wrong texture reference) (Paul Wratt)
+
+2010-08-02 18:26  hek
+
+	* xaaes/src.km/win_draw.c: revert textures-patch until the
+	  compile-error is found.
+
+2010-08-02 17:57  alanh
+
+	* sys/: KERNELDEFS, keyboard.c, arch/syscall.h: Fix the COLDFIRE
+	  build - has this ever worked ???
+
+2010-08-02 17:36  alanh
+
+	* CONFIGVARS: Build COLDFIRE by default. If you can't build because
+	  of old GCC - disable in your local build.
+
+2010-08-02 17:35  alanh
+
+	* sys/KERNELDEFS: Adjust kernel names appropriately
+
+2010-08-02 17:34  alanh
+
+	* sys/KERNELDEFS: Stop building my1, my2, my3 and my4 targets -
+	  used for developers only.
+
+2010-08-02 17:11  alanh
+
+	* xaaes/src.km/win_draw.c: Fix build
+
+2010-08-02 14:35  alanh
+
+	* ChangeLog.#1.17.0: Add current 1.17 changelog
+
 2010-08-02 13:56  alanh
 
 	* sys/fatfs.c: Allow renaming of in-use files. Code already dealt
