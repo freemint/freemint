@@ -25,6 +25,7 @@
  */
 
 #include "xa_types.h"
+//#include "xa_global.h"
 #include "xaaeswdg.h"
 #include "win_draw.h"
 
@@ -970,9 +971,9 @@ struct window_colours def_otop_cols =
                                       {0, 10,   0, MD_TRANS, 0,        G_WHITE,	G_WHITE, G_WHITE,  1,       1,     NULL}},	/* Highlighted */
  /* Info text-info */
  { 0,
-                                      {0,  9,   0, MD_TRANS, 0,        G_BLACK,	G_WHITE, G_WHITE,  1,       1,     NULL},	/* Normal */
-                                      {0,  9,   0, MD_TRANS, 0,        G_BLACK,	G_WHITE, G_WHITE,  1,       1,     NULL},	/* Selected */
-                                      {0,  9,   0, MD_TRANS, 0,        G_BLACK,	G_WHITE, G_WHITE,  1,       1,     NULL}},	/* Highlighted */
+                                      {0,  10,   0, MD_TRANS, 0,        G_BLACK,	G_WHITE, G_WHITE,  1,       1,     NULL},	/* Normal */
+                                      {0,  10,   0, MD_TRANS, 0,        G_BLACK,	G_WHITE, G_WHITE,  1,       1,     NULL},	/* Selected */
+                                      {0,  10,   0, MD_TRANS, 0,        G_BLACK,	G_WHITE, G_WHITE,  1,       1,     NULL}},	/* Highlighted */
 
 };
 
@@ -1198,9 +1199,9 @@ struct window_colours def_utop_cols =
                                       {0,  10,  0, MD_TRANS, 0,        G_LBLACK, G_WHITE, G_WHITE, 1,      1,       NULL},	/* Selected */
                                       {0,  10,  0, MD_TRANS, 0,        G_BLACK,	 G_WHITE, G_WHITE, 1,      1,       NULL}},	/* Highlighted */
  /* Info text-info */
- { 0,		      		      {0,   9,  0, MD_TRANS, 0,        G_LBLACK, G_WHITE, G_WHITE, 1,      1,       NULL},	/* Normal */
-                                      {0,   9,  0, MD_TRANS, 0,        G_LBLACK, G_WHITE, G_WHITE, 1,      1,       NULL},	/* Selected */
-                                      {0,   9,  0, MD_TRANS, 0,        G_BLACK,	 G_WHITE, G_WHITE, 1,      1,       NULL}},	/* Highlighted */
+ { 0,		      		      {0,   10,  0, MD_TRANS, 0,        G_LBLACK, G_WHITE, G_WHITE, 1,      1,       NULL},	/* Normal */
+                                      {0,   10,  0, MD_TRANS, 0,        G_LBLACK, G_WHITE, G_WHITE, 1,      1,       NULL},	/* Selected */
+                                      {0,   10,  0, MD_TRANS, 0,        G_BLACK,	 G_WHITE, G_WHITE, 1,      1,       NULL}},	/* Highlighted */
 };
 
 /* ---------------------------------------------------------------------------------- */
@@ -3165,9 +3166,11 @@ s_info_size(struct xa_window *wind, struct xa_widget *widg)
 		wti->n.f = wti->s.f = wti->h.f = wtu->n.f = wtu->s.f = wtu->h.f = v->font_sid;
 	}
 
+//		wti->n.f = wti->s.f = wti->h.f = wtu->n.f = wtu->s.f = wtu->h.f = v->font_sid;
 	(*v->api->t_font)(v, wti->n.p, wti->n.f);
 	(*v->api->t_effects)(v, wti->n.e);
-	(*v->api->t_extent)(v, "A", &w, &h);
+	(*v->api->text_extent)(v, "X", &wti->n, &w, &h);
+	//(*v->api->t_extent)(v, "A", &w, &h);
 	(*v->api->t_effects)(v, 0);
 // 	h += 2;
  	if ((wci->flags & (WCOL_DRAW3D|WCOL_BOXED)) || (wti->flags & WTXT_DRAW3D))
@@ -3984,6 +3987,8 @@ test_img_stuff(struct module *m)
 #endif
 }
 
+extern struct config cfg;
+
 /*
  * This function is called by XaAES to have the module initialize itself
  */
@@ -4070,13 +4075,21 @@ init_module(const struct xa_module_api *xmapi, const struct xa_screen *screen, c
 
 		if (scrninf->r.h <= 280)
 		{
-			def_otop_cols.title_txt.n.f = 9;
-			def_otop_cols.title_txt.s.f = 9;
-			def_otop_cols.title_txt.h.f = 9;
-			def_utop_cols.title_txt.n.f = 9;
-			def_utop_cols.title_txt.s.f = 9;
-			def_utop_cols.title_txt.h.f = 9;
+			def_otop_cols.title_txt.n.p = 9;
+			def_otop_cols.title_txt.s.p = 9;
+			def_otop_cols.title_txt.h.p = 9;
+			def_utop_cols.title_txt.n.p = 9;
+			def_utop_cols.title_txt.s.p = 9;
+			def_utop_cols.title_txt.h.p = 9;
 		}
+
+		//BLOG((0,"init_mod: point=%d",cfg.standard_font_point));
+		def_otop_cols.info_txt.n.p = cfg.standard_font_point;
+		def_otop_cols.info_txt.s.p = cfg.standard_font_point;
+		def_otop_cols.info_txt.h.p = cfg.standard_font_point;
+		def_utop_cols.info_txt.n.p = cfg.standard_font_point;
+		def_utop_cols.info_txt.s.p = cfg.standard_font_point;
+		def_utop_cols.info_txt.h.p = cfg.standard_font_point;
 
 	}
 	else
