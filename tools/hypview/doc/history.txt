@@ -7,7 +7,7 @@ History for HypView (v0.35.3e)
 	-Many changes to fix problems with different sized fonts [ozk]
 
 17.09.2005 (v0.35.2e)
-	-ALT-E Stack lschen (Men -> Stack lschen) [GS]
+	-ALT-E Stack loeschen (Men -> Stack loeschen) [GS]
 
 20.08.2005
 	-Iconifizieren des Infodialogs [GS]
@@ -20,7 +20,7 @@ History for HypView (v0.35.3e)
 
 14.08.2005
 	-Ist das Dokument fuer das erste Fenster nicht mehr vorhanden, war
-	 keine Benutzung von HypView mehr mglich. [GS]
+	 keine Benutzung von HypView mehr moeglich. [GS]
 
 12.08.2005 (v0.35.2d)
 	-Ist WDIALOG nicht vorhanden, sind einige Icons der Toolbar nicht
