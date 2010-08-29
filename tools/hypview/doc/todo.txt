@@ -63,6 +63,8 @@ HypView
    mglich sind, und b) werden Rechtsklicks von den verschiedenen TOS-
    Versionen unterschiedlich behandelt (Quelle: Martin "WINX" Osieka)
 
++ ALT-D - DEFHYP laden
+
 - ALT-R - Remarker oeffnen, falls dieser laeuft oder die Variable REMARKER
           definiert ist
 
@@ -79,3 +81,21 @@ HypView
 - Ctrl-G   Pattern erneut suchen  (wie Extra -> Weitersuchen)
 
 - BubbleGEM fuer Icon
+
+
+--------------------------------
+> Probably not too hard ;) Try for example to have some default hyp file,
+> click on ACC, it's opened, all right. Click again and 0x00000000 memory
+> violation occurs.
+
+I'm not able to reproduce this on my Milan. However, I can make it crash
+with a NULL-pointer by topping and the hiding it when it has no open
+windows. This only happens when using it as an accessory, as it exits if
+there are no open windows when running as an application.
+
+
+Topping an already open window doesn't crash here. But attempting to top
+Hypview (by sending it AC_OPEN) will crash it if it has had an open
+window but no open windows now. This happens every time.
+
+J-------------------------
