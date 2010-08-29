@@ -27,6 +27,7 @@
 #include "include/scancode.h"
 #include "diallib.h"
 #include "defs.h"
+#include "hyp.h"
 
 extern WINDOW_DATA *Win;
 
