@@ -24,6 +24,7 @@
  */
 
 #include <string.h>
+#include "../diallib.h"
 #include "../hyp.h"
 
 short find_nr_by_title(HYP_DOCUMENT *hyp_doc,char *title)

@@ -426,16 +426,6 @@ d8b(char *s)
 	DIAG((""));
 }
 #endif
-struct pic_adm
-{
-	short type;
-	unsigned short flags;
-	char *src;
-	char osrc[8];
-	void *data;
-	GRECT trans;
-	GRECT orig;
-};
 
 static void
 set_start(struct prepnode *p, short empty)
