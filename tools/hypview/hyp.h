@@ -182,6 +182,17 @@ struct _loaded_picture_
 };
 typedef struct _loaded_picture_ LOADED_PICTURE;
 
+struct pic_adm
+{
+	short type;
+	unsigned short flags;
+	char *src;
+	char osrc[8];
+	void *data;
+	GRECT trans;
+	GRECT orig;
+};
+
 struct prepnode
 {
 	HYP_DOCUMENT *hyp;
@@ -379,5 +390,11 @@ void HypOpenExtRef(char *name, short new_window);
  *		Search.c
  */
 void search_allref(char *string, short no_message );
+
+/*
+ *		Search_D.c
+ */
+void Hypfind( DOCUMENT *doc );
+void HypfindFinsih ( short AppID, short ret );
 
 #endif
