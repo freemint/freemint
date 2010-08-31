@@ -90,7 +90,7 @@ This will produce the file
 !begin_sourcecode
 User_manual.xml
 !end_sourcecode
-in you local directory.
+in your local directory.
 
 !subnode Convert from wiki to udo
 
