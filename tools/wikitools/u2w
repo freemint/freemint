@@ -1,0 +1,2 @@
+awk -f u2w.awk -v INF=$1
+

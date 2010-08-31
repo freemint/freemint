@@ -1,0 +1,48 @@
+########################################
+# @(#) include for w2u
+# @(#) Helmut Karlowski, 30.08.2010
+########################################
+!language english
+
+!ifdest [asc]
+	!define weblink (!1)
+	!define maillink (!2)
+#	!macro wikilink (!2)
+!else
+	!macro weblink <a (!nolink [href="(!1)">(!2)])</a>
+	!define maillink <a href="mailto:(!2)">(!1)</a>
+#	!define wikilink <a href="(!1)">(!2)</a>
+!endif
+
+#special preamble for dvipdfm, dvips
+!no_preamble [tex]
+
+!use_nodes_inside_index  [all]
+!use_label_inside_index  [all]
+!use_alias_inside_index  [all]
+
+!no_headlines [html]
+!html_merge_nodes
+!html_merge_subnodes
+!html_merge_subsubnodes
+
+#
+!tex_tetex
+!tex_2e
+
+#graphic-input for different formats
+#!include graphicmac.u
+
+#####################################################
+#######START###################
+############
+
+
+#!use_auto_subtocs    [info,html,stg,tvh,win,aqv]
+#!use_auto_subsubtocs [info,html,stg,tvh,win,aqv]
+!no_effects          [asc]
+!use_justification   [asc]
+
+########################################
+
+
