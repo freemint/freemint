@@ -1,0 +1,2 @@
+awk -f w2u.awk -v INF=$1
+
