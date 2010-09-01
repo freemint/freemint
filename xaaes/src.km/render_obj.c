@@ -3852,7 +3852,7 @@ ob_text(XA_TREE *wt,
 					(*v->api->t_color)(v, bgc);
 					v_gtext(v->handle, r->x + 1, r->y + 1 - v->dists[5], t);
 				}
-				(*v->api->t_color)(v, fgc); //tc);
+				(*v->api->t_color)(v, fgc);
 				v_gtext(v->handle, r->x, r->y - v->dists[5], t);
 			}
 		}
@@ -3940,7 +3940,7 @@ ob_text(XA_TREE *wt,
 static short
 format_dialog_text(char *text_out, const char *template, const char *text_in, short edit_pos, short *ret_startpos)
 {
-	short index = 0, start_tpos = -1, tpos = 0, max = strlen(template);
+	short index = 0, start_tpos = -1, tpos = 0, max = strlen(template), noned = 0;
 	/* HR: In case a template ends with '_' and the text is completely
 	 * filled, edit_index was indeterminate. :-)
 	 */
@@ -3956,6 +3956,10 @@ format_dialog_text(char *text_out, const char *template, const char *text_in, sh
 		if (*template != '_')
 		{
 			*text_out++ = *template;
+			if( start_tpos != -1 )
+			{
+				noned++;	/* inc. max-position for cursor */
+			}
 		}
 		else
 		{
@@ -3985,7 +3989,7 @@ format_dialog_text(char *text_out, const char *template, const char *text_in, sh
 
 	*text_out = '\0';
 
-	if (edit_index > (start_tpos + tpos))
+	if (edit_index > (start_tpos + tpos + noned))
 		edit_index = start_tpos + tpos;
 
 	if (ret_startpos)
@@ -3996,6 +4000,7 @@ format_dialog_text(char *text_out, const char *template, const char *text_in, sh
 		edit_index--;
 
 // 	display("t out '%s'", to);
+
 	return edit_index;
 }
 
@@ -5141,6 +5146,8 @@ d_g_boxchar(struct widget_tree *wt, struct xa_vdi_settings *v)
 	c = (*api->object_get_spec)(ob)->obspec;
 	temp_text[0] = c.character;
 	temp_text[1] = '\0';
+
+
 	draw_g_box(wt, v, ct, &c, DRAW_ALL, &gr);
 	(*v->api->t_effects)(v, ct->fnt.e);
 	(*v->api->t_font)(v, screen->standard_font_point, screen->standard_font_id);
@@ -5188,7 +5195,7 @@ d_g_boxtext(struct widget_tree *wt, struct xa_vdi_settings *v)
 
 	fl3d = (ob->ob_flags & FL3DMASK) >> 9;
 
-	if ((disabled = ob->ob_state & OS_DISABLED))
+	if ((disabled = (ob->ob_state & OS_DISABLED)))
 	{
 		ct = selected ? &obt->dis.s[fl3d] : &obt->dis.n[fl3d];
 	}
@@ -5246,7 +5253,7 @@ d_g_fboxtext(struct widget_tree *wt, struct xa_vdi_settings *v)
 
 	fl3d = (ob->ob_flags & FL3DMASK) >> 9;
 
-	if ((disabled = ob->ob_state & OS_DISABLED))
+	if ((disabled = (ob->ob_state & OS_DISABLED)))
 	{
 		ct = selected ? &obt->dis.s[fl3d] : &obt->dis.n[fl3d];
 	}
@@ -5360,6 +5367,7 @@ d_g_button(struct widget_tree *wt, struct xa_vdi_settings *v)
 				(*v->api->t_extent)(v, text, &gr.w, &gr.h);
 				rr.y += gr.h / 2;
 				rr.h -= gr.h / 2;
+				//BLOG((0,"d_g_box: screen->standard_font_point=%d h=%d", screen->standard_font_point, rr.h));
 			}
 			if ((fl3d & 2)) /* BKG or ACT */
 			{
@@ -5846,7 +5854,7 @@ drw_g_text(struct widget_tree *wt, struct xa_vdi_settings *v, bool ftext)
 
 	fl3d = (ob->ob_flags & FL3DMASK) >> 9;
 
-	if ((disabled = ob->ob_state & OS_DISABLED))
+	if ((disabled = (ob->ob_state & OS_DISABLED)))
 	{
 		ct = selected ? &obt->dis.s[fl3d] : &obt->dis.n[fl3d];
 	}
@@ -5960,7 +5968,7 @@ d_g_string(struct widget_tree *wt, struct xa_vdi_settings *v)
 		else
 			obt = &theme->string;
 
-		if ((disabled = ob->ob_state & OS_DISABLED))
+		if ((disabled = (ob->ob_state & OS_DISABLED)))
 		{
 			ct = selected ? &obt->dis.s[fl3d] : &obt->dis.n[fl3d];
 		}
