@@ -30,8 +30,6 @@
 #include "xa_xtobj.h"
 #include "global.h"
 
-#define WAIT_SEE					{int i;for( i = 0; i < 10000; i++ )nap( 60000 );}
-
 #define MONO (screen->colours < 16)
 #define done(x) (*wt->state_mask &= ~(x))
 #ifndef max
@@ -5369,6 +5367,7 @@ d_g_button(struct widget_tree *wt, struct xa_vdi_settings *v)
 				(*v->api->t_extent)(v, text, &gr.w, &gr.h);
 				rr.y += gr.h / 2;
 				rr.h -= gr.h / 2;
+				//BLOG((0,"d_g_box: screen->standard_font_point=%d h=%d", screen->standard_font_point, rr.h));
 			}
 			if ((fl3d & 2)) /* BKG or ACT */
 			{
