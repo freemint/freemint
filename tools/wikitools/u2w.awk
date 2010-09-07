@@ -15,6 +15,48 @@ function is_node(L)
 	return L;
 }
 
+# eval macros
+# remove macroname, replace [y] [z]) -> [y z]
+function do_macros()
+{
+	if( NF <= 1 )
+		return;
+
+	while( 1 ){
+		found = 0;
+		for( i in MACRO ){
+#			printf( "%d:testing in %s for %s\n", lnr, $0, i);
+			for( n_i = 1; n_i <= NF; n_i++ ){
+				if( m_i = index( $n_i, i ) ){
+					found = 1;
+# save part of $n_i before marco-def
+					pre = substr( $n_i, 1, m_i-1);
+#					printf( "FOUND:%s m_i=%d n_i=%d\n",i, m_i, n_i);
+
+					$n_i = pre;
+
+#					printf( "2.MACRO:%s b1=%s, c2=%s:%s PRE=%s\n", $0, b[1], c2[1], c2[length(c2)], pre);
+
+					n_i++;
+					sub( "\\]", "", $n_i );
+#					print $n_i;
+
+# would cause endless recursion (?)
+#					s = pre $n_i;
+#					$n_i = s;
+
+					n_i++;
+					sub( "\\[", "", $n_i );
+					sub( "\\)", "", $n_i );
+
+#					printf( "END:MACRO:%d:%s\n%s\n->%s\n", n_i, $n_i, $(n_i+1), $0);
+				}
+			}
+		}
+		if( !found )
+			break;
+	}
+}
 
 BEGIN{
 
@@ -39,9 +81,12 @@ BEGIN{
 	begin_exclude = 333;
 	end_exclude = 334;
 
+	begin_document = 400;
+	end_document = 401;
+
 	weblink = 1000;
 	maillink = 1001;
-	wikilink = 1002;
+#	wikilink = 1002;
 
 ########################
 # parse-arrays
@@ -71,12 +116,16 @@ BEGIN{
 
 	COMMAND["!label"] = label;
 
+# flow-control
+	CONTROL["!begin_document"] = begin_document;
+	CONTROL["!end_document"] = end_document;
 
 # macros
 
 	MACRO["(!weblink"] = weblink;
-	MACRO["(!maillink"] = maillink;
-	MACRO["(!wikilink"] = wikilink;
+	MACRO["(!webnolink"] = weblink;
+#	MACRO["(!maillink"] = maillink;
+#	MACRO["(!wikilink"] = wikilink;
 
 
 # wiki-special: #!wik com
@@ -108,8 +157,6 @@ BEGIN{
 	IGNORED["!use_justification"] = 1;
 	IGNORED["!maketitle"] = 1;
 	IGNORED["!tableofcontents"] = 1;
-	IGNORED["!begin_document"] = 1;
-	IGNORED["!end_document"] = 1;
 
 	IGNORED_DI["[program]"] = 1;
 	IGNORED_DI["[date]"] = 1;
@@ -123,6 +170,9 @@ BEGIN{
 
 
 # start processing #
+	if( INF == "" ){
+		INF = ARGV[1];
+	}
 	if( INF == "" ){
 		INF = "/dev/stdin";
 		OUTF = "/dev/stdout";
@@ -180,8 +230,11 @@ BEGIN{
 	if( "$0" == "" )
 		r = getline < INF;
 	else r = 1;
-	print;
-	for(  ; r; (r=getline <INF ) > 0 && lnr++ && (OLDNF = NF) ){
+#		print;
+
+	doc_valid = 0;
+
+	for(  ; r > 0; (r=getline <INF ) > 0 && lnr++ && (OLDNF = NF) ){
 
 # inlines
 		gsub( /\(\!B\)/, "'''" );
@@ -189,8 +242,13 @@ BEGIN{
 		gsub( /\(\!I\)/, "''" );
 		gsub( /\(\!i\)/, "''" );
 #
+
+		found = 0;
+
 		split( $1, a, "" );
-		if( a[1] == "#" ){
+		found = 0;
+
+		if( exclude > 0 || a[1] == "#" ){
 			if( match( $1, /#\!wik/ ) ){
 				for( i in WIKI )
 					if( $2 == i ){
@@ -206,7 +264,7 @@ BEGIN{
 								if( exclude == 0 ){
 									if( OLDNF > 0 )
 										printf( "\n" ) >>OUTF;
-									printf( "%s-->\n", $0 ) >>OUTF;
+									printf( "%s -->\n", $0 ) >>OUTF;
 								}
 							}
 							else
@@ -214,8 +272,16 @@ BEGIN{
 						}
 					}
 			}
+			else if( exclude ){
+#				printf( "exclude-part:%s\n", $0);
+				print >>OUTF;	# leave exclude-part unchanged
+			}
+			else if( doc_valid )
+				printf( "<!--%s-->\n",$0) >>OUTF;
+
 			continue;	#comment ignored
 		}
+		do_macros();
 		if( a[1] == "!" ){
 
 			found = 0;
@@ -229,6 +295,16 @@ BEGIN{
 				continue;
 
 			found = 0;
+			for( i in CONTROL ){
+				if( i == $1 ){
+					found = 1;
+					if( CONTROL[i] == begin_document )
+						doc_valid = 1;
+					else if( CONTROL[i] == end_document )
+						doc_valid = 0;
+					break;
+				}
+			}
 			for( i in PREAPP ){
 				if( i == $1 ){
 					found = 1;
@@ -345,33 +421,7 @@ BEGIN{
 			if( !found )
 				printf( "%s:%d:unknown command:%s(ignored)\n", INF, lnr, $1) >"/dev/stderr";
 		}
-		else if( a[1] == "(" && a[2] == "!" ){
-# macros
-			found = 0;
-			for( i in MACRO ){
-				if( i == $1 ){
-					found = 1;
-					split( $0, b, "[" );
-					split( b[2], c1, "]" );
-					split( b[3], c2, "]" );
-					if( MACRO[i] == weblink )
-						printf( "[%s %s] ", c2[1], c1[1] ) >>OUTF;
-					else if( MACRO[i] == wikilink )
-						printf( "[[%s]] ", c1[1] ) >>OUTF;
-					else
-						printf( "[%s %s] ", c2[1], c1[1] ) >>OUTF;
-					n = split( $0, a, ")" );
-					for( j = 2; j <= n; j++ )
-						printf( "%s", a[j] ) >>OUTF;
-					printf( "\n" ) >>OUTF;
-					OLDNF = 1;
-					break;
-				}
-			}
-			if( !found )
-				printf( "%s:%d:unknown macro:%s(ignored)\n", INF, lnr, $1) >"/dev/stderr";
-		}
-		else{	# plain text
+		else if( doc_valid ){	# plain text
 
 			if( NF == 0 ){
 				if( nstars == 0 )

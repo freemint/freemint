@@ -5,11 +5,17 @@
 !language english
 
 !ifdest [asc]
-	!define weblink (!1)
+	!define weblink (!2)
+	!define webnolink (!1)
 	!define maillink (!2)
 #	!macro wikilink (!2)
 !else
-	!macro weblink <a (!nolink [href="(!1)">(!2)])</a>
+# use inside text
+	!macro webnolink <a (!nolink [href="(!1)">(!2)])</a>
+#use after !node
+#	!macro weblink <a (!nolink [href="(!1)">(!2)])</a>
+# this seems to be an udo-bug: !nolink does not work after !node
+	!define weblink <a href="(!1)">(!2)</a>
 	!define maillink <a href="mailto:(!2)">(!1)</a>
 #	!define wikilink <a href="(!1)">(!2)</a>
 !endif
@@ -17,11 +23,11 @@
 #special preamble for dvipdfm, dvips
 !no_preamble [tex]
 
-!use_nodes_inside_index  [all]
-!use_label_inside_index  [all]
+#!use_nodes_inside_index  [all]
+#!use_label_inside_index  [all]
 !use_alias_inside_index  [all]
 
-!no_headlines [html]
+!no_headlines [all]
 !html_merge_nodes
 !html_merge_subnodes
 !html_merge_subsubnodes
