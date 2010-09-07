@@ -1,3 +1,4 @@
+
 ########################################
 # @(#) Wiki-Tools-userguide
 # @(#) Helmut Karlowski, 31.08.2010
@@ -62,15 +63,30 @@ documents written for udo from and to the wiki-language.
 
 !node Installation
 
+Copy the files listed below (except w2u.ui) into a directory in $PATH or your local
+directory. The include-file w2u.ui is first searched in the local
+directory, then in $HOME/wiki. Copy the Makefile to your local directory.
 
 !subnode Files
 !begin_description
 !item [u2w.awk]	Convert from udo to wiki
 !item [w2u.awk] Convert from wiki to udo
-!item [w2u.ui]	Includefile needed for the udo-output
 !item [u2w]	Shell-script to call u2w.awk
 !item [w2u]	Shell-script to call w2u.awk
 !item [getxml]	Retrieve xml-source from the wiki
+!item [makenodes] Create nodes- and label-list
+!item [Makefile] type
+!begin_sourcecode
+make <name>.<ext>
+!end_sourcecode
+to produce the output-format you want.
+Example:
+!begin_sourcecode
+make User_manual.html
+!end_sourcecode
+will produce User_manual.html from User_manual.xml, User_manual.wu, or User_manual.u.
+!item [w2u.ui]	Includefile needed for the udo-output by w2u.awk, contains some macros and
+udo-specific settings.
 !end_description
 
 !node Usage
@@ -96,7 +112,7 @@ in your local directory.
 
 You get udo-source from wiki-xml by entering
 !begin_sourcecode
-awk -f w2u.awk -v INF=<wiki-source>
+awk -f w2u.awk <wiki-source>
 !end_sourcecode
 or simply
 !begin_sourcecode
@@ -108,7 +124,7 @@ extension .wu.
 
 For example to convert the MiNT-usermanual to udo enter:
 !begin_sourcecode
-awk -f w2u.awk -v INF=User_manual.xml
+awk -f w2u.awk User_manual.xml
 !end_sourcecode
 
 This will produce the file
@@ -119,15 +135,16 @@ User_manual.wu
 
 Now you can convert this using udo to any format you need.
 
+
 !subnode Convert from udo to wiki
 
 You get wiki-source from udo-source by entering
 !begin_sourcecode
-awk -f u2w.awk -v <udo-source>
+awk -f u2w.awk <udo-source>
 !end_sourcecode
 or simply
 !begin_sourcecode
-w2u <udo-source>
+u2w <udo-source>
 !end_sourcecode
 
 The output-filename will have the same base as the source with the
@@ -136,7 +153,7 @@ extension .wik.
 To convert the MiNT-usermanual to wiki enter:
 
 !begin_sourcecode
-awk -f u2w.awk -v INF=User_manual.wu
+awk -f u2w.awk User_manual.wu
 !end_sourcecode
 
 This produces
@@ -158,13 +175,78 @@ You can create this file by running
 egrep "(^!(sub)*node|^!label)" <udo-source> ><udo-source>.n
 !end_sourcecode
 
+or run
+
+!begin_sourcecode
+makenodes <udo-source>
+!end_sourcecode
+
 !node Environment
 !node Coverage
+
+Both tools only cover a small subset of their input-language, so it's up
+to the user to not use anything that's not supported.
+
 !subnode Coverage of udo-syntax
+!subsubnode udo-Comments
+Lines that start with a '#' are comments. They are converted into
+!begin_sourcecode
+<!--# <text> -->
+!end_sourcecode
 !subnode Coverage of wiki-syntax
-!node Miscellaneous
+!subsubnode Wiki-Comments
+The html-commentmarks
+!begin_sourcecode
+<!--, -->
+!end_sourcecode
+are removed from the wiki-source. If you want to add a comment to the
+wiki-source type:
+!begin_sourcecode
+<!--# <your comment> -->
+!end_sourcecode
+so your comment will be a comment in udo-source and will not get lost or
+cause errors. Only one-line-comments are possible.
+
+!subsubnode What should be avoided in wiki
+
+!begin_itemize
+!item Using links as headlines is a ba idea, because udo places the link
+itself in the TOC not the link-text.
+!item Using brackets in a link-text is not reccommended, because they
+may confuse udo and the converter.
+!item  definition lists don't work because awk kills any leading ';'
+from the input-stream.
+!end_itemize
+
+!subsubnode What should be avoided in udo
+
+The converter emits a warning for any unknown udo-command it encounters.
+
+!node Known bugs
+
+!begin_itemize
+!item When repeatetly converting back and forth, the bold-environment may not
+always be correct (as well as other things).
+!end_itemize
+!node External links
+Both converters use the URL given in the base-statement, which is for
+wiki:
+!begin_sourcecode
+<base>URL</base>
+!end_sourcecode
+
+and for udo:
+!begin_sourcecode
+#! base URL
+!end_sourcecode
+at the start of the document.
+
 !node Download
 !node See also
-awk, udo, egrep, wget
+awk, (!weblink [http://man.udo-open-source.org/de/] [udo]), egrep, wget
+
+!node Conclusion
+The combination udo/awk is too limited (or my skills are) to make a complete converter, so this
+is probably the last version.
 !end_document
 
