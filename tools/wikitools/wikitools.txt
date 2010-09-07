@@ -2,7 +2,7 @@
 
                   w2u: wiki to udo, u2w: udo to wiki
 
-                           August 31, 2010
+                          September 1, 2010
 
                                   by
 
@@ -26,7 +26,9 @@ Contents
 
  5  Coverage
     5.1  Coverage of udo-syntax
+         5.1.1  Comments
     5.2  Coverage of wiki-syntax
+         5.2.1  Comments
 
  6  Miscellaneous
 
@@ -63,6 +65,8 @@ convert documents written for udo from and to the wiki-language.
 
  getxml Retrieve xml-source from the wiki
 
+ makenodes Create nodes- and label-list
+
 
 
 3  Usage
@@ -87,7 +91,7 @@ This will produce the file
      User_manual.xml
 
 
-in you local directory.
+in your local directory.
 
 
 3.2  Convert from wiki to udo
@@ -129,7 +133,7 @@ You get wiki-source from udo-source by entering
 
 or simply
 
-     w2u <udo-source>
+     u2w <udo-source>
 
 
 The output-filename  will  have  the  same base as the source with the
@@ -160,6 +164,11 @@ You can create this file by running
      egrep "(^!(sub)*node|^!label)" <udo-source> ><udo-source>.n
 
 
+or run
+
+     makenodes <udo-source>
+
+
 
 
 4  Environment
@@ -175,8 +184,35 @@ You can create this file by running
 ===========================
 
 
+5.1.1  Comments
+---------------
+
+Lines that start with a '#' are comments. They are converted into
+
+     <!--# <text> -->
+
+
+
 5.2  Coverage of wiki-syntax
 ============================
+
+
+5.2.1  Comments
+---------------
+
+The html-commentmarks
+
+     <!--, -->
+
+
+are removed  from the wiki-source. If you want to add a comment to the
+wiki-source type:
+
+     <!--# <your comment> -->
+
+
+so your comment will be a comment in udo-source and will not get  lost
+or cause errors. Only one-line-comments are possible.
 
 
 
