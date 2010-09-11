@@ -58,16 +58,25 @@ void ProgrammInfos( DOCUMENT *doc )
 	
 	strncpy ( tree[PROG_DATEI].ob_spec.free_string, doc->filename, 39 );
 	tree[PROG_DATEI].ob_spec.free_string[39] = '\0';
-	strncpy ( tree[PROG_THEMA].ob_spec.free_string, hyp->database, 39 );
-	tree[PROG_THEMA].ob_spec.free_string[39] = '\0';
-	strncpy ( tree[PROG_AUTOR].ob_spec.free_string, hyp->author, 39 );
-	tree[PROG_AUTOR].ob_spec.free_string[39] = '\0';
-	if ( strncmp ( hyp->version, "$VER: ", 6) == 0 )
-		strncpy ( tree[PROG_VERSION].ob_spec.free_string, &hyp->version[6], 39 );
-	else
-		strncpy ( tree[PROG_VERSION].ob_spec.free_string, hyp->version, 39 );
-	tree[PROG_VERSION].ob_spec.free_string[39] = '\0';
-
+	if ( doc->type == F_HYP )
+	{
+		strncpy ( tree[PROG_THEMA].ob_spec.free_string, hyp->database, 39 );
+		tree[PROG_THEMA].ob_spec.free_string[39] = '\0';
+		strncpy ( tree[PROG_AUTOR].ob_spec.free_string, hyp->author, 39 );
+		tree[PROG_AUTOR].ob_spec.free_string[39] = '\0';
+		if ( strncmp ( hyp->version, "$VER: ", 6) == 0 )
+			strncpy ( tree[PROG_VERSION].ob_spec.free_string, &hyp->version[6], 39 );
+		else
+			strncpy ( tree[PROG_VERSION].ob_spec.free_string, hyp->version, 39 );
+		tree[PROG_VERSION].ob_spec.free_string[39] = '\0';
+  }
+  else
+  {
+		tree[PROG_THEMA].ob_spec.free_string[0] = '\0';
+		tree[PROG_AUTOR].ob_spec.free_string[0] = '\0';
+		tree[PROG_VERSION].ob_spec.free_string[0] = '\0';
+  }
+  
 	if(has_wlffp & 1) {
 		Prog_Dialog = OpenDialog( ProgHandle, tree, "Programminfo...", -1, -1);
 	}
