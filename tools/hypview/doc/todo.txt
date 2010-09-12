@@ -10,8 +10,6 @@ HypView
 
 -Fehlermeldung falls keine weiteren Fenster mehr vorhanden.
 
-+Window-Cycling selber machen, falls AV-Server das nicht uebernimmt.
-
 -ST-Guide kann bei Verwendung eines Fonts mit kleineren Ausmassen als denen 
  des Standard-Systemfonts, unter bestimmten Umstaenden Texte so plazieren, 
  da Text und Grafik sich nicht ueberschneiden. Angenommen auf einer
@@ -62,8 +60,6 @@ HypView
    Nachteil hat, da Aktionen im hintenliegenden Fenster nicht mehr
    mglich sind, und b) werden Rechtsklicks von den verschiedenen TOS-
    Versionen unterschiedlich behandelt (Quelle: Martin "WINX" Osieka)
-
-+ ALT-D - DEFHYP laden
 
 - ALT-R - Remarker oeffnen, falls dieser laeuft oder die Variable REMARKER
           definiert ist
