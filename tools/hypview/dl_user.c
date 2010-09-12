@@ -42,13 +42,9 @@
 
 extern WINDOW_DATA *Win;
 
-/* [GS] 0.35.2c Start: */
 long last_node;
 char last_path[DL_PATHMAX];
-/* Ende */
-/* [GS] 0.35.2e Start: */
 HISTORY *last_history = NULL;
-/* Ende */
 
 /*******************************************************/
 /****** Events                                    ******/
@@ -85,7 +81,6 @@ void DoUserEvents(EVNT *event)
 	{
 		if(event->msg[0]==AC_OPEN)
 		{
-/* [GS] 0.35.2e Start: */
 			short ret=0;
 			
 			if ( count_window () == 0 && last_path[0] != '\0' )
@@ -108,23 +103,7 @@ void DoUserEvents(EVNT *event)
 				else
 					SelectFileLoad();
 			}
-#if 0
-/* Ende; alt: -----------------> */
-/* [GS] 0.35.2c Start: */
-			if ( count_window () == 0 && last_path[0] != '\0' )
-				OpenFileNW(last_path, NULL, last_node);
-			else
-			{
-/* Ende */
-				if(*default_file)
-					OpenFileNW(default_file,NULL, 0);
-				else
-					SelectFileLoad();
-/* [GS] 0.35.2c Start: */
-			}
-/* Ende */
-/*<----------------- */
-#endif
+
 			event->mwhich&=~MU_MESAG;
 		}
 		else if(event->msg[0]==AC_CLOSE)
@@ -373,7 +352,6 @@ void DoVA_START(short msg[8])
 			else
 				ret = OpenFileSW(arg, chapter, va_start_newwin);
 
-/* [GS] 0.35.2e Start: */
 			if ( count == 0 && ret==TRUE)
 			{
 /* ----
@@ -383,7 +361,6 @@ void DoVA_START(short msg[8])
 ---- */
 			}
 
-/* Ende */
 		}
 		else
 		{
