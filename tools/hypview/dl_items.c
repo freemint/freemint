@@ -229,6 +229,7 @@ void AllIconify(short handle, GRECT *r)
 
 void CycleItems(void)
 {
+#if 0
 	short handle = 0, our = -1, opn, owner;
 
 	if (modal_items >= 0)
@@ -253,8 +254,9 @@ void CycleItems(void)
 		
 		appl_write(ap_id, 16, msg);
 	}
-#if 0	
-	short j = 0, owner, *stack_list;
+#endif
+#if 1
+	short j = 0, owner, *stack_list, hi, lo;
 	short msg[]={WM_TOPPED,0,0,0,0,0,0,0};
 	
 	if(modal_items >= 0)
@@ -262,20 +264,23 @@ void CycleItems(void)
 	
 	msg[1] = ap_id;
 
-	if((wind_get_ptr(0,WF_M_WINDLIST,(void **)&stack_list))&&
-		(stack_list))
+	if ( wind_get ( 0, WF_M_WINDLIST, &hi, &lo, NULL, NULL ) )
 	{
-		while(stack_list[j])
-			j++;
-
-		for(; j > 0; j--)
+		stack_list = (short *)((hi << 16) | lo);
+	  if ( stack_list )
 		{
-			wind_get(stack_list[j],WF_OWNER,&owner,NULL,NULL,NULL);
-			if(owner == ap_id)
+			while(stack_list[j])
+				j++;
+	
+			for(; j > 0; j--)
 			{
-				msg[3] = stack_list[j];
-				appl_write(ap_id, 16, msg);
-				break;
+				wind_get(stack_list[j],WF_OWNER,&owner,NULL,NULL,NULL);
+				if(owner == ap_id)
+				{
+					msg[3] = stack_list[j];
+					appl_write(ap_id, 16, msg);
+					break;
+				}
 			}
 		}
 	}
