@@ -348,7 +348,12 @@ xa_prop_clipped_name(struct xa_vdi_settings *v, const char *s, char *d, int w, s
 					if (tog) c = *--e;
 					else	 c = *s++;
 
-					vqt_width(v->handle, c, &cw, &tmp, &tmp);
+					/* fvdi-bug #nn: if high-bit in c is set, vqt_width returns random values for cw */
+					if( C.fvdi_version > 0 && (c & 0x80) )
+						vqt_width(v->handle, 'a', &cw, &tmp, &tmp);
+					else
+						vqt_width(v->handle, c, &cw, &tmp, &tmp);
+
 					if (cw != -1)
 					{
 						swidth += cw;
