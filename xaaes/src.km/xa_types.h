@@ -530,6 +530,7 @@ struct options
 					 * +1: make a thicker frame for wasier border grabbing and sizing. */
 	short wheel_page;		/* how many wheel clicks for a page */
 	short wheel_mode;
+	short standard_font_point;	/* if != 0 set standard-font for application */
 	unsigned long wind_opts;			/* Default window options - see struct xa_window.opts */
 	unsigned long app_opts;
 	long half_screen;
@@ -1812,7 +1813,8 @@ enum scroll_info_flags
 	SIF_AUTOOPEN	= 0x0100,
 	SIF_KEYBDACT	= 0x0200,
 	SIF_DIRTY			= 0x0400,
-	SIF_INLINE_EFFECTS	=	0x800
+	SIF_INLINE_EFFECTS	=	0x800,
+	SIF_NO_ICONS	=	0x1000
 
 };
 typedef enum scroll_info_flags SCROLL_INFO_FLAGS;
