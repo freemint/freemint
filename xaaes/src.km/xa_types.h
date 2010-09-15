@@ -530,6 +530,7 @@ struct options
 					 * +1: make a thicker frame for wasier border grabbing and sizing. */
 	short wheel_page;		/* how many wheel clicks for a page */
 	short wheel_mode;
+	short standard_font_point;	/* if != 0 set standard-font for application */
 	unsigned long wind_opts;			/* Default window options - see struct xa_window.opts */
 	unsigned long app_opts;
 	long half_screen;
@@ -1812,7 +1813,8 @@ enum scroll_info_flags
 	SIF_AUTOOPEN	= 0x0100,
 	SIF_KEYBDACT	= 0x0200,
 	SIF_DIRTY			= 0x0400,
-	SIF_INLINE_EFFECTS	=	0x800
+	SIF_INLINE_EFFECTS	=	0x800,
+	SIF_NO_ICONS	=	0x1000
 
 };
 typedef enum scroll_info_flags SCROLL_INFO_FLAGS;
@@ -2946,9 +2948,10 @@ struct config
 	Path rsc_name;			/* Path to XaAES rsc */
 	Path xobj_name;
 
-	/* display modes of window title */
-	short topname;
+	/* display modes of window title (unimplemented)*/
+	/*short topname;
 	short backname;
+	*/
 
 	short next_active;		/* 0 = set previous active client active upon client termination */
 					/* 1 = set owner of previous topped (or only) window upon client termination */
@@ -2982,7 +2985,8 @@ struct config
 //	short widg_dw, widg_dh;		/* flexible widget object types. */
 
 	short ted_filler;
-	short font_id;			/* Font id to use */
+	short font_id;			/* Font id to use (buttons, menus) */
+	short xaw_point;	/* Font id to use (XaAES-window-content) */
 	short double_click_time;	/* Double click timing */
 	short mouse_packet_timegap;
 	short redraw_timeout;
