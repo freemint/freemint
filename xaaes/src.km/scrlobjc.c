@@ -538,6 +538,7 @@ calc_entry_wh(SCROLL_INFO *list, SCROLL_ENTRY *this)
 	return fullredraw;
 }
 
+
 static short
 draw_nesticon(struct xa_vdi_settings *v, short width, RECT *xy, SCROLL_ENTRY *this)
 {
@@ -591,7 +592,6 @@ draw_nesticon(struct xa_vdi_settings *v, short width, RECT *xy, SCROLL_ENTRY *th
 
 		(*v->api->l_color)(v, G_BLACK);
 		(*v->api->gbox)(v, 0, &r);
-
 		//if (this->prev || this->up)
 		if (this->prev)
 		{
@@ -661,7 +661,7 @@ draw_nesticon(struct xa_vdi_settings *v, short width, RECT *xy, SCROLL_ENTRY *th
 
 static void
 display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
-	struct xa_vdi_settings *v, RECT *xy, const RECT *clip)
+	struct xa_vdi_settings *v, RECT *xy, const RECT *clip, short TOP, bool NO_ICONS)
 {
 	bool sel = this->state & OS_SELECTED;
 
@@ -673,10 +673,13 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 		struct xa_fnt_info *wtxt;
 		RECT r, clp;
 
-		(*v->api->wr_mode)(v, MD_REPLACE);
-		(*v->api->f_color)(v, sel ? G_BLACK : G_WHITE);
-		(*v->api->f_interior)(v, FIS_SOLID);
-		(*v->api->bar)(v, 0, xy->x, xy->y, xy->w, this->r.h);
+		if( TOP != 2 )
+		{
+			(*v->api->wr_mode)(v, MD_REPLACE);
+			(*v->api->f_color)(v, sel ? G_BLACK : G_WHITE);
+			(*v->api->f_interior)(v, FIS_SOLID);
+			(*v->api->bar)(v, 0, xy->x, xy->y, xy->w, this->r.h);
+		}
 
 		//(*v->api->t_effects)(v, 0);	/* restore just in case */
 
@@ -684,11 +687,12 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 		{
 			r.x = xy->x;
 			r.y = xy->y;
-			r.w = list->tabs[list->indent_upto].r.x;
-			r.h = this->r.h;
-			if (xa_rect_clip(clip, &r, &clp))
+			r.w = 16 * (this->level+1);
+			r.h = this->r.h;//list->nesticn_h
+			if ( NO_ICONS == false && (TOP || xa_rect_clip(clip, &r, &clp)))
 			{
-				(*v->api->set_clip)(v, &clp);
+				if( !TOP )
+					(*v->api->set_clip)(v, &clp);
 				draw_nesticon(v, 16, xy, this);
 			}
 			indent += 16;
@@ -720,11 +724,12 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 			{
 				case SECONTENT_ICON:
 				{
-					if (xa_rect_clip(clip, &r, &clp))
+					if (NO_ICONS == false && (TOP || xa_rect_clip(clip, &r, &clp)))
 					{
 						short ix, iy;
 
-						(*v->api->set_clip)(v, &clp);
+						if( !TOP )
+							(*v->api->set_clip)(v, &clp);
 						if (sel)
 							c->c.icon.icon->ob_state |= OS_SELECTED;
 						else
@@ -755,9 +760,10 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 					short x2, y2, dx, dy, tw, th, f;
 					char t[512];
 
-					if (xa_rect_clip(clip, &r, &clp))
+					if (TOP || xa_rect_clip(clip, &r, &clp))
 					{
-						(*v->api->set_clip)(v, &clp);
+						if( !TOP )
+							(*v->api->set_clip)(v, &clp);
 
 						dx = r.x;
 						x2 = dx + r.w;
@@ -766,6 +772,8 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 						tw = r.w;
 						if (c->c.text.icon.icon)
 						{
+							if( NO_ICONS == false )
+							{
 
 							short ix, iy;
 							if (sel)
@@ -789,6 +797,7 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 							list->nil_wt->objcr_api = list->wt->owner->objcr_api;
 							list->nil_wt->objcr_theme = list->wt->owner->objcr_theme;
 							display_object(lock, list->nil_wt, v, aesobj(list->nil_wt->tree, 0), ix, iy, 0);
+							}
 							dx += c->c.text.icon.r.w;
 							if( list->icon_w == 0 )
 								list->icon_w = c->c.text.icon.r.w;
@@ -823,7 +832,8 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 							(*v->api->t_font)(v, wtxt->p, wtxt->f);
 							(*v->api->t_effects)(v, wtxt->e);
 
-							w = c->c.text.tblen * list->char_width;
+							w = c->c.text.slen * list->char_width;
+
 							/* opt: const width for prop_... */
 							if( method >= 0 && w > tw )
 							{
@@ -834,20 +844,21 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 							else
 							{
 								strncpy( t, c->c.text.text, sizeof(t)-1 );
+
 								t[sizeof(t)-1] = 0;
 								th = c->c.text.h;
 								tw = c->c.text.slen * list->char_width;;
 							}
-
-#if ITALIC_IS_CUTOFF
 							/* on some systems the last letter is cut off if italic */
-							if( C.fvdi_version > 0 && (wtxt->e & ITALIC) && c->c.text.slen < sizeof(t)-1 )
+							if( C.fvdi_version > 0 )
 							{
-								t[c->c.text.slen] = ' ';
-								t[c->c.text.slen+1] = 0;
-								//tw += list->char_width;
+								if( (wtxt->e & ITALIC) && c->c.text.slen < sizeof(t)-1 )
+								{
+									t[c->c.text.slen] = ' ';
+									t[c->c.text.slen+1] = 0;
+									//tw += list->char_width;
+								}
 							}
-#endif
 
 							{
 							char *tp = t;
@@ -1028,9 +1039,10 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 		r.y = xy->y;
 		r.w = list->widest;
 		r.h = this->r.h;
-		if ((this->state & OS_BOXED) && xa_rect_clip(clip, &r, &clp))
+		if ((this->state & OS_BOXED) && (TOP || xa_rect_clip(clip, &r, &clp)) )
 		{
-			(*v->api->set_clip)(v, &clp);
+			if( !TOP )
+				(*v->api->set_clip)(v, &clp);
 
 			(*v->api->l_color)(v, G_BLACK);
 			(*v->api->wr_mode)(v, MD_XOR);
@@ -1040,7 +1052,7 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 
 		(*v->api->set_clip)(v, clip);
 		/* normal */
-		(*v->api->t_effects)(v, 0);
+		//(*v->api->t_effects)(v, 0);
 	}
 }
 
@@ -1054,6 +1066,9 @@ draw_slist(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *entry, const RECT *
 
 	if (xa_rect_clip(clip, &wind->wa, &r))
 	{
+		short TOP = 0;
+		bool NO_ICONS = false;
+
 		(*v->api->set_clip)(v, &r);
 
 		(*v->api->wr_mode)(v, MD_TRANS);
@@ -1062,6 +1077,13 @@ draw_slist(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *entry, const RECT *
 		xy.y = wind->wa.y - list->off_y;
 		xy.w = wind->wa.w + list->start_x;
 		xy.h = wind->wa.h + list->off_y;
+
+		if( TOP_WINDOW == wind )
+		{
+			TOP = 1;
+		}
+		if( list->flags & SIF_NO_ICONS )
+			NO_ICONS = true;
 
 		while (this && xy.y < (wind->wa.y + wind->wa.h))
 		{
@@ -1074,13 +1096,16 @@ draw_slist(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *entry, const RECT *
 
 			if (!entry || entry == this)
 			{
-				display_list_element(lock, list, this, v, &ar, &r);
+				display_list_element(lock, list, this, v, &ar, &r, TOP, NO_ICONS);
+				if( TOP == 1 )
+					TOP = 2;
 			}
 
 			xy.y += this->r.h;
 			xy.h -= this->r.h;
 			this = next_entry(this, ENT_VISIBLE, -1, NULL);
 		}
+		TOP = 0;
 
 		if (!entry && xy.h > 0)
 		{
@@ -2017,7 +2042,7 @@ m_state_done:
 					if (entry->down)
 					{
 						get_entry_lrect(list, entry, 1, &r);
-						if ((r.w | r.h))
+						if ((r.w || r.h))
 						{
 							list->total_h += (r.h - entry->r.h);
 // 							list->total_w = list->widest = find_widest(list, NULL);
@@ -3609,17 +3634,17 @@ scroll_right(SCROLL_INFO *list, long num, bool rdrw)
 
 	if (rdrw)
 	{
-		if (!canblit(list) || max > list->wi->wa.w - 8)
+		if ( !canblit(list) || max > list->wi->wa.w - 8)
 			list->redraw(list, NULL);
 		else
 		{
 			RECT s, d;
 
 			s = list->wi->wa;
-
 			s.w -= max;
 			d = s;
 			d.x += max;
+
 			hidem();
 			(*list->vdi_settings->api->form_copy)(&s, &d);
 			s.w = max;
@@ -4347,6 +4372,10 @@ set_slist_object(enum locks lock,
 		list->indent_upto = 1;
 		list->indent = 2;
 		list->nesticn_w = 16;
+		/*if( cfg.xaw_point < 10 )
+			list->nesticn_h = 10;
+		else
+		*/
 		list->nesticn_h = 16;
 
 		open_window(lock, list->wi, list->wi->r);
