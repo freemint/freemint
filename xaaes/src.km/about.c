@@ -251,6 +251,11 @@ open_about(enum locks lock, struct xa_client *client, bool open)
 
 		wt = set_toolbar_widget(lock, wind, wind->owner, obtree, inv_aesobj(), 0/*WIP_NOTEXT*/, STW_ZEN, NULL, &or);
 		wt->exit_form = about_form_exit;
+		if( screen.c_max_h < 16 ){
+			short d = 16 / screen.c_max_h;
+			wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
+					WM_SIZED, 0,0, wind->handle, wind->r.x, wind->r.y, wind->r.w, wind->r.h * d );
+		}
 	}
 	else{
 		wind = htd->w_about;
@@ -305,7 +310,6 @@ open_about(enum locks lock, struct xa_client *client, bool open)
 	/* Set the window destructor */
 	wind->destructor = about_destructor;
 	htd->w_about = wind;
-	//BLOG((0,"about:open=%d", open));
 	if (open)
 	{
 		open_window(lock, wind, wind->r); //remember);
