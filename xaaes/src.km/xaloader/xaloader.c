@@ -117,7 +117,7 @@ loader_init(int argc, char **argv, char **env)
 	/*
 	 * now lookup FreeMiNT's sysdir
 	 */
-	fh = Fopen("/kern/sysdir", O_RDONLY);
+	fh = Fopen("u:/kern/sysdir", O_RDONLY);
 	if (fh < 0)
 	{
 		Cconws("XaAES loader: Fopen(\"/kern/sysdir\") failed!\r\n");
