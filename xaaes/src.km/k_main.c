@@ -111,8 +111,7 @@ cancel_cevents(struct xa_client *client)
 	{
 		struct c_event *nxt;
 
-		DIAG((D_kern, client, "Cancel evnt %lx (next %lx) for %s",
-			ce, ce->next, client->name));
+		DIAG((D_kern, client, "Cancel evnt %lx (next %lx) for %s",ce, ce->next, client->name));
 
 		(*ce->funct)(0, ce, true);
 
@@ -1213,7 +1212,7 @@ sshutdown_timeout(struct proc *p, long arg)
 				}
 			}
 
-			quit_all_apps(NOLOCKING, NULL, (C.shutdown & RESOLUTION_CHANGE) ? AP_RESCHG : AP_TERM);
+			quit_all_apps(NOLOCKING, (struct xa_client*)-1, (C.shutdown & RESOLUTION_CHANGE) ? AP_RESCHG : AP_TERM);
 			set_shutdown_timeout(SD_TIMEOUT);
 		}
 		else
@@ -1330,13 +1329,27 @@ kick_shutdn_if_last_client(void)
 			set_shutdown_timeout(SD_TIMEOUT);
 	}
 }
+
+static char ASK_SHUTDOWN_ALERT[] = "[2][leave XaAES][Cancel|Ok]";
+
+void _cdecl
+ce_dispatch_shutdown(enum locks lock, struct xa_client *client, bool b)
+{
+		short r = 0;
+		r = xaaes_do_form_alert( lock, C.Hlp, 1, ASK_SHUTDOWN_ALERT);
+
+		if( r != 2 )
+			return;
+		dispatch_shutdown((short)b, 0);
+}
+
 /*
  * Initiate shutdown...
  */
 void _cdecl
 dispatch_shutdown(short flags, unsigned long arg)
 {
-	if (!(C.shutdown & SHUTDOWN_STARTED))
+	if ( !(C.shutdown & SHUTDOWN_STARTED))
 	{
 		C.shutdown = SHUTDOWN_STARTED | flags;
 		if ((flags & RESOLUTION_CHANGE))
@@ -1786,7 +1799,9 @@ k_main(void *dummy)
 
 		/* execute delayed delete_window */
 		if (S.deleted_windows.first)
+		{
 			do_delayed_delete_window(lock);
+		}
 	}
 	while (!(C.shutdown & EXIT_MAINLOOP));
 

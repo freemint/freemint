@@ -40,7 +40,14 @@
 /*----------------------------------------------------------------- */
 
 /* define 1 if CTRL-ALT-keys shall shutdown system or term apps */
-#define HOTKEYQUIT	0
+#ifndef HOTKEYQUIT
+#define HOTKEYQUIT	1
+#endif
+
+/* define 1 you want an alert before exiting XaAES from taskmanager */
+#ifndef TM_ASK_BEFORE_SHUTDOWN
+#define TM_ASK_BEFORE_SHUTDOWN 0
+#endif
 
 /* define 1 if credits shall be displayed in 'about' and at bootup, 0 for only freemint-url */
 #define DISPCREDITS	0
@@ -77,9 +84,9 @@
  * system-window
  */
 #if XAAES_RELEASE
-#define CHECK_STACK	1
-#else
 #define CHECK_STACK	0
+#else
+#define CHECK_STACK	1
 #endif
 
 #define NAES3D			1	/* ??? */

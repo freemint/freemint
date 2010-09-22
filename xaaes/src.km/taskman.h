@@ -35,7 +35,10 @@ struct xa_window * _cdecl create_dwind(enum locks lock, XA_WIND_ATTR tp, char *t
 struct helpthread_data * get_helpthread_data(struct xa_client *client);
 
 extern struct xa_wtxt_inf norm_txt;
-void	set_xa_fnt( int pt, struct xa_wtxt_inf *wp[], OBJECT *obtree, int objs[], SCROLL_INFO *list );
+
+int xaaes_do_form_alert( enum locks lock, struct xa_client *client, int def_butt, char al_text[] );
+
+short	set_xa_fnt( int pt, struct xa_wtxt_inf *wp[], OBJECT *obtree, int objs[], SCROLL_INFO *list );
 
 void add_window_to_tasklist(struct xa_window *wi, const char *title);
 void add_to_tasklist(struct xa_client *client);
@@ -43,10 +46,12 @@ void remove_from_tasklist(struct xa_client *client);
 
 #define NO_AES_CLIENT	0
 #define AES_CLIENT	1
+
+
 void update_tasklist_entry(int md, void *app, int redraw);
 
+void ce_quit_all_clients(enum locks lock, struct xa_client *client, bool b);
 void quit_all_apps(enum locks lock, struct xa_client *except, short reason);
-void quit_all_clients(enum locks lock, struct cfg_name_list *except_nl, struct xa_client *except_cl, short reason);
 
 bool isin_namelist(struct cfg_name_list *list, char *name, short nlen, struct cfg_name_list **last, struct cfg_name_list **prev);
 void addto_namelist(struct cfg_name_list **list, char *name);

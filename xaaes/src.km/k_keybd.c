@@ -30,6 +30,7 @@
 #include "c_keybd.h"
 #include "xa_global.h"
 
+//#include "debug.h"
 #include "about.h"
 #include "app_man.h"
 #include "c_window.h"
@@ -222,6 +223,7 @@ XA_keyboard_event(enum locks lock, const struct rawkey *key)
 		waiting ? "waiting" : "", update_locked() ? update_locked()->pid : 0,
 		c_owner(client), keywind ? w_owner(keywind) : "no keywind"));
 
+
 // 	display("XA_keyboard_event: %s; update_lock:%d, focus: %s, window_list: %s, waiting_pb=%lx",
 // 		waiting ? "waiting" : "", update_locked() ? update_locked()->pid : 0,
 // 		client->name, keywind ? keywind->owner->name : "no keywind", client->waiting_pb);
@@ -326,6 +328,7 @@ kernel_key(enum locks lock, struct rawkey *key)
 		struct xa_client *client;
 		struct kernkey_entry *kkey = C.kernkeys;
 		short nk;
+		short sdmd = 0;
 
 		key->norm = nkc_tconv(key->raw.bcon);
 		nk = key->norm & 0x00ff;
@@ -542,13 +545,8 @@ otm:
 #if HOTKEYQUIT
 		case 'A':
 		{
-			struct cfg_name_list *nl = NULL;
-
-			if (!(key->raw.conin.state & (K_RSHIFT|K_LSHIFT)))
-				nl = cfg.ctlalta;
-
-			DIAGS(("Quit all apps by CtlAlt A"));
-			quit_all_clients(lock, nl, NULL, AP_TERM);
+			DIAGS(("Quit all clients by CtlAlt A"));
+			post_cevent(C.Hlp, ceExecfunc, ce_quit_all_clients, NULL, !(key->raw.conin.state & (K_RSHIFT|K_LSHIFT)),0, NULL, NULL);
 			return true;
 		}
 #endif
@@ -557,21 +555,18 @@ otm:
 			DIAGS(("Recover palette"));
 			if (screen.planes <= 8)
 			{
-				set_syspalette( /*C.P_handle */C.Aes->vdi_settings->handle, screen.palette);
+				set_syspalette( C.Aes->vdi_settings->handle, screen.palette);
 			}
 			return true;
 		}
 #if HOTKEYQUIT
+		case 'H':
+			sdmd = HALT_SYSTEM;
 		case 'Q':
 		{
 			DIAGS(("shutdown by CtlAlt Q"));
-			dispatch_shutdown(0, 0);
-			return true;
-		}
-		case 'H':
-		{
-			DIAGS(("shutdown by CtlAlt H"));
-			dispatch_shutdown(HALT_SYSTEM, 0);
+
+			post_cevent(C.Hlp, ceExecfunc, ce_dispatch_shutdown, NULL, sdmd,1, NULL, NULL);
 			return true;
 		}
 #endif

@@ -67,9 +67,6 @@
 #ifndef USE_Suptime
 #define USE_Suptime 1
 #endif
-#ifndef ASK_BEFORE_SHUTDOWN
-#define ASK_BEFORE_SHUTDOWN 0
-#endif
 
 #define ADDPROCINFO	0
 
@@ -106,28 +103,17 @@ static int ker_stat( int pid, char *what, long pinfo[] );
 #include <mintbind.h>	/* Suptime */
 #endif
 
-#if ASK_BEFORE_SHUTDOWN
-static	AESPB axx;
-char ASK_SHUTDOWN_ALERT[] = "[2][leave XaAES][Cancel|Ok]";
-static char ASK_QUITALL_ALERT[] = "[2][Quit All][Cancel|Ok]";
-int xaaes_do_form_alert( enum locks lock, int def_butt, char al_text[], char title[] );
-/*
- * form_alert for XaAES-thread internal
- */
-int xaaes_do_form_alert( enum locks lock, int def_butt, char al_text[], char title[] )
-{
-	C.Aes->waiting_pb = &axx;
-	C.update_lock = C.Aes->p;
-	C.updatelock_count++;
+#if 0
+//void ask_and_shutdown( enum locks lock, struct xa_client *client, bool b);
 
-	do_form_alert( lock, C.Aes, def_butt, al_text, title );
-	Block(C.Aes, 0);
-	C.updatelock_count--;
-	C.update_lock = NULL;
-	C.Aes->waiting_pb = NULL;
-	Unblock(C.Aes, 0, 0);
-	return axx.intout[0];
+/*void ask_and_shutdown( enum locks lock, struct xa_client *client, bool b)
+{
+	short r = xaaes_do_form_alert( lock, client, 1, ASK_SHUTDOWN_ALERT);
+	//BLOG((0,"ask_and_shutdown:r=%d b=%d", r, b));
+	if ( r == 2 )
+			dispatch_shutdown(0, 0);
 }
+*/
 #endif
 
 /*static*/ struct xa_wtxt_inf norm_txt =
@@ -228,29 +214,70 @@ static void init_list_focus( OBJECT *obtree, short item, short y )
 	click_scroll_list(0, obtree, item, &md);
 }
 
-void	set_xa_fnt( int pt, struct xa_wtxt_inf *wp[], OBJECT *obtree, int objs[], SCROLL_INFO *list )
+/*
+ */
+short set_xa_fnt( int pt, struct xa_wtxt_inf *wp[], OBJECT *obtree, int objs[], SCROLL_INFO *list )
 {
 	short i, w, h;
+	short oldh, oldpt;
+	struct xa_wtxt_inf *wpp;
 
 	if( wp )
 	{
-		for( i = 0; wp[i]; i++ )
-		{
-			wp[i]->n.p = wp[i]->s.p = wp[i]->h.p = pt;
-		}
+		wpp = wp[0];
 	}
+	else
+		wpp = &norm_txt;
 
-	C.Aes->vdi_settings->api->text_extent(C.Aes->vdi_settings, "X", &norm_txt.n, &w, &h);
+	//BLOG((0,"set_xa_fnt:pt=%d p=%d", pt, wpp->n.p));
 
-	/* todo: need smaller icons */
+	if( pt != wpp->n.p )
+	{
+		if( wpp->n.p != -1 )
+		{
+			oldpt = wpp->n.p;
+			if( pt > wpp->n.p )
+				i = 1;
+			else
+				i = -1;
+
+			for( C.Aes->vdi_settings->api->text_extent(C.Aes->vdi_settings, "X", &wpp->n, &w, &h), oldh = h;
+					oldh == h && wpp->n.p < 66 && wpp->n.p > 0;)
+			{
+				wpp->n.p += i;
+				C.Aes->vdi_settings->api->text_extent(C.Aes->vdi_settings, "X", &wpp->n, &w, &h);
+				//BLOG((0,"set_xa_fnt:p=%d h=%d oldh=%d", wpp->n.p, h, oldh));
+			}
+
+			if( h == oldh )
+				return wpp->n.p = oldpt;
+
+			pt = wpp->n.p;
+		}
+		if( wp )
+			for( i = 0; wp[i]; i++ )
+			{
+				wp[i]->n.p = wp[i]->s.p = wp[i]->h.p = pt;
+				//BLOG((0,"set_xa_fnt:i=%d", i));
+			}
+	}
+	C.Aes->vdi_settings->api->text_extent(C.Aes->vdi_settings, "X", &wpp->n, &w, &h);
+	//BLOG((0,"set_xa_fnt:pt=%d wpp->n.p=%d",pt, wpp->n.p));
+
+	/* todo: need smaller/greater icons */
 	if( objs && obtree )
 		for( i = 0; objs[i]; i++ )
+		{
+			//BLOG((0,"set_xa_fnt:set icon#%d h=%d->%d", objs[i], object_get_spec(obtree + objs[i])->iconblk->ib_hicon, h));
 			object_get_spec(obtree + objs[i])->iconblk->ib_hicon = h;
+		}
 
-	list->nesticn_h = h;// + 2;
-	//if( list->nesticn_h < 10 )
-		//list->nesticn_h = 10;
-	list->char_width = 0;
+	if( list )
+	{
+		list->nesticn_h = h;// + 2;
+		list->char_width = 0;
+	}
+	return wpp->n.p;
 }
 
 struct helpthread_data *
@@ -343,8 +370,9 @@ build_tasklist_string( int md, void *app)
 			utim, ptim,
 			cp
 		);
+		//BLOG((0,"build_task: tx='%s'", tx));
 
-		if( md == 1 )
+		if( md == AES_CLIENT )
 			name[15] = c;
 	}
 	return tx;
@@ -857,11 +885,27 @@ send_terminate(enum locks lock, struct xa_client *client, short reason)
 			 client->p->pid, reason/*AP_TERM*/, 0, 0);
 }
 
+static char ASK_QUITALL_ALERT[] = "[2][Quit All][Cancel|Ok]";
+
 void
 quit_all_apps(enum locks lock, struct xa_client *except, short reason)
 {
 	struct xa_client *client;
+	bool do_alert = true;
 
+	//BLOG((0,"quit_all_apps:except=%lx", except));
+	if( (unsigned long)except == 0xFFFFFFFF )
+	{
+		do_alert = false;
+		except = 0;
+	}
+
+	//BLOG((0,"quit_all_apps:reason=%d,do_alert=%d", reason, do_alert));
+	if ( do_alert == true && xaaes_do_form_alert( lock, C.Hlp, 1, ASK_QUITALL_ALERT ) != 2 )
+	{
+		//BLOG((0,"quit_all_apps:cancelled"));
+		return;
+	}
 	Sema_Up(clients);
 	lock |= clients;
 
@@ -877,8 +921,8 @@ quit_all_apps(enum locks lock, struct xa_client *except, short reason)
 	Sema_Dn(clients);
 }
 
-#if ALT_CTRL_APP_OPS && HOTKEYQUIT
-void
+#if ALT_CTRL_APP_OPS && 1	//HOTKEYQUIT
+static void
 quit_all_clients(enum locks lock, struct cfg_name_list *except_nl, struct xa_client *except_cl, short reason)
 {
 	struct xa_client *client, *dsk = NULL;
@@ -911,6 +955,23 @@ quit_all_clients(enum locks lock, struct cfg_name_list *except_nl, struct xa_cli
 		}
 	}
 	Sema_Dn(clients);
+}
+void
+ce_quit_all_clients(enum locks lock, struct xa_client *client, bool b)
+{
+	struct cfg_name_list *nl = NULL;
+
+	//BLOG((0,"ce_quit_all_clients:%s:b=%d", client->name, b));
+
+	if ( xaaes_do_form_alert( lock, C.Hlp, 1, ASK_QUITALL_ALERT ) != 2 )
+	{
+		//BLOG((0,"quit_all_clients:cancelled"));
+		return;
+	}
+
+	if (b)
+		nl = cfg.ctlalta;
+	quit_all_clients(lock, nl, NULL, AP_TERM);
 }
 #endif
 void
@@ -1078,6 +1139,7 @@ void force_window_top( enum locks lock, struct xa_window *wind )
 		S.focus = 0;	/* force focus to new top */
 	}
 	TOP_WINDOW = 0;
+	screen.standard_font_point = wind->owner->options.standard_font_point;
 	top_window( lock, true, true, wind );
 }
 
@@ -1113,6 +1175,27 @@ void app_or_acc_in_front( enum locks lock, struct xa_client *client )
 	}
 }
 
+/******************
+static void set_fnts(SCROLL_INFO *list, short pt)
+{
+	SCROLL_ENTRY *entry;
+	for (entry = list->start; entry; entry = entry->next )
+	{
+		entry->fnt->n.p = entry->fnt->s.p = entry->fnt->h.p = pt;
+	}
+}
+
+static void clear_list( SCROLL_INFO *list)
+{
+		while (list->start)
+		{
+			list->start = list->del(list, list->start, false);
+		}
+}
+
+
+****************/
+
 /*
  * todo: if fileselector is open during shutdown there's a problem
  */
@@ -1130,6 +1213,7 @@ taskmanager_form_exit(struct xa_client *Client,
 
 	Sema_Up(clients);
 	lock |= clients;
+
 
 	wt->which = 0;
 
@@ -1149,7 +1233,9 @@ taskmanager_form_exit(struct xa_client *Client,
 					client = ((struct xa_window*)client)->owner;
 			}
 			else
+			{
 				return;
+			}
 		}
 	}
 
@@ -1290,11 +1376,8 @@ taskmanager_form_exit(struct xa_client *Client,
 			object_deselect(wt->tree + TM_QUITAPPS);
 			redraw_toolbar(lock, wind, TM_QUITAPPS);
 			*/
-#if ASK_BEFORE_SHUTDOWN
-			if ( xaaes_do_form_alert( lock, 1, ASK_QUITALL_ALERT, XAAESNAME ) != 2 )
-				goto lb_TM_OK;//break;
-#endif
 			DIAGS(("taskmanager: quit all apps"));
+			//BLOG((0,"taskmanager: quit all apps"));
 			quit_all_apps(lock, NULL, AP_TERM);
 			force_window_top( lock, wind );
 			break;
@@ -1305,12 +1388,13 @@ taskmanager_form_exit(struct xa_client *Client,
 			object_deselect(wt->tree + TM_QUIT);
 			redraw_toolbar(lock, wind, TM_QUIT);
 			*/
-#if ASK_BEFORE_SHUTDOWN
-			if ( xaaes_do_form_alert( lock, 1, ASK_SHUTDOWN_ALERT, XAAESNAME ) != 2 )
-				goto lb_TM_OK;//break;
-#endif
 			DIAGS(("taskmanager: quit XaAES"));
-			dispatch_shutdown(0,0);
+#if TM_ASK_BEFORE_SHUTDOWN
+			post_cevent(C.Hlp, ceExecfunc, ce_dispatch_shutdown, NULL, 0,1, NULL, NULL);
+#else
+			dispatch_shutdown(0, 0);
+#endif
+			//ask_and_shutdown( lock, C.Hlp, 0);
 			force_window_top( lock, wind );
 
 			break;
@@ -1321,12 +1405,13 @@ taskmanager_form_exit(struct xa_client *Client,
 			object_deselect(wt->tree + TM_REBOOT);
 			redraw_toolbar(lock, wind, TM_REBOOT);
 			*/
-#if ASK_BEFORE_SHUTDOWN
-			if ( xaaes_do_form_alert( lock, 1, ASK_SHUTDOWN_ALERT, XAAESNAME ) != 2 )
-				goto lb_TM_OK;//break;
-#endif
 			DIAGS(("taskmanager: reboot system"));
-			dispatch_shutdown(REBOOT_SYSTEM,0);
+			//BLOG((0,"taskmanager: reboot system"));
+#if TM_ASK_BEFORE_SHUTDOWN
+			post_cevent(C.Hlp, ceExecfunc, ce_dispatch_shutdown, NULL, REBOOT_SYSTEM,1, NULL, NULL);
+#else
+			dispatch_shutdown(REBOOT_SYSTEM, 0);
+#endif
 			force_window_top( lock, wind );
 
 			break;
@@ -1337,14 +1422,19 @@ taskmanager_form_exit(struct xa_client *Client,
 			object_deselect(wt->tree + TM_HALT);
 			redraw_toolbar(lock, wind, TM_HALT);
 			*/
-#if ASK_BEFORE_SHUTDOWN
 			Sema_Dn(clients);
+#if 0
 			close_window(lock, wind);
-			if ( xaaes_do_form_alert( 0, 1, ASK_SHUTDOWN_ALERT, XAAESNAME ) != 2 )
+			if ( xaaes_do_form_alert( 0, C.Hlp, 1, ASK_SHUTDOWN_ALERT ) != 2 )
 				goto lb_TM_OK;//break;
 #endif
 			DIAGS(("taskmanager: halt system"));
+
+#if TM_ASK_BEFORE_SHUTDOWN
+			post_cevent(C.Hlp, ceExecfunc, ce_dispatch_shutdown, NULL, HALT_SYSTEM,1, NULL, NULL);
+#else
 			dispatch_shutdown(HALT_SYSTEM, 0);
+#endif
 			force_window_top( 0, wind );
 
 			break;
@@ -1355,12 +1445,12 @@ taskmanager_form_exit(struct xa_client *Client,
 			object_deselect(wt->tree + TM_COLD);
 			redraw_toolbar(lock, wind, TM_COLD);
 			*/
-#if ASK_BEFORE_SHUTDOWN
-			if ( xaaes_do_form_alert( lock, 1, ASK_SHUTDOWN_ALERT, XAAESNAME ) != 2 )
-				goto lb_TM_OK;//break;
-#endif
 			DIAGS(("taskmanager: coldstart system"));
+#if TM_ASK_BEFORE_SHUTDOWN
+			post_cevent(C.Hlp, ceExecfunc, ce_dispatch_shutdown, NULL, COLDSTART_SYSTEM,1, NULL, NULL);
+#else
 			dispatch_shutdown(COLDSTART_SYSTEM, 0);
+#endif
 			force_window_top( lock, wind );
 			break;
 		}
@@ -1372,9 +1462,6 @@ taskmanager_form_exit(struct xa_client *Client,
 			generate_redraws(lock, wind, &wind->r, RDRW_ALL);
 			break;
 		}
-#endif
-#if ASK_BEFORE_SHUTDOWN
-lb_TM_OK:
 #endif
 		case TM_OK:
 		{
@@ -1531,6 +1618,7 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 	OBJECT *obtree = NULL;
 	RECT or;
 	int redraw = NOREDRAW;
+
 	struct xa_wtxt_inf *wp[] = {&norm_txt, &acc_txt, &prg_txt, &sys_txt, &sys_thrd, &desk_txt, 0};
 	int objs[] = {TM_ICN_MENU, TM_ICN_XAAES, 0};
 
@@ -1552,7 +1640,29 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 		wt = new_widget_tree(client, obtree);
 		if (!wt) goto fail;
 		wt->flags |= WTF_TREE_ALLOC | WTF_AUTOFREE;
+#if 1
+		/* resize window if < 10-point-font */
+		if( screen.c_max_h < 16 ){
+			short d = 16 / screen.c_max_h, dy;
 
+			obtree->ob_height *= d;
+			dy = (obtree+TM_LIST)->ob_height;
+
+			(obtree+TM_LIST)->ob_height *= d;
+			(obtree+TM_LIST)->ob_height += d/2;//12;
+			(obtree+TM_LIST)->ob_y += obtree->ob_y + 18;
+
+			dy = dy * (d  - 1) + 12;
+			(obtree+TM_CHART)->ob_height *= d;
+			(obtree+TM_CHART)->ob_y = (obtree+TM_LIST)->ob_y + (obtree+TM_LIST)->ob_height;
+
+			dy = obtree->ob_y + obtree->ob_height - ((obtree + TM_OK)->ob_y + (obtree+TM_OK)->ob_height) - 8;
+			for( d = TM_QUITAPPS; d < TM_CHART; d++ )
+			{
+				(obtree+d)->ob_y += dy;
+			}
+		}
+#endif
 		list = set_slist_object(0, wt, NULL, TM_LIST,
 				 SIF_SELECTABLE|SIF_AUTOSELECT|SIF_TREEVIEW|SIF_ICONINDENT|SIF_AUTOOPEN|SIF_AUTOSLIDERS,
 				 NULL, NULL, NULL, NULL, NULL, NULL,
@@ -1561,12 +1671,13 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 
 		if (!list) goto fail;
 
-		set_xa_fnt( cfg.xaw_point, wp, obtree, objs, list);
 
 		/*!obj_init_focus(wt, OB_IF_RESET);*/
 		obj_rectangle(wt, aesobj(obtree, 0), &or);
 		obtree[TM_ICONS].ob_flags |= OF_HIDETREE;
 
+		//BLOG((0,"open_taskmanager:open=%d or=%d/%d/%d/%d c_max_w=%d c_max_h=%d", open, or, screen.c_max_w, screen.c_max_h));
+		set_xa_fnt( cfg.xaw_point, wp, obtree, objs, list);
 		/* Work out sizing */
 		if (!remember.w)
 		{
@@ -1661,7 +1772,8 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 				long u = 0;
 
 				/* todo: to change fnt-size at runtime font-info for each list-entry would have to be updated */
-				//set_xa_fnt( cfg.xaw_point, wp, obtree, objs, list);
+				//set_xa_fnt( cfg.xaw_point + fss, wp, wt->tree, objs, list);
+				//set_fnts( list, cfg.xaw_point + fss );
 
 				for( this = list->start; this; this = this->next )
 					this->usr_flags &= ~TM_UPDATED;
@@ -2600,8 +2712,8 @@ open_systemalerts(enum locks lock, struct xa_client *client, bool open)
 					NULL, NULL);
 		if (!wind) goto fail;
 
-		wind->min.h = SYSLOGMINH;
-		wind->min.w = SYSLOGMINH * 2;	/* minimum width for this window */
+		wind->min.h = remember.h * 2/3;	/* minimum height for this window */
+		wind->min.w = remember.w;	/* minimum width for this window */
 		list->set(list, NULL, SESET_PRNTWIND, (long)wind, NOREDRAW);
 
 		/* Set the window title */
@@ -2661,7 +2773,7 @@ do_system_menu(enum locks lock, int clicked_title, int menu_item)
 		/* Quit all applications */
 		case SYS_MN_QUITAPP:
 			DIAGS(("Quit all Apps"));
-			quit_all_apps(lock, NULL, AP_TERM);
+			quit_all_apps(lock, (struct xa_client*)-1, AP_TERM);
 			break;
 
 		/* Quit XaAES */

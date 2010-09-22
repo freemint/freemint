@@ -239,6 +239,48 @@ max_w(int m, char to[][MAX_X+1], int *tot)
 	return x * screen.c_max_w;
 }
 
+/*
+ * form_alert for XaAES-thread internal
+ */
+int xaaes_do_form_alert( enum locks lock, struct xa_client *client, int def_butt, char al_text[] )
+{
+	short intin[8], intout[8];
+	long addrin[8];
+/*static*/	AESPB axx;
+
+	axx.intin = intin;
+	intin[0] = def_butt;
+	axx.intin = intin;
+	axx.addrin = addrin;
+	addrin[0] = (long)al_text;
+	intout[0] = -1;
+	axx.intout = intout;
+
+	client->waiting_pb = &axx;
+
+	client->status |= CS_FORM_ALERT;
+	do_form_alert( lock, client, def_butt, al_text, client->name );
+
+	if( client == C.Aes )
+	{
+		while( intout[0] == -1 )
+		{
+			yield();
+		}
+	}
+	else
+	(*client->block)(client, 0);
+
+	client->status &= ~CS_FORM_ALERT;
+
+	C.update_lock = NULL;
+	client->waiting_pb = NULL;
+
+	Unblock(client, 0, 0);
+
+	return intout[0];
+}
+
 /* changed thus, that a alert is always displayed, whether format error or not.
  * otherwise the app is suspended and the screen & keyb are locked,
  * and you can do nothing but a reset. :-(
@@ -258,9 +300,10 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 	OBJECT *alert_icons;
 	ALERTXT *alertxt;
 	RECT or;
-	short x, w;
+	short x, w, h;
 	int n_lines, n_buttons, icon = 0, m_butt_w;
-	int retv = 1, b, f;
+	int  retv = 1, b, f;
+	struct xa_vdi_settings *v = client->vdi_settings;
 
 	DIAG((D_form, client, "called do_form_alert(%s)", alert));
 
@@ -357,6 +400,8 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 	b = x / (n_buttons + 1);
 	x = b;
 
+	(*v->api->t_font)(client->vdi_settings, screen.standard_font_point, screen.standard_font_id );
+	(*v->api->t_extent)(client->vdi_settings, "W", &w, &h );
 	/* Fill in & show buttons */
 	for (f = 0; f < n_buttons; f++)
 	{
@@ -377,15 +422,46 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 
 	{
 		int nl = n_lines, dh;
-
+		long lh = alert_form[0].ob_height, fh;
 		if (n_lines < 2)
 			nl = 2;
-		dh = (ALERT_LINES - nl)*screen.c_max_h;
-		alert_form[0].ob_height -= dh;
-		alert_form[ALERT_BUT1].ob_y -= dh;
-		alert_form[ALERT_BUT2].ob_y -= dh;
-		alert_form[ALERT_BUT3].ob_y -= dh;
-		alert_form[ALERT_BUT4].ob_y -= dh;
+
+		dh = (ALERT_LINES - nl)*h;	//screen.c_max_h;
+
+		if( cfg.standard_font_point != screen.standard_font_point )
+		{
+			short h1, w1;
+			(*v->api->t_font)(client->vdi_settings, cfg.standard_font_point, screen.standard_font_id );
+			(*v->api->t_extent)(client->vdi_settings, "W", &w1, &h1 );
+			(*v->api->t_font)(client->vdi_settings, screen.standard_font_point, screen.standard_font_id );
+
+			/* current > standard */
+			if( h > h1 )
+			{
+				fh = h * 1024 / h1;
+				lh = lh * fh / 1024;
+			}
+			/* current < standard */
+			else if( h < h1 )
+			{
+				fh = h1 * 1024 / h;
+				lh = lh * 1024 / fh;
+			}
+			alert_form[ALERT_BUT1].ob_height = h + 2;
+			alert_form[ALERT_BUT2].ob_height = h + 2;
+			alert_form[ALERT_BUT3].ob_height = h + 2;
+			alert_form[ALERT_BUT4].ob_height = h + 2;
+		}
+		alert_form[0].ob_height = lh - dh;
+		if( alert_form[0].ob_height < ICON_H + 50 )
+			alert_form[0].ob_height = ICON_H + 50;
+
+
+		alert_form[ALERT_BUT1].ob_y = alert_form[0].ob_height + alert_form[0].ob_y - 6 - alert_form[ALERT_BUT1].ob_height;
+		alert_form[ALERT_BUT2].ob_y = alert_form[0].ob_height + alert_form[0].ob_y - 6 - alert_form[ALERT_BUT2].ob_height;
+		alert_form[ALERT_BUT3].ob_y = alert_form[0].ob_height + alert_form[0].ob_y - 6 - alert_form[ALERT_BUT3].ob_height;
+		alert_form[ALERT_BUT4].ob_y = alert_form[0].ob_height + alert_form[0].ob_y - 6 - alert_form[ALERT_BUT4].ob_height;
+
 	}
 
 	/* Set the default button if it was specified */
