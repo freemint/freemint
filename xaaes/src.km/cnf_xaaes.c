@@ -593,8 +593,13 @@ pCB_app_options(char *line)
 			}
 			else if (!strnicmp(s, "alt_shortcuts", 13))
 			{
-				get_argument(s + 13, &a); //get_boolarg(s + 6, &opts->clwtna);
+				get_argument(s + 13, &a);
 				opts->alt_shortcuts = a;
+			}
+			else if (!strnicmp(s, "standard_font_point", 19))
+			{
+				get_argument(s + 19, &a);
+				opts->standard_font_point = a;
 			}
 
 #if GENERATE_DIAGS

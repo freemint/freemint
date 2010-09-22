@@ -678,6 +678,7 @@ again:
 	/* Parse the config file */
 	load_config();
 
+	C.Aes->options.standard_font_point = cfg.standard_font_point;
 	//C.Aes->options = default_options;
 	//C.Aes->options.xa_nomove = false;
 
