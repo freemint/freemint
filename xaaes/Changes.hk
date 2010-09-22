@@ -1,3 +1,77 @@
+22-09-2010
+----------
+
+xaaes009:
+
+XaAES resource file
+
+- TREE008 Objects 4,6,7,8,9,12 hidden (set FLAG "hidden")
+---------------------------------------------------------------------
+k_init:
+
+fix planes-calculation if opnwk returned wrong value (CT)
+---------------------------------------------------------------------
+win_draw:
+
+set font-size of window-info-line to standard_point.
+---------------------------------------------------------------------
+render_obj:
+
+- fixed a bug in edit fields with a mask that contains non-editable characters
+
+- added missing paranthesises
+
+---------------------------------------------------------------------
+scrlobjc:
+
+- optimized rendering-speed if window is top-window
+- do not display icons if font-point is < 10, because icons are designed for 10-point (also speed-improvement)
+- removed unnecessary call to t_effects
+- use real string-len for test for prop_clipped-call not tblen
+
+---------------------------------------------------------------------
+xa_types:
+
+- added SIF_NO_ICONS for list-flags
+- new config-variable standard_font_point for apps (coming soon)
+---------------------------------------------------------------------
+xa_vdi:
+
+- prop_clipped_name: workaround for another fvdi-bug: if high-bit in c is set, vqt_width returns random values for
+width, use 'a' in that case
+---------------------------------------------------------------------
+win_draw:
+
+correct widget-height-calculaton for window-infoline
+---------------------------------------------------------------------
+fselsz (xa_fsel.h xa_fsel.c):
+
+
+font-size can be changed by pressing Alt-+/-
+---------------------------------------------------------------------
+k_init:
+
+ony test for fvdi when trying to open a virtual wk
+---------------------------------------------------------------------
+about:
+
+resize window when standard-font-point != 10
+---------------------------------------------------------------------
+fontpt (xa_appl.c xa_appl.h cnf_xaaes.c draw_obj.c init.c app_man.c):
+
+
+implement app_option standard_font_point - standard font-size is set on
+every menu-switch
+---------------------------------------------------------------------
+version:
+
+status now beta
+---------------------------------------------------------------------
+sdalert (xa_defs.h xa_form.c taskman.h taskman.c k_main.c k_main.h k_keybd.c):
+
+
+implement alerts for shutdown/halt/reboot/quit
+---------------------------------------------------------------------
 22-08-2010
 ----------
 
