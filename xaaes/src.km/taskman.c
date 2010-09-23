@@ -891,13 +891,15 @@ void
 quit_all_apps(enum locks lock, struct xa_client *except, short reason)
 {
 	struct xa_client *client;
+#if 0
 	bool do_alert = true;
 
 	//BLOG((0,"quit_all_apps:except=%lx", except));
-	if( (unsigned long)except == 0xFFFFFFFF )
+	if( except )
 	{
 		do_alert = false;
-		except = 0;
+		if( except == (struct xa_client*)-1 )
+			except = 0;
 	}
 
 	//BLOG((0,"quit_all_apps:reason=%d,do_alert=%d", reason, do_alert));
@@ -906,6 +908,7 @@ quit_all_apps(enum locks lock, struct xa_client *except, short reason)
 		//BLOG((0,"quit_all_apps:cancelled"));
 		return;
 	}
+#endif
 	Sema_Up(clients);
 	lock |= clients;
 
