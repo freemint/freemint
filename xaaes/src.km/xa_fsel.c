@@ -2914,8 +2914,11 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 
 		}
 
+		//BLOG((0,"open_fsel:pat=%lx:%s.", pat));
 		if (pat)
 		{
+			if( !*pat )
+				pat = "*";
 			fsel_filters(fs->menu->tree, pat );
 			strcpy(fs->fs_pattern, pat);
 			strcpy(fs->fs_origpattern, fs->fs_pattern);
