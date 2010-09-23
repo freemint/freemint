@@ -564,9 +564,21 @@ otm:
 			sdmd = HALT_SYSTEM;
 		case 'Q':
 		{
-			DIAGS(("shutdown by CtlAlt Q"));
+			struct proc *p;
+			const char *sdmaster = get_env(0, "SDMASTER=");
 
-			post_cevent(C.Hlp, ceExecfunc, ce_dispatch_shutdown, NULL, sdmd,1, NULL, NULL);
+			if (sdmaster)
+			{
+				int ret = create_process(sdmaster, NULL, NULL, &p, 0, NULL);
+				if (ret < 0)
+					ALERT(("$SDMASTER is not a valid program: %s", sdmaster));
+			}
+			else
+			{
+				DIAGS(("shutdown by CtlAlt Q"));
+				post_cevent(C.Hlp, ceExecfunc, ce_dispatch_shutdown, NULL, sdmd,1, NULL, NULL);
+			}
+
 			return true;
 		}
 #endif
