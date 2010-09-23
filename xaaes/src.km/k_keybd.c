@@ -571,13 +571,12 @@ otm:
 			{
 				int ret = create_process(sdmaster, NULL, NULL, &p, 0, NULL);
 				if (ret < 0)
-					ALERT(("$SDMASTER is not a valid program: %s", sdmaster));
+					ALERT(("$SDMASTER is not a valid program: %s (use the taskmanager)", sdmaster));
+				else
+					return true;
 			}
-			else
-			{
-				DIAGS(("shutdown by CtlAlt Q"));
+			else	/* the ALERT comes after ce_dispatch_shutdown, so the else must stay for now */
 				post_cevent(C.Hlp, ceExecfunc, ce_dispatch_shutdown, NULL, sdmd,1, NULL, NULL);
-			}
 
 			return true;
 		}
