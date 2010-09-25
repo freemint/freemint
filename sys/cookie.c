@@ -55,6 +55,7 @@
 # include "libkern/libkern.h"
 # include "mint/rsvf.h"
 
+//# include "dos.h"	/* s_s_uper */
 # include "biosfs.h"	/* rsvf */
 # include "memory.h"	/* get_region, attach_region */
 
@@ -419,7 +420,7 @@ get_cookie (struct cookie *cj, ulong tag, ulong *ret)
 	struct user_things *ut;
 	struct cookie *cjar;
 # else
-	struct cookie *cjar = *CJAR;
+	struct cookie *cjar;
 # endif
 	ushort slotnum = 0;		/* number of already taken slots */
 # ifdef DEBUG_INFO
@@ -430,12 +431,16 @@ get_cookie (struct cookie *cj, ulong tag, ulong *ret)
 
 	DEBUG (("get_cookie(): tag=%08lx (%s) ret=%08lx", tag, asc.a, ret));
 
+	if( !cj )
+	{
 # ifdef JAR_PRIVATE
-	ut = get_curproc()->p_mem->tp_ptr;
-	cjar = ut->user_jar_p;
+		ut = get_curproc()->p_mem->tp_ptr;
+		cjar = ut->user_jar_p;
+# else
+		cjar = *CJAR;
 # endif
-
-	if (cj)
+	}
+	else
 		cjar = cj;
 
 	/* If tag == 0, we return the value of NULL slot
@@ -578,7 +583,7 @@ set_cookie (struct cookie *cj, ulong tag, ulong val)
 		if (cjar->tag == tag)
 		{
 			cjar->value = val;
-			TRACE (("set_cookie(): old entry %08lx (%s) updated", tag, asc));
+			TRACE (("set_cookie(): old entry %08lx (%s) updated", tag, asc.a));
 			return E_OK;
 		}
 		cjar++;
