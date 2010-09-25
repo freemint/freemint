@@ -616,7 +616,9 @@ sys_s_alert (char *str)
 extern unsigned short proc_clock;
 unsigned short pc;
 #endif
+
 #if NEWLOAD
+/* when loadaverage[0] is 0x4143544CL	fill loadaverage[3] with actual load */
 #define WITH_ACTLD	0x4143544CL	/* 'ACTL' */
 extern unsigned short new_ld;
 extern unsigned short uptimetick;
@@ -698,9 +700,9 @@ shutdown(void)
 	for (p = proclist; p; p = p->gl_next)
 	{
 		ls.s = p->name;
-		FORCE("p->name=%s:%lx pgrp=%d", p->name, ls.l, p->pgrp);
-		/* Skip MiNT, curproc and AES (and GEM: this is a quick hack only!) */
-		if (p->pgrp && (p != get_curproc()) && ((p->p_mem->memflags & F_OS_SPECIAL) == 0) && ls.l != GEM )
+		DEBUG(("p=%lx p->name=%s:%lx pgrp=%d memflags=%x modeflags=%x", p, p->name, ls.l, p->pgrp, p->p_mem->memflags, p->modeflags));
+		/* Skip MiNT (pid 0), init (pid 1), curproc and AES, and GEM */
+		if (p != curproc && p->pgrp && p->pid > 1 && !(p->p_mem->memflags & F_OS_SPECIAL) && ls.l != GEM )
 		{
 			if (p->wait_q != ZOMBIE_Q && p->wait_q != TSR_Q)
 			{
@@ -719,16 +721,22 @@ shutdown(void)
 			}
 		}
 	}
-
+	/* give SIGTERMed processes time to exit.
+	 * problem may be they use resources that do
+	 * not exist anymore because other processes
+	 * already exited (theory).
+	 */
+#if 0
+	//FORCE("yielding");
 	while (posts--)
 		for (i = 0; i < 16; i++)	/* sleep */
 			sys_s_yield();
-
+#endif
 	sysq[READY_Q].head = sysq[READY_Q].tail = NULL;
 
-	FORCE("Close open files ...");
+	//FORCE("Close open files ...");
 	close_filesys();
-	FORCE("done");
+	//FORCE("done");
 
 	FORCE("Syncing file systems ...");
 	sys_s_ync();
@@ -782,6 +790,13 @@ sys_s_hutdown(long restart)
 		return EPERM;
 	}
 	shutting_down = 1;
+
+	/* cursor home (vt52) */
+	{
+	char h[3] = {0x1b,'E',0};
+	debug_ws(h);
+	}
+
 	FORCE("sys_s_hutdown: %ld", restart);
 	/* only root may shut down the system */
 	if ((p->p_cred->ucr->euid == 0) || (p->p_cred->ruid == 0))
