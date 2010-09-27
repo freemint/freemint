@@ -1542,7 +1542,7 @@ load_external_table(FILEPTR *fp, const char *name, long size)
 		return ENOMEM;
 	}
 
-	mint_bzero(kbuf, size+1);
+	mint_bzero(kbuf, size+2);
 
 	if ((*fp->dev->read)(fp, (char *)kbuf, size) == size)
 	{
@@ -1550,7 +1550,7 @@ load_external_table(FILEPTR *fp, const char *name, long size)
 		{
 			case 0x2771:		/* magic word for std format */
 			{
-				quickmove(kbuf, kbuf + sizeof(short), size - sizeof(short) + 1);
+				quickmove(kbuf, kbuf + sizeof(short), size - sizeof(short) + 2);
 				break;
 			}
 			case 0x2772:		/* magic word for ext format */
@@ -1566,7 +1566,7 @@ load_external_table(FILEPTR *fp, const char *name, long size)
 				if ((sbuf[1] >= 0) && (sbuf[1] <= MAXAKP))
 					gl_kbd = sbuf[1];
 
-				quickmove(kbuf, kbuf + sizeof(long), size - sizeof(long) + 1);
+				quickmove(kbuf, kbuf + sizeof(long), size - sizeof(long) + 2);
 				break;
 			}
 			case 0x2773:		/* the ISO format (as of 30.VII.2004) */
@@ -1585,7 +1585,7 @@ load_external_table(FILEPTR *fp, const char *name, long size)
 				{
 					iso_8859_code = (long)sbuf[3];
 					quickmove(kbuf, kbuf + (sizeof(long)*2), \
-							size - (sizeof(long)*2) + 1);
+							size - (sizeof(long)*2) + 2);
 				}
 				else
 				{
