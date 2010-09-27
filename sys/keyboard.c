@@ -50,8 +50,6 @@
  *
  */
 
-# ifndef NO_AKP_KEYBOARD
-
 # include "libkern/libkern.h"	/* strcpy(), strcat(), ksprintf() */
 
 # include "mint/asm.h"		/* spl7() */
@@ -84,6 +82,8 @@
 # include "random.h"		/* add_keyboard_randomness() */
 # include "signal.h"		/* killgroup() */
 # include "timeout.h"		/* addroottimeout() */
+
+# ifndef NO_AKP_KEYBOARD
 
 /* The _AKP cookie value consists of:
  *
@@ -1874,28 +1874,28 @@ init_keybd(void)
 
 # else
 
-long
-sys_keytbl(char *unshift, char *shift, char *caps)
+struct keytab * _cdecl
+sys_b_keytbl(char *unshifted, char *shifted, char *caps)
 {
-	return ROM_Keytbl(unshift, shift, caps);
+	return ROM_Keytbl(unshifted, shifted, caps);
 }
 
-long
-sys_bioskeys(void)
+void _cdecl
+sys_b_bioskeys(void)
 {
-	return ROM_Bioskeys();
+	ROM_Bioskeys();
 }
 
-long
-sys_kbrate(ushort del, ushort rep)
+ushort _cdecl
+sys_b_kbrate(short delay, short rate)
 {
-	return ROM_Kbrate(del, rep);
+	return ROM_Kbrate(delay, rate);
 }
 
-long
-sys_kbdvbase(void)
+KBDVEC * _cdecl
+sys_b_kbdvbase(void)
 {
-	return ROM_Kbdvbase();
+	return (KBDVEC * _cdecl)ROM_Kbdvbase();
 }
 
 # endif	/* NO_AKP_KEYBOARD */
