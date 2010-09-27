@@ -401,25 +401,12 @@ set_mouse_timeout( void _cdecl (*f)(PROC *), short make, short delta, long to)
 	}
 }
 
-# ifdef DEBUG_INFO
-extern long ikbd_cnt;
-# endif
 
 # ifndef MILAN
 static void put_key_into_buf(IOREC_T *iorec, uchar c0, uchar c1, uchar c2, uchar c3);
 static void
 kbd_repeat(PROC *p, long arg)
 {
-	//FORCE("kbd_repeat:last_iorec=%lx %d %d %d %d %d last_key=%d/%d/%d/%d lock=%d cnt=%ld", *last_iorec, last_key[0], last_key[1], last_key[2], last_key[3], kbd_lock, ikbd_cnt);
-	/* in case sys_b_bioskeys crashed and did not reset kbd_lock, do it now */
-#if 1
-	if( kbd_lock )
-	{
-		FORCE("kbd_repeat: kbd locked");
-		//FORCE("kbd_repeat:reset kbd_lock:%d:%lx", kbd_lock, &kbd_lock);
-		return;
-	}
-#endif
 	put_key_into_buf(last_iorec, last_key[0], last_key[1], last_key[2], last_key[3]);
 	k_to = addroottimeout(keyrep_time, (void _cdecl (*)(PROC *))kbd_repeat, 1);
 }
@@ -592,7 +579,6 @@ put_key_into_buf(IOREC_T *iorec, uchar c0, uchar c1, uchar c2, uchar c3)
 		c0 = 0;
 # endif
 // 	display("c0 %x, c1 %x, c2 %x, c3 %x", c0, c1, c2, c3);
-	//FORCE("put_key_into_buf:c0 %x, c1 %x, c2 %x, c3 %x", c0, c1, c2, c3);
 
 	iorec->tail += 4;
 	if (iorec->tail >= iorec->buflen)
@@ -924,55 +910,29 @@ static struct scanb_entry scanb[16];
 static void _cdecl IkbdScan(PROC *, long);
 
 
-void leave_kernel(void);
-
 void _cdecl
 ikbd_scan(ushort scancode, IOREC_T *rec)
 {
 	int tail = (scanb_tail + 1) & 0xf;
-#if 1
-	/* in case sys_b_bioskeys crashed and did not reset kbd_lock, do it now */
-	if( kbd_lock )
-	{
-		FORCE("ikbd_scan1:kbd locked");
-		//FORCE("ikbd_scan2:reset kbd_lock:%d:%lx", kbd_lock, &kbd_lock);
-		return;
-	}
-#endif
-	//FORCE("ikbd_scan: cnt=%ld rec=%lx scancode=%x scanb[].iorec=%lx:%lx tail=%d scanb_head=%d lock=%d ikbd_to=%lx", ikbd_cnt, rec, scancode, scanb[scanb_head].iorec, scanb[scanb_tail].iorec, tail, scanb_head, kbd_lock, ikbd_to);
 
-# ifdef DEBUG_INFO
-	ikbd_cnt--;
-# endif
 	if (tail != scanb_head)
 	{
 		scanb[scanb_tail].iorec = rec;
 		scanb[scanb_tail].scan = scancode;
 		scanb_tail = tail;
 	}
-#if 0
-	if( scanb[scanb_head].iorec == NULL )
-	{
-		int i;
-		for( i = 0; i < 16; i++ )
-			FORCE("scanb[%i].iorec=%lx", scanb[i].iorec);
-	}
-#endif
-	//FORCE("ikbd_scan: iorec=%lx %d %d %d %d %d", *rec );
 
 	if( curproc->modeflags & M_SINGLE_TASK )
 	{
+		//FORCE("ikbd_scan:modeflags=%x:%x", curproc->modeflags, scancode);
 # ifdef DEBUG_INFO
 		extern short in_kernel;
-		//FORCE("ikbd_scan directly for '%s' head=%d", curproc->name, scanb_head );
 		DEBUG(("ikbd_scan directly for '%s' head=%d p_flags=%lx slices=%d in_kernel=%x", curproc->name, scanb_head, curproc->p_mem->base->p_flags, curproc->slices, in_kernel ));
 # endif
 		IkbdScan( curproc, 1);
 	}
 	else if (!ikbd_to)
 	{
-		//DEBUG(("ikbd_scan for '%s' head=%d modeflags=%x", curproc->name, scanb_head, curproc->modeflags ));
-		//FORCE("ikbd_scan for '%s' head=%d modeflags=%x", curproc->name, scanb_head, curproc->modeflags );
 		ikbd_to = addroottimeout(0L, (void _cdecl(*)(PROC *))IkbdScan, 1);
 	}
 }
@@ -991,7 +951,7 @@ IkbdScan(PROC *p, long arg)
 		scancode   = scanb[scanb_head].scan;
 		scanb_head = (scanb_head + 1) & 0xf;
 
-		//FORCE("IkbdScan: scancode=%x, rec=%lx, h=%i, t=%i", scancode, iorec, scanb_head, scanb_tail);
+		DEBUG(("ikbd_scan: scancode=%x, rec=%lx, h=%i, t=%i", scancode, iorec, scanb_head, scanb_tail));
 // 		display("ikbd_scan: scancode=%x, rec=%lx, h=%i, t=%i", scancode, iorec, scanb_head, scanb_tail);
 
 		scan = scancode & 0xff;
@@ -1168,9 +1128,7 @@ IkbdScan(PROC *p, long arg)
 							}
 						}
 					}
-
 					continue;
-// 					goto keepscan;
 				}
 				/* Function keys */
 				case 0x003b ... 0x0044:
@@ -1187,9 +1145,7 @@ IkbdScan(PROC *p, long arg)
 
 						kbdclick(scan);
 					}
-
 					continue;
-// 					goto keepscan;
 				}
 				/* This is in case the keyboard has real F11-F20 keys on it */
 				case 0x0054 ... 0x005d:
@@ -1205,7 +1161,6 @@ IkbdScan(PROC *p, long arg)
 					}
 
 					continue;
-// 					goto keepscan;
 				}
 			}
 		}
@@ -1258,9 +1213,7 @@ IkbdScan(PROC *p, long arg)
 						addroottimeout(ROOT_TIMEOUT, (void _cdecl (*)(PROC *))alt_help, 1);
 						kbdclick(scan);
 					}
-
 					continue;
-// 					goto keepscan;
 				}
 				/* Alt/Numpad generates ASCII codes like in TOS 2.0x.
 				 */
@@ -1375,7 +1328,6 @@ IkbdScan(PROC *p, long arg)
 #ifndef MILAN
 		set_keyrepeat_timeout(make);
 #endif
-// again:
 
 	} while (scanb_head != scanb_tail);
 
@@ -1486,8 +1438,6 @@ sys_b_bioskeys(void)
 		return;
 	}
 	kbd_lock = 1;
-
-	//set_keyrepeat_timeout(0);
 
 	/* Release old user keytables and vectors */
 	if (user_keytab_region)
@@ -1603,7 +1553,7 @@ load_external_table(FILEPTR *fp, const char *name, long size)
 		return ENOMEM;
 	}
 
-	mint_bzero(kbuf, size+1);
+	mint_bzero(kbuf, size+2);
 
 	if ((*fp->dev->read)(fp, (char *)kbuf, size) == size)
 	{
@@ -1611,7 +1561,7 @@ load_external_table(FILEPTR *fp, const char *name, long size)
 		{
 			case 0x2771:		/* magic word for std format */
 			{
-				quickmove(kbuf, kbuf + sizeof(short), size - sizeof(short) + 1);
+				quickmove(kbuf, kbuf + sizeof(short), size - sizeof(short) + 2);
 				break;
 			}
 			case 0x2772:		/* magic word for ext format */
@@ -1627,7 +1577,7 @@ load_external_table(FILEPTR *fp, const char *name, long size)
 				if ((sbuf[1] >= 0) && (sbuf[1] <= MAXAKP))
 					gl_kbd = sbuf[1];
 
-				quickmove(kbuf, kbuf + sizeof(long), size - sizeof(long) + 1);
+				quickmove(kbuf, kbuf + sizeof(long), size - sizeof(long) + 2);
 				break;
 			}
 			case 0x2773:		/* the ISO format (as of 30.VII.2004) */
@@ -1646,7 +1596,7 @@ load_external_table(FILEPTR *fp, const char *name, long size)
 				{
 					iso_8859_code = (long)sbuf[3];
 					quickmove(kbuf, kbuf + (sizeof(long)*2), \
-							size - (sizeof(long)*2) + 1);
+							size - (sizeof(long)*2) + 2);
 				}
 				else
 				{
@@ -1884,7 +1834,6 @@ load_keyboard_table(const char *path, short flag)
 void
 init_keybd(void)
 {
-	int i;
 	ushort delayrate;
 
 	/* Call the underlying XBIOS to get some defaults.
@@ -1893,8 +1842,6 @@ init_keybd(void)
 	 * static pointer to an initialized struct in
 	 * key_tables.h
 	 */
-
-	i = 0;
 
 # ifndef WITHOUT_TOS
 	tos_keytab = TRAP_Keytbl(-1, -1, -1);
