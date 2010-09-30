@@ -2860,8 +2860,8 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 //			display("no path passed, building '%s'", fs->root);
 		}
 		{
-			int cwdl;
-			char chr=0;
+			//int cwdl;
+			//char chr=0;
 
 			if( !pat )
 			{
@@ -2870,12 +2870,18 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 				if (!pat) pat = pbt;
 				if( pat )
 				{
-					*pat++ = 0;
-					if( !*pat )
-						pat = "*";
+					if( strmchr( pat, "*!?[" ) )
+					{
+						*pat++ = 0;
+					}
+					else
+						pat = 0;
 				}
 			}
+			if( !pat || !*pat )
+				pat = "*";
 
+#if 0
 			if( pat && *pat && !strrchr(pat, '*'))
 			{
 				if ((chr = fs->root[2]))
@@ -2890,7 +2896,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 				else
 					fs->root[2] = fs->fslash[0]/*'\\'*/, fs->root[3] = '\0';
 			}
-
+#endif
 //			display("illegal path '%s'", path ? path : "nopath");
 //			display("set path to	'%s'", fs->root);
 		#if 0
@@ -2914,7 +2920,6 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 
 		}
 
-		//BLOG((0,"open_fsel:pat=%lx:%s.", pat));
 		if (pat)
 		{
 			if( !*pat )
