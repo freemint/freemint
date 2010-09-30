@@ -720,16 +720,20 @@ k_init(unsigned long vm)
 		 *	stay enabled at all times!
 		 */
 		{
+#if SAVE_CACHE_WK
 			unsigned long sc = 0, cm = 0;
 
 			cm = s_system(S_CTRLCACHE, 0L, -1L);
 			sc = s_system(S_CTRLCACHE, -1L, 0L);
 			s_system(S_CTRLCACHE, sc & ~3, cm);
+#endif
 			set_wrkin(work_in, mode);
 			BLOG((0,"k_init: v_opnwk() mode=%d", mode ));
 			v_opnwk(work_in, &(C.P_handle), work_out);
 			BLOG((0,"k_init: v_opnwk() handle=%d", C.P_handle ));
+#if SAVE_CACHE_WK
 			s_system(S_CTRLCACHE, sc, cm);
+#endif
 		}
 #else
 		set_wrkin(work_in, mode);
