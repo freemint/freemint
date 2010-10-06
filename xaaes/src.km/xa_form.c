@@ -246,7 +246,7 @@ int xaaes_do_form_alert( enum locks lock, struct xa_client *client, int def_butt
 {
 	short intin[8], intout[8];
 	long addrin[8];
-/*static*/	AESPB axx;
+	AESPB axx;
 
 	axx.intin = intin;
 	intin[0] = def_butt;
@@ -261,7 +261,7 @@ int xaaes_do_form_alert( enum locks lock, struct xa_client *client, int def_butt
 	client->status |= CS_FORM_ALERT;
 	do_form_alert( lock, client, def_butt, al_text, client->name );
 
-	if( client == C.Aes )
+	if( client == C.Aes /*|| client == C.Hlp*/ )
 	{
 		while( intout[0] == -1 )
 		{
@@ -269,7 +269,7 @@ int xaaes_do_form_alert( enum locks lock, struct xa_client *client, int def_butt
 		}
 	}
 	else
-	(*client->block)(client, 0);
+		(*client->block)(client, 0);
 
 	client->status &= ~CS_FORM_ALERT;
 

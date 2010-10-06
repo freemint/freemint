@@ -562,6 +562,7 @@ otm:
 #if HOTKEYQUIT
 		case 'H':
 			sdmd = HALT_SYSTEM;
+		case 'G':
 		case 'Q':
 		{
 			struct proc *p;
@@ -576,7 +577,9 @@ otm:
 					return true;
 			}
 			else	/* the ALERT comes after ce_dispatch_shutdown, so the else must stay for now */
+			{
 				post_cevent(C.Hlp, ceExecfunc, ce_dispatch_shutdown, NULL, sdmd,1, NULL, NULL);
+			}
 
 			return true;
 		}
