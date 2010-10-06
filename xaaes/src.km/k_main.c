@@ -836,6 +836,7 @@ CE_fa(enum locks lock, struct c_event *ce, bool cancel)
 					struct timeval tv;
 					struct timezone tz;
 					union udostim dtim;
+					extern struct xa_wtxt_inf norm_txt;	/* from taskman.c */
 
 					Tgettimeofday( &tv, &tz );
 					dtim.l = unix2xbios( tv.tv_sec );
@@ -849,6 +850,7 @@ CE_fa(enum locks lock, struct c_event *ce, bool cancel)
 					sc.t.text = data->buf;
 					sc.icon = icon;
 					sc.t.strings = 1;
+					sc.fnt = &norm_txt;
 					p.idx = -1;
 					p.arg.txt = /*txt_alerts*/"Alerts";
 					list->get(list, NULL, SEGET_ENTRYBYTEXT, &p);
@@ -943,25 +945,23 @@ static void setup_common(void);
  * signal handlers
  */
 static void
-ignore(void)
+ignore(int sig)
 {
 	DIAGS(("AESSYS: ignored signal"));
+	BLOG((0, "AESSYS: received signal:%d(ignored)", sig));
 	KERNEL_DEBUG("AESSYS: ignored signal");
 }
 #if !GENERATE_DIAGS
 static void
-fatal(void)
+fatal(int sig)
 {
+	BLOG((true, "AESSYS: fatal error:%d", sig));
 	KERNEL_DEBUG("AESSYS: fatal error, trying to clean up");
 	k_exit(0);
 }
 #endif
 
 extern char XAAESNAME[];
-#if ALERT_SHUTDOWN
-int xaaes_do_form_alert( enum locks lock, int def_butt, char al_text[], char title[] );
-extern char ASK_SHUTDOWN_ALERT[];
-#endif
 
 static void
 sigterm(void)
@@ -1337,7 +1337,6 @@ ce_dispatch_shutdown(enum locks lock, struct xa_client *client, bool b)
 {
 		short r = 0;
 		r = xaaes_do_form_alert( lock, C.Hlp, 1, ASK_SHUTDOWN_ALERT);
-
 		if( r != 2 )
 			return;
 		dispatch_shutdown((short)b, 0);
@@ -1785,7 +1784,7 @@ k_main(void *dummy)
 		{
 			tty->state &= ~TS_COOKED;	/* we are kernel ... */
 		}
-		if (aessys_timeout == 1)
+		while (aessys_timeout == 1)
 		{
 			/* some regular thing todo */
 
@@ -1795,6 +1794,7 @@ k_main(void *dummy)
 			 * with callback interface
 			 */
 			do_widget_repeat();
+			yield();
 		}
 
 		/* execute delayed delete_window */
@@ -1852,7 +1852,7 @@ setup_common(void)
 	p_signal(SIGILL,   (long) fatal);
 	p_signal(SIGTRAP,  (long) fatal);
 	p_signal(SIGABRT,  (long) fatal);
-	p_signal(SIGFPE,   (long) fatal);
+	p_signal(SIGFPE,   (long) ignore);//fatal);
 	p_signal(SIGBUS,   (long) fatal);
 	p_signal(SIGSEGV,  (long) fatal);
 	p_signal(SIGSYS,   (long) fatal);
