@@ -111,8 +111,7 @@ cancel_cevents(struct xa_client *client)
 	{
 		struct c_event *nxt;
 
-		DIAG((D_kern, client, "Cancel evnt %lx (next %lx) for %s",
-			ce, ce->next, client->name));
+		DIAG((D_kern, client, "Cancel evnt %lx (next %lx) for %s",ce, ce->next, client->name));
 
 		(*ce->funct)(0, ce, true);
 
@@ -837,6 +836,7 @@ CE_fa(enum locks lock, struct c_event *ce, bool cancel)
 					struct timeval tv;
 					struct timezone tz;
 					union udostim dtim;
+					extern struct xa_wtxt_inf norm_txt;	/* from taskman.c */
 
 					Tgettimeofday( &tv, &tz );
 					dtim.l = unix2xbios( tv.tv_sec );
@@ -850,6 +850,7 @@ CE_fa(enum locks lock, struct c_event *ce, bool cancel)
 					sc.t.text = data->buf;
 					sc.icon = icon;
 					sc.t.strings = 1;
+					sc.fnt = &norm_txt;
 					p.idx = -1;
 					p.arg.txt = /*txt_alerts*/"Alerts";
 					list->get(list, NULL, SEGET_ENTRYBYTEXT, &p);
@@ -944,25 +945,23 @@ static void setup_common(void);
  * signal handlers
  */
 static void
-ignore(void)
+ignore(int sig)
 {
 	DIAGS(("AESSYS: ignored signal"));
+	BLOG((0, "AESSYS: received signal:%d(ignored)", sig));
 	KERNEL_DEBUG("AESSYS: ignored signal");
 }
 #if !GENERATE_DIAGS
 static void
-fatal(void)
+fatal(int sig)
 {
+	BLOG((true, "AESSYS: fatal error:%d", sig));
 	KERNEL_DEBUG("AESSYS: fatal error, trying to clean up");
 	k_exit(0);
 }
 #endif
 
 extern char XAAESNAME[];
-#if ALERT_SHUTDOWN
-int xaaes_do_form_alert( enum locks lock, int def_butt, char al_text[], char title[] );
-extern char ASK_SHUTDOWN_ALERT[];
-#endif
 
 static void
 sigterm(void)
@@ -1213,7 +1212,7 @@ sshutdown_timeout(struct proc *p, long arg)
 				}
 			}
 
-			quit_all_apps(NOLOCKING, NULL, (C.shutdown & RESOLUTION_CHANGE) ? AP_RESCHG : AP_TERM);
+			quit_all_apps(NOLOCKING, (struct xa_client*)-1, (C.shutdown & RESOLUTION_CHANGE) ? AP_RESCHG : AP_TERM);
 			set_shutdown_timeout(SD_TIMEOUT);
 		}
 		else
@@ -1330,13 +1329,26 @@ kick_shutdn_if_last_client(void)
 			set_shutdown_timeout(SD_TIMEOUT);
 	}
 }
+
+static char ASK_SHUTDOWN_ALERT[] = "[2][leave XaAES][Cancel|Ok]";
+
+void _cdecl
+ce_dispatch_shutdown(enum locks lock, struct xa_client *client, bool b)
+{
+		short r = 0;
+		r = xaaes_do_form_alert( lock, C.Hlp, 1, ASK_SHUTDOWN_ALERT);
+		if( r != 2 )
+			return;
+		dispatch_shutdown((short)b, 0);
+}
+
 /*
  * Initiate shutdown...
  */
 void _cdecl
 dispatch_shutdown(short flags, unsigned long arg)
 {
-	if (!(C.shutdown & SHUTDOWN_STARTED))
+	if ( !(C.shutdown & SHUTDOWN_STARTED))
 	{
 		C.shutdown = SHUTDOWN_STARTED | flags;
 		if ((flags & RESOLUTION_CHANGE))
@@ -1772,7 +1784,7 @@ k_main(void *dummy)
 		{
 			tty->state &= ~TS_COOKED;	/* we are kernel ... */
 		}
-		if (aessys_timeout == 1)
+		while (aessys_timeout == 1)
 		{
 			/* some regular thing todo */
 
@@ -1782,11 +1794,14 @@ k_main(void *dummy)
 			 * with callback interface
 			 */
 			do_widget_repeat();
+			yield();
 		}
 
 		/* execute delayed delete_window */
 		if (S.deleted_windows.first)
+		{
 			do_delayed_delete_window(lock);
+		}
 	}
 	while (!(C.shutdown & EXIT_MAINLOOP));
 
@@ -1837,7 +1852,7 @@ setup_common(void)
 	p_signal(SIGILL,   (long) fatal);
 	p_signal(SIGTRAP,  (long) fatal);
 	p_signal(SIGABRT,  (long) fatal);
-	p_signal(SIGFPE,   (long) fatal);
+	p_signal(SIGFPE,   (long) ignore);//fatal);
 	p_signal(SIGBUS,   (long) fatal);
 	p_signal(SIGSEGV,  (long) fatal);
 	p_signal(SIGSYS,   (long) fatal);
