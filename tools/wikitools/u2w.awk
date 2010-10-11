@@ -276,8 +276,12 @@ BEGIN{
 #				printf( "exclude-part:%s\n", $0);
 				print >>OUTF;	# leave exclude-part unchanged
 			}
-			else if( doc_valid )
-				printf( "<!--%s-->\n",$0) >>OUTF;
+			else if( doc_valid ){
+				if( !source )
+					printf( "<!--%s-->\n",$0) >>OUTF;
+				else
+					print >>OUTF;
+			}
 
 			continue;	#comment ignored
 		}
@@ -410,6 +414,10 @@ BEGIN{
 				for( i in PRE ){
 					if( i == $1 ){
 						found = 1;
+						if( i == "!begin_sourcecode" )
+							source = 1;
+						else if( i == "!end_sourcecode" )
+							source = 0;
 						printf( PRE[i] ) >>OUTF;
 						for( j = 2; j <= NF; j++ ){
 							printf( " %s", $j ) >>OUTF;
