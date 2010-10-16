@@ -34,7 +34,8 @@
 #define VER_MINOR	999
 #define ARCH_TARGET	AES_ARCH_M68K
 /*#define DEV_STATUS	(AES_DEVSTATUS_ALPHA|AES_FDEVSTATUS_STABLE)*/
-#define DEV_STATUS	AES_DEVSTATUS_RELEASE
+#define DEV_STATUS	AES_DEVSTATUS_BETA
+//#define DEV_STATUS	AES_DEVSTATUS_RELEASE
 
 /* This is only used in wind_get(WF_XAAES) which will be removed */
 #define HEX_VERSION	0x09
@@ -52,7 +53,7 @@
 #ifdef XAAES_RELEASE
 #undef XAAES_RELEASE
 #endif
-#define XAAES_RELEASE		1
+#define XAAES_RELEASE		0
 #define ASCII_DEV_STATUS	"Beta"
 #endif
 

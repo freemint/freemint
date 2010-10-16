@@ -100,6 +100,7 @@ k_shutdown(void)
 		S.open_windows.root = NULL;
 	}
 	BLOG((false, "shutting down aes thread .. tp=%lx", C.Aes->tp));
+
 	if (C.Aes->tp)
 	{
 		volatile struct proc **h = (volatile struct proc **)&C.Aes->tp;
@@ -110,6 +111,7 @@ k_shutdown(void)
 			yield();
 		}
 	}
+
 	BLOG((false, "Freeing Aes environment"));
 	if (C.env)
 	{
@@ -257,7 +259,9 @@ k_shutdown(void)
 		if( C.P_handle > 0 && C.P_handle != v->handle )
 		{
 #ifndef ST_ONLY
+#if SAVE_CACHE_WK
 			unsigned long sc = 0, cm = 0;
+#endif
 			int odbl;
 
 		/*
@@ -265,20 +269,24 @@ k_shutdown(void)
 		 *	while the VDI accesses the hardware. This fixes 'black-screen'
 		 *	problems on Hades with Nova VDI.
 		 */
+#if SAVE_CACHE_WK
 			cm = s_system(S_CTRLCACHE, 0L, -1L);
 			sc = s_system(S_CTRLCACHE, -1L, 0L);
 			BLOG((false, "Get current cpu cache settings... cm = %lx, sc = %lx", cm, sc));
 			s_system(S_CTRLCACHE, sc & ~7, cm);
+#endif
 			BLOG((false, "Enter cursor mode"));
 			v_enter_cur(C.P_handle);	/* Ozk: Lets enter cursor mode */
 			BLOG((false, "Closing VDI workstation %d", C.P_handle));
 			odbl = DEBUG_LEVEL;
 			DEBUG_LEVEL = 4;
 			v_clswk(C.P_handle);		/* Auto version must close the physical workstation */
-			BLOG((false, "VDI workstation closed" ));
-			DEBUG_LEVEL = odbl;
-			BLOG((false, "Restore CPU caches"));
+			BLOG((false, "VDI workstation closed"));
+#if SAVE_CACHE_WK
+			BLOG((0,"Restore CPU caches:%lx,%lx",sc,cm));
 			s_system(S_CTRLCACHE, sc, cm);
+#endif
+			DEBUG_LEVEL = odbl;
 			BLOG((false, "Done shutting down VDI"));
 #else
 			v_enter_cur(C.P_handle);
