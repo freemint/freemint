@@ -60,6 +60,7 @@ struct fsel_data
 	int clear_on_folder_change;
 	int ok;
 	int initial;	/* 1 if first call */
+	short fntinc;	/* increment/decrement font-size for file-selector */
 	bool tfile;
 	bool kbdnav;
 	bool treeview;

@@ -97,11 +97,12 @@ static struct parser_item parser_tab[] =
 	{ "WIDGET_AUTO_HIGHLIGHT", PI_R_B,   & cfg.widg_auto_highlight	},
 	{ "REMAP_CICONS",          PI_R_B,   & cfg.remap_cicons		},
 	{ "SET_RSC_PALETTE",       PI_R_B,   & cfg.set_rscpalette	},
-	{ "ALERT_WINDOWS",	   PI_R_US,  & cfg.alert_winds		},
+	{ "ALERT_WINDOWS",         PI_R_US,  & cfg.alert_winds		},
 	{ "FONT_ID",               PI_R_S,   & cfg.font_id		},
 	{ "STANDARD_POINT",        PI_R_S,   & cfg.standard_font_point	},
 	{ "MEDIUM_POINT",          PI_R_S,   & cfg.medium_font_point	},
 	{ "SMALL_POINT",           PI_R_S,   & cfg.small_font_point	},
+	{ "XAW_POINT",             PI_R_S,   & cfg.xaw_point		},
 	{ "POPSCROLL",             PI_R_S,   & cfg.popscroll		},
 	{ "DC_TIME",               PI_R_S,   & cfg.double_click_time	},
 	{ "MP_TIMEGAP",            PI_R_S,   & cfg.mouse_packet_timegap },
@@ -592,8 +593,13 @@ pCB_app_options(char *line)
 			}
 			else if (!strnicmp(s, "alt_shortcuts", 13))
 			{
-				get_argument(s + 13, &a); //get_boolarg(s + 6, &opts->clwtna);
+				get_argument(s + 13, &a);
 				opts->alt_shortcuts = a;
+			}
+			else if (!strnicmp(s, "standard_font_point", 19))
+			{
+				get_argument(s + 19, &a);
+				opts->standard_font_point = a;
 			}
 
 #if GENERATE_DIAGS

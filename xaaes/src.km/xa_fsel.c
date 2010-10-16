@@ -50,6 +50,7 @@
 #include "c_keybd.h"
 #include "k_keybd.h"
 #include "c_window.h"
+#include "taskman.h"	//set_xa_fnt
 #include "form.h"
 #include "k_main.h"
 #include "matchpat.h"
@@ -117,7 +118,7 @@ static char *faccess[] =
 	"rwx",
 };
 
-static struct xa_wtxt_inf norm_txt =
+static struct xa_wtxt_inf fs_norm_txt =
 {
  WTXT_NOCLIP,
 /* id  pnts  flags wrm, 		efx 	fgc 		 bgc	 banner x_3dact y_3dact texture */
@@ -227,7 +228,7 @@ init_fsel(void)
 		prover = provermin = i + 1;	/* + "*" */
 	if (screen.planes < 4)
 	{
-		exe_txt = dexe_txt = dir_txt = norm_txt;
+		exe_txt = dexe_txt = dir_txt = fs_norm_txt;
 	}
 
 #if SKEWED_TEXT_SCRAMBLED
@@ -1307,7 +1308,7 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 						else
 						{
 							icon = obtree + FS_ICN_FILE;
-							sc.fnt = &norm_txt;
+							sc.fnt = &fs_norm_txt;
 						}
 					}
 					if (sln)
@@ -1397,6 +1398,8 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 			d_closedir(i);
 			match_pattern( 0, 0, false);	/* de-init */
 
+//			WAIT_SEE
+
 			/* this is not elaborated
 			 * try to adapt the 1st distance
 			 */
@@ -1414,7 +1417,7 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 				if( fs->treeview )
 					h += 10;
 
-				/*list->vdi_settings->api->text_extent(list->vdi_settings, T, &norm_txt.n, &w, &h);*/
+				/*list->vdi_settings->api->text_extent(list->vdi_settings, T, &fs_norm_txt.n, &w, &h);*/
 				tab.r = (RECT){0,0,-h, 0};
 				//list->tabs[FSLIDX_NAME].v = tab.r;
 				list->set(list, NULL, SESET_TAB, (long)&tab, false);
@@ -1459,6 +1462,7 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 	PROFILE(("fsel:read_directory:return" ));
 
 }
+
 /*
  * Re-load a file_selector listbox
  * HR: version without the big overhead of separate dir/file lists
@@ -1472,6 +1476,9 @@ refresh_filelist(enum locks lock, struct fsel_data *fs, SCROLL_ENTRY *dir_ent)
 	OBJECT *form = fs->form->tree;
 	OBJECT *sl;
 	SCROLL_INFO *list;
+	struct xa_wtxt_inf *wp[] = {&fs_norm_txt, &exe_txt, &dexe_txt, &dir_txt, 0};
+	int objs[] = {FS_ICN_EXE, FS_ICN_DIR, FS_ICN_PRG, FS_ICN_FILE, FS_ICN_SYMLINK, 0};
+	short p;
 
 	//PROFILE(("fsel:refresh_file:entry" ));
 
@@ -1479,6 +1486,14 @@ refresh_filelist(enum locks lock, struct fsel_data *fs, SCROLL_ENTRY *dir_ent)
 	DIAG((D_fsel, NULL, "refresh_filelist: fs = %lx, obtree = %lx, sl = %lx",
 		fs, fs->form->tree, sl));
 	list = object_get_slist(sl);
+
+	fs->fntinc = (p=set_xa_fnt( cfg.xaw_point + fs->fntinc, wp, form, objs, list )) - cfg.xaw_point;
+
+	if( p < 10 )
+		list->flags |= SIF_NO_ICONS;
+	else
+		list->flags &= ~SIF_NO_ICONS;
+
 	add_slash(fs->root, fs->fslash);
 
 #ifdef FS_DBAR
@@ -2388,15 +2403,25 @@ fs_key_form_do(enum locks lock,
 		nkcode = nkc_tconv(key->raw.bcon);
 	nk = tolower(nkcode & 0xff);
 
-	/* HR 310501: ctrl|alt + letter :: select drive */
-	if ((key->raw.conin.state == K_ALT) && ((nk >= 'a' && nk <= 'z') || (nk >= '0' && nk <= '9')))
+	/* HR 310501: alt + letter :: select drive */
+	if (key->raw.conin.state == K_ALT)
 	{
+		if ((nk >= 'a' && nk <= 'z') || (nk >= '0' && nk <= '9'))
+		{
 		int drive_object_index = find_drive(nk, fs);
 		if (drive_object_index >= FSEL_DRVA){
 			wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 						 MN_SELECTED, 0, 0, FSEL_DRV,
 						 drive_object_index, 0, 0, 0);
 
+			return true;
+		}
+		}
+		else if( nk == '+' || nk == '-' )
+		{
+			nk == '+' ? fs->fntinc++ : fs->fntinc--;
+			refresh_filelist(fsel, fs, NULL);
+			list->redraw(list, NULL);
 			return true;
 		}
 	}
@@ -2443,6 +2468,9 @@ fs_key_form_do(enum locks lock,
 			ce.ptr2 = widg;
 			cXA_open_menubykbd( 0, &ce, false);
 		}
+		else if( nk == 'l' )
+			list->redraw(list, NULL);
+			//refresh_filelist(fsel, fs, NULL);
 	}
 	else if (focus_item(wt) == FS_FILE && key->aes == SC_TAB)
 	{
@@ -2832,8 +2860,8 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 //			display("no path passed, building '%s'", fs->root);
 		}
 		{
-			int cwdl;
-			char chr=0;
+			//int cwdl;
+			//char chr=0;
 
 			if( !pat )
 			{
@@ -2842,12 +2870,18 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 				if (!pat) pat = pbt;
 				if( pat )
 				{
-					*pat++ = 0;
-					if( !*pat )
-						pat = "*";
+					if( strmchr( pat, "*!?[" ) )
+					{
+						*pat++ = 0;
+					}
+					else
+						pat = 0;
 				}
 			}
+			if( !pat || !*pat )
+				pat = "*";
 
+#if 0
 			if( pat && *pat && !strrchr(pat, '*'))
 			{
 				if ((chr = fs->root[2]))
@@ -2862,7 +2896,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 				else
 					fs->root[2] = fs->fslash[0]/*'\\'*/, fs->root[3] = '\0';
 			}
-
+#endif
 //			display("illegal path '%s'", path ? path : "nopath");
 //			display("set path to	'%s'", fs->root);
 		#if 0
@@ -2888,6 +2922,8 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 
 		if (pat)
 		{
+			if( !*pat )
+				pat = "*";
 			fsel_filters(fs->menu->tree, pat );
 			strcpy(fs->fs_pattern, pat);
 			strcpy(fs->fs_origpattern, fs->fs_pattern);
@@ -3194,6 +3230,9 @@ close_fileselector(enum locks lock, struct fsel_data *fs)
 
 	if( fs->owner == aes_has_fsel )
 		aes_has_fsel = 0;
+
+	/* force font-sz-init on next call */
+	fs_norm_txt.n.p = -1;
 
 #if NONBLOCK_FSEL
 	C.update_lock  = fs_update_lock;
