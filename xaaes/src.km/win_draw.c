@@ -29,6 +29,9 @@
 #include "xaaeswdg.h"
 #include "win_draw.h"
 
+extern struct config cfg;
+
+
 #define MONO (scrninf->colours < 16)
 
 static const struct xa_module_api *api;
@@ -964,16 +967,16 @@ struct window_colours def_otop_cols =
 /* flags	                     fontId  size flags wrmode    Effect      forground       background x_3dact y_3dact	*/
 /*								                col	          col		*/
  /* Title text-info */
- { WTXT_DRAW3D|WTXT_ACT3D|WTXT_CENTER,
-                                   /* id  pnts flags wrm,   efx         fgc      bgc      banner  x_3dact y_3dact texture */
-                                      {0, 10,   0, MD_TRANS, 0,        G_WHITE,	G_BLUE, G_WHITE,  1,       1,     NULL}, /* Normal */
-                                      {0, 10,   0, MD_TRANS, 0,        G_WHITE,	G_BLUE, G_WHITE,  1,       1,     NULL},	/* Selected */
-                                      {0, 10,   0, MD_TRANS, 0,        G_WHITE,	G_WHITE, G_WHITE,  1,       1,     NULL}},	/* Highlighted */
- /* Info text-info */
- { 0,
-                                      {0,  10,   0, MD_TRANS, 0,        G_BLACK,	G_WHITE, G_WHITE,  1,       1,     NULL},	/* Normal */
-                                      {0,  10,   0, MD_TRANS, 0,        G_BLACK,	G_WHITE, G_WHITE,  1,       1,     NULL},	/* Selected */
-                                      {0,  10,   0, MD_TRANS, 0,        G_BLACK,	G_WHITE, G_WHITE,  1,       1,     NULL}},	/* Highlighted */
+	 { WTXT_DRAW3D|WTXT_ACT3D|WTXT_CENTER,
+	 /* id	pnts flags wrm, 	efx 				fgc 		 bgc			banner	x_3dact y_3dact texture */
+		{0, 10, 	0, MD_TRANS, 0, 			 G_WHITE, G_BLUE, G_WHITE,	1,			 1, 		NULL}, /* Normal */
+		{0, 10, 	0, MD_TRANS, 0, 			 G_WHITE, G_BLUE, G_WHITE,	1,			 1, 		NULL},	/* Selected */
+		{0, 10, 	0, MD_TRANS, 0, 			 G_WHITE, G_WHITE, G_WHITE,  1, 			1,		 NULL}},	/* Highlighted */
+	 /* Info text-info */
+	 { 0,
+		{0,  10,	 0, MD_TRANS, 0,				G_BLACK,	G_WHITE, G_WHITE,  1, 			1,		 NULL}, /* Normal */
+		{0,  10,	 0, MD_TRANS, 0,				G_BLACK,	G_WHITE, G_WHITE,  1, 			1,		 NULL}, /* Selected */
+		{0,  10,	 0, MD_TRANS, 0,				G_BLACK,	G_WHITE, G_WHITE,  1, 			1,		 NULL}},	/* Highlighted */
 
 };
 
@@ -3148,7 +3151,6 @@ s_title_size(struct xa_window *wind, struct xa_widget *widg)
 static void _cdecl
 s_info_size(struct xa_window *wind, struct xa_widget *widg)
 {
-	struct xa_wcol_inf *wci = &((struct window_colours *)wind->ontop_cols)->info;
 	struct xa_wtxt_inf *wti = &((struct window_colours *)wind->ontop_cols)->info_txt;
 	struct xa_wtxt_inf *wtu = &((struct window_colours *)wind->untop_cols)->info_txt;
 	struct xa_vdi_settings *v = wind->vdi_settings;
@@ -3158,7 +3160,8 @@ s_info_size(struct xa_window *wind, struct xa_widget *widg)
 
 	if (!wti->n.f)
 	{
-		(*v->api->t_font)(v, wti->n.p, 1); // 103);
+
+		(*v->api->t_font)(v, wti->n.p, cfg.font_id); // 103);
 // 		if (v->font_rid != v->font_sid)
 // 			(*v->api->t_font)(v, wti->n.p, 13384);
 		if (v->font_rid != v->font_sid)
@@ -3170,18 +3173,21 @@ s_info_size(struct xa_window *wind, struct xa_widget *widg)
 	(*v->api->t_font)(v, wti->n.p, wti->n.f);
 	(*v->api->t_effects)(v, wti->n.e);
 	(*v->api->text_extent)(v, "X", &wti->n, &w, &h);
-	//(*v->api->t_extent)(v, "A", &w, &h);
 	(*v->api->t_effects)(v, 0);
-// 	h += 2;
+	//(*v->api->t_extent)(v, "A", &w, &h);
+ 	h += 2;
+ 	/*************************************************************************
+ 	{
+	struct xa_wcol_inf *wci = &((struct window_colours *)wind->ontop_cols)->info;
  	if ((wci->flags & (WCOL_DRAW3D|WCOL_BOXED)) || (wti->flags & WTXT_DRAW3D))
  		h += 4;
  	if ((wci->flags & WCOL_ACT3D) || (wti->flags & WTXT_ACT3D))
  		h++;
 // 	if ((wci->flags & WCOL_BOXED))
 // 		h += 2;
-
+	}	***************************************************************************/
 	widg->r.h = h;
-};
+}
 
 static void _cdecl
 s_menu_size(struct xa_window *wind, struct xa_widget *widg)
@@ -3987,8 +3993,6 @@ test_img_stuff(struct module *m)
 #endif
 }
 
-extern struct config cfg;
-
 /*
  * This function is called by XaAES to have the module initialize itself
  */
@@ -4083,7 +4087,6 @@ init_module(const struct xa_module_api *xmapi, const struct xa_screen *screen, c
 			def_utop_cols.title_txt.h.p = 9;
 		}
 
-		//BLOG((0,"init_mod: point=%d",cfg.standard_font_point));
 		def_otop_cols.info_txt.n.p = cfg.standard_font_point;
 		def_otop_cols.info_txt.s.p = cfg.standard_font_point;
 		def_otop_cols.info_txt.h.p = cfg.standard_font_point;
