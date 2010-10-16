@@ -775,6 +775,7 @@ display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, struct x
 	/* Call the appropriate display routine */
 	(*drawer)(wt, v);
 
+
 	if (t != G_PROGDEF)
 	{
 		/* Handle CHECKED object state: */
@@ -786,8 +787,9 @@ display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, struct x
 		}
 
 		/* Handle DISABLED state: */
-		if ((ob->ob_state & state_mask) & OS_DISABLED)
-			(*v->api->write_disable)(v, &r, G_WHITE);
+		/* already handled by renderer */
+		//if ((ob->ob_state & state_mask) & OS_DISABLED)
+			//(*v->api->write_disable)(v, &r, G_WHITE);
 
 		/* Handle CROSSED object state: */
 		if ((ob->ob_state & state_mask) & OS_CROSSED)
@@ -904,6 +906,13 @@ short flags)
 	c = &current;
 	*c = aesobj(wt->tree, 0);
 	stop = inv_aesobj();
+
+	/* set the font-size for the app */
+	if( wt->owner->options.standard_font_point )
+		x = wt->owner->options.standard_font_point;
+	else
+		x = cfg.standard_font_point;
+	screen.standard_font_point = x;
 
 	if( wt->wind && (wt->wind->window_status & XAWS_RESIZED ) ){
 		set_toolbar_coords(wt->wind, NULL);

@@ -159,6 +159,50 @@ init_client_mdbuff(struct xa_client *client)
 }
 
 /*
+ * set point-size for main-menu
+ * adjust root-window-size
+ */
+void set_standard_point(struct xa_client *client)
+{
+	//if(  client->options.standard_font_point != screen.standard_font_point )
+	{
+		short w, h;
+		struct xa_widget *xaw = get_menu_widg(), *xat = get_widget(root_window, XAW_TOOLBAR);
+		XA_TREE *wt = xat->stuff;
+		struct xa_vdi_settings *v = client->vdi_settings;
+
+		(*v->api->t_font)(client->vdi_settings, client->options.standard_font_point, cfg.font_id);
+		(*v->api->t_extent)(client->vdi_settings, "X", &w, &h );
+
+		if( h == screen.c_max_h )
+			return;
+
+		screen.standard_font_height = v->font_h;
+		/*v->cell_h = */screen.c_max_h = h;
+		screen.c_max_w = w;
+		C.Aes->std_menu->tree->ob_height = h + 2;
+		xaw->r.h = xaw->ar.h = h + 2;
+		screen.standard_font_point = client->options.standard_font_point;
+
+		root_window->wa.h = screen.r.h - xaw->r.h;
+		root_window->wa.y = xaw->r.h;
+
+		wt->tree->ob_height = root_window->wa.h;
+		wt->tree->ob_y = root_window->wa.y;
+
+
+		if( xat )
+		{
+			xat->r.h = root_window->wa.h;
+			xat->r.y = root_window->wa.y;
+		}
+
+
+		display_window(NOLOCKS, 42, root_window, &screen.r);
+	}
+}
+
+/*
  * Ozk: New scheme; We keep the shel_info extension throughout the processes
  * lifetime. Reason for this is that applications may call appl_init()/appl_exit()
  * more than once. And that means we need the shel_info on the second init() too.
@@ -366,6 +410,12 @@ init_client(enum locks lock, bool sysclient)
 	proc_is_now_client(client);
 
 	init_client_objcrend(client);
+
+#if 1
+	if( !client->options.standard_font_point )
+		client->options.standard_font_point = cfg.standard_font_point;
+	set_standard_point(client);
+#endif
 
 //	app_in_front(lock, client, true, false);
 
@@ -692,6 +742,7 @@ exit_proc(enum locks lock, struct proc *p, int code)
 
 	}
 
+	//update_windows_below(NOLOCKS, &screen.r, NULL, window_list, NULL);
 	return ret;
 }
 

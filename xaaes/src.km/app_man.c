@@ -30,6 +30,7 @@
  */
 
 #include "app_man.h"
+#include "xa_appl.h"
 #include "xa_global.h"
 #include "xa_rsrc.h"
 
@@ -185,10 +186,14 @@ setnew_focus(struct xa_window *wind, struct xa_window *unfocus, bool topowner, b
 
 	if (!unfocus || unfocus == S.focus)
 	{
-		struct xa_client *owner;
+		struct xa_client *owner;	//, *p_owner = 0;
 
-		if ((S.focus && (S.focus->window_status & XAWS_STICKYFOCUS)))
-			return;
+		if (S.focus)
+		{
+			if( (S.focus->window_status & XAWS_STICKYFOCUS))
+				return;
+			//p_owner = S.focus->owner;
+		}
 
 		if (wind)
 		{
@@ -267,7 +272,6 @@ setnew_focus(struct xa_window *wind, struct xa_window *unfocus, bool topowner, b
 			S.focus = wind;
 			DIAGA(("setnew_focus: Set focus to %d of %s", wind ? wind->handle : -2, wind ? wind->owner->name : "NoWind"));
 		}
-
 		DIAGA(("setnew_focus: to %d of '%s', was %d of '%s'",
 			(long)wind ? wind->handle : -2, (long)wind ? wind->owner->proc_name : "None",
 			(long)S.focus ? S.focus->handle : -2, (long)S.focus ? S.focus->owner->proc_name : "None"));
@@ -492,6 +496,7 @@ recover(void)
 	forcem();
 }
 #endif
+
 void
 set_next_menu(struct xa_client *new, bool do_topwind, bool force)
 {
@@ -503,14 +508,15 @@ set_next_menu(struct xa_client *new, bool do_topwind, bool force)
 		struct xa_window *top = NULL;
 
 		/* in single-mode display only menu of single-app */
-		if( C.SingleTaskPid > 0
-			&& !(new->p->pid == C.SingleTaskPid/* || new->p->pid == C.AESpid || new->p->pid == C.Hlp->p->pid*/) )
+		if( C.SingleTaskPid > 0	&& !(new->p->pid == C.SingleTaskPid) )
 			return;
 		if (new->nxt_menu)
 		{
 			new->std_menu = new->nxt_menu;
 			new->nxt_menu = NULL;
 		}
+
+		set_standard_point(new);
 
 		if (force || (is_infront(new) || (!infront->std_menu && !infront->nxt_menu)))
 		{
@@ -549,7 +555,9 @@ set_next_menu(struct xa_client *new, bool do_topwind, bool force)
 				}
 				set_rootmenu_area(new);
 			}
+
 			redraw_menu(lock);
+
 		}
 	}
 }
@@ -1130,9 +1138,9 @@ app_in_front(enum locks lock, struct xa_client *client, bool snd_untopped, bool 
 		DIAG((D_appl, client, "app_in_front: %s", c_owner(client)));
 
 		infront = get_app_infront();
-		if (infront != client)
+		if (infront != client){
 			set_active_client(lock, client);
-
+		}
 		if (client->std_menu != get_menu() || client->nxt_menu)
 			swap_menu(lock, client, NULL, SWAPM_DESK);
 

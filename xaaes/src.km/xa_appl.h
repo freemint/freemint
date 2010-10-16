@@ -30,6 +30,7 @@
 #include "global.h"
 #include "xa_types.h"
 
+void set_standard_point(struct xa_client *client);
 void	init_client_mdbuff(struct xa_client *client);
 void	client_nicename(struct xa_client *client, const char *n, bool autonice);
 
