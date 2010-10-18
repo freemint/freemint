@@ -6321,8 +6321,8 @@ exit_module(void)
 static void
 free_ob_theme_resources(struct ob_theme *obt)
 {
-	int j;
 #ifndef ST_ONLY
+	int j;
 	{
 		struct xa_gradient *g;
 
