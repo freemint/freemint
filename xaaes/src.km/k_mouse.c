@@ -1116,9 +1116,11 @@ button_timeout(struct proc *p, long arg)
 			struct moose_data md;
 
 			get_md(&md);
+#if 0
 			DIAGA(("adi_button_event: type=%d, (%d/%d - %d/%d) state=%d, cstate=%d, clks=%d, l_clks=%d, r_clks=%d (%ld)",
 				md.ty, md.x, md.y, md.sx, md.sy, md.state, md.cstate, md.clicks,
 				md.iclicks[0], md.iclicks[1], sizeof(struct moose_data) ));
+#endif
 #if 0
 			display("adi_button_event: type=%d, (%d/%d - %d/%d) state=%d, cstate=%d, clks=%d, l_clks=%d, r_clks=%d (%ld)",
 				md.ty, md.x, md.y, md.sx, md.sy, md.state, md.cstate, md.clicks,
