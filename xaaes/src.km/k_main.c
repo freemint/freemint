@@ -967,6 +967,7 @@ static void
 sigterm(void)
 {
 	struct proc *p = get_curproc();
+	(void) p;
 	BLOG((false, "%s(%d:AES:%d): sigterm received", p->name, p->pid, C.AESpid ));
 #if 1
 	BLOG((false, "(ignored)" ));

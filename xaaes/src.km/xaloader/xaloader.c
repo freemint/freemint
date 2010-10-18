@@ -89,9 +89,9 @@ static void ignore(long sig)
 		sign[0] = ' ';
 	sign[1] = sig + '0';
 	sign[2] = 0;
-	Cconws( "XaAES loader: SIGNAL ");
-	Cconws( sign );
-	Cconws( " ignored\r\n");
+	(void) Cconws( "XaAES loader: SIGNAL ");
+	(void) Cconws( sign );
+	(void) Cconws( " ignored\r\n");
 }
 
 int
@@ -242,7 +242,7 @@ loader_init(int argc, char **argv, char **env)
 		goto error;
 	}
 
-	Cconws( "XaAES loader: KM_FREE\r\n");
+	(void) Cconws( "XaAES loader: KM_FREE\r\n");
 	//Cconin();
 
 	r = Fcntl((int)fh, path, KM_FREE);
@@ -254,9 +254,9 @@ loader_init(int argc, char **argv, char **env)
 		if( p > path )
 		{
 			p++;
-			Cconws( "XaAES loader: KM_FREE failed trying: '");
-			Cconws( p );
-			Cconws( "'..\r\n");
+			(void) Cconws( "XaAES loader: KM_FREE failed trying: '");
+			(void) Cconws( p );
+			(void) Cconws( "'..\r\n");
 			r = Fcntl((int)fh, p, KM_FREE);
 		}
 		if( r )
@@ -266,20 +266,20 @@ loader_init(int argc, char **argv, char **env)
 				r = -r;
 			e[0] = r + '0';
 			e[1] = 0;
-			Cconws( "\r\nXaAES loader: KM_FREE failed: ");
-			Cconws( e );
-			Cconws( "\r\n");
+			(void) Cconws( "\r\nXaAES loader: KM_FREE failed: ");
+			(void) Cconws( e );
+			(void) Cconws( "\r\n");
 			//Cconin();
 		}
 	}
-	//Cconws( "XaAES loader: Fclose()\r\n");
+	//(void) Cconws( "XaAES loader: Fclose()\r\n");
 	Fclose((int)fh);
-	//Cconws( "XaAES loader: return\r\n");
+	//(void) Cconws( "XaAES loader: return\r\n");
 	//Cconin();
 	return r;
 
 error:
-	(void)Cconws("press any key to continue ...\r\n");
+	(void) Cconws("press any key to continue ...\r\n");
 	(void)Cconin();
 	return 1;
 }
