@@ -25,7 +25,7 @@
  */
 
 #define PROFILING	0
-#define USEOWNSTRLEN 1
+#define USEOWNSTRLEN    0
 #define USEBUILTINMEMCPY	0
 #define ITALIC_IS_CUTOFF	1
 #define LSLINDST_PTS	2
@@ -65,8 +65,8 @@ static memcpy_t memcpy = 0;
 #endif
 
 #if USEOWNSTRLEN
-# undef strlen
-static int strlen (const char *p1 )
+#undef strlen
+static long strlen (const char *p1 )
 {
 	const char *p = p1;
 	if( /*!p1 ||*/ !*p1 )
