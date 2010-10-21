@@ -65,8 +65,7 @@ static memcpy_t memcpy = 0;
 #endif
 
 #if USEOWNSTRLEN
-# undef strlen
-static int strlen (const char *p1 )
+static int xa_strlen (const char *p1 )
 {
 	const char *p = p1;
 	if( /*!p1 ||*/ !*p1 )
@@ -74,6 +73,8 @@ static int strlen (const char *p1 )
 	for( ; *++p1; );
 	return (int)(p1-p);
 }
+# undef strlen
+#define strlen xa_strlen
 #endif
 
 #define ONLY_OPENED 1
