@@ -446,7 +446,6 @@ iBlock(struct xa_client *client, int which)
 
 	client->usr_evnt = 0;
 
-// 	BLOG((true,"enter iBlock"));
 
 // 	if (!a->addrin[0])
 // 		BLOG((true, "iBlock: 0 NULL"));
@@ -966,8 +965,10 @@ extern char XAAESNAME[];
 static void
 sigterm(void)
 {
+#if BOOTLOG
 	struct proc *p = get_curproc();
 	BLOG((false, "%s(%d:AES:%d): sigterm received", p->name, p->pid, C.AESpid ));
+#endif
 #if 1
 	BLOG((false, "(ignored)" ));
 	return;
@@ -1754,7 +1755,7 @@ k_main(void *dummy)
 		/* The pivoting point of XaAES!
 		 * Wait via Fselect() for keyboard and alerts.
 		 */
-		PROFILE(("main:fselect:%ld", n++ ));
+		PROFILE(("main:f_select:%ld", n++ ));
 		if( aessys_timeout == 0 )
 			aessys_timeout = AESSYS_TIMEOUT;
 		fs_rtn = f_select(aessys_timeout, (long *) &input_channels, 0L, 0L);
@@ -1815,7 +1816,6 @@ leave:
 	/* delete semaphore */
 	{
 		int r;
-		BLOG((0,"k_main:SEMDESTROY"));
 		r = p_semaphore( SEMDESTROY, XA_SEM, 0 );
 		if( r )
 			BLOG((0,"k_main:could not destroy semaphore:%d", r ));

@@ -5367,7 +5367,6 @@ d_g_button(struct widget_tree *wt, struct xa_vdi_settings *v)
 				(*v->api->t_extent)(v, text, &gr.w, &gr.h);
 				rr.y += gr.h / 2;
 				rr.h -= gr.h / 2;
-				//BLOG((0,"d_g_box: screen->standard_font_point=%d h=%d", screen->standard_font_point, rr.h));
 			}
 			if ((fl3d & 2)) /* BKG or ACT */
 			{
@@ -6321,8 +6320,8 @@ exit_module(void)
 static void
 free_ob_theme_resources(struct ob_theme *obt)
 {
-	int j;
 #ifndef ST_ONLY
+	int j;
 	{
 		struct xa_gradient *g;
 
