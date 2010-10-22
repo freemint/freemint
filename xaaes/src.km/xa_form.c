@@ -364,14 +364,13 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 /* >  */
 
 	alert_icons = ResourceTree(C.Aes_rsc, ALERT_ICONS);
-
 	alert_form->ob_width = w;
 // 	Form_Center(alert_form, ICON_H);
 
 	{	/* HR */
 		int icons[7] = {ALR_IC_SYSTEM, ALR_IC_WARNING, ALR_IC_QUESTION, ALR_IC_STOP,
 						  ALR_IC_INFO,   ALR_IC_DRIVE,   ALR_IC_BOMB};
-		if (icon > 7 || icon < 0)
+		if (icon >= 7 || icon < 0)
 			icon = 0;
 
 		for (f = 0; f < 7; f++)
@@ -525,7 +524,7 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 
 			widg = get_widget(alert_window, XAW_TOOLBAR);
 
-			set_toolbar_widget(lock, alert_window, client, alert_form, inv_aesobj(), WIP_NOTEXT, STW_ZEN, NULL, &or); //(RECT *)&alert_form->ob_x);
+			set_toolbar_widget(lock, alert_window, client, alert_form, inv_aesobj(), WIP_NOTEXT, STW_ZEN, NULL, &or);
 			wt->extra = alertxt;
 
 			set_window_title(alert_window, title ? title : client->name, false);
@@ -817,13 +816,15 @@ XA_form_error(enum locks lock, struct xa_client *client, AESPB *pb)
 	static char error_alert[256]; // XXX
 
 	const char *msg = "Unknown error.";
-	char icon = '7';
+	char icon = '0';
 	int num;
 
 	CONTROL(1,1,0)
 
 	client->waiting_pb = pb;
 	num = pb->intin[0];
+	if( num < 0 )
+		num = -num;
 
 	if (num >= 0 && num < (sizeof(form_error_msgs) / sizeof(form_error_msgs[0])))
 	{
