@@ -1,33 +1,33 @@
 /*
  * $Id$
- * 
+ *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
- * 
- * 
+ *
+ *
  * Copyright 2003 Odd Skancke <ozk@atari.org>
  * Copyright 1998, 2000 Frank Naumann <fnaumann@freemint.de>
  * Copyright 1995 Torsten Scherer <itschere@techfak.uni-bielefeld.de>
  * All rights reserved.
- * 
+ *
  * Please send suggestions, patches or bug reports to me or
  * the MiNT mailing list.
- * 
- * 
+ *
+ *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
  * any later version.
- * 
+ *
  * This file is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  */
 
 # include "mint/mint.h"
@@ -57,9 +57,9 @@
 
 # define VER_MAJOR	0
 # define VER_MINOR	10
-# define VER_STATUS	
+# define VER_STATUS
 
-# define MSG_VERSION	str (VER_MAJOR) "." str (VER_MINOR) str (VER_STATUS) 
+# define MSG_VERSION	str (VER_MAJOR) "." str (VER_MINOR) str (VER_STATUS)
 # define MSG_BUILDDATE	__DATE__
 
 # define MSG_BOOT	\
@@ -124,7 +124,7 @@ static long _cdecl	moose_timeout		(struct adif *a);
 
 static char lname[] = "Moose AES Device interface for XaAES\0";
 
-static struct adif moose_aif = 
+static struct adif moose_aif =
 {
 	0,		/* *next */
 	ADIC_MOUSE,	/* class */
@@ -139,7 +139,7 @@ static struct adif moose_aif =
 	moose_timeout,	/* timeout */
 	{ NULL },
 };
-	
+
 
 /*
  * debugging stuff
@@ -224,13 +224,13 @@ struct mouse_pak
 			unsigned char state;
 			short time;
 		} but;
-		
+
 		struct
 		{
 			unsigned char wheel;
 			short clicks;
 		} whl;
-		
+
 		struct
 		{
 			char state;
@@ -348,7 +348,7 @@ timer_handler(void)
 			if (inbuf)
 			{
 				if (pak_head->ty == BUT_PAK)
-				{	
+				{
 					register short tm = pak_head->t.but.time;
 					register unsigned short s = (unsigned char)pak_head->t.but.state;
 					time_between = pak_head->dbg;
@@ -402,7 +402,7 @@ timer_handler(void)
 										c[i]++;
 										click_count++;
 									}
-								
+
 									s >>= 1;
 								}
 							}
@@ -446,7 +446,7 @@ do_button_packet(void)
 	md.cstate	= click_cstate;
 	md.clicks	= click_count;
 	md.kstate	= 0;		/* Not set here -- will change*/
-	s = (unsigned long *)md.iclicks;
+	s = md.iclicks.ulongs;
 	d = (unsigned long *)clicks;
 	*s++ = *d, *d++ = 0;
 	*s++ = *d, *d++ = 0;
@@ -517,7 +517,7 @@ moose_ioctl (struct adif *a, short cmd, long arg)
 		case MOOSE_READVECS:
 		{
 			struct moose_vecsbuf *vecs = (struct moose_vecsbuf *)arg;
-			
+
 			vecs->motv = (vdi_vec *) motv;
 			vecs->butv = (vdi_vec *) butv;
 			vecs->timv = (vdi_vec *) timv;
@@ -549,7 +549,7 @@ moose_ioctl (struct adif *a, short cmd, long arg)
 		{
 			return ENOSYS;
 		}
-	}	
+	}
 	return E_OK;
 }
 
