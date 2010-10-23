@@ -6,6 +6,8 @@
 #include <sys/fcntl.h>
 #include <string.h>
 
+#define ConsoleWrite (void)Cconws
+
 /* KM_RUN */
 #include "../../../sys/mint/ioctl.h"
 
@@ -89,9 +91,9 @@ static void ignore(long sig)
 		sign[0] = ' ';
 	sign[1] = sig + '0';
 	sign[2] = 0;
-	Cconws( "XaAES loader: SIGNAL ");
-	Cconws( sign );
-	Cconws( " ignored\r\n");
+	ConsoleWrite( "XaAES loader: SIGNAL ");
+	ConsoleWrite( sign );
+	ConsoleWrite( " ignored\r\n");
 }
 
 int
@@ -106,7 +108,7 @@ loader_init(int argc, char **argv, char **env)
 	 */
 	(void)Pdomain(1);
 
-	Cconws("XaAES loader starting...\r\n");
+	ConsoleWrite("XaAES loader starting...\r\n");
 
 	/*
 	 * first make sure we are on FreeMiNT's '/'
@@ -120,18 +122,18 @@ loader_init(int argc, char **argv, char **env)
 	fh = Fopen("u:/kern/sysdir", O_RDONLY);
 	if (fh < 0)
 	{
-		Cconws("XaAES loader: Fopen(\"/kern/sysdir\") failed!\r\n");
+		ConsoleWrite("XaAES loader: Fopen(\"/kern/sysdir\") failed!\r\n");
 		goto error;
 	}
 	r = Fread((int)fh, sizeof(path), path);
 	if (r <= 0)
 	{
-		Cconws("XaAES loader: Fread(\"/kern/sysdir\") failed!\r\n");
+		ConsoleWrite("XaAES loader: Fread(\"/kern/sysdir\") failed!\r\n");
 		goto error;
 	}
 	if (r >= sizeof(path))
 	{
-		Cconws("XaAES loader: buffer for Fread(\"/kern/sysdir\") to small!\r\n");
+		ConsoleWrite("XaAES loader: buffer for Fread(\"/kern/sysdir\") to small!\r\n");
 		goto error;
 	}
 	Fclose((int)fh);
@@ -184,9 +186,9 @@ loader_init(int argc, char **argv, char **env)
 	r = Dsetpath(path);
 	if (r)
 	{
-		Cconws("XaAES loader: No such directory: \"");
-		Cconws(path);
-		Cconws("\"\r\n");
+		ConsoleWrite("XaAES loader: No such directory: \"");
+		ConsoleWrite(path);
+		ConsoleWrite("\"\r\n");
 		goto error;
 	}
 
@@ -194,7 +196,7 @@ loader_init(int argc, char **argv, char **env)
 	r = Dgetpath(path, 0);
 	if (r)
 	{
-		Cconws("XaAES loader: Dgetpath() failed???\r\n");
+		ConsoleWrite("XaAES loader: Dgetpath() failed???\r\n");
 		goto error;
 	}
 
@@ -206,21 +208,21 @@ loader_init(int argc, char **argv, char **env)
 	fh = Fopen(path, O_RDONLY);
 	if (fh < 0)
 	{
-		Cconws("XaAES loader: No such file: \"");
-		Cconws(path);
-		Cconws("\"\r\n");
+		ConsoleWrite("XaAES loader: No such file: \"");
+		ConsoleWrite(path);
+		ConsoleWrite("\"\r\n");
 		goto error;
 	}
 	Fclose((int)fh);
 
-	Cconws("Load kernel module: ");
-	Cconws(path);
-	Cconws("\r\n");
+	ConsoleWrite("Load kernel module: ");
+	ConsoleWrite(path);
+	ConsoleWrite("\r\n");
 
 	fh = Fopen("/dev/km", O_RDONLY);
 	if (fh < 0)
 	{
-		Cconws("XaAES loader: no /dev/km, please update your kernel!\r\n");
+		ConsoleWrite("XaAES loader: no /dev/km, please update your kernel!\r\n");
 		goto error;
 	}
 	/* if mint waits for xaloader it should not exit */
@@ -231,17 +233,17 @@ loader_init(int argc, char **argv, char **env)
 	Psignal( SIGTERM, ignore );
 	//Psignal( SIGKILL, ignore );
 
-	//Cconws( "XaAES loader: KM_RUN \r\n");
+	//ConsoleWrite( "XaAES loader: KM_RUN \r\n");
 	//Cconin();
 	r = Fcntl((int)fh, path, KM_RUN);
-	//Cconws( "XaAES loader: KM_RUN done()\r\n");
+	//ConsoleWrite( "XaAES loader: KM_RUN done()\r\n");
 
 	if (r)
 	{
-		Cconws("XaAES loader: Fcntl(KM_RUN) failed!\r\n");
+		ConsoleWrite("XaAES loader: Fcntl(KM_RUN) failed!\r\n");
 	}
 
-	Cconws( "XaAES loader: KM_FREE\r\n");
+	ConsoleWrite( "XaAES loader: KM_FREE\r\n");
 	//Cconin();
 
 	r = Fcntl((int)fh, path, KM_FREE);
@@ -253,9 +255,9 @@ loader_init(int argc, char **argv, char **env)
 		if( p > path )
 		{
 			p++;
-			Cconws( "XaAES loader: KM_FREE failed trying: '");
-			Cconws( p );
-			Cconws( "'..\r\n");
+			ConsoleWrite( "XaAES loader: KM_FREE failed trying: '");
+			ConsoleWrite( p );
+			ConsoleWrite( "'..\r\n");
 			r = Fcntl((int)fh, p, KM_FREE);
 		}
 		if( r )
@@ -265,20 +267,20 @@ loader_init(int argc, char **argv, char **env)
 				r = -r;
 			e[0] = r + '0';
 			e[1] = 0;
-			Cconws( "\r\nXaAES loader: KM_FREE failed: ");
-			Cconws( e );
-			Cconws( "\r\n");
+			ConsoleWrite( "\r\nXaAES loader: KM_FREE failed: ");
+			ConsoleWrite( e );
+			ConsoleWrite( "\r\n");
 			//Cconin();
 		}
 	}
-	//Cconws( "XaAES loader: Fclose()\r\n");
+	//ConsoleWrite( "XaAES loader: Fclose()\r\n");
 	Fclose((int)fh);
-	//Cconws( "XaAES loader: return\r\n");
+	//ConsoleWrite( "XaAES loader: return\r\n");
 	//Cconin();
 	return r;
 
 error:
-	Cconws("press any key to continue ...\r\n");
+	ConsoleWrite("press any key to continue ...\r\n");
 	Cconin();
 	return r;
 }
