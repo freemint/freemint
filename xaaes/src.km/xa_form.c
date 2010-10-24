@@ -391,7 +391,11 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 		if (*alertxt->text[f] == 0)
 			alert_form[ALERT_T1 + f].ob_flags |= OF_HIDETREE;
 		else
+		{
 			alert_form[ALERT_T1 + f].ob_flags &= ~OF_HIDETREE;
+			if( f )
+				alert_form[ALERT_T1 + f].ob_y = alert_form[ALERT_T1 + f-1].ob_y + screen.c_max_h;
+		}
 	}
 
 	/* Space the buttons evenly */
@@ -410,6 +414,7 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 
 		alert_form[ALERT_BUT1 + f].ob_spec.free_string = alertxt->button[f];
 		alert_form[ALERT_BUT1 + f].ob_width = width;
+		alert_form[ALERT_BUT1 + f].ob_height = screen.c_max_h;
 		alert_form[ALERT_BUT1 + f].ob_x = x;
 
 		alert_form[ALERT_BUT1 + f].ob_flags &= ~(OF_HIDETREE|OF_DEFAULT);
