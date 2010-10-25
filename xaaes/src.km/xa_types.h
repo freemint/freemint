@@ -3019,6 +3019,7 @@ struct config
 	short standard_font_point;	/* Size for normal text */
 	short medium_font_point;	/* The same, but for low resolution screens */
 	short small_font_point;		/* Size for small text */
+	short info_font_point;	/* Size for infoline */
 	short popscroll;		/* number of lines of a popup above which it will be made scrollable. */
 
 	short videomode;		/* ID of screen device opened by v_opnwk() */
