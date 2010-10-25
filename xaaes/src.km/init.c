@@ -487,7 +487,8 @@ again:
 	cfg.double_click_time = DOUBLE_CLICK_TIME;
 	cfg.mouse_packet_timegap = MOUSE_PACKET_TIMEGAP;
 	cfg.redraw_timeout = 500;
-	cfg.standard_font_point = cfg.info_font_point = STANDARD_FONT_POINT;	/* Size for normal text */
+	cfg.standard_font_point = STANDARD_FONT_POINT;	/* Size for normal text */
+	cfg.info_font_point = -1;
 	cfg.medium_font_point = MEDIUM_FONT_POINT;	/* The same, but for low resolution screens */
 	cfg.small_font_point = SMALL_FONT_POINT;	/* Size for small text */
 	cfg.ted_filler = '_';
@@ -677,6 +678,9 @@ again:
 
 	/* Parse the config file */
 	load_config();
+
+	if( cfg.info_font_point == -1 )
+		cfg.info_font_point = cfg.standard_font_point;
 
 	C.Aes->options.standard_font_point = cfg.standard_font_point;
 	//C.Aes->options = default_options;
