@@ -1,3 +1,80 @@
+25-10-2010
+----------
+
+scrlobjc:
+
+call own strlen xa_strlen
+---------------------------------------------------------------------
+xa_form:
+
+- do_form_alert: fix array-subscript-bug
+- XA_form_error: default icon is '0'
+- XA_form_error: if errnum < 0 use -errnum
+---------------------------------------------------------------------
+k_init:
+
+If screen-parameters returned from 1st v_opnwk are crap, ignore and open physical
+---------------------------------------------------------------------
+xa_form:
+
+correct line-distance and box-size in alert-box
+---------------------------------------------------------------------
+infoline (cnf_xaaes.c init.c win_draw.c xa_types.h):
+
+
+Add new global config-variable "infoline_point" for size of window-infoline
+---------------------------------------------------------------------
+18-10-2010
+----------
+
+k_keybd:
+
+add SDMASTER-support. Contributed by joska.
+---------------------------------------------------------------------
+taskman:
+
+no alert from quit_all_apps.
+---------------------------------------------------------------------
+xa_fsel:
+
+When pat is empty set it to '*', really finally!
+---------------------------------------------------------------------
+xa_form:
+
+add prototype for xaaes_do_form_alert.
+---------------------------------------------------------------------
+k_keybd:
+
+minor change to the SDMASTER-patch
+---------------------------------------------------------------------
+
+CPUcache (k_init.c k_shutdown.c):
+
+
+Do not save/restore CPU-cache for open/close physical workstation (experimental)
+
+---------------------------------------------------------------------
+xa_fsel:
+
+if arg has no trailing \ pattern was wrong
+---------------------------------------------------------------------
+k_main:
+
+- avoid simulateous VDI-calls by different threads (fix for CTPCI).
+- ignore SIGFPE
+- print signum in signal-handler
+---------------------------------------------------------------------
+sdalert (xa_defs.h xa_form.c xa_form.h taskman.h taskman.c k_main.c k_main.h k_keybd.c):
+
+
+implement alerts for shutdown/halt/reboot/quit
+---------------------------------------------------------------------
+moose (k_mouse.c adi/moose.h):
+
+
+use a union for moose_data.iclicks.
+
+---------------------------------------------------------------------
 22-09-2010
 ----------
 
