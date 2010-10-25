@@ -4087,12 +4087,12 @@ init_module(const struct xa_module_api *xmapi, const struct xa_screen *screen, c
 			def_utop_cols.title_txt.h.p = 9;
 		}
 
-		def_otop_cols.info_txt.n.p = cfg.standard_font_point;
-		def_otop_cols.info_txt.s.p = cfg.standard_font_point;
-		def_otop_cols.info_txt.h.p = cfg.standard_font_point;
-		def_utop_cols.info_txt.n.p = cfg.standard_font_point;
-		def_utop_cols.info_txt.s.p = cfg.standard_font_point;
-		def_utop_cols.info_txt.h.p = cfg.standard_font_point;
+		def_otop_cols.info_txt.n.p = cfg.info_font_point;
+		def_otop_cols.info_txt.s.p = cfg.info_font_point;
+		def_otop_cols.info_txt.h.p = cfg.info_font_point;
+		def_utop_cols.info_txt.n.p = cfg.info_font_point;
+		def_utop_cols.info_txt.s.p = cfg.info_font_point;
+		def_utop_cols.info_txt.h.p = cfg.info_font_point;
 
 	}
 	else
