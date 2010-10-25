@@ -102,6 +102,7 @@ static struct parser_item parser_tab[] =
 	{ "STANDARD_POINT",        PI_R_S,   & cfg.standard_font_point	},
 	{ "MEDIUM_POINT",          PI_R_S,   & cfg.medium_font_point	},
 	{ "SMALL_POINT",           PI_R_S,   & cfg.small_font_point	},
+	{ "INFOLINE_POINT",        PI_R_S,   & cfg.info_font_point	},
 	{ "XAW_POINT",             PI_R_S,   & cfg.xaw_point		},
 	{ "POPSCROLL",             PI_R_S,   & cfg.popscroll		},
 	{ "DC_TIME",               PI_R_S,   & cfg.double_click_time	},
