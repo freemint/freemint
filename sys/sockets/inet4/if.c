@@ -1045,10 +1045,18 @@ if_config (struct ifconf *ifconf)
 	char name[100];
 	long len;
 	
+	if (!ifconf->ifcu.buf) {
+		/* count interfaces when no buffer! */
+		for (nif = allinterfaces; nif; nif = nif->next) {
+			ifconf->len += sizeof(*ifr); /* AF_INET */
+			ifconf->len += sizeof(*ifr); /* AF_LINK */
+		}
+		return 0;
+	}
+
 	len = ifconf->len;
 	ifr = ifconf->ifcu.req;
-	nif = allinterfaces;
-	for (; len >= sizeof (*ifr) && nif; nif = nif->next)
+	for (nif = allinterfaces; len >= sizeof (*ifr) && nif; nif = nif->next)
 	{
 		ksprintf (name, "%s%d", nif->name, nif->unit);
 		ifa = nif->addrlist;
@@ -1073,6 +1081,18 @@ if_config (struct ifconf *ifconf)
 				len -= sizeof (*ifr);
 				ifr++;
 			}
+		}
+		{
+			struct sockaddr_hw shw;
+			
+			shw.shw_family = AF_LINK;
+			shw.shw_type = nif->hwtype;
+			shw.shw_len = nif->hwlocal.len;
+			memcpy (shw.shw_adr.bytes, nif->hwlocal.adr.bytes, MIN (shw.shw_len, sizeof (shw.shw_adr)));
+			strncpy (ifr->ifr_name, name, IF_NAMSIZ);
+			sa_copy ((struct sockaddr *)&ifr->ifru.adr.hw, (struct sockaddr *)&shw);
+			len -= sizeof (*ifr);
+			ifr++;
 		}
 	}
 	ifconf->len -= len;
