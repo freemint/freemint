@@ -2748,9 +2748,11 @@ click_scroll(enum locks lock, struct xa_window *wind, struct xa_widget *widg, co
 				{
 					sl->rpos = offs;
 					if (wind->send_message)
+					{
 						wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 								   widg->slider_type == XAW_VSLIDE ? WM_VSLID : WM_HSLID,
 								   0, 0, wind->handle, offs, 0, 0, 0);
+					}
 				}
 			}
 
@@ -4410,7 +4412,7 @@ set_toolbar_widget(enum locks lock,
 	RECT or,wr;
 
 	DIAG((D_wind, wind->owner, "set_toolbar_widget for %d (%s): obtree %lx, %d",
-		wind->handle, wind->owner->name, obtree, edobj));
+		wind->handle, wind->owner->name, obtree, edobj.item));
 
 	if (widg->stuff)
 	{
