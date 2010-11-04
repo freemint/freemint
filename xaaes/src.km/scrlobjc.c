@@ -27,7 +27,6 @@
 #define PROFILING	0
 #define USEOWNSTRLEN 1
 #define USEBUILTINMEMCPY	0
-#define ITALIC_IS_CUTOFF	1
 #define LSLINDST_PTS	2
 
 #include "xa_types.h"
@@ -912,7 +911,6 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 							else if ( tab->flags & SETAB_CJUST)
 							{
 								dx += list->char_width * c->c.text.tblen - (tw >> 1);
-								//dx = x2 - (tw >> 1);
 							}
 
 							dy += ((this->r.h - th) >> 1);
@@ -1009,6 +1007,9 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 							}
 							else
 							{
+								if( (wtxt->e & ITALIC) )
+									dx -= list->char_width / 2;	// looks nicer
+
 								if (f & WTXT_DRAW3D)
 								{
 									if (sel && (f & WTXT_ACT3D))
