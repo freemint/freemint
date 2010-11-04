@@ -197,9 +197,6 @@ add_pattern(char *pattern)
 	}
 }
 
-/*
- * if ITALIC_IS_CUTOFF is set in scrlobjc.c this may be 0 (now ' ' is appended in scrlobjc.c)
- */
 #define SKEWED_TEXT_SCRAMBLED 0
 #if SKEWED_TEXT_SCRAMBLED
 #undef ITALIC
@@ -1397,8 +1394,6 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 			}
 			d_closedir(i);
 			match_pattern( 0, 0, false);	/* de-init */
-
-//			WAIT_SEE
 
 			/* this is not elaborated
 			 * try to adapt the 1st distance
