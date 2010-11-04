@@ -1074,9 +1074,9 @@ screen_dump(enum locks lock, struct xa_client *client, bool open)
 				{
 					struct proc *p;
 					long ret;
-					char cmdlin[32] = "x0 0 1\0";
-					*cmdlin = 6;
-					*(cmdlin + 6) = 0;
+					char cmdlin[32] = "60 0 0\0";
+					//*cmdlin = 6;
+					//*(cmdlin + 6) = 0;
 					/* <wait> <key> <verbose>
 					 * key: 0 -> screen
 					 	      2 -> top-window: work-area
@@ -1093,8 +1093,7 @@ screen_dump(enum locks lock, struct xa_client *client, bool open)
 					else
 						*(cmdlin + 3) = '0';	/* full screen */
 
-					ret = create_process(cfg.snapper, cmdlin, NULL,
-						     &p, 0, NULL);
+					ret = create_process(cfg.snapper, cmdlin, NULL, &p, 0, NULL);
 
 				}
 // 				xa_graf_mouse(ARROW, NULL,NULL, false);
@@ -1700,7 +1699,6 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 		wt = set_toolbar_widget(lock, wind, client, obtree, inv_aesobj(), 0/*WIP_NOTEXT*/, STW_ZEN, NULL, &or);
 		wt->exit_form = taskmanager_form_exit;
 
-		strcpy( wt->tree[TM_RESCHG].ob_spec.free_string, "toggle load" );
 		wt->focus = aesobj( obtree, TM_LIST );	/*cursor on list */
 		init_list_focus( obtree, TM_LIST, 0 );
 
