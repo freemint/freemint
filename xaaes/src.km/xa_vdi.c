@@ -810,10 +810,8 @@ xa_draw_texture(struct xa_vdi_settings *v, XAMFDB *msrc, RECT *r, RECT *anch)
 				y = 0;
 			}
 
-			//pnt[2] = x + w - 1;
 			pnt[3] = pnt[1] + h - 1;
 
-			//pnt[6] = r.x + w - 1;
 			pnt[7] = pnt[5] + h - 1;
 
 			vro_cpyfm(v->handle, S_ONLY, pnt, &msrc->mfdb, &mscreen);
