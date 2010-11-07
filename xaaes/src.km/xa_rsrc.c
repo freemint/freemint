@@ -527,17 +527,21 @@ fix_objects(struct xa_client *client,
 		/* What kind of object is it? */
 		switch (type)
 		{
-			case G_TEXT:
-			case G_BOXTEXT:
-			case G_FTEXT:
-			case G_FBOXTEXT:
 			case G_IMAGE:
+			case G_BOXTEXT:
+			case G_FBOXTEXT:
+			case G_TEXT:
+			case G_FTEXT:
+
 			case G_BUTTON:
 			case G_STRING:
 			case G_SHORTCUT:
 			case G_TITLE:
 			{
 				obj->ob_spec.free_string += (long)b;
+				//if( !(type == G_IMAGE || type == G_BOXTEXT || type == G_FBOXTEXT || type == G_TEXT || type == G_FTEXT) )
+					//bootlog((0,"%d:%s", type, obj->ob_spec.free_string));
+
 				break;
 			}
 			case G_ICON:
@@ -644,6 +648,8 @@ fix_trees(struct xa_client *client, void *b, OBJECT **trees, unsigned long n, sh
 								((XTEDINFO *)ted->te_ptmplt)->o = aesobj(*trees, k);
 // 								set_aesobj(&((XTEDINFO *)ted->te_ptmplt)->o, *trees, k); //->index = k;
 							}
+							//else
+								//bootlog((0,"%d:%s", obj->ob_type, ted->te_ptmplt));
 							break;
 						}
 						default:;
@@ -878,7 +884,6 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 				size = *(unsigned long *)(base + osize);
 
 			/*	no chance to check for correct rsc-size if loaded from memory!
-			BLOG((0,"LoadResources:%s: size (%ld,%ld)!", fname, sz, size ));
 			if( size > sz )
 			{
 				BLOG((1,"LoadResources:%s: wrong size (%ld,%ld)!", fname, sz, size ));
@@ -1001,7 +1006,6 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 	 * fix_objects MUST run before fix_trees!!!
 	 */
 	fix_objects(client, rscs, cibh, vdih, base, (OBJECT *)(base + hdr->rsh_object), hdr->rsh_nobs);
-
 	fix_trees(client, base, (OBJECT **)(base + hdr->rsh_trindex), hdr->rsh_ntree, designWidth, designHeight);
 
 	return (RSHDR *)base;
