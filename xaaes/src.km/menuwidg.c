@@ -1202,6 +1202,8 @@ display_popup(Tab *tab, short rdx, short rdy)
 
 		DIAG((D_menu, tab->client, "drop: %d/%d,%d/%d", r));
 		set_popup_widget(tab, wind, pi->parent);
+
+#if GENERATE_DIAGS
 		if (!cfg.menu_locking)
 		{
 			DIAG((D_menu, tab->client, "nolocking pop window %lx + %d", obtree, pi->parent));
@@ -1212,6 +1214,9 @@ display_popup(Tab *tab, short rdx, short rdy)
 			DIAG((D_menu, tab->client, "locking pop window %lx + %d", obtree, pi->parent));
 			open_window(tab->lock, wind, r);
 		}
+#else
+		open_window(tab->lock, wind, r);
+#endif
 	}
 }
 
@@ -2058,6 +2063,7 @@ Display_menu_widg(struct xa_window *wind, struct xa_widget *widg, const RECT *cl
 	assert(wt);
 	obtree = rp_2_ap(wind, widg, &widg->ar);
 	assert(obtree);
+
 
 	if (wind->dial & created_for_POPUP)
 	{
