@@ -1130,6 +1130,8 @@ void force_window_top( enum locks lock, struct xa_window *wind )
 	}
 	TOP_WINDOW = 0;
 	screen.standard_font_point = wind->owner->options.standard_font_point;
+	if (is_hidden(wind))
+		unhide_window(lock|winlist, wind, false);
 	top_window( lock, true, true, wind );
 }
 
@@ -1151,8 +1153,8 @@ void app_or_acc_in_front( enum locks lock, struct xa_client *client )
 	{
 		if( C.SingleTaskPid > 0 && client->p->pid != C.SingleTaskPid )
 			return;
-		if( client->name[1] == '*' )
-			hide_app( lock, client );
+		//if( client->name[1] == '*' )
+			//hide_app( lock, client );
 		app_in_front(lock, client, true, true, true);
 
 		if (client->type & APP_ACCESSORY)
@@ -1473,11 +1475,12 @@ taskmanager_form_exit(struct xa_client *Client,
 					if( list->cur->data != wind )
 					{
 						if( !(wi->window_status & XAWS_OPEN)
-							|| wi->dial
+							|| (wi->dial
 								& ( created_for_SLIST
 								| created_for_CALC
 								| created_for_POPUP
 								| created_for_ALERT
+								)
 							) )
 						{
 							app_or_acc_in_front( lock, wi->owner );
@@ -1871,7 +1874,7 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 				}
 			}	/* /if( list ) */
 
-			if( TOP_WINDOW != htd->w_taskman )
+			//if( TOP_WINDOW != htd->w_taskman )
 			{
 				open_window(lock, wind, wind->r);
 				force_window_top( lock, wind );
