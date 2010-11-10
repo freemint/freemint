@@ -1534,6 +1534,7 @@ static bool is_aes_client( struct proc *p )
 static bool calc_tm_bar( OBJECT *obtree, short item, short ind, long pinfo[] )
 {
 
+	TEDINFO *t = object_get_tedinfo(&obtree[item], NULL);
 	obtree[item].ob_height = (short)(pinfo[ind] * (long)obtree[TM_CHART].ob_height / MAXLOAD);
 
 	/* if height = 0 a bar is drawn anyway!? */
@@ -1542,6 +1543,39 @@ static bool calc_tm_bar( OBJECT *obtree, short item, short ind, long pinfo[] )
 
 	obtree[item].ob_y = obtree[TM_CHART].ob_height - obtree[item].ob_height;
 
+	if( t )
+	{
+		OBJC_COLORWORD *c = &t->te_color;
+		int v = obtree[item].ob_height * 100 / obtree[TM_CHART].ob_height;
+		c->pattern = IP_SOLID;
+		/* mark levels with different colors
+		  found the color-values by Trial&Error ...
+		*/
+		if( v > 90 )
+		{
+			c->borderc = c->fillc = 3;	//magenta
+			if( v > 100 )	// happens sometimes
+			{
+				c->borderc = c->fillc = 8;
+				obtree[item].ob_height = obtree[TM_CHART].ob_height;
+				//BLOG((0,"calc_tm_bar:%d: v=%d c->borderc=%d type=%dted=%lx color=%x", item, v, c->borderc, obtree[item].ob_type, t, t?t->te_color:0));
+			}
+		}
+		else if( v > 75 )
+		{
+			c->borderc = c->fillc = 5;	// red
+		}
+		else if( v > 25 )
+		{
+			c->borderc = c->fillc = 6;	// blue
+			//BLOG((0,"calc_tm_bar: type=%dted=%lx color=%x", obtree[item].ob_type, t, t?t->te_color:0));
+		}
+		else{
+
+			//c->fillc = c->borderc = 0;	//black
+			c->fillc = c->borderc = 7;	//green
+		}
+	}
 	return true;
 }
 
