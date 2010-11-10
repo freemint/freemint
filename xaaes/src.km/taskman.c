@@ -1545,13 +1545,13 @@ static bool calc_tm_bar( OBJECT *obtree, short item, short ind, long pinfo[] )
 
 	if( t )
 	{
-		OBJC_COLORWORD *c = &t->te_color;
+		OBJC_COLORWORD *c = (OBJC_COLORWORD *)&t->te_color;
 		int v = obtree[item].ob_height * 100 / obtree[TM_CHART].ob_height;
 		c->pattern = IP_SOLID;
 		/* mark levels with different colors
 		  found the color-values by Trial&Error ...
 		*/
-		if( v > 90 )
+		if( v > 95 )
 		{
 			c->borderc = c->fillc = 3;	//magenta
 			if( v > 100 )	// happens sometimes
