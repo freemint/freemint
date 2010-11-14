@@ -359,7 +359,9 @@ cBlock(struct xa_client *client, int which)
 	while (!client->usr_evnt && (client->irdrw_msg || client->cevnt_count))
 	{
 		if (client->irdrw_msg)
+		{
 			exec_iredraw_queue(0, client);
+		}
 
 		dispatch_cevent(client);
 	}
@@ -969,6 +971,7 @@ sigterm(void)
 	struct proc *p = get_curproc();
 	BLOG((false, "%s(%d:AES:%d): sigterm received", p->name, p->pid, C.AESpid ));
 #endif
+	c_conws("\033e\033E");		/* Cursor enable, cursor home */
 #if 1
 	BLOG((false, "(ignored)" ));
 	return;
