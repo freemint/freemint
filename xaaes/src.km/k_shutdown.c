@@ -243,7 +243,6 @@ k_shutdown(void)
 	 */
 	if (C.P_handle)
 	{
-		BLOG((false, "Closing down physical vdi workstation %d", C.P_handle));
 		vst_color(C.P_handle, G_BLACK);
 		vswr_mode(C.P_handle, MD_REPLACE);
 
@@ -264,6 +263,7 @@ k_shutdown(void)
 #endif
 			int odbl;
 
+			BLOG((false, "Closing down physical vdi workstation %d", C.P_handle));
 		/*
 		 * Ozk: We switch off instruction, data and branch caches (where available)
 		 *	while the VDI accesses the hardware. This fixes 'black-screen'
@@ -294,7 +294,7 @@ k_shutdown(void)
 #endif
 		}
 
-		display("\033e\033H");		/* Cursor enable, cursor home */
+		c_conws("\033e\033E");		/* Cursor enable, cursor home */
 	}
 	BLOG((false, "leaving k_shutdown()"));
 }
