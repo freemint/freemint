@@ -52,7 +52,6 @@
 
 #include "mint/dcntl.h"
 #include "mint/fcntl.h"
-#include "mint/signal.h"
 
 #include "obtree.h"
 #include "draw_obj.h"
