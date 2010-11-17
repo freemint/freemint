@@ -711,6 +711,7 @@ k_init(unsigned long vm)
 
 		}*/
 		BLOG((false, "Screenmode is: %d", mode));
+		c_conws("033E");		/* Clear screen, cursor home (for WongCKs falcon) */
 
 #ifndef ST_ONLY
 		/*
