@@ -997,7 +997,6 @@ CHlp_aesmsg(struct xa_client *client)
 	}
 }
 
-
 #if ALT_CTRL_APP_OPS
 static char sdalert[] = /*scrn_snap_what*/ "[2][What do you want to snap?][Block|Full screen|Top Window|Cancel]";
 void
@@ -1021,6 +1020,7 @@ screen_dump(enum locks lock, struct xa_client *client, bool open)
 
 			do_form_alert(lock, client, 4, sdalert, XAAESNAME);
 			Block(client, 0);
+			//BLOG((0,"screen_dump: intout %d", a->intout[0]));
 
 // 			display("intout %d", C.Hlp_pb->intout[0]);
 
@@ -1558,7 +1558,6 @@ static bool calc_tm_bar( OBJECT *obtree, short item, short ind, long pinfo[] )
 			{
 				c->borderc = c->fillc = 8;
 				obtree[item].ob_height = obtree[TM_CHART].ob_height;
-				//BLOG((0,"calc_tm_bar:%d: v=%d c->borderc=%d type=%dted=%lx color=%x", item, v, c->borderc, obtree[item].ob_type, t, t?t->te_color:0));
 			}
 		}
 		else if( v > 75 )
@@ -1568,7 +1567,6 @@ static bool calc_tm_bar( OBJECT *obtree, short item, short ind, long pinfo[] )
 		else if( v > 25 )
 		{
 			c->borderc = c->fillc = 6;	// blue
-			//BLOG((0,"calc_tm_bar: type=%dted=%lx color=%x", obtree[item].ob_type, t, t?t->te_color:0));
 		}
 		else{
 
