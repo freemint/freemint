@@ -971,7 +971,6 @@ sigterm(void)
 	struct proc *p = get_curproc();
 	BLOG((false, "%s(%d:AES:%d): sigterm received", p->name, p->pid, C.AESpid ));
 #endif
-	c_conws("\033e\033E");		/* Cursor enable, cursor home */
 #if 1
 	BLOG((false, "(ignored)" ));
 	return;
