@@ -45,6 +45,7 @@
 # include "global.h"
 # include "init.h"
 # include "kerinfo.h"
+# include "kentry.h"
 
 
 /*
@@ -165,7 +166,8 @@ _getmch (void)
 				case COOKIE_NF:
 				{
 					kernelinfo.nf_ops = nf_init();
-					
+					kentry.vec_mch.nf_ops = nf_init();
+
 					add_info = aranym;
 					break;
 				}
