@@ -432,9 +432,7 @@ void DhstFree(short msg[]);
 void ConvertKeypress(short *key,short *kstate);
 void CopyMaximumChars(OBJECT *obj,char *str);
 char *ParseData(char *start);
-#ifndef _MT_GEMLIB_H_
-short rc_intersect(GRECT *p1,GRECT *p2);
-#endif
+short rc_intersect_my(GRECT *p1,GRECT *p2);
 void Debug(const char *str,...);
 
 #ifdef GENERATE_DIAGS
