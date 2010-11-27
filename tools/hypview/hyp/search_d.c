@@ -43,6 +43,8 @@ HypfindHandle ( struct HNDL_OBJ_args args)
 	{
 		case HNDL_CLSD:
 			return 0;
+		case HYPFIND_TEXT:
+		  return 0;
 		case HYPFIND_ABORT:
 			tree_addr[HYPFIND][HYPFIND_ABORT].ob_state &= ~OS_SELECTED;
 			return 0;
