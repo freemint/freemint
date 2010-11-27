@@ -195,7 +195,7 @@ WINDOW_DATA *OpenWindow(HNDL_WIN proc, short kind, char *title,
 					real_worksize.g_y = win.g_y;
 					real_worksize.g_w = (short)min(32000L, ptr->max_width * ptr->x_raster + DL_WIN_XADD);
 					real_worksize.g_h = (short)min(32000L, ptr->max_height * ptr->y_raster + DL_WIN_YADD);
-					rc_intersect(&real_worksize, &win);
+					rc_intersect_my(&real_worksize, &win);
 					wind_calc_grect(WC_BORDER, ptr->kind, &win, &open_size);
 				}
 #else
@@ -345,7 +345,7 @@ ScrollWindow(WINDOW_DATA *ptr, short *r_x, short *r_y)
 
 	/*	Zu bearbeitender Bereich auf den Bildschirm beschraenken	*/
 	wind_get_grect(0, WF_WORKXYWH, &box);
-	rc_intersect(&box, &work);
+	rc_intersect_my(&box, &work);
 
 #if USE_TOOLBAR==YES
 	work.g_x += ptr->x_offset;
@@ -437,7 +437,7 @@ ScrollWindow(WINDOW_DATA *ptr, short *r_x, short *r_y)
 
 	while(box.g_w && box.g_h)
 	{
-		if(rc_intersect(&work, &box))
+		if(rc_intersect_my(&work, &box))
 		{
 			if(!move_screen || abs_rel_x >= box.g_w || abs_rel_y >= box.g_h)
 			{
@@ -643,7 +643,7 @@ void WindowEvents(WINDOW_DATA *ptr, EVNT *event)
 					graf_mouse(M_OFF,NULL);
 					while(box.g_w && box.g_h)
 					{
-						if(rc_intersect((GRECT *)&event->msg[4], &box))
+						if(rc_intersect_my((GRECT *)&event->msg[4], &box))
 							objc_draw_grect(tree_addr[DIAL_LIBRARY],0,1,&box);
 						wind_get_grect(event->msg[3], WF_NEXTXYWH,&box);
 					}
@@ -687,7 +687,7 @@ void WindowEvents(WINDOW_DATA *ptr, EVNT *event)
 #if USE_TOOLBAR==YES
 					GRECT temp_tbar;
 						temp_tbar=toolbar;
-						if(rc_intersect(&box,&temp_tbar))
+						if(rc_intersect_my(&box,&temp_tbar))
 						{
 							if(ptr->x_offset)		/*	Vertikale Toolbar?	*/
 							{
@@ -700,10 +700,10 @@ void WindowEvents(WINDOW_DATA *ptr, EVNT *event)
 								box.g_h-=temp_tbar.g_h;
 							}
 						}
-						if(rc_intersect((GRECT *)&event->msg[4], &temp_tbar))
+						if(rc_intersect_my((GRECT *)&event->msg[4], &temp_tbar))
 							objc_draw_grect(ptr->toolbar,0,MAX_DEPTH,&temp_tbar);
 #endif
-						if(rc_intersect((GRECT *)&event->msg[4], &box))
+						if(rc_intersect_my((GRECT *)&event->msg[4], &box))
 							ptr->proc(ptr,WIND_REDRAW,(void *)&box);
 						wind_get_grect(event->msg[3], WF_NEXTXYWH,&box);
 					}
@@ -1078,7 +1078,7 @@ void DrawToolbar(WINDOW_DATA *win)
 		{
 		GRECT temp_tbar;
 			temp_tbar=toolbar;
-			if(rc_intersect(&box, &temp_tbar))
+			if(rc_intersect_my(&box, &temp_tbar))
 				objc_draw_grect(win->toolbar,0,MAX_DEPTH,&temp_tbar);
 			wind_get_grect(win->whandle, WF_NEXTXYWH,&box);
 		}
