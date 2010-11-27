@@ -40,7 +40,6 @@
 void ConvertKeypress(short *key,short *kstate);
 void CopyMaximumChars(OBJECT *obj,char *str);
 char *ParseData(char *start);
-/* short rc_intersect(GRECT *p1,GRECT *p2); */
 void Debug(const char *str,...);
 
 
@@ -152,8 +151,8 @@ short in_quote=0, more=FALSE;
 		return(start);
 }
 
-#if 0
-short rc_intersect(GRECT *p1,GRECT *p2)
+#if 1
+short rc_intersect_my ( GRECT *p1, GRECT *p2 )
 {
 	short tx,ty,tw,th;
 	tw=min((p2->g_x+p2->g_w),(p1->g_x+p1->g_w));
