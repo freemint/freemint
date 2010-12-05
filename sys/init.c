@@ -86,7 +86,6 @@ void mint_thread(void *arg);
 /* print an additional boot message
  */
 short intr_done = 0;
-
 void
 boot_print (const char *s)
 {
@@ -206,14 +205,14 @@ check_for_gem (void)
 	return aes_globl[0];
 }
 
-static long GEM_memflags = F_FASTLOAD | F_ALTLOAD | F_ALTALLOC | F_PROT_S;
+static long GEM_memflags = F_FASTLOAD | F_ALTLOAD | F_ALTALLOC | F_PROT_S | F_OS_SPECIAL /*?*/;
 extern int debug_level;
 void
 init (void)
 {
 	long r, *sysbase;
 	FILEPTR *f;
-	
+
 	/* greetings (placed here 19960610 cpbs to allow me to get version
 	 * info by starting MINT.PRG, even if MiNT's already installed.)
 	 */
@@ -454,13 +453,13 @@ init (void)
 
 	/* initialize interrupt vectors */
 	init_intr ();
-	DEBUG (("init_intr() ok!"));
 
 	/* after init_intr we are in kernel
 	 * trapping isn't allowed anymore; use direct calls
 	 * from now on
 	 */
 	intr_done = 1;
+	DEBUG (("init_intr() ok!"));
 
 	/* Enable superscalar dispatch on 68060 */
 # ifndef M68000
@@ -575,7 +574,7 @@ init (void)
 		strcpy(sysdir, "\\mint\\" MINT_VERS_PATH_STRING "\\");
 	else if (sys_d_setpath("\\mint\\") == 0)
 		strcpy(sysdir, "\\mint\\");
-	else 
+	else
 	{
 		boot_printf(MSG_init_no_mint_folder, MINT_VERS_PATH_STRING);
 		step_by_step = -1; stop_and_ask(); /* wait for a key */
@@ -1075,16 +1074,16 @@ mint_thread(void *arg)
 	  	if (init_is_gem)
 	  	{
 	  		BASEPAGE *bp;
-			long entry;
+				long entry;
 # ifdef VERBOSE_BOOT
-			boot_print(MSG_init_rom_AES);
+				boot_print(MSG_init_rom_AES);
 # endif
-			entry = *((long *) EXEC_OS);
-			bp = (BASEPAGE *) sys_pexec(7, (char *) GEM_memflags, (char *) "\0", _base->p_env);
-			bp->p_tbase = entry;
+				entry = *((long *) EXEC_OS);
+				bp = (BASEPAGE *) sys_pexec(7, (char *) GEM_memflags, (char *) "\0", _base->p_env);
+				bp->p_tbase = entry;
 
-			r = sys_pexec(106, (char *) "GEM", bp, 0L);
-			DEBUG(("%s(): exec ROM AES returned %ld", __FUNCTION__, r));
+				r = sys_pexec(106, (char *) "GEM", bp, 0L);
+				DEBUG(("%s(): exec ROM AES returned %ld", __FUNCTION__, r));
 	  	}
 	  	else
 	  	{
@@ -1177,10 +1176,12 @@ mint_thread(void *arg)
 	/* If init program exited, reboot the system.
 	 * Never go back to TOS.
 	 */
+	FORCE("init:sys_s_hutdown:COLD");
 	(void) sys_s_hutdown(SHUT_COLD);	/* cold reboot is more efficient ;-) */
 # else
 	/* With debug kernels, always halt
 	 */
+	FORCE("init:sys_s_hutdown:HALT");
 	(void) sys_s_hutdown(SHUT_HALT);
 # endif
 
