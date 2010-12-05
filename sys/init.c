@@ -404,10 +404,8 @@ init (void)
 # endif
 
 	/* initialize memory */
-	boot_print("init_mem()");
 	init_mem ();
 	DEBUG (("init_mem() ok!"));
-	boot_print("init_mem() ok!");
 
 	/* Initialize high-resolution calendar time */
 	init_time ();
@@ -455,13 +453,13 @@ init (void)
 
 	/* initialize interrupt vectors */
 	init_intr ();
-	DEBUG (("init_intr() ok!"));
 
 	/* after init_intr we are in kernel
 	 * trapping isn't allowed anymore; use direct calls
 	 * from now on
 	 */
 	intr_done = 1;
+	DEBUG (("init_intr() ok!"));
 
 	/* Enable superscalar dispatch on 68060 */
 # ifndef M68000
@@ -1076,16 +1074,16 @@ mint_thread(void *arg)
 	  	if (init_is_gem)
 	  	{
 	  		BASEPAGE *bp;
-			long entry;
+				long entry;
 # ifdef VERBOSE_BOOT
-			boot_print(MSG_init_rom_AES);
+				boot_print(MSG_init_rom_AES);
 # endif
-			entry = *((long *) EXEC_OS);
-			bp = (BASEPAGE *) sys_pexec(7, (char *) GEM_memflags, (char *) "\0", _base->p_env);
-			bp->p_tbase = entry;
+				entry = *((long *) EXEC_OS);
+				bp = (BASEPAGE *) sys_pexec(7, (char *) GEM_memflags, (char *) "\0", _base->p_env);
+				bp->p_tbase = entry;
 
-			r = sys_pexec(106, (char *) "GEM", bp, 0L);
-			DEBUG(("%s(): exec ROM AES returned %ld", __FUNCTION__, r));
+				r = sys_pexec(106, (char *) "GEM", bp, 0L);
+				DEBUG(("%s(): exec ROM AES returned %ld", __FUNCTION__, r));
 	  	}
 	  	else
 	  	{
