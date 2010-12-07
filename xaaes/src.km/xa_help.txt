@@ -1,24 +1,51 @@
-#place this file in the xaaes-boot directory
+# Place this file in the xaaes-boot directory (C:\mint\1-*-*\xaaes)
 Ctrl-Alt-Shortcuts:
-A             Terminates all applications (A list of exceptions can be specified)
-B             open System-window
+
+A             Terminates all applications (list of exceptions in xaaes.cnf)
+B             Open System/Log-window
 D             Open the screenshot dialog (XAAESNAP.PRG is required)
-E             open windows-submenu
-F,L           open task-manager
-Help          open about
+E             Open windows-submenu
+F,L           Open task-manager
+HELP          Open about
 H             Halt system (if SDMASTER is not set)
-I             (un-)iconify current window
-K             launch program
-T,Home        Redraw screen
+I             (Un-)iconify current window
+K             Launch program
+T,HOME        Redraw screen
 P             Restore palette in colour depth of 8-bits or less
-Q,G           Quit XaAES
+Q,G           Quit XaAES immediately (no alert!)
 R             Attempt to recover a system that has locked up
 V             Unhide all applications
 W             Global window cycling
 X             Hide all except the currently focused application
 Y             Hide currently focused application
-space         Open main menu bar
-Shift-space   Open menu in current window if it has one, else open main menubar
+SPACE         Open main menu bar
+SHIFT+SPACE   Open menu in current window if it has one, else open main menubar
 TAB           Cycle open applications
-Cursor-right  full current window
--------------------------------------
+CURSOR-RIGHT  Full current window
+---------------------------------------------------------------------------------
+
+Shortcuts/navigation in XaAES fileselector:
+
+CTRL+O        Open window menu (navigation with CURSOR keys and RETURN)
+CTRL+C        The path and the marked file (if any) is copied to the Clipboard
+
+* List-box selected:
+
+  CURSOR-RIGHT              Open tree
+  CURSOR-LEFT               Collapse tree
+  CURSOR UP/DOWN            Move the cursor
+  PageUp/Down(SHIFT+CU/CD)  Pages the filelist
+  CLEAR/HOME                Jump to top of list
+  SHIFT+CLEAR/HOME          Jump to end of list
+
+* List-box not selected:
+
+  CURSOR-RIGHT              Scroll right
+  CURSOR-LEFT               Scroll left
+  CURSOR UP/DOWN            Scroll up/down
+
+If an entry is selected in the list-box, CURSOR-RIGHT focusses the edit-field,
+so the selection can be edited.
+---------------------------------------------------------------------------------
+Additional documentation: http://wiki.sparemint.org/index.php/XaAES
+
