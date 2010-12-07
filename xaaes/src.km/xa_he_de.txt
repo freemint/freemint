@@ -47,5 +47,5 @@ CTRL+C        Der selektierte Pfad (+Dateiname) wird ins Clipboard kopiert
 Ist in der List-Box eine Datei selektiert, so kann man mit PFEIL-RECHTS in die
 Eingabezeile wechseln und den Namen editieren.
 ---------------------------------------------------------------------------------
-Mehr DoKumentation: http://wiki.sparemint.org/index.php/XaAES
+Mehr Dokumentation: http://wiki.sparemint.org/index.php/XaAES
 
