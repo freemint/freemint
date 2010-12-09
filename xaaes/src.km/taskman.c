@@ -1020,7 +1020,6 @@ screen_dump(enum locks lock, struct xa_client *client, bool open)
 
 			do_form_alert(lock, client, 4, sdalert, XAAESNAME);
 			Block(client, 0);
-			//BLOG((0,"screen_dump: intout %d", a->intout[0]));
 
 // 			display("intout %d", C.Hlp_pb->intout[0]);
 
@@ -1541,8 +1540,6 @@ static bool calc_tm_bar( OBJECT *obtree, short item, short ind, long pinfo[] )
 	if( obtree[item].ob_height <= 0 )
 		obtree[item].ob_height = 1;
 
-	obtree[item].ob_y = obtree[TM_CHART].ob_height - obtree[item].ob_height;
-
 	if( t )
 	{
 		OBJC_COLORWORD *c = (OBJC_COLORWORD *)&t->te_color;
@@ -1574,6 +1571,9 @@ static bool calc_tm_bar( OBJECT *obtree, short item, short ind, long pinfo[] )
 			c->fillc = c->borderc = 7;	//green
 		}
 	}
+
+	obtree[item].ob_y = obtree[TM_CHART].ob_height - obtree[item].ob_height;
+
 	return true;
 }
 
