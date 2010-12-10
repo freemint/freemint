@@ -7,12 +7,12 @@ D             ôffnet den Screenshot-Dialog (XAAESNAP.PRG benîtigt)
 E             ôffnet das Fenster-KontextmenÅ
 F,L           ôffnet den Task-Manager
 HELP          ôffnet den XaAES Infodialog
-H             System herunterfahren (wenn SDMASTER nicht gesetzt ist)
+H             System herunterfahren (oder $SDMASTER ausfÅhren, falls gesetzt)
 I             Oberstes Fenster (de-)ikonifizieren
 K             Programm starten
 T,HOME        Bildschirm wiederherstellen (neuzeichnen)
 P             Farbpalette wiederherstellen (Farbtiefe 8-Bit oder weniger)
-Q,G           XaAES sofort beenden (ohne Nachfrage!)
+Q,G           XaAES beenden (oder $SDMASTER ausfÅhren, falls gesetzt)
 R             Versucht ein "hÑngendes" System wiederherzustellen
 V             Alle versteckten Programme hervorholen
 W             Globaler Fensterwechsel
