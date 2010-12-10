@@ -7,12 +7,12 @@ D             Open the screenshot dialog (XAAESNAP.PRG is required)
 E             Open windows-submenu
 F,L           Open task-manager
 HELP          Open about
-H             Halt system (if SDMASTER is not set)
+H             Halt system (or execute $SDMASTER if set)
 I             (Un-)iconify current window
 K             Launch program
 T,HOME        Redraw screen
 P             Restore palette in colour depth of 8-bits or less
-Q,G           Quit XaAES immediately (no alert!)
+Q,G           Quit XaAES (or execute $SDMASTER if set)
 R             Attempt to recover a system that has locked up
 V             Unhide all applications
 W             Global window cycling
