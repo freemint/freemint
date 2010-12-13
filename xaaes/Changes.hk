@@ -1,3 +1,164 @@
+13-12-2010
+----------
+
+xa_help:
+
+extended version by Lars Schmidbauer
+
+---------------------------------------------------------------------
+xa_he_de:
+
+German version of the extended version by Lars Schmidbauer
+
+---------------------------------------------------------------------
+xa_he_de:
+
+fix typo
+---------------------------------------------------------------------
+taskman:
+
+fix position of load-bar in case load exceeds 100%.
+---------------------------------------------------------------------
+xa_help:
+
+correct help-text
+
+---------------------------------------------------------------------
+xa_he_de:
+
+correct help-text
+
+---------------------------------------------------------------------
+cnf_xaaes:
+
+- add 'include'-facility
+- remove unneeded #include "cnf_xaaes.h"
+---------------------------------------------------------------------
+cnf_xaaes:
+
+white space
+---------------------------------------------------------------------
+render_obj:
+
+fix y-position of checkboxes and radion-buttons for different font-sizes
+---------------------------------------------------------------------
+21-11-2010
+----------
+
+taskman:
+
+- fix compiler-warning
+- change to magenta at 95%
+---------------------------------------------------------------------
+k_init:
+
+signal.h not needed
+---------------------------------------------------------------------
+k_main:
+
+emit Cursor on, Clear/Home on SIGTERM
+---------------------------------------------------------------------
+k_shutdown:
+
+- Use Clear/Home instead of Home after v_clswk and c_conws not display
+- move log-message
+
+---------------------------------------------------------------------
+home (k_init.c k_main.c):
+
+
+move cursor-home from SIGTERM-handler to startup to avoid a crash at shutdown.
+---------------------------------------------------------------------
+taskman:
+
+remove outcommented BLOGS
+---------------------------------------------------------------------
+k_init:
+
+add missing \
+---------------------------------------------------------------------
+10-11-2010
+----------
+
+adi/adidefs:
+
+white-space-change
+---------------------------------------------------------------------
+xa_fsel:
+
+code-cleanup
+---------------------------------------------------------------------
+scrlobjc:
+
+- move not-inlined italic text in one half char-width to the left for optical reasons
+- remove unused macro ITALIC_IS_CUTOFF
+---------------------------------------------------------------------
+taskman:
+
+- do not overwrite the resource-text to display "toggle load"
+- some minor cleanup
+---------------------------------------------------------------------
+widgets:
+
+correct DIAG-argument
+---------------------------------------------------------------------
+xa_help:
+
+update for new features
+---------------------------------------------------------------------
+menuwidg:
+
+minor cleanup
+
+---------------------------------------------------------------------
+taskman:
+
+- force unhiding and opening selected window
+- add missing paranthesis
+---------------------------------------------------------------------
+xa_vdi:
+
+minor cleanup
+
+---------------------------------------------------------------------
+xa_rsrc:
+
+preparation for loading resource-strings from separate file
+---------------------------------------------------------------------
+xaaes_de:
+
+
+- TREE RES_CHFALC/Obj. RC_BIT15 "Zus„tzl. Bit..." changed -> "Zus. Bit..."
+- TREE RES_CHFALC corrected sizes and positions for a better look.
+- TREE DEF_DESKTOP/Obj. BETA_BOX set FLAG "hidden"
+- TREE SYS_ERROR/Obj. BOMB set FLAG "hidden"
+
+Contributed by latzmaster
+---------------------------------------------------------------------
+xaaes009:
+
+
+- TREE TASK_MANAGER/Obj. TM_RESCHG "toggle load" changed -> "Toggle load"
+- TREE RES_CHFALC/Obj. RC_BIT15 "Additive bit..." changed -> "Add. bit..."
+- TREE RES_CHFALC corrected sizes and positions for a better look.
+- TREE DEF_DESKTOP/Obj. BETA_BOX set FLAG "hidden"
+- TREE SYS_ERROR/Obj. BOMB set FLAG "hidden"
+
+Contributed by latzmaster
+---------------------------------------------------------------------
+taskman:
+
+- limit size of bars in load-display to load-box.
+- color the bars according to their values.
+---------------------------------------------------------------------
+25-10-2010
+----------
+
+init:
+
+use standard_font_point from config for info_font_point if the latter is
+not defined in xaaes.cnf.
+---------------------------------------------------------------------
 25-10-2010
 ----------
 
