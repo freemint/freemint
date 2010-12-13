@@ -62,7 +62,7 @@
 # include "umemory.h"		/* umalloc, ufree */
 # include "util.h"		/* pid2proc */
 # include "xfs_xdd.h"
-
+# include "xhdi.h"		/* XHNewCookie */
 
 # undef DEFAULT_MODE
 # undef DEFAULT_DIRMODE
