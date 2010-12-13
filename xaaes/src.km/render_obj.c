@@ -5412,8 +5412,9 @@ d_g_button(struct widget_tree *wt, struct xa_vdi_settings *v)
 			b.objcr_theme = theme;
 			xobj = aesobj(xobj_rsc, (ob->ob_flags & OF_RBUTTON) ? (selected ? XOBJ_R_SEL : XOBJ_R_DSEL) : (selected ? XOBJ_B_SEL : XOBJ_B_DSEL));
 			(*api->object_spec_wh)(aesobj_ob(&xobj), &w, &h);
-			if (gr.h > h)
+			if (gr.h != h)
 				gr.y += ((gr.h - h) >> 1);
+
 			(*api->render_object)(&b, v, xobj, gr.x, gr.y);
 			if (text)
 			{
