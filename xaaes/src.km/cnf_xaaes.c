@@ -24,8 +24,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "cnf_xaaes.h"
-
 #include "xa_global.h"
 #include "xa_shel.h"
 #include "taskman.h"
@@ -68,6 +66,7 @@ static PCB_A    pCB_filters;
 static PCB_A	pCB_ctlalta_survivors;
 static PCB_A	pCB_kill_without_question;
 static PCB_T    pCB_menu;
+static PCB_Tx    pCB_include;
 static PCB_A    pCB_helpserver;
 
 static PCB_ATK  pCB_shell;
@@ -118,6 +117,7 @@ static struct parser_item parser_tab[] =
 //	{ "TOPPAGE",               PI_V_T,   pCB_toppage		},
 	{ "NEXT_ACTIVE",           PI_V_T,   pCB_next_active		},
 //	{ "CLOSE_LASTWIND",        PI_V_T,   pCB_close_lastwind		},
+	{ "INCLUDE",               PI_C_T,		pCB_include	},
 	{ "FOCUS",                 PI_V_T,   pCB_point_to_type		},
 	{ "APP_OPTIONS",           PI_V_A,   pCB_app_options		},
 	{ "CANCEL",                PI_V_A,   pCB_cancel			},
@@ -470,6 +470,17 @@ pCB_point_to_type(const char *str)
 #endif
 
 /*----------------------------------------------------------------------------*/
+
+/*----------------------------------------------------------------------------*/
+static void
+pCB_include(char *path, struct parsinf *inf)
+{
+	BLOG((0,"include: '%s'", path));
+  parse_include(path, inf, parser_tab);
+}
+
+/*----------------------------------------------------------------------------*/
+
 static void
 pCB_cancel(char *line)
 {
