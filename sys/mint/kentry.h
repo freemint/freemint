@@ -557,12 +557,6 @@ struct kentry_misc
 	long _cdecl (*trap_1_emu)(short fnum, ...);
 	long _cdecl (*trap_13_emu)(short fnum, ...);
 	long _cdecl (*trap_14_emu)(short fnum, ...);
-
-	/*
-	 * function to install XHDI drivers
-	 */
-	long _cdecl (*XHNewCookie)(void *newcookie);
-	
 };
 #define DEFAULTS_kentry_misc \
 { \
@@ -578,7 +572,6 @@ struct kentry_misc
 	trap_1_emu, \
 	trap_13_emu, \
 	trap_14_emu, \
-	XHNewCookie, \
 }
 
 
