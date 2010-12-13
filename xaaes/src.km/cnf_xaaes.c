@@ -476,7 +476,7 @@ static void
 pCB_include(char *path, struct parsinf *inf)
 {
 	BLOG((0,"include: '%s'", path));
-  parse_include(path, inf, parser_tab);
+	parse_include(path, inf, parser_tab);
 }
 
 /*----------------------------------------------------------------------------*/
