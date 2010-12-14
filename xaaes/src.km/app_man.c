@@ -1136,7 +1136,6 @@ app_in_front(enum locks lock, struct xa_client *client, bool snd_untopped, bool 
 
 		wakeup_client(client);
 		DIAG((D_appl, client, "app_in_front: %s", c_owner(client)));
-		BLOG((0, "app_in_front: %s allwinds=%d", client->name, allwinds));
 
 		infront = get_app_infront();
 		if (infront != client){
