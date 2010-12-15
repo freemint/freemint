@@ -1204,8 +1204,8 @@ app_in_front(enum locks lock, struct xa_client *client, bool snd_untopped, bool 
 			update_all_windows(lock, window_list);
 			set_winmouse(-1, -1);
 		}
-		//if( topped )
-			//S.focus = 0;	/* force focus to new top */
+		if( topped == S.focus )
+			S.focus = 0;	/* force focus to new top */
 		setnew_focus(topped, S.focus, false, true, true);
 	}
 }
