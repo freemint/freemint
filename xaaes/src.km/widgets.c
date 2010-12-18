@@ -4313,8 +4313,9 @@ set_toolbar_handlers(const struct toolbar_handlers *th, struct xa_window *wind, 
 			else
 				widg->m.drag	= th->drag;
 		}
-		else
+		else{
 			widg->m.drag	= Click_windowed_form_do;
+		}
 
 		if (th && th->draw)
 		{
@@ -4748,6 +4749,7 @@ do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct
 					else /* normal widget */
 					{
 						short b = md->cstate, rx = md->x, ry = md->y;
+						XA_TREE *wt = widg->stuff;
 
 						/* We don't auto select & pre-display for a menu or toolbar widget */
 						if (f != XAW_MENU && f != XAW_TOOLBAR)
@@ -4756,7 +4758,7 @@ do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct
 						/*
 						 * Check if the widget has a dragger function if button still pressed
 						*/
-						if (b && f == XAW_TOOLBAR && (w->dial & created_for_TOOLBAR))
+						if (b && f == XAW_TOOLBAR && (w->dial & created_for_TOOLBAR) && wt->exit_form )
 						{
 							/*
 							 * Special case; If click goes onto a userinstalled toolbar
@@ -4768,16 +4770,19 @@ do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct
 							 */
 							if (md->cstate)
 								button_event(lock, w->owner, md);
-							if (widg->m.click)
+							if (widg->m.click){
 								rtn = widg->m.click(lock, w, widg, md);
+							}
 						}
-						if (b && (widg->m.properties & WIP_NODRAG))
+						else if (b && (widg->m.properties & WIP_NODRAG))
 						{
-							if (widg->m.click)
+							if (widg->m.click){
 								widg->m.click(lock, w, widg, md);
+							}
 						}
-						else if (b && widg->m.drag)
+						else if (b && widg->m.drag){
 							rtn = widg->m.drag(lock, w, widg, md);
+						}
 						else
 						{
 						/*
