@@ -874,7 +874,8 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 		if (ob)
 		{
 			XA_TREE *wt;
-			short vsl = 0, vslw = 0;
+			short vslw = 0;
+			long vsl = 0;
 
 			/*if (wt || !widg->stuff)*/	/* new or changed toolbar */
 			{
@@ -902,15 +903,15 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				/*
 				 * correct vslider to new wa
 				 */
-				if ( (w->active_widgets & VSLIDE) )
+				if ( (w->active_widgets & (VS_WIDGETS|SIZER)) )
 				{
 					XA_WIDGET *widg2 = get_widget(w, XAW_VSLIDE);
 					/* disable slider, redraw wa, enable new slider */
-					vsl = w->active_widgets & VS_WIDGETS;
-					w->active_widgets &= ~VS_WIDGETS;
+					vsl = w->active_widgets & (VS_WIDGETS|SIZER);
+					w->active_widgets &= ~(VS_WIDGETS|SIZER);
 
-					if( o == ob )
-						d = -ob->ob_height;
+					//if( o == ob )
+						//d = -ob->ob_height;
 					widg2->r.h += d;
 					widg2->ar.h += d;
 					widg2->r.y -= d;
@@ -941,6 +942,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				obj_rectangle(wt, aesobj(ob, 0), &or);
 				wt = set_toolbar_widget(lock, w, client, ob, aesobj(ob, pb->intin[5]), 0, STW_ZEN, NULL, &or);
 				widg->r.w = widg->ar.w = ob->ob_width = or.w = w->r.w;
+				widg->ar.x = ob->ob_x = w->r.x;
 				//if( md == 1 )	/* changed */
 				{
 					/* send redraw for wa anyway! */
@@ -951,7 +953,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				rp_2_ap_cs(w, widg, NULL);
 				if (wt && wt->tree)
 				{
-					wt->tree->ob_x = w->wa.x;
+					wt->tree->ob_x = w->r.x;
 					wt->tree->ob_y = w->wa.y;
 					if (!wt->zen)
 					{
@@ -973,7 +975,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 
 				if( vsl )	/* restore vslider */
 				{
-					w->active_widgets |= VS_WIDGETS;//vsl;
+					w->active_widgets |= vsl;//VS_WIDGETS;
 					w->wa.w -= vslw;
 					w->rwa.w -= vslw;
 				}
@@ -981,8 +983,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				if( w->r.h < w->min.h )	/* height may too small for toolbar */
 					move_window(lock, w, true, -1L, w->r.x, w->r.y, w->r.w, w->min.h);
 
-				w->send_message(lock, w, NULL, AMQ_NORM, QMF_NORM,
-						WM_TOOLBAR, 0, 0, w->handle, 1, 0, 0, 0);
+				w->send_message(lock, w, NULL, AMQ_NORM, QMF_NORM, WM_TOOLBAR, 0, 0, w->handle, 1, 0, 0, 0);
 			}
 		}	/*/if (ob)*/
 		else if (widg->stuff)	/* remove toolbar */
@@ -1357,7 +1358,7 @@ XA_wind_get(enum locks lock, struct xa_client *client, AESPB *pb)
 		}
 		break;
 	}
-	case WF_FTOOLBAR:	/* suboptimal, but for the moment it is more important that it van be used. */
+	case WF_FTOOLBAR:	/* suboptimal, but for the moment it is more important that it can be used. */
 	case WF_NTOOLBAR:
 	{
 		struct xa_rect_list *rl = NULL;
