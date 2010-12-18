@@ -729,12 +729,27 @@ static unsigned short alert_masks[] =
 	0x0010, 0x0020, 0x0040, 0x0080
 };
 
-static char *strrpl( char *s, char in, char out )
+/*
+ * replace all occurences of in by out in s
+ * replace string of rep1 by one rep1
+ */
+static char *strrpl( char *s, char in, char out, char rep1 )
 {
-	char *ret = s;
+	char *ret = s, *t = s;
+	bool out_rep1 = out == rep1;
 	for( ; *s; s++ )
+	{
+		if( rep1 && *s == rep1 )
+		{
+			*t++ = rep1;
+			for( s++; *s == rep1 || (out_rep1 && *s == in); s++ );
+		}
 		if( *s == in )
-			*s = out;
+			*t++ = out;
+		else
+			*t++ = *s;
+	}
+	*t = 0;
 
 	return ret;
 }
@@ -844,8 +859,8 @@ CE_fa(enum locks lock, struct c_event *ce, bool cancel)
 					sprintf( data->buf, MAXALERTLEN, "%02d:%02d:%02d: %s", dtim.t.hour, dtim.t.minute, dtim.t.sec2, b + 4 );
 #endif
 #if ALERTTIME	// b is used for form_alert
-					strrpl( data->buf, '|', ' ' );
-					data->buf[strlen(data->buf)-9] = 0;	/* strip off [ OK ] */
+					strrpl( data->buf, '|', ' ', ' ' );
+					data->buf[strlen(data->buf)-7] = 0;	/* strip off [ OK ] */
 					BLOG((0,data->buf));
 #endif
 					sc.t.text = data->buf;
