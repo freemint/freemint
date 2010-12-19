@@ -942,7 +942,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				obj_rectangle(wt, aesobj(ob, 0), &or);
 				wt = set_toolbar_widget(lock, w, client, ob, aesobj(ob, pb->intin[5]), 0, STW_ZEN, NULL, &or);
 				widg->r.w = widg->ar.w = ob->ob_width = or.w = w->r.w;
-				widg->ar.x = ob->ob_x = w->r.x;
+				//widg->ar.x = ob->ob_x = w->r.x;
 				//if( md == 1 )	/* changed */
 				{
 					/* send redraw for wa anyway! */
@@ -970,6 +970,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 					widg->start = pb->intin[4];
 					obj_edit(wt, w->vdi_settings, ED_INIT, edobj, 0,0, NULL, false, NULL,NULL, NULL,NULL);
 				}
+				widg->ar.x = ob->ob_x = w->r.x;
 				redraw_toolbar(lock, w, 0);
 				widg->start = 0;
 
