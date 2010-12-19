@@ -775,7 +775,6 @@ display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, struct x
 	/* Call the appropriate display routine */
 	(*drawer)(wt, v);
 
-
 	if (t != G_PROGDEF)
 	{
 		/* Handle CHECKED object state: */
@@ -831,7 +830,7 @@ display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, struct x
 			}
 		}
 
-		if ((ob->ob_state & state_mask) & OS_SELECTED)
+		if ( (ob->ob_state & state_mask) & OS_SELECTED)
 		{
 			(*wt->objcr_api->write_selection)(v, 0, &r);
 		}
@@ -841,7 +840,9 @@ display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, struct x
 	{
 		if (wt->e.c_state || wt->wind )		/* wt->wind is for wdialogs */
 		{
-			do_object_cursor(v, &sr, 1);
+
+			if( !(wt->wind && (wt->wind->dial & created_for_TOOLBAR)) )
+				do_object_cursor(v, &sr, 1);
 		}
 	}
 
