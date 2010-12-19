@@ -280,10 +280,8 @@ make_rect_list(struct xa_window *wind, bool swap, short which)
 		case RECT_TOOLBAR:
 		{
 			XA_WIDGET *widg = get_widget(wind, XAW_TOOLBAR);
-			OBJECT *o = ((XA_TREE*)widg->stuff)->tree;
 			if (swap)
 				free_rectlist_entry(&wind->rect_toolbar);
-			o->ob_x = wind->widgets[XAW_TOOLBAR].ar.x = wind->r.x;	// !!!
 			if (!usertoolbar_installed(wind) || !xa_rect_clip(&wind->r, &wind->widgets[XAW_TOOLBAR].ar, &area))
 				return NULL;
 			rle = &wind->rect_toolbar;
