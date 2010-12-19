@@ -87,7 +87,7 @@ short AsciiLoad(DOCUMENT *doc, short handle)
 				{
 					unsigned char *old_ptr = ptr;
 					doc->lines++;				/*	Zeile zaehlen	*/
-					
+
 					/*	Suche den Wort-Anfang	*/
 					while(columns)
 					{
@@ -100,7 +100,7 @@ short AsciiLoad(DOCUMENT *doc, short handle)
 						}
 					}
 
-					if (columns--)
+					if (columns)
 					{
 						*ptr++ = '\n';		/*	kuenstliches Zeilen-Ende	*/
 						doc->columns = max(doc->columns, columns);
@@ -141,7 +141,7 @@ short AsciiLoad(DOCUMENT *doc, short handle)
 					break;
 				}
 			}
-			
+
 			doc->height = doc->lines * font_ch;
 			doc->data = ascii;
 			doc->start_line = 0;
