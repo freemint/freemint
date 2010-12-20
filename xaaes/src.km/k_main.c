@@ -964,15 +964,16 @@ static void
 ignore(int sig)
 {
 	DIAGS(("AESSYS: ignored signal"));
-	BLOG((0, "AESSYS: received signal:%d(ignored)", sig));
+	BLOG((0, "'%s': received signal: %d(ignored)", get_curproc()->name, sig));
 	KERNEL_DEBUG("AESSYS: ignored signal");
 }
 #if !GENERATE_DIAGS
 static void
 fatal(int sig)
 {
-	BLOG((true, "AESSYS: fatal error:%d", sig));
-	KERNEL_DEBUG("AESSYS: fatal error, trying to clean up");
+	struct proc *p = get_curproc();
+	BLOG((true, "'%s': fatal error: %d", p->name, sig));
+	KERNEL_DEBUG("'%s': fatal error, trying to clean up", p->name );
 	k_exit(0);
 }
 #endif
