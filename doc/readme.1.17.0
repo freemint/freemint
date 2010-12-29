@@ -17,9 +17,58 @@ and this release is dedicated to him and the efforts he made during his life.
 
 Alan Hourihane <alanh@freemint.org>
 ------------------------------------
-August 9, 2010
+December 29th, 2010
 
 
-======
+XAAES Changes:
+--------------
 
-<PLACEHOLDER>
+- Updated documentation
+- Improved Task manager
+  ( Detailed process info, also list application-windows, Load Graph )
+- Single Tasking mode
+- File Selector: improved case sensitive pattern matching,
+  if the first char in pattern is the pipe-sysmbol (|) the
+  pattern-list is caseinsensitive,
+  concatenation of patterns with |
+- launchpath config variable (previously "launcher"):
+  Extended pattern matching, example:
+  launchpath=<somepath>\*.prg|*.app|*.tos|*.ttp|*.acc|!*.*
+- new config-variable: snapshot (can lunch internal & external snapshot app)
+- Adjustable default font size (config-variable standard_font_point)
+  for each app (app_options).
+- New global config-variable "infoline_point" for size of window-infoline
+- Support for "extended textures"
+- Improved compatibility with EmuTos
+- Manages a list of processes which shouldn't be killed shutdown
+ (CTLALTA_SURVIVORS)
+- Implement text-effects for list-text:
+   Italic:<i>text</i>
+   Bold:<b>text</b>
+   Underlined:<u>text</u>
+- New ctrl-alt key-shortcuts (look into XaAES about Dialog for a list)
+- It is now possible to run XaAES from atari-desktop.
+- Content of about-window is read at runtime from xa_help.txt.
+
+XAAES Bugfixes:
+---------------
+ - Fixed many redraw issues ( like drawing of transparent RSC Elements )
+ - Several bugfixes for Resource File loading
+ - Various other Bugfixes of "small bugs" ( not so interesting for users )
+ - Corrected the font-selector: List all fonts, style and family only 
+   valid for outline-fonts.
+
+Kernel Changes:
+---------------
+
+ - FAT fs: Renaming of files in-use is allowed
+ - Single Tasking mode
+ - Keyboard table Dead key-support
+
+Kernel Bugfixes:
+----------------
+
+ - fixed load of keyboard tables when memory protection is turned on
+ - Shutdown procedure fixed
+ - TCP connect sequence fixed
+ - Various other Bugfixes of "small bugs" ( not so interesting for users )
