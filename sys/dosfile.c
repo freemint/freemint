@@ -695,12 +695,12 @@ long _cdecl
 sys_f_select (ushort timeout, long *rfdp, long *wfdp, long *xfdp)
 {
 	long rfd, wfd, xfd, col_rfd, col_wfd, col_xfd;
-	long mask, bytes;
-	int i, count;
+	long mask;
+	long count;
 	FILEPTR *f;
 	struct proc *p;
 	TIMEOUT *t;
-	int rsel;
+	int i, rsel;
 	long wait_cond;
 	short sr;
 #if 0
@@ -825,38 +825,6 @@ retry_after_collision:
 		mask = mask << 1L;
 	}
 
-#if 0
-
-/* Should we (1999) still keep this code? */
-
-/* GEM kludges part #xxx :(
- *
- * the `last' (1993) GEM AES apparently uses the same etv_timer counter
- * for GEM processes evnt_timer/evnt_multi timeouts and sometimes for
- * some other internal watchdog timer or whatever of always 0x2600 ticks
- * when waking up console/mouse selects, and so sometimes turns your
- * 50ms evnt_timer call into a >3 min one.
- *
- * *sigh* when will atari release source if they don't care about their
- * GEM anymore...  this beast not only needs debugged, it also wants to
- * see a profiler...
- *
- */
-	if (!strcmp (p->name, "AESSYS")) {
-	/* pointer to gems etv_timer handler */
-		char *foo = *(char **)(lineA0()-0x42);
-		long *bar;
-	/* find that counter by looking for the first subql #1,xxxxxx
-	 * instruction (0x53b9), save address and old value
-	 */
-		if (foo && NULL != (foo = memchr (foo, 0x53, 0x40)) &&
-		    !(1 & (long)foo) && foo[1] == (char)0xb9 &&
-		    foo < (char *)(bar = *(long **)(foo+2))) {
-			gemtimer = (long)bar;
-			oldgemtimer = *bar;
-		}
-	}
-#endif
 	if (count == 0)
 	{
 		/* no data is ready yet */
@@ -881,8 +849,14 @@ retry_after_collision:
 			 * curproc. But sleep used to reset curproc->wait_cond
 			 * to wakeselect causing curproc to sleep forever.
 			 */
-			if (sleep (SELECT_Q|0x100, wait_cond))
-				p->wait_cond = 0;
+			if (sleep (SELECT_Q|0x100, wait_cond)) {
+				/* signal happened, abort */
+				if (t) canceltimeout(t);
+
+				count = EINTR;
+
+				goto cancel;
+			}
 			sr = spl7 ();
 		}
 		if (p->wait_cond == (long)&select_coll)
@@ -905,12 +879,11 @@ retry_after_collision:
 				f = p->p_fd->ofiles[i];
 				if (f)
 				{
-				    bytes = 1L;
 				    if (is_terminal(f))
-					(void)tty_ioctl(f, FIONREAD, &bytes);
+					rsel = (int) tty_select(f, (long)p, O_RDONLY);
 				    else
-					(void)(*f->dev->ioctl)(f, FIONREAD,&bytes);
-				    if (bytes > 0)
+					rsel = (int) (*f->dev->select)(f, (long)p, O_RDONLY);
+				    if (rsel == 1)
 				    {
 					*rfdp |= mask;
 					count++;
@@ -922,12 +895,11 @@ retry_after_collision:
 				f = p->p_fd->ofiles[i];
 				if (f)
 				{
-				    bytes = 1L;
 				    if (is_terminal(f))
-					(void)tty_ioctl(f, FIONWRITE, &bytes);
+					rsel = (int) tty_select(f, (long)p, O_WRONLY);
 				    else
-				        (void)(*f->dev->ioctl)(f, FIONWRITE,&bytes);
-				    if (bytes > 0)
+					rsel = (int) (*f->dev->select)(f, (long)p, O_WRONLY);
+				    if (rsel == 1)
 				    {
 					*wfdp |= mask;
 					count++;
@@ -942,9 +914,8 @@ retry_after_collision:
 /*  tesche: since old device drivers won't understand this call,
  * we set up `no exceptional condition' as default.
  */
-				    bytes = 0L;
-				    (void)(*f->dev->ioctl)(f, FIOEXCEPT,&bytes);
-				    if (bytes > 0)
+				    rsel = (int) (*f->dev->select)(f, (long)p, O_RDWR);
+				    if (rsel == 1)
 				    {
 					*xfdp |= mask;
 					count++;
@@ -962,6 +933,7 @@ retry_after_collision:
 		canceltimeout(t);
 	}
 
+cancel:
 	/* at this point, we either have data or a time out */
 	/* cancel all the selects */
 	mask = 1L;
@@ -1246,16 +1218,17 @@ sys_f_poll (POLLFD *fds, ulong nfds, ulong timeout)
 			return EINVAL;
 
 # define LEGAL_FLAGS \
-	(POLLIN | POLLPRI | POLLOUT | POLLERR | POLLHUP | POLLNVAL | POLLRDNORM | POLLWRNORM)
+	(POLLIN | POLLPRI | POLLOUT | POLLERR | POLLHUP | POLLNVAL | POLLRDNORM | POLLWRNORM | POLLRDBAND | POLLWRBAND)
 
-		if ((fds[i].events | LEGAL_FLAGS) != LEGAL_FLAGS)
+		if ((fds[i].events | LEGAL_FLAGS) != LEGAL_FLAGS) {
 			return EINVAL;
+		}
 
-		if (fds[i].events & POLLIN)
+		if (fds[i].events & (POLLIN | POLLRDNORM))
 			rfds |= (1L << (fds[i].fd));
 		if (fds[i].events & POLLPRI)
 			xfds |= (1L << (fds[i].fd));
-		if (fds[i].events & POLLOUT)
+		if (fds[i].events & (POLLOUT | POLLWRNORM))
 			wfds |= (1L << (fds[i].fd));
 	}
 
@@ -1304,7 +1277,7 @@ sys_f_poll (POLLFD *fds, ulong nfds, ulong timeout)
 	for (i = 0; i < nfds; i++)
 	{
 		if (rfds & (1L << (fds[i].fd)))
-			fds[i].revents = POLLIN;
+			fds[i].revents = (fds[i].events & (POLLIN | POLLRDNORM));
 		else
 			fds[i].revents = 0;
 
@@ -1312,7 +1285,7 @@ sys_f_poll (POLLFD *fds, ulong nfds, ulong timeout)
 			fds[i].revents |= POLLPRI;
 
 		if (wfds & (1L << (fds[i].fd)))
-			fds[i].revents |= POLLOUT;
+			fds[i].revents |= (fds[i].events & (POLLOUT | POLLWRNORM));
 	}
 
 	return retval;
