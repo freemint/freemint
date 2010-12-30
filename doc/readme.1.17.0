@@ -63,7 +63,6 @@ Kernel Changes:
 
  - FAT fs: Renaming of files in-use is allowed
  - Single Tasking mode
- - Keyboard table Dead key-support
 
 Kernel Bugfixes:
 ----------------
