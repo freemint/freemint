@@ -1,3 +1,676 @@
+2010-12-30 00:06  alanh
+
+	* sys/dosfile.c: Fix select to properly timeout when no data is
+	  available. Additionally return EINTR when interrupted while
+	  sleeping.
+
+2010-12-30 00:03  alanh
+
+	* sys/dosfile.c: Fix select to properly timeout when no data is
+	  available. Additionally return EINTR when interrupted while
+	  sleeping.
+
+2010-12-29 15:11  alanh
+
+	* doc/readme.1.17.0: Update with Ole's changes
+
+2010-12-28 16:13  hek
+
+	* xaaes/src.km/: version.h: change status to release
+
+2010-12-28 14:04  hek
+
+	* xaaes/src.km/xa_defs.h: change status to release
+
+2010-12-28 11:56  hek
+
+	* xaaes/src.km/: xaaes009.rsc: update resource-file
+
+2010-12-20 20:53  hek
+
+	* xaaes/src.km/: k_main.c: print proc-name in 'fatal'-error-msg
+
+2010-12-20 18:06  hek
+
+	* xaaes/src.km/: rectlist.c: fix build
+
+2010-12-19 19:34  hek
+
+	* xaaes/src.km/: draw_obj.c: do not draw object-cursor for
+	  toolbar-objects
+
+2010-12-19 18:52  hek
+
+	* xaaes/src.km/: rectlist.c, xa_wind.c: rectlist.c xa_wind.c:
+
+	  fix x-pos of toolbar
+
+2010-12-19 14:22  ggs
+
+	* tools/hypview/plain/ascii.c: Display the last character in the
+	  longest line
+
+2010-12-18 20:53  hek
+
+	* xaaes/src.km/: widgets.c: avoid second event for
+	  TOUCHEXIT-objects
+
+2010-12-18 20:53  hek
+
+	* xaaes/src.km/: rectlist.c, xa_wind.c: rectlist.c xa_wind.c:
+
+	  fix toolbar-behaviour - force toolbar-width to window-width - if
+	  SIZER is present same geometry as if VSLIDER present assumed
+
+2010-12-18 20:52  hek
+
+	* xaaes/src.km/: k_main.c: replace string of blanks by one blank in
+	  alert-text
+
+2010-12-15 18:31  hek
+
+	* xaaes/src.km/: app_man.c: fix desktop-dialog-focus.
+
+2010-12-14 21:55  hek
+
+	* xaaes/src.km/: app_man.c: remove BLOG
+
+2010-12-14 21:46  hek
+
+	* xaaes/src.km/: app_man.c: do not set old focus to 0 when
+	  switching apps.
+
+2010-12-14 12:10  alanh
+
+	* sys/buildinfo/version.h: Move up to RELEASE - get ready folks...
+
+2010-12-13 21:21  hek
+
+	* xaaes/Changes.hk: [no log message]
+
+2010-12-13 19:21  hek
+
+	* xaaes/src.km/: render_obj.c: fix y-position of checkboxes and
+	  radion-buttons for different font-sizes
+
+2010-12-13 14:35  alanh
+
+	* sys/: libkern/kernel_module.h, kentry.c, mint/kentry.h: Reverse
+	  the patch from David, so we can push to a new branch.
+
+2010-12-13 14:31  alanh
+
+	* sys/: kentry.c, libkern/kernel_module.h, mint/kentry.h: Export
+	  the XHDI function XHNewCookie to kernel modules (using kentry
+	  struct) to be able to install XHDI drivers.  Contributed by David
+	  Galvez.
+
+2010-12-13 14:21  hek
+
+	* xaaes/src.km/: cnf_xaaes.c: white space
+
+2010-12-13 14:15  hek
+
+	* xaaes/src.km/: cnf_xaaes.c: - add 'include'-facility - remove
+	  unneeded #include "cnf_xaaes.h"
+
+2010-12-10 21:14  hek
+
+	* xaaes/src.km/: xa_help.txt, xa_he_de.txt: correct help-text
+
+2010-12-09 21:22  hek
+
+	* xaaes/src.km/: taskman.c: fix position of load-bar in case load
+	  exceeds 100%.
+
+2010-12-07 19:58  hek
+
+	* xaaes/src.km/: xa_he_de.txt: fix typo
+
+2010-12-07 19:43  hek
+
+	* xaaes/src.km/: xa_he_de.txt: German version of the extended
+	  version by Lars Schmidbauer
+
+2010-12-07 19:42  hek
+
+	* xaaes/src.km/: xa_help.txt: extended version by Lars Schmidbauer
+
+2010-12-05 11:27  hek
+
+	* sys/: init.c: When MFP_DEBUG_DIRECT isn't defined, BIOS function
+	  "Bconout( )" is called to output debug messages. During
+	  initialization until all interrupts vectors and new trap routines
+	  are initialized this function is used through a normal trap, and
+	  later trough a trap wrapper. The flag "intr_done" is activated to
+	  mark this point. During the boot process the macro DEBUG is used
+	  after interrupts initialization and before the flag is activated,
+	  this makes the kernel crash when using serial debugging with
+	  "Bconout( )".
+
+2010-11-27 13:14  ggs
+
+	* tools/hypview/: diallib.h, dl_routs.c, dl_win.c: We use our own
+	  rc_intersect
+
+2010-11-27 13:13  ggs
+
+	* tools/hypview/hyp/search_d.c: Do nothing if the button text
+	  pressed
+
+2010-11-20 12:09  hek
+
+	* sys/arch/init_mach.c: for the Aranym kernel the struct nf_ops is
+	  part of kentry
+
+2010-11-20 12:03  hek
+
+	* sys/arch/init_mach.c: for the Aranym kernel the struct nf_ops is
+	  part of kentry
+
+2010-11-18 17:54  hek
+
+	* xaaes/src.km/: k_init.c: add missing \
+
+2010-11-17 22:42  hek
+
+	* xaaes/src.km/: taskman.c: remove outcommented BLOGS
+
+2010-11-17 21:12  hek
+
+	* xaaes/src.km/: k_init.c, k_main.c: k_init.c k_main.c:
+
+	  move cursor-home from SIGTERM-handler to startup to avoid a crash
+	  at shutdown.
+
+2010-11-14 17:34  hek
+
+	* xaaes/src.km/: k_shutdown.c: - Use Clear/Home instead of Home
+	  after v_clswk and c_conws not display - move log-message
+
+2010-11-14 17:34  hek
+
+	* xaaes/src.km/: k_main.c: emit Cursor on, Clear/Home on SIGTERM
+
+2010-11-14 17:34  hek
+
+	* xaaes/src.km/: k_init.c: signal.h not needed
+
+2010-11-11 20:09  hek
+
+	* xaaes/src.km/: xaaes009.rsm, xaaes_de.rsm: rsm-files for
+	  resource-master
+
+2010-11-10 21:52  hek
+
+	* xaaes/src.km/: taskman.c: - fix compiler-warning - change to
+	  magenta at 95%
+
+2010-11-10 21:39  hek
+
+	* xaaes/src.km/: taskman.c: - limit size of bars in load-display to
+	  load-box.  - color the bars according to their values.
+
+2010-11-10 21:37  hek
+
+	* xaaes/src.km/: xaaes_de.rsc:
+	  - TREE RES_CHFALC/Obj. RC_BIT15 "Zustzl. Bit..." changed ->
+	  "Zus. Bit..." - TREE RES_CHFALC corrected sizes and positions for
+	  a better look.  - TREE DEF_DESKTOP/Obj. BETA_BOX set FLAG
+	  "hidden" - TREE SYS_ERROR/Obj. BOMB set FLAG "hidden"
+
+	  Contributed by latzmaster
+
+2010-11-10 21:36  hek
+
+	* xaaes/src.km/XAAES_D.RSC: german resource now xaaes_de.rsc
+
+2010-11-10 21:35  hek
+
+	* xaaes/src.km/: XAAES_E.RSC: remove redundant english
+	  resource-file
+
+2010-11-10 21:34  hek
+
+	* xaaes/src.km/XAAES_D.RSC: German resource not xaaes_de.rsc.
+
+2010-11-07 11:36  hek
+
+	* xaaes/src.km/: xa_rsrc.c: preparation for loading
+	  resource-strings from separate file
+
+2010-11-07 11:33  hek
+
+	* xaaes/src.km/: taskman.c: - force unhiding and opening selected
+	  window - add missing paranthesis
+
+2010-11-07 11:33  hek
+
+	* xaaes/src.km/: menuwidg.c, xa_vdi.c: minor cleanup
+
+2010-11-05 13:14  hek
+
+	* xaaes/src.km/: xaaes009.rsc: xaaes009.rsc XAAES_E.RSC:
+
+	  - TREE TASK_MANAGER/Obj. TM_RESCHG "toggle load" changed ->
+	  "Toggle load" - TREE RES_CHFALC/Obj. RC_BIT15 "Additive bit..."
+	  changed -> "Add. bit..." - TREE RES_CHFALC corrected sizes and
+	  positions for a better look.
+
+2010-11-05 13:03  hek
+
+	* xaaes/src.km/XAAES_D.RSC: file XAAES_D.RSC was added on branch
+	  helmut-enhancements on 2010-11-05 13:05:01 +0000
+
+2010-11-05 13:03  hek
+
+	* xaaes/src.km/: XAAES_D.RSC: german resource
+
+2010-11-05 13:03  hek
+
+	* xaaes/src.km/XAAES_E.RSC: english resource
+
+2010-11-05 12:27  hek
+
+	* xaaes/src.km/XAAES_E.RSC: english resource
+
+2010-11-04 18:11  hek
+
+	* xaaes/src.km/: xa_help.txt: update for new features
+
+2010-11-04 18:11  hek
+
+	* xaaes/src.km/: widgets.c: correct DIAG-argument
+
+2010-11-04 18:11  hek
+
+	* xaaes/src.km/: taskman.c: - do not overwrite the resource-text to
+	  display "toggle load" - some minor cleanup
+
+2010-11-04 18:10  hek
+
+	* xaaes/src.km/: scrlobjc.c: - move not-inlined italic text in one
+	  half char-width to the left for optical reasons - remove unused
+	  macro ITALIC_IS_CUTOFF
+
+2010-11-04 18:10  hek
+
+	* xaaes/src.km/: xa_fsel.c: code-cleanup
+
+2010-11-04 18:10  hek
+
+	* xaaes/src.km/adi/adidefs.h: white-space-change
+
+2010-11-04 18:03  hek
+
+	* xaaes/src.km/adi/adidefs.h: white-space-change
+
+2010-11-02 08:57  alanh
+
+	* sys/sockets/inet4/tcpout.c: Disable a FATAL error and try to
+	  workaround the problem. May need further investigation, but this
+	  works for now.
+
+2010-11-02 08:56  alanh
+
+	* sys/sockets/inet4/if.c: During SIOCGIFCONF do the following...
+	  1. Expose AF_LINK interfaces, not just AF_INET.  2. When no
+	  buffer is supplied, count the number of interfaces.
+
+2010-10-25 11:22  hek
+
+	* xaaes/src.km/: init.c: use standard_font_point from config for
+	  info_font_point if the latter is not defined in xaaes.cnf.
+
+2010-10-25 11:10  hek
+
+	* xaaes/Changes.hk: [no log message]
+
+2010-10-25 11:10  hek
+
+	* xaaes/src.km/: cnf_xaaes.c, init.c, win_draw.c, xa_types.h:
+	  cnf_xaaes.c init.c win_draw.c xa_types.h:
+
+	  Add new global config-variable "infoline_point" for size of
+	  window-infoline
+
+2010-10-24 18:51  hek
+
+	* xaaes/src.km/: xa_form.c: correct line-distance and box-size in
+	  alert-box
+
+2010-10-23 09:56  hek
+
+	* xaaes/src.km/adi/whlmoose/whlmoose.c: fix build
+
+2010-10-23 08:51  hek
+
+	* xaaes/src.km/: k_init.c: If screen-parameters returned from 1st
+	  v_opnwk are crap, ignore and open physical
+
+2010-10-23 08:51  hek
+
+	* xaaes/src.km/xaloader/: crtinit.c, xaloader.c: fix
+	  compiler-warnings
+
+2010-10-22 18:04  hek
+
+	* xaaes/src.km/: xa_form.c: - do_form_alert: fix
+	  array-subscript-bug - XA_form_error: default icon is '0' -
+	  XA_form_error: if errnum < 0 use -errnum
+
+2010-10-22 09:31  hek
+
+	* xaaes/src.km/: k_main.c, render_obj.c: fix sto-build
+
+2010-10-21 18:05  hek
+
+	* xaaes/src.km/scrlobjc.c: call own strlen xa_strlen
+
+2010-10-18 11:45  hek
+
+	* xaaes/src.km/: k_mouse.c, adi/moose.h: k_mouse.c adi/moose.h:
+
+	  use a union for moose_data.iclcks.
+
+2010-10-18 11:18  alanh
+
+	* sys/CONFIGVARS, xaaes/src.km/CONFIGVARS, xaaes/src.km/k_main.c,
+	  xaaes/src.km/render_obj.c, xaaes/src.km/xaloader/xaloader.c: Turn
+	  on -Werror for xaaes & the kernel and fix up those warnings.
+
+2010-10-18 11:14  hek
+
+	* xaaes/src.km/: k_mouse.c, adi/moose.h: k_mouse.c adi/moose.h:
+
+	  use a union for moose_data.iclcks.
+
+2010-10-18 11:06  alanh
+
+	* xaaes/src.km/scrlobjc.c: Use system strlen. Why do we need a
+	  different one ?
+
+2010-10-18 10:38  alanh
+
+	* xaaes/src.km/k_mouse.c: Fix build breakage
+
+2010-10-16 22:21  hek
+
+	* xaaes/src.km/: about.c, about.h, adi.c, adiload.c, app_man.c,
+	  app_man.h, c_keybd.c, c_keybd.h, c_message.c, c_message.h,
+	  c_mouse.c, c_mouse.h, c_window.c, cnf_xaaes.c, cnf_xaaes.h,
+	  debug.c, debug.h, desktop.c, draw_obj.c, draw_obj.h, form.c,
+	  global.c, global.h, handler.c, init.c, init.h, k_init.c,
+	  k_init.h, k_keybd.c, k_keybd.h, k_main.c, k_main.h, k_mouse.c,
+	  k_mouse.h, k_shutdown.c, keycodes.h, matchpat.c, matchpat.h,
+	  menuwidg.c, menuwidg.h, messages.c, messages.h, mt_gem.h,
+	  mt_gemx.h, mvdi.c, mvdi.h, nkcc-gc.s, nkcc.c, nkcc.h,
+	  ob_inlines.h, obtree.c, obtree.h, rectlist.c, rectlist.h,
+	  render_obj.c, scrlobjc.c, scrlobjc.h, semaphores.c, semaphores.h,
+	  sys_proc.c, sys_proc.h, taskman.c, taskman.h, trnfm.c, trnfm.h,
+	  util.c, util.h, vaproto.h, vdi_parms.h, version.h, widgets.c,
+	  widgets.h, win_draw.c, xa_aes.h, xa_appl.c, xa_appl.h, xa_defs.h,
+	  xa_evnt.c, xa_evnt.h, xa_fnts.c, xa_fnts.h, xa_form.c, xa_form.h,
+	  xa_fsel.c, xa_fsel.h, xa_fslx.c, xa_fslx.h, xa_global.c,
+	  xa_global.h, xa_graf.c, xa_graf.h, xa_lbox.c, xa_lbox.h,
+	  xa_list.h, xa_menu.c, xa_menu.h, xa_objc.c, xa_objc.h, xa_pdlg.c,
+	  xa_pdlg.h, xa_rsrc.c, xa_rsrc.h, xa_scrp.c, xa_scrp.h, xa_shel.c,
+	  xa_shel.h, xa_types.h, xa_user_things.h, xa_vdi.c, xa_wdlg.c,
+	  xa_wdlg.h, xa_wind.c, xa_wind.h: merge in
+	  helmut-enhancements-branch
+
+2010-10-11 17:52  hek
+
+	* tools/wikitools/u2w.awk: some minor fixes
+
+2010-10-06 17:15  hek
+
+	* xaaes/src.km/: k_keybd.c, taskman.c, xa_form.c, k_main.c,
+	  k_main.h, taskman.h, xa_defs.h, xa_form.h: xa_defs.h xa_form.c
+	  xa_form.h taskman.h taskman.c k_main.c k_main.h k_keybd.c:
+
+	  implement alerts for shutdown/halt/reboot/quit
+
+2010-10-06 17:08  hek
+
+	* xaaes/src.km/k_main.c: - avoid simulateous VDI-calls by different
+	  threads (fix for CTPCI).  - ignore SIGFPE - print signum in
+	  signal-handler
+
+2010-10-06 16:59  hek
+
+	* xaaes/src.km/k_main.c: - avoid simulateous VDI-calls by different
+	  threads (fix for CTPCI).  - ignore SIGFPE - print signum in
+	  signal-handler
+
+2010-09-30 17:25  hek
+
+	* xaaes/src.km/xa_fsel.c: if arg has no trailing \ pattern was
+	  wrong
+
+2010-09-30 17:22  hek
+
+	* xaaes/src.km/: k_init.c, k_shutdown.c: k_init.c k_shutdown.c:
+
+	  Do not save/restore CPU-cache for open/close physical workstation
+	  (experimental)
+
+2010-09-27 22:07  hek
+
+	* sys/keyboard.c: Fixed a bug where the keyboard table was not
+	  correctly copied if the deadkeys table was missing.
+
+2010-09-27 21:51  hek
+
+	* sys/keyboard.c: Fix the COLDFIRE build
+
+2010-09-27 21:39  hek
+
+	* sys/keyboard.c: Fixed a bug where the keyboard table was not
+	  correctly copied if the deadkeys table was missing.
+
+2010-09-25 19:14  hek
+
+	* sys/dos.c: - don't kill curproc at shutdown (was removed?) -
+	  issue Esc-E (vt52-Home) before shutdown
+
+2010-09-25 15:30  hek
+
+	* sys/: cookie.c: Setting the debug level to "TRACE" crashes the
+	  system during boot.
+
+	  This small patch solves it. By David_G=E1lvez.
+
+2010-09-23 20:23  hek
+
+	* xaaes/src.km/k_keybd.c: minor change to the SDMASTER-patch
+
+2010-09-23 20:23  hek
+
+	* xaaes/src.km/xa_form.h: add prototype for xaaes_do_form_alert.
+
+2010-09-23 18:57  hek
+
+	* xaaes/src.km/xa_fsel.c: When pat is empty set it to '*', really
+	  finally!
+
+2010-09-23 18:57  hek
+
+	* xaaes/src.km/taskman.c: no alert from quit_all_apps.
+
+2010-09-23 18:57  hek
+
+	* xaaes/src.km/k_keybd.c: add SDMASTER-support. Contributed by
+	  joska.
+
+2010-09-22 18:40  hek
+
+	* xaaes/src.km/xaloader/xaloader.c: add drive-letter u: for sysdir
+
+2010-09-22 18:31  hek
+
+	* xaaes/Changes.hk: [no log message]
+
+2010-09-22 18:23  hek
+
+	* xaaes/src.km/: k_keybd.c, k_main.c, k_main.h, taskman.c,
+	  taskman.h, xa_defs.h, xa_form.c: xa_defs.h xa_form.c taskman.h
+	  taskman.c k_main.c k_main.h k_keybd.c:
+
+	  implement alerts for shutdown/halt/reboot/quit
+
+2010-09-22 18:23  hek
+
+	* xaaes/src.km/version.h: status now beta
+
+2010-09-22 18:23  hek
+
+	* xaaes/src.km/: app_man.c, cnf_xaaes.c, draw_obj.c, init.c,
+	  xa_appl.c, xa_appl.h: xa_appl.c xa_appl.h cnf_xaaes.c draw_obj.c
+	  init.c app_man.c:
+
+	  implement app_option standard_font_point - standard font-size is
+	  set on every menu-switch
+
+2010-09-22 18:23  hek
+
+	* xaaes/src.km/about.c: resize window when standard-font-point !=
+	  10
+
+2010-09-22 18:22  hek
+
+	* xaaes/src.km/k_init.c: ony test for fvdi when trying to open a
+	  virtual wk
+
+2010-09-22 18:22  hek
+
+	* xaaes/src.km/: xa_fsel.c, xa_fsel.h: xa_fsel.h xa_fsel.c:
+
+	  font-size can be changed by pressing Alt-+/-
+
+2010-09-16 12:16  hek
+
+	* xaaes/src.km/win_draw.c: correct widget-height-calculaton for
+	  window-infoline
+
+2010-09-15 19:25  hek
+
+	* xaaes/src.km/: xa_vdi.c: - prop_clipped_name: workaround for
+	  another fvdi-bug: if high-bit in c is set, vqt_width returns
+	  random values for width, use 'a' in that case
+
+2010-09-15 19:25  hek
+
+	* xaaes/src.km/: xa_types.h: - added SIF_NO_ICONS for list-flags -
+	  new config-variable standard_font_point for apps (coming soon)
+
+2010-09-15 19:22  hek
+
+	* xaaes/src.km/: scrlobjc.c: - optimized rendering-speed if window
+	  is top-window - do not display icons if font-point is < 10,
+	  because icons are designed for 10-point (also speed-improvement)
+	  - removed unnecessary call to t_effects - use real string-len for
+	  test for prop_clipped-call not tblen
+
+2010-09-13 09:49  ggs
+
+	* tools/hypview/dl_items.c: Window change work again
+
+2010-09-12 16:02  ggs
+
+	* tools/hypview/dl_user.c: Clean up
+
+2010-09-12 16:01  ggs
+
+	* tools/hypview/hyp/prepare.c: Use the variable islimage
+
+2010-09-12 16:01  ggs
+
+	* tools/hypview/doc/todo.txt: Update
+
+2010-09-11 09:54  ggs
+
+	* tools/hypview/info.c: Info dialog will not crash if a binary or
+	  plain text is loaded
+
+2010-09-07 20:24  hek
+
+	* tools/wikitools/wikitools.txt: txt-file can be created by udo.
+
+2010-09-07 20:21  hek
+
+	* tools/wikitools/: getxml.sh, u2w.awk, w2u.awk, w2u.ui,
+	  wikitools.txt, wikitools.u: Updated everything: Hopefully all
+	  sparemint-wikis are convertible by w2u now.
+
+2010-09-07 20:21  hek
+
+	* tools/wikitools/Makefile: makefile added
+
+2010-09-01 21:23  hek
+
+	* xaaes/src.km/: render_obj.c: - fixed a bug in edit fields with a
+	  mask that contains non-editable characters
+
+	  - added missing paranthesises
+
+2010-08-31 18:47  hek
+
+	* tools/wikitools/: wikitools.u, wikitools.ula: removed.
+
+2010-08-31 18:42  hek
+
+	* tools/wikitools/: getxml.sh, makenodes, u2w, u2w.awk, w2u,
+	  w2u.awk, w2u.ui, wikitools.txt, wikitools.u, wikitools.ula: first
+	  version of udo<->wiki-converter
+
+2010-08-29 19:58  alanh
+
+	* tools/toswin2/english/: engl.hrd, engl.rsc, toswin2.hrd,
+	  toswin2.rsc: Add Lars' english version and rename to toswin2.* as
+	  expected.
+
+2010-08-29 17:16  ggs
+
+	* tools/hypview/hyp/: prepare.c, tool.c: Move pic_admin to hyp.h
+
+2010-08-29 17:15  ggs
+
+	* tools/hypview/hyp.h: Add prototype from search_d.c and move
+	  pic_admin
+
+2010-08-29 17:15  ggs
+
+	* tools/hypview/window.c: No prototype warning
+
+2010-08-29 17:15  ggs
+
+	* tools/hypview/doc/todo.txt: Update
+
+2010-08-29 17:15  ggs
+
+	* tools/hypview/doc/history.txt: Remove german character
+
+2010-08-28 18:05  hek
+
+	* xaaes/src.km/: win_draw.c: set font-size of window-info-line to
+	  standard_point.
+
+2010-08-24 00:54  hek
+
+	* xaaes/src.km/: k_init.c: fix planes-calculation if opnwk returned
+	  wrong value (CT)
+
+2010-08-23 22:01  hek
+
+	* xaaes/src.km/: xaaes009.rsc: XaAES resource file
+
+	  - TREE008 Objects 4,6,7,8,9,12 hidden (set FLAG "hidden")
+
+2010-08-23 13:59  alanh
+
+	* ChangeLog.#1.17.0: update ChangeLog
+
 2010-08-23 11:51  alanh
 
 	* sys/mint/falcon.h: #define SND_XBIOS 0x20
