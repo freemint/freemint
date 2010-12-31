@@ -1535,14 +1535,14 @@ load_external_table(FILEPTR *fp, const char *name, long size)
 		return EFTYPE;
 	}
 
-	kbuf = kmalloc(size+2); /* Append a zero (if the table is missing the altgr + deadkey part) */
+	kbuf = kmalloc(size+2); /* Append two zeros in case the altgr + deadkey tables are missing from the file. */
 	if (!kbuf)
 	{
 		DEBUG(("%s(): out of memory", __FUNCTION__));
 		return ENOMEM;
 	}
 
-	mint_bzero(kbuf, size+2);
+	mint_bzero(kbuf, size+2); /* Don't forget to clear the buffer in case the file is missing any tables. */
 
 	if ((*fp->dev->read)(fp, (char *)kbuf, size) == size)
 	{
@@ -1618,7 +1618,7 @@ load_external_table(FILEPTR *fp, const char *name, long size)
 		kfree(keytab_buffer);
 
 	keytab_buffer = (char *)kbuf;
-	keytab_size = size+1;
+	keytab_size = size+2;
 
 	TRACE(("%s(): keytab_size %ld", __FUNCTION__, keytab_size));
 
