@@ -36,11 +36,11 @@ function do_macros()
 
 					$n_i = pre;
 
-#					printf( "2.MACRO:%s b1=%s, c2=%s:%s PRE=%s\n", $0, b[1], c2[1], c2[length(c2)], pre);
+#					printf( "2.MACRO:%s b1=%s, c2=%s:%s PRE=%s MACRO#%d\n", $0, b[1], c2[1], c2[length(c2)], pre, MACRO[i]);
 
 					n_i++;
 					sub( "\\]", "", $n_i );
-#					print $n_i;
+					print $n_i;
 
 # would cause endless recursion (?)
 #					s = pre $n_i;
@@ -48,9 +48,13 @@ function do_macros()
 
 					n_i++;
 					sub( "\\[", "", $n_i );
-					for( k = 0; !sub( ")", "", $(n_i+k) ) && k < NF; k++ );
+					for( k = 0; !sub( ")", "", $(n_i+k) ) && (k+n_i) <= NF; k++ );
 
-#					printf( "END:MACRO:%d:%s\n%s\n->%s\n", n_i, $n_i, $(n_i+1), $0);
+					if( MACRO[i] == wikilink ){
+						$(n_i-1) = "[" $(n_i-1) "|";
+						$(n_i+k-1) = $(n_i+k-1) "]";
+					}
+#					printf( "END:MACRO:%d:%s\n%s\n, k=%d->%s\n", n_i, $n_i, $(n_i+1), k, $0);
 				}
 			}
 		}
