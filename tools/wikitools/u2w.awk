@@ -40,7 +40,7 @@ function do_macros()
 
 					n_i++;
 					sub( "\\]", "", $n_i );
-					print $n_i;
+#					print $n_i;
 
 # would cause endless recursion (?)
 #					s = pre $n_i;
