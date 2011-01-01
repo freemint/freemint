@@ -10,8 +10,9 @@
 # this may slow things down a bit
 function is_node(L)
 {
-	for( I in NODES )
-		sub( I, NODES[I], L );
+	for( I in NODES ){
+		sub( "[^[:alnum:]_]" I "[^[:alnum:]_]", " "NODES[I], L );
+	}
 	return L;
 }
 
@@ -47,7 +48,7 @@ function do_macros()
 
 					n_i++;
 					sub( "\\[", "", $n_i );
-					sub( "\\)", "", $n_i );
+					for( k = 0; !sub( ")", "", $(n_i+k) ) && k < NF; k++ );
 
 #					printf( "END:MACRO:%d:%s\n%s\n->%s\n", n_i, $n_i, $(n_i+1), $0);
 				}
@@ -86,7 +87,7 @@ BEGIN{
 
 	weblink = 1000;
 	maillink = 1001;
-#	wikilink = 1002;
+	wikilink = 1002;
 
 ########################
 # parse-arrays
@@ -125,7 +126,7 @@ BEGIN{
 	MACRO["(!weblink"] = weblink;
 	MACRO["(!webnolink"] = weblink;
 #	MACRO["(!maillink"] = maillink;
-#	MACRO["(!wikilink"] = wikilink;
+	MACRO["(!wikilink"] = wikilink;
 
 
 # wiki-special: #!wik com
