@@ -116,6 +116,8 @@ struct listopens
 };
 # endif
 
+#define F_DUPFD_CLOEXEC		1030
+
 /* file descriptor flags (F_GETFD, F_SETFD) */
 # define FD_CLOEXEC	0x01		/* close-on-exec flag */
 
