@@ -21,7 +21,6 @@ all-here: build
 DEFINITIONS = $(KERNELDEFAULTDEFS) $(KERNELDEFS)
 WARN =  -Wall \
 	-Wmissing-prototypes \
-	-Winline \
 	-Wshadow \
 	-Wpointer-arith \
 	-Wcast-qual \

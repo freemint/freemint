@@ -76,7 +76,6 @@ WARN = \
 	-Wmissing-prototypes \
 	-Wshadow \
 	-Wpointer-arith \
-	-Wcast-qual \
 	-Waggregate-return
 #	-Werror
 
