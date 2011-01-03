@@ -367,7 +367,7 @@ sys_f_dup (short fd)
 {
 	long r;
 
-	r = do_dup (fd, MIN_OPEN);
+	r = do_dup (fd, 0, 0);
 
 	TRACE (("Fdup(%d) -> %ld", fd, r));
 	return r;
@@ -567,8 +567,9 @@ sys_f_cntl (short fd, long arg, short cmd)
 
 	TRACE (("Fcntl(%i, cmd=0x%x)", fd, cmd));
 
-	if (cmd == F_DUPFD)
-  		return do_dup (fd, arg);
+	if (cmd == F_DUPFD || cmd == F_DUPFD_CLOEXEC) {
+  		return do_dup (fd, arg, cmd == F_DUPFD_CLOEXEC ? 1: 0);
+	}
 
 	TRACE(("Fcntl getfileptr"));
 	r = GETFILEPTR (&p, &fd, &f);
