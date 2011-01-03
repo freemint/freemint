@@ -196,7 +196,7 @@ fp_get1 (struct proc *p, short fd, FILEPTR **fp, const char *func)
  */
 
 long
-do_dup (short fd, short min)
+do_dup (short fd, short min, int cmd)
 {
 	PROC *p = get_curproc();
 	FILEPTR *fp;
@@ -215,7 +215,7 @@ do_dup (short fd, short min)
 		return ret;
 	}
 
-	FP_DONE (get_curproc(), fp, newfd, ((newfd >= MIN_OPEN) ? FD_CLOEXEC : 0));
+	FP_DONE (get_curproc(), fp, newfd, cmd ? FD_CLOEXEC : 0);
 
 	fp->links++;
 	return newfd;
