@@ -25,10 +25,8 @@ CFLAGS-xa_shel.c = -Wno-uninitialized
 INCLUDES += -I$(top_srcdir)/../../sys
 WARN = 	-Wall \
 	-Wmissing-prototypes \
-	-Winline \
 	-Wshadow \
-	-Wpointer-arith \
-	-Wcast-qual
+	-Wpointer-arith
 
 NOCFLAGS-adiload.c = $(MODEL)
 CFLAGS-adiload.c = -m68000
