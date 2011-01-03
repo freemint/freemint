@@ -77,7 +77,6 @@ WARN = \
 	-Winline \
 	-Wshadow \
 	-Wpointer-arith \
-	-Wcast-qual \
 	-Waggregate-return
 #	-Werror
 
