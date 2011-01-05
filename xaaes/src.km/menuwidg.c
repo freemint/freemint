@@ -1432,8 +1432,9 @@ cancel_CE_do_collapse(void)
 }
 
 static void
-do_popup_to(struct proc *p, Tab *tab)
+do_popup_to(struct proc *p, long arg)
 {
+	Tab *tab = (Tab *)arg;
 	S.popin_timeout = NULL;
 	S.popin_timeout_ce = tab->client;
 	
@@ -1444,8 +1445,9 @@ do_popup_to(struct proc *p, Tab *tab)
 }
 
 static void
-do_popout_timeout(struct proc *p, Tab *tab)
+do_popout_timeout(struct proc *p, long arg)
 {
+	Tab *tab = (Tab *)arg;
 	S.popout_timeout = NULL;
 	S.popout_timeout_ce = tab->client;
 	
@@ -1481,7 +1483,7 @@ set_popout_timeout(Tab *tab, bool instant)
 				t->arg = (long)tab;
 		}
 		else
-			do_popout_timeout(NULL, tab);
+			do_popout_timeout(NULL, (long)tab);
 	}
 }
 
@@ -2547,8 +2549,8 @@ fix_menu(struct xa_client *client, XA_TREE *menu, struct xa_window *wind, bool d
  	DIAG((D_menu, NULL, "done fix_menu()"));
 }
 
-static void menu_scrld_to(struct proc *p, Tab *tab);
-static void menu_scrlu_to(struct proc *p, Tab *tab);
+static void menu_scrld_to(struct proc *p, long arg);
+static void menu_scrlu_to(struct proc *p, long arg);
 
 /*
  * return 0 if at end or 1 if more entries can be scrolled
@@ -2789,8 +2791,9 @@ CE_do_menu_scroll(enum locks lock, struct c_event *ce, bool cancel)
 }
 
 static void
-menu_scrld_to(struct proc *p, Tab *tab)
+menu_scrld_to(struct proc *p, long arg)
 {
+	Tab *tab = (Tab *)arg;
 	short mb;
 	S.menuscroll_timeout = NULL;
 	check_mouse(NULL, &mb, NULL,NULL);
@@ -2799,8 +2802,9 @@ menu_scrld_to(struct proc *p, Tab *tab)
 }
 
 static void
-menu_scrlu_to(struct proc *p, Tab *tab)
+menu_scrlu_to(struct proc *p, long arg)
 {
+	Tab *tab = (Tab *)arg;
 	short mb;
 	S.menuscroll_timeout = NULL;
 	check_mouse(NULL, &mb, NULL,NULL);

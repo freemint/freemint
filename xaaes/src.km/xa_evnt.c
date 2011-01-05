@@ -565,8 +565,9 @@ got_evnt:
 }
 
 static void
-wakeme_timeout(struct proc *p, struct xa_client *client)
+wakeme_timeout(struct proc *p, long arg)
 {
+	struct xa_client *client = (struct xa_client *)arg;
 // 	if (!strnicmp(client->proc_name, "sprite", 6))
 // 		display("wake");
 
