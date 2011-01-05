@@ -1384,7 +1384,7 @@ bios_tread (FILEPTR *f, char *buf, long bytes)
  */
 
 static void _cdecl
-wakewrite (PROC *p)
+wakewrite (PROC *p, long arg)
 {
 	short s;
 

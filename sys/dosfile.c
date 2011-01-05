@@ -687,7 +687,7 @@ sys_f_cntl (short fd, long arg, short cmd)
 
 /* helper function for time outs */
 static void _cdecl
-unselectme (struct proc *p)
+unselectme (struct proc *p, long arg)
 {
 	wakeselect (p);
 }

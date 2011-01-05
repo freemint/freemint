@@ -190,7 +190,7 @@ if_flushq (struct ifq *q)
 }
 
 static void
-if_doinput (long proc)
+if_doinput (PROC *proc, long arg)
 {
 	register struct netif *nif;
 	register char *sp;
@@ -276,7 +276,7 @@ if_input (struct netif *nif, BUF *buf, long delay, short type)
 }
 
 static void
-if_slowtimeout (long proc)
+if_slowtimeout (PROC *proc, long arg)
 {
 	struct netif *nif;
 	
