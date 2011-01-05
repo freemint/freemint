@@ -26,8 +26,8 @@
 # define BUF_SIZE(b)		(BUF_BLOCK_SIZE >> (b))
 
 
-static void	gc		(long);
-static void	addmem		(long);
+static void	gc		(PROC *proc, long arg);
+static void	addmem		(PROC *proc, long arg);
 static short	buf_add_block	(void);
 static short	buf_free_block	(void);
 
@@ -38,7 +38,7 @@ static TIMEOUT *tmout = NULL;
 
 
 static void
-gc (long proc)
+gc (PROC *proc, long arg)
 {
 	long mem = mem_used;
 	
@@ -56,7 +56,7 @@ gc (long proc)
 }
 
 static void
-addmem (long proc)
+addmem (PROC *proc, long arg)
 {
 	tmout = 0;
 	buf_add_block ();

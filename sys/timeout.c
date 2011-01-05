@@ -421,7 +421,7 @@ checkalarms (void)
 		 */
 		register long arg = tlist->arg;
 		register PROC *p = tlist->proc;
-		void (*evnt)(PROC *, long arg) = (void (*)(PROC *, long)) tlist->func;
+		to_func *evnt = tlist->func;
 		register TIMEOUT *old = tlist;
 		
 		tlist = tlist->next;
