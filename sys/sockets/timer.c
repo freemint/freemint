@@ -13,7 +13,7 @@
 
 
 static void	update_head	(void);
-static void	check_events	(long);
+static void	check_events	(PROC *proc, long arg2);
 static void	event_insert	(struct event *, long);
 static short	event_remove	(struct event *);
 
@@ -63,7 +63,7 @@ setstack (register void *sp)
 # endif
 
 static void
-check_events (long proc)
+check_events (PROC *proc, long arg2)
 {
 	register struct event *ep;
 	register void (*func)(long);
