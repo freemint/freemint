@@ -65,7 +65,7 @@ static void	bpf_release	(struct bpf *);
 static long	bpf_attach	(struct bpf *, struct ifreq *);
 static void	bpf_reset	(struct bpf *);
 static long	bpf_sfilter	(struct bpf *, struct bpf_program *);
-static void	bpf_handler	(long);
+static void	bpf_handler	(PROC *, long arg);
 
 static struct devdrv bpf_dev =
 {
@@ -324,7 +324,7 @@ static volatile short have_tmout;
  * top half input handler.
  */
 static void
-bpf_handler (long proc)
+bpf_handler (PROC *proc, long arg)
 {
 	struct bpf *bpf;
 	

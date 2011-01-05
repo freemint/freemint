@@ -301,7 +301,7 @@ dosleep:
  */
 
 static void _cdecl
-unsemame(struct proc *p)
+unsemame(struct proc *p, long arg)
 {
 	ushort sr;
 

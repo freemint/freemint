@@ -225,9 +225,9 @@ struct kentry_proc
 	 *
 	 * same as canceltimeout() but for root timeouts
 	 */
-	struct timeout *_cdecl (*addtimeout)(long, void (*)());
+	struct timeout *_cdecl (*addtimeout)(long, void (*)(PROC *, long arg));
 	void _cdecl (*canceltimeout)(struct timeout *);
-	struct timeout *_cdecl (*addroottimeout)(long, void (*)(), unsigned short);
+	struct timeout *_cdecl (*addroottimeout)(long, void (*)(PROC *, long arg), unsigned short);
 	void _cdecl (*cancelroottimeout)(struct timeout *);
 
 	/* create a new process */

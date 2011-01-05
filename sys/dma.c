@@ -138,7 +138,7 @@ static ulong	_cdecl dma_get_channel	(void);
 static long	_cdecl dma_free_channel	(ulong i);
 static void	_cdecl dma_start	(ulong i);
 static void	_cdecl dma_end		(ulong i);
-static void *	_cdecl dma_block	(ulong i, ulong timeout, void _cdecl (*func)(PROC *p));
+static void *	_cdecl dma_block	(ulong i, ulong timeout, void _cdecl (*func)(PROC *p, long arg));
 static void	_cdecl dma_deblock	(ulong i, void *idev);
 
 DMA dma =
@@ -294,7 +294,7 @@ dma_timeout (PROC *p, long i)
 /* only synchronusly callable [to kernel]
  */
 static void * _cdecl
-dma_block (ulong i, ulong timeout, void _cdecl (*func)(PROC *p))
+dma_block (ulong i, ulong timeout, void _cdecl (*func)(PROC *p, long arg))
 {
 	CHANNEL *c;
 	
@@ -311,7 +311,7 @@ dma_block (ulong i, ulong timeout, void _cdecl (*func)(PROC *p))
 	{
 		c->t = addroottimeout (timeout,
 				func ? func
-				: (void _cdecl (*)(PROC *)) dma_timeout, 0);
+				: dma_timeout, 0);
 		if (!c->t)
 			FATAL (ERR_dma_addroottimeout);
 		
