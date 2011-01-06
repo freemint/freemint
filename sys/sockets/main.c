@@ -93,7 +93,7 @@ init (struct kerinfo *k)
 # endif
 	c_conws ("\r\n");
 	
-	if (MINT_MAJOR != 1 || MINT_MINOR != 17 || MINT_KVERSION != 2 || !so_register)
+	if (MINT_MAJOR != 1 || MINT_MINOR != 18 || MINT_KVERSION != 2 || !so_register)
 	{
 		c_conws (MSG_OLDMINT);
 		return NULL;
