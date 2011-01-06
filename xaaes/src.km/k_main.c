@@ -1444,7 +1444,7 @@ void set_tty_mode( short md )
 	struct sgttyb sg;
 	long r;
 	r = f_cntl(C.KBD_dev, (long)&KBD_dev_sg, TIOCGETP);
-	KERNEL_DEBUG("fcntl(TIOCGETP) -> %li", r);
+	//KERNEL_DEBUG("fcntl(TIOCGETP) -> %li", r);
 	assert(r == 0);
 
 	sg = KBD_dev_sg;
@@ -1456,10 +1456,10 @@ void set_tty_mode( short md )
 		sg.sg_flags &= ~T_RAW;
 		sg.sg_flags |= T_CRMOD;
 	}
-	KERNEL_DEBUG("sg.sg_flags 0x%x", sg.sg_flags);
+	//KERNEL_DEBUG("sg.sg_flags 0x%x", sg.sg_flags);
 
 	r = f_cntl(C.KBD_dev, (long)&sg, TIOCSETN);
-	KERNEL_DEBUG("fcntl(TIOCSETN) -> %li", r);
+	//KERNEL_DEBUG("fcntl(TIOCSETN) -> %li", r);
 	assert(r == 0);
  	get_curproc()->p_fd->ofiles[C.KBD_dev]->flags |= O_HEAD;
 #endif
