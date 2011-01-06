@@ -1409,7 +1409,7 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 				else if( h > MAXWIDTH )
 					h = MAXWIDTH;
 
-				if( fs->treeview )
+				if( fs->treeview || fs->rtbuild )
 					h += 10;
 
 				/*list->vdi_settings->api->text_extent(list->vdi_settings, T, &fs_norm_txt.n, &w, &h);*/
@@ -1450,7 +1450,7 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 	}
 	else if (dir_ent)
 	{
-		list->set(list, dir_ent, SESET_OPEN, 1, true);
+		list->set(list, dir_ent, SESET_OPEN, 1, NORMREDRAW);
 	}
 
 	PRPRINT;
@@ -1473,6 +1473,7 @@ refresh_filelist(enum locks lock, struct fsel_data *fs, SCROLL_ENTRY *dir_ent)
 	SCROLL_INFO *list;
 	struct xa_wtxt_inf *wp[] = {&fs_norm_txt, &exe_txt, &dexe_txt, &dir_txt, 0};
 	int objs[] = {FS_ICN_EXE, FS_ICN_DIR, FS_ICN_PRG, FS_ICN_FILE, FS_ICN_SYMLINK, 0};
+	int initial;
 	short p;
 
 	//PROFILE(("fsel:refresh_file:entry" ));
@@ -1507,6 +1508,8 @@ refresh_filelist(enum locks lock, struct fsel_data *fs, SCROLL_ENTRY *dir_ent)
 	DIAG((D_fsel, NULL, "refresh_filelist: fs.path='%s',fs_pattern='%s'",
 		fs->root, fs->fs_pattern));
 
+	initial = fs->initial;
+
 	/* Clear out current file list contents */
 	if (!dir_ent)
 	{
@@ -1523,6 +1526,12 @@ refresh_filelist(enum locks lock, struct fsel_data *fs, SCROLL_ENTRY *dir_ent)
 
 	xa_graf_mouse(HOURGLASS, NULL, NULL, false);
 	read_directory(fs, list, dir_ent);
+
+	/* redraw again if rtbuild with correct tab-sizes */
+	if( initial && fs->rtbuild )
+	{
+		list->redraw(list, NULL);
+	}
 	xa_graf_mouse(ARROW, NULL, NULL, false);
 
 }
@@ -3101,7 +3110,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 			tab.index = FSLIDX_NAME;
 			tab.flags = 0;
 			tab.r = (RECT){0,0,-50,0};
-			if (!fs->treeview)
+			if (!fs->treeview && !fs->rtbuild)
 				tab.r.w = -MINWIDTH;
 
 			list->set(list, NULL, SESET_TAB, (long)&tab, false);
