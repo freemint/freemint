@@ -338,6 +338,7 @@ init_client(enum locks lock, bool sysclient)
 			 */
 			client->rppid = info->rppid;
 			client->cmd_tail = info->cmd_tail;
+			//info->tail_is_heap = false;
 			strcpy(client->cmd_name, info->cmd_name);
 			strcpy(client->home_path, info->home_path);
 		}
@@ -1511,8 +1512,8 @@ short info_tab[][4] =
 	/* 18 <-- 96 AES_VERSION */
 	/* AES version information */
 	{
-		VER_MAJOR,	/* Major */
-		VER_MINOR,	/* Minor */
+		XAAES_MAJ_VERSION,	/* Major */
+		XAAES_MIN_VERSION,	/* Minor */
 		DEV_STATUS,	/* Status */
 		ARCH_TARGET	/* Target */
 	},
