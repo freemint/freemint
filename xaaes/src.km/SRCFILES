@@ -63,6 +63,7 @@ HEADER = \
 	xa_rsrc.h \
 	xa_scrp.h \
 	xa_shel.h \
+	xa_strings.h \
 	xa_types.h \
 	xa_user_things.h \
 	xa_vdi.h \
@@ -125,6 +126,7 @@ COBJS = \
 	xa_rsrc.c \
 	xa_scrp.c \
 	xa_shel.c \
+	xa_strings.c \
 	xa_vdi.c \
 	xa_wdlg.c \
 	xa_wind.c

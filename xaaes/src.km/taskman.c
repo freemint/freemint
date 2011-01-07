@@ -34,6 +34,7 @@
 
 #include "xa_types.h"
 #include "xa_global.h"
+#include "xa_strings.h"
 
 #include "about.h"
 #include "app_man.h"
@@ -878,7 +879,6 @@ send_terminate(enum locks lock, struct xa_client *client, short reason)
 			 client->p->pid, reason/*AP_TERM*/, 0, 0);
 }
 
-static char ASK_QUITALL_ALERT[] = "[2][Quit All][Cancel|Ok]";
 
 void
 quit_all_apps(enum locks lock, struct xa_client *except, short reason)
@@ -955,7 +955,7 @@ ce_quit_all_clients(enum locks lock, struct xa_client *client, bool b)
 	struct cfg_name_list *nl = NULL;
 
 
-	if ( xaaes_do_form_alert( lock, C.Hlp, 1, ASK_QUITALL_ALERT ) != 2 )
+	if ( xaaes_do_form_alert( lock, C.Hlp, 1, xa_strings[ASK_QUITALL_ALERT] ) != 2 )
 	{
 		return;
 	}
@@ -987,7 +987,7 @@ CHlp_aesmsg(struct xa_client *client)
 				}
 				else if (m->m[3] != 0)
 				{
-					sprintf(alert, sizeof(alert), /*scrn_snap_serr*/"[1][ Snapper could not save snap! | ERROR: %d ][ Ok ]", m->m[3]);
+					sprintf(alert, sizeof(alert), /*scrn_snap_serr*/xa_strings[SNAP_ERR1], m->m[3]);
 					do_form_alert(0, client, 1, alert, XAAESNAME);
 				}
 				break;
@@ -998,7 +998,6 @@ CHlp_aesmsg(struct xa_client *client)
 }
 
 #if ALT_CTRL_APP_OPS
-static char sdalert[] = /*scrn_snap_what*/ "[2][What do you want to snap?][Block|Full screen|Top Window|Cancel]";
 void
 screen_dump(enum locks lock, struct xa_client *client, bool open)
 {
@@ -1018,7 +1017,7 @@ screen_dump(enum locks lock, struct xa_client *client, bool open)
 			C.update_lock = client->p;
 			C.updatelock_count++;
 
-			do_form_alert(lock, client, 4, sdalert, XAAESNAME);
+			do_form_alert(lock, client, 4, xa_strings[SDALERT], XAAESNAME);
 			Block(client, 0);
 
 // 			display("intout %d", C.Hlp_pb->intout[0]);
@@ -1051,7 +1050,7 @@ screen_dump(enum locks lock, struct xa_client *client, bool open)
 					C.updatelock_count--;
 					C.update_lock = NULL;
 					unlock_screen(client->p);
-					do_form_alert(lock, client, 1, /*scrn_snap_twc*/"[1][Cannot snap topwindow as | parts of it is offscreen!][OK]", XAAESNAME);
+					do_form_alert(lock, client, 1, /*scrn_snap_twc*/xa_strings[SNAP_ERR2], XAAESNAME);
 					doit = false;
 				}
 			}
@@ -1112,9 +1111,7 @@ screen_dump(enum locks lock, struct xa_client *client, bool open)
 		}
 	}
 	else
-		do_form_alert(lock, client, 1, /*scrn_snap_notfound*/
-"[1]['xaaesnap' process not found.|Start 'xaaesnap.prg' and try again|or define snapshot in xaaes.cnf][OK]",
-	XAAESNAME);
+		do_form_alert(lock, client, 1, /*scrn_snap_notfound*/ xa_strings[SNAP_ERR3],	XAAESNAME);
 }
 #endif
 
@@ -1414,7 +1411,7 @@ taskmanager_form_exit(struct xa_client *Client,
 			Sema_Dn(clients);
 #if 0
 			close_window(lock, wind);
-			if ( xaaes_do_form_alert( 0, C.Hlp, 1, ASK_SHUTDOWN_ALERT ) != 2 )
+			if ( xaaes_do_form_alert( 0, C.Hlp, 1, xa_strings[ASK_SHUTDOWN_ALERT] ) != 2 )
 				goto lb_TM_OK;//break;
 #endif
 			DIAGS(("taskmanager: halt system"));
@@ -1604,8 +1601,8 @@ static void make_tm_ticks( OBJECT *obtree, int ticks[] )
 
 static long calc_new_ld(struct proc *rootproc)
 {
-	static long systime = 0, old_tim = 0, new_ld=0;
-	long ud, utim, rsystime = rootproc->systime;
+	static long systime = 0, old_tim = 0;
+	long ud, utim, rsystime = rootproc->systime, new_ld = 0;
 	struct timeval tv;
 
 	Tgettimeofday( &tv, 0 );
@@ -1690,7 +1687,7 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 				 SIF_SELECTABLE|SIF_AUTOSELECT|SIF_TREEVIEW|SIF_ICONINDENT|SIF_AUTOOPEN|SIF_AUTOSLIDERS,
 				 NULL, NULL, NULL, NULL, NULL, NULL,
 				 NULL, NULL, NULL, NULL,
-				 /*tm_client_apps*/"Applications", NULL, NULL, 255);
+				 xa_strings[RS_APPLST], NULL, NULL, 255);
 
 		if (!list) goto fail;
 
@@ -1729,7 +1726,7 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 		wind->window_status |= XAWS_NODELETE;
 
 		/* Set the window title */
-		set_window_title(wind, /*tm_manager*/" Task Manager ", false);
+		set_window_title(wind, /*tm_manager*/xa_strings[RS_TM], false);
 
 		wt = set_toolbar_widget(lock, wind, client, obtree, inv_aesobj(), 0/*WIP_NOTEXT*/, STW_ZEN, NULL, &or);
 		wt->exit_form = taskmanager_form_exit;
@@ -2242,7 +2239,7 @@ open_launcher(enum locks lock, struct xa_client *client)
 	fs = &aes_fsel_data;
 	open_fileselector(lock, client, fs,
 			  cfg.launch_path,
-			  NULL, /*txt_launch_prg*/"Launch Program",
+			  NULL, /*txt_launch_prg*/xa_strings[RS_LAUNCH],
 			  handle_launcher, NULL, NULL);
 }
 #endif
@@ -2281,7 +2278,7 @@ sysalerts_form_exit(struct xa_client *Client,
 			struct scroll_info *list = object_get_slist(wt->tree + SYSALERT_LIST);
 			struct sesetget_params p = { 0 };
 
-			p.arg.txt = /*txt_alerts*/"Alerts";
+			p.arg.txt = xa_strings[RS_ALERTS];
 			list->get(list, NULL, SEGET_ENTRYBYTEXT, &p);
 			if (p.e)
 				list->empty(list, p.e, 0);
@@ -2586,9 +2583,9 @@ open_systemalerts(enum locks lock, struct xa_client *client, bool open)
 	{
 		struct scroll_info *list;
 		RECT or;
-		char a[] = /*txt_alerts*/"Alerts";
-		char e[] = /*txt_environment*/"Environment";
-		char s[] = /*txt_environment*/"System";
+		char *a = xa_strings[RS_ALERTS];
+		char *e = xa_strings[RS_ENV];
+		char *s = xa_strings[RS_SYSTEM];
 		int objs[] = {SALERT_IC1, SALERT_IC2, 0};
 
 		obtree = duplicate_obtree(client, ResourceTree(C.Aes_rsc, SYS_ERROR), 0);
@@ -2738,7 +2735,7 @@ open_systemalerts(enum locks lock, struct xa_client *client, bool open)
 		list->set(list, NULL, SESET_PRNTWIND, (long)wind, NOREDRAW);
 
 		/* Set the window title */
-		set_window_title(wind, " System window & Alerts log", false);
+		set_window_title(wind, xa_strings[RS_SYS], false);
 
 		wt = set_toolbar_widget(lock, wind, client, obtree, inv_aesobj(), 0/*WIP_NOTEXT*/, STW_ZEN, NULL, &or);
 		wt->exit_form = sysalerts_form_exit;
