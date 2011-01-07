@@ -45,8 +45,6 @@
 #include "mint/stat.h"
 
 
-#define XA_HELP_FILE	"xa_help.txt"
-
 #define AB_GPL "The terms of the <b>GPL version 2</b> or later apply."
 #define AB_MINT	"Part of freemint ("SPAREMINT_URL")."
 
@@ -291,7 +289,10 @@ open_about(enum locks lock, struct xa_client *client, bool open)
 	set_xa_fnt( cfg.xaw_point, 0, 0, 0, list);
 
 #if HELPINABOUT
-	sprintf( ebuf, sizeof(ebuf), "%s\\%s", C.start_path, XA_HELP_FILE );
+	if( cfg.lang[0] )
+	{
+	}
+	sprintf( ebuf, sizeof(ebuf), "%s\\%s", C.start_path, xa_strings[XA_HELP_FILE] );
 	/* check if help-file has changed and if yes re-read */
 	if (list->start)
 	{
