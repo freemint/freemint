@@ -1,0 +1,584 @@
+nn:#  3: XaAES
+_
+nn:#  4: Process
+de:#  4: Prozesse
+_
+nn:#  7:  About XaAES...
+de:#  7:  öber XaAES...
+_
+nn:#  8:-------------------
+_
+nn:#  9:  Desk Accessory 1
+_
+nn:# 10:  Desk Accessory 2
+_
+nn:# 11:  Desk Accessory 3
+_
+nn:# 12:  Desk Accessory 4
+_
+nn:# 13:  Desk Accessory 5
+_
+nn:# 14:  Desk Accessory 6
+_
+nn:# 16:  Launch...
+de:# 16:  Programm starten...
+_
+nn:# 17:  Launch Desk
+de:# 17:  Desktop starten
+_
+nn:# 18:  Task Manager...
+_
+nn:# 19:------------------
+_
+nn:# 20:  System...
+_
+nn:# 21:  Log...
+_
+nn:# 22:------------------
+_
+nn:# 23:  Quit all Apps
+de:# 23:  Alle Apps beenden
+_
+nn:# 24:  Quit XaAES
+de:# 24:  XaAES beenden
+_
+nn:# 25:------------------
+_
+nn:# 26:  Resolution...
+de:# 26:  Auflîsung...
+_
+nn:# 30: C:
+_
+nn:# 31: *.[CHS]********
+_
+nn:# 32: Options
+de:# 32: Optionen
+_
+nn:# 35:  A:
+_
+nn:# 36:  B:
+_
+nn:# 37:  C:
+_
+nn:# 38:  D:
+_
+nn:# 39:  E:
+_
+nn:# 40:  F:
+_
+nn:# 41:  G:
+_
+nn:# 42:  H:
+_
+nn:# 43:  I:
+_
+nn:# 44:  J:
+_
+nn:# 45:  K:
+_
+nn:# 46:  L:
+_
+nn:# 47:  M:
+_
+nn:# 48:  N:
+_
+nn:# 49:  O:
+_
+nn:# 50:  P:
+_
+nn:# 51:  Q:
+_
+nn:# 52:  R:
+_
+nn:# 53:  S:
+_
+nn:# 54:  T:
+_
+nn:# 55:  U:
+_
+nn:# 56:  V:
+_
+nn:# 57:  W:
+_
+nn:# 58:  X:
+_
+nn:# 59:  Y:
+_
+nn:# 60:  Z:
+_
+nn:# 61:  0:
+_
+nn:# 62:  1:
+_
+nn:# 63:  2:
+_
+nn:# 64:  3:
+_
+nn:# 65:  4:
+_
+nn:# 66:  5:
+_
+nn:# 67:  6:
+_
+nn:# 68:  7:
+_
+nn:# 69:  8:
+_
+nn:# 70:  9:
+_
+nn:# 72:  ***************
+_
+nn:# 73:  *.*
+_
+nn:# 74:  *.C*
+_
+nn:# 75:  *.H*
+_
+nn:# 76:  *.S*
+_
+nn:# 77:  *.[CHS]*
+_
+nn:# 78:  *.[ATPG]*
+_
+nn:# 79:  *.I*
+_
+nn:# 80:  *.O*
+_
+nn:# 81:  *.P*
+_
+nn:# 82:  *.T*
+_
+nn:# 83:  *.APP
+_
+nn:# 84:  *.PRG
+_
+nn:# 85:  *.TTP
+_
+nn:# 86:  *.TOS
+_
+nn:# 87:  *.TXT
+_
+nn:# 88:  *.DOC
+_
+nn:# 89:  *.RSC
+_
+nn:# 90:  *.PAS
+_
+nn:# 91:  *.CPP
+_
+nn:# 92:  *.PAP
+_
+nn:# 93:  *.HTM
+_
+nn:# 94:  *.HTML
+_
+nn:# 96:  Realtime build directories
+de:# 96:  Echtzeit-Anzeige
+_
+nn:# 97:  Tree view
+de:# 97:  Baumansicht
+_
+nn:# 98:-----------------------------
+_
+nn:# 99:  Sort by Name
+de:# 99:  Nach Namen sortiert
+_
+nn:#100:  Sort by Date
+de:#100:  Nach Datum sortiert
+_
+nn:#101:  Sort by Size
+de:#101:  Nach Grîûe sortiert
+_
+nn:#102:  Sort by Ext
+de:#102:  Nach Extension sortiert
+_
+nn:#103:  No sorting
+de:#103:  Unsortiert
+_
+nn:#114:Alert box template-----------------------------------------------
+_
+nn:#115:Alert box template-----------------------------------------------
+_
+nn:#116:Alert box template-----------------------------------------------
+_
+nn:#117:Alert box template-----------------------------------------------
+_
+nn:#118:Alert box template-----------------------------------------------
+_
+nn:#119:Alert box template-----------------------------------------------
+_
+nn:#120:Button1-------------
+_
+nn:#121:Button2-------------
+_
+nn:#122:Button3-------------
+_
+nn:#123:Button4-------------
+_
+nn:#125:XaAES Ain't the AES
+_
+nn:#128:The GEMø compatible AES for FreeMiNT
+de:#128:Das GEMø-kompatible AES fÅr FreeMiNT
+_
+nn:#130:Version:
+de:#132:Datum:
+_
+nn:#131:.
+_
+nn:#132:Date:
+_
+nn:#133:.
+_
+nn:#134:OK
+_
+nn:#135:Target:
+de:#135:System:
+_
+nn:#136:.
+_
+nn:#137:.
+_
+nn:#138:0.0.9
+_
+nn:#142:Beta Test Release
+_
+nn:#157:Quit all Apps
+de:#157:Alle beenden
+_
+nn:#158:Reboot
+de:#158:Warmstart
+_
+nn:#159:Quit XaAES
+de:#159:XaAES beenden
+_
+nn:#160:Halt
+de:#160:Shutdown
+_
+nn:#161:OK
+_
+nn:#162:Coldboot
+de:#162:Kaltstart
+_
+nn:#163:Toggle load
+de:#163:Auslastung an/aus
+_
+nn:#171:load
+de:#171:Auslastung
+_
+nn:#172:mem
+_
+nn:#185:Clear
+de:#185:AufrÑumen
+_
+nn:#186:OK
+_
+nn:#188:___________________________________________________________
+_
+nn:#197:Cancel
+de:#197:Abbruch
+_
+nn:#198:OK
+_
+nn:#202:is still running. Action?
+de:#202:ist noch aktiv. Was nun?
+_
+nn:#203:Wait
+de:#203:Warten
+_
+nn:#204:Kill
+de:#204:Beenden
+_
+nn:#205:A very long application name.
+_
+nn:#206:Shutting down
+de:#206:Shutdown
+_
+nn:#207:Kill'em All
+de:#207:Alle beenden
+_
+nn:#209:Cancel
+de:#209:Abbruch
+_
+nn:#210:OK
+_
+nn:#211:Set
+de:#211:Setzen
+_
+nn:#212:Mark
+_
+nn:#213:User definable
+de:#213:Benutzerdefiniert
+_
+nn:#218:1234
+_
+nn:#219:1234
+_
+nn:#220:Point:
+de:#220:Grîûe:
+_
+nn:#221:B/H:
+_
+nn:#226:Display
+de:#226:Schriftstil anzeigen
+_
+nn:#228:Cancel
+de:#228:Abbruch
+_
+nn:#229:OK
+_
+nn:#233:Driver:
+de:#233:GerÑt:
+_
+nn:#238:all
+de:#238:alle
+_
+nn:#239:from
+de:#239:von:
+_
+nn:#240:9999
+_
+nn:#241:9999
+_
+nn:#242:Even
+de:#242:gerade
+_
+nn:#243:Odd
+de:#243:ungerade
+_
+nn:#244:9999
+_
+nn:#245:Quality:
+de:#245:QualitÑt:
+_
+nn:#246:Color:
+de:#246:Farben:
+_
+nn:#247:Pages:
+de:#247:Seiten:
+_
+nn:#248:Copies:
+de:#248:Kopien:
+_
+nn:#249:to
+de:#249:bis:
+_
+nn:#257:100
+_
+nn:#258:Scale:
+de:#258:Grîûe:
+_
+nn:#259:Paper:
+de:#259:Papier:
+_
+nn:#260:Output tray:
+de:#260:Auswurf:
+_
+nn:#261:Input tray:
+de:#261:Einzug:
+_
+nn:#264:C
+_
+nn:#265:M
+_
+nn:#266:Y
+_
+nn:#267:K
+_
+nn:#268:Raster:
+_
+nn:#271:Port:
+de:#271:Anschluss:
+_
+nn:#272:in the background
+de:#272:im Hintergrund
+_
+nn:#273:in the foreground
+de:#273:im Vordergrund
+_
+nn:#274:Print:
+de:#274:Drucken:
+_
+nn:#279:Cancel
+de:#279:Abbruch
+_
+nn:#280:OK
+_
+nn:#281: Colours
+de:#281: Farben
+_
+nn:#282:mono
+_
+nn:#283:4
+_
+nn:#284:16
+_
+nn:#285:256
+_
+nn:#286:64k
+_
+nn:#287: Columns
+de:#287: Spalten
+_
+nn:#288:40
+_
+nn:#289:80
+_
+nn:#290: VGA
+_
+nn:#291:TV
+_
+nn:#292:VGA
+_
+nn:#293: TVsel
+de:#293: TV
+_
+nn:#294:NTSC
+_
+nn:#295:PAL
+_
+nn:#296:Overscan
+_
+nn:#297:Line double/Interlace
+de:#297:Zeilenverdoppelung/Interlace
+_
+nn:#298:Add. bit (bit 15 in modeword)
+de:#298:Zus. Bit (Bit 15 in modeword)
+_
+nn:#300:Cancel
+de:#300:Abbruch
+_
+nn:#301:OK
+_
+nn:#302:0123456789012345678901234567890123
+_
+nn:#303:Button
+_
+nn:#304:Resolution:
+de:#304:Auflîsung:
+_
+nn:#305:Color depth:
+de:#305:Farbtiefe:
+_
+nn:#307:Cancel
+de:#307:Abbruch
+_
+nn:#308:OK
+_
+nn:#309: Modes
+de:#309: Modi
+_
+nn:#310:1 (unused)
+de:#310:1 (unbenutzt)
+_
+nn:#311:2 320x200x16c (ST Low)
+_
+nn:#312:3 640x200x4c  (ST-Med)
+_
+nn:#313:4 640x480x2c  (ST-Hi)
+_
+nn:#314:5 (unused)
+de:#314:5 (unbenutzt)
+_
+nn:#315:6 640x480x256c (TT Med)
+_
+nn:#316:8 1280x960x2c (TT Hi)
+_
+nn:#317:7 (unused)
+_
+nn:#318:9 320x480x16c (TT Low)
+_
+nn:#319:10 (unused)
+de:#319:10 (unbenutzt)
+_
+NN:#  1:Part of freemint (www.freemint.org).
+de:#  1:Teil von freemint (www.freemint.org).
+_
+NN:#  2:The terms of the <b>GPL version 2</b> or later apply.
+de:#  2:Es gilt die <b>GPL version 2</b> oder sp‰ter.
+_
+NN:#  3:‰Windows     @
+de:#  3:‰Fenster     @
+_
+NN:#  4:Advanced    @
+de:#  4:Erweitert   @
+_
+NN:#  5:‰To desktop  @
+de:#  5:‰Zum Desktop @
+_
+NN:#  6:Close       @
+de:#  6:Schliessen  @
+_
+NN:#  7:Hide        @
+_
+NN:#  8:Iconify     @
+_
+NN:#  9:Shade       @
+_
+NN:# 10:≠Move        @
+_
+NN:# 11:≠Resize      @
+_
+NN:# 12:≠Quit        @
+_
+NN:# 13:≠Kill        @
+_
+NN:# 14:≠Keep above others
+de:# 14:≠‹ber den anderen
+_
+NN:# 15:≠Keep below others
+de:# 15:≠Unter den anderen
+_
+NN:# 16:≠Toolbox attribute
+_
+NN:# 17:≠Deny keyboard focus
+_
+NN:# 18:≠This
+_
+NN:# 19:≠All
+_
+NN:# 20:≠All others
+_
+NN:# 21:≠Restore all
+_
+NN:# 22:≠Restore all others
+_
+NN:# 23:≠This window
+_
+NN:# 24:≠Application
+_
+NN:# 25:≠Other app
+_
+NN:# 26:≠Show other app
+_
+NN:# 27:  About
+_
+NN:# 28: Task Manager
+_
+NN:# 29: System window & Alerts log
+_
+NN:# 30:Applications
+_
+NN:# 31:Alerts
+_
+NN:# 32:Environment
+_
+NN:# 33:System
+_
+NN:# 34:[2][Quit All][Cancel|Ok]
+_
+NN:# 35:[2][leave XaAES][Cancel|Ok]
+_
+NN:# 36:[1][ Snapper could not save snap! | ERROR: %d ][ Ok ]
+_
+NN:# 37:[1][Cannot snap topwindow as | parts of it is offscreen!][OK]
+_
+NN:# 38:[1]['xaaesnap' process not found.|Start 'xaaesnap.prg' and try again|or define snapshot in xaaes.cnf][OK]
+_
+NN:# 39:[2][What do you want to snap?][Block|Full screen|Top Window|Cancel]
+de:# 39:[2][Wos wuilst schnoppen?][A Block|Ganzen Sch¸rrm|Fenschterl|Nix]
+_
+NN:# 40: Launch Program
+de:# 40:Proggy abfahrn
+_
+
+
