@@ -1350,6 +1350,8 @@ kick_shutdn_if_last_client(void)
 	}
 }
 
+static char ASK_SHUTDOWN_ALERT[] = "[2][leave XaAES][Cancel|Ok]";
+
 void _cdecl
 ce_dispatch_shutdown(enum locks lock, struct xa_client *client, bool b)
 {
