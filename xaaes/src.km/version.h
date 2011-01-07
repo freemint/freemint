@@ -29,13 +29,16 @@
 
 #define DSMASM 0x00ff
 
-/* Version numbers */
-#define VER_MAJOR	0
-#define VER_MINOR	999
+/*
+ * main version macros
+  */
+#define XAAES_MAJ_VERSION  1
+#define XAAES_MIN_VERSION  0
+#define XAAES_PATCH_LEVEL  0
+
 #define ARCH_TARGET	AES_ARCH_M68K
-/*#define DEV_STATUS	(AES_DEVSTATUS_ALPHA|AES_FDEVSTATUS_STABLE)*/
-//#define DEV_STATUS	AES_DEVSTATUS_BETA
-#define DEV_STATUS	AES_DEVSTATUS_RELEASE
+#define DEV_STATUS	AES_DEVSTATUS_BETA
+//#define DEV_STATUS	AES_DEVSTATUS_RELEASE
 
 /* This is only used in wind_get(WF_XAAES) which will be removed */
 #define HEX_VERSION	0x09

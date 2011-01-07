@@ -451,7 +451,7 @@ again:
 		}
 	}
 
-	sprintf(version, sizeof(version), "%i.%i", VER_MAJOR, VER_MINOR);
+	sprintf(version, sizeof(version), "%i.%i.%i", XAAES_MAJ_VERSION, XAAES_MIN_VERSION, XAAES_PATCH_LEVEL);
 	sprintf(vversion, sizeof(vversion), "%s %s%s", version,  DEV_STATUS & AES_FDEVSTATUS_STABLE ? "Stable " : "", ASCII_DEV_STATUS);
 #if GENERATE_DIAGS
 	bzero(&D, sizeof(D));
@@ -678,6 +678,7 @@ again:
 
 	/* Parse the config file */
 	load_config();
+	BLOG((0,"lang=%s.",cfg.lang));
 
 	if( cfg.info_font_point == -1 )
 		cfg.info_font_point = cfg.standard_font_point;
