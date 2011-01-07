@@ -509,10 +509,13 @@ NN:#  6:Close       @
 de:#  6:Schliessen  @
 _
 NN:#  7:Hide        @
+de:#  7:Weg         @
 _
 NN:#  8:Iconify     @
+de:#  8:Klein machen@
 _
 NN:#  9:Shade       @
+de:#  9:Schattieren @
 _
 NN:# 10:≠Move        @
 _
@@ -533,34 +536,49 @@ _
 NN:# 17:≠Deny keyboard focus
 _
 NN:# 18:≠This
+de:# 18:≠Das hier
 _
 NN:# 19:≠All
+de:# 19:≠Alle
 _
 NN:# 20:≠All others
+de:# 20:≠Die andern
 _
 NN:# 21:≠Restore all
+de:# 21:≠Alles auf Anfang
 _
 NN:# 22:≠Restore all others
+de:# 22:≠Ander restaurieren
 _
 NN:# 23:≠This window
+de:# 23:≠Das hier
 _
 NN:# 24:≠Application
+de:# 24:≠Anwendung
 _
 NN:# 25:≠Other app
+de:# 25:≠Andere Anwendung
 _
 NN:# 26:≠Show other app
+de:# 26:≠Zeig andere Anwendung
 _
 NN:# 27:  About
+de:# 27:Werbinich
 _
 NN:# 28: Task Manager
+de:# 28:Chefsache
 _
 NN:# 29: System window & Alerts log
+de:# 29: Fenschterl fÅrs GmÅt
 _
 NN:# 30:Applications
+de:# 30:Anwendungen
 _
 NN:# 31:Alerts
+de:# 31:Meldungen
 _
 NN:# 32:Environment
+de:# 32:Umgebung
 _
 NN:# 33:System
 _
@@ -579,6 +597,9 @@ de:# 39:[2][Wos wuilst schnoppen?][A Block|Ganzen Sch¸rrm|Fenschterl|Nix]
 _
 NN:# 40: Launch Program
 de:# 40:Proggy abfahrn
+_
+NN:# 41:xa_help.txt
+de:# 41:xa_help.de
 _
 
 
