@@ -226,6 +226,16 @@ void xa_fclose( XA_FILE *fp )
 	kfree( fp );
 }
 
+/*
+ * simple version!
+ */
+int xa_writeline( char *buf, long l, XA_FILE *fp )
+{
+	if( l <= 0 || buf == 0 || (kernel_write( fp->k_fp, buf, l ) <= 0) )
+		return 0;
+	return kernel_write( fp->k_fp, "\n", 1 );
+}
+
 char *xa_readline( char *buf, long size, XA_FILE *fp )
 {
 	long err = 1;
@@ -236,10 +246,9 @@ char *xa_readline( char *buf, long size, XA_FILE *fp )
 	if( fp->k_fp )
 	{
 
-		if( !fp->p /*|| fp->p >= fp->buf + sizeof(fp->buf) - 1*/)
+		if( !fp->p )
 		{
 			err = kernel_read( fp->k_fp, fp->buf, sizeof(fp->buf)-1 );
-
 
 			if( err <= 0 )
 			{

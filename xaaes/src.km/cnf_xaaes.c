@@ -87,6 +87,7 @@ static struct parser_item parser_tab[] =
 	{ "CLIPBOARD",             PI_R_T,     cfg.scrap_path          , { dat: sizeof(cfg.scrap_path)  } },
 	{ "SNAPSHOT",  	           PI_R_T,     cfg.snapper  		        , { dat: sizeof(cfg.snapper)  } },
 	{ "ACCPATH",               PI_R_T,     cfg.acc_path            , { dat: sizeof(cfg.acc_path)    } },
+	{ "LANG",                  PI_R_T,     cfg.lang		             , { dat: sizeof(cfg.lang)   } },
 	{ "WIDGETS",               PI_R_T,     cfg.widg_name           , { dat: sizeof(cfg.widg_name)   } },
 	{ "RESOURCE",              PI_R_T,     cfg.rsc_name            , { dat: sizeof(cfg.rsc_name)    } },
 	{ "USEHOME",               PI_R_B,   & cfg.usehome		},
@@ -476,7 +477,7 @@ static void
 pCB_include(char *path, struct parsinf *inf)
 {
 	BLOG((0,"include: '%s'", path));
-	parse_include(path, inf, parser_tab);
+	parse_include(path, inf, parser_tab);	// should return error-value
 }
 
 /*----------------------------------------------------------------------------*/
@@ -569,10 +570,6 @@ pCB_app_options(char *line)
 				get_boolarg(s + 9, &opts->xa_nohide);
 			else if (!strnicmp(s, "xa_nomove", 9))
 				get_boolarg(s + 9, &opts->xa_nomove);
-		//	else if (!strnicmp(s, "xa_objced", 9))
-		//		get_boolarg(s + 9, &opts->xa_objced);
-			else if (!strnicmp(s, "xa_none", 7))
-				get_boolarg(s + 7, &opts->xa_none);
 			else if (!strnicmp(s, "noleft", 6))
 				get_boolarg(s + 6, &opts->noleft);
 			else if (!strnicmp(s, "thinwork", 8))
@@ -583,10 +580,12 @@ pCB_app_options(char *line)
 				get_boolarg(s + 13, &opts->wheel_reverse);
 			else if (!strnicmp(s, "naesff", 6))
 				get_boolarg(s + 7, &opts->naes_ff);
-			else if (!strnicmp(s, "naes12", 6))
-				get_boolarg(s + 6, &opts->naes12);
-			else if (!strnicmp(s, "naes", 4))
-				get_boolarg(s + 4, &opts->naes);
+			//else if (!strnicmp(s, "naes12", 6))
+				//get_boolarg(s + 6, &opts->naes12);
+			//else if (!strnicmp(s, "naes", 4))
+				//get_boolarg(s + 4, &opts->naes);
+			else if (!strnicmp(s, "rsc_lang", 8))
+				get_argument(s + 8, &opts->rsc_lang);
 			else if (!strnicmp(s, "winframe_size", 13))
 				get_argument(s + 13, &opts->thinframe);
 			else if (!strnicmp(s, "inhibit_hide", 12))
@@ -938,8 +937,8 @@ diags_opts(struct options *o)
 {
 	DIAGS(("        windowner  = %s", o->windowner ? "true" : "false"));
 	DIAGS(("        nohide     = %s", o->nohide    ? "true" : "false"));
-	DIAGS(("        naes       = %s", o->naes      ? "true" : "false"));
-	DIAGS(("        naes12     = %s", o->naes12    ? "true" : "false"));
+	//DIAGS(("        naes       = %s", o->naes      ? "true" : "false"));
+	//DIAGS(("        naes12     = %s", o->naes12    ? "true" : "false"));
 
 	DIAGS(("        xa_nohide  = %s", o->xa_nohide ? "true" : "false"));
 	DIAGS(("        xa_nomove  = %s", o->xa_nomove ? "true" : "false"));

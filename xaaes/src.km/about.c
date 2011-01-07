@@ -28,6 +28,7 @@
 
 #include "xa_types.h"
 #include "xa_global.h"
+#include "xa_strings.h"
 
 #include "c_window.h"
 #include "form.h"
@@ -46,13 +47,36 @@
 
 #define XA_HELP_FILE	"xa_help.txt"
 
+#define AB_GPL "The terms of the <b>GPL version 2</b> or later apply."
+#define AB_MINT	"Part of freemint ("SPAREMINT_URL")."
+
 #if XAAES_RELEASE
 #define FN_CRED	1
 #else
 #define FN_CRED	0
 #endif
 
-static char *about_lines[] =
+#if 1
+char *about_lines[] =
+{
+  /*          1         2         3         4         5         6
+     123456789012345678901234567890123456789012345678901234567890 */
+#if FN_CRED
+	"",
+	"           <u>Dedicated to <i>Frank Naumann </i></u>\xbb",
+	"<u>                                                                  </u>",
+#endif
+	"",
+	AB_MINT,
+	"",
+	AB_GPL,
+	"",
+	NULL
+};
+
+extern char *wctxt_main_txt[];
+#else
+char *about_lines[] =
 {
   /*          1         2         3         4         5         6
      123456789012345678901234567890123456789012345678901234567890 */
@@ -76,7 +100,7 @@ static char *about_lines[] =
 	"Using Harald Siegmunds NKCC.",
 	"",
 #else
-	"Part of freemint ("SPAREMINT_URL").",
+	AB_MINT,
 #endif
 #if LONG_LICENSE
 	"XaAES is free software; you can redistribute it",
@@ -86,14 +110,14 @@ static char *about_lines[] =
 	"License, or (at your option) any later version.",
 #else
 	"",
-	"The terms of the <b>GPL version 2</b> or later apply.",
+	AB_GPL,
 #endif
 
 	"",
 	NULL
 };
+#endif
 
-// static struct xa_window *about_window = NULL;
 
 static int
 about_destructor(enum locks lock, struct xa_window *wind)
@@ -232,7 +256,7 @@ open_about(enum locks lock, struct xa_client *client, bool open)
 		wind->min.h = wind->r.h;//MINOBJMVH * 3;	/* minimum height for this window */
 		wind->min.w = wind->r.w;//MINOBJMVH;	/* minimum width for this window */
 		/* Set the window title */
-		set_window_title(wind, "  About  ", true);
+		set_window_title(wind, RS_ABOUT, true);
 
 		(obtree + ABOUT_INFOSTR)->ob_spec.free_string = "\0";
 #if XAAES_RELEASE
