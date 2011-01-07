@@ -521,8 +521,8 @@ struct options
 	bool nolive;			/* Live moving and sizing of windows. */
 	bool wheel_reverse;		/* Do you want move the slider in the wheel direction,
 					 * or rather the window content? */
-	bool naes;			/* N.Aes 3d compatability */
-	bool naes12;
+	//bool naes;			/* N.Aes 3d compatability */
+	//bool naes12;
 	bool naes_ff;			/**/
 	bool inhibit_hide;
 
@@ -531,6 +531,7 @@ struct options
 	short wheel_page;		/* how many wheel clicks for a page */
 	short wheel_mode;
 	short standard_font_point;	/* if != 0 set standard-font for application */
+	short rsc_lang;		/* try to read strings for rsc from <rsc-basename>.rsl */
 	unsigned long wind_opts;			/* Default window options - see struct xa_window.opts */
 	unsigned long app_opts;
 	long half_screen;
@@ -2947,6 +2948,8 @@ struct config
 	Path widg_name;			/* Path to XaAES widget rsc */
 	Path rsc_name;			/* Path to XaAES rsc */
 	Path xobj_name;
+
+	char lang[4];				/* language (de,en,es,...) */
 
 	/* display modes of window title (unimplemented)*/
 	/*short topname;

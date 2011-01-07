@@ -1767,7 +1767,7 @@ drag_border(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 #define MWCTXT_QUIT	10
 #define MWCTXT_KILL	11
 
-static char *wctxt_main_txt[] =
+char *wctxt_main_txt[] =
 {
  "\255Windows     ",
    "\1Advanced    ",
@@ -1785,8 +1785,8 @@ static char *wctxt_main_txt[] =
 #define ADVWC_SINK	2
 #define ADVWC_TOOLBOX	3
 #define ADVWC_NOFOCUS	4
-	"\255Keep over others",
-	"\255Keep under others",
+	"\255Keep above others",
+	"\255Keep below others",
 	"\255Toolbox attribute",
 	"\255Deny keyboard focus ",
 	"",

@@ -33,6 +33,7 @@
 #include "xa_appl.h"
 #include "xa_rsrc.h"
 #include "xa_shel.h"
+#include "util.h"
 
 #include "mint/fcntl.h"
 #include "mint/stat.h"
@@ -504,6 +505,87 @@ fix_cicons(struct xa_client *client, void *base, CICONBLK **cibh, char **extra)
 	return maxplanes;
 }
 
+static int make_rscl_name( char *in, char *out )
+{
+	char *p;
+	strncpy( out, in, PATH_MAX );
+	p = strrchr( out, '.' );
+	if( !p || stricmp( p+1, "rsc" ) )
+		return 1;
+	*(p+3) = 'l';
+	return 0;
+}
+
+
+#define READ	1
+#define WRITE	2
+#define OREAD	3
+#define OWRITE	4
+#define CLOSE	5
+#define REPLACE	6
+
+#define LF_OFFS	8
+#define LF_SEPCH	'_'
+#define LF_SEPSTR	"_"
+
+struct rsc_trans{
+	int n_items;
+	char **str;
+};
+
+static XA_FILE *rsc_lang_file( int md, XA_FILE *fp, char *buf, int l )
+{
+	switch( md )
+	{
+		case OREAD:
+		return xa_fopen( buf, O_RDONLY );
+		case OWRITE:
+		return xa_fopen( buf, O_WRONLY|O_CREAT|O_TRUNC);
+		case READ:
+		return 0;
+		case WRITE:
+			if (fp)
+				xa_writeline( buf, l, fp );
+		return 0;
+		case CLOSE:
+			xa_fclose(fp);
+		return 0;
+		case REPLACE:
+		{
+			char lbuf[256];
+			long i=0;
+			for( lbuf[0] = 0; lbuf[0] != LF_SEPCH ; )
+			{
+				if( !xa_readline( lbuf, sizeof(lbuf)-1, fp ) ){
+					lbuf[0] = LF_SEPCH;
+					break;
+				}
+				if( !strncmp( lbuf, cfg.lang, 2 ) && (i=atol( lbuf + 4 )) == l )
+					break;
+			}
+
+			if( lbuf[0] != LF_SEPCH )	// found
+			{
+				char *p = strrchr( lbuf, '@' );
+				if( p )
+					*p = 0;
+				strncpy( buf, lbuf + LF_OFFS, strlen(buf) );
+			}
+			//else if( !isdigit(buf[0] ) )
+				//strrev( buf );
+			while( lbuf[0] != LF_SEPCH )
+			{
+				if( !xa_readline( lbuf, sizeof(lbuf)-1, fp ) ){
+					break;
+				}
+			}
+		}
+		return 0;
+		default:
+		return 0;
+	}
+}
+
 static void
 fix_objects(struct xa_client *client,
 	    struct xa_rscs *rscs,
@@ -511,7 +593,9 @@ fix_objects(struct xa_client *client,
 	    short vdih,
 	    void *b,
 	    OBJECT *obj,
-	    unsigned long n)
+	    unsigned long n,
+	    XA_FILE *rfp
+)
 {
 	unsigned long i;
 	short type;
@@ -539,9 +623,40 @@ fix_objects(struct xa_client *client,
 			case G_TITLE:
 			{
 				obj->ob_spec.free_string += (long)b;
-				//if( !(type == G_IMAGE || type == G_BOXTEXT || type == G_FBOXTEXT || type == G_TEXT || type == G_FTEXT) )
-					//bootlog((0,"%d:%s", type, obj->ob_spec.free_string));
+				if( client->options.rsc_lang && !(type == G_IMAGE) )
+				{
+					char buf[256], *p = 0;
+					int l;
 
+					if( object_has_tedinfo(obj) )
+					{
+						TEDINFO *ted = object_get_tedinfo(obj, NULL);
+						if( ted )
+						{
+							p = ted->te_ptext;
+						}
+					}
+					else
+						p = obj->ob_spec.free_string;
+
+					if( !p || !*p )
+						break;
+
+					l = sprintf( buf, sizeof(buf), "nn:#%3ld:%s", i, p);
+
+					if( l > LF_OFFS )
+					{
+						if( client->options.rsc_lang == WRITE )
+						{
+							rsc_lang_file( WRITE, rfp, buf, l);
+							rsc_lang_file( WRITE, rfp, LF_SEPSTR, 1);
+						}
+						else if( client->options.rsc_lang == READ )
+						{
+							rsc_lang_file( REPLACE, rfp, p, i);
+						}
+					}
+				}
 				break;
 			}
 			case G_ICON:
@@ -764,6 +879,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 	char *extra_ptr = NULL;
 	struct xa_rscs *rscs = NULL;
 	short vdih;
+	XA_FILE *rfp = 0;
 
 	if (!client)
 		client = C.Aes;
@@ -1002,10 +1118,48 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 			earray++;
 #endif
 	}
+
+	if( client->options.rsc_lang ){
+		char rscl_name[PATH_MAX];
+		if( !make_rscl_name( fname, rscl_name ) )
+		{
+			if( client->options.rsc_lang == READ ){
+				if( !( rfp = rsc_lang_file( OREAD, 0, rscl_name, 0)) )
+					client->options.rsc_lang = WRITE;
+			}
+			if( client->options.rsc_lang == WRITE ){
+				if( !(rfp = rsc_lang_file( OWRITE, 0, rscl_name, 0)) ){
+					BLOG((0,"LoadResources: could not write:%s.", rscl_name));
+					client->options.rsc_lang = 0;
+				}
+			}
+		}
+		else
+			client->options.rsc_lang = 0;
+	}
+
+
 	/*
 	 * fix_objects MUST run before fix_trees!!!
 	 */
-	fix_objects(client, rscs, cibh, vdih, base, (OBJECT *)(base + hdr->rsh_object), hdr->rsh_nobs);
+	fix_objects(client, rscs, cibh, vdih, base, (OBJECT *)(base + hdr->rsh_object), hdr->rsh_nobs, rfp );
+	if( rfp ){
+		extern char **trans_strings[];
+		if( client->options.rsc_lang == READ && trans_strings[0] ){
+			int i, k, j;
+			char **t;
+			for(k = 1, i = 0; trans_strings[i]; i++){
+				for(j = 0, t = trans_strings[i]; *t; j++, t++ ){
+					if( **t )
+					{
+						rsc_lang_file( REPLACE, rfp, *t, k++);
+					}
+				}
+			}
+			trans_strings[0] = 0;
+		}
+		rsc_lang_file( CLOSE, rfp, 0, 0 );
+		}
 	fix_trees(client, base, (OBJECT **)(base + hdr->rsh_trindex), hdr->rsh_ntree, designWidth, designHeight);
 
 	return (RSHDR *)base;

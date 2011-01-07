@@ -1194,7 +1194,7 @@ sshutdown_timeout(struct proc *p, long arg)
 
 	C.sdt = NULL;
 #if ALERT_SHUTDOWN
-	if ( xaaes_do_form_alert( 0, 1, ASK_SHUTDOWN_ALERT, XAAESNAME ) != 2 )
+	if ( xaaes_do_form_alert( 0, 1, xa_strings[ASK_SHUTDOWN_ALERT], XAAESNAME ) != 2 )
 		return;
 #endif
 
@@ -1350,13 +1350,11 @@ kick_shutdn_if_last_client(void)
 	}
 }
 
-static char ASK_SHUTDOWN_ALERT[] = "[2][leave XaAES][Cancel|Ok]";
-
 void _cdecl
 ce_dispatch_shutdown(enum locks lock, struct xa_client *client, bool b)
 {
 		short r = 0;
-		r = xaaes_do_form_alert( lock, C.Hlp, 1, ASK_SHUTDOWN_ALERT);
+		r = xaaes_do_form_alert( lock, C.Hlp, 1, xa_strings[ASK_SHUTDOWN_ALERT]);
 		if( r != 2 )
 			return;
 		dispatch_shutdown((short)b, 0);
