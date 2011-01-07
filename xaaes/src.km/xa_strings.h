@@ -1,5 +1,5 @@
 /*
- * Output-strings (to be moved into the rsc-file)
+ * Output-strings
  */
 
  /* window-titles */
@@ -20,6 +20,8 @@
 #define SNAP_ERR3          11
 #define SDALERT            12
 #define RS_LAUNCH          13
+
+#define XA_HELP_FILE 14
 
 
 extern char *xa_strings[];
