@@ -155,6 +155,9 @@ static void file_to_list( SCROLL_INFO *list, char *fn)
 	XA_FILE *xa_fp = xa_fopen(fn, O_RDONLY );
 	char *p;
 
+	if( !xa_fp )
+		return;
+
 	sc.t.strings = 1;
 	sc.fnt = &norm_txt;
 
