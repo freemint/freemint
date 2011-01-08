@@ -27,8 +27,7 @@ WARN = 	-Wall \
 	-Wmissing-prototypes \
 	-Winline \
 	-Wshadow \
-	-Wpointer-arith \
-	-Wcast-qual
+	-Wpointer-arith
 
 NOCFLAGS-adiload.c = $(MODEL)
 CFLAGS-adiload.c = -m68000
