@@ -510,9 +510,9 @@ static int make_rscl_name( char *in, char *out )
 	char *p;
 	strncpy( out, in, PATH_MAX );
 	p = strrchr( out, '.' );
-	if( !p || stricmp( p+1, "rsc" ) )
+	if( !p || stricmp( ++p, "rsc" ) )
 		return 1;
-	*(p+3) = 'l';
+	strcpy( p, "rsl" );
 	return 0;
 }
 
@@ -524,20 +524,22 @@ static int make_rscl_name( char *in, char *out )
 #define CLOSE	5
 #define REPLACE	6
 
-#define LF_OFFS	8
+#define LF_OFFS	3
 #define LF_SEPCH	'_'
 #define LF_SEPSTR	"_"
 
-struct rsc_trans{
-	int n_items;
-	char **str;
-};
+#define RSL_MAX_ERRORS	5
+static int rsl_errors = 0;	// maximum alerts for invalid rsl-file
+
+static short rsl_lno = 1;
 
 static XA_FILE *rsc_lang_file( int md, XA_FILE *fp, char *buf, int l )
 {
 	switch( md )
 	{
 		case OREAD:
+			rsl_errors = 0;
+			rsl_lno = 1;
 		return xa_fopen( buf, O_RDONLY );
 		case OWRITE:
 		return xa_fopen( buf, O_WRONLY|O_CREAT|O_TRUNC);
@@ -553,38 +555,78 @@ static XA_FILE *rsc_lang_file( int md, XA_FILE *fp, char *buf, int l )
 		case REPLACE:
 		{
 			char lbuf[256];
-			long i=0;
-			for( lbuf[0] = 0; lbuf[0] != LF_SEPCH ; )
+			bool found;
+			int len = strlen(buf), blen = 0;
+
+			for( found = false, lbuf[0] = 0; found == false && lbuf[0] != -1; )
 			{
-				if( !xa_readline( lbuf, sizeof(lbuf)-1, fp ) ){
-					lbuf[0] = LF_SEPCH;
-					break;
+				for( lbuf[0] = 0; lbuf[0] != LF_SEPCH ; )
+				{
+					if( !xa_readline( lbuf, sizeof(lbuf)-1, fp ) ){
+						lbuf[0] = -1;
+						break;
+					}
+					rsl_lno++;
+
+					if( lbuf[0] == LF_SEPCH )
+						break;
+					blen = strlen( lbuf + LF_OFFS );
+					if( lbuf[blen+LF_OFFS-1] == '@' )
+					{
+						lbuf[blen+LF_OFFS-1] = 0;
+						blen--;
+					}
+					if( blen > len )
+						blen = len;
+
+					if( found == false )
+					{
+						if( !strnicmp( lbuf, "nn", 2 ) )
+							if( (found = !strncmp( lbuf+LF_OFFS, buf, blen )) )
+								if( lbuf[3] == ';' )	// dont translate this
+									break;
+					}
+					else if( !strncmp( lbuf, cfg.lang, 2 ) )
+					{
+						break;
+					}
 				}
-				if( !strncmp( lbuf, cfg.lang, 2 ) && (i=atol( lbuf + 4 )) == l )
-					break;
 			}
 
-			if( lbuf[0] != LF_SEPCH )	// found
+			if( lbuf[0] != -1 && lbuf[0] != LF_SEPCH )	// found
 			{
-				char *p = strrchr( lbuf, '@' );
-				if( p )
-					*p = 0;
-				strncpy( buf, lbuf + LF_OFFS, strlen(buf) );
+				strncpy( buf, lbuf + LF_OFFS, blen );
+				buf[blen] = 0;
+				/*for( blen--; buf[blen] == ' '; blen-- );
+				if( buf[++blen] == ' ' )
+					buf[blen] = 0;
+				*/
+
 			}
-			//else if( !isdigit(buf[0] ) )
-				//strrev( buf );
+
 			while( lbuf[0] != LF_SEPCH )
 			{
 				if( !xa_readline( lbuf, sizeof(lbuf)-1, fp ) ){
 					break;
 				}
 			}
+			if( found == false && lbuf[0] == -1 )
+			{
+				if( rsl_errors++ < RSL_MAX_ERRORS )
+				{
+					ALERT(("rsc-trans: item '%s' not found", buf ));
+					xa_rewind( fp );
+				}
+			}
+			return found? (XA_FILE*)(long)blen : 0;
+
 		}
-		return 0;
 		default:
 		return 0;
 	}
 }
+
+//int AdjustObjects = 1;	//<--
 
 static void
 fix_objects(struct xa_client *client,
@@ -642,18 +684,20 @@ fix_objects(struct xa_client *client,
 					if( !p || !*p )
 						break;
 
-					l = sprintf( buf, sizeof(buf), "nn:#%3ld:%s", i, p);
+					l = sprintf( buf, sizeof(buf), "nn:%s", p);
 
 					if( l > LF_OFFS )
 					{
 						if( client->options.rsc_lang == WRITE )
 						{
-							rsc_lang_file( WRITE, rfp, buf, l);
-							rsc_lang_file( WRITE, rfp, LF_SEPSTR, 1);
+							rsc_lang_file( WRITE, rfp, buf, l );
+							rsc_lang_file( WRITE, rfp, LF_SEPSTR, 1 );
 						}
 						else if( client->options.rsc_lang == READ )
 						{
-							rsc_lang_file( REPLACE, rfp, p, i);
+							short blen = (short)(long)rsc_lang_file( REPLACE, rfp, p, i);
+							if( /*AdjustObjects && */blen && obj->ob_type == G_TITLE )
+								obj->ob_width = blen;
 						}
 					}
 				}
@@ -1152,7 +1196,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 				for(j = 0, t = trans_strings[i]; *t; j++, t++ ){
 					if( **t )
 					{
-						rsc_lang_file( REPLACE, rfp, *t, k++);
+						rsc_lang_file( REPLACE, rfp, *t, k++ );
 					}
 				}
 			}
