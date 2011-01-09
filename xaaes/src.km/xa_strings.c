@@ -9,7 +9,7 @@ char *xa_strings[] = {
 	" System window & Alerts log",
 /* system-window*/
 	"Applications",
-	"Alerts",
+	"Alerts    ",
 	"Environment",
 	"System",
 /* alert-text */
