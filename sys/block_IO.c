@@ -209,7 +209,7 @@
 # endif
 
 # ifndef DEV_RANDOM
-# define add_blkdev_randomness (drv)
+# define add_blkdev_randomness(drv)
 # endif
 
 /****************************************************************************/
@@ -1474,7 +1474,7 @@ bio_set_cache_size (long size)
 	count = (size * 1024L) / cache.max_size;
 	if (!count)
 	{
-		BIO_ALERT (("block_IO []: %s, %ld: Specified cache size too small (%li).", __FILE__, (long)__LINE__, size));
+		BIO_ALERT (("block_IO []: %s, %d: Specified cache size too small (%li).", __FILE__, __LINE__, size));
 		return EBADARG;
 	}
 
@@ -1488,7 +1488,7 @@ bio_set_cache_size (long size)
 	data = kmalloc (count * cache.max_size);
 	if ((long) data & 15)
 	{
-		BIO_FORCE (("block_IO []: %s, %ld: not aligned (%lx)!", __FILE__, (long) __LINE__, data));
+		BIO_FORCE (("block_IO []: %s, %d: not aligned (%lx)!", __FILE__, __LINE__, data));
 	}
 
 	if (!blocks || !data)
