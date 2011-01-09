@@ -24,6 +24,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include "mint/fcntl.h"	//SEEK_SET
 #include "util.h"
 #include "debug.h"
 
@@ -224,6 +225,13 @@ void xa_fclose( XA_FILE *fp )
 		return;
 	kernel_close( fp->k_fp );
 	kfree( fp );
+}
+
+long xa_rewind( XA_FILE *fp )
+{
+	if( !fp )
+		return -1;
+	return kernel_lseek( fp->k_fp, 0, SEEK_SET );
 }
 
 /*
