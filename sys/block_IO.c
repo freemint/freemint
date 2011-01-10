@@ -209,7 +209,7 @@
 # endif
 
 # ifndef DEV_RANDOM
-# define add_blkdev_randomness(drv)
+# define add_blkdev_randomness (drv)
 # endif
 
 /****************************************************************************/
@@ -803,7 +803,7 @@ bio_readin (DI *di, void *buffer, ulong size, ulong sector)
 INLINE long
 bio_writeout (DI *di, const void *buffer, ulong size, ulong sector)
 {
-	union { const void *cvb; void *b;} ptr = {buffer};	// ptr.cvb = buffer;
+	union { const void *cvb; void *b;} ptr; ptr.cvb = buffer;
 	register long r;
 
 /* NASTY HACK, FIXME */
