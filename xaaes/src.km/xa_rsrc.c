@@ -26,6 +26,7 @@
 
 #include "xa_types.h"
 #include "xa_global.h"
+#include "xa_strings.h"
 
 #include "draw_obj.h"
 #include "trnfm.h"
@@ -528,7 +529,6 @@ static int make_rscl_name( char *in, char *out )
 #define LF_SEPCH	'_'
 #define LF_SEPSTR	"_"
 
-#define RSL_MAX_ERRORS	5
 static int rsl_errors = 0;	// maximum alerts for invalid rsl-file
 
 static short rsl_lno = 1;
@@ -556,7 +556,11 @@ static XA_FILE *rsc_lang_file( int md, XA_FILE *fp, char *buf, int l )
 		{
 			char lbuf[256];
 			bool found;
-			int len = strlen(buf), blen = 0;
+			int len = strlen(buf), blen = 0, clen, cmplen;
+
+			/* strip trailing blanks */
+			for( clen = len - 1; buf[clen] == ' '; clen-- );
+			clen++;
 
 			for( found = false, lbuf[0] = 0; found == false && lbuf[0] != -1; )
 			{
@@ -570,25 +574,35 @@ static XA_FILE *rsc_lang_file( int md, XA_FILE *fp, char *buf, int l )
 
 					if( lbuf[0] == LF_SEPCH )
 						break;
+
+					cmplen = clen;
 					blen = strlen( lbuf + LF_OFFS );
+
+					/* input-length correct */
 					if( lbuf[blen+LF_OFFS-1] == '@' )
 					{
 						lbuf[blen+LF_OFFS-1] = 0;
 						blen--;
+						cmplen = len;
 					}
+					/* copy shorter length */
 					if( blen > len )
 						blen = len;
 
 					if( found == false )
 					{
 						if( !strnicmp( lbuf, "nn", 2 ) )
-							if( (found = !strncmp( lbuf+LF_OFFS, buf, blen )) )
+						{
+							if( (found = !strncmp( lbuf+LF_OFFS, buf, cmplen )) )
+							{
 								if( lbuf[3] == ';' )	// dont translate this
 									break;
+							}
+						}
 					}
 					else if( !strncmp( lbuf, cfg.lang, 2 ) )
 					{
-						break;
+						break;	// translation found
 					}
 				}
 			}
@@ -597,11 +611,7 @@ static XA_FILE *rsc_lang_file( int md, XA_FILE *fp, char *buf, int l )
 			{
 				strncpy( buf, lbuf + LF_OFFS, blen );
 				buf[blen] = 0;
-				/*for( blen--; buf[blen] == ' '; blen-- );
-				if( buf[++blen] == ' ' )
-					buf[blen] = 0;
-				*/
-
+				len = blen;
 			}
 
 			while( lbuf[0] != LF_SEPCH )
@@ -610,20 +620,36 @@ static XA_FILE *rsc_lang_file( int md, XA_FILE *fp, char *buf, int l )
 					break;
 				}
 			}
-			if( found == false && lbuf[0] == -1 )
-			{
-				if( rsl_errors++ < RSL_MAX_ERRORS )
-				{
-					ALERT(("rsc-trans: item '%s' not found", buf ));
-					xa_rewind( fp );
-				}
-			}
-			return found? (XA_FILE*)(long)blen : 0;
+			return found? (XA_FILE*)(long)len : 0;
 
 		}
 		default:
 		return 0;
 	}
+}
+
+static short translate_string( struct xa_client *client, XA_FILE *rfp, char *p, long i )
+{
+	short blen, j;
+
+	for( blen = j = 0; j < 2 && !blen; j++ )
+	{
+		if( (blen = (short)(long)rsc_lang_file( REPLACE, rfp, p, i)) )
+			break;	//found
+		if( rsl_errors++ < RSL_MAX_ERRORS )
+		{
+			BLOG((0,"translate_string:REPLACE:rewind!:'%s'", p));
+			xa_rewind( rfp );
+		}
+		else
+			break;	// give up
+	}
+	if( !blen )
+	{
+		ALERT(("translate: item '%s' not found", p ));
+		BLOG((0, "%s:translate: item '%s' not found", client->name, p ));
+	}
+	return blen;
 }
 
 //int AdjustObjects = 1;	//<--
@@ -681,7 +707,7 @@ fix_objects(struct xa_client *client,
 					else
 						p = obj->ob_spec.free_string;
 
-					if( !p || !*p )
+					if( !p || !*p || strchr(p, '\n') )
 						break;
 
 					l = sprintf( buf, sizeof(buf), "nn:%s", p);
@@ -690,14 +716,21 @@ fix_objects(struct xa_client *client,
 					{
 						if( client->options.rsc_lang == WRITE )
 						{
+							if( *(buf + l - 1) == ' ' )
+							{
+								*(buf + l) = '@';
+								l++;
+								*(buf + l) = 0;
+							}
 							rsc_lang_file( WRITE, rfp, buf, l );
 							rsc_lang_file( WRITE, rfp, LF_SEPSTR, 1 );
 						}
 						else if( client->options.rsc_lang == READ )
 						{
-							short blen = (short)(long)rsc_lang_file( REPLACE, rfp, p, i);
-							if( /*AdjustObjects && */blen && obj->ob_type == G_TITLE )
-								obj->ob_width = blen;
+							short blen = translate_string( client, rfp, p, i );
+
+							if( blen && /*AdjustObjects && */ obj->ob_type == G_TITLE )
+								obj->ob_width = blen + 1;
 						}
 					}
 				}
@@ -1167,7 +1200,8 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 		char rscl_name[PATH_MAX];
 		if( !make_rscl_name( fname, rscl_name ) )
 		{
-			if( client->options.rsc_lang == READ ){
+			if( client->options.rsc_lang == READ )
+			{
 				if( !( rfp = rsc_lang_file( OREAD, 0, rscl_name, 0)) )
 					client->options.rsc_lang = WRITE;
 			}
@@ -1187,23 +1221,25 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 	 * fix_objects MUST run before fix_trees!!!
 	 */
 	fix_objects(client, rscs, cibh, vdih, base, (OBJECT *)(base + hdr->rsh_object), hdr->rsh_nobs, rfp );
-	if( rfp ){
-		extern char **trans_strings[];
-		if( client->options.rsc_lang == READ && trans_strings[0] ){
+
+	if( client == C.Aes && trans_strings[0] && rfp ){
+		if( client->options.rsc_lang == READ ){		// only READ for internal strings!
 			int i, k, j;
 			char **t;
-			for(k = 1, i = 0; trans_strings[i]; i++){
-				for(j = 0, t = trans_strings[i]; *t; j++, t++ ){
+			for(k = 1, i = 0; trans_strings[i]; i++)
+			{
+				for(j = 0, t = trans_strings[i]; *t; j++, t++ )
+				{
 					if( **t )
 					{
-						rsc_lang_file( REPLACE, rfp, *t, k++ );
+						translate_string( client, rfp, *t, k++ );
 					}
 				}
 			}
 			trans_strings[0] = 0;
 		}
 		rsc_lang_file( CLOSE, rfp, 0, 0 );
-		}
+	}
 	fix_trees(client, base, (OBJECT **)(base + hdr->rsh_trindex), hdr->rsh_ntree, designWidth, designHeight);
 
 	return (RSHDR *)base;
