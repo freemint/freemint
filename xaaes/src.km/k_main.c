@@ -624,7 +624,6 @@ init_moose(void)
 	C.move_block = 0;
 	C.rect_lock = 0;
 
-	BLOG((0,"moose_w"));
 	G.adi_mouse = adi_name2adi("moose_w");
 	if (!G.adi_mouse)
 		G.adi_mouse = adi_name2adi("moose");
@@ -633,7 +632,6 @@ init_moose(void)
 	{
 		long aerr;
 
-		display("init_moose:lname=%s name=%s.", G.adi_mouse->lname, G.adi_mouse->name);
 		aerr = adi_open(G.adi_mouse);
 		if (!aerr)
 		{
