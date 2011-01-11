@@ -29,6 +29,7 @@
 #include "k_keybd.h"
 #include "c_keybd.h"
 #include "xa_global.h"
+#include "xa_strings.h"
 
 //#include "debug.h"
 #include "about.h"
@@ -57,6 +58,7 @@
 #include "mint/fcntl.h"
 #include "mint/ioctl.h"
 #include "mint/signal.h"
+#include "mint/ssystem.h"
 
 short key_conv( struct xa_client *client, short key )
 {
@@ -334,6 +336,7 @@ kernel_key(enum locks lock, struct rawkey *key)
 		nk = key->norm & 0x00ff;
 
 		DIAG((D_keybd, NULL,"CTRL+ALT+%04x --> %04x '%c'", key->aes, key->norm, nk));
+		BLOG((0,"CTRL+ALT+%04x --> %04x '%c' kkey=%lx", key->aes, key->norm, nk, kkey));
 
 		while (kkey)
 		{
@@ -387,6 +390,31 @@ kernel_key(enum locks lock, struct rawkey *key)
 //#endif
 #endif
 
+		if( (nk == cfg.keyboards.c && (key->raw.conin.state & (K_RSHIFT|K_LSHIFT))) || (tolower(nk) == cfg.keyboards.c) )
+		{
+			static short kbdnum = 0;
+			unsigned long dummy;
+			char tblpath[PATH_MAX];
+			long out;
+			char *tbname = cfg.keyboards.keyboard[kbdnum++];
+
+			if( !tbname )
+			{
+				kbdnum = 0;
+				tbname = cfg.keyboards.keyboard[kbdnum++];
+			}
+			if( !tbname )
+				return true;
+
+			sprintf( tblpath, sizeof(tblpath), "%s%s.tbl", sysdir, tbname );
+
+			out = s_system(S_LOADKBD, (unsigned long)tblpath, (unsigned long)&dummy);
+			if( out )
+			{
+				ALERT((xa_strings[AL_KBD]/*"keyboard-table not loaded"*/, tbname, sysdir, out));
+			}
+			return true;
+		}
 		switch (nk)
 		{
 		case NK_TAB:				/* TAB, switch menu bars */
@@ -572,7 +600,7 @@ otm:
 			{
 				int ret = create_process(sdmaster, NULL, NULL, &p, 0, NULL);
 				if (ret < 0)
-					ALERT(("$SDMASTER is not a valid program: %s (use the taskmanager)", sdmaster));
+					ALERT((xa_strings[AL_SDMASTER], sdmaster));
 				else
 					return true;
 			}

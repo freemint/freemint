@@ -2936,6 +2936,12 @@ struct cfg_name_list
 	char name[32];
 };
 
+struct keyboards
+{
+	short c;
+	char *keyboard[MAX_KEYBOARDS+1];
+};
+
 struct config
 {
 	short gradients;
@@ -2978,6 +2984,7 @@ struct config
 	short alert_winds;		/* If set, alert windows are shown */
 
 	char cancel_buttons[NUM_CB][CB_L];
+	struct keyboards keyboards;
 #if FILESELECTOR
 	char Filters[FS_NPATTERNS][FS_PATLEN];
 #endif
