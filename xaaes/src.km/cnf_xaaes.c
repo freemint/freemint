@@ -27,6 +27,7 @@
 #include "xa_global.h"
 #include "xa_shel.h"
 #include "taskman.h"
+#include "util.h"
 
 #include "cnf_xaaes.h"
 #include "keycodes.h"
@@ -64,8 +65,10 @@ static PCB_A	pCB_app_options;
 static PCB_A    pCB_cancel;
 static PCB_A    pCB_filters;
 static PCB_A	pCB_ctlalta_survivors;
+//static PCB_A  pCB_ctrl_alt_run;
 static PCB_A	pCB_kill_without_question;
 static PCB_T    pCB_menu;
+static PCB_A    pCB_keyboards;
 static PCB_Tx    pCB_include;
 static PCB_A    pCB_helpserver;
 
@@ -121,7 +124,9 @@ static struct parser_item parser_tab[] =
 	{ "INCLUDE",               PI_C_T,		pCB_include	},
 	{ "FOCUS",                 PI_V_T,   pCB_point_to_type		},
 	{ "APP_OPTIONS",           PI_V_A,   pCB_app_options		},
+	//{ "CTRLALTRUN",            PI_C_A,   pCB_ctrl_alt_run},
 	{ "CANCEL",                PI_V_A,   pCB_cancel			},
+	{ "KEYBOARDS",             PI_V_A,		pCB_keyboards	},
 	{ "FILTERS",               PI_V_A,   pCB_filters		},
 	{ "CTLALTA_SURVIVORS",	   PI_V_A,   pCB_ctlalta_survivors	},
 	{ "KILL_WO_QUESTION",	   PI_V_A,   pCB_kill_without_question	},
@@ -473,6 +478,14 @@ pCB_point_to_type(const char *str)
 /*----------------------------------------------------------------------------*/
 
 /*----------------------------------------------------------------------------*/
+/*
+static void
+pCB_ctrl_alt_run(char *line)
+{
+	BLOG((0,"ctrl_alt_run: '%s'", line));
+}
+*/
+/*----------------------------------------------------------------------------*/
 static void
 pCB_include(char *path, struct parsinf *inf)
 {
@@ -480,6 +493,29 @@ pCB_include(char *path, struct parsinf *inf)
 	parse_include(path, inf, parser_tab);	// should return error-value
 }
 
+/*----------------------------------------------------------------------------*/
+static void
+pCB_keyboards(char *line)
+{
+	int i;
+
+
+	for( i = 0; i < MAX_KEYBOARDS; i++ )
+	{
+		char *s;
+
+		s = get_string(&line);
+		if (!s)
+			break;
+		if( i == 0 )
+			cfg.keyboards.c = *s;
+		else
+		{
+			BLOG((0,"keyboard#%d=%s",i-1,s));
+			cfg.keyboards.keyboard[i-1] = xa_strdup( s );
+		}
+	}
+}
 /*----------------------------------------------------------------------------*/
 
 static void
