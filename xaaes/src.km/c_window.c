@@ -1801,14 +1801,14 @@ draw_window(enum locks lock, struct xa_window *wind, const RECT *clip)
 						if (xa_rect_clip(clip, &wind->wa, &r))
 						{
 							(*v->api->set_clip)(v, &r);
-	// 						if (f == XAW_TOOLBAR) display("drawing toolbar (waclip) for %s", wind->owner->name);
+	 						//if (f == XAW_TOOLBAR) display("drawing toolbar (waclip) for %s,w=%d", wind->owner->name, wind->wa.w);
 							(*widg->m.r.draw)(wind, widg, &r);
 							(*v->api->set_clip)(v, clip);
 						}
 					}
 					else
 					{
-	// 					if (f == XAW_TOOLBAR) display("drawing toolbar for %s", wind->owner->name);
+	 					//if (f == XAW_TOOLBAR) display("drawing toolbar for %s", wind->owner->name);
 						widg->m.r.draw(wind, widg, clip);
 					}
 				}
