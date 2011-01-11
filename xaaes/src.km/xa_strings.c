@@ -21,6 +21,8 @@ char *xa_strings[] = {
 "[2][ What do you want to snap?][ Block | Full screen | Top Window | Cancel ]",
 " Launch Program ",
 "xa_help.txt",
+"$SDMASTER is not a valid program: %s (use the taskmanager)",
+"keyboard-table not loaded:%s(%ld)",
 	0
 };
 
