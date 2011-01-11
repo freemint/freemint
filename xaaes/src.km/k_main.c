@@ -869,7 +869,7 @@ CE_fa(enum locks lock, struct c_event *ce, bool cancel)
 					sc.t.strings = 1;
 					sc.fnt = &norm_txt;
 					p.idx = -1;
-					p.arg.txt = /*txt_alerts*/"Alerts";
+					p.arg.txt = xa_strings[RS_ALERTS];
 					list->get(list, NULL, SEGET_ENTRYBYTEXT, &p);
 					list->add(list, p.e, NULL, &sc, p.e ? SEADD_CHILD: 0, 0, true);
 				}
