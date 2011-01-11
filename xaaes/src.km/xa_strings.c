@@ -22,7 +22,7 @@ char *xa_strings[] = {
 " Launch Program ",
 "xa_help.txt",
 "$SDMASTER is not a valid program: %s (use the taskmanager)",
-"keyboard-table not loaded:%s(%ld)",
+"could not load %s.tbl from %s (%ld)",
 	0
 };
 
