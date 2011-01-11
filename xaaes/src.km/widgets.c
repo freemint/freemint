@@ -1785,9 +1785,9 @@ char *wctxt_main_txt[] =
 #define ADVWC_SINK	2
 #define ADVWC_TOOLBOX	3
 #define ADVWC_NOFOCUS	4
-	"\255Keep above others",
-	"\255Keep below others",
-	"\255Toolbox attribute",
+	"\255Keep above others   ",
+	"\255Keep below others   ",
+	"\255Toolbox attribute   ",
 	"\255Deny keyboard focus ",
 	"",
 #define WCACT_THIS	1
@@ -1795,20 +1795,20 @@ char *wctxt_main_txt[] =
 #define WCACT_OTHERS	3
 #define WCACT_RALL	4
 #define WCACT_ROTHERS	5
-	"\255This",
-	"\255All",
-	"\255All others",
-	"\255Restore all",
+	"\255This               ",
+	"\255All                ",
+	"\255All others         ",
+	"\255Restore all        ",
 	"\255Restore all others ",
 	"",
 #define WCHIDE_THIS	1
 #define WCHIDE_APP	2
 #define WCHIDE_OTHER	3
 #define WCHIDE_UNHIDEOTH 4
-	"\255This window",
-	"\255Application",
-	"\255Other app",
-	"\255Show other app",
+	"\255This window             ",
+	"\255Application             ",
+	"\255Other apps              ",
+	"\255Show other apps         ",
 	"",""
 };
 #if 0
