@@ -20,9 +20,12 @@
 #define SNAP_ERR3          11
 #define SDALERT            12
 #define RS_LAUNCH          13
+#define XA_HELP_FILE       14
+#define AL_SDMASTER        15
+#define AL_KBD             16
 
-#define XA_HELP_FILE 14
 
 
 extern char *xa_strings[];
+extern char **trans_strings[];
 
