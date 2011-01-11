@@ -624,6 +624,7 @@ init_moose(void)
 	C.move_block = 0;
 	C.rect_lock = 0;
 
+	BLOG((0,"moose_w"));
 	G.adi_mouse = adi_name2adi("moose_w");
 	if (!G.adi_mouse)
 		G.adi_mouse = adi_name2adi("moose");
@@ -632,6 +633,7 @@ init_moose(void)
 	{
 		long aerr;
 
+		display("init_moose:lname=%s name=%s.", G.adi_mouse->lname, G.adi_mouse->name);
 		aerr = adi_open(G.adi_mouse);
 		if (!aerr)
 		{
@@ -869,7 +871,7 @@ CE_fa(enum locks lock, struct c_event *ce, bool cancel)
 					sc.t.strings = 1;
 					sc.fnt = &norm_txt;
 					p.idx = -1;
-					p.arg.txt = /*txt_alerts*/"Alerts";
+					p.arg.txt = xa_strings[RS_ALERTS];
 					list->get(list, NULL, SEGET_ENTRYBYTEXT, &p);
 					list->add(list, p.e, NULL, &sc, p.e ? SEADD_CHILD: 0, 0, true);
 				}
