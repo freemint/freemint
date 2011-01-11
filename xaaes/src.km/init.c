@@ -210,9 +210,9 @@ sysfile_exists(const char *sd, char *fn)
 	"gr","ru","il","za","pt","be","jp","cn","kp","vn",
 	"in","ir","mn","np","la","kh","id","bd",
 */
-#if 0
 #define MaX_COUNTRYCODE 48
 static char countrycodes[] = "usdefrenesitsefsgstrfinodksanlczhuplltlveebyuaskrobgslhrcscsmkgrruilzaptbejpcnkpvninirmnnplakhidbd";
+#if 0
 struct aes_string {
 	int lang;
 	union { char c[2]; short w; } ccode;
@@ -676,9 +676,27 @@ again:
 
 	C.Aes->options = default_options;
 
+	err = -1;
 	/* Parse the config file */
 	load_config();
-	BLOG((0,"lang=%s.",cfg.lang));
+	if( !cfg.lang[0] )
+	{
+		const char *lang = get_env(0, "LANG=");
+		if( lang )
+		{
+			err = -2;
+			strncpy( cfg.lang, lang, 2 );
+		}
+		else if (!(s_system(S_GETCOOKIE, COOKIE__AKP, (unsigned long)(&err))))
+			if( err < MaX_COUNTRYCODE )
+			{
+				err *= 2;
+				cfg.lang[0] = countrycodes[err];
+				cfg.lang[1] = countrycodes[err+1];
+			}
+	}
+	
+	BLOG((0,"lang='%s' (from %s).",cfg.lang, err == -1 ? "config" : (err == -2 ? "Environ" : "AKP") ));
 
 	if( cfg.info_font_point == -1 )
 		cfg.info_font_point = cfg.standard_font_point;
