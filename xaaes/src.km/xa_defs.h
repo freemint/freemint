@@ -104,7 +104,6 @@
 /*----------------------------------------------------------------- */
 
 #define SPAREMINT_URL	"http://sparemint.org"
-
 /* Maximum space for 'nice name' for app's (menu_register) */
 #define NICE_NAME		64
 
@@ -114,6 +113,9 @@
 #define NUM_CB			32	/* table of cancel button texts */
 #define CB_L			16
 #define CASCADE			16	/* Max depth of cascading menus */
+
+#define MAX_KEYBOARDS 4     /* maximum number of keytables to cycle */
+#define RSL_MAX_ERRORS	10	/* maximum number of errors before translator gives up */
 
 /* Maximum number of windows that can be created concurrently */
 #define MAX_WINDOWS 		4096	/* should this be enough? */
