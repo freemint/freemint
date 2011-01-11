@@ -569,6 +569,7 @@ k_init(unsigned long vm)
 			BLOG((false, "could not determine fvdi version"));
 #endif
 	}
+	c_conws("\033E");		/* Clear screen, cursor home (for WongCKs falcon) */
 	/* try to open virtual wk - necessary when physical wk is already open
 	 * ? how to know if physical wk is open and its handle without AES?
 	 */
@@ -711,7 +712,6 @@ k_init(unsigned long vm)
 
 		}*/
 		BLOG((false, "Screenmode is: %d", mode));
-		c_conws("\033E");		/* Clear screen, cursor home (for WongCKs falcon) */
 
 #ifndef ST_ONLY
 		/*
@@ -919,13 +919,14 @@ k_init(unsigned long vm)
 				{
 					OBJECT *about = ResourceTree(C.Aes_rsc, ABOUT_XAAES);
 					int gt = 0;
+					char *t = object_get_tedinfo(about + RSC_VERSION, NULL)->te_ptext;
 
 					if ((ob_count_objs(about, 0, -1) < RSC_VERSION)   ||
 					     about[RSC_VERSION].ob_type != G_TEXT     ||
-					    ( gt = strcmp(object_get_tedinfo(about + RSC_VERSION, NULL)->te_ptext, RSCFILE_VERSION)))
+					    ( gt = strcmp(t, RSCFILE_VERSION)))
 					{
 						char *s = gt > 0 ? "too new" : gt < 0 ? "too old" : "wrong";
-						display("ERROR: %s resource file (%s) - use version "RSCFILE_VERSION"!", s, RscFiles[i]);
+						display("ERROR: %s resource file (%s)(version:%s) - use version "RSCFILE_VERSION"!", s, t, RscFiles[i]);
 						//return -1;
 					}
 					else
