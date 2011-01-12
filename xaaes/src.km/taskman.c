@@ -2246,8 +2246,6 @@ open_launcher(enum locks lock, struct xa_client *client)
 
 
 
-// static struct xa_window *systemalerts_win = NULL;
-
 /* double click now also available for internal handlers. */
 static void
 sysalerts_form_exit(struct xa_client *Client,
@@ -2460,10 +2458,10 @@ static void add_os_features(struct scroll_info *list, struct scroll_entry *this,
 
 #if CHECK_STACK
 	extern unsigned short stack_align;
-	sprintf( s, sizeof(s)-1, "MEMPROT:%s, Stack: %x", has_mprot ? "ON" : "OFF", stack_align );
+	sprintf( s, sizeof(s)-1, "%s%s, Stack: %x", xa_strings[RS_MEMPROT], has_mprot ? xa_strings[RS_ON] : xa_strings[RS_OFF], stack_align );
 	BLOG((0,s));
 #else
-	sprintf( s, sizeof(s)-1, "MEMPROT:%s", has_mprot ? "ON" : "OFF" );
+	sprintf( s, sizeof(s)-1, "%s%s", xa_strings[RS_MEMPROT], has_mprot ? xa_strings[RS_ON] : xa_strings[RS_OFF], stack_align );
 #endif
 	sc->t.text = s;
 
@@ -2676,7 +2674,7 @@ open_systemalerts(enum locks lock, struct xa_client *client, bool open)
 				else
 					fs = pformats[5];
 
-				sprintf( sstr, sizeof(sstr)-1, "Video:%dx%dx%d,%d colours, format: %s",
+				sprintf( sstr, sizeof(sstr)-1, xa_strings[RS_VIDEO],//"Video:%dx%dx%d,%d colours, format: %s",
 					screen.r.w, screen.r.h, screen.planes, screen.colours, fs );
 			}
 
