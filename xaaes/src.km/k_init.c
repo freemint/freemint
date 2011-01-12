@@ -541,8 +541,6 @@ k_init(unsigned long vm)
 			*t++ = -1;
 	}
 
-//	setup_xa_module_api();
-
 	cfg.videomode = (short)vm;
 	BLOG((0,"k_init: videomode=%d",cfg.videomode ));
 
