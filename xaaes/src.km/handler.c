@@ -530,11 +530,12 @@ XA_handler(void *_pb)
 		if (!strnicmp(pr->name, "taskb", 5))
 			display("%s calls (%d)%s", pr->name, cmd, aes_tab[cmd].descr);
 #endif
+
 		/* XXX	- ozk:
 		 * I dont know how I like this! However, we test force-init/attaching client structure
 		 * to a process calling the AES wihtout prior appl_init() call.
 		 */
-		if (!(client = lookup_extension(NULL, XAAES_MAGIC)) && cmd != 10)
+		if (!(client = lookup_extension(NULL, XAAES_MAGIC)) && cmd != 10)	// 10:XA_appl_init
 		{
 			if (!(aes_tab[cmd].flags & NOCLIENT))
 			{
@@ -622,8 +623,11 @@ XA_handler(void *_pb)
 		}
 #endif
 
-//		if( client )
-//			BLOG((0, "%s[%d] made by %s",	aes_tab[cmd].descr, cmd, client->name));
+		/*if( client )
+			BLOG((0, "%s[%d] made by %s",	aes_tab[cmd].descr, cmd, client->name));
+		else
+			BLOG((0, "%s[%d] made",	aes_tab[cmd].descr, cmd));
+		*/
 
 
 		cmd_routine = aes_tab[cmd].f;
@@ -679,7 +683,7 @@ XA_handler(void *_pb)
 			 * Now we check if circumstances under which we check if process started/ended
 			 * being a AES client
 			 */
-			if (!client || cmd == 10 || cmd == 19)
+			if (!client || cmd == 10 || cmd == 19)	// XA_appl_init || XA_appl_exit
 			{
 				client = lookup_extension(NULL, XAAES_MAGIC);
 #if GENERATE_DIAGS
