@@ -267,7 +267,6 @@ make_rect_list(struct xa_window *wind, bool swap, short which)
 			area = wind->r;
 			rle = &wind->rect_list;
 			break;
-			/* Fall through */
 		}
 		case RECT_OPT:
 		{
