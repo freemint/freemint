@@ -355,7 +355,7 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 	n_buttons = get_parts(ALERT_BUTTONS, alertxt->button, &retv);
 
 	w = max_w(n_lines,   alertxt->text, NULL);
-	    max_w(n_buttons, alertxt->button, &m_butt_w);
+  max_w(n_buttons, alertxt->button, &m_butt_w);
 
 	if (m_butt_w > w)
 		w = m_butt_w;
