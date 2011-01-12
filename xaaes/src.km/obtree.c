@@ -3384,7 +3384,7 @@ obj_ed_char(
 		}
 		break;
 	}
-	case SC_BACKSPACE: /* 0x0e08 */	/* BACKSPACE deletes character left of cursor (if any) */
+	case SC_BACKSPACE: /* 0x0e08 */	/* BACKSPACE deletes character left of cursor (if any) (todo: skip non-edit-chars) */
 	{
 		if (!(delete_marked(ei, txt)) && ei->pos)
 		{
@@ -3444,7 +3444,7 @@ obj_ed_char(
 		}
 		break;
 	}
-	case SC_LFARROW: /* 0x4b00 */	/* LEFT ARROW moves cursor left */
+	case SC_LFARROW: /* 0x4b00 */	/* LEFT ARROW moves cursor left (todo: skip non-edit-chars) */
 	{
 		if (ei->pos)
 		{
@@ -3889,6 +3889,7 @@ obj_edit(XA_TREE *wt,
 	display("  -- func %s, wt=%lx obtree=%lx, obj:%d, k:%x, pos:%x",
 	      funcstr, wt, obtree, aesobj_item(&obj), keycode, pos);
 #endif
+
 
 	if (valid_aesobj(&obj))
 		ted = object_get_tedinfo(aesobj_ob(&obj), &xted);

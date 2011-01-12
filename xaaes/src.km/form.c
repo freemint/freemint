@@ -469,9 +469,7 @@ Form_Button(XA_TREE *wt,
 								ptxt = ted->te_ptmplt;
 
 								for( ; txt[x]; x++ );
-								{
-									for( ; ptxt[y] && ptxt[y] != '_'; y++ );
-								}
+								for( ; ptxt[y] && ptxt[y] != '_'; y++ );
 							}
 						}
 						ei->edstart = y;
@@ -1568,7 +1566,9 @@ do_formwind_msg(
 			/* if (!wind->nolist && (wind->active_widgets & SIZE)) */
 			{
 				if( msg[6] < wind->min.w || msg[7] < wind->min.h /*|| (msg[6] == wind->r.w && msg[7] == wind->r.h)*/ )
+				{
 					return;
+				}
 				/*
 				 * resize internal window (except fsel)
 				 * move window here, set RESIZED-flag, and recalc during redraw in draw_object_tree "on the fly"
