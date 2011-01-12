@@ -46,7 +46,7 @@
 
 
 #define AB_GPL "The terms of the <b>GPL version 2</b> or later apply."
-#define AB_MINT	"Part of freemint ("SPAREMINT_URL")."
+#define AB_MINT	"Part of FreeMiNT ("SPAREMINT_URL")."
 
 #if XAAES_RELEASE
 #define FN_CRED	1
