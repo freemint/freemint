@@ -564,7 +564,9 @@ check_queued_events(struct xa_client *client)
 		*out++ = key;
 		*out   = mbs.c;
 	} else
+	{
 		return false;
+	}
 
 got_evnt:
 	client->usr_evnt = 1;
@@ -655,7 +657,7 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		DIAG((D_i,client,"Timer val: %ld(hi=%d,lo=%d)",	client->timer_val, pb->intin[15], pb->intin[14]));
 		if (client->timer_val > 5) {
-			client->timeout = addtimeout(client->timer_val, wakeme_timeout);
+			client->timeout = addtimeout(client->timer_val, (void (*)(PROC *, long arg))wakeme_timeout);
 			if (client->timeout)
 				client->timeout->arg = (long)client;
 		} else {
@@ -711,7 +713,7 @@ XA_evnt_mesag(enum locks lock, struct xa_client *client, AESPB *pb)
 	client->waiting_pb = pb;
 
 	if (!check_queued_events(client))
-		(*client->block)(client, 1); //Block(client, 1);
+		(*client->block)(client, 2); //Block(client, 1);
 
 	return XAC_DONE;
 }
@@ -737,7 +739,7 @@ XA_evnt_button(enum locks lock, struct xa_client *client, AESPB *pb)
 	client->waiting_for = MU_BUTTON;
 	client->waiting_pb = pb;
 	if (!check_queued_events(client))
-		(*client->block)(client, 1); //Block(client, 1);
+		(*client->block)(client, 3); //Block(client, 1);
 	return XAC_DONE;
 }
 
@@ -758,7 +760,7 @@ XA_evnt_keybd(enum locks lock, struct xa_client *client, AESPB *pb)
 	client->waiting_for = MU_KEYBD;
 	client->waiting_pb = pb;
 	if (!check_queued_events(client))
-		(*client->block)(client, 1); //Block(client, 1);
+		(*client->block)(client, 4); //Block(client, 1);
 	return XAC_DONE;
 }
 
@@ -786,7 +788,7 @@ XA_evnt_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 	client->waiting_pb = pb;
 
 	if (!check_queued_events(client))
-		(*client->block)(client, 1); //Block(client, 1);
+		(*client->block)(client, 5); //Block(client, 1);
 
 	return XAC_DONE;
 }
@@ -807,11 +809,11 @@ XA_evnt_timer(enum locks lock, struct xa_client *client, AESPB *pb)
 		client->waiting_pb = pb;
 		/* Store a pointer to the AESPB to fill when the event occurs */
 		client->waiting_for = MU_TIMER;
-		client->timeout = addtimeout(client->timer_val, wakeme_timeout);
+		client->timeout = addtimeout(client->timer_val, (void (*)(PROC *, long arg))wakeme_timeout);
 		if (client->timeout) {
 			client->timeout->arg = (long)client;
 		}
-		(*client->block)(client, 1); //Block(client, 1);
+		(*client->block)(client, 6); //Block(client, 1);
 	}
 
 	return XAC_DONE;

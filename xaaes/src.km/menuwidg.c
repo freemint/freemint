@@ -1477,7 +1477,7 @@ set_popout_timeout(Tab *tab, bool instant)
 	{
 		if (!instant && cfg.popout_timeout)
 		{
-			t = addroottimeout(cfg.popout_timeout, do_popout_timeout, 1);
+			t = addroottimeout(cfg.popout_timeout, (void (*)(PROC *, long arg))do_popout_timeout, 1);
 			if ((S.popout_timeout = t))
 				t->arg = (long)tab;
 		}
@@ -1672,7 +1672,7 @@ open_attach(Tab *tab, short asel, bool instant)
 			{
 				TIMEOUT *t;
 
-				t = addroottimeout(cfg.popup_timeout, do_popup_to, 1);
+				t = addroottimeout(cfg.popup_timeout, (void (*)(PROC *, long arg))do_popup_to, 1);
 				if (t)
 				{
 					t->arg = (long)tab;
@@ -2785,7 +2785,7 @@ CE_do_menu_scroll(enum locks lock, struct c_event *ce, bool cancel)
 
 			if (mb && ret == 1)
 			{
-				t = addroottimeout(cfg.menu_settings.mn_set.speed, !ce->d0 ? menu_scrld_to : menu_scrlu_to, 1);
+				t = addroottimeout(cfg.menu_settings.mn_set.speed, !ce->d0 ? (void (*)(PROC *, long arg))menu_scrld_to : (void (*)(PROC *, long arg))menu_scrlu_to, 1);
 				if (t)
 					t->arg = (long)tab;
 			}
@@ -2845,7 +2845,7 @@ menuclick(Tab *tab, short item)
 				if (mb)
 				{
 					TIMEOUT *t;
-					t = addroottimeout(cfg.menu_settings.mn_set.delay, menu_scrld_to, 1);
+					t = addroottimeout(cfg.menu_settings.mn_set.delay, (void (*)(PROC *, long arg))menu_scrld_to, 1);
 					if (t)
 						t->arg = (long)tab;
 					S.menuscroll_timeout = t;
@@ -2864,7 +2864,7 @@ menuclick(Tab *tab, short item)
 				if (mb)
 				{
 					TIMEOUT *t;
-					t = addroottimeout(cfg.menu_settings.mn_set.delay, menu_scrlu_to, 1);
+					t = addroottimeout(cfg.menu_settings.mn_set.delay, (void (*)(PROC *, long arg))menu_scrlu_to, 1);
 					if (t)
 						t->arg = (long)tab;
 					S.menuscroll_timeout = t;
