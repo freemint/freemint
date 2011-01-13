@@ -575,8 +575,9 @@ got_evnt:
 }
 
 static void
-wakeme_timeout(struct proc *p, struct xa_client *client)
+wakeme_timeout(struct proc *p, long arg)
 {
+	struct xa_client *client = (struct xa_client *)arg;
 // 	if (!strnicmp(client->proc_name, "sprite", 6))
 // 		display("wake");
 
@@ -657,7 +658,7 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		DIAG((D_i,client,"Timer val: %ld(hi=%d,lo=%d)",	client->timer_val, pb->intin[15], pb->intin[14]));
 		if (client->timer_val > 5) {
-			client->timeout = addtimeout(client->timer_val, (void (*)(PROC *, long arg))wakeme_timeout);
+			client->timeout = addtimeout(client->timer_val, wakeme_timeout);
 			if (client->timeout)
 				client->timeout->arg = (long)client;
 		} else {
@@ -809,7 +810,7 @@ XA_evnt_timer(enum locks lock, struct xa_client *client, AESPB *pb)
 		client->waiting_pb = pb;
 		/* Store a pointer to the AESPB to fill when the event occurs */
 		client->waiting_for = MU_TIMER;
-		client->timeout = addtimeout(client->timer_val, (void (*)(PROC *, long arg))wakeme_timeout);
+		client->timeout = addtimeout(client->timer_val, wakeme_timeout);
 		if (client->timeout) {
 			client->timeout->arg = (long)client;
 		}
