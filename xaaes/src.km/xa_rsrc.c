@@ -527,7 +527,9 @@ static int make_rscl_name( char *in, char *out )
 
 #define LF_OFFS	3
 #define LF_SEPCH	'_'
+#define LF_COMMCH	'#'
 #define LF_SEPSTR	"_"
+#define LF_COMMSTR	"#"
 
 static int rsl_errors = 0;	// maximum alerts for invalid rsl-file
 
@@ -571,6 +573,8 @@ static XA_FILE *rsc_lang_file( int md, XA_FILE *fp, char *buf, int l )
 						break;
 					}
 					rsl_lno++;
+					if( lbuf[0] == LF_COMMCH )
+						continue;
 
 					if( lbuf[0] == LF_SEPCH )
 						break;
@@ -636,9 +640,8 @@ static short translate_string( struct xa_client *client, XA_FILE *rfp, char *p, 
 	{
 		if( (blen = (short)(long)rsc_lang_file( REPLACE, rfp, p, i)) )
 			break;	//found
-		if( rsl_errors++ < RSL_MAX_ERRORS )
+		if( 1 || rsl_errors++ < RSL_MAX_ERRORS )
 		{
-			BLOG((0,"translate_string:REPLACE:rewind!:'%s'", p));
 			xa_rewind( rfp );
 		}
 		else
