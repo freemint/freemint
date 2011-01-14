@@ -1458,6 +1458,12 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 
 }
 
+static bool treeview = false;
+static bool rtbuild = false;
+static short fs_height = 0, fs_width = 0, fs_x = 0, fs_y = 0;
+static short fs_point = 0;
+static short fs_num = 0;
+
 /*
  * Re-load a file_selector listbox
  * HR: version without the big overhead of separate dir/file lists
@@ -1474,7 +1480,6 @@ refresh_filelist(enum locks lock, struct fsel_data *fs, SCROLL_ENTRY *dir_ent)
 	struct xa_wtxt_inf *wp[] = {&fs_norm_txt, &exe_txt, &dexe_txt, &dir_txt, 0};
 	int objs[] = {FS_ICN_EXE, FS_ICN_DIR, FS_ICN_PRG, FS_ICN_FILE, FS_ICN_SYMLINK, 0};
 	int initial;
-	short p;
 
 	//PROFILE(("fsel:refresh_file:entry" ));
 
@@ -1483,9 +1488,11 @@ refresh_filelist(enum locks lock, struct fsel_data *fs, SCROLL_ENTRY *dir_ent)
 		fs, fs->form->tree, sl));
 	list = object_get_slist(sl);
 
-	fs->fntinc = (p=set_xa_fnt( cfg.xaw_point + fs->fntinc, wp, form, objs, list )) - cfg.xaw_point;
+	fs->point = set_xa_fnt( fs->point + fs->fntinc, wp, form, objs, list );
+	
+	fs->fntinc = 0;
 
-	if( p < 10 )
+	if( fs->point < 10 )
 		list->flags |= SIF_NO_ICONS;
 	else
 		list->flags &= ~SIF_NO_ICONS;
@@ -2667,8 +2674,8 @@ fs_destructor(enum locks lock, struct xa_window *wind)
 	return true;
 }
 
-static bool treeview = false;
-static bool rtbuild = false;
+/* fsel opened by launcher */
+static struct xa_client *aes_has_fsel = 0;
 
 static void
 fs_init_menu(struct fsel_data *fs)
@@ -2690,9 +2697,6 @@ fs_init_menu(struct fsel_data *fs)
 
 	fs->rtbuild = rtbuild;
 }
-
-/* fsel opened by launcher */
-static struct xa_client *aes_has_fsel = 0;
 
 /* ignore updatelocks for fsel (does not work) */
 #define NONBLOCK_FSEL 0
@@ -2989,12 +2993,21 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 		{
 			short dh, dw;
 
+			if( fs_width == 0 )
+			{
+				dh = root_window->wa.h - 7 * screen.c_max_h - form->ob_height;
+				dw = root_window->wa.w - (form->ob_width + (screen.c_max_w * 4));
+				if ((dw + form->ob_width) > 560)
+					dw = 560 - form->ob_width;
 
-			dh = root_window->wa.h - 7 * screen.c_max_h - form->ob_height;
-			dw = root_window->wa.w - (form->ob_width + (screen.c_max_w * 4));
-
-			if ((dw + form->ob_width) > 560)
-				dw = 560 - form->ob_width;
+			}
+			else
+			{
+				dh = fs_height - form->ob_height;
+				dw = fs_width - form->ob_width;
+				form->ob_x = fs_x;
+				form->ob_y = fs_y;
+			}
 
 			form->ob_height += dh;
 			form->ob_width += dw;
@@ -3010,7 +3023,18 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 		/* Work out sizing */
 		if (!remember.w)
 		{
-			center_rect(&or);
+			if( fs_x == 0 )
+			{
+				fs->point = cfg.xaw_point;
+				center_rect(&or);
+			}
+			else
+			{
+				or.x = fs_x + screen.c_max_w * fs_num;
+				or.y = fs_y + screen.c_max_h * fs_num;
+				fs->point = fs_point;
+			}
+
 			remember =
 			calc_window(lock, client, WC_BORDER,
 						kind, created_for_AES,
@@ -3166,6 +3190,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 		strcpy(fs->filter, fs->fs_pattern);
 		fs->wind = dialog_window;
 		open_window(lock, dialog_window, dialog_window->r);
+		fs_num++;
 
 		/* HR: after set_slist_object() & opwn_window */
 		//refresh_filelist(lock, fs, 5);
@@ -3226,6 +3251,12 @@ close_fileselector(enum locks lock, struct fsel_data *fs)
 	delete_window(lock, fs->wind);
 	rtbuild = fs->rtbuild;
 	treeview = fs->treeview;
+	fs_height = fs->form->tree->ob_height;
+	fs_width = fs->form->tree->ob_width;
+	fs_x = fs->form->tree->ob_x;
+	fs_y = fs->form->tree->ob_y;
+	fs_point = fs->point;
+	fs_num--;
 	fs->wind = NULL;
 	fs->menu = NULL;
 	fs->form = NULL;
@@ -3236,7 +3267,7 @@ close_fileselector(enum locks lock, struct fsel_data *fs)
 		aes_has_fsel = 0;
 
 	/* force font-sz-init on next call */
-	fs_norm_txt.n.p = -1;
+	//fs_norm_txt.n.p = -1;
 
 #if NONBLOCK_FSEL
 	C.update_lock  = fs_update_lock;
