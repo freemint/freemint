@@ -215,6 +215,9 @@ static void init_list_focus( OBJECT *obtree, short item, short y )
 }
 
 /*
+ * set font-point to pt - if not available select next bigger/smaller to current
+ *
+ * return new point
  */
 short set_xa_fnt( int pt, struct xa_wtxt_inf *wp[], OBJECT *obtree, int objs[], SCROLL_INFO *list )
 {
@@ -230,9 +233,12 @@ short set_xa_fnt( int pt, struct xa_wtxt_inf *wp[], OBJECT *obtree, int objs[], 
 		wpp = &norm_txt;
 
 
+	//BLOG((0,"set_xa_fnt:pt=%d p=%d", pt, wpp->n.p));
 	if( pt != wpp->n.p )
 	{
-		if( wpp->n.p != -1 )
+		wpp->n.p = pt;
+		C.Aes->vdi_settings->api->text_extent(C.Aes->vdi_settings, "X", &wpp->n, &w, &h);
+		if( wpp->n.p != pt )
 		{
 			oldpt = wpp->n.p;
 			if( pt > wpp->n.p )
@@ -240,11 +246,13 @@ short set_xa_fnt( int pt, struct xa_wtxt_inf *wp[], OBJECT *obtree, int objs[], 
 			else
 				i = -1;
 
+			wpp->n.p += i;
 			for( C.Aes->vdi_settings->api->text_extent(C.Aes->vdi_settings, "X", &wpp->n, &w, &h), oldh = h;
 					oldh == h && wpp->n.p < 66 && wpp->n.p > 0;)
 			{
 				wpp->n.p += i;
 				C.Aes->vdi_settings->api->text_extent(C.Aes->vdi_settings, "X", &wpp->n, &w, &h);
+				//BLOG((0,"set_xa_fnt:p=%d h=%d oldh=%d i=%d", wpp->n.p, h, oldh, i));
 			}
 
 			if( h == oldh )
