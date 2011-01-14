@@ -499,7 +499,11 @@ pCB_keyboards(char *line)
 {
 	int i;
 
-
+	for( cfg.keyboards.c = *line; *line && *line != ','; line++ );
+	if( !*line++ )
+		return;
+	if( cfg.keyboards.c == ',' )
+		cfg.keyboards.c = 0xa;	// Enter
 	for( i = 0; i < MAX_KEYBOARDS; i++ )
 	{
 		char *s;
@@ -507,13 +511,8 @@ pCB_keyboards(char *line)
 		s = get_string(&line);
 		if (!s)
 			break;
-		if( i == 0 )
-			cfg.keyboards.c = *s;
-		else
-		{
-			BLOG((0,"keyboard#%d=%s",i-1,s));
-			cfg.keyboards.keyboard[i-1] = xa_strdup( s );
-		}
+		BLOG((0,"keyboard#%d=%s",i,s));
+		cfg.keyboards.keyboard[i] = xa_strdup( s );
 	}
 }
 /*----------------------------------------------------------------------------*/
