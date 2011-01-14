@@ -7361,7 +7361,7 @@ fatfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 				{
 					case FAT_TYPE_12:
 					{
-						info->type |= FS_FAT12;
+						info->type |= _MINOR_FAT12;
 						*dst++ = '1';
 						*dst++ = '2';
 
@@ -7369,7 +7369,7 @@ fatfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 					}
 					case FAT_TYPE_16:
 					{
-						info->type |= FS_FAT16;
+						info->type |= _MINOR_FAT16;
 						*dst++ = '1';
 						*dst++ = '6';
 
@@ -7377,7 +7377,7 @@ fatfs_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 					}
 					case FAT_TYPE_32:
 					{
-						info->type |= FS_FAT32;
+						info->type |= _MINOR_FAT32;
 						*dst++ = '3';
 						*dst++ = '2';
 
