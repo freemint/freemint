@@ -1,5 +1,5 @@
 /*
- * Output-strings (to be moved into the rsc-file)
+ * Output-strings
  */
 
 char *xa_strings[] = {
@@ -17,25 +17,19 @@ char *xa_strings[] = {
 	"OFF",
 	"ON",
 /* alert-text */
-"[2][Quit All][Cancel|Ok]",
+"[2][Quit All][Cancel|Ok]     ",
 "[2][Leave XaAES][Cancel|Ok]     ",
 "[1][ Snapper could not save snap! | ERROR: %d ][ Ok ]",
 "[1][Cannot snap topwindow as | parts of it is offscreen!][OK]",
 "[1]['xaaesnap' process not found.|Start 'xaaesnap.prg' and try again|or define snapshot in xaaes.cnf][OK]",
 "[2][ What do you want to snap?][ Block | Full screen | Top Window | Cancel ]",
-" Launch Program ",
-"xa_help.txt",
+"  Launch Program ",
 "$SDMASTER is not a valid program: %s (use the taskmanager)",
-"could not load %s.tbl from %s (%ld)",
+"Could not load %s.tbl from %s (%ld)",
+/* help-file */
+"xa_help.txt",
 	0
 };
-
-
-#if 0
-/* about-window */
-char *AB_GPL = 	"The terms of the <b>GPL version 2</b> or later apply.";
-char *AB_MINT = 	"Part of freemint ("SPAREMINT_URL").";
-#endif
 
 extern char *wctxt_main_txt[];
 extern char *about_lines[];
