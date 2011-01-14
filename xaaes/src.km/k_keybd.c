@@ -335,8 +335,8 @@ kernel_key(enum locks lock, struct rawkey *key)
 		key->norm = nkc_tconv(key->raw.bcon);
 		nk = key->norm & 0x00ff;
 
-		DIAG((D_keybd, NULL,"CTRL+ALT+%04x --> %04x '%c'", key->aes, key->norm, nk));
-		BLOG((0,"CTRL+ALT+%04x --> %04x '%c' kkey=%lx", key->aes, key->norm, nk, kkey));
+		DIAG((D_keybd, NULL,"CTRL+ALT+%04x --> %04x '%c'", key->aes, key->norm, nk, ));
+		//BLOG((0,"CTRL+ALT+%04x --> %04x %x,'%c','%c' kkey=%lx cfg.keyboards.c=%x:'%c'", key->aes, key->norm, nk, nk, tolower(nk), kkey, cfg.keyboards.c, cfg.keyboards.c));
 
 		while (kkey)
 		{
@@ -398,6 +398,7 @@ kernel_key(enum locks lock, struct rawkey *key)
 			long out;
 			char *tbname = cfg.keyboards.keyboard[kbdnum++];
 
+			//BLOG((0,"tbname=%lx", tbname));
 			if( !tbname )
 			{
 				kbdnum = 0;
