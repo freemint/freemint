@@ -246,13 +246,13 @@ null_select (FILEPTR *f, long p, int mode)
 {
 	UNUSED (f);
 	UNUSED (p);
-	
+
 	if ((mode == O_RDONLY) || (mode == O_WRONLY))
 	{
 		/* we're always ready to read/write */
 		return 1;
 	}
-	
+
 	/* other things we don't care about */
 	return E_OK;
 }
@@ -383,12 +383,14 @@ __dir_search (COOKIE *dir, const char *name)
 
 		if (stricmp (tmp->name, name) == 0)
 		{
+			RAM_DEBUG (("arafs: __dir_search: return %lx", tmp));
 			return tmp;
 		}
 
 		tmp = tmp->next;
 	}
 
+	RAM_DEBUG (("arafs: __dir_search: return NULL"));
 	return NULL;
 }
 
@@ -889,6 +891,7 @@ ara_lookup (fcookie *dir, const char *name, fcookie *fc)
 	{
 		DIRLST *f = __dir_search (c, name);
 
+		RAM_DEBUG (("arafs: __dir_search: f=%lx", f));
 		if (f)
 		{
 			fc->fs = &arafs_filesys;
@@ -898,6 +901,7 @@ ara_lookup (fcookie *dir, const char *name, fcookie *fc)
 
 			f->cookie->links++;
 
+			RAM_DEBUG (("arafs: ara_lookup : return E_OK"));
 			return E_OK;
 		}
 	}
@@ -959,7 +963,7 @@ ara_stat64 (fcookie *fc, STAT *stat)
 {
 	COOKIE *c = (COOKIE *) fc->index;
 
-	long r = c->cops && c->cops->stat ? 
+	long r = c->cops && c->cops->stat ?
 		c->cops->stat( fc, stat) : 0;
 	if (r < 0)
 	{
@@ -1871,7 +1875,7 @@ ara_open (FILEPTR *f)
 			return r;
 		}
 	}
-	
+
 	f->pos = 0;
 	f->devinfo = 0;
 	f->next = c->open;
@@ -2437,7 +2441,7 @@ ara_close (FILEPTR *f, int pid)
 	RAM_DEBUG (("arafs: ara_close: enter (f->links = %i)", f->links));
 
 	{
-		long r = c->cops && c->cops->dev_ops->close ? 
+		long r = c->cops && c->cops->dev_ops->close ?
 			 c->cops->dev_ops->close( f, pid) : 0;
 		if (r < 0)
 		{

@@ -32,7 +32,7 @@ extern struct proc_queue sysq[NUM_QUEUES];
  * use alternative method for load-calculation
  * use time not spent in kernel to get load
 */
-# define NEWLOAD	1
+# define NEWLOAD	0
 
 # define LOAD_SCALE		2048
 

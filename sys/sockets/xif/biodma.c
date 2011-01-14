@@ -106,7 +106,7 @@ static long	lance_probe	(struct netif *);
 static void	lance_probe_c	(void);
 // static long	lance_reset	(struct netif *);
 static void	lance_int	(struct netif *);
-static void	timeout_int(void);
+static void	timeout_int	(PROC *proc, long arg);
 
 static int	sendpkt (int target, uchar *buffer, int length);
 static int	receivepkt (int target, uchar *buffer);
@@ -239,7 +239,7 @@ driver_init (void)
 	static char message[100];
 	
 	strcpy (if_lance.name, "de");
-	if_lance.unit = if_getfreeunit ("de");
+	if_lance.unit = if_getfreeunit ((char *)"de");
 	if_lance.metric = 0;
 	if_lance.flags = IFF_BROADCAST;
 	if_lance.mtu = 1500;
@@ -428,7 +428,7 @@ lance_probe_c (void)
  * LANCE interrupt routine
  */
 static void
-timeout_int(void)
+timeout_int(PROC *proc, long arg)
 {
 	pending--;
 	lance_int (&if_lance);

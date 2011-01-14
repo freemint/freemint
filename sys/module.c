@@ -57,10 +57,6 @@
 
 # include "proc.h"
 
-#if STACKCHECK
-short check_stack_alignment( void );
-#endif
-
 long _cdecl
 kernel_opendir(struct dirstruct *dirh, const char *name)
 {
@@ -725,24 +721,12 @@ run_km(const char *path)
 	{
 		long _cdecl (*run)(struct kentry *, const struct kernel_module *);
 
-#if STACKCHECK
-		FORCE("run_km(%s) ok (bp 0x%lx)! &err=%lx STACK:%d", path, km->b, &err, check_stack_alignment());
-#endif
 //		sys_c_conin();
 // 		run = (long _cdecl(*)(struct kentry *, const char *))km->b->p_tbase;
 		run = (long _cdecl(*)(struct kentry *, const struct kernel_module *))km->b->p_tbase;
-#if STACKCHECK
-		FORCE("STACK:%d", check_stack_alignment());
-#endif
 		km->caller = curproc;	/* save caller for KM_FREE */
-#if STACKCHECK
-		FORCE("+STACK:%d", check_stack_alignment());
-#endif
 		//FORCE("run_km run(%lx,%lx)", &kentry, km );
 		err = (*run)(&kentry, km); //km->path);
-#if STACKCHECK
-		FORCE("-STACK:%d", check_stack_alignment());
-#endif
 	}
 	else
 		err = EBADARG;
@@ -874,9 +858,6 @@ module_ioctl(FILEPTR *f, int mode, void *buf)
 			if( !km )	/* not found -> run */
 #endif
 			{
-#if STACKCHECK
-				FORCE("module_ioctl:run:STACK:%d", check_stack_alignment());
-#endif
 				r = run_km(buf);
 			}
 			break;

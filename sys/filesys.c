@@ -1009,7 +1009,7 @@ restart_mount:
 
 			while (DIRSEP (*s))
 				s++;
-				
+
 			if (!*s) {
 				PATH2COOKIE_DB (("relpath2cookie: no more path, breaking"));
 				*res = dir;

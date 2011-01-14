@@ -272,7 +272,7 @@ sys_p_pause (void)
  * off, and raises SIGALRM
  */
 static void _cdecl
-alarmme (PROC *p)
+alarmme (PROC *p, long arg)
 {
 	p->alarmtim = 0;
 	post_sig (p, SIGALRM);
@@ -353,7 +353,7 @@ foundalarm:
  * timer goes off
  */
 static void _cdecl
-itimer_real_me (PROC *p)
+itimer_real_me (PROC *p, long arg)
 {
 	if (p->itimer[ITIMER_REAL].interval)
 		p->itimer[ITIMER_REAL].timeout = addtimeout (p, p->itimer[ITIMER_REAL].interval, itimer_real_me);
@@ -368,7 +368,7 @@ itimer_real_me (PROC *p)
  * timer goes off
  */
 static void _cdecl
-itimer_virtual_me (PROC *p)
+itimer_virtual_me (PROC *p, long arg)
 {
 	long timeleft;
 
@@ -401,7 +401,7 @@ itimer_virtual_me (PROC *p)
  * timer goes off
  */
 static void _cdecl
-itimer_prof_me (PROC *p)
+itimer_prof_me (PROC *p, long arg)
 {
 	long timeleft;
 
@@ -445,7 +445,7 @@ sys_t_setitimer (int which, long *interval, long *value, long *ointerval, long *
 	PROC *p = get_curproc();
 	long oldtimer;
 	TIMEOUT *t;
-	void _cdecl (*handler)() = 0;
+	void _cdecl (*handler)(PROC *P, long arg) = 0;
 	long tmpold;
 
 	if ((which != ITIMER_REAL)

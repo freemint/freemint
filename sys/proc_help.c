@@ -1,31 +1,31 @@
 /*
  * $Id$
- * 
+ *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
- * 
- * 
+ *
+ *
  * Copyright 2000 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
- * 
+ *
  * Please send suggestions, patches or bug reports to me or
  * the MiNT mailing list.
- * 
- * 
+ *
+ *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
  * any later version.
- * 
+ *
  * This file is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  */
 
 # include "proc_help.h"
@@ -71,21 +71,21 @@ init_page_table_ptr (struct memspace *m)
 # if defined (M68040) || defined (M68060)
 		extern int page_ram_type;	/* mprot040.c */
 		MEMREGION *pt = NULL;
-		
+
 // 		FORCE("init_page_table_ptr: p_mem->mem = %lx", curproc->p_mem->mem);
 		if (page_ram_type & 2)
 			pt = get_region (alt, page_table_size + 512, PROT_S);
 		if (!pt && (page_ram_type & 1))
 			pt = get_region (core, page_table_size + 512, PROT_S);
-		
+
 		/* For the 040, the page tables must be on 512 byte boundaries */
 		m->page_table = pt ? ROUND512 (pt->loc) : NULL;
 		m->pt_mem = pt;
 # else /* M68040 || M68060 */
 		void *pt;
-		
+
 		pt = kmalloc (page_table_size + 16);
-		
+
 		/* page tables must be on 16 byte boundaries, so we
 		 * round off by 16 for that; however, we will want to
 		 * kfree that memory at some point, so we squirrel
@@ -94,7 +94,7 @@ init_page_table_ptr (struct memspace *m)
 		m->page_table = pt ? ROUND16 (pt) : NULL;
 		m->pt_mem = pt;
 # endif /* M68040 || M68060 */
-		
+
 		if (!pt) DEBUG(("init_page_table_ptr: no mem for page table"));
 	}
 # endif
@@ -108,19 +108,19 @@ free_page_table_ptr (struct memspace *m)
 	{
 # if defined(M68040) || defined(M68060)
 		MEMREGION *pt;
-		
+
 		pt = m->pt_mem;
 		m->pt_mem = NULL;
-		
+
 		pt->links--;
 		if (!pt->links)
 			free_region(pt);
 # else
 		void *pt;
-		
+
 		pt = m->pt_mem;
 		m->pt_mem = NULL;
-		
+
 		kfree(pt);
 # endif
 	}
@@ -134,28 +134,28 @@ copy_mem (struct proc *p)
 	struct memspace *m;
 	union { char *c; void *v; } ptr;
 	int i;
-	
+
 	TRACE (("copy_mem: pid %i (%lx)", p->pid, p));
 	assert (p && p->p_mem && p->p_mem->links > 0);
-	
+
 	m = kmalloc (sizeof (*m));
 	if (!m)
 	{
 		DEBUG(("copy_mem: kmalloc failed -> NULL"));
 		return NULL;
 	}
-	
+
 	bcopy (p->p_mem, m, sizeof (*m));
 	m->links = 1;
 	/* don't copy over F_OS_SPECIAL flag */
 	m->memflags &= ~F_OS_SPECIAL;
-	
+
 	init_page_table_ptr (m);
-	
+
 	ptr.v = kmalloc (m->num_reg * sizeof (void *) * 2);
 	m->mem = ptr.v;
 	m->addr = (void *)(ptr.c + m->num_reg * sizeof (char *));
-	
+
 	/* Trampoline. Space is added for user cookie jar */
 
 # ifdef JAR_PRIVATE
@@ -175,7 +175,7 @@ copy_mem (struct proc *p)
 	m->tp_reg = get_region(alt, user_things.len + PRIV_JAR_SIZE, PROT_P);
 	if (!m->tp_reg)
 		m->tp_reg = get_region(core, user_things.len + PRIV_JAR_SIZE, PROT_P);
-	
+
 	TRACE(("copy_mem: ptr=%lx, m->pt_mem = %lx, m->tp_reg = %lx, mp=%s", ptr, m->pt_mem, m->tp_reg, no_mem_prot ? "off":"on"));
 
 #ifdef M68000
@@ -184,17 +184,17 @@ copy_mem (struct proc *p)
 	if ((!no_mem_prot && !m->pt_mem) || !ptr.c || !m->tp_reg)
 #endif
 		goto nomem;
-	
+
 	/* copy memory */
 	for (i = 0; i < m->num_reg; i++)
 	{
 		m->mem[i] = p->p_mem->mem[i];
 		if (m->mem[i])
 			m->mem[i]->links++;
-		
+
 		m->addr[i] = p->p_mem->addr[i];
 	}
-	
+
 	/* initialize trampoline things */
 	ut = m->tp_ptr = (struct user_things *) m->tp_reg->loc;
 
@@ -258,17 +258,17 @@ copy_mem (struct proc *p)
 	cpushi(ut, sizeof(*ut));
 #endif
 	detach_region(get_curproc(), m->tp_reg);
-	
+
 	TRACE (("copy_mem: ok (%lx)", m));
 	return m;
-	
+
 nomem:
 	TRACE (("copy_mem: out of mem!"));
 	if (m->pt_mem) free_page_table_ptr (m);
 	if (ptr.c) kfree (ptr.c);
 	if (m->tp_reg) { m->tp_reg->links--; free_region(m->tp_reg); }
 	kfree (m);
-	
+
 	return NULL;
 }
 
@@ -278,16 +278,16 @@ free_mem (struct proc *p)
 	struct memspace *p_mem;
 	void *ptr;
 	int i;
-	
+
 	assert (p && p->p_mem && p->p_mem->links > 0);
 	p_mem = p->p_mem;
 	// XXX p->p_mem = NULL; --- dependency in arch/mprot0?0.c
-	
+
 	if (--p_mem->links > 0)
 		return;
-	
+
 	DEBUG (("freeing p_mem for %s", p->name));
-	
+
 	if (p_mem->tp_reg)
 	{
 		p_mem->tp_reg->links--;
@@ -303,23 +303,23 @@ free_mem (struct proc *p)
 	for (i = p_mem->num_reg - 1; i >= 0; i--)
 	{
 		MEMREGION *m = p_mem->mem[i];
-		
+
 		p_mem->mem[i] = NULL;
 		p_mem->addr[i] = 0;
-		
+
 		if (m)
 		{
 			/* don't free specially allocated memory */
 			if ((m->mflags & M_KEEP) && (m->links <= 1))
 				if (p != rootproc)
 					attach_region (rootproc, m);
-			
+
 			m->links--;
 			if (m->links == 0)
 				free_region (m);
 		}
 	}
-	
+
 	/*
 	 * mark the mem & addr arrays as void so the memory
 	 * protection code won't try to walk them. Do this before
@@ -334,20 +334,20 @@ free_mem (struct proc *p)
 	 * though, after dispose_proc. This might be Not A Good
 	 * Thing.
 	 */
-	
+
 	ptr = p_mem->mem;
-	
+
 	p_mem->mem = NULL;
 	p_mem->addr = NULL;
 	p_mem->num_reg = 0;
-	
+
 	kfree (ptr);
-	
+
 	/* invalidate memory space for proc before freeing it
 	 * -> so the MMU code don't access it
 	 */
 	p->p_mem = NULL;
-	
+
 	free_page_table_ptr (p_mem);
 	kfree (p_mem);
 }
@@ -406,28 +406,28 @@ copy_fd (struct proc *p)
 	struct filedesc *org_fd;
 	struct filedesc *fd;
 	long i;
-	
+
 	TRACE (("copy_fd: pid %i (%lx)", p->pid, p));
 	assert (p && p->p_fd && p->p_fd->links > 0);
 	org_fd = p->p_fd;
-	
+
 	fd = kmalloc (sizeof (*fd));
 	if (!fd)
 	{
 		DEBUG(("copy_fd: kmalloc failed -> NULL"));
 		return NULL;
 	}
-	
+
 	bcopy (org_fd, fd, sizeof (*fd));
 	fd->links = 1;
-	
+
 # if 0
 	if (!(fd->lastfile < NDFILE))
 	{
 		i = fd->nfiles;
 		while (i >= 2 * NDEXTENT && i > fd->lastfile * 2)
 			i /= 2;
-		
+
 		fd->ofiles = kmalloc (i * OFILESIZE);
 		fd->ofileflags = (char *) &fd->ofiles[i];
 	}
@@ -438,16 +438,16 @@ copy_fd (struct proc *p)
 		fd->ofileflags = (unsigned char *)&fd->dfileflags[0];
 		i = NDFILE;
 	}
-	
+
 	fd->nfiles = i;
-	
+
 	//mint_bcopy (org_fd->ofiles, fd->ofiles, i * sizeof (FILEPTR **));
 	//mint_bcopy (org_fd->ofileflags, fd->ofileflags, i * sizeof (char));
-	
+
 	for (i = MIN_HANDLE; i < fd->nfiles; i++)
 	{
 		FILEPTR *f = fd->ofiles[i];
-		
+
 		if (f)
 		{
 			if ((f == (FILEPTR *) 1L) || (f->flags & O_NOINHERIT))
@@ -459,12 +459,12 @@ copy_fd (struct proc *p)
 				f->links++;
 		}
 	}
-	
+
 	/* clear directory search info */
 	mint_bzero (fd->srchdta, NUM_SEARCH * sizeof (DTABUF *));
 	mint_bzero (fd->srchdir, sizeof (fd->srchdir));
 	fd->searches = NULL;
-	
+
 	TRACE (("copy_fd: ok (%lx)", fd));
 	return fd;
 }
@@ -475,16 +475,16 @@ free_fd (struct proc *p)
 	struct filedesc *p_fd;
 	FILEPTR *f;
 	int i;
-	
+
 	assert (p && p->p_fd && p->p_fd->links > 0);
 	p_fd = p->p_fd;
 	p->p_fd = NULL;
-	
+
 	if (--p_fd->links > 0)
 		return;
-	
+
 	DEBUG (("freeing p_fd for %s", p->name));
-	
+
 	/* release the controlling terminal,
 	 * if we're the last member of this pgroup
 	 */
@@ -493,19 +493,19 @@ free_fd (struct proc *p)
 	{
 		struct tty *tty = (struct tty *) f->devinfo;
 		int pgrp = p->pgrp;
-		
+
 		if (pgrp == tty->pgrp)
 		{
 			FILEPTR *pfp;
 			PROC *p1;
-			
+
 			if (tty->use_cnt > 1)
 			{
 				for (p1 = proclist; p1; p1 = p1->gl_next)
 				{
 					if (p1->wait_q == ZOMBIE_Q || p1->wait_q == TSR_Q)
 						continue;
-					
+
 					if (p1->pgrp == pgrp
 						&& p1 != p
 						&& ((pfp = p1->p_fd->control) != NULL)
@@ -522,7 +522,7 @@ free_fd (struct proc *p)
 				{
 					if (p1->wait_q == ZOMBIE_Q || p1->wait_q == TSR_Q)
 						continue;
-					
+
 					if (p1->pgrp == pgrp
 						&& p1 != p
 						&& p1->p_fd->control == f)
@@ -537,19 +537,19 @@ free_fd (struct proc *p)
 found:
 		;
 	}
-	
+
 	/* close all files */
 	for (i = MIN_HANDLE; i < p_fd->nfiles; i++)
 	{
 		f = p_fd->ofiles[i];
-		
+
 		if (f)
 		{
 			p_fd->ofiles[i] = NULL;
 			do_close (p, f);
 		}
 	}
-	
+
 	/* close any unresolved Fsfirst/Fsnext directory searches */
 	for (i = 0; i < NUM_SEARCH; i++)
 	{
@@ -561,29 +561,29 @@ found:
 			dirh->fc.fs = 0;
 		}
 	}
-	
+
 	/* close pending opendir/readdir searches */
 	{
 		register DIR *dirh = p_fd->searches;
-		
+
 		while (dirh)
 		{
 			register DIR *nexth = dirh->next;
-			
+
 			if (dirh->fc.fs)
 			{
 				xfs_closedir (dirh->fc.fs, dirh);
 				release_cookie (&dirh->fc);
 			}
-			
+
 			kfree (dirh);
 			dirh = nexth;
 		}
 	}
-	
+
 	if (p_fd->nfiles > NDFILE)
 		kfree (p_fd->ofiles);
-	
+
 	kfree (p_fd);
 }
 
@@ -595,23 +595,23 @@ copy_cwd (struct proc *p)
 	struct cwd *org_cwd;
 	struct cwd *cwd;
 	int i;
-	
+
 	TRACE (("copy_cwd: pid %i (%lx)", p->pid, p));
 	assert (p && p->p_cwd && p->p_cwd->links > 0);
 	org_cwd = p->p_cwd;
-	
+
 	cwd = kmalloc (sizeof (*cwd));
 	if (!cwd)
 	{
 		DEBUG(("copy_cwd: kmalloc failed -> NULL"));
 		return NULL;
 	}
-	
+
 	mint_bzero (cwd, sizeof (*cwd));
-	
+
 	cwd->links = 1;
 	cwd->cmask =  org_cwd->cmask;
-	
+
 	if (cwd->root_dir)
 	{
 		cwd->root_dir = kmalloc (strlen (cwd->root_dir) + 1);
@@ -620,20 +620,20 @@ copy_cwd (struct proc *p)
 			kfree (cwd);
 			return NULL;
 		}
-		
+
 		strcpy (cwd->root_dir, org_cwd->root_dir);
 		dup_cookie (&cwd->rootdir, &org_cwd->rootdir);
 	}
-	
+
 	cwd->curdrv = org_cwd->curdrv;
-	
+
 	/* copy root and current directories */
 	for (i = 0; i < NUM_DRIVES; i++)
 	{
 		dup_cookie (&cwd->root[i], &org_cwd->root[i]);
 		dup_cookie (&cwd->curdir[i], &org_cwd->curdir[i]);
 	}
-	
+
 	TRACE (("copy_cwd: ok (%lx)", cwd));
 	return cwd;
 }
@@ -643,16 +643,16 @@ free_cwd (struct proc *p)
 {
 	struct cwd *p_cwd;
 	int i;
-	
+
 	assert (p && p->p_cwd && p->p_cwd->links > 0);
 	p_cwd = p->p_cwd;
 	p->p_cwd = NULL;
-	
+
 	if (--p_cwd->links > 0)
 		return;
-	
+
 	DEBUG (("freeing p_cwd for %s", p->name));
-	
+
 	/* release the directory cookies held by the process */
 	for (i = 0; i < NUM_DRIVES; i++)
 	{
@@ -661,17 +661,17 @@ free_cwd (struct proc *p)
 		release_cookie (&p_cwd->root[i]);
 		p_cwd->root[i].fs = NULL;
 	}
-	
+
 	if (p_cwd->root_dir)
 	{
 		DEBUG (("free root_dir = %s", p_cwd->root_dir));
-		
+
 		release_cookie (&p_cwd->rootdir);
 		p_cwd->rootdir.fs = NULL;
 		kfree (p_cwd->root_dir);
 		p_cwd->root_dir = NULL;
 	}
-	
+
 	kfree (p_cwd);
 }
 
@@ -681,20 +681,20 @@ struct sigacts *
 copy_sigacts (struct proc *p)
 {
 	struct sigacts *p_sigacts;
-	
+
 	TRACE (("copy_sigacts: pid %i (%lx)", p->pid, p));
 	assert (p && p->p_sigacts && p->p_sigacts->links > 0);
-	
+
 	p_sigacts = kmalloc (sizeof (*p_sigacts));
 	if (!p_sigacts)
 	{
 		DEBUG(("copy_sigacts: kmalloc failed -> NULL"));
 		return NULL;
 	}
-	
+
 	bcopy (p->p_sigacts, p_sigacts, sizeof (*p_sigacts));
 	p_sigacts->links = 1;
-	
+
 	TRACE (("copy_sigacts: ok (%lx)", p_sigacts));
 	return p_sigacts;
 }
@@ -703,16 +703,16 @@ void
 free_sigacts (struct proc *p)
 {
 	struct sigacts *p_sigacts;
-	
+
 	assert (p && p->p_sigacts && p->p_sigacts->links > 0);
 	p_sigacts = p->p_sigacts;
 	p->p_sigacts = NULL;
-	
+
 	if (--p_sigacts->links > 0)
 		return;
-	
+
 	DEBUG (("freeing p_sigacts for %s", p->name));
-	
+
 	kfree (p_sigacts);
 }
 
@@ -723,28 +723,28 @@ struct plimit *
 copy_limits (struct proc *p)
 {
 	struct plimit *n;
-	
+
 	TRACE (("copy_limit: %lx links %li", p_limit, p_limit->links));
 	assert (p_limit->links > 0);
-	
+
 	if (p_limit->links == 1)
 		return p_limit;
-	
+
 	n = kmalloc (sizeof (*n));
 	if (n)
 	{
 		/* copy */
 		memcpy (n->limits, p_limit->limits, sizeof (n->limits));
-		
+
 		/* reset flags */
 		n->flags = 0;
-		
+
 		/* adjust link counters */
 		p_limit->links--;
 		n->links = 1;
 	}
 		DEBUG(("copy_limit: kmalloc failed -> NULL"));
-	
+
 	return n;
 }
 #endif
@@ -754,7 +754,7 @@ free_limits (struct proc *p)
 {
 #if 0
 	assert (p_limit->links > 0);
-	
+
 	if (--p_limit->links == 0)
 		kfree (p_limit);
 #endif
@@ -764,13 +764,13 @@ static struct proc_ext *
 new_proc_ext(long ident, unsigned long flags, unsigned long size, struct module_callback *cb)
 {
 	struct proc_ext *e;
-	
+
 	e = kmalloc(sizeof(*e));
-	
+
 	if (e)
 	{
 		mint_bzero(e, sizeof(*e));
-		
+
 		if ((e->data = kmalloc(size)))
 		{
 			/* Initialize data */
@@ -842,7 +842,7 @@ share_ext(struct proc *p, struct proc *p2)
 					{
 						ext->links++;
 						p_ext->ext[p_ext->used++] = ext;
-					}						
+					}
 				}
 			}
 			if (p_ext->used)
@@ -861,7 +861,7 @@ share_ext(struct proc *p, struct proc *p2)
 				for (i = 0; i < p_ext2->used; i++)
 				{
 					struct proc_ext *ext;
-				
+
 					ext = p_ext2->ext[i];
 					if (ext->cb_vector && ext->cb_vector->share)
 						(*ext->cb_vector->share)(ext->data, p, p2);
@@ -895,7 +895,11 @@ free_ext(struct proc *p)
 			{
 				/* release callback */
 				if (ext->cb_vector && ext->cb_vector->release)
-					(*ext->cb_vector->release)(ext->data);
+				{
+					FORCE("free_ext:release %lx flags=%lx", ext->data, ext->flags);
+					//if( !(ext->flags & PEXT_NOSHARE) )	// hack: when this flag is set data (probably) has been copied
+						(*ext->cb_vector->release)(ext->data);
+				}
 
 				kfree(ext->data);
 				kfree(ext);
@@ -954,7 +958,7 @@ proc_attach_extension(struct proc *p, long ident, unsigned long flags, unsigned 
 	if (!p) p = get_curproc();
 
 	assert(size);
-	
+
 	p_ext = p->p_ext;
 
 	/* Ozk:
@@ -997,9 +1001,9 @@ proc_attach_extension(struct proc *p, long ident, unsigned long flags, unsigned 
 		DEBUG(("proc_attach_extension: no free extension slots"));
 		return NULL;
 	}
-	
+
 	ext = new_proc_ext(ident, flags, size, cb);
-	
+
 	if (ext)
 	{
 		p_ext->ext[p_ext->used++] = ext;
@@ -1083,15 +1087,15 @@ void
 proc_ext_on_exit(struct proc *p, int code)
 {
 	struct p_ext *p_ext = p->p_ext;
-	
+
 	if (p_ext)
 	{
 		int i;
-		
+
 		for (i = 0; i < p_ext->used; i++)
 		{
 			struct proc_ext *ext = p_ext->ext[i];
-			
+
 			if (ext->cb_vector && ext->cb_vector->on_exit)
 			{
 				(*ext->cb_vector->on_exit)(ext->data, p, code);

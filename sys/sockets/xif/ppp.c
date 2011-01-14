@@ -711,7 +711,7 @@ ppp_build_frame (struct ppp *ppp, BUF *buf)
 static volatile short havetimeout = 0;
 
 static void
-wakeup (long p)
+wakeup (PROC *p, long arg)
 {
 	int i;
 	

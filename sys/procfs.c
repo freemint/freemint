@@ -1,17 +1,17 @@
 /*
  * $Id$
- * 
+ *
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
- * 
- * 
+ *
+ *
  * Copyright 1991,1992 Eric R. Smith.
  * Copyright 1992,1993,1994 Atari Corporation.
  * All rights reserved.
- * 
- * 
+ *
+ *
  * PROC pseudo-filesystem routines
- * 
+ *
  * basically just to allow 'ls -l X:' to give a list of active processes
  * some things to note:
  * process names are given as name.XXX, where 'XXX' is the pid of the
@@ -29,7 +29,7 @@
  * have the system bit (0x04) set, and the read-only bit is used to
  * otherwise distinguish states (which is unfortunate, since it would be
  * nice if this bit corresponded with file permissions).
- * 
+ *
  */
 
 # include "procfs.h"
@@ -100,7 +100,7 @@ procfs_init (void)
 FILESYS proc_filesys =
 {
 	NULL,
-	
+
 	/*
 	 * FS_KNOPARSE		kernel shouldn't do parsing
 	 * FS_CASESENSITIVE	file names are case sensitive
@@ -121,7 +121,7 @@ FILESYS proc_filesys =
 	FS_REENTRANT_L2		|
 	FS_EXT_2		|
 	FS_EXT_3		,
-	
+
 	proc_root,
 	proc_lookup, null_creat, proc_getdev, proc_getxattr,
 	null_chattr, proc_chown, null_chmode,
@@ -131,16 +131,16 @@ FILESYS proc_filesys =
 	null_symlink, null_readlink, null_hardlink, proc_fscntl, null_dskchng,
 	NULL, NULL,
 	NULL,
-	
+
 	/* FS_EXT_1 */
 	NULL, NULL,
-	
+
 	/* FS_EXT_2
 	 */
-	
+
 	/* FS_EXT_3 */
 	proc_stat64,
-	
+
 	0, 0, 0, 0, 0,
 	NULL, NULL
 };
@@ -169,16 +169,16 @@ name2proc (const char *name)
 		if (c == '.')
 			pstr = name;
 	}
-	
+
 	if (!isdigit (*pstr) && *pstr != '-')
 		return 0;
-	
+
 	i = atol (pstr);
 	if (i == -1)
 		return get_curproc();
 	else if (i == -2)
 		i = get_curproc()->ppid;
-	
+
 	return pid2proc (i);
 }
 
@@ -187,17 +187,17 @@ getproc (long index)
 {
 	register struct proc *check = (struct proc *) index;
 	register struct proc *p;
-	
+
 	for (p = proclist; p; p = p->gl_next)
 	{
 		if (p == check)
 			return p;
 	}
-	
+
 	return NULL;
 }
 
-long _cdecl 
+long _cdecl
 proc_root (int drv, fcookie *fc)
 {
 	if (drv == PROCDRV)
@@ -207,22 +207,22 @@ proc_root (int drv, fcookie *fc)
 		fc->index = 0L;
 		return E_OK;
 	}
-	
+
 	fc->fs = 0;
 	return EINTERNAL;
 }
 
-static long _cdecl 
+static long _cdecl
 proc_lookup (fcookie *dir, const char *name, fcookie *fc)
 {
 	PROC *p;
-	
+
 	if (dir->index != 0)
 	{
 		DEBUG (("proc_lookup: bad directory"));
 		return ENOTDIR;
 	}
-	
+
 	/* special case: an empty name in a directory means that directory
 	 * so does "."
 	 */
@@ -231,25 +231,25 @@ proc_lookup (fcookie *dir, const char *name, fcookie *fc)
 		*fc = *dir;
 		return E_OK;
 	}
-	
+
 	/* another special case: ".." could be a mount point */
 	if (!strcmp (name, ".."))
 	{
 		*fc = *dir;
 		return EMOUNT;
 	}
-	
+
 	p = name2proc (name);
 	if (!p)
 	{
 		DEBUG (("proc_lookup: name not found"));
 		return ENOENT;
 	}
-	
+
 	fc->index = (long) p;
 	fc->fs = &proc_filesys;
 	fc->dev = PROC_RDEV_BASE | p->pid;
-	
+
 	return E_OK;
 }
 
@@ -267,17 +267,17 @@ static int p_attr [NUM_QUEUES] =
 	0x21			/* "SELECT" (same as IOBOUND) */
 };
 
-static long _cdecl 
+static long _cdecl
 proc_getxattr (fcookie *fc, XATTR *xattr)
 {
 	struct proc *p = getproc (fc->index);
-	
+
 	xattr->nblocks = 1;
 	xattr->blksize = 1;
 	if (!p)
 	{
 		/* the root directory */
-		
+
 		xattr->index = 0;
 		xattr->dev = xattr->rdev = PROCDRV;
 		xattr->nlink = 1;
@@ -287,17 +287,17 @@ proc_getxattr (fcookie *fc, XATTR *xattr)
 		SET_XATTR_TD(xattr,a,xtime.tv_sec);
 		SET_XATTR_TD(xattr,m,procfs_stmp.tv_sec);
 		SET_XATTR_TD(xattr,c,rootproc->started.tv_sec);
-#if 0		
+#if 0
 		*((long *) &(xattr->atime)) = xtime.tv_sec;
 		*((long *) &(xattr->mtime)) = procfs_stmp.tv_sec;
 		*((long *) &(xattr->ctime)) = rootproc->started.tv_sec;
-#endif	
+#endif
 		xattr->mode = S_IFDIR | DEFAULT_DIRMODE;
 		xattr->attr = FA_DIR;
-		
+
 		return E_OK;
 	}
-	
+
 	xattr->index = p->pid;
 	xattr->dev = xattr->rdev = PROC_RDEV_BASE | p->pid;
 	xattr->nlink = 1;
@@ -310,26 +310,26 @@ proc_getxattr (fcookie *fc, XATTR *xattr)
 	SET_XATTR_TD(xattr,c,p->started.tv_sec);
 #if 0
 	*(long *) &xattr->atime = xtime.tv_sec;
-	*(long *) &xattr->mtime = 
+	*(long *) &xattr->mtime =
 	*(long *) &xattr->ctime = p->started.tv_sec;
 #endif
 	xattr->mode = S_IFMEM | S_IRUSR | S_IWUSR;
 	xattr->attr = p_attr[p->wait_q];
-	
+
 	return E_OK;
 }
 
-static long _cdecl 
+static long _cdecl
 proc_chown (fcookie *fc, int uid, int gid)
 {
 	struct proc *p = getproc (fc->index);
-	
+
 	if (!p)
 		return EACCES;
-	
+
 	if (uid != -1) p->p_cred->ruid = p->p_cred->ucr->euid = uid;
 	if (gid != -1) p->p_cred->rgid = p->p_cred->ucr->egid = gid;
-	
+
 	return E_OK;
 }
 
@@ -337,33 +337,33 @@ static long _cdecl
 proc_stat64 (fcookie *fc, STAT *ptr)
 {
 	struct proc *p = getproc (fc->index);
-	
+
 	mint_bzero (ptr, sizeof (*ptr));
-	
+
 	ptr->blocks = 1;
 	ptr->blksize = 1;
 	ptr->nlink = 1;
 	if (!p)
 	{
 		/* the root directory */
-		
+
 		ptr->dev = ptr->rdev = PROCDRV;
 		ptr->mode = S_IFDIR | DEFAULT_DIRMODE;
-		
-		ptr->atime.high_time = 0;	
+
+		ptr->atime.high_time = 0;
 		ptr->atime.time = xtime.tv_sec;
-		
-		ptr->mtime.high_time = 0;	
+
+		ptr->mtime.high_time = 0;
 		ptr->mtime.time = procfs_stmp.tv_sec;
-		ptr->mtime.nanoseconds = 0;	
-		
-		ptr->ctime.high_time = 0;	
+		ptr->mtime.nanoseconds = 0;
+
+		ptr->ctime.high_time = 0;
 		ptr->ctime.time = rootproc->started.tv_sec;
-		ptr->ctime.nanoseconds = 0;	
-		
+		ptr->ctime.nanoseconds = 0;
+
 		return E_OK;
 	}
-	
+
 	ptr->ino = p->pid;
 	ptr->dev = ptr->rdev = PROC_RDEV_BASE | p->pid;
 	ptr->uid = p->p_cred->ucr->euid;
@@ -371,37 +371,37 @@ proc_stat64 (fcookie *fc, STAT *ptr)
 	ptr->size = ptr->blocks = memused(p);
 	ptr->mode = S_IFMEM | S_IRUSR | S_IWUSR;
 
-	ptr->atime.high_time = 0;	
+	ptr->atime.high_time = 0;
 	ptr->atime.time = xtime.tv_sec;
-	ptr->atime.nanoseconds = 0;	
-	
-	ptr->mtime.high_time = 0;	
-	ptr->mtime.time = 
-	ptr->mtime.nanoseconds = 0;	
-	
-	ptr->ctime.high_time = 0;	
+	ptr->atime.nanoseconds = 0;
+
+	ptr->mtime.high_time = 0;
+	ptr->mtime.time =
+	ptr->mtime.nanoseconds = 0;
+
+	ptr->ctime.high_time = 0;
 	ptr->ctime.time = p->started.tv_sec;
-	ptr->ctime.nanoseconds = 0;	
-	
+	ptr->ctime.nanoseconds = 0;
+
 	return E_OK;
 }
 
-static long _cdecl 
+static long _cdecl
 proc_remove (fcookie *dir, const char *name)
 {
 	PROC *t;
-	
+
 	if (dir->index != 0)
 		return ENOTDIR;
-	
+
 	t = name2proc (name);
 	if (!t)
 		return ENOENT;
-	
+
 	/* this check is necessary because the Fdelete code checks for
 	 * write permission on the directory, not on individual
 	 * files
-	 * 
+	 *
 	 * Draco: it was
 	 *	if (curproc->euid && curproc->ruid != p->ruid)
 	 * what allowed regular users to remove root processes using ftpd.
@@ -413,21 +413,21 @@ proc_remove (fcookie *dir, const char *name)
 		DEBUG(("proc_remove: wrong user"));
 		return EACCES;
 	}
-	
+
 	post_sig (t, SIGTERM);
 	check_sigs ();		/* it might have been us */
-	
+
 	return E_OK;
 }
 
-static long _cdecl 
+static long _cdecl
 proc_getname (fcookie *root, fcookie *dir, char *pathname, int size)
 {
 	PROC *p;
 	char buffer[20]; /* enough if proc names no longer than 8 chars */
-	
+
 	UNUSED (root);
-	
+
 	if (dir->index == 0)
 	{
 		*buffer = 0;
@@ -436,32 +436,32 @@ proc_getname (fcookie *root, fcookie *dir, char *pathname, int size)
 	{
 		p = getproc (dir->index);
 		if (!p) return EBADARG;
-		
+
 		ksprintf (buffer, sizeof (buffer), "%s.03d", p->name, p->pid);
 	}
-	
+
 	if (strlen (buffer) < size)
 	{
 		strcpy (pathname, buffer);
 		return E_OK;
 	}
-	
+
 	return EBADARG;
 }
 
-static long _cdecl 
+static long _cdecl
 proc_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newname)
 {
 	PROC *p;
 	int i;
-	
+
 	if (olddir->index != 0 || newdir->index != 0)
 		return ENOTDIR;
-	
+
 	p = name2proc (oldname);
 	if (!p)
 		return ENOENT;
-	
+
 	oldname = p->name;
 	for (i = 0; i < PNAMSIZ; i++)
 	{
@@ -470,22 +470,22 @@ proc_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newnam
 			*oldname = 0;
 			break;
 		}
-		
+
 		*oldname++ = *newname++;
 	}
-	
+
 	return E_OK;
 }
 
-static long _cdecl 
+static long _cdecl
 proc_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 {
 	PROC *p;
 	int i;
-	
+
 	do {
 		i = dirh->index++;
-		
+
 		/* BUG: we shouldn't have the magic value "MAXPID" for
 		 * maximum proc pid
 		 */
@@ -494,40 +494,40 @@ proc_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 			p = 0;
 			break;
 		}
-		
+
 		p = pid2proc (i);
 	}
 	while (!p);
 
 	if (!p)
 		return ENMFILES;
-	
+
 	fc->index = (long) p;
 	fc->fs = &proc_filesys;
 	fc->dev = PROC_RDEV_BASE | p->pid;
-	
+
 	if (dirh->flags == 0)
 	{
 		namelen -= 4;
 		if (namelen <= 0)
 			return EBADARG;
-		
+
 		*((long *) name) = (long) p->pid;
 		name += 4;
 	}
-	
+
 	if (namelen < strlen (p->name) + 5)
 		return EBADARG;
-	
+
 	ksprintf (name, namelen, "%s.%03d", p->name, p->pid);
 	return E_OK;
 }
 
-static long _cdecl 
+static long _cdecl
 proc_pathconf (fcookie *dir, int which)
 {
 	UNUSED(dir);
-	
+
 	switch (which)
 	{
 		case DP_INQUIRE:	return DP_XATTRFIELDS;
@@ -550,46 +550,46 @@ proc_pathconf (fcookie *dir, int which)
 						| DP_NBLOCKS
 					);
 	}
-	
+
 	return ENOSYS;
 }
 
-static long _cdecl 
+static long _cdecl
 proc_dfree (fcookie *dir, long *buf)
 {
 	long size;
-	
+
 	/* "sector" size is the size of the smallest amount of memory that
 	 * can be allocated. see mem.h for the definition of ROUND
 	 */
 	long secsiz = ROUND(1);
-	
+
 	UNUSED(dir);
-	
+
 	size = tot_rsize(core, 0) + tot_rsize(alt, 0);
 	*buf++ = size/secsiz;			/* number of free clusters */
 	size = tot_rsize(core, 1) + tot_rsize(alt, 1);
 	*buf++ = size/secsiz;			/* total number of clusters */
 	*buf++ = secsiz;			/* sector size (bytes) */
 	*buf = 1;				/* cluster size (in sectors) */
-	
+
 	return E_OK;
 }
 
-static long _cdecl 
+static long _cdecl
 proc_readlabel (fcookie *dir, char *name, int namelen)
 {
 	UNUSED (dir);
-	
+
 	if (sizeof "Processes" >= namelen)
 		return EBADARG;
-	
+
 	strcpy (name, "Processes");
-	
+
 	return E_OK;
 }
 
-static DEVDRV * _cdecl 
+static DEVDRV * _cdecl
 proc_getdev (fcookie *fc, long *devsp)
 {
 	*devsp = fc->index;
@@ -598,10 +598,10 @@ proc_getdev (fcookie *fc, long *devsp)
 
 static long _cdecl
 proc_fscntl (fcookie *dir, const char *name, int cmd, long arg)
-{	
-	UNUSED (dir); 
+{
+	UNUSED (dir);
 	UNUSED (name);
-	
+
 	switch (cmd)
 	{
 		case MX_KER_XFSNAME:
@@ -610,7 +610,7 @@ proc_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 			return E_OK;
 		}
 	}
-	
+
 	return ENOSYS;
 }
 
@@ -623,15 +623,15 @@ proc_fscntl (fcookie *dir, const char *name, int cmd, long arg)
  * for processes
  */
 
-static long _cdecl 
+static long _cdecl
 proc_open (FILEPTR *f)
 {
 	UNUSED (f);
-	
+
 	return E_OK;
 }
 
-static long _cdecl 
+static long _cdecl
 proc_write (FILEPTR *f, const char *buf, long nbytes)
 {
 	struct proc *p = getproc (f->devinfo);
@@ -659,16 +659,16 @@ proc_write (FILEPTR *f, const char *buf, long nbytes)
 		short save_id[7];
 		ushort save_flags;
 		long save_limit[4];
-		
+
 		bytes_written = (unsigned long)(p + 1) - where;
-		
+
 		if (bytes_written > nbytes)
 			bytes_written = nbytes;
-		
+
 		/* Some code against hacking superuser privileges in MiNT :-)
 		 * (draco)
 		 */
-		
+
 		if (secure_mode && get_curproc()->euid)
 		{
 			save_id[0] = p->rgid;
@@ -774,7 +774,7 @@ proc_write (FILEPTR *f, const char *buf, long nbytes)
 				where += bytes_written;
 				nbytes -= bytes_written;
 			}
-			
+
 			if (nbytes && where < m->loc + 256 + txtsize) {
 				bytes_written = m->loc + 256 + txtsize - where;
 				if (bytes_written > nbytes)
@@ -808,7 +808,7 @@ proc_write (FILEPTR *f, const char *buf, long nbytes)
 	return bytes_written;
 }
 
-static long _cdecl 
+static long _cdecl
 proc_read (FILEPTR *f, char *buf, long nbytes)
 {
 	struct proc *p = getproc (f->devinfo);
@@ -884,7 +884,7 @@ proc_read (FILEPTR *f, char *buf, long nbytes)
 				where += bytes_read;
 				nbytes -= bytes_read;
 			}
-			
+
 			if (nbytes && where < m->loc + 256 + txtsize) {
 				bytes_read = m->loc + 256 + txtsize - where;
 				if (bytes_read > nbytes)
@@ -935,14 +935,15 @@ proc_read (FILEPTR *f, char *buf, long nbytes)
  * PLOADINFO: get information about the process name and command line
  */
 
-static long _cdecl 
+static long _cdecl
 proc_ioctl (FILEPTR *f, int mode, void *buf)
 {
 	struct proc *p = getproc (f->devinfo);
-	
+
 	if (!p)
 		return EACCES;
-	
+
+	DEBUG(("proc_ioctl:%d", mode));
 	switch (mode)
 	{
 		case FIONREAD:
@@ -992,7 +993,7 @@ proc_ioctl (FILEPTR *f, int mode, void *buf)
 				*((long *) buf) = (long) p->p_mem->base;
 			else
 				*((long *) buf) = 0;
-			
+
 			return E_OK;
 		}
 		case PCTXTSIZE:
@@ -1005,26 +1006,26 @@ proc_ioctl (FILEPTR *f, int mode, void *buf)
 			struct filedesc *fd = p->p_fd;
 			FILEPTR *pf;
 			int pfd;
-			
+
 			if (!fd)
 			{
 				DEBUG (("ioctl(PFSTAT): no filedesc struct"));
 				return EBADF;
 			}
-			
+
 			pfd = (*(ushort *) buf);
 			if ((pfd < MIN_HANDLE) || (pfd >= fd->nfiles)
 				|| ((pf = fd->ofiles[pfd]) == 0))
 			{
 				return EBADF;
 			}
-			
+
 			return xfs_getxattr (pf->fc.fs, &pf->fc, (XATTR *) buf);
 		}
 		case PSETFLAGS:
 		{
 			int newflags = (ushort)(*(long *) buf);
-			
+
 			if ((newflags & F_OS_SPECIAL)
 				&& (!(p->p_mem->memflags & F_OS_SPECIAL)))
 			{
@@ -1039,10 +1040,10 @@ proc_ioctl (FILEPTR *f, int mode, void *buf)
 				p->p_mem->memflags = newflags;
 				mem_prot_special (p);
 			}
-			
+
 			/* note: only the low 16 bits are actually used */
 			p->p_mem->memflags = *((long *) buf);
-			
+
 			return E_OK;
 		}
 		case PGETFLAGS:
@@ -1060,7 +1061,7 @@ proc_ioctl (FILEPTR *f, int mode, void *buf)
 					p->ptracer = 0;
 					p->ctxt[CURRENT].ptrace = 0;
 					p->ctxt[SYSCALL].ptrace = 0;
-					
+
 					/* if the process is stopped, restart it */
 					if (p->wait_q == STOP_Q)
 					{
@@ -1082,7 +1083,7 @@ proc_ioctl (FILEPTR *f, int mode, void *buf)
 				DEBUG (("proc_ioctl: process already being traced"));
 				return EACCES;
 			}
-			
+
 			return E_OK;
 		}
 		case PTRACEGFLAGS:
@@ -1092,7 +1093,7 @@ proc_ioctl (FILEPTR *f, int mode, void *buf)
 				*(ushort *) buf = p->ptraceflags;
 				return E_OK;
 			}
-			
+
 			return EACCES;
 		}
 		case PTRACE11:
@@ -1129,24 +1130,24 @@ proc_ioctl (FILEPTR *f, int mode, void *buf)
 				DEBUG (("proc_ioctl(PTRACE): process stopped by job control"));
 				return EACCES;
 			}
-			
+
 			if (buf && *(ushort *) buf >= NSIG)
 			{
 				DEBUG (("proc_ioctl(PTRACE): illegal signal number"));
 				return EBADARG;
 			}
-			
+
 			p->ctxt[SYSCALL].sr &= 0x3fff;	/* clear both trace bits */
 			p->ctxt[SYSCALL].sr |= (mode - PTRACEGO) << 14;
 			/* Discard the saved frame */
 			p->ctxt[SYSCALL].sfmt = 0;
 			p->sigpending = 0;
-			
+
 			if (buf && *(ushort *) buf != 0)
 			{
 				TRACE (("PTRACEGO: sending signal %d to pid %d", *(ushort *)buf, p->pid));
 				post_sig (p, *(ushort *)buf);
-				
+
 				/* another SIGNULL hack... within check_sigs()
 				 * we watch for a pending SIGNULL, if we see
 				 * this then we allow delivery of a signal to
@@ -1159,7 +1160,7 @@ proc_ioctl (FILEPTR *f, int mode, void *buf)
 			{
 				TRACE(("PTRACEGO: no signal"));
 			}
-			
+
 			/* wake the process up */
 			{
 				ushort sr = spl7 ();
@@ -1167,7 +1168,7 @@ proc_ioctl (FILEPTR *f, int mode, void *buf)
 				add_q (READY_Q, p);
 				spl (sr);
 			}
-			
+
 			return E_OK;
 		}
 		case PLOADINFO:
@@ -1176,16 +1177,16 @@ proc_ioctl (FILEPTR *f, int mode, void *buf)
 			 *     passed to Pexec
 			 */
 			struct ploadinfo *pl = buf;
-			
+
 			if (!p->fname[0])
 				return ENOENT;
-			
+
 			if (strlen (p->fname) >= pl->fnamelen)
 				return EBADARG;
-			
+
 			strncpy (pl->cmdlin, p->cmdlin, 128);
 			strcpy (pl->fname, p->fname);
-			
+
 			return E_OK;
 		}
 		case PMEMINFO:
@@ -1193,20 +1194,20 @@ proc_ioctl (FILEPTR *f, int mode, void *buf)
 			struct memspace *mem = p->p_mem;
 			struct pmeminfo *mi = buf;
 			int i;
-			
+
 			if (!mem || !mem->mem)
 			{
 				DEBUG (("ioctl(PMEMINFO): no memspace struct"));
 				return EBADARG;
 			}
-			
+
 			for (i = 0; i < mem->num_reg; i++)
 			{
 				MEMREGION *m;
-				
+
 				if (i == mi->mem_blocks)
 					return ENOMEM;
-				
+
 				m = mem->mem [i];
 				if (m)
 				{
@@ -1215,7 +1216,7 @@ proc_ioctl (FILEPTR *f, int mode, void *buf)
 					mi->mlist[i]->flags = get_prot_mode (m);
 				}
 			}
-			
+
 			return E_OK;
 		}
 		default:
@@ -1224,11 +1225,11 @@ proc_ioctl (FILEPTR *f, int mode, void *buf)
 			/* return EINVAL; */
 		}
 	}
-	
+
 	return ENOSYS;
 }
 
-static long _cdecl 
+static long _cdecl
 proc_lseek (FILEPTR *f, long where, int whence)
 {
 	switch (whence)
@@ -1243,18 +1244,18 @@ proc_lseek (FILEPTR *f, long where, int whence)
 		default:
 			return ENOSYS;
 	}
-	
+
 	return f->pos;
 }
 
-static long _cdecl 
+static long _cdecl
 proc_datime (FILEPTR *f, ushort *timeptr, int flag)
 {
 	struct proc *p = getproc (f->devinfo);
-	
+
 	if (!p)
 		return EACCES;
-	
+
 	switch (flag)
 	{
 		case 0:
@@ -1269,15 +1270,15 @@ proc_datime (FILEPTR *f, ushort *timeptr, int flag)
 		default:
 			return EBADARG;
 	}
-	
+
 	return E_OK;
 }
 
-static long _cdecl 
+static long _cdecl
 proc_close (FILEPTR *f, int pid)
 {
 	UNUSED (f);
 	UNUSED (pid);
-	
+
 	return E_OK;
 }

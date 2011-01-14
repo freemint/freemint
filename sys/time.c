@@ -344,7 +344,7 @@ sys_t_adjtime(const struct timeval *delta, struct timeval *olddelta)
 			tv.tv_sec++;
 		}
 		tv.tv_sec += delta->tv_sec;
-		
+
 		retval = do_settimeofday (&tv);
 		if (retval < 0)
 			return retval;

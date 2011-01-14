@@ -387,9 +387,9 @@ void
 init_bios(void)
 {
 	int i;
-	
+
 	keyrec = (IOREC_T *)TRAP_Iorec(1);
-	
+
 	for (i = 0; i < BDEVMAP_MAX; i++)
 	{
 		BDEVMAP *map = &(bdevmap[i]);
@@ -1544,13 +1544,13 @@ checkkeys (void)
 				keyrec->head = oldktail;
 				continue;
 			}
-			
+
 			if (sig)
 			{
 				tty->state &= ~TS_HOLD;
 				if (!(tty->sg.sg_flags & T_NOFLSH))
 				    oldktail = keyrec->head = keyrec->tail;
-				
+
 				DEBUG(("checkkeys: killgroup(%i, %i, 1)", tty->pgrp, sig, 1));
 				killgroup(tty->pgrp, sig, 1);
 				ret = 1;

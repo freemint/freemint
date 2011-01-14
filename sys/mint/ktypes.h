@@ -144,7 +144,7 @@ struct dma
 	long	_cdecl (*free_channel)	(ulong);
 	void	_cdecl (*dma_start)	(ulong);
 	void	_cdecl (*dma_end)	(ulong);
-	void *	_cdecl (*block)		(ulong, ulong, void _cdecl (*)(PROC *p));
+	void *	_cdecl (*block)		(ulong, ulong, void _cdecl (*)(PROC *p, long arg));
 	void	_cdecl (*deblock)	(ulong, void *);
 };
 

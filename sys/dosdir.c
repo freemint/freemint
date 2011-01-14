@@ -40,7 +40,7 @@ sys_d_setdrv (int d)
 {
 	struct proc *p = get_curproc();
 	long r;
-	
+
 	r = sys_b_drvmap() | dosdrvs ;
 	TRACELOW (("Dsetdrv(%d)", d));
 	assert (p->p_fd && p->p_cwd);
@@ -277,7 +277,7 @@ bailout:
 	else
 	{
 		struct proc *p;
-		
+
 		/* don't delete anyone else's root or current directory */
 		for (p = proclist; p; p = p->gl_next)
 		{
@@ -345,7 +345,7 @@ sys_d_setpath0 (struct proc *p, const char *path)
 	int drv;
 	long r;
 
-	TRACE (("Dsetpath(%s)", path));
+	DEBUG (("Dsetpath(%s)", path));
 	assert (cwd);
 
 	r = path2cookie (p, path, follow_links, &dir);
@@ -444,7 +444,7 @@ sys_d_getcwd (char *path, int drv, int size)
 	long r;
 
 
-	TRACE (("Dgetcwd(%c, %d)", drv + '@', size));
+	DEBUG (("Dgetcwd(%c, %d)", drv + '@', size));
 	assert (cwd);
 
 	if (drv < 0 || drv > NUM_DRIVES)
@@ -453,6 +453,8 @@ sys_d_getcwd (char *path, int drv, int size)
 	drv = (drv == 0) ? cwd->curdrv : drv - 1;
 
 	root = &cwd->root[drv];
+	//FORCE("Dgetcwd:drv=%d,root=%lx", drv, root);
+	//FORCE("root->fs=%lx",root->fs);
 	if (!root->fs)
 	{
 		/* maybe not initialized yet? */
@@ -505,6 +507,7 @@ sys_d_getcwd (char *path, int drv, int size)
 			}
 		}
 	}
+	//FORCE( "Dgetcwd path=%s return %ld", path, r);
 
 	return r;
 }
@@ -1447,6 +1450,7 @@ sys_d_closedir (long handle)
 				where = _where;
 			}
 
+			DEBUG(("Closedir: do_close %x", f));
 			do_close(p, f);
 
 			DEBUG (("Removing file descriptor %d", dirh->fd));
@@ -1514,7 +1518,7 @@ long _cdecl
 sys_f_link (const char *old, const char *new)
 {
 	struct proc *p = get_curproc();
-	
+
 	fcookie olddir, newdir;
 	char temp1[PATH_MAX], temp2[PATH_MAX];
 	long r;
@@ -1568,7 +1572,7 @@ long _cdecl
 sys_f_symlink (const char *old, const char *new)
 {
 	struct proc *p = get_curproc();
-	
+
 	fcookie newdir;
 	long r;
 	char temp1[PATH_MAX];

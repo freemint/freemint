@@ -575,7 +575,7 @@ sleep(int _que, long cond)
 	 */
 	if ((que == READY_Q && !sysq[READY_Q].head)
 	    || ((sleepcond != cond || (iwakecond == cond && cond) || (_que & 0x100 && curproc->wait_cond != cond))
-		&& (!sysq[READY_Q].head || (newslice = 0, proc_clock))))
+		&& (!sysq[READY_Q].head || (newslice = 0, proc_clock)) ))
 	{
 		/* we're just going to wake up again right away! */
 		iwakecond = 0;
@@ -616,6 +616,7 @@ sleep(int _que, long cond)
 			sr = splhigh();
 			p = rootproc;		/* pid 0 */
 			rm_q(p->wait_q, p);
+			//DEBUG(("sleep:add_q(READY_Q,root)"));
 			add_q(READY_Q, p);
 			spl(sr);
 		}
@@ -958,7 +959,6 @@ calc_load_average(void)
 			ud, number_running, new_ld, proc_clock );
 #endif
 		new_ld = ud * 1000L - (rootproc->systime - systime);
-		//new_ld = 5L * (5000L - (rootproc->systime - systime)) / ud;
 	}
 	else
 		new_ld = 5000 - (rootproc->systime - systime);
@@ -976,7 +976,6 @@ calc_load_average(void)
 	}
 	else
 		new_ld = 0;
-#endif
 
 #ifdef DEBUG_INFO
 	DEBUG(("%d running ld=%d uptime=%ld tick=%u overfl=%d/%d",
@@ -993,8 +992,6 @@ calc_load_average(void)
 		uptime_ovfl1 = uptime_ovfl2 = 0;
 	}
 #endif
-
-#if NEWLOAD
 	number_running = new_ld;
 #endif	/* NEWLOAD */
 

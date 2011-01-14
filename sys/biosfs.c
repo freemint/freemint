@@ -297,6 +297,7 @@ rsvf_close (int f)
 
 	if (f != ENODEV)
 	{
+		//FORCE("rsvf_close: %d", f);
 		r = ROM_Fclose (f);
 		if (r) ALERT ("rsvf_close(%d): ROM_Fclose %x returned %lx", f, r);
 	}
@@ -311,6 +312,7 @@ rsvf_ioctl (int f, void *arg, int mode)
 		return ENOSYS;
 
 	TRACE(("rsvf_ioctl: passing ioctl %x (tosfd=0x%x)", mode, f));
+	//FORCE("rsvf_ioctl: passing ioctl %x (tosfd=0x%x)", mode, f);
 	/* is there a more direct way than this? */
 	return ROM_Fcntl (f, (long) arg, mode);
 }
@@ -1384,7 +1386,7 @@ bios_tread (FILEPTR *f, char *buf, long bytes)
  */
 
 static void _cdecl
-wakewrite (PROC *p)
+wakewrite (PROC *p, long arg)
 {
 	short s;
 
@@ -1686,6 +1688,7 @@ iread (int bdev, char *buf, long bytes, int ndelay, struct bios_file *b)
 	ushort head, bsize, wrap;
 	long left;
 
+	//DEBUG(("iread:bdev=%d bytes=%ld ndelay=%d", bdev, bytes, ndelay));
 	if (bdev == 3 && tosvers >= 0x0102)
 	{
 		/* midi */
@@ -1842,6 +1845,7 @@ bios_nwrite (FILEPTR *f, const char *buf, long bytes)
 	int bdev = f->fc.aux;
 	int c;
 
+	//FORCE("bios_nwrite %ld bytes to %d", bytes, bdev);
 	while (bytes > 0)
 	{
 		if ((f->flags & O_NDELAY) && !bcostat (bdev))
@@ -2155,6 +2159,7 @@ bios_ioctl (FILEPTR *f, int mode, void *buf)
 	/* just resetting iorec pointers here can hang a flow controlled port,
 	 * iread can do better...
 	 */
+			//FORCE("bios_ioctl TIOCFLUSH: %lx", ior);
 			if ((flushtype & 1) &&
 			    iread (dev, (char *) NULL, 0, 1, b) == ENODEV) {
 				sr = spl7();
@@ -2166,6 +2171,7 @@ bios_ioctl (FILEPTR *f, int mode, void *buf)
 			    iwrite (dev, (char *) NULL, 0, 1, b) == ENODEV) {
 				ior++; /* output record */
 				sr = spl7();
+				//FORCE("bios_ioctl 2:reset %lx", ior);
 				ior->head = ior->tail = 0;
 				spl(sr);
 			}
@@ -2530,6 +2536,7 @@ bios_close (FILEPTR *f, int pid)
 
 	if (tty && !tty->use_cnt && (NULL != (t = BTTY(f)) && t->tosfd != ENODEV))
 	{
+		//FORCE("bios_close:%d", t->tosfd);
 		rsvf_close (t->tosfd);
 		t->tosfd = ENODEV;
 	}
@@ -2615,6 +2622,7 @@ found_device:
 				*tty = default_tty;
 				tty->state = s;
 				tty->use_cnt = 1;
+				//FORCE("tty_ioctl(%lx, TIOCSTART, 0);",f);
 				tty_ioctl(f, TIOCSTART, 0);
 			}
 

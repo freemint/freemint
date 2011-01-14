@@ -14,9 +14,9 @@
 extern TIMEOUT *tlist;
 extern TIMEOUT *expire_list;
 
-TIMEOUT * _cdecl addtimeout (struct proc *p, long delta, void _cdecl (*func)(struct proc *));
-TIMEOUT * _cdecl addtimeout_curproc (long delta, void _cdecl (*func)(struct proc *));
-TIMEOUT * _cdecl addroottimeout (long delta, void _cdecl (*func)(struct proc *), ushort flags);
+TIMEOUT * _cdecl addtimeout (struct proc *p, long delta, void _cdecl (*func)(struct proc *, long));
+TIMEOUT * _cdecl addtimeout_curproc (long delta, void _cdecl (*func)(struct proc *, long));
+TIMEOUT * _cdecl addroottimeout (long delta, void _cdecl (*func)(struct proc *, long), ushort flags);
 void _cdecl cancelalltimeouts (void);
 void _cdecl canceltimeout (TIMEOUT *which);
 void _cdecl cancelroottimeout (TIMEOUT *which);

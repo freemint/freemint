@@ -1,35 +1,35 @@
 /*
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
- * 
- * 
+ *
+ *
  * Copyright 2000, 2001 Frank Naumann <fnaumann@freemint.de>
  * Copyright 1993, 1994, 1995, 1996 Kay Roemer
  * All rights reserved.
- * 
+ *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
  * any later version.
- * 
+ *
  * This file is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
- * 
+ *
+ *
  * begin:	2001-05-08
  * last change:	2001-05-08
- * 
+ *
  * Author:	Frank Naumann <fnaumann@freemint.de>
- * 
+ *
  * Please send suggestions, patches or bug reports to me or
  * the MiNT mailing list.
- * 
+ *
  */
 
 # include "init_mach.h"
@@ -83,7 +83,7 @@ getmch (void)
  * This must be done in a separate routine because the machine type and CPU
  * type are needed when initializing the system, whereas install_cookies is
  * not called until everything is practically up.
- * 
+ *
  * In fact, getmch() should be called before *anything* else is
  * initialized, so that if we find a MiNT cookie already in the
  * jar we can bail out early and painlessly.
@@ -119,27 +119,27 @@ _getmch (void)
 # endif
 					break;
 				}
-				
+
 				case COOKIE__VDO:
 				{
 					FalconVideo = (jar->value == 0x00030000L);
 					ste_video = (jar->value == 0x00010000L);
 					break;
 				}
-				
+
 				case COOKIE_MiNT:
 				{
 					boot_print ("MiNT is already installed!!\r\n");
 					return -1;
 				}
-				
+
 				case COOKIE__AKP:
 				{
 					gl_kbd = (short)(jar->value & 0x00ffL);
 					gl_lang = (short)((jar->value >> 8) & 0x00ff);
 					break;
 				}
-				
+
 				case COOKIE_PMMU:
 				{
 					/* jr: if PMMU cookie exists, someone else is
@@ -149,43 +149,42 @@ _getmch (void)
 					no_mem_prot = 1;
 					break;
 				}
-				
+
 				case COOKIE_HADES:
 				{
 					add_info = hades;
 					break;
 				}
-				
+
 				case COOKIE_CT60:
 				{
 					add_info = ct60;
 					break;
 				}
-				
+
 # ifdef ARANYM
 				case COOKIE_NF:
 				{
-					kernelinfo.nf_ops = nf_init();
-					kentry.vec_mch.nf_ops = nf_init();
+					kentry.vec_mch.nf_ops = kernelinfo.nf_ops = nf_init();
 
 					add_info = aranym;
 					break;
 				}
 # endif
 			}
-			
+
 			jar++;
 		}
 	}
-	
+
 	/* own CPU test */
 	mcpu = detect_cpu ();
 	/* own FPU test; this must be done after the CPU detection */
 	fputype = detect_fpu ();
-	
+
 	if ((fputype >> 16) > 1)
 		fpu = 1;
-	
+
 	boot_printf(" fputype=%ld, fpu=%d\r\n", fputype, fpu);
 
 # ifndef M68000
@@ -202,7 +201,7 @@ _getmch (void)
 
 		return -1;
 	}
-	
+
 	/* Odd Skancke:
 	 *	If protect_page0 == 0, we check if we should tell the pmmu code
 	 *	to set SUPER on the first descriptor by placing a value of 1 here.
@@ -223,16 +222,16 @@ _getmch (void)
 		protect_page0 = 1;
 	}
 # endif /* !M68000 */
-	
+
 	/* initialize the info strings */
 	identify (add_info);
-	
+
 	DEBUG (("detecting hardware ... "));
 	/* at the moment only detection of ST-ESCC */
 	if (mcpu < 40 && detect_hardware ())
 		boot_print ("ST-ESCC extension detected\r\n");
 	DEBUG (("ok!\r\n"));
-	
+
 	/*
 	 * if no preference found, look at the country code to decide
 	 */
@@ -240,12 +239,12 @@ _getmch (void)
 	{
 		long *sysbase;
 		int i;
-		
+
 		sysbase = *((long **)(0x4f2L)); /* gets the RAM OS header */
 		sysbase = (long *)sysbase[2];	/* gets the ROM one */
-		
+
 		i = (int) ((sysbase[7] & 0x7ffe0000L) >> 17L);
-		
+
 		switch (i)
 		{
 			case 1:		/* Germany */
@@ -267,7 +266,7 @@ _getmch (void)
 				break;
 		}
 	}
-	
+
 	if (gl_lang >= MAXLANG || gl_lang < 0)
 		gl_lang = 0;
 
@@ -279,9 +278,9 @@ identify (enum special_hw info)
 {
 	char buf[64];
 	char *_cpu, *_mmu, *_fpu;
-	
+
 	machine = "Unknown clone";
-	
+
 	switch (info)
 	{
 		case none:
@@ -328,9 +327,9 @@ identify (enum special_hw info)
 # endif
 		default:;
 	}
-	
+
 	_fpu = " no ";
-	
+
 	if (fpu)
 	{
 		switch (fputype >> 16)
@@ -357,10 +356,10 @@ identify (enum special_hw info)
 				break;
 		}
 	}
-	
+
 	_cpu = "m68k";
 	_mmu = "";
-	
+
 	switch (mcpu)
 	{
 		case 0:
@@ -391,7 +390,7 @@ identify (enum special_hw info)
 		case 60:
 		{
 			ulong pcr;
-			
+
 			__asm__
 			(
 				".word 0x4e7a,0x0808;"
@@ -400,20 +399,20 @@ identify (enum special_hw info)
 				:
 				: "d0"
 			);
-			
+
 			ksprintf (buf, sizeof (buf), "68%s060 rev.%ld",
 					pcr & 0x10000 ? "LC/EC" : "",
 					(pcr >> 8) & 0xff);
-			
+
 			cpu_type = mmu_type = "68060";
 			_cpu = buf;
 			_mmu = "/MMU";
 			break;
 		}
 	}
-	
+
 	ksprintf (cpu_model, sizeof (cpu_model), "%s (%s CPU%s%sFPU)",
 			machine, _cpu, _mmu, _fpu);
-	
+
 	boot_printf ("%s\r\n\r\n", cpu_model);
 }

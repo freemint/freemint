@@ -181,7 +181,7 @@ psg_timer (void)
 }
 
 static void
-flushme (long proc)
+flushme (PROC *proc, long arg)
 {
 	short sr = spl7 ();
 	if (thedev.status == 1)
@@ -260,9 +260,7 @@ psg_copyout (char *buf, long len)
 }
 
 static long
-psg_ioctl (mode, buf)
-	short mode;
-	void *buf;
+psg_ioctl (short mode, void *buf)
 {
 	unsigned char ctrl, data;
 	long r, arg = (long)buf;

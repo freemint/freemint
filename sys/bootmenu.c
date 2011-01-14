@@ -510,7 +510,7 @@ read_ini (void)
 	char ini_file[128];
 	long r, usp;
 
-	
+
 	/* Ozk: This code crashed on hardware that correctly denies
 	 *	user accesses to the low 2Kb of system RAM. Therefore
 	 *	we must switch to Super before accessing the system-
@@ -521,7 +521,7 @@ read_ini (void)
 		usp = TRAP_Super(0L);
 	else
 		usp = 0L;
-	
+
 	/* check and read the command line arguments - if not empty */
 	argsptr = (*(BASEPAGE**)(*((long **)(0x4f2L)))[10])->p_cmdlin;
 
@@ -536,7 +536,7 @@ read_ini (void)
 
 		boot_printf(MSG_init_read, ini_file);
 
-		
+
 		read_ini_file( -1, ' ');
 	} else {
 		if (usp)
@@ -719,4 +719,5 @@ pause_and_ask(void)
 		}
 		while (newstamp < pause);
 	}
+
 }

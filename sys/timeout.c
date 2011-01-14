@@ -157,7 +157,7 @@ inserttimeout (TIMEOUT *t, long delta)
  */
 
 static TIMEOUT *
-__addtimeout (PROC *p, long delta, void _cdecl (*func)(PROC *), ushort flags)
+__addtimeout (PROC *p, long delta, void _cdecl (*func)(PROC *, long arg), ushort flags)
 {
 	TIMEOUT *t;
 
@@ -198,13 +198,13 @@ __addtimeout (PROC *p, long delta, void _cdecl (*func)(PROC *), ushort flags)
 }
 
 TIMEOUT * _cdecl
-addtimeout (PROC *p, long delta, void _cdecl (*func)(PROC *))
+addtimeout (PROC *p, long delta, void _cdecl (*func)(PROC *, long arg))
 {
 	return __addtimeout (p, delta, func, 0);
 }
 
 TIMEOUT * _cdecl
-addtimeout_curproc (long delta, void _cdecl (*func)(PROC *))
+addtimeout_curproc (long delta, void _cdecl (*func)(PROC *, long arg))
 {
 	return __addtimeout (get_curproc(), delta, func, 0);
 }
@@ -229,7 +229,7 @@ addtimeout_curproc (long delta, void _cdecl (*func)(PROC *))
  */
 
 TIMEOUT * _cdecl
-addroottimeout (long delta, void _cdecl (*func)(PROC *), ushort flags)
+addroottimeout (long delta, void _cdecl (*func)(PROC *, long arg), ushort flags)
 {
 	return __addtimeout (rootproc, delta, func, flags);
 }
@@ -421,7 +421,7 @@ checkalarms (void)
 		 */
 		register long arg = tlist->arg;
 		register PROC *p = tlist->proc;
-		void (*evnt)(PROC *, long evarg) = (void (*)(PROC *, long)) tlist->func;
+		to_func *evnt = tlist->func;
 		register TIMEOUT *old = tlist;
 
 		tlist = tlist->next;
@@ -467,7 +467,7 @@ checkalarms (void)
  */
 
 static void _cdecl
-unnapme (PROC *p)
+unnapme (PROC *p, long arg)
 {
 	register short sr = spl7 ();
 

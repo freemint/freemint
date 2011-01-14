@@ -156,7 +156,7 @@ static long	_cdecl sl_ioctl(struct netif *,short,long);
 
 static void add_trace_entry(struct sl_device *dev,char type,short len,long rc);
 static void get_waiting_packets(struct netif *nif);
-static void handle_all_input(void);
+static void handle_all_input(PROC *proc, long arg);
 static void handle_input(struct netif *nif);
 static long queue_output(struct netif *nif,BUF *nbuf);
 static long read_packet(struct sl_device *dev,char *packet);
@@ -229,7 +229,7 @@ int i, bus, id;
 		memset(nif,0,sizeof(struct netif));			/* must do this! */
 		memset(dev,0,sizeof(struct sl_device));
 		strcpy(nif->name,ETHERNET_NAME);
-		nif->unit = if_getfreeunit(ETHERNET_NAME);
+		nif->unit = if_getfreeunit((char *)ETHERNET_NAME);
 		nif->flags = IFF_BROADCAST;
 		nif->mtu = ETH_MAX_DLEN;
 		nif->hwtype = HWTYPE_ETH;
@@ -528,7 +528,7 @@ unsigned long option;
 /*
  *	interrupt handler
  */
-void interrupt_handler()
+void interrupt_handler(void)
 {
 	addroottimeout(0,handle_all_input,1);
 }
@@ -539,7 +539,7 @@ void interrupt_handler()
 *											*
 ********************************************/
 
-static void handle_all_input()
+static void handle_all_input(PROC *proc, long arg)
 {
 int i;
 

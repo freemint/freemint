@@ -373,17 +373,20 @@ init_core (void)
 		/* otherwise, use the line A variables */
 		scrnsize = (vscreen->maxy+1)*(long)vscreen->linelen;
 	}
-
+#if 1
 		temp = (ulong)core_malloc(scrnsize+256L, 0);
 		if (temp) {
 			TRAP_Setscreen((void *)-1L, (void *)((temp + 511) & (0xffffff00L)), -1);
 			if ((long)TRAP_Physbase() != ((temp + 511) & (0xffffff00L))) {
-				scrnsize = 0x7fffffffUL;
+#endif
+				scrnsize = 0x7fffffffUL;	//<-
 				scrndone = 1;
+#if 1
 			}
 			TRAP_Setscreen((void *)-1L, (void *)scrnplace, -1);
 			core_free(temp);
 		}
+#endif
 	}
 
 	/* initialize ST RAM */
@@ -393,8 +396,11 @@ init_core (void)
 	boot_printf (MSG_mem_core, size);
 # endif
 
-       	while (size > 0) {
+ 	while ( size > 0) {
 		place = (ulong) core_malloc (size, 0);
+# ifdef VERBOSE_BOOT
+		boot_printf ("place: %lu B ", place);
+# endif
 		if (!scrndone && (place + size == scrnplace)) {
 			size += scrnsize;
 			scrndone = 1;

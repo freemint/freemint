@@ -197,7 +197,7 @@ sys_pexec(short mode, const void *p1, const void *p2, const void *p3)
 	const char *tfmt = "Pexec(%d,%s,\"%s\",%lx)";
 	int tail_offs = 1;
 # endif
-	TRACE(("Pexec mode:%d",mode));
+	DEBUG(("Pexec mode:%d",mode));
 #if 0
 	{
 		struct proc *pr = get_curproc();
@@ -567,6 +567,15 @@ sys_pexec(short mode, const void *p1, const void *p2, const void *p3)
 		detach_region(get_curproc(), env);
 	}
 
+	if (p)
+	{
+		FORCE("%s:%d mkwait=%d", p->name, p->pid, mkwait);
+		if( p->pid == 1 && !strcmp( p->name, "GEM" ) )
+		{
+			FORCE("setting SINGLE_TASK for %d", p->pid);
+			p->modeflags |= M_SINGLE_TASK;
+		}
+	}
 	if (mkwait)
 	{
 		long oldsigint, oldsigquit;
@@ -629,7 +638,7 @@ sys_pexec(short mode, const void *p1, const void *p2, const void *p3)
 	{
 		/* guarantee ourselves at least 3 timeslices to do an Mshrink */
 		fresh_slices(3);
-		TRACE(("leaving Pexec with basepage address %lx", base->loc));
+		DEBUG(("leaving Pexec with basepage address %lx", base->loc));
 		return base->loc;
 	}
 }
@@ -890,7 +899,7 @@ create_process(const void *filename, const void *cmdline, const void *newenv,
 		goto leave;
 	}
 
-	TRACE(("create_process: basepage region(%lx) is %ld bytes at %lx", base, base->len, base->loc));
+	DEBUG(("create_process: basepage region(%lx) is %ld bytes at %lx", base, base->len, base->loc));
 
 	b = (BASEPAGE *) base->loc;
 
@@ -920,12 +929,12 @@ create_process(const void *filename, const void *cmdline, const void *newenv,
 
 	if (b->p_flags & F_SINGLE_TASK)
 	{
-		DEBUG(("create_process: setting M_SINGLE_TASK"));
+		DEBUG(("create_process: setting M_SINGLE_TASK for %s", filename));
 		p->modeflags |= M_SINGLE_TASK;
 	}
 	if (b->p_flags & F_DONT_STOP)
 	{
-		DEBUG(("create_process: setting M_DONT_STOP"));
+		DEBUG(("create_process: setting M_DONT_STOP for %s", filename));
 		p->modeflags |= M_DONT_STOP;
 	}
 	b->p_flags &= ~(F_SINGLE_TASK | F_DONT_STOP);

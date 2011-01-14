@@ -24,7 +24,7 @@ static void	tcbos_xmit	(struct tcb *, short);
 static void	tcbos_retrans	(struct tcb *, short);
 static void	tcbos_persist	(struct tcb *, short);
 
-static BUF *	tcp_mkseg	(struct tcb *, long);
+static BUF *	tcp_mkseg	(struct tcb *, ulong);
 static long	tcp_sndseg	(struct tcb *, BUF *, short, long w1, long w2);
 static short	tcp_retrans	(struct tcb *);
 static short	tcp_probe	(struct tcb *);
@@ -201,7 +201,7 @@ static void
 tcbos_retrans (struct tcb *tcb, short event)
 {
 	struct in_dataq *q;
-	short nsegs;
+	long nsegs;
 	long tmout;
 	
 	switch (event)
@@ -408,7 +408,7 @@ tcbos_persist (struct tcb *tcb, short event)
  * Make a TCP segment of size 'size' an fill in some header fields.
  */
 static BUF *
-tcp_mkseg (struct tcb *tcb, long size)
+tcp_mkseg (struct tcb *tcb, ulong size)
 {
 	struct tcp_dgram *tcph;
 	BUF *b;
@@ -442,11 +442,12 @@ static long
 tcp_sndseg (struct tcb *tcb, BUF *b, short nretrans, long wnd1st, long wndnxt)
 {
 	struct tcp_dgram *tcph, *tcph2;
-	long seq1st, seqnxt = 0, todo, offs;
+	long seq1st, seqnxt = 0, offs;
+	ulong todo;
 	BUF *nb, *b2;
 	short cut = 0;
 	
-	todo = b->dend - b->dstart;
+	todo = (ulong)(b->dend - b->dstart);
 	nb = buf_alloc (TCP_RESERVE + todo, TCP_RESERVE/2, BUF_NORMAL);
 	if (!nb)
 	{
@@ -458,10 +459,12 @@ tcp_sndseg (struct tcb *tcb, BUF *b, short nretrans, long wnd1st, long wndnxt)
 	seq1st = SEQ1ST (b);
 	seqnxt = seq1st + tcp_seglen (b, TH (b));
 	
+#if 0
 	if (SEQLE (wndnxt, seq1st) || SEQLE (seqnxt, wnd1st))
 		FATAL ("tcp_sndseg: seg (%ld %ld) outside wnd (%ld %ld)",
 			seq1st, seqnxt, wnd1st, wndnxt);
-	
+#endif
+
 	if (!SEQLT (seq1st, wnd1st))
 	{
 		/*
@@ -759,6 +762,10 @@ tcp_sndhead (struct tcb *tcb)
 	{
 		seqnxt = SEQ1ST (b) + tcp_seglen (b, TH (b));
 		stamp = GETTIME ();
+
+		if (SEQLE (wndnxt, SEQ1ST(b)) || SEQLE (seqnxt, tcb->snd_nxt))
+			break;
+
 		/*
 		 * See if the segment should be sent:
 		 * 1) send whole seg if it fits into window
@@ -872,7 +879,6 @@ tcp_probe (struct tcb *tcb)
 					(SEQ1ST(buf) + DATLEN(buf) - tcph->seq);
 			}
 		}
-		tcph->chksum = 0;
 		tcph->chksum = tcp_checksum (tcph, TCP_MINLEN+1,
 			tcb->data->src.addr,
 			tcb->data->dst.addr);

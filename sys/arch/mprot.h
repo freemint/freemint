@@ -32,5 +32,4 @@ void report_buserr (void);
 void BIG_MEM_DUMP (int bigone, PROC *proc);
 int mem_access_for (PROC *p, ulong where, long len);
 
-
 # endif /* _m68k_mprot_h */

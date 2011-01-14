@@ -70,13 +70,6 @@ again:	move.l	_syskey,a3
 type:	dc.b	1,2,3,3,3,3,4,5,6,7
 todo:	dc.b	7,5,2,2,2,2,6,2,1,1
 
-# ifdef DEBUG_INFO
-	.globl	_ikbd_cnt
-# endif
-	.globl	_ikbd_ovr
-
-_ikbd_cnt: dc.l	0
-
 	.text
 
 	.globl	_ikbdsys_handler
@@ -84,9 +77,6 @@ _ikbd_cnt: dc.l	0
 // We only replace ikbdsys, midisys will be handled in ROM.
 
 _ikbdsys_handler:
-# ifdef DEBUG_INFO
-	add.l	#1,_ikbd_cnt
-# endif
 	move.b	(0xfc00).w,d1		// ACIA control
 	move.l	_keyrec,a0
 	btst	#0x07,d1		// interrupt request
