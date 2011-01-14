@@ -188,15 +188,15 @@ sys_pexec(short mode, const void *p1, const void *p2, const void *p3)
 	int new_pid;
 	int aes_hack = 0;
 
-	ptr_1.v = p1;
-	ptr_2.v = p2;
-	ptr_3.v = p3;
-
 # ifdef DEBUG_INFO
 	/* tfmt and tail_offs are used for debugging only */
 	const char *tfmt = "Pexec(%d,%s,\"%s\",%lx)";
 	int tail_offs = 1;
 # endif
+	ptr_1.v = p1;
+	ptr_2.v = p2;
+	ptr_3.v = p3;
+
 	DEBUG(("Pexec mode:%d",mode));
 #if 0
 	{
