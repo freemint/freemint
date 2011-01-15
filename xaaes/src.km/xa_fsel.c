@@ -1046,6 +1046,9 @@ inq_xfs(struct fsel_data *fs, char *p, char *dsep)
 	else
 		fs->fcase &= ~FS_FSNOCASE;
 
+	if( c == DP_CASEINSENS)	/* case preserved */
+		fs->fcase |= FS_PATNOCASE;
+
 	return !(c == DP_CASECONV && t == DP_DOSTRUNC);
 }
 
@@ -1489,7 +1492,7 @@ refresh_filelist(enum locks lock, struct fsel_data *fs, SCROLL_ENTRY *dir_ent)
 	list = object_get_slist(sl);
 
 	fs->point = set_xa_fnt( fs->point + fs->fntinc, wp, form, objs, list );
-	
+
 	fs->fntinc = 0;
 
 	if( fs->point < 10 )
