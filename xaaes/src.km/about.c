@@ -45,34 +45,8 @@
 #include "mint/stat.h"
 
 
-#define AB_GPL "The terms of the <b>GPL version 2</b> or later apply."
-#define AB_MINT	"Part of FreeMiNT ("SPAREMINT_URL")."
-
-#if XAAES_RELEASE
-#define FN_CRED	1
-#else
-#define FN_CRED	0
-#endif
-
 #if 1
-char *about_lines[] =
-{
-  /*          1         2         3         4         5         6
-     123456789012345678901234567890123456789012345678901234567890 */
-#if FN_CRED
-	"",
-	"           <u>Dedicated to <i>Frank Naumann </i></u>\xbb",
-	"<u>                                                                  </u>",
-#endif
-	"",
-	AB_MINT,
-	"",
-	AB_GPL,
-	"",
-	NULL
-};
-
-extern char *wctxt_main_txt[];
+extern char *about_lines[];
 #else
 char *about_lines[] =
 {
@@ -257,7 +231,7 @@ open_about(enum locks lock, struct xa_client *client, bool open)
 		wind->min.h = wind->r.h;//MINOBJMVH * 3;	/* minimum height for this window */
 		wind->min.w = wind->r.w;//MINOBJMVH;	/* minimum width for this window */
 		/* Set the window title */
-		set_window_title(wind, RS_ABOUT, true);
+		set_window_title(wind, xa_strings[RS_ABOUT], true);
 
 		(obtree + ABOUT_INFOSTR)->ob_spec.free_string = "\0";
 #if XAAES_RELEASE
