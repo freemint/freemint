@@ -233,7 +233,6 @@ short set_xa_fnt( int pt, struct xa_wtxt_inf *wp[], OBJECT *obtree, int objs[], 
 		wpp = &norm_txt;
 
 
-	//BLOG((0,"set_xa_fnt:pt=%d p=%d", pt, wpp->n.p));
 	if( pt != wpp->n.p )
 	{
 		wpp->n.p = pt;
@@ -252,7 +251,6 @@ short set_xa_fnt( int pt, struct xa_wtxt_inf *wp[], OBJECT *obtree, int objs[], 
 			{
 				wpp->n.p += i;
 				C.Aes->vdi_settings->api->text_extent(C.Aes->vdi_settings, "X", &wpp->n, &w, &h);
-				//BLOG((0,"set_xa_fnt:p=%d h=%d oldh=%d i=%d", wpp->n.p, h, oldh, i));
 			}
 
 			if( h == oldh )
@@ -2466,10 +2464,11 @@ static void add_os_features(struct scroll_info *list, struct scroll_entry *this,
 
 #if CHECK_STACK
 	extern unsigned short stack_align;
-	sprintf( s, sizeof(s)-1, "%s%s, Stack: %x", xa_strings[RS_MEMPROT], has_mprot ? xa_strings[RS_ON] : xa_strings[RS_OFF], stack_align );
+	int l = sprintf( s, sizeof(s)-1, xa_strings[RS_MEMPROT], has_mprot ? xa_strings[RS_ON] : xa_strings[RS_OFF] );
+	sprintf( s+l, sizeof(s)-1-l, ", Stack: %x", stack_align );
 	BLOG((0,s));
 #else
-	sprintf( s, sizeof(s)-1, "%s%s", xa_strings[RS_MEMPROT], has_mprot ? xa_strings[RS_ON] : xa_strings[RS_OFF], stack_align );
+	sprintf( s, sizeof(s)-1, xa_strings[RS_MEMPROT], has_mprot ? xa_strings[RS_ON] : xa_strings[RS_OFF]);
 #endif
 	sc->t.text = s;
 
