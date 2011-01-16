@@ -166,7 +166,7 @@ void HypClick(DOCUMENT *doc, EVNTDATA *m)
 						else
 						{
 							AddHistoryEntry(win);
-							GotoPage(doc,dst_page,line_nr);
+							GotoPage(doc,dst_page,line_nr, 1);
 						}
 					}
 					else if (dst_type == POPUP)

@@ -38,12 +38,25 @@
 
 extern WINDOW_DATA *Win;
 
-void GotoPage(DOCUMENT *doc, long num, long line)
+void GotoPage(DOCUMENT *doc, long num, long line, short calc)
 {
 	WINDOW_DATA *win = Win;
 
 	graf_mouse(BUSYBEE,NULL);
 	doc->gotoNodeProc(doc,NULL,num);
+	if ( calc ) /* Falls wir von einem Link kommen muessen wir die  */
+	{           /* die richtige "line" ermittelt. Ist wichtig falls */
+	            /* sich Bilder in der Seite befinden.               */
+		short y;
+		LOADED_NODE *node;
+		HYP_DOCUMENT *hyp;
+
+		hyp = doc->data;
+		node = (LOADED_NODE *)hyp->entry;
+		
+		y = HypGetLineY ( node, line );
+		line =  y / win->y_raster;
+	}
 	doc->start_line=line;
 	graf_mouse(ARROW,NULL);
 	ReInitWindow(win,doc);
@@ -90,7 +103,7 @@ void GoBack(DOCUMENT *old_doc)
 		}
 
 		if(new_doc->type>=0)					/*	bekannter Typ?	*/
-			GotoPage(new_doc,page,line);	/*	Zur Seite wechseln	*/
+			GotoPage(new_doc,page,line, 0);	/*	Zur Seite wechseln	*/
 		else
 			FileError(new_doc->filename,"format not recognized");
 	}
@@ -211,7 +224,7 @@ void MoreBackPopup(DOCUMENT *old_doc, short x, short y)
 		}
 
 		if (new_doc->type >= 0)				/* known file type ? */
-			GotoPage(new_doc, page, line);	/* jump to page */
+			GotoPage(new_doc, page, line, 0);	/* jump to page */
 		else
 			FileError(new_doc->filename, "format not recognized");
 	}
@@ -234,7 +247,7 @@ void GotoHelp(DOCUMENT *doc)
 		if(page_nr != hyp->entry->number)
 		{
 			AddHistoryEntry(win);
-			GotoPage(doc, page_nr, 0);
+			GotoPage(doc, page_nr, 0, 0);
 		}
 		else
 		{
@@ -255,7 +268,7 @@ void GotoIndex(DOCUMENT *doc)
 	if(hyp->index_page!=hyp->entry->number)
 	{
 		AddHistoryEntry(win);
-		GotoPage(doc,hyp->index_page,0);
+		GotoPage(doc,hyp->index_page,0, 0);
 	}
 	else
 	{
@@ -292,6 +305,6 @@ void GoThisButton(DOCUMENT *doc,short obj)
 	
 	if(obj == TO_HOME)
 		AddHistoryEntry(win);
-	GotoPage(doc,new_node,0);
+	GotoPage(doc,new_node,0, 0);
 }
 
