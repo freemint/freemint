@@ -1225,17 +1225,19 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 	 */
 	fix_objects(client, rscs, cibh, vdih, base, (OBJECT *)(base + hdr->rsh_object), hdr->rsh_nobs, rfp );
 
-	if( client == C.Aes && trans_strings[0] && rfp ){
-		if( client->options.rsc_lang == READ ){		// only READ for internal strings!
-			int i, k, j;
-			char **t;
-			for(k = 1, i = 0; trans_strings[i]; i++)
-			{
-				for(j = 0, t = trans_strings[i]; *t; j++, t++ )
+	if( client == C.Aes && rfp ){
+		if( trans_strings[0] ){
+			if( client->options.rsc_lang == READ ){		// only READ for internal strings!
+				int i, k, j;
+				char **t;
+				for(k = 1, i = 0; trans_strings[i]; i++)
 				{
-					if( **t )
+					for(j = 0, t = trans_strings[i]; *t; j++, t++)
 					{
-						translate_string( client, rfp, *t, k++ );
+						if( **t )
+						{
+							translate_string( client, rfp, *t, k++ );
+						}
 					}
 				}
 			}
