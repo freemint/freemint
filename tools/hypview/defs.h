@@ -233,7 +233,7 @@ WINDOW_DATA *get_first_window(void);
 /*
  *		Navigate.c
  */
-void GotoPage(DOCUMENT *doc, long num, long line);
+void GotoPage(DOCUMENT *doc, long num, long line, short calc);
 void GoBack(DOCUMENT *doc);
 void MoreBackPopup(DOCUMENT *doc, short x, short y);
 void GotoHelp(DOCUMENT *doc);

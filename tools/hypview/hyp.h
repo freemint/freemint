@@ -345,6 +345,8 @@ void OpenPopup(DOCUMENT *doc, long num, short x, short y);
  *		Autoloc.c
  */
 LINEPTR *HypGetYLine(LOADED_NODE *node, long y);
+short HypGetLineY ( LOADED_NODE *node, long line );
+long HypGetRealTextLine ( LOADED_NODE *node, short y );
 void HypGetTextLine(HYP_DOCUMENT *hyp, long line,char *dst);
 long HypAutolocator(DOCUMENT *doc,long line);
 

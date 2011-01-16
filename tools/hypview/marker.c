@@ -138,7 +138,7 @@ void MarkerShow ( DOCUMENT *doc, short num, short new_window )
 		if ( open_success )
 		{
 			doc = win->data;
-			GotoPage( doc, marken[num].node_num, marken[num].line );
+			GotoPage( doc, marken[num].node_num, marken[num].line, 0 );
 		}
 	}
 }
