@@ -52,14 +52,58 @@ HypGetYLine(LOADED_NODE *node, long y)
 	return line_ptr;
 }
 
+/* Return the real Y value form a line                                         */
+/* You can not only make "line * win->y_raster", because the picture have also */
+/* lines. The first line have in his "y" value a offest, otherwise the are     */
+/* zero.                                                                       */
+
+short
+HypGetLineY ( LOADED_NODE *node, long line )
+{
+	long i, sy;
+	LINEPTR *line_ptr = node->line_ptr;
+
+	i = sy = 0;
+	while ( i < line)
+	{
+		sy  +=line_ptr->y + line_ptr->h;
+		line_ptr++;
+		i++;
+	}
+	return sy;
+}
+
+/* Return the real Textline                                                    */
+/* It is the same Problme like above. If you get a Line you can't use this     */
+/* direct to get for example the "line_ptr[line].txt".                         */
+/* You must be convert the value "line" befor you can use them.                */
+
+long
+HypGetRealTextLine ( LOADED_NODE *node, short y )
+{
+	long i, sy;
+	LINEPTR *line_ptr = node->line_ptr;
+
+	i = sy = 0;
+	while ( y > sy )
+	{
+		sy  +=line_ptr->y + line_ptr->h;
+		line_ptr++;
+		i++;
+	}
+  return i;
+}
+
 void
-HypGetTextLine(HYP_DOCUMENT *hyp, long line, char *dst)
+HypGetTextLine(HYP_DOCUMENT *hyp, long line, char *dst )
 {
 	char *src;
 
+	
 	src = ((LOADED_NODE *)hyp->entry)->line_ptr[line].txt;
 
-	if(!src)
+
+  if(!src)
 	{
 		*dst = 0;
 		return;
@@ -124,6 +168,8 @@ HypAutolocator(DOCUMENT *doc, long line)
 {
 	char *search = doc->autolocator;
 	char *src;
+	short y;
+	WINDOW_DATA *win = Win;
 	LOADED_NODE *node;
 	char temp[LINE_BUF];
 	long len = strlen(search);
@@ -132,20 +178,27 @@ HypAutolocator(DOCUMENT *doc, long line)
 	Hyp = hyp = doc->data;
 
 	node = (LOADED_NODE *)hyp->entry;
-	
+
 	if (!node)								/*	no node loaded	*/
 		return -1;
-	
+
+	y =  line * win->y_raster;
+  line = HypGetRealTextLine ( node, y );
+
 	if (doc->autolocator_dir > 0) 
 	{
 		while (line < node->lines)
 		{
-			HypGetTextLine(hyp, line, temp);
+			HypGetTextLine(hyp, line, temp );
 			src = temp;
 			while (*src)
 			{
 				if (strnicmp(src++, search, len) == 0)
+				{
+          y = HypGetLineY ( node, line );
+					line = y / win->y_raster;          /* Wirkliche Linie im Textfenster ermitteln */
 					return line;
+				}
 			}
 			line++;
 		}
@@ -154,12 +207,16 @@ HypAutolocator(DOCUMENT *doc, long line)
 	{
 		while (line > 0)
 		{
-			HypGetTextLine(hyp, line, temp);
+			HypGetTextLine(hyp, line, temp );
 			src = temp;
 			while (*src)
 			{
 				if (strnicmp(src++, search, len) == 0)
+				{
+          y = HypGetLineY ( node, line );
+					line = y / win->y_raster;          /* Wirkliche Linie im Textfenster ermitteln */
 					return line;
+				}
 			}
 			line--;
 		}

@@ -1,5 +1,12 @@
-History for HypView (v0.35.3e)
+History for HypView (v0.40.0)
 =======================================
+xx.xx.2011 (v0.40.0)
+    -HYPFIND can be used [GS]
+    -The last character from a ASCII file will now displayed [GS]
+    -Sometimes the toolbar overwrite windows in the front of them [GS]
+    -Window change work again [GS]
+    -Info dialog will not crash if a binary or plain text is loaded [GS]
+
 10.02.2006 (v0.35.3e)
 	-Modified for gemlib. [ozk]
 	-Ported to gcc. [ozk]
@@ -7,7 +14,7 @@ History for HypView (v0.35.3e)
 	-Many changes to fix problems with different sized fonts [ozk]
 
 17.09.2005 (v0.35.2e)
-	-ALT-E Stack loeschen (Men -> Stack loeschen) [GS]
+	-ALT-E Stack loeschen (Menue -> Stack loeschen) [GS]
 
 20.08.2005
 	-Iconifizieren des Infodialogs [GS]
