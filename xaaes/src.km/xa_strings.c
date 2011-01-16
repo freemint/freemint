@@ -61,7 +61,8 @@ char *wctxt_main_txt[] =
 	"\255Application             ",
 	"\255Other apps              ",
 	"\255Show other apps         ",
-	"",""
+	"","",
+	0
 };
 
 
