@@ -15,8 +15,8 @@ enum
 	RS_SYSTEM,
 	RS_VIDEO,
 	RS_MEMPROT,
-	RS_ON,
 	RS_OFF,
+	RS_ON,
 
 	/* alert-text */
 	ASK_QUITALL_ALERT,
@@ -28,9 +28,25 @@ enum
 	RS_LAUNCH,
 	AL_SDMASTER,
 	AL_KBD,
+	AL_TERMAES,
+	AL_KILLAES,
+	AL_NOPB,
+	AL_NOAESPR,
+	AL_VALOBTREE,
+	AL_ATTACH,
+	AL_MEM,
+	AL_PDLG,
+	AL_STMD,
+
 	XA_HELP_FILE
 };
 
+enum TR_STRINGS
+{
+	ABOUT_LINES,
+	WCTXT_MAIN_TXT,
+	XA_STRINGS
+};
 
 
 extern char *xa_strings[];
