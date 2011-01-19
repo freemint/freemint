@@ -28,6 +28,7 @@
 
 #include "widgets.h"
 #include "xa_global.h"
+#include "xa_strings.h"
 
 #include "app_man.h"
 #include "c_window.h"
@@ -770,7 +771,6 @@ free_wt(XA_TREE *wt)
 		{
 			DIAGS(("  --- ufreed obtree %lx", wt->tree));
 			//if (tst) BLOG((false, "  --- ufreed obtree %lx", wt->tree));
-
 			free_object_tree(C.Aes, wt->tree);
 		}
 		wt->tree = NULL;
@@ -815,14 +815,11 @@ free_wt(XA_TREE *wt)
 		wt->objcr_theme = s[1];
 		wt->owner = client;
 	}
-	//if (tst) BLOG((false, "free_wt: done"));
 }
 
 bool _cdecl
 remove_wt(XA_TREE *wt, bool force)
 {
-	//if (wt->owner == C.Aes || wt->owner == C.Hlp)
-	//	BLOG((false, "remove_wt: wt %lx", wt));
 
 	if (force || (wt->flags & (WTF_STATIC|WTF_AUTOFREE)) == WTF_AUTOFREE)
 	{
@@ -2163,7 +2160,7 @@ CE_winctxt(enum locks lock, struct c_event *ce, bool cancel)
 
 		txt = wctxt_main_txt;
 
-		for (i = 0; i < WCTXT_POPUPS && *txt; i++)
+		for (i = 0; i < WCTXT_POPUPS && txt && *txt; i++)
 		{
 			n_entries = 0;
 			p.start = wct->text[i] = txt;
@@ -2574,7 +2571,9 @@ CE_winctxt(enum locks lock, struct c_event *ce, bool cancel)
 					case MWCTXT_QUIT:
 					{
 						if (wind->owner->type & (APP_AESTHREAD|APP_AESSYS))
-							ALERT(("Cannot terminate AES system proccesses!"));
+						{
+							ALERT((xa_strings[AL_TERMAES]/*"Cannot terminate AES system proccesses!"*/));
+						}
 						else
 							send_terminate(lock, wind->owner, AP_TERM);
 						break;
@@ -2583,7 +2582,7 @@ CE_winctxt(enum locks lock, struct c_event *ce, bool cancel)
 					{
 						if (wind->owner->type & (APP_AESTHREAD|APP_AESSYS))
 						{
-							ALERT(("Not a good idea, I tell you!"));
+							ALERT((xa_strings[AL_KILLAES]/*"Not a good idea, I tell you!"*/));
 						}
 						else
 							ikill(wind->owner->p->pid, SIGKILL);
@@ -2607,7 +2606,9 @@ bailout:
 			}
 
 			for (i = 0; i < WCTXT_POPUPS; i++)
+			{
 				remove_wt(wct->wt[i], false);
+			}
 
 			kfree(wct);
 		}

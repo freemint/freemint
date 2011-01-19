@@ -27,6 +27,7 @@
 #include RSCHNAME
 
 #include "global.h"
+#include "xa_strings.h"
 #include "xa_global.h"
 #include "vdi_parms.h"
 #include "xa_pdlg.h"
@@ -2711,7 +2712,7 @@ memerr:
 	if (pdlg)
 	{
 		if (pdlg == (void *)-1L)
-			ALERT(("XaAES: Print dialogs unavailable with current VDI"));
+			ALERT((xa_strings[AL_PDLG]/*"XaAES: Print dialogs unavailable with current VDI"*/));
 		else
 			kfree(pdlg);
 	}
