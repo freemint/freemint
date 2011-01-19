@@ -1,3 +1,332 @@
+19-01-2011
+----------
+
+app_man:
+
+do not set old focus to 0 when switching apps.
+---------------------------------------------------------------------
+app_man:
+
+remove BLOG
+---------------------------------------------------------------------
+app_man:
+
+fix desktop-dialog-focus.
+---------------------------------------------------------------------
+k_main:
+
+replace string of blanks by one blank in alert-text
+---------------------------------------------------------------------
+toolbar (rectlist.c xa_wind.c):
+
+
+fix toolbar-behaviour
+- force toolbar-width to window-width
+- if SIZER is present same geometry as if VSLIDER present assumed
+---------------------------------------------------------------------
+widgets:
+
+avoid second event for TOUCHEXIT-objects
+---------------------------------------------------------------------
+toolbarfix (rectlist.c xa_wind.c):
+
+
+fix x-pos of toolbar
+---------------------------------------------------------------------
+draw_obj:
+
+do not draw object-cursor for toolbar-objects
+---------------------------------------------------------------------
+rectlist:
+
+fix build
+---------------------------------------------------------------------
+k_main:
+
+print proc-name in 'fatal'-error-msg
+---------------------------------------------------------------------
+xaaes009:
+
+update resource-file
+---------------------------------------------------------------------
+xaaes009:
+
+update rsm-file
+---------------------------------------------------------------------
+xa_defs:
+
+change status to release
+---------------------------------------------------------------------
+version:
+
+change status to release
+---------------------------------------------------------------------
+xa_fsel:
+
+correct tabs for realtime-build
+---------------------------------------------------------------------
+version (init.c version.h xa_appl.c):
+
+
+- new version-scheme: Major.Minor.Patchlevel
+- set version to 1.0.0
+---------------------------------------------------------------------
+lang (SRCFILES about.c cnf_xaaes.c k_main.c taskman.c util.c util.h widgets.c xa_rsrc.c xa_types.h):
+
+
+- initial version of multi-language-support
+	The different languages are replaced when reading the resource-file.
+They reside in a separate file (resource-base.rsl) with the
+following structure:
+
+entries: entry entries
+entry: lang ':' count ':' text
+lang: <two-characters>
+count: '#' <three digits>
+text: <string>
+
+currently lang can only be set by the new config-variable lang, e.g.:
+lang=it
+---------------------------------------------------------------------
+xa_shel:
+
+init xshelw x_shell
+---------------------------------------------------------------------
+xa_help (about.c xa_strings.c xa_strings.h xaaes009.rsl):
+
+
+select xa_help.<lang> for about-window.
+---------------------------------------------------------------------
+xa_rsrc:
+
+language-support revised:
+- drop numbers in rsl-file
+- replace-method now more tolerant about missing entries in either rsc- or rsl- list
+---------------------------------------------------------------------
+xa_strings:
+
+provide longer string for "Alerts".
+---------------------------------------------------------------------
+util (util.c util.h):
+
+
+implement xa_rewind()
+---------------------------------------------------------------------
+about:
+
+avoid crash when help-text not found
+---------------------------------------------------------------------
+
+- write more information to bootlog when rsc-file could not be found
+- do cls before 1st try to open vwk not wk
+---------------------------------------------------------------------
+xa_strings (xa_strings.c xa_strings.h):
+
+
+-add strings for SDMASTER-alert and keyboard-switch-alert
+-declare trans_strings in header
+---------------------------------------------------------------------
+widgets:
+
+provide longer strings for context-menu
+---------------------------------------------------------------------
+k_main:
+
+use external string for "Alerts"
+---------------------------------------------------------------------
+strdup (util.c util.h):
+
+
+add xa_strdup.
+---------------------------------------------------------------------
+debug:
+
+add macro to wait (for debugging)
+---------------------------------------------------------------------
+debug:
+
+add macro to wait (for debugging)
+---------------------------------------------------------------------
+kbdswitch (xa_defs.h xa_types.h k_keybd.c cnf_xaaes.c):
+
+
+add keytable-switch-feature:
+
+keyboards = <key>,<table-list>
+
+<key> is casesensitive!
+---------------------------------------------------------------------
+xa_strings:
+
+changed   due to the kernel's formatting "keyboard-table not loaded:%s(%ld)", into  "could not load %s from %s (%ld)"
+---------------------------------------------------------------------
+xaaes009:
+
+xaaes009.rsc
+
+- TREE SYSTEM_MENU/Process/Launch...  changed -> Launch Program...
+- TREE TASK_MANAGER/Obj. TM_FAST   load changed -> Load
+- TREE WDLG_FNTS/Obj. 13  B/H  changed -> W/H
+- TREE RES_CHATARI/Obj. 9 "6 640x480x256c  (TT Med)" changed -> "6 640x480x16c  (TT Med)"
+- TREE RES_CHATARI/Obj. 12 "9 320x480x16c  (TT Low)" changed -> "9 320x480x256c  (TT Low)"
+
+Contributed by latzmaster
+---------------------------------------------------------------------
+xaaes_de:
+
+xaaes_de.rsc
+
+- TREE SYSTEM_MENU Prozesse changed -> Prozess
+- TREE RES_CHATARI/Obj. 9 "6 640x480x256c  (TT Med)" changed -> "6 640x480x16c  (TT Med)"
+- TREE RES_CHATARI/Obj. 12 "9 320x480x16c  (TT Low)" changed -> "9 320x480x256c  (TT Low)"
+
+Contributed by latzmaster
+---------------------------------------------------------------------
+fix (menuwidg.c xa_evnt.c):
+
+fix compiler-warnings
+---------------------------------------------------------------------
+rectlist:
+
+add /* Fall through */
+---------------------------------------------------------------------
+about:
+
+change freemint->FreeMiNT
+---------------------------------------------------------------------
+xa_strings (xa_strings.c xa_strings.h):
+
+add some more strings for translation
+---------------------------------------------------------------------
+white (obtree.c form.c xa_form.c):
+
+white space and comments
+---------------------------------------------------------------------
+taskman:
+
+use external strings for system-window
+---------------------------------------------------------------------
+white (handler.c k_init.c):
+
+white space and comments
+---------------------------------------------------------------------
+cfix (menuwidg.c xa_evnt.c):
+
+avoid casting (revert previous change)
+---------------------------------------------------------------------
+xaaes009 (xaaes009.rsl xaaes009.rsc xaaes009.rsm):
+
+update to latest multi-language-version
+---------------------------------------------------------------------
+k_keybd:
+
+remove debug-output
+---------------------------------------------------------------------
+taskman:
+
+set_xa_fnt: if desired font-size is available, set it, else search
+---------------------------------------------------------------------
+xa_rsrc:
+
+allow comments in rsl-file (first char in line #)
+---------------------------------------------------------------------
+xa_strings (xa_strings.c xa_strings.h):
+
+- change some ext-strings
+- use enum not #define for strings-enumeration
+---------------------------------------------------------------------
+xa_fsel (xa_fsel.c xa_fsel.h):
+
+remember position, size, and font-size of fileselector
+---------------------------------------------------------------------
+version:
+
+bump version from 1.0.0 to 1.1.0
+---------------------------------------------------------------------
+version:
+
+bump version from 1.0.0 to 1.1.0
+---------------------------------------------------------------------
+cnf_xaaes:
+
+improve feature to cycle keyboard-layout by Ctrl-Alt-hotkey.
+set in xaaes.cnf:
+keyboards = [key], <keyboard-list>
+if key is ommitted, Enter is used
+---------------------------------------------------------------------
+k_keybd:
+
+fix
+---------------------------------------------------------------------
+about:
+
+fix window-title
+move about_lines to xa_strings.c
+---------------------------------------------------------------------
+taskman:
+
+fix system-window-content
+---------------------------------------------------------------------
+widgets:
+
+move wctxt_main_txt to xa_strings.c
+
+---------------------------------------------------------------------
+xa_fsel:
+
+on caseinsensitive filesystem (VFAT) set pattern caseinsensitive
+---------------------------------------------------------------------
+xa_strings:
+
+define wctxt_main_txt from widgets.c and about_lines from about.c here
+
+---------------------------------------------------------------------
+version:
+
+bump version from 1.1.0 to 1.1.1
+---------------------------------------------------------------------
+version:
+
+bump version from 1.1.0 to 1.1.1
+---------------------------------------------------------------------
+xa_rsrc:
+
+always close rsl-file
+---------------------------------------------------------------------
+xa_strings:
+
+terminate wctxt_main_txt with 0
+---------------------------------------------------------------------
+xaaes009:
+
+update recent changes
+---------------------------------------------------------------------
+about:
+
+clean code
+---------------------------------------------------------------------
+draw_obj:
+
+- disable sanity-check for userdefs
+- allow variable border for left/right half of window on resizing (wind->sw)
+---------------------------------------------------------------------
+xa_strings:
+
+add more translation-strings
+---------------------------------------------------------------------
+strings (handler.c xa_appl.c xa_pdlg.c widgets.c xa_shel.c):
+
+- replace ALERT-text by global xa_strings[]
+
+---------------------------------------------------------------------
+version:
+
+bump version from 1.1.1 to 1.1.2
+---------------------------------------------------------------------
+taskman:
+
+set "middle" of taskmanager to 1/3 of width
+---------------------------------------------------------------------
 13-12-2010
 ----------
 
