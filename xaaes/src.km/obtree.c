@@ -24,6 +24,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include "xa_strings.h"
 #include "draw_obj.h"
 #include "obtree.h"
 #include "scrlobjc.h"
@@ -58,7 +59,7 @@ validate_obtree(struct xa_client *client, OBJECT *obtree, char *fdesc)
 	if (obtree <= (OBJECT *)0x1000L)
 	{
 			/* inform user what's going on */
-		ALERT(("%s: validate OBTREE for %s failed, object ptr = %lx, killing it!", fdesc, client->proc_name, obtree));
+		ALERT((xa_strings[AL_VALOBTREE]/*"%s: validate OBTREE for %s failed, object ptr = %lx, killing it!"*/, fdesc, client->proc_name, obtree));
 		raise(SIGKILL);
 		return false;
 	}
@@ -971,7 +972,9 @@ free_object_tree(struct xa_client *client, OBJECT *obtree)
 		DIAG((D_objc, client, "free_object_tree: %lx for %s", obtree, client->name));
 		free_obtree_resources(client, obtree);
 		if (client == C.Aes || client == C.Hlp)
+		{
 			kfree(obtree);
+		}
 		else
 			ufree(obtree);
 	}
