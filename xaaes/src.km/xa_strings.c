@@ -27,6 +27,15 @@ char *xa_strings[] = {
 "Launch Program     ",
 "$SDMASTER is not a valid program: %s (use the taskmanager)                      ",
 "Could not load %s.tbl from %s (%ld)         ",
+"Cannot terminate AES system proccesses!",
+"Not a good idea, I tell you!",
+"XaAES: No AES Parameter Block, returning",
+"XaAES: non-AES process issued AES system call %i, killing it",
+"%s: validate OBTREE for %s failed, object ptr = %lx, killing it!",
+"attach_extension for %u failed, out of memory?",
+"umalloc for %u failed, out of memory?",
+"XaAES: Print dialogs unavailable with current VDI",
+"launch: cannot enter single-task-mode: already in single-task-mode: %s(%d).",
 /* help-file */
 "xa_help.txt",
 	0
