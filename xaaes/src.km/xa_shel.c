@@ -26,6 +26,7 @@
 
 #include "xa_types.h"
 #include "xa_global.h"
+#include "xa_strings.h"
 
 #include "xa_appl.h"
 #include "xa_shel.h"
@@ -41,7 +42,7 @@
 #include "k_exec.h"
 
 
-#define STRINGS 1024 /* number of environment variable allowes in zaaes.cnf */
+#define STRINGS 1024 /* number of environment variable allowed in xaaes.cnf */
 static char *strings[STRINGS];
 
 //char * const * const get_raw_env(void) { return strings; }
@@ -623,7 +624,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 						if( C.SingleTaskPid > 0 )
 						{
 							struct proc *s = pid2proc(C.SingleTaskPid);
-							ALERT(("launch: cannot enter single-task-mode: already in single-task-mode: %s(%d).",
+							ALERT((xa_strings[AL_STMD]/*"launch: cannot enter single-task-mode: already in single-task-mode: %s(%d)."*/,
 								s->name, s->pid));
 						}
 					}
