@@ -34,6 +34,7 @@
 
 #include "handler.h"
 #include "xa_global.h"
+#include "xa_strings.h"
 
 #include "c_window.h"
 #include "k_main.h"
@@ -509,7 +510,7 @@ XA_handler(void *_pb)
 		raise(SIGKILL);
 #else
 		/* inform user what's going on */
-		ALERT(("XaAES: No AES Parameter Block, returning", p_getpid()));
+		ALERT((xa_strings[AL_NOPB]/*"XaAES: No AES Parameter Block, returning"*/, p_getpid()));
 #endif
 		return 0;
 	}
@@ -570,7 +571,7 @@ XA_handler(void *_pb)
 				cmd, p_getpid(), pb));
 
 			/* inform user what's going on */
-			ALERT(("XaAES: non-AES process issued AES system call %i, killing it", cmd));
+			ALERT((xa_strings[AL_NOAESPR]/*"XaAES: non-AES process issued AES system call %i, killing it"*/, cmd));
 			exit_proc(0, get_curproc(), 0);
 			raise(SIGKILL);
 			return 0;
