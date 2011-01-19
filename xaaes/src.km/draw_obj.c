@@ -451,20 +451,20 @@ d_g_progdef(struct widget_tree *wt, struct xa_vdi_settings *v)
 		sstate_mask = wt->state_mask;
 		pret = do_callout(pfunc,p);
 
-		if( wt->state_mask == sstate_mask && wt->state_mask && !((long)wt->state_mask & 1) )
+		//if( wt->state_mask == sstate_mask && wt->state_mask && !((long)wt->state_mask & 1) )
 			*wt->state_mask = pret;
+#if 0
 		else
 		{
-#if 0
 			BLOG(("d_g_progdef:%s(%s):invalid state_mask-pointer:%lx, \
 user-func:%lx TEXT:%lx-%lx (killed)", client->name, get_curproc()->name, wt->state_mask, pfunc, base->p_tbase, base->p_tbase + base->p_tlen));
-#endif
 			ALERT(("d_g_progdef:invalid state_mask-pointer:%lx/%lx", wt->state_mask, sstate_mask));
 			client->status |= (CS_EXITING | CS_SIGKILLED);
 			raise(SIGKILL);
 			yield();
 			return;
 		}
+#endif
 	}
 #else
 	act.sa_handler = client->ut->progdef_p;
@@ -1008,12 +1008,18 @@ short flags)
 						if( c->ob->ob_x < wt->wind->min.w / 2 && c->ob->ob_width > wt->wind->min.w / 2 )
 							/* resize width for wide objects */
 							c->ob->ob_width += dw;
-						else if( c->ob->ob_x + dw > wt->wind->r.w / 2 && c->ob->ob_x > wt->wind->min.w / 2 )
+						else
 						{
-							/* keep distance from right border constant */
-							c->ob->ob_x += dw;
-							if( c->ob->ob_x + c->ob->ob_width > wt->wind->r.w )
-								c->ob->ob_x = wt->wind->r.w - c->ob->ob_width - 1;
+							short sw = wt->wind->sw;
+							if( sw == 0 )
+								sw = 2;
+							if( c->ob->ob_x + dw > wt->wind->r.w / sw && c->ob->ob_x > wt->wind->min.w / sw )
+							{
+								/* keep distance from right border constant */
+								c->ob->ob_x += dw;
+								if( c->ob->ob_x + c->ob->ob_width > wt->wind->r.w )
+									c->ob->ob_x = wt->wind->r.w - c->ob->ob_width - 1;
+							}
 						}
 					}
 				}
