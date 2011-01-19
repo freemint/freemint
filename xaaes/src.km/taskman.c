@@ -1728,6 +1728,7 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 		if (!wind) goto fail;
 		wind->min.h = remember.h * 2/3;	/* minimum height for this window */
 		wind->min.w = remember.w;	/* minimum width for this window */
+		wind->sw = 3;	// border for moveing objects when resizing
 		list->set(list, NULL, SESET_PRNTWIND, (long)wind, NOREDRAW);
 		wind->window_status |= XAWS_NODELETE;
 
