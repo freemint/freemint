@@ -266,10 +266,8 @@ open_about(enum locks lock, struct xa_client *client, bool open)
 	set_xa_fnt( cfg.xaw_point, 0, 0, 0, list);
 
 #if HELPINABOUT
-	if( cfg.lang[0] )
-	{
-	}
-	sprintf( ebuf, sizeof(ebuf), "%s\\%s", C.start_path, xa_strings[XA_HELP_FILE] );
+	sprintf( ebuf, sizeof(ebuf), "%s%s", C.start_path, xa_strings[XA_HELP_FILE] );
+
 	/* check if help-file has changed and if yes re-read */
 	if (list->start)
 	{
