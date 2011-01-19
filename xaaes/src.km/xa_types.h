@@ -1734,7 +1734,8 @@ struct xa_window
 	RECT outer;
 	RECT inner;
 
-	short sw, sh;			/* width(not used) and height to use when SHADED */
+	short sw;			/* define middle of window (default 2 -> 1/2), used for resizing */
+	short sh;			/* height to use when SHADED */
 	short hx, hy;
 
 	short handle;			/* Window handle */
