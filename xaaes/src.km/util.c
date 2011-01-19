@@ -212,7 +212,7 @@ XA_FILE *xa_fopen( char *fn, int rwmd )
 	struct file *fp = kernel_open( fn, rwmd, &err, NULL );
 	if( !fp )
 	{
-		BLOG((0,"xa_fopen: cannot open %s", fn));
+		BLOG((0,"xa_fopen: cannot open '%s'", fn));
 		return 0;
 	}
 	ret = kmalloc( sizeof( XA_FILE ) );
