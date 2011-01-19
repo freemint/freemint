@@ -556,7 +556,7 @@ static XA_FILE *rsc_lang_file( int md, XA_FILE *fp, char *buf, int l )
 		return 0;
 		case REPLACE:
 		{
-			char lbuf[256];
+			char lbuf[256], *p;
 			bool found;
 			int len = strlen(buf), blen = 0, clen, cmplen;
 
@@ -580,8 +580,9 @@ static XA_FILE *rsc_lang_file( int md, XA_FILE *fp, char *buf, int l )
 						break;
 
 					cmplen = clen;
-					blen = strlen( lbuf + LF_OFFS );
 
+					p = lbuf + LF_OFFS;
+					blen = strlen( p );
 					/* input-length correct */
 					if( lbuf[blen+LF_OFFS-1] == '@' )
 					{
@@ -597,7 +598,7 @@ static XA_FILE *rsc_lang_file( int md, XA_FILE *fp, char *buf, int l )
 					{
 						if( !strnicmp( lbuf, "nn", 2 ) )
 						{
-							if( (found = !strncmp( lbuf+LF_OFFS, buf, cmplen )) )
+							if( (found = !strncmp( p, buf, cmplen )) )
 							{
 								if( lbuf[3] == ';' )	// dont translate this
 									break;
@@ -611,11 +612,19 @@ static XA_FILE *rsc_lang_file( int md, XA_FILE *fp, char *buf, int l )
 				}
 			}
 
-			if( lbuf[0] != -1 && lbuf[0] != LF_SEPCH )	// found
+			if( lbuf[0] != -1 && lbuf[0] != LF_SEPCH && blen )	// found
 			{
-				strncpy( buf, lbuf + LF_OFFS, blen );
+				/*strncpy( buf, p, blen );
 				buf[blen] = 0;
 				len = blen;
+				*/
+				if( l == WCTXT_MAIN_TXT )	// contextmenu needs certain strings!
+				{
+					memset( buf, ' ', len );
+				}
+				else
+					buf[blen] = 0;
+				memcpy( buf, p, blen );
 			}
 
 			while( lbuf[0] != LF_SEPCH )
@@ -730,7 +739,7 @@ fix_objects(struct xa_client *client,
 						}
 						else if( client->options.rsc_lang == READ )
 						{
-							short blen = translate_string( client, rfp, p, i );
+							short blen = translate_string( client, rfp, p, 0 );
 
 							if( blen && /*AdjustObjects && */ obj->ob_type == G_TITLE )
 								obj->ob_width = blen + 1;
@@ -1225,8 +1234,8 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 	 */
 	fix_objects(client, rscs, cibh, vdih, base, (OBJECT *)(base + hdr->rsh_object), hdr->rsh_nobs, rfp );
 
-	if( client == C.Aes && rfp ){
-		if( trans_strings[0] ){
+	if( rfp ){
+		if( client == C.Aes && trans_strings[0] ){
 			if( client->options.rsc_lang == READ ){		// only READ for internal strings!
 				int i, k, j;
 				char **t;
@@ -1236,7 +1245,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 					{
 						if( **t )
 						{
-							translate_string( client, rfp, *t, k++ );
+							translate_string( client, rfp, *t, i );
 						}
 					}
 				}
