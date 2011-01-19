@@ -26,6 +26,7 @@
 
 #include "xa_appl.h"
 #include "xa_global.h"
+#include "xa_strings.h"
 
 
 #include "app_man.h"
@@ -222,7 +223,7 @@ init_client(enum locks lock, bool sysclient)
 	 */
 	client = attach_extension(NULL, XAAES_MAGIC, PEXT_NOSHARE, sizeof(*client), &xaaes_cb_vector);
 	if (!client) {
-		ALERT(("attach_extension for %u failed, out of memory?", p->pid));
+		ALERT((xa_strings[AL_ATTACH]/*"attach_extension for %u failed, out of memory?"*/, p->pid));
 		return NULL;
 	}
 
@@ -248,7 +249,7 @@ init_client(enum locks lock, bool sysclient)
 	}
 
 	if (!client->ut || !client->mnu_clientlistname) {
-		ALERT(("umalloc for %u failed, out of memory?", p->pid));
+		ALERT((xa_strings[AL_MEM]/*"umalloc for %u failed, out of memory?"*/, p->pid));
 
 		if (client->ut)
 			ufree(client->ut);
