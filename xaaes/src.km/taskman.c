@@ -1484,7 +1484,8 @@ taskmanager_form_exit(struct xa_client *Client,
 					struct xa_window *wi = list->cur->data;
 					if( list->cur->data != wind )
 					{
-						if( !(wi->window_status & XAWS_OPEN)
+						//BLOG((0,"TM_OK:%s:window_status=%lx", wi->wname, wi->window_status));
+						if( !(wi->window_status & XAWS_OPEN) || (wi->window_status & XAWS_BINDFOCUS)
 							|| (wi->dial
 								& ( created_for_SLIST
 								| created_for_CALC
