@@ -1023,7 +1023,7 @@ create_popup_tree(struct xa_client *client, short type, short nobjs, short min_w
 
 		ol = sizeof(*new) * (nobjs + 1);
 
-		new = kmalloc(ol + sl + longest);
+		new = kmalloc(ol + sl + longest + 4);
 
 		if (new)
 		{
@@ -1109,6 +1109,7 @@ create_popup_tree(struct xa_client *client, short type, short nobjs, short min_w
 
 			if (new->ob_height < min_h)
 				new->ob_height = min_h;
+
 		}
 	}
 	return new;
