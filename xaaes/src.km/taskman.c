@@ -1225,6 +1225,11 @@ taskmanager_form_exit(struct xa_client *Client,
 				client = list->cur->data;
 				if( (list->cur->usr_flags & TM_WINDOW) )
 					client = ((struct xa_window*)client)->owner;
+				if( !client )
+				{
+					BLOG((0,"taskmanager_form_exit: client = 0!" ));
+					return;
+				}
 			}
 			else
 			{
@@ -1260,6 +1265,7 @@ taskmanager_form_exit(struct xa_client *Client,
 				int pid = ((struct proc*)client)->pid;
 				if( pid <= TM_MINPID || pid >= TM_MAXPID || pid == C.Aes->tp->pid )
 					break;
+
 				ikill(pid, SIGKILL);
 				for( i = 0; i < TM_KILLLOOPS && !k; i++ )
 				{
@@ -1268,6 +1274,8 @@ taskmanager_form_exit(struct xa_client *Client,
 				}
 				if( k )
 					remove_from_tasklist( client );
+				else
+					BLOG((0,"taskmanager_form_exit: could not kill %d", pid));
 			break;
 			}
 
@@ -2328,7 +2336,7 @@ refresh_systemalerts(OBJECT *form)
  * replace \n->,
  *
  */
-static void kerinfo2line( char *in, char *out, size_t maxlen )
+static void kerinfo2line( char *in, char *out, long maxlen )
 {
 	char *pi = in, *po = out;
 	size_t i;
@@ -2699,7 +2707,7 @@ open_systemalerts(enum locks lock, struct xa_client *client, bool open)
 
 			add_kerinfo( "u:/kern/version", list, this, NULL, &sc, 0, 0, false, NULL );
 			BLOG((0,"version:%s", sc.t.text ));
-#if XAAES_RELEASE > 0
+#if !XAAES_RELEASE
 			add_kerinfo( "u:/kern/buildinfo", list, this, NULL, &sc, 0, 1, false, NULL );
 			BLOG((0,"buildinfo:%s", sc.t.text ));
 #endif
