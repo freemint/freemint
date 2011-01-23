@@ -2037,10 +2037,12 @@ build_windlist_pu(struct xa_client *client, struct moose_data *md)
 	if (winds)
 	{
 		char *s, *d, *d1;
+		size_t sz;
 
 		msize = (long)(an_len + wn_len + 4) * winds;
 
-		pu = kmalloc(sizeof(*pu) + msize + (sizeof(char *) * winds) + (sizeof(struct xa_window *) * winds));
+		sz = sizeof(*pu) + msize + (sizeof(char *) * winds) + (sizeof(struct xa_window *) * winds);
+		pu = kmalloc(sz);
 
 		if (pu)
 		{
