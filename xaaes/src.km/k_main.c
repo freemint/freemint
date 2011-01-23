@@ -771,8 +771,9 @@ CE_fa(enum locks lock, struct c_event *ce, bool cancel)
 
 		if( pid && strstr( data->buf, "KILLED:" ) )
 		{
-			while( !ikill(pid, SIGKILL) )
-				nap(2000);
+			short s;
+			for( s = 0; !ikill(pid, SIGKILL) && s < 666; s++ )
+				nap(20);
 		}
 		/***********************************************/
 
@@ -827,7 +828,8 @@ CE_fa(enum locks lock, struct c_event *ce, bool cancel)
 				}
 			if (wind)
 			{
-				strcpy( b, data->buf );
+				strncpy( b, data->buf, sizeof(b)-1 );
+				b[sizeof(b)-1] = 0;
 
 				/* Add the log entry */
 				{
@@ -857,7 +859,8 @@ CE_fa(enum locks lock, struct c_event *ce, bool cancel)
 
 					Tgettimeofday( &tv, &tz );
 					dtim.l = unix2xbios( tv.tv_sec );
-					sprintf( data->buf, MAXALERTLEN, "%02d:%02d:%02d: %s", dtim.t.hour, dtim.t.minute, dtim.t.sec2, b + 4 );
+					sprintf( data->buf, MAXALERTLEN-1, "%02d:%02d:%02d: %s", dtim.t.hour, dtim.t.minute, dtim.t.sec2, b + 4 );
+					data->buf[MAXALERTLEN-1] = 0;
 #endif
 #if ALERTTIME	// b is used for form_alert
 					strrpl( data->buf, '|', ' ', ' ' );
@@ -1155,6 +1158,7 @@ helpthread_entry(void *c)
 	if (C.Hlp_pb)
 	{
 // 		display("free pb");
+		BLOG((0,"helpthread_entry:kfree(%lx)",C.Hlp_pb));
 		kfree(C.Hlp_pb);
 		C.Hlp_pb = NULL;
 	}
