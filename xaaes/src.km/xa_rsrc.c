@@ -293,13 +293,40 @@ FixColourIconData(struct xa_client *client, CICONBLK *icon, struct xa_rscs *rscs
 	}
 }
 
+#define READ	1
+#define WRITE	2
+#define OREAD	3
+#define OWRITE	4
+#define CLOSE	5
+#define REPLACE	6
+
+#define LF_OFFS	3
+#define LF_SEPCH	'_'
+#define LF_COMMCH	'#'
+#define LF_SEPSTR	"_"
+#define LF_COMMSTR	"#"
+
+static short rsc_trans_rw( struct xa_client *client, XA_FILE *rfp, char *buf );
+static XA_FILE *rsc_lang_file( int md, XA_FILE *fp, char *buf, int l );
+
 static void
-fix_chrarray(struct xa_client *client, void *b, char **p, unsigned long n, char **extra)
+fix_chrarray(struct xa_client *client, void *b, char **p, unsigned long n, char **extra, XA_FILE *rfp)
 {
+	//BLOG((0,"fix_chrarray:%s:*p='%lx', rfp=%lx, n=%ld", client->name, *p, rfp, n ));
+	if( client->options.rsc_lang == WRITE && n && rfp)
+	{
+		rsc_lang_file( WRITE, rfp, "# - Strings -", 13 );
+	}
 	while (n)
 	{
 		DIAG((D_rsrc, NULL, " -- %lx, value %lx", p, *p));
+		//BLOG((0, " -- %lx, value %lx", p, *p));
 		*p += (unsigned long)b;
+		//BLOG((0, " -- to %lx:%s", *p, *p));
+		if( rfp )
+		{
+			rsc_trans_rw( client, rfp, *p );
+		}
 		DIAG((D_rsrc, NULL, " -- to %lx", *p));
 
 		p++;
@@ -333,6 +360,7 @@ fix_tedarray(struct xa_client *client, void *b, TEDINFO *ti, unsigned long n, ch
 			ei++;
 			n--;
 			DIAG((D_rsrc, NULL, "fix_tedarray: ti=%lx, ptext='%s'", ti, ei->ti.te_ptext));
+			//BLOG((0, "%s:fix_tedarray: ti=%lx, ptext='%s'", client->name, ti, ei->ti.te_ptext));
 			DIAG((D_rsrc, NULL, "ptext=%lx, ptmpl=%lx, pvalid=%lx",
 				ti->te_ptext, ti->te_ptmplt, ti->te_pvalid));
 		}
@@ -347,6 +375,7 @@ fix_tedarray(struct xa_client *client, void *b, TEDINFO *ti, unsigned long n, ch
 			ti->te_pvalid	+= (long)b;
 
 			DIAG((D_rsrc, NULL, "fix_tedarray: ti=%lx, ptext='%s'", ti, ti->te_ptext));
+			//BLOG((0, "%s:fix_tedarray: ti=%lx, ptext='%s'", client->name, ti, ti->te_ptext));
 			DIAG((D_rsrc, NULL, "ptext=%lx, ptmpl=%lx, pvalid=%lx",
 				ti->te_ptext, ti->te_ptmplt, ti->te_pvalid));
 
@@ -518,19 +547,6 @@ static int make_rscl_name( char *in, char *out )
 }
 
 
-#define READ	1
-#define WRITE	2
-#define OREAD	3
-#define OWRITE	4
-#define CLOSE	5
-#define REPLACE	6
-
-#define LF_OFFS	3
-#define LF_SEPCH	'_'
-#define LF_COMMCH	'#'
-#define LF_SEPSTR	"_"
-#define LF_COMMSTR	"#"
-
 static int rsl_errors = 0;	// maximum alerts for invalid rsl-file
 
 static short rsl_lno = 1;
@@ -549,7 +565,9 @@ static XA_FILE *rsc_lang_file( int md, XA_FILE *fp, char *buf, int l )
 		return 0;
 		case WRITE:
 			if (fp)
+			{
 				xa_writeline( buf, l, fp );
+			}
 		return 0;
 		case CLOSE:
 			xa_fclose(fp);
@@ -614,17 +632,9 @@ static XA_FILE *rsc_lang_file( int md, XA_FILE *fp, char *buf, int l )
 
 			if( lbuf[0] != -1 && lbuf[0] != LF_SEPCH && blen )	// found
 			{
-				/*strncpy( buf, p, blen );
 				buf[blen] = 0;
-				len = blen;
-				*/
-				if( l == WCTXT_MAIN_TXT )	// contextmenu needs certain strings!
-				{
-					memset( buf, ' ', len );
-				}
-				else
-					buf[blen] = 0;
 				memcpy( buf, p, blen );
+				//BLOGif(l == WCTXT_MAIN_TXT,(0,"->\n'%s'", buf+1));
 			}
 
 			while( lbuf[0] != LF_SEPCH )
@@ -664,6 +674,38 @@ static short translate_string( struct xa_client *client, XA_FILE *rfp, char *p, 
 	return blen;
 }
 
+static short rsc_trans_rw( struct xa_client *client, XA_FILE *rfp, char *txt )
+{
+	short blen = 0;
+	char buf[256];
+
+	if( !rfp || !txt || !*txt )
+		return 0;
+
+	//BLOG((0,"rsc_trans_rw:%s:txt='%s' rsc_lang=%d", client->name, txt, client->options.rsc_lang));
+	if( client->options.rsc_lang == WRITE )
+	{
+		int l = sprintf( buf, sizeof(buf), "nn:%s", txt);
+
+		if( *(buf + l - 1) == ' ' )
+		{
+			*(buf + l) = '@';
+			l++;
+			*(buf + l) = 0;
+		}
+		rsc_lang_file( WRITE, rfp, buf, l );
+		rsc_lang_file( WRITE, rfp, LF_SEPSTR, 1 );
+	}
+	else if( client->options.rsc_lang == READ )
+	{
+		blen = translate_string( client, rfp, txt, 0 );
+
+	}
+
+	return blen;
+}
+
+
 //int AdjustObjects = 1;	//<--
 
 static void
@@ -682,12 +724,19 @@ fix_objects(struct xa_client *client,
 
 	DIAG((D_rsrc, client, "fix_objects: b=%lx, cibh=%lx, obj=%lx, num=%ld",
 		b, cibh, obj, n));
+	//BLOGif(!(client == C.Aes || client == C.Hlp), (0, "fix_objects:%s: b=%lx, cibh=%lx, obj=%lx, num=%ld",client->name, b, cibh, obj, n));
 
+	if( client->options.rsc_lang == WRITE && n && rfp)
+	{
+		rsc_lang_file( WRITE, rfp, "# - Objects -", 13 );
+	}
 	/* fixup all objects' ob_spec pointers */
 	for (i = 0; i < n; i++, obj++)
 	{
 		type = obj->ob_type & 255;
 
+		//BLOGif(!(client == C.Aes || client == C.Hlp),(0,"%s:ob_type=%d", client->name, type));
+		//BLOGif(type == G_BOX && !(client == C.Aes || client == C.Hlp),(0,"%s:ob_type=%d, free_string=%s", client->name, type,obj->ob_spec.free_string+(long)b-26 ));
 		/* What kind of object is it? */
 		switch (type)
 		{
@@ -705,8 +754,8 @@ fix_objects(struct xa_client *client,
 				obj->ob_spec.free_string += (long)b;
 				if( client->options.rsc_lang && !(type == G_IMAGE) )
 				{
-					char buf[256], *p = 0;
-					int l;
+					char *p;
+					short blen;
 
 					if( object_has_tedinfo(obj) )
 					{
@@ -722,29 +771,11 @@ fix_objects(struct xa_client *client,
 					if( !p || !*p || strchr(p, '\n') )
 						break;
 
-					l = sprintf( buf, sizeof(buf), "nn:%s", p);
+					blen = rsc_trans_rw( client, rfp, p );
 
-					if( l > LF_OFFS )
-					{
-						if( client->options.rsc_lang == WRITE )
-						{
-							if( *(buf + l - 1) == ' ' )
-							{
-								*(buf + l) = '@';
-								l++;
-								*(buf + l) = 0;
-							}
-							rsc_lang_file( WRITE, rfp, buf, l );
-							rsc_lang_file( WRITE, rfp, LF_SEPSTR, 1 );
-						}
-						else if( client->options.rsc_lang == READ )
-						{
-							short blen = translate_string( client, rfp, p, 0 );
+					if( client->options.rsc_lang == READ && blen && /*AdjustObjects && */ obj->ob_type == G_TITLE )
+						obj->ob_width = blen + 1;
 
-							if( blen && /*AdjustObjects && */ obj->ob_type == G_TITLE )
-								obj->ob_width = blen + 1;
-						}
-					}
 				}
 				break;
 			}
@@ -788,6 +819,7 @@ fix_objects(struct xa_client *client,
 			}
 			default:
 			{
+				//BLOG((0, "%s: Unknown object type %d", client->name, type));
 				DIAG((D_rsrc, client, "Unknown object type %d", type));
 				break;
 			}
@@ -1106,8 +1138,37 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 		return NULL;
 	}
 
-	fix_chrarray(client, base, (char **)	(base + hdr->rsh_frstr),   hdr->rsh_nstring, &extra_ptr);
-	fix_chrarray(client, base, (char **)	(base + hdr->rsh_frimg),   hdr->rsh_nimages, &extra_ptr);
+	if( client->options.rsc_lang ){
+		char rscl_name[PATH_MAX];
+		if( !make_rscl_name( fname, rscl_name ) )
+		{
+			if( client->options.rsc_lang == READ )
+			{
+				if( !( rfp = rsc_lang_file( OREAD, 0, rscl_name, 0)) )
+					client->options.rsc_lang = WRITE;
+			}
+			if( client->options.rsc_lang == WRITE )
+			{
+				if( !(rfp = rsc_lang_file( OWRITE, 0, rscl_name, 0)) ){
+					BLOG((0,"LoadResources: could not write:%s.", rscl_name));
+					client->options.rsc_lang = 0;
+				}
+				else
+				{
+					char buf[256];
+					int l = sprintf( buf, sizeof(buf)-1, "#%s: Language-File for %s\n# %s", rscl_name, client->name, C.Aes->name );
+					rsc_lang_file( WRITE, rfp, buf, l );
+					BLOG((0,"%s: Language-File for %s created", rscl_name, client->name ));
+				}
+			}
+		}
+		else{
+			client->options.rsc_lang = 0;
+		}
+	}
+
+	fix_chrarray(client, base, (char **)	(base + hdr->rsh_frstr),   hdr->rsh_nstring, &extra_ptr, rfp );
+	fix_chrarray(client, base, (char **)	(base + hdr->rsh_frimg),   hdr->rsh_nimages, &extra_ptr, 0);
 	fix_tedarray(client, base, (TEDINFO *)	(base + hdr->rsh_tedinfo), hdr->rsh_nted, &extra_ptr);
 	fix_icnarray(client, base, (ICONBLK *)	(base + hdr->rsh_iconblk), hdr->rsh_nib, &extra_ptr);
 	fix_bblarray(client, base, (BITBLK *)	(base + hdr->rsh_bitblk),  hdr->rsh_nbb, &extra_ptr);
@@ -1208,45 +1269,31 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 #endif
 	}
 
-	if( client->options.rsc_lang ){
-		char rscl_name[PATH_MAX];
-		if( !make_rscl_name( fname, rscl_name ) )
-		{
-			if( client->options.rsc_lang == READ )
-			{
-				if( !( rfp = rsc_lang_file( OREAD, 0, rscl_name, 0)) )
-					client->options.rsc_lang = WRITE;
-			}
-			if( client->options.rsc_lang == WRITE ){
-				if( !(rfp = rsc_lang_file( OWRITE, 0, rscl_name, 0)) ){
-					BLOG((0,"LoadResources: could not write:%s.", rscl_name));
-					client->options.rsc_lang = 0;
-				}
-			}
-		}
-		else
-			client->options.rsc_lang = 0;
-	}
-
-
 	/*
 	 * fix_objects MUST run before fix_trees!!!
 	 */
 	fix_objects(client, rscs, cibh, vdih, base, (OBJECT *)(base + hdr->rsh_object), hdr->rsh_nobs, rfp );
 
 	if( rfp ){
-		if( client == C.Aes && trans_strings[0] ){
-			if( client->options.rsc_lang == READ ){		// only READ for internal strings!
-				int i, k, j;
-				char **t;
-				for(k = 1, i = 0; trans_strings[i]; i++)
+		if( client == C.Aes && trans_strings[0] && client->options.rsc_lang )
+		{
+			int i, k;
+			long l;
+			char **t;
+
+			if( client->options.rsc_lang == WRITE )
+			{
+				rsc_lang_file( WRITE, rfp, "# - Internal Strings -", 22 );
+			}
+			for(k = 1, i = 0; trans_strings[i]; i++)
+			{
+				for( t = trans_strings[i]; *t; t++)
 				{
-					for(j = 0, t = trans_strings[i]; *t; j++, t++)
+					if( **t )
 					{
-						if( **t )
-						{
-							translate_string( client, rfp, *t, i );
-						}
+						//BLOGif(i == WCTXT_MAIN_TXT,(0,"LoadResources:*t=\n'%s' ->", *t));
+						l = rsc_trans_rw( client, rfp, *t );
+						//BLOGif(i == WCTXT_MAIN_TXT,(0,"LoadResources:*t=\n'%s'", *t));
 					}
 				}
 			}
