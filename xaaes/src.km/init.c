@@ -205,7 +205,7 @@ sysfile_exists(const char *sd, char *fn)
  */
 /*
 	"us","de","fr","en","es","it","se","fs","gs","tr","fi",
-	"no","dk","sa","nl","cz","hu","pl","lt","lv","ee",
+	"no","dk","sa","nl","cs","hu","pl","lt","lv","ee",
 	"by","ua","sk","ro","bg","sl","hr","cs","cs","mk",
 	"gr","ru","il","za","pt","be","jp","cn","kp","vn",
 	"in","ir","mn","np","la","kh","id","bd",
@@ -695,7 +695,7 @@ again:
 				cfg.lang[1] = countrycodes[err+1];
 			}
 	}
-	
+
 	BLOG((0,"lang='%s' (from %s).",cfg.lang, err == -1 ? "config" : (err == -2 ? "Environ" : "AKP") ));
 
 	if( cfg.info_font_point == -1 )
