@@ -1,0 +1,5 @@
+# Diese Datei geh”rt in den XaAES-Ordner (C:\mint\1-*-*\xaaes)
+
+Das soll der franz”sische helptext sein!!!!!!!!!!
+
+Wird noch nachgereicht
