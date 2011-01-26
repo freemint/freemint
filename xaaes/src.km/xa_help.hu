@@ -1,0 +1,52 @@
+# Ennek a f†jlnak az xaaes kînyvt†r†ban kell lennie (C:\mint\1-*-*\xaaes)
+Ctrl-Alt gyorsbillentyÅk:
+
+A             Bez†r minden alkalmaz†st (a kivÇtelek list†ja az xaaes.cnf-ban)
+B             Rendszer/Napl¢-ablak megnyit†sa
+D             KÇplop¢ megnyit†sa (XAAESNAP.PRG szÅksÇges)
+E             Ablak almenÅ megnyit†sa
+F,L           Feladat kezelî megnyit†sa
+HELP          NÇvjegy megnyit†sa
+H             Rendszer le†ll°t†sa (vagy $SDMASTER futtat†sa)
+I             Aktu†lis ablak minimaliz†l†sa
+K             Program ind°t†sa
+T,HOME        KÇprenyî £jrarajzol†sa
+P             Paletta vissza†ll°t†sa 8bit vagy ann†l kisebb sz°nmÇlysÇg esetÇn
+Q,G           KilÇpÇs az XaAES-bîl (vagy $SDMASTER futtat†sa)
+R             Lefagyott rendszer vissza†ll°t†sa
+V             ôsszes alkalmaz†s ablak†nak felfedÇse
+W             Ablakok kîzîtti v†lt†s
+X             A f¢kuszban lÇvîn k°vÅl minden alkalmaz†s elrejtÇse
+Y             A f¢kuszban lÇvî alkalmaz†s elrejtÇse
+SPACE         FîmenÅ megnyit†sa
+SHIFT+SPACE   Aktu†lis ablak menÅjÇnek vagy ha nincs, a fîmenÅ megnyit†sa
+TAB           Nyitott alkalmaz†sok kîzîtti v†lt†s
+CURSOR-RIGHT  Aktu†lis ablak maximaliz†l†sa
+---------------------------------------------------------------------------------
+
+GyorsbillentyÅk/navig†ci¢ az XaAES f†jl kiv†laszt†s†n†l:
+
+CTRL+O        Ablak menÅ megnyit†sa (navig†ci¢ a KURZOR Çs RETURN gomobokkal)
+CTRL+C        A kiv†lasztott f†jl Çs elÇrÇsi £tvonal V†g¢lapra m†sol†sa
+
+* List-box kiv†lasztva:
+
+  CURSOR-RIGHT              Fa megynit†sa
+  CURSOR-LEFT               Fa bez†r†sa
+  CURSOR UP/DOWN            Kurzor mozgat†sa
+  PageUp/Down(SHIFT+CU/CD)  Lapoz†s a f†jllist†ban
+  CLEAR/HOME                Lista elejÇre ugr†s
+  SHIFT+CLEAR/HOME          Lista vÇgÇre ugr†s
+
+* List-box nincs kiv†lasztva:
+
+  CURSOR-RIGHT              Jobbra gîrgetÇs
+  CURSOR-LEFT               Balra gîrgetÇs
+  CURSOR UP/DOWN            Fel/Le gîrgetÇs
+
+Ha egy elem ki van v†lasztva a "list-box"-ban, a KURZOR-JOBBRA gombbal lehetîsÇg 
+van a szerkesztÇsÇre.
+
+---------------------------------------------------------------------------------
+RÇszletes dokument†ci¢: http://wiki.sparemint.org/index.php/XaAES
+
