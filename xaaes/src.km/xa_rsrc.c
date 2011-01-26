@@ -123,7 +123,7 @@ transform_icon_bitmap(struct xa_client *client, struct xa_rscs *rscs, CICONBLK *
 
 	DIAG((D_s, client, "icon_len %ld, new_len %ld", icon_len, new_len));
 
-// 	if (planes < screen.planes)
+//  if (planes < screen.planes)
 	{
 		DIAG((D_x, client, "alloc of %ld bytes", new_len));
 
@@ -150,7 +150,7 @@ transform_icon_bitmap(struct xa_client *client, struct xa_rscs *rscs, CICONBLK *
 			ra->next = rscs->ra;
 			rscs->ra = ra;
 
-// 			memcpy(new_data, map, icon_len);
+//      memcpy(new_data, map, icon_len);
 		}
 		else
 			return map;
@@ -224,17 +224,17 @@ transform_icon_bitmap(struct xa_client *client, struct xa_rscs *rscs, CICONBLK *
 	tmp = kmalloc(new_len);
 	if (tmp)
 	{
-		src.fd_addr	= tmp;
+		src.fd_addr = tmp;
 		src.fd_w	= icon->monoblk.ib_wicon; /* Transform MFDB's */
 		src.fd_h	= icon->monoblk.ib_hicon;
 		src.fd_wdwidth	= (src.fd_w + 15) >> 4; // / 16; /* round up */
 		src.fd_stand	= 1;
-		src.fd_r1	= src.fd_r2 = src.fd_r3 = 0;
+		src.fd_r1 = src.fd_r2 = src.fd_r3 = 0;
 		src.fd_nplanes	= screen.planes;
 
 		dst = src;
 
-		dst.fd_addr	= new_data;
+		dst.fd_addr = new_data;
 		dst.fd_stand	= 0;
 		dst.fd_nplanes	= screen.planes;
 
@@ -268,7 +268,7 @@ FixColourIconData(struct xa_client *client, CICONBLK *icon, struct xa_rscs *rscs
 		DIAG((D_rsrc,client,"[1]probe cicon 0x%lx", c));
 
 		if (c->num_planes <= screen.planes
-		    && (!best_cicon || (best_cicon && c->num_planes > best_cicon->num_planes)))
+				&& (!best_cicon || (best_cicon && c->num_planes > best_cicon->num_planes)))
 		{
 			best_cicon = c;
 		}
@@ -294,25 +294,24 @@ FixColourIconData(struct xa_client *client, CICONBLK *icon, struct xa_rscs *rscs
 }
 
 #define READ	1
-#define WRITE	2
-#define OREAD	3
+#define WRITE 2
+#define OREAD 3
 #define OWRITE	4
-#define CLOSE	5
-#define REPLACE	6
+#define CLOSE 5
+#define REPLACE 6
 
-#define LF_OFFS	3
+#define LF_OFFS 3
 #define LF_SEPCH	'_'
-#define LF_COMMCH	'#'
-#define LF_SEPSTR	"_"
+#define LF_COMMCH '#'
+#define LF_SEPSTR "_"
 #define LF_COMMSTR	"#"
 
-static short rsc_trans_rw( struct xa_client *client, XA_FILE *rfp, char *buf );
+static short rsc_trans_rw( struct xa_client *client, XA_FILE *rfp, char **buf );
 static XA_FILE *rsc_lang_file( int md, XA_FILE *fp, char *buf, int l );
 
 static void
 fix_chrarray(struct xa_client *client, void *b, char **p, unsigned long n, char **extra, XA_FILE *rfp)
 {
-	//BLOG((0,"fix_chrarray:%s:*p='%lx', rfp=%lx, n=%ld", client->name, *p, rfp, n ));
 	if( client->options.rsc_lang == WRITE && n && rfp)
 	{
 		rsc_lang_file( WRITE, rfp, "# - Strings -", 13 );
@@ -320,12 +319,10 @@ fix_chrarray(struct xa_client *client, void *b, char **p, unsigned long n, char 
 	while (n)
 	{
 		DIAG((D_rsrc, NULL, " -- %lx, value %lx", p, *p));
-		//BLOG((0, " -- %lx, value %lx", p, *p));
 		*p += (unsigned long)b;
-		//BLOG((0, " -- to %lx:%s", *p, *p));
 		if( rfp )
 		{
-			rsc_trans_rw( client, rfp, *p );
+			rsc_trans_rw( client, rfp, p );
 		}
 		DIAG((D_rsrc, NULL, " -- to %lx", *p));
 
@@ -348,19 +345,18 @@ fix_tedarray(struct xa_client *client, void *b, TEDINFO *ti, unsigned long n, ch
 		{
 			bzero(ei, sizeof(*ei));
 
-			ei->p_ti = 	ti;
+			ei->p_ti =	ti;
 			ti->te_ptext	+= (long)b;
-			ti->te_ptmplt	+= (long)b;
-			ti->te_pvalid	+= (long)b;
+			ti->te_ptmplt += (long)b;
+			ti->te_pvalid += (long)b;
 			ei->ti = *ti;
 			ti->te_ptext	= (char *)-1L;
-			ti->te_ptmplt	= (char *)ei;
+			ti->te_ptmplt = (char *)ei;
 
 			ti++;
 			ei++;
 			n--;
 			DIAG((D_rsrc, NULL, "fix_tedarray: ti=%lx, ptext='%s'", ti, ei->ti.te_ptext));
-			//BLOG((0, "%s:fix_tedarray: ti=%lx, ptext='%s'", client->name, ti, ei->ti.te_ptext));
 			DIAG((D_rsrc, NULL, "ptext=%lx, ptmpl=%lx, pvalid=%lx",
 				ti->te_ptext, ti->te_ptmplt, ti->te_pvalid));
 		}
@@ -371,11 +367,10 @@ fix_tedarray(struct xa_client *client, void *b, TEDINFO *ti, unsigned long n, ch
 		while (n)
 		{
 			ti->te_ptext	+= (long)b;
-			ti->te_ptmplt	+= (long)b;
-			ti->te_pvalid	+= (long)b;
+			ti->te_ptmplt += (long)b;
+			ti->te_pvalid += (long)b;
 
 			DIAG((D_rsrc, NULL, "fix_tedarray: ti=%lx, ptext='%s'", ti, ti->te_ptext));
-			//BLOG((0, "%s:fix_tedarray: ti=%lx, ptext='%s'", client->name, ti, ti->te_ptext));
 			DIAG((D_rsrc, NULL, "ptext=%lx, ptmpl=%lx, pvalid=%lx",
 				ti->te_ptext, ti->te_ptmplt, ti->te_pvalid));
 
@@ -550,7 +545,9 @@ static int make_rscl_name( char *in, char *out )
 static int rsl_errors = 0;	// maximum alerts for invalid rsl-file
 
 static short rsl_lno = 1;
-
+/*
+ * if md=REPLACE buf is char**
+ */
 static XA_FILE *rsc_lang_file( int md, XA_FILE *fp, char *buf, int l )
 {
 	switch( md )
@@ -574,12 +571,12 @@ static XA_FILE *rsc_lang_file( int md, XA_FILE *fp, char *buf, int l )
 		return 0;
 		case REPLACE:
 		{
-			char lbuf[256], *p;
-			bool found;
-			int len = strlen(buf), blen = 0, clen, cmplen;
+			char lbuf[256], *p, *in = *((char**)buf);
+			bool found, strip = true;
+			int len = strlen(in), blen = 0, clen, cmplen;
 
 			/* strip trailing blanks */
-			for( clen = len - 1; buf[clen] == ' '; clen-- );
+			for( clen = len - 1; in[clen] == ' '; clen-- );
 			clen++;
 
 			for( found = false, lbuf[0] = 0; found == false && lbuf[0] != -1; )
@@ -601,25 +598,30 @@ static XA_FILE *rsc_lang_file( int md, XA_FILE *fp, char *buf, int l )
 
 					p = lbuf + LF_OFFS;
 					blen = strlen( p );
-					/* input-length correct */
+
+					/* input-length */
+					for( ; lbuf[blen+LF_OFFS-1] == ' '; blen-- );
 					if( lbuf[blen+LF_OFFS-1] == '@' )
 					{
-						lbuf[blen+LF_OFFS-1] = 0;
 						blen--;
 						cmplen = len;
 					}
+					lbuf[blen+LF_OFFS] = 0;
+
 					/* copy shorter length */
-					if( blen > len )
+					if( blen > len && strip == true )
 						blen = len;
 
 					if( found == false )
 					{
 						if( !strnicmp( lbuf, "nn", 2 ) )
 						{
-							if( (found = !strncmp( p, buf, cmplen )) )
+							if( (found = !strncmp( p, in, cmplen )) )
 							{
-								if( lbuf[3] == ';' )	// dont translate this
+								if( lbuf[LF_OFFS-1] == ';' )	// dont translate this
 									break;
+								if( lbuf[LF_OFFS-1] == '+' )	// realloc
+									strip = false;
 							}
 						}
 					}
@@ -632,10 +634,19 @@ static XA_FILE *rsc_lang_file( int md, XA_FILE *fp, char *buf, int l )
 
 			if( lbuf[0] != -1 && lbuf[0] != LF_SEPCH && blen )	// found
 			{
-				buf[blen] = 0;
-				memcpy( buf, p, blen );
-				//BLOGif(l == WCTXT_MAIN_TXT,(0,"->\n'%s'", buf+1));
+				if( blen > len && strip == false )
+				{
+					in = xa_strdup( lbuf + LF_OFFS );
+					*((char**)buf) = in;
+				}
+				else
+				{
+					in[blen] = 0;
+					memcpy( in, p, blen );
+				}
 			}
+			else
+				blen = clen;
 
 			while( lbuf[0] != LF_SEPCH )
 			{
@@ -643,7 +654,7 @@ static XA_FILE *rsc_lang_file( int md, XA_FILE *fp, char *buf, int l )
 					break;
 				}
 			}
-			return found? (XA_FILE*)(long)len : 0;
+			return found? (XA_FILE*)(long)blen : 0;
 
 		}
 		default:
@@ -651,13 +662,16 @@ static XA_FILE *rsc_lang_file( int md, XA_FILE *fp, char *buf, int l )
 	}
 }
 
-static short translate_string( struct xa_client *client, XA_FILE *rfp, char *p, long i )
+static short translate_string( struct xa_client *client, XA_FILE *rfp, char **p, long i )
 {
 	short blen, j;
 
+	if( !p )
+		return 0;
+
 	for( blen = j = 0; j < 2 && !blen; j++ )
 	{
-		if( (blen = (short)(long)rsc_lang_file( REPLACE, rfp, p, i)) )
+		if( (blen = (short)(long)rsc_lang_file( REPLACE, rfp, (char*)p, i)) )
 			break;	//found
 		if( 1 || rsl_errors++ < RSL_MAX_ERRORS )
 		{
@@ -668,24 +682,23 @@ static short translate_string( struct xa_client *client, XA_FILE *rfp, char *p, 
 	}
 	if( !blen )
 	{
-		ALERT(("translate: item '%s' not found", p ));
-		BLOG((0, "%s:translate: item '%s' not found", client->name, p ));
+		ALERT(("translate: item '%s' not found", *p ));
+		BLOG((0, "%s:translate: item '%s' not found", client->name, *p ));
 	}
 	return blen;
 }
 
-static short rsc_trans_rw( struct xa_client *client, XA_FILE *rfp, char *txt )
+static short rsc_trans_rw( struct xa_client *client, XA_FILE *rfp, char **txt )
 {
 	short blen = 0;
 	char buf[256];
 
-	if( !rfp || !txt || !*txt )
+	if( !rfp || !txt || !*txt || !**txt )
 		return 0;
 
-	//BLOG((0,"rsc_trans_rw:%s:txt='%s' rsc_lang=%d", client->name, txt, client->options.rsc_lang));
 	if( client->options.rsc_lang == WRITE )
 	{
-		int l = sprintf( buf, sizeof(buf), "nn:%s", txt);
+		int l = sprintf( buf, sizeof(buf), "nn:%s", *txt);
 
 		if( *(buf + l - 1) == ' ' )
 		{
@@ -706,25 +719,28 @@ static short rsc_trans_rw( struct xa_client *client, XA_FILE *rfp, char *txt )
 }
 
 
-//int AdjustObjects = 1;	//<--
+#define MAX_TITLES 32
 
 static void
 fix_objects(struct xa_client *client,
-	    struct xa_rscs *rscs,
-	    CICONBLK **cibh,
-	    short vdih,
-	    void *b,
-	    OBJECT *obj,
-	    unsigned long n,
-	    XA_FILE *rfp
+			struct xa_rscs *rscs,
+			CICONBLK **cibh,
+			short vdih,
+			void *b,
+			OBJECT *obj,
+			unsigned long n,
+			XA_FILE *rfp
 )
 {
 	unsigned long i;
 	short type;
 
+	short shift[MAX_TITLES], n_titles = 0, title = 0;
+
 	DIAG((D_rsrc, client, "fix_objects: b=%lx, cibh=%lx, obj=%lx, num=%ld",
 		b, cibh, obj, n));
-	//BLOGif(!(client == C.Aes || client == C.Hlp), (0, "fix_objects:%s: b=%lx, cibh=%lx, obj=%lx, num=%ld",client->name, b, cibh, obj, n));
+
+	memset( shift, 0, sizeof(shift));
 
 	if( client->options.rsc_lang == WRITE && n && rfp)
 	{
@@ -735,8 +751,6 @@ fix_objects(struct xa_client *client,
 	{
 		type = obj->ob_type & 255;
 
-		//BLOGif(!(client == C.Aes || client == C.Hlp),(0,"%s:ob_type=%d", client->name, type));
-		//BLOGif(type == G_BOX && !(client == C.Aes || client == C.Hlp),(0,"%s:ob_type=%d, free_string=%s", client->name, type,obj->ob_spec.free_string+(long)b-26 ));
 		/* What kind of object is it? */
 		switch (type)
 		{
@@ -754,7 +768,7 @@ fix_objects(struct xa_client *client,
 				obj->ob_spec.free_string += (long)b;
 				if( client->options.rsc_lang && !(type == G_IMAGE) )
 				{
-					char *p;
+					char **p, *pp;
 					short blen;
 
 					if( object_has_tedinfo(obj) )
@@ -762,20 +776,38 @@ fix_objects(struct xa_client *client,
 						TEDINFO *ted = object_get_tedinfo(obj, NULL);
 						if( ted )
 						{
-							p = ted->te_ptext;
+							p = &ted->te_ptext;
 						}
 					}
 					else
-						p = obj->ob_spec.free_string;
+						p = &obj->ob_spec.free_string;
 
-					if( !p || !*p || strchr(p, '\n') )
+					if( !*p || !**p || strchr(*p, '\n') )
 						break;
 
+					pp = *p;
 					blen = rsc_trans_rw( client, rfp, p );
 
-					if( client->options.rsc_lang == READ && blen && /*AdjustObjects && */ obj->ob_type == G_TITLE )
-						obj->ob_width = blen + 1;
+					if( client->options.rsc_lang == READ && blen && obj->ob_type == G_TITLE )
+					{
+						short s = blen - obj->ob_width + 1;
 
+						title = 0;
+						if( n_titles > 0 )
+							obj->ob_x += shift[n_titles-1];
+
+						if( s )
+						{
+							obj->ob_width = blen + 1;
+
+							shift[n_titles] = s;
+						}
+
+						if( n_titles > 0 && n_titles < MAX_TITLES )
+							shift[n_titles] += shift[n_titles-1];
+
+						n_titles++;
+					}
 				}
 				break;
 			}
@@ -811,15 +843,22 @@ fix_objects(struct xa_client *client,
 				obj->ob_spec.userblk = NULL;
 				break;
 			}
-			case G_IBOX:
 			case G_BOX:
+				if( title >= n_titles )
+					title = -1;
+				if( title > 0 )
+				{
+					obj->ob_x += shift[title-1];
+				}
+				if( title >= 0 )
+					title++;
+			case G_IBOX:
 			case G_BOXCHAR:
 			{
 				break;
 			}
 			default:
 			{
-				//BLOG((0, "%s: Unknown object type %d", client->name, type));
 				DIAG((D_rsrc, client, "Unknown object type %d", type));
 				break;
 			}
@@ -882,7 +921,7 @@ fix_trees(struct xa_client *client, void *b, OBJECT **trees, unsigned long n, sh
 							if (ted->te_ptext == (char *)-1L)
 							{
 								((XTEDINFO *)ted->te_ptmplt)->o = aesobj(*trees, k);
-// 								set_aesobj(&((XTEDINFO *)ted->te_ptmplt)->o, *trees, k); //->index = k;
+//								set_aesobj(&((XTEDINFO *)ted->te_ptmplt)->o, *trees, k); //->index = k;
 							}
 							//else
 								//bootlog((0,"%d:%s", obj->ob_type, ted->te_ptmplt));
@@ -1167,11 +1206,11 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 		}
 	}
 
-	fix_chrarray(client, base, (char **)	(base + hdr->rsh_frstr),   hdr->rsh_nstring, &extra_ptr, rfp );
-	fix_chrarray(client, base, (char **)	(base + hdr->rsh_frimg),   hdr->rsh_nimages, &extra_ptr, 0);
+	fix_chrarray(client, base, (char **)	(base + hdr->rsh_frstr),	 hdr->rsh_nstring, &extra_ptr, rfp );
+	fix_chrarray(client, base, (char **)	(base + hdr->rsh_frimg),	 hdr->rsh_nimages, &extra_ptr, 0);
 	fix_tedarray(client, base, (TEDINFO *)	(base + hdr->rsh_tedinfo), hdr->rsh_nted, &extra_ptr);
 	fix_icnarray(client, base, (ICONBLK *)	(base + hdr->rsh_iconblk), hdr->rsh_nib, &extra_ptr);
-	fix_bblarray(client, base, (BITBLK *)	(base + hdr->rsh_bitblk),  hdr->rsh_nbb, &extra_ptr);
+	fix_bblarray(client, base, (BITBLK *) (base + hdr->rsh_bitblk),  hdr->rsh_nbb, &extra_ptr);
 
 	if (hdr->rsh_vrsn & 4)
 	{
@@ -1184,7 +1223,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 		/* this the row of pointers to extensions */
 		/* terminated by a 0L */
 		earray = (unsigned long *)(base + osize);
-		earray++;						/* ozk: skip filesize */
+		earray++; 					/* ozk: skip filesize */
 		if (*earray && *earray != -1L) /* Get colour icons */
 		{
 			cibh = (CICONBLK **)(base + *earray);
@@ -1198,13 +1237,13 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 		 *	present in the resource file is a valid one. The criterias I've
 		 *	implemented here is;
 		 *	1. The resource must have 256 color cicons - else the palette is
-		 *	   not considered at all.
+		 *		 not considered at all.
 		 *	2. The first 16 palette entries are checked and only valid if
-		 *	   there are 16 unique pen indexes.
+		 *		 there are 16 unique pen indexes.
 		 *	3. If check 2 passes, check if there are valid RGB data in the
-		 *	   remaining palette entries. This simply means the check fails
-		 *	   if there is only 0 for r, g and b levels .. not a very reliable
-		 *	   test.
+		 *		 remaining palette entries. This simply means the check fails
+		 *		 if there is only 0 for r, g and b levels .. not a very reliable
+		 *		 test.
 		 */
 		if (maxplanes >= 8 && *earray && *earray != -1L)
 		{
@@ -1216,7 +1255,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 			DIAG((D_rsrc, client, "Color palette present"));
 			p = (struct xa_rsc_rgb *)(base + *earray);
 
-			/* Ozk:	First we check if the first 16 pens have valid data
+			/* Ozk: First we check if the first 16 pens have valid data
 			 *	Valid data means two palette entries can not index
 			 *	the same pen index
 			 */
@@ -1291,9 +1330,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 				{
 					if( **t )
 					{
-						//BLOGif(i == WCTXT_MAIN_TXT,(0,"LoadResources:*t=\n'%s' ->", *t));
-						l = rsc_trans_rw( client, rfp, *t );
-						//BLOGif(i == WCTXT_MAIN_TXT,(0,"LoadResources:*t=\n'%s'", *t));
+						l = rsc_trans_rw( client, rfp, t );
 					}
 				}
 			}
@@ -1320,7 +1357,7 @@ Rsrc_setglobal(RSHDR *h, struct aes_global *gl)
 		gl->lmem = h->rsh_rssize;
 
 		DIAGS(("Resources %ld(%lx) in global[5,6]", o, o));
-		DIAGS(("      and %ld(%lx) in global[7,8]", h, h));
+		DIAGS(("			and %ld(%lx) in global[7,8]", h, h));
 	}
 }
 
@@ -1518,7 +1555,7 @@ ResourceObject(RSHDR *hdr, int num)
 	if (num_nok(nobs))
 		return NULL;
 
-	index = (OBJECT *)((char *)hdr + hdr->rsh_object);// 	start(object);
+	index = (OBJECT *)((char *)hdr + hdr->rsh_object);//	start(object);
 	return index + num;
 }
 
@@ -1571,7 +1608,7 @@ ResourceBitblk(RSHDR *hdr, int num)
 
 /* HR: I think free_strings are the target; The only difference
 			is the return value.
-	   Well at least TERADESK now works the same as with other AES's */
+		 Well at least TERADESK now works the same as with other AES's */
 
 static char *
 ResourceString(RSHDR *hdr, int num)
@@ -1589,8 +1626,8 @@ ResourceString(RSHDR *hdr, int num)
 
 /* Find the image with a given index */
 /* HR: images (like strings) have no fixed length, so they must be held
-       (like strings) in a pointer array, which should have been fixed up.
-       Where????? Well I couldnt find it, so I wrote it, see loader.
+			 (like strings) in a pointer array, which should have been fixed up.
+			 Where????? Well I couldnt find it, so I wrote it, see loader.
  */
 static void *
 ResourceImage(RSHDR *hdr, int num)
@@ -1652,8 +1689,8 @@ XA_rsrc_load(enum locks lock, struct xa_client *client, AESPB *pb)
 	incompatible anyway... <mk>
 
 	HR: suggestion: put them in a list, last in front. So you can free what is
-	    left in XA_client_exit.
-	    7/9/200   done.  As well as the memory allocated for colour icon data.
+			left in XA_client_exit.
+			7/9/200 	done.  As well as the memory allocated for colour icon data.
 */
 		path = shell_find(lock, client, (char*)pb->addrin[0]);
 		if (path)
@@ -1662,11 +1699,11 @@ XA_rsrc_load(enum locks lock, struct xa_client *client, AESPB *pb)
 			DIAG((D_rsrc, client, "rsrc_load('%s')", path));
 
 			rsc = LoadResources(client, path, NULL, DU_RSX_CONV, DU_RSY_CONV, false);
-// 			rsc = LoadResources(client, path, NULL, screen.c_max_w, screen.c_max_h, false);
+//			rsc = LoadResources(client, path, NULL, screen.c_max_w, screen.c_max_h, false);
 			if (rsc)
 			{
 				OBJECT **o;
-// 				(unsigned long)o = (unsigned long)rsc + rsc->rsh_trindex;
+//				(unsigned long)o = (unsigned long)rsc + rsc->rsh_trindex;
 				o = (OBJECT **)((char *)rsc + rsc->rsh_trindex);
 				client->rsrc = rsc;
 				client->trees = o;
@@ -1688,7 +1725,7 @@ XA_rsrc_load(enum locks lock, struct xa_client *client, AESPB *pb)
 					Rsrc_setglobal(rsc, (struct aes_global *)pb->global);
 
 				ret = 1; //pb->intout[0] = 1;
-// 				return XAC_DONE;
+//				return XAC_DONE;
 			}
 			kfree(path);
 		}
@@ -1785,7 +1822,7 @@ XA_rsrc_gaddr(enum locks lock, struct xa_client *client, AESPB *pb)
 					*addr = trees[index];
 					break;
 			}
-			DIAG((D_s,client,"  from pb->global --> %ld",*addr));
+			DIAG((D_s,client,"	from pb->global --> %ld",*addr));
 			pb->intout[0] = 1;
 		}
 		else
@@ -1828,10 +1865,10 @@ XA_rsrc_gaddr(enum locks lock, struct xa_client *client, AESPB *pb)
 		case R_BITBLK:
 			*addr = ResourceBitblk(client->rsrc, index);
 			break;
-/*!*/		case R_STRING:
+/*!*/ 	case R_STRING:
 			*addr = ResourceString(client->rsrc, index);
 			break;
-/*!*/		case R_IMAGEDATA:
+/*!*/ 	case R_IMAGEDATA:
 			*addr = ResourceImage(client->rsrc, index);
 			break;
 		case R_OBSPEC:
@@ -1858,14 +1895,14 @@ XA_rsrc_gaddr(enum locks lock, struct xa_client *client, AESPB *pb)
 		case R_BIPDATA:
 			*addr = ResourceBitblk(client->rsrc, index)->bi_pdata;
 			break;
-/*!*/		case R_FRSTR:
+/*!*/ 	case R_FRSTR:
 			*addr = ResourceFrstr(client->rsrc, index);
 			break;
-/*!*/		case R_FRIMG:
+/*!*/ 	case R_FRIMG:
 			*addr = ResourceFrimg(client->rsrc, index);
 			break;
 		}
-		DIAG((D_s,client,"  --> %lx",*addr));
+		DIAG((D_s,client,"	--> %lx",*addr));
 		pb->intout[0] = 1;
 	}
 	else
