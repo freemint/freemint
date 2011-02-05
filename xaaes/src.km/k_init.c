@@ -31,6 +31,7 @@
 #include "k_main.h"
 #include "k_init.h"
 #include "xa_global.h"
+#include "xa_strings.h"
 
 #include "app_man.h"
 #include "c_window.h"
@@ -840,7 +841,7 @@ k_init(unsigned long vm)
 
 	(*v->api->t_alignment)(v, 0, 5);
 	(*v->api->t_font)(v, cfg.small_font_point, cfg.font_id);
-	screen.standard_font_id  = screen.small_font_id = v->font_rid;
+	screen.standard_font_id  = screen.small_font_id = cfg.font_id;	//v->font_rid;
 	screen.small_font_height = v->font_h;
 	screen.small_font_point  = v->font_rsize;
 	screen.c_min_w = v->cell_w;
@@ -853,12 +854,12 @@ k_init(unsigned long vm)
 	screen.c_max_h = v->cell_h;
 	calc_average_fontsize(v, &screen.c_max_w, &screen.c_max_h, &screen.c_max_dist[0]);
 
-	/*
+
 	BLOG((false, "stdfont: id = %d, size = %d, cw=%d, ch=%d",
  		screen.standard_font_id, screen.standard_font_point, screen.c_max_w, screen.c_max_h));
 	BLOG((false, "smlfont: id = %d, size = %d, cw=%d, ch=%d",
 		screen.small_font_id, screen.small_font_point, screen.c_min_w, screen.c_min_h));
-	*/
+
 	/*
 	 * Init certain things in the info_tab used by appl_getinfo()
 	 */
@@ -1001,9 +1002,9 @@ k_init(unsigned long vm)
 	wt_menu_area(C.Aes->std_menu);
 	set_rootmenu_area(C.Aes);
 
-	C.Aes->mnu_clientlistname = kmalloc(strlen(mnu_clientlistname)+1);
+	C.Aes->mnu_clientlistname = kmalloc(strlen(xa_strings[MNU_CLIENTS]) + 1);
 	assert(C.Aes->mnu_clientlistname);
-	strcpy(C.Aes->mnu_clientlistname, mnu_clientlistname);
+	strcpy(C.Aes->mnu_clientlistname, xa_strings[MNU_CLIENTS]);
 	fix_menu(C.Aes, C.Aes->std_menu, root_window, true);
 	set_menu_widget(root_window, C.Aes, C.Aes->std_menu);
 
