@@ -532,6 +532,7 @@ struct options
 	short wheel_mode;
 	short standard_font_point;	/* if != 0 set standard-font for application */
 	short rsc_lang;		/* try to read strings for rsc from <rsc-basename>.rsl */
+	short ignore_rsc_size;		/* ignore mismatch in actual rscfile-size and size from header */
 	unsigned long wind_opts;			/* Default window options - see struct xa_window.opts */
 	unsigned long app_opts;
 	long half_screen;
