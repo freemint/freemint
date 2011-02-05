@@ -32,6 +32,7 @@
 
 #include "xa_form.h"
 #include "xa_global.h"
+#include "xa_appl.h"
 
 #include "form.h"
 #include "c_window.h"
@@ -403,8 +404,10 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 	b = x / (n_buttons + 1);
 	x = b;
 
-	(*v->api->t_font)(client->vdi_settings, screen.standard_font_point, screen.standard_font_id );
-	(*v->api->t_extent)(client->vdi_settings, "W", &w, &h );
+	set_standard_point(client);
+	h = screen.c_max_h;
+
+	//(*v->api->t_extent)(client->vdi_settings, "W", &w, &h );
 	/* Fill in & show buttons */
 	for (f = 0; f < n_buttons; f++)
 	{
@@ -414,7 +417,7 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 
 		alert_form[ALERT_BUT1 + f].ob_spec.free_string = alertxt->button[f];
 		alert_form[ALERT_BUT1 + f].ob_width = width;
-		alert_form[ALERT_BUT1 + f].ob_height = screen.c_max_h;
+		alert_form[ALERT_BUT1 + f].ob_height = h;
 		alert_form[ALERT_BUT1 + f].ob_x = x;
 
 		alert_form[ALERT_BUT1 + f].ob_flags &= ~(OF_HIDETREE|OF_DEFAULT);
@@ -430,7 +433,7 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 		if (n_lines < 2)
 			nl = 2;
 
-		dh = (ALERT_LINES - nl)*h;	//screen.c_max_h;
+		dh = (ALERT_LINES - nl) * h;
 
 		if( cfg.standard_font_point != screen.standard_font_point )
 		{
@@ -442,7 +445,7 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 			/* current > standard */
 			if( h > h1 )
 			{
-				fh = h * 1024 / h1;
+				fh = screen.c_max_h * 1024 / h1;
 				lh = lh * fh / 1024;
 			}
 			/* current < standard */
