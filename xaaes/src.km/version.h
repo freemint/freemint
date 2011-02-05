@@ -68,8 +68,40 @@
 #define ASCII_DEV_STATUS	"Undefined"
 #endif
 
+#ifdef __mcoldfire__
+ #define _CPU	"ColdFire"
+#else
+ #ifdef mc68060
+  #ifdef mc68020
+   #define _CPU	"m68020-060"
+  #else
+   #define _CPU	"m68060"
+  #endif
+ #else
+  #ifdef mc68040
+   #define _CPU	"m68040"
+  #else
+   #ifdef mc68030
+    #define _CPU	"m68030"
+   #else
+    #ifdef mc68020
+     #define _CPU	"m68020"
+    #else
+     #ifdef mc68010
+      #define _CPU	"m68010"
+     #else
+      #define _CPU	"m68000"
+     #endif
+    #endif
+   #endif
+  #endif
+ #endif
+#endif
+
+
+
 #if (ARCH_TARGET == AES_ARCH_M68K)
-#define ASCII_ARCH_TARGET	"m68k"
+#define ASCII_ARCH_TARGET	_CPU
 #endif
 #ifndef ASCII_ARCH_TARGET
 #define ASCII_ARCH_TARGET	"Undefined"
