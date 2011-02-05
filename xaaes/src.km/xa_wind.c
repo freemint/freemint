@@ -883,6 +883,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				int md = widg->stuff ? 1 : 0;
 				short d;
 				OBJECT *o = ((XA_TREE*)widg->stuff)->tree;
+				struct xa_vdi_settings *v = w->vdi_settings;
 
 				DIAGS(("  --- Set new toolbar"));
 
@@ -929,27 +930,31 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				/* draw correct borders around wa */
 				if( !w->thinwork && md == 0 )
 				{
-					w->wa.x -= 2;
 					w->wa.y -= 2;
-					w->wa.w += 2;
 					w->wa.h += 2;
 				}
+				w->wa.x = w->r.x;	//-= 2;
+				//w->wa.w += 2;
 
 				wt = obtree_to_wt(client, ob);
 				if (!wt)
 					wt = new_widget_tree(client, ob);
 				assert(wt);
-				obj_rectangle(wt, aesobj(ob, 0), &or);
-				wt = set_toolbar_widget(lock, w, client, ob, aesobj(ob, pb->intin[5]), 0, STW_ZEN, NULL, &or);
+
 				widg->r.w = widg->ar.w = ob->ob_width = or.w = w->r.w;
-				//widg->ar.x = ob->ob_x = w->r.x;
+				widg->ar.x = ob->ob_x = w->r.x ;
+
 				//if( md == 1 )	/* changed */
 				{
 					/* send redraw for wa anyway! */
-					w->active_widgets &= ~TOOLBAR;
+					//w->active_widgets &= ~TOOLBAR;
 					/* redraw window without toolbar&vslider */
 					generate_redraws(lock, w, &w->r, RDRW_ALL);
 				}
+
+				obj_rectangle(wt, aesobj(ob, 0), &or);
+				wt = set_toolbar_widget(lock, w, client, ob, aesobj(ob, pb->intin[5]), 0, STW_ZEN, NULL, &or);
+
 				rp_2_ap_cs(w, widg, NULL);
 				if (wt && wt->tree)
 				{
@@ -969,8 +974,14 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 					struct xa_aes_object edobj = aesobj(wt->tree, pb->intin[5]);
 					widg->start = pb->intin[4];
 					obj_edit(wt, w->vdi_settings, ED_INIT, edobj, 0,0, NULL, false, NULL,NULL, NULL,NULL);
+
+					ob->ob_width = widg->ar.w = w->r.w;
+					/* kludge: avoid garbage ... todo: draw frame */
+					(*v->api->f_color)(v, objc_rend.dial_colours.bg_col);
+					(*v->api->f_interior)(v, FIS_SOLID);
+					(*v->api->gbar)(v, 0, &widg->ar);
 				}
-				widg->ar.x = ob->ob_x = w->r.x;
+
 				redraw_toolbar(lock, w, 0);
 				widg->start = 0;
 
