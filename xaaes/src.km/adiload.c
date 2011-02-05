@@ -93,7 +93,10 @@ load_adi(struct basepage *b, const char *name, short *class, short *subclass)
 
 	if (r == -1L)
 	{
-		display("Module %s error, reason: %s", name, reason);
+		char *s = "";
+		if( !strcmp( reason, "Nothing" ) )
+			s = " (possibly from other kernel)";
+		display("Module %s error, reason: %s%s", name, reason, s);
 // 		display("kentry updated, %s too old! Please update it", name);
 	}
 
