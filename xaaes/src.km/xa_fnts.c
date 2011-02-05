@@ -197,6 +197,7 @@ callout_display(struct xa_fnts_item *f, short vdih, long pt, long ratio, RECT *c
 		{
 			short x, y, w, h;
 			short c[8];
+			char inf[256];
 
 			vst_color(vdih, 1);
 			vs_clip(vdih, 1, (short *)clip);
@@ -212,7 +213,7 @@ callout_display(struct xa_fnts_item *f, short vdih, long pt, long ratio, RECT *c
 			x = area->x + (area->w >> 1);
 			y = area->y + (area->h >> 1);
 
-			y -= (h >> 1);
+			//y -= (h >> 1);
 			x -= (w >> 1);
 
 			if (x < area->x)
@@ -221,6 +222,10 @@ callout_display(struct xa_fnts_item *f, short vdih, long pt, long ratio, RECT *c
 				y = area->y;
 
 			v_gtext(vdih, x, y, txt);
+			sprintf( inf, sizeof(inf)-1, "id:%d,h:%d", (short)f->f.id, h);
+			vst_font(vdih, 1 );
+			vst_point(vdih, 9, &x, &x, &x, &x);
+			v_gtext(vdih, area->x, area->y, inf);
 		}
 	}
 }
