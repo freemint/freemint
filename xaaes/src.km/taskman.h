@@ -35,6 +35,11 @@ struct xa_window * _cdecl create_dwind(enum locks lock, XA_WIND_ATTR tp, char *t
 struct helpthread_data * get_helpthread_data(struct xa_client *client);
 
 extern struct xa_wtxt_inf norm_txt;
+extern struct xa_wtxt_inf acc_txt;
+extern struct xa_wtxt_inf prg_txt;
+extern struct xa_wtxt_inf sys_txt;
+extern struct xa_wtxt_inf sys_thrd;
+extern struct xa_wtxt_inf desk_txt;
 
 int xaaes_do_form_alert( enum locks lock, struct xa_client *client, int def_butt, char al_text[] );
 
