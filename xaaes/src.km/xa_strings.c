@@ -29,13 +29,19 @@ char *xa_strings[] = {
 "Could not load %s.tbl from %s (%ld)         ",
 "Cannot terminate AES system proccesses!               ",
 "Cannot kill XaAES!                    ",
-"XaAES: No AES Parameter Block, returning. ",
+"XaAES: No AES Parameter Block, returning.          ",
 "XaAES: Non-AES process issued AES system call %i, killing it!             ",
 "%s: Validate OBTREE for %s failed, object ptr = %lx, killing it!             ",
 "attach_extension for %u failed, out of memory?           ",
 "umalloc for %u failed, out of memory?           ",
 "XaAES: Print dialogs unavailable with current VDI.         ",
 "launch: Cannot enter single-task-mode. Already in single-task-mode: %s(%d).        ",
+"XaAES: %s%s, client with no globl_ptr, killing it",
+"XaAES: AES shell already running!",
+"XaAES: No AES shell set; See 'shell =' configuration variable in xaaes.cnf",
+
+"  Clients \3",
+
 /* help-file */
 "xa_help.txt",
 	0
@@ -55,24 +61,26 @@ char *wctxt_main_txt[] =
  "\255Quit        ",
  "\255Kill        ",
  "",
-	"\255Keep above others        ",
-	"\255Keep below others        ",
-	"\255Toolbox attribute        ",
-	"\255Deny keyboard focus      ",
+	"\255Keep above others           ",
+	"\255Keep below others           ",
+	"\255Toolbox attribute           ",
+	"\255Deny keyboard focus         ",
 	"",
-	"\255This                ",
-	"\255All                 ",
-	"\255All others          ",
-	"\255Restore all         ",
-	"\255Restore all others  ",
+	"\255This                      ",
+	"\255All                       ",
+	"\255All others                ",
+	"\255Restore all               ",
+	"\255Restore all others        ",
 	"",
-	"\255This window             ",
-	"\255Application             ",
-	"\255Other apps              ",
-	"\255Show other apps         ",
+	"\255This window              ",
+	"\255Application              ",
+	"\255Other apps               ",
+	"\255Show other apps          ",
 	"","",
 	0
 };
+
+//const char mnu_clientlistname[] =
 
 
 #if XAAES_RELEASE
