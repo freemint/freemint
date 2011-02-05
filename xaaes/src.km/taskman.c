@@ -126,7 +126,7 @@ static int ker_stat( int pid, char *what, long pinfo[] );
 
 };
 
-static struct xa_wtxt_inf acc_txt =
+/*static*/ struct xa_wtxt_inf acc_txt =
 {
  WTXT_NOCLIP,
 /* id  pnts  flags wrm,     efx   fgc      bgc   banner x_3dact y_3dact texture */
@@ -136,7 +136,7 @@ static struct xa_wtxt_inf acc_txt =
 
 };
 
-static struct xa_wtxt_inf prg_txt =
+/*static*/ struct xa_wtxt_inf prg_txt =
 {
  WTXT_NOCLIP,
 /* id  pnts  flags wrm,     efx   fgc      bgc   banner x_3dact y_3dact texture */
@@ -146,7 +146,7 @@ static struct xa_wtxt_inf prg_txt =
 
 };
 
-static struct xa_wtxt_inf sys_txt =
+/*static*/ struct xa_wtxt_inf sys_txt =
 {
  WTXT_NOCLIP,
 /* id  pnts  flags wrm,     efx   fgc      bgc   banner x_3dact y_3dact texture */
@@ -156,7 +156,7 @@ static struct xa_wtxt_inf sys_txt =
 
 };
 
-static struct xa_wtxt_inf sys_thrd =
+/*static*/ struct xa_wtxt_inf sys_thrd =
 {
  WTXT_NOCLIP,
 /* id  pnts  flags wrm,     efx   fgc      bgc   banner x_3dact y_3dact texture */
@@ -166,7 +166,7 @@ static struct xa_wtxt_inf sys_thrd =
 
 };
 
-static struct xa_wtxt_inf desk_txt =
+/*static*/ struct xa_wtxt_inf desk_txt =
 {
  WTXT_NOCLIP,
 /* id  pnts  flags wrm,     efx   fgc      bgc   banner x_3dact y_3dact texture */
@@ -233,22 +233,26 @@ short set_xa_fnt( int pt, struct xa_wtxt_inf *wp[], OBJECT *obtree, int objs[], 
 		wpp = &norm_txt;
 
 
-	if( pt != wpp->n.p )
-	{
+	if( wpp->n.p < 0 )
 		wpp->n.p = pt;
-		C.Aes->vdi_settings->api->text_extent(C.Aes->vdi_settings, "X", &wpp->n, &w, &h);
+
+	C.Aes->vdi_settings->api->text_extent(C.Aes->vdi_settings, "X", &wpp->n, &w, &oldh);
+	oldpt = wpp->n.p;
+	//if( pt != wpp->n.p )
+	{
 		if( wpp->n.p != pt )
 		{
-			oldpt = wpp->n.p;
 			if( pt > wpp->n.p )
 				i = 1;
 			else
 				i = -1;
 
 			wpp->n.p += i;
-			for( C.Aes->vdi_settings->api->text_extent(C.Aes->vdi_settings, "X", &wpp->n, &w, &h), oldh = h;
-					oldh == h && wpp->n.p < 66 && wpp->n.p > 0;)
+			for( C.Aes->vdi_settings->api->text_extent(C.Aes->vdi_settings, "X", &wpp->n, &w, &h);//, oldh = h;
+					wpp->n.p < 65 && wpp->n.p > 0;)
 			{
+				if( oldh != h )
+					break;
 				wpp->n.p += i;
 				C.Aes->vdi_settings->api->text_extent(C.Aes->vdi_settings, "X", &wpp->n, &w, &h);
 			}
@@ -1484,7 +1488,6 @@ taskmanager_form_exit(struct xa_client *Client,
 					struct xa_window *wi = list->cur->data;
 					if( list->cur->data != wind )
 					{
-						//BLOG((0,"TM_OK:%s:window_status=%lx", wi->wname, wi->window_status));
 						if( !(wi->window_status & XAWS_OPEN) || (wi->window_status & XAWS_BINDFOCUS)
 							|| (wi->dial
 								& ( created_for_SLIST
@@ -1677,7 +1680,7 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 		wt->flags |= WTF_TREE_ALLOC | WTF_AUTOFREE;
 #if 1
 		/* resize window if < 10-point-font */
-		if( screen.c_max_h < 16 ){
+		if( screen.c_max_h < 14 ){
 			short d = 16 / screen.c_max_h, dy;
 
 			obtree->ob_height *= d;
@@ -2866,9 +2869,9 @@ do_system_menu(enum locks lock, int clicked_title, int menu_item)
 		case SYS_MN_DESK:
 		{
 			if (C.DSKpid >= 0)
-				ALERT((/*shell_running*/"XaAES: AES shell already running!"));
+				ALERT((/*shell_running*/xa_strings[AL_SHELLRUNS]/*"XaAES: AES shell already running!"*/));
 			else if (!*C.desk)
-				ALERT((/*no_shell*/"XaAES: No AES shell set; See 'shell =' configuration variable in xaaes.cnf"));
+				ALERT((/*no_shell*/xa_strings[AL_NOSHELL]/*"XaAES: No AES shell set; See 'shell =' configuration variable in xaaes.cnf"*/));
 			else
 				C.DSKpid = launch(lock, 0,0,0, C.desk, "\0", C.Aes);
 			break;
