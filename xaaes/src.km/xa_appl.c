@@ -242,10 +242,10 @@ init_client(enum locks lock, bool sysclient)
 
 	if (sysclient) {
 		client->ut = kmalloc(xa_user_things.len);
-		client->mnu_clientlistname = kmalloc(strlen(mnu_clientlistname)+1);
+		client->mnu_clientlistname = kmalloc(strlen(xa_strings[MNU_CLIENTS])+1);
 	} else {
 		client->ut = umalloc(xa_user_things.len);
-		client->mnu_clientlistname = umalloc(strlen(mnu_clientlistname)+1);
+		client->mnu_clientlistname = umalloc(strlen(xa_strings[MNU_CLIENTS])+1);
 	}
 
 	if (!client->ut || !client->mnu_clientlistname) {
@@ -290,7 +290,7 @@ init_client(enum locks lock, bool sysclient)
 	 * temporarily...
 	 * When changing this, also change it in k_init.c for the AESSYS
 	 */
-	strcpy(client->mnu_clientlistname, mnu_clientlistname);
+	strcpy(client->mnu_clientlistname, xa_strings[MNU_CLIENTS]);
 
 	strncpy(client->proc_name, client->p->name, 8);
 	f = strlen(client->proc_name);
@@ -1612,6 +1612,7 @@ XA_appl_getinfo(enum locks lock, struct xa_client *client, AESPB *pb)
 		}
 	}
 
+	info_tab[0][0] = client->options.standard_font_point;
 	if (gi_type != -1) {
 		if (n_intout > 5) n_intout = 5;
 
