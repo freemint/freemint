@@ -640,7 +640,8 @@ init_objects(void)
 /*
  * display or remove object-cursor
  * sr: coords of object
- * md: 1: show, 0: remove
+ * md & 1 1: show, 0: remove
+ * md & 2 1: toolbar, 0: other
  */
 static void do_object_cursor( struct xa_vdi_settings *v, RECT *sr, short md)
 {
@@ -654,11 +655,29 @@ static void do_object_cursor( struct xa_vdi_settings *v, RECT *sr, short md)
 		c = conv.c;
 #endif
 	/* this should in fact be the parent-color */
-	short color = md ? G_RED : (screen.planes > 1 ? G_LWHITE : G_WHITE);
+	short color = 0;
+	//short color = md ? G_RED : (screen.planes > 1 ? G_LWHITE : G_WHITE);
+	switch( md )
+	{
+	case 0:
+		color = screen.planes > 1 ? G_LWHITE : G_WHITE;
+	break;
+	case 1:
+		color = G_RED;
+	break;
+	case 2:
+		return;
+		//color = G_BLACK;
+	break;
+	case 3:
+		return;
+		//color = G_LWHITE;
+	break;
+	}
 	(*v->api->wr_mode)(v, MD_REPLACE);
 	(*v->api->l_color)(v, color);
 	(*v->api->l_width)(v, 1);
-	if( md == 1 )
+	if( md & 1 )
 	{
 		(*v->api->l_type)(v, USERLINE);
 		(*v->api->l_udsty)(v, 0xaaaa);
@@ -767,7 +786,7 @@ display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, struct x
 	else
 	{
 		if (flags & UNDRAW_FOCUS)
-			do_object_cursor(v, &sr, 0);
+			do_object_cursor(v, &sr, (wt->wind->dial & created_for_TOOLBAR) ? 2 : 0);
 		else
 			(*v->api->wr_mode)(v, MD_REPLACE);
 	}
@@ -840,9 +859,10 @@ display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, struct x
 	{
 		if (wt->e.c_state || wt->wind )		/* wt->wind is for wdialogs */
 		{
-
-			if( !(wt->wind && (wt->wind->dial & created_for_TOOLBAR)) )
-				do_object_cursor(v, &sr, 1);
+			enum window_type dial = created_for_CLIENT;
+			if( wt->wind )
+				dial = wt->wind->dial;
+			do_object_cursor(v, &sr, (dial & created_for_TOOLBAR) ? 3 : 1);
 		}
 	}
 
