@@ -621,6 +621,8 @@ pCB_app_options(char *line)
 				//get_boolarg(s + 4, &opts->naes);
 			else if (!strnicmp(s, "rsc_lang", 8))
 				get_argument(s + 8, &opts->rsc_lang);
+			else if (!strnicmp(s, "ignore_rsc_size", 15))
+				get_argument(s + 15, &opts->ignore_rsc_size);
 			else if (!strnicmp(s, "winframe_size", 13))
 				get_argument(s + 13, &opts->thinframe);
 			else if (!strnicmp(s, "inhibit_hide", 12))
