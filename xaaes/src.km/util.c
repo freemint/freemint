@@ -218,7 +218,7 @@ XA_FILE *xa_fopen( char *fn, int rwmd )
 	ret = kmalloc( sizeof( XA_FILE ) );
 	if( !ret )
 	{
-		BLOG((0,"xa_fopen: malloc for %s", fn));
+		BLOG((0,"xa_fopen: malloc failed for %s", fn));
 		return 0;
 	}
 	ret->k_fp = fp;
