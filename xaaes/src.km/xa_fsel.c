@@ -370,6 +370,64 @@ modify_mult_state(struct scroll_info *list, void *parent, short bits, short mask
 	p.level.curlevel = 0;
 	list->set(list, parent, SESET_M_STATE, (long)&p, NORMREDRAW);
 }
+
+static void set_tabs( struct scroll_info *list, struct fsel_data *fs)
+{
+	struct seset_tab tab;
+
+	tab.index = FSLIDX_NAME;
+	tab.flags = 0;
+	tab.r = (RECT){0,0,-50,0};
+	if (!fs->treeview && !fs->rtbuild)
+		tab.r.w = -MINWIDTH;
+
+	list->set(list, NULL, SESET_TAB, (long)&tab, false);
+
+	tab.index = FSLIDX_SIZE;
+	tab.flags |= SETAB_RJUST;
+	tab.r.w = 0; //-10; //(RECT){0,0,-10,0};
+	list->set(list, NULL, SESET_TAB, (long)&tab, false);
+
+	tab.index = FSLIDX_TIME;
+	tab.flags = 0;	//SETAB_CJUST;
+	tab.r.w = 0; //-10;
+	list->set(list, NULL, SESET_TAB, (long)&tab, false);
+
+	tab.index = FSLIDX_DATE;
+	tab.flags = 0;
+	tab.r.w = 0; //-20;
+	list->set(list, NULL, SESET_TAB, (long)&tab, false);
+
+	tab.index = FSLIDX_FLAG;
+	tab.flags = 0;
+	tab.r.w = 0; //-10;
+	list->set(list, NULL, SESET_TAB, (long)&tab, false);
+
+//			tab.index = 3;
+//			tab.flags = 0;
+//			tab.r = (RECT){0,0,-2,0};
+//			list->set(list, NULL, SESET_TAB, (long)&tab, false);
+
+
+#if 0
+	list->get(list, NULL, SEGET_LISTXYWH, &r);
+
+	w = r.w >> 2;
+
+	tab.index = 1;
+	list->get(list, NULL, SEGET_TEXTTAB, &tab);
+	tab.r.w = w * 3;
+	list->set(list, NULL, SESET_TEXTTAB, (long)&tab, false);
+
+	tab.index = 2;
+	list->get(list, NULL, SEGET_TEXTTAB, &tab);
+	tab.r.w = w;
+	tab.flags |= SETAB_RJUST;
+	list->set(list, NULL, SESET_TEXTTAB, (long)&tab, false);
+#endif
+}
+
+
 #if INCLUDE_UNUSED
 static void
 set_selected(struct scroll_info *list, struct scroll_entry *this)
@@ -1401,7 +1459,7 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 			/* this is not elaborated
 			 * try to adapt the 1st distance
 			 */
-			//if (!fs->treeview)
+			if (!fs->treeview)
 			{
 				short w = 1, h = ((max_namlen + max_szlen)* w) + 10;
 				struct seset_tab tab;
@@ -1412,12 +1470,12 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 				else if( h > MAXWIDTH )
 					h = MAXWIDTH;
 
-				if( fs->treeview || fs->rtbuild )
+				if( fs->rtbuild )
 					h += 10;
 
-				/*list->vdi_settings->api->text_extent(list->vdi_settings, T, &fs_norm_txt.n, &w, &h);*/
+				/*list->vdi_settings->api->text_extent(list->vdi_settings, "X", &fs_norm_txt.n, &w, &h);*/
+
 				tab.r = (RECT){0,0,-h, 0};
-				//list->tabs[FSLIDX_NAME].v = tab.r;
 				list->set(list, NULL, SESET_TAB, (long)&tab, false);
 			}
 			PROFILE(( "fsel: dir closed %d items", num ));
@@ -1492,6 +1550,13 @@ refresh_filelist(enum locks lock, struct fsel_data *fs, SCROLL_ENTRY *dir_ent)
 	list = object_get_slist(sl);
 
 	fs->point = set_xa_fnt( fs->point + fs->fntinc, wp, form, objs, list );
+
+	if( fs->fntinc )
+	{
+		list->widest = 0;
+		list->char_width = 0;
+		set_tabs( list, fs );
+	}
 
 	fs->fntinc = 0;
 
@@ -1607,12 +1672,14 @@ fsel_drives(OBJECT *m, int drive, long *dmapp)
 	return drvs;
 }
 
+#define P_free_string_len	18
+
 static void
 fsel_filters(OBJECT *m, char *pattern)
 {
 	char p[16];
 	int d = FSEL_PATA;
-	int i = 0;
+	int i = 0, l;
 
 	add_pattern(pattern);
 
@@ -1627,8 +1694,14 @@ fsel_filters(OBJECT *m, char *pattern)
 				m[d].ob_state |= OS_CHECKED;
 			}
 			m[d].ob_flags &= ~OF_HIDETREE;	/* may be a new pattern */
-			sprintf(m[d].ob_spec.free_string, 128, " "" %s", fs_patterns[i++]);
-			m[d++].ob_spec.free_string[15] = 0;
+			l = sprintf(m[d].ob_spec.free_string, P_free_string_len, " %s", fs_patterns[i++]);
+			l *= screen.c_max_w;
+			if( m[FSEL_PATBOX].ob_width < l )
+				m[d].ob_width = m[FSEL_PATBOX].ob_width = l;
+
+
+			//m[d].ob_spec.free_string[15] = 0;
+			d++;
 		}
 
 		m[FSEL_PATBOX].ob_height = i * screen.c_max_h;
@@ -2005,6 +2078,7 @@ static void fs_set_shortcut_letter( OBJECT *o, long dmap )
 	int b;
 	long dmask;
 
+	for( ; *text == ' '; text++ );
 	for( b = 0, dmask = 1; *text; text++, b++, dmask <<= 1 )
 		if( !( ( 1 << (tolower(*text) - 'a') ) & dmap) )
 			break;
@@ -2699,6 +2773,23 @@ fs_init_menu(struct fsel_data *fs)
 	obtree[FSM_SORTBYNAME + fs->sort].ob_state |= OS_CHECKED;
 
 	fs->rtbuild = rtbuild;
+	fs_norm_txt.n.f = cfg.font_id;
+	fs_norm_txt.s.f = cfg.font_id;
+	fs_norm_txt.h.f = cfg.font_id;
+
+	exe_txt.n.f = cfg.font_id;
+	exe_txt.s.f = cfg.font_id;
+	exe_txt.h.f = cfg.font_id;
+
+	dexe_txt.n.f = cfg.font_id;
+	dexe_txt.s.f = cfg.font_id;
+	dexe_txt.h.f = cfg.font_id;
+
+	dir_txt.n.f = cfg.font_id;
+	dir_txt.s.f = cfg.font_id;
+	dir_txt.h.f = cfg.font_id;
+
+
 }
 
 /* ignore updatelocks for fsel (does not work) */
@@ -3129,62 +3220,9 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 				 NULL, NULL, NULL, NULL/*free_scrollist*/,
 				 /*title,info,data,lmax*/
 				 fs->path, NULL, fs, 30);
-		{
-			struct seset_tab tab;
-//			RECT r;
-//			short w;
 
-			tab.index = FSLIDX_NAME;
-			tab.flags = 0;
-			tab.r = (RECT){0,0,-50,0};
-			if (!fs->treeview && !fs->rtbuild)
-				tab.r.w = -MINWIDTH;
+		set_tabs(list, fs);
 
-			list->set(list, NULL, SESET_TAB, (long)&tab, false);
-
-			tab.index = FSLIDX_SIZE;
-			tab.flags |= SETAB_RJUST;
-			tab.r.w = 0; //-10; //(RECT){0,0,-10,0};
-			list->set(list, NULL, SESET_TAB, (long)&tab, false);
-
-			tab.index = FSLIDX_TIME;
-			tab.flags = 0;	//SETAB_CJUST;
-			tab.r.w = 0; //-10;
-			list->set(list, NULL, SESET_TAB, (long)&tab, false);
-
-			tab.index = FSLIDX_DATE;
-			tab.flags = 0;
-			tab.r.w = 0; //-20;
-			list->set(list, NULL, SESET_TAB, (long)&tab, false);
-
-			tab.index = FSLIDX_FLAG;
-			tab.flags = 0;
-			tab.r.w = 0; //-10;
-			list->set(list, NULL, SESET_TAB, (long)&tab, false);
-
-//			tab.index = 3;
-//			tab.flags = 0;
-//			tab.r = (RECT){0,0,-2,0};
-//			list->set(list, NULL, SESET_TAB, (long)&tab, false);
-
-
-#if 0
-			list->get(list, NULL, SEGET_LISTXYWH, &r);
-
-			w = r.w >> 2;
-
-			tab.index = 1;
-			list->get(list, NULL, SEGET_TEXTTAB, &tab);
-			tab.r.w = w * 3;
-			list->set(list, NULL, SESET_TEXTTAB, (long)&tab, false);
-
-			tab.index = 2;
-			list->get(list, NULL, SEGET_TEXTTAB, &tab);
-			tab.r.w = w;
-			tab.flags |= SETAB_RJUST;
-			list->set(list, NULL, SESET_TEXTTAB, (long)&tab, false);
-#endif
-		}
 		/* HR: after set_menu_widget (fs_destructor must cover what is in menu_destructor())
 		 *		 Set the window destructor
 		 */
@@ -3336,12 +3374,14 @@ do_fsel_exinput(enum locks lock, struct xa_client *client, AESPB *pb, const char
 
 	if (fs)
 	{
+		int font_point = client->options.standard_font_point;
 
 		DIAG((D_fsel, NULL, "fsel_(ex)input: title=%s, path=%s, file=%s, fs=%lx",
 			text, path, file, fs));
 	//	display("fsel_(ex)input: title=(%lx)%s, path=(%lx)%s, file=(%lx)%s, fs=%lx",
 	//		text, text, path, path, file, file, fs);
 
+		client->options.standard_font_point = cfg.standard_font_point;
 		if (open_fileselector1( lock|fsel,
 					client,
 					fs,
@@ -3380,6 +3420,7 @@ do_fsel_exinput(enum locks lock, struct xa_client *client, AESPB *pb, const char
 			}
 		}
 		kfree(fs);
+		client->options.standard_font_point = font_point;
 	}
 }
 
