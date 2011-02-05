@@ -435,7 +435,7 @@ recalc_tabs(struct scroll_info *list)
 		totalw += tabs->r.w;
 	}
 
-	if (list->widest < totalw)
+	if (list->widest == 0 || list->widest < totalw)
 		list->widest = list->total_w = totalw;
 
 
@@ -467,18 +467,25 @@ calc_entry_wh(SCROLL_INFO *list, SCROLL_ENTRY *this)
 					c->c.text.w = list->char_width * l;	/* assuming unprop. font! */
 					c->c.text.h = c->prev->c.text.h;
 				}
-				else{
-					struct xa_fnt_info *f = c->fnt ? &c->fnt->n : &this->fnt->n;
-					{
-						PROFRECp(
-						*list->vdi_settings->api->,text_extent,(list->vdi_settings, s,
-								f, &c->c.text.w, &c->c.text.h));
-					}
-
-					if( l )
-						list->char_width = c->c.text.w / l;
-
+#if 0
+				else if( this->prev )	// && CONST_FONT ..
+				{
+					struct se_content *cp = (struct se_content *)this->prev->content;
+					c->c.text.w = list->char_width * l;	/* assuming unprop. font! */
+					c->c.text.h = cp->c.text.h;
 				}
+#endif
+				else
+				{
+					struct xa_fnt_info *f = c->fnt ? &c->fnt->n : &this->fnt->n;
+					PROFRECp(
+					*list->vdi_settings->api->,text_extent,(list->vdi_settings, s,
+							f, &c->c.text.w, &c->c.text.h));
+				}
+
+				if( l )
+					list->char_width = c->c.text.w / l;
+
 				ew = c->c.text.w + 2;
 				eh = c->c.text.h;
 				if (c->c.text.icon.icon)
