@@ -67,8 +67,6 @@ short border_mouse[CDV] =
 
 XA_PENDING_WIDGET widget_active;
 
-const char mnu_clientlistname[] = "  Clients \3";
-
 // XA_TREE nil_tree;
 
 struct xa_client *
