@@ -3194,8 +3194,9 @@ s_menu_size(struct xa_window *wind, struct xa_widget *widg)
 {
 	struct xa_vdi_settings *v = wind->vdi_settings;
 	short w, h;
+	//extern struct xa_screen screen;
 
-	(*v->api->t_font)(v, scrninf->standard_font_point, scrninf->standard_font_id);
+	(*v->api->t_font)(v, wind->owner->options.standard_font_point, scrninf->standard_font_id);
 	(*v->api->t_effects)(v, 0);
 	(*v->api->t_extent)(v, "A", &w, &h);
 
@@ -4087,12 +4088,37 @@ init_module(const struct xa_module_api *xmapi, const struct xa_screen *screen, c
 			def_utop_cols.title_txt.h.p = 9;
 		}
 
+		/* set window-title and info-font-id */
+		def_otop_cols.title_txt.n.f= cfg.font_id;
+		def_otop_cols.title_txt.s.f= cfg.font_id;
+		def_otop_cols.title_txt.h.f= cfg.font_id;
+		def_utop_cols.title_txt.n.f= cfg.font_id;
+		def_utop_cols.title_txt.s.f= cfg.font_id;
+		def_utop_cols.title_txt.h.f= cfg.font_id;
+
+		def_otop_cols.info_txt.n.f = cfg.font_id;
+		def_otop_cols.info_txt.s.f = cfg.font_id;
+		def_otop_cols.info_txt.h.f = cfg.font_id;
+		def_utop_cols.info_txt.n.f = cfg.font_id;
+		def_utop_cols.info_txt.s.f = cfg.font_id;
+		def_utop_cols.info_txt.h.f = cfg.font_id;
+
+		/* set slist-window-title font-id */
+		slist_def_otop_cols.title_txt.n.f= cfg.font_id;
+		slist_def_otop_cols.title_txt.s.f= cfg.font_id;
+		slist_def_otop_cols.title_txt.h.f= cfg.font_id;
+		slist_def_utop_cols.title_txt.n.f= cfg.font_id;
+		slist_def_utop_cols.title_txt.s.f= cfg.font_id;
+		slist_def_utop_cols.title_txt.h.f= cfg.font_id;
+
+		/* set infoline-point */
 		def_otop_cols.info_txt.n.p = cfg.info_font_point;
 		def_otop_cols.info_txt.s.p = cfg.info_font_point;
 		def_otop_cols.info_txt.h.p = cfg.info_font_point;
 		def_utop_cols.info_txt.n.p = cfg.info_font_point;
 		def_utop_cols.info_txt.s.p = cfg.info_font_point;
 		def_utop_cols.info_txt.h.p = cfg.info_font_point;
+
 
 	}
 	else
@@ -4248,7 +4274,7 @@ new_color_theme(void *_module, short win_class, void **ontop, void **untop)
 #endif
 				break;
 			default:
-			{
+ 			{
 				*new_ontop = MONO ? mono_def_otop_cols : def_otop_cols;
 				*new_untop = MONO ? mono_def_utop_cols : def_utop_cols;
 				break;
@@ -4322,3 +4348,4 @@ main_xa_theme(struct xa_module_widget_theme **ret)
 {
 	*ret = &module;
 }
+
