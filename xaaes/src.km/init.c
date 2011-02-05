@@ -336,6 +336,7 @@ init(struct kentry *k, const struct kernel_module *km) //const char *path)
 	long stk = (long)get_sp();
 #endif
 	long err = 0L;
+	int i=0;
 	bool first = true;
 	struct proc *rootproc;
 
@@ -431,7 +432,7 @@ again:
 			goto error;
 		}
 
-		/* look is there is an moose.adi
+		/* look is there is a moose.adi
 		 * terminate if yes; moose.adi must be in XaAES module directory
 		 */
 		flag = sysfile_exists(sysdir, "moose_w.adi");
@@ -695,11 +696,48 @@ again:
 				cfg.lang[1] = countrycodes[err+1];
 			}
 	}
+	if( cfg.lang[0] )
+	{
+		char *p = strstr( countrycodes, cfg.lang );
+		if( p )
+		{
+			extern short info_tab[][4];
+			i = p - countrycodes;
+			i /= 2;
+			info_tab[3][0] = i;
+		}
+	}
 
-	BLOG((0,"lang='%s' (from %s).",cfg.lang, err == -1 ? "config" : (err == -2 ? "Environ" : "AKP") ));
+	BLOG((0,"lang='%s(%d)' (from %s).",cfg.lang, i, err == -1 ? "config" : (err == -2 ? "Environ" : "AKP") ));
 
 	if( cfg.info_font_point == -1 )
 		cfg.info_font_point = cfg.standard_font_point;
+
+	/* XaAES-windows */
+	norm_txt.n.f = cfg.font_id;
+	norm_txt.s.f = cfg.font_id;
+	norm_txt.h.f = cfg.font_id;
+
+	acc_txt.n.f = cfg.font_id;
+	acc_txt.s.f = cfg.font_id;
+	acc_txt.h.f = cfg.font_id;
+
+	prg_txt.n.f = cfg.font_id;
+	prg_txt.s.f = cfg.font_id;
+	prg_txt.h.f = cfg.font_id;
+
+	sys_txt.n.f = cfg.font_id;
+	sys_txt.s.f = cfg.font_id;
+	sys_txt.h.f = cfg.font_id;
+
+	sys_thrd.n.f = cfg.font_id;
+	sys_thrd.s.f = cfg.font_id;
+	sys_thrd.h.f = cfg.font_id;
+
+	desk_txt.n.f = cfg.font_id;
+	desk_txt.s.f = cfg.font_id;
+	desk_txt.h.f = cfg.font_id;
+
 
 	C.Aes->options.standard_font_point = cfg.standard_font_point;
 	//C.Aes->options = default_options;
