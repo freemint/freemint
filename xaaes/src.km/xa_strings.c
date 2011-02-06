@@ -38,7 +38,7 @@ char *xa_strings[] = {
 "launch: Cannot enter single-task-mode. Already in single-task-mode: %s(%d).        ",
 "XaAES: %s%s, client with no globl_ptr, killing it",
 "XaAES: AES shell already running!",
-"XaAES: No AES shell set; See 'shell =' configuration variable in xaaes.cnf",
+"XaAES: No AES shell set, see 'shell =' configuration variable in xaaes.cnf.            ",
 
 "  Clients \3",
 
