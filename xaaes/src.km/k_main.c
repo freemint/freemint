@@ -1158,7 +1158,6 @@ helpthread_entry(void *c)
 	if (C.Hlp_pb)
 	{
 // 		display("free pb");
-		BLOG((0,"helpthread_entry:kfree(%lx)",C.Hlp_pb));
 		kfree(C.Hlp_pb);
 		C.Hlp_pb = NULL;
 	}
