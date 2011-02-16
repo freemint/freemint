@@ -494,35 +494,56 @@ set_wrkin(short *in, short dev)
 		in[i] = 0;
 }
 
-static void
+static short
 calc_average_fontsize(struct xa_vdi_settings *v, short *maxw, short *maxh, short *dist)
 {
 	short i, j, count = 0, cellw, tmp;
+	short d, w = 0;
 	short temp[8];
-	unsigned long wch = 0;
+	unsigned long wch = 0, dev = 0;
 
-	for (i = 0; i < 256; i++)
+	for (i = 1; i < 256; i++)
 	{
 		j = vqt_width(v->handle, i, &cellw, &tmp, &tmp);
 		if (j >= 0)
 		{
 			count++;
 			wch += cellw;
+			if( w > 0 ){
+				d = cellw - w;
+				dev += d * d;
+			}
+			w = cellw;
 		}
 // 		display("i=%d, j=%d, count=%d, cellw=%d, totalw=%ld", i, j, count, cellw, wch);
 	}
 	if (count)
 	{
-		*maxw = (wch / count);
+		*maxw = (wch+(count/2)) / count;
+		dev *= 1000;
+		dev /= count;
+ 		//BLOG((0,"font-height:%2d: cellw=%d, dev=%ld", *maxh, *maxw, dev));
+	}
+	else
+	{
+		BLOG((0,"font has no width, assuming 8!" ));
+		*maxw = 8;
 	}
 	(*v->api->t_extent)(v, "A_", &cellw, &tmp);
 	*maxh = tmp;
+
+	if( *maxh <= 0 ){
+		BLOG((0,"font has no height, assuming 16!" ));
+		*maxh = 16;
+	}
 
 	vqt_fontinfo(v->handle, &i, &i, dist, &i, temp);
 
 // 	display("w %d(%d), h %d", *maxw, tmp, *maxh);
 // 	display("dists %d, %d, %d, %d, %d - %d, %d", dist[0], dist[1], dist[2], dist[3], dist[4]);
 // 	display("effex %d, %d, %d", temp[0], temp[1], temp[2]);
+
+	return dev;
 }
 
 int
@@ -530,6 +551,7 @@ k_init(unsigned long vm)
 {
 	short work_in[16];
 	short work_out[58];
+	short dev1, dev2;
 	char *resource_name;
 	struct xa_vdi_settings *v = &global_vdi_settings;
 
@@ -823,8 +845,8 @@ k_init(unsigned long vm)
 // 	get_syspalette(C.P_handle, screen.palette);
 
 	screen.pixel_fmt = detect_pixel_format(v);
-	BLOG((false, "Video info: width(%d/%d), planes :%d, colours %d pixel-format %d palsz=%ld",
-		screen.r.w, screen.r.h, screen.planes, screen.colours, screen.pixel_fmt, sizeof(screen.palette)));
+	BLOG((false, "Video info: width(%d/%d), planes :%d, colours %d pixel-format %d",
+		screen.r.w, screen.r.h, screen.planes, screen.colours, screen.pixel_fmt));
 
 // 	display("Video info: width(%d/%d), planes :%d, colours %d, pixelfmt = %d",
 // 		screen.r.w, screen.r.h, screen.planes, screen.colours, screen.pixel_fmt);
@@ -846,19 +868,19 @@ k_init(unsigned long vm)
 	screen.small_font_point  = v->font_rsize;
 	screen.c_min_w = v->cell_w;
 	screen.c_min_h = v->cell_h;
-	calc_average_fontsize(v, &screen.c_min_w, &screen.c_min_h, &screen.c_min_dist[0]);
+	dev1 = calc_average_fontsize(v, &screen.c_min_w, &screen.c_min_h, &screen.c_min_dist[0]);
 	(*v->api->t_font)(v, (screen.r.h <= 280) ? (cfg.standard_font_point = cfg.medium_font_point) : cfg.standard_font_point, -1);
 	screen.standard_font_height = v->font_h;
 	screen.standard_font_point  = v->font_rsize;
 	screen.c_max_w = v->cell_w;
 	screen.c_max_h = v->cell_h;
-	calc_average_fontsize(v, &screen.c_max_w, &screen.c_max_h, &screen.c_max_dist[0]);
+	dev2 = calc_average_fontsize(v, &screen.c_max_w, &screen.c_max_h, &screen.c_max_dist[0]);
 
 
-	BLOG((false, "stdfont: id = %d, size = %d, cw=%d, ch=%d",
- 		screen.standard_font_id, screen.standard_font_point, screen.c_max_w, screen.c_max_h));
-	BLOG((false, "smlfont: id = %d, size = %d, cw=%d, ch=%d",
-		screen.small_font_id, screen.small_font_point, screen.c_min_w, screen.c_min_h));
+	BLOG((false, "stdfont: id = %d, size = %d, cw=%d, ch=%d, dev=%d",
+ 		screen.standard_font_id, screen.standard_font_point, screen.c_max_w, screen.c_max_h, dev2));
+	BLOG((false, "smlfont: id = %d, size = %d, cw=%d, ch=%d, dev=%d",
+		screen.small_font_id, screen.small_font_point, screen.c_min_w, screen.c_min_h, dev1));
 
 	/*
 	 * Init certain things in the info_tab used by appl_getinfo()
