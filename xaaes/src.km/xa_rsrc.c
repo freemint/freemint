@@ -580,8 +580,8 @@ static XA_FILE *rsc_lang_file( int md, XA_FILE *fp, char *buf, long l )
 		case REPLACE:
 		{
 			char lbuf[256], *p = 0, *in = *((char**)buf);
-			bool found, strip = true;
-			int len = strlen(in);
+			bool strip = true;
+			int len = strlen(in), found;
 			short blen = 0, clen, cmplen, *chgl = (short*)l;
 
 			// BLOG((0,"trans: looking '%s'", in ));
@@ -598,7 +598,7 @@ static XA_FILE *rsc_lang_file( int md, XA_FILE *fp, char *buf, long l )
 				return (XA_FILE*)(long)len;
 			clen++;
 
-			for( found = false, lbuf[0] = 0; found == false && lbuf[0] != -1; )
+			for( found = 0, lbuf[0] = 0; found == 0 && lbuf[0] != -1; )
 			{
 				for( lbuf[0] = 0; lbuf[0] != LF_SEPCH ; )
 				{
@@ -626,13 +626,13 @@ static XA_FILE *rsc_lang_file( int md, XA_FILE *fp, char *buf, long l )
 					}
 					lbuf[blen+LF_OFFS] = 0;
 
-					if( found == false )
+					if( found == 0 )
 					{
 						if( !strnicmp( lbuf, "nn", 2 ) )
 						{
 							if( (*p == '-' && *in == '-') || !strncmp( p, in, cmplen ) )
 							{
-								found = true;
+								found = -1;
 								if( lbuf[LF_OFFS-1] == ';' )	// dont translate this
 									break;
 								if( lbuf[LF_OFFS-1] == '+' )	// realloc
@@ -650,6 +650,7 @@ static XA_FILE *rsc_lang_file( int md, XA_FILE *fp, char *buf, long l )
 						/* copy shorter length */
 						if( blen > len && strip == true )
 							blen = len;
+						found = 1;
 						break;	// translation found
 					}
 				}
@@ -689,7 +690,15 @@ static XA_FILE *rsc_lang_file( int md, XA_FILE *fp, char *buf, long l )
 				*chgl = (strip == false);
 			}
 			// BLOGif(!found,(0,"rsc_lang_file:'%s' not found/%d", in, len ));
-			return found? (XA_FILE*)(long)blen : 0;
+			switch( found )
+			{
+			case 1:
+				return (XA_FILE*)(long)blen;
+			case -1:
+				return (XA_FILE*)(long)-blen;
+			default:
+				return 0;
+			}
 
 		}
 		default:
@@ -842,7 +851,7 @@ fix_objects(struct xa_client *client,
 						if( obj->ob_type == G_TITLE )
 						{
 							if( scan.n_titles == 0 )
-								rsc_lang_file( WRITE, rfp, "### Main-menu ###", 17 );
+								rsc_lang_file( WRITE, rfp, "### Menubar ###", 15 );
 
 							scan.titles[scan.n_titles++] = *p;
 							scan.title = 0;
@@ -863,6 +872,16 @@ fix_objects(struct xa_client *client,
 					{
 						if( client->options.rsc_lang == READ )
 						{
+							if( blen > 0 )	// orig and trans found
+							{
+								if( obj->ob_type == G_BUTTON && (obj->ob_flags & OF_SELECTABLE) )
+								{
+									obj->ob_state &= (0x80ff);	// make own shortcuts
+								}
+							}
+							else
+								blen = -blen;		// only orig found
+
 							if( obj->ob_type == G_STRING && scan.title > 0 && scan.change_lo[scan.title-1] )
 							{
 								if( **p != '-' && blen > scan.mwidth )
@@ -873,7 +892,7 @@ fix_objects(struct xa_client *client,
 								}
 
 							}
-							if( scan.n_titles >= 0 && obj->ob_type == G_TITLE )
+							else if( obj->ob_type == G_TITLE && scan.n_titles >= 0 )
 							{
 								short s;
 
@@ -1083,6 +1102,10 @@ fix_trees(struct xa_client *client, void *b, OBJECT **trees, unsigned long n, sh
 						if (temp & 0x8000)
 							temp += 0x00010000L;
 						*c++ = (temp >> 16);
+						if( j == 3 && screen.c_max_h < 16 && (obj->ob_type == G_CICON || obj->ob_type == G_ICON || obj->ob_type == G_IBOX) )
+						{
+							*(c-1) *= (16 / screen.c_max_h);
+						}
 					}
 					k++;
 				}
