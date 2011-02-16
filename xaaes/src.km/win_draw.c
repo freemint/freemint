@@ -4103,6 +4103,7 @@ init_module(const struct xa_module_api *xmapi, const struct xa_screen *screen, c
 		def_utop_cols.info_txt.s.f = cfg.font_id;
 		def_utop_cols.info_txt.h.f = cfg.font_id;
 
+
 #ifndef ST_ONLY
 		/* set slist-window-title font-id */
 		slist_def_otop_cols.title_txt.n.f= cfg.font_id;
