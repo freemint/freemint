@@ -1,3 +1,269 @@
+16-02-2011
+----------
+
+obtree.c:
+
+- replace ALERT-text by global xa_strings[]
+
+---------------------------------------------------------------------
+util.c:
+
+add '' in xa_fopen_errormsg
+
+---------------------------------------------------------------------
+xa_strings.h:
+
+add defines for new strings
+---------------------------------------------------------------------
+xa_strings.h:
+
+add defines for new strings
+---------------------------------------------------------------------
+xa_types.h:
+
+wind->sw no longer unused
+---------------------------------------------------------------------
+xa_rsrc.c:
+
+fill wctxt_main_txt-strings with blanks
+---------------------------------------------------------------------
+k_main.c:
+
+CE_fa:
+-dont wait forever for a killed client to disappear
+-check bufsizes for strcpy, sprintf
+---------------------------------------------------------------------
+obtree.c:
+
+reserve 4 more bytes for buffer in create_popup_tree
+---------------------------------------------------------------------
+taskman.c:
+
+check client for NULL taskmanager_form_exit
+display stack-alignment in non-relase-version only
+---------------------------------------------------------------------
+xa_rsrc.c:
+
+- re-arrange translation-functions
+- add translation of unbound strings
+- context-menu-strings no more padded with blanks
+---------------------------------------------------------------------
+taskman.c:
+
+top_window: if XAWS_BINDFOCUS set (toolbox-attribute) top the app not
+the window
+---------------------------------------------------------------------
+version.h:
+
+bump version from 1.1.2 to 1.1.3
+---------------------------------------------------------------------
+init.c:
+
+Czech language-code is cs not cz
+---------------------------------------------------------------------
+xa_rsrc.c:
+
+allow translated menu-titles to be longer than originals by shifting
+remaining titles and drop-down-boxes. To enable use + instead of - for the search-strings in
+the rsl-file.
+---------------------------------------------------------------------
+xa_strings.c:
+
+reserve more space for strings to store translations.
+---------------------------------------------------------------------
+version.h:
+
+bump version from 1.1.3 to 1.1.4
+---------------------------------------------------------------------
+adiload.c:
+
+display more verbose error-msg
+---------------------------------------------------------------------
+cnf_xaaes.c:
+
+new app_option: ignore_rsc_size (load rsc even if size wrong)
+---------------------------------------------------------------------
+draw_obj.c:
+
+dont undraw cursor for toolbar
+---------------------------------------------------------------------
+init.c:
+
+- set info_tab[3][0] for language-request in appl_getinfo
+- set font-id for XaAES-windows to cfg.font_id
+
+---------------------------------------------------------------------
+k_init.c:
+
+- set font-id for screen to cfg.font_id
+- replace mnu_clientlistname by xa_strings[MNU_CLIENTS]
+---------------------------------------------------------------------
+scrlobjc.c:
+
+- recalc_tabs: list->widest may be 0
+- restucture calc_entry_wh
+---------------------------------------------------------------------
+taskman.c:
+
+taskman.c taskman.h:
+
+- font-structures no more static
+- fix set_xa_fnt
+- c_max_h < 14 considered small not 16
+---------------------------------------------------------------------
+taskman.h:
+
+font-structures no more static
+---------------------------------------------------------------------
+util.c:
+
+add "failed" to error-msg
+---------------------------------------------------------------------
+version.h:
+
+detect target by CPU-defines
+---------------------------------------------------------------------
+win_draw.c:
+
+set all font-ids to cfg.font_id
+---------------------------------------------------------------------
+xa_appl.c:
+
+- replace "Clients"-menu entry by xa_strings[MNU_CLIENTS]
+- set info_tab[0][0] to current font-point
+---------------------------------------------------------------------
+xa_fnts.c:
+
+display Id and height of font
+---------------------------------------------------------------------
+xa_form.c:
+
+call set_standard_point in do_form_alert and use screen.c_max_h for text-height
+---------------------------------------------------------------------
+xa_fsel.c:
+
+- new function set_tabs
+- call set_tabs when point-size changed (todo!)
+- adjust filter-menu to filter-length, max. 18 char
+- skip blanks when detecting Cancel/OK-shortcut
+- set font-ids for all fonts to cfg.font_id
+- set and restore fileslector-font-size
+---------------------------------------------------------------------
+xa_global.c:
+
+remove "Clients"
+---------------------------------------------------------------------
+xa_rsrc.c:
+
+- dont translate text that contains \ or \n
+- emit more usable error-msg while translating
+- @-indicator only valid when preceeded by blank
+- ignore lines beginning with - (menu-separator)
+- control replacement of longer translations valid for whole menu
+- more than one menu recognized
+- more structure in generated rsl-file
+- when ignore_rsc_size true load even if wrong size
+- replace alert-strings by xa_strings
+---------------------------------------------------------------------
+xa_strings (xa_strings.c xa_strings.h):
+
+
+- more strings translated
+- adapt some lengths
+---------------------------------------------------------------------
+xa_wind.c:
+
+fix toolbar-replace-method
+---------------------------------------------------------------------
+xaaes009.rsl:
+
+update
+---------------------------------------------------------------------
+xa_types.h:
+
+add app_option ignore_rsc_size
+---------------------------------------------------------------------
+version.h:
+
+bump version from 1.1.4 to 1.1.5
+---------------------------------------------------------------------
+xa_strings.c:
+
+correct No shell-alert
+---------------------------------------------------------------------
+xaaes009.rsl:
+
+fix some entries
+---------------------------------------------------------------------
+init.c:
+
+set font-id and font-size for scroll-list according to config
+---------------------------------------------------------------------
+k_init.c:
+
+calculate and print some sort of std-dev for font-width
+correct rounding-error in font-width-calculation
+---------------------------------------------------------------------
+obtree.c:
+
+fix_shortcuts: add another pass for touchexit-objects
+---------------------------------------------------------------------
+k_main.c:
+
+remove bootlog
+---------------------------------------------------------------------
+scrlobjc.c:
+
+scrlobjc.c scrlobjc.h:
+default_fnt no more static
+---------------------------------------------------------------------
+scrlobjc.h:
+
+scrlobjc.c scrlobjc.h:
+default_fnt no more static
+---------------------------------------------------------------------
+win_draw.c:
+
+fix sto-build
+---------------------------------------------------------------------
+k_init.c:
+
+calculate and print some sort of std-dev for font-width
+correct rounding-error in font-width-calculation
+---------------------------------------------------------------------
+init.c:
+
+set font-id and font-size for scroll-list according to config
+---------------------------------------------------------------------
+k_main.c:
+
+remove bootlog
+---------------------------------------------------------------------
+scrlobjc (scrlobjc.c scrlobjc.h):
+
+default_fnt no more static
+---------------------------------------------------------------------
+trnfm.c:
+
+remove bootlogs
+---------------------------------------------------------------------
+xa_fsel.c:
+
+keep window-width constant
+---------------------------------------------------------------------
+xa_rsrc.c:
+
+invalidate predefined shortcuts for translated strings in buttons
+---------------------------------------------------------------------
+xaloader/xaloader.c:
+
+select km according to CPU-cookie
+print errno
+---------------------------------------------------------------------
+xaaes009.rsc:
+
+update rsc-file
+---------------------------------------------------------------------
 19-01-2011
 ----------
 
