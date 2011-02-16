@@ -84,7 +84,7 @@ slist_msg_handler(struct xa_window *wind, struct xa_client *to, short amq, short
 
 static void entry_action(struct scroll_info *list, struct scroll_entry *this, const struct moose_data *md);
 
-static struct xa_wtxt_inf default_fnt =
+/*static*/ struct xa_wtxt_inf default_fnt =
 {
  WTXT_NOCLIP,
 /* id  pnts  flags wrm,     efx   fgc      bgc   banner x_3dact y_3dact texture */
