@@ -96,6 +96,21 @@ static void ignore(long sig)
 	ConsoleWrite( " ignored\r\n");
 }
 
+static void d2a( int r, char e[] )
+{
+	int i = 0;
+	if( r < 10 )
+		e[i++] = r + '0';
+	else
+	{
+		e[i++] = r / 10 + '0';
+		e[i++] = r % 10 + '0';
+	}
+	e[i++] = '\r';
+	e[i++] = '\n';
+	e[i] = 0;
+}
+
 int
 loader_init(int argc, char **argv, char **env)
 {
@@ -107,7 +122,6 @@ loader_init(int argc, char **argv, char **env)
 	 *  Go into MiNT domain
 	 */
 	(void)Pdomain(1);
-
 	ConsoleWrite("XaAES loader starting...\r\n");
 
 	/*
@@ -174,13 +188,31 @@ loader_init(int argc, char **argv, char **env)
 
 		name = DEFAULT;
 
-		/* if the system have a 68000 CPU we use the 68000 compiled
+		/* if the system has a 68000 CPU we use the 68000 compiled
 		 * module
 		 */
 		r = Ssystem(S_GETCOOKIE, C__CPU, &cpu);
-		if (r == 0 && cpu < 20)
-			name = DEFAULT_68000;
+		if (r == 0 )
+		{
+			switch( cpu )
+			{
+			case 30:
+				name = "xaaes030.km";
+			break;
+			case 40:
+				name = "xaaes040.km";
+			break;
+			case 60:
+				name = "xaaes060.km";
+			break;
+			default:
+				name = DEFAULT_68000;
+			}
+		}
+		ConsoleWrite("CPU-cookie not found \r\n");
 	}
+	ConsoleWrite(name);
+	ConsoleWrite("\r\n");
 
 	/* change to the XaAES module directory */
 	r = Dsetpath(path);
@@ -193,13 +225,18 @@ loader_init(int argc, char **argv, char **env)
 	}
 
 	/* get absolute path to this directory */
-	r = Dgetpath(path, 0);
-	if (r)
+	if( !(*path == 'u' && *(path+1) == ':' && *(path+2) == '/') )
 	{
-		ConsoleWrite("XaAES loader: Dgetpath() failed???\r\n");
-		goto error;
+		r = Dgetpath(path, 0);
+		if (r)
+		{
+			ConsoleWrite("XaAES loader: Dgetpath() failed???\r\n");
+			goto error;
+		}
 	}
 
+	ConsoleWrite(path);
+	ConsoleWrite("'\r\n");
 	/* append module name */
 	my_strlcat(path, "\\", sizeof(path));
 	my_strlcat(path, name, sizeof(path));
@@ -215,9 +252,9 @@ loader_init(int argc, char **argv, char **env)
 	}
 	Fclose((int)fh);
 
-	ConsoleWrite("Load kernel module: ");
+	ConsoleWrite("Load kernel module: '");
 	ConsoleWrite(path);
-	ConsoleWrite("\r\n");
+	ConsoleWrite("'\r\n");
 
 	fh = Fopen("/dev/km", O_RDONLY);
 	if (fh < 0)
@@ -235,43 +272,51 @@ loader_init(int argc, char **argv, char **env)
 
 	//ConsoleWrite( "XaAES loader: KM_RUN \r\n");
 	//Cconin();
+
 	r = Fcntl((int)fh, path, KM_RUN);
 	//ConsoleWrite( "XaAES loader: KM_RUN done()\r\n");
 
+	if( r < 0 )
+		r = -r;
 	if (r)
 	{
-		ConsoleWrite("XaAES loader: Fcntl(KM_RUN) failed!\r\n");
+		char e[6];
+		d2a( r, e );
+		ConsoleWrite("XaAES loader: Fcntl(KM_RUN) failed!\r\nerror:");
+		ConsoleWrite(e);
 	}
-
-	ConsoleWrite( "XaAES loader: KM_FREE\r\n");
-	//Cconin();
-
-	r = Fcntl((int)fh, path, KM_FREE);
-	if( r )
+	if( r != 64 )	// EBADARG
 	{
-		char *p;
-		for( p = path; *p; p++ );
-		for( --p; p > path && !(*p == '/' || *p == '\\'); p-- );
-		if( p > path )
-		{
-			p++;
-			ConsoleWrite( "XaAES loader: KM_FREE failed trying: '");
-			ConsoleWrite( p );
-			ConsoleWrite( "'..\r\n");
-			r = Fcntl((int)fh, p, KM_FREE);
-		}
+		ConsoleWrite( "XaAES loader: KM_FREE\r\n");
+		//Cconin();
+
+		r = Fcntl((int)fh, path, KM_FREE);
 		if( r )
 		{
-			char e[2];
+			char *p;
+			for( p = path; *p; p++ );
+			for( --p; p > path && !(*p == '/' || *p == '\\'); p-- );
+			if( p > path )
+			{
+				p++;
+				ConsoleWrite( "XaAES loader: KM_FREE failed trying: '");
+				ConsoleWrite( p );
+				ConsoleWrite( "'..\r\n");
+				r = Fcntl((int)fh, p, KM_FREE);
+			}
 			if( r < 0 )
 				r = -r;
-			e[0] = r + '0';
-			e[1] = 0;
-			ConsoleWrite( "\r\nXaAES loader: KM_FREE failed: ");
-			ConsoleWrite( e );
-			ConsoleWrite( "\r\n");
-			//Cconin();
+			if( r )
+			{
+				char e[6];
+				d2a( r, e );
+				ConsoleWrite( "\r\nXaAES loader: KM_FREE failed: ");
+				ConsoleWrite( e );
+				ConsoleWrite( "press key ...\r\n");
+				Cconin();
+			}
 		}
+
 	}
 	//ConsoleWrite( "XaAES loader: Fclose()\r\n");
 	Fclose((int)fh);
