@@ -2238,6 +2238,7 @@ set_syspalette(short vdih, struct rgb_1000 *palette)
 {
 	short i, pens;
 
+	BLOG((0,"set_syspalette"));
 	if (screen.planes > 8)
 		pens = 256;
 	else
@@ -2330,7 +2331,6 @@ detect_pixel_format(struct xa_vdi_settings *v)
 		(*v->api->l_ends)(v, 0, 0);
 		(*v->api->l_width)(v, 1);
 #if HAVE_VS_COLOR
-		BLOG((0,"detect_pixel: using vs_color"));
 		vq_color(v->handle, 0, 1, (short *)&srgb);
 // 		display("saved %04d, %04d, %04d", srgb.red, srgb.green, srgb.blue);
 		rgb.red = 1000;
@@ -2341,7 +2341,6 @@ detect_pixel_format(struct xa_vdi_settings *v)
 #else
 		{
 		RECT r = {0,0,v->screen.w,v->screen.h};
-		BLOG((0,"detect_pixel: using vsf_color"));
 		(*v->api->f_color)(v, 6 );	/* yellow */
 		(*v->api->gbar)( v, 0, &r );
 		}
