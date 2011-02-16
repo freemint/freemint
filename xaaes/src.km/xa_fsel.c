@@ -3094,17 +3094,21 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 				if ((dw + form->ob_width) > 560)
 					dw = 560 - form->ob_width;
 
+				form->ob_width += dw;
+				form->ob_height += dh;
+
 			}
 			else
 			{
-				dh = fs_height - form->ob_height;
 				dw = fs_width - form->ob_width;
+				dh = fs_height - form->ob_height;
+
+				form->ob_width = fs_width;
+				form->ob_height = fs_height;
 				form->ob_x = fs_x;
 				form->ob_y = fs_y;
 			}
 
-			form->ob_height += dh;
-			form->ob_width += dw;
 			form[FS_LIST ].ob_height += dh;
 			form[FS_LIST ].ob_width += dw;
 			form[FS_UNDER].ob_y += dh;
@@ -3115,7 +3119,6 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 
 		kind = (XaMENU|NAME|TOOLBAR|BORDER);
 		/* Work out sizing */
-		if (!remember.w)
 		{
 			if( fs_x == 0 )
 			{
@@ -3135,6 +3138,13 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 						C.Aes->options.thinframe,
 						C.Aes->options.thinwork,
 						*(RECT*)&or); //form->ob_x);
+			if( fs_width )
+			{
+				short dw = remember.w - fs_width;
+				remember.w = fs_width;
+				form[FS_LIST].ob_width -= dw;
+				form[FS_UNDER].ob_x -= dw;
+			}
 		}
 
 		if (C.update_lock == client->p ||
