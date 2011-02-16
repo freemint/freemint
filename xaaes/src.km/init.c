@@ -43,6 +43,7 @@
 #include "xa_shel.h"
 #include "xa_appl.h"
 #include "taskman.h"
+#include "scrlobjc.h"
 #include "win_draw.h"
 #include "version.h"
 
@@ -738,6 +739,14 @@ again:
 	desk_txt.s.f = cfg.font_id;
 	desk_txt.h.f = cfg.font_id;
 
+		/* scrlobjc */
+	default_fnt.n.f = cfg.font_id;
+	default_fnt.s.f = cfg.font_id;
+	default_fnt.h.f = cfg.font_id;
+
+	default_fnt.n.p = cfg.xaw_point;
+	default_fnt.s.p = cfg.xaw_point;
+	default_fnt.h.p = cfg.xaw_point;
 
 	C.Aes->options.standard_font_point = cfg.standard_font_point;
 	//C.Aes->options = default_options;
