@@ -59,4 +59,6 @@ SCROLL_INFO *set_slist_object(
 unsigned short scrl_cursor(SCROLL_INFO *list, unsigned short kc, unsigned short ks);
 void free_scrollist(SCROLL_INFO *list);
 
+extern struct xa_wtxt_inf default_fnt;
+
 #endif /* _scrlobjc_h */
