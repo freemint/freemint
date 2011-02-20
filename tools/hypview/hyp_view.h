@@ -1,4 +1,4 @@
- /*  Resource C-Header-File v1.95 fÅr ResourceMaster ab v2.06 by ARDISOFT  */
+ /*  Resource C-Header-File v1.97 fÅr ResourceMaster ab v2.06 by ARDISOFT  */
 
 #define DIAL_LIBRARY 0  /* form/dial */
 #define DI_ICON 1  /* CICON in tree DIAL_LIBRARY */
@@ -36,8 +36,10 @@
 #define CO_PASTE 3  /* STRING in tree CONTEXT */
 #define CO_SELECT_ALL 5  /* STRING in tree CONTEXT */
 #define CO_SAVE 7  /* STRING in tree CONTEXT */
-#define CO_PRINT 8  /* STRING in tree CONTEXT */
-#define CO_DELETE_STACK 9  /* STRING in tree CONTEXT */
+#define CO_SEARCH 9  /* STRING in tree CONTEXT */
+#define CO_SEARCH_AGAIN 10  /* STRING in tree CONTEXT */
+#define CO_DELETE_STACK 11  /* STRING in tree CONTEXT */
+#define CO_PRINT 12  /* STRING in tree CONTEXT */
 
 #define EMPTYPOPUP 3  /* form/dial */
 #define EM_BACK 0  /* BOX in tree EMPTYPOPUP */
