@@ -59,6 +59,9 @@ void BlockOperation(DOCUMENT *doc, short num)
 		case CO_SELECT_ALL:
 			SelectAll(doc);
 			break;
+	  case CO_SEARCH:
+	    Hypfind( doc );
+	    break;
 		case CO_DELETE_STACK:
 			RemoveAllHistoryEntries(win);
 			ToolbarUpdate(doc,win->toolbar,TRUE);

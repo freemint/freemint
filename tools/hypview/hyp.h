@@ -347,7 +347,7 @@ void OpenPopup(DOCUMENT *doc, long num, short x, short y);
 LINEPTR *HypGetYLine(LOADED_NODE *node, long y);
 short HypGetLineY ( LOADED_NODE *node, long line );
 long HypGetRealTextLine ( LOADED_NODE *node, short y );
-void HypGetTextLine(HYP_DOCUMENT *hyp, long line,char *dst);
+void HypGetTextLine(HYP_DOCUMENT *hyp, long line,char *dst );
 long HypAutolocator(DOCUMENT *doc,long line);
 
 /*
@@ -396,7 +396,6 @@ void search_allref(char *string, short no_message );
 /*
  *		Search_D.c
  */
-void Hypfind( DOCUMENT *doc );
 void HypfindFinsih ( short AppID, short ret );
 
 #endif

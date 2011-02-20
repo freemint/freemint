@@ -289,4 +289,9 @@ void ProgrammInfos(DOCUMENT *doc);
 void search_all(char *string);
 void Search(DOCUMENT *doc);
 
+/*
+ *		hyp\search.c
+ */
+void Hypfind( DOCUMENT *doc );
+
 #endif
