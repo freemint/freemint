@@ -522,7 +522,6 @@ calc_average_fontsize(struct xa_vdi_settings *v, short *maxw, short *maxh, short
 		*maxw = (wch+(count/2)) / count;
 		dev *= 1000;
 		dev /= count;
- 		//BLOG((0,"font-height:%2d: cellw=%d, dev=%ld", *maxh, *maxw, dev));
 	}
 	else
 	{
@@ -691,7 +690,6 @@ k_init(unsigned long vm)
 			{
 				short nvmode;
 
-				BLOG((false, "Falcon video: mode %d(%x)", cfg.videomode, cfg.videomode));
 
 				/* Ronald Andersson:
 				 * This should be the method for falcon!
@@ -705,6 +703,7 @@ k_init(unsigned long vm)
 
 				work_out[45] = nvmode;
 				mode = 5;
+				BLOG((false, "Falcon video: videomode %d(%x),mode=%d,nvmode=%x", cfg.videomode, cfg.videomode, mode, nvmode));
 // 				display("Falcon video: mode %x, %x", cfg.videomode, nvmode);
 			}
 			else
