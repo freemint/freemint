@@ -2875,6 +2875,7 @@ struct common
 #define COLDSTART_SYSTEM	0x0020		/* - cold reboot */
 #define RESOLUTION_CHANGE	0x0040
 #define KILLEM_ALL		0x0080
+#define RESTART_XAAES	0x0100
 #define EXIT_MAINLOOP		0x8000
 	short shutdown_step;
 	struct timeout *sdt;		/* Shutdown Timeout */
