@@ -522,6 +522,7 @@ calc_average_fontsize(struct xa_vdi_settings *v, short *maxw, short *maxh, short
 		*maxw = (wch+(count/2)) / count;
 		dev *= 1000;
 		dev /= count;
+		BLOG((0,"font-height:%2d: cellw=%d, dev=%ld", *maxh, *maxw, dev));
 	}
 	else
 	{
