@@ -882,13 +882,14 @@ fix_objects(struct xa_client *client,
 							else
 								blen = -blen;		// only orig found
 
-							if( obj->ob_type == G_STRING && scan.title > 0 && scan.change_lo[scan.title-1] )
+							if( obj->ob_type == G_STRING )	//&& ( scan.title > 0 && scan.change_lo[scan.title-1]) )
 							{
-								if( **p != '-' && blen > scan.mwidth )
+								if( **p != '-' )
 								{
 									if( *(*p + blen - 1) != ' ' )
 										blen++;
-									scan.mwidth = blen;
+									if( blen > scan.mwidth )
+										scan.mwidth = blen;
 								}
 
 							}
@@ -970,7 +971,7 @@ fix_objects(struct xa_client *client,
 
 				else if( scan.title >= 0 )
 				{
-					if( scan.mwidth && scan.lastbox > 0 )//&& obj->ob_next == scan.lastbox /*(obj - i + obj->ob_next)->ob_type == G_BOX*/ )	// last entry in menu-box
+					if( scan.mwidth && scan.lastbox > 0 )	// last entry in menu-box
 					{
 						OBJECT *o = (obj - i + scan.lastbox);
 						o->ob_width = scan.mwidth;
@@ -990,8 +991,6 @@ fix_objects(struct xa_client *client,
 				{
 					scan.title = -1;
 					scan.n_titles = -1;
-					//memset( scan.shift, 0, sizeof(scan.shift));
-					//memset( scan.change_lo, 0, sizeof(scan.change_lo));
 				}
 
 			case G_IBOX:
@@ -1493,10 +1492,12 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 					}
 				}
 			}
-			client->options.rsc_lang = 0;	// dont translate other rsc-files
+			trans_strings[0] = 0;	// no further translation possible
 		}
 		rsc_lang_file( CLOSE, rfp, 0, 0 );
 	}
+	if( client == C.Aes )
+		client->options.rsc_lang = 0;	// dont translate other rsc-files
 	fix_trees(client, base, (OBJECT **)(base + hdr->rsh_trindex), hdr->rsh_ntree, designWidth, designHeight);
 
 	return (RSHDR *)base;
