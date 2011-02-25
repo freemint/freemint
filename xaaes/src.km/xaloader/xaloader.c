@@ -106,6 +106,7 @@ static void d2a( int r, char e[] )
 		e[i++] = r / 10 + '0';
 		e[i++] = r % 10 + '0';
 	}
+
 	e[i++] = '\r';
 	e[i++] = '\n';
 	e[i] = 0;
@@ -118,6 +119,7 @@ loader_init(int argc, char **argv, char **env)
 	char *name;
 	long fh, r = 1;
 
+again:
 	/*
 	 *  Go into MiNT domain
 	 */
@@ -322,6 +324,34 @@ loader_init(int argc, char **argv, char **env)
 	Fclose((int)fh);
 	//ConsoleWrite( "XaAES loader: return\r\n");
 	//Cconin();
+
+	/* when xaloader has pid 1 it is the direct child of the kernel
+	   restart the module
+	 */
+	fh = Fopen( "/kern/self/stat", O_RDONLY );
+	r = Fread((int)fh, sizeof(path), path);
+	if (r <= 0)
+	{
+		ConsoleWrite("XaAES loader: Fread(\"/kern/self/stat\") failed!\r\n");
+		goto error;
+	}
+	else
+	{
+		char *p = path;
+		short pid = 0;
+		while( *p >= '0' && *p <= '9' )
+		{
+			pid += pid * 10 + *p - '0';
+			p++;
+		}
+		*p = 0;
+		ConsoleWrite("XaAES loader: pid=");
+		ConsoleWrite(path);
+		ConsoleWrite(".\r\n");
+		if( pid == 1 )
+			goto again;
+	}
+
 	return r;
 
 error:
