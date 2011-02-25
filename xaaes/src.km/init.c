@@ -771,6 +771,7 @@ again:
 	{
 		struct proc *p = get_curproc();
 		ulong oldmask;
+		char *sd_str;
 
 		oldmask = p->p_sigmask;
 		p->p_sigmask = 0xffffffffUL;
@@ -779,9 +780,31 @@ again:
 		{
 			sleep(WAIT_Q, (long)&loader_pid);
 		}
+		switch( C.shutdown & 0x0178)
+		{
+		case HALT_SYSTEM:
+			sd_str = "Halt";
+		break;
+		case REBOOT_SYSTEM:
+			sd_str = "Warmboot";
+		break;
+		case COLDSTART_SYSTEM:
+			sd_str = "Coldboot";
+		break;
+		case RESTART_XAAES:
+			sd_str = "Restart XaAES";
+		break;
+		default:
+			sd_str = "Quit XaAES";
+		}
 
-		BLOG((1,"AESSYS kthread exited - C.shutdown = %lx", C.shutdown));
-// 		display("AESSYS kthread exited - C.shutdown = %lx", C.shutdown);
+		BLOG((1,"AESSYS kthread exited - C.shutdown = %x->%s.", C.shutdown, sd_str));
+
+		if( C.shutdown & RESTART_XAAES )
+			goto again;
+
+
+// 		display("AESSYS kthread exited - C.shutdown = %x", C.shutdown);
 
 #if GENERATE_DIAGS
 		/* Close the debug output file */
