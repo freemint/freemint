@@ -587,8 +587,11 @@ otm:
 			return true;
 		}
 #if HOTKEYQUIT
+		case 'J':
+			sdmd = RESTART_XAAES;
 		case 'H':
-			sdmd = HALT_SYSTEM;
+			if( !sdmd )
+				sdmd = HALT_SYSTEM;
 		case 'G':
 		case 'Q':
 		{
