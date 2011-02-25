@@ -433,12 +433,17 @@ void add_window_to_tasklist(struct xa_window *wi, const char *title)
 					if( !thiswi )
 						return;
 					/* window closed: delete list-entry */
-					if( thiswi->prev )
-						list->cur = thiswi->prev;
-					else
+					list->cur = 0;
+					if( (this->xstate & OS_OPENED) )
+					{
+						if( thiswi->prev )
+							list->cur = thiswi->prev;
+						else
+							list->cur = thiswi->next;
+					}
+					if( list->cur == 0 )
 						list->cur = this;
 					list->del(list, thiswi, true);
-					list->set(list, this, SESET_OPEN, 1, NORMREDRAW);
 					list->set(list, list->cur, SESET_SELECTED, 0, NORMREDRAW);
 				}
 				else
@@ -467,11 +472,12 @@ void add_window_to_tasklist(struct xa_window *wi, const char *title)
 							return;
 						sc.t.strings = 1;
 						sc.data = wi;
-						sc.usr_flags = TM_WINDOW;	/* window */
+						sc.usr_flags = TM_WINDOW;
 						sc.fnt = &norm_txt;
 						list->add(list, this, NULL, &sc, SEADD_CHILD, 0, redraw);
 
-						list->set(list, this, SESET_OPEN, 1, NORMREDRAW);
+						if( !(this->xstate & OS_OPENED) )
+							list->cur = this;
 						list->set(list, list->cur, SESET_SELECTED, 0, NORMREDRAW);
 					}
 				}
@@ -631,7 +637,6 @@ remove_from_tasklist(struct xa_client *client)
 			if (p.e)
 			{
 #if 0	//debugging-info: dont delete
-				struct scroll_entry *this = p.e;
 				BLOG((0,"remove_from_tasklist: flags=%lx", this->usr_flags ));
 				if( this->usr_flags & TM_NOAES )
 				{
@@ -641,7 +646,13 @@ remove_from_tasklist(struct xa_client *client)
 				else if( this->usr_flags == TM_CLIENT )
 					BLOG((0,"remove_from_tasklist: delete CLIENT:%d:%s(%s):%lx", client->p->pid, client->name, client->p->name, p.e ));
 #endif
+				if( p.e->prev )
+					list->cur = p.e->prev;
+				else
+					list->cur = p.e->next;
 				list->del(list, p.e, true);
+				if( list->cur )
+					list->set(list, list->cur, SESET_SELECTED, 0, NORMREDRAW);
 			}
 		}
 	}
@@ -1450,6 +1461,7 @@ taskmanager_form_exit(struct xa_client *Client,
 			redraw_toolbar(lock, wind, TM_COLD);
 			*/
 			DIAGS(("taskmanager: coldstart system"));
+
 #if TM_ASK_BEFORE_SHUTDOWN
 			post_cevent(C.Hlp, ceExecfunc, ce_dispatch_shutdown, NULL, COLDSTART_SYSTEM,1, NULL, NULL);
 #else
