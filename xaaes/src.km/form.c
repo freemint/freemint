@@ -91,7 +91,6 @@ Set_form_do(struct xa_client *client,
 	}
 
 	ei = wt->ei ? wt->ei : &wt->e;
-
 	/* Ozk:
 	 * Check if this obtree needs a keypress handler..
 	 */
@@ -182,7 +181,6 @@ Setup_form_do(struct xa_client *client,
 		DIAG((D_form, client, "Setup_form_do: wind %d for %s", client->fmd.wind->handle, client->name));
 		wind = client->fmd.wind;
 	 	wt = get_widget(wind, XAW_TOOLBAR)->stuff;
-	 	//wt = widg->stuff;
 
 	 	if( wt->tree == obtree )
 	 	{
@@ -252,20 +250,25 @@ Setup_form_do(struct xa_client *client,
 	}
 okexit:
 	ei = wt->ei ? wt->ei : &wt->e;
-	ei->o = edobj;
-
+	if( !valid_aesobj( &ei->o ) )
+		ei->o = edobj;
+	else
+		edobj = ei->o;
+#if 0
 	if( !valid_aesobj(&wt->focus)/*aesobj_edit( &edobj )*/ )
 	{
 		wt->focus = edobj;
 	}
+#endif
 	/* first draw edit-cursor */
 	if( valid_aesobj( &edobj ) )
 	{
 		/* draw 1st cursor */
+		wt->focus = edobj;
 		obj_draw(wt, client->vdi_settings, edobj, 0, NULL, NULL, DRW_CURSOR);
 	}
 	/* if edit-object != focus draw focus-cursor */
-	if( !same_aesobj( &wt->focus, &edobj ) )
+	else if( !same_aesobj( &wt->focus, &edobj ) )
 	{
 		/* draw 1st cursor */
 		obj_draw(wt, client->vdi_settings, wt->focus, 0, NULL, NULL, DRW_CURSOR);
