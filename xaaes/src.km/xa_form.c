@@ -893,6 +893,7 @@ XA_form_dial(enum locks lock, struct xa_client *client, AESPB *pb)
 			/* If the client's dialog window is still hanging around, dispose of it... */
 			wind = client->fmd.wind;
 			DIAG((D_form,client,"Finish fmd.wind %d", wind->handle));
+
 			close_window(lock, wind);
 			delete_window(lock, wind);
 		}
@@ -946,6 +947,14 @@ XA_form_do(enum locks lock, struct xa_client *client, AESPB *pb)
 				{
 					display_window(lock, 4, wind, NULL);
 				}
+
+				/* in case this client did not do evnt*(), windows may not have been redrawn
+				   and may draw above the dialog
+				   this is a workaround!
+				*/
+				if( !(client->status & CS_CALLED_EVNT ) )
+					generate_redraws(lock, wind, &wind->r, RDRW_ALL);
+				client->status &= ~CS_CALLED_EVNT;
 			}
 // 			display("wait for form_do...");
 			(*client->block)(client, 0); //Block(client, 0);
