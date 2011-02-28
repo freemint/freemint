@@ -238,36 +238,35 @@ short set_xa_fnt( int pt, struct xa_wtxt_inf *wp[], OBJECT *obtree, int objs[], 
 
 	C.Aes->vdi_settings->api->text_extent(C.Aes->vdi_settings, "X", &wpp->n, &w, &oldh);
 	oldpt = wpp->n.p;
-	//if( pt != wpp->n.p )
+
+	if( wpp->n.p != pt )
 	{
-		if( wpp->n.p != pt )
+		if( pt > wpp->n.p )
+			i = 1;
+		else
+			i = -1;
+
+		wpp->n.p += i;
+		for( C.Aes->vdi_settings->api->text_extent(C.Aes->vdi_settings, "X", &wpp->n, &w, &h);
+				wpp->n.p < 65 && wpp->n.p > 0;)
 		{
-			if( pt > wpp->n.p )
-				i = 1;
-			else
-				i = -1;
-
+			if( oldh != h )
+				break;
 			wpp->n.p += i;
-			for( C.Aes->vdi_settings->api->text_extent(C.Aes->vdi_settings, "X", &wpp->n, &w, &h);//, oldh = h;
-					wpp->n.p < 65 && wpp->n.p > 0;)
-			{
-				if( oldh != h )
-					break;
-				wpp->n.p += i;
-				C.Aes->vdi_settings->api->text_extent(C.Aes->vdi_settings, "X", &wpp->n, &w, &h);
-			}
-
-			if( h == oldh )
-				return wpp->n.p = oldpt;
-
-			pt = wpp->n.p;
+			C.Aes->vdi_settings->api->text_extent(C.Aes->vdi_settings, "X", &wpp->n, &w, &h);
 		}
-		if( wp )
-			for( i = 0; wp[i]; i++ )
-			{
-				wp[i]->n.p = wp[i]->s.p = wp[i]->h.p = pt;
-			}
+
+		if( h == oldh )
+			return wpp->n.p = oldpt;
+
+		pt = wpp->n.p;
 	}
+	if( wp )
+		for( i = 0; wp[i]; i++ )
+		{
+			wp[i]->n.p = wp[i]->s.p = wp[i]->h.p = pt;
+		}
+
 	C.Aes->vdi_settings->api->text_extent(C.Aes->vdi_settings, "X", &wpp->n, &w, &h);
 
 	/* todo: need smaller/greater icons */
