@@ -504,7 +504,7 @@ _
 nn:   Set    @
 de:Setzen
 fr:Appliquer
-es:
+es:Aplicar
 hu:Be ll.
 ru:Óñòàíîâèòü
 cs:Nastavit
@@ -512,7 +512,7 @@ _
 nn:  Mark  @
 de:Mark.
 fr:Marquer
-es:
+es:Marcar
 hu:Jel.
 ru:Ìåòêà
 cs:Oznaèit
@@ -520,7 +520,7 @@ _
 nn:    User definable    @
 de:Benutzerdefiniert
 fr:D‚fini par utilisateur
-es:
+es:Definible
 hu:Szabadon be ll.
 ru:Âûáèğàåìûé ïîëüçîâàòåëåì
 cs:Nastavitelné
@@ -532,7 +532,7 @@ _
 nn:Point: @
 de:Gr”e:
 fr:Point:
-es:
+es:Tama¤o:
 hu:M‚ret:
 ru:Ğàçìåğ:
 cs:Bod:
@@ -540,7 +540,7 @@ _
 nn:W/H:   @
 de:B/H:
 fr:L/H:
-es:
+es:An/Al
 hu:Sz‚/Ma
 ru:ØÈĞ/ÂÛÑ
 cs:©/V:
@@ -548,7 +548,7 @@ _
 nn:Display             @
 de:Schriftstil anzeigen
 fr:Afficher
-es:
+es:Mostrar
 hu:K‚perny”
 ru:Ïîêàçàòü
 cs:Obrazovka
@@ -567,7 +567,7 @@ _
 nn:Driver:      @
 de:Ger„t:
 fr:Pilote:
-es:
+es:Dispositivo:
 hu:Eszk”zkezel”:
 ru:Äğàéâåğ:
 cs:Ovladaè:
@@ -575,15 +575,15 @@ _
 nn:all   @
 de:alle
 fr:tout
-es:
+es:todo
 hu:™sszes
 ru:âñå
 cs:v¹e
 _
-nn:from@
+nn:from @
 de:von
 fr:de
-es:
+es:desde
 hu:t¢l
 ru:èç
 cs:od
@@ -595,7 +595,7 @@ _
 nn:Even  @
 de:gerade
 fr:Paires
-es:
+es:Par
 hu:P ros
 ru:÷åòíûå
 cs:Sudé
@@ -603,7 +603,7 @@ _
 nn:Odd     @
 de:ungerade
 fr:Impair
-es:
+es:Impar
 hu:P ratlan
 ru:íå÷åòíûå
 cs:Liché
@@ -613,7 +613,7 @@ _
 nn:Quality: @
 de:Qualit„t:
 fr:Qualit‚:
-es:
+es:Calidad:
 hu:Min”s‚g:
 ru:Êà÷åñòâî:
 cs:Kvalita:
@@ -621,7 +621,7 @@ _
 nn:Color:   @
 de:Farben:
 fr:Couleurs:
-es:
+es:Color:
 hu:Sz¡n:
 ru:Öâåò:
 cs:Barvy:
@@ -629,7 +629,7 @@ _
 nn:Pages:   @
 de:Seiten:
 fr:Pages:
-es:
+es:P ginas:
 hu:Oldalak:
 ru:Ñòğàíèöû:
 cs:Strany:
@@ -637,7 +637,7 @@ _
 nn:Copies:   @
 de:Kopien:
 fr:Copies:
-es:
+es:Copias:
 hu:M solatok:
 ru:Êîïèè:
 cs:Kopie:
@@ -645,7 +645,7 @@ _
 nn:to @
 de:bis
 fr: …
-es:
+es: a
 hu:ig
 ru: â
 cs:do
@@ -655,7 +655,7 @@ _
 nn:Scale:  @
 de:Gr”e:
 fr:Echelle:
-es:
+es:Escala:
 hu:M‚ret:
 ru:Ìàñøòàá:
 cs:Mìøítko:
@@ -663,23 +663,23 @@ _
 nn:Paper: @
 de:Papier:
 fr:Papier:
-es:
+es:Papel:
 hu:Pap¡r:
 ru:Áóìàãà:
 cs:Papír:
 _
-nn:Output tray:    @
+nn:Output tray:      @
 de:Auswurf:
 fr:Bac de sortie:
-es:
+es:Bandeja de salida:
 hu:Kiad¢ t lca:
 ru:Âûõîäíàÿ ïîäà÷à:
 cs:Vıstup:
 _
-nn:Input tray:    @
+nn:Input tray:        @
 de:Einzug:
 fr:Bac d'entr‚e:
-es:
+es:Bandeja de entrada:
 hu:Adagol¢ t lca:
 ru:Âõîäíàÿ ïîäà÷à:
 cs:Podavaè:
@@ -692,10 +692,10 @@ nn:Y
 _
 nn:K
 _
-nn:Raster:@
+nn:Raster:    @
 de:Raster:
 fr:Bitmap:
-es:
+es:Cuadr¡cula:
 hu:R cs:
 ru:Ğàñòğ:
 cs:Rastr:
@@ -703,7 +703,7 @@ _
 nn:Port:      @
 de:Anschluss:
 fr:Port:
-es:
+es:Puerto:
 hu:Csatlakoz¢:
 ru:Ïîğò:
 cs:Rozhraní:
@@ -711,7 +711,7 @@ _
 nn:in the background@
 de:im Hintergrund
 fr:En arriŠre-plan
-es:
+es:en segundo plano
 hu:h tt‚rben
 ru:â òåíåâîì ğåæèìå
 cs:na pozadí
@@ -719,7 +719,7 @@ _
 nn:in the foreground@
 de:im Vordergrund
 fr:En avant-plan
-es:
+es:en primer plano
 hu:el”t‚rben
 ru:ïîâåğõ âñåõ
 cs:na popøedí
@@ -727,7 +727,7 @@ _
 nn:Print:    @
 de:Drucken:
 fr:Imprimer:
-es:
+es:Imprimir:
 hu:Nyomtat s:
 ru:Ïå÷àòü:
 cs:Tisk:
@@ -746,7 +746,7 @@ _
 nn: Colours  @
 de: Farben
 fr: Couleurs
-es:
+es: Colores
 hu: Sz¡nek
 ru: Öâåòà
 cs: Barvy
@@ -764,7 +764,7 @@ _
 nn: Columns  @
 de: Spalten
 fr: Colonnes
-es:
+es: Columnas
 hu: Oszlopok
 ru: Êîëîíîê
 cs: Sloupcù
@@ -781,8 +781,8 @@ nn:VGA
 _
 nn: TVsel @
 de: TV
-fr:
-es:
+fr: TV
+es: TV
 hu: TV
 ru: TV
 cs: TV
@@ -796,7 +796,7 @@ _
 nn:Line double/Interlace       @
 de:Zeilenverdoppelung/Interlace
 fr:Double lignes/entrelac‚
-es:
+es:Doble l¡nea/Entrelazado
 hu:Sorism‚tl‚s/Sorv lt s
 ru:Óäâîåíèå ëèíèé/Interlace
 cs:Dvojté øádky/prokládání
@@ -804,7 +804,7 @@ _
 nn:Add. bit (bit 15 in modeword)   @
 de:Zus. Bit (Bit 15 in modeword)
 fr:Ajout bit (bit 15 in modeword)
-es:
+es:Bit extra (Bit 15 en modeword)
 hu:Plusz bit (15-”s bit)
 ru:Äîï. áèò (áèò 15-êîä ğàçğåøåíèÿ)
 cs:Bit navíc (15. bit v modeword)
@@ -835,7 +835,7 @@ _
 nn:Color depth:  @
 de:Farbtiefe:
 fr:Profondeur:
-es:
+es:Colores:
 hu:Sz¡nm‚lys‚g:
 ru:Ãëóáèíà öâåòà:
 cs:Hloubka barev:
@@ -854,7 +854,7 @@ _
 nn: Modes @
 de: Modi
 fr: Modes
-es:
+es: Modo
 hu: M¢dok
 ru: Ğåæèìû
 cs: Re¾imy
@@ -862,7 +862,7 @@ _
 nn:1 (unused)         @
 de:1 (unbenutzt)
 fr:1 (inutilis‚)
-es:
+es:1 (sin usar)
 hu:1 (nem haszn lt)
 ru:1 (íå èñïîëüçóåòñÿ)
 cs:1 (nepou¾ito)
@@ -876,7 +876,7 @@ _
 nn:5 (unused)         @
 de:5 (unbenutzt)
 fr:5 (inutilis‚)
-es:
+es:5 (sin usar)
 hu:5 (nem haszn lt)
 ru:5 (íå èñïîëüçóåòñÿ)
 cs:5 (nepou¾ito)
@@ -888,7 +888,7 @@ _
 nn:7 (unused)         @
 de:7 (unbenutzt)
 fr:7 (inutilis‚)
-es:
+es:7 (sin usar)
 hu:7 (nem haszn lt)
 ru:7 (íå èñïîëüçóåòñÿ)
 cs:7 (nepou¾ito)
@@ -898,7 +898,7 @@ _
 nn:10 (unused)         @
 de:10 (unbenutzt)
 fr:10 (inutilis‚)
-es:
+es:10 (sin usar)
 hu:10 (nem haszn lt)
 ru:10 (íå èñïîëüçóåòñÿ)
 cs:10 (nepou¾ito)
@@ -906,7 +906,7 @@ _
 NN:Part of FreeMiNT (http://sparemint.org).       @
 de:Teil von FreeMiNT (http://sparemint.org).
 fr:Fait partie de FreeMiNT (http://sparemint.org).
-es:
+es:Parte de FreeMiNT (http://sparemint.org).
 hu:FreeMiNT r‚sze (http://sparemint.org).
 ru:×àñòü FreeMiNT (http://sparemint.org).
 cs:Souèást FreeMiNT (http://sparemint.org).
@@ -914,7 +914,7 @@ _
 NN:The terms of the <b>GPL version 2</b> or later apply.            @
 de:Es gilt die <b>GPL version 2</b> oder sp„ter.
 fr:Les termes de la <b>GPL version 2</b> ou plus sont d'application.
-es:
+es:Se aplican los terminos de la <b>GPL versi¢n 2</b> o posterior.
 hu:<b>GPL version 2</b> vagy k‚s”bbi vonatkozik r .
 ru:Óäîâëåòâîğÿåò óñëîâèÿì <b>GPL âåğñèè 2</b>.
 cs:Øídí se ustanoveními <b>GPL verze 2</b> nebo novìj¹í.
@@ -923,7 +923,7 @@ _
 NN:­Windows     @
 de:­Fenster     @
 fr:­Fenˆtres    @
-es:­            @
+es:­Ventanas    @
 hu:­Ablakok     @
 ru:­Îêíà        @
 cs:­Okna        @
@@ -931,7 +931,7 @@ _
 NN:Advanced    @
 de:Erweitert   @
 fr:Avanc‚      @
-es:            @
+es:Avanzado    @
 hu:B”vebb      @
 ru:Äîïîëíèò.   @
 cs:Pokroèilé   @
@@ -939,7 +939,7 @@ _
 NN:­To desktop  @
 de:­Zum Desktop @
 fr:­Au bureau   @
-es:­            @
+es:­Escritorio  @
 hu:­Desktop-hoz @
 ru:­Ê äåñêòîïó  @
 cs:­Na plochu   @
@@ -947,7 +947,7 @@ _
 NN:Close       @
 de:Schliessen  @
 fr:Fermer      @
-es:            @
+es:Cerrar      @
 hu:Bez r       @
 ru:Çàêğûòü     @
 cs:Zavøít      @
@@ -955,7 +955,7 @@ _
 NN:Hide        @
 de:Verstecken  @
 fr:Cacher      @
-es:            @
+es:Ocultar     @
 hu:Elrejt      @
 ru:Ñêğûòü      @
 cs:Skrıt       @
@@ -963,7 +963,7 @@ _
 NN:Iconify     @
 de:Als Icon    @
 fr:Ic“nifier   @
-es:            @
+es:Minimizar   @
 hu:Kicsiny¡t‚s @
 ru:Èêîíèçèğ.   @
 cs:Ikonifikovat@
@@ -971,7 +971,7 @@ _
 NN:Shade       @
 de:Einklappen  @
 fr:Masquer     @
-es:            @
+es:Ensombrecer @
 hu:µrny‚kol s  @
 ru:Çàòåíèòü    @
 cs:Zarolovat   @
@@ -979,7 +979,7 @@ _
 NN:­Move        @
 de:­Verschieben @
 fr:­D‚placer    @
-es:­            @
+es:­Mover       @
 hu:­Mozgat s    @
 ru:­Ïåğåìåñòèòü @
 cs:­Pøesunout   @
@@ -987,7 +987,7 @@ _
 NN:­Resize      @
 de:­Gr”e „ndern@
 fr:­Redimension.@
-es:­            @
+es:­Dimensionar @
 hu:­M‚retez‚s   @
 ru:­Èçì. ğàçìåğ @
 cs:­Zmìna velik.@
@@ -995,15 +995,15 @@ _
 NN:­Quit        @
 de:­Beenden     @
 fr:­Quitter     @
-es:­            @
+es:­Terminar    @
 hu:­Kil‚p‚s     @
 ru:­Âûéòè       @
 cs:­Ukonèit     @
 _
 NN:­Kill        @
-de:­Kill        @
+de:­Killen      @
 fr:­Terminer    @
-es:­            @
+es:­Kill        @
 hu:­Kil”v‚s     @
 ru:­Ïğåğâàòü    @
 cs:­Zabít       @
@@ -1011,7 +1011,7 @@ _
 NN:­Keep above others
 de:­šber den anderen
 fr:­Maintenir au-dessus
-es:­
+es:­Mantener delante
 hu:­T”bbiek el”tt
 ru:­Ïîâåğõ âñåõ îêîí
 cs:­Dr¾et nad ostatními
@@ -1019,15 +1019,15 @@ _
 NN:­Keep below others
 de:­Unter den anderen
 fr:­Maintenir en dessous
-es:­
+es:­Mantener detras
 hu:­T”bbiek m”g”tt
 ru:­Çà âñåìè îêíàìè
 cs:­Dr¾et pod ostatními
 _
 NN:­Toolbox attribute
-de:­Toolbox Attribute
+de:­Toolbox Attribut
 fr:­Attribut toolbox
-es:­
+es:­Atributo Toolbox
 hu:­Toolbox tulajd.
 ru:­Àòğèáóòû ïàíåëè èíñòğóìåíòîâ
 cs:­Jako okno nástrojù
@@ -1035,7 +1035,7 @@ _
 NN:­Deny keyboard focus
 de:­Kein Tastatur-Fokus
 fr:­Interdire entr‚es clavier
-es:­
+es:­Sin foco de teclado
 hu:­Nem kaphat f¢kuszt
 ru:­Çàïğåò ôîêóñà êëàâèàòóğû
 cs:­Neovládat klávesnicí
@@ -1043,7 +1043,7 @@ _
 NN:­This
 de:­Dieses Fenster
 fr:­Celle-ci
-es:­
+es:­Este
 hu:­Ez
 ru:­İòî
 cs:­Toto
@@ -1051,7 +1051,7 @@ _
 NN:­All
 de:­Alle
 fr:­Toutes
-es:­
+es:­Todos
 hu:­Mind
 ru:­Âñå
 cs:­V¹echny
@@ -1059,7 +1059,7 @@ _
 NN:­All others
 de:­Alle anderen
 fr:­Toutes les autres
-es:­
+es:­Todos los dem s
 hu:­T”bbi
 ru:­Âñå îñòàëüíûå
 cs:­V¹echny ostatní
@@ -1067,7 +1067,7 @@ _
 NN:­Restore all
 de:­Alle hervorholen
 fr:­Tout restaurer
-es:­
+es:­Restaurar todos
 hu:­Mind vissza ll¡t sa
 ru:­Âîññòàíîâèòü âñå
 cs:­Obnovit v¹echny
@@ -1075,7 +1075,7 @@ _
 NN:­Restore all others
 de:­Andere hervorholen
 fr:­R‚tablir les autres
-es:­
+es:­Restaurar todos los dem s
 hu:­T”bbi vissza ll¡t sa
 ru:­Âîññòàíîâèòü âñå îñòàëüíûå
 cs:­Obnovit v¹echny ostatní
@@ -1083,7 +1083,7 @@ _
 NN:­This window
 de:­Dieses Fenster
 fr:­Cette fenˆtre
-es:­
+es:­Esta ventana
 hu:­Ez az ablak
 ru:­İòî îêíî
 cs:­Toto okno
@@ -1091,7 +1091,7 @@ _
 NN:­Application
 de:­Anwendung
 fr:­Application
-es:­
+es:­Aplicaci¢n
 hu:­Alkalmaz s
 ru:­Ïğîãğàììà
 cs:­Aplikaci
@@ -1099,7 +1099,7 @@ _
 NN:­Other apps
 de:­Andere Anwendungen
 fr:­Autres applications
-es:­
+es:­Otras aplicaciones
 hu:­T”bbi alkalmaz s
 ru:­Äğóãèå ïğîãğàììû
 cs:­Ostatní aplikace
@@ -1107,7 +1107,7 @@ _
 NN:­Show other apps
 de:­Zeige and. Anwendungen
 fr:­Montrer les autres
-es:­
+es:­Mostrar otras aplicaciones
 hu:­T”bbi alk. megj.
 ru:­Ïîêàçàòü äğóãèå ïğîãğàììû
 cs:­Ukázat ostatní aplikace
@@ -1116,7 +1116,7 @@ _
 NN:About      @
 de:šber XaAES
 fr:A propos de
-es:
+es:Acerca de
 hu:N‚vjegy
 ru:Î XaAES
 cs:O
@@ -1124,7 +1124,7 @@ _
 NN:Task Manager           @
 de:Task-Manager
 fr:Gestionnaire des tƒches
-es:
+es:Gestor de tareas
 hu:Feladatkezel”
 ru:Ìåíåäæåğ çàäà÷
 cs:Správce úloh
@@ -1132,7 +1132,7 @@ _
 NN:System window & Alerts log           @
 de:System-Infos & Meldungen
 fr:Fenˆtre systŠme & journal des alertes
-es:
+es:Sistema & Registro de Alertas
 hu:Rendszer ablak & Figyelmeztet‚sek
 ru:Îêíî ñèñòåìû  & æóğíàë îùèáîê
 cs:Systémové okno a protokol varování
@@ -1140,7 +1140,7 @@ _
 NN:Applications@
 de:Anwendungen
 fr:Applications
-es:
+es:Aplicaciones
 hu:Alkalmaz sok
 ru:Ïğîãğàììû
 cs:Aplikace
@@ -1148,7 +1148,7 @@ _
 NN:Alerts          @
 de:Meldungen
 fr:Alertes
-es:
+es:Alertas
 hu:Figyelmeztet‚sek
 ru:Ïğåäóïğåæäåíèÿ
 cs:Varování
@@ -1156,7 +1156,7 @@ _
 NN:Environment  @
 de:Umgebung
 fr:Environnement
-es:
+es:Entorno
 hu:K”rnyezet
 ru:Îêğóæåíèå
 cs:Prostøedí
@@ -1164,7 +1164,7 @@ _
 NN:System  @
 de:System
 fr:SystŠme
-es:
+es:Sistema
 hu:Rendszer
 ru:Ñèñòåìà
 cs:Systém
@@ -1172,7 +1172,7 @@ _
 NN:Video:%dx%dx%d,%d colours, format: %s @
 de:Video:%dx%dx%d,%d Farben, Format: %s
 fr:Vid‚o:%dx%dx%d,%d couleurs, format: %s
-es:
+es:Video:%dx%dx%d,%d colores, formato: %s
 hu:Video:%dx%dx%d,%d sz¡n, form tum: %s
 ru:Âèäåî:%dx%dx%d,%d öâåòîâ, ôîğìàò: %s
 cs:Obraz:%dx%dx%d,%d barev, formát: %s
@@ -1180,7 +1180,7 @@ _
 NN:MEMPROT:%s@
 de:MEMPROT:%s
 fr:PROTMEM:%s
-es:
+es:PROTMEM:%s
 hu:MEMPROT:%s
 ru:MEMPROT:%s
 cs:MEM-pr.:%s
@@ -1188,15 +1188,15 @@ _
 NN:OFF     @
 de:AUS
 fr:Inactive
-es:
+es:Apagado
 hu:Ki
 ru:ÂÛÊË
 cs:Vypnuto
 _
-NN:ON     @
+NN:ON       @
 de:AN
 fr:Active
-es:
+es:Encendido
 hu:Be
 ru:ÂÊË
 cs:Zapnuto
@@ -1205,7 +1205,7 @@ _
 NN:[2][Quit All][Cancel|OK]     @
 de:[2][Alle beenden][Abbruch|OK]
 fr:[2][Tout quitter][Annuler|OK]
-es:[2]
+es:[2][Terminar todo][Anular|OK]
 hu:[2][Mind bez r sa][M‚gsem|OK]
 ru:[2][Çàêğûòü âñå][Îòìåíà|ÎÊ]
 cs:[2][Ukonèit v¹e][Zru¹it|OK]
@@ -1213,7 +1213,7 @@ _
 NN:[2][Leave XaAES][Cancel|OK]    @
 de:[2][XaAES beenden][Abbruch|OK]
 fr:[2][Quitter XaAES][Annuler|OK]
-es:[2]
+es:[2][Terminar XaAES][Anular|OK]
 hu:[2][XaAES bez r sa][M‚gsem|OK]
 ru:[2][Âûéòè èç XaAES][Îòìåíà|ÎÊ]
 cs:[2][Opustit XaAES][Zru¹it|OK]
@@ -1221,7 +1221,7 @@ _
 NN:[1][Snapper could not save snap!|ERROR: %d][OK]                     @
 de:[1][Snapper konnte das Bildschirmfoto|nicht sichern!|FEHLER: %d][OK]
 fr:[1][Impossible de sauver l'image !|ERROR: %d][OK]
-es:[1]
+es:[1][­Imposible guardar pantallazo!|ERROR: %d][OK]
 hu:[1][A k‚plop¢ nem tudja|elmenteni a f jlt!|HIBA: %d][OK]
 ru:[1][Íå ìîãó ñîõğàíèòü ñíèìîê!|ÎØÈÁÊÀ: %d][ÎÊ]
 cs:[1][Nelze ulo¾it snímek obrazovky!|CHYBA: %d][OK]
@@ -1229,7 +1229,7 @@ _
 NN:[1][Cannot snap topwindow as|parts of it are offscreen!][OK]                                                   @
 de:[1][Das oberste Fenster kann nicht|fotografiert werden weil Teile davon|ausserhalb des Bildschirms liegen!][OK]
 fr:[1][Impossible de capturer la|fenˆtre sup‚rieure. Une partie|se trouve hors de l'‚cran !][OK]
-es:[1]
+es:[1][Imposible capturar ventana|­Parcialmente fuera de la pantalla!][OK]
 hu:[1][Az akt¡v ablakr¢l nem lehet|k‚perny”k‚pet k‚sz¡teni k‚perny”n|k¡vlre es” r‚szei vannak!][OK]
 ru:[1][Íå ìîãó ñäåëàòü ñíèìîê àêòèâíîãî îêíà òê.|åãî ÷àñòü çà ïğåäåëàìè ıêğàíà!][ÎÊ]
 cs:[1][Nelze udìlat snímek aktivního okna,|proto¾e jeho èást le¾í mimo obraz!][OK]
@@ -1237,7 +1237,7 @@ _
 NN:[1]['xaaesnap' process not found.|Start 'xaaesnap.prg' and try again|or define snapshot in xaaes.cnf][OK]                            @
 de:[1][Prozess 'xaaesnap' nicht gefunden.|Bitte 'xaaesnap.prg' starten und|nochmal versuchen oder snapshot|in xaaes.cnf definieren.][OK]
 fr:[1][Programme 'xaaesnap' non|trouv‚. Lancer 'xaaesnap.prg'|et r‚essayez ou d‚clarez un|programme dans xaaes.cnf][OK]
-es:[1]
+es:[1]['xaaesnap' proceso no encontrado.|Ejecutar 'xaaesnap.prg' e intentar de nuevo|o defina snapshot en xaaes.cnf][OK]
 hu:[1]['xaaesnap' nem tal lhat¢.|Ind¡tsd el a 'xaaesnap.prg'-ot ‚s|pr¢b ld £jra vagy adj meg m s|alkalmaz s az 'xaaes.cnf'-ban][OK]
 ru:[1][Ïğîöåññ 'xaaesnap' íå íàéäåí.|Çàïóñòèòå 'xaaesnap.prg' è ïîïğîáóéòå ñíîâà|èëè ñêîíôèãóğèğóéòå ñíèìîê â xaaes.cnf][ÎÊ]
 cs:[1][Proces 'xaaesnap' nenalezen.|Spus»te 'xaaesnap.prg' a zkuste to znovu nebo|nastavte program pro snímkování v xaaes.cnf][OK]
@@ -1245,7 +1245,7 @@ _
 NN:[2][What do you want to snap?][Block|Full screen|Top Window|Cancel]          @
 de:[2][Was soll fotografiert werden?][Block|Ganzer Schirm|Fenster|Abbruch]
 fr:[2][Quelle partie capturer ?][R‚gion|Tout l'‚cran|Fenˆtre sup‚rieure|Annuler]
-es:[2]
+es:[2][¨Qu‚ desea capturar?][Bloque|Panatalla completa|Ventana|Anular]
 hu:[2][Mir”l akarsz k‚perny”k‚pet?][T‚glalap|K‚perny”|Akt¡v ablak|M‚gsem]
 ru:[2][Ñíèìîê ÷åãî âû õîòèòå ñäåëàòü?][Áëîêà|Âñåãî ıêğàíà|Àêòèâíîãî îêíà|Îòìåíà]
 cs:[2][Èeho snímek chcete vytvoøit?][Blok|Celá obrazovka|Horní okno|Zru¹it]
@@ -1262,7 +1262,7 @@ _
 NN:$SDMASTER is not a valid program: %s (use the taskmanager)                      @
 de:$SDMASTER ist kein gltiges Programm: %s (bitte Taskmanager verwenden)
 fr:$SDMASTER n'est pas un programme valide: %s (utiliser le gestionnaire de tƒches)
-es:
+es:$SDMASTER no es un programa valido: %s (use el gestor de tareas)
 hu:$SDMASTER nem futtathat¢: %s (haszn ld a feledatkezel¸t)
 ru:$SDMASTER íå ÿâëÿåòñÿ ïğîãğàììîé: %s (âîñïîëüçóéòåñü ìåíåäæåğîì çàäà÷)
 cs:$SDMASTER není platnı program: %s (pou¾ijte správce úloh)
@@ -1270,7 +1270,7 @@ _
 NN:Could not load %s.tbl from %s (%ld)         @
 de:Konnte %s.tbl von %s nicht laden (%ld)
 fr:Impossible de charger %s.tbl depuis %s (%ld)
-es:
+es:Imposible cargar %s.tbl desde %s (%ld)
 hu:%s.tbl -t nem lehet bet”lteni (%s) (%ld)
 ru:Íå ìîãó çàãğóçèòü %s.tbl èç %s (%ld)
 cs:Nelze naèíst %s.tbl z %s (%ld)
@@ -1278,107 +1278,107 @@ _
 NN:Cannot terminate AES system proccesses!               @
 de:Kann AES-Systemprozesse nicht beenden!
 fr:Impossible de quitter les processus systŠme de l'AES !
-es:
+es:­Imposible terminar los procesos del sistema AES!
 hu:AES rendszer folyamatokat nem lehet le ll¡tani!
 ru:Íå ìîãó ïğåğâàòü ñèñòåìíûé ïğîöåññ AES!
-cs:
+cs:Nelze ukonèit procesy systému AES!
 _
 NN:Cannot kill XaAES!                    @
 de:XaAES kann nicht gekillt werden!
 fr:Impossible de forcer XaAES … quitter !
-es:
+es:­Imposible forzar la salida de XaAES!
 hu:XaAES-t nem lehet kil¸ni!
 ru:Íå ìîãó îñòàíîâèòü XaAES!
-cs:
+cs:Nelze zabít XaAES!
 _
 NN:XaAES: No AES Parameter Block, returning.          @
 de:XaAES: Kein AES Parameter-Block, Abbruch.
 fr:XaAES: Pas de bloc paramŠtres AES. Quitte.
-es:
+es:XaAES: Ning£n bloque de parametros AES. Volver.
 hu:XaAES: Nincs AES param‚ter blokk ...
 ru:XaAES: Áëîê ïàğàìåòğîâ íå ïğèíàäëåæèò AES, âîçâğàò.
-cs:
+cs:XaAES: ®ádnı blok parametrù AES; vracím se.
 _
 NN:XaAES: Non-AES process issued AES system call %i, killing it!             @
 de:XaAES: Nicht-AES Prozess gibt AES-Systemaufruf %i aus. Wird beendet!
 fr:XaAES: Un processus non AES a fait l'appel systŠme AES %i. Processus tu‚ !
-es:
+es:XaAES: Ning£n proceso AES efectu¢ una llamada al AES %i,­Forzando salida!
 hu:XaAES: Nem AES-hez tartoz¢ process AES h¡v st (%i) kezdem‚nyezett!
 ru:XaAES: Íå-AES ïğîöåññ èíèöèèğîâàë ñèñòåìíûé âûçîâ AES %i, ïğåğûâàş åãî!
-cs:
+cs:XaAES: Ne-AES proces vyslal systémové volání AES %i; zabíjím ho!
 _
 NN:%s: Validate OBTREE for %s failed, object ptr = %lx, killing it!             @
 de:%s: Best„tigung OBTREE fr %s fehlgeschlagen, Objekt-Ptr = %lx. Wird beendet!
 fr:%s: Echec validatation OBTREE pour %s, pointeur objet = %lx, processus tu‚ !
-es:
+es:%s: Validaci¢n del OBTREE para %s fall¢, objecto ptr = %lx, ­forzando salida!
 hu:%s: %s OBTREE valid c¢ó nem sikerlt (objektum ptr = %lx), megszakit s!
 ru:%s: Îøèáêà âàëèäàöèè OBTREE äëÿ %s , îáúåêò ptr = %lx, ïğåğûâàş åãî!
-cs:
+cs:%s: Ovìøení OBTREE pro %s selhalo, objekt ptr = %lx, zabíjím ho!
 _
 NN:attach_extension for %u failed, out of memory?           @
 de:attach_extension fr %u fehlgeschlagen. Zuwenig Speicher?
 fr:attach_extension pour %u a ‚chou‚, plus de m‚moire ?
-es:
+es:attach_extension para %u fall¢, ¨memoria exhausta?
 hu:%u attach_extension h¡v sa nem sikerlt, kev‚s a mem¢ria?
 ru:îøèáêà attach_extension äëÿ %u , íå õâàòàåò ïàìÿòè?
-cs:
+cs:attach_extension pro %u selhalo; nedostatek pamìti?
 _
 NN:umalloc for %u failed, out of memory?           @
 de:umalloc fr %u fehlgeschlagen. Zuwenig Speicher?
 fr:umalloc pour %u a ‚chou‚, plus de m‚moire ?
-es:
+es:umalloc para %u fall¢, ¨memoria exhausta?
 hu:%u umalloc h¡v sa nem sikerlt, kev‚s a mem¢ria?
 ru:îøèáêà umalloc äëÿ %u , íå õâàòàåò ïàìÿòè?
-cs:
+cs:umalloc pro %u selhalo; nedostatek pamìti?
 _
 NN:XaAES: Print dialogs unavailable with current VDI.         @
 de:XaAES: Druckdialoge sind mit diesem VDI nicht verfgbar.
 fr:XaAES: Dialogue d'impression non disponoble avec cette VDI.
-es:
+es:XaAES: Dialogos de impresi¢n no disponibles con este VDI.
 hu:XaAES: Nyomtat¢ p rbesz‚dablakot nem t mogatja ez a VDI.
 ru:XaAES: Äèàëîãîâîå îêíî ïå÷àòè íåâîçìîæíî ñ äàííûì VDI.
-cs:
+cs:XaAES: Dialog tisku nedostupnı s aktuálním VDI.
 _
 NN:launch: Cannot enter single-task-mode. Already in single-task-mode: %s(%d).        @
 de:launch: Kann Single-Task Modus nicht starten. Bereits im Single-Task Modus: %s(%d).
 fr:launch: Impossible de passer en mode mono-tƒche. D‚j… en mono-tƒche: %s(%d).
-es:
+es:launch: Imposible entrar en modo monotarea. Modo monotarea ya en uso: %s(%d).
 hu:launch: Nem lehet single-task-mode-ba v ltani, mivel m r abban vagyunk: %s(%d).
 ru:launch: Íå ìîãó âûáğàòü îäíîçàäà÷íûé ğåæèì. Óæå â îäíîçàäà÷íîì ğåæèìå: %s(%d).
-cs:
+cs:launch: Nelze pøejít do jednoúlohového re¾imu. Re¾im ji¾ jednoúlohovı je: %s(%d).
 _
-NN:XaAES: %s%s, client with no globl_ptr, killing it!  @
+NN:XaAES: %s%s, client with no globl_ptr, killing it!          @
 de:XaAES: %s%s, Anwendung ohne globl_ptr, wird beendet!
-fr:XaAES: %s%s
-es:XaAES: %s%s
-hu:XaAES: %s%s
+fr:XaAES: %s%s, client sans globl_ptr, ex‚cution termin‚e !
+es:XaAES: %s%s, cliente sin ning£n globl_ptr, ­forzando salida!
+hu:XaAES: %s%s, kliens globl_ptr n‚lkl, bez r s!
 ru:XaAES: %s%s
-cs:XaAES: %s%s
+cs:XaAES: %s%s, klient bez globl_ptr; zabíjím ho!
 _
-NN:XaAES: AES shell already running!            @
+NN:XaAES: AES shell already running!                    @
 de:XaAES: AES-Shell (Desktop) ist bereits aktiv!
-fr:XaAES:
-es:XaAES:
-hu:XaAES:
+fr:XaAES: Le shell AES tourne d‚j… !
+es:XaAES: ­Existe un AES shell ejecut ndose actualmente!
+hu:XaAES: M r fut egy AES-shell!
 ru:XaAES:
-cs:XaAES:
+cs:XaAES: Shell AES (pracovní plocha) ji¾ bì¾í!
 _
-NN:XaAES: No AES shell set, see 'shell =' configuration variable in xaaes.cnf.            @
+NN:XaAES: No AES shell set, see 'shell =' configuration variable in xaaes.cnf.                 @
 de:XaAES: Keine AES-Shell angemeldet, siehe Konfigurationsvariable 'shell =' in xaaes.cnf.
-fr:XaAES:
-es:XaAES:
-hu:XaAES:
+fr:XaAES: Pas de shell AES d‚fini ; voir la variable de configuration 'shell =' dans xaaes.cnf.
+es:XaAES: Ning£n AES shell establecido, ver variable de configuraci¢n 'shell =' en xaaes.cnf.
+hu:XaAES: Nincs be llitva AES-shell ('shell=' konfigur ci¢ az xaaes.cnf f jlban).
 ru:XaAES:
-cs:XaAES:
+cs:XaAES: Nenastaven ¾ádnı shell AES; viz promìnná 'shell =' v xaaes.cnf.
 _
 ### Miscellanous ###
 nn+  Clients 
 de:  Anwendungen 
-fr:  Applications 
-es:
-hu:
+fr:  Clients 
+es:  Clientes 
+hu:  Kliensek 
 ru:  Ïğîãğàììû 
-cs:
+cs:  Klienti 
 _
 NN:xa_help.txt
 de:xa_help.de
