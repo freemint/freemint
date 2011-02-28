@@ -16,7 +16,7 @@ char *xa_strings[] = {
 	"Video:%dx%dx%d,%d colours, format: %s ",
 	"MEMPROT:%s",
 	"OFF     ",
-	"ON     ",
+	"ON       ",
 /* alert-text */
 "[2][Quit All][Cancel|OK]     ",
 "[2][Leave XaAES][Cancel|OK]    ",
@@ -36,9 +36,9 @@ char *xa_strings[] = {
 "umalloc for %u failed, out of memory?           ",
 "XaAES: Print dialogs unavailable with current VDI.         ",
 "launch: Cannot enter single-task-mode. Already in single-task-mode: %s(%d).        ",
-"XaAES: %s%s, client with no globl_ptr, killing it",
-"XaAES: AES shell already running!",
-"XaAES: No AES shell set, see 'shell =' configuration variable in xaaes.cnf.            ",
+"XaAES: %s%s, client with no globl_ptr, killing it!          ",
+"XaAES: AES shell already running!                    ",
+"XaAES: No AES shell set, see 'shell =' configuration variable in xaaes.cnf.                 ",
 
 "  Clients \3",
 
@@ -72,10 +72,10 @@ char *wctxt_main_txt[] =
 	"\255Restore all               ",
 	"\255Restore all others        ",
 	"",
-	"\255This window              ",
-	"\255Application              ",
-	"\255Other apps               ",
-	"\255Show other apps          ",
+	"\255This window               ",
+	"\255Application               ",
+	"\255Other apps                ",
+	"\255Show other apps           ",
 	"","",
 	0
 };
