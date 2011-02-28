@@ -2228,23 +2228,27 @@ ob_fix_shortcuts(OBJECT *obtree, bool not_hidden)
 
 		/*
 		 * 1. predefined shortcuts (>0!)
-		 * 2. touchexit
-		 * 3. other
+		 * 2. default,exit
+		 * 3. touchexit
+		 * 4. other
 		 */
-		for( k = 0; k < 3; k++ )
+		for( k = 0; k < 4; k++ )
 		{
 			switch( k )
 			{
 			case 0:
-				flag = OF_SELECTABLE;// | OF_EDITABLE;
+				flag = OF_SELECTABLE;
 			break;
 			case 1:
-				//flag2 = flag;
-				flag = OF_TOUCHEXIT | OF_DEFAULT | OF_EXIT;
+				flag = OF_DEFAULT | OF_EXIT;
 			break;
 			case 2:
 				flag2 = flag;
-				flag = OF_SELECTABLE;// | OF_EDITABLE;
+				flag = OF_TOUCHEXIT;
+			break;
+			case 3:
+				flag2 = flag;
+				flag = OF_SELECTABLE;
 			break;
 			}
 			for( i = 1; i <= objs; i++ )
