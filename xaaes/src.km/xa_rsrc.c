@@ -1270,7 +1270,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 		if (size != sz )
 		{
 			DIAG((D_rsrc, client, "LoadResource(): Error loading file (size mismatch)"));
-			BLOG((1,"LoadResources:%s: wrong size (file:%ld,header:%ld)!", fname, sz, size ));
+			BLOG((1,"LoadResources:%s: wrong size (file:%ld,header:%ld)!", fname, sz, size, client->options.ignore_rsc_size ? "ignored" : "" ));
 			if( client->options.ignore_rsc_size )
 			{
 				if( size > sz )
