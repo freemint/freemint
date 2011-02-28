@@ -2279,6 +2279,10 @@ ob_fix_shortcuts(OBJECT *obtree, bool not_hidden)
 								/* skip non-alpha-numeric-chars in start of free_string
 								*/
 								for( nc = 0; nc < slen && !isalnum(s[nc]); nc++ );
+								if( nc >= slen )	/* try any char except blank */
+								{
+									for( nc = 0; nc < slen && s[nc] <= ' '; nc++ );
+								}
 								if( j == 0 )
 								{
 									if( k == 0 )
