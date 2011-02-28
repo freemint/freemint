@@ -2433,6 +2433,7 @@ struct xa_client
 
 #define CS_NO_SCRNLOCK		0x00001000
 #define CS_CLIENT_EXIT		0x00002000
+#define CS_CALLED_EVNT    0x00004000
 
 
 	long status;
