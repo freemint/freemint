@@ -522,7 +522,6 @@ calc_average_fontsize(struct xa_vdi_settings *v, short *maxw, short *maxh, short
 		*maxw = (wch+(count/2)) / count;
 		dev *= 1000;
 		dev /= count;
-		BLOG((0,"font-height:%2d: cellw=%d, dev=%ld", *maxh, *maxw, dev));
 	}
 	else
 	{
@@ -590,7 +589,7 @@ k_init(unsigned long vm)
 			BLOG((false, "could not determine fvdi version"));
 #endif
 	}
-	c_conws("\033E");		/* Clear screen, cursor home (for WongCKs falcon) */
+	c_conws("\033E\033f");		/* Clear screen, cursor home (for WongCKs falcon) and cursor off */
 	/* try to open virtual wk - necessary when physical wk is already open
 	 * ? how to know if physical wk is open and its handle without AES?
 	 */
@@ -776,7 +775,7 @@ k_init(unsigned long vm)
 		/*
 		 * We need to get rid of the cursor
 		 */
-		v_exit_cur(C.P_handle);
+		//v_exit_cur(C.P_handle);
 
 		/*
 		 * Open us a virtual workstation for XaAES to play with
