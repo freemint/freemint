@@ -93,8 +93,10 @@ pending_redraw_msgs(enum locks lock, struct xa_client *client, union msg_buf *bu
 		rtn = 1;
 		kick_mousemove_timeout();
 	}
-	else if (C.redraws)
-		yield();
+	else{
+		if (C.redraws )
+			yield();
+	}
 
 	Sema_Dn(clients);
 	return rtn;
@@ -181,7 +183,7 @@ exec_iredraw_queue(enum locks lock, struct xa_client *client)
 				if (!(r->w || r->h))
 					r = NULL;
 
-				display_window(lock, 0, wind, r);
+				display_window(lock, 14, wind, r);
 			}
 			else
 			{
@@ -198,6 +200,7 @@ exec_iredraw_queue(enum locks lock, struct xa_client *client)
 		} while (pending_iredraw_msgs(lock, client, &ibuf));
 
 		showm();
+
 		C.redraws -= rdrws;
 
 		if (!(client->status & CS_NO_SCRNLOCK))
@@ -569,7 +572,7 @@ check_queued_events(struct xa_client *client)
 	}
 
 got_evnt:
-	client->usr_evnt = 1;
+	client->status |= CS_CALLED_EVNT;
 	cancel_evnt_multi(client, 222);
 	return true;
 }
