@@ -253,7 +253,7 @@ open_about(enum locks lock, struct xa_client *client, bool open)
 		if( screen.c_max_h < 16 ){
 			short d = 16 / screen.c_max_h;
 			wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
-					WM_SIZED, 0,0, wind->handle, wind->r.x, wind->r.y, wind->r.w, wind->r.h * d );
+					WM_SIZED, 0,0, wind->handle, wind->r.x, wind->r.y - ( wind->r.h * ( d - 1 ) ) / 2, wind->r.w, wind->r.h * d );
 		}
 	}
 	else{
