@@ -176,10 +176,12 @@ again:
 
 		if (name)
 		{
-			*name++ = '\0';
+			c = *name;
+			*name = '\0';
 
 			my_strlcpy(path, argv[1], sizeof(path));
 			my_strlcat(path, "/", sizeof(path));
+			*name++ = c;
 		}
 		else
 			name = argv[1];
