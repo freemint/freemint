@@ -463,28 +463,28 @@ calc_entry_wh(SCROLL_INFO *list, SCROLL_ENTRY *this)
 				if( s )
 					l = c->c.text.slen;
 
-				if( list->char_width && c->prev && c->prev->c.text.h ){
-					c->c.text.w = list->char_width * l;	/* assuming unprop. font! */
-					c->c.text.h = c->prev->c.text.h;
-				}
-#if 0
-				else if( this->prev )	// && CONST_FONT ..
+				if( list->char_width )
 				{
-					struct se_content *cp = (struct se_content *)this->prev->content;
 					c->c.text.w = list->char_width * l;	/* assuming unprop. font! */
-					c->c.text.h = cp->c.text.h;
+					/* todo: list->char_height, list->const_height */
+					if( c->prev && c->prev->c.text.h )
+						c->c.text.h = c->prev->c.text.h;
 				}
-#endif
-				else
+				if( !c->c.text.h || !list->char_width )
 				{
+					short w;
 					struct xa_fnt_info *f = c->fnt ? &c->fnt->n : &this->fnt->n;
 					PROFRECp(
 					*list->vdi_settings->api->,text_extent,(list->vdi_settings, s,
-							f, &c->c.text.w, &c->c.text.h));
-				}
+							f, &w, &c->c.text.h));
+					if( !c->c.text.w )
+						c->c.text.w = w;
 
-				if( l )
-					list->char_width = c->c.text.w / l;
+					if( l && !list->char_width )
+					{
+						list->char_width = c->c.text.w / l;
+					}
+				}
 
 				ew = c->c.text.w + 2;
 				eh = c->c.text.h;
