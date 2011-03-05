@@ -1,3 +1,118 @@
+06-03-2011
+----------
+
+form.c:
+
+fix initial focus for non-windowed dialogs
+---------------------------------------------------------------------
+k_init.c:
+
+print mode and vnmode
+---------------------------------------------------------------------
+k_keybd.c:
+
+new shortcut for restart: J
+---------------------------------------------------------------------
+taskman.c:
+
+do not open tree when a window is opened
+set cursor in tasklist to previous or next item when a window is closed
+---------------------------------------------------------------------
+xa_rsrc.c:
+
+- fix width for all G_STRINGs, not only when there was a G_TITLE
+- non-rsc-strings can only be translated once
+---------------------------------------------------------------------
+xa_types.h:
+
+new define for shutdown: RESTART_XAAES
+---------------------------------------------------------------------
+xaloader/xaloader.c:
+
+when xaloader has pid 1 it is the direct child of the kernel, restart the module
+
+---------------------------------------------------------------------
+init.c:
+
+print exit-mode in bootlog
+restart if RESTART_XAAES set
+---------------------------------------------------------------------
+version.h:
+
+bump version from 1.1.5 to 1.1.6
+---------------------------------------------------------------------
+k_init.c:
+
+accidentally removed a BLOG
+---------------------------------------------------------------------
+about.c:
+
+center about-window vertically
+---------------------------------------------------------------------
+k_init.c:
+
+switch cursor off by esc-sequence, not v_exit_cur
+---------------------------------------------------------------------
+obtree.c:
+
+fix_shortcuts: if no alphanumeric char can be found, use any non-blank char
+---------------------------------------------------------------------
+taskman.c:
+
+code-cleanup in xa_set_fnt
+---------------------------------------------------------------------
+xa_evnt.c:
+
+set new flag CS_CALLED_EVNT when client did an evnt-call
+some minor changes
+---------------------------------------------------------------------
+xa_rsrc.c:
+
+print "ignored" when wrong rsc-file-size is ignored
+---------------------------------------------------------------------
+xa_form.c:
+
+XA_form_do: redraw a dialog when client did not call an evnt before to
+avoid redraw-error
+---------------------------------------------------------------------
+xa_strings.c:
+
+new lenghts needed for translation
+---------------------------------------------------------------------
+xa_types.h:
+
+new status-flag CS_CALLED_EVNT
+---------------------------------------------------------------------
+xaaes009.rsl:
+
+more translations
+Contributed by Lars Schmidbauer
+---------------------------------------------------------------------
+xaloader/xaloader.c:
+
+restore argv in case of a restart
+---------------------------------------------------------------------
+form.c:
+
+dont draw additional object-cursor in setting up form_do
+---------------------------------------------------------------------
+scrlobjc.c:
+
+calc_entry_wh: small optimization in width- and height-calculation
+---------------------------------------------------------------------
+xa_fnt (about.c taskman.c taskman.h):
+
+
+set_xa_fnt: new parameters for fraction of widths times 1000, and height
+---------------------------------------------------------------------
+xa_fnts.c:
+
+display font-width
+---------------------------------------------------------------------
+xa_fsel.c:
+
+fix tabbing for different font-sizes
+---------------------------------------------------------------------
 16-02-2011
 ----------
 
