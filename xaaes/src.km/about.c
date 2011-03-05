@@ -263,7 +263,7 @@ open_about(enum locks lock, struct xa_client *client, bool open)
 	}
 
 	list = object_get_slist(wt->tree + ABOUT_LIST);
-	set_xa_fnt( cfg.xaw_point, 0, 0, 0, list);
+	set_xa_fnt( cfg.xaw_point, 0, 0, 0, list, 0, 0);
 
 #if HELPINABOUT
 	sprintf( ebuf, sizeof(ebuf), "%s%s", C.start_path, xa_strings[XA_HELP_FILE] );
