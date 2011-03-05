@@ -222,7 +222,7 @@ callout_display(struct xa_fnts_item *f, short vdih, long pt, long ratio, RECT *c
 				y = area->y;
 
 			v_gtext(vdih, x, y, txt);
-			sprintf( inf, sizeof(inf)-1, "id:%d,h:%d", (short)f->f.id, h);
+			sprintf( inf, sizeof(inf)-1, "id:%d,h:%d,w=%d", (short)f->f.id, h, w / (int)strlen(txt));
 			vst_font(vdih, 1 );
 			vst_point(vdih, 9, &x, &x, &x, &x);
 			v_gtext(vdih, area->x, area->y, inf);
@@ -656,6 +656,7 @@ set_points_list(struct xa_fnts_info *fnts, struct xa_fnts_item *f)
 	if (f)
 	{
 		sc.t.strings = 1;
+
 		for (i = 0; i < f->f.npts; i++)
 		{
 			sc.t.text = b;
@@ -964,6 +965,7 @@ create_new_fnts(enum locks lock,
 				 NULL, NULL, NULL, NULL,
 				 NULL, NULL, fnts, 1);
 
+
 		set_slist_object(lock,
 				 wt,
 				 wind,
@@ -973,6 +975,7 @@ create_new_fnts(enum locks lock,
 				 NULL, click_style, NULL, NULL,
 				 NULL, NULL, NULL, NULL,
 				 NULL, NULL, fnts, 1);
+
 
 		set_slist_object(lock,
 				 wt,
