@@ -219,10 +219,10 @@ static void init_list_focus( OBJECT *obtree, short item, short y )
  *
  * return new point
  */
-short set_xa_fnt( int pt, struct xa_wtxt_inf *wp[], OBJECT *obtree, int objs[], SCROLL_INFO *list )
+short set_xa_fnt( int pt, struct xa_wtxt_inf *wp[], OBJECT *obtree, int objs[], SCROLL_INFO *list, short *neww, short *newh )
 {
-	short i, w, h;
-	short oldh, oldpt;
+	short i, w, h, x, vdih;
+	short oldh, oldpt, oldw;
 	struct xa_wtxt_inf *wpp;
 
 	if( wp )
@@ -233,10 +233,17 @@ short set_xa_fnt( int pt, struct xa_wtxt_inf *wp[], OBJECT *obtree, int objs[], 
 		wpp = &norm_txt;
 
 
+	if( neww )
+		*neww = 0;
+	if( newh )
+		*newh = 0;
+
 	if( wpp->n.p < 0 )
 		wpp->n.p = pt;
 
-	C.Aes->vdi_settings->api->text_extent(C.Aes->vdi_settings, "X", &wpp->n, &w, &oldh);
+	vdih = C.Aes->vdi_settings->handle;
+	vst_point(vdih, wpp->n.p, &w, &h, &oldw, &oldh);
+
 	oldpt = wpp->n.p;
 
 	if( wpp->n.p != pt )
@@ -247,17 +254,17 @@ short set_xa_fnt( int pt, struct xa_wtxt_inf *wp[], OBJECT *obtree, int objs[], 
 			i = -1;
 
 		wpp->n.p += i;
-		for( C.Aes->vdi_settings->api->text_extent(C.Aes->vdi_settings, "X", &wpp->n, &w, &h);
+		for( vst_point(vdih, wpp->n.p, &x, &x, &w, &h);
 				wpp->n.p < 65 && wpp->n.p > 0;)
 		{
-			if( oldh != h )
+			if( oldh != h || w != oldw )
 				break;
 			wpp->n.p += i;
-			C.Aes->vdi_settings->api->text_extent(C.Aes->vdi_settings, "X", &wpp->n, &w, &h);
+			vst_point(vdih, wpp->n.p, &x, &x, &w, &h);
 		}
 
-		if( h == oldh )
-			return wpp->n.p = oldpt;
+		if( h == oldh && w == oldw )
+			return wpp->n.p = oldpt;	// no change
 
 		pt = wpp->n.p;
 	}
@@ -267,7 +274,7 @@ short set_xa_fnt( int pt, struct xa_wtxt_inf *wp[], OBJECT *obtree, int objs[], 
 			wp[i]->n.p = wp[i]->s.p = wp[i]->h.p = pt;
 		}
 
-	C.Aes->vdi_settings->api->text_extent(C.Aes->vdi_settings, "X", &wpp->n, &w, &h);
+	vst_point(vdih, wpp->n.p, &x, &x, &w, &h);
 
 	/* todo: need smaller/greater icons */
 	if( objs && obtree )
@@ -279,9 +286,19 @@ short set_xa_fnt( int pt, struct xa_wtxt_inf *wp[], OBJECT *obtree, int objs[], 
 	if( list )
 	{
 		list->nesticn_h = h;// + 2;
-		list->char_width = 0;
+		list->char_width = w;
 	}
-	return wpp->n.p;
+
+	if( neww )
+	{
+		*neww = (1000L * (long)w) / (long)oldw;
+	}
+	if( newh )
+	{
+		*newh = h;
+		//*hd = 1000 * h / oldh;
+	}
+	return pt;
 }
 
 struct helpthread_data *
@@ -1725,7 +1742,7 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 		obj_rectangle(wt, aesobj(obtree, 0), &or);
 		obtree[TM_ICONS].ob_flags |= OF_HIDETREE;
 
-		set_xa_fnt( cfg.xaw_point, wp, obtree, objs, list);
+		set_xa_fnt( cfg.xaw_point, wp, obtree, objs, list, 0, 0);
 		/* Work out sizing */
 		if (!remember.w)
 		{
@@ -2631,7 +2648,7 @@ open_systemalerts(enum locks lock, struct xa_client *client, bool open)
 
 		if (!list) goto fail;
 
-		set_xa_fnt( cfg.xaw_point, 0, obtree, objs, list);
+		set_xa_fnt( cfg.xaw_point, 0, obtree, objs, list, 0, 0);
 
 		/* todo: set focus into list (?) */
 		obj_init_focus(wt, OB_IF_RESET);
