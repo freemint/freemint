@@ -267,15 +267,16 @@ okexit:
 		wt->focus = edobj;
 		obj_draw(wt, client->vdi_settings, edobj, 0, NULL, NULL, DRW_CURSOR);
 	}
+#if 0
 	/* if edit-object != focus draw focus-cursor */
 	else if( !same_aesobj( &wt->focus, &edobj ) )
 	{
 		/* draw 1st cursor */
 		obj_draw(wt, client->vdi_settings, wt->focus, 0, NULL, NULL, DRW_CURSOR);
 	}
-
+#endif
 	DIAGS(("Setup_form_do: returning - edobj=%d, wind %lx",
-		edit_item(ei), wind));
+	edit_item(ei), wind));
 
 	if (ret_edobj)
 		*ret_edobj = editfocus(ei); //edit_item(ei);
