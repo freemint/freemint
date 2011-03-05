@@ -371,9 +371,11 @@ modify_mult_state(struct scroll_info *list, void *parent, short bits, short mask
 	list->set(list, parent, SESET_M_STATE, (long)&p, NORMREDRAW);
 }
 
-static void set_tabs( struct scroll_info *list, struct fsel_data *fs)
+static void set_tabs( struct scroll_info *list, struct fsel_data *fs, short wd)
 {
 	struct seset_tab tab;
+	int i;
+	short x;
 
 	tab.index = FSLIDX_NAME;
 	tab.flags = 0;
@@ -383,48 +385,28 @@ static void set_tabs( struct scroll_info *list, struct fsel_data *fs)
 
 	list->set(list, NULL, SESET_TAB, (long)&tab, false);
 
-	tab.index = FSLIDX_SIZE;
 	tab.flags |= SETAB_RJUST;
-	tab.r.w = 0; //-10; //(RECT){0,0,-10,0};
-	list->set(list, NULL, SESET_TAB, (long)&tab, false);
-
-	tab.index = FSLIDX_TIME;
-	tab.flags = 0;	//SETAB_CJUST;
-	tab.r.w = 0; //-10;
-	list->set(list, NULL, SESET_TAB, (long)&tab, false);
-
-	tab.index = FSLIDX_DATE;
-	tab.flags = 0;
-	tab.r.w = 0; //-20;
-	list->set(list, NULL, SESET_TAB, (long)&tab, false);
-
-	tab.index = FSLIDX_FLAG;
-	tab.flags = 0;
-	tab.r.w = 0; //-10;
-	list->set(list, NULL, SESET_TAB, (long)&tab, false);
-
-//			tab.index = 3;
-//			tab.flags = 0;
-//			tab.r = (RECT){0,0,-2,0};
-//			list->set(list, NULL, SESET_TAB, (long)&tab, false);
-
-
-#if 0
-	list->get(list, NULL, SEGET_LISTXYWH, &r);
-
-	w = r.w >> 2;
-
-	tab.index = 1;
-	list->get(list, NULL, SEGET_TEXTTAB, &tab);
-	tab.r.w = w * 3;
-	list->set(list, NULL, SESET_TEXTTAB, (long)&tab, false);
-
-	tab.index = 2;
-	list->get(list, NULL, SEGET_TEXTTAB, &tab);
-	tab.r.w = w;
-	tab.flags |= SETAB_RJUST;
-	list->set(list, NULL, SESET_TEXTTAB, (long)&tab, false);
-#endif
+	x = list->tabs[FSLIDX_NAME].r.w;
+	for( i = FSLIDX_SIZE; i <= FSLIDX_FLAG; i++ )
+	{
+		if( wd )
+		{
+			if( wd < 1000 )
+			{
+				long w;
+				w = (long)list->tabs[i].r.w * wd;
+				list->tabs[i].r.w = w / 1000L;
+				list->tabs[i].r.x = x;
+				x += list->tabs[i].r.w;
+			}
+		}
+		else
+		{
+			tab.index = i;
+			tab.r.w = 0;
+			list->set(list, NULL, SESET_TAB, (long)&tab, false);
+		}
+	}
 }
 
 
@@ -1541,6 +1523,7 @@ refresh_filelist(enum locks lock, struct fsel_data *fs, SCROLL_ENTRY *dir_ent)
 	struct xa_wtxt_inf *wp[] = {&fs_norm_txt, &exe_txt, &dexe_txt, &dir_txt, 0};
 	int objs[] = {FS_ICN_EXE, FS_ICN_DIR, FS_ICN_PRG, FS_ICN_FILE, FS_ICN_SYMLINK, 0};
 	int initial;
+	short wd, h;
 
 	//PROFILE(("fsel:refresh_file:entry" ));
 
@@ -1549,21 +1532,31 @@ refresh_filelist(enum locks lock, struct fsel_data *fs, SCROLL_ENTRY *dir_ent)
 		fs, fs->form->tree, sl));
 	list = object_get_slist(sl);
 
-	fs->point = set_xa_fnt( fs->point + fs->fntinc, wp, form, objs, list );
+	fs->point = set_xa_fnt( fs->point + fs->fntinc, wp, form, objs, list, &wd, &h );
 
 	if( fs->fntinc )
 	{
 		list->widest = 0;
-		list->char_width = 0;
-		set_tabs( list, fs );
+		//list->char_width = 0;
+		if( wd )
+		{
+			//long w = (long)list->wi->wa.w;
+
+			//w *= wd;
+			//list->wi->wa.w = (w / 1000L);
+			set_tabs( list, fs, wd );
+		}
 	}
 
 	fs->fntinc = 0;
 
-	if( fs->point < 10 )
-		list->flags |= SIF_NO_ICONS;
-	else
-		list->flags &= ~SIF_NO_ICONS;
+	if( h > 0 )
+	{
+		if( h < 12 /*fs->point < 10*/ )
+			list->flags |= SIF_NO_ICONS;
+		else
+			list->flags &= ~SIF_NO_ICONS;
+	}
 
 	add_slash(fs->root, fs->fslash);
 
@@ -3231,7 +3224,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 				 /*title,info,data,lmax*/
 				 fs->path, NULL, fs, 30);
 
-		set_tabs(list, fs);
+		set_tabs(list, fs, 0);
 
 		/* HR: after set_menu_widget (fs_destructor must cover what is in menu_destructor())
 		 *		 Set the window destructor
