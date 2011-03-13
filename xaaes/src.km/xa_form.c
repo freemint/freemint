@@ -952,8 +952,13 @@ XA_form_do(enum locks lock, struct xa_client *client, AESPB *pb)
 				   and may draw above the dialog
 				   this is a workaround!
 				*/
-				if( !(client->status & CS_CALLED_EVNT ) )
-					generate_redraws(lock, wind, &wind->r, RDRW_ALL);
+				if( !(client->status & CS_CALLED_EVNT ) && wind->next )
+				{
+					RECT r;
+					int b = xa_rect_chk( &wind->next->r, &wind->r, &r );
+					if( b != 2 )
+						generate_redraws(lock, wind, &wind->r, RDRW_ALL);
+				}
 				client->status &= ~CS_CALLED_EVNT;
 			}
 // 			display("wait for form_do...");
