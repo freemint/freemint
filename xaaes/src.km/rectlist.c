@@ -508,7 +508,12 @@ xa_rect_clip(const RECT *s, const RECT *d, RECT *r)
 		return false;
 }
 /*
- * return 0 if
+ * return
+ *
+ * 0	s or d has w=0 or h=0 or no intersection
+ * 1	d not inside s
+ * 2	d inside s
+ *
  */
 int
 xa_rect_chk(const RECT *s, const RECT *d, RECT *r)
