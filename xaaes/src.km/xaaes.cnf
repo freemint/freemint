@@ -4,16 +4,25 @@
 #
 # upper/lowercase don't matter for all keywords
 # bool values can be expressed as 1/0, y/n, yes/no, true/false
-# 
-# Ozk: The values enabled resembles the xaaes.cnf file I use on my
-#      Milan 040. 
 #
-# video mode select
+# Ozk: The values enabled resembles the xaaes.cnf file I use on my
+#      Milan 040.
+######################################################################
+#  include <file>
+#
+# Example: Include any external file into configuration
+#
+#include u:/c/video.cnf
+#include c:\video.cnf
+#include C:\video.cnf
+
+#####################################################################
+## video mode select
 # -----------------
-# 
+#
 # Selects the video mode that XaAES will boot into. If not set mode = 1
 # will be used, e.g. use current/default video mode.
-# 
+#
 # If you don't have a Falcon <mode> can be:
 # -----------------------------------------
 #   - 2 =  320*200,  16 colour (ST-Low)
@@ -22,63 +31,63 @@
 #   - 6 =  640*480,  16 colour (TT Medium)
 #   - 8 = 1280*960,   2 colour (TT High)
 #   - 9 =  320*480, 256 colour (TT Low)
-#   
+#
 #   All other values are ignored!
-# 
-# If you have a Falcon <mode> is the sam argument as to the
+#
+# If you have a Falcon <mode> is the same argument as to the
 # VsetMode() OS call:
 # ---------------------------------------------------------
 #   BIT     Name     Meaning
-#   
+#
 #   0-2     BPS      Number of bitplanes:
 #                    - 000 = 2colour
 #                    - 001 = 4colour
 #                    - 010 = 16colour
 #                    - 011 = 256colour
 #                    - 100 = 16bits/pixel (True colour)
-#   
+#
 #   3       COL      Number of columns
 #                    - 0 = 40
 #                    - 1 = 80
-#   
+#
 #   4       VGA      Monitor select
 #                    - 0 = TV mode
 #                    - 1 = VGA mode
-#   
+#
 #   5       TVSEL    TV standard select
 #                    - 0 = NTSC
 #                    - 1 = PAL
-#   
+#
 #   6       OVERSCN  Overscan flag (not valid for VGA)
 #                    - 0 = don't overscan
 #                    - 1 = overscan
-#   
+#
 #   7       STMODES  ST Compatibility mode
 #                    - 0 = Standard VGA video modes
 #                    - 1 = ST Compatible Video modes
-#   
+#
 #   8       VERTFLAG Vertical mode
 #                    - VGA: 0 = standard
 #                           1 = line doubling (half res)
 #                    - TV:  0 = standard
 #                           1 = Interlace (double res!!!)
-#   
+#
 #   9-14    unused
-#   
+#
 #   15               Additive mode bit for non standard resolutions
 #                    If set, use the default screen resolution as preset by
 #                    CentScreen.
 #
 # For example:
-# 
+#
 # video = 26      will select 640*480*16colour VGA mode.
 # video = 0x801a  will select 16 colour VGA mode in
 #                 the resolution preset by centscreen.
-# Note: 
+# Note:
 # When you use a screenexpander like Screenblaster, you have to use
 # the video option as well. This will make the Screenblaster-Software
 # to show up the resolution-selection-menu.
-# 
+#
 #video = <mode>
 #video = 4
 
@@ -135,7 +144,7 @@ usehome = yes
 
 #####################################################################
 # dc_time = <time in ms>        (default is 50)
-# 
+#
 # double click time (ms)
 #
 #dc_time = 35
@@ -244,7 +253,7 @@ redraw_timeout = 2000
 # entry when mouse hovers over. 'popout_timeout' sets the time in ms before
 # an entry's attachement is closed when mouse leaves, unless mouse enters
 # another entry with an attachement in which case that new attachment is
-# opened according to 'popup_timeout". 
+# opened according to 'popup_timeout".
 #
 # In normal AES menu/popup navigation it is possible to click, and select,
 # a menu or pop entry that has an attachment. However, to be able to implement
@@ -318,7 +327,7 @@ redraw_timeout = 2000
                         # the right/bottom.
 #icnfy_orient = 0x103   # Start at right/bottom corner and go towards
                         # windows towards the left/bottm corner.
-                        
+
 #####################################################################
 # icnfy_width  = <value>        (default is 72)
 # icnfy_height = <value>        (default is 72)
@@ -491,14 +500,29 @@ redraw_timeout = 2000
 #     1: shortcuts for alerts
 #     2: shortcuts for dialog
 #     3: 1+2
-# 
+#
 #     default: 3
-# 
+#
 #  example:
 #  app_options = diskus, alt_shortcuts = 0
-# 
+#
 #  For teradesk >= 4 you need: app_options = DESKTOP, alt_shortcuts = 1
 #--------------------------------------------------------------------
+#  rsc_lang = <value>  default: 0
+#
+# If set XaAES creates or uses a translation file (.rsl) for
+# this application.
+#
+# 0 = No translation
+# 1 = Read an existing translation file (or create, if not present)
+# 2 = Always create a translation file (overwrite existing one)
+#--------------------------------------------------------------------
+#  ignore_rsc_size = <bool>   default: false
+#
+# If true difference between resource-filesize and size given
+# in rsc-header is no error.
+#
+#######################################################################
 #
 # This default setting will make XaAES look closer to n.aes, but
 # will require precision when grabbing the window border for
@@ -588,7 +612,7 @@ app_options = jaygrpii, alt_shortcuts = 0
 # spaces to fit 8 characters. This is NOT the 'nice' name. So, if your
 # Toswin2 binary is named "tw2.app", you use "tw2     ". Each app-name
 # is separated with comma.
-# 
+#
 # This will allow you to specify applications which should be killed without
 # question during shutdown. It is necessary because many apps dont react to
 # the AP_TERM message, leaving the AES waiting for a maximum amount of time
@@ -599,7 +623,7 @@ app_options = jaygrpii, alt_shortcuts = 0
 # Application authors: Make sure your apps dont end up on this list! :)
 #
 #kill_wo_question = "procalc", "mintsett"
-# 
+#
 kill_wo_question = "ST-Guide"
 
 #####################################################################
@@ -610,8 +634,10 @@ kill_wo_question = "ST-Guide"
 clipboard = c:\clipbrd\
 accpath   = c:\
 launchpath  = u:\usr\gem
+
 #####################################################################
 # define external snapshot-program to be executed if xaaesnap is not loaded
+#
 #snapshot=u:/usr/local/bin/snapshot
 
 #####################################################################
@@ -625,6 +651,32 @@ launchpath  = u:\usr\gem
 #widtets = widgets/baroqwdg.rsc
 #widgets = widgets/ronb_wdg.rsc
 #widgets = widgets/magicwdg.rsc
+
+#####################################################################
+# Language selection
+# ------------------
+#
+# lang = <two character language-code>     (default is 'en')
+#
+# Set your preferred language for XaAES here, current available
+# two-character language-codes are: en, de, fr, es, hu, ru, cs.
+#
+#lang = de
+
+#####################################################################
+# Switch keyboard tables
+# ----------------------
+#
+# keyboards = <key>, <layout1>, <layout2>, ...
+#
+# <key>:     ALT-CTRL shortcut key for switching between keyboard-
+#            tables (layouts). NOTE: The character you use should be
+#            present and equal in ALL layouts.
+# <layout*>: Names of keyboard.tbl files (without .tbl extension).
+#            Please copy the needed files from /keyboard/ to
+#            /mint/1-*-*/ folder.
+#
+#keyboards = <, british, german, french
 
 #####################################################################
 #
