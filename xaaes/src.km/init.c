@@ -482,7 +482,7 @@ again:
 	 */
 	strcpy(cfg.xobj_name, "xa_xtobj.rsc");
 
-	strcpy(cfg.rsc_name, "xaaes.rsc");
+	strcpy(cfg.rsc_name, RSCNAME);
 
 	cfg.font_id = STANDARD_AES_FONTID;		/* Font id to use */
 	cfg.xaw_point = 10;	/* fnt-sz for xaaes-windows */
