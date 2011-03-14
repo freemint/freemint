@@ -896,7 +896,7 @@ free_ext(struct proc *p)
 				/* release callback */
 				if (ext->cb_vector && ext->cb_vector->release)
 				{
-					FORCE("free_ext:release %lx flags=%lx", ext->data, ext->flags);
+					//FORCE("free_ext:release %lx flags=%lx", ext->data, ext->flags);
 					//if( !(ext->flags & PEXT_NOSHARE) )	// hack: when this flag is set data (probably) has been copied
 						(*ext->cb_vector->release)(ext->data);
 				}

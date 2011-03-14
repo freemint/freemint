@@ -569,7 +569,7 @@ sys_pexec(short mode, const void *p1, const void *p2, const void *p3)
 
 	if (p)
 	{
-		FORCE("%s:%d mkwait=%d", p->name, p->pid, mkwait);
+		//FORCE("%s:%d mkwait=%d", p->name, p->pid, mkwait);
 		if( p->pid == 1 && !strcmp( p->name, "GEM" ) )
 		{
 			FORCE("setting SINGLE_TASK for %d", p->pid);
