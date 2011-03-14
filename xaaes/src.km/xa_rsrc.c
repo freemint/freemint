@@ -770,7 +770,7 @@ static short rsc_trans_rw( struct xa_client *client, XA_FILE *rfp, char **txt, l
 
 struct rsc_scan
 {
-	short n_titles, title, lastbox, mwidth, change_lo[MAX_TITLES], shift[MAX_TITLES];
+	short n_titles, title, lastbox, mwidth, keep_w, change_lo[MAX_TITLES], shift[MAX_TITLES];
 	char *titles[MAX_TITLES];
 };
 
@@ -888,8 +888,12 @@ fix_objects(struct xa_client *client,
 								{
 									if( *(*p + blen - 1) != ' ' )
 										blen++;
-									if( blen > scan.mwidth )
-										scan.mwidth = blen;
+									if( obj->ob_x > 0 )
+										scan.keep_w = 1;	// more than one obj in one line -> don't adjust width
+									if( blen + obj->ob_x > scan.mwidth )
+									{
+										scan.mwidth = blen + obj->ob_x;
+									}
 								}
 
 							}
@@ -978,10 +982,12 @@ fix_objects(struct xa_client *client,
 						if( scan.title > 1 )
 							o->ob_x += scan.shift[scan.title-2];
 
-						for( o++; o < obj && o->ob_type == G_STRING; o++ )
-						{
-							o->ob_width = scan.mwidth;
-						}
+						if( scan.keep_w == 0 )
+							for( o++; o < obj && o->ob_type == G_STRING; o++ )
+							{
+								o->ob_width = scan.mwidth;
+							}
+
 						scan.mwidth = 0;
 					}
 					scan.lastbox = i;
