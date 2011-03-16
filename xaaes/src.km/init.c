@@ -695,7 +695,7 @@ again:
 			 * The bits 0-7 provide info about the layout of the keyboard
 			 * The bits 8-15 identify the language of the country
 			 */
-			if( err & 0xf0 )	// language
+			if( err & 0xff00 )	// language
 				err >>= 8;
 			if( err < MaX_COUNTRYCODE )
 			{
