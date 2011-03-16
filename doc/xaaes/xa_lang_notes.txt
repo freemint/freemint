@@ -1,0 +1,30 @@
+NOTES for XaAES multi language support:
+
+- For XaAES language selection, please add a line "lang = xx" in xaaes.cnf where "xx" is the
+  code for your preferred language:
+  en  english
+  de  german
+  fr  french  (Thanks to JFL)
+  es  spanish  (Thanks to David)
+  hu  hungarian  (Thanks to Joszef)
+  ru  russian  (Thanks to Dima)
+  cs  czech  (Thanks to Bohdan)
+
+You may also add any other two-character-language-code, and add your
+translation-strings in the rsl-file.
+
+- XaAES can read out the resource strings of every started app and generate an .rsl file for it. This
+  is selectable in xaaes.cnf, too. Just add another parameter to the according "app_options= " line:
+  "rsc_lang = 0" for no translation file.
+  "rsc_lang = 1" for generate (or read, if present) a translation file.
+
+  To enable this for XaAES:
+   app_options = aessys, thinwork = ..., rsc_lang = 1
+
+	Or any other app-name where translation should take place.
+
+- English, german, french, spanish and hungarian version can be used with default Atari charset (fonts).
+- For russian version you have to install l_kyr_08.fnt, l_kyr_09.fnt and l_kyr_10.fnt in NVDI or fvdi
+  as system fonts. There's a russian keyboard table "russian.tbl" for MiNT, too.
+- For czech version you have to install iso2a-16.fnt and iso2a-8.fnt in NVDI or fvdi as system fonts.
+- For greek version...
