@@ -690,12 +690,20 @@ again:
 			strncpy( cfg.lang, lang, 2 );
 		}
 		else if (!(s_system(S_GETCOOKIE, COOKIE__AKP, (unsigned long)(&err))))
+		{
+			/*
+			 * The bits 0-7 provide info about the layout of the keyboard
+			 * The bits 8-15 identify the language of the country
+			 */
+			if( err & 0xf0 )	// language
+				err >>= 8;
 			if( err < MaX_COUNTRYCODE )
 			{
 				err *= 2;
 				cfg.lang[0] = countrycodes[err];
 				cfg.lang[1] = countrycodes[err+1];
 			}
+		}
 	}
 	if( cfg.lang[0] )
 	{
