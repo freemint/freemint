@@ -7,12 +7,12 @@ D             ôffnet den Screenshot-Dialog (XAAESNAP.PRG benîtigt)
 E             ôffnet das Fenster-KontextmenÅ
 F,L           ôffnet den Task-Manager
 HELP          ôffnet den XaAES Infodialog
-H             System herunterfahren (oder $SDMASTER ausfÅhren, falls gesetzt)
+H             System herunterfahren (o. $SDMASTER ausfÅhren, falls gesetzt)
 I             Oberstes Fenster (de-)ikonifizieren
 K             Programm starten
 T,HOME        Bildschirm wiederherstellen (neuzeichnen)
 P             Farbpalette wiederherstellen (Farbtiefe 8-Bit oder weniger)
-Q,G           XaAES beenden (oder $SDMASTER ausfÅhren, falls gesetzt)
+Q,G           XaAES sofort beenden (o. $SDMASTER ausfÅhren, falls gesetzt)
 R             Versucht ein "hÑngendes" System wiederherzustellen
 V             Alle versteckten Programme hervorholen
 W             Globaler Fensterwechsel
@@ -28,6 +28,9 @@ Shortcuts/Navigation im Dateiauswahl-Dialog:
 
 CTRL+O        ôffnet das FenstermenÅ (Navigation mit Pfeiltasten und RETURN)
 CTRL+C        Der selektierte Pfad (+Dateiname) wird ins Clipboard kopiert
+
+ALT+ " + "    Vergrîûert die Schrift in der List-Box
+ALT+ " - "    Verkleinert die Schrift in der List-Box
 
 * List-Box selektiert:
 
@@ -47,5 +50,5 @@ CTRL+C        Der selektierte Pfad (+Dateiname) wird ins Clipboard kopiert
 Ist in der List-Box eine Datei selektiert, so kann man mit PFEIL-RECHTS in die
 Eingabezeile wechseln und den Namen editieren.
 ---------------------------------------------------------------------------------
-Mehr Dokumentation: http://wiki.sparemint.org/index.php/XaAES
+Weitere Informationen: http://wiki.sparemint.org/index.php/XaAES
 
