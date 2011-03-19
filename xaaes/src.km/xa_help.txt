@@ -29,6 +29,9 @@ Shortcuts/navigation in XaAES fileselector:
 CTRL+O        Open window menu (navigation with CURSOR keys and RETURN)
 CTRL+C        The path and the marked file (if any) is copied to the Clipboard
 
+ALT+ " + "    Increase the fontsize in listbox
+ALT+ " - "    Decrease the fontsize in listbox
+
 * List-box selected:
 
   CURSOR-RIGHT              Open tree
@@ -48,4 +51,3 @@ If an entry is selected in the list-box, CURSOR-RIGHT focusses the edit-field,
 so the selection can be edited.
 ---------------------------------------------------------------------------------
 Additional documentation: http://wiki.sparemint.org/index.php/XaAES
-
