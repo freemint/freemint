@@ -791,13 +791,6 @@ fix_objects(struct xa_client *client,
 
 	memset( &scan, 0, sizeof(scan) );
 
-	/*short shift[MAX_TITLES], n_titles = 0, title = 0, lastbox = 0, mwidth = 0, change_lo[MAX_TITLES];
-	char *titles[MAX_TITLES];
-	memset( shift, 0, sizeof(shift));
-	memset( change_lo, 0, sizeof(change_lo));
-	memset( titles, 0, sizeof(titles));
-	*/
-
 	DIAG((D_rsrc, client, "fix_objects: b=%lx, cibh=%lx, obj=%lx, num=%ld",
 		b, cibh, obj, n));
 
@@ -932,7 +925,7 @@ fix_objects(struct xa_client *client,
 				obj->ob_spec.free_string += (long)b;
 				ib = obj->ob_spec.iconblk;
 
-				if( screen.c_max_h < 16 )
+				if( client != C.Aes && screen.c_max_h < 16 )
 					ib->ib_hicon /= (160 / (screen.c_max_h * 10));
 				break;
 			}
@@ -975,7 +968,6 @@ fix_objects(struct xa_client *client,
 							rsc_lang_file( WRITE, rfp, "### - TREE - ###", 16 );
 						}
 					}
-					//break;
 				}
 
 				else if( scan.title >= 0 )
@@ -995,9 +987,9 @@ fix_objects(struct xa_client *client,
 
 						scan.mwidth = 0;
 					}
-					scan.lastbox = i;
 					scan.title++;
 				}
+				scan.lastbox = i;
 				if( scan.n_titles > 0 && scan.title > scan.n_titles )
 				{
 					scan.title = -1;
@@ -1115,8 +1107,8 @@ fix_trees(struct xa_client *client, void *b, OBJECT **trees, unsigned long n, sh
 						/*if( j == 3 && screen.c_max_h < 16 && (obj->ob_type == G_CICON || obj->ob_type == G_ICON || obj->ob_type == G_IBOX) )
 						{
 							*(c-1) *= (16 / screen.c_max_h);
-						}
-						*/
+						}*/
+
 					}
 					k++;
 				}
