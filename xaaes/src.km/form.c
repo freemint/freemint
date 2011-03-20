@@ -555,7 +555,7 @@ Form_Cursor(XA_TREE *wt,
 	    ushort keycode,
 	    ushort keystate,
 	    struct xa_aes_object obj,
-	    bool redraw,
+	    bool redraw,	// not used!
 	    struct xa_rect_list **rl,
 	/* output */
 	    struct xa_aes_object *ret_focus,
@@ -850,17 +850,6 @@ g_slist:
 	}
 
 	next_obj = Form_Cursor(wt, v, keycode, keystate, next_obj, redraw, rl, &new_focus, &keycode);
-#if 1
-	if( new_focus.ob->ob_type == G_SLIST ){
-		wt->focus = new_focus;
-		keycode = key->aes;
-		/*
-		 * this is true if user uses a cursor-key right after opening of a list-window
-		 * and focus was not set to the list
-		 */
-		goto g_slist;
-	}
-#endif
 	if (keycode)
 	{
 		bool has_focus = focus_set(wt);
@@ -962,6 +951,15 @@ g_slist:
 			}
 			wt->focus = new_focus;
 			obj_draw(wt, v, new_focus, 0, NULL, *rl, md);
+		}
+		if( new_focus.ob->ob_type == G_SLIST )
+		{
+		/*
+		 * this is true if user uses a cursor-key right after opening of a list-window
+		 * and focus was not set to the list
+		 */
+			keycode = key->aes;
+			goto g_slist;
 		}
 	}
 	//else
