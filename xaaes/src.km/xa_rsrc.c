@@ -928,7 +928,12 @@ fix_objects(struct xa_client *client,
 			}
 			case G_ICON:
 			{
+				ICONBLK *ib;
 				obj->ob_spec.free_string += (long)b;
+				ib = obj->ob_spec.iconblk;
+
+				if( screen.c_max_h < 16 )
+					ib->ib_hicon /= (160 / (screen.c_max_h * 10));
 				break;
 			}
 			case G_CICON:
@@ -1107,10 +1112,11 @@ fix_trees(struct xa_client *client, void *b, OBJECT **trees, unsigned long n, sh
 						if (temp & 0x8000)
 							temp += 0x00010000L;
 						*c++ = (temp >> 16);
-						if( j == 3 && screen.c_max_h < 16 && (obj->ob_type == G_CICON || obj->ob_type == G_ICON || obj->ob_type == G_IBOX) )
+						/*if( j == 3 && screen.c_max_h < 16 && (obj->ob_type == G_CICON || obj->ob_type == G_ICON || obj->ob_type == G_IBOX) )
 						{
 							*(c-1) *= (16 / screen.c_max_h);
 						}
+						*/
 					}
 					k++;
 				}
