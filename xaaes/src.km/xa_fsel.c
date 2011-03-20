@@ -1086,7 +1086,9 @@ inq_xfs(struct fsel_data *fs, char *p, char *dsep)
 	else
 		fs->fcase &= ~FS_FSNOCASE;
 
-	if( c == DP_CASEINSENS)	/* case preserved */
+	if( c == DP_CASESENS)	/* case sens */
+		fs->fcase &= ~FS_PATNOCASE;
+	else
 		fs->fcase |= FS_PATNOCASE;
 
 	return !(c == DP_CASECONV && t == DP_DOSTRUNC);
@@ -1235,8 +1237,8 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 		}
 		else
 		{
-			if( fs->initial != 1 )
-				fs->fcase &= ~FS_PATNOCASE;
+			//if( fs->initial != 1 )
+				//fs->fcase &= ~FS_PATNOCASE;
 			strcpy( pattern, fs->fs_pattern );
 		}
 		fs->initial = 0;
