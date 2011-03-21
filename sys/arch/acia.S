@@ -170,10 +170,11 @@ mid_multiple:
 #ifdef __mcoldfire__
 	moveq.l	#0x06,d1
 	cmp.b	IKBDSTATE(a3),d1
+	bcc.s	nostk
 #else
 	cmp.b	#0x06,IKBDSTATE(a3)
-#endif
 	bcs.s	nostk
+#endif
 
 	clr.l	d1
 	move.b	IKBDSTATE(a3),d1
