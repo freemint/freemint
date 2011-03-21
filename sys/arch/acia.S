@@ -41,16 +41,33 @@ _old_acia:
 	dc.l	0
 
 _new_acia:
+#ifdef __mcoldfire__
+	lea	-32(sp),sp
+	movem.l	d0-d3/a0-a3,(sp)
+#else
 	movem.l	d0-d3/a0-a3,-(sp)
+#endif
 again:	move.l	_syskey,a3
 //	move.l	VMIDISYS(a3),a0
 //	jsr	(a0)
 	move.l	VIKBDSYS(a3),a0
 	jsr	(a0)
+#ifdef __mcoldfire__
+	moveq.l	#04,d0
+	btst	d0,0xfa01.w	//(0xfa01).w
+#else
 	btst	#04,0xfa01.w	//(0xfa01).w
+#endif
 	beq.s	again
+#ifdef __mcoldfire__
+	moveq.l	#6,d0
+	bclr	d0,0xfa11.w	//move.b	#0xbf,(0xfa11).w
+	movem.l	(sp),d0-d3/a0-a3
+	lea	32(sp),sp
+#else
 	movem.l	(sp)+,d0-d3/a0-a3
 	bclr	#6,0xfa11.w	//move.b	#0xbf,(0xfa11).w
+#endif
 #ifdef M68000
 	nop				// see intr.S and syscall.S
 #endif
@@ -98,7 +115,11 @@ no_error:
 	bne.s	mid_multiple
 	cmp.b	#0xf6,d0		// $f6-$ff are multibyte packets
 	bcc.s	not_keyboard
+#ifdef __mcoldfire__
+	and.l	#0xff,d0
+#else
 	and.w	#0xff,d0
+#endif
 	move.l	_keyrec,-(sp)
 	move.w	d0,-(sp)
 	jsr	_ikbd_scan
@@ -110,16 +131,29 @@ no_error:
 //	jmp	(a1)
 
 not_keyboard:
+#ifdef __mcoldfire__
+	sub.l	#0xf6,d0
+#else
 	sub.b	#0xf6,d0
+#endif
 
 // unlike some documentation states, syskey->ikbdstate contains
 // the type of the packet, and not the number of bytes transmitted.
 
 	lea	type,a1
+#ifdef __mcoldfire__
+	move.b	(a1,d0.l),IKBDSTATE(a3)	
+#else
 	move.b	(a1,d0.w),IKBDSTATE(a3)	
+#endif
 	lea	todo,a1
+#ifdef __mcoldfire__
+	move.b	(a1,d0.l),IKBDTODO(a3)
+	add.l	#0xf6,d0
+#else
 	move.b	(a1,d0.w),IKBDTODO(a3)
 	add.b	#0xf6,d0
+#endif
 	cmp.b	#0xf8,d0
 	blt.s	joy
 	cmp.b	#0xfb,d0
@@ -133,7 +167,12 @@ joy:	cmp.b	#0xfd,d0
 ret:	rts
 
 mid_multiple:
+#ifdef __mcoldfire__
+	moveq.l	#0x06,d1
+	cmp.b	IKBDSTATE(a3),d1
+#else
 	cmp.b	#0x06,IKBDSTATE(a3)
+#endif
 	bcs.s	nostk
 
 	clr.l	d1
@@ -151,6 +190,18 @@ nostk:	lea	buffers,a2
 	clr.l	d2
 	move.b	IKBDSTATE(a3),d2
 
+#ifdef __mcoldfire__
+	subq.l	#1,d2
+
+	move.l	d2,d3
+	lsl.l	#3,d2			// multiply by 8
+	lsl.l	#2,d3			// multiply by 4
+	add.l	d3,d2			// multiply by 12
+
+	move.l	(a2,d2.l),a0		// get buffer address for packet
+	move.l	4(a2,d2.l),a1		// get buffer end for packet
+	move.l	8(a2,d2.l),d3		// routine to call
+#else
 	subq.w	#1,d2
 
 	move.w	d2,d3
@@ -161,13 +212,21 @@ nostk:	lea	buffers,a2
 	move.l	(a2,d2.w),a0		// get buffer address for packet
 	move.l	4(a2,d2.w),a1		// get buffer end for packet
 	move.l	8(a2,d2.w),d3		// routine to call
+#endif
 	move.l	(a3,d3.l),a2
 
 	clr.l	d2
 	move.b	IKBDTODO(a3),d2
 	sub.l	d2,a1
 	move.b	d0,(a1)
+#ifdef __mcoldfire__
+	moveq.l	#0,d0
+	move.b	IKBDTODO(a3),d0
+	subq.l	#1,d0
+	move.b	d0,IKBDTODO(a3)
+#else
 	subq.b	#1,IKBDTODO(a3)
+#endif
 	tst.b	IKBDTODO(a3)
 	bne.s	xret
 

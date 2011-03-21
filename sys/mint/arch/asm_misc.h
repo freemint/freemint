@@ -39,6 +39,28 @@
 # define MINT_CLOBBER_LIST
 #endif
 
+/* Macros for ColdFire compatibility. */
+
+#ifdef __mcoldfire__
+
+#define PUSH_SP(regs,size)						\
+	"lea	sp@(-" #size "),sp\n\t"					\
+	"movml	" regs ",sp@\n\t"
+
+#define POP_SP(regs,size)						\
+	"movml	sp@," regs "\n\t"					\
+	"lea	sp@(" #size "),sp\n\t"
+
+#else
+
+#define PUSH_SP(regs,size)						\
+	"movml	" regs ",sp@-\n\t"
+
+#define POP_SP(regs,size)						\
+	"movml	sp@+," regs "\n\t"
+
+#endif
+
 /* On TOS 1.04, when calling Bconout(2,'\a') the VDI jumps directly
    back to the BIOS which expects the register A5 to be set to zero.
    (Specifying the register as clobbered does not work.) */
@@ -50,13 +72,13 @@
 	short _a = (short)(a);			\
 						\
 	__asm__ volatile			\
-	("  moveml d5-d7/a4-a6,sp@-;		\
-	    movew %2,sp@-;			\
-	    movel %1,a0;			\
-	    subal a5,a5;			\
-	    jsr a0@;				\
-	    addqw #2,sp;			\
-	    moveml sp@+,d5-d7/a4-a6 "		\
+	(   PUSH_SP("d5-d7/a4-a6", 24)		\
+	    "movew	%2,sp@-\n\t"		\
+	    "movel	%1,a0\n\t"		\
+	    "subal	a5,a5\n\t"		\
+	    "jsr	a0@\n\t"		\
+	    "addql	#2,sp\n\t"		\
+	    POP_SP("d5-d7/a4-a6", 24)		\
 	: "=r"(retvalue)	/* outputs */	\
 	: "r"(_f), "r"(_a)	/* inputs */	\
 	:  MINT_CLOBBER_LIST /* clobbered regs */ \
@@ -72,14 +94,14 @@
 	short _b = (short)(b);			\
 						\
 	__asm__ volatile			\
-	("  moveml d5-d7/a4-a6,sp@-;		\
-	    movew %3,sp@-;			\
-	    movew %2,sp@-;			\
-	    movel %1,a0;			\
-	    subal a5,a5;			\
-	    jsr a0@;				\
-	    addqw #4,sp;			\
-	    moveml sp@+,d5-d7/a4-a6 "		\
+	(   PUSH_SP("d5-d7/a4-a6", 24)		\
+	    "movew	%3,sp@-\n\t"		\
+	    "movew	%2,sp@-\n\t"		\
+	    "movel	%1,a0\n\t"		\
+	    "subal	a5,a5\n\t"		\
+	    "jsr	a0@\n\t"		\
+	    "addql	#4,sp\n\t"		\
+	    POP_SP("d5-d7/a4-a6", 24)		\
 	: "=r"(retvalue)	/* outputs */	\
 	: "r"(_f), "r"(_a), "r"(_b) /* inputs */ \
 	: MINT_CLOBBER_LIST /* clobbered regs */ \
