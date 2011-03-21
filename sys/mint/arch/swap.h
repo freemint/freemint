@@ -40,7 +40,7 @@ __asm_swap32 (register __u32 x)
 {
 	__asm__
 	(
-		"swap %0;"
+		"swap    %0"
 		: "=d" (x)
 		: "0" (x)
 	);

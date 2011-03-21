@@ -35,6 +35,8 @@
 # define _mint_m68k_bswap_h
 
 
+#ifndef __mcoldfire__
+
 static inline __u16
 __asm_bswap16 (register __u16 x)
 {
@@ -89,6 +91,8 @@ __asm_bswap64 (register __u64 x)
 }
 # define HAVE_ASM_BSWAP64
 # endif
+
+#endif /* __mcoldfire__ */
 
 
 # endif /* _mint_m68k_bswap_h */
