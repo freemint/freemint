@@ -1151,7 +1151,7 @@ mint_thread(void *arg)
 	if (pid > 0)
 	{
 		do {
-# if 1
+# if !defined(COLDFIRE)
 			r = sys_pwaitpid(-1, 1, NULL);
 			if (r == 0)
 			{
