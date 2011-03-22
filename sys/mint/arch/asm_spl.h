@@ -39,20 +39,24 @@
 static inline void
 cpu_stop (void)
 {
+#ifndef COLDFIRE /* Currently buggy with FireTOS */
 	__asm__ volatile
 	(
 		"stop  #0x2000"
 	);
+#endif
 }
 
 static inline void
 cpu_lpstop (void)
 {
+#ifndef __mcoldfire__
 	/* 68060's lpstop #$2000 instruction */
 	__asm__ volatile
 	(
 		"dc.w	0xf800,0x01c0,0x2000"
 	);
+#endif
 }
 
 static inline __u16

@@ -462,7 +462,7 @@ INLINE ulong rotate_left (int i, ulong word);
 INLINE ulong
 rotate_left (int i, ulong word)
 {
-# ifdef __GNUC__
+# if defined(__GNUC__) && !defined(__mcoldfire__)
 	__asm__
 	(
 		"roll  %2,%1"
