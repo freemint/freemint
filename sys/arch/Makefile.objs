@@ -59,15 +59,6 @@ NOCFLAGS-kernel.S = $(MODEL)
 endif
 CFLAGS-kernel.S = -m68000
 
-NOCFLAGS-mprot030.c = $(MODEL)
-NOCFLAGS-mprot040.c = $(MODEL)
-CFLAGS-mprot030.c = -m68030
-CFLAGS-mprot040.c = -m68060
-NOCFLAGS-init_intr.c = $(MODEL)
-CFLAGS-init_intr.c = -m68000
-NOCFLAGS-sig_mach.c = $(MODEL)
-CFLAGS-sig_mach.c = -m68000
-
 cflags = $(kernel_cflags)
 nocflags = $(kernel_nocflags)
 
