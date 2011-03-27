@@ -20,13 +20,15 @@ all-here: build
 # default overwrites
 DEFINITIONS = -D__KERNEL_MODULE__ -DMODULE_NAME=XaAES $(XAAESDEFS)
 
-CFLAGS-xa_shel.c = -Wno-uninitialized
+#CFLAGS-xa_shel.c = -Wno-uninitialized
 
 INCLUDES += -I$(top_srcdir)/../../sys
 WARN = 	-Wall \
 	-Wmissing-prototypes \
+	-Winline \
 	-Wshadow \
-	-Wpointer-arith
+	-Wpointer-arith \
+	-Wcast-qual
 
 NOCFLAGS-adiload.c = $(MODEL)
 CFLAGS-adiload.c = -m68000
@@ -44,7 +46,7 @@ NOCFLAGS-xa_user_things.s = $(MODEL)
 CFLAGS-xa_user_things.s = -m68000
 
 LD = $(CC) -nostdlib -Wl,--entry -Wl,_init
-LIBS = -lgem16 $(LIBKERN) -lgcc
+LIBS = -lgem $(LIBKERN) -lgcc
 STRIPFLAGS =
 
 # default definitions
