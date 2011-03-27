@@ -14,7 +14,7 @@ INCLUDES = -I$(top_srcdir)
 DEFINITIONS =
 
 ifeq ($(CPU),v4e)
-MODEL = -mcfv4e
+MODEL = -mcpu=5475
 else
 MODEL = -m68$(CPU)
 endif
