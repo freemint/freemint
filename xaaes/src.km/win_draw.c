@@ -3654,8 +3654,9 @@ cleanup_colortheme(struct module *m, struct window_colours *wc, char *txt)
 	}
 }
 
-static int imgpath_file = 0;
-static char imgpath[128];
+/* render_obj.c */
+extern int imgpath_file;
+extern char imgpath[128];
 
 static void _cdecl
 delete_texture(void *_t)
@@ -3671,6 +3672,9 @@ static struct widg_texture *
 load_texture(struct module *m, char *fn)
 {
 	struct widg_texture *t = NULL;
+
+	if( imgpath_file == -1 )
+		return NULL;
 
 	imgpath[imgpath_file] = '\0';
 	strcat(imgpath, fn);
@@ -4055,7 +4059,7 @@ init_module(const struct xa_module_api *xmapi, const struct xa_screen *screen, c
 		}
 		fix_default_widgets(rsc);
 
-		if (screen->planes >= 8)
+		if (screen->planes >= 8 && imgpath_file != -1)
 		{
 			strcpy(imgpath, "img\\");
 			strcat(imgpath, screen->planes == 8 ? "8b\\" : "hc\\");

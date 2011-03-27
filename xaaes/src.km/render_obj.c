@@ -5449,7 +5449,7 @@ d_g_button(struct widget_tree *wt, struct xa_vdi_settings *v)
 
 		und = (ob->ob_state & OS_WHITEBAK) ? ((ob->ob_state >> 8) & 0x7f) : -1;
 
-		/* Use extent, NOT vst_alinment. Makes x and y to v_gtext
+		/* Use extent, NOT vst_alignment. Makes x and y to v_gtext
 		 * real values that can be used for other stuff (like shortcut
 		 * underlines :-)
 		 */
@@ -6116,8 +6116,8 @@ d_g_title(struct widget_tree *wt, struct xa_vdi_settings *v)
 	done(OS_SELECTED);
 }
 
-static int imgpath_file = 0;
-static char imgpath[128];
+int imgpath_file = 0;
+char imgpath[128];
 
 static void _cdecl
 delete_texture(void *_t)
@@ -6133,6 +6133,9 @@ static struct texture *
 load_texture(char *fn)
 {
 	struct texture *t = NULL;
+
+	if( imgpath_file == -1 )
+		return NULL;
 
 	imgpath[imgpath_file] = '\0';
 	strcat(imgpath, fn);
@@ -6295,9 +6298,22 @@ init_module(const struct xa_module_api *xmapi, const struct xa_screen *xa_screen
 	}
 	if (screen->planes >= 8)
 	{
+		char dbuf[128];
+		long d;
 		strcpy(imgpath, "img\\");
 		strcat(imgpath, screen->planes == 8 ? "8b\\" : "hc\\");
-		imgpath_file = strlen(imgpath);
+		sprintf( dbuf, sizeof(dbuf), "%s%s", xmapi->C->Aes->home_path, imgpath );
+		d = d_opendir( dbuf, 0 );
+		if( d > 0 )
+		{
+			imgpath_file = strlen(imgpath);
+			d_closedir(d);
+		}
+		else
+		{
+			imgpath_file = -1;
+			BLOG((0,"init_module: '%s' not found", dbuf ));
+		}
 	}
 
 	clear_edit(&nil_tree.e);
