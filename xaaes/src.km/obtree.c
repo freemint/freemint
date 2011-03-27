@@ -3130,7 +3130,7 @@ obj_change(XA_TREE *wt,
 		{
 			r = *(RECT*)&obj.ob->ob_x;
 		}
-		obj_draw(wt, v, obj, transdepth, &r/*clip*/, rl, dflags);
+		obj_draw(wt, v, obj, transdepth, &r, rl, dflags);
 	}
 }
 
@@ -4082,7 +4082,7 @@ obj_edit(XA_TREE *wt,
 						if (redraw)
 						{
 							(*wt->objcr_api->eor_cursor)(wt, v, rl);
-							obj_ed_char(ei, ted, NULL, 0x011b);
+							obj_ed_char(ei, ted, NULL, SC_ESC);
 							while (*string)
 								obj_ed_char(ei, ted, NULL, *string++);
 
