@@ -280,7 +280,7 @@ short set_xa_fnt( int pt, struct xa_wtxt_inf *wp[], OBJECT *obtree, int objs[], 
 	if( objs && obtree )
 		for( i = 0; objs[i]; i++ )
 		{
-			object_get_spec(obtree + objs[i])->iconblk->ib_hicon = h;
+			object_get_spec(obtree + objs[i])->iconblk->ib_hicon = (obtree + objs[i])->ob_height = h;
 		}
 
 	if( list )
@@ -1698,8 +1698,6 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 		struct scroll_content sc = {{ 0 }};
 		int tm_ticks[] = {TM_TICK1, 25, 1, TM_TICK2, 50, 2, TM_TICK3, 75, 1, 0, 0, 0};
 
-
-
 		obtree = duplicate_obtree(client, ResourceTree(C.Aes_rsc, TASK_MANAGER), 0);
 		if (!obtree) goto fail;
 
@@ -1736,7 +1734,6 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 				 xa_strings[RS_APPLST], NULL, NULL, 255);
 
 		if (!list) goto fail;
-
 
 		/*!obj_init_focus(wt, OB_IF_RESET);*/
 		obj_rectangle(wt, aesobj(obtree, 0), &or);
