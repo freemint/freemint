@@ -756,6 +756,7 @@ static short rsc_trans_rw( struct xa_client *client, XA_FILE *rfp, char **txt, l
 		blen = len;
 		rsc_lang_file( WRITE, rfp, buf, len );
 		rsc_lang_file( WRITE, rfp, LF_SEPSTR, 1 );
+
 	}
 	else if( client->options.rsc_lang == READ )
 	{
@@ -959,7 +960,7 @@ fix_objects(struct xa_client *client,
 			case G_BOX:
 				if( client->options.rsc_lang == WRITE )
 				{
-					if( scan.title >= 0 )
+					if( scan.title >= 0 && scan.title < MAX_TITLES )
 						scan.title++;
 					else
 					{
@@ -969,7 +970,6 @@ fix_objects(struct xa_client *client,
 						}
 					}
 				}
-
 				else if( scan.title >= 0 )
 				{
 					if( scan.mwidth && scan.lastbox > 0 )	// last entry in menu-box
@@ -1107,8 +1107,8 @@ fix_trees(struct xa_client *client, void *b, OBJECT **trees, unsigned long n, sh
 						/*if( j == 3 && screen.c_max_h < 16 && (obj->ob_type == G_CICON || obj->ob_type == G_ICON || obj->ob_type == G_IBOX) )
 						{
 							*(c-1) *= (16 / screen.c_max_h);
-						}*/
-
+						}
+						*/
 					}
 					k++;
 				}
@@ -1256,6 +1256,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 		if (size != fsize)
 		{
 			DIAG((D_rsrc, client, "LoadResource(): Error loading file (size mismatch)"));
+			BLOG((0, "LoadResource(): Error loading file (size mismatch)"));
 			if (client == C.Aes || client == C.Hlp)
 				kfree(base);
 			else
