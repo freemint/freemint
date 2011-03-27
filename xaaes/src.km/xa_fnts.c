@@ -59,7 +59,7 @@
  *   http://arnaud.bercegeay.free.fr/gemlib/
  *
  * - the MagiC documentation project:
- *   http://www.bygjohn.fsnet.co.uk/atari/mdp/
+ *   http://homepage.mac.com/bygjohn/atari/mdp/index.html
  */
 
 #if WDIALOG_FNTS
@@ -139,7 +139,7 @@ xvst_load_fonts(XVDIPB *vpb, short select, short handle)
 	return vpb->intout[0];
 }
 //callout_display(short x, short y, RECT *clip, long id, long pt, long ratio, char *txt)
-static void
+static long
 callout_display(struct xa_fnts_item *f, short vdih, long pt, long ratio, RECT *clip, RECT *area, char *txt)
 {
 	if (f)
@@ -195,15 +195,32 @@ callout_display(struct xa_fnts_item *f, short vdih, long pt, long ratio, RECT *c
 		}
 		else
 		{
-			short x, y, w, h;
-			short c[8];
+			short x, y, w, h, ch;
+			short c[8], ptr;
 			char inf[256];
+
+			pt >>= 16;
 
 			vst_color(vdih, 1);
 			vs_clip(vdih, 1, (short *)clip);
-			vst_alignment(vdih, 0, 5, &x, &x);
+			vst_alignment(vdih, TA_LEFT, TA_ASCENT, &x, &x);
 			vst_font(vdih, f->f.id);
-			vst_point(vdih, pt >> 16, &x, &x, &x, &x);
+			ptr = vst_point(vdih, pt, &x, &h, &x, &ch);
+			if( ptr != pt )
+			{
+				h += (pt - ptr);
+				if( ptr < pt )
+				{
+					h += h / 15;
+				}
+				else
+				{
+					h -= h / 15;
+				}
+
+				vst_height( vdih, h, &x, &ch, &x, &w );
+
+			}
 
 			vqt_extent(vdih, txt, c);
 
@@ -211,7 +228,7 @@ callout_display(struct xa_fnts_item *f, short vdih, long pt, long ratio, RECT *c
 			h = -(c[1] - c[7]);
 
 			x = area->x + (area->w >> 1);
-			y = area->y + (area->h >> 1);
+			y = area->y + 4;//(area->h >> 1);
 
 			//y -= (h >> 1);
 			x -= (w >> 1);
@@ -222,12 +239,15 @@ callout_display(struct xa_fnts_item *f, short vdih, long pt, long ratio, RECT *c
 				y = area->y;
 
 			v_gtext(vdih, x, y, txt);
-			sprintf( inf, sizeof(inf)-1, "id:%d,h:%d,w=%d", (short)f->f.id, h, w / (int)strlen(txt));
+			w /= (int)strlen(txt);
+			sprintf( inf, sizeof(inf)-1, "id:%d,h:%d,w:%d", (short)f->f.id, h, w );
+			ratio = (((long)w << 16L) ) / (long)h;
 			vst_font(vdih, 1 );
 			vst_point(vdih, 9, &x, &x, &x, &x);
 			v_gtext(vdih, area->x, area->y, inf);
 		}
 	}
+	return ratio;
 }
 
 static void
@@ -238,7 +258,8 @@ fnts_extb_callout(struct extbox_parms *p)
 
 	if (f)
 	{
-		callout_display(f, fnts->vdi_handle, fnts->fnt_pt, fnts->fnt_ratio, &p->clip, &p->r, fnts->sample_text);
+		fnts->fnt_ratio = callout_display(f, fnts->vdi_handle, fnts->fnt_pt, fnts->fnt_ratio, &p->clip, &p->r, fnts->sample_text);
+
 	}
 }
 
@@ -950,6 +971,10 @@ create_new_fnts(enum locks lock,
 			d = kmalloc(slen);
 			if (d) strcpy(d, opt);
 		}
+		else
+		{
+			wt->tree[FNTS_XUDEF].ob_flags |= OF_HIDETREE;
+		}
 		fnts->opt_button = d;
 
 		fnts->fnts_ring = get_font_items(fnts);
@@ -1188,6 +1213,7 @@ init_fnts(struct xa_fnts_info *fnts)
 
 	{
 		char pt[16];
+		long l;
 		TEDINFO *ted;
 		struct xa_aes_object size_obj, ratio_obj;
 
@@ -1198,8 +1224,8 @@ init_fnts(struct xa_fnts_info *fnts)
 		 * set ratio edit field..
 		 */
 		ted = object_get_tedinfo(aesobj_ob(&ratio_obj), NULL);
-		sprintf(pt, sizeof(pt), "%d", (unsigned short)(fnts->fnt_ratio >> 16));
-		sprintf(pt + strlen(pt), sizeof(pt) - strlen(pt), ".%d", (short)(fnts->fnt_ratio));
+		l = sprintf(pt, ted->te_txtlen, "%d", (unsigned short)(fnts->fnt_ratio >> 16L));
+		sprintf(pt + l, ted->te_txtlen - l, ".%d", (short)(fnts->fnt_ratio));
 		strcpy(ted->te_ptext, pt);
 		obj_edit(fnts->wt, fnts->vdi_settings, ED_INIT, ratio_obj, 0, -1, NULL, false, NULL, NULL, NULL, NULL);
 
@@ -1557,6 +1583,17 @@ get_cbstatus(OBJECT *obtree)
 	return state;
 }
 
+static int inc_str( char *in, long l, int key, long min, long max )
+{
+	long i = atol(in);
+	i = key == '+' ? i + 1L : i - 1L;
+	if( i < min )
+		i = min;
+	else if( i > max )
+		i = max;
+	return sprintf( in, l+1, "%ld", i );
+}
+
 unsigned long
 XA_fnts_evnt(enum locks lock, struct xa_client *client, AESPB *pb)
 {
@@ -1573,6 +1610,9 @@ XA_fnts_evnt(enum locks lock, struct xa_client *client, AESPB *pb)
 // 		OBJECT *obtree = fnts->wt->tree;
 		long val;
 		struct wdlg_evnt_parms wep;
+		struct xa_aes_object size_obj, ratio_obj;
+		TEDINFO *ted;
+		int key;
 
 		wep.wind	= wind;
 		wep.wt		= get_widget(wind, XAW_TOOLBAR)->stuff;
@@ -1582,7 +1622,42 @@ XA_fnts_evnt(enum locks lock, struct xa_client *client, AESPB *pb)
 		wep.redraw	= wdialog_redraw;
 		wep.obj		= inv_aesobj();
 
+
+		key = (wep.ev->key & 0xff);
+
+		if( key == '+' || key == '-' )
+		{
+			/* simulate cursor-right to unmark edit-field */
+			short k = wep.ev->key;
+
+			size_obj  = aesobj(fnts->wt->tree, FNTS_EDSIZE);
+			if( !same_aesobj(&size_obj, &wep.wt->focus) )
+			{
+				obj_draw(wep.wt, wind->vdi_settings, wep.wt->focus, 0, NULL, NULL, UNDRAW_FOCUS);
+				wep.wt->focus = size_obj;
+			}
+			wep.ev->key = 0x4d00;	//SC_RTARROW;
+			wep.obj = size_obj;
+			ret = wdialog_event(lock, client, &wep);
+			wep.ev->key = k;
+		}
+
 		ret = wdialog_event(lock, client, &wep);
+
+		if( key == '+' || key == '-' )
+		{
+			int l;
+			ted = object_get_tedinfo(fnts->wt->tree + FNTS_EDSIZE, NULL);
+			l = inc_str( ted->te_ptext, ted->te_txtlen, key, 1, 99 );
+			aesobj_setsel(&wep.obj);
+			/* adjust cursor-pos: affects next call! */
+			if( wep.wt->e.pos != l )
+			{
+				wep.wt->e.pos = l;
+				if( wep.wt->ei )
+					wep.wt->ei->pos = l;
+			}
+		}
 
 		if (check_internal_objects(fnts, wep.obj))
 		{
@@ -1591,9 +1666,22 @@ XA_fnts_evnt(enum locks lock, struct xa_client *client, AESPB *pb)
 		}
 		else
 		{
-			if (valid_aesobj(&wep.obj) && aesobj_sel(&wep.obj))
-				obj_change(fnts->wt, wind->vdi_settings, wep.obj, -1, aesobj_state(&wep.obj) & ~OS_SELECTED, aesobj_flags(&wep.obj), true, &wind->wa, wind->rect_list.start, 0);
+			char pt[16];
+			long l;
+			if( wep.wt->ei && wep.wt->ei->o.item /*wep.obj.item*/ != FNTS_EDRATIO )
+			{
+				ratio_obj = aesobj(fnts->wt->tree, FNTS_EDRATIO);
+				ted = object_get_tedinfo(aesobj_ob(&ratio_obj), NULL);
+				l = sprintf(pt, ted->te_txtlen, "%d", (unsigned short)(fnts->fnt_ratio >> 16L));
+				sprintf(pt + l, ted->te_txtlen - l, ".%d", (short)(((fnts->fnt_ratio & 0xffffL) * 100L + (1L << 15L)) >> 16L ));
+				strcpy(ted->te_ptext, pt);
+				obj_draw(wep.wt, wind->vdi_settings, ratio_obj, 1, NULL, NULL, 0);
+			}
 
+			if (valid_aesobj(&wep.obj) && aesobj_sel(&wep.obj))
+			{
+				obj_change(fnts->wt, wind->vdi_settings, wep.obj, -1, aesobj_state(&wep.obj) & ~OS_SELECTED, aesobj_flags(&wep.obj), true, &wind->wa, wind->rect_list.start, 0);
+			}
 			val = get_edpoint(fnts);
 			if (val != fnts->fnt_pt)
 			{
