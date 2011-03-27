@@ -229,6 +229,8 @@ Setup_form_do(struct xa_client *client,
 		client->fmd.kind = kind;
 	}
 
+	if( valid_aesobj( &wt->focus ) && edobj.item != wt->focus.item )
+		obj_draw(wt, client->vdi_settings, wt->focus, 0, NULL, NULL, UNDRAW_FOCUS);
 	wt->focus = edobj;
 	/*
 	 * If we get here and have no window pointer, this is the first time
