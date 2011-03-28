@@ -16,7 +16,6 @@ __mint_blockcpy:
 	move.l	_mcpu,d1
 	cmp.w	#40,d1
 	bcc.s	L_040			| for 68000-68030 do quickmove
-	clr.l	d1
 	bra	blkmv
 L_040:	dc.l	0xf6218000		| move16 (a1)+,(a0)+
 	dc.l	0xf6218000
@@ -53,12 +52,9 @@ L_040:	dc.l	0xf6218000		| move16 (a1)+,(a0)+
 	subq.l	#1,d0
 	bne	L_040
 	rts
-#else
-	clr.l	d1
-	bra.s	blkmv
 #endif
 
-blkmv:	movem.l	d1-d7/a2-a6,-(sp)	| save regs
+blkmv:	movem.l	d2-d7/a2-a6,-(sp)	| save regs
 L1:
 	movem.l	(a1)+,d1-d7/a2-a6	| read 12*4 = 48 bytes
 	movem.l	d1-d7/a2-a6,(a0)	|
@@ -85,28 +81,8 @@ L1:
 
 	lea	512(a0),a0
 	subq.l	#1,d0
-	bgt.s	L1
+	bne.s	L1
 
-	movem.l	(sp)+,d1-d7/a2-a6	| pop registers
+	movem.l	(sp)+,d2-d7/a2-a6	| pop registers
 
-Leftover:				| do the remaining bytes
-	moveq.l	#3,d0
-	and.w	d1,d0
-	lsr.w	#2,d1
-	subq.w	#1,d1			| prepare for dbra loop
-	bmi.s	L4done
-	lsr.w	#1,d1
-	bcc.s	L23
-L2l:
-	move.l	(a1)+,(a0)+
-L23:
-	move.l	(a1)+,(a0)+
-	dbra	d1,L2l
-L4done:
-	subq.w	#1,d0			| prepare for dbra loop
-	bmi.s	Ldone
-L2:
-	move.b	(a1)+,(a0)+
-	dbra	d0,L2
-Ldone:
 	rts				| return
