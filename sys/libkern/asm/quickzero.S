@@ -21,7 +21,6 @@ __mint_quickzero:
 	moveq.l	#0,d6
 	moveq.l	#0,d7
 	move.l	d1,a1
-	subq.l	#1,d0			| adjust for dbra loop
 loop:
 	movem.l	d1-d7/a1,(a0)		| zero the memory, 32 bytes at a time
 	movem.l	d1-d7/a1,32(a0)
@@ -32,6 +31,7 @@ loop:
 	movem.l	d1-d7/a1,192(a0)
 	movem.l	d1-d7/a1,224(a0)
 	lea	256(a0),a0
-	dbra	d0,loop
+	subq.l	#1,d0
+	bne.s	loop
 	movem.l	(sp)+,d1-d7/a1		| restore regs
 	rts				| and leave
