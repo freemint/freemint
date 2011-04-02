@@ -3123,14 +3123,14 @@ obj_change(XA_TREE *wt,
 	}
 
 	if (draw && redraw) {
-		RECT r;
-		if( clip )
-			r = *clip;
-		else
+		if( !clip )
 		{
+			RECT r;
 			r = *(RECT*)&obj.ob->ob_x;
+			if( r.x == 0 )	//?
+				clip = &r;
 		}
-		obj_draw(wt, v, obj, transdepth, &r, rl, dflags);
+		obj_draw(wt, v, obj, transdepth, clip, rl, dflags);
 	}
 }
 
