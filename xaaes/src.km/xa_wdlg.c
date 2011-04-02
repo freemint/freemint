@@ -1075,7 +1075,7 @@ wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms 
 						ev->mwhich &= ~MU_BUTTON;
 						if (!is_iconified(wind))
 						{
-							DIAG((D_wdlg, NULL, "wdialog_event(MU_BUTTON): doing form_do on obj=%d for %s",
+							DIAG((D_wdlg, NULL, "wdialog_event(MU_BUTTON): doing Form_Button on obj=%d for %s",
 								aesobj_item(&obj), client->name));
 							if ( !Form_Button(wt,			/* widget tree	*/
 									  v,			/* VDI settings & api */
