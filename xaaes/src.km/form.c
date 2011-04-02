@@ -361,13 +361,12 @@ Form_Button(XA_TREE *wt,
 		no_exit = false;
 	}
 
-	if ( (flags & (OF_SELECTABLE|OF_EDITABLE)) && !(state & OS_DISABLED) )
+	if ( ((flags & (OF_SELECTABLE|OF_EDITABLE)) || (fbflags & FBF_CHANGE_FOCUS)) && !(state & OS_DISABLED) )
 	{
 		short type = aesobj_type(&obj) & 0xff;
 
 		if (type == G_SLIST)
 		{
-			wt->focus = obj;
 			if ((wt->flags & WTF_FBDO_SLIST) || (fbflags & FBF_DO_SLIST))
 			{
 				click_scroll_list(0, obtree, aesobj_item(&obj), md);
@@ -448,53 +447,51 @@ Form_Button(XA_TREE *wt,
 				}
 				else
 				{
-					DIAGS(("Form_Button: switch state"));
 					obj_change(wt, v, obj, -1, state^OS_SELECTED, flags, redraw, clip, *rl, 0);
 				}
 			}
 			state = aesobj_state(&obj);
-
-			if ((flags & OF_EDITABLE) || ((fbflags & FBF_CHANGE_FOCUS) && (flags & (OF_EXIT|OF_TOUCHEXIT))))
-			{
-				struct xa_aes_object pf = focus(wt);
-				if( flags & OF_EDITABLE ){
-					struct objc_edit_info *ei = (wt->ei ? wt->ei : &wt->e);
-					int x = 0, y = 0;
-
-					// cmp obtree#3405
-					if( !obj_is_focus(wt, &obj) ){
-						if( obj.ob->ob_spec.tedinfo ){
-							TEDINFO *ted;
-							char *txt, *ptxt;
-
-							ted = object_get_tedinfo(aesobj_ob(&obj), NULL);
-
-							if( ted )
-							{
-								txt = ted->te_ptext;
-								ptxt = ted->te_ptmplt;
-
-								for( ; txt[x]; x++ );
-								for( ; ptxt[y] && ptxt[y] != '_'; y++ );
-							}
-						}
-						ei->edstart = y;
-						ei->pos = x;
-
-						ei->c_state |= OB_CURS_ENABLED;
-
-						ei->o = obj;
-					}
-				}
-				if (valid_aesobj(&pf))
-				{
-					obj_draw(wt, v, pf, 0, NULL, *rl, UNDRAW_FOCUS|DRW_CURSOR);
-				}
-				wt->focus = obj;
-				obj_draw(wt, v, obj, 0, NULL, *rl, DRW_CURSOR);
-			}
 		}
-	}	/*/if ( (flags & OF_SELECTABLE) && !(state & OS_DISABLED) )*/
+		if ((flags & OF_EDITABLE) || ((fbflags & FBF_CHANGE_FOCUS) && (flags & (OF_EXIT|OF_TOUCHEXIT))))
+		{
+			struct xa_aes_object pf = focus(wt);
+			if( flags & OF_EDITABLE ){
+				struct objc_edit_info *ei = (wt->ei ? wt->ei : &wt->e);
+				int x = 0, y = 0;
+
+				// cmp obtree#3405
+				if( !obj_is_focus(wt, &obj) ){
+					if( obj.ob->ob_spec.tedinfo ){
+						TEDINFO *ted;
+						char *txt, *ptxt;
+
+						ted = object_get_tedinfo(aesobj_ob(&obj), NULL);
+
+						if( ted )
+						{
+							txt = ted->te_ptext;
+							ptxt = ted->te_ptmplt;
+
+							for( ; txt[x]; x++ );
+							for( ; ptxt[y] && ptxt[y] != '_'; y++ );
+						}
+					}
+					ei->edstart = y;
+					ei->pos = x;
+
+					ei->c_state |= OB_CURS_ENABLED;
+
+					ei->o = obj;
+				}
+			}
+			if (valid_aesobj(&pf))
+			{
+				obj_draw(wt, v, pf, 0, NULL, *rl, UNDRAW_FOCUS|DRW_CURSOR);
+			}
+			wt->focus = obj;
+			obj_draw(wt, v, obj, 0, NULL, *rl, DRW_CURSOR);
+		}
+	}	/*/if ( ((flags & (OF_SELECTABLE|OF_EDITABLE)) || (fbflags & FBF_CHANGE_FOCUS)) && !(state & OS_DISABLED) ) */
 
 	DIAGS(("Form_Button: state %x, flags %x",
 		state, flags));
@@ -943,7 +940,7 @@ g_slist:
 		{
 			short md = 0;
 			struct xa_aes_object pf = wt->focus;
-			//wt->focus = new_focus;
+			wt->focus = new_focus;
 			if (aesobj_edit(&new_focus))
 				md = DRW_CURSOR;
 			wt->e.c_state |= OB_CURS_EOR;
@@ -951,7 +948,6 @@ g_slist:
 			{
 				obj_draw(wt, v, pf, 0, NULL, *rl, UNDRAW_FOCUS|DRW_CURSOR);		/* remove cursor+focus */
 			}
-			wt->focus = new_focus;
 			obj_draw(wt, v, new_focus, 0, NULL, *rl, md);
 		}
 		if( new_focus.ob->ob_type == G_SLIST )
