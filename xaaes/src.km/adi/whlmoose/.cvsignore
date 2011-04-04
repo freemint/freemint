@@ -1,2 +1,4 @@
 .deps
 moose*.adi
+*.o
+whlmoose_w.c
