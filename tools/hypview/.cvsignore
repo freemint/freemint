@@ -1,2 +1,3 @@
 .deps
 hyp_view.app
+*.o

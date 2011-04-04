@@ -1,2 +1,3 @@
 .deps
 gen-syscall
+*.o
