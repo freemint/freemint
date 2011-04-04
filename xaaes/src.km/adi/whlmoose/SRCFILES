@@ -8,6 +8,6 @@ COBJS = \
 	whlmoose.c
 
 SOBJS = \
-	vex_x.s
+	vex_x.S
 
 SRCFILES = $(HEADER) $(COBJS) $(SOBJS)
