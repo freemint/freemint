@@ -2,3 +2,5 @@
 pars.c
 pars.h
 scan.c
+*.o
+*.a
