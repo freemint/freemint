@@ -28,7 +28,7 @@ CPU = 000
 
 # default definitions
 SGENFILES = moose.adi moose_w.adi
-OBJS = $(SOBJS:.s=.o)
+OBJS = $(SOBJS:.S=.o)
 
 
 entry:
