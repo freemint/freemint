@@ -1076,7 +1076,7 @@ draw_slist(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *entry, const RECT *
 	if (xa_rect_clip(clip, &wind->wa, &r))
 	{
 		short TOP = 0;
-		bool NO_ICONS = false;
+		bool no_icons = false;
 
 		(*v->api->set_clip)(v, &r);
 
@@ -1092,7 +1092,7 @@ draw_slist(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *entry, const RECT *
 			TOP = 1;
 		}
 		if( list->flags & SIF_NO_ICONS )
-			NO_ICONS = true;
+			no_icons = true;
 
 		while (this && xy.y < (wind->wa.y + wind->wa.h))
 		{
@@ -1105,7 +1105,7 @@ draw_slist(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *entry, const RECT *
 
 			if (!entry || entry == this)
 			{
-				display_list_element(lock, list, this, v, &ar, &r, TOP, NO_ICONS);
+				display_list_element(lock, list, this, v, &ar, &r, TOP, no_icons);
 				if( TOP == 1 )
 					TOP = 2;
 			}
