@@ -107,8 +107,8 @@ static void d2a( int r, char e[] )
 		e[i++] = r % 10 + '0';
 	}
 
-	e[i++] = '\r';
-	e[i++] = '\n';
+	//e[i++] = '\r';
+	//e[i++] = '\n';
 	e[i] = 0;
 }
 
@@ -180,7 +180,7 @@ again:
 			*name = '\0';
 
 			my_strlcpy(path, argv[1], sizeof(path));
-			my_strlcat(path, "/", sizeof(path));
+			//my_strlcat(path, "/", sizeof(path));
 			*name++ = c;
 		}
 		else
@@ -213,7 +213,8 @@ again:
 				name = DEFAULT_68000;
 			}
 		}
-		ConsoleWrite("CPU-cookie not found \r\n");
+		else
+			ConsoleWrite("CPU-cookie not found \r\n");
 	}
 	ConsoleWrite(name);
 	ConsoleWrite("\r\n");
@@ -237,12 +238,12 @@ again:
 			ConsoleWrite("XaAES loader: Dgetpath() failed???\r\n");
 			goto error;
 		}
+		my_strlcat(path, "/", sizeof(path));
 	}
 
 	ConsoleWrite(path);
 	ConsoleWrite("'\r\n");
 	/* append module name */
-	//my_strlcat(path, "\\", sizeof(path));
 	my_strlcat(path, name, sizeof(path));
 
 	/* check if file exist */
@@ -288,8 +289,11 @@ again:
 		d2a( r, e );
 		ConsoleWrite("XaAES loader: Fcntl(KM_RUN) failed!\r\nerror:");
 		ConsoleWrite(e);
+		if( r == 36 )	// Permission denied
+			ConsoleWrite(", already running?");
+		ConsoleWrite("\r\n");
 	}
-	if( r != 64 )	// EBADARG
+	if( r != 64 && r != 36 )	// EBADARG,EACCES
 	{
 		ConsoleWrite( "XaAES loader: KM_FREE\r\n");
 		//Cconin();
