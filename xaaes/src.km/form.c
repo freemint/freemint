@@ -1469,6 +1469,7 @@ do_formwind_msg(
 			}
 			break;
 		}
+#if 0
 		case WM_BOTTOMED:
 		{
 			if (wind->owner->fmd.wind == wind)
@@ -1481,6 +1482,7 @@ do_formwind_msg(
 				bottom_window(0, false, true, wind);
 			break;
 		}
+#endif
 		case WM_ARROWED:
 		{
 			if (msg[4] < WA_LFPAGE || msg[4] == WA_UPSCAN || msg[4] == WA_DNSCAN)
