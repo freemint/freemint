@@ -158,7 +158,7 @@ again:
 	path[r] = '\0';
 
 	/* append XaAES subdir */
-	my_strlcat(path, "xaaes\\", sizeof(path));
+	my_strlcat(path, "xaaes/", sizeof(path));
 
 	if (argc > 1)
 	{
@@ -242,7 +242,7 @@ again:
 	ConsoleWrite(path);
 	ConsoleWrite("'\r\n");
 	/* append module name */
-	my_strlcat(path, "\\", sizeof(path));
+	//my_strlcat(path, "\\", sizeof(path));
 	my_strlcat(path, name, sizeof(path));
 
 	/* check if file exist */
