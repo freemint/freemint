@@ -1105,6 +1105,8 @@ bottom_window(enum locks lock, bool snd_untopped, bool snd_ontop, struct xa_wind
 
 	DIAG((D_wind, w->owner, "bottom_window %d", w->handle));
 
+	if (w == w->owner->fmd.wind && w->dial == created_for_FMD_START)
+		return;	// modal dialog
 	if (w == root_window || wl == root_window)
 		/* Don't do anything if already bottom */
 		return;
