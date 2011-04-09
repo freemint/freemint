@@ -1701,17 +1701,20 @@ XA_fnts_evnt(enum locks lock, struct xa_client *client, AESPB *pb)
 		{
 			/* simulate cursor-right to unmark edit-field */
 			short k = wep.ev->key;
+			struct xa_aes_object sfocus = wep.wt->focus;
 
 			size_obj  = aesobj(fnts->wt->tree, FNTS_EDSIZE);
-			if( !same_aesobj(&size_obj, &wep.wt->focus) )
+			/*if( !same_aesobj(&size_obj, &wep.wt->focus) )
 			{
 				obj_draw(wep.wt, wind->vdi_settings, wep.wt->focus, 0, NULL, NULL, UNDRAW_FOCUS);
 				wep.wt->focus = size_obj;
-			}
+			}*/
+			wep.wt->focus = size_obj;
 			wep.ev->key = 0x4d00;	//SC_RTARROW;
 			wep.obj = size_obj;
 			ret = wdialog_event(lock, client, &wep);
 			wep.ev->key = k;
+			wep.wt->focus = sfocus;
 		}
 
 		ret = wdialog_event(lock, client, &wep);
