@@ -1612,7 +1612,7 @@ XA_appl_getinfo(enum locks lock, struct xa_client *client, AESPB *pb)
 		}
 	}
 
-	info_tab[0][0] = client->options.standard_font_point;
+	info_tab[0][0] = screen.standard_font_height;
 	if (gi_type != -1) {
 		if (n_intout > 5) n_intout = 5;
 
