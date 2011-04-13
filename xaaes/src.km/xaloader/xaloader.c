@@ -98,18 +98,17 @@ static void ignore(long sig)
 
 static void d2a( int r, char e[] )
 {
-	int i = 0;
-	if( r < 10 )
-		e[i++] = r + '0';
-	else
+	int i = 3;
+
+	e[4] = 0;
+	while( r > 0 && i >= 0 )
 	{
-		e[i++] = r / 10 + '0';
-		e[i++] = r % 10 + '0';
+		e[i--] = r % 10 + '0';
+		r /= 10;
 	}
 
-	//e[i++] = '\r';
-	//e[i++] = '\n';
-	e[i] = 0;
+	while( i >= 0 )
+		e[i--] = ' ';
 }
 
 int
@@ -298,8 +297,8 @@ again:
 		ConsoleWrite( "XaAES loader: KM_FREE\r\n");
 		//Cconin();
 
-		r = Fcntl((int)fh, path, KM_FREE);
-		if( r )
+		long er = Fcntl((int)fh, path, KM_FREE);
+		if( er )
 		{
 			char *p;
 			for( p = path; *p; p++ );
@@ -310,11 +309,11 @@ again:
 				ConsoleWrite( "XaAES loader: KM_FREE failed trying: '");
 				ConsoleWrite( p );
 				ConsoleWrite( "'..\r\n");
-				r = Fcntl((int)fh, p, KM_FREE);
+				er = Fcntl((int)fh, p, KM_FREE);
 			}
-			if( r < 0 )
-				r = -r;
-			if( r )
+			if( er < 0 )
+				er = -er;
+			if( er )
 			{
 				char e[6];
 				d2a( r, e );
@@ -330,7 +329,8 @@ again:
 	Fclose((int)fh);
 	//ConsoleWrite( "XaAES loader: return\r\n");
 	//Cconin();
-
+	if( r && r != 2 )
+		goto error;
 	/* when xaloader has pid 1 it is the direct child of the kernel
 	   restart the module
 	 */
@@ -361,7 +361,18 @@ again:
 	return r;
 
 error:
-	ConsoleWrite("press any key to continue ...\r\n");
-	Cconin();
+	ConsoleWrite("press any key to continue ('x' for /bin/sh) ...\r\n");
+	r = Cconin();
+	/*d2a( r, path );
+	ConsoleWrite("XaAES loader: r=");
+	ConsoleWrite(path);
+	ConsoleWrite("\r\n");
+	*/
+	if( (short)r == 'x' )
+	{
+		ConsoleWrite("XaAES loader: starting /bin/sh");
+		ConsoleWrite("\r\n");
+		Pexec( 0, (long)"/bin/sh", 0, 0 );
+	}
 	return r;
 }
