@@ -30,6 +30,6 @@
 #include "global.h"
 #include "taskman.h"
 
-void open_about(enum locks lock, struct xa_client *client, bool open);
+void open_about(enum locks lock, struct xa_client *client, bool open, char *fn);
 
 #endif /* _about_h */
