@@ -24,6 +24,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+
+#define PROFILING	0
 #include RSCHNAME
 
 #include "xa_types.h"
@@ -115,10 +117,14 @@ about_form_exit(struct xa_client *client,
 	{
 		case ABOUT_OK:
 		{
+			SCROLL_INFO *list;
 			object_deselect(obtree + ABOUT_OK);
 			redraw_toolbar(lock, wind, ABOUT_OK);
 			close_window(lock, wind);
-// 			delayed_delete_window(lock, wind);
+			list = object_get_slist(obtree + ABOUT_LIST);
+			list->destroy( list );
+			//list->empty( list, 0, 0 );
+			delete_window(lock, wind);
 			break;
 		}
 		case ABOUT_LIST:
@@ -137,41 +143,52 @@ about_form_exit(struct xa_client *client,
 
 #if HELPINABOUT
 #include "util.h"
+
+#define VIEW_MAX_LINES 1024
 /*
  * insert lines of a text-file into a scroll-list
  * if first non-white char is '#' line is skipped
  * line-endings must be unix-or dos-style
  *
- * currently used only in about-window
  *
-  */
-static void file_to_list( SCROLL_INFO *list, char *fn)
+ */
+static void file_to_list( SCROLL_INFO *list, char *fn, bool skip_hash)
 {
 	struct scroll_content sc = {{ 0 }};
 	XA_FILE *xa_fp = xa_fopen(fn, O_RDONLY );
 	char *p;
+	long lineno;
 
 	if( !xa_fp )
 		return;
 
 	sc.t.strings = 1;
-	sc.fnt = &norm_txt;
+	//sc.fnt = &norm_txt;
+	sc.fnt = 0;
 
-	for( ; (p = xa_readline( 0, 0, xa_fp )); )
+	PRINIT;
+	for( lineno = 1; lineno < VIEW_MAX_LINES && (p = xa_readline( 0, 0, xa_fp )); lineno++ )
 	{
 		sc.t.text = p;
 		for( ; *p && *p <= ' '; p++ )
 		;
-		if( *p != '#' )
+		if( skip_hash == false || *p != '#' )
 			list->add(list, NULL, NULL, &sc, false, 0, false);
 	}
-	xa_fclose(xa_fp);
+
+
+	if( lineno >= VIEW_MAX_LINES )
+	{
+		sc.t.text = "...";
+		list->add(list, NULL, NULL, &sc, false, 0, false);
+	}
+	PRPRINT;
 
 }
 #endif
 
 void
-open_about(enum locks lock, struct xa_client *client, bool open)
+open_about(enum locks lock, struct xa_client *client, bool open, char *fn)
 {
 	struct helpthread_data *htd;
 	struct xa_window *wind;
@@ -180,12 +197,17 @@ open_about(enum locks lock, struct xa_client *client, bool open)
 	RECT or;
 	SCROLL_INFO *list;
 	char ebuf[196];
+	bool view_file = false;
+
+	if( (fn && (client->status & CS_USES_ABOUT)) )
+		view_file = true;
+	client = C.Hlp;
 
 	htd = get_helpthread_data(client);
 	if (!htd)
 		return;
 
-	if (!htd->w_about)
+	if (view_file || !htd->w_about)
 	{
 		RECT remember = { 0, 0, 0, 0 };
 
@@ -193,7 +215,9 @@ open_about(enum locks lock, struct xa_client *client, bool open)
 		if (!obtree) goto fail;
 		wt = new_widget_tree(client, obtree);
 		if (!wt) goto fail;
-		wt->flags |= WTF_TREE_ALLOC | WTF_AUTOFREE;
+		wt->flags |= WTF_AUTOFREE | WTF_TREE_ALLOC;
+		if( client != C.Aes )
+			wt->flags |= WTF_TREE_CALLOC;
 
 		set_slist_object(0, wt, NULL, ABOUT_LIST, SIF_AUTOSLIDERS | SIF_INLINE_EFFECTS,
 				 NULL, NULL, NULL, NULL, NULL, NULL,
@@ -231,7 +255,7 @@ open_about(enum locks lock, struct xa_client *client, bool open)
 		wind->min.h = wind->r.h;//MINOBJMVH * 3;	/* minimum height for this window */
 		wind->min.w = wind->r.w;//MINOBJMVH;	/* minimum width for this window */
 		/* Set the window title */
-		set_window_title(wind, xa_strings[RS_ABOUT], true);
+		//set_window_title(wind, xa_strings[RS_ABOUT], true);
 
 		(obtree + ABOUT_INFOSTR)->ob_spec.free_string = "\0";
 #if XAAES_RELEASE
@@ -250,23 +274,35 @@ open_about(enum locks lock, struct xa_client *client, bool open)
 
 		wt = set_toolbar_widget(lock, wind, wind->owner, obtree, inv_aesobj(), 0/*WIP_NOTEXT*/, STW_ZEN, NULL, &or);
 		wt->exit_form = about_form_exit;
-		if( screen.c_max_h < 16 ){
+		//if( screen.c_max_h < 16 )
+		{
 			short d = 16 / screen.c_max_h;
 			wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 					WM_SIZED, 0,0, wind->handle, wind->r.x, wind->r.y - ( wind->r.h * ( d - 1 ) ) / 2, wind->r.w, wind->r.h * d );
 		}
 	}
 	else{
-		wind = htd->w_about;
+		if( !view_file )
+			wind = htd->w_about;
 		wt = get_widget(wind, XAW_TOOLBAR)->stuff;
-
 	}
 
 	list = object_get_slist(wt->tree + ABOUT_LIST);
 	set_xa_fnt( cfg.xaw_point, 0, 0, 0, list, 0, 0);
 
 #if HELPINABOUT
-	sprintf( ebuf, sizeof(ebuf), "%s%s", C.start_path, xa_strings[XA_HELP_FILE] );
+	if(	view_file == true )
+	{
+		strcpy( ebuf, fn );
+		/* Set the window title */
+		set_window_title(wind, fn, true);
+	}
+	else
+	{
+		sprintf( ebuf, sizeof(ebuf), "%s%s", C.start_path, xa_strings[XA_HELP_FILE] );
+		set_window_title(wind, xa_strings[RS_ABOUT], true);
+	}
+
 
 	/* check if help-file has changed and if yes re-read */
 	if (list->start)
@@ -279,7 +315,7 @@ open_about(enum locks lock, struct xa_client *client, bool open)
 		}
 		else
 		{
-			if( xah_mtime.time != st.mtime.time )
+			if( view_file || xah_mtime.time != st.mtime.time )
 			{
 				list->empty(list, 0, 0);
 				list->start = 0;
@@ -294,26 +330,32 @@ open_about(enum locks lock, struct xa_client *client, bool open)
 		struct scroll_content sc = {{ 0 }};
 
 		sc.t.strings = 1;
-		while (*t)
+		if( view_file == false )
 		{
-			sc.t.text = *t;
-			list->add(list, NULL, NULL, &sc, false, 0, false);
-			t++;
+			while (*t)
+			{
+				sc.t.text = *t;
+				list->add(list, NULL, NULL, &sc, false, 0, false);
+				t++;
+			}
 		}
 #if HELPINABOUT
-		file_to_list( list, ebuf );
+		file_to_list( list, ebuf, view_file == false );
 #endif
 	}
 
-	list->slider(list, false);
+	//list->slider(list, false);
 
 	/* Set the window destructor */
 	wind->destructor = about_destructor;
-	htd->w_about = wind;
+	if( !view_file )
+		htd->w_about = wind;
 	if (open)
 	{
 		open_window(lock, wind, wind->r); //remember);
 		force_window_top( lock, wind );
+		//list->slider(list, true);
+		//generate_redraws(lock, wind, &wind->r, RDRW_ALL);
 	}
 	return;
 fail:
