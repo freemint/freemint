@@ -29,6 +29,11 @@ Shortcuts/navigation in XaAES fileselector:
 CTRL+O        Open window menu (navigation with CURSOR keys and RETURN)
 CTRL+C        The path and the marked file (if any) is copied to the Clipboard
 
+CTRL+F        Create folder (type name in editbox)
+CTRL+R        Rename selected file/folder (type new [path]name in editbox)
+CTRL+V        View selected file
+DELETE        Delete selected file/empty folder
+
 ALT+ " + "    Increase the fontsize in listbox
 ALT+ " - "    Decrease the fontsize in listbox
 
