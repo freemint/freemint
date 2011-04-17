@@ -2262,6 +2262,7 @@ get_syspalette(short vdih, struct rgb_1000 *palette)
 		case 1:	pens =  2; break;
 		case 2: pens =  4; break;
 		case 4: pens = 16; break;
+		case 0: case 16: case 24: case 32: return;
 		default: pens = 256; break;
 	}
 	for (i = 0; i < pens; i++)
