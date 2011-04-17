@@ -324,11 +324,10 @@ fix_chrarray(struct xa_client *client, void *b, char **p, unsigned long n, char 
 		*p += (unsigned long)b;
 		if( rfp )
 		{
-			if( strmchr(*p, "\r\n") )
-			//if( strchr(*p, '\n' ) )
-				return;
-			rsc_trans_rw( client, rfp, p, 0 );
+			if( !strmchr(*p, "\r\n") )
+				rsc_trans_rw( client, rfp, p, 0 );
 		}
+
 		DIAG((D_rsrc, NULL, " -- to %lx", *p));
 
 		p++;
@@ -594,8 +593,9 @@ static XA_FILE *rsc_lang_file( int md, XA_FILE *fp, char *buf, long l )
 				return 0;
 			/* strip trailing blanks */
 			for( clen = len - 1; clen && in[clen] == ' '; clen-- );
-			if( clen == 0 && *in == ' ' )	// blank line
+			/*if( clen == 0 && *in == ' ' )	// blank line
 				return (XA_FILE*)(long)len;
+			*/
 			clen++;
 
 			for( found = 0, lbuf[0] = 0; found == 0 && lbuf[0] != -1; )
@@ -729,7 +729,7 @@ static short translate_string( struct xa_client *client, XA_FILE *rfp, char **p,
 	}
 	if( !blen )
 	{
-		ALERT(("translate: item '%s' not found", *p ));
+		//ALERT(("translate: item '%s' not found", *p ));
 		BLOG((0, "%s:translate: item '%s' not found", client->name, *p ));
 	}
 	return blen;
@@ -1265,6 +1265,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 		}
 
 		hdr = (RSHDR *)base;
+		client->rsrc = hdr;
 		size = (unsigned long)hdr->rsh_rssize;
 		osize = (size + 1UL) & 0xfffffffeUL;
 
@@ -1702,7 +1703,6 @@ OBJECT * _cdecl
 ResourceTree(RSHDR *hdr, long num)
 {
 	OBJECT **index;
-
 	DIAGS(("ResourceTree: hdr = %lx, num = %ld", hdr, num));
 	if (num_nok(ntree))
 		return NULL;
@@ -1783,7 +1783,13 @@ ResourceString(RSHDR *hdr, int num)
 	if (num_nok(nstring))
 		return NULL;
 
-	index = (char **)((char *)hdr + hdr->rsh_frstr); //start(frstr);
+	if( hdr->rsh_vrsn == 3 ){
+		index = (char **)((char *)hdr + ((RSXHDR*)hdr)->rsh_frstr);
+	}
+	else
+	{
+		index = (char **)((char *)hdr + hdr->rsh_frstr);
+	}
 
 //	DIAG((D_s, NULL, "Gaddr 5 %lx '%s'", index[num], index[num]));
 	return index[num];
@@ -1870,7 +1876,6 @@ XA_rsrc_load(enum locks lock, struct xa_client *client, AESPB *pb)
 				OBJECT **o;
 //				(unsigned long)o = (unsigned long)rsc + rsc->rsh_trindex;
 				o = (OBJECT **)((char *)rsc + rsc->rsh_trindex);
-				client->rsrc = rsc;
 				client->trees = o;
 
 #if GENERATE_DIAGS
@@ -2016,7 +2021,12 @@ XA_rsrc_gaddr(enum locks lock, struct xa_client *client, AESPB *pb)
 			pb->intout[0] = 0;
 			break;
 		case R_TREE:
-			*addr = ResourceTree(client->rsrc, index);
+			if( rsc->rsh_vrsn == 3 && trees )
+			{
+				*addr = trees[index];
+			}
+			else
+				*addr = ResourceTree(client->rsrc, index);
 			break;
 		case R_OBJECT:
 			*addr = ResourceObject(client->rsrc, index);
@@ -2068,7 +2078,22 @@ XA_rsrc_gaddr(enum locks lock, struct xa_client *client, AESPB *pb)
 			break;
 		}
 		DIAG((D_s,client,"	--> %lx",*addr));
-		pb->intout[0] = 1;
+		{
+			char *rsc_end;
+			if (rsc->rsh_vrsn == 3)
+				rsc_end = (char*)rsc + ((RSXHDR*)rsc)->rsh_rssize;
+			else
+				rsc_end = (char*)rsc + rsc->rsh_rssize;
+
+			if( (char*)*addr < (char*)rsc || (char*)*addr > rsc_end )
+			{
+				ALERT(("rsrc_gaddr: invalid pointer: %lx(rsc=%lx->%lx), type=%d", *addr, rsc, rsc_end, type ));
+				pb->intout[0] = 0;
+				*addr = 0;
+			}
+			else
+				pb->intout[0] = 1;
+		}
 	}
 	else
 		pb->intout[0] = 0;
