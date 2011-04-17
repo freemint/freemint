@@ -150,6 +150,8 @@ bootmessage(void)
 
 struct kentry *kentry;
 
+/* similar to xaaes_sysfile in k_init.c */
+
 static bool
 sysfile_exists(const char *sd, char *fn)
 {
@@ -329,6 +331,7 @@ unsigned short stack_align = 0;
  */
 static Path start_path;
 static const struct kernel_module *self = NULL;
+extern int ferr;	//k_main
 
 long
 init(struct kentry *k, const struct kernel_module *km) //const char *path)
@@ -337,7 +340,6 @@ init(struct kentry *k, const struct kernel_module *km) //const char *path)
 	long stk = (long)get_sp();
 #endif
 	long err = 0L;
-	int i=0;
 	bool first = true;
 	struct proc *rootproc;
 
@@ -678,7 +680,8 @@ again:
 
 	C.Aes->options = default_options;
 
-	err = -1;
+	{
+	long	li = -1;
 	/* Parse the config file */
 	load_config();
 	if( !cfg.lang[0] )
@@ -686,22 +689,22 @@ again:
 		const char *lang = get_env(0, "LANG=");
 		if( lang )
 		{
-			err = -2;
+			li = -2;
 			strncpy( cfg.lang, lang, 2 );
 		}
-		else if (!(s_system(S_GETCOOKIE, COOKIE__AKP, (unsigned long)(&err))))
+		else if (!(s_system(S_GETCOOKIE, COOKIE__AKP, (unsigned long)(&li))))
 		{
 			/*
 			 * The bits 0-7 provide info about the layout of the keyboard
 			 * The bits 8-15 identify the language of the country
 			 */
-			if( err & 0xff00 )	// language
-				err >>= 8;
-			if( err < MaX_COUNTRYCODE )
+			if( li & 0xff00 )	// language
+				li >>= 8;
+			if( li < MaX_COUNTRYCODE )
 			{
-				err *= 2;
-				cfg.lang[0] = countrycodes[err];
-				cfg.lang[1] = countrycodes[err+1];
+				li *= 2;
+				cfg.lang[0] = countrycodes[li];
+				cfg.lang[1] = countrycodes[li+1];
 			}
 		}
 	}
@@ -711,13 +714,14 @@ again:
 		if( p )
 		{
 			extern short info_tab[][4];
-			i = p - countrycodes;
-			i /= 2;
-			info_tab[3][0] = i;
+			li = p - countrycodes;
+			li /= 2;
+			info_tab[3][0] = li;
 		}
 	}
 
-	BLOG((0,"lang='%s(%d)' (from %s).",cfg.lang, i, err == -1 ? "config" : (err == -2 ? "Environ" : "AKP") ));
+	BLOG((0,"lang='%s(%d)' (from %s).",cfg.lang, li, li == -1 ? "config" : (li == -2 ? "Environ" : "AKP") ));
+	}
 
 	if( cfg.info_font_point == -1 )
 		cfg.info_font_point = cfg.standard_font_point;
@@ -852,6 +856,8 @@ error:
 	if (D.debug_file)
 		kernel_close(D.debug_file);
 #endif
+	if( err == 0 )
+		err = ferr;
 	BLOG((0,"init:return %ld", err));
 	return err;
 }
