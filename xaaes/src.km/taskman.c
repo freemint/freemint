@@ -1502,7 +1502,7 @@ taskmanager_form_exit(struct xa_client *Client,
 			{
 				TOP_WINDOW = 0;	/* ignore clwtna */
 				/* and release */
-				close_window(lock, wind);
+				//close_window(lock, wind);
 
 				if( !(list->cur->usr_flags & TM_WINDOW) )
 				{
@@ -1534,10 +1534,11 @@ taskmanager_form_exit(struct xa_client *Client,
 						}
 					}
 				}
+				//close_window(lock, wind);
 			}
-			else
-				close_window(lock, wind);
-// 			delayed_delete_window(lock, wind);
+			//else
+			close_window(lock, wind);
+ 			//delayed_delete_window(lock, wind);
 
 			break;
 		}
