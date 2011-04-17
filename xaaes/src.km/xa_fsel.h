@@ -59,7 +59,10 @@ struct fsel_data
 	int drives;
 	int clear_on_folder_change;
 	int ok;
-	int initial;	/* 1 if first call */
+#define FS_INIT           1
+#define FS_CREATE_FOLDER  2
+#define FS_RENAME_FILE    4
+	short rtflags;	/* runtime-flags */
 	short fntinc;	/* increment/decrement font-size for file-selector */
 	short point;	/* font-size */
 	bool tfile;
