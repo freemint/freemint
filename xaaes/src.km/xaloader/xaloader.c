@@ -294,10 +294,11 @@ again:
 	}
 	if( r != 64 && r != 36 )	// EBADARG,EACCES
 	{
+		long er;
 		ConsoleWrite( "XaAES loader: KM_FREE\r\n");
 		//Cconin();
 
-		long er = Fcntl((int)fh, path, KM_FREE);
+		er = Fcntl((int)fh, path, KM_FREE);
 		if( er )
 		{
 			char *p;
@@ -329,7 +330,7 @@ again:
 	Fclose((int)fh);
 	//ConsoleWrite( "XaAES loader: return\r\n");
 	//Cconin();
-	if( r && r != 2 )
+	if( r )
 		goto error;
 	/* when xaloader has pid 1 it is the direct child of the kernel
 	   restart the module
@@ -363,11 +364,6 @@ again:
 error:
 	ConsoleWrite("press any key to continue ('x' for /bin/sh) ...\r\n");
 	r = Cconin();
-	/*d2a( r, path );
-	ConsoleWrite("XaAES loader: r=");
-	ConsoleWrite(path);
-	ConsoleWrite("\r\n");
-	*/
 	if( (short)r == 'x' )
 	{
 		ConsoleWrite("XaAES loader: starting /bin/sh");
