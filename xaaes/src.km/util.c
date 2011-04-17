@@ -183,7 +183,7 @@ get_drive_and_path(char *path, short plen)
 
 char *xa_strdup(char*s)
 {
-	char *r = kmalloc( strlen(s) );
+	char *r = kmalloc( strlen(s) + 1);
 	if( r )
 		strcpy(r,s);
 	return r;
