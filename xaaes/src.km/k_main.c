@@ -960,7 +960,7 @@ alert_input(enum locks lock)
 static void k_exit(int);
 static void restore_sigs(void);
 static void setup_common(void);
-
+int ferr = 0;
 /*
  * signal handlers
  */
@@ -978,6 +978,7 @@ fatal(int sig)
 	struct proc *p = get_curproc();
 	BLOG((true, "'%s': fatal error: %d", p->name, sig));
 	KERNEL_DEBUG("'%s': fatal error, trying to clean up", p->name );
+	ferr = sig;
 	k_exit(0);
 }
 #endif
@@ -1934,7 +1935,7 @@ k_exit(int wait)
 	k_shutdown();
 	if (wait)
 	{
-		display(/*press_any_key*/"press any key to continue ...");
+		display("XaAES: press any key to continue ...");
 		_c_conin();
 	}
 // 	display("done");
