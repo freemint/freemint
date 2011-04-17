@@ -467,7 +467,7 @@ calc_entry_wh(SCROLL_INFO *list, SCROLL_ENTRY *this)
 				{
 					c->c.text.w = list->char_width * l;	/* assuming unprop. font! */
 					/* todo: list->char_height, list->const_height */
-					if( c->prev && c->prev->c.text.h )
+					if( !c->c.text.h && c->prev && c->prev->c.text.h )
 						c->c.text.h = c->prev->c.text.h;
 				}
 				if( !c->c.text.h || !list->char_width )
@@ -539,8 +539,8 @@ calc_entry_wh(SCROLL_INFO *list, SCROLL_ENTRY *this)
 	this->r.w = tw;
 	if( this->r.h == 0 )
 		this->r.h = th;	/* dont change height */
-	if (list->widest < tw)
-		list->widest = list->total_w = tw;
+	//if (list->widest < tw)
+		//list->widest = list->total_w = tw;
 
 	return fullredraw;
 }
@@ -1135,7 +1135,7 @@ reset_listwi_widgets(SCROLL_INFO *list, short redraw)
 {
 	XA_WIND_ATTR tp = list->wi->active_widgets;
 	bool rdrw = false;
-	bool as = list->flags & SIF_AUTOSLIDERS;
+	bool as = !!(list->flags & SIF_AUTOSLIDERS);
 
 	if (list->wi)
 	{
@@ -1186,10 +1186,12 @@ reset_listwi_widgets(SCROLL_INFO *list, short redraw)
 				/* only redraw if top (nolist is never TOP_WINDOW .. why?)*/
 				if( !list->pw || list->pw == TOP_WINDOW || list->pw->nolist )
 					draw_window(0, list->wi, &list->wi->r);
-				if (redraw)
+
+				if (redraw && (list->flags & SIF_TREEVIEW) )
 				{
 					list->redraw(list, NULL);
 				}
+
 			}
 			return true;
 		}
@@ -1201,6 +1203,7 @@ static void
 sliders(struct scroll_info *list, bool rdrw)
 {
 	int rm = 0;
+
 
 	if (XA_slider(list->wi, XAW_VSLIDE,
 		  list->total_h,
@@ -1426,6 +1429,13 @@ slist_redraw(SCROLL_INFO *list, SCROLL_ENTRY *entry)
 			return;
 		}
 	}
+	else
+	{
+		reset_listwi_widgets(list, true);
+		list->slider(list, true);
+	}
+
+
 	if (wind && ((wind->window_status & (XAWS_OPEN|XAWS_SHADED|XAWS_HIDDEN)) == XAWS_OPEN) && (rl = wind->rect_list.start))
 	{
 		check_movement(list);
@@ -1779,13 +1789,15 @@ new_setext(const char *t, OBJECT *icon, short type, short *sl)
 	PRDEF(new_setext,set_setext_icon);
 	PRDEF(new_setext,memcpy);
 	PRDEF(new_setext,xaaes_kmalloc);
-	PRDEF(new_setext,strlen);
+#if USEOWNSTRLEN
+	PRDEF(new_setext,xa_strlen);
+#endif
 #endif
 	/* Ozk:
 	 * On second thought, lets always copy the text
 	 */
-#if PRFSE
-	PROFRECs(slen =, strlen,(t));
+#if PRFSE && USEOWNSTRLEN
+	PROFRECs(slen =, xa_strlen,(t));
 #else
 	slen = strlen(t);
 #endif
@@ -2188,7 +2200,9 @@ m_state_done:
 			else
 				list->flags &= ~SIF_TREEVIEW;
 			if (rdrw)
+			{
 				list->redraw(list, NULL);
+			}
 			break;
 		}
 		case SESET_TEXT:
@@ -2256,7 +2270,9 @@ m_state_done:
 					frdrw = calc_entry_wh(list, entry);
 				}
 				if (rdrw)
+				{
 					list->redraw(list, frdrw ? NULL : entry);
+				}
 			}
 			break;
 		}
@@ -2712,7 +2728,7 @@ sort_entry(SCROLL_INFO *list, SCROLL_ENTRY **start, SCROLL_ENTRY *new, scrl_comp
 					*start = here;	/* done */
 					return;
 				}
-				PROFILE(( "sort_entry:not sorted:smaller(%s,%s,start=%s) flags=%lx", new->content->c.text.txtstr, here->content->c.text.txtstr, c->content->c.text.txtstr, new->usr_flags ));
+				//PROFILE(( "sort_entry:not sorted:smaller(%s,%s,start=%s) flags=%lx", new->content->c.text.txtstr, here->content->c.text.txtstr, c->content->c.text.txtstr, new->usr_flags ));
 			}
 			else
 			{
@@ -2839,6 +2855,8 @@ add_scroll_entry(SCROLL_INFO *list,
 // 		new->r.w += new->indent;
 // 		ndisplay("calc ent wh");
 
+		if( list->start )
+			((struct se_content *)new->content)->c.text.h = list->start->r.h;
 		PROFRECv(calc_entry_wh,(list, new));
 
 // 		display(" done");
@@ -2878,6 +2896,15 @@ add_scroll_entry(SCROLL_INFO *list,
 					usecur = true;
 				}
 				PROFRECv(sort_entry,(list, &here, new, sort));
+
+				if( here )
+				{
+					r.y = (long)(here->r.y + here->r.h);
+					here->r.y = r.y;
+				}
+				else
+					r.y = 0;
+
 				if( usecur == true )
 					list->cur = new;
 
@@ -2961,7 +2988,26 @@ add_scroll_entry(SCROLL_INFO *list,
 			}
 		}
 
-		PROFRECv(get_entry_lrect,(list, new, 0, &r));
+		if ((list->flags & SIF_TREEVIEW))
+		{
+			PROFRECv(get_entry_lrect,(list, new, 0, &r));
+		}
+		else
+		{
+			r.x = new->r.x;
+			r.w = new->r.w;
+			r.h = new->r.h;
+			if( !sort )
+			{
+				if( here )
+				{
+					r.y = (long)(here->r.y + here->r.h);
+					here->r.y = r.y;
+				}
+				else
+					r.y = 0;
+			}
+		}
 
 		if ((r.h | r.w))
 		{
@@ -2978,9 +3024,14 @@ add_scroll_entry(SCROLL_INFO *list,
 // 			list->total_w = list->widest;
 			list->total_h += new->r.h;
 
+
 			if (r.y < (list->start_y - list->off_y))
 			{
 				list->start_y += r.h;
+
+				if( !redraw )
+					return 1;
+
 				PROFRECv(reset_listwi_widgets,(list, redraw));
 
 // 				if (!reset_listwi_widgets(list, redraw) && canredraw(list) && redraw)
@@ -2995,6 +3046,9 @@ add_scroll_entry(SCROLL_INFO *list,
 					else
 						list->top = new;
 				}
+
+				if( !redraw )
+					return 1;
 
 				if( !PROFREC( reset_listwi_widgets,(list, redraw)) && redraw)
 				{
@@ -3036,6 +3090,8 @@ add_scroll_entry(SCROLL_INFO *list,
 			}
 			else
 			{
+				if( !redraw )
+					return 1;
 				PROFRECv(reset_listwi_widgets,(list, redraw));
 
 // 				if (!reset_listwi_widgets(list, redraw) && canredraw(list) && redraw)
@@ -3357,7 +3413,9 @@ del_scroll_entry(struct scroll_info *list, struct scroll_entry *e, short redraw)
 
 		hidem();
 		if (!canblit(list) || sy == -1L)
+		{
 			list->redraw(list, NULL);
+		}
 		else
 		{
 			s = list->wi->wa;
@@ -3409,6 +3467,9 @@ empty_scroll_list(SCROLL_INFO *list, SCROLL_ENTRY *this, SCROLL_ENTRY_TYPE type)
 				this = next_entry(this, ENT_ISROOT, -1, &level);
 #endif
 		}
+		list->total_h =	list->start_y = list->off_y = 0;
+		list->widest = 0;
+		list->start = 0;
 	}
 	else
 	{
@@ -3562,7 +3623,9 @@ scroll_down(SCROLL_INFO *list, long num, bool rdrw)
 	if (rdrw)
 	{
 		if (!canblit(list) || max > (list->wi->wa.h - 8))
+		{
 			list->redraw(list, NULL);
+		}
 		else
 		{
 			RECT s, d;
@@ -3605,7 +3668,9 @@ scroll_left(SCROLL_INFO *list, long num, bool rdrw)
 	if (rdrw)
 	{
 		if (!canblit(list) || max > list->wi->wa.w - 8)
+		{
 			list->redraw(list, NULL);
+		}
 		else
 		{
 			RECT s, d;
@@ -3644,7 +3709,9 @@ scroll_right(SCROLL_INFO *list, long num, bool rdrw)
 	if (rdrw)
 	{
 		if ( !canblit(list) || max > list->wi->wa.w - 8)
+		{
 			list->redraw(list, NULL);
+		}
 		else
 		{
 			RECT s, d;
@@ -4172,8 +4239,6 @@ unset_G_SLIST(struct scroll_info *list)
 	OBJECT *ob = list->wt->tree + list->item;
 
 	DIAG((D_objc, NULL, "unset_G_SLIST: list=%lx, obtree=%lx, index=%d",
-		list, list->wt->tree, list->item));
-	PROFILE(("unset_G_SLIST: list=%lx, obtree=%lx, index=%d",
 		list, list->wt->tree, list->item));
 	this = list->start;
 	while (this)
