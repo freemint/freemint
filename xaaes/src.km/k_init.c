@@ -715,8 +715,7 @@ k_init(unsigned long vm)
 				}
 				else
 				{
-					BLOG((false, "videomode %d invalid", cfg.videomode));
-					BLOG((false, "must be between 1 and 10"));
+					BLOG((false, "videomode %d invalid, must be between 1 and 10", cfg.videomode));
 				}
 			}
 		}	/*/if (cfg.videomode)*/
@@ -726,11 +725,6 @@ k_init(unsigned long vm)
 		}
 // 		display("set mode %x", mode);
 
-		/*{
-		short w, h, wb, hb, hdl = graf_handle(&w,&h,&wb,&hb);
-		BLOG((false, "Screenmode is: %d hdl=%d", mode, hdl));
-
-		}*/
 		BLOG((false, "Screenmode is: %d", mode));
 
 #ifndef ST_ONLY
@@ -793,8 +787,6 @@ k_init(unsigned long vm)
 	}
 	BLOG((false, "Virtual work station opened: %d", v->handle));
 
-		get_syspalette(v->handle/*C.P_handle*/, screen.palette);
-// 	set_defaultpalette(C.P_handle);
 	/*
 	 * Setup the screen parameters
 	 */
@@ -806,6 +798,21 @@ k_init(unsigned long vm)
 	screen.colours = work_out[13];
 	screen.display_type = D_LOCAL;
 	v->screen = screen.r;
+
+	BLOG((0, "display-type LOCAL"));
+
+	vq_extnd(v->handle, 1, work_out);	/* Get extended information */
+	/*{int i;
+	for( i = 0; i < 58 / 2; i += 2 )
+	}*/
+
+	if( !(work_out[0] = 4 || work_out[0] == 1) )
+	{
+		BLOG((0,"invalid screen-type:%d", work_out[0] ));
+		return -1;
+	}
+	screen.planes = work_out[4];		/* number of planes in the screen */
+
 	C.Aes->vdi_settings = v;
 	vs_clip(/*C.P_*/v->handle, 1, (short *)&screen.r);
 	(*v->api->set_clip)(v, &screen.r);
@@ -818,9 +825,6 @@ k_init(unsigned long vm)
 // 	showm();
 
 	objc_rend.dial_colours = MONO ? bw_default_colours : default_colours;
-
-	vq_extnd(v->handle, 1, work_out);	/* Get extended information */
-	screen.planes = work_out[4];		/* number of planes in the screen */
 
 	BLOG((0,"lookup-support:%d, planes:%d", work_out[5], work_out[4] ));
 
@@ -839,9 +843,6 @@ k_init(unsigned long vm)
 			return 1;
 		}
 	}
-// 	if (screen.planes > 8)
-// 		set_defaultpalette(v->handle);
-// 	get_syspalette(C.P_handle, screen.palette);
 
 	screen.pixel_fmt = detect_pixel_format(v);
 	BLOG((false, "Video info: width(%d/%d), planes :%d, colours %d pixel-format %d",
@@ -850,6 +851,9 @@ k_init(unsigned long vm)
 // 	display("Video info: width(%d/%d), planes :%d, colours %d, pixelfmt = %d",
 // 		screen.r.w, screen.r.h, screen.planes, screen.colours, screen.pixel_fmt);
 
+// 	if (screen.planes > 8)
+// 		set_defaultpalette(v->handle);
+	get_syspalette(v->handle/*C.P_handle*/, screen.palette);
 
 	/*
 	 * If we are using anything apart from the system font for windows,
