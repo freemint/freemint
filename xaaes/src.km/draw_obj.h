@@ -33,6 +33,7 @@
 
 #define DRW_CURSOR		1
 #define UNDRAW_FOCUS	2
+#define DRAW_FOCUS    4	// draw only object-cursor
 
 long init_client_objcrend(struct xa_client *client);
 void exit_client_objcrend(struct xa_client *client);
