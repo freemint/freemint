@@ -541,23 +541,24 @@ d_g_slist(struct widget_tree *wt, struct xa_vdi_settings *v)
 
 	/* list = object_get_spec(ob)->listbox; */
 	list = (SCROLL_INFO*)object_get_spec(ob)->index;
-	w = list->wi;
-
-	w->r.x = w->rc.x = r.x;
-	w->r.y = w->rc.y = r.y;
-
-	/* for after moving */
-	calc_work_area(w);
-
-	wa = w->wa;
-	//y = wa.y;
-	//maxy = y + wa.h - screen.c_max_h;
-	this = list->top;
-
-	(*v->api->t_color)(v, G_BLACK);
-
-	//if (list->state == 0)
+	if (list)
 	{
+		w = list->wi;
+
+		w->r.x = w->rc.x = r.x;
+		w->r.y = w->rc.y = r.y;
+
+		/* for after moving */
+		calc_work_area(w);
+
+		wa = w->wa;
+		//y = wa.y;
+		//maxy = y + wa.h - screen.c_max_h;
+		this = list->top;
+
+		(*v->api->t_color)(v, G_BLACK);
+
+		//if ((list->flags & SIF_DIRTY))
 		get_widget(w, XAW_TITLE)->stuff = list->title;
 		r = v->clip;
 		draw_window(list->lock, w, &r);
@@ -711,6 +712,7 @@ display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, struct x
 	unsigned short state_mask = (OS_SELECTED|OS_CROSSED|OS_CHECKED|OS_DISABLED|OS_OUTLINED);
 	unsigned short t = ob->ob_type & 0xff;
 
+
 	(*wt->objcr_api->obj_offsets)(wt, ob, &o);
 
 	r.x = parent_x + ob->ob_x;
@@ -792,7 +794,8 @@ display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, struct x
 	}
 
 	/* Call the appropriate display routine */
-	(*drawer)(wt, v);
+	if( !(flags & DRAW_FOCUS) )
+		(*drawer)(wt, v);
 
 	if (t != G_PROGDEF)
 	{
