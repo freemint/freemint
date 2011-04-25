@@ -277,7 +277,7 @@ int xaaes_do_form_alert( enum locks lock, struct xa_client *client, int def_butt
 	C.update_lock = NULL;
 	client->waiting_pb = NULL;
 
-	Unblock(client, 0, 0);
+	Unblock(client, 0, 10);
 
 	return intout[0];
 }
