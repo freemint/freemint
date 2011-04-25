@@ -953,7 +953,7 @@ CE_redraw_menu(enum locks lock, struct c_event *ce, bool cancel)
 				    0, 0,
 				    NULL,
 				    NULL);
-			Unblock(mc, 1, 1);
+			Unblock(mc, 1, 11);
 		}
 	#endif
 	}
