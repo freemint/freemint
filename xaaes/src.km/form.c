@@ -277,8 +277,7 @@ okexit:
 		obj_draw(wt, client->vdi_settings, wt->focus, 0, NULL, NULL, DRW_CURSOR);
 	}
 #endif
-	DIAGS(("Setup_form_do: returning - edobj=%d, wind %lx",
-	edit_item(ei), wind));
+	DIAGS(("Setup_form_do: returning - edobj=%d, wind %lx", edit_item(ei), wind));
 
 	if (ret_edobj)
 		*ret_edobj = editfocus(ei); //edit_item(ei);
@@ -948,6 +947,8 @@ g_slist:
 			{
 				obj_draw(wt, v, pf, 0, NULL, *rl, UNDRAW_FOCUS|DRW_CURSOR);		/* remove cursor+focus */
 			}
+			if( !(new_focus.ob->ob_state & OS_SELECTED) )
+				md |= DRAW_FOCUS;
 			obj_draw(wt, v, new_focus, 0, NULL, *rl, md);
 		}
 		if( new_focus.ob->ob_type == G_SLIST )
@@ -1437,7 +1438,10 @@ do_formwind_msg(
 			{
 				obj_edit(wt, v, ED_END, editfocus(&wt->e), 0, 0, NULL, true, &wind->wa, wind->rect_list.start, NULL, NULL);
 			}
-			dfwm_redraw(wind, widg, wt, (RECT *)&msg[4]);
+			if (!(wind->dial & created_for_FMD_START))
+			{
+				dfwm_redraw(wind, widg, wt, (RECT *)&msg[4]);
+			}
 			if (!wt->ei && edit_set(&wt->e))
 			{
 				obj_edit(wt, v, ED_END, editfocus(&wt->e), 0, 0, NULL, true, &wind->wa, wind->rect_list.start, NULL, NULL);
@@ -1456,7 +1460,9 @@ do_formwind_msg(
 		case WM_TOPPED:
 		{
 			if (wind->owner->fmd.wind == wind)
+			{
 				top_window(0, true, false, wind);
+			}
 			else if ( wind != root_window &&
 				 (wind->window_status & XAWS_OPEN) &&
 				 (wind->nolist ? !wind_has_focus(wind) : !is_topped(wind))
