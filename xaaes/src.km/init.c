@@ -467,9 +467,9 @@ again:
 #else
 	D.debug_file = NULL;
 #endif
-	sprintf(Aes_display_name, sizeof(Aes_display_name), "  XaAES(dbg) v%s", vversion);
+	sprintf(Aes_display_name, sizeof(Aes_display_name), "  XaAES(dbg) v%s (%s)", vversion, _CPU);
 #else
-	sprintf(Aes_display_name, sizeof(Aes_display_name), "  XaAES v%s", vversion);
+	sprintf(Aes_display_name, sizeof(Aes_display_name), "  XaAES v%s (%s)", vversion, _CPU);
 #endif
 	/*
 	 * default configuration
@@ -720,7 +720,7 @@ again:
 		}
 	}
 
-	BLOG((0,"lang='%s(%d)' (from %s).",cfg.lang, li, li == -1 ? "config" : (li == -2 ? "Environ" : "AKP") ));
+	BLOG((0,"lang='%s(%ld)' (from %s).",cfg.lang, li, li == -1 ? "config" : (li == -2 ? "Environ" : "AKP") ));
 	}
 
 	if( cfg.info_font_point == -1 )
