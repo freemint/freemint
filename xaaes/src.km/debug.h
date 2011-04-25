@@ -28,16 +28,15 @@
 #define _debug_h
 
 #include "global.h"
+#ifndef PROFILING
+#define PROFILING	0
+#endif
 
 #define WAIT_SEE					{int _i;for( _i = 0; _i < 10000; _i++ )nap( 60000 );}
 
 
 void _cdecl display(const char *fmt, ...);
 void _cdecl ndisplay(const char *fmt, ...);
-
-#ifndef PROFILING
-#define PROFILING 0
-#endif
 
 enum prof_cmd{ P_Init_All = 0, P_Init = 1, P_Start = 2, P_Stop = 3, P_Print_All = 4,
 	P_Drop_Name = 5};
@@ -201,13 +200,17 @@ void diag(enum debug_item item, struct xa_client *client, char *t, ...);
 
 #endif /* GENERATE_DIAGS */
 
-#if BOOTLOG
 void _cdecl bootlog(bool disp, const char *fmt, ...);
+#if BOOTLOG
 #define BLOG(x)	bootlog x
 #define BLOGif(c,x)	if(c)bootlog x
+#define DBG BLOG
+#define DBGif BLOGif
 #else
-void _cdecl bootlog(bool disp, const char *fmt, ...);
 #define BLOG(x)
+#define BLOGif(x)
+#define DBG(x)
+#define DBGif(x)
 #endif
 
 #endif /* _debug_h */
