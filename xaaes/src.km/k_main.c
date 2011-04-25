@@ -250,7 +250,7 @@ post_cevent(struct xa_client *client,
 		{
 			DIAGS(("kmalloc(%i) failed, out of memory?", sizeof(*c)));
 		}
-		Unblock(client, 1, 0);
+		Unblock(client, 1, 3);
 	}
 }
 
@@ -327,6 +327,8 @@ dispatch_cevent(struct xa_client *client)
 void
 do_block(struct xa_client *client)
 {
+	if( client->status & 0x00010000L )
+		return;
 #if 0
 	if ((client->i_xevmask.ev_0 & XMU_FSELECT))
 	{
@@ -1263,7 +1265,7 @@ sshutdown_timeout(struct proc *p, long arg)
 						else
 						{
 							flag = client;
-							Unblock(client, 1, 1);
+							Unblock(client, 1, 4);
 						}
 					}
 				}
