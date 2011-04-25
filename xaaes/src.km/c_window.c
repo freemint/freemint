@@ -2158,7 +2158,9 @@ close_window(enum locks lock, struct xa_window *wind)
 
 			r = wind->r;
 			if (!(wind->active_widgets & STORE_BACK))
+			{
 				update_windows_below(lock, &r, NULL, wl, NULL);
+			}
 
 			unset_focus(wind);
 		}
@@ -3197,7 +3199,7 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 				showm();
 			}
 			/*
-			 * Calculate rectangles that needs to be redrawn...
+			 * Calculate rectangles that need to be redrawn...
 			 */
 			newrl = wind->rect_list.start;
 			while (newrl)
