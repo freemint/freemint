@@ -25,7 +25,7 @@
  */
 
 #define PROFILING	0
-
+#include "debug.h"
 #include "xa_types.h"
 #include "xa_global.h"
 
