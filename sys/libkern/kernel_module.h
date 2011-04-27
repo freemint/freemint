@@ -931,6 +931,9 @@ check_kentry_version(void)
 
 # define ROM_Setexc(vnum,vptr)	(void (*)(void))trap_13_emu(0x05,(short)(vnum),(long)(vptr))
 
+#ifdef USB_SUPPORT
+# define XHNewCookie		(*KENTRY->vec_misc.XHNewCookie)
+#endif
 
 /*
  * kentry_debug
