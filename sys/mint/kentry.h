@@ -102,9 +102,11 @@ struct timeval;
  * versions are enough :-)
  */
 #define KENTRY_MAJ_VERSION	0
+#ifdef USB_SUPPORT
+#define KENTRY_MIN_VERSION	17
+#else
 #define KENTRY_MIN_VERSION	16
-
-
+#endif
 /* hardware dependant vector
  */
 struct kentry_mch
@@ -557,7 +559,31 @@ struct kentry_misc
 	long _cdecl (*trap_1_emu)(short fnum, ...);
 	long _cdecl (*trap_13_emu)(short fnum, ...);
 	long _cdecl (*trap_14_emu)(short fnum, ...);
+#ifdef USB_SUPPORT
+	/*
+	 * function to install XHDI drivers
+	 */
+	long _cdecl (*XHNewCookie)(void *newcookie);
+#endif	
 };
+#ifdef USB_SUPPORT
+#define DEFAULTS_kentry_misc \
+{ \
+	&dma, \
+	\
+	get_toscookie, \
+	\
+	add_rsvfentry, \
+	del_rsvfentry, \
+	\
+	remaining_proc_time, \
+	\
+	trap_1_emu, \
+	trap_13_emu, \
+	trap_14_emu, \
+	XHNewCookie, \
+}
+#else
 #define DEFAULTS_kentry_misc \
 { \
 	&dma, \
@@ -573,7 +599,7 @@ struct kentry_misc
 	trap_13_emu, \
 	trap_14_emu, \
 }
-
+#endif
 
 /* debug support
  */
