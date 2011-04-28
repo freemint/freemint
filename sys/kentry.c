@@ -63,6 +63,9 @@
 # include "util.h"		/* pid2proc */
 # include "xfs_xdd.h"
 
+# ifdef USB_SUPPORT
+# include "xhdi.h"		/* XHNewCookie */
+# endif
 
 # undef DEFAULT_MODE
 # undef DEFAULT_DIRMODE
