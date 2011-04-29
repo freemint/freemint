@@ -3,7 +3,7 @@
 #
 
 SHELL = /bin/sh
-SUBDIRS = arch buildinfo gen-syscall libkern sockets xdd xfs
+SUBDIRS = arch buildinfo gen-syscall libkern sockets usb xdd xfs
 KERNELSUBDIRS = arch buildinfo
 
 srcdir = .
