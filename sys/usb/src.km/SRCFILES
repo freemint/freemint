@@ -1,0 +1,33 @@
+# This file gets included by the Makefile in this directory to determine
+# the files that should go only into source distributions.
+
+HEADER = \
+	config.h \
+	global.h \
+	hub.h \
+	init.h \
+	part.h \
+	ucd.h \
+	ucdload.h \
+	udd.h \
+	uddload.h \
+	usb.h \
+	usb_defs.h \
+	util.h \
+	version.h
+
+COBJS = \
+	hub.c \
+	init.c \
+	ucd.c \
+	ucdload.c \
+	udd.c \
+	uddload.c \
+	usb.c \
+	util.c
+
+SOBJS = \
+
+SSOBJS = \
+
+SRCFILES = $(HEADER) $(COBJS) $(SOBJS) $(SSOBJS)
