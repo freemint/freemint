@@ -593,12 +593,13 @@ k_init(unsigned long vm)
 	/* try to open virtual wk - necessary when physical wk is already open
 	 * ? how to know if physical wk is open and its handle without AES?
 	 */
+	v->handle = 0;
+	C.P_handle = 0;
 	if( C.fvdi_version == 0 /*&& C.nvdi_version != 0*/ /* todo: detect AES */ )
 	{
-		v->handle = 0;
-		C.P_handle = 0;
 		set_wrkin(work_in, cfg.videomode);
 		BLOG((0,"1st v_opnvwk" ));
+		setFatal(false);
 		v_opnvwk(work_in, &v->handle, work_out);
 		BLOG((0,"->%d, wh=%d/%d %d colors", v->handle, work_out[0], work_out[1], work_out[13]));
 		if( !(work_out[0] && work_out[1] && work_out[13]) )
@@ -606,6 +607,7 @@ k_init(unsigned long vm)
 			BLOG((0,"invalid values, trying physical workstation"));
 			v->handle = 0;
 		}
+		setFatal(true);
 
 	}
 	if ( v->handle <= 0 )
