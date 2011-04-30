@@ -182,6 +182,7 @@ static void file_to_list( SCROLL_INFO *list, char *fn, bool skip_hash)
 		sc.t.text = "...";
 		list->add(list, NULL, NULL, &sc, false, 0, false);
 	}
+	xa_fclose(xa_fp);
 	PRPRINT;
 
 }
