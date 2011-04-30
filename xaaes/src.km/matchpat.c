@@ -65,6 +65,8 @@
 
 #define PATSEP	'|'
 
+char *strmrchr( char *s, char *p );
+
 /*
  * search for any character of p in s
  *
@@ -82,13 +84,12 @@ char *strmchr( char *s, char *p )
 	return 0;
 }
 
-#if CASESENS
 /*
  * search for any character of p in s from end of s
  *
  * return pointer in s or 0
  */
-static char *strmrchr( char *s, char *p )
+char *strmrchr( char *s, char *p )
 {
 	char *p1, *sx = s + strlen(s) - 1;
 	for( ; sx >= s; sx-- )
@@ -100,6 +101,7 @@ static char *strmrchr( char *s, char *p )
 	return 0;
 }
 
+#if CASESENS
 #define NO_EXTENDED_PATMATCH	0
 #define MAXPATTERNS	8
 
