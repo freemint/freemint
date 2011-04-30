@@ -954,12 +954,9 @@ set_mouse_shape(short m_shape, MFORM *m_form, struct xa_client *client, bool aes
 		{
 			C.aesmouse = m_shape;
 			C.aesmouse_form = m_form;
-			if (C.realmouse != m_shape)
-			{
-				chg = true;
-				C.realmouse = m_shape;
-				C.realmouse_form = m_form;
-			}
+			chg = true;
+			C.realmouse = m_shape;
+			C.realmouse_form = m_form;
 			C.realmouse_owner = NULL;
 		}
 	}
@@ -1091,9 +1088,13 @@ xa_graf_mouse(int m_shape, MFORM *mf, struct xa_client *client, bool aesm)
 		set_mouse_shape(m_shape, mf ? mf : &M_BUBD_MOUSE, client, aesm);
 		//set_mouse_shape(m_shape, &M_BUBD_MOUSE, client, aesm);
 		break;
+	case X_MRESET:
+	case M_FORCE:
+		forcem();
+		return;
 	default:
 	{
-		if ((mf = get_mform(m_shape)))
+		if ((mf = get_mform(m_shape)))	//case X_MGET??
 			set_mouse_shape(m_shape, mf, client, aesm);
 		break;
 	}
@@ -1230,6 +1231,13 @@ XA_xa_graf_mouse(enum locks lock, struct xa_client *client, AESPB *pb)
 			set_client_mouse(client, SCM_MAIN|0x8000, m, ud);
 			DIAG((D_f,client,"mouse_form to %d(%lx)", m, ud));
 		}
+	}
+	else if( m == X_MGET )
+	{
+		pb->intout[0] = tellm();
+		if( pb->addrin[0] && C.realmouse_form )
+			*(MFORM*)pb->addrin[0] = *C.realmouse_form;
+		return XAC_DONE;
 	}
 	else if (m != M_SAVE && m != M_RESTORE && m != M_PREVIOUS)
 	{
