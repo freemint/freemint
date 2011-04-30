@@ -638,7 +638,10 @@ typedef  struct
 #define M_RESTORE 		  259
 #define M_LAST 			  260
 #define M_PREVIOUS        M_LAST  /* alias */
-#define M_FORCE			0x8000
+#define X_MRESET      0x1000	//geneva
+#define X_MGET        0x1001	//geneva
+#define X_MSET_SHAPE  0x1100	//geneva
+#define M_FORCE       0x8000
 
 /* objects - general */
 #define ROOT		 	0 	 /* index of ROOT */
