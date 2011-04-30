@@ -64,6 +64,9 @@
 /* define 1 if alerts in syslog shall have a timestamp */
 #define ALERTTIME	1
 
+/* define 1 if CPU-caches should be saved/restored for opnwk/clswk */
+#define SAVE_CACHE_WK 0
+
 #define DISPLAY_LOGO_IN_TITLE	0	/* Display the XaAES logo in the title bar of each window */
 
 #define POINT_TO_TYPE		0	/* if defined focus can be dynamically changed in the cfg (see parde*/
@@ -89,7 +92,6 @@
 #define CHECK_STACK	1
 #endif
 
-#define NAES3D			1	/* ??? */
 
 #if __GNUC__ > 2
 /* set 1 if you wish more inlinig
