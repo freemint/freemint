@@ -55,7 +55,7 @@
 #define REV_3D		(1<<7)
 #define ANCH_PARENT	(1<<8)
 #define CALC_ONLY	(1<<15)
-#define NAES3D	1
+
 
 static short _cdecl obj_thickness(struct widget_tree *wt, OBJECT *ob);
 static void _cdecl obj_offsets(struct widget_tree *wt, OBJECT *ob, RECT *c);
@@ -125,6 +125,7 @@ struct theme
 {
 	struct xa_data_hdr h;
 
+#define NAES3D			1
 	unsigned long rflags;
 
 	short	shadow_col;
@@ -3198,7 +3199,7 @@ d3_pushbutton(struct xa_vdi_settings *v, struct theme *theme, short d, RECT *r, 
 	t = abs(thick);
 	outline = j;
 
-#if NAES3D
+#ifdef REND_NAES3D
 	if ((theme->rflags & NAES3D) && !(mode & 2)) //default_options.naes && !(mode & 2))
 	{
 		(*v->api->l_color)(v, theme->normal.c.box_c);
@@ -5505,6 +5506,9 @@ icon_characters(struct xa_vdi_settings *v, struct theme *theme, ICONBLK *iconblk
 	char lc = iconblk->ib_char;
 	short tx,ty,pnt[4];
 
+	if( !lc && !*iconblk->ib_ptext )
+		return;
+
 	(*v->api->wr_mode)(v, MD_REPLACE);
 	(*v->api->ritopxy)(pnt, obx + iconblk->ib_xtext, oby + iconblk->ib_ytext,
 		     iconblk->ib_wtext, iconblk->ib_htext);
@@ -5799,7 +5803,8 @@ d_g_cicon(struct widget_tree *wt, struct xa_vdi_settings *v)
 	Micon.fd_nplanes = screen->planes;
 
 	vro_cpyfm(v->handle, blitmode, pxy, &Micon, &Mscreen);
-	icon_characters(v, theme, iconblk, ob->ob_state & (OS_SELECTED|OS_DISABLED), obx, oby, ic.x, ic.y);
+	if( iconblk->ib_char || *iconblk->ib_ptext )
+		icon_characters(v, theme, iconblk, ob->ob_state & (OS_SELECTED|OS_DISABLED), obx, oby, ic.x, ic.y);
 
 	if ((ob->ob_state & OS_DISABLED) || ((ob->ob_state & OS_SELECTED) && !have_sel))
 	{
