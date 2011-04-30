@@ -189,17 +189,12 @@ extern const char mnu_clientlistname[];
 
 // extern XA_TREE nil_tree;
 
-/* shortcuts */
-#if AGGRESSIVE_INLINING
-static inline __attribute__((always_inline)) void hidem(void)  { v_hide_c(C.P_handle);    }
-static inline __attribute__((always_inline)) void showm(void)  { v_show_c(C.P_handle, 1); }
-static inline __attribute__((always_inline)) void forcem(void) { v_show_c(C.P_handle, 0); }
-#else
 /* mscall.c */
 void hidem(void);
 void showm(void);
 void forcem(void);
-#endif
+int tellm(void);
+
 struct xa_client *pid2client(short pid);
 struct xa_client *proc2client(struct proc *p);
 
