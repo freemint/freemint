@@ -104,10 +104,10 @@ drive_and_path(char *fname, char *path, char *name, bool n, bool set)
 	{
 		/* Seperate path & name */
 		t = strlen(path)-1;
-		while (t >= 0 && path[t] != '\\')
+		while (t >= 0 && !(path[t] == '\\' || path[t] == '/') )
 			t--;
 
-		if (path[t] == '\\')
+		if (path[t] == '\\' || path[t] == '/' )
 		{
 			path[t] = '\0';
 			if (name)
