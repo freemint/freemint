@@ -35,7 +35,7 @@
 #include "xa_types.h"
 
 void ceExecfunc(enum locks lock, struct c_event *ce, bool cancel);
-// void shutdown_timeout(struct proc *p, long arg);
+void setFatal(bool val );
 struct timeout * set_shutdown_timeout(long delta);
 void kick_shutdn_if_last_client(void);
 
@@ -46,7 +46,6 @@ void cancel_CE(struct xa_client *client, void *f, bool(*callback)(struct c_event
 void post_cevent(struct xa_client *client, void (*func)(enum locks, struct c_event *, bool cancel), void *ptr1, void *ptr2, int d0, int d1, const RECT *r, const struct moose_data *md);
 short dispatch_selcevent(struct xa_client *client, void *f, bool cancel);
 
-//short check_cevents(struct xa_client *client);
 
 void do_block(struct xa_client *client);
 void cBlock(struct xa_client *client, int which);
