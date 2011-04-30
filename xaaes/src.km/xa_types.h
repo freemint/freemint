@@ -1817,8 +1817,8 @@ enum scroll_info_flags
 	SIF_KEYBDACT	= 0x0200,
 	SIF_DIRTY			= 0x0400,
 	SIF_INLINE_EFFECTS	=	0x800,
-	SIF_NO_ICONS	=	0x1000
-
+	SIF_NO_ICONS	=	0x1000,
+	SIF_ICONS_HAVE_NO_TEXT = 0x2000
 };
 typedef enum scroll_info_flags SCROLL_INFO_FLAGS;
 
