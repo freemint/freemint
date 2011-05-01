@@ -148,8 +148,10 @@ umem_verify(MEMREGION *m, struct umem_descriptor *descr)
 static struct umem_descriptor *
 umem_split(struct umem_descriptor *descr, unsigned long n, unsigned long size)
 {
-	union { char *c; struct umem_descriptor *d; } ptr; ptr.d = descr;
+	union { char *c; struct umem_descriptor *d; } ptr;
 	struct umem_descriptor *descr1;
+
+	ptr.d = descr;
 
 	descr1 = (void *)(ptr.c + (n - size));
 
@@ -171,7 +173,10 @@ static int
 umem_lookup(struct proc *p, MEMREGION *m, unsigned long size, void **result)
 {
 	struct umem_descriptor *descr;
-	union { char **c; void **v; } resultptr; resultptr.v = result;
+	union { char **c; void **v; } resultptr; 
+	
+	resultptr.v = result;
+
 	/* default is nothing found */
 	*resultptr.v = NULL;
 
@@ -306,9 +311,11 @@ _umalloc(unsigned long size, const char *func)
 void _cdecl
 _ufree(void *plac, const char *func)
 {
-	union { char *c; void *v; long l; struct umem_descriptor *descr; } placeptr; placeptr.v = plac;
+	union { char *c; void *v; long l; struct umem_descriptor *descr; } placeptr; 
 	struct proc *p = get_curproc();
 	MEMREGION *m;
+
+	placeptr.v = plac;
 
 	DEBUG(("ufree(0x%lx, %s)", plac, func));
 
