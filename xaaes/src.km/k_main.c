@@ -974,18 +974,28 @@ ignore(int sig)
 	KERNEL_DEBUG("AESSYS: ignored signal");
 }
 #if !GENERATE_DIAGS
-static bool IgnoreFatal = false;
-void setFatal(bool val )
+#if 0
+static int IgnoreFatal = 0;
+int setIgnFatal(int val )
 {
-	IgnoreFatal = val;
+	if( IgnoreFatal == 0 || val == 0 )
+		IgnoreFatal = val;
+	return IgnoreFatal;
 }
+#endif
 static void
 fatal(int sig)
 {
 	struct proc *p = get_curproc();
-	BLOG((true, "'%s': fatal error: %d", p->name, sig, IgnoreFatal == true ? "(Ignored)" : ""));
-	if( IgnoreFatal == true )
+#if 0
+	BLOG((true, "'%s': fatal error: %d %s.", p->name, sig, IgnoreFatal ? "(Ignored)" : ""));
+	if( IgnoreFatal != 0 ){
+		IgnoreFatal = 0;
 		return;
+	}
+#else
+	BLOG((true, "'%s': fatal error: %d", p->name, sig ));
+#endif
 	KERNEL_DEBUG("'%s': fatal error, trying to clean up", p->name );
 	ferr = sig;
 	k_exit(0);
