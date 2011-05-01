@@ -241,24 +241,34 @@ static bool is_same_file( char *f1, char *f2 )
 		return st1.dev == st2.dev && st1.ino == st2.ino;
 	return false;
 }
-static bool is_launch_path( char *path )
+
+static int base( char *path, char **ps )
 {
-	char *p = strrchr( cfg.launch_path, '\\' );
-	bool ret;
+	char *p = strrchr( path, '\\' ), c=0;
+	if( !p )
+		p = strrchr( path, '/' );
 	if( p )
+	{
+		c = *p;
 		*p = 0;
-	ret = is_same_file( cfg.launch_path, path );
-	if( p )
-		*p = '\\';
-	return ret;
+		if( ps )
+			*ps = p;
+	}
+	return c;
 }
 
-static char *get_full_curpath( char *dir )
+static bool is_launch_path( char *path )
 {
-	dir[0] = d_getdrv() + 'a';
-	dir[1] = ':';
-	d_getpath(dir + 2, 0);
-	return dir;
+	bool ret;
+	char *p1, *p2;
+	char c1 = base( cfg.launch_path, &p1 );
+	char c2 = base( path, &p2 );
+	ret = is_same_file( cfg.launch_path, path );
+	if( p1 )
+		*p1 = c1;
+	if( p2 )
+		*p2 = c2;
+	return ret;
 }
 
 int
@@ -277,9 +287,9 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 	char *tail = argvtail;
 	int ret = 0;
 	int drv = 0;
-	Path path, name, defdir;
+	Path path, name, defdir;//, cur;
 	struct proc *p = NULL;
-	int type = 0;
+	int type = 0, follow = 0;
 // 	bool d = (caller && !strnicmp(caller->proc_name, "guitar", 6)) ? true : false;
 
 
@@ -576,6 +586,8 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 
 			DIAG((D_shel, 0, "[2]drive_and_path %d,'%s','%s'", drv, path,name));
 
+			follow = is_launch_path( cmd );
+
 			if (tailsize && (wiscr == 1 || longtail))
 				make_argv(tail, tailsize, name, argvtail);
 
@@ -591,24 +603,27 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 					_f_readlink( PATH_MAX, linkname, cmd );
 					if( strcmp( cmd, linkname ) )
 					{
-						Path cur;
-
 						ps = strrchr( linkname, '\\' );
-						//if( !ps )
-							//ps = strrchr( linkname, '/' );
+						if( !ps )
+							ps = strrchr( linkname, '/' );
 
 						if( ps )
 							*ps = 0;
-						cpopts.defdir = linkname;
+						strcpy( defdir, linkname );
 
 						/* if started from launch_path set home to link-target path */
-						if( is_launch_path( get_full_curpath(cur) ) )
+						if( follow ) //is_launch_path( get_full_curpath(cur) ) )
+						{
 							strcpy( path, linkname );	/* this gets shel_info.home_path in init_client */
+							//DBG((0,"launch:cmd=%s,link=%s,path=%s->%ld", cmd, linkname, path, r));
+						}
 					}
 				}
+
 				ret = create_process(cmd, *argvtail ? argvtail : tail,
 						     (x_mode & SW_ENVIRON) ? x_shell.env : *strings,
 						     &p, 0, cpopts.mode ? &cpopts : NULL);
+
 				if (ret == 0)
 				{
 					assert(p);
@@ -1318,10 +1333,11 @@ XA_shel_find(enum locks lock, struct xa_client *client, AESPB *pb)
 }
 
 #if GENERATE_DIAGS
+
 static void
 display_env(char **env, int which)
 {
-	if (D.debug_level > 2 && D.point[D_shel])
+	//if (D.debug_level > 2 && D.point[D_shel])
 	{
 		if (which == 1)
 		{
