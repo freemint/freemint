@@ -117,9 +117,13 @@ sock_open (FILEPTR *f)
 static long
 sock_write (FILEPTR *f, const char *buf, long buflen)
 {
-	union { const char *cc; char *c; } bufptr; bufptr.cc = buf;
+	union { const char *cc; char *c; } bufptr;
 	struct socket *so = (struct socket *) f->devinfo;
-	struct iovec iov[1] = {{ bufptr.c, buflen }};
+	struct iovec iov[1];
+
+	bufptr.cc = buf;
+	iov[0].iov_base = bufptr.c;
+	iov[0].iov_len = buflen;
 
 	SOCKDEV_ASSERT ((so));
 

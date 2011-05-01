@@ -1287,11 +1287,13 @@ bios_topen (FILEPTR *f)
 static long _cdecl
 bios_twrite (FILEPTR *f, const char *buf, long bytes)
 {
-	union { const char *b; long *l;} ptr; ptr.b = buf;
 	long *r;
 	long ret = 0;
 	int bdev = f->fc.aux;
 	struct bios_file *b = (struct bios_file *) f->fc.index;
+	union { const char *b; long *l;} ptr; 
+	
+	ptr.b = buf;
 
 	r = ptr.l;// (long *) buf;
 

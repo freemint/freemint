@@ -132,7 +132,7 @@ long	XHStop		(ushort major, ushort minor, ushort do_stop, ushort key);
 long	XHEject		(ushort major, ushort minor, ushort do_eject, ushort key);
 long	XHDrvMap	(void);
 long	XHInqDev	(ushort bios_device, ushort *major, ushort *minor, ulong *start_sector, __BPB *bpb);
-long	XHInqDriver	(ushort bios_device, char *name, char *version, char *company, ushort *ahdi_version, ushort *maxIPL);
+long	XHInqDriver	(ushort bios_device, char *name, char *ver, char *company, ushort *ahdi_version, ushort *maxIPL);
 long	XHNewCookie	(void *newcookie);
 long	XHReadWrite	(ushort major, ushort minor, ushort rwflag, ulong recno, ushort count, void *buf);
 long	XHInqTarget2	(ushort major, ushort minor, ulong *block_size, ulong *device_flags, char *product_name, ushort stringlen);
