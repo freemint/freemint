@@ -1448,9 +1448,11 @@ ram_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newname
 static long _cdecl
 ram_opendir (DIR *dirh, int flags)
 {
-	union { char *c; DIRLST **d; } ptr; ptr.c = dirh->fsstuff;
+	union { char *c; DIRLST **d; } ptr;
 	COOKIE *c = (COOKIE *) dirh->fc.index;
 	DIRLST *l;
+
+	ptr.c = dirh->fsstuff;
 
 	if (!IS_DIR (c))
 	{
@@ -1472,9 +1474,11 @@ ram_opendir (DIR *dirh, int flags)
 static long _cdecl
 ram_readdir (DIR *dirh, char *nm, int nmlen, fcookie *fc)
 {
-	union { char *c; DIRLST **d;} ptr; ptr.c = dirh->fsstuff;
+	union { char *c; DIRLST **d;} ptr;
 	DIRLST *l;
 	long r = ENMFILES;
+
+	ptr.c = dirh->fsstuff;
 
 	l = *ptr.d; // *(DIRLST **) (&dirh->fsstuff);
 	if (l)

@@ -7074,11 +7074,14 @@ fatfs_writelabel (fcookie *dir, const char *name)
 
 	if (r == E_OK)
 	{
-		register union { const char *cc; const unsigned char *c; } nameptr; nameptr.cc = name;
+		register union { const char *cc; const unsigned char *c; } nameptr; 
 		register const char *table = DEFAULT_T (dir->dev);
-		register const uchar *src = nameptr.c;
+		register const uchar *src;
 		register char *dst = odir.info->name;
 		register long i;
+		
+		nameptr.cc = name;
+		src = nameptr.c;
 
 		for (i = 0; i < 11 && *src; i++)
 		{
