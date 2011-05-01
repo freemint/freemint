@@ -164,6 +164,7 @@ has_opened (SHARED_LIB *sl, int pid)
 static long
 load_and_init_slb(char *name, char *path, long min_ver, SHARED_LIB **sl)
 {
+	union { char *c; long *l;} ptr;
 	int new_pid, prot_cookie;
 	long r, hitpa, oldsigint, oldsigquit, oldcmdlin, *exec_longs;
 	char *fullpath;
@@ -295,7 +296,6 @@ slb_error:
 	 * to be executed by a program with ordinary Pexec().
 	 */
 
-	union { char *c; long *l;} ptr;
 	ptr.c = b->p_cmdlin;
 	
 	oldcmdlin = *ptr.l;
