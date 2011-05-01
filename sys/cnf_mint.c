@@ -407,9 +407,11 @@ pCB_echo(char *line)
 static void
 pCB_exec(const char *path, const char *line, struct parsinf *inf)
 {
-	union { const char *cc; char *c;} pathptr; pathptr.cc = path;
 	char cmdline[128];
 	int i;
+	union { const char *cc; char *c;} pathptr; 
+	
+	pathptr.cc = path;
 
 	i = strlen(line);
 	if (i > 126) i = 126;

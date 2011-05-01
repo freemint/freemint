@@ -68,15 +68,12 @@
 # endif
 
 
-/* define to mark a function as inline: */
-# ifdef __GNUC__
-# define INLINE		static inline __attribute__((always_inline))
-# endif
-
-/* default: */
-# ifndef INLINE
-# define INLINE		static
-# endif
+/* Forces a function to be always inlined.  */
+#if __GNUC_PREREQ (3,2)
+# define INLINE static __inline __attribute__ ((__always_inline__))
+#else
+# define INLINE static __inline
+#endif
 
 /* define to indicate unused variables: */
 # ifdef __TURBOC__
