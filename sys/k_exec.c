@@ -174,9 +174,6 @@ long _cdecl
 sys_pexec(short mode, const void *p1, const void *p2, const void *p3)
 {
 	union { const void *v; const char *cc; char *c; long l; } ptr_1, ptr_2, ptr_3;
-	ptr_1.v = p1;
-	ptr_2.v = p2;
-	ptr_3.v = p3;
 	MEMREGION *base;
 	MEMREGION *env = NULL;	/* assignment suppresses spurious warning */
 	struct proc *p = NULL;
@@ -197,6 +194,10 @@ sys_pexec(short mode, const void *p1, const void *p2, const void *p3)
 	int tail_offs = 1;
 # endif
 	TRACE(("Pexec mode:%d",mode));
+
+	ptr_1.v = p1;
+	ptr_2.v = p2;
+	ptr_3.v = p3;
 #if 0
 	{
 		struct proc *pr = get_curproc();
