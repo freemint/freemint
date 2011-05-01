@@ -138,7 +138,7 @@ xvst_load_fonts(XVDIPB *vpb, short select, short handle)
 	VDI(vpb, 119, 0, 1, 0, handle);
 	return vpb->intout[0];
 }
-//callout_display(short x, short y, RECT *clip, long id, long pt, long ratio, char *txt)
+
 static long
 callout_display(struct xa_fnts_item *f, short vdih, long pt, long ratio, RECT *clip, RECT *area, char *txt)
 {
@@ -771,15 +771,19 @@ set_name_list(struct xa_fnts_info *fnts, struct xa_fnts_item *selstyle)
 
 	if (list_type->top)
 	{
-		list_type->cur = NULL;
+		if( list_type->cur == NULL )
+			list_type->cur = list_type->top;
 
 		if (!selstyle)
-			selstyle = list->cur->data;
-		if (selstyle)
+		{
+			selstyle = list_type->top->data;
+		}
+		if (selstyle /*&& selstyle != list_type->cur->data*/ )
 		{
 			SCROLL_ENTRY *s = list_type->search(list_type, NULL, SEFM_BYDATA, selstyle);
 
-			if (s)
+			if (!s)
+				s = list_type->top;
 			{
 				list_type->set(list_type, s, SESET_SELECTED, 0, false);
 				list_type->vis(list_type, s, NORMREDRAW);
