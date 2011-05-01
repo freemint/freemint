@@ -261,7 +261,7 @@ xa_t_font(struct xa_vdi_settings *v, short point, short id)
 	/*
 	 * Ozk: Hmm... have to reset point size when changing fonts!!??
 	 */
-	if (point != -1 && (!id || v->font_rsize != point))
+	if (point != -1 )	//&& (!id || v->font_rsize != point))
 	{
 		v->font_rsize = point;
 		v->font_ssize = vst_point(v->handle, point, &v->font_w, &v->font_h, &v->cell_w, &v->cell_h);
