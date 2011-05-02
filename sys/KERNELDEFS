@@ -77,7 +77,7 @@ endif
 ifeq ($(kernel),060)
 MINT = mint060.prg
 CPU  = 060
-KERNELDEFS = -DM68060 -DUSB_SUPPORT
+KERNELDEFS = -DM68060
 endif
 
 ifeq ($(kernel),020)
