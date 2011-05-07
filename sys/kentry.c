@@ -63,7 +63,7 @@
 # include "util.h"		/* pid2proc */
 # include "xfs_xdd.h"
 
-# ifdef USB_SUPPORT
+# ifdef XHDI_MASS_STORAGE_SUPPORT
 # include "xhdi.h"		/* XHNewCookie */
 # endif
 
