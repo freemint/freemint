@@ -39,7 +39,8 @@ udd_init(void *initfunc, struct kentry *k, struct usb_module_api *a, long arg, l
 
 	__asm__ volatile
 	(
-		"movem.l d3-d7/a3-a6,-(sp);"
+	        "lea     -45(sp),sp;"
+		"movem.l d3-d7/a3-a6,(sp);"
 		"move.l %5,-(sp);"
 		"move.l %4,-(sp);"
 		"move.l	%3,-(sp);"
@@ -47,7 +48,8 @@ udd_init(void *initfunc, struct kentry *k, struct usb_module_api *a, long arg, l
 		"move.l	%1,a0;"
 		"jsr	(a0);"
 		"lea	16(sp),sp;"
-		"movem.l (sp)+,d3-d7/a3-a6;"
+		"movem.l (sp),d3-d7/a3-a6;"
+		"lea    45(sp),sp;"
 		: "=r"(ret)						/* outputs */
 		: "g"(initfunc), "r"(k), "r"(a), "r"(arg), "g"(reason)	/* inputs  */
 		: __CLOBBER_RETURN("d0")
