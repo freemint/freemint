@@ -53,8 +53,6 @@ extern ulong loops_per_sec;
 # endif
 
 
-# ifdef __M68020__
-
 static inline void
 __delay (register ulong loops)
 {
@@ -65,6 +63,8 @@ __delay (register ulong loops)
 		: "0" (loops)
 	);
 }
+
+# ifdef __M68020__
 
 static inline void
 udelay (register ulong usecs)
@@ -83,15 +83,18 @@ udelay (register ulong usecs)
 	__delay (usecs);
 }
 
+# else
+
+static inline void
+udelay (register ulong usecs)
+{
+	__delay(usecs); /* Sigh */
+}
+
+# endif
+
 # ifdef loops_per_sec
 # undef loops_per_sec
 # endif
-
-# else
-
-# define NO_DELAY
-
-# endif
-
 
 # endif /* _mint_m68k_asm_delay_h */
