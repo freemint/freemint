@@ -11,11 +11,12 @@ subdir = $(compile_dir)
 
 default: all
 
+include ../USBDEFS
+
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-include ../USBDEFS
 
 all-here: build
 
