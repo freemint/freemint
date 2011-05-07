@@ -19,7 +19,7 @@ all-here: entry
 
 # default overwrites
 INCLUDES = -I$(top_srcdir)
-DEFINITIONS = -D__KERNEL_MODULE__ -DMODULE_NAME=storage $(XDD_DEFINITIONS) -DUSB_SUPPORT
+DEFINITIONS = -D__KERNEL_MODULE__ -DMODULE_NAME=storage $(XDD_DEFINITIONS)
 XDD_DEFINITIONS = 
 
 LD = $(CC) -nostdlib -Wl,--entry -Wl,_init
