@@ -11,11 +11,12 @@ subdir = src.km
 
 default: help
 
+include ./USBDEFS
+
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-include ./USBDEFS
 
 all-here: all-targets
 
