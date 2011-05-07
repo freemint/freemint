@@ -31,7 +31,7 @@
 # ifndef _mint_kentry_h
 # define _mint_kentry_h
 
-/* Force USB support on so that kernel modules are built correctly for
+/* Force mass storage support on so that kernel modules are built correctly for
  * all targets. Affects *.km modules, but not xif, xdd, xfs etc.
  *
  * Do not remove unless you know what you are doing.
