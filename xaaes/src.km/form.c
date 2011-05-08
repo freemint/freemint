@@ -230,7 +230,9 @@ Setup_form_do(struct xa_client *client,
 	}
 
 	if( valid_aesobj( &wt->focus ) && edobj.item != wt->focus.item )
+	{
 		obj_draw(wt, client->vdi_settings, wt->focus, 0, NULL, NULL, UNDRAW_FOCUS);
+	}
 	wt->focus = edobj;
 	/*
 	 * If we get here and have no window pointer, this is the first time
@@ -451,7 +453,7 @@ Form_Button(XA_TREE *wt,
 			}
 			state = aesobj_state(&obj);
 		}
-		if ((flags & OF_EDITABLE) || ((fbflags & FBF_CHANGE_FOCUS) && (flags & (OF_EXIT|OF_TOUCHEXIT))))
+		if (type != G_SLIST && ((flags & OF_EDITABLE) || ((fbflags & FBF_CHANGE_FOCUS) && (flags & (OF_EXIT|OF_TOUCHEXIT)))))
 		{
 			struct xa_aes_object pf = focus(wt);
 			if( flags & OF_EDITABLE ){
