@@ -241,7 +241,7 @@ k_shutdown(void)
 	/*
 	 * Close the physical
 	 */
-	if (C.P_handle)
+	if (C.P_handle > 0 && C.f_phys == 0 )
 	{
 		vst_color(C.P_handle, G_BLACK);
 		vswr_mode(C.P_handle, MD_REPLACE);
