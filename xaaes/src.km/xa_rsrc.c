@@ -91,8 +91,10 @@ obfix(OBJECT *tree, short object, short designWidth, short designHeight)
 	 * Special case handling: any OBJECT 80 characters wide is supposed
 	 * to be a menu bar, which always covers the entire screen width...
 	 */
-	if (ob->ob_width == 80)
+	if (ob->ob_width == 80 && ob->ob_type == G_BOX && ob->ob_x == 0)
+	{
 		ob->ob_width = screen.r.w;
+	}
 	else
 	{
 
@@ -550,6 +552,12 @@ static int rsl_errors = 0;	// maximum alerts for invalid rsl-file
 static int reported_skipped = 0;
 static long rsl_lno = 1;
 
+enum{
+	NOT_FOUND=0,
+	OFOUND=-1,
+	TFOUND=1
+};
+
 /*
  * if md=REPLACE buf is char**
  */
@@ -598,7 +606,7 @@ static XA_FILE *rsc_lang_file( int md, XA_FILE *fp, char *buf, long l )
 			*/
 			clen++;
 
-			for( found = 0, lbuf[0] = 0; found == 0 && lbuf[0] != -1; )
+			for( found = NOT_FOUND, lbuf[0] = 0; found == NOT_FOUND && lbuf[0] != -1; )
 			{
 				for( lbuf[0] = 0; lbuf[0] != LF_SEPCH ; )
 				{
@@ -692,9 +700,9 @@ static XA_FILE *rsc_lang_file( int md, XA_FILE *fp, char *buf, long l )
 			// BLOGif(!found,(0,"rsc_lang_file:'%s' not found/%d", in, len ));
 			switch( found )
 			{
-			case 1:
+			case TFOUND:
 				return (XA_FILE*)(long)blen;
-			case -1:
+			case OFOUND:
 				return (XA_FILE*)(long)-blen;
 			default:
 				return 0;
@@ -985,7 +993,7 @@ fix_objects(struct xa_client *client,
 								o->ob_width = scan.mwidth;
 							}
 
-						scan.mwidth = 0;
+						scan.mwidth = scan.keep_w = 0;
 					}
 					scan.title++;
 				}
@@ -1199,6 +1207,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 
 	vdih = client->vdi_settings->handle;
 
+	// BLOG((0,"%s:LoadResources,fname=%s", client->name, fname?fname:""));
 	if (fname)
 	{
 		struct file *f;
