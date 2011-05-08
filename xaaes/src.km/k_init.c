@@ -545,6 +545,7 @@ calc_average_fontsize(struct xa_vdi_settings *v, short *maxw, short *maxh, short
 	return dev;
 }
 
+
 int
 k_init(unsigned long vm)
 {
@@ -590,13 +591,13 @@ k_init(unsigned long vm)
 #endif
 	}
 	c_conws("\033E\033f");		/* Clear screen, cursor home (for WongCKs falcon) and cursor off */
+
 	/* try to open virtual wk - necessary when physical wk is already open
 	 * ? how to know if physical wk is open and its handle without AES?
 	 */
 	v->handle = 0;
-	C.P_handle = 0;
 
-	if( C.fvdi_version == 0 /*&& C.nvdi_version != 0*/ /* todo: detect AES */ )
+	if( C.P_handle > 0 || (C.nvdi_version > 0x400 && C.fvdi_version == 0) )
 	{
 		set_wrkin(work_in, cfg.videomode);
 		BLOG((0,"1st v_opnvwk" ));
@@ -607,6 +608,9 @@ k_init(unsigned long vm)
 			BLOG((0,"invalid values, trying physical workstation"));
 			v->handle = 0;
 		}
+		else
+			C.f_phys = 1;
+
 	}
 	if ( v->handle <= 0 )
 	{
@@ -799,7 +803,6 @@ k_init(unsigned long vm)
 	screen.display_type = D_LOCAL;
 	v->screen = screen.r;
 
-	BLOG((0, "display-type LOCAL"));
 
 	vq_extnd(v->handle, 1, work_out);	/* Get extended information */
 	/*{int i;
