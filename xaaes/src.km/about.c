@@ -123,8 +123,9 @@ about_form_exit(struct xa_client *client,
 			close_window(lock, wind);
 			list = object_get_slist(obtree + ABOUT_LIST);
 			list->destroy( list );
-			//list->empty( list, 0, 0 );
 			delete_window(lock, wind);
+			if( wind->parent )
+				top_window( lock, true, true, wind->parent );
 			break;
 		}
 		case ABOUT_LIST:
@@ -201,7 +202,9 @@ open_about(enum locks lock, struct xa_client *client, bool open, char *fn)
 	bool view_file = false;
 
 	if( (fn && (client->status & CS_USES_ABOUT)) )
+	{
 		view_file = true;
+	}
 	client = C.Hlp;
 
 	htd = get_helpthread_data(client);
@@ -251,6 +254,7 @@ open_about(enum locks lock, struct xa_client *client, bool open, char *fn)
 					C.Aes->options.thinframe, C.Aes->options.thinwork,
 					remember, 0, NULL);
 
+		wind->parent = TOP_WINDOW;
 		if (!wind) goto fail;
 
 		wind->min.h = wind->r.h;//MINOBJMVH * 3;	/* minimum height for this window */
