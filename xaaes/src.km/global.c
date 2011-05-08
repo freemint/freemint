@@ -63,6 +63,7 @@ xaaes_kfree(void *addr, const char *func)
 	if (!addr)
 		FATAL("xaaes_kfree(NULL) from %s", func);
 
+
 	tmp--;
 	memory -= *tmp;
 
@@ -98,3 +99,7 @@ xaaes_ufree(void *addr, const char *func)
 {
 	_ufree(addr, func);
 }
+
+/* for old gemlib */
+short my_global_aes[16] = {0};
+
