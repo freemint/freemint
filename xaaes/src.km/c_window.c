@@ -2126,6 +2126,8 @@ close_window(enum locks lock, struct xa_window *wind)
 	if (!(wind->window_status & XAWS_OPEN))
 		return false;
 
+	DBGif(wind->handle < 0 ),(0,"%s:close_window on %d", wind->owner ? wind->owner->name : "-", wind->handle));
+
 	if (wind == C.hover_wind)
 	{
 		C.hover_wind = NULL;
@@ -2199,7 +2201,7 @@ close_window(enum locks lock, struct xa_window *wind)
 
 		update_windows_below(lock, &r, NULL, wl, NULL);
 
-		if (is_top)
+		if (is_top && !(wind->dial & created_for_AES))
 		{
 			if (wind->active_widgets & STORE_BACK)
 			{
@@ -2214,7 +2216,9 @@ close_window(enum locks lock, struct xa_window *wind)
 				if (w->owner == client && !(w->window_status & (XAWS_ICONIFIED|XAWS_HIDDEN|XAWS_NOFOCUS)))
 				{
 					if (w != TOP_WINDOW)
+					{
 						top_window(lock|winlist, true, true, w);
+					}
 					else
 					{
 						setnew_focus(w, NULL, true, true, true);
@@ -2236,7 +2240,7 @@ close_window(enum locks lock, struct xa_window *wind)
 
 		if (!ignorefocus && TOP_WINDOW && is_top && !w)
 		{
-			switch (client->options.clwtna & 0xff)
+			switch (client->options.clwtna)
 			{
 				case 0:		/* Keep active client ontop */
 				{
