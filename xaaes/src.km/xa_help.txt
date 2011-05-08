@@ -1,36 +1,45 @@
 # Place this file in the xaaes-boot directory (C:\mint\1-*-*\xaaes)
 Ctrl-Alt-Shortcuts:
 
-A             Terminates all applications (list of exceptions in xaaes.cnf)
+A             Terminates all applications (list of
+              exceptions in xaaes.cnf)
 B             Open System/Log-window
-D             Open the screenshot dialog (XAAESNAP.PRG is required)
+D             Open the screenshot dialog
+              (XAAESNAP.PRG is required)
 E             Open windows-submenu
 F,L           Open task-manager
 HELP          Open about
 H             Halt system (or execute $SDMASTER if set)
 I             (Un-)iconify current window
 K             Launch program
-T,HOME        Redraw screen
-P             Restore palette in colour depth of 8-bits or less
+M             Force mouse on
+P             Restore palette in colour depth of 8-bits
+              or less
 Q,G           Quit XaAES (or execute $SDMASTER if set)
-R             Attempt to recover a system that has locked up
+R             Attempt to recover a system that has
+              locked up
+T,HOME        Redraw screen
 V             Unhide all applications
 W             Global window cycling
-X             Hide all except the currently focused application
+X             Hide all except the currently
+              focused application
 Y             Hide currently focused application
 SPACE         Open main menu bar
-SHIFT+SPACE   Open menu in current window if it has one, else open main menubar
+SHIFT+SPACE   Open menu in current window if it has one,
+              else open main menubar
 TAB           Cycle open applications
 CURSOR-RIGHT  Full current window
----------------------------------------------------------------------------------
+-------------------------------------------------------
 
 Shortcuts/navigation in XaAES fileselector:
 
-CTRL+O        Open window menu (navigation with CURSOR keys and RETURN)
-CTRL+C        The path and the marked file (if any) is copied to the Clipboard
-
+CTRL+O        Open window menu (navigation with
+              CURSOR keys and RETURN)
+CTRL+C        The path and the marked file (if any)
+              is copied to the Clipboard
 CTRL+F        Create folder (type name in editbox)
-CTRL+R        Rename selected file/folder (type new [path]name in editbox)
+CTRL+R        Rename selected file/folder
+              (type new [path]name in editbox)
 CTRL+V        View selected file
 DELETE        Delete selected file/empty folder
 
@@ -52,7 +61,9 @@ ALT+ " - "    Decrease the fontsize in listbox
   CURSOR-LEFT               Scroll left
   CURSOR UP/DOWN            Scroll up/down
 
-If an entry is selected in the list-box, CURSOR-RIGHT focusses the edit-field,
-so the selection can be edited.
----------------------------------------------------------------------------------
-Additional documentation: http://wiki.sparemint.org/index.php/XaAES
+If an entry is selected in the list-box, CURSOR-RIGHT
+focusses the edit-field, so the selection can be edited
+-------------------------------------------------------
+Additional documentation:
+
+http://wiki.sparemint.org/index.php/XaAES
