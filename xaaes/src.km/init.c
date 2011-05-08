@@ -55,13 +55,6 @@
 #if CHECK_STACK
 short check_stack_alignment( long e );
 #endif
-short my_global_aes[16];
-
-/* XXX gemlib */
-//short	mt_appl_init    (short *global_aes);
-//short	mt_appl_exit    (short *global_aes);
-//short	mt_graf_handle	(short *Wchar, short *Hchar, short *Wbox, short *Hbox, short *global_aes);
-
 
 long loader_pid = 0;
 long loader_pgrp = 0;
@@ -70,33 +63,10 @@ long loader_pgrp = 0;
 
 static char Aes_display_name[32];
 
-#if 0
-static int
-imp_msg(void)
-{
-	long ci;
-
-	display(" ---=== IMPORTNAT!! ===---");
-	display("");
-	display("If you have read the CHANGES.txt, you");
-	display("can proceed boot by pressing RETURN.");
-	display("If not, please press any other key to");
-	display("quit, becaues important changes needs");
-	display("your attention!");
-	display("");
-	display(" This warning will be removed after");
-	display(" some time!");
-	ci = _c_conin();
-
-	return ((ci & 0xff) == 13) ? 1 : 0;
-}
-#endif
-
 static void
 bootmessage(void)
 {
-	BLOG((true, "%s", Aes_display_name));
-	BLOG((true, "MultiTasking AES for MiNT"));
+	BLOG((true, "%s (MultiTasking AES for MiNT)", Aes_display_name));
 #if DISPCREDITS
 	BLOG((true, ""));
 	BLOG((true, "(c) 1995-1999 Craig Graham, Johan Klockars, Martin Koehling, Thomas Binder"));
@@ -109,7 +79,6 @@ bootmessage(void)
 	BLOG((true, ""));
 #else
 	BLOG((true,"Part of freemint ("SPAREMINT_URL")." ));
-
 #endif
 	BLOG((true, "Supports mouse wheels"));
 	BLOG((true, "Compile time switches enabled:"));
@@ -607,7 +576,7 @@ again:
 		{
 
 			BLOG((true,
-"ERROR: There exist no moose.adi in your XaAES module directory.\n"
+"ERROR: no moose.adi in your XaAES module directory.\n"
 "	  -> '%s'"
 "   Please install it before starting the XaAES kernel module!",
 				C.Aes->home_path));
@@ -615,10 +584,6 @@ again:
 			goto error;
 		}
 	}
-
-
-	/* clear my_global_aes[0] for old gemlib */
-	my_global_aes[0] = 0;
 
 	/* requires mint >= 1.15.11 */
 	C.mvalidate = true;
