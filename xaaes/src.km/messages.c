@@ -293,7 +293,6 @@ static void
 CE_do_winmesag(enum locks lock, struct c_event *ce, bool cancel)
 {
 	struct CE_do_winmesag_data *args = ce->ptr1;
-
 	if (!cancel)
 	{
 		struct xa_window *wind = args->wind;
@@ -352,7 +351,10 @@ do_winmesag(enum locks lock,
 			struct CE_do_winmesag_data *p;
 
 			if (mp0 == WM_REDRAW)
+			{
+				//	DBG((0,"do_winmesag: WM_REDRAW %s %d/%d/%d/%d/%d/%d/%d/%d", wind->wname, mp0,mp1,mp2,mp3,mp4,mp5,mp6,mp7));
 				C.redraws++, C.move_block = 3;
+			}
 
 			p = kmalloc(sizeof(*p));
 			if (p)
@@ -366,8 +368,6 @@ do_winmesag(enum locks lock,
 				for (i = 0; i < 8; i++)
 					p->msg[i] = msg[i];
 
-				//if (mp0 == WM_REDRAW)
-				//	BLOG((0,"do_winmesag: WM_REDRAW %s %d/%d/%d/%d/%d/%d/%d/%d", wind->wname, mp0,mp1,mp2,mp3,mp4,mp5,mp6,mp7));
 
 				post_cevent(wo, CE_do_winmesag, p, NULL, 0,0, NULL, NULL);
 			}
