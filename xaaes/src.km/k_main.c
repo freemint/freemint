@@ -1487,7 +1487,6 @@ void set_tty_mode( short md )
 #endif
 }
 
-
 /*
  * Main AESSYS thread...
  */
@@ -1623,6 +1622,17 @@ k_main(void *dummy)
 		}
 	}
 #endif
+	{
+	short x;
+	if( mt_appl_init(my_global_aes) != -1 )
+	{
+		C.P_handle = mt_graf_handle( &x, &x, &x, &x, my_global_aes );
+		//if( C.P_handle > 13 )
+			//C.P_handle = 0;
+	}
+	else mt_appl_exit(my_global_aes);
+	}
+	BLOG((0,"apid=%d", my_global_aes[2]));
 	/*
 	 * register trap#2 handler
 	 */
@@ -1973,6 +1983,8 @@ k_exit(int wait)
 		BLOG((false, "unregister trap handler failed"));
 // 	display("done");
 
+	if( my_global_aes[2] != -1 )
+		mt_appl_exit(my_global_aes);
 	/*
 	 * close input devices
 	 */

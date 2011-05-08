@@ -2829,6 +2829,7 @@ struct common
 	Path	start_path;
 	unsigned short nvdi_version;
 	unsigned short fvdi_version;
+	bool f_phys;	// using physical wk
 	unsigned long gdos_version;
 
 	void (*reschange)(enum locks lock, struct xa_client *client, bool open);

@@ -146,4 +146,6 @@ __extension__								\
 
 #define xbios_getrez()	(short)trap_14_w((short)(0x04))
 
+extern short my_global_aes[];
+
 #endif /* _global_h */
