@@ -65,6 +65,7 @@
 #include "keycodes.h"
 
 #include "xa_graf.h"
+#include "xa_wind.h"	// XA_wind_update
 #include "xa_rsrc.h"
 
 #include "mint/pathconf.h"
@@ -162,6 +163,17 @@ static char fs_paths[DRV_MAX][NAME_MAX+2];
 static char fs_patterns[FS_NPATTERNS][FS_PATLEN];
 static int prover = 0, provermin = 0;
 
+enum{
+	UP,
+	DOWN
+};
+static short SortDir = DOWN;
+static bool treeview = false;
+static bool rtbuild = false;
+static short fs_height = 0, fs_width = 0, fs_x = 0, fs_y = 0;
+static short fs_point = 0;
+static short fs_num = 0;
+static short fs_sort = 0;
 
 static void
 add_pattern(char *pattern)
@@ -610,6 +622,7 @@ fs_prompt(SCROLL_INFO *list, char *file, bool typing)
 	return ret;
 } /*/fs_prompt*/
 
+
 static short
 sort_by_date(struct xattr *x1, struct xattr *x2)
 {
@@ -660,6 +673,7 @@ sort_by_ext(char *n1, char *n2)
 
 	return ret;
 }
+
 #if INCLUDE_CINSENS
 static short
 sort_by_name(char *n1, char *n2)
@@ -670,7 +684,11 @@ sort_by_name(char *n1, char *n2)
 static short
 sort_by_name(char *n1, char *n2)
 {
-	return strcmp(n1, n2);
+	short r = strcmp(n1, n2);
+	if( SortDir == UP )
+		r = -r;
+
+	return r;
 }
 #endif
 
@@ -719,7 +737,11 @@ sortbydate(struct scroll_info *list, struct scroll_entry *e1, struct scroll_entr
 		list->get(list, e2, SEGET_USRDATA, &x2);
 
 		if ((tmp = sort_by_date(x1, x2)))
+		{
+			if( SortDir == UP )
+				tmp = -tmp;
 			return tmp > 0 ? false : true;
+		}
 
 		if ((tmp = sort_by_ext(p1.ret.ptr, p2.ret.ptr)))
 			return tmp > 0 ? true : false;
@@ -904,9 +926,15 @@ sortbyname(struct scroll_info *list, struct scroll_entry *e1, struct scroll_entr
 			return sort_by_name(t1, t2) > 0 ? true : false;
 #else
 			if( *t1 == *t2 ){
+				if( SortDir == UP )
+				{
+					char *t = t1;
+					t1 = t2;
+					t2 = t;
+				}
 				PROFRECr( return, bstrcmp,(t1+1, t2+1 ));
 			}
-			return *t1 > *t2;
+			return SortDir == DOWN ? *t1 > *t2 : *t1 < *t2;
 #endif
 		}
 		/* same dir&same name => same file! */
@@ -954,7 +982,11 @@ sortbyext(struct scroll_info *list, struct scroll_entry *e1, struct scroll_entry
 		list->get(list, e2, SEGET_USRDATA, &x2);
 
 		if ((tmp = sort_by_ext(p1.ret.ptr, p2.ret.ptr)))
+		{
+			if( SortDir == UP )
+				tmp = -tmp;
 			return tmp > 0 ? true : false;
+		}
 
 		if ((tmp = sort_by_name(p1.ret.ptr, p2.ret.ptr)))
 			return tmp > 0 ? true : false;
@@ -1016,17 +1048,29 @@ sortbysize(struct scroll_info *list, struct scroll_entry *e1, struct scroll_entr
 		if (!S_ISDIR(x1->mode) && !S_ISDIR(x2->mode))
 		{
 			if (x1->size > x2->size)
-				return true;
+				return SortDir == DOWN ? true : false;
 			else if (x1->size < x2->size)
-				return false;
+				return SortDir == DOWN ? false : true;
 		}
 
 		if ((tmp = sort_by_name(p1.ret.ptr, p2.ret.ptr)))
+		{
+			if( SortDir == UP )
+				tmp = -tmp;
 			return tmp > 0 ? true : false;
+		}
 		if ((tmp = sort_by_ext(p1.ret.ptr, p2.ret.ptr)))
+		{
+			if( SortDir == UP )
+				tmp = -tmp;
 			return tmp > 0 ? true : false;
+		}
 		if ((tmp = sort_by_date(x1, x2)))
+		{
+			if( SortDir == UP )
+				tmp = -tmp;
 			return tmp > 0 ? false : true;
+		}
 	}
 	return false;
 }
@@ -1531,12 +1575,6 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 
 }
 
-static bool treeview = false;
-static bool rtbuild = false;
-static short fs_height = 0, fs_width = 0, fs_x = 0, fs_y = 0;
-static short fs_point = 0;
-static short fs_num = 0;
-
 /*
  * Re-load a file_selector listbox
  * HR: version without the big overhead of separate dir/file lists
@@ -2022,7 +2060,7 @@ fs_item_action(struct scroll_info *list, struct scroll_entry *this, const struct
 						}
 						set_dir(list);
 
-						set_file(fs, fs->ofile, false); //if (!fs->tfile) set_file(fs, "");
+						set_file(fs, fs->ofile, false);
 					}
 				}
 				else
@@ -2172,7 +2210,6 @@ fileselector_form_exit(struct xa_client *client,
 				{
 					list->get(list, list->cur, SEGET_TEXTPTR, &pa);
 					fname = pa.ret.ptr;
-					//BLOG((0,"'r':fname=%s", fname));
 				}
 				if( !fname || !*fname )
 					fname = fs->ofile;
@@ -2523,6 +2560,12 @@ fs_slist_key(struct scroll_info *list, unsigned short keycode, unsigned short ks
 	return keyout;
 }
 
+static void
+fs_msg_handler(
+	struct xa_window *wind,
+	struct xa_client *to,
+	short amq, short qmf,
+	short *msg);
 
 /*
  * FormKeyInput()
@@ -2566,6 +2609,7 @@ fs_key_form_do(enum locks lock,
 			nk == '+' ? fs->fntinc++ : fs->fntinc--;
 			refresh_filelist(fsel, fs, NULL);
 			list->redraw(list, NULL);
+			fs_prompt( list, fs->file, true );
 			return true;
 		}
 	}
@@ -2630,6 +2674,13 @@ fs_key_form_do(enum locks lock,
 			open_about( lock, client, true, pt );
 			client->status &= ~CS_USES_ABOUT;
 		}
+		else if( nk == ' ' )
+		{
+			SortDir = SortDir == UP ? DOWN : UP;
+			refresh_filelist(fsel, fs, NULL);
+			list->redraw(list, NULL);
+			fs_prompt( list, fs->file, true );
+		}
 		else if( nk == 'r' )	//rename
 		{
 			fs->rtflags |= FS_RENAME_FILE;
@@ -2642,8 +2693,35 @@ fs_key_form_do(enum locks lock,
 			//fs_prompt(list, fs->file, false);
 		}
 		else if( nk == 'l' )
+		{
 			list->redraw(list, NULL);
 			//refresh_filelist(fsel, fs, NULL);
+		}
+		else
+		{
+			OBJECT *obtree = fs->menu->tree;
+			int i, k = toupper(nk), l;
+			short msg[16];
+			char *s, file[sizeof(fs->file)];
+
+			msg[0] = MN_SELECTED;
+			msg[3] = FSEL_OPTS;
+			for( i = FSM_RTBUILD; i < FSM_SORTBYNAME + 5; i++ )
+			{
+				s = obtree[i].ob_spec.free_string;
+				l = strlen(s);
+				if( *(s+l-2) == '^' && *(s+l-1) == k )
+				{
+					msg[4] = i;
+					strcpy( file, fs->file);
+					fs_msg_handler( wind, client, AMQ_NORM, QMF_NORM, msg );
+					strcpy( fs->file, file );
+					fs_prompt( list, fs->file, true );
+					break;
+				}
+			}
+		}
+
 	}
 	else if (focus_item(wt) == FS_FILE && key->aes == SC_TAB)
 	{
@@ -2970,10 +3048,22 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 	DIAG((D_fsel,NULL,"open_fileselector for %s on '%s', fn '%s', '%s', %lx,%lx)",
 			c_owner(client), path, file, title, s, c));
 
+
+	if( client->fmd.lock /*& SCREEN_UPD*/ )
+	{
+		short in = END_UPDATE, out;
+		AESPB pb = {0, 0, &in, &out, 0, 0};
+		XA_wind_update(0, client, &pb );
+		in = END_MCTRL;
+		XA_wind_update(0, client, &pb );
+	}
+
 	if (fs)
 	{
+		short dy = 0;
 		bzero(fs, sizeof(*fs));
 
+		//SortDir = DOWN;
 		fs->data = data;
 		fs->owner = client;
 
@@ -3229,6 +3319,10 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 			}
 			else
 			{
+				dy = screen.c_max_h * fs_num;// + 4;
+				if( fs_height + fs_y + dy > screen.r.h )
+					fs_height = screen.r.h - (fs_y + dy);
+
 				dw = fs_width - form->ob_width;
 				dh = fs_height - form->ob_height;
 
@@ -3253,11 +3347,12 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 			{
 				fs->point = cfg.xaw_point;
 				center_rect(&or);
+				or.y = 0;
 			}
 			else
 			{
 				or.x = fs_x + screen.c_max_w * fs_num;
-				or.y = fs_y + screen.c_max_h * fs_num;
+				or.y = fs_y + dy;
 				fs->point = fs_point;
 			}
 
@@ -3274,6 +3369,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 				form[FS_LIST].ob_width -= dw;
 				form[FS_UNDER].ob_x -= dw;
 			}
+			fs->sort = fs_sort;
 		}
 
 		if (C.update_lock == client->p ||
@@ -3436,6 +3532,7 @@ close_fileselector(enum locks lock, struct fsel_data *fs)
 	fs_x = fs->form->tree->ob_x;
 	fs_y = fs->form->tree->ob_y;
 	fs_point = fs->point;
+	fs_sort = fs->sort;
 	fs_num--;
 	fs->wind = NULL;
 	fs->menu = NULL;
