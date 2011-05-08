@@ -1,33 +1,42 @@
 # Ennek a f jlnak az xaaes k”nyvt r ban kell lennie (C:\mint\1-*-*\xaaes)
 Ctrl-Alt gyorsbillentyk:
 
-A             Bez r minden alkalmaz st (a kiv‚telek list ja az xaaes.cnf-ban)
+A             Bez r minden alkalmaz st (a kiv‚telek
+              list ja az xaaes.cnf-ban)
 B             Rendszer/Napl¢-ablak megnyit sa
-D             K‚plop¢ megnyit sa (XAAESNAP.PRG szks‚ges)
+D             K‚plop¢ megnyit sa
+              (XAAESNAP.PRG szks‚ges)
 E             Ablak almen megnyit sa
 F,L           Feladat kezel” megnyit sa
 HELP          N‚vjegy megnyit sa
-H             Rendszer le ll¡t sa (vagy $SDMASTER futtat sa)
+H             Rendszer le ll¡t sa
+              (vagy $SDMASTER futtat sa)
 I             Aktu lis ablak minimaliz l sa
 K             Program ind¡t sa
 T,HOME        K‚preny” £jrarajzol sa
-P             Paletta vissza ll¡t sa 8bit vagy ann l kisebb sz¡nm‚lys‚g eset‚n
-Q,G           Kil‚p‚s az XaAES-b”l (vagy $SDMASTER futtat sa)
+P             Paletta vissza ll¡t sa 8bit vagy ann l
+              kisebb sz¡nm‚lys‚g eset‚n
+Q,G           Kil‚p‚s az XaAES-b”l
+              (vagy $SDMASTER futtat sa)
 R             Lefagyott rendszer vissza ll¡t sa
 V             ™sszes alkalmaz s ablak nak felfed‚se
 W             Ablakok k”z”tti v lt s
-X             A f¢kuszban l‚v”n k¡vl minden alkalmaz s elrejt‚se
+X             A f¢kuszban l‚v”n k¡vl minden
+              alkalmaz s elrejt‚se
 Y             A f¢kuszban l‚v” alkalmaz s elrejt‚se
 SPACE         F”men megnyit sa
-SHIFT+SPACE   Aktu lis ablak menj‚nek vagy ha nincs, a f”men megnyit sa
+SHIFT+SPACE   Aktu lis ablak menj‚nek vagy ha nincs,
+              a f”men megnyit sa
 TAB           Nyitott alkalmaz sok k”z”tti v lt s
 CURSOR-RIGHT  Aktu lis ablak maximaliz l sa
----------------------------------------------------------------------------------
+-------------------------------------------------------
 
 Gyorsbillentyk/navig ci¢ az XaAES f jl kiv laszt s n l:
 
-CTRL+O        Ablak men megnyit sa (navig ci¢ a KURZOR ‚s RETURN gomobokkal)
-CTRL+C        A kiv lasztott f jl ‚s el‚r‚si £tvonal V g¢lapra m sol sa
+CTRL+O        Ablak men megnyit sa (navig ci¢ a KURZOR
+              ‚s RETURN gomobokkal)
+CTRL+C        A kiv lasztott f jl ‚s el‚r‚si £tvonal
+              V g¢lapra m sol sa
 
 * List-box kiv lasztva:
 
@@ -44,8 +53,9 @@ CTRL+C        A kiv lasztott f jl ‚s el‚r‚si £tvonal V g¢lapra m sol sa
   CURSOR-LEFT               Balra g”rget‚s
   CURSOR UP/DOWN            Fel/Le g”rget‚s
 
-Ha egy elem ki van v lasztva a "list-box"-ban, a KURZOR-JOBBRA gombbal lehet”s‚g 
-van a szerkeszt‚s‚re.
+Ha egy elem ki van v lasztva a "list-box"-ban, a
+KURZOR-JOBBRA gombbal lehet”s‚g  van a szerkeszt‚s‚re.
+-------------------------------------------------------
+R‚szletes dokument ci¢:
 
----------------------------------------------------------------------------------
-R‚szletes dokument ci¢: http://wiki.sparemint.org/index.php/XaAES
+http://wiki.sparemint.org/index.php/XaAES

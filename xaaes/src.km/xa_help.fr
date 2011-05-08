@@ -1,40 +1,51 @@
 # Mettre ce fichier dans le r‚pertoire d'XaAES (C:\mint\1-*-*\xaaes)
 Raccourcis clavier avec Ctrl-Alt:
 
-A             Quitter toutes les applications (liste d'exceptions dans xaaes.cnf)
-B             Ouvrir la fenˆtre systŠme/le journal systŠme
-D             Ouvrir le programme de capture d'‚cran (XAAESNAP.PRG n‚cessaire)
+A             Quitter toutes les applications
+              (liste d'exceptions dans xaaes.cnf)
+B             Ouvrir la fenˆtre systŠme/
+              le journal systŠme
+D             Ouvrir le programme de capture d'‚cran
+              (XAAESNAP.PRG n‚cessaire)
 E             Ouvrir le sous-menu des fenˆtres
 F,L           Ouvrir le gestionnaire des tƒches
 HELP          Ouvrir la fenˆtre "A propos de"
-H             Arrˆter le systŠme (ou ex‚cuter $SDMASTER si pr‚sent)
+H             Arrˆter le systŠme (ou ex‚cuter $SDMASTER
+              si pr‚sent)
 I             (D‚s-)iconifier la fenˆtre actuelle
 K             Lancer un programme
 T,HOME        Redessiner l'‚cran
-P             Restaurer la palette dans les modes inf‚rieurs ou ‚gals … 8 bits
-Q,G           Quitter XaAES (ou ex‚cuter $SDMASTER si pr‚sent)
+P             Restaurer la palette dans les modes
+              inf‚rieurs ou ‚gals … 8 bits
+Q,G           Quitter XaAES (ou ex‚cuter $SDMASTER
+              si pr‚sent)
 R             Tenter de r‚cup‚rer un systŠme bloqu‚
 V             D‚masquer toutes les applications
-W             Passer d'une fenˆtre … l'autre globalement
-X             Masquer toutes les applications sauf celle au 1er plan
+W             Passer d'une fenˆtre … l'autre
+              globalement
+X             Masquer toutes les applications sauf
+              celle au 1er plan
 Y             Masquer l'application du 1er plan
 ESPACE        Ouvrir le menu principal
-SHIFT+ESPACE  Ouvrir le menu de la fenˆtre du 1er plan, sinon le menu principal
+SHIFT+ESPACE  Ouvrir le menu de la fenˆtre du 1er plan,
+              sinon le menu principal
 TAB           Passer d'une application … l'autre
 FLECHE DROITE Maximiser la fenˆtre active
----------------------------------------------------------------------------------
+-------------------------------------------------------
 
 Raccourcis/navigation dans le s‚lecteur de fichiers:
 
-CTRL+O        Ouvrir le menu du s‚lecteur (navigation avec les flŠches et Return)
-CTRL+C        Copie le chemin et le nom de la s‚lection dans le presse-papiers
+CTRL+O        Ouvrir le menu du s‚lecteur (navigation
+              avec les flŠches et Return)
+CTRL+C        Copie le chemin et le nom de la
+              s‚lection dans le presse-papiers
 
 * Liste s‚lectionn‚e:
 
   FLECHE DROITE             Ouvrir l'arborescence
   FLECHE GAUCHE             Fermer l'arborescence
   FLECHE HAUT/BAS           D‚placer le curseur
-  PageHaut/Bas(SHIFT+CH/CB) Monter/descendre d'une page
+  PAGE HAUT/BAS             Monter/descendre d'une page
   CLEAR/HOME                Aller au d‚but de la liste
   SHIFT+CLEAR/HOME          Aller … la fin de la liste
 
@@ -44,7 +55,10 @@ CTRL+C        Copie le chemin et le nom de la s‚lection dans le presse-papiers
   FLECHE GAUCHE             D‚filement … gauche
   FLECHE HAUT/BAS           D‚filement en haut/bas
 
-Si une entr‚e est s‚lectionn‚e dans la liste, FLECHE DROITE place le curseur dans
-le champ ‚ditable, ce qui permet d'‚diter la s‚lection.
----------------------------------------------------------------------------------
-Documentation suppl‚mentaire : http://wiki.sparemint.org/index.php/XaAES
+Si une entr‚e est s‚lectionn‚e dans la liste,
+FLECHE DROITE place le curseur dans le champ ‚ditable,
+ce qui permet d'‚diter la s‚lection.
+-------------------------------------------------------
+Documentation suppl‚mentaire :
+
+http://wiki.sparemint.org/index.php/XaAES
