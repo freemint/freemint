@@ -35,6 +35,7 @@
 #include "xa_types.h"
 #include "xa_global.h"
 #include "xa_strings.h"
+#include "keycodes.h"
 
 #include "about.h"
 #include "app_man.h"
@@ -1220,7 +1221,77 @@ static void clear_list( SCROLL_INFO *list)
 
 
 ****************/
+static void kill_client( SCROLL_INFO *list )
+{
+	struct xa_client *client = list->cur->data;
 
+	if( (list->cur->usr_flags & TM_WINDOW) )
+		return;
+
+	if( list->cur->usr_flags & TM_NOAES )
+	{
+		long i, k = 0;
+		int pid = ((struct proc*)client)->pid;
+		if( pid <= TM_MINPID || pid >= TM_MAXPID || pid == C.Aes->tp->pid )
+			return;
+
+		ikill(pid, SIGKILL);
+		for( i = 0; i < TM_KILLLOOPS && !k; i++ )
+		{
+			nap( TM_KILLWAIT );
+			k = ikill(pid, 0);
+		}
+		if( k )
+			remove_from_tasklist( client );
+		else
+			BLOG((0,"taskmanager_form_exit: could not kill %d", pid));
+	return;
+	}
+
+	DIAGS(("taskmanager: KILL for %s", c_owner(client)));
+	if (client && is_client(client))
+	{
+		if (client->type & (APP_AESTHREAD|APP_AESSYS))
+		{
+			return;
+		}
+		else
+		{
+			ikill(client->p->pid, SIGKILL);
+		}
+	}
+}
+
+static void term_client( enum locks lock, SCROLL_INFO *list )
+{
+	struct xa_client *client = list->cur->data;
+	if( list->cur->usr_flags & TM_NOAES )
+	{
+		int pid = ((struct proc*)client)->pid;
+		if( pid <= TM_MINPID || pid >= TM_MAXPID || pid == C.Aes->tp->pid )
+			return;
+		ikill(pid, SIGTERM);
+	}
+	else{
+		if (client && is_client(client))
+		{
+			DIAGS(("taskmanager: TM_TERM for %s", c_owner(client)));
+			if (client->type & (APP_AESTHREAD|APP_AESSYS))
+			{
+				return;
+			}
+			else
+			{
+				send_terminate(lock, client, AP_TERM);
+			}
+		}
+	}
+
+	/*
+	object_deselect(wt->tree + TM_TERM);
+	redraw_toolbar(lock, wind, TM_TERM);
+	*/
+}
 /*
  * todo: if fileselector is open during shutdown there's a problem
  */
@@ -1287,71 +1358,12 @@ taskmanager_form_exit(struct xa_client *Client,
 		}
 		case TM_KILL:
 		{
-			if( (list->cur->usr_flags & TM_WINDOW) )
-				break;
-
-			if( list->cur->usr_flags & TM_NOAES )
-			{
-				long i, k = 0;
-				int pid = ((struct proc*)client)->pid;
-				if( pid <= TM_MINPID || pid >= TM_MAXPID || pid == C.Aes->tp->pid )
-					break;
-
-				ikill(pid, SIGKILL);
-				for( i = 0; i < TM_KILLLOOPS && !k; i++ )
-				{
-					nap( TM_KILLWAIT );
-					k = ikill(pid, 0);
-				}
-				if( k )
-					remove_from_tasklist( client );
-				else
-					BLOG((0,"taskmanager_form_exit: could not kill %d", pid));
-			break;
-			}
-
-			DIAGS(("taskmanager: KILL for %s", c_owner(client)));
-			if (client && is_client(client))
-			{
-				if (client->type & (APP_AESTHREAD|APP_AESSYS))
-				{
-					break;
-				}
-				else
-					ikill(client->p->pid, SIGKILL);
-			}
-
+			kill_client(list);
 			break;
 		}
 		case TM_TERM:
 		{
-
-			if( list->cur->usr_flags & TM_NOAES )
-			{
-				int pid = ((struct proc*)client)->pid;
-				if( pid <= TM_MINPID || pid >= TM_MAXPID || pid == C.Aes->tp->pid )
-					break;
-				ikill(pid, SIGTERM);
-			}
-			else{
-				if (client && is_client(client))
-				{
-					DIAGS(("taskmanager: TM_TERM for %s", c_owner(client)));
-					if (client->type & (APP_AESTHREAD|APP_AESSYS))
-					{
-						break;
-					}
-					else
-					{
-						send_terminate(lock, client, AP_TERM);
-					}
-				}
-			}
-
-			/*
-			object_deselect(wt->tree + TM_TERM);
-			redraw_toolbar(lock, wind, TM_TERM);
-			*/
+			term_client(lock, list);
 			break;
 		}
 		case TM_SLEEP:
@@ -1675,6 +1687,28 @@ static long calc_new_ld(struct proc *rootproc)
 	return new_ld;
 }
 
+static unsigned short
+tm_slist_key(struct scroll_info *list, unsigned short keycode, unsigned short keystate)
+{
+	switch( keycode )
+	{
+	case SC_DEL:
+	{
+		if( keystate & (K_RSHIFT|K_LSHIFT) )
+		{
+			keycode = 0;
+			kill_client( list );
+		}
+		else if( keystate == 0 )
+		{
+			keycode = 0;
+			term_client( clients, list );
+		}
+	}
+	break;
+	}
+	return keycode;
+}
 void
 open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 {
@@ -1730,7 +1764,7 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 #endif
 		list = set_slist_object(0, wt, NULL, TM_LIST,
 				 SIF_SELECTABLE|SIF_AUTOSELECT|SIF_TREEVIEW|SIF_ICONINDENT|SIF_AUTOOPEN|SIF_AUTOSLIDERS,
-				 NULL, NULL, NULL, NULL, NULL, NULL,
+				 NULL, NULL, NULL, NULL, NULL, tm_slist_key,
 				 NULL, NULL, NULL, NULL,
 				 xa_strings[RS_APPLST], NULL, NULL, 255);
 
