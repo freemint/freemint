@@ -235,63 +235,65 @@ nn:  *.HTM
 _
 nn:  *.HTML
 _
-nn:  Realtime build directories
-de:  Echtzeit-Anzeige
-fr:  Affichage en temps r‚el
-es:  Directorios en tiempo real
-hu:  Val¢s idej k”nyvt r megj.
-ru:  Äèğåêòîğèè â ğåàëüíîì âğåìåíè
-cs:  Adresáøe v reálném èase
+nn:  Realtime build directories  ^B
+de:  Echtzeit-Anzeige         ^B
+fr:  Affichage en temps r‚el    ^B
+es:  Directorios en tiempo real  ^B
+hu:  Val¢s idej k”nyvt r megj.  ^B
+ru:  asdas asd asd asd asd asd asd x^B
+#ru:  Äèğåêòîğèè â ğåàëüíîì âğåìåíè  ^B
+cs:  Adresáøe v reálném èase  ^B
 _
-nn:  Tree view
-de:  Baumansicht
-fr:  Affichage en arborescence
-es:  Vista de  rbol
-hu:  Fa szer megjelen¡t‚s
-ru:  Â âèäå äåğåâà
-cs:  Stromovı pohled
+nn:  Tree view                   ^T
+de:  Baumansicht              ^T
+fr:  Affichage en arborescence  ^T
+es:  Vista de  rbol              ^T
+hu:  Fa szer megjelen¡t‚s       ^T
+ru:  1231 123 1231 23 123 123 123 123 234 234 435asd asd asd asd asd asd asd as ^T
+#ru:  Â âèäå äåğåâà                  ^T
+cs:  Stromovı pohled          ^T
 _
 nn:--------------------------------
 _
-nn:  Sort by Name
-de:  Nach Namen sortiert
-fr:  Tri par nom
-es:  Ordenar por Nombre
-hu:  N‚v szerinti sorrend
-ru:  Ñîğòèğîâàòü ïî èìåíè
-cs:  Seøadit podle jména
+nn:  Sort by Name                ^N
+de:  Nach Namen sortiert      ^N
+fr:  Tri par nom                ^N
+es:  Ordenar por Nombre          ^N
+hu:  N‚v szerinti sorrend        ^N
+ru:  Ñîğòèğîâàòü ïî èìåíè           ^N
+cs:  Seøadit podle jména      ^N
 _
-nn:  Sort by Date
-de:  Nach Datum sortiert
-fr:  Tri par date
-es:  Ordenar por fecha
-hu:  D tum szerinti sorrend
-ru:  Ñîğòèğîâàòü ïî äàòå
-cs:  Seøadit podle data
+nn:  Sort by Date                ^D
+de:  Nach Datum sortiert      ^D
+fr:  Tri par date               ^D
+es:  Ordenar por fecha           ^D
+hu:  D tum szerinti sorrend      ^D
+ru:  Ñîğòèğîâàòü ïî äàòå            ^D
+cs:  Seøadit podle data       ^D
 _
-nn:  Sort by Size
-de:  Nach Gr”e sortiert
-fr:  Tri par taille
-es:  Ordenar por Tama¤o
-hu:  M‚ret szerinti sorrend
-ru:  Ñîğòèğîâàòü ïî ğàçìåğó
-cs:  Seøadit podle velikosti
+nn:  Sort by Size                ^S
+de:  Nach Gr”e sortiert      ^S
+fr:  Tri par taille             ^S
+es:  Ordenar por Tama¤o          ^S
+hu:  M‚ret szerinti sorrend      ^S
+ru:  Ñîğòèğîâàòü ïî ğàçìåğó         ^S
+cs:  Seøadit podle velikosti  ^S
 _
-nn:  Sort by Ext
-de:  Nach Extension sortiert
-fr:  Tri par type
-es:  Ordenar por Tipo
-hu:  T¡pus szerinti sorrend
-ru:  Ñîğòèğîâàòü ïî òèïó
-cs:  Seøadit podle typu
+nn:  Sort by Ext                 ^E
+de:  Nach Extension sortiert  ^E
+fr:  Tri par type               ^E
+es:  Ordenar por Tipo            ^E
+hu:  T¡pus szerinti sorrend      ^E
+ru:  Ñîğòèğîâàòü ïî òèïó            ^E
+cs:  Seøadit podle typu       ^E
 _
-nn:  No sorting
-de:  Unsortiert
-fr:  Pas de tri
-es:  Sin ordenar
-hu:  Rendezetlen
-ru:  Íå ñîğòèğîâàòü
-cs:  Nesetøídìnì
+nn:  No sorting                  ^X
+de:  Unsortiert               ^X
+fr:  Pas de tri                 ^X
+es:  Sin ordenar                 ^X
+hu:  Rendezetlen                 ^X
+ru:  Íå ñîğòèğîâàòü                 ^X
+cs:  Nesetøídìnì              ^X
 _
 ### Alertbox ###
 nn:Alert box template-----------------------------------------------
@@ -1001,7 +1003,7 @@ ru:­Âûéòè       @
 cs:­Ukonèit     @
 _
 NN:­Kill        @
-de:­Terminieren @
+de:­Abbrechen   @
 fr:­Terminer    @
 es:­Kill        @
 hu:­Kil”v‚s     @
@@ -1025,7 +1027,7 @@ ru:­Çà âñåìè îêíàìè
 cs:­Dr¾et pod ostatními
 _
 NN:­Toolbox attribute
-de:­Toolbox-Attribut
+de:­Toolbox Attribut
 fr:­Attribut toolbox
 es:­Atributo Toolbox
 hu:­Toolbox tulajd.
@@ -1352,7 +1354,7 @@ de:XaAES: %s%s, Anwendung ohne globl_ptr, wird beendet!
 fr:XaAES: %s%s, client sans globl_ptr, ex‚cution termin‚e !
 es:XaAES: %s%s, cliente sin ning£n globl_ptr, ­forzando salida!
 hu:XaAES: %s%s, kliens globl_ptr n‚lkl, bez r s!
-ru:XaAES: %s%s
+ru:XaAES: %s%s, êëèåíò áåç globl_ptr, çàêğûâàş åãî!
 cs:XaAES: %s%s, klient bez globl_ptr; zabíjím ho!
 _
 NN:XaAES: AES shell already running!                    @
@@ -1360,7 +1362,7 @@ de:XaAES: AES-Shell (Desktop) ist bereits aktiv!
 fr:XaAES: Le shell AES tourne d‚j… !
 es:XaAES: ­Existe un AES shell ejecut ndose actualmente!
 hu:XaAES: M r fut egy AES-shell!
-ru:XaAES:
+ru:XaAES: Îáîëî÷êà AES óæå çàïóùåíà!
 cs:XaAES: Shell AES (pracovní plocha) ji¾ bì¾í!
 _
 NN:XaAES: No AES shell set, see 'shell =' configuration variable in xaaes.cnf.                 @
@@ -1368,7 +1370,7 @@ de:XaAES: Keine AES-Shell angemeldet, siehe Konfigurationsvariable 'shell =' in 
 fr:XaAES: Pas de shell AES d‚fini ; voir la variable de configuration 'shell =' dans xaaes.cnf.
 es:XaAES: Ning£n AES shell establecido, ver variable de configuraci¢n 'shell =' en xaaes.cnf.
 hu:XaAES: Nincs be llitva AES-shell ('shell=' konfigur ci¢ az xaaes.cnf f jlban).
-ru:XaAES:
+ru:XaAES: Íå âûáğàíà îáîëî÷êà AES, ïğîâåğüòå ïåğåìåííóş 'shell =' â ôàéëå xaaes.cnf.
 cs:XaAES: Nenastaven ¾ádnı shell AES; viz promìnná 'shell =' v xaaes.cnf.
 _
 ### Miscellanous ###
