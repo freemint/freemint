@@ -2126,7 +2126,6 @@ close_window(enum locks lock, struct xa_window *wind)
 	if (!(wind->window_status & XAWS_OPEN))
 		return false;
 
-	DBGif(wind->handle < 0 ),(0,"%s:close_window on %d", wind->owner ? wind->owner->name : "-", wind->handle));
 
 	if (wind == C.hover_wind)
 	{
