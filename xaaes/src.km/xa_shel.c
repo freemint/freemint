@@ -615,7 +615,6 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 						if( follow ) //is_launch_path( get_full_curpath(cur) ) )
 						{
 							strcpy( path, linkname );	/* this gets shel_info.home_path in init_client */
-							//DBG((0,"launch:cmd=%s,link=%s,path=%s->%ld", cmd, linkname, path, r));
 						}
 					}
 				}
