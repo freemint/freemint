@@ -251,9 +251,9 @@ static int base( char *path, char **ps )
 	{
 		c = *p;
 		*p = 0;
-		if( ps )
-			*ps = p;
 	}
+	if( ps )
+		*ps = p;
 	return c;
 }
 
