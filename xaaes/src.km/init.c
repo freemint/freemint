@@ -317,6 +317,12 @@ init(struct kentry *k, const struct kernel_module *km) //const char *path)
 	self = km;
 	next_res = 0L;
 
+	if ( !k || !km || check_kentry_version())
+	{
+		err = ENOSYS;
+		goto error;
+	}
+
 	bzero(&G, sizeof(G));
 	C.bootlog_path[0] = '\0';
 	get_drive_and_path(start_path, sizeof(start_path));
@@ -361,12 +367,6 @@ again:
 	else
 			BLOG(( 0,"stack is word-aligned:%lx", stk ));
 #endif
-
-	if (check_kentry_version())
-	{
-		err = ENOSYS;
-		goto error;
-	}
 
 	/* remember loader */
 
