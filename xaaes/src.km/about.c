@@ -185,6 +185,7 @@ static void file_to_list( SCROLL_INFO *list, char *fn, bool skip_hash)
 	}
 	xa_fclose(xa_fp);
 	PRPRINT;
+	list->set(list, list->start, SESET_SELECTED, 0, NOREDRAW);
 
 }
 #endif
@@ -217,13 +218,28 @@ open_about(enum locks lock, struct xa_client *client, bool open, char *fn)
 
 		obtree = duplicate_obtree(client, ResourceTree(C.Aes_rsc, ABOUT_XAAES), 0);
 		if (!obtree) goto fail;
+
+		if( view_file )
+		{
+			int i;
+			(obtree + ABOUT_LIST)->ob_y -= 48;
+			(obtree + ABOUT_LIST)->ob_height += 84;
+
+			(obtree + ABOUT_OK)->ob_y += 24;
+			(obtree + ABOUT_OK)->ob_height -= 8;
+			for( i = ABOUT_VERSION - 1; i <= RSC_VERSION; i++ )
+			{
+				if( i != ABOUT_OK )
+					(obtree + i)->ob_flags |= OF_HIDETREE;
+			}
+		}
 		wt = new_widget_tree(client, obtree);
 		if (!wt) goto fail;
 		wt->flags |= WTF_AUTOFREE | WTF_TREE_ALLOC;
 		if( client != C.Aes )
 			wt->flags |= WTF_TREE_CALLOC;
 
-		set_slist_object(0, wt, NULL, ABOUT_LIST, SIF_AUTOSLIDERS | SIF_INLINE_EFFECTS,
+		set_slist_object(0, wt, NULL, ABOUT_LIST, SIF_AUTOSLIDERS | SIF_INLINE_EFFECTS | SIF_AUTOSELECT,
 				 NULL, NULL, NULL, NULL, NULL, NULL,
 				 NULL, NULL, NULL, NULL,
 				 NULL, NULL, NULL, 255);
@@ -258,24 +274,25 @@ open_about(enum locks lock, struct xa_client *client, bool open, char *fn)
 		if (!wind) goto fail;
 
 		wind->min.h = wind->r.h;//MINOBJMVH * 3;	/* minimum height for this window */
-		wind->min.w = wind->r.w;//MINOBJMVH;	/* minimum width for this window */
-		/* Set the window title */
-		//set_window_title(wind, xa_strings[RS_ABOUT], true);
+		wind->min.w = wind->r.w;	/* minimum width for this window */
 
 		(obtree + ABOUT_INFOSTR)->ob_spec.free_string = "\0";
+		if( !view_file )
+		{
 #if XAAES_RELEASE
-		/* set version */
-		(obtree + ABOUT_VERSION)->ob_spec.free_string = vversion;
-		/* Set version date */
-		(obtree + ABOUT_DATE)->ob_spec.free_string = __DATE__;
-		(obtree + ABOUT_TARGET)->ob_spec.free_string = arch_target;
+			/* set version */
+			(obtree + ABOUT_VERSION)->ob_spec.free_string = vversion;
+			/* Set version date */
+			(obtree + ABOUT_DATE)->ob_spec.free_string = __DATE__;
+			(obtree + ABOUT_TARGET)->ob_spec.free_string = arch_target;
 #else
-		(obtree + ABOUT_VERSION)->ob_spec.free_string = vversion;
-		/* Set version date */
-		(obtree + ABOUT_DATE)->ob_spec.free_string = info_string;
-		(obtree + ABOUT_TARGET)->ob_spec.free_string = arch_target;
-		//(obtree + ABOUT_INFOSTR)->ob_spec.free_string = info_string;
+			(obtree + ABOUT_VERSION)->ob_spec.free_string = vversion;
+			/* Set version date */
+			(obtree + ABOUT_DATE)->ob_spec.free_string = info_string;
+			(obtree + ABOUT_TARGET)->ob_spec.free_string = arch_target;
+			//(obtree + ABOUT_INFOSTR)->ob_spec.free_string = info_string;
 #endif
+		}
 
 		wt = set_toolbar_widget(lock, wind, wind->owner, obtree, inv_aesobj(), 0/*WIP_NOTEXT*/, STW_ZEN, NULL, &or);
 		wt->exit_form = about_form_exit;
@@ -349,7 +366,6 @@ open_about(enum locks lock, struct xa_client *client, bool open, char *fn)
 #endif
 	}
 
-	//list->slider(list, false);
 
 	/* Set the window destructor */
 	wind->destructor = about_destructor;
@@ -359,8 +375,6 @@ open_about(enum locks lock, struct xa_client *client, bool open, char *fn)
 	{
 		open_window(lock, wind, wind->r); //remember);
 		force_window_top( lock, wind );
-		//list->slider(list, true);
-		//generate_redraws(lock, wind, &wind->r, RDRW_ALL);
 	}
 	return;
 fail:
