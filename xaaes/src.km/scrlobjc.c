@@ -929,17 +929,18 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 
 							(*v->api->t_color)(v, wtxt->fgc);
 
+#define TABSZ	4
 							if( list->flags & SIF_INLINE_EFFECTS )
 							{
 								bool cont = true;
 								char *tpp = tp, cp = 0;
-								short te = wtxt->e, wd, h, cwd;
+								short te = wtxt->e, wd, h, cwd, tabsz = TABSZ * list->char_width, dx0 = dx;
 
 								while( cont )
 								{
 									bool unknown = false;
 
-									for( ; *tp && !(*tp == '<' || (*tp == '\\' && *(tp+1) == '<')); tp++ )
+									for( ; *tp && !(*tp == '\t' || *tp == '<' || (*tp == '\\' && *(tp+1) == '<')); tp++ )
 									;
 
 									if( !(cp = *tp) )
@@ -952,9 +953,13 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 									cwd = wd / (tp-tpp);
 
 									tpp = tp;
-
 									switch( cp )
 									{
+									case '\t':
+										dx = dx0 + (((dx - dx0) / tabsz) + 1) * tabsz;
+										*tp++ = '\t';
+										tpp = tp;
+									continue;
 									case '\\':
 										*tp = '\\';
 										tp += 2;
@@ -4108,7 +4113,7 @@ click_scroll_list(enum locks lock, OBJECT *form, int item, const struct moose_da
 				list->click(list, this, md);
 		}
 #endif
-	}
+	}	// /if (!do_widgets(lock, list->wi, 0, md))
 }
 
 void
