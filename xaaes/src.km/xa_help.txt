@@ -46,6 +46,8 @@ DELETE        Delete selected file/empty folder
 ALT+ " + "    Increase the fontsize in listbox
 ALT+ " - "    Decrease the fontsize in listbox
 
+CTRL+SPACE    Reverse sort-order
+
 * List-box selected:
 
   CURSOR-RIGHT              Open tree
