@@ -573,7 +573,7 @@ swap_menu(enum locks lock, struct xa_client *new, struct widget_tree *new_menu, 
 {
 	struct proc *p = get_curproc();
 
-	DIAG((D_appl, NULL, "swap_menu: %s, flags=%lx", new->name, flags));
+	DIAG((D_appl, NULL, "swap_menu: %s, flags=%x", new->name, flags));
 
 	/* in single-mode display only menu of single-app */
 	if( C.SingleTaskPid > 0 && new->p->pid != C.SingleTaskPid )
@@ -618,9 +618,6 @@ swap_menu(enum locks lock, struct xa_client *new, struct widget_tree *new_menu, 
 			struct proc *update_lock = C.update_lock;
 			DIAG((D_appl, NULL, "swap_menu: now. std=%lx, new_menu=%lx, nxt_menu = %lx for %s",
 				new->std_menu, new_menu, new->nxt_menu, new->name));
-
-		//	display("swap_menu: now. std=%lx, new_menu=%lx, nxt_menu = %lx for %s",
-		//		new->std_menu, new_menu, new->nxt_menu, new->name);
 
 			if (new_menu)
 				new->nxt_menu = new_menu;
