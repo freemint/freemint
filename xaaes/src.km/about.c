@@ -222,11 +222,12 @@ open_about(enum locks lock, struct xa_client *client, bool open, char *fn)
 		if( view_file )
 		{
 			int i;
-			(obtree + ABOUT_LIST)->ob_y -= 48;
-			(obtree + ABOUT_LIST)->ob_height += 84;
+			short h = screen.c_max_h / 2, h0 = obtree->ob_height;
+			(obtree + ABOUT_LIST)->ob_y -= h * 6;
+			(obtree + ABOUT_LIST)->ob_height = h0 - h * 6;
 
-			(obtree + ABOUT_OK)->ob_y += 24;
-			(obtree + ABOUT_OK)->ob_height -= 8;
+			(obtree + ABOUT_OK)->ob_y += h * 3 - 2;
+			(obtree + ABOUT_OK)->ob_height -= h;
 			for( i = ABOUT_VERSION - 1; i <= RSC_VERSION; i++ )
 			{
 				if( i != ABOUT_OK )
