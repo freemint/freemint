@@ -47,7 +47,7 @@ progdef_callout:
 	move.l	d0,a0
 	pea	_parmblk(pc)
 	jsr	(a0)
-	addq.w	#4,sp
+	addq.l	#4,sp
 nofunc:
 	lea	_retcode(pc),a0
 	move.l	d0,(a0)
@@ -64,7 +64,12 @@ _xa_callout_user:
 	.long	callout_ret		- _xa_callout_user
 	
 callout_user:
+#ifdef __mcoldfire__
+	lea	-60(sp),sp
+	movem.l	d0-d7/a0-a6,(sp)
+#else
 	movem.l	d0-d7/a0-a6,-(sp)
+#endif
 	lea	callout_func(pc),a0
 	move.l	(a0)+,d0
 	beq.s	callout_exit
@@ -73,10 +78,19 @@ callout_user:
 	beq.s	callout_noparms
 	adda.l	d1,a0
 	adda.l	d1,a0
+#ifdef __mcoldfire__
+	subq.l	#1,d1
+#else
 	subq.w	#1,d1
+#endif
 callout_gparms:
 	move.w	-(a0),-(sp)
+#ifdef __mcoldfire__
+	subq.l	#1,d1
+	bpl.s	callout_gparms
+#else
 	dbra	d1,callout_gparms
+#endif
 callout_noparms:
 	move.l	d0,a0
 	jsr	(a0)
@@ -87,7 +101,12 @@ callout_noparms:
 	adda.l	d1,sp
 	adda.l	d1,sp
 callout_exit:
+#ifdef __mcoldfire__
+	movem.l	(sp),d0-d7/a0-a6
+	lea	60(sp),sp
+#else
 	movem.l	(sp)+,d0-d7/a0-a6
+#endif
 	rts
 
 callout_ret:	dc.l 0
