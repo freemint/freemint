@@ -76,7 +76,7 @@ vcheckmode(short mode)
 		"move.w		%1,-(sp)\n\t"		\
 		"move.w		#0x5f,-(sp)\n\t"	\
 		"trap		#14\n\t"		\
-		"addq.w		#4,sp\n\t"		\
+		"addq.l		#4,sp\n\t"		\
 		"move.w		d0,%0\n\t"		\
 		: "=d"(ret)
 		: "d"(mode)
@@ -96,7 +96,7 @@ vsetmode(short mode)
 		"move.w		%1,-(sp)\n\t"		\
 		"move.w		#0x58,-(sp)\n\t"	\
 		"trap		#14\n\t"		\
-		"addq.w		#4,sp\n\t"		\
+		"addq.l		#4,sp\n\t"		\
 		"move.w		d0,%0\n\t"		\
 		: "=d"(ret)
 		: "d"(mode)

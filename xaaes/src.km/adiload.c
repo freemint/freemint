@@ -53,14 +53,14 @@ module_init(void *initfunc, struct kentry *k, struct adiinfo *a, long reason)
 
 	__asm__ volatile
 	(
-		"movem.l d3-d7/a3-a6,-(sp);"
-		"move.l %4,-(sp);"
-		"move.l	%3,-(sp);"
-		"move.l	%2,-(sp);"
-		"move.l	%1,a0;"
-		"jsr	(a0);"
-		"lea	12(sp),sp;"
-		"movem.l (sp)+,d3-d7/a3-a6;"
+		PUSH_SP("d3-d7/a3-a6", 36)
+		"move.l	%4,-(sp)\n\t"
+		"move.l	%3,-(sp)\n\t"
+		"move.l	%2,-(sp)\n\t"
+		"move.l	%1,a0\n\t"
+		"jsr	(a0)\n\t"
+		"lea	12(sp),sp\n\t"
+		POP_SP("d3-d7/a3-a6", 36)
 		: "=r"(ret)					/* outputs */
 		: "g"(initfunc), "r"(k), "r"(a), "g"(reason)	/* inputs  */
 		: __CLOBBER_RETURN("d0")
@@ -117,15 +117,15 @@ xam_init(void *initfunc, struct kentry *k, struct xa_module_api *a, long arg, lo
 
 	__asm__ volatile
 	(
-		"movem.l d3-d7/a3-a6,-(sp);"
-		"move.l %5,-(sp);"
-		"move.l %4,-(sp);"
-		"move.l	%3,-(sp);"
-		"move.l	%2,-(sp);"
-		"move.l	%1,a0;"
-		"jsr	(a0);"
-		"lea	16(sp),sp;"
-		"movem.l (sp)+,d3-d7/a3-a6;"
+		PUSH_SP("d3-d7/a3-a6", 36)
+		"move.l	%5,-(sp)\n\t"
+		"move.l	%4,-(sp)\n\t"
+		"move.l	%3,-(sp)\n\t"
+		"move.l	%2,-(sp)\n\t"
+		"move.l	%1,a0\n\t"
+		"jsr	(a0)\n\t"
+		"lea	16(sp),sp\n\t"
+		POP_SP("d3-d7/a3-a6", 36)
 		: "=r"(ret)						/* outputs */
 		: "g"(initfunc), "r"(k), "r"(a), "r"(arg), "g"(reason)	/* inputs  */
 		: __CLOBBER_RETURN("d0")

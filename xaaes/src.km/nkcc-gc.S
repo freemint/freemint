@@ -94,32 +94,56 @@ nk_findscan:
 	btst	#NKFb_NUM,d0		| on numeric keypad?
 	beqs	search			| no ->
 
-	movew	#0x4a,d1		| yes: try all numeric keypad
+	moveql	#0x4a,d1		| yes: try all numeric keypad
+#ifdef __mcoldfire__
+	cmpb	a0@(d1:l),d0		|	scan codes first
+#else
 	cmpb	a0@(d1:w),d0		|	scan codes first
+#endif
 	beqs	found1			| it matches ->
 
-	movew	#0x4e,d1
+	moveql	#0x4e,d1
+#ifdef __mcoldfire__
+	cmpb	a0@(d1:l),d0
+#else
 	cmpb	a0@(d1:w),d0
+#endif
 	beqs	found1
 
-	movew	#0x63,d1		| block starts at 0x63
+	moveql	#0x63,d1		| block starts at 0x63
 
 numsearch:
+#ifdef __mcoldfire__
+	cmpb	a0@(d1:l),d0		| match?
+#else
 	cmpb	a0@(d1:w),d0		| match?
+#endif
 	beqs	found1			| yes ->
 
+#ifdef __mcoldfire__
+	addql	#1,d1			| next scan code
+#else
 	addqw	#1,d1			| next scan code
+#endif
 	cmpw	#0x73,d1		| block end at 0x72
 	bcss	numsearch		| continue search ->
 
 search:
-	movew	#1,d1			| start with first valid scan code
+	moveql	#1,d1			| start with first valid scan code
 
 mainsearch:
+#ifdef __mcoldfire__
+	cmpb	a0@(d1:l),d0		| match?
+#else
 	cmpb	a0@(d1:w),d0		| match?
+#endif
 	beqs	found1			| yes ->
 
+#ifdef __mcoldfire__
+	addql	#1,d1			| next scan code
+#else
 	addqb	#1,d1			| next scan code
+#endif
 	cmpb	#0x78,d1		| 0x78 = last valid scan code
 	bcss	mainsearch		| continue search ->
 
@@ -169,24 +193,43 @@ _nkc_init:
 
 _nkc_tos2n:
 	movel	sp@(4), d0		| Parameter via Stack!
+#ifdef __mcoldfire__
+	lea	sp@(-12),sp
+	movem.l	d2-d4,sp@		| store registers
+#else
 	movem.l	d2-d4,sp@- 		| store registers
+#endif
 
 |------------- separate TOS key code
 
 	movel	d0,d1			| TOS key code
 	swap	d1			| .W = scan code and flags
 	movew	d1,d2			| copy
+#ifdef __mcoldfire__
+	movel	#0xff,d3		| and-mask
+	andl	d3,d0			| .B = ASCII code
+	andl	d3,d1			| .B = scan code
+#else
 	movew	#0xff,d3		| and-mask
 	andw	d3,d0			| .B = ASCII code
 	andw	d3,d1			| .B = scan code
+#endif
 	beq	tos306			| scancode=zero (key code created
 						| by ASCII input of TOS 3.06)? ->
+#ifdef __mcoldfire__
+	andl	#0x1f00,d2		| .W = key flags (in high byte)
+#else
 	andw	#0x1f00,d2		| .W = key flags (in high byte)
+#endif
 
 |------------- decide which translation table to use
 
 	movew	d2,d3			| key flags
+#ifdef __mcoldfire__
+	andl	#NKFf_SHIFT,d3		| isolate bits for shift keys
+#else
 	andw	#NKFf_SHIFT,d3		| isolate bits for shift keys
+#endif
 	beqs	ktab11			| shift key pressed? no->
 
 	movel	pkey_shift,a0		| yes: use shift table
@@ -221,17 +264,37 @@ ktab13:
 
 	movew	d2,d1			| flags
 |	andw	#NKFf_ALT|NKFf_CTRL,d1	| Alternate or Control?
+#ifdef __mcoldfire__
+	andl	#0xc00,d1		| Alternate or Control?
+#else
 	andw	#0xc00,d1		| Alternate or Control?
+#endif
 	beqs	special 		| no ->
 
+#ifdef __mcoldfire__
+	orl	#NKFf_NUM,d0		| yes: set numeric keypad flag
+#else
 	orw	#NKFf_NUM,d0		| yes: set numeric keypad flag
+#endif
 |	and	#NKFf_CAPS|NKFf_SHIFT,d2	| mask off both flags
+#ifdef __mcoldfire__
+	andl	#0x1300,d2		| mask off both flags
+#else
 	andw	#0x1300,d2		| mask off both flags
+#endif
 
 special:
+#ifdef __mcoldfire__
+	orl	d2,d0			| combine with ASCII code
+#else
 	orw	d2,d0			| combine with ASCII code
+#endif
 |	orw	#NKFf_FUNC|NKFf_RESVD,d0	| set function and resvd
+#ifdef __mcoldfire__
+	orl	#0x1300,d0		| set function and resvd
+#else
 	orw	#0x1300,d0		| set function and resvd
+#endif
 	cmpb	#0x20,d0		| ASCII code in range?
 	bcc	exit2			| yes ->
 
@@ -244,9 +307,15 @@ ktab14:
 	cmpb	#0x78,d1		| scan code of Alt + number?
 	bcss	scan1			| no->
 
+#ifdef __mcoldfire__
+	subl	#0x76,d1		| yes: calculate REAL scan code
+	moveb	a0@(d1:l),d0		| fetch ASCII code
+	orl	#NKFf_ALT,d2		| set Alternate flag
+#else
 	subb	#0x76,d1		| yes: calculate REAL scan code
 	moveb	a0@(d1:w),d0		| fetch ASCII code
 	orw	#NKFf_ALT,d2		| set Alternate flag
+#endif
 	bra	cat_codes		| -> add flag byte and exit
 
 |------------- check if exception scan code from cursor keypad
@@ -261,7 +330,11 @@ search_scan:
 	cmpb	d1,d3			| scan code found?
 	bnes	search_scan		| no: continue search ->
 
+#ifdef __mcoldfire__
+	lsrl	#8,d3			| .B = NKC
+#else
 	lsrw	#8,d3			| .B = NKC
+#endif
 	moveql	#0,d0			| mark: key code found
 	bras	scan2			| ->
 
@@ -271,7 +344,11 @@ tabend:
 |------------- check if rubbish ASCII code and erase it, if so
 
 scan2:
+#ifdef __mcoldfire__
+	moveb	a0@(d1:l),d4		| ASCII code from translation table
+#else
 	moveb	a0@(d1:w),d4		| ASCII code from translation table
+#endif
 	cmpb	#32,d0			| ASCII returned by TOS < 32?
 	bccs	scan3			| no -> can't be rubbish
 
@@ -291,7 +368,11 @@ scan3:
 	beqs	scan4			| equal: normal key ->
 
 |	and	#!NKFf_ALT,d2		| no: clear Alternate flag
+#ifdef __mcoldfire__
+	andl	#0xF7FF,d2		| no: clear Alternate flag
+#else
 	andw	#0xF7FF,d2		| no: clear Alternate flag
+#endif
 
 |------------- check if ASCII code found yet, and set it, if not
 
@@ -328,7 +409,11 @@ scan6:
 	bhis	scan7			| no ->
 
 numeric:
+#ifdef __mcoldfire__
+	orl	#NKFf_NUM,d2		| yes: set numeric bit
+#else
 	orw	#NKFf_NUM,d2		| yes: set numeric bit
+#endif
 
 |------------- check if "function key" and set bit accordingly
 
@@ -336,7 +421,11 @@ scan7:
 	cmpb	#32,d0			| ASCII code less than 32?
 	bccs	scan8			| no ->
 
+#ifdef __mcoldfire__
+	orl	#NKFf_FUNC,d2		| yes: set function bit
+#else
 	orw	#NKFf_FUNC,d2		| yes: set function bit
+#endif
 
 |------------- check special case: Return or Enter key
 
@@ -357,11 +446,23 @@ scan8:
 	cmpb	#0x5d,d1
 	bhis	scan9			| no ->
 
+#ifdef __mcoldfire__
+	subl	#0x54-0x3b,d1		| yes: scan code for unshifted key
+#else
 	subb	#0x54-0x3b,d1		| yes: scan code for unshifted key
+#endif
 	movew	d2,d3			| shift flags
+#ifdef __mcoldfire__
+	andl	#NKFf_SHIFT,d3		| any shift key flag set?
+#else
 	andw	#NKFf_SHIFT,d3		| any shift key flag set?
+#endif
 	bnes	scan9			| yes ->
+#ifdef __mcoldfire__
+	orl	#NKFf_SHIFT,d2		| no: set both flags
+#else
 	orw	#NKFf_SHIFT,d2		| no: set both flags
+#endif
 
 scan9:
 	cmpb	#0x3b,d1		| (unshifted) function key?
@@ -371,50 +472,92 @@ scan9:
 	bhis	cat_codes		| no ->
 
 	moveb	d1,d0			| yes: calc NKC
+#ifdef __mcoldfire__
+	subl	#0x2b,d0
+#else
 	subb	#0x2b,d0
+#endif
 
 |------------- final flag handling| mix key code (low byte) and flag byte
 
 cat_codes:
 	movel	pkey_shift,a0		| ^shifted table
+#ifdef __mcoldfire__
+	moveb	a0@(d1:l),d3		| get shifted ASCII code
+	orl	d2,d0			| mix flags with key code
+	tst.w	d0
+#else
 	moveb	a0@(d1:w),d3		| get shifted ASCII code
 	orw	d2,d0			| mix flags with key code
+#endif
 	bmis	scan10			| result is "function key"? ->
 
+#ifdef __mcoldfire__
+	andl	#NKFf_CTRL+NKFf_ALT,d2	| Control or Alternate pressed?
+#else
 	andw	#NKFf_CTRL+NKFf_ALT,d2	| Control or Alternate pressed?
+#endif
 	bnes	scan11			| yes ->
 
 scan10:
 	movel	pkey_unshift,a0 	| ^unshifted table
+#ifdef __mcoldfire__
+	cmpb	a0@(d1:l),d3		| shifted ASCII = unshifted ASCII?
+#else
 	cmpb	a0@(d1:w),d3		| shifted ASCII = unshifted ASCII?
+#endif
 	beqs	scan12			| yes ->
 
 	bras	exit2			| no ->
 
 scan11:
+#ifdef __mcoldfire__
+	orl	#NKFf_FUNC,d0		| Alt/Ctrl + char: set function bit
+#else
 	orw	#NKFf_FUNC,d0		| Alt/Ctrl + char: set function bit
+#endif
 	movel	pkey_caps,a0		| ^CapsLock table
+#ifdef __mcoldfire__
+	cmpb	a0@(d1:l),d3		| shifted ASCII = CapsLocked ASCII?
+#else
 	cmpb	a0@(d1:w),d3		| shifted ASCII = CapsLocked ASCII?
+#endif
 	bnes	exit2			| no ->
 
 	moveb	d3,d0			| yes: use shifted ASCII code
 
 scan12:
+#ifdef __mcoldfire__
+	orl	#NKFf_RESVD,d0		| yes: nkc_cmp() has to check
+#else
 	orw	#NKFf_RESVD,d0		| yes: nkc_cmp() has to check
+#endif
 
 |------------- restore registers and exit
 
 exit2:
 	tstw	d0			| set CCR
+#ifdef __mcoldfire__
+	movem.l	sp@,d2-d4 		| restore registers
+	lea	sp@(12),sp
+#else
 	movem.l	sp@+,d2-d4 		| restore registers
+#endif
 	rts				| bye
 
 |------------- special handling for key codes created by TOS' 3.06 ASCII input
 
 tos306:
+#ifdef __mcoldfire__
+	andl	#NKFf_CAPS,d2		| isolate CapsLock flag
+	orl	d2,d0			| merge with ASCII code
+	movem.l	sp@,d2-d4 		| restore registers
+	lea	sp@(12),sp
+#else
 	andw	#NKFf_CAPS,d2		| isolate CapsLock flag
 	orw	d2,d0			| merge with ASCII code
 	movem.l	sp@+,d2-d4 		| restore registers
+#endif
 	rts				| bye
 
 |***************************************************************************
@@ -428,7 +571,11 @@ _nkc_n2tos:
 
 	movew	d0,d1			| normalized key code
 |	and	#NKFf_FUNC|NKFf_ALT|NKFf_CTRL,d1| isolate flags
+#ifdef __mcoldfire__
+	andl	#0x8c00,d1		| isolate flags
+#else
 	andw	#0x8c00,d1		| isolate flags
+#endif
 	cmpw	#NKFf_FUNC,d1		| only function flag set?
 	bnes	ktab20			| no ->
 
@@ -444,10 +591,18 @@ _nkc_n2tos:
 	beqs	mackey			| no ->
 
 |	or	#NKFf_ALT|NKFf_CTRL,d0	| yes: set Alternate + Control
+#ifdef __mcoldfire__
+	orl	#0xc00,d1		| yes: set Alternate + Control?
+#else
 	orw	#0xc00,d1		| yes: set Alternate + Control?
+#endif
 
 mackey:
+#ifdef __mcoldfire__
+	orl	#0xff,d0		| scan code always 0xff
+#else
 	orb	#0xff,d0		| scan code always 0xff
+#endif
 	swap	d0			| flags and scan code in upper word
 	moveb	d1,d0			| ASCII code
 	bra	exit3			| ->
@@ -456,7 +611,11 @@ mackey:
 
 ktab20:
 	movew	d0,d1			| normalized key code
+#ifdef __mcoldfire__
+	andl	#NKFf_SHIFT,d1		| isolate bits for shift keys
+#else
 	andw	#NKFf_SHIFT,d1		| isolate bits for shift keys
+#endif
 	beqs	ktab21			| shift key pressed? no->
 
 	lea	n_to_scan_s,a1		| ^default translation table
@@ -490,7 +649,11 @@ ktab23:
 	lea	tolower,a0		| ^upper->lower case table
 	moveql	#0,d2			| clear for word operation
 	moveb	d0,d2			| ASCII code
+#ifdef __mcoldfire__
+	moveb	a0@(d2:l),d0		| get lowercased ASCII code
+#else
 	moveb	a0@(d2:w),d0		| get lowercased ASCII code
+#endif
 	movel	d1,a0			| restore a0
 	bsr	nk_findscan		| try to find scan code again
 	bnes	found2			| found ->
@@ -501,7 +664,11 @@ ktab23:
 notfound:
 	moveql	#0,d1			| not found: clear for word op.
 	moveb	d0,d1			| unchanged ASCII code
+#ifdef __mcoldfire__
+	andl	#0x1f00,d0		| keep shift flags only
+#else
 	andw	#0x1f00,d0		| keep shift flags only
+#endif
 	swap	d0			| -> high word (scan code = 0)
 	movew	d1,d0			| low word: ASCII code
 	bra	exit3			| ->
@@ -512,14 +679,22 @@ lowascii:
 	btst	#NKFb_FUNC,d0		| function key?
 	bnes	func			| yes ->
 
+#ifdef __mcoldfire__
+	andl	#0xffff10ff,d0		| clear all flags except CapsLock
+#else
 	andw	#0x10ff,d0		| clear all flags except CapsLock
+#endif
 	bras	notfound		| ->
 
 func:
 	moveql	#0,d1			| clear for word operation
 	moveb	d0,d1			| ASCII code (0...0x1f)
 	movew	d1,d2			| copy
+#ifdef __mcoldfire__
+	moveb	a1@(d1:l),d1		| get scan code
+#else
 	moveb	a1@(d1:w),d1		| get scan code
+#endif
 	bnes	getascii		| valid? ->
 
 	moveq	#0,d0			| invalid key code!! return 0
@@ -527,8 +702,13 @@ func:
 
 getascii:
 	lea	n_to_scan_u,a1		| ^unshifted translation table
+#ifdef __mcoldfire__
+	moveb	a1@(d2:l),d2		| get scan code from unshifted tab.
+	moveb	a0@(d2:l),d0		| get ASCII from system's table
+#else
 	moveb	a1@(d2:w),d2		| get scan code from unshifted tab.
 	moveb	a0@(d2:w),d0		| get ASCII from system's table
+#endif
 
 | register contents:
 |
@@ -539,7 +719,11 @@ getascii:
 
 found2:
 	movew	d0,d2			| flags and ASCII code
+#ifdef __mcoldfire__
+	andl	#0x1f00,d0		| isolate shift flags
+#else
 	andw	#0x1f00,d0		| isolate shift flags
+#endif
 	moveb	d1,d0			| merge with scan code
 	swap	d0			| -> high byte
 	clrw	d0			| erase low word
@@ -583,12 +767,20 @@ ascloop:
 	cmpb	d0,d1			| ASCII code found?
 	bnes	ascloop 		| no -> continue search
 
+#ifdef __mcoldfire__
+	lsrl	#8,d1			| yes: get translated code
+#else
 	lsrw	#8,d1			| yes: get translated code
+#endif
 	moveb	d1,d0			| use it
 	bras	exit3			| ->
 
 noctrlasc:
+#ifdef __mcoldfire__
+	andl	#0x1f,d0		| mask off upper 3 bits
+#else
 	andb	#0x1f,d0		| mask off upper 3 bits
+#endif
 	bras	exit3			| ->
 
 |------------- handling for Alternate key flag
@@ -637,7 +829,11 @@ exit3:
 _nkc_toupper:
 	movel	sp@(4),d1		| Parameter via Stack!
 	lea	toupper,a0		| ^upper case translation table
+#ifdef __mcoldfire__
+	andl	#0xff,d1		| high byte = 0 for word operation
+#else
 	andw	#0xff,d1		| high byte = 0 for word operation
+#endif
 	moveb	a0@(d1:l),d0		| convert
 	rts				| bye
 
@@ -650,7 +846,11 @@ _nkc_toupper:
 _nkc_tolower:
 	movel	sp@(4),d1		| Parameter via Stack!
 	lea	tolower,a0		| ^lower case translation table
+#ifdef __mcoldfire__
+	andl	#0xff,d1		| high byte = 0 for word operation
+#else
 	andw	#0xff,d1		| high byte = 0 for word operation
+#endif
 	moveb	a0@(d1:l),d0		| convert
 	rts				| bye
 
