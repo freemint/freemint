@@ -73,7 +73,7 @@
 #endif
 
 #ifdef __mcoldfire__
- #define _CPU	"coldfire"
+ #define _CPU	"ColdFire"
 #else
  #ifdef mc68060
   #ifdef mc68020
