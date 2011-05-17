@@ -1191,7 +1191,7 @@ adi_wheel(struct adif *a, struct moose_data *md)
 	}
 }
 
-#ifdef EIFFEL_SUPPORT
+#if EIFFEL_SUPPORT
 bool
 eiffel_wheel(unsigned short scan)
 {
