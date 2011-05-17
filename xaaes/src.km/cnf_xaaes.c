@@ -93,6 +93,7 @@ static struct parser_item parser_tab[] =
 	{ "LANG",                  PI_R_T,     cfg.lang		             , { dat: sizeof(cfg.lang)   } },
 	{ "WIDGETS",               PI_R_T,     cfg.widg_name           , { dat: sizeof(cfg.widg_name)   } },
 	{ "RESOURCE",              PI_R_T,     cfg.rsc_name            , { dat: sizeof(cfg.rsc_name)    } },
+	{ "EIFFEL_SUPPORT",        PI_R_B,   & cfg.eiffel_support},
 	{ "USEHOME",               PI_R_B,   & cfg.usehome		},
 	{ "NAES_COOKIE",           PI_R_B,   & cfg.naes_cookie		},
 	{ "MENUPOP_PIDS",          PI_R_B,   & cfg.menupop_pids		},
