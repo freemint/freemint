@@ -1202,7 +1202,7 @@ eiffel_wheel(unsigned short scan)
 		md.y = md.sy	= y_mouse;
 		md.state	= (scan == 0x59 || scan == 0x5a) ? cfg.ver_wheel_id : cfg.hor_wheel_id;
 		md.cstate	= md.state;
-		md.clicks	= scan == 0x59 ? -1 : 1;
+		md.clicks	= (scan == 0x59 || scan == 0x5c) ? -1 : 1;
 		md.kstate	= 0;
 		md.dbg1		= 0;
 		md.dbg2		= 0;
