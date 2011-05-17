@@ -663,7 +663,9 @@ void
 keyboard_input(enum locks lock)
 {
 	/* Did we get some keyboard input? */
-	//while (f_instat(C.KBD_dev))
+#if EIFFEL_SUPPORT
+	while (1)
+#endif
 	{
 		struct rawkey key;
 
@@ -671,10 +673,11 @@ keyboard_input(enum locks lock)
 // 		display("f_getchar: 0x%08lx, AES=%x, NORM=%x", key.raw.bcon, key.aes, key.norm);
 
 	// this produces wheel-events on some F-keys (eg. S-F10)
-#ifdef EIFFEL_SUPPORT
-		if ( eiffel_wheel((unsigned short)key.raw.conin.scan & 0xff))
+#if EIFFEL_SUPPORT
+		if ( cfg.eiffel_support && eiffel_wheel((unsigned short)key.raw.conin.scan & 0xff))
 		{
-			continue;
+			if( f_instat(C.KBD_dev) )
+				continue;
 		}
 #endif
 		/* Translate the BIOS raw data into AES format */
@@ -687,5 +690,8 @@ keyboard_input(enum locks lock)
 		{
 			XA_keyboard_event(lock, &key);
 		}
+#if EIFFEL_SUPPORT
+		break;
+#endif
 	}
 }
