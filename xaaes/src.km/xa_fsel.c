@@ -3584,6 +3584,9 @@ open_fileselector(enum locks lock, struct xa_client *client, struct fsel_data *f
 			aes_has_fsel = C.Hlp;
 		open_fileselector1(lock, client, fs, path, file, title, s, c, data);
 	}
+	else
+		top_window( lock, true, true, fs->wind );
+
 }
 
 /*
