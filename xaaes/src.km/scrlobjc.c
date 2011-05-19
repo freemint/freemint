@@ -513,15 +513,18 @@ calc_entry_wh(SCROLL_INFO *list, SCROLL_ENTRY *this)
 		}
 
 		tab = &tabs[c->index];
-
-		if (tab->v.w == 0)
+		if( list->flags & SIF_INLINE_EFFECTS )
 		{
-			if (tab->r.w < ew)
+			if (tab->r.w == 0)
 			{
-				tab->r.w = ew + 3;
-				PROFRECv(recalc_tabs,(list));
-				fullredraw = true;
+					tab->r.w = list->wi->rwa.w;
 			}
+		}
+		else if (tab->r.w < ew)
+		{
+			tab->r.w = ew + 3;
+			PROFRECv(recalc_tabs,(list));
+			fullredraw = true;
 		}
 
 		tw += ew;
@@ -681,7 +684,6 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 		struct xa_fnt_info *wtxt;
 		RECT r, clp;
 
-		if( TOP != 2 )
 		{
 			(*v->api->wr_mode)(v, MD_REPLACE);
 			(*v->api->f_color)(v, sel ? G_BLACK : G_WHITE);
@@ -700,7 +702,9 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 			if ( NO_ICONS == false && (TOP || xa_rect_clip(clip, &r, &clp)))
 			{
 				if( !TOP )
+				{
 					(*v->api->set_clip)(v, &clp);
+				}
 				draw_nesticon(v, 16, xy, this);
 			}
 			indent += 16;
@@ -737,7 +741,9 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 						short ix, iy;
 
 						if( !TOP )
+						{
 							(*v->api->set_clip)(v, &clp);
+						}
 						if (sel)
 							c->c.icon.icon->ob_state |= OS_SELECTED;
 						else
@@ -771,7 +777,9 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 					if (TOP || xa_rect_clip(clip, &r, &clp))
 					{
 						if( !TOP )
+						{
 							(*v->api->set_clip)(v, &clp);
+						}
 
 						dx = r.x;
 						x2 = dx + r.w;
@@ -1075,7 +1083,9 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 		}
 
 		if( clipped == false )
+		{
 			(*v->api->set_clip)(v, clip);
+		}
 		/* normal */
 		//(*v->api->t_effects)(v, 0);
 		}
@@ -1095,6 +1105,11 @@ draw_slist(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *entry, const RECT *
 		short TOP = 0;
 		bool no_icons = false;
 
+		if( TOP_WINDOW == list->pw )
+		{
+			TOP = 1;
+		}
+
 		(*v->api->set_clip)(v, &r);
 
 		(*v->api->wr_mode)(v, MD_TRANS);
@@ -1104,10 +1119,6 @@ draw_slist(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *entry, const RECT *
 		xy.w = wind->wa.w + list->start_x;
 		xy.h = wind->wa.h + list->off_y;
 
-		if( TOP_WINDOW == wind )
-		{
-			TOP = 1;
-		}
 		if( list->flags & SIF_NO_ICONS )
 			no_icons = true;
 
@@ -3101,6 +3112,8 @@ add_scroll_entry(SCROLL_INFO *list,
 			}
 		}
 
+		if (new->r.w > list->widest)
+			list->widest = new->r.w;
 		if ((r.h /*| r.w*/))
 		{
 			/* compensate for not calling next_entry in get_entry_lrect...*/
@@ -3109,8 +3122,6 @@ add_scroll_entry(SCROLL_INFO *list,
 				new->r.h += LSLINDST_PTS;
 			}
 
-			if (new->r.w > list->widest)
-				list->widest = new->r.w;
 			if (new->r.h > list->highest)
 				list->highest = new->r.h;
 			list->total_h += new->r.h;
@@ -3742,12 +3753,12 @@ scroll_left(SCROLL_INFO *list, long num, bool rdrw)
 {
 	long n, max;
 
-	if (list->total_w < list->wi->wa.w)
+	if (list->widest < list->wi->wa.w)
 		return;
 
-	if ((num + list->start_x + list->wi->wa.w) > list->total_w)
+	if ((num + list->start_x + list->wi->wa.w) > list->widest)
 	{
-		max = n = list->total_w - (list->start_x + list->wi->wa.w);
+		max = n = list->widest - (list->start_x + list->wi->wa.w);
 		if (max < 0)
 			return;
 	}
@@ -3787,7 +3798,7 @@ scroll_right(SCROLL_INFO *list, long num, bool rdrw)
 {
 	long n, max;
 
-	if (list->total_w < list->wi->wa.w)
+	if (list->widest < list->wi->wa.w)
 		return;
 
 	if (num > list->start_x)
@@ -4732,9 +4743,9 @@ slist_msg_handler(
 		if (top)
 		{
 			p = list->wi->wa.w;
-			if (p < list->total_w)
+			if (p < list->widest )
 			{
-				long new = sl_to_pix(list->total_w - p, msg[4]);
+				long new = sl_to_pix(list->widest - p, msg[4]);
 				new -= list->start_x;
 				if (new < 0)
 					scroll_right(list, -new, true);
@@ -4758,7 +4769,10 @@ slist_msg_handler(
 	case WM_SIZED:
 	{
 // 		display("resize slist wind");
+
 		move_window(0, wind, false, -1, msg[4], msg[5], msg[6], msg[7]);
+ 		if( list->tabs && (list->flags & SIF_INLINE_EFFECTS) )
+ 			list->tabs[0].r.w = wind->rwa.w;
 		if( (list->flags & SIF_TREEVIEW) )
 		{
 			recalc_tabs(list);
