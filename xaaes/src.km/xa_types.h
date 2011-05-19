@@ -2980,7 +2980,9 @@ struct config
 	bool no_xa_fsel;
 	bool point_to_type;
 	bool fsel_cookie;
+#if EIFFEL_SUPPORT
 	bool eiffel_support;	/* generate wheel-events on special keys */
+#endif
 	bool usehome;			/* use $HOME in shell_find */
 	bool naes_cookie;		/* If true, install fake nAES cookie */
 	bool menupop_pids;		/* If true, add PIDs to clients listed in menupop clientlist */
