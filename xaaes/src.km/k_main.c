@@ -626,8 +626,8 @@ init_moose(void)
 	C.move_block = 0;
 	C.rect_lock = 0;
 
-	G.adi_mouse = adi_name2adi("moose_w");
-	if (!G.adi_mouse)
+	//G.adi_mouse = adi_name2adi("moose_w");
+	//if (!G.adi_mouse)
 		G.adi_mouse = adi_name2adi("moose");
 
 	if (G.adi_mouse)
@@ -1627,8 +1627,6 @@ k_main(void *dummy)
 	if( mt_appl_init(my_global_aes) != -1 )
 	{
 		C.P_handle = mt_graf_handle( &x, &x, &x, &x, my_global_aes );
-		//if( C.P_handle > 13 )
-			//C.P_handle = 0;
 	}
 	else mt_appl_exit(my_global_aes);
 	}
