@@ -512,30 +512,19 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 		}
 	}
 
-	//if( base->p_flags & F_FORCE_MINT )
-		//p_domain(1);
 	if( (p->modeflags & M_SINGLE_TASK) )
 	{
 		if( C.SingleTaskPid <= 0 )
 		{
 			struct shel_info *info = lookup_extension(p, XAAES_MAGIC_SH);
 			struct proc *k = pid2proc(0);	/* MiNT */
-			//long KBD_dev;
-
-			//xconout_dev = kernel_open( "u:/dev/xconout2", O_RDWR, 0, 0);
-
-			/* todo: get owner of xconout2: how? */
 
 			if( !info )
 			{
-				//ALERT((0,"can execute singletask-app %s only by shel_write.", p->name));
-				//pb->intout[0] = -1;
 				BLOG((0,"can execute singletask-app %s only by shel_write (killing it).", p->name));
 				ikill(p->pid, SIGTERM);
 				return XAC_DONE;
 			}
-			//KBD_dev = f_open("u:/dev/kbd", O_DENYRW|O_RDONLY);
-
 			BLOG((0,"%s(%d): enter single-mode.", p->name, p->pid));
 			if( k )
 			{
