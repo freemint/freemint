@@ -678,6 +678,8 @@ keyboard_input(enum locks lock)
 		{
 			if( f_instat(C.KBD_dev) )
 				continue;
+			else
+				break;
 		}
 #endif
 		/* Translate the BIOS raw data into AES format */
