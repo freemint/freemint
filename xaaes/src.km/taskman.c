@@ -96,8 +96,6 @@ static int ker_stat( int pid, char *what, long pinfo[] );
 #define TM_HEADER		0x20L	/* header */
 #define TM_CLIENT		0x40L	/* aes-client-entry in taskman-list */
 
-#define SYSLOGMINH	240	/* syslog cannot have smaller height */
-
 #if USE_Suptime
 #ifdef trap_14_w
 #undef trap_14_w	/* "redefined" warning */
