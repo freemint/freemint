@@ -523,11 +523,12 @@ otm:
 				RECT r = wind->r;
 				if( nk == NK_DOWN )
 					g = -g;
+				g *= 2;
 				r.y -= g;
 				if( !s )
 				{
 					r.x -= g;
-					r.w += g * 4;
+					r.w += g * 2;
 					r.h += g * 2;
 					if( nk == NK_UP )
 					{
