@@ -402,11 +402,36 @@ set_mouse_timeout( void _cdecl (*f)(PROC *, long arg), short make, short delta, 
 }
 
 
+static bool
+is_eiffel_mouse_key(ushort scan)
+{
+	return ((scan >= 0x59 && scan <= 0x5f) && scan != 0x5b)
+		|| scan == 0x37;
+}
+
+
 # ifndef MILAN
+static void set_keyrepeat_timeout(short make);
+//short iplpop = 0;
+//short ikbd_err = 0;
+//struct proc *repeatproc = 0;
+int repeat_pid = -1;
+
+extern struct proc *pid2proc(int pid);
+
 static void put_key_into_buf(IOREC_T *iorec, uchar c0, uchar c1, uchar c2, uchar c3);
 static void
 kbd_repeat(PROC *p, long arg)
 {
+#if 0
+	if( !pid2proc(repeat_pid)) //curproc != repeatproc && curproc->pid == 0 pid2proc )
+	{
+		FORCE("kbd_repeat:uptimetick=%u,k_to=%lx,repeat_pid=%d,pid=%d", uptimetick, k_to, repeat_pid, curproc->pid);
+		set_keyrepeat_timeout(0);
+		return;
+	}
+#endif
+	repeat_pid = curproc->pid;
 	put_key_into_buf(last_iorec, last_key[0], last_key[1], last_key[2], last_key[3]);
 	k_to = addroottimeout(keyrep_time, kbd_repeat, 1);
 }
@@ -414,10 +439,21 @@ kbd_repeat(PROC *p, long arg)
 static void
 set_keyrepeat_timeout(short make)
 {
+#if 0
+	if(curproc->pid != 0 )
+	{
+		FORCE("set_keyrepeat_timeout:uptimetick=%u,k_to=%lx,make=%d", uptimetick, k_to, make);
+		//curproc = rootproc;
+		//return;
+	}
+#endif
 	if (make)
 	{
 		if (k_to)
 			cancelroottimeout(k_to);
+
+		//repeatproc = curproc;
+		repeat_pid = curproc->pid;
 
 		k_to = addroottimeout(keydel_time, kbd_repeat, 1);
 	}
@@ -604,7 +640,8 @@ put_key_into_buf(IOREC_T *iorec, uchar c0, uchar c1, uchar c2, uchar c3)
 		last_key[2] = c2;
 		last_key[3] = c3;
 
-		kbdclick((ushort)c2);
+		if (!is_eiffel_mouse_key(c1))
+			kbdclick((ushort)c2);
 	}
 
 	kintr = 1;
@@ -959,16 +996,10 @@ IkbdScan(PROC *p, long arg)
 
 		scan = scancode & 0xff;
 
-		switch (scan)
+		if (is_eiffel_mouse_key(scan))
 		{
-			case 0x59:		/* Eiffel - mousewheel up */
-			case 0x5a:		/* Eiffel - mousewheel down */
-			case 0x5c:		/* Eiffel - mousewheel left */
-			case 0x5d:		/* Eiffel - mousewheel right */
-			{
-				put_key_into_buf(iorec, shift, (uchar)scan, 0, 0);
-				continue; //goto again;
-			}
+			put_key_into_buf(iorec, shift, (uchar)scan, 0, 0);
+			continue; //goto again;
 		}
 
 		/* This is set during various keyboard table initializations
