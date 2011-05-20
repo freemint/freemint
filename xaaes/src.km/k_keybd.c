@@ -422,7 +422,7 @@ kernel_key(enum locks lock, struct rawkey *key)
 			app_or_acc_in_front( lock, client );
 			return true;
 		}
-		case NK_ESC:
+		//case NK_ESC:
 		case ' ':
 		{
 			struct xa_window *wind;
@@ -493,15 +493,12 @@ kernel_key(enum locks lock, struct rawkey *key)
 			{
 				recover();
 			}
-// 			recover();
 			return true;
 		}
 		case 'F':				/* open the task manager */
 #if !GENERATE_DIAGS
 		case 'L':				/* open the task manager */
 #endif
-// 		case NK_ESC:
-
 		if( !C.update_lock )
 		{
 otm:
@@ -511,20 +508,96 @@ otm:
 
 		case 'I':	/* (un-)iconify window */
 			return 	iconify_action(lock, TOP_WINDOW, 0);
+		case NK_INS:
+			TOP_WINDOW->send_message(lock, TOP_WINDOW, NULL, AMQ_NORM, QMF_CHKDUP,
+			   WM_FULLED, 0, 0, TOP_WINDOW->handle, 0, 0, 0, 0);
+		return true;
 
-		case NK_RIGHT:				/* full window */
-		if( TOP_WINDOW )
-		{
-			if (TOP_WINDOW->send_message)
+#define WGROW	16
+		case NK_UP:
+		case NK_DOWN:
+			if( TOP_WINDOW )
 			{
 				struct xa_window *wind = TOP_WINDOW;
-				wind->send_message(lock, TOP_WINDOW, NULL, AMQ_NORM, QMF_CHKDUP,
-						   WM_FULLED, 0, 0, wind->handle,
-						   0, 0, 0, 0);
-				return true;
+				short g = WGROW, s = key->raw.conin.state & (K_RSHIFT|K_LSHIFT);
+				RECT r = wind->r;
+				if( nk == NK_DOWN )
+					g = -g;
+				r.y -= g;
+				if( !s )
+				{
+					r.x -= g;
+					r.w += g * 4;
+					r.h += g * 2;
+					if( nk == NK_UP )
+					{
+						if (r.x < 0)
+							r.x = 0;
+						if (r.y < 0)
+							r.y = 0;
+						if( r.y + r.h > screen.r.h )
+							r.h = screen.r.h - r.y;
+						if( r.x + r.w > screen.r.w )
+							r.w = screen.r.w - r.x;
+					}
+					else if( nk == NK_DOWN )
+					{
+						if( r.w < WGROW * 8 )
+						{
+							r.x = wind->r.x;
+							r.w = wind->r.w;
+						}
+						if( r.h < WGROW * 10 )
+						{
+							r.y = wind->r.y;
+							r.h = wind->r.h;
+						}
+					}
+				}
+				if( r.y >= screen.r.h )
+					r.y = screen.r.h - WGROW;
+				wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
+							   s ? WM_MOVED : WM_SIZED, 0, 0, wind->handle,
+							   r.x, r.y, r.w, r.h);
 			}
-		}
-		break;
+		return true;
+		case NK_RIGHT:
+		case NK_LEFT:
+			if( TOP_WINDOW )
+			{
+				struct xa_window *wind = TOP_WINDOW;
+				short s = key->raw.conin.state & (K_RSHIFT|K_LSHIFT);
+				RECT r = wind->r;
+				if( !s )
+				{
+					short g = WGROW;
+					if( nk == NK_LEFT )
+						g = -g;
+					r.x -= g;
+					r.w += g * 2;
+					wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
+					   WM_SIZED, 0, 0, wind->handle,
+					   r.x, r.y, r.w, r.h);
+				}
+				else
+				{
+					if( nk == NK_RIGHT )
+					{
+						r.x += WGROW;
+						if( r.x >= screen.r.w )
+							return true;
+					}
+					else{
+						r.x -= WGROW;
+						if( r.x + wind->r.w <= 0 )
+							return true;
+					}
+					wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
+						   WM_MOVED, 0, 0, wind->handle,
+						   r.x, r.y, r.w, r.h);
+				}
+			}
+		return true;
 		case 'E':	/* open windows-submenu on top-window */
 
 		if( TOP_WINDOW && !C.update_lock )
@@ -624,6 +697,17 @@ otm:
 			hide_other(lock, focus_owner());
 			return true;
 		}
+		case 'U':
+		{
+			struct xa_window *wind;
+			wind = TOP_WINDOW;
+			if( wind )
+			{
+				wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
+							   WM_CLOSED, 0, 0, wind->handle, 0,0,0,0);
+			}
+			return true;
+		}
 		case 'V':				/* ctrl+alt+V, unhide all. */
 		{
 			unhide_all(lock, focus_owner());
@@ -674,7 +758,7 @@ keyboard_input(enum locks lock)
 
 	// this produces wheel-events on some F-keys (eg. S-F10)
 #if EIFFEL_SUPPORT
-		if ( cfg.eiffel_support && eiffel_wheel((unsigned short)key.raw.conin.scan & 0xff))
+		if ( !key.raw.conin.state && cfg.eiffel_support && eiffel_wheel((unsigned short)key.raw.conin.scan & 0xff))
 		{
 			if( f_instat(C.KBD_dev) )
 				continue;
