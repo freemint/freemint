@@ -447,7 +447,7 @@ calc_entry_wh(SCROLL_INFO *list, SCROLL_ENTRY *this)
 	bool fullredraw = false;
 	struct se_tab *tabs = list->tabs, *tab;
 	struct se_content *c = this->content;
-	short ew, eh, tw = 0, th = 0, nx = 0/*, ny = 0*/;
+	short ew, eh, tw = 0, th = 0;
 	char *s;
 	PRDEF( calc_entry_wh, text_extent);
 	PRDEF( calc_entry_wh, recalc_tabs);
@@ -532,8 +532,6 @@ calc_entry_wh(SCROLL_INFO *list, SCROLL_ENTRY *this)
 		if (th < eh)
 			th = eh;
 
-		nx += tab->r.w;
-
 		c = c->next;
 	}
 
@@ -542,6 +540,7 @@ calc_entry_wh(SCROLL_INFO *list, SCROLL_ENTRY *this)
 	this->r.w = tw;
 	if( this->r.h == 0 )
 		this->r.h = th;	/* dont change height */
+
 	//if (list->widest < tw)
 		//list->widest = list->total_w = tw;
 
@@ -669,6 +668,7 @@ draw_nesticon(struct xa_vdi_settings *v, short width, RECT *xy, SCROLL_ENTRY *th
 	return width;
 }
 
+static short ssel;
 static struct xa_fnt_info owtxt = {0};
 static void
 display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
@@ -684,12 +684,14 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 		struct xa_fnt_info *wtxt;
 		RECT r, clp;
 
+		if( TOP != 2 || ssel != sel )
 		{
 			(*v->api->wr_mode)(v, MD_REPLACE);
 			(*v->api->f_color)(v, sel ? G_BLACK : G_WHITE);
 			(*v->api->f_interior)(v, FIS_SOLID);
-			(*v->api->bar)(v, 0, xy->x, xy->y, xy->w, this->r.h);
+			ssel = sel;
 		}
+		(*v->api->bar)(v, 0, xy->x, xy->y, xy->w, this->r.h);
 
 		//(*v->api->t_effects)(v, 0);	/* restore just in case */
 
@@ -1123,6 +1125,7 @@ draw_slist(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *entry, const RECT *
 			no_icons = true;
 
 		memset( &owtxt, 0, sizeof(owtxt) );
+		ssel = -1;
 		v->font_rid = -1;
 		while (this && xy.y < (wind->wa.y + wind->wa.h))
 		{
