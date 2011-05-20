@@ -398,6 +398,14 @@ set_mouse_timeout( void _cdecl (*f)(PROC *, long arg), short make, short delta, 
 }
 
 
+static bool
+is_eiffel_mouse_key(ushort scan)
+{
+	return ((scan >= 0x59 && scan <= 0x5f) && scan != 0x5b)
+		|| scan == 0x37;
+}
+
+
 # ifndef MILAN
 static void put_key_into_buf(IOREC_T *iorec, uchar c0, uchar c1, uchar c2, uchar c3);
 static void
@@ -600,7 +608,8 @@ put_key_into_buf(IOREC_T *iorec, uchar c0, uchar c1, uchar c2, uchar c3)
 		last_key[2] = c2;
 		last_key[3] = c3;
 
-		kbdclick((ushort)c2);
+		if (!is_eiffel_mouse_key(c1))
+			kbdclick((ushort)c2);
 	}
 
 	kintr = 1;
@@ -954,16 +963,10 @@ IkbdScan(PROC *p, long arg)
 
 		scan = scancode & 0xff;
 
-		switch (scan)
+		if (is_eiffel_mouse_key(scan))
 		{
-			case 0x59:		/* Eiffel - mousewheel up */
-			case 0x5a:		/* Eiffel - mousewheel down */
-			case 0x5c:		/* Eiffel - mousewheel left */
-			case 0x5d:		/* Eiffel - mousewheel right */
-			{
-				put_key_into_buf(iorec, shift, (uchar)scan, 0, 0);
-				continue; //goto again;
-			}
+			put_key_into_buf(iorec, shift, (uchar)scan, 0, 0);
+			continue; //goto again;
 		}
 
 		/* This is set during various keyboard table initializations
