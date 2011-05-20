@@ -1573,12 +1573,25 @@ do_formwind_msg(
 
 		case WM_SIZED:
 		{
+			short n = 0;
 			/* if (!wind->nolist && (wind->active_widgets & SIZE)) */
 			{
-				if( msg[6] < wind->min.w || msg[7] < wind->min.h /*|| (msg[6] == wind->r.w && msg[7] == wind->r.h)*/ )
+				if( msg[6] < wind->min.w )
 				{
-					return;
+					msg[4] = wind->r.x;
+					msg[6] = wind->min.w;
+					n |= 1;
 				}
+
+				if( msg[7] < wind->min.h )
+				{
+					msg[5] = wind->r.y;
+					msg[7] = wind->min.h;
+					n |= 2;
+				}
+				if( n == 3 )
+					return;
+
 				/*
 				 * resize internal window (except fsel)
 				 * move window here, set RESIZED-flag, and recalc during redraw in draw_object_tree "on the fly"
