@@ -419,7 +419,7 @@ _kbdclick:
 	beq.s	L_pop
 	move.l	d0,a0
 	clr.l	d0
-	move.w	28(sp),d0	// scancode
+	move.w	64(sp),d0	// scancode
 	jsr	(a0)
 L_pop:	movem.l	(sp)+,d0-a6
 L_nocl:	rts
