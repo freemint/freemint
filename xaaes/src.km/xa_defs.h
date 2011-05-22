@@ -159,6 +159,8 @@
 #define MG	1 /*2*/			/* standard frame size for windows */
 
 
+#define TABSZ 4	/* tab-size for expanding \t in list-text */
+
 /*----------------------------------------------------------------- */
 /* Return codes in the clients reply pipe */
 #define XA_OK			0L	/* Ok, op-code done */
