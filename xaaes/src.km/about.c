@@ -171,10 +171,14 @@ static void file_to_list( SCROLL_INFO *list, char *fn, bool skip_hash)
 	for( lineno = 1; lineno < VIEW_MAX_LINES && (p = xa_readline( 0, 0, xa_fp )); lineno++ )
 	{
 		sc.t.text = p;
-		for( ; *p && *p <= ' '; p++ )
-		;
-		if( skip_hash == false || *p != '#' )
-			list->add(list, NULL, NULL, &sc, false, 0, false);
+		if( skip_hash == true )
+		{
+			for( ; *p && *p <= ' '; p++ )
+			;
+			if( *p != '#' )
+				continue;
+		}
+		list->add(list, NULL, NULL, &sc, false, 0, false);
 	}
 
 
@@ -240,10 +244,6 @@ open_about(enum locks lock, struct xa_client *client, bool open, char *fn)
 		if( client != C.Aes )
 			wt->flags |= WTF_TREE_CALLOC;
 
-		set_slist_object(0, wt, NULL, ABOUT_LIST, SIF_AUTOSLIDERS | SIF_INLINE_EFFECTS | SIF_AUTOSELECT,
-				 NULL, NULL, NULL, NULL, NULL, NULL,
-				 NULL, NULL, NULL, NULL,
-				 NULL, NULL, NULL, 255);
 		obj_init_focus(wt, OB_IF_RESET);
 
 		obj_rectangle(wt, aesobj(obtree, 0), &or);
@@ -276,6 +276,11 @@ open_about(enum locks lock, struct xa_client *client, bool open, char *fn)
 
 		wind->min.h = wind->r.h;//MINOBJMVH * 3;	/* minimum height for this window */
 		wind->min.w = wind->r.w;	/* minimum width for this window */
+
+		set_slist_object(0, wt, wind, ABOUT_LIST, SIF_AUTOSLIDERS | SIF_INLINE_EFFECTS | SIF_AUTOSELECT,
+				 NULL, NULL, NULL, NULL, NULL, NULL,
+				 NULL, NULL, NULL, NULL,
+				 NULL, NULL, NULL, 255);
 
 		(obtree + ABOUT_INFOSTR)->ob_spec.free_string = "\0";
 		if( !view_file )
@@ -374,7 +379,7 @@ open_about(enum locks lock, struct xa_client *client, bool open, char *fn)
 		htd->w_about = wind;
 	if (open)
 	{
-		open_window(lock, wind, wind->r); //remember);
+		open_window(lock, wind, wind->r);
 		force_window_top( lock, wind );
 	}
 	return;
