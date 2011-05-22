@@ -29,6 +29,7 @@ SPACE         Open main menu bar
 SHIFT+SPACE   Open menu in current window if it has one,
               else open main menubar
 TAB           Cycle open applications
+
 INS           Full current window
 CURSOR-UP     Grow current window
 CURSOR-DOWN   Shrink current window
@@ -59,6 +60,14 @@ ALT+ " + "    Increase the fontsize in listbox
 ALT+ " - "    Decrease the fontsize in listbox
 
 CTRL+SPACE    Reverse sort-order
+
+-------------------------------------------------------
+
+Shortcuts for all list-windows:
+
+SHIFT+
+ CURSOR-UP/DOWN             Page up/down
+ CURSOR-LEFT/RIGHT          Page left/right
 
 * List-box selected:
 
