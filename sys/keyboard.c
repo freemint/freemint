@@ -433,6 +433,7 @@ kbd_repeat(PROC *p, long arg)
 #endif
 	repeat_pid = curproc->pid;
 	put_key_into_buf(last_iorec, last_key[0], last_key[1], last_key[2], last_key[3]);
+	kbdclick(last_key[1]);
 	k_to = addroottimeout(keyrep_time, kbd_repeat, 1);
 }
 
@@ -639,9 +640,6 @@ put_key_into_buf(IOREC_T *iorec, uchar c0, uchar c1, uchar c2, uchar c3)
 		last_key[1] = c1;
 		last_key[2] = c2;
 		last_key[3] = c3;
-
-		if (!is_eiffel_mouse_key(c1))
-			kbdclick(c1);
 	}
 
 	kintr = 1;
@@ -1076,6 +1074,7 @@ IkbdScan(PROC *p, long arg)
 						numin[0] = 0;
 
 						put_key_into_buf(iorec, 0, 0, 0, (uchar)ascii_c);
+						kbdclick(0);
 					}
 				}
 				break;
@@ -1358,6 +1357,8 @@ IkbdScan(PROC *p, long arg)
 			}
 			else
 				put_key_into_buf(iorec, shift, (uchar)scan, 0, ascii);
+
+			kbdclick(scan);
 		}
 #ifndef MILAN
 		set_keyrepeat_timeout(make);
