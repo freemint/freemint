@@ -38,6 +38,8 @@
 	.globl	_uptimetick
 	.globl	_checkbttys_vbl
 
+//	.globl	_iplpop
+
 // AKP: this code is hit once every 5ms
 // it updates the time fields of curproc.
 
@@ -100,7 +102,7 @@ L_no_profile:
 	subq.w	#0x01,vblcnt		// each fourth interrupt makes a "VBL"
 	bne.s	L_novbl
 	move.w	#0x0004,vblcnt
-	
+
 	tst.w	(0x059e).w
 	beq.s	L_short_1
 	clr.w	-(sp)			// set up a jump to VBL emulation
@@ -193,6 +195,7 @@ skip:	move.w	(0x0442).w,d0
 // "VBL" things go here (50 times per second at IPL 3)
 
 txit:	btst	#2,24(sp)		// don't perform if saved IPL is higher than 3 (bit 2 set)
+
 	bne.s	L_popnout
 	move.w	#0x2400,sr		// lower the current IPL
 
@@ -229,6 +232,7 @@ L_popnout:	movem.l	(sp)+,d0-d2/a0-a2
 #ifdef M68000
 	nop
 #endif
+//	move.w	#1,_iplpop
 	rte
 
 // Process' time has expired, check if we can preempt
@@ -419,7 +423,7 @@ _kbdclick:
 	beq.s	L_pop
 	move.l	d0,a0
 	clr.l	d0
-	move.w	28(sp),d0	// scancode
+	move.w	64(sp),d0	// scancode
 	jsr	(a0)
 L_pop:	movem.l	(sp)+,d0-a6
 L_nocl:	rts

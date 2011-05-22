@@ -641,7 +641,7 @@ put_key_into_buf(IOREC_T *iorec, uchar c0, uchar c1, uchar c2, uchar c3)
 		last_key[3] = c3;
 
 		if (!is_eiffel_mouse_key(c1))
-			kbdclick((ushort)c2);
+			kbdclick(c1);
 	}
 
 	kintr = 1;
