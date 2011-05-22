@@ -3,7 +3,7 @@
 #
 
 SHELL = /bin/sh
-SUBDIRS = ethernat
+SUBDIRS = ethernat netusbee
 
 srcdir = .
 top_srcdir = ../../..
