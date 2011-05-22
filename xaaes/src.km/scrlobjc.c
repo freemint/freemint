@@ -55,7 +55,7 @@
 # define memcpy __builtin_memcpy
 # define _Pmemcpy _P__builtin_memcpy
 # else
-void* memcpy (void*  __dest, const void*  __src, size_t __n);
+void* memcpy (void*  __dest, const void* __src, size_t __n);
 # endif
 
 #else
@@ -175,7 +175,6 @@ next_entry(SCROLL_ENTRY *this, short flags, short maxlevel, short *level)
 						this = NULL, lev++;
 					else if ((this = this->up))
 					{
-// 						this = this->up;
 						while (this)
 						{
 							if (this->next)
@@ -241,7 +240,6 @@ next_entry(SCROLL_ENTRY *this, short flags, short maxlevel, short *level)
 						this = NULL, lev++;
 					else if ((this = this->up))
 					{
-// 						this = this->up;
 						while (this)
 						{
 							if (this->next)
@@ -338,8 +336,7 @@ check_movement(SCROLL_INFO *list)
 	x = obtree->ob_x + list->rel_x;
 	y = obtree->ob_y + list->rel_y;
 
-	if (x != wind->rc.x ||
-	    y != wind->rc.y )
+	if (x != wind->rc.x || y != wind->rc.y )
 	{
 		wind->r.x = wind->rc.x = x;
 		wind->r.y = wind->rc.y = y;
@@ -406,13 +403,11 @@ recalc_tabs(struct scroll_info *list)
 			if ((listw - tmp) < 0)
 			{
 				tabs->r.w = 4;
-// 				listw = 0;
 			}
 			else
 			{
 
 				tabs->r.w = tmp;
-// 				listw -= tmp;
 			}
 		}
 		else if (!tabs->v.w)
@@ -435,10 +430,21 @@ recalc_tabs(struct scroll_info *list)
 		totalw += tabs->r.w;
 	}
 
-	if (list->widest == 0 || list->widest < totalw)
+	if (list->widest < totalw)
 		list->widest = list->total_w = totalw;
 
+}
 
+static short calc_len(char *s)
+{
+	short r = 0;
+	for( ; *s; s++ )
+		if( *s == '\t' )
+			r = (r / TABSZ + 1) * TABSZ;
+		else
+			r++;
+
+	return r;
 }
 
 static bool
@@ -461,7 +467,18 @@ calc_entry_wh(SCROLL_INFO *list, SCROLL_ENTRY *this)
 				short l = 0;
 				s = c->c.text.text;
 				if( s )
-					l = c->c.text.slen;
+				{
+					if( (list->flags & SIF_INLINE_EFFECTS) )
+					{
+						/*
+						 * include (inline-)tabs
+						 */
+						l = calc_len(s);
+					}
+					else
+						l = c->c.text.slen;
+				}
+
 
 				if( list->char_width )
 				{
@@ -513,17 +530,11 @@ calc_entry_wh(SCROLL_INFO *list, SCROLL_ENTRY *this)
 		}
 
 		tab = &tabs[c->index];
-		if( list->flags & SIF_INLINE_EFFECTS )
-		{
-			if (tab->r.w == 0)
-			{
-					tab->r.w = list->wi->rwa.w;
-			}
-		}
-		else if (tab->r.w < ew)
+		if (tab->r.w < ew)
 		{
 			tab->r.w = ew + 3;
-			PROFRECv(recalc_tabs,(list));
+			if( !(list->flags & SIF_INLINE_EFFECTS) )
+				PROFRECv(recalc_tabs,(list));
 			fullredraw = true;
 		}
 
@@ -939,7 +950,6 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 
 							(*v->api->t_color)(v, wtxt->fgc);
 
-#define TABSZ	4
 							if( list->flags & SIF_INLINE_EFFECTS )
 							{
 								bool cont = true;
@@ -1154,12 +1164,15 @@ draw_slist(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *entry, const RECT *
 			(*v->api->f_color)(v, G_WHITE);
 			(*v->api->bar)(v, 0, xy.x, xy.y, xy.w, xy.h);
 
-		  list->flags &= ~SIF_DIRTY;
+			list->flags &= ~SIF_DIRTY;
 		}
 		(*v->api->set_clip)(v, clip);
 	}
 
 }
+static short
+find_widest(SCROLL_INFO *list, SCROLL_ENTRY *start);
+
 /*
  * Reset listwindow's widgets according to contents
  */
@@ -1212,6 +1225,12 @@ reset_listwi_widgets(SCROLL_INFO *list, short redraw)
 		if (rdrw || (tp != list->wi->active_widgets))
 		{
 			change_window_attribs(0, list->wi->owner, list->wi, tp, false, false, 0, list->wi->r, NULL);
+			if (list->flags & SIF_TREEVIEW)
+			{
+				list->widest = find_widest(list, NULL);
+				if( list->tabs[1].r.w == 0 )
+					list->tabs[0].r.w = list->widest;
+			}
 			recalc_tabs(list);
 			if (canredraw(list))
 			{
@@ -1347,7 +1366,7 @@ hidden_entry(SCROLL_ENTRY *this)
 	{
 		if (!(this->xstate & OS_OPENED))
 		{
-			hidden =  true;
+			hidden = true;
 			break;
 		}
 		this = this->up;
@@ -1481,7 +1500,7 @@ slist_redraw(SCROLL_INFO *list, SCROLL_ENTRY *entry)
 		}
 		(*wind->vdi_settings->api->clear_clip)(wind->vdi_settings);
 		if (!entry){
-		  list->flags &= ~SIF_DIRTY;
+			list->flags &= ~SIF_DIRTY;
 		}
 		showm();
 	}
@@ -1571,7 +1590,6 @@ alloc_entry_wtxt(struct scroll_entry *entry, struct xa_wtxt_inf *newwtxt)
 				set_font(&newwtxt->s, &entry->fnt->s, &default_fnt.s);
 				set_font(&newwtxt->h, &entry->fnt->h, &default_fnt.h);
 
-// 				*entry->fnt = *newwtxt;
 			}
 			else if (old)
 				*entry->fnt = *old;
@@ -1734,13 +1752,12 @@ insert_se_content(struct scroll_entry *this, struct se_content *this_sc, short i
 	struct se_content *sc = this->content;
 	short last_idx;
 
-// 	ndisplay("ins_se_cont");
+//	ndisplay("ins_se_cont");
 
 	this_sc->index = index;
 
 	if (!sc)
 	{
-// 		ndisplay(" first");
 		this->content = this_sc;
 		last_idx = index;
 	}
@@ -1750,7 +1767,6 @@ insert_se_content(struct scroll_entry *this, struct se_content *this_sc, short i
 		{
 			sc = sc->next;
 		}
-// 		ndisplay(" last_idx = %d, index %d", last_idx, index);
 
 		/*
 		 * If we got to the index, we insert before
@@ -1792,7 +1808,6 @@ insert_se_content(struct scroll_entry *this, struct se_content *this_sc, short i
 			sc->next = this_sc;
 		}
 	}
-// 	display("done");
 }
 #endif
 static void
@@ -1892,7 +1907,7 @@ new_seicon(OBJECT *icon)
 {
 	struct se_content *new;
 
- 	if ((new = kmalloc(sizeof(*new))))
+	if ((new = kmalloc(sizeof(*new))))
 	{
 		/*bzero(new, sizeof(*new)); xaaes_kmalloc zeros */
 		new->c.icon.icon = icon;
@@ -2037,7 +2052,6 @@ set(SCROLL_INFO *list,
 					entry = next_entry(entry, flags, maxlevel, &p->level.curlevel);
 				while (entry)
 				{
-// 					display("flags %x, mxl %d, curl %d", p->level.flags, p->level.maxlevel, p->level.curlevel);
 					state = entry->state;
 					state &= p->arg.state.mask;
 					state |= p->arg.state.bits;
@@ -2060,7 +2074,6 @@ m_state_done:
 			if (entry->iflags & SEF_WTXTALLOC)
 			{
 				set_font(f, &entry->fnt->n, NULL);
-// 				entry->fnt->n = *f;
 			}
 				else ret = 0;
 			break;
@@ -2072,7 +2085,6 @@ m_state_done:
 			if (entry->iflags & SEF_WTXTALLOC)
 			{
 				set_font(f, &entry->fnt->s, NULL);
-// 				entry->fnt->s = *f;
 			}
 				else ret = 0;
 			break;
@@ -2084,7 +2096,6 @@ m_state_done:
 			if (entry->iflags & SEF_WTXTALLOC)
 			{
 				set_font(f, &entry->fnt->h, NULL);
-// 				entry->fnt->h = *f;
 			}
 				else ret = 0;
 			break;
@@ -2134,7 +2145,8 @@ m_state_done:
 						if ((r.w || r.h))
 						{
 							list->total_h += (r.h - entry->r.h);
-// 							list->total_w = list->widest = find_widest(list, NULL);
+							if (list->flags & SIF_TREEVIEW)
+								list->total_w = list->widest = find_widest(list, NULL);
 							if (!reset_listwi_widgets(list, rdrw))
 							{
 								if ((r.y + entry->r.h) < list->start_y)
@@ -2182,10 +2194,10 @@ m_state_done:
 					entry->xstate = xstate;
 					if (entry->down)
 					{
-						if ((r.w | r.h))
+						if ((r.w || r.h))
 						{
 							list->total_h -= (r.h - entry->r.h);
-// 							list->total_w = list->widest = find_widest(list, NULL);
+							list->total_w = list->widest = find_widest(list, NULL);
 							if (!reset_listwi_widgets(list, rdrw))
 							{
 								if ((r.y + r.h) < list->start_y)
@@ -4774,12 +4786,6 @@ slist_msg_handler(
 // 		display("resize slist wind");
 
 		move_window(0, wind, false, -1, msg[4], msg[5], msg[6], msg[7]);
- 		if( list->tabs && (list->flags & SIF_INLINE_EFFECTS) )
- 			list->tabs[0].r.w = wind->rwa.w;
-		if( (list->flags & SIF_TREEVIEW) )
-		{
-			recalc_tabs(list);
-		}
 		reset_listwi_widgets(list, false);
 		list->slider(list, false);
 		break;
@@ -4795,6 +4801,9 @@ slist_msg_handler(
 unsigned short
 scrl_cursor(SCROLL_INFO *list, unsigned short keycode, unsigned short keystate)
 {
+
+	short msg[8] = { WM_ARROWED,0,0,list->wi->handle,0,0,0,0 };
+
 	switch (key_conv(list->wi->owner, keycode))
 	{
 	case SC_SPACE:
@@ -4818,7 +4827,7 @@ scrl_cursor(SCROLL_INFO *list, unsigned short keycode, unsigned short keystate)
 	{
 		if (!list->cur)
 		{
-			short msg[8] = { WM_ARROWED,0,0,list->wi->handle,WA_UPLINE,0,0,0 };
+			msg[4] = WA_UPLINE;
 			slist_msg_handler(list->wi, NULL, AMQ_NORM, QMF_CHKDUP, msg);
 		}
 		else
@@ -4850,7 +4859,7 @@ scrl_cursor(SCROLL_INFO *list, unsigned short keycode, unsigned short keystate)
 	{
 		if (!list->cur)
 		{
-			short msg[8] = { WM_ARROWED,0,0,list->wi->handle,WA_DNLINE,0,0,0 };
+			msg[4] = WA_DNLINE;
 			slist_msg_handler(list->wi, NULL, AMQ_NORM, QMF_CHKDUP, msg);
 		}
 		else
@@ -4877,9 +4886,9 @@ scrl_cursor(SCROLL_INFO *list, unsigned short keycode, unsigned short keystate)
 	}
 	case SC_LFARROW: /* 0x4B00 */			/* left arrow */
 	{
-		if (!list->cur)
+		if ( !(list->flags & SIF_TREEVIEW) || !list->cur)
 		{
-			short msg[8] = { WM_ARROWED,0,0,list->wi->handle,WA_LFLINE,0,0,0 };
+			msg[4] = WA_LFLINE;
 			slist_msg_handler(list->wi, NULL, AMQ_NORM, QMF_CHKDUP, msg);
 		}
 		else
@@ -4902,6 +4911,7 @@ scrl_cursor(SCROLL_INFO *list, unsigned short keycode, unsigned short keystate)
 		}
 		break;
 	}
+#if 0
 	case SC_CTRL_LFARROW: /* 0x7300 */	/* CTLR + left arrow */
 	{
 		if (list->cur)
@@ -4917,12 +4927,13 @@ scrl_cursor(SCROLL_INFO *list, unsigned short keycode, unsigned short keystate)
 		}
 		break;
 	}
+#endif
 	case SC_RTARROW: /* 0x4D00 */		/* Right arrow */
 	{
 		struct scroll_entry *cur;
-		if (!(cur = list->cur))
+		if ( !(list->flags & SIF_TREEVIEW) || !(cur = list->cur))
 		{
-			short msg[8] = { WM_ARROWED,0,0,list->wi->handle,WA_RTLINE,0,0,0 };
+			msg[4] = WA_RTLINE;
 			slist_msg_handler(list->wi, NULL, AMQ_NORM, QMF_CHKDUP, msg);
 		}
 		else
@@ -4966,8 +4977,8 @@ scrl_cursor(SCROLL_INFO *list, unsigned short keycode, unsigned short keystate)
 	case SC_PGUP:		/* 0x4900 */	/* page up */
 	case SC_SHFT_UPARROW:	/* 0x4838 */	/* shift + up arrow */
 	{
-		short msg[8] = { WM_ARROWED,0,0,list->wi->handle,WA_UPPAGE,0,0,0 };
 
+		msg[4] = WA_UPPAGE;
 		if (list->cur)
 			list->set(list, NULL, SESET_UNSELECTED, UNSELECT_ALL, NORMREDRAW);
 
@@ -4982,7 +4993,7 @@ scrl_cursor(SCROLL_INFO *list, unsigned short keycode, unsigned short keystate)
 	case SC_SHFT_DNARROW:	/* 0x5032 */ 	/* shift + down arrow */
 	case SC_PGDN:		/* 0x5100 */	/* page down */
 	{
-		short msg[8] = { WM_ARROWED,0,0,list->wi->handle,WA_DNPAGE,0,0,0 };
+		msg[4] = WA_DNPAGE;
 		if (list->cur)
 			list->set(list, NULL, SESET_UNSELECTED, UNSELECT_ALL, NORMREDRAW);
 		slist_msg_handler(list->wi, NULL, AMQ_NORM, QMF_CHKDUP, msg);
@@ -4992,6 +5003,15 @@ scrl_cursor(SCROLL_INFO *list, unsigned short keycode, unsigned short keystate)
 		}
 		break;
 	}
+
+	case SC_SHFT_RTARROW:		// page right
+		msg[4] = WA_RTPAGE;
+	case SC_SHFT_LFARROW:		// page left
+		if( msg[4] == 0 )
+			msg[4] = WA_LFPAGE;
+		slist_msg_handler(list->wi, NULL, AMQ_NORM, QMF_CHKDUP, msg);
+	break;
+
 	case SC_CLRHOME:	/* 0x4700 */	/* home */
 	{
 		//if (list->cur)
