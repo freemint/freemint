@@ -593,7 +593,6 @@ k_init(unsigned long vm)
 	c_conws("\033E\033f");		/* Clear screen, cursor home (for WongCKs falcon) and cursor off */
 
 	/* try to open virtual wk - necessary when physical wk is already open
-	 * ? how to know if physical wk is open and its handle without AES?
 	 */
 	v->handle = 0;
 
