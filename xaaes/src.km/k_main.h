@@ -66,6 +66,7 @@ void _cdecl ce_dispatch_shutdown(enum locks l, struct xa_client *client, bool b)
 void k_main(void *);
 
 extern int aessys_timeout;
+extern int ferr;
 
 #if CHECK_STACK
 /* Read the current stack pointer value */
