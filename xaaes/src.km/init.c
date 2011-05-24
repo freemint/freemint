@@ -300,7 +300,6 @@ unsigned short stack_align = 0;
  */
 static Path start_path;
 static const struct kernel_module *self = NULL;
-extern int ferr;	//k_main
 
 long
 init(struct kentry *k, const struct kernel_module *km) //const char *path)
