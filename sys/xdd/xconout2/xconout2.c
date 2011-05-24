@@ -235,12 +235,12 @@ printc (register long c)
 	
 	__asm__ volatile
 	(
-		"moveml d0-d7/a0-a6,sp@-;"
-		"movl %1,sp@-;"
-		"movl _oldxconout2, a0;"
-		"jbsr a0@;"
-		"addqw #4,sp;"
-		"moveml sp@+,d0-d7/a0-a6;"
+		PUSH_SP("d0-d7/a0-a6", 60)
+		"movl	%1,sp@-\n\t"
+		"movl	_oldxconout2,a0\n\t"
+		"jbsr	a0@\n\t"
+		"addql	#4,sp\n\t"
+		POP_SP("d0-d7/a0-a6", 60)
 		: "=r" (r)			/* outputs */
 		: "g" (c)			/* inputs  */
 	);
