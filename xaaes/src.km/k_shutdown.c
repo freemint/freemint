@@ -294,7 +294,8 @@ k_shutdown(void)
 #endif
 		}
 
-		c_conws("\033e\033E");		/* Cursor enable, cursor home */
+		if( !ferr )
+			c_conws("\033e\033E");		/* Cursor enable, cursor home */
 	}
 	BLOG((false, "leaving k_shutdown()"));
 }
