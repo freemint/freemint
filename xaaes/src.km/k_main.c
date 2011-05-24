@@ -1648,7 +1648,7 @@ k_main(void *dummy)
 	if (!(next_res & 0x80000000))
 		next_res = cfg.videomode;
 
-	if (k_init(next_res) != 0)
+	if ((ferr = k_init(next_res)) != 0)
 	{
 		display(/*00000013*/"ERROR: k_init failed!");
 		goto leave;
