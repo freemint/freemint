@@ -175,7 +175,7 @@ static void file_to_list( SCROLL_INFO *list, char *fn, bool skip_hash)
 		{
 			for( ; *p && *p <= ' '; p++ )
 			;
-			if( *p != '#' )
+			if( *p == '#' )
 				continue;
 		}
 		list->add(list, NULL, NULL, &sc, false, 0, false);
