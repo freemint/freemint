@@ -918,7 +918,7 @@ k_init(unsigned long vm)
 					  DU_RSX_CONV, // screen.c_max_w, // < 8 ? 8 : screen.c_max_w,
 					  DU_RSY_CONV, //screen.c_max_h, // < 16 ? 16 : screen.c_max_h); //DU_RSX_CONV, DU_RSY_CONV);
 					  true);
-		BLOG((false, "system resource = %lx (%s)", C.Aes_rsc, resource_name));
+		BLOG((true, "system resource = %lx (%s)", C.Aes_rsc, resource_name));
 		kfree(resource_name);
 	}
 	if (!C.Aes_rsc)
