@@ -3544,6 +3544,9 @@ obj_ed_char(
 
 		key = keycode & 0xff;
 
+		if( key == 0 )
+			return false;	// bug #0000168
+
 		if ((n = strlen(ted->te_pvalid) - 1) < 0)
 		{
 			txt[ted->te_txtlen - 2] = '\0';
