@@ -1032,6 +1032,18 @@ Exit_form_do( struct xa_client *client,
 				client->alert = NULL;
 			close_window(lock, wind);
 			delayed_delete_window(lock, wind);
+			{
+			struct xa_client *n = 0;
+			if( !( wind->owner == C.Aes || wind->owner == C.Hlp) )
+				n = wind->owner;
+			else if( wind->next )
+				n = wind->next->owner;
+			if( n )
+			{
+				app_in_front(lock, n, true, true, true);
+			}
+			}
+
 		}
 #endif
 		else if (wind == client->fmd.wind)
