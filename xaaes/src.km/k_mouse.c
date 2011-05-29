@@ -25,6 +25,7 @@
  */
 
 #include "k_mouse.h"
+#include "k_keybd.h"
 #include "xa_global.h"
 #include "c_mouse.h"
 #include "xa_graf.h"
@@ -701,6 +702,7 @@ XA_wheel_event(enum locks lock, const struct moose_data *md)
 
 	DIAGS(("mouse wheel %d has wheeled %d (x=%d, y=%d)", md->state, md->clicks, md->x, md->y));
 
+	toggle_menu(lock, -2);
 	/*
 	 * Ozk: For now we send wheel events to the owner of the window underneath the mouse
 	 * in all cases except when owner of mouse_lock() is waiting for MU_WHEEL.
@@ -741,6 +743,9 @@ XA_wheel_event(enum locks lock, const struct moose_data *md)
 	}
 	locker = C.mouse_lock ? get_mouse_locker() : NULL;
 	wind = find_window(lock, md->x, md->y, FNDW_NOLIST|FNDW_NORMAL);
+	if( cfg.menu_bar && wind->r.y < screen.c_max_h + 2 )
+		toggle_menu(lock, -2);
+
 
 	client = wind == root_window ? get_desktop()->owner : (wind ? wind->owner : NULL);
 

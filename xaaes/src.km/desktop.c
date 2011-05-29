@@ -34,6 +34,7 @@
 #include "xa_global.h"
 
 #include "app_man.h"
+#include "xa_appl.h"
 #include "c_window.h"
 #include "rectlist.h"
 #include "k_main.h"
@@ -150,9 +151,17 @@ Set_desktop(XA_TREE *new_desktop)
 {
 	OBJECT *ob; RECT r;
 	XA_WIDGET *wi = get_widget(root_window, XAW_TOOLBAR);
+	short menu_bar = 0;
 
 	/* Set the desktop */
 
+	/* temporarily switch menubar off to set root-object of desktop to secreen-size (works with teradesk) */
+	if( cfg.menu_bar && new_desktop->owner != C.Aes )
+	{
+		menu_bar = cfg.menu_bar;
+		cfg.menu_bar = 0;
+		set_standard_point( new_desktop->owner );
+	}
 	if (wi->stuff)
 	{
 		((XA_TREE *)wi->stuff)->widg = NULL;
@@ -168,7 +177,6 @@ Set_desktop(XA_TREE *new_desktop)
 	ob = new_desktop->tree;
 	*(RECT *)&ob->ob_x = root_window->wa;
 	r = *(RECT*)&ob->ob_x;
-
 	/* Now use the root window's auto-redraw function to redraw it
 	 *
 	 * HR: 110601 fixed erroneous use owner->wt.
@@ -186,6 +194,11 @@ Set_desktop(XA_TREE *new_desktop)
 	wi->stufftype = STUFF_IS_WT;
 	wi->m.destruct = free_xawidget_resources;
 
+	if( menu_bar && new_desktop->owner != C.Aes )
+	{
+		cfg.menu_bar = menu_bar;
+		set_standard_point( new_desktop->owner );
+	}
 	//send_iredraw(0, root_window, 0, NULL);
 }
 static void

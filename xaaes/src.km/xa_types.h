@@ -2991,6 +2991,8 @@ struct config
 	bool opentaskman;		/* open taskmanager at boot. */
 
 	short alert_winds;		/* If set, alert windows are shown */
+	short back_col;       /* if set, use for background */
+	short menu_bar;				/* If 0 don't draw main-menubar */
 
 	char cancel_buttons[NUM_CB][CB_L];
 	struct keyboards keyboards;
