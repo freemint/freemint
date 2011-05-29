@@ -259,22 +259,22 @@ XA_slider(struct xa_window *w, int which, long total, long visible, long start)
 	return ret;
 }
 
-/* 32768: don't care */
+/* 32678: don't care */
 bool
 m_inside(short x, short y, RECT *o)
 {
-	if( x != 32768 && y != 32768 )
+	if( x != 32678 && y != 32678 )
 		return (   x >= o->x
 		&& y >= o->y
 		&& x <  o->x+o->w
 		&& y <  o->y+o->h);
 
-	else if( y != 32768 )
+	else if( y != 32678 )
 		return (
 		y >= o->y
 		&& y <  o->y+o->h);
 
-	else if( x != 32768 )
+	else if( x != 32678 )
 		return ( x >= o->x
 		&& x <  o->x+o->w );
 
