@@ -899,6 +899,7 @@ menu_pop(Tab *tab)
 	return tab;
 }
 
+
 /*
  * This is always called to end a menu navigation session
 */
@@ -955,6 +956,7 @@ menu_finish(struct task_administration_block *tab)
 		}
 		unlock_menustruct(proc);
 	}
+	toggle_menu(0, -2);
 }
 
 Tab *
@@ -1576,7 +1578,6 @@ menu_bar(struct task_administration_block *tab, short item)
 	dx = k->m.wt->dx;
 	dy = k->m.wt->dy;
 	k->m.wt->dx = k->m.wt->dy = 0;
-
 	if (item == -1)
 		title = find_menu_object(k->m.wt, k->m.titles, k->rdx, k->rdy, k->x, k->y, &k->bar);
 	else if (item == -2)
@@ -2209,15 +2210,21 @@ keyboard_menu_widget(enum  locks lock, struct xa_window *wind, struct xa_widget 
 		if (client == C.Aes)
 		{
 			if (client->tp != p)
+			{
 				return false;
+			}
 		}
 		else if (client->p != p)
+		{
 			return false;
+		}
 
 		if ( widg->stuff == get_menu())
 		{
 			if ( !lock_menustruct(client->p, true) )
+			{
 				return false;
+			}
 		}
 		((XA_TREE *)widg->stuff)->owner->status |= CS_MENU_NAV;
 
@@ -2234,7 +2241,7 @@ keyboard_menu_widget(enum  locks lock, struct xa_window *wind, struct xa_widget 
 	return false;
 
 }
-/* Changed! */
+
 static bool
 menu_title(enum locks lock, Tab *tab, short title, struct xa_window *wind, XA_WIDGET *widg, int locker, const struct moose_data *md)
 {
@@ -2246,6 +2253,9 @@ menu_title(enum locks lock, Tab *tab, short title, struct xa_window *wind, XA_WI
 	short f, n;
 
 	DIAG((D_menu, NULL, "menu_title: tab=%lx, md=%lx", tab, md));
+
+	if( widg->wind == root_window && cfg.menu_bar == 0 )
+		return false;
 	if (!tab)
 	{
 		tab = nest_menutask(NULL);

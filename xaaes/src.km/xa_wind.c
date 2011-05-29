@@ -262,6 +262,7 @@ setget(int i)
 }
 #endif /* GENERATE_DIAGS */
 
+
 unsigned long
 XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 {
@@ -558,7 +559,10 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			DIAGS(("wind_set: WF_CURRXYWH - (%d/%d/%d/%d) blit=%s, ir=%lx",
 				*(const RECT *)(pb->intin + 2), blit ? "yes":"no", ir));
 
-			blit = true;
+			if( w->rc.y > root_window->wa.y )
+			{
+				blit = true;
+			}
 		}
 
 		if (!move)
