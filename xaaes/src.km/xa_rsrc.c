@@ -97,7 +97,6 @@ obfix(OBJECT *tree, short object, short designWidth, short designHeight)
 	}
 	else
 	{
-
 		fixupobj(&ob->ob_width, x_fact, designWidth);
 	}
 
@@ -968,8 +967,11 @@ fix_objects(struct xa_client *client,
 			case G_BOX:
 				if( client->options.rsc_lang == WRITE )
 				{
-					if( scan.title >= 0 && scan.title < MAX_TITLES )
-						scan.title++;
+					if( scan.title >= 0 )
+					{
+						if( scan.title < MAX_TITLES )
+							scan.title++;
+					}
 					else
 					{
 						if( obj->ob_next == -1 )
@@ -1132,8 +1134,6 @@ fix_trees(struct xa_client *client, void *b, OBJECT **trees, unsigned long n, sh
 				/* Standard AES menu */
 				j = 0;
 				do {
-					DIAGS((" -- obj %d, type %x (n=%d, h=%d, t=%d)",
-						j, obj->ob_type, obj->ob_next, obj->ob_head, obj->ob_tail));
 					obfix(obj, j, designWidth, designHeight);
 				}
 				while (!(obj[j++].ob_flags & OF_LASTOB));
