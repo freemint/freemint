@@ -259,13 +259,26 @@ XA_slider(struct xa_window *w, int which, long total, long visible, long start)
 	return ret;
 }
 
+/* 32768: don't care */
 bool
 m_inside(short x, short y, RECT *o)
 {
-	return (   x >= o->x
+	if( x != 32768 && y != 32768 )
+		return (   x >= o->x
 		&& y >= o->y
 		&& x <  o->x+o->w
 		&& y <  o->y+o->h);
+
+	else if( y != 32768 )
+		return (
+		y >= o->y
+		&& y <  o->y+o->h);
+
+	else if( x != 32768 )
+		return ( x >= o->x
+		&& x <  o->x+o->w );
+
+	return false;
 }
 
 /*
@@ -940,7 +953,8 @@ CE_redraw_menu(enum locks lock, struct c_event *ce, bool cancel)
 
 		if (ce->client == mc)
 		{
-			display_widget(lock, root_window, widg, NULL);
+			struct xa_rect_list rl = {0, {0, 0, screen.r.w, screen.r.h} };	//!
+			display_widget(lock, root_window, widg, &rl);
 		}
 	#if 1
 		else
@@ -958,6 +972,7 @@ CE_redraw_menu(enum locks lock, struct c_event *ce, bool cancel)
 	#endif
 	}
 }
+
 /*
  * Ozk: redraw menu need to check the owner of the menu object tree
  * and draw it in the right context.
@@ -968,6 +983,8 @@ redraw_menu(enum locks lock)
 	struct xa_client *rc, *mc;
 	struct xa_widget *widg;
 
+	if( cfg.menu_bar == 0 )
+		return;
 	rc = lookup_extension(NULL, XAAES_MAGIC);
 	if (!rc)
 		rc = C.Aes;
@@ -984,17 +1001,18 @@ redraw_menu(enum locks lock)
 	DIAGS(("redaw_menu: widg owner = %s", mc->name));
 
 	/* in single-mode display only menu of single-app */
-	if( C.SingleTaskPid > 0 && mc->p->pid != C.SingleTaskPid )
+	if( cfg.menu_bar == 0 || (C.SingleTaskPid > 0 && mc->p->pid != C.SingleTaskPid) )
 		return;
 
 	if (mc == rc || mc == C.Aes)
 	{
+		struct xa_rect_list rl = {0, {0, 0, screen.r.w, screen.r.h} };	// menubar always top
 		if (C.update_lock && C.update_lock != rc->p)
 		{
 			return;
 		}
 
-		display_widget(lock, root_window, widg, NULL);
+		display_widget(lock, root_window, widg, &rl);
 	}
 	else
 	{
@@ -1257,34 +1275,34 @@ shade_action(enum locks lock, struct xa_window *wind)
 {
 	if (wind->active_widgets & (MOVER|NAME))
 	{
-	if (!(wind->window_status & XAWS_ZWSHADED))
-	{
-		if ((wind->window_status & XAWS_SHADED))
+		if (!(wind->window_status & XAWS_ZWSHADED))
 		{
-			if (wind->send_message)
+			if ((wind->window_status & XAWS_SHADED))
 			{
-				DIAGS(("Click_title: unshading window %d for %s",
-					wind->handle, wind->owner->name));
+				if (wind->send_message)
+				{
+					DIAGS(("Click_title: unshading window %d for %s",
+						wind->handle, wind->owner->name));
 
-				wind->send_message(lock, wind, NULL, AMQ_CRITICAL, QMF_CHKDUP,
-					WM_UNSHADED, 0, 0,wind->handle, 0, 0, 0, 0);
+					wind->send_message(lock, wind, NULL, AMQ_CRITICAL, QMF_CHKDUP,
+						WM_UNSHADED, 0, 0,wind->handle, 0, 0, 0, 0);
 
-				move_window(lock, wind, true, ~(XAWS_SHADED|XAWS_ZWSHADED), wind->rc.x, wind->rc.y, wind->rc.w, wind->rc.h);
+					move_window(lock, wind, true, ~(XAWS_SHADED|XAWS_ZWSHADED), wind->rc.x, wind->rc.y, wind->rc.w, wind->rc.h);
+				}
+			}
+			else
+			{
+				if (wind->send_message)
+				{
+					DIAGS(("Click_title: shading window %d for %s",
+						wind->handle, wind->owner->name));
+
+					move_window(lock, wind, true, XAWS_SHADED, wind->rc.x, wind->rc.y, wind->rc.w, wind->rc.h);
+					wind->send_message(lock, wind, NULL, AMQ_CRITICAL, QMF_CHKDUP,
+						WM_SHADED, 0, 0, wind->handle, 0,0,0,0);
+				}
 			}
 		}
-		else
-		{
-			if (wind->send_message)
-			{
-				DIAGS(("Click_title: shading window %d for %s",
-					wind->handle, wind->owner->name));
-
-				move_window(lock, wind, true, XAWS_SHADED, wind->rc.x, wind->rc.y, wind->rc.w, wind->rc.h);
-				wind->send_message(lock, wind, NULL, AMQ_CRITICAL, QMF_CHKDUP,
-					WM_SHADED, 0, 0, wind->handle, 0,0,0,0);
-			}
-		}
-	}
 	}
 }
 /*
@@ -1348,36 +1366,6 @@ click_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 		else if (md->state == MBS_RIGHT && !(wind->dial & created_for_SLIST))
 		{
 			shade_action(lock, wind);
-#if 0
-			if (!(wind->window_status & XAWS_ZWSHADED))
-			{
-				if ((wind->window_status & XAWS_SHADED))
-				{
-					if (wind->send_message)
-					{
-						DIAGS(("Click_title: unshading window %d for %s",
-							wind->handle, wind->owner->name));
-
-						wind->send_message(lock, wind, NULL, AMQ_CRITICAL, QMF_CHKDUP,
-							WM_UNSHADED, 0, 0,wind->handle, 0, 0, 0, 0);
-
-						move_window(lock, wind, true, ~(XAWS_SHADED|XAWS_ZWSHADED), wind->rc.x, wind->rc.y, wind->rc.w, wind->rc.h);
-					}
-				}
-				else
-				{
-					if (wind->send_message)
-					{
-						DIAGS(("Click_title: shading window %d for %s",
-							wind->handle, wind->owner->name));
-
-						move_window(lock, wind, true, XAWS_SHADED, wind->rc.x, wind->rc.y, wind->rc.w, wind->rc.h);
-						wind->send_message(lock, wind, NULL, AMQ_CRITICAL, QMF_CHKDUP,
-							WM_SHADED, 0, 0, wind->handle, 0,0,0,0);
-					}
-				}
-			}
-#endif
 		}
 		return true;
 	}
@@ -4847,7 +4835,9 @@ redisplay_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, short
 		if ((wind->dial & created_for_SLIST) || (wind->nolist && !wind->rect_list.start))
 		{
 			if (wind->parent && (wind->dial & created_for_SLIST))
+			{
 				draw_widget(wind, widg, wind->parent->rect_list.start);
+			}
 			else
 			{
 				struct xa_vdi_settings *v = wind->vdi_settings;

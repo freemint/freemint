@@ -34,6 +34,7 @@
 //#include "debug.h"
 #include "about.h"
 #include "app_man.h"
+#include "xa_appl.h"
 #include "c_window.h"
 #include "cnf_xaaes.h"
 #include "desktop.h"
@@ -194,7 +195,6 @@ unqueue_key(struct xa_client *client, struct rawkey *key)
 	return ret;
 }
 
-
 static void
 XA_keyboard_event(enum locks lock, const struct rawkey *key)
 {
@@ -284,6 +284,53 @@ XA_keyboard_event(enum locks lock, const struct rawkey *key)
 			*/
 	}
 }
+
+/*
+ * md=-2: off if was -1
+ * md=-1: on temp.
+ * else: set md
+ */
+void toggle_menu(enum locks lock, short md)
+{
+	struct xa_client *client = find_focus(true, NULL, NULL, 0);
+
+	if( !client )
+		return;
+	if( md == -2 )
+	{
+		if( cfg.menu_bar == -1 )
+			md = 0;
+		else return;
+	}
+	if( md != -1 ){
+		if( cfg.menu_bar == md )
+		{
+			redraw_menu(lock);
+			return;
+		}
+		cfg.menu_bar = md;
+	}
+	else
+		if( ++cfg.menu_bar > 1 )
+			cfg.menu_bar = 0;
+
+	set_standard_point( client );
+	if( cfg.menu_bar )
+	{
+		redraw_menu(lock);
+	}
+	else
+	{
+		RECT r = screen.r;
+		popout(TAB_LIST_START);
+		r.h = 20;	//screen.c_max_h + 2;	// widget-height
+		update_windows_below(lock, &r, NULL, window_list, NULL);
+	}
+	generate_redraws(lock, root_window, &screen.r, RDRW_ALL);
+
+}
+
+
 /******************************************************************************
  from "unofficial XaAES":
 
@@ -422,14 +469,18 @@ kernel_key(enum locks lock, struct rawkey *key)
 			app_or_acc_in_front( lock, client );
 			return true;
 		}
+		case '0':	// toggle main-menubar
+			toggle_menu(lock, -1);
+		return true;
 		//case NK_ESC:
 		case ' ':
 		{
 			struct xa_window *wind;
 			struct xa_widget *widg;
+			short mb = cfg.menu_bar;
 
-			if (nk == NK_ESC && !TAB_LIST_START)
-				goto otm;
+//			if (nk == NK_ESC && !TAB_LIST_START)
+//				goto otm;
 
 			client = NULL;
 			widg = NULL;
@@ -449,6 +500,8 @@ kernel_key(enum locks lock, struct rawkey *key)
 						client = NULL;
 				}
 			}
+			else
+				toggle_menu(lock, 1);
 
 			if (!client)
 			{
@@ -467,6 +520,8 @@ kernel_key(enum locks lock, struct rawkey *key)
 			}
 			if (client)
 				post_cevent(client, cXA_open_menubykbd, wind,widg, 0,0, NULL,NULL);
+			if( !mb )
+				cfg.menu_bar = -1;
 			return true;
 		}
 #if GENERATE_DIAGS == 0
@@ -501,7 +556,7 @@ kernel_key(enum locks lock, struct rawkey *key)
 #endif
 		if( !C.update_lock )
 		{
-otm:
+//otm:
 			post_cevent(C.Hlp, ceExecfunc, open_taskmanager,NULL, 1,0, NULL,NULL);
 		}
 		return true;
@@ -527,6 +582,8 @@ otm:
 				r.y -= g;
 				if( !s )
 				{
+					if( wind->dial & (created_for_ALERT | created_for_FORM_DO | created_for_WDIAL) || (wind->window_status & (XAWS_ICONIFIED | XAWS_HIDDEN)) )
+						return true;
 					r.x -= g;
 					r.w += g * 2;
 					r.h += g * 2;
@@ -557,9 +614,20 @@ otm:
 				}
 				if( r.y >= screen.r.h )
 					r.y = screen.r.h - WGROW;
-				wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
+				if( r.y < root_window->wa.y )
+					r.y = root_window->wa.y;
+				if( memcmp(&r, &wind->r, sizeof(RECT)) )
+				{
+					wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 							   s ? WM_MOVED : WM_SIZED, 0, 0, wind->handle,
 							   r.x, r.y, r.w, r.h);
+					/* resize wdialogs */
+					/*if( !s && wind->do_message == NULL || (wind->dial & created_for_WDIAL) )
+					{
+						short msg[8] = {WM_SIZED, 0, 0, 0, r.x, r.y, r.w, r.h};
+						do_formwind_msg(wind, client, 0, 0, msg);
+					}*/
+				}
 			}
 		return true;
 		case NK_RIGHT:
@@ -572,6 +640,9 @@ otm:
 				if( !s )
 				{
 					short g = WGROW;
+
+					if( wind->dial & (created_for_ALERT | created_for_FORM_DO | created_for_WDIAL) || (wind->window_status & (XAWS_ICONIFIED | XAWS_HIDDEN)) )
+						return true;
 					if( nk == NK_LEFT )
 						g = -g;
 					r.x -= g;
@@ -579,6 +650,11 @@ otm:
 					wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 					   WM_SIZED, 0, 0, wind->handle,
 					   r.x, r.y, r.w, r.h);
+					/*if( (wind->do_message == NULL || (wind->dial & created_for_WDIAL)) )
+					{
+						short msg[8] = {WM_SIZED, 0, 0, 0, r.x, r.y, r.w, r.h};
+						do_formwind_msg(wind, client, 0, 0, msg);
+					}*/
 				}
 				else
 				{
