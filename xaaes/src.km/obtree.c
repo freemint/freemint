@@ -1051,7 +1051,7 @@ create_popup_tree(struct xa_client *client, short type, short nobjs, short min_w
 			new->ob_width = min_w;
 			new->ob_height = 0;
 
-			(*v->api->t_font)(v, screen.standard_font_point, screen.standard_font_id);
+			(*v->api->t_font)(v, cfg.standard_font_point, cfg.font_id);
 			(*v->api->t_effects)(v, 0);
 
 			for (i = 1; i <= nobjs; i++)
@@ -3115,14 +3115,15 @@ obj_change(XA_TREE *wt,
 
 	if (aesobj_flags(&obj) != flags) {
 		aesobj_setflags(&obj, flags);
-		draw |= true;
+		draw = true;
 	}
 	if (aesobj_state(&obj) != state) {
 		aesobj_setstate(&obj, state);
-		draw |= true;
+		draw = true;
 	}
 
 	if (draw && redraw) {
+#if 0
 		if( !clip )
 		{
 			RECT r;
@@ -3130,7 +3131,9 @@ obj_change(XA_TREE *wt,
 			if( r.x == 0 )	//?
 				clip = &r;
 		}
-		obj_draw(wt, v, obj, transdepth, clip, rl, dflags);
+#endif
+
+		obj_draw(wt, v, obj, transdepth, clip, (aesobj_type(&obj) == G_TITLE && obj.ob->ob_y == 0 ) ? 0 : rl, dflags);	// of y=0 and G_TITLE it's a menu-title (don't clip)
 	}
 }
 
