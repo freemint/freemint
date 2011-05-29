@@ -274,7 +274,7 @@ cXA_open_menu(enum locks lock, struct c_event *ce, bool cancel)
 		{
 			if( cfg.menu_bar )
 			{
-				struct xa_window *w = find_window(lock, 32768, menu->area.h, -1 );
+				struct xa_window *w = find_window(lock, 32678, menu->area.h, -1 );
 				if( w && w != root_window )
 				{
 					redraw_menu(lock);	// a window might hide part of menu (not elegant ..)
