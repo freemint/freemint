@@ -519,7 +519,7 @@ calc_entry_wh(SCROLL_INFO *list, SCROLL_ENTRY *this)
 			case SECONTENT_ICON:
 			{
 				ew = c->c.icon.r.w + 2;
-				eh = c->c.icon.r.h + 2;
+				eh = c->c.icon.r.h;// + 2;
 				break;
 			}
 			default:
@@ -2972,7 +2972,9 @@ add_scroll_entry(SCROLL_INFO *list,
 // 		ndisplay("calc ent wh");
 
 		if( list->start )
+		{
 			((struct se_content *)new->content)->c.text.h = list->start->r.h;
+		}
 		PROFRECv(calc_entry_wh,(list, new));
 
 // 		display(" done");
@@ -3119,8 +3121,11 @@ add_scroll_entry(SCROLL_INFO *list,
 			{
 				if( here )
 				{
-					here->r.y += here->r.h;
+					/*here->r.y += here->r.h;
 					r.y = (long)here->r.y;
+					*/
+					new->r.y = here->r.y + r.h;
+					r.y = (long)new->r.y;
 				}
 				/*else
 					r.y = 0L;*/
@@ -3132,10 +3137,10 @@ add_scroll_entry(SCROLL_INFO *list,
 		if ((r.h /*| r.w*/))
 		{
 			/* compensate for not calling next_entry in get_entry_lrect...*/
-			if( !sort )
+			/*if( !sort )
 			{
 				new->r.h += LSLINDST_PTS;
-			}
+			}*/
 
 			if (new->r.h > list->highest)
 				list->highest = new->r.h;
