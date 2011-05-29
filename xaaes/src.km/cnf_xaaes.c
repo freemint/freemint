@@ -104,6 +104,8 @@ static struct parser_item parser_tab[] =
 	{ "REMAP_CICONS",          PI_R_B,   & cfg.remap_cicons		},
 	{ "SET_RSC_PALETTE",       PI_R_B,   & cfg.set_rscpalette	},
 	{ "ALERT_WINDOWS",         PI_R_US,  & cfg.alert_winds		},
+	{ "BACK_COL",              PI_R_S,   & cfg.back_col	},
+	{ "MENUBAR",               PI_R_S,   & cfg.menu_bar	},
 	{ "FONT_ID",               PI_R_S,   & cfg.font_id		},
 	{ "STANDARD_POINT",        PI_R_S,   & cfg.standard_font_point	},
 	{ "MEDIUM_POINT",          PI_R_S,   & cfg.medium_font_point	},

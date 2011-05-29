@@ -271,7 +271,17 @@ cXA_open_menu(enum locks lock, struct c_event *ce, bool cancel)
 	{
 		DIAG((D_mouse, ce->client, "cXA_open_menu for %s", ce->client->name));
 		if ( menu == get_menu() )
-			widg->m.click(lock, root_window, widg, &ce->md);
+		{
+			if( cfg.menu_bar )
+			{
+				struct xa_window *w = find_window(lock, 32768, menu->area.h, -1 );
+				if( w && w != root_window )
+				{
+					redraw_menu(lock);	// a window might hide part of menu (not elegant ..)
+				}
+				widg->m.click(lock, root_window, widg, &ce->md);
+			}
+		}
 #if GENERATE_DIAGS
 		else
 			DIAG((D_mouse, ce->client, "cXA_open_menu skipped for %s - menu changed before cevent.", ce->client->name));
