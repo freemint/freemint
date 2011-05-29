@@ -48,6 +48,7 @@
 
 #include "xa_evnt.h"
 #include "xa_graf.h"
+#include "xa_wind.h"
 #include "xa_rsrc.h"
 
 #if 0
@@ -364,15 +365,16 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 	w += 66;
 /* >  */
 
-	alert_icons = ResourceTree(C.Aes_rsc, ALERT_ICONS);
-	alert_form->ob_width = w;
-// 	Form_Center(alert_form, ICON_H);
 
-	{	/* HR */
-		int icons[7] = {ALR_IC_SYSTEM, ALR_IC_WARNING, ALR_IC_QUESTION, ALR_IC_STOP,
-						  ALR_IC_INFO,   ALR_IC_DRIVE,   ALR_IC_BOMB};
-		if (icon >= 7 || icon < 0)
-			icon = 0;
+	alert_form->ob_width = w;
+	if( icon )
+	{
+		int icons[8] = {0, ALR_IC_WARNING, ALR_IC_QUESTION, ALR_IC_STOP,
+						  ALR_IC_INFO,   ALR_IC_DRIVE,   ALR_IC_BOMB, ALR_IC_SYSTEM};
+		alert_icons = ResourceTree(C.Aes_rsc, ALERT_ICONS);
+
+		if (icon >= 8 || icon < 0)
+			icon = 7;
 
 		for (f = 0; f < 7; f++)
 		{
@@ -383,6 +385,11 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 		}
 
 		(alert_form + ALERT_D_ICON)->ob_spec = (alert_icons + icons[icon])->ob_spec;
+	}
+	else	//bug#154
+	{
+		alert_form->ob_width -= 48;	//?
+		(alert_form + ALERT_D_ICON)->ob_flags |= OF_HIDETREE;
 	}
 
 	/* Fill in texts */
@@ -396,6 +403,8 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 			alert_form[ALERT_T1 + f].ob_flags &= ~OF_HIDETREE;
 			if( f )
 				alert_form[ALERT_T1 + f].ob_y = alert_form[ALERT_T1 + f-1].ob_y + screen.c_max_h;
+			if( !icon )
+				alert_form[ALERT_T1 + f].ob_x -= 48;	//?
 		}
 	}
 
@@ -403,6 +412,8 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 	x = w - m_butt_w;
 	b = x / (n_buttons + 1);
 	x = b;
+	if( !icon )
+		x -= 48 / 2;	//?
 
 	set_standard_point(client);
 	h = screen.c_max_h;
@@ -729,6 +740,15 @@ XA_form_wkeybd(enum locks lock, struct xa_client *client, AESPB *pb)
 	return XAC_DONE;
 }
 
+void release_blocks(struct xa_client *client)
+{
+	short in = END_UPDATE, out;
+	AESPB p = {0, 0, &in, &out, 0, 0};
+	XA_wind_update(0, client, &p );
+	in = END_MCTRL;
+	XA_wind_update(0, client, &p );
+}
+
 unsigned long
 XA_form_alert(enum locks lock, struct xa_client *client, AESPB *pb)
 {
@@ -738,6 +758,7 @@ XA_form_alert(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	DIAG((D_form, client, "XA_alert %s", (char *)pb->addrin[0]));
 	client->status |= CS_FORM_ALERT;
+	release_blocks(client);
 	do_form_alert(lock, client, pb->intin[0], (char *)pb->addrin[0], NULL);
 	(*client->block)(client, 0); //Block(client, 0);
 	client->status &= ~CS_FORM_ALERT;
