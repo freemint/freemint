@@ -802,7 +802,6 @@ k_init(unsigned long vm)
 	screen.display_type = D_LOCAL;
 	v->screen = screen.r;
 
-
 	vq_extnd(v->handle, 1, work_out);	/* Get extended information */
 	/*{int i;
 	for( i = 0; i < 58 / 2; i += 2 )
@@ -880,7 +879,6 @@ k_init(unsigned long vm)
 	screen.c_max_w = v->cell_w;
 	screen.c_max_h = v->cell_h;
 	dev2 = calc_average_fontsize(v, &screen.c_max_w, &screen.c_max_h, &screen.c_max_dist[0]);
-
 
 	BLOG((false, "stdfont: id = %d, size = %d, cw=%d, ch=%d, dev=%d",
  		screen.standard_font_id, screen.standard_font_point, screen.c_max_w, screen.c_max_h, dev2));
@@ -1023,6 +1021,8 @@ k_init(unsigned long vm)
 		*(RECT*)&ob->ob_x = root_window->r;
 		(ob + DESKTOP_LOGO)->ob_x = (root_window->wa.w - (ob + DESKTOP_LOGO)->ob_width) / 2;
 		(ob + DESKTOP_LOGO)->ob_y = (root_window->wa.h - (ob + DESKTOP_LOGO)->ob_height) / 2;
+		if( cfg.back_col != -1 )
+			(ob + DESKTOP)->ob_spec.obspec.interiorcol = cfg.back_col;
 		C.Aes->desktop = new_widget_tree(C.Aes, ob);
 
 		set_desktop_widget(root_window, C.Aes->desktop);
@@ -1038,7 +1038,8 @@ k_init(unsigned long vm)
 // 	if (cfg.opentaskman)
 // 		open_taskmanager(NOLOCKING);
 
-// 	display("redrawing menu");
+	set_standard_point( C.Aes );
+
 	redraw_menu(NOLOCKING);
 // 	display("all fine - return 0");
 

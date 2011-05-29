@@ -162,45 +162,65 @@ init_client_mdbuff(struct xa_client *client)
 /*
  * set point-size for main-menu
  * adjust root-window-size
+ * also used to switch menubar on/off
  */
 void set_standard_point(struct xa_client *client)
 {
-	//if(  client->options.standard_font_point != screen.standard_font_point )
+	static int old_menu_bar = -1;
+	short w, h;
+	struct xa_widget *xaw = get_menu_widg(), *xat = get_widget(root_window, XAW_TOOLBAR);
+	XA_TREE *wt = xat->stuff;
+	struct xa_vdi_settings *v = client->vdi_settings;
+#if 1
+	/* kludge: if < 1 set menu_bar=0, if != -1 set -standard_font_point */
+	if( client->options.standard_font_point < 0 )
 	{
-		short w, h;
-		struct xa_widget *xaw = get_menu_widg(), *xat = get_widget(root_window, XAW_TOOLBAR);
-		XA_TREE *wt = xat->stuff;
-		struct xa_vdi_settings *v = client->vdi_settings;
+		client->options.standard_font_point = -client->options.standard_font_point;
+		if( client->options.standard_font_point == 1 )
+			client->options.standard_font_point = cfg.standard_font_point;
+		cfg.menu_bar = 0;
+	}
+#endif
+	(*v->api->t_font)(client->vdi_settings, client->options.standard_font_point, cfg.font_id);
+	(*v->api->t_extent)(client->vdi_settings, "X", &w, &h );
 
-		(*v->api->t_font)(client->vdi_settings, client->options.standard_font_point, cfg.font_id);
-		(*v->api->t_extent)(client->vdi_settings, "X", &w, &h );
+	screen.c_max_w = w;
+	screen.standard_font_point = client->options.standard_font_point;
+	if( h == screen.c_max_h && cfg.menu_bar == old_menu_bar )
+		return;
 
-		if( h == screen.c_max_h )
-			return;
+	old_menu_bar = cfg.menu_bar;
 
-		screen.standard_font_height = v->font_h;
-		/*v->cell_h = */screen.c_max_h = h;
-		screen.c_max_w = w;
-		C.Aes->std_menu->tree->ob_height = h + 2;
-		xaw->r.h = xaw->ar.h = h + 2;
-		screen.standard_font_point = client->options.standard_font_point;
+	screen.standard_font_height = v->font_h;
+	screen.c_max_h = h;
+	C.Aes->std_menu->tree->ob_height = h + 2;
+	xaw->r.h = xaw->ar.h = h + 2;
 
-		root_window->wa.h = screen.r.h - xaw->r.h;
-		root_window->wa.y = xaw->r.h;
+	if (get_desktop()->owner == C.Aes) {
+		if( cfg.menu_bar == 1 )
+		{
+			root_window->wa.h = screen.r.h - xaw->r.h;
+			root_window->wa.y = xaw->r.h;
+		}
+		else
+		{
+			root_window->wa.h = screen.r.h;
+			root_window->wa.y = 0;
+			//xaw->r.h = xaw->ar.h = 0;
+		}
+		root_window->rwa = root_window->wa;
 
 		wt->tree->ob_height = root_window->wa.h;
 		wt->tree->ob_y = root_window->wa.y;
-
-
 		if( xat )
 		{
 			xat->r.h = root_window->wa.h;
 			xat->r.y = root_window->wa.y;
 		}
-
-
-		display_window(NOLOCKS, 42, root_window, &screen.r);
 	}
+
+	//send_sized( NOLOCKS, root_window, 0, &root_window->r );
+	send_iredraw(NOLOCKS, root_window, 0, &root_window->r);
 }
 
 /*
@@ -413,11 +433,9 @@ init_client(enum locks lock, bool sysclient)
 
 	init_client_objcrend(client);
 
-#if 1
 	if( !client->options.standard_font_point )
 		client->options.standard_font_point = cfg.standard_font_point;
 	set_standard_point(client);
-#endif
 
 //	app_in_front(lock, client, true, false);
 
@@ -449,8 +467,6 @@ static char  *strip_uni_drive( char *in )
 	c = d_pathconf(in, DP_CASE);
 	cconv = c == DP_CASECONV;
 
-
-#if 1
 	if( (*in == 'u' || *in == 'U') && in[1] == ':' && (in[2] == '/' || in[2] == '\\')
 		&& isalpha( in[3] ) && (in[4] == '/' || in[4] == '\\') )
 	{
@@ -458,7 +474,7 @@ static char  *strip_uni_drive( char *in )
 		p += 2;
 		in[0] = toupper(in[3]);
 	}
-#endif
+
 	for(; *p; p++, p1++ )
 		if( *p == '/' )
 			*p = '\\';
