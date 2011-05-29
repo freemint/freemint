@@ -42,6 +42,7 @@ SHIFT+
  CURSOR-UP    Move current window up
  CURSOR-DOWN  Move current window down
 
+CTRL+0        Switch menubar on/off
 -------------------------------------------------------
 
 Shortcuts/navigation in XaAES fileselector:
