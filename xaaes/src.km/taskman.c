@@ -1584,11 +1584,11 @@ static bool is_aes_client( struct proc *p )
 #define MAXLOAD	234L
 #define WITH_ACTLD  0x4143544CL /* 'ACTL' */
 
-static bool calc_tm_bar( OBJECT *obtree, short item, short ind, long pinfo[] )
+static bool calc_tm_bar( OBJECT *obtree, short item, long pinf, long max )
 {
 
 	TEDINFO *t = object_get_tedinfo(&obtree[item], NULL);
-	obtree[item].ob_height = (short)(pinfo[ind] * (long)obtree[TM_CHART].ob_height / MAXLOAD);
+	obtree[item].ob_height = (short)(pinf * (long)obtree[TM_CHART].ob_height / max );
 
 	/* if height = 0 a bar is drawn anyway!? */
 	if( obtree[item].ob_height <= 0 )
@@ -1707,6 +1707,74 @@ tm_slist_key(struct scroll_info *list, unsigned short keycode, unsigned short ke
 	}
 	return keycode;
 }
+
+static void do_tm_chart(enum locks lock, XA_TREE *wt, struct proc *rootproc, struct xa_window *wind)
+{
+	if( !( wt->tree[TM_CHART].ob_flags & OF_HIDETREE) )
+	{
+		static int has_new_uptime = -1;
+		long pinfo[8];
+		long u = 0;
+
+		pinfo[0] = 1;
+		pinfo[1] = 2;
+		pinfo[2] = 0;
+#if !USE_Suptime
+		if( ker_stat( 0, "uptime", pinfo )
+			|| ((u = pinfo[0] * 1000L + pinfo[1]) < uptime	/* /kern/uptime not always correct! :-*/
+			))
+		{
+			uptime = 0L;
+		}
+		else
+			uptime = u;
+		//idle = pinfo[2] * 1000L + pinfo[3];
+#else
+		if( has_new_uptime == -1 )
+		{
+			pinfo[3] = WITH_ACTLD;	/* magic */
+			pinfo[0] = WITH_ACTLD;
+		}
+		Suptime( &u, pinfo );	/* this is sometimes all 0 or constant max. on aranym ! :-( */
+		if( has_new_uptime == -1 )
+		{
+			if( pinfo[3] == WITH_ACTLD )
+				has_new_uptime = 0;
+			else
+				has_new_uptime = 1;
+		}
+		uptime = u * 1000L;
+		if( has_new_uptime == 0 )
+		{
+			int i;
+			for( i = 0; i < 3; i++ )
+				pinfo[i] = (pinfo[i] * MAXLOAD) / OLD_MAXLOAD;
+		}
+#endif
+		calc_tm_bar( wt->tree, TM_LOAD1, pinfo[0], MAXLOAD );
+		calc_tm_bar( wt->tree, TM_LOAD2, pinfo[1], MAXLOAD );
+		calc_tm_bar( wt->tree, TM_LOAD3, pinfo[2], MAXLOAD );
+		pinfo[3] = calc_new_ld( rootproc );
+		calc_tm_bar( wt->tree, TM_ACTLD, pinfo[3], MAXLOAD );
+
+		pinfo[0] = 13;
+		pinfo[1] = 16;
+		pinfo[2]= 19;
+		pinfo[3] = 22;
+		pinfo[4] = 25;
+		pinfo[5]= 28;
+		pinfo[6]= 0;
+
+		ker_stat( 0, "meminfo", pinfo);
+
+		calc_tm_bar( wt->tree, TM_MEM, pinfo[0] - pinfo[1], pinfo[0] );		// total
+		calc_tm_bar( wt->tree, TM_FAST, pinfo[2] - pinfo[3], pinfo[2] );	// fast
+		calc_tm_bar( wt->tree, TM_CORE, pinfo[4] - pinfo[5], pinfo[4] );	//core
+
+		redraw_toolbar( lock, wind, TM_CHART );
+	}
+}
+
 void
 open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 {
@@ -1849,9 +1917,8 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 		if (open)
 		{
 			SCROLL_INFO *list;
-			long pinfo[5];
 			struct scroll_content sc = {{ 0 }};
-			static int has_new_uptime = -1;
+			struct proc *rootproc = pid2proc(0);
 
 			wt = get_widget(wind, XAW_TOOLBAR)->stuff;
 			list = object_get_slist(wt->tree + TM_LIST);
@@ -1859,13 +1926,12 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 			if( TOP_WINDOW == wind )
 				redraw = NORMREDRAW;
 
+			do_tm_chart(lock, wt, rootproc, wind);
+
 			if( list )
 			{
 				struct sesetget_params p = { 0 };
 				struct scroll_entry *this;
-				struct proc *rootproc = pid2proc(0);
-				long u = 0;
-
 				/* todo: to change fnt-size at runtime font-info for each list-entry would have to be updated */
 				//set_xa_fnt( cfg.xaw_point + fss, wp, wt->tree, objs, list);
 				//set_fnts( list, cfg.xaw_point + fss );
@@ -1886,54 +1952,10 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 					uinfo[1] = (long)"used: ";
 					uinfo[2] = 2;
 					uinfo[3] = 0;
+					/* todo: use info from do_tm_chart */
 					add_kerinfo( "u:/kern/meminfo", list, NULL, p.e, &sc, PROCINFLEN, 5, redraw, uinfo );
 				}
 
-				if( !( wt->tree[TM_CHART].ob_flags & OF_HIDETREE) )
-				{
-					pinfo[0] = 1;
-					pinfo[1] = 2;
-					pinfo[2] = 0;
-#if !USE_Suptime
-					if( ker_stat( 0, "uptime", pinfo )
-						|| ((u = pinfo[0] * 1000L + pinfo[1]) < uptime	/* /kern/uptime not always correct! :-*/
-						))
-					{
-						uptime = 0L;
-					}
-					else
-						uptime = u;
-					//idle = pinfo[2] * 1000L + pinfo[3];
-#else
-					if( has_new_uptime == -1 )
-					{
-						pinfo[3] = WITH_ACTLD;	/* magic */
-						pinfo[0] = WITH_ACTLD;
-					}
-					Suptime( &u, pinfo );	/* this is sometimes all 0 or constant max. on aranym ! :-( */
-					if( has_new_uptime == -1 )
-					{
-						if( pinfo[3] == WITH_ACTLD )
-							has_new_uptime = 0;
-						else
-							has_new_uptime = 1;
-					}
-					uptime = u * 1000L;
-					if( has_new_uptime == 0 )
-					{
-						int i;
-						for( i = 0; i < 3; i++ )
-							pinfo[i] = (pinfo[i] * MAXLOAD) / OLD_MAXLOAD;
-					}
-					calc_tm_bar( wt->tree, TM_LOAD1, 0, pinfo );
-					calc_tm_bar( wt->tree, TM_LOAD2, 1, pinfo );
-					calc_tm_bar( wt->tree, TM_LOAD3, 2, pinfo );
-					pinfo[3] = calc_new_ld( rootproc );
-					calc_tm_bar( wt->tree, TM_ACTLD, 3, pinfo );
-
-					redraw_toolbar( lock, wind, TM_CHART );
-#endif
-				}
 				FOREACH_CLIENT(client)
 				{				/* */
 					update_tasklist_entry( AES_CLIENT, client, redraw);
@@ -2484,15 +2506,18 @@ static int ker_stat( int pid, char *what, long pinfo[] )
 		path[err] = 0;
 		for( j = 0, i = 1; *p && pinfo[j]; i++ )
 		{
+			for( ; *p && *p <= ' '; p++ );
 			if( i == pinfo[j] )
 			{
 				if( !isdigit( *p ) )
 					return 3;
 				pinfo[j++] = atol( p );
 			}
-			for( ; *p && !(*p == ' ' || *p == '.'); p++ );
+			for( ; *p && !(*p <= ' ' || *p == '.'); p++ );
 			if( *p )
+			{
 				p++;
+			}
 		}
 		if( !*p && pinfo[j] )
 			return 4;
