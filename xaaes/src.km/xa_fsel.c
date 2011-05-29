@@ -64,6 +64,7 @@
 #include "widgets.h"
 #include "keycodes.h"
 
+#include "xa_form.h"
 #include "xa_graf.h"
 #include "xa_wind.h"	// XA_wind_update
 #include "xa_rsrc.h"
@@ -3049,15 +3050,10 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 			c_owner(client), path, file, title, s, c));
 
 
-	if( client->fmd.lock /*& SCREEN_UPD*/ )
+	if( client->fmd.lock )
 	{
-		short in = END_UPDATE, out;
-		AESPB pb = {0, 0, &in, &out, 0, 0};
-		XA_wind_update(0, client, &pb );
-		in = END_MCTRL;
-		XA_wind_update(0, client, &pb );
+		release_blocks(client);
 	}
-
 	if (fs)
 	{
 		short dy = 0;
