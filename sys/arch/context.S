@@ -48,6 +48,10 @@
  *	flush the ATC.
  */
 
+#ifndef __mcoldfire__
+	.arch	68030
+#endif
+
 #include "magic/magic.i"
 
 	.text
@@ -112,7 +116,12 @@ nojunk:
 
 	fsave	C_FSTATE(a0)		// save internal state frame
 #ifndef M68000
+#ifdef	__mcoldfire__
+	moveq	#60,d1
+	cmp.w	_mcpu+2,d1		// on 68060 frame format is different
+#else
 	cmp.w	#60,_mcpu+2		// on 68060 frame format is different
+#endif
 	bne.s	no60
 	tst.b	C_FSTATE+2(a0)		// if NULL frame then the FPU is not in use
 	beq.s	nofpu			// skip programmer's model save
@@ -121,22 +130,50 @@ no60:
 #endif
 	tst.b	C_FSTATE(a0)		// if NULL frame then the FPU is not in use
 	beq.s	nofpu			// skip programmer's model save
+#ifdef	__mcoldfire__
+save:	fmovem.d fp0-fp7,C_FREGS(a0)		// save data registers
+	fmove.l	fpcr,C_FCTRL(a0)		// and control registers
+	fmove.l	fpsr,C_FCTRL+4(a0)
+	fmove.l	fpiar,C_FCTRL+8(a0)
+#else
 save:	fmovem.x fp0-fp7,C_FREGS(a0)		// save data registers
 	fmovem.l fpcr/fpsr/fpiar,C_FCTRL(a0)	// and control registers
+#endif
 nofpu:
 	lea	C_SFMT(a0),a2
+#ifdef	__mcoldfire__
+	moveq	#0,d1
+#endif
 	move.w	(a1)+,d1		// fetch frame format word
 	move.w	d1,(a2)+		// and stash it away for later
+#ifdef	__mcoldfire__
+	lsr.l	#8,d1			// isolate the frame format identifier
+	lsr.l	#4,d1
+#else
 	lsr.w	#8,d1			// isolate the frame format identifier
 	lsr.w	#4,d1
+#endif
 	lea	_framesizes,a3
+#ifdef	__mcoldfire__
+	move.b	0(a3,d1.l),d1
+#else
 	move.b	0(a3,d1.w),d1
+#endif
 	beq.s	short1			// if no data to save, skip this
+#ifdef	__mcoldfire__
+	subq.l	#1,d1			// correct for first time through loop
+#else
 	subq.w	#1,d1			// correct for first time through loop
+#endif
 bcint:
 	move.w	(a1)+,(a2)+		// copy CPU internal state
 bcover:
+#ifdef	__mcoldfire__
+	subq.l	#1,d1
+	bpl.s	bcint
+#else
 	dbra	d1,bcint
+#endif
 short1:
 	move.l	a1,C_SSP(a0)		// a1 now points above the state frame
 	move.l	usp,a1			// save user stack pointer
@@ -148,7 +185,12 @@ L_SUPER1:
 	// means not testing longframe again. (AKP)
 	move.l	C_SSP(a0),a1		// was using super stack pointer before interrupt
 L_CONT1:
+#ifdef	__mcoldfire__
+	move.l	(0x408).w,d1
+	move.l	d1,C_TERM(a0)		// save GEMDOS terminate vector
+#else
 	move.l	(0x408).w,C_TERM(a0) 	// save GEMDOS terminate vector
+#endif
 	move.l	(sp)+,C_A0(a0)		// save old register a0
 	rts
 
@@ -179,7 +221,12 @@ noprot2:
 	beq.s	nofpu2
 	fsave	C_FSTATE(a0)		// save internal state frame
 #ifndef M68000
+#ifdef	__mcoldfire__
+	moveq	#60,d1
+	cmp.w	_mcpu+2,d1		// on 68060 frame format is different
+#else
 	cmp.w	#60,_mcpu+2		// on 68060 frame format is different
+#endif
 	bne.s	no60_2
 	tst.b	C_FSTATE+2(a0)		// if NULL frame then the FPU is not in use
 	beq.s	nofpu2			// skip programmer's model save
@@ -188,8 +235,15 @@ no60_2:
 #endif
 	tst.b	C_FSTATE(a0)			// if NULL frame then the FPU is not in use
 	beq.s	nofpu2				// skip programmer's model save
+#ifdef	__mcoldfire__
+save2:	fmovem.d fp0-fp7,C_FREGS(a0)		// save data registers
+	fmove.l	fpcr,C_FCTRL(a0)		// and control registers
+	fmove.l	fpsr,C_FCTRL+4(a0)
+	fmove.l	fpiar,C_FCTRL+8(a0)
+#else
 save2:	fmovem.x fp0-fp7,C_FREGS(a0)		// save data registers
 	fmovem.l fpcr/fpsr/fpiar,C_FCTRL(a0)	// and control registers
+#endif
 nofpu2:
 // note: I am somewhat unsure of this assumption, viz that save_context
 // can never be called in a situation where a co-processor
@@ -206,14 +260,26 @@ nofpu2:
 	move.l	-4(a1),C_PC(a0)		// save PC
 	move.l	usp,a1
 	move.l	a1,C_USP(a0)		// save user stack pointer
+#ifdef	__mcoldfire__
+	move.w	sr,d1
+	move.w	d1,C_SR(a0)		// save status register
+	move.l	(0x408).w,d1
+	move.l	d1,C_TERM(a0)		// save GEMDOS terminate vector
+#else
 	move.w	sr,C_SR(a0)		// save status register
 	move.l	(0x408).w,C_TERM(a0)	// save GEMDOS terminate vector
+#endif
 	move.l	(sp)+,C_A0(a0)		// save old a0
 	clr.l	d0			// return 0
 	rts
-
 _restore_context:
+#ifdef	__mcoldfire__
+	move.w	sr,d1
+	ori.l	#0x0400,d1
+	move.w	d1,sr
+#else
 	ori.w	#0x0400,sr
+#endif
 	move.l	4(sp),a0		// address of context save area
 
 // Switch stacks now - starting now ssp is in the memory space of
@@ -226,7 +292,12 @@ _restore_context:
 	move.l	a1,sp
 	move.l	C_USP(a0),a1
 	move.l	a1,usp			// set user stack pointer
+#ifdef	__mcoldfire__
+	move.l	C_TERM(a0),d1
+	move.l	d1,(0x408).w		// restore GEMDOS terminate vector
+#else
 	move.l	C_TERM(a0),(0x408).w	// restore GEMDOS terminate vector
+#endif
 
 // Set memory context now: actually, this isn't necessary, since
 // we're coming back to a context in the same process as is running
@@ -243,20 +314,46 @@ _restore_context:
 #endif
 	lea	C_SFMT(a0),a1
 	move.w	(a1)+,d0		// fetch frame format word
+#ifdef	__mcoldfire__
+	moveq	#0,d1
+#endif
 	move.w	d0,d1			// copy it for later
+#ifdef	__mcoldfire__
+	lsr.l	#8,d1			// isolate the frame format identifier
+	lsr.l	#4,d1
+#else
 	lsr.w	#8,d1			// isolate the frame format identifier
 	lsr.w	#4,d1
+#endif
 	lea	_framesizes,a2
+#ifdef	__mcoldfire__
+	move.b	0(a2,d1.l),d1
+#else
 	move.b	0(a2,d1.w),d1
+#endif
 	beq.s	rcovernc		// if no data to copy, skip the copy
+#ifdef	__mcoldfire__
+	sub.l	d1,sp
+	sub.l	d1,sp
+#else
 	sub.w	d1,sp
 	sub.w	d1,sp
+#endif
 	move.l	sp,a2
+#ifdef	__mcoldfire__
+	subq.l	#1,d1			// correct for first time through loop
+#else
 	subq.w	#1,d1			// correct for first time through loop
+#endif
 rcint:
 	move.w	(a1)+,(a2)+
 rcover:
+#ifdef	__mcoldfire__
+	subq.l	#1,d1
+	bpl.s	rcint
+#else
 	dbf	d1,rcint
+#endif
 rcovernc:
 	move.w	d0,-(sp)		// frame format identifier
 
@@ -264,7 +361,12 @@ rcovernc:
 	tst.w	_fpu			// is there a true FPU in the system
 	beq.s	short3
 #ifndef M68000
+#ifdef	__mcoldfire__
+	moveq	#60,d1
+	cmp.w	_mcpu+2,d1		// on 68060 frame format is different
+#else
 	cmp.w	#60,_mcpu+2		// on 68060 frame format is different
+#endif
 	bne.s	no60_3
 	tst.b	C_FSTATE+2(a0)
 	beq.s	short4
@@ -273,8 +375,15 @@ no60_3:
 #endif
 	tst.b	C_FSTATE(a0)			// if NULL frame then the FPU is not in use
 	beq.s	short4				// skip programmer's model restore
+#ifdef	__mcoldfire__
+save3:	fmove.l	C_FCTRL(a0),fpcr		// restore control registers
+	fmove.l	C_FCTRL+4(a0),fpsr
+	fmove.l	C_FCTRL+8(a0),fpiar
+	fmovem.d C_FREGS(a0),fp0-fp7		// and data registers
+#else
 save3:	fmovem.l C_FCTRL(a0),fpcr/fpsr/fpiar	// restore control registers
 	fmovem.x C_FREGS(a0),fp0-fp7		// and data registers
+#endif
 short4:
 	frestore C_FSTATE(a0)			// finally the internal state
 short3:
@@ -289,7 +398,13 @@ notrace:
 
 
 _change_context:
+#ifdef	__mcoldfire__
+	move.w	sr,d1
+	ori.l	#0x0400,d1		// mask interrupts
+	move.w	d1,sr
+#else
 	ori.w	#0x0400,sr		// mask interrupts
+#endif
 	move.l	4(sp),a0		// address of context save area
 
 // Switch stacks now - starting now ssp is in the memory space of
@@ -302,7 +417,12 @@ _change_context:
 	move.l	a1,sp
 	move.l	C_USP(a0),a1
 	move.l	a1,usp			// set user stack pointer
+#ifdef	__mcoldfire__
+	move.l	C_TERM(a0),d1
+	move.l	d1,(0x408).w		// restore GEMDOS terminate vector
+#else
 	move.l	C_TERM(a0),(0x408).w	// restore GEMDOS terminate vector
+#endif
 
 #ifndef M68000
 // Set memory context now
@@ -329,20 +449,46 @@ noprot4:
 #endif
 	lea	C_SFMT(a0),a1
 	move.w	(a1)+,d0		// fetch frame format word
+#ifdef	__mcoldfire__
+	moveq	#0,d1
+#endif
 	move.w	d0,d1			// copy it for later
+#ifdef	__mcoldfire__
+	lsr.l	#8,d1			// isolate the frame format identifier
+	lsr.l	#4,d1
+#else
 	lsr.w	#8,d1			// isolate the frame format identifier
 	lsr.w	#4,d1
+#endif
 	lea	_framesizes,a2
+#ifdef	__mcoldfire__
+	move.b	0(a2,d1.l),d1
+#else
 	move.b	0(a2,d1.w),d1
+#endif
 	beq.s	rcover2nc		// if no data to copy, skip it
+#ifdef	__mcoldfire__
+	sub.l	d1,sp
+	sub.l	d1,sp
+#else
 	sub.w	d1,sp
 	sub.w	d1,sp
+#endif
 	move.l	sp,a2
+#ifdef	__mcoldfire__
+	subq.l	#1,d1			// correct for first time through loop
+#else
 	subq.w	#1,d1			// correct for first time through loop
+#endif
 rcint2:
 	move.w	(a1)+,(a2)+
 rcover2:
+#ifdef	__mcoldfire__
+	subq.l	#1,d1
+	bpl.s	rcint2
+#else
 	dbf	d1,rcint2
+#endif
 rcover2nc:
 	move.w	d0,-(sp)		// frame format identifier
 
@@ -352,7 +498,12 @@ rcover2nc:
 	beq.s	short6
 
 #ifndef M68000
+#ifdef	__mcoldfire__
+	moveq	#60,d1
+	cmp.w	_mcpu+2,d1		// on 68060 frame format is different
+#else
 	cmp.w	#60,_mcpu+2		// on 68060 frame format is different
+#endif
 	bne.s	no60_4
 	tst.b	C_FSTATE+2(a0)
 	beq.s	short5
@@ -361,8 +512,15 @@ no60_4:
 #endif
 	tst.b	C_FSTATE(a0)		// if NULL frame then the FPU is not in use
 	beq.s	short5			// skip programmer's model restore
+#ifdef	__mcoldfire__
+save5:	fmove.l	C_FCTRL(a0),fpcr		// restore control registers
+	fmove.l	C_FCTRL+4(a0),fpsr
+	fmove.l	C_FCTRL+8(a0),fpiar
+	fmovem.d C_FREGS(a0),fp0-fp7		// and data registers
+#else
 save5:	fmovem.l C_FCTRL(a0),fpcr/fpsr/fpiar	// restore control registers
 	fmovem.x C_FREGS(a0),fp0-fp7		// and data registers
+#endif
 short5:
 	frestore C_FSTATE(a0)			// finally the internal state
 short6:
