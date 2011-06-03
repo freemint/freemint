@@ -194,7 +194,13 @@ _get_mmuregs:
 _read_phys:
 	move.l	4(sp),a0		// get address to read
 	move	sr,d1
+#ifdef __mcoldfire__
+	move.w	sr,d0
+	ori.l	#0x700,d0		// disable all interrupts
+	move.w	d0,sr
+#else
 	ori	#0x700,sr		// disable all interrupts
+#endif
 	
 	move.l	#0x00ffe060,d0		// value for DTT0: transparently
 					// translate all data accesses, not using
