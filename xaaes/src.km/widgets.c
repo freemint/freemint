@@ -259,22 +259,22 @@ XA_slider(struct xa_window *w, int which, long total, long visible, long start)
 	return ret;
 }
 
-/* 32678: don't care */
+/* MI_IGN: don't care */
 bool
 m_inside(short x, short y, RECT *o)
 {
-	if( x != 32678 && y != 32678 )
+	if( x != MI_IGN && y != MI_IGN )
 		return (   x >= o->x
 		&& y >= o->y
 		&& x <  o->x+o->w
 		&& y <  o->y+o->h);
 
-	else if( y != 32678 )
+	else if( y != MI_IGN )
 		return (
 		y >= o->y
 		&& y <  o->y+o->h);
 
-	else if( x != 32678 )
+	else if( x != MI_IGN )
 		return ( x >= o->x
 		&& x <  o->x+o->w );
 
@@ -886,8 +886,11 @@ draw_widget(struct xa_window *wind, XA_WIDGET *widg, struct xa_rect_list *rl)
 			}
 			else
 			{
-				(*v->api->set_clip)(v, &rl->r);
-				widg->m.r.draw(wind, widg, &rl->r);
+				if( wind == root_window || !cfg.menu_bar || ( rl->r.y > get_menu_height() || !clip_off_menu( &rl->r )) )
+				{
+					(*v->api->set_clip)(v, &rl->r);
+					widg->m.r.draw(wind, widg, &rl->r);
+				}
 			}
 			rl = rl->next;
 		}
@@ -1001,7 +1004,7 @@ redraw_menu(enum locks lock)
 	DIAGS(("redaw_menu: widg owner = %s", mc->name));
 
 	/* in single-mode display only menu of single-app */
-	if( cfg.menu_bar == 0 || (C.SingleTaskPid > 0 && mc->p->pid != C.SingleTaskPid) )
+	if( (C.SingleTaskPid > 0 && mc->p->pid != C.SingleTaskPid) )
 		return;
 
 	if (mc == rc || mc == C.Aes)
@@ -1184,7 +1187,10 @@ drag_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, cons
 
 			bound.x = wind->owner->options.noleft ?
 					0 : -root_window->r.w;
-			bound.y = root_window->wa.y;
+			if (cfg.menu_bar /*&& cfg.menu_layout == 0*/)
+				bound.y = get_menu_height();
+			else
+				bound.y = root_window->wa.y;
 			bound.w = root_window->r.w*3;
 			bound.h = root_window->r.h*2;
 
@@ -1698,6 +1704,7 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 			{
 				if (wind->opts & XAWO_WCOWORK)
 					r = f2w(&wind->delta, &r, true);
+
 				if (move && size && (wind->opts & XAWO_SENDREPOS))
 					send_reposed(lock, wind, AMQ_NORM, &r);
 				else
