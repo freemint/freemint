@@ -395,8 +395,8 @@ add_msg_2_queue(struct xa_aesmsg_list **queue, union msg_buf *msg, short qmflags
 
 		DIAG((D_m, NULL, "WM_REDRAW for %s, rect %d/%d,%d/%d", client->name, new[4], new[5], new[6], new[7]));
 
-		if (!new[3])
-			display("WM_REDRAW on root-window???");
+		//if (!new[3])
+			//display("WM_REDRAW on root-window???");
 
 		next = queue;
 
@@ -406,9 +406,9 @@ add_msg_2_queue(struct xa_aesmsg_list **queue, union msg_buf *msg, short qmflags
 			{
 				old = (*next)->message.m;
 
-				if (old[3] == new[3])
+				if (old[3] == new[3] && old[0] == new[0] )
 				{
-					if (is_inside((RECT *)&(new[4]), (RECT *)&(old[4])))
+					if ( !memcmp((RECT *)&(old[4]), (RECT *)&(new[4]),sizeof(RECT)) || is_inside((RECT *)&(new[4]), (RECT *)&(old[4])))
 					{
 						msg = NULL;
 						break;
@@ -713,7 +713,9 @@ send_a_message(enum locks lock, struct xa_client *dest_client, short amq, short 
 				}
 			}
 			else
+			{
 				queue_message(lock, dest_client, amq, qmf, msg);
+			}
 
 // 			display("send_a_message: client status %lx %s", dest_client->status, dest_client->name);
 #if GENERATE_DIAGS
