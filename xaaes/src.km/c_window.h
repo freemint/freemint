@@ -72,12 +72,15 @@ struct xa_window *root_w(enum locks lock);
 bool _cdecl	close_window(enum locks lock, struct xa_window *wind);
 int  _cdecl	open_window(enum locks lock, struct xa_window *w, RECT r);
 void _cdecl	send_wind_to_bottom(enum locks lock, struct xa_window *w);
+void set_standard_point(struct xa_client *client);
+void toggle_menu(enum locks lock, short md);
 void _cdecl	move_window(enum locks lock, struct xa_window *wind, bool blit, WINDOW_STATUS newstate, short x, short y, short w, short h);
 void _cdecl	delete_window(enum locks lock, struct xa_window *wind);
 void _cdecl	delayed_delete_window(enum locks lock, struct xa_window *wind);
 void	do_delayed_delete_window(enum locks lock);
 void	display_window(enum locks lock, int which, struct xa_window *w, RECT *clip);
 
+bool clip_off_menu( RECT *cl );
 void	draw_window(enum locks lock, struct xa_window *wind, const RECT *clip);
 void	update_all_windows(enum locks lock, struct xa_window *wl);
 void	update_windows_below(enum locks lock, const RECT *old, RECT *new, struct xa_window *wl, struct xa_window *wend);
@@ -97,7 +100,7 @@ void	bottom_window(enum locks lock, bool snd_untopped, bool snd_ontop, struct xa
 void	after_top(enum locks lock, bool untop);
 void	remove_windows(enum locks lock, struct xa_client *client);
 void	remove_all_windows(enum locks lock, struct xa_client *client);
-void	inside_root(RECT *r, bool noleft);
+short	inside_root(RECT *r, bool noleft);
 void	inside_minmax(RECT *r, struct xa_window *wind);
 void	set_winrect(struct xa_window *wind, RECT *wr, const RECT *r);
 
