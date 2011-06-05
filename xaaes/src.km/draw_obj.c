@@ -751,7 +751,11 @@ display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, struct x
 
 	if( cfg.menu_bar && wt != get_menu() && v->clip.y < get_menu_height() )
 	{
+		short d = get_menu_height() - v->clip.y;
+		if( v->clip.h <= d )
+			return;
 		v->clip.y = get_menu_height();
+		v->clip.h -= d;
 		(*v->api->set_clip)(v, &v->clip);
 	}
 
