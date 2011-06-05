@@ -24,6 +24,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include "xaaes.h"
 #include "menuwidg.h"
 #include "xa_global.h"
 
@@ -197,7 +198,7 @@ wt_menu_area(XA_TREE *wt)
 	{
 	/* additional fix to fit in window */
 		//obtree->ob_height = obtree[obtree->ob_head].ob_height = obtree[obtree->ob_tail].ob_height = get_menu_widg()->r.h; //wind->wa.w;
-		titles = obtree[obtree[0].ob_head].ob_head;
+		titles = obtree[obtree[SYSTEM_MENU].ob_head].ob_head;
 		obj_area(wt, aesobj(wt->tree, titles), &wt->area);
 
 		DIAG((D_menu, wt->owner, "wt_menu_area: %d/%d/%d/%d for %s",
