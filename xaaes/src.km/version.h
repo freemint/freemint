@@ -34,7 +34,7 @@
   */
 #define XAAES_MAJ_VERSION  1
 #define XAAES_MIN_VERSION  1
-#define XAAES_PATCH_LEVEL  110
+#define XAAES_PATCH_LEVEL  11
 
 #define ARCH_TARGET	AES_ARCH_M68K
 #define DEV_STATUS	AES_DEVSTATUS_BETA
@@ -73,7 +73,7 @@
 #endif
 
 #ifdef __mcoldfire__
- #define _CPU	"ColdFire"
+ #define _CPU	"coldfire"
 #else
  #ifdef mc68060
   #ifdef mc68020
