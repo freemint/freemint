@@ -37,6 +37,7 @@ void cancel_winctxt_popup(enum locks lock, struct xa_window *wind, struct xa_cli
 void init_client_widget_theme(struct xa_client *client);
 void exit_client_widget_theme(struct xa_client *client);
 
+#define MI_IGN	32767
 
 //COMPASS compass(short d, short x, short y, RECT r);
 
@@ -129,5 +130,7 @@ usertoolbar_installed(struct xa_window *wind)
 	else
 		return NULL;
 }
+
+#define BELOW_FOREIGN_MENU(y)	(cfg.menu_bar && desktop_owner() != C.Aes && y < get_menu_height() )
 
 #endif /* _widgets_h */

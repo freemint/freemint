@@ -37,6 +37,7 @@
 #include "rectlist.h"
 #include "c_window.h"
 #include "widgets.h"
+#include "menuwidg.h"
 #include "scrlobjc.h"
 #include "xa_user_things.h"
 
@@ -748,6 +749,13 @@ display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, struct x
 		return;
 	}
 
+	if( cfg.menu_bar && wt != get_menu() && v->clip.y < get_menu_height() )
+	{
+		v->clip.y = get_menu_height();
+		(*v->api->set_clip)(v, &v->clip);
+	}
+
+
 	/* Fill in the object display parameter structure */
 	wt->current = item;
 	wt->r_parent.x = parent_x;
@@ -955,7 +963,7 @@ short flags)
 	DIAG((D_objc, wt->owner, "dx = %d, dy = %d", x, y));
 	DIAG((D_objc, wt->owner, "draw_object_tree for %s to %d/%d,%d/%d; %lx + %d depth:%d",
 		t_owner(wt), x + tree->ob_x, y + tree->ob_y,
-		tree->ob_width, tree->ob_height, tree, item, depth));
+		tree->ob_width, tree->ob_height, tree, item.item, depth));
 	DIAG((D_objc, wt->owner, "  -   (%d)%s%s",
 		wt->is_menu, obtree_is_menu(tree) ? "menu" : "object", wt->zen ? " with zen" : " no zen"));
 
