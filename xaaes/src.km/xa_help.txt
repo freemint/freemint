@@ -1,6 +1,7 @@
 # Place this file in the xaaes-boot directory (C:\mint\1-*-*\xaaes)
 Ctrl-Alt-Shortcuts:
 
+0             Switch menubar on/off
 A             Terminates all applications (list of
               exceptions in xaaes.cnf)
 B             Open System/Log-window
@@ -12,7 +13,7 @@ HELP          Open about
 H             Halt system (or execute $SDMASTER if set)
 I             (Un-)iconify current window
 K             Launch program
-M             Force mouse on
+M             Recover mousepointer
 P             Restore palette in colour depth of 8-bits
               or less
 Q,G           Quit XaAES (or execute $SDMASTER if set)
@@ -30,19 +31,18 @@ SHIFT+SPACE   Open menu in current window if it has one,
               else open main menubar
 TAB           Cycle open applications
 
-INS           Full current window
+INSERT        Full current window
 CURSOR-UP     Grow current window
 CURSOR-DOWN   Shrink current window
 CURSOR-RIGHT  Grow width of current window
 CURSOR-LEFT   Shrink width of current window
 
 SHIFT+
- CURSOR-RIGHT Move current window right
- CURSOR-LEFT  Move current window left
  CURSOR-UP    Move current window up
  CURSOR-DOWN  Move current window down
+ CURSOR-RIGHT Move current window right
+ CURSOR-LEFT  Move current window left
 
-CTRL+0        Switch menubar on/off
 -------------------------------------------------------
 
 Shortcuts/navigation in XaAES fileselector:
