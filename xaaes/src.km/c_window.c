@@ -2243,10 +2243,12 @@ move_window(enum locks lock, struct xa_window *wind, bool blit, WINDOW_STATUS ne
 	 */
 	if (!C.redraws && C.move_block != 3)
 		C.move_block = 0;
+	{
 	short y = old.y < new.y ? old.y : new.y;
 	if( cfg.menu_bar && y < get_menu_height() )
 	{
 		redraw_menu(lock);
+	}
 	}
 }
 
