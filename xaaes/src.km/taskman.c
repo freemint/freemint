@@ -1588,41 +1588,43 @@ static bool calc_tm_bar( OBJECT *obtree, short item, long pinf, long max )
 {
 
 	TEDINFO *t = object_get_tedinfo(&obtree[item], NULL);
-	obtree[item].ob_height = (short)(pinf * (long)obtree[TM_CHART].ob_height / max );
 
-	/* if height = 0 a bar is drawn anyway!? */
-	if( obtree[item].ob_height <= 0 )
-		obtree[item].ob_height = 1;
+	if( max == 0L )
+		obtree[item].ob_height = 0;
+	else
+	{
+		obtree[item].ob_height = (short)(pinf * (long)obtree[TM_CHART].ob_height / max );
+
+		/* if height = 0 a bar is drawn anyway!? */
+		if( obtree[item].ob_height <= 0 )
+			obtree[item].ob_height = 1;
+	}
 
 	if( t )
 	{
 		OBJC_COLORWORD *c = (OBJC_COLORWORD *)&t->te_color;
 		int v = obtree[item].ob_height * 100 / obtree[TM_CHART].ob_height;
-		c->pattern = IP_SOLID;
-		/* mark levels with different colors
-		  found the color-values by Trial&Error ...
-		*/
-		if( v > 95 )
+
+		/* mark levels with different colors */
+		if( v > 100 )	// happens sometimes
 		{
-			c->borderc = c->fillc = 3;	//magenta
-			if( v > 100 )	// happens sometimes
-			{
-				c->borderc = c->fillc = 8;
-				obtree[item].ob_height = obtree[TM_CHART].ob_height;
-			}
+			c->fillc = G_MAGENTA;
+			obtree[item].ob_height = obtree[TM_CHART].ob_height;
+		}
+		else if( v > 95 )
+		{
+			c->fillc = G_RED;
 		}
 		else if( v > 75 )
 		{
-			c->borderc = c->fillc = 5;	// red
+			c->fillc = G_LRED;
 		}
 		else if( v > 25 )
 		{
-			c->borderc = c->fillc = 6;	// blue
+			c->fillc = G_CYAN;	//G_LBLUE;
 		}
 		else{
-
-			//c->fillc = c->borderc = 0;	//black
-			c->fillc = c->borderc = 7;	//green
+			c->fillc = G_GREEN;
 		}
 	}
 
@@ -1793,7 +1795,7 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 	if (!htd)
 		return;
 
-	if (!htd->w_taskman) //(!task_man_win)
+	if (!htd->w_taskman)
 	{
 		struct scroll_info *list;
 		struct scroll_content sc = {{ 0 }};
@@ -2676,6 +2678,7 @@ open_systemalerts(enum locks lock, struct xa_client *client, bool open)
 	struct widget_tree *wt = NULL;
 	struct xa_window *wind;
 	RECT remember = { 0, 0, 0, 0 };
+
 
 	if (!(htd = get_helpthread_data(client)))
 		return;
