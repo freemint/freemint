@@ -56,7 +56,6 @@ short key_conv( struct xa_client *client, short key );
 void cancel_keyqueue	(struct xa_client *client);
 void queue_key		(struct xa_client *client, const struct rawkey *key);
 bool unqueue_key	(struct xa_client *client, struct rawkey *key);
-void toggle_menu(enum locks lock, short md);
 
 void keyboard_input	(enum locks lock);
 
