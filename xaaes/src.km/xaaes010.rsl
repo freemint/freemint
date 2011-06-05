@@ -414,15 +414,9 @@ hu:Terhel‚s ki/be
 ru:Загрузка вкл/выкл
 cs:Vyp/zap graf
 _
-nn:Load      @
-de:Auslastung
-fr:Charge
-es:Carga promedio
-hu:Terhel‚s
-ru:загрузка
-cs:Zбtмѕ
+nn:CPU
 _
-nn:mem
+nn:RAM
 _
 nn:T
 _
