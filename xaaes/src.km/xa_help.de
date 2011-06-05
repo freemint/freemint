@@ -1,6 +1,7 @@
 # Diese Datei gehîrt in den XaAES-Ordner (C:\mint\1-*-*\xaaes)
 XaAES Tastatur-Shortcuts (CTRL+ALT+Taste):
 
+0             MenÅzeile an/ausschalten
 A             Beendet alle laufenden Progamme
               (Ausnahmeliste in xaaes.cnf)
 B             ôffnet den System/Log-Dialog
@@ -13,13 +14,15 @@ H             System herunterfahren (oder $SDMASTER
               ausfÅhren, falls gesetzt)
 I             Oberstes Fenster (de-)ikonifizieren
 K             Programm starten
-T,HOME        Bildschirm wiederherstellen (neuzeichnen)
+M             Mauszeiger wiederherstellen
 P             Farbpalette wiederherstellen (Farbtiefe
               8-Bit oder weniger)
 Q,G           XaAES sofort beenden (oder $SDMASTER
               ausfÅhren, falls gesetzt)
 R             Versucht ein "hÑngendes" System
               wiederherzustellen
+T,HOME        Bildschirm wiederherstellen (neuzeichnen)
+U             Oberstes Fenster schlieûen
 V             Alle versteckten Programme hervorholen
 W             Globaler Fensterwechsel
 X             Versteckt alle Programme bis auf das
@@ -31,8 +34,20 @@ SPACE         ôffnet das HauptmenÅ (Navigation mit
 SHIFT+SPACE   ôffnet das FenstermenÅ (falls vorhanden),
               sonst das HauptmenÅ
 TAB           Wechsel zwischen aktiven Programmen
-PFEIL-RECHTS  Oberstes Fenster maximieren
+
+INSERT        Oberstes Fenster maximieren
               (volle Bildschirmgrîûe)
+PFEIL-HOCH    Oberstes Fenster vergrîûern
+PFEIL-RUNTER  Oberstes Fenster verkleinern
+PFEIL-RECHTS  Oberstes Fenster breiter machen
+PFEIL-LINKS   Oberstes Fenster schmaler machen
+
+SHIFT+
+ PFEIL-HOCH   Oberstes Fenster nach oben verschieben
+ PFEIL-RUNTER Oberstes Fenster nach unten verschiebenn
+ PFEIL-RECHTS Oberstes Fenster nach rechts verschieben
+ PFEIL-LINKS  Oberstes Fenster nach links verschieben
+
 -------------------------------------------------------
 
 Shortcuts/Navigation im Dateiauswahl-Dialog:
@@ -50,6 +65,16 @@ DELETE        Selektierte Datei/leeren Ordner lîschen
 
 ALT+ " + "    Vergrîûert die Schrift in der List-Box
 ALT+ " - "    Verkleinert die Schrift in der List-Box
+
+CTRL+SPACE    Sortierung umkehren
+
+-------------------------------------------------------
+
+Shortcuts fÅr alle Fenster:
+
+SHIFT+
+ PFEIL-HOCH/RUNTER      Seite hoch/runter blÑttern
+ PFEIL-RECHTS/LINKS     Seite rechts/links blÑttern
 
 * List-Box selektiert:
 
