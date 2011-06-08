@@ -12,6 +12,7 @@ F,L           Open task-manager
 HELP          Open about
 H             Halt system (or execute $SDMASTER if set)
 I             (Un-)iconify current window
+J             Restart XaAES
 K             Launch program
 M             Recover mousepointer
 P             Restore palette in colour depth of 8-bits
