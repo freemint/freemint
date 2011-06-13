@@ -21,19 +21,6 @@ all-here: startup objs
 INCLUDES = -I$(top_srcdir)
 DEFINITIONS = $(KERNELDEFAULTDEFS) $(KERNELDEFS)
 
-ifneq ($(CPU),030)
-NOCFLAGS-cpu.S = $(MODEL)
-endif
-CFLAGS-cpu.S = -m68030
-ifneq ($(CPU),030)
-NOCFLAGS-intr.S = $(MODEL)
-endif
-CFLAGS-intr.S = -m68030
-ifneq ($(CPU),020-60)
-NOCFLAGS-syscall.S = $(MODEL)
-endif
-CFLAGS-syscall.S = -m68020-60
-
 cflags = $(kernel_cflags)
 nocflags = $(kernel_nocflags)
 
