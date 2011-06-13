@@ -1,3 +1,4 @@
 .deps
 gen-syscall
+gen-syscall.exe
 *.o

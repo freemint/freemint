@@ -12,6 +12,7 @@ lib*.a
 *.prg
 __target.*
 mkbuild
+mkbuild.exe
 cdef.h
 build.h
 buildserial
