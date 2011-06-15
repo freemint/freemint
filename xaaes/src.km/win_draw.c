@@ -2754,7 +2754,7 @@ d_info(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 
 	if (wti->flags & WTXT_NOCLIP)
 		(*v->api->set_clip)(wind->vdi_settings, &widg->ar);
-	draw_widget_text(wind->vdi_settings, widg, wti, widg->stuff, 4, 0);
+	draw_widget_text(wind->vdi_settings, widg, wti, widg->stuff, 4 + widg->xlimit, 0);
 	/* restore clip */
 	if (wti->flags & WTXT_NOCLIP)
 		(*v->api->set_clip)(wind->vdi_settings, &dr);
