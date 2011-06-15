@@ -74,7 +74,7 @@
 
 char XAAESNAME[] = "XaAES";
 
-static void add_kerinfo( char *path, struct scroll_info *list, struct scroll_entry *this, struct scroll_entry *to, struct scroll_content *sc, int maxlen, int startline, int redraw, long *pinfo );
+static void add_kerinfo( char *path, struct scroll_info *list, struct scroll_entry *this, struct scroll_entry *to, struct scroll_content *sc, int maxlen, int startline, int redraw, long *pinfo, bool child );
 static int ker_stat( int pid, char *what, long pinfo[] );
 
 
@@ -478,7 +478,7 @@ void add_window_to_tasklist(struct xa_window *wi, const char *title)
 					{
 						/* new window */
 						struct scroll_content sc = {{ 0 }};
-						bool redraw = (wind->window_status & XAWS_OPEN) ? true : false;
+						//bool redraw = (wind->window_status & XAWS_OPEN) ? true : false;
 
 						sc.t.text = wi->wname;
 						if( !*sc.t.text )
@@ -489,7 +489,7 @@ void add_window_to_tasklist(struct xa_window *wi, const char *title)
 						sc.data = wi;
 						sc.usr_flags = TM_WINDOW;
 						sc.fnt = &norm_txt;
-						list->add(list, this, NULL, &sc, SEADD_CHILD, 0, redraw);
+						list->add(list, this, NULL, &sc, SEADD_CHILD, 0, true);
 
 						if( !(this->xstate & OS_OPENED) )
 							list->cur = this;
@@ -1584,7 +1584,7 @@ static bool is_aes_client( struct proc *p )
 #define MAXLOAD	234L
 #define WITH_ACTLD  0x4143544CL /* 'ACTL' */
 
-static bool calc_tm_bar( OBJECT *obtree, short item, long pinf, long max )
+static bool calc_tm_bar( OBJECT *obtree, short item, short parent, long pinf, long max )
 {
 
 	TEDINFO *t = object_get_tedinfo(&obtree[item], NULL);
@@ -1593,7 +1593,7 @@ static bool calc_tm_bar( OBJECT *obtree, short item, long pinf, long max )
 		obtree[item].ob_height = 0;
 	else
 	{
-		obtree[item].ob_height = (short)(pinf * (long)obtree[TM_CHART].ob_height / max );
+		obtree[item].ob_height = (short)(pinf * (long)obtree[parent].ob_height / max );
 
 		/* if height = 0 a bar is drawn anyway!? */
 		if( obtree[item].ob_height <= 0 )
@@ -1603,13 +1603,13 @@ static bool calc_tm_bar( OBJECT *obtree, short item, long pinf, long max )
 	if( t )
 	{
 		OBJC_COLORWORD *c = (OBJC_COLORWORD *)&t->te_color;
-		int v = obtree[item].ob_height * 100 / obtree[TM_CHART].ob_height;
+		int v = obtree[item].ob_height * 100 / obtree[parent].ob_height;
 
 		/* mark levels with different colors */
 		if( v > 100 )	// happens sometimes
 		{
 			c->fillc = G_MAGENTA;
-			obtree[item].ob_height = obtree[TM_CHART].ob_height;
+			obtree[item].ob_height = obtree[parent].ob_height;
 		}
 		else if( v > 95 )
 		{
@@ -1628,7 +1628,7 @@ static bool calc_tm_bar( OBJECT *obtree, short item, long pinf, long max )
 		}
 	}
 
-	obtree[item].ob_y = obtree[TM_CHART].ob_height - obtree[item].ob_height;
+	obtree[item].ob_y = obtree[parent].ob_height - obtree[item].ob_height;
 
 	return true;
 }
@@ -1753,11 +1753,11 @@ static void do_tm_chart(enum locks lock, XA_TREE *wt, struct proc *rootproc, str
 				pinfo[i] = (pinfo[i] * MAXLOAD) / OLD_MAXLOAD;
 		}
 #endif
-		calc_tm_bar( wt->tree, TM_LOAD1, pinfo[0], MAXLOAD );
-		calc_tm_bar( wt->tree, TM_LOAD2, pinfo[1], MAXLOAD );
-		calc_tm_bar( wt->tree, TM_LOAD3, pinfo[2], MAXLOAD );
+		calc_tm_bar( wt->tree, TM_LOAD1, TM_CPU, pinfo[0], MAXLOAD );
+		calc_tm_bar( wt->tree, TM_LOAD2, TM_CPU, pinfo[1], MAXLOAD );
+		calc_tm_bar( wt->tree, TM_LOAD3, TM_CPU, pinfo[2], MAXLOAD );
 		pinfo[3] = calc_new_ld( rootproc );
-		calc_tm_bar( wt->tree, TM_ACTLD, pinfo[3], MAXLOAD );
+		calc_tm_bar( wt->tree, TM_ACTLD, TM_CPU, pinfo[3], MAXLOAD );
 
 		pinfo[0] = 13;
 		pinfo[1] = 16;
@@ -1769,12 +1769,43 @@ static void do_tm_chart(enum locks lock, XA_TREE *wt, struct proc *rootproc, str
 
 		ker_stat( 0, "meminfo", pinfo);
 
-		calc_tm_bar( wt->tree, TM_MEM, pinfo[0] - pinfo[1], pinfo[0] );		// total
-		calc_tm_bar( wt->tree, TM_FAST, pinfo[2] - pinfo[3], pinfo[2] );	// fast
-		calc_tm_bar( wt->tree, TM_CORE, pinfo[4] - pinfo[5], pinfo[4] );	//core
+		calc_tm_bar( wt->tree, TM_MEM, TM_RAM, pinfo[0] - pinfo[1], pinfo[0] );		// total
+		calc_tm_bar( wt->tree, TM_FAST, TM_RAM, pinfo[2] - pinfo[3], pinfo[2] );	// fast
+		calc_tm_bar( wt->tree, TM_CORE, TM_RAM, pinfo[4] - pinfo[5], pinfo[4] );	//core
 
 		redraw_toolbar( lock, wind, TM_CHART );
 	}
+}
+
+static void add_meminfo( struct scroll_info *list, struct scroll_entry *this )
+{
+	struct scroll_content sc = {{ 0 }};
+	long uinfo[4];
+	struct scroll_entry *to = 0;
+
+	sc.t.strings = 1;
+	sc.data = (void*)1;
+	sc.xflags = 0;
+	{
+		struct sesetget_params p = { 0 };
+		p.arg.data = (void*)1;
+		if( list->get(list, NULL, SEGET_ENTRYBYDATA, &p) )
+		{
+			to = p.e;
+			if( to->next )
+			{
+				list->del( list, to, NOREDRAW );	// meminfo always last
+				to = 0;
+			}
+		}
+	}
+	sc.usr_flags = TM_MEMINFO;
+
+	uinfo[0] = 1;
+	uinfo[1] = (long)"used: ";
+	uinfo[2] = 2;
+	uinfo[3] = 0;
+	add_kerinfo( "u:/kern/meminfo", list, this, to, &sc, PROCINFLEN, 5, NOREDRAW, uinfo, false );
 }
 
 void
@@ -1798,7 +1829,6 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 	if (!htd->w_taskman)
 	{
 		struct scroll_info *list;
-		struct scroll_content sc = {{ 0 }};
 		int tm_ticks[] = {TM_TICK1, 25, 1, TM_TICK2, 50, 2, TM_TICK3, 75, 1, 0, 0, 0};
 
 		obtree = duplicate_obtree(client, ResourceTree(C.Aes_rsc, TASK_MANAGER), 0);
@@ -1810,18 +1840,20 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 #if 1
 		/* resize window if < 10-point-font */
 		if( screen.c_max_h < 14 ){
+			short i, rs[4] = {TM_CHART, TM_CPU, TM_RAM, 0};
 			short d = 16 / screen.c_max_h, dy;
 
 			obtree->ob_height *= d;
-			dy = (obtree+TM_LIST)->ob_height;
 
 			(obtree+TM_LIST)->ob_height *= d;
-			(obtree+TM_LIST)->ob_height += d/2;//12;
+			(obtree+TM_LIST)->ob_height += d/2;
 			(obtree+TM_LIST)->ob_y += obtree->ob_y + 18;
 
-			dy = dy * (d  - 1) + 12;
-			(obtree+TM_CHART)->ob_height *= d;
-			(obtree+TM_CHART)->ob_y = (obtree+TM_LIST)->ob_y + (obtree+TM_LIST)->ob_height;
+			for( i = 0; rs[i]; i++ )
+			{
+				(obtree + rs[i])->ob_height *= d;
+			}
+			(obtree + TM_CHART)->ob_y = (obtree+TM_LIST)->ob_y + (obtree+TM_LIST)->ob_height;
 
 			dy = obtree->ob_y + obtree->ob_height - ((obtree + TM_OK)->ob_y + (obtree+TM_OK)->ob_height) - 8;
 			for( d = TM_QUITAPPS; d < TM_CHART; d++ )
@@ -1834,7 +1866,7 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 				 SIF_SELECTABLE|SIF_AUTOSELECT|SIF_TREEVIEW|SIF_ICONINDENT|SIF_AUTOOPEN|SIF_AUTOSLIDERS,
 				 NULL, NULL, NULL, NULL, NULL, tm_slist_key,
 				 NULL, NULL, NULL, NULL,
-				 xa_strings[RS_APPLST], NULL, NULL, 255);
+				 xa_strings[RS_APPLST], "         name          pid  ppid pgrp pri DOM STATE    SZ           CPU  % args", NULL, 255);
 
 		if (!list) goto fail;
 
@@ -1888,26 +1920,6 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 
 		htd->w_taskman = wind;
 
-		{
-		long uinfo[4];
-		sc.t.strings = 1;
-		sc.data = (void*)1;
-		sc.xflags = 0;
-		sc.usr_flags = TM_MEMINFO;
-		uinfo[0] = 1;
-		uinfo[1] = (long)"used: ";
-		uinfo[2] = 2;
-		uinfo[3] = 0;
-		add_kerinfo( "u:/kern/meminfo", list, NULL, NULL, &sc, PROCINFLEN, 5, NOREDRAW, uinfo );
-		}
-
-		sc.data = 0;
-		sc.usr_flags = TM_HEADER;
-		/* ! no tabs! */
-		sc.t.text = "       name          pid  ppid pgrp pri DOM STATE    SZ           CPU  % args";
-		sc.fnt = &norm_txt;
-		list->add(list, NULL, NULL, &sc, false, 0, NOREDRAW);
-
 		if (open)
 		{
 			open_window(lock, wind, wind->r);
@@ -1919,7 +1931,6 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 		if (open)
 		{
 			SCROLL_INFO *list;
-			struct scroll_content sc = {{ 0 }};
 			struct proc *rootproc = pid2proc(0);
 
 			wt = get_widget(wind, XAW_TOOLBAR)->stuff;
@@ -1932,7 +1943,6 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 
 			if( list )
 			{
-				struct sesetget_params p = { 0 };
 				struct scroll_entry *this;
 				/* todo: to change fnt-size at runtime font-info for each list-entry would have to be updated */
 				//set_xa_fnt( cfg.xaw_point + fss, wp, wt->tree, objs, list);
@@ -1940,23 +1950,6 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 
 				for( this = list->start; this; this = this->next )
 					this->usr_flags &= ~TM_UPDATED;
-
-				sc.t.strings = 1;
-				sc.data = (void*)1;
-				sc.xflags = 0;
-				sc.usr_flags = TM_UPDATED;
-				p.arg.data = (void*)1;
-				list->get(list, NULL, SEGET_ENTRYBYDATA, &p);
-				if (p.e)
-				{
-					long uinfo[4];
-					uinfo[0] = 1;
-					uinfo[1] = (long)"used: ";
-					uinfo[2] = 2;
-					uinfo[3] = 0;
-					/* todo: use info from do_tm_chart */
-					add_kerinfo( "u:/kern/meminfo", list, NULL, p.e, &sc, PROCINFLEN, 5, redraw, uinfo );
-				}
 
 				FOREACH_CLIENT(client)
 				{				/* */
@@ -1993,6 +1986,9 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 							}
 						}
 						d_closedir(i);
+
+						add_meminfo( list, this );
+
 						for( this = list->start; this; this = this->next )
 						{
 							if( !(this->usr_flags & (TM_MEMINFO|TM_UPDATED|TM_HEADER) ) )
@@ -2588,7 +2584,7 @@ static void add_kerinfo(
 	struct scroll_info *list,
 	struct scroll_entry *this, struct scroll_entry *to,
 	struct scroll_content *sc, int maxlen, int startline,
-	int redraw, long *pinfo
+	int redraw, long *pinfo, bool child
 )
 {
 	long err;
@@ -2661,7 +2657,7 @@ static void add_kerinfo(
 			{
 				sc->t.text = line;
 				sc->fnt = &norm_txt;
-				list->add(list, this, 0, sc, this ? (SEADD_CHILD) : SEADD_PRIOR, 0, redraw);
+				list->add(list, this, 0, sc, child ? (this ? (SEADD_CHILD) : SEADD_PRIOR) : 0, 0, redraw);
 			}
 		}
 	}
@@ -2788,17 +2784,17 @@ open_systemalerts(enum locks lock, struct xa_client *client, bool open)
 			list->add(list, this, 0, &sc, this ? (SEADD_CHILD) : SEADD_PRIOR, 0, true);
 
 			/* cpuinfo */
-			add_kerinfo( "u:/kern/cpuinfo", list, this, NULL, &sc, 0, 0, false, NULL );
+			add_kerinfo( "u:/kern/cpuinfo", list, this, NULL, &sc, 0, 0, false, NULL, true );
 			BLOG((0,"cpuinfo:%s", sc.t.text ));
 			add_os_features(list, this, &sc);
 
 
 			this = add_title_string(list, this, "Kernel");
 
-			add_kerinfo( "u:/kern/version", list, this, NULL, &sc, 0, 0, false, NULL );
+			add_kerinfo( "u:/kern/version", list, this, NULL, &sc, 0, 0, false, NULL, true );
 			BLOG((0,"version:%s", sc.t.text ));
 #if !XAAES_RELEASE
-			add_kerinfo( "u:/kern/buildinfo", list, this, NULL, &sc, 0, 1, false, NULL );
+			add_kerinfo( "u:/kern/buildinfo", list, this, NULL, &sc, 0, 1, false, NULL, true );
 			BLOG((0,"buildinfo:%s", sc.t.text ));
 #endif
 			init_list_focus( obtree, SYSALERT_LIST, 0 );
