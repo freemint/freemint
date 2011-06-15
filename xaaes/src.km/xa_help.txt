@@ -64,7 +64,13 @@ ALT+ " - "    Decrease the fontsize in listbox
 CTRL+SPACE    Reverse sort-order
 
 -------------------------------------------------------
+Shortcuts in the taskmanager:
 
+DELETE    Terminate selected program (same as trashcan)
+SHIFT+
+ DELETE   Kill selected program  (same as skull)
+
+-------------------------------------------------------
 Shortcuts for all list-windows:
 
 SHIFT+
