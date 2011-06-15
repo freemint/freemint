@@ -76,13 +76,12 @@ $(MINT): $(OBJS) $(BUILDINFO) $(LIBKERNTARGET)
 		$(LIBS)
 
 $(BUILDINFO): compiler buildheader buildserial
-	$(CC) $(CFLAGS) -o $@ -c $(srcdir)/$(BUILD).c
 
 compiler:
 	cd $(srcdir)/buildinfo; \
 	CC="$(CC)" \
-	OPTS="$(GENERAL) $(MODEL) $(OPTS)" \
-	DEFS="$(DEFINITIONS)" \
+	OPTS="$(filter-out $(nocflags), $(MODEL) $(GENERAL) $(OPTS))" \
+	DEFS="$(filter-out $(nocflags), $(DEFINITIONS))" \
 	sh cdef.sh
 
 buildheader:
