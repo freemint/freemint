@@ -83,18 +83,21 @@
 #define TM_COLD 19  /* BUTTON in tree TASK_MANAGER */
 #define TM_RESCHG 20  /* BUTTON in tree TASK_MANAGER */
 #define TM_CHART 21  /* BOXTEXT in tree TASK_MANAGER */
-#define TM_LOADTTL 22  /* TEXT in tree TASK_MANAGER */
-#define TM_MEMTTL 23  /* TEXT in tree TASK_MANAGER */
-#define TM_ACTLD 24  /* BOXTEXT in tree TASK_MANAGER */
-#define TM_LOAD1 25  /* BOXTEXT in tree TASK_MANAGER */
-#define TM_LOAD2 26  /* BOXTEXT in tree TASK_MANAGER */
+#define TM_CHARTTTL 25  /* TEXT in tree TASK_MANAGER */
+#define TM_CPU 26  /* BOX in tree TASK_MANAGER */
+#define TM_TICK3 22  /* BOXTEXT in tree TASK_MANAGER */
+#define TM_TICK2 23  /* BOXTEXT in tree TASK_MANAGER */
+#define TM_TICK1 24  /* BOXTEXT in tree TASK_MANAGER */
 #define TM_LOAD3 27  /* BOXTEXT in tree TASK_MANAGER */
-#define TM_MEM 28  /* BOXTEXT in tree TASK_MANAGER */
-#define TM_FAST 29  /* BOXTEXT in tree TASK_MANAGER */
-#define TM_CORE 30  /* BOXTEXT in tree TASK_MANAGER */
-#define TM_TICK2 31  /* BOXTEXT in tree TASK_MANAGER */
-#define TM_TICK3 32  /* BOXTEXT in tree TASK_MANAGER */
-#define TM_TICK1 33  /* BOXTEXT in tree TASK_MANAGER */
+#define TM_LOAD2 28  /* BOXTEXT in tree TASK_MANAGER */
+#define TM_LOAD1 29  /* BOXTEXT in tree TASK_MANAGER */
+#define TM_ACTLD 30  /* BOXTEXT in tree TASK_MANAGER */
+#define TM_CPUTTL 31  /* TEXT in tree TASK_MANAGER */
+#define TM_RAM 32  /* BOX in tree TASK_MANAGER */
+#define TM_CORE 33  /* BOXTEXT in tree TASK_MANAGER */
+#define TM_FAST 34  /* BOXTEXT in tree TASK_MANAGER */
+#define TM_MEM 35  /* BOXTEXT in tree TASK_MANAGER */
+#define TM_RAMTTL 36  /* TEXT in tree TASK_MANAGER */
 
 #define SYS_ERROR 7  /* form/dial */
 #define SYSALERT_LIST 1  /* BOX in tree SYS_ERROR */
