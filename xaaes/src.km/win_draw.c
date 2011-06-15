@@ -1805,9 +1805,9 @@ struct window_colours slist_def_utop_cols =
                                       {0,  10,  0, MD_TRANS, 0,        G_LBLACK, G_WHITE, G_WHITE, 1,      1,       NULL},	/* Selected */
                                       {0,  10,  0, MD_TRANS, 0,        G_BLACK,	 G_WHITE, G_WHITE, 1,      1,       NULL}},	/* Highlighted */
  /* Info text-info */
- { 0,		      		      {0,   9,  0, MD_TRANS, 0,        G_LBLACK, G_WHITE, G_WHITE, 1,      1,       NULL},	/* Normal */
-                                      {0,   9,  0, MD_TRANS, 0,        G_LBLACK, G_WHITE, G_WHITE, 1,      1,       NULL},	/* Selected */
-                                      {0,   9,  0, MD_TRANS, 0,        G_BLACK,	 G_WHITE, G_WHITE, 1,      1,       NULL}},	/* Highlighted */
+ { 0,                                 {0,  10,  0, MD_TRANS, 0,        G_LBLACK, G_WHITE, G_WHITE, 1,      1,       NULL}, /* Normal */
+                                      {0,  10,  0, MD_TRANS, 0,        G_LBLACK, G_WHITE, G_WHITE, 1,      1,       NULL},	/* Selected */
+                                      {0,  10,  0, MD_TRANS, 0,        G_BLACK,	 G_WHITE, G_WHITE, 1,      1,       NULL}},	/* Highlighted */
 };
 #endif
 
@@ -2721,6 +2721,9 @@ d_info(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	struct xa_wcol_inf *wci = &wc->info;
 	struct xa_wtxt_inf *wti = &wc->info_txt;
 	struct xa_wtexture *t = NULL;
+	struct xa_vdi_settings *v = wind->vdi_settings;
+	RECT dr = v->clip;
+
 
 	/* Convert relative coords and window location to absolute screen location */
 	(*api->rp2ap)(wind, widg, &widg->ar);
@@ -2748,7 +2751,13 @@ d_info(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 
 
 	draw_widg_box(wind->vdi_settings, 0, wci, t, widg->state, &widg->ar, t ? &widg->ar : &wind->r);
+
+	if (wti->flags & WTXT_NOCLIP)
+		(*v->api->set_clip)(wind->vdi_settings, &widg->ar);
 	draw_widget_text(wind->vdi_settings, widg, wti, widg->stuff, 4, 0);
+	/* restore clip */
+	if (wti->flags & WTXT_NOCLIP)
+		(*v->api->set_clip)(wind->vdi_settings, &dr);
 	return true;
 }
 
@@ -4093,12 +4102,12 @@ init_module(const struct xa_module_api *xmapi, const struct xa_screen *screen, c
 		}
 
 		/* set window-title and info-font-id */
-		def_otop_cols.title_txt.n.f= cfg.font_id;
-		def_otop_cols.title_txt.s.f= cfg.font_id;
-		def_otop_cols.title_txt.h.f= cfg.font_id;
-		def_utop_cols.title_txt.n.f= cfg.font_id;
-		def_utop_cols.title_txt.s.f= cfg.font_id;
-		def_utop_cols.title_txt.h.f= cfg.font_id;
+		def_otop_cols.title_txt.n.f = cfg.font_id;
+		def_otop_cols.title_txt.s.f = cfg.font_id;
+		def_otop_cols.title_txt.h.f = cfg.font_id;
+		def_utop_cols.title_txt.n.f = cfg.font_id;
+		def_utop_cols.title_txt.s.f = cfg.font_id;
+		def_utop_cols.title_txt.h.f = cfg.font_id;
 
 		def_otop_cols.info_txt.n.f = cfg.font_id;
 		def_otop_cols.info_txt.s.f = cfg.font_id;
@@ -4107,23 +4116,68 @@ init_module(const struct xa_module_api *xmapi, const struct xa_screen *screen, c
 		def_utop_cols.info_txt.s.f = cfg.font_id;
 		def_utop_cols.info_txt.h.f = cfg.font_id;
 
-
-#ifndef ST_ONLY
-		/* set slist-window-title font-id */
-		slist_def_otop_cols.title_txt.n.f= cfg.font_id;
-		slist_def_otop_cols.title_txt.s.f= cfg.font_id;
-		slist_def_otop_cols.title_txt.h.f= cfg.font_id;
-		slist_def_utop_cols.title_txt.n.f= cfg.font_id;
-		slist_def_utop_cols.title_txt.s.f= cfg.font_id;
-		slist_def_utop_cols.title_txt.h.f= cfg.font_id;
-
-		/* set infoline-point */
+		/* set window-info-font-pt */
 		def_otop_cols.info_txt.n.p = cfg.info_font_point;
 		def_otop_cols.info_txt.s.p = cfg.info_font_point;
 		def_otop_cols.info_txt.h.p = cfg.info_font_point;
+
 		def_utop_cols.info_txt.n.p = cfg.info_font_point;
 		def_utop_cols.info_txt.s.p = cfg.info_font_point;
 		def_utop_cols.info_txt.h.p = cfg.info_font_point;
+
+		mono_def_otop_cols.info_txt.n.p = cfg.info_font_point;
+		mono_def_otop_cols.info_txt.s.p = cfg.info_font_point;
+		mono_def_otop_cols.info_txt.h.p = cfg.info_font_point;
+
+		mono_def_utop_cols.info_txt.n.p = cfg.info_font_point;
+		mono_def_utop_cols.info_txt.s.p = cfg.info_font_point;
+		mono_def_utop_cols.info_txt.h.p = cfg.info_font_point;
+
+
+		mono_def_otop_cols.title_txt.n.f = cfg.font_id;
+		mono_def_otop_cols.title_txt.s.f = cfg.font_id;
+		mono_def_otop_cols.title_txt.h.f = cfg.font_id;
+		mono_def_utop_cols.title_txt.n.f = cfg.font_id;
+		mono_def_utop_cols.title_txt.s.f = cfg.font_id;
+		mono_def_utop_cols.title_txt.h.f = cfg.font_id;
+
+		mono_def_otop_cols.info_txt.n.f = cfg.font_id;
+		mono_def_otop_cols.info_txt.s.f = cfg.font_id;
+		mono_def_otop_cols.info_txt.h.f = cfg.font_id;
+		mono_def_utop_cols.info_txt.n.f = cfg.font_id;
+		mono_def_utop_cols.info_txt.s.f = cfg.font_id;
+		mono_def_utop_cols.info_txt.h.f = cfg.font_id;
+
+
+#ifndef ST_ONLY
+		/* set slist-window-title and info font-id */
+		slist_def_otop_cols.title_txt.n.f= cfg.font_id;
+		slist_def_otop_cols.title_txt.s.f= cfg.font_id;
+		slist_def_otop_cols.title_txt.h.f= cfg.font_id;
+
+		slist_def_utop_cols.title_txt.n.f = cfg.font_id;
+		slist_def_utop_cols.title_txt.s.f = cfg.font_id;
+		slist_def_utop_cols.title_txt.h.f = cfg.font_id;
+
+		slist_def_otop_cols.info_txt.n.f = cfg.font_id;
+		slist_def_otop_cols.info_txt.s.f = cfg.font_id;
+		slist_def_otop_cols.info_txt.h.f = cfg.font_id;
+
+		slist_def_utop_cols.info_txt.n.f = cfg.font_id;
+		slist_def_utop_cols.info_txt.s.f = cfg.font_id;
+		slist_def_utop_cols.info_txt.h.f = cfg.font_id;
+
+
+		/* set infoline-point */
+		slist_def_otop_cols.info_txt.n.p = cfg.xaw_point;
+		slist_def_otop_cols.info_txt.s.p = cfg.xaw_point;
+		slist_def_otop_cols.info_txt.h.p = cfg.xaw_point;
+
+		slist_def_utop_cols.info_txt.n.p = cfg.xaw_point;
+		slist_def_utop_cols.info_txt.s.p = cfg.xaw_point;
+		slist_def_utop_cols.info_txt.h.p = cfg.xaw_point;
+
+
 #endif
 
 	}
@@ -4278,6 +4332,10 @@ new_color_theme(void *_module, short win_class, void **ontop, void **untop)
 				*new_ontop = MONO ? mono_def_otop_cols : def_otop_cols;
 				*new_untop = MONO ? mono_def_utop_cols : def_utop_cols;
 #endif
+				/* !! */
+				new_untop->info_txt.flags |= WTXT_NOCLIP;
+				new_ontop->info_txt.flags |= WTXT_NOCLIP;
+
 				break;
 			default:
  			{
