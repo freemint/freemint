@@ -1282,7 +1282,12 @@ sliders(struct scroll_info *list, bool rdrw)
 				display_widget(0, list->wi, get_widget(list->wi, XAW_VSLIDE), wind->rect_list.start);
 			}
 			if (rm & 2)
+			{
+				struct xa_widget *info = get_widget(list->wi, XAW_INFO);
+				info->xlimit = -list->start_x;
+				display_widget(0, list->wi, info, wind->rect_list.start);
 				display_widget(0, list->wi, get_widget(list->wi, XAW_HSLIDE), wind->rect_list.start);
+			}
 		}
 	}
 }
