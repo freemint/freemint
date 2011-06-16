@@ -133,7 +133,7 @@
 # include "mmu.h"
 
 
-#if defined(M68040) || defined(M68060)
+#if defined(WITH_MMU_SUPPORT) && (defined(M68040) || defined(M68060))
 
 #define MP_DEBUG_INFO DEBUG_INFO
 
@@ -1774,4 +1774,4 @@ BIG_MEM_DUMP (int bigone __attribute__((unused)), PROC *proc __attribute__((unus
 # endif /* DEBUG_INFO */
 }
 
-# endif /* M68040 || M68060 */
+#endif

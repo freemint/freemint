@@ -1583,7 +1583,11 @@ _dmabuf_alloc(ulong size, short cmode, const char *func)
 	MEMREGION *m;
 
 	/* we can't support cmode if memory protection is disabled */
-	if (cmode && no_mem_prot)
+	if (cmode
+# ifdef WITH_MMU_SUPPORT
+	    && no_mem_prot
+# endif
+	    )
 		return NULL;
 
 	m = kmr_get();
