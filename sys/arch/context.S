@@ -65,7 +65,9 @@
 	.globl	_fpu
 	.globl	_framesizes
 	.globl	_new_trace		// from intr.s
+#ifdef WITH_MMU_SUPPORT
 	.globl	_no_mem_prot
+#endif
 
 	.text
 
@@ -75,7 +77,7 @@ _build_context:
 
 	movem.l	d0-d7/a0-a6,(a0)	// save registers D0-D7/A0-A6
 
-#ifndef M68000
+#ifdef WITH_MMU_SUPPORT
 	tst.w	_no_mem_prot		// is there memory protection?
 	bne.s	noprot1
 #if defined (M68040) || defined (M68060)
@@ -200,7 +202,7 @@ _save_context:
 
 	movem.l	d0-d7/a0-a6,(a0)	// save D0-D7/A0-A6
 
-#ifndef M68000
+#ifdef WITH_MMU_SUPPORT
 	tst.w	_no_mem_prot
 	bne.s	noprot2
 	move.w	sr,d1
@@ -424,7 +426,7 @@ _change_context:
 	move.l	C_TERM(a0),(0x408).w	// restore GEMDOS terminate vector
 #endif
 
-#ifndef M68000
+#ifdef WITH_MMU_SUPPORT
 // Set memory context now
 	tst.w	_no_mem_prot
 	bne.s	noprot4

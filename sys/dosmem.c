@@ -46,9 +46,11 @@ sys_m_addalt (long start, long size)
 	if (!suser (p->p_cred->ucr))
 		return EPERM;
 
+# ifdef WITH_MMU_SUPPORT
 	if (!no_mem_prot)
 		/* pretend to succeed */
 		return E_OK;
+# endif
 
 	for (x = 0; x < size; x += 0x2000)
 	{
