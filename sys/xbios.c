@@ -427,6 +427,7 @@ long _cdecl
 sys_b_dosound (const char *p)
 {
 	union { volatile char *vc; const char *cc; long l; } ptr; ptr.cc = p;
+# ifdef WITH_MMU_SUPPORT
 	if (!no_mem_prot && ptr.l >= 0)
 	{
 		MEMREGION *r;
@@ -447,6 +448,7 @@ sys_b_dosound (const char *p)
 			mark_region (r, PROT_S, 0);
 		}
 	}
+# endif
 
 	ROM_Dosound (ptr.cc);
 

@@ -621,7 +621,7 @@ kern_get_welcome (SIZEBUF **buffer)
 	{
 		greet1,
 		greet2,
-# ifndef M68000
+# ifdef WITH_MMU_SUPPORT
 		no_mem_prot ? memprot_warning : "",
 # endif
 # ifdef CRYPTO_CODE

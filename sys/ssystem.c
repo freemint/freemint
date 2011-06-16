@@ -162,10 +162,14 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
  */
 		case S_OSFEATURES:
 		{
+			r = 0;
+
+# ifdef WITH_MMU_SUPPORT
+			if (!no_mem_prot)
+				r |= 0x01;
+# endif
 # ifdef CRYPTO_CODE
-			r =  ((!no_mem_prot) & 0x01) | 0x04;
-# else
-			r = ((!no_mem_prot) & 0x01);
+			r |= 0x04;
 # endif
 			break;
 		}
