@@ -321,7 +321,7 @@ init_cookies (void)
 
 	/* jr: install PMMU cookie if memory protection is used
 	 */
-# ifndef M68000
+# ifdef WITH_MMU_SUPPORT
 	if (!no_mem_prot)
 	{
 		TRACE(("PMMU cookie = %08lx", (long)0L));

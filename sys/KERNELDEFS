@@ -7,6 +7,7 @@
 # -DSOFT_UNITABLE	loadable unicode tables
 # -DBUILTIN_SHELL	include the built-in minimal shell
 # -DC_ONLY		replace some assembly function by C compatible one
+# -DWITH_MMU_SUPPORT	include MMU support
 
 #
 # machine flags
@@ -46,6 +47,7 @@
 KERNELDEFAULTDEFS = -D__KERNEL__
 KERNELDEFAULTDEFS += -DLANG_ENGLISH
 KERNELDEFAULTDEFS += -DVERBOSE_BOOT
+KERNELDEFAULTDEFS += -DWITH_MMU_SUPPORT
 
 # added this to default-options for test-purpose for now
 KERNELDEFAULTDEFS += -DWITH_SINGLE_TASK_SUPPORT
@@ -60,6 +62,7 @@ ifeq ($(kernel),000)
 MINT = mint000.prg
 CPU  = 000
 KERNELDEFS = -DM68000 -DNO_RAMFS -DNO_FAKE_SUPER
+kernel_nocflags = -DWITH_MMU_SUPPORT
 endif
 
 ifeq ($(kernel),030)
@@ -84,6 +87,7 @@ ifeq ($(kernel),020)
 MINT = mint020.prg
 CPU  = 020
 KERNELDEFS = -DM68000
+kernel_nocflags = -DWITH_MMU_SUPPORT
 endif
 
 ifeq ($(kernel),deb)
@@ -96,6 +100,7 @@ ifeq ($(kernel),col)
 MINT = mintv4e.prg
 CPU  = v4e
 KERNELDEFS = -DDEBUG_INFO -DM68040 -DNO_FAKE_SUPER -DCOLDFIRE -DC_ONLY
+kernel_nocflags = -DWITH_MMU_SUPPORT
 endif
 
 ifeq ($(kernel),mil)

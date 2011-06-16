@@ -192,7 +192,7 @@ emit_exe_auto(short fd)
 static void
 do_mem_prot(char *arg)
 {
-# ifndef M68000
+# ifdef WITH_MMU_SUPPORT
 	no_mem_prot = (strncmp(arg, "YES", 3) == 0) ? 0 : 1;	/* reversed */
 # endif
 }
@@ -200,7 +200,7 @@ do_mem_prot(char *arg)
 static long
 emit_mem_prot(short fd)
 {
-# ifndef M68000
+# ifdef WITH_MMU_SUPPORT
 	char line[MAX_CMD_LEN];
 
 	ksprintf(line, sizeof(line), "MEM_PROT=%s\n", no_mem_prot ? "NO" : "YES");
@@ -572,7 +572,9 @@ boot_kernel_p (void)
 	option[1] = load_xfs_f;		/* Load XFS or not */
 	option[2] = load_xdd_f;		/* Load XDD or not */
 	option[3] = load_auto;		/* Load AUTO or not */
+# ifdef WITH_MMU_SUPPORT
 	option[4] = !no_mem_prot;	/* Use memprot or not */
+# endif
 	option[5] = step_by_step;	/* Enter stepper mode */
 	option[6] = debug_level;
 	option[7] = out_device;
@@ -589,7 +591,7 @@ boot_kernel_p (void)
 			option[1] ? MSG_init_menu_yesrn : MSG_init_menu_norn,
 			option[2] ? MSG_init_menu_yesrn : MSG_init_menu_norn,
 			option[3] ? MSG_init_menu_yesrn : MSG_init_menu_norn,
-# ifndef M68000
+# ifdef WITH_MMU_SUPPORT
 			option[4] ? MSG_init_menu_yesrn : MSG_init_menu_norn,
 # endif
 			( option[5] == -1 ) ? MSG_init_menu_yesrn : MSG_init_menu_norn,
@@ -614,7 +616,9 @@ wait:
 					load_xfs_f   =  option[1];
 					load_xdd_f   =  option[2];
 					load_auto    =  option[3];
+# ifdef WITH_MMU_SUPPORT
 					no_mem_prot  = !option[4];
+# endif
 					step_by_step =  option[5];
 					debug_level  =  option[6];
 					out_device   =  option[7];
@@ -633,7 +637,13 @@ wait:
 				modified = 1;
 				break;
 			}
-			case '1' ... '5':
+			case '1':
+			case '2':
+			case '3':
+			case '4':
+# ifdef WITH_MMU_SUPPORT
+			case '5':
+# endif
 			{
 				int off;
 

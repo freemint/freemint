@@ -96,7 +96,7 @@
 # include "cookie.h"
 
 
-#ifdef M68030
+#if defined(WITH_MMU_SUPPORT) && defined(M68030)
 
 #if 0
 #define MP_DEBUG(x) DEBUG(x)
@@ -1258,4 +1258,4 @@ win_and_mark:
 	return prot_temp(start, nbytes, -1);
 }
 
-#endif /* M68030 */
+#endif
