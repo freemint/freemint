@@ -20,6 +20,8 @@ char *xa_strings[] = {
 /* alert-text */
 "[2][Quit All][Cancel|OK]     ",
 "[2][Leave XaAES][Cancel|OK]    ",
+"[2][Restart XaAES][Cancel|OK]    ",
+"[2][Halt System][Cancel|OK]     ",
 "[1][Snapper could not save snap!|ERROR: %d][OK]                     ",
 "[1][Cannot snap topwindow as|parts of it are offscreen!][OK]                                                   ",
 "[1]['xaaesnap' process not found.|Start 'xaaesnap.prg' and try again|or define snapshot in xaaes.cnf][OK]                            ",

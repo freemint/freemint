@@ -1377,7 +1377,20 @@ void _cdecl
 ce_dispatch_shutdown(enum locks lock, struct xa_client *client, bool b)
 {
 		short r = 0;
-		r = xaaes_do_form_alert( lock, C.Hlp, 1, xa_strings[ASK_SHUTDOWN_ALERT]);
+		char *s;
+		switch( (short)b & (RESTART_XAAES | HALT_SYSTEM) )
+		{
+		case RESTART_XAAES:
+			s = xa_strings[ASK_RESTART_ALERT];
+		break;
+		case HALT_SYSTEM:
+			s = xa_strings[ASK_SHUTDOWN_ALERT];
+		break;
+		default:
+			s = xa_strings[ASK_QUIT_ALERT];
+		}
+
+		r = xaaes_do_form_alert( lock, C.Hlp, 1, s);
 		if( r != 2 )
 			return;
 		dispatch_shutdown((short)b, 0);
