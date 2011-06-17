@@ -2026,6 +2026,9 @@ void set_standard_point(struct xa_client *client)
 	struct xa_widget *xaw = get_menu_widg(), *xat = get_widget(root_window, XAW_TOOLBAR);
 	XA_TREE *wt = xat->stuff;
 	struct xa_vdi_settings *v = client->vdi_settings;
+
+	if( cfg.menu_bar == 2 )
+		return;
 #if 1
 	/* kludge: if < 1 set menu_bar=0, if != -1 set -standard_font_point */
 	if( client->options.standard_font_point < 0 )
@@ -2082,6 +2085,8 @@ void toggle_menu(enum locks lock, short md)
 {
 	struct xa_client *client = find_focus(true, NULL, NULL, 0);
 
+	if( cfg.menu_bar == 2 )
+		return;
 	if( !client )
 		return;
 	if( md == -2 )

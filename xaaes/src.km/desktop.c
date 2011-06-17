@@ -156,7 +156,7 @@ Set_desktop(XA_TREE *new_desktop)
 	/* Set the desktop */
 
 	/* temporarily switch menubar off to set root-object of desktop to secreen-size (works with teradesk) */
-	if( cfg.menu_bar && new_desktop->owner != C.Aes )
+	if( cfg.menu_bar != 2 && cfg.menu_bar && new_desktop->owner != C.Aes )
 	{
 		menu_bar = cfg.menu_bar;
 		cfg.menu_bar = 0;
@@ -194,7 +194,7 @@ Set_desktop(XA_TREE *new_desktop)
 	wi->stufftype = STUFF_IS_WT;
 	wi->m.destruct = free_xawidget_resources;
 
-	if( menu_bar && new_desktop->owner != C.Aes )
+	if( cfg.menu_bar != 2 && menu_bar && new_desktop->owner != C.Aes )
 	{
 		cfg.menu_bar = menu_bar;
 		set_standard_point( new_desktop->owner );
