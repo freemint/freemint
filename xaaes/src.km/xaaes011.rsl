@@ -1232,6 +1232,12 @@ hu:[2][XaAES bez r sa][M‚gsem|OK]
 ru:[2][Âûéòè èç XaAES][Îòìåíà|ÎÊ]
 cs:[2][Opustit XaAES][Zru¹it|OK]
 _
+NN:[2][Restart XaAES][Cancel|OK]    @
+de:[2][XaAES neustarten][Abbruch|OK]
+_
+NN:[2][Halt System][Cancel|OK]     @
+de:[2][System anhalten][Abbruch|OK]
+_
 NN:[1][Snapper could not save snap!|ERROR: %d][OK]                     @
 de:[1][Snapper konnte das Bildschirmfoto|nicht sichern!|FEHLER: %d][OK]
 fr:[1][Impossible de sauver l'image !|ERROR: %d][OK]
