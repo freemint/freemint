@@ -437,7 +437,7 @@ again:
 #endif
 	sprintf(Aes_display_name, sizeof(Aes_display_name), "  XaAES(dbg) v%s (%s)", vversion, _CPU);
 #else
-	sprintf(Aes_display_name, sizeof(Aes_display_name), "  XaAES v%s (%s)", vversion, _CPU);
+	sprintf(Aes_display_name, sizeof(Aes_display_name), "  XaAES v%s", vversion);
 #endif
 	/*
 	 * default configuration
