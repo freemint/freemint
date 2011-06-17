@@ -28,6 +28,7 @@
 //#include "xa_global.h"
 #include "xaaeswdg.h"
 #include "win_draw.h"
+#include "rectlist.h"
 
 extern struct config cfg;
 
@@ -2753,7 +2754,13 @@ d_info(struct xa_window *wind, struct xa_widget *widg, const RECT *clip)
 	draw_widg_box(wind->vdi_settings, 0, wci, t, widg->state, &widg->ar, t ? &widg->ar : &wind->r);
 
 	if (wti->flags & WTXT_NOCLIP)
-		(*v->api->set_clip)(wind->vdi_settings, &widg->ar);
+	{
+		RECT r;
+		if (xa_rect_clip(&widg->ar, &dr, &r))
+			(*v->api->set_clip)(wind->vdi_settings, &r);
+		else
+			return true;
+	}
 	draw_widget_text(wind->vdi_settings, widg, wti, widg->stuff, 4 + widg->xlimit, 0);
 	/* restore clip */
 	if (wti->flags & WTXT_NOCLIP)
