@@ -1522,7 +1522,7 @@ static bool text_type(WINDOW *w, short code, short shift)
 	long offset, height;
 	long c = (code & 0x00ff) | (((long)code & 0x0000ff00L) << 8L) | ((long)shift << 24L);
 	long r;
-
+	
 	/* Context-sensitive help */
 	if (code == 0x6200)		/* HELP */
 	{
@@ -1610,7 +1610,7 @@ static bool text_type(WINDOW *w, short code, short shift)
 		if (r > 0)
 		{
 			/* vt52 -> vt100 cursor/function key remapping */
-			if (t->vt_mode == MODE_VT100 && code >= 0x3b00 && code <= 0x5000)
+			if (t->vt_mode == MODE_VT100 && code >= 0x3b00 && code <= 0x5000 && ((code&0xFF00)<=0x20))
 			{
 				(void)Fputchar(t->fd, (long)(0x0001001bL | ((long)shift << 24L)), 0);	  /* 'ESC' */
 			  	switch (code)
