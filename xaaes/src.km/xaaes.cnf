@@ -15,7 +15,33 @@
 #include u:/c/video.cnf
 #include c:\video.cnf
 #include C:\video.cnf
-
+######################################################################
+#
+# eiffel_support [true|false]
+#
+# if set F-keys > 10 cause eiffel-wheel-events
+#
+#eiffel_support = true
+#
+######################################################################
+#
+# back_col [0-15]
+#
+# set XaAES-background-colour
+#
+#back_col = 13
+#
+#####################################################################
+#
+# menubar [0|1|2]
+#
+# hideable menubar
+# 0: off
+# 1: on
+# 2: always on (default)
+#
+#menubar=1
+#
 #####################################################################
 ## video mode select
 # -----------------
