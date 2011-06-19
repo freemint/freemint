@@ -1794,7 +1794,7 @@ static void add_meminfo( struct scroll_info *list, struct scroll_entry *this )
 			to = p.e;
 			if( to->next )
 			{
-				list->del( list, to, NOREDRAW );	// meminfo always last
+				list->del( list, to, NORMREDRAW );	// meminfo always last
 				to = 0;
 			}
 		}
@@ -1805,7 +1805,7 @@ static void add_meminfo( struct scroll_info *list, struct scroll_entry *this )
 	uinfo[1] = (long)"used: ";
 	uinfo[2] = 2;
 	uinfo[3] = 0;
-	add_kerinfo( "u:/kern/meminfo", list, this, to, &sc, PROCINFLEN, 5, NOREDRAW, uinfo, false );
+	add_kerinfo( "u:/kern/meminfo", list, this, to, &sc, PROCINFLEN, 5, NORMREDRAW, uinfo, false );
 }
 
 void
