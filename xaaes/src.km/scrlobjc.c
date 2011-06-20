@@ -1236,8 +1236,9 @@ reset_listwi_widgets(SCROLL_INFO *list, short redraw)
 			{
 				/* no rectlist-clip here! */
 				/* only redraw if top (nolist is never TOP_WINDOW .. why?)*/
-				if( !list->pw || list->pw == TOP_WINDOW || list->pw->nolist )
-					draw_window(0, list->wi, &list->wi->r);
+				//if( /*!list->pw ||*/ list->pw == window_list /*TOP_WINDOW*/ || list->pw->nolist )
+
+					display_window( 0, 13, list->wi, &list->pw->r);
 
 				if (redraw && (list->flags & SIF_TREEVIEW) )
 				{
@@ -4798,6 +4799,19 @@ slist_msg_handler(
 		move_window(0, wind, false, -1, msg[4], msg[5], msg[6], msg[7]);
 		reset_listwi_widgets(list, false);
 		list->slider(list, false);
+		break;
+	}
+	case WM_UNTOPPED:
+	case WM_ONTOP:
+	{
+		void *colours = (msg[0] == WM_UNTOPPED) ? wind->untop_cols : wind->ontop_cols;
+
+		if( wind->colours != colours )
+		{
+			wind->colours = colours;
+			display_window( 0, 13, wind, &wind->r);
+		}
+
 		break;
 	}
 	default:
