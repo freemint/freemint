@@ -1421,9 +1421,10 @@ do_formwind_msg(
 	struct xa_vdi_settings *v = wind->vdi_settings;
 	XA_WIDGET *widg = wind->tool;
 	bool draw = false;
+
 // 	bool d = (!strnicmp(wind->owner->proc_name, "gfa_xref", 8)) ? true : false;
 
-	DIAG((D_form, wind->owner, "do_formwind_msg: wown %s, to %s, wdig=%lx, msg %d, %d, %d, %d, %d, %d, %d, %d",
+	DIAG((D_form, wind->owner, "do_formwind_msg: wown %s, to %s, widg=%lx, msg %d, %d, %d, %d, %d, %d, %d, %d",
 		wind->owner->name, to_client->name, widg, msg[0], msg[1], msg[2], msg[3], msg[4], msg[5], msg[6], msg[7]));
 
 // 	if (d) display("do_formwind_msg: wown %s, to %s, wdig=%lx, msg %d, %d, %d, %d, %d, %d, %d, %d",
@@ -1487,6 +1488,13 @@ do_formwind_msg(
 
 				top_window(0, true, false, wind);
 			}
+			ob_set_wind( wt->tree, G_SLIST, msg[0] );
+			break;
+		}
+		case WM_ONTOP:
+		case WM_UNTOPPED:
+		{
+			ob_set_wind( wt->tree, G_SLIST, msg[0] );
 			break;
 		}
 #if 0
@@ -1625,7 +1633,6 @@ do_formwind_msg(
 		}
 		default:
 		{
-
 			return;
 		}
 		}
