@@ -542,7 +542,7 @@ kernel_key(enum locks lock, struct rawkey *key)
 				r.y -= g;
 				if( !s )
 				{
-					if( wind->dial & (created_for_ALERT | created_for_FORM_DO | created_for_WDIAL) || (wind->window_status & (XAWS_ICONIFIED | XAWS_HIDDEN)) )
+					if( !wind->rect_list.start || wind->dial & (created_for_ALERT | created_for_FORM_DO | created_for_WDIAL) || (wind->window_status & (XAWS_ICONIFIED | XAWS_HIDDEN)) )
 						return true;
 					r.x -= g;
 					r.w += g * 2;
@@ -612,13 +612,13 @@ kernel_key(enum locks lock, struct rawkey *key)
 				{
 					short g = WGROW;
 
-					if( wind->dial & (created_for_ALERT | created_for_FORM_DO | created_for_WDIAL) || (wind->window_status & (XAWS_ICONIFIED | XAWS_HIDDEN)) )
+					if( !wind->rect_list.start || (wind->dial & (created_for_ALERT | created_for_FORM_DO | created_for_WDIAL) || (wind->window_status & (XAWS_ICONIFIED | XAWS_HIDDEN))) )
 						return true;
 					if( nk == NK_LEFT )
 						g = -g;
 					r.x -= g;
 					r.w += g * 2;
-					if( inside_root( &r, client->options.noleft ) & 2 )
+					if( (inside_root( &r, client->options.noleft ) & 2) )
 						return true;
 					wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 					   WM_SIZED, 0, 0, wind->handle,
