@@ -69,6 +69,7 @@ short			ob_remove(OBJECT *obtree, short object);
 short			ob_add(OBJECT *obtree, short parent, short aobj);
 void			ob_order(OBJECT *obtree, short object, ushort pos);
 struct xa_aes_object	ob_find_flag(OBJECT *obtree, short f, short mf, short stopf);
+void      ob_set_wind(OBJECT *tree, short f, short t );
 short			ob_count_flag(OBJECT *obtree, short f, short mf, short stopf, short *count);
 short			ob_count_any_flag(OBJECT *obtree, short f, short mf, short stopf, short *count);
 struct xa_aes_object	ob_find_flst(OBJECT *obtree, short f, short s, short mf, short ms, short stopf, short stops);

@@ -27,6 +27,7 @@
 #include "xa_strings.h"
 #include "draw_obj.h"
 #include "obtree.h"
+#include "c_window.h"
 #include "scrlobjc.h"
 #include "rectlist.h"
 #include "xa_global.h"
@@ -1332,8 +1333,6 @@ STATIC void
 foreach_object(OBJECT *tree,
 		struct xa_aes_object parent,
 		struct xa_aes_object start,
-		//short stopf,	/* unused! */
-		//short stops,	/* unused! */
 		bool(*f)(OBJECT *obtree, short obj, void *ret), void *data)
 {
 	struct xa_aes_object curr, next, stop;
@@ -1608,12 +1607,12 @@ ob_find_flag(OBJECT *tree, short f, short mf, short stopf)
 	d.ret = -1;
 	d.ret_object = inv_aesobj();
 
-	foreach_object(tree, aesobj(tree, 0), aesobj(tree, 0), /*stopf, 0,*/ anyflst, &d);
+	foreach_object(tree, aesobj(tree, 0), aesobj(tree, 0), anyflst, &d);
 	return d.ret_object;
 }
 #endif
 STATIC struct xa_aes_object
-ob_find_any_flag(OBJECT *tree, short f, short mf/*, short stopf*/)
+ob_find_any_flag(OBJECT *tree, short f, short mf)
 {
 	struct anyflst_parms d;
 
@@ -1625,7 +1624,7 @@ ob_find_any_flag(OBJECT *tree, short f, short mf/*, short stopf*/)
 	d.ms = 0;
 	d.ret = -1;
 	d.ret_object = inv_aesobj();
-	foreach_object(tree, aesobj(tree, 0), aesobj(tree, 0), /*stopf, 0,*/ anyflst, &d);
+	foreach_object(tree, aesobj(tree, 0), aesobj(tree, 0), anyflst, &d);
 	return d.ret_object;
 }
 /*
@@ -1649,7 +1648,7 @@ ob_count_flag(OBJECT *tree, short f, short mf, short stopf, short *count)
 	d.ret = 0;
 	d.ret1 = -1;
 
-	foreach_object(tree, aesobj(tree, 0), aesobj(tree, 0), /*stopf, 0,*/ count_flst, &d);
+	foreach_object(tree, aesobj(tree, 0), aesobj(tree, 0), count_flst, &d);
 
 	if (count)
 		*count = d.ret;
@@ -1677,7 +1676,7 @@ ob_count_any_flag(OBJECT *tree, short f, short mf, short stopf, short *count)
 	d.ret = 0;
 	d.ret1 = -1;
 
-	foreach_object(tree, aesobj(tree, 0), aesobj(tree, 0), /*stopf, 0,*/ count_flst, &d);
+	foreach_object(tree, aesobj(tree, 0), aesobj(tree, 0), count_flst, &d);
 
 	if (count)
 		*count = d.ret;
@@ -1699,7 +1698,7 @@ ob_find_any_flst(OBJECT *tree, short f, short s, short mf, short ms/*, short sto
 	d.ret = -1;
 	d.ret_object = inv_aesobj();
 
-	foreach_object(tree, aesobj(tree, 0), aesobj(tree, 0), /*stopf, stops,*/ anyflst, &d);
+	foreach_object(tree, aesobj(tree, 0), aesobj(tree, 0), anyflst, &d);
 	return d.ret_object;
 }
 
@@ -1717,7 +1716,7 @@ ob_find_flst(OBJECT *tree, short f, short s, short mf, short ms, short stopf, sh
 	d.ret = -1;
 	d.ret_object = inv_aesobj();
 
-	foreach_object(tree, aesobj(tree, 0), aesobj(tree, 0), /*stopf, stops,*/ anyflst, &d);
+	foreach_object(tree, aesobj(tree, 0), aesobj(tree, 0), anyflst, &d);
 	return d.ret_object;
 }
 
@@ -1738,9 +1737,61 @@ ob_find_type(OBJECT *tree, short t )
 	d.ret = -1;
 	d.ret_object = inv_aesobj();
 
-	foreach_object(tree, aesobj(tree, 0), aesobj(tree, 0), /*0, 0,*/ anyflst, &d);
+	foreach_object(tree, aesobj(tree, 0), aesobj(tree, 0), anyflst, &d);
 	return d.ret_object;
 }
+
+static bool
+set_wind(OBJECT *tree, short o, void *_data)
+{
+	struct anyflst_parms *d = _data;
+	tree += o;
+	if( tree->ob_type == d->f )
+	{
+		switch( d->f )
+		{
+		case G_SLIST:
+		{
+			struct scroll_info *list = object_get_slist(tree);
+
+			if( list )
+			{
+				struct xa_window *lwind = list->wi;
+				switch( d->t )
+				{
+				case WM_UNTOPPED:
+					setwin_untopped( 0, lwind, true );
+				break;
+				case WM_ONTOP:
+					setwin_ontop( 0, lwind, true );
+				break;
+				}
+			}
+		}
+		break;
+		}
+	}
+	return false;
+}
+/*
+ *
+ */
+void ob_set_wind(OBJECT *tree, short f, short t )
+{
+	struct anyflst_parms d;
+
+	d.flags = 0;
+	d.f = f;
+	d.t = t;
+	d.s = 0;
+	d.mf = 0;
+	d.ms = 0;
+	d.ret = -1;
+	d.ret_object = inv_aesobj();
+
+	foreach_object(tree, aesobj(tree, 0), aesobj(tree, 0), set_wind, &d);
+}
+
 
 #define SY_TOL	4	// sloppy y-coord-matching
 
