@@ -2248,12 +2248,13 @@ move_window(enum locks lock, struct xa_window *wind, bool blit, WINDOW_STATUS ne
 	 */
 	if (!C.redraws && C.move_block != 3)
 		C.move_block = 0;
+
 	{
-	short y = old.y < new.y ? old.y : new.y;
-	if( cfg.menu_bar && y < get_menu_height() )
-	{
-		redraw_menu(lock);
-	}
+		short y = old.y < new.y ? old.y : new.y;
+		if( cfg.menu_bar && y < get_menu_height() )
+		{
+			redraw_menu(lock);
+		}
 	}
 }
 
@@ -2647,7 +2648,8 @@ display_window(enum locks lock, int which, struct xa_window *wind, RECT *clip)
 			struct xa_rect_list *rl;
 			RECT d;
 
-			rl = wind->rect_list.start;
+			rl = (wind->dial & created_for_SLIST) && wind->parent ? wind->parent->rect_list.start : wind->rect_list.start;
+
 			while (rl)
 			{
 				if (clip)
@@ -3030,7 +3032,9 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 	if (!(wind->window_status & XAWS_OPEN))
 		return;
 #if 1
-	if ((wind->nolist && (wind->active_widgets & STORE_BACK)) || (wind->dial & created_for_SLIST))
+	if ((wind->dial & created_for_SLIST))
+		return;
+	if ((wind->nolist && (wind->active_widgets & STORE_BACK))/* || (wind->dial & created_for_SLIST)*/)
 	{
 		if (xmove || ymove || resize)
 		{
@@ -3044,7 +3048,7 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 				(*xa_vdiapi->form_save)(0, wind->r, &(wind->background));
 			}
 
-			if (!(wind->dial & created_for_SLIST)) // && !(wind->active_widgets & STORE_BACK))
+			//if (!(wind->dial & created_for_SLIST)) // && !(wind->active_widgets & STORE_BACK))
 			{
 				generate_redraws(wlock, wind, (RECT *)&wind->r, !only_wa ? RDRW_ALL : RDRW_WA);
 			}

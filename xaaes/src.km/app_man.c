@@ -38,6 +38,7 @@
 #include "c_window.h"
 #include "desktop.h"
 #include "menuwidg.h"
+#include "obtree.h"
 #include "messages.h"
 #include "taskman.h"
 #include "widgets.h"
@@ -183,7 +184,6 @@ setnew_focus(struct xa_window *wind, struct xa_window *unfocus, bool topowner, b
 		wind ? wind->handle : -2, wind ? wind->owner->name : "nowind",
 		unfocus ? unfocus->handle : -2, unfocus ? unfocus->owner->name : "nowind"));
 
-
 	if (!unfocus || unfocus == S.focus)
 	{
 		struct xa_client *owner;	//, *p_owner = 0;
@@ -246,6 +246,15 @@ setnew_focus(struct xa_window *wind, struct xa_window *unfocus, bool topowner, b
 					setwin_ontop(0, wind, snd_ontop);
 
 					wind->colours = wind->ontop_cols;
+					if( wind->tool )
+					{
+						XA_WIDGET *widg = wind->tool;
+						XA_TREE *wt = widg->stuff;
+						if( wt )
+						{
+							ob_set_wind( wt->tree, G_SLIST, WM_ONTOP );
+						}
+					}
 					send_iredraw(0, wind, 0, NULL);
 
 				} else
@@ -1005,7 +1014,7 @@ get_topwind(enum locks lock, struct xa_client *client, struct xa_window *startw,
 struct xa_window *
 next_wind(enum locks lock)
 {
-	struct xa_window *w, *wind;
+	struct xa_window *wind;
 
 	DIAG((D_appl, NULL, "next_window"));
 	wind = window_list;
@@ -1014,20 +1023,28 @@ next_wind(enum locks lock)
 		return NULL;
 
 	if (wind)
+	{
+		if( wind != S.focus && (wind->window_status & XAWS_FLOAT) )	// works if 1 XAWS_FLOAT
+		{
+			return wind;
+		}
 		wind = wind->next;
-
-	w = wind;
+	}
 
 	if (wind)
 	{
 		while (wind->next)
+		{
+			//if( (wind->window_status & (XAWS_FLOAT|XAWS_FIRST)) == XAWS_FLOAT )
+				//return wind;
 			wind = wind->next;
+		}
 	}
 
 	while (wind)
 	{
-		if ( wind != root_window
-		  && ((wind->window_status & (XAWS_OPEN|XAWS_HIDDEN)) == XAWS_OPEN)
+		if ( S.focus != wind && wind != root_window
+		  && ((wind->window_status & (XAWS_OPEN|XAWS_HIDDEN)) == XAWS_OPEN )
 		  && wind->r.w
 		  && wind->r.h )
 		{
