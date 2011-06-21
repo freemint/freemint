@@ -189,27 +189,23 @@ emit_exe_auto(short fd)
 	return TRAP_Fwrite(fd, strlen(line), line);
 }
 
+# ifdef WITH_MMU_SUPPORT
 static void
 do_mem_prot(char *arg)
 {
-# ifdef WITH_MMU_SUPPORT
 	no_mem_prot = (strncmp(arg, "YES", 3) == 0) ? 0 : 1;	/* reversed */
-# endif
 }
 
 static long
 emit_mem_prot(short fd)
 {
-# ifdef WITH_MMU_SUPPORT
 	char line[MAX_CMD_LEN];
 
 	ksprintf(line, sizeof(line), "MEM_PROT=%s\n", no_mem_prot ? "NO" : "YES");
 
 	return TRAP_Fwrite(fd, strlen(line), line);
-# else
-	return 0;
-# endif
 }
+# endif
 
 /* INI_STEP=YES makes step_by_step equal to -1 and acts traditionally.
  * INI_STEP=NO makes step by step equal to 0 and acts traditionally
@@ -388,21 +384,33 @@ emit_boot_delay(short fd)
  */
 static const char *ini_keywords[] =
 {
-	"XFS_LOAD=", "XDD_LOAD=", "EXE_AUTO=", "MEM_PROT=", "INI_STEP=",
+	"XFS_LOAD=", "XDD_LOAD=", "EXE_AUTO=",
+# ifdef WITH_MMU_SUPPORT
+	"MEM_PROT=",
+# endif
+	"INI_STEP=",
 	"DEBUG_LEVEL=", "DEBUG_DEVNO=", "BOOT_DELAY=",
 	"INI_SAVE=", NULL
 };
 
 static typeof(do_xfs_load) *do_func[] =
 {
-	do_xfs_load, do_xdd_load, do_exe_auto, do_mem_prot, do_ini_step,
+	do_xfs_load, do_xdd_load, do_exe_auto,
+# ifdef WITH_MMU_SUPPORT
+	do_mem_prot,
+# endif
+	do_ini_step,
 	do_debug_level, do_debug_devno, do_boot_delay,
 	do_ini_save
 };
 
 static typeof(emit_xfs_load) *emit_func[] =
 {
-	emit_xfs_load, emit_xdd_load, emit_exe_auto, emit_mem_prot, emit_ini_step,
+	emit_xfs_load, emit_xdd_load, emit_exe_auto,
+# ifdef WITH_MMU_SUPPORT
+	emit_mem_prot,
+# endif
+	emit_ini_step,
 	emit_debug_level, emit_debug_devno, emit_boot_delay,
 	emit_ini_save
 };
