@@ -1021,6 +1021,8 @@ popup_inside(Tab *tab, RECT r)
 	RECT ir = root_window->wa;
 	RECT rc = rc_inside(r, ir);
 
+	if( rc.y < get_menu_height() )
+		rc.y = get_menu_height();
 	if (rc.x != r.x)
 	{
 		Tab *tx = NEXT_TAB(tab);
@@ -2159,7 +2161,7 @@ click_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *wid
 	struct proc *p = get_curproc();
 	DIAG((D_menu, NULL, "click_menu_widget"));
 
-	if (md->cstate && md->clicks > 1)
+	if (C.rdm || (md->cstate && (md->clicks > 1 || md->state)))
 	{
 		return false;
 	}
@@ -2519,7 +2521,7 @@ fix_menu(struct xa_client *client, XA_TREE *menu, struct xa_window *wind, bool d
 
 	h = (wind ? get_widget(wind, XAW_MENU)->r.h : get_menu_widg()->r.h) - 1;
 
-	root->ob_width  = root[tbar].ob_width  = root[menus].ob_width = wind ? get_widget(wind, XAW_MENU)->r.w : get_menu_widg()->r.w; //screen.r.w;
+	menu->area.w = root->ob_width = root[tbar].ob_width  = root[menus].ob_width = wind ? get_widget(wind, XAW_MENU)->r.w : get_menu_widg()->r.w; //screen.r.w;
 	root->ob_height = root[titles].ob_height = root[tbar].ob_height = h;
 	root[menus].ob_y = h + 1;
 	wt_menu_area(menu);

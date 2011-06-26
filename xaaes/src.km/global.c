@@ -25,6 +25,7 @@
  */
 
 #include "global.h"
+#include "xa_types.h"
 #include "debug.h"
 
 /*
@@ -102,4 +103,12 @@ xaaes_ufree(void *addr, const char *func)
 
 /* for old gemlib */
 short my_global_aes[16] = {0};
+
+/*
+ * global data
+ */
+/* The screen descriptor */
+struct xa_screen screen;
+
+struct xa_window *root_window = 0, *menu_window = 0;
 
