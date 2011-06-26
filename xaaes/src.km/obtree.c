@@ -1780,14 +1780,8 @@ void ob_set_wind(OBJECT *tree, short f, short t )
 {
 	struct anyflst_parms d;
 
-	d.flags = 0;
 	d.f = f;
 	d.t = t;
-	d.s = 0;
-	d.mf = 0;
-	d.ms = 0;
-	d.ret = -1;
-	d.ret_object = inv_aesobj();
 
 	foreach_object(tree, aesobj(tree, 0), aesobj(tree, 0), set_wind, &d);
 }
@@ -3174,7 +3168,8 @@ obj_change(XA_TREE *wt,
 	}
 
 	if (draw && redraw) {
-#if 0
+#if 1
+		// "sysinfo"-fix
 		if( !clip )
 		{
 			RECT r;
