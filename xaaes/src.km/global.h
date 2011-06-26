@@ -148,4 +148,6 @@ __extension__								\
 
 extern short my_global_aes[];
 
+extern struct xa_window *root_window, *menu_window;
+
 #endif /* _global_h */

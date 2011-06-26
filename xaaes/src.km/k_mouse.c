@@ -425,6 +425,15 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 		}
 	}
 
+	if( cfg.menu_bar != 2 && md->y < 2 )
+	{
+		short mb = cfg.menu_bar;
+		toggle_menu( lock, -1 );
+		if( md->x > 8 && !mb )
+			cfg.menu_bar = -1;
+
+		return;
+	}
 	mouse_wind = find_window(lock, md->x, md->y, FNDW_NOLIST|FNDW_NORMAL);
 	if (mouse_wind)
 		mw_owner = mouse_wind == root_window ? get_desktop()->owner : mouse_wind->owner;

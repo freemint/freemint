@@ -749,14 +749,21 @@ display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, struct x
 		return;
 	}
 
-	if( cfg.menu_bar && wt != get_menu() && v->clip.y < get_menu_height() )
+	if( cfg.menu_bar != 2 && !cfg.menu_ontop && cfg.menu_bar && wt != get_menu() && v->clip.y < get_menu_height()-2 )
 	{
-		short d = get_menu_height() - v->clip.y;
-		if( v->clip.h <= d )
-			return;
-		v->clip.y = get_menu_height();
-		v->clip.h -= d;
-		(*v->api->set_clip)(v, &v->clip);
+		if( cfg.menu_layout == 0 )
+		{
+			short d = get_menu_height()-2 - v->clip.y;
+			if( v->clip.h <= d )
+				return;
+			v->clip.y = get_menu_height()-2;
+			v->clip.h -= d;
+			(*v->api->set_clip)(v, &v->clip);
+		}
+		else
+		{
+			C.rdm = 1;
+		}
 	}
 
 
