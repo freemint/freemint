@@ -337,8 +337,9 @@ rp2ap_obtree(struct xa_window *wind, struct xa_widget *widg, RECT *r)
 	{
  		if (!(widg->m.properties & WIP_NOTEXT))
  		{
- 			widg->r.w = wind->r.w;
- 			//widg->r.w = wind->wa.w;
+ 			//DBGif(widg->m.r.xaw_idx == XAW_MENU,(0,"rp2ap_obtree:w=%d:%d,%d,wind=%lx,root=%lx", widg->r.w, wind->r.w, wind->wa.w, wind, root_window ));
+			if( wind != root_window || (cfg.menu_layout == 0 && widg->m.r.xaw_idx == XAW_MENU) )
+ 				widg->r.w = wind->r.w;
  		}
 		if ((wt = widg->stuff))
 		{
@@ -886,9 +887,13 @@ draw_widget(struct xa_window *wind, XA_WIDGET *widg, struct xa_rect_list *rl)
 			}
 			else
 			{
-				if( wind == root_window || !cfg.menu_bar || ( rl->r.y > get_menu_height() || !clip_off_menu( &rl->r )) )
+				if( wind == root_window || !cfg.menu_bar || cfg.menu_layout != 0 || ( rl->r.y > get_menu_height() || !clip_off_menu( &rl->r )) )
 				{
 					(*v->api->set_clip)(v, &rl->r);
+					if( !cfg.menu_ontop && widg->m.r.xaw_idx != XAW_MENU && rl->r.y < get_menu_height() &&  rl->r.x < get_menu_widg()->r.w )
+					{
+						C.rdm = 1;
+					}
 					widg->m.r.draw(wind, widg, &rl->r);
 				}
 			}
@@ -956,7 +961,9 @@ CE_redraw_menu(enum locks lock, struct c_event *ce, bool cancel)
 
 		if (ce->client == mc)
 		{
-			struct xa_rect_list rl = {0, {0, 0, screen.r.w, screen.r.h} };	//!
+			struct xa_rect_list rl = {0, {0, 0, 0, 0} };
+			rl.r.w = get_menu_widg()->r.w;	//C.Aes->std_menu->tree->ob_width;
+			rl.r.h = get_menu_widg()->r.h;	//get_menu_height();
 			display_widget(lock, root_window, widg, &rl);
 		}
 	#if 1
@@ -1009,11 +1016,14 @@ redraw_menu(enum locks lock)
 
 	if (mc == rc || mc == C.Aes)
 	{
-		struct xa_rect_list rl = {0, {0, 0, screen.r.w, screen.r.h} };	// menubar always top
+		struct xa_rect_list rl = {0, {0, 0, 0, 0} };
 		if (C.update_lock && C.update_lock != rc->p)
 		{
 			return;
 		}
+		// menubar always top
+		rl.r.w = get_menu_widg()->r.w;
+		rl.r.h = get_menu_widg()->r.h;
 
 		display_widget(lock, root_window, widg, &rl);
 	}
@@ -1187,7 +1197,7 @@ drag_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, cons
 
 			bound.x = wind->owner->options.noleft ?
 					0 : -root_window->r.w;
-			if (cfg.menu_bar /*&& cfg.menu_layout == 0*/)
+			if (cfg.menu_bar && cfg.menu_ontop == 0)
 				bound.y = get_menu_height();
 			else
 				bound.y = root_window->wa.y;
@@ -4858,8 +4868,10 @@ redisplay_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, short
 			}
 		}
 		else
+		{
 			/* Display the selected widget */
 			display_widget(lock, wind, widg, NULL);
+		}
 	}
 	return ret;
 }

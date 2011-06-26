@@ -74,6 +74,7 @@ enum window_type
 	created_for_AES		= 0x0100,
 	created_for_ALERT	= 0x0200,
 	created_for_CALC	= 0x0400,
+	created_for_MENUBAR = 0x800	// don't draw anything
 };
 typedef enum window_type WINDOW_TYPE;
 
@@ -2838,6 +2839,7 @@ struct common
 	short AESpid;			/* The AES's MiNT process ID */
 	short DSKpid;			/* The desktop programs pid, if any */
 	short SingleTaskPid;	/* The pid of the single-task-client, if any */
+	short rdm;        /* "dirty" menubar */
 
 	short P_handle;			/* Physical workstation handle used by the AES */
 	short global_clip[4];
@@ -2993,6 +2995,8 @@ struct config
 	short alert_winds;		/* If set, alert windows are shown */
 	short back_col;       /* if set, use for background */
 	short menu_bar;				/* If 0 don't draw main-menubar */
+	short menu_layout;		/* short, float .. */
+	short menu_ontop;     /* menubar is window */
 
 	char cancel_buttons[NUM_CB][CB_L];
 	struct keyboards keyboards;

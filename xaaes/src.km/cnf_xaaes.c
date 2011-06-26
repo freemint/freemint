@@ -106,6 +106,8 @@ static struct parser_item parser_tab[] =
 	{ "ALERT_WINDOWS",         PI_R_US,  & cfg.alert_winds		},
 	{ "BACK_COL",              PI_R_S,   & cfg.back_col	},
 	{ "MENUBAR",               PI_R_S,   & cfg.menu_bar	},
+	{ "MENU_LAYOUT",           PI_R_S,   & cfg.menu_layout	},
+	{ "MENU_ONTOP",            PI_R_B,   & cfg.menu_ontop	},
 	{ "FONT_ID",               PI_R_S,   & cfg.font_id		},
 	{ "STANDARD_POINT",        PI_R_S,   & cfg.standard_font_point	},
 	{ "MEDIUM_POINT",          PI_R_S,   & cfg.medium_font_point	},
