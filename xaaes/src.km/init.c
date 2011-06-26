@@ -333,6 +333,7 @@ again:
 	bzero(&cfg, sizeof(cfg));
 	bzero(&S, sizeof(S));
 	bzero(&C, sizeof(C));
+	root_window = menu_window = 0;
 	C.SingleTaskPid = -1;	/* just for sure */
 
 	strcpy(C.start_path, start_path);

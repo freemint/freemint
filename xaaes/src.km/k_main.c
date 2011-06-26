@@ -768,14 +768,19 @@ CE_fa(enum locks lock, struct c_event *ce, bool cancel)
 		long pid = 0;
 		char *ps = strstr( data->buf, "(PID ");
 
+		yield();
 		if( ps )
 			pid = atol( ps + 4 );
 
 		if( pid && strstr( data->buf, "KILLED:" ) )
 		{
 			short s;
-			for( s = 0; !ikill(pid, SIGKILL) && s < 666; s++ )
+			long r;
+			for( s = 0; !(r=ikill(pid, 0)) && s < 666; s++ )
+			{
+				ikill(pid, SIGKILL);
 				nap(20);
+			}
 		}
 		/***********************************************/
 
@@ -793,7 +798,7 @@ CE_fa(enum locks lock, struct c_event *ce, bool cancel)
 			struct xa_window *wind = NULL;
 			int c;
 #if ALERTTIME
-		  char b[MAXALERTLEN];
+			char b[MAXALERTLEN];
 #endif
 			unsigned short amask;
 			struct widget_tree *wt;
@@ -884,12 +889,14 @@ CE_fa(enum locks lock, struct c_event *ce, bool cancel)
 			{
 				/* if an app left the mouse off */
 				forcem();
+
 #if ALERTTIME
 				do_form_alert(data->lock, client, 1, b, "XaAES");
 #else
 				do_form_alert(data->lock, client, 1, data->buf, "XaAES");
 #endif
 			}
+
 			kfree(data);
 		}
 	}
@@ -1738,12 +1745,11 @@ k_main(void *dummy)
 
 // 	display("C.HLP started OK");
 
-	add_to_tasklist(C.Aes);
-	add_to_tasklist(C.Hlp);
-
 	if (cfg.opentaskman)
 		post_cevent(C.Hlp, ceExecfunc, open_taskmanager,NULL, 1,0, NULL,NULL);
 
+	add_to_tasklist(C.Aes);
+	add_to_tasklist(C.Hlp);
 #if CHECK_STACK
 	if( stack_align & 0x111 )
 	{
@@ -1845,6 +1851,11 @@ k_main(void *dummy)
 		else if( aessys_timeout > 1 )
 		{
 			tty->state &= ~TS_COOKED;	/* we are kernel ... */
+			if( C.rdm )
+			{
+				redraw_menu(0);
+				C.rdm = 0;
+			}
 		}
 		while (aessys_timeout == 1)
 		{

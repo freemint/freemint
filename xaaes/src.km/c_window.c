@@ -310,7 +310,7 @@ inside_root(RECT *r, bool noleft)
 {
 	short ret = 0, min = 0;
 
-	if (cfg.menu_bar /*&& cfg.menu_layout == 0*/)
+	if (cfg.menu_bar && cfg.menu_layout == 0 && cfg.menu_ontop == 0)
 	{
 		min = get_menu_height();
 	}
@@ -1322,12 +1322,13 @@ create_window(
 	w->do_message	= message_doer;
 	get_widget(w, XAW_TITLE)->stuff = client->name;
 
-	if (dial & created_for_POPUP)
+	/*if (dial & created_for_POPUP)
 	{
 		w->x_shadow = 1;
 		w->y_shadow = 1;
 	}
 	else
+	*/
 	{
 		w->x_shadow = 1; //2;
 		w->y_shadow = 1; //2;
@@ -1517,7 +1518,7 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 	RECT clip, our_win;
 	bool ignorefocus = false;
 
-	DIAG((D_wind, wind->owner, "open_window %d for %s to %d/%d,%d/%d status %x",
+	DIAG((D_wind, wind->owner, "open_window %d for %s to %d/%d,%d/%d status %lx",
 		wind->handle, c_owner(wind->owner), r.x,r.y,r.w,r.h, wind->window_status));
 
 	if (C.redraws) {
@@ -1749,7 +1750,7 @@ draw_window(enum locks lock, struct xa_window *wind, const RECT *clip)
 		wind->handle, w_owner(wind),
 		wind->r.x, wind->r.y, wind->r.w, wind->r.h));
 
-	if (!(wind->window_status & XAWS_OPEN))
+	if (!(wind->window_status & XAWS_OPEN) || (wind->dial & created_for_MENUBAR) )
 	{
 		DIAG((D_wind, wind->owner, "Dwindow %d for %s not open",
 			wind->handle, w_owner(wind)));
@@ -1757,7 +1758,7 @@ draw_window(enum locks lock, struct xa_window *wind, const RECT *clip)
 	}
 
 	/* is window below menubar? (better should change rectlists?) */
-	if( cfg.menu_bar && cl.y < get_menu_height() )
+	if( cfg.menu_layout == 0 && cfg.menu_bar && cl.y < get_menu_height() )
 	{
 		if( clip_off_menu( &cl ) )
 			return;
@@ -2014,6 +2015,41 @@ send_wind_to_bottom(enum locks lock, struct xa_window *w)
 	make_rect_list(w, true, RECT_SYS);
 }
 
+static void redraw_menu_area(void)
+{
+	RECT r = screen.r;
+	popout(TAB_LIST_START);
+	r.h = get_menu_height();
+
+	if( cfg.menu_layout || !cfg.menu_bar )
+	{
+		RECT rc = screen.r;
+		short mb = cfg.menu_bar;
+		cfg.menu_bar = 0;
+		if( mb )
+		{
+			rc.x = get_menu_widg()->r.w;
+			rc.w -= rc.x;
+		}
+		rc.h = r.h;
+		update_windows_below(0, &rc, &rc, window_list, NULL);
+		cfg.menu_bar = mb;
+		if( mb )
+			redraw_menu(0);
+	}
+}
+#if 0
+static void print_rect_list( struct xa_window *wind )
+{
+	struct xa_rect_list *rl = wind->rect_list.start;
+	int i;
+	BLOG((0, "print_rect_list:%s", wind->wname));
+	for( i = 0; rl; i++, rl = rl->next )
+	{
+		BLOG((0, "%2d:%d/%d/%d/%d", i, rl->r));
+	}
+}
+#endif
 /*
  * set point-size for main-menu
  * adjust root-window-size
@@ -2027,11 +2063,9 @@ void set_standard_point(struct xa_client *client)
 	XA_TREE *wt = xat->stuff;
 	struct xa_vdi_settings *v = client->vdi_settings;
 
-	if( cfg.menu_bar == 2 )
-		return;
 #if 1
 	/* kludge: if < 1 set menu_bar=0, if != -1 set -standard_font_point */
-	if( client->options.standard_font_point < 0 )
+	if( cfg.menu_bar != 2 && !cfg.menu_ontop && client->options.standard_font_point < 0 )
 	{
 		client->options.standard_font_point = -client->options.standard_font_point;
 		if( client->options.standard_font_point == 1 )
@@ -2044,7 +2078,15 @@ void set_standard_point(struct xa_client *client)
 
 	screen.c_max_w = w;
 	screen.standard_font_point = client->options.standard_font_point;
-	if( h == screen.c_max_h && cfg.menu_bar == old_menu_bar )
+	if( cfg.menu_bar != 2 && cfg.menu_layout == 1 )
+	{
+		if( client->std_menu )
+			xaw->r.w = xaw->ar.w = client->std_menu->area.w;
+		//print_rect_list( root_window );
+		if( !cfg.menu_ontop )
+			redraw_menu_area();
+	}
+	if( h == screen.c_max_h && (cfg.menu_bar == 2 || (cfg.menu_bar == old_menu_bar && cfg.menu_layout == 0)) )
 		return;
 
 	old_menu_bar = cfg.menu_bar;
@@ -2054,25 +2096,35 @@ void set_standard_point(struct xa_client *client)
 	C.Aes->std_menu->tree->ob_height = h + 1;
 	xaw->r.h = xaw->ar.h = h + 1;
 
+	if( cfg.menu_bar == 2 || (cfg.menu_bar == 1 && !cfg.menu_layout && !cfg.menu_ontop) )
 	{
-		if( cfg.menu_bar == 1 )
+		root_window->wa.h = screen.r.h - xaw->r.h;
+		root_window->wa.y = xaw->r.h;
+	}
+	else
+	{
+		root_window->wa.h = screen.r.h;
+		root_window->wa.y = 0;
+	}
+	if( menu_window && cfg.menu_bar != 2 && cfg.menu_ontop && cfg.menu_bar )//&& cfg.menu_layout )
+	{
+		if( menu_window->window_status & XAWS_OPEN)
 		{
-			root_window->wa.h = screen.r.h - xaw->r.h;
-			root_window->wa.y = xaw->r.h;
+			move_window( 0, menu_window, true, 0, menu_window->r.x, menu_window->r.y, xaw->r.w, xaw->r.h );
 		}
 		else
 		{
-			root_window->wa.h = screen.r.h;
-			root_window->wa.y = 0;
-			//xaw->r.h = xaw->ar.h = 0;
+			menu_window->r.w = xaw->r.w;
+			menu_window->r.h = xaw->r.h;
 		}
-		root_window->rwa = root_window->wa;
+	}
 
-		if (get_desktop()->owner == C.Aes)
-		{
-			wt->tree->ob_height = root_window->wa.h;
-			wt->tree->ob_y = root_window->wa.y;
-		}
+	root_window->rwa = root_window->wa;
+
+	if (/*!cfg.menu_ontop &&*/ get_desktop()->owner == C.Aes)
+	{
+		wt->tree->ob_height = root_window->wa.h;
+		wt->tree->ob_y = root_window->wa.y;
 	}
 }
 
@@ -2083,7 +2135,7 @@ void set_standard_point(struct xa_client *client)
  */
 void toggle_menu(enum locks lock, short md)
 {
-	struct xa_client *client = find_focus(true, NULL, NULL, 0);
+	struct xa_client *client = menu_owner();
 
 	if( cfg.menu_bar == 2 )
 		return;
@@ -2110,17 +2162,20 @@ void toggle_menu(enum locks lock, short md)
 	set_standard_point( client );
 	if( cfg.menu_bar )
 	{
+		if( cfg.menu_ontop )
+		{
+			open_window(0, menu_window, menu_window->r );
+		}
 		redraw_menu(lock);
 	}
 	else
 	{
-		RECT r = screen.r;
-		popout(TAB_LIST_START);
-		r.h = get_menu_height();
-		update_windows_below(lock, &r, NULL, window_list, NULL);
+		if( cfg.menu_ontop )
+		{
+			close_window(0, menu_window);
+		}
+		redraw_menu_area();
 	}
-	generate_redraws(lock, root_window, &screen.r, RDRW_ALL);
-
 }
 
 /*
@@ -2248,12 +2303,11 @@ move_window(enum locks lock, struct xa_window *wind, bool blit, WINDOW_STATUS ne
 	 */
 	if (!C.redraws && C.move_block != 3)
 		C.move_block = 0;
-
 	{
 		short y = old.y < new.y ? old.y : new.y;
-		if( cfg.menu_bar && y < get_menu_height() )
+		if( !cfg.menu_ontop && cfg.menu_bar && y < get_menu_height() )
 		{
-			redraw_menu(lock);
+			C.rdm = 1;
 		}
 	}
 }

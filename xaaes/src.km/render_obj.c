@@ -4405,14 +4405,22 @@ draw_g_box(struct widget_tree *wt, struct xa_vdi_settings *v, struct color_theme
 
 	draw_outline(wt, v, out, &r);
 }
-
+extern struct config cfg;
 /* ************************************************************ */
 /*        Functions exported in objcr_theme			*/
 /* ************************************************************ */
 static void _cdecl
 write_menu_line(struct xa_vdi_settings *v, RECT *cl)
 {
+	/* lower */
 	(*v->api->line)(v, cl->x, cl->y + cl->h - 1, cl->x + cl->w - 1, cl->y + cl->h - 1, G_BLACK);
+	if( cfg.menu_layout )
+	{
+		/* right */
+		//(*v->api->line)(v, cl->x + cl->w-1, cl->y + cl->h-1, cl->x + cl->w-1, cl->y, G_BLACK);
+		/* left */
+		(*v->api->line)(v, cl->x + 8, cl->y + cl->h-1, cl->x + 8, cl->y, G_BLACK);
+	}
 }
 
 static void _cdecl

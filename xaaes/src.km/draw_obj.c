@@ -341,12 +341,12 @@ do_callout ( void *f, PARMBLK *p)
 {
 	register long ret __asm__("d0");
 	__asm__ volatile (
-		PUSH_SP("d3-d7/a3-a6", 36)
+		"movem.l d3-d7/a3-a6,-(sp)\n\t"
 		"move.l %2,-(sp)\n\t"
 		"move.l %1,a0\n\t"
 		"jsr	(a0)\n\t"
 		"lea	4(sp),sp\n\t"
-		POP_SP("d3-d7/a3-a6", 36)
+		"movem.l (sp)+,d3-d7/a3-a6\n\t"
 			: "=r"(ret) 				/* outputs */
 			: "g"(f),"g"(p)
 			: __CLOBBER_RETURN("d0")
@@ -749,14 +749,21 @@ display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, struct x
 		return;
 	}
 
-	if( cfg.menu_bar && wt != get_menu() && v->clip.y < get_menu_height() )
+	if( cfg.menu_bar != 2 && !cfg.menu_ontop && cfg.menu_bar && wt != get_menu() && v->clip.y < get_menu_height()-2 )
 	{
-		short d = get_menu_height() - v->clip.y;
-		if( v->clip.h <= d )
-			return;
-		v->clip.y = get_menu_height();
-		v->clip.h -= d;
-		(*v->api->set_clip)(v, &v->clip);
+		if( cfg.menu_layout == 0 )
+		{
+			short d = get_menu_height()-2 - v->clip.y;
+			if( v->clip.h <= d )
+				return;
+			v->clip.y = get_menu_height()-2;
+			v->clip.h -= d;
+			(*v->api->set_clip)(v, &v->clip);
+		}
+		else
+		{
+			C.rdm = 1;
+		}
 	}
 
 
