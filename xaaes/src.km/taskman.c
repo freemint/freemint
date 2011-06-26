@@ -536,6 +536,10 @@ add_to_tasklist(struct xa_client *client)
 	if (!htd)
 		return;
 
+	while (!htd->w_taskman)
+	{
+		yield();
+	}
 	wind = htd->w_taskman;
 
 	if (wind)
@@ -652,13 +656,15 @@ remove_from_tasklist(struct xa_client *client)
 			if (p.e)
 			{
 #if 0	//debugging-info: dont delete
-				BLOG((0,"remove_from_tasklist: flags=%lx", this->usr_flags ));
+				struct scroll_entry *this = p.e;
+				BLOG((0,"remove_from_tasklist:'%s': this=%lx,client=%lx,p=%lx", get_curproc()->name, this, client, client ? client->p : -1 ));
+				BLOGif(this,(0,"remove_from_tasklist: flags=%lx,content=%lx", this->usr_flags, this->content ));
 				if( this->usr_flags & TM_NOAES )
 				{
 					struct proc *pr = (struct proc *)client;
 					BLOG((0,"remove_from_tasklist: delete: NOAES:%lx:%s:%lx", pr, this->content->c.text.text, p.e ));
 				}
-				else if( this->usr_flags == TM_CLIENT )
+				else if( this->usr_flags & TM_CLIENT )
 					BLOG((0,"remove_from_tasklist: delete CLIENT:%d:%s(%s):%lx", client->p->pid, client->name, client->p->name, p.e ));
 #endif
 				if( p.e->prev )
@@ -1866,7 +1872,7 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 				 SIF_SELECTABLE|SIF_AUTOSELECT|SIF_TREEVIEW|SIF_ICONINDENT|SIF_AUTOOPEN|SIF_AUTOSLIDERS,
 				 NULL, NULL, NULL, NULL, NULL, tm_slist_key,
 				 NULL, NULL, NULL, NULL,
-				 xa_strings[RS_APPLST], "         name          pid  ppid pgrp pri DOM STATE    SZ           CPU  % args", NULL, 255);
+         xa_strings[RS_APPLST], "      name            pid ppid pgrp pri DOM  STATE       SZ         CPU  % args", NULL, 255);
 
 		if (!list) goto fail;
 
@@ -1905,7 +1911,7 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 		wind->window_status |= XAWS_NODELETE;
 
 		/* Set the window title */
-		set_window_title(wind, /*tm_manager*/xa_strings[RS_TM], false);
+		set_window_title(wind, xa_strings[RS_TM], false);
 
 		wt = set_toolbar_widget(lock, wind, client, obtree, inv_aesobj(), 0/*WIP_NOTEXT*/, STW_ZEN, NULL, &or);
 		wt->exit_form = taskmanager_form_exit;
