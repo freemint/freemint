@@ -68,6 +68,7 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 
 // 	if (d) display("menu_bar mode %d for %s, %lx %lx(%lx (%lx(%lx))", pb->intin[0], client->name, mnu, menu, menu->tree, menu_bar, menu_bar->tree);
 
+
 	switch (pb->intin[0])
 	{
 	case MENU_INSTL:
@@ -81,6 +82,7 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		if (validate_obtree(client, mnu, "XA_menu_bar:"))
 		{
+			short mw = 0;
 			XA_TREE *mwt = obtree_to_wt(client, mnu);
 
 			if (!mwt || (mwt && mwt != menu))
@@ -94,14 +96,27 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 				fix_menu(client, mwt/*mnu*/, root_window, true);
 				DIAG((D_menu,NULL,"fixed menu"));
 
-#if GENERATE_DIAGS
+				if( cfg.menu_layout != 0 )
 				{
-					int i = 0;
+					struct xa_widget *widg = get_menu_widg();
+					int i = 0, t = 0;
 					while ((mnu[i].ob_flags & OF_LASTOB) == 0)
+					{
+						if( mnu[i].ob_type == G_TITLE )
+						{
+							t = i;
+						}
 						i++;
+					}
+					mw = mnu[t].ob_width + mnu[t].ob_x;
 					mwt->lastob = i;
+					mnu[0].ob_width = get_menu_widg()->r.w = widg->r.w = widg->ar.w = mwt->area.w = mw + mwt->area.x;
+
+					/* !!! */
+					mwt->area.x = 0;
+					mwt->area.h += 2;
+
 				}
-#endif
 				/* HR: std_menu is now a complete widget_tree :-) */
 				mwt->is_menu = true;
 				mwt->menu_line = true;
@@ -111,7 +126,9 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 					top_owner = get_app_infront();
 
 					if (menu && (client == top_owner || !top_owner->std_menu))
+					{
 						swap_menu(lock|winlist, client, mwt, SWAPM_TOPW);
+					}
 					else
 					{
 						client->nxt_menu = mwt;
@@ -125,7 +142,8 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 			else if (mwt && swap)
 			{
 				top_owner = get_app_infront();
-				wt_menu_area(mwt);
+				if( cfg.menu_layout == 0 )
+					wt_menu_area(mwt);
 				if (menu && (client == top_owner || !top_owner->std_menu))
 					swap_menu(lock|winlist, client, NULL, SWAPM_TOPW);
 				else
@@ -174,7 +192,8 @@ upd_menu(enum locks lock, struct xa_client *client, OBJECT *tree, short item, bo
 	wt = obtree_to_wt(client, tree);
 	if (wt && tree[item].ob_type == G_TITLE)
 	{
-		wt_menu_area(wt);
+		if( cfg.menu_layout == 0 )
+			wt_menu_area(wt);
 		if (wt == get_menu())
 		{
 			set_rootmenu_area(client);

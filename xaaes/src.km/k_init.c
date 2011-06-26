@@ -460,17 +460,6 @@ xaaes_sysfile(const char *file)
 	return NULL;
 }
 
-/*
- * global data
- */
-
-/* The screen descriptor */
-struct xa_screen screen;
-struct xa_window *root_window;
-
-/*
- * private data
- */
 
 /* Pointer to the widget resource (icons) */
 //static void *widget_resources = NULL;
@@ -1030,6 +1019,24 @@ k_init(unsigned long vm)
 	}
 	open_window(NOLOCKING, root_window, screen.r);
 	S.open_windows.root = root_window;
+
+	if( cfg.menu_bar == 2 )
+		cfg.menu_ontop = cfg.menu_layout = 0;
+	if( cfg.menu_ontop )
+	{
+		RECT r = C.Aes->std_menu->area;
+
+		r.x = 0;
+		if( cfg.menu_layout == 0 )
+			r.w = screen.r.w;
+		else
+			r.w += C.Aes->std_menu->area.x;
+		menu_window = create_window(0, NULL, NULL, C.Aes, true, 0, created_for_AES|created_for_POPUP, false, false, r, 0,0);
+		menu_window->dial |= created_for_MENUBAR;
+		if( cfg.menu_bar )
+			open_window(0, menu_window, r);
+	}
+
 	/* Initial iconified window coords */
 	C.iconify = iconify_grid(0);
 // 	v_show_c(v->handle, 1); /* 0 = reset */
