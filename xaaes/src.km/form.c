@@ -1453,10 +1453,9 @@ do_formwind_msg(
 			{
 				obj_edit(wt, v, ED_END, editfocus(&wt->e), 0, 0, NULL, true, &wind->wa, wind->rect_list.start, NULL, NULL);
 			}
-			if (!(wind->dial & created_for_FMD_START))
-			{
-				dfwm_redraw(wind, widg, wt, (RECT *)&msg[4]);
-			}
+
+			dfwm_redraw(wind, widg, wt, (RECT *)&msg[4]);
+
 			if (!wt->ei && edit_set(&wt->e))
 			{
 				obj_edit(wt, v, ED_END, editfocus(&wt->e), 0, 0, NULL, true, &wind->wa, wind->rect_list.start, NULL, NULL);
@@ -1488,13 +1487,15 @@ do_formwind_msg(
 
 				top_window(0, true, false, wind);
 			}
-			ob_set_wind( wt->tree, G_SLIST, msg[0] );
+			if( !(wind->dial & created_for_FMD_START) )
+				ob_set_wind( wt->tree, G_SLIST, msg[0] );
 			break;
 		}
 		case WM_ONTOP:
 		case WM_UNTOPPED:
 		{
-			ob_set_wind( wt->tree, G_SLIST, msg[0] );
+			if( !(wind->dial & created_for_FMD_START) )
+				ob_set_wind( wt->tree, G_SLIST, msg[0] );
 			break;
 		}
 #if 0
