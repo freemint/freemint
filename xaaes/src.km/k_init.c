@@ -48,6 +48,7 @@
 #include "xa_evnt.h"
 #include "xa_form.h"
 #include "xa_fsel.h"
+#include "xa_menu.h"
 #include "xa_rsrc.h"
 #include "xa_shel.h"
 
@@ -991,6 +992,9 @@ k_init(unsigned long vm)
 				&screen.r,		/* maximum size (NB default would be rootwindow->wa) */
 				0);			/* need no remembrance */
 
+	if( !root_window )
+		return -1;
+	strcpy( root_window->wname, "root" );
 // 	display("Fixing up root menu");
 	/* Tack a menu onto the root_window widget */
 	C.Aes->std_menu = new_widget_tree(C.Aes, ResourceTree(C.Aes_rsc, SYSTEM_MENU));
@@ -1003,6 +1007,7 @@ k_init(unsigned long vm)
 	strcpy(C.Aes->mnu_clientlistname, xa_strings[MNU_CLIENTS]);
 	fix_menu(C.Aes, C.Aes->std_menu, root_window, true);
 	set_menu_widget(root_window, C.Aes, C.Aes->std_menu);
+	set_menu_width( C.Aes->std_menu->tree, C.Aes->std_menu );
 
 	/* Set a default desktop */
 	{
@@ -1022,6 +1027,7 @@ k_init(unsigned long vm)
 
 	if( cfg.menu_bar == 2 )
 		cfg.menu_ontop = cfg.menu_layout = 0;
+	// ->fix_menu
 	if( cfg.menu_ontop )
 	{
 		RECT r = C.Aes->std_menu->area;
@@ -1031,8 +1037,10 @@ k_init(unsigned long vm)
 			r.w = screen.r.w;
 		else
 			r.w += C.Aes->std_menu->area.x;
-		menu_window = create_window(0, NULL, NULL, C.Aes, true, 0, created_for_AES|created_for_POPUP, false, false, r, 0,0);
-		menu_window->dial |= created_for_MENUBAR;
+		menu_window = create_window(0, NULL, NULL, C.Aes, true, 0, created_for_AES|created_for_POPUP|created_for_MENUBAR, false, false, r, 0,0);
+		if( !menu_window )
+			return -1;
+		strcpy( menu_window->wname, "menubar" );
 		if( cfg.menu_bar )
 			open_window(0, menu_window, r);
 	}
