@@ -96,6 +96,13 @@ If an entry is selected in the list-box, CURSOR-RIGHT
 focusses the edit-field, so the selection can be edited
 <u>                                                      </u>
 
+<b>Menubar:</b>
+
+If configured, the menu may be switched on/off by clicking on top of the
+screen. If click goes to top-left then menu is on/off permanentely
+(Ctrl-Alt-0), else temporarily on (Ctrl-Alt-blank).
+<u>                                                      </u>
+
 Additional documentation:
 
 http://wiki.sparemint.org/index.php/XaAES
