@@ -1,5 +1,5 @@
 # Place this file in the xaaes-boot directory (C:\mint\1-*-*\xaaes)
-Ctrl-Alt-Shortcuts:
+<b>Ctrl-Alt-Shortcuts:</b>
 
 0             Switch menubar on/off
 A             Terminates all applications (list of
@@ -43,10 +43,10 @@ SHIFT+
  CURSOR-DOWN  Move current window down
  CURSOR-RIGHT Move current window right
  CURSOR-LEFT  Move current window left
+<u>                                                      </u>
 
--------------------------------------------------------
 
-Shortcuts/navigation in XaAES fileselector:
+Shortcuts/navigation in <b>XaAES fileselector:</b>
 
 CTRL+O        Open window menu (navigation with
               CURSOR keys and RETURN)
@@ -62,39 +62,40 @@ ALT+ " + "    Increase the fontsize in listbox
 ALT+ " - "    Decrease the fontsize in listbox
 
 CTRL+SPACE    Reverse sort-order
+<u>                                                      </u>
 
--------------------------------------------------------
-Shortcuts in the taskmanager:
+Shortcuts in the <b>taskmanager:</b>
 
 DELETE    Terminate selected program (same as trashcan)
 SHIFT+
  DELETE   Kill selected program  (same as skull)
+<u>                                                      </u>
 
--------------------------------------------------------
-Shortcuts for all list-windows:
+Shortcuts for <b>all list-windows:</b>
 
 SHIFT+
  CURSOR-UP/DOWN             Page up/down
  CURSOR-LEFT/RIGHT          Page left/right
 
-* List-box selected:
+<u>List-box selected:</u>
 
-  CURSOR-RIGHT              Open tree
-  CURSOR-LEFT               Collapse tree
-  CURSOR UP/DOWN            Move the cursor
-  PageUp/Down(SHIFT+CU/CD)  Pages the filelist
-  CLEAR/HOME                Jump to top of list
-  SHIFT+CLEAR/HOME          Jump to end of list
+ CURSOR-RIGHT              Open tree
+ CURSOR-LEFT               Collapse tree
+ CURSOR UP/DOWN            Move the cursor
+ PageUp/Down(SHIFT+CU/CD)  Pages the filelist
+ CLEAR/HOME                Jump to top of list
+ SHIFT+CLEAR/HOME          Jump to end of list
 
-* List-box not selected:
+<u>List-box not selected:</u>
 
-  CURSOR-RIGHT              Scroll right
-  CURSOR-LEFT               Scroll left
-  CURSOR UP/DOWN            Scroll up/down
+ CURSOR-RIGHT              Scroll right
+ CURSOR-LEFT               Scroll left
+ CURSOR UP/DOWN            Scroll up/down
 
 If an entry is selected in the list-box, CURSOR-RIGHT
 focusses the edit-field, so the selection can be edited
--------------------------------------------------------
+<u>                                                      </u>
+
 Additional documentation:
 
 http://wiki.sparemint.org/index.php/XaAES
