@@ -149,7 +149,7 @@ rw(enum locks lock, struct xa_window *wl, struct xa_client *client)
 			wl, wl->next, wl->prev));
 
 		nwl = wl->next;
-		if (wl != root_window)
+		if (wl != root_window && wl != menu_window)
 		{
 			if (!client || wl->owner == client)
 			{
@@ -174,6 +174,8 @@ void
 remove_windows(enum locks lock, struct xa_client *client)
 {
 	DIAG((D_wind,client,"remove_windows on open_windows list for %s", c_owner(client)));
+	if( !client )
+		return;
 	rw(lock, window_list, client);
 	DIAG((D_wind,client,"remove_windows on closed_windows list for %s", c_owner(client)));
 	rw(lock, S.closed_windows.first, client);
@@ -184,6 +186,8 @@ remove_all_windows(enum locks lock, struct xa_client *client)
 {
 	DIAG((D_wind, client,"remove_all_windows for %s", c_owner(client)));
 
+	if( !client )
+		return;
 	remove_windows(lock, client);
 	DIAG((D_wind, client, "remove_all_windows on open_nlwindows for %s", c_owner(client)));
 	rw(lock, S.open_nlwindows.first, client);
@@ -2063,10 +2067,16 @@ void set_standard_point(struct xa_client *client)
 	XA_TREE *wt = xat->stuff;
 	struct xa_vdi_settings *v = client->vdi_settings;
 
+	if( cfg.menu_ontop && !menu_window )
+	{
+		return;
+	}
 #if 1
 	/* kludge: if < 1 set menu_bar=0, if != -1 set -standard_font_point */
-	if( cfg.menu_bar != 2 && !cfg.menu_ontop && client->options.standard_font_point < 0 )
+	if( cfg.menu_bar != 2 && client->options.standard_font_point < 0 )
 	{
+		//DBG((0,"%s:set_standard_point:std_menu=%lx:%lx", client->name, client->std_menu, C.Aes->std_menu));
+		//DBGif(client->std_menu, (0,"set_standard_point:%s:xaw=%lx,w=%d,%d,%d,client=%lx,owner=%lx(%s),wt=%d/%d", client->name, xaw, xaw->r.w, xaw->ar.w, client->std_menu->area.w, client, xaw->owner, xaw->owner->name, wt->tree->ob_width, wt->r.w));
 		client->options.standard_font_point = -client->options.standard_font_point;
 		if( client->options.standard_font_point == 1 )
 			client->options.standard_font_point = cfg.standard_font_point;
@@ -2081,20 +2091,22 @@ void set_standard_point(struct xa_client *client)
 	if( cfg.menu_bar != 2 && cfg.menu_layout == 1 )
 	{
 		if( client->std_menu )
-			xaw->r.w = xaw->ar.w = client->std_menu->area.w;
+			xaw->r.w = xaw->ar.w = client->std_menu->area.w + 1;
 		//print_rect_list( root_window );
 		if( !cfg.menu_ontop )
 			redraw_menu_area();
 	}
 	if( h == screen.c_max_h && (cfg.menu_bar == 2 || (cfg.menu_bar == old_menu_bar && cfg.menu_layout == 0)) )
+	{
 		return;
+	}
 
 	old_menu_bar = cfg.menu_bar;
 
 	screen.standard_font_height = v->font_h;
 	screen.c_max_h = h;
-	C.Aes->std_menu->tree->ob_height = h + 1;
-	xaw->r.h = xaw->ar.h = h + 1;
+	C.Aes->std_menu->tree->ob_height = h + 2;
+	xaw->r.h = xaw->ar.h = h + 2;
 
 	if( cfg.menu_bar == 2 || (cfg.menu_bar == 1 && !cfg.menu_layout && !cfg.menu_ontop) )
 	{
@@ -2108,14 +2120,12 @@ void set_standard_point(struct xa_client *client)
 	}
 	if( menu_window && cfg.menu_bar != 2 && cfg.menu_ontop && cfg.menu_bar )//&& cfg.menu_layout )
 	{
+		menu_window->r.w = xaw->r.w;
+		menu_window->r.h = xaw->r.h;
 		if( menu_window->window_status & XAWS_OPEN)
 		{
-			move_window( 0, menu_window, true, 0, menu_window->r.x, menu_window->r.y, xaw->r.w, xaw->r.h );
-		}
-		else
-		{
-			menu_window->r.w = xaw->r.w;
-			menu_window->r.h = xaw->r.h;
+			move_window( 0, menu_window, true, 0, menu_window->r.x, menu_window->r.y, menu_window->r.w, menu_window->r.h );
+			redraw_menu_area();
 		}
 	}
 
@@ -2126,6 +2136,7 @@ void set_standard_point(struct xa_client *client)
 		wt->tree->ob_height = root_window->wa.h;
 		wt->tree->ob_y = root_window->wa.y;
 	}
+	//DBG((0,"set_standard_point:%s:ok",client->name));
 }
 
 /*
@@ -2176,6 +2187,7 @@ void toggle_menu(enum locks lock, short md)
 		}
 		redraw_menu_area();
 	}
+
 }
 
 /*
@@ -2345,7 +2357,8 @@ close_window(enum locks lock, struct xa_window *wind)
 		C.hover_wind = NULL;
 		C.hover_widg = NULL;
 	}
-	add_window_to_tasklist( wind, (char *)-1);
+	if( !C.shutdown )
+		add_window_to_tasklist( wind, (char *)-1);
 	if (!(wind->dial & (created_for_SLIST|created_for_CALC)))
 		cancel_winctxt_popup(lock, wind, NULL);
 
@@ -2353,6 +2366,7 @@ close_window(enum locks lock, struct xa_window *wind)
 	{
 		DIAGS(("close_window: nolist window %d, bkg=%lx",
 			wind->handle, wind->background));
+
 
 		cancel_do_winmesag(lock, wind);
 
@@ -2371,10 +2385,8 @@ close_window(enum locks lock, struct xa_window *wind)
 			wi_put_first(&S.closed_nlwindows, wind);
 
 			r = wind->r;
-			if (!(wind->active_widgets & STORE_BACK))
-			{
+			if (!(wind->active_widgets & STORE_BACK) && !C.shutdown )
 				update_windows_below(lock, &r, NULL, wl, NULL);
-			}
 
 			unset_focus(wind);
 		}
@@ -2411,7 +2423,8 @@ close_window(enum locks lock, struct xa_window *wind)
 		if (!wl)
 			wl = window_list;
 
-		update_windows_below(lock, &r, NULL, wl, NULL);
+		if( !C.shutdown )
+			update_windows_below(lock, &r, NULL, wl, NULL);
 
 		if (is_top && !(wind->dial & created_for_AES))
 		{
@@ -2674,18 +2687,25 @@ do_delayed_delete_window(enum locks lock)
 	struct xa_window *wind = S.deleted_windows.first;
 
 	DIAGS(("do_delayed_delete_window"));
+	//DBG((0,"do_delayed_delete_window"));
 
 	while (wind)
 	{
 		/* remove from list */
+		//DBG((0,"wi_remove(%lx,%lx)", &S.deleted_windows, wind));
 		wi_remove(&S.deleted_windows, wind, false);
 
 		/* final delete */
-		delete_window1(lock, wind);
+		//DBG((0,"delete_window1(lock, %lx)", wind));
+		if( wind == menu_window || wind == root_window )
+			BLOG((0,"do_delayed_delete_window:ERROR:wind=%s", wind == menu_window ? "menu-window" : "root-window" ));
+		else
+			delete_window1(lock, wind);
 
 		/* anything left? */
 		wind = S.deleted_windows.first;
 	}
+	//DBG((0,"do_delayed_delete_window ok"));
 }
 
 /*
