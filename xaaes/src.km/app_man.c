@@ -252,7 +252,8 @@ setnew_focus(struct xa_window *wind, struct xa_window *unfocus, bool topowner, b
 						XA_TREE *wt = widg->stuff;
 						if( wt )
 						{
-							ob_set_wind( wt->tree, G_SLIST, WM_ONTOP );
+							if( !(wind->dial & created_for_FMD_START) )
+								ob_set_wind( wt->tree, G_SLIST, WM_ONTOP );
 						}
 					}
 					send_iredraw(0, wind, 0, NULL);
@@ -564,9 +565,7 @@ set_next_menu(struct xa_client *new, bool do_topwind, bool force)
 				}
 				set_rootmenu_area(new);
 			}
-
 			redraw_menu(lock);
-
 		}
 	}
 }
@@ -1156,7 +1155,9 @@ app_in_front(enum locks lock, struct xa_client *client, bool snd_untopped, bool 
 			set_active_client(lock, client);
 		}
 		if (client->std_menu != get_menu() || client->nxt_menu)
+		{
 			swap_menu(lock, client, NULL, SWAPM_DESK);
+		}
 
 		if (allwinds)
 		{
