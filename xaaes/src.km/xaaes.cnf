@@ -42,6 +42,22 @@
 #
 #menubar=1
 #
+####################
+#
+# menu_layout[0|1]
+#
+# use short[1] or long[0] menu
+#
+#menu_layout=1
+#
+####################
+#
+# menu_ontop[0|1]
+#
+# menubar may be overwritten [0] or not[1]
+#
+#menu_ontop=1
+#
 #####################################################################
 ## video mode select
 # -----------------
