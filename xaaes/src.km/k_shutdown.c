@@ -64,6 +64,7 @@ k_shutdown(void)
 {
 	struct xa_vdi_settings *v = C.Aes->vdi_settings;
 
+	_f_sync();
 	BLOG((false, "Cleaning up ready to exit...."));
 	BLOG((false, "wait for AES help thread to terminate...."));
 	cancel_reiconify_timeout();
@@ -90,10 +91,19 @@ k_shutdown(void)
 	remove_all_windows(NOLOCKING, NULL);
 	BLOG((false, "Freeing delayed deleted windows"));
 	do_delayed_delete_window(NOLOCKING);
-	BLOG((false, "Closing and deleting root window"));
 
+	if (menu_window)
+	{
+		//DBG((0,"close_window(NOLOCKING, %lx);", menu_window));
+		close_window(NOLOCKING, menu_window);
+		//DBG((0,"delete_window(NOLOCKING, menu_window);"));
+		delete_window(NOLOCKING, menu_window);
+		//DBG((0,"menu_window = NULL;"));
+		menu_window = NULL;
+	}
 	if (root_window)
 	{
+		BLOG((false, "Closing and deleting root window"));
 		close_window(NOLOCKING, root_window);
 		delete_window(NOLOCKING, root_window);
 		root_window = NULL;
@@ -217,6 +227,7 @@ k_shutdown(void)
 	}
 
 	xaaes_kmalloc_leaks();
+
 	nkc_exit();
 
 
