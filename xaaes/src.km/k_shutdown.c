@@ -94,11 +94,8 @@ k_shutdown(void)
 
 	if (menu_window)
 	{
-		//DBG((0,"close_window(NOLOCKING, %lx);", menu_window));
 		close_window(NOLOCKING, menu_window);
-		//DBG((0,"delete_window(NOLOCKING, menu_window);"));
 		delete_window(NOLOCKING, menu_window);
-		//DBG((0,"menu_window = NULL;"));
 		menu_window = NULL;
 	}
 	if (root_window)
