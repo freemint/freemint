@@ -28,6 +28,7 @@
 #include "xa_global.h"
 
 #include "xa_appl.h"
+#include "xa_rsrc.h"
 #include "k_main.h"
 #include "app_man.h"
 #include "c_window.h"
@@ -38,6 +39,27 @@
 #include "util.h"
 #include "widgets.h"
 
+void set_menu_width( OBJECT *mnu, XA_TREE *mwt )
+{
+	struct xa_widget *widg = get_menu_widg();
+	int i = 0, t = 0;
+	short mw = 0;
+	while ((mnu[i].ob_flags & OF_LASTOB) == 0)
+	{
+		if( mnu[i].ob_type == G_TITLE )
+		{
+			t = i;
+		}
+		i++;
+	}
+
+	mw = mnu[t].ob_x + mnu[t].ob_width;
+	mwt->lastob = i;
+	mnu[0].ob_width = widg->r.w = mwt->area.w = mw + mwt->area.x;
+
+	/* !!! */
+	mwt->area.h += 2;
+}
 /*
  * This file provides the interface between XaAES's (somewhat strange) menu
  * system and the standard GEM calls. Most GEM apps will only care about the
@@ -82,7 +104,6 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		if (validate_obtree(client, mnu, "XA_menu_bar:"))
 		{
-			short mw = 0;
 			XA_TREE *mwt = obtree_to_wt(client, mnu);
 
 			if (!mwt || (mwt && mwt != menu))
@@ -96,26 +117,10 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 				fix_menu(client, mwt/*mnu*/, root_window, true);
 				DIAG((D_menu,NULL,"fixed menu"));
 
-				if( cfg.menu_layout != 0 )
+	// ->fix_menu
+				if( client->options.rsc_lang == READ || cfg.menu_layout != 0 )
 				{
-					struct xa_widget *widg = get_menu_widg();
-					int i = 0, t = 0;
-					while ((mnu[i].ob_flags & OF_LASTOB) == 0)
-					{
-						if( mnu[i].ob_type == G_TITLE )
-						{
-							t = i;
-						}
-						i++;
-					}
-					mw = mnu[t].ob_width + mnu[t].ob_x;
-					mwt->lastob = i;
-					mnu[0].ob_width = get_menu_widg()->r.w = widg->r.w = widg->ar.w = mwt->area.w = mw + mwt->area.x;
-
-					/* !!! */
-					mwt->area.x = 0;
-					mwt->area.h += 2;
-
+					set_menu_width( mnu, mwt );
 				}
 				/* HR: std_menu is now a complete widget_tree :-) */
 				mwt->is_menu = true;
@@ -145,7 +150,9 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 				if( cfg.menu_layout == 0 )
 					wt_menu_area(mwt);
 				if (menu && (client == top_owner || !top_owner->std_menu))
+				{
 					swap_menu(lock|winlist, client, NULL, SWAPM_TOPW);
+				}
 				else
 				{
 					client->nxt_menu = mwt;
