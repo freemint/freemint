@@ -2075,8 +2075,6 @@ void set_standard_point(struct xa_client *client)
 	/* kludge: if < 1 set menu_bar=0, if != -1 set -standard_font_point */
 	if( cfg.menu_bar != 2 && client->options.standard_font_point < 0 )
 	{
-		//DBG((0,"%s:set_standard_point:std_menu=%lx:%lx", client->name, client->std_menu, C.Aes->std_menu));
-		//DBGif(client->std_menu, (0,"set_standard_point:%s:xaw=%lx,w=%d,%d,%d,client=%lx,owner=%lx(%s),wt=%d/%d", client->name, xaw, xaw->r.w, xaw->ar.w, client->std_menu->area.w, client, xaw->owner, xaw->owner->name, wt->tree->ob_width, wt->r.w));
 		client->options.standard_font_point = -client->options.standard_font_point;
 		if( client->options.standard_font_point == 1 )
 			client->options.standard_font_point = cfg.standard_font_point;
@@ -2136,7 +2134,6 @@ void set_standard_point(struct xa_client *client)
 		wt->tree->ob_height = root_window->wa.h;
 		wt->tree->ob_y = root_window->wa.y;
 	}
-	//DBG((0,"set_standard_point:%s:ok",client->name));
 }
 
 /*
@@ -2687,16 +2684,13 @@ do_delayed_delete_window(enum locks lock)
 	struct xa_window *wind = S.deleted_windows.first;
 
 	DIAGS(("do_delayed_delete_window"));
-	//DBG((0,"do_delayed_delete_window"));
 
 	while (wind)
 	{
 		/* remove from list */
-		//DBG((0,"wi_remove(%lx,%lx)", &S.deleted_windows, wind));
 		wi_remove(&S.deleted_windows, wind, false);
 
 		/* final delete */
-		//DBG((0,"delete_window1(lock, %lx)", wind));
 		if( wind == menu_window || wind == root_window )
 			BLOG((0,"do_delayed_delete_window:ERROR:wind=%s", wind == menu_window ? "menu-window" : "root-window" ));
 		else
@@ -2705,7 +2699,6 @@ do_delayed_delete_window(enum locks lock)
 		/* anything left? */
 		wind = S.deleted_windows.first;
 	}
-	//DBG((0,"do_delayed_delete_window ok"));
 }
 
 /*
