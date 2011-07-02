@@ -601,7 +601,6 @@ kernel_key(enum locks lock, struct rawkey *key)
 
 				//if( !wind || wind == root_window )
 					//wind = menu_window;
-				//DBGif(wind,(0,"k_keybd:wind=%lx:%s,status=%lx,dial=%x", wind, wind->wname, wind->window_status, wind->dial));
 				if( !wind || wind == root_window || (wind->dial & created_for_POPUP) )
 					return true;
 				client = wind->owner;
