@@ -512,7 +512,6 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 			ikill(p->pid, SIGTERM);
 			return XAC_DONE;
 		}
-# define _f_sync			(*KENTRY->vec_dos[0x103]) 	/* f_sync */
 		_f_sync();
 	}
 
