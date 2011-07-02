@@ -285,7 +285,6 @@ short set_xa_fnt( int pt, struct xa_wtxt_inf *wp[], OBJECT *obtree, int objs[], 
 	if( list )
 	{
 		list->nesticn_h = h;// + 2;
-		list->char_width = w;
 	}
 
 	if( neww )
@@ -399,6 +398,8 @@ build_tasklist_string( int md, void *app)
 
 void add_window_to_tasklist(struct xa_window *wi, const char *title)
 {
+	if( C.shutdown )
+		return;
 	if (wi && (wi->window_status & XAWS_OPEN)
 		&& !( wi->dial
 			& ( created_for_SLIST
