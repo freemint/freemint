@@ -531,9 +531,8 @@ kernel_key(enum locks lock, struct rawkey *key)
 				short g = WGROW, s = key->raw.conin.state & (K_RSHIFT|K_LSHIFT);
 				RECT r;
 
-				if( !wind )
+				if( !wind || wind == root_window || (wind->dial & created_for_POPUP) )
 					return true;
-
 				client = wind->owner;
 				r = wind->r;
 				if( nk == NK_DOWN )
@@ -590,9 +589,6 @@ kernel_key(enum locks lock, struct rawkey *key)
 						do_formwind_msg(wind, client, 0, 0, msg);
 					}*/
 				}
-				//if( mb )
-					//toggle_menu(lock, 1);
-
 			}
 		return true;
 		case NK_RIGHT:
@@ -603,7 +599,10 @@ kernel_key(enum locks lock, struct rawkey *key)
 				short s = key->raw.conin.state & (K_RSHIFT|K_LSHIFT);
 				RECT r;
 
-				if( !wind )
+				//if( !wind || wind == root_window )
+					//wind = menu_window;
+				//DBGif(wind,(0,"k_keybd:wind=%lx:%s,status=%lx,dial=%x", wind, wind->wname, wind->window_status, wind->dial));
+				if( !wind || wind == root_window || (wind->dial & created_for_POPUP) )
 					return true;
 				client = wind->owner;
 				r = wind->r;
