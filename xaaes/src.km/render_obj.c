@@ -4417,7 +4417,7 @@ write_menu_line(struct xa_vdi_settings *v, RECT *cl)
 	if( cfg.menu_layout )
 	{
 		/* right */
-		//(*v->api->line)(v, cl->x + cl->w-1, cl->y + cl->h-1, cl->x + cl->w-1, cl->y, G_BLACK);
+		(*v->api->line)(v, cl->x + cl->w - 1, cl->y + cl->h-1, cl->x + cl->w - 1, cl->y, G_BLACK);
 		/* left */
 		(*v->api->line)(v, cl->x + 8, cl->y + cl->h-1, cl->x + 8, cl->y, G_BLACK);
 	}
