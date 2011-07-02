@@ -3160,26 +3160,27 @@ obj_change(XA_TREE *wt,
 
 	if (aesobj_flags(&obj) != flags) {
 		aesobj_setflags(&obj, flags);
-		draw = true;
+		draw |= 1;
 	}
 	if (aesobj_state(&obj) != state) {
 		aesobj_setstate(&obj, state);
-		draw = true;
+		draw |= 2;
 	}
 
 	if (draw && redraw) {
 #if 1
 		// "sysinfo"-fix
-		if( !clip )
+		if( obj.ob->ob_type == G_USERDEF && !clip && obj.ob->ob_x == 0 )
 		{
 			RECT r;
 			r = *(RECT*)&obj.ob->ob_x;
-			if( r.x == 0 )	//?
-				clip = &r;
+			clip = &r;
 		}
 #endif
 
-		obj_draw(wt, v, obj, transdepth, clip, (aesobj_type(&obj) == G_TITLE && obj.ob->ob_y == 0 ) ? 0 : rl, dflags);	// of y=0 and G_TITLE it's a menu-title (don't clip)
+		if( (aesobj_type(&obj) == G_TITLE && obj.ob->ob_y == 0 ) )
+			rl = 0;
+		obj_draw(wt, v, obj, transdepth, clip, rl, dflags);	// of y=0 and G_TITLE it's a menu-title (don't clip)
 	}
 }
 
