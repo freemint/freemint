@@ -91,11 +91,13 @@ obfix(OBJECT *tree, short object, short designWidth, short designHeight)
 	 * Special case handling: any OBJECT 80 characters wide is supposed
 	 * to be a menu bar, which always covers the entire screen width...
 	 */
-	if (ob->ob_width == 80 && ob->ob_type == G_BOX && ob->ob_x == 0)
+#if 0
+	if (!cfg.menu_layout && ob->ob_width == 80 && ob->ob_type == G_BOX && ob->ob_x == 0)
 	{
 		ob->ob_width = screen.r.w;
 	}
 	else
+#endif
 	{
 		fixupobj(&ob->ob_width, x_fact, designWidth);
 	}
@@ -295,13 +297,6 @@ FixColourIconData(struct xa_client *client, CICONBLK *icon, struct xa_rscs *rscs
 		DIAG((D_rsrc,client,"[1]No matching icon"));
 	}
 }
-
-#define READ	1
-#define WRITE 2
-#define OREAD 3
-#define OWRITE	4
-#define CLOSE 5
-#define REPLACE 6
 
 #define LF_OFFS 3
 #define LF_SEPCH	'_'
@@ -980,7 +975,7 @@ fix_objects(struct xa_client *client,
 						}
 					}
 				}
-				else if( scan.title >= 0 )
+				else if( client->options.rsc_lang == READ && scan.title >= 0 )
 				{
 					if( scan.mwidth && scan.lastbox > 0 )	// last entry in menu-box
 					{
