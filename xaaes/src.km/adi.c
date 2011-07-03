@@ -120,7 +120,7 @@ adi_name2adi (char *aname)
 {
 	char name[ADI_NAMSIZ+1], *cp;
 	short i;
-	long unit = 0;
+	short unit = 0;
 	struct adif *a;
 
 	for (i = 0, cp = aname; i < ADI_NAMSIZ && *cp; ++cp, ++i)
