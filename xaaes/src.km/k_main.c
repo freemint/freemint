@@ -2024,7 +2024,9 @@ k_exit(int wait)
 	PRCLOSE;
 
 	if (C.alert_pipe > 0)
+	{
 		f_close(C.alert_pipe);
+	}
 	wake(WAIT_Q, (long)&loader_pid);
 
 	/* XXX todo -> module_exit */
@@ -2034,7 +2036,7 @@ k_exit(int wait)
 	{
 		long r;
 		r = f_cntl(C.KBD_dev, (long)&KBD_dev_sg, TIOCSETN);
-		KERNEL_DEBUG("fcntl(TIOCSETN) -> %li", r);
+		//KERNEL_DEBUG("fcntl(TIOCSETN) -> %li", r);
 		//r = f_cntl(C.KBD_dev, NULL, TIOCFLUSH);
 
 		f_close(C.KBD_dev);
