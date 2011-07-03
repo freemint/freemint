@@ -222,7 +222,7 @@ XA_FILE *xa_fopen( char *fn, int rwmd )
 		return 0;
 	}
 	ret->k_fp = fp;
-	ret->p1 = ret->p = 0;//ret->buf;
+	ret->p1 = ret->p = 0;
 
 	return ret;
 }
@@ -266,7 +266,7 @@ char *xa_readline( char *buf, long size, XA_FILE *fp )
 		{
 			err = kernel_read( fp->k_fp, fp->buf, sizeof(fp->buf)-1 );
 
-			if( err <= 0 )
+			if( err <= 0 || fp->buf[0] < '\t' )
 			{
 				return 0;
 			}
