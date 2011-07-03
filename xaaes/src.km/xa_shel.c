@@ -612,7 +612,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 						strcpy( defdir, linkname );
 
 						/* if started from launch_path set home to link-target path */
-						if( follow ) //is_launch_path( get_full_curpath(cur) ) )
+						if( follow )
 						{
 							strcpy( path, linkname );	/* this gets shel_info.home_path in init_client */
 						}

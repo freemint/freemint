@@ -1029,7 +1029,7 @@ redraw_menu(enum locks lock)
 	}
 	else
 	{
-		DIAGS(("Display MENU: post cevnt (%lx) to owner %s by %s", CE_redraw_menu, mc->name, rc->name));
+		DIAGS(("redraw_menu: post cevnt (%lx) to owner %s by %s", CE_redraw_menu, mc->name, rc->name));
 		post_cevent(mc,
 			    CE_redraw_menu,
 			    NULL,
@@ -1038,7 +1038,7 @@ redraw_menu(enum locks lock)
 			    NULL,
 			    NULL);
 	}
-	DIAGS(("Display MENU - exit OK"));
+	DIAGS(("redraw_menu - exit OK"));
 }
 
 #if 0
