@@ -156,16 +156,22 @@ about_form_exit(struct xa_client *client,
 static void file_to_list( SCROLL_INFO *list, char *fn, bool skip_hash)
 {
 	struct scroll_content sc = {{ 0 }};
-	XA_FILE *xa_fp = xa_fopen(fn, O_RDONLY );
+	struct stat st;
+	long r = f_stat64(0, fn, &st);
+	XA_FILE *xa_fp;
 	char *p;
 	long lineno;
 
+	if( r || !S_ISREG(st.mode) )
+		return;
+	xa_fp = xa_fopen(fn, O_RDONLY );
 	if( !xa_fp )
 		return;
 
 	sc.t.strings = 1;
 	//sc.fnt = &norm_txt;
 	sc.fnt = 0;
+
 
 	PRINIT;
 	for( lineno = 1; lineno < VIEW_MAX_LINES && (p = xa_readline( 0, 0, xa_fp )); lineno++ )
