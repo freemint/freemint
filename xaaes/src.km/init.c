@@ -777,10 +777,12 @@ again:
 			sd_str = "Quit XaAES";
 		}
 
-		BLOG((1,"AESSYS kthread exited - C.shutdown = %x->%s.", C.shutdown, sd_str));
+		BLOG((1,"AESSYS kthread exited - shutdown = %x(%s).", C.shutdown, sd_str));
 
 		if( C.shutdown & RESTART_XAAES )
+		{
 			goto again;
+		}
 
 
 // 		display("AESSYS kthread exited - C.shutdown = %x", C.shutdown);
