@@ -5,12 +5,11 @@
 #define SYS_MN_ABOUT 7  /* STRING in tree SYSTEM_MENU */
 #define SYS_MN_LAUNCH 16  /* STRING in tree SYSTEM_MENU */
 #define SYS_MN_DESK 17  /* STRING in tree SYSTEM_MENU */
-#define SYS_MN_TASKMNG 18  /* STRING in tree SYSTEM_MENU */
-#define SYS_MN_SALERT 20  /* STRING in tree SYSTEM_MENU */
-#define SYS_MN_ENV 21  /* STRING in tree SYSTEM_MENU */
-#define SYS_MN_QUITAPP 23  /* STRING in tree SYSTEM_MENU */
+#define SYS_MN_TASKMNG 19  /* STRING in tree SYSTEM_MENU */
+#define SYS_MN_SYSTEM 20  /* STRING in tree SYSTEM_MENU */
+#define SYS_MN_QUITAPP 22  /* STRING in tree SYSTEM_MENU */
+#define SYS_MN_RESTART 23  /* STRING in tree SYSTEM_MENU */
 #define SYS_MN_QUIT 24  /* STRING in tree SYSTEM_MENU */
-#define SYS_MN_RESCHG 26  /* STRING in tree SYSTEM_MENU */
 
 #define FSEL_MENU 1  /* menu */
 #define FSEL_DRV 3  /* TITLE in tree FSEL_MENU */
@@ -59,7 +58,6 @@
 #define DEF_DESKTOP 5  /* form/dial */
 #define DESKTOP 0  /* BOX in tree DEF_DESKTOP */
 #define DESKTOP_LOGO 1  /* CICON in tree DEF_DESKTOP */
-#define BETA_BOX 2  /* BOX in tree DEF_DESKTOP */
 
 #define TASK_MANAGER 6  /* form/dial */
 #define TM_ICONS 1  /* IBOX in tree TASK_MANAGER */
@@ -183,27 +181,3 @@
 #define PDLG_I_PORT 36  /* BUTTON in tree PDLG_DIALOGS */
 #define PDLG_I_BG 38  /* BUTTON in tree PDLG_DIALOGS */
 #define PDLG_R_FG 39  /* BUTTON in tree PDLG_DIALOGS */
-
-#define RSC_CONTROL 13  /* form/dial */
-#define CTRL_SLIST 1  /* BOX in tree RSC_CONTROL */
-#define CTRL_CTRLITEM 2  /* IBOX in tree RSC_CONTROL */
-
-#define RES_CHFALC 14  /* form/dial */
-#define RC_CANCEL 1  /* BUTTON in tree RES_CHFALC */
-#define RC_OK 2  /* BUTTON in tree RES_CHFALC */
-#define RC_COLOURS 3  /* BUTTON in tree RES_CHFALC */
-#define RC_COLUMNS 9  /* BUTTON in tree RES_CHFALC */
-#define RC_VGA 12  /* BUTTON in tree RES_CHFALC */
-#define RC_TVSEL 15  /* BUTTON in tree RES_CHFALC */
-#define RC_OVERSCAN 18  /* BUTTON in tree RES_CHFALC */
-#define RC_ILACE 19  /* BUTTON in tree RES_CHFALC */
-#define RC_BIT15 20  /* BUTTON in tree RES_CHFALC */
-
-#define RES_CHMIL 15  /* form/dial */
-#define RCHM_CANCEL 1  /* BUTTON in tree RES_CHMIL */
-#define RCHM_OK 2  /* BUTTON in tree RES_CHMIL */
-#define RCHM_RES 3  /* BUTTON in tree RES_CHMIL */
-#define RCHM_COL 4  /* BUTTON in tree RES_CHMIL */
-
-#define RES_CHATARI 16  /* form/dial */
-#define RC_MODES 3  /* BUTTON in tree RES_CHATARI */
