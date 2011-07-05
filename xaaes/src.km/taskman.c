@@ -2907,42 +2907,18 @@ do_system_menu(enum locks lock, int clicked_title, int menu_item)
 			dispatch_shutdown(0, 0);
 			break;
 
+		case SYS_MN_RESTART:
+			dispatch_shutdown(RESTART_XAAES, 0);
+			break;
+
 		/* Open the "Task Manager" window */
 		case SYS_MN_TASKMNG:
 			post_cevent(C.Hlp, ceExecfunc, open_taskmanager,NULL, 1,0, NULL,NULL);
 			break;
-		/* Open system alerts log window */
-		case SYS_MN_SALERT:
-			post_cevent(C.Hlp, ceExecfunc, open_systemalerts,NULL, 1,0, NULL,NULL);
-			break;
 		/* Open system alerts log window filled with environment */
-		case SYS_MN_ENV:
+		case SYS_MN_SYSTEM:
 		{
 			post_cevent(C.Hlp, ceExecfunc, open_systemalerts, NULL, 1,0, NULL,NULL);
-#if 0
-			OBJECT *form = ResourceTree(C.Aes_rsc, SYS_ERROR);
-			struct scroll_info *list = object_get_slist(form + SYSALERT_LIST);
-			struct scroll_entry *this;
-			const char **strings = get_raw_env(); //char * const * const strings = get_raw_env();
-			int i;
-			struct sesetget_params p = { 0 };
-			struct scroll_content sc = {{ 0 }};
-
-			p.idx = -1;
-			p.arg.txt = "Environment";
-			p.level.flags = 0;
-			p.level.curlevel = 0;
-			p.level.maxlevel = 0;
-			list->get(list, NULL, SEGET_ENTRYBYTEXT, &p);
-			list->empty(list, p.e, 0);
-			this = p.e;
-			sc.t.strings = 1;
-			for (i = 0; strings[i]; i++)
-			{	sc.t.text = strings[i];
-				list->add(list, this, NULL, &sc, this ? (SEADD_CHILD|SEADD_PRIOR) : SEADD_PRIOR, 0, true);
-			}
-			post_cevent(C.Hlp, ceExecfunc, open_systemalerts,NULL, 1,0, NULL,NULL);
-#endif
 			break;
 		}
 
@@ -2964,11 +2940,6 @@ do_system_menu(enum locks lock, int clicked_title, int menu_item)
 			else
 				C.DSKpid = launch(lock, 0,0,0, C.desk, "\0", C.Aes);
 			break;
-		}
-		case SYS_MN_RESCHG:
-		{
-			if (C.reschange)
-				post_cevent(C.Hlp, ceExecfunc, C.reschange,NULL, 1,0, NULL,NULL);
 		}
 	}
 }
