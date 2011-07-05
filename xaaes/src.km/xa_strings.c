@@ -15,8 +15,8 @@ char *xa_strings[] = {
 	"System  ",
 	"Video:%dx%dx%d,%d colours, format: %s ",
 	"MEMPROT:%s",
-	"OFF     ",
-	"ON       ",
+	"OFF",
+	"ON",
 /* alert-text */
 "[2][Quit All][Cancel|OK]     ",
 "[2][Leave XaAES][Cancel|OK]    ",
