@@ -219,6 +219,102 @@ static struct xa_gradient popbkg_gradient =
 	3, 1, {-40, 0},
 	{{800,800,800}, {900,900,900}, {700,700,700}},
 };
+
+#include "gradients.h"
+
+/* import from win_draw.c */
+extern struct xa_gradient
+
+otop_vslide_gradient, otop_hslide_gradient,
+otop_vslider_gradient, otop_hslider_gradient, utop_vslide_gradient,
+utop_hslide_gradient, utop_vslider_gradient, utop_hslider_gradient,
+otop_title_gradient, utop_title_gradient, otop_info_gradient,
+utop_info_gradient, otop_grey_gradient,
+utop_grey_gradient,
+
+alert_otop_title_gradient, alert_utop_title_gradient,
+alert_utop_grey_gradient,
+slist_otop_vslide_gradient, slist_otop_hslide_gradient,
+slist_otop_vslider_gradient, slist_otop_hslider_gradient,
+slist_utop_vslide_gradient, slist_utop_hslide_gradient,
+slist_utop_vslider_gradient, slist_utop_hslider_gradient,
+slist_otop_title_gradient, slist_utop_title_gradient,
+slist_otop_info_gradient, slist_utop_info_gradient,
+slist_otop_grey_gradient, slist_utop_grey_gradient;
+
+
+static struct xa_gradient *gradients[] =
+{
+
+	&otop_vslide_gradient, &otop_hslide_gradient,
+	&otop_vslider_gradient, &otop_hslider_gradient,
+	&utop_vslide_gradient, &utop_hslide_gradient,
+	&utop_vslider_gradient, &utop_hslider_gradient,
+	&otop_title_gradient, &utop_title_gradient,
+	&otop_info_gradient, &utop_info_gradient,
+	&otop_grey_gradient, &utop_grey_gradient,
+
+	&alert_otop_title_gradient, &alert_utop_title_gradient,
+	&alert_utop_grey_gradient,
+
+	&slist_otop_vslide_gradient, &slist_otop_hslide_gradient,
+	&slist_otop_vslider_gradient, &slist_otop_hslider_gradient,
+	&slist_utop_vslide_gradient, &slist_utop_hslide_gradient,
+	&slist_utop_vslider_gradient, &slist_utop_hslider_gradient,
+	&slist_otop_title_gradient, &slist_utop_title_gradient,
+	&slist_otop_info_gradient, &slist_utop_info_gradient,
+	&slist_otop_grey_gradient, &slist_utop_grey_gradient,
+
+	&menu_gradient, &sel_title_gradient, &sel_popent_gradient, &indbutt_gradient, &sel_indbutt_gradient, &actbutt_gradient, &popbkg_gradient,
+
+	0
+};
+static void load_gradients( char *path, char *fn )
+{
+	struct xa_gradient **gp = gradients, *gpp;
+	char buf[8192], *cp = buf;
+	long err;
+	struct file *fp;
+
+	sprintf( buf, sizeof(buf), "%sgradients/%s.grd", path, fn );
+	BLOG((0,"loading gradients:%s", buf));
+	fp = kernel_open( buf, O_RDONLY, &err, NULL );
+	if( !fp )
+	{
+		BLOG((0,"gradients not found:%ld", err));
+		return;
+	}
+	err = kernel_read( fp, buf, sizeof(buf)-1 );
+	kernel_close( fp );
+
+	if( err < sizeof( gradients ) / sizeof(void*) * sizeof( struct xa_gradient ) )
+	{
+		BLOG((0,"load_gradients:file-error: %ld<%ld", err, sizeof( gradients ) / sizeof(void*) * sizeof( struct xa_gradient ) ));
+		return;
+	}
+	/* search START */
+	for( ; *(short*)cp != START && cp - buf < err; cp++ )
+		;
+	if( *(short*)cp != START )
+	{
+		BLOG((0,"load_gradients:start not found"));
+		return;
+	}
+	cp += sizeof(short);
+
+	gpp = (struct xa_gradient *)cp;
+	for( err = GRAD_INIT; *gp; err++)
+	{
+		if( (long)gpp->allocs != err )
+		{
+			BLOG((0,"load_gradients:read-error:%lx != %lx", (long)gpp->allocs, err));
+			break;
+		}
+		gpp->allocs = 0;
+		**gp++ = *gpp++;
+	}
+}
+
 #endif
 static struct theme stdtheme =
 {
@@ -4405,7 +4501,7 @@ draw_g_box(struct widget_tree *wt, struct xa_vdi_settings *v, struct color_theme
 
 	draw_outline(wt, v, out, &r);
 }
-extern struct config cfg;
+
 /* ************************************************************ */
 /*        Functions exported in objcr_theme			*/
 /* ************************************************************ */
@@ -4414,7 +4510,7 @@ write_menu_line(struct xa_vdi_settings *v, RECT *cl)
 {
 	/* lower */
 	(*v->api->line)(v, cl->x, cl->y + cl->h - 1, cl->x + cl->w - 1, cl->y + cl->h - 1, G_BLACK);
-	if( cfg.menu_layout )
+	if( api->cfg->menu_layout )
 	{
 		/* right */
 		(*v->api->line)(v, cl->x + cl->w - 1, cl->y + cl->h-1, cl->x + cl->w - 1, cl->y, G_BLACK);
@@ -6308,6 +6404,12 @@ init_module(const struct xa_module_api *xmapi, const struct xa_screen *xa_screen
 			tree[i].ob_x = tree[i].ob_y = 0;
 
 		xobj_rsc = tree;
+	}
+	if (grad)
+	{
+		if( api->cfg->gradients[1] != 0 )
+			load_gradients( xmapi->C->Aes->home_path, api->cfg->gradients );
+		imgpath_file = -1;
 	}
 	if (screen->planes >= 8)
 	{
