@@ -134,15 +134,25 @@
 #video = 4
 
 ####################################################
-# gradients = <value>    (default = 0)
+# gradients = <name|[0|1]>    (default = 0)
 #
-# setting gradients to a nonzero value turns on use of
+# setting gradients to a nonzero value or a name turns on use of
 # color gradients in the window widget and aes object
 # renderer in hc/tc color modes.
-# THIS IS ONLY A TEMPORARY CONFIGURATION THAT WILL BE GONE
-# LATER ON!!! Only turn this on if you have a fast machine
 #
+# gradient-files are <sysdir>/xaaes/gradients/<name>.grd
+
+#default gradients
 #gradients = 1
+#gradients = default
+
+#special gradients
+#gradients = g_red
+#gradients = g_green
+#gradients = g_blue
+#gradients = g_yellow
+#gradients = g_cyan
+#gradients = g_purple
 
 #####################################################################
 # setenv name val ..... set up environment
