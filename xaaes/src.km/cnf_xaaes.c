@@ -85,10 +85,9 @@ static PCB_TAx  pCB_run;
 static struct parser_item parser_tab[] =
 {
 	/* config variables */
-	//{ "LAUNCHER",              PI_R_T,     cfg.launch_path         , { dat: sizeof(cfg.launch_path) } },
-	{ "LAUNCHPATH",              PI_R_T,     cfg.launch_path         , { dat: sizeof(cfg.launch_path) } },
+	{ "LAUNCHPATH",              PI_R_T,     cfg.launch_path       , { dat: sizeof(cfg.launch_path) } },
 	{ "CLIPBOARD",             PI_R_T,     cfg.scrap_path          , { dat: sizeof(cfg.scrap_path)  } },
-	{ "SNAPSHOT",  	           PI_R_T,     cfg.snapper  		        , { dat: sizeof(cfg.snapper)  } },
+	{ "SNAPSHOT",  	           PI_R_T,     cfg.snapper  		       , { dat: sizeof(cfg.snapper)  } },
 	{ "ACCPATH",               PI_R_T,     cfg.acc_path            , { dat: sizeof(cfg.acc_path)    } },
 	{ "LANG",                  PI_R_T,     cfg.lang		             , { dat: sizeof(cfg.lang)   } },
 	{ "WIDGETS",               PI_R_T,     cfg.widg_name           , { dat: sizeof(cfg.widg_name)   } },
@@ -156,7 +155,7 @@ static struct parser_item parser_tab[] =
 	{ "ICNFY_HEIGHT",	PI_R_S, &cfg.icnfy_h			},
 	{ "ICNFY_REORDER_TO",	PI_R_S, &cfg.icnfy_reorder_to, Range(0, 32000) },
 
-	{ "GRADIENTS",		PI_R_S, &cfg.gradients			},
+	{ "GRADIENTS",		PI_R_T, cfg.gradients,       { dat: sizeof(cfg.gradients) } },
 
 	/* startup things */
 	{ "SHELL",                 PI_V_ATK, pCB_shell			},
