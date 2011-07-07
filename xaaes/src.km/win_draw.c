@@ -662,7 +662,7 @@ struct xa_gradient utop_hslider_gradient =
 	{{800,800,800},{500,500,500}},
 };
 
-static struct xa_gradient otop_title_gradient =
+struct xa_gradient otop_title_gradient =
 {
 #if 0
 	NULL,
@@ -681,7 +681,7 @@ static struct xa_gradient otop_title_gradient =
 	{{700,700,900},{500,500,700}},
 #endif
 };
-static struct xa_gradient utop_title_gradient =
+struct xa_gradient utop_title_gradient =
 {
 #if 0
 	NULL,
@@ -701,7 +701,7 @@ static struct xa_gradient utop_title_gradient =
 #endif
 };
 
-static struct xa_gradient otop_info_gradient =
+struct xa_gradient otop_info_gradient =
 {
 	NULL,
 	0, -1,
@@ -712,7 +712,7 @@ static struct xa_gradient otop_info_gradient =
 // 	3, 1, {3, 0},
 // 	{{200,200,200},{600,600,600},{900,900,900}},
 };
-static struct xa_gradient utop_info_gradient =
+struct xa_gradient utop_info_gradient =
 {
 	NULL,
 	0, -1,
@@ -723,7 +723,7 @@ static struct xa_gradient utop_info_gradient =
 };
 
 #if 0
-static struct xa_gradient otop_green_gradient =
+struct xa_gradient otop_green_gradient =
 {
 	NULL,
 	-1, -1,
@@ -733,7 +733,7 @@ static struct xa_gradient otop_green_gradient =
 	{{200,500,200},{800,1000,800}},
 };
 #endif
-static struct xa_gradient otop_grey_gradient =
+struct xa_gradient otop_grey_gradient =
 {
 	NULL,
 	-1, -1,
@@ -742,7 +742,7 @@ static struct xa_gradient otop_grey_gradient =
 	2, 0, {0},
 	{{600,600,700},{900,900,1000}},
 };
-static struct xa_gradient utop_grey_gradient =
+struct xa_gradient utop_grey_gradient =
 {
 	NULL,
 	-1, -1,
@@ -1212,7 +1212,7 @@ struct window_colours def_utop_cols =
 /* ---------------- Alert window colour theme --------------------------------------- */
 /* ---------------------------------------------------------------------------------- */
 #ifndef ST_ONLY
-static struct xa_gradient alert_otop_title_gradient =
+struct xa_gradient alert_otop_title_gradient =
 {
 	NULL,
 	-1, -1,
@@ -1221,7 +1221,7 @@ static struct xa_gradient alert_otop_title_gradient =
 	2, 0,{0},
 	{{500,200,200},{1000,800,800}},
 };
-static struct xa_gradient alert_utop_title_gradient =
+struct xa_gradient alert_utop_title_gradient =
 {
 	NULL,
 	-1, -1,
@@ -1232,7 +1232,7 @@ static struct xa_gradient alert_utop_title_gradient =
 /*	{{500,500,500},{900,900,900}}, */
 };
 
-static struct xa_gradient alert_utop_grey_gradient =
+struct xa_gradient alert_utop_grey_gradient =
 {
 	NULL,
 	-1, -1,
@@ -1533,7 +1533,7 @@ struct xa_gradient slist_utop_hslider_gradient =
 	{{800,800,800},{500,500,500}},
 };
 
-static struct xa_gradient slist_otop_title_gradient =
+struct xa_gradient slist_otop_title_gradient =
 {
 	NULL,
 	-1, -1,
@@ -1542,7 +1542,7 @@ static struct xa_gradient slist_otop_title_gradient =
 	2, 0,{0},
 	{{00,00,400},{600,600,1000}},
 };
-static struct xa_gradient slist_utop_title_gradient =
+struct xa_gradient slist_utop_title_gradient =
 {
 	NULL,
 	-1, -1,
@@ -1553,7 +1553,7 @@ static struct xa_gradient slist_utop_title_gradient =
 /*	{{500,500,500},{900,900,900}}, */
 };
 
-static struct xa_gradient slist_otop_info_gradient =
+struct xa_gradient slist_otop_info_gradient =
 {
 	NULL,
 	0, -1,
@@ -1562,7 +1562,7 @@ static struct xa_gradient slist_otop_info_gradient =
 	3, 1, {3, 0},
 	{{200,200,200},{600,600,600},{900,900,900}},
 };
-static struct xa_gradient slist_utop_info_gradient =
+struct xa_gradient slist_utop_info_gradient =
 {
 	NULL,
 	0, -1,
@@ -1571,7 +1571,7 @@ static struct xa_gradient slist_utop_info_gradient =
 	0, 0, {0},
 	{{200,200,200},{400,400,400}},
 };
-static struct xa_gradient slist_otop_grey_gradient =
+struct xa_gradient slist_otop_grey_gradient =
 {
 	NULL,
 	-1, -1,
@@ -1580,7 +1580,7 @@ static struct xa_gradient slist_otop_grey_gradient =
 	2, 0, {0},
 	{{500,500,500},{900,900,900}},
 };
-static struct xa_gradient slist_utop_grey_gradient =
+struct xa_gradient slist_utop_grey_gradient =
 {
 	NULL,
 	-1, -1,

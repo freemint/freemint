@@ -943,7 +943,9 @@ k_init(unsigned long vm)
 	main_xa_theme(&C.Aes->xmwt);
 	main_object_render(&C.Aes->objcr_module);
 
-	if (!(*C.Aes->objcr_module->init_module)(&xam_api, &screen, cfg.gradients))
+	if( cfg.gradients[0] == '0' && cfg.gradients[1] == 0 )
+		cfg.gradients[0] = 0;
+	if (!(*C.Aes->objcr_module->init_module)(&xam_api, &screen, cfg.gradients[0] != 0))
 	{
 		BLOG((true, "object render returned NULL"));
 		return -1;
@@ -954,7 +956,7 @@ k_init(unsigned long vm)
 		return -1;
 	}
 
-	if (!(C.Aes->wtheme_handle = (*C.Aes->xmwt->init_module)(&xam_api, &screen, (char *)&cfg.widg_name, cfg.gradients)))
+	if (!(C.Aes->wtheme_handle = (*C.Aes->xmwt->init_module)(&xam_api, &screen, (char *)&cfg.widg_name, cfg.gradients[0] != 0)))
 	{
 		BLOG((true,"Window widget module returned NULL"));
 		return -1;
