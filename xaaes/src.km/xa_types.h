@@ -2952,7 +2952,7 @@ struct keyboards
 
 struct config
 {
-	short gradients;
+	Path gradients;
 
 	Path launch_path;		/* Initial path for launcher */
 	Path scrap_path;		/* Path to the scrap directory */
