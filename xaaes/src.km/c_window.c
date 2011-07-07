@@ -2293,7 +2293,7 @@ move_window(enum locks lock, struct xa_window *wind, bool blit, WINDOW_STATUS ne
 
 	inside_root(&new, wind->owner->options.noleft);
 
-	if( cfg.menu_bar && old.y < get_menu_height() )
+	if( !cfg.menu_ontop && cfg.menu_bar && old.y != wind->r.y && old.y < get_menu_height() )
 	{
 		blit = false;
 	}
@@ -3677,7 +3677,33 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 		short flags = only_wa ? RDRW_WA : RDRW_ALL;
 		while (newrl)
 		{
-			generate_redraws(wlock, wind, &newrl->r, flags );
+			bool joined = false;
+			if( newrl->next )
+			{
+				short y11 = newrl->r.y, y12 = newrl->r.y + newrl->r.h, y21 = newrl->next->r.y, y22 = newrl->next->r.y + newrl->next->r.h,
+					x12 = newrl->r.x + newrl->r.w, x21 = newrl->next->r.x, x22 = newrl->next->r.x + newrl->next->r.w, x11 = newrl->r.x,
+					way1 = wind->wa.y, way2 = wind->wa.y + wind->wa.h;
+
+				/* two x-adjacend rects; y equal or outside wa: join */
+				if( (y11 == y21 || (y11 < way1 && y21 < way1)) && (y12 == y22 || (y12 >= way2 && y22 >= way2)) && (x21 == x12 || x22 == x11) )
+				{
+					RECT r;
+					r.y = y11 < y21 ? y11 : y21;
+					r.h = y12 > y22 ? y12 : y22;
+					r.h -= r.y;
+					r.x = x11 < x21 ? x11 : x21;
+					//r.w = x12 > x22 ? x12 : x22;
+					//r.w -= r.x;
+					r.w = newrl->r.w + newrl->next->r.w;
+
+					generate_redraws(wlock, wind, &r, flags );
+					newrl = newrl->next;
+					joined = true;
+				}
+			}
+
+			if( !joined )
+				generate_redraws(wlock, wind, &newrl->r, flags );
 			newrl = newrl->next;
 		}
 
