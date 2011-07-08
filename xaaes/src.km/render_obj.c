@@ -6405,12 +6405,14 @@ init_module(const struct xa_module_api *xmapi, const struct xa_screen *xa_screen
 
 		xobj_rsc = tree;
 	}
+#ifndef ST_ONLY
 	if (grad)
 	{
 		if( api->cfg->gradients[1] != 0 )
 			load_gradients( xmapi->C->Aes->home_path, api->cfg->gradients );
-		imgpath_file = -1;
 	}
+#endif
+	imgpath_file = -1;
 	if (screen->planes >= 8)
 	{
 		char dbuf[128];
@@ -6426,7 +6428,6 @@ init_module(const struct xa_module_api *xmapi, const struct xa_screen *xa_screen
 		}
 		else
 		{
-			imgpath_file = -1;
 			BLOG((0,"init_module: '%s' not found", dbuf ));
 		}
 	}

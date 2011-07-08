@@ -10,7 +10,7 @@ typedef struct rgb_1000
 
 struct xa_gradient
 {
-	void *allocs;
+	unsigned long allocs;
 	short wmask, hmask;
 	short w, h;
 	short method;
@@ -22,7 +22,7 @@ struct xa_gradient
 
 #define START 0x1111
 #define STOP  0x1112
-#define GRAD_INIT 0xff000000
+#define GRAD_INIT 0x00ff
 
 enum {
 
