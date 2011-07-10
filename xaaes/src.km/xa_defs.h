@@ -74,9 +74,20 @@
 #define ALT_CTRL_APP_OPS	1	/* Some ALT+CTRL+key combo's will perform functions relating to
                        			 * the XaAES system */
 
+/* if 0 don't produce wheel-events from keys */
 #ifndef EIFFEL_SUPPORT
 #define EIFFEL_SUPPORT 1
 #endif
+
+/* enable gradients */
+#ifndef WITH_GRADIENTS
+#ifdef ST_ONLY
+#define WITH_GRADIENTS 0
+#else
+#define WITH_GRADIENTS 1
+#endif
+#endif
+
 
 #define PRESERVE_DIALOG_BGD	0	/* Preserve the background of dialogs */
 

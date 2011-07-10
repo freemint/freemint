@@ -418,7 +418,7 @@ struct xa_wtexture
 	XAMFDB	*body;
 };
 
-#ifndef ST_ONLY
+#if WITH_GRADIENTS
 struct xa_gradient
 {
 	struct xa_data_hdr *allocs;
@@ -441,7 +441,7 @@ struct xa_wcol
 	short	tlc;	/* Top-Left color for 3-d effect */
 	short	brc;	/* Bottom-Right color for 3-d effect */
 	struct	xa_wtexture *texture;
-#ifndef ST_ONLY
+#if WITH_GRADIENTS
 	struct	xa_gradient *gradient;
 #endif
 };
@@ -700,7 +700,7 @@ struct xa_vdi_api
 	void _cdecl (*rtopxy)		(short *p, const RECT *r);
 	void _cdecl (*ri2pxy)		(short *p, short d, short x, short y, short w, short h);
 	void _cdecl (*ritopxy)		(short *p, short x, short y, short w, short h);
-#ifndef ST_ONLY
+#if WITH_GRADIENTS
 	void _cdecl (*create_gradient)	(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, short *steps, short w, short h );
 #endif
 };
@@ -1375,8 +1375,10 @@ struct render_widget
 	short		pos_in_row;
 	DrawWidg	*draw;		/* Function called to draw the widget */
 	SetWidgSize	*setsize;	/* Function called to get widget dimensions */
+#if 1	//WITH_GRADIENTS
 	FreePriv	*freepriv;	/* Function called to release any widget render resources */
 	long		priv[4];	/* wdiget render on a 'per widget' private data */
+#endif
 };
 
 struct nwidget_row
@@ -2952,7 +2954,10 @@ struct keyboards
 
 struct config
 {
+#if WITH_GRADIENTS
 	Path gradients;
+#endif
+	Path palette;       /* load palette from file */
 
 	Path launch_path;		/* Initial path for launcher */
 	Path scrap_path;		/* Path to the scrap directory */
