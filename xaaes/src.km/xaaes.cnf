@@ -154,6 +154,23 @@
 #gradients = g_cyan
 #gradients = g_purple
 
+#special gradients (sinfo-title and window-title exchanged)
+#gradients = n_default
+
+#gradients = n_red
+#gradients = n_green
+#gradients = n_blue
+#gradients = n_yellow
+#gradients = n_cyan
+#gradients = n_purple
+
+#####################################################################
+#palette = <name>
+#
+#load palette from file <sysdir>/xaaes/pal/<name>.pal
+#
+#palette = gem
+
 #####################################################################
 # setenv name val ..... set up environment
 #
