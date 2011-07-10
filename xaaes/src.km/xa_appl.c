@@ -568,13 +568,13 @@ CE_pwaitpid(enum locks lock, struct c_event *ce, bool cancel)
 
 		FOREACH_CLIENT(c)
 		{
-			if( c->p->pid && c != C.Aes && c != C.Hlp )
+			if( c->p->pid && c != C.Aes && c != C.Hlp && !(c->status & (CS_EXITING | CS_SIGKILLED)) )
 			{
 				BLOG((0,"continue %s(%d)", c->name, c->p->pid));
 				ikill(c->p->pid, SIGCONT);
 			}
 		}
-		BLOG((0,"%s: leaving single-mode.", get_curproc()->name));
+		BLOG((0,"%s: leaving single-mode (k=%lx).", get_curproc()->name, k));
 		k->modeflags &= ~M_SINGLE_TASK;
 		C.SingleTaskPid = -1;
 
