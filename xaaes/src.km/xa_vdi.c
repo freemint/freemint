@@ -1009,7 +1009,7 @@ static struct xa_vdi_api vdiapi =
 	rtopxy,
 	ri2pxy,
 	ritopxy,
-#ifndef ST_ONLY
+#if WITH_GRADIENTS
 	create_gradient,
 #endif
 };
