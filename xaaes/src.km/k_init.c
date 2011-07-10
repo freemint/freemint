@@ -844,7 +844,13 @@ k_init(unsigned long vm)
 
 // 	if (screen.planes > 8)
 // 		set_defaultpalette(v->handle);
-	get_syspalette(v->handle/*C.P_handle*/, screen.palette);
+	if( cfg.palette[0] )
+	{
+		rw_syspalette( READ, screen.palette );
+		set_syspalette(v->handle, screen.palette);
+	}
+	else
+		get_syspalette(v->handle, screen.palette);
 
 	/*
 	 * If we are using anything apart from the system font for windows,
@@ -943,9 +949,13 @@ k_init(unsigned long vm)
 	main_xa_theme(&C.Aes->xmwt);
 	main_object_render(&C.Aes->objcr_module);
 
+#if WITH_GRADIENTS
 	if( cfg.gradients[0] == '0' && cfg.gradients[1] == 0 )
 		cfg.gradients[0] = 0;
 	if (!(*C.Aes->objcr_module->init_module)(&xam_api, &screen, cfg.gradients[0] != 0))
+#else
+	if (!(*C.Aes->objcr_module->init_module)(&xam_api, &screen, 0 ) )
+#endif
 	{
 		BLOG((true, "object render returned NULL"));
 		return -1;
@@ -956,7 +966,11 @@ k_init(unsigned long vm)
 		return -1;
 	}
 
+#if WITH_GRADIENTS
 	if (!(C.Aes->wtheme_handle = (*C.Aes->xmwt->init_module)(&xam_api, &screen, (char *)&cfg.widg_name, cfg.gradients[0] != 0)))
+#else
+	if (!(C.Aes->wtheme_handle = (*C.Aes->xmwt->init_module)(&xam_api, &screen, (char *)&cfg.widg_name, 0 )))
+#endif
 	{
 		BLOG((true,"Window widget module returned NULL"));
 		return -1;
