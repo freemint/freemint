@@ -90,6 +90,7 @@ static struct parser_item parser_tab[] =
 	{ "SNAPSHOT",  	           PI_R_T,     cfg.snapper  		       , { dat: sizeof(cfg.snapper)  } },
 	{ "ACCPATH",               PI_R_T,     cfg.acc_path            , { dat: sizeof(cfg.acc_path)    } },
 	{ "LANG",                  PI_R_T,     cfg.lang		             , { dat: sizeof(cfg.lang)   } },
+	{ "PALETTE",               PI_R_T,     cfg.palette             , { dat: sizeof(cfg.palette)   } },
 	{ "WIDGETS",               PI_R_T,     cfg.widg_name           , { dat: sizeof(cfg.widg_name)   } },
 	{ "RESOURCE",              PI_R_T,     cfg.rsc_name            , { dat: sizeof(cfg.rsc_name)    } },
 #if EIFFEL_SUPPORT
@@ -155,8 +156,9 @@ static struct parser_item parser_tab[] =
 	{ "ICNFY_HEIGHT",	PI_R_S, &cfg.icnfy_h			},
 	{ "ICNFY_REORDER_TO",	PI_R_S, &cfg.icnfy_reorder_to, Range(0, 32000) },
 
+#if WITH_GRADIENTS
 	{ "GRADIENTS",		PI_R_T, cfg.gradients,       { dat: sizeof(cfg.gradients) } },
-
+#endif
 	/* startup things */
 	{ "SHELL",                 PI_V_ATK, pCB_shell			},
 	{ "RUN",                   PI_C_TA,  pCB_run			},
