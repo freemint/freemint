@@ -315,7 +315,7 @@ struct xa_gradient slist_utop_info_gradient =
 	16, 0,
 
 	0, 0, {0},
-	{{200,250,250},{400,450,450}},
+	{{400,450,450},{700,750,750}},
 };
 struct xa_gradient slist_otop_grey_gradient =
 {
