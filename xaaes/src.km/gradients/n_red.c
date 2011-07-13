@@ -25,7 +25,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-/*// RED - rose/peach/pastel red (slist and window-title excnaged)*/
+/*// RED - rose/peach/pastel red (slist and window-title exchanged)*/
 #include "../gradients.h"
 short start = START;
 
