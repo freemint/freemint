@@ -1978,16 +1978,12 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 							if( isdigit( nm[4] ) )
 							{
 								pid = atol(nm+4);
-								/* check if prog really exists */
-								if( !ikill( pid, 0 ) )
+								pr = pid2proc( pid );
+								if( pr )
 								{
-									pr = pid2proc( pid );
-									if( pr )
+									if( !is_aes_client(pr) )
 									{
-										if( !is_aes_client(pr) )
-										{
-											update_tasklist_entry( NO_AES_CLIENT, pr, redraw );
-										}
+										update_tasklist_entry( NO_AES_CLIENT, pr, redraw );
 									}
 								}
 							}
