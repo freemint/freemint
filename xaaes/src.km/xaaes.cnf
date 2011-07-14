@@ -788,6 +788,7 @@ filters = *.*, *.[atpg]*, *.[chs]*, *.l*, *.o*
 # standard_point - Size of the 'standard' AES font (for window titles, etc)
 # medium_point   - The same, but for low resolution screens
 # small_point    - Size of the 'small' AES font
+# infoline_point - Fontsize for window infoline
 #
 # defaults:
 #
@@ -795,6 +796,7 @@ filters = *.*, *.[atpg]*, *.[chs]*, *.l*, *.o*
 #standard_point=10
 #medium_point=9
 #small_point=8
+#infoline_point=10
 
 #####################################################################
 # start any other programs with run
