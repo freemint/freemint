@@ -1,5 +1,5 @@
-#u:/c/mint/1-18-cur/xaaes/xaaes012.rsl: Language-File for   XaAES v1.1.14 Beta
-#   XaAES v1.1.14 Beta
+# Language-File for XaAES v1.1.16 Beta
+#
 # - Objects -
 ### Menubar ###
 nn+ XaAES
@@ -13,13 +13,13 @@ ru: Ïğîöåññ
 cs: Proces
 _
 ### - " XaAES"-menu - ###
-nn:  About XaAES ^Help @
-de:  šber XaAES  ^Help @
-fr:  A propos de ^Help @
-es:  Acerca de   ^Help @
-hu:  XaAES n‚vjegye  ^Help @
-ru:  Î XaAES ^Help @
-cs:  O XaAES ^Help @
+nn:  About XaAES  ^Help @
+de:  šber XaAES  ^Help @
+fr:  A propos de  ^Help @
+es:  Acerca de  ^Help @
+hu:  XaAES n‚vjegye  ^Help @
+ru:  Î XaAES  ^Help @
+cs:  O XaAES  ^Help @
 _
 nn:---------------------
 _
@@ -36,13 +36,13 @@ _
 nn:  Desk Accessory 6 @
 _
 ### - " Process"-menu - ###
-nn:  Launch Program...  ^K
-de:  Programm starten... ^K
-fr:  Lancer un progamme...
-es:  Ejecutar programa...
-hu:  Program ind¡t sa...
-ru:  Çàïóñòèòü ïğîãğàììó...
-cs:  Spustit program...
+nn:  Launch Program...  ^K
+de:  Programm starten...  ^K
+fr:  Lancer un progamme...      ^K
+es:  Ejecutar programa...  ^K
+hu:  Program ind¡t sa...  ^K
+ru:  Çàïóñòèòü ïğîãğàììó...  ^K
+cs:  Spustit program...        ^K
 _
 nn:  Launch Desk
 de:  Desktop starten
@@ -54,42 +54,47 @@ cs:  Spustit plochu
 _
 nn:-----------------------------
 _
-nn:  Task Manager       ^L
-de:  Task Manager        ^L
-fr:  Gestionnaire de tƒches
-es:  Gestor de tareas...
-hu:  Feladat Kezel”...
-ru:  Ìåíåäæåğ çàäà÷...
-cs:  Správce úloh...
+nn:  Task Manager       ^L
+de:  Task Manager         ^L
+fr:  Gestionnaire de tƒches     ^L
+es:  Gestor de tareas...   ^L
+hu:  Feladat Kezel”...    ^L
+ru:  Ìåíåäæåğ çàäà÷...       ^L
+cs:  Správce úloh...           ^L
 _
-nn:  System             ^B
-de:  System              ^B
-fr:  SystŠme...
-es:  Sistema...
-hu:  Rendszer...
-ru:  Ñèñòåìà...
-cs:  Systém...
+nn:  System             ^B
+de:  System               ^B
+fr:  SystŠme...                 ^B
+es:  Sistema...            ^B
+hu:  Rendszer...          ^B
+ru:  Ñèñòåìà...              ^B
+cs:  Systém...                 ^B
 _
 nn:-----------------------------
 _
-nn:  Quit all Apps      ^A
-de:  Alle Apps beenden   ^A
-fr:  Quitter toutes les applis
-es:  Terminar todo
-hu:  Programok bez r sa
-ru:  Çàêğûòü âñå ïğîãğàììû
-cs:  Ukonèit v¹echny programy
+nn:  Quit all Apps      ^A
+de:  Alle Apps beenden    ^A
+fr:  Quitter toutes les applis  ^A
+es:  Terminar todo         ^A
+hu:  Programok bez r sa   ^A
+ru:  Çàêğûòü âñå ïğîãğàììû   ^A
+cs:  Ukonèit v¹echny programy  ^A
 _
-nn:  Restart XaAES      ^J
-de:  XaAES neustarten    ^J
+nn:  Restart XaAES      ^J
+de:  XaAES neustarten     ^J
+fr:  Red‚marrer XaAES           ^J
+es:  No translation        ^J
+hu:  XaAES £jraind¡t sa   ^J
+ru:  Ïåğåçàïóñòèòü XaAES     ^J
+cs:  No translation            ^J
 _
-nn:  Quit XaAES         ^Q
-de:  XaAES beenden       ^Q
-fr:  Quitter XaAES
-es:  Terminar XaAES
-hu:  XaAES bez r sa
-ru:  Âûéòè èç XaAES
-cs:  Ukonèit XaAES
+nn:  Quit XaAES         ^Q
+de:  XaAES beenden        ^Q
+fr:  Quitter XaAES              ^Q
+es:  Terminar XaAES        ^Q
+hu:  XaAES bez r sa       ^Q
+ru:  Âûéòè èç XaAES          ^Q
+cs:  Ukonèit XaAES             ^Q
 _
 ### Menubar ###
 nn: C:
@@ -1039,7 +1044,7 @@ hu:[2][Mind bez r sa][M‚gsem|OK]
 ru:[2][Çàêğûòü âñå][Îòìåíà|ÎÊ]
 cs:[2][Ukonèit v¹e][Zru¹it|OK]
 _
-NN:[2][Leave XaAES][Cancel|OK]    @
+NN:[2][Leave XaAES][Cancel|OK]   @
 de:[2][XaAES beenden][Abbruch|OK]
 fr:[2][Quitter XaAES][Annuler|OK]
 es:[2][Terminar XaAES][Anular|OK]
@@ -1047,11 +1052,21 @@ hu:[2][XaAES bez r sa][M‚gsem|OK]
 ru:[2][Âûéòè èç XaAES][Îòìåíà|ÎÊ]
 cs:[2][Opustit XaAES][Zru¹it|OK]
 _
-NN:[2][Restart XaAES][Cancel|OK]    @
+NN:[2][Restart XaAES][Cancel|OK]      @
 de:[2][XaAES neustarten][Abbruch|OK]
+fr:[2][Red‚marrer XaAES][Annuler|OK]
+es:[2][][Anular|OK]
+hu:[2][XaAES £jraind¡t sa][M‚gsem|OK]
+ru:[2][Ïåğåçàïóñòèòü XaAES][Îòìåíà|ÎÊ]
+cs:[2][][Zru¹it|OK]
 _
-NN:[2][Halt System][Cancel|OK]     @
+NN:[2][Halt System][Cancel|OK]        @
 de:[2][System anhalten][Abbruch|OK]
+fr:[2][Arrˆter le systŠme][Annuler|OK]
+es:[2][Apagar sistema][Anular|OK]
+hu:[2][Rendszer le ll¡t sa][M‚gsem|OK]
+ru:[2][Îñòàíîâèòü ñèñòåìó][Îòìåíà|ÎÊ]
+cs:[2][Zastavit systém][Zru¹it|OK]
 _
 NN:[1][Snapper could not save snap!|ERROR: %d][OK]                     @
 de:[1][Snapper konnte das Bildschirmfoto|nicht sichern!|FEHLER: %d][OK]
