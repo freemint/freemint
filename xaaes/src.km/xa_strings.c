@@ -19,7 +19,7 @@ char *xa_strings[] = {
 	"ON",
 /* alert-text */
 "[2][Quit All][Cancel|OK]     ",
-"[2][Leave XaAES][Cancel|OK]    ",
+"[2][Leave XaAES][Cancel|OK]   ",
 "[2][Restart XaAES][Cancel|OK]    ",
 "[2][Halt System][Cancel|OK]     ",
 "[1][Snapper could not save snap!|ERROR: %d][OK]                     ",
