@@ -287,7 +287,7 @@ static void load_gradients( char *path, char *fn )
 	long err;
 	struct file *fp;
 
-	sprintf( buf, sizeof(buf), "%sgradients/%s.grd", path, fn );
+	sprintf( buf, sizeof(buf), "%sgradient/%s.grd", path, fn );
 	BLOG((0,"loading gradients:%s", buf));
 	fp = kernel_open( buf, O_RDONLY, &err, NULL );
 	if( !fp )
