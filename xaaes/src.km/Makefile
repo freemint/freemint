@@ -3,7 +3,7 @@
 #
 
 SHELL = /bin/sh
-SUBDIRS = adi xaloader gradients
+SUBDIRS = adi xaloader gradient
 
 srcdir = .
 top_srcdir = .
