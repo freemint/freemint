@@ -281,17 +281,13 @@ init (void)
 
 	get_my_name();
 
-# ifdef WITH_MMU_SUPPORT
 # ifdef VERBOSE_BOOT
+# ifdef WITH_MMU_SUPPORT
 	boot_printf(MSG_init_mp, no_mem_prot ? MSG_init_mp_disabled : MSG_init_mp_enabled);
 # endif
-# endif
-# ifdef VERBOSE_BOOT
 	/* These are set inside getmch() */
 	boot_printf(MSG_init_kbd_desktop_nationality, gl_kbd, gl_lang);
-# endif
 
-# ifdef VERBOSE_BOOT
 	boot_print(MSG_init_supermode);
 # endif
 
