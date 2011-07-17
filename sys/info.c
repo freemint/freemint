@@ -364,7 +364,7 @@ const char *MSG_init_no_mint_folder = "No <boot>/mint or <boot>/mint/%s folder f
 const char *MSG_init_hitanykey = "Hit a key to continue.\r\n";
 const char *MSG_init_delay_loop = "Calibrating delay loop ... ";
 # ifdef VERBOSE_BOOT
-# ifndef M68000
+# ifdef WITH_MMU_SUPPORT
 const char *MSG_init_mp = "Memory protection %s\r\n";
 const char *MSG_init_mp_enabled = "enabled";
 const char *MSG_init_mp_disabled = "disabled";
