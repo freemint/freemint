@@ -572,10 +572,16 @@ kernel_key(enum locks lock, struct rawkey *key)
 					}
 				}
 
-				if( r.y >= screen.r.h )
-					r.y = screen.r.h - WGROW;
+				if( r.h >= screen.r.h )
+					r.h = screen.r.h - WGROW;
 				if( r.y < root_window->wa.y )
 					r.y = root_window->wa.y;
+				if( !s && nk == NK_DOWN && wind->r.w <= wind->min.w && wind->r.h <= wind->min.h )
+					return true;
+				if( r.w < wind->min.w )
+					r.w = wind->min.w;
+				if( r.h < wind->min.h )
+					r.h = wind->min.h;
 
 				if( memcmp(&r, &wind->r, sizeof(RECT)) )
 				{
@@ -616,8 +622,10 @@ kernel_key(enum locks lock, struct rawkey *key)
 						g = -g;
 					r.x -= g;
 					r.w += g * 2;
-					if( (inside_root( &r, client->options.noleft ) & 2) )
+					if( (nk == NK_LEFT && wind->r.w <= wind->min.w) || (inside_root( &r, client->options.noleft ) & 2) )
 						return true;
+					if( r.w < wind->min.w )
+						r.w = wind->min.w;
 					wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 					   WM_SIZED, 0, 0, wind->handle,
 					   r.x, r.y, r.w, r.h);
