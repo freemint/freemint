@@ -102,6 +102,8 @@ about_destructor(enum locks lock, struct xa_window *wind)
 	return true;
 }
 
+static RECT wsiz = { 0, 0, 0, 0 };
+
 static void
 about_form_exit(struct xa_client *client,
 		struct xa_window *wind,
@@ -121,6 +123,7 @@ about_form_exit(struct xa_client *client,
 			object_deselect(obtree + ABOUT_OK);
 			redraw_toolbar(lock, wind, ABOUT_OK);
 			close_window(lock, wind);
+			wsiz = wind->r;
 			list = object_get_slist(obtree + ABOUT_LIST);
 			list->destroy( list );
 			delete_window(lock, wind);
@@ -254,9 +257,8 @@ open_about(enum locks lock, struct xa_client *client, bool open, char *fn)
 
 		obj_rectangle(wt, aesobj(obtree, 0), &or);
 
-
 		/* Work out sizing */
-		if (!remember.w)
+		//if (!remember.w)
 		{
 			center_rect(&or);
 			remember = calc_window(lock, C.Aes, WC_BORDER,
@@ -280,7 +282,7 @@ open_about(enum locks lock, struct xa_client *client, bool open, char *fn)
 		wind->parent = TOP_WINDOW;
 		if (!wind) goto fail;
 
-		wind->min.h = wind->r.h;//MINOBJMVH * 3;	/* minimum height for this window */
+		wind->min.h = wind->r.h;	/* minimum height for this window */
 		wind->min.w = wind->r.w;	/* minimum width for this window */
 
 		set_slist_object(0, wt, wind, ABOUT_LIST, SIF_AUTOSLIDERS | SIF_INLINE_EFFECTS | SIF_AUTOSELECT,
@@ -288,7 +290,6 @@ open_about(enum locks lock, struct xa_client *client, bool open, char *fn)
 				 NULL, NULL, NULL, NULL,
 				 NULL, NULL, NULL, 255);
 
-		(obtree + ABOUT_INFOSTR)->ob_spec.free_string = "\0";
 		if( !view_file )
 		{
 #if XAAES_RELEASE
@@ -302,7 +303,6 @@ open_about(enum locks lock, struct xa_client *client, bool open, char *fn)
 			/* Set version date */
 			(obtree + ABOUT_DATE)->ob_spec.free_string = info_string;
 			(obtree + ABOUT_TARGET)->ob_spec.free_string = arch_target;
-			//(obtree + ABOUT_INFOSTR)->ob_spec.free_string = info_string;
 #endif
 		}
 
@@ -311,8 +311,15 @@ open_about(enum locks lock, struct xa_client *client, bool open, char *fn)
 		//if( screen.c_max_h < 16 )
 		{
 			short d = 16 / screen.c_max_h;
+			if( wsiz.w == 0 )
+			{
+				wsiz.x = wind->r.x;
+				wsiz.y = wind->r.y - ( wind->r.h * ( d - 1 ) ) / 2;
+				wsiz.w = wind->r.w;
+				wsiz.h = wind->r.h * d;
+			}
 			wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
-					WM_SIZED, 0,0, wind->handle, wind->r.x, wind->r.y - ( wind->r.h * ( d - 1 ) ) / 2, wind->r.w, wind->r.h * d );
+					WM_SIZED, 0,0, wind->handle, wsiz.x, wsiz.y, wsiz.w, wsiz.h );
 		}
 	}
 	else{
