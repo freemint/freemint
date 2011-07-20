@@ -601,7 +601,10 @@ draw_nesticon(struct xa_vdi_settings *v, short width, RECT *xy, SCROLL_ENTRY *th
 	r.x = x + x_center - 4;
 	r.y = xy->y + y_center - 4;
 	r.w = 9;
-	r.h = 9;
+	if( this->r.h < 9 )
+		r.h = this->r.h - 2;
+	else
+		r.h = 9;
 
 
 	if (this->down || (this->xstate & OS_NESTICON))
@@ -712,7 +715,7 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 			r.y = xy->y;
 			r.w = 16 * (this->level+1);
 			r.h = this->r.h;//list->nesticn_h
-			if ( NO_ICONS == false && (TOP || xa_rect_clip(clip, &r, &clp)))
+			if ( (TOP || xa_rect_clip(clip, &r, &clp)))
 			{
 				if( !TOP )
 				{
@@ -1159,11 +1162,13 @@ draw_slist(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *entry, const RECT *
 		}
 		TOP = 0;
 
-		if (!entry && xy.h > 0)
+		if (!entry)
 		{
-			(*v->api->f_color)(v, G_WHITE);
-			(*v->api->bar)(v, 0, xy.x, xy.y, xy.w, xy.h);
-
+			if (xy.h > 0)
+			{
+				(*v->api->f_color)(v, G_WHITE);
+				(*v->api->bar)(v, 0, xy.x, xy.y, xy.w, xy.h);
+			}
 			list->flags &= ~SIF_DIRTY;
 		}
 		(*v->api->set_clip)(v, clip);
@@ -1505,9 +1510,9 @@ slist_redraw(SCROLL_INFO *list, SCROLL_ENTRY *entry)
 			rl = rl->next;
 		}
 		(*wind->vdi_settings->api->clear_clip)(wind->vdi_settings);
-		if (!entry){
+		/*if (!entry){
 			list->flags &= ~SIF_DIRTY;
-		}
+		}*/
 		showm();
 	}
 }
@@ -4462,7 +4467,7 @@ set_slist_object(enum locks lock,
 	for (i = 0; i < 10; i++)
 		tabs[i] = default_setab;	/* 0 */
 
-	list->flags |= SIF_KMALLOC;
+	list->flags |= SIF_KMALLOC | SIF_DIRTY;
 
 	/* colours are those for windows */
 	list->prev_ob = *ob;
