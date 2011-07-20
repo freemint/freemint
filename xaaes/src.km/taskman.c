@@ -284,7 +284,8 @@ short set_xa_fnt( int pt, struct xa_wtxt_inf *wp[], OBJECT *obtree, int objs[], 
 
 	if( list )
 	{
-		list->nesticn_h = h;// + 2;
+		list->nesticn_h = h;
+		list->char_width = w;
 	}
 
 	if( neww )
@@ -1321,7 +1322,7 @@ taskmanager_form_exit(struct xa_client *Client,
 	ob = wt->tree + TM_LIST;
 	list = object_get_slist(ob);
 
-	if( item != TM_LIST )
+	if( wind && item != TM_LIST )
 	{
 		object_deselect(wt->tree + item);
 		redraw_toolbar(lock, wind, item);
@@ -1554,7 +1555,8 @@ taskmanager_form_exit(struct xa_client *Client,
 				//close_window(lock, wind);
 			}
 			//else
-			close_window(lock, wind);
+			if( fr->no_exit == false )	//!(item & 0x100) )
+				close_window(lock, wind);
  			//delayed_delete_window(lock, wind);
 
 			break;
@@ -1699,6 +1701,15 @@ tm_slist_key(struct scroll_info *list, unsigned short keycode, unsigned short ke
 {
 	switch( keycode )
 	{
+	case SC_TAB:
+	{
+    struct fmd_result fr;
+    fr.obj.item = TM_OK;
+    fr.no_exit = true;
+		taskmanager_form_exit( 0, 0, list->wt, &fr );
+		keycode = 0;
+	}
+	break;
 	case SC_DEL:
 	{
 		if( keystate & (K_RSHIFT|K_LSHIFT) )
@@ -1905,9 +1916,11 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 					remember, NULL, NULL);
 
 		if (!wind) goto fail;
-		wind->min.h = remember.h * 2/3;	/* minimum height for this window */
-		wind->min.w = remember.w;	/* minimum width for this window */
-		wind->sw = 3;	// border for moveing objects when resizing
+		/* minimum height for this window */
+		wind->min.h = remember.h * 2/3;
+		/* minimum width for this window */
+		wind->min.w = remember.w;
+		wind->sw = 3;	// border for moving objects when resizing
 		list->set(list, NULL, SESET_PRNTWIND, (long)wind, NOREDRAW);
 		wind->window_status |= XAWS_NODELETE;
 
@@ -2833,8 +2846,11 @@ open_systemalerts(enum locks lock, struct xa_client *client, bool open)
 					NULL, NULL);
 		if (!wind) goto fail;
 
-		wind->min.h = remember.h * 2/3;	/* minimum height for this window */
-		wind->min.w = remember.w;	/* minimum width for this window */
+		/* minimum height for this window */
+		wind->min.h = remember.h * 2/3;
+		/* minimum width for this window */
+		wind->min.w = remember.w;
+
 		list->set(list, NULL, SESET_PRNTWIND, (long)wind, NOREDRAW);
 
 		/* Set the window title */
