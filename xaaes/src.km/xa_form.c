@@ -553,6 +553,8 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 				client->alert = alert_window;
 
 			open_window(lock, alert_window, alert_window->r);
+			S.focus = 0;
+			top_window(0, true, true, alert_window);
 
 			/* For if the app has hidden the mouse */
 			forcem();
