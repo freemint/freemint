@@ -1202,7 +1202,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 
 	vdih = client->vdi_settings->handle;
 
-	// BLOG((0,"%s:LoadResources,fname=%s", client->name, fname?fname:""));
+	// BLOG((0,"%s:LoadResources,fname=%s,designWidth=%d, designHeight=%d", client->name, fname?fname:"", designWidth, designHeight));
 	if (fname)
 	{
 		struct file *f;
