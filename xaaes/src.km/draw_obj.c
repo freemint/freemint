@@ -559,7 +559,6 @@ d_g_slist(struct widget_tree *wt, struct xa_vdi_settings *v)
 
 		(*v->api->t_color)(v, G_BLACK);
 
-		//if ((list->flags & SIF_DIRTY))
 		get_widget(w, XAW_TITLE)->stuff = list->title;
 		r = v->clip;
 		draw_window(list->lock, w, &r);
@@ -676,7 +675,7 @@ static void do_object_cursor( struct xa_vdi_settings *v, RECT *sr, short md)
 		//color = G_LWHITE;
 	break;
 	}
-	(*v->api->wr_mode)(v, MD_REPLACE);
+	(*v->api->wr_mode)(v, MD_TRANS);	//MD_REPLACE);
 	(*v->api->l_color)(v, color);
 	(*v->api->l_width)(v, 1);
 	if( md & 1 )
@@ -877,7 +876,7 @@ display_object(enum locks lock, XA_TREE *wt, struct xa_vdi_settings *v, struct x
 		}
 	}
 
-	if ( focus_ob(wt) == ob && !(flags & UNDRAW_FOCUS) )
+	if ( focus_ob(wt) == ob && !(flags & UNDRAW_FOCUS) )	//(flags & DRAW_FOCUS) )
 	{
 		if (wt->e.c_state || wt->wind )		/* wt->wind is for wdialogs */
 		{
