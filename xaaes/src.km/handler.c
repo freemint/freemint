@@ -624,7 +624,7 @@ XA_handler(void *_pb)
 		}
 #endif
 
-/*	if( client )
+		/*if( client )
 			BLOG((0, "%s[%d] made by %s",	aes_tab[cmd].descr, cmd, client->name));
 		else
 			BLOG((0, "%s[%d] made",	aes_tab[cmd].descr, cmd));
