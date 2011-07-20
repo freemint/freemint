@@ -428,6 +428,8 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 	if( cfg.menu_bar != 2 && md->y < 2 )
 	{
 		short mb = cfg.menu_bar;
+		if( md->x > 8 && mb > 0 )
+			return;	// dont switch off
 		toggle_menu( lock, -1 );
 		if( md->x > 8 && !mb )
 			cfg.menu_bar = -1;
