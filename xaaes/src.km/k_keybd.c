@@ -572,8 +572,8 @@ kernel_key(enum locks lock, struct rawkey *key)
 					}
 				}
 
-				if( r.h >= screen.r.h )
-					r.h = screen.r.h - WGROW;
+				if( r.y >= screen.r.h )
+					r.y = screen.r.h - WGROW;
 				if( r.y < root_window->wa.y )
 					r.y = root_window->wa.y;
 				if( !s && nk == NK_DOWN && wind->r.w <= wind->min.w && wind->r.h <= wind->min.h )
