@@ -3499,7 +3499,7 @@ find_gradient(struct xa_vdi_settings *v, struct color_theme *ct, short w, short 
 	struct xa_wtexture *ret = NULL;
 	struct xa_gradient *g = ct->col.gradient;
 
-	if (g && use_gradients)
+	if (g && use_gradients && w > 2 && h > 2)
 	{
 		w &= g->wmask;
 		w |= g->w;
@@ -3628,7 +3628,7 @@ draw_objc_bkg(struct widget_tree *wt, struct xa_vdi_settings *v, struct color_th
 		r.h += o + o;
 
 #if WITH_GRADIENTS
-		if (ct->col.gradient->n_steps >= 0 && (ct->col.flags & WCOL_GRADIENT)) // || (flags & DRAW_TEXTURE))
+		if (ct->col.gradient->n_steps >= 0 && (ct->col.flags & WCOL_GRADIENT))
 		{
 			if ((wgrad = find_gradient(v, ct, r.w, r.h)))
 			{
@@ -3987,6 +3987,11 @@ ob_text(XA_TREE *wt,
 				sc = t[und + 1];
 				t[und + 1] = '\0';
 				(*v->api->t_extent)(v, t, &w, &h);
+				if( h > ob->ob_height )
+				{
+					h = ob->ob_height;
+					y += 1;
+				}
 				t[und + 1] = sc;
 				w -= x;
 				y += (h - v->dists[0] + 1);
@@ -5208,6 +5213,11 @@ d_g_box(struct widget_tree *wt, struct xa_vdi_settings *v)
 static void _cdecl
 d_g_ibox(struct widget_tree *wt, struct xa_vdi_settings *v)
 {
+// !! TEST!
+#if 1
+	done(OS_SELECTED|OS_DISABLED);
+	return;
+#else
 	OBJECT *ob = wt->current.ob;
 	struct theme *theme = wt->objcr_theme;
 	struct object_theme *obt = &theme->box;
@@ -5230,6 +5240,7 @@ d_g_ibox(struct widget_tree *wt, struct xa_vdi_settings *v)
 	}
 	draw_g_box(wt, v, ct, &c, DRAW_BOX|DRAW_3D, NULL);
 	done(OS_SELECTED|OS_DISABLED);
+#endif
 }
 
 /*
