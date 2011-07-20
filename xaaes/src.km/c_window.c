@@ -862,6 +862,8 @@ send_moved(enum locks lock, struct xa_window *wind, short amq, RECT *r)
 
 	}
 }
+#define WIND_WMIN	64
+#define WIND_HMIN	64
 void
 send_sized(enum locks lock, struct xa_window *wind, short amq, RECT *r)
 {
@@ -869,6 +871,10 @@ send_sized(enum locks lock, struct xa_window *wind, short amq, RECT *r)
 	{
 		if (wind->send_message)
 		{
+			if( r->w < WIND_WMIN )
+				r->w = WIND_WMIN;
+			if( r->h < WIND_HMIN )
+				r->h = WIND_HMIN;
 			C.move_block = 2;
 			wind->send_message(lock, wind, NULL, amq, QMF_CHKDUP,
 				WM_SIZED, 0,0, wind->handle,
@@ -1103,8 +1109,6 @@ top_window(enum locks lock, bool snd_untopped, bool snd_ontop, struct xa_window 
 {
 // 	display("top_window %d for %s", w->handle, w->owner->proc_name); //client->proc_name);
 	DIAG((D_wind, NULL, "top_window %d for %s",  w->handle, w == root_window ? get_desktop()->owner->proc_name : w->owner->proc_name));
-	if (w == root_window || (S.focus == w) )
-		return;
 
 	if (w->nolist)
 	{
@@ -1254,6 +1258,7 @@ create_window(
 
 	w->vdi_settings = client->vdi_settings;
 
+	w->min.h = w->min.w = WIND_WMIN;
 	tp = fix_wind_kind(tp);
 	w->requested_widgets = tp;
 
@@ -1603,6 +1608,9 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 			if (!(wind->window_status & XAWS_NOFOCUS))
 				wind->colours = wind->untop_cols;
 
+			/* top menu-owner */
+			if( wind != menu_window && (wind->dial & created_for_POPUP) )
+				app_in_front(lock, wind->owner, true, true, true);
 			generate_redraws(lock, wind, &wind->r, RDRW_ALL);
 		}
 		/* dont open unlisted windows */
@@ -2063,13 +2071,14 @@ void set_standard_point(struct xa_client *client)
 {
 	static int old_menu_bar = -1;
 	short w, h;
+	bool new_menu_sz = true;
 	struct xa_widget *xaw = get_menu_widg(), *xat = get_widget(root_window, XAW_TOOLBAR);
 	XA_TREE *wt = xat->stuff;
 	struct xa_vdi_settings *v = client->vdi_settings;
 
-	if( cfg.menu_ontop && !menu_window )
+	if( (cfg.menu_ontop && !menu_window) || !client->std_menu )
 	{
-		return;
+		new_menu_sz = false;
 	}
 #if 1
 	/* kludge: if < 1 set menu_bar=0, if != -1 set -standard_font_point */
@@ -2086,10 +2095,9 @@ void set_standard_point(struct xa_client *client)
 
 	screen.c_max_w = w;
 	screen.standard_font_point = client->options.standard_font_point;
-	if( cfg.menu_bar != 2 && cfg.menu_layout == 1 )
+	if( new_menu_sz == true && cfg.menu_bar != 2 && cfg.menu_layout == 1 )
 	{
-		if( client->std_menu )
-			xaw->r.w = xaw->ar.w = client->std_menu->area.w + 1;
+		xaw->r.w = xaw->ar.w = client->std_menu->area.w + 1;
 		//print_rect_list( root_window );
 		if( !cfg.menu_ontop )
 			redraw_menu_area();
@@ -2103,36 +2111,39 @@ void set_standard_point(struct xa_client *client)
 
 	screen.standard_font_height = v->font_h;
 	screen.c_max_h = h;
-	C.Aes->std_menu->tree->ob_height = h + 2;
-	xaw->r.h = xaw->ar.h = h + 2;
+	if( new_menu_sz == true )
+	{
+		C.Aes->std_menu->tree->ob_height = h + 2;
+		xaw->r.h = xaw->ar.h = h + 2;
 
-	if( cfg.menu_bar == 2 || (cfg.menu_bar == 1 && !cfg.menu_layout && !cfg.menu_ontop) )
-	{
-		root_window->wa.h = screen.r.h - xaw->r.h;
-		root_window->wa.y = xaw->r.h;
-	}
-	else
-	{
-		root_window->wa.h = screen.r.h;
-		root_window->wa.y = 0;
-	}
-	if( menu_window && cfg.menu_bar != 2 && cfg.menu_ontop && cfg.menu_bar )//&& cfg.menu_layout )
-	{
-		menu_window->r.w = xaw->r.w;
-		menu_window->r.h = xaw->r.h;
-		if( menu_window->window_status & XAWS_OPEN)
+		if( cfg.menu_bar == 2 || (cfg.menu_bar == 1 && !cfg.menu_layout && !cfg.menu_ontop) )
 		{
-			move_window( 0, menu_window, true, 0, menu_window->r.x, menu_window->r.y, menu_window->r.w, menu_window->r.h );
-			redraw_menu_area();
+			root_window->wa.h = screen.r.h - xaw->r.h;
+			root_window->wa.y = xaw->r.h;
 		}
-	}
+		else
+		{
+			root_window->wa.h = screen.r.h;
+			root_window->wa.y = 0;
+		}
+		if( menu_window && cfg.menu_bar != 2 && cfg.menu_ontop && cfg.menu_bar )//&& cfg.menu_layout )
+		{
+			menu_window->r.w = xaw->r.w;
+			menu_window->r.h = xaw->r.h;
+			if( menu_window->window_status & XAWS_OPEN)
+			{
+				move_window( 0, menu_window, true, 0, menu_window->r.x, menu_window->r.y, menu_window->r.w, menu_window->r.h );
+				redraw_menu_area();
+			}
+		}
 
-	root_window->rwa = root_window->wa;
+		root_window->rwa = root_window->wa;
 
-	if (/*!cfg.menu_ontop &&*/ get_desktop()->owner == C.Aes)
-	{
-		wt->tree->ob_height = root_window->wa.h;
-		wt->tree->ob_y = root_window->wa.y;
+		if (get_desktop()->owner == C.Aes)
+		{
+			wt->tree->ob_height = root_window->wa.h;
+			wt->tree->ob_y = root_window->wa.y;
+		}
 	}
 }
 
@@ -3032,6 +3043,36 @@ calc_window(enum locks lock, struct xa_client *client, int request, XA_WIND_ATTR
 	return o;
 }
 
+/*
+ * two x-adjacend rects; y equal or outside wa: join
+ * when generating redraws
+ *
+ * cannot change window's rl (?)
+ */
+static bool join_redraws( short wlock, struct xa_window *wind, struct xa_rect_list *newrl, short flags )
+{
+	short y11 = newrl->r.y, y12 = newrl->r.y + newrl->r.h, y21 = newrl->next->r.y, y22 = newrl->next->r.y + newrl->next->r.h,
+		x12 = newrl->r.x + newrl->r.w, x21 = newrl->next->r.x, x22 = newrl->next->r.x + newrl->next->r.w, x11 = newrl->r.x,
+		way1 = wind->wa.y, way2 = wind->wa.y + wind->wa.h;
+
+	/* two x-adjacend rects; y equal or outside wa: join */
+	if( (y11 == y21 || (y11 < way1 && y21 < way1)) && (y12 == y22 || (y12 >= way2 && y22 >= way2)) && (x21 == x12 || x22 == x11) )
+	{
+		RECT r;
+		r.y = y11 < y21 ? y11 : y21;
+		r.h = y12 > y22 ? y12 : y22;
+		r.h -= r.y;
+		r.x = x11 < x21 ? x11 : x21;
+		//r.w = x12 > x22 ? x12 : x22;
+		//r.w -= r.x;
+		r.w = newrl->r.w + newrl->next->r.w;
+
+		generate_redraws(wlock, wind, &r, flags );
+		return true;
+	}
+	return false;
+}
+
 STATIC void
 set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new)
 {
@@ -3680,26 +3721,8 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 			bool joined = false;
 			if( newrl->next )
 			{
-				short y11 = newrl->r.y, y12 = newrl->r.y + newrl->r.h, y21 = newrl->next->r.y, y22 = newrl->next->r.y + newrl->next->r.h,
-					x12 = newrl->r.x + newrl->r.w, x21 = newrl->next->r.x, x22 = newrl->next->r.x + newrl->next->r.w, x11 = newrl->r.x,
-					way1 = wind->wa.y, way2 = wind->wa.y + wind->wa.h;
-
-				/* two x-adjacend rects; y equal or outside wa: join */
-				if( (y11 == y21 || (y11 < way1 && y21 < way1)) && (y12 == y22 || (y12 >= way2 && y22 >= way2)) && (x21 == x12 || x22 == x11) )
-				{
-					RECT r;
-					r.y = y11 < y21 ? y11 : y21;
-					r.h = y12 > y22 ? y12 : y22;
-					r.h -= r.y;
-					r.x = x11 < x21 ? x11 : x21;
-					//r.w = x12 > x22 ? x12 : x22;
-					//r.w -= r.x;
-					r.w = newrl->r.w + newrl->next->r.w;
-
-					generate_redraws(wlock, wind, &r, flags );
+				if( (joined = join_redraws( wlock, wind, newrl, flags )) )
 					newrl = newrl->next;
-					joined = true;
-				}
 			}
 
 			if( !joined )
