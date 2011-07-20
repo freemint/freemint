@@ -118,7 +118,7 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 				DIAG((D_menu,NULL,"fixed menu"));
 
 	// ->fix_menu
-				if( client->options.rsc_lang == READ || cfg.menu_layout != 0 )
+				if( cfg.menu_layout != 0 )
 				{
 					set_menu_width( mnu, mwt );
 				}
