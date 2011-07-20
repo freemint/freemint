@@ -1583,7 +1583,9 @@ menu_bar(struct task_administration_block *tab, short item)
 	dy = k->m.wt->dy;
 	k->m.wt->dx = k->m.wt->dy = 0;
 	if (item == -1)
-		title = find_menu_object(k->m.wt, k->m.titles, k->rdx, k->rdy, k->x, k->y, &tab->widg->r);	//&k->bar);
+	{
+		title = find_menu_object(k->m.wt, k->m.titles, k->rdx, k->rdy, k->x, k->y, tab->widg->r.y == 0 ? &tab->widg->r : &k->bar);	// ??
+	}
 	else if (item == -2)
 		title = -1;
 	else
