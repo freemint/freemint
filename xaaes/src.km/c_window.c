@@ -1109,6 +1109,8 @@ top_window(enum locks lock, bool snd_untopped, bool snd_ontop, struct xa_window 
 {
 // 	display("top_window %d for %s", w->handle, w->owner->proc_name); //client->proc_name);
 	DIAG((D_wind, NULL, "top_window %d for %s",  w->handle, w == root_window ? get_desktop()->owner->proc_name : w->owner->proc_name));
+	if (w == root_window || (S.focus == w) )
+		return;
 
 	if (w->nolist)
 	{
@@ -1609,7 +1611,7 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 				wind->colours = wind->untop_cols;
 
 			/* top menu-owner */
-			if( wind != menu_window && (wind->dial & created_for_POPUP) )
+			if( wind != menu_window && (wind->dial & created_for_POPUP) && wind->owner != C.Hlp )
 				app_in_front(lock, wind->owner, true, true, true);
 			generate_redraws(lock, wind, &wind->r, RDRW_ALL);
 		}
