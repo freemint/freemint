@@ -127,6 +127,7 @@ about_form_exit(struct xa_client *client,
 			list = object_get_slist(obtree + ABOUT_LIST);
 			list->destroy( list );
 			delete_window(lock, wind);
+
 			if( wind->parent )
 				top_window( lock, true, true, wind->parent );
 			break;
@@ -274,7 +275,7 @@ open_about(enum locks lock, struct xa_client *client, bool open, char *fn)
 					do_formwind_msg,
 					client,//C.Aes,
 					false,
-					BORDER|CLOSER|NAME|TOOLBAR|(C.Aes->options.xa_nomove ? 0 : MOVER),
+					BACKDROP|BORDER|CLOSER|NAME|TOOLBAR|(C.Aes->options.xa_nomove ? 0 : MOVER),
 					created_for_AES,
 					C.Aes->options.thinframe, C.Aes->options.thinwork,
 					remember, 0, NULL);
