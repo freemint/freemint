@@ -1040,6 +1040,7 @@ create_new_fnts(enum locks lock,
 			long slen = strlen(opt) + 1;
 			d = kmalloc(slen);
 			if (d) strcpy(d, opt);
+			wt->tree[FNTS_XUDEF].ob_spec.free_string = d;
 		}
 		else
 		{
