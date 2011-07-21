@@ -1498,7 +1498,7 @@ do_formwind_msg(
 				ob_set_wind( wt->tree, G_SLIST, msg[0] );
 			break;
 		}
-#if 0
+#if 1
 		case WM_BOTTOMED:
 		{
 			if (wind->owner->fmd.wind == wind)
