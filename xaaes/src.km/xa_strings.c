@@ -17,6 +17,8 @@ char *xa_strings[] = {
 	"MEMPROT:%s",
 	"OFF",
 	"ON",
+	"Switch keyboard, current:",
+	"unknown  ",
 /* alert-text */
 "[2][Quit All][Cancel|OK]     ",
 "[2][Leave XaAES][Cancel|OK]   ",
@@ -41,6 +43,9 @@ char *xa_strings[] = {
 "XaAES: %s%s, client with no globl_ptr, killing it!          ",
 "XaAES: AES shell already running!                    ",
 "XaAES: No AES shell set, see 'shell =' configuration variable in xaaes.cnf.                 ",
+
+"SPACE",
+"DELETE",
 
 "  Clients \3",
 
