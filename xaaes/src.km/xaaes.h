@@ -15,13 +15,24 @@
 #define FSEL_DRV 3  /* TITLE in tree FSEL_MENU */
 #define FSEL_FILTER 4  /* TITLE in tree FSEL_MENU */
 #define FSEL_OPTS 5  /* TITLE in tree FSEL_MENU */
-#define FSEL_DRVBOX 7  /* BOX in tree FSEL_MENU */
-#define FSEL_DRVA 8  /* STRING in tree FSEL_MENU */
-#define FSEL_PATBOX 44  /* BOX in tree FSEL_MENU */
-#define FSEL_PATA 45  /* STRING in tree FSEL_MENU */
-#define FSM_RTBUILD 69  /* STRING in tree FSEL_MENU */
-#define FSM_TREEVIEW 70  /* STRING in tree FSEL_MENU */
-#define FSM_SORTBYNAME 72  /* STRING in tree FSEL_MENU */
+#define FSEL_FILE 6  /* TITLE in tree FSEL_MENU */
+#define FSEL_DRVBOX 8  /* BOX in tree FSEL_MENU */
+#define FSEL_DRVA 9  /* STRING in tree FSEL_MENU */
+#define FSEL_PATBOX 45  /* BOX in tree FSEL_MENU */
+#define FSEL_PATA 46  /* STRING in tree FSEL_MENU */
+#define FSM_RTBUILD 70  /* STRING in tree FSEL_MENU */
+#define FSM_TREEVIEW 71  /* STRING in tree FSEL_MENU */
+#define FSM_SORTBYNAME 73  /* STRING in tree FSEL_MENU */
+#define FSM_SORTBYDATE 74  /* STRING in tree FSEL_MENU */
+#define FSM_SORTBYSIZE 75  /* STRING in tree FSEL_MENU */
+#define FSM_SORTBYEXT 76  /* STRING in tree FSEL_MENU */
+#define FSM_NOSORT 77  /* STRING in tree FSEL_MENU */
+#define FSM_REVSORT 79  /* STRING in tree FSEL_MENU */
+#define FSM_COPY 81  /* STRING in tree FSEL_MENU */
+#define FSM_NEW 82  /* STRING in tree FSEL_MENU */
+#define FSM_RENAME 83  /* STRING in tree FSEL_MENU */
+#define FSM_VIEW 84  /* STRING in tree FSEL_MENU */
+#define FSM_DELETE 85  /* STRING in tree FSEL_MENU */
 
 #define ALERT_ICONS 2  /* form/dial */
 #define ALR_IC_DRIVE 1  /* CICON in tree ALERT_ICONS */
@@ -52,8 +63,7 @@
 #define ABOUT_DATE 9  /* STRING in tree ABOUT_XAAES */
 #define ABOUT_OK 10  /* BUTTON in tree ABOUT_XAAES */
 #define ABOUT_TARGET 12  /* STRING in tree ABOUT_XAAES */
-#define ABOUT_INFOSTR 13  /* STRING in tree ABOUT_XAAES */
-#define RSC_VERSION 14  /* TEXT in tree ABOUT_XAAES */
+#define RSC_VERSION 13  /* TEXT in tree ABOUT_XAAES */
 
 #define DEF_DESKTOP 5  /* form/dial */
 #define DESKTOP 0  /* BOX in tree DEF_DESKTOP */
@@ -99,27 +109,28 @@
 
 #define SYS_ERROR 7  /* form/dial */
 #define SYSALERT_LIST 1  /* BOX in tree SYS_ERROR */
-#define BOMB 2  /* CICON in tree SYS_ERROR */
-#define SALERT_ICONS 3  /* IBOX in tree SYS_ERROR */
-#define SALERT_IC1 4  /* CICON in tree SYS_ERROR */
-#define SALERT_IC2 5  /* CICON in tree SYS_ERROR */
-#define SALERT_IC3 6  /* CICON in tree SYS_ERROR */
-#define SALERT_IC4 7  /* CICON in tree SYS_ERROR */
-#define SALERT_CLEAR 8  /* BUTTON in tree SYS_ERROR */
-#define SALERT_OK 9  /* BUTTON in tree SYS_ERROR */
+#define SALERT_ICONS 2  /* IBOX in tree SYS_ERROR */
+#define SALERT_IC1 3  /* CICON in tree SYS_ERROR */
+#define SALERT_IC2 4  /* CICON in tree SYS_ERROR */
+#define SALERT_IC3 5  /* CICON in tree SYS_ERROR */
+#define SALERT_IC4 6  /* CICON in tree SYS_ERROR */
+#define SALERT_CLEAR 7  /* BUTTON in tree SYS_ERROR */
+#define SALERT_OK 8  /* BUTTON in tree SYS_ERROR */
 
 #define FILE_SELECT 8  /* form/dial */
 #define FS_FILE 1  /* FBOXTEXT in tree FILE_SELECT */
 #define FS_LIST 2  /* BOX in tree FILE_SELECT */
-#define FS_UNDER 3  /* IBOX in tree FILE_SELECT */
-#define FS_ICONS 5  /* IBOX in tree FILE_SELECT */
-#define FS_ICN_EXE 6  /* CICON in tree FILE_SELECT */
-#define FS_ICN_DIR 7  /* CICON in tree FILE_SELECT */
-#define FS_ICN_PRG 8  /* CICON in tree FILE_SELECT */
-#define FS_ICN_FILE 9  /* CICON in tree FILE_SELECT */
-#define FS_CANCEL 10  /* BUTTON in tree FILE_SELECT */
-#define FS_OK 11  /* BUTTON in tree FILE_SELECT */
-#define FS_ICN_SYMLINK 12  /* CICON in tree FILE_SELECT */
+#define FS_ICONS 3  /* IBOX in tree FILE_SELECT */
+#define FS_ICN_EXE 4  /* CICON in tree FILE_SELECT */
+#define FS_ICN_DIR 5  /* CICON in tree FILE_SELECT */
+#define FS_ICN_PRG 6  /* CICON in tree FILE_SELECT */
+#define FS_ICN_FILE 7  /* CICON in tree FILE_SELECT */
+#define FS_ICN_SYMLINK 8  /* CICON in tree FILE_SELECT */
+#define FS_CANCEL 9  /* BUTTON in tree FILE_SELECT */
+#define FS_OK 10  /* BUTTON in tree FILE_SELECT */
+#define FS_FNTSIZE 14  /* IBOX in tree FILE_SELECT */
+#define FS_LFNTSIZE 11  /* BUTTON in tree FILE_SELECT */
+#define FS_HFNTSIZE 13  /* BUTTON in tree FILE_SELECT */
 
 #define KILL_OR_WAIT 9  /* form/dial */
 #define KORW_WAIT 3  /* BUTTON in tree KILL_OR_WAIT */
@@ -144,6 +155,11 @@
 #define FNTS_CBSIZES 16  /* BOX in tree WDLG_FNTS */
 #define FNTS_CBRATIO 17  /* BOX in tree WDLG_FNTS */
 #define FNTS_XDISPLAY 18  /* BUTTON in tree WDLG_FNTS */
+#define FNTS_ID 20  /* TEXT in tree WDLG_FNTS */
+#define FNTS_W 22  /* TEXT in tree WDLG_FNTS */
+#define FNTS_H 24  /* TEXT in tree WDLG_FNTS */
+#define FNTS_LSIZE 25  /* BUTTON in tree WDLG_FNTS */
+#define FNTS_HSIZE 26  /* BUTTON in tree WDLG_FNTS */
 
 #define WDLG_PDLG 11  /* form/dial */
 #define XPDLG_CANCEL 1  /* BUTTON in tree WDLG_PDLG */
