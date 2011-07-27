@@ -1,7 +1,8 @@
 # Diese Datei gehîrt in den XaAES-Ordner (C:\mint\1-*-*\xaaes)
-XaAES Tastatur-Shortcuts (CTRL+ALT+Taste):
+<b>XaAES Tastatur-Shortcuts (CTRL+ALT+Taste):</b>
 
 0             MenÅzeile an/ausschalten
+#$1 [keyboard-switch]
 A             Beendet alle laufenden Progamme
               (Ausnahmeliste in xaaes.cnf)
 B             ôffnet den System/Log-Dialog
@@ -13,6 +14,7 @@ HELP          ôffnet den XaAES Infodialog
 H             System herunterfahren (oder $SDMASTER
               ausfÅhren, falls gesetzt)
 I             Oberstes Fenster (de-)ikonifizieren
+J             XaAES neu starten
 K             Programm starten
 M             Mauszeiger wiederherstellen
 P             Farbpalette wiederherstellen (Farbtiefe
@@ -36,7 +38,6 @@ SHIFT+SPACE   ôffnet das FenstermenÅ (falls vorhanden),
 TAB           Wechsel zwischen aktiven Programmen
 
 INSERT        Oberstes Fenster maximieren
-              (volle Bildschirmgrîûe)
 PFEIL-HOCH    Oberstes Fenster vergrîûern
 PFEIL-RUNTER  Oberstes Fenster verkleinern
 PFEIL-RECHTS  Oberstes Fenster breiter machen
@@ -44,13 +45,12 @@ PFEIL-LINKS   Oberstes Fenster schmaler machen
 
 SHIFT+
  PFEIL-HOCH   Oberstes Fenster nach oben verschieben
- PFEIL-RUNTER Oberstes Fenster nach unten verschiebenn
+ PFEIL-RUNTER Oberstes Fenster nach unten verschieben
  PFEIL-RECHTS Oberstes Fenster nach rechts verschieben
  PFEIL-LINKS  Oberstes Fenster nach links verschieben
+<u>                                                      </u>
 
--------------------------------------------------------
-
-Shortcuts/Navigation im Dateiauswahl-Dialog:
+Shortcuts/Navigation im <b>Dateiauswahl-Dialog:</b>
 
 CTRL+O        ôffnet das FenstermenÅ (Navigation mit
               Pfeiltasten und RETURN)
@@ -67,16 +67,24 @@ ALT+ " + "    Vergrîûert die Schrift in der List-Box
 ALT+ " - "    Verkleinert die Schrift in der List-Box
 
 CTRL+SPACE    Sortierung umkehren
+<u>                                                      </u>
 
--------------------------------------------------------
+Shortcuts im <b>Taskmanager:</b>
 
-Shortcuts fÅr alle Fenster:
+DELETE    Selektiertes Programm sauber beenden (wie
+          MÅlleimer-Icon)
+SHIFT+
+ DELETE   Bei selekt. Programm beenden erzwingen
+          (wie Totenkopf-Icon)
+<u>                                                      </u>
+
+Shortcuts fÅr <b>alle Fenster:</b>
 
 SHIFT+
  PFEIL-HOCH/RUNTER      Seite hoch/runter blÑttern
  PFEIL-RECHTS/LINKS     Seite rechts/links blÑttern
 
-* List-Box selektiert:
+<u>List-Box selektiert:</u>
 
   PFEIL-RECHTS          Ins sel. Unterverzeichnis
                         wechseln
@@ -87,7 +95,7 @@ SHIFT+
   CLEAR/HOME            Zum ersten Eintrag springen
   SHIFT+CLEAR/HOME      Zum letzten Eintrag springen
 
-* List-Box nicht selektiert:
+<u>List-Box nicht selektiert:</u>
 
   PFEIL-RECHTS          Cursor nach rechts bewegen
   PFEIL-LINKS           Cursor nach links bewegen
@@ -96,7 +104,17 @@ SHIFT+
 Ist in der List-Box eine Datei selektiert, so kann man
 mit PFEIL-RECHTS in die Eingabezeile wechseln und den
 Namen editieren.
--------------------------------------------------------
+<u>                                                      </u>
+
+<b>MenÅzeile:</b>
+
+Die MenÅzeile kann durch einen Klick auf den oberen
+Bildschirmrand aus- und angeschaltet werden (je nach
+Konfiguration in xaaes.cnf). Ein Klick in die obere
+linke Ecke schaltet das MenÅ permanent an/aus (wie
+CTRL-ALT-0), sonst nur temporÑr an (CTRL-ALT-SPACE).
+<u>                                                      </u>
+
 Weitere Informationen:
 
 http://wiki.sparemint.org/index.php/XaAES
