@@ -285,7 +285,7 @@ XA_keyboard_event(enum locks lock, const struct rawkey *key)
 	}
 }
 
-void switch_keyboard( char *tbname )
+static void switch_keyboard( char *tbname )
 {
 			long out;
 			unsigned long dummy;
