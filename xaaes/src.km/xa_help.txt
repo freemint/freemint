@@ -2,6 +2,7 @@
 <b>Ctrl-Alt-Shortcuts:</b>
 
 0             Switch menubar on/off
+#$1 [keyboard-switch]
 A             Terminates all applications (list of
               exceptions in xaaes.cnf)
 B             Open System/Log-window
@@ -69,6 +70,7 @@ Shortcuts in the <b>taskmanager:</b>
 DELETE    Terminate selected program (same as trashcan)
 SHIFT+
  DELETE   Kill selected program  (same as skull)
+TAB       Top selected program or window
 <u>                                                      </u>
 
 Shortcuts for <b>all list-windows:</b>
