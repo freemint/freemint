@@ -92,7 +92,6 @@ char *about_lines[] =
 };
 #endif
 
-
 static int
 about_destructor(enum locks lock, struct xa_window *wind)
 {
@@ -103,7 +102,34 @@ about_destructor(enum locks lock, struct xa_window *wind)
 }
 
 static RECT wsiz = { 0, 0, 0, 0 };
-
+static SCROLL_INFO *alist = 0;
+static SCROLL_ENTRY *athis[16] = {0};
+void add_keybd_switch(void)
+{
+	char buf[256], *k;
+	if( !alist || !cfg.keyboards.c )
+		return;
+	if( cfg.keyboards.cur >= 0 )
+		k = cfg.keyboards.keyboard[cfg.keyboards.cur];
+	else
+		k = xa_strings[UNKNOWN];
+	sprintf( buf, sizeof(buf), "%c             %s %s", cfg.keyboards.c, xa_strings[SW_KEYBD], k );
+	if( athis[0] )
+	{
+		struct setcontent_text t = { 0 };
+		t.text = buf;
+		alist->set( alist, athis[0], SESET_TEXT, (long)&t, true );
+	}
+	else
+	{
+		struct scroll_content sc = {{ 0 }};
+		sc.t.text = buf;
+		sc.t.strings = 1;
+		sc.fnt = 0;
+		alist->add( alist, NULL, NULL, &sc, false, 0, false);
+		athis[0] = alist->cur;
+	}
+}
 static void
 about_form_exit(struct xa_client *client,
 		struct xa_window *wind,
@@ -126,6 +152,8 @@ about_form_exit(struct xa_client *client,
 			wsiz = wind->r;
 			list = object_get_slist(obtree + ABOUT_LIST);
 			list->destroy( list );
+			alist = 0;
+			memset( athis, 0, sizeof(athis) );
 			delete_window(lock, wind);
 
 			if( wind->parent )
@@ -186,7 +214,17 @@ static void file_to_list( SCROLL_INFO *list, char *fn, bool skip_hash)
 			for( ; *p && *p <= ' '; p++ )
 			;
 			if( *p == '#' )
+			{
+				if( *(p+1) == '$' )
+					switch( *(p+2) )
+					{
+					case '1':
+						if( cfg.keyboards.c )
+							add_keybd_switch();
+					break;
+					}
 				continue;
+			}
 		}
 		list->add(list, NULL, NULL, &sc, false, 0, false);
 	}
@@ -343,6 +381,7 @@ open_about(enum locks lock, struct xa_client *client, bool open, char *fn)
 	{
 		sprintf( ebuf, sizeof(ebuf), "%s%s", C.start_path, xa_strings[XA_HELP_FILE] );
 		set_window_title(wind, xa_strings[RS_ABOUT], true);
+		alist = list;
 	}
 
 
@@ -362,6 +401,7 @@ open_about(enum locks lock, struct xa_client *client, bool open, char *fn)
 				list->empty(list, 0, 0);
 				list->start = 0;
 				xah_mtime.time = st.mtime.time;
+				memset( athis, 0, sizeof(athis) );
 			}
 		}
 	}
