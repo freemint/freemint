@@ -522,6 +522,8 @@ pCB_keyboards(char *line)
 		BLOG((0,"keyboard#%d=%s",i,s));
 		cfg.keyboards.keyboard[i] = xa_strdup( s );
 	}
+	cfg.keyboards.cur = -1;	//undef.
+	//switch_keyboard( cfg.keyboards.keyboard[0] );
 }
 /*----------------------------------------------------------------------------*/
 
