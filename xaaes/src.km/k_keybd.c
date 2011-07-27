@@ -285,6 +285,19 @@ XA_keyboard_event(enum locks lock, const struct rawkey *key)
 	}
 }
 
+void switch_keyboard( char *tbname )
+{
+			long out;
+			unsigned long dummy;
+			char tblpath[PATH_MAX];
+			sprintf( tblpath, sizeof(tblpath), "%s%s.tbl", sysdir, tbname );
+
+			out = s_system(S_LOADKBD, (unsigned long)tblpath, (unsigned long)&dummy);
+			if( out )
+			{
+				ALERT((xa_strings[AL_KBD]/*"keyboard-table not loaded"*/, tbname, sysdir, out));
+			}
+}
 /******************************************************************************
  from "unofficial XaAES":
 
@@ -392,27 +405,19 @@ kernel_key(enum locks lock, struct rawkey *key)
 
 		if( (nk == cfg.keyboards.c && (key->raw.conin.state & (K_RSHIFT|K_LSHIFT))) || (tolower(nk) == cfg.keyboards.c) )
 		{
-			static short kbdnum = 0;
-			unsigned long dummy;
-			char tblpath[PATH_MAX];
-			long out;
-			char *tbname = cfg.keyboards.keyboard[kbdnum++];
+			char *tbname = cfg.keyboards.keyboard[++cfg.keyboards.cur];
 
 			if( !tbname )
 			{
-				kbdnum = 0;
-				tbname = cfg.keyboards.keyboard[kbdnum++];
+				cfg.keyboards.cur = 0;
+				tbname = cfg.keyboards.keyboard[cfg.keyboards.cur];
 			}
 			if( !tbname )
 				return true;
 
-			sprintf( tblpath, sizeof(tblpath), "%s%s.tbl", sysdir, tbname );
+			switch_keyboard( tbname );
+			add_keybd_switch();
 
-			out = s_system(S_LOADKBD, (unsigned long)tblpath, (unsigned long)&dummy);
-			if( out )
-			{
-				ALERT((xa_strings[AL_KBD]/*"keyboard-table not loaded"*/, tbname, sysdir, out));
-			}
 			return true;
 		}
 		switch (nk)
