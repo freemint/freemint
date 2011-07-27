@@ -140,7 +140,7 @@
 # color gradients in the window widget and aes object
 # renderer in hc/tc color modes.
 #
-# gradient-files are <sysdir>/xaaes/gradients/<name>.grd
+# gradient-files are <xaaes-home-dir>/gradient/<name>.grd
 
 #default gradients
 #gradients = 1
