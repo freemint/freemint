@@ -244,7 +244,6 @@ callout_display(struct xa_fnts_item *f, short vdih, long pt, long ratio, RECT *c
 				*fw = w;
 			if( fh )
 				*fh = h;
-			//sprintf( inf, sizeof(inf)-1, "id:%d,h:%d,w:%d", (short)f->f.id, h, w );
 
 			ratio = (((long)w << 16L) ) / (long)h;
 			vst_font(vdih, 1 );
@@ -258,6 +257,12 @@ callout_display(struct xa_fnts_item *f, short vdih, long pt, long ratio, RECT *c
 static void redraw_ratio (struct xa_fnts_info *fnts)
 {
 	struct xa_aes_object ratio_obj = aesobj(fnts->wt->tree, FNTS_EDRATIO);
+	obj_draw(fnts->wt, fnts->wind->vdi_settings, ratio_obj, 0, NULL, NULL, 0);
+	ratio_obj = aesobj(fnts->wt->tree, FNTS_ID);
+	obj_draw(fnts->wt, fnts->wind->vdi_settings, ratio_obj, 0, NULL, NULL, 0);
+	ratio_obj = aesobj(fnts->wt->tree, FNTS_W);
+	obj_draw(fnts->wt, fnts->wind->vdi_settings, ratio_obj, 0, NULL, NULL, 0);
+	ratio_obj = aesobj(fnts->wt->tree, FNTS_H);
 	obj_draw(fnts->wt, fnts->wind->vdi_settings, ratio_obj, 0, NULL, NULL, 0);
 }
 
@@ -1656,11 +1661,6 @@ check_internal_objects(struct xa_fnts_info *fnts, struct xa_aes_object obj)
 		}
 		ret = 1;
 	break;
-	/*case FNTS_W:
-	case FNTS_H:
-		ret = 1;
-	break;
-	*/
 	}
 	return ret;
 }
