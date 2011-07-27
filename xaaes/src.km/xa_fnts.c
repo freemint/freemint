@@ -197,7 +197,6 @@ callout_display(struct xa_fnts_item *f, short vdih, long pt, long ratio, RECT *c
 		{
 			short x, y, w, h, ch;
 			short c[8], ptr;
-			char inf[256];
 
 			pt >>= 16;
 
@@ -246,9 +245,6 @@ callout_display(struct xa_fnts_item *f, short vdih, long pt, long ratio, RECT *c
 				*fh = h;
 
 			ratio = (((long)w << 16L) ) / (long)h;
-			vst_font(vdih, 1 );
-			vst_point(vdih, 9, &x, &x, &x, &x);
-			v_gtext(vdih, area->x, area->y, inf);
 		}
 	}
 	return ratio;
