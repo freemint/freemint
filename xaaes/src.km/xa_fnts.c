@@ -140,7 +140,7 @@ xvst_load_fonts(XVDIPB *vpb, short select, short handle)
 }
 
 static long
-callout_display(struct xa_fnts_item *f, short vdih, long pt, long ratio, RECT *clip, RECT *area, char *txt)
+callout_display(struct xa_fnts_item *f, short vdih, long pt, long ratio, RECT *clip, RECT *area, char *txt, short *fw, short *fh)
 {
 	if (f)
 	{
@@ -240,7 +240,12 @@ callout_display(struct xa_fnts_item *f, short vdih, long pt, long ratio, RECT *c
 
 			v_gtext(vdih, x, y, txt);
 			w /= (int)strlen(txt);
-			sprintf( inf, sizeof(inf)-1, "id:%d,h:%d,w:%d", (short)f->f.id, h, w );
+			if( fw )
+				*fw = w;
+			if( fh )
+				*fh = h;
+			//sprintf( inf, sizeof(inf)-1, "id:%d,h:%d,w:%d", (short)f->f.id, h, w );
+
 			ratio = (((long)w << 16L) ) / (long)h;
 			vst_font(vdih, 1 );
 			vst_point(vdih, 9, &x, &x, &x, &x);
@@ -256,7 +261,7 @@ static void redraw_ratio (struct xa_fnts_info *fnts)
 	obj_draw(fnts->wt, fnts->wind->vdi_settings, ratio_obj, 0, NULL, NULL, 0);
 }
 
-static void update_ratio( struct xa_fnts_info *fnts )
+static void update_ratio( struct xa_fnts_info *fnts, short fw, short fh, long id )
 {
 	char pt[16];
 	long l;
@@ -268,6 +273,14 @@ static void update_ratio( struct xa_fnts_info *fnts )
 	l = sprintf(pt, ted->te_txtlen, "%d", (unsigned short)(fnts->fnt_ratio >> 16L));
 	sprintf(pt + l, ted->te_txtlen - l, ".%d", (short)(((fnts->fnt_ratio & 0xffffL) * 100L + (1L << 15L)) >> 16L ));
 	strcpy(ted->te_ptext, pt);
+
+	ted = object_get_tedinfo((fnts->wt->tree + FNTS_ID), NULL);
+	sprintf( ted->te_ptext, ted->te_txtlen, "%ld", id );
+	ted = object_get_tedinfo((fnts->wt->tree + FNTS_W), NULL);
+	sprintf( ted->te_ptext, ted->te_txtlen, "%d", fw );
+	ted = object_get_tedinfo((fnts->wt->tree + FNTS_H), NULL);
+	sprintf( ted->te_ptext, ted->te_txtlen, "%d", fh );
+
 }
 
 static void
@@ -278,8 +291,9 @@ fnts_extb_callout(struct extbox_parms *p)
 
 	if (f)
 	{
-		fnts->fnt_ratio = callout_display(f, fnts->vdi_handle, fnts->fnt_pt, fnts->fnt_ratio, &p->clip, &p->r, fnts->sample_text);
-		update_ratio( fnts );
+		short fw = 0, fh = 0;
+		fnts->fnt_ratio = callout_display(f, fnts->vdi_handle, fnts->fnt_pt, fnts->fnt_ratio, &p->clip, &p->r, fnts->sample_text, &fw, &fh);
+		update_ratio( fnts, fw, fh, f->f.id );
 	}
 }
 
@@ -1039,8 +1053,10 @@ create_new_fnts(enum locks lock,
 		{
 			long slen = strlen(opt) + 1;
 			d = kmalloc(slen);
-			if (d) strcpy(d, opt);
-			wt->tree[FNTS_XUDEF].ob_spec.free_string = d;
+			if (d){
+				strcpy(d, opt);
+				wt->tree[FNTS_XUDEF].ob_spec.free_string = d;
+			}
 		}
 		else
 		{
@@ -1621,8 +1637,9 @@ check_internal_objects(struct xa_fnts_info *fnts, struct xa_aes_object obj)
 	long id;
 	int ret = 0;
 
-	if (aesobj_item(&obj) == FNTS_XDISPLAY)
+	switch (aesobj_item(&obj))
 	{
+	case FNTS_XDISPLAY:
 		//fnts->dialog_flags ^= FNTS_DISPLAY;
 
 		if (aesobj_sel(&obj))
@@ -1638,6 +1655,12 @@ check_internal_objects(struct xa_fnts_info *fnts, struct xa_aes_object obj)
 			init_fnts(fnts);
 		}
 		ret = 1;
+	break;
+	/*case FNTS_W:
+	case FNTS_H:
+		ret = 1;
+	break;
+	*/
 	}
 	return ret;
 }
@@ -1724,6 +1747,17 @@ XA_fnts_evnt(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		ret = wdialog_event(lock, client, &wep);
 
+		if( wep.obj.item == FNTS_LSIZE || wep.obj.item == FNTS_HSIZE )
+		{
+			obj_change(fnts->wt, wind->vdi_settings, wep.obj, -1, aesobj_state(&wep.obj) & ~OS_SELECTED, aesobj_flags(&wep.obj), true, &wind->wa, wind->rect_list.start, 0);
+			if( wep.obj.item == FNTS_HSIZE )
+				key = KPLUS;
+			else
+				key = KMINUS;
+			wep.ev->key = key;
+			wep.obj = aesobj(fnts->wt->tree, FNTS_EDSIZE);
+			ret = 1;
+		}
 		if( key == KPLUS || key == KMINUS )
 		{
 			int l;
