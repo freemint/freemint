@@ -441,6 +441,15 @@ static short calc_len(char *s)
 	for( ; *s; s++ )
 		if( *s == '\t' )
 			r = (r / TABSZ + 1) * TABSZ;
+		else if( *s == '<' )	// don't count html-tags
+		{
+			short n;
+			char *t;
+			for( t = s, n = 0; *t && *t != '>' && n < 4; n++, t++ )
+				;
+			if( *t == '>' )
+				s = t;
+		}
 		else
 			r++;
 
@@ -471,7 +480,7 @@ calc_entry_wh(SCROLL_INFO *list, SCROLL_ENTRY *this)
 					if( (list->flags & SIF_INLINE_EFFECTS) )
 					{
 						/*
-						 * include (inline-)tabs
+						 * include (inline-)tabs and html-tags
 						 */
 						l = calc_len(s);
 					}
@@ -3049,28 +3058,31 @@ add_scroll_entry(SCROLL_INFO *list,
 				else
 					addmode &= ~SEADD_PRIOR;
 			}
-			else if (parent)
+			else
 			{
 				list->cur = new;
-				/*
-				 * If we have a parent but 'here' is not equal to it,
-				 * 'here' points to 'parent's first child - we now need
-				 * to find the last entry at that level and append 'new'
-				 * there.
-				 */
-				if (here != parent && !(addmode & SEADD_PRIOR))
+				if (parent)
+				{
+					/*
+					 * If we have a parent but 'here' is not equal to it,
+					 * 'here' points to 'parent's first child - we now need
+					 * to find the last entry at that level and append 'new'
+					 * there.
+					 */
+					if (here != parent && !(addmode & SEADD_PRIOR))
+					{
+						while (here->next)
+							here = here->next;
+					}
+					/* else if here == parent means that 'here' points to the entry after
+					 * which we will insert the 'new' entry.
+					 */
+				}
+				else if (!(addmode & SEADD_PRIOR))
 				{
 					while (here->next)
 						here = here->next;
 				}
-				/* else if here == parent means that 'here' points to the entry after
-				 * which we will insert the 'new' entry.
-				 */
-			}
-			else if (!(addmode & SEADD_PRIOR))
-			{
-				while (here->next)
-					here = here->next;
 			}
 
 			new->up = here->up;
