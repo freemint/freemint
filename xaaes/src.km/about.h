@@ -31,5 +31,6 @@
 #include "taskman.h"
 
 void open_about(enum locks lock, struct xa_client *client, bool open, char *fn);
+void add_keybd_switch(void);
 
 #endif /* _about_h */

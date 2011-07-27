@@ -2948,7 +2948,7 @@ struct cfg_name_list
 
 struct keyboards
 {
-	short c;
+	short c, cur;
 	char *keyboard[MAX_KEYBOARDS+1];
 };
 
