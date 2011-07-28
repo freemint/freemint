@@ -37,8 +37,8 @@
 	"\033p Ext2 filesystem driver version " MSG_VERSION " \033q\r\n"
 
 # define MSG_GREET	\
-	"� 1998, 1999 by Axel Kaiser.\r\n" \
-	"� " MSG_BUILDDATE " by Frank Naumann.\r\n"
+	"\xbd 1998, 1999 by Axel Kaiser.\r\n" \
+	"\xbd " MSG_BUILDDATE " by Frank Naumann.\r\n"
 
 # define MSG_ALPHA	\
 	"\033p WARNING: This is an unstable version - ALPHA! \033q\7\r\n"
