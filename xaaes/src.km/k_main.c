@@ -34,6 +34,7 @@
 #include "app_man.h"
 #include "adiload.h"
 #include "c_window.h"
+#include "cnf_xaaes.h"
 #include "desktop.h"
 #include "debug.h"
 #include "handler.h"
@@ -926,6 +927,18 @@ display_alert(struct proc *p, long arg)
 	}
 }
 
+void load_gradients( char *path, char *fn );
+
+static void load_grd( void *fn )
+{
+	load_gradients( 0, fn );
+}
+
+typedef void XA_CONF (void *p);
+
+static XA_CONF *xa_config[] = {load_grd};
+
+
 static void
 alert_input(enum locks lock)
 {
@@ -953,6 +966,16 @@ alert_input(enum locks lock)
 		f_read(C.alert_pipe, n, data->buf);
 		data->buf[n] = '\0';
 // 		display("alert_intput %s", data->buf);
+
+		if( data->buf[0] == '#' && data->buf[1] == '$' )
+		{
+			if( data->buf[2] == '#' && data->buf[3] >= '0' )
+				xa_config[(int)data->buf[3]-'0']( (void*)(data->buf + 4) );
+			else
+				load_config();
+			kfree(data);
+			return;
+		}
 		if (C.Hlp)
 		{
 			post_cevent(C.Hlp, CE_fa, data, NULL, 0,0, NULL,NULL);
@@ -2023,6 +2046,11 @@ k_exit(int wait)
 	 */
 	PRCLOSE;
 
+	/*
+	 * reset keyboard
+	 */
+	if( cfg.keyboards.c )
+		switch_keyboard( "keyboard" );
 	if (C.alert_pipe > 0)
 	{
 		f_close(C.alert_pipe);

@@ -280,14 +280,17 @@ static struct xa_gradient *gradients[] =
 
 	0
 };
-static void load_gradients( char *path, char *fn )
+void load_gradients( char *path, char *fn )
 {
 	struct xa_gradient **gp = gradients, *gpp;
 	char buf[8192], *cp = buf, *end;
 	long err;
 	struct file *fp;
 
-	sprintf( buf, sizeof(buf), "%sgradient/%s.grd", path, fn );
+	if( path && *path )
+		sprintf( buf, sizeof(buf), "%sgradient/%s.grd", path, fn );
+	else
+		strcpy( buf, fn );
 	BLOG((0,"loading gradients:%s", buf));
 	fp = kernel_open( buf, O_RDONLY, &err, NULL );
 	if( !fp )
