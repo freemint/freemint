@@ -285,18 +285,24 @@ XA_keyboard_event(enum locks lock, const struct rawkey *key)
 	}
 }
 
-static void switch_keyboard( char *tbname )
+int switch_keyboard( char *tbname )
 {
 			long out;
 			unsigned long dummy;
 			char tblpath[PATH_MAX];
-			sprintf( tblpath, sizeof(tblpath), "%s%s.tbl", sysdir, tbname );
+			if( tbname )
+			{
+				sprintf( tblpath, sizeof(tblpath), "%s%s.tbl", sysdir, tbname );
+			}
 
-			out = s_system(S_LOADKBD, (unsigned long)tblpath, (unsigned long)&dummy);
+			/* 0 should restore the power-up setting */
+			out = s_system(S_LOADKBD, tbname ? (unsigned long)tblpath : 0L, (unsigned long)&dummy);
 			if( out )
 			{
-				ALERT((xa_strings[AL_KBD]/*"keyboard-table not loaded"*/, tbname, sysdir, out));
+				ALERT((xa_strings[AL_KBD], tbname, sysdir, out));
+				return 1;
 			}
+			return 0;
 }
 /******************************************************************************
  from "unofficial XaAES":
@@ -405,18 +411,25 @@ kernel_key(enum locks lock, struct rawkey *key)
 
 		if( (nk == cfg.keyboards.c && (key->raw.conin.state & (K_RSHIFT|K_LSHIFT))) || (tolower(nk) == cfg.keyboards.c) )
 		{
-			char *tbname = cfg.keyboards.keyboard[++cfg.keyboards.cur];
+			char *tbname;
+			int r;
 
-			if( !tbname )
+			for( ; ; )
 			{
-				cfg.keyboards.cur = 0;
-				tbname = cfg.keyboards.keyboard[cfg.keyboards.cur];
+				tbname = cfg.keyboards.keyboard[++cfg.keyboards.cur];
+				if( !tbname )
+				{
+					cfg.keyboards.cur = -1;
+					tbname = "keyboard";
+				}
+				if( !(r = switch_keyboard( tbname )) || cfg.keyboards.cur == -1)
+				{
+					if( r && cfg.keyboards.cur == -1)
+						switch_keyboard(0);
+					add_keybd_switch();
+					break;
+				}
 			}
-			if( !tbname )
-				return true;
-
-			switch_keyboard( tbname );
-			add_keybd_switch();
 
 			return true;
 		}
@@ -732,7 +745,7 @@ kernel_key(enum locks lock, struct rawkey *key)
 		case 'Q':
 		{
 			struct proc *p;
-			const char *sdmaster = get_env(0, "SDMASTER=");
+			const char *sdmaster = sdmd == RESTART_XAAES ? 0 : get_env(0, "SDMASTER=");
 
 			if (sdmaster)
 			{
