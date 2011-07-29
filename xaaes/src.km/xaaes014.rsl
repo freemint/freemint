@@ -1122,8 +1122,8 @@ _
 NN+Switch keyboard, current:
 de:Tastatur umschalten, aktuell:
 _
-NN:unknown  @
-de:unbekannt
+NN:default
+de:normal
 _
 ### Alerts ###
 NN:[2][Quit All][Cancel|OK]     @
