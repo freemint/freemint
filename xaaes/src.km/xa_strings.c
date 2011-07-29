@@ -18,7 +18,7 @@ char *xa_strings[] = {
 	"OFF",
 	"ON",
 	"Switch keyboard, current:",
-	"unknown  ",
+	"default",
 /* alert-text */
 "[2][Quit All][Cancel|OK]     ",
 "[2][Leave XaAES][Cancel|OK]   ",
