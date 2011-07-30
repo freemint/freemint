@@ -229,6 +229,7 @@ usb_hub_port_connect_change(struct usb_device *dev, long port)
 
 	portstatus = le2cpu16(portsts.wPortStatus);
 	portchange = le2cpu16(portsts.wPortChange);
+	UNUSED(portchange);
 	DEBUG(("portstatus %x, change %x, %s",
 			portstatus, portchange, portspeed(portstatus)));
 
@@ -402,6 +403,7 @@ usb_hub_configure(struct usb_device *dev)
 	}
 
 	hubsts = (struct usb_hub_status *)buffer;
+	UNUSED(hubsts);
 	DEBUG(("get_hub_status returned status %x, change %x",
 			le2cpu16(hubsts->wHubStatus),
 			le2cpu16(hubsts->wHubChange)));

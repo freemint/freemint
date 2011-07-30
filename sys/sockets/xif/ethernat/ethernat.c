@@ -390,6 +390,7 @@ ethernat_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, s
 	// Check available memory in LAN91C111
 	Eth_set_bank(0);
 	littlemem = (*LAN_MIR) & 0x00ff;
+	UNUSED(littlemem);
 //	if (len == 0)
 //	{
 //		c_conws("Insufficient memory in LAN91C111!\n\r");
@@ -634,6 +635,7 @@ ethernat_config (struct netif *nif, struct ifopt *ifo)
 			return ENOENT;
 		memcpy (nif->hwlocal.adr.bytes, ifo->ifou.v_string, ETH_ALEN);
 		cp = nif->hwlocal.adr.bytes;
+		UNUSED (cp);
 		DEBUG (("dummy: hwaddr is %x:%x:%x:%x:%x:%x",
 			cp[0], cp[1], cp[2], cp[3], cp[4], cp[5]));
 	}
@@ -647,6 +649,7 @@ ethernat_config (struct netif *nif, struct ifopt *ifo)
 			return ENOENT;
 		memcpy (nif->hwbrcst.adr.bytes, ifo->ifou.v_string, ETH_ALEN);
 		cp = nif->hwbrcst.adr.bytes;
+		UNUSED (cp);
 		DEBUG (("dummy: braddr is %x:%x:%x:%x:%x:%x",
 			cp[0], cp[1], cp[2], cp[3], cp[4], cp[5]));
 	}

@@ -2512,7 +2512,6 @@ draw_pu_canvas(struct xa_window *wind, RECT *outer, RECT *inner, const RECT *cli
 {
 // 	struct xa_wcol_inf *wci = &((struct window_colours *)wind->colours)->borders;
 	struct xa_vdi_settings *v = wind->vdi_settings;
-	short size;
 // 	RECT r;
 
 	if ((outer->w | outer->h | inner->w | outer->h))
@@ -2528,10 +2527,6 @@ draw_pu_canvas(struct xa_window *wind, RECT *outer, RECT *inner, const RECT *cli
 		}
 		else
 		{
-
-			size = -3;
-
-
 			(*v->api->br_hook)(v, 0, outer, G_BLACK);
 			(*v->api->br_hook)(v, -1, outer, G_LBLACK);
 
@@ -3792,6 +3787,7 @@ get_wcol(struct xa_window *wind, short gem_widget, BFOBSPEC *ret)
 
 			ot.framesize = ut.framesize = wind->thinwork ? 1 : 2;
 			ot.framecol = ontop_cols->waframe_col;
+			UNUSED(ot);
 			ut.framecol = untop_cols->waframe_col;
 			break;
 		}
