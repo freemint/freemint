@@ -28,5 +28,6 @@
 #define _render_obj_h_
 
 void main_object_render(struct xa_module_object_render **);
+void load_gradients( char *path, char *fn );
 
 #endif /* _render_obj_h_ */
