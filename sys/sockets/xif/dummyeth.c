@@ -341,6 +341,7 @@ dummy_config (struct netif *nif, struct ifopt *ifo)
 			return ENOENT;
 		memcpy (nif->hwlocal.adr.bytes, ifo->ifou.v_string, ETH_ALEN);
 		cp = nif->hwlocal.adr.bytes;
+		UNUSED (cp);
 		DEBUG (("dummy: hwaddr is %x:%x:%x:%x:%x:%x",
 			cp[0], cp[1], cp[2], cp[3], cp[4], cp[5]));
 	}
@@ -354,6 +355,7 @@ dummy_config (struct netif *nif, struct ifopt *ifo)
 			return ENOENT;
 		memcpy (nif->hwbrcst.adr.bytes, ifo->ifou.v_string, ETH_ALEN);
 		cp = nif->hwbrcst.adr.bytes;
+		UNUSED (cp);
 		DEBUG (("dummy: braddr is %x:%x:%x:%x:%x:%x",
 			cp[0], cp[1], cp[2], cp[3], cp[4], cp[5]));
 	}

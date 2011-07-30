@@ -538,6 +538,7 @@ check_priv(struct privilege_violation_stackframe *frame)
 {
 	ushort opcode;
 	opcode = *frame->pc;
+	UNUSED(opcode);
 # ifndef M68000
 	/* Emulate the "move from sr" instruction,
 	 * which is not privileged on 68000, and privileged later.

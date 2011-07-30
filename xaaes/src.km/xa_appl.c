@@ -303,10 +303,8 @@ init_client(enum locks lock, bool sysclient)
 // 			display("no shel_info");
 	}
 
-	{long r;
 	/* use loader-pgrp for keyboard-access for clients */
-	r = p_setpgrp(client->p->pid, loader_pgrp);
-	}
+	p_setpgrp(client->p->pid, loader_pgrp);
 
 	/* Get the client's home directory (where it was started)
 	 * - we use this later to load resource files, etc

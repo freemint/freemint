@@ -1115,7 +1115,6 @@ screen_dump(enum locks lock, struct xa_client *client, bool open)
 				else
 				{
 					struct proc *p;
-					long ret;
 					char cmdlin[32] = "60 0 0\0";
 					//*cmdlin = 6;
 					//*(cmdlin + 6) = 0;
@@ -1135,7 +1134,7 @@ screen_dump(enum locks lock, struct xa_client *client, bool open)
 					else
 						*(cmdlin + 3) = '0';	/* full screen */
 
-					ret = create_process(cfg.snapper, cmdlin, NULL, &p, 0, NULL);
+					create_process(cfg.snapper, cmdlin, NULL, &p, 0, NULL);
 
 				}
 // 				xa_graf_mouse(ARROW, NULL,NULL, false);

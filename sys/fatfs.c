@@ -5404,6 +5404,8 @@ get_bpb (_x_BPB *xbpb, DI *di)
 		bio.set_lshift (di, xbpb->recsiz);
 	}
 
+	UNUSED (fvi);
+
 	FAT_DEBUG (("get_bpb: val_bpb = %li", r));
 	return r;
 }

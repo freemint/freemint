@@ -2061,10 +2061,9 @@ k_exit(int wait)
 
 	if (C.KBD_dev > 0)
 	{
-		long r;
-		r = f_cntl(C.KBD_dev, (long)&KBD_dev_sg, TIOCSETN);
+		f_cntl(C.KBD_dev, (long)&KBD_dev_sg, TIOCSETN);
 		//KERNEL_DEBUG("fcntl(TIOCSETN) -> %li", r);
-		//r = f_cntl(C.KBD_dev, NULL, TIOCFLUSH);
+		//f_cntl(C.KBD_dev, NULL, TIOCFLUSH);
 
 		f_close(C.KBD_dev);
 	}

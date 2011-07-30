@@ -1380,12 +1380,10 @@ init_pc16550 (void)
 		}
 		else if (intr_num < MAX_INTS)
 		{
-			void *old;
-			
 			DEBUG (("allocating new int handler %d to iovar %d, INT %d", intr_num, i, IOVARS (i)->intr));
 			
 			intr_iovar[intr_num] = IOVARS (i);
-			old = Setexc (80 + IOVARS (i)->intr, intr_handler[intr_num]);
+			(void) Setexc (80 + IOVARS (i)->intr, intr_handler[intr_num]);
 			DEBUG (("old int handler = %lx", old));
 			
 			intr_num++;

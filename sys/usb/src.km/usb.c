@@ -1227,7 +1227,7 @@ usb_find_interface_driver(struct usb_device *dev, unsigned ifnum)
 
 	LIST_FOREACH (tmp, &usb_driver_list, chain)
 	{
-		void *private;
+		void *private = NULL;
 		struct usb_driver *driver = tmp;
 	
 		DEBUG(("LIST_FOREACH. tmp %lx", tmp ));

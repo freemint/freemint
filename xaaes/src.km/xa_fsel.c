@@ -2223,6 +2223,7 @@ fileselector_form_exit(struct xa_client *client,
 			if( fs->rtflags & FS_CREATE_FOLDER )
 			{
 				r = _d_create( pt );
+				UNUSED( r );
 			}
 			else if( fs->rtflags & FS_RENAME_FILE )
 			{
@@ -2243,6 +2244,7 @@ fileselector_form_exit(struct xa_client *client,
 
 				sprintf( pt2, sizeof(pt2)-1, "%s%s", fs->path, fname);
 				r = _f_rename( 0, pt2, pt );
+				UNUSED( r );
 				BLOG((0,"rename '%s' -> '%s' -> %ld", pt2, pt, r ));
 			}
 			refresh_filelist(fsel, fs, 0);//fs->selected_dir->up);
@@ -2609,6 +2611,7 @@ static void delete_item(struct scroll_info *list, struct fsel_data *fs)
 			SCROLL_ENTRY *c = list->cur, *n;
 			fs_slist_key(list, SC_UPARROW, 0);
 			n = list->del( list, c, true );
+			UNUSED(n);
 		}
 	}
 }

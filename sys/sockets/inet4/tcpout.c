@@ -195,6 +195,9 @@ tcbos_xmit (struct tcb *tcb, short event)
 			break;
 		}
 	}
+
+	UNUSED (inq);
+	UNUSED (delay);
 }
 
 static void
