@@ -1,6 +1,8 @@
 # Ennek a f jlnak az xaaes k”nyvt r ban kell lennie (C:\mint\1-*-*\xaaes)
-Ctrl-Alt gyorsbillentyk:
+<b>Ctrl-Alt gyorsbillentyk:</b>
 
+0             Mensor be/ki
+#$1 [keyboard-switch]
 A             Bez r minden alkalmaz st (a kiv‚telek
               list ja az xaaes.cnf-ban)
 B             Rendszer/Napl¢-ablak megnyit sa
@@ -12,13 +14,16 @@ HELP          N‚vjegy megnyit sa
 H             Rendszer le ll¡t sa
               (vagy $SDMASTER futtat sa)
 I             Aktu lis ablak minimaliz l sa
+J             XaAES £jraind¡t sa
 K             Program ind¡t sa
-T,HOME        K‚preny” £jrarajzol sa
+M             Eg‚rmutat¢ megjelen¡t‚se
 P             Paletta vissza ll¡t sa 8bit vagy ann l
               kisebb sz¡nm‚lys‚g eset‚n
 Q,G           Kil‚p‚s az XaAES-b”l
               (vagy $SDMASTER futtat sa)
 R             Lefagyott rendszer vissza ll¡t sa
+T,HOME        K‚preny” £jrarajzol sa
+U             Aktu lis ablak bez r sa
 V             ™sszes alkalmaz s ablak nak felfed‚se
 W             Ablakok k”z”tti v lt s
 X             A f¢kuszban l‚v”n k¡vl minden
@@ -28,17 +33,59 @@ SPACE         F”men megnyit sa
 SHIFT+SPACE   Aktu lis ablak menj‚nek vagy ha nincs,
               a f”men megnyit sa
 TAB           Nyitott alkalmaz sok k”z”tti v lt s
-CURSOR-RIGHT  Aktu lis ablak maximaliz l sa
--------------------------------------------------------
 
-Gyorsbillentyk/navig ci¢ az XaAES f jl kiv laszt s n l:
+INSERT        Ablak teljes m‚retre nagy¡t sa
+KURZOR-FEL    Ablak m‚ret‚nek n”vel‚se
+KURZOR-LE     Ablak m‚ret‚nek cs”kkent‚se
+KURZOR-JOBB   Ablak sz‚less‚g‚nek n”vel‚se
+KURZOR-BAL    Ablak sz‚less‚g‚nek cs”kkent‚se
+
+SHIFT +
+ KURZOR-FEL  Ablak felfel‚ mozgat sa
+ KURZOR-LE   Ablak lefel‚ mozgat sa
+ KURZOR-JOBB Ablak jobbra mozgat sa
+ KURZOR-BAL  Ablak balra mozgat sa
+<u>                                                      </u>
+
+Gyorsbillentyk/navig ci¢ az <b>XaAES f jl kiv laszt s n l:</b>
+
+CTRL+B        Val¢s idej k”nyvt r megj.
+CTRL+T        Fa szer megjelen¡t‚s
+CTRL+N        N‚v szerinti sorrend
+CTRL+D        D tum szerinti sorrend
+CTRL+S        M‚ret szerinti sorrend
+CTRL+E        T¡pus szerinti sorrend
+CTRL+X        Rendezetlen
+CTRL+SPACE    Ford¡tott sorrend
 
 CTRL+O        Ablak men megnyit sa (navig ci¢ a KURZOR
               ‚s RETURN gomobokkal)
 CTRL+C        A kiv lasztott f jl ‚s el‚r‚si £tvonal
               V g¢lapra m sol sa
+CTRL+F        Mappa l‚trehoz sa (n‚v megad sa)
+CTRL+R        F jl/mappa  tnevez‚se (£j n‚v/el‚r‚si
+              £t megad sa)
+CTRL+V        F jl mutat sa
+DELETE        F jl/res mappa t”rl‚se
 
-* List-box kiv lasztva:
+ALT+ " + "    Lista betm‚ret n”vel‚se
+ALT+ " - "    Lista betm‚ret cs”kkent‚se
+<u>                                                      </u>
+
+<b>Feladatkezel”</b> gyorsbillenty:
+
+DELETE        Program befejez‚se
+SHIFT+
+ DELETE       Program kil”v‚se
+<u>                                                      </u>
+
+Gyorsbillenty az <b>”sszes ablakhoz:</b>
+
+SHIFT+
+ KURZOR-FEL/LE          El”re/h tra lapoz
+ KURZOR-BAL/JOBB        Balra/jobbra lapoz
+
+<u>List-box kiv lasztva:</u>
 
   CURSOR-RIGHT              Fa megynit sa
   CURSOR-LEFT               Fa bez r sa
@@ -47,7 +94,7 @@ CTRL+C        A kiv lasztott f jl ‚s el‚r‚si £tvonal
   CLEAR/HOME                Lista elej‚re ugr s
   SHIFT+CLEAR/HOME          Lista v‚g‚re ugr s
 
-* List-box nincs kiv lasztva:
+<u>List-box nincs kiv lasztva:</u>
 
   CURSOR-RIGHT              Jobbra g”rget‚s
   CURSOR-LEFT               Balra g”rget‚s
@@ -55,7 +102,11 @@ CTRL+C        A kiv lasztott f jl ‚s el‚r‚si £tvonal
 
 Ha egy elem ki van v lasztva a "list-box"-ban, a
 KURZOR-JOBBRA gombbal lehet”s‚g  van a szerkeszt‚s‚re.
--------------------------------------------------------
+<u>                                                      </u>
+
+<b>F”men megnyit sa:</b>
+<u>                                                      </u>
+
 R‚szletes dokument ci¢:
 
 http://wiki.sparemint.org/index.php/XaAES

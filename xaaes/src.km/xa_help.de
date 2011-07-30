@@ -52,6 +52,15 @@ SHIFT+
 
 Shortcuts/Navigation im <b>Dateiauswahl-Dialog:</b>
 
+CTRL+B        Echtzeit-Anzeige
+CTRL+T        Baumansicht
+CTRL+N        Nach Namen sortiert
+CTRL+D        Nach Datum sortiert
+CTRL+S        Nach Grîûe sortiert
+CTRL+E        Nach Extension sortiert
+CTRL+X        Unsortiert
+CTRL+SPACE    Sortierung umkehren
+
 CTRL+O        ôffnet das FenstermenÅ (Navigation mit
               Pfeiltasten und RETURN)
 CTRL+C        Der selektierte Pfad (+Dateiname) wird
@@ -65,8 +74,6 @@ DELETE        Selektierte Datei/leeren Ordner lîschen
 
 ALT+ " + "    Vergrîûert die Schrift in der List-Box
 ALT+ " - "    Verkleinert die Schrift in der List-Box
-
-CTRL+SPACE    Sortierung umkehren
 <u>                                                      </u>
 
 Shortcuts im <b>Taskmanager:</b>
