@@ -926,14 +926,12 @@ display_alert(struct proc *p, long arg)
 		post_cevent(C.Hlp, CE_fa, data,NULL, 0,0, NULL,NULL);
 	}
 }
-
-void load_gradients( char *path, char *fn );
-
 static void load_grd( void *fn )
 {
+#if WITH_GRADIENTS
 	load_gradients( 0, fn );
+#endif
 }
-
 typedef void XA_CONF (void *p);
 
 static XA_CONF *xa_config[] = {load_grd};
@@ -969,7 +967,7 @@ alert_input(enum locks lock)
 
 		if( data->buf[0] == '#' && data->buf[1] == '$' )
 		{
-			if( data->buf[2] == '#' && data->buf[3] >= '0' )
+			if( data->buf[2] == '#' && data->buf[3] >= '0' && data->buf[3] <= '0' )
 				xa_config[(int)data->buf[3]-'0']( (void*)(data->buf + 4) );
 			else
 				load_config();
