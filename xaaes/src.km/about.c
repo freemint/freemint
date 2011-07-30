@@ -106,14 +106,16 @@ static SCROLL_INFO *alist = 0;
 static SCROLL_ENTRY *athis[16] = {0};
 void add_keybd_switch(void)
 {
-	char buf[256], *k;
+	char buf[256], lang[4], *k;
 	if( !alist || !cfg.keyboards.c )
 		return;
 	if( cfg.keyboards.cur >= 0 )
 		k = cfg.keyboards.keyboard[cfg.keyboards.cur];
 	else
 		k = xa_strings[UNKNOWN];
-	sprintf( buf, sizeof(buf), "%c             %s %s", cfg.keyboards.c, xa_strings[SW_KEYBD], k );
+	lang_from_keybd( lang );
+	lang[2] = 0;
+	sprintf( buf, sizeof(buf), "%c             %s %s(%s)", cfg.keyboards.c, xa_strings[SW_KEYBD], k, lang );
 	if( athis[0] )
 	{
 		struct setcontent_text t = { 0 };
