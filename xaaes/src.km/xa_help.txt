@@ -46,8 +46,16 @@ SHIFT+
  CURSOR-LEFT  Move current window left
 <u>                                                      </u>
 
-
 Shortcuts/navigation in <b>XaAES fileselector:</b>
+
+CTRL+B        Realtime build directories
+CTRL+T        Tree view
+CTRL+N        Sort by name
+CTRL+D        Sort by date
+CTRL+S        Sort by size
+CTRL+E        Sort by extension
+CTRL+X        No sorting
+CTRL+SPACE    Reverse sort-order
 
 CTRL+O        Open window menu (navigation with
               CURSOR keys and RETURN)
@@ -61,8 +69,6 @@ DELETE        Delete selected file/empty folder
 
 ALT+ " + "    Increase the fontsize in listbox
 ALT+ " - "    Decrease the fontsize in listbox
-
-CTRL+SPACE    Reverse sort-order
 <u>                                                      </u>
 
 Shortcuts in the <b>taskmanager:</b>
@@ -70,7 +76,6 @@ Shortcuts in the <b>taskmanager:</b>
 DELETE    Terminate selected program (same as trashcan)
 SHIFT+
  DELETE   Kill selected program  (same as skull)
-TAB       Top selected program or window
 <u>                                                      </u>
 
 Shortcuts for <b>all list-windows:</b>
@@ -100,9 +105,10 @@ focusses the edit-field, so the selection can be edited
 
 <b>Menubar:</b>
 
-If configured, the menu may be switched on/off by clicking on top of the
-screen. If click goes to top-left then menu is on/off permanentely
-(Ctrl-Alt-0), else temporarily on (Ctrl-Alt-blank).
+If configured, the menu may be switched on/off by
+clicking on top of the screen. If click goes to
+top-left then menu is on/off permanentely  (CTRL-ALT-0),
+else temporarily on (CTRL-ALT-SPACE).
 <u>                                                      </u>
 
 Additional documentation:
