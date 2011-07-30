@@ -293,6 +293,25 @@ unsigned short stack_align = 0;
 
 #endif
 
+void lang_from_keybd( char lang[2] )
+{
+	long	li;
+	if (!(s_system(S_GETCOOKIE, COOKIE__AKP, (unsigned long)(&li))))
+	{
+		/*
+		 * The bits 0-7 provide info about the layout of the keyboard
+		 * The bits 8-15 identify the language of the country
+		 */
+		if( li & 0xff00 )	// language
+			li >>= 8;
+		if( li < MaX_COUNTRYCODE )
+		{
+			li *= 2;
+			lang[0] = countrycodes[li];
+			lang[1] = countrycodes[li+1];
+		}
+	}
+}
 /*
  * Module initialisation
  * - setup internal data
@@ -659,21 +678,8 @@ again:
 			li = -2;
 			strncpy( cfg.lang, lang, 2 );
 		}
-		else if (!(s_system(S_GETCOOKIE, COOKIE__AKP, (unsigned long)(&li))))
-		{
-			/*
-			 * The bits 0-7 provide info about the layout of the keyboard
-			 * The bits 8-15 identify the language of the country
-			 */
-			if( li & 0xff00 )	// language
-				li >>= 8;
-			if( li < MaX_COUNTRYCODE )
-			{
-				li *= 2;
-				cfg.lang[0] = countrycodes[li];
-				cfg.lang[1] = countrycodes[li+1];
-			}
-		}
+		else
+			lang_from_keybd( cfg.lang );
 	}
 	if( cfg.lang[0] )
 	{
