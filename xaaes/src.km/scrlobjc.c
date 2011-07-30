@@ -3060,7 +3060,7 @@ add_scroll_entry(SCROLL_INFO *list,
 			}
 			else
 			{
-				list->cur = new;
+				//list->cur = new;
 				if (parent)
 				{
 					/*
