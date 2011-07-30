@@ -366,6 +366,8 @@ static inline void isp116x_write_addr(struct isp116x *isp116x, unsigned reg)
 	isp116x->addr_reg = (u16*)ISP116X_HCD_ADDR;
 	dumm = __raw_readw(isp116x->addr_reg);
 	isp116x_delay(isp116x, UDELAY);
+
+	UNUSED (dumm);
 }
 
 static inline void isp116x_write_data16(struct isp116x *isp116x, unsigned short val)
@@ -377,6 +379,8 @@ static inline void isp116x_write_data16(struct isp116x *isp116x, unsigned short 
 	isp116x->addr_reg = (u16*)((ISP116X_HCD_ADDR - 0x4000) + ((val & 0x00ff)<<1));
 	dumm = __raw_readw(isp116x->addr_reg);
 	isp116x_delay(isp116x, UDELAY);
+
+	UNUSED (dumm);
 }
 
 static inline void isp116x_raw_write_data16(struct isp116x *isp116x, unsigned short val)
@@ -388,6 +392,8 @@ static inline void isp116x_raw_write_data16(struct isp116x *isp116x, unsigned sh
 	isp116x->addr_reg =  (u16*)((ISP116X_HCD_ADDR - 0x4000) + ((val & 0xff00)>>7)); 
 	dumm = __raw_readw(isp116x->addr_reg);
 	isp116x_delay(isp116x, UDELAY);
+
+	UNUSED (dumm);
 }
 
 static inline unsigned short isp116x_read_data16(struct isp116x *isp116x)
@@ -439,6 +445,8 @@ static inline void isp116x_raw_write_data32(struct isp116x *isp116x, unsigned lo
 	isp116x->addr_reg = (u16*)((ISP116X_HCD_ADDR - 0x4000) + ((val & 0xff000000)>>23) );
 	dumm = __raw_readw(isp116x->addr_reg);
 	isp116x_delay(isp116x, UDELAY);
+
+	UNUSED (dumm);
 }
 /***********************************************/
 

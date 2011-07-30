@@ -810,6 +810,7 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 						x2 = dx + r.w;
 						dy = r.y;
 						y2 = dy + this->r.h - 1;
+						UNUSED(y2);
 						tw = r.w;
 						if (c->c.text.icon.icon)
 						{
@@ -983,6 +984,7 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 									list->vdi_settings->api->t_extent(list->vdi_settings, tpp, &wd, &h);
 									dx += wd;
 									cwd = wd / (tp-tpp);
+									UNUSED(cwd);
 
 									tpp = tp;
 									switch( cp )
@@ -1947,7 +1949,6 @@ static struct se_content *
 insert_strings(struct scroll_entry *this, struct sc_text *t, OBJECT *icon, short type)
 {
 	struct se_content *this_sc, *ret = NULL;
-	struct se_content *sc;
 	int i, j = t->strings;
 	short slen;
 	const char *s = t->text;
@@ -1955,7 +1956,6 @@ insert_strings(struct scroll_entry *this, struct sc_text *t, OBJECT *icon, short
 	size_t sz;
 	PRDEF(insert_strings,new_setext);
 
-	sc = 0;
 	memset( tbuf, 0, sizeof(tbuf));
 	for (i = 0; i < j && tp < ep; i++)
 	{
@@ -4650,13 +4650,12 @@ slist_msg_handler(
 	SCROLL_INFO *list;
 	SCROLL_ENTRY *top, *n;
 	OBJECT *ob;
-	long p, oldp;
+	long p;
 	short amount, msgt;
 
 	ob = wind->winob + wind->winitem;
 	list = object_get_slist(ob);
 	top = list->top;
-	oldp = list->start_y;
 	check_movement(list);
 	switch (msg[0])		/* message number */
 	{

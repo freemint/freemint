@@ -1147,7 +1147,6 @@ init_mfp (long mch)
 	if (iovar_mfp_tt)
 	{
 		IOVAR *iovar = iovar_mfp_tt;
-		void *old;
 		uchar reg;
 
 		iovar->table = baudtable_st;
@@ -1165,10 +1164,10 @@ init_mfp (long mch)
 
 # define vector(x)	(x / 4)
 
-		old = Setexc (vector (0x164), ttmfp1_txerror);
-		old = Setexc (vector (0x168), ttmfp1_txempty);
-		old = Setexc (vector (0x16c), ttmfp1_rxerror);
-		old = Setexc (vector (0x170), ttmfp1_rxavail);
+		(void) Setexc (vector (0x164), ttmfp1_txerror);
+		(void) Setexc (vector (0x168), ttmfp1_txempty);
+		(void) Setexc (vector (0x16c), ttmfp1_rxerror);
+		(void) Setexc (vector (0x170), ttmfp1_rxavail);
 
 # undef vector
 
