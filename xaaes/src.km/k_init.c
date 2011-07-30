@@ -876,6 +876,8 @@ k_init(unsigned long vm)
 	screen.c_max_h = v->cell_h;
 	dev2 = calc_average_fontsize(v, &screen.c_max_w, &screen.c_max_h, &screen.c_max_dist[0]);
 
+	UNUSED(dev1);
+	UNUSED(dev2);
 	BLOG((false, "stdfont: id = %d, size = %d, cw=%d, ch=%d, dev=%d",
  		screen.standard_font_id, screen.standard_font_point, screen.c_max_w, screen.c_max_h, dev2));
 	BLOG((false, "smlfont: id = %d, size = %d, cw=%d, ch=%d, dev=%d",

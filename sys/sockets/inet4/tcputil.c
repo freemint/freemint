@@ -496,6 +496,7 @@ tcp_dump (BUF *buf)
 	long datalen;
 	
 	datalen = (long) buf->dend - (long) TCP_DATA (tcph);
+	UNUSED (datalen);
 	
 	DEBUG (("tcpdump: srcport = %d, dstport = %d, hdrlen = %d",
 		tcph->srcport, tcph->dstport, tcph->hdrlen*4));

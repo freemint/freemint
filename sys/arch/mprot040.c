@@ -708,6 +708,7 @@ init_tables(void)
 		tt_mbytes = 0;
 
 	n_megabytes = (int) ((mint_top_st / ONE_MEG) + tt_mbytes);
+	UNUSED(n_megabytes);
 
     /*
      * Get the page table size. This is done by traversing the current MMU

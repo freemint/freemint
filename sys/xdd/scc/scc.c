@@ -1150,8 +1150,6 @@ init_scc (void)
 	init_SCC (&iovar_sccb, sccb);
 	if (iovar_sccb)
 	{
-		void *old;
-		
 		if (flag_14_7456_mhz)
 			iovar_sccb->table = baudtable_14_7456_mhz;
 		else if (mch == FALCON)
@@ -1167,10 +1165,10 @@ init_scc (void)
 		
 # define vector(x)	(x / 4)
 		
-		old = Setexc (vector (0x180), sccb_txempty);
-		old = Setexc (vector (0x188), sccb_stchange);
-		old = Setexc (vector (0x190), sccb_rxavail);
-		old = Setexc (vector (0x198), sccb_special);
+		(void) Setexc (vector (0x180), sccb_txempty);
+		(void) Setexc (vector (0x188), sccb_stchange);
+		(void) Setexc (vector (0x190), sccb_rxavail);
+		(void) Setexc (vector (0x198), sccb_special);
 		
 # undef vector
 	}
@@ -1178,8 +1176,6 @@ init_scc (void)
 	init_SCC (&iovar_scca, scca);
 	if (iovar_scca)
 	{
-		void *old;
-		
 		if (flag_14_7456_mhz)
 			iovar_scca->table = baudtable_14_7456_mhz;
 		/* else if (mch == FALCON)
@@ -1215,10 +1211,10 @@ init_scc (void)
 		
 # define vector(x)	(x / 4)
 		
-		old = Setexc (vector (0x1a0), scca_txempty);
-		old = Setexc (vector (0x1a8), scca_stchange);
-		old = Setexc (vector (0x1b0), scca_rxavail);
-		old = Setexc (vector (0x1b8), scca_special);
+		(void) Setexc (vector (0x1a0), scca_txempty);
+		(void) Setexc (vector (0x1a8), scca_stchange);
+		(void) Setexc (vector (0x1b0), scca_rxavail);
+		(void) Setexc (vector (0x1b8), scca_special);
 		
 # undef vector
 	}
@@ -1613,7 +1609,6 @@ scc_special (void)
 {
 	IOVAR *iovar;
 	SCC *regs;
-	uchar ctlreg;
 	
 	asm volatile
 	(
@@ -1627,8 +1622,8 @@ scc_special (void)
 	DEBUG (("scc_special: %lx", regs));
 	
 	
-	ctlreg = ZS_READ (regs, RR1);
-	ctlreg = ZS_READ (regs, RR8);
+	ZS_READ (regs, RR1);
+	ZS_READ (regs, RR8);
 	
 	ZS_WRITE_0 (regs, ERRRES);
 	ZS_WRITE_0 (regs, RHIUS);

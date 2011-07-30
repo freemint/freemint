@@ -333,6 +333,7 @@ lance_config (struct netif *nif, struct ifopt *ifo)
 			return ENOENT;
 		memcpy (nif->hwlocal.adr.bytes, ifo->ifou.v_string, ETH_ALEN);
 		cp = nif->hwlocal.adr.bytes;
+		UNUSED (cp);
 		DEBUG (("LANCE: hwaddr is %02x:%02x:%02x:%02x:%02x:%02x",
 			cp[0], cp[1], cp[2], cp[3], cp[4], cp[5]));
 	}
@@ -348,6 +349,7 @@ lance_config (struct netif *nif, struct ifopt *ifo)
 			return ENOENT;
 		memcpy (nif->hwbrcst.adr.bytes, ifo->ifou.v_string, ETH_ALEN);
 		cp = nif->hwbrcst.adr.bytes;
+		UNUSED (cp);
 		DEBUG (("LANCE: braddr is %02x:%02x:%02x:%02x:%02x:%02x",
 			cp[0], cp[1], cp[2], cp[3], cp[4], cp[5]));
 	}
@@ -707,7 +709,6 @@ lance_int (void)
 #endif
 # endif
 	register ushort		csr0;
-	register int		type;
 	
 	ushort sr; /* New since Nov/11/1998 */
 	
@@ -744,7 +745,6 @@ again:
 			if ((STP|ENP) == (rmd->rmd1 & (ERR|STP|ENP)))
 			{
 				pkt = pkt_rcv_ring[rcv_ring_host];
-				type = pkt->et_type;
 
 				/*
 				 * packet length without checksum
@@ -923,15 +923,10 @@ lance_pkt_init (void)
 static void
 lance_install_ints (void)
 {
-	long old_v5 
-# ifdef PAMs_INTERN
-	   , old_hbl
-# endif
-	   ;
 	ushort sr;
 	
 	sr = spl7 ();
-	old_v5 = (long)Setexc (LANCEIVEC, lance_v5_int);
+	(void)Setexc (LANCEIVEC, lance_v5_int);
 # ifdef PAMs_INTERN
 	/*
          * This is a real dirty hack but seems to be necessary for the MiNT
@@ -951,7 +946,7 @@ lance_install_ints (void)
 	old_vbi = (long)Setexc (HBI+2, lance_vbi_int);
 	
 	*(char *)LANCEIVECREG = LANCEIVEC;
-	old_hbl = (long)Setexc (HBI, lance_hbi_int);
+	(void)Setexc (HBI, lance_hbi_int);
 # endif
 # ifdef RIEBL
 	*(char *)LANCEIVECREG = LANCEIVEC;

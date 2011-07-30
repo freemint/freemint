@@ -823,7 +823,7 @@ fix_objects(struct xa_client *client,
 				obj->ob_spec.free_string += (long)b;
 				if( client->options.rsc_lang && !(type == G_IMAGE) )
 				{
-					char **p = 0, *pp;
+					char **p = 0;
 					short blen, chgl;
 
 					if( object_has_tedinfo(obj) )
@@ -839,8 +839,6 @@ fix_objects(struct xa_client *client,
 
 					if( !p || !*p || !**p || strmchr(*p, "\r\n") )
 						break;
-
-					pp = *p;
 
 					if( client->options.rsc_lang == WRITE )
 					{
@@ -1339,6 +1337,8 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 		}
 	}
 
+	UNUSED(end);
+
 	if (!rscs)
 	{
 		return NULL;
@@ -1484,21 +1484,20 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 	if( rfp ){
 		if( client == C.Aes && trans_strings[0] && client->options.rsc_lang )
 		{
-			int i, k;
-			long l;
+			int i;
 			char **t;
 
 			if( client->options.rsc_lang == WRITE )
 			{
 				rsc_lang_file( WRITE, rfp, "# - Internal Strings -", 22 );
 			}
-			for(k = 1, i = 0; trans_strings[i]; i++)
+			for(i = 0; trans_strings[i]; i++)
 			{
 				for( t = trans_strings[i]; *t; t++)
 				{
 					if( **t )
 					{
-						l = rsc_trans_rw( client, rfp, t, 0 );
+						rsc_trans_rw( client, rfp, t, 0 );
 					}
 				}
 			}
@@ -1565,6 +1564,7 @@ FreeResources(struct xa_client *client, AESPB *pb, struct xa_rscs *rsrc)
 
 	cur = client->resources;
 
+	UNUSED(rsc);
 	DIAG((D_rsrc,client,"FreeResources: %lx for %d, ct=%d, pb->global->rsc=%lx",
 		cur, client->p->pid, client->rsct, rsc));
 

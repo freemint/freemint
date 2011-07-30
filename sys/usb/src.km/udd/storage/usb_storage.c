@@ -623,9 +623,11 @@ dev_print(block_dev_desc_t *dev_desc)
 		/* round to 1 digit */
 		mb_quot	= mb / 10;
 		mb_rem	= mb - (10 * mb_quot);
+		UNUSED(mb_rem);
 		gb = mb / 1024;
 		gb_quot	= gb / 10;
 		gb_rem	= gb - (10 * gb_quot);
+		UNUSED(gb_rem);
 #ifdef CONFIG_LBA48
 		if(dev_desc->lba48)
 			DEBUG(("Supports 48-bit addressing"));
@@ -838,6 +840,7 @@ usb_stor_CB_reset(struct us_data *us)
 	cmd[1] = 4;
 	result = usb_control_msg(us->pusb_dev, usb_sndctrlpipe(us->pusb_dev, 0), 
 	 US_CBI_ADSC, USB_TYPE_CLASS | USB_RECIP_INTERFACE, 0, us->ifnum, cmd, sizeof(cmd), USB_CNTL_TIMEOUT * 5);
+	UNUSED(result);
 	/* long wait for reset */
 	mdelay(1500);
 	DEBUG(("CB_reset result %ld: status %lx clearing endpoint halt", result, us->pusb_dev->status));

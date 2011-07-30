@@ -74,10 +74,9 @@ focus_owner(void)
 bool
 wind_has_focus(struct xa_window *wind)
 {
-	struct xa_client *c;
 	struct xa_window *w;
 
-	c = find_focus(true, NULL, NULL, &w);
+	find_focus(true, NULL, NULL, &w);
 
 	return wind == w ? true : false;
 }
@@ -459,7 +458,6 @@ recover(void)
 {
 	struct proc *proc;
 	struct proc *menu_lock = menustruct_locked();
-	struct xa_client *client;
 
 	DIAG((D_appl, NULL, "Attempting to recover control....."));
 
@@ -467,8 +465,6 @@ recover(void)
 
 	if ((proc = C.update_lock))
 	{
-		client = proc2client(proc);
-
 		DIAG((D_appl, NULL, "Killing owner of update lock"));
 		free_update_lock();
 		if (C.mouse_lock == proc)

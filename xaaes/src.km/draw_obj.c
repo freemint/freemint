@@ -450,6 +450,7 @@ d_g_progdef(struct widget_tree *wt, struct xa_vdi_settings *v)
 #endif
 
 		sstate_mask = wt->state_mask;
+		UNUSED(sstate_mask);
 		pret = do_callout(pfunc,p);
 
 		//if( wt->state_mask == sstate_mask && wt->state_mask && !((long)wt->state_mask & 1) )
@@ -556,6 +557,8 @@ d_g_slist(struct widget_tree *wt, struct xa_vdi_settings *v)
 		//y = wa.y;
 		//maxy = y + wa.h - screen.c_max_h;
 		this = list->top;
+		UNUSED(this);
+		UNUSED(wa);
 
 		(*v->api->t_color)(v, G_BLACK);
 
