@@ -793,6 +793,7 @@ again:
 			sd_str = "Quit XaAES";
 		}
 
+		UNUSED(sd_str);
 		BLOG((1,"AESSYS kthread exited - shutdown = %x(%s).", C.shutdown, sd_str));
 
 		if( C.shutdown & RESTART_XAAES )

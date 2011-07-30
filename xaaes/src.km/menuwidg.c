@@ -1274,6 +1274,9 @@ do_popup(Tab *tab, XA_TREE *wt, short item, short entry, TASK *click, short rdx,
 				k->y = y;
 				popup(tab, -1);
 			}*/
+
+			UNUSED(x);
+			UNUSED(y);
 		}
 		else
 			popup(tab, entry);
