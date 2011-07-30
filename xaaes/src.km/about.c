@@ -113,7 +113,7 @@ void add_keybd_switch(void)
 		k = cfg.keyboards.keyboard[cfg.keyboards.cur];
 	else
 		k = xa_strings[UNKNOWN];
-	lang_from_keybd( lang );
+	lang_from_akp( lang, 1 );
 	lang[2] = 0;
 	sprintf( buf, sizeof(buf), "%c             %s %s(%s)", cfg.keyboards.c, xa_strings[SW_KEYBD], k, lang );
 	if( athis[0] )
@@ -124,12 +124,18 @@ void add_keybd_switch(void)
 	}
 	else
 	{
+		struct sesetget_params p = { 0 };
 		struct scroll_content sc = {{ 0 }};
 		sc.t.text = buf;
 		sc.t.strings = 1;
 		sc.fnt = 0;
 		alist->add( alist, NULL, NULL, &sc, false, 0, false);
-		athis[0] = alist->cur;
+
+		/* search for keyboard-entry and save in athis[0] */
+		p.level.maxlevel = 1;
+		p.arg.txt = buf;
+		alist->get(alist, 0, SEGET_ENTRYBYTEXT, &p);
+		athis[0] = p.e;
 	}
 }
 static void
@@ -359,6 +365,7 @@ open_about(enum locks lock, struct xa_client *client, bool open, char *fn)
 				wsiz.w = wind->r.w;
 				wsiz.h = wind->r.h * d;
 			}
+			/* WM_SIZED resizes list-window (though not open yet!)*/
 			wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 					WM_SIZED, 0,0, wind->handle, wsiz.x, wsiz.y, wsiz.w, wsiz.h );
 		}
