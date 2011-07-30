@@ -37,5 +37,6 @@ extern long loader_pgrp;
 extern char version[];
 
 long init(struct kentry *k, const struct kernel_module *km);
+void lang_from_keybd( char lang[] );
 
 #endif /* _init_h */
