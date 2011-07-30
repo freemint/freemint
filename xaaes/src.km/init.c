@@ -292,8 +292,11 @@ short check_stack_alignment( long stk )
 unsigned short stack_align = 0;
 
 #endif
-
-void lang_from_keybd( char lang[2] )
+/*
+ * md = 0: get lang
+ * md = 1: get keyboard-layout-lang
+ */
+void lang_from_akp( char lang[], int md )
 {
 	long	li;
 	if (!(s_system(S_GETCOOKIE, COOKIE__AKP, (unsigned long)(&li))))
@@ -302,8 +305,15 @@ void lang_from_keybd( char lang[2] )
 		 * The bits 0-7 provide info about the layout of the keyboard
 		 * The bits 8-15 identify the language of the country
 		 */
-		if( li & 0xff00 )	// language
-			li >>= 8;
+		if( !md )
+		{
+		/* fix: sometimes upper byte is always 0 - fails for USA(0) */
+			if( (li & 0xff00) )	// language
+				li >>= 8;	// else use keyboard-lang
+		}
+		else
+			li &= 0x000000ffL;
+
 		if( li < MaX_COUNTRYCODE )
 		{
 			li *= 2;
@@ -679,7 +689,7 @@ again:
 			strncpy( cfg.lang, lang, 2 );
 		}
 		else
-			lang_from_keybd( cfg.lang );
+			lang_from_akp( cfg.lang, 0 );
 	}
 	if( cfg.lang[0] )
 	{
