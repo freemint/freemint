@@ -48,6 +48,7 @@
 #include "taskman.h"
 #include "widgets.h"
 #include "obtree.h"
+#include "render_obj.h"
 #include "taskman.h"
 
 #include "xa_appl.h"
