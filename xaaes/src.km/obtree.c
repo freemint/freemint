@@ -3170,7 +3170,7 @@ obj_change(XA_TREE *wt,
 	if (draw && redraw) {
 #if 1
 		// "sysinfo"-fix
-		if( obj.ob->ob_type == G_USERDEF && !clip && obj.ob->ob_x == 0 )
+		if( obj.ob->ob_type == G_USERDEF && !clip /*&& obj.ob->ob_x == 0*/ )
 		{
 			RECT r;
 			r = *(RECT*)&obj.ob->ob_x;
