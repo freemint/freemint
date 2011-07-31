@@ -196,19 +196,19 @@ callout_display(struct xa_fnts_item *f, short vdih, long pt, long ratio, RECT *c
 		else
 		{
 			short x, y, w, h, ch;
-			short c[8], ptr;
+			short c[16], ptr, p = pt >> 16;
 
-			pt >>= 16;
+			//pt >>= 16;
 
 			vst_color(vdih, 1);
 			vs_clip(vdih, 1, (short *)clip);
 			vst_alignment(vdih, TA_LEFT, TA_ASCENT, &x, &x);
-			vst_font(vdih, f->f.id);
-			ptr = vst_point(vdih, pt, &x, &h, &x, &ch);
-			if( ptr != pt )
+			vst_font(vdih, (short)f->f.id);
+			ptr = vst_point(vdih, p, &x, &h, &x, &ch);
+			if( ptr != p )
 			{
-				h += (pt - ptr);
-				if( ptr < pt )
+				h += (p - ptr);
+				if( ptr < p )
 				{
 					h += h / 15;
 				}
@@ -217,6 +217,7 @@ callout_display(struct xa_fnts_item *f, short vdih, long pt, long ratio, RECT *c
 					h -= h / 15;
 				}
 
+				x = ch = w = 0;
 				vst_height( vdih, h, &x, &ch, &x, &w );
 
 			}
@@ -226,6 +227,8 @@ callout_display(struct xa_fnts_item *f, short vdih, long pt, long ratio, RECT *c
 			w = c[4] - c[6];
 			h = -(c[1] - c[7]);
 
+			if( w > 1280 || h > 128 )
+				return 0;
 			x = area->x + (area->w >> 1);
 			y = area->y + 4;//(area->h >> 1);
 
@@ -1315,9 +1318,9 @@ init_fnts(struct xa_fnts_info *fnts)
 		 * set ratio edit field..
 		 */
 		ted = object_get_tedinfo(aesobj_ob(&ratio_obj), NULL);
-		l = sprintf(pt, ted->te_txtlen, "%d", (unsigned short)(fnts->fnt_ratio >> 16L));
-		sprintf(pt + l, ted->te_txtlen - l, ".%d", (short)(fnts->fnt_ratio));
-		strcpy(ted->te_ptext, pt);
+		l = sprintf(pt, sizeof(pt)-1, "%d", (unsigned short)(fnts->fnt_ratio >> 16L));
+		sprintf(pt + l, sizeof(pt) - 1 - l, ".%d", (short)(fnts->fnt_ratio));
+		strncpy(ted->te_ptext, pt, sizeof(pt)-1);
 		obj_edit(fnts->wt, fnts->vdi_settings, ED_INIT, ratio_obj, 0, -1, NULL, false, NULL, NULL, NULL, NULL);
 
 		/*
