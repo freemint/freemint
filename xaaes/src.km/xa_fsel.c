@@ -2222,8 +2222,7 @@ fileselector_form_exit(struct xa_client *client,
 			sprintf( pt, sizeof(pt)-1, "%s%s", fs->path, fs->file);
 			if( fs->rtflags & FS_CREATE_FOLDER )
 			{
-				r = _d_create( pt );
-				UNUSED( r );
+				_d_create( pt );
 			}
 			else if( fs->rtflags & FS_RENAME_FILE )
 			{
@@ -2244,7 +2243,9 @@ fileselector_form_exit(struct xa_client *client,
 
 				sprintf( pt2, sizeof(pt2)-1, "%s%s", fs->path, fname);
 				r = _f_rename( 0, pt2, pt );
+#if !BOOTLOG
 				UNUSED( r );
+#endif
 				BLOG((0,"rename '%s' -> '%s' -> %ld", pt2, pt, r ));
 			}
 			refresh_filelist(fsel, fs, 0);//fs->selected_dir->up);
@@ -2608,10 +2609,9 @@ static void delete_item(struct scroll_info *list, struct fsel_data *fs)
 		BLOG((0,"delete '%s' -> %ld", pt, r));
 		if( !r )
 		{
-			SCROLL_ENTRY *c = list->cur, *n;
+			SCROLL_ENTRY *c = list->cur;
 			fs_slist_key(list, SC_UPARROW, 0);
-			n = list->del( list, c, true );
-			UNUSED(n);
+			list->del( list, c, true );
 		}
 	}
 }

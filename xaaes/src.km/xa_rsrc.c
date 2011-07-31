@@ -1189,7 +1189,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 	CICONBLK **cibh = NULL;
 	unsigned long osize = 0, size = 0, extra = 0;
 	unsigned long sz;
-	char *base = NULL, *end = NULL;
+	char *base = NULL;	//, *end = NULL;
 	char *extra_ptr = NULL;
 	struct xa_rscs *rscs = NULL;
 	short vdih;
@@ -1293,7 +1293,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 				return NULL;
 			}
 		}
-		end = base + size;
+		//end = base + size;
 		/*
 		 * Ozk: Added 'flags' to xa_rscs structure, so we know
 		 * if the resource associated with it was allocated by
@@ -1333,11 +1333,10 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 			*/
 			client->rsct++;
 			rscs = list_resource(client, base, 0);
-			end = base + size;
+			//end = base + size;
 		}
 	}
 
-	UNUSED(end);
 
 	if (!rscs)
 	{
@@ -1556,18 +1555,16 @@ dump_ra_list(struct xa_rscs *rscs)
 void
 FreeResources(struct xa_client *client, AESPB *pb, struct xa_rscs *rsrc)
 {
-	struct xa_rscs *cur;
+	struct xa_rscs *cur = client->resources;
+#if GENERATE_DIAGS
 	RSHDR *rsc = NULL;
 
 	if (pb && pb->global)
 		rsc = ((struct aes_global *)pb->global)->rshdr;
 
-	cur = client->resources;
-
-	UNUSED(rsc);
 	DIAG((D_rsrc,client,"FreeResources: %lx for %d, ct=%d, pb->global->rsc=%lx",
 		cur, client->p->pid, client->rsct, rsc));
-
+#endif
 	if (cur && client->rsct)
 	{
 		/* Put older rsrc back, and the pointer in global */
