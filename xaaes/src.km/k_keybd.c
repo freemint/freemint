@@ -750,8 +750,13 @@ kernel_key(enum locks lock, struct rawkey *key)
 			if (sdmaster)
 			{
 				int ret = create_process(sdmaster, NULL, NULL, &p, 0, NULL);
+				//sdmaster = "xaz";
 				if (ret < 0)
+				{
+					if( strlen(sdmaster) > 12 )
+						sdmaster += (strlen(sdmaster) - 12);	// ->fix ALERT!
 					ALERT((xa_strings[AL_SDMASTER], sdmaster));
+				}
 				else
 					return true;
 			}
