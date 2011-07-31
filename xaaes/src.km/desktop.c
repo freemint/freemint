@@ -149,7 +149,7 @@ set_desktop_widget(struct xa_window *wind, XA_TREE *desktop)
 static void
 Set_desktop(XA_TREE *new_desktop)
 {
-	OBJECT *ob; RECT r;
+	OBJECT *ob;
 	XA_WIDGET *wi = get_widget(root_window, XAW_TOOLBAR);
 	short menu_bar = 0;
 
@@ -176,8 +176,6 @@ Set_desktop(XA_TREE *new_desktop)
 
 	ob = new_desktop->tree;
 	*(RECT *)&ob->ob_x = root_window->wa;
-	r = *(RECT*)&ob->ob_x;
-	UNUSED(r);
 	/* Now use the root window's auto-redraw function to redraw it
 	 *
 	 * HR: 110601 fixed erroneous use owner->wt.
