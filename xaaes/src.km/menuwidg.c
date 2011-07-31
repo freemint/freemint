@@ -1230,7 +1230,7 @@ do_popup(Tab *tab, XA_TREE *wt, short item, short entry, TASK *click, short rdx,
 {
 	OBJECT *root = wt->tree;
 	MENU_TASK *k = &tab->task_data.menu;
-	short x, y;
+	//short x, y;
 
 	DIAG((D_menu, tab->client, "do_popup: tab=%lx for %s", tab, tab->client->name));
 	menu_spec(root, item);
@@ -1265,7 +1265,7 @@ do_popup(Tab *tab, XA_TREE *wt, short item, short entry, TASK *click, short rdx,
 #if 0
 			check_mouse(wt->owner, NULL, &x, &y);
 #else
-			x = rdx, y = rdy;
+			//x = rdx, y = rdy;
 #endif
 
 			/*if (m_inside(x, y, &k->drop))
@@ -1275,8 +1275,6 @@ do_popup(Tab *tab, XA_TREE *wt, short item, short entry, TASK *click, short rdx,
 				popup(tab, -1);
 			}*/
 
-			UNUSED(x);
-			UNUSED(y);
 		}
 		else
 			popup(tab, entry);
