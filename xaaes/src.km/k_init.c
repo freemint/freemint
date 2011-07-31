@@ -540,7 +540,7 @@ int
 k_init(unsigned long vm)
 {
 	short work_in[16];
-	short work_out[58];
+	short work_out[58] = {0};
 	short dev1, dev2;
 	char *resource_name;
 	struct xa_vdi_settings *v = &global_vdi_settings;
