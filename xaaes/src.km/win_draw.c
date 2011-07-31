@@ -3781,6 +3781,7 @@ get_wcol(struct xa_window *wind, short gem_widget, BFOBSPEC *ret)
 		}
 		case W_DATA:
 		{
+#if 0
 			BFOBSPEC ot, ut;
 
 		 	ot = ut = (BFOBSPEC){0};
@@ -3789,6 +3790,7 @@ get_wcol(struct xa_window *wind, short gem_widget, BFOBSPEC *ret)
 			ot.framecol = ontop_cols->waframe_col;
 			UNUSED(ot);
 			ut.framecol = untop_cols->waframe_col;
+#endif
 			break;
 		}
 		case W_WORK:

@@ -569,7 +569,7 @@ toIbs32b(struct rgb_1000 *pal, void *img_ptr)
 STATIC void
 build_pal_xref(struct rgb_1000 *src_palette, struct rgb_1000 *dst_palette, unsigned char *cref, int pens)
 {
-	struct rgb_1000 *dst, *src, *s, *d;
+	struct rgb_1000 *dst, *src;
 	unsigned long closest, this;
 	int i, j, c;
 
@@ -585,11 +585,9 @@ build_pal_xref(struct rgb_1000 *src_palette, struct rgb_1000 *dst_palette, unsig
 	for (i = 1, src = src_palette + 1; i < pens; i++, src++)
 	{
 		dst = dst_palette + 16;
-		s = src;
 		closest = 0xffffffffL;
 
 		c = 0;
-		d = NULL;
 		/*
 		 * I'm a bit unsure here -- would it be best to avoid remapping
 		 * bitmap pen referances down to pens 0 - 16?
@@ -599,13 +597,11 @@ build_pal_xref(struct rgb_1000 *src_palette, struct rgb_1000 *dst_palette, unsig
 			if (!(this = get_coldist(src, dst)))
 			{
 				closest = this;
-				d = dst;
 				c = j;
 				break;
 			}
 			else if (this < closest) // > this)
 			{
-				d = dst;
 				closest = this;
 				c = j;
 			}
@@ -624,8 +620,6 @@ build_pal_xref(struct rgb_1000 *src_palette, struct rgb_1000 *dst_palette, unsig
 // 		if (D) display(" %04lx xref %d to %d(%d)", closest, i, c, j, cref[i]);
 	}
 
-	UNUSED(s);
-	UNUSED(d);
 }
 /*
  * Remap the bitmap palette referances.
@@ -890,14 +884,14 @@ gem_rdata(struct file *fp, XA_XIMG_HEAD *pic, bool disp, long *rcnt)
 		   Of course, my guesswork says that the order is R,G,B and as
 		   GBM used B,G,R, i'll have to reverse the order. */
 		{
-			long y, sl, rsl, remain;
+			long y, sl, rsl;	//, remain;
 			unsigned long vrep = 0L;
 			unsigned char *dst;
 // 			ndisplay("24b img: ");
 			sl = (long)((pic->ximg.img_w + 15) & ~15) * 3;
 			rsl = (long)((pic->ximg.img_w + 7) & ~7) * 3;
-			remain = sl - rsl;
-			UNUSED(remain);
+			//remain = sl - rsl;
+			//UNUSED(remain);
 // 			sl = (long)pic->ximg.img_w * 3;
 // 			display("stride %ld, sl %ld, scan %ld, wscan %ld", stride, sl, scan, wscan);
 
@@ -946,7 +940,7 @@ gem_rdata(struct file *fp, XA_XIMG_HEAD *pic, bool disp, long *rcnt)
 STATIC void
 depack_img(char *name, XA_XIMG_HEAD *pic)
 {
-	int width, word_aligned, pal_size;
+	int /*width, */word_aligned, pal_size;
 	long size, err;
 	struct file *fp = NULL;
 	bool disp = false;
@@ -989,8 +983,8 @@ depack_img(char *name, XA_XIMG_HEAD *pic)
 			word_aligned <<= 1;
 
 			/* width byte aligned */
-			width = (pic->ximg.img_w + 7) >> 3;
-			UNUSED(width);
+			//width = (pic->ximg.img_w + 7) >> 3;
+			//UNUSED(width);
 			size = (long)((long)word_aligned * pic->ximg.img_h * pic->ximg.planes);
 
 // 			display("depack_img: size = %ld, width=%d", size, width);
@@ -1333,7 +1327,7 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 		if (screen.planes > 8)
 		{
 			int i, j, pixelsize;
-			char *data, *ed;
+			char *data;	//, *ed;
 			char *d;
 			short wdwidth;
 			long pixel, size, scanlen, red, green, blue, ired, igreen, iblue;
@@ -1374,8 +1368,8 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 
 
 			data = pm->mfdb.fd_addr;
-			ed = data + size;
-			UNUSED(ed);
+			//ed = data + size;
+			//UNUSED(ed);
 
 			switch (method)
 			{

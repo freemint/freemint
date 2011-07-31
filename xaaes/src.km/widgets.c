@@ -1221,7 +1221,7 @@ drag_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, cons
 		}
 		else if (widget_active.m.cstate)
 		{
-			short pmx, pmy, /*mx, my,*/ mb;
+			short pmx, pmy/*, mx, my, mb*/;
 
 			/* need to do this anyhow, for mb */
 			/* vq_mouse(C.vh, &mb, &pmx, &pmy);*/
@@ -1237,8 +1237,7 @@ drag_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, cons
 			{
 				pmx = widget_active.m.x;
 				pmy = widget_active.m.y;
-				mb  = widget_active.m.cstate;
-				UNUSED(mb);
+				//mb  = widget_active.m.cstate;
 				rect_dist_xy(wind->owner, pmx, pmy, &r, &d);
 				widget_active.m.x = md->sx;
 				widget_active.m.y = md->sy;
@@ -2042,7 +2041,7 @@ build_windlist_pu(struct xa_client *client, struct moose_data *md)
 
 	if (winds)
 	{
-		char *s, *d, *d1;
+		char *s, *d/*, *d1*/;
 		size_t sz;
 
 		msize = (long)(an_len + wn_len + 4) * winds;
@@ -2065,7 +2064,7 @@ build_windlist_pu(struct xa_client *client, struct moose_data *md)
 			wind = window_list;
 			while (wind && wind != root_window)
 			{
-				d1 = 0;
+				//d1 = 0;
 				if (wind->window_status & XAWS_OPEN)
 				{
 					s = wind->owner->name;
@@ -2080,7 +2079,7 @@ build_windlist_pu(struct xa_client *client, struct moose_data *md)
 						{
 							if (*s)
 							{
-								d1 = d;
+								//d1 = d;
 								*d++ = *s++;
 							}
 							else *d++ = ' ';
@@ -2096,7 +2095,6 @@ build_windlist_pu(struct xa_client *client, struct moose_data *md)
 
 						*d++ = '\0';
 						i++;
-						UNUSED(d1);
 						/*if( d1 && *d1 && !isalnum( *d1 ) )
 							BLOG((0,"build_windlist_pu: owner:d='%s':'%s':'%s'", d, wind->owner->cmd_name, wind->owner->cmd_tail?wind->owner->cmd_tail:"-" ));
 							*/
@@ -2969,13 +2967,12 @@ display_object_widget(struct xa_window *wind, struct xa_widget *widg, const RECT
 {
 	struct xa_vdi_settings *v = wind->vdi_settings;
 	XA_TREE *wt = widg->stuff;
-	OBJECT *root;
 	/* Convert relative coords and window location to absolute screen location */
-	root = rp_2_ap(wind, widg, NULL);
-	UNUSED(root);
-
+#if GENERATE_DIAGS
+	OBJECT *root = rp_2_ap(wind, widg, NULL);
 	DIAG((D_form,wind->owner,"display_object_widget(wind=%d), wt=%lx, e.obj=%d, e.pos=%d, form: %d/%d",
 		wind->handle, wt, edit_item(&wt->e), wt->e.pos, root->ob_x, root->ob_y));
+#endif
 
 	if (wind->nolist && (wind->dial & created_for_POPUP))
 	{
@@ -4699,7 +4696,7 @@ do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct
 
 				if (inside)
 				{
-					short oldstate = -1;
+					//short oldstate = -1;
 					bool rtn = false;
 					int ax = 0;
 
@@ -4738,7 +4735,7 @@ do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct
 
 						/* We don't auto select & pre-display for a menu or toolbar widget */
 						if (f != XAW_MENU && f != XAW_TOOLBAR)
-							oldstate = redisplay_widget(lock, w, widg, OS_SELECTED);
+							/*oldstate = */redisplay_widget(lock, w, widg, OS_SELECTED);
 
 						/*
 						 * Check if the widget has a dragger function if button still pressed
@@ -4826,9 +4823,8 @@ do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct
 					if (rtn)	/* If the widget click/drag function returned true we reset the state of the widget */
 					{
 						DIAG((D_button, NULL, "Deselect widget"));
-						UNUSED(oldstate);
 						if (f != XAW_MENU && f != XAW_TOOLBAR)
-							redisplay_widget(lock, w, widg, OS_NORMAL); //oldstate); //OS_NORMAL);	/* Flag the widget as de-selected */
+							redisplay_widget(lock, w, widg, OS_NORMAL); /* Flag the widget as de-selected */
 					}
 					else if (w == root_window && f == XAW_TOOLBAR)		/* HR: 280801 a little bit special. */
 						return false;		/* pass click to desktop owner */
