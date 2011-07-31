@@ -505,18 +505,20 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 	/*
 	 * check for rootwindow widgets, like the menu-bar, clicks
 	 */
-	if (mouse_wind == root_window && md->state)
+	if (md->state && (mouse_wind == root_window || mouse_wind == menu_window) )
 	{
 		struct xa_widget *widg;
 
 		checkif_do_widgets(lock, mouse_wind, 0, md->x, md->y, &widg);
-		if (widg && widg->m.r.xaw_idx == XAW_MENU)
+		if (mouse_wind == menu_window || (widg && widg->m.r.xaw_idx == XAW_MENU) )
 		{
 			XA_TREE *menu;
 
 			if (C.aesmouse != -1)
 				xa_graf_mouse(-1, NULL, NULL, true);
 
+			if( !widg )
+				widg = get_menu_widg();
 			menu = (XA_TREE *)widg->stuff;
 			client = menu->owner;
 			if (!(client->status & CS_EXITING))
