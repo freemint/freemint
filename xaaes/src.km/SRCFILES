@@ -129,7 +129,8 @@ COBJS = \
 	xa_strings.c \
 	xa_vdi.c \
 	xa_wdlg.c \
-	xa_wind.c
+	xa_wind.c \
+	xcclib.c
 
 SOBJS = \
 	accstart.s \

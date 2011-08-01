@@ -45,6 +45,7 @@
 #include "taskman.h"
 #include "scrlobjc.h"
 #include "win_draw.h"
+#include "xcclib.h"
 #include "version.h"
 
 #include "mint/ssystem.h"
@@ -342,6 +343,9 @@ init(struct kentry *k, const struct kernel_module *km) //const char *path)
 
 	/* setup kernel entry */
 	kentry = k;
+	xmemcpy = memcpy;
+	xmemset = memset;
+
 	self = km;
 	next_res = 0L;
 
@@ -792,10 +796,11 @@ again:
 		default:
 			sd_str = "Quit XaAES";
 		}
-
-		UNUSED(sd_str);
+#if BOOTLOG
 		BLOG((1,"AESSYS kthread exited - shutdown = %x(%s).", C.shutdown, sd_str));
-
+#else
+		UNUSED(sd_str);
+#endif
 		if( C.shutdown & RESTART_XAAES )
 		{
 			goto again;
