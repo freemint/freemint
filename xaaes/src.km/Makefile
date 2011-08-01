@@ -22,6 +22,7 @@ all-here: all-targets
 # default definitions
 compile_all_dirs = .compile_*
 GENFILES = $(compile_all_dirs) *.km
+SGENFILES = xversion.h
 
 
 help:
