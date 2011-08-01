@@ -1,38 +1,38 @@
-|*
-|* $Id$
-|*
-|* XaAES - XaAES Aint the AES (c) 1992 - 1998 C.Graham
-|*                                 1999 - 2003 H.Robbers
-|*                                        2004 F.Naumann & O.Skancke
-|*
-|* A multitasking AES replacement for FreeMiNT
-|*
-|* This file is part of XaAES.
-|*
-|* XaAES is free software; you can redistribute it and/or modify
-|* it under the terms of the GNU General Public License as published by
-|* the Free Software Foundation; either version 2 of the License, or
-|* (at your option) any later version.
-|*
-|* XaAES is distributed in the hope that it will be useful,
-|* but WITHOUT ANY WARRANTY; without even the implied warranty of
-|* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-|* GNU General Public License for more details.
-|*
-|* You should have received a copy of the GNU General Public License
-|* along with XaAES; if not, write to the Free Software
-|* Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-|*
-|***************************************************************************
+//
+// $Id$
+//
+// XaAES - XaAES Aint the AES (c) 1992 - 1998 C.Graham
+//                                 1999 - 2003 H.Robbers
+//                                        2004 F.Naumann & O.Skancke
+//
+// A multitasking AES replacement for FreeMiNT
+//
+// This file is part of XaAES.
+//
+// XaAES is free software; you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation; either version 2 of the License, or
+// (at your option) any later version.
+//
+// XaAES is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with XaAES; if not, write to the Free Software
+// Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+//
+//**************************************************************************
 |
 | reduced NKCC for the CF-Lib
 | GNU-C compatible version
 |
-|***************************************************************************
+//**************************************************************************
 
-|***************************************************************************
+//**************************************************************************
 | ASSEMBLER CONTROL SECTION
-|***************************************************************************
+//**************************************************************************
 
 VERSION		=	0x0294		| NKCCs version
 
@@ -70,9 +70,9 @@ NK_M_F14	=	0x1d		| Mac: function key #14
 NK_ENTER	=	0x0a		| Enter
 NK_DEL		=	0x1f		| Delete
 
-|***************************************************************************
+//**************************************************************************
 | EXPORT
-|***************************************************************************
+//**************************************************************************
 
 	.globl	_nkc_init		| init NKCC
 	.globl	_nkc_tos2n		| TOS key code converter
@@ -80,15 +80,15 @@ NK_DEL		=	0x1f		| Delete
 	.globl	_nkc_toupper		| convert character to upper case
 	.globl	_nkc_tolower		| convert character to lower case
 
-|***************************************************************************
+//**************************************************************************
 | LOCAL TEXT SECTION
-|***************************************************************************
+//**************************************************************************
 
-|***************************************************************************
+//**************************************************************************
 |
 | nk_findscan: find scan code
 |
-|***************************************************************************
+//**************************************************************************
 
 nk_findscan:
 	btst	#NKFb_NUM,d0		| on numeric keypad?
@@ -154,15 +154,15 @@ found1:
 	tstw	d1			| found set CCR
 	rts
 
-|***************************************************************************
+//**************************************************************************
 | GLOBAL TEXT SECTION
-|***************************************************************************
+//**************************************************************************
 
-|***************************************************************************
+//**************************************************************************
 |
 | nkc_init: initialize NKCC
 |
-|***************************************************************************
+//**************************************************************************
 
 _nkc_init:
 |------------- fetch addresses of TOS key scan code translation tables
@@ -187,11 +187,11 @@ _nkc_init:
 	movel	sp@+,a2
 	rts				| bye
 
-|***************************************************************************
+//**************************************************************************
 |
 | nkc_tconv: TOS key code converter
 |
-|***************************************************************************
+//**************************************************************************
 
 _nkc_tos2n:
 	movel	sp@(4), d0		| Parameter via Stack!
@@ -562,11 +562,11 @@ tos306:
 #endif
 	rts				| bye
 
-|***************************************************************************
+//**************************************************************************
 |
 | nkc_n2tos: convert normalized key codes back to TOS format
 |
-|***************************************************************************
+//**************************************************************************
 
 _nkc_n2tos:
 	movel	sp@(4),d0		| Parameter Åber Stack!
@@ -822,11 +822,11 @@ exit3:
 	rts				| bye
 
 
-|***************************************************************************
+//**************************************************************************
 |
 | nkc_toupper: convert character to upper case
 |
-|***************************************************************************
+//**************************************************************************
 
 _nkc_toupper:
 	movel	sp@(4),d1		| Parameter via Stack!
@@ -839,11 +839,11 @@ _nkc_toupper:
 	moveb	a0@(d1:l),d0		| convert
 	rts				| bye
 
-|***************************************************************************
+//**************************************************************************
 |
 | nkc_tolower: convert character to lower case
 |
-|***************************************************************************
+//**************************************************************************
 
 _nkc_tolower:
 	movel	sp@(4),d1		| Parameter via Stack!
@@ -856,9 +856,9 @@ _nkc_tolower:
 	moveb	a0@(d1:l),d0		| convert
 	rts				| bye
 
-|***************************************************************************
+//**************************************************************************
 | LOCAL DATA SECTION
-|***************************************************************************
+//**************************************************************************
 
 		.data
 
@@ -1054,9 +1054,9 @@ n_to_scan_s:
 	.byte	0x00			| reserved!
 	.byte	0x53			| Delete
 
-|***************************************************************************
+//**************************************************************************
 | LOCAL BSS SECTION
-|***************************************************************************
+//**************************************************************************
 
 |	.bss
 
