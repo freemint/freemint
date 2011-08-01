@@ -3,7 +3,7 @@
 #
 
 SHELL = /bin/sh
-SUBDIRS = 
+SUBDIRS =
 
 srcdir = .
 top_srcdir = ../..
@@ -20,21 +20,22 @@ all-here: entry
 # default overwrites
 INCLUDES = -I$(top_srcdir)/../../sys
 DEFINITIONS = -D__KERNEL_MODULE__ -DMODULE_NAME=whlmoose $(XDD_DEFINITIONS)
-XDD_DEFINITIONS = 
+XDD_DEFINITIONS =
 
 LD = $(CC) -nostdlib -Wl,--entry -Wl,_init
 LIBS = $(LIBKERN) -lgcc
 CPU = 000
 
 # default definitions
-SGENFILES = moose.adi moose_w.adi
-OBJS = $(SOBJS:.s=.o)
+GENFILES = moose.adi moose_w.adi
+SGENFILES = whlmoose_w.c
+OBJS = $(SOBJS:.S=.o)
 
 
 entry:
 	$(MAKE) XDD_DEFINITIONS="" moose.adi
 	$(MAKE) XDD_DEFINITIONS="-DHAVE_WHEEL=1" moose_w.adi
-	
+
 moose.adi: whlmoose.o $(OBJS) $(LIBKERNTARGET)
 	$(LD) $(CFLAGS) -o $@ $< $(OBJS) $(LIBS)
 
