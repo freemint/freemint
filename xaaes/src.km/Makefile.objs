@@ -51,7 +51,7 @@ STRIPFLAGS =
 
 # default definitions
 GENFILES = $(TARGET)
-OBJS = $(COBJS:.c=.o) $(SOBJS:.s=.o) $(SSOBJS:.S=.o)
+OBJS = $(COBJS:.c=.o) $(SOBJS:.S=.o)
 
 VPATH = ..
 
