@@ -182,7 +182,7 @@ Set_desktop(XA_TREE *new_desktop)
          *     The desktop can of course be handled by tool_bar widget stuff!!!
 	 */
 
-	DIAGS(("desktop: %d/%d,%d/%d",r.x,r.y,r.w,r.h));
+	DIAGS(("desktop: %d/%d,%d/%d",*(RECT *)&ob->ob_x));
 
 
 	/* HR 010501: general fix */
