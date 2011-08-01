@@ -1,6 +1,6 @@
 |*
 |* $Id$
-|* 
+|*
 |* XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
 |*                                 1999 - 2003 H.Robbers
 |*                                        2004 F.Naumann & O.Skancke
@@ -167,6 +167,8 @@ found1:
 _nkc_init:
 |------------- fetch addresses of TOS' key scan code translation tables
 
+	movel	a2,sp@-			| backup registers
+	movel	d2,sp@-
 	moveql	#-1,d0			| the function is also used to
 	movel	d0,sp@- 		| change the addresses| values
 	movel	d0,sp@- 		| of -1 as new addresses tell
@@ -180,8 +182,9 @@ _nkc_init:
 	movel	a0@+,pkey_shift 	| get ^shifted table
 	movel	a0@,pkey_caps		| get ^CapsLock table
 
-exit1:
 	movew	#VERSION,d0		| load version #
+	movel	sp@+,d2			| restore registers
+	movel	sp@+,a2
 	rts				| bye
 
 |***************************************************************************
@@ -565,7 +568,7 @@ tos306:
 |
 |***************************************************************************
 
-_nkc_n2tos:  
+_nkc_n2tos:
 	movel	sp@(4),d0		| Parameter Åber Stack!
 
 	movew	d0,d1			| normalized key code
