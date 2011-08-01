@@ -27,7 +27,8 @@ LIBS = $(LIBKERN) -lgcc
 CPU = 000
 
 # default definitions
-SGENFILES = moose.adi moose_w.adi
+GENFILES = moose.adi moose_w.adi
+SGENFILES = whlmoose_w.c
 OBJS = $(SOBJS:.S=.o)
 
 
