@@ -31,6 +31,7 @@ CPU = 000
 
 # default definitions
 GENFILES = *.xif
+SGENFILES = rieblspc.c rieblspc_fast.c rieblmst.c rieblmst_fast.c rieblste.c riebltt.c rtl8012st.c
 
  
 OBJS = $(addsuffix .o, $(basename $(notdir $(COBJS))))
