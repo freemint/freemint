@@ -3502,7 +3502,7 @@ find_gradient(struct xa_vdi_settings *v, struct color_theme *ct, short w, short 
 	struct xa_wtexture *ret = NULL;
 	struct xa_gradient *g = ct->col.gradient;
 
-	if (g && use_gradients && w > 2 && h > 2)
+	if (g && use_gradients && w > 2 && h > 2 && g->n_steps >= 0 )
 	{
 		w &= g->wmask;
 		w |= g->w;
@@ -6438,12 +6438,12 @@ init_module(const struct xa_module_api *xmapi, const struct xa_screen *xa_screen
 	}
 #endif
 	imgpath_file = -1;
-	if (screen->planes >= 8)
+	if (screen->planes >= 8 && api->cfg->textures[0] != '0' )
 	{
 		char dbuf[128];
 		long d;
-		strcpy(imgpath, "img\\");
-		strcat(imgpath, screen->planes == 8 ? "8b\\" : "hc\\");
+		strcpy(imgpath, api->cfg->textures[0] ? api->cfg->textures : "img" );
+		strcat(imgpath, screen->planes == 8 ? "\\8b\\" : "\\hc\\");
 		sprintf( dbuf, sizeof(dbuf), "%s%s", xmapi->C->Aes->home_path, imgpath );
 		d = d_opendir( dbuf, 0 );
 		if( d > 0 )

@@ -2957,6 +2957,7 @@ struct config
 #if WITH_GRADIENTS
 	Path gradients;
 #endif
+	Path textures;
 	Path palette;       /* load palette from file */
 
 	Path launch_path;		/* Initial path for launcher */
