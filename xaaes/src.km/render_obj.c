@@ -6376,9 +6376,7 @@ load_textures(struct theme *theme)
 
 	if (screen->planes >= 8)
 	{
-		struct texture *t;
-
-		t = install_texture("dbox.img"/*steel3.img"*/, NULL, &theme->box, ST_ALL, ST_ALL, 0, 0, 0, 0);
+		install_texture("dbox.img"/*steel3.img"*/, NULL, &theme->box, ST_ALL, ST_ALL, 0, 0, 0, 0);
 		install_texture("popbkg.img", NULL, &theme->popupbkg, ST_ALL, 0, 0, 0,0,0);
 		install_texture("dbutton.img", NULL, &theme->button, ST_ALL, ST_ALL, 0, ST_ALL, ST_ALL,0);
 		install_texture("dtext.img", NULL, &theme->text, ST_ALL, ST_ALL, 0, ST_ALL, ST_ALL, 0);
