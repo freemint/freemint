@@ -4101,6 +4101,8 @@ load_texture(struct module *m, char *fn)
 	}
 	return t;
 }
+
+
 #if WITH_GRADIENTS
 static void _cdecl
 delete_pmap(void *_t)
@@ -4118,7 +4120,7 @@ find_gradient(struct xa_vdi_settings *v, struct xa_wcol *wcol, bool free, struct
 	struct xa_wtexture *ret = NULL;
 	struct xa_gradient *g = wcol->gradient;
 
-	if (g && use_gradients)
+	if (g && use_gradients && g->n_steps >= 0)
 	{
 		if (!allocs)
 			allocs = &g->allocs;
