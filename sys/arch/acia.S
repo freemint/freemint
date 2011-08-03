@@ -96,7 +96,11 @@ _ikbdsys_handler:
 	move.b	(0xfc00).w,d1		// ACIA control
 	move.l	_keyrec,a0
 	btst	#0x07,d1		// interrupt request
+#ifdef __mcoldfire__
+	beq	return
+#else
 	beq.s	return
+#endif
 	btst	#0x00,d1		// Receiver full
 	beq.s	skip
 	move.l	d1,-(sp)
@@ -142,13 +146,15 @@ not_keyboard:
 
 	lea	type,a1
 #ifdef __mcoldfire__
-	move.b	(a1,d0.l),IKBDSTATE(a3)	
+	move.b	(a1,d0.l),d1
+	move.b	d1,IKBDSTATE(a3)	
 #else
 	move.b	(a1,d0.w),IKBDSTATE(a3)	
 #endif
 	lea	todo,a1
 #ifdef __mcoldfire__
-	move.b	(a1,d0.l),IKBDTODO(a3)
+	move.b	(a1,d0.l),d1
+	move.b	d1,IKBDTODO(a3)
 	add.l	#0xf6,d0
 #else
 	move.b	(a1,d0.w),IKBDTODO(a3)
