@@ -694,7 +694,12 @@ exec_region(struct proc *p, MEMREGION *mem, int thread)
 		long *exec_longs = (long *)b->p_tbase;
 
 		/* Test for new program format */
-		if (exec_longs[0] == 0x283a001aL && exec_longs[1] == 0x4efb48faL)
+		if (
+		     /* Original binutils */
+		     (exec_longs[0] == 0x283a001aL && exec_longs[1] == 0x4efb48faL)
+		     /* binutils >= 2.18-mint-20080209 */
+		     || (exec_longs[0] == 0x203a001aL && exec_longs[1] == 0x4efb08faL)
+		   )
 			exec_longs += (228 / sizeof(long));
 
 		if (exec_longs[0] == SLB_HEADER_MAGIC)

@@ -229,7 +229,12 @@ slb_error:
 
 	/* Test for the new program format */
 	exec_longs = (long *) b->p_tbase;
-	if (exec_longs[0] == 0x283a001aL && exec_longs[1] == 0x4efb48faL)
+	if (
+	     /* Original binutils */
+	     (exec_longs[0] == 0x283a001aL && exec_longs[1] == 0x4efb48faL)
+	     /* binutils >= 2.18-mint-20080209 */
+	     || (exec_longs[0] == 0x203a001aL && exec_longs[1] == 0x4efb08faL)
+	   )
 	{
 		(*sl)->slb_head = (SLB_HEAD *)(b->p_tbase + 228);
 	}
