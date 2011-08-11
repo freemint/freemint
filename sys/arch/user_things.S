@@ -224,21 +224,42 @@ loop:	move.w	d7,-(sp)		// Fclose(x)
 
 	move.l	4(sp),a0		// basepage pointer
 	lea	256(a0),a0		// begin of the TEXT segment
+
+	// Test for original binutils
 #ifdef __mcoldfire__
 	move.l	#0x283a001a,d0
 	cmp.l	(a0),d0
 #else
 	cmp.l	#0x283a001a,(a0)
 #endif
-	bne.s	oldfmt
+	bne.s	binu2
 #ifdef __mcoldfire__
 	move.l	#0x4efb48fa,d0
 	cmp.l	4(a0),d0
 #else
 	cmp.l	#0x4efb48fa,4(a0)
 #endif
+	bne.s	binu2
+	bra.s	newfmt
+
+	// Test for binutils >= 2.18-mint-20080209
+binu2:
+#ifdef __mcoldfire__
+	move.l	#0x203a001a,d0
+	cmp.l	(a0),d0
+#else
+	cmp.l	#0x203a001a,(a0)
+#endif
+	bne.s	oldfmt
+#ifdef __mcoldfire__
+	move.l	#0x4efb08fa,d0
+	cmp.l	4(a0),d0
+#else
+	cmp.l	#0x4efb08fa,4(a0)
+#endif
 	bne.s	oldfmt
 
+newfmt:
 	lea	228.w(a0),a0		// the header is a bit bigger (new format)
 
 oldfmt:	move.l	a0,-(sp)		// 4 bytes go to the stack
