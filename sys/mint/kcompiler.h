@@ -83,14 +83,7 @@
 # endif
 
 /* define to indicate unused variables: */
-# ifdef __TURBOC__
 # define UNUSED(x)	(void) x
-# endif
-
-/* default: */
-# ifndef UNUSED
-# define UNUSED(x)
-# endif
 
 
 # ifndef TRUE
