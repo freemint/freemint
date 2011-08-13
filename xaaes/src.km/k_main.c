@@ -931,6 +931,8 @@ static void load_grd( void *fn )
 {
 #if WITH_GRADIENTS
 	load_gradients( 0, fn );
+	update_windows_below(0, &screen.r, NULL, window_list, NULL);
+	redraw_menu(0);
 #endif
 }
 typedef void XA_CONF (void *p);
