@@ -29,5 +29,7 @@
 
 //void init_widget_theme(struct widget_theme *wd);
 void main_xa_theme(struct xa_module_widget_theme **xmt);
+void free_widg_grad(const struct xa_module_api *_api);
+
 
 #endif /* _wind_draw_h */
