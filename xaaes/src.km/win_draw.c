@@ -544,6 +544,7 @@ delete_theme(void *_theme)
 	(*api->kfree)(_theme);
 }
 
+
 /*
  * Private structure holding color information. This structure is accessible
  * to the widget-drawer functions via the 'colours', 'ontop_cols' and 'untop_cols'
@@ -4104,6 +4105,33 @@ load_texture(struct module *m, char *fn)
 
 
 #if WITH_GRADIENTS
+static void free_grad( struct xa_window *w )
+{
+	int i, n;
+	struct xa_data_hdr **a;
+	for( n = 0; n < XA_MAX_WIDGETS; n++ )
+	{
+		for( i = 0; i < 2; i++ )
+		{
+			a = (struct xa_data_hdr **)&w->widgets[n].m.r.priv[i];
+			(*api->free_xa_data_list)(a);
+		}
+	}
+}
+void free_widg_grad(const struct xa_module_api *_api)
+{
+	struct xa_window *wp[] = {_api->S->open_windows.first, _api->S->closed_windows.first, 0};
+	struct xa_window *w;
+	int i;
+	for( i = 0; wp[i]; i++ )
+		for( w = wp[i]; w && w != root_window; w = w->next )
+		{
+			free_grad( w );
+			if( w->winob )
+				free_grad( (struct xa_window *)w->winob );
+		}
+}
+
 static void _cdecl
 delete_pmap(void *_t)
 {
@@ -4122,20 +4150,17 @@ find_gradient(struct xa_vdi_settings *v, struct xa_wcol *wcol, bool free, struct
 
 	if (g && use_gradients && g->n_steps >= 0)
 	{
-		if (!allocs)
-			allocs = &g->allocs;
-
 		w &= g->wmask;
 		w |= g->w;
 		h &= g->hmask;
 		h |= g->h;
 		t =  (*api->lookup_xa_data_byid)(allocs, (((long)w << 16) | h) );
-
 		if (!t)
 		{
 			if (free)
 			{
 // 				display("free prev");
+
 				(*api->free_xa_data_list)(allocs);
 			}
 

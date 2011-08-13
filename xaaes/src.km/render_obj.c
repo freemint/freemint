@@ -280,55 +280,6 @@ static struct xa_gradient *gradients[] =
 
 	0
 };
-void load_gradients( char *path, char *fn )
-{
-	struct xa_gradient **gp = gradients, *gpp;
-	char buf[8192], *cp = buf, *end;
-	long err;
-	struct file *fp;
-
-	if( path && *path )
-		sprintf( buf, sizeof(buf), "%sgradient/%s.grd", path, fn );
-	else
-		strcpy( buf, fn );
-	BLOG((0,"loading gradients:%s", buf));
-	fp = kernel_open( buf, O_RDONLY, &err, NULL );
-	if( !fp )
-	{
-		BLOG((0,"gradients not found:%ld", err));
-		return;
-	}
-	err = kernel_read( fp, buf, sizeof(buf)-1 );
-	kernel_close( fp );
-
-	if( err < sizeof( gradients ) / sizeof(void*) * sizeof( struct xa_gradient ) )
-	{
-		BLOG((0,"load_gradients:file-error: %ld<%ld", err, sizeof( gradients ) / sizeof(void*) * sizeof( struct xa_gradient ) ));
-		return;
-	}
-	end = cp + err;
-	/* search START */
-	for( ; *(short*)cp != START && cp < end; cp++ )
-		;
-	if( *(short*)cp != START )
-	{
-		BLOG((0,"load_gradients:start not found"));
-		return;
-	}
-	cp += sizeof(short);
-
-	gpp = (struct xa_gradient *)cp;
-	for( err = GRAD_INIT; *gp && (char*)gpp < end && *(short*)gpp != STOP; err++)
-	{
-		if( (long)gpp->allocs != err )
-		{
-			BLOG((0,"load_gradients:read-error:%lx != %lx", (long)gpp->allocs, err));
-			break;
-		}
-		gpp->allocs = 0;
-		**gp++ = *gpp++;
-	}
-}
 #endif
 static struct theme stdtheme =
 {
@@ -3504,6 +3455,7 @@ find_gradient(struct xa_vdi_settings *v, struct color_theme *ct, short w, short 
 
 	if (g && use_gradients && w > 2 && h > 2 && g->n_steps >= 0 )
 	{
+
 		w &= g->wmask;
 		w |= g->w;
 		h &= g->hmask;
@@ -6382,7 +6334,65 @@ load_textures(struct theme *theme)
 		install_texture("dtext.img", NULL, &theme->text, ST_ALL, ST_ALL, 0, ST_ALL, ST_ALL, 0);
 	}
 }
+#if WITH_GRADIENTS
+#include "win_draw.h"
 
+void load_gradients( char *path, char *fn )
+{
+	struct xa_gradient **gp = gradients, *gpp;
+	char buf[8192], *cp = buf, *end;
+	long err;
+	struct file *fp;
+
+	if( path && *path )
+		sprintf( buf, sizeof(buf), "%sgradient/%s.grd", path, fn );
+	else
+		strcpy( buf, fn );
+	BLOG((0,"loading gradients:%s", buf));
+	fp = kernel_open( buf, O_RDONLY, &err, NULL );
+	if( !fp )
+	{
+		BLOG((0,"gradients not found:%ld", err));
+		return;
+	}
+	err = kernel_read( fp, buf, sizeof(buf)-1 );
+	kernel_close( fp );
+
+	if( err < sizeof( gradients ) / sizeof(void*) * sizeof( struct xa_gradient ) )
+	{
+		BLOG((0,"load_gradients:file-error: %ld<%ld", err, sizeof( gradients ) / sizeof(void*) * sizeof( struct xa_gradient ) ));
+		return;
+	}
+	end = cp + err;
+	/* search START */
+	for( ; *(short*)cp != START && cp < end; cp++ )
+		;
+	if( *(short*)cp != START )
+	{
+		BLOG((0,"load_gradients:start not found"));
+		return;
+	}
+	cp += sizeof(short);
+
+	gpp = (struct xa_gradient *)cp;
+
+	free_widg_grad(api);
+
+	for( err = GRAD_INIT; *gp && (char*)gpp < end && *(short*)gpp != STOP; err++)
+	{
+		if( (long)gpp->allocs != err )
+		{
+			BLOG((0,"load_gradients:read-error:%lx != %lx", (long)gpp->allocs, err));
+			break;
+		}
+		gpp->allocs = (*gp)->allocs;
+		if( gpp->n_steps >= 0 && gpp->allocs )
+			api->free_xa_data_list( &gpp->allocs );
+
+		**gp++ = *gpp++;
+	}
+}
+#endif
 static void * _cdecl
 init_module(const struct xa_module_api *xmapi, const struct xa_screen *xa_screen, bool grad)
 {
@@ -6572,8 +6582,8 @@ close(struct object_render_api *rapi)
 		if (r)
 		{
 			r->h.links--;
-			if (r->h.links < 0)
-				display(" objcr_api links less than 0 (%ld)!!!!!!!!!!!!", r->h.links);
+			//if (r->h.links < 0)
+				//display(" objcr_api links less than 0 (%ld)!!!!!!!!!!!!", r->h.links);
 // 			display(" --- links = %ld", r->h.links);
 			if (!r->h.links)
 			{
@@ -6656,8 +6666,8 @@ free_theme(void *theme)
 		if (t)
 		{
 			t->h.links--;
-			if (t->h.links < 0)
-				display(" theme links less than 0 (%ld)!!!!!!!!!!!!", t->h.links);
+			//if (t->h.links < 0)
+				//display(" theme links less than 0 (%ld)!!!!!!!!!!!!", t->h.links);
 			DIAGS((" --- links = %ld", t->h.links));
 // 			display(" --- links = %ld", t->h.links);
 			if (!t->h.links)
