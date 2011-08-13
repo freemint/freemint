@@ -4150,6 +4150,9 @@ find_gradient(struct xa_vdi_settings *v, struct xa_wcol *wcol, bool free, struct
 
 	if (g && use_gradients && g->n_steps >= 0)
 	{
+		if (!allocs)
+			allocs = &g->allocs;
+
 		w &= g->wmask;
 		w |= g->w;
 		h &= g->hmask;
