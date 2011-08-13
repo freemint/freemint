@@ -46,6 +46,9 @@
 KERNELDEFAULTDEFS = -D__KERNEL__
 KERNELDEFAULTDEFS += -DLANG_ENGLISH
 
+# added this to default-options for test-purpose for now
+KERNELDEFAULTDEFS += -DWITH_SINGLE_TASK_SUPPORT
+
 ifneq ($(kernel),000)
 #KERNELDEFAULTDEFS += -DVERBOSE_BOOT
 #KERNELDEFAULTDEFS += -DCRYPTO_CODE
@@ -95,7 +98,8 @@ endif
 ifeq ($(kernel),col)
 MINT = mintnp.prg
 CPU  = v4e
-KERNELDEFS = -DDEBUG_INFO -DM68040 -DNO_AKP_KEYBOARD -DNO_RAMFS -DNO_FAKE_SUPER -DCOLDFIRE -DC_ONLY -DVERBOSE_BOOT
+KERNELDEFS = -DDEBUG_INFO -DM68040 -DNO_RAMFS -DNO_FAKE_SUPER -DCOLDFIRE -DC_ONLY -DVERBOSE_BOOT
+#KERNELDEFS = -DDEBUG_INFO -DM68040 -DNO_AKP_KEYBOARD -DNO_RAMFS -DNO_FAKE_SUPER -DCOLDFIRE -DC_ONLY -DVERBOSE_BOOT
 endif
 
 ifeq ($(kernel),mil)
@@ -142,8 +146,8 @@ endif
 #
 # all default targets
 #
-kerneltargets = 000 030 040 060 117 deb mil ara my1 my2 my3 my4
-cputargets = 000 030 020-60
+kerneltargets = 000 030 040 060 117 deb mil ara col
+cputargets = 000 030 020-60 v4e
 
 COLDFIRE=yes
 ifeq (COLDFIRE,yes)
