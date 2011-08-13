@@ -2438,7 +2438,10 @@ m_state_done:
 			struct xa_window *parent = (struct xa_window *)arg;
 
 			if (parent)
+			{
 				list->pw = parent;
+				parent->winob = (OBJECT*)list->wi;	// pointer from parent to list-window (winob misused!)
+			}
 			if (list->wi)
 				list->wi->parent = parent;
 			break;
@@ -4543,6 +4546,8 @@ set_slist_object(enum locks lock,
 	{
 		int dh;
 
+		if( parentwind )
+			parentwind->winob = (OBJECT*)list->wi;	// pointer from parent to list-window (winob misused!)
 		list->vdi_settings = list->wi->vdi_settings;
 		list->wi->parent = list->pw;
 		if (title)
