@@ -748,7 +748,7 @@ INLINE long b_setexc(short number, long vector)
 INLINE long b_drvmap(void)
 { return ((long _cdecl (*)(void)) _b_drvmap)(); }
 
-
+#include "strings.h"
 /*
  * generic version check
  */
@@ -758,15 +758,15 @@ check_kentry_version(void)
 {
 	if ((MINT_MAJOR != MINT_MAJ_VERSION) || (MINT_MINOR != MINT_MIN_VERSION))
 	{
-		c_conws("Wrong FreeMiNT version!\r\n");
-		c_conws("This module is compiled against " MINT_NAME);
-		c_conws(MINT_VERS_STRING);
-		c_conws("\r\n");
+		c_conws(kstrings[Wrong_FreeMiNT]);
+		c_conws(kstrings[This_module_is_compiled_against]);
+		c_conws(kstrings[MINT_VERS]);
+		c_conws(kstrings[KSTR_NL]);
 		return -1;
 	}
 	if ((kentry->version_major != KENTRY_MAJ_VERSION) || (kentry->version_minor != KENTRY_MIN_VERSION))
 	{
-		c_conws("Wrong kentry-version (contact your local dealer)!\r\n");
+		c_conws(kstrings[Wrong_kentry]);
 		return -1;
 	}
 	return 0;
