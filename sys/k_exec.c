@@ -334,6 +334,7 @@ sys_pexec(short mode, const void *p1, const void *p2, const void *p3)
 			cbuf[127] = 0;
 			ptr_1.c = strncpy(fbuf, ptr_1.c, PATH_MAX-2);
 			tail.cc = strncpy(cbuf, ptr_2.cc, 127);
+
 		}
 
 		base = load_region(ptr_1.c, env, tail.c, &xattr, &flags, &ret);
@@ -567,15 +568,17 @@ sys_pexec(short mode, const void *p1, const void *p2, const void *p3)
 		detach_region(get_curproc(), env);
 	}
 
+# ifdef WITH_SINGLE_TASK_SUPPORT
 	if (p)
 	{
 		//FORCE("%s:%d mkwait=%d", p->name, p->pid, mkwait);
-		if( p->pid == 1 && !strcmp( p->name, "GEM" ) )
+		if( p->pid == 1 && !strcmp( localname, "GEM" ) )
 		{
-			FORCE("setting SINGLE_TASK for %d", p->pid);
+			FORCE("setting SINGLE_TASK for %d:%s", p->pid, localname);
 			p->modeflags |= M_SINGLE_TASK;
 		}
 	}
+#endif
 	if (mkwait)
 	{
 		long oldsigint, oldsigquit;
