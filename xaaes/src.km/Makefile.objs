@@ -61,6 +61,8 @@ VPATH = ..
 #
 build: $(TARGET)
 
+$(top_srcdir)/../../sys/libkern/.cpu_$(CPU)/strings.o: $(LIBKERNTARGET)
+
 $(TARGET): $(OBJS)
 	$(LD) -o $@ $(CFLAGS) $(OBJS) $(LIBS)
 
