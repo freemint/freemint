@@ -178,7 +178,7 @@ struct xa_gradient alert_otop_title_gradient =
 	0, 0,
 
 	2, 0,{0},
-	{{400,250,200},{900,850,800}},
+	{{400,650,200},{900,950,800}},
 };
 
 struct xa_gradient alert_utop_title_gradient =
@@ -188,8 +188,7 @@ struct xa_gradient alert_utop_title_gradient =
 	0, 0,
 
 	2, 0, {0},
-	{{550,500,500},{750,700,700}},
-/*	{{500,500,500},{900,900,900}}, */
+	{{250,350,300},{350,500,400}},
 };
 
 struct xa_gradient alert_utop_grey_gradient =
@@ -200,7 +199,6 @@ struct xa_gradient alert_utop_grey_gradient =
 
 	2, 0, {0},
 	{{350,330,300},{750,730,700}},
-/*	{{500,500,500},{900,900,900}}, */
 };
 
 /* ---------------------------------------------------------------------------------- */
@@ -399,17 +397,6 @@ struct xa_gradient popbkg_gradient =
 	3, 1, {-40, 0},
 	{{500,700,600},{650,750,700}, {750,800,500}},
 };
-#if 0
-struct xa_gradient box_gradient =
-{
-	(unsigned long)BOX_GRADIENT,
-	-1,   0,
-	 0,  16,
-
-	4, -1, { -35, 0, },
-	{{500,600,600},{650,650,700}, {750,700,500}},
-};
-#else
 struct xa_gradient box_gradient =
 {
 	(unsigned long)BOX_GRADIENT,
@@ -419,6 +406,29 @@ struct xa_gradient box_gradient =
 	3, 0, {-40, 0},
 	{{500,600,600},{650,750,700}, {750,700,500}},
 };
-#endif
+struct xa_gradient box_gradient2 =
+{
+	(unsigned long)BOX_GRADIENT2,
+	0, -1,
+	16, 0,
+
+	3, 0, {-40, 0},
+	{{700,650,400},{650,600,450}, {450,700,300}},
+};
+struct xa_gradient text_gradient =
+{
+	(unsigned long)TEXT_GRADIENT,
+	-1, 0,
+	0, 16,
+
+	0, 1, {-40, 0},
+	{{700,700,600},{650,750,700}, {550,800,500}},
+	/*unsigned long)TEXT_GRADIENT,
+	-1,   0,
+	 0,  8,
+
+	4, 1, { -10, 0},
+	{{800,700,400},{700,600,500},{700,600,500}}*/
+};
 short stop = STOP;
 
