@@ -399,5 +399,32 @@ struct xa_gradient popbkg_gradient =
 	{{800,800,850}, {900,900,950}, {700,700,750}},
 };
 
+struct xa_gradient box_gradient =
+{
+	(unsigned long)BOX_GRADIENT,
+	0, -1,
+	16, 0,
+
+	3, -1, {-40, 0},
+	{{500,600,700},{600,750,800}, {650,700,700}},
+};
+struct xa_gradient box_gradient2 =
+{
+	(unsigned long)BOX_GRADIENT2,
+	-1, -1,
+	0, 0,
+
+	2, -1,{0},
+	{{300,800,300},{500,650,850}},
+};
+struct xa_gradient text_gradient =
+{
+	(unsigned long)TEXT_GRADIENT,
+	-1, 0,
+	0, 16,
+
+	0, -1, {-40, 0},
+	{{700,700,600},{650,750,700}, {550,800,500}},
+};
 short stop = STOP;
 
