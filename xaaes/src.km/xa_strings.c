@@ -29,6 +29,7 @@ char *xa_strings[] = {
 "[1]['xaaesnap' process not found.|Start 'xaaesnap.prg' and try again|or define snapshot in xaaes.cnf][OK]                            ",
 "[2][What do you want to snap?][Block|Full screen|Top Window|Cancel]          ",
 "Launch Program     ",
+"Load Gradient",
 "$SDMASTER is not a valid program: %s (use the taskmanager)                      ",
 "Could not load %s.tbl from %s (%ld)         ",
 "Cannot terminate AES system proccesses!               ",

@@ -927,14 +927,7 @@ display_alert(struct proc *p, long arg)
 		post_cevent(C.Hlp, CE_fa, data,NULL, 0,0, NULL,NULL);
 	}
 }
-static void load_grd( void *fn )
-{
-#if WITH_GRADIENTS
-	load_gradients( 0, fn );
-	update_windows_below(0, &screen.r, NULL, window_list, NULL);
-	redraw_menu(0);
-#endif
-}
+
 typedef void XA_CONF (void *p);
 
 static XA_CONF *xa_config[] = {load_grd};
@@ -1531,6 +1524,15 @@ void set_tty_mode( short md )
 #endif
 }
 
+void load_grd( void *fn )
+{
+#if WITH_GRADIENTS
+	load_gradients( 0, fn );
+	update_windows_below(0, &screen.r, NULL, window_list, NULL);
+	redraw_menu(0);
+#endif
+}
+
 /*
  * Main AESSYS thread...
  */
@@ -2063,9 +2065,10 @@ k_exit(int wait)
 
 	if (C.KBD_dev > 0)
 	{
-		f_cntl(C.KBD_dev, (long)&KBD_dev_sg, TIOCSETN);
+		long r;
+		r = f_cntl(C.KBD_dev, (long)&KBD_dev_sg, TIOCSETN);
 		//KERNEL_DEBUG("fcntl(TIOCSETN) -> %li", r);
-		//f_cntl(C.KBD_dev, NULL, TIOCFLUSH);
+		//r = f_cntl(C.KBD_dev, NULL, TIOCFLUSH);
 
 		f_close(C.KBD_dev);
 	}
