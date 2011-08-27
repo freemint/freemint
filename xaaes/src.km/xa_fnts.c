@@ -285,6 +285,7 @@ static void update_ratio( struct xa_fnts_info *fnts, short fw, short fh, long id
 	ted = object_get_tedinfo((fnts->wt->tree + FNTS_H), NULL);
 	sprintf( ted->te_ptext, ted->te_txtlen, "%d", fh );
 
+
 }
 
 static void
@@ -1320,7 +1321,7 @@ init_fnts(struct xa_fnts_info *fnts)
 		ted = object_get_tedinfo(aesobj_ob(&ratio_obj), NULL);
 		l = sprintf(pt, sizeof(pt)-1, "%d", (unsigned short)(fnts->fnt_ratio >> 16L));
 		sprintf(pt + l, sizeof(pt) - 1 - l, ".%d", (short)(fnts->fnt_ratio));
-		strncpy(ted->te_ptext, pt, sizeof(pt)-1);
+		strncpy(ted->te_ptext, pt, ted->te_txtlen);
 		obj_edit(fnts->wt, fnts->vdi_settings, ED_INIT, ratio_obj, 0, -1, NULL, false, NULL, NULL, NULL, NULL);
 
 		/*
