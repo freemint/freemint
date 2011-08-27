@@ -1198,6 +1198,9 @@ hu:Program id¡t sa
 ru:Çàïóñòèòü ïğîãğàììó
 cs:Spustit program
 _
+nn:Load Gradient
+de:Lade Gradient
+_
 ### XaAES alerts ###
 NN:$SDMASTER is not a valid program: %s (use the taskmanager)                      @
 de:$SDMASTER ist kein gltiges Programm: %s (bitte Taskmanager verwenden)
