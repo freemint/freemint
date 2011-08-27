@@ -927,14 +927,7 @@ display_alert(struct proc *p, long arg)
 		post_cevent(C.Hlp, CE_fa, data,NULL, 0,0, NULL,NULL);
 	}
 }
-static void load_grd( void *fn )
-{
-#if WITH_GRADIENTS
-	load_gradients( 0, fn );
-	update_windows_below(0, &screen.r, NULL, window_list, NULL);
-	redraw_menu(0);
-#endif
-}
+
 typedef void XA_CONF (void *p);
 
 static XA_CONF *xa_config[] = {load_grd};
@@ -1528,6 +1521,15 @@ void set_tty_mode( short md )
 	//KERNEL_DEBUG("fcntl(TIOCSETN) -> %li", r);
 	assert(r == 0);
  	get_curproc()->p_fd->ofiles[C.KBD_dev]->flags |= O_HEAD;
+#endif
+}
+
+void load_grd( void *fn )
+{
+#if WITH_GRADIENTS
+	load_gradients( 0, fn );
+	update_windows_below(0, &screen.r, NULL, window_list, NULL);
+	redraw_menu(0);
 #endif
 }
 

@@ -1990,7 +1990,7 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 							if( isdigit( nm[4] ) )
 							{
 								pid = atol(nm+4);
-								pr = pid2proc( pid );
+								pr = pid2proc( pid );	//copy?
 								if( pr )
 								{
 									if( !is_aes_client(pr) )
@@ -2305,7 +2305,18 @@ handle_launcher(enum locks lock, struct fsel_data *fs, const char *path, const c
 
 	DIAGS(("launch: \"%s\"", parms+1));
 	//sprintf(cfg.launch_path, sizeof(cfg.launch_path), "%s%s", path, fs->fs_pattern);
-	launch(lock, 0, 0, 0, parms+1, parms, C.Aes);
+
+	switch( (long)fs->data )
+	{
+		case 1:
+			launch(lock, 0, 0, 0, parms+1, parms, C.Aes);
+		break;
+#if WITH_GRADIENTS
+		case 0:
+			load_grd( parms+1 );
+		break;
+#endif
+	}
 }
 
 #if FILESELECTOR
@@ -2313,46 +2324,65 @@ handle_launcher(enum locks lock, struct fsel_data *fs, const char *path, const c
 static struct fsel_data aes_fsel_data;
 
 void
-open_launcher(enum locks lock, struct xa_client *client)
+open_launcher(enum locks lock, struct xa_client *client, int what)
 {
-	struct fsel_data *fs;
+	struct fsel_data *fs = &aes_fsel_data;
+	char *path, *text;
+#if WITH_GRADIENTS
+	char pbuf[PATH_MAX];
+#endif
+	switch( what )
+	{
+#if WITH_GRADIENTS
+		case 0:
+			path = pbuf;
+			text = xa_strings[RS_LDGRAD];
+			sprintf( pbuf, sizeof(pbuf), "%s%s", C.Aes->home_path, "gradient\\*.grd" );
+		break;
+#endif
+		case 1:
+			path = cfg.launch_path;
+			text = xa_strings[RS_LAUNCH];
+		break;
+		default:
+			return;
+	}
 
 	/* if lauchpath defined but is no path discard it */
-	if (*cfg.launch_path)
+	if (*path)
 	{
 		struct stat st;
 		long r;
-		//char *p = strchr( cfg.launch_path, '*' );
-		char *p = strrchr( cfg.launch_path, '\\' ), c=0;
+		//char *p = strchr( path, '*' );
+		char *p = strrchr( path, '\\' ), c=0;
 
 		if( !p )
-			p = strrchr( cfg.launch_path, '/' );
+			p = strrchr( path, '/' );
 		if( p )
 		{
 			c = *p;
 			*p = 0;
 		}
 
-		r = f_stat64(0, cfg.launch_path, &st);
+		r = f_stat64(0, path, &st);
 		if (r != 0 || !S_ISDIR(st.mode) )
-			*cfg.launch_path = 0;
+			*path = 0;
 		else if( p )
 			*p = c;
 	}
-	if (!*cfg.launch_path)
+	if (!*path)
 	{
-		cfg.launch_path[0] = d_getdrv() + 'a';
-		cfg.launch_path[1] = ':';
-		cfg.launch_path[2] = '\\';
-		cfg.launch_path[3] = '*';
-		cfg.launch_path[4] = 0;
+		path[0] = d_getdrv() + 'a';
+		path[1] = ':';
+		path[2] = '\\';
+		path[3] = '*';
+		path[4] = 0;
 	}
 
-	fs = &aes_fsel_data;
 	open_fileselector(lock, client, fs,
-			  cfg.launch_path,
-			  NULL, /*txt_launch_prg*/xa_strings[RS_LAUNCH],
-			  handle_launcher, NULL, NULL);
+			  path,
+			  NULL, text,
+			  handle_launcher, NULL, (void*)(long)what);
 }
 #endif
 

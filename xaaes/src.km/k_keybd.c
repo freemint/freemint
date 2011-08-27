@@ -718,6 +718,14 @@ kernel_key(enum locks lock, struct rawkey *key)
 			forcem();
 			return true;
 		}
+#if WITH_GRADIENTS
+		case 'N':	/* load gradients */
+		if( !C.update_lock )
+		{
+			post_cevent(C.Hlp, ceExecfunc, open_launcher,NULL, 0, 0, NULL,NULL);
+		}
+		return true;
+#endif
 #if HOTKEYQUIT
 		case 'A':
 		{
