@@ -73,7 +73,7 @@ void wakeup_client(struct xa_client *client);
 void app_or_acc_in_front( enum locks lock, struct xa_client *client );
 void open_taskmanager(enum locks lock, struct xa_client *client, bool open);
 void open_systemalerts(enum locks lock, struct xa_client *client, bool open);
-void open_launcher(enum locks lock, struct xa_client *client);
+void open_launcher(enum locks lock, struct xa_client *client, int what);
 // void open_reschange(enum locks lock, struct xa_client *client, bool open);
 // void open_milan_reschange(enum locks lock, struct xa_client *client, bool open);
 // void open_nova_reschange(enum locks lock, struct xa_client *client, bool open);
