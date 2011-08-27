@@ -176,8 +176,8 @@ widen_rectangle(COMPASS xy, short mx, short my, RECT start, const RECT *d)
 {
 	RECT r = start;
 
-	if( xy < E_ && my + d->y < MENU_H ) /* cannot go above main-menubar */
-		my = MENU_H - d->y;
+	if( xy < E_ && my + d->y < root_window->wa.y ) /* cannot go above main-menubar */
+		my = root_window->wa.y - d->y;
 	switch (xy)
 	{
 	case NW:
