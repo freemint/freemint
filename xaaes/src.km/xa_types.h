@@ -1375,10 +1375,8 @@ struct render_widget
 	short		pos_in_row;
 	DrawWidg	*draw;		/* Function called to draw the widget */
 	SetWidgSize	*setsize;	/* Function called to get widget dimensions */
-#if 1	//WITH_GRADIENTS
 	FreePriv	*freepriv;	/* Function called to release any widget render resources */
 	long		priv[4];	/* wdiget render on a 'per widget' private data */
-#endif
 };
 
 struct nwidget_row
