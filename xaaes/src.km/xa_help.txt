@@ -50,6 +50,15 @@ SHIFT+
 
 Shortcuts/navigation in <b>XaAES fileselector:</b>
 
+CTRL+B        Realtime build directories
+CTRL+T        Tree view
+CTRL+N        Sort by name
+CTRL+D        Sort by date
+CTRL+S        Sort by size
+CTRL+E        Sort by extension
+CTRL+X        No sorting
+CTRL+SPACE    Reverse sort-order
+
 CTRL+O        Open window menu (navigation with
               CURSOR keys and RETURN)
 CTRL+C        The path and the marked file (if any)
@@ -63,7 +72,6 @@ DELETE        Delete selected file/empty folder
 ALT+ " + "    Increase the fontsize in listbox
 ALT+ " - "    Decrease the fontsize in listbox
 
-CTRL+SPACE    Reverse sort-order
 <u>                                                      </u>
 
 Shortcuts in the <b>taskmanager:</b>
