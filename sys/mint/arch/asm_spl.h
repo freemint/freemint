@@ -39,32 +39,47 @@
 static inline void
 cpu_stop (void)
 {
+#ifndef COLDFIRE /* Currently buggy with FireTOS */
 	__asm__ volatile
 	(
 		"stop  #0x2000"
 	);
+#endif
 }
 
 static inline void
 cpu_lpstop (void)
 {
+#ifndef __mcoldfire__
 	/* 68060's lpstop #$2000 instruction */
 	__asm__ volatile
 	(
 		"dc.w	0xf800,0x01c0,0x2000"
 	);
+#endif
 }
 
 static inline __u16
 splhigh (void)
 {
 	register __u16 sr;
+#ifdef __mcoldfire__
+	register __u16 tempo;
+#endif
 	
 	__asm__ volatile
 	(
-		"movew sr, %0;"
-		"oriw  #0x0700, sr"
+#ifdef __mcoldfire__
+		"movew   sr,%0\n\t"
+		"movew   %0,%1\n\t"
+		"oril    #0x0700,%1\n\t"
+		"movew   %1,sr"
+		: "=d" (sr), "=d" (tempo)
+#else
+		"movew   sr,%0\n\t"
+		"oriw    #0x0700,sr"
 		: "=d" (sr)
+#endif
 	);
 	
 	return sr; 
@@ -76,7 +91,7 @@ spl (register __u16 sr)
 {
 	__asm__ volatile
 	(
-		"movew %0, sr"
+		"movew   %0,sr"
 		:
 		: "d" (sr)
 	);

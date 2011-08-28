@@ -20,6 +20,12 @@
  *
  */
 
+#if __GNUC__ > 2
+#ifndef __mcoldfire__
+	.arch	68030
+#endif
+#endif
+
 // Test hardware registers for presence
 
 	.globl	_test_byte_rd
@@ -93,13 +99,21 @@ _test_long_rd:
 
 _detect_hardware:
 
+#ifdef __mcoldfire__
+	move.l	d2,-(sp)
+#endif
 	moveq	#0,d0				// initialize return value
 
 // *** detect ST-ESCC (Harun Scheutzow's extension to normal ST(E)s providing modem2 and serial2)
 
 	move.l	sp,a1				// save stack pointer
 	move.l	(8).w,a0			// save bus error vector
+#ifdef __mcoldfire__
+	move.l	#no_stescc,d2
+	move.l	d2,(8).w			// set temporary new bus error vector
+#else
 	move.l	#no_stescc,(8).w		// set temporary new bus error vector
+#endif
 	nop					// flush write pipeline (>= 040)
 	move.w	SR,d1
 
@@ -107,13 +121,24 @@ _detect_hardware:
 // 700 dec is 0x02bc hex, so it really raised the IPL, but MFP
 // interrupts were't disabled (they're IPL 5 IIRC).
 
+#ifdef __mcoldfire__
+	move.w	SR,d2
+	ori.l	#0x0700,d2			// disable interrupts
+	move.w	d2,SR
+#else
 	ori.w	#0x0700,SR			// disable interrupts
+#endif
 
 // The next instruction will cause a bus error if there is no
 // ST-compatible MFP, which makes the odd addresses 0xFFFFFA01 -
 // 0xFFFFFA3F accessible and is neccessary for the ST-ESCC extension
 
+#ifdef __mcoldfire__
+	moveq	#3,d2
+	move.b	d2,(0xFFFFFA31).w		// select register 3, channel B
+#else
 	move.b	#3,(0xFFFFFA31).w		// select register 3, channel B
+#endif
 
 // If we reach the following instruction we have a ST-compatible MFP.
 // If there is an ST-ESCC we have already selected register 3 of channel B,
@@ -121,10 +146,21 @@ _detect_hardware:
 
 	tst.b	(0xFFFFFA31).w			// register is always 0 if ST-ESCC present
 	bne.s	no_stescc			// no -> no ST-ESCC present
+#ifdef __mcoldfire__
+	move.w	#0xFA35,d2
+	move.w	d2,_ControlRegA+2		// set register adresses to ST-ESCC's
+	move.w	#0xFA37,d2
+	move.w	d2,_DataRegA+2
+	move.w	#0xFA31,d2
+	move.w	d2,_ControlRegB+2
+	move.w	#0xFA33,d2
+	move.w	d2,_DataRegB+2
+#else
 	move.w	#0xFA35,_ControlRegA+2		// set register adresses to ST-ESCC's
 	move.w	#0xFA37,_DataRegA+2
 	move.w	#0xFA31,_ControlRegB+2
 	move.w	#0xFA33,_DataRegB+2
+#endif
 	bset	#0x00,d0			// mark ST-ESCC present
 no_stescc:					// bus error occured or reg 3 != 0 -> ST-ESCC not present
 	move.w	d1,SR				// enable interrupts
@@ -134,6 +170,9 @@ no_stescc:					// bus error occured or reg 3 != 0 -> ST-ESCC not present
 
 // next detection should start here
 
+#ifdef __mcoldfire__
+	move.l	(sp)+,a2
+#endif
 	rts
 
 	.data

@@ -91,7 +91,7 @@ terminateme:
 //    (sp)	(long) signal number -- was a parameter for user routine
 
 sig_return:
-	addq.w	#8,sp			// pop signal number and sfmt
+	addq.l	#8,sp			// pop signal number and sfmt
 	move.w	#0x011a,-(sp)		// Psigreturn() system call
 	trap	#1
 pc_valid_return:			// tells kernel its us
@@ -205,12 +205,17 @@ noenv:	pea	0x01190001.l		// Pdomain(1)
 	trap	#1
 	addq.l	#4,sp
 
-	move.w	#0x0004,d7
+	moveq	#0x0004,d7
 loop:	move.w	d7,-(sp)		// Fclose(x)
 	move.w	#0x003e,-(sp)
 	trap	#1
 	addq.l	#4,sp
+#ifdef __mcoldfire__
+	subq.l	#1,d7
+	bpl.s	loop
+#else
 	dbra.w	d7,loop
+#endif
 
 	clr.l	-(sp)			// Psetpgrp(0,0)
 	move.w	#0x010e,-(sp)
@@ -219,20 +224,61 @@ loop:	move.w	d7,-(sp)		// Fclose(x)
 
 	move.l	4(sp),a0		// basepage pointer
 	lea	256(a0),a0		// begin of the TEXT segment
+
+	// Test for original binutils
+#ifdef __mcoldfire__
+	move.l	#0x283a001a,d0
+	cmp.l	(a0),d0
+#else
 	cmp.l	#0x283a001a,(a0)
-	bne.s	oldfmt
+#endif
+	bne.s	binu2
+#ifdef __mcoldfire__
+	move.l	#0x4efb48fa,d0
+	cmp.l	4(a0),d0
+#else
 	cmp.l	#0x4efb48fa,4(a0)
+#endif
+	bne.s	binu2
+	bra.s	newfmt
+
+	// Test for binutils >= 2.18-mint-20080209
+binu2:
+#ifdef __mcoldfire__
+	move.l	#0x203a001a,d0
+	cmp.l	(a0),d0
+#else
+	cmp.l	#0x203a001a,(a0)
+#endif
+	bne.s	oldfmt
+#ifdef __mcoldfire__
+	move.l	#0x4efb08fa,d0
+	cmp.l	4(a0),d0
+#else
+	cmp.l	#0x4efb08fa,4(a0)
+#endif
 	bne.s	oldfmt
 
+newfmt:
 	lea	228.w(a0),a0		// the header is a bit bigger (new format)
 
 oldfmt:	move.l	a0,-(sp)		// 4 bytes go to the stack
 
+#ifdef __mcoldfire__
+	move.l	#0x70004afc,d0
+	cmp.l	(a0),d0
+#else
 	cmp.l	#0x70004afc,(a0)	// a0 = SLB header address
+#endif
 	beq.s	exec
 
 	move.l	8(sp),a0
+#ifdef __mcoldfire__
+	moveq	#-1,d0
+	move.l	d0,B_CMDLIN(a0)		// put -1 on the bp->p_cmdlin
+#else
 	move.l	#-1,B_CMDLIN(a0)	// put -1 on the bp->p_cmdlin
+#endif
 
 	bsr.s	slb_stop		// Slbopen() will now read the status
 

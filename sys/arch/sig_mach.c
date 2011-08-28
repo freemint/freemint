@@ -1,17 +1,17 @@
 /*
  * $Id$
- * 
+ *
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
- * 
- * 
+ *
+ *
  * Copyright 1990,1991,1992 Eric R. Smith.
  * Copyright 1992,1993,1994 Atari Corporation.
  * All rights reserved.
- * 
- * 
+ *
+ *
  * machine dependant signal handling
- * 
+ *
  */
 
 # include "sig_mach.h"
@@ -59,7 +59,8 @@ sendsig(ushort sig)
 
 
 	assert(curproc->stack_magic == STACK_MAGIC);
-	
+
+	//FORCE("sendsig %d", sig);
 	/* another kludge: there is one case in which the p_sigreturn
 	 * mechanism is invoked by the kernel, namely when the user
 	 * calls Supexec() or when s/he installs a handler for the
@@ -79,13 +80,13 @@ sendsig(ushort sig)
 	 * so there is is no possibility of confusion with anything
 	 * the user does.
 	 */
-	
+
 	if (sig == 0)
 	{
 		/* kernel_pterm() sets p_sigmask to let us know to do
 		 * Psigreturn
 		 */
-		
+
 		if (curproc->p_sigmask & 1L)
 		{
 			sys_psigreturn();
@@ -96,9 +97,9 @@ sendsig(ushort sig)
 			unwound_stack = 0;
 		}
 	}
-	
+
 	++curproc->nsigs;
-	
+
 	if (curproc->p_flag & P_FLAG_SYS)
 	{
 		/* This is a system process, e.g. a kernel thread. We can't
@@ -107,23 +108,23 @@ sendsig(ushort sig)
 		 * signal handler we can simply callout the signal handler
 		 * as function.
 		 */
-		
-		DEBUG(("system process, calling signal handler 0x%lx (%d)(%s) directly", sigact->sa_handler, sig, curproc->name));
+
+		//FORCE("sendsig:system process, calling signal handler 0x%lx (%d)(%s) directly", sigact->sa_handler, sig, curproc->name);
 		((void (*)(short)) sigact->sa_handler)(sig);
-		
+
 		if (sigact->sa_flags & SA_RESETHAND)
 		{
-			TRACE(("resetting sa_handler"));
-			
+			//FORCE("resetting sa_handler");
+
 			sigact->sa_handler = SIG_DFL;
 			sigact->sa_flags &= ~SA_RESETHAND;
 		}
-		
+
 		return 0;
 	}
 
 	call = &(curproc->ctxt[SYSCALL]);
-	
+
 	/* what we do is build two fake stack frames; the top one is
 	 * for a call to the user function, with (long)parameter being the
 	 * signal number; the bottom one is for sig_return.
@@ -131,27 +132,31 @@ sendsig(ushort sig)
 	 * calls into the kernel to restore the context in prev_ctxt
 	 * (thus putting us back here). We can then continue on our way.
 	 */
-	
+
 	/* set a new system stack, with a bit of buffer space */
 	oldstack = curproc->sysstack;
 # ifdef COLDFIRE
 	newstack = ((unsigned long) &newcurrent) - 0x40UL - 12UL - 0x100UL;
 # else
 	newstack = ((unsigned long) &newcurrent) - 0x40UL - 12UL - 0x100UL;
-# endif	
+# endif
+	//TRACE(("sendsig(%d): new=%lx cur=%lx call=%lx newcur=%lx sr=%x ssp=%lx usp=%lx", sig, newstack, curproc->stack, call, &newcurrent, call->sr, call->ssp, call->usp));
 	if (newstack < (unsigned long) curproc->stack + ISTKSIZE + 256)
 	{
-		ALERT("stack overflow");
-		return 1;
+		FORCE("sendsig(%d):stack overflow: new=%lx cur=%lx call=%lx newcur=%lx sr=%x ssp=%lx usp=%lx", sig, newstack, curproc->stack, call, &newcurrent, call->sr, call->ssp, call->usp);
+		ALERT("sendsig:stack overflow: new=%lx cur=%lx call=%lx newcur=%lx", newstack, curproc->stack, call, &newcurrent);
+		//FORCE("sendsig(%d):stack overflow: new=%lx cur=%lx call=%lx newcur=%lx", sig, newstack, curproc->stack, call, &newcurrent);
+		//return 1;
 	}
 	else if ((unsigned long) curproc->stack + STKSIZE < newstack)
 	{
 		FATAL("system stack not in proc structure");
 	}
-	
+	//FORCE("sendsig:stack:new=%lx,cur=%lx call=%lx,newcur=%lx", newstack, curproc->stack,call, &newcurrent);
+
 	oldsysctxt = *call;
 	stack = (unsigned long *)(call->sr & 0x2000 ? call->ssp : call->usp);
-	
+
 	/* Hmmm... here's another potential problem for the signal 0
 	 * terminate vector: if the program keeps returning back to
 	 * user mode without worrying about the supervisor stack,
@@ -159,7 +164,7 @@ sendsig(ushort sig)
 	 * in supervisor mode itself, then we don't want to stop on
 	 * its stack. Temporary solution: ignore the problem, the
 	 * stack's only growing 12 bytes at a time.
-	 * 
+	 *
 	 * in addition to the signal number we stuff the vector offset
 	 * on the stack; if the user is interested they can sniff it,
 	 * if not ignoring it needs no action on their part. Why do we
@@ -183,19 +188,19 @@ sendsig(ushort sig)
 		call->ssp = ((unsigned long)stack);
 	else
 		call->usp = ((unsigned long)stack);
-	
+
 	call->pc = sigact->sa_handler;
 	/* don't restart FPU communication */
 	call->sfmt = call->fstate.bytes[0] = 0;
-	
+
 	if (sigact->sa_flags & SA_RESETHAND)
 	{
 		TRACE(("resetting sa_handler"));
-		
+
 		sigact->sa_handler = SIG_DFL;
 		sigact->sa_flags &= ~SA_RESETHAND;
 	}
-	
+
 	if (save_context(&newcurrent) == 0)
 	{
 		/* go do the signal; eventually, we'll restore this
@@ -205,11 +210,11 @@ sendsig(ushort sig)
 		 * p_sigreturn() will unmask it for us when the user
 		 * is finished.
 		 */
-		
+
 		/* set D0 so next return is different */
 		newcurrent.regs[0] = CTXT_MAGIC;
 		assert(curproc->magic == CTXT_MAGIC);
-		
+
 		/* unwound_stack is set by p_sigreturn() */
 		if (sig == 0 && unwound_stack)
 			stack = (unsigned long *)unwound_stack;
@@ -219,9 +224,9 @@ sendsig(ushort sig)
 			 * it up with interrupts off...  -nox
 			 */
 			stack = (unsigned long *)newstack;
-		
+
 		splhigh();
-		
+
 		unwound_stack = 0;
 		curproc->sysstack = (unsigned long)stack;
 		stack++;
@@ -233,27 +238,27 @@ sendsig(ushort sig)
 
 		restore_context(call);
 	}
-	
+
 	/* OK, we get here from p_sigreturn, via the user returning
 	 * from the handler to sig_return. Restoring the stack and
 	 * unmasking the signal have been done already for us by
 	 * p_sigreturn. We should just restore the old system call
 	 * context and continue with whatever it was we were doing.
 	 */
-	
+
 	TRACE(("done handling signal"));
-	
+
 	oldsysctxt.pc = sigctxt->sc_pc;
 	oldsysctxt.usp = sigctxt->sc_usp;
 	oldsysctxt.sr &= 0xff00;
 	oldsysctxt.sr |= sigctxt->sc_sr & 0xff;
-	
+
 	curproc->ctxt[SYSCALL] = oldsysctxt;
 	assert(curproc->magic == CTXT_MAGIC);
 
 # undef oldsysctxt
 # undef newcurrent
-	
+
 	return 0;
 }
 
@@ -292,10 +297,10 @@ top:
 	}
 	unwound_stack = curproc->sysstack;
 	TRACE (("Psigreturn(%d)", (int) sig));
-	
+
 	curproc->sysstack = frame[1];	/* restore frame */
 	curproc->p_sigmask &= ~(1L<<sig); /* unblock signal */
-	
+
 	if (curproc->ctxt[SYSCALL].pc != ut->pc_valid_return_p)
 	{
 		/* here, the user is telling us that a longjmp out of a signal
@@ -307,7 +312,7 @@ top:
 	else
 	{
 		unwound_stack = 0;
-# ifdef COLDFIRE	
+# ifdef COLDFIRE
 		oldctxt = (CONTEXT *) (((long) &frame[2]) + 0x40 + 0x100);
 # else
 		oldctxt = (CONTEXT *) (((long) &frame[2]) + 0x40 + 0x100);
@@ -317,9 +322,9 @@ top:
 			FATAL ("p_sigreturn: corrupted context");
 		}
 		assert (curproc->magic == CTXT_MAGIC);
-		
+
 		restore_context (oldctxt);
-		
+
 		/* dummy -- this isn't reached */
 		return E_OK;
 	}
@@ -339,10 +344,10 @@ static char excep_num[NSIG] =
 	4,		/* pretend SIGABRT is also illegal instruction */
 	8,		/* SIGPRIV == privileged instruction exception */
 	5,		/* SIGFPE  == divide by zero */
-	0,		
+	0,
 	2,		/* SIGBUS  == bus error */
 	3		/* SIGSEGV == address error */
-	
+
 	/* everything else gets zeros */
 };
 
@@ -401,7 +406,7 @@ bombs(ushort sig)
 	long *procinfo = (long *)0x380L;
 	int i;
 	CONTEXT *crash;
-	
+
 	if (sig >= NSIG)
 	{
 		ALERT("bombs(%d): sig out of range", sig);
@@ -421,7 +426,7 @@ bombs(ushort sig)
 			long ptext = 0;
 			long pdata = 0;
 			long pbss = 0;
-			
+
 			/* can it happen, that base == NULL???? */
 			if (base)
 			{
@@ -429,7 +434,7 @@ bombs(ushort sig)
 				pdata = base->p_dbase;
 				pbss = base->p_bbase;
 			}
-			
+
 			if (sig == SIGSEGV || sig == SIGBUS)
 			{
 				ALERT("%s: User PC=%lx, Address: %lx (basepage=%lx, text=%lx, data=%lx, bss=%lx)",
@@ -445,25 +450,25 @@ bombs(ushort sig)
 					base, ptext, pdata, pbss);
 			}
 		}
-		
+
 		/* save the processor state at crash time
-		 * 
+		 *
 		 * assumes that "crash time" is the context
 		 * curproc->ctxt[SYSCALL]
-		 * 
+		 *
 		 * BUG: this is not true if the crash happened in the kernel;
 		 * in the latter case, the crash context wasn't saved anywhere.
 		 */
 		crash = &curproc->ctxt[SYSCALL];
 		*procinfo++ = 0x12345678L; /* magic flag for valid info */
-		
+
 		for (i = 0; i < 15; i++)
 			*procinfo++ = crash->regs[i];
-		
+
 		*procinfo++ = curproc->exception_ssp;
 		*procinfo++ = ((long)excep_num[sig]) << 24L;
 		*procinfo = crash->usp;
-		
+
 		/* we're also supposed to save some info from the supervisor
 		 * stack. it's not clear what we should do for MiNT, since
 		 * most of the stuff that used to be on the stack has been
@@ -489,10 +494,10 @@ exception(ushort sig)
 {
 	assert(curproc->stack_magic == STACK_MAGIC);
 	assert(curproc->p_sigacts);
-	
+
 	DEBUG(("signal #%d raised [syscall_pc 0x%lx, exception_pc 0x%lx]",
 		sig, curproc->ctxt[SYSCALL].pc, curproc->exception_pc));
-	
+
 	SIGACTION(curproc, sig).sa_flags |= SA_RESETHAND;
 	raise(sig);
 }
@@ -502,10 +507,10 @@ sigbus(void)
 {
 	assert(curproc->stack_magic == STACK_MAGIC);
 	assert(curproc->p_sigacts);
-	
+
 	if (SIGACTION(curproc, SIGBUS).sa_handler == SIG_DFL)
 		report_buserr();
-	
+
 	exception(SIGBUS);
 }
 
@@ -527,10 +532,10 @@ void
 sigpriv(void)
 {
 	assert(curproc->stack_magic == STACK_MAGIC);
-	
+
 	DEBUG(("signal SIGPRIV raised [syscall_pc 0x%lx, exception_pc 0x%lx]",
 		curproc->ctxt[SYSCALL].pc, curproc->exception_pc));
-	
+
 	raise(SIGPRIV);
 }
 
@@ -538,14 +543,14 @@ void
 sigfpe(void)
 {
 	assert(curproc->stack_magic == STACK_MAGIC);
-	
+
 	DEBUG(("signal SIGFPE raised [syscall_pc 0x%lx, exception_pc 0x%lx]",
 		curproc->ctxt[SYSCALL].pc, curproc->exception_pc));
-	
+
 	if (fpu)
 	{
 		CONTEXT *ctxt = &curproc->ctxt[SYSCALL];
-		
+
 		/* 0x1f38 is a Motorola magic cookie to detect a 68882 idle
 		 * state frame
 		 */
@@ -559,7 +564,7 @@ sigfpe(void)
 			ctxt->fstate.bytes[ctxt->fstate.bytes[1]] |= 1 << 3;
 		}
 	}
-	
+
 	raise(SIGFPE);
 }
 
@@ -567,10 +572,10 @@ void
 sigtrap(void)
 {
 	assert(curproc->stack_magic == STACK_MAGIC);
-	
+
 	DEBUG(("signal SIGTRAP raised [syscall_pc 0x%lx, exception_pc 0x%lx]",
 		curproc->ctxt[SYSCALL].pc, curproc->exception_pc));
-	
+
 	raise(SIGTRAP);
 }
 

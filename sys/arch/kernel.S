@@ -49,7 +49,12 @@ _in_kernel:
 	.text
 
 _enter_gemdos:
+#ifdef __mcoldfire__
+	moveq	#0x07,d0
+	bset	d0,_in_kernel
+#else
 	bset	#0x07,_in_kernel
+#endif
 	bne.s	exit
 	move.l	_curproc,a0
 	move.w	#0x0001,P_INDOS(a0)
@@ -57,7 +62,12 @@ _enter_gemdos:
 exit:	rts
 
 _enter_kernel:
-	bset #0x7,_in_kernel
+#ifdef __mcoldfire__
+	moveq	#0x7,d0
+	bset	d0,_in_kernel
+#else
+	bset	#0x7,_in_kernel
+#endif
 	bne.s	exit
 	move.l	_curproc,a0
 	move.w	#1,P_INKERN(a0)

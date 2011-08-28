@@ -7,6 +7,7 @@
 # -DSOFT_UNITABLE	loadable unicode tables
 # -DBUILTIN_SHELL	include the built-in minimal shell
 # -DC_ONLY		replace some assembly function by C compatible one
+# -DWITH_MMU_SUPPORT	include MMU support
 
 #
 # machine flags
@@ -14,7 +15,7 @@
 # -DM68000		build for 68000 (no mmu, no caches)
 # -DM68030		build for 68030
 # -DM68040		build for 68040-060
-# -DM68060		build for 68060 (same as M68040, currently)
+# -DM68060		build for 68060
 # -DMILAN		build Milan kernel
 # -DARANYM		build Aranym kernel
 # -DCOLDFIRE		build coldfire kernel
@@ -45,6 +46,8 @@
 # mandatory for kernel source now
 KERNELDEFAULTDEFS = -D__KERNEL__
 KERNELDEFAULTDEFS += -DLANG_ENGLISH
+KERNELDEFAULTDEFS += -DVERBOSE_BOOT
+KERNELDEFAULTDEFS += -DWITH_MMU_SUPPORT
 
 # added this to default-options for test-purpose for now
 KERNELDEFAULTDEFS += -DWITH_SINGLE_TASK_SUPPORT
@@ -59,9 +62,7 @@ endif
 ifeq ($(kernel),000)
 MINT = mint000.prg
 CPU  = 000
-KERNELDEFS = -DM68000 -DNO_RAMFS -DNO_FAKE_SUPER -DVERBOSE_BOOT
-#KERNELDEFS += -DDEBUG_INFO
-#KERNELDEFS += -DMFP_DEBUG_DIRECT
+KERNELDEFS = -DM68000 -DNO_RAMFS -DNO_FAKE_SUPER
 OPTS += -fstrength-reduce
 endif
 
@@ -90,23 +91,17 @@ CPU  = 060
 KERNELDEFS = -DM68040
 endif
 
-ifeq ($(kernel),117)
-MINT = mint117.prg
-CPU  = 020-60
-KERNELDEFS = -DM68040
-endif
-
 ifeq ($(kernel),deb)
-MINT = mintnp.prg
+MINT = mintdeb.prg
 CPU  = 020-60
 KERNELDEFS = -DDEBUG_INFO -DM68040
 endif
 
 ifeq ($(kernel),col)
-MINT = mintnp.prg
+MINT = mintv4e.prg
 CPU  = v4e
-KERNELDEFS = -DDEBUG_INFO -DM68040 -DNO_RAMFS -DNO_FAKE_SUPER -DCOLDFIRE -DC_ONLY -DVERBOSE_BOOT
-#KERNELDEFS = -DDEBUG_INFO -DM68040 -DNO_AKP_KEYBOARD -DNO_RAMFS -DNO_FAKE_SUPER -DCOLDFIRE -DC_ONLY -DVERBOSE_BOOT
+KERNELDEFS = -DDEBUG_INFO -DM68040 -DNO_FAKE_SUPER -DCOLDFIRE -DC_ONLY
+kernel_nocflags = -DWITH_MMU_SUPPORT
 endif
 
 ifeq ($(kernel),mil)
@@ -129,7 +124,7 @@ kerneltargets = 000 020 030 040 060 deb mil ara
 cputargets = 000 020 030 040 060 020-60
 
 COLDFIRE=yes
-ifeq (COLDFIRE,yes)
+ifeq ($(COLDFIRE),yes)
 kerneltargets += col
 cputargets += v4e
 endif

@@ -23,7 +23,11 @@ _memset:
 	move.w	8+4(sp),d1
 #ifndef M68000
 	move.b	d1,d0		| expand d1 to longword
+#ifdef __mcoldfire__
+	lsl.l	#0x8,d1
+#else
 	lsl.w	#0x8,d1
+#endif
 	move.b	d0,d1
 	move.w	d1,d0
 	swap	d1
@@ -37,7 +41,11 @@ L_long:
 	subq.l	#0x1,d0
 	bne.s	L_long
 	move.l	d2,d0
+#ifdef __mcoldfire__
+	and.l	#0xfffffffc,d0
+#else
 	and.w	#0xfffc,d0
+#endif
 	sub.l	d0,d2
 
 L_nolong:

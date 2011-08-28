@@ -46,10 +46,6 @@
  */
 # undef OLDTOSFS
 
-# ifdef COLDFIRE
-# define OLDTOSFS  // else the TFTP Ram-Disk is destroyed
-# endif
-
 /*
  * include old style socket device emulation
  */
@@ -70,7 +66,7 @@
 /*
  * add /dev/random and /dev/urandom
  */
-/*# define DEV_RANDOM*/
+# define DEV_RANDOM
 
 /*
  * MAXPID is the maxium PID MiNT will generate

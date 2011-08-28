@@ -42,6 +42,7 @@
 # include "mint/ioctl.h"
 # include "mint/mem.h"
 # include "mint/proc.h"
+# include "mint/arch/asm.h"
 
 # include "dosdir.h"
 # include "filesys.h"
@@ -450,6 +451,7 @@ module_init(void *initfunc, struct kerinfo *k)
 # define LOCAL_CLOBBER_LIST
 #endif
 
+
 static void *
 module_init(void *initfunc, struct kerinfo *k)
 {
@@ -457,12 +459,12 @@ module_init(void *initfunc, struct kerinfo *k)
 
 	__asm__ volatile
 	(
-		"movem.l d3-d7/a3-a6,-(sp)\r\n"
-		"move.l	%2,-(sp)\r\n"
-		"move.l	%1,a0\r\n"
-		"jsr	(a0)\r\n"
-		"addqw	#4,sp\r\n"
-		"moveml	(sp)+,d3-d7/a3-a6\r\n"
+		PUSH_SP("d3-d7/a3-a6", 36)
+		"move.l	%2,-(sp)\n\t"
+		"move.l	%1,a0\n\t"
+		"jsr	(a0)\n\t"
+		"addq.l	#4,sp\n\t"
+		POP_SP("d3-d7/a3-a6", 36)
 		: "=r"(ret)				/* outputs */
 		: "r"(initfunc), "r"(k)			/* inputs  */
 		: LOCAL_CLOBBER_LIST /* clobbered regs */

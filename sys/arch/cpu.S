@@ -21,10 +21,20 @@
 	.globl	_mcpu
 
 _get_superscalar:
+#ifdef __mcoldfire__
+	moveq	#60,d1
+	cmp.w	_mcpu+2,d1
+	bpl.s	ssret
+#else
 	cmp.w	#60,_mcpu+2
 	bmi.s	ssret
+#endif
 	dc.l	0x4e7a0808		// movec pcr,d0
+#ifdef __mcoldfire__
+	ori.l	#0x0001,d0		// enable the superscalar dispatch
+#else
 	ori.w	#0x0001,d0		// enable the superscalar dispatch
+#endif
 	dc.l	0x4e7b0808		// movec d0,pcr
 ssret:	rts
 
@@ -32,10 +42,20 @@ ssret:	rts
 
 _is_superscalar:
 	clr.w	d0
+#ifdef __mcoldfire__
+	moveq	#60,d1
+	cmp.w	_mcpu+2,d1
+	bpl.s	ssret
+#else
 	cmp.w	#60,_mcpu+2
 	bmi.s	ssret
+#endif
 	dc.l	0x4e7a0808		// movec pcr,d0
+#ifdef __mcoldfire__
+	andi.l	#0x0001,d0
+#else
 	andi.w	#0x0001,d0
+#endif
 	rts
 
 //
@@ -68,7 +88,12 @@ hascaches:
 // init cache routines
 
 _init_cache:
+#ifdef __mcoldfire__
+	lea	-24(sp),sp
+	movem.l	d0-d1/a0-a3,(sp)
+#else
 	movem.l	d0-d1/a0-a3,-(sp)
+#endif
 	move.l	_mcpu,d0
 	beq	icquit
 	cmp.w	#10,d0
@@ -99,9 +124,20 @@ icset:	move.l	a0,_cachevec
 	move.l	a1,l2cv
 	move.l	a2,c2lv
 	move.l	a3,_cacheveci
+#ifdef __mcoldfire__
+	moveq	#-1,d0
+	move.b	d0,hascaches
+#else
 	st	hascaches
+#endif
 	nop
-icquit:	movem.l	(sp)+,d0-d1/a0-a3
+icquit:
+#ifdef __mcoldfire__
+	movem.l	(sp),d0-d1/a0-a3
+	lea	24(sp),sp
+#else
+	movem.l	(sp)+,d0-d1/a0-a3
+#endif
 	rts
 
 // Cache control routines.
@@ -160,8 +196,14 @@ ccw_dmasks:
 
 _ccw_set:
 	tst.w	hascaches
+#ifdef __mcoldfire__
+	beq	clq
+	lea	-20(sp),sp
+	movem.l	d1-d2/a0-a2,(sp)
+#else
 	beq.s	clq
 	movem.l	d1-d2/a0-a2,-(sp)
+#endif
 	bsr.s	_ccw_get		// get the current CCW
 	move.l	d0,-(sp)		// save it for later reference
 	move.l	28(sp),d1		// user specified CCW
@@ -171,14 +213,23 @@ _ccw_set:
 	and.l	d2,d0			// clear bits to change in actual CCW
 	or.l	d0,d1			// apply user CCW bits
 	bsr	_ccw_getdmask
+#ifdef __mcoldfire__
+	and.l	d1,d0
+#else
 	and.w	d1,d0
+#endif
 	and.l	#0x0000ffff,d0
 	move.l	d0,-(sp)		// save new CCW
 	move.l	l2cv,a0			// convert new CCW ...
 	jsr	(a0)
 	move.l	(sp)+,d2		// restore new CCW
 	move.l	(sp)+,d1		// restore old CCW
+#ifdef __mcoldfire__
+	move.w	_mcpu+2,a0
+	cmpa.l	#40,a0			// the following is only necessary
+#else
 	cmpi.w	#40,_mcpu+2		// the following is only necessary
+#endif
 	blt.s	lt040			// on 68040 and 68060 (copyback cache!)
 	btst	#0,d2			// instruction cache going to be enabled?
 	beq.s	ic_off
@@ -203,7 +254,12 @@ dc_off:
 	dc.w	0xF478			// cpusha dc
 lt040:
 	movec	d0,cacr			// write CACR
+#ifdef __mcoldfire__
+	movem.l	(sp),d1-d2/a0-a2
+	lea	20(sp),sp
+#else
 	movem.l	(sp)+,d1-d2/a0-a2
+#endif
 clq:	clr.l	d0			// E_OK
 	rts
 
@@ -212,15 +268,29 @@ clq:	clr.l	d0			// E_OK
 _ccw_get:
 	tst.w	hascaches
 	beq.s	clq
+#ifdef __mcoldfire__
+	lea	-20(sp),sp
+	movem.l	d1-d2/a0-a2,(sp)
+#else
 	movem.l	d1-d2/a0-a2,-(sp)
-	movec	cacr,d0			// read CACR
+#endif
+	dc.w	0x4e7a,0x0002		// movec cacr,d0
 	move.l	c2lv,a0			// convert
 	jsr	(a0)
 	move.w	d0,d1
 	bsr.s	_ccw_getdmask
+#ifdef __mcoldfire__
+	and.l	d1,d0
+#else
 	and.w	d1,d0
+#endif
 	and.l	#0x0000ffff,d0
+#ifdef __mcoldfire__
+	movem.l	(sp),d1-d2/a0-a2
+	lea	20(sp),sp
+#else
 	movem.l	(sp)+,d1-d2/a0-a2
+#endif
 	rts
 
 // get default Cache Control Mask for currently used CPU
@@ -230,7 +300,11 @@ _ccw_getdmask:
 	divu.w	#5,d0
 	and.l	#0x0000ffff,d0		// better to be safe...
 	lea	ccw_dmasks,a0
+#ifdef __mcoldfire__
+	move.w	0(a0,d0.l),d0		// _not_ a (a0,d0.w*2), see divu
+#else
 	move.w	0(a0,d0.w),d0		// _not_ a (a0,d0.w*2), see divu
+#endif
 	rts
 
 // These are called by routines above. Notice CACR is ulong,
@@ -238,16 +312,31 @@ _ccw_getdmask:
 
 // 68020, bit 0 enables the cache, bit 1 freezes it.
 
-l2c020:	move.w	d0,d1
+l2c020:
+#ifdef __mcoldfire__
+	mvz.w	d0,d1
+	and.l	#0x0001,d0		// leave the CE bit
+	lsr.l	#0x02,d1		// shift the CF bit left
+	or.l	d1,d0
+#else
+	move.w	d0,d1
 	and.w	#0x0001,d0		// leave the CE bit
 	lsr.w	#0x02,d1		// shift the CF bit left
 	or.w	d1,d0
+#endif
 	rts
 
-c2l020:	move.l	d0,d1
+c2l020:
+	move.l	d0,d1
+#ifdef __mcoldfire__
+	and.l	#0x0001,d0
+	lsl.l	#0x02,d1
+	or.l	d1,d0
+#else
 	and.w	#0x0001,d0
 	lsl.w	#0x02,d1
 	or.w	d1,d0
+#endif
 	rts
 
 // 68030
@@ -263,35 +352,97 @@ ccw30:	dc.w	0x0001,0x0008,0x0000,0x0000
 l2c030:	lea	cacr30,a0
 	clr.l	d1
 	moveq	#0x07,d2
-l30:	lsr.w	#0x01,d0
+l30:
+#ifdef __mcoldfire__
+	lsr.l	#0x01,d0
+#else
+	lsr.w	#0x01,d0
+#endif
 	bcc.s	s30
+#ifdef __mcoldfire__
+	move.w	(a0),d0
+	or.l	d0,d1
+#else
 	or.w	(a0),d1
+#endif
 s30:	addq.l	#0x02,a0
+#ifdef __mcoldfire__
+	subq.l	#1,d2
+	bpl.s	l30
+#else
 	dbra.w	d2,l30
+#endif
 	move.l	d1,d0
 	rts
 
 c2l030:	lea	ccw30,a0
 	clr.l	d1
 	moveq	#0x0f,d2
-c30:	lsr.w	#0x01,d0
+c30:
+#ifdef __mcoldfire__
+	lsr.l	#0x01,d0
+#else
+	lsr.w	#0x01,d0
+#endif
 	bcc.s	s31
+#ifdef __mcoldfire__
+	mvz.w	(a0),d0
+	or.l	d0,d1
+#else
 	or.w	(a0),d1
+#endif
 s31:	addq.l	#0x02,a0
+#ifdef __mcoldfire__
+	subq.l	#1,d2
+	bpl.s	c30
+#else
 	dbra.w	d2,c30
+#endif
 	move.l	d1,d0
 	rts
 
 // 68040, bit 15 enables the instruction cache, bit 31 enables the data cache.
 
-l2c040:	ror.l	#0x01,d0		// move IE bit to position 31
+l2c040:
+#ifdef __mcoldfire__
+	move.l	d1,-(sp)
+	moveq	#0,d1
+	btst	#0,d0			// IE bit
+	beq.s	l2c040ieok
+	bset	#15,d1
+l2c040ieok:
+	btst	#1,d0			// DE bit
+	beq.s	l2c040deok
+	bset	#31,d1
+l2c040deok:
+	move.l	d1,d0
+	move.l	(sp)+,d1
+#else
+	ror.l	#0x01,d0		// move IE bit to position 31
 	ror.w	#0x01,d0		// move DE bit to position 15
 	swap	d0			// swap them
+#endif
 	rts
 
-c2l040:	swap	d0
+c2l040:
+#ifdef __mcoldfire__
+	move.l	d1,-(sp)
+	moveq	#0,d1
+	btst	#15,d0			// IE bit
+	beq.s	c2l040ieok
+	bset	#0,d1
+c2l040ieok:
+	btst	#31,d0			// DE bit
+	beq.s	c2l040deok
+	bset	#1,d1
+c2l040deok:
+	move.l	d1,d0
+	move.l	(sp)+,d1
+#else
+	swap	d0
 	rol.w	#0x01,d0
 	rol.l	#0x01,d0
+#endif
 	rts
 
 // 68060
@@ -315,11 +466,21 @@ ccw60:	dc.w	0x0000,0x0100,0x0200,0x0001
 l2c060:	lea	cacr60,a0
 	clr.l	d1
 	moveq	#0x0f,d2
-l60:	lsr.w	#0x01,d0
+l60:
+#ifdef __mcoldfire__
+	lsr.l	#0x01,d0
+#else
+	lsr.w	#0x01,d0
+#endif
 	bcc.s	s60
 	or.l	(a0),d1
 s60:	addq.l	#0x04,a0
+#ifdef __mcoldfire__
+	subq.l	#1,d2
+	bpl.s	l60
+#else
 	dbra.w	d2,l60
+#endif
 	move.l	d1,d0
 	eori.l	#0x58006000,d0		// adjust reverted bits
 	rts
@@ -331,11 +492,25 @@ c2l060:	lea	ccw60,a0
 	moveq	#0x13,d2
 c60:	lsr.l	#0x01,d0
 	bcc.s	s61
+#ifdef __mcoldfire__
+	mvz.w	(a0),d0
+	or.l	d0,d1
+#else
 	or.w	(a0),d1
+#endif
 s61:	addq.l	#0x02,a0
+#ifdef __mcoldfire__
+	subq.l	#1,d2
+	bpl.s	c60
+#else
 	dbra.w	d2,c60
+#endif
 	move.l	d1,d0
+#ifdef __mcoldfire__
+	eor.l	#0x4f00,d0		// adjust reverted bits
+#else
 	eor.w	#0x4f00,d0		// adjust reverted bits
+#endif
 	rts
 
 #endif
@@ -370,7 +545,7 @@ _cpush:
 	jmp	(a1)
 
 _cache030:				// 68030 cache
-	movec	cacr,d1
+	dc.w	0x4e7a,0x1002		// movec cacr,d1
 	move.l	d1,-(sp)
 	addq.l	#1,d0			// if was -1
 	beq.s	abc030			// then flush everything
@@ -379,16 +554,31 @@ _cache030:				// 68030 cache
 	cmp.l	#64,d0
 	bcs.s	fls030			// dump selectively
 
-abc030:	or.w	#0x0808,d1
+abc030:
+#ifdef __mcoldfire__
+	or.l	#0x0808,d1
+#else
+	or.w	#0x0808,d1
+#endif
 	movec	d1,cacr
 	bra.s	rescacr
 
-fls030:	or.w	#0x0404,d1		// clear DC/IC entries
+fls030:
+#ifdef __mcoldfire__
+	or.l	#0x0404,d1		// clear DC/IC entries
+#else
+	or.w	#0x0404,d1		// clear DC/IC entries
+#endif
 // run through d0+1 times (since a0 may not be on a long boundary)
-do030:	movec	a0,caar
+do030:	dc.w	0x4e7b,0x8802		// movec a0,caar
 	movec	d1,cacr
-	addq.w	#4,a0
+	addq.l	#4,a0
+#ifdef __mcoldfire__
+	subq.l	#1,d0
+	bpl.s	do030
+#else
 	dbf	d0,do030
+#endif
 rescacr:
 	move.l	(sp)+,d0
 	movec	d0,cacr
@@ -418,7 +608,11 @@ abc040:	dc.w	0xF478			// this is "cpusha dc" if your asm knows '040
 fls040:
 // run through d0+1 times (since a0 may not be on a line boundary)
 	move.l	a0,d1
+#ifdef __mcoldfire__
+	and.l	#0xfffffff0,d1
+#else
 	and.w	#0xfff0,d1
+#endif
 	movea.l	d1,a1
 	moveq	#16,d1
 do040:
@@ -435,14 +629,20 @@ do040:
 	cmpa.l	#-1,a0
 	beq.s	abc040			// if there's no physical address, flush all
 	dc.w	0xF468			// this is "cpushl dc,(a0)" for the '040
-	add.w	d1,a1
+	add.l	d1,a1
+#ifdef __mcoldfire__
+	subq.l	#1,d0
+	bpl.s	do040
+#else
 	dbf	d0,do040
+#endif
 _c060rts:
 	rts
 	
 _cache060:
 	move.l	d0,d1			// If no bytes to push, exit
 	beq.s	_c060rts
+#ifndef COLDFIRE
 	addq.l	#1,d1			// If was -1
 	beq.s	abc040			// then fulsh everything
 	move.l	a0,d1			// extract the position within the cacheline
@@ -451,7 +651,6 @@ _cache060:
 	add.l	d1,d0			// only push this one cacheline
 	lsr.l	#4,d0			// how many cachelines we need to push
 	cmp.l	#512,d0
-#ifndef COLDFIRE
 	bcs.s	fls040
 #endif
 	dc.w	0xF478			// see abc040
@@ -480,7 +679,11 @@ abc040i:
 fls040i:
 	// run through d0+1 times (since a0 may not be on a line boundary)
 	move.l	a0,d1
+#ifdef __mcoldfire__
+	and.l	#0xfffffff0,d1
+#else
 	and.w	#0xfff0,d1
+#endif
 	movea.l	d1,a1
 	moveq	#16,d1
 do040i:
@@ -498,14 +701,20 @@ do040i:
 	beq.s	abc040i			// if there's no physical address, flush all
 	dc.w	0xF468			// this is "cpushl dc,(a0)"
 	dc.w	0xF488			// this is "cinvl ic,(a0)"
-	add.w	d1,a1
+	add.l	d1,a1
+#ifdef __mcoldfire__
+	subq.l	#1,d0
+	bpl.s	do040i
+#else
 	dbf	d0,do040i
+#endif
 _c060rtsi:
 	rts
 
 _cache060_i:
 	move.l	d0,d1			// If no bytes to push, exit
 	beq.s	_c060rtsi
+#ifndef COLDFIRE
 	addq.l	#1,d1			// If was -1
 	beq.s	abc040i			// then fulsh everything
 	move.l	a0,d1			// extract the position within the cacheline
@@ -514,7 +723,6 @@ _cache060_i:
 	add.l	d1,d0			// only push this one cacheline
 	lsr.l	#4,d0			// how many cachelines we need to push
 	cmp.l	#512,d0
-#ifndef COLDFIRE
 	bcs.s	fls040i
 #endif
 	dc.w	0xF478			// this is "cpusha dc"
@@ -543,8 +751,15 @@ _cache060_i:
 // a0: physical address (-1 if the address is not currently mapped)
 
 log2phys:
+#ifdef __mcoldfire__
+	lea	-16(sp),sp
+	movem.l	d0-d2/a1,(sp)		// save some registers
+	move.w	_mcpu+2,d0
+	cmpi.w	#60,d0			// is this a 060?
+#else
 	movem.l	d0-d2/a1,-(sp)		// save some registers
 	cmpi.w	#60,_mcpu+2		// is this a 060?
+#endif
 	beq.s	l2p_060			// yes, so use plpa
 	dc.w	0x4e7a,0x0003		// movec tc,d0
 	btst	#15,d0
@@ -568,11 +783,22 @@ l2p_goon:
 	bra.s	l2p_exit
 l2p_resident:
 	and.l	d2,d0			// extract the physical page address
+#ifdef __mcoldfire__
+	move.l	d0,d2
+	move.l	a0,d0
+	move.l	d2,a0
+#else
 	exg	d0,a0
+#endif
 	and.l	d1,d0			// extract the offset from the logical address
 	add.l	d0,a0			// and build the effective phyiscal address
 l2p_exit:
+#ifdef __mcoldfire__
+	movem.l	(sp),d0-d2/a1		// restore registers
+	lea	16(sp),sp
+#else
 	movem.l	(sp)+,d0-d2/a1		// restore registers
+#endif
 	rts
 
 	// Here's the code for the MC68060. Note that it needs a temporary
@@ -584,15 +810,33 @@ l2p_060:
 	beq.s	l2p_exit
 	// Install the temporary access exception handler
 	move.w	sr,d1
+#ifdef __mcoldfire__
+	move.w	sr,d0
+	ori.l	#0x700,d0
+	move.w	d0,sr
+#else
 	ori	#0x700,sr
-	movec	vbr,a1
+#endif
+	dc.w	0x4e7a,0x9801		// movec vbr,a1
+#ifdef __mcoldfire__
+	move.l	8(a1),d0
+	move.l	d0,old_access
+	move.l	#temp_access,d0
+	move.l	d0,8(a1)
+#else
 	move.l	8(a1),old_access
 	move.l	#temp_access,8(a1)
+#endif
 	move.l	sp,a1
 	dc.w	0xf5c8			// translate the address (plpar (a0))
 lp2_rte:
-	movec	vbr,a1
+	dc.w	0x4e7a,0x9801		// movec vbr,a1
+#ifdef __mcoldfire__
+	move.l	old_access,d0
+	move.l	d0,8(a1)
+#else
 	move.l	old_access,8(a1)
+#endif
 	move.w	d1,sr
 	bra.s	l2p_exit
 // This is the temporary access exception handler. If it gets called, there's

@@ -2,6 +2,10 @@
 # global definitions
 #
 include $(top_srcdir)/../CONFIGVARS
+#
+# compile coldfire target (requires newer gcc)
+#
+COLDFIRE = yes
 
 #
 # private definitions

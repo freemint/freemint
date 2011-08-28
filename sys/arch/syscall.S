@@ -53,6 +53,12 @@
  *
  */
 
+#if __GNUC__ > 2
+#ifndef __mcoldfire__
+	.arch	68030
+#endif
+#endif
+
 #include "magic/magic.i"
 
 	.text
@@ -86,7 +92,7 @@
 	.globl	_sys_b_ubconstat,_do_bconin,_sys_b_ubcostat,_sys_b_kbshift
 
 	.globl	_secure_mode,_falcontos
-	
+
 	.globl	_stop
 
 	.globl _stackerror
@@ -113,7 +119,12 @@ _mint_dos:
 	beq.s	norm_gemdos
 
 	movea.l	sp,a0
+#ifdef __mcoldfire__
+	lea	-44(sp),sp
+	movem.l	d2-d7/a2-a6,(sp)
+#else
 	movem.l	d2-d7/a2-a6,-(sp)
+#endif
 	lea	_dos_tab,a5
 	move.w	_dos_max,d5
 	bra	reentrant_trap
@@ -133,14 +144,27 @@ norm_gemdos:
 	move.l	_curproc,a0
 	move.l	(a0),sp 		// this puts us in our private stack
 #ifdef NEW_SYSCALL
+#ifdef __mcoldfire__
+	mvz.w  (a1),d1
+#else
 	move.w (a1),d1
+#endif
 	cmp.w	_dos_max,d1
 	bcc	gemdos
 // offset 0 is func pointer, 4 is nr of args, 6 is their size
-nospr:	move.w	6(a5,d1.w*8),d1		// fetch size in bytes
+nospr:
+#ifdef __mcoldfire__
+	move.w	6(a5,d1.l*8),d1		// fetch size in bytes
+	lsr.l	#1,d1			// we need size in words
+cparg:	move.w	(a1,d1.l*2),-(sp)
+	subq.l	#1,d1
+	bpl.s	cparg
+#else
+	move.w	6(a5,d1.w*8),d1		// fetch size in bytes
 	lsr.w	#1,d1			// we need size in words
 cparg:	move.w	(a1,d1.w*2),-(sp)
 	dbra.w	d1,cparg
+#endif
 #else
 	move.l	32(a1),-(sp)		// a1 was set by build_context
 	move.l	28(a1),-(sp)
@@ -154,7 +178,12 @@ cparg:	move.w	(a1,d1.w*2),-(sp)
 #endif
 noargs:	jsr	_enter_gemdos		// set up vectors appropriately
 #ifdef DEBUG_INFO
+#ifdef __mcoldfire__
+	move.w	#4201,d1
+	cmp.w	(sp),d1			// special case Sys_Printf
+#else
 	cmpi.w	#4201,(sp)		// special case Sys_Printf
+#endif
 	bne.s	no_sys_printf
 	clr.w	(sp)			// manipulate function number
 	lea	_sys_mon_tab,a5		// tab
@@ -186,7 +215,12 @@ _mint_xbios:
 	beq	norm_xbios
 
 	movea.l	sp,a0
+#ifdef __mcoldfire__
+	lea	-44(sp),sp
+	movem.l	d2-d7/a2-a6,(sp)
+#else
 	movem.l	d2-d7/a2-a6,-(sp)
+#endif
 	lea	_xbios_tab,a5
 	move.w	_xbios_max,d5
 	bra	reentrant_trap
@@ -200,7 +234,7 @@ norm_xbios:
 	lea	6(sp),a1		// supervisor mode: args on stack
 	tst.w	(0x59e).w		// test longframe
 	beq.s	LX_check
-	addq.w	#2,a1			// stack is a bit bigger
+	addq.l	#2,a1			// stack is a bit bigger
 #endif
 	bra.s	LX_check
 LX_usr:
@@ -210,11 +244,26 @@ LX_usr:
 
 LX_check:
 	move.l	_curproc,a0
+#ifdef __mcoldfire__
+	moveq	#17,d1
+	cmp.w	(a1),d1			// no need to forbid Random()
+#else
 	cmp.w	#17,(a1)		// no need to forbid Random()
+#endif
 	beq.s	pok
+#ifdef __mcoldfire__
+	moveq	#21,d1
+	cmp.w	(a1),d1			// Cursconf() gets converted to ioctl()
+#else
 	cmp.w	#21,(a1)		// Cursconf() gets converted to ioctl()
+#endif
 	beq.s	pok
+#ifdef __mcoldfire__
+	moveq	#38,d1
+	cmp.w	(a1),d1			// Supexec() has own protection code
+#else
 	cmp.w	#38,(a1)		// Supexec() has own protection code
+#endif
 	beq.s	pok
 	tst.w	_secure_mode		// the rest is subject to check
 	beq.s	pok
@@ -224,14 +273,29 @@ pok:
 #ifndef M68000
 	tst.w	_falcontos		// on TOS 4.0 - 4.04...
 	beq.s	sk
+#ifdef __mcoldfire__
+	moveq	#5,d1
+	cmp.w	(a1),d1 		// ...check for Setscreen command
+#else
 	cmp.w	#5,(a1) 		// ...check for Setscreen command
+#endif
 	beq.s	LX_rom			// no -- fall through
 
 // DSP XBIOS is Falcon030 only - am I right?
 
+#ifdef __mcoldfire__
+	moveq	#108,d1
+	cmp.w	(a1),d1			// Dsp_LoadProg()
+#else
 	cmp.w	#108,(a1)		// Dsp_LoadProg()
+#endif
 	beq.s	LX_rom
+#ifdef __mcoldfire__
+	moveq	#111,d1
+	cmp.w	(a1),d1			// Dsp_LodToBinary()
+#else
 	cmp.w	#111,(a1)		// Dsp_LodToBinary()
+#endif
 	beq.s	LX_rom
 #endif
 // _curproc is already in a0 here
@@ -244,7 +308,7 @@ sk:
 	jsr	_build_context
 	lea	_xbios_tab,a5		// set syscall_tab
 	move.w	_xbios_max,d5		// set syscall_max
-	
+
 //
 // copy parameters onto process stack. a0 and a1 were set by _build_context
 //
@@ -298,7 +362,12 @@ _mint_bios:
 	beq	norm_bios
 
 	movea.l	sp,a0
+#ifdef __mcoldfire__
+	lea	-44(sp),sp
+	movem.l	d2-d7/a2-a6,(sp)
+#else
 	movem.l	d2-d7/a2-a6,-(sp)
+#endif
 	lea	_bios_tab,a5
 	move.w	_bios_max,d5
 	bra	reentrant_trap
@@ -333,7 +402,13 @@ L_ubios:
 L_1out:
 	addq.l	#2,sp
 L_0out:
+#ifdef __mcoldfire__
+	move.w	sr,d1
+	ori.l	#0x0400,d1		// spl7()
+	move.w	d1,sr
+#else
 	ori.w	#0x0400,sr		// spl7()
+#endif
 	jsr	_leave_kernel		// does not change d0
 	rte				// return to user
 L_00:
@@ -341,7 +416,7 @@ L_00:
 	bne.s	L_01
 	move.w	2(a1),-(sp)		// yes; push argument
 	jsr	_do_bconin
-	addq.w	#2,sp
+	addq.l	#2,sp
 	cmp.w	#0xdead,d0		// would Bconin block?
 	bne.s	L_0out			// no -- we're done
 	bra.s	L_bios			// yes -- do the long stuff
@@ -411,14 +486,26 @@ pt_ende:
 //
 // figure out which routine to call
 //
+#ifdef __mcoldfire__
+	mvz.w	(sp),d1
+#else
 	move.w	(sp),d1
+#endif
 	cmp.w	d5,d1
 	bcc	error
 #ifndef M68000
 #ifdef NEW_SYSCALL
+#ifdef __mcoldfire__
+	move.l	0(a5,d1.l*8),d1
+#else
 	move.l	0(a5,d1.w*8),d1
+#endif
+#else
+#ifdef __mcoldfire__
+	move.l	0(a5,d1.l*4),d1 	// d0 = syscall_tab[d0]
 #else
 	move.l	0(a5,d1.w*4),d1 	// d0 = syscall_tab[d0]
+#endif
 #endif
 #else
 #ifdef NEW_SYSCALL
@@ -429,7 +516,7 @@ pt_ende:
 	move.l	0(a5,d1.w),d1		// d0 = syscall_tab[d0]
 #endif
 	beq	error			// null entry means invalid call
-	addq.w	#2,sp			// pop function number off stack
+	addq.l	#2,sp			// pop function number off stack
 	move.l	d1,a0
 	jsr	(a0)			// go do the call
 
@@ -442,8 +529,14 @@ out_select:
 	tst.l	P_PTRACER(a0)		// check curproc->ptracer, if not set
 	beq.s	notrace 		// then no pending trace this ensures
 	move.w	d0,d1			// we work with non-MiNT debuggers
+#ifdef __mcoldfire__
+	and.l	#0xc000,d1		// are either of the trace bits set
+	sne	d1
+	move.b	d1,P_SYSCTXT+C_PTRACE(a0) // mark as trace pending/not
+#else
 	and.w	#0xc000,d1		// are either of the trace bits set
 	sne	P_SYSCTXT+C_PTRACE(a0)	// mark as trace pending/not
+#endif
 notrace:
 	tst.w	d2			// If D2 set, dont preemtp
 	bne.s	nosleep
@@ -474,7 +567,13 @@ nosleep:
 noreload2:
 	jsr	_check_sigs
 nosig:
+#ifdef __mcoldfire__
+	move.w	sr,d1
+	ori.l	#0x0400,d1		// spl7()
+	move.w	d1,sr
+#else
 	ori.w	#0x0400,sr		// spl7()
+#endif
 	clr.l	_unwound_stack
 	jsr	_leave_kernel		// restore vectors (loads a0)
 	pea	4(a0)
@@ -498,15 +597,33 @@ do_bconout:
 	bne.s	new_dev 		// no -- maybe we can't do this
 put_buf:
 	move.w	4(a1),d0		// get the character to output
+#ifdef __mcoldfire__
+	mvz.w	_bconbsiz,d1		// get index into buffer table
+#else
 	move.w	_bconbsiz,d1		// get index into buffer table
+#endif
 	cmp.w	#255,d1 		// buffer full?
 	beq	L_bios			// yes -- flush it out
 	lea	_bconbuf,a0
+#ifdef __mcoldfire__
+	add.l	d1,a0
+#else
 	add.w	d1,a0
+#endif
 	move.b	d0,(a0) 		// store the character
+#ifdef __mcoldfire__
+	addq.l	#1,d1
+#else
 	addq.w	#1,d1
+#endif
 	move.w	d1,_bconbsiz
+#ifdef __mcoldfire__
+	move.w	sr,d1
+	ori.l	#0x0400,d1		// spl7()
+	move.w	d1,sr
+#else
 	ori.w	#0x0400,sr		// spl7()
+#endif
 	jsr	_leave_kernel		// restore vectors
 	moveq.l	#-1,d0			// return character output OK
 	rte
@@ -558,12 +675,22 @@ _mint_trap2:
 	tst.w	_in_kernel
 	beq.s	norm_trap2
 
+#ifdef __mcoldfire__
+	lea	-56(sp),sp
+	movem.l	d1-d7/a0-a6,(sp)
+#else
 	movem.l	d1-d7/a0-a6,-(sp)
+#endif
 	lea	((7+7)*4)(sp),a0
 	bra	reentrant_trap2
 
 norm_trap2:
+#ifdef __mcoldfire__
+	lea	_in_kernel,a0
+	bset	#0x07,(a0)
+#else
 	bset	#0x07,_in_kernel
+#endif
 
 // The AES/VDI passes parameters in D0/D1, so we do not touch
 // them registers..
@@ -589,7 +716,7 @@ norm_trap2:
 	beq	trap2_gdosvers
 	cmp.w	#-1,d0			// This returns the address of the VDI handler
 	beq	trap2_vdihandler
-	
+
 	// What to do with trap 2 calls we dont know?
 	// for now just noting..
 trap2_out:
@@ -603,7 +730,7 @@ enter_vdi:
 	move.l	d2,a0
 	move.l	d1,-(sp)		// VDI parameter block address
 	jsr	(a0)
-	addq.w	#4,sp
+	addq.l	#4,sp
 	moveq	#1,d2			// nonzero D2 prevents preempt
 	bra.s	trap2_out
 
@@ -615,12 +742,12 @@ enter_aes:
 	move.l	d2,a0
 	move.l	d1,-(sp)
 	jsr	(a0)
-	addq.w	#4,sp
+	addq.l	#4,sp
 	moveq	#0,d2			// zero D2 allows preempt
 	bra.s	trap2_out
 
 	// Return the GDOS version if VDI is installed
-	// as a kernel module. 
+	// as a kernel module.
 trap2_gdosvers:
 	move.l	_vdi_handler,d2
 	beq.s	old_trap2
@@ -667,8 +794,14 @@ _trap_1_emu:
 	move.w	(sp),-(sp)
 	move.w	4(sp),2(sp)
 	clr.w	4(sp)
-TE_D:	move.w	sr,-(sp)
-#ifndef	M68000
+TE_D:
+#ifdef __mcoldfire__
+	move.w	sr,d0
+	move.w	d0,-(sp)
+#else
+	move.w	sr,-(sp)
+#endif
+#if !(defined(M68000) || defined(__mcoldfire__))
 	jmp	([_old_dos])
 #else
 	move.l	_old_dos.w(pc),-(sp)
@@ -685,14 +818,23 @@ _trap_2_emu:
 	move.w	(sp),-(sp)
 	move.w	4(sp),2(sp)
 	clr.w	4(sp)
-TE_AV:	move.w	sr,-(sp)
-#ifndef	M68000
+TE_AV:
+#ifdef __mcoldfire__
+	subq.l	#4,sp
+	move.w	d0,(sp)
+	move.w	sr,d0
+	move.w	d0,2(sp)
+	move.w	(sp)+,d0
+#else
+	move.w	sr,-(sp)
+#endif
+#if !(defined(M68000) || defined(__mcoldfire__))
 	jmp	([_old_trap2])
 #else
 	move.l	_old_trap2.w(pc),-(sp)
 	rts
 #endif
-	
+
 _trap_13_emu:
 #ifdef M68000
 	tst.w	(0x059e).w		// test longframe
@@ -701,8 +843,14 @@ _trap_13_emu:
 	move.w	(sp),-(sp)
 	move.w	4(sp),2(sp)
 	clr.w	4(sp)
-TE_B:	move.w	sr,-(sp)
-#ifndef	M68000
+TE_B:
+#ifdef __mcoldfire__
+	move.w	sr,d0
+	move.w	d0,-(sp)
+#else
+	move.w	sr,-(sp)
+#endif
+#if !(defined(M68000) || defined(__mcoldfire__))
 	jmp	([_old_bios])
 #else
 	move.l	_old_bios.w(pc),-(sp)
@@ -717,8 +865,14 @@ _trap_14_emu:
 	move.w	(sp),-(sp)
 	move.w	4(sp),2(sp)
 	clr.w	4(sp)
-TE_X:	move.w	sr,-(sp)
-#ifndef	M68000
+TE_X:
+#ifdef __mcoldfire__
+	move.w	sr,d0
+	move.w	d0,-(sp)
+#else
+	move.w	sr,-(sp)
+#endif
+#if !(defined(M68000) || defined(__mcoldfire__))
 	jmp	([_old_xbios])
 #else
 	move.l	_old_xbios.w(pc),-(sp)
@@ -761,13 +915,17 @@ v_rte:	rte				// and return :-)
 	.globl	_lineA0
 
 _lineA0:
-	movem.l	d2/a2,-(sp)		// save scratch registers
-#ifdef COLDFIRE
-	jsr 0xE09512             // TOS40
+#ifdef __mcoldfire__
+	move.l	a2,-(sp)		// save scratch registers
+	move.l	d2,-(sp)
+	dc.w	0xa920			// call the line A initialization routine
+	move.l	(sp)+,d2
+	move.l	(sp)+,a2
 #else
+	movem.l	d2/a2,-(sp)		// save scratch registers
 	dc.w	0xa000			// call the line A initialization routine
-#endif
 	movem.l	(sp)+,d2/a2
+#endif
 	rts
 
 //
@@ -780,9 +938,19 @@ _lineA0:
 _call_aes:
 	move.l	4(sp),d1		// fetch pointer to parameter block
 	move.l	#200,d0 		// magic number for AES
+#ifdef __mcoldfire__
+	move.l	a2,-(sp)		// save scratch registers
+	move.l	d2,-(sp)
+#else
 	movem.l	d2/a2,-(sp)		// save scratch registers
+#endif
 	trap	#2
+#ifdef __mcoldfire__
+	move.l	(sp)+,d2
+	move.l	(sp)+,a2
+#else
 	movem.l	(sp)+,d2/a2
+#endif
 	rts
 
 //
@@ -801,13 +969,28 @@ _call_aes:
 _callout:
 	lea	8(sp),a0		// pointer to args
 	move.l	4(sp),a1		// pointer to pointer to function
+#ifdef __mcoldfire__
+	lea	-44(sp),sp
+	movem.l	d2-d7/a2-a6,(sp)	// save registers
+#else
 	movem.l	d2-d7/a2-a6,-(sp)	// save registers
+#endif
 	movem.l	(a0),d0-d7		// copy parameters
+#ifdef __mcoldfire__
+	lea	-32(sp),sp
+	movem.l	d0-d7,(sp)
+#else
 	movem.l	d0-d7,-(sp)
+#endif
 	suba.l	a5,a5			// the BIOS expects 0 in a5
 	jsr	(a1)			// go do it
 	lea	32(sp),sp
+#ifdef __mcoldfire__
+	movem.l	(sp),d2-d7/a2-a6	// restore reggies
+	lea	44(sp),sp
+#else
 	movem.l	(sp)+,d2-d7/a2-a6	// restore reggies
+#endif
 	rts
 //
 // _callout2 and _callout1 are for functions with just 1 or
@@ -820,41 +1003,95 @@ _callout:
 _callout1:
 _callout2:
 	movem.l	4(sp),a0/a1		// get function ptr & args
+#ifdef __mcoldfire__
+	lea	-44(sp),sp
+	movem.l	d2-d7/a2-a6,(sp)	// save reggies
+#else
 	movem.l	d2-d7/a2-a6,-(sp)	// save reggies
+#endif
 	move.l	a1,-(sp)		// push args
 	suba.l	a5,a5			// the BIOS expects 0 in a5
 	jsr	(a0)			// do function
-	addq.w	#4,sp
+	addq.l	#4,sp
+#ifdef __mcoldfire__
+	movem.l	(sp),d2-d7/a2-a6	// restore reggies
+	lea	44(sp),sp
+#else
 	movem.l	(sp)+,d2-d7/a2-a6	// restore reggies
+#endif
 	rts
 //
 // _callout6 passes 6 words, saving sr
 //
 _callout6:
+#ifdef __mcoldfire__
+	lea	-44(sp),sp
+	movem.l	d2-d7/a2-a6,(sp)	// save registers
+#else
 	movem.l	d2-d7/a2-a6,-(sp)	// save registers
+#endif
 	movem.l	4+44(sp),a0-a3		// get function ptr & args
+#ifdef __mcoldfire__
+	move.w	sr,d2
+	move.w	d2,-(sp)
+	lea	-12(sp),sp
+	movem.l	a1-a3,(sp)		// copy args
+#else
 	move.w	sr,-(sp)
 	movem.l	a1-a3,-(sp)		// copy args
+#endif
 	suba.l	a5,a5			// the BIOS expects 0 in a5
 	jsr	(a0)			// go do it
 	lea	12(sp),sp
+#ifdef __mcoldfire__
+	move.w	(sp)+,d2
+	move.w	d2,sr
+	movem.l	(sp),d2-d7/a2-a6	// restore reggies
+	lea	44(sp),sp
+#else
 	move.w	(sp)+,sr
 	movem.l	(sp)+,d2-d7/a2-a6	// restore reggies
+#endif
 	rts
 //
 // _callout6spl7 passes 6 words at ipl7
 //
 _callout6spl7:
+#ifdef __mcoldfire__
+	lea	-44(sp),sp
+	movem.l	d2-d7/a2-a6,(sp)	// save registers
+#else
 	movem.l	d2-d7/a2-a6,-(sp)	// save registers
+#endif
 	movem.l	4+44(sp),a0-a3		// get function ptr & args
+#ifdef __mcoldfire__
+	move.w	(sp)+,d2
+	move.w	d2,sr
+	lea	-12(sp),sp
+	movem.l	a1-a3,(sp)		// copy args
+#else
 	move.w	sr,-(sp)
 	movem.l	a1-a3,-(sp)		// copy args
+#endif
 	suba.l	a5,a5			// the BIOS expects 0 in a5
+#ifdef __mcoldfire__
+	move.w	sr,d2
+	ori.l	#0x0700,d2		// spl7()
+	move.w	d2,sr
+#else
 	ori.w	#0x0700,sr		// spl7()
+#endif
 	jsr	(a0)			// go do it
 	lea	12(sp),sp
+#ifdef __mcoldfire__
+	move.w	(sp)+,d2
+	move.w	d2,sr
+	movem.l	(sp),d2-d7/a2-a6	// restore reggies
+	lea	44(sp),sp
+#else
 	move.w	(sp)+,sr
 	movem.l	(sp)+,d2-d7/a2-a6	// restore reggies
+#endif
 	rts
 
 //
@@ -904,33 +1141,51 @@ ucret:	lea	24(sp),sp		// fix up stack
 //
 reentrant_trap:
 #ifdef M68000
-	addq.w	#2+4,a0
+	addq.l	#2+4,a0
 	tst.w	(0x59e).w
 	beq.s	reent_shortframe
-	addq.w	#2,a0
+	addq.l	#2,a0
 reent_shortframe:
 #else
-	addq.w	#2+4+2,a0
+	addq.l	#2+4+2,a0
 #endif
 	// Save hardware registers (CPU/FPU)
 	tst.w	_fpu
 	beq.s	reent_fpu_saved
+#ifdef __mcoldfire__
+	lea	-16(sp),sp
+	fsave	(sp)
+#else
 	fsave	-(sp)
+#endif
 
 #ifndef M68000
+#ifdef __mcoldfire__
+	moveq	#60,d1
+	cmp.w	_mcpu+2,d1
+#else
 	cmp.w	#60,_mcpu+2
+#endif
 	bne.s	reent_no_060
 	tst.b	2(sp)
 	beq.s	reent_fpu_notused
 	bra.s	reent_save_fpu
 reent_no_060:
 #endif
-	
+
 	tst.b	(sp)
 	beq.s	reent_fpu_notused
 reent_save_fpu:
+#ifdef __mcoldfire__
+	lea	-64(sp),sp
+	fmovem.d fp0-fp7,(sp)
+	fmove.l	fpiar,-(sp)
+	fmove.l	fpsr,-(sp)
+	fmove.l	fpcr,-(sp)
+#else
 	fmovem.x fp0-fp7,-(sp)
 	fmovem.l fpcr/fpsr/fpiar,-(sp)
+#endif
 	move.w	#1,-(sp)
 	bra.s	reent_fpu_saved
 reent_fpu_notused:
@@ -963,7 +1218,11 @@ reent_fpu_saved:
 	moveq	#24,d5
 	cmpa.l	#_dos_tab,a5
 	bne.s	reent_24
+ #ifdef __mcoldfire__
+	addq.l	#8,d5
+ #else
 	addq.w	#8,d5
+ #endif
 reent_24:
 
 // ---------- END without NEW_SYSCALL ---------------
@@ -983,40 +1242,80 @@ reent_24:
 	move.l	(a5,d1.l),d2
  #endif
 	beq.s	reent_nofunc
- #ifndef M68000
+ #ifdef __mcoldfire__
+	mvz.w	6(a5,d1.l*8),d5
+ #elif !defined(M68000)
 	move.w	6(a5,d1.l*8),d5
  #else
  	move.w	6(a5,d1.l),d5
  #endif
 #endif	//NEW_SYSCALL
 // ------------ END with NEW_SYSCALL ------------------
+#ifdef __mcoldfire__
+	add.l	d5,a0		// A0 now points to the last parameter (first one pushed)
+	subq.l	#2,d5		// Skip the Function number
+	move.l	d5,d1
+#else
 	add.w	d5,a0		// A0 now points to the last parameter (first one pushed)
 	subq.w	#2,d5		// Skip the Function number
 	move.w	d5,d1
+#endif
 	beq.s	reent_noargs	// No args (only function number)
+#ifdef __mcoldfire__
+	lsr.l	#1,d1		// Turn bytes into words
+	subq.l	#1,d1
+#else
 	lsr.w	#1,d1		// Turn bytes into words
 	subq.w	#1,d1
+#endif
 reent_cpyargs:
 	move.w	-(a0),-(sp)
+#ifdef __mcoldfire__
+	subq.l	#1,d1
+	bpl.s	reent_cpyargs
+#else
 	dbra	d1,reent_cpyargs
+#endif
 reent_noargs:
 
 	move.l	d2,a0		// Function address
 	jsr	(a0)
 	moveq	#0,d1		// Clear D1 -- we're not gonna call anything else
 reent_out:
+#ifdef __mcoldfire__
+	add.l	d5,sp		// Correct stack
+#else
 	add.w	d5,sp		// Correct stack
+#endif
 	// Unstack all cpu/fpu registers...
 	tst.w	_fpu
 	beq.s	reent_out_no_fpu
 	tst.w	(sp)+
 	beq.s	reent_no_fpu_saved
+#ifdef __mcoldfire__
+	fmove.l	(sp)+,fpcr
+	fmove.l	(sp)+,fpsr
+	fmove.l	(sp)+,fpiar
+	fmovem.d (sp),fp0-fp7
+	lea	64(sp),sp
+#else
 	fmovem.l (sp)+,fpcr/fpsr/fpiar
 	fmovem.x (sp)+,fp0-fp7
+#endif
 reent_no_fpu_saved:
+#ifdef __mcoldfire__
+	frestore (sp)
+	lea	16(sp),sp
+#else
 	frestore (sp)+
+#endif
 reent_out_no_fpu:
+#ifdef __mcoldfire__
+	movem.l	(sp),d2-d7/a2-a6
+	lea	44(sp),sp
+#else
 	movem.l	(sp)+,d2-d7/a2-a6
+#endif
 	tst.l	d1		// If D1 is not NULL, it is the address of some old trap
 	bne.s	reent_call_rom
 	rte
@@ -1061,34 +1360,52 @@ reentrant_trap2:
 	// we wont bother with it. VDI/AES passes args in D0/D1.
 #ifdef	TRAP2_STACK_PARAMS
 #ifdef M68000
-	addq.w	#2+4,a0
+	addq.l	#2+4,a0
 	tst.w	(0x59e).w
 	beq.s	reent2_shortframe
-	addq.w	#2,a0
+	addq.l	#2,a0
 reent2_shortframe:
 #else
-	addq.w	#2+4+2,a0
+	addq.l	#2+4+2,a0
 #endif
 #endif
 	// Save hardware registers (CPU/FPU)
 	tst.w	_fpu
 	beq.s	reent2_fpu_saved
+#ifdef __mcoldfire__
+	lea	-16(sp),sp
+	fsave	(sp)
+#else
 	fsave	-(sp)
+#endif
 
 #ifndef M68000
+#ifdef __mcoldfire__
+	moveq	#60,d1
+	cmp.w	_mcpu+2,d1
+#else
 	cmp.w	#60,_mcpu+2
+#endif
 	bne.s	reent2_no_060
 	tst.b	2(sp)
 	beq.s	reent2_fpu_notused
 	bra.s	reent2_save_fpu
 reent2_no_060:
 #endif
-	
+
 	tst.b	(sp)
 	beq.s	reent2_fpu_notused
 reent2_save_fpu:
+#ifdef __mcoldfire__
+	lea	-64(sp),sp
+	fmovem.d fp0-fp7,(sp)
+	fmove.l	fpiar,-(sp)
+	fmove.l	fpsr,-(sp)
+	fmove.l	fpcr,-(sp)
+#else
 	fmovem.x fp0-fp7,-(sp)
 	fmovem.l fpcr/fpsr/fpiar,-(sp)
+#endif
 	move.w	#1,-(sp)
 	bra.s	reent2_fpu_saved
 reent2_fpu_notused:
@@ -1109,7 +1426,7 @@ reent2_fpu_saved:
 	beq	reent2_trap2_gdosvers
 	cmp.w	#-1,d0			// This returns the address of the VDI handler
 	beq	reent2_trap2_vdihandler
-	
+
 	// What to do with trap 2 calls we dont know?
 	// for now just noting..
 	moveq	#0,d2
@@ -1125,7 +1442,7 @@ reent2_enter_vdi:
 	move.l	d2,a0
 	move.l	d1,-(sp)
 	jsr	(a0)
-	addq.w	#4,sp
+	addq.l	#4,sp
 	moveq	#0,d2
 	bra.s	reent2_trap2_out
 
@@ -1137,12 +1454,12 @@ reent2_enter_aes:
 	move.l	d2,a0
 	move.l	d1,-(sp)
 	jsr	(a0)
-	addq.w	#4,sp
+	addq.l	#4,sp
 	moveq	#0,d2
 	bra.s	reent2_trap2_out
 
 	// REturn the GDOS version if VDI is installed
-	// as a kernel module. 
+	// as a kernel module.
 reent2_trap2_gdosvers:
 	tst.l	_vdi_handler
 	beq.s	reent2_old_trap2
@@ -1172,16 +1489,39 @@ reent2_out:
 	beq.s	reent2_out_no_fpu
 	tst.w	(sp)+
 	beq.s	reent2_no_fpu_saved
+#ifdef __mcoldfire__
+	fmove.l	(sp)+,fpcr
+	fmove.l	(sp)+,fpsr
+	fmove.l	(sp)+,fpiar
+	fmovem.d (sp),fp0-fp7
+	lea	64(sp),sp
+#else
 	fmovem.l (sp)+,fpcr/fpsr/fpiar
 	fmovem.x (sp)+,fp0-fp7
+#endif
 reent2_no_fpu_saved:
+#ifdef __mcoldfire__
+	frestore (sp)
+	lea	16(sp),sp
+#else
 	frestore (sp)+
+#endif
 reent2_out_no_fpu:
 	tst.l	d2
 	bne.s	reent2_call_old
+#ifdef __mcoldfire__
+	movem.l	(sp),d1-d7/a0-a6
+	lea	56(sp),sp
+#else
 	movem.l	(sp)+,d1-d7/a0-a6
+#endif
 	rte
 reent2_call_old:
+#ifdef __mcoldfire__
+	movem.l	(sp),d1-d7/a0-a6
+	lea	56(sp),sp
+#else
 	movem.l	(sp)+,d1-d7/a0-a6
+#endif
 	move.l	_old_trap2,-(sp)
 	rts
