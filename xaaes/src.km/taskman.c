@@ -2637,12 +2637,10 @@ static void add_kerinfo(
 	fp = kernel_open( path, O_RDONLY, &err, NULL );
 	if(fp)
 	{
-		char line[256], sstr[1024];
+		char line[512], sstr[1024];
 
 		err = kernel_read( fp, sstr, sizeof(sstr)-1 );
 		kernel_close(fp);
-		if( err >= sizeof(sstr) )
-			*(sstr + sizeof(sstr) - 1) = 0;
 
 		if( err > 0 )
 		{
