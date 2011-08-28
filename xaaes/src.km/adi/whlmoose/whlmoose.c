@@ -182,7 +182,10 @@ static short click_y;
 static short click_state;
 static short click_cstate;
 static short click_count;
-static char  clicks[16];
+static union {
+	char chars[16];
+	unsigned long ulongs[4];
+} clicks;
 //static short l_clicks;
 //static short r_clicks;
 
@@ -356,7 +359,7 @@ timer_handler(void)
 					if (s != last_state) /* We skip identical button state events */
 					{
 						register short i;
-						register char *c = clicks;
+						register char *c = clicks.chars;
 
 						if (timeout)
 						{
@@ -447,7 +450,7 @@ do_button_packet(void)
 	md.clicks	= click_count;
 	md.kstate	= 0;		/* Not set here -- will change*/
 	s = md.iclicks.ulongs;
-	d = (unsigned long *)clicks;
+	d = clicks.ulongs;
 	*s++ = *d, *d++ = 0;
 	*s++ = *d, *d++ = 0;
 	*s++ = *d, *d++ = 0;
@@ -483,7 +486,7 @@ moose_open (struct adif *a)
 	dc_time		= 50;
 	pkt_timegap	= 3;
 	click_count	= 0;
-	for (i = 0; i < 16; i++) clicks[i] = 0;
+	for (i = 0; i < 16; i++) clicks.chars[i] = 0;
 
 	timeout		= 0;
 
