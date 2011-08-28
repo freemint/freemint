@@ -24,9 +24,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-//#include WIDGHNAME
-// #include "xa_xtobj.h"
-
 #include "xa_types.h"
 #include "xa_global.h"
 
@@ -40,6 +37,7 @@
 #include "menuwidg.h"
 #include "scrlobjc.h"
 #include "xa_user_things.h"
+#include "mint/arch/asm.h"
 
 /* call progdef-function via SIGUSR2
  * (not good because of possible VDI-calls inside signal-handler)
@@ -341,12 +339,12 @@ do_callout ( void *f, PARMBLK *p)
 {
 	register long ret __asm__("d0");
 	__asm__ volatile (
-		"movem.l d3-d7/a3-a6,-(sp)\n\t"
+		PUSH_SP("d3-d7/a3-a6", 36)
 		"move.l %2,-(sp)\n\t"
 		"move.l %1,a0\n\t"
 		"jsr	(a0)\n\t"
 		"lea	4(sp),sp\n\t"
-		"movem.l (sp)+,d3-d7/a3-a6\n\t"
+		POP_SP("d3-d7/a3-a6", 36)
 			: "=r"(ret) 				/* outputs */
 			: "g"(f),"g"(p)
 			: __CLOBBER_RETURN("d0")

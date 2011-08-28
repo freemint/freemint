@@ -30,21 +30,6 @@ WARN = 	-Wall \
 	-Wpointer-arith \
 	-Wcast-qual
 
-NOCFLAGS-adiload.c = $(MODEL)
-CFLAGS-adiload.c = -m68000
-NOCFLAGS-draw_obj.c = $(MODEL)
-CFLAGS-draw_obj.c = -m68000
-NOCFLAGS-info.c = $(MODEL)
-CFLAGS-info.c = -m68000
-NOCFLAGS-mvdi.c = $(MODEL)
-CFLAGS-mvdi.c = -m68000
-NOCFLAGS-nkcc-gc.S = $(MODEL)
-CFLAGS-nkcc-gc.S = -m68000
-NOCFLAGS-nkcc-gc.s = $(MODEL)
-CFLAGS-nkcc-gc.s = -m68000
-NOCFLAGS-xa_user_things.s = $(MODEL)
-CFLAGS-xa_user_things.s = -m68000
-
 LD = $(CC) -nostdlib -Wl,--entry -Wl,_init
 LIBS = -lgem -lgcc
 STRIPFLAGS =
@@ -61,7 +46,7 @@ VPATH = ..
 #
 build: $(TARGET)
 
-$(top_srcdir)/../../sys/libkern/.cpu_$(CPU)/strings.o: $(LIBKERNTARGET)
+#$(top_srcdir)/../../sys/libkern/.cpu_$(CPU)/strings.o: $(LIBKERNTARGET)
 
 $(TARGET): $(OBJS)
 	$(LD) -o $@ $(CFLAGS) $(OBJS) $(LIBS)

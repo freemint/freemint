@@ -188,6 +188,9 @@ again:
 	else
 	{
 		long cpu;
+#ifdef __mcoldfire__
+		name = "xaaesv4e.km";
+#else
 
 		name = DEFAULT;
 
@@ -214,6 +217,7 @@ again:
 		}
 		else
 			ConsoleWrite("CPU-cookie not found \r\n");
+#endif
 	}
 	ConsoleWrite(name);
 	ConsoleWrite("\r\n");
