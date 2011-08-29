@@ -13,7 +13,9 @@ GRADIENTS = g_blue.grd g_cyan.grd g_green.grd g_purple.grd g_red.grd g_yellow.gr
 
 all: $(GRADIENTS)
 
-distclean:
+distclean: clean
+
+clean:
 	rm -f $(GRADIENTS)
 
 %.grd: %.c
