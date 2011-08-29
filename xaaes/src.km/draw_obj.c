@@ -379,8 +379,6 @@ d_g_progdef(struct widget_tree *wt, struct xa_vdi_settings *v)
 {
 #if PROGDEF_BY_SIGNAL
 	struct sigaction oact, act;
-#else
- 	ushort *sstate_mask;
 #endif
 	struct xa_client *client = lookup_extension(NULL, XAAES_MAGIC);
 	OBJECT *ob = wt->current.ob;
@@ -447,17 +445,14 @@ d_g_progdef(struct widget_tree *wt, struct xa_vdi_settings *v)
 		}
 #endif
 
-		sstate_mask = wt->state_mask;
 		pret = do_callout(pfunc,p);
 
-		//if( wt->state_mask == sstate_mask && wt->state_mask && !((long)wt->state_mask & 1) )
-			*wt->state_mask = pret;
+		*wt->state_mask = pret;
 #if 0
 		else
 		{
 			BLOG(("d_g_progdef:%s(%s):invalid state_mask-pointer:%lx, \
 user-func:%lx TEXT:%lx-%lx (killed)", client->name, get_curproc()->name, wt->state_mask, pfunc, base->p_tbase, base->p_tbase + base->p_tlen));
-			ALERT(("d_g_progdef:invalid state_mask-pointer:%lx/%lx", wt->state_mask, sstate_mask));
 			client->status |= (CS_EXITING | CS_SIGKILLED);
 			raise(SIGKILL);
 			yield();
@@ -532,13 +527,11 @@ user-func:%lx TEXT:%lx-%lx (killed)", client->name, get_curproc()->name, wt->sta
 static void
 d_g_slist(struct widget_tree *wt, struct xa_vdi_settings *v)
 {
-	RECT r = wt->r, wa;
+	RECT r = wt->r;
 	SCROLL_INFO *list;
-	SCROLL_ENTRY *this;
 	struct xa_window *w;
 	OBJECT *ob = wt->current.ob;
 
-	/* list = object_get_spec(ob)->listbox; */
 	list = (SCROLL_INFO*)object_get_spec(ob)->index;
 	if (list)
 	{
@@ -549,11 +542,6 @@ d_g_slist(struct widget_tree *wt, struct xa_vdi_settings *v)
 
 		/* for after moving */
 		calc_work_area(w);
-
-		wa = w->wa;
-		//y = wa.y;
-		//maxy = y + wa.h - screen.c_max_h;
-		this = list->top;
 
 		(*v->api->t_color)(v, G_BLACK);
 
