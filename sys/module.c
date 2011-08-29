@@ -42,6 +42,7 @@
 # include "mint/ioctl.h"
 # include "mint/mem.h"
 # include "mint/proc.h"
+# include "mint/arch/asm.h"
 
 # include "dosdir.h"
 # include "filesys.h"
@@ -228,21 +229,21 @@ load_module(const char *path, const char *filename, long *err)
 
 	size = fh.ftext + fh.fdata + fh.fbss;
 	size += 256; /* sizeof (struct basepage) */
-	
+
 	kmsize = ((sizeof(*km) + 15) & 0xfffffff0);
 
 	km = kmalloc(size + kmsize);
 	if (!km)
 	{
 		DEBUG(("load_module: out of memory?"));
-		
+
 		*err = ENOMEM;
 		goto failed;
 	}
 
 	mint_bzero(km, size + kmsize);
 	b = (struct basepage *)((char *)km + kmsize);
-	
+
 	b->p_lowtpa = (long) b;
 	b->p_hitpa = (long)((char *)b + size);
 
@@ -443,18 +444,18 @@ module_init(void *initfunc, struct kerinfo *k)
 # if __GNUC__ >= 3
    /* gcc 3 does not want a clobbered register to be input or output */
 #  define LOCAL_CLOBBER_LIST	__CLOBBER_RETURN("d0") "d1", "d2", "a0", "a1", "a2", "memory"
-# else	
+# else
 #  define LOCAL_CLOBBER_LIST	__CLOBBER_RETURN("d0") "d1", "d2", "a0", "a1", "a2", "memory"
 # endif
 #else
 # define LOCAL_CLOBBER_LIST
 #endif
 
-static void *	 
+static void *
 module_init(void *initfunc, struct kerinfo *k)
 {
 	register void *ret __asm__("d0");
-	
+
 	__asm__ volatile
 	(
 		PUSH_SP("d3-d7/a3-a6", 36)
@@ -726,6 +727,7 @@ run_km(const char *path)
 // 		run = (long _cdecl(*)(struct kentry *, const char *))km->b->p_tbase;
 		run = (long _cdecl(*)(struct kentry *, const struct kernel_module *))km->b->p_tbase;
 		km->caller = curproc;
+		FORCE("run_km: run=0x%lx", run);
 		err = (*run)(&kentry, km); //km->path);
 	}
 	else
@@ -739,26 +741,26 @@ run_km(const char *path)
 {
 	struct kernel_module *km;
 	long err;
-	
+
 	km = load_module(NULL, path, &err);
 	if (km)
 	{
 		long _cdecl (*run)(struct kentry *, const char *path);
-		
+
 		FORCE("run_km(%s) ok (bp 0x%lx)!", path, km->b);
-		
+
 		//sys_c_conin();
 		km->class = MODCLASS_KM;
 		km->subclass = 0;
 
 		run = (long _cdecl (*)(struct kentry *, const char *))km->b->p_tbase;
 		err = (*run)(&kentry, path);
-		
+
 		free_km(km);
 	}
 	else
 		FORCE("run_km(%s) failed -> %li", path, err);
-	
+
 	return err;
 }
 #endif
@@ -772,10 +774,10 @@ static long _cdecl
 module_open(FILEPTR *f)
 {
 	DEBUG(("module_open [%i]: enter (%lx)", f->fc.aux, f->flags));
-	
+
 	if (!suser(get_curproc()->p_cred->ucr))
 		return EPERM;
-	
+
 	return 0;
 }
 
@@ -783,7 +785,7 @@ static long _cdecl
 module_close(FILEPTR *f, int pid)
 {
 	DEBUG(("module_close [%i]: enter", f->fc.aux));
-	
+
 	return E_OK;
 }
 
@@ -811,7 +813,7 @@ module_ioctl(FILEPTR *f, int mode, void *buf)
 	long r = ENOSYS;
 	char *p1, *p2;
 	struct kernel_module *km;
-	
+
 	DEBUG(("module_ioctl [%i]: (%x, (%c %i), %lx)",
 		f->fc.aux, mode, (char)(mode >> 8), (mode & 0xff), buf));
 
@@ -874,7 +876,7 @@ module_ioctl(FILEPTR *f, int mode, void *buf)
 			break;
 		}
 	}
-	
+
 	DEBUG (("module_ioctl(%d): return %li", mode&0xff, r));
 	return r;
 }
@@ -884,10 +886,10 @@ module_datime(FILEPTR *f, ushort *timeptr, int rwflag)
 {
 	if (rwflag)
 		return EACCES;
-	
+
 	*timeptr++ = timestamp;
 	*timeptr = datestamp;
-	
+
 	return E_OK;
 }
 
