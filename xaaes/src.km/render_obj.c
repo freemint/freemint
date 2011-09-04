@@ -26,9 +26,11 @@
 
 
 #include "xa_types.h"
+#include "mint/stat.h"
 #include "render_obj.h"
 #include "xa_xtobj.h"
 #include "global.h"
+#include "mscall.h"
 
 #define MONO (screen->colours < 16)
 #define done(x) (*wt->state_mask &= ~(x))
@@ -3514,6 +3516,154 @@ find_gradient(struct xa_vdi_settings *v, struct color_theme *ct, short w, short 
 	return ret;
 }
 #endif
+
+long make_bkg_img_path( char *bfn, long l )
+{
+	return sprintf( bfn, l, "%s%d%d.%d", api->C->Aes->home_path, screen->r.w, screen->r.h, screen->planes );
+}
+
+#if WITH_BKG_IMG
+/*
+ * md = 0: copy to screen
+ *      1: load from disk
+ *      2: free buffer
+ *      3: load new
+ */
+int do_bkg_img(struct xa_client *client, int md, char *fn )
+{
+	MFDB Mscreen = { 0 };
+	MFDB Mpreserve;
+	short pnt[8];
+	RECT r = screen->r;
+	long sz = 0;
+	struct xa_vdi_settings *v = client->vdi_settings;
+	static void *background = 0;
+	static int ierr = -1;
+	static char bfn[PATH_MAX];
+
+	if( ierr == 1 )	// no memory
+		return 3;
+	if( md == 0 && ierr == 2 )	// wrong file
+		return 3;
+
+	if( md == 2 )	//free
+	{
+		if( ierr == 0 && background )
+			kfree(background);
+		background = 0;
+		return 0;
+	}
+	if( md == 1 || md == 3 || ierr == -1 )
+	{
+		if( !fn )
+		{
+			long l = make_bkg_img_path( bfn, sizeof(bfn)-16 );
+			long err = _d_create( bfn );
+			if( err == -33 )	// could not mkdir
+			{
+				BLOG((0,"do_bkg_img:could not create %s", bfn ));
+				ierr = 2;
+				return 3;
+			}
+			strcpy( bfn + l, "/xa_form.mfp" );
+		}
+		else
+			strcpy( bfn, fn );
+	}
+	v->api->rtopxy(pnt, &r);
+	v->api->ritopxy(pnt + 4, 0, 0, r.w, r.h);
+
+	DIAG((D_menu, NULL, "form_save %d/%d,%d/%d", r.x, r.y, r.w, r.h));
+
+	Mpreserve.fd_w = r.w;
+	Mpreserve.fd_h = r.h;
+	Mpreserve.fd_wdwidth = (r.w + 15) / 16;
+	Mpreserve.fd_nplanes = screen->planes;
+	Mpreserve.fd_stand = 0;
+
+	if( !background || md == 1 || md == 3 )
+	{
+		//if( background )
+			//kfree(background);
+		sz = calc_back(&r,screen->planes);
+		if( !background )
+			background = kmalloc(sz);
+	}
+
+	if (background)
+	{
+		long err;
+		struct file *fp=0;
+		Mpreserve.fd_addr = background;
+
+		if( md == 1 )
+		{
+			fp = kernel_open( bfn, O_RDWR|O_CREAT|O_TRUNC, &err, NULL );
+			if( fp )
+			{
+				hidem();
+				vro_cpyfm(v->handle, S_ONLY, pnt, &Mscreen, &Mpreserve);
+				showm();
+				err = kernel_write( fp, background, sz );
+				kernel_close(fp);
+				ierr = 0;
+				return 0;
+			}
+		}
+		else
+		{
+			RECT r2 = v->clip;
+			if( ierr == -1 || md == 3 )
+			{
+				struct stat st;
+				long sr = f_stat64(0, bfn, &st);
+				if( sr )
+					BLOG((0,"do_bkg_img:%s not found", bfn ));
+				if( st.size != sz )
+				{
+					BLOG((0,"do_bkg_img:%s:wrong file:%ld(%ld)->%ld", bfn, (long)st.size, sz, sr));
+					sr = 1;
+				}
+
+				if( !sr )
+					if( !(fp = kernel_open( bfn, O_RDONLY, &err, NULL )) )
+						BLOG((0,"do_bkg_img: could not open %s", bfn));
+
+				if( !fp || sr )
+				{
+					if( background )
+						kfree(background);
+					background = 0;
+					ierr = 2;
+					if( fp )
+						kernel_close(fp);
+					return 1;
+				}
+				err = kernel_read( fp, background, sz );
+
+				kernel_close(fp);
+				if( err != sz )
+				{
+					BLOG((0,"do_bkg_img:read-error:%ld(%ld):return 1", err, sz));
+					return 1;
+				}
+				ierr = 0;
+			}
+			v->api->rtopxy(pnt, &r2);
+			v->api->rtopxy(pnt+4, &r2);
+			vro_cpyfm(v->handle, S_ONLY, pnt, &Mpreserve, &Mscreen);
+		}
+
+		return 0;
+	}
+	else
+	{
+		ierr = 1;
+		return 2;
+	}
+}
+#endif
+
 static void
 draw_objc_bkg(struct widget_tree *wt, struct xa_vdi_settings *v, struct color_theme *ct, BFOBSPEC *cw, short flags, short fgc, short box_col, short d, short d3_thick, short box_thick, short shadow_thick, RECT *wr, RECT *anch, RECT *area)
 {
@@ -4468,7 +4618,7 @@ draw_outline(struct widget_tree *wt, struct xa_vdi_settings *v, short d, RECT *r
 
 	done(OS_OUTLINED);
 }
-
+#include "desktop.h"
 // draw_objc_bkg(struct xa_vdi_settings *v, struct color_theme *ct, BFOBSPEC *cw, short d, short d3_thick, short box_thick, short btlc, short bbrc, short state, RECT *wr, RECT *anch)
 static void
 draw_g_box(struct widget_tree *wt, struct xa_vdi_settings *v, struct color_theme *ct, BFOBSPEC *c, short flags, RECT *area)
@@ -4478,6 +4628,7 @@ draw_g_box(struct widget_tree *wt, struct xa_vdi_settings *v, struct color_theme
 	short thick, d, d3t, out;
 
 	thick = obj_thickness(wt, ob);
+
 
 	/* before borders */
 	done(OS_SELECTED);
@@ -5100,6 +5251,14 @@ d_g_box(struct widget_tree *wt, struct xa_vdi_settings *v)
 
 #else
 
+#endif
+#if WITH_BKG_IMG
+	if( !memcmp( &wt->r, &root_window->wa, sizeof(RECT)) && wt == get_desktop() && wt->owner == api->C->Aes )
+	{
+
+		if( !do_bkg_img(wt->owner, 0, 0) )
+			return;
+	}
 #endif
 	if ((ob->ob_type & 0xff) == G_EXTBOX)
 	{

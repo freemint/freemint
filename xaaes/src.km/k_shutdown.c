@@ -36,6 +36,7 @@
 #include "init.h"
 #include "nkcc.h"
 #include "draw_obj.h"
+#include "render_obj.h"
 #include "scrlobjc.h"
 #include "taskman.h"
 #include "widgets.h"
@@ -106,6 +107,9 @@ k_shutdown(void)
 		root_window = NULL;
 		S.open_windows.root = NULL;
 	}
+#if WITH_BKG_IMG
+	do_bkg_img( C.Aes, 2, 0 );
+#endif
 	BLOG((false, "shutting down aes thread .. tp=%lx", C.Aes->tp));
 
 	if (C.Aes->tp)

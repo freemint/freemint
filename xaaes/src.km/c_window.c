@@ -1022,7 +1022,7 @@ generate_redraws(enum locks lock, struct xa_window *wind, RECT *r, short flags)
 
 			if ((widg = usertoolbar_installed(wind)) )
 			{
-				if ( xa_rect_clip(&widg->ar, r, &b))
+				if (xa_rect_clip(&widg->ar, r, &b))
 				{
 					send_app_message(lock, wind, NULL, AMQ_IREDRAW, QMF_NORM,
 						WM_REDRAW, widg->m.r.xaw_idx, ((long)wind) >> 16, ((long)wind) & 0xffff,
@@ -1521,6 +1521,18 @@ change_window_attribs(enum locks lock,
 	if (remember)
 		*remember = w->r;
 }
+#if WITH_BKG_IMG
+void make_window_full_screen(enum locks lock)
+{
+	struct xa_window *wind = TOP_WINDOW;
+	if( wind )
+	{
+		change_window_attribs(lock, wind->owner, wind, 0, false, false, 0, wind->r, NULL);
+		wind->send_message(lock, wind, NULL, AMQ_REDRAW, QMF_CHKDUP,
+		   WM_SIZED, 0, 0, wind->handle, screen.r.x, screen.r.y, screen.r.w, screen.r.h);
+	}
+}
+#endif
 
 int _cdecl
 open_window(enum locks lock, struct xa_window *wind, RECT r)
@@ -1611,8 +1623,8 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 				wind->colours = wind->untop_cols;
 
 			/* top menu-owner */
-			if( wind != menu_window && (wind->dial & created_for_POPUP) && wind->owner != C.Hlp )
-				app_in_front(lock, wind->owner, true, true, true);
+			//if( wind != menu_window && (wind->dial & created_for_POPUP) && wind->owner != C.Hlp )
+				//app_in_front(lock, wind->owner, true, true, true);
 			generate_redraws(lock, wind, &wind->r, RDRW_ALL);
 		}
 		/* dont open unlisted windows */
@@ -2128,7 +2140,7 @@ void set_standard_point(struct xa_client *client)
 			root_window->wa.h = screen.r.h;
 			root_window->wa.y = 0;
 		}
-		if( menu_window && cfg.menu_bar != 2 && cfg.menu_ontop && cfg.menu_bar )//&& cfg.menu_layout )
+		if( menu_window && cfg.menu_bar != 2 && cfg.menu_ontop && cfg.menu_bar )
 		{
 			menu_window->r.w = xaw->r.w;
 			menu_window->r.h = xaw->r.h;
