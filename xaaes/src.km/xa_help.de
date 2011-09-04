@@ -3,6 +3,8 @@
 
 0             MenÅzeile an/ausschalten
 #$1 [keyboard-switch]
+.             Aktuellen Fensterinhalt auf Bildschirmgrî·e
+:             Aktuellen Bildschirminhalt als Hintergrund verwenden
 A             Beendet alle laufenden Progamme
               (Ausnahmeliste in xaaes.cnf)
 B             ôffnet den System/Log-Dialog
@@ -18,6 +20,7 @@ J             XaAES neu starten
 K             Programm starten
 M             Mauszeiger wiederherstellen
 N             Lade Gradient
+SHIFT+N       Hintergrundbild Ñndern
 P             Farbpalette wiederherstellen (Farbtiefe
               8-Bit oder weniger)
 Q,G           XaAES sofort beenden (oder $SDMASTER

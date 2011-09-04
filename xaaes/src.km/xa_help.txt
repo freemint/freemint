@@ -3,6 +3,8 @@
 
 0             Switch menubar on/off
 #$1 [keyboard-switch]
+.             Make current window-content full-screen
+:             Make background from current screen
 A             Terminates all applications (list of
               exceptions in xaaes.cnf)
 B             Open System/Log-window
@@ -17,6 +19,7 @@ J             Restart XaAES
 K             Launch program
 M             Recover mousepointer
 N             Load Gradient
+SHIFT+N       Change background-image
 P             Restore palette in colour depth of 8-bits
               or less
 Q,G           Quit XaAES (or execute $SDMASTER if set)
