@@ -164,10 +164,21 @@
 #gradients = n_cyan
 #gradients = n_purple
 
+####################################################
+# textures = <name|[0|1]>    (default = 0)
+#
+# setting textures to a nonzero value or a name (default: img) turns on use of
+# textures in the window widget and aes object
+# renderer in color modes.
+#
+# texture-folders are <xaaes-home-dir>/<name>/
+#textures = img
+textures = 0
+
 #####################################################################
 #palette = <name>
 #
-#load palette from file <sysdir>/xaaes/pal/<name>.pal
+#load palette from file <xaaes-home-dir>/pal/<name>.pal
 #
 #palette = gem
 
@@ -183,8 +194,8 @@ setenv ACCPATH		C:\
 setenv ACCEXT		ACC,ACX
 setenv GEMEXT		PRG,APP,GTP,OVL,SYS
 setenv TOSEXT		TOS,TTP
-setenv TOSRUN		u:\opt\toswin2\tw-call.app
-setenv GEMJINGPATH	u:\d\sound\gemjing\gemjing.prg
+setenv TOSRUN		u:\usr\gem\toswin2\tw-call.app
+#setenv GEMJINGPATH	u:\d\sound\gemjing\gemjing.prg
 setenv SDL_VIDEODRIVER	gem
 
 #####################################################################
@@ -725,7 +736,7 @@ launchpath  = u:\usr\gem
 # Language selection
 # ------------------
 #
-# lang = <two character language-code>     (default is 'en')
+# lang = <two character language-code>     (default from $LANG or AKP-cookie)
 #
 # Set your preferred language for XaAES here, current available
 # two-character language-codes are: en, de, fr, es, hu, ru, cs.
@@ -837,5 +848,4 @@ run u:\usr\gem\toswin2.app
 #setenv AVSERVER   "DESKTOP "
 #setenv FONTSELECT "DESKTOP "
 #
-
 #shell = c:\teradesk\desktop.prg
