@@ -53,6 +53,7 @@
 #include "xa_rsrc.h"
 #include "xa_shel.h"
 #include "trnfm.h"
+#include "render_obj.h"
 #include "keycodes.h"
 
 #include "mint/dcntl.h"
@@ -304,6 +305,8 @@ int switch_keyboard( char *tbname )
 			}
 			return 0;
 }
+
+
 /******************************************************************************
  from "unofficial XaAES":
 
@@ -709,6 +712,8 @@ kernel_key(enum locks lock, struct rawkey *key)
 		case 'T':				/* ctrl+alt+T    Tidy screen */
 		case NK_HOME:				/*     "    Home       "     */
 		{
+			if( C.update_lock )
+				return true;
 			update_windows_below(lock, &screen.r, NULL, window_list, NULL);
 			redraw_menu(lock);
 			return true;
@@ -722,10 +727,22 @@ kernel_key(enum locks lock, struct rawkey *key)
 		case 'N':	/* load gradients */
 		if( !C.update_lock )
 		{
-			post_cevent(C.Hlp, ceExecfunc, open_launcher,NULL, 0, 0, NULL,NULL);
+			post_cevent(C.Hlp, ceExecfunc, open_launcher, NULL, (key->raw.conin.state & (K_RSHIFT|K_LSHIFT)) ? 2 : 0, 0, NULL,NULL);
 		}
 		return true;
 #endif
+#if WITH_BKG_IMG
+		case ':':	// .: make background-image
+			//if( key->raw.conin.state & (K_RSHIFT|K_LSHIFT) )
+			{
+				do_bkg_img( C.Aes, 1, 0 );
+			}
+		return true;
+		case '.':	// .: display top-window full-screen, todo: restore
+			make_window_full_screen(lock);
+		return true;
+#endif
+
 #if HOTKEYQUIT
 		case 'A':
 		{
