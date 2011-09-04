@@ -28,8 +28,10 @@
 #include "xa_global.h"
 
 #include "draw_obj.h"
+#include "desktop.h"
 #include "obtree.h"
 #include "k_init.h"
+#include "render_obj.h"
 #include "trnfm.h"
 #include "rectlist.h"
 #include "c_window.h"
@@ -370,7 +372,6 @@ typedef short __CDECL (*p_handler)(PARMBLK *pb);
  * Draw a box (respecting 3d flags)
  */
 
-
 #define userblk(ut) (*(USERBLK **)(ut->userblk_pp))
 #define ret(ut)     (     (long *)(ut->ret_p     ))
 #define parmblk(ut) (  (PARMBLK *)(ut->parmblk_p ))
@@ -403,6 +404,21 @@ d_g_progdef(struct widget_tree *wt, struct xa_vdi_settings *v)
 	if ((client->status & CS_EXITING))
 		return;
 
+#if WITH_BKG_IMG || WITH_GRADIENTS
+	if( !memcmp( &wt->r, &root_window->wa, sizeof(RECT)) && wt == get_desktop() )
+	{
+
+#if WITH_BKG_IMG
+		if( !do_bkg_img(client, 0, 0) )
+			return;
+#endif
+		if( wt->objcr_api->drawers[G_BOX] )
+		{
+			wt->objcr_api->drawers[G_BOX]( wt, v );
+			return;
+		}
+	}
+#endif
 	p = parmblk(client->ut);
 	p->pb_tree = wt->current.tree;
 	p->pb_obj = wt->current.item;
