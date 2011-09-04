@@ -1533,6 +1533,14 @@ void load_grd( void *fn )
 #endif
 }
 
+void load_bkg_img( void *fn )
+{
+#if WITH_BKG_IMG
+	do_bkg_img(C.Aes, 3, fn);
+	update_windows_below(0, &screen.r, NULL, window_list, NULL);
+#endif
+}
+
 /*
  * Main AESSYS thread...
  */

@@ -44,6 +44,7 @@
 #include "k_main.h"
 #include "k_mouse.h"
 #include "draw_obj.h"
+#include "render_obj.h"
 #include "menuwidg.h"
 #include "obtree.h"
 #include "scrlobjc.h"
@@ -2316,6 +2317,11 @@ handle_launcher(enum locks lock, struct fsel_data *fs, const char *path, const c
 			load_grd( parms+1 );
 		break;
 #endif
+#if WITH_BKG_IMG
+		case 2:
+			load_bkg_img( parms + 1 );
+		break;
+#endif
 	}
 }
 
@@ -2328,7 +2334,7 @@ open_launcher(enum locks lock, struct xa_client *client, int what)
 {
 	struct fsel_data *fs = &aes_fsel_data;
 	char *path, *text;
-#if WITH_GRADIENTS
+#if WITH_GRADIENTS || WITH_BKG_IMG
 	char pbuf[PATH_MAX];
 #endif
 	switch( what )
@@ -2344,6 +2350,14 @@ open_launcher(enum locks lock, struct xa_client *client, int what)
 			path = cfg.launch_path;
 			text = xa_strings[RS_LAUNCH];
 		break;
+#if WITH_BKG_IMG
+		case 2:
+			path = pbuf;
+			make_bkg_img_path( path, sizeof(pbuf)-16 );
+			strcat( path, "\\*.mfp" );
+			text = "load image";
+		break;
+#endif
 		default:
 			return;
 	}

@@ -87,6 +87,14 @@
 #define WITH_GRADIENTS 1
 #endif
 #endif
+/* enable background-image */
+#ifndef WITH_BKG_IMG
+#ifdef ST_ONLY
+#define WITH_BKG_IMG 0
+#else
+#define WITH_BKG_IMG 1
+#endif
+#endif
 
 
 #define PRESERVE_DIALOG_BGD	0	/* Preserve the background of dialogs */
