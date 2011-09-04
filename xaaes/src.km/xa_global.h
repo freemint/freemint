@@ -189,11 +189,7 @@ extern const char mnu_clientlistname[];
 
 // extern XA_TREE nil_tree;
 
-/* mscall.c */
-void hidem(void);
-void showm(void);
-void forcem(void);
-int tellm(void);
+#include "mscall.h"
 
 struct xa_client *pid2client(short pid);
 struct xa_client *proc2client(struct proc *p);

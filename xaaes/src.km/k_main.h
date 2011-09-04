@@ -64,6 +64,7 @@ short dispatch_tpcevent(struct xa_client *client);
 void _cdecl dispatch_shutdown(short flags, unsigned long arg);
 void _cdecl ce_dispatch_shutdown(enum locks l, struct xa_client *client, bool b);
 void load_grd( void *fn );
+void load_bkg_img( void *fn );
 void k_main(void *);
 
 extern int aessys_timeout;
