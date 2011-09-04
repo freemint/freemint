@@ -56,6 +56,7 @@ void change_window_attribs(enum locks lock,
 			   short noleft,
 			   RECT r, RECT *remember);
 
+void make_window_full_screen(enum locks lock);
 //void wi_remove(struct win_base *b, struct xa_window *w, bool chkfocus);
 //void wi_put_first(struct win_base *b, struct xa_window *w);
 void wi_move_first(struct win_base *b, struct xa_window *w);
