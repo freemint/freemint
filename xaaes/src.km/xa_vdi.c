@@ -857,9 +857,12 @@ xa_form_save(short d, RECT r, void **area)
 
 	if (r.w > 0 && r.h > 0)
 	{
-		short xd = r.x & 0x000f;
-		r.x &= ~0x000f;		/* set x to word-boundary */
-		r.w += xd;
+		if( screen.planes == 8 )
+		{
+			short xd = r.x & 0x000f;
+			r.x &= ~0x000f;		/* set x to word-boundary (fVDI)*/
+			r.w += xd;
+		}
 
 		rtopxy(pnt, &r);
 		ritopxy(pnt + 4, 0, 0, r.w, r.h);
@@ -884,8 +887,10 @@ xa_form_save(short d, RECT r, void **area)
 			Mpreserve.fd_addr = *area;
 			hidem();
 			vro_cpyfm(C.P_handle, S_ONLY, pnt, &Mscreen, &Mpreserve);
+
 			showm();
 		}
+		//else
 	}
 }
 
@@ -916,9 +921,12 @@ xa_form_restore(short d, RECT r, void **area)
 
 		if (r.w > 0 && r.h > 0)
 		{
-			short xd = r.x & 0x000f;
-			r.x &= ~0x000f;		/* set x to word-boundary */
-			r.w += xd;
+			if( screen.planes == 8 )
+			{
+				short xd = r.x & 0x000f;
+				r.x &= ~0x000f;		/* set x to word-boundary (fVDI) */
+				r.w += xd;
+			}
 
 			rtopxy(pnt+4, &r);
 			ritopxy(pnt,0,0,r.w,r.h);
