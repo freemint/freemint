@@ -117,9 +117,6 @@ debug139:	.ascii "XHDI XHReadWrite"	/* Galvez: DEBUG */
 #endif
 
 
-//	dc.l 0x58425241          // XBRA
-//	dc.l 0x5F504349          // _PCI
-
 text_color:
 	moveq #0,D0
 	move.w 0x3E86,D0         // number of planes
@@ -130,39 +127,6 @@ text_color:
 	jsr _cconws_from_S                  // Cconws
 	addq.l #6,SP
 .black_and_white:
-	rts
-	
-install_xbra:	// A0: handler, D0: vector, D1: ID 
-	lea -28(SP),SP
-	movem.l D1-D3/A0-A3,(SP)
-	moveq #0,D3
-	move.w D0,D3             // vector
-	move.l A0,A3             // handler
-	move.l D1,-(SP)
-	move.l #18,-(SP)         // size
-	jsr _kmalloc_from_S
-	addq.l #4,SP
-	move.l (SP)+,D1
-	tst.l D0
-	beq.s .error_xbra
-	move.l D0,A0
-	move.l #0x58425241,(A0)+ // XBRA
-	move.l D1,(A0)+
-	clr.l (A0)+	
-	move.w #0x4EF9,(A0)+     // JMP
-	move.l A3,(A0)+          // handler
-	lea -10(A0),A0
-
-	cpusha BC
-
-	move.l D3,A1
-	move.l (A1),D0
-	move.l D0,(A0)+          // old vector
-	move.l A0,(A1)           // JMP, new vector
-.error_xbra:
-	tst.l D0
-	movem.l (SP),D1-D3/A0-A3
-	lea 28(SP),SP
 	rts
 
 _install_usb_stor:
@@ -290,19 +254,26 @@ _install_usb_stor:
 	move.w D0,-(SP)
 	or.l #0x700,D0           // mask interrupts
 	move.w D0,SR
-	move.l #0x5F555342,D1    // _USB
-	lea det_hdv_bpb_usb(PC),A0
-	move.w #hdv_bpb,D0
-	bsr install_xbra
-	move.l D0,old_hdv_bpb_usb
-	lea det_hdv_rw_usb(PC),A0
-	move.w #hdv_rw,D0
-	bsr install_xbra	
-	move.l D0,old_hdv_rw_usb
-	lea det_hdv_mediach_usb(PC),A0
-	move.w #hdv_mediach,D0
-	bsr install_xbra
-	move.l D0,old_hdv_mediach_usb
+//	move.l #0x5F555342,D1    // _USB
+	
+	move.l #hdv_bpb,A0
+	lea old_hdv_bpb_usb(PC),A1
+	move.l (A0),(A1)
+	lea det_hdv_bpb_usb(PC),A1
+	move.l A1,(A0)
+	
+	move.l #hdv_rw,A0
+	lea old_hdv_rw_usb(PC),A1
+	move.l (A0),(A1)
+	lea det_hdv_rw_usb(PC),A1
+	move.l A1,(A0)
+
+	move.l #hdv_mediach,A0
+	lea old_hdv_mediach_usb(PC),A1
+	move.l (A0),(A1)
+	lea det_hdv_mediach_usb(PC),A1
+	move.l A1,(A0)
+	
 	move.l cookie,D0
 	beq.s .no_cookie_jar
 	move.l D0,A0
@@ -540,6 +511,11 @@ _uninstall_usb_stor:
 	lea 32(SP),SP
 	rts
 
+	dc.l	0x58425241	// XBRA
+	dc.l	0x5F555342	// ID: _USB
+old_hdv_bpb_usb:
+	dc.l	0
+
 det_hdv_bpb_usb:
 	move.l A0,-(SP)
 	move.l pun_ptr,A0
@@ -592,6 +568,11 @@ det_hdv_bpb_usb:
 	move.l (SP)+,D1
 	move.l (SP)+,A0
 	rts
+
+	dc.l	0x58425241	// XBRA
+	dc.l	0x5F555342	// ID: _USB
+old_hdv_rw_usb:
+	dc.l	0
 
 det_hdv_rw_usb:
 	lea -28(SP),SP
@@ -733,6 +714,11 @@ det_hdv_rw_usb:
 	movem.l (SP),D1-D4/A0-A2
 	lea 28(SP),SP
  	rts
+
+	dc.l	0x58425241	// XBRA
+	dc.l	0x5F555342	// ID: _USB
+old_hdv_mediach_usb:
+	dc.l	0
 
 det_hdv_mediach_usb:
 	move.l A0,-(SP)
@@ -1302,11 +1288,7 @@ black:	.byte 0x1B,0x62,0x3F,0
 	.lcomm pun_ptr_usb,4
 	.lcomm my_drvbits,4
 	.lcomm _usb_1st_disk_drive,4
-	.lcomm old_hdv_bpb_usb,4
-	.lcomm old_hdv_rw_usb,4
-	.lcomm old_hdv_mediach_usb,4
 	.lcomm old_xhdi,4
 	.lcomm old_xhdi_version,4
 	.lcomm product_name,4*(PUN_DEV+1)
-
 
