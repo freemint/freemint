@@ -28,6 +28,7 @@ char *xa_strings[] = {
 "[1][Cannot snap topwindow as|parts of it are offscreen!][OK]                                                   ",
 "[1]['xaaesnap' process not found.|Start 'xaaesnap.prg' and try again|or define snapshot in xaaes.cnf][OK]                            ",
 "[2][What do you want to snap?][Block|Full screen|Top Window|Cancel]          ",
+"[1][%s: wrong size (file:%ld,header:%ld)][Run anyway|Cancel]  ",
 "Launch Program     ",
 "Load Gradient",
 "$SDMASTER is not a valid program: %s (use the taskmanager)                      ",
