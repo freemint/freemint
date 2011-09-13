@@ -1715,7 +1715,9 @@ static void
 free_setext(struct se_content *setext)
 {
 	if (setext->c.text.flags & SETEXT_ALLOC)
+	{
 		kfree(setext->c.text.text);
+	}
 }
 
 static void
@@ -1886,7 +1888,7 @@ new_setext(const char *t, OBJECT *icon, short type, short *sl, char **tp)
 #if PRFSE
 	PROFRECs(new =, xaaes_kmalloc,(sizeof(*new) + tblen, FUNCTION));
 #else
-	new = xaaes_kmalloc(sizeof(*new) + tblen, FUNCTION);
+	new = xaaes_kmalloc(sizeof(*new) + tblen + 1, FUNCTION);
 #endif
 	}
 	if (new)
@@ -2322,7 +2324,7 @@ m_state_done:
 					if (slen < setext->c.text.tblen || setext->next || setext->prev)
 					{
 						strncpy(setext->c.text.text, t->text, setext->c.text.tblen);
-						setext->c.text.text[setext->c.text.tblen] = '\0';
+						setext->c.text.text[setext->c.text.tblen-1] = '\0';
 					}
 					else
 					{
@@ -3265,7 +3267,9 @@ static void
 free_se(struct scroll_entry *this)
 {
 	if ((this->iflags & SEF_WTXTALLOC))
+	{
 		kfree(this->fnt);
+	}
 
 	if (this->data_destruct)
 		(*this->data_destruct)(this->data);
@@ -4406,7 +4410,9 @@ unset_G_SLIST(struct scroll_info *list)
 	}
 
 	if (list->tabs)
+	{
 		kfree(list->tabs);
+	}
 
 	*ob = list->prev_ob;
 	if (list->flags & SIF_KMALLOC)
