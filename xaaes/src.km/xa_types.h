@@ -106,6 +106,7 @@ enum window_status
 	XAWS_BELOWROOT	 = 0x00002000L,
 	XAWS_FIRST	 = 0x00004000L,
 	XAWS_RESIZED	 = 0x00008000L,		/* if WM_SIZED to XaAES-(list-)window, evaluate in draw_object_tree() */
+	XAWS_RM_WDG = 0x00010000L,
 	XAWS_SEMA	 = 0x80000000L,
 };
 typedef enum window_status WINDOW_STATUS;
@@ -2981,6 +2982,7 @@ struct config
 
 	bool lrmb_swap;			/* Swap left and right mouse-button status bits */
 	bool widg_auto_highlight;	/* WIDGET Highligh when Mouse Hovers */
+	bool leave_top_border;	/* windows may be moved higher than top of screen */
 	bool remap_cicons;
 	bool set_rscpalette;
 	bool no_xa_fsel;

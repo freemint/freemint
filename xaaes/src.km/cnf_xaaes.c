@@ -100,6 +100,7 @@ static struct parser_item parser_tab[] =
 	{ "MENUPOP_PIDS",          PI_R_B,   & cfg.menupop_pids		},
 	{ "LRMB_SWAP",	           PI_R_B,   & cfg.lrmb_swap		},
 	{ "WIDGET_AUTO_HIGHLIGHT", PI_R_B,   & cfg.widg_auto_highlight	},
+	{ "LEAVE_TOP_BORDER",      PI_R_B,   & cfg.leave_top_border},
 	{ "REMAP_CICONS",          PI_R_B,   & cfg.remap_cicons		},
 	{ "SET_RSC_PALETTE",       PI_R_B,   & cfg.set_rscpalette	},
 	{ "ALERT_WINDOWS",         PI_R_US,  & cfg.alert_winds		},
