@@ -1190,6 +1190,9 @@ hu:[2][MirФl akarsz kВpernyФkВpet?][TВglalap|KВpernyФ|Akt°v ablak|MВgsem]
 ru:[2][—нимок чего вы хотите сделать?][Ѕлока|¬сего экрана|јктивного окна|ќтмена]
 cs:[2][»eho snнmek chcete vytvoшit?][Blok|Celб obrazovka|Hornн okno|Zruєit]
 _
+NN:[1][%s: wrong size (file:%ld,header:%ld)][Run anyway|Cancel]  @
+de:[1][%s: falsche GrФбe (Datei:%ld,Header:%ld)][Starten|Abbruch]
+_
 NN:Launch Program     @
 de:Programm starten
 fr:Lancer un programme
