@@ -184,6 +184,7 @@ setnew_focus(struct xa_window *wind, struct xa_window *unfocus, bool topowner, b
 		wind ? wind->handle : -2, wind ? wind->owner->name : "nowind",
 		unfocus ? unfocus->handle : -2, unfocus ? unfocus->owner->name : "nowind"));
 
+
 	if (!unfocus || unfocus == S.focus)
 	{
 		struct xa_client *owner;	//, *p_owner = 0;
@@ -252,8 +253,10 @@ setnew_focus(struct xa_window *wind, struct xa_window *unfocus, bool topowner, b
 						XA_TREE *wt = widg->stuff;
 						if( wt )
 						{
-							if( !(wind->dial & created_for_FMD_START) )
+							if( wind->owner->p == get_curproc() && !(wind->dial & created_for_FMD_START) )
+							{
 								ob_set_wind( wt->tree, G_SLIST, WM_ONTOP );
+							}
 						}
 					}
 					send_iredraw(0, wind, 0, NULL);

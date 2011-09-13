@@ -3085,7 +3085,7 @@ calc_work_area(struct xa_window *wind)
 	wind->delta = wind->wadelta;
 	wind->wa = f2w(&wind->wadelta, &wind->rc, true);
 
-	if ((wind->active_widgets & TOOLBAR) && !(get_widget(wind, XAW_TOOLBAR)->m.properties & WIP_NOTEXT))
+	if ((wind->active_widgets & TOOLBAR) && !(get_widget(wind, XAW_TOOLBAR)->m.properties & WIP_NOTEXT) && wind->owner->p == get_curproc())
 	{
 		struct xa_widget *widg = get_widget(wind, XAW_TOOLBAR);
 

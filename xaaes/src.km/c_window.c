@@ -312,16 +312,20 @@ set_winrect(struct xa_window *wind, RECT *wr, const RECT *new)
 short
 inside_root(RECT *r, bool noleft)
 {
-	short ret = 0, min = 0;
+	short ret = 0;
+	if( !cfg.leave_top_border )
+	{
+		short min = 0;
 
-	if (cfg.menu_bar && cfg.menu_layout == 0 && cfg.menu_ontop == 0)
-	{
-		min = get_menu_height();
-	}
-	if (r->y < min )
-	{
-		r->y = min;
-		ret = 1;
+		if (cfg.menu_bar && cfg.menu_layout == 0 && cfg.menu_ontop == 0)
+		{
+			min = get_menu_height();
+		}
+		if (r->y < min )
+		{
+			r->y = min;
+			ret = 1;
+		}
 	}
 
 	if (noleft && r->x < root_window->wa.x)
@@ -1505,7 +1509,7 @@ change_window_attribs(enum locks lock,
 		if ((wt = get_widget(w, XAW_TOOLBAR)->stuff))
 		{
 			set_toolbar_coords(w, NULL);
-			if (wt->tree)
+			if (wt->tree && client->p == get_curproc())
 			{
 				wt->tree->ob_x = w->wa.x;
 				wt->tree->ob_y = w->wa.y;
@@ -1521,18 +1525,43 @@ change_window_attribs(enum locks lock,
 	if (remember)
 		*remember = w->r;
 }
-#if WITH_BKG_IMG
-void make_window_full_screen(enum locks lock)
+
+void remove_window_widgets(enum locks lock, int full)
 {
 	struct xa_window *wind = TOP_WINDOW;
-	if( wind )
+	if( wind && !(wind->window_status & XAWS_ICONIFIED) )
 	{
-		change_window_attribs(lock, wind->owner, wind, 0, false, false, 0, wind->r, NULL);
-		wind->send_message(lock, wind, NULL, AMQ_REDRAW, QMF_CHKDUP,
-		   WM_SIZED, 0, 0, wind->handle, screen.r.x, screen.r.y, screen.r.w, screen.r.h);
+		XA_WIND_ATTR	active_widgets;
+		if( !(wind->window_status & XAWS_RM_WDG) )
+		{
+			wind->save_widgets = wind->active_widgets;
+			active_widgets = 0;	// todo: uninstall menu/toolbar
+			wind->window_status |= XAWS_RM_WDG;
+			if( full )
+			{
+				wind->ro = wind->r;
+				wind->r = screen.r;
+			}
+		}
+		else
+		{
+			wind->window_status &= ~XAWS_RM_WDG;
+			active_widgets = wind->save_widgets;	// todo: re-install menu/toolbar
+			if( full )
+				wind->r = wind->ro;
+		}
+		change_window_attribs(lock, wind->owner, wind, active_widgets, false, false, 0, wind->r, NULL);
+		if( full )
+		{
+			wind->send_message(lock, wind, NULL, AMQ_REDRAW, QMF_CHKDUP,
+		  	WM_SIZED, 0, 0, wind->handle, wind->r.x, wind->r.y, wind->r.w, wind->r.h);
+		}
+		else
+		{
+			update_windows_below(lock, &screen.r, NULL, window_list, NULL);
+		}
 	}
 }
-#endif
 
 int _cdecl
 open_window(enum locks lock, struct xa_window *wind, RECT r)
