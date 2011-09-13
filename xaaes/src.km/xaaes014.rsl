@@ -1204,6 +1204,9 @@ _
 nn:Load Gradient
 de:Lade Gradient
 _
+nn:Load Image
+de:Lade Bild
+_
 ### XaAES alerts ###
 NN:$SDMASTER is not a valid program: %s (use the taskmanager)                      @
 de:$SDMASTER ist kein gÅltiges Programm: %s (bitte Taskmanager verwenden)
