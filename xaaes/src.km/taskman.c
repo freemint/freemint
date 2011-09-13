@@ -2361,7 +2361,7 @@ open_launcher(enum locks lock, struct xa_client *client, int what)
 			path = pbuf;
 			make_bkg_img_path( path, sizeof(pbuf)-16 );
 			strcat( path, "\\*."BKGIMG_EXT );
-			text = "load image";
+			text = xa_strings[RS_LDIMG];
 		break;
 #endif
 		default:
