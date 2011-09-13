@@ -95,7 +95,7 @@
 #define WITH_BKG_IMG 1
 #endif
 #endif
-
+#define BKGIMG_EXT "mfd"
 
 #define PRESERVE_DIALOG_BGD	0	/* Preserve the background of dialogs */
 

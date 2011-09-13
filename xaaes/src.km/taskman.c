@@ -326,12 +326,12 @@ static long uptime = 99;	/* system-uptime */
  */
 
 static char *
-build_tasklist_string( int md, void *app)
+build_tasklist_string( int md, void *app, long pid)
 {
-	long tx_len = 148;
+#define TX_LEN	256
 	char *tx;
 
-	tx = kmalloc(tx_len);
+	tx = kmalloc(TX_LEN);
 
 	if (tx && app)
 	{
@@ -340,7 +340,7 @@ build_tasklist_string( int md, void *app)
 		long pinfo[4], utim, ptim;
 		static char *state_str[] = {"Cur ", "Run ", "Wait", "IO  ", "Zomb", "TSR ", "STOP", "Slct"};
 
-		if( md == AES_CLIENT  )
+		if( md == AES_CLIENT )
 		{
 			p = ((struct xa_client *)app)->p;
 			name = ((struct xa_client *)app)->name;
@@ -350,6 +350,11 @@ build_tasklist_string( int md, void *app)
 		else
 		{
 			p = app;
+			if( p != pid2proc(pid) )
+			{
+				BLOG((0,"*build_tasklist_string %ld:p=0!", pid));
+				return NULL;
+			}
 			name = p->name;
 		}
 
@@ -385,7 +390,7 @@ build_tasklist_string( int md, void *app)
 		for( ; *cp && *cp <= ' '; cp++ )
 		;
 
-		sprintf(tx, tx_len, "%16s %4d %4d %4d %3d   %c   %s %8ld %11ld %2ld %s",
+		sprintf(tx, TX_LEN-1, "%16s %4d %4d %4d %3d   %c   %s %8ld %11ld %2ld %s",
 			name, p->pid, p->ppid, p->pgrp, p->curpri, p->domain == 0?'T':'M',
 			state_str[p->wait_q], pinfo[0],
 			utim, ptim,
@@ -578,7 +583,7 @@ add_to_tasklist(struct xa_client *client)
 		else
 			icon = obtree + TM_ICN_XAAES;
 
-		tx = build_tasklist_string(1, client);
+		tx = build_tasklist_string(AES_CLIENT, client, 0);
 		sc.icon = icon;
 		cp = tx ? tx : client->name;
 		sc.t.text = cp;
@@ -687,7 +692,7 @@ remove_from_tasklist(struct xa_client *client)
  * md = 0: no aes-client
  */
 void
-update_tasklist_entry( int md, void *app, int redraw )
+update_tasklist_entry( int md, void *app, long pid, int redraw )
 {
 	struct helpthread_data *htd = lookup_xa_data_byname(&C.Hlp->xa_data, HTDNAME);
 	struct xa_window *wind;
@@ -725,7 +730,7 @@ update_tasklist_entry( int md, void *app, int redraw )
 					}
 				}
 
-				if ((tx = build_tasklist_string(md, app)))
+				if ((tx = build_tasklist_string(md, app, pid)))
 					t.text = tx;
 				else
 				{
@@ -766,7 +771,7 @@ update_tasklist_entry( int md, void *app, int redraw )
 				sc.xflags = 0;
 				sc.usr_flags = TM_UPDATED | TM_NOAES;
 				//sc.icon = obtree + TM_ICN_MENU;
-				if ((tx = build_tasklist_string(md, app)))
+				if ((tx = build_tasklist_string(md, app, pid)))
 					t.text = tx;
 				sc.t.text = t.text;
 
@@ -1381,7 +1386,7 @@ taskmanager_form_exit(struct xa_client *Client,
 				if( pid <= TM_MINPID || pid >= TM_MAXPID || pid == C.Aes->tp->pid )
 					break;
 				ikill(pid, SIGSTOP);
-				update_tasklist_entry( NO_AES_CLIENT, client, true);
+				update_tasklist_entry( NO_AES_CLIENT, client, pid, true);
 			}
 			else if (client && is_client(client))
 			{
@@ -1393,7 +1398,7 @@ taskmanager_form_exit(struct xa_client *Client,
 				}
 				app_in_front(lock, C.Aes, true, true, true);
 				ikill(client->p->pid, SIGSTOP);
-				update_tasklist_entry( AES_CLIENT, client, true);
+				update_tasklist_entry( AES_CLIENT, client, 0, true);
 			}
 		break;
 		}
@@ -1405,7 +1410,7 @@ taskmanager_form_exit(struct xa_client *Client,
 				if( pid <= TM_MINPID || pid >= TM_MAXPID )
 					break;
 				ikill(pid, SIGCONT);
-				update_tasklist_entry( NO_AES_CLIENT, client, true);
+				update_tasklist_entry( NO_AES_CLIENT, client, pid, true);
 			}
 			else if (client && is_client(client))
 			{
@@ -1414,7 +1419,7 @@ taskmanager_form_exit(struct xa_client *Client,
 					break;
 				}
 				ikill(client->p->pid, SIGCONT);
-				update_tasklist_entry( AES_CLIENT, client, true);
+				update_tasklist_entry( AES_CLIENT, client, 0, true);
 			}
 		break;
 		}
@@ -1810,7 +1815,7 @@ static void add_meminfo( struct scroll_info *list, struct scroll_entry *this )
 		if( list->get(list, NULL, SEGET_ENTRYBYDATA, &p) )
 		{
 			to = p.e;
-			if( to->next )
+			if( to && to->next )
 			{
 				list->del( list, to, NORMREDRAW );	// meminfo always last
 				to = 0;
@@ -1973,7 +1978,7 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 
 				FOREACH_CLIENT(client)
 				{				/* */
-					update_tasklist_entry( AES_CLIENT, client, redraw);
+					update_tasklist_entry( AES_CLIENT, client, 0, redraw);
 				}
 				/* add non-client-procs */
 				{
@@ -1984,7 +1989,7 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 						struct proc *pr;
 						long pid;
 
-						update_tasklist_entry( NO_AES_CLIENT, rootproc, redraw );	/* kernel */
+						update_tasklist_entry( NO_AES_CLIENT, rootproc, 0, redraw );	/* kernel */
 
 						while( d_readdir(127, i, nm) == 0)
 						{
@@ -1996,7 +2001,7 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 								{
 									if( !is_aes_client(pr) )
 									{
-										update_tasklist_entry( NO_AES_CLIENT, pr, redraw );
+										update_tasklist_entry( NO_AES_CLIENT, pr, pid, redraw );
 									}
 								}
 							}
@@ -2005,6 +2010,7 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 
 						add_meminfo( list, this );
 
+						/* delete exited entries */
 						for( this = list->start; this; this = this->next )
 						{
 							if( !(this->usr_flags & (TM_MEMINFO|TM_UPDATED|TM_HEADER) ) )
@@ -2354,7 +2360,7 @@ open_launcher(enum locks lock, struct xa_client *client, int what)
 		case 2:
 			path = pbuf;
 			make_bkg_img_path( path, sizeof(pbuf)-16 );
-			strcat( path, "\\*.mfp" );
+			strcat( path, "\\*."BKGIMG_EXT );
 			text = "load image";
 		break;
 #endif
@@ -2651,10 +2657,11 @@ static void add_kerinfo(
 	fp = kernel_open( path, O_RDONLY, &err, NULL );
 	if(fp)
 	{
-		char line[512], sstr[1024];
+		char line[512], sstr[512];
 
 		err = kernel_read( fp, sstr, sizeof(sstr)-1 );
 		kernel_close(fp);
+		sstr[err-1] = 0;
 
 		if( err > 0 )
 		{
@@ -2676,7 +2683,7 @@ static void add_kerinfo(
 						}
 						for( cpx = cp; *cpx > ' '; cpx++ );
 						*cpx = 0;
-						if( cp && *cp )
+						if( cp && *cp && sizeof(line) > j + 32)
 							j += sprintf( line+j, sizeof(line)-j-1, "%s%s ", pinfo[p+1], cp );
 						p += 3;
 						*cpx = ' ';
@@ -2695,7 +2702,7 @@ static void add_kerinfo(
 				err = maxlen;
 			if( err >= sizeof(line) -1 )
 				err = sizeof(line)-1;
-			sstr[err+i] = 0;
+			sstr[err+i-1] = 0;
 
 			kerinfo2line( sstr+i, line+j, sizeof(line)-j-1 );
 
@@ -2720,6 +2727,7 @@ static void add_kerinfo(
 	}
 	else
 		BLOG((0,"add_kerinfo:could not open %s err=%ld", path, err ));
+
 }
 
 
