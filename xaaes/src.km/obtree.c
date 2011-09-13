@@ -1741,6 +1741,7 @@ ob_find_type(OBJECT *tree, short t )
 	return d.ret_object;
 }
 
+// set top/untop-rendering (for list-windows)
 static bool
 set_wind(OBJECT *tree, short o, void *_data)
 {
