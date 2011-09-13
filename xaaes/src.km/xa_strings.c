@@ -31,6 +31,7 @@ char *xa_strings[] = {
 "[1][%s: wrong size (file:%ld,header:%ld)][Run anyway|Cancel]  ",
 "Launch Program     ",
 "Load Gradient",
+"Load Image",
 "$SDMASTER is not a valid program: %s (use the taskmanager)                      ",
 "Could not load %s.tbl from %s (%ld)         ",
 "Cannot terminate AES system proccesses!               ",
