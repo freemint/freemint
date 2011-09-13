@@ -35,6 +35,7 @@ RSHDR * _cdecl LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr
 void _cdecl FreeResources(struct xa_client *client, AESPB *pb, struct xa_rscs *rscs);
 OBJECT * _cdecl ResourceTree(RSHDR *base, long num);
 void _cdecl obfix(OBJECT *tree, short object, short designwidth, short designheight);
+void hide_object_tree( RSHDR *rsc, short tree, short item, int Unhide );
 
 AES_function
 	XA_rsrc_load,
