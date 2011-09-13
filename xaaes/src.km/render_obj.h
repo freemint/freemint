@@ -29,6 +29,7 @@
 
 void main_object_render(struct xa_module_object_render **);
 void load_gradients( char *path, char *fn );
+int is_gradient_installed( int grd );
 int do_bkg_img(struct xa_client *client, int md, char *fn );
 long make_bkg_img_path( char *bfn, long l );
 
