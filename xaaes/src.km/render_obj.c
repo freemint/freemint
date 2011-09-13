@@ -300,6 +300,14 @@ static struct xa_gradient *gradients[] =
 
 	0
 };
+
+int is_gradient_installed( int grd )
+{
+	grd -= GRAD_INIT;
+	if( use_gradients && grd >= 0 && grd <= TEXT_GRADIENT && gradients[grd] && gradients[grd]->n_steps >= 0 )
+		return 1;
+	return 0;
+}
 #endif
 static struct theme stdtheme =
 {
@@ -3521,11 +3529,14 @@ long make_bkg_img_path( char *bfn, long l )
 {
 	return sprintf( bfn, l, "%s%d%d.%d", api->C->Aes->home_path, screen->r.w, screen->r.h, screen->planes );
 }
-
 #if WITH_BKG_IMG
+
+#include "xa_rsrc.h"
+#include "xaaes.h"
+
 /*
- * md = 0: copy to screen
- *      1: load from disk
+ * md = 0: (load and) copy to screen
+ *      1: write to disk
  *      2: free buffer
  *      3: load new
  */
@@ -3565,7 +3576,7 @@ int do_bkg_img(struct xa_client *client, int md, char *fn )
 				ierr = 2;
 				return 3;
 			}
-			strcpy( bfn + l, "/xa_form.mfp" );
+			strcpy( bfn + l, "/xa_form."BKGIMG_EXT );
 		}
 		else
 			strcpy( bfn, fn );
@@ -3583,8 +3594,6 @@ int do_bkg_img(struct xa_client *client, int md, char *fn )
 
 	if( !background || md == 1 || md == 3 )
 	{
-		//if( background )
-			//kfree(background);
 		sz = calc_back(&r,screen->planes);
 		if( !background )
 			background = kmalloc(sz);
@@ -3609,6 +3618,8 @@ int do_bkg_img(struct xa_client *client, int md, char *fn )
 				ierr = 0;
 				return 0;
 			}
+			else
+				BLOG((0,"do_bkg_img(write): could not open %s:%ld", bfn, err));
 		}
 		else
 		{
@@ -3627,13 +3638,15 @@ int do_bkg_img(struct xa_client *client, int md, char *fn )
 
 				if( !sr )
 					if( !(fp = kernel_open( bfn, O_RDONLY, &err, NULL )) )
-						BLOG((0,"do_bkg_img: could not open %s", bfn));
+						BLOG((0,"do_bkg_img(read): could not open %s:%ld", bfn, err));
 
 				if( !fp || sr )
 				{
 					if( background )
 						kfree(background);
 					background = 0;
+					/* unhide logo */
+					hide_object_tree( api->C->Aes_rsc, DEF_DESKTOP, DESKTOP_LOGO, 1 );
 					ierr = 2;
 					if( fp )
 						kernel_close(fp);
@@ -3648,6 +3661,9 @@ int do_bkg_img(struct xa_client *client, int md, char *fn )
 					return 1;
 				}
 				ierr = 0;
+				/* hide logo */
+				hide_object_tree( api->C->Aes_rsc, DEF_DESKTOP, DESKTOP_LOGO, 0 );
+
 			}
 			v->api->rtopxy(pnt, &r2);
 			v->api->rtopxy(pnt+4, &r2);
