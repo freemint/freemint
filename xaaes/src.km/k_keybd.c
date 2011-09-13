@@ -595,7 +595,7 @@ kernel_key(enum locks lock, struct rawkey *key)
 
 				if( r.y >= screen.r.h )
 					r.y = screen.r.h - WGROW;
-				if( r.y < root_window->wa.y )
+				if( !cfg.leave_top_border && r.y < root_window->wa.y )
 					r.y = root_window->wa.y;
 				if( !s && nk == NK_DOWN && wind->r.w <= wind->min.w && wind->r.h <= wind->min.h )
 					return true;
@@ -723,7 +723,7 @@ kernel_key(enum locks lock, struct rawkey *key)
 			forcem();
 			return true;
 		}
-#if WITH_GRADIENTS
+#if WITH_GRADIENTS || WITH_BKG_IMG
 		case 'N':	/* load gradients */
 		if( !C.update_lock )
 		{
@@ -738,10 +738,13 @@ kernel_key(enum locks lock, struct rawkey *key)
 				do_bkg_img( C.Aes, 1, 0 );
 			}
 		return true;
-		case '.':	// .: display top-window full-screen, todo: restore
-			make_window_full_screen(lock);
-		return true;
 #endif
+		case '.':	// .: remove widgets and display top-window full-screen, todo: restore
+			remove_window_widgets(lock, 1);
+		return true;
+		case ',':	// ,: remove widgets
+			remove_window_widgets(lock, 0);
+		return true;
 
 #if HOTKEYQUIT
 		case 'A':
