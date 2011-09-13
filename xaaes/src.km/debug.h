@@ -33,6 +33,7 @@
 #endif
 
 #define WAIT_SEE					{int _i;for( _i = 0; _i < 10000; _i++ )nap( 60000 );}
+#define WAIT_SEEi(i)			{int _i;for( _i = 0; _i < i; _i++ )nap( 60000 );}
 
 
 void _cdecl display(const char *fmt, ...);
