@@ -223,8 +223,8 @@ deref_xa_data(struct xa_data_hdr **list, void *_data, short flags)
 
 // 	ndisplay("deref_xa_data %lx - links = %ld", data, data->links);
 	data->links--;
-	if (data->links < 0)
-		display("deref_xa_data: negative links!!");
+	//if (data->links < 0)
+		//display("deref_xa_data: negative links!!");
 	if (!(ret = data->links) && (flags & 1))
 	{
 // 		display("deref_xa_data - deleting!");
