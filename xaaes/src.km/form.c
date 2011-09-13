@@ -1228,6 +1228,8 @@ Click_form_do(enum locks lock,
 // 				display("Click_form_do: calling exit_form");
 				fr.md = md;
 				fr.key = NULL;
+				DBG((0,"Click_form_do;no_exit=%d", fr.no_exit));
+				fr.no_exit = false;
 				(*wt->exit_form)(client, wind, wt, &fr);
 			}
 		}
