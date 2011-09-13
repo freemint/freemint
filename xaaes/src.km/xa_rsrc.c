@@ -32,6 +32,7 @@
 #include "draw_obj.h"
 #include "trnfm.h"
 #include "obtree.h"
+#include "taskman.h"
 #include "xa_appl.h"
 #include "xa_rsrc.h"
 #include "xa_shel.h"
@@ -1277,8 +1278,12 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 		}
 		if (size != sz )
 		{
+			char s[256];
 			DIAG((D_rsrc, client, "LoadResource(): Error loading file (size mismatch)"));
-			BLOG((1,"LoadResources:%s: wrong size (file:%ld,header:%ld)!", fname, sz, size, client->options.ignore_rsc_size ? "ignored" : "" ));
+			sprintf( s, 255, xa_strings[RS_RSCSZ], client->name, sz, size );
+
+			if ( !client->options.ignore_rsc_size && (xaaes_do_form_alert( 0, client, 2, s ) == 1) )
+				client->options.ignore_rsc_size = 1;
 			if( client->options.ignore_rsc_size )
 			{
 				if( size > sz )
@@ -1696,6 +1701,14 @@ FreeResources(struct xa_client *client, AESPB *pb, struct xa_rscs *rsrc)
 #define num_nok(t) (!hdr || num < 0 || num >= hdr->rsh_ ## t)
 #define start(t) (unsigned long)index = (unsigned long)hdr + hdr->rsh_ ## t
 
+void hide_object_tree( RSHDR *rsc, short tree, short item, int Unhide )
+{
+	OBJECT *obtree = ResourceTree( rsc, tree );
+	if( Unhide )
+		obtree[item].ob_flags &= ~OF_HIDETREE;
+	else
+		obtree[item].ob_flags |= OF_HIDETREE;
+}
 /*
  * Find the tree with a given index
  * fixing up the pointer array is now done in Loadresources, to make it usable via global[5]

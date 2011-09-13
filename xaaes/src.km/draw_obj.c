@@ -356,6 +356,7 @@ do_callout ( void *f, PARMBLK *p)
 	return ret;
 }
 
+#include "gradients.h"
 #define CHECK_PROGDEF_ADDR 0
 
 typedef short __CDECL (*p_handler)(PARMBLK *pb);
@@ -412,11 +413,13 @@ d_g_progdef(struct widget_tree *wt, struct xa_vdi_settings *v)
 		if( !do_bkg_img(client, 0, 0) )
 			return;
 #endif
-		if( wt->objcr_api->drawers[G_BOX] )
+#if WITH_GRADIENTS
+		if( is_gradient_installed( BOX_GRADIENT2 ) && wt->objcr_api->drawers[G_BOX] )
 		{
 			wt->objcr_api->drawers[G_BOX]( wt, v );
 			return;
 		}
+#endif
 	}
 #endif
 	p = parmblk(client->ut);
