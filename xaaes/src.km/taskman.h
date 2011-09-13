@@ -53,7 +53,7 @@ void remove_from_tasklist(struct xa_client *client);
 #define AES_CLIENT	1
 
 
-void update_tasklist_entry(int md, void *app, int redraw);
+void update_tasklist_entry(int md, void *app, long pid, int redraw);
 
 void ce_quit_all_clients(enum locks lock, struct xa_client *client, bool b);
 void quit_all_apps(enum locks lock, struct xa_client *except, short reason);
