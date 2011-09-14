@@ -301,13 +301,6 @@ static struct xa_gradient *gradients[] =
 	0
 };
 
-int is_gradient_installed( int grd )
-{
-	grd -= GRAD_INIT;
-	if( use_gradients && grd >= 0 && grd <= TEXT_GRADIENT && gradients[grd] && gradients[grd]->n_steps >= 0 )
-		return 1;
-	return 0;
-}
 #endif
 static struct theme stdtheme =
 {
@@ -3464,6 +3457,16 @@ draw_3defx(struct xa_vdi_settings *v, struct color_theme *ct, bool selected, sho
 	}
 }
 #if WITH_GRADIENTS
+int is_gradient_installed( int grd )
+{
+	if( screen->planes <= 8 || !use_gradients )
+		return 0;
+	grd -= GRAD_INIT;
+	if( grd >= 0 && grd <= TEXT_GRADIENT && gradients[grd] && gradients[grd]->n_steps >= 0 )
+		return 1;
+	return 0;
+}
+
 static void _cdecl
 delete_pmap(void *_t)
 {
@@ -5269,7 +5272,7 @@ d_g_box(struct widget_tree *wt, struct xa_vdi_settings *v)
 
 #endif
 #if WITH_BKG_IMG
-	if( !memcmp( &wt->r, &root_window->wa, sizeof(RECT)) && wt == get_desktop() && wt->owner == api->C->Aes )
+	if( !memcmp( &wt->r, &root_window->wa, sizeof(RECT)) && wt == get_desktop() )
 	{
 
 		if( !do_bkg_img(wt->owner, 0, 0) )
