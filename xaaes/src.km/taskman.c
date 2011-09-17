@@ -350,16 +350,14 @@ build_tasklist_string( int md, void *app, long pid)
 		else
 		{
 			p = app;
-			if( p != pid2proc(pid) )
+			if( !p || p != pid2proc(pid) )
 			{
-				BLOG((0,"*build_tasklist_string %ld:p=0!", pid));
+				BLOG((0,"*build_tasklist_string %ld: not found! (p=%lx)", pid, p));
 				return NULL;
 			}
 			name = p->name;
 		}
 
-		if( !p )
-			return NULL;
 		if( p->pid )
 		{
 			pinfo[0] = 23;
@@ -541,7 +539,7 @@ add_to_tasklist(struct xa_client *client)
 	struct helpthread_data *htd = lookup_xa_data_byname(&C.Hlp->xa_data, HTDNAME);
 	struct xa_window *wind;
 
-	if (!htd)
+	if (!htd || !client)
 		return;
 
 	while (!htd->w_taskman)
@@ -697,11 +695,11 @@ update_tasklist_entry( int md, void *app, long pid, int redraw )
 	struct helpthread_data *htd = lookup_xa_data_byname(&C.Hlp->xa_data, HTDNAME);
 	struct xa_window *wind;
 
-	if (!htd)
+	if (!htd || !app)
 		return;
 	wind = htd->w_taskman;
 
-	if (wind && app)
+	if (wind)
 	{
 		struct widget_tree *wt = get_widget(wind, XAW_TOOLBAR)->stuff;
 		OBJECT *obtree = wt->tree; //ResourceTree(C.Aes_rsc, TASK_MANAGER);
@@ -844,8 +842,8 @@ addto_namelist(struct cfg_name_list **list, char *name)
 
 		if (new)
 		{
-			if (nlen > 32)
-				nlen = 32;
+			if (nlen > sizeof(new->name) -1)
+				nlen = sizeof(new->name) -1;
 
 			bzero(new, sizeof(*new));
 
@@ -859,7 +857,8 @@ addto_namelist(struct cfg_name_list **list, char *name)
 				DIAGS((" -- add first=%lx to start=%lx", new, list));
 				*list = new;
 			}
-			strcpy(new->name, name);
+			strncpy(new->name, name, nlen);
+			new->name[nlen] = 0;
 			new->nlen = nlen;
 		}
 	}
@@ -2011,12 +2010,16 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 						add_meminfo( list, this );
 
 						/* delete exited entries */
-						for( this = list->start; this; this = this->next )
 						{
+						struct scroll_entry *this_next;
+						for( this = list->start; this; this = this_next )
+						{
+							this_next = this->next;
 							if( !(this->usr_flags & (TM_MEMINFO|TM_UPDATED|TM_HEADER) ) )
 							{
 								list->del( list, this, true );
 							}
+						}
 						}
 					}
 				}
@@ -2561,8 +2564,8 @@ static int ker_stat( int pid, char *what, long pinfo[] )
 		return 1;
 	}
 
-	err = kernel_read( fp, path, sizeof(path) );
-	if( err > 0 )
+	err = kernel_read( fp, path, sizeof(path)-1 );
+	if( err > 0 && err < sizeof(path) )
 	{
 		int i, j;
 		char *p = path;
