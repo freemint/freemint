@@ -63,7 +63,9 @@ static short _cdecl obj_thickness(struct widget_tree *wt, OBJECT *ob);
 static void _cdecl obj_offsets(struct widget_tree *wt, OBJECT *ob, RECT *c);
 
 static bool use_gradients = true;
-
+#if WITH_BKG_IMG || WITH_GRADIENTS
+static bool box2_status = false;	// have box_gradient2?
+#endif
 struct texture
 {
 	struct xa_data_hdr h;
@@ -3542,6 +3544,7 @@ long make_bkg_img_path( char *bfn, long l )
  *      1: write to disk
  *      2: free buffer
  *      3: load new
+ *      4: get status
  */
 int do_bkg_img(struct xa_client *client, int md, char *fn )
 {
@@ -3555,6 +3558,8 @@ int do_bkg_img(struct xa_client *client, int md, char *fn )
 	static int ierr = -1;
 	static char bfn[PATH_MAX];
 
+	if( md == 4 )
+		return ierr;
 	if( ierr == 1 )	// no memory
 		return 3;
 	if( md == 0 && ierr == 2 )	// wrong file
@@ -3633,7 +3638,7 @@ int do_bkg_img(struct xa_client *client, int md, char *fn )
 				long sr = f_stat64(0, bfn, &st);
 				if( sr )
 					BLOG((0,"do_bkg_img:%s not found", bfn ));
-				if( st.size != sz )
+				else if( st.size != sz )
 				{
 					BLOG((0,"do_bkg_img:%s:wrong file:%ld(%ld)->%ld", bfn, (long)st.size, sz, sr));
 					sr = 1;
@@ -3648,8 +3653,10 @@ int do_bkg_img(struct xa_client *client, int md, char *fn )
 					if( background )
 						kfree(background);
 					background = 0;
-					/* unhide logo */
-					hide_object_tree( api->C->Aes_rsc, DEF_DESKTOP, DESKTOP_LOGO, 1 );
+
+					/* unhide logo if !box_gradient2 */
+					if( !box2_status )
+						hide_object_tree( api->C->Aes_rsc, DEF_DESKTOP, DESKTOP_LOGO, 1 );
 					ierr = 2;
 					if( fp )
 						kernel_close(fp);
@@ -6546,6 +6553,7 @@ void load_gradients( char *path, char *fn )
 	char buf[8192], *cp = buf, *end;
 	long err;
 	struct file *fp;
+	int no_img;
 
 	if( path && *path )
 		sprintf( buf, sizeof(buf), "%sgradient/%s.grd", path, fn );
@@ -6582,6 +6590,11 @@ void load_gradients( char *path, char *fn )
 
 	free_widg_grad(api);
 
+	if( (no_img = do_bkg_img( 0, 4, 0 )) )
+	{
+		hide_object_tree( api->C->Aes_rsc, DEF_DESKTOP, DESKTOP_LOGO, 1 );	// show
+	}
+	box2_status = false;
 	for( err = GRAD_INIT; *gp && (char*)gpp < end && *(short*)gpp != STOP; err++)
 	{
 		if( (long)gpp->allocs != err )
@@ -6593,6 +6606,12 @@ void load_gradients( char *path, char *fn )
 		if( gpp->n_steps >= 0 && gpp->allocs )
 			api->free_xa_data_list( &gpp->allocs );
 
+		if( err == BOX_GRADIENT2 && gpp->n_steps >= 0 )
+		{
+			if( no_img )
+				hide_object_tree( api->C->Aes_rsc, DEF_DESKTOP, DESKTOP_LOGO, 0 );	// hide
+			box2_status = true;
+		}
 		**gp++ = *gpp++;
 	}
 }
