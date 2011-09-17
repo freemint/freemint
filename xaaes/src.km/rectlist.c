@@ -180,6 +180,15 @@ build_rect_list(struct build_rl_parms *p)
 						rl->r.y = win_y2;
 						rl->r.w = r_ours.w;
 						rl->r.h = our_y2 - win_y2;
+						if( flag )
+						{
+							/* avoid spltting workarea because of menu */
+							if( menu_window && rl_prev->r.y < menu_window->r.h && rl->r.x + rl->r.w == rl_prev->r.x && rl->r.y + rl->r.h == rl_prev->r.y + rl_prev->r.h )
+							{
+								rl->r.w += rl_prev->r.w;
+								rl_prev->r.h = rl->r.y - rl_prev->r.y;
+							}
+						}
 
 						r_ours.h -= rl->r.h;
 						flag = 1;
