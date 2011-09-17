@@ -2321,10 +2321,9 @@ m_state_done:
 				if (setext)
 				{
 					slen = strlen(t->text);
-					if (slen < setext->c.text.tblen || setext->next || setext->prev)
+					if (slen <= setext->c.text.tblen || setext->next || setext->prev)
 					{
 						strncpy(setext->c.text.text, t->text, setext->c.text.tblen);
-						setext->c.text.text[setext->c.text.tblen-1] = '\0';
 					}
 					else
 					{
@@ -2341,7 +2340,6 @@ m_state_done:
 						else
 						{
 							strncpy(setext->c.text.text, t->text, setext->c.text.tblen);
-							setext->c.text.text[setext->c.text.tblen] = '\0';
 						}
 					}
 				}
