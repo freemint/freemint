@@ -349,7 +349,11 @@ ccw30:	dc.w	0x0001,0x0008,0x0000,0x0000
 	dc.w	0x0002,0x0010,0x0000,0x0000
 	dc.w	0x0040,0x0080,0x0000,0x0000
 
-l2c030:	lea	cacr30,a0
+l2c030:	
+#ifdef __mcoldfire__
+	move.l	d3,-(sp)
+#endif
+	lea	cacr30,a0
 	clr.l	d1
 	moveq	#0x07,d2
 l30:
@@ -360,8 +364,8 @@ l30:
 #endif
 	bcc.s	s30
 #ifdef __mcoldfire__
-	move.w	(a0),d0
-	or.l	d0,d1
+	mvz.w	(a0),d3
+	or.l	d3,d1
 #else
 	or.w	(a0),d1
 #endif
@@ -373,9 +377,16 @@ s30:	addq.l	#0x02,a0
 	dbra.w	d2,l30
 #endif
 	move.l	d1,d0
+#ifdef __mcoldfire__
+	move.l	(sp)+,d3
+#endif
 	rts
 
-c2l030:	lea	ccw30,a0
+c2l030:
+#ifdef __mcoldfire__
+	move.l	d3,-(sp)
+#endif
+	lea	ccw30,a0
 	clr.l	d1
 	moveq	#0x0f,d2
 c30:
@@ -386,8 +397,8 @@ c30:
 #endif
 	bcc.s	s31
 #ifdef __mcoldfire__
-	mvz.w	(a0),d0
-	or.l	d0,d1
+	mvz.w	(a0),d3
+	or.l	d3,d1
 #else
 	or.w	(a0),d1
 #endif
@@ -399,6 +410,9 @@ s31:	addq.l	#0x02,a0
 	dbra.w	d2,c30
 #endif
 	move.l	d1,d0
+#ifdef __mcoldfire__
+	move.l	(sp)+,d3
+#endif
 	rts
 
 // 68040, bit 15 enables the instruction cache, bit 31 enables the data cache.
@@ -485,7 +499,11 @@ s60:	addq.l	#0x04,a0
 	eori.l	#0x58006000,d0		// adjust reverted bits
 	rts
 
-c2l060:	lea	ccw60,a0
+c2l060:
+#ifdef __mcoldfire__
+	move.l	d3,-(sp)
+#endif
+	lea	ccw60,a0
 	lsr.l	#0x08,d0		// first 13 bits of CACR aren't used
 	lsr.l	#0x04,d0
 	clr.l	d1
@@ -493,8 +511,8 @@ c2l060:	lea	ccw60,a0
 c60:	lsr.l	#0x01,d0
 	bcc.s	s61
 #ifdef __mcoldfire__
-	mvz.w	(a0),d0
-	or.l	d0,d1
+	mvz.w	(a0),d3
+	or.l	d3,d1
 #else
 	or.w	(a0),d1
 #endif
@@ -510,6 +528,9 @@ s61:	addq.l	#0x02,a0
 	eor.l	#0x4f00,d0		// adjust reverted bits
 #else
 	eor.w	#0x4f00,d0		// adjust reverted bits
+#endif
+#ifdef __mcoldfire__
+	move.l	(sp)+,d3
 #endif
 	rts
 
