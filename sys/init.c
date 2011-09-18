@@ -230,8 +230,8 @@ init (void)
 	 */
 	if (TRAP_Dsetpath("\\mint\\" MINT_VERS_PATH_STRING) == 0)
 		strcpy(sysdir, "\\mint\\" MINT_VERS_PATH_STRING "\\");
-// 	else if (TRAP_Dsetpath("\\mint\\") == 0)
-// 		strcpy(sysdir, "\\mint\\");
+ 	else if (TRAP_Dsetpath("\\mint\\") == 0)
+ 		strcpy(sysdir, "\\mint\\");
 # ifndef BOOTSTRAPABLE
 	else
 	{
