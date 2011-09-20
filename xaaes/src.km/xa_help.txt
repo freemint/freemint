@@ -1,5 +1,5 @@
 # Place this file in the xaaes-boot directory (C:\mint\1-*-*\xaaes)
-<b>Ctrl-Alt-Shortcuts:</b>
+<b>Ctrl-Alt-Shortcuts</b>:
 
 0             Switch menubar on/off
 #$1 [keyboard-switch]
@@ -18,7 +18,7 @@ I             (Un-)iconify current window
 J             Restart XaAES
 K             Launch program
 M             Recover mousepointer
-N             Load Gradient
+N             Load gradient
 SHIFT+N       Change background-image
 P             Restore palette in colour depth of 8-bits
               or less
@@ -36,7 +36,7 @@ SPACE         Open main menu bar
 SHIFT+SPACE   Open menu in current window if it has one,
               else open main menubar
 TAB           Cycle open applications
-
+SHIFT+TAB     Top previous application
 INSERT        Full current window
 CURSOR-UP     Grow current window
 CURSOR-DOWN   Shrink current window
@@ -50,8 +50,7 @@ SHIFT+
  CURSOR-LEFT  Move current window left
 <u>                                                      </u>
 
-
-Shortcuts/navigation in <b>XaAES fileselector:</b>
+Shortcuts/navigation in <b>XaAES fileselector</b>:
 
 CTRL+B        Realtime build directories
 CTRL+T        Tree view
@@ -74,10 +73,9 @@ DELETE        Delete selected file/empty folder
 
 ALT+ " + "    Increase the fontsize in listbox
 ALT+ " - "    Decrease the fontsize in listbox
-
 <u>                                                      </u>
 
-Shortcuts in the <b>taskmanager:</b>
+Shortcuts in the <b>taskmanager</b>:
 
 DELETE    Terminate selected program (same as trashcan)
 SHIFT+
@@ -85,7 +83,7 @@ SHIFT+
 TAB       Top selected program or window
 <u>                                                      </u>
 
-Shortcuts for <b>all list-windows:</b>
+Shortcuts for <b>all list-windows</b>:
 
 SHIFT+
  CURSOR-UP/DOWN             Page up/down
@@ -110,11 +108,12 @@ If an entry is selected in the list-box, CURSOR-RIGHT
 focusses the edit-field, so the selection can be edited
 <u>                                                      </u>
 
-<b>Menubar:</b>
+<b>Menubar</b>:
 
-If configured, the menu may be switched on/off by clicking on top of the
-screen. If click goes to top-left then menu is on/off permanentely
-(Ctrl-Alt-0), else temporarily on (Ctrl-Alt-blank).
+If configured, the menu may be switched on/off by
+clicking on top of the screen. If click goes to
+top-left then menu is on/off permanentely  (CTRL-ALT-0),
+else temporarily on (CTRL-ALT-SPACE).
 <u>                                                      </u>
 
 Additional documentation:
