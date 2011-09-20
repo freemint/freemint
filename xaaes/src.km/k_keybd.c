@@ -440,7 +440,18 @@ kernel_key(enum locks lock, struct rawkey *key)
 		{
 		case NK_TAB:				/* TAB, switch menu bars */
 		{
-			client = next_app(lock, false, false);  /* including the AES for its menu bar. */
+			if (key->raw.conin.state & (K_RSHIFT|K_LSHIFT))
+			{
+				client = APP_LIST_START;
+				for( client = NEXT_APP(client); client && ((client->type & APP_SYSTEM) || client == C.Aes || client == C.Hlp); client = NEXT_APP(client) )
+				{
+
+				}
+				if( !client )
+					client = APP_LIST_START;
+			}
+			else
+				client = next_app(lock, true, false);  /* including the AES for its menu bar. */
 			app_or_acc_in_front( lock, client );
 			return true;
 		}
