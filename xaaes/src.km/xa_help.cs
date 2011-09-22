@@ -1,5 +1,5 @@
 # Umístìte tento soubor do startovacího adresáøe xaaes (C:\mint\1-*-*\xaaes)
-<b>Ctrl-Alt-zkratky:</b>
+<b>Ctrl-Alt-zkratky</b>:
 
 0
 #$1 [keyboard-switch]
@@ -35,7 +35,7 @@ TAB           Pøepínat otevøené aplikace
 ©IPKA VPRAVO  Maximalizovat souèasné okno
 <u>                                                      </u>
 
-Zkratky/pohyb v <b>XaAES oknì pro výbìr souborù:</b>
+Zkratky/pohyb v <b>XaAES oknì pro výbìr souborù</b>:
 
 CTRL+B        Adresáøe v reálném èase
 CTRL+T        Stromový pohled
