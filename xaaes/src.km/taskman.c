@@ -75,7 +75,7 @@
 
 char XAAESNAME[] = "XaAES";
 
-static void add_kerinfo( char *path, struct scroll_info *list, struct scroll_entry *this, struct scroll_entry *to, struct scroll_content *sc, int maxlen, int startline, int redraw, long *pinfo, bool child );
+static void add_kerinfo( char *path, struct scroll_info *list, struct scroll_entry *this, struct scroll_entry *to, struct scroll_content *sc, int maxlen, int startline, int redraw, long *pinfo, bool child, char *out, size_t outl );
 static int ker_stat( int pid, char *what, long pinfo[] );
 
 
@@ -530,7 +530,7 @@ add_proc_info( int md, void *app,
 	sc->usr_flags = TM_PROCINFO;
 	sc->fnt = &norm_txt;
 	to = this->down;
-	add_kerinfo( path, list, this, to, sc, PROCINFLEN, 0, NORMREDRAW, NULL );
+	add_kerinfo( path, list, this, to, sc, PROCINFLEN, 0, NORMREDRAW, NULL, NULL,0 );
 }
 #endif
 void
@@ -1827,7 +1827,7 @@ static void add_meminfo( struct scroll_info *list, struct scroll_entry *this )
 	uinfo[1] = (long)"used: ";
 	uinfo[2] = 2;
 	uinfo[3] = 0;
-	add_kerinfo( "u:/kern/meminfo", list, this, to, &sc, PROCINFLEN, 5, NORMREDRAW, uinfo, false );
+	add_kerinfo( "u:/kern/meminfo", list, this, to, &sc, PROCINFLEN, 5, NORMREDRAW, uinfo, false, NULL, 0 );
 }
 
 void
@@ -2503,7 +2503,7 @@ static void kerinfo2line( char *in, char *out, long maxlen )
 		else if( !(*(po-1) == ' ' || *(po-1) == ':') )
 			*po++ = ' ';
 	}
-	*--po = 0;
+	*po = 0;
 }
 
 /*
@@ -2652,7 +2652,8 @@ static void add_kerinfo(
 	struct scroll_info *list,
 	struct scroll_entry *this, struct scroll_entry *to,
 	struct scroll_content *sc, int maxlen, int startline,
-	int redraw, long *pinfo, bool child
+	int redraw, long *pinfo, bool child,
+	char *out, size_t outl
 )
 {
 	long err;
@@ -2727,6 +2728,8 @@ static void add_kerinfo(
 				list->add(list, this, 0, sc, child ? (this ? (SEADD_CHILD) : SEADD_PRIOR) : 0, 0, redraw);
 			}
 		}
+		if( out )
+			strncpy( out, line, outl );
 	}
 	else
 		BLOG((0,"add_kerinfo:could not open %s err=%ld", path, err ));
@@ -2800,10 +2803,10 @@ open_systemalerts(enum locks lock, struct xa_client *client, bool open)
 			list->add(list, NULL, NULL, &sc, 0, SETYP_STATIC, NOREDRAW);
 		}
 		{
-// 			struct scroll_info *list = object_get_slist(obtree + SYSALERT_LIST);
 			struct scroll_entry *this;
 			const char **strings = get_raw_env(); //char * const * const strings = get_raw_env();
 			int i;
+			char text[255];
 			struct sesetget_params p = { 0 };
 			struct scroll_content sc = {{ 0 }};
 			char sstr[1024];
@@ -2852,18 +2855,18 @@ open_systemalerts(enum locks lock, struct xa_client *client, bool open)
 			list->add(list, this, 0, &sc, this ? (SEADD_CHILD) : SEADD_PRIOR, 0, true);
 
 			/* cpuinfo */
-			add_kerinfo( "u:/kern/cpuinfo", list, this, NULL, &sc, 0, 0, false, NULL, true );
-			BLOG((0,"cpuinfo:%s", sc.t.text ));
+			add_kerinfo( "u:/kern/cpuinfo", list, this, NULL, &sc, 0, 0, false, NULL, true, text, sizeof(text) );
+			BLOG((0,"cpuinfo:%s", text ));
 			add_os_features(list, this, &sc);
 
 
 			this = add_title_string(list, this, "Kernel");
 
-			add_kerinfo( "u:/kern/version", list, this, NULL, &sc, 0, 0, false, NULL, true );
-			BLOG((0,"version:%s", sc.t.text ));
+			add_kerinfo( "u:/kern/version", list, this, NULL, &sc, 0, 0, false, NULL, true, text, sizeof(text) );
+			BLOG((0,"version:%s", text ));
 #if !XAAES_RELEASE
-			add_kerinfo( "u:/kern/buildinfo", list, this, NULL, &sc, 0, 1, false, NULL, true );
-			BLOG((0,"buildinfo:%s", sc.t.text ));
+			add_kerinfo( "u:/kern/buildinfo", list, this, NULL, &sc, 0, 1, false, NULL, true, text, sizeof(text) );
+			BLOG((0,"buildinfo:%s", text ));
 #endif
 			init_list_focus( obtree, SYSALERT_LIST, 0 );
 		}
