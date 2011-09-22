@@ -1,8 +1,12 @@
 # Mettre ce fichier dans le r‚pertoire d'XaAES (C:\mint\1-*-*\xaaes)
-<b>Raccourcis clavier avec Ctrl-Alt:</b>
+<b>Raccourcis clavier avec Ctrl-Alt</b>:
 
 0             Aficher/Cacher menu
 #$1 [keyboard-switch]
+.             Mettre le contenu de la fenˆtre
+              en plein ‚cran
+:             Cr‚er un fond d'‚cran … partir de
+              l'‚cran actuel
 A             Quitter toutes les applications
               (liste d'exceptions dans xaaes.cnf)
 B             Ouvrir la fenˆtre systŠme/
@@ -18,6 +22,8 @@ I             (D‚s-)iconifier la fenˆtre actuelle
 J             Red‚marrer XaAES
 K             Lancer un programme
 M             R‚afficher pointeur souris
+N             Charger d‚grad‚
+SHIFT+N       Changer le fond d'‚cran
 P             Restaurer la palette dans les modes
               inf‚rieurs ou ‚gals … 8 bits
 Q,G           Quitter XaAES (ou ex‚cuter $SDMASTER
@@ -49,7 +55,7 @@ SHIFT+
  FLECHE GAUCHE D‚placer fenˆtre active vers la gauche
 <u>                                                      </u>
 
-Raccourcis/navigation dans <b>le s‚lecteur de fichiers:</b>
+Raccourcis/navigation dans <b>le s‚lecteur de fichiers</b>:
 
 CTRL+B        Affichage en temps r‚el
 CTRL+T        Affichage en arborescense
@@ -75,16 +81,18 @@ ALT+ " + "    Augmenter taille de texte dans la liste
 ALT+ " - "    R‚duire taille de texte dans la liste
 <u>                                                      </u>
 
-Raccourcis dans <b>gestionnaire de tƒches:</b>
+Raccourcis dans <b>gestionnaire de tƒches</b>:
 
 DELETE     Quitter programme s‚lectionn‚
            (idem ic“ne corbeille)
 SHIFT+
  DELETE    Forcer … quitter programme s‚lectionn‚
            (idem ic“ne crƒne)
+TAB        Amener le programme ou la fenˆtre
+           s‚lectionn‚(e) … l'avant 
 <u>                                                      </u>
 
-Raccourcis pour <b>toutes les fenˆtres:</b>
+Raccourcis pour <b>toutes les fenˆtres</b>:
 
 SHIFT+
  CURSEUR-HAUT/BAS           Page haut/bas
@@ -110,7 +118,7 @@ FLECHE DROITE place le curseur dans le champ ‚ditable,
 ce qui permet d'‚diter la s‚lection.
 <u>                                                      </u>
 
-<b>Barre de menu:</b>
+<b>Barre de menu</b>:
 
 Suivant la configuration, la barre de menu peut ˆtre
 cach‚e/affich‚e en cliquant en haut de l'‚cran.
