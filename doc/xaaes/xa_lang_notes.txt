@@ -6,6 +6,7 @@ NOTES for XaAES multi language support:
   de  german
   fr  french  (Thanks to JFL)
   es  spanish  (Thanks to David)
+  it  italian  (Thanks to Lodovico)
   hu  hungarian  (Thanks to Joszef)
   ru  russian  (Thanks to Dima)
   cs  czech  (Thanks to Bohdan)
@@ -14,7 +15,7 @@ NOTES for XaAES multi language support:
 
   app_options = aessys, thinwork = ..., rsc_lang = 1
 
-All translations for XaAES are located in file xaaes009.rsl (in xaaes folder).
+All translations for XaAES are located in file xaaes*.rsl (in xaaes folder).
 You may add any other two-character-language-code, add your translation-strings in the rsl-file
 and perhaps send the rsl-file to MiNTlist (zipped and attached because of possible mailclient encoding
 problems). Any additional language is welcome!
@@ -36,9 +37,9 @@ problems). Any additional language is welcome!
   Useful only for menus:
   It's enough to use + before the menu-TITLE, e.g. nn+ Options. The whole Options-menu will be resized then.
 
-- English, german, french, spanish and hungarian version can be used with default Atari charset (fonts).
-- For russian version you have to install l_kyr_08.fnt, l_kyr_09.fnt and l_kyr_10.fnt in NVDI or fvdi
-  as system fonts. There's a russian keyboard table "russian.tbl" for MiNT, too (based on LVAFONTS.ACC
-  layout from B. A. Lewitzki).
-- For czech version you have to install iso2a-16.fnt, iso2a-8.fnt and iso2a-6-fnt in NVDI or fvdi
-  as system fonts.
+- English, german, french, spanish, italian and hungarian version can be used with default Atari charset (fonts).
+- For russian version you have to install either d_kyr_*.fnt set (Atari systemfont style, located in ./fonts/ru/)
+  or l_kyr_*.fnt set (Monaco font style) in NVDI or fvdi as system fonts.
+  There's a russian keyboard table "russian.tbl" for MiNT, too (based on LVAFONTS.ACC layout from B. A. Lewitzki).
+- For czech version you have to install iso2a-16.fnt, iso2a-8.fnt and iso2a-6-fnt in NVDI or fvdi as system
+  fonts (located in ./fonts/cs/).
