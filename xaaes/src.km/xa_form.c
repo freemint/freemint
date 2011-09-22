@@ -145,21 +145,20 @@ sk1(void)
 
 /* give delimited string */
 static int
-lstr(char *w, unsigned long lim)
+lstr(char *w, char *s)
 {
-	int i = 0, c = *ln;
-	char *s = (char *)&lim;
+	int i = 0, c = *ln, sl = strlen(s), j;
+	//char *s = (char *)&lim;
 
 	while (i < mc)
 	{
 		c = *ln;
-
-		if (c == 0     ) break;	/* einde input */
-		if (c == *(s+3)) break;
-		if (c == *(s+2)) break;
-		if (c == *(s+1)) break;
-		if (c == * s   ) break;
-
+		if (c == 0     ) break;	/* end input */
+		for( j = 0; j < sl; j++ )
+			if( c == s[j] )
+				break;
+		if( j < sl )
+			break;
 		*w++ = c;
 		ln++;
 		i++;
@@ -200,7 +199,7 @@ get_parts(int m, char to[][MAX_X+1], int *retv)
 		int s;
 
 		/* delimited string, no translation */
-		s = lstr(to[n++], 0x7c5d /* '|]' */);
+		s = lstr(to[n++], "|]");
 		if (s == '|')
 		{
 			sk1();
