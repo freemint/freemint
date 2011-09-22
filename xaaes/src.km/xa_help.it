@@ -1,0 +1,133 @@
+# Inserire questo file nella directory xaaes-boot (C:\mint\1-*-*\xaaes)
+<b>Scorciatoie Ctrl-Alt</b>:
+
+0             Visualizza/nascondi il menu
+#$1 [keyboard-switch]
+.             Visione a pieno schermo del contenuto
+              della finestra attiva
+:             Crea sfondo dallo schermo attuale
+A             Chiudi tutte le applicazioni (elenco
+              delle eccezioni in xaaes.cnf)
+B             Apri la finestra Sistema/Log
+D             Apri il programma cattura schermo
+              (deve essere presente XAAESNAP.PRG)
+E             Apri il submenu delle finestre
+F,L           Apri il task-manager
+HELP          Apri Circa
+H             Arresta il sistema (o esegui $SDMASTER,
+              se presente)
+I             (De-)iconizza le finestra attiva
+J             Riavvio di XaAES
+K             Avvio di un programma
+M             Ripristino del puntatore mouse
+N             Carica gradiente
+SHIFT+N       Modifica immagine sfondo
+P             Ripristina la paletta nelle modalit…
+              inferiori od uguali a 8 bit
+Q,G           Esci da XaAES (o esegui $SDMASTER se 
+              presente)
+R             Tenta il ripristino di un sistema
+              bloccato
+T,HOME        Aggiorna lo schermo
+U             Chiudi la finestra attiva
+V             Visualizza tutte le applicazioni
+W             Passa da una finestra all'altra
+              globalmente
+X             Nascondi tutte le applicazioni tranne
+              quella in primo piano
+Y             Nascondi l'applicazione in primo piano
+SPACE         Apri il menu principale
+SHIFT+SPACE   Apri il menu della finestra in primo
+              piano altrimenti il menu principale
+TAB           Passa da una applicazione ad un'altra
+
+INSERT        Massimizza la finestra attiva
+CURSOR-UP     Ingradisci la finestra attiva
+CURSOR-DOWN   Riduci la finestra attiva
+CURSOR-RIGHT  Aumenta larghezza finestra attiva
+CURSOR-LEFT   Riduci larghezza finestra attiva
+
+SHIFT+
+ CURSOR-UP    Sposta in alto la finestra attiva
+ CURSOR-DOWN  Sposta in basso la finestra attiva
+ CURSOR-RIGHT Sposta a destra la finestra attiva
+ CURSOR-LEFT  Sposta a sinistra la finestra attiva
+<u>                                                      </u>
+
+Scorciatoie/navigazione nel <b>Fileselector di XaAES</b>:
+
+CTRL+B        Aggiorna in tempo reale
+CTRL+T        Visione ad albero
+CTRL+N        Ordina per nome
+CTRL+D        Ordina per data
+CTRL+S        Ordina per dimensioni
+CTRL+E        Ordina per estensione
+CTRL+X        Nessun ordine
+CTRL+SPACE    Inverti ordinamento
+
+CTRL+O        Apri il menu della finestra (navigazione
+              con i tasti Freccia e RETURN)
+CTRL+C        Copia nel taccuino il percorso ed il
+              nome del file selezionato
+CTRL+F        Crea cartella (immetti in nome nella
+              casella di modifica)
+CTRL+R        Rinomina il file/cartella selezionato
+              (immetti il nuovo nome nella casella
+              di modifica
+CTRL+V        Vedi file selezionato
+DELETE        Cancella il file selezionato/svuota
+              cartella
+
+ALT+ " + "    Aumenta dimensioni fonte nell'elenco
+ALT+ " - "    Diminuisci dimensioni fonte nell'elenco
+<u>                                                      </u>
+
+Scorciatoie nel <b>taskmanager</b>:
+
+DELETE    Esci dal programma selezionato (equivale
+          alla icona cestino)
+SHIFT+
+ DELETE   Forza uscita dal programma selezionato
+          (equivale alla icona teschio)
+TAB       Porta in primo piano il programma o la 
+          finestra selezionata
+<u>                                                      </u>
+
+Scorciatoie per <b>tutte le finestre</b>:
+
+SHIFT+
+ CURSOR-UP/DOWN             Pagina su/gi—
+ CURSOR-LEFT/RIGHT          Pagina sinistra/destra
+
+<u>Elenco selezionato:</u>
+
+ CURSOR-RIGHT              Apri albero
+ CURSOR-LEFT               Chiudi albero
+ CURSOR UP/DOWN            Sposta il cursore
+ PageUp/Down(SHIFT+CU/CD)  Sali/scendi una pagina
+ CLEAR/HOME                Vai ad inizio elenco
+ SHIFT+CLEAR/HOME          Vai a fine elenco
+
+<u>Elenco non selezionato:</u>
+
+ CURSOR-RIGHT              Scorri a destra
+ CURSOR-LEFT               Scorri a sinistra
+ CURSOR UP/DOWN            Scorri in alto/in basso
+
+Se una voce Š selezionata nell'elenco, la FRECCIA
+DESTRA muove il cursore in un campo modificabile, 
+consentendo di modificare la selezione.
+<u>                                                      </u>
+
+<b>Barra del menu</b>:
+
+Se configurato, il menu pu• essere visibile/nascosto
+cliccando in alto allo schermo. Cliccando nell'angolo
+in alto a sinistra il menu Š reso visibile/invisibile
+in modo permanente (Ctrl-Alt-0), altrimenti in modo
+temporaneo con (Ctrl-Alt-Spazio).
+<u>                                                      </u>
+
+Documentazione aggiuntiva:
+
+http://wiki.sparemint.org/index.php/XaAES
