@@ -57,14 +57,6 @@ enum
 	XA_HELP_FILE
 };
 
-enum TR_STRINGS
-{
-	ABOUT_LINES,
-	//WCTXT_MAIN_TXT,
-	XA_STRINGS
-};
-
-
 extern char *xa_strings[];
+extern char *KeyNames[];
 extern char **trans_strings[];
-

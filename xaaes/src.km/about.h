@@ -33,4 +33,12 @@
 void open_about(enum locks lock, struct xa_client *client, bool open, char *fn);
 void add_keybd_switch(void);
 
+enum CtrlAltMd{
+	Set = 0,
+	Get,
+	Reset
+};
+
+int DoCtrlAlt( enum CtrlAltMd md, int orig, int repl );
+
 #endif /* _about_h */

@@ -1489,3 +1489,41 @@ hu:xa_help.hu
 ru:xa_help.ru
 cs:xa_help.cs
 _
+### Key-Names ###
+NN:CURSOR-UP @
+de:PFEIL-HOCH
+_
+NN:CURSOR-DOWN @
+de:PFEIL-RUNTER
+_
+NN:CURSOR-RIGHT
+de:PFEIL-RECHTS
+_
+NN:CURSOR-LEFT
+de:PFEIL-LINKS
+_
+NN:SPACE
+_
+NN:ESC
+_
+NN:
+_
+NN:BACKSPACE
+_
+NN:TAB
+_
+NN:ENTER
+_
+NN:INSERT
+_
+NN:HOME
+_
+NN:RETURN
+_
+NN:HELP
+_
+NN:HOME
+_
+NN:UNDO
+_
+
