@@ -352,7 +352,7 @@ kernel_key(enum locks lock, struct rawkey *key)
 	{
 		struct xa_client *client;
 		struct kernkey_entry *kkey = C.kernkeys;
-		short nk;
+		short nk, n;
 		short sdmd = 0;
 
 		key->norm = nkc_tconv(key->raw.bcon);
@@ -436,6 +436,7 @@ kernel_key(enum locks lock, struct rawkey *key)
 
 			return true;
 		}
+
 		switch (nk)
 		{
 		case NK_TAB:				/* TAB, switch menu bars */
@@ -835,13 +836,35 @@ kernel_key(enum locks lock, struct rawkey *key)
 		}
 		case 'W':
 		{
-			struct xa_window *wind;
-			wind = next_wind(lock);
-			if (wind)
+			if (key->raw.conin.state & (K_RSHIFT|K_LSHIFT))
 			{
-				top_window(lock, true, true, wind);
+				if( TOP_WINDOW )
+				{
+					struct xa_window *w = TOP_WINDOW;
+
+					client = w->owner;
+					for( w = w->next; w && (client == w->owner || w->owner == C.Aes || w->owner == C.Hlp); w = w->next )
+					;
+					if( !w )
+						w = TOP_WINDOW->next;
+					if( w )
+					{
+						top_window(lock, true, true, w );
+						return true;
+					}
+				}
+				return false;
 			}
-			return true;
+			else
+			{
+				struct xa_window *wind;
+				wind = next_wind(lock);
+				if (wind)
+				{
+					top_window(lock, true, true, wind);
+				}
+				return true;
+			}
 		}
 #if GENERATE_DIAGS
 		case 'L':				/* ctrl+alt+L, turn on debugging output */
