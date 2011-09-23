@@ -116,10 +116,31 @@ char *about_lines[] =
 	0
 };
 
+char *KeyNames[] = {
+	"CURSOR-UP ",
+	"CURSOR-DOWN ",
+	"CURSOR-RIGHT",
+	"CURSOR-LEFT",
+	"SPACE",
+	"ESC",
+	"",
+	"BACKSPACE",
+	"TAB",
+	"ENTER",
+	"INSERT",
+	"HOME",
+	"RETURN",
+	"HELP",
+	"HOME",
+	"UNDO",
+	0
+};
+
 
 char **trans_strings[] = {
 	about_lines,
 	wctxt_main_txt,
 	xa_strings,
+	KeyNames,
 	0
 };
