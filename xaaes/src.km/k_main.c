@@ -31,6 +31,7 @@
 #include "xa_global.h"
 #include "xa_strings.h"
 
+#include "about.h"
 #include "app_man.h"
 #include "adiload.h"
 #include "c_window.h"
@@ -1791,6 +1792,7 @@ k_main(void *dummy)
 	}
 #endif
 	post_cevent(C.Hlp, CE_start_apps, NULL,NULL, 0,0, NULL,NULL);
+	post_cevent(C.Hlp, ceExecfunc, open_about,NULL, 0,0, NULL,NULL);
 
 	/*
 	 * console-output:

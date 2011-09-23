@@ -436,6 +436,20 @@ kernel_key(enum locks lock, struct rawkey *key)
 
 			return true;
 		}
+		n = DoCtrlAlt( Get, nk, key->raw.conin.state );
+		if( n == 255 )
+			return false;
+		if( n )
+		{
+			nk = n;
+			if( nk > 128 )
+			{
+				nk -= 128;
+				key->raw.conin.state |= (K_RSHIFT|K_LSHIFT);
+			}
+			else
+				key->raw.conin.state &= ~(K_RSHIFT|K_LSHIFT);
+		}
 
 		switch (nk)
 		{
