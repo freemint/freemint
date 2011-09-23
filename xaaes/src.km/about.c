@@ -186,6 +186,173 @@ about_form_exit(struct xa_client *client,
 #include "util.h"
 
 #define VIEW_MAX_LINES 1024
+
+#if ALT_CTRL_APP_OPS
+enum PState
+{
+	CtrlAlt = 0,
+	nil
+};
+
+static int ScanKey( char **p, long *lp )
+{
+	char *p1 = strchr( *p+1, '#' );
+	int i, shift = 0;
+	long l;
+
+	if( !p1 )
+		return 0;
+	if( !strncmp( *p, "SHIFT+", 6 ) )
+	{
+		shift = 128;
+		*p += 6;
+		if( **p <= ' ' )
+			return 0;
+	}
+	l = p1 - *p;
+	if( l > 1 )
+	{
+		for( i = 0; KeyNames[i]; i++ )
+		{
+			if( !strncmp( *p, KeyNames[i], l ) )
+				break;
+		}
+		if( KeyNames[i] )
+		{
+			*p = p1;
+			*lp = l + (shift ? 6 : 0);
+			if( i == 4 )
+				i = ' ';
+			else if( i == 5 )
+				i = 0x1b;	//NK_ESC;
+			else
+				i++;
+			return i + shift;
+		}
+		//else
+	}
+	*lp = shift ? 7 : 1;
+	i = **p;
+	*p = p1;
+	return i + shift;
+}
+
+static int DStart = 0;
+static void PatchLn( char *ln, long lpo, long lpr )
+{
+	char *p;
+	char *px = ln;
+	if( !lpo )
+		return;
+	for( p = ln; lpo && *p; lpo--, p++ )
+	;
+	for( ; lpr && *p && *p != '#'; lpr-- )
+	{
+		*ln++ = *p++;
+	}
+	p++;
+
+	for( *ln++ = ' '; *ln && *ln != ' ' && ln < p; )
+		*ln++ = ' ';
+	if( DStart == 0 && *ln == ' ' )
+	{
+		for( ; *ln == ' '; ln++ )
+		;
+		DStart = ln - px;
+	}
+	else if( DStart )
+	{
+		int pos = ln - px;
+		pos -= DStart;
+		if( pos > 0 )
+		{
+			for( p = ln - pos; *ln; )
+				*p++ = *ln++;
+			*p = 0;
+		}
+	}
+}
+typedef struct{
+	unsigned char c;
+}Keys;
+
+int DoCtrlAlt( enum CtrlAltMd md, int orig, int repl )
+{
+	static Keys CtrlAltKeys[256] = {{0}};
+	switch( md )
+	{
+	case Set:
+	{
+		if( repl <= 0 || orig <= 0 )
+			return 1;
+		repl--;
+		orig--;
+		if( repl > sizeof(CtrlAltKeys) / sizeof(Keys) )
+			return 1;
+		CtrlAltKeys[repl].c = orig + 1;
+	}
+	break;
+	case Get:
+		if( orig <= 0 )
+			return 0;
+		if( repl & (K_RSHIFT|K_LSHIFT) )
+			orig += 128;
+		orig--;
+		if( orig > sizeof(CtrlAltKeys) / sizeof(Keys) )
+			return 0;
+		return CtrlAltKeys[orig].c;
+	case Reset:
+		memset( CtrlAltKeys, 0, sizeof(CtrlAltKeys) );
+	break;
+	}
+	return 0;
+}
+
+static void SetCtrlAlt( char *p )
+{
+	int org, repl;
+	long lpo, lpr;
+	char *p1 = p;
+	if( !( org = ScanKey( &p, &lpo ) ) || *p != '#' )
+	{
+		if( DStart == 0 )
+		{
+			for( ; *p == ' '; p++ )
+			;
+			DStart = p - p1;
+		}
+		return;
+	}
+	p++;
+	if( *p == '#' )	// free shortcut
+	{
+		DoCtrlAlt( Set, 255, org );
+		*p1 = 0;
+		return;
+	}
+	if( !( repl = ScanKey( &p, &lpr ) ) )
+		return;
+	PatchLn( p1, lpo + 1, lpr + 1 );
+	DoCtrlAlt( Set, org, repl );
+}
+
+static enum PState GetPState( char *p )
+{
+	static char *Snames[] = { "CtrlAlt", 0};
+	int i;
+	long l;
+	char *p1 = strchr( p, '>' );
+	if( !p1 )
+		return nil;	//ERROR
+	l = p1 - p;
+	for( i = 0; Snames[i]; i++ )
+	{
+		if( !strncmp( p, Snames[i], l ) )
+			return i;
+	}
+	return nil;
+}
+#endif
 /*
  * insert lines of a text-file into a scroll-list
  * if first non-white char is '#' line is skipped
@@ -201,6 +368,10 @@ static void file_to_list( SCROLL_INFO *list, char *fn, bool skip_hash)
 	XA_FILE *xa_fp;
 	char *p;
 	long lineno;
+#if ALT_CTRL_APP_OPS
+	enum PState pstate = nil;
+	DStart = 0;
+#endif
 
 	if( r || !S_ISREG(st.mode) )
 		return;
@@ -223,7 +394,10 @@ static void file_to_list( SCROLL_INFO *list, char *fn, bool skip_hash)
 			;
 			if( *p == '#' )
 			{
-				if( *(p+1) == '$' )
+				switch( *(p+1) )
+				{
+#if ALT_CTRL_APP_OPS
+				case '$':
 					switch( *(p+2) )
 					{
 					case '1':
@@ -232,8 +406,27 @@ static void file_to_list( SCROLL_INFO *list, char *fn, bool skip_hash)
 					break;
 					}
 				continue;
+
+				case '<':
+					if( *(p+2) == '/' )
+						pstate = nil;
+					else
+						pstate = GetPState( p+2 );
+				continue;
+#endif
+				default:	// comment
+				continue;
+				}
 			}
 		}
+#if ALT_CTRL_APP_OPS
+		if( pstate == CtrlAlt && *p )
+		{
+			SetCtrlAlt( p );
+			if( !*p )
+				continue;
+		}
+#endif
 		list->add(list, NULL, NULL, &sc, false, 0, false);
 	}
 
@@ -411,6 +604,10 @@ open_about(enum locks lock, struct xa_client *client, bool open, char *fn)
 				list->start = 0;
 				xah_mtime.time = st.mtime.time;
 				memset( athis, 0, sizeof(athis) );
+#if ALT_CTRL_APP_OPS
+				if( view_file == false )
+					DoCtrlAlt( Reset, 0, 0 );
+#endif
 			}
 		}
 	}
