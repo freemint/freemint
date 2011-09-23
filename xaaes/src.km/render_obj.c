@@ -3570,6 +3570,7 @@ int do_bkg_img(struct xa_client *client, int md, char *fn )
 		if( ierr == 0 && background )
 			kfree(background);
 		background = 0;
+		ierr = -1;
 		return 0;
 	}
 	if( md == 1 || md == 3 || ierr == -1 )
