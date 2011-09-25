@@ -140,7 +140,7 @@ static int ker_stat( int pid, char *what, long pinfo[] );
 {
  WTXT_NOCLIP,
 /* id  pnts  flags wrm,     efx   fgc      bgc   banner x_3dact y_3dact texture */
- {  -1,  -1, 0, MD_TRANS, 0, G_LRED, G_WHITE, G_WHITE,   0,      0,     NULL  },	/* Normal */
+ {  -1,  -1, 0, MD_TRANS, 0, G_RED, G_WHITE, G_WHITE,   0,      0,     NULL  },	/* Normal */
  {  -1,  -1, 0, MD_TRANS, 0, G_WHITE/*RED*/, G_WHITE, G_WHITE,   0,      0,     NULL  },	/* Selected */
  {  -1,  -1, 0, MD_TRANS, 0, G_BLACK, G_WHITE, G_WHITE,   0,      0,     NULL  },	/* Highlighted */
 
@@ -170,8 +170,8 @@ static int ker_stat( int pid, char *what, long pinfo[] );
 {
  WTXT_NOCLIP,
 /* id  pnts  flags wrm,     efx   fgc      bgc   banner x_3dact y_3dact texture */
- {  -1,  -1, 0, MD_TRANS, 0, G_RED,   G_LWHITE, G_WHITE,   0,      0,     NULL  },	/* Normal */
- {  -1,  -1, 0, MD_TRANS, 0, G_RED,   G_LWHITE, G_WHITE,   0,      0,     NULL  },	/* Selected */
+ {  -1,  -1, 0, MD_TRANS, 0, G_LRED,   G_LWHITE, G_WHITE,   0,      0,     NULL  },	/* Normal */
+ {  -1,  -1, 0, MD_TRANS, 0, G_MAGENTA,   G_LWHITE, G_WHITE,   0,      0,     NULL  },	/* Selected */
  {  -1,  -1, 0, MD_TRANS, 0, G_BLACK, G_WHITE,  G_WHITE,   0,      0,     NULL  },	/* Highlighted */
 
 };
