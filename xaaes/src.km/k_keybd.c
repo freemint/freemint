@@ -419,17 +419,25 @@ kernel_key(enum locks lock, struct rawkey *key)
 
 			for( ; ; )
 			{
-				tbname = cfg.keyboards.keyboard[++cfg.keyboards.cur];
-				if( !tbname )
+				cfg.keyboards.cur++;
+				if( cfg.keyboards.cur == MAX_KEYBOARDS || !*cfg.keyboards.keyboard[cfg.keyboards.cur])
 				{
 					cfg.keyboards.cur = -1;
 					tbname = "keyboard";
 				}
+				else
+					tbname = cfg.keyboards.keyboard[cfg.keyboards.cur];
 				if( !(r = switch_keyboard( tbname )) || cfg.keyboards.cur == -1)
 				{
-					if( r && cfg.keyboards.cur == -1)
-						switch_keyboard(0);
-					add_keybd_switch();
+					if( cfg.keyboards.cur == -1)
+					{
+						if( r )
+						{
+							switch_keyboard(0);
+						}
+						tbname = xa_strings[UNKNOWN];
+					}
+					add_keybd_switch(tbname);
 					break;
 				}
 			}
@@ -911,6 +919,7 @@ keyboard_input(enum locks lock)
 		struct rawkey key;
 
 		key.raw.bcon = f_getchar(C.KBD_dev, RAW);
+ 		//DBG((0,"f_getchar: 0x%08lx, AES=%x, NORM=%x", key.raw.bcon, key.aes, key.norm));
 // 		display("f_getchar: 0x%08lx, AES=%x, NORM=%x", key.raw.bcon, key.aes, key.norm);
 
 	// this produces wheel-events on some F-keys (eg. S-F10)
