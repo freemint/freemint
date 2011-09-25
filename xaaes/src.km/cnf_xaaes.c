@@ -522,7 +522,7 @@ pCB_keyboards(char *line)
 			break;
 		BLOG((0,"keyboard#%d=%s",i,s));
 
-		strncpy(cfg.keyboards.keyboard[i], s, sizeof(cfg.keyboards.keyboard[i]-1));
+		strncpy(cfg.keyboards.keyboard[i], s, sizeof(cfg.keyboards.keyboard[i])-1);
 
 	}
 	cfg.keyboards.cur = -1;	//undef.
