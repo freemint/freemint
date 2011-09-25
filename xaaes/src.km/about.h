@@ -30,8 +30,9 @@
 #include "global.h"
 #include "taskman.h"
 
+void reset_about(void);
 void open_about(enum locks lock, struct xa_client *client, bool open, char *fn);
-void add_keybd_switch(void);
+void add_keybd_switch(char *k);
 
 enum CtrlAltMd{
 	Set = 0,

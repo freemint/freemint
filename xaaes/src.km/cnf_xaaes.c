@@ -521,10 +521,11 @@ pCB_keyboards(char *line)
 		if (!s)
 			break;
 		BLOG((0,"keyboard#%d=%s",i,s));
-		cfg.keyboards.keyboard[i] = xa_strdup( s );
+
+		strncpy(cfg.keyboards.keyboard[i], s, sizeof(cfg.keyboards.keyboard[i]-1));
+
 	}
 	cfg.keyboards.cur = -1;	//undef.
-	//switch_keyboard( cfg.keyboards.keyboard[0] );
 }
 /*----------------------------------------------------------------------------*/
 
