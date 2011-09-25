@@ -4111,7 +4111,7 @@ static void free_grad( struct xa_window *w )
 	struct xa_data_hdr **a;
 	for( n = 0; n < XA_MAX_WIDGETS; n++ )
 	{
-		for( i = 0; i < 2; i++ )
+		for( i = 0; i < 4; i++ )
 		{
 			a = (struct xa_data_hdr **)&w->widgets[n].m.r.priv[i];
 			(*api->free_xa_data_list)(a);
@@ -4124,11 +4124,14 @@ void free_widg_grad(const struct xa_module_api *_api)
 	struct xa_window *w;
 	int i;
 	for( i = 0; wp[i]; i++ )
-		for( w = wp[i]; w && w != root_window; w = w->next )
+		for( w = wp[i]; w; w = w->next )
 		{
-			free_grad( w );
-			if( w->winob )
-				free_grad( (struct xa_window *)w->winob );
+			if( w != root_window )
+			{
+				free_grad( w );
+				if( w->winob )
+					free_grad( (struct xa_window *)w->winob );
+			}
 		}
 }
 
