@@ -100,19 +100,23 @@ about_destructor(enum locks lock, struct xa_window *wind)
 		htd->w_about = NULL;
 	return true;
 }
-
 static RECT wsiz = { 0, 0, 0, 0 };
 static SCROLL_INFO *alist = 0;
-static SCROLL_ENTRY *athis[16] = {0};
-void add_keybd_switch(void)
+static SCROLL_ENTRY *athis[1] = {0};
+static struct time xah_mtime = {0,0,0};
+void reset_about(void)
 {
-	char buf[256], lang[4], *k;
+	alist = 0;
+	memset( athis, 0, sizeof(athis) );
+	memset( &xah_mtime, 0, sizeof(xah_mtime) );
+}
+
+void add_keybd_switch(char *k)
+{
+	char buf[256], lang[4];
 	if( !alist || !cfg.keyboards.c )
 		return;
-	if( cfg.keyboards.cur >= 0 )
-		k = cfg.keyboards.keyboard[cfg.keyboards.cur];
-	else
-		k = xa_strings[UNKNOWN];
+
 	lang_from_akp( lang, 1 );
 	lang[2] = 0;
 	sprintf( buf, sizeof(buf), "%c             %s %s(%s)", cfg.keyboards.c, xa_strings[SW_KEYBD], k, lang );
@@ -360,7 +364,7 @@ static enum PState GetPState( char *p )
  *
  *
  */
-static void file_to_list( SCROLL_INFO *list, char *fn, bool skip_hash)
+static void file_to_list( SCROLL_INFO *list, char *fn, bool skip_hash, bool open)
 {
 	struct scroll_content sc = {{ 0 }};
 	struct stat st;
@@ -401,8 +405,8 @@ static void file_to_list( SCROLL_INFO *list, char *fn, bool skip_hash)
 					switch( *(p+2) )
 					{
 					case '1':
-						if( cfg.keyboards.c )
-							add_keybd_switch();
+						if( open && cfg.keyboards.c )
+							add_keybd_switch(xa_strings[UNKNOWN]);
 					break;
 					}
 				continue;
@@ -590,7 +594,6 @@ open_about(enum locks lock, struct xa_client *client, bool open, char *fn)
 	/* check if help-file has changed and if yes re-read */
 	if (list->start)
 	{
-		static struct time xah_mtime = {0,0,0};
 		struct stat st;
 		if( f_stat64( 0, ebuf, &st ) )
 		{
@@ -628,7 +631,7 @@ open_about(enum locks lock, struct xa_client *client, bool open, char *fn)
 			}
 		}
 #if HELPINABOUT
-		file_to_list( list, ebuf, view_file == false );
+		file_to_list( list, ebuf, view_file == false, open );
 #endif
 	}
 
