@@ -1792,7 +1792,6 @@ k_main(void *dummy)
 	}
 #endif
 	post_cevent(C.Hlp, CE_start_apps, NULL,NULL, 0,0, NULL,NULL);
-	post_cevent(C.Hlp, ceExecfunc, open_about,NULL, 0,0, NULL,NULL);
 
 	/*
 	 * console-output:
@@ -1810,7 +1809,8 @@ k_main(void *dummy)
 	default_input_channels |= 1UL << C.alert_pipe;	/* Monitor the system alert pipe */
 	tty = (struct tty *)C.Aes->p->p_fd->ofiles[C.KBD_dev]->devinfo;
 
-
+	reset_about();
+	post_cevent(C.Hlp, ceExecfunc, open_about,NULL, 0,0, NULL,NULL);
 	/*
 	 * Main kernel loop
 	 */
