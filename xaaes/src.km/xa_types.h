@@ -2945,10 +2945,10 @@ struct cfg_name_list
 	char name[32];
 };
 
-struct keyboards
+struct xa_keyboards
 {
 	short c, cur;
-	char *keyboard[MAX_KEYBOARDS+1];
+	char keyboard[MAX_KEYBOARDS+1][12];
 };
 
 struct config
@@ -3004,8 +3004,8 @@ struct config
 	short menu_layout;		/* short, float .. */
 	short menu_ontop;     /* menubar is window */
 
+	struct xa_keyboards keyboards;
 	char cancel_buttons[NUM_CB][CB_L];
-	struct keyboards keyboards;
 #if FILESELECTOR
 	char Filters[FS_NPATTERNS][FS_PATLEN];
 #endif
