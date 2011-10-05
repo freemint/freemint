@@ -2622,15 +2622,15 @@ static struct scroll_entry *add_title_string( struct scroll_info *list, struct s
 static void add_os_features(struct scroll_info *list, struct scroll_entry *this, struct scroll_content *sc)
 {
 	char s[128];
-	long has_mprot = Ssystem(S_OSFEATURES,0,0);
+	long features = Ssystem(S_OSFEATURES,0,0);
 
 #if CHECK_STACK
 	extern unsigned short stack_align;
-	int l = sprintf( s, sizeof(s)-1, xa_strings[RS_MEMPROT], has_mprot ? xa_strings[RS_ON] : xa_strings[RS_OFF] );
+	int l = sprintf( s, sizeof(s)-1, xa_strings[RS_MEMPROT], (features & 1) ? xa_strings[RS_ON] : xa_strings[RS_OFF] );
 	sprintf( s+l, sizeof(s)-1-l, ", Stack: %x", stack_align );
 	BLOG((0,s));
 #else
-	sprintf( s, sizeof(s)-1, xa_strings[RS_MEMPROT], has_mprot ? xa_strings[RS_ON] : xa_strings[RS_OFF]);
+	sprintf( s, sizeof(s)-1, xa_strings[RS_MEMPROT], (features & 1) ? xa_strings[RS_ON] : xa_strings[RS_OFF]);
 #endif
 	sc->t.text = s;
 
