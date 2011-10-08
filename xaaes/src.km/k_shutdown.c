@@ -93,6 +93,14 @@ k_shutdown(void)
 	BLOG((false, "Freeing delayed deleted windows"));
 	do_delayed_delete_window(NOLOCKING);
 
+#if WITH_BBL_HELP
+	if (bgem_window)
+	{
+		close_window(NOLOCKING, bgem_window);
+		delete_window(NOLOCKING, bgem_window);
+		bgem_window = NULL;
+	}
+#endif
 	if (menu_window)
 	{
 		close_window(NOLOCKING, menu_window);
@@ -267,7 +275,7 @@ k_shutdown(void)
 		 */
 // 		v_clsvwk(global_vdi_settings.handle);
 
-		if( C.P_handle > 0 && C.P_handle != v->handle )
+		if( /*!(C.shutdown & RESTART_XAAES) &&*/ C.P_handle > 0 && C.P_handle != v->handle )
 		{
 #ifndef ST_ONLY
 #if SAVE_CACHE_WK

@@ -11,6 +11,7 @@ HEADER = \
 	c_message.h \
 	c_mouse.h \
 	c_window.h \
+	xacookie.h \
 	cnf_xaaes.h \
 	debug.h \
 	desktop.h \
@@ -47,6 +48,7 @@ HEADER = \
 	win_draw.h \
 	xa_aes.h \
 	xa_appl.h \
+	xa_bubble.h \
 	xa_defs.h \
 	xa_evnt.h \
 	xa_fnts.h \
@@ -81,6 +83,7 @@ COBJS = \
 	c_message.c \
 	c_mouse.c \
 	c_window.c \
+	xacookie.c \
 	debug.c \
 	desktop.c \
 	draw_obj.c \
@@ -112,6 +115,7 @@ COBJS = \
 	widgets.c \
 	win_draw.c \
 	xa_appl.c \
+	xa_bubble.c \
 	xa_evnt.c \
 	xa_fnts.c \
 	xa_form.c \
