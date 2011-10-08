@@ -44,6 +44,7 @@ char *xa_strings[] = {
 "XaAES: Print dialogs unavailable with current VDI.         ",
 "launch: Cannot enter single-task-mode. Already in single-task-mode: %s(%d).        ",
 "XaAES: %s%s, client with no globl_ptr, killing it!          ",
+"rsrc_gaddr: invalid pointer: %lx(rsc=%lx->%lx), type=%d",
 "XaAES: AES shell already running!                    ",
 "XaAES: No AES shell set, see 'shell =' configuration variable in xaaes.cnf.                 ",
 
@@ -123,7 +124,7 @@ char *KeyNames[] = {
 	"CURSOR-LEFT",
 	"SPACE",
 	"ESC",
-	"",
+	".",
 	"BACKSPACE",
 	"TAB",
 	"ENTER",
