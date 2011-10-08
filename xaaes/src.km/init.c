@@ -50,8 +50,7 @@
 
 #include "mint/ssystem.h"
 #include "cookie.h"
-
-//long module_exit(void);
+#include "info.h"
 
 #if CHECK_STACK
 short check_stack_alignment( long e );
@@ -67,7 +66,7 @@ static char Aes_display_name[32];
 static void
 bootmessage(void)
 {
-	BLOG((true, "%s (MultiTasking AES for MiNT)", Aes_display_name));
+	BLOG((true, "%s (%s, %s) (MultiTasking AES for MiNT)", Aes_display_name+2, arch_target, build_date() ));
 #if DISPCREDITS
 	BLOG((true, ""));
 	BLOG((true, "(c) 1995-1999 Craig Graham, Johan Klockars, Martin Koehling, Thomas Binder"));
@@ -355,18 +354,22 @@ init(struct kentry *k, const struct kernel_module *km) //const char *path)
 		goto error;
 	}
 
-	bzero(&G, sizeof(G));
 	C.bootlog_path[0] = '\0';
 	get_drive_and_path(start_path, sizeof(start_path));
 
 	setup_xa_module_api();
 again:
 	/* zero anything out */
+	bzero(my_global_aes, sizeof(my_global_aes));
+	bzero(&G, sizeof(G));
 	bzero(&default_options, sizeof(default_options));
 	bzero(&cfg, sizeof(cfg));
 	bzero(&S, sizeof(S));
 	bzero(&C, sizeof(C));
 	root_window = menu_window = 0;
+#if CHECK_STACK
+	stack_align = 0;
+#endif
 	C.SingleTaskPid = -1;	/* just for sure */
 
 	strcpy(C.start_path, start_path);
@@ -379,14 +382,42 @@ again:
 	}
 
 	if (first)
-		BLOG(( false, "\n~~~~~~~~~~~~ XaAES start up!! ~~~~~~~~~~~~~~~~" ));
+		BLOG(( false, "\n~~~~~~~~~~~~ XaAES start up ~~~~~~~~~~~~~~~~" ));
 	else
-		BLOG((false, "\n~~~~~~~~~~~~ XaAES restarting! ~~~~~~~~~~~~~~~"));
+		BLOG((false, "\n~~~~~~~~~~~~ XaAES restarting ~~~~~~~~~~~~~~~"));
 #endif
 
 	/* reset single-flags in case of previous fault */
 	rootproc = pid2proc(0);
 	rootproc->modeflags &= ~(M_SINGLE_TASK|M_DONT_STOP);
+
+	/* remember loader */
+
+	loader_pid = p_getpid();
+	//get_curproc()->pgrp = 0;
+	loader_pgrp = p_getpgrp();
+
+	sprintf(version, sizeof(version), "%i.%i.%i", XAAES_MAJ_VERSION, XAAES_MIN_VERSION, XAAES_PATCH_LEVEL);
+	sprintf(vversion, sizeof(vversion), "%s %s%s", version,  DEV_STATUS & AES_FDEVSTATUS_STABLE ? "Stable " : "", ASCII_DEV_STATUS);
+
+#if GENERATE_DIAGS
+	bzero(&D, sizeof(D));
+	D.debug_level = 4;
+#if 0 /*LOGDEBUG*/
+	/* Set the default debug file */
+	strcpy(D.debug_path, "xaaes.log");
+	D.debug_file = kernel_open(D.debug_path, O_WRONLY|O_CREAT|O_TRUNC, NULL, NULL);
+#else
+	D.debug_file = NULL;
+#endif
+	sprintf(Aes_display_name, sizeof(Aes_display_name), "  XaAES(dbg) v%s (%s)", vversion, _CPU);
+#else
+	sprintf(Aes_display_name, sizeof(Aes_display_name), "  XaAES v%s", vversion);
+#endif
+
+	/* Print a text boot message */
+	if (first)
+		bootmessage();
 
 #if CHECK_STACK
 	/**** check if stack is sane ****/
@@ -400,13 +431,6 @@ again:
 	else
 			BLOG(( 0,"stack is word-aligned:%lx", stk ));
 #endif
-
-	/* remember loader */
-
-	loader_pid = p_getpid();
-	//get_curproc()->pgrp = 0;
-	loader_pgrp = p_getpgrp();
-
 	/* do some sanity checks of the installation
 	 * that are a common source of user problems
 	 */
@@ -457,22 +481,6 @@ again:
 		}
 	}
 
-	sprintf(version, sizeof(version), "%i.%i.%i", XAAES_MAJ_VERSION, XAAES_MIN_VERSION, XAAES_PATCH_LEVEL);
-	sprintf(vversion, sizeof(vversion), "%s %s%s", version,  DEV_STATUS & AES_FDEVSTATUS_STABLE ? "Stable " : "", ASCII_DEV_STATUS);
-#if GENERATE_DIAGS
-	bzero(&D, sizeof(D));
-	D.debug_level = 4;
-#if 0 /*LOGDEBUG*/
-	/* Set the default debug file */
-	strcpy(D.debug_path, "xaaes.log");
-	D.debug_file = kernel_open(D.debug_path, O_WRONLY|O_CREAT|O_TRUNC, NULL, NULL);
-#else
-	D.debug_file = NULL;
-#endif
-	sprintf(Aes_display_name, sizeof(Aes_display_name), "  XaAES(dbg) v%s (%s)", vversion, _CPU);
-#else
-	sprintf(Aes_display_name, sizeof(Aes_display_name), "  XaAES v%s", vversion);
-#endif
 	/*
 	 * default configuration
 	 */
@@ -623,10 +631,6 @@ again:
 	/* requires mint >= 1.15.11 */
 	C.mvalidate = true;
 
-	/* Print a text boot message */
-	if (first)
-		bootmessage();
-
 	/* Setup the kernel OS call jump table */
 
 	setup_handler_table();
@@ -679,7 +683,6 @@ again:
 	default_options.alt_shortcuts = 3;
 
 	C.Aes->options = default_options;
-
 	{
 	long	li = -1;
 	/* Parse the config file */
@@ -709,7 +712,6 @@ again:
 
 	BLOG((0,"lang='%s(%ld)' (from %s).",cfg.lang, li, li == -1 ? "config" : (li == -2 ? "Environ" : "AKP") ));
 	}
-
 	if( cfg.info_font_point == -1 )
 		cfg.info_font_point = cfg.standard_font_point;
 
