@@ -28,7 +28,7 @@
 #define _global_h
 
 #include <stddef.h>
-
+#include "xa_defs.h"
 #include "mint/module.h"
 #include "mint/config.h"
 #include "libkern/libkern.h"
@@ -146,9 +146,12 @@ __extension__								\
 
 #define xbios_getrez()	(short)trap_14_w((short)(0x04))
 #define _f_sync			(*KENTRY->vec_dos[0x103]) 	/* f_sync */
-
-extern short my_global_aes[];
+#define GL_AES_SZ	16
+extern short my_global_aes[GL_AES_SZ];
 
 extern struct xa_window *root_window, *menu_window;
+#if WITH_BBL_HELP
+extern struct xa_window *bgem_window;
+#endif
 
 #endif /* _global_h */

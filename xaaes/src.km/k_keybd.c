@@ -55,6 +55,9 @@
 #include "trnfm.h"
 #include "render_obj.h"
 #include "keycodes.h"
+#if WITH_BBL_HELP
+#include "xa_bubble.h"
+#endif
 
 #include "mint/dcntl.h"
 #include "mint/fcntl.h"
@@ -291,6 +294,7 @@ int switch_keyboard( char *tbname )
 			long out;
 			unsigned long dummy;
 			char tblpath[PATH_MAX];
+
 			if( tbname )
 			{
 				sprintf( tblpath, sizeof(tblpath), "%s%s.tbl", sysdir, tbname );
@@ -911,6 +915,10 @@ kernel_key(enum locks lock, struct rawkey *key)
 void
 keyboard_input(enum locks lock)
 {
+#if WITH_BBL_HELP
+	if( cfg.xa_bubble )
+		xa_bubble( lock, bbl_close_bubble2, 0, 0 );
+#endif
 	/* Did we get some keyboard input? */
 #if EIFFEL_SUPPORT
 	while (1)

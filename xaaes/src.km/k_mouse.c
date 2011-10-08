@@ -28,6 +28,7 @@
 #include "k_keybd.h"
 #include "xa_global.h"
 #include "c_mouse.h"
+#include "xa_appl.h"
 #include "xa_graf.h"
 #include "xa_evnt.h"
 
@@ -45,11 +46,13 @@
 #include "scrlobjc.h"
 #include "taskman.h"
 #include "widgets.h"
+#if WITH_BBL_HELP
+#include "xa_bubble.h"
+#endif
 
 #include "mint/dcntl.h"
 #include "mint/fcntl.h"
 #include "mint/signal.h"
-
 
 /*
  * Ozk: When a mouse button event is delivered to a client, or application,
@@ -261,6 +264,12 @@ is_bevent(int gotbut, int gotcl, const short *o, int which)
 	DIAG((D_button,NULL,"[%d]is_bevent? %s; gotb %d; gotc %d; clks 0x%x, msk %d, st %d",
 		which, ev ? "Yes" : "No", gotbut, gotcl, clks, msk, st));
 
+#if WITH_BBL_HELP
+		if( cfg.xa_bubble && gotbut == 1 && xa_bubble( 0, bbl_get_status, 0, 1 ) == bs_open )	/* left click: bubble off */
+		{
+			xa_bubble( 0, bbl_close_bubble1, 0, 0 );
+		}
+#endif
 	return ev;
 }
 
@@ -917,6 +926,44 @@ static TIMEOUT *b_to = NULL;
 static TIMEOUT *m_to = NULL;
 static TIMEOUT *m_rto = NULL;
 
+#if WITH_BBL_HELP
+
+static TIMEOUT *ms_to = NULL;
+
+static void
+m_not_move_timeout(struct proc *p, long arg)
+{
+	struct xa_window *wind;
+	BBL_STATUS b = xa_bubble( 0, bbl_get_status, 0, 0 );
+
+	ms_to = NULL;
+	if( b == bs_open )
+		return;
+
+	wind = find_window( 0, last_x, last_y, FNDW_NOLIST | FNDW_NORMAL );
+#if 0
+	if( wind && wind->owner != C.Aes && wind->owner != C.Hlp )
+	{
+		post_cevent(client, XA_bubble_event, NULL, NULL, last_x, last_y, NULL, NULL);
+	}
+#else
+	if( wind && wind->owner != C.Aes && wind->owner != C.Hlp )
+	{
+		union msg_buf m;
+		m.m[0] = BUBBLEGEM_REQUEST;
+		m.m[1] = wind->owner->p->pid;	//C.AESpid;
+		m.m[2] = 0;
+		m.m[3] = wind->handle;
+		m.m[4] = x_mouse;	//last_x;
+		m.m[5] = y_mouse;	//last_y;
+		m.m[6] = 0;	//kbshift
+		m.m[7] = 0;
+		xa_bubble( 0, bbl_send_request, &m, wind->owner->p->pid );
+
+	}
+#endif
+}
+#endif
 static void move_timeout(struct proc *, long arg);
 
 /*
@@ -987,7 +1034,10 @@ move_timeout(struct proc *p, long arg)
 		/*
 		 * Did mouse move since last time?
 		*/
-		if (last_x != x_mouse || last_y != y_mouse)
+		if (last_x == x_mouse && last_y == y_mouse)
+		{
+		}
+		else
 		{
 			last_x = x_mouse;
 			last_y = y_mouse;
@@ -1054,6 +1104,7 @@ move_timeout(struct proc *p, long arg)
 				}
 			}
 		}
+
 	}
 }
 
@@ -1089,6 +1140,25 @@ adi_move(struct adif *a, short x, short y)
 		if (!m_to)
 			m_to = addroottimeout(0L, move_timeout, 1);
 	}
+#if WITH_BBL_HELP
+	if( cfg.xa_bubble )
+	{
+		BBL_STATUS s = xa_bubble( 0, bbl_get_status, 0, 1 );
+		if( s == bs_open )
+		{
+			post_cevent(C.Aes, XA_bubble_event, NULL, NULL, 0, 0, NULL, NULL);
+		}
+		//xa_bubble( 0, bbl_close_bubble1, 0, 0 );
+		if (ms_to)
+		{
+			cancelroottimeout(ms_to);
+			ms_to = NULL;
+		}
+		{
+			ms_to = addroottimeout(500L, m_not_move_timeout, 1);
+		}
+	}
+#endif
 }
 
 /*

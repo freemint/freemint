@@ -102,7 +102,7 @@ xaaes_ufree(void *addr, const char *func)
 }
 
 /* for old gemlib */
-short my_global_aes[16] = {0};
+short my_global_aes[16];
 
 /*
  * global data
@@ -111,4 +111,6 @@ short my_global_aes[16] = {0};
 struct xa_screen screen;
 
 struct xa_window *root_window = 0, *menu_window = 0;
-
+#if WITH_BBL_HELP
+struct xa_window *bgem_window = 0;
+#endif
