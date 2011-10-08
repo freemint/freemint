@@ -1280,7 +1280,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 		{
 			char s[256];
 			DIAG((D_rsrc, client, "LoadResource(): Error loading file (size mismatch)"));
-			sprintf( s, 255, xa_strings[RS_RSCSZ], client->name, sz, size );
+			sprintf( s, 255, xa_strings[RS_RSCSZ], fname, sz, size );
 
 			if ( !client->options.ignore_rsc_size && (xaaes_do_form_alert( 0, client, 2, s ) == 1) )
 				client->options.ignore_rsc_size = 1;
@@ -2101,7 +2101,7 @@ XA_rsrc_gaddr(enum locks lock, struct xa_client *client, AESPB *pb)
 
 			if( (char*)*addr < (char*)rsc || (char*)*addr > rsc_end )
 			{
-				ALERT(("rsrc_gaddr: invalid pointer: %lx(rsc=%lx->%lx), type=%d", *addr, rsc, rsc_end, type ));
+				ALERT((xa_strings[AL_INVALIDP], *addr, rsc, rsc_end, type ));
 				pb->intout[0] = 0;
 				*addr = 0;
 			}
