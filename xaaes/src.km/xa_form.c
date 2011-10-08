@@ -358,6 +358,7 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 	w = max_w(n_lines,   alertxt->text, NULL);
   max_w(n_buttons, alertxt->button, &m_butt_w);
 
+  //DBG((0,"do_form_alert:w=%d,m_butt_w=%d,n_buttons=%d,icon=%d", w,m_butt_w,n_buttons, icon));
 	if (m_butt_w > w)
 		w = m_butt_w;
 
@@ -414,7 +415,7 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 	if( !icon )
 		x -= 48 / 2;	//?
 
-	set_standard_point(client);
+	//set_standard_point(client);
 	h = screen.c_max_h;
 
 	//(*v->api->t_extent)(client->vdi_settings, "W", &w, &h );
