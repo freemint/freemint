@@ -2119,7 +2119,7 @@ void set_standard_point(struct xa_client *client)
 	XA_TREE *wt = xat->stuff;
 	struct xa_vdi_settings *v = client->vdi_settings;
 
-	if( (cfg.menu_ontop && !menu_window) || !client->std_menu )
+	if( (cfg.menu_ontop && !menu_window) )	//|| !client->std_menu )
 	{
 		new_menu_sz = false;
 	}
@@ -2138,7 +2138,7 @@ void set_standard_point(struct xa_client *client)
 
 	screen.c_max_w = w;
 	screen.standard_font_point = client->options.standard_font_point;
-	if( new_menu_sz == true && cfg.menu_bar != 2 && cfg.menu_layout == 1 )
+	if( new_menu_sz == true && cfg.menu_bar != 2 && cfg.menu_layout == 1 && client->std_menu )
 	{
 		xaw->r.w = xaw->ar.w = client->std_menu->area.w + 1;
 		//print_rect_list( root_window );
@@ -2157,7 +2157,7 @@ void set_standard_point(struct xa_client *client)
 	if( new_menu_sz == true )
 	{
 		C.Aes->std_menu->tree->ob_height = h + 2;
-		xaw->r.h = xaw->ar.h = h + 2;
+		xaw->r.h = xaw->ar.h = xat->r.h = xat->ar.h = h + 2;
 
 		if( cfg.menu_bar == 2 || (cfg.menu_bar == 1 && !cfg.menu_layout && !cfg.menu_ontop) )
 		{
@@ -2180,6 +2180,8 @@ void set_standard_point(struct xa_client *client)
 			}
 		}
 
+		//RECT rc = screen.r;
+		//update_windows_below(0, &rc, &rc, window_list, NULL);
 		root_window->rwa = root_window->wa;
 
 		if (get_desktop()->owner == C.Aes)
