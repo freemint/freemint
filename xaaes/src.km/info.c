@@ -21,7 +21,10 @@ static char *mcs(char *d, char *s)
 	return d - 1;
 }
 #endif
-
+char *build_date(void)
+{
+	return BDATETIME;
+}
 void
 init_apgi_infotab(void)
 {
