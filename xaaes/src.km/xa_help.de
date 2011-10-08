@@ -1,6 +1,7 @@
 # Diese Datei gehîrt in den XaAES-Ordner (C:\mint\1-*-*\xaaes)
 <b>XaAES Tastatur-Shortcuts (CTRL+ALT+Taste)</b>:
 
+#<CtrlAlt>
 0             MenÅzeile an/ausschalten
 #$1 [keyboard-switch]
 .             Aktuellen Fensterinhalt auf gesamtem
@@ -33,6 +34,7 @@ T,HOME        Bildschirm wiederherstellen (neuzeichnen)
 U             Oberstes Fenster schlieûen
 V             Alle versteckten Programme hervorholen
 W             Globaler Fensterwechsel
+SHIFT+W       Oberstes Fenster vom vorigen Programm nach vorn
 X             Versteckt alle Programme bis auf das
               momentan verwendete
 Y             Momentan verwendetes Programm verstecken
@@ -54,6 +56,7 @@ SHIFT+
  PFEIL-RUNTER Oberstes Fenster nach unten verschieben
  PFEIL-RECHTS Oberstes Fenster nach rechts verschieben
  PFEIL-LINKS  Oberstes Fenster nach links verschieben
+#</CtrlAlt>
 <u>                                                      </u>
 
 Shortcuts/Navigation im <b>Dateiauswahl-Dialog</b>:
