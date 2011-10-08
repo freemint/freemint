@@ -1,6 +1,7 @@
 # Place this file in the xaaes-boot directory (C:\mint\1-*-*\xaaes)
 <b>Ctrl-Alt-Shortcuts</b>:
 
+#<CtrlAlt>
 0             Switch menubar on/off
 #$1 [keyboard-switch]
 .             Make current window-content full-screen
@@ -29,6 +30,7 @@ T,HOME        Redraw screen
 U             Close current window
 V             Unhide all applications
 W             Global window cycling
+SHIFT+W       Top top-window of previous application
 X             Hide all except the currently
               focused application
 Y             Hide currently focused application
@@ -48,6 +50,7 @@ SHIFT+
  CURSOR-DOWN  Move current window down
  CURSOR-RIGHT Move current window right
  CURSOR-LEFT  Move current window left
+#</CtrlAlt>
 <u>                                                      </u>
 
 Shortcuts/navigation in <b>XaAES fileselector</b>:
