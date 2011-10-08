@@ -883,17 +883,19 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 							/* opt: const width for prop_... */
 							if( method >= 0 && w > tw )
 							{
-								if( c->c.text.tblen > sizeof(t)-1 )
-									c->c.text.tblen = sizeof(t)-1;
-								(*v->api->prop_clipped_name)(v, c->c.text.text, t, tw, &tw, &th, method);
+
+								strncpy( t, c->c.text.text, c->c.text.tblen);
+								t[c->c.text.tblen] = 0;
+								(*v->api->prop_clipped_name)(v, t, t, tw, &tw, &th, method);
 							}
 							else
 							{
+								int l = c->c.text.slen < sizeof(t) ? c->c.text.slen : sizeof(t);
 								strncpy( t, c->c.text.text, sizeof(t)-1 );
 
-								t[sizeof(t)-1] = 0;
+								t[l] = 0;
 								th = c->c.text.h;
-								tw = c->c.text.slen * list->char_width;;
+								tw = c->c.text.slen * list->char_width;
 							}
 							/* on some systems the last letter is cut off if italic */
 							if( C.fvdi_version > 0 )
@@ -1873,22 +1875,21 @@ new_setext(const char *t, OBJECT *icon, short type, short *sl, char **tp)
 #else
 	slen = strlen(t);
 #endif
-	tblen = slen < 44 ? 44 : slen + 1;
+	tblen = slen < 44 ? 44 : slen;
 	if( sl )
 		*sl = slen;
 
 	if( tp )
 	{
 		new = (struct se_content *)*tp;
-		*tp += sizeof(struct se_content) + tblen;
+		*tp += sizeof(struct se_content) + tblen + 1;
 	}
 	else
 	{
-	//new = kmalloc(sizeof(*new) + tblen);
 #if PRFSE
-	PROFRECs(new =, xaaes_kmalloc,(sizeof(*new) + tblen, FUNCTION));
+		PROFRECs(new =, xaaes_kmalloc,(sizeof(*new) + tblen + 1, FUNCTION));
 #else
-	new = xaaes_kmalloc(sizeof(*new) + tblen + 1, FUNCTION);
+		new = xaaes_kmalloc(sizeof(*new) + tblen + 1, FUNCTION);
 #endif
 	}
 	if (new)
@@ -1901,9 +1902,9 @@ new_setext(const char *t, OBJECT *icon, short type, short *sl, char **tp)
 		 * strcpy(new->c.text.txtstr, t);
 		 */
 #if PRFSE
-		PROFRECv(memcpy,(new->c.text.txtstr, t, tblen));
+		PROFRECv(memcpy,(new->c.text.txtstr, t, slen+1));
 #else
-		memcpy(new->c.text.txtstr, t, tblen);
+		memcpy(new->c.text.txtstr, t, slen+1);
 #endif
 		if (icon){
 #if PRFSE
@@ -1978,8 +1979,7 @@ insert_strings(struct scroll_entry *this, struct sc_text *t, OBJECT *icon, short
 		this_sc->prev = 0;
 		for ( i = 1; i <= j; i++ )
 		{
-			struct se_content *next = (struct se_content *)((char*)this_sc + this_sc->c.text.tblen + sizeof(struct se_content));
-			//nn = (struct se_content *)((char*)n + n->c.text.tblen + sizeof(struct se_content));
+			struct se_content *next = (struct se_content *)((char*)this_sc + this_sc->c.text.tblen + sizeof(struct se_content) + 1);
 			this_sc->c.text.text = this_sc->c.text.txtstr;
 			this_sc->index = i - 1;
 			if( i == j )
@@ -2309,7 +2309,7 @@ m_state_done:
 		}
 		case SESET_TEXT:
 		{
-			struct setcontent_text *t = (struct setcontent_text *)arg; //sc_text *t = (struct sc_text *)arg;
+			struct setcontent_text *t = (struct setcontent_text *)arg;
 
 			if (t && t->text && entry)
 			{
@@ -2321,7 +2321,7 @@ m_state_done:
 				if (setext)
 				{
 					slen = strlen(t->text);
-					if (slen <= setext->c.text.tblen || setext->next || setext->prev)
+					if (slen <= setext->c.text.tblen || setext->next || setext->prev)		// if table -> always copy
 					{
 						strncpy(setext->c.text.text, t->text, setext->c.text.tblen);
 					}
@@ -2330,12 +2330,8 @@ m_state_done:
 						struct se_content *new = new_setext(t->text, setext->c.text.icon.icon, 0,0, 0);
 						if (new)
 						{
-							//remove_se_content(this, sc, 0, &next);
-
 							delete_se_content(entry, setext, NULL, NULL);
 							entry->content = new;
-							//insert_se_content(entry, new, t->index);
-							//setext = new;
 						}
 						else
 						{
@@ -2794,7 +2790,10 @@ get(SCROLL_INFO *list, SCROLL_ENTRY *entry, short what, void *arg)
 				struct se_content *setext;
 
 				if ((setext = get_entry_setext(entry, p->idx)))
+				{
 					strcpy(p->arg.txt, setext->c.text.text);
+					//p->arg.txt[setext->c.text.tblen] = 0;
+				}
 				else
 					ret = 0;
 				break;
