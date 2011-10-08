@@ -98,6 +98,9 @@ static struct parser_item parser_tab[] =
 	{ "USEHOME",               PI_R_B,   & cfg.usehome		},
 	{ "NAES_COOKIE",           PI_R_B,   & cfg.naes_cookie		},
 	{ "MENUPOP_PIDS",          PI_R_B,   & cfg.menupop_pids		},
+#if WITH_BBL_HELP
+	{ "XA_BUBBLE",	           PI_R_B,   & cfg.xa_bubble},
+#endif
 	{ "LRMB_SWAP",	           PI_R_B,   & cfg.lrmb_swap		},
 	{ "WIDGET_AUTO_HIGHLIGHT", PI_R_B,   & cfg.widg_auto_highlight	},
 	{ "LEAVE_TOP_BORDER",      PI_R_B,   & cfg.leave_top_border},
@@ -118,6 +121,7 @@ static struct parser_item parser_tab[] =
 	{ "DC_TIME",               PI_R_S,   & cfg.double_click_time	},
 	{ "MP_TIMEGAP",            PI_R_S,   & cfg.mouse_packet_timegap },
 	{ "VIDEO",	           PI_R_S,   & cfg.videomode		},
+	{ "ET4000_HACK",       PI_R_B,   & cfg.et4000_hack	},
 	{ "REDRAW_TIMEOUT",        PI_R_S,   & cfg.redraw_timeout, Range(0, 32000)	},
 	{ "POPUP_TIMEOUT",	   PI_R_S,   & cfg.popup_timeout, Range(0, 32000)	},
 	{ "POPOUT_TIMEOUT",        PI_R_S,   & cfg.popout_timeout, Range(0, 32000)	},

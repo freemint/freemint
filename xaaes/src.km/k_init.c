@@ -29,6 +29,8 @@
 #include "util.h"
 
 #include "k_main.h"
+#include "messages.h"
+#include "form.h"
 #include "k_init.h"
 #include "xa_global.h"
 #include "xa_strings.h"
@@ -535,12 +537,11 @@ calc_average_fontsize(struct xa_vdi_settings *v, short *maxw, short *maxh, short
 	return dev;
 }
 
-
 int
 k_init(unsigned long vm)
 {
 	short work_in[16];
-	short work_out[58] = {0};
+	short work_out[58];
 	short dev1, dev2;
 	char *resource_name;
 	struct xa_vdi_settings *v = &global_vdi_settings;
@@ -585,11 +586,12 @@ k_init(unsigned long vm)
 	/* try to open virtual wk - necessary when physical wk is already open
 	 */
 	v->handle = 0;
-
-	if( C.P_handle > 0 || (C.nvdi_version > 0x400 && C.fvdi_version == 0) )
+#if 1
+	if( C.P_handle > 0 || (cfg.et4000_hack && C.nvdi_version > 0x400 && C.fvdi_version == 0) )
 	{
-		set_wrkin(work_in, cfg.videomode);
-		BLOG((0,"1st v_opnvwk" ));
+		memset( work_out, 0, sizeof(work_out) );
+		set_wrkin(work_in, 1);	//cfg.videomode);
+		BLOG((0,"1st v_opnvnwk (P_handle=%d)", C.P_handle ));
 		v_opnvwk(work_in, &v->handle, work_out);
 		BLOG((0,"->%d, wh=%d/%d %d colors", v->handle, work_out[0], work_out[1], work_out[13]));
 		if( !(work_out[0] && work_out[1] && work_out[13]) )
@@ -601,6 +603,7 @@ k_init(unsigned long vm)
 			C.f_phys = 1;
 
 	}
+#endif
 	if ( v->handle <= 0 )
 	{
 		short mode = 1;
@@ -783,21 +786,25 @@ k_init(unsigned long vm)
 	/*
 	 * Setup the screen parameters
 	 */
-	if( C.P_handle == 0 )
-		C.P_handle = v->handle;	/* why is phys-handle used at all? */
+	if( C.P_handle == 0 && C.f_phys )
+		C.P_handle = 1;	// HOPE it's 1 ..
 	screen.r.x = screen.r.y = 0;
 	screen.r.w = work_out[0] + 1;
 	screen.r.h = work_out[1] + 1;
 	screen.colours = work_out[13];
 	screen.display_type = D_LOCAL;
 	v->screen = screen.r;
+	//if(	cfg.raster_handle == 0 )
+	{
+		if( 1 || C.fvdi_version != 0 )
+			C.raster_handle = v->handle;
+		else
+			C.raster_handle = C.P_handle;
+	}
 
 	vq_extnd(v->handle, 1, work_out);	/* Get extended information */
-	/*{int i;
-	for( i = 0; i < 58 / 2; i += 2 )
-	}*/
 
-	if( !(work_out[0] = 4 || work_out[0] == 1) )
+	if( !(work_out[0] == 4 || work_out[0] == 1) )
 	{
 		BLOG((0,"invalid screen-type:%d", work_out[0] ));
 		return -1;
@@ -1064,6 +1071,17 @@ k_init(unsigned long vm)
 		if( cfg.menu_bar )
 			open_window(0, menu_window, r);
 	}
+#if WITH_BBL_HELP
+	if( cfg.xa_bubble )
+	{
+		RECT r = {0,0,420,420};
+
+		bgem_window = create_window(0, do_winmesag, do_formwind_msg, C.Aes, true, 0, created_for_AES|created_for_POPUP, false, false, r, 0,0);
+		if( !bgem_window )
+			return -1;
+		strcpy( bgem_window->wname, "bgem" );
+	}
+#endif
 
 	/* Initial iconified window coords */
 	C.iconify = iconify_grid(0);
