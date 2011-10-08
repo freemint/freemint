@@ -1078,7 +1078,9 @@ next_app(enum locks lock, bool wwom, bool no_acc)
 	if (client)
 	{
 		while (NEXT_APP(client))
+		{
 			client = NEXT_APP(client);
+		}
 	}
 
 	if (wwom)
