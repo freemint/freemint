@@ -36,6 +36,7 @@
 #include "adiload.h"
 #include "c_window.h"
 #include "cnf_xaaes.h"
+#include "xacookie.h"
 #include "desktop.h"
 #include "debug.h"
 #include "handler.h"
@@ -57,13 +58,15 @@
 #include "xa_form.h"
 #include "xa_rsrc.h"
 #include "xa_shel.h"
+#if WITH_BBL_HELP
+#include "xa_bubble.h"
+#endif
 
 #include "mint/dcntl.h"
 #include "mint/fcntl.h"
 #include "mint/filedesc.h"
 #include "mint/ioctl.h"
 #include "mint/signal.h"
-#include "mint/ssystem.h"
 #include "cookie.h"
 
 #if CHECK_STACK
@@ -1596,30 +1599,14 @@ k_main(void *dummy)
 
 	if (cfg.naes_cookie)
 	{
-		if ( (c_naes = (N_AESINFO *)m_xalloc(sizeof(*c_naes), (4<<4)|(1<<3)|3) ))
-		{
-			memcpy(c_naes, &naes_cookie, sizeof(*c_naes));
-			if (s_system(S_SETCOOKIE, C_nAES, (long)c_naes) != 0)
-			{
-				m_free(c_naes);
-				c_naes = NULL;
-				BLOG((false, "Installing 'nAES' cookie failed!"));
-			}
-#if BOOTLOG
-			else
-			{
-				BLOG((false, "Installed 'nAES' cookie in readable memory at %lx", (long)c_naes));
-			}
-#endif
-		}
-#if BOOTLOG
-		else
-		{
-			BLOG((false, "Could not get memory for 'nAES' cookie! (Mxalloc() fail)"));
-		}
-#endif
+		install_cookie( (void**)&c_naes, (void*)&naes_cookie, sizeof(*c_naes), C_nAES );
 	}
-
+#if WITH_BBL_HELP
+	if (cfg.xa_bubble)
+	{
+		xa_bubble( 0, bbl_enable_bubble, 0, 0 );
+	}
+#endif
 	C.reschange = NULL;
 #if 0
 	{
@@ -1685,7 +1672,7 @@ k_main(void *dummy)
 	}
 	else mt_appl_exit(my_global_aes);
 	}
-	BLOG((0,"apid=%d", my_global_aes[2]));
+	BLOG((0,"apid=%d,P_handle=%d", my_global_aes[2], C.P_handle));
 	/*
 	 * register trap#2 handler
 	 */
@@ -2029,10 +2016,12 @@ k_exit(int wait)
 
 	if (c_naes)
 	{
-		s_system(S_DELCOOKIE, C_nAES, 0L);
-		m_free(c_naes);
-		c_naes = NULL;
+		delete_cookie( (void**)&c_naes, C_nAES, 1 );
 	}
+#if WITH_BBL_HELP
+	if( cfg.xa_bubble )
+		xa_bubble( 0, bbl_disable_and_free, 0, 0 );
+#endif
 // 	display("unreg trap2");
 	/*
 	 * deinstall trap #2 handler
@@ -2042,7 +2031,10 @@ k_exit(int wait)
 // 	display("done");
 
 	if( my_global_aes[2] != -1 )
-		mt_appl_exit(my_global_aes);
+	{
+		short r;
+		r = mt_appl_exit(my_global_aes);
+	}
 	/*
 	 * close input devices
 	 */
@@ -2086,5 +2078,5 @@ k_exit(int wait)
 	/* reset single-flags in case of previous fault */
 	pid2proc(0)->modeflags &= ~(M_SINGLE_TASK|M_DONT_STOP);
 
- 	kthread_exit(0);
+	kthread_exit(0);
 }

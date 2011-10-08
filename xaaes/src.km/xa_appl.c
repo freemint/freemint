@@ -23,11 +23,13 @@
  * along with XaAES; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-
 #include "xa_appl.h"
 #include "xa_global.h"
 #include "xa_strings.h"
 
+#if WITH_BBL_HELP
+#include "xa_bubble.h"
+#endif
 
 #include "app_man.h"
 #include "c_window.h"
@@ -50,8 +52,9 @@
 #include "version.h"
 #include "mint/fcntl.h"
 #include "mint/stat.h"
-//#include "mint/ioctl.h"	/*f_cntl*/
+	//#include "mint/ioctl.h"	/*f_cntl*/
 #include "mint/signal.h"
+//#include "mint/ssystem.h"
 
 
 bool
@@ -419,6 +422,7 @@ static char  *strip_uni_drive( char *in )
 
 }
 
+
 #define F_FORCE_MINT	0x40000
 struct file *xconout_dev = 0;
 /*
@@ -455,6 +459,12 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 				}
 			}
 			add_to_tasklist(client);
+#if WITH_BBL_HELP
+			if( cfg.xa_bubble && !strnicmp( "  BUBBLE", client->name, 8 ) )
+			{
+				xa_bubble( lock, bbl_disable_and_free, 0, 0 );
+			}
+#endif
 			/* Preserve the pointer to the globl array
 			 * so we can fill in the resource address later
 			 */
@@ -818,6 +828,12 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 		FreeResources(client, NULL, NULL);
 	}
 
+#if WITH_BBL_HELP
+	if( cfg.xa_bubble && xa_bubble( 0, bbl_get_status, 0, 0 ) <= bs_inactive && !strnicmp( "  BUBBLE", client->name, 8 ) )
+	{
+		xa_bubble( lock, bbl_enable_bubble, 0, 0 );
+	}
+#endif
 	/* Free name *only if* it is malloced: */
 	if ( client->tail_is_heap) {
 		kfree(client->cmd_tail);
@@ -1107,6 +1123,29 @@ handle_XaAES_msgs(enum locks lock, union msg_buf *msg)
 		default:
 			break;
 	}
+#if WITH_BBL_HELP
+	if( cfg.xa_bubble && xa_bubble( lock, bbl_get_status, 0, 0 ) >= bs_closed )
+	{
+		switch (mt) {
+			case BUBBLEGEM_SHOW:
+			case BUBBLEGEM_HIDE:
+				xa_bubble( lock, bbl_process_event, msg, 0 );
+			return;
+			/*
+			case BUBBLEGEM_ACK:
+			case BUBBLEGEM_REQUEST:
+			case BUBBLEGEM_ASKFONT:
+			case BUBBLEGEM_FONT:
+			*/
+			default:
+			{
+				BLOG((0,"handle_XaAES_msgs: unhandled BUBBLE: %x, from %d, win=%d(%s)", mt, m.m[1], m.m[3], get_curproc()->name));
+				return;
+			}
+			break;
+		}
+	}
+#endif
 	dest_clnt = pid2client(m.m[1]);
 	if (dest_clnt)
 		send_a_message(lock, dest_clnt, AMQ_NORM, QMF_CHKDUP, &m);
@@ -1160,15 +1199,6 @@ XA_appl_write(enum locks lock, struct xa_client *client, AESPB *pb)
 			short amq = AMQ_NORM;
 			short qmf = QMF_NORM;
 
-#if 0
-			if (!strnicmp(client->proc_name,    "ergo", 4) || !strnicmp(client->proc_name, "thing", 5)) /*
-			     !strnicmp(dest_clnt->proc_name, "thing", 5))  &&
-			    m->m[0] == WM_REDRAW)*/ //(m->m[0] >= 0x4700 && m->m[0] <= 0x4760) )
-			{
-				display("%s sends %s to %s", client->name, pmsg(m->m[0]), dest_clnt->name);
-				display(" %04x, %04x, %04x, %04x, %04x, %04x, %04x, %04x", m->m[1], m->m[2], m->m[3], m->m[4], m->m[5], m->m[6], m->m[7]);
-			}
-#endif
 			if (m->m[0] == WM_REDRAW) {
 				struct xa_window *wind = get_wind_by_handle(lock, m->m[3]);
 
@@ -1702,6 +1732,13 @@ XA_appl_find(enum locks lock, struct xa_client *client, AESPB *pb)
 				struct xa_client *cl;
 
 				DIAG((D_appl, client, "   Mode search for '%s'", name));
+#if WITH_BBL_HELP
+				if( cfg.xa_bubble && xa_bubble( lock, bbl_get_status, 0, 0 ) >= bs_closed && !strnicmp( "BUBBLE  ", name, 8 ) )
+				{
+					pb->intout[0] = C.AESpid;
+					break;
+				}
+#endif
 
 				Sema_Up(clients);
 

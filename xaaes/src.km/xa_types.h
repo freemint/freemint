@@ -2832,6 +2832,7 @@ struct common
 	unsigned short nvdi_version;
 	unsigned short fvdi_version;
 	bool f_phys;	// using physical wk
+	short raster_handle;	// pyhs. or virt.?
 	unsigned long gdos_version;
 
 	void (*reschange)(enum locks lock, struct xa_client *client, bool open);
@@ -2980,6 +2981,9 @@ struct config
 //	short last_wind;		/* 0 = Put owner of window ontop of window_list infront. */
 //					/* 1 = Keep client whose last window was closed infront. */
 
+#if WITH_BBL_HELP
+	bool xa_bubble;	/* use XaAES for bubble-help */
+#endif
 	bool lrmb_swap;			/* Swap left and right mouse-button status bits */
 	bool widg_auto_highlight;	/* WIDGET Highligh when Mouse Hovers */
 	bool leave_top_border;	/* windows may be moved higher than top of screen */
@@ -3053,6 +3057,7 @@ struct config
 	short info_font_point;	/* Size for infoline */
 	short popscroll;		/* number of lines of a popup above which it will be made scrollable. */
 
+	bool et4000_hack;	/* always try open virtual wk first */
 	short videomode;		/* ID of screen device opened by v_opnwk() */
 
 	struct helpserver *helpservers;	/* configured helpservers */
