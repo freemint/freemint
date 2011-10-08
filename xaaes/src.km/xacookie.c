@@ -22,21 +22,17 @@ int install_cookie( void **addr, void *buff, size_t sz, long magic )
 			BLOG((false, "Installing '%s' cookie failed (%ld)!", mstr, r));
 			return 1;
 		}
-#if BOOTLOG
 		else
 		{
 			BLOG((false, "Installed '%s' cookie in readable memory at %lx", mstr, (long)addr));
 			return 0;
 		}
-#endif
 	}
-#if BOOTLOG
 	else
 	{
 		BLOG((false, "Could not get memory for '%s' cookie! (Mxalloc() failed)", mstr));
 		return 2;
 	}
-#endif
 }
 
 void delete_cookie( void **addr, long magic, int free)
