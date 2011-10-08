@@ -1448,6 +1448,8 @@ hu:XaAES: %s%s, kliens globl_ptr n‚lkl, bez r s!
 ru:XaAES: %s%s, êëèåíò áåç globl_ptr, çàêðûâàþ åãî!
 cs:XaAES: %s%s, klient bez globl_ptr; zabíjím ho!
 _
+NN:rsrc_gaddr: invalid pointer: %lx(rsc=%lx->%lx), type=%d
+_
 NN:XaAES: AES shell already running!                    @
 de:XaAES: AES-Shell (Desktop) ist bereits aktiv!
 fr:XaAES: Le shell AES tourne d‚j… !
@@ -1506,7 +1508,7 @@ NN:SPACE
 _
 NN:ESC
 _
-NN:
+NN:.
 _
 NN:BACKSPACE
 _
