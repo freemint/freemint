@@ -2081,7 +2081,9 @@ fs_item_action(struct scroll_info *list, struct scroll_entry *this, const struct
 		fs_cwd(list, fs->path, 2);
 
 		if( this && this->content )
-			strncpy( fs->file, this->content->c.text.text, NAME_MAX);
+		{
+			strncpy( fs->file, this->content->c.text.text, this->content->c.text.tblen);
+		}
 		if (fs->selected)
 		{
 			fs->selected(list->lock, fs, fs->path, fs->file);
@@ -2232,8 +2234,9 @@ fileselector_form_exit(struct xa_client *client,
 				pa.idx = -1;
 				if( list->cur )
 				{
-					list->get(list, list->cur, SEGET_TEXTPTR, &pa);
-					fname = pa.ret.ptr;
+					pa.arg.txt = fs->file;
+					list->get(list, list->cur, SEGET_TEXTCPY, &pa);
+					fname = fs->file;
 				}
 				if( !fname || !*fname )
 					fname = fs->ofile;
@@ -2533,9 +2536,9 @@ fs_slist_key(struct scroll_info *list, unsigned short keycode, unsigned short ks
 							}
 							fs->selected_file = this;
 							p.idx = -1;
-							list->get(list, this, SEGET_TEXTPTR, &p);
-							strcpy( fs->file, p.ret.ptr );	/* remove pattern */
-							set_file(fs, p.ret.ptr, true);
+							p.arg.txt = fs->file;
+							list->get(list, this, SEGET_TEXTCPY, &p);
+							set_file(fs, fs->file, true);
 							fs->tfile = false;
 						}
 						else
@@ -2594,12 +2597,13 @@ static void delete_item(struct scroll_info *list, struct fsel_data *fs)
 
 	p.idx = -1;
 
-	if ( list->cur && list->get(list, list->cur, SEGET_TEXTPTR, &p))
+	p.arg.txt = fs->file;
+	if ( list->cur && list->get(list, list->cur, SEGET_TEXTCPY, &p))
 	{
 		long uf;
 
 		list->get(list, list->cur, SEGET_USRFLAGS, &uf);
-		sprintf( pt, sizeof(pt)-1, "%s%s", fs->path, p.ret.ptr);
+		sprintf( pt, sizeof(pt)-1, "%s%s", fs->path, p.arg.txt);
 
 		if( uf & (FLAG_DIR|FLAG_SDIR) )
 			r = _d_delete( pt );
