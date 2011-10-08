@@ -3955,19 +3955,19 @@ ref_colortheme_resources(struct module *m, struct window_colours *wc)
 		{
 			t = (*api->lookup_xa_data_byid)(&m->allocs, (long)wtexture);
 			if (t) (*api->ref_xa_data)(&m->allocs, t, 1);
-			else display("WARNING!!");
+			else BLOG((1,"ref_colortheme_resources(h):t=0(wtexure=%lx,m=%lx,i=%d)", wtexture, m, i));
 		}
 		if ((wtexture = wci[i].n.texture))
 		{
 			t = (*api->lookup_xa_data_byid)(&m->allocs, (long)wtexture);
 			if (t) (*api->ref_xa_data)(&m->allocs, t, 1);
-			else display("WARNING!!");
+			else BLOG((1,"ref_colortheme_resources(n):t=0(wtexure=%lx,m=%lx,i=%d)", wtexture, m, i));
 		}
 		if ((wtexture = wci[i].s.texture))
 		{
 			t = (*api->lookup_xa_data_byid)(&m->allocs, (long)wtexture);
 			if (t) (*api->ref_xa_data)(&m->allocs, t, 1);
-			else display("WARNING!!");
+			else BLOG((1,"ref_colortheme_resources(s):t=0(wtexure=%lx,m=%lx,i=%d)", wtexture, m, i));
 		}
 	}
 }
@@ -3994,7 +3994,7 @@ deref_colortheme_resources(struct module *m, struct window_colours *wc)
 // 				if (!(*api->deref_xa_data)(&m->allocs, t, 1))
 // 					display("freeing %lx", wci[i].h.texture);
 			}
-			else display("free: WARNING!!");
+			else BLOG((1,"deref_colortheme_resources(h):t=0(wtexure=%lx,m=%lx,i=%d)", wtexture, m, i));
 		}
 		if ((wtexture = wci[i].n.texture))
 		{
@@ -4005,7 +4005,7 @@ deref_colortheme_resources(struct module *m, struct window_colours *wc)
 // 				if (!(*api->deref_xa_data)(&m->allocs, t, 1))
 // 					display("freeing %lx", wci[i].n.texture);
 			}
-			else display("free: WARNING!!");
+			else BLOG((1,"deref_colortheme_resources(n):t=0(wtexure=%lx,m=%lx,i=%d)", wtexture, m, i));
 		}
 		if ((wtexture = wci[i].s.texture))
 		{
@@ -4016,7 +4016,7 @@ deref_colortheme_resources(struct module *m, struct window_colours *wc)
 // 				if (!(*api->deref_xa_data)(&m->allocs, t, 1))
 // 					display("freeing %lx", wci[i].s.texture);
 			}
-			else display("free: WARNING!!");
+			else BLOG((1,"deref_colortheme_resources(s):t=0(wtexure=%lx,m=%lx,i=%d)", wtexture, m, i));
 		}
 	}
 }
