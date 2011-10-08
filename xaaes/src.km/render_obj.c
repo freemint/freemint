@@ -3620,7 +3620,7 @@ int do_bkg_img(struct xa_client *client, int md, char *fn )
 			if( fp )
 			{
 				hidem();
-				vro_cpyfm(v->handle, S_ONLY, pnt, &Mscreen, &Mpreserve);
+				vro_cpyfm(api->C->raster_handle, S_ONLY, pnt, &Mscreen, &Mpreserve);
 				showm();
 				err = kernel_write( fp, background, sz );
 				kernel_close(fp);
@@ -3678,7 +3678,7 @@ int do_bkg_img(struct xa_client *client, int md, char *fn )
 			}
 			v->api->rtopxy(pnt, &r2);
 			v->api->rtopxy(pnt+4, &r2);
-			vro_cpyfm(v->handle, S_ONLY, pnt, &Mpreserve, &Mscreen);
+			vro_cpyfm(api->C->raster_handle, S_ONLY, pnt, &Mpreserve, &Mscreen);
 		}
 
 		return 0;
@@ -4521,6 +4521,7 @@ set_obtext(TEDINFO *ted,
 		break;
 	}
 	}
+
 	/* HR: use vqt_extent to obtain x, because it is almost impossible, or
 	 *	at least very unnecessary tedious to position the cursor.
 	 *	vst_alignment is not needed anymore.
@@ -4533,6 +4534,8 @@ set_obtext(TEDINFO *ted,
 	}
 	else
 		strncpy(temp_text, ted->te_ptext, 255);
+
+	(*v->api->t_effects)(v, 0);	// use normal style
 
 	(*v->api->t_extent)(v, temp_text, &w, &h);
 
@@ -6094,7 +6097,7 @@ d_g_cicon(struct widget_tree *wt, struct xa_vdi_settings *v)
 
 	Micon.fd_nplanes = screen->planes;
 
-	vro_cpyfm(v->handle, blitmode, pxy, &Micon, &Mscreen);
+	vro_cpyfm(api->C->raster_handle, blitmode, pxy, &Micon, &Mscreen);
 	if( iconblk->ib_char || *iconblk->ib_ptext )
 		icon_characters(v, theme, iconblk, ob->ob_state & (OS_SELECTED|OS_DISABLED), obx, oby, ic.x, ic.y);
 
@@ -6674,7 +6677,7 @@ init_module(const struct xa_module_api *xmapi, const struct xa_screen *xa_screen
 	{
 		char dbuf[128];
 		long d;
-		strcpy(imgpath, api->cfg->textures[0] ? api->cfg->textures : "img" );
+		strcpy(imgpath, api->cfg->textures[1] > ' ' ? api->cfg->textures : "img" );
 		strcat(imgpath, screen->planes == 8 ? "\\8b\\" : "\\hc\\");
 		sprintf( dbuf, sizeof(dbuf), "%s%s", xmapi->C->Aes->home_path, imgpath );
 		d = d_opendir( dbuf, 0 );
