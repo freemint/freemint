@@ -163,10 +163,11 @@ about_form_exit(struct xa_client *client,
 			close_window(lock, wind);
 			wsiz = wind->r;
 			list = object_get_slist(obtree + ABOUT_LIST);
-			list->destroy( list );
-			alist = 0;
-			memset( athis, 0, sizeof(athis) );
-			delete_window(lock, wind);
+			if( list != alist )
+			{
+				list->destroy( list );
+				delete_window(lock, wind);
+			}
 
 			if( wind->parent )
 				top_window( lock, true, true, wind->parent );
@@ -536,18 +537,10 @@ open_about(enum locks lock, struct xa_client *client, bool open, char *fn)
 
 		if( !view_file )
 		{
-#if XAAES_RELEASE
-			/* set version */
-			(obtree + ABOUT_VERSION)->ob_spec.free_string = vversion;
-			/* Set version date */
-			(obtree + ABOUT_DATE)->ob_spec.free_string = __DATE__;
-			(obtree + ABOUT_TARGET)->ob_spec.free_string = arch_target;
-#else
 			(obtree + ABOUT_VERSION)->ob_spec.free_string = vversion;
 			/* Set version date */
 			(obtree + ABOUT_DATE)->ob_spec.free_string = info_string;
 			(obtree + ABOUT_TARGET)->ob_spec.free_string = arch_target;
-#endif
 		}
 
 		wt = set_toolbar_widget(lock, wind, wind->owner, obtree, inv_aesobj(), 0/*WIP_NOTEXT*/, STW_ZEN, NULL, &or);
@@ -601,7 +594,7 @@ open_about(enum locks lock, struct xa_client *client, bool open, char *fn)
 		}
 		else
 		{
-			if( view_file || xah_mtime.time != st.mtime.time )
+			if( view_file || xah_mtime.time < st.mtime.time )
 			{
 				list->empty(list, 0, 0);
 				list->start = 0;
