@@ -1,6 +1,7 @@
 # Inserire questo file nella directory xaaes-boot (C:\mint\1-*-*\xaaes)
 <b>Scorciatoie Ctrl-Alt</b>:
 
+#<CtrlAlt>
 0             Visualizza/nascondi il menu
 #$1 [keyboard-switch]
 .             Visione a pieno schermo del contenuto
@@ -52,6 +53,7 @@ SHIFT+
  CURSOR-DOWN  Sposta in basso la finestra attiva
  CURSOR-RIGHT Sposta a destra la finestra attiva
  CURSOR-LEFT  Sposta a sinistra la finestra attiva
+#</CtrlAlt>
 <u>                                                      </u>
 
 Scorciatoie/navigazione nel <b>Fileselector di XaAES</b>:

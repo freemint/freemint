@@ -1,6 +1,7 @@
 # Umístìte tento soubor do startovacího adresáøe xaaes (C:\mint\1-*-*\xaaes)
 <b>Ctrl-Alt-zkratky</b>:
 
+#<CtrlAlt>
 0
 #$1 [keyboard-switch]
 A             Ukonèit v¹echny programy
@@ -33,6 +34,7 @@ SHIFT+MEZERA  Otevøít nabídku souèasného okna, pokud
               ji má, jinak hlavní nabídku
 TAB           Pøepínat otevøené aplikace
 ©IPKA VPRAVO  Maximalizovat souèasné okno
+#</CtrlAlt>
 <u>                                                      </u>
 
 Zkratky/pohyb v <b>XaAES oknì pro výbìr souborù</b>:
