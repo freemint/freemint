@@ -1,6 +1,7 @@
 # Mettre ce fichier dans le r‚pertoire d'XaAES (C:\mint\1-*-*\xaaes)
 <b>Raccourcis clavier avec Ctrl-Alt</b>:
 
+#<CtrlAlt>
 0             Aficher/Cacher menu
 #$1 [keyboard-switch]
 .             Mettre le contenu de la fenˆtre
@@ -53,6 +54,7 @@ SHIFT+
  FLECHE BAS    Descendre fenˆtre active
  FLECHE DROITE D‚placer fenˆtre active vers la droite
  FLECHE GAUCHE D‚placer fenˆtre active vers la gauche
+#</CtrlAlt>
 <u>                                                      </u>
 
 Raccourcis/navigation dans <b>le s‚lecteur de fichiers</b>:
@@ -64,7 +66,7 @@ CTRL+D        Tri par date
 CTRL+S        Tri par taille
 CTRL+E        Tri par type
 CTRL+X        Pas de tri
-CTRL+SPACE    Inverser l'ordre
+CTRL+ESPACE   Inverser l'ordre
 
 CTRL+O        Ouvrir le menu du s‚lecteur (navigation
               avec les flŠches et Return)

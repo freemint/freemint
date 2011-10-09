@@ -1,4 +1,4 @@
-# Language-File for XaAES v1.1.19 Beta
+# Language-File for XaAES v1.1.20 Beta
 #
 # - Objects -
 ### Menubar ###
@@ -1247,7 +1247,7 @@ hu:[2][Mind bez r sa][M‚gsem|OK]
 ru:[2][Çàêðûòü âñå][Îòìåíà|ÎÊ]
 cs:[2][Ukonèit v¹e][Zru¹it|OK]
 _
-NN:[2][Leave XaAES][Cancel|OK]   @
+NN:[2][Leave XaAES][Cancel|OK]     @
 de:[2][XaAES beenden][Abbruch|OK]
 fr:[2][Quitter XaAES][Annuler|OK]
 es:[2][Terminar XaAES][Anular|OK]
@@ -1492,19 +1492,33 @@ ru:xa_help.ru
 cs:xa_help.cs
 _
 ### Key-Names ###
-NN:CURSOR-UP @
+NN:CURSOR-UP    @
 de:PFEIL-HOCH
+fr:FLECHE HAUT
+es:CURSOR-ARRIBA
+hu:KURZOR-FEL
 _
 NN:CURSOR-DOWN @
 de:PFEIL-RUNTER
+fr:FLECHE BAS
+es:CURSOR-ABAJO
+hu:KURZOR-LE
 _
-NN:CURSOR-RIGHT
+NN:CURSOR-RIGHT @
 de:PFEIL-RECHTS
+fr:FLECHE DROITE
+es:CURSOR-DRCHA
+hu:KURZOR-JOBB
 _
-NN:CURSOR-LEFT
+NN:CURSOR-LEFT  @
 de:PFEIL-LINKS
+fr:FLECHE GAUCHE
+es:CURSOR-IZQ
+hu:KURZOR-BAL
 _
-NN:SPACE
+NN:SPACE  @
+fr:ESPACE
+es:ESPACIO
 _
 NN:ESC
 _
@@ -1528,4 +1542,3 @@ NN:HOME
 _
 NN:UNDO
 _
-

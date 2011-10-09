@@ -1,6 +1,7 @@
 # Situa este fichero en el directorio de arranque de xaaes (C:\mint\1-*-*\xaaes)
 <b>Ctrl-Alt-Atajos</b>:
 
+#<CtrlAlt>
 0             Ocultar barra men£ (on/off)
 #$1 [keyboard-switch]
 .             Pasa contenido de la ventana a pantalla completa 
@@ -48,6 +49,7 @@ SHIFT+
  CURSOR-ABAJO  Bajar ventana
  CURSOR-DRCHA  Mover ventana hacia la derecha
  CURSOR-IZQ    Mover ventana hacia la izquierda
+#</CtrlAlt>
 <u>                                                      </u>
 
 Atajos/navegaci¢n en el <b>selector de ficheros de XaAES</b>:

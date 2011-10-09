@@ -34,7 +34,8 @@ T,HOME        Bildschirm wiederherstellen (neuzeichnen)
 U             Oberstes Fenster schlieûen
 V             Alle versteckten Programme hervorholen
 W             Globaler Fensterwechsel
-SHIFT+W       Oberstes Fenster vom vorigen Programm nach vorn
+SHIFT+W       Oberstes Fenster vom vorigen Programm
+              nach vorn holen
 X             Versteckt alle Programme bis auf das
               momentan verwendete
 Y             Momentan verwendetes Programm verstecken
@@ -44,7 +45,7 @@ SPACE         ôffnet das HauptmenÅ (Navigation mit
 SHIFT+SPACE   ôffnet das FenstermenÅ (falls vorhanden),
               sonst das HauptmenÅ
 TAB           Wechsel zwischen aktiven Programmen
-SHIFT+TAB     Wechsel zum vorherigen Programm
+
 INSERT        Oberstes Fenster maximieren
 PFEIL-HOCH    Oberstes Fenster vergrîûern
 PFEIL-RUNTER  Oberstes Fenster verkleinern
@@ -56,7 +57,7 @@ SHIFT+
  PFEIL-RUNTER Oberstes Fenster nach unten verschieben
  PFEIL-RECHTS Oberstes Fenster nach rechts verschieben
  PFEIL-LINKS  Oberstes Fenster nach links verschieben
-#</CtrlAlt>
+ #</CtrlAlt>
 <u>                                                      </u>
 
 Shortcuts/Navigation im <b>Dateiauswahl-Dialog</b>:
