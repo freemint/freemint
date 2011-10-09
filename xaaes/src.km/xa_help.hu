@@ -1,6 +1,7 @@
 # Ennek a f†jlnak az xaaes kînyvt†r†ban kell lennie (C:\mint\1-*-*\xaaes)
 <b>Ctrl-Alt gyorsbillentyÅk</b>:
 
+#<CtrlAlt>
 0             MenÅsor be/ki
 #$1 [keyboard-switch]
 A             Bez†r minden alkalmaz†st (a kivÇtelek
@@ -45,6 +46,7 @@ SHIFT +
  KURZOR-LE   Ablak lefelÇ mozgat†sa
  KURZOR-JOBB Ablak jobbra mozgat†sa
  KURZOR-BAL  Ablak balra mozgat†sa
+ #</CtrlAlt>
 <u>                                                      </u>
 
 GyorsbillentyÅk/navig†ci¢ az <b>XaAES f†jl kiv†laszt†s†n†l</b>:
@@ -87,18 +89,18 @@ SHIFT+
 
 <u>List-box kiv†lasztva:</u>
 
-  CURSOR-RIGHT              Fa megynit†sa
-  CURSOR-LEFT               Fa bez†r†sa
-  CURSOR UP/DOWN            Kurzor mozgat†sa
+  KURZOR-FEL                Fa megynit†sa
+  KURZOR-LE                 Fa bez†r†sa
+  KURZOR-BAL/JOBB           Kurzor mozgat†sa
   PageUp/Down(SHIFT+CU/CD)  Lapoz†s a f†jllist†ban
   CLEAR/HOME                Lista elejÇre ugr†s
   SHIFT+CLEAR/HOME          Lista vÇgÇre ugr†s
 
 <u>List-box nincs kiv†lasztva:</u>
 
-  CURSOR-RIGHT              Jobbra gîrgetÇs
-  CURSOR-LEFT               Balra gîrgetÇs
-  CURSOR UP/DOWN            Fel/Le gîrgetÇs
+  KURZOR-FELHT              Jobbra gîrgetÇs
+  KURZOR-LE                 Balra gîrgetÇs
+  KURZOR BAL/JOBB           Fel/Le gîrgetÇs
 
 Ha egy elem ki van v†lasztva a "list-box"-ban, a
 KURZOR-JOBBRA gombbal lehetîsÇg  van a szerkesztÇsÇre.
