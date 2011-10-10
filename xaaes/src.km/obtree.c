@@ -2316,10 +2316,10 @@ ob_fix_shortcuts(OBJECT *obtree, bool not_hidden)
 						DIAGS((" -- obj %d, und = %d", i, j));
 						if (j < 126)
 						{
-							char *s = object_get_spec(ob)->free_string;
+							unsigned char *s = (unsigned char *)object_get_spec(ob)->free_string;
 							if (s)
 							{
-								int slen = strlen(s);
+								int slen = strlen((char*)s);
 								int nc;
 
 								/* skip non-alpha-numeric-chars in start of free_string
@@ -2341,7 +2341,7 @@ ob_fix_shortcuts(OBJECT *obtree, bool not_hidden)
 								if (j < slen)
 								{
 									scuts = sc;
-									nk = toupper(*(s + j));
+									nk = toupper((char)*(s + j));
 
 									while (scuts->c )
 									{
