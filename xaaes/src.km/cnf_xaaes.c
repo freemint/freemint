@@ -99,7 +99,7 @@ static struct parser_item parser_tab[] =
 	{ "NAES_COOKIE",           PI_R_B,   & cfg.naes_cookie		},
 	{ "MENUPOP_PIDS",          PI_R_B,   & cfg.menupop_pids		},
 #if WITH_BBL_HELP
-	{ "XA_BUBBLE",	           PI_R_B,   & cfg.xa_bubble},
+	{ "XA_BUBBLE",	           PI_R_S,   & cfg.xa_bubble},
 #endif
 	{ "LRMB_SWAP",	           PI_R_B,   & cfg.lrmb_swap		},
 	{ "WIDGET_AUTO_HIGHLIGHT", PI_R_B,   & cfg.widg_auto_highlight	},
