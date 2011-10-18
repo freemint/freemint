@@ -49,11 +49,9 @@
 #if WITH_BBL_HELP
 #include "xa_bubble.h"
 #endif
-
 #include "mint/dcntl.h"
 #include "mint/fcntl.h"
 #include "mint/signal.h"
-
 /*
  * Ozk: When a mouse button event is delivered to a client, or application,
  * the whole button event is copied into the clients private moose_data.
@@ -265,10 +263,10 @@ is_bevent(int gotbut, int gotcl, const short *o, int which)
 		which, ev ? "Yes" : "No", gotbut, gotcl, clks, msk, st));
 
 #if WITH_BBL_HELP
-		if( cfg.xa_bubble && gotbut == 1 && xa_bubble( 0, bbl_get_status, 0, 1 ) == bs_open )	/* left click: bubble off */
-		{
-			xa_bubble( 0, bbl_close_bubble1, 0, 0 );
-		}
+	if( cfg.xa_bubble && gotbut == 1 && xa_bubble( 0, bbl_get_status, 0, 1 ) == bs_open )	/* left click: bubble off */
+	{
+		xa_bubble( 0, bbl_close_bubble1, 0, 0 );
+	}
 #endif
 	return ev;
 }
@@ -1141,14 +1139,13 @@ adi_move(struct adif *a, short x, short y)
 			m_to = addroottimeout(0L, move_timeout, 1);
 	}
 #if WITH_BBL_HELP
-	if( cfg.xa_bubble )
 	{
 		BBL_STATUS s = xa_bubble( 0, bbl_get_status, 0, 1 );
 		if( s == bs_open )
 		{
 			post_cevent(C.Aes, XA_bubble_event, NULL, NULL, 0, 0, NULL, NULL);
 		}
-		//xa_bubble( 0, bbl_close_bubble1, 0, 0 );
+
 		if (ms_to)
 		{
 			cancelroottimeout(ms_to);
