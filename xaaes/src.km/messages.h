@@ -50,6 +50,12 @@ union msg_buf
 		void *ptr;
 		RECT rect;
 	} irdrw;
+	struct
+	{
+		short m0, m1, m2, m3, m4;
+		void *p56;
+		short m7;
+	} sb;
 };
 
 const char *pmsg(short m);
