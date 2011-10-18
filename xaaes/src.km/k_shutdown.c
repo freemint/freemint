@@ -66,11 +66,10 @@ k_shutdown(void)
 	struct xa_vdi_settings *v = C.Aes->vdi_settings;
 
 	_f_sync();
-	BLOG((false, "Cleaning up ready to exit...."));
-	BLOG((false, "wait for AES help thread to terminate...."));
+	BLOG((false, "wait for AES help thread to terminate....(ferr=%d)", ferr));
 	cancel_reiconify_timeout();
 
-	if (C.Hlp)
+	if (!ferr && C.Hlp)
 	{
 		volatile struct xa_client **h = (volatile struct xa_client **)&C.Hlp;
 		long l = 0;
@@ -250,6 +249,7 @@ k_shutdown(void)
 		BLOG((false, "RESOLUTION_CHANGE flag is set"));
 		*/
 #endif
+	}
 	/*
 	 * Close the virtual used by XaAES
 	 */
