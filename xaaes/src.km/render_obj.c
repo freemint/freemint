@@ -32,6 +32,9 @@
 #include "global.h"
 #include "mscall.h"
 
+#define RASTER_HDL	v->handle
+//#define RASTER_HDL	api->C->raster_handle
+
 #define MONO (screen->colours < 16)
 #define done(x) (*wt->state_mask &= ~(x))
 #ifndef max
@@ -3620,7 +3623,7 @@ int do_bkg_img(struct xa_client *client, int md, char *fn )
 			if( fp )
 			{
 				hidem();
-				vro_cpyfm(api->C->raster_handle, S_ONLY, pnt, &Mscreen, &Mpreserve);
+				vro_cpyfm(RASTER_HDL, S_ONLY, pnt, &Mscreen, &Mpreserve);
 				showm();
 				err = kernel_write( fp, background, sz );
 				kernel_close(fp);
@@ -3678,7 +3681,7 @@ int do_bkg_img(struct xa_client *client, int md, char *fn )
 			}
 			v->api->rtopxy(pnt, &r2);
 			v->api->rtopxy(pnt+4, &r2);
-			vro_cpyfm(api->C->raster_handle, S_ONLY, pnt, &Mpreserve, &Mscreen);
+			vro_cpyfm(RASTER_HDL, S_ONLY, pnt, &Mpreserve, &Mscreen);
 		}
 
 		return 0;
@@ -6097,7 +6100,7 @@ d_g_cicon(struct widget_tree *wt, struct xa_vdi_settings *v)
 
 	Micon.fd_nplanes = screen->planes;
 
-	vro_cpyfm(api->C->raster_handle, blitmode, pxy, &Micon, &Mscreen);
+	vro_cpyfm(RASTER_HDL, blitmode, pxy, &Micon, &Mscreen);
 	if( iconblk->ib_char || *iconblk->ib_ptext )
 		icon_characters(v, theme, iconblk, ob->ob_state & (OS_SELECTED|OS_DISABLED), obx, oby, ic.x, ic.y);
 
