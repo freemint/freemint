@@ -385,6 +385,7 @@ init_client(enum locks lock, bool sysclient)
 	client->mouse_form = NULL;
 	client->save_mouse = client->mouse;
 	client->save_mouse_form = client->mouse_form;
+
 	return client;
 }
 
@@ -462,7 +463,7 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 #if WITH_BBL_HELP
 			if( cfg.xa_bubble && !strnicmp( "  BUBBLE", client->name, 8 ) )
 			{
-				xa_bubble( lock, bbl_disable_and_free, 0, 0 );
+				xa_bubble( lock, bbl_disable_bubble, 0, 0 );
 			}
 #endif
 			/* Preserve the pointer to the globl array
@@ -829,10 +830,13 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 	}
 
 #if WITH_BBL_HELP
-	if( cfg.xa_bubble && xa_bubble( 0, bbl_get_status, 0, 0 ) <= bs_inactive && !strnicmp( "  BUBBLE", client->name, 8 ) )
+	if( cfg.xa_bubble )
 	{
-		xa_bubble( lock, bbl_enable_bubble, 0, 0 );
+		if( xa_bubble( 0, bbl_get_status, 0, 0 ) <= bs_inactive && !strnicmp( "  BUBBLE", client->name, 8 ) )
+			post_cevent(C.Aes, XA_bubble_event, NULL, NULL, 1, 0, NULL, NULL);
+			//xa_bubble( lock, bbl_enable_bubble, 0, 0 );
 	}
+	xa_bubble( 0, bbl_close_bubble1, 0, 0 );
 #endif
 	/* Free name *only if* it is malloced: */
 	if ( client->tail_is_heap) {
