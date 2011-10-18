@@ -267,7 +267,7 @@ shadow_area(struct xa_vdi_settings *v, short d, short state, RECT *rp, short col
 	short offset, inc;
 
 	/* Are we shadowing this object? (Borderless objects aren't shadowed!) */
-	if ((x_thick | y_thick) && (state & OS_SHADOWED))
+	if ((x_thick || y_thick) && (state & OS_SHADOWED))
 	{
 		short i;
 
