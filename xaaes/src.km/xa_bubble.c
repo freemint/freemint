@@ -100,17 +100,6 @@ static int format_string( unsigned char *str, int *maxl )
 	}
 	if( C.fvdi_version && Style == 2 && fl_longest )
 		ml++;
-	/*if( Style == 2 && ml < 6 )
-	{
-		char s[8];
-		short d = (6 - ml)/2 + 1;
-
-		memset( s, ' ', 6);
-		s[7] = 0;
-		memcpy( s + d, start, ml );
-		strcpy( start, s );
-		ml = 6;
-	}*/
 
 	if( maxl )
 	{
@@ -318,7 +307,7 @@ static int open_bbl_window( enum locks lock, unsigned char *str, short x, short 
 			r.y -= ( r.h + 42 );
 			ro.y -= ( r.h + 42 );
 		}
-		if( r.y < 20 )	// too high
+		if( r.y < get_menu_height() )	// too high
 		{
 			y2 += 2;	// avoid window covering mouse-point
 			r.y = ro.y = y + 42;
@@ -524,7 +513,6 @@ BBL_STATUS xa_bubble( enum locks lock, BBL_MD md, union msg_buf *msg, short dest
 			if( intin[0] )
 			{
 				/* send ACK-message saved at SHOW */
-				XA_appl_write( lock, C.Hlp, &pb );
 				XA_appl_write( lock, C.Hlp, &pb );
 			}
 			XaBubble = bs_closed;
