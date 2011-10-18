@@ -73,6 +73,8 @@
 # xa_bubble
 # if you want to use the XaAES-builtin bubble-help (since 1.1.21) set
 # this.
+# 1: windows-tooltip-style
+# 2: apple-ballon-help-style
 #xa_bubble = 1
 #####################################################################
 ## video mode select
