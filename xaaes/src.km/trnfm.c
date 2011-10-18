@@ -2250,45 +2250,50 @@ fix_rsc_palette(struct xa_rsc_rgb *palette)
 	kfree(new);
 }
 
-void rw_syspalette( int md, struct rgb_1000 *palette )
+/*
+ * md = READ: read palette-file and copy palette into palette
+ * md = WRITE: unimplemented
+ * return 0 for success
+ */
+int rw_syspalette( int md, struct rgb_1000 *palette )
 {
+	short buf[1024], palsz, pens;
+	char fn[PATH_MAX];
+	long err;
+	struct file *fp;
+
+	if (screen.planes > 8)
+		pens = 256;
+	else
+		pens = 1 << screen.planes;
+
+	palsz = pens * 3 * 2 + 4;
+	sprintf( fn, sizeof(fn), "%spal/%s.pal", C.Aes->home_path, cfg.palette );
+	BLOG((0,"loading palette:%s", fn));
+	fp = kernel_open( fn, O_RDONLY, &err, NULL );
+	if( !fp )
 	{
-		short buf[1024], palsz, pens;
-		char fn[PATH_MAX];
-		long err;
-		struct file *fp;
-
-		if (screen.planes > 8)
-			pens = 256;
-		else
-			pens = 1 << screen.planes;
-
-		palsz = pens * 3 * 2 + 4;
-		sprintf( fn, sizeof(fn), "%spal/%s.pal", C.Aes->home_path, cfg.palette );
-		BLOG((0,"loading palette:%s", fn));
-		fp = kernel_open( fn, O_RDONLY, &err, NULL );
-		if( !fp )
-		{
-			BLOG((0,"palette not found:%ld", err));
-			return;
-		}
-		err = kernel_read( fp, buf, sizeof(buf)-1 );
-		kernel_close( fp );
-		if( err != palsz )
-		{
-			BLOG((0,"palette-size wrong:%ld, should be %d", err, palsz));
-			return;
-		}
-		if( memcmp( (char*)buf, "PA01", 4 ) )
-		{
-			BLOG((0,"%s:no palette-file", fn ));
-			return;
-		}
-
-		palsz -= 4;
-		memcpy( palette, &buf[2], palsz );
+		BLOG((0,"palette not found:%ld", err));
+		return 1;
 	}
+	err = kernel_read( fp, buf, sizeof(buf)-1 );
+	kernel_close( fp );
+	if( err != palsz )
+	{
+		BLOG((0,"palette-size wrong:%ld, should be %d", err, palsz));
+		return 2;
+	}
+	if( memcmp( (char*)buf, "PA01", 4 ) )
+	{
+		BLOG((0,"%s:no palette-file", fn ));
+		return 3;
+	}
+
+	palsz -= 4;
+	memcpy( palette, &buf[2], palsz );
+	return 0;
 }
+
 void
 set_syspalette(short vdih, struct rgb_1000 *palette)
 {
