@@ -2832,7 +2832,6 @@ struct common
 	unsigned short nvdi_version;
 	unsigned short fvdi_version;
 	bool f_phys;	// using physical wk
-	short raster_handle;	// pyhs. or virt.?
 	unsigned long gdos_version;
 
 	void (*reschange)(enum locks lock, struct xa_client *client, bool open);
@@ -2982,7 +2981,7 @@ struct config
 //					/* 1 = Keep client whose last window was closed infront. */
 
 #if WITH_BBL_HELP
-	bool xa_bubble;	/* use XaAES for bubble-help */
+	short xa_bubble;	/* use XaAES for bubble-help: 1: tooltip-style, 2: ballon-style */
 #endif
 	bool lrmb_swap;			/* Swap left and right mouse-button status bits */
 	bool widg_auto_highlight;	/* WIDGET Highligh when Mouse Hovers */
