@@ -53,6 +53,9 @@
 #include "xa_menu.h"
 #include "xa_rsrc.h"
 #include "xa_shel.h"
+#if WITH_BBL_HELP
+#include "xa_bubble.h"
+#endif
 
 #include "mint/dcntl.h"
 #include "mint/fcntl.h"
@@ -794,13 +797,6 @@ k_init(unsigned long vm)
 	screen.colours = work_out[13];
 	screen.display_type = D_LOCAL;
 	v->screen = screen.r;
-	//if(	cfg.raster_handle == 0 )
-	{
-		if( 1 || C.fvdi_version != 0 )
-			C.raster_handle = v->handle;
-		else
-			C.raster_handle = C.P_handle;
-	}
 
 	vq_extnd(v->handle, 1, work_out);	/* Get extended information */
 
@@ -851,9 +847,8 @@ k_init(unsigned long vm)
 
 // 	if (screen.planes > 8)
 // 		set_defaultpalette(v->handle);
-	if( cfg.palette[0] )
+	if( cfg.palette[0] && !rw_syspalette( READ, screen.palette ) )
 	{
-		rw_syspalette( READ, screen.palette );
 		set_syspalette(v->handle, screen.palette);
 	}
 	else
@@ -1071,15 +1066,19 @@ k_init(unsigned long vm)
 		if( cfg.menu_bar )
 			open_window(0, menu_window, r);
 	}
+//#define WITH_BBL_HELP 0
 #if WITH_BBL_HELP
-	if( cfg.xa_bubble )
+	if( cfg.xa_bubble || cfg.menu_bar != 2 )
 	{
 		RECT r = {0,0,420,420};
+		bool nolist = false;
 
-		bgem_window = create_window(0, do_winmesag, do_formwind_msg, C.Aes, true, 0, created_for_AES|created_for_POPUP, false, false, r, 0,0);
+		bgem_window = create_window(0, 0, 0, C.Aes, nolist, 0, created_for_AES|created_for_POPUP|created_for_MENUBAR, 0, false, r, 0,0);
 		if( !bgem_window )
 			return -1;
 		strcpy( bgem_window->wname, "bgem" );
+		bgem_window->x_shadow = bgem_window->x_shadow = 0;
+		xa_bubble( 0, bbl_enable_bubble, 0, 0 );
 	}
 #endif
 
