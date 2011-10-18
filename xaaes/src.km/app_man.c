@@ -31,6 +31,7 @@
 
 #include "app_man.h"
 #include "xa_appl.h"
+#include "xa_bubble.h"
 #include "xa_global.h"
 #include "xa_rsrc.h"
 
@@ -1224,6 +1225,12 @@ app_in_front(enum locks lock, struct xa_client *client, bool snd_untopped, bool 
 		if( topped == S.focus )
 			S.focus = 0;	/* force focus to new top */
 		setnew_focus(topped, S.focus, false, true, true);
+#if WITH_BBL_HELP
+		if( cfg.menu_bar == 0 && !topped )
+			display_launched( lock, client->name );
+		else
+			xa_bubble( 0, bbl_close_bubble1, 0, 0 );
+#endif
 	}
 }
 
