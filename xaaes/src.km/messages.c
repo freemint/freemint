@@ -394,7 +394,6 @@ add_msg_2_queue(struct xa_aesmsg_list **queue, union msg_buf *msg, short qmflags
 		short *old;
 
 		DIAG((D_m, NULL, "WM_REDRAW for %s, rect %d/%d,%d/%d", client->name, new[4], new[5], new[6], new[7]));
-
 		//if (!new[3])
 			//display("WM_REDRAW on root-window???");
 
