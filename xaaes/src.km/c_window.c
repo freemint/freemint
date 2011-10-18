@@ -37,6 +37,7 @@
 #include "rectlist.h"
 #include "scrlobjc.h"
 #include "widgets.h"
+#include "xa_bubble.h"
 #include "xa_graf.h"
 #include "xa_wind.h"
 
@@ -1122,6 +1123,12 @@ top_window(enum locks lock, bool snd_untopped, bool snd_ontop, struct xa_window 
 	}
 	else
 	{
+#if WITH_BBL_HELP
+		if( w != bgem_window && !(w->dial == (created_for_ALERT | created_for_AES)) )
+		{
+			xa_bubble( 0, bbl_close_bubble1, 0, 2 );
+		}
+#endif
 		pull_wind_to_top(lock, w);
 		setnew_focus(w, NULL, true, snd_untopped, snd_ontop);
 	}
@@ -1588,6 +1595,12 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 		return 0;
 	}
 
+#if WITH_BBL_HELP
+	if( wind != bgem_window && wind->handle >= 0 && !(wind->dial == (created_for_ALERT | created_for_AES)) )
+	{
+		xa_bubble( 0, bbl_close_bubble1, 0, 3 );
+	}
+#endif
 	if (wind->nolist || (wind->dial & created_for_SLIST))
 	{
 		DIAGS(("open_window: nolist window - SLIST wind? %s",
@@ -1813,7 +1826,7 @@ draw_window(enum locks lock, struct xa_window *wind, const RECT *clip)
 	}
 
 	/* is window below menubar? (better should change rectlists?) */
-	if( cfg.menu_layout == 0 && cfg.menu_bar && cl.y < get_menu_height() )
+	if( wind->handle >= 0 && cfg.menu_layout == 0 && cfg.menu_bar && cl.y < get_menu_height() )
 	{
 		if( clip_off_menu( &cl ) )
 			return;
@@ -1833,7 +1846,7 @@ draw_window(enum locks lock, struct xa_window *wind, const RECT *clip)
 		if (wind->draw_waframe)
 			(*wind->draw_waframe)(wind, clip);
 
-		if (wind->frame >= 0 && (wind->x_shadow | wind->y_shadow))
+		if (wind->frame >= 0 && (wind->x_shadow || wind->y_shadow))
 		{
 			//shadow_object(0, OS_SHADOWED, &cl, G_BLACK, wind->shadow/2); //SHADOW_OFFSET/2);
 			shadow_area(v, 0, OS_SHADOWED, &wind->r, G_BLACK, wind->x_shadow, wind->y_shadow);
@@ -2226,6 +2239,9 @@ void toggle_menu(enum locks lock, short md)
 	set_standard_point( client );
 	if( cfg.menu_bar )
 	{
+#if WITH_BBL_HELP
+		xa_bubble( 0, bbl_close_bubble1, 0, 4 );
+#endif
 		if( cfg.menu_ontop )
 		{
 			open_window(0, menu_window, menu_window->r );
