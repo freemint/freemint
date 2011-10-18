@@ -221,6 +221,7 @@ k_shutdown(void)
 	}
 
 	BLOG((false, "Freeing Options"));
+	if( !(C.shutdown & (HALT_SYSTEM | REBOOT_SYSTEM | COLDSTART_SYSTEM)) )
 	{
 		struct opt_list *op;
 
@@ -232,86 +233,86 @@ k_shutdown(void)
 			kfree(op);
 			op = next;
 		}
-	}
 
-	xaaes_kmalloc_leaks();
+		xaaes_kmalloc_leaks();
 
-	nkc_exit();
+		nkc_exit();
 
 
-	BLOG((false, "C.shutdown = 0x%x", C.shutdown));
+		BLOG((false, "C.shutdown = 0x%x", C.shutdown));
 #if BOOTLOG
-	if (C.shutdown & HALT_SYSTEM)
-		BLOG((false, "HALT_SYSTEM flag is set"));
-	if (C.shutdown & REBOOT_SYSTEM)
-		BLOG((false, "REBOOT_SYSTEM flag is set"));
-	/*if (C.shutdown & RESOLUTION_CHANGE)
-		BLOG((false, "RESOLUTION_CHANGE flag is set"));
-		*/
+		if (C.shutdown & HALT_SYSTEM)
+			BLOG((false, "HALT_SYSTEM flag is set"));
+		if (C.shutdown & REBOOT_SYSTEM)
+			BLOG((false, "REBOOT_SYSTEM flag is set"));
+		/*if (C.shutdown & RESOLUTION_CHANGE)
+			BLOG((false, "RESOLUTION_CHANGE flag is set"));
+			*/
 #endif
-	}
-	/*
-	 * Close the virtual used by XaAES
-	 */
-	if (v && v->handle && v->handle != C.P_handle)
-	{
-		BLOG((false, "Closing down vwk %d", v->handle));
-		v_clsvwk(v->handle);
-	}
-	/*
-	 * Close the physical
-	 */
-	if (C.P_handle > 0 && C.f_phys == 0 )
-	{
-		vst_color(C.P_handle, G_BLACK);
-		vswr_mode(C.P_handle, MD_REPLACE);
 
-		/* Shut down the VDI */
-		v_clrwk(C.P_handle);
-
-		/* v_clswk bombs with NOVA VDI 2.67 & Memory Protection.
-		 * so I moved this to the end of the xaaes_shutdown,
-		 * AFTER closing the debugfile.
+		/*
+		 * Close the virtual used by XaAES
 		 */
-// 		v_clsvwk(global_vdi_settings.handle);
-
-		if( /*!(C.shutdown & RESTART_XAAES) &&*/ C.P_handle > 0 && C.P_handle != v->handle )
+		if (v && v->handle && v->handle != C.P_handle)
 		{
+			BLOG((false, "Closing down vwk %d", v->handle));
+			v_clsvwk(v->handle);
+		}
+		/*
+		 * Close the physical
+		 */
+		if (C.P_handle > 0 && C.f_phys == 0 )
+		{
+			vst_color(C.P_handle, G_BLACK);
+			vswr_mode(C.P_handle, MD_REPLACE);
+
+			/* Shut down the VDI */
+			v_clrwk(C.P_handle);
+
+			/* v_clswk bombs with NOVA VDI 2.67 & Memory Protection.
+			 * so I moved this to the end of the xaaes_shutdown,
+			 * AFTER closing the debugfile.
+			 */
+	// 		v_clsvwk(global_vdi_settings.handle);
+
+			if( /*!(C.shutdown & RESTART_XAAES) &&*/ C.P_handle > 0 && C.P_handle != v->handle )
+			{
 #ifndef ST_ONLY
 #if SAVE_CACHE_WK
-			unsigned long sc = 0, cm = 0;
+				unsigned long sc = 0, cm = 0;
 #endif
-			int odbl;
+				int odbl;
 
-			BLOG((false, "Closing down physical vdi workstation %d", C.P_handle));
-		/*
-		 * Ozk: We switch off instruction, data and branch caches (where available)
-		 *	while the VDI accesses the hardware. This fixes 'black-screen'
-		 *	problems on Hades with Nova VDI.
-		 */
+				BLOG((false, "Closing down physical vdi workstation %d", C.P_handle));
+			/*
+			 * Ozk: We switch off instruction, data and branch caches (where available)
+			 *	while the VDI accesses the hardware. This fixes 'black-screen'
+			 *	problems on Hades with Nova VDI.
+			 */
 #if SAVE_CACHE_WK
-			cm = s_system(S_CTRLCACHE, 0L, -1L);
-			sc = s_system(S_CTRLCACHE, -1L, 0L);
-			BLOG((false, "Get current cpu cache settings... cm = %lx, sc = %lx", cm, sc));
-			s_system(S_CTRLCACHE, sc & ~7, cm);
+				cm = s_system(S_CTRLCACHE, 0L, -1L);
+				sc = s_system(S_CTRLCACHE, -1L, 0L);
+				BLOG((false, "Get current cpu cache settings... cm = %lx, sc = %lx", cm, sc));
+				s_system(S_CTRLCACHE, sc & ~7, cm);
 #endif
-			BLOG((false, "Enter cursor mode"));
-			v_enter_cur(C.P_handle);	/* Ozk: Lets enter cursor mode */
-			BLOG((false, "Closing VDI workstation %d", C.P_handle));
-			odbl = DEBUG_LEVEL;
-			DEBUG_LEVEL = 4;
-			v_clswk(C.P_handle);		/* Auto version must close the physical workstation */
-			BLOG((false, "VDI workstation closed"));
+				BLOG((false, "Enter cursor mode"));
+				v_enter_cur(C.P_handle);	/* Ozk: Lets enter cursor mode */
+				BLOG((false, "Closing VDI workstation %d", C.P_handle));
+				odbl = DEBUG_LEVEL;
+				DEBUG_LEVEL = 4;
+				v_clswk(C.P_handle);		/* Auto version must close the physical workstation */
+				BLOG((false, "VDI workstation closed"));
 #if SAVE_CACHE_WK
-			BLOG((0,"Restore CPU caches:%lx,%lx",sc,cm));
-			s_system(S_CTRLCACHE, sc, cm);
+				BLOG((0,"Restore CPU caches:%lx,%lx",sc,cm));
+				s_system(S_CTRLCACHE, sc, cm);
 #endif
-			DEBUG_LEVEL = odbl;
-			BLOG((false, "Done shutting down VDI"));
+				DEBUG_LEVEL = odbl;
+				BLOG((false, "Done shutting down VDI"));
 #else
-			v_enter_cur(C.P_handle);
-			v_clswk(C.P_handle);
+				v_enter_cur(C.P_handle);
+				v_clswk(C.P_handle);
 #endif
+			}
 		}
 
 		if( !ferr )
