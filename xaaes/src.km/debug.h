@@ -207,11 +207,13 @@ void _cdecl bootlog(bool disp, const char *fmt, ...);
 #define BLOGif(c,x)	if(c)bootlog x
 #define DBG BLOG
 #define DBGif BLOGif
+#define KDBG(x) KERNEL_DEBUG x
 #else
 #define BLOG(x)
 #define BLOGif(x)
 #define DBG(x)
 #define DBGif(x)
+#define KDBG(x)
 #endif
 
 #endif /* _debug_h */
