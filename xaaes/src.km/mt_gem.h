@@ -275,6 +275,7 @@ typedef struct
 
 #define BGS7_USRHIDE 0x0001
 #define BGS7_MOUSE   0x0004
+#define BGS7_DISPCL  0x0080	// display client: XaAES-special
 
 #define BUBBLEGEM_REQUEST  0xBABA
 #define BUBBLEGEM_SHOW     0xBABB
