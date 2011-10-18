@@ -431,6 +431,7 @@ again:
 	else
 			BLOG(( 0,"stack is word-aligned:%lx", stk ));
 #endif
+	BLOG((0,"PRG: km=%lx, base=%lx, text=%lx -> %lx(%ld)", km, km->b, km->b->p_tbase, km->b->p_tbase + km->b->p_tlen, km->b->p_tlen));
 	/* do some sanity checks of the installation
 	 * that are a common source of user problems
 	 */
