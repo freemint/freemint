@@ -23,7 +23,6 @@
  * along with XaAES; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-
 #define PROFILING	0
 #include "xaaes.h" /*RSCHNAME*/
 
@@ -217,6 +216,8 @@ post_cevent(struct xa_client *client,
 {
 	struct c_event *c;
 
+	//if( !client || !client->p->pid )
+		//return;
 	if (!(client->status & CS_BLOCK_CE))
 	{
 		c = kmalloc(sizeof(*c));
@@ -773,11 +774,15 @@ CE_fa(enum locks lock, struct c_event *ce, bool cancel)
 		/* make sure the evil process really goes away */
 		long pid = 0;
 		char *ps = strstr( data->buf, "(PID ");
+		if( !ps )
+			ps = strstr( data->buf, "pid ");
 
 		yield();
 		if( ps )
 			pid = atol( ps + 4 );
 
+		if( pid == C.Aes->p->pid || pid == C.Hlp->p->pid || pid == C.Aes->tp->pid )
+			return;
 		if( pid && strstr( data->buf, "KILLED:" ) )
 		{
 			short s;
@@ -788,6 +793,7 @@ CE_fa(enum locks lock, struct c_event *ce, bool cancel)
 				nap(20);
 			}
 		}
+		nap(2000);
 		/***********************************************/
 
 		if (C.update_lock)
@@ -891,7 +897,7 @@ CE_fa(enum locks lock, struct c_event *ce, bool cancel)
 				}
 			}
 
-			if ((cfg.alert_winds & amask))
+			if ( C.shutdown == 0 && (cfg.alert_winds & amask))
 			{
 				/* if an app left the mouse off */
 				forcem();
@@ -934,9 +940,10 @@ display_alert(struct proc *p, long arg)
 
 typedef void XA_CONF (void *p);
 
-static XA_CONF *xa_config[] = {load_grd};
+void show_bubble( void *str );
+static XA_CONF *xa_config[] = {load_grd, show_bubble};
 
-
+#define MAX_ALERTLEN 512
 static void
 alert_input(enum locks lock)
 {
@@ -945,6 +952,8 @@ alert_input(enum locks lock)
 
 	n = f_instat(C.alert_pipe);
 
+	if( n > MAX_ALERTLEN)
+		n = MAX_ALERTLEN;
 	if (n > 0)
 	{
 		struct display_alert_data *data;
@@ -959,22 +968,20 @@ alert_input(enum locks lock)
 			DIAGS(("kmalloc(%i) failed, out of memory?", sizeof(*data)));
 			return;
 		}
-// 		display("alert_input - %ld bytes in pipe, buff %lx", n, (long)data);
 		data->lock = lock;
 		f_read(C.alert_pipe, n, data->buf);
 		data->buf[n] = '\0';
-// 		display("alert_intput %s", data->buf);
 
 		if( data->buf[0] == '#' && data->buf[1] == '$' )
 		{
-			if( data->buf[2] == '#' && data->buf[3] >= '0' && data->buf[3] <= '0' )
+			if( data->buf[2] == '#' && data->buf[3] >= '0' && data->buf[3] - '0' < sizeof(xa_config) / sizeof(void*) )
 				xa_config[(int)data->buf[3]-'0']( (void*)(data->buf + 4) );
 			else
 				load_config();
 			kfree(data);
 			return;
 		}
-		if (C.Hlp)
+		if (C.Hlp && n < MAX_ALERTLEN && *data->buf == '[')
 		{
 			post_cevent(C.Hlp, CE_fa, data, NULL, 0,0, NULL,NULL);
 		}
@@ -990,7 +997,7 @@ alert_input(enum locks lock)
 static void k_exit(int);
 static void restore_sigs(void);
 static void setup_common(void);
-int ferr = 0;
+int ferr = 0;	/* global to indicate serious problems */
 /*
  * signal handlers
  */
@@ -1002,31 +1009,25 @@ ignore(int sig)
 	KERNEL_DEBUG("AESSYS: ignored signal");
 }
 #if !GENERATE_DIAGS
-#if 0
-static int IgnoreFatal = 0;
-int setIgnFatal(int val )
+
+static void print_context(int sig)
 {
-	if( IgnoreFatal == 0 || val == 0 )
-		IgnoreFatal = val;
-	return IgnoreFatal;
+	struct proc *p = get_curproc();
+	//long *sspcur = (long*)p->ctxt[CURRENT].ssp;
+
+	BLOG((true,"exception %d for %s pc:%lx addr:%lx", sig, p->name, p->exception_pc, p->exception_addr));
 }
-#endif
+
 static void
 fatal(int sig)
 {
-	struct proc *p = get_curproc();
-#if 0
-	BLOG((true, "'%s': fatal error: %d %s.", p->name, sig, IgnoreFatal ? "(Ignored)" : ""));
-	if( IgnoreFatal != 0 ){
-		IgnoreFatal = 0;
-		return;
-	}
-#else
-	BLOG((true, "'%s': fatal error: %d", p->name, sig ));
-#endif
-	KERNEL_DEBUG("'%s': fatal error, trying to clean up", p->name );
+	//struct proc *p = get_curproc();
+	print_context(sig);
+	//KERNEL_DEBUG("'%s': fatal error, trying to clean up", p->name );
 	ferr = sig;
-	k_exit(0);
+	S.clients_exiting = 0;
+	C.shutdown |= EXIT_MAINLOOP;
+	dispatch_shutdown( RESTART_XAAES, 0);
 }
 #endif
 
@@ -1178,17 +1179,13 @@ helpthread_entry(void *c)
 				client->waiting_for = MU_MESAG|XAWAIT_MULTI;
 // 				BLOG((true, "enter block %lx", client->waiting_pb->addrin[0]));
 				(*client->block)(client, 0);
-// 				BLOG((true, "..."));
 				if (*t)
 				{
-// 					display("client will terminate");
 					break;
 				}
 			}
-// 			display("broke from while");
 		}
 
-// 		display("remove htd");
 		htd = lookup_xa_data_byname(&client->xa_data, HTDNAME);
 		if (htd)
 			delete_xa_data(&client->xa_data, htd);
@@ -1196,21 +1193,16 @@ helpthread_entry(void *c)
 		while (dispatch_cevent(client))
 			;
 
-// 		display(" exit client");
 		exit_client(0, client, 0, false, false);
 
-// 		display("detach extension");
 		detach_extension(NULL, XAAES_MAGIC);
-// 		display(" .. done");
 	}
 	if (C.Hlp_pb)
 	{
-// 		display("free pb");
 		kfree(C.Hlp_pb);
 		C.Hlp_pb = NULL;
 	}
 	C.Hlp = NULL;
-// 	display("C.HLP exiting!!");
 	kthread_exit(0);
 }
 
@@ -1401,27 +1393,43 @@ kick_shutdn_if_last_client(void)
 	}
 }
 
+static int in_ce_dispatch_shutdown = 0;
 void _cdecl
 ce_dispatch_shutdown(enum locks lock, struct xa_client *client, bool b)
 {
-		short r = 0;
-		char *s;
-		switch( (short)b & (RESTART_XAAES | HALT_SYSTEM) )
+	short r = 0, def = 1;
+	char *s;
+	if( in_ce_dispatch_shutdown )	// no clue why this happens ..
+	{
+		return;
+	}
+	in_ce_dispatch_shutdown = 1;
+	switch( (short)b & (RESTART_XAAES | HALT_SYSTEM) )
+	{
+	case RESTART_XAAES:
+		s = xa_strings[ASK_RESTART_ALERT];
+	break;
+	case HALT_SYSTEM:
+		if( b & 0x400 )
 		{
-		case RESTART_XAAES:
-			s = xa_strings[ASK_RESTART_ALERT];
-		break;
-		case HALT_SYSTEM:
-			s = xa_strings[ASK_SHUTDOWN_ALERT];
-		break;
-		default:
-			s = xa_strings[ASK_QUIT_ALERT];
+			s = "[2][XaAES had a problem][Continue|Halt]";
+			def = 2;
+			b &= ~0x400;
 		}
+		else
+			s = xa_strings[ASK_SHUTDOWN_ALERT];
+	break;
+	default:
+		s = xa_strings[ASK_QUIT_ALERT];
+	}
 
-		r = xaaes_do_form_alert( lock, C.Hlp, 1, s);
-		if( r != 2 )
-			return;
+	r = xaaes_do_form_alert( lock, C.Hlp, def, s);
+	if( r == 2 )
+	{
+		S.clients_exiting = 0;
 		dispatch_shutdown((short)b, 0);
+	}
+	in_ce_dispatch_shutdown = 0;
 }
 
 /*
@@ -1528,6 +1536,23 @@ void set_tty_mode( short md )
 #endif
 }
 
+void show_bubble( void *str )
+{
+#if WITH_BBL_HELP
+	union msg_buf msg;
+	short br, xr, yr;
+	check_mouse( C.Aes, &br, &xr, &yr );
+	msg.m[0] = BUBBLEGEM_SHOW;
+	msg.m[1] = C.AESpid;
+	msg.m[2] = 0;
+	msg.m[3] = xr;
+	msg.m[4] = yr;
+	msg.sb.p56 = str;
+	msg.m[7] = 0;
+	xa_bubble( 0, bbl_process_event, &msg, C.AESpid );
+#endif
+}
+
 void load_grd( void *fn )
 {
 #if WITH_GRADIENTS
@@ -1561,7 +1586,7 @@ void load_bkg_img( void *fn )
 void
 k_main(void *dummy)
 {
-	int wait = 1;
+	int wait = 1, pferr;
 	unsigned long default_input_channels;
 	struct tty *tty;
 
@@ -1570,6 +1595,7 @@ k_main(void *dummy)
 	stack_align |= (check_stack_alignment(stk) << 4);
 #endif
 	/* test if already running */
+	in_ce_dispatch_shutdown = 0;
 	if( p_semaphore( SEMGET, XA_SEM, 0 ) != EBADARG )
 	{
 		display("XaAES already running!" );
@@ -1599,14 +1625,8 @@ k_main(void *dummy)
 
 	if (cfg.naes_cookie)
 	{
-		install_cookie( (void**)&c_naes, (void*)&naes_cookie, sizeof(*c_naes), C_nAES );
+		install_cookie( (void**)&c_naes, (void*)&naes_cookie, sizeof(*c_naes), C_nAES, true );
 	}
-#if WITH_BBL_HELP
-	if (cfg.xa_bubble)
-	{
-		xa_bubble( 0, bbl_enable_bubble, 0, 0 );
-	}
-#endif
 	C.reschange = NULL;
 #if 0
 	{
@@ -1690,6 +1710,8 @@ k_main(void *dummy)
 	if (!(next_res & 0x80000000))
 		next_res = cfg.videomode;
 
+	pferr = ferr;
+
 	if ((ferr = k_init(next_res)) != 0)
 	{
 		display(/*00000013*/"ERROR: k_init failed!");
@@ -1719,7 +1741,7 @@ k_main(void *dummy)
 		goto leave;
 	}
 
-	BLOG((0,"alert:%ld, KBD:%ld", C.alert_pipe, C.KBD_dev ));
+	BLOG((0,"alert:%ld, KBD:%ld,pferr=%d", C.alert_pipe, C.KBD_dev, pferr ));
 
 	/* initialize mouse */
 	if (!init_moose())
@@ -1778,7 +1800,8 @@ k_main(void *dummy)
 		ALERT(( "WARNING:your stack is odd!" ));
 	}
 #endif
-	post_cevent(C.Hlp, CE_start_apps, NULL,NULL, 0,0, NULL,NULL);
+	if( !pferr )
+		post_cevent(C.Hlp, CE_start_apps, NULL,NULL, 0,0, NULL,NULL);
 
 	/*
 	 * console-output:
@@ -1796,6 +1819,10 @@ k_main(void *dummy)
 	default_input_channels |= 1UL << C.alert_pipe;	/* Monitor the system alert pipe */
 	tty = (struct tty *)C.Aes->p->p_fd->ofiles[C.KBD_dev]->devinfo;
 
+	if( pferr )
+	{
+		post_cevent(C.Hlp, ceExecfunc, ce_dispatch_shutdown, NULL, HALT_SYSTEM | 0x400, 1, NULL, NULL);
+	}
 	reset_about();
 	post_cevent(C.Hlp, ceExecfunc, open_about,NULL, 0,0, NULL,NULL);
 	/*
@@ -1992,7 +2019,6 @@ k_exit(int wait)
 		post_cevent(C.Hlp, CE_at_restoresigs, NULL, NULL, 0,0, NULL, NULL);
 		yield();
 	}
-// 	display("after yield");
 
 	if (svmotv)
 	{
@@ -2005,14 +2031,12 @@ k_exit(int wait)
 			vex_wheelv(C.P_handle, svwhlv, &h);
 	}
 
-// 	display("k_shutdown..");
 	k_shutdown();
 	if (wait)
 	{
 		display("XaAES: press any key to continue ...");
 		_c_conin();
 	}
-// 	display("done");
 
 	if (c_naes)
 	{
@@ -2022,13 +2046,11 @@ k_exit(int wait)
 	if( cfg.xa_bubble )
 		xa_bubble( 0, bbl_disable_and_free, 0, 0 );
 #endif
-// 	display("unreg trap2");
 	/*
 	 * deinstall trap #2 handler
 	 */
 	if(register_trap2(XA_handler, 1, 0, 0))
 		BLOG((false, "unregister trap handler failed"));
-// 	display("done");
 
 	if( my_global_aes[2] != -1 )
 	{
@@ -2060,10 +2082,11 @@ k_exit(int wait)
 	{
 		f_close(C.alert_pipe);
 	}
+	BLOG((1,"wake loader: %lx;shutdown=%x", (long)&loader_pid, C.shutdown));
 	wake(WAIT_Q, (long)&loader_pid);
 
 	/* XXX todo -> module_exit */
-// 	display("kthread_exit...");
+
 
 	if (C.KBD_dev > 0)
 	{
