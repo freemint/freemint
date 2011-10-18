@@ -6,7 +6,8 @@ typedef enum{
 	bbl_disable_and_free,
 	bbl_get_status,
 	bbl_close_bubble1,
-	bbl_close_bubble2
+	bbl_close_bubble2,
+	bbl_tmp_inact
 }BBL_MD;
 
 typedef enum{
@@ -14,12 +15,14 @@ typedef enum{
 	bs_inactive,
 	/* from here it's running */
 	bs_closed,
-	bs_open
+	bs_open,
+	bs_tmpinact
 
 }BBL_STATUS;
 
 BBL_STATUS xa_bubble( enum locks lock, BBL_MD md, union msg_buf *msg, short destID );
 void XA_bubble_event(enum locks lock, struct c_event *ce, bool cancel);
+void display_launched( enum locks lock, char *str );
 
 #define BBL_LLEN	32
 #define BBL_MAXLLEN	36
