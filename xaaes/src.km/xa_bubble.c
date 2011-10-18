@@ -1,26 +1,61 @@
 #include "xa_appl.h"
-#include "xacookie.h"
-#include "c_window.h"
-#include "xa_bubble.h"
 
 #if WITH_BBL_HELP
+#include "menuwidg.h"
+#include "xacookie.h"
+#include "c_window.h"
 #define BBL_MAXLEN	255
+
+#include "xa_bubble.h"
 
 /* if modal HIDE should come from client, but taskbar sends it too late so we handle mouse-move if ALWAYS_HIDE 1 */
 #define ALWAYS_HIDE 1
 
+static void set_bbl_vdi( struct xa_vdi_settings *v )
+{
+	v->api->f_color(v, G_WHITE);
+	v->api->wr_mode(v, MD_REPLACE);
+	v->api->t_color(v, G_BLACK);
+	v->api->l_color(v, G_BLACK);
+	v->api->t_effects(v, 0);
+}
+
+static void skip_trailing_blanks( unsigned char *str )
+{
+	unsigned char *p;
+	for( p = str + strlen((char*)str)-1; *p == ' '; p-- )
+	;
+	*(p+1) = 0;
+}
+
+extern MFORM M_POINTSLIDE_MOUSE;
+static short radius = 16, roff = 4;
+/* fVDI has different rboxes */
+static short xtxt_add, rox, wadd;
+
+static short Style;
+static BGEM bgem =
+{
+	C_BGEM,
+	18,
+	7,
+	0,
+	&M_POINTSLIDE_MOUSE,
+	200
+};
+
 /*
  * if no | in str break lines at BBL_LLEN, avoid too long lines > BBL_MAXLLEN
+ * return #of lines
  */
-static int count_pipes( unsigned char *str, int *maxl )
+static int format_string( unsigned char *str, int *maxl )
 {
-	int ret = 0, cnt, l, ml, hasnop = !strchr( (char*)str, '|' );
+	int ret = 1, cnt, l, ml, hasnop = !strchr( (char*)str, '|' ), fl_longest = 1;
 	unsigned char *lastbl = 0;
 	for( cnt = ml = l = 0; *str && cnt < BBL_MAXLEN; str++, l++, cnt++ )
 	{
 		if( *str == '|' || (hasnop && l > BBL_LLEN && *str <= ' ') )
 		{
-			ret++;
 			if( hasnop )
 			{
 				if( l > BBL_MAXLLEN && lastbl && lastbl < str )
@@ -35,83 +70,298 @@ static int count_pipes( unsigned char *str, int *maxl )
 				}
 			}
 			else
-				if( *(str-1) == ' ')	/* trailing blank */
+			{
+				if( *(str-1) == ' ' )	/* trailing blank */
 				{
 					l--;
 				}
+			}
 
 			if( l > ml )
+			{
+				if( ret > 1 )
+					fl_longest = 0;
 				ml = l;
+			}
 			l = -1;
+			ret++;
 		}
 		if( *str == ' ' )
 			lastbl = str;
 	}
 	if( cnt == BBL_MAXLEN )
+	{
 		*str = 0;
-	if( l > ml )
+	}
+	if( l >= ml )
+	{
+		fl_longest = 1;
 		ml = l;
+	}
+	if( C.fvdi_version && Style == 2 && fl_longest )
+		ml++;
+	/*if( Style == 2 && ml < 6 )
+	{
+		char s[8];
+		short d = (6 - ml)/2 + 1;
+
+		memset( s, ' ', 6);
+		s[7] = 0;
+		memcpy( s + d, start, ml );
+		strcpy( start, s );
+		ml = 6;
+	}*/
+
 	if( maxl )
 	{
 		*maxl = ml;
 	}
+
 	return ret;
 }
-static int open_bbl_window( enum locks lock, unsigned char *str, short x, short y )
+
+static void set_bbl_rect_bbl( short np, RECT *r, RECT *ri, RECT *rw, short x, short y )
 {
-	int maxl;
-	int np = count_pipes( str, &maxl ) + 1;
-	short th;
-	RECT r;
-	struct xa_vdi_settings *v = C.Aes->vdi_settings;
+	r->x -= roff;
+	r->y -= roff;
+	r->h += roff * 2;
 
-	r.x = x + 16;
-	r.y = y + 16;
-	v->api->t_font( v, C.Aes->options.standard_font_point, cfg.font_id);
-	v->api->t_extent( v, "X", &r.w, &r.h );
-	r.w *= maxl;
-	th = r.h;
-	r.w += 12;
-	r.h *= np;
-	r.h += 10;
-	if( r.x + r.w > screen.r.w )
-		r.x = screen.r.w - r.w - 4;
-	if( r.y + r.h > screen.r.h - 32 )
-		r.y = screen.r.h - r.h - ( 4 + 32);
-	if( r.y < 4 )
-		r.y = 4;
-	if( r.x < 4 )
-		r.x = 4;
+	ri->x = r->x + radius;
+	ri->y = r->y + radius;
+	ri->w = r->w - radius * 2;
+	ri->h = r->h - radius * 2;
 
-	if( !open_window(lock, bgem_window, r) )
+	rw->x = r->x - 10 + wadd;
+	if( x > r->x )
+		rw->w = r->w + (x - r->x) + 8;
+	else
+		rw->w = r->w + (r->x - x) + 8;
+	if( y > r->y )
 	{
-		BLOG((0,"open_bbl_window: could not open window"));
-		return 1;
+		rw->y = r->y - 2;
+		rw->h = (y - r->y) + 4;
+	}
+	else
+	{
+		rw->y = y;
+		rw->h = r->h + (r->y - y) + 4;
 	}
 
-	v->api->wr_mode(v, MD_REPLACE);
-	v->api->f_color(v, G_WHITE);
-	v->api->t_color(v, G_BLACK);
-	v->api->gbar( v, 0, &r );
-	for( ; np; np--, r.y += th )
+}
+
+static short set_bbl_rect( short np, short x, short y, short maxl, RECT *r, RECT *ro )
+{
+
+	short rx = rox;
+	if( Style == 2 && maxl < 6 )
+	{
+		rx += (7 - maxl) / 2 * screen.c_max_w;
+		maxl = 6;
+	}
+
+	ro->h = r->h;
+
+	r->x = x + 8;
+	r->y = y + 16;
+	r->w *= (maxl+1);
+
+	r->h *= np;
+	r->h += 4;
+
+	if( Style == 3 )
+	{
+		r->y = 0;
+		ro->x = r->x = 2;
+		r->h = screen.c_max_h + 2;
+	}
+	else if( Style == 1 )
+	{
+		if( r->y + r->h >= screen.r.h - get_menu_height() )	//22 )
+		{
+			r->y = y - r->h - get_menu_height();//	16;
+			r->x = x + 4;
+		}
+	}
+
+	if( r->x + r->w > screen.r.w )
+		r->x = screen.r.w - r->w - 10;
+	if( Style != 3 )
+	{
+		if( r->y < 4 )
+			r->y = 4;
+		if( r->x < rx )
+			r->x = rx;
+		ro->x = r->x + rx;
+	}
+	ro->y = r->y;
+	ro->w = 0;
+	return maxl;
+}
+
+static void draw_bbl_window( struct xa_vdi_settings *v, RECT *r, RECT *ri, short x, short y )
+{
+	switch( Style )
+	{
+	case 1:	// tooltip
+	case 3:	// app
+		v->api->gbar( v, 0, r );
+		v->api->box( v, 0, r->x, r->y, r->w, r->h );
+	break;
+	case 2:	// balloon
+	{
+		short fxy[8], yd;
+		short m = 0, n = 0, xd = 20;
+
+		/* filled rect */
+		fxy[0] = r->x;
+		fxy[1] = r->y-1;
+		fxy[2] = r->x + r->w + wadd;
+		fxy[3] = r->y + r->h;
+		//v->api->f_color(v, G_BLUE);
+		v_rfbox( v->handle, fxy );
+		//v->api->f_color(v, G_WHITE);
+
+		/* border rect */
+		v_rbox( v->handle, fxy );
+
+
+		/* arrow */
+		if( x >= r->x + (r->w/2))
+		{
+			n = 1;	// left
+		}
+		if( y > r->y + r->h )	// up
+		{
+			m = 1;	// up
+			yd = y - (r->y+r->h) + xd;
+		}
+		else		// down
+			yd = r->y - y;
+
+		fxy[0] = x;
+		fxy[1] = y;
+		if( n )
+			fxy[2] = x - yd - 2;
+		else
+			fxy[2] = x + yd - 10;
+
+		if( m )
+			fxy[3] = r->y + r->h;
+		else
+			fxy[3] = r->y;
+
+		fxy[4] = fxy[2];
+		fxy[2] += xd;
+		fxy[5] = fxy[3];
+		fxy[6] = x;
+		fxy[7] = y;
+
+		hidem();
+
+		//v->api->f_color(v, G_CYAN);
+		v_fillarea( v->handle, 3, fxy );
+		//v->api->f_color(v, G_BLUE);
+		v_pline(v->handle, 2, fxy);
+		//v->api->f_color(v, G_GREEN);
+		v_pline(v->handle, 2, fxy+4);
+
+		showm();
+	}
+	break;
+	}
+}
+
+static void bbl_text( struct xa_vdi_settings *v, RECT *ro, unsigned char *str, short np )
+{
+	short yt = ro->y, rx = ro->x, h = ro->h, to;
+	if( Style == 2 )
+		rx += xtxt_add;
+
+	if( Style == 3 )
+		to = 1;
+	else
+		to = 2;
+	v->api->t_font( v, C.Aes->options.standard_font_point, cfg.font_id);
+	for( ; np; np--, yt += h )
 	{
 		unsigned char *s = (unsigned char *)strchr( (char*)str, '|' );
 		if( s )
 			*s = 0;
-		v_gtext(v->handle, r.x + 4, r.y + 4, (char*)str);
+		skip_trailing_blanks(str);
+		v_gtext(v->handle, rx, yt + to, (char*)str);
 		if( s )
 			str = s + 1;
 		else
 			break;
 	}
+}
+
+static int open_bbl_window( enum locks lock, unsigned char *str, short x, short y )
+{
+	int maxl;
+	int np = format_string( str, &maxl );
+	RECT r, ro, rw;
+	struct xa_vdi_settings *v = C.Aes->vdi_settings;
+	short y2 = y;
+
+	RECT ri;
+
+	v->api->t_font( v, C.Aes->options.standard_font_point, cfg.font_id);
+	r.w = v->cell_w;
+	r.h = v->cell_h;
+
+	maxl = set_bbl_rect( np, x, y, maxl, &r, &ro );
+	if( Style == 2 )
+	{
+		if( r.y > y )	// prefer up
+		{
+			r.y -= ( r.h + 42 );
+			ro.y -= ( r.h + 42 );
+		}
+		if( r.y < 20 )	// too high
+		{
+			y2 += 2;	// avoid window covering mouse-point
+			r.y = ro.y = y + 42;
+		}
+		else
+		{
+			y2 -= 2;
+		}
+		rw.y = y2;
+		set_bbl_rect_bbl( np, &r, &ri, &rw, x, y2);
+		// control-box
+		//v->api->box( v, 0, rw.x, rw.y, rw.w, rw.h );
+	}
+	else
+		rw = r;
+
+	if( !open_window(lock, bgem_window, rw) )
+	{
+		return 1;
+	}
+	bgem_window->window_status |= XAWS_FLOAT;
+	set_bbl_vdi( v );
+	//v->api->set_clip( v, &rw);
+	draw_bbl_window( v, &r, &ri, x, y2 );
+	bbl_text( v, &ro, str, np );
 
 	return 0;
 }
-
+#if 0
+static void xstrncpy( unsigned char *dst, unsigned char *src, long len )
+{
+	while( *src && len-- )
+	{
+		*dst++ = *src++;
+	}
+	if( len )
+		*dst = 0;
+}
+#endif
 BBL_STATUS xa_bubble( enum locks lock, BBL_MD md, union msg_buf *msg, short destID )
 {
 	static BGEM *c_bgem = 0;
-	static int XaBubble = bs_none, XaModal = 0, in_xa_bubble = -1;
+	static int XaBubble = bs_none, OldState = bs_none, XaModal = 0, in_xa_bubble = -1;
 
 	static union msg_buf m;
 	static short intin[8], intout[8], control[8], global[8];
@@ -126,6 +376,8 @@ BBL_STATUS xa_bubble( enum locks lock, BBL_MD md, union msg_buf *msg, short dest
 		/* destID=1 means if in_xa_bubble never close */
 		if( destID == 1 && in_xa_bubble != -1 )
 			return bs_none;
+		if( Style == 3 )
+			return bs_closed;
 		return XaBubble;
 	}
 
@@ -136,7 +388,7 @@ BBL_STATUS xa_bubble( enum locks lock, BBL_MD md, union msg_buf *msg, short dest
 	}
 	in_xa_bubble = get_curproc()->pid;
 	ret = 0;
-	if( md == bbl_send_request && XaBubble == bs_open )	//|| get_curproc()->pid == 0 )
+	if( md == bbl_send_request && Style != 3 && XaBubble == bs_open )
 		goto xa_bubble_ret;	// bubble open: no request
 	if( msg )
 	{
@@ -146,6 +398,15 @@ BBL_STATUS xa_bubble( enum locks lock, BBL_MD md, union msg_buf *msg, short dest
 
 	switch( md )
 	{
+	case bbl_tmp_inact:
+		if( XaBubble != bbl_tmp_inact )
+		{
+			OldState = XaBubble;
+			XaBubble = bbl_tmp_inact;
+		}
+		else
+			XaBubble = OldState;
+	goto xa_bubble_ret;
 	case bbl_process_event:
 		switch( m.m[0] )
 		{
@@ -160,17 +421,33 @@ BBL_STATUS xa_bubble( enum locks lock, BBL_MD md, union msg_buf *msg, short dest
 			XaBubble = bs_closed;
 		goto xa_bubble_ret;
 		case BUBBLEGEM_SHOW:
+			if( Style == 3 )
+			{
+				close_window( lock, bgem_window );
+				XaBubble = bs_closed;
+			}
 			if( XaBubble == bs_closed )
 			{
-				unsigned char bbl_buf[BBL_MAXLEN+1];
-				unsigned long l5 = (unsigned long)m.m[5] << 16L, l6 = (l5 | ((unsigned long)m.m[6] & 0xffffL));
-				char *str = (char*)l6;
+				unsigned char bbl_buf[BBL_MAXLEN+1], *bp = bbl_buf;
+				unsigned char *str = m.sb.p56;
 				if( !str || !*str )
 				{
 					ret = -2;
 					goto xa_bubble_ret;
 				}
-				strncpy( (char*)bbl_buf, str, sizeof(bbl_buf)-1);
+				if( m.m[7] & BGS7_DISPCL )
+				{
+					Style = 3;
+					for( ; *str == ' '; str++ );
+					skip_trailing_blanks(str);
+					*bp++ = ' ';
+				}
+				else
+					Style = cfg.xa_bubble;
+
+				strncpy( (char*)bp, (char*)str, BBL_MAXLEN );
+				//xstrncpy( bp, str, BBL_MAXLEN );
+				bbl_buf[BBL_MAXLEN] = 0;
 				c_bgem->active = 1;
 				if( open_bbl_window( lock,  bbl_buf, m.m[3], m.m[4]) )
 				{
@@ -181,7 +458,7 @@ BBL_STATUS xa_bubble( enum locks lock, BBL_MD md, union msg_buf *msg, short dest
 				XaModal = (m.m[7] & BGS7_USRHIDE);
 				XaBubble = bs_open;
 
-				//if( !XaModal )
+				if( destID != C.AESpid /* && !XaModal*/ )
 				{
 					/* ACK-message comes after (unmodal) close */
 					intin[0] = m.m[1];	//destID
@@ -189,6 +466,8 @@ BBL_STATUS xa_bubble( enum locks lock, BBL_MD md, union msg_buf *msg, short dest
 					m.m[1] = C.AESpid;
 					m.m[2] = m.m[3] = m.m[4] = 0;
 				}
+				else
+					intin[0] = 0;
 			}
 		break;
 		case BUBBLEGEM_ACK:
@@ -197,19 +476,25 @@ BBL_STATUS xa_bubble( enum locks lock, BBL_MD md, union msg_buf *msg, short dest
 	break;
 	case bbl_enable_bubble:
 	{
-		//static MFORM bms;
-		extern  MFORM M_POINTSLIDE_MOUSE;
-		BGEM bgem =
+		XaBubble = bs_closed;
+
+		if( !install_cookie( (void**)&c_bgem, (void*)&bgem, sizeof(*c_bgem), C_BGEM, false ) )
 		{
-			C_BGEM,
-			18,
-			7,
-			0,
-			&M_POINTSLIDE_MOUSE,
-			200
-		};
-		if( !install_cookie( (void**)&c_bgem, (void*)&bgem, sizeof(*c_bgem), C_BGEM ) )
 			XaBubble = bs_closed;
+			/* fVDI has a different rbox */
+			if( C.fvdi_version )
+			{
+				rox = 4;
+				xtxt_add = 0;
+				wadd = 4;
+			}
+			else
+			{
+				rox = 3;
+				xtxt_add = -2;
+				wadd = 0;
+			}
+		}
 	}
 	break;
 	case bbl_disable_bubble:
@@ -224,19 +509,24 @@ BBL_STATUS xa_bubble( enum locks lock, BBL_MD md, union msg_buf *msg, short dest
 	goto xa_bubble_ret;
 	case bbl_close_bubble1:
 	case bbl_close_bubble2:
-		if( msg || destID )
+		if( msg )
 		{
 			ALERT(( "xa_bubble:msg=%lx,destID=%d (md=%d)", msg, destID, md));
 			ret = -3;
 			goto xa_bubble_ret;
 		}
-		if( XaBubble == bs_open /*&& XaModal == 0*/ )
+		if( XaBubble == bs_open && !(S.open_nlwindows.top->dial & created_for_ALERT) /*&& XaModal == 0*/ )
 		{
 			close_window( lock, bgem_window );
 			c_bgem->active = 0;
+			Style = cfg.xa_bubble;
 
-			/* send ACK-message saved at SHOW */
-			XA_appl_write( lock, C.Hlp, &pb );
+			if( intin[0] )
+			{
+				/* send ACK-message saved at SHOW */
+				XA_appl_write( lock, C.Hlp, &pb );
+				XA_appl_write( lock, C.Hlp, &pb );
+			}
 			XaBubble = bs_closed;
 			goto xa_bubble_ret;
 		}
@@ -249,10 +539,35 @@ xa_bubble_ret:
 	return ret;
 }
 
+void display_launched( enum locks lock, char *str )
+{
+	//return;
+	union msg_buf m = {{0}};
+	if( xa_bubble( 0, bbl_get_status, 0, 1 ) == bs_open )
+	{
+		xa_bubble( 0, bbl_close_bubble1, 0, 0 );
+	}
+	m.m[0] = BUBBLEGEM_SHOW;
+	m.m[1] = C.AESpid;
+	m.m[7] = BGS7_DISPCL;
+	///*m.m[3] =*/ m.m[4] = -16;
+	m.sb.p56 = str;
+
+	xa_bubble( lock, bbl_process_event, &m, C.AESpid );
+}
+
 void
 XA_bubble_event(enum locks lock, struct c_event *ce, bool cancel)
 {
-	xa_bubble( 0, bbl_close_bubble1, 0, 0 );
+	switch( ce->d0 )
+	{
+	case 0:
+		xa_bubble( 0, bbl_close_bubble1, 0, 5 );
+	break;
+	case 1:
+		xa_bubble( 0, bbl_enable_bubble, 0, 0 );
+	break;
+	}
 }
 
 #endif
