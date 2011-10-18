@@ -310,6 +310,17 @@ int switch_keyboard( char *tbname )
 			return 0;
 }
 
+#if TST_BE
+static void bus_error(void)
+{
+	long *sp = (long*)get_sp();
+	 DBG((1,"%s:BUS-ERROR at bus_error:%lx,sp=%lx:%lx", get_curproc()->name, bus_error, sp, *sp));
+	 KDBG(("BUS-ERROR at bus_error:%lx", bus_error));
+	*(long*)-3L = 44;
+	 KDBG(("BUS-ERROR OK"));
+	 DBG((1,"BUS-ERROR at bus_error OK"));
+}
+#endif
 
 /******************************************************************************
  from "unofficial XaAES":
@@ -463,6 +474,12 @@ kernel_key(enum locks lock, struct rawkey *key)
 				key->raw.conin.state &= ~(K_RSHIFT|K_LSHIFT);
 		}
 
+#if WITH_BBL_HELP
+		if( nk != 'D' )	// allow screenshot
+		{
+			xa_bubble( lock, bbl_close_bubble2, 0, 0 );
+		}
+#endif
 		switch (nk)
 		{
 		case NK_TAB:				/* TAB, switch menu bars */
@@ -580,7 +597,12 @@ kernel_key(enum locks lock, struct rawkey *key)
 			TOP_WINDOW->send_message(lock, TOP_WINDOW, NULL, AMQ_NORM, QMF_CHKDUP,
 			   WM_FULLED, 0, 0, TOP_WINDOW->handle, 0, 0, 0, 0);
 		return true;
-
+#if TST_BE
+		case NK_ENTER:
+			if( key->raw.conin.state & (K_RSHIFT|K_LSHIFT) )
+				bus_error();
+		break;
+#endif
 #define WGROW	16
 		case NK_UP:
 		case NK_DOWN:
@@ -915,10 +937,6 @@ kernel_key(enum locks lock, struct rawkey *key)
 void
 keyboard_input(enum locks lock)
 {
-#if WITH_BBL_HELP
-	if( cfg.xa_bubble )
-		xa_bubble( lock, bbl_close_bubble2, 0, 0 );
-#endif
 	/* Did we get some keyboard input? */
 #if EIFFEL_SUPPORT
 	while (1)
@@ -927,6 +945,7 @@ keyboard_input(enum locks lock)
 		struct rawkey key;
 
 		key.raw.bcon = f_getchar(C.KBD_dev, RAW);
+
  		//DBG((0,"f_getchar: 0x%08lx, AES=%x, NORM=%x", key.raw.bcon, key.aes, key.norm));
 // 		display("f_getchar: 0x%08lx, AES=%x, NORM=%x", key.raw.bcon, key.aes, key.norm);
 
@@ -948,6 +967,9 @@ keyboard_input(enum locks lock)
 
 		if (kernel_key(lock, &key) == false )
 		{
+#if WITH_BBL_HELP
+			xa_bubble( lock, bbl_close_bubble2, 0, 0 );
+#endif
 			XA_keyboard_event(lock, &key);
 		}
 #if EIFFEL_SUPPORT
