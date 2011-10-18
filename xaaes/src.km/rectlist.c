@@ -183,7 +183,7 @@ build_rect_list(struct build_rl_parms *p)
 						if( flag )
 						{
 							/* avoid spltting workarea because of menu */
-							if( menu_window && rl_prev->r.y < menu_window->r.h && rl->r.x + rl->r.w == rl_prev->r.x && rl->r.y + rl->r.h == rl_prev->r.y + rl_prev->r.h )
+							if( cfg.menu_bar == 1 && menu_window && rl_prev->r.y < menu_window->r.h && rl->r.x + rl->r.w == rl_prev->r.x && rl->r.y + rl->r.h == rl_prev->r.y + rl_prev->r.h )
 							{
 								rl->r.w += rl_prev->r.w;
 								rl_prev->r.h = rl->r.y - rl_prev->r.y;
