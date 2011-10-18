@@ -1012,10 +1012,11 @@ ignore(int sig)
 
 static void print_context(int sig)
 {
+#ifdef BOOTLOG
 	struct proc *p = get_curproc();
-	//long *sspcur = (long*)p->ctxt[CURRENT].ssp;
 
 	BLOG((true,"exception %d for %s pc:%lx addr:%lx", sig, p->name, p->exception_pc, p->exception_addr));
+#endif
 }
 
 static void
