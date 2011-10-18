@@ -120,6 +120,10 @@
 #define CHECK_STACK	1
 #endif
 
+/* some debug-code to produce a bus-error */
+#ifndef TST_BE
+#define TST_BE 0
+#endif
 
 #if __GNUC__ > 2
 /* set 1 if you wish more inlinig
