@@ -51,6 +51,9 @@
 #include "taskman.h"
 #include "widgets.h"
 #include "xa_appl.h"
+#if WITH_BBL_HELP
+#include "xa_bubble.h"
+#endif
 #include "xa_form.h"
 #include "xa_graf.h"
 #include "xa_menu.h"
@@ -1062,12 +1065,17 @@ screen_dump(enum locks lock, struct xa_client *client, bool open)
 			short b = 0, x, y;
 			bool doit = true, snapmsg = false;
 			AESPB *a = C.Hlp_pb;
+			int pid = -1;
 
+			hidem();
 			C.update_lock = client->p;
 			C.updatelock_count++;
 
 			do_form_alert(lock, client, 4, xa_strings[SDALERT], XAAESNAME);
 			Block(client, 0);
+#if WITH_BBL_HELP
+			xa_bubble( 0, bbl_tmp_inact, 0, 0 );
+#endif
 
 // 			display("intout %d", C.Hlp_pb->intout[0]);
 
@@ -1099,50 +1107,95 @@ screen_dump(enum locks lock, struct xa_client *client, bool open)
 					C.updatelock_count--;
 					C.update_lock = NULL;
 					unlock_screen(client->p);
-					do_form_alert(lock, client, 1, /*scrn_snap_twc*/xa_strings[SNAP_ERR2], XAAESNAME);
+					do_form_alert(lock, client, 1, xa_strings[SNAP_ERR2], XAAESNAME);
 					doit = false;
 				}
 			}
 			else
 				doit = false;
 
-			if ((r.w | r.h) && doit) //C.Hlp_pb->intout[0] != 4)
+			if (doit)
 			{
-				msg[4] = r.x;
-				msg[5] = r.y;
-				msg[6] = r.w;
-				msg[7] = r.h;
-				if( dest_client )
+				if (r.w > 0 && r.h > 0)
 				{
-					send_a_message(lock, dest_client, AMQ_NORM, 0, (union msg_buf *)msg);
-					snapmsg = true;
+					if( dest_client )
+					{
+						msg[4] = r.x;
+						msg[5] = r.y;
+						msg[6] = r.w;
+						msg[7] = r.h;
+						send_a_message(lock, dest_client, AMQ_NORM, 0, (union msg_buf *)msg);
+						snapmsg = true;
+					}
+					else
+					{
+						struct proc *p;
+						long sleep_tm = 1;	//s
+						char cmdlin[32] = " 1 0 0\0";
+
+						/* <wait> <key> <verbose>
+						 * key: 0 -> screen
+						 	      2 -> top-window: work-area
+						 	      6 -> top-window: whole-area
+						 */
+						//sprintf( cmdlin, 2, "%2ld", sleep_tm );
+						//cmdlin[2] = ' ';
+
+						if (a->intout[0] == 3)	/* top window */
+							*(cmdlin + 3) = '2';
+						else if (a->intout[0] == 1)	/* box */
+						{
+							int i = sprintf( cmdlin + 6, sizeof(cmdlin)-1, " %d %d %d %d\0", r.x, r.y, r.w, r.h );
+							*(cmdlin + 3) = '8';
+							*cmdlin = i + 6;
+						}
+						else
+							*(cmdlin + 3) = '0';	/* full screen */
+
+						/* todo: store blit-screenshot to file, snapper converts this */
+						pid = create_process(cfg.snapper, cmdlin, NULL, &p, 0, NULL);
+						if( pid == 0 && p )
+						{
+							short term = 0;
+							long pr = -1;
+							short br, xr, yr, xm, ym;
+
+							pid = p->pid;
+							for( sleep_tm *= 1000; sleep_tm; sleep_tm-- )
+								nap(1000);	//ms
+							/* todo: timeout! */
+#if 1
+							check_mouse(client, &br, &xm, &ym);
+							xm = xr;
+							ym = yr;
+							for( term = 0; term < 10000 && !(pr = ikill( pid, 0)); term++ )
+							{
+								check_mouse(client, &br, &xr, &yr);
+								if( term > 3 && xr && (xr != xm || yr != ym) )
+									break;
+								nap( 1000 );
+								xm = xr;
+								ym = yr;
+							}
+							if( pr == 0 )	// snapper still there
+							{
+								char s[128];
+								pr = ikill( pid, SIGTERM );
+								yield();
+								pr = ikill( pid, SIGKILL );
+								sprintf( s, sizeof(s)-1, "[1][%s: killed][OK]", cfg.snapper, pid );
+								do_form_alert(lock, client, 1, s, XAAESNAME );
+							}
+#endif
+						}
+					}
 				}
 				else
 				{
-					struct proc *p;
-					char cmdlin[32] = "60 0 0\0";
-					//*cmdlin = 6;
-					//*(cmdlin + 6) = 0;
-					/* <wait> <key> <verbose>
-					 * key: 0 -> screen
-					 	      2 -> top-window: work-area
-					 	      6 -> top-window: whole-area
-					 */
-					if (a->intout[0] == 3)	/* top window */
-						*(cmdlin + 3) = '2';
-					else if (a->intout[0] == 1)	/* box */
-					{
-						int i = sprintf( cmdlin + 6, sizeof(cmdlin)-1, " %d %d %d %d\0", r.x, r.y, r.w, r.h );
-						*(cmdlin + 3) = '8';
-						*cmdlin = i + 6;
-					}
-					else
-						*(cmdlin + 3) = '0';	/* full screen */
-
-					create_process(cfg.snapper, cmdlin, NULL, &p, 0, NULL);
-
+					char s[128];
+					sprintf( s, sizeof(s)-1, "[1][could not snap area:w=%d,h=%d][OK]", r.w, r.h);
+					do_form_alert(lock, client, 1, s, XAAESNAME );
 				}
-// 				xa_graf_mouse(ARROW, NULL,NULL, false);
 			}
 			if( snapmsg == false )
 			{
@@ -1156,6 +1209,10 @@ screen_dump(enum locks lock, struct xa_client *client, bool open)
 				client->waiting_for = XAWAIT_MULTI|MU_MESAG;
 				client->waiting_pb = a;
 			}
+#if WITH_BBL_HELP
+			xa_bubble( 0, bbl_tmp_inact, 0, 0 );
+#endif
+			showm();
 		}
 	}
 	else
@@ -1829,7 +1886,6 @@ static void add_meminfo( struct scroll_info *list, struct scroll_entry *this )
 	uinfo[3] = 0;
 	add_kerinfo( "u:/kern/meminfo", list, this, to, &sc, PROCINFLEN, 5, NORMREDRAW, uinfo, false, NULL, 0 );
 }
-
 void
 open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 {
