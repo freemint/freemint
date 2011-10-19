@@ -71,7 +71,7 @@ k_shutdown(void)
 
 	if (!ferr && C.Hlp)
 	{
-		volatile struct xa_client **h = (volatile struct xa_client **)&C.Hlp;
+		const volatile struct xa_client **h = (const volatile struct xa_client **)(const void**)&C.Hlp;
 		long l = 0;
 		post_cevent(C.Hlp, CE_at_terminate, NULL, NULL, 0,0, NULL, NULL);
 		while (*h && l++ < 1500)
@@ -121,7 +121,7 @@ k_shutdown(void)
 
 	if (C.Aes->tp)
 	{
-		volatile struct proc **h = (volatile struct proc **)&C.Aes->tp;
+		const volatile struct proc **h = (const volatile struct proc **)(const void**)&C.Aes->tp;
 		post_cevent(C.Aes, CE_at_terminate, NULL,NULL, 0,0, NULL,NULL);
 		while (*h)
 		{
