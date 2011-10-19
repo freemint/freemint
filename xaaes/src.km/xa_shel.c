@@ -45,8 +45,7 @@
 #define STRINGS 1024 /* number of environment variable allowed in xaaes.cnf */
 static char *strings[STRINGS];
 
-//char * const * const get_raw_env(void) { return strings; }
-const char ** get_raw_env(void) { return (const char **)strings; }
+const char ** get_raw_env(void) { return (const char **)(const void**)strings; }
 
 #if GENERATE_DIAGS
 static void display_env(char **env, int which);
