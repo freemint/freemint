@@ -1077,7 +1077,8 @@ k_init(unsigned long vm)
 		if( !bgem_window )
 			return -1;
 		strcpy( bgem_window->wname, "bgem" );
-		bgem_window->x_shadow = bgem_window->x_shadow = 0;
+		bgem_window->x_shadow = 0;
+		bgem_window->x_shadow = 0;
 		xa_bubble( 0, bbl_enable_bubble, 0, 0 );
 	}
 #endif
