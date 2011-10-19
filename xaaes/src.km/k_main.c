@@ -314,8 +314,6 @@ dispatch_cevent(struct xa_client *client)
 			ce, client->cevnt_head, client->cevnt_tail, client->cevnt_count, client->name));
 
 
-// 		(*ce->funct)(0, ce, false);
-
 		if (!(nxt = ce->next))
 			client->cevnt_tail = nxt;
 
@@ -335,7 +333,9 @@ void
 do_block(struct xa_client *client)
 {
 	if( client->status & 0x00010000L )
+	{
 		return;
+	}
 #if 0
 	if ((client->i_xevmask.ev_0 & XMU_FSELECT))
 	{
@@ -458,21 +458,13 @@ iBlock(struct xa_client *client, int which)
 
 	client->usr_evnt = 0;
 
-
-// 	if (!a->addrin[0])
-// 		BLOG((true, "iBlock: 0 NULL"));
-
 	while (!client->usr_evnt && (client->irdrw_msg || client->cevnt_count))
 	{
 		if (client->irdrw_msg)
 			exec_iredraw_queue(0, client);
 
-// 	BLOG((true, "iBlock: dispatch 0"));
 		dispatch_cevent(client);
 	}
-
-// 	if (!a->addrin[0])
-// 		BLOG((true, "iBlock: 1 NULL"));
 
 	if (client->usr_evnt)
 	{
@@ -483,20 +475,15 @@ iBlock(struct xa_client *client, int which)
 		}
 		else
 			client->usr_evnt = 0;
-// 	BLOG((true, "leave iBlock"));
 		return;
 	}
 
-// 	BLOG((true, "iBlock: 0 - a = %lx, waiting_pb = %lx", (long)a, client->waiting_pb ? client->waiting_pb->addrin[0] : -1L));
 	/*
 	 * Now check if there are any events to deliver to the
 	 * application...
 	 */
-// 	BLOG((true, "iBlock: check queued 0"));
 	if (check_queued_events(client))
 	{
-// 		if (!a->addrin[0])
-// 			BLOG((true, "iBlock: 2 NULL"));
 		if (a->intout[0] & MU_MESAG)
 		{
 			CHlp_aesmsg(client);
@@ -507,8 +494,6 @@ iBlock(struct xa_client *client, int which)
 		client->waiting_pb = C.Hlp_pb;
 	}
 
-// 	if (!a->addrin[0])
-// 		BLOG((true, "iBlock: 3 NULL"));
 	/*
 	 * Getting here if no more client events are in the queue
 	 * Looping around doing client events until a user event
@@ -521,16 +506,10 @@ iBlock(struct xa_client *client, int which)
 
 		if (client->tp_term)
 		{
-// 			display("iBlock - tp_term set");
-// 	BLOG((true, "leave iBlock"));
 			return;
 		}
 
-// 		if (!a->addrin[0])
-// 			BLOG((true, "iBlock: 4 NULL"));
 		do_block(client);
-// 		if (!a->addrin[0])
-// 			BLOG((true, "iBlock: 5 NULL"));
 
 		/*
 		 * Ozk: This is gonna be the new style of delivering events;
@@ -544,12 +523,9 @@ iBlock(struct xa_client *client, int which)
 			if (client->irdrw_msg)
 				exec_iredraw_queue(0, client);
 
-// 	BLOG((true, "iBlock: dispatch 1"));
 			dispatch_cevent(client);
 		}
 
-// 		if (!a->addrin[0])
-// 			BLOG((true, "iBlock: 6 NULL"));
 		if (client->usr_evnt)
 		{
 			if (client->usr_evnt & 1)
@@ -559,14 +535,9 @@ iBlock(struct xa_client *client, int which)
 			}
 			else
 				client->usr_evnt = 0;
-// 	BLOG((true, "leave iBlock"));
 			return;
 		}
 
-// 		if (!a->addrin[0])
-// 			BLOG((true, "iBlock: 7 NULL"));
-
-// 	BLOG((true, "iBlock: 1 - a = %lx, waiting_pb = %lx", (long)a, client->waiting_pb ? client->waiting_pb->addrin[0] : -1L));
 		if (check_queued_events(client))
 		{
 			if (a->intout[0] & MU_MESAG)
@@ -579,8 +550,6 @@ iBlock(struct xa_client *client, int which)
 			client->waiting_pb = C.Hlp_pb;
 		}
 	}
-// 	if (!a->addrin[0])
-// 		BLOG((true, "iBlock: 8 NULL"));
 	if (client->usr_evnt & 1)
 	{
 		cancel_evnt_multi(client, 6);
@@ -588,7 +557,6 @@ iBlock(struct xa_client *client, int which)
 	}
 	else
 		client->usr_evnt = 0;
-// 	BLOG((true, "leave iBlock"));
 }
 
 void
@@ -1179,11 +1147,13 @@ helpthread_entry(void *c)
 				client->waiting_pb = (AESPB *)pb;
 				client->waiting_for = MU_MESAG|XAWAIT_MULTI;
 // 				BLOG((true, "enter block %lx", client->waiting_pb->addrin[0]));
+ 				//DBG((true, "enter block %lx", client->waiting_pb->addrin[0]));
+ 				//yield();
 				(*client->block)(client, 0);
-				if (*t)
+				/*if (*t)
 				{
 					break;
-				}
+				}*/
 			}
 		}
 
@@ -1993,13 +1963,13 @@ static void
 restore_sigs(void)
 {
 	/* don't reenter on fatal signals */
-	p_signal(SIGILL,   SIG_DFL);
-	p_signal(SIGTRAP,  SIG_DFL);
-	p_signal(SIGTRAP,  SIG_DFL);
-	p_signal(SIGABRT,  SIG_DFL);
-	p_signal(SIGFPE,   SIG_DFL);
-	p_signal(SIGBUS,   SIG_DFL);
-	p_signal(SIGSEGV,  SIG_DFL);
+	p_signal(SIGILL,   SIG_IGN);
+	p_signal(SIGTRAP,  SIG_IGN);
+	p_signal(SIGTRAP,  SIG_IGN);
+	p_signal(SIGABRT,  SIG_IGN);
+	p_signal(SIGFPE,   SIG_IGN);
+	p_signal(SIGBUS,   SIG_IGN);
+	p_signal(SIGSEGV,  SIG_IGN);
 
 }
 
@@ -2055,8 +2025,7 @@ k_exit(int wait)
 
 	if( my_global_aes[2] != -1 )
 	{
-		short r;
-		r = mt_appl_exit(my_global_aes);
+		mt_appl_exit(my_global_aes);
 	}
 	/*
 	 * close input devices
@@ -2091,8 +2060,7 @@ k_exit(int wait)
 
 	if (C.KBD_dev > 0)
 	{
-		long r;
-		r = f_cntl(C.KBD_dev, (long)&KBD_dev_sg, TIOCSETN);
+		f_cntl(C.KBD_dev, (long)&KBD_dev_sg, TIOCSETN);
 		//KERNEL_DEBUG("fcntl(TIOCSETN) -> %li", r);
 		//r = f_cntl(C.KBD_dev, NULL, TIOCFLUSH);
 
