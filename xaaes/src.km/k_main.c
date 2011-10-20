@@ -778,7 +778,7 @@ CE_fa(enum locks lock, struct c_event *ce, bool cancel)
 			struct xa_window *wind = NULL;
 			int c;
 #if ALERTTIME
-			char b[MAXALERTLEN];
+			char b[MAXALERTLEN];	// to be output by form_alert
 #endif
 			unsigned short amask;
 			struct widget_tree *wt;
@@ -846,10 +846,7 @@ CE_fa(enum locks lock, struct c_event *ce, bool cancel)
 
 					Tgettimeofday( &tv, &tz );
 					dtim.l = unix2xbios( tv.tv_sec );
-					sprintf( data->buf, MAXALERTLEN-1, "%02d:%02d:%02d: %s", dtim.t.hour, dtim.t.minute, dtim.t.sec2, b + 4 );
-					data->buf[MAXALERTLEN-1] = 0;
-#endif
-#if ALERTTIME	// b is used for form_alert
+					sprintf( data->buf, ce->d0, "%02d:%02d:%02d: %s", dtim.t.hour, dtim.t.minute, dtim.t.sec2, b + 4 );
 					strrpl( data->buf, '|', ' ', ' ' );
 					data->buf[strlen(data->buf)-7] = 0;	/* strip off [ OK ] */
 					BLOG((0,data->buf));
@@ -881,7 +878,9 @@ CE_fa(enum locks lock, struct c_event *ce, bool cancel)
 		}
 	}
 	else
+	{
 		kfree(ce->ptr1);
+	}
 
 }
 
@@ -910,7 +909,11 @@ typedef void XA_CONF (void *p);
 
 void show_bubble( void *str );
 static XA_CONF *xa_config[] = {load_grd, show_bubble};
-
+#if ALERTTIME
+#define ALERTPL	10
+#else
+#define ALERTPL	0
+#endif
 #define MAX_ALERTLEN 512
 static void
 alert_input(enum locks lock)
@@ -926,11 +929,8 @@ alert_input(enum locks lock)
 	{
 		struct display_alert_data *data;
 
-#if ALERTTIME
-		data = kmalloc(sizeof(*data) + n + 4 + 10);
-#else
-		data = kmalloc(sizeof(*data) + n + 4);
-#endif
+		data = kmalloc(sizeof(*data) + n + ALERTPL + 4 );
+
 		if (!data)
 		{
 			DIAGS(("kmalloc(%i) failed, out of memory?", sizeof(*data)));
@@ -951,7 +951,7 @@ alert_input(enum locks lock)
 		}
 		if (C.Hlp && n < MAX_ALERTLEN && *data->buf == '[')
 		{
-			post_cevent(C.Hlp, CE_fa, data, NULL, 0,0, NULL,NULL);
+			post_cevent(C.Hlp, CE_fa, data, NULL, n + ALERTPL, 0, NULL,NULL);
 		}
 		else
 			kfree(data);
@@ -1147,8 +1147,6 @@ helpthread_entry(void *c)
 				client->waiting_pb = (AESPB *)pb;
 				client->waiting_for = MU_MESAG|XAWAIT_MULTI;
 // 				BLOG((true, "enter block %lx", client->waiting_pb->addrin[0]));
- 				//DBG((true, "enter block %lx", client->waiting_pb->addrin[0]));
- 				//yield();
 				(*client->block)(client, 0);
 				/*if (*t)
 				{
