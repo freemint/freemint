@@ -5286,7 +5286,7 @@ d_g_box(struct widget_tree *wt, struct xa_vdi_settings *v)
 
 #endif
 #if WITH_BKG_IMG
-	if( !memcmp( &wt->r, &root_window->wa, sizeof(RECT)) && wt == get_desktop() )
+	if( wt == get_desktop() && !memcmp( &wt->r, &root_window->wa, sizeof(RECT)) )
 	{
 
 		if( !do_bkg_img(wt->owner, 0, 0) )
