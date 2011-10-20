@@ -561,12 +561,9 @@ CE_pwaitpid(enum locks lock, struct c_event *ce, bool cancel)
 {
 	long r;
 
-// 	display("doing pwaitpid for %s", ce->client->name);
-
 	while ((r = p_waitpid(-1, 1, NULL)) > 0) {
 
 		DIAGS(("sigchld -> %li (pid %li)", r, ((r & 0xffff0000L) >> 16)));
-// 		/	display("sigchld -> %li (pid %li)", r, ((r & 0xffff0000L) >> 16));
 	}
 
 	/* if single-mode-task exited: continue clients, reset flag */
