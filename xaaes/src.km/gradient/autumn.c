@@ -293,7 +293,7 @@ struct xa_gradient slist_utop_title_gradient =
 	16, 0,
 
 	0,0,{0},
-	{{607,307,000},{633,603,0}}
+	{{607,307,1000},{633,603,0}}
 };
 
 struct xa_gradient slist_otop_info_gradient =
@@ -321,7 +321,7 @@ struct xa_gradient slist_otop_grey_gradient =
 	0, 0,
 
 	2, 0, {0},
-	{{500,550,500},{900,950,900}},
+	{{500,550,500},{800,950,900}},
 };
 struct xa_gradient slist_utop_grey_gradient =
 {
@@ -330,7 +330,7 @@ struct xa_gradient slist_utop_grey_gradient =
 	0, 0,
 
 	2, 0, {0},
-	{{300,350,300},{700,750,700}},
+	{{300,350,500},{500,650,600}},
 /*	{{500,500,500},{900,900,900}}, */
 };
 
@@ -419,9 +419,9 @@ struct xa_gradient text_gradient =
 {
 	(unsigned long)TEXT_GRADIENT,
 	-1, 0,
-	0, 16,
+	0, 64,
 
-	0, 1, {-50, 0},
+	4, 1, {-50, 0},
 	{{700,700,200},{750,850,400}, {550,800,100}},
 };
 short stop = STOP;
