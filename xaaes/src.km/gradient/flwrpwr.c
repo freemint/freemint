@@ -418,16 +418,10 @@ struct xa_gradient text_gradient =
 {
 	(unsigned long)TEXT_GRADIENT,
 	-1, 0,
-	0, 16,
+	0, 32,
 
 	0, 1, {-40, 0},
 	{{700,700,600},{650,750,700}, {550,800,500}},
-	/*unsigned long)TEXT_GRADIENT,
-	-1,   0,
-	 0,  8,
-
-	4, 1, { -10, 0},
-	{{800,700,400},{700,600,500},{700,600,500}}*/
 };
 short stop = STOP;
 
