@@ -2387,6 +2387,9 @@ handle_launcher(enum locks lock, struct fsel_data *fs, const char *path, const c
 			load_bkg_img( parms + 1 );
 		break;
 #endif
+		case 3:
+			load_palette( parms+1 );
+		break;
 	}
 }
 
@@ -2399,9 +2402,7 @@ open_launcher(enum locks lock, struct xa_client *client, int what)
 {
 	struct fsel_data *fs = &aes_fsel_data;
 	char *path, *text;
-#if WITH_GRADIENTS || WITH_BKG_IMG
 	char pbuf[PATH_MAX];
-#endif
 	switch( what )
 	{
 #if WITH_GRADIENTS
@@ -2423,6 +2424,11 @@ open_launcher(enum locks lock, struct xa_client *client, int what)
 			text = xa_strings[RS_LDIMG];
 		break;
 #endif
+		case 3:
+			path = pbuf;
+			text = xa_strings[RS_LDPAL];
+			sprintf( pbuf, sizeof(pbuf), "%s%s", C.Aes->home_path, "pal\\*.pal" );
+		break;
 		default:
 			return;
 	}
