@@ -23,6 +23,7 @@ N             Load gradient
 SHIFT+N       Change background-image
 P             Restore palette in colour depth of 8-bits
               or less
+SHIFT+P       Load palette
 Q,G           Quit XaAES (or execute $SDMASTER if set)
 R             Attempt to recover a system that has
               locked up
