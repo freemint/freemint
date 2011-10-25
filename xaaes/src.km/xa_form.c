@@ -369,22 +369,20 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 	alert_form->ob_width = w;
 	if( icon )
 	{
-		int icons[8] = {0, ALR_IC_WARNING, ALR_IC_QUESTION, ALR_IC_STOP,
-						  ALR_IC_INFO,   ALR_IC_DRIVE,   ALR_IC_BOMB, ALR_IC_SYSTEM};
+		ICONBLK *ai;
+		ICONBLK *af;
+
 		alert_icons = ResourceTree(C.Aes_rsc, ALERT_ICONS);
 
 		if (icon >= 8 || icon < 0)
 			icon = 7;
 
-		for (f = 0; f < 7; f++)
-		{
-			ICONBLK *ai = object_get_spec(alert_icons + icons[f]    )->iconblk;
-			ICONBLK *af = object_get_spec(alert_form  + ALERT_D_ICON)->iconblk;
-			ai->ib_xicon = af->ib_xicon;
-			ai->ib_yicon = af->ib_yicon;
-		}
+		ai = object_get_spec(alert_icons + icon)->iconblk;
+		af = object_get_spec(alert_form  + ALERT_D_ICON)->iconblk;
+		ai->ib_xicon = af->ib_xicon;
+		ai->ib_yicon = af->ib_yicon;
 
-		(alert_form + ALERT_D_ICON)->ob_spec = (alert_icons + icons[icon])->ob_spec;
+		(alert_form + ALERT_D_ICON)->ob_spec = (alert_icons + icon)->ob_spec;
 	}
 	else	//bug#154
 	{
