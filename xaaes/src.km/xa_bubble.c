@@ -43,6 +43,8 @@ static BGEM bgem =
 	&M_POINTSLIDE_MOUSE,
 	200
 };
+#define BBL_LLEN	37
+#define BBL_MAXLLEN	42
 
 /*
  * if no | in str break lines at BBL_LLEN, avoid too long lines > BBL_MAXLLEN
@@ -50,11 +52,11 @@ static BGEM bgem =
  */
 static int format_string( unsigned char *str, int *maxl )
 {
-	int ret = 1, cnt, l, ml, hasnop = !strchr( (char*)str, '|' ), fl_longest = 1;
+	int ret = 1, cnt, l, ml, hasnop = !strchr( (char*)str, '|' );
 	unsigned char *lastbl = 0;
-	for( cnt = ml = l = 0; *str && cnt < BBL_MAXLEN; str++, l++, cnt++ )
+	for( cnt = ml = l = 0; /**str &&*/ cnt < BBL_MAXLEN; str++, l++, cnt++ )
 	{
-		if( *str == '|' || (hasnop && l > BBL_LLEN && *str <= ' ') )
+		if( !*str || *str == '|' || (hasnop && l > BBL_LLEN && *str <= ' ') )
 		{
 			if( hasnop )
 			{
@@ -64,7 +66,7 @@ static int format_string( unsigned char *str, int *maxl )
 					str = lastbl;// + 1;
 					*lastbl = '|';
 				}
-				else
+				else if( *str )
 				{
 					*str = '|';
 				}
@@ -79,11 +81,11 @@ static int format_string( unsigned char *str, int *maxl )
 
 			if( l > ml )
 			{
-				if( ret > 1 )
-					fl_longest = 0;
 				ml = l;
 			}
 			l = -1;
+			if( !*str )
+				break;
 			ret++;
 		}
 		if( *str == ' ' )
@@ -95,11 +97,10 @@ static int format_string( unsigned char *str, int *maxl )
 	}
 	if( l >= ml )
 	{
-		fl_longest = 1;
 		ml = l;
 	}
-	if( C.fvdi_version && Style == 2 && fl_longest )
-		ml++;
+	//if( C.fvdi_version && Style == 2 && fl_longest )
+		//ml++;
 
 	if( maxl )
 	{
@@ -120,11 +121,11 @@ static void set_bbl_rect_bbl( short np, RECT *r, RECT *ri, RECT *rw, short x, sh
 	ri->w = r->w - radius * 2;
 	ri->h = r->h - radius * 2;
 
-	rw->x = r->x - 10 + wadd;
+	rw->x = r->x - 10;	// + wadd;
 	if( x > r->x )
-		rw->w = r->w + (x - r->x) + 8;
+		rw->w = r->w + (x - r->x) + 8 + wadd;
 	else
-		rw->w = r->w + (r->x - x) + 8;
+		rw->w = r->w + (r->x - x) + 8 + wadd;
 	if( y > r->y )
 	{
 		rw->y = r->y - 2;
@@ -203,7 +204,7 @@ static void draw_bbl_window( struct xa_vdi_settings *v, RECT *r, RECT *ri, short
 
 		/* filled rect */
 		fxy[0] = r->x;
-		fxy[1] = r->y-1;
+		fxy[1] = r->y;	//-1;
 		fxy[2] = r->x + r->w + wadd;
 		fxy[3] = r->y + r->h;
 		//v->api->f_color(v, G_BLUE);
@@ -235,9 +236,9 @@ static void draw_bbl_window( struct xa_vdi_settings *v, RECT *r, RECT *ri, short
 			fxy[2] = x + yd - 10;
 
 		if( m )
-			fxy[3] = r->y + r->h;
+			fxy[3] = r->y + r->h - 1;
 		else
-			fxy[3] = r->y;
+			fxy[3] = r->y + 1;
 
 		fxy[4] = fxy[2];
 		fxy[2] += xd;
@@ -250,6 +251,11 @@ static void draw_bbl_window( struct xa_vdi_settings *v, RECT *r, RECT *ri, short
 		//v->api->f_color(v, G_CYAN);
 		v_fillarea( v->handle, 3, fxy );
 		//v->api->f_color(v, G_BLUE);
+		if( m )
+			fxy[3]++;
+		else
+			fxy[3]--;
+		fxy[5] = fxy[3];
 		v_pline(v->handle, 2, fxy);
 		//v->api->f_color(v, G_GREEN);
 		v_pline(v->handle, 2, fxy+4);
@@ -475,7 +481,7 @@ BBL_STATUS xa_bubble( enum locks lock, BBL_MD md, union msg_buf *msg, short dest
 			{
 				rox = 4;
 				xtxt_add = 0;
-				wadd = 4;
+				wadd = 6;
 			}
 			else
 			{
@@ -518,7 +524,7 @@ BBL_STATUS xa_bubble( enum locks lock, BBL_MD md, union msg_buf *msg, short dest
 			XaBubble = bs_closed;
 			goto xa_bubble_ret;
 		}
-		break;
+	break;
 	default:
 		BLOG((0,"xa_bubble: unhandled code: %d", md));
 	}
