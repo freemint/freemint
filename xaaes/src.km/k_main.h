@@ -35,7 +35,7 @@
 #include "xa_types.h"
 
 void ceExecfunc(enum locks lock, struct c_event *ce, bool cancel);
-void setFatal(bool val );
+
 struct timeout * set_shutdown_timeout(long delta);
 void kick_shutdn_if_last_client(void);
 
@@ -65,6 +65,7 @@ void _cdecl dispatch_shutdown(short flags, unsigned long arg);
 void _cdecl ce_dispatch_shutdown(enum locks l, struct xa_client *client, bool b);
 void load_grd( void *fn );
 void load_bkg_img( void *fn );
+void load_palette( void *fn );
 void k_main(void *);
 
 extern int aessys_timeout;

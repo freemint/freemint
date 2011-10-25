@@ -816,10 +816,20 @@ kernel_key(enum locks lock, struct rawkey *key)
 #endif
 		case 'P':
 		{
-			DIAGS(("Recover palette"));
-			if (screen.planes <= 8)
+			if( key->raw.conin.state & (K_RSHIFT|K_LSHIFT) )
 			{
-				set_syspalette( C.Aes->vdi_settings->handle, screen.palette);
+				if( !C.update_lock )
+				{
+					post_cevent(C.Hlp, ceExecfunc, open_launcher, NULL, 3, 0, NULL,NULL);
+				}
+			}
+			else
+			{
+				DIAGS(("Recover palette"));
+				//if (screen.planes <= 8)
+				{
+					set_syspalette( C.Aes->vdi_settings->handle, screen.palette);
+				}
 			}
 			return true;
 		}
