@@ -2882,6 +2882,7 @@ struct common
 #define RESOLUTION_CHANGE	0x0040
 #define KILLEM_ALL		0x0080
 #define RESTART_XAAES	0x0100
+#define RESTART_AFTER_BOMB	0x0400
 #define EXIT_MAINLOOP		0x8000
 	short shutdown_step;
 	struct timeout *sdt;		/* Shutdown Timeout */

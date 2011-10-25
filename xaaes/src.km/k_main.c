@@ -51,6 +51,7 @@
 #include "obtree.h"
 #include "render_obj.h"
 #include "taskman.h"
+#include "trnfm.h"
 
 #include "xa_appl.h"
 #include "xa_evnt.h"
@@ -1373,20 +1374,17 @@ ce_dispatch_shutdown(enum locks lock, struct xa_client *client, bool b)
 		return;
 	}
 	in_ce_dispatch_shutdown = 1;
-	switch( (short)b & (RESTART_XAAES | HALT_SYSTEM) )
+	switch( (short)b & (RESTART_XAAES | HALT_SYSTEM | RESTART_AFTER_BOMB) )
 	{
 	case RESTART_XAAES:
 		s = xa_strings[ASK_RESTART_ALERT];
 	break;
+	case RESTART_AFTER_BOMB:
+		s = xa_strings[HAD_A_PROBLEM];
+		def = 2;
+	break;
 	case HALT_SYSTEM:
-		if( b & 0x400 )
-		{
-			s = "[2][XaAES had a problem][Continue|Halt]";
-			def = 2;
-			b &= ~0x400;
-		}
-		else
-			s = xa_strings[ASK_SHUTDOWN_ALERT];
+		s = xa_strings[ASK_SHUTDOWN_ALERT];
 	break;
 	default:
 		s = xa_strings[ASK_QUIT_ALERT];
@@ -1395,6 +1393,10 @@ ce_dispatch_shutdown(enum locks lock, struct xa_client *client, bool b)
 	r = xaaes_do_form_alert( lock, C.Hlp, def, s);
 	if( r == 2 )
 	{
+		if( b & RESTART_AFTER_BOMB )
+		{
+			b |= HALT_SYSTEM;
+		}
 		S.clients_exiting = 0;
 		dispatch_shutdown((short)b, 0);
 	}
@@ -1537,6 +1539,14 @@ void load_bkg_img( void *fn )
 	do_bkg_img(C.Aes, 3, fn);
 	update_windows_below(0, &screen.r, NULL, window_list, NULL);
 #endif
+}
+void load_palette( void *fn )
+{
+	if( !rw_syspalette( READ, screen.palette, 0, fn ) )
+	{
+		set_syspalette(C.Aes->vdi_settings->handle, screen.palette);
+		update_windows_below(0, &screen.r, NULL, window_list, NULL);
+	}
 }
 
 /*
@@ -1790,7 +1800,7 @@ k_main(void *dummy)
 
 	if( pferr )
 	{
-		post_cevent(C.Hlp, ceExecfunc, ce_dispatch_shutdown, NULL, HALT_SYSTEM | 0x400, 1, NULL, NULL);
+		post_cevent(C.Hlp, ceExecfunc, ce_dispatch_shutdown, NULL, RESTART_AFTER_BOMB, 1, NULL, NULL);
 	}
 	reset_about();
 	post_cevent(C.Hlp, ceExecfunc, open_about,NULL, 0,0, NULL,NULL);
