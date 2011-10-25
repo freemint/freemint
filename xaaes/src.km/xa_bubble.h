@@ -24,6 +24,4 @@ BBL_STATUS xa_bubble( enum locks lock, BBL_MD md, union msg_buf *msg, short dest
 void XA_bubble_event(enum locks lock, struct c_event *ce, bool cancel);
 void display_launched( enum locks lock, char *str );
 
-#define BBL_LLEN	32
-#define BBL_MAXLLEN	36
 
