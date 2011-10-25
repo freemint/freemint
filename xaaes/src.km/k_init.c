@@ -847,7 +847,7 @@ k_init(unsigned long vm)
 
 // 	if (screen.planes > 8)
 // 		set_defaultpalette(v->handle);
-	if( cfg.palette[0] && !rw_syspalette( READ, screen.palette ) )
+	if( cfg.palette[0] && !rw_syspalette( READ, screen.palette, C.Aes->home_path, cfg.palette ) )
 	{
 		set_syspalette(v->handle, screen.palette);
 	}

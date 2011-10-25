@@ -2253,9 +2253,10 @@ fix_rsc_palette(struct xa_rsc_rgb *palette)
 /*
  * md = READ: read palette-file and copy palette into palette
  * md = WRITE: unimplemented
+ * if path=0 use f else path/f.pal
  * return 0 for success
  */
-int rw_syspalette( int md, struct rgb_1000 *palette )
+int rw_syspalette( int md, struct rgb_1000 *palette, char *path, char *f )
 {
 	short buf[1024], palsz, pens;
 	char fn[PATH_MAX];
@@ -2268,7 +2269,11 @@ int rw_syspalette( int md, struct rgb_1000 *palette )
 		pens = 1 << screen.planes;
 
 	palsz = pens * 3 * 2 + 4;
-	sprintf( fn, sizeof(fn), "%spal/%s.pal", C.Aes->home_path, cfg.palette );
+	if( path )
+		sprintf( fn, sizeof(fn), "%spal/%s.pal", path, f );
+	else
+		strcpy( fn, f );
+
 	BLOG((0,"loading palette:%s", fn));
 	fp = kernel_open( fn, O_RDONLY, &err, NULL );
 	if( !fp )
