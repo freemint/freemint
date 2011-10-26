@@ -2390,6 +2390,9 @@ handle_launcher(enum locks lock, struct fsel_data *fs, const char *path, const c
 		case 3:
 			load_palette( parms+1 );
 		break;
+		case 4:
+			load_config( parms+1 );
+		break;
 	}
 }
 
@@ -2428,6 +2431,11 @@ open_launcher(enum locks lock, struct xa_client *client, int what)
 			path = pbuf;
 			text = xa_strings[RS_LDPAL];
 			sprintf( pbuf, sizeof(pbuf), "%s%s", C.Aes->home_path, "pal\\*.pal" );
+		break;
+		case 4:
+			path = pbuf;
+			text = "Load Config";	//xa_strings[RS_LDPAL];
+			sprintf( pbuf, sizeof(pbuf), "%s%s", C.Aes->home_path, "*.cnf" );
 		break;
 		default:
 			return;
