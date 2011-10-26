@@ -1379,12 +1379,18 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 				}
 				else
 				{
-					//if (!strcmp(nam, ".") || !strcmp(nam, ".."))
-					if ( nam[0] == '.' && (nam[1] == 0 || (nam[1] == '.' && nam[2] == 0)) )
+					if ( nam[0] == '.' )
 					{
-						if (dir_ent)
+						if( nam[1] == 0 )	// don't list '.'-entry
+						{
 							continue;
-						sc.usr_flags |= FLAG_SDIR;
+						}
+						if ( (nam[1] == '.' && nam[2] == 0) )
+						{
+							if (dir_ent)
+								continue;
+							sc.usr_flags |= FLAG_SDIR;
+						}
 					}
 					if (fs->treeview)
 						sc.xstate |= OS_NESTICON;
