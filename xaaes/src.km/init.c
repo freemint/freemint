@@ -687,7 +687,7 @@ again:
 	{
 	long	li = -1;
 	/* Parse the config file */
-	load_config();
+	load_config(0);
 	if( !cfg.lang[0] )
 	{
 		const char *lang = get_env(0, "LANG=");
