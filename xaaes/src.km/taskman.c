@@ -3072,9 +3072,9 @@ do_system_menu(enum locks lock, int clicked_title, int menu_item)
 		case SYS_MN_DESK:
 		{
 			if (C.DSKpid >= 0)
-				ALERT((/*shell_running*/xa_strings[AL_SHELLRUNS]/*"XaAES: AES shell already running!"*/));
+				ALERT((xa_strings[AL_SHELLRUNS]));
 			else if (!*C.desk)
-				ALERT((/*no_shell*/xa_strings[AL_NOSHELL]/*"XaAES: No AES shell set; See 'shell =' configuration variable in xaaes.cnf"*/));
+				ALERT((xa_strings[AL_NOSHELL]));
 			else
 				C.DSKpid = launch(lock, 0,0,0, C.desk, "\0", C.Aes);
 			break;
