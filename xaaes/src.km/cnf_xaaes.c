@@ -1004,21 +1004,26 @@ diags_opts(struct options *o)
 #endif
 
 void
-load_config(void)
+load_config(void *path )
 {
-	char path[128];
+	char cpath[128];
 
 	struct cnfdata mydata;
 //	struct options *curopt = &default_options;	/* specify some options for some programs. */
 //	bool have_brace = false, have_opt = false;
 //	char *cnf = NULL;
 
-	strcpy(path, C.Aes->home_path);
-	strcat(path, CNF_NAME);
+	if( !path || !*(char*)path )
+	{
+		strcpy(cpath, C.Aes->home_path);
+		strcat(cpath, CNF_NAME);
+	}
+	else
+		strcpy(cpath, path );
 
-	DIAGS(("Loading config %s", path));
-	BLOG((0,"Loading config %s", path));
-	parse_cnf(path, parser_tab, &mydata);
+	DIAGS(("Loading config %s", cpath));
+	BLOG((0,"Loading config %s", cpath));
+	parse_cnf(cpath, parser_tab, &mydata);
 
 #if GENERATE_DIAGS
 	{
