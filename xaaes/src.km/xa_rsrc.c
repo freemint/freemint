@@ -1279,11 +1279,18 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 		if (size != sz )
 		{
 			char s[256];
-			DIAG((D_rsrc, client, "LoadResource(): Error loading file (size mismatch)"));
-			sprintf( s, 255, xa_strings[RS_RSCSZ], fname, sz, size );
+			if( client == C.Aes )
+			{
+				BLOG((1, "XAAES:Error loading file '%s':(size mismatch)", fname));
+			}
+			else
+			{
+				DIAG((D_rsrc, client, "LoadResource(): Error loading file (size mismatch)"));
+				sprintf( s, 255, xa_strings[RS_RSCSZ], fname, sz, size );
 
-			if ( !client->options.ignore_rsc_size && (xaaes_do_form_alert( 0, client, 2, s ) == 1) )
-				client->options.ignore_rsc_size = 1;
+				if ( !client->options.ignore_rsc_size && (xaaes_do_form_alert( 0, client, 2, s ) == 1) )
+					client->options.ignore_rsc_size = 1;
+			}
 			if( client->options.ignore_rsc_size )
 			{
 				if( size > sz )
