@@ -580,14 +580,16 @@ kernel_key(enum locks lock, struct rawkey *key)
 			}
 			return true;
 		}
-		case 'F':				/* open the task manager */
+		//case 'F':				/* open the task manager */
 #if !GENERATE_DIAGS
 		case 'L':				/* open the task manager */
 #endif
 		if( !C.update_lock )
 		{
-//otm:
-			post_cevent(C.Hlp, ceExecfunc, open_taskmanager,NULL, 1,0, NULL,NULL);
+			if( key->raw.conin.state & (K_RSHIFT|K_LSHIFT) )
+					post_cevent(C.Hlp, ceExecfunc, open_launcher, NULL, 4, 0, NULL,NULL);
+			else
+				post_cevent(C.Hlp, ceExecfunc, open_taskmanager,NULL, 1, 0, NULL,NULL);
 		}
 		return true;
 
@@ -769,7 +771,7 @@ kernel_key(enum locks lock, struct rawkey *key)
 			post_cevent(C.Hlp, ceExecfunc, open_launcher,NULL, 1,0, NULL,NULL);
 		}
 		return true;
-		case 'T':				/* ctrl+alt+T    Tidy screen */
+		//case 'T':				/* ctrl+alt+T    Tidy screen */
 		case NK_HOME:				/*     "    Home       "     */
 		{
 			if( C.update_lock )
@@ -839,7 +841,7 @@ kernel_key(enum locks lock, struct rawkey *key)
 		case 'H':
 			if( !sdmd )
 				sdmd = HALT_SYSTEM;
-		case 'G':
+		//case 'G':
 		case 'Q':
 		{
 			struct proc *p;
