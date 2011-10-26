@@ -909,7 +909,7 @@ display_alert(struct proc *p, long arg)
 typedef void XA_CONF (void *p);
 
 void show_bubble( void *str );
-static XA_CONF *xa_config[] = {load_grd, show_bubble};
+static XA_CONF *xa_config[] = {load_grd, show_bubble, load_config};
 #if ALERTTIME
 #define ALERTPL	10
 #else
@@ -945,8 +945,6 @@ alert_input(enum locks lock)
 		{
 			if( data->buf[2] == '#' && data->buf[3] >= '0' && data->buf[3] - '0' < sizeof(xa_config) / sizeof(void*) )
 				xa_config[(int)data->buf[3]-'0']( (void*)(data->buf + 4) );
-			else
-				load_config();
 			kfree(data);
 			return;
 		}
