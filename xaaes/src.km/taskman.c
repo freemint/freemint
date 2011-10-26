@@ -40,6 +40,7 @@
 #include "about.h"
 #include "app_man.h"
 #include "c_window.h"
+#include "cnf_xaaes.h"
 #include "form.h"
 #include "k_main.h"
 #include "k_mouse.h"
