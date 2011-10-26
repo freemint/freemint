@@ -539,7 +539,6 @@ calc_average_fontsize(struct xa_vdi_settings *v, short *maxw, short *maxh, short
 
 	return dev;
 }
-
 int
 k_init(unsigned long vm)
 {
@@ -932,20 +931,23 @@ k_init(unsigned long vm)
 	 * Version check the aessys resouce
 	 */
 	{
+		char *t = 0;
 		OBJECT *about = ResourceTree(C.Aes_rsc, ABOUT_XAAES);
 		int gt = 0;
-		char *t = object_get_tedinfo(about + RSC_VERSION, NULL)->te_ptext;
+		if( about )
+			t = object_get_tedinfo(about + RSC_VERSION, NULL)->te_ptext;
 
-		if ((ob_count_objs(about, 0, -1) < RSC_VERSION)   ||
-		     about[RSC_VERSION].ob_type != G_TEXT     ||
-		    ( gt = strcmp(t, RSCFILE_VERSION)))
+		if ( !t || about[RSC_VERSION].ob_type != G_TEXT )
 		{
-			char *s = gt > 0 ? "too new" : gt < 0 ? "too old" : "wrong";
-			display("ERROR: %s resource file (%s)(version:%s) - use version "RSCFILE_VERSION"!", s, t, cfg.rsc_name);
+			display("ERROR: wrong resource file: %s - use version "RSCFILE_VERSION"!", cfg.rsc_name);
 			return -1;
 		}
-		//else
-			//break;
+		if ( (ob_count_objs(about, 0, -1) < RSC_VERSION) || ( gt = strcmp(t, RSCFILE_VERSION)) )
+		{
+			char *s = gt > 0 ? "too new" : gt < 0 ? "too old" : "wrong";
+			display("ERROR: %s resource file (current:%s)(%s) - use version "RSCFILE_VERSION"!", s, t, cfg.rsc_name);
+			return -1;
+		}
 	}
 
 	/*
@@ -974,8 +976,10 @@ k_init(unsigned long vm)
 
 #if WITH_GRADIENTS
 	if (!(C.Aes->wtheme_handle = (*C.Aes->xmwt->init_module)(&xam_api, &screen, (char *)&cfg.widg_name, cfg.gradients[0] != 0)))
+		if (!(C.Aes->wtheme_handle = (*C.Aes->xmwt->init_module)(&xam_api, &screen, WIDGNAME, cfg.gradients[0] != 0)))
 #else
 	if (!(C.Aes->wtheme_handle = (*C.Aes->xmwt->init_module)(&xam_api, &screen, (char *)&cfg.widg_name, 0 )))
+		if (!(C.Aes->wtheme_handle = (*C.Aes->xmwt->init_module)(&xam_api, &screen, WIDGNAME, 0 )))
 #endif
 	{
 		BLOG((true,"Window widget module returned NULL"));
