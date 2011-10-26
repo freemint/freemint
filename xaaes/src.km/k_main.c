@@ -741,7 +741,7 @@ CE_fa(enum locks lock, struct c_event *ce, bool cancel)
 		struct display_alert_data *data = ce->ptr1;
 
 		/* make sure the evil process really goes away */
-		long pid = 0;
+		long pid = -1;
 		char *ps = strstr( data->buf, "(PID ");
 		if( !ps )
 			ps = strstr( data->buf, "pid ");
@@ -750,19 +750,19 @@ CE_fa(enum locks lock, struct c_event *ce, bool cancel)
 		if( ps )
 			pid = atol( ps + 4 );
 
-		if( pid == C.Aes->p->pid || pid == C.Hlp->p->pid || pid == C.Aes->tp->pid )
-			return;
-		if( pid && strstr( data->buf, "KILLED:" ) )
+		if( pid >= 0 && strstr( data->buf, "KILLED:" ) )
 		{
 			short s;
 			long r;
+			if( pid == C.Aes->p->pid || pid == C.Hlp->p->pid || pid == C.Aes->tp->pid )
+				return;
 			for( s = 0; !(r=ikill(pid, 0)) && s < 666; s++ )
 			{
 				ikill(pid, SIGKILL);
 				nap(20);
 			}
+			nap(2000);
 		}
-		nap(2000);
 		/***********************************************/
 
 		if (C.update_lock)
@@ -1436,8 +1436,6 @@ CE_start_apps(enum locks lock, struct c_event *ce, bool cancel)
 		 */
 		BLOG((false, "loading shell and autorun ---------------"));
 
-		C.DSKpid = -1;
-
 		for (i = sizeof(cfg.cnf_run)/sizeof(cfg.cnf_run[0]) - 1; i >= 0; i--)
 		{
 			if (cfg.cnf_run[i])
@@ -1777,6 +1775,7 @@ k_main(void *dummy)
 		ALERT(( "WARNING:your stack is odd!" ));
 	}
 #endif
+	C.DSKpid = -1;
 	if( !pferr )
 		post_cevent(C.Hlp, CE_start_apps, NULL,NULL, 0,0, NULL,NULL);
 
