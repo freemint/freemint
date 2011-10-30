@@ -1,6 +1,5 @@
 #include "xa_appl.h"
 
-#define BGS7_USRHIDE2 0x0002
 #if WITH_BBL_HELP
 #include "k_mouse.h"
 #include "menuwidg.h"
@@ -122,7 +121,7 @@ static void set_bbl_rect_bbl( short np, RECT *r, RECT *ri, RECT *rw, short x, sh
 	ri->w = r->w - radius * 2;
 	ri->h = r->h - radius * 2;
 
-	rw->x = r->x - 10;	// + wadd;
+	rw->x = r->x;// - 10;	// + wadd;
 	if( x > r->x )
 		rw->w = r->w + (x - r->x) + 8 + wadd;
 	else
@@ -153,7 +152,9 @@ static short set_bbl_rect( short np, short x, short y, short maxl, RECT *r, RECT
 	ro->h = r->h;
 
 	r->x = x + 8;
-	r->y = y + 16;
+	r->y = y + 2;
+	if( Style == 1 )
+		r->y += 16;
 	r->w *= (maxl+1);
 
 	r->h *= np;
@@ -167,7 +168,7 @@ static short set_bbl_rect( short np, short x, short y, short maxl, RECT *r, RECT
 	}
 	else if( Style == 1 )
 	{
-		if( r->y + r->h >= screen.r.h - get_menu_height() )	//22 )
+		if( r->y + r->h >= screen.r.h - get_menu_height() )
 		{
 			r->y = y - r->h - get_menu_height();//	16;
 			r->x = x + 4;
@@ -203,7 +204,7 @@ static void draw_bbl_window( struct xa_vdi_settings *v, RECT *r, RECT *ri, short
 		short fxy[8], pxy[4], yd;
 		short m = 0, n = 0, xd = 20;
 
-		pxy[0] = r->x;
+		pxy[0] = r->x + 1;
 		pxy[1] = r->y;
 		pxy[2] = r->x + r->w + wadd;
 		pxy[3] = r->y + r->h;
@@ -224,11 +225,12 @@ static void draw_bbl_window( struct xa_vdi_settings *v, RECT *r, RECT *ri, short
 		if( y > r->y + r->h )	// up
 		{
 			m = 1;	// up
-			yd = y - (r->y+r->h) + xd;
+			yd = y - (r->y+r->h);
 		}
 		else		// down
 			yd = r->y - y;
 
+		x += 4;
 		fxy[0] = x;
 		fxy[1] = y;
 		if( n )
@@ -312,17 +314,17 @@ static int open_bbl_window( enum locks lock, unsigned char *str, short x, short 
 	{
 		if( r.y > y )	// prefer up
 		{
-			r.y -= ( r.h + 42 );
-			ro.y -= ( r.h + 42 );
+			r.y = y - ( r.h + 32 );
+			ro.y = r.y;
 		}
 		if( r.y < get_menu_height() )	// too high
 		{
 			y2 += 2;	// avoid window covering mouse-point
-			r.y = ro.y = y + 42;
+			r.y = ro.y = y2 + 32;
 		}
 		else
 		{
-			y2 -= 2;
+			//y2 -= 2;
 		}
 		rw.y = y2;
 		set_bbl_rect_bbl( np, &r, &ri, &rw, x, y2);
@@ -338,7 +340,7 @@ static int open_bbl_window( enum locks lock, unsigned char *str, short x, short 
 	}
 	bgem_window->window_status |= XAWS_FLOAT;
 	set_bbl_vdi( v );
-	//v->api->set_clip( v, &rw);
+	v->api->set_clip( v, &rw);
 	draw_bbl_window( v, &r, &ri, x, y2 );
 	bbl_text( v, &ro, str, np );
 
@@ -631,10 +633,6 @@ void bubble_request( short pid, short whndl, short x, short y )
 
 void bubble_show( char *str )
 {
-	//short x, y, b;
-	//check_mouse( C.Aes, &b, &x, &y );
-	//bbl_arg.x = x;
-	//bbl_arg.y = y;
 	bbl_arg.str = str;
 }
 
