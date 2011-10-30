@@ -208,8 +208,6 @@ cancel_CE(struct xa_client *client,
 	}
 }
 
-static void
-CE_fa(enum locks lock, struct c_event *ce, bool cancel);
 void
 post_cevent(struct xa_client *client,
 	void (*func)(enum locks, struct c_event *, bool cancel),
