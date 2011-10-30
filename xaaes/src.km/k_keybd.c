@@ -557,13 +557,7 @@ kernel_key(enum locks lock, struct rawkey *key)
 #if GENERATE_DIAGS == 0
 		case 'D':	/* screen-dump */
 		{
-			short mode;
-			if (key->raw.conin.state & (K_RSHIFT|K_LSHIFT))
-				mode = 0;
-			else
-				mode = 1;
-			post_cevent(C.Hlp, ceExecfunc, screen_dump, NULL, mode,0, NULL,NULL);
-
+			post_cevent(C.Hlp, ceExecfunc, screen_dump, NULL, 1, 0, NULL,NULL);
 			return true;
 		}
 #endif
