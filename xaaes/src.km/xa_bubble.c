@@ -1,10 +1,15 @@
 #include "xa_appl.h"
 
+#define BGS7_USRHIDE2 0x0002
 #if WITH_BBL_HELP
+#include "k_mouse.h"
 #include "menuwidg.h"
 #include "xacookie.h"
 #include "c_window.h"
-#define BBL_MAXLEN	255
+#define BBL_MAXLEN	511
+#define BBL_LLEN	37
+#define BBL_MAXLLEN	42
+#define BBL_MINLEN	7
 
 #include "xa_bubble.h"
 
@@ -43,8 +48,6 @@ static BGEM bgem =
 	&M_POINTSLIDE_MOUSE,
 	200
 };
-#define BBL_LLEN	37
-#define BBL_MAXLLEN	42
 
 /*
  * if no | in str break lines at BBL_LLEN, avoid too long lines > BBL_MAXLLEN
@@ -54,7 +57,7 @@ static int format_string( unsigned char *str, int *maxl )
 {
 	int ret = 1, cnt, l, ml, hasnop = !strchr( (char*)str, '|' );
 	unsigned char *lastbl = 0;
-	for( cnt = ml = l = 0; /**str &&*/ cnt < BBL_MAXLEN; str++, l++, cnt++ )
+	for( cnt = ml = l = 0; cnt < BBL_MAXLEN; str++, l++, cnt++ )
 	{
 		if( !*str || *str == '|' || (hasnop && l > BBL_LLEN && *str <= ' ') )
 		{
@@ -62,8 +65,8 @@ static int format_string( unsigned char *str, int *maxl )
 			{
 				if( l > BBL_MAXLLEN && lastbl && lastbl < str )
 				{
-					l -= (str - lastbl);// - 1);
-					str = lastbl;// + 1;
+					l -= (str - lastbl);
+					str = lastbl;
 					*lastbl = '|';
 				}
 				else if( *str )
@@ -99,8 +102,6 @@ static int format_string( unsigned char *str, int *maxl )
 	{
 		ml = l;
 	}
-	//if( C.fvdi_version && Style == 2 && fl_longest )
-		//ml++;
 
 	if( maxl )
 	{
@@ -143,10 +144,10 @@ static short set_bbl_rect( short np, short x, short y, short maxl, RECT *r, RECT
 {
 
 	short rx = rox;
-	if( Style == 2 && maxl < 6 )
+	if( Style == 2 && maxl < BBL_MINLEN )
 	{
-		rx += (7 - maxl) / 2 * screen.c_max_w;
-		maxl = 6;
+		rx += (BBL_MINLEN + 1 - maxl) / 2 * screen.c_max_w;
+		maxl = BBL_MINLEN;
 	}
 
 	ro->h = r->h;
@@ -199,21 +200,21 @@ static void draw_bbl_window( struct xa_vdi_settings *v, RECT *r, RECT *ri, short
 	break;
 	case 2:	// balloon
 	{
-		short fxy[8], yd;
+		short fxy[8], pxy[4], yd;
 		short m = 0, n = 0, xd = 20;
 
-		/* filled rect */
-		fxy[0] = r->x;
-		fxy[1] = r->y;	//-1;
-		fxy[2] = r->x + r->w + wadd;
-		fxy[3] = r->y + r->h;
-		//v->api->f_color(v, G_BLUE);
-		v_rfbox( v->handle, fxy );
-		//v->api->f_color(v, G_WHITE);
+		pxy[0] = r->x;
+		pxy[1] = r->y;
+		pxy[2] = r->x + r->w + wadd;
+		pxy[3] = r->y + r->h;
+		memcpy( fxy, pxy, sizeof(pxy) );
 
 		/* border rect */
+		fxy[0]--;
+		fxy[2]++;
+		fxy[1]--;
+		fxy[3]++;
 		v_rbox( v->handle, fxy );
-
 
 		/* arrow */
 		if( x >= r->x + (r->w/2))
@@ -231,35 +232,36 @@ static void draw_bbl_window( struct xa_vdi_settings *v, RECT *r, RECT *ri, short
 		fxy[0] = x;
 		fxy[1] = y;
 		if( n )
-			fxy[2] = x - yd - 2;
+			fxy[2] = x - yd;
 		else
-			fxy[2] = x + yd - 10;
+			fxy[2] = x + yd;
 
 		if( m )
-			fxy[3] = r->y + r->h - 1;
+			fxy[3] = r->y + r->h;
 		else
 			fxy[3] = r->y + 1;
 
+		if( fxy[2] < r->x + 10 )
+			fxy[2] = r->x + 10;
+		if( fxy[2] + xd > r->x + r->w - 6 )
+			fxy[2] = r->x + r->w - 6 - xd;
 		fxy[4] = fxy[2];
 		fxy[2] += xd;
 		fxy[5] = fxy[3];
+
 		fxy[6] = x;
 		fxy[7] = y;
 
 		hidem();
 
-		//v->api->f_color(v, G_CYAN);
 		v_fillarea( v->handle, 3, fxy );
-		//v->api->f_color(v, G_BLUE);
-		if( m )
-			fxy[3]++;
-		else
+		if( !m )
 			fxy[3]--;
-		fxy[5] = fxy[3];
 		v_pline(v->handle, 2, fxy);
-		//v->api->f_color(v, G_GREEN);
 		v_pline(v->handle, 2, fxy+4);
 
+		/* filled round rect */
+		v_rfbox( v->handle, pxy );
 		showm();
 	}
 	break;
@@ -353,6 +355,13 @@ static void xstrncpy( unsigned char *dst, unsigned char *src, long len )
 		*dst = 0;
 }
 #endif
+
+struct bbl_arg {
+	char *str;
+};
+
+static struct bbl_arg bbl_arg={0};
+
 BBL_STATUS xa_bubble( enum locks lock, BBL_MD md, union msg_buf *msg, short destID )
 {
 	static BGEM *c_bgem = 0;
@@ -364,15 +373,18 @@ BBL_STATUS xa_bubble( enum locks lock, BBL_MD md, union msg_buf *msg, short dest
 	static AESPB pb = {control, global, intin, intout, addrin, addrout};
 	int ret;
 
+	if( md == bbl_close_bubble2 )
+		bbl_arg.str = 0;	// cancel pending SHOW
+
 	if( md == bbl_get_status
-		|| ( (md == bbl_close_bubble1 || md == bbl_close_bubble2)
+		|| (( md == bbl_close_bubble1 || md == bbl_close_bubble2)
 			&& ( XaBubble == bs_closed || (!ALWAYS_HIDE && XaModal == 1)) ) )
 	{
 		/* destID=1 means if in_xa_bubble never close */
 		if( destID == 1 && in_xa_bubble != -1 )
 			return bs_none;
-		if( Style == 3 )
-			return bs_closed;
+		//if( Style == 3 )
+			//return bs_closed;
 		return XaBubble;
 	}
 
@@ -405,8 +417,6 @@ BBL_STATUS xa_bubble( enum locks lock, BBL_MD md, union msg_buf *msg, short dest
 	case bbl_process_event:
 		switch( m.m[0] )
 		{
-		case BUBBLEGEM_REQUEST:
-		break;
 		case BUBBLEGEM_HIDE:
 			close_window( lock, bgem_window );
 			c_bgem->active = 0;
@@ -415,6 +425,8 @@ BBL_STATUS xa_bubble( enum locks lock, BBL_MD md, union msg_buf *msg, short dest
 			XA_appl_write( lock, C.Hlp, &pb );
 			XaBubble = bs_closed;
 		goto xa_bubble_ret;
+		case BUBBLEGEM_REQUEST:
+		break;
 		case BUBBLEGEM_SHOW:
 			if( Style == 3 )
 			{
@@ -437,20 +449,22 @@ BBL_STATUS xa_bubble( enum locks lock, BBL_MD md, union msg_buf *msg, short dest
 					skip_trailing_blanks(str);
 					*bp++ = ' ';
 				}
+				else if( m.m[2] != 0 )
+						Style = m.m[2];
 				else
 					Style = cfg.xa_bubble;
 
 				strncpy( (char*)bp, (char*)str, BBL_MAXLEN );
-				//xstrncpy( bp, str, BBL_MAXLEN );
+
 				bbl_buf[BBL_MAXLEN] = 0;
 				c_bgem->active = 1;
 				if( open_bbl_window( lock,  bbl_buf, m.m[3], m.m[4]) )
 				{
-					BLOG((0,"xa_bubble: could not open window for %s", get_curproc()->name));
+					BLOG((1, "xa_bubble: could not open window for %s", get_curproc()->name));
 					ret = -1;
 					goto xa_bubble_ret;
 				}
-				XaModal = (m.m[7] & BGS7_USRHIDE);
+				XaModal = (m.m[7] & (BGS7_USRHIDE | BGS7_USRHIDE2));
 				XaBubble = bs_open;
 
 				if( destID != C.AESpid /* && !XaModal*/ )
@@ -503,6 +517,8 @@ BBL_STATUS xa_bubble( enum locks lock, BBL_MD md, union msg_buf *msg, short dest
 		XA_appl_write( 0, C.Aes, &pb );
 	goto xa_bubble_ret;
 	case bbl_close_bubble1:
+		if( XaModal & 2 )
+			goto xa_bubble_ret;
 	case bbl_close_bubble2:
 		if( msg )
 		{
@@ -510,7 +526,7 @@ BBL_STATUS xa_bubble( enum locks lock, BBL_MD md, union msg_buf *msg, short dest
 			ret = -3;
 			goto xa_bubble_ret;
 		}
-		if( XaBubble == bs_open && !(S.open_nlwindows.top->dial & created_for_ALERT) /*&& XaModal == 0*/ )
+		if( XaBubble == bs_open && (!S.open_nlwindows.top || !(S.open_nlwindows.top->dial & created_for_ALERT)) /*&& XaModal == 0*/ )
 		{
 			close_window( lock, bgem_window );
 			c_bgem->active = 0;
@@ -533,6 +549,95 @@ xa_bubble_ret:
 	return ret;
 }
 
+/*
+ * to be called by post_cevent
+ */
+void
+XA_bubble_event(enum locks lock, struct c_event *ce, bool cancel)
+{
+	switch( ce->d0 )
+	{
+	case 0:
+		xa_bubble( 0, bbl_close_bubble1, 0, 5 );
+	break;
+	case 1:
+		xa_bubble( 0, bbl_enable_bubble, 0, 0 );
+	break;
+	}
+}
+
+static void do_bubble_show(void)
+{
+	short x, y, b;
+	check_mouse( C.Aes, &b, &x, &y );
+	if( bbl_arg.str == 0 )
+		return;
+
+	{
+	union msg_buf m = {{0}};
+	BBL_STATUS status = xa_bubble( 0, bbl_get_status, 0, 1 );
+	if( status == bs_open )
+	{
+		status = xa_bubble( 0, bbl_close_bubble2, 0, 0 );
+	}
+	if( status != bs_closed )
+		return;
+	m.m[0] = BUBBLEGEM_SHOW;
+	m.m[1] = C.AESpid;
+	m.m[2] = cfg.describe_widgets;
+	m.m[3] = x;
+	m.m[4] = y + 4;
+	m.sb.p56 = bbl_arg.str;
+	m.m[7] = BGS7_USRHIDE2;
+	bbl_arg.str = 0;
+
+	xa_bubble( 0, bbl_process_event, &m, C.AESpid );
+	}
+}
+
+void bubble_request( short pid, short whndl, short x, short y )
+{
+	if( bbl_arg.str != 0 )
+	{
+		static short cnt = 0;
+		static char *str = 0;
+		if( cnt == 1 )
+		{
+			if( bbl_arg.str == str )
+				do_bubble_show();
+			cnt = 0;
+		}
+		else
+		{
+			str = bbl_arg.str;
+			cnt++;
+		}
+	}
+
+	if( pid != C.AESpid )
+	{
+		union msg_buf m;
+		m.m[0] = BUBBLEGEM_REQUEST;
+		m.m[1] = pid;
+		m.m[2] = 0;
+		m.m[3] = whndl;
+		m.m[4] = x;
+		m.m[5] = y;
+		m.m[6] = 0;	//kbshift
+		m.m[7] = 0;
+		xa_bubble( 0, bbl_send_request, &m, pid );
+	}
+}
+
+void bubble_show( char *str )
+{
+	//short x, y, b;
+	//check_mouse( C.Aes, &b, &x, &y );
+	//bbl_arg.x = x;
+	//bbl_arg.y = y;
+	bbl_arg.str = str;
+}
+
 void display_launched( enum locks lock, char *str )
 {
 	//return;
@@ -548,20 +653,6 @@ void display_launched( enum locks lock, char *str )
 	m.sb.p56 = str;
 
 	xa_bubble( lock, bbl_process_event, &m, C.AESpid );
-}
-
-void
-XA_bubble_event(enum locks lock, struct c_event *ce, bool cancel)
-{
-	switch( ce->d0 )
-	{
-	case 0:
-		xa_bubble( 0, bbl_close_bubble1, 0, 5 );
-	break;
-	case 1:
-		xa_bubble( 0, bbl_enable_bubble, 0, 0 );
-	break;
-	}
 }
 
 #endif

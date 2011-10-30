@@ -262,12 +262,6 @@ is_bevent(int gotbut, int gotcl, const short *o, int which)
 	DIAG((D_button,NULL,"[%d]is_bevent? %s; gotb %d; gotc %d; clks 0x%x, msk %d, st %d",
 		which, ev ? "Yes" : "No", gotbut, gotcl, clks, msk, st));
 
-#if WITH_BBL_HELP
-	if( cfg.xa_bubble && gotbut == 1 && xa_bubble( 0, bbl_get_status, 0, 1 ) == bs_open )	/* left click: bubble off */
-	{
-		xa_bubble( 0, bbl_close_bubble1, 0, 0 );
-	}
-#endif
 	return ev;
 }
 
@@ -945,19 +939,9 @@ m_not_move_timeout(struct proc *p, long arg)
 		post_cevent(client, XA_bubble_event, NULL, NULL, last_x, last_y, NULL, NULL);
 	}
 #else
-	if( wind && wind->owner != C.Aes && wind->owner != C.Hlp )
+	//if( wind && wind->owner != C.Aes && wind->owner != C.Hlp )
 	{
-		union msg_buf m;
-		m.m[0] = BUBBLEGEM_REQUEST;
-		m.m[1] = wind->owner->p->pid;	//C.AESpid;
-		m.m[2] = 0;
-		m.m[3] = wind->handle;
-		m.m[4] = x_mouse;	//last_x;
-		m.m[5] = y_mouse;	//last_y;
-		m.m[6] = 0;	//kbshift
-		m.m[7] = 0;
-		xa_bubble( 0, bbl_send_request, &m, wind->owner->p->pid );
-
+		bubble_request( wind->owner->p->pid, wind->handle, x_mouse, y_mouse );
 	}
 #endif
 }
@@ -1146,12 +1130,13 @@ adi_move(struct adif *a, short x, short y)
 			post_cevent(C.Aes, XA_bubble_event, NULL, NULL, 0, 0, NULL, NULL);
 		}
 
-		if (ms_to)
+		if (cfg.xa_bubble)
 		{
-			cancelroottimeout(ms_to);
-			ms_to = NULL;
-		}
-		{
+			if (ms_to)
+			{
+				cancelroottimeout(ms_to);
+				ms_to = NULL;
+			}
 			ms_to = addroottimeout(500L, m_not_move_timeout, 1);
 		}
 	}
@@ -1208,10 +1193,11 @@ button_timeout(struct proc *p, long arg)
 			DIAGA(("adi_button_event: type=%d, (%d/%d - %d/%d) state=%d, cstate=%d, clks=%d, l_clks=%d, r_clks=%d (%ld)",
 				md.ty, md.x, md.y, md.sx, md.sy, md.state, md.cstate, md.clicks,
 				md.iclicks.chars[0], md.iclicks.chars[1], sizeof(struct moose_data) ));
-#if 0
-			display("adi_button_event: type=%d, (%d/%d - %d/%d) state=%d, cstate=%d, clks=%d, l_clks=%d, r_clks=%d (%ld)",
-				md.ty, md.x, md.y, md.sx, md.sy, md.state, md.cstate, md.clicks,
-				md.iclicks[0], md.iclicks[1], sizeof(struct moose_data) );
+#if WITH_BBL_HELP
+			if( /*cfg.xa_bubble &&*/ md.state == 1 && xa_bubble( 0, bbl_get_status, 0, 1 ) == bs_open )	/* left click: bubble off */
+			{
+				xa_bubble( 0, bbl_close_bubble2, 0, 0 );
+			}
 #endif
 			vq_key_s(C.P_handle, &md.kstate);
 
