@@ -199,6 +199,35 @@ enum PState
 	nil
 };
 
+/*
+ * p: pointer to cur
+ * p1: prev
+ * lp: ptr to len of name
+ * l: len of name
+ * shift: true/false
+ */
+static int IsKeyName( char **p, char *p1, long *lp, long l, int shift )
+{
+	int i;
+	for( i = 0; KeyNames[i]; i++ )
+	{
+		if( !strncmp( *p, KeyNames[i], l ) )
+			break;
+	}
+	if( KeyNames[i] )
+	{
+		*p = p1;
+		*lp = l + (shift ? 6 : 0);
+		if( i == 4 )
+			i = ' ';
+		else if( i == 5 )
+			i = 0x1b;	//NK_ESC;
+		else
+			i++;
+		return i + shift;
+	}
+	return 0;
+}
 static int ScanKey( char **p, long *lp )
 {
 	char *p1 = strchr( *p+1, '#' );
@@ -217,24 +246,7 @@ static int ScanKey( char **p, long *lp )
 	l = p1 - *p;
 	if( l > 1 )
 	{
-		for( i = 0; KeyNames[i]; i++ )
-		{
-			if( !strncmp( *p, KeyNames[i], l ) )
-				break;
-		}
-		if( KeyNames[i] )
-		{
-			*p = p1;
-			*lp = l + (shift ? 6 : 0);
-			if( i == 4 )
-				i = ' ';
-			else if( i == 5 )
-				i = 0x1b;	//NK_ESC;
-			else
-				i++;
-			return i + shift;
-		}
-		//else
+		return IsKeyName( p, p1, lp, l, shift );
 	}
 	*lp = shift ? 7 : 1;
 	i = **p;
