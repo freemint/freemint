@@ -696,6 +696,7 @@ remove_from_tasklist(struct xa_client *client)
 void
 update_tasklist_entry( int md, void *app, long pid, int redraw )
 {
+	// -> opt!
 	struct helpthread_data *htd = lookup_xa_data_byname(&C.Hlp->xa_data, HTDNAME);
 	struct xa_window *wind;
 
@@ -1055,7 +1056,7 @@ void
 screen_dump(enum locks lock, struct xa_client *client, bool open)
 {
 	struct xa_client *dest_client;
-
+	UNUSED(open);
 	if ((dest_client = get_app_by_procname("xaaesnap")) || cfg.snapper[0] )
 	{
 // 		display("send dump message to %s", dest_client->proc_name);
@@ -2017,9 +2018,7 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 			wt = get_widget(wind, XAW_TOOLBAR)->stuff;
 			list = object_get_slist(wt->tree + TM_LIST);
 
-			if( TOP_WINDOW == wind )
-				redraw = NORMREDRAW;
-
+			redraw = NOREDRAW;
 			do_tm_chart(lock, wt, rootproc, wind);
 
 			if( list )
@@ -2074,12 +2073,13 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 							this_next = this->next;
 							if( !(this->usr_flags & (TM_MEMINFO|TM_UPDATED|TM_HEADER) ) )
 							{
-								list->del( list, this, true );
+								list->del( list, this, false );
 							}
 						}
 						}
 					}
 				}
+				list->redraw( list, NULL );
 			}	/* /if( list ) */
 
 			//if( TOP_WINDOW != htd->w_taskman )
