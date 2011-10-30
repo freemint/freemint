@@ -68,7 +68,7 @@ bool _cdecl	remove_wt(XA_TREE *wt, bool force);
 //XA_TREE *check_widget_tree(enum locks lock, struct xa_client *client, OBJECT *obtree);
 
 void	calc_work_area(struct xa_window *wind);
-bool	checkif_do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, short x, short y, XA_WIDGET **ret);
+short	checkif_do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, short x, short y, XA_WIDGET **ret);
 int	do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct moose_data *md);
 long	pix_to_sl(long p, long s);
 long	sl_to_pix(long s, long p);

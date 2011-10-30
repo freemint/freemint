@@ -62,4 +62,5 @@ enum
 
 extern char *xa_strings[];
 extern char *KeyNames[];
+extern char *WidgNames[];
 extern char **trans_strings[];
