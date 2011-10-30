@@ -77,6 +77,14 @@
 # 2: apple-ballon-help-style
 #xa_bubble = 1
 #####################################################################
+# describe_widgets
+# if set not 0 display name/function of a widget when the mouse is
+# placed (not moved) twice above a widget.
+# 1: windows-tooltip-style (recommended)
+# 2: apple-ballon-help-style
+# describe_widgets = 1
+#####################################################################
+
 ## video mode select
 # -----------------
 #

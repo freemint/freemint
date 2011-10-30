@@ -888,6 +888,8 @@ hu:Nyomtat s:
 ru:Ïå÷àòü:
 cs:Tisk:
 _
+NN:
+_
 ### Internal strings ###
 NN:Part of FreeMiNT (http://sparemint.org).       @
 de:Teil von FreeMiNT (http://sparemint.org).
@@ -897,6 +899,8 @@ it:Parte di FreeMiNT (http://sparemint.org).
 hu:FreeMiNT r‚sze (http://sparemint.org).
 ru:×àñòü FreeMiNT (http://sparemint.org).
 _
+NN:
+_
 NN:The terms of the <b>GPL version 2</b> or later apply.            @
 de:Es gilt die <b>GPL version 2</b> oder sp„ter.
 fr:Les termes de la <b>GPL version 2</b> ou plus sont d'application.
@@ -905,6 +909,8 @@ it:Si applicano i termini <b>GPL versione 2</b> o successivi.
 hu:<b>GPL version 2</b> vagy k‚s”bbi vonatkozik r .
 ru:Óäîâëåòâîğÿåò óñëîâèÿì <b>GPL âåğñèè 2</b>.
 cs:Øídí se ustanoveními <b>GPL verze 2</b> nebo novìj¹í.
+_
+NN:
 _
 ### Window context menu ###
 NN:­Windows     @
@@ -1006,6 +1012,8 @@ hu:­Kil”v‚s     @
 ru:­Ïğåğâàòü    @
 cs:­Zabít       @
 _
+NN:
+_
 NN:­Keep above others
 de:­šber den anderen
 fr:­Maintenir au-dessus
@@ -1041,6 +1049,8 @@ it:­Focus tastiera interdetto
 hu:­Nem kaphat f¢kuszt
 ru:­Çàïğåò ôîêóñà êëàâèàòóğû
 cs:­Neovládat klávesnicí
+_
+NN:
 _
 NN:­This
 de:­Dieses Fenster
@@ -1087,6 +1097,8 @@ hu:­T”bbi vissza ll¡t sa
 ru:­Âîññòàíîâèòü âñå îñòàëüíûå
 cs:­Obnovit v¹echny ostatní
 _
+NN:
+_
 NN:­This window
 de:­Dieses Fenster
 fr:­Cette fenˆtre
@@ -1122,6 +1134,10 @@ it:­Mostra altre applicazioni
 hu:­T”bbi alk. megj.
 ru:­Ïîêàçàòü äğóãèå ïğîãğàììû
 cs:­Ukázat ostatní aplikace
+_
+NN:
+_
+NN:
 _
 ### Window titles & system strings ###
 NN:About      @
@@ -1551,3 +1567,57 @@ NN:HOME
 _
 NN:UNDO
 _
+# widget-bubbles
+NN:Resize
+_
+NN:Move       @
+de:Verschieben
+_
+NN:
+_
+NN:
+_
+NN:Close    @
+de:Schlieáen
+_
+NN:Full
+_
+NN:Info
+_
+NN:Resize
+_
+NN:Scroll up
+_
+NN:Scroll up
+_
+NN:Scroll down
+_
+NN:Vertical slide
+_
+NN:Scroll left
+_
+NN:Scroll left
+_
+NN:Scroll right
+_
+NN:Horizontal slide
+_
+NN:Iconify
+_
+NN:Hide
+_
+NN:
+_
+NN:
+_
+NN:Mover
+_
+NN:Page up
+_
+NN:Page down
+_
+NN:Page left
+_
+NN:Page right
+_
+
