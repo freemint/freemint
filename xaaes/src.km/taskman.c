@@ -2014,11 +2014,13 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 		{
 			SCROLL_INFO *list;
 			struct proc *rootproc = pid2proc(0);
+			static int first = 1;	// do full-redraw for correct slider-size
 
 			wt = get_widget(wind, XAW_TOOLBAR)->stuff;
 			list = object_get_slist(wt->tree + TM_LIST);
 
-			redraw = NOREDRAW;
+			if( first == 0 )
+				redraw = NORMREDRAW;
 			do_tm_chart(lock, wt, rootproc, wind);
 
 			if( list )
@@ -2073,13 +2075,17 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 							this_next = this->next;
 							if( !(this->usr_flags & (TM_MEMINFO|TM_UPDATED|TM_HEADER) ) )
 							{
-								list->del( list, this, false );
+								list->del( list, this, redraw );
 							}
 						}
 						}
 					}
 				}
-				list->redraw( list, NULL );
+				if( first == 1 )
+				{
+					list->redraw( list, NULL );
+					first = 0;
+				}
 			}	/* /if( list ) */
 
 			//if( TOP_WINDOW != htd->w_taskman )
