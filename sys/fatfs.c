@@ -5171,7 +5171,7 @@ get_bpb (_x_BPB *xbpb, DI *di)
 {
 	_F_BS *fbs;
 	_F32_BS *f32bs;
-	_F_VI *fvi;
+	//_F_VI *fvi;
 
 	UNIT *u;
 	long r;
@@ -5225,7 +5225,7 @@ get_bpb (_x_BPB *xbpb, DI *di)
 		FAT_DEBUG (("get_bpb: GEM/BGM detected"));
 
 		xbpb->ftype = FAT_TYPE_16;
-		fvi = (void *) (u->data + sizeof (*fbs));
+		//fvi = (void *) (u->data + sizeof (*fbs));
 	}
 	else
 
@@ -5238,7 +5238,7 @@ get_bpb (_x_BPB *xbpb, DI *di)
 		FAT_DEBUG (("get_bpb: F32 detected"));
 
 		xbpb->ftype = FAT_TYPE_32;
-		fvi = (void *) (u->data + sizeof (*f32bs));
+		//fvi = (void *) (u->data + sizeof (*f32bs));
 	}
 	else
 
@@ -5257,14 +5257,14 @@ get_bpb (_x_BPB *xbpb, DI *di)
 			case 0x0e: /* FAT16, partially or completely above sector 16,450,559 (DOS-limit for CHS access) */
 			{
 				xbpb->ftype = FAT_TYPE_16;
-				fvi = (void *) (u->data + sizeof (*fbs));
+				//fvi = (void *) (u->data + sizeof (*fbs));
 				break;
 			}
 			case 0x0b:
 			case 0x0c: /* FAT32, partially or completely above sector 16,450,559 (DOS-limit for CHS access) */
 			{
 				xbpb->ftype = FAT_TYPE_32;
-				fvi = (void *) (u->data + sizeof (*f32bs));
+				//fvi = (void *) (u->data + sizeof (*f32bs));
 				break;
 			}
 			default:
