@@ -208,6 +208,8 @@ cancel_CE(struct xa_client *client,
 	}
 }
 
+static void
+CE_fa(enum locks lock, struct c_event *ce, bool cancel);
 void
 post_cevent(struct xa_client *client,
 	void (*func)(enum locks, struct c_event *, bool cancel),
@@ -697,6 +699,7 @@ multi_intout(struct xa_client *client, short *o, int evnt)
 struct display_alert_data
 {
 	enum locks lock;
+	short len;
 	char buf[0];
 };
 
@@ -772,7 +775,7 @@ CE_fa(enum locks lock, struct c_event *ce, bool cancel)
 			if (t)
 				t->arg = (long)data;
 		}
-		else
+		else if( data->len )
 		{
 			struct xa_client *client = ce->client;
 			struct helpthread_data *htd = lookup_xa_data_byname(&client->xa_data, HTDNAME);
@@ -844,13 +847,16 @@ CE_fa(enum locks lock, struct c_event *ce, bool cancel)
 					struct timezone tz;
 					union udostim dtim;
 					extern struct xa_wtxt_inf norm_txt;	/* from taskman.c */
+					long len;
 
 					Tgettimeofday( &tv, &tz );
 					dtim.l = unix2xbios( tv.tv_sec );
-					sprintf( data->buf, ce->d0, "%02d:%02d:%02d: %s", dtim.t.hour, dtim.t.minute, dtim.t.sec2, b + 4 );
+					len = sprintf( data->buf, ce->d0, "%02d:%02d:%02d: %s", dtim.t.hour, dtim.t.minute, dtim.t.sec2, b + 4 );
 					strrpl( data->buf, '|', ' ', ' ' );
-					data->buf[strlen(data->buf)-7] = 0;	/* strip off [ OK ] */
-					BLOG((0,data->buf));
+					len = strlen(data->buf);
+					if( len > 7 )
+						data->buf[strlen(data->buf)-7] = 0;	/* strip off [ OK ] */
+					BLOG((0, "ALERT:'%s'", data->buf));
 #endif
 					sc.t.text = data->buf;
 					sc.icon = icon;
@@ -882,7 +888,6 @@ CE_fa(enum locks lock, struct c_event *ce, bool cancel)
 	{
 		kfree(ce->ptr1);
 	}
-
 }
 
 static void
@@ -938,6 +943,7 @@ alert_input(enum locks lock)
 			return;
 		}
 		data->lock = lock;
+		data->len = n + ALERTPL;
 		f_read(C.alert_pipe, n, data->buf);
 		data->buf[n] = '\0';
 
@@ -950,7 +956,7 @@ alert_input(enum locks lock)
 		}
 		if (C.Hlp && n < MAX_ALERTLEN && *data->buf == '[')
 		{
-			post_cevent(C.Hlp, CE_fa, data, NULL, n + ALERTPL, 0, NULL,NULL);
+			post_cevent(C.Hlp, CE_fa, data, NULL, 0, 0, NULL,NULL);
 		}
 		else
 			kfree(data);
@@ -965,18 +971,6 @@ static void k_exit(int);
 static void restore_sigs(void);
 static void setup_common(void);
 int ferr = 0;	/* global to indicate serious problems */
-/*
- * signal handlers
- */
-static void
-ignore(int sig)
-{
-	DIAGS(("AESSYS: ignored signal"));
-	BLOG((0, "'%s': received signal: %d(ignored)", get_curproc()->name, sig));
-	KERNEL_DEBUG("AESSYS: ignored signal");
-}
-#if !GENERATE_DIAGS
-
 static void print_context(int sig)
 {
 #ifdef BOOTLOG
@@ -985,6 +979,19 @@ static void print_context(int sig)
 	BLOG((true,"exception %d for %s pc:%lx addr:%lx", sig, p->name, p->exception_pc, p->exception_addr));
 #endif
 }
+
+/*
+ * signal handlers
+ */
+static void
+ignore(int sig)
+{
+	DIAGS(("AESSYS: ignored signal"));
+	print_context(sig);
+	BLOG((0, "'%s': received signal: %d(ignored)", get_curproc()->name, sig));
+	KERNEL_DEBUG("AESSYS: ignored signal");
+}
+#if !GENERATE_DIAGS
 
 static void
 fatal(int sig)
