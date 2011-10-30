@@ -1331,7 +1331,7 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 			char *data;	//, *ed;
 			char *d;
 			short wdwidth;
-			long pixel, size, scanlen, red, green, blue, ired, igreen, iblue;
+			long pixel, size, scanlen, red, green, blue, ired=0, igreen=0, iblue=0;
 			void * (*to)(struct rgb_1000 *pal, void *imgdata);
 			void (*rp)(void *, void *, int);
 			struct rgb_1000 col;
@@ -1378,9 +1378,12 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 
 			case 0:
 			{
-				ired = ((long)(c[1].red - c[0].red) << 16) / h;
-				igreen = ((long)(c[1].green - c[0].green) << 16) / h;
-				iblue = ((long)(c[1].blue - c[0].blue) << 16) / h;
+				if( h )
+				{
+					ired = ((long)(c[1].red - c[0].red) << 16) / h;
+					igreen = ((long)(c[1].green - c[0].green) << 16) / h;
+					iblue = ((long)(c[1].blue - c[0].blue) << 16) / h;
+				}
 
 				red = (long)c[0].red << 16;
 				green = (long)c[0].green << 16;
@@ -1413,9 +1416,12 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 			{
 				long rgb[3];
 
-				ired = ((long)(c[1].red - c[0].red) << 16) / w;
-				igreen = ((long)(c[1].green - c[0].green) << 16) / w;
-				iblue = ((long)(c[1].blue - c[0].blue) << 16) / w;
+				if( w )
+				{
+					ired = ((long)(c[1].red - c[0].red) << 16) / w;
+					igreen = ((long)(c[1].green - c[0].green) << 16) / w;
+					iblue = ((long)(c[1].blue - c[0].blue) << 16) / w;
+				}
 				red = (long)c[0].red << 16;
 				green = (long)c[0].green << 16;
 				blue = (long)c[0].blue << 16;
@@ -1467,11 +1473,14 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 				{
 					d = data;
 
-					ired = ((long)(c[1].red - strt.red) << 16) / w;
+					if( w )
+					{
+						ired = ((long)(c[1].red - strt.red) << 16) / w;
+						igreen = ((long)(c[1].green - strt.green) << 16) / w;
+						iblue = ((long)(c[1].blue - strt.blue) << 16) / w;
+					}
 					if( c[3].red )ired += c[3].red;	// chaos!
-					igreen = ((long)(c[1].green - strt.green) << 16) / w;
 					if( c[3].green )igreen += c[3].green;	// chaos!
-					iblue = ((long)(c[1].blue - strt.blue) << 16) / w;
 					if( c[3].blue )iblue += c[3].blue;	// chaos!
 
 					red = (long)strt.red << 16;
@@ -1485,7 +1494,7 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 						col.green = green >> 16;
 						if( c[2].green )col.green += ((col.blue) % c[2].green);	// chaos!
 						col.blue = blue >> 16;
-						if( c[2].blue )col.blue += ((col.red)       % c[2].blue);	// chaos!
+						if( c[2].blue )col.blue += ((col.red) % c[2].blue);	// chaos!
 						d = (*to)(&col, d);
 
 						red += ired;
@@ -1524,9 +1533,12 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 					h2 = h - step;
 				}
 
-				ired = ((long)(c[1].red - c[0].red) << 16) / h1;
-				igreen = ((long)(c[1].green - c[0].green) << 16) / h1;
-				iblue = ((long)(c[1].blue - c[0].blue) << 16) / h1;
+				if( h1 )
+				{
+					ired = ((long)(c[1].red - c[0].red) << 16) / h1;
+					igreen = ((long)(c[1].green - c[0].green) << 16) / h1;
+					iblue = ((long)(c[1].blue - c[0].blue) << 16) / h1;
+				}
 
 				red = (long)c[0].red << 16;
 				green = (long)c[0].green << 16;
@@ -1552,18 +1564,21 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 					green += igreen;
 					blue += iblue;
 					col.red = red >> 16;
-					if( c[3].red )col.red -= (i % c[3].red);	// chaos
+					if( c[3].red )col.red -= ((col.green) % c[3].red);	// chaos!
 					col.green = green >> 16;
-					if( c[3].green )col.green -= (i % c[3].green);	// chaos
+					if( c[3].green )col.green -= ((col.blue) % c[3].green);	// chaos!
 					col.blue = blue >> 16;
-					if( c[3].blue )col.blue -= (i % c[3].blue);	// chaos
+					if( c[3].blue )col.blue -= ((col.red) % c[3].blue);	// chaos!
 
 					data += scanlen;
 				}
 
-				ired = ((long)(c[2].red - col.red) << 16) / h2;
-				igreen = ((long)(c[2].green - col.green) << 16) / h2;
-				iblue = ((long)(c[2].blue - col.blue) << 16) / h2;
+				if( h2 )
+				{
+					ired = ((long)(c[2].red - col.red) << 16) / h2;
+					igreen = ((long)(c[2].green - col.green) << 16) / h2;
+					iblue = ((long)(c[2].blue - col.blue) << 16) / h2;
+				}
 
 				red = (long)col.red << 16;
 				green = (long)col.green << 16;
@@ -1585,8 +1600,11 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 					green += igreen;
 					blue += iblue;
 					col.red = red >> 16;
+					if( c[3].red )col.red += ((col.green) % c[3].red);	// chaos!
 					col.green = green >> 16;
+					if( c[3].green )col.green += ((col.blue) % c[3].green);	// chaos!
 					col.blue = blue >> 16;
+					if( c[3].blue )col.blue += ((col.red) % c[3].blue);	// chaos!
 
 					data += scanlen;
 				}
@@ -1613,9 +1631,12 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 				{
 					d = data;
 
-					ired =   ((long)(c[1].red - c[0].red) << 16) / w1;
-					igreen = ((long)(c[1].green - c[0].green) << 16) / w1;
-					iblue =  ((long)(c[1].blue - c[0].blue) << 16) / w1;
+					if( w1 )
+					{
+						ired =   ((long)(c[1].red - c[0].red) << 16) / w1;
+						igreen = ((long)(c[1].green - c[0].green) << 16) / w1;
+						iblue =  ((long)(c[1].blue - c[0].blue) << 16) / w1;
+					}
 
 					red =	(long)c[0].red << 16;
 					green =	(long)c[0].green << 16;
@@ -1631,9 +1652,12 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 						blue += iblue;
 					}
 
-					ired =   ((long)(c[2].red - col.red) << 16) / w2;
-					igreen = ((long)(c[2].green - col.green) << 16) / w2;
-					iblue =  ((long)(c[2].blue - col.blue) << 16) / w2;
+					if( w2 )
+					{
+						ired =   ((long)(c[2].red - col.red) << 16) / w2;
+						igreen = ((long)(c[2].green - col.green) << 16) / w2;
+						iblue =  ((long)(c[2].blue - col.blue) << 16) / w2;
+					}
 
 					red =   (long)col.red << 16;
 					green = (long)col.green << 16;
