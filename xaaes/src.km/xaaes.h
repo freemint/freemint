@@ -35,13 +35,13 @@
 #define FSM_DELETE 85  /* STRING in tree FSEL_MENU */
 
 #define ALERT_ICONS 2  /* form/dial */
-#define ALR_IC_DRIVE 1  /* CICON in tree ALERT_ICONS */
-#define ALR_IC_STOP 2  /* CICON in tree ALERT_ICONS */
-#define ALR_IC_SYSTEM 3  /* CICON in tree ALERT_ICONS */
-#define ALR_IC_BOMB 4  /* CICON in tree ALERT_ICONS */
-#define ALR_IC_WARNING 5  /* CICON in tree ALERT_ICONS */
-#define ALR_IC_INFO 6  /* CICON in tree ALERT_ICONS */
-#define ALR_IC_QUESTION 7  /* CICON in tree ALERT_ICONS */
+#define ALR_IC_WARNING 1  /* CICON in tree ALERT_ICONS */
+#define ALR_IC_QUESTION 2  /* CICON in tree ALERT_ICONS */
+#define ALR_IC_STOP 3  /* CICON in tree ALERT_ICONS */
+#define ALR_IC_INFO 4  /* CICON in tree ALERT_ICONS */
+#define ALR_IC_DRIVE 5  /* CICON in tree ALERT_ICONS */
+#define ALR_IC_BOMB 6  /* CICON in tree ALERT_ICONS */
+#define ALR_IC_SYSTEM 7  /* CICON in tree ALERT_ICONS */
 
 #define ALERT_BOX 3  /* form/dial */
 #define ALERT_BACK 0  /* BOX in tree ALERT_BOX */
