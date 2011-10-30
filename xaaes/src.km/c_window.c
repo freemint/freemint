@@ -2423,6 +2423,9 @@ close_window(enum locks lock, struct xa_window *wind)
 
 	if (wind == C.hover_wind)
 	{
+#if WITH_BBL_HELP
+		bubble_show(0);
+#endif
 		C.hover_wind = NULL;
 		C.hover_widg = NULL;
 	}
