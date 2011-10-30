@@ -592,8 +592,8 @@ static XA_FILE *rsc_lang_file( int md, XA_FILE *fp, char *buf, long l )
 				strip = false;
 			}
 
-			//if( !len )
-				//return 0;
+			if( !len )
+				return 0;
 			/* strip trailing blanks */
 			for( clen = len - 1; clen && in[clen] == ' '; clen-- );
 			/*if( clen == 0 && *in == ' ' )	// blank line
@@ -718,11 +718,11 @@ static short translate_string( struct xa_client *client, XA_FILE *rfp, char **p,
 
 	for( blen = j = 0; j < 2 && !blen; j++ )
 	{
-		if( (blen = (short)(long)rsc_lang_file( REPLACE, rfp, (char*)p, i)) || !**p)
+		if( (blen = (short)(long)rsc_lang_file( REPLACE, rfp, (char*)p, i)))
 			break;	//found
 		if( 1 || rsl_errors++ < RSL_MAX_ERRORS )
 		{
-			 BLOG((0,"translate:'%s':rewind", *p ));
+			// BLOG((0,"translate:'%s':rewind", *p ));
 			xa_rewind( rfp );
 			rsl_lno = 1;
 			reported_skipped = -1;
@@ -730,7 +730,7 @@ static short translate_string( struct xa_client *client, XA_FILE *rfp, char **p,
 		else
 			break;	// give up
 	}
-	if( !blen && **p )
+	if( !blen )
 	{
 		//ALERT(("translate: item '%s' not found", *p ));
 		BLOG((0, "%s:translate: item '%s':%x not found", client->name, *p, **p ));
@@ -743,7 +743,7 @@ static short rsc_trans_rw( struct xa_client *client, XA_FILE *rfp, char **txt, l
 	short blen = 0;
 	char buf[256];
 
-	if( !rfp || !txt || !*txt /*|| !**txt*/ )
+	if( !rfp || !txt || !*txt || !**txt )
 		return 0;
 
 	if( client->options.rsc_lang == WRITE )
@@ -1506,7 +1506,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 			{
 				for( t = trans_strings[i]; *t; t++)
 				{
-					//if( **t )
+					if( **t )
 					{
 						rsc_trans_rw( client, rfp, t, 0 );
 					}
