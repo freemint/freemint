@@ -139,11 +139,40 @@ char *KeyNames[] = {
 	0
 };
 
+char *WidgNames[] = {
+	"Resize",	// Border
+	"Move       ",
+	"",	// Wcontext
+	"",	// Wappicn
+	"Close    ",
+	"Full",
+	"Info",
+	"Resize",	//Title
+	"Scroll up",
+	"Scroll up",
+	"Scroll down",
+	"Vertical slide",
+	"Scroll left",
+	"Scroll left",
+	"Scroll right",
+	"Horizontal slide",
+	"Iconify",
+	"Hide",
+	"",	//Toolbar
+	"",	//Menu
+	"",	//Mover
+	"Page up",
+	"Page down",
+	"Page left",
+	"Page right",
+	0
+};
 
 char **trans_strings[] = {
 	about_lines,
 	wctxt_main_txt,
 	xa_strings,
 	KeyNames,
+	WidgNames,
 	0
 };

@@ -42,6 +42,9 @@
 #include "rectlist.h"
 #include "taskman.h"
 
+#if WITH_BBL_HELP
+#include "xa_bubble.h"
+#endif
 #include "xa_evnt.h"
 #include "xa_graf.h"
 #include "xa_rsrc.h"
@@ -994,7 +997,9 @@ redraw_menu(enum locks lock)
 	struct xa_widget *widg;
 
 	if( cfg.menu_bar == 0 )
+	{
 		return;
+	}
 	rc = lookup_extension(NULL, XAAES_MAGIC);
 	if (!rc)
 		rc = C.Aes;
@@ -4605,7 +4610,10 @@ is_V_arrow(struct xa_window *w, XA_WIDGET *widg, int click)
    structures and made it global.
    Another reason to have the active_widget handling in the kernel. */
 
-bool
+/*
+ * return widget-number+1 if found else 0
+ */
+short
 checkif_do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, short x, short y, XA_WIDGET **ret)
 {
 	XA_WIDGET *widg;
@@ -4640,7 +4648,7 @@ checkif_do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, shor
 					{
 						if (ret)
 							*ret = widg;
-						return true;
+						return f + 1;
 					}
 				}
 			}
@@ -4649,7 +4657,7 @@ checkif_do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, shor
 	if (ret)
 		*ret = NULL;
 
-	return false;
+	return 0;
 }
 
 
@@ -4916,6 +4924,7 @@ set_winmouse(short x, short y)
 	wind_mshape(wind, x, y);
 }
 
+
 short
 wind_mshape(struct xa_window *wind, short x, short y)
 {
@@ -4927,84 +4936,106 @@ wind_mshape(struct xa_window *wind, short x, short y)
 
 	if (!update_locked() || update_locked() == wind->owner->p)
 	{
-	if (wind)
-	{
-		if (!(wo->status & CS_EXITING))
+		if (wind)
 		{
-			if (!update_locked() && cfg.widg_auto_highlight)
+			if (!(wo->status & CS_EXITING))
 			{
-				struct xa_window *rwind = NULL;
-				struct xa_widget *hwidg, *rwidg = NULL;
-
-				checkif_do_widgets(0, wind, 0, x, y, &hwidg);
-
-				if (hwidg && !hwidg->owner && wdg_is_inst(hwidg))
-				{
-					if (wind != C.hover_wind || hwidg != C.hover_widg)
-					{
-						rwind = C.hover_wind;
-						rwidg = C.hover_widg;
-						redisplay_widget(0, wind, hwidg, OS_SELECTED);
-						C.hover_wind = wind;
-						C.hover_widg = hwidg;
-					}
-				}
-				else if ((rwind = C.hover_wind))
-				{
-					rwidg = C.hover_widg;
-					C.hover_wind = NULL, C.hover_widg = NULL;
-				}
-
-				if (rwind)
-				{
-					redisplay_widget(0, rwind, rwidg, OS_NORMAL);
-				}
-			}
-
-			if (wind->active_widgets & (SIZER|BORDER))
-			{
-				widg = wind->widgets + XAW_RESIZE;
-				if ( /*wind->frame > 0 && */
-				    (wind->active_widgets & BORDER) &&
-				   !(wind->widgets[XAW_BORDER].m.statusmask & status) &&
-				    (!m_inside(x, y, &wind->ba)))
-				{
-					r = wind->r;
-					shape = border_mouse[compass(16, x, y, r)];
-				}
-				else if (wind->active_widgets & SIZER)
+				if (wind->active_widgets & (SIZER|BORDER))
 				{
 					widg = wind->widgets + XAW_RESIZE;
-					if (!(widg->m.statusmask & status))
+					if ( /*wind->frame > 0 && */
+					    (wind->active_widgets & BORDER) &&
+					   !(wind->widgets[XAW_BORDER].m.statusmask & status) &&
+					    (!m_inside(x, y, &wind->ba)))
 					{
-						rp_2_ap_cs(wind, widg, &r);
-						if (m_inside(x, y, &r))
-							shape = border_mouse[SE];
+						r = wind->r;
+						shape = border_mouse[compass(16, x, y, r)];
+					}
+					else if (wind->active_widgets & SIZER)
+					{
+						widg = wind->widgets + XAW_RESIZE;
+						if (!(widg->m.statusmask & status))
+						{
+							rp_2_ap_cs(wind, widg, &r);
+							if (m_inside(x, y, &r))
+								shape = border_mouse[SE];
+						}
 					}
 				}
-			}
-			if (shape != -1)
-			{
-				if (C.aesmouse == -1 || (C.aesmouse != -1 && C.aesmouse != shape))
-					xa_graf_mouse(shape, NULL, NULL, true);
+				if (shape != -1)
+				{
+					if (C.aesmouse == -1 || (C.aesmouse != -1 && C.aesmouse != shape))
+						xa_graf_mouse(shape, NULL, NULL, true);
+				}
+				else
+				{
+					if (C.aesmouse != -1)
+						xa_graf_mouse(-1, NULL, NULL, true);
+					if (C.mouse_form != wind->owner->mouse_form)
+						xa_graf_mouse(wo->mouse, wo->mouse_form, wo, false);
+				}
+				if (!update_locked() && (cfg.widg_auto_highlight || cfg.describe_widgets) )
+				{
+					int bbl_closed = 0;
+					struct xa_window *rwind = NULL;
+					struct xa_widget *hwidg, *rwidg = NULL;
+
+					short f = checkif_do_widgets(0, wind, 0, x, y, &hwidg), f1 = 0;
+
+					if( f == (XAW_TOOLBAR+1) && wind->winob && (f = f1 = checkif_do_widgets(0, (struct xa_window *)wind->winob, 0, x, y, &hwidg)) )
+						wind = (struct xa_window *)wind->winob;	// list-window
+
+					if( ( (!f1 || f1 != (XAW_TITLE + 1)) && wind != bgem_window)	// ? root_window,menu:window ?
+						&& (hwidg && !hwidg->owner && wdg_is_inst(hwidg)) )
+					{
+						if (wind != C.hover_wind || hwidg != C.hover_widg)
+						{
+							rwind = C.hover_wind;
+							rwidg = C.hover_widg;
+#if WITH_BBL_HELP
+
+							if (cfg.describe_widgets)
+							{
+								if (rwind)
+								{
+									xa_bubble( 0, bbl_close_bubble2, 0, 0 );
+									bbl_closed = 1;
+								}
+								bubble_show( WidgNames[f-1] );
+							}
+#endif
+							if( cfg.widg_auto_highlight )
+								redisplay_widget(0, wind, hwidg, OS_SELECTED);
+							C.hover_wind = wind;
+							C.hover_widg = hwidg;
+						}
+					}
+					else if ((rwind = C.hover_wind))
+					{
+						rwidg = C.hover_widg;
+						C.hover_wind = NULL, C.hover_widg = NULL;
+					}
+
+					if (rwind)
+					{
+						if( cfg.widg_auto_highlight )
+							redisplay_widget(0, rwind, rwidg, OS_NORMAL);
+#if WITH_BBL_HELP
+						if( cfg.describe_widgets && !bbl_closed )
+							xa_bubble( 0, bbl_close_bubble2, 0, 0 );
+#endif
+					}
+				}
 			}
 			else
 			{
-				if (C.aesmouse != -1)
-					xa_graf_mouse(-1, NULL, NULL, true);
-				if (C.mouse_form != wind->owner->mouse_form)
-					xa_graf_mouse(wo->mouse, wo->mouse_form, wo, false);
+				C.hover_wind = NULL;
+				C.hover_widg = NULL;
+				xa_graf_mouse(ARROW, NULL, NULL, false);
 			}
 		}
-		else
-		{
-			C.hover_wind = NULL;
-			C.hover_widg = NULL;
-			xa_graf_mouse(ARROW, NULL, NULL, false);
-		}
-	}
-	else if (C.aesmouse != -1)
-		xa_graf_mouse(-1, NULL, NULL, true);
+		else if (C.aesmouse != -1)
+			xa_graf_mouse(-1, NULL, NULL, true);
 	}
 
 	return shape;
