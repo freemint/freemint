@@ -1,6 +1,7 @@
 #include "xa_appl.h"
 
 #if WITH_BBL_HELP
+#include "k_main.h"
 #include "k_mouse.h"
 #include "menuwidg.h"
 #include "xacookie.h"
@@ -373,7 +374,7 @@ BBL_STATUS xa_bubble( enum locks lock, BBL_MD md, union msg_buf *msg, short dest
 	static short intin[8], intout[8], control[8], global[8];
 	static long addrin[4] = {(long)&m}, addrout[4];
 	static AESPB pb = {control, global, intin, intout, addrin, addrout};
-	int ret;
+	int ret = XaBubble;
 
 	if( md == bbl_close_bubble2 )
 		bbl_arg.str = 0;	// cancel pending SHOW
@@ -383,8 +384,8 @@ BBL_STATUS xa_bubble( enum locks lock, BBL_MD md, union msg_buf *msg, short dest
 			&& ( XaBubble == bs_closed || (!ALWAYS_HIDE && XaModal == 1)) ) )
 	{
 		/* destID=1 means if in_xa_bubble never close */
-		if( destID == 1 && in_xa_bubble != -1 )
-			return bs_none;
+		//if( destID == 1 && in_xa_bubble != -1 )
+			//return bs_none;
 		//if( Style == 3 )
 			//return bs_closed;
 		return XaBubble;
@@ -393,7 +394,9 @@ BBL_STATUS xa_bubble( enum locks lock, BBL_MD md, union msg_buf *msg, short dest
 	if( in_xa_bubble >= 0 )
 	{
 		if( md == bbl_send_request || md == bbl_close_bubble1 || md == bbl_close_bubble2 )
+		{
 			return bs_none;
+		}
 	}
 	in_xa_bubble = get_curproc()->pid;
 	ret = 0;
@@ -487,8 +490,6 @@ BBL_STATUS xa_bubble( enum locks lock, BBL_MD md, union msg_buf *msg, short dest
 	break;
 	case bbl_enable_bubble:
 	{
-		XaBubble = bs_closed;
-
 		if( !install_cookie( (void**)&c_bgem, (void*)&bgem, sizeof(*c_bgem), C_BGEM, false ) )
 		{
 			XaBubble = bs_closed;
@@ -539,7 +540,7 @@ BBL_STATUS xa_bubble( enum locks lock, BBL_MD md, union msg_buf *msg, short dest
 				/* send ACK-message saved at SHOW */
 				XA_appl_write( lock, C.Hlp, &pb );
 			}
-			XaBubble = bs_closed;
+			ret = XaBubble = bs_closed;
 			goto xa_bubble_ret;
 		}
 	break;
@@ -568,22 +569,26 @@ XA_bubble_event(enum locks lock, struct c_event *ce, bool cancel)
 	}
 }
 
-static void do_bubble_show(void)
+static void do_bubble_show(enum locks lock, struct c_event *ce, bool cancel)
+//static void do_bubble_show(void)
 {
 	short x, y, b;
-	check_mouse( C.Aes, &b, &x, &y );
 	if( bbl_arg.str == 0 )
 		return;
 
 	{
-	union msg_buf m = {{0}};
-	BBL_STATUS status = xa_bubble( 0, bbl_get_status, 0, 1 );
+	union msg_buf m;
+	BBL_STATUS status = xa_bubble( 0, bbl_get_status, 0, 0 );
 	if( status == bs_open )
 	{
 		status = xa_bubble( 0, bbl_close_bubble2, 0, 0 );
 	}
+	check_mouse( C.Aes, &b, &x, &y );
 	if( status != bs_closed )
+	{
+		bbl_arg.str = 0;
 		return;
+	}
 	m.m[0] = BUBBLEGEM_SHOW;
 	m.m[1] = C.AESpid;
 	m.m[2] = cfg.describe_widgets;
@@ -606,7 +611,10 @@ void bubble_request( short pid, short whndl, short x, short y )
 		if( cnt == 1 )
 		{
 			if( bbl_arg.str == str )
-				do_bubble_show();
+			{
+				post_cevent(C.Aes, do_bubble_show, NULL, NULL, 0, 0, NULL, NULL);
+				//do_bubble_show();
+			}
 			cnt = 0;
 		}
 		else
@@ -647,7 +655,6 @@ void display_launched( enum locks lock, char *str )
 	m.m[0] = BUBBLEGEM_SHOW;
 	m.m[1] = C.AESpid;
 	m.m[7] = BGS7_DISPCL;
-	///*m.m[3] =*/ m.m[4] = -16;
 	m.sb.p56 = str;
 
 	xa_bubble( lock, bbl_process_event, &m, C.AESpid );
