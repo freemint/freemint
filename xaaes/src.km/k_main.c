@@ -849,12 +849,12 @@ CE_fa(enum locks lock, struct c_event *ce, bool cancel)
 
 					Tgettimeofday( &tv, &tz );
 					dtim.l = unix2xbios( tv.tv_sec );
-					len = sprintf( data->buf, ce->d0, "%02d:%02d:%02d: %s", dtim.t.hour, dtim.t.minute, dtim.t.sec2, b + 4 );
+					sprintf( data->buf, data->len, "%02d:%02d:%02d: %s", dtim.t.hour, dtim.t.minute, dtim.t.sec2, b + 4 );
 					strrpl( data->buf, '|', ' ', ' ' );
 					len = strlen(data->buf);
 					if( len > 7 )
-						data->buf[strlen(data->buf)-7] = 0;	/* strip off [ OK ] */
-					BLOG((0, "ALERT:'%s'", data->buf));
+						data->buf[len-7] = 0;	/* strip off [ OK ] */
+					BLOG((0, data->buf));
 #endif
 					sc.t.text = data->buf;
 					sc.icon = icon;
