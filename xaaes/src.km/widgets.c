@@ -4992,6 +4992,8 @@ wind_mshape(struct xa_window *wind, short x, short y)
 						{
 							rwind = C.hover_wind;
 							rwidg = C.hover_widg;
+							if( cfg.widg_auto_highlight )
+								redisplay_widget(0, wind, hwidg, OS_SELECTED);
 #if WITH_BBL_HELP
 
 							if (cfg.describe_widgets)
@@ -5004,8 +5006,6 @@ wind_mshape(struct xa_window *wind, short x, short y)
 								bubble_show( WidgNames[f-1] );
 							}
 #endif
-							if( cfg.widg_auto_highlight )
-								redisplay_widget(0, wind, hwidg, OS_SELECTED);
 							C.hover_wind = wind;
 							C.hover_widg = hwidg;
 						}
@@ -5022,7 +5022,9 @@ wind_mshape(struct xa_window *wind, short x, short y)
 							redisplay_widget(0, rwind, rwidg, OS_NORMAL);
 #if WITH_BBL_HELP
 						if( cfg.describe_widgets && !bbl_closed )
+						{
 							xa_bubble( 0, bbl_close_bubble2, 0, 0 );
+						}
 #endif
 					}
 				}
