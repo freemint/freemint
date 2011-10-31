@@ -5,15 +5,21 @@
 #include "mint/proc.h"
 #include "mint/mem.h"
 
+
+#define PM_PRIV   (1<<4)	// = Private
+#define PM_GLOB   (2<<4) 	// = Global
+#define PM_SUPER  (3<<4)	// = Supervisor-mode-only access
+#define PM_READ   (4<<4)	// = World-readable access
+
 int install_cookie( void **addr, void *buff, size_t sz, long magic, bool readonly )
 {
 	char mstr[5];
 	short rw;
 
 	if( readonly )
-		rw = F_PROT_PR;
+		rw = PM_READ;
 	else
-		rw = F_PROT_G;
+		rw = PM_GLOB;
 
 	if( !addr )
 	{
@@ -24,11 +30,12 @@ int install_cookie( void **addr, void *buff, size_t sz, long magic, bool readonl
 	memcpy( mstr, (char*)&magic, 4 );
 	mstr[4] = 0;
 
-	if ( *addr || (*addr = (void*)m_xalloc(sz, rw | 0x3 ) ) )
+	if ( *addr || (*addr = (void*)m_xalloc(sz, rw | F_ALTPREF ) ) )
 	{
 		long r;
 
-		memcpy(*addr, buff, sz );
+		if( *addr != buff )
+			memcpy(*addr, buff, sz );
 		if ( (r=s_system(S_SETCOOKIE, magic, (long)*addr)) != 0)
 		{
 			BLOG((false, "Installing '%s' cookie failed (%ld,addr=%lx)!", mstr, r, *addr));
@@ -38,7 +45,7 @@ int install_cookie( void **addr, void *buff, size_t sz, long magic, bool readonl
 		}
 		else
 		{
-			BLOG((false, "%s:Installed '%s' cookie in readable memory at %lx", get_curproc()->name, mstr, *(long*)addr));
+			BLOG((false, "%s:Installed '%s' cookie in %s memory at %lx", get_curproc()->name, mstr, readonly ? "readable" : "writeable", *(long*)addr));
 			return 0;
 		}
 	}
