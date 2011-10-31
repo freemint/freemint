@@ -933,17 +933,10 @@ m_not_move_timeout(struct proc *p, long arg)
 		return;
 
 	wind = find_window( 0, last_x, last_y, FNDW_NOLIST | FNDW_NORMAL );
-#if 0
-	if( wind && wind->owner != C.Aes && wind->owner != C.Hlp )
-	{
-		post_cevent(client, XA_bubble_event, NULL, NULL, last_x, last_y, NULL, NULL);
-	}
-#else
-	//if( wind && wind->owner != C.Aes && wind->owner != C.Hlp )
+	if( wind )
 	{
 		bubble_request( wind->owner->p->pid, wind->handle, x_mouse, y_mouse );
 	}
-#endif
 }
 #endif
 static void move_timeout(struct proc *, long arg);
