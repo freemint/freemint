@@ -2382,6 +2382,7 @@ sanity_check (MMAP map, ulong line)
 				DEBUG (("%lu: Contiguous memory regions not merged!", line));
 				DEBUG (("  m %lx, loc %lx, len %lx, links %u, next %lx", m, m->loc, m->len, m->links, m->next));
 			}
+# ifdef WITH_MMU_SUPPORT
 			else if (!no_mem_prot && (m->loc != ROUND(m->loc)))
 			{
 				ALERT ("%lu: Memory region unaligned", line);
@@ -2392,6 +2393,7 @@ sanity_check (MMAP map, ulong line)
 				ALERT ("%lu: Memory region length unaligned", line);
 				DEBUG (("%lu: Memory region length unaligned", line));
 			}
+# endif
 
 			if (m->save && !(m->mflags & M_FSAVED) && !m->shadow)
 			{
