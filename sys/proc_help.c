@@ -57,7 +57,7 @@
 void
 init_page_table_ptr (struct memspace *m)
 {
-# ifdef M68000
+# ifndef WITH_MMU_SUPPORT
 	m->page_table = NULL;
 	m->pt_mem = NULL;
 # else
@@ -103,7 +103,7 @@ init_page_table_ptr (struct memspace *m)
 static void
 free_page_table_ptr (struct memspace *m)
 {
-# ifndef M68000
+# ifdef WITH_MMU_SUPPORT
 	if (!no_mem_prot)
 	{
 # if defined(M68040) || defined(M68060)
@@ -176,9 +176,15 @@ copy_mem (struct proc *p)
 	if (!m->tp_reg)
 		m->tp_reg = get_region(core, user_things.len + PRIV_JAR_SIZE, PROT_P);
 
-	TRACE(("copy_mem: ptr=%lx, m->pt_mem = %lx, m->tp_reg = %lx, mp=%s", ptr, m->pt_mem, m->tp_reg, no_mem_prot ? "off":"on"));
+	TRACE(("copy_mem: ptr=%lx, m->pt_mem = %lx, m->tp_reg = %lx, mp=%s", ptr, m->pt_mem, m->tp_reg,
+#ifdef WITH_MMU_SUPPORT
+		no_mem_prot
+#else
+		true
+#endif
+		? "off":"on"));
 
-#ifdef M68000
+#ifndef WITH_MMU_SUPPORT
 	if (!ptr.c || !m->tp_reg)
 #else
 	if ((!no_mem_prot && !m->pt_mem) || !ptr.c || !m->tp_reg)

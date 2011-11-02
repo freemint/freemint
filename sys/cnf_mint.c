@@ -214,7 +214,9 @@ static struct parser_item parser_tab[] =
 	{ "KERN_BIOSBUF",		PI_V_B,	pCB_biosbuf			},
 	{ "KERN_DEBUG_DEVNO",		PI_R_S,	& out_device, Range(0, 9) 	},
 	{ "KERN_DEBUG_LEVEL",		PI_R_S,	& debug_level, Range(0, 9) 	},
+# ifdef WITH_MMU_SUPPORT
 	{ "KERN_MPFLAGS",		PI_R_L,	& mem_prot_flags		},
+# endif
 	{ "KERN_SECURITY_LEVEL",	PI_V_L,	pCL_securelevel, Range(0, 2)	},
 	{ "KERN_SLICES",		PI_R_S,	& time_slice			},
 	{ "PROC_MAXMEM",		PI_V_L,	pCB_maxmem			},
@@ -243,7 +245,9 @@ static struct parser_item parser_tab[] =
 	{ "HIDE_B",		PI_V_B,   pCB_hide_b			},
 	{ "INITIALMEM",		PI_R_L,   & initialmem			},
 	{ "MAXMEM",		PI_V_L,   pCB_maxmem			},
+# ifdef WITH_MMU_SUPPORT
 	{ "MPFLAGS",		PI_R_L,   & mem_prot_flags		},
+# endif
 	{ "PRN",		PI_V_T,   pCB_prn			},
 	{ "SECURELEVEL",	PI_V_L,   pCL_securelevel, Range(0, 2)	},
 	{ "SLICES",		PI_R_S,   & time_slice			},

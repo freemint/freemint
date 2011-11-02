@@ -621,7 +621,7 @@ kern_get_welcome (SIZEBUF **buffer)
 	{
 		greet1,
 		greet2,
-# ifndef M68000
+# ifdef WITH_MMU_SUPPORT
 		no_mem_prot ? memprot_warning : "",
 # endif
 # ifdef CRYPTO_CODE
@@ -792,7 +792,7 @@ kern_procdir_get_environ (SIZEBUF **buffer, struct proc *p)
 	/* Walk the array and find out the maximum length */
   	for (;;)
   	{
-# ifndef M68000 
+# ifndef M68000
 		if (*(ushort *)from == 0)
 			break;
 # else

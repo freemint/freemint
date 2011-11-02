@@ -413,11 +413,13 @@ bombs(ushort sig)
 	}
 	else if (signames[sig])
 	{
+# ifdef WITH_MMU_SUPPORT
 		if (!no_mem_prot && sig == SIGBUS)
 		{
 		    /* already reported by report_buserr */
 		}
 		else
+# endif
 		{
 			/* uk: give some more information in case of a crash, so that a
 			 *     progam which shared text can be debugged better.

@@ -133,7 +133,7 @@
 # include "mmu.h"
 
 
-#if defined(M68040) || defined(M68060)
+#if defined(WITH_MMU_SUPPORT) && (defined(M68040) || defined(M68060))
 
 #define MP_DEBUG_INFO DEBUG_INFO
 
@@ -708,6 +708,7 @@ init_tables(void)
 		tt_mbytes = 0;
 
 	n_megabytes = (int) ((mint_top_st / ONE_MEG) + tt_mbytes);
+	UNUSED(n_megabytes);
 
     /*
      * Get the page table size. This is done by traversing the current MMU
@@ -1774,4 +1775,4 @@ BIG_MEM_DUMP (int bigone __attribute__((unused)), PROC *proc __attribute__((unus
 # endif /* DEBUG_INFO */
 }
 
-# endif /* M68040 || M68060 */
+#endif

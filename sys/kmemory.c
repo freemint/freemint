@@ -69,7 +69,6 @@
 
 # include "memory.h"
 
-
 # define KMEMORY_VERS	1		/* internal version */
 
 # define PAGESIZE	8192		/* pagesize */
@@ -1176,12 +1175,21 @@ km_s2_malloc (ushort size)
 
 	return ptr;
 }
-
+#include "signal.h"
+#include "mint/signal.h"
 INLINE void
 km_s2_free (KM_S2 *ptr, KM_P *page)
 {
 	register KM_S2 *next = ptr->next;
 	register KM_S2 *prev = ptr->prev;
+
+	if(ptr->magic != S2_MAGIC)
+	{
+		KM_FORCE(("********magic: %x != %x:%lx->%lx**********(%ld,%s)", ptr->magic, S2_MAGIC, ptr, (char*)ptr + S2_HEAD, (long) __LINE__, __FILE__));
+		KM_ALERT(("ERROR:0x%x != 0x%x:%lx->%lx**********(%ld,%s)", ptr->magic, S2_MAGIC, ptr, (char*)ptr + S2_HEAD, (long) __LINE__, __FILE__));
+		raise (SIGTERM);
+		return;
+	}
 
 	KM_ASSERT ((ptr->magic == S2_MAGIC));
 
@@ -1501,8 +1509,10 @@ _kmalloc(unsigned long size, const char *func)
 void _cdecl
 _kfree(void *place, const char *func)
 {
+	//char *ptr = place;
 	KM_P *page;
 
+	//KM_FORCE(("_kfree(%lx)", place));
 	if (!place)
 	{
 		KM_ALERT(("%s: kfree on NULL ptr!", func));
@@ -1539,7 +1549,9 @@ _kfree(void *place, const char *func)
 		}
 		else
 		{
-			FATAL ("%s: kfree on 0x%lx, invalid STAT_MAGIC!", func, (ulong) place);
+			//FATAL ("%s: kfree on 0x%lx, invalid STAT_MAGIC!", func, (ulong) place);
+			KM_FORCE (("%s: kfree on 0x%lx, invalid STAT_MAGIC:%x!", func, (ulong) place, *p));
+			KM_ALERT (("%s: kfree on 0x%lx, invalid STAT_MAGIC:%x!", func, (ulong) place, *p));
 		}
 
 		place = (char *) place - KM_STAT_OFFSET;
@@ -1558,6 +1570,7 @@ _kfree(void *place, const char *func)
 			}
 			case S2_MAGIC:
 			{
+				//KM_FORCE(("km_s2_free:%lx", ptr));
 				km_s2_free((KM_S2 *)((char *) place - S2_HEAD), page);
 				break;
 			}
@@ -1568,7 +1581,10 @@ _kfree(void *place, const char *func)
 			}
 			default:
 			{
-				FATAL("%s: kfree on 0x%lx: invalid S?_MAGIC!", func, (ulong) place);
+				//FATAL("%s: kfree on 0x%lx: invalid S?_MAGIC!", func, (ulong) place);
+				KM_FORCE(("%s: kfree on 0x%lx: invalid S?_MAGIC:%x!", func, (ulong) place, page->magic));
+				KM_ALERT(("%s: kfree on 0x%lx: invalid S?_MAGIC:%x!", func, (ulong) place, page->magic));
+				raise (SIGTERM);
 			}
 		}
 	}
@@ -1583,7 +1599,11 @@ _dmabuf_alloc(ulong size, short cmode, const char *func)
 	MEMREGION *m;
 
 	/* we can't support cmode if memory protection is disabled */
-	if (cmode && no_mem_prot)
+	if (cmode
+# ifdef WITH_MMU_SUPPORT
+	    && no_mem_prot
+# endif
+	    )
 		return NULL;
 
 	m = kmr_get();

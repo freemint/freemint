@@ -281,17 +281,13 @@ init (void)
 
 	get_my_name();
 
-# ifndef M68000
 # ifdef VERBOSE_BOOT
+# ifdef WITH_MMU_SUPPORT
 	boot_printf(MSG_init_mp, no_mem_prot ? MSG_init_mp_disabled : MSG_init_mp_enabled);
 # endif
-# endif
-# ifdef VERBOSE_BOOT
 	/* These are set inside getmch() */
 	boot_printf(MSG_init_kbd_desktop_nationality, gl_kbd, gl_lang);
-# endif
 
-# ifdef VERBOSE_BOOT
 	boot_print(MSG_init_supermode);
 # endif
 
@@ -323,7 +319,7 @@ init (void)
 	boot_printf(MSG_init_sysdrv_is, sysdrv + 'a');
 # endif
 
-# ifndef M68000
+# ifdef WITH_MMU_SUPPORT
 # ifdef VERBOSE_BOOT
 	boot_print(MSG_init_saving_mmu);
 # endif
@@ -602,13 +598,11 @@ init (void)
 	}
 
 	/* print the warning message if MP is turned off */
-# ifndef COLDFIRE
-# ifndef M68000
+# ifdef WITH_MMU_SUPPORT
 	if (no_mem_prot && mcpu > 20)
 		boot_print(memprot_warning);
 
 	stop_and_ask();
-# endif
 # endif
 
 	/* initialize delay */
@@ -1151,7 +1145,7 @@ mint_thread(void *arg)
 	if (pid > 0)
 	{
 		do {
-# if 1
+# if !defined(COLDFIRE)
 			r = sys_pwaitpid(-1, 1, NULL);
 			if (r == 0)
 			{

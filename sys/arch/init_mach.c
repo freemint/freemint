@@ -140,6 +140,7 @@ _getmch (void)
 					break;
 				}
 
+#ifdef WITH_MMU_SUPPORT
 				case COOKIE_PMMU:
 				{
 					/* jr: if PMMU cookie exists, someone else is
@@ -149,6 +150,7 @@ _getmch (void)
 					no_mem_prot = 1;
 					break;
 				}
+#endif
 
 				case COOKIE_HADES:
 				{

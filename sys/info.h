@@ -177,13 +177,15 @@ extern const char *MSG_init_must_be_auto;
 extern const char *MSG_init_no_mint_folder;
 extern const char *MSG_init_delay_loop;
 # ifdef VERBOSE_BOOT
+# ifdef WITH_MMU_SUPPORT
 extern const char *MSG_init_mp;
 extern const char *MSG_init_mp_enabled;
 extern const char *MSG_init_mp_disabled;
+extern const char *MSG_init_saving_mmu;
+# endif
 extern const char *MSG_init_kbd_desktop_nationality;
 extern const char *MSG_init_supermode;
 extern const char *MSG_init_sysdrv_is;
-extern const char *MSG_init_saving_mmu;
 extern const char *MSG_init_tosver_kbshft;
 extern const char *MSG_init_bconmap;
 extern const char *MSG_init_system;

@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
  */
@@ -13,12 +13,14 @@
 # include "mint/proc.h"
 
 
+#ifdef WITH_MMU_SUPPORT
 extern int no_mem_prot;
 
 extern long page_table_size;
 extern ulong mem_prot_flags;
 extern ulong mint_top_st;
-extern ulong mint_top_tt;	
+extern ulong mint_top_tt;
+#endif
 
 void init_tables (void);
 int get_prot_mode (MEMREGION *);

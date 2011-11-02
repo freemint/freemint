@@ -764,6 +764,7 @@ exec_region(struct proc *p, MEMREGION *mem, int thread)
 				}
 				else
 				{
+# ifdef WITH_MMU_SUPPORT
 					/* Update curproc's mmu table, but not
 					 * for basepage and environment */
 					if ((m->loc != (unsigned long) b) &&
@@ -772,6 +773,7 @@ exec_region(struct proc *p, MEMREGION *mem, int thread)
 					{
 						mark_proc_region(p->p_mem, m, PROT_I, p->pid);
 					}
+# endif
 				}
 			}
 		}
