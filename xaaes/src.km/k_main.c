@@ -56,6 +56,7 @@
 #include "xa_appl.h"
 #include "xa_evnt.h"
 #include "xa_form.h"
+#include "xa_graf.h"	//graf_mouse
 #include "xa_rsrc.h"
 #include "xa_shel.h"
 #if WITH_BBL_HELP
@@ -863,18 +864,34 @@ CE_fa(enum locks lock, struct c_event *ce, bool cancel)
 					p.idx = -1;
 					p.arg.txt = xa_strings[RS_ALERTS];
 					list->get(list, NULL, SEGET_ENTRYBYTEXT, &p);
-					list->add(list, p.e, NULL, &sc, p.e ? SEADD_CHILD: 0, 0, true);
+					if( p.e )
+					{
+						list->add(list, p.e, NULL, &sc, SEADD_CHILD, 0, true);
+						if( !(p.e->xstate & OS_OPENED) )
+							list->cur = p.e;	// don't set cur to leaf if not opened (->add_scroll_entry?)
+					}
 				}
 			}
 
 			if ( C.shutdown == 0 && (cfg.alert_winds & amask))
 			{
-				/* if an app left the mouse off */
-				forcem();
 
 #if ALERTTIME
+				/* really bad hack: apps often crash when accessing /host/clipbrd under aranym
+				 * and this should prevent from debugging XaAES
+				 * (see: http://sourceforge.net/tracker/?func=detail&aid=3038473&group_id=41106&atid=429796)
+				 */
+				char *p;
+				if( (p = strstr( b, "AF000000" )) )
+				{
+					memcpy( p, "CLIPBRD ", 8 );
+				}
+				/* if an app left the mouse off */
+				forcem();
 				do_form_alert(data->lock, client, 1, b, "XaAES");
 #else
+				/* if an app left the mouse off */
+				forcem();
 				do_form_alert(data->lock, client, 1, data->buf, "XaAES");
 #endif
 			}
@@ -1781,6 +1798,15 @@ k_main(void *dummy)
 	}
 #endif
 	C.DSKpid = -1;
+
+	/* initialize mouse */
+	{
+		short b, x, y;
+		vq_mouse( C.Aes->vdi_settings->handle, &b, &x, &y );
+		adi_move( 0, x, y );
+		xa_graf_mouse(-1, NULL, C.Aes, true);
+	}
+
 	if( !pferr )
 		post_cevent(C.Hlp, CE_start_apps, NULL,NULL, 0,0, NULL,NULL);
 
