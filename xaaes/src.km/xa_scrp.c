@@ -55,7 +55,7 @@ XA_scrp_write(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	CONTROL(0,1,1)
 
-	if (new_path && strlen(new_path) < 128)
+	if (new_path && strcmp( new_path, cfg.scrap_path) && strlen(new_path) < 128)
 	{
 		strcpy(cfg.scrap_path, new_path);
 		pb->intout[0] = 1;
