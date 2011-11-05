@@ -694,12 +694,12 @@ remove_from_tasklist(struct xa_client *client)
  * md = 0: no aes-client
  */
 void
-update_tasklist_entry( int md, void *app, long pid, int redraw )
+update_tasklist_entry( int md, void *app, struct helpthread_data *htd, long pid, int redraw )
 {
-	// -> opt!
-	struct helpthread_data *htd = lookup_xa_data_byname(&C.Hlp->xa_data, HTDNAME);
 	struct xa_window *wind;
 
+	if( !htd )
+		htd = lookup_xa_data_byname(&C.Hlp->xa_data, HTDNAME);
 	if (!htd || !app)
 		return;
 	wind = htd->w_taskman;
@@ -751,6 +751,11 @@ update_tasklist_entry( int md, void *app, long pid, int redraw )
 					list->set(list, this, SESET_TEXT, (long)&t, NORMREDRAW);
 				}
 				this->usr_flags |= TM_UPDATED;
+				if( app == S.app_list.first && TOP_WINDOW != htd->w_taskman )
+				{
+					list->cur = this;
+					list->set(list, list->cur, SESET_SELECTED, 0, NORMREDRAW);
+				}
 
 #if ADDPROCINFO
 				p.level.maxlevel = 1;
@@ -1444,7 +1449,7 @@ taskmanager_form_exit(struct xa_client *Client,
 				if( pid <= TM_MINPID || pid >= TM_MAXPID || pid == C.Aes->tp->pid )
 					break;
 				ikill(pid, SIGSTOP);
-				update_tasklist_entry( NO_AES_CLIENT, client, pid, true);
+				update_tasklist_entry( NO_AES_CLIENT, client, 0, pid, true);
 			}
 			else if (client && is_client(client))
 			{
@@ -1456,7 +1461,7 @@ taskmanager_form_exit(struct xa_client *Client,
 				}
 				app_in_front(lock, C.Aes, true, true, true);
 				ikill(client->p->pid, SIGSTOP);
-				update_tasklist_entry( AES_CLIENT, client, 0, true);
+				update_tasklist_entry( AES_CLIENT, client, 0, 0, true);
 			}
 		break;
 		}
@@ -1468,7 +1473,7 @@ taskmanager_form_exit(struct xa_client *Client,
 				if( pid <= TM_MINPID || pid >= TM_MAXPID )
 					break;
 				ikill(pid, SIGCONT);
-				update_tasklist_entry( NO_AES_CLIENT, client, pid, true);
+				update_tasklist_entry( NO_AES_CLIENT, client, 0, pid, true);
 			}
 			else if (client && is_client(client))
 			{
@@ -1477,7 +1482,7 @@ taskmanager_form_exit(struct xa_client *Client,
 					break;
 				}
 				ikill(client->p->pid, SIGCONT);
-				update_tasklist_entry( AES_CLIENT, client, 0, true);
+				update_tasklist_entry( AES_CLIENT, client, 0, 0, true);
 			}
 		break;
 		}
@@ -1675,10 +1680,10 @@ static bool calc_tm_bar( OBJECT *obtree, short item, short parent, long pinf, lo
 	if( t )
 	{
 		OBJC_COLORWORD *c = (OBJC_COLORWORD *)&t->te_color;
-		int v = obtree[item].ob_height * 100 / obtree[parent].ob_height;
+		unsigned long v = (unsigned long)obtree[item].ob_height * 100L / (unsigned long)obtree[parent].ob_height;
 
 		/* mark levels with different colors */
-		if( v > 100 )	// happens sometimes
+		if( v > 100UL )	// happens sometimes
 		{
 			c->fillc = G_MAGENTA;
 			obtree[item].ob_height = obtree[parent].ob_height;
@@ -2035,7 +2040,7 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 
 				FOREACH_CLIENT(client)
 				{				/* */
-					update_tasklist_entry( AES_CLIENT, client, 0, redraw);
+					update_tasklist_entry( AES_CLIENT, client, htd, 0, redraw);
 				}
 				/* add non-client-procs */
 				{
@@ -2046,7 +2051,7 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 						struct proc *pr;
 						long pid;
 
-						update_tasklist_entry( NO_AES_CLIENT, rootproc, 0, redraw );	/* kernel */
+						update_tasklist_entry( NO_AES_CLIENT, rootproc, htd, 0, redraw );	/* kernel */
 
 						while( d_readdir(127, i, nm) == 0)
 						{
@@ -2058,7 +2063,7 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 								{
 									if( !is_aes_client(pr) )
 									{
-										update_tasklist_entry( NO_AES_CLIENT, pr, pid, redraw );
+										update_tasklist_entry( NO_AES_CLIENT, pr, htd, pid, redraw );
 									}
 								}
 							}
@@ -2088,7 +2093,7 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 				}
 			}	/* /if( list ) */
 
-			//if( TOP_WINDOW != htd->w_taskman )
+			if( TOP_WINDOW != htd->w_taskman )
 			{
 				open_window(lock, wind, wind->r);
 				force_window_top( lock, wind );
@@ -2417,6 +2422,8 @@ open_launcher(enum locks lock, struct xa_client *client, int what)
 	{
 #if WITH_GRADIENTS
 		case 0:
+			if( !cfg.gradients[0] )
+				return;
 			path = pbuf;
 			text = xa_strings[RS_LDGRAD];
 			sprintf( pbuf, sizeof(pbuf), "%s%s", C.Aes->home_path, "gradient\\*.grd" );
@@ -2997,7 +3004,9 @@ open_systemalerts(enum locks lock, struct xa_client *client, bool open)
 		refresh_systemalerts(obtree);
 
 		if (open)
+		{
 			open_window(lock, wind, wind->r);
+		}
 
 		htd->w_sysalrt = wind; //systemalerts_win = dialog_window;
 	}
