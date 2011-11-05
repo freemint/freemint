@@ -1894,9 +1894,6 @@ draw_window(enum locks lock, struct xa_window *wind, const RECT *clip)
 			{
 				if( wdg_is_inst(widg) )
 				{
-// 				if (f == XAW_TOOLBAR)
-// 					display("wdg_is_inst return %s", wdg_is_inst(widg) ? "true":"false");
-
 					DIAG((D_wind, wind->owner, "draw_window %d: display widget %d (func=%lx)",
 						wind->handle, f, widg->m.r.draw));
 
@@ -2424,7 +2421,7 @@ close_window(enum locks lock, struct xa_window *wind)
 	if (wind == C.hover_wind)
 	{
 #if WITH_BBL_HELP
-		bubble_show(0);
+		bubble_show(0);	// cancel pending bubble
 #endif
 		C.hover_wind = NULL;
 		C.hover_widg = NULL;
@@ -3131,6 +3128,7 @@ static bool join_redraws( short wlock, struct xa_window *wind, struct xa_rect_li
 		//r.w -= r.x;
 		r.w = newrl->r.w + newrl->next->r.w;
 
+		BLOG((0,"join_redraws:%s,y11=%d,y21=%d", wind->wname, y11, y21));
 		generate_redraws(wlock, wind, &r, flags );
 		return true;
 	}
@@ -3167,6 +3165,9 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 
 	resize	= new->w != old.w || new->h != old.h ? 1 : 0;
 
+#if WITH_BBL_HELP
+	bubble_show(0);	// cancel pending bubble
+#endif
 	if (xmove || ymove || resize)
 	{
 		/*
@@ -3516,10 +3517,19 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 			 */
 			if (xmove || ymove)
 			{
+				struct xa_rect_list *trl = 0;
 				nrl = brl;
 				hidem();
 				while (nrl)
 				{
+					/* first blit lower rect if two left, moving down and upper rect partly hidden by menubar (see build_rectlist - surely a hack ..) */
+					if( menu_window && cfg.menu_bar && (dir & 1) && nrl->r.y < menu_window->r.h )
+						if( nrl->next && !nrl->next->next && nrl->r.y + nrl->r.h == nrl->next->r.y && !trl )
+						{
+							trl = nrl;
+							nrl = nrl->next;
+							dir = 0;
+						}
 					bd = nrl->r;
 					bs.x = bd.x + new->x;
 					bs.y = bd.y + new->y;
@@ -3530,7 +3540,17 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 					//DIAGS(("Blitting from %d/%d/%d/%d to %d/%d/%d/%d (%lx, %lx)",
 					//	bd, bs, brl, (long)brl->next));
 					(*xa_vdiapi->form_copy)(&bd, &bs);
-					nrl = nrl->next;
+					if( trl )
+					{
+						if( nrl == trl )
+						{
+							nrl = 0;	//nrl->next->next;
+							trl = 0;
+						}
+						nrl = trl;
+					}
+					else
+						nrl = nrl->next;
 				}
 				showm();
 			}
@@ -3708,6 +3728,18 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 					orl = orl->next;
 				} /* while (orl && nrl) */
 				//DIAGS(("DONE CLIPPING"));
+				/* only blitted: if window has a list-window inform list-window to move its widgets */
+				if( !resize && wind->winob )
+				{
+					struct xa_window *lwind = (struct xa_window *)wind->winob;
+					if( !(dir & 1) )
+						ymove = -ymove;
+					if( !(dir & 2) )
+						xmove = -xmove;
+					lwind->send_message(wlock, lwind, NULL, AMQ_NORM, QMF_CHKDUP,
+						WM_MOVED, 0,0, lwind->handle,
+						lwind->r.x + xmove, lwind->r.y + ymove, lwind->r.w, lwind->r.h);
+				}
 				/*
 				 * nrl is the first in a list of rectangles that needs
 				 * to be redrawn
@@ -3791,7 +3823,8 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 
 			if( !joined )
 				generate_redraws(wlock, wind, &newrl->r, flags );
-			newrl = newrl->next;
+			if( newrl )
+				newrl = newrl->next;
 		}
 
 		while (oldrl)
