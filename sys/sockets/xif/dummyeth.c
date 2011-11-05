@@ -169,7 +169,7 @@ dummy_close (struct netif *nif)
  *	eth_remove_hdr ();
  *	addroottimeout (..., ..., 1);
  */
- 
+
 static long
 dummy_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, short pktype)
 {
@@ -192,7 +192,7 @@ dummy_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, shor
 		buf_deref (buf, BUF_NORMAL);
 		return 0;
 	}
-	
+
 	/*
 	 * Attach eth header. MintNet provides you with the eth_build_hdr
 	 * function that attaches an ethernet header to the packet in
@@ -212,7 +212,7 @@ dummy_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, shor
 		return ENOMEM;
 	}
 	nif->out_packets++;
-	
+
 	/*
 	 * Here you should either send the packet to the hardware or
 	 * enqueue the packet and send the next packet as soon as
@@ -224,13 +224,13 @@ dummy_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, shor
 	 */
 	if (nif->bpf)
 		bpf_input (nif, nbuf);
-	
+
 	/*
 	 * Now follows the input side code of the driver. This is
 	 * only part of the output function, because this example
 	 * is a loopback driver.
 	 */
-	
+
 	/*
 	 * Before passing it to if_input pass it to the packet filter.
 	 * (but before stripping the ethernet header).
@@ -241,7 +241,7 @@ dummy_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, shor
 	 * if (nif->bpf)
 	 *	bpf_input (nif, buf);
 	 */
-	
+
 	/*
 	 * Strip eth header and get packet type. MintNet provides you
 	 * with the function eth_remove_hdr(buf) for this purpose where
@@ -249,7 +249,7 @@ dummy_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, shor
 	 * ethernet header and returns the packet type.
 	 */
 	type = eth_remove_hdr (nbuf);
-	
+
 	/*
 	 * Then you should pass the buf to MintNet for further processing,
 	 * using
@@ -267,7 +267,7 @@ dummy_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, shor
 		nif->in_errors++;
 	else
 		nif->in_packets++;
-	
+
 	return r;
 }
 
@@ -284,14 +284,14 @@ static long
 dummy_ioctl (struct netif *nif, short cmd, long arg)
 {
 	struct ifreq *ifr;
-	
+
 	switch (cmd)
 	{
 		case SIOCSIFNETMASK:
 		case SIOCSIFFLAGS:
 		case SIOCSIFADDR:
 			return 0;
-		
+
 		case SIOCSIFMTU:
 			/*
 			 * Limit MTU to 1500 bytes. MintNet has alraedy set nif->mtu
@@ -300,7 +300,7 @@ dummy_ioctl (struct netif *nif, short cmd, long arg)
 			if (nif->mtu > ETH_MAX_DLEN)
 				nif->mtu = ETH_MAX_DLEN;
 			return 0;
-		
+
 		case SIOCSIFOPT:
 			/*
 			 * Interface configuration, handled by dummy_config()
@@ -308,7 +308,7 @@ dummy_ioctl (struct netif *nif, short cmd, long arg)
 			ifr = (struct ifreq *) arg;
 			return dummy_config (nif, ifr->ifru.data);
 	}
-	
+
 	return ENOSYS;
 }
 
@@ -330,32 +330,40 @@ static long
 dummy_config (struct netif *nif, struct ifopt *ifo)
 {
 # define STRNCMP(s)	(strncmp ((s), ifo->option, sizeof (ifo->option)))
-	
+
 	if (!STRNCMP ("hwaddr"))
 	{
+#ifdef DEBUG_INFO
 		uchar *cp;
+#endif
 		/*
 		 * Set hardware address
 		 */
 		if (ifo->valtype != IFO_HWADDR)
 			return ENOENT;
 		memcpy (nif->hwlocal.adr.bytes, ifo->ifou.v_string, ETH_ALEN);
+#ifdef DEBUG_INFO
 		cp = nif->hwlocal.adr.bytes;
 		DEBUG (("dummy: hwaddr is %x:%x:%x:%x:%x:%x",
 			cp[0], cp[1], cp[2], cp[3], cp[4], cp[5]));
+#endif
 	}
 	else if (!STRNCMP ("braddr"))
 	{
+#ifdef DEBUG_INFO
 		uchar *cp;
+#endif
 		/*
 		 * Set broadcast address
 		 */
 		if (ifo->valtype != IFO_HWADDR)
 			return ENOENT;
 		memcpy (nif->hwbrcst.adr.bytes, ifo->ifou.v_string, ETH_ALEN);
+#ifdef DEBUG_INFO
 		cp = nif->hwbrcst.adr.bytes;
 		DEBUG (("dummy: braddr is %x:%x:%x:%x:%x:%x",
 			cp[0], cp[1], cp[2], cp[3], cp[4], cp[5]));
+#endif
 	}
 	else if (!STRNCMP ("debug"))
 	{
@@ -375,7 +383,7 @@ dummy_config (struct netif *nif, struct ifopt *ifo)
 			return ENOENT;
 		DEBUG (("dummy: log file is %s", ifo->ifou.v_string));
 	}
-	
+
 	return ENOSYS;
 }
 
@@ -396,7 +404,7 @@ driver_init (void)
 {
 	static char message[100];
 	static char my_file_name[128];
-	
+
 	/*
 	 * Set interface name
 	 */
@@ -424,7 +432,7 @@ driver_init (void)
 	 * Time in ms between calls to (*if_dummy.timeout) ();
 	 */
 	if_dummy.timer = 0;
-	
+
 	/*
 	 * Interface hardware type
 	 */
@@ -434,14 +442,14 @@ driver_init (void)
 	 */
 	if_dummy.hwlocal.len =
 	if_dummy.hwbrcst.len = ETH_ALEN;
-	
+
 	/*
 	 * Set interface hardware and broadcast addresses. For real ethernet
 	 * drivers you must get them from the hardware of course!
 	 */
 	memcpy (if_dummy.hwlocal.adr.bytes, "\001\002\003\004\005\006", ETH_ALEN);
 	memcpy (if_dummy.hwbrcst.adr.bytes, "\377\377\377\377\377\377", ETH_ALEN);
-	
+
 	/*
 	 * Set length of send and receive queue. IF_MAXQ is a good value.
 	 */
@@ -458,23 +466,23 @@ driver_init (void)
 	 * Optional timer function that is called every 200ms.
 	 */
 	if_dummy.timeout = 0;
-	
+
 	/*
 	 * Here you could attach some more data your driver may need
 	 */
 	if_dummy.data = 0;
-	
+
 	/*
 	 * Number of packets the hardware can receive in fast succession,
 	 * 0 means unlimited.
 	 */
 	if_dummy.maxpackets = 0;
-	
+
 	/*
 	 * Register the interface.
 	 */
 	if_register (&if_dummy);
-	
+
 	/*
 	 * NETINFO->fname is a pointer to the drivers file name
 	 * (without leading path), eg. "dummy.xif".
@@ -489,7 +497,7 @@ driver_init (void)
 		ksprintf (message, "My file name is '%s'\n\r", my_file_name);
 		c_conws (message);
 # endif
-	}	
+	}
 	/*
 	 * And say we are alive...
 	 */

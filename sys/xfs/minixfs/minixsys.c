@@ -1,9 +1,9 @@
 /*
  * This file is part of 'minixfs' Copyright 1991,1992,1993 S.N.Henson
- * 
+ *
  * Modified for FreeMiNT CVS
  * by Frank Naumann <fnaumann@freemint.de>
- * 
+ *
  * Please send suggestions, patches or bug reports to me or
  * the MiNT mailing list.
  *
@@ -76,7 +76,7 @@ static long	_cdecl m_unmount	(int drv);
 FILESYS minix_filesys =
 {
 	NULL,
-	
+
 	/*
 	 * FS_KNOPARSE		kernel shouldn't do parsing
 	 * FS_CASESENSITIVE	file names are case sensitive
@@ -98,7 +98,7 @@ FILESYS minix_filesys =
 	FS_EXT_1		|
 	FS_EXT_2		|
 	FS_EXT_3		,
-	
+
 	root:			m_root,
 	lookup:			m_lookup,
 	creat:			m_creat,
@@ -128,20 +128,20 @@ FILESYS minix_filesys =
 	release:		m_release,
 	dupcookie:		m_dupcookie,
 	sync:			m_sync,
-	
+
 	/* FS_EXT_1 */
 	mknod:			m_mknod,
 	unmount:		m_unmount,
-	
+
 	/* FS_EXT_2
 	 */
-	
+
 	/* FS_EXT_3 */
 	stat64:			m_stat64,
-	res1:			0, 
+	res1:			0,
 	res2:			0,
 	res3:			0,
-	
+
 	lock: 0, sleepers: 0,
 	block: NULL, deblock: NULL
 };
@@ -159,7 +159,7 @@ static void
 set_atime (fcookie *fc)
 {
 	d_inode rip;
-	
+
 	if (fc->dev > 1)
 	{
 		read_inode (fc->index, &rip, fc->dev);
@@ -174,13 +174,13 @@ sync_bitmaps (register SI *psblk)
 	register void *buf = NULL;
 	register long start = 0;
 	register long size = 0;
-	
+
 	if (psblk->idirty)
 	{
 		buf = psblk->ibitmap;
 		start = 2;
 		size = psblk->sblk->s_imap_blks;
-		
+
 		if (psblk->zdirty)
 			size += psblk->sblk->s_zmap_blks;
 	}
@@ -190,13 +190,13 @@ sync_bitmaps (register SI *psblk)
 		start = psblk->sblk->s_imap_blks + 2;
 		size = psblk->sblk->s_zmap_blks;
 	}
-	
+
 	if (start)
 	{
 		size *= BLOCK_SIZE;
 		BIO_RWABS (psblk->di, 3, buf, size, start);
 	}
-	
+
 	psblk->idirty = 0;
 	psblk->zdirty = 0;
 }
@@ -214,9 +214,9 @@ static long _cdecl
 m_root (int dev, fcookie *dir)
 {
 	SI **psblk = super_ptr + dev;
-	
+
 	DEBUG (("Minix-FS (%c): m_root enter", dev+'A'));
-	
+
 	/* If not present, see if it's valid */
 	if (!*psblk)
 	{
@@ -226,25 +226,25 @@ m_root (int dev, fcookie *dir)
 			DEBUG (("Minix-FS (%c): m_root leave %li", dev+'A', i));
 			return i;
 		}
-		
+
 		/* default: enable writeback mode */
 		(void) bio.config (dev, BIO_WB, ENABLE);
 	}
-	
+
 	if (*psblk)
 	{
 		dir->fs = &minix_filesys;
-		
+
 		/* Aux field tells original device */
 		dir->aux = dev | AUX_DRV ;
 		dir->index = ROOT_INODE;
-		
+
 		dir->dev = dev;
-		
+
 		DEBUG (("Minix-FS (%c): m_root leave E_OK", dev+'A'));
 		return E_OK;
 	}
-	
+
 	DEBUG (("Minix-FS (%c): m_root leave ENXIO", dev+'A'));
 	return ENXIO;
 }
@@ -263,11 +263,11 @@ m_lookup (fcookie *dir, const char *name, fcookie *fc)
 	if (dir->index == ROOT_INODE && !strcmp (name, ".."))
 	{
 		*fc = *dir;
-		
+
 		fc->index = search_dir (name, fc->index, fc->dev, FIND);
 		if (fc->index < 0)
 			return fc->index;
-		
+
 		fc->aux = 0;
 		return 0;
 	}
@@ -276,10 +276,10 @@ m_lookup (fcookie *dir, const char *name, fcookie *fc)
 	fc->dev = dir->dev;
 	if (fc->index < 0)
 		return fc->index;
-	
+
 	fc->aux = 0;
 	fc->fs = &minix_filesys;
-	
+
 	return E_OK;
 }
 
@@ -288,9 +288,9 @@ m_getdev (fcookie *fc, long int *devsp)
 {
 	if (fc->fs == &minix_filesys)
 		return &minix_dev;
-	
+
 	*devsp = ENOSYS;
-	
+
 	DEBUG (("MinixFS: m_getdev: leave failure"));
 	return NULL;
 }
@@ -301,15 +301,15 @@ m_getxattr (fcookie *fc, XATTR *xattr)
 	SI *psblk = super_ptr[fc->dev];
 	d_inode rip;
 	long nblocks;
-	
+
 	read_inode (fc->index, &rip, fc->dev);
-	
+
 	/* Minix and gcc use different values for FIFO's */
 	if ((rip.i_mode & I_TYPE) == I_NAMED_PIPE)
 		xattr->mode = S_IFIFO | (rip.i_mode & ALL_MODES);
 	else
 		xattr->mode = rip.i_mode;
-	
+
 	/* We could potentially have trouble with symlinks too */
 # if I_SYMLINK != S_IFLNK
 	if ((rip.i_mode & I_TYPE) == I_SYMLINK)
@@ -319,56 +319,56 @@ m_getxattr (fcookie *fc, XATTR *xattr)
 	/* Fake attr field a bit , to keep TOS happy */
 	if (IS_DIR (rip)) xattr->attr = FA_DIR;
 	else xattr->attr = (rip.i_mode & 0222) ? 0 : FA_RDONLY;
-	
+
         xattr->index = fc->index;
         xattr->dev = fc->dev;
-	
+
 	/* Char and block special files need major/minor device nos filled in */
 	if (IM_SPEC (rip.i_mode)) xattr->rdev = rip.i_zone[0];
 	else xattr->rdev = 0;
-	
+
         xattr->nlink = rip.i_nlinks;
         xattr->uid = rip.i_uid;
         xattr->gid = rip.i_gid;
         xattr->size = rip.i_size;
 	xattr->blksize = BLOCK_SIZE;
-	
+
 	/* Note: the nblocks calculation is accurate only if the file is
 	 * contiguous. It usually will be, and if it's not, it shouldn't
 	 * matter ('du' will return values that are slightly too high)
 	 */
 	nblocks = (xattr->size + (BLOCK_SIZE - 1)) / BLOCK_SIZE;
 	xattr->nblocks = nblocks;
-	
+
 	if (xattr->nblocks > psblk->dzpi)
 	{
 		/* correct for the indirection block */
 		nblocks++;
 	}
-	
+
 	if (xattr->nblocks > psblk->ndbl)
 	{
 		/* correct for double indirection block */
 		nblocks++;
-		
+
 		/* and single indirection blocks */
 		nblocks += (xattr->nblocks - psblk->ndbl) / psblk->zpind;
 	}
-	
+
 	if (xattr->nblocks > psblk->ndbl + (long) psblk->zpind * psblk->zpind)
 	{
 		/* correct for triple indir block */
 		nblocks++;
-		
+
 		/* and double indirection blocks */
 		nblocks += ((xattr->nblocks - psblk->ndbl
 			- (long) psblk->zpind * psblk->zpind)
 			/ ((long) psblk->zpind * psblk->zpind));
 	}
-	
+
 	/* measured in blksize (BLOCK_SIZE) byte blocks */
 	xattr->nblocks = nblocks;
-	
+
 	if (native_utc)
 	{
 		SET_XATTR_TD(xattr,m,rip.i_mtime);
@@ -391,11 +391,11 @@ m_getxattr (fcookie *fc, XATTR *xattr)
 		*((long *) &(xattr->ctime)) = dostime (rip.i_ctime);
 #endif
 	}
-	
+
 	xattr->reserved2 = 0;
 	xattr->reserved3[0] = 0;
 	xattr->reserved3[1] = 0;
-	
+
 	return E_OK;
 }
 
@@ -405,86 +405,86 @@ m_stat64 (fcookie *fc, STAT *ptr)
 	SI *psblk = super_ptr[fc->dev];
 	d_inode rip;
 	long nblocks;
-	
+
 	read_inode (fc->index, &rip, fc->dev);
-	
+
 	/* Minix and gcc use different values for FIFO's */
 	if ((rip.i_mode & I_TYPE) == I_NAMED_PIPE)
 		ptr->mode = S_IFIFO | (rip.i_mode & ALL_MODES);
 	else
 		ptr->mode = rip.i_mode;
-	
+
 	/* We could potentially have trouble with symlinks too */
 # if I_SYMLINK != S_IFLNK
 	if ((rip.i_mode & I_TYPE) == I_SYMLINK)
 		ptr->mode = S_IFLNK | (rip.i_mode & ALL_MODES);
 # endif
-	
+
 	ptr->dev = fc->dev;
 	ptr->ino = fc->index;
-	
+
 	/* Char and block special files need major/minor device nos filled in */
 	if (IM_SPEC (rip.i_mode)) ptr->rdev = rip.i_zone[0];
 	else ptr->rdev = 0;
-	
+
         ptr->nlink = rip.i_nlinks;
         ptr->uid = rip.i_uid;
         ptr->gid = rip.i_gid;
         ptr->size = rip.i_size;
 	ptr->blksize = BLOCK_SIZE;
-	
+
 	/* Note: the nblocks calculation is accurate only if the file is
 	 * contiguous. It usually will be, and if it's not, it shouldn't
 	 * matter ('du' will return values that are slightly too high)
 	 */
 	nblocks = (ptr->size + (BLOCK_SIZE - 1)) / BLOCK_SIZE;
 	ptr->blocks = nblocks;
-	
+
 	if (ptr->blocks > psblk->dzpi)
 	{
 		/* correct for the indirection block */
 		nblocks++;
 	}
-	
+
 	if (ptr->blocks > psblk->ndbl)
 	{
 		/* correct for double indirection block */
 		nblocks++;
-		
+
 		/* and single indirection blocks */
 		nblocks += (ptr->blocks - psblk->ndbl) / psblk->zpind;
 	}
-	
+
 	if (ptr->blocks > psblk->ndbl + (long) psblk->zpind * psblk->zpind)
 	{
 		/* correct for triple indir block */
 		nblocks++;
-		
+
 		/* and double indirection blocks */
 		nblocks += ((ptr->blocks - psblk->ndbl
 			- (long) psblk->zpind * psblk->zpind)
 			/ ((long) psblk->zpind * psblk->zpind));
 	}
-	
+
 	/* measured in 512 byte blocks */
 	ptr->blocks = nblocks << (L_BS - 9);
-	
+
 	ptr->atime.high_time	= 0;
 	ptr->atime.time		= rip.i_atime;
 	ptr->atime.nanoseconds	= 0;
-	
+
 	ptr->mtime.high_time	= 0;
 	ptr->mtime.time		= rip.i_mtime;
 	ptr->mtime.nanoseconds	= 0;
-	
+
 	ptr->ctime.high_time	= 0;
 	ptr->ctime.time		= rip.i_ctime;
 	ptr->ctime.nanoseconds	= 0;
-	
+
 	ptr->flags = 0;
 	ptr->gen = 0;
 	bzero (ptr->res, sizeof (ptr->res));
-	
+
 	return E_OK;
 }
 
@@ -497,37 +497,37 @@ m_chattr (fcookie *file, int attr)
         long inum = file->index;
 	int drive = file->dev;
 	d_inode rip;
-	
+
 	if (super_ptr [drive]->s_flags & MS_RDONLY)
 		return EROFS;
-	
+
 	if ((attr & FA_RDONLY) || (attr == 0))
 	{
 		read_inode (inum, &rip, drive);
-		
+
 		if (attr)
 		{
 			/* turn off write permission */
 			rip.i_mode &= ~(0222);
-			
+
 			goto write;
 		}
 		else if ((rip.i_mode & 0222) == 0)
 		{
 			/* turn write permission back on */
 			rip.i_mode |= ((rip.i_mode & 0444) >> 1);
-			
+
 			goto write;
 		}
 	}
-	
+
 	return E_OK;
-	
+
 write:
 	rip.i_ctime = CURRENT_TIME;
 	write_inode (inum, &rip, drive);
 	sync (drive);
-	
+
 	return E_OK;
 }
 
@@ -535,18 +535,18 @@ static long _cdecl
 m_chown (fcookie *file, int uid, int gid)
 {
 	d_inode rip;
-	
+
 	if (super_ptr [file->dev]->s_flags & MS_RDONLY)
 		return EROFS;
-	
+
 	read_inode (file->index, &rip, file->dev);
-	
+
  	if (uid != -1) rip.i_uid = uid;
 	if (gid != -1) rip.i_gid = gid;
-	
+
 	rip.i_ctime = CURRENT_TIME;
 	write_inode (file->index, &rip, file->dev);
-	
+
 	sync (file->dev);
 	return E_OK;
 }
@@ -555,13 +555,13 @@ static long _cdecl
 m_chmode (fcookie *file, unsigned int mode)
 {
 	d_inode rip;
-	
+
 	if (super_ptr [file->dev]->s_flags & MS_RDONLY)
 		return EROFS;
-	
+
 	read_inode (file->index, &rip, file->dev);
-	
-	rip.i_mode = (rip.i_mode & I_TYPE) | (mode & ALL_MODES);                
+
+	rip.i_mode = (rip.i_mode & I_TYPE) | (mode & ALL_MODES);
 	rip.i_ctime = CURRENT_TIME;
 	write_inode (file->index, &rip, file->dev);
 
@@ -577,17 +577,17 @@ m_mkdir (fcookie *dir, const char *name, unsigned int mode)
 	long pos;
 	int incr = super_ptr[dir->dev]->incr;
 	dir_struct blank[incr * 2];
-	
+
 	if (super_ptr [dir->dev]->s_flags & MS_RDONLY)
 		return EROFS;
-	
+
 	if ((pos = search_dir (name, dir->index, dir->dev, ADD)) < 0)
 		return pos;
-	
+
 	read_inode (dir->index, &rip, dir->dev);
 	if (rip.i_nlinks >= MINIX2_LINK_MAX)
 		return EACCES;
-	
+
 	/* Get new inode */
 	if (!(newdir = alloc_inode (dir->dev)))
 		return EACCES;
@@ -608,7 +608,7 @@ m_mkdir (fcookie *dir, const char *name, unsigned int mode)
 	blank[0].d_inum = newdir;
 	strcpy (blank[incr].d_name, "..");
 	blank[incr].d_inum = dir->index;
-	
+
 	if (l_write ((unsigned) newdir, -1L, (long)(DIR_ENTRY_SIZE * 2 * incr),
 		blank, dir->dev) != (incr * DIR_ENTRY_SIZE * 2))
 	{
@@ -616,15 +616,15 @@ m_mkdir (fcookie *dir, const char *name, unsigned int mode)
 		ripnew.i_nlinks = 0;
 		write_inode (newdir, &ripnew, dir->dev);
 		free_inode (dir->dev, newdir);
-		
+
 		sync (dir->dev);
 		return EACCES;
 	}
-	
+
 	rip.i_nlinks++;
 	write_inode (dir->index, &rip, dir->dev);
 	l_write (dir->index, pos, 2L, &newdir, dir->dev);
-	
+
 	sync (dir->dev);
 	return E_OK;
 }
@@ -637,10 +637,10 @@ m_rmdir (fcookie *dir, const char *name)
 	long inum;
 	int i, incr;
 	d_inode rip, rip2;
-	
+
 	if (super_ptr [dir->dev]->s_flags & MS_RDONLY)
 		return EROFS;
-	
+
 	if ((inum = search_dir (name, dir->index, dir->dev, FIND)) < 0)
 		return inum;
 
@@ -648,7 +648,7 @@ m_rmdir (fcookie *dir, const char *name)
 	read_inode (dir->index, &rip2, dir->dev);
 	if (!IS_DIR (rip)) return ENOENT;
 	incr = super_ptr[dir->dev]->incr;
-	
+
 	/* Check if dir is actually empty */
 	for (chunk = 0; (left = next_zone (&rip, chunk) / DIR_ENTRY_SIZE); chunk++)
 	{
@@ -688,13 +688,13 @@ m_creat (fcookie *dir, const char *name, unsigned int mode, int attr, fcookie *e
 	d_inode ripnew;
 	ushort newfile;
 	char *ext;
-	
+
 	if (super_ptr [dir->dev]->s_flags & MS_RDONLY)
 		return EROFS;
-	
-	/* Create dir entry */	
+
+	/* Create dir entry */
 	if ((pos = search_dir (name, dir->index, dir->dev, ADD)) < 0)
-	{	
+	{
 		return pos;
 	}
 
@@ -707,16 +707,16 @@ m_creat (fcookie *dir, const char *name, unsigned int mode, int attr, fcookie *e
 	/* Set up inode */
 	bzero (&ripnew, sizeof (d_inode));
 
-	/* If  creating a file with approriate extensions 
+	/* If  creating a file with approriate extensions
 	 * automatically give it execute permissions.
 	 */
 	if (do_trans (AEXEC_TOS, dir->dev) && (ext = strrchr (name, '.')))
 	{
 		ext++;
-		if ( 
+		if (
 		/* Insert your favourite extensions here */
-		  !(stricmp(ext,"TTP") && stricmp(ext,"PRG") 
-		   && stricmp(ext,"APP") && stricmp(ext,"TOS") 
+		  !(stricmp(ext,"TTP") && stricmp(ext,"PRG")
+		   && stricmp(ext,"APP") && stricmp(ext,"TOS")
 		   && stricmp(ext,"ACC") && stricmp(ext, "GTP")))
 				mode |= 0111;
 	}
@@ -736,7 +736,7 @@ m_creat (fcookie *dir, const char *name, unsigned int mode, int attr, fcookie *e
 	entry->dev = dir->dev;
 	entry->index = newfile;
 	entry->aux = 0;
-	
+
 	sync (dir->dev);
 	return 0;
 }
@@ -751,25 +751,25 @@ m_remove (fcookie *dir, const char *name)
 	long inum, ret;
 	char spec;	/* Special file */
 	d_inode rip;
-	
+
 	if (super_ptr [dir->dev]->s_flags & MS_RDONLY)
 		return EROFS;
-	
+
 	inum = search_dir (name, dir->index, dir->dev, FIND);
 	if (inum < 0)
 		return inum;
-	
+
 	read_inode (inum, &rip, dir->dev);
-	if (!IS_REG (rip) && !IS_SYM (rip)) 
+	if (!IS_REG (rip) && !IS_SYM (rip))
 	{
 		if (!IM_SPEC (rip.i_mode)) return EACCES;
 		spec = 1;
 	}
 	else spec = 0;
-	
+
 	if ((ret = search_dir (name, dir->index, dir->dev, KILL)) < 0)
 		return ret;
-	
+
 	if (--rip.i_nlinks == 0)
 	{
 		if(spec || !inode_busy (inum, dir->dev, 1)) /* Is inode busy ? */
@@ -780,15 +780,15 @@ m_remove (fcookie *dir, const char *name)
 		}
 	}
 	write_inode (inum, &rip, dir->dev);
-	
+
 	sync (dir->dev);
 	return(0);
 }
 
-/* This function is inefficient, it uses the standard sys V method of 
+/* This function is inefficient, it uses the standard sys V method of
  * finding out the pathname of the cwd : for each part of the path, search
  * the parent for a link with the same inode number as '..' , append this to the
- * path until we get to root dir, then reverse order of dirs. This way no 
+ * path until we get to root dir, then reverse order of dirs. This way no
  * temporary buffers are allocated which could overflow or kmalloc to fail ...
  */
 
@@ -802,29 +802,29 @@ m_getname (fcookie *root, fcookie *dir, char *pathname, int length)
 	ushort dev = dir->dev;
 	int incr = psblk->incr;
 	short plength = 0;
-	
+
 	*pathname = 0;
-	
+
 	if ((dir->dev == root->dev) && (dir->index == root->index))
 		return 0;
-	
+
 	while ((inum != root->index) && (inum != ROOT_INODE))
 	{
 		d_inode rip;
 		long chunk;
 		long left;
 		ulong pinum;
-		
+
 		/* Parent inum */
-		pinum = search_dir ("..", inum, dev, FIND); 
+		pinum = search_dir ("..", inum, dev, FIND);
 		if (pinum < 0)
 		{
 			/* If this happens we're in trouble */
-			
+
 			ALERT (("Minix-FS (%c): m_getname: no '..' in inode %d", dev+'A', inum));
 			return pinum;
 		}
-		
+
 		read_inode (pinum, &rip, dev);
 		for (chunk = 0; (left = next_zone (&rip, chunk) / DIR_ENTRY_SIZE) && inum != pinum; chunk++)
 		{
@@ -837,42 +837,42 @@ m_getname (fcookie *root, fcookie *dir, char *pathname, int length)
 				{
 					strncpy (tname, ((bufr *) u->data)->bdir[i].d_name, psblk->mfname);
 					tname [psblk->mfname] = 0;
-					
+
 					strrev (tname);
-					
+
 					plength += strlen (tname) + 1;
 					if (length <= plength)
 						return EBADARG;
-					
+
 					strcat (pathname, tname);
 					strcat (pathname, "\\");
 					inum = pinum;
 				}
 			}
 		}
-		
+
 		if ((left == 0) && (inum != pinum))
 		{
 			ALERT (("Minix-FS (%c): m_getname: inode %d orphaned or bad '..'", dev+'A', inum));
 			return EINTERNAL;
 		}
 	}
-	
+
 	if ((inum == ROOT_INODE) && (root->index != ROOT_INODE))
 	{
 		DEBUG (("Minix-FS (%c): m_getname: Hmmmm root is not a parent of dir.", dev+'A'));
 		return EINTERNAL;
 	}
-	
+
 	strrev (pathname);
 	return E_OK;
 }
 
-/* m_rename, move a file or directory. Directories need special attention 
+/* m_rename, move a file or directory. Directories need special attention
  * because if /usr/foo is moved to /usr/foo/bar then the filesystem will be
  * damaged by making the /usr/foo directory inaccessible. The sanity checking
  * performed is very simple but should cover all cases: Start at the parent
- * of the destination , check if this is the source inode , if not then 
+ * of the destination , check if this is the source inode , if not then
  * move back to '..' and check again , repeatedly check until the root inode
  * is reached , if the source is ever seen on the way back to the root then
  * the rename is invalid , otherwise it should be OK.
@@ -884,17 +884,17 @@ m_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newname)
 	long finode, ret;
 	d_inode rip;
 	long pos;
-	char dirmove, dirren;
+	char dirmove;	//, dirren;
 	dirmove = 0;
-	dirren = 0;
-	
+	//dirren = 0;
+
 	/* Check cross drives */
 	if (olddir->dev != newdir->dev)
 		return EXDEV;
-	
+
 	if (super_ptr [olddir->dev]->s_flags & MS_RDONLY)
 		return EROFS;
-	
+
 	/* Check new doesn't exist and path is otherwise valid */
 	finode = search_dir (newname, newdir->index, newdir->dev, FIND);
 	if (finode > 0) return EACCES;
@@ -909,7 +909,7 @@ m_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newname)
 	/* Sanity check movement of directories */
 	if (IS_DIR (rip))
 	{
-		dirren = 1;
+		//dirren = 1;
 	 	if (olddir->index != newdir->index)
 		{
 # ifdef MFS_NMOVE_DIR
@@ -930,7 +930,7 @@ m_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newname)
 	/* Create new entry */
 	if ((pos = search_dir (newname, newdir->index, newdir->dev, ADD)) < 0)
 		return pos;
-	
+
 	/* Delete old path */
 	if ((finode = search_dir (oldname, olddir->index, olddir->dev, KILL)) < 0)
 			return finode;
@@ -945,7 +945,7 @@ m_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newname)
 	if (dirmove)
 	{
 		pos = search_dir ("..", finode, newdir->dev, POS);
-		if (pos < 0) 
+		if (pos < 0)
 		{
 			ALERT (("Minix-FS (%c): m_rename: no '..' in inode %ld.", olddir->dev+'A', finode));
 			return EACCES;
@@ -959,12 +959,12 @@ m_rename (fcookie *olddir, char *oldname, fcookie *newdir, const char *newname)
 		read_inode (olddir->index, &rip, olddir->dev);
 		rip.i_nlinks--;
 		write_inode (olddir->index, &rip, olddir->dev);
-		
+
 		read_inode (newdir->index, &rip, newdir->dev);
 		rip.i_nlinks++;
 		write_inode (newdir->index, &rip, newdir->dev);
 	}
-	
+
 	sync (olddir->dev);
 	return 0;
 }
@@ -984,24 +984,24 @@ m_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 	unsigned entry, chunk;
 	long limit;
 	int flag, incr;
-	
+
 	if (dirh->flags & TOS_SEARCH)
 		flag = do_trans (DIR_TOS, dirh->fc.dev);
 	else
 		flag = 0;
-	
+
 	if (!dirh->fc.index) return EACCES;
-	
+
 	entry = dirh->index % NR_DIR_ENTRIES;
 	chunk = dirh->index / NR_DIR_ENTRIES;
-	
+
 	read_inode (dirh->fc.index, &rip, dirh->fc.dev);
 	incr = psblk->incr;
 
 	while ((limit = next_zone (&rip, chunk) / DIR_ENTRY_SIZE))
 	{
 		UNIT *u = cget_zone (find_zone (&rip, chunk, dirh->fc.dev, 0), dirh->fc.dev);
-		
+
 		while (entry < limit)
 	  	{
 			dir_struct *try = &((bufr *) u->data)->bdir[entry];
@@ -1010,9 +1010,9 @@ m_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 			{
 				char tmpbuf[psblk->mfname + 8];
 				char *tmpnam;
-				
+
 				tmpnam = tosify (try->d_name, flag, tmpbuf, psblk->mfname);
-				
+
 				if ((dirh->flags & TOS_SEARCH) == 0)
 				{
 					namelen -= sizeof (long);
@@ -1023,33 +1023,33 @@ m_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 
 				strncpy (name, tmpnam, namelen);
 				dirh->index = entry + chunk * NR_DIR_ENTRIES;
-				
+
 				/* set up a file cookie for this entry */
 				fc->dev = dirh->fc.dev;
 				fc->aux = 0;
 				fc->index = (long) try->d_inum;
 				fc->fs = &minix_filesys;
-				
-				if (strlen (tmpnam) >= namelen) 
+
+				if (strlen (tmpnam) >= namelen)
 					return EBADARG;
-				
+
 				/* If turbo mode set atime here: we'll only
 				 * change the cache here so it wont cause
 				 * lots of I/O
 				 */
 				if (WB_CHECK (psblk) && !(psblk->s_flags & MS_RDONLY))
 					set_atime (&dirh->fc);
-				
+
 				return E_OK;
 			}
 		}
-		
+
 		if (entry != NR_DIR_ENTRIES) return ENMFILES;
 		else entry = 0;
-		
+
 		chunk++;
 	}
-	
+
 	return ENMFILES;
 }
 
@@ -1064,7 +1064,7 @@ static long _cdecl
 m_closedir (DIR *dirh)
 {
 	SI *psblk = super_ptr [dirh->fc.dev];
-	
+
 	/*
 	 * Access time is set here if we aren't in TURBO cache mode. Otherwise we
 	 * would be sync'ing on every dir read which would be far too slow. See note
@@ -1075,7 +1075,7 @@ m_closedir (DIR *dirh)
 		set_atime (&dirh->fc);
 		sync (dirh->fc.dev);
 	}
-	
+
 	dirh->fc.index = 0;
 	return 0;
 }
@@ -1113,7 +1113,7 @@ m_pathconf (fcookie *dir, int which)
 					);
 		case DP_VOLNAMEMAX:	return 0;
 	}
-	
+
 	return ENOSYS;
 }
 
@@ -1121,12 +1121,12 @@ static long _cdecl
 m_dfree (fcookie *dir, long int *buffer)
 {
 	SI *psblk = super_ptr[dir->dev];
-	
+
 	buffer[1] = psblk->sblk->s_zones - psblk->sblk->s_firstdatazn;
 	buffer[0] = buffer[1] - count_bits (psblk->zbitmap, buffer[1] + 1) + 1;
 	buffer[2] = BLOCK_SIZE;
 	buffer[3] = 1L;
-	
+
 	return 0;
 }
 
@@ -1154,7 +1154,7 @@ m_symlink (fcookie *dir, const char *name, const char *to)
 
 	if (super_ptr [dir->dev]->s_flags & MS_RDONLY)
 		return EROFS;
-	
+
 	if (!*to)
 	{
 		DEBUG (("Minix-FS (%c): m_symlink: invalid null filename.", dir->dev+'A'));
@@ -1178,7 +1178,7 @@ m_symlink (fcookie *dir, const char *name, const char *to)
 		DEBUG (("Minix-FS (%c): m_symlink: no free inodes.", dir->dev+'A'));
 		return EACCES;
 	}
-	
+
 
 	bzero (&rip, sizeof (d_inode));
 	rip.i_mode = I_SYMLINK | 0777;
@@ -1200,7 +1200,7 @@ m_symlink (fcookie *dir, const char *name, const char *to)
  	write_zone (rip.i_zone[0], &temp, dir->dev);
 	write_inode (newinode, &rip, dir->dev);
 	l_write (dir->index, pos, 2L, &newinode, dir->dev);
-	
+
 	sync (dir->dev);
 	return 0;
 }
@@ -1211,7 +1211,7 @@ m_readlink (fcookie *file, char *buf, int len)
 	bufr temp;
 	long inum = file->index;
 	d_inode rip;
-	
+
 	read_inode (inum, &rip, file->dev);
 	if ((rip.i_mode & I_TYPE) != I_SYMLINK)
 	{
@@ -1230,7 +1230,7 @@ m_readlink (fcookie *file, char *buf, int len)
 		DEBUG (("Minix-FS (%c): m_readlink: name too long.", file->dev+'A'));
 		return EBADARG;
 	}
-	
+
 	TRACE (("Minix-FS (%c): m_readlink returned %s", file->dev+'A', buf));
 	return 0;
 }
@@ -1245,14 +1245,14 @@ m_hardlink (fcookie *fromdir, const char *fromname, fcookie *todir, const char *
 	long finode;
 	d_inode rip;
 	long pos;
-	
+
 	/* Check cross drives */
 	if (fromdir->dev != todir->dev)
 		return EXDEV;
-	
+
 	if (super_ptr [fromdir->dev]->s_flags & MS_RDONLY)
 		return EROFS;
-	
+
 	/* Check new doesn't exist and path is otherwise valid */
 	finode = search_dir (toname, todir->index, todir->dev, FIND);
 	if (finode > 0) return EACCES;
@@ -1269,7 +1269,7 @@ m_hardlink (fcookie *fromdir, const char *fromname, fcookie *todir, const char *
 	/* Create new entry */
 	if ((pos = search_dir (toname, todir->index, todir->dev, ADD)) < 0)
 		return pos;
-	
+
 	{
 		ushort ino = finode;
 		l_write (todir->index, pos, 2L, &ino, todir->dev);
@@ -1277,7 +1277,7 @@ m_hardlink (fcookie *fromdir, const char *fromname, fcookie *todir, const char *
 	rip.i_nlinks++;
 	rip.i_ctime = CURRENT_TIME;
 	write_inode (finode, &rip, fromdir->dev);
-	
+
 	sync (fromdir->dev);
 	return 0;
 }
@@ -1289,10 +1289,10 @@ m_fscntl (fcookie *dir, const char *name, int cmd, long int arg)
 	long inum;
 	int uid, gid, id;
 	d_inode rip;
-	
+
 	uid = p_geteuid ();
 	gid = p_getegid ();
-	
+
 	switch (cmd)
 	{
 		case MX_KER_XFSNAME:
@@ -1316,13 +1316,13 @@ m_fscntl (fcookie *dir, const char *name, int cmd, long int arg)
 		{
 			SI *psblk = super_ptr[dir->dev];
 			struct fs_usage *inf = (struct fs_usage *) arg;
-			
+
 			inf->blocksize = BLOCK_SIZE;
 			inf->blocks = psblk->sblk->s_zones - psblk->sblk->s_firstdatazn;
 			inf->free_blocks = inf->blocks - count_bits (psblk->zbitmap, inf->blocks + 1) + 1;
 			inf->inodes = psblk->sblk->s_ninodes;
 			inf->free_inodes = inf->inodes - count_bits (psblk->ibitmap, inf->inodes + 1) + 1;
-			
+
 			return E_OK;
 		}
 		case MFS_VERIFY:
@@ -1335,7 +1335,7 @@ m_fscntl (fcookie *dir, const char *name, int cmd, long int arg)
 		{
 			sync_bitmaps (super_ptr[dir->dev]);
 			bio.sync_drv (super_ptr[dir->dev]->di);
-			
+
 			TRACE (("Minix-FS (%c): Done sync", dir->dev+'A'));
 			return E_OK;
 		}
@@ -1368,29 +1368,29 @@ m_fscntl (fcookie *dir, const char *name, int cmd, long int arg)
 				int	increment;	/* Directory increment */
 				long	res [4];	/* Reserved for future use */
 			};
-			
+
 			SI *psblk = super_ptr[dir->dev];
 			mfs_info *inf = (mfs_info *) arg;
-			
+
 			inf->total_zones = psblk->sblk->s_zones-psblk->sblk->s_firstdatazn;
 			inf->total_inodes = psblk->sblk->s_ninodes;
 			inf->version = 2;
-			inf->increment = psblk->incr;		
+			inf->increment = psblk->incr;
 			inf->free_inodes = inf->total_inodes - count_bits (psblk->ibitmap, inf->total_inodes + 1) + 1;
 			inf->free_zones = inf->total_zones - count_bits (psblk->zbitmap, inf->total_zones + 1) + 1;
-			
+
 			return E_OK;
 		}
 		case MFS_IMODE:
 		{
 			if (uid) return EACCES;
-			
+
 			inum = search_dir (name, dir->index, dir->dev, FIND);
 			if (inum < 0) return inum;
 			read_inode (inum, &rip, dir->dev);
 			rip.i_mode = arg;
 			write_inode (inum, &rip, dir->dev);
-			
+
 			return E_OK;
 		}
 		case MFS_GTRANS:
@@ -1420,18 +1420,18 @@ m_fscntl (fcookie *dir, const char *name, int cmd, long int arg)
 		{
 			fcookie fc;
 			read_inode (dir->index, &rip, dir->dev);
-			
+
 			if (super_ptr [dir->dev]->s_flags & MS_RDONLY)
 				return EROFS;
-			
+
 			/* Have we got 'x' access for current dir ? */
- 			if (check_mode (uid, gid, &rip, S_IXUSR)) 
+ 			if (check_mode (uid, gid, &rip, S_IXUSR))
 		  		return EACCES;
-		  	
+
 			/* Lookup the entry */
 			if ((inum = m_lookup (dir, name, &fc)))
 				return inum;
-			
+
 			read_inode (fc.index, &rip, fc.dev);
 			if ((cmd == FUTIME) || (cmd == FUTIME_UTC))
 			{
@@ -1441,22 +1441,22 @@ m_fscntl (fcookie *dir, const char *name, int cmd, long int arg)
 				 */
 				if (uid && uid != rip.i_uid /* && (arg || check_mode (uid, gid, &rip, S_IWUSR)) */)
 					return EACCES;
-				
+
 				rip.i_ctime = CURRENT_TIME;
-				
+
 				if (arg)
-				{	
+				{
 					if (native_utc || (cmd == FUTIME_UTC))
 					{
 						long *timeptr = (long *) arg;
-						
+
 						rip.i_atime = timeptr[0];
 						rip.i_mtime = timeptr[1];
 					}
 					else
 					{
 						MUTIMBUF *buf = (MUTIMBUF *) arg;
-						
+
 						rip.i_atime = unixtime (buf->actime, buf->acdate);
 						rip.i_mtime = unixtime (buf->modtime, buf->moddate);
 					}
@@ -1466,22 +1466,22 @@ m_fscntl (fcookie *dir, const char *name, int cmd, long int arg)
 					rip.i_atime =
 					rip.i_mtime = rip.i_ctime;
 				}
-				
+
 				write_inode (fc.index, &rip, fc.dev);
-				
+
 				sync (fc.dev);
 				return E_OK;
 			}
 
 			if (!IS_REG (rip))
 				return EACCES;
-			
+
 			/* Need write access as well */
 			if (check_mode (uid, gid, &rip, S_IWUSR))
 				return EACCES;
-			
+
 			itruncate (fc.index, fc.dev, *((long *) arg));
-			
+
 	  		sync (fc.dev);
 			return E_OK;
 		}
@@ -1495,11 +1495,11 @@ m_fscntl (fcookie *dir, const char *name, int cmd, long int arg)
 				long	limit;		/* Number of elements in flist */
 				ushort	flist[1];	/* Inode list */
 			};
-			
+
 			openf_list *flist = (openf_list *) arg;
 			long fcount = 0;
 			inum = 0;
-			
+
 			for (f = firstptr; f; f = f->next)
 			{
 				/* If same file or wrong device, skip */
@@ -1511,26 +1511,26 @@ m_fscntl (fcookie *dir, const char *name, int cmd, long int arg)
 					return EBADARG;
 			}
 			flist->flist[fcount] = 0;
-			
+
 			return fcount;
 		}
 		case MFS_MKNOD:
 		{
 		 	long pos;
 			unsigned inm, mode;
-			
+
 		 	if (uid) return EACCES;
 		 	mode = arg & 0xffff;
-			
+
 			if (super_ptr [dir->dev]->s_flags & MS_RDONLY)
 				return EROFS;
-			
+
 		 	/* Char and block specials only at present */
 		 	if (!IM_SPEC (mode)) return EBADARG;
 
 		 	/* Create new name */
 		 	pos = search_dir (name, dir->index, dir->dev, ADD);
-		 	if (pos < 0) return pos;		 
+		 	if (pos < 0) return pos;
 		 	inm =  alloc_inode (dir->dev);
 		 	if (!inm) return EWRITE;
 
@@ -1548,7 +1548,7 @@ m_fscntl (fcookie *dir, const char *name, int cmd, long int arg)
 
 			write_inode (inm, &rip, dir->dev);
 			l_write (dir->index, pos, 2L, &inm, dir->dev);
-			
+
 			sync (dir->dev);
 			return E_OK;
 		}
@@ -1556,11 +1556,11 @@ m_fscntl (fcookie *dir, const char *name, int cmd, long int arg)
 		{
 			SI *s = super_ptr[dir->dev];
 			long r;
-			
+
 			r = bio.config (dir->dev, BIO_WP, arg);
 			if (r || (arg == ASK))
 				return r;
-			
+
 			r = EINVAL;
 			if (BIO_WP_CHECK (s->di) && !(s->s_flags & MS_RDONLY))
 			{
@@ -1569,27 +1569,27 @@ m_fscntl (fcookie *dir, const char *name, int cmd, long int arg)
 					s->sblk->s_state |= MINIX_VALID_FS;
 					bio_MARK_MODIFIED (&bio, s->sunit);
 				}
-				
+
 				bio.sync_drv (s->di);
-				
+
 				s->s_flags |= MS_RDONLY;
 				ALERT (("MinixFS [%c]: remounted read-only!", dir->dev+'A'));
-				
+
 				r = E_OK;
 			}
 			else if (s->s_flags & MS_RDONLY)
 			{
 				s->sblk->s_state &= ~MINIX_VALID_FS;
 				bio_MARK_MODIFIED (&bio, s->sunit);
-				
+
 				bio.sync_drv (s->di);
-				
+
 				s->s_flags &= ~MS_RDONLY;
 				ALERT (("MinixFS [%c]: remounted read/write!", dir->dev+'A'));
-				
+
 				r = E_OK;
 			}
-			
+
 			return r;
 		}
 		case V_CNTR_WB:
@@ -1597,7 +1597,7 @@ m_fscntl (fcookie *dir, const char *name, int cmd, long int arg)
 			return bio.config (dir->dev, BIO_WB, arg);
 		}
 	}
-	
+
 	return ENOSYS;
 }
 
@@ -1611,19 +1611,19 @@ m_dskchng (int drv, int mode)
 	SI *s = super_ptr [drv];
 	long change = 1;
 	FILEPTR *f, **last;
-	
+
 	TRACE (("Minix-FS (%c): m_dskchng: enter (mode = %i)", drv+'A', mode));
-	
+
 	if (mode == 0)
 		change = BIO_DSKCHNG (s->di);
-	
+
 	if (change == 0)
 	{
 		/* no change */
 		TRACE (("Minix-FS (%c): m_dskchng: leave no change!", drv+'A'));
 		return change;
 	}
-	
+
 	/* Since the disk has changed always invalidate cache
 	 * only the bitmaps are directly cached
 	 */
@@ -1635,20 +1635,20 @@ m_dskchng (int drv, int mode)
 	{
 		ALERT (("Minix-FS: Zone bitmap not written out when drive %c invalidated", drv+'A'));
 	}
-	
+
 	s->idirty =	0;
 	s->zdirty = 0;
-	
-	
+
+
 	/* free the DI (invalidate also the cache units) */
 	bio.free_di (s->di);
-	
+
 	/* free allocated memory */
 	kfree (s->ibitmap);
 	kfree (s);
-	
+
 	super_ptr [drv] = 0;
-	
+
 	/* Free any memory associated to file pointers of this drive. */
 	last = &firstptr;
 	for (f = *last; f != 0; f = *last)
@@ -1656,7 +1656,7 @@ m_dskchng (int drv, int mode)
 		if (f->fc.dev == drv)
 		{
 			f_cache *fch = (f_cache *) f->devinfo;
-			
+
 			/*
 			 * The lock structure is shared between the fileptr's.
 			 * Make sure that it is freed only once.
@@ -1673,7 +1673,7 @@ m_dskchng (int drv, int mode)
 				kfree (fch->lfirst);
 			}
 			kfree (fch);
-			
+
 			/* Remove this fileptr from the list. */
 			*last = f->next;
 			f->next = 0;
@@ -1681,7 +1681,7 @@ m_dskchng (int drv, int mode)
 		else
 			last = &f->next;
 	}
-	
+
 	return change;
 }
 
@@ -1695,11 +1695,11 @@ static long _cdecl
 m_dupcookie (fcookie *dest, fcookie *src)
 {
 	ushort tmpaux = dest->aux;
-	
+
 	*dest = *src;
 	if (restore_dev != - 1 && (tmpaux & (AUX_DEV|AUX_DRV)) == (restore_dev|AUX_DRV))
 		dest->dev = tmpaux & AUX_DEV;
-	
+
 	return E_OK;
 }
 
@@ -1707,7 +1707,7 @@ static long _cdecl
 m_sync (void)
 {
 	int i;
-	
+
 	for (i = 0; i < NUM_DRIVES; i++)
 	{
 		register SI *s = super_ptr[i];
@@ -1716,7 +1716,7 @@ m_sync (void)
 			sync_bitmaps (s);
 		}
 	}
-	
+
 	/* buffer cache automatically synced */
 	return E_OK;
 }
@@ -1731,7 +1731,7 @@ static long _cdecl
 m_unmount (int drv)
 {
 	SI *s = super_ptr[drv];
-	
+
 	if (!(s->s_flags & MS_RDONLY) && !(s->s_flags & S_NOT_CLEAN_MOUNTED))
 	{
 		s->sblk->s_state |= MINIX_VALID_FS;
@@ -1741,15 +1741,15 @@ m_unmount (int drv)
 	{
 		DEBUG (("can't unmount cleanly"));
 	}
-	
+
 	/* sync bitmaps */
 	sync_bitmaps (s);
-	
+
 	/* sync the buffer cache */
 	bio.sync_drv (s->di);
-	
+
 	/* invalidate the drv */
 	m_dskchng (drv, 1);
-	
+
 	return E_OK;
 }

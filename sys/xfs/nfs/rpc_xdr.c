@@ -5,10 +5,10 @@
  * EVEN THE IMPLIED WARRANTIES OF MERCHANTIBILITY OR
  * FITNESS FOR A PARTICULAR PURPOSE. USE AT YOUR OWN
  * RISK.
- * 
+ *
  * Modified for FreeMiNT CVS
  * by Frank Naumann <fnaumann@freemint.de>
- * 
+ *
  * Please send suggestions, patches or bug reports to me or
  * the MiNT mailing list.
  *
@@ -45,8 +45,10 @@ xdr_size_opaque_auth(opaque_auth *ap)
 bool_t
 xdr_opaque_auth(xdrs *x, opaque_auth *ap)
 {
+	const opaque *cp;
 	xdr_enum(x, &ap->flavor);
-	return xdr_opaque(x, (const char **)&ap->data, (long *)&ap->len, MAX_AUTH_BYTES);
+	cp = (const opaque *)ap->data;
+	return xdr_opaque(x, &cp, (long *)&ap->len, MAX_AUTH_BYTES);
 }
 
 

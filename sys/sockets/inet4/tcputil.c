@@ -20,10 +20,10 @@ long
 tcp_isn (void)
 {
 	static long isn = 0;
-	
+
 	if (isn == 0)
 		isn = unixtime (t_gettime (), t_getdate ());
-	
+
 	isn += 999;
 	return isn;
 }
@@ -32,7 +32,7 @@ struct tcb *
 tcb_alloc (void)
 {
 	struct tcb *tcb;
-	
+
 	tcb = kmalloc (sizeof (*tcb));
 	if (!tcb)
 	{
@@ -40,23 +40,23 @@ tcb_alloc (void)
 		return NULL;
 	}
 	bzero (tcb, sizeof (*tcb));
-	
+
 	tcb->state = TCBS_CLOSED;
 	tcb->ostate = TCBOS_IDLE;
 	tcb->snd_mss = TCP_MSS;
 	tcb->rcv_mss = TCP_MSS;
 	tcb->snd_ppw = 2;
-	
+
 	/*
 	 * The following settings will result in an initial timeout of
 	 * 2 seconds.
 	 */
 	tcb->rtt = 0;
 	tcb->rttdev = (2000/EVTGRAN);
-	
+
 	tcb->artt = 0;
 	tcb->arttdev = TCP_MINRETRANS;
-	
+
 	/*
 	 * tcb->snd_cwnd is only an estimate (mss currently can't be
 	 * greater than TCP_MSS) and is updated if we receive a max
@@ -64,7 +64,7 @@ tcb_alloc (void)
 	 */
 	tcb->snd_cwnd = tcb->snd_mss;
 	tcb->snd_thresh = 65536;
-	
+
 	return tcb;
 }
 
@@ -87,16 +87,16 @@ void
 tcb_delete (struct tcb *tcb)
 {
 	struct in_data *data = tcb->data;
-	
+
 	tcb->state = TCBS_CLOSED;
 	if (data->sock == 0)
 	{
 		DEBUG (("tcp_delete: removing tcb"));
-		
+
 		tcb_free (tcb);
 		data->pcb = 0;
 		in_data_destroy (data, 0);
-	}	
+	}
 }
 
 static void
@@ -104,12 +104,12 @@ deleteme (long arg)
 {
 	struct tcb *tcb = (struct tcb *) arg;
 	struct in_data *data = tcb->data;
-	
+
 	tcb->state = TCBS_CLOSED;
 	if (data->sock == 0)
 	{
 		DEBUG (("deleteme: removing tcb"));
-		
+
 		tcb_free (tcb);
 		data->pcb = 0;
 		in_data_destroy (data, 0);
@@ -128,10 +128,10 @@ tcb_wait (struct tcb *tcb)
 			 */
 			event_add (&tcb->delete_evt, TCP_CONN_TMOUT, deleteme, (long)tcb);
 			break;
-			
+
 		default:
 			DEBUG (("tcb_wait: called on tcb != FINWAIT2,TIMEWAIT"));
-			
+
 		case TCBS_TIMEWAIT:
 			tcb_deltimers (tcb);
 			event_add (&tcb->delete_evt, 2*TCP_MSL, deleteme, (long)tcb);
@@ -187,22 +187,22 @@ tcp_sndrst (BUF *ibuf)
 {
 	struct tcp_dgram *otcph, *itcph;
 	BUF *obuf;
-	
+
 	itcph = (struct tcp_dgram *) IP_DATA (ibuf);
 	if (itcph->flags & TCPF_RST)
 		return 0;
-	
+
 	obuf = buf_alloc (TCP_MINLEN + TCP_RESERVE, TCP_RESERVE, BUF_NORMAL);
 	if (!obuf)
 	{
 		DEBUG (("tcp_reset: no memory for reset segment"));
 		return 0;
 	}
-	
+
 	otcph = (struct tcp_dgram *) obuf->dstart;
 	otcph->srcport = itcph->dstport;
 	otcph->dstport = itcph->srcport;
-	
+
 	if (itcph->flags & TCPF_ACK)
 	{
 		otcph->seq = itcph->ack;
@@ -213,7 +213,7 @@ tcp_sndrst (BUF *ibuf)
 		otcph->seq = 0;
 		otcph->flags = TCPF_RST|TCPF_ACK;
 	}
-	
+
 	otcph->ack = itcph->seq + tcp_seglen (ibuf, itcph);
 	otcph->hdrlen = TCP_MINLEN/4;
 	otcph->window = 0;
@@ -221,7 +221,7 @@ tcp_sndrst (BUF *ibuf)
 	otcph->chksum = 0;
 	otcph->chksum = tcp_checksum (otcph, TCP_MINLEN, IP_DADDR (ibuf),
 		IP_SADDR (ibuf));
-	
+
 	obuf->dend += TCP_MINLEN;
 	return ip_send (IP_DADDR (ibuf), IP_SADDR (ibuf), obuf, IPPROTO_TCP,
 		0, 0);
@@ -237,21 +237,21 @@ tcp_sndack (struct tcb *tcb, BUF *ibuf)
 	struct tcp_dgram *otcph, *itcph = (struct tcp_dgram *) IP_DATA (ibuf);
 	long wndlast;
 	BUF *obuf;
-	
+
 	if (itcph->flags & TCPF_RST)
 		return 0;
-	
+
 	wndlast = tcb->snd_wndack + tcb->snd_wnd;
 	if (tcb->snd_wnd > 0)
 		--wndlast;
-	
+
 	obuf = buf_alloc (TCP_MINLEN + TCP_RESERVE, TCP_RESERVE, BUF_NORMAL);
 	if (!obuf)
 	{
 		DEBUG (("tcp_sndack: no memory for ack"));
 		return 0;
 	}
-	
+
 	otcph = (struct tcp_dgram *) obuf->dstart;
 	otcph->srcport = itcph->dstport;
 	otcph->dstport = itcph->srcport;
@@ -264,9 +264,9 @@ tcp_sndack (struct tcb *tcb, BUF *ibuf)
 	otcph->chksum = 0;
 	otcph->chksum = tcp_checksum (otcph, TCP_MINLEN, IP_DADDR (ibuf),
 		IP_SADDR (ibuf));
-	
+
 	obuf->dend += TCP_MINLEN;
-	
+
 	/*
 	 * Everything acked now
 	 */
@@ -284,13 +284,13 @@ tcp_valid (struct tcb *tcb, BUF *buf)
 {
 	struct tcp_dgram *tcph = (struct tcp_dgram *)IP_DATA (buf);
 	long window, wndlast, seglen, seqlast, seq;
-	
+
 	if (tcb->state < TCBS_SYNRCVD)
 		return 1;
-	
+
 	seglen = tcp_seglen (buf, tcph);
 	seq = tcph->seq;
-	
+
 	window = tcp_rcvwnd (tcb, 0);
 	if (window > 0)
 	{
@@ -298,22 +298,22 @@ tcp_valid (struct tcb *tcb, BUF *buf)
 		seqlast = seq + seglen;
 		if (seglen)
 			--seqlast;
-		
+
 		if (tcph->flags & TCPF_SYN && SEQLT (seq, tcb->rcv_nxt))
 		{
 			tcph->flags &= ~TCPF_SYN;
 			++tcph->seq;
 		}
-		
+
 		if (tcph->flags & TCPF_FIN && SEQGE (seqlast, wndlast))
 			tcph->flags &= ~TCPF_FIN;
-		
+
 		if (SEQLE (tcb->rcv_nxt, seqlast) && SEQLT (seq, wndlast))
 			return 1;
 	}
 	else if (seglen == 0 && SEQEQ (seq, tcb->rcv_nxt))
 		return 1;
-	
+
 	return 0;
 }
 
@@ -323,7 +323,7 @@ tcp_options (struct tcb *tcb, struct tcp_dgram *tcph)
 	short optlen, len, i;
 	uchar *cp;
 	long mss = TCP_MSS;
-	
+
 	optlen = tcph->hdrlen*4 - TCP_MINLEN;
 	cp = (unsigned char *)tcph->data;
 	for (i = 0; i < optlen; i += len)
@@ -332,11 +332,11 @@ tcp_options (struct tcb *tcb, struct tcp_dgram *tcph)
 		{
 			case TCPOPT_EOL:
 				goto leave;
-			
+
 			case TCPOPT_NOP:
 				len = 1;
 				break;
-			
+
 			case TCPOPT_MSS:
 				len = cp[i+1];
 				if (len != 4)
@@ -347,7 +347,7 @@ tcp_options (struct tcb *tcb, struct tcp_dgram *tcph)
 				if (tcph->flags & TCPF_SYN)
 					mss = (((ushort)cp[i+2]) << 8) + cp[i+3];
 				break;
-			
+
 			default:
 				DEBUG (("tcp_options: unknown TCP option %d", cp[i]));
 				goto leave;
@@ -362,12 +362,12 @@ tcp_mss (struct tcb *tcb, ulong faddr, long maxmss)
 {
 	struct route *rt;
 	long win, mss = TCP_MSS;
-	
+
 	rt = route_get (faddr);
 	if (rt)
 	{
 		mss = MIN (rt->nif->mtu-20, maxmss+20) - TCP_MINLEN;
-		
+
 		/*
 		 * If destination not on directly attached network then
 		 * used default MSS. Otherwise make it as big as mtu
@@ -377,7 +377,7 @@ tcp_mss (struct tcb *tcb, ulong faddr, long maxmss)
 			mss = TCP_MSS;
 		if (mss < 32)
 			mss = 32;
-		
+
 		/*
 		 * Limit receive window to 'maxpackets' ful sized segments
 		 * if interface wants this.
@@ -388,24 +388,24 @@ tcp_mss (struct tcb *tcb, ulong faddr, long maxmss)
 			if (win < tcb->data->rcv.maxdatalen)
 				tcb->data->rcv.maxdatalen = win;
 		}
-		
+
 		/*
 		 * MSS at most half of our send window, please.
 		 */
 		if (2*mss > tcb->data->snd.maxdatalen)
 			mss = tcb->data->snd.maxdatalen/2;
-		
+
 		route_deref (rt);
 	}
-	
-	return mss;	
+
+	return mss;
 }
 
 ushort
 tcp_checksum (struct tcp_dgram *dgram, ushort len, ulong srcadr, ulong dstadr)
 {
 	ulong sum = 0;
-	
+
 	/*
 	 * Pseudo IP header checksum
 	 */
@@ -422,7 +422,7 @@ tcp_checksum (struct tcp_dgram *dgram, ushort len, ulong srcadr, ulong dstadr)
 		  "d"(len), "0"(sum)
 		: "d0"
 	);
-	
+
 	/*
 	 * TCP datagram & header checksum
 	 */
@@ -457,7 +457,7 @@ tcp_checksum (struct tcp_dgram *dgram, ushort len, ulong srcadr, ulong dstadr)
 		: "g"(len), "0"(sum), "1"(dgram)
 		: "d0", "d1", "d2", "d3", "d4"
 	);
-	
+
 	/*
 	 * Add in extra word, byte (if len not multiple of 4).
 	 * Convert to short
@@ -485,18 +485,18 @@ tcp_checksum (struct tcp_dgram *dgram, ushort len, ulong srcadr, ulong dstadr)
 		: "d"(len), "0"(sum), "1"(dgram)
 		: "d0", "d1"
 	);
-	
+
 	return (short)(~sum & 0xffff);
 }
 
 void
 tcp_dump (BUF *buf)
 {
+#ifdef DEBUG_INFO
 	struct tcp_dgram *tcph = (struct tcp_dgram *) buf->dstart;
 	long datalen;
-	
 	datalen = (long) buf->dend - (long) TCP_DATA (tcph);
-	
+
 	DEBUG (("tcpdump: srcport = %d, dstport = %d, hdrlen = %d",
 		tcph->srcport, tcph->dstport, tcph->hdrlen*4));
 	DEBUG (("tcpdump: seq = %ld, datalen = %ld, ack = %ld",
@@ -511,4 +511,5 @@ tcp_dump (BUF *buf)
 		tcph->flags & TCPF_FREEME ? "FRE " : ""));
 	DEBUG (("tcpdump: window = %u, chksum = %u, urgptr = %u",
 		tcph->window, tcph->chksum, tcph->urgptr));
+#endif
 }

@@ -391,29 +391,37 @@ neth_config (struct netif *nif, struct ifopt *ifo)
 
 	if (!STRNCMP ("hwaddr"))
 	{
+#ifdef DEBUG_INFO
 		uchar *cp;
+#endif
 		/*
 		 * Set hardware address
 		 */
 		if (ifo->valtype != IFO_HWADDR)
 			return ENOENT;
 		memcpy (nif->hwlocal.adr.bytes, ifo->ifou.v_string, ETH_ALEN);
+#ifdef DEBUG_INFO
 		cp = nif->hwlocal.adr.bytes;
 		DEBUG (("dummy: hwaddr is %x:%x:%x:%x:%x:%x",
 				cp[0], cp[1], cp[2], cp[3], cp[4], cp[5]));
+#endif
 	}
 	else if (!STRNCMP ("braddr"))
 	{
+#ifdef DEBUG_INFO
 		uchar *cp;
+#endif
 		/*
 		 * Set broadcast address
 		 */
 		if (ifo->valtype != IFO_HWADDR)
 			return ENOENT;
 		memcpy (nif->hwbrcst.adr.bytes, ifo->ifou.v_string, ETH_ALEN);
+#ifdef DEBUG_INFO
 		cp = nif->hwbrcst.adr.bytes;
 		DEBUG (("dummy: braddr is %x:%x:%x:%x:%x:%x",
 				cp[0], cp[1], cp[2], cp[3], cp[4], cp[5]));
+#endif
 	}
 	else if (!STRNCMP ("debug"))
 	{
