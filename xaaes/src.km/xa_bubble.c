@@ -560,10 +560,10 @@ XA_bubble_event(enum locks lock, struct c_event *ce, bool cancel)
 {
 	switch( ce->d0 )
 	{
-	case 0:
+	case BBL_EVNT_CLOSE1:
 		xa_bubble( 0, bbl_close_bubble1, 0, 5 );
 	break;
-	case 1:
+	case BBL_EVNT_ENABLE:
 		xa_bubble( 0, bbl_enable_bubble, 0, 0 );
 	break;
 	}
@@ -581,10 +581,10 @@ static void do_bubble_show(enum locks lock, struct c_event *ce, bool cancel)
 	BBL_STATUS status = xa_bubble( 0, bbl_get_status, 0, 0 );
 	if( status == bs_open )
 	{
-		status = xa_bubble( 0, bbl_close_bubble2, 0, 0 );
+		status = xa_bubble( 0, bbl_close_bubble2, 0, 20 );
 	}
 	check_mouse( C.Aes, &b, &x, &y );
-	if( status != bs_closed )
+	if( status != bs_closed || b )
 	{
 		bbl_arg.str = 0;
 		return;
@@ -596,7 +596,6 @@ static void do_bubble_show(enum locks lock, struct c_event *ce, bool cancel)
 	m.m[4] = y + 4;
 	m.sb.p56 = bbl_arg.str;
 	m.m[7] = BGS7_USRHIDE2;
-	bbl_arg.str = 0;
 
 	xa_bubble( 0, bbl_process_event, &m, C.AESpid );
 	}
@@ -622,9 +621,10 @@ void bubble_request( short pid, short whndl, short x, short y )
 			str = bbl_arg.str;
 			cnt++;
 		}
+		return;
 	}
 
-	if( pid != C.AESpid )
+	if( pid != C.AESpid && pid != C.Hlp->p->pid )
 	{
 		union msg_buf m;
 		m.m[0] = BUBBLEGEM_REQUEST;
@@ -641,14 +641,15 @@ void bubble_request( short pid, short whndl, short x, short y )
 
 void bubble_show( char *str )
 {
+	if( bbl_arg.str && str == NULL )
+		xa_bubble( 0, bbl_close_bubble2, 0, 22 );
 	bbl_arg.str = str;
 }
 
 void display_launched( enum locks lock, char *str )
 {
-	//return;
 	union msg_buf m = {{0}};
-	if( xa_bubble( 0, bbl_get_status, 0, 1 ) == bs_open )
+	if( xa_bubble( 0, bbl_get_status, 0, 21 ) == bs_open )
 	{
 		xa_bubble( 0, bbl_close_bubble1, 0, 0 );
 	}
