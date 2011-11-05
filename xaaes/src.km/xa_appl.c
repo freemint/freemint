@@ -829,9 +829,8 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 #if WITH_BBL_HELP
 	if( cfg.xa_bubble )
 	{
-		if( xa_bubble( 0, bbl_get_status, 0, 0 ) <= bs_inactive && !strnicmp( "  BUBBLE", client->name, 8 ) )
-			post_cevent(C.Aes, XA_bubble_event, NULL, NULL, 1, 0, NULL, NULL);
-			//xa_bubble( lock, bbl_enable_bubble, 0, 0 );
+		if( !C.shutdown && xa_bubble( 0, bbl_get_status, 0, 0 ) <= bs_inactive && !strnicmp( "  BUBBLE", client->name, 8 ) )
+			post_cevent(C.Aes, XA_bubble_event, NULL, NULL, BBL_EVNT_ENABLE, 0, NULL, NULL);
 	}
 	xa_bubble( 0, bbl_close_bubble1, 0, 0 );
 #endif
@@ -1199,6 +1198,13 @@ XA_appl_write(enum locks lock, struct xa_client *client, AESPB *pb)
 		if (dest_clnt) {
 			short amq = AMQ_NORM;
 			short qmf = QMF_NORM;
+			/* experimental */
+			if( (dest_clnt->status & CS_EXITING) )
+			{
+				BLOG((0,"%s:XA_appl_write:dest_clnt:%s is exiting", client->name, dest_clnt->name));
+				pb->intout[0] = rep;
+				return XAC_DONE;
+			}
 
 			if (m->m[0] == WM_REDRAW) {
 				struct xa_window *wind = get_wind_by_handle(lock, m->m[3]);
