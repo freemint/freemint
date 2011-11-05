@@ -1725,7 +1725,9 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 				else
 				{
 					if (move)
+					{
 						send_moved(lock, wind, AMQ_NORM, &r);
+					}
 					if (size)
 					{
 						send_sized(lock, wind, AMQ_NORM, &r);
@@ -4974,18 +4976,29 @@ wind_mshape(struct xa_window *wind, short x, short y)
 					if (C.mouse_form != wind->owner->mouse_form)
 						xa_graf_mouse(wo->mouse, wo->mouse_form, wo, false);
 				}
-				if (!update_locked() && (cfg.widg_auto_highlight || cfg.describe_widgets) )
+				if (!update_locked() && (cfg.widg_auto_highlight
+#if WITH_BBL_HELP
+					|| cfg.describe_widgets
+#endif
+) )
 				{
+#if WITH_BBL_HELP
 					int bbl_closed = 0;
+#endif
 					struct xa_window *rwind = NULL;
 					struct xa_widget *hwidg, *rwidg = NULL;
 
+					/* todo: checkif_do_widgets does not find wdlg-widgets */
 					short f = checkif_do_widgets(0, wind, 0, x, y, &hwidg), f1 = 0;
 
 					if( f == (XAW_TOOLBAR+1) && wind->winob && (f = f1 = checkif_do_widgets(0, (struct xa_window *)wind->winob, 0, x, y, &hwidg)) )
 						wind = (struct xa_window *)wind->winob;	// list-window
 
-					if( ( (!f1 || f1 != (XAW_TITLE + 1)) && wind != bgem_window)	// ? root_window,menu:window ?
+					if( ( (!f1 || f1 != (XAW_TITLE + 1))
+#if WITH_BBL_HELP
+						&& wind != bgem_window	// ? root_window,menu:window ?
+#endif
+)
 						&& (hwidg && !hwidg->owner && wdg_is_inst(hwidg)) )
 					{
 						if (wind != C.hover_wind || hwidg != C.hover_widg)
