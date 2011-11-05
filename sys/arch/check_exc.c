@@ -536,9 +536,9 @@ check_bus(struct m68k_stack_frames frame)
 long _cdecl
 check_priv(struct privilege_violation_stackframe *frame)
 {
-	opcode = *frame->pc;
-# ifndef M68000
+# ifndef NO_FAKE_SUPER
 	ushort opcode;
+	opcode = *frame->pc;
 	/* Emulate the "move from sr" instruction,
 	 * which is not privileged on 68000, and privileged later.
 	 * Thus many programs (even Thing Desktop) execute it in
@@ -629,7 +629,7 @@ check_priv(struct privilege_violation_stackframe *frame)
 			}
 		}
 	}
-# endif /* M68000 */
+# endif /* NO_FAKE_SUPER */
 
 # ifndef NO_FAKE_SUPER
 
