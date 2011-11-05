@@ -461,7 +461,7 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 			}
 			add_to_tasklist(client);
 #if WITH_BBL_HELP
-			if( cfg.xa_bubble && !strnicmp( "  BUBBLE", client->name, 8 ) )
+			if( cfg.xa_bubble && !stricmp( "  BUBBLE  ", client->name ) )
 			{
 				xa_bubble( lock, bbl_disable_bubble, 0, 0 );
 			}
