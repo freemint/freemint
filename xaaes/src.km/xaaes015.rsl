@@ -1006,7 +1006,7 @@ hu:­Kil”v‚s     @
 ru:­Ïğåğâàòü    @
 cs:­Zabít       @
 _
-NN:­Keep above others
+NN+­Keep above others
 de:­šber den anderen
 fr:­Maintenir au-dessus
 es:­Mantener delante
@@ -1015,7 +1015,7 @@ hu:­T”bbiek el”tt
 ru:­Ïîâåğõ âñåõ îêîí
 cs:­Dr¾et nad ostatními
 _
-NN:­Keep below others
+NN+­Keep below others
 de:­Unter den anderen
 fr:­Maintenir en dessous
 es:­Mantener detras
@@ -1024,7 +1024,7 @@ hu:­T”bbiek m”g”tt
 ru:­Çà âñåìè îêíàìè
 cs:­Dr¾et pod ostatními
 _
-NN:­Toolbox attribute
+NN+­Toolbox attribute
 de:­Toolbox Attribut
 fr:­Attribut toolbox
 es:­Atributo Toolbox
@@ -1033,7 +1033,7 @@ hu:­Toolbox tulajd.
 ru:­Àòğèáóòû ïàíåëè èíñòğóìåíòîâ
 cs:­Jako okno nástrojù
 _
-NN:­Deny keyboard focus
+NN+­Deny keyboard focus
 de:­Kein Tastatur-Fokus
 fr:­Interdire entr‚es clavier
 es:­Sin foco de teclado
@@ -1042,7 +1042,7 @@ hu:­Nem kaphat f¢kuszt
 ru:­Çàïğåò ôîêóñà êëàâèàòóğû
 cs:­Neovládat klávesnicí
 _
-NN:­This
+NN+­This
 de:­Dieses Fenster
 fr:­Celle-ci
 es:­Este
@@ -1051,7 +1051,7 @@ hu:­Ez
 ru:­İòî
 cs:­Toto
 _
-NN:­All
+NN+­All
 de:­Alle
 fr:­Toutes
 es:­Todos
@@ -1060,7 +1060,7 @@ hu:­Mind
 ru:­Âñå
 cs:­V¹echny
 _
-NN:­All others
+NN+­All others
 de:­Alle anderen
 fr:­Toutes les autres
 es:­Todos los dem s
@@ -1069,7 +1069,7 @@ hu:­T”bbi
 ru:­Âñå îñòàëüíûå
 cs:­V¹echny ostatní
 _
-NN:­Restore all
+NN+­Restore all
 de:­Alle hervorholen
 fr:­Tout restaurer
 es:­Restaurar todos
@@ -1078,7 +1078,7 @@ hu:­Mind vissza ll¡t sa
 ru:­Âîññòàíîâèòü âñå
 cs:­Obnovit v¹echny
 _
-NN:­Restore all others
+NN+­Restore all others
 de:­Andere hervorholen
 fr:­R‚tablir les autres
 es:­Restaurar todos los dem s
@@ -1087,7 +1087,7 @@ hu:­T”bbi vissza ll¡t sa
 ru:­Âîññòàíîâèòü âñå îñòàëüíûå
 cs:­Obnovit v¹echny ostatní
 _
-NN:­This window
+NN+­This window
 de:­Dieses Fenster
 fr:­Cette fenˆtre
 es:­Esta ventana
@@ -1096,7 +1096,7 @@ hu:­Ez az ablak
 ru:­İòî îêíî
 cs:­Toto okno
 _
-NN:­Application
+NN+­Application
 de:­Anwendung
 fr:­Application
 es:­Aplicaci¢n
@@ -1105,7 +1105,7 @@ hu:­Alkalmaz s
 ru:­Ïğîãğàììà
 cs:­Aplikaci
 _
-NN:­Other apps
+NN+­Other apps
 de:­Andere Anwendungen
 fr:­Autres applications
 es:­Otras aplicaciones
@@ -1114,7 +1114,7 @@ hu:­T”bbi alkalmaz s
 ru:­Äğóãèå ïğîãğàììû
 cs:­Ostatní aplikace
 _
-NN:­Show other apps
+NN+­Show other apps
 de:­Zeige and. Anwendungen
 fr:­Montrer les autres
 es:­Mostrar otras aplicaciones
