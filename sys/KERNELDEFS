@@ -63,6 +63,7 @@ ifeq ($(kernel),000)
 MINT = mint000.prg
 CPU  = 000
 KERNELDEFS = -DM68000 -DNO_RAMFS -DNO_FAKE_SUPER
+kernel_nocflags = -DWITH_MMU_SUPPORT
 OPTS += -fstrength-reduce
 endif
 
