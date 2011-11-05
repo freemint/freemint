@@ -926,7 +926,7 @@ static void
 m_not_move_timeout(struct proc *p, long arg)
 {
 	struct xa_window *wind;
-	BBL_STATUS b = xa_bubble( 0, bbl_get_status, 0, 0 );
+	BBL_STATUS b = xa_bubble( 0, bbl_get_status, 0, 3 );
 
 	ms_to = NULL;
 	if( b == bs_open )
@@ -1117,10 +1117,10 @@ adi_move(struct adif *a, short x, short y)
 	}
 #if WITH_BBL_HELP
 	{
-		BBL_STATUS s = xa_bubble( 0, bbl_get_status, 0, 1 );
+		BBL_STATUS s = xa_bubble( 0, bbl_get_status, 0, 2 );
 		if( s == bs_open )
 		{
-			post_cevent(C.Aes, XA_bubble_event, NULL, NULL, 0, 0, NULL, NULL);
+			post_cevent(C.Aes, XA_bubble_event, NULL, NULL, BBL_EVNT_CLOSE1, 0, NULL, NULL);
 		}
 
 		if (cfg.xa_bubble)
@@ -1187,9 +1187,11 @@ button_timeout(struct proc *p, long arg)
 				md.ty, md.x, md.y, md.sx, md.sy, md.state, md.cstate, md.clicks,
 				md.iclicks.chars[0], md.iclicks.chars[1], sizeof(struct moose_data) ));
 #if WITH_BBL_HELP
-			if( /*cfg.xa_bubble &&*/ md.state == 1 && xa_bubble( 0, bbl_get_status, 0, 1 ) == bs_open )	/* left click: bubble off */
+			if( xa_bubble( 0, bbl_get_status, 0, 11 ) == bs_open )
 			{
-				xa_bubble( 0, bbl_close_bubble2, 0, 0 );
+				if( md.state == 1 )
+					xa_bubble( 0, bbl_close_bubble2, 0, 0 );	/* left click: bubble off */
+				bubble_show( 0 );	/* any click: close widget-bubble */
 			}
 #endif
 			vq_key_s(C.P_handle, &md.kstate);
