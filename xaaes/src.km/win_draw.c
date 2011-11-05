@@ -25,7 +25,6 @@
  */
 
 #include "xa_types.h"
-//#include "xa_global.h"
 #include "xaaeswdg.h"
 #include "win_draw.h"
 #include "rectlist.h"
