@@ -73,6 +73,7 @@ long	del_rsvfentry	(char *name);
 # define COOKIE_RSVF	0x52535646L
 # define COOKIE_FSEL	0x4653454CL
 # define COOKIE_HBFS	0x48424653L /* BoxKite File Selector */
+# define COOKIE_DMAC	0x444D4143L /* FireTOS DMA API */
 
 /* Not that we want to support these below ... */
 # define COOKIE_STiK	0x5354694bL
@@ -83,8 +84,7 @@ long	del_rsvfentry	(char *name);
 # define COOKIE_CT60	0x43543630L
 # define COOKIE_HADES	0x68616465L
 
-/* values of MCH cookie
- */
+/* values of MCH cookie */
 # define ST		0
 # define STE		0x00010000L
 # define MEGASTE	0x00010010L
