@@ -27,7 +27,8 @@ DEFINITIONS = -D__KERNEL_XDD__ $(XIF_DEFINITIONS)
 
 LD = $(CC) -mshort -nostdlib -Wl,--entry -Wl,_init
 LIBS = $(LIBKERN) -lgcc
-CPU="020-60"
+CPU = v4e
+MODEL = -mcpu=5475
 
 # default definitions
 OBJS = $(addsuffix .o, $(basename $(notdir $(FECDMA_SRCS) $(COMMON_SRCS))))
