@@ -495,16 +495,26 @@ udp_checksum (struct udp_dgram *dgram, ulong srcadr, ulong dstadr)
 	 */
 	__asm__
 	(
-		"clrw	d0		\n\t"
+		"moveq	#0, d0		\n\t"
 		"movel	%3, %0		\n\t"
 		"addl	%1, %0		\n\t"
 		"addxl	%2, %0		\n\t"
+#ifdef __mcoldfire__
+		"mvzw	%4, d1		\n\t"
+		"addxl	d1, %0		\n\t"
+		"addxl	d0, %0		\n\t"
+#else
 		"addxw	%4, %0		\n\t"
 		"addxw	d0, %0		\n\t"
+#endif
 		: "=d"(sum)
 		: "g"(srcadr), "d"(dstadr), "i"(IPPROTO_UDP),
 		  "d"(len), "0"(sum)
+#ifdef __mcoldfire__
+		: "d0", "d1"
+#else
 		: "d0"
+#endif
 	);
 	
 	/*
@@ -513,29 +523,64 @@ udp_checksum (struct udp_dgram *dgram, ulong srcadr, ulong dstadr)
 	__asm__
 	(
 		"clrl	d0		\n\t"
+#ifdef __mcoldfire__
+		"mvzw	%2, d1		\n\t"
+		"lsrl	#4, d1		\n\t"
+#else
 		"movew	%2, d1		\n\t"
 		"lsrw	#4, d1		\n\t"
+#endif
 		"beq	4f		\n\t"
+#ifdef __mcoldfire__
+		"subql	#1, d1		\n"	/* clears X bit */
+#else
 		"subqw	#1, d1		\n"	/* clears X bit */
+#endif
 		"1:			\n\t"
+#ifdef __mcoldfire__
+		"moveml	%4@, d0/d2-d4	\n\t"	/* 16 byte loop */
+		"lea	%4@(16), %4	\n\t"
+#else
 		"moveml	%4@+, d0/d2-d4	\n\t"	/* 16 byte loop */
+#endif
 		"addxl	d0, %0		\n\t"	/* ~5 clock ticks per byte */
 		"addxl	d2, %0		\n\t"
 		"addxl	d3, %0		\n\t"
 		"addxl	d4, %0		\n\t"
+#ifdef __mcoldfire__
+		"moveq	#0, d0		\n\t"   /* X not affected */
+		"addxl	d0, %0		\n\t"
+		"subql	#1, d1		\n\t"   /* X cloberred */
+		"bpls	1b		\n\t"   /* X not affected */
+#else
 		"dbra	d1, 1b		\n\t"
 		"clrl	d0		\n\t"
 		"addxl	d0, %0		\n"
+#endif
 		"4:			\n\t"
 		"movew	%2, d1		\n\t"
+#ifdef __mcoldfire__
+		"andil	#0xf, d1	\n\t"
+		"lsrl	#2, d1		\n\t"
+#else
 		"andiw	#0xf, d1	\n\t"
 		"lsrw	#2, d1		\n\t"
+#endif
 		"beq	2f		\n\t"
+#ifdef __mcoldfire__
+		"subql	#1, d1		\n"
+#else
 		"subqw	#1, d1		\n"
+#endif
 		"3:			\n\t"
 		"addl	%4@+, %0	\n\t"	/* 4 byte loop */
 		"addxl	d0, %0		\n\t"	/* ~10 clock ticks per byte */
+#ifdef __mcoldfire__
+		"subql	#1, d1		\n\t"
+		"bpls	3b		\n\t"
+#else
 		"dbra	d1, 3b		\n"
+#endif
 		"2:			\n\t"
 		: "=d"(sum), "=a"(dgram)
 		: "g"(len), "0"(sum), "1"(dgram)
@@ -551,23 +596,53 @@ udp_checksum (struct udp_dgram *dgram, ulong srcadr, ulong dstadr)
 		"clrl	d0		\n\t"
 		"btst	#1, %2		\n\t"
 		"beq	5f		\n\t"
+#ifdef __mcoldfire__
+		"mvz.w	%4@+, d2	\n\t"
+		"addl	d2, %0		\n\t"	/* no, add in extra word */
+		"addxl	d0, %0		\n"
+#else
 		"addw	%4@+, %0	\n\t"	/* extra word */
 		"addxw	d0, %0		\n"
+#endif
 		"5:			\n\t"
 		"btst	#0, %2		\n\t"
 		"beq	6f		\n\t"
+#ifdef __mcoldfire__
+		"mvzb	%4@+, d1	\n\t"	/* extra byte */
+		"lsll	#8, d1		\n\t"
+		"addl	d1, %0		\n\t"
+		"addxl	d0, %0		\n"
+#else
 		"moveb	%4@+, d1	\n\t"	/* extra byte */
 		"lslw	#8, d1		\n\t"
 		"addw	d1, %0		\n\t"
 		"addxw	d0, %0		\n"
+#endif
 		"6:			\n\t"
+#ifdef __mcoldfire__
+		"swap	%0		\n\t"	/* convert to short */
+		"mvzw	%0, d1		\n\t"
+		"clr.w	%0		\n\t"
+		"swap	%0		\n\t"
+		"addl	d1, %0		\n\t"
+		"swap	%0		\n\t"
+		"mvzw	%0, d1		\n\t"
+		"clr.w	%0		\n\t"
+		"swap	%0		\n\t"
+		"addl	d1, %0		\n\t"
+#else
 		"movel	%0, d1		\n\t"	/* convert to short */
 		"swap	d1		\n\t"
 		"addw	d1, %0		\n\t"
 		"addxw	d0, %0		\n\t"
+#endif
 		: "=d"(sum), "=a"(dgram)
 		: "d"(len), "0"(sum), "1"(dgram)
+#ifdef __mcoldfire__
+		: "d0", "d1", "d2"
+#else
 		: "d0", "d1"
+#endif
 	);
 	
 	return (short)(~sum & 0xffff);
