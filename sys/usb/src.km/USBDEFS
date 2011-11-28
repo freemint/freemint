@@ -1,7 +1,13 @@
+#
+# debug flags
+#
+# -DDEV_DEBUG		include debugging information
+
+
 ifeq ($(usb),deb)
 TARGET = usbdeb.km
 CPU = 020-60
-USBDEFS +=
+USBDEFS += -DDEV_DEBUG
 endif
 
 ifeq ($(usb),000)
