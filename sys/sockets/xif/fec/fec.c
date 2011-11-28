@@ -40,6 +40,16 @@
 #define ETH_MIN_FRM     (ETH_HLEN + ETH_MIN_DLEN + ETH_CRC_LEN)
 #define ETH_MTU         (ETH_HLEN + ETH_MAX_DLEN)
 
+/* mode parameters for firetos_read_parameter: */
+#define CT60_MODE_READ 0
+
+/* type parameters for firetos_read_parameter: */
+#define CT60_MAC_ADDRESS 10L
+
+/* macro to read FireTOS parameters (named ct60_rw_parameter within FireTOS): */
+#define firetos_read_parameter(type_param, value )\
+	(long)trap_14_wwll( 0xc60b, CT60_MODE_READ, type_param, 0 )
+
 /* ------------------------ Type definitions ------------------------------ */
 typedef struct s_fec_if_priv
 {
@@ -98,50 +108,19 @@ static long	fec_output	(struct netif *, BUF *, const char *, short, short);
 static long	fec_ioctl	(struct netif *, short, long);
 static long	fec_config	(struct netif *, struct ifopt *);
 
-unsigned char *board_get_ethaddr(unsigned char *ethaddr);
-unsigned char *board_get_client(unsigned char *client);
-unsigned char *board_get_server(unsigned char *server);
-unsigned char *board_get_gateway(unsigned char *gateway);
-unsigned char *board_get_netmask(unsigned char *netmask);
+static unsigned char *board_get_ethaddr(unsigned char *ethaddr);
 
-unsigned char *board_get_ethaddr(unsigned char *ethaddr)
+unsigned char *board_get_ethaddr(unsigned char * ethaddr)
 {
-    int i;
-    for(i = 0; i < 6; i++)
-        ethaddr[i] = ((PARAM *)PARAMS_ADDRESS)->ethaddr[i];
+    unsigned long ethaddr_part;
+    ethaddr_part=(unsigned long)firetos_read_parameter(CT60_MAC_ADDRESS,0L);
+    ethaddr[0] = 0;
+    ethaddr[1] = 0xCF;
+    ethaddr[2] = 0x54;
+    ethaddr[3] = ( (ethaddr_part>>16) & 255 );
+    ethaddr[4] = ( (ethaddr_part>>8) & 255 );
+    ethaddr[5] = ( ethaddr_part &255 );
     return ethaddr;
-}
-
-unsigned char *board_get_client(unsigned char *client)
-{
-    int i;
-    for(i = 0; i < 4; i++)
-        client[i] = ((PARAM *)PARAMS_ADDRESS)->client[i];
-    return client;
-}
-
-unsigned char *board_get_server(unsigned char *server)
-{
-    int i;
-    for(i = 0; i < 4; i++)
-        server[i] = ((PARAM *)PARAMS_ADDRESS)->server[i];
-    return server;
-}
-
-unsigned char *board_get_gateway(unsigned char *gateway)
-{
-    int i;
-    for(i = 0; i < 4; i++)
-        gateway[i] = ((PARAM *)PARAMS_ADDRESS)->gateway[i];
-    return gateway;
-}
-
-unsigned char *board_get_netmask(unsigned char *netmask)
-{
-    int i;
-    for(i = 0; i < 4; i++)
-        netmask[i] = ((PARAM *)PARAMS_ADDRESS)->netmask[i];
-    return netmask;
 }
 
 static char * dbgbuf[128];
@@ -660,14 +639,13 @@ static void fec_rx_start(struct netif * nif, s8 *rxbd, uint8 pri)
     fec_if_t *fecif = (fec_if_t *)nif->data;
     uint8 ch = fecif->ch;
     uint32 initiator;
-    long result;
 
     if( dma_get_channel( DMA_FEC_RX(ch) ) != -1 )
     {
         fec_rx_stop(fecif);
     }
     /* Make the initiator assignment */
-    result = dma_set_initiator(DMA_FEC_RX(ch));
+    dma_set_initiator(DMA_FEC_RX(ch));
     /* Grab the initiator number */
     initiator = dma_get_initiator(DMA_FEC_RX(ch));
     /* Determine the DMA channel running the task for the selected FEC */
@@ -675,7 +653,7 @@ static void fec_rx_start(struct netif * nif, s8 *rxbd, uint8 pri)
 #if RX_BUFFER_SIZE != 2048
 #error "RX_BUFFER_SIZE must be set to 2048 for safe FEC operation"
 #endif
-    result = MCD_startDma(fecif->rx_dma_ch, (s8*)rxbd, 0, MCF_FEC_FECRFDR_ADDR(ch), 0, RX_BUFFER_SIZE,
+    MCD_startDma(fecif->rx_dma_ch, (s8*)rxbd, 0, MCF_FEC_FECRFDR_ADDR(ch), 0, RX_BUFFER_SIZE,
                           0, initiator, (long)pri,
                           (uint32)(MCD_FECRX_DMA | MCD_INTERRUPT | MCD_TT_FLAGS_CW | MCD_TT_FLAGS_RL | MCD_TT_FLAGS_SP),
                           (uint32)(MCD_NO_CSUM | MCD_NO_BYTE_SWAP)
@@ -868,7 +846,6 @@ static void fec_tx_start(struct netif * nif, s8 *txbd, uint8 pri)
     fec_if_t *fecif = (fec_if_t *)nif->data;
     uint8 ch = fecif->ch;
     uint32 initiator;
-    long result;
 
     if( dma_get_channel( DMA_FEC_TX(ch) ) != -1 )
     {
@@ -876,14 +853,14 @@ static void fec_tx_start(struct netif * nif, s8 *txbd, uint8 pri)
     }
 
     /* Make the initiator assignment */
-    result = dma_set_initiator(DMA_FEC_TX(ch));
+    dma_set_initiator(DMA_FEC_TX(ch));
     /* Grab the initiator number */
     initiator = dma_get_initiator(DMA_FEC_TX(ch));
     /* Determine the DMA channel running the task for the selected FEC */
     fecif->tx_dma_ch = dma_set_channel(DMA_FEC_TX(ch), ch ? NULL : fec0_tx_frame);
     /* Start the Tx DMA task */
 
-    result = MCD_startDma(fecif->tx_dma_ch, txbd, 0, MCF_FEC_FECTFDR_ADDR(ch), 0, ETH_MTU, 0, initiator, (long)pri,
+    MCD_startDma(fecif->tx_dma_ch, txbd, 0, MCF_FEC_FECTFDR_ADDR(ch), 0, ETH_MTU, 0, initiator, (long)pri,
                           (uint32)(MCD_FECTX_DMA | MCD_INTERRUPT | MCD_TT_FLAGS_CW | MCD_TT_FLAGS_RL | MCD_TT_FLAGS_SP),
                           (uint32)(MCD_NO_CSUM | MCD_NO_BYTE_SWAP)
                          );
@@ -1410,7 +1387,6 @@ fec_config (struct netif *nif, struct ifopt *ifo)
 
     if (!STRNCMP ("hwaddr"))
     {
-        uchar *cp;
         /*
          * Set hardware address
          */
@@ -1418,21 +1394,15 @@ fec_config (struct netif *nif, struct ifopt *ifo)
             return ENOENT;
         memcpy (nif->hwlocal.adr.bytes, ifo->ifou.v_string, ETH_ALEN);
         fec_set_address( ((fec_if_t*)nif->data)->ch, nif->hwlocal.adr.bytes );
-        cp = nif->hwlocal.adr.bytes;
     }
     else if (!STRNCMP ("braddr"))
     {
-        uchar *cp;
         /*
          * Set broadcast address
          */
         if (ifo->valtype != IFO_HWADDR)
             return ENOENT;
         memcpy (nif->hwbrcst.adr.bytes, ifo->ifou.v_string, ETH_ALEN);
-        cp = nif->hwbrcst.adr.bytes;
-        /*KDEBUG (("fec: braddr is %x:%x:%x:%x:%x:%x",
-                 cp[0], cp[1], cp[2], cp[3], cp[4], cp[5]));
-                 */
     }
     else if (!STRNCMP ("debug"))
     {
