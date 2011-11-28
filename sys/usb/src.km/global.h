@@ -39,7 +39,7 @@
  * debug section
  */
 
-#if 0
+#ifdef DEV_DEBUG
 
 # define ALERT(x)       KERNEL_ALERT x
 # define DEBUG(x)       KERNEL_DEBUG x
