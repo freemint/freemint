@@ -190,7 +190,7 @@ loader_init(int argc, char **argv, char **env)
 	else
 	{
 #ifdef __mcoldfire__
-		name = "xaaesv4e.km";
+		name = "usbv4e.km";
 #else
 		long cpu;
 
