@@ -1672,7 +1672,7 @@ ram_symlink (fcookie *dir, const char *name, const char *to)
 	if (IS_IMMUTABLE (c))
 		return EACCES;
 
-	r = __creat (c, name, &new, S_IFLNK, 0);
+	r = __creat (c, name, &new, 0777 | S_IFLNK, 0);
 	if (r == E_OK)
 	{
 		ushort len = strlen (to) + 1;
@@ -1682,6 +1682,7 @@ ram_symlink (fcookie *dir, const char *name, const char *to)
 		if (new->data.symlnk.name)
 		{
 			strcpy (new->data.symlnk.name, to);
+			new->stat.size = len - 1;
 		}
 		else
 		{
