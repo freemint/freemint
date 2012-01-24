@@ -325,16 +325,20 @@ lance_config (struct netif *nif, struct ifopt *ifo)
 # ifndef PAMs_INTERN
 	if (!STRNCMP ("hwaddr"))
 	{
+#ifdef DEBUG_INFO
 		uchar *cp;
+#endif
 		/*
 		 * Set hardware address
 		 */
 		if (ifo->valtype != IFO_HWADDR)
 			return ENOENT;
 		memcpy (nif->hwlocal.adr.bytes, ifo->ifou.v_string, ETH_ALEN);
+#ifdef DEBUG_INFO
 		cp = nif->hwlocal.adr.bytes;
 		DEBUG (("LANCE: hwaddr is %02x:%02x:%02x:%02x:%02x:%02x",
 			cp[0], cp[1], cp[2], cp[3], cp[4], cp[5]));
+#endif
 	}
 	else
 # endif
@@ -932,13 +936,13 @@ lance_install_ints (void)
 	   , old_hbl
 # endif
 	   ;
-	UNUSED(old_v5);
-	UNUSED(old_hbl);
 	ushort sr;
 
 	sr = spl7 ();
 	old_v5 = (long)Setexc (LANCEIVEC, lance_v5_int);
+	UNUSED(old_v5);
 # ifdef PAMs_INTERN
+	UNUSED(old_hbl);
 	/*
          * This is a real dirty hack but seems to be necessary for the MiNT
          * environment. Even with a correct hbi handler installed I found an
