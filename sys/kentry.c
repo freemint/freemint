@@ -63,6 +63,9 @@
 # include "util.h"		/* pid2proc */
 # include "xfs_xdd.h"
 
+# ifdef XHDI_MASS_STORAGE_SUPPORT
+# include "xhdi.h"		/* XHNewCookie */
+# endif
 
 # undef DEFAULT_MODE
 # undef DEFAULT_DIRMODE
