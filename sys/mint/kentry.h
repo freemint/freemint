@@ -31,6 +31,13 @@
 # ifndef _mint_kentry_h
 # define _mint_kentry_h
 
+/* Force mass storage support on so that kernel modules are built correctly for
+ * all targets. Affects *.km modules, but not xif, xdd, xfs etc.
+ *
+ * Do not remove unless you know what you are doing.
+ */
+# define XHDI_MASS_STORAGE_SUPPORT
+
 # ifndef __KERNEL__
 # error not a KERNEL source
 # endif
@@ -102,9 +109,11 @@ struct timeval;
  * versions are enough :-)
  */
 #define KENTRY_MAJ_VERSION	0
+#ifdef XHDI_MASS_STORAGE_SUPPORT
+#define KENTRY_MIN_VERSION	17
+#else
 #define KENTRY_MIN_VERSION	16
-
-
+#endif
 /* hardware dependant vector
  */
 struct kentry_mch
@@ -557,7 +566,31 @@ struct kentry_misc
 	long _cdecl (*trap_1_emu)(short fnum, ...);
 	long _cdecl (*trap_13_emu)(short fnum, ...);
 	long _cdecl (*trap_14_emu)(short fnum, ...);
+#ifdef XHDI_MASS_STORAGE_SUPPORT
+	/*
+	 * function to install XHDI drivers
+	 */
+	long _cdecl (*XHNewCookie)(void *newcookie);
+#endif
 };
+#ifdef XHDI_MASS_STORAGE_SUPPORT
+#define DEFAULTS_kentry_misc \
+{ \
+	&dma, \
+	\
+	get_toscookie, \
+	\
+	add_rsvfentry, \
+	del_rsvfentry, \
+	\
+	remaining_proc_time, \
+	\
+	trap_1_emu, \
+	trap_13_emu, \
+	trap_14_emu, \
+	XHNewCookie, \
+}
+#else
 #define DEFAULTS_kentry_misc \
 { \
 	&dma, \
@@ -573,7 +606,7 @@ struct kentry_misc
 	trap_13_emu, \
 	trap_14_emu, \
 }
-
+#endif
 
 /* debug support
  */
