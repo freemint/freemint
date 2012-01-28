@@ -314,7 +314,6 @@ short lang_from_akp( char lang[], int md )
 		 * The bits 0-7 provide info about the layout of the keyboard
 		 * The bits 8-15 identify the language of the country
 		 */
-		DBG((0,"lang_from_akp:li=%lx", li ));
 		if( !md )
 			li >>= 8;
 		li &= 0x000000ffL;
