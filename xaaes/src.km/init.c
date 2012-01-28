@@ -183,7 +183,15 @@ sysfile_exists(const char *sd, char *fn)
 	"in","ir","mn","np","la","kh","id","bd",
 */
 #define MaX_COUNTRYCODE 48
-static char countrycodes[] = "usdefrenesitsefsgstrfinodksanlczhuplltlveebyuaskrobgslhrcscsmkgrruilzaptbejpcnkpvninirmnnplakhidbd";
+static char countrycodes[] = "endefrukesitsefsgstrfinodksanlczhuplltlveebyuaskrobgslhrcscsmkgrruilzaptbejpcnkpvninirmnnplakhidbd";
+static short search_code( char *lang )
+{
+	short i;
+	for( i = 0; i < sizeof( countrycodes ); i += 2 )
+		if( lang[0] == countrycodes[i] && lang[1] == countrycodes[i+1] )
+			return i/2;
+	return -1;
+}
 #if 0
 struct aes_string {
 	int lang;
@@ -296,24 +304,22 @@ unsigned short stack_align = 0;
  * md = 0: get lang
  * md = 1: get keyboard-layout-lang
  */
-void lang_from_akp( char lang[], int md )
+short lang_from_akp( char lang[], int md )
 {
 	long	li;
+	short ret = -1;
 	if (!(s_system(S_GETCOOKIE, COOKIE__AKP, (unsigned long)(&li))))
 	{
 		/*
 		 * The bits 0-7 provide info about the layout of the keyboard
 		 * The bits 8-15 identify the language of the country
 		 */
+		DBG((0,"lang_from_akp:li=%lx", li ));
 		if( !md )
-		{
-		/* fix: sometimes upper byte is always 0 - fails for USA(0) */
-			if( (li & 0xff00) )	// language
-				li >>= 8;	// else use keyboard-lang
-		}
-		else
-			li &= 0x000000ffL;
+			li >>= 8;
+		li &= 0x000000ffL;
 
+		ret = li;
 		if( li < MaX_COUNTRYCODE )
 		{
 			li *= 2;
@@ -321,6 +327,7 @@ void lang_from_akp( char lang[], int md )
 			lang[1] = countrycodes[li+1];
 		}
 	}
+	return ret;
 }
 /*
  * Module initialisation
@@ -685,7 +692,7 @@ again:
 
 	C.Aes->options = default_options;
 	{
-	long	li = -1;
+	short li = 0, p = -1;
 	/* Parse the config file */
 	load_config(0);
 	if( !cfg.lang[0] )
@@ -693,26 +700,28 @@ again:
 		const char *lang = get_env(0, "LANG=");
 		if( lang )
 		{
-			li = -2;
+			li = 1;
 			strncpy( cfg.lang, lang, 2 );
 		}
 		else
-			lang_from_akp( cfg.lang, 0 );
-	}
-	if( cfg.lang[0] )
-	{
-		char *p = strstr( countrycodes, cfg.lang );
-		if( p )
 		{
-			extern short info_tab[][4];
-			li = p - countrycodes;
-			li /= 2;
-			info_tab[3][0] = li;
+			li = 2;
+			p = lang_from_akp( cfg.lang, 0 );
 		}
 	}
-
-	BLOG((0,"lang='%s(%ld)' (from %s).",cfg.lang, li, li == -1 ? "config" : (li == -2 ? "Environ" : "AKP") ));
+	if( p == -1 && cfg.lang[0] )
+	{
+		p = search_code( cfg.lang );
 	}
+	if( p >= 0 )
+	{
+		extern short info_tab[][4];	/* xa_appl.c */
+		info_tab[3][0] = p;
+	}
+
+	BLOG((0,"lang='%s' (from %s).",cfg.lang, li == 0 ? "config" : (li == 1 ? "Environ" : "AKP") ));
+	}
+
 	if( cfg.info_font_point == -1 )
 		cfg.info_font_point = cfg.standard_font_point;
 
