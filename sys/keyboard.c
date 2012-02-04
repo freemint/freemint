@@ -1457,11 +1457,32 @@ tbl_scan_fwd(uchar *tmp)
 
 	return ++tmp;		/* skip the ending NULL */
 }
+typedef struct
+{
+  unsigned int bootpref;
+  char reserved[4];
+  unsigned char language;
+  unsigned char keyboard;
+  unsigned char datetime;
+  char separator;
+  unsigned char bootdelay;
+  char reserved2[3];
+  unsigned int vmode;
+  unsigned char scsi;
+} NVM;
+
+static short get_NVM_lang(void)
+{
+	NVM nvm;
+	if( !TRAP_NVMaccess( 0, 0, sizeof(NVM), &nvm ) )
+		return nvm.language;
+	return -1;
+}
 
 void _cdecl
 sys_b_bioskeys(void)
 {
-	long akp_val = 0;
+	long akp_val = 0, r;
 	unsigned char *buf, *tables;
 	struct keytab *pointers;
 
@@ -1518,10 +1539,22 @@ sys_b_bioskeys(void)
 	 */
 
 	/* _AKP specifies the hardware keyboard layout */
-	get_cookie(NULL, COOKIE__AKP, (unsigned long *)&akp_val);
-	akp_val &= 0xffffff00L;
-	akp_val |= (gl_kbd & 0x000000ff);
-	set_cookie(NULL, COOKIE__AKP, akp_val);
+	r = get_cookie(NULL, COOKIE__AKP, (unsigned long *)&akp_val);
+	if( r )
+	{
+		r = get_NVM_lang();
+		if( r < 0 && os_lang < 127 )
+		{
+			r = os_lang;
+		}
+		os_lang = r;
+		akp_val |= (os_lang << 8);
+	}
+	else
+		os_lang = (akp_val & 0x0000ffff) >> 8;
+	akp_val &= 0xffff0000L;
+	akp_val |= (gl_kbd & 0x000000ff) | (os_lang << 8);
+	r = set_cookie(NULL, COOKIE__AKP, akp_val);
 
 	/* _ISO specifies the real keyboard/font nationality */
 	set_cookie(NULL, COOKIE__ISO, iso_8859_code);
