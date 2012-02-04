@@ -97,9 +97,6 @@ static const long skiplist [] =
 # ifndef OLDTOSFS
 	COOKIE__FLK,
 # endif
-# ifndef NO_AKP_KEYBOARD
-	COOKIE__AKP,	/* we install our own _AKP cookie */
-# endif
 	0
 };
 
@@ -497,7 +494,7 @@ get_cookie (struct cookie *cj, ulong tag, ulong *ret)
 
 		if (ret)
 		{
-			DEBUG (("get_cookie(): tag %08lx returned at %08lx", cjar->tag, ret));
+			DEBUG (("get_cookie(): cjar=%lx, tag %08lx returned at %08lx", cjar, cjar->tag, ret));
 			*ret = cjar->tag;
 			return E_OK;
 		}
