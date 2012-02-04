@@ -207,10 +207,36 @@ check_for_gem (void)
 
 static long GEM_memflags = F_FASTLOAD | F_ALTLOAD | F_ALTALLOC | F_PROT_S | F_OS_SPECIAL /*?*/;
 extern int debug_level;
+
+typedef struct _osheader
+{
+	ushort    os_entry;       /* BRAnch instruction to Reset-handler  */
+  ushort    os_version;     /* TOS version number                   */
+  void       *reseth;         /* Pointer to Reset-handler             */
+  struct _osheader *os_beg;   /* Base address of the operating system */
+  void       *os_end;         /* First byte not used by the OS        */
+  ulong     os_rsvl;        /* Reserved                             */
+ 	void/*GEM_MUPB*/   *os_magic;       /* GEM memory-usage parameter block     */
+  long     os_date;        /* TOS date (English !) in BCD format   */
+  ushort    os_conf;        /* Various configuration bits           */
+  ushort    os_dosdate;     /* TOS date in GEMDOS format            */
+
+    /* The following components are available only as of TOS Version
+       1.02 (Blitter-TOS)               */
+  uchar    **p_root;         /* Base address of the GEMDOS pool      */
+  uchar    **pkbshift;       /* Pointer to BIOS Kbshift variable
+                                  (for TOS 1.00 see Kbshift)           */
+  BASEPAGE  **p_run;          /* Address of the variables containing
+                                 a pointer to the current GEMDOS
+                                 process.                             */
+  ulong     p_rsv2;         /* Reserved, always 'ETOS', if EmuTOS present     */
+} OSHEADER;
+
 void
 init (void)
 {
 	long r, *sysbase;
+	OSHEADER *os;
 	FILEPTR *f;
 
 	/* greetings (placed here 19960610 cpbs to allow me to get version
@@ -342,8 +368,10 @@ init (void)
 	 */
 	sysbase = *((long **)(0x4f2L));	/* gets the RAM OS header */
 	sysbase = (long *)sysbase[2];	/* gets the ROM one */
+	os = (OSHEADER*)sysbase;
 
 	tosvers = (short)(sysbase[0] & 0x0000ffff);
+	os_lang = os->os_conf >> 1;
 	kbshft = (tosvers == 0x100) ? (char *) 0x0e1bL : (char *)sysbase[9];
 	falcontos = (tosvers >= 0x0400 && tosvers <= 0x0404) || (tosvers >= 0x0700);
 
