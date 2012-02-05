@@ -1543,17 +1543,14 @@ sys_b_bioskeys(void)
 	if( r )
 	{
 		r = get_NVM_lang();
-		if( r < 0 && os_lang < 127 )
+		if( r < 0 && gl_lang < 127 )
 		{
-			r = os_lang;
+			r = gl_lang;
 		}
-		os_lang = r;
-		akp_val |= (os_lang << 8);
+		gl_lang = r;
 	}
-	else
-		os_lang = (akp_val & 0x0000ffff) >> 8;
 	akp_val &= 0xffff0000L;
-	akp_val |= (gl_kbd & 0x000000ff) | (os_lang << 8);
+	akp_val |= (gl_kbd & 0x000000ff) | (gl_lang << 8);
 	r = set_cookie(NULL, COOKIE__AKP, akp_val);
 
 	/* _ISO specifies the real keyboard/font nationality */
