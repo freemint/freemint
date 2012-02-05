@@ -308,23 +308,17 @@ short lang_from_akp( char lang[], int md )
 {
 	long	li;
 	short ret = -1;
-	if (!(s_system(S_GETCOOKIE, COOKIE__AKP, (unsigned long)(&li))))
-	{
-		/*
-		 * The bits 0-7 provide info about the layout of the keyboard
-		 * The bits 8-15 identify the language of the country
-		 */
-		if( !md )
-			li >>= 8;
-		li &= 0x000000ffL;
+	if( md )
+		li = gl_kbd;
+	else
+		li = gl_lang;
 
-		ret = li;
-		if( li < MaX_COUNTRYCODE )
-		{
-			li *= 2;
-			lang[0] = countrycodes[li];
-			lang[1] = countrycodes[li+1];
-		}
+	ret = li;
+	if( li < MaX_COUNTRYCODE )
+	{
+		li *= 2;
+		lang[0] = countrycodes[li];
+		lang[1] = countrycodes[li+1];
 	}
 	return ret;
 }
