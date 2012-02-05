@@ -90,7 +90,7 @@ typedef struct stat		STAT;
 typedef struct file		FILEPTR;
 typedef struct ilock		LOCK;
 typedef struct filesys		FILESYS;
-typedef struct devdrv		DEVDRV;	
+typedef struct devdrv		DEVDRV;
 typedef struct tty		TTY;
 
 /* forward declarations: proc.h
@@ -119,7 +119,7 @@ struct global
 
 	short gl_lang;		/* language preference */
 # define MAXLANG 6		/* languages supported */
-	short reserved;
+	short	gl_kbd;			/* default keyboard layout */
 
 	/* The path to the system directory
 	 */
