@@ -411,7 +411,6 @@ static void put_key_into_buf(IOREC_T *iorec, uchar c0, uchar c1, uchar c2, uchar
 static void
 kbd_repeat(PROC *p, long arg)
 {
-	repeat_pid = curproc->pid;
 	put_key_into_buf(last_iorec, last_key[0], last_key[1], last_key[2], last_key[3]);
 	kbdclick(last_key[1]);
 	k_to = addroottimeout(keyrep_time, kbd_repeat, 1);
