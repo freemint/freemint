@@ -781,6 +781,7 @@ check_kentry_version(void)
 # define fputype		( KENTRY->vec_mch.global->fputype)
 # define tosvers		( KENTRY->vec_mch.global->tosvers)
 # define gl_lang		( KENTRY->vec_mch.global->gl_lang)
+# define gl_kbd		( KENTRY->vec_mch.global->gl_kbd)
 # define sysdrv			( KENTRY->vec_mch.global->sysdrv)
 # define sysdir			( KENTRY->vec_mch.global->sysdir)
 # define loops_per_sec_ptr	( KENTRY->vec_mch.loops_per_sec)
@@ -946,7 +947,7 @@ check_kentry_version(void)
 # define KERNEL_DEBUG		(*KENTRY->vec_debug.debug)
 # define KERNEL_ALERT		(*KENTRY->vec_debug.alert)
 # define KERNEL_FATAL		(*KENTRY->vec_debug.fatal)
-# define KERNEL_FORCE		(*KENTRY->vec_debug.force)
+
 
 /*
  * kentry_libkern
