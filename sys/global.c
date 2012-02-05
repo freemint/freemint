@@ -36,7 +36,7 @@
 
 struct global global =
 {
-	0, 0, 0, 0, 0, 0, ""
+	0, 0, 0, -1, 0, 0, ""
 };
 
 long mcpu = 0;
@@ -47,8 +47,6 @@ unsigned long c20ms = 0;
 
 BASEPAGE *_base;
 
-short	gl_kbd;			/* default keyboard layout */
-short os_lang;    /* language of TOS from header/_AKP */
 /*
  * special flags for workarounds
  */

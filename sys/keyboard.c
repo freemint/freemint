@@ -139,6 +139,10 @@ static const uchar modifiers[] =
 	ALTGR, 0
 };
 
+/* why should insert be a modifyer?? */
+#undef MM_INSERT
+#define MM_INSERT	0
+
 /* Masks correspond to the above modifier scancodes */
 static const uchar mmasks[] =
 {
@@ -407,10 +411,27 @@ is_eiffel_mouse_key(ushort scan)
 
 
 # ifndef MILAN
+static void set_keyrepeat_timeout(short make);
+//short iplpop = 0;
+//short ikbd_err = 0;
+//struct proc *repeatproc = 0;
+int repeat_pid = -1;
+
+extern struct proc *pid2proc(int pid);
+
 static void put_key_into_buf(IOREC_T *iorec, uchar c0, uchar c1, uchar c2, uchar c3);
 static void
 kbd_repeat(PROC *p, long arg)
 {
+#if 0
+	if( !pid2proc(repeat_pid)) //curproc != repeatproc && curproc->pid == 0 pid2proc )
+	{
+		FORCE("kbd_repeat:uptimetick=%u,k_to=%lx,repeat_pid=%d,pid=%d", uptimetick, k_to, repeat_pid, curproc->pid);
+		set_keyrepeat_timeout(0);
+		return;
+	}
+#endif
+	repeat_pid = curproc->pid;
 	put_key_into_buf(last_iorec, last_key[0], last_key[1], last_key[2], last_key[3]);
 	kbdclick(last_key[1]);
 	k_to = addroottimeout(keyrep_time, kbd_repeat, 1);
@@ -419,10 +440,21 @@ kbd_repeat(PROC *p, long arg)
 static void
 set_keyrepeat_timeout(short make)
 {
+#if 0
+	if(curproc->pid != 0 )
+	{
+		FORCE("set_keyrepeat_timeout:uptimetick=%u,k_to=%lx,make=%d", uptimetick, k_to, make);
+		//curproc = rootproc;
+		//return;
+	}
+#endif
 	if (make)
 	{
 		if (k_to)
 			cancelroottimeout(k_to);
+
+		//repeatproc = curproc;
+		repeat_pid = curproc->pid;
 
 		k_to = addroottimeout(keydel_time, kbd_repeat, 1);
 	}
@@ -912,6 +944,7 @@ static int scanb_tail = 0;
 static struct scanb_entry scanb[16];
 static void _cdecl IkbdScan(PROC *, long);
 
+
 void _cdecl
 ikbd_scan(ushort scancode, IOREC_T *rec)
 {
@@ -1330,6 +1363,7 @@ IkbdScan(PROC *p, long arg)
 #ifndef MILAN
 		set_keyrepeat_timeout(make);
 #endif
+
 	} while (scanb_head != scanb_tail);
 
 	ikbd_to = NULL;
@@ -1453,6 +1487,12 @@ sys_b_bioskeys(void)
 	struct keytab *pointers;
 
 	/* First block the keyboard processing code */
+	DEBUG(("*sys_b_bioskeys:enter"));
+	if( kbd_lock )
+	{
+		FORCE("sys_b_bioskeys: re-entered!!");
+		return;
+	}
 	kbd_lock = 1;
 
 	/* Release old user keytables and vectors */
@@ -1466,10 +1506,11 @@ sys_b_bioskeys(void)
 		free_region(user_keytab_region);
 	}
 
-	/* Reserve one region for both keytable and its vectors */
+	/* Reserve one region for both keytable and its vectors (globally accessible!) */
 	user_keytab_region = get_region(core, keytab_size + sizeof(struct keytab), PROT_G);
 
 	buf = (unsigned char *)attach_region(rootproc, user_keytab_region);
+
 	pointers = (struct keytab *)buf;
 	tables = buf + sizeof(struct keytab);
 
@@ -1502,26 +1543,24 @@ sys_b_bioskeys(void)
 	if( r )
 	{
 		r = get_NVM_lang();
-		if( r < 0 && os_lang < 127 )
+		if( r < 0 && gl_lang < 127 )
 		{
-			r = os_lang;
+			r = gl_lang;
 		}
-		os_lang = r;
-		akp_val |= (os_lang << 8);
+		gl_lang = r;
 	}
-	else
-		os_lang = (akp_val & 0x0000ffff) >> 8;
 	akp_val &= 0xffff0000L;
-	akp_val |= (gl_kbd & 0x000000ff) | (os_lang << 8);
+	akp_val |= (gl_kbd & 0x000000ff) | (gl_lang << 8);
 	r = set_cookie(NULL, COOKIE__AKP, akp_val);
 
 	/* _ISO specifies the real keyboard/font nationality */
 	set_cookie(NULL, COOKIE__ISO, iso_8859_code);
 
 	user_keytab = pointers;
-
 	/* Done! */
 	kbd_lock = 0;
+
+	DEBUG(("*sys_b_bioskeys:return"));
 }
 
 /* Kbdvbase() */
@@ -1895,6 +1934,7 @@ init_keybd(void)
 	boot_printf(MSG_keytable_loaded, gl_kbd, iso_8859_code);
 	boot_printf("\r\n");
 # endif
+
 }
 
 # else
