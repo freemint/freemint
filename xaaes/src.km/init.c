@@ -690,10 +690,14 @@ again:
 	default_options.alt_shortcuts = 3;
 
 	C.Aes->options = default_options;
-	{
-	short li = 0, p = -1;
 	/* Parse the config file */
 	load_config(0);
+
+	{
+	short li = 0, p = -1;
+#if !BOOTLOG
+	UNUSED(li);
+#endif
 	if( !cfg.lang[0] )
 	{
 		const char *lang = get_env(0, "LANG=");
