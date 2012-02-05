@@ -947,7 +947,7 @@ check_kentry_version(void)
 # define KERNEL_DEBUG		(*KENTRY->vec_debug.debug)
 # define KERNEL_ALERT		(*KENTRY->vec_debug.alert)
 # define KERNEL_FATAL		(*KENTRY->vec_debug.fatal)
-
+# define KERNEL_FORCE		(*KENTRY->vec_debug.force)
 
 /*
  * kentry_libkern
