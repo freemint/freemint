@@ -97,6 +97,9 @@ static const long skiplist [] =
 # ifndef OLDTOSFS
 	COOKIE__FLK,
 # endif
+# ifndef NO_AKP_KEYBOARD
+	COOKIE__AKP,	/* we install our own _AKP cookie */
+# endif
 	0
 };
 

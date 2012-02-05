@@ -371,7 +371,8 @@ init (void)
 	os = (OSHEADER*)sysbase;
 
 	tosvers = (short)(sysbase[0] & 0x0000ffff);
-	os_lang = os->os_conf >> 1;
+	if( gl_lang == -1 )	// no _AKP found
+		gl_lang = os->os_conf >> 1;
 	kbshft = (tosvers == 0x100) ? (char *) 0x0e1bL : (char *)sysbase[9];
 	falcontos = (tosvers >= 0x0400 && tosvers <= 0x0404) || (tosvers >= 0x0700);
 

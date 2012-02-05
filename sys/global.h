@@ -46,13 +46,12 @@ extern struct global global;
 #define fputype		global.fputype
 #define tosvers		global.tosvers
 #define gl_lang		global.gl_lang
+#define gl_kbd		global.gl_kbd
 #define sysdrv		global.sysdrv
 #define sysdir		global.sysdir
 
 extern BASEPAGE *_base;	/* pointer to kernel's basepage */
 
-extern short gl_kbd;	/* default keyboard layout */
-extern short os_lang; /* language of TOS from header/_AKP */
 
 extern long mcpu; /* processor we are running */
 extern long pmmu;
