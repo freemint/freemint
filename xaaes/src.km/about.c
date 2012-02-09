@@ -193,6 +193,7 @@ about_form_exit(struct xa_client *client,
 #define VIEW_MAX_LINES 1024
 
 #if ALT_CTRL_APP_OPS
+
 enum PState
 {
 	CtrlAlt = 0,
@@ -204,14 +205,14 @@ enum PState
  * p1: prev
  * lp: ptr to len of name
  * l: len of name
- * shift: true/false
+ * shift: offset for shifted keys or 0
  */
-static int IsKeyName( char **p, char *p1, long *lp, long l, int shift )
+static int IsKeyName( unsigned char **p, unsigned char *p1, long *lp, long l, int shift )
 {
 	int i;
 	for( i = 0; KeyNames[i]; i++ )
 	{
-		if( !strncmp( *p, KeyNames[i], l ) )
+		if( !strncmp( (const char*)*p, KeyNames[i], l ) )
 			break;
 	}
 	if( KeyNames[i] )
@@ -228,17 +229,17 @@ static int IsKeyName( char **p, char *p1, long *lp, long l, int shift )
 	}
 	return 0;
 }
-static int ScanKey( char **p, long *lp )
+static int ScanKey( unsigned char **p, long *lp )
 {
-	char *p1 = strchr( *p+1, '#' );
+	unsigned char *p1 = (unsigned char *)strchr( (const char*)*p+1, '#' );
 	int i, shift = 0;
 	long l;
 
 	if( !p1 )
 		return 0;
-	if( !strncmp( *p, "SHIFT+", 6 ) )
+	if( !strncmp( (const char*)*p, "SHIFT+", 6 ) )
 	{
-		shift = 128;
+		shift = HK_SHIFT;
 		*p += 6;
 		if( **p <= ' ' )
 			return 0;
@@ -255,10 +256,10 @@ static int ScanKey( char **p, long *lp )
 }
 
 static int DStart = 0;
-static void PatchLn( char *ln, long lpo, long lpr )
+static void PatchLn( unsigned char *ln, long lpo, long lpr )
 {
-	char *p;
-	char *px = ln;
+	unsigned char *p;
+	unsigned char *px = ln;
 	if( !lpo )
 		return;
 	for( p = ln; lpo && *p; lpo--, p++ )
@@ -290,12 +291,12 @@ static void PatchLn( char *ln, long lpo, long lpr )
 	}
 }
 typedef struct{
-	unsigned char c;
+	unsigned short c;
 }Keys;
 
 int DoCtrlAlt( enum CtrlAltMd md, int orig, int repl )
 {
-	static Keys CtrlAltKeys[256] = {{0}};
+	static Keys CtrlAltKeys[256+256] = {{0}};
 	switch( md )
 	{
 	case Set:
@@ -304,8 +305,8 @@ int DoCtrlAlt( enum CtrlAltMd md, int orig, int repl )
 			return 1;
 		repl--;
 		orig--;
-		if( repl > sizeof(CtrlAltKeys) / sizeof(Keys) )
-			return 1;
+		//if( repl > sizeof(CtrlAltKeys) / sizeof(Keys) )
+			//return 1;
 		CtrlAltKeys[repl].c = orig + 1;
 	}
 	break;
@@ -313,10 +314,10 @@ int DoCtrlAlt( enum CtrlAltMd md, int orig, int repl )
 		if( orig <= 0 )
 			return 0;
 		if( repl & (K_RSHIFT|K_LSHIFT) )
-			orig += 128;
+			orig += HK_SHIFT;
 		orig--;
-		if( orig > sizeof(CtrlAltKeys) / sizeof(Keys) )
-			return 0;
+		//if( orig > sizeof(CtrlAltKeys) / sizeof(Keys) )
+			//return 0;
 		return CtrlAltKeys[orig].c;
 	case Reset:
 		memset( CtrlAltKeys, 0, sizeof(CtrlAltKeys) );
@@ -325,11 +326,11 @@ int DoCtrlAlt( enum CtrlAltMd md, int orig, int repl )
 	return 0;
 }
 
-static void SetCtrlAlt( char *p )
+static void SetCtrlAlt( unsigned char *p )
 {
 	int org, repl;
 	long lpo, lpr;
-	char *p1 = p;
+	unsigned char *p1 = p;
 	if( !( org = ScanKey( &p, &lpo ) ) || *p != '#' )
 	{
 		if( DStart == 0 )
@@ -343,7 +344,7 @@ static void SetCtrlAlt( char *p )
 	p++;
 	if( *p == '#' )	// free shortcut
 	{
-		DoCtrlAlt( Set, 255, org );
+		DoCtrlAlt( Set, HK_FREE, org );
 		*p1 = 0;
 		return;
 	}
@@ -353,18 +354,19 @@ static void SetCtrlAlt( char *p )
 	DoCtrlAlt( Set, org, repl );
 }
 
-static enum PState GetPState( char *p )
+static enum PState GetPState( unsigned char *p )
 {
 	static char *Snames[] = { "CtrlAlt", 0};
 	int i;
 	long l;
-	char *p1 = strchr( p, '>' );
+	unsigned char *p1 = (unsigned char *)strchr( (char*)p, '>' );
+
 	if( !p1 )
 		return nil;	//ERROR
 	l = p1 - p;
 	for( i = 0; Snames[i]; i++ )
 	{
-		if( !strncmp( p, Snames[i], l ) )
+		if( !strncmp( (char*)p, Snames[i], l ) )
 			return i;
 	}
 	return nil;
@@ -383,7 +385,7 @@ static void file_to_list( SCROLL_INFO *list, char *fn, bool skip_hash, bool open
 	struct stat st;
 	long r = f_stat64(0, fn, &st);
 	XA_FILE *xa_fp;
-	char *p;
+	unsigned char *p;
 	long lineno;
 #if ALT_CTRL_APP_OPS
 	enum PState pstate = nil;
@@ -402,9 +404,9 @@ static void file_to_list( SCROLL_INFO *list, char *fn, bool skip_hash, bool open
 
 
 	PRINIT;
-	for( lineno = 1; lineno < VIEW_MAX_LINES && (p = xa_readline( 0, 0, xa_fp )); lineno++ )
+	for( lineno = 1; lineno < VIEW_MAX_LINES && (p = (unsigned char *)xa_readline( 0, 0, xa_fp )); lineno++ )
 	{
-		sc.t.text = p;
+		sc.t.text = (char*)p;
 		if( skip_hash == true )
 		{
 			for( ; *p && *p <= ' '; p++ )

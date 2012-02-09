@@ -74,6 +74,10 @@
 #define ALT_CTRL_APP_OPS	1	/* Some ALT+CTRL+key combo's will perform functions relating to
                        			 * the XaAES system */
 
+/* set default-widgets */
+#ifndef WIDGNAME
+#define WIDGNAME "xaaeswdg.rsc"
+#endif
 /* if 0 don't produce wheel-events from keys */
 #ifndef EIFFEL_SUPPORT
 #define EIFFEL_SUPPORT 1
@@ -188,6 +192,10 @@
 
 
 #define TABSZ 4	/* tab-size for expanding \t in list-text */
+
+/* special indices for shortcut-replacement-algorithm */
+#define HK_SHIFT  256        /* add for SHIFT */
+#define HK_FREE   511        /* last index: unused/invalid */
 
 /*----------------------------------------------------------------- */
 /* Return codes in the clients reply pipe */
