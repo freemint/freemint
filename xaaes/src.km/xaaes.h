@@ -162,11 +162,11 @@
 #define FNTS_HSIZE 26  /* BUTTON in tree WDLG_FNTS */
 
 #define WDLG_PDLG 11  /* form/dial */
-#define XPDLG_CANCEL 1  /* BUTTON in tree WDLG_PDLG */
-#define XPDLG_PRINT 2  /* BUTTON in tree WDLG_PDLG */
-#define XPDLG_LIST 3  /* BOX in tree WDLG_PDLG */
+#define XPDLG_LIST 1  /* BOX in tree WDLG_PDLG */
+#define XPDLG_DRIVER 3  /* BUTTON in tree WDLG_PDLG */
 #define XPDLG_DIALOG 4  /* IBOX in tree WDLG_PDLG */
-#define XPDLG_DRIVER 5  /* BUTTON in tree WDLG_PDLG */
+#define XPDLG_PRINT 5  /* BUTTON in tree WDLG_PDLG */
+#define XPDLG_CANCEL 6  /* BUTTON in tree WDLG_PDLG */
 
 #define PDLG_DIALOGS 12  /* form/dial */
 #define PDLG_GENERAL 1  /* BOX in tree PDLG_DIALOGS */
