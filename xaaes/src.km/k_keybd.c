@@ -44,6 +44,7 @@
 #include "nkcc.h"
 #include "scrlobjc.h"
 #include "taskman.h"
+#include "util.h"
 #include "widgets.h"
 #include "menuwidg.h"
 
@@ -371,7 +372,7 @@ kernel_key(enum locks lock, struct rawkey *key)
 		short sdmd = 0;
 
 		key->norm = nkc_tconv(key->raw.bcon);
-		nk = key->norm & 0x00ff;
+		nk = xa_toupper(key->norm & 0x00ff);
 
 		DIAG((D_keybd, NULL,"CTRL+ALT+%04x --> %04x '%c'", key->aes, key->norm, nk ));
 
@@ -460,14 +461,14 @@ kernel_key(enum locks lock, struct rawkey *key)
 			return true;
 		}
 		n = DoCtrlAlt( Get, nk, key->raw.conin.state );
-		if( n == 255 )
+		if( n == HK_FREE )
 			return false;
 		if( n )
 		{
 			nk = n;
-			if( nk > 128 )
+			if( nk > HK_SHIFT )
 			{
-				nk -= 128;
+				nk -= HK_SHIFT;
 				key->raw.conin.state |= (K_RSHIFT|K_LSHIFT);
 			}
 			else
@@ -878,7 +879,8 @@ kernel_key(enum locks lock, struct rawkey *key)
 			wind = TOP_WINDOW;
 			if( wind )
 			{
-				wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
+				if( wind->send_message )
+					wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 							   WM_CLOSED, 0, 0, wind->handle, 0,0,0,0);
 			}
 			return true;
