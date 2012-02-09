@@ -255,7 +255,9 @@ Setup_form_do(struct xa_client *client,
 okexit:
 	ei = wt->ei ? wt->ei : &wt->e;
 	if( !valid_aesobj( &ei->o ) )
+	{
 		ei->o = edobj;
+	}
 	else
 		edobj = ei->o;
 #if 0
@@ -458,6 +460,7 @@ Form_Button(XA_TREE *wt,
 			struct xa_aes_object pf = focus(wt);
 			if( flags & OF_EDITABLE ){
 				struct objc_edit_info *ei = (wt->ei ? wt->ei : &wt->e);
+				XTEDINFO *xted = 0;
 				int x = 0, y = 0;
 
 				// cmp obtree#3405
@@ -466,7 +469,7 @@ Form_Button(XA_TREE *wt,
 						TEDINFO *ted;
 						char *txt, *ptxt;
 
-						ted = object_get_tedinfo(aesobj_ob(&obj), NULL);
+						ted = object_get_tedinfo(aesobj_ob(&obj), &xted);
 
 						if( ted )
 						{
@@ -477,12 +480,19 @@ Form_Button(XA_TREE *wt,
 							for( ; ptxt[y] && ptxt[y] != '_'; y++ );
 						}
 					}
+					if( xted )
+					{
+						if( (wt->owner->status & CS_FORM_DO) )	// not windowed form_do
+							wt->ei = ei = xted;
+					}
+					//if( !xted )	/* don't destroy the link between xted and object */
+					else
+						ei->o = obj;
 					ei->edstart = y;
 					ei->pos = x;
 
 					ei->c_state |= OB_CURS_ENABLED;
 
-					ei->o = obj;
 				}
 			}
 			if (valid_aesobj(&pf))
@@ -880,7 +890,7 @@ g_slist:
 				|| (wt->owner->status & CS_FORM_ALERT))
 			{
 				char c = toupper(key->norm & 0x00ff);
-				next_obj = ob_find_shortcut(obtree, c);
+				next_obj = ob_find_shortcut(obtree, c, 0);
 				DIAG((D_keybd, NULL, "Form_Keyboard: shortcut %d for %s",
 					next_obj.item, client->name));
 			}
