@@ -35,6 +35,7 @@ void strip_fname(const char *filename, char *pn, char *fn);
 int drive_and_path(char *fname, char *path, char *name, bool n, bool set);
 void set_drive_and_path(char *fname);
 void get_drive_and_path(char *path, short plen);
+short xa_toupper( short c );
 char *xa_strdup(char*s);
 void strnupr(char *s, int n);
 

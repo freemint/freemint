@@ -183,7 +183,7 @@ callout_pdlg_sub(struct xa_pdlg_info *pdlg, short which, PDLG_SUB *sub, PRN_SETT
 			bcopy(&xa_callout_user, u, xa_callout_user.len);
 
 			u->sighand_p	+= (long)u;
-			u->parm_p	 = (void *)((char *)u->parm_p + (long)u);
+			u->parm_p  = (void *)((char *)u->parm_p + (long)u);
 
 			p 	= u->parm_p;
 			p->func	= function;
@@ -218,8 +218,8 @@ callout_pdlg_sub(struct xa_pdlg_info *pdlg, short which, PDLG_SUB *sub, PRN_SETT
 #else
 		{
 		//BASEPAGE *base = get_curproc()->p_mem->base;
-		if( pdlg->n_printers <= 0 )
-			return ret;
+		//if( pdlg->n_printers <= 0 )
+			//return ret;
 		switch( which )
 		{
 			case CALL_INIT_DLG:
@@ -442,6 +442,7 @@ count_printers(struct xa_pdlg_info *pdlg)
 	pdlg->n_printers = count;
 
 // 	display(" counted %d printers across %d drivers", pdlg->n_printers, pdlg->n_drivers);
+
 }
 
 static void
@@ -696,7 +697,6 @@ set_oblink(struct xa_pdlg_info *pdlg, OBJECT *to_tree, short to_obj)
 	return upd;
 }
 
-//callout_pdlg_sub(struct xa_pdlg_info *pdlg, short which, PDLG_SUB *sub, PRN_SETTINGS *pset, short obj)
 static int
 click_list(SCROLL_INFO *list, SCROLL_ENTRY *this, const struct moose_data *md)
 {
@@ -1306,6 +1306,7 @@ static char *colornames[] =
 	"Unknown 30",
 	"Unknown 31",
 	"",
+  "",
 };
 
 static long colormodes[] =
@@ -2621,6 +2622,8 @@ create_new_pdlg(struct xa_client *client, XA_WIND_ATTR tp) //, struct xa_window 
 					     r, NULL, NULL)))
 				goto fail;
 
+			/* set a default-name */
+			sprintf( wind->wname, sizeof( wind->wname), "%s- Print-Dialog", client->name+1 );
 			set_toolbar_widget(0, wind, client, mwt->tree, aesobj(mwt->tree, -2), 0, STW_ZEN, &wdlg_th, &or);
 		}
 		if (mwt && dwt)
@@ -2651,6 +2654,21 @@ create_new_pdlg(struct xa_client *client, XA_WIND_ATTR tp) //, struct xa_window 
 			add_dialog(pdlg, NULL, "Paper", pdlg->dwt->tree, PDLG_PAPER);
 			add_dialog(pdlg, NULL, "Raster", pdlg->dwt->tree, PDLG_RASTER);
 			add_dialog(pdlg, NULL, "Interface", pdlg->dwt->tree, PDLG_PORT);
+
+			{
+				/* last objects in pdlg-dialogs */
+#define XPDLG_LAST	XPDLG_CANCEL
+#define PDLG_LAST PDLG_R_FG
+
+				void *scp = kmalloc( 3 * (XPDLG_LAST + PDLG_LAST) );
+				if( !scp )
+					return 0;
+				memset( scp, 0, 3 * (XPDLG_LAST + PDLG_LAST) );
+
+				ob_fix_shortcuts( pdlg->mwt->tree, false, &scp );
+				ob_fix_shortcuts( pdlg->dwt->tree, false, &scp );
+				kfree(scp);
+			}
 
 			set_oblink(pdlg, pdlg->dwt->tree, PDLG_GENERAL);
 
@@ -2730,6 +2748,7 @@ XA_pdlg_delete(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	DIAG((D_pdlg, client, "XA_pdlg_delete"));
 // 	display("XA_pdlg_delete: %s", client->name);
+
 
 	pb->intout[0] = 0;
 
@@ -3312,7 +3331,14 @@ XA_pdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 // 	display(" -- exit %d", pb->intout[0]);
 	return XAC_DONE;
 }
-
+#if 0
+/* for debug */
+static void print_xted( struct xa_aes_object *obj, long l )
+{
+	XTEDINFO *xted;
+	object_get_tedinfo(aesobj_ob(obj), &xted);
+}
+#endif
 unsigned long
 XA_pdlg_evnt(enum locks lock, struct xa_client *client, AESPB *pb)
 {
@@ -3341,9 +3367,9 @@ XA_pdlg_evnt(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		ret = wdialog_event(lock, client, &wep);
 
+		//print_xted( &wep.obj, __LINE__);
 		if (check_internal_objects(pdlg, wep.obj))
 		{
-			wep.obj = inv_aesobj();
 			ret = 1;
 		}
 		else
@@ -3354,13 +3380,28 @@ XA_pdlg_evnt(enum locks lock, struct xa_client *client, AESPB *pb)
 			}
 			/* prepare return stuff here */
 		}
-		pb->intout[1] = valid_aesobj(&wep.obj) ? aesobj_item(&wep.obj) : 0;
+		if( valid_aesobj(&wep.obj) && aesobj_tree(&wep.obj) == pdlg->mwt->tree )
+		{
+			ret = 0;
+			switch( aesobj_item(&wep.obj) )
+			{
+				case XPDLG_PRINT:
+					pb->intout[1] =  2;
+				break;
+				case XPDLG_CANCEL:
+					pb->intout[1] =  1;
+				break;
+			}
+		}
+		else
+		{
+			ret = 1;
+		}
 
-		if (pb->intout[1] == 2 && out)
+		if (pb->intout[1] == XPDLG_PRINT && out)
 		{
 			build_prn_settings(pdlg, &pdlg->current_settings);
 			*out = pdlg->current_settings;
-// 			display_pset(out);
 		}
 	}
 	pb->intout[0] = ret;
@@ -3408,7 +3449,7 @@ Formexit( struct xa_client *client,
 
 	if (!check_internal_objects(pdlg, fr->obj))
 	{
-		if (aesobj_item(&fr->obj) == 2 || aesobj_item(&fr->obj) == 1)
+		if (aesobj_item(&fr->obj) == XPDLG_PRINT || aesobj_item(&fr->obj) == XPDLG_CANCEL)
 		{
 			pdlg->exit_button = valid_aesobj(&fr->obj) ? aesobj_item(&fr->obj) : 0;
 			client->usr_evnt = 1;
@@ -3451,6 +3492,7 @@ XA_pdlg_do(enum locks lock, struct xa_client *client, AESPB *pb)
 		OBJECT *obtree = wt->tree;
 		RECT or;
 		XA_WIND_ATTR tp = wind->active_widgets & ~STD_WIDGETS;
+		short ret = 1;	// Cancel
 
 		obj_rectangle(wt, aesobj(obtree, 0), &or);
 		center_rect(&or);
@@ -3479,13 +3521,14 @@ XA_pdlg_do(enum locks lock, struct xa_client *client, AESPB *pb)
 
 		close_window(lock, wind);
 
-		if (pdlg->exit_button == 2)
+		if (pdlg->exit_button == XPDLG_PRINT)
 		{
 			build_prn_settings(pdlg, &pdlg->current_settings);
 			*outpset = pdlg->current_settings;
 // 			display_pset(outpset);
+			ret = 2;	// Ok
 		}
-		pb->intout[0] = pdlg->exit_button;
+		pb->intout[0] = ret;
 	}
 	return XAC_DONE;
 }
