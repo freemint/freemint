@@ -5,9 +5,9 @@
 
 char *xa_strings[] = {
  /* window-titles */
-	"About      ",
-	"Task Manager           ",
-	"System window & Alerts log           ",
+	"About",
+	"Task Manager",
+	"System window & Alerts log",
 /* system-window*/
 	"Applications",
 	"Alerts          ",
@@ -24,7 +24,7 @@ char *xa_strings[] = {
 "[2][Leave XaAES][Cancel|OK]     ",
 "[2][Restart XaAES][Cancel|OK]      ",
 "[2][Halt System][Cancel|OK]        ",
-"[2][XaAES had a problem][Continue|Halt]",
+"[2][XaAES had a problem][Continue|Halt]              ",
 "[1][Snapper could not save snap!|ERROR: %d][OK]                     ",
 "[1][Cannot snap topwindow as|parts of it are offscreen!][OK]                                                   ",
 "[1]['xaaesnap' process not found.|Start 'xaaesnap.prg' and try again|or define snapshot in xaaes.cnf][OK]                            ",
@@ -33,7 +33,8 @@ char *xa_strings[] = {
 "Launch Program     ",
 "Load Gradient     ",
 "Load Image        ",
-"Load Palette",
+"Load Palette     ",
+"Load Config        ",
 "$SDMASTER is not a valid program: %s (use the taskmanager)                      ",
 "Could not load %s.tbl from %s (%ld)         ",
 "Cannot terminate AES system proccesses!               ",
@@ -74,21 +75,21 @@ char *wctxt_main_txt[] =
  "\255Quit        ",
  "\255Kill        ",
  "",
-	"\255Keep above others   ",
-	"\255Keep below others   ",
-	"\255Toolbox attribute   ",
-	"\255Deny keyboard focus ",
+	"\255Keep above others           ",
+	"\255Keep below others           ",
+	"\255Toolbox attribute           ",
+	"\255Deny keyboard focus         ",
 	"",
-	"\255This               ",
-	"\255All                ",
-	"\255All others         ",
-	"\255Restore all        ",
-	"\255Restore all others ",
+	"\255This                      ",
+	"\255All                       ",
+	"\255All others                ",
+	"\255Restore all               ",
+	"\255Restore all others        ",
 	"",
-	"\255This window     ",
-	"\255Application     ",
-	"\255Other apps      ",
-	"\255Show other apps ",
+	"\255This window               ",
+	"\255Application               ",
+	"\255Other apps                ",
+	"\255Show other apps           ",
 	"","",
 	0
 };
@@ -134,37 +135,36 @@ char *KeyNames[] = {
 	"HOME",
 	"RETURN",
 	"HELP",
-	"HOME",
 	"UNDO",
 	0
 };
 
 char *WidgNames[] = {
-	"Resize",	// Border
+	"Resize           ",	// Border
 	"Move       ",
 	"",	// Wcontext
 	"",	// Wappicn
 	"Close    ",
-	"Full",
-	"Info",
-	"Resize",	//Title
-	"Scroll up",
-	"Scroll up",
-	"Scroll down",
-	"Vertical slide",
-	"Scroll left",
-	"Scroll left",
-	"Scroll right",
-	"Horizontal slide",
-	"Iconify",
-	"Hide",
+	"Full      ",
+	"Info        ",
+	"Resize           ",	// Sizer
+	"Scroll up         ",
+	"Scroll up         ",
+	"Scroll down      ",
+	"Vertical slide        ",
+	"Scroll left        ",
+	"Scroll left        ",
+	"Scroll right       ",
+	"Horizontal slide        ",
+	"Iconify      ",
+	"Hide      ",
 	"",	//Toolbar
 	"",	//Menu
 	"",	//Mover
-	"Page up",
-	"Page down",
-	"Page left",
-	"Page right",
+	"Page up       ",
+	"Page down    ",
+	"Page left       ",
+	"Page right     ",
 	0
 };
 
