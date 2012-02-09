@@ -175,7 +175,9 @@ wdialog_redraw(enum locks lock, struct xa_window *wind, struct xa_aes_object sta
 		hidem();
 
 		if (drwcurs)
+		{
 			obj_edit(wt, v, ED_END, aesobj(wt->tree, 0), 0, 0, NULL, true, &wind->wa, wind->rect_list.start, NULL, NULL);
+		}
 
 		if (r)
 		{
@@ -469,7 +471,7 @@ struct toolbar_handlers wdlg_th =
 	(void *)-1L,			/* FormExit		*exitform;	*/
 	(void *)-1L,			/* FormKeyInput		*keypress;	*/
 
-	(void *)-1L,			/* DisplayWidget	*display;	*/
+	(void *)0,	//-1L,			/* DisplayWidget	*display;	*/
 	click_wdlg_widget,		/* WidgetBehaviour	*click;		*/
 	click_wdlg_widget,		/* WidgetBehaviour	*drag;		*/
 	(void *)-1L,			/* WidgetBehaviour	*release;	*/
@@ -1045,6 +1047,7 @@ XA_wdlg_set(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	return XAC_DONE;
 }
+
 short
 wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms *wep)
 {
@@ -1062,7 +1065,7 @@ wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms 
 			struct objc_edit_info *ei;
 			struct moose_data md;
 			short events, dc;
-			struct xa_aes_object nxtobj, obj;
+			struct xa_aes_object nxtobj, obj = {0};
 
 			events = ev->mwhich;
 
@@ -1093,6 +1096,7 @@ wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms 
 						{
 							DIAG((D_wdlg, NULL, "wdialog_event(MU_BUTTON): doing Form_Button on obj=%d for %s",
 								aesobj_item(&obj), client->name));
+							//print_xted( &obj, __LINE__);
 							if ( !Form_Button(wt,			/* widget tree	*/
 									  v,			/* VDI settings & api */
 									  obj,			/* Object	*/
@@ -1113,13 +1117,13 @@ wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms 
 							}
 							else
 							{
-								ei = wt->ei ? wt->ei : &wt->e;
+								ei = &wt->e;
 
 								if (valid_aesobj(&nxtobj) && aesobj_is_editable(&nxtobj, 0, 0) && !same_aesobj(&nxtobj, &ei->o))
 								{
-
 									if (edit_set(ei))
 										obj_edit(wt, v, ED_END, aesobj(wt->tree, 0), 0, 0, NULL, true, &wind->wa, wind->rect_list.start, NULL, NULL);
+
 									obj_edit(wt, v, ED_INIT, nxtobj, 0, -1, NULL, true, &wind->wa, wind->rect_list.start, NULL, &nxtobj);
 									DIAG((D_wdlg, NULL, "wdlg_event(MU_BUTTON): Call wdlg->exit(%lx) with new editobj=%d for %s",
 										wep->wdlg ? wep->wdlg->exit : NULL, aesobj_item(&nxtobj), client->name));
@@ -1240,7 +1244,7 @@ wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms 
 
 						if ( (ks & (K_CTRL|K_ALT)) == K_ALT )
 						{
-							nxtobj = ob_find_shortcut(obtree, nk);
+							nxtobj = ob_find_shortcut(obtree, nk, 0);
 							DIAG((D_wdlg, NULL, "wdlg_event(MU_KEYBD): shortcut %d for %s",
 								aesobj_item(&nxtobj), client->name));
 						}
@@ -1280,6 +1284,7 @@ wdialog_event(enum locks lock, struct xa_client *client, struct wdlg_evnt_parms 
 						{
 							DIAG((D_wdlg, NULL, "wdlg_event(MU_KEYBD): HNDL_EDIT exit(%lx) with key=%x for %s",
 								wep->wdlg ? wep->wdlg->exit : NULL, key, client->name));
+							ei = &wt->e;
 							obj_edit(wt,
 							 v,
 							 ED_CHAR,

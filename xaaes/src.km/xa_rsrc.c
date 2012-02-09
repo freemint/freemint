@@ -23,8 +23,8 @@
  * along with XaAES; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-
 #include "xa_types.h"
+#include "mt_gem.h"
 #include "xa_global.h"
 #include "xa_strings.h"
 #include "matchpat.h"	//strmchr
@@ -554,7 +554,8 @@ enum{
 };
 
 /*
- * if md=REPLACE buf is char**
+ * md=REPLACE buf is char**
+ *            l=-1: don't translate
  */
 static XA_FILE *rsc_lang_file( int md, XA_FILE *fp, char *buf, long l )
 {
@@ -584,8 +585,10 @@ static XA_FILE *rsc_lang_file( int md, XA_FILE *fp, char *buf, long l )
 			char lbuf[256], *p = 0, *in = *((char**)buf);
 			bool strip = true;
 			int len = strlen(in), found;
-			short blen = 0, clen, cmplen, *chgl = (short*)l;
+			short blen = 0, clen, cmplen, *chgl = 0;
 
+			if( l > 0 )
+				chgl = (short*)l;
 			// BLOG((0,"trans: looking '%s'", in ));
 			if( chgl && *chgl == 2 )
 			{
@@ -631,12 +634,17 @@ static XA_FILE *rsc_lang_file( int md, XA_FILE *fp, char *buf, long l )
 
 					if( found == 0 )
 					{
+						if( l == -1 )
+						{
+							found = OFOUND;
+							break;
+						}
 						if( !strnicmp( lbuf, "nn", 2 ) )
 						{
 							if( (*p == '-' && *in == '-') || !strncmp( p, in, cmplen ) )
 							{
-								found = -1;
-								if( lbuf[LF_OFFS-1] == ';' )	// dont translate this
+								found = OFOUND;
+								if( lbuf[LF_OFFS-1] == ';')	// dont translate this
 									break;
 								if( lbuf[LF_OFFS-1] == '+' )	// realloc
 									strip = false;
@@ -653,13 +661,13 @@ static XA_FILE *rsc_lang_file( int md, XA_FILE *fp, char *buf, long l )
 						/* copy shorter length */
 						if( blen > len && strip == true )
 							blen = len;
-						found = 1;
+						found = TFOUND;
 						break;	// translation found
 					}
 				}
 			}
 
-			if( p && lbuf[0] != -1 && lbuf[0] != LF_SEPCH )	// found
+			if( found == TFOUND && p && lbuf[0] != -1 && lbuf[0] != LF_SEPCH )	// found
 			{
 				if( blen > len && strip == false )
 				{
@@ -722,7 +730,7 @@ static short translate_string( struct xa_client *client, XA_FILE *rfp, char **p,
 			break;	//found
 		if( 1 || rsl_errors++ < RSL_MAX_ERRORS )
 		{
-			// BLOG((0,"translate:'%s':rewind", *p ));
+			 BLOG((0,"translate:'%s':rewind", *p ));
 			xa_rewind( rfp );
 			rsl_lno = 1;
 			reported_skipped = -1;
@@ -733,7 +741,7 @@ static short translate_string( struct xa_client *client, XA_FILE *rfp, char **p,
 	if( !blen )
 	{
 		//ALERT(("translate: item '%s' not found", *p ));
-		BLOG((0, "%s:translate: item '%s':%x not found", client->name, *p, **p ));
+		BLOG((0, "%s:translate: item '%s': not found", client->name, *p ));
 	}
 	return blen;
 }
@@ -1118,9 +1126,10 @@ fix_trees(struct xa_client *client, void *b, OBJECT **trees, unsigned long n, sh
 				}
 				while (!(obj++->ob_flags & OF_LASTOB));
 
-				if (client->options.alt_shortcuts & ALTSC_DIALOG)
+				if ( (client->options.alt_shortcuts & ALTSC_DIALOG) && !((*trees)->ob_state & OS_WHITEBAK) )
 				{
-					ob_fix_shortcuts(*trees, false);
+					ob_fix_shortcuts(*trees, false, 0);
+					//sc_exit();
 				}
 			}
 			else
@@ -1504,11 +1513,27 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 			}
 			for(i = 0; trans_strings[i]; i++)
 			{
+				//char *t_1 = 0;
 				for( t = trans_strings[i]; *t; t++)
 				{
 					if( **t )
 					{
-						rsc_trans_rw( client, rfp, t, 0 );
+						char **t_2;
+						short ptr_seen = 0;
+
+						/* strings might be merged
+						 * gcc4 puts all strings in the same order in the out-file as they are in the source
+						 * gcc2 (and maybe also others) uses another order, so a search for the current string is done
+						 */
+						for( t_2 = trans_strings[i]; t_2 < t; t_2++)
+							if( *t_2 == *t )
+							{
+								ptr_seen = -1;
+								break;
+							}
+
+						rsc_trans_rw( client, rfp, t, ptr_seen );
+						//t_1 = *t;
 					}
 				}
 			}
