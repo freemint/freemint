@@ -33,6 +33,7 @@
 #include "xa_global.h"
 #include "k_mouse.h"
 #include "keycodes.h"
+#include "util.h"
 
 #include "mint/signal.h"
 
@@ -151,7 +152,6 @@ TEDINFO *
 object_get_tedinfo(OBJECT *ob, XTEDINFO **x)
 {
 	TEDINFO *ted = NULL;
-
 	if (x)
 		*x = NULL;
 
@@ -871,9 +871,9 @@ duplicate_obtree(struct xa_client *client, OBJECT *obtree, short start)
 		client = C.Aes;
 
 	if (client == C.Aes || client == C.Hlp)
-		new = kmalloc(size); // + 4096); // 1024);
+		new = kmalloc(size);
 	else
-		new = umalloc(size); // + 1024);
+		new = umalloc(size);
 
 	if (new)
 	{
@@ -2240,11 +2240,18 @@ ob_find_cancel(OBJECT *ob)
 	return inv_aesobj();
 }
 
+static short xa_isalnum( short c )
+{
+	if( (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= 0xb0 && c <= 0xff) || (c >= '0' && c <= '9') )
+		return true;
+	return false;
+}
+
 /*
  * define '_'-shortcuts
  */
 void
-ob_fix_shortcuts(OBJECT *obtree, bool not_hidden)
+ob_fix_shortcuts(OBJECT *obtree, bool not_hidden, void **scp)
 {
 	struct sc
 	{
@@ -2262,7 +2269,19 @@ ob_fix_shortcuts(OBJECT *obtree, bool not_hidden)
 	DIAGS((" -- %d objects", objs));
 	len = ((long)objs + 1) * sizeof(struct sc);
 
-	sc = kmalloc(len);
+	if( !scp || !*scp )
+	{
+		if( !(sc = kmalloc(len) ) )
+		{
+			BLOG((0,"ob_fix_shortcuts:kmalloc(%ld) failed.", len));
+			return;
+		}
+		if( scp )
+			*scp = sc;
+		bzero(sc, len);
+	}
+	else
+		sc = *scp;
 
 	DIAGS((" -- sc = %lx", sc));
 
@@ -2270,7 +2289,6 @@ ob_fix_shortcuts(OBJECT *obtree, bool not_hidden)
 	{
 		int i, k;
 		short flag = 0, flag2 = 0;
-		bzero(sc, len);
 
 		/*
 		 * 1. predefined shortcuts (>0!)
@@ -2301,7 +2319,6 @@ ob_fix_shortcuts(OBJECT *obtree, bool not_hidden)
 			{
 				OBJECT *ob = obtree + i;
 				bool predef = false;
-
 				DIAGS((" -- obj %d, type %x (n=%d, h=%d, t=%d)",
 					i, ob->ob_type, ob->ob_next, ob->ob_head, ob->ob_tail));
 
@@ -2324,7 +2341,7 @@ ob_fix_shortcuts(OBJECT *obtree, bool not_hidden)
 
 								/* skip non-alpha-numeric-chars in start of free_string
 								*/
-								for( nc = 0; nc < slen && !isalnum(s[nc]); nc++ );
+								for( nc = 0; nc < slen && !xa_isalnum(s[nc]); nc++ );
 								if( nc >= slen )	/* try any char except blank */
 								{
 									for( nc = 0; nc < slen && s[nc] <= ' '; nc++ );
@@ -2341,14 +2358,14 @@ ob_fix_shortcuts(OBJECT *obtree, bool not_hidden)
 								if (j < slen)
 								{
 									scuts = sc;
-									nk = toupper((char)*(s + j));
+									nk = xa_toupper((char)*(s + j));
 
 									while (scuts->c )
 									{
 										if (i != scuts->o && scuts->c == nk )
 										{
 											if( nc < slen )
-												nk = toupper(*(s + nc++));
+												nk = xa_toupper(*(s + nc++));
 											else
 												break;
 											scuts = sc;
@@ -2386,23 +2403,35 @@ ob_fix_shortcuts(OBJECT *obtree, bool not_hidden)
 			}
 		}
 
-		kfree(sc);
+		if( !scp )
+			kfree(sc);
 	}
 	DIAGS((" -- ob_fix_shortcuts: done"));
 }
-
+/* follow  G_OBLINK
+ * todo: same in fix_shortcuts
+ */
 struct xa_aes_object
-ob_find_shortcut(OBJECT *tree, ushort nk)
+ob_find_shortcut(OBJECT *tree, ushort nk, short stop_type)
 {
-	int i = 0;
+	int i = 1;
 
 	nk &= 0xff;
 
 	DIAG((D_keybd, NULL, "find_shortcut: %d(0x%x), '%c'", nk, nk, nk));
 
-	do {
+	for( i = 1; tree[i].ob_type != stop_type; i++ )
+	{
 		OBJECT *ob = tree + i;
-		if ((ob->ob_state & (OS_WHITEBAK | OS_DISABLED)) == OS_WHITEBAK)
+		if( ob->ob_type == G_OBLINK )
+		{
+			struct oblink_spec *oblink = object_get_oblink(ob);
+			OBJECT *tr = oblink->to.tree + oblink->to.item;
+			struct xa_aes_object xo = ob_find_shortcut( tr, nk, G_BOX );
+			if( valid_aesobj( &xo ) )
+				return xo;
+		}
+		else if ((ob->ob_state & (OS_WHITEBAK | OS_DISABLED)) == OS_WHITEBAK)
 		{
 			int ty = ob->ob_type & 0xff;
 			if (ty == G_BUTTON || ty == G_STRING)
@@ -2410,13 +2439,17 @@ ob_find_shortcut(OBJECT *tree, ushort nk)
 				int j = (ob->ob_state >> 8) & 0x7f;
 				if (j < 126)
 				{
-					char *s = object_get_spec(ob)->free_string;
+					unsigned char *s = (unsigned char *)object_get_spec(ob)->free_string;
 					if (s)
 					{
-						if (j < strlen(s))
+						if (j < strlen((char*)s))
 						{
+							short c = *(s+j);
+							/*if( !(nk & 0x80) )
+								c = toupper(c);
+							*/
 							DIAG((D_keybd,NULL,"  -  in '%s' find '%c' on %d :: %c",s,nk,j, *(s+j)));
-							if (toupper(*(s + j)) == nk)
+							if (xa_toupper(c) == xa_toupper(nk))
 							{
 								return aesobj(tree, i);
 							}
@@ -2424,12 +2457,23 @@ ob_find_shortcut(OBJECT *tree, ushort nk)
 					}
 				}
 			}
+			//else DBG((0,"ob_find_shortcut:i=%d, ob_state=%x, ob_flags=%x, next=%d,head=%d,tail=%d", i, ob->ob_state, ob->ob_flags, ob->ob_next, ob->ob_head, ob->ob_tail));
 		}
-	} while ( (tree[i++].ob_flags & OF_LASTOB) == 0);
+		//else DBG((0,"ob_find_shortcut:i=%d, ob_type=%d, ob_state=%x, ob_flags=%x, next=%d,head=%d,tail=%d", i, ob->ob_type, ob->ob_state, ob->ob_flags, ob->ob_next, ob->ob_head, ob->ob_tail));
+
+		if( (tree[i].ob_flags & OF_LASTOB) )
+			break;
+	}
 
 	return inv_aesobj();
 }
-
+/*
+static void print_xted( struct xa_aes_object *obj, long l )
+{
+	XTEDINFO *xted;
+	object_get_tedinfo(aesobj_ob(obj), &xted);
+}
+*/
 void
 obj_init_focus(XA_TREE *wt, short flags)
 {
@@ -2440,6 +2484,7 @@ obj_init_focus(XA_TREE *wt, short flags)
 	 * 3. Look for first clickable object, if found it is focus, else..
 	 * 4. No focus found.
 	 */
+
 	if (flags & OB_IF_RESET)
 		clear_focus(wt);
 
@@ -2451,7 +2496,9 @@ obj_init_focus(XA_TREE *wt, short flags)
 		o = ob_find_next_any_flagstate(wt, aesobj(obtree, 0), inv_aesobj(), OF_EDITABLE, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_EXACTFLAG);
 		if (valid_aesobj(&o))
 		{
+			//print_xted( &wt->e.o, __LINE__ );
 			wt->e.o = wt->focus = o;
+			//print_xted( &wt->e.o, __LINE__ );
 		}
 		else if (!(flags & OB_IF_ONLY_EDITS))
 		{
@@ -3955,14 +4002,6 @@ obj_edit(XA_TREE *wt,
 	DIAG((D_form,wt->owner,"  --  obj_edit: func %s, wt=%lx obtree=%lx, obj:%d, k:%x, pos:%x",
 	      funcstr, wt, obtree, aesobj_item(&obj), keycode, pos));
 #endif
-#if 0
-	char *funcstr = func < 0 || func > 3 ? edfunc[4] : edfunc[func];
-
-	display("obj_edit: %s", wt->owner->name);
-	display("  -- func %s, wt=%lx obtree=%lx, obj:%d, k:%x, pos:%x",
-	      funcstr, wt, obtree, aesobj_item(&obj), keycode, pos);
-#endif
-
 
 	if (valid_aesobj(&obj))
 		ted = object_get_tedinfo(aesobj_ob(&obj), &xted);
@@ -3989,7 +4028,9 @@ obj_edit(XA_TREE *wt,
 				obj_ED_INIT(wt, &wt->e, obj.item, -1, last, CLRMARKS, NULL, NULL, &old_ed_obj);
 
 				if (redraw)
+				{
 					(*wt->objcr_api->eor_cursor)(wt, v, rl);
+				}
 				wt->e.c_state ^= OB_CURS_EOR;
 
 				showm();
@@ -4199,7 +4240,10 @@ obj_edit(XA_TREE *wt,
 				if (ei && same_aesobj(&ei->o, &obj))
 					xted = ei;
 				else if (valid_aesobj(&obj))
+				{
 					ted = object_get_tedinfo(aesobj_ob(&obj), &xted);
+					/* obj.item, xted->o.item differ ??? */
+				}
 
 				if (!ei || ei != xted)
 				{
@@ -4233,6 +4277,7 @@ obj_edit(XA_TREE *wt,
 					else
 					{
 						ei = xted;
+						//ei = wt->ei;
 
 						obj_xED_INIT(wt, ei, pos, SETMARKS|SETACTIVE);
 						(*wt->objcr_api->set_cursor)(wt, v, ei);
@@ -4303,7 +4348,9 @@ obj_edit(XA_TREE *wt,
 				if (ei && same_aesobj(&ei->o, &obj))
 					xted = ei;
 				else if (valid_aesobj(&obj))
+				{
 					ted = object_get_tedinfo(aesobj_ob(&obj), &xted);
+				}
 
 				if (!ei || ei != xted)
 				{
@@ -4332,6 +4379,7 @@ obj_edit(XA_TREE *wt,
 					{
 						if (redraw)
 						{
+ 							//DBG((0,"ED_CHAR:obj_draw,ei=%d", editfocus(ei).item));
 							obj_draw(wt, v, editfocus(ei), -1, clip, rl, 0);
 						}
 					}
@@ -4358,7 +4406,9 @@ obj_edit(XA_TREE *wt,
 				if (ei && same_aesobj(&ei->o, &obj))
 					xted = ei;
 				else if (valid_aesobj(&obj))
+				{
 					ted = aesobj_get_tedinfo(&obj, &xted);
+				}
 
 				if (!ei || ei != xted)
 				{
@@ -4408,7 +4458,9 @@ obj_edit(XA_TREE *wt,
 				if (ei && same_aesobj(&ei->o, &obj))
 					xted = ei;
 				else if (valid_aesobj(&obj))
+				{
 					ted = object_get_tedinfo(aesobj_ob(&obj), &xted);
+				}
 
 				if (!ei || ei != xted)
 				{
@@ -4466,7 +4518,9 @@ obj_edit(XA_TREE *wt,
 				if (ei && same_aesobj(&ei->o, &obj))
 					xted = ei;
 				else if (valid_aesobj(&obj))
+				{
 					ted = object_get_tedinfo(aesobj_ob(&obj), &xted);
+				}
 
 				if (!ei || ei != xted)
 				{

@@ -88,7 +88,7 @@ strip_fname(const char *path, char *newpath, char *fname)
 		}
 	}
 }
-
+#include "mint/proc.h"
 int
 drive_and_path(char *fname, char *path, char *name, bool n, bool set)
 {
@@ -179,6 +179,16 @@ get_drive_and_path(char *path, short plen)
 		path[drv++] = '\\';
 		path[drv] = '\0';
 	}
+}
+
+/*
+ * converts also "international" lower to upper
+ */
+short xa_toupper( short c )
+{
+	if( (c >= 'a' && c <= 'z') || (c >= 0xe0 && c <= 0xff) )
+		return c - ('a' - 'A');
+	return c;
 }
 
 char *xa_strdup(char*s)
