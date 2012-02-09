@@ -485,7 +485,6 @@ Form_Button(XA_TREE *wt,
 						if( (wt->owner->status & CS_FORM_DO) )	// not windowed form_do
 							wt->ei = ei = xted;
 					}
-					//if( !xted )	/* don't destroy the link between xted and object */
 					else
 						ei->o = obj;
 					ei->edstart = y;
