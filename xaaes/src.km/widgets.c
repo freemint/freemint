@@ -4616,7 +4616,7 @@ is_V_arrow(struct xa_window *w, XA_WIDGET *widg, int click)
  * return widget-number+1 if found else 0
  */
 short
-checkif_do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, short x, short y, XA_WIDGET **ret)
+checkif_do_widgets(enum locks lock, struct xa_window *w, short x, short y, XA_WIDGET **ret)
 {
 	XA_WIDGET *widg;
 	int f;
@@ -4926,7 +4926,6 @@ set_winmouse(short x, short y)
 	wind_mshape(wind, x, y);
 }
 
-
 short
 wind_mshape(struct xa_window *wind, short x, short y)
 {
@@ -4936,6 +4935,7 @@ wind_mshape(struct xa_window *wind, short x, short y)
 	XA_WIDGET *widg;
 	RECT r;
 
+	/* C.shutdown, ferr ? */
 	if (!update_locked() || update_locked() == wind->owner->p)
 	{
 		if (wind)
@@ -4980,7 +4980,7 @@ wind_mshape(struct xa_window *wind, short x, short y)
 #if WITH_BBL_HELP
 					|| cfg.describe_widgets
 #endif
-) )
+				) )
 				{
 #if WITH_BBL_HELP
 					int bbl_closed = 0;
@@ -4988,18 +4988,34 @@ wind_mshape(struct xa_window *wind, short x, short y)
 					struct xa_window *rwind = NULL;
 					struct xa_widget *hwidg, *rwidg = NULL;
 
-					/* todo: checkif_do_widgets does not find wdlg-widgets */
-					short f = checkif_do_widgets(0, wind, 0, x, y, &hwidg), f1 = 0;
+					short f = checkif_do_widgets(0, wind, x, y, &hwidg);
 
-					if( f == (XAW_TOOLBAR+1) && wind->winob && (f = f1 = checkif_do_widgets(0, (struct xa_window *)wind->winob, 0, x, y, &hwidg)) )
-						wind = (struct xa_window *)wind->winob;	// list-window
+					if( f == (XAW_TOOLBAR+1) )
+					{
+						struct widget_tree *wt = hwidg->stuff;	//get_widget(wind, XAW_TOOLBAR)->stuff;
 
-					if( ( (!f1 || f1 != (XAW_TITLE + 1))
+						if( wt->extra && (wt->flags & WTF_EXTRA_ISLIST) )
+						{
+							SCROLL_INFO *list = wt->extra;
+							while( list )
+							{
+								if( m_inside(x, y, &list->wi->r) )
+								{
+									wind = list->wi;
+									f = checkif_do_widgets(0, wind, x, y, &hwidg);
+									if( f == (XAW_TITLE + 1) )
+										hwidg = 0;	/* don't select list-window-title */
+									break;
+								}
+								list = list->next;
+							}
+						}
+					}
+					if( (hwidg && !hwidg->owner)
 #if WITH_BBL_HELP
-						&& wind != bgem_window	// ? root_window,menu:window ?
+						&& wind != bgem_window	// ? root_window,menu_window ?
 #endif
-)
-						&& (hwidg && !hwidg->owner && wdg_is_inst(hwidg)) )
+						)
 					{
 						if (wind != C.hover_wind || hwidg != C.hover_widg)
 						{

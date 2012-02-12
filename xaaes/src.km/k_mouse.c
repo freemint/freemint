@@ -353,7 +353,7 @@ dispatch_button_event(enum locks lock, struct xa_window *wind, const struct moos
 		/*
 		 * Check if click on any windows gadgets, which is AES's task to handle
 		 */
-		if (checkif_do_widgets(lock, wind, 0, md->x, md->y, NULL))
+		if (checkif_do_widgets(lock, wind, md->x, md->y, NULL))
 		{
 			DIAG((D_mouse, target, "XA_button_event: Send cXA_do_widgets to %s", target->name));
 			post_cevent(target, cXA_do_widgets, wind,NULL, 0,0, NULL,md);
@@ -361,7 +361,7 @@ dispatch_button_event(enum locks lock, struct xa_window *wind, const struct moos
 		else /* Just deliver the event ... */
 			deliver_button_event(wind, target, md);
 	}
-	else if (!is_topped(wind) && checkif_do_widgets(lock, wind, 0, md->x, md->y, NULL))
+	else if (!is_topped(wind) && checkif_do_widgets(lock, wind, md->x, md->y, NULL))
 	{
 		DIAG((D_mouse, target, "XA_button_event: Send cXA_do_widgets (untopped widgets) to %s", target->name));
 		post_cevent(target, cXA_do_widgets, wind,NULL, 0,0, NULL,md);
@@ -510,7 +510,7 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 	{
 		struct xa_widget *widg;
 
-		checkif_do_widgets(lock, mouse_wind, 0, md->x, md->y, &widg);
+		checkif_do_widgets(lock, mouse_wind, md->x, md->y, &widg);
 		if (mouse_wind == menu_window || (widg && widg->m.r.xaw_idx == XAW_MENU) )
 		{
 			XA_TREE *menu;
@@ -614,7 +614,6 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 			client = widget_active.wind->owner;
 			if (!(client->status & CS_EXITING))
 			{
-// 				wind_mshape(widget_active.wind, md->x, md->y);
 				DIAG((D_mouse, client, "post active widget (move) to %s", client->name));
 				C.move_block = 1;
 				post_cevent(client, cXA_active_widget, NULL,NULL, 0,0, NULL, md);
@@ -921,15 +920,20 @@ static TIMEOUT *m_rto = NULL;
 #if WITH_BBL_HELP
 
 static TIMEOUT *ms_to = NULL;
-
+static short bbl_cnt = 0;
+static long bbl_to = BBL_MIN_TO;
 static void
 m_not_move_timeout(struct proc *p, long arg)
 {
-	struct xa_window *wind;
 	BBL_STATUS b = xa_bubble( 0, bbl_get_status, 0, 3 );
+	struct xa_window *wind;
 
 	ms_to = NULL;
-	if( b == bs_open )
+	if( bbl_cnt == 0 )
+		bbl_cnt = 1;
+	if( bbl_to > BBL_MIN_TO )
+		bbl_to -= BBL_MIN_TO;
+	if( b == bs_open || --bbl_cnt )
 		return;
 
 	wind = find_window( 0, last_x, last_y, FNDW_NOLIST | FNDW_NORMAL );
@@ -1082,6 +1086,24 @@ move_timeout(struct proc *p, long arg)
 
 	}
 }
+static void new_bbl_timeout(unsigned long to)
+{
+	BBL_STATUS s = xa_bubble( 0, bbl_get_status, 0, 2 );
+	if( s == bs_open )
+	{
+		post_cevent(C.Aes, XA_bubble_event, NULL, NULL, BBL_EVNT_CLOSE1, 0, NULL, NULL);
+	}
+
+	if (cfg.xa_bubble)
+	{
+		if (ms_to)
+		{
+			cancelroottimeout(ms_to);
+			ms_to = NULL;
+		}
+		ms_to = addroottimeout(to, m_not_move_timeout, 1);
+	}
+}
 
 /*
  * adi_move() AES Device Interface entry point,
@@ -1116,23 +1138,7 @@ adi_move(struct adif *a, short x, short y)
 			m_to = addroottimeout(0L, move_timeout, 1);
 	}
 #if WITH_BBL_HELP
-	{
-		BBL_STATUS s = xa_bubble( 0, bbl_get_status, 0, 2 );
-		if( s == bs_open )
-		{
-			post_cevent(C.Aes, XA_bubble_event, NULL, NULL, BBL_EVNT_CLOSE1, 0, NULL, NULL);
-		}
-
-		if (cfg.xa_bubble)
-		{
-			if (ms_to)
-			{
-				cancelroottimeout(ms_to);
-				ms_to = NULL;
-			}
-			ms_to = addroottimeout(500L, m_not_move_timeout, 1);
-		}
-	}
+	new_bbl_timeout(bbl_to);
 #endif
 }
 
@@ -1193,6 +1199,9 @@ button_timeout(struct proc *p, long arg)
 					xa_bubble( 0, bbl_close_bubble2, 0, 0 );	/* left click: bubble off */
 				bubble_show( 0 );	/* any click: close widget-bubble */
 			}
+			bbl_cnt = 2;
+			if( bbl_to < BBL_MAX_TO )
+				bbl_to += BBL_MIN_TO;
 #endif
 			vq_key_s(C.P_handle, &md.kstate);
 
