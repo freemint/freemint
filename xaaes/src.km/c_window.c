@@ -1596,7 +1596,7 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 	}
 
 #if WITH_BBL_HELP
-	if( wind != bgem_window && wind->handle >= 0 && !(wind->dial == (created_for_ALERT | created_for_AES)) )
+	if( wind != bgem_window && wind->handle >= 0 && !(wind->dial == (created_for_ALERT | created_for_AES | created_for_WDIAL)) )
 	{
 		xa_bubble( 0, bbl_close_bubble1, 0, 3 );
 	}
@@ -3729,16 +3729,27 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 				} /* while (orl && nrl) */
 				//DIAGS(("DONE CLIPPING"));
 				/* only blitted: if window has a list-window inform list-window to move its widgets */
-				if( !resize && wind->winob )
+				if( !	resize )
 				{
-					struct xa_window *lwind = (struct xa_window *)wind->winob;
-					if( !(dir & 1) )
-						ymove = -ymove;
-					if( !(dir & 2) )
-						xmove = -xmove;
-					lwind->send_message(wlock, lwind, NULL, AMQ_NORM, QMF_CHKDUP,
-						WM_MOVED, 0,0, lwind->handle,
-						lwind->r.x + xmove, lwind->r.y + ymove, lwind->r.w, lwind->r.h);
+					struct widget_tree *wt = get_widget(wind, XAW_TOOLBAR)->stuff;
+#if 1
+					if( wt && wt->extra && (wt->flags & WTF_EXTRA_ISLIST) ) // &&
+					{
+						SCROLL_INFO *list = wt->extra;
+						while( list && list->wi )
+						{
+							struct xa_window *lwind = list->wi;
+							if( !(dir & 1) )
+								ymove = -ymove;
+							if( !(dir & 2) )
+								xmove = -xmove;
+							lwind->send_message(wlock, lwind, NULL, AMQ_NORM, QMF_CHKDUP,
+								WM_MOVED, 0,0, lwind->handle,
+								lwind->r.x + xmove, lwind->r.y + ymove, lwind->r.w, lwind->r.h);
+									list = list->next;
+						}
+					}
+#endif
 				}
 				/*
 				 * nrl is the first in a list of rectangles that needs
