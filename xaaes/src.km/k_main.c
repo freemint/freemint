@@ -334,10 +334,10 @@ dispatch_cevent(struct xa_client *client)
 void
 do_block(struct xa_client *client)
 {
-	if( client->status & 0x00010000L )
+	/*if( client->status & 0x00010000L )
 	{
 		return;
-	}
+	}*/
 #if 0
 	if ((client->i_xevmask.ev_0 & XMU_FSELECT))
 	{
@@ -961,6 +961,8 @@ alert_input(enum locks lock)
 		data->len = n + ALERTPL;
 		f_read(C.alert_pipe, n, data->buf);
 		data->buf[n] = '\0';
+		if( ferr )
+			return;
 
 		if( data->buf[0] == '#' && data->buf[1] == '$' )
 		{
@@ -1016,7 +1018,7 @@ fatal(int sig)
 	//KERNEL_DEBUG("'%s': fatal error, trying to clean up", p->name );
 	ferr = sig;
 	S.clients_exiting = 0;
-	C.shutdown |= EXIT_MAINLOOP;
+	C.shutdown |= EXIT_MAINLOOP | KILLEM_ALL;
 	dispatch_shutdown( RESTART_XAAES, 0);
 }
 #endif
@@ -1725,6 +1727,7 @@ k_main(void *dummy)
 		display(/*00000014*/"ERROR: Can't open alert pipe '%s' :: %ld",
 			alert_pipe_name, C.alert_pipe);
 
+		ferr = 1;
 		goto leave;
 	}
 
@@ -1735,6 +1738,7 @@ k_main(void *dummy)
 		display(/*00000015*/"ERROR: Can't open keyboard device '%s' :: %ld",
 			KBD_dev_name, C.KBD_dev);
 
+		ferr = 2;
 		goto leave;
 	}
 
@@ -1744,6 +1748,7 @@ k_main(void *dummy)
 	if (!init_moose())
 	{
 		display(/*00000016*/"ERROR: init_moose failed");
+		ferr = 3;
 		goto leave;
 	}
 
@@ -1760,6 +1765,7 @@ k_main(void *dummy)
 		{
 			C.Aes->tp = NULL;
 			display(/*00000017*/"ERROR: start AES thread failed");
+			ferr = 4;
 			goto leave;
 		}
 	}
@@ -1773,6 +1779,7 @@ k_main(void *dummy)
 		{
 			C.Hlp = NULL;
 			display(/*00000018*/"ERROR: start AES helper thread failed");
+			ferr = 5;
 			goto leave;
 		}
 	}
