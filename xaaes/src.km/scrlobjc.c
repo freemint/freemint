@@ -845,7 +845,7 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 								list->icon_w = c->c.text.icon.r.w;
 							tw -= c->c.text.icon.r.w;
 						}
-						else if (!this->up && this->prev && !c->prev && (long)this->data > 1 )
+						else if (!this->up && this->prev && !c->prev /*&& (long)this->data > 1*/ )
 						{
 							dx += list->icon_w;
 							tw -= list->icon_w;
@@ -1279,6 +1279,7 @@ sliders(struct scroll_info *list, bool rdrw)
 		  list->wi->wa.h,
 		  list->start_y))
 		rm |= 1;
+
 
 	if (XA_slider(list->wi, XAW_HSLIDE,
 		  list->widest,
@@ -2436,7 +2437,6 @@ m_state_done:
 			if (parent)
 			{
 				list->pw = parent;
-				parent->winob = (OBJECT*)list->wi;	// pointer from parent to list-window (winob misused!)
 			}
 			if (list->wi)
 				list->wi->parent = parent;
@@ -4549,8 +4549,12 @@ set_slist_object(enum locks lock,
 	{
 		int dh;
 
-		if( parentwind )
-			parentwind->winob = (OBJECT*)list->wi;	// pointer from parent to list-window (winob misused!)
+		if( wt->extra )
+		{
+			list->next = wt->extra;
+		}
+		wt->extra = list;
+		wt->flags |= WTF_EXTRA_ISLIST;
 		list->vdi_settings = list->wi->vdi_settings;
 		list->wi->parent = list->pw;
 		if (title)
