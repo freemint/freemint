@@ -2813,6 +2813,7 @@ fs_msg_handler(
 	struct fsel_data *fs = list->data;
 
 
+
 	switch (msg[0])
 	{
 	case MN_SELECTED:
@@ -2968,6 +2969,9 @@ fs_msg_handler(
 //		display("cur3 %lx", list->cur);
 		break;
 	}
+	case WM_CLOSED:
+		close_fileselector( lock, fs );
+	break;
 	case WM_MOVED:
 	{
 		msg[6] = fs->wind->r.w, msg[7] = fs->wind->r.h;
@@ -3431,20 +3435,22 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 			fs->sort = fs_data.fs_sort;
 		}
 
-		if (C.update_lock == client->p ||
-				C.mouse_lock	== client->p)
+#if !NONBLOCK_FSEL
+		if ((C.update_lock == client->p ||
+				C.mouse_lock	== client->p))
 		{
-#if NONBLOCK_FSEL
+#else
 			fs_update_lock = C.update_lock;
 			fs_mouse_lock	= C.mouse_lock;
 			fs_data.aes_has_fsel = client;
 			C.update_lock = 0;
 			C.mouse_lock	= 0;
-#else
+#endif
+#if !NONBLOCK_FSEL
 			nolist = true;
 			kind |= STORE_BACK;
-#endif
 		}
+#endif
 #if !NONBLOCK_FSEL
 		else
 #endif
