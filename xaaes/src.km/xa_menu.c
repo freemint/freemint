@@ -28,6 +28,7 @@
 #include "xa_global.h"
 
 #include "xa_appl.h"
+#include "xa_bubble.h"
 #include "xa_rsrc.h"
 #include "k_main.h"
 #include "app_man.h"
@@ -373,6 +374,12 @@ XA_menu_register(enum locks lock, struct xa_client *client, AESPB *pb)
 		if (pb->intin[0] != -1)
 		{
 			client_nicename(client, n, false);
+#if WITH_BBL_HELP
+			if( cfg.xa_bubble && !strcmp( "  BubbleGEM ", client->name ) )
+			{
+				xa_bubble( lock, bbl_disable_bubble, 0, 0 );
+			}
+#endif
 
 			/* refresh the name change in the taskmanager */
 			update_tasklist_entry(AES_CLIENT, client, 0, 0, NOREDRAW);

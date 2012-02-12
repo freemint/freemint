@@ -460,12 +460,6 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 				}
 			}
 			add_to_tasklist(client);
-#if WITH_BBL_HELP
-			if( cfg.xa_bubble && !stricmp( "  BUBBLE  ", client->name ) )
-			{
-				xa_bubble( lock, bbl_disable_bubble, 0, 0 );
-			}
-#endif
 			/* Preserve the pointer to the globl array
 			 * so we can fill in the resource address later
 			 */
@@ -829,7 +823,7 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 #if WITH_BBL_HELP
 	if( cfg.xa_bubble )
 	{
-		if( !C.shutdown && xa_bubble( 0, bbl_get_status, 0, 0 ) <= bs_inactive && !strnicmp( "  BUBBLE", client->name, 8 ) )
+		if( !C.shutdown && xa_bubble( 0, bbl_get_status, 0, 0 ) <= bs_inactive && !strcmp( "  BubbleGEM ", client->name ) )
 			post_cevent(C.Aes, XA_bubble_event, NULL, NULL, BBL_EVNT_ENABLE, 0, NULL, NULL);
 	}
 	xa_bubble( 0, bbl_close_bubble1, 0, 0 );
