@@ -3112,11 +3112,16 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 	DIAG((D_fsel,NULL,"open_fileselector for %s on '%s', fn '%s', '%s', %lx,%lx)",
 			c_owner(client), path, file, title, s, c));
 
-
-	if( client->fmd.lock )
+	for( dmap = 0; dmap < 5 && client->fmd.lock; dmap++ )
 	{
 		release_blocks(client);
 	}
+	if( client->fmd.lock )
+	{
+		BLOG((0,"%s: could not unlock screen for fileselector!", client->name ));
+		goto memerr;
+	}
+
 	if (fs)
 	{
 		short dy = 0;
@@ -3536,7 +3541,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 		fs_data.fs_num++;
 
 		/* HR: after set_slist_object() & opwn_window */
-		//refresh_filelist(lock, fs, 5);
+		//refresh_filelist(lock, fs, 0);
 		/* we post this as a client event, so it does not happen before the fsel is drawn... */
 		post_cevent(client, CE_refresh_filelist, fs, list, 0, 0, NULL, NULL);
 
