@@ -815,14 +815,8 @@ pCB_menu(char *line)
 		if (!s)
 			break;
 
-		if (stricmp(s, "pull") == 0)
-			cfg.menu_behave = PULL;
-		else if (stricmp(s, "push") == 0)
+		if (stricmp(s, "push") == 0)
 			cfg.menu_behave = PUSH;
-		else if (stricmp(s, "leave") == 0)
-			cfg.menu_behave = LEAVE;
-		else if (stricmp(s, "nolocking") == 0)
-			cfg.menu_locking = false;
 		else
 			; // XXX print error, invalid name
 
