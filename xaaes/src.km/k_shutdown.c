@@ -42,7 +42,6 @@
 #include "widgets.h"
 #include "menuwidg.h"
 #include "obtree.h"
-#include "xa_form.h"
 #include "xa_rsrc.h"
 
 #include "mint/signal.h"
