@@ -5427,11 +5427,12 @@ d_g_boxchar(struct widget_tree *wt, struct xa_vdi_settings *v)
 	short w, h, fl3d, fcol;
 	ushort selected = ob->ob_state & OS_SELECTED;
 	char temp_text[2];
+	bool disabled;
 
 	selected = ob->ob_state & OS_SELECTED;
 	fl3d = (ob->ob_flags & FL3DMASK) >> 9;
 
-	if (ob->ob_state & OS_DISABLED)
+	if ((disabled = (ob->ob_state & OS_DISABLED)))
 	{
 		ct = selected ? &obt->dis.s[fl3d] : &obt->dis.n[fl3d];
 	}
@@ -5451,19 +5452,24 @@ d_g_boxchar(struct widget_tree *wt, struct xa_vdi_settings *v)
 	gr.x += (gr.w - w) >> 1;
 	gr.y += (gr.h - h) >> 1;
 
-	if (selected)
+	if (!disabled)
 	{
-		if (fl3d == ACT)
+		if (selected)
 		{
-			gr.x += PUSH3D_DISTANCE;
-			gr.y += PUSH3D_DISTANCE;
-			fcol = c.textcol;
+			if (fl3d == ACT)
+			{
+				gr.x += PUSH3D_DISTANCE;
+				gr.y += PUSH3D_DISTANCE;
+				fcol = c.textcol;
+			}
+			else
+				fcol = selected3D_colour[c.textcol];
 		}
 		else
-			fcol = selected3D_colour[c.textcol];
+			fcol = c.textcol;
 	}
 	else
-		fcol = c.textcol;
+		fcol = -1;
 
 	ob_text(wt, v, NULL, ct, &gr, &r, &c, -1, fcol, -1, -1, 0, 0, 0, temp_text, 0, 0, -1, G_BLACK);
 	done(OS_SELECTED);
