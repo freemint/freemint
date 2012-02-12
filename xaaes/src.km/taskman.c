@@ -95,6 +95,7 @@ static int ker_stat( int pid, char *what, long pinfo[] );
 
 #define TM_WINDOW		0x01L	/* window-entry */
 #define TM_MEMINFO	0x02L	/* extra line for memory-info */
+#define TM_MEMINFO_DATA	(void*)-1;	/* unique "data" for memory-info */
 #define TM_UPDATED	0x04L	/* was updated */
 #define TM_NOAES		0x08L	/* not an aes-client */
 #define TM_PROCINFO	0x10L	/* process-info (if def'd) */
@@ -337,24 +338,32 @@ build_tasklist_string( int md, void *app, long pid)
 
 	tx = kmalloc(TX_LEN);
 
-	if (tx && app)
+	if (tx)
 	{
 		struct proc *p;
 		/*unsigned*/ char *name, c=0, *cp;
-		long pinfo[4], utim, ptim;
+		long pinfo[4], utim, ptim, l;
 		static char *state_str[] = {"Cur ", "Run ", "Wait", "IO  ", "Zomb", "TSR ", "STOP", "Slct"};
 
 		if( md == AES_CLIENT )
 		{
-			p = ((struct xa_client *)app)->p;
-			name = ((struct xa_client *)app)->name;
-			c = name[15];
-			name[15] = 0;
+			if( app )
+			{
+				p = ((struct xa_client *)app)->p;
+				name = ((struct xa_client *)app)->name;
+				c = name[15];
+				name[15] = 0;
+			}
+			else
+			{
+				kfree(tx);
+				return 0;
+			}
 		}
 		else
 		{
-			p = app;
-			if( !p || p != pid2proc(pid) )
+			p = pid2proc(pid);
+			if( !p )	//|| p != pid2proc(pid) )
 			{
 				BLOG((0,"*build_tasklist_string %ld: not found! (p=%lx)", pid, p));
 				return NULL;
@@ -386,11 +395,13 @@ build_tasklist_string( int md, void *app, long pid)
 		else
 			ptim = 0L;
 
-		for( cp = p->cmdlin; *cp > ' '; )
-			if( *cp++ == 0x7f )
-				break;
-		for( ; *cp && *cp <= ' '; cp++ )
-		;
+		l = strlen(p->name);
+		cp = p->cmdlin;
+		if( !strncmp( cp, p->name, l ) )
+			cp += l;
+		else
+			if( *cp == 0x7f )
+				cp++;
 
 		sprintf(tx, TX_LEN-1, "%16s %4d %4d %4d %3d   %c   %s %8ld %11ld %2ld %s",
 			name, p->pid, p->ppid, p->pgrp, p->curpri, p->domain == 0?'T':'M',
@@ -700,7 +711,7 @@ update_tasklist_entry( int md, void *app, struct helpthread_data *htd, long pid,
 
 	if( !htd )
 		htd = lookup_xa_data_byname(&C.Hlp->xa_data, HTDNAME);
-	if (!htd || !app)
+	if (!htd || (md == AES_CLIENT && !app))
 		return;
 	wind = htd->w_taskman;
 
@@ -717,7 +728,7 @@ update_tasklist_entry( int md, void *app, struct helpthread_data *htd, long pid,
 			char *tx = 0;
 			struct setcontent_text t = { 0 };
 
-			p.arg.data = app;
+			p.arg.data = (md == AES_CLIENT ? app : (void*)pid);
 			list->get(list, NULL, SEGET_ENTRYBYDATA, &p);
 			if (p.e)
 			{
@@ -753,6 +764,17 @@ update_tasklist_entry( int md, void *app, struct helpthread_data *htd, long pid,
 				this->usr_flags |= TM_UPDATED;
 				if( app == S.app_list.first && TOP_WINDOW != htd->w_taskman )
 				{
+					if( TOP_WINDOW->owner == app && this->down && (this->xstate & OS_OPENED) )
+					{
+						/* set cursor on window-entry */
+						p.arg.data = TOP_WINDOW;
+						p.level.flags = 0;
+						p.level.curlevel = 0;
+						p.level.maxlevel = 3;
+						list->get(list, NULL, SEGET_ENTRYBYDATA, &p);
+						if( p.e )
+							this = p.e;
+					}
 					list->cur = this;
 					list->set(list, list->cur, SESET_SELECTED, 0, NORMREDRAW);
 				}
@@ -772,14 +794,12 @@ update_tasklist_entry( int md, void *app, struct helpthread_data *htd, long pid,
 			}
 			else if( md == NO_AES_CLIENT )	/* add non-client */
 			{
-				//p.arg.data = app;
-
 				sc.t.strings = 1;
-				sc.data = app;
+				sc.data = (void*)pid;
 				sc.xflags = 0;
 				sc.usr_flags = TM_UPDATED | TM_NOAES;
 				//sc.icon = obtree + TM_ICN_MENU;
-				if ((tx = build_tasklist_string(md, app, pid)))
+				if ((tx = build_tasklist_string(md, 0, pid)))
 					t.text = tx;
 				sc.t.text = t.text;
 
@@ -1229,11 +1249,14 @@ screen_dump(enum locks lock, struct xa_client *client, bool open)
 
 void force_window_top( enum locks lock, struct xa_window *wind )
 {
+	if( S.focus == wind )
+		return;
 	if( S.focus )
 	{
-		setwin_untopped( lock, S.focus, true );
-		S.focus->colours = S.focus->untop_cols;
-		send_iredraw(lock, S.focus, 0, NULL);
+		struct xa_window *w = S.focus;
+		setwin_untopped( lock, w, true );
+		w->colours = w->untop_cols;
+		send_iredraw(lock, w, 0, NULL);
 		S.focus = 0;	/* force focus to new top */
 	}
 	TOP_WINDOW = 0;
@@ -1275,53 +1298,40 @@ void app_or_acc_in_front( enum locks lock, struct xa_client *client )
 	}
 }
 
-/******************
-static void set_fnts(SCROLL_INFO *list, short pt)
-{
-	SCROLL_ENTRY *entry;
-	for (entry = list->start; entry; entry = entry->next )
-	{
-		entry->fnt->n.p = entry->fnt->s.p = entry->fnt->h.p = pt;
-	}
-}
-
-static void clear_list( SCROLL_INFO *list)
-{
-		while (list->start)
-		{
-			list->start = list->del(list, list->start, false);
-		}
-}
-
-
-****************/
 static void kill_client( SCROLL_INFO *list )
 {
-	struct xa_client *client = list->cur->data;
+	struct xa_client *client;
 
 	if( (list->cur->usr_flags & TM_WINDOW) )
 		return;
 
 	if( list->cur->usr_flags & TM_NOAES )
 	{
-		long i, k = 0;
-		int pid = ((struct proc*)client)->pid;
+		long i, k;
+		int pid;
+
+		pid = (int)(long)list->cur->data;
 		if( pid <= TM_MINPID || pid >= TM_MAXPID || pid == C.Aes->tp->pid )
 			return;
 
-		ikill(pid, SIGKILL);
-		for( i = 0; i < TM_KILLLOOPS && !k; i++ )
+		k = ikill(pid, SIGKILL);
+		for( k = i = 0; i < TM_KILLLOOPS && !k; i++ )
 		{
 			nap( TM_KILLWAIT );
 			k = ikill(pid, 0);
 		}
 		if( k )
-			remove_from_tasklist( client );
+		{
+			remove_from_tasklist( list->cur->data );
+		}
+#if BOOTLOG
 		else
 			BLOG((0,"taskmanager_form_exit: could not kill %d", pid));
-	return;
+#endif
+		return;
 	}
 
+	client = list->cur->data;
 	DIAGS(("taskmanager: KILL for %s", c_owner(client)));
 	if (client && is_client(client))
 	{
@@ -1341,10 +1351,11 @@ static void term_client( enum locks lock, SCROLL_INFO *list )
 	struct xa_client *client = list->cur->data;
 	if( list->cur->usr_flags & TM_NOAES )
 	{
-		int pid = ((struct proc*)client)->pid;
+		int pid = (int)(long)client;
 		if( pid <= TM_MINPID || pid >= TM_MAXPID || pid == C.Aes->tp->pid )
 			return;
 		ikill(pid, SIGTERM);
+		/* todo: update list */
 	}
 	else{
 		if (client && is_client(client))
@@ -1445,11 +1456,11 @@ taskmanager_form_exit(struct xa_client *Client,
 
 			if( list->cur->usr_flags & TM_NOAES )
 			{
-				int pid = ((struct proc*)client)->pid;
+				int pid = (int)(long)client;
 				if( pid <= TM_MINPID || pid >= TM_MAXPID || pid == C.Aes->tp->pid )
 					break;
 				ikill(pid, SIGSTOP);
-				update_tasklist_entry( NO_AES_CLIENT, client, 0, pid, true);
+				update_tasklist_entry( NO_AES_CLIENT, 0, 0, pid, true);
 			}
 			else if (client && is_client(client))
 			{
@@ -1469,11 +1480,11 @@ taskmanager_form_exit(struct xa_client *Client,
 		{
 			if( list->cur->usr_flags & TM_NOAES )
 			{
-				int pid = ((struct proc*)client)->pid;
+				int pid = (int)(long)client;
 				if( pid <= TM_MINPID || pid >= TM_MAXPID )
 					break;
 				ikill(pid, SIGCONT);
-				update_tasklist_entry( NO_AES_CLIENT, client, 0, pid, true);
+				update_tasklist_entry( NO_AES_CLIENT, 0, 0, pid, true);
 			}
 			else if (client && is_client(client))
 			{
@@ -1870,11 +1881,11 @@ static void add_meminfo( struct scroll_info *list, struct scroll_entry *this )
 	struct scroll_entry *to = 0;
 
 	sc.t.strings = 1;
-	sc.data = (void*)1;
+	sc.data = TM_MEMINFO_DATA;
 	sc.xflags = 0;
 	{
 		struct sesetget_params p = { 0 };
-		p.arg.data = (void*)1;
+		p.arg.data = TM_MEMINFO_DATA;
 		if( list->get(list, NULL, SEGET_ENTRYBYDATA, &p) )
 		{
 			to = p.e;
@@ -2051,7 +2062,7 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 						struct proc *pr;
 						long pid;
 
-						update_tasklist_entry( NO_AES_CLIENT, rootproc, htd, 0, redraw );	/* kernel */
+						update_tasklist_entry( NO_AES_CLIENT, 0, htd, 0, redraw );	/* kernel */
 
 						while( d_readdir(127, i, nm) == 0)
 						{
@@ -2063,7 +2074,7 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 								{
 									if( !is_aes_client(pr) )
 									{
-										update_tasklist_entry( NO_AES_CLIENT, pr, htd, pid, redraw );
+										update_tasklist_entry( NO_AES_CLIENT, 0, htd, pid, redraw );
 									}
 								}
 							}
@@ -2093,7 +2104,7 @@ open_taskmanager(enum locks lock, struct xa_client *client, bool open)
 				}
 			}	/* /if( list ) */
 
-			if( TOP_WINDOW != htd->w_taskman )
+			if( S.focus != wind )
 			{
 				open_window(lock, wind, wind->r);
 				force_window_top( lock, wind );
@@ -2448,7 +2459,7 @@ open_launcher(enum locks lock, struct xa_client *client, int what)
 		break;
 		case 4:
 			path = pbuf;
-			text = "Load Config";	//xa_strings[RS_LDPAL];
+			text = xa_strings[RS_LDCNF];
 			sprintf( pbuf, sizeof(pbuf), "%s%s", C.Aes->home_path, "*.cnf" );
 		break;
 		default:
