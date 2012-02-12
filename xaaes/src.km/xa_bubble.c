@@ -25,12 +25,14 @@ static void set_bbl_vdi( struct xa_vdi_settings *v )
 	v->api->t_effects(v, 0);
 }
 
-static void skip_trailing_blanks( unsigned char *str )
+static short skip_trailing_blanks( unsigned char *str )
 {
 	unsigned char *p;
-	for( p = str + strlen((char*)str)-1; *p == ' '; p-- )
-	;
+	short ret = strlen((char*)str);
+	for( p = str + ret-1; *p == ' '; p-- )
+		ret--;
 	*(p+1) = 0;
+	return ret;
 }
 
 extern MFORM M_POINTSLIDE_MOUSE;
@@ -52,11 +54,14 @@ static BGEM bgem =
 /*
  * if no | in str break lines at BBL_LLEN, avoid too long lines > BBL_MAXLLEN
  * return #of lines
+ *
+ * todo: skip trailing blanks on every line (?)
  */
 static int format_string( unsigned char *str, int *maxl )
 {
 	int ret = 1, cnt, l, ml, hasnop = !strchr( (char*)str, '|' );
 	unsigned char *lastbl = 0;
+	unsigned char *start = str;
 	for( cnt = ml = l = 0; cnt < BBL_MAXLEN; str++, l++, cnt++ )
 	{
 		if( !*str || *str == '|' || (hasnop && l > BBL_LLEN && *str <= ' ') )
@@ -94,11 +99,14 @@ static int format_string( unsigned char *str, int *maxl )
 		if( *str == ' ' )
 			lastbl = str;
 	}
+	if( ret == 1 )
+		ml = skip_trailing_blanks( start );
+
 	if( cnt == BBL_MAXLEN )
 	{
 		*str = 0;
 	}
-	if( l >= ml )
+	if( l > ml )
 	{
 		ml = l;
 	}
@@ -218,7 +226,7 @@ static void draw_bbl_window( struct xa_vdi_settings *v, RECT *r, RECT *ri, short
 		fxy[3]++;
 		v_rbox( v->handle, fxy );
 
-		/* arrow */
+		/* arrow -> down-left!*/
 		if( x >= r->x + (r->w/2))
 		{
 			n = 1;	// left
@@ -229,7 +237,15 @@ static void draw_bbl_window( struct xa_vdi_settings *v, RECT *r, RECT *ri, short
 			yd = y - (r->y+r->h);
 		}
 		else		// down
+		{
+			if( n == 0 )
+			{
+				y -= 4;
+			}
+			x -= 4;
+			y -= 4;
 			yd = r->y - y;
+		}
 
 		x += 4;
 		fxy[0] = x;
@@ -322,10 +338,6 @@ static int open_bbl_window( enum locks lock, unsigned char *str, short x, short 
 		{
 			y2 += 2;	// avoid window covering mouse-point
 			r.y = ro.y = y2 + 32;
-		}
-		else
-		{
-			//y2 -= 2;
 		}
 		rw.y = y2;
 		set_bbl_rect_bbl( np, &r, &ri, &rw, x, y2);

@@ -1,3 +1,8 @@
+/* timeout-parameters */
+#define BBL_MIN_TO	500L
+#define BBL_MAX_TO	1500L
+#define BBL_MAX_CNT	2
+
 typedef enum{
 	bbl_process_event,
 	bbl_send_request,
