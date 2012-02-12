@@ -1106,6 +1106,7 @@ struct widget_tree
 #define WTF_AUTOFREE	0x00000020
 #define WTF_FBDO_SLIST	0x00000040	/* Form_Button() handles SLIST objects */
 #define WTF_OBJCEDIT	0x00000080
+#define WTF_EXTRA_ISLIST 0x00000100	/* extra points to a list */
 	unsigned long	flags;
 
 #define WTR_POPUP	0x00000001
@@ -2169,6 +2170,7 @@ typedef struct scroll_entry SCROLL_ENTRY;
 
 struct scroll_info
 {
+	struct scroll_info *next;	/* lists in one window linked */
 	enum locks lock;
 
 	struct xa_window *wi;		/* make the scroll box a real window */
