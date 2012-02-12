@@ -1170,7 +1170,7 @@ XA_fnts_create(enum locks lock, struct xa_client *client, AESPB *pb)
 		if (!(fnts = create_new_fnts(lock, client, wind, wt, pb->intin[0], pb->intin[1], pb->intin[2], pb->intin[3], (char *)pb->addrin[0], (char *)pb->addrin[1])))
 			goto memerr;
 
-		wt = set_toolbar_widget(lock, wind, client, obtree, aesobj(obtree, -2), 0, STW_ZEN, &wdlg_th, &or);
+		wt = set_toolbar_widget(lock, wind, client, obtree, aesobj(obtree, -2), (WIP_ACTIVE|WIP_INSTALLED), STW_ZEN, &wdlg_th, &or);
 
 		update_slists(fnts);
 
@@ -1394,7 +1394,7 @@ XA_fnts_open(enum locks lock, struct xa_client *client, AESPB *pb)
 			RECT r = wind->wa;
 			XA_WIND_ATTR tp = wind->active_widgets | MOVER|NAME;
 
-			widg->m.properties |= WIP_NOTEXT;
+			widg->m.properties |= WIP_NOTEXT | (WIP_ACTIVE|WIP_INSTALLED);
 			set_toolbar_handlers(&wdlg_th, wind, widg, widg->stuff);
 
 			obj_init_focus(wt, OB_IF_RESET);
