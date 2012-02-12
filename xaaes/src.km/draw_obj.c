@@ -29,6 +29,7 @@
 
 #include "draw_obj.h"
 #include "desktop.h"
+#include "gradients.h"
 #include "obtree.h"
 #include "k_init.h"
 #include "render_obj.h"
@@ -356,7 +357,6 @@ do_callout ( void *f, PARMBLK *p)
 	return ret;
 }
 
-#include "gradients.h"
 #define CHECK_PROGDEF_ADDR 0
 
 typedef short __CDECL (*p_handler)(PARMBLK *pb);
@@ -426,7 +426,7 @@ d_g_progdef(struct widget_tree *wt, struct xa_vdi_settings *v)
 	p->pb_tree = wt->current.tree;
 	p->pb_obj = wt->current.item;
 
-	p->pb_prevstate = p->pb_currstate = ob->ob_state;
+	p->pb_currstate = ob->ob_state;
 
 	*(RECT *)&(p->pb_x) = wt->r;
 
