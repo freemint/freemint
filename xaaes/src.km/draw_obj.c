@@ -426,7 +426,7 @@ d_g_progdef(struct widget_tree *wt, struct xa_vdi_settings *v)
 	p->pb_tree = wt->current.tree;
 	p->pb_obj = wt->current.item;
 
-	p->pb_currstate = ob->ob_state;
+	p->pb_prevstate = p->pb_currstate = ob->ob_state;
 
 	*(RECT *)&(p->pb_x) = wt->r;
 
