@@ -556,8 +556,6 @@ check_queued_events(struct xa_client *client)
 #endif
 		if (to_yield)
 			yield();
-// 		else if ((events & MU_TIMER) && (wevents & XAWAIT_NTO))
-// 			display("got other events %x, no yield", events);
 
 		*out++ = events;
 		*out++ = mbs.x;
@@ -660,6 +658,10 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 		client->timer_val = ((long)pb->intin[15] << 16) | pb->intin[14];
 
 		DIAG((D_i,client,"Timer val: %ld(hi=%d,lo=%d)",	client->timer_val, pb->intin[15], pb->intin[14]));
+#if SKIP_TEXEL_INTRO
+		if( events == 0x10023 && TOP_WINDOW->owner != client && !strcmp( client->name, "  Texel " ) )
+			client->timer_val = 0;	// fake for texel-demo
+#endif
 		if (client->timer_val > 5) {
 			client->timeout = addtimeout(client->timer_val, wakeme_timeout);
 			if (client->timeout)

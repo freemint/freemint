@@ -74,6 +74,9 @@
 #define ALT_CTRL_APP_OPS	1	/* Some ALT+CTRL+key combo's will perform functions relating to
                        			 * the XaAES system */
 
+/* set !0 to skip texel-demo-wait-loop */
+#define SKIP_TEXEL_INTRO 0
+
 /* set default-widgets */
 #ifndef WIDGNAME
 #define WIDGNAME "xaaeswdg.rsc"
