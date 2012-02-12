@@ -26,10 +26,10 @@
 
 
 #include "xa_types.h"
+#include "global.h"
 #include "mint/stat.h"
 #include "render_obj.h"
 #include "xa_xtobj.h"
-#include "global.h"
 #include "mscall.h"
 
 #define RASTER_HDL	v->handle
@@ -753,22 +753,22 @@ static struct theme stdtheme =
 	/* normal */	{
 #if !WITH_GRADIENTS
 				/* flags              wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
-				{{   WCOL_DRAWBKG, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
+				{{   WCOL_DRAWBKG,               MD_REPLACE, G_WHITE, FIS_SOLID,  0, G_BLACK, 1, G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
 				{ 0, 0, 0, MD_TRANS, 0, G_BLACK, G_LBLACK, G_WHITE, 0, 0, NULL}},
-				{{   WCOL_DRAWBKG, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
+				{{   WCOL_DRAWBKG,               MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK, 1, G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
 				{ 0, 0, 0, MD_TRANS, 0, G_BLACK, G_LBLACK, G_WHITE, 0, 0, NULL}},
-				{{   WCOL_DRAWBKG, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
+				{{   WCOL_DRAWBKG,               MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK, 1, G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
 				{ 0, 0, 0, MD_TRANS, 0, G_BLACK, G_LBLACK, G_WHITE, 0, 0, NULL}},
-				{{   WCOL_DRAWBKG, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
+				{{   WCOL_DRAWBKG,               MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK, 1, G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
 				{ 0, 0, 0, MD_TRANS, 0, G_BLACK, G_LBLACK, G_WHITE, 0, 0, NULL}},
 #else
-				{{   WCOL_DRAWBKG|WCOL_GRADIENT, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL, &text_gradient},
+				{{   WCOL_DRAWBKG|WCOL_GRADIENT, MD_REPLACE, G_WHITE,  FIS_SOLID, 0, G_BLACK, 1, G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL, &text_gradient},
 				{ 0, 0, 0, MD_TRANS, 0, G_BLACK, G_LBLACK, G_WHITE, 0, 0, NULL}},
-				{{   WCOL_DRAWBKG|WCOL_GRADIENT, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL, &text_gradient},
+				{{   WCOL_DRAWBKG|WCOL_GRADIENT, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK, 1, G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL, &text_gradient},
 				{ 0, 0, 0, MD_TRANS, 0, G_BLACK, G_LBLACK, G_WHITE, 0, 0, NULL}},
-				{{   WCOL_DRAWBKG|WCOL_GRADIENT, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL, &text_gradient},
+				{{   WCOL_DRAWBKG|WCOL_GRADIENT, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK, 1, G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL, &text_gradient},
 				{ 0, 0, 0, MD_TRANS, 0, G_BLACK, G_LBLACK, G_WHITE, 0, 0, NULL}},
-				{{   WCOL_DRAWBKG|WCOL_GRADIENT, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL, &text_gradient},
+				{{   WCOL_DRAWBKG|WCOL_GRADIENT, MD_REPLACE, G_LWHITE, FIS_SOLID, 0, G_BLACK, 1, G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL, &text_gradient},
 				{ 0, 0, 0, MD_TRANS, 0, G_BLACK, G_LBLACK, G_WHITE, 0, 0, NULL}},
 #endif
 			},
@@ -1170,18 +1170,18 @@ static struct theme stdtheme =
 	/* normal */	{
 #if !WITH_GRADIENTS
 				/* flags   wrm       color   interior  fill frame_c frame_th top     bottom     left     right texture */
-				{{ WCOL_DRAWBKG|WCOL_DRAW3D|WCOL_BOXED, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_LBLACK,   1,    G_LWHITE, G_WHITE, G_WHITE, G_LWHITE, NULL},
+				{{ WCOL_DRAWBKG|WCOL_DRAW3D|WCOL_BOXED, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_LBLACK, 1, G_LWHITE, G_WHITE, G_WHITE, G_LWHITE, NULL},
 				 { 0, 0, 0, MD_TRANS, 0, G_BLACK, G_LBLACK, G_WHITE, 0, 0, NULL}},
-				{{ WCOL_DRAWBKG, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
+				{{ WCOL_DRAWBKG,                        MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,  1, G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
 				 { 0, 0, 0, MD_TRANS, 0, G_BLACK, G_LBLACK, G_WHITE, 0, 0, NULL}},
 				{{  WCOL_DRAWBKG|WCOL_DRAW3D|WCOL_BOXED|WCOL_REV3D|WCOL_BOXBF3D, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_LWHITE,   1, G_LBLACK, G_WHITE, G_LBLACK, G_WHITE, NULL},
 				 { 0, 0, 0, MD_TRANS, 0, G_LBLUE, G_LBLACK, G_WHITE, 0, 0, NULL}},
-				{{  WCOL_DRAWBKG, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
+				{{  WCOL_DRAWBKG,                       MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1, G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL},
 				 { 0, 0, 0, MD_TRANS, 0, G_BLACK, G_LBLACK, G_WHITE, 0, 0, NULL}},
 #else
-				{{ WCOL_DRAWBKG|WCOL_DRAW3D|WCOL_BOXED, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_LBLACK,   1,    G_LWHITE, G_WHITE, G_WHITE, G_LWHITE, NULL, NULL},
+				{{ WCOL_DRAWBKG|WCOL_DRAW3D|WCOL_BOXED, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_LBLACK,  1, G_LWHITE, G_WHITE, G_WHITE, G_LWHITE, NULL, NULL},
 				 { 0, 0, 0, MD_TRANS, 0, G_BLACK, G_LBLACK, G_WHITE, 0, 0, NULL}},
-				{{ WCOL_DRAWBKG, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1,    G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL, NULL},
+				{{ WCOL_DRAWBKG,                        MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_BLACK,   1, G_WHITE, G_LBLACK, G_WHITE, G_LBLACK, NULL, NULL},
 				 { 0, 0, 0, MD_TRANS, 0, G_BLACK, G_LBLACK, G_WHITE, 0, 0, NULL}},
 				{{  WCOL_DRAWBKG|WCOL_DRAW3D|WCOL_BOXED|WCOL_REV3D|WCOL_BOXBF3D, MD_REPLACE, G_WHITE, FIS_SOLID, 0, G_LWHITE,   1, G_LBLACK, G_WHITE, G_LBLACK, G_WHITE, NULL, NULL},
 				 { 0, 0, 0, MD_TRANS, 0, G_LBLUE, G_LBLACK, G_WHITE, 0, 0, NULL}},
@@ -4019,6 +4019,7 @@ ob_text(XA_TREE *wt,
 		else if (wrm == -1)
 			wrm = ct->fnt.wrm;
 
+		(*v->api->t_effects)(v, ct->fnt.e);
 		if (fgc == -1)
 		{
 			fgc = ct->fnt.fgc;
@@ -4193,6 +4194,7 @@ ob_text(XA_TREE *wt,
 			(*v->api->t_extent)(v, t, &w, &nr.h);
 			d3_bottom_line(v, &nr, (flags & OF_FL3DBAK), G_BLACK, G_WHITE);
 		}
+		(*v->api->t_effects)(v, 0);
 	}
 }
 
@@ -4799,10 +4801,9 @@ set_cursor(struct widget_tree *wt, struct xa_vdi_settings *v, struct objc_edit_i
 	RECT r;
 	OBJECT *ob;
 	RECT gr;
-// 	BFOBSPEC colours;
 	TEDINFO *ted;
-// 	XTEDINFO *xted;
-// 	short thick;
+
+ 	XTEDINFO *xted;
 
 	if (!ei)
 		ei = &wt->e;
@@ -4810,15 +4811,11 @@ set_cursor(struct widget_tree *wt, struct xa_vdi_settings *v, struct objc_edit_i
 	if (!edit_set(ei))
 		return;
 
-// 	(*api->obj_offset)(wt, editfocus(ei), &r.x, &r.y);
 	(*api->obj_rectangle)(wt, editfocus(ei), &r);
 	ob = edit_ob(ei);
 
-// 	r.w  = ob->ob_width;
-// 	r.h  = ob->ob_height;
+	get_tedinformation(ob, &ted, NULL/*&c*/, &xted);
 
-// 	set_text(ob, v, &gr, &ei->cr, true, ei->pos, temp_text, &colours, &thick, &ei->edstart, NULL, r);
-	get_tedinformation(ob, &ted, NULL/*&c*/, NULL/*&xted*/);
 	set_obtext(ted, v, &gr, &ei->cr, true, ei->pos, temp_text, &ei->edstart, r);
 
 	ei->cr.x -= wt->tree->ob_x;
