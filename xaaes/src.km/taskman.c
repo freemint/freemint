@@ -2597,9 +2597,9 @@ refresh_systemalerts(OBJECT *form)
  * replace \n->,
  *
  */
-static void kerinfo2line( char *in, char *out, long maxlen )
+static void kerinfo2line( uchar *in, uchar *out, long maxlen )
 {
-	char *pi = in, *po = out;
+	uchar *pi = in, *po = out;
 	size_t i;
 
 	for( i = 0; i < maxlen && *pi; i++, pi++ )
@@ -2772,7 +2772,7 @@ static void add_kerinfo(
 	fp = kernel_open( path, O_RDONLY, &err, NULL );
 	if(fp)
 	{
-		char line[512], sstr[512];
+		uchar line[512], sstr[512];
 
 		err = kernel_read( fp, sstr, sizeof(sstr)-1 );
 		kernel_close(fp);
@@ -2799,7 +2799,7 @@ static void add_kerinfo(
 						for( cpx = cp; *cpx > ' '; cpx++ );
 						*cpx = 0;
 						if( cp && *cp && sizeof(line) > j + 32)
-							j += sprintf( line+j, sizeof(line)-j-1, "%s%s ", pinfo[p+1], cp );
+							j += sprintf( (char*)line+j, sizeof(line)-j-1, "%s%s ", pinfo[p+1], cp );
 						p += 3;
 						*cpx = ' ';
 					}
@@ -2825,7 +2825,7 @@ static void add_kerinfo(
 			{
 				struct setcontent_text t = { 0 };
 				struct se_content *sec = to->content;
-				t.text = line;
+				t.text = (char*)line;
 				/* set only if changed */
 				if( !sec || strcmp( t.text, sec->c.text.text ) )
 				{
@@ -2834,13 +2834,13 @@ static void add_kerinfo(
 			}
 			else
 			{
-				sc->t.text = line;
+				sc->t.text = (char*)line;
 				sc->fnt = &norm_txt;
 				list->add(list, this, 0, sc, child ? (this ? (SEADD_CHILD) : SEADD_PRIOR) : 0, 0, redraw);
 			}
 		}
 		if( out )
-			strncpy( out, line, outl );
+			strncpy( (char*)out, (char*)line, outl );
 	}
 	else
 		BLOG((0,"add_kerinfo:could not open %s err=%ld", path, err ));
