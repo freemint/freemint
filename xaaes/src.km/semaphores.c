@@ -240,10 +240,13 @@ unlock_screen(struct proc *proc)
 
 	if (update_lock.proc == proc)
 	{
-		r = ressource_semaphore_rel(&mouse_lock, proc);
 		r = ressource_semaphore_rel(&update_lock, proc);
 	}
-	else
+	if (mouse_lock.proc == proc)
+	{
+		r |= ressource_semaphore_rel(&mouse_lock, proc);
+	}
+	if( !r )
 	{
 		DIAG((D_sema, NULL, "unlock_screen from %d without lock_screen!", proc->pid));
 	}
