@@ -737,7 +737,7 @@ update_tasklist_entry( int md, void *app, struct helpthread_data *htd, long pid,
 
 				if( md == AES_CLIENT )
 				{
-					if( *(((struct xa_client *)app)->name+2) <= ' ' )
+					if( *((uchar*)((struct xa_client *)app)->name+2) <= ' ' )
 					{
 						remove_from_tasklist( app );
 						return;
@@ -1183,15 +1183,17 @@ screen_dump(enum locks lock, struct xa_client *client, bool open)
 						pid = create_process(cfg.snapper, cmdlin, NULL, &p, 0, NULL);
 						if( pid == 0 && p )
 						{
+/* todo: if snapper hangs system could hang too */
+#if KILL_SNAPPER
 							short term = 0;
 							long pr = -1;
 							short br, xr, yr, xm, ym;
-
+#endif
 							pid = p->pid;
 							for( sleep_tm *= 1000; sleep_tm; sleep_tm-- )
 								nap(1000);	//ms
 							/* todo: timeout! */
-#if 1
+#if KILL_SNAPPER
 							check_mouse(client, &br, &xm, &ym);
 							xm = xr;
 							ym = yr;
@@ -1346,6 +1348,30 @@ static void kill_client( SCROLL_INFO *list )
 	}
 }
 
+static void stop_cont_client( enum locks lock, SCROLL_INFO *list, int sig )
+{
+	struct xa_client *client = list->cur->data;
+	if( list->cur->usr_flags & TM_NOAES )
+	{
+		int pid = (int)(long)client;
+		if( pid <= TM_MINPID || pid >= TM_MAXPID || pid == C.Aes->tp->pid )
+			return;
+		ikill(pid, sig);
+		update_tasklist_entry( NO_AES_CLIENT, 0, 0, pid, true);
+	}
+	else if (client && is_client(client))
+	{
+		DIAGS(("taskmanager: TM_SLEEP for %s", c_owner(client)));
+		if (client->type & (APP_AESTHREAD|APP_AESSYS|APP_ACCESSORY))
+		{
+			return;			//ALERT(/*kill_aes_thread*/("Not a good idea, I tell you!"));
+		}
+		app_in_front(lock, C.Aes, true, true, true);
+		ikill(client->p->pid, sig);
+		update_tasklist_entry( AES_CLIENT, client, 0, 0, true);
+	}
+}
+
 static void term_client( enum locks lock, SCROLL_INFO *list )
 {
 	struct xa_client *client = list->cur->data;
@@ -1371,12 +1397,8 @@ static void term_client( enum locks lock, SCROLL_INFO *list )
 			}
 		}
 	}
-
-	/*
-	object_deselect(wt->tree + TM_TERM);
-	redraw_toolbar(lock, wind, TM_TERM);
-	*/
 }
+
 /*
  * todo: if fileselector is open during shutdown there's a problem
  */
@@ -1453,31 +1475,14 @@ taskmanager_form_exit(struct xa_client *Client,
 		}
 		case TM_SLEEP:
 		{
+			stop_cont_client( lock, list, SIGSTOP );
 
-			if( list->cur->usr_flags & TM_NOAES )
-			{
-				int pid = (int)(long)client;
-				if( pid <= TM_MINPID || pid >= TM_MAXPID || pid == C.Aes->tp->pid )
-					break;
-				ikill(pid, SIGSTOP);
-				update_tasklist_entry( NO_AES_CLIENT, 0, 0, pid, true);
-			}
-			else if (client && is_client(client))
-			{
-				DIAGS(("taskmanager: TM_SLEEP for %s", c_owner(client)));
-				if (client->type & (APP_AESTHREAD|APP_AESSYS|APP_ACCESSORY))
-				{
-					break;
-					//ALERT(/*kill_aes_thread*/("Not a good idea, I tell you!"));
-				}
-				app_in_front(lock, C.Aes, true, true, true);
-				ikill(client->p->pid, SIGSTOP);
-				update_tasklist_entry( AES_CLIENT, client, 0, 0, true);
-			}
 		break;
 		}
 		case TM_WAKE:
 		{
+			stop_cont_client( lock, list, SIGCONT );
+#if 0
 			if( list->cur->usr_flags & TM_NOAES )
 			{
 				int pid = (int)(long)client;
@@ -1495,6 +1500,7 @@ taskmanager_form_exit(struct xa_client *Client,
 				ikill(client->p->pid, SIGCONT);
 				update_tasklist_entry( AES_CLIENT, client, 0, 0, true);
 			}
+#endif
 		break;
 		}
 
@@ -1659,7 +1665,7 @@ static bool is_aes_client( struct proc *p )
 	{
 		if( client->p == p )
 		{
-			if( *(client->name+2) > ' ' )
+			if( *(uchar*)(client->name+2) > ' ' )
 				return true;
 			else
 				return false;
@@ -1802,6 +1808,16 @@ tm_slist_key(struct scroll_info *list, unsigned short keycode, unsigned short ke
 			term_client( clients, list );
 		}
 	}
+	}
+	switch( keycode & 0xff )
+	{
+	case 'S': case 's':
+		keycode = 0;
+		stop_cont_client( clients, list, SIGSTOP );
+	break;
+	case 'Q': case 'q':
+		keycode = 0;
+		stop_cont_client( clients, list, SIGCONT );
 	break;
 	}
 	return keycode;
@@ -2291,7 +2307,7 @@ open_csr(enum locks lock, struct xa_client *client, struct xa_client *running)
 		{
 			char *s = running->name;
 
-			while (*s && *s == ' ')
+			while (*s && *(uchar*)s == ' ')
 				s++;
 
 			for (; i < 32 && (t->te_ptext[i] = *s++); i++)
@@ -2299,7 +2315,7 @@ open_csr(enum locks lock, struct xa_client *client, struct xa_client *running)
 		}
 		if( i == 0 )
 		{
-			if( running->proc_name[0] > ' ' )
+			if( (uchar)running->proc_name[0] > ' ' )
 			{
 				strncpy(t->te_ptext, running->proc_name, 8);
 			}
@@ -2588,14 +2604,14 @@ static void kerinfo2line( char *in, char *out, long maxlen )
 
 	for( i = 0; i < maxlen && *pi; i++, pi++ )
 	{
-		if( *pi > ' ' /*!= '\t'*/ )
+		if( *(uchar*)pi > ' ' /*!= '\t'*/ )
 		{
 			if( *pi == '\n' )
 				*po++ = ',';
 			else
 				*po++ = *pi;
 		}
-		else if( !(*(po-1) == ' ' || *(po-1) == ':') )
+		else if( !(*(uchar*)(po-1) == ' ' || *(po-1) == ':') )
 			*po++ = ' ';
 	}
 	*po = 0;
@@ -2667,14 +2683,14 @@ static int ker_stat( int pid, char *what, long pinfo[] )
 		path[err] = 0;
 		for( j = 0, i = 1; *p && pinfo[j]; i++ )
 		{
-			for( ; *p && *p <= ' '; p++ );
+			for( ; *p && *(uchar*)p <= ' '; p++ );
 			if( i == pinfo[j] )
 			{
 				if( !isdigit( *p ) )
 					return 3;
 				pinfo[j++] = atol( p );
 			}
-			for( ; *p && !(*p <= ' ' || *p == '.'); p++ );
+			for( ; *p && !(*(uchar*)p <= ' ' || *p == '.'); p++ );
 			if( *p )
 			{
 				p++;
@@ -2765,7 +2781,7 @@ static void add_kerinfo(
 		if( err > 0 )
 		{
 			int i, j = 0, p=0, l;
-			char *sp;
+			uchar *sp;
 			for( sp = sstr, l = i = 0; l < startline && i < err; i++ )
 			{
 				if( sstr[i] == '\n' )
@@ -2773,7 +2789,7 @@ static void add_kerinfo(
 					/* grab words from lines before startline */
 					if( pinfo && pinfo[p] && pinfo[p] == l )
 					{
-						char *cp, *cpx;
+						uchar *cp, *cpx;
 						int k;
 						for( cp = sp, k = 0; k < pinfo[p+2]; k++ )
 						{
