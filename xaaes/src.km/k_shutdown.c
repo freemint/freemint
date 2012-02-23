@@ -65,163 +65,164 @@ k_shutdown(void)
 	struct xa_vdi_settings *v = C.Aes->vdi_settings;
 
 	_f_sync();
-	BLOG((false, "wait for AES help thread to terminate....(ferr=%d)", ferr));
-	cancel_reiconify_timeout();
-
-	if (!ferr && C.Hlp)
-	{
-		const volatile struct xa_client **h = (const volatile struct xa_client **)(const void**)&C.Hlp;
-		long l = 0;
-		post_cevent(C.Hlp, CE_at_terminate, NULL, NULL, 0,0, NULL, NULL);
-		while (*h && l++ < 1500)
-		{
-			Unblock(C.Hlp, 0, 0);
-			nap( 1500 );
-			//yield();
-		}
-		if( *h )
-			BLOG((0,"failed!" ));
-	}
-	/* To demonstrate the working on multiple resources. */
-	while (C.Aes->resources)
-		FreeResources(C.Aes, NULL, NULL);
-
-	BLOG((false, "Removing all remaining windows"));
-	remove_all_windows(NOLOCKING, NULL);
-	BLOG((false, "Freeing delayed deleted windows"));
-	do_delayed_delete_window(NOLOCKING);
-
-#if WITH_BBL_HELP
-	if (bgem_window)
-	{
-		close_window(NOLOCKING, bgem_window);
-		delete_window(NOLOCKING, bgem_window);
-		bgem_window = NULL;
-	}
-#endif
-	if (menu_window)
-	{
-		close_window(NOLOCKING, menu_window);
-		delete_window(NOLOCKING, menu_window);
-		menu_window = NULL;
-	}
-	if (root_window)
-	{
-		BLOG((false, "Closing and deleting root window"));
-		close_window(NOLOCKING, root_window);
-		delete_window(NOLOCKING, root_window);
-		root_window = NULL;
-		S.open_windows.root = NULL;
-	}
-#if WITH_BKG_IMG
-	do_bkg_img( C.Aes, 2, 0 );
-#endif
-	BLOG((false, "shutting down aes thread .. tp=%lx", C.Aes->tp));
-
-	if (C.Aes->tp)
-	{
-		const volatile struct proc **h = (const volatile struct proc **)(const void**)&C.Aes->tp;
-		post_cevent(C.Aes, CE_at_terminate, NULL,NULL, 0,0, NULL,NULL);
-		while (*h)
-		{
-			Unblock(C.Aes, 0, 0);
-			yield();
-		}
-	}
-
-	BLOG((false, "Freeing Aes environment"));
-	if (C.env)
-	{
-		kfree(C.env);
-		C.env = NULL;
-	}
-
-	/* just to be sure */
-	if (C.button_waiter == C.Aes)
-		C.button_waiter = NULL;
-
-	BLOG((false, "cancel aesmsgs"));
-	cancel_app_aesmsgs(C.Aes);
-	BLOG((false, "cancel cevents"));
-	cancel_cevents(C.Aes);
-	BLOG((false, "cancel keyqueue"));
-	cancel_keyqueue(C.Aes);
-
-	BLOG((false, "freeing attachements"));
-	if (C.Aes->attach)
-		kfree(C.Aes->attach);
-
-	BLOG((false, "free clientlistname"));
-	if (C.Aes->mnu_clientlistname)
-		kfree(C.Aes->mnu_clientlistname);
-
-	/*
-	 * Exit the widget theme module
-	 */
-	if (C.Aes->xmwt && C.Aes->wtheme_handle)
-	{
-		BLOG((false, "Exit widget theme module"));
-		exit_client_widget_theme(C.Aes);
-		(*C.Aes->xmwt->exit_module)(C.Aes->wtheme_handle);
-		C.Aes->wtheme_handle = NULL;
-	}
-
-	/*
-	 * Free the wind_calc() cache
-	 */
-	BLOG((false, "Freeing wind_calc cache"));
-	delete_wc_cache(&C.Aes->wcc);
-	/*
-	 * Freeing the WT list is the last thing to do. Modules may attach
-	 * widget_tree's to C.Aes
-	 */
-	BLOG((false, "freeing attachments"));
-	free_attachments(C.Aes);
-
-	/*
-	 * Exit the object render module
-	 */
-	BLOG((false, "Exit object render module"));
-	if (C.Aes->objcr_module)
-	{
-		exit_client_objcrend( C.Aes );
-		(*C.Aes->objcr_module->exit_module)();
-	}
-
-	BLOG((false, "freeing wtlist"));
-	free_wtlist(C.Aes);
-	BLOG((false, "Free main XaAES client structure"));
-	kfree(C.Aes);
-	C.Aes = NULL;
-
-	free_desk_popup();
-
-	BLOG((false, "Freeing cnf stuff"));
-	{
-		int i;
-
-		free_namelist(&cfg.ctlalta);
-		free_namelist(&cfg.kwq);
-
-		if (cfg.cnf_shell)
-			kfree(cfg.cnf_shell);
-
-		if (cfg.cnf_shell_arg)
-			kfree(cfg.cnf_shell_arg);
-
-		for (i = 0; i < sizeof(cfg.cnf_run)/sizeof(cfg.cnf_run[0]); i++)
-		{
-			if (cfg.cnf_run[i])
-				kfree(cfg.cnf_run[i]);
-
-			if (cfg.cnf_run_arg[i])
-				kfree(cfg.cnf_run_arg[i]);
-		}
-	}
-
-	BLOG((false, "Freeing Options"));
 	if( !(C.shutdown & (HALT_SYSTEM | REBOOT_SYSTEM | COLDSTART_SYSTEM)) )
 	{
+		BLOG((false, "wait for AES help thread to terminate....(ferr=%d)", ferr));
+		cancel_reiconify_timeout();
+
+		if (!ferr && C.Hlp)
+		{
+			const volatile struct xa_client **h = (const volatile struct xa_client **)(const void**)&C.Hlp;
+			long l = 0;
+			post_cevent(C.Hlp, CE_at_terminate, NULL, NULL, 0,0, NULL, NULL);
+			while (*h && l++ < 1500)
+			{
+				Unblock(C.Hlp, 0, 0);
+				nap( 1500 );
+				//yield();
+			}
+			if( *h )
+				BLOG((0,"failed!" ));
+		}
+		/* To demonstrate the working on multiple resources. */
+		while (C.Aes->resources)
+			FreeResources(C.Aes, NULL, NULL);
+
+		BLOG((false, "Removing all remaining windows"));
+		remove_all_windows(NOLOCKING, NULL);
+		BLOG((false, "Freeing delayed deleted windows"));
+		do_delayed_delete_window(NOLOCKING);
+
+#if WITH_BBL_HELP
+		if (bgem_window)
+		{
+			close_window(NOLOCKING, bgem_window);
+			delete_window(NOLOCKING, bgem_window);
+			bgem_window = NULL;
+		}
+#endif
+		if (menu_window)
+		{
+			close_window(NOLOCKING, menu_window);
+			delete_window(NOLOCKING, menu_window);
+			menu_window = NULL;
+		}
+		if (root_window)
+		{
+			BLOG((false, "Closing and deleting root window"));
+			close_window(NOLOCKING, root_window);
+			delete_window(NOLOCKING, root_window);
+			root_window = NULL;
+			S.open_windows.root = NULL;
+		}
+#if WITH_BKG_IMG
+		do_bkg_img( C.Aes, 2, 0 );
+#endif
+		BLOG((false, "shutting down aes thread .. tp=%lx", C.Aes->tp));
+
+		if (C.Aes->tp)
+		{
+			const volatile struct proc **h = (const volatile struct proc **)(const void**)&C.Aes->tp;
+			post_cevent(C.Aes, CE_at_terminate, NULL,NULL, 0,0, NULL,NULL);
+			while (*h)
+			{
+				Unblock(C.Aes, 0, 0);
+				yield();
+			}
+		}
+
+		BLOG((false, "Freeing Aes environment"));
+		if (C.env)
+		{
+			kfree(C.env);
+			C.env = NULL;
+		}
+
+		/* just to be sure */
+		if (C.button_waiter == C.Aes)
+			C.button_waiter = NULL;
+
+		BLOG((false, "cancel aesmsgs"));
+		cancel_app_aesmsgs(C.Aes);
+		BLOG((false, "cancel cevents"));
+		cancel_cevents(C.Aes);
+		BLOG((false, "cancel keyqueue"));
+		cancel_keyqueue(C.Aes);
+
+		BLOG((false, "freeing attachements"));
+		if (C.Aes->attach)
+			kfree(C.Aes->attach);
+
+		BLOG((false, "free clientlistname"));
+		if (C.Aes->mnu_clientlistname)
+			kfree(C.Aes->mnu_clientlistname);
+
+		/*
+		 * Exit the widget theme module
+		 */
+		if (C.Aes->xmwt && C.Aes->wtheme_handle)
+		{
+			BLOG((false, "Exit widget theme module"));
+			exit_client_widget_theme(C.Aes);
+			(*C.Aes->xmwt->exit_module)(C.Aes->wtheme_handle);
+			C.Aes->wtheme_handle = NULL;
+		}
+
+		/*
+		 * Free the wind_calc() cache
+		 */
+		BLOG((false, "Freeing wind_calc cache"));
+		delete_wc_cache(&C.Aes->wcc);
+		/*
+		 * Freeing the WT list is the last thing to do. Modules may attach
+		 * widget_tree's to C.Aes
+		 */
+		BLOG((false, "freeing attachments"));
+		free_attachments(C.Aes);
+
+		/*
+		 * Exit the object render module
+		 */
+		BLOG((false, "Exit object render module"));
+		if (C.Aes->objcr_module)
+		{
+			exit_client_objcrend( C.Aes );
+			(*C.Aes->objcr_module->exit_module)();
+		}
+
+		BLOG((false, "freeing wtlist"));
+		free_wtlist(C.Aes);
+		BLOG((false, "Free main XaAES client structure"));
+		kfree(C.Aes);
+		C.Aes = NULL;
+
+		free_desk_popup();
+
+		BLOG((false, "Freeing cnf stuff"));
+		{
+			int i;
+
+			free_namelist(&cfg.ctlalta);
+			free_namelist(&cfg.kwq);
+
+			if (cfg.cnf_shell)
+				kfree(cfg.cnf_shell);
+
+			if (cfg.cnf_shell_arg)
+				kfree(cfg.cnf_shell_arg);
+
+			for (i = 0; i < sizeof(cfg.cnf_run)/sizeof(cfg.cnf_run[0]); i++)
+			{
+				if (cfg.cnf_run[i])
+					kfree(cfg.cnf_run[i]);
+
+				if (cfg.cnf_run_arg[i])
+					kfree(cfg.cnf_run_arg[i]);
+			}
+		}
+
+		BLOG((false, "Freeing Options"));
+		{
 		struct opt_list *op;
 
 		op = S.app_options;
@@ -236,7 +237,7 @@ k_shutdown(void)
 		xaaes_kmalloc_leaks();
 
 		nkc_exit();
-
+		}
 
 		BLOG((false, "C.shutdown = 0x%x", C.shutdown));
 #if BOOTLOG
@@ -313,7 +314,6 @@ k_shutdown(void)
 #endif
 			}
 		}
-
 		if( !ferr )
 			c_conws("\033e\033E");		/* Cursor enable, cursor home */
 	}
