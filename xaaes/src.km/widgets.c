@@ -4915,14 +4915,12 @@ do_active_widget(enum locks lock, struct xa_client *client)
 void
 set_winmouse(short x, short y)
 {
-// 	short x, y;
 	struct xa_window *wind;
 
 	if (x == -1 && y == -1)
 		check_mouse(NULL, NULL, &x, &y);
 
 	wind = find_window(0, x, y, FNDW_NOLIST|FNDW_NORMAL);
-
 	wind_mshape(wind, x, y);
 }
 
@@ -4930,15 +4928,23 @@ short
 wind_mshape(struct xa_window *wind, short x, short y)
 {
 	short shape = -1;
+	struct xa_client *wo;
 	WINDOW_STATUS status = wind->window_status;
-	struct xa_client *wo = wind == root_window ? get_desktop()->owner : wind->owner;
 	XA_WIDGET *widg;
 	RECT r;
 
-	/* C.shutdown, ferr ? */
-	if (!update_locked() || update_locked() == wind->owner->p)
+	if( !wind )
 	{
-		if (wind)
+		return -1;
+	}
+	if( wind == root_window)
+		wo = get_desktop()->owner;
+	else
+		wo = wind->owner;
+	/* C.shutdown, ferr ? */
+	if ( !update_locked() || update_locked() == wind->owner->p )
+	{
+		if (wo)
 		{
 			if (!(wo->status & CS_EXITING))
 			{
@@ -5066,7 +5072,9 @@ wind_mshape(struct xa_window *wind, short x, short y)
 			}
 		}
 		else if (C.aesmouse != -1)
+		{
 			xa_graf_mouse(-1, NULL, NULL, true);
+		}
 	}
 
 	return shape;
