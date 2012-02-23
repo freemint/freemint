@@ -2290,7 +2290,7 @@ open_csr(enum locks lock, struct xa_client *client, struct xa_client *running)
 		return;
 
 
-	if (!htd->w_csr) // !csr_win)
+	if (!htd->w_csr)
 	{
 		TEDINFO *t;
 		int i = 0;
@@ -2305,9 +2305,9 @@ open_csr(enum locks lock, struct xa_client *client, struct xa_client *running)
 		t = object_get_tedinfo(obtree + KORW_APPNAME, NULL);
 		if (running->name[0])
 		{
-			char *s = running->name;
+			uchar *s = (uchar*)running->name;
 
-			while (*s && *(uchar*)s == ' ')
+			while (*s && *s == ' ')
 				s++;
 
 			for (; i < 32 && (t->te_ptext[i] = *s++); i++)
@@ -2604,14 +2604,14 @@ static void kerinfo2line( uchar *in, uchar *out, long maxlen )
 
 	for( i = 0; i < maxlen && *pi; i++, pi++ )
 	{
-		if( *(uchar*)pi > ' ' /*!= '\t'*/ )
+		if( *pi > ' ' /*!= '\t'*/ )
 		{
 			if( *pi == '\n' )
 				*po++ = ',';
 			else
 				*po++ = *pi;
 		}
-		else if( !(*(uchar*)(po-1) == ' ' || *(po-1) == ':') )
+		else if( !(*(po-1) == ' ' || *(po-1) == ':') )
 			*po++ = ' ';
 	}
 	*po = 0;
@@ -2662,14 +2662,14 @@ static void kerinfo2line( uchar *in, uchar *out, long maxlen )
  */
 static int ker_stat( int pid, char *what, long pinfo[] )
 {
-	char path[256];
+	uchar path[256];
 	struct file *fp;
 	long err;
 	if( pid )
-		sprintf( path, sizeof(path), "u:/kern/%d/%s", pid, what );
+		sprintf( (char*)path, sizeof(path), "u:/kern/%d/%s", pid, what );
 	else
-		sprintf( path, sizeof(path), "u:/kern/%s",what );
-	fp = kernel_open( path, O_RDONLY, &err, NULL );
+		sprintf( (char*)path, sizeof(path), "u:/kern/%s",what );
+	fp = kernel_open( (char*)path, O_RDONLY, &err, NULL );
 	if( !fp )
 	{
 		return 1;
@@ -2679,18 +2679,18 @@ static int ker_stat( int pid, char *what, long pinfo[] )
 	if( err > 0 && err < sizeof(path) )
 	{
 		int i, j;
-		char *p = path;
+		uchar *p = path;
 		path[err] = 0;
 		for( j = 0, i = 1; *p && pinfo[j]; i++ )
 		{
-			for( ; *p && *(uchar*)p <= ' '; p++ );
+			for( ; *p && *p <= ' '; p++ );
 			if( i == pinfo[j] )
 			{
 				if( !isdigit( *p ) )
 					return 3;
-				pinfo[j++] = atol( p );
+				pinfo[j++] = atol( (char*)p );
 			}
-			for( ; *p && !(*(uchar*)p <= ' ' || *p == '.'); p++ );
+			for( ; *p && !(*p <= ' ' || *p == '.'); p++ );
 			if( *p )
 			{
 				p++;
