@@ -995,6 +995,7 @@ done:
 	DIAG((D_keybd, NULL, "Form_Keyboard: no_exit=%s(%d), nxtobj=%d, obstate=%x, for %s",
 		fr.no_exit ? "true" : "false", fr.no_exit, aesobj_item(&next_obj), aesobj_state(&next_obj), client->name));
 
+
 // 	display("Form_Keyboard: no_exit=%s(%d), nxtobj=%d, nxteobj=%d, obstate=%x, for %s",
 // 		fr.no_exit ? "true" : "false", fr.no_exit, next_obj, new_eobj, wt->tree[next_obj].ob_state, wt->owner->name);
 
@@ -1023,17 +1024,13 @@ Exit_form_do( struct xa_client *client,
 		 */
 		if ((wind->dial & created_for_ALERT)) //wind == client->alert)
 		{
-// 			OBJECT *obtree = wt->tree;
 			struct xa_aes_object f = fr->obj;
 			/* Is f a valid button? */
-// 			display("click alert but1 %d, but4 %d", ALERT_BUT1, ALERT_BUT1 + 3);
-			if (   aesobj_item(&f) >= ALERT_BUT1 && aesobj_item(&f) < ALERT_BUT1 + ALERT_BUTTONS && !aesobj_hidden(&f))
+			if ( aesobj_item(&f) >= ALERT_BUT1 && aesobj_item(&f) < ALERT_BUT1 + ALERT_BUTTONS && !aesobj_hidden(&f))
 			{
-// 				display("client '%s'", client->name);
 				client->waiting_pb->intout[0] = aesobj_item(&f) - ALERT_BUT1 + 1;
-				if (client != C.Aes /*&& client != C.Hlp*/ && client->waiting_pb)
+				if (client->waiting_pb)
 				{
-// 					display("Alert return %d", client->waiting_pb->intout[0]);
 					client->usr_evnt = 1;
 					client->waiting_pb = NULL;
 				}
