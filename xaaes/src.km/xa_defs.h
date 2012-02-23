@@ -127,6 +127,12 @@
 #define CHECK_STACK	1
 #endif
 
+/* ask user to run an slb that calls appl_init or kill the caller */
+#define RUN_BOGUS_SLB 1
+
+/* do appl_init if an app does AES-calls without precedent appl_init */
+#define INSERT_APPL_INIT 0
+
 /* some debug-code to produce a bus-error */
 #ifndef TST_BE
 #define TST_BE 0
