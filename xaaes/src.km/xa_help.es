@@ -12,22 +12,22 @@ B             Abrir la ventana Sistema/Registro
 D             Cuadro de dialogo para capturar pantallas
               (XAAESNAP.PRG requerido)
 E             Abrir submenu de ventanas
-F,L           Abrir el gestor de tareas
-HELP          Abrir Acerca de...
 H             Apagar sistema (o ejecuta $SDMASTER si
               est  configurado)
 I             Minimizar/restablecer la ventana actual
 J             Reinicializar XaAES
 K             Ejecutar programa
+L             Abrir el gestor de tareas
+SHIFT+L       Cargar configuraci¢n
 M             Recuperar puntero rat¢n
 N             Cargar gradiente
-SHIFT+N       Cambiar imagen de fondo
+SHIFT+N       Cargar imagen de fondo
 P             Restaurar la paleta de colores para modo
               8-bits o inferior
-Q,G           Quitar XaAES (o ejecutar $SDMASTER si
+SHIFT+P       Cargar paleta de colores
+Q             Quitar XaAES (o ejecutar $SDMASTER si
               est  configurado)
 R             Intentar restablecer el sistema bloqueado
-T,HOME        Redibujar pantalla
 U             Cerrar ventana
 V             Mostrar todas las aplicaciones
 W             Rotar ventanas
@@ -36,6 +36,8 @@ Y             Ocultar aplicaci¢n activa
 ESPACIO       Abrir barra del menu principal
 SHIFT+ESPACIO Abrir menu de la ventana activa si lo
               posee, sino abrir menu principal
+HELP          Abrir Acerca de...
+HOME          Redibujar pantalla
 TAB           Rotar aplicaciones abiertas
 
 INSERT        Maximizar ventana
