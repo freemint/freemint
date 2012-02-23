@@ -525,12 +525,7 @@ XA_handler(void *_pb)
 	{
 		AES_function *cmd_routine;
 		unsigned long cmd_rtn;
-#if 0
-		struct proc *pr = get_curproc();
-
-		if (!strnicmp(pr->name, "taskb", 5))
-			display("%s calls (%d)%s", pr->name, cmd, aes_tab[cmd].descr);
-#endif
+		struct proc *p = get_curproc();
 
 		/* XXX	- ozk:
 		 * I dont know how I like this! However, we test force-init/attaching client structure
@@ -538,27 +533,24 @@ XA_handler(void *_pb)
 		 */
 		if (!(client = lookup_extension(NULL, XAAES_MAGIC)) && cmd != 10)	// 10:XA_appl_init
 		{
+#if INSERT_APPL_INIT
 			if (!(aes_tab[cmd].flags & NOCLIENT))
 			{
+				struct proc *pp = pid2proc( p->ppid );
+				if( p->p_flag & (P_FLAG_SLB | (P_FLAG_SLB << 8)) )
+				{
+					BLOG((0,"slb %s did appl_exit (ignored)!", p->name));
+					return 0;
+				}
 				client = init_client(0, false);
 				if (client)
 				{
 					add_to_tasklist(client);
-// 					ALERT(("XaAES: client %s calls (%d)%s without appl_init()!!",
-// 						client->proc_name, cmd, aes_tab[cmd].descr));
 					client->forced_init_client = true;
 				}
 			}
-#if 0
-			else
-			{
-				struct proc *p = get_curproc();
-				ALERT(("XaAES: process %d(%s) calls AES function (%d)%s without appl_init()!",
-					p->pid, p->name, cmd, aes_tab[cmd].descr));
-			}
 #endif
 		}
-
 		/*
 		 * If process has not called appl_init() yet, it has restricted
 		 * access to AES functions
@@ -571,9 +563,12 @@ XA_handler(void *_pb)
 				cmd, p_getpid(), pb));
 
 			/* inform user what's going on */
-			ALERT((xa_strings[AL_NOAESPR]/*"XaAES: non-AES process issued AES system call %i, killing it"*/, cmd));
-			exit_proc(0, get_curproc(), 0);
-			raise(SIGKILL);
+			if( !(p->p_flag & (P_FLAG_SLB | (P_FLAG_SLB << 8))) )
+			{
+				ALERT((xa_strings[AL_NOAESPR]/*"XaAES: non-AES process issued AES system call %i, killing it"*/, cmd));
+				exit_proc(0, get_curproc(), 0);
+				raise(SIGKILL);
+			}
 			return 0;
 		}
 
@@ -597,20 +592,6 @@ XA_handler(void *_pb)
 				exec_iredraw_queue(0, client);
 			}
 		}
-#if 0
-#error external fileselectors not yet supported
-		if ((cfg.fsel_cookie || cfg.no_xa_fsel)
-		    && (   cmd == XA_FSEL_INPUT
-		        || cmd == XA_FSEL_EXINPUT))
-		{
-			DIAG((D_fsel, client, "Redirected fsel call"));
-
-			/* This causes call via the old vector
-			 * see p_handlr.s
-			 */
-			return -1;
-		}
-#endif
 #if GENERATE_DIAGS
 		if (client)
 		{
@@ -624,18 +605,13 @@ XA_handler(void *_pb)
 		}
 #endif
 
-		/*if( client )
-			BLOG((0, "%s[%d] made by %s",	aes_tab[cmd].descr, cmd, client->name));
-		else
-			BLOG((0, "%s[%d] made",	aes_tab[cmd].descr, cmd));
-*/
+		// BLOG((0, "%s[%d] made by %s",	aes_tab[cmd].descr, cmd, client ? client->name : "-"));
 
 		cmd_routine = aes_tab[cmd].f;
 
 		/* if opcode is implemented, call it */
 		if (cmd_routine)
 		{
-			struct proc *p = get_curproc();
 
 			/* The root of all locking under client pid.
 			 *
@@ -679,6 +655,7 @@ XA_handler(void *_pb)
 					aes_tab[cmd].descr, cmd, cmd_rtn, p_getpid()));
 			}
 #endif
+			// BLOG((0, "%s: %s[%d] returned %ld for %s", client ? client->name : "-", aes_tab[cmd].descr, cmd, cmd_rtn, p->name));
 			/* Ozk:
 			 * Now we check if circumstances under which we check if process started/ended
 			 * being a AES client
@@ -710,6 +687,8 @@ XA_handler(void *_pb)
 					}
 					break;
 				}
+				default:
+					BLOG((0,"Xa_handler:unknown cmd_rtn:%d", client ? client->name : "-", cmd_rtn));
 			}
 #if GENERATE_DIAGS
 			if (client)
