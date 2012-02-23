@@ -87,7 +87,9 @@ bootlog(bool disp, const char *fmt, ...)
 		c_conws(buf);
 	}
 #endif
+#if BOOTLOG
 	DEBUG_LEVEL = lvl;
+#endif
 }
 
 
