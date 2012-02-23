@@ -2577,7 +2577,8 @@ close_window(enum locks lock, struct xa_window *wind)
 			}
 		}
 	}
-	set_winmouse(-1, -1);
+	if( !C.shutdown )
+		set_winmouse(-1, -1);
 
 	return true;
 }
