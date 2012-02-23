@@ -61,6 +61,8 @@ bootlog(bool disp, const char *fmt, ...)
 	char buf[512];
 	va_list args;
 	long l;
+	int lvl = DEBUG_LEVEL;
+	DEBUG_LEVEL = 0;
 
 	va_start(args, fmt);
 	l = vsprintf(buf, sizeof(buf), fmt, args);
@@ -85,6 +87,7 @@ bootlog(bool disp, const char *fmt, ...)
 		c_conws(buf);
 	}
 #endif
+	DEBUG_LEVEL = lvl;
 }
 
 
