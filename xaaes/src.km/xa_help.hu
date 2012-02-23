@@ -10,20 +10,18 @@ B             Rendszer/Napl¢-ablak megnyit†sa
 D             KÇplop¢ megnyit†sa
               (XAAESNAP.PRG szÅksÇges)
 E             Ablak almenÅ megnyit†sa
-F,L           Feladat kezelî megnyit†sa
-HELP          NÇvjegy megnyit†sa
 H             Rendszer le†ll°t†sa
               (vagy $SDMASTER futtat†sa)
 I             Aktu†lis ablak minimaliz†l†sa
 J             XaAES £jraind°t†sa
 K             Program ind°t†sa
+L             Feladat kezelî megnyit†sa
 M             EgÇrmutat¢ megjelen°tÇse
 P             Paletta vissza†ll°t†sa 8bit vagy ann†l
               kisebb sz°nmÇlysÇg esetÇn
-Q,G           KilÇpÇs az XaAES-bîl
+Q             KilÇpÇs az XaAES-bîl
               (vagy $SDMASTER futtat†sa)
 R             Lefagyott rendszer vissza†ll°t†sa
-T,HOME        KÇprenyî £jrarajzol†sa
 U             Aktu†lis ablak bez†r†sa
 V             ôsszes alkalmaz†s ablak†nak felfedÇse
 W             Ablakok kîzîtti v†lt†s
@@ -33,6 +31,8 @@ Y             A f¢kuszban lÇvî alkalmaz†s elrejtÇse
 SPACE         FîmenÅ megnyit†sa
 SHIFT+SPACE   Aktu†lis ablak menÅjÇnek vagy ha nincs,
               a fîmenÅ megnyit†sa
+HELP          NÇvjegy megnyit†sa
+HOME          KÇprenyî £jrarajzol†sa
 TAB           Nyitott alkalmaz†sok kîzîtti v†lt†s
 
 INSERT        Ablak teljes mÇretre nagy°t†sa
