@@ -10,20 +10,18 @@ B             Otevøít Systémové okno a protokol varování
 D             Otevøít dialogové okno snímku obrazovky
               (vy¾aduje XAAESNAP.PRG)
 E             Otevøít kontextovou nabídku okna
-F,L           Otevøít správce úloh
-HELP          Otevøít okno O...
 H             Zastavit systém (nebo spustit $SDMASTER,
               je-li nastaven)
 I             (Od-)ikonifikovat souèasné okno
 J
 K             Spustit program
+L             Otevøít správce úloh
 M
 P             Obnovit paletu barev v hloubce 8 bitù
               nebo ménì
-Q,G           Ukonèit XaAES (nebo spustit $SDMASTER,
+Q             Ukonèit XaAES (nebo spustit $SDMASTER,
               je-li nastaven)
 R             Pokusit se obnovit systém po zaseknutí
-T,HOME        Pøekreslit obrazovku
 U
 V             Zviditelnit v¹echny programy
 W             Globální pøepínání oken
@@ -32,7 +30,10 @@ Y             Skrýt momentálnì aktivní aplikaci
 MEZERA        Otevøít hlavní li¹tu nabídky
 SHIFT+MEZERA  Otevøít nabídku souèasného okna, pokud
               ji má, jinak hlavní nabídku
+HELP          Otevøít okno O...
+HOME          Pøekreslit obrazovku
 TAB           Pøepínat otevøené aplikace
+
 ©IPKA VPRAVO  Maximalizovat souèasné okno
 #</CtrlAlt>
 <u>                                                      </u>

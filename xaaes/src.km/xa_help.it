@@ -13,34 +13,39 @@ B             Apri la finestra Sistema/Log
 D             Apri il programma cattura schermo
               (deve essere presente XAAESNAP.PRG)
 E             Apri il submenu delle finestre
-F,L           Apri il task-manager
-HELP          Apri Circa
 H             Arresta il sistema (o esegui $SDMASTER,
               se presente)
 I             (De-)iconizza le finestra attiva
 J             Riavvio di XaAES
 K             Avvio di un programma
+L             Apri il task-manager
+SHIFT+L       Carica configurazione
 M             Ripristino del puntatore mouse
 N             Carica gradiente
-SHIFT+N       Modifica immagine sfondo
+SHIFT+N       Carica immagine sfondo
 P             Ripristina la paletta nelle modalit…
               inferiori od uguali a 8 bit
-Q,G           Esci da XaAES (o esegui $SDMASTER se 
+SHIFT+P       Carica paletta
+Q             Esci da XaAES (o esegui $SDMASTER se 
               presente)
 R             Tenta il ripristino di un sistema
               bloccato
-T,HOME        Aggiorna lo schermo
 U             Chiudi la finestra attiva
 V             Visualizza tutte le applicazioni
 W             Passa da una finestra all'altra
               globalmente
+SHIFT+W       Finestra superiore della precedente
+              applicazione attiva
 X             Nascondi tutte le applicazioni tranne
               quella in primo piano
 Y             Nascondi l'applicazione in primo piano
 SPACE         Apri il menu principale
 SHIFT+SPACE   Apri il menu della finestra in primo
               piano altrimenti il menu principale
+HELP          Apri Circa
+HOME          Aggiorna lo schermo
 TAB           Passa da una applicazione ad un'altra
+SHIFT+TAB     Precedente applicazione attiva
 
 INSERT        Massimizza la finestra attiva
 CURSOR-UP     Ingradisci la finestra attiva

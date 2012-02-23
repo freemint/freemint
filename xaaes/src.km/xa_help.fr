@@ -15,33 +15,38 @@ B             Ouvrir la fenˆtre systŠme/
 D             Ouvrir le programme de capture d'‚cran
               (XAAESNAP.PRG n‚cessaire)
 E             Ouvrir le sous-menu des fenˆtres
-F,L           Ouvrir le gestionnaire des tƒches
-HELP          Ouvrir la fenˆtre "A propos de"
 H             Arrˆter le systŠme (ou ex‚cuter $SDMASTER
               si pr‚sent)
 I             (D‚s-)iconifier la fenˆtre actuelle
 J             Red‚marrer XaAES
 K             Lancer un programme
+L             Ouvrir le gestionnaire des tƒches
+SHIFT+L       Charger configuration
 M             R‚afficher pointeur souris
 N             Charger d‚grad‚
-SHIFT+N       Changer le fond d'‚cran
+SHIFT+N       Charger le fond d'‚cran
 P             Restaurer la palette dans les modes
               inf‚rieurs ou ‚gals … 8 bits
-Q,G           Quitter XaAES (ou ex‚cuter $SDMASTER
+SHIFT+P       Charger palette
+Q             Quitter XaAES (ou ex‚cuter $SDMASTER
               si pr‚sent)
 R             Tenter de r‚cup‚rer un systŠme bloqu‚
-T,HOME        Redessiner l'‚cran
 U             Fermer fenˆtre active
 V             D‚masquer toutes les applications
 W             Passer d'une fenˆtre … l'autre
               globalement
+SHIFT+W       Amener la fenˆtre sup‚rieure de
+              l'application pr‚c‚dente … l'avant
 X             Masquer toutes les applications sauf
               celle au 1er plan
 Y             Masquer l'application du 1er plan
 ESPACE        Ouvrir le menu principal
 SHIFT+ESPACE  Ouvrir le menu de la fenˆtre du 1er plan,
               sinon le menu principal
+HELP          Ouvrir la fenˆtre "A propos de"
+HOME          Redessiner l'‚cran
 TAB           Passer d'une application … l'autre
+SHIFT+TAB     Amener l'application pr‚c‚dente … l'avant
 
 INSERT         Maximiser fenˆtre active
 FLECHE HAUT    Agrandir fenˆtre active
