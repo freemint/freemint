@@ -2674,7 +2674,7 @@ delete_window1(enum locks lock, struct xa_window *wind)
 }
 
 static void
-CE_delete_window(enum locks lock, struct c_event *ce, bool cancel)
+CE_delete_window(enum locks lock, struct c_event *ce, short cancel)
 {
 // 	if (!strnicmp(ce->client->proc_name, "gfa_xref", 8))
 // 		display("CE_del_wind %lx", ce->ptr1);
