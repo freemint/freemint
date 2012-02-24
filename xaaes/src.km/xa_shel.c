@@ -33,6 +33,7 @@
 
 #include "accstart.h"
 #include "init.h"
+#include "k_main.h"
 #include "sys_proc.h"
 #include "taskman.h"
 #include "util.h"
@@ -910,6 +911,15 @@ XA_shel_write(enum locks lock, struct xa_client *client, AESPB *pb)
 
 			/* resolution change */
 			case SWM_REZCHANGE:
+				if( !(wiscr == 0 || wiscr == 1) )
+				{
+					pb->intout[0] = 0;
+					break;
+				}
+				next_res = wisgr;
+				pb->intout[0] = 1;
+				post_cevent(C.Hlp, ceExecfunc, ce_dispatch_shutdown, NULL, RESOLUTION_CHANGE, 1, NULL, NULL);
+
 				break;
 
 			/* undefined */
