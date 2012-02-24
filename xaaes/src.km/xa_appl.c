@@ -426,8 +426,9 @@ static char  *strip_uni_drive( char *in )
 
 #define F_FORCE_MINT	0x40000
 
-static void ikill_proc(enum locks lock, struct c_event *ce, bool cancel)
+static void ikill_proc(enum locks lock, struct c_event *ce, short cancel)
 {
+	UNUSED(cancel);
 	ikill( ce->d0, ce->d1 );
 }
 
@@ -584,7 +585,7 @@ send_ch_exit(struct xa_client *client, short pid, int code)
 }
 
 static void
-CE_pwaitpid(enum locks lock, struct c_event *ce, bool cancel)
+CE_pwaitpid(enum locks lock, struct c_event *ce, short cancel)
 {
 	long r;
 

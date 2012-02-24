@@ -53,7 +53,7 @@
 #include "mint/signal.h"
 
 void
-cXA_button_event(enum locks lock, struct c_event *ce, bool cancel)
+cXA_button_event(enum locks lock, struct c_event *ce, short cancel)
 {
 	struct xa_client *client = ce->client;
 	struct xa_window *wind = (struct xa_window *)ce->ptr1;
@@ -179,7 +179,7 @@ endmenu:	C.ce_menu_click = NULL;
 }
 
 void
-cXA_deliver_button_event(enum locks lock, struct c_event *ce, bool cancel)
+cXA_deliver_button_event(enum locks lock, struct c_event *ce, short cancel)
 {
 	struct xa_window *wind;
 	struct xa_widget *widg = NULL;
@@ -211,7 +211,7 @@ cXA_deliver_button_event(enum locks lock, struct c_event *ce, bool cancel)
 }
 
 void
-cXA_deliver_rect_event(enum locks lock, struct c_event *ce, bool cancel)
+cXA_deliver_rect_event(enum locks lock, struct c_event *ce, short cancel)
 {
 	struct xa_client *client = ce->client;
 	AESPB *pb = client->waiting_pb;
@@ -250,7 +250,7 @@ cXA_deliver_rect_event(enum locks lock, struct c_event *ce, bool cancel)
 }
 
 void
-cXA_form_do(enum locks lock, struct c_event *ce, bool cancel)
+cXA_form_do(enum locks lock, struct c_event *ce, short cancel)
 {
 	struct xa_client *client = ce->client;
 
@@ -262,7 +262,7 @@ cXA_form_do(enum locks lock, struct c_event *ce, bool cancel)
 }
 
 void
-cXA_open_menu(enum locks lock, struct c_event *ce, bool cancel)
+cXA_open_menu(enum locks lock, struct c_event *ce, short cancel)
 {
 	XA_WIDGET *widg = ce->ptr1;
 	XA_TREE *menu = ce->ptr2;
@@ -372,7 +372,7 @@ menu_move(struct xa_client *client, struct moose_data *md, bool f)
 
 }
 void
-cXA_menu_move(enum locks lock, struct c_event *ce, bool cancel)
+cXA_menu_move(enum locks lock, struct c_event *ce, short cancel)
 {
 	if (!cancel)
 	{
@@ -382,7 +382,7 @@ cXA_menu_move(enum locks lock, struct c_event *ce, bool cancel)
 }
 
 void
-cXA_do_widgets(enum locks lock, struct c_event *ce, bool cancel)
+cXA_do_widgets(enum locks lock, struct c_event *ce, short cancel)
 {
 	if (!cancel)
 	{
@@ -394,7 +394,7 @@ cXA_do_widgets(enum locks lock, struct c_event *ce, bool cancel)
 }
 
 void
-cXA_active_widget(enum locks lock, struct c_event *ce, bool cancel)
+cXA_active_widget(enum locks lock, struct c_event *ce, short cancel)
 {
 	if (!cancel)
 	{
@@ -411,7 +411,7 @@ cXA_active_widget(enum locks lock, struct c_event *ce, bool cancel)
 
 #if INCLUDE_UNUSED
 void
-cXA_widget_click(enum locks lock, struct c_event *ce, bool cancel)
+cXA_widget_click(enum locks lock, struct c_event *ce, short cancel)
 {
 	XA_WIDGET *widg = ce->ptr1;
 
@@ -529,7 +529,7 @@ whlarrowed(struct xa_window *wind, short WA, short amount, const struct moose_da
 }
 
 void
-cXA_wheel_event(enum locks lock, struct c_event *ce, bool cancel)
+cXA_wheel_event(enum locks lock, struct c_event *ce, short cancel)
 {
 	struct xa_client *client = ce->client;
 	struct xa_window *wind = ce->ptr1;

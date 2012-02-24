@@ -949,7 +949,7 @@ display_widget(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, struct 
 }
 
 static void
-CE_redraw_menu(enum locks lock, struct c_event *ce, bool cancel)
+CE_redraw_menu(enum locks lock, struct c_event *ce, short cancel)
 {
 	if (!cancel)
 	{
@@ -1919,7 +1919,7 @@ next_wctxt_entry(short item, void **_data)
 }
 
 static void
-CE_shade_action(enum locks lock, struct c_event *ce, bool cancel)
+CE_shade_action(enum locks lock, struct c_event *ce, short cancel)
 {
 	if (!cancel)
 	{
@@ -2151,7 +2151,7 @@ build_windlist_pu(struct xa_client *client, struct moose_data *md)
 }
 
 void
-CE_winctxt(enum locks lock, struct c_event *ce, bool cancel)
+CE_winctxt(enum locks lock, struct c_event *ce, short cancel)
 {
 	if (!cancel)
 	{

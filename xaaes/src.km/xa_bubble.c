@@ -568,7 +568,7 @@ xa_bubble_ret:
  * to be called by post_cevent
  */
 void
-XA_bubble_event(enum locks lock, struct c_event *ce, bool cancel)
+XA_bubble_event(enum locks lock, struct c_event *ce, short cancel)
 {
 	switch( ce->d0 )
 	{
@@ -581,7 +581,7 @@ XA_bubble_event(enum locks lock, struct c_event *ce, bool cancel)
 	}
 }
 
-static void do_bubble_show(enum locks lock, struct c_event *ce, bool cancel)
+static void do_bubble_show(enum locks lock, struct c_event *ce, short cancel)
 //static void do_bubble_show(void)
 {
 	short x, y, b;
