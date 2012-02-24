@@ -201,7 +201,7 @@ Set_desktop(XA_TREE *new_desktop)
 	//send_iredraw(0, root_window, 0, NULL);
 }
 static void
-CE_set_desktop(enum locks lock, struct c_event *ce, bool cancel)
+CE_set_desktop(enum locks lock, struct c_event *ce, short cancel)
 {
 	if (!cancel)
 	{

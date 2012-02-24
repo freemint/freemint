@@ -116,7 +116,7 @@ static int ker_stat( int pid, char *what, long pinfo[] );
 {
 	short r = xaaes_do_form_alert( lock, client, 1, ASK_SHUTDOWN_ALERT);
 	if ( r == 2 )
-			dispatch_shutdown(0, 0);
+			dispatch_shutdown(0);
 }
 */
 #endif
@@ -1078,7 +1078,7 @@ CHlp_aesmsg(struct xa_client *client)
 
 #if ALT_CTRL_APP_OPS
 void
-screen_dump(enum locks lock, struct xa_client *client, bool open)
+screen_dump(enum locks lock, struct xa_client *client, short open)
 {
 	struct xa_client *dest_client;
 	UNUSED(open);
@@ -1527,7 +1527,7 @@ taskmanager_form_exit(struct xa_client *Client,
 #if TM_ASK_BEFORE_SHUTDOWN
 			post_cevent(C.Hlp, ceExecfunc, ce_dispatch_shutdown, NULL, 0,1, NULL, NULL);
 #else
-			dispatch_shutdown(0, 0);
+			dispatch_shutdown(0);
 #endif
 			//ask_and_shutdown( lock, C.Hlp, 0);
 			force_window_top( lock, wind );
@@ -1544,7 +1544,7 @@ taskmanager_form_exit(struct xa_client *Client,
 #if TM_ASK_BEFORE_SHUTDOWN
 			post_cevent(C.Hlp, ceExecfunc, ce_dispatch_shutdown, NULL, REBOOT_SYSTEM,1, NULL, NULL);
 #else
-			dispatch_shutdown(REBOOT_SYSTEM, 0);
+			dispatch_shutdown(REBOOT_SYSTEM);
 #endif
 			force_window_top( lock, wind );
 
@@ -1567,7 +1567,7 @@ taskmanager_form_exit(struct xa_client *Client,
 #if TM_ASK_BEFORE_SHUTDOWN
 			post_cevent(C.Hlp, ceExecfunc, ce_dispatch_shutdown, NULL, HALT_SYSTEM,1, NULL, NULL);
 #else
-			dispatch_shutdown(HALT_SYSTEM, 0);
+			dispatch_shutdown(HALT_SYSTEM);
 #endif
 			force_window_top( 0, wind );
 
@@ -1584,7 +1584,7 @@ taskmanager_form_exit(struct xa_client *Client,
 #if TM_ASK_BEFORE_SHUTDOWN
 			post_cevent(C.Hlp, ceExecfunc, ce_dispatch_shutdown, NULL, COLDSTART_SYSTEM,1, NULL, NULL);
 #else
-			dispatch_shutdown(COLDSTART_SYSTEM, 0);
+			dispatch_shutdown(COLDSTART_SYSTEM);
 #endif
 			force_window_top( lock, wind );
 			break;
@@ -1921,7 +1921,7 @@ static void add_meminfo( struct scroll_info *list, struct scroll_entry *this )
 	add_kerinfo( "u:/kern/meminfo", list, this, to, &sc, PROCINFLEN, 5, NORMREDRAW, uinfo, false, NULL, 0 );
 }
 void
-open_taskmanager(enum locks lock, struct xa_client *client, bool open)
+open_taskmanager(enum locks lock, struct xa_client *client, short open)
 {
 	RECT remember = { 0,0,0,0 };
 	struct helpthread_data *htd;
@@ -2352,7 +2352,7 @@ fail:
 }
 
 void
-CE_open_csr(enum locks lock, struct c_event *ce, bool cancel)
+CE_open_csr(enum locks lock, struct c_event *ce, short cancel)
 {
 	if (!cancel)
 	{
@@ -2361,7 +2361,7 @@ CE_open_csr(enum locks lock, struct c_event *ce, bool cancel)
 }
 
 void
-CE_abort_csr(enum locks lock, struct c_event *ce, bool cancel)
+CE_abort_csr(enum locks lock, struct c_event *ce, short cancel)
 {
 	if (!cancel)
 	{
@@ -2849,7 +2849,7 @@ static void add_kerinfo(
 
 
 void
-open_systemalerts(enum locks lock, struct xa_client *client, bool open)
+open_systemalerts(enum locks lock, struct xa_client *client, short open)
 {
 	struct helpthread_data *htd;
 	OBJECT *obtree = NULL;
@@ -3084,11 +3084,11 @@ do_system_menu(enum locks lock, int clicked_title, int menu_item)
 		/* Quit XaAES */
 		case SYS_MN_QUIT:
 			DIAGS(("Quit XaAES"));
-			dispatch_shutdown(0, 0);
+			dispatch_shutdown(0);
 			break;
 
 		case SYS_MN_RESTART:
-			dispatch_shutdown(RESTART_XAAES, 0);
+			dispatch_shutdown(RESTART_XAAES);
 			break;
 
 		/* Open the "Task Manager" window */
