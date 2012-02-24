@@ -1675,7 +1675,7 @@ refresh_filelist(enum locks lock, struct fsel_data *fs, SCROLL_ENTRY *dir_ent)
 }
 
 static void
-CE_refresh_filelist(enum locks lock, struct c_event *ce, bool cancel)
+CE_refresh_filelist(enum locks lock, struct c_event *ce, short cancel)
 {
 	if (!cancel)
 	{

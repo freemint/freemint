@@ -66,20 +66,20 @@ void free_namelist(struct cfg_name_list **list);
 void send_terminate(enum locks lock, struct xa_client *client, short reason);
 
 void CHlp_aesmsg(struct xa_client *client);
-void screen_dump(enum locks lock, struct xa_client *client, bool open);
+void screen_dump(enum locks lock, struct xa_client *client, short open);
 
 void force_window_top( enum locks lock, struct xa_window *wind );
 void wakeup_client(struct xa_client *client);
 void app_or_acc_in_front( enum locks lock, struct xa_client *client );
-void open_taskmanager(enum locks lock, struct xa_client *client, bool open);
-void open_systemalerts(enum locks lock, struct xa_client *client, bool open);
+void open_taskmanager(enum locks lock, struct xa_client *client, short open);
+void open_systemalerts(enum locks lock, struct xa_client *client, short open);
 void open_launcher(enum locks lock, struct xa_client *client, int what);
 // void open_reschange(enum locks lock, struct xa_client *client, bool open);
 // void open_milan_reschange(enum locks lock, struct xa_client *client, bool open);
 // void open_nova_reschange(enum locks lock, struct xa_client *client, bool open);
 // void open_falcon_reschange(enum locks lock, struct xa_client *client, bool open);
-void CE_open_csr(enum locks lock, struct c_event *ce, bool cancel);
-void CE_abort_csr(enum locks lock, struct c_event *ce, bool cancel);
+void CE_open_csr(enum locks lock, struct c_event *ce, short cancel);
+void CE_abort_csr(enum locks lock, struct c_event *ce, short cancel);
 void cancel_csr(struct xa_client *running);
 
 void open_imgload(enum locks lock);

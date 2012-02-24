@@ -55,9 +55,6 @@ static TASK click_menu_entry;
 static TASK menu_bar;
 
 
-static void CE_do_popup(enum locks lock, struct c_event *ce, bool cancel);
-static void cancel_CE_do_popup(void);
-
 static XAMENU desk_popup;
 static XA_TREE desk_wt;
 static bool menu_title(enum locks lock, Tab *tab, short item, struct xa_window *wind, XA_WIDGET *widg, int locker, const struct moose_data *md);
@@ -1389,7 +1386,7 @@ do_collapse(Tab *tab)
 }
 
 static void
-CE_do_popup(enum locks lock, struct c_event *ce, bool cancel)
+CE_do_popup(enum locks lock, struct c_event *ce, short cancel)
 {
 	if (!cancel)
 	{
@@ -1400,7 +1397,7 @@ CE_do_popup(enum locks lock, struct c_event *ce, bool cancel)
 		cancel_pop_timeouts();
 }
 static void
-CE_do_collapse(enum locks lock, struct c_event *ce, bool cancel)
+CE_do_collapse(enum locks lock, struct c_event *ce, short cancel)
 {
 	if (!cancel)
 	{
@@ -2113,7 +2110,7 @@ Display_menu_widg(struct xa_window *wind, struct xa_widget *widg, const RECT *cl
 }
 
 static void
-CE_display_menu_widg(enum locks lock, struct c_event *ce, bool cancel)
+CE_display_menu_widg(enum locks lock, struct c_event *ce, short cancel)
 {
 	if (!cancel)
 		Display_menu_widg(ce->ptr1, ce->ptr2, (const RECT *)&ce->r);
@@ -2785,7 +2782,7 @@ menu_scroll_down(Tab *tab)
 }
 
 static void
-CE_do_menu_scroll(enum locks lock, struct c_event *ce, bool cancel)
+CE_do_menu_scroll(enum locks lock, struct c_event *ce, short cancel)
 {
 	Tab *tab = ce->ptr1;
 	TIMEOUT *t = NULL;

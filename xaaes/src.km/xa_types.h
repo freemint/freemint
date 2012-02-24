@@ -1229,7 +1229,7 @@ struct fmd
 struct c_event
 {
 	struct c_event		*next;
-	void			(*funct)(enum locks, struct c_event *, bool cancel);
+	void			(*funct)(enum locks, struct c_event *, short cancel);
 	struct xa_client	*client;
 	void			*ptr1;
 	void			*ptr2;
@@ -2756,7 +2756,7 @@ editfocus(struct objc_edit_info *ei)
 	return ei->o;
 }
 
-typedef void kernkey_action(enum locks lock, struct xa_client *client, bool open);
+typedef void kernkey_action(enum locks lock, struct xa_client *client, short open);
 
 struct kernkey_entry
 {
@@ -3185,7 +3185,7 @@ struct xa_module_api
 
 	void _cdecl	(*redraw_toolbar)	(enum locks lock, struct xa_window *wind, short item);
 
-	void _cdecl	(*dispatch_shutdown)	(short flags, unsigned long arg);
+	void _cdecl	(*dispatch_shutdown)	(short flags);
 };
 
 #endif /* _xa_types_h */
