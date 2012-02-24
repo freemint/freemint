@@ -91,19 +91,19 @@ void set_tty_mode( short md );
 #define AESSYS_TIMEOUT	2000	/* s/1000 */
 
 void
-ceExecfunc(enum locks lock, struct c_event *ce, bool cancel)
+ceExecfunc(enum locks lock, struct c_event *ce, short cancel)
 {
 	if (!cancel)
 	{
 		if (ce->d1)
 		{
-			void _cdecl (*f)(enum locks, struct xa_client *, bool);
+			void _cdecl (*f)(enum locks, struct xa_client *, short);
 			if ((f = ce->ptr1))
 				(*f)(lock, ce->client, ce->d0);
 		}
 		else
 		{
-			void (*f)(enum locks, struct xa_client *, bool);
+			void (*f)(enum locks, struct xa_client *, short);
 			if ((f = ce->ptr1))
 				(*f)(lock, ce->client, ce->d0);
 		}
@@ -211,7 +211,7 @@ cancel_CE(struct xa_client *client,
 
 void
 post_cevent(struct xa_client *client,
-	void (*func)(enum locks, struct c_event *, bool cancel),
+	void (*func)(enum locks, struct c_event *, short cancel),
 	void *ptr1, void *ptr2,
 	int d0, int d1, const RECT *r,
 	const struct moose_data *md)
@@ -736,7 +736,7 @@ static char *strrpl( char *s, char in, char out, char rep1 )
 }
 
 static void
-CE_fa(enum locks lock, struct c_event *ce, bool cancel)
+CE_fa(enum locks lock, struct c_event *ce, short cancel)
 {
 	if (!cancel)
 	{
@@ -1019,7 +1019,7 @@ fatal(int sig)
 	ferr = sig;
 	S.clients_exiting = 0;
 	C.shutdown |= EXIT_MAINLOOP | KILLEM_ALL;
-	dispatch_shutdown( RESTART_XAAES, 0);
+	dispatch_shutdown( RESTART_XAAES);
 }
 #endif
 
@@ -1043,7 +1043,7 @@ sigterm(void)
 	}
 	BLOG((false, "dispatch_shutdown(0)" ));
 	/*KERNEL_DEBUG("AESSYS: sigterm received, dispatch_shutdown(0)");*/
-	dispatch_shutdown(0, 0);
+	dispatch_shutdown(0);
 #endif
 }
 
@@ -1199,7 +1199,7 @@ helpthread_entry(void *c)
 }
 
 static void
-CE_at_restoresigs(enum locks lock, struct c_event *ce, bool cancel)
+CE_at_restoresigs(enum locks lock, struct c_event *ce, short cancel)
 {
 	if (!cancel)
 	{
@@ -1387,7 +1387,7 @@ kick_shutdn_if_last_client(void)
 
 static int in_ce_dispatch_shutdown = 0;
 void _cdecl
-ce_dispatch_shutdown(enum locks lock, struct xa_client *client, bool b)
+ce_dispatch_shutdown(enum locks lock, struct xa_client *client, short b)
 {
 	short r = 0, def = 1;
 	char *s;
@@ -1396,7 +1396,7 @@ ce_dispatch_shutdown(enum locks lock, struct xa_client *client, bool b)
 		return;
 	}
 	in_ce_dispatch_shutdown = 1;
-	switch( (short)b & (RESTART_XAAES | HALT_SYSTEM | RESTART_AFTER_BOMB) )
+	switch( b & (RESTART_XAAES | HALT_SYSTEM | RESTART_AFTER_BOMB) )
 	{
 	case RESTART_XAAES:
 		s = xa_strings[ASK_RESTART_ALERT];
@@ -1411,6 +1411,8 @@ ce_dispatch_shutdown(enum locks lock, struct xa_client *client, bool b)
 	default:
 		s = xa_strings[ASK_QUIT_ALERT];
 	}
+	if( !(b & RESOLUTION_CHANGE) )
+		next_res = 0;
 
 	r = xaaes_do_form_alert( lock, C.Hlp, def, s);
 	if( r == 2 )
@@ -1420,7 +1422,7 @@ ce_dispatch_shutdown(enum locks lock, struct xa_client *client, bool b)
 			b |= HALT_SYSTEM;
 		}
 		S.clients_exiting = 0;
-		dispatch_shutdown((short)b, 0);
+		dispatch_shutdown(b);
 	}
 	in_ce_dispatch_shutdown = 0;
 }
@@ -1429,19 +1431,17 @@ ce_dispatch_shutdown(enum locks lock, struct xa_client *client, bool b)
  * Initiate shutdown...
  */
 void _cdecl
-dispatch_shutdown(short flags, unsigned long arg)
+dispatch_shutdown(short flags)
 {
 	if ( !(C.shutdown & SHUTDOWN_STARTED))
 	{
 		C.shutdown = SHUTDOWN_STARTED | flags;
-		if ((flags & RESOLUTION_CHANGE))
-			next_res = arg;
 		set_shutdown_timeout(0);
 	}
 }
 
 static void
-CE_start_apps(enum locks lock, struct c_event *ce, bool cancel)
+CE_start_apps(enum locks lock, struct c_event *ce, short cancel)
 {
 	if (!cancel)
 	{
@@ -1706,7 +1706,7 @@ k_main(void *dummy)
 	/*
 	 * Initialization AES/VDI
 	 */
-	if (!(next_res & 0x80000000))
+	if (!next_res)
 		next_res = cfg.videomode;
 
 	pferr = ferr;
