@@ -290,7 +290,7 @@ struct CE_do_winmesag_data
 };
 
 static void
-CE_do_winmesag(enum locks lock, struct c_event *ce, bool cancel)
+CE_do_winmesag(enum locks lock, struct c_event *ce, short cancel)
 {
 	struct CE_do_winmesag_data *args = ce->ptr1;
 	if (!cancel)
