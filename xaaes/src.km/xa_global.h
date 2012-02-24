@@ -40,7 +40,7 @@
 extern struct nova_data *nova_data;
 extern struct cookie_mvdi mvdi_api;
 
-extern unsigned long next_res;
+extern unsigned short next_res;
 
 extern char version[32];
 extern char vversion[128];

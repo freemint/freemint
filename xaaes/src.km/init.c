@@ -810,7 +810,7 @@ again:
 #else
 		UNUSED(sd_str);
 #endif
-		if( C.shutdown & RESTART_XAAES )
+		if( C.shutdown & (RESTART_XAAES | RESOLUTION_CHANGE) )
 		{
 			goto again;
 		}
