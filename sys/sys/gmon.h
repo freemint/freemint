@@ -60,7 +60,7 @@ struct __bb
 	long		*counts;
 	long		ncounts;
 	struct __bb	*next;
-	const ulong	*addresses;
+	/*const*/ ulong	*addresses;
 };
 
 extern struct __bb *__bb_head;
