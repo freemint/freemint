@@ -375,13 +375,16 @@ __dir_search (COOKIE *dir, const char *name)
 {
 	register DIRLST *tmp = dir->data.dir.start;
 
-	RAM_DEBUG (("arafs: __dir_search: search: %s!", name));
+	RAM_DEBUG (("arafs: __dir_search: search: '%s'", name));
 
 	while (tmp)
 	{
-		RAM_DEBUG (("arafs: __dir_search: compare with: %s!", tmp->name));
+		RAM_DEBUG (("arafs: __dir_search: compare '%s' with: '%s',next=%lx", name, tmp->name, tmp->next));
 
-		if (stricmp (tmp->name, name) == 0)
+		/* fix trailing pathsep (appends an empty name, so stop here) */
+		if(!name[0])
+			return tmp;
+		if ( stricmp (tmp->name, name) == 0)
 		{
 			return tmp;
 		}
