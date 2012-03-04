@@ -375,13 +375,16 @@ __dir_search (COOKIE *dir, const char *name)
 {
 	register DIRLST *tmp = dir->data.dir.start;
 
-	RAM_DEBUG (("arafs: __dir_search: search: %s!", name));
+	RAM_DEBUG (("arafs: __dir_search: search: '%s'", name));
 
 	while (tmp)
 	{
-		RAM_DEBUG (("arafs: __dir_search: compare with: %s!", tmp->name));
+		RAM_DEBUG (("arafs: __dir_search: compare '%s' with: '%s',next=%lx", name, tmp->name, tmp->next));
 
-		if (stricmp (tmp->name, name) == 0)
+		/* fix trailing pathsep (appends an empty name, so stop here) */
+		if(!name[0])
+			return tmp;
+		if ( stricmp (tmp->name, name) == 0)
 		{
 			RAM_DEBUG (("arafs: __dir_search: return %lx", tmp));
 			return tmp;
@@ -891,7 +894,7 @@ ara_lookup (fcookie *dir, const char *name, fcookie *fc)
 	{
 		DIRLST *f = __dir_search (c, name);
 
-		RAM_DEBUG (("arafs: __dir_search: f=%lx", f));
+		RAM_DEBUG (("arafs: __dir_search(%s): f=%lx", name, f));
 		if (f)
 		{
 			fc->fs = &arafs_filesys;
