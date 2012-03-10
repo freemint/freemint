@@ -377,13 +377,13 @@ __dir_search (COOKIE *dir, const char *name)
 
 	RAM_DEBUG (("arafs: __dir_search: search: '%s'", name));
 
+	/* fix trailing pathsep (appends an empty name, so return found) */
+	if(!name[0])
+		return tmp;
 	while (tmp)
 	{
 		RAM_DEBUG (("arafs: __dir_search: compare '%s' with: '%s',next=%lx", name, tmp->name, tmp->next));
 
-		/* fix trailing pathsep (appends an empty name, so stop here) */
-		if(!name[0])
-			return tmp;
 		if ( stricmp (tmp->name, name) == 0)
 		{
 			return tmp;
@@ -708,6 +708,7 @@ __unlink (COOKIE *d, const char *name)
 	register COOKIE *t;
 	long r;
 
+	RAM_DEBUG (("arafs: __unlink: %s", name));
 	if (!IS_DIR (d))
 	{
 		RAM_DEBUG (("arafs: __unlink: dir not a DIR!"));
@@ -847,6 +848,7 @@ ara_lookup (fcookie *dir, const char *name, fcookie *fc)
 {
 	COOKIE *c = (COOKIE *) dir->index;
 
+	RAM_DEBUG (("arafs: ara_lookup: '%s'", name));
 	/* sanity checks */
 	if (!c || !IS_DIR (c))
 	{
@@ -1057,6 +1059,7 @@ ara_rmdir (fcookie *dir, const char *name)
 {
 	COOKIE *c = (COOKIE *) dir->index;
 
+	RAM_DEBUG (("arafs: ara_rmdir '%s' enter,flags=%lx,IS_IMMUTABLE=%lx", name, c->s->flags & MS_RDONLY, IS_IMMUTABLE (c) ));
 	if (c->s->flags & MS_RDONLY)
 		return EROFS;
 
@@ -1064,7 +1067,9 @@ ara_rmdir (fcookie *dir, const char *name)
 		return EACCES;
 
 	/* check for an empty dir is in __unlink */
-	return __unlink (c, name);
+	long r = __unlink (c, name);
+	RAM_DEBUG (("arafs: ara_rmdir '%s' return %ld", name, r));
+	return r;
 }
 
 static long _cdecl
@@ -1100,6 +1105,7 @@ ara_remove (fcookie *dir, const char *name)
 	COOKIE *c = (COOKIE *) dir->index;
 	long r;
 
+	RAM_DEBUG (("arafs: ara_remove '%s' enter", name));
 	if (c->s->flags & MS_RDONLY)
 		return EROFS;
 
@@ -1108,6 +1114,7 @@ ara_remove (fcookie *dir, const char *name)
 
 	r = __unlink (c, name);
 
+	RAM_DEBUG (("arafs: ara_remove '%s' return %ld", name, r));
 	return r;
 }
 
@@ -1270,10 +1277,21 @@ ara_opendir (DIR *dirh, int flags)
 static long _cdecl
 ara_readdir (DIR *dirh, char *nm, int nmlen, fcookie *fc)
 {
-	union { char *c; DIRLST **dir; } dirptr; dirptr.c = dirh->fsstuff;
+	union { char *c; DIRLST **dir; } dirptr;
 	DIRLST *l;
 	long r = ENMFILES;
 
+	if (!dirh)
+	{
+		RAM_DEBUG (("arafs: ara_readdir: ERROR: dirh=0"));
+		return r;
+	}
+	dirptr.c = dirh->fsstuff;
+	if (!dirptr.dir)
+	{
+		RAM_DEBUG (("arafs: ara_readdir: ERROR: dirptr.dir=0"));
+		return r;
+	}
 	l = *dirptr.dir;
 	if (l)
 	{
