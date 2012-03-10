@@ -28,6 +28,7 @@
 #include "xa_global.h"
 #include "xa_strings.h"
 
+#include "c_window.h"
 #include "xa_appl.h"
 #include "xa_shel.h"
 
@@ -629,7 +630,9 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 
 					type = APP_APPLICATION;
 					ret = p->pid;
-
+					/* switch menu off for single-task (todo: fix it) */
+					if( (p->modeflags & M_SINGLE_TASK) )
+						toggle_menu( lock, 0 );
 				}
 				else
 				{
