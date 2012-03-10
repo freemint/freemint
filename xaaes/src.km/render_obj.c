@@ -3537,11 +3537,12 @@ long make_bkg_img_path( char *bfn, long l )
 {
 	return sprintf( bfn, l, "%s%d%d.%d", api->C->Aes->home_path, screen->r.w, screen->r.h, screen->planes );
 }
-#if WITH_BKG_IMG
+#if WITH_BKG_IMG || WITH_GRADIENTS
 
 #include "xa_rsrc.h"
 #include "xaaes.h"
-
+#endif
+#if WITH_BKG_IMG
 /*
  * md = 0: (load and) copy to screen
  *      1: write to disk
@@ -3558,7 +3559,7 @@ int do_bkg_img(struct xa_client *client, int md, char *fn )
 	long sz = 0;
 	struct xa_vdi_settings *v = client->vdi_settings;
 	static void *background = 0;
-	static int ierr = -1;
+	static int ierr = -1;	// 0: ok
 	static char bfn[PATH_MAX];
 
 	if( md == 4 )
@@ -6600,10 +6601,12 @@ void load_gradients( char *path, char *fn )
 
 	free_widg_grad(api);
 
+#if WITH_BKG_IMG
 	if( (no_img = do_bkg_img( 0, 4, 0 )) )
 	{
 		hide_object_tree( api->C->Aes_rsc, DEF_DESKTOP, DESKTOP_LOGO, 1 );	// show
 	}
+#endif
 	box2_status = false;
 	for( err = GRAD_INIT; *gp && (char*)gpp < end && *(short*)gpp != STOP; err++)
 	{
