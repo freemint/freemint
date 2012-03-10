@@ -600,6 +600,10 @@ CE_pwaitpid(enum locks lock, struct c_event *ce, short cancel)
 		struct proc *k = pid2proc(0);
 		struct xa_client *c;
 
+		while( !ikill( C.SingleTaskPid, 0 ) )
+		{
+		 	yield();
+		}
 		FOREACH_CLIENT(c)
 		{
 			if( c->p->pid && c != C.Aes && c != C.Hlp && !(c->status & (CS_EXITING | CS_SIGKILLED)) )
@@ -756,6 +760,9 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 
 	DIAG((D_appl, NULL, "XA_client_exit: %s", c_owner(client)));
 
+					/* switch menu off for single-task (todo: fix it) */
+					if( C.SingleTaskPid > 0 )
+						toggle_menu( lock, 0 );
 // 	display("info=%lx for %s", info, client->name);
 // 	if (d) display(" exit C.HLP");
 	S.clients_exiting++;
@@ -1302,8 +1309,8 @@ short info_tab[][4] =
 	},
 	/* 2 colours */
 	{
-		1,		/* Getrez() */
-		16,		/* no of colours */
+		1,		/* phys. handle */
+		256,		/* no of colours */
 		1,		/* colour icons */
 		1		/* extended rsrc file format */
 	},
@@ -1493,7 +1500,7 @@ short info_tab[][4] =
 	/*15 <-- 64 */
 	{
 		0,		/* shel_write and AP_AESTERM */
-		0,		/* shel_write and SHW_SHUTDOWN/SHW_RESCHANGE */
+		1,		/* shel_write and SHW_SHUTDOWN/SHW_RESCHANGE */
 		3,		/* appl_search with long names and additive mode APP_TASKINFO available. */
 		1		/* form_error and all GEMDOS errorcodes */
 	},
