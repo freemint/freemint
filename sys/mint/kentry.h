@@ -110,9 +110,9 @@ struct timeval;
  */
 #define KENTRY_MAJ_VERSION	0
 #ifdef XHDI_MASS_STORAGE_SUPPORT
-#define KENTRY_MIN_VERSION	17
+#define KENTRY_MIN_VERSION	18
 #else
-#define KENTRY_MIN_VERSION	16
+#define KENTRY_MIN_VERSION	17
 #endif
 /* hardware dependant vector
  */
@@ -619,12 +619,14 @@ struct kentry_debug
 	 * debug - error messages
 	 * alert - really serious errors
 	 * fatal - fatal errors
+	 * force - always prints, even with debug level 0
 	 */
 	int *debug_level;
 	void	_cdecl (*trace)(const char *, ...);
 	void	_cdecl (*debug)(const char *, ...);
 	void	_cdecl (*alert)(const char *, ...);
 	EXITING	_cdecl (*fatal)(const char *, ...) NORETURN;
+	void	_cdecl (*force)(const char *, ...);
 };
 extern int debug_level;
 #define DEFAULTS_kentry_debug \
@@ -634,6 +636,7 @@ extern int debug_level;
 	Debug, \
 	ALERT, \
 	FATAL, \
+	FORCE, \
 }
 
 
