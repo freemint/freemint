@@ -885,7 +885,7 @@ g_slist:
 		}
 		else
 		{
-			if ( (key->raw.conin.state & K_ALT)
+			if ( ((key->raw.conin.state  & (K_CTRL|K_ALT)) == K_ALT )
 				|| (wt->owner->status & CS_FORM_ALERT))
 			{
 				char c = toupper(key->norm & 0x00ff);
