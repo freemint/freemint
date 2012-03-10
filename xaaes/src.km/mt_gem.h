@@ -111,7 +111,15 @@ __BEGIN_DECLS
 #define AES_DEVSTATUS_BETA	1
 #define AES_DEVSTATUS_RELEASE	2
 #define AES_FDEVSTATUS_STABLE	0x100
-#define AES_ARCH_M68K		0
+
+#define AES_ARCH_M68000	    0
+#define AES_ARCH_M68010     1
+#define AES_ARCH_M68020     2
+#define AES_ARCH_M68030    	3
+#define AES_ARCH_M68040    	4
+#define AES_ARCH_M68060  	  5
+#define AES_ARCH_M6802060	  6
+#define AES_ARCH_COLDFILRE	7
 
 /* appl_getinfo(AES_FUNCTIONS) return values */
 #define AGI_WFORM		1
