@@ -11,7 +11,7 @@ char *kstrings[] = {
 	MINT_VERS_STRING,
 	"\r\n",
 	"Wrong kentry-version (kernel-version too ",
-	"high",
-	"low"
+	"high)",
+	"low)"
 };
 
