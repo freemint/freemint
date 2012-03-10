@@ -1013,9 +1013,9 @@ ignore(int sig)
 static void
 fatal(int sig)
 {
-	//struct proc *p = get_curproc();
+	struct proc *p = get_curproc();
 	print_context(sig);
-	//KERNEL_DEBUG("'%s': fatal error, trying to clean up", p->name );
+	KERNEL_DEBUG("'%s': fatal error, trying to clean up", p->name );
 	ferr = sig;
 	S.clients_exiting = 0;
 	C.shutdown |= EXIT_MAINLOOP | KILLEM_ALL;
@@ -1814,9 +1814,6 @@ k_main(void *dummy)
 		xa_graf_mouse(-1, NULL, C.Aes, true);
 	}
 
-	if( !pferr )
-		post_cevent(C.Hlp, CE_start_apps, NULL,NULL, 0,0, NULL,NULL);
-
 	/*
 	 * console-output:
 	 * if RAW Ctrl-S is not eaten by the kernel, but \n is not translated to \r\n
@@ -1839,6 +1836,8 @@ k_main(void *dummy)
 	}
 	reset_about();
 	post_cevent(C.Hlp, ceExecfunc, open_about,NULL, 0,0, NULL,NULL);
+	if( !pferr )
+		post_cevent(C.Hlp, CE_start_apps, NULL,NULL, 0,0, NULL,NULL);
 	/*
 	 * Main kernel loop
 	 */
@@ -2066,10 +2065,6 @@ k_exit(int wait)
 	if(register_trap2(XA_handler, 1, 0, 0))
 		BLOG((false, "unregister trap handler failed"));
 
-	if( my_global_aes[2] != -1 )
-	{
-		mt_appl_exit(my_global_aes);
-	}
 	/*
 	 * close input devices
 	 */
@@ -2081,6 +2076,10 @@ k_exit(int wait)
 // 		G.adi_mouse = NULL;
 	}
 
+	if( my_global_aes[2] != -1 )
+	{
+		mt_appl_exit(my_global_aes);
+	}
 	/*
 	 * close profile
 	 */
