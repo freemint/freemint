@@ -582,7 +582,7 @@ kernel_key(enum locks lock, struct rawkey *key)
 		if( !C.update_lock )
 		{
 			if( key->raw.conin.state & (K_RSHIFT|K_LSHIFT) )
-					post_cevent(C.Hlp, ceExecfunc, open_launcher, NULL, 4, 0, NULL,NULL);
+					post_cevent(C.Hlp, ceExecfunc, open_launcher, NULL, HL_LOAD_CFG, 0, NULL,NULL);
 			else
 				post_cevent(C.Hlp, ceExecfunc, open_taskmanager,NULL, 1, 0, NULL,NULL);
 		}
@@ -763,7 +763,7 @@ kernel_key(enum locks lock, struct rawkey *key)
 		case 'K':	/* launcher */
 		if( !C.update_lock )
 		{
-			post_cevent(C.Hlp, ceExecfunc, open_launcher,NULL, 1,0, NULL,NULL);
+			post_cevent(C.Hlp, ceExecfunc, open_launcher, NULL, HL_LAUNCH, 0, NULL, NULL);
 		}
 		return true;
 		//case 'T':				/* ctrl+alt+T    Tidy screen */
@@ -784,7 +784,7 @@ kernel_key(enum locks lock, struct rawkey *key)
 		case 'N':	/* load gradients */
 		if( !C.update_lock )
 		{
-			post_cevent(C.Hlp, ceExecfunc, open_launcher, NULL, (key->raw.conin.state & (K_RSHIFT|K_LSHIFT)) ? 2 : 0, 0, NULL,NULL);
+			post_cevent(C.Hlp, ceExecfunc, open_launcher, NULL, (key->raw.conin.state & (K_RSHIFT|K_LSHIFT)) ? HL_LOAD_IMG : HL_LOAD_GRAD, 0, NULL,NULL);
 		}
 		return true;
 #endif
@@ -817,7 +817,7 @@ kernel_key(enum locks lock, struct rawkey *key)
 			{
 				if( !C.update_lock )
 				{
-					post_cevent(C.Hlp, ceExecfunc, open_launcher, NULL, 3, 0, NULL,NULL);
+					post_cevent(C.Hlp, ceExecfunc, open_launcher, NULL, HL_LOAD_PAL, 0, NULL,NULL);
 				}
 			}
 			else
