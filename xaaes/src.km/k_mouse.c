@@ -1086,6 +1086,7 @@ move_timeout(struct proc *p, long arg)
 
 	}
 }
+#if WITH_BBL_HELP
 static void new_bbl_timeout(unsigned long to)
 {
 	BBL_STATUS s = xa_bubble( 0, bbl_get_status, 0, 2 );
@@ -1104,7 +1105,7 @@ static void new_bbl_timeout(unsigned long to)
 		ms_to = addroottimeout(to, m_not_move_timeout, 1);
 	}
 }
-
+#endif
 /*
  * adi_move() AES Device Interface entry point,
  * taken whenever mouse moves.
