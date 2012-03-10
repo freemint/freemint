@@ -299,7 +299,7 @@ bailout:
 				}
 				else if (i == cwd->curdrv && p != cp && samefile (&targdir, &cwd->curdir[i]))
 				{
-					DEBUG(("Ddelete: directory %s is in use", path));
+					DEBUG(("Ddelete: directory %s is in use by %d:'%s'", path, p->pid, p->name));
 					release_cookie (&targdir);
 					release_cookie (&parentdir);
 					return EACCES;
