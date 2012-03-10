@@ -765,7 +765,8 @@ launchpath  = u:\usr\gem
 # lang = <two character language-code>     (default from $LANG or AKP-cookie)
 #
 # Set your preferred language for XaAES here, current available
-# two-character language-codes are: en, de, fr, es, hu, ru, cs.
+# currently supported two-character language-codes are:
+#  en, de, fr, es, it, hu, ru, cs.
 #
 #lang = de
 
