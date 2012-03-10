@@ -76,8 +76,6 @@ init_apgi_infotab(void)
 	info_tab[1][1] = screen.small_font_id;
 	info_tab[1][2] = screen.small_font_id <= 1 ? 0 : 1;
 
-	info_tab[2][0] = C.P_handle;//xbios_getrez();
-	info_tab[2][1] = 256;
-	info_tab[2][2] = 1;
-	info_tab[2][3] = 1; // + 2;
+	info_tab[2][0] = C.P_handle;
+
 }
