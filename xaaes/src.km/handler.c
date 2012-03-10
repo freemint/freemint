@@ -50,6 +50,8 @@
  * and are supposed to be locking
  */
 
+#define DBG_CALLS 0
+
 #include "xa_appl.h"
 #include "xa_form.h"
 #include "xa_fsel.h"
@@ -74,7 +76,7 @@ struct xa_ftab
 	int flags;
 #define DO_LOCKSCREEN	0x1	/* if set syscall is enclosed with lock/unclock_screen */
 #define NOCLIENT	0x2	/* if set syscall is callable without appl_init() */
-#if 1	/*GENERATE_DIAGS*/ // -> would save mem!
+#if DBG_CALLS || GENERATE_DIAGS
 	const char *descr;
 #define DESCR(x) x
 #else
@@ -457,7 +459,6 @@ setup_handler_table(void)
 	aes_tab[206].f = XA_pdlg_evnt;
 	aes_tab[207].f = XA_pdlg_do;
 #endif
-
 #ifndef WDIALOG_EDIT
 #define WDIALOG_EDIT 0
 #endif
@@ -536,10 +537,12 @@ XA_handler(void *_pb)
 #if INSERT_APPL_INIT
 			if (!(aes_tab[cmd].flags & NOCLIENT))
 			{
-				struct proc *pp = pid2proc( p->ppid );
-				if( p->p_flag & (P_FLAG_SLB | (P_FLAG_SLB << 8)) )
+				if( cmd == 19 && (p->p_flag & (P_FLAG_SLB | (P_FLAG_SLB << 8))) )
 				{
-					BLOG((0,"slb %s did appl_exit (ignored)!", p->name));
+#ifdef BOOTLOG
+					struct proc *pp = pid2proc( p->ppid );
+					BLOG((0,"slb %s (called by %s) did appl_exit (ignored)!", p->name, pp ? pp->name : ""));
+#endif
 					return 0;
 				}
 				client = init_client(0, false);
@@ -548,9 +551,18 @@ XA_handler(void *_pb)
 					add_to_tasklist(client);
 					client->forced_init_client = true;
 				}
+				BLOG((0,"non-AES-process '%s' (%d:Single:%d) did AES-call %d (%sfixed)", p->name, p->pid, C.SingleTaskPid, cmd, client ? "": "not " ));
+				if( !client )
+				{
+					ALERT((xa_strings[AL_NOAESPR]/*"XaAES: non-AES process issued AES system call %i, killing it"*/, cmd));
+					exit_proc(0, get_curproc(), 0);
+					raise(SIGKILL);
+					return 0;
+				}
 			}
 #endif
 		}
+#if !INSERT_APPL_INIT
 		/*
 		 * If process has not called appl_init() yet, it has restricted
 		 * access to AES functions
@@ -571,7 +583,7 @@ XA_handler(void *_pb)
 			}
 			return 0;
 		}
-
+#endif
 		/*
 		 * default paths are kept per process by MiNT ??
 		 * so we need to get them here when we run under the process id.
@@ -604,9 +616,9 @@ XA_handler(void *_pb)
 				aes_tab[cmd].descr, cmd, p_getpid()));
 		}
 #endif
-
-		// BLOG((0, "%s[%d] made by %s",	aes_tab[cmd].descr, cmd, client ? client->name : "-"));
-
+#if DBG_CALLS
+		BLOG((0, "%s[%d] made by %s",	aes_tab[cmd].descr, cmd, client ? client->name : get_curproc()->name));
+#endif
 		cmd_routine = aes_tab[cmd].f;
 
 		/* if opcode is implemented, call it */
@@ -655,7 +667,9 @@ XA_handler(void *_pb)
 					aes_tab[cmd].descr, cmd, cmd_rtn, p_getpid()));
 			}
 #endif
-			// BLOG((0, "%s: %s[%d] returned %ld for %s", client ? client->name : "-", aes_tab[cmd].descr, cmd, cmd_rtn, p->name));
+#if DBG_CALLS
+			BLOG((0, "%s: %s[%d] returned %ld for %s", client ? client->name : "-", aes_tab[cmd].descr, cmd, cmd_rtn, p->name));
+#endif
 			/* Ozk:
 			 * Now we check if circumstances under which we check if process started/ended
 			 * being a AES client
