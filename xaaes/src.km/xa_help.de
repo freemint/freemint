@@ -12,6 +12,7 @@ D             ôffnet den Screenshot-Dialog
               (XAAESNAP.PRG benîtigt)
 E             ôffnet das Fenster-KontextmenÅ
 L#F#          ôffnet den Task-Manager
+SHIFT+L       Konfiguration laden
 HELP          ôffnet den XaAES Infodialog
 H             System herunterfahren (oder $SDMASTER
               ausfÅhren, falls gesetzt)
@@ -52,6 +53,11 @@ SHIFT+PFEIL-HOCH#8#Oberstes Fenster nach oben verschieben
 SHIFT+PFEIL-RUNTER#2#Oberstes Fenster nach unten verschieben
 SHIFT+PFEIL-RECHTS#6#Oberstes Fenster nach rechts verschieben
 SHIFT+PFEIL-LINKS#4#Oberstes Fenster nach links verschieben
+SHIFT+
+ PFEIL-HOCH   Oberstes Fenster nach oben verschieben
+ PFEIL-RUNTER Oberstes Fenster nach unten verschieben
+ PFEIL-RECHTS Oberstes Fenster nach rechts verschieben
+ PFEIL-LINKS  Oberstes Fenster nach links verschieben
 #</CtrlAlt>
 <u>                                                      </u>
 
