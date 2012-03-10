@@ -131,8 +131,9 @@
 #define RUN_BOGUS_SLB 1
 
 /* do appl_init if an app does AES-calls without precedent appl_init */
-#define INSERT_APPL_INIT 0
-
+#ifndef INSERT_APPL_INIT
+#define INSERT_APPL_INIT 1
+#endif
 /* some debug-code to produce a bus-error */
 #ifndef TST_BE
 #define TST_BE 0
