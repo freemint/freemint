@@ -766,7 +766,22 @@ check_kentry_version(void)
 	}
 	if ((kentry->version_major != KENTRY_MAJ_VERSION) || (kentry->version_minor != KENTRY_MIN_VERSION))
 	{
+		int s = 0;
 		c_conws(kstrings[Wrong_kentry]);
+
+		if (kentry->version_major == KENTRY_MAJ_VERSION)
+		{
+			if( kentry->version_minor > KENTRY_MIN_VERSION)
+				s = 1;
+		}
+		else
+			if (kentry->version_major > KENTRY_MAJ_VERSION)
+				s = 2;
+		if( s )
+			c_conws(kstrings[high]);
+		else
+			c_conws(kstrings[low]);
+		c_conws(kstrings[KSTR_NL]);
 		return -1;
 	}
 	return 0;
