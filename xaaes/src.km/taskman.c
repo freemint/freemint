@@ -2413,23 +2413,23 @@ handle_launcher(enum locks lock, struct fsel_data *fs, const char *path, const c
 
 	switch( (long)fs->data )
 	{
-		case 1:
+		case HL_LAUNCH:
 			launch(lock, 0, 0, 0, parms+1, parms, C.Aes);
 		break;
 #if WITH_GRADIENTS
-		case 0:
+		case HL_LOAD_GRAD:
 			load_grd( parms+1 );
 		break;
 #endif
 #if WITH_BKG_IMG
-		case 2:
+		case HL_LOAD_IMG:
 			load_bkg_img( parms + 1 );
 		break;
 #endif
-		case 3:
+		case HL_LOAD_PAL:
 			load_palette( parms+1 );
 		break;
-		case 4:
+		case HL_LOAD_CFG:
 			load_config( parms+1 );
 		break;
 	}
