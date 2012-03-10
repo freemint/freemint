@@ -5,6 +5,8 @@ enum{
 	This_module_is_compiled_against,
 	MINT_VERS,
 	KSTR_NL,
-	Wrong_kentry
+	Wrong_kentry,
+	high,
+	low
 };
 

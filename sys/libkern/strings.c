@@ -10,6 +10,8 @@ char *kstrings[] = {
 	"This module is compiled against " MINT_NAME,
 	MINT_VERS_STRING,
 	"\r\n",
-	"Wrong kentry-version (contact your local dealer)!\r\n",
+	"Wrong kentry-version (kernel-version too ",
+	"high",
+	"low"
 };
 
