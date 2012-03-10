@@ -431,7 +431,7 @@ again:
 	else
 			BLOG(( 0,"stack is word-aligned:%lx", stk ));
 #endif
-	BLOG((0,"PRG: km=%lx, base=%lx, text=%lx -> %lx(%ld)", km, km->b, km->b->p_tbase, km->b->p_tbase + km->b->p_tlen, km->b->p_tlen));
+	BLOG((0,"PRG: km=%lx, base=%lx, text=%lx -> %lx(%ld), kentry:%d.%d", km, km->b, km->b->p_tbase, km->b->p_tbase + km->b->p_tlen, km->b->p_tlen, KENTRY_MAJ_VERSION, KENTRY_MIN_VERSION));
 	/* do some sanity checks of the installation
 	 * that are a common source of user problems
 	 */
@@ -715,7 +715,6 @@ again:
 		extern short info_tab[][4];	/* xa_appl.c */
 		info_tab[3][0] = p;
 	}
-
 	BLOG((0,"lang='%s' (from %s).",cfg.lang, li == 0 ? "config" : (li == 1 ? "Environ" : "AKP") ));
 	}
 
