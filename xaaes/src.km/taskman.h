@@ -52,6 +52,13 @@ void remove_from_tasklist(struct xa_client *client);
 #define NO_AES_CLIENT	0
 #define AES_CLIENT	1
 
+/* opcodes for handle_launcher */
+#define HL_LOAD_GRAD  0
+#define HL_LAUNCH     1
+#define HL_LOAD_IMG   2
+#define HL_LOAD_PAL   3
+#define HL_LOAD_CFG   4
+
 
 void update_tasklist_entry(int md, void *app, struct helpthread_data *htd, long pid, int redraw);
 
