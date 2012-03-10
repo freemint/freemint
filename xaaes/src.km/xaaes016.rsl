@@ -1,4 +1,4 @@
-# Language-File for XaAES v1.1.22 Beta
+# Language-File for XaAES v1.2.0 Beta
 #
 # - Objects -
 ### Menubar ###
@@ -417,6 +417,7 @@ _
 nn:.
 _
 nn:OK
+ru:ОК
 _
 nn:Target :
 de:System :
@@ -469,7 +470,7 @@ ru:Выключить
 cs:Zastavit
 _
 nn:OK
-#de:™K
+ru:ОК
 _
 nn:   Coldboot   @
 de:Kaltstart
@@ -519,6 +520,7 @@ ru:Очистить
 cs:Vyиistit
 _
 nn:OK
+ru:ОК
 _
 ### Fileselector buttons ###
 nn:___________________________________________________________
@@ -533,6 +535,7 @@ ru:Отмена
 cs:Zru№it
 _
 nn:OK
+ru:ОК
 _
 nn:-
 _
@@ -604,6 +607,7 @@ ru:Отмена
 cs:Zru№it
 _
 nn:OK
+ru:ОК
 _
 nn:    Set    @
 de:Setzen
@@ -700,6 +704,7 @@ ru:Драйвер:
 cs:Ovladaи:
 _
 nn:OK
+ru:ОК
 _
 nn: Cancel @
 de:Abbruch
@@ -1277,6 +1282,7 @@ _
 NN:[2][XaAES had a problem][Continue|Halt]              @
 de:[2][Problem bei XaAES][Weiter|Abbruch]
 fr:[2][XaAES a rencontr‚ un problЉme][Continuer|Arr€ter]
+es:[2][XaAES tuvo un problema][Contiuar|Detener]
 it:[2][XaAES ha avuto un problema][Continua|Arresta]
 ru:[2][Ошибка XaAES][Продолжить|Прервать]
 _
@@ -1353,8 +1359,12 @@ es:Cargar paleta
 it:Carica palleta
 ru:Загрузить палитру
 _
-nn:Load Config        @
+nn:Load Config           @
 de:Konfiguration laden
+fr:Charger configuration
+es:Cargar configuraciўn
+it:Carica configurazione
+ru:Загрузить конфигурация
 _
 ### XaAES alerts ###
 NN:$SDMASTER is not a valid program: %s (use the taskmanager)                      @
@@ -1561,6 +1571,7 @@ _
 NN:Resize           @
 de:Gr”ћe „ndern
 fr:Changer la taille
+es:Redimensionar
 it:Ridimensiona
 ru:Масштаб
 _
@@ -1596,54 +1607,63 @@ _
 NN:Resize           @
 de:Gr”ћe „ndern
 fr:Changer la taille
+es:Redimensionar
 it:Ridimensiona
 ru:Масштаб
 _
 NN:Scroll up         @
 de:Nach oben rollen
 fr:D‚filement en haut
+es:Desplazarse arriba
 it:Scorri in alto
 ru:Прокрутить вверх
 _
 NN:Scroll up         @
 de:Nach oben rollen
 fr:D‚filement en haut
+es:Desplazarse arriba
 it:Scorri in alto
 ru:Прокрутить вверх
 _
 NN:Scroll down      @
 de:Nach unten rollen
 fr:D‚filement en bas
+es:Desplazarse abajo
 it:Scorri in basso
 ru:Прокрутить вниз
 _
-NN:Vertical slide        @
+NN:Vertical slide         @
 de:Vertikal rollen
 fr:D‚filement vertical
+es:Desplazamiento vertical
 it:Scorrimento verticale
 ru:Вертикальные подсказки
 _
-NN:Scroll left        @
+NN:Scroll left          @
 de:Nach links rollen
 fr:D‚filement … gauche
+es:Desplazarse izquierda
 it:Scorri a sinistra
 ru:Прокрутить влево
 _
-NN:Scroll left        @
+NN:Scroll left          @
 de:Nach links rollen
 fr:D‚filement … gauche
+es:Desplazarse izquierda
 it:Scorri a sinistra
 ru:Прокрутить влево
 _
 NN:Scroll right       @
 de:Nach rechts rollen
 fr:D‚filement … droite
+es Desplazarse derecha
 it:Scorri a destra
 ru:Прокрутить вправо
 _
-NN:Horizontal slide        @
+NN:Horizontal slide         @
 de:Horizontal rollen
 fr:D‚filement horizontal
+es:Desplazamiento horizontal
 it:Scorrimento orizzontale
 ru:Горизонтальные подсказки
 _
