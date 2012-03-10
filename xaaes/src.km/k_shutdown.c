@@ -245,15 +245,14 @@ k_shutdown(void)
 			BLOG((false, "HALT_SYSTEM flag is set"));
 		if (C.shutdown & REBOOT_SYSTEM)
 			BLOG((false, "REBOOT_SYSTEM flag is set"));
-		/*if (C.shutdown & RESOLUTION_CHANGE)
+		if (C.shutdown & RESOLUTION_CHANGE)
 			BLOG((false, "RESOLUTION_CHANGE flag is set"));
-			*/
 #endif
 
 		/*
 		 * Close the virtual used by XaAES
 		 */
-		if (v && v->handle && v->handle != C.P_handle)
+		if (v && v->handle)
 		{
 			BLOG((false, "Closing down vwk %d", v->handle));
 			v_clsvwk(v->handle);
@@ -273,9 +272,7 @@ k_shutdown(void)
 			 * so I moved this to the end of the xaaes_shutdown,
 			 * AFTER closing the debugfile.
 			 */
-	// 		v_clsvwk(global_vdi_settings.handle);
 
-			if( /*!(C.shutdown & RESTART_XAAES) &&*/ C.P_handle > 0 && C.P_handle != v->handle )
 			{
 #ifndef ST_ONLY
 #if SAVE_CACHE_WK
@@ -295,8 +292,7 @@ k_shutdown(void)
 				BLOG((false, "Get current cpu cache settings... cm = %lx, sc = %lx", cm, sc));
 				s_system(S_CTRLCACHE, sc & ~7, cm);
 #endif
-				BLOG((false, "Enter cursor mode"));
-				v_enter_cur(C.P_handle);	/* Ozk: Lets enter cursor mode */
+				//v_enter_cur(C.P_handle);	/* Ozk: Lets enter cursor mode */
 				BLOG((false, "Closing VDI workstation %d", C.P_handle));
 				odbl = DEBUG_LEVEL;
 				DEBUG_LEVEL = 4;
@@ -313,9 +309,9 @@ k_shutdown(void)
 				v_clswk(C.P_handle);
 #endif
 			}
+			if( !ferr )
+				c_conws("\033e\033E");		/* Cursor enable, cursor home */
 		}
-		if( !ferr )
-			c_conws("\033e\033E");		/* Cursor enable, cursor home */
 	}
 	BLOG((false, "leaving k_shutdown()"));
 }
