@@ -36,7 +36,6 @@
 #define XAAES_MIN_VERSION  2
 #define XAAES_PATCH_LEVEL  0
 
-#define ARCH_TARGET	AES_ARCH_M68K
 #define DEV_STATUS	AES_DEVSTATUS_BETA
 //#define DEV_STATUS	AES_DEVSTATUS_RELEASE
 
@@ -68,33 +67,43 @@
 #define ASCII_DEV_STATUS	"Release"
 #endif
 
+#undef ARCH_TARGET
+
 #ifndef ASCII_DEV_STATUS
 #define ASCII_DEV_STATUS	"Undefined"
 #endif
 
 #ifdef __mcoldfire__
  #define _CPU	"coldfire"
+ #define ARCH_TARGET	AES_ARCH_COLDFILRE
 #else
  #ifdef mc68060
   #ifdef mc68020
    #define _CPU	"m68020-060"
+   #define ARCH_TARGET	AES_ARCH_M6802060
   #else
    #define _CPU	"m68060"
+   #define ARCH_TARGET	AES_ARCH_M68060
   #endif
  #else
   #ifdef mc68040
    #define _CPU	"m68040"
+   #define ARCH_TARGET	AES_ARCH_M68040
   #else
    #ifdef mc68030
     #define _CPU	"m68030"
+    #define ARCH_TARGET	AES_ARCH_M68030
    #else
     #ifdef mc68020
      #define _CPU	"m68020"
+     #define ARCH_TARGET	AES_ARCH_M68020
     #else
      #ifdef mc68010
       #define _CPU	"m68010"
+      #define ARCH_TARGET	AES_ARCH_M68010
      #else
       #define _CPU	"m68000"
+      #define ARCH_TARGET	AES_ARCH_M68000
      #endif
     #endif
    #endif
@@ -104,10 +113,9 @@
 
 
 
-#if (ARCH_TARGET == AES_ARCH_M68K)
+#ifdef ARCH_TARGET
 #define ASCII_ARCH_TARGET	_CPU
-#endif
-#ifndef ASCII_ARCH_TARGET
+#else
 #define ASCII_ARCH_TARGET	"Undefined"
 #endif
 
