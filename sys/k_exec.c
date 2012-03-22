@@ -64,10 +64,6 @@
 # include "timeout.h"
 # include "util.h"
 
-# ifdef COLDFIRE
-extern void	patch_memset_purec(BASEPAGE *b);
-# endif
-
 void rts (void);
 static struct proc *exec_region(struct proc *p, MEMREGION *mem, int thread);
 
@@ -346,9 +342,6 @@ sys_pexec(short mode, const void *p1, const void *p2, const void *p3)
 		}
 
 		TRACE(("Pexec: basepage region(%lx) is %ld bytes at %lx", base, base->len, base->loc));
-# ifdef COLDFIRE
-		patch_memset_purec((BASEPAGE *)base->loc);
-# endif
 	}
 	else
 	{
