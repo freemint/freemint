@@ -37,6 +37,9 @@
 
 # include "proc.h"
 
+# ifdef COLDFIRE
+extern void   patch_memset_purec(BASEPAGE *b);
+# endif
 
 struct screen
 {
@@ -1611,6 +1614,9 @@ failed:
 	DEBUG (("load_region: return region = %lx", reg));
 
 	SANITY_CHECK_MAPS ();
+#ifdef COLDFIRE
+   patch_memset_purec(b);
+#endif
 	return reg;
 }
 
