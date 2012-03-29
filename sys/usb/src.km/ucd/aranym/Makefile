@@ -1,6 +1,7 @@
 #
 # Makefile for ucd module
 #
+TARGET = aranym.ucd
 
 SHELL = /bin/sh
 SUBDIRS = 
@@ -15,7 +16,7 @@ include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-all-here: entry
+all-here: $(TARGET)
 
 # default overwrites
 INCLUDES = -I$(top_srcdir)
@@ -27,15 +28,10 @@ LIBS = $(LIBKERN) -lgcc
 CPU = 040
 
 # default definitions
-SGENFILES = aranym.ucd
-OBJS = $(SSOBJS:.S=.o)
+SGENFILES = $(TARGET)
+OBJS = $(SSOBJS:.S=.o) $(COBJS:.c=.o)
 
-
-entry:
-	$(MAKE) aranym.ucd
-	
-aranym.ucd: aranym-hcd.o $(OBJS) $(LIBKERNTARGET)
-	$(LD) $(CFLAGS) -o $@ $< $(OBJS) $(LIBS)
-
+$(TARGET): $(OBJS) $(LIBKERNTARGET)
+	$(LD) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
 
 include $(top_srcdir)/DEPENDENCIES
