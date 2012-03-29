@@ -2,7 +2,7 @@
 # Makefile for usb loader
 #
 
-TARGETS = loader.prg
+TARGETS = loader.prg #unloader.prg
 
 SHELL = /bin/sh
 SUBDIRS = 
@@ -22,7 +22,7 @@ all-here: $(TARGETS)
 # default overwrites
 LD = $(CC) -nostdlib -Wl,--entry -Wl,__start
 LIBS = -lgcc
-CPU = 060
+CPU = 020-60
 STRIPFLAGS =
 INCLUDES = 
 
@@ -34,18 +34,9 @@ COMMON		= crtinit.o $(SSOBJS:.S=.o)
 LOADER		= loader.o $(COMMON)
 #UNLOADER	= unloader.o $(COMMON)
 
-
-loader.prg: $(LOADER)
+$(TARGETS): $(OBJS)
 	$(LD) -o $@ -Wall $^ $(LIBS)
 	$(STRIP) $@
-
-#unloader.prg: $(UNLOADER)
-#	$(LD) -o $@ -Wall $^ $(LIBS)
-#	$(STRIP) $@
-
-#$(TARGET): $(OBJS)
-#	$(LD) -o $@ -Wall $^ $(LIBS)
-#	$(STRIP) $@
 
 
 include $(top_srcdir)/DEPENDENCIES
