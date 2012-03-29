@@ -395,7 +395,7 @@ long
 XHDINewCookie_from_S(void *newcookie)
 {
 	long r;
-	r = XHNewCookie(newcookie);
+	r = xhnewcookie(newcookie);
 	DEBUG((" XHNewCookie %d", r));
 	return r;
 }
