@@ -1,6 +1,7 @@
 #
-# Makefile for ucd module
+# Makefile for udd module
 #
+TARGET = storage.udd
 
 SHELL = /bin/sh
 SUBDIRS = 
@@ -15,7 +16,7 @@ include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
 include $(top_srcdir)/PHONY
 
-all-here: entry
+all-here: $(TARGET)
 
 # default overwrites
 INCLUDES = -I$(top_srcdir)
@@ -24,18 +25,13 @@ XDD_DEFINITIONS =
 
 LD = $(CC) -nostdlib -Wl,--entry -Wl,_init
 LIBS = $(LIBKERN) -lgcc
-CPU = 060
+CPU = 020-60
 
 # default definitions
-SGENFILES = storage.udd
-OBJS = $(SOBJS:.s=.o)
+SGENFILES = $(TARGET)
+OBJS = $(COBJS:.c=.o) $(SSOBJS:.S=.o) 
 
-
-entry:
-	$(MAKE) storage.udd
-	
-storage.udd: usb_storage.o $(OBJS) $(LIBKERNTARGET)
-	$(LD) $(CFLAGS) -o $@ $< $(OBJS) $(LIBS)
-
+$(TARGET): $(OBJS) $(LIBKERNTARGET)
+	$(LD) $(CFLAGS) -o $@ $(OBJS) $(LIBS)
 
 include $(top_srcdir)/DEPENDENCIES
