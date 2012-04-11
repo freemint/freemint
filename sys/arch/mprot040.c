@@ -151,7 +151,11 @@ ulong read_phys(ulong *addr);	/* dito */
  * by setting no_mem_prot to 1.
  */
 
+# ifdef ARANYM
+int no_mem_prot = 1; /* Turn off by default on ARANYM */
+# else
 int no_mem_prot = 0;
+# endif
 long page_table_size = 0L;
 int page_ram_type = 3;
 ulong mem_prot_flags = 0L; /* Bitvector, currently only bit 0 is used */
