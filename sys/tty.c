@@ -152,6 +152,10 @@ tty_read(FILEPTR *f, void *buf, long nbytes)
 		long ret, bytes = 0;
 		
 		ret = (*f->dev->select)(f, (long) get_curproc(), O_RDONLY);
+		if (ret == EINTR) {
+			(*f->dev->unselect)(f, (long) get_curproc(), O_RDONLY);
+			return ret;
+		}
 		if (ret != 1)
 		{
 			TIMEOUT *t;
@@ -167,8 +171,11 @@ tty_read(FILEPTR *f, void *buf, long nbytes)
 			while (get_curproc()->wait_cond == (long) wakeselect)
 			{
 				TRACE (("sleeping in tty_read (VTIME)"));
-				if (sleep (SELECT_Q | 0x100, (long) wakeselect))
-					break;
+				if (sleep (SELECT_Q | 0x100, (long) wakeselect)) {
+					canceltimeout(t);
+					(*f->dev->unselect)(f, (long) get_curproc(), O_RDONLY);
+					return EINTR;
+				}
 			}
 			
 			canceltimeout (t);
@@ -1665,7 +1672,8 @@ tty_putchar (FILEPTR *f, long data, int mode)
 				/* if the device has writeb assume it wakes
 				 * us when TS_HOLD resets
 				 */
-				sleep (IO_Q, (long) &tty->state);
+				if (sleep (IO_Q, (long) &tty->state))
+					return EINTR;
 				continue;
 			}
 			

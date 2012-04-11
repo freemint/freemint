@@ -1035,7 +1035,8 @@ bconin (int dev)
 again:
 		while (k->tail == k->head)
 		{
-			sleep (IO_Q, (long) &console_in);
+			if (sleep (IO_Q, (long) &console_in))
+			   return EINTR;
 		}
 
 		if (checkkeys ())
@@ -1072,14 +1073,18 @@ again:
 				/* help the compiler... :) */
 				long *statc;
 
-				while (!callout1 (*(statc = &MAPTAB [dev - SERDEV].bconstat), dev))
-					sleep (IO_Q, (long) &bttys [h]);
+				while (!callout1 (*(statc = &MAPTAB [dev - SERDEV].bconstat), dev)) {
+					if (sleep (IO_Q, (long) &bttys [h]))
+						return EINTR;
+				}
 
 				return callout1 (statc[1], dev);
 			}
 
-			while (!BCONSTAT (dev))
-				sleep (IO_Q, (long) (dev == 3 ? &midi_btty : &bttys[h]));
+			while (!BCONSTAT (dev)) {
+				if (sleep (IO_Q, (long) (dev == 3 ? &midi_btty : &bttys[h])))
+					return EINTR;
+			}
 		}
 		else if (dev > 0)
 		{

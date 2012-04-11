@@ -1567,7 +1567,10 @@ iwrite (int bdev, const char *buf, long bytes, int ndelay, struct bios_file *b)
 				if (t)
 				{
 					TRACE (("sleeping in iwrite"));
-					sleep (IO_Q|0x100, (long) &tty->state);
+					if (sleep (IO_Q|0x100, (long) &tty->state)) {
+						canceltimeout(t);
+						return EINTR;
+					}
 					canceltimeout (t);
 				}
 			}
@@ -1730,9 +1733,10 @@ iread (int bdev, char *buf, long bytes, int ndelay, struct bios_file *b)
 			    (bdev == 3 ? ionread (ior) : btty_ionread (t)) < (long)t->tty->vmin)
 			 : !(int) callout1 (*cinstat, bdev))
 		{
-			if (t)
-				sleep (IO_Q, (long) t);
-			else
+			if (t) {
+				if (sleep (IO_Q, (long) t))
+					return EINTR;
+			} else
 				nap (60);
 		}
 	}
@@ -2356,7 +2360,8 @@ bios_ioctl (FILEPTR *f, int mode, void *buf)
 		if (!tty)
 			return ENOSYS;
 		while (tty->state & TS_BLIND)
-			sleep (IO_Q, (long)&tty->state);
+			if (sleep (IO_Q, (long)&tty->state))
+				return EINTR;
 		return E_OK;
 	    }
 	case TCURSOFF:
@@ -2386,9 +2391,10 @@ bios_ioctl (FILEPTR *f, int mode, void *buf)
 
 		b = (struct bios_file *)f->fc.index;
 		while (b->lockpid && b->lockpid != get_curproc()->pid) {
-			if (mode == F_SETLKW && lck->l_type != F_UNLCK)
-				sleep(IO_Q, (long)b);
-			else
+			if (mode == F_SETLKW && lck->l_type != F_UNLCK) {
+				if (sleep(IO_Q, (long)b))
+					return EINTR;
+			} else
 				return ELOCKED;
 		}
 		if (lck->l_type == F_UNLCK) {
@@ -2607,7 +2613,8 @@ found_device:
 			tty->use_cnt++;
 			while (tty->hup_ospeed)
 			{
-				sleep (IO_Q, (long) &tty->state);
+				if (sleep (IO_Q, (long) &tty->state))
+					return EINTR;
 			}
 
 			/* first open for this device? */
