@@ -307,6 +307,7 @@ get_argval(char *wfarg, short *result)
 	return 0;
 }
 
+#ifndef ST_ONLY
 static char*
 get_str_arg(char *wfarg)
 {
@@ -334,6 +335,7 @@ get_str_arg(char *wfarg)
 	*p = c;
 	return ret;
 }
+#endif
 static short
 get_argument(char *wfarg, short *result)
 {
@@ -667,8 +669,10 @@ pCB_app_options(char *line)
 				get_argument(s + 8, &opts->rsc_lang);
 			else if (!strnicmp(s, "ignore_rsc_size", 15))
 				get_argument(s + 15, &opts->ignore_rsc_size);
+#ifndef ST_ONLY
 			else if (!strnicmp(s, "icn_pal_name", 12))
 				opts->icn_pal_name = get_str_arg( s + 12 );
+#endif
 			else if (!strnicmp(s, "winframe_size", 13))
 				get_argument(s + 13, &opts->thinframe);
 			else if (!strnicmp(s, "inhibit_hide", 12))
