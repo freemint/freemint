@@ -247,10 +247,11 @@ again:
 	ConsoleWrite(path);
 	ConsoleWrite("'\r\n");
 	/* append module name */
-	my_strlcat(path, name, sizeof(path));
+	//my_strlcat(path, name, sizeof(path));
 
 	/* check if file exist */
-	fh = Fopen(path, O_RDONLY);
+	fh = Fopen(name, O_RDONLY);
+	//fh = Fopen(path, O_RDONLY);
 	if (fh < 0)
 	{
 		ConsoleWrite("XaAES loader: No such file: \"");
@@ -261,7 +262,8 @@ again:
 	Fclose((int)fh);
 
 	ConsoleWrite("Load kernel module: '");
-	ConsoleWrite(path);
+	ConsoleWrite(name);
+	//ConsoleWrite(path);
 	ConsoleWrite("'\r\n");
 
 	fh = Fopen("/dev/km", O_RDONLY);
@@ -281,7 +283,8 @@ again:
 	//ConsoleWrite( "XaAES loader: KM_RUN \r\n");
 	//Cconin();
 
-	r = Fcntl((int)fh, path, KM_RUN);
+	r = Fcntl((int)fh, name, KM_RUN);
+	//r = Fcntl((int)fh, path, KM_RUN);
 	//ConsoleWrite( "XaAES loader: KM_RUN done()\r\n");
 
 	if( r < 0 )
