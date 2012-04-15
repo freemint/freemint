@@ -245,12 +245,100 @@ transform_icon_bitmap(struct xa_client *client, struct xa_rscs *rscs, CICONBLK *
 		dst.fd_nplanes	= screen.planes;
 
 		memcpy(tmp, new_data, new_len);
-		transform_gem_bitmap(vdih, src, dst, planes, cfg.remap_cicons ? rscs->palette : NULL, screen.palette);
+#ifndef ST_ONLY
+		{
+		static char *icn_pal_name = 0;
+
+		if( cfg.remap_cicons || (client->options.icn_pal_name && cfg.palette[0] && strcmp( cfg.palette, client->options.icn_pal_name )) )
+		{
+			if( !rscs->palette && client->options.icn_pal_name )
+			{
+				if( C.is_init_icn_pal == 1 && strcmp( icn_pal_name, client->options.icn_pal_name) )
+					C.is_init_icn_pal = 0;
+				if( !C.is_init_icn_pal )
+				{
+					if( !C.icn_pal )
+						C.icn_pal = kmalloc( 256 * sizeof(*C.icn_pal) );	// free!
+					if( C.icn_pal && !rw_syspalette( READ, C.icn_pal, C.Aes->home_path, client->options.icn_pal_name ) )
+					{
+						if( icn_pal_name )
+							kfree(icn_pal_name);
+						icn_pal_name = xa_strdup( client->options.icn_pal_name );
+						C.is_init_icn_pal = 1;
+					}
+					else
+						C.is_init_icn_pal = -1;
+				}
+			}
+		}
+
+		transform_gem_bitmap(vdih, src, dst, planes, cfg.remap_cicons ? rscs->palette ? rscs->palette : C.is_init_icn_pal == 1 ? C.icn_pal : 0 : 0, screen.palette);
+#else
+		transform_gem_bitmap(vdih, src, dst, planes, 0, screen.palette);
+#endif
+		}
 		kfree(tmp);
 	}
 	return new_data;
 }
 #endif
+#if 0	// debugging!
+void dump_hex( void *data, long len, int bpw, int doit );
+void dump_hex( void *data, long len, int bpw, int doit )
+{
+	union{
+		const uchar *p1;
+		const short *p2;
+		const long *p4;
+	}rv;
+	int llen = 16;
+	char  s[llen*(bpw*2+1)];
+	int col = 1, sl = 0;
+	long l, off, vl;
+	short vs;
+	if( len <= 0 || !doit )
+		return;
+
+	for( l = off = 0, rv.p1 = data; l < len; rv.p1 += bpw, l += bpw )
+	{
+		switch( bpw )
+		{
+			default:
+			case 1:
+				vs = *rv.p1;
+				sl += sprintf( (char*)(s + sl), sizeof( s ) - sl, "%02x ", vs & 0xff );
+			break;
+			case 2:
+				vs = *rv.p2;
+				sl += sprintf( (char*)(s + sl), sizeof( s ) - sl, "%04x ", vs );
+			break;
+			case 3:
+				vl = *rv.p4 & 0x00ffffff;
+				sl += sprintf( (char*)(s + sl), sizeof( s ) - sl, "%06lx ", vl );
+			break;
+			case 4:
+				vl = *rv.p4;
+				sl += sprintf( (char*)(s + sl), sizeof( s ) - sl, "%08lx ", vl );
+			break;
+		}
+		if( ++col > llen )
+		{
+			s[sl] = 0;
+			BLOG(( 0, "%04ld: %s", off, s));
+			off = l+bpw;
+			col = 1;
+			sl = 0;
+		}
+	}
+	if( sl )
+	{
+		s[sl-1] = 0;
+		BLOG(( 0, "%04ld: %s", off, s));
+	}
+
+}
+#endif
+
 /*
  * FixColourIconData: Convert a colour icon from device independent to device specific
  */
@@ -286,7 +374,9 @@ FixColourIconData(struct xa_client *client, CICONBLK *icon, struct xa_rscs *rscs
 		/* DIAG((D_rsrc,client,"[1]best_cicon planes: %d", best_cicon->num_planes)); */
 		c = best_cicon;
 		if (c->col_data)
+		{
 			c->col_data = transform_icon_bitmap(client, rscs, icon, c->col_data, len, c->num_planes, vdih);
+		}
 		if (c->sel_data)
 			c->sel_data = transform_icon_bitmap(client, rscs, icon, c->sel_data, len, c->num_planes, vdih);
 

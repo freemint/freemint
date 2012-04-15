@@ -386,6 +386,8 @@ init_client(enum locks lock, bool sysclient)
 	client->save_mouse = client->mouse;
 	client->save_mouse_form = client->mouse_form;
 
+	if( C.is_init_icn_pal == -1 )
+		C.is_init_icn_pal = 0;
 	return client;
 }
 
