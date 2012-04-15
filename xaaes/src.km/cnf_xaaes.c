@@ -121,7 +121,7 @@ static struct parser_item parser_tab[] =
 	{ "POPSCROLL",             PI_R_S,   & cfg.popscroll		},
 	{ "DC_TIME",               PI_R_S,   & cfg.double_click_time	},
 	{ "MP_TIMEGAP",            PI_R_S,   & cfg.mouse_packet_timegap },
-	{ "VIDEO",	           PI_R_S,   & cfg.videomode		},
+	{ "VIDEO",	           PI_R_US,   & cfg.videomode		},
 	{ "ET4000_HACK",       PI_R_B,   & cfg.et4000_hack	},
 	{ "REDRAW_TIMEOUT",        PI_R_S,   & cfg.redraw_timeout, Range(0, 32000)	},
 	{ "POPUP_TIMEOUT",	   PI_R_S,   & cfg.popup_timeout, Range(0, 32000)	},
@@ -307,6 +307,33 @@ get_argval(char *wfarg, short *result)
 	return 0;
 }
 
+static char*
+get_str_arg(char *wfarg)
+{
+	char *ret, *p, c = 0;
+	DIAGS(("get_argument: string = '%s'", wfarg));
+
+	wfarg = skip(wfarg);
+
+	if (*wfarg == '=')
+		wfarg++;
+	else
+	{
+		DIAGS(("get_str_arg: equation expected"));
+		return 0;
+	}
+	wfarg = skip(wfarg);
+	for( p = wfarg; *p > ' '; p++ )
+	;
+	if( *p )
+	{
+		c = *p;
+		*p = 0;
+	}
+	ret = xa_strdup( wfarg );
+	*p = c;
+	return ret;
+}
 static short
 get_argument(char *wfarg, short *result)
 {
@@ -640,6 +667,8 @@ pCB_app_options(char *line)
 				get_argument(s + 8, &opts->rsc_lang);
 			else if (!strnicmp(s, "ignore_rsc_size", 15))
 				get_argument(s + 15, &opts->ignore_rsc_size);
+			else if (!strnicmp(s, "icn_pal_name", 12))
+				opts->icn_pal_name = get_str_arg( s + 12 );
 			else if (!strnicmp(s, "winframe_size", 13))
 				get_argument(s + 13, &opts->thinframe);
 			else if (!strnicmp(s, "inhibit_hide", 12))

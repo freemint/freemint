@@ -189,10 +189,20 @@ static unsigned long
 get_coldist(struct rgb_1000 *src, struct rgb_1000 *dst)
 {
 	long r, g, b;
+	int src_grey = 0, dst_grey = 0;
 
 	r = dst->red;
 	r -= src->red;
 	r *= r;
+
+	if( src->red == src->green && src->green == src->blue )
+		src_grey = 1;
+	if( dst->red == dst->green && dst->green == dst->blue )
+		dst_grey = 1;
+	if( src_grey && dst_grey )
+		return r / 8;	// prefer if both grey
+	if( src_grey != dst_grey )
+		r *= 4;	// bad if only one grey
 
 	g = dst->green;
 	g -= src->green;
@@ -579,12 +589,14 @@ build_pal_xref(struct rgb_1000 *src_palette, struct rgb_1000 *dst_palette, unsig
 	/*
 	 * Normally, We do not remap any referances to pens 0 - 15
 	 */
-	for (i = 0; i < pens && i < 16; i++)
-		cref[i] = i;
+	//for (i = 0; i < pens && i < 16; i++)
+		//cref[i] = i;
 
+	cref[0] = 0;
 	for (i = 1, src = src_palette + 1; i < pens; i++, src++)
 	{
-		dst = dst_palette + 16;
+		//dst = dst_palette + 1;
+		//dst = dst_palette + 16;
 		closest = 0xffffffffL;
 
 		c = 0;
@@ -615,6 +627,7 @@ build_pal_xref(struct rgb_1000 *src_palette, struct rgb_1000 *dst_palette, unsig
 		}
 		cref[i] = c;
 
+
 // 		if (D) display("src %03d, %03d, %03d, dst %03d, %03d, %03d",
 // 			src->red, src->green, src->blue, dst->red, dst->green, dst->blue);
 // 		if (D) display(" %04lx xref %d to %d(%d)", closest, i, c, j, cref[i]);
@@ -623,9 +636,10 @@ build_pal_xref(struct rgb_1000 *src_palette, struct rgb_1000 *dst_palette, unsig
 }
 /*
  * Remap the bitmap palette referances.
+ * md == 1: bitmap, else img
  */
 STATIC void
-remap_bitmap_colindexes(MFDB *map, unsigned char *cref)
+remap_bitmap_colindexes(MFDB *map, unsigned char *cref, int md)
 {
 	int planes, psize;
 	int i, j, k, bit;
@@ -658,7 +672,10 @@ remap_bitmap_colindexes(MFDB *map, unsigned char *cref)
 				*d_ptr <<= 1;
 				d_ptr += psize;
 			}
-			cref_ind = cref[cref_ind >> (16 - planes)];
+			cref_ind >>= (16 - planes);
+			if( planes == 8 && md == 1 )
+				cref_ind = devtovdi8[cref_ind];
+			cref_ind = cref[cref_ind];
 			for (j = 0; j < planes; j++)
 			{
 				d[j] |= (cref_ind & 1) << bit;
@@ -1683,8 +1700,8 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 		}
 	}
 }
-#endif
-#endif
+#endif	// ST_ONLY
+#endif	//WITH_GRADIENTS
 
 void
 load_image(char *name, XAMFDB *mimg)
@@ -1727,7 +1744,7 @@ load_image(char *name, XAMFDB *mimg)
 				unsigned char cref[256];
 				ndisplay(",remap bitmap...");
 				build_pal_xref((struct rgb_1000 *)xa_img.palette, screen.palette, (unsigned char *)&cref, (1 << msrc.mfdb.fd_nplanes));
-				remap_bitmap_colindexes(&msrc.mfdb, (unsigned char *)&cref);
+				remap_bitmap_colindexes(&msrc.mfdb, (unsigned char *)&cref, 0);
 				ndisplay("OK!");
 			}
 		}
@@ -1875,7 +1892,7 @@ transform_bitmap(short vdih, MFDB *src, MFDB *dst, struct rgb_1000 *src_pal, str
 			{
 				unsigned char cref[256];
 				build_pal_xref(src_pal, sys_pal, (unsigned char *)&cref, (1 << src->fd_nplanes));
-				remap_bitmap_colindexes(src, (unsigned char *)&cref);
+				remap_bitmap_colindexes(src, (unsigned char *)&cref, 1);
 				yield();
 			}
 			newsize = (long)(((src->fd_w + 15) >> 4) << 1) * src->fd_h * dst->fd_nplanes;
@@ -1916,15 +1933,13 @@ transform_bitmap(short vdih, MFDB *src, MFDB *dst, struct rgb_1000 *src_pal, str
 
 			to = (void *)-1L;
 			from = (void *)-1L;
-#if 1
 			if (src->fd_nplanes <= 8 && src_pal && sys_pal)
 			{
 				unsigned char cref[256];
 				build_pal_xref(src_pal, sys_pal, (unsigned char *)&cref, (1 << src->fd_nplanes));
-				remap_bitmap_colindexes(src, (unsigned char *)&cref);
+				remap_bitmap_colindexes(src, (unsigned char *)&cref, 1);
 // 				yield();
 			}
-#endif
 			if (screen.pixel_fmt >= 0)
 			{
 				switch (dst->fd_nplanes)
@@ -1962,6 +1977,7 @@ transform_bitmap(short vdih, MFDB *src, MFDB *dst, struct rgb_1000 *src_pal, str
 /* ************************************************* */
 }
 #else
+void dump_hex( void *data, long len, int bpw, int doit );
 bool
 transform_gem_bitmap(short vdih, MFDB msrc, MFDB mdest, short planes, struct rgb_1000 *src_pal, struct rgb_1000 *sys_pal)
 {
@@ -1972,11 +1988,19 @@ transform_gem_bitmap(short vdih, MFDB msrc, MFDB mdest, short planes, struct rgb
 
 	if (src_planes <= 8 && dst_planes <= 8)
 	{
-		if (src_planes == 8 && dst_planes == 8 && src_pal && sys_pal)
+		static unsigned short init_pal_cref8 = 0;	// todo: check for same src/dst-pal vs. prev!
+		if ( src_pal && sys_pal)
 		{
-			unsigned char cref[256];
-			build_pal_xref(src_pal, sys_pal, (unsigned char *)&cref, 256);
-			remap_bitmap_colindexes(&msrc, (unsigned char *)&cref);
+			static unsigned char cref[256];
+			if( init_pal_cref8 == 0 )
+			{
+				//build_pal_xref(src_pal, sys_pal, (unsigned char *)&cref, 256);
+				build_pal_xref(src_pal, sys_pal, cref, 256);
+				init_pal_cref8 = 1;
+			}
+
+			remap_bitmap_colindexes(&msrc, cref, 1);
+			//remap_bitmap_colindexes(&msrc, (unsigned char *)&cref, 1);
 			yield();
 		}
 		if ((src_planes | dst_planes) != 1)
@@ -1993,12 +2017,13 @@ transform_gem_bitmap(short vdih, MFDB msrc, MFDB mdest, short planes, struct rgb
 	}
 	else if (src_planes <= 8)
 	{
-		int i;
+		short i;
 		short x, y, pxy[8], colours[2];
 		long plane_int_size = msrc.fd_wdwidth * msrc.fd_h;
 		short *colour_lut, words[8], mask;
 		char used_colours[256];
 		MFDB tmp, tmp2;
+
 
 		DIAGS(("dst.planes %d src.fd_stand %d", dst_planes, msrc.fd_stand));
 		tmp = msrc;
@@ -2014,6 +2039,7 @@ transform_gem_bitmap(short vdih, MFDB msrc, MFDB mdest, short planes, struct rgb
 		if (!tmp2.fd_addr)
 			tmp2.fd_addr = tmp.fd_addr;
 
+		//bzero(tmp2.fd_addr, map_size(&tmp2, 5));
 		mask = (1 << src_planes) - 1;
 
 		colours[1] = 0;
@@ -2029,7 +2055,25 @@ transform_gem_bitmap(short vdih, MFDB msrc, MFDB mdest, short planes, struct rgb
 
 		switch (src_planes)
 		{
-			case 8:	colour_lut = devtovdi8;	break;
+			case 8:
+				colour_lut = devtovdi8;
+				/* convert 8bit-icon-palette to system-palette */
+				if( src_pal )
+				{
+					static int init_pal_cref = 0;	// 	// todo: check for same src/dst-pal!
+					//static uchar pal_cref[256] = {0}, init_pal_cref = 0;
+					if( init_pal_cref == 0 )
+					{
+						uchar pal_cref[256];
+						short lut[256];
+						build_pal_xref(src_pal, sys_pal, pal_cref, 256);
+						memcpy( lut, colour_lut, 256 * sizeof(short) );
+						for( i = 0; i < 256; i++ )
+							colour_lut[i] = pal_cref[lut[i]];
+						init_pal_cref = 1;
+					}
+				}
+			break;
 			case 4:	colour_lut = devtovdi4;	break;
 			case 2:	colour_lut = devtovdi2;	break;
 			case 1: colour_lut = devtovdi1;	break;
@@ -2053,21 +2097,24 @@ transform_gem_bitmap(short vdih, MFDB msrc, MFDB mdest, short planes, struct rgb
 
 			bzero(tmp.fd_addr, map_size(&tmp, 4));
 			bzero(used_colours, sizeof(used_colours));
+			//bzero(words, sizeof(words));
 			for (x = 0; x < msrc.fd_wdwidth; x++)
 			{
 				short *ptr = (short *)((char *)msrc.fd_addr + (y * msrc.fd_wdwidth * 2) + (x << 1));
 				/* Get the 16 bit from each plane in words[8] */
 				i = 0;
 				while (i < src_planes)
-					words[i++] = *ptr,
+				{
+					words[i++] = *ptr;
 					ptr += plane_int_size;
+				}
 
 				/* Now built the colour index number from them
 				 * by taking 1 bit from each words[j]. */
 				for (i = 0; i < 16; i++)
 				{
 					/* interleaved to chunky conversion */
-					int j;
+					short j;
 					unsigned short pixcol = 0;
 					for (j = src_planes - 1; j >= 0; j--)
 					{
@@ -2086,8 +2133,17 @@ transform_gem_bitmap(short vdih, MFDB msrc, MFDB mdest, short planes, struct rgb
 			/* src fd_stand to device dependent format translation
 			 * (for the current line) */
 			pxy[5] = pxy[7] = y;
+			//static int dd = 0;
+			/*if( !dd ){
+				dump_hex( tmp.fd_addr, map_size(&tmp,8), 1);
+			}*/
 			vr_trnfm( vdih, &tmp, &tmp2 );
+			//memcpy( tmp.fd_addr, tmp2.fd_addr, map_size(&tmp2, 9));
 
+			/*if( !dd ){
+				dump_hex( tmp2.fd_addr, map_size(&tmp2,7), 1);
+				dd = 1;
+			}*/
 			/* for each color in src MFDB color depth */
 			for (i = 0; i < tmp.fd_h; i++)
 			{
@@ -2099,9 +2155,13 @@ transform_gem_bitmap(short vdih, MFDB msrc, MFDB mdest, short planes, struct rgb
 
 					pxy[1] = pxy[3] = i;
 					/* project transparently to the mdest */
+					//dump_hex( tmp2.fd_addr, map_size(&tmp2,6), 2, dd==3);
+					//if( colours[0] )
 					vrt_cpyfm( vdih, MD_TRANS, pxy, &tmp2, &mdest, colours );
+					//dump_hex( mdest.fd_addr, map_size(&mdest,6), 2, dd==3);
 				}
 			}
+			//dd++;
 		}
 
 		if (tmp2.fd_addr != tmp.fd_addr)
@@ -2298,7 +2358,7 @@ int rw_syspalette( int md, struct rgb_1000 *palette, char *path, char *f )
 	else
 		strcpy( fn, f );
 
-	BLOG((0,"loading palette:%s", fn));
+	BLOG((0,"loading palette:'%s'", fn));
 	fp = kernel_open( fn, O_RDONLY, &err, NULL );
 	if( !fp )
 	{
@@ -2320,6 +2380,7 @@ int rw_syspalette( int md, struct rgb_1000 *palette, char *path, char *f )
 
 	palsz -= 4;
 	memcpy( palette, &buf[2], palsz );
+	//for( pens = 0; pens < 256; pens++ )
 	return 0;
 }
 
