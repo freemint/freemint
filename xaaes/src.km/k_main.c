@@ -1006,7 +1006,9 @@ ignore(int sig)
 	DIAGS(("AESSYS: ignored signal"));
 	print_context(sig);
 	BLOG((0, "'%s': received signal: %d(ignored)", get_curproc()->name, sig));
-	KERNEL_DEBUG("AESSYS: ignored signal");
+	KERNEL_DEBUG("AESSYS: ignored signal %d", sig);
+	if( sig == SIGINT )
+		recover();
 }
 #if !GENERATE_DIAGS
 
