@@ -273,10 +273,10 @@ transform_icon_bitmap(struct xa_client *client, struct xa_rscs *rscs, CICONBLK *
 		}
 
 		transform_gem_bitmap(vdih, src, dst, planes, cfg.remap_cicons ? rscs->palette ? rscs->palette : C.is_init_icn_pal == 1 ? C.icn_pal : 0 : 0, screen.palette);
+		}
 #else
 		transform_gem_bitmap(vdih, src, dst, planes, 0, screen.palette);
 #endif
-		}
 		kfree(tmp);
 	}
 	return new_data;
