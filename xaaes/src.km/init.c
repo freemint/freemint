@@ -602,10 +602,13 @@ again:
 			*name = '\0';
 	}
 #endif
-	BLOG((false, "home_path: '%s'", C.Aes->home_path));
 
 	C.Aes->xdrive = d_getdrv();
 	d_getpath(C.Aes->xpath, 0);
+	/* home_path is no full path - make one */
+	if( *(C.Aes->home_path + 2) != ':' )
+		sprintf( C.Aes->home_path, sizeof(C.Aes->home_path), "%c:%s\\", C.Aes->xdrive + 'a', C.Aes->xpath);
+	BLOG((true, "home_path: '%s'", C.Aes->home_path));
 
 	/* check if there exist a moose.adi */
 	if (first)
