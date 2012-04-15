@@ -599,6 +599,30 @@ redraw_timeout = 2000
 #         have any windows, it will get topped.
 #
 #--------------------------------------------------------------------
+# icn_pal_name = <string>
+# (set mapping-palette for icons)
+#
+# Icon-colours for the app will be mapped according to the specified palette.
+# The global command pal has to be set.
+# To remap widgets set icn_pal_name for aessys.
+# This only has an effect if icn_pal_name and pal differ.
+# The palette specified by icn_pal_name has to be in the pal-dir.
+# Currently only 8bit-icons are supported.
+#
+# The palette given in the rsc-file precedes the palette set by icn_pal.
+# remap_cicons must be  true.
+#
+# example:
+# Set app-icon-palette for all apps
+# app_options = default, ..., icn_pal_name = nvdi
+#
+# Set app-icon-palette for a specific app
+# app_options = some-app, ..., icn_pal_name = gem
+#
+# Set widgets-palette
+# app_options = aessys, ..., icn_pal_name = nvdi
+
+#--------------------------------------------------------------------
 #	alt_shortcuts = <value>
 # (Add shortcuts to dialog/alert)
 #
@@ -787,9 +811,8 @@ launchpath  = u:\usr\gem
 
 #####################################################################
 #
-#use_rsc_palette = yes
-
-#####################################################################
+# Icon-colours for the app will be mapped according to the rsc-palette
+# (if given in the rsc-file).
 #
 #remap_cicons = yes
 
