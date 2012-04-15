@@ -33,8 +33,8 @@
  * main version macros
   */
 #define XAAES_MAJ_VERSION  1
-#define XAAES_MIN_VERSION  2
-#define XAAES_PATCH_LEVEL  1
+#define XAAES_MIN_VERSION  3
+#define XAAES_PATCH_LEVEL  0
 
 #define DEV_STATUS	AES_DEVSTATUS_BETA
 //#define DEV_STATUS	AES_DEVSTATUS_RELEASE
