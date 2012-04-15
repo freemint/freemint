@@ -132,9 +132,10 @@ struct theme
 {
 	struct xa_data_hdr h;
 
+#ifdef REND_NAES3D
 #define NAES3D			1
 	unsigned long rflags;
-
+#endif
 	short	shadow_col;
 
 	short	ad3dval_x;
@@ -311,7 +312,9 @@ static struct theme stdtheme =
 {
 	{ 0 },
 
+#ifdef REND_NAES3D
 	0,
+#endif
 	G_BLACK,
 	2, 2,
 
@@ -2141,7 +2144,9 @@ static struct theme mono_stdtheme =
 {
 	{ 0 },
 
+#ifdef REND_NAES3D
 	0,
+#endif
 	G_BLACK,
 	2, 2,
 
