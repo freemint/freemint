@@ -516,6 +516,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 		}
 		case 1:
 		{
+			long r;
 			/* TOS Launch?  */
 			if (wisgr == 0)
 			{
@@ -596,7 +597,6 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 			{
 				char linkname[PATH_MAX+1], *ps;
 				XATTR xat;
-				long r;
 
 				r = f_xattr(1, cmd, &xat);
 				if( !r && S_ISLNK( xat.mode ) )
@@ -650,7 +650,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 			}
 
 			/* restore cwd for XaAES */
-			d_setdrv(toupper(*C.Aes->home_path - 'A') );
+			d_setdrv(toupper(*C.Aes->home_path) - 'A' );
 			d_setpath(C.Aes->home_path);
 			break;
 		}
