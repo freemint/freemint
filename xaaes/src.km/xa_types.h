@@ -535,6 +535,9 @@ struct options
 	short standard_font_point;	/* if != 0 set standard-font for application */
 	short rsc_lang;		/* try to read strings for rsc from <rsc-basename>.rsl */
 	short ignore_rsc_size;		/* ignore mismatch in actual rscfile-size and size from header */
+#ifndef ST_ONLY
+	char *icn_pal_name;       /* remap icons to palette */
+#endif
 	unsigned long wind_opts;			/* Default window options - see struct xa_window.opts */
 	unsigned long app_opts;
 	long half_screen;
@@ -2898,6 +2901,11 @@ struct common
 	void *Aes_rsc;			/* Pointer to the XaAES resources */
 	char *env;			/* new environment */
 
+#ifndef ST_ONLY
+	/* icon-palette */
+	short is_init_icn_pal;
+	struct rgb_1000 *icn_pal;
+#endif
 	struct xa_window *hover_wind;
 	struct xa_widget *hover_widg;
 
