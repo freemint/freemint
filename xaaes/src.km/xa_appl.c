@@ -385,9 +385,11 @@ init_client(enum locks lock, bool sysclient)
 	client->mouse_form = NULL;
 	client->save_mouse = client->mouse;
 	client->save_mouse_form = client->mouse_form;
+#ifndef ST_ONLY
 
 	if( C.is_init_icn_pal == -1 )
 		C.is_init_icn_pal = 0;
+#endif
 	return client;
 }
 
