@@ -2115,7 +2115,7 @@ e_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 		case (('e' << 8) | 0xf):
 		{
 			long len;
-			struct { char *buf; long bufsize } *descr = (void *) arg;
+			struct { char *buf; long bufsize; } *descr = (void *) arg;
 			
 			dump_inode_cache (descr->buf, descr->bufsize);
 			len = strlen (descr->buf);
