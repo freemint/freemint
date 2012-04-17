@@ -1,5 +1,5 @@
 /*
- * Modified for the FreeMiNT USB subsystem by David Galvez. 2010 - 2011
+ * Modified for the FreeMiNT USB subsystem by David Galvez. 2010-2012
  *
  * TOS 4.04 Xbios dispatcher for the CT60/CTPCI boards
  * and USB-disk / Ram-Disk utility
@@ -39,10 +39,9 @@
 	.global _kmalloc_from_S, _cconws_from_S, _dsetdrive_from_S, _XHDINewCookie_from_S
 
 //#define DEBUG_BIOS_LAYER	/* Show extra debug info into the console */ 
-//#ifdef DEBUG_BIOS_LAYER
-//	.global display_string,hex_long,hex_word,hex_byte,display_char,wait_key,_debug
-//#endif
-
+#ifdef DEBUG_BIOS_LAYER
+	.global display_string,hex_long,hex_word,hex_byte,display_char,wait_key,_debug
+#endif
 	.data
 
 /* XHDI */
@@ -83,8 +82,6 @@
 
 
 #ifdef DEBUG_BIOS_LAYER
-//debug1:	.asciz "XBIOS #0x"
-//debug2:	.asciz "Setscreen 0x"
 debug3:	
 	.asciz "hdv_rw 0x"
 debug4:
@@ -93,9 +90,6 @@ debug4:
 debug5:	
 	.ascii "hdv_mediach"
 	.byte 13,10,0
-//debug6:	.asciz "Vsetmode 0x"
-//debug7:	.asciz "ValidMode 0x"
-//debug8:	.asciz "Gettime 0x
 debug132:
 	.asciz "XHDI XHReadWrite 0x"
 debug133:
@@ -150,8 +144,6 @@ _install_usb_stor:
 	beq.s .partition_ok
 	cmp.l #0x6,D2            // FAT16 over 32M
 	beq.s .partition_ok
-//	tst.l ___mint		// Galvez: NOT MiNT? then go out
-//	beq .invalid_partition_type
 	cmp.l #0xE,D2            // WIN95 FAT16
 	beq .partition_ok
 	cmp.l #0xB,D2		// FAT32
@@ -254,7 +246,6 @@ _install_usb_stor:
 	move.w D0,-(SP)
 	or.l #0x700,D0           // mask interrupts
 	move.w D0,SR
-//	move.l #0x5F555342,D1    // _USB
 	
 	move.l #hdv_bpb,A0
 	lea old_hdv_bpb_usb(PC),A1
@@ -386,11 +377,9 @@ _install_usb_stor:
 	cmp.l D4,D0
 	bne.s .no_set_drive_usb
 	move.w D0,_bootdev
-//	movem.l D0-D2/A0-A2,-(SP)
 	move.w D0,-(SP)
 	jsr _dsetdrv_from_S
 	addq.l #2,SP
-//	movem.l (SP)+,D0-D2/A0-A2
 .no_set_drive_usb:
 	move.l 36(SP),D0         // USB devnum
 	movem.l 52(SP),A1/A2/A3  // vendor / revision / product
@@ -479,16 +468,6 @@ _uninstall_usb_stor:
 	cmp.l #32,D3
 	bhi .error            // error
 
-//	add.l _usb_1st_disk_drive,D3 	// BIOS storage device number
-	cmp.l #15,D3			// Galvez: update AHDI pun struct:
-	bgt .ahdi_part_num_limit_2	// Galvez: if logical part. > 16
-	move.l old_pun_ptr,A2		// Galvez: we need it to update hd driver pun struct
-	moveq #-1,D0			// Galvez: don't update pun struct,
-	move.b D0,pinfo_pun(A2,D3.l)	// Galvez: to avoid corruption.
-	move.w pinfo_puns(A2),D0	// Galvez: update hd driver pun stuct
-	subq.w #1,D0			// Galvez: othewise MiNT only handles 16MB
-	move.w D0,pinfo_puns(A2)	// Galvez: when not using XHDI
-					// Galvez: see BLOCK_IO.c (MiNT sources)
 .ahdi_part_num_limit_2:	
 	move.l pun_ptr,D0
 	move.l D0,A3
@@ -1235,11 +1214,7 @@ XHDOSLimits:
 .xl4:
 	cmp.l #XH_DL_MAXSPC,D0   // sectors per cluster maximal
 	bne.s .xl5
-#ifdef COLDFIRE
-	moveq #64,D0             // for this Coldfire version of BDOS, else 2
-#else
 	moveq #2,D0
-#endif
 	rts
 .xl5:
 	cmp.l #XH_DL_CLUSTS,D0   // maximal number of clusters of a 16 bit FAT
@@ -1249,11 +1224,7 @@ XHDOSLimits:
 .xl6:
 	cmp.l #XH_DL_MAXSEC,D0   // maximal number of sectors
 	bne.S .xl7
-#ifdef COLDFIRE
-	move.l #0x200000,D0      // for this Coldfire version of BDOS, else 0x10000
-#else
 	move.l #0x10000,D0
-#endif
 	rts
 .xl7:
 	cmp.l #XH_DL_DRIVES,D0   // maximal number of BIOS drives supported by the DOS
@@ -1271,12 +1242,7 @@ message2b:	.asciz ", disk installed in "
 
 
 crlf:	.byte 13,10,0
-error:	.asciz "No ram-disk installed, "
-error1:	.ascii "no enough radeon memory"
-	.byte 13,10,0
 error2:	.ascii "all drives already used"
-	.byte 13,10,0
-error3:	.ascii "error disk name"
 	.byte 13,10,0
 error4:	.ascii "partition type not supported"
 	.byte 13,10,0
