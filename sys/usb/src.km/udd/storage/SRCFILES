@@ -5,9 +5,11 @@ HEADER = \
 	part.h \
 	scsi.h \
 	vars.h \
+	xhdi.h
 
 COBJS = \
 	usb_storage.c \
+	xhdi.c
 
 SSOBJS = \
 	bios.S \
