@@ -219,14 +219,6 @@ _install_usb_stor:
 	move.l D4,D2
 	or.l #PUN_USB,D2
 	move.b D2,pinfo_pun(A3,D4.l)
-	cmp.l #15,D4			// Galvez: update AHDI pun struct:
-	bgt .ahdi_part_num_limit	// Galvez: if logical part. > 16
-	move.b D2,pinfo_pun(A2,D4.l)	// Galvez: don't update pun struct,
-	move.w D0,-(SP)			// Galvez: to avoid corruption.
-	move.w pinfo_puns(A2),D0	// Galvez: update hd driver pun stuct
-	addq.l #1,D0			// Galvez: othewise MiNT only handles 16MB
-	move.w D0,pinfo_puns(A2)	// Galvez: when not using XHDI
-	move.w (SP)+,D0			// Galvez: see BLOCK_IO.c (MiNT sources)
 .ahdi_part_num_limit:			
 	move.l D3,(A0,D4.l*4)    // size
 	move.l D1,pinfo_pstart(A3,D4.l*4)	
