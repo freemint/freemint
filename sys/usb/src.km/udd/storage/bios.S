@@ -310,7 +310,7 @@ _install_usb_stor:
 .no_set_drive_usb:
 	move.l 36(SP),D0         // USB devnum
 	movem.l 52(SP),A1/A2/A3  // vendor / revision / product
-	move.l _product_name,A0      // save product name pointer for XHDI
+	lea _product_name,A0      // save product name pointer for XHDI
 	move.l A3,(A0,D4.l*4)
 	bsr display_drive_usb
 	pea message2b(PC)
