@@ -551,13 +551,11 @@ XA_handler(void *_pb)
 					add_to_tasklist(client);
 					client->forced_init_client = true;
 				}
-				BLOG((0,"non-AES-process '%s' (%d:Single:%d) did AES-call %d (%sfixed)", p->name, p->pid, C.SingleTaskPid, cmd, client ? "": "not " ));
+				BLOG((0,"non-AES-process '%s' (%d:(%s)) did AES-call %d (%sfixed)", p->name, p->pid, C.SingleTaskPid == p->pid ? "SingleTask" : "", cmd, client ? "": "not " ));
 				if( !client )
 				{
-					ALERT((xa_strings[AL_NOAESPR]/*"XaAES: non-AES process issued AES system call %i, killing it"*/, cmd));
-					exit_proc(0, get_curproc(), 0);
-					raise(SIGKILL);
-					return 0;
+					ALERT(("XaAES: non-AES process issued AES system call %i, ignored", cmd));
+					return 1;
 				}
 			}
 #endif
