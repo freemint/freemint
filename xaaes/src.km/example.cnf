@@ -603,7 +603,7 @@ redraw_timeout = 2000
 # (set mapping-palette for icons)
 #
 # Icon-colours for the app will be mapped according to the specified palette.
-# The global command pal has to be set.
+# The global command palette has to be set.
 # To remap widgets set icn_pal_name for aessys.
 # This only has an effect if icn_pal_name and pal differ.
 # The palette specified by icn_pal_name has to be in the pal-dir.
