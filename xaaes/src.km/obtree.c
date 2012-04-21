@@ -3226,7 +3226,7 @@ obj_change(XA_TREE *wt,
 		}
 #endif
 
-		if( (aesobj_type(&obj) == G_TITLE && obj.ob->ob_y == 0 ) )
+		if( obj.ob->ob_y == 0 && (aesobj_type(&obj) == G_TITLE || aesobj_type(&obj) == G_USERDEF) )
 			rl = 0;
 		obj_draw(wt, v, obj, transdepth, clip, rl, dflags);	// of y=0 and G_TITLE it's a menu-title (don't clip)
 	}

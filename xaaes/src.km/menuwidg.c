@@ -2301,14 +2301,16 @@ menu_title(enum locks lock, Tab *tab, short title, struct xa_window *wind, XA_WI
 	k->rdy = r.y;
 
 	if (title == -1)
+	{
 		k->m.current = find_menu_object(k->m.wt, k->m.titles, k->rdx, k->rdy, k->x, k->y, NULL);
+	}
 	else if (title == -2)
 		k->m.current = obtree[k->m.titles].ob_head;
 	else
 		k->m.current = title;
 
 	if ( k->m.current > -1
-	    && obtree[k->m.current].ob_type == G_TITLE
+	    && (obtree[k->m.current].ob_type == G_TITLE || obtree[k->m.current].ob_type == G_USERDEF)
 	    && !(obtree[k->m.current].ob_state & OS_DISABLED))
 	{
 		wt->dx = wt->dy = 0;
