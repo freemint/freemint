@@ -45,11 +45,13 @@ void set_menu_width( OBJECT *mnu, XA_TREE *mwt )
 	struct xa_widget *widg = get_menu_widg();
 	int i = 0, t = 0;
 	short mw = 0;
+	short xm = 0;
 	while ((mnu[i].ob_flags & OF_LASTOB) == 0)
 	{
-		if( mnu[i].ob_type == G_TITLE )
+		if( mnu[i].ob_x > xm && (mnu[i].ob_type == G_TITLE || mnu[i].ob_type == G_USERDEF) )
 		{
 			t = i;
+			xm = mnu[i].ob_x;
 		}
 		i++;
 	}
@@ -89,7 +91,7 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	DIAG((D_menu, NULL, "menu_bar for %s, %lx", c_owner(client), mnu));
 
-// 	if (d) display("menu_bar mode %d for %s, %lx %lx(%lx (%lx(%lx))", pb->intin[0], client->name, mnu, menu, menu->tree, menu_bar, menu_bar->tree);
+// 	if (d) display("menu_bar mode %d for %s, %lx %lx(%lx (%lx(%lx))", pb->intin[0], client->name, mnu, menu, menu ? menu->tree : 0, menu_bar, menu_bar ? menu_bar->tree : 0);
 
 
 	switch (pb->intin[0])
@@ -198,7 +200,7 @@ upd_menu(enum locks lock, struct xa_client *client, OBJECT *tree, short item, bo
 	XA_TREE *wt;
 
 	wt = obtree_to_wt(client, tree);
-	if (wt && tree[item].ob_type == G_TITLE)
+	if (wt && (tree[item].ob_type == G_TITLE || tree[item].ob_type == G_USERDEF))
 	{
 		if( cfg.menu_layout == 0 )
 			wt_menu_area(wt);
