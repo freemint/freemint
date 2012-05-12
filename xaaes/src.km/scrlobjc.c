@@ -2339,6 +2339,7 @@ m_state_done:
 							strncpy(setext->c.text.text, t->text, setext->c.text.tblen);
 						}
 					}
+					setext->c.text.slen = slen;
 				}
 				else
 				{
