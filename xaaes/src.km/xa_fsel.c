@@ -1865,6 +1865,7 @@ fs_enter_dir(struct fsel_data *fs, struct scroll_info *list, struct scroll_entry
 	//add_slash( fs->root, fs->fslash );
 
 	/* follow symlinks (does not work in treeview (->todo)) */
+	if( (long)fs->data == HL_LAUNCH )
 	{
 		XATTR xat;
 		char linkname[PATH_MAX+1];
