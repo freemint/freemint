@@ -1328,7 +1328,6 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 
 		PROFILE(("fsel:Dopendir %s", fs->path ));
 		//DIAG((D_fsel, NULL, "Dopendir -> %lx", i));
-
 		if (i > 0)
 		{
 			struct xattr xat, *x;
@@ -1864,6 +1863,21 @@ fs_enter_dir(struct fsel_data *fs, struct scroll_info *list, struct scroll_entry
 		strcpy(fs_data.fs_paths[drv], fs->root);
 
 	//add_slash( fs->root, fs->fslash );
+
+	/* follow symlinks (does not work in treeview (->todo)) */
+	{
+		XATTR xat;
+		char linkname[PATH_MAX+1];
+		long r = f_xattr(1, fs->root, &xat);
+		if( !r && S_ISLNK( xat.mode ) )
+		{
+
+			if( !_f_readlink( PATH_MAX, linkname, fs->root ) )
+			{
+				strcpy( fs->root, linkname );
+			}
+		}
+	}
 	set_file(fs, fs->ofile,false);
 	set_dir(list);
 	fs->selected_file = NULL;
