@@ -322,7 +322,7 @@ _ALERT(char *s)
 				ptr++;
 			}
 			
-			strcpy(ptr, "][  OK  ]");
+			strcpy(ptr, "][ OK ]");
 		}
 		
 		if( !fp->dev )
