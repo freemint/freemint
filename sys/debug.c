@@ -248,8 +248,9 @@ _ALERT(char *s)
 	debug_logging = 0;
 	
 	ret = FP_ALLOC(rootproc, &fp);
-	if (!ret)
+	if (!ret){
 		ret = do_open(&fp, "u:\\pipe\\alert", (O_WRONLY | O_NDELAY), 0, NULL);
+	}
 	
 	debug_level = olddebug;
 	debug_logging = oldlogging;
@@ -267,13 +268,14 @@ _ALERT(char *s)
 		}
 		else
 		{
-			char alertbuf[SPRINTF_MAX + 10];
-			char *ptr;
+			char alertbuf[SPRINTF_MAX + 32];
+			char *ptr, *end = alertbuf+sizeof(alertbuf)-8;	/* strlen "][ OK ]" +1 */
 			char *lastspace;
 			int counter;
 			
 			alert = alertbuf;
-			ksprintf(alertbuf, sizeof(alertbuf), "[1][%s", s);
+			ksprintf(alertbuf, end-alertbuf, "[1][%s", s);
+			*end = 0;
 			
 			/* make sure no lines exceed 30 characters;
 			 * also, filter out any reserved characters
@@ -323,6 +325,17 @@ _ALERT(char *s)
 			strcpy(ptr, "][  OK  ]");
 		}
 		
+		if( !fp->dev )
+		{
+			DEBUG(("_ALERT:fp->dev=0! (%s:%ld)", __FILE__, (long)__LINE__));
+			return 0;
+		}
+
+		if( !fp->dev->write )
+		{
+			DEBUG(("_ALERT:fp->dev->write=0! (%s:%ld)", __FILE__, (long)__LINE__));
+			return 0;
+		}
 		(*fp->dev->write)(fp, alert, strlen(alert) + 1);
 		do_close(rootproc, fp);
 		
