@@ -1862,9 +1862,8 @@ fs_enter_dir(struct fsel_data *fs, struct scroll_info *list, struct scroll_entry
 	if ((drv = get_drv(fs->root)) >= 0)
 		strcpy(fs_data.fs_paths[drv], fs->root);
 
-	//add_slash( fs->root, fs->fslash );
-
-	/* follow symlinks (does not work in treeview (->todo)) */
+#if 0
+	/* resolve symlinks (does not work in treeview (->todo)) ->menu */
 	if( (long)fs->data == HL_LAUNCH )
 	{
 		XATTR xat;
@@ -1879,6 +1878,7 @@ fs_enter_dir(struct fsel_data *fs, struct scroll_info *list, struct scroll_entry
 			}
 		}
 	}
+#endif
 	set_file(fs, fs->ofile,false);
 	set_dir(list);
 	fs->selected_file = NULL;
