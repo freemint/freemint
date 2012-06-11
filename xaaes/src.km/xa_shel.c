@@ -1091,7 +1091,7 @@ XA_shel_read(enum locks lock, struct xa_client *client, AESPB *pb)
  * wildcard filename matching:
  *	returns TRUE iff 'name' matches the pattern in 'template'
  *
- * this ought to be already available somewnere in MiNT ...
+ * this ought to be already available somewhere in MiNT ...
  */
 static int
 wc_match (const char *name, const char *template, bool nocase)
@@ -1205,6 +1205,25 @@ wc_stat64(int mode, const char *node, char *fn, struct stat *st, char *result)
 	return -1;
 }
 
+/*
+ * search-strategy:
+ *
+ * 1. filename has an absolute path -> goto 6.
+ *
+ * 2. split path from filename -> filepath, filename
+ *
+ * 3. if usehome is true do wildcard-search for $HOME\[filepath\]filename
+ *
+ * 4. do wildcard-search for client-home\[filepath\]filename
+ *    client-home is the directory where the client was started from
+ *
+ * 5. if filename does not contain a path-component do a wildcard-search for filename in $PATH
+ *
+ * 6. look for filename without any processing
+ *
+ * wildcard-search: case-insensitive, wildcards ? and * possible (DOS-like pattern-matching)
+ *
+ */
 char *
 shell_find(enum locks lock, struct xa_client *client, char *fn)
 {
@@ -1222,7 +1241,7 @@ shell_find(enum locks lock, struct xa_client *client, char *fn)
 	path = kmalloc(len);
 	if (path)
 	{
-		char *p, *pf = fn, c=0;
+		char *p=0, *pf = fn, c;
 
 		if ( !( ( isalpha(*fn) && *(fn + 1) == ':' )
 			|| *fn == '/' || *fn == '\\' ) )	/* no absolute path given */
@@ -1231,7 +1250,7 @@ shell_find(enum locks lock, struct xa_client *client, char *fn)
 			p = strrchr( fn, '\\');
 			if( !p )
 				p = strrchr( fn, '/');
-			if( p )
+			if( p )	/* filename contains directory */
 			{
 				c = *p;
 				*p = 0;
@@ -1248,7 +1267,7 @@ shell_find(enum locks lock, struct xa_client *client, char *fn)
 				kh = get_env(lock, "HOME=");
 				if( kh )
 				{
-					if( p )
+					if( p )	/* append path from filename */
 					{
 						sprintf( fpath, sizeof(fpath)-1, "%s%c%s", kh, c, pf );
 						kh = fpath;
@@ -1336,7 +1355,7 @@ shell_find(enum locks lock, struct xa_client *client, char *fn)
 			}
 		}
 
-		if( c )
+		if( p )
 		{
 			fn = pf;
 			*p = c;
