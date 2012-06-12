@@ -1241,7 +1241,7 @@ shell_find(enum locks lock, struct xa_client *client, char *fn)
 	path = kmalloc(len);
 	if (path)
 	{
-		char *p=0, *pf = fn, c;
+		char *p=0, *pf = fn, c=0;
 
 		if ( !( ( isalpha(*fn) && *(fn + 1) == ':' )
 			|| *fn == '/' || *fn == '\\' ) )	/* no absolute path given */
