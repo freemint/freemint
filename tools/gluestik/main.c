@@ -34,7 +34,8 @@
 # include <signal.h>
 # include <unistd.h>
 # include <netdb.h>
-
+# include <stdbool.h>
+# include <string.h>
 
 # include "gs.h"
 
@@ -69,7 +70,7 @@
 # define MSG_FAILURE	\
 	"\7Sorry, driver NOT installed - initialization failed!\r\n\r\n"
 
-
+static bool opt_force_install = false;
 
 int (*init_funcs [])(void) =
 {
@@ -96,6 +97,18 @@ cleanup (void)
 		(*cleanup_funcs [i])();
 }
 
+/* ------------------
+   | Remove cookie |
+   ------------------ */
+static void
+uninstall_cookie (void)
+{
+# ifndef S_DELCOOKIE
+# define S_DELCOOKIE	26
+# endif
+
+	Ssystem(S_DELCOOKIE, C_STiK, 0L);
+}
 
 /* ------------------
    | Install cookie |
@@ -110,7 +123,10 @@ install_cookie (void)
 		Cconws (MSG_MINT);
 		return 1;
 	}
-	
+
+	if (opt_force_install == true) {
+		uninstall_cookie();
+	}
 	if (Ssystem (S_GETCOOKIE, C_STiK, &dummy) == 0)
 	{
 		Cconws (MSG_ALREADY);
@@ -123,19 +139,6 @@ install_cookie (void)
 	}
 	
 	return 0;
-}
-
-/* ------------------
-   | Remove cookie |
-   ------------------ */
-static void
-uninstall_cookie (void)
-{
-# ifndef S_DELCOOKIE
-# define S_DELCOOKIE	26
-# endif
-
-	Ssystem(S_DELCOOKIE, C_STiK, 0L);
 }
 
 
@@ -156,13 +159,31 @@ end (long sig)
 	exit (0);
 }
 
+
+/* ------------------
+   | Remove cookie |
+   ------------------ */
+static void 
+parse_cmdline(int argc, char *argv[])
+{
+	int i;
+
+	for (i = 1; i < argc; i++)
+        {
+        	if (!strncmp(argv[i], "--force", 7) || !strncmp(argv[i], "-f", 2))
+			opt_force_install = true; 
+	}
+}
+
 int
-main (void)
+main (int argc, char *argv[])
 {
 	if (fork () == 0)
 	{
 		int i;
-		
+
+		parse_cmdline(argc, argv);
+
 		Cconws (MSG_BOOT);
 		Cconws (MSG_GREET);
 # ifdef ALPHA
