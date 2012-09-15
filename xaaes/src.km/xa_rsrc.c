@@ -248,10 +248,11 @@ transform_icon_bitmap(struct xa_client *client, struct xa_rscs *rscs, CICONBLK *
 #ifndef ST_ONLY
 		{
 		static char *icn_pal_name = 0;
+		int not_to_sys_pal = cfg.palette[0] && client->options.icn_pal_name && strcmp( cfg.palette, client->options.icn_pal_name );
 
-		if( cfg.remap_cicons || (client->options.icn_pal_name && cfg.palette[0] && strcmp( cfg.palette, client->options.icn_pal_name )) )
+		if( cfg.remap_cicons || not_to_sys_pal )
 		{
-			if( !rscs->palette && client->options.icn_pal_name )
+			if( !rscs->palette && not_to_sys_pal )
 			{
 				if( C.is_init_icn_pal == 1 && strcmp( icn_pal_name, client->options.icn_pal_name) )
 					C.is_init_icn_pal = 0;
