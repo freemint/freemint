@@ -532,10 +532,10 @@ XA_handler(void *_pb)
 		 * I dont know how I like this! However, we test force-init/attaching client structure
 		 * to a process calling the AES wihtout prior appl_init() call.
 		 */
-		if (!(client = lookup_extension(NULL, XAAES_MAGIC)) && cmd != 10)	// 10:XA_appl_init
+		if ((!(client = lookup_extension(NULL, XAAES_MAGIC)) ) && cmd != 10)	// 10:XA_appl_init
 		{
 #if INSERT_APPL_INIT
-			if (!(aes_tab[cmd].flags & NOCLIENT))
+			if (!(aes_tab[cmd].flags & NOCLIENT) && !(p->modeflags & M_XA_CLIENT_EXIT ) )
 			{
 				if( cmd == 19 && (p->p_flag & (P_FLAG_SLB | (P_FLAG_SLB << 8))) )
 				{
@@ -551,7 +551,7 @@ XA_handler(void *_pb)
 					add_to_tasklist(client);
 					client->forced_init_client = true;
 				}
-				BLOG((0,"non-AES-process '%s' (%d:(%s)) did AES-call %d (%sfixed)", p->name, p->pid, C.SingleTaskPid == p->pid ? "SingleTask" : "", cmd, client ? "": "not " ));
+				BLOG((0,"non-AES-process '%s' (%d:(%s)) did AES-call %d (%sfixed),globl_ptr=%lx,status=%lx,modeflags=%x", p->name, p->pid, C.SingleTaskPid == p->pid ? "SingleTask" : "", cmd, client ? "": "not ", client->globl_ptr, client->status, p->modeflags ));
 				if( !client )
 				{
 					ALERT(("XaAES: non-AES process issued AES system call %i, ignored", cmd));
@@ -560,7 +560,6 @@ XA_handler(void *_pb)
 			}
 #endif
 		}
-#if !INSERT_APPL_INIT
 		/*
 		 * If process has not called appl_init() yet, it has restricted
 		 * access to AES functions
@@ -581,7 +580,6 @@ XA_handler(void *_pb)
 			}
 			return 0;
 		}
-#endif
 		/*
 		 * default paths are kept per process by MiNT ??
 		 * so we need to get them here when we run under the process id.
@@ -615,7 +613,7 @@ XA_handler(void *_pb)
 		}
 #endif
 #if DBG_CALLS
-		BLOG((0, "%s[%d] made by %s",	aes_tab[cmd].descr, cmd, client ? client->name : get_curproc()->name));
+		BLOGif(cmd!=25,(0, "%s[%d] made by %lx:%s(%s:%d),status=%lx",	aes_tab[cmd].descr, cmd, client, client ? client->name : "", get_curproc()->name, get_curproc()->pid, client->status));
 #endif
 		cmd_routine = aes_tab[cmd].f;
 
@@ -666,7 +664,7 @@ XA_handler(void *_pb)
 			}
 #endif
 #if DBG_CALLS
-			BLOG((0, "%s: %s[%d] returned %ld for %s", client ? client->name : "-", aes_tab[cmd].descr, cmd, cmd_rtn, p->name));
+			BLOGif(cmd!=25,(0, "%s[%d] returned %ld for %s", aes_tab[cmd].descr, cmd, cmd_rtn, p->name));
 #endif
 			/* Ozk:
 			 * Now we check if circumstances under which we check if process started/ended
@@ -708,9 +706,13 @@ XA_handler(void *_pb)
 				if (mouse_locked() || update_locked())
 				{
 					if (mouse_locked() == client->p)
+					{
 						DIAG((D_kern, client, "Leaving AES with mouselock %s", client->name));
+					}
 					if (update_locked() == client->p)
+					{
 						DIAG((D_kern, client, "Leaving AES with screenlock %s", client->name));
+					}
 				}
 				else
 					DIAG((D_kern, client, "Leaving AES %s", client->name));
