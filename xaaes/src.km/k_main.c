@@ -24,9 +24,24 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 #define PROFILING	0
+
+
 #include "xaaes.h" /*RSCHNAME*/
 
+#define MX_STRAM
 #include "k_main.h"
+#undef MX_STRAM	/* sigh ...*/
+
+/* add time to alerts in syslog */
+#if ALERTTIME
+#ifdef trap_14_w
+//#undef trap_14_w	/* "redefined" warning */
+#endif
+#include <mintbind.h>	/* Tgettimeofday */
+#define MAXALERTLEN	196
+
+#endif
+
 #include "xa_global.h"
 #include "xa_strings.h"
 
@@ -78,14 +93,7 @@ extern short stack_align;
 #include "c_mouse.h"
 void set_tty_mode( short md );
 
-/* add time to alerts in syslog */
-#if ALERTTIME
-#ifdef trap_14_w
-#undef trap_14_w	/* "redefined" warning */
-#endif
-#include <mintbind.h>	/* Tgettimeofday */
-#define MAXALERTLEN	196
-#endif
+
 /* ask before shutting down (does not work yet) */
 #define ALERT_SHUTDOWN 0
 #define AESSYS_TIMEOUT	2000	/* s/1000 */
@@ -1808,7 +1816,7 @@ k_main(void *dummy)
 #endif
 	C.DSKpid = -1;
 
-	/* initialize mouse */
+	/* initialize mouse-position */
 	{
 		short b, x, y;
 		vq_mouse( C.Aes->vdi_settings->handle, &b, &x, &y );
