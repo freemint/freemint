@@ -401,8 +401,7 @@ build_tasklist_string( int md, void *app, long pid)
 		if( !strncmp( cp, p->name, l ) )
 			cp += l;
 		else
-			if( *cp == 0x7f )
-				cp++;
+			cp++;	/* length */
 
 		sprintf(tx, TX_LEN-1, "%16s %4d %4d %4d %3d   %c   %s %8ld %11ld %2ld %s",
 			name, p->pid, p->ppid, p->pgrp, p->curpri, p->domain == 0?'T':'M',
