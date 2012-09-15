@@ -32,6 +32,19 @@
 
 #include RSCHNAME
 
+#define NEWLOAD 1
+#ifndef USE_Suptime
+#define USE_Suptime 1
+#endif
+
+#if USE_Suptime
+#ifdef trap_14_w
+//#undef trap_14_w	/* "redefined" warning */
+#endif
+#include <mintbind.h>	/* Suptime */
+#endif
+
+
 #include "xa_types.h"
 #include "xa_global.h"
 #include "xa_strings.h"
@@ -70,11 +83,6 @@
 #include "mint/fcntl.h"
 #include "mint/ssystem.h"
 
-#define NEWLOAD 1
-#ifndef USE_Suptime
-#define USE_Suptime 1
-#endif
-
 #define ADDPROCINFO	0
 
 char XAAESNAME[] = "XaAES";
@@ -101,13 +109,6 @@ static int ker_stat( int pid, char *what, long pinfo[] );
 #define TM_PROCINFO	0x10L	/* process-info (if def'd) */
 #define TM_HEADER		0x20L	/* header */
 #define TM_CLIENT		0x40L	/* aes-client-entry in taskman-list */
-
-#if USE_Suptime
-#ifdef trap_14_w
-#undef trap_14_w	/* "redefined" warning */
-#endif
-#include <mintbind.h>	/* Suptime */
-#endif
 
 #if 0
 //void ask_and_shutdown( enum locks lock, struct xa_client *client, bool b);
