@@ -291,9 +291,6 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 	Path path, name, defdir;//, cur;
 	struct proc *p = NULL;
 	int type = 0, follow = 0;
-// 	bool d = (caller && !strnicmp(caller->proc_name, "guitar", 6)) ? true : false;
-
-
 
 #if GENERATE_DIAGS
 	if (caller)
@@ -301,9 +298,6 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 		DIAG((D_shel, caller, "launch for %s: 0x%x,%d,%d,%lx,%lx",
 			c_owner(caller), mode, wisgr, wiscr, parm, p_tail));
 		DIAG((D_shel, caller, " --- parm=%lx, tail=%lx", parm, tail));
-		//DIAG((D_shel, caller, " --- parm='%s', tail='%s'",
-		//	parm ? parm : "no parm",
-		//	tail ? tail : "no tail"));
 	}
 	else
 	{
@@ -311,14 +305,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 			p_getpid(), mode, wisgr, wiscr, parm, p_tail));
 	}
 #endif
-#if 0
-	if (d)
-	{
-	display("launch for %s: 0x%x,%d,%d,%lx,%lx",
-		caller ? caller->name : "no caller", mode, wisgr, wiscr, parm, p_tail);
-	display(" --- parm=%lx, tail=%lx", parm, tail);
-	}
-#endif
+
 	if (!parm)
 		return -1;
 
@@ -378,14 +365,6 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 
 	if (p_tail)
 	{
-#if 0
-		if (d)
-		{
-		display("p_tail: (%lx) %x, '%s' for %s", p_tail, (unsigned char)p_tail[0], (char *)&p_tail[1],
-			caller ? caller->name : "None");
-		display("pcmd: '%s'", pcmd);
-		}
-#endif
 
 		if (p_tail[0] == 0x7f || (unsigned char)p_tail[0] == 0xff)
 		{
@@ -590,8 +569,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 
 			follow = is_launch_path( cmd );
 
-			if (tailsize && (wiscr == 1 || longtail))
-				make_argv(tail, tailsize, name, argvtail);
+			make_argv(tail, tailsize, name, argvtail);
 
 			if (wisgr != 0)
 			{
@@ -604,6 +582,8 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 					_f_readlink( PATH_MAX, linkname, cmd );
 					if( strcmp( cmd, linkname ) )
 					{
+						if( follow )
+							strcpy( cmd, linkname );
 						ps = strrchr( linkname, '\\' );
 						if( !ps )
 							ps = strrchr( linkname, '/' );
@@ -777,6 +757,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 			else
 				info->rppid = p_getpid();
 
+			info->reserved = ret;
 			info->shel_write = true;
 
 			info->cmd_tail = save_tail;
@@ -841,6 +822,7 @@ XA_shel_write(enum locks lock, struct xa_client *client, AESPB *pb)
 	}
 #endif
 //	display("shel_write(0x%x,%d,%d) for %s",
+
 //		wdoex, wisgr, wiscr, client ? client->name : "no client");
 
 	if ((wdoex & 0xff) < SWM_SHUTDOWN) /* SWM_LANUCH, SWM_LAUNCHNOW or SWM_LAUNCACC */
