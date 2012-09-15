@@ -762,11 +762,12 @@ exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, boo
 	//int really_exited;
 // 	bool d = (client == C.Hlp) ? true : false; //(!strnicmp(client->proc_name, "xasys", 6)) ? true : false;
 
-	DIAG((D_appl, NULL, "XA_client_exit: %s", c_owner(client)));
+	DIAG((D_appl, NULL, "exit_client: %s", c_owner(client)));
 
-					/* switch menu off for single-task (todo: fix it) */
-					if( C.SingleTaskPid > 0 )
-						toggle_menu( lock, 0 );
+	/* switch menu off for single-task (todo: fix it) */
+	if( C.SingleTaskPid > 0 )
+		toggle_menu( lock, 0 );
+
 // 	display("info=%lx for %s", info, client->name);
 // 	if (d) display(" exit C.HLP");
 	S.clients_exiting++;
@@ -1003,6 +1004,7 @@ XA_appl_exit(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	/* Which process are we? It'll be a client pid */
 	pb->intout[0] = client->p->pid;
+	client->p->modeflags |= M_XA_CLIENT_EXIT;
 
 	/* XXX ??? */
 	/*
