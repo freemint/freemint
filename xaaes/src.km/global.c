@@ -26,7 +26,6 @@
 
 #include "global.h"
 #include "xa_types.h"
-#include "debug.h"
 
 /*
  * memory allocation for private XaAES memory
@@ -64,8 +63,12 @@ xaaes_kfree(void *addr, const char *func)
 	if (!addr)
 		FATAL("xaaes_kfree(NULL) from %s", func);
 
-
 	tmp--;
+	if( *tmp == 0 || *tmp >= memory )
+	{
+		BLOG((0,"%s:freeing invalid memory: %lx(%ld/%ld)", func, tmp+1, *tmp, memory));
+		return;
+	}
 	memory -= *tmp;
 
 	_kfree(tmp, func);
@@ -114,3 +117,4 @@ struct xa_window *root_window = 0, *menu_window = 0;
 #if WITH_BBL_HELP
 struct xa_window *bgem_window = 0;
 #endif
+
