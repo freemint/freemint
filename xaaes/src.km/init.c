@@ -144,7 +144,7 @@ sysfile_exists(const char *sd, char *fn)
 			tmp[2] = '\0';
 		}
 		strcat(buf + o, fn);
-		display("sysfile_exits: '%s'", buf);
+		display("sysfile_exists: '%s'", buf);
 		check = kernel_open(buf, O_RDONLY, NULL, NULL);
 		if (check)
 		{
