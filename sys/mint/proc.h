@@ -132,8 +132,9 @@ struct proc
 	short	_euid;			/* unused */
 	short	_egid;			/* unused */
 
-# define M_SINGLE_TASK	0x0001		/* XaAES: if set (in modeflags) it's "single-task-mode" */
-# define M_DONT_STOP	0x00002		/* XaAES: if set do not stop when entering single-task-mode */
+# define M_SINGLE_TASK    0x0001    /* XaAES: if set (in modeflags) it's "single-task-mode" */
+# define M_DONT_STOP      0x0002    /* XaAES: if set do not stop when entering single-task-mode */
+# define M_XA_CLIENT_EXIT 0x8000    /* XaAES: appl_exit called */
 	ushort	modeflags;
 
 	short	pri;			/**< base process priority 	*/
