@@ -74,18 +74,17 @@ static void _cdecl
 xaaes_on_exit(void *_client, struct proc *p, int code)
 {
 	struct xa_client *client = _client;
+	extern int ferr;
 
-	if (client->p->pid == p->pid)
+	if (!ferr && client->p->pid == p->pid)
 	{
 		enum locks lock = NOLOCKS;
 
 		DIAGS(("xaaes_on_exit event for %u (%i)", p->pid, code));
-// 		display("xaaes_on_exit: code %d for %s", code, p->name);
 		exit_client(lock, _client, code, true, false);
 	}
 	else
 	{
-// 		display("xaaes_on_exit: different proc!?");
 		DIAGS(("xaaes_on_exit - thread terminate"));
 	}
 }
@@ -166,16 +165,35 @@ info_share(void *_info, struct proc *from, struct proc *to)
 // 	display("info_share %lx", _info);
 }
 
+
+#define MAX_CMDLEN 65535	/* ?? */
 static void _cdecl
 info_release(void *_info)
 {
 	struct shel_info *info = _info;
+	struct proc *p = get_curproc();
 
 	DIAGS(("info_release: releasing 0x%lx", info));
 // 	display("info_release: releasing 0x%lx", info);
 
-	if (info->tail_is_heap && info->cmd_tail)
+	if (info->tail_is_heap && info->cmd_tail && !(p->p_flag & P_FLAG_SLB << 8))
+	{
+		unsigned long *x = (unsigned long *)info->cmd_tail;
+
+		//struct proc *ip = pid2proc(info->reserved);
+
+		/* Problem: The kernel duplicates *info including cmt_tail, which is malloced,
+			and releases the copy and the original, so cmd_tail is freed twice.
+			TRY to check this.
+	 */
+
+		if( !(*x == 0x7f || *(x-1) < 130 ) || *(x-1) > MAX_CMDLEN || !p || p->pid != info->reserved )
+		{
+			BLOG((0,"info_release:kfree(%lx)->%lx:%ld): pid=%d:%d: error", x, *x, *(x-1), info->reserved, p ? p->pid : -1 ));
+			return;
+		}
 		kfree(info->cmd_tail);
+	}
 }
 
 static void _cdecl
