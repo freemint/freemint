@@ -2558,13 +2558,19 @@ fix_menu(struct xa_client *client, XA_TREE *menu, struct xa_window *wind, bool d
 
 		/* client->mnu_clientlistname is umalloced area */
 		root[t_ob++].ob_spec.free_string = client->mnu_clientlistname;
-		DIAG((D_menu, NULL, "Wrong menufix for %s - adding object at %lx",
+		DIAG((D_menu, NULL, "menufix for %s - adding object at %lx",
 			client->name, client->mnu_clientlistname));
 
 		while (t_ob != s_ob)
 		{
 			root[t_ob].ob_flags |= OF_HIDETREE|OS_DISABLED;
+			if( (root[t_ob].ob_flags & OF_LASTOB) || root[t_ob].ob_next < 0 )
+				break;
 			t_ob = root[t_ob].ob_next;
+		}
+		if( t_ob != s_ob )
+		{
+			BLOG((0,"%s: fix_menu: wrong links? (s=%d,t=%d)", client->name, s_ob, t_ob));
 		}
 	}
 
