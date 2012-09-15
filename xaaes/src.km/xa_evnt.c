@@ -352,7 +352,7 @@ get_mbstate(struct xa_client *client, struct mbs *d)
 }
 
 //unsigned long wevents = 0xffffffff;
-char *wclientname = 0;	/* for debugging output only */
+//char *wclientname = 0;	/* for debugging output only */
 bool
 check_queued_events(struct xa_client *client)
 {
@@ -364,12 +364,14 @@ check_queued_events(struct xa_client *client)
 	union msg_buf *m;
 	bool multi, to_yield = false;
 	unsigned long wevents;
-
+#if 0
 	if( !(wevents = client->waiting_for) )
 	{
 		wclientname = client->name;
 	}
-
+#else
+	wevents = client->waiting_for;
+#endif
 	multi = wevents & XAWAIT_MULTI ? true : false;
 // 	bool d = (strnicmp(client->proc_name, "atarirc", 7)) ? false : true;
 
@@ -409,6 +411,7 @@ check_queued_events(struct xa_client *client)
 			return false;
 		}
 	}
+	/* should MU_BUTTON be sent to a client without any windows? */
 	if ((wevents & MU_BUTTON)) {
 		bool bev = false;
 		const short *in = multi ? pb->intin + 1 : pb->intin;
@@ -662,11 +665,14 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 		if( events == 0x10023 && TOP_WINDOW->owner != client && !strcmp( client->name, "  Texel " ) )
 			client->timer_val = 0;	// fake for texel-demo
 #endif
-		if (client->timer_val > 5) {
+		//if (client->timer_val > 5)
+		{
 			client->timeout = addtimeout(client->timer_val, wakeme_timeout);
 			if (client->timeout)
 				client->timeout->arg = (long)client;
-		} else {
+		}
+#if 0
+		else {
 			/* Is this the cause of loosing the key's at regular intervals? */
 			DIAG((D_i,client, "Done timer for %d", client->p->pid));
 
@@ -677,6 +683,7 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 			events |= XAWAIT_NTO;
 			client->timer_val = 0;
 		}
+#endif
 	}
 
 	client->waiting_for = events | XAWAIT_MULTI;
