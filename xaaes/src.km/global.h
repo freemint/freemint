@@ -125,6 +125,7 @@ INLINE void ping(void) { b_ubconout(2, 7); }
 
 /* XXX move to a better place */
 #define AND_MEMORY , "memory"
+#undef trap_14_w
 #define trap_14_w(n)							\
 __extension__								\
 ({									\
