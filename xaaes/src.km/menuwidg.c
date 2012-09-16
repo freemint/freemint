@@ -2551,22 +2551,37 @@ fix_menu(struct xa_client *client, XA_TREE *menu, struct xa_window *wind, bool d
 	/* fix desk menu */
 	if (do_desk)
 	{
+		int o;
 		s_ob = root[menus].ob_head;
 		t_ob = root[s_ob ].ob_head;
-		root[s_ob].ob_height = root[t_ob + 3].ob_y - root[s_ob].ob_y;
-		t_ob += 2;
 
-		/* client->mnu_clientlistname is umalloced area */
-		root[t_ob++].ob_spec.free_string = client->mnu_clientlistname;
-		DIAG((D_menu, NULL, "menufix for %s - adding object at %lx",
-			client->name, client->mnu_clientlistname));
+		/* LASTOB in next 3 entries - bogus structure? */
+		for( o = 0; o < 3; o++ )
+		{
+			if( (root[t_ob+o].ob_flags & OF_LASTOB) )
+			{
+				break;
+			}
+		}
+		if( o == 3 )
+		{
+			t_ob += 3;
+			root[s_ob].ob_height = root[t_ob].ob_y - root[s_ob].ob_y;
+
+			/* client->mnu_clientlistname is umalloced area */
+			root[t_ob-1].ob_spec.free_string = client->mnu_clientlistname;
+			DIAG((D_menu, NULL, "menufix for %s - adding object at %lx",
+				client->name, client->mnu_clientlistname));
+		}
+		else
+			t_ob = 0;
 
 		while (t_ob != s_ob)
 		{
 			root[t_ob].ob_flags |= OF_HIDETREE|OS_DISABLED;
-			if( (root[t_ob].ob_flags & OF_LASTOB) || root[t_ob].ob_next < 0 )
-				break;
 			t_ob = root[t_ob].ob_next;
+			if( t_ob < 0 || (root[t_ob].ob_flags & OF_LASTOB) )
+				break;
 		}
 		if( t_ob != s_ob )
 		{
