@@ -610,6 +610,8 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 
 					type = APP_APPLICATION;
 					ret = p->pid;
+					strncpy( p->cmdlin, p_tail, sizeof(p->cmdlin)-1 );	/* for taskmanager */
+
 					/* switch menu off for single-task (todo: fix it) */
 					if( (p->modeflags & M_SINGLE_TASK) )
 						toggle_menu( lock, 0 );
