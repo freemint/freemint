@@ -1478,7 +1478,7 @@ CE_start_apps(enum locks lock, struct c_event *ce, short cancel)
 				BLOG((false, "   args[%d]:    =(%lx) '%s'", i, cfg.cnf_run_arg[i], cfg.cnf_run_arg[i] ? cfg.cnf_run_arg[i] : "no arg"));
 				parms[0] = '\0';
 				if (cfg.cnf_run_arg[i])
-					parms[0] = sprintf(parms+1, sizeof(parms)-1, "%s", cfg.cnf_run_arg[i]);
+					parms[0] = sprintf(parms+1, sizeof(parms)-2, "%s", cfg.cnf_run_arg[i]);
 
 				launch(lock, 0, 0, 0, cfg.cnf_run[i], parms, C.Aes);
 			}
