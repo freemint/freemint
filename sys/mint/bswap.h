@@ -78,7 +78,7 @@ __const_bswap64 (__u64 x)
 
 # include "arch/bswap.h"
 
-static inline __u16
+INLINE __u16
 bswap16 (register __u16 x)
 {
 # ifdef HAVE_ASM_BSWAP16
@@ -88,7 +88,7 @@ bswap16 (register __u16 x)
 # endif
 }
 
-static inline __u32
+INLINE __u32
 bswap32 (register __u32 x)
 {
 # ifdef HAVE_ASM_BSWAP32
@@ -98,7 +98,7 @@ bswap32 (register __u32 x)
 # endif
 }
 
-static inline __u64
+INLINE __u64
 bswap64 (register __u64 x)
 {
 # ifdef HAVE_ASM_BSWAP64
