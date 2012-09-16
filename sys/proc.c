@@ -443,8 +443,8 @@ do_wakeup_things(short sr, int newslice, long cond)
 
 		if (p->pid && ((long) &foo) < (long) p->stack + ISTKSIZE + 512)
 		{
-			ALERT("stack underflow");
-			handle_sig(SIGBUS);
+			FORCE("do_wakeup_things:stack underflow, %lx<->%lx", &foo, p->stack);
+			//handle_sig(SIGBUS);
 		}
 
 		/* see if process' time limit has been exceeded */
@@ -495,10 +495,6 @@ do_wakeup_things(short sr, int newslice, long cond)
 }
 
 static long sleepcond, iwakecond;
-
-#if NEWLOAD
-short new_ld;
-#endif
 
 #ifdef ARANYM
 #define TEST_TICK	1
@@ -867,16 +863,17 @@ DUMPPROC(void)
 #ifdef DEBUG_INFO
 	struct proc *p = curproc;
 
-	FORCE("Uptime: %ld seconds Loads: %ld %ld %ld Processes running: %d",
+	FORCE("Uptime: %ld seconds Loads: %ld %ld %ld Processes running: %d DUMPPROC=%lx",
 		uptime,
 		(avenrun[0] * 100) / 2048 , (avenrun[1] * 100) / 2048, (avenrun[2] * 100 / 2048),
- 		number_running);
+ 		number_running,DUMPPROC);
 
 	for (curproc = proclist; curproc; curproc = curproc->gl_next)
 	{
-		FORCE("state %s sys %s, inkern %s PC: %lx/%lx BP: %lx (pgrp %i)",
-			qname(curproc->wait_q),
+		FORCE("state %s(%lx) sys %s, indos %s inkern %s PC: %lx/%lx BP: %lx (pgrp %i)",
+			qname(curproc->wait_q), curproc->wait_cond,
 			curproc->p_flag & P_FLAG_SYS ? "yes":" no",
+			curproc->in_dos ? "yes":" no",
 			curproc->in_kern ? "yes":" no",
 			curproc->ctxt[CURRENT].pc, curproc->ctxt[SYSCALL].pc,
 			curproc->p_mem ? curproc->p_mem->base : NULL,
@@ -894,11 +891,7 @@ gen_average(unsigned long *sum, unsigned char *load_ptr, unsigned long max_size)
 
 	*load_ptr = (unsigned char) new_load;
 
-#if NEWLOAD
-	*sum += (new_load - old_load);
-#else
  	*sum += (new_load - old_load) * LOAD_SCALE;
-#endif
 	return (*sum / max_size);
 }
 
@@ -914,12 +907,7 @@ calc_load_average(void)
 	static unsigned long sum5 = 0;
 	static unsigned long sum15 = 0;
 
-#if !NEWLOAD
  	register struct proc *p;
-#else
-	static unsigned long systime = 0, usrtime = 0, old_uptime = 0;
-	unsigned long ud;
-#endif
 
 # if 0	/* moved to intr.spp */
 	uptime++;
@@ -928,7 +916,6 @@ calc_load_average(void)
 	if (uptime % 5) return;
 # endif
 
-#if !NEWLOAD
 	number_running = 0;
 
 	for (p = proclist; p; p = p->gl_next)
@@ -948,52 +935,6 @@ calc_load_average(void)
 		if (p->stack_magic != STACK_MAGIC)
 			FATAL("proc %lx has invalid stack_magic %lx", (long) p, p->stack_magic);
 	}
-#else
-
-	ud = uptime - old_uptime;
-	if( ud != 5 )
-	{
-#ifdef DEBUG_INFO
-		FORCE("calc_load():%ld-%ld:%d - ud=%ld %d running ld=%d %d",
-			rootproc->systime, systime, new_ld,
-			ud, number_running, new_ld, proc_clock );
-#endif
-		new_ld = ud * 1000L - (rootproc->systime - systime);
-	}
-	else
-		new_ld = 5000 - (rootproc->systime - systime);
-	systime = rootproc->systime;
-	old_uptime = uptime;
-	usrtime = rootproc->usrtime;
-
-	if( new_ld > 0 )
-	{
-		/* maximum new_ld=234 */
-		new_ld >>= 4;		/* 312 */
-		new_ld -= (new_ld >> 2);	/* 312 - 78 */
-		if( new_ld > 255 )
-			new_ld = 255;
-	}
-	else
-		new_ld = 0;
-
-#ifdef DEBUG_INFO
-	DEBUG(("%d running ld=%d uptime=%ld tick=%u overfl=%d/%d",
-		number_running, new_ld, uptime, uptimetick,
-		uptime_ovfl1, uptime_ovfl2 ));
-
-
-	if( uptimetick > 200 || uptime_ovfl1 || uptime_ovfl2 )
-	{
-		DEBUG(("calc_load():ld=%d tick=%u uptime=%ld overfl=%d/%d vbl=%d",
-			new_ld, uptimetick, uptime, uptime_ovfl1, uptime_ovfl2, mint_vblcnt));
-		if( uptimetick > 200 )
-			uptimetick = 200;
-		uptime_ovfl1 = uptime_ovfl2 = 0;
-	}
-#endif
-	number_running = new_ld;
-#endif	/* NEWLOAD */
 
 	if (one_min_ptr == SAMPS_PER_MIN)
 		one_min_ptr = 0;
