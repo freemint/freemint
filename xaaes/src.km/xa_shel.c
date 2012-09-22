@@ -285,7 +285,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 	char *save_tail = NULL, *ext = NULL;
 	long longtail = 0, tailsize = 0;
 	Path save_cmd;
-	char *tail = argvtail;
+	char *tail = argvtail, *t;
 	int ret = 0;
 	int drv = 0;
 	Path path, name, defdir;//, cur;
@@ -600,7 +600,12 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 					}
 				}
 
-				ret = create_process(cmd, *argvtail ? argvtail : tail,
+				if( tailsize && *argvtail && (wiscr == 1 || longtail))
+					t = argvtail;
+				else
+					t = tail;
+
+				ret = create_process(cmd, t,
 						     (x_mode & SW_ENVIRON) ? x_shell.env : *strings,
 						     &p, 0, cpopts.mode ? &cpopts : NULL);
 
