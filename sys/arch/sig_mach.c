@@ -134,11 +134,7 @@ sendsig(ushort sig)
 	
 	/* set a new system stack, with a bit of buffer space */
 	oldstack = curproc->sysstack;
-# ifdef COLDFIRE
 	newstack = ((unsigned long) &newcurrent) - 0x40UL - 12UL - 0x100UL;
-# else
-	newstack = ((unsigned long) &newcurrent) - 0x40UL - 12UL - 0x100UL;
-# endif	
 	if (newstack < (unsigned long) curproc->stack + ISTKSIZE + 256)
 	{
 		ALERT("stack overflow");
@@ -307,11 +303,7 @@ top:
 	else
 	{
 		unwound_stack = 0;
-# ifdef COLDFIRE	
 		oldctxt = (CONTEXT *) (((long) &frame[2]) + 0x40 + 0x100);
-# else
-		oldctxt = (CONTEXT *) (((long) &frame[2]) + 0x40 + 0x100);
-# endif
 		if (oldctxt->regs[0] != CTXT_MAGIC)
 		{
 			FATAL ("p_sigreturn: corrupted context");
