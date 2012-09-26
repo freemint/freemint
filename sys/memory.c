@@ -37,8 +37,8 @@
 
 # include "proc.h"
 
-# ifdef COLDFIRE
-extern void   patch_memset_purec(BASEPAGE *b);
+# ifdef __mcoldfire__
+extern void patch_memset_purec(BASEPAGE *b);
 # endif
 
 struct screen
@@ -1614,9 +1614,18 @@ failed:
 	DEBUG (("load_region: return region = %lx", reg));
 
 	SANITY_CHECK_MAPS ();
-#ifdef COLDFIRE
-   patch_memset_purec(b);
+
+#ifdef __mcoldfire__
+	if (coldfire_68k_emulation)
+	{
+		/* Unfortunately, a few 680x0 user instructions can't be
+		 * emulated via illegal instruction handler on ColdFire,
+		 * so they require to be dynamically patched.
+		 */
+		patch_memset_purec(b);
+	}
 #endif
+
 	return reg;
 }
 
