@@ -185,20 +185,26 @@ init_cookies (void)
 	newcookie = (struct cookie *) attach_region (rootproc, newjar_region);
 # endif
 
-	/* set the hardware detected CPU and FPU rather
-	 * than trust the TOS
-	 */
-	TRACE(("_CPU cookie = %08lx", mcpu));
+#ifdef __mcoldfire__
+	/* do not set _CPU and _FPU on native ColdFire */
+	if (coldfire_68k_emulation)
+#endif
+	{
+		/* set the hardware detected CPU and FPU rather
+		 * than trust the TOS
+		 */
+		TRACE(("_CPU cookie = %08lx", mcpu));
 
-	newcookie[i].tag = COOKIE__CPU;
-	newcookie[i].value = mcpu;
-	i++;
+		newcookie[i].tag = COOKIE__CPU;
+		newcookie[i].value = mcpu;
+		i++;
 
-	TRACE(("_FPU cookie = %08lx", fputype));
+		TRACE(("_FPU cookie = %08lx", fputype));
 
-	newcookie[i].tag = COOKIE__FPU;
-	newcookie[i].value = fputype;
-	i++;
+		newcookie[i].tag = COOKIE__FPU;
+		newcookie[i].value = fputype;
+		i++;
+	}
 
 	/* We install basic Atari cookies, if these ain't
 	 * there, assuming we're on an old ST.
