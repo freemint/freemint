@@ -536,7 +536,9 @@ check_bus(struct m68k_stack_frames frame)
 long _cdecl
 check_priv(struct privilege_violation_stackframe *frame)
 {
+#if defined(__mcoldfire__) || !defined(M68000)
 	bool emulate_obsolete_instructions = true;
+#endif
 	ushort opcode;
 	opcode = *frame->pc;
 	UNUSED(opcode);
