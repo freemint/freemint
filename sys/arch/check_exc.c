@@ -536,14 +536,15 @@ check_bus(struct m68k_stack_frames frame)
 long _cdecl
 check_priv(struct privilege_violation_stackframe *frame)
 {
-#if defined(__mcoldfire__) || !defined(M68000)
+# ifndef M68000
+	/* Backward compatibility with older processors */
 	bool emulate_obsolete_instructions = true;
-#endif
+# endif
 	ushort opcode;
 	opcode = *frame->pc;
 	UNUSED(opcode);
 
-#ifdef __mcoldfire__
+# ifdef __mcoldfire__
 	if (!coldfire_68k_emulation)
 	{
 		/* Fortunately, pure ColdFire programs are brand new
@@ -551,7 +552,7 @@ check_priv(struct privilege_violation_stackframe *frame)
 		 */
 		emulate_obsolete_instructions = false;
 	}
-#endif
+# endif
 
 # ifndef M68000
 	/* Emulate the "move from sr" instruction,
