@@ -54,8 +54,12 @@ cXA_keypress(enum locks lock, struct c_event *ce, short cancel)
 
 	if (!cancel)
 	{
+	  struct fmd_result fr;
 		DIAG((D_keybd, client, "cXA_keypress for %s", client->name));
-		wind->keypress(lock, client, wind, NULL, key, NULL);
+		wind->keypress(lock, client, wind, NULL, key, &fr);
+
+		if (fr.aeskey && client->waiting_pb && (TOP_WINDOW->dial & created_for_TOOLBAR))
+			cXA_keybd_event( lock, ce, cancel);
 	}
 	kfree(key);
 }
