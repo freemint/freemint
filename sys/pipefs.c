@@ -805,8 +805,7 @@ check_atomicity:
 		{
 			if (f->flags & O_NDELAY)
 				return 0;
-			if (sleep (IO_Q, (long) &this->tty->state))
-				return EINTR;
+			sleep (IO_Q, (long) &this->tty->state);
 			goto check_atomicity;
 		}
 
@@ -829,8 +828,7 @@ check_atomicity:
 			{
 				/* Buffer still full.  Sleep. */
 				TRACELOW (("pipe_write: sleep until atomic write possible"));
-				if (sleep(IO_Q, (long)p))
-					return EINTR;
+				sleep(IO_Q, (long)p);
 				goto check_atomicity;
 			}
 			/* else do write now. */
@@ -894,8 +892,7 @@ check_atomicity:
 			{
 				/* Nobody has read from the pipe.  */
 				TRACE (("pipe_write: pipe full: sleep on %lx", p));
-				if (sleep (IO_Q, (long)p))
-					return EINTR;
+				sleep (IO_Q, (long)p);
 			}
 		}
 	}
@@ -964,9 +961,7 @@ pipe_read (FILEPTR *f, char *buf, long nbytes)
 			if (p->len == plen) {
 				/* Nobody has read from the pipe. */
 				TRACE(("pipe_read: pipe empty: sleep on %lx", p));
-				if (sleep(IO_Q, (long)p)) {
-					return EINTR;
-				}
+				sleep(IO_Q, (long)p);
 			}
 		}
 	}
@@ -1059,8 +1054,7 @@ pty_readb (FILEPTR *f, char *buf, long nbytes)
 		    (tty->sg.sg_flags & (T_RAW|T_CBREAK)) &&
 		    this->inp->len < tty->vmin*4 && this->inp->writers > 0 &&
 		    this->inp->writers != VIRGIN_PIPE)
-			if (sleep (IO_Q, (long)this->inp))
-				return EINTR;
+			sleep (IO_Q, (long)this->inp);
 
 		return ENODEV;
 	}
@@ -1072,8 +1066,7 @@ pty_readb (FILEPTR *f, char *buf, long nbytes)
 		while (!(f->flags & O_NDELAY) &&
 		    !this->outp->len && this->outp->writers > 0 &&
 		    this->outp->writers != VIRGIN_PIPE)
-			if (sleep (IO_Q, (long)this->outp))
-				return EINTR;
+			sleep (IO_Q, (long)this->outp);
 
 		if (nbytes > this->outp->len)
 			nbytes = this->outp->len;
@@ -1170,8 +1163,7 @@ pipe_ioctl (FILEPTR *f, int mode, void *buf)
 					if (mode == F_SETLKW && lck->l_type != F_UNLCK)
 					{
 						/* sleep a while */
-						if (sleep (IO_Q, (long) this))
-							return EINTR;
+						sleep (IO_Q, (long) this);
 					}
 					else
 						return ELOCKED;
