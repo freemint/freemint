@@ -222,6 +222,7 @@ static struct parser_item parser_tab[] =
 	{ "PROC_MAXMEM",		PI_V_L,	pCB_maxmem			},
 	{ "TPA_FASTLOAD",		PI_R_B,	& forcefastload			},
 	{ "TPA_INITIALMEM",		PI_R_L,	& initialmem			},
+	{ "ALLOW_TRP_CHG",	PI_R_B,	& allow_trp_chg },
 	{ "FDC_HIDE_B",			PI_V_B,	pCB_hide_b			},
 # ifndef NO_AKP_KEYBOARD
 	{ "KBD_AT_CAPS",		PI_R_B,	& kbd_pc_style_caps		},

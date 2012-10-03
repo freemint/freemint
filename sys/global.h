@@ -69,6 +69,8 @@ extern short fpu; /* flag if fpu is present */
  */
 extern short secure_mode;
 
+extern short allow_trp_chg;		/* if 0 only kernel-processes or auto-programs may change sys-vectors */
+
 /* linear 20ms counter */
 extern unsigned long c20ms;
 

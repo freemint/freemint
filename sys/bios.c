@@ -236,6 +236,16 @@ sys_b_setexc (int number, long vector)
 		secure_mode && p->in_dos == 0)
 # endif
 	{
+#if 1
+# ifdef WITH_SINGLE_TASK_SUPPORT
+		if( !(get_curproc()->modeflags & M_SINGLE_TASK) )
+# endif
+			if( !allow_trp_chg && !(get_curproc()->pid <= 1 || get_curproc()->ppid == 0) )
+			{
+				DEBUG (("Setexc not permitted"));
+				return EPERM;
+			}
+#endif
 		if (!suser (p->p_cred->ucr))
 		{
 			DEBUG (("Setexc by non privileged process!"));
