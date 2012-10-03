@@ -1,4 +1,4 @@
-/*
+ /*
  * $Id$
  *
  * This file has been modified as part of the FreeMiNT project. See
@@ -55,7 +55,7 @@
 # include "ipc_socketutil.h"	/* domaininit() */
 # include "k_exec.h"		/* sys_pexec */
 # include "k_exit.h"		/* sys_pwaitpid */
-# include "k_fds.h"		/* do_open/do_pclose */
+# include "k_fds.h"		/* do_open/do_close */
 # include "keyboard.h"		/* init_keytbl() */
 # include "kmemory.h"		/* kmalloc */
 # include "memory.h"		/* init_mem, get_region, attach_region, restr_screen */
@@ -231,6 +231,8 @@ typedef struct _osheader
                                  process.                             */
   ulong     p_rsv2;         /* Reserved, always 'ETOS', if EmuTOS present     */
 } OSHEADER;
+
+short write_boot_file = 0;
 
 void
 init (void)
@@ -527,8 +529,30 @@ init (void)
 
 	rootproc->p_fd->control = f;
 	rootproc->p_fd->ofiles[0] = f; f->links++;
-	rootproc->p_fd->ofiles[1] = f; f->links++;
+	if( !write_boot_file )
+	{
+		rootproc->p_fd->ofiles[1] = f;
+		f->links++;
+	}
+	else
+	{
+		FILEPTR *fb;
 
+		r = FP_ALLOC(rootproc, &fb);
+		if (r) FATAL("Can't allocate fp for bootlog!");
+		r = do_open( &fb, BOOTLOGFILE, O_RDWR|O_TRUNC|O_CREAT, 0, NULL);
+		if( !r )
+		{
+			rootproc->p_fd->ofiles[1] = fb;
+		}
+		else
+		{
+			boot_print("could not open "BOOTLOGFILE"\r\n" );
+			(void)TRAP_Cconin();
+			rootproc->p_fd->ofiles[1] = f;
+			f->links++;
+		}
+	}
 #ifndef COLDFIRE
 
 	r = FP_ALLOC(rootproc, &f);
@@ -1044,6 +1068,18 @@ mint_thread(void *arg)
  	sys_d_setpath("/");
 	stop_and_ask();
 
+	DEBUG(( "closing bootlog, fd=%lx\r\n",rootproc->p_fd->ofiles[0] ));
+
+	if( write_boot_file )
+	{
+		//boot_printf( "closing bootlog, fd=%lx\r\n",rootproc->p_fd->ofiles[1] );
+		r = do_close( rootproc, rootproc->p_fd->ofiles[1] );
+		if( r )
+			DEBUG(( "error closing bootlog:%ld\r\n", r));
+		rootproc->p_fd->ofiles[1] = rootproc->p_fd->ofiles[0];
+		rootproc->p_fd->ofiles[0]->links++;
+		write_boot_file = 0;
+	}
 	/* prepare to run the init program as PID 1. */
 	set_pid_1();
 
