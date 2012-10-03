@@ -63,6 +63,14 @@ extern long pmmu;
  */
 extern short fpu; /* flag if fpu is present */
 
+#ifdef __mcoldfire__
+/* When true, we have a ColdFire CPU running a 68K emulation layer.
+ * So ColdFire supervisor instructions are not available.
+ * We also have 68K exception stack frames, not native ColdFire ones.
+ */
+extern bool coldfire_68k_emulation;
+#endif
+
 /* if this variable is set, then we have "secure mode" enabled; that
  * means only the superuser may access some functions those may be
  * critical for system security.
