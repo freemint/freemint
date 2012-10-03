@@ -22,6 +22,7 @@
  *
  *
  * Author: Konrad M. Kokoszkiewicz <draco@atari.org>
+ * Bootfile-option and minor changes: Helmut Karlowski 2012
  *
  * please send suggestions or bug reports to me or
  * the MiNT mailing list
@@ -46,7 +47,11 @@
  */
 
 /* if the user is holding down the magic shift key, we ask before booting */
+# ifdef ARANYM
+# define MAGIC_SHIFT	0x1		/* right shift (left does not work) */
+# else
 # define MAGIC_SHIFT	0x2		/* left shift */
+# endif
 
 # define MAX_CMD_LEN	32
 
@@ -130,6 +135,20 @@ static const char *debug_devices[] =
 	"(KBD:, keyboard)",
 	"(RAW:, raw console)",
 	"", "", "", ""
+};
+
+static const char *write_boot_levels[] =
+{
+# ifdef ARANYM
+	"(none)",
+	"(File)",
+	"(File/Host-Console)"
+# define WBOOTLVL 2
+# else
+	"(no)",
+	"(yes)"
+# define WBOOTLVL 1
+# endif
 };
 
 /* Pairs of functions handling each keyword. The do_xxx_yyyy() function
@@ -370,6 +389,24 @@ do_boot_delay(char *arg)
 }
 
 static long
+emit_write_boot(short fd)
+{
+	char line[MAX_CMD_LEN];
+
+	ksprintf(line, sizeof(line), "WRITE_BOOT=%d\n", write_boot_file );
+
+	return TRAP_Fwrite(fd, strlen(line), line);
+}
+
+static void
+do_write_boot(char *arg)
+{
+	write_boot_file = *arg - '0';
+	if( write_boot_file < 0 || write_boot_file > 2 )
+		write_boot_file = 1;
+}
+
+static long
 emit_boot_delay(short fd)
 {
 	char line[MAX_CMD_LEN];
@@ -390,7 +427,9 @@ static const char *ini_keywords[] =
 # endif
 	"INI_STEP=",
 	"DEBUG_LEVEL=", "DEBUG_DEVNO=", "BOOT_DELAY=",
-	"INI_SAVE=", NULL
+	"WRITE_BOOT=",
+	"INI_SAVE=",
+	NULL
 };
 
 static typeof(do_xfs_load) *do_func[] =
@@ -400,7 +439,7 @@ static typeof(do_xfs_load) *do_func[] =
 	do_mem_prot,
 # endif
 	do_ini_step,
-	do_debug_level, do_debug_devno, do_boot_delay,
+	do_debug_level, do_debug_devno, do_boot_delay, do_write_boot,
 	do_ini_save
 };
 
@@ -412,6 +451,7 @@ static typeof(emit_xfs_load) *emit_func[] =
 # endif
 	emit_ini_step,
 	emit_debug_level, emit_debug_devno, emit_boot_delay,
+	emit_write_boot,
 	emit_ini_save
 };
 
@@ -573,7 +613,7 @@ read_ini (void)
 int
 boot_kernel_p (void)
 {
-	int option[9];
+	int option[10];
 	int modified;
 
 	option[0] = 1;			/* Load MiNT or not */
@@ -586,7 +626,8 @@ boot_kernel_p (void)
 	option[5] = step_by_step;	/* Enter stepper mode */
 	option[6] = debug_level;
 	option[7] = out_device;
-	option[8] = save_ini;
+	option[8] = write_boot_file;
+	option[9] = save_ini;
 
 	modified = 0;
 
@@ -605,7 +646,8 @@ boot_kernel_p (void)
 			( option[5] == -1 ) ? MSG_init_menu_yesrn : MSG_init_menu_norn,
 			option[6], debug_levels[option[6]],
 			option[7], debug_devices[option[7]],
-			option[8] ? MSG_init_menu_yesrn : MSG_init_menu_norn );
+			option[8], write_boot_levels[option[8]],
+			option[9] ? MSG_init_menu_yesrn : MSG_init_menu_norn);
 
 wait:
 		c = TRAP_Crawcin();
@@ -630,7 +672,8 @@ wait:
 					step_by_step =  option[5];
 					debug_level  =  option[6];
 					out_device   =  option[7];
-					save_ini     =  option[8];
+					write_boot_file =  option[8];
+					save_ini     =  option[9];
 
 					if (save_ini)
 						write_ini();
@@ -640,7 +683,7 @@ wait:
 			}
 			case '0':
 			{
-				option[8] = option[8] ? 0 : 1;
+				option[9] = option[9] ? 0 : 1;
 
 				modified = 1;
 				break;
@@ -652,22 +695,19 @@ wait:
 # ifdef WITH_MMU_SUPPORT
 			case '5':
 # endif
-			{
-				int off;
-
-				off = ((c & 0x0f) - 1);
-				option[off] = option[off] ? 0 : 1;
-
-				modified = 1;
-				break;
-			}
 			case '6':
+			case '9':
 			{
-				int off;
+				int off, opt;
 
 				off = ((c & 0x0f) - 1);
-				option[off] = option[off] ? 0 : -1;
+				opt = option[off];
 
+				opt++;
+				if (opt > WBOOTLVL)
+					opt = 0;
+
+				option[off] = opt;
 				modified = 1;
 				break;
 			}
@@ -726,8 +766,7 @@ pause_and_ask(void)
 
 		do {
 			newstamp = TRAP_Supexec(get_hz_200);
-
-			if ((TRAP_Kbshift(-1) & MAGIC_SHIFT) == MAGIC_SHIFT)
+			if (TRAP_Kbshift(-1) == MAGIC_SHIFT)
 			{
 				long yn = boot_kernel_p ();
 				if (!yn)
