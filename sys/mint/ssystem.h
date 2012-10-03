@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * This file belongs to FreeMiNT.  It's not in the original MiNT 1.12
  * distribution.  See the file Changes.MH for a detailed log of changes.
  */
@@ -37,6 +37,7 @@
 # define S_CTRLALTDEL		25	/* ctraltdel behavoiur */
 # define S_DELCOOKIE	26
 # define S_LOADKBD	27	/* reload the keyboard table */
+# define S_ALLOW_TRP_CHG	28	/* if 0 only kernel-processes may change sys-vectors */
 # define S_CLOCKUTC	100
 # define S_TIOCMGET	0x54f8	/* 21752 */
 
