@@ -19,11 +19,14 @@
 # include "mint/ioctl.h"
 # include "mint/proc.h"
 
+# include "init.h"
 # include "dosfile.h"
 # include "filesys.h"
 # include "tty.h"
 # include "proc.h"
-
+# ifdef ARANYM
+# include "arch/aranym.h"
+# endif
 
 /*
  * These routines are what Cconout, Cauxout, etc. ultimately call.
@@ -179,6 +182,8 @@ sys_c_necin (void)
 	return file_getchar (get_curproc()->p_fd->ofiles[0], COOKED | NOECHO);
 }
 
+int
+nf_debug(const char *msg);
 long _cdecl
 sys_c_conws (const char *str)
 {
@@ -188,6 +193,10 @@ sys_c_conws (const char *str)
 	while (*p++)
 		cnt++;
 
+# ifdef ARANYM
+	if( write_boot_file == 2 )
+		nf_debug(str);
+# endif
 	return sys_f_write (1, cnt, str);
 }
 

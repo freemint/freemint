@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
  */
@@ -14,6 +14,8 @@
 
 extern short intr_done;
 extern short step_by_step;
+extern short write_boot_file;
+#define BOOTLOGFILE "C:/mint/boot.log"
 
 void	boot_print	(const char *s);
 void	boot_printf	(const char *fmt, ...);
