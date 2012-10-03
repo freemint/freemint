@@ -49,8 +49,9 @@
 
 # if 0
 short run_level = 1;		/* default runlevel */
-# endif
 short disallow_single = 0;
+# endif
+short allow_trp_chg = 1;		/* if 0 only kernel-processes may change sys-vectors */
 
 
 long _cdecl
@@ -371,6 +372,15 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 			else if (arg1 == -1)	r = secure_mode;
 			else if (arg1 > 2)	r = EBADARG;
 			else			secure_mode = arg1;
+
+			break;
+		}
+		case S_ALLOW_TRP_CHG:
+		{
+			if (isroot == 0)	r = EPERM;
+			else if (arg1 == -1)	r = allow_trp_chg;
+			else if (arg1 > 1)	r = EBADARG;
+			else			allow_trp_chg = arg1;
 
 			break;
 		}
