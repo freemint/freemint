@@ -52,8 +52,8 @@ lowercase(const char *src)
 	
 	while (*d)
 	{
-		if (isupper(*d))
-			*d = tolower(*d);
+		if (isupper((unsigned char)*d))
+			*d = tolower((unsigned char)*d);
 		d++;
 	}
 	
