@@ -51,7 +51,7 @@
 short run_level = 1;		/* default runlevel */
 short disallow_single = 0;
 # endif
-short allow_setexc = 1;		/* if 0 only kernel-processes may change sys-vectors */
+short allow_setexc = 2;		/* if 0 only kernel-processes may change sys-vectors */
 
 
 long _cdecl
