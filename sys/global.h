@@ -77,7 +77,7 @@ extern bool coldfire_68k_emulation;
  */
 extern short secure_mode;
 
-extern short allow_trp_chg;		/* if 0 only kernel-processes or auto-programs may change sys-vectors */
+extern short allow_setexc;		/* if 0 only kernel-processes or auto-programs may change sys-vectors */
 
 /* linear 20ms counter */
 extern unsigned long c20ms;
