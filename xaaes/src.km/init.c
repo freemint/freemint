@@ -510,6 +510,7 @@ again:
 	cfg.menu_locking = true;
 	cfg.back_col = -1;
 	cfg.menu_bar = 2;	// always on
+	cfg.allow_setexc = 2;	/* allow Setexc */
 	//cfg.backname = FAINT;
 	cfg.next_active = 0;
 // 	cfg.widg_w = ICON_W;
