@@ -560,6 +560,12 @@ k_init(unsigned long vm)
 	cfg.videomode = (short)vm;
 	BLOG((0,"k_init: videomode=%d",cfg.videomode ));
 
+	{
+	long r;
+	/* don't want anyone to change system-vectors */
+	if (!(r=s_system(S_SETEXC, cfg.allow_setexc, 0 )) )
+		BLOG((0,"could set SETEXC to %d:%ld", cfg.allow_setexc, r));
+	}
 	xa_vdiapi = v->api = init_xavdi_module();
 	{
 		short *p;
@@ -588,6 +594,7 @@ k_init(unsigned long vm)
 	/* try to open virtual wk - necessary when physical wk is already open
 	 */
 	v->handle = 0;
+
 #if 1
 	if( C.P_handle > 0 || (cfg.et4000_hack && C.nvdi_version > 0x400 && C.fvdi_version == 0) )
 	{
@@ -776,7 +783,7 @@ k_init(unsigned long vm)
 
 		set_wrkin(work_in, C.P_handle);
 		v_opnvwk(work_in, &v->handle, work_out);
-	}
+	}	/* /if ( v->handle <= 0 ) */
 
 	if (v->handle == 0)
 	{
@@ -917,6 +924,7 @@ k_init(unsigned long vm)
 					  DU_RSX_CONV, // screen.c_max_w, // < 8 ? 8 : screen.c_max_w,
 					  DU_RSY_CONV, //screen.c_max_h, // < 16 ? 16 : screen.c_max_h); //DU_RSX_CONV, DU_RSY_CONV);
 					  true);
+
 		BLOG((true, "system resource = %lx (%s)", C.Aes_rsc, resource_name));
 		kfree(resource_name);
 	}

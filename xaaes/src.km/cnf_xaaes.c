@@ -122,6 +122,7 @@ static struct parser_item parser_tab[] =
 	{ "DC_TIME",               PI_R_S,   & cfg.double_click_time	},
 	{ "MP_TIMEGAP",            PI_R_S,   & cfg.mouse_packet_timegap },
 	{ "VIDEO",	           PI_R_US,   & cfg.videomode		},
+	{ "ALLOW_SETEXC",        PI_R_S,   & cfg.allow_setexc, Range(0, 2)	},
 	{ "ET4000_HACK",       PI_R_B,   & cfg.et4000_hack	},
 	{ "REDRAW_TIMEOUT",        PI_R_S,   & cfg.redraw_timeout, Range(0, 32000)	},
 	{ "POPUP_TIMEOUT",	   PI_R_S,   & cfg.popup_timeout, Range(0, 32000)	},
@@ -1030,7 +1031,6 @@ diags_opts(struct options *o)
 }
 
 #endif
-
 void
 load_config(void *path )
 {
@@ -1052,6 +1052,7 @@ load_config(void *path )
 	DIAGS(("Loading config %s", cpath));
 	BLOG((0,"Loading config %s", cpath));
 	parse_cnf(cpath, parser_tab, &mydata);
+
 
 #if GENERATE_DIAGS
 	{
