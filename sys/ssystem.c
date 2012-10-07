@@ -51,7 +51,7 @@
 short run_level = 1;		/* default runlevel */
 short disallow_single = 0;
 # endif
-short allow_trp_chg = 1;		/* if 0 only kernel-processes may change sys-vectors */
+short allow_setexc = 1;		/* if 0 only kernel-processes may change sys-vectors */
 
 
 long _cdecl
@@ -375,12 +375,12 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 
 			break;
 		}
-		case S_ALLOW_TRP_CHG:
+		case S_SETEXC:
 		{
 			if (isroot == 0)	r = EPERM;
-			else if (arg1 == -1)	r = allow_trp_chg;
-			else if (arg1 > 1)	r = EBADARG;
-			else			allow_trp_chg = arg1;
+			else if (arg1 == -1)	r = allow_setexc;
+			else if (arg1 > 2)	r = EBADARG;
+			else			allow_setexc = arg1;
 
 			break;
 		}
