@@ -1563,7 +1563,7 @@ void remove_window_widgets(enum locks lock, int full)
 			wind->send_message(lock, wind, NULL, AMQ_REDRAW, QMF_CHKDUP,
 		  	WM_SIZED, 0, 0, wind->handle, wind->r.x, wind->r.y, wind->r.w, wind->r.h);
 		}
-		else
+		if( memcmp( &wind->r, &screen.r, sizeof(RECT) ) )
 		{
 			update_windows_below(lock, &screen.r, NULL, window_list, NULL);
 		}
