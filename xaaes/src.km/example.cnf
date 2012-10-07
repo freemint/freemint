@@ -63,21 +63,28 @@
 # define if windows are allowed to move over top of screen (crashes some VDI)
 #leave_top_border = 1
 #####################################################################
-# et4000_hack
+# allow_setexc (default:2)
+# restrict calls to Setexc by programs started after XaAES.
+# 0: deny all
+# 1: deny trap-changes (numbers 0-15)
+# 2: allow all
+#
+#####################################################################
+# et4000_hack (default:0)
 # if XaAES is run with NVDI and an ET4000-graphics-card, it cannot open
 # the physical workstation. Either start from ROM-desktop or open the
 # physical workstation before MiNT by another program. In that case this
 # has to be set.
 #et4000_hack = 1
 #####################################################################
-# xa_bubble
+# xa_bubble (default:0)
 # if you want to use the XaAES-builtin bubble-help (since 1.1.21) set
 # this.
 # 1: windows-tooltip-style
 # 2: apple-ballon-help-style
 #xa_bubble = 1
 #####################################################################
-# describe_widgets
+# describe_widgets (default:0)
 # if set not 0 display name/function of a widget when the mouse is
 # placed (not moved) twice above a widget.
 # 1: windows-tooltip-style (recommended)
