@@ -804,7 +804,7 @@ Form_Keyboard(XA_TREE *wt,
 	DIAG((D_form, NULL, "Form_Keyboard: wt=%lx, obtree=%lx, wt->owner=%lx(%lx), obj=%d, key=%x(%x), nrmkey=%x for %s",
 		wt, wt->tree, wt->owner, client, aesobj_item(&obj), keycode, key->aes, key->norm, wt->owner->name));
 
-	ei = wt->ei ? wt->ei : &wt->e;
+	ei = (wt->wind->dial & created_for_TOOLBAR) && wt->ei ? wt->ei : &wt->e;
 
 // 	display("Form_Keyboard:   wt=%lx, obtree=%lx, wt->owner=%lx(%lx), obj=%d, key=%x(%x), nrmkey=%x for %s",
 // 		ei->obj, wt, wt->tree, wt->owner, wt->owner, obj, keycode, key->aes, key->norm, wt->owner->name);
@@ -816,7 +816,7 @@ Form_Keyboard(XA_TREE *wt,
 	else
 		new_eobj = obj;
 
-	if (new_eobj.item < 0 || !object_is_editable(new_eobj.ob, 0, 0))
+	if (new_eobj.item < 0 || (/*!(wt->wind->dial & created_for_TOOLBAR) &&*/ !object_is_editable(new_eobj.ob, 0, 0)) )
 	{
 		new_eobj = ob_find_next_any_flagstate(wt, aesobj(obtree, 0), focus(wt), OF_EDITABLE, OF_HIDETREE, 0, OS_DISABLED, 0, 0, OBFIND_FIRST);
 	}
@@ -885,7 +885,7 @@ g_slist:
 		}
 		else
 		{
-			if ( ((key->raw.conin.state  & (K_CTRL|K_ALT)) == K_ALT )
+			if ( ((key->raw.conin.state & (K_CTRL|K_ALT)) == K_ALT )
 				|| (wt->owner->status & CS_FORM_ALERT))
 			{
 				char c = toupper(key->norm & 0x00ff);
@@ -1308,14 +1308,15 @@ Key_form_do(enum locks lock,
 		v = client->vdi_settings;
 	}
 
-	ei = wt->ei ? wt->ei : &wt->e;
-
+	ei = !(wt->wind->dial & created_for_TOOLBAR) && wt->ei ? wt->ei : &wt->e;
 
 	if (obtree)
 	{
 		fr.dblmask = 0;
 
-		fr.no_exit = Form_Keyboard(wt,
+		if( ei->o.item >= 0
+			|| !(wt->wind->dial & created_for_TOOLBAR) || key->aes == SC_RETURN || (key->raw.conin.state & (K_CTRL|K_ALT)) == K_ALT )
+			fr.no_exit = Form_Keyboard(wt,
 					   v,
 					   ei->o,
 					   key,
@@ -1367,7 +1368,6 @@ Key_form_do(enum locks lock,
 			}
 		}
 	}
-
 	if (ret_fr)
 		*ret_fr = fr;
 
