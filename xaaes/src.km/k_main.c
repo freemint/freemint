@@ -83,6 +83,7 @@
 #include "mint/filedesc.h"
 #include "mint/ioctl.h"
 #include "mint/signal.h"
+#include "mint/ssystem.h"
 #include "cookie.h"
 
 #if CHECK_STACK
@@ -1595,7 +1596,7 @@ void load_palette( void *fn )
 void
 k_main(void *dummy)
 {
-	int wait = 1, pferr;
+	int wait = 1, pferr, p_exc = -1;
 	unsigned long default_input_channels;
 	struct tty *tty;
 
@@ -1846,6 +1847,17 @@ k_main(void *dummy)
 	}
 	reset_about();
 	post_cevent(C.Hlp, ceExecfunc, open_about,NULL, 0,0, NULL,NULL);
+	if (cfg.allow_setexc != -1 )
+	{
+		/* don't want anyone to change system-vectors */
+		long r;
+		if( (r=s_system(S_SETEXC, -1, 0 ) >= 0) )
+		{
+			p_exc = r;
+			if( (r=s_system(S_SETEXC, cfg.allow_setexc, 0 )) )
+				BLOG((0,"could set SETEXC to %d:%ld", cfg.allow_setexc, r));
+		}
+	}
 	if( !pferr )
 		post_cevent(C.Hlp, CE_start_apps, NULL,NULL, 0,0, NULL,NULL);
 	/*
@@ -1958,12 +1970,15 @@ k_main(void *dummy)
 	C.sdt = NULL;
 
 leave:
-	/* delete semaphore */
 	{
 		int r;
+		/* delete semaphore */
 		r = p_semaphore( SEMDESTROY, XA_SEM, 0 );
 		if( r )
 			BLOG((0,"k_main:could not destroy semaphore:%d", r ));
+		/* reset Setexc */
+		if( p_exc != -1 && (r=s_system(S_SETEXC, p_exc, 0 )) < 0 )
+			BLOG((0,"k_main:could not reset setexc:%d", r ));
 	}
 
 	k_exit(wait);
