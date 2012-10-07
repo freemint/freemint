@@ -563,7 +563,7 @@ k_init(unsigned long vm)
 	{
 	long r;
 	/* don't want anyone to change system-vectors */
-	if (!(r=s_system(S_SETEXC, cfg.allow_setexc, 0 )) )
+	if (cfg.allow_setexc != -1 && !(r=s_system(S_SETEXC, cfg.allow_setexc, 0 )) )
 		BLOG((0,"could set SETEXC to %d:%ld", cfg.allow_setexc, r));
 	}
 	xa_vdiapi = v->api = init_xavdi_module();
