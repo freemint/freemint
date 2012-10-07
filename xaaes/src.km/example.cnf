@@ -63,8 +63,9 @@
 # define if windows are allowed to move over top of screen (crashes some VDI)
 #leave_top_border = 1
 #####################################################################
-# allow_setexc (default:2)
+# allow_setexc (default:-1)
 # restrict calls to Setexc by programs started after XaAES.
+# -1: no change
 # 0: deny all
 # 1: deny trap-changes (numbers 0-15)
 # 2: allow all
