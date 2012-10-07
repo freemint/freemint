@@ -892,12 +892,15 @@ draw_widget(struct xa_window *wind, XA_WIDGET *widg, struct xa_rect_list *rl)
 			{
 				if( wind == root_window || !cfg.menu_bar || cfg.menu_layout != 0 || ( rl->r.y > get_menu_height() || !clip_off_menu( &rl->r )) )
 				{
-					(*v->api->set_clip)(v, &rl->r);
-					if( !cfg.menu_ontop && widg->m.r.xaw_idx != XAW_MENU && rl->r.y < get_menu_height() &&  rl->r.x < get_menu_widg()->r.w )
+					if (xa_rect_clip(&rl->r, &widg->ar, &r))
 					{
-						C.rdm = 1;
+						(*v->api->set_clip)(v, &r);
+						if( !cfg.menu_ontop && widg->m.r.xaw_idx != XAW_MENU && rl->r.y < get_menu_height() &&  rl->r.x < get_menu_widg()->r.w )
+						{
+							C.rdm = 1;
+						}
+						widg->m.r.draw(wind, widg, &rl->r);
 					}
-					widg->m.r.draw(wind, widg, &rl->r);
 				}
 			}
 			rl = rl->next;
@@ -1336,9 +1339,6 @@ click_title(enum locks lock, struct xa_window *wind, struct xa_widget *widg, con
 
 	if (nolist && (wind->window_status & XAWS_NOFOCUS))
 		return true;
-
-// 	if (nolist)
-// 		display("NOTLIST!");
 
 	/* Ozk: If either shifts pressed, unconditionally send the window to bottom */
 	if (md->clicks == 1)
@@ -3179,11 +3179,11 @@ free_xawidget_resources(struct xa_widget *widg)
 		DIAGS(("  --- stuff=%lx not alloced in widg=%lx",
 			widg->stuff, widg));
 #endif
-	widg->stufftype	= 0;
-	widg->stuff	= NULL;
- 	widg->m.r.draw	= NULL;
-	widg->m.click	= NULL;
-	widg->m.drag	= NULL;
+	widg->stufftype = 0;
+	widg->stuff = NULL;
+ 	widg->m.r.draw = NULL;
+	widg->m.click = NULL;
+	widg->m.drag = NULL;
 	widg->m.properties = 0;
 }
 
@@ -4288,12 +4288,12 @@ set_toolbar_handlers(const struct toolbar_handlers *th, struct xa_window *wind, 
 		if (th && th->click)
 		{
 			if (th->click == (void *)-1L)
-				widg->m.click	= NULL;
+				widg->m.click = NULL;
 			else
-				widg->m.click	= th->click;
+				widg->m.click = th->click;
 		}
 		else
-			widg->m.click	= Click_windowed_form_do;
+			widg->m.click = Click_windowed_form_do;
 
 		if (th && th->drag)
 		{
@@ -4351,9 +4351,9 @@ set_toolbar_handlers(const struct toolbar_handlers *th, struct xa_window *wind, 
 		/* hek:
 		 * seems some alerts have no default but only Ok
 		 * they can only be handled by mouse then
-		 * now all have a keyboard
+		 * now all have a keyboard (Key_form_do)
 		 */
-		if (wt /*&& (wt->ei || edit_set(&wt->e) || obtree_has_default(wt->tree))*/)
+		if (wt)
 		{
 			if (th && th->keypress) {
 				if (th->keypress == (void *)-1L)
@@ -4706,7 +4706,6 @@ do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct
 
 				if (inside)
 				{
-					//short oldstate = -1;
 					bool rtn = false;
 					int ax = 0;
 
@@ -4743,9 +4742,11 @@ do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct
 						short b = md->cstate, rx = md->x, ry = md->y;
 						XA_TREE *wt = widg->stuff;
 
-						/* We don't auto select & pre-display for a menu or toolbar widget */
-						if (f != XAW_MENU && f != XAW_TOOLBAR)
-							/*oldstate = */redisplay_widget(lock, w, widg, OS_SELECTED);
+						/* We don't auto select & re-display for a menu, info or toolbar widget */
+						if (f != XAW_MENU && f != XAW_TOOLBAR && f != XAW_INFO)
+						{
+							redisplay_widget(lock, w, widg, OS_SELECTED);
+						}
 
 						/*
 						 * Check if the widget has a dragger function if button still pressed
@@ -4833,8 +4834,10 @@ do_widgets(enum locks lock, struct xa_window *w, XA_WIND_ATTR mask, const struct
 					if (rtn)	/* If the widget click/drag function returned true we reset the state of the widget */
 					{
 						DIAG((D_button, NULL, "Deselect widget"));
-						if (f != XAW_MENU && f != XAW_TOOLBAR)
+						if (f != XAW_MENU && f != XAW_TOOLBAR && f != XAW_INFO)
+						{
 							redisplay_widget(lock, w, widg, OS_NORMAL); /* Flag the widget as de-selected */
+						}
 					}
 					else if (w == root_window && f == XAW_TOOLBAR)		/* HR: 280801 a little bit special. */
 						return false;		/* pass click to desktop owner */
