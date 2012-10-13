@@ -1071,7 +1071,7 @@ driver_init (void)
 
     if( mc_dma_init() == NULL )
     {
-        c_conws("Exit: failed to load DMA API!\n");
+        c_conws("Exit: failed to load DMA API!\r\n");
         KDEBUG(("Exit: failed to load DMA API!"));
         return( 1 );
     }
@@ -1158,7 +1158,7 @@ driver_init (void)
      */
     if_register (&if_fec[0]);
 
-    ksprintf (message, "%s v%d.%d  (%s%d - %02x:%02x:%02x:%02x:%02x:%02x) \n\r",
+    ksprintf (message, "%s v%d.%d  (%s%d - %02x:%02x:%02x:%02x:%02x:%02x)\r\n",
               FEC_DRIVER_DESC,
               FEC_DRIVER_MAJOR_VERSION,
               FEC_DRIVER_MINOR_VERSION,
@@ -1194,7 +1194,7 @@ fec_open (struct netif *nif)
 
     if( fec_buf_init(fi) )
     {
-        c_conws("fec_buf_init failed!");
+        c_conws("fec_buf_init failed!\r\n");
         fec_buf_flush(fi);
         res = 1;
     }
@@ -1207,7 +1207,7 @@ fec_open (struct netif *nif)
         if( (mode == FEC_MODE_MII) && (am79c874_init(fi->ch, FEC_PHY(fi->ch), speed, duplex) == 0) )
         {
             /* Flush the network buffers */
-            c_conws("am79c874_init failed!");
+            c_conws("am79c874_init failed!\r\n");
             fec_buf_flush(fi);
             res = 1;
         }
