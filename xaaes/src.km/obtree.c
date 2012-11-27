@@ -2251,7 +2251,7 @@ static short xa_isalnum( short c )
  * define '_'-shortcuts
  */
 void
-ob_fix_shortcuts(OBJECT *obtree, bool not_hidden, void **scp)
+ob_fix_shortcuts(OBJECT *obtree, bool not_hidden)
 {
 	struct sc
 	{
@@ -2269,19 +2269,12 @@ ob_fix_shortcuts(OBJECT *obtree, bool not_hidden, void **scp)
 	DIAGS((" -- %d objects", objs));
 	len = ((long)objs + 1) * sizeof(struct sc);
 
-	if( !scp || !*scp )
+	if( !(sc = kmalloc(len) ) )
 	{
-		if( !(sc = kmalloc(len) ) )
-		{
-			BLOG((0,"ob_fix_shortcuts:kmalloc(%ld) failed.", len));
-			return;
-		}
-		if( scp )
-			*scp = sc;
-		bzero(sc, len);
+		BLOG((0,"ob_fix_shortcuts:kmalloc(%ld) failed.", len));
+		return;
 	}
-	else
-		sc = *scp;
+	bzero(sc, len);
 
 	DIAGS((" -- sc = %lx", sc));
 
@@ -2408,8 +2401,7 @@ ob_fix_shortcuts(OBJECT *obtree, bool not_hidden, void **scp)
 			}
 		}
 
-		if( !scp )
-			kfree(sc);
+		kfree(sc);
 	}
 	DIAGS((" -- ob_fix_shortcuts: done"));
 }
