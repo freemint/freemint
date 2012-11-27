@@ -134,7 +134,7 @@ __extension__								\
 	("\
 		movw    %1,sp@-; \
 		trap    #14;	\
-		addqw   #2,sp "						\
+		addql   #2,sp "						\
 	: "=r"(retvalue)			/* outputs */		\
 	: "g"(n)				/* inputs  */		\
 	: __CLOBBER_RETURN("d0")					\
