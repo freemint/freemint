@@ -494,7 +494,7 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 
 	if( client->options.alt_shortcuts & ALTSC_ALERT )
 	{
-		ob_fix_shortcuts(alert_form, true, 0);
+		ob_fix_shortcuts(alert_form, true);
 	}
 
 	/* Create a window and attach the alert object tree centered to it */
@@ -589,7 +589,7 @@ XA_form_center(enum locks lock, struct xa_client *client, AESPB *pb)
 		{
 			if( !(obtree->ob_state & OS_WHITEBAK) )
 			{
-				ob_fix_shortcuts( obtree, true, 0 );
+				ob_fix_shortcuts( obtree, true );
 				obtree->ob_state |= OS_WHITEBAK;
 			}
 		}
