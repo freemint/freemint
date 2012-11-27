@@ -2267,7 +2267,7 @@ ob_fix_shortcuts(OBJECT *obtree, bool not_hidden)
 
 	objs = ob_count_objs(obtree, 0, -1);
 	DIAGS((" -- %d objects", objs));
-	len = ((long)objs + 1) * sizeof(struct sc);
+	len = (long)objs * sizeof(struct sc);
 
 	if( !(sc = kmalloc(len) ) )
 	{
@@ -2355,7 +2355,7 @@ ob_fix_shortcuts(OBJECT *obtree, bool not_hidden)
 									scuts = sc;
 									nk = xa_toupper((char)*(s + j));
 
-									while (scuts->c && scuts-sc < objs)
+									while (scuts-sc < objs && scuts->c)
 									{
 										if (i != scuts->o && scuts->c == nk )
 										{
