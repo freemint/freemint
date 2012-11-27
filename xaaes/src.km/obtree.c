@@ -2311,14 +2311,13 @@ ob_fix_shortcuts(OBJECT *obtree, bool not_hidden, void **scp)
 				flag = OF_TOUCHEXIT;
 			break;
 			case 3:
-				flag2 = flag;
+				flag2 |= flag;
 				flag = OF_SELECTABLE;
 			break;
 			}
 			for( i = 1; i <= objs; i++ )
 			{
 				OBJECT *ob = obtree + i;
-				bool predef = false;
 				DIAGS((" -- obj %d, type %x (n=%d, h=%d, t=%d)",
 					i, ob->ob_type, ob->ob_next, ob->ob_head, ob->ob_tail));
 
@@ -2353,14 +2352,17 @@ ob_fix_shortcuts(OBJECT *obtree, bool not_hidden, void **scp)
 									j = nc;
 								}
 								else
-									predef = true;
+								{
+									if( k > 0 )
+										continue;
+								}
 
 								if (j < slen)
 								{
 									scuts = sc;
 									nk = xa_toupper((char)*(s + j));
 
-									while (scuts->c )
+									while (scuts->c && scuts-sc < objs)
 									{
 										if (i != scuts->o && scuts->c == nk )
 										{
@@ -2373,12 +2375,15 @@ ob_fix_shortcuts(OBJECT *obtree, bool not_hidden, void **scp)
 										else
 											scuts++;
 									}
+									if( scuts-sc >= objs )
+									{
+										BLOG((0,"ob_fix_shortcuts: '%s': buffer-overflow", s));
+										continue;
+									}
 									if (!scuts->c )
 									{
 										scuts->c = nk;
 										scuts->o = i;
-										if( predef && k > 0 )
-											continue;		/* no predefined */
 										if( nc <= j )
 										{
 											nc = j;	/* first non-white or preselected char */
