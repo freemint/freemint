@@ -2655,20 +2655,8 @@ create_new_pdlg(struct xa_client *client, XA_WIND_ATTR tp) //, struct xa_window 
 			add_dialog(pdlg, NULL, "Raster", pdlg->dwt->tree, PDLG_RASTER);
 			add_dialog(pdlg, NULL, "Interface", pdlg->dwt->tree, PDLG_PORT);
 
-			{
-				/* last objects in pdlg-dialogs */
-#define XPDLG_LAST	XPDLG_CANCEL
-#define PDLG_LAST PDLG_R_FG
-
-				void *scp = kmalloc( 3 * (XPDLG_LAST + PDLG_LAST) );
-				if( !scp )
-					return 0;
-				memset( scp, 0, 3 * (XPDLG_LAST + PDLG_LAST) );
-
-				ob_fix_shortcuts( pdlg->mwt->tree, false, &scp );
-				ob_fix_shortcuts( pdlg->dwt->tree, false, &scp );
-				kfree(scp);
-			}
+			ob_fix_shortcuts( pdlg->mwt->tree, false);//XPDLG_LAST + PDLG_LAST);
+			ob_fix_shortcuts( pdlg->dwt->tree, false);//XPDLG_LAST + PDLG_LAST);
 
 			set_oblink(pdlg, pdlg->dwt->tree, PDLG_GENERAL);
 
