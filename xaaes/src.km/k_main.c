@@ -1855,9 +1855,15 @@ k_main(void *dummy)
 		{
 			p_exc = r;
 			if( (r=s_system(S_SETEXC, cfg.allow_setexc, 0 )) )
-				BLOG((0,"could set SETEXC to %d:%ld", cfg.allow_setexc, r));
+				BLOG((0,"could not set SETEXC to %d:%ld", cfg.allow_setexc, r));
 		}
+		else
+			BLOG((0,"could not get SETEXC:%ld", r));
 	}
+
+	/* redirect stderr (mintlib (main.c) assumes this to be done when argv[0] != 0, see launch()) */
+	(void)_f_force(2,1);
+
 	if( !pferr )
 		post_cevent(C.Hlp, CE_start_apps, NULL,NULL, 0,0, NULL,NULL);
 	/*
