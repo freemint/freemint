@@ -2249,34 +2249,34 @@ static short xa_isalnum( short c )
 
 /*
  * define '_'-shortcuts
+ * if scp != 0 use external shorcut-buffer to combine dialogs
  */
 void
-ob_fix_shortcuts(OBJECT *obtree, bool not_hidden)
+ob_fix_shortcuts(OBJECT *obtree, bool not_hidden, struct sc2 *scp)
 {
-	struct sc
-	{
-		short o;
-		char c;
-	};
 	struct sc *sc, *scuts;
 	short objs;
-	long len;
 	char nk;
 
 	DIAG((D_rsrc, NULL, "ob_fix_shortcuts: tree=%lx)", obtree));
 
-	objs = ob_count_objs(obtree, 0, -1);
-	DIAGS((" -- %d objects", objs));
-	len = (long)objs * sizeof(struct sc);
-
-	if( !(sc = kmalloc(len) ) )
+	if( !scp )
 	{
-		BLOG((0,"ob_fix_shortcuts:kmalloc(%ld) failed.", len));
-		return;
+		long len;
+		objs = ob_count_objs(obtree, 0, -1);
+		len = (long)objs * sizeof(struct sc);
+		if( !(sc = kmalloc(len) ) )
+		{
+			BLOG((0,"ob_fix_shortcuts:kmalloc(%ld) failed.", len));
+			return;
+		}
+		//bzero(sc, len);
 	}
-	bzero(sc, len);
-
-	DIAGS((" -- sc = %lx", sc));
+	else
+	{
+		objs = scp->objs;
+		sc = scp->sc;
+	}
 
 	if (sc)
 	{
@@ -2400,8 +2400,8 @@ ob_fix_shortcuts(OBJECT *obtree, bool not_hidden)
 				}
 			}
 		}
-
-		kfree(sc);
+		if( !scp )
+			kfree(sc);
 	}
 	DIAGS((" -- ob_fix_shortcuts: done"));
 }
