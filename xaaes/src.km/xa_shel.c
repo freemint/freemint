@@ -148,6 +148,7 @@ make_argv(char *p_tail, long tailsize, char *command, char *argvtail)
 		argvtail[0] = 0x7f;
 		DIAGS(("ARGV constructed"));
 		IFDIAG(display_env(strings, 0);)
+		//display_env(strings, 0);
 	}
 	else
 		DIAGS(("ARGV: out of memory"));
@@ -600,10 +601,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 					}
 				}
 
-				if( tailsize && *argvtail && (wiscr == 1 || longtail))
-					t = argvtail;
-				else
-					t = tail;
+				t = tail;
 
 				ret = create_process(cmd, t,
 						     (x_mode & SW_ENVIRON) ? x_shell.env : *strings,
