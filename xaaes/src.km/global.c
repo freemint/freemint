@@ -64,7 +64,7 @@ xaaes_kfree(void *addr, const char *func)
 		FATAL("xaaes_kfree(NULL) from %s", func);
 
 	tmp--;
-	if( *tmp == 0 || *tmp >= memory )
+	if( *tmp == 0 || *tmp > memory )
 	{
 		BLOG((0,"%s:freeing invalid memory: %lx(%ld/%ld)", func, tmp+1, *tmp, memory));
 		return;
