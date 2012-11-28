@@ -2628,6 +2628,8 @@ create_new_pdlg(struct xa_client *client, XA_WIND_ATTR tp) //, struct xa_window 
 		}
 		if (mwt && dwt)
 		{
+			int len;
+			struct sc2 scp;
 			pdlg->handle = (void *)((unsigned long)pdlg >> 16 | (unsigned long)pdlg << 16);
 			pdlg->client = client;
 			pdlg->wind = wind;
@@ -2655,8 +2657,19 @@ create_new_pdlg(struct xa_client *client, XA_WIND_ATTR tp) //, struct xa_window 
 			add_dialog(pdlg, NULL, "Raster", pdlg->dwt->tree, PDLG_RASTER);
 			add_dialog(pdlg, NULL, "Interface", pdlg->dwt->tree, PDLG_PORT);
 
-			ob_fix_shortcuts( pdlg->mwt->tree, false);
-			ob_fix_shortcuts( pdlg->dwt->tree, false);
+			scp.objs = ob_count_objs(pdlg->mwt->tree, 0, -1);
+			scp.objs += ob_count_objs(pdlg->dwt->tree, 0, -1);
+
+			len = scp.objs * sizeof(struct sc);
+			if( !(scp.sc = kmalloc(len) ) )
+			{
+				BLOG((0,"create_new_pdlg:kmalloc(%ld) failed.", len));
+				return 0;
+			}
+
+			ob_fix_shortcuts( pdlg->mwt->tree, false, &scp);
+			ob_fix_shortcuts( pdlg->dwt->tree, false, &scp);
+			kfree( scp.sc );
 
 			set_oblink(pdlg, pdlg->dwt->tree, PDLG_GENERAL);
 
