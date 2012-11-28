@@ -91,7 +91,18 @@ short	ob_find_prev_any_flag(OBJECT *obtree, short start, short f);
 struct xa_aes_object	ob_find_cancel(OBJECT *ob);
 struct xa_aes_object ob_find_type(OBJECT *tree, short t );
 
-void			ob_fix_shortcuts(OBJECT *obtree, bool not_hidden);
+struct sc
+{
+	short o;
+	char c;
+};
+struct sc2
+{
+	short objs;
+	struct sc *sc;
+};
+
+void			ob_fix_shortcuts(OBJECT *obtree, bool not_hidden, struct sc2 *scp);
 struct xa_aes_object 	ob_find_shortcut(OBJECT *tree, ushort nk, short stop_type);
 
 short	ob_offset(OBJECT *obtree, struct xa_aes_object object, short *mx, short *my);
