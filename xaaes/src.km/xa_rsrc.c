@@ -1219,7 +1219,7 @@ fix_trees(struct xa_client *client, void *b, OBJECT **trees, unsigned long n, sh
 
 				if ( (client->options.alt_shortcuts & ALTSC_DIALOG) && !((*trees)->ob_state & OS_WHITEBAK) )
 				{
-					ob_fix_shortcuts(*trees, false);
+					ob_fix_shortcuts(*trees, false, 0);
 					//sc_exit();
 				}
 			}
