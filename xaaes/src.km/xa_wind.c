@@ -931,14 +931,13 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 					widg2->ar.y -= d;
 				}
 
-				/* draw correct borders around wa */
 				if( !w->thinwork && md == 0 )
 				{
 					w->wa.y -= 2;
 					w->wa.h += 2;
 				}
-				w->wa.x = w->r.x;	//-= 2;
-				//w->wa.w += 2;
+				w->wa.x = w->r.x;
+				//w->wa.w -= 2;
 
 				wt = obtree_to_wt(client, ob);
 				if (!wt)
@@ -946,7 +945,7 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				assert(wt);
 
 				widg->r.w = widg->ar.w = ob->ob_width = or.w = w->r.w;
-				widg->ar.x = ob->ob_x = w->r.x ;
+				widg->ar.x = ob->ob_x = w->r.x;
 
 				//if( md == 1 )	/* changed */
 				{
@@ -997,7 +996,9 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 				}
 
 				if( w->r.h < w->min.h )	/* height may too small for toolbar */
+				{
 					move_window(lock, w, true, -1L, w->r.x, w->r.y, w->r.w, w->min.h);
+				}
 
 				w->send_message(lock, w, NULL, AMQ_NORM, QMF_NORM, WM_TOOLBAR, 0, 0, w->handle, 1, 0, 0, 0);
 			}
