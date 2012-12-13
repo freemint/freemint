@@ -1311,6 +1311,9 @@ shade_action(enum locks lock, struct xa_window *wind)
 					wind->send_message(lock, wind, NULL, AMQ_CRITICAL, QMF_CHKDUP,
 						WM_UNSHADED, 0, 0,wind->handle, 0, 0, 0, 0);
 
+					/* if window was opened shaded fix rc.h */
+					if( wind->rc.h == wind->r.h && wind->pr.h > wind->rc.h )
+						wind->rc.h = wind->pr.h;
 					move_window(lock, wind, true, ~(XAWS_SHADED|XAWS_ZWSHADED), wind->rc.x, wind->rc.y, wind->rc.w, wind->rc.h);
 				}
 			}
