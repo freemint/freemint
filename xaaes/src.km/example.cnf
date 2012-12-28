@@ -691,9 +691,9 @@ redraw_timeout = 2000
 #simple
 #app_options = default,xa_nomove = false
 #real
-app_options = default,thinwork = true, winframe_size = 2, xa_nomove = false, clwtna = 0, nolive = true
-app_options = xasys, thinwork = true, winframe_size = 3, xa_nomove = false, clwtna = 1, nolive = false
-app_options = aessys, thinwork = true, winframe_size = 3, xa_nomove = false, clwtna = 1, nolive = false
+app_options = default,thinwork = true, winframe_size = 2, xa_nomove = false, nolive = true
+app_options = xasys, thinwork = true, winframe_size = 3, xa_nomove = false, nolive = false
+app_options = aessys, thinwork = true, winframe_size = 3, xa_nomove = false, nolive = false
 #
 
 app_options = toswin2, nohide = true,noleft=true
