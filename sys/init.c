@@ -1188,11 +1188,13 @@ mint_thread(void *arg)
 # endif
 
 # ifdef BUILTIN_SHELL
-# ifdef VERBOSE_BOOT
-		boot_print(MSG_init_starting_internal_shell);
-# endif
 		if (r <= 0)
+		{
+# ifdef VERBOSE_BOOT
+			boot_print(MSG_init_starting_internal_shell);
+# endif
 			r = startup_shell();	/* r is the shell's pid */
+		}
 # endif
 	}
 
