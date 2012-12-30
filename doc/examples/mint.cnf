@@ -272,7 +272,6 @@
 #sln e:/etc      u:/etc
 #sln e:/home     u:/home
 #sln e:/lib      u:/lib
-#sln e:/lost+found u:/lost+found
 #sln e:/mnt      u:/mnt
 #sln e:/opt      u:/opt
 #sln e:/root     u:/root
