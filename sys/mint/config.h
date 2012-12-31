@@ -82,7 +82,7 @@
  * (This is slowly changing, actually... fewer and fewer places use
  *  PATH_MAX, and eventually we should get rid of it)
  */
-# define PATH_MAX 128
+# define PATH_MAX 256
 
 /*
  * maximum length of a string passed to ksprintf_old
