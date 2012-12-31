@@ -284,8 +284,7 @@ kern_get_hz (SIZEBUF **buffer)
 	if (!info)
 		return ENOMEM;
 
-	ksprintf (info->buf, len, "%lu", HZ);
-	info->len = strlen(info->buf);
+	info->len = ksprintf (info->buf, len, "%lu\n", HZ);
 
 	*buffer = info;
 	return 0;
@@ -472,14 +471,13 @@ kern_get_sysdir (SIZEBUF **buffer)
 	SIZEBUF *info;
 	ulong len;
 
-	len = strlen(sysdir) + 1;
+	len = strlen(sysdir) + 2;
 
 	info = kmalloc (sizeof (*info) + len);
 	if (!info)
 		return ENOMEM;
 
-	strcpy (info->buf, sysdir);
-	info->len = strlen(info->buf);
+	info->len = ksprintf (info->buf, len, "%s\n", sysdir);
 
 	*buffer = info;
 	return 0;
