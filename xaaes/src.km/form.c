@@ -1438,13 +1438,8 @@ do_formwind_msg(
 	XA_WIDGET *widg = wind->tool;
 	bool draw = false;
 
-// 	bool d = (!strnicmp(wind->owner->proc_name, "gfa_xref", 8)) ? true : false;
-
 	DIAG((D_form, wind->owner, "do_formwind_msg: wown %s, to %s, widg=%lx, msg %d, %d, %d, %d, %d, %d, %d, %d",
 		wind->owner->name, to_client->name, widg, msg[0], msg[1], msg[2], msg[3], msg[4], msg[5], msg[6], msg[7]));
-
-// 	if (d) display("do_formwind_msg: wown %s, to %s, wdig=%lx, msg %d, %d, %d, %d, %d, %d, %d, %d",
-// 		wind->owner->name, to->name, widg, msg[0], msg[1], msg[2], msg[3], msg[4], msg[5], msg[6], msg[7]);
 
 	if (widg)
 	{
@@ -1456,11 +1451,6 @@ do_formwind_msg(
 		      dy = wt->dy,
 		      ow = ob->ob_width,		/* object measures */
 		      oh = ob->ob_height;
-#if 0
-		short wd = ow - ww,			/* space ouside workarea */
-		      hd = oh - wh;
-#endif
-// 		display("ow = %d, oh = %d", ow, oh);
 		switch (msg[0])
 		{
 		case WM_REDRAW:
