@@ -35,7 +35,7 @@
 /* add time to alerts in syslog */
 #if ALERTTIME
 #ifdef trap_14_w
-//#undef trap_14_w	/* "redefined" warning */
+#undef trap_14_w	/* "redefined" warning */
 #endif
 #include <mintbind.h>	/* Tgettimeofday */
 #define MAXALERTLEN	196
@@ -2130,13 +2130,9 @@ k_exit(int wait)
 
 	/* XXX todo -> module_exit */
 
-
 	if (C.KBD_dev > 0)
 	{
 		f_cntl(C.KBD_dev, (long)&KBD_dev_sg, TIOCSETN);
-		//KERNEL_DEBUG("fcntl(TIOCSETN) -> %li", r);
-		//r = f_cntl(C.KBD_dev, NULL, TIOCFLUSH);
-
 		f_close(C.KBD_dev);
 	}
 
