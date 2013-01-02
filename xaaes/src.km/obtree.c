@@ -2442,9 +2442,6 @@ ob_find_shortcut(OBJECT *tree, ushort nk, short stop_type)
 						if (j < strlen((char*)s))
 						{
 							short c = *(s+j);
-							/*if( !(nk & 0x80) )
-								c = toupper(c);
-							*/
 							DIAG((D_keybd,NULL,"  -  in '%s' find '%c' on %d :: %c",s,nk,j, *(s+j)));
 							if (xa_toupper(c) == xa_toupper(nk))
 							{
