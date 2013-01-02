@@ -155,7 +155,13 @@
 /* Maximum space for 'nice name' for app's (menu_register) */
 #define NICE_NAME		64
 
-#define MAX_FTEXTLEN		256
+//#define MAX_FTEXTLEN		256
+
+#ifdef PATH_MAX
+#define FILENAME_MAX PATH_MAX
+#else
+#define FILENAME_MAX 255
+#endif
 
 /* CONFIGURABLE PARAMETERS */
 #define NUM_CB			32	/* table of cancel button texts */

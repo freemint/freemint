@@ -1034,7 +1034,7 @@ diags_opts(struct options *o)
 void
 load_config(void *path )
 {
-	char cpath[128];
+	char cpath[FILENAME_MAX];
 
 	struct cnfdata mydata;
 //	struct options *curopt = &default_options;	/* specify some options for some programs. */
@@ -1043,11 +1043,11 @@ load_config(void *path )
 
 	if( !path || !*(char*)path )
 	{
-		strcpy(cpath, C.Aes->home_path);
+		strncpy(cpath, C.Aes->home_path, sizeof(cpath)-sizeof(CNF_NAME)-1);
 		strcat(cpath, CNF_NAME);
 	}
 	else
-		strcpy(cpath, path );
+		strncpy(cpath, path, sizeof(cpath) );
 
 	DIAGS(("Loading config %s", cpath));
 	BLOG((0,"Loading config %s", cpath));
