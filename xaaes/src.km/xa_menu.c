@@ -117,7 +117,7 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 				assert(mwt);
 
 				/* Do a special fix on the menu  */
-				fix_menu(client, mwt/*mnu*/, root_window, true);
+				fix_menu(client, mwt, root_window, true);
 				DIAG((D_menu,NULL,"fixed menu"));
 
 	// ->fix_menu
@@ -185,7 +185,6 @@ XA_menu_bar(enum locks lock, struct xa_client *client, AESPB *pb)
 		DIAG((D_menu, NULL, "MENU_INQUIRE := %d", menu_bar->owner->p->pid));
 
 		pb->intout[0] = menu_bar->owner->p->pid;
-	//	if (d) display("MENU_INQ: owner %s, %lx(%lx)", menu_bar->owner->name, menu_bar, menu_bar->tree);
 		break;
 	}
 	}
