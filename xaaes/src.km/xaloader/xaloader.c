@@ -153,8 +153,8 @@ again:
 	}
 	Fclose((int)fh);
 
-	/* null terminate, at the point of \n */
-	path[r-1] = '\0';
+	/* null terminate */
+	path[r] = '\0';
 
 	/* append XaAES subdir */
 	my_strlcat(path, "xaaes/", sizeof(path));

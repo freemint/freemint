@@ -471,13 +471,14 @@ kern_get_sysdir (SIZEBUF **buffer)
 	SIZEBUF *info;
 	ulong len;
 
-	len = strlen(sysdir) + 2;
+	len = strlen(sysdir) + 1;
 
 	info = kmalloc (sizeof (*info) + len);
 	if (!info)
 		return ENOMEM;
 
-	info->len = ksprintf (info->buf, len, "%s\n", sysdir);
+	strcpy (info->buf, sysdir);
+	info->len = strlen(info->buf);
 
 	*buffer = info;
 	return 0;
