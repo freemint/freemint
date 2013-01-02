@@ -429,9 +429,13 @@ void add_window_to_tasklist(struct xa_window *wi, const char *title)
 			))
 	)
 	{
-		struct helpthread_data *htd = lookup_xa_data_byname(&C.Hlp->xa_data, HTDNAME);
+		struct helpthread_data *htd = 0;
 		struct scroll_entry *this;
 		struct xa_window *wind;
+		if( C.Hlp )
+		{
+			htd = lookup_xa_data_byname(&C.Hlp->xa_data, HTDNAME);
+		}
 
 		if (!htd)
 			return;
@@ -2122,6 +2126,7 @@ open_taskmanager(enum locks lock, struct xa_client *client, short open)
 
 			if( S.focus != wind )
 			{
+
 				open_window(lock, wind, wind->r);
 				force_window_top( lock, wind );
 			}
@@ -2395,26 +2400,34 @@ cancel_csr(struct xa_client *running)
 static void
 handle_launcher(enum locks lock, struct fsel_data *fs, const char *path, const char *file)
 {
-	char parms[200];//, *t;
+	char parms[128], args[128], *p;
 
-	sprintf(parms+1, sizeof(parms)-1, "%s%s", path, file);
-	parms[0] = '\0';
-#if 0
-	for(t = parms + 1; *t; t++)
-	{
-		if (*t == '/')
-			*t = '\\';
-	}
-#endif
 	close_fileselector(lock, fs);
 
+	/* provide commandline-args for launched program (fails if prg-name contains blanks) */
+	if( (long)fs->data == HL_LAUNCH && (p = strchr( file, ' ' ) ) )
+	{
+		*p++ = 0;
+	}
+	else
+		p = 0;
+	sprintf(parms+1, sizeof(parms)-1, "%s%s", path, file);
+	parms[0] = '\0';
+	if( p )
+	{
+		strncpy(args+1, p, sizeof(args)-1);
+		args[0] = strlen(args+1);
+		p = args;
+	}
+	else
+		p = parms;
+
 	DIAGS(("launch: \"%s\"", parms+1));
-	//sprintf(cfg.launch_path, sizeof(cfg.launch_path), "%s%s", path, fs->fs_pattern);
 
 	switch( (long)fs->data )
 	{
 		case HL_LAUNCH:
-			launch(lock, 0, 0, 0, parms+1, parms, C.Aes);
+			launch(lock, 0, 0, 0, parms+1, p, C.Aes);
 		break;
 #if WITH_GRADIENTS
 		case HL_LOAD_GRAD:
