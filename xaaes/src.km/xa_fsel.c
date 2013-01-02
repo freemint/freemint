@@ -1808,7 +1808,7 @@ fs_updir(struct scroll_info *list)
 			fs->root[++s] = *fs->fslash;
 		}
 		if (!atroot)
-			strcpy(outof, &fs->root[s + 1]);
+			strncpy(outof, &fs->root[s + 1], sizeof(outof));
 
 		fs->root[++s] = 0;
 		DIAG((D_fsel,NULL," 	--> 	'%s'", fs->root));
