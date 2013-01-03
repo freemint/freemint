@@ -257,14 +257,8 @@ _getmch (void)
 			case 7:		/* Swiss French */
 				gl_lang = 2;
 				break;
-			case 4:		/* Spain */
-				gl_lang = 4;
-				break;
-			case 5:		/* Italy */
-				gl_lang = 5;
-				break;
 			default:
-				gl_lang = 0;
+				gl_lang = i;
 				break;
 		}
 	}
