@@ -269,7 +269,7 @@ _getmch (void)
 		}
 	}
 
-	if (gl_lang >= MAXLANG || gl_lang < 0)
+	if (gl_lang < 0)
 		gl_lang = 0;
 
 	return 0;
