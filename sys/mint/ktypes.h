@@ -118,7 +118,6 @@ struct global
 	short tosvers;		/* the underlying TOS version */
 
 	short gl_lang;		/* language preference */
-# define MAXLANG 6		/* languages supported */
 	short	gl_kbd;			/* default keyboard layout */
 
 	/* The path to the system directory
