@@ -2162,7 +2162,7 @@ click_menu_widget(enum locks lock, struct xa_window *wind, struct xa_widget *wid
 	struct proc *p = get_curproc();
 	DIAG((D_menu, NULL, "click_menu_widget"));
 
-	if (C.rdm || (md->cstate && (md->clicks > 1 || md->state)))
+	if (C.rdm || md->clicks > 1)
 	{
 		return false;
 	}
