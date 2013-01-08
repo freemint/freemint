@@ -39,6 +39,7 @@ bool is_client(struct xa_client *client);
 int exit_proc(enum locks lock, struct proc *proc, int code);
 void exit_client(enum locks lock, struct xa_client *client, int code, bool pexit, bool detach);
 
+extern short info_tab[][4];
 
 AES_function
 	XA_appl_init,
