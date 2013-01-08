@@ -1455,7 +1455,7 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 		return NULL;
 	}
 
-	if( client->options.rsc_lang )
+	if( client->options.rsc_lang && info_tab[3][0] )
 	{
 		char rscl_name[PATH_MAX];
 		if( !make_rscl_name( fname, rscl_name ) )
