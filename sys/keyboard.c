@@ -1543,9 +1543,12 @@ sys_b_bioskeys(void)
 	if( r )
 	{
 		r = get_NVM_lang();
-		if( r < 0 && gl_lang < 127 )
+		if( r < 0 )
 		{
-			r = gl_lang;
+			if( gl_lang < 127 )
+				r = gl_lang;
+			else
+				r = 0;	/* ERROR! */
 		}
 		gl_lang = r;
 	}
