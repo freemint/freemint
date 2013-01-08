@@ -716,7 +716,6 @@ again:
 	}
 	if( p >= 0 )
 	{
-		extern short info_tab[][4];	/* xa_appl.c */
 		info_tab[3][0] = p;
 	}
 	BLOG((0,"lang='%s' (from %s).",cfg.lang, li == 0 ? "config" : (li == 1 ? "Environ" : "AKP") ));
