@@ -693,7 +693,7 @@ redraw_timeout = 2000
 #real
 app_options = default,thinwork = true, winframe_size = 2, xa_nomove = false, nolive = true
 app_options = xasys, thinwork = true, winframe_size = 3, xa_nomove = false, nolive = false
-app_options = aessys, thinwork = true, winframe_size = 3, xa_nomove = false, nolive = false
+app_options = aessys, thinwork = true, winframe_size = 3, xa_nomove = false, nolive = false, rsc_lang  = 1, icn_pal_name = nvdi
 #
 
 app_options = toswin2, nohide = true,noleft=true
@@ -796,11 +796,15 @@ launchpath  = u:\usr\gem
 #
 # lang = <two character language-code>     (default from $LANG or AKP-cookie)
 #
-# Set your preferred language for XaAES here, current available
+# Set your preferred language for XaAES here.
 # currently supported two-character language-codes are:
 #  en, de, fr, es, it, hu, ru, cs.
 #
-#lang = de
+# No resource-translation is performed for en (see app_options/rsc_lang).
+# Comment the following line to get your computer's native language
+# or set one of the above codes.
+lang = en
+
 
 #####################################################################
 # Switch keyboard tables
