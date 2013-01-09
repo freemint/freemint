@@ -328,9 +328,7 @@ init_client(enum locks lock, bool sysclient)
 
 			r = xfs_getxattr(fc.fs, &fc, &x);
 			if (!r &&  S_ISLNK(x.mode)) {
-				//if (d) display("%s is link", tmp);
 				r = xfs_readlink(fc.fs, &fc, tmp, PATH_MAX);
-				//if (d) display(" -> %s", tmp);
 				if (r != E_OK) {
 					tmp[0] = '\0';
 					done = true;
@@ -341,31 +339,10 @@ init_client(enum locks lock, bool sysclient)
 			strcpy(hp, tmp);
 			release_cookie(&fc);
 		}
-		//if (d) display("REsult! '%s'", hp);
 		fix_path(hp);
 		strip_fname(hp, client->home_path, NULL);
-		//if (d) display(" -- '%s'", client->home_path);
 
-// 		strcpy(client->home_path, hp);
 	}
-#if 0
-	if (!*client->home_path) {
-		int drv = d_getdrv();
-		client->home_path[0] = (char)drv + 'A';
-		client->home_path[1] = ':';
-		d_getcwd(client->home_path + 2, drv + 1, sizeof(client->home_path) - 3);
-
-		DIAG((D_appl, client, "[1]Client %d home path = '%s'",
-			client->p->pid, client->home_path));
-	}
-#endif
-#if GENERATE_DIAGS
-	else /* already filled out by launch() */
-	{
-		DIAG((D_appl, client, "[2]Client %d home path = '%s'",
-			client->p->pid, client->home_path));
-	}
-#endif
 	proc_is_now_client(client);
 
 	init_client_objcrend(client);
@@ -373,8 +350,6 @@ init_client(enum locks lock, bool sysclient)
 	if( !client->options.standard_font_point )
 		client->options.standard_font_point = cfg.standard_font_point;
 	set_standard_point(client);
-
-//	app_in_front(lock, client, true, false);
 
 	/* Reset the AES messages pending list for our new application */
 	client->msg = NULL;
@@ -417,11 +392,14 @@ static char  *strip_uni_drive( char *in )
 		in[0] = toupper(in[3]);
 	}
 
-	for(; *p; p++, p1++ )
-		if( *p == '/' )
+	for(; *p1; p++, p1++ )
+		if( *p1 == '/' )
 			*p = '\\';
 		else
 			*p = cconv ? toupper(*p1) : *p1;
+	if( *(p-1) == '\\' )
+		p--;
+	*p = 0;
 
 	return in;
 
