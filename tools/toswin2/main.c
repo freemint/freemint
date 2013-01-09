@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
 	char str[25];
 	OBJECT *tmp;
 
-	if (getenv("DEBUG") || strcmp(argv[1], "--debug") == 0)
+	if (getenv("DEBUG") || (argc >=2 && strcmp(argv[1], "--debug") == 0))
 	{
 #ifdef DEBUG
 		do_debug = 1;
