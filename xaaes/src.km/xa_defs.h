@@ -155,8 +155,6 @@
 /* Maximum space for 'nice name' for app's (menu_register) */
 #define NICE_NAME		64
 
-//#define MAX_FTEXTLEN		256
-
 #ifdef PATH_MAX
 #define FILENAME_MAX PATH_MAX
 #else
