@@ -193,7 +193,7 @@ int main(int argc, char *argv[])
 	tw_id = find_tw();						/* TW2 suchen bzw. starten */
 	if (tw_id > 0)
 	{
-		if (strcmp(argv[1], "-l") == 0)	/* Neue Shell */
+		if (argc > 1 && strcmp(argv[1], "-l") == 0)	/* Neue Shell */
 			send_msg(TWSHELL);
 		else if (argc > 1)					/* TOS-Programm */
 		{
