@@ -40,7 +40,7 @@ struct global global =
 };
 
 long mcpu = 0;
-long pmmu = 0;
+short pmmu = 0;
 short fpu = 0;
 #ifdef __mcoldfire__
 bool coldfire_68k_emulation = false;

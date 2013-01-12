@@ -21,8 +21,9 @@ extern void *ControlRegB, *DataRegB;
 
 long detect_hardware (void);
 
-long detect_cpu (void);		/* in detect.spp */
-long detect_fpu (void);		/* ibidem */
+long detect_cpu (void);
+long detect_fpu (void);
+short detect_pmmu (void);
 
 long _cdecl test_byte_rd(long addr);
 long _cdecl test_word_rd(long addr);
