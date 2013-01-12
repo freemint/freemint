@@ -109,7 +109,7 @@ boot_printf (const char *fmt, ...)
 }
 
 /* Stop and ask the user for confirmation to continue */
-short step_by_step;
+short step_by_step = 0;
 
 void
 stop_and_ask(void)
