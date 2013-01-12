@@ -282,6 +282,14 @@ init (void)
 		TRAP_Pterm0();
 	}
 
+	/* Read user defined defaults before anything else so we can override them later */
+	read_ini();
+
+	/* Ask the user if s/he wants to boot MiNT */
+	pause_and_ask();
+
+	boot_print("\r\n");
+
 	/* figure out what kind of machine we're running on:
 	 * - biosfs wants to know this
 	 * - also sets no_mem_prot
@@ -293,14 +301,6 @@ init (void)
 		(void) TRAP_Cconin();
 		TRAP_Pterm0();
 	}
-
-	/* Read user defined defaults */
-	read_ini();
-
-	/* Ask the user if s/he wants to boot MiNT */
-	pause_and_ask();
-
-	boot_print("\r\n");
 
 # ifdef OLDTOSFS
 	/* Get GEMDOS version from ROM for later use by our own Sversion() */

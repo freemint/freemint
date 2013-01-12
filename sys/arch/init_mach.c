@@ -196,7 +196,21 @@ _getmch (void)
 	if ((fputype >> 16) > 1)
 		fpu = 1;
 	
-	boot_printf(" fputype=%ld, fpu=%d\r\n", fputype, fpu);
+#ifdef WITH_MMU_SUPPORT
+	if (add_info == ct60 && no_mem_prot)
+	{
+		// HACK: PMMU cookie is for some reason set on CT60 but we want to
+		// use memory protection anyway (which is ON by default)
+		no_mem_prot = 0;
+	}
+
+	pmmu = detect_pmmu ();
+	if (!no_mem_prot && !pmmu)
+	{
+		FORCE ("WARNING: PMMU is requested but not present, disabling.\r\n");
+		no_mem_prot = 1;
+	}
+#endif
 
 # ifndef M68000
 
@@ -394,27 +408,32 @@ identify (enum special_hw info)
 			case 0:
 				cpu_type = "68000";
 				_cpu = cpu_type;
-				_mmu = "";
 				break;
 			case 10:
 				cpu_type = "68010";
 				_cpu = cpu_type;
-				_mmu = "";
 				break;
 			case 20:
 				cpu_type = "68020";
 				_cpu = cpu_type;
-				_mmu = "";
 				break;
 			case 30:
-				cpu_type = mmu_type = "68030";
+				cpu_type = "68030";
 				_cpu = cpu_type;
+				if (pmmu)
+				{
+					mmu_type = cpu_type;
 				_mmu = "/MMU";
+				}
 				break;
 			case 40:
-				cpu_type = mmu_type = "68040";
+				cpu_type = "68040";
 				_cpu = cpu_type;
+				if (pmmu)
+				{
+					mmu_type = cpu_type;
 				_mmu = "/MMU";
+				}
 				break;
 			case 60:
 			{
@@ -433,9 +452,13 @@ identify (enum special_hw info)
 						pcr & 0x10000 ? "LC/EC" : "",
 						(pcr >> 8) & 0xff);
 				
-				cpu_type = mmu_type = "68060";
+				cpu_type = "68060";
 				_cpu = buf;
+				if (pmmu)
+				{
+					mmu_type = cpu_type;
 				_mmu = "/MMU";
+				}
 				break;
 			}
 		}

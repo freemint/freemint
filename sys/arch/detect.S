@@ -390,3 +390,30 @@ fexit:	move.l	a1,(0x2c).w	// restore Line-F
 	movem.l	(sp)+,a0-a2/d1
 #endif
 	rts
+
+	.globl	_detect_pmmu
+
+// PMMU detection
+//
+// A very basic routine. For 000-020 it assumes none,
+// for 030 always present and for 040/060 it checks TC's 'E' bit, what is not
+// an 100% correct thing to do according to the UM but it seems to work.
+
+_detect_pmmu:
+	moveq	#0,d0		// TODO ColdFire PMMU
+#ifndef __mcoldfire__
+	move.l	d1,-(sp)
+
+	move.l	_mcpu,d1	// check cpu
+	cmp.w	#30,d1
+	blt.b	pexit		// <030 => no pmmu
+	beq.b	pexit1		// 030 => always pmmu for Atari
+
+	dc.w	0x4e7a,0x1003	// movec tc,d1 (040/060)
+	and.w	#0x8000,d1	// check 'E' bit
+	beq.b	pexit
+
+pexit1:	moveq	#1,d0
+pexit:	move.l	(sp)+,d1
+#endif
+	rts

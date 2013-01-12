@@ -54,7 +54,8 @@ extern BASEPAGE *_base;	/* pointer to kernel's basepage */
 
 
 extern long mcpu; /* processor we are running */
-extern long pmmu;
+
+extern short pmmu; /* flag if mmu is present */
 
 /* for proper co-processors we must consider saving their context.
  * This variable when non-zero indicates that the BIOS considers a
