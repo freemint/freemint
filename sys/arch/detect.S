@@ -203,56 +203,6 @@ _DataRegB:	dc.l 0xFFFF8C87
 
 	.globl	_detect_cpu
 
-#if 0
-
-// old routine
-
-_detect_cpu:
-	movem.l	a0-a2/d1-d2,-(sp)
-	move.l	(0x10).w,a1	// save the illegal instr. exception vector
-	move.l	(0xf4).w,a2	// save the unimplemented instr. exception vector
-	lea	exit.w(PC),a0
-	move.l	a0,(0x10).w	// set either vector
-	move.l	a0,(0xf4).w
-	move.l	sp,a0		// save the ssp
-	nop			// eventually flush pipelines
-
-// on 68000 we try out a `move from CCR'.
-
-	clr.l	d0              // assume 68000
-	move.w	ccr,d0		// legal on 68010+
-	moveq	#0x0a,d0
-
-// CACR is present only in 68020+
-
-	movec	cacr,d1		// get cache control register
-	move.l	d1,d2		// hold a copy for later
-	ori.w	#0x8100,d1	// enable '030 data and '040 instruction caches
-	movec	d1,cacr		// set new cache controls
-	movec	cacr,d1		// read it back to check the effects
-	movec	d2,cacr		// restore original CACR settings
-	tst.w	d1		// if 15th bit was set, this is a 68040+
-	bmi.s	x040
-	moveq	#0x14,d0	// assume 68020
-	btst	#0x08,d1	// check if 68030 data cache was enabled
-	beq.s	exit		// a zero here means no data cache, i.e. 68020
-	moveq	#0x1e,d0	// data cache enabled means 68030
-	bra.s	exit
-
-// 68040 or 68060. Quad word mulu test.
-
-x040:	moveq	#0x3c,d0	// assume 68060
-	dc.l	0x4c102401	// mulu.l (a0),d1-d2
-	moveq	#0x28,d0	// no fault -> this is 68040
-exit:	move.l	a2,(0xf4).w	// restore stuff and exit
-	move.l	a1,(0x10).w
-	move.l	a0,sp
-	nop			// flush pipelines
-	movem.l	(sp)+,a0-a2/d1-d2
-	rts
-
-#else
-
 // new routine, does not change the CPU state (esp. caches)
 // <draco@atari.org>
 //
@@ -347,8 +297,6 @@ exit:	move.l	a1,sp
 	movem.l	(sp)+,a0-a2/d1-d2
 #endif
 	rts
-
-#endif
 
 // FPU type detection, experimental (draco@atari.org).
 //
