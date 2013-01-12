@@ -1523,7 +1523,10 @@ void set_tty_mode( short md )
 	sg = KBD_dev_sg;
 	sg.sg_flags &= TF_FLAGS;
 	if( md == RAW )
+	{
 		sg.sg_flags |= T_RAW;
+		sg.sg_flags |= T_CRMOD; /* Avoid stairs effect on Console */
+	}
 	else
 	{
 		sg.sg_flags &= ~T_RAW;
