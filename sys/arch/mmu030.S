@@ -12,7 +12,7 @@
  *
  */
 
-#ifdef M68030
+#if defined(WITH_MMU_SUPPORT) && defined(M68030)
 
 	.data
 nulltc:
