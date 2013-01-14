@@ -488,10 +488,7 @@ tty_write (FILEPTR *f, const void *buf, long nbytes)
 	/*
 	 * "mode" can now be reduced to just T_CRMODE or not
 	 */
-	if ((get_curproc()->domain == DOM_MINT) && (mode & T_CRMOD) && !(mode & T_RAW))
-		mode = T_CRMOD;
-	else
-		mode = 0;
+	mode &= ~T_CRMOD;
 
 	if (nbytes == 0)
 		return bytes_written;
