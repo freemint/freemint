@@ -24,6 +24,7 @@ N             Lade Gradient
 SHIFT+N       Hintergrundbild Ñndern
 P             Farbpalette wiederherstellen (Farbtiefe
               8-Bit oder weniger)
+SHIFT+P       Palette laden
 Q,G           XaAES sofort beenden (oder $SDMASTER
               ausfÅhren, falls gesetzt)
 R             Versucht ein "hÑngendes" System
@@ -32,7 +33,7 @@ HOME#T#       Bildschirm wiederherstellen (neuzeichnen)
 U             Oberstes Fenster schlieûen
 V             Alle versteckten Programme hervorholen
 W             Globaler Fensterwechsel
-SHIFT+W#ESC#  Oberstes Fenster vo voherigen Programm nach vorn
+SHIFT+W#ESC#  Oberstes Fenster von voherigem Programm nach vorn
 X             Versteckt alle Programme bis auf das
               momentan verwendete
 Y             Momentan verwendetes Programm verstecken
