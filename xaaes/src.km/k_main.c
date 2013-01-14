@@ -1522,13 +1522,14 @@ void set_tty_mode( short md )
 
 	sg = KBD_dev_sg;
 	sg.sg_flags &= TF_FLAGS;
+
+	sg.sg_flags |= T_CRMOD; /* Avoid stairs effect on Console */
+
 	if( md == RAW )
 		sg.sg_flags |= T_RAW;
 	else
-	{
 		sg.sg_flags &= ~T_RAW;
-		sg.sg_flags |= T_CRMOD;
-	}
+
 	//KERNEL_DEBUG("sg.sg_flags 0x%x", sg.sg_flags);
 
 	r = f_cntl(C.KBD_dev, (long)&sg, TIOCSETN);
