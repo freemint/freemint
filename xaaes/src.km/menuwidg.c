@@ -193,9 +193,12 @@ wt_menu_area(XA_TREE *wt)
 
 	if ((obtree = wt->tree))
 	{
-	/* additional fix to fit in window */
-		//obtree->ob_height = obtree[obtree->ob_head].ob_height = obtree[obtree->ob_tail].ob_height = get_menu_widg()->r.h; //wind->wa.w;
+		/* shift menubar (todo) */
+		//short shift = screen.c_max_w / 2 + 2;
 		titles = obtree[obtree[SYSTEM_MENU].ob_head].ob_head;
+		//if( wt->owner != C.Aes )
+			//aesobj(wt->tree, titles).ob->ob_x -= shift;
+		/* additional fix to fit in window */
 		obj_area(wt, aesobj(wt->tree, titles), &wt->area);
 
 		DIAG((D_menu, wt->owner, "wt_menu_area: %d/%d/%d/%d for %s",
@@ -1205,6 +1208,9 @@ display_popup(Tab *tab, short rdx, short rdy)
 		DIAG((D_menu, tab->client, "drop: %d/%d,%d/%d", r));
 		set_popup_widget(tab, wind, pi->parent);
 
+		/* top menu-owner-window */
+		if( tab->wind != TOP_WINDOW && tab->wind != root_window )
+			top_window(tab->lock, true, true, tab->wind);
 #if GENERATE_DIAGS
 		if (!cfg.menu_locking)
 		{
