@@ -1,4 +1,18 @@
 # Place this file in the xaaes-boot directory (C:\mint\1-*-*\xaaes)
+#
+# Remap Ctrl-Alt-Shortcuts:
+# <original>#<new>
+# assigns <new> to <original> while <original>
+# remains valid.
+#
+# <original>#
+# invalidates <original>
+# Example:
+# SHIFT+W#ESC# Top top-window of previous application
+#  ->  Ctrl-Alt-Esc does the same as Ctrl-Alt-SHIFT-W
+# SHIFT+W#
+#  -> invalidate Ctrl-Alt-SHIFT-W
+#
 <b>Ctrl-Alt-Shortcuts</b>:
 
 #<CtrlAlt>
