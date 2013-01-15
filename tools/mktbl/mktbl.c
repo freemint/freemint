@@ -72,7 +72,7 @@
 /* Own getdelim(). The `n' buffer size must definitely be bigger than 0!
  */
 static int
-getdelim(char **lineptr, size_t *n, int terminator, FILE *stream)
+mktbl_getdelim(char **lineptr, size_t *n, int terminator, FILE *stream)
 {
 	int ch;
 	char *buf = *lineptr;
@@ -159,13 +159,13 @@ main(int argc, char **argv)
 	if (!fd)
 		return 3;
 
-	out = fopen(outname, "w");
+	out = fopen(outname, "wb");
 	if (!fd)
 		return 4;
 
 	do
 	{
-		r = getdelim(&line, &buf, '\n', fd);
+		r = mktbl_getdelim(&line, &buf, '\n', fd);
 		if (r >= 0 && line[0] != ';' && (ln = strstr(line, "dc.")))
 		{
 			w = strncmp(ln, "dc.b", 4);
