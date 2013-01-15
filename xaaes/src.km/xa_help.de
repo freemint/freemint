@@ -1,13 +1,14 @@
 # Diese Datei geh”rt in den XaAES-Ordner (C:\mint\1-*-*\xaaes)
 #
 # Umbelegen von Ctrl-Alt-Shortcuts:
-# <original>#<neu>
+# <original>#<neu>#
 # weist <neu>  <original> zu, <original>
 # bleibt gltig.
 #
 # <original>#
 # deaktiviert <original>
-#
+# Die Shortcut-Umdefinition wird bei jedem ™ffnen des "šber XaAES"-
+# Fensters ausgewertet, kein Neustart erforderlich.
 # Beispiel:
 # SHIFT+W#ESC#   Oberstes Fenster von voherigem Programm nach vorn
 #  ->  Ctrl-Alt-Esc erh„lt die gleiche Funktion wie Ctrl-Alt-SHIFT-W
