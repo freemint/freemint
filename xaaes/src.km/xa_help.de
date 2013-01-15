@@ -3,13 +3,14 @@
 # Umbelegen von Ctrl-Alt-Shortcuts:
 # <original>#<neu>
 # weist <neu>  <original> zu, <original>
-# bleibt g√ºltig.
+# bleibt gÅltig.
 #
 # <original>#
 # deaktiviert <original>
+#
 # Beispiel:
 # SHIFT+W#ESC#   Oberstes Fenster von voherigem Programm nach vorn
-#  ->  Ctrl-Alt-Esc erh√§lt die gleiche Funktion wie Ctrl-Alt-SHIFT-W
+#  ->  Ctrl-Alt-Esc erhÑlt die gleiche Funktion wie Ctrl-Alt-SHIFT-W
 # SHIFT+W#
 #  -> Deaktiviert Ctrl-Alt-SHIFT-W
 #
