@@ -270,7 +270,7 @@ static void PatchLn( unsigned char *ln, long lpo, long lpr )
 	}
 	p++;
 
-	for( *ln++ = ' '; *ln && *ln != ' ' && ln < p; )
+	for( *ln++ = ' '; *ln && ln < p; )
 		*ln++ = ' ';
 	if( DStart == 0 && *ln == ' ' )
 	{
