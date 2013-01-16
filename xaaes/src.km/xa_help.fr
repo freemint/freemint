@@ -1,4 +1,28 @@
 # Mettre ce fichier dans le r‚pertoire d'XaAES (C:\mint\1-*-*\xaaes)
+#
+# Proc‚dure pour r‚-attribuer les raccourcis Ctrl+Alt:
+# <original>#<nouveau>#
+# Attribue <nouveau> … <original>; <original> reste
+# valide.
+#
+# <original>#
+# <original> n'est plus valide
+# 
+# Les raccourcis sont ‚valu‚s chaque fois que la fenˆtre
+# "¶ propos de" est ouverte (par le menu ou avec Ctrl+Alt+Help).
+# Il n'est donc pas n‚cessaire de red‚marrer l'ordinateur.
+#
+# Exemple d'application: si vous pr‚f‚rez la touche "Esc"
+# plut“t que "W" pour basculer de la fenˆtre d'une application
+# … l'autre, ajoutez ce qui suit parmi la liste des raccourcis
+# ci-dessous:
+#
+# SHIFT+W#ESC# ==> Ceci fera en sorte que les 2 touches seront
+#                  valides pour cette action.
+#
+# SHIFT+W# ==> Avec ceci, vous invalidez la touche "W", qui peut
+#              donc ˆtre utilis‚e pour une autre action.
+#
 <b>Raccourcis clavier avec Ctrl-Alt</b>:
 
 #<CtrlAlt>
@@ -33,7 +57,7 @@ Q             Quitter XaAES (ou ex‚cuter $SDMASTER
 R             Tenter de r‚cup‚rer un systŠme bloqu‚
 U             Fermer fenˆtre active
 V             D‚masquer toutes les applications
-W             Passer d'une fenˆtre … l'autre
+W             Basculer d'une fenˆtre … l'autre
               globalement
 SHIFT+W       Amener la fenˆtre sup‚rieure de
               l'application pr‚c‚dente … l'avant
@@ -45,8 +69,8 @@ SHIFT+ESPACE  Ouvrir le menu de la fenˆtre du 1er plan,
               sinon le menu principal
 HELP          Ouvrir la fenˆtre "A propos de"
 HOME          Redessiner l'‚cran
-TAB           Passer d'une application … l'autre
-SHIFT+TAB     Amener l'application pr‚c‚dente … l'avant
+TAB           Basculer d'une application … l'autre
+SHIFT+TAB     Basculer vers l'application pr‚c‚dente
 
 INSERT         Maximiser fenˆtre active
 FLECHE HAUT    Agrandir fenˆtre active
