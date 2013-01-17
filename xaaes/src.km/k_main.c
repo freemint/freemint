@@ -1852,7 +1852,7 @@ k_main(void *dummy)
 	{
 		/* don't want anyone to change system-vectors */
 		long r;
-		if( (r=s_system(S_SETEXC, -1, 0 ) >= 0) )
+		if( (r=s_system(S_SETEXC, -1, 0 )) >= 0 )
 		{
 			p_exc = r;
 			if( (r=s_system(S_SETEXC, cfg.allow_setexc, 0 )) )
