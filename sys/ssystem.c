@@ -378,9 +378,10 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 		case S_SETEXC:
 		{
 			if (isroot == 0)	r = EPERM;
-			else if (arg1 == -1)	r = allow_setexc;
+			else if (arg1 == (ulong)-1)
+				r = allow_setexc;
 			else if (arg1 > 2)	r = EBADARG;
-			else			allow_setexc = arg1;
+			else allow_setexc = arg1;
 
 			break;
 		}
