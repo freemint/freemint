@@ -160,13 +160,13 @@ sysfile_exists(const char *sd, char *fn)
  *  0 = USA          8 = Ger.Suisse    16 = Hungary    24 = Romania
  *  1 = Germany      9 = Turkey        17 = Poland     25 = Bulgaria
  *  2 = France      10 = Finnland      18 = Lituania   26 = Slovenia
- *  3 = England     11 = Norway        19 = Latvia     27 = Croatia
+ *  3 = England     11 = Norway        19 = Russia     27 = Croatia
  *  4 = Spain       12 = Danmark       20 = Estonia    28 = Serbia
  *  5 = Italy       13 = S. Arabia     21 = Bialorus   29 = Montenegro
  *  6 = Sweden      14 = Netherlands   22 = Ukraina    30 = Macedonia
  *  7 = Fr.Suisse   15 = Czech         23 = Slovakia   31 = Greece
  *
- * 32 = Russia      40 = Vietnam       48 = Bangladesh
+ * 32 = Latvia      40 = Vietnam       48 = Bangladesh
  * 33 = Israel      41 = India
  * 34 = Sou. Africa 42 = Iran
  * 35 = Portugal    43 = Mongolia
@@ -175,15 +175,10 @@ sysfile_exists(const char *sd, char *fn)
  * 38 = China       46 = Kambodja
  * 39 = Korea       47 = Indonesia
  */
-/*
-	"us","de","fr","en","es","it","se","fs","gs","tr","fi",
-	"no","dk","sa","nl","cs","hu","pl","lt","lv","ee",
-	"by","ua","sk","ro","bg","sl","hr","cs","cs","mk",
-	"gr","ru","il","za","pt","be","jp","cn","kp","vn",
-	"in","ir","mn","np","la","kh","id","bd",
-*/
 #define MaX_COUNTRYCODE 48
-static char countrycodes[] = "endefrukesitsefsgstrfinodksanlczhuplltlveebyuaskrobgslhrcscsmkgrruilzaptbejpcnkpvninirmnnplakhidbd";
+static char countrycodes[] =
+  "endefrukesitsefsgstrfinodksanlczhuplltrueebyuaskrobgslhrcscsmkgrlvilzaptbejpcnkpvninirmnnplakhidbd";
+/* 0 1 2 3 4 5 6 7 8 9 1 1 2 3 4 5 6 7 8 9 2 1 2 3 4 5 6 7 8 9 3 1 2 3 4 5 6 7 8 9 4 1 2 3 4 5 6 7 8 */
 static short search_code( char *lang )
 {
 	short i;
