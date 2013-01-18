@@ -100,13 +100,13 @@
  *  0 = USA          8 = Ger.Suisse    16 = Hungary    24 = Romania
  *  1 = Germany      9 = Turkey        17 = Poland     25 = Bulgaria
  *  2 = France      10 = Finnland      18 = Lituania   26 = Slovenia
- *  3 = England     11 = Norway        19 = Latvia     27 = Croatia
+ *  3 = England     11 = Norway        19 = Russia     27 = Croatia
  *  4 = Spain       12 = Danmark       20 = Estonia    28 = Serbia
  *  5 = Italy       13 = S. Arabia     21 = Bialorus   29 = Montenegro
  *  6 = Sweden      14 = Netherlands   22 = Ukraina    30 = Macedonia
  *  7 = Fr.Suisse   15 = Czech         23 = Slovakia   31 = Greece
  *
- * 32 = Russia      40 = Vietnam       48 = Bangladesh
+ * 32 = Latvia      40 = Vietnam       48 = Bangladesh
  * 33 = Israel      41 = India
  * 34 = Sou. Africa 42 = Iran
  * 35 = Portugal    43 = Mongolia
@@ -117,7 +117,7 @@
  *
  * The rest of codes are reserved for future extensions. Add ones,
  * if you find a missing one. Consider there are various countries
- * which all speak the same language, like all the South America
+ * which all speak the same language, like all South America
  * speaks Spanish or Portughese, the North America English or French
  * etc.
  *
