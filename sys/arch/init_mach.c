@@ -93,7 +93,9 @@ _getmch (void)
 {
 	enum special_hw add_info = none;
 	struct cookie *jar;
-
+#ifdef WITH_MMU_SUPPORT
+	int old_no_mem_prot = no_mem_prot;
+#endif
 	jar = *CJAR;
 	if (jar)
 	{
@@ -197,10 +199,10 @@ _getmch (void)
 		fpu = 1;
 	
 #ifdef WITH_MMU_SUPPORT
-	if (add_info == ct60 && no_mem_prot)
+	if (add_info == ct60 && !old_no_mem_prot)
 	{
-		// HACK: PMMU cookie is for some reason set on CT60 but we want to
-		// use memory protection anyway (which is ON by default)
+		// HACK: PMMU cookie is for some reason set on CT60
+		// so make sure we set the old value as intended
 		no_mem_prot = 0;
 	}
 
