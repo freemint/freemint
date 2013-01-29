@@ -366,11 +366,7 @@ sys_t_adjtime(const struct timeval *delta, struct timeval *olddelta)
 void
 init_time (void)
 {
-# ifdef COLDFIRE
-	long value = 0;
-# else
 	long value = _mfpregs->tbdr;
-# endif
 
 # if 0
 	/* See, a piece of code is a function, not just a long integer */
@@ -457,11 +453,7 @@ quick_synch (void)
 			 * to care to much about overflows.
 			 */
 
-# ifdef COLDFIRE
-	timerc = 0;
-# else
 	timerc = _mfpregs->tbdr;
-# endif
 	current_ticks = *hz_200;
 
 	/* Make sure that the clock runs monotonic.  */
