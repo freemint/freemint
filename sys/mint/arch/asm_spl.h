@@ -34,17 +34,25 @@
 # ifndef _mint_m68k_asm_spl_h
 # define _mint_m68k_asm_spl_h
 
+# include "global.h"
+
 /* Called inside init.c */
 
 static inline void
 cpu_stop (void)
 {
-#ifndef COLDFIRE /* Currently buggy with FireTOS */
+#ifdef __mcoldfire__
+	if (coldfire_68k_emulation)
+	{
+		/* The stop instruction is currently buggy with FireTOS */
+		return;
+	}
+#endif
+
 	__asm__ volatile
 	(
 		"stop  #0x2000"
 	);
-#endif
 }
 
 static inline void

@@ -703,7 +703,7 @@ _c060rts:
 _cache060:
 	move.l	d0,d1			// If no bytes to push, exit
 	beq.s	_c060rts
-#ifndef COLDFIRE
+#ifndef __mcoldfire__
 	addq.l	#1,d1			// If was -1
 	beq.s	abc040			// then fulsh everything
 	move.l	a0,d1			// extract the position within the cacheline
@@ -775,7 +775,7 @@ _c060rtsi:
 _cache060_i:
 	move.l	d0,d1			// If no bytes to push, exit
 	beq.s	_c060rtsi
-#ifndef COLDFIRE
+#ifndef __mcoldfire__
 	addq.l	#1,d1			// If was -1
 	beq.s	abc040i			// then fulsh everything
 	move.l	a0,d1			// extract the position within the cacheline
@@ -827,7 +827,7 @@ setloop:
 	cmpi.l	#4,d0		// flushed all the ways?
 	bne.s	setloop
 	rts
-#endif /* COLDFIRE */
+#endif
 
 // ---------------------------------------------------
 
