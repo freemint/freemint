@@ -203,13 +203,12 @@ calc_shade_height(struct xa_window *wind)
 	if (wind->active_widgets & (CLOSER|NAME|MOVER|ICONIFIER|FULLER))
 	{
 		RECT t;
-		t = w2f(&wind->rbd, &wind->widgets[XAW_TITLE].r, true);
+		t = w2f(&wind->rbd, &wind->widgets[XAW_TITLE].r, false);
+		if( t.h < 6 )
+			t.h = 6;
 		wind->sh = t.h + wind->y_shadow;
 		if (wind->frame > 0)
 			wind->sh += (wind->frame << 1);
-// 		RECT t;
-// 		rp_2_ap_cs(w, w->widgets + XAW_TITLE, &t);
-// 		w->sh = t.y + t.h - w->r.y + (w->frame > 0 ? w->frame : 0);
 	}
 }
 
