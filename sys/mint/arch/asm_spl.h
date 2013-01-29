@@ -34,7 +34,13 @@
 # ifndef _mint_m68k_asm_spl_h
 # define _mint_m68k_asm_spl_h
 
-# include "global.h"
+/*
+ * Normally we'd include global.h, but there are multiple global.h files.
+ * This needs cleaning up. So just define directly.
+ *
+ * #include "global.h"
+ */
+extern bool coldfire_68k_emulation;
 
 /* Called inside init.c */
 
