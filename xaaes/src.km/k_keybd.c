@@ -503,7 +503,13 @@ kernel_key(enum locks lock, struct rawkey *key)
 		case '0':	// toggle main-menubar
 			toggle_menu(lock, -1);
 		return true;
-		//case NK_ESC:
+		case '+':
+			C.loglvl++;
+		break;
+		case '-':
+			if( --C.loglvl < 0 )
+				C.loglvl = 0;
+		break;
 		case ' ':
 		{
 			struct xa_window *wind;

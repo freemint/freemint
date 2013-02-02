@@ -201,7 +201,7 @@ void diag(enum debug_item item, struct xa_client *client, char *t, ...);
 
 #endif /* GENERATE_DIAGS */
 
-void _cdecl bootlog(bool disp, const char *fmt, ...);
+void _cdecl bootlog(short disp, const char *fmt, ...);
 #if BOOTLOG
 #define BLOG(x)	bootlog x
 #define BLOGif(c,x)	if(c)bootlog x
