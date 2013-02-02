@@ -7,13 +7,18 @@
 #
 # <original>#
 # deaktiviert <original>
+#
+# FÅr # ist \# zu verwenden, fÅr \ \\.
+#
 # Die Shortcut-Umdefinition wird bei jedem ôffnen des "öber XaAES"-
 # Fensters ausgewertet, kein Neustart erforderlich.
-# Beispiel:
+# Beispiele:
 # SHIFT+W#ESC#   Oberstes Fenster von voherigem Programm nach vorn
 #  ->  Ctrl-Alt-Esc erhÑlt die gleiche Funktion wie Ctrl-Alt-SHIFT-W
 # SHIFT+W#
 #  -> Deaktiviert Ctrl-Alt-SHIFT-W
+# L#\\# ... -> Ctrl-Alt \ wird Synonym fÅr Ctrl-Alt-L
+# L#\## ... -> Ctrl-Alt # wird Synonym fÅr Ctrl-Alt-L
 #
 <b>XaAES Tastatur-Shortcuts (CTRL+ALT+Taste):</b>
 #<CtrlAlt>
@@ -21,6 +26,8 @@
 #$1 [keyboard-switch]
 .             Aktuellen Fensterinhalt auf Bildschirmgrî·e
 :             Aktuellen Bildschirminhalt als Hintergrund verwenden
++             Loglevel erhîhen
+-             Loglevel erniedrigen
 A             Beendet alle laufenden Progamme
               (Ausnahmeliste in xaaes.cnf)
 B             ôffnet den System/Log-Dialog
