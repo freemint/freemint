@@ -1479,7 +1479,6 @@ copy_env(char *to, char *s[], const char *without, char **last)
 		}
 
 		if (!l || strncmp(s[i], without, l))
-// 		if (l == 0 || (l != 0 && strncmp(s[i], without, l) != 0))
 		{
 			strcpy(to, s[i]);
 			s[j++] = to;
