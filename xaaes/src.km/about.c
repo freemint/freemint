@@ -229,12 +229,49 @@ static int IsKeyName( unsigned char **p, unsigned char *p1, long *lp, long l, in
 	}
 	return 0;
 }
+
+#define CA_SEP	0x01
+static int DStart = 0;
+
+static void enquote( unsigned char *p )
+{
+	int isquote = 0;
+	unsigned char tb[256], *tp = tb, *ep;
+	char *in = (char*)p;
+
+	if( !((ep=(unsigned char *)strchr( (const char*)p, '#' )) && strchr( (const char*)ep+1, '#')) )
+		return;
+	ep = tb + sizeof(tb)-1;
+	for( ; *p && tp < ep; p++ )
+	{
+		if( *p == '\\' )
+		{
+			if( isquote )
+				*tp++ = '\\';
+			isquote ^= 1;
+			continue;
+		}
+		else if( *p == '#' && !isquote )
+			*tp++ = CA_SEP;
+		else
+			*tp++ = *p;
+		isquote = 0;
+	}
+	*tp = 0;
+	strcpy( in, (const char*)tb );
+}
+static void unquote( unsigned char *p )
+{
+	for( ; p && (p=(unsigned char*)strchr( (char*)p, CA_SEP )); )
+		*p++ = '#';
+}
 static int ScanKey( unsigned char **p, long *lp )
 {
-	unsigned char *p1 = (unsigned char *)strchr( (const char*)*p+1, '#' );
+	unsigned char *p1;	// = *p1+1;
 	int i, shift = 0;
 	long l;
 
+	p1 = (unsigned char *)strchr( (const char*)*p+1, CA_SEP );
 	if( !p1 )
 		return 0;
 	if( !strncmp( (const char*)*p, "SHIFT+", 6 ) )
@@ -255,7 +292,6 @@ static int ScanKey( unsigned char **p, long *lp )
 	return i + shift;
 }
 
-static int DStart = 0;
 static void PatchLn( unsigned char *ln, long lpo, long lpr )
 {
 	unsigned char *p;
@@ -264,7 +300,7 @@ static void PatchLn( unsigned char *ln, long lpo, long lpr )
 		return;
 	for( p = ln; lpo && *p; lpo--, p++ )
 	;
-	for( ; lpr && *p && *p != '#'; lpr-- )
+	for( ; lpr && *p && *p != CA_SEP; lpr-- )
 	{
 		*ln++ = *p++;
 	}
@@ -331,18 +367,21 @@ static void SetCtrlAlt( unsigned char *p )
 	int org, repl;
 	long lpo, lpr;
 	unsigned char *p1 = p;
-	if( !( org = ScanKey( &p, &lpo ) ) || *p != '#' )
+
+	if( !( org = ScanKey( &p, &lpo ) ) || *p != CA_SEP )
 	{
 		if( DStart == 0 )
 		{
-			for( ; *p == ' '; p++ )
+			for( ; *p > ' '; p++ )
+			;
+			for( p++; *p == ' '; p++ )
 			;
 			DStart = p - p1;
 		}
 		return;
 	}
 	p++;
-	if( *p == '#' )	// free shortcut
+	if( *p == CA_SEP )	// free shortcut
 	{
 		DoCtrlAlt( Set, HK_FREE, org );
 		*p1 = 0;
@@ -387,6 +426,7 @@ static void file_to_list( SCROLL_INFO *list, char *fn, bool skip_hash, bool open
 	XA_FILE *xa_fp;
 	unsigned char *p;
 	long lineno;
+	unsigned char lbuf[256];
 #if ALT_CTRL_APP_OPS
 	enum PState pstate = nil;
 	DStart = 0;
@@ -404,8 +444,9 @@ static void file_to_list( SCROLL_INFO *list, char *fn, bool skip_hash, bool open
 
 
 	PRINIT;
-	for( lineno = 1; lineno < VIEW_MAX_LINES && (p = (unsigned char *)xa_readline( 0, 0, xa_fp )); lineno++ )
+	for( lineno = 1; lineno < VIEW_MAX_LINES && xa_readline( (char*)lbuf, sizeof(lbuf), xa_fp ); lineno++ )
 	{
+		p = lbuf;
 		sc.t.text = (char*)p;
 		if( skip_hash == true )
 		{
@@ -441,9 +482,11 @@ static void file_to_list( SCROLL_INFO *list, char *fn, bool skip_hash, bool open
 #if ALT_CTRL_APP_OPS
 		if( pstate == CtrlAlt && *p )
 		{
+			enquote(p);
 			SetCtrlAlt( p );
 			if( !*p )
-				continue;
+				{BLOG((0,"file_to_list:*p=0(#%ld)", lineno));continue;}
+			unquote(p);
 		}
 #endif
 		list->add(list, NULL, NULL, &sc, false, 0, false);
