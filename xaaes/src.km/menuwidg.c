@@ -846,9 +846,15 @@ menu_pop(Tab *tab)
 	struct xa_window *w;
 	MENU_TASK *k = &tab->task_data.menu;
 	OBJECT *obtree = k->p.wt->tree;
+	struct proc *p = get_curproc();
 
 	DIAG((D_menu, tab->client, "menu_pop: tab=%lx for %s", tab, tab->client->name));
 
+	if( !(p == k->p.wt->owner->p /*|| p == C.Hlp->p || p == C.Aes->p*/) )
+	{
+		BLOG((0, "menu_pop: ERROR:(%s,%s)", p->name, k->p.wt->owner->p->name ));
+		return 0;
+	}
 	cancel_pop_timeouts();
 
 	k->p.wt->dx = k->p.wt->dy = 0;
@@ -923,7 +929,12 @@ menu_finish(struct task_administration_block *tab)
 		client = tab->client;
 
 		DIAG((D_menu, tab->client, "[%d]menu_finish, tab=%lx, ty:%d for %s", tab->dbg2, tab, tab->ty, tab->client->name));
-
+#if 0
+		if( tab->client->p != get_curproc())
+		{
+			return;
+		}
+#endif
 		if (is_bar && !NEXT_TAB(tab))
 			obtree[k->m.popups].ob_flags |= OF_HIDETREE;
 
@@ -985,6 +996,11 @@ popout(struct task_administration_block *tab)
 	DIAG((D_menu, NULL, "popout %d", tab->dbg));
 	DIAG((D_menu, NULL, "[1]collapse"));
 
+	if( C.update_lock && C.update_lock != get_curproc() )
+	{
+		BLOG((0,"popout:ERROR:update_lock != get_curproc"));
+		return;
+	}
 	if (tab)
 	{
 		t = collapse(tab, NULL);
@@ -1336,7 +1352,9 @@ do_timeout_popup(Tab *tab)
 	DIAG((D_menu, NULL, "do_timeout_popup: tab=%lx", tab));
 
 	if (tab != TAB_LIST_START)
+	{
 		collapse(TAB_LIST_START, tab);
+	}
 
 	DIAG((D_menu, NULL, " --- is attach"));
 
@@ -1388,7 +1406,20 @@ static void
 do_collapse(Tab *tab)
 {
 	if (tab != TAB_LIST_START)
+	{
 		collapse(TAB_LIST_START, tab);
+	}
+	else
+	{
+#if 1
+		struct rawkey key;
+		key.aes = SC_ESC;	/* close window-menu */
+		menu_keyboard(tab, &key);
+#else
+		tab = menu_pop(tab);
+#endif
+	}
+
 }
 
 static void
@@ -1412,6 +1443,12 @@ CE_do_collapse(enum locks lock, struct c_event *ce, short cancel)
 	}
 	else
 		cancel_pop_timeouts();
+}
+
+void close_window_menu(Tab *tab);
+void close_window_menu(Tab *tab)
+{
+	post_cevent(tab->client, CE_do_collapse, tab, NULL, 0,0, NULL,NULL);
 }
 
 static bool
@@ -1614,7 +1651,9 @@ menu_bar(struct task_administration_block *tab, short item)
 	else
 	{
 		if (TAB_LIST_START != tab)
+		{
 			tab = collapse(TAB_LIST_START, tab);
+		}
 
 		tab = menu_pop(tab);
 		title_tnormal(tab);
