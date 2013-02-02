@@ -370,7 +370,8 @@ static void
 recalc_tabs(struct scroll_info *list)
 {
 	int i, ntabs;
-	short listw, /*listh,*/ x, totalw;
+	short listw, x, totalw;
+	short w0;
 	struct se_tab *tabs;
 	RECT r_list;
 
@@ -385,6 +386,14 @@ recalc_tabs(struct scroll_info *list)
 	x = 0;
 	totalw = 0;
 
+	if( tabs->v.h < 0 )
+	{
+		w0 = (-tabs->v.h + 8) * screen.c_max_w;
+		if( w0 > listw )
+			w0 = listw;
+	}
+	else
+		w0 = 0;
 	for (i = 0; i < ntabs; i++, tabs++)
 	{
 		tabs->r.x = x;
@@ -406,7 +415,6 @@ recalc_tabs(struct scroll_info *list)
 			}
 			else
 			{
-
 				tabs->r.w = tmp;
 			}
 		}
@@ -426,6 +434,8 @@ recalc_tabs(struct scroll_info *list)
 		tabs->r.x = x;
 		tabs->r.y = 0;
 
+		if( i == 0 && w0 )
+			tabs->r.w = w0;
 		x += tabs->r.w;
 		totalw += tabs->r.w;
 	}
