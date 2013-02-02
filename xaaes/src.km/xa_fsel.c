@@ -92,7 +92,7 @@
 #define FS_PATNOCASE	2 /* pattern is caseinsensitive */
 
 	/* needed for tab-calculation... */
-#define MINWIDTH	20
+#define MINWIDTH	14
 #define MAXWIDTH	60
 
 static char *months[] =
@@ -277,8 +277,14 @@ strins(char *d, const char *s, long here)
 		here = dlen;
 
 	strncpy(t, d + here, sizeof(t));
-	strncpy(d + here, s, slen);
-	strcpy(d + here + slen, t);
+	strncpy(d + here, s, dlen - here - 1);
+	if( dlen > slen + here)
+		strncpy(d + here + slen, t, dlen-here-slen);
+	else
+	{
+		d[0] = '?';
+		d[0] = '0';
+	}
 }
 
 static struct scroll_entry *
@@ -395,12 +401,14 @@ static void set_tabs( struct scroll_info *list, struct fsel_data *fs, short wd)
 
 	tab.index = FSLIDX_NAME;
 	tab.flags = 0;
-	tab.r = (RECT){0,0,-50,0};
+	tab.r = (RECT){0,0,0,0};
 	if (!fs->treeview && !fs->rtbuild)
-		tab.r.w = -MINWIDTH;
+		tab.r.h = -MINWIDTH;
 
 	list->set(list, NULL, SESET_TAB, (long)&tab, false);
 
+	//tab.r.x = 0;
+	tab.r.w = 0;
 	tab.flags |= SETAB_RJUST;
 	x = list->tabs[FSLIDX_NAME].r.w;
 	for( i = FSLIDX_SIZE; i <= FSLIDX_FLAG; i++ )
@@ -419,7 +427,6 @@ static void set_tabs( struct scroll_info *list, struct fsel_data *fs, short wd)
 		else
 		{
 			tab.index = i;
-			tab.r.w = 0;
 			list->set(list, NULL, SESET_TAB, (long)&tab, false);
 		}
 	}
@@ -1526,13 +1533,13 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 			 */
 			if (!fs->treeview)
 			{
-				short w = 1, h = ((max_namlen + max_szlen)* w) + 10;
+				short h = max_namlen;	//((max_namlen + max_szlen)* w) + 10;
 				struct seset_tab tab;
 				tab.index = FSLIDX_NAME;
 				tab.flags = 0;
-				if( h < MINWIDTH )
+				/*if( h < MINWIDTH )
 					h = MINWIDTH;
-				else if( h > MAXWIDTH )
+				else */if( h > MAXWIDTH )
 					h = MAXWIDTH;
 
 				if( fs->rtbuild )
@@ -1540,7 +1547,8 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 
 				/*list->vdi_settings->api->text_extent(list->vdi_settings, "X", &fs_norm_txt.n, &w, &h);*/
 
-				tab.r = (RECT){0,0,-h, 0};
+				tab.r = (RECT){0,0,0, -h};
+				//tab.r.x = 20 * screen.c_max_w;
 				list->set(list, NULL, SESET_TAB, (long)&tab, false);
 			}
 			PROFILE(( "fsel: dir closed %d items", num ));
