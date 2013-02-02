@@ -84,6 +84,27 @@ struct tty default_tty =
 
 #define _put(f, c) (tty_putchar((f), (c), RAW))
 
+/*
+ * Two functions that put/get the character to/from the TTY.
+ * But it also checks the return code and aborts with either
+ * the number of character written/read or the failed return code.
+ */
+#define check_tty_putchar(f, c, mode) \
+{ \
+	if ((r = tty_putchar(f, c, mode)) < E_OK) \
+	{ \
+		return bytes_written ? bytes_written : r; \
+	} \
+}
+
+#define check_tty_getchar(f, mode) \
+{ \
+	if ((r = tty_getchar(f, mode)) < E_OK) \
+	{ \
+		return bytes_read ? bytes_read : r; \
+	} \
+}
+
 static void
 _erase (FILEPTR *f, int c, int mode)
 {
@@ -217,14 +238,8 @@ tty_read(FILEPTR *f, void *buf, long nbytes)
 	
 	while (bytes_read < nbytes)
 	{
-		r = tty_getchar (f, rdmode);
-		if (r < E_OK)
-		{
-tty_error:
-			DEBUG (("tty_read: tty_getchar returned %ld", r));
-			return (bytes_read) ? bytes_read : r;
-		}
-		else if (r == MiNTEOF)
+		check_tty_getchar (f, rdmode);
+		if (r == MiNTEOF)
 			return bytes_read;
 		
 		ch = r & 0xff;
@@ -310,16 +325,14 @@ tty_error:
 					put(f, '^');
 					put(f, '\b');
 				}
-				r = tty_getchar (f, RAW);
+				check_tty_getchar (f, RAW);
+				if (r == MiNTEOF)
+					return bytes_read;
+				
 				if (rdmode & COOKED)
 					tty->state |= TS_COOKED;
 				else
 					tty->state &= ~TS_COOKED;
-				
-				if (r < E_OK)
-					goto tty_error;
-				else if (r == MiNTEOF)
-					return bytes_read;
 				
 				ch = r & 0xff;
 				goto stuff_it;
@@ -437,7 +450,8 @@ tty_write (FILEPTR *f, const void *buf, long nbytes)
 {
 	unsigned const char *ptr;
 	long c;
-	long bytes_written;
+	long r;
+	long bytes_written = 0;
 	int mode, rwmode;
 	struct tty *tty;
 	int use_putchar = 0;
@@ -484,35 +498,36 @@ tty_write (FILEPTR *f, const void *buf, long nbytes)
 			return bytes_written;
 		if (mode)
 		{
-			/* i.e. T_CRMODE */
-			if ((*f->dev->writeb)(f, buf, 0L) != ENODEV)
+			c = (*f->dev->writeb)(f, buf, 0L);
+			if (c == ENODEV) 
 			{
-				/* write in big chunks if possible;
-				 * lines if CRMODE (if we get here flow
-				 * control is taken care of by the device)
-				 */
-				long bytes_to_write = 0;
-				unsigned const char *s = ptr;
+				goto nofastmode;
+			} 
+			else if (c < E_OK) 
+			{
+				return bytes_written ? bytes_written : c;
+			}
 
-				while (nbytes-- > 0)
+			/* i.e. T_CRMODE */
+			/* write in big chunks if possible;
+			 * lines if CRMODE (if we get here flow
+			 * control is taken care of by the device)
+			 */
+			long bytes_to_write = 0;
+			unsigned const char *s = ptr;
+
+			while (nbytes-- > 0)
+			{
+				if (*ptr++ == '\n')
 				{
-					if (*ptr++ == '\n')
+					if (0 != (bytes_to_write = ptr - s - 1))
 					{
-						if (0 != (bytes_to_write = ptr - s - 1))
-						{
-							c = (*f->dev->writeb)(f, (const char *) s, bytes_to_write);
-							bytes_written += c;
-							if (c != bytes_to_write)
-							{
-								if (c < 0)
-									bytes_written = c;
-								
-								return bytes_written;
-							}
+						c = (*f->dev->writeb)(f, (const char *) s, bytes_to_write);
+						if (c < E_OK) {
+							return bytes_written ? bytes_written : c;
 						}
-						s = ptr-1;
-						c = (*f->dev->writeb)(f, "\r", 1);
-						if (c != 1)
+						bytes_written += c;
+						if (c != bytes_to_write)
 						{
 							if (c < 0)
 								bytes_written = c;
@@ -520,26 +535,47 @@ tty_write (FILEPTR *f, const void *buf, long nbytes)
 							return bytes_written;
 						}
 					}
+					s = ptr-1;
+					c = (*f->dev->writeb)(f, "\r", 1);
+					if (c < E_OK) {
+						return bytes_written ? bytes_written : c;
+					}
+
+					if (c != 1)
+					{
+						if (c < 0)
+							bytes_written = c;
+						
+						return bytes_written;
+					}
 				}
-				
-				if (0 != (bytes_to_write = ptr - s))
-				{
-					c = (*f->dev->writeb)(f, (const char *)s, bytes_to_write);
-					bytes_written += c;
-					if (c < 0)
-						bytes_written = c;
-				}
-				
-				return bytes_written;
 			}
+			
+			if (0 != (bytes_to_write = ptr - s))
+			{
+				c = (*f->dev->writeb)(f, (const char *)s, bytes_to_write);
+				if (c < E_OK) {
+					return bytes_written ? bytes_written : c;
+				}
+				bytes_written += c;
+				if (c < 0)
+					bytes_written = c;
+			}
+			
+			return bytes_written;
 		}
 		else
 		{
 			c = (*f->dev->writeb)(f, buf, nbytes);
-			if (c != ENODEV)
-				return c;
+			if (c == ENODEV) 
+			{
+				goto nofastmode;
+			} 
+			return c;
 		}
 	}
+
+nofastmode:
 # endif
 	
 	/*
@@ -553,10 +589,10 @@ tty_write (FILEPTR *f, const void *buf, long nbytes)
 	if (c == '\n' && mode)
 	{
 		/* remember, "mode" now means CRMOD */
-		tty_putchar (f, cr_char, rwmode);
+		check_tty_putchar (f, cr_char, rwmode);
 	}
 	
-	tty_putchar (f, c, rwmode);
+	check_tty_putchar (f, c, rwmode);
 	nbytes--;
 	bytes_written++;
 	
@@ -566,8 +602,10 @@ tty_write (FILEPTR *f, const void *buf, long nbytes)
 		{
 			c = *ptr++;
 			if (c == '\n' && mode)
-				tty_putchar (f, cr_char, rwmode);
-			tty_putchar (f, c, rwmode);
+			{
+				check_tty_putchar (f, cr_char, rwmode);
+			}
+			check_tty_putchar (f, c, rwmode);
 			bytes_written++;
 		}
 	}
@@ -590,9 +628,11 @@ tty_write (FILEPTR *f, const void *buf, long nbytes)
 					bytes_to_write = 0;
 					s = lbuf;
 				}
-				if (mode)	/* i.e. T_CRMODE */
-					tty_putchar (f, cr_char, rwmode);
-				tty_putchar (f, (long) c, rwmode);
+				if (mode) 
+				{	/* i.e. T_CRMODE */
+					check_tty_putchar (f, cr_char, rwmode);
+				}
+				check_tty_putchar (f, c, rwmode);
 				bytes_written++;
 			}
 			else
@@ -602,15 +642,22 @@ tty_write (FILEPTR *f, const void *buf, long nbytes)
 				bytes_to_write += 4;
 				if (bytes_to_write >= LBUFSIZ * 4)
 				{
-					(*f->dev->write)(f, (char *) lbuf, bytes_to_write);
+					c = (*f->dev->write)(f, (char *) lbuf, bytes_to_write);
+					if (c < E_OK) {
+						return bytes_written ? bytes_written : c;
+					}
 					bytes_to_write = 0;
 					s = lbuf;
 				}
 			}
 		}
 		
-		if (bytes_to_write)
-			(*f->dev->write)(f, (char *) lbuf, bytes_to_write);
+		if (bytes_to_write) {
+			c = (*f->dev->write)(f, (char *) lbuf, bytes_to_write);
+			if (c < E_OK) {
+				return bytes_written ? bytes_written : c;
+			}
+		}
 	}
 	
 	return bytes_written;
@@ -1397,7 +1444,9 @@ long
 tty_getchar (FILEPTR *f, int mode)
 {
 	struct tty *tty = (struct tty *) f->devinfo;
-	long r; int scan; char c;
+	long r, ret; 
+	int scan; 
+	char c;
 	
 	assert (tty);
 	
@@ -1413,7 +1462,15 @@ tty_getchar (FILEPTR *f, int mode)
 #endif
 	if (f->flags & O_HEAD)
 	{
-		long ret = (*f->dev->read)(f, (char *)&r, 4L);
+		ret = (*f->dev->read)(f, (char *)&r, 4L);
+		if (ret == ENODEV)
+		{
+			return MiNTEOF;
+		}
+		else if (ret < E_OK) 
+		{
+			return ret;
+		}
 		return (ret != 4L) ? MiNTEOF : r;
 	}
 	
@@ -1461,8 +1518,6 @@ tty_getchar (FILEPTR *f, int mode)
 	
 	while (c != UNDEF)
 	{
-		long ret;
-		
 		if (tty->state & TS_BLIND)
 		{
 			TRACE (("tty_getchar: offline"));
@@ -1470,6 +1525,14 @@ tty_getchar (FILEPTR *f, int mode)
 		}
 		
 		ret = (*f->dev->read)(f, (char *) &r, 4L);
+		if (ret == ENODEV) 
+		{
+			return MiNTEOF;
+		}
+		else if (ret < E_OK)
+		{
+			return ret;
+		}
 		if (ret != 4L)
 		{
 			DEBUG (("EOF on tty device (%li)", ret));
@@ -1527,8 +1590,12 @@ tty_getchar (FILEPTR *f, int mode)
 				c = UNDEF;
 	}
 	
-	if (mode & ECHO)
-		tty_putchar (f, r, mode);
+	if (mode & ECHO) {
+		if ((ret = tty_putchar(f, r, mode)) < E_OK)
+		{
+			return ret; 
+		}
+	}
 	
 	return r;
 }
