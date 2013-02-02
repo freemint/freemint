@@ -1230,8 +1230,9 @@ screen_dump(enum locks lock, struct xa_client *client, short open)
 					do_form_alert(lock, client, 1, s, XAAESNAME );
 				}
 			}
-			if( snapmsg == false )
+			if( snapmsg == false )	/* external process */
 			{
+				nap(25);
 				C.updatelock_count--;
 				C.update_lock = NULL;
 				unlock_screen(client->p);
@@ -1662,7 +1663,7 @@ taskmanager_form_exit(struct xa_client *Client,
 /*
  * return true if AES-client AND valid client->name
  */
-static bool is_aes_client( struct proc *p )
+struct xa_client *is_aes_client( struct proc *p )
 {
 	struct xa_client *client;
 	FOREACH_CLIENT(client)
@@ -1670,12 +1671,12 @@ static bool is_aes_client( struct proc *p )
 		if( client->p == p )
 		{
 			if( *(uchar*)(client->name+2) > ' ' )
-				return true;
+				return client;
 			else
-				return false;
+				return NULL;
 		}
 	}
-	return false;
+	return NULL;
 }
 
 #define OLD_MAXLOAD	4095L	/* ?? */
@@ -2678,6 +2679,8 @@ static int ker_stat( int pid, char *what, long pinfo[] )
 	uchar path[256];
 	struct file *fp;
 	long err;
+	int ret = 0;
+
 	if( pid )
 		sprintf( (char*)path, sizeof(path), "u:/kern/%d/%s", pid, what );
 	else
@@ -2710,14 +2713,14 @@ static int ker_stat( int pid, char *what, long pinfo[] )
 			}
 		}
 		if( !*p && pinfo[j] )
-			return 4;
+			ret = 4;
 	}
 	kernel_close(fp);
 	if( err <= 0 )
 	{
 		return 2;
 	}
-	return 0;
+	return ret;
 }
 
 
