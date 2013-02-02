@@ -7,13 +7,18 @@
 #
 # <original>#
 # invalidates <original>
+#
+# To use the #-key write \#, to use \ write \\.
+#
 # Shortcut-mapping is evaluated when the about-window is opened.
 # No restart necessary.
-# Example:
+# Examples:
 # SHIFT+W#ESC# Top top-window of previous application
 #  ->  Ctrl-Alt-Esc does the same as Ctrl-Alt-SHIFT-W
 # SHIFT+W#
 #  -> invalidate Ctrl-Alt-SHIFT-W
+# L#\\# ... -> Ctrl-Alt \ is the same as Ctrl-Alt-L
+# L#\## ... -> Ctrl-Alt # is the same as Ctrl-Alt-L
 #
 <b>Ctrl-Alt-Shortcuts</b>:
 
@@ -22,6 +27,8 @@
 #$1 [keyboard-switch]
 .             Make current window-content full-screen
 :             Make background from current screen
++             Increase log-level
+-             Decrease log-level
 A             Terminates all applications (list of
               exceptions in xaaes.cnf)
 B             Open System/Log-window
