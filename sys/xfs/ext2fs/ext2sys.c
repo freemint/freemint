@@ -1340,8 +1340,8 @@ struct dirinfo
 static long _cdecl
 e_opendir (DIR *dirh, int flag)
 {
-	union { char *c; struct dirinfo *dirinfo; } dirptr; dirptr.c = dirh->fsstuff;
 	COOKIE *c = (COOKIE *) dirh->fc.index;
+	union { char *c; struct dirinfo *dirinfo; } dirptr; dirptr.c = dirh->fsstuff;
 	
 	DEBUG (("Ext2-FS [%c]: e_opendir: #%li", dirh->fc.dev+'A', c->inode));
 	
@@ -1358,13 +1358,13 @@ e_opendir (DIR *dirh, int flag)
 static long _cdecl
 e_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 {
-	union { char *c; struct dirinfo *dirinfo; } dirptr; dirptr.c = dirh->fsstuff;
 	COOKIE *c = (COOKIE *) dirh->fc.index;
 	SI *s = super [dirh->fc.dev];
 	ext2_d2 *de;
-	
+	union { char *c; struct dirinfo *dirinfo; } dirptr = {dirh->fsstuff};
 	ulong offset = dirptr.dirinfo->pos & EXT2_BLOCK_SIZE_MASK (s);
 	
+
 	DEBUG (("Ext2-FS [%c]: e_readdir: #%li", dirh->fc.dev+'A', c->inode));
 	
 	while (dirptr.dirinfo->pos < dirptr.dirinfo->size)
@@ -2115,7 +2115,7 @@ e_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 		case (('e' << 8) | 0xf):
 		{
 			long len;
-			struct { char *buf; long bufsize } *descr = (void *) arg;
+			struct { char *buf; long bufsize; } *descr = (void *) arg;
 			
 			dump_inode_cache (descr->buf, descr->bufsize);
 			len = strlen (descr->buf);

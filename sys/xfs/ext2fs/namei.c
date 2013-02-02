@@ -369,7 +369,6 @@ ext2_search_entry (COOKIE *dir, const char *name, long namelen)
 	
 	if (namelen == 0)
 		return NULL;
-	
 	/* 1. search in directory cache
 	 */
 	dentry = d_lookup (dir, name);
