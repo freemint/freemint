@@ -2892,7 +2892,7 @@ struct common
 	short shutdown_step;
 	struct timeout *sdt;		/* Shutdown Timeout */
 
-	bool mvalidate;
+	//bool mvalidate;
 
 	long alert_pipe;		/* AESSYS: The MiNT Salert() pipe's file handle */
 	long KBD_dev;			/* AESSYS: The MiNT keyboard device's file handle */
@@ -2931,6 +2931,8 @@ struct common
 
 	struct xa_client	*do_widget_repeat_client;
 	enum locks		 do_widget_repeat_lock;
+	struct proc *boot_focus;
+	short loglvl;
 	char bootlog_path[200];
 };
 
@@ -3081,6 +3083,8 @@ struct config
 	char *cnf_shell_arg;		/* args for SHELL cnf directive */
 	char *cnf_run[32];		/* RUN directives */
 	char *cnf_run_arg[32];		/* args for RUN cnf directives */
+
+	char focus[10];		/* first focus after startup */
 };
 /*
  * module_register() modes..
@@ -3098,7 +3102,7 @@ struct xa_module_api
 
 	void	_cdecl		(*display)		(const char *fmt, ...);
 	void	_cdecl		(*ndisplay)		(const char *fmt, ...);
-	void	_cdecl		(*bootlog)		(bool disp, const char *fmt, ...);
+	void	_cdecl		(*bootlog)		(short disp, const char *fmt, ...);
 
 	long	_cdecl		(*module_register)	(long type, void *data);
 
