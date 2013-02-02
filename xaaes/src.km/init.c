@@ -80,6 +80,8 @@ bootmessage(void)
 #else
 	BLOG((true,"Part of freemint ("SPAREMINT_URL")." ));
 #endif
+
+#if 0
 	BLOG((true, "Supports mouse wheels"));
 	BLOG((true, "Compile time switches enabled:"));
 
@@ -98,10 +100,12 @@ bootmessage(void)
 #if ALT_CTRL_APP_OPS
 	BLOG((true, " - CTRL+ALT key-combo's"));
 #endif
+
 	if (C.mvalidate)
 		BLOG((true, " - Client vector validation"));
 
 	BLOG((true, " - Realtime (live) window scrolling, moving and sizing"));
+
 
 #if PRESERVE_DIALOG_BGD
 	BLOG((true, " - Preserve dialog backgrounds"));
@@ -115,6 +119,9 @@ bootmessage(void)
 		display(" - FSEL cookie found");
 
 	BLOG((true, ""));
+
+#endif
+
 }
 
 struct kentry *kentry;
@@ -144,7 +151,7 @@ sysfile_exists(const char *sd, char *fn)
 			tmp[2] = '\0';
 		}
 		strcat(buf + o, fn);
-		display("sysfile_exists: '%s'", buf);
+		BLOG((0,"sysfile_exists: '%s'", buf));
 		check = kernel_open(buf, O_RDONLY, NULL, NULL);
 		if (check)
 		{
@@ -317,6 +324,7 @@ short lang_from_akp( char lang[], int md )
 	}
 	return ret;
 }
+
 /*
  * Module initialisation
  * - setup internal data
@@ -324,6 +332,90 @@ short lang_from_akp( char lang[], int md )
  */
 static Path start_path;
 static const struct kernel_module *self = NULL;
+
+static void configure(void)
+{
+	C.Aes->type = APP_AESSYS;
+	C.Aes->cmd_tail = "\0";
+	//C.Aes->wt.e.obj = -1;
+
+	strcpy(C.Aes->cmd_name, "XaAES");
+	strcpy(C.Aes->name, Aes_display_name);
+	strcpy(C.Aes->proc_name,"AESSYS  ");
+
+	/* Where were we started? */
+	strcpy(C.Aes->home_path, self->path);
+
+	C.Aes->xdrive = d_getdrv();
+	d_getpath(C.Aes->xpath, 0);
+	/* home_path is no full path - make one */
+	if( *(C.Aes->home_path + 2) != ':' )
+		sprintf( C.Aes->home_path, sizeof(C.Aes->home_path), "%c:%s\\", C.Aes->xdrive + 'a', C.Aes->xpath);
+	BLOG((true, "home_path: '%s'", C.Aes->home_path));
+
+	/*
+	 * default configuration
+	 */
+
+	strcpy(cfg.scrap_path, "c:\\clipbrd\\");
+	strcpy(cfg.acc_path, "c:\\");
+	strcpy(cfg.widg_name, WIDGNAME);
+	/*
+	 * XXX - REMOVE ME! It is the responsibility of the object renderer to provide
+	 *	the extended AES objects.
+	 */
+	strcpy(cfg.xobj_name, "xa_xtobj.rsc");
+
+	strcpy(cfg.rsc_name, RSCNAME);
+
+	cfg.font_id = STANDARD_AES_FONTID;		/* Font id to use */
+	cfg.xaw_point = 10;	/* fnt-sz for xaaes-windows */
+	cfg.double_click_time = DOUBLE_CLICK_TIME;
+	cfg.mouse_packet_timegap = MOUSE_PACKET_TIMEGAP;
+	cfg.redraw_timeout = 500;
+	cfg.standard_font_point = STANDARD_FONT_POINT;	/* Size for normal text */
+	cfg.info_font_point = -1;
+	cfg.medium_font_point = MEDIUM_FONT_POINT;	/* The same, but for low resolution screens */
+	cfg.small_font_point = SMALL_FONT_POINT;	/* Size for small text */
+	cfg.ted_filler = '_';
+	cfg.menu_locking = true;
+	cfg.back_col = -1;
+	cfg.menu_bar = 2;	// always on
+	cfg.allow_setexc = -1;	/* dont change */
+	//cfg.backname = FAINT;
+	cfg.next_active = 0;
+// 	cfg.widg_w = ICON_W;
+// 	cfg.widg_h = ICON_H;
+
+	cfg.ver_wheel_id = 0;
+	cfg.ver_wheel_amount = 1;
+	cfg.hor_wheel_id = 1;
+	cfg.hor_wheel_amount = 1;
+
+	cfg.icnfy_orient = 3;
+	cfg.icnfy_w = 72;
+	cfg.icnfy_h = 72;
+
+	cfg.popup_timeout = 10;
+	cfg.popout_timeout = 1000;
+
+	cfg.alert_winds = 0xffff;
+
+	/* default to live actions */
+	default_options.xa_nomove = true;
+	default_options.xa_nohide = true;
+	//default_options.xa_objced = true;
+	default_options.thinframe = 1;
+	default_options.wheel_mode = WHL_AROWWHEEL;
+
+	default_options.clwtna = 1;
+	default_options.alt_shortcuts = 3;
+
+	C.Aes->options = default_options;
+	/* Parse the config file */
+	load_config(0);
+}
+
 
 long
 init(struct kentry *k, const struct kernel_module *km) //const char *path)
@@ -361,10 +453,16 @@ again:
 	bzero(&cfg, sizeof(cfg));
 	bzero(&S, sizeof(S));
 	bzero(&C, sizeof(C));
-	root_window = menu_window = 0;
+#if XAAES_RELEASE
+	C.loglvl = 0;
+#else
+	C.loglvl = 1;
+#endif
 #if CHECK_STACK
 	stack_align = 0;
 #endif
+
+	root_window = menu_window = 0;
 	C.SingleTaskPid = -1;	/* just for sure */
 
 	strcpy(C.start_path, start_path);
@@ -373,7 +471,7 @@ again:
 	{
 		strcpy(C.bootlog_path, C.start_path);
 		strcat(C.bootlog_path, "xa_boot.log");
-		display("bootlog '%s'", C.bootlog_path);
+		//display("bootlog '%s'", C.bootlog_path);
 	}
 
 	if (first)
@@ -427,6 +525,8 @@ again:
 			BLOG(( 0,"stack is word-aligned:%lx", stk ));
 #endif
 	BLOG((0,"PRG: km=%lx, base=%lx, text=%lx -> %lx(%ld), kentry:%d.%d", km, km->b, km->b->p_tbase, km->b->p_tbase + km->b->p_tlen, km->b->p_tlen, KENTRY_MAJ_VERSION, KENTRY_MIN_VERSION));
+
+#if 0
 	/* do some sanity checks of the installation
 	 * that are a common source of user problems
 	 */
@@ -476,55 +576,27 @@ again:
 			goto error;
 		}
 	}
+#endif
 
-	/*
-	 * default configuration
-	 */
+	init_env();
+	/* copy over environment from loader */
+	{
+		struct proc *p = get_curproc();
+		const char *env_str = p->p_mem->base->p_env;
 
-	strcpy(cfg.scrap_path, "c:\\clipbrd\\");
-	strcpy(cfg.acc_path, "c:\\");
-	strcpy(cfg.widg_name, WIDGNAME);
-	/*
-	 * XXX - REMOVE ME! It is the responsibility of the object renderer to provide
-	 *	the extended AES objects.
-	 */
-	strcpy(cfg.xobj_name, "xa_xtobj.rsc");
+		if (env_str)
+		{
+			while (*env_str)
+			{
+				put_env(NOLOCKING, env_str);
 
-	strcpy(cfg.rsc_name, RSCNAME);
+				while (*env_str)
+					env_str++;
 
-	cfg.font_id = STANDARD_AES_FONTID;		/* Font id to use */
-	cfg.xaw_point = 10;	/* fnt-sz for xaaes-windows */
-	cfg.double_click_time = DOUBLE_CLICK_TIME;
-	cfg.mouse_packet_timegap = MOUSE_PACKET_TIMEGAP;
-	cfg.redraw_timeout = 500;
-	cfg.standard_font_point = STANDARD_FONT_POINT;	/* Size for normal text */
-	cfg.info_font_point = -1;
-	cfg.medium_font_point = MEDIUM_FONT_POINT;	/* The same, but for low resolution screens */
-	cfg.small_font_point = SMALL_FONT_POINT;	/* Size for small text */
-	cfg.ted_filler = '_';
-	cfg.menu_locking = true;
-	cfg.back_col = -1;
-	cfg.menu_bar = 2;	// always on
-	cfg.allow_setexc = -1;	/* dont change */
-	//cfg.backname = FAINT;
-	cfg.next_active = 0;
-// 	cfg.widg_w = ICON_W;
-// 	cfg.widg_h = ICON_H;
-
-	cfg.ver_wheel_id = 0;
-	cfg.ver_wheel_amount = 1;
-	cfg.hor_wheel_id = 1;
-	cfg.hor_wheel_amount = 1;
-
-	cfg.icnfy_orient = 3;
-	cfg.icnfy_w = 72;
-	cfg.icnfy_h = 72;
-
-	cfg.popup_timeout = 10;
-	cfg.popout_timeout = 1000;
-
-	cfg.alert_winds = 0xffff;
-
+				env_str++;
+			}
+		}
+	}
 #if !FILESELECTOR
 #error external fileselectors not supported yet!
 	cfg.no_xa_fsel = true;
@@ -566,45 +638,7 @@ again:
 
 	TAB_LIST_INIT();
 
-	C.Aes->type = APP_AESSYS;
-	C.Aes->cmd_tail = "\0";
-	//C.Aes->wt.e.obj = -1;
-
-	strcpy(C.Aes->cmd_name, "XaAES");
-	strcpy(C.Aes->name, Aes_display_name);
-	strcpy(C.Aes->proc_name,"AESSYS  ");
-
-	/* Where were we started? */
-#if OZK_ENH /* or was it MINT_ENH? */
-	strcpy(C.Aes->home_path, self->fpath);
-#else
-	strcpy(C.Aes->home_path, self->path);
-#endif
-// 	strcat(C.Aes->home_path, "/");
-#if 0
-	/* strip off last element */
-	{
-		char *s = C.Aes->home_path, *name = NULL;
-		char c;
-
-		do {
-			c = *s++;
-			if (c == '\\' || c == '/')
-				name = s;
-		}
-		while (c);
-
-		if (name)
-			*name = '\0';
-	}
-#endif
-
-	C.Aes->xdrive = d_getdrv();
-	d_getpath(C.Aes->xpath, 0);
-	/* home_path is no full path - make one */
-	if( *(C.Aes->home_path + 2) != ':' )
-		sprintf( C.Aes->home_path, sizeof(C.Aes->home_path), "%c:%s\\", C.Aes->xdrive + 'a', C.Aes->xpath);
-	BLOG((true, "home_path: '%s'", C.Aes->home_path));
+	configure();
 
 	/* check if there exist a moose.adi */
 	if (first)
@@ -628,13 +662,10 @@ again:
 		}
 	}
 
-	/* requires mint >= 1.15.11 */
-	C.mvalidate = true;
 
 	/* Setup the kernel OS call jump table */
 
 	setup_handler_table();
-
 
 	/* set bit 3 in conterm, so Bconin returns state of ALT and CTRL in upper 8 bit */
 	{
@@ -643,48 +674,12 @@ again:
 		helper = (s_system(S_GETBVAL, 0x0484, 0)) | 8;
 		s_system(S_SETBVAL, 0x0484, (char)helper);
 	}
-//	BLOG((false, "set bit 3 in conterm ok!"));
 
 #if GENERATE_DIAGS
 	{ short nkc_vers = nkc_init(); DIAGS(("nkc_init: version %x", nkc_vers)); }
 #else
 	nkc_init();
 #endif
-	BLOG((false, "nkc_init ok!"));
-
-	init_env();
-	/* copy over environment from loader */
-	{
-		struct proc *p = get_curproc();
-		const char *env_str = p->p_mem->base->p_env;
-
-		if (env_str)
-		{
-			while (*env_str)
-			{
-				put_env(NOLOCKING, env_str);
-
-				while (*env_str)
-					env_str++;
-
-				env_str++;
-			}
-		}
-	}
-
-	/* default to live actions */
-	default_options.xa_nomove = true;
-	default_options.xa_nohide = true;
-	//default_options.xa_objced = true;
-	default_options.thinframe = 1;
-	default_options.wheel_mode = WHL_AROWWHEEL;
-
-	default_options.clwtna = 1;
-	default_options.alt_shortcuts = 3;
-
-	C.Aes->options = default_options;
-	/* Parse the config file */
-	load_config(0);
 
 	{
 	short li = 0, p = -1;
@@ -713,7 +708,7 @@ again:
 	{
 		info_tab[3][0] = p;
 	}
-	BLOG((0,"lang='%s' (from %s).",cfg.lang, li == 0 ? "config" : (li == 1 ? "Environ" : "AKP") ));
+	BLOG((0,"lang='%s' (from %s) code=%d.",cfg.lang, li == 0 ? "config" : (li == 1 ? "Environ" : "AKP"), info_tab[3][0] ));
 	}
 
 	if( cfg.info_font_point == -1 )

@@ -55,30 +55,39 @@ write_bootlog(char *t, short l)
 #endif
 
 void _cdecl
-bootlog(bool disp, const char *fmt, ...)
+bootlog(short disp, const char *fmt, ...)
 {
 #if BOOTLOG
 	char buf[512];
 	va_list args;
 	long l;
-	int lvl = DEBUG_LEVEL;
+	int lvl;
+	short dlvl = disp >> 1, llvl = C.loglvl;	// >> 1;
+	disp = (disp & 1) | (C.loglvl & 2);
+
+	if( !disp && llvl <= dlvl )
+		return;
+
+	lvl = DEBUG_LEVEL;
 	DEBUG_LEVEL = 0;
 
 	va_start(args, fmt);
 	l = vsprintf(buf, sizeof(buf), fmt, args);
 	va_end(args);
 
-	DEBUG((buf));
-
-	buf[l] = '\n';
-#if GENERATE_DIAGS
-	if (D.debug_file)
+	if( llvl > dlvl )
 	{
-		kernel_write(D.debug_file, buf, l+1);
-	}
-#endif
-	write_bootlog(buf, l+1);
+		//DEBUG((buf));
 
+		buf[l] = '\n';
+#if GENERATE_DIAGS
+		if (D.debug_file)
+		{
+			kernel_write(D.debug_file, buf, l+1);
+		}
+#endif
+		write_bootlog(buf, l+1);
+	}
 	if (disp)
 	{
 		buf[l] = '\r';
