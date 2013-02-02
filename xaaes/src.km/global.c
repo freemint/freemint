@@ -105,7 +105,7 @@ xaaes_ufree(void *addr, const char *func)
 }
 
 /* for old gemlib */
-short my_global_aes[16];
+short my_global_aes[GL_AES_SZ];
 
 /*
  * global data
