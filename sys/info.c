@@ -300,6 +300,7 @@ const char *MSG_cnf_argument_for = "argument %i for '%s' ";
 const char *MSG_cnf_missed = "missed";
 const char *MSG_cnf_must_be_a_num = "must be a number";
 const char *MSG_cnf_out_of_range = "out of range";
+const char *MSG_cnf_string_too_long = "'%s': string too long (max.: %ld) (ignored)";
 const char *MSG_cnf_must_be_a_bool = "must be of type boolean (y/n)";
 const char *MSG_cnf_missing_quotation = "missing quotation";
 const char *MSG_cnf_junk = "junk at end of line ignored.";

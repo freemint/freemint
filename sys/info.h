@@ -127,6 +127,7 @@ extern const char *MSG_cnf_argument_for;
 extern const char *MSG_cnf_missed;
 extern const char *MSG_cnf_must_be_a_num;
 extern const char *MSG_cnf_out_of_range;
+extern const char *MSG_cnf_string_too_long;
 extern const char *MSG_cnf_must_be_a_bool;
 extern const char *MSG_cnf_missing_quotation;
 extern const char *MSG_cnf_junk;

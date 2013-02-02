@@ -74,7 +74,7 @@ parser_msg(struct parsinf *inf, const char *msg)
 		boot_printf ("[%s:%i] ", inf->file, inf->line);
 	else if (!msg)
 		msg = MSG_cnf_parser_skipped;
-	
+
 	if (msg)
 	{
 		boot_print (msg);
@@ -100,12 +100,12 @@ parse_token(struct parsinf *inf, bool upcase)
 	char delim = NUL;
 	char c;
 	union genarg ret;
-	
+
 	ret.c = inf->dst;
 
 	do {
 		c = *(src++);
-		
+
 		if (c == NUL)
 		{
 			/* correct overread zero */
@@ -168,7 +168,7 @@ static union genarg
 parse_line(struct parsinf *inf)
 {
 	union genarg ret;
-	
+
 	ret.c = inf->dst;
 
 	while (*(inf->src) && *(inf->src) != EOL)
@@ -247,7 +247,7 @@ parse_long(struct parsinf *inf, const struct range *range)
 
 		while ( isdigit(c) || (c >= 'A' && c <= 'F'))
 		{
-			ret.l <<= 4;			
+			ret.l <<= 4;
 			if (c < 'A')
 				ret.l |= c - '0';
 			else
@@ -588,7 +588,12 @@ parser(FILEPTR *f, long f_size,
 				case PI_R_T:
 				{
 					if (strlen(arg[0].c) < item->dat.dat)
-						strcpy((char *)(cb._v), arg[0].c); 
+						strcpy((char *)(cb._v), arg[0].c);
+					else
+					{
+						parser_msg(inf, NULL);
+						boot_printf( MSG_cnf_string_too_long, arg[0].c, item->dat.dat);
+					}
 					break;
 				}
 
@@ -647,7 +652,7 @@ parse_include(const char *path, struct parsinf *inf, struct parser_item *parser_
 	{
 		fp->links = 0;
 		FP_FREE(fp);
-		
+
 		parser_msg(inf, NULL);
 		boot_printf(MSG_cnf_cannot_include, path);
 		parser_msg(NULL, NULL);
