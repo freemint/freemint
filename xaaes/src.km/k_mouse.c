@@ -388,7 +388,6 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 	DIAGA(("XA_button_event: %d/%d, state=0x%x, clicks=%d",
 		md->x, md->y, md->state, md->clicks));
 
-	//C.boot_focus = 0;
 	/* Ozk 040503: Detect a button-released situation, and let active-widget get inactive */
 
 	/*
