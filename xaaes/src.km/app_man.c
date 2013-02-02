@@ -185,6 +185,9 @@ setnew_focus(struct xa_window *wind, struct xa_window *unfocus, bool topowner, b
 		unfocus ? unfocus->handle : -2, unfocus ? unfocus->owner->name : "nowind"));
 
 
+	if( C.boot_focus && (unfocus || (wind && wind->owner->p != C.boot_focus)))
+		return;
+
 	if (!unfocus || unfocus == S.focus)
 	{
 		struct xa_client *owner;	//, *p_owner = 0;
@@ -448,7 +451,6 @@ find_focus(bool withlocks, bool *waiting, struct xa_client **locked_client, stru
 	}
 
 	DIAGA(("find_focus: focus = %s, infront = %s", client->name, APP_LIST_START->name));
-// 	display("find_focus: focus = %s, infront = %s", client->name, APP_LIST_START->name);
 
 	return client;
 }
@@ -585,7 +587,7 @@ swap_menu(enum locks lock, struct xa_client *new, struct widget_tree *new_menu, 
 	DIAG((D_appl, NULL, "swap_menu: %s, flags=%x", new->name, flags));
 
 	/* in single-mode display only menu of single-app */
-	if( C.SingleTaskPid > 0 && new->p->pid != C.SingleTaskPid )
+	if( (C.boot_focus && new->p != C.boot_focus) || (C.SingleTaskPid > 0 && new->p->pid != C.SingleTaskPid) )
 		return;
 
 	/* If the new client has no menu bar, no need for a change */
@@ -1226,10 +1228,13 @@ app_in_front(enum locks lock, struct xa_client *client, bool snd_untopped, bool 
 			S.focus = 0;	/* force focus to new top */
 		setnew_focus(topped, S.focus, false, true, true);
 #if WITH_BBL_HELP
-		if( cfg.menu_bar == 0 && !topped )
-			display_launched( lock, client->name );
-		else
-			xa_bubble( 0, bbl_close_bubble1, 0, 0 );
+		if( (!C.boot_focus || client->p == C.boot_focus) )
+		{
+			if( cfg.menu_bar == 0 && !topped )
+				display_launched( lock, client->name );
+			else
+				xa_bubble( 0, bbl_close_bubble1, 0, 0 );
+		}
 #endif
 	}
 }

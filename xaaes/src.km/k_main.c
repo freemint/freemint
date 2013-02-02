@@ -97,7 +97,7 @@ void set_tty_mode( short md );
 
 /* ask before shutting down (does not work yet) */
 #define ALERT_SHUTDOWN 0
-#define AESSYS_TIMEOUT	2000	/* s/1000 */
+#define AESSYS_TIMEOUT	3*2000	/* s/1000 */
 
 void
 ceExecfunc(enum locks lock, struct c_event *ce, short cancel)
@@ -1450,7 +1450,6 @@ dispatch_shutdown(short flags)
 		set_shutdown_timeout(0);
 	}
 }
-
 static void
 CE_start_apps(enum locks lock, struct c_event *ce, short cancel)
 {
@@ -1475,13 +1474,20 @@ CE_start_apps(enum locks lock, struct c_event *ce, short cancel)
 		{
 			if (cfg.cnf_run[i])
 			{
+				int pid;
 				BLOG((false, "autorun[%d]: cmd=(%lx) '%s'", i, cfg.cnf_run[i], cfg.cnf_run[i] ? cfg.cnf_run[i] : "no cmd"));
 				BLOG((false, "   args[%d]:    =(%lx) '%s'", i, cfg.cnf_run_arg[i], cfg.cnf_run_arg[i] ? cfg.cnf_run_arg[i] : "no arg"));
 				parms[0] = '\0';
 				if (cfg.cnf_run_arg[i])
 					parms[0] = sprintf(parms+1, sizeof(parms)-2, "%s", cfg.cnf_run_arg[i]);
 
-				launch(lock, 0, 0, 0, cfg.cnf_run[i], parms, C.Aes);
+				pid = launch(lock, 0, 0, 0, cfg.cnf_run[i], parms, C.Aes);
+				if( pid > 0 )
+				{
+					struct proc *p = pid2proc(pid);
+					if( !strcmp( cfg.focus, p->name) )
+						C.boot_focus = p;
+				}
 			}
 		}
 		if (cfg.cnf_shell)
@@ -1493,7 +1499,11 @@ CE_start_apps(enum locks lock, struct c_event *ce, short cancel)
 			BLOG((false, "Launch shell '%s' with args '%s'", cfg.cnf_shell, parms[0] ? parms : "No args"));
 			C.DSKpid = launch(lock, 0, 0, 0, cfg.cnf_shell, parms, C.Aes);
 			if (C.DSKpid > 0)
+			{
 				strcpy(C.desk, cfg.cnf_shell);
+				if( !strcmp( cfg.focus, "shell" ) )
+					C.boot_focus = pid2proc(C.DSKpid);
+			}
 		}
 	}
 }
@@ -1578,6 +1588,20 @@ void load_palette( void *fn )
 	{
 		set_syspalette(C.Aes->vdi_settings->handle, screen.palette);
 		update_windows_below(0, &screen.r, NULL, window_list, NULL);
+	}
+}
+
+static void set_boot_focus(enum locks lock)
+{
+	if( C.boot_focus )
+	{
+		struct xa_client *c = is_aes_client( C.boot_focus );
+		C.boot_focus = 0;
+
+		if( c )
+		{
+			set_active_client(lock, c);
+		}
 	}
 }
 
@@ -1704,6 +1728,7 @@ k_main(void *dummy)
 	else mt_appl_exit(my_global_aes);
 	}
 	BLOG((0,"apid=%d,P_handle=%d", my_global_aes[2], C.P_handle));
+
 	/*
 	 * register trap#2 handler
 	 */
@@ -1867,6 +1892,7 @@ k_main(void *dummy)
 
 	if( !pferr )
 		post_cevent(C.Hlp, CE_start_apps, NULL,NULL, 0,0, NULL,NULL);
+
 	/*
 	 * Main kernel loop
 	 */
@@ -1879,35 +1905,6 @@ k_main(void *dummy)
 		enum locks lock = winlist|envstr|pending;
 		unsigned long input_channels;
 		long fs_rtn;
-
-
-#if 0
-		{
-/* set 1 if you want CTRL_APP_OPS when no pending events
- * -> "single task"
- */
-#define ALWAYS_CTRL_APP_OPS 0
-			/*
-			 * EXPERIMENTAL:
-			 * if focussed client doesn't wait for any event
-			 * give it some cpu to read keyboard (see anyplayer:"whithout GEM")
-			 */
-			extern unsigned long wevents;	/* from xa_evnt.c (check_queued_events) */
-			if( wevents == 0 )
-			{
- 				extern char *wclientname;
-				BLOG((0,"k_main:yield for %s", wclientname));
-#if ALWAYS_CTRL_APP_OPS && ALT_CTRL_APP_OPS
-				/* Ctrl-Alt? */
-				if( Getshift() == 0 )
-#endif
-				{
-					nap( 10000 );
-					continue;	/* nothing to do for us .. */
-				}
-			}
-		}
-#endif
 
 		input_channels = default_input_channels;
 
@@ -1927,9 +1924,10 @@ k_main(void *dummy)
 			mouse_locked() ? mouse_locked()->pid : 0,
 			mouse_locked() ? mouse_locked()->name : ""));
 
-
 		if (fs_rtn > 0)
 		{
+			set_boot_focus(lock);
+			C.boot_focus = 0;
 			if (input_channels & (1UL << C.KBD_dev))
 			{
 				keyboard_input(lock);
@@ -2112,6 +2110,7 @@ k_exit(int wait)
 	{
 		mt_appl_exit(my_global_aes);
 	}
+
 	/*
 	 * close profile
 	 */

@@ -345,6 +345,7 @@ dispatch_button_event(enum locks lock, struct xa_window *wind, const struct moos
 {
 	struct xa_client *target = wind->owner;
 
+	C.boot_focus = 0;
 	/*
 	 * Right-button clicks or clicks on no-list windows or topped windows...
 	 */
@@ -355,7 +356,7 @@ dispatch_button_event(enum locks lock, struct xa_window *wind, const struct moos
 		 */
 		if (checkif_do_widgets(lock, wind, md->x, md->y, NULL))
 		{
-			DIAG((D_mouse, target, "XA_button_event: Send cXA_do_widgets to %s", target->name));
+			DIAG((D_mouse, target, "dispatch_button_event: Send cXA_do_widgets to %s", target->name));
 			post_cevent(target, cXA_do_widgets, wind,NULL, 0,0, NULL,md);
 		}
 		else /* Just deliver the event ... */
@@ -368,8 +369,9 @@ dispatch_button_event(enum locks lock, struct xa_window *wind, const struct moos
 	}
 	else if (wind->send_message && md->state)
 	{
-		DIAG((D_mouse, target, "XA_button_event: Sending WM_TOPPED to %s", target->name));
+		DIAG((D_mouse, target, "dispatch_button_event: Sending WM_TOPPED to %s", target->name));
 		wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP, WM_TOPPED, 0, 0, wind->handle, 0,0,0,0);
+		top_window( lock, true, true, wind );	/* ?? */
 	}
 }
 
@@ -386,6 +388,7 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 	DIAGA(("XA_button_event: %d/%d, state=0x%x, clicks=%d",
 		md->x, md->y, md->state, md->clicks));
 
+	//C.boot_focus = 0;
 	/* Ozk 040503: Detect a button-released situation, and let active-widget get inactive */
 
 	/*
