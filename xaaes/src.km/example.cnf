@@ -63,6 +63,51 @@
 # define if windows are allowed to move over top of screen (crashes some VDI)
 #leave_top_border = 1
 #####################################################################
+#
+# logfile <filename> (default xa_boot.log in the xaaes-startup-directory)
+#
+# set the name of the logfile
+# if empty ("") debug-output to file is disabled.
+#
+# examples:
+#
+#logfile = ""
+#logfile = C:\xaaes.log
+#logfile = my.log
+#
+#####################################################################
+#
+# loglvl <positive number> (default: 1 in snapshot, 0 in release)
+#
+# set verbosity of debug-output
+# the higher the more gets printed.
+# bit 1 (value 2) of loglvl causes all debug-output also to go to console.
+# A value of 0 disables debug-output
+#
+# examples:
+#
+# debug-output to file
+#loglvl = 1
+# debug-output to console
+#loglvl = 2
+# debug-output to console and file
+#loglvl = 3
+# no debug-output
+#loglvl = 0
+#
+#####################################################################
+#
+# focus <program>
+#
+# set first focus.
+#
+# The program given by <program> will be the first to receive input after startup
+# and have the menu and top-window if any.
+# The special name 'shell' sets the focus to the desktop given by the
+# shell-directive.
+#
+#####################################################################
+#
 # allow_setexc (default:-1)
 # restrict calls to Setexc by programs started after XaAES.
 # -1: no change
@@ -824,7 +869,7 @@ lang = en
 #####################################################################
 #
 # Icon-colours for the app will be mapped according to the rsc-palette
-# (if given in the rsc-file).
+# (if given in the rsc-file or defined by icn_pal_name).
 #
 #remap_cicons = yes
 
