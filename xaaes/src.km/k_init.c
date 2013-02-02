@@ -589,7 +589,6 @@ k_init(unsigned long vm)
 	 */
 	v->handle = 0;
 
-#if 1
 	if( C.P_handle > 0 || (cfg.et4000_hack && C.nvdi_version > 0x400 && C.fvdi_version == 0) )
 	{
 		memset( work_out, 0, sizeof(work_out) );
@@ -604,9 +603,8 @@ k_init(unsigned long vm)
 		}
 		else
 			C.f_phys = 1;
-
 	}
-#endif
+
 	if ( v->handle <= 0 )
 	{
 		short mode = 1;

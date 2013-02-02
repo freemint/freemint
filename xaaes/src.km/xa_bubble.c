@@ -541,7 +541,7 @@ BBL_STATUS xa_bubble( enum locks lock, BBL_MD md, union msg_buf *msg, short dest
 			ret = -3;
 			goto xa_bubble_ret;
 		}
-		if( XaBubble == bs_open && (!S.open_nlwindows.top || !(S.open_nlwindows.top->dial & created_for_ALERT)) /*&& XaModal == 0*/ )
+		if( XaBubble == bs_open && (!S.open_nlwindows.top || !(S.open_nlwindows.top->dial & created_for_ALERT)))
 		{
 			close_window( lock, bgem_window );
 			c_bgem->active = 0;
