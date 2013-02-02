@@ -1389,7 +1389,11 @@ bflush (void)
 				if ((ret = (*f->dev->writeb)(f, (char *)s, bsiz)) != ENODEV) {
 					f->flags = oldflags;
 					bconbdev = 0;
-					return ret;
+					if (ret < E_OK) 
+					{
+						return 0;
+					} 
+					return -1;
 				}
 			    }
 #endif
@@ -1400,13 +1404,25 @@ bflush (void)
 			    while (--bsiz > 0) {
 				*where++ = *s++; nbytes+=4;
 			    }
-			    if (nbytes)
-				(*f->dev->write)(f, (char *)lbconbuf, nbytes);
+			    if (nbytes) {
+				ret = (*f->dev->write)(f, (char *)lbconbuf, nbytes);
+			    }
 			}
+			if (ret < E_OK) 
+			{
+				/* some bytes not successfully flushed */
+				ret = 0;
+			}
+			/* all bytes flush */
 			ret = -1;
 			f->flags = oldflags;
 		} else {
 			ret = (*f->dev->write)(f, (char *)bconbuf, bsiz);
+			if (ret < E_OK)
+			{
+				ret = 0;
+			}
+			ret = -1;
 		}
 		bconbdev = 0;
 		return ret;
@@ -1480,11 +1496,20 @@ do_bconin(int dev)
 		nread = 0;
 		(void)(*f->dev->ioctl)(f, FIONREAD, &nread);
 		if (!nread) return WOULDBLOCK;	/* data not ready */
-		if (is_terminal(f))
+		if (is_terminal(f)) {
 			r = tty_getchar(f, RAW);
+		}
 		else
 		{
 			r = (*f->dev->read)(f, (char *)&c, 1L);
+			if (r == ENODEV) 
+			{
+				return MiNTEOF;
+			}
+			else if (r < E_OK) 
+			{
+				return r;
+			}
 			r = (r == 1) ? c : MiNTEOF;
 		}
 	}
