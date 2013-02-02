@@ -929,12 +929,7 @@ menu_finish(struct task_administration_block *tab)
 		client = tab->client;
 
 		DIAG((D_menu, tab->client, "[%d]menu_finish, tab=%lx, ty:%d for %s", tab->dbg2, tab, tab->ty, tab->client->name));
-#if 0
-		if( tab->client->p != get_curproc())
-		{
-			return;
-		}
-#endif
+
 		if (is_bar && !NEXT_TAB(tab))
 			obtree[k->m.popups].ob_flags |= OF_HIDETREE;
 
@@ -1411,13 +1406,9 @@ do_collapse(Tab *tab)
 	}
 	else
 	{
-#if 1
 		struct rawkey key;
 		key.aes = SC_ESC;	/* close window-menu */
 		menu_keyboard(tab, &key);
-#else
-		tab = menu_pop(tab);
-#endif
 	}
 
 }
