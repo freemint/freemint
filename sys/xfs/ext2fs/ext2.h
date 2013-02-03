@@ -28,8 +28,6 @@
 # ifndef _ext2_h
 # define _ext2_h
 
-# include "global.h"
-
 /*
  * The second extended filesystem constants/structures
  */
