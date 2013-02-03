@@ -79,7 +79,8 @@ struct tty default_tty =
 	0,			/* or for writing */
 	NULL,			/* use default XKEY map */
 	0,			/* not currently hanging up */
-	1, 0			/* RAW reads need 1 char, no timeout */
+	1, 0,			/* RAW reads need 1 char, no timeout */
+	0         /* index in escape-sequence */
 };
 
 #define _put(f, c) (tty_putchar((f), (c), RAW))
@@ -139,7 +140,7 @@ tty_read(FILEPTR *f, void *buf, long nbytes)
 		mode = T_TOS | T_ECHO | T_ECHOCTL;
 	}
 
-	DEBUG(("tty_read: pgrp=%d state=%x %ld bytes", tty->pgrp, tty->state, nbytes ));
+	DEBUG(("tty_read: pgrp=%d state=%x %ld bytes", tty->pgrp, tty->esc_state, nbytes ));
 
 	if (nbytes == 0)
 		return bytes_read;
@@ -149,7 +150,7 @@ tty_read(FILEPTR *f, void *buf, long nbytes)
 	if (tty->vtime
 		&& (mode & (T_RAW | T_CBREAK))
 		&& !(f->flags & (O_NDELAY | O_HEAD))
-		&& (!(tty->state & TS_ESC) || !(rdmode & ESCSEQ)))
+		&& (!tty->esc_state || !(rdmode & ESCSEQ)))
 	{
 		long ret, bytes = 0;
 
@@ -193,7 +194,7 @@ tty_read(FILEPTR *f, void *buf, long nbytes)
 	/* see if we can do fast RAW byte IO thru the device driver...
 	 */
 	if (rdmode == RAW
-		&& (!(tty->state & TS_ESC) || !(rdmode & ESCSEQ) || (f->flags & O_HEAD))
+		&& (!tty->esc_state || !(rdmode & ESCSEQ) || (f->flags & O_HEAD))
 		&& (f->fc.fs != &bios_filesys
 			|| (nbytes > 1
 				&& ((struct bios_file *)f->fc.index)->drvsize >
@@ -409,7 +410,7 @@ stuff_it:
 		bytes_read++;
 
 		/* for RAW mode, if there are no more characters then break */
-		if ((mode & (T_RAW|T_CBREAK)) && !(tty->state & TS_ESC))
+		if ((mode & (T_RAW|T_CBREAK)) && !tty->esc_state)
 		{
 			r = 1;
 			(void)(*f->dev->ioctl)(f, FIONREAD, &r);
@@ -492,8 +493,6 @@ tty_write (FILEPTR *f, const void *buf, long nbytes)
 
 	if (nbytes == 0)
 		return bytes_written;
-
-	DEBUG(("tty_write: pgrp=%d state=%x %ld bytes ext=%lx", tty->pgrp, tty->state, nbytes, get_curproc()->p_ext));
 
 
 # if 1
@@ -580,7 +579,6 @@ tty_write (FILEPTR *f, const void *buf, long nbytes)
 		/* remember, "mode" now means CRMOD */
 		tty_putchar (f, cr_char, rwmode);
 	}
-
 	tty_putchar (f, c, rwmode);
 	nbytes--;
 	bytes_written++;
@@ -590,8 +588,9 @@ tty_write (FILEPTR *f, const void *buf, long nbytes)
 		while (nbytes-- > 0)
 		{
 			c = *ptr++;
-			if (c == '\n' && mode)
+			if (c == '\n' && mode){
 				tty_putchar (f, cr_char, rwmode);
+			}
 			tty_putchar (f, c, rwmode);
 			bytes_written++;
 		}
@@ -607,6 +606,7 @@ tty_write (FILEPTR *f, const void *buf, long nbytes)
 		while (nbytes-- > 0)
 		{
 			c = *ptr++;
+			//if(c<' ')DBG_FORCE(("mode=%d,c=%lx", mode,c));
 			if (c == '\n')
 			{
 				if (bytes_to_write)
@@ -616,7 +616,9 @@ tty_write (FILEPTR *f, const void *buf, long nbytes)
 					s = lbuf;
 				}
 				if (mode)	/* i.e. T_CRMODE */
+				{
 					tty_putchar (f, cr_char, rwmode);
+				}
 				tty_putchar (f, (long) c, rwmode);
 				bytes_written++;
 			}
@@ -642,14 +644,32 @@ tty_write (FILEPTR *f, const void *buf, long nbytes)
 }
 
 /* some notable scan codes */
+/* modifiers */
+#define KM_SHIFT	3
+#define KM_CTRL	4
+#define KM_ALT	8
+
+#define K_1	0x02
+#define K_0	0x0b
+#define K_BACKSPACE	0x0e
+#define K_TAB	0x0f
+#define K_PLUS	0x1b
+#define K_HASH	0x29
+#define K_TILDE	0x2b
+#define K_COMMA	0x33
+#define K_MINUS	0x35
 #define K_INSERT	0x52
+#define K_DELETE	0x53
 #define K_HOME		0x47
+#define CTRL_HOME		0x77
 #define K_UNDO		0x61
 #define K_HELP		0x62
 #define CURS_UP		0x48
 #define CURS_DN		0x50
 #define CURS_RT		0x4d
 #define CURS_LF		0x4b
+#define CTRL_CURS_RT		0x74
+#define CTRL_CURS_LF		0x73
 #define F_1		0x3b
 #define F_10		0x44
 #define F_11		0x54
@@ -665,7 +685,9 @@ tty_write (FILEPTR *f, const void *buf, long nbytes)
  *		28-31 are shift+cursor up, down, right, and left
  */
 
-static const char vt52xkey[256] =
+#if 0
+#define XKEY_LEN 8
+static const char vt52xkey[/*256*/] =
 {
 	'\033', 'P', 0, 0, 0, 0, 0, 0,
 	'\033', 'Q', 0, 0, 0, 0, 0, 0,
@@ -699,8 +721,106 @@ static const char vt52xkey[256] =
 	'\033', 'b', 0, 0, 0, 0, 0, 0,
 	'\033', 'c', 0, 0, 0, 0, 0, 0,
 	'\033', 'd', 0, 0, 0, 0, 0, 0,
+	'\033', 'e', 0, 0, 0, 0, 0, 0,
+};
+#else
+#define XKEY_LEN 4
+#if 0
+WARNING:
+TIOCSXKEY uses
+struct xkey {
+	  short xk_num;    /* function key number */
+    char  xk_def[8]; /* associated string */
+};
+#endif
+static const char vt52xkey[256] =
+{
+	/* F-keys */
+   /*   0   */  '\033', 'P', 0, 0,
+   /*   1   */  '\033', 'Q', 0, 0,
+   /*   2   */  '\033', 'R', 0, 0,
+   /*   3   */  '\033', 'S', 0, 0,
+   /*   4   */  '\033', 'T', 0, 0,
+   /*   5   */  '\033', 'U', 0, 0,
+   /*   6   */  '\033', 'V', 0, 0,
+   /*   7   */  '\033', 'W', 0, 0,
+   /*   8   */  '\033', 'X', 0, 0,
+   /*   9   */  '\033', 'Y', 0, 0,
+	/* Shift-F-keys */
+   /*  10   */  '\033', 'p', 0, 0,
+   /*  11   */  '\033', 'q', 0, 0,
+   /*  12   */  '\033', 'r', 0, 0,
+   /*  13   */  '\033', 's', 0, 0,
+   /*  14   */  '\033', 't', 0, 0,
+   /*  15   */  '\033', 'u', 0, 0,
+   /*  16   */  '\033', 'v', 0, 0,
+   /*  17   */  '\033', 'w', 0, 0,
+   /*  18   */  '\033', 'x', 0, 0,
+   /*  19   */  '\033', 'y', 0, 0,
+	/* Cursor Up, Down, Right, Left */
+   /*  20   */  '\033', 'A', 0, 0,
+   /*  21   */  '\033', 'B', 0, 0,
+   /*  22   */  '\033', 'C', 0, 0,
+   /*  23   */  '\033', 'D', 0, 0,
+	/* */
+   /*  24   */  '\033', 'H', 0, 0,
+   /*  25   */  '\033', 'K', 0, 0,
+   /*  26   */  '\033', 'I', 0, 0,
+   /*  27   */  '\033', 'E', 0, 0,
+   /*  28   */  '\033', 'a', 0, 0,
+   /*  29   */  '\033', 'b', 0, 0,
+   /*  30   */  '\033', 'c', 0, 0,
+   /*  31   */  '\033', 'd', 0, 0,
+	/* Ctrl-Cursor-Up/Down/Left/Right*/
+   /*  32   */  '\033', 'e', 0, 0,
+   /*  33   */  '\033', 'f', 0, 0,
+   /*  34   */  '\033', 'g', 0, 0,
+   /*  35   */  '\033', 'h', 0, 0,
+	/* Ctrl-Ins/Del */
+   /*  36   */  '\033', 'i', 0, 0,
+   /*  37   */  '\033', 'j', 0, 0,
+	/* Ctrl-Help/Undo */
+   /*  38   */  '\033', 'k', 0, 0,
+   /*  39   */  '\033', 'u', 0, 0,
+#define CTRL_VT 40
+
+#define CSC1 ';'
+#define CSC2 ':'
+#define CSC3 ','
+
+#define CSI_CHAR '['
+#define CSI_CHAR1 '('
+#define CSI_CHAR2 '{'
+#define CSI_CHAR3 '}'
+
+/* to be appended seqs */
+# define VT_CTRL_ESC CTRL_VT * XKEY_LEN + 1
+   /*       */  0, CSC1, 0, 0,
+# define VT_SHIFT_ESC (CTRL_VT+1) * XKEY_LEN + 1
+   /*       */  0, CSC2, 0, 0,
+# define VT_CTRL_SHIFT_ESC (CTRL_VT+2) * XKEY_LEN + 1
+   /*       */  0, CSC3, 0, 0,
 };
 
+#define STATE_CTRL 1
+#define STATE_SHIFT 2
+#define STATE_CTRL_SHIFT 3
+#define STATE_ESC_CTRL 4
+#define STATE_CSI 8
+#define STATE_CSI1 0x10
+#define STATE_CSI2 0x20
+#define STATE_CSI3 0x40
+#define STATE_DIRECT 0x80
+
+# undef T_XTABS_notyet	/* unimplemented */
+#define T_XKEY_NP	0x0008      /* sg_falgs: not "numlock" */
+#define XKEY_NP	0x0008      /* mode: not "numlock" */
+
+static int is_np(int c)
+{
+	return ((c >= 0x63 && c <= 0x72) || c == 0x4a || c == 0x4e);
+}
+#endif
 /* convert a number describing the baud rate into a Unix
  * style baud rate number. Returns the Unix baud rate,
  * or 21 (EXTA) if the rate is unknown
@@ -760,7 +880,7 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 			if (tty->state & TS_BLIND)
 				*(long *)arg = 0;
 
-			if ((tty->sg.sg_flags & T_XKEY) && (tty->state & TS_ESC) && !*(long *)arg)
+			if ((tty->sg.sg_flags & T_XKEY) && tty->esc_state && !*(long *)arg)
 				*(long *)arg = 1;
 
 			return E_OK;
@@ -794,7 +914,7 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 				return r;
 
 			if (!arg || (*(long *)arg & 1))
-				tty->state &= ~TS_ESC;
+				tty->esc_state = 0;
 
 			return E_OK;
 		}
@@ -860,7 +980,7 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 				tty->state |= TS_COOKED;
 
 			if (!(sg->sg_flags & T_XKEY))
-				tty->state &= ~TS_ESC;
+				tty->esc_state = 0;
 
 			/* set baud rates */
 			baud = tosbaud (sg->sg_ispeed);
@@ -1019,8 +1139,8 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 			if (i < 0 || i > 31) return EBADARG;
 			xktab = tty->xkey;
 			if (!xktab) xktab = vt52xkey;
-			xktab += i*8;
-			for (i = 0; i < 8; i++)
+			xktab += i*XKEY_LEN;
+			for (i = 0; i < XKEY_LEN; i++)
 				xk->xk_def[i] = *xktab++;
 
 			return E_OK;
@@ -1034,24 +1154,26 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 			xktab = tty->xkey;
 			if (!xktab)
 			{
-				xktab = kmalloc (256);
+				xktab = kmalloc (sizeof(vt52xkey));	//256);
 				if (!xktab)
 					return ENOMEM;
 
-				for (i = 0; i < 256; i++)
+				for (i = 0; i < sizeof(vt52xkey); i++)
 					xktab[i] = vt52xkey[i];
 
 				tty->xkey = xktab;
 			}
 
 			i = xk->xk_num;
-			if (i < 0 || i > 31)
+			if (i < 0 || i > sizeof(vt52xkey)/XKEY_LEN /*31*/)
 				return EBADARG;
 
-			xktab += i*8;
-			for (i = 0; i < 7; i++)
+			xktab += i*XKEY_LEN;
+			for (i = 0; i < XKEY_LEN && xk->xk_def[i]; i++)
 				xktab[i] = xk->xk_def[i];
-			xktab[7] = 0;
+			if (i < XKEY_LEN)
+				xktab[i] = 0;
+			//xktab[XKEY_LEN-1] = 0;
 
 			return E_OK;
 		}
@@ -1063,8 +1185,8 @@ tty_ioctl (FILEPTR *f, int mode, void *arg)
 			 */
 			long mask = ((long *)arg)[1] & ~(TS_HOLD|TS_BLIND);
 
-			if (!(tty->sg.sg_flags & T_XKEY))
-				mask &= ~TS_ESC;
+			//if (!(tty->sg.sg_flags & T_XKEY))
+				//mask &= ~TS_ESC;
 
 			if (*(long *)arg != -1)
 				tty->state = (tty->state & ~mask) | (*((long *)arg) & mask);
@@ -1361,26 +1483,50 @@ escseq (struct tty *tty, int scan)
 	{
 		case CURS_UP:		i = 20; break;
 		case CURS_DN:		i = 21; break;
+		case CTRL_CURS_RT:
 		case CURS_RT:		i = 22; break;
+		case CTRL_CURS_LF:
 		case CURS_LF:		i = 23; break;
 		case K_HELP:		i = 24; break;
 		case K_UNDO:		i = 25; break;
-		case K_INSERT:		i = 26; break;
-		case K_HOME:		i = 27; break;
+		case K_INSERT:
+		case K_INSERT + 0x100:		i = 26; break;
+		case K_HOME:
+		case CTRL_HOME:
+		case K_HOME + 0x100:		i = 27; break;
 		case CURS_UP + 0x100:	i = 28; break;
 		case CURS_DN + 0x100:	i = 29; break;
 		case CURS_RT + 0x100:	i = 30; break;
 		case CURS_LF + 0x100:	i = 31; break;
+		case CURS_UP + 0x200:	i = 32; break;
+		case CURS_DN + 0x200:	i = 33; break;
+		case K_DELETE + 0x100:	i = 37; break;
+		case K_HELP + 0x200:		i = 38; break;
+		case K_UNDO + 0x200:		i = 39; break;
+
 		default:
+		{
+			//int m = (scan & 0xf00) >> 8;
+			//scan &= 0xff;
 			if (scan >= F_1 && scan <= F_10)
-				i = scan - F_1;
-			else if (scan >= F_11 && scan <= F_20)
+			{
+				//if (m == 2)	/* Ctrl-Fkey */
+					//i = scan - F_1 + 39 + 1;
+				//else
+					i = scan - F_1;
+			}
+			else if (scan >= F_11 && scan <= F_20)	/* Shift-Fkey */
+			{
 				i = 10 + scan - F_11;
+					tty->state &= ~VT_SHIFT_ESC;	/* already shift */
+				/* else Ctrl-Shift-Fkey */
+			}
 			else
 				i = -1;
+		}
 	}
 
-	if (i >= 0)
+	if (i >= 0 )
 	{
 		/* an extended escape sequence */
 
@@ -1388,13 +1534,17 @@ escseq (struct tty *tty, int scan)
 		if (!tab)
 			tab = vt52xkey;
 
-		i *= 8;
+		/* !! */
+		i *= XKEY_LEN;
 
-		scan = tab[i++];
+		if( i < sizeof(vt52xkey) )
+			scan = tab[i++];
+		else
+			scan = 0;
 		if (scan)
 		{
 			if (tab[i] == 0) i = 0;
-			tty->state = (tty->state & ~TS_ESC) | i;
+			tty->esc_state = i;
 		}
 
 		return scan;
@@ -1424,7 +1574,9 @@ long
 tty_getchar (FILEPTR *f, int mode)
 {
 	struct tty *tty = (struct tty *) f->devinfo;
-	long r; int scan; char c;
+	long r;
+	int scan;
+	uchar c;
 
 	assert (tty);
 
@@ -1444,6 +1596,8 @@ tty_getchar (FILEPTR *f, int mode)
 		return (ret != 4L) ? MiNTEOF : r;
 	}
 
+	if (tty->sg.sg_flags & T_XKEY_NP)
+		mode |= XKEY_NP;	/* ->todo! */
 	/* job control check */
 
 	/*
@@ -1470,25 +1624,85 @@ tty_getchar (FILEPTR *f, int mode)
 	c = UNDEF + 1;	/* set to UNDEF when we successfully read a character */
 
 	/* we may be in the middle of an escape sequence */
-	scan = (tty->state & TS_ESC);
-	if (scan != 0)
+	scan = tty->esc_state;
+	if( (tty->state & TS_ESC) & STATE_ESC_CTRL )
+	{
+		/* shift+ctrl+alpha -> ESC ctrl+alpha */
+		c = UNDEF;
+		r = scan;
+		tty->esc_state = 0;
+		tty->state &= ~TS_ESC;
+	}
+	else if( tty->state & STATE_CSI )
+	{
+		c = UNDEF;
+		r = CSI_CHAR;
+		tty->state &= ~STATE_CSI;
+	}
+	else if( tty->state & STATE_CSI1 )
+	{
+		c = UNDEF;
+		r = CSI_CHAR1;
+		tty->state &= ~STATE_CSI1;
+	}
+	else if( tty->state & STATE_CSI2 )
+	{
+		c = UNDEF;
+		r = CSI_CHAR2;
+		tty->state &= ~STATE_CSI2;
+	}
+	else if( tty->state & STATE_CSI3 )
+	{
+		c = UNDEF;
+		r = CSI_CHAR3;
+		tty->state &= ~STATE_CSI3;
+	}
+
+	else if( tty->state & STATE_DIRECT )
+	{
+		c = UNDEF;
+		r = tty->esc_state;
+		tty->esc_state = 0;
+		tty->state &= ~STATE_DIRECT;
+
+	}
+	else if (scan % XKEY_LEN)
 	{
 		const char *tab = tty->xkey ? tty->xkey : vt52xkey;
 		r = (uchar) tab[scan++];
 		if (r)
 		{
 			c = UNDEF;
-			if (tab[scan] == 0) scan = 0;
+			if (tab[scan] == 0)
+			{
+				switch (tty->state & TS_ESC)
+				{
+				case STATE_CTRL:
+					scan = VT_CTRL_ESC;
+				break;
+				case STATE_SHIFT:
+					scan = VT_SHIFT_ESC;
+				break;
+				case STATE_CTRL_SHIFT:
+					scan = VT_CTRL_SHIFT_ESC;
+				break;
+				default:
+					scan = 0;
+				}
+				tty->state &= ~TS_ESC;
+			}
 		}
 		else
 			scan = 0;
 
-		tty->state = (tty->state & ~TS_ESC) | scan;
+		tty->esc_state = scan;
 	}
 
 	while (c != UNDEF)
 	{
 		long ret;
+		ushort ctrl=0;
+		int is_numpad;
 
 		if (tty->state & TS_BLIND)
 		{
@@ -1504,25 +1718,238 @@ tty_getchar (FILEPTR *f, int mode)
 
 		c = r & 0x00ff;
 		scan = (int)((r & 0x00ff0000L) >> 16);
-		if ((c == 0) && (mode & ESCSEQ) && scan)
+
+		/* extended keycodes
+		 * every key+modifier gives a uniqe esc-sequence
+		 *
+		 * if bit 3 (0x8) in sg_flags is set numpad generates esc-sequeneces
+		 *
+		 * bugs:
+		 * whole code is a mess
+		 */
+
+		is_numpad = (mode & XKEY_NP) && is_np(scan);	/* numpad */
+		ctrl = (int)((r & 0x0f000000L) >> 24);
+
+		if( ctrl && scan == K_BACKSPACE )	/* exchange ctrl-shift (personel preference) */
 		{
-			c = UNDEF;
+			if( ctrl == KM_CTRL )
+				ctrl = KM_SHIFT;
+			else if( (~ctrl & ~KM_SHIFT) == ~KM_SHIFT )
+				ctrl = KM_CTRL;
+		}
+
+		tty->state &= ~TS_ESC;
+		if (ctrl & KM_CTRL)	//CTRL	-> append CSC2 for some escapes
+			tty->state |= STATE_CTRL;
+		if (ctrl & KM_SHIFT)	//SHIFT	-> append CSC1 for some escapes
+			tty->state |= STATE_SHIFT;
+		if (c == 0 && (mode & ESCSEQ) && scan)
+		{
 			/* translate cursor keys, etc. into escape sequences or
 			 * META characters
 			 */
-			r = escseq (tty, scan);
-		}
-		else if ((mode & ESCSEQ) && ((scan == CURS_UP && c == '8')
-			|| (scan == CURS_DN && c == '2')
-			|| (scan == CURS_RT && c == '6')
-			|| (scan == CURS_LF && c == '4')))
-		{
 			c = UNDEF;
-			r = escseq (tty, scan+0x100);
+			r = escseq (tty, scan);
+			if( is_numpad && (ctrl & KM_ALT) )
+			{
+				tty->state |= STATE_CSI3;
+				if( ctrl & KM_SHIFT )
+					scan += 0x11;
+			}
+			if( (!(r & 0x80) || (scan >= ALT_1 && scan <= ALT_0) ) && (ctrl & KM_ALT) )	/* ALT ,.-#+ï~  (?) */
+			{
+				tty->state |= STATE_DIRECT;
+				tty->state |= STATE_CSI2;	/* -> "esc{c" */
+				if( (scan >= F_1 && scan <= F_10) || (scan >= F_11 && scan <= F_20) )	/* alt(+shift)+fkey */
+				{
+					if( scan < F_11 )
+						scan = 'a' + scan - F_1;
+					else
+						scan = 'A' + scan - F_11;
+				}
+				else if( scan >= ALT_1 && scan <= ALT_0 )	/* alt+digit */
+				{
+					if( ctrl & KM_SHIFT )
+						scan = '!' + scan - ALT_1;
+					else
+						scan = '1' + scan - ALT_1;
+				}
+				else	/* not fkey not digit: ,.-#+ */
+				{
+					if( scan >= K_COMMA )
+						scan += ',' - K_COMMA;
+					else
+						tty->state |= STATE_CSI1;
+					if( (ctrl & KM_SHIFT) )
+					{
+
+						if( scan >= ',' )
+							scan += 4 - ' ';	/* map to something different .. */
+						else
+						{
+							if( scan == K_BACKSPACE )
+								tty->state |= STATE_CSI;
+							scan += '1' - '+';	/* map to something different .. */
+						}
+
+					}
+				}
+				if( scan <= 0x1b )	/* no esc in esc-seq */
+				{
+					if( ctrl & KM_SHIFT )
+						scan += 'X' - 0x1b;
+					else
+						scan += 'x' - 0x1b;
+				}
+				tty->esc_state = scan;
+				r = 0x1b;
+			}
+			else if( r & 0x80 )	/* alt+letter: todo: esq-seq if alt pressed (->int. chars) sg_flags ...? */
+			{
+				if( (tty->state & STATE_CTRL_SHIFT) == STATE_SHIFT )
+					r -= 'a' - 'A';
+			}
+			else if( /*r == 0x1b &&*/ (tty->state & STATE_CTRL_SHIFT) )
+			{
+				/* ctrl-cursor etc. */
+				if( r != 0x1b )
+				{
+					r = 0x1b;
+					tty->esc_state = scan;
+				}
+				tty->state |= STATE_CSI;
+			}
 		}
+		else if ((mode & ESCSEQ) && ((scan == CURS_UP && (c == '8' || c == 0x18))
+			|| (scan == CURS_DN && (c == '2' || c == 0x12))
+			|| (scan == CURS_RT && c == '6')
+			|| (scan == CURS_LF && c == '4')
+			|| scan == K_HOME
+			|| (scan == K_INSERT)
+			|| (scan == K_DELETE && (c == 0x1f || ((ctrl & KM_SHIFT) && c == 0x7f)))
+			))
+		{
+			r = escseq (tty, scan+0x100);
+			if( scan == CURS_UP || scan == CURS_DN || scan == CURS_RT || scan == CURS_LF )
+				tty->state &= ~STATE_SHIFT;	/* already shift */
+
+			if( tty->state & STATE_CTRL_SHIFT )
+				tty->state |= STATE_CSI;
+
+			c = UNDEF;
+		}
+		/* ctrl+digits, tab, numpad and ,.-#+ try to map to something useful */
+		else if ( (mode & ESCSEQ) &&
+			( ((ctrl & KM_CTRL) &&
+				((scan >= K_1 && scan <= K_BACKSPACE)
+			|| (scan >= K_COMMA && scan <= K_MINUS)
+			|| scan == K_TAB
+			|| (scan == K_HASH && (ctrl & (KM_CTRL|KM_SHIFT)) == KM_CTRL)
+			|| (scan == K_TILDE || scan == K_PLUS /*|| scan == 0x0d*/)	))
+			|| is_numpad
+			) )
+		{
+			if( is_numpad )
+			{
+				if( scan >= 0x63 )
+					c = scan - 0x63 + '(';
+				else
+				{
+					c = scan - 0x4e + '`';
+					if( ctrl & KM_SHIFT )
+					{
+						c += ' ';
+						tty->state |= STATE_CSI;
+					}
+				}
+				if( ctrl & KM_CTRL )
+					tty->state |= STATE_CSI3;
+			}
+			else
+			{
+				if( scan <= K_BACKSPACE )	/* digits */
+				{
+					c = scan - 2 + '1';
+					if( scan > K_0 )
+						tty->state |= STATE_CSI3;
+				}
+				else if( scan >= K_COMMA )
+				{
+					c = scan - K_COMMA + 'k';
+				}
+				else
+				{
+					c = scan;
+				}
+
+				/* map 0-key to '0' */
+				if( c == 0x3a )
+					c = '0';
+				else if( c < ' ' )
+					c += ' ';
+			}
+			if( ctrl & KM_SHIFT )	/* shift */
+			{
+				if( is_numpad )
+				{
+					tty->state |= STATE_CSI1;
+					c += ' ';
+				}
+				else if( c >= 'k' || c <= 0x3a )
+					c -= 0x10;
+				else
+					c -= ('c' - ';');
+			}
+			if( isalpha(c) || scan == K_HASH || is_numpad )	/* "esc[letter" -> "esc[{letter" */
+			{
+				tty->state |= STATE_CSI2;
+				if( is_numpad && (ctrl & KM_CTRL) )
+				{
+					if( ctrl & KM_SHIFT )
+					{
+						c += 'n' -0x51;
+						c = tolower(c);
+					}
+					else
+					{
+						c -= 0x11;
+						if( c < ' ' && scan >= 0x65 )
+							c += ('a' - ' ');
+					}
+				}
+				else if( scan == K_HASH )
+					c += ' ';
+			}
+			else
+				tty->state |= STATE_CSI;
+
+			/* avoid non-printable characters */
+			if( c > 'z' )
+			{
+				c -= 'z';
+				tty->state |= STATE_CSI1;
+			}
+			if( c < ' ' )
+			{
+				c += 'A';
+				tty->state &= ~STATE_CSI1;
+				tty->state |= STATE_CSI3;
+			}
+			else if( !(tty->state & STATE_CSI1) )
+			{
+				tty->state |= STATE_CSI;
+			}
+			tty->state |= STATE_DIRECT;
+			tty->esc_state = c;
+
+			r = 0x1b;
+			c = UNDEF;
+		}
+
 		else if (mode & COOKED)
 		{
-			if (c == UNDEF)
+			if (c == UNDEF || c == 0xff)
 				;	/* do nothing */
 			else if (c == tty->ltc.t_dsuspc)
 			{
@@ -1547,15 +1974,30 @@ tty_getchar (FILEPTR *f, int mode)
 			else if (c == tty->tc.t_startc)
 				tty_ioctl(f, TIOCSTART, 0);
 			else
+			{
 				c = UNDEF;
+			}
 		}
 		else
-				c = UNDEF;
+			c = UNDEF;
+
+		if( c == UNDEF && ((r & 0xff) && (r & 0xff) < 0x1b) )
+		{
+			tty->state &= ~(STATE_CTRL|STATE_CSI);
+			if( tty->state & STATE_SHIFT )		/* shift+ctrl+alpha -> ESC^alpha */
+			{
+				tty->state = STATE_ESC_CTRL;
+				tty->esc_state = r & 0xff;
+				r = 0x1b;
+			}
+		}
 	}
 
 	if (mode & ECHO)
 		tty_putchar (f, r, mode);
 
+	if( r & 0x0000ff00 )
+		FORCE("tty_getchar:return %lx!",r);
 	return r;
 }
 
@@ -1577,13 +2019,19 @@ tty_putchar (FILEPTR *f, long data, int mode)
 			tty->pgrp, get_curproc()->pgrp, (f->flags & O_HEAD) ? "yes":"no");
 	}
 #endif
+#if 0
+	if( data == 0x0a )	/* nl -> crnl */
+	{
+		tty_putchar( f, 0x0d, mode );
+	}
+#endif
 	/* pty masters never worry about job control
 	 */
 	if (f->flags & O_HEAD)
 	{
 		ch = data & 0xff;
 
-		if ((tty->state & TS_COOKED) && ch != UNDEF)
+		if ((tty->state & TS_COOKED) && ch != UNDEF && ch != -1 )
 		{
 			long r = 1;
 
@@ -1720,7 +2168,7 @@ tty_select(FILEPTR *f, long proc, int mode)
 	{
 		struct tty *tty = (struct tty *) f->devinfo;
 
-		if ((tty->sg.sg_flags & T_XKEY) && (tty->state & TS_ESC))
+		if ((tty->sg.sg_flags & T_XKEY) && tty->esc_state)
 			return 1;
 	}
 
