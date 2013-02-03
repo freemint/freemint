@@ -252,7 +252,8 @@ struct tty
 	char		*xkey;		/* extended keyboard table */
 	long		hup_ospeed;	/* saved ospeed while hanging up */
 	ushort		vmin, vtime;	/* min chars, timeout for RAW reads */
-	long		resrvd[1];	/* for future expansion */
+	ushort		esc_state;	/* index in escape-sequence */
+	short		resrvd[1];	/* for future expansion */
 };
 
 
