@@ -283,10 +283,10 @@ xdr_readlinkres (xdrs *x, readlinkres *rp)
 	if (!xdr_enum (x, &rp->status))
 		return FALSE;
 
-	if (NFS_OK == rp->status)
-	{
-		const char *cp = (const char*)rp->readlinkres_u.data;
-		return xdr_string (x, &cp, MAXPATHLEN);
+	if (NFS_OK == rp->status) {
+		const char *name = rp->readlinkres_u.data;
+
+		return xdr_string (x, &name, MAXPATHLEN);
 	}
 
 	return TRUE;
@@ -314,12 +314,14 @@ xdr_readres (xdrs *x, readres *rp)
 
 	if (NFS_OK == rp->status)
 	{
-		const char *cp;
+		const char *name;
+
 		if (!xdr_fattr (x, &rp->readres_u.read_ok.attributes))
 			return FALSE;
 
-		cp = (const char*)rp->readres_u.read_ok.data_val;
-		if (!xdr_opaque (x, &cp,
+		name = rp->readres_u.read_ok.data_val;
+
+		if (!xdr_opaque (x, &name,
 				    (long *)&rp->readres_u.read_ok.data_len, MAXDATA))
 			return FALSE;
 	}
@@ -458,15 +460,17 @@ xdr_size_symlinkargs (symlinkargs *ap)
 bool_t
 xdr_entry (xdrs *x, entry *ep)
 {
-	const char *cp;
+	const char *name;
+
 	if (!xdr_ulong (x, &ep->fileid))
 		return FALSE;
 
 	if (XDR_DECODE == x->op)
 		ep->name = (char *) ep + sizeof (entry);
 
-	cp = (const char *)ep->name;
-	if (!xdr_string (x, &cp, MAXNAMLEN))
+	name = ep->name;
+
+	if (!xdr_string (x, &name, MAXNAMLEN))
 		return FALSE;
 
 	if (!xdr_nfscookie (x, ep->cookie))

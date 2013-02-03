@@ -45,10 +45,10 @@ xdr_size_opaque_auth(opaque_auth *ap)
 bool_t
 xdr_opaque_auth(xdrs *x, opaque_auth *ap)
 {
-	const opaque *cp;
+	const char *name;
 	xdr_enum(x, &ap->flavor);
-	cp = (const opaque *)ap->data;
-	return xdr_opaque(x, &cp, (long *)&ap->len, MAX_AUTH_BYTES);
+	name = ap->data;
+	return xdr_opaque(x, &name, (long *)&ap->len, MAX_AUTH_BYTES);
 }
 
 
