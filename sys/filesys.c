@@ -64,6 +64,9 @@
 
 
 static void
+xfs_dismiss (FILESYS *fs);
+
+static void
 xfs_blocking_init (FILESYS *fs)
 {
 # ifdef NONBLOCKING_DMA
@@ -265,8 +268,12 @@ init_filesys (void)
 		FILESYS *fs = hostfs_init ();
 		if ( fs )
 			hostfs_mount_drives( fs );
+		else
+			xfs_dismiss( &hostfs_filesys );
 	}
 # endif
+
+	UNUSED (xfs_dismiss); /* Maybe */
 }
 
 # ifdef DEBUG_INFO
@@ -356,6 +363,24 @@ xfs_add (FILESYS *fs)
 
 		fs->next = active_fs;
 		active_fs = fs;
+	}
+}
+
+/* dismiss a file system which failed to initialize */
+static void
+xfs_dismiss (FILESYS *fs)
+{
+	FILESYS **p;
+
+	for (p = &active_fs; *p; p = &(*p)->next)
+	{
+		if (*p == fs)
+		{
+			*p = (*p)->next;
+			fs->next = NULL;
+
+			return;
+		}
 	}
 }
 
@@ -809,7 +834,6 @@ relpath2cookie(struct proc *p, fcookie *relto, const char *path, char *lastname,
 nodrive:
 		drv = cwd->curdrv;
 	}
-
 	/* see if the path is rooted from '\\'
 	 */
 	if (DIRSEP (*path))

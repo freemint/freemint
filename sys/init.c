@@ -109,7 +109,7 @@ boot_printf (const char *fmt, ...)
 }
 
 /* Stop and ask the user for confirmation to continue */
-short step_by_step;
+short step_by_step = 0;
 
 void
 stop_and_ask(void)
@@ -282,6 +282,14 @@ init (void)
 		TRAP_Pterm0();
 	}
 
+	/* Read user defined defaults before anything else so we can override them later */
+	read_ini();
+
+	/* Ask the user if s/he wants to boot MiNT */
+	pause_and_ask();
+
+	boot_print("\r\n");
+
 	/* figure out what kind of machine we're running on:
 	 * - biosfs wants to know this
 	 * - also sets no_mem_prot
@@ -293,14 +301,6 @@ init (void)
 		(void) TRAP_Cconin();
 		TRAP_Pterm0();
 	}
-
-	/* Read user defined defaults */
-	read_ini();
-
-	/* Ask the user if s/he wants to boot MiNT */
-	pause_and_ask();
-
-	boot_print("\r\n");
 
 # ifdef OLDTOSFS
 	/* Get GEMDOS version from ROM for later use by our own Sversion() */
@@ -383,6 +383,8 @@ init (void)
 			falcontos ? " (FalconTOS)" : "", (long)kbshft);
 # endif
 
+#ifndef __mcoldfire__
+	/* Currently, ColdFire machines have trouble with Bconmap() */
 	if (falcontos)
 	{
 		bconmap2 = (BCONMAP2_T *) TRAP_Bconmap (-2);
@@ -413,6 +415,7 @@ init (void)
 		if (has_bconmap)
 			bconmap2 = (BCONMAP2_T *) TRAP_Bconmap (-2);
 	}
+#endif
 
 # ifdef VERBOSE_BOOT
 	boot_printf(MSG_init_bconmap, has_bconmap ? MSG_init_present : MSG_init_not_present);
@@ -553,7 +556,6 @@ init (void)
 			f->links++;
 		}
 	}
-#ifndef COLDFIRE
 
 	r = FP_ALLOC(rootproc, &f);
 	if (r) FATAL("Can't allocate fp!");
@@ -606,8 +608,6 @@ init (void)
 		((struct tty *) f->devinfo)->aux_cnt = 2;
 		f->pos = 1;	/* flag for close to --aux_cnt */
 	}
-
-#endif
 
 # ifdef BOOTSTRAPABLE
 	/* Bootstrapped kernel (executed directly by some loader) does
@@ -1214,7 +1214,6 @@ mint_thread(void *arg)
 	if (pid > 0)
 	{
 		do {
-# if !defined(COLDFIRE)
 			r = sys_pwaitpid(-1, 1, NULL);
 			if (r == 0)
 			{
@@ -1225,10 +1224,6 @@ mint_thread(void *arg)
 				 * else */
 					cpu_stop();	/* stop and wait for an interrupt */
 			}
-# else
-			r = sys_pwaitpid(-1, 0, NULL);
-			TRACE(("%s(): sys_pwaitpid() done -> %li (%li)", __FUNCTION__, r, ((r & 0xffff0000L) >> 16)));
-# endif
 		}
 		while (pid != ((r & 0xffff0000L) >> 16));
 	}
