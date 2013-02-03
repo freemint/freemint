@@ -850,10 +850,9 @@ menu_pop(Tab *tab)
 
 	DIAG((D_menu, tab->client, "menu_pop: tab=%lx for %s", tab, tab->client->name));
 
-	w = k->p.wind;
-	if( tab->ty != ROOT_MENU && !(p == k->p.wt->owner->p) )
+	if( !(tab->ty == ROOT_MENU || p == k->p.wt->owner->p) )
 	{
-		BLOG((0, "menu_pop: ERROR:(%s,%s,%lx:%lx)", p->name, k->p.wt->owner->p->name, w, menu_window ));
+		BLOG((0, "menu_pop: ERROR:(%s,%s,%lx:%lx)", p->name, k->p.wt->owner->p->name ));
 		return 0;
 	}
 	cancel_pop_timeouts();
