@@ -375,7 +375,6 @@ slb_error:
 	(*sl)->slb_proc = pid2proc(new_pid);
 	assert((*sl)->slb_proc);
 	(*sl)->slb_proc->p_flag |= P_FLAG_SLB;	/* mark as SLB */
-	FORCE("load_and_init_slb:slb_proc=%lx p_flag=%x", (*sl)->slb_proc, (*sl)->slb_proc->p_flag);
 	(*sl)->slb_next = slb_list;
 	slb_list = *sl;
 	mark_proc_region(get_curproc()->p_mem, mr, PROT_PR, get_curproc()->pid);
