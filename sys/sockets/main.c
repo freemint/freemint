@@ -62,7 +62,7 @@
 	"\033p WARNING: This is a test version - BETA! \033q\7\r\n"
 
 # define MSG_OLDMINT	\
-	"\033pMiNT too old, this module requires at least a FreeMiNT 1.16!\033q\r\n"
+	"\033pMiNT is not the correct version, this module requires FreeMiNT 1.18!\033q\r\n"
 
 # define MSG_FAILURE	\
 	"\7Sorry, module NOT installed!\r\n\r\n"
