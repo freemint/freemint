@@ -116,9 +116,6 @@ sys_b_supexec (Func funcptr, long arg1, long arg2, long arg3, long arg4, long ar
 	usrarg3 = arg3;
 	usrarg4 = arg4;
 	usrarg5 = arg5;
-#ifdef COLDFIRE
-/*	return (*usrcall)((long) usrcall, usrarg1, usrarg2, usrarg3, usrarg4, usrarg5); */
-#endif
 	SIGACTION(get_curproc(), 0).sa_handler = (long) do_usrcall;
 	savesr = syscall->sr;	/* save old super/user mode flag */
 	syscall->sr |= 0x2000;	/* set supervisor mode */

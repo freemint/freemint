@@ -31,6 +31,7 @@
 # include "kerinfo.h"
 # include "kmemory.h"
 # include "time.h"
+# include "dev-null.h"
 
 # include "biosfs.h"
 # include "kernfs.h"
@@ -103,6 +104,21 @@ FILESYS uni_filesys =
 
 	0, 0, 0, 0, 0,
 	NULL, NULL
+};
+
+DEVDRV uni_device =
+{
+	open:		null_open,
+	write:		null_write,
+	read:		null_read,
+	lseek:		null_lseek,
+	ioctl:		null_ioctl,
+	datime:		null_datime,
+	close:		null_close,
+	select:		null_select,
+	unselect:	null_unselect,
+	writeb:		NULL,
+	readb:		NULL
 };
 
 /*
@@ -238,12 +254,14 @@ uni_lookup (fcookie *dir, const char *name, fcookie *fc)
 static long
 do_ulookup (fcookie *dir, const char *nam, fcookie *fc, UNIFILE **up)
 {
-	union { const char *cc; char *c; } nameptr = {nam};	// nameptr.cc = nam;
+	union { const char *cc; char *c; } nameptr;
 	UNIFILE *u;
 	long drvs;
 	FILESYS *fs;
 	fcookie *tmp;
 	long changed;
+
+	nameptr.cc = nam;
 
 	TRACE (("uni_lookup(%s)", nam));
 
@@ -710,8 +728,11 @@ uni_getdev (fcookie *fc, long *devsp)
 {
 	UNUSED (fc);
 
+	if (fc->fs == &uni_filesys) return &uni_device;
+
 	*devsp = EACCES;
-	return E_OK;
+
+	return NULL;
 }
 
 static long _cdecl
