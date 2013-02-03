@@ -439,7 +439,7 @@ pCB_gem_init(const char *path, const char *line, long val)
 {
 	init_is_gem = val;
 
-	boot_printf("GEM '%s' '%s'\r\n", path, line);
+	boot_printf("%s '%s' '%s'\r\n", init_is_gem ? "GEM" : "INIT", path, line);
 	if (stricmp(path,"ROM") == 0)
 	{
 		init_prg = 0;

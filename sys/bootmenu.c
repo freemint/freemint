@@ -128,6 +128,7 @@ static const char *debug_levels[] =
 
 static const char *debug_devices[] =
 {
+#define DEBUGDEV 9
 	"(PRN:, printer)",
 	"(AUX:, modem)",
 	"(CON:, console)",
@@ -633,7 +634,7 @@ boot_kernel_p (void)
 
 	for (;;)
 	{
-		int c;
+		int c, off;
 
 		boot_printf(MSG_init_bootmenu, \
 			option[0] ? MSG_init_menu_yesrn : MSG_init_menu_norn,
@@ -652,6 +653,8 @@ boot_kernel_p (void)
 wait:
 		c = TRAP_Crawcin();
 		c &= 0x7f;
+
+		off = ((c & 0x0f) - 1);	/* not used in all cases */
 
 		switch (c)
 		{
@@ -695,47 +698,50 @@ wait:
 # ifdef WITH_MMU_SUPPORT
 			case '5':
 # endif
-			case '6':
-			case '9':
 			{
-				int off, opt;
+				option[off] = option[off] ? 0 : 1;
 
-				off = ((c & 0x0f) - 1);
-				opt = option[off];
+				modified = 1;
+				break;
+			}
+			case '6':
+			{
+				option[off] = option[off] == -1 ? 0 : -1;
 
-				opt++;
-				if (opt > WBOOTLVL)
-					opt = 0;
-
-				option[off] = opt;
 				modified = 1;
 				break;
 			}
 			case '7':
 			{
-				int off, opt;
-
-				off = ((c & 0x0f) - 1);
-				opt = option[off];
+				int opt = option[off];
 
 				opt++;
 				if (opt > LOW_LEVEL)
 					opt = 0;
 
 				option[off] = opt;
-
 				modified = 1;
 				break;
 			}
 			case '8':
 			{
-				int off, opt;
-
-				off = ((c & 0x0f) - 1);
-				opt = option[off];
+				int opt = option[off];
 
 				opt++;
-				if (opt > 9)
+				if (opt > DEBUGDEV)
+					opt = 0;
+
+				option[off] = opt;
+
+				modified = 1;
+				break;
+			}
+			case '9':
+			{
+				int opt = option[off];
+
+				opt++;
+				if (opt > WBOOTLVL)
 					opt = 0;
 
 				option[off] = opt;
