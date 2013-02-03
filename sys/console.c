@@ -78,22 +78,21 @@ file_outstat (FILEPTR *f)
 long
 file_getchar (FILEPTR *f, int mode)
 {
+	char c;
+	long r;
+
 	if (!f)
 		return EBADF;
 
 	if (is_terminal (f))
 		return tty_getchar (f, mode);
 
-	{
-		char c;
-		long r;
-
 		r = xdd_read (f, &c, 1L);
-		if (r != 1)
-			return MiNTEOF;
-		else
-			return ((long) c) & 0xff;
+	if (r < 0) {
+		return r;
 	}
+
+	return (r == 1) ? (((long) c) & 0xff) : MiNTEOF;
 }
 
 long
@@ -161,7 +160,7 @@ sys_c_rawio (int c)
 			return 0;
 
 		r = file_getchar (p->p_fd->ofiles[0], RAW);
-		if (r <= E_OK)
+		if (r < E_OK)
 			return 0;
 
 		return r;
@@ -213,11 +212,13 @@ sys_c_conrs (char *buf)
 		 */
 		r = sys_f_read (0, size, buf + 2);
 		if (r < E_OK)
+		{
 			buf [1] = 0;
-		else
-			buf [1] = (char) r;
+			return r;
+		}
 
-		return (r < E_OK) ? r : E_OK;
+		buf [1] = (char) r;
+		return E_OK;
 	}
 
 	/* TB: In all other cases, we must read character by character, breaking
