@@ -693,6 +693,8 @@ init (void)
 	boot_print(MSG_init_loading_modules);
 # endif
 
+	/* set cwd to sysdir for modules */
+	sys_d_setpath(sysdir);
 	/* load the kernel modules */
 	load_all_modules((load_xdd_f | (load_xfs_f << 1)));
 
