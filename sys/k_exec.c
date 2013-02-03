@@ -700,7 +700,12 @@ exec_region(struct proc *p, MEMREGION *mem, int thread)
 		long *exec_longs = (long *)b->p_tbase;
 
 		/* Test for new program format */
-		if (exec_longs[0] == 0x283a001aL && exec_longs[1] == 0x4efb48faL)
+		if (
+		     /* Original binutils */
+		     (exec_longs[0] == 0x283a001aL && exec_longs[1] == 0x4efb48faL)
+		     /* binutils >= 2.18-mint-20080209 */
+		     || (exec_longs[0] == 0x203a001aL && exec_longs[1] == 0x4efb08faL)
+		   )
 			exec_longs += (228 / sizeof(long));
 
 		if (exec_longs[0] == SLB_HEADER_MAGIC)
@@ -897,18 +902,20 @@ create_process(const void *filename, const void *cmdline, const void *newenv,
 		goto leave;
 	}
 
-	DEBUG(("create_process: basepage region(%lx) is %ld bytes at %lx", base, base->len, base->loc));
+	TRACE(("create_process: basepage region(%lx) is %ld bytes at %lx", base, base->len, base->loc));
 
 	b = (BASEPAGE *) base->loc;
 
 	DEBUG(("create_process: p_flags=%lx", b->p_flags));
 
+# ifdef WITH_SINGLE_TASK_SUPPORT
 	if ((b->p_flags & F_SINGLE_TASK) && (rootproc->modeflags & M_SINGLE_TASK))
 	{
 		DEBUG(("create_process(single-task):already in single-task-mode."));
 		r = EPERM;
 		goto leave;
 	}
+# endif
 
 	if (stack)
 	{
@@ -925,6 +932,7 @@ create_process(const void *filename, const void *cmdline, const void *newenv,
 	if (!p)
 		goto leave;
 
+# ifdef WITH_SINGLE_TASK_SUPPORT
 	if (b->p_flags & F_SINGLE_TASK)
 	{
 		DEBUG(("create_process: setting M_SINGLE_TASK for %s", filename));
@@ -936,6 +944,7 @@ create_process(const void *filename, const void *cmdline, const void *newenv,
 		p->modeflags |= M_DONT_STOP;
 	}
 	b->p_flags &= ~(F_SINGLE_TASK | F_DONT_STOP);
+# endif
 
 	/* jr: add Pexec information to PROC struct */
 	strncpy(p->cmdlin, b->p_cmdlin, 128);
