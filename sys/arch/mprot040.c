@@ -726,7 +726,7 @@ init_tables(void)
 	if (page_table_size == 0L)
 	{
 init_tables_fatal:
-		FATAL("Couldn't initialize memory protection. Please run MINTNP.PRG instead.");
+		FATAL("Couldn't initialize memory protection.");
 	}
 
 	rounded_table_size = (long)ROUND512(page_table_size);

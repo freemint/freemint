@@ -175,14 +175,12 @@ static struct bios_file BDEV [] =
 	 * are present on all machines (except for modem1, which does however
 	 * have a different device number on TTs and STs)
 	 */
-#ifndef COLDFIRE
 	{ "modem1",	&bios_tdevice,	 6,       O_TTY, &aux_tty, NULL},
 #ifndef MILAN/* these do not really work on Milan, so it is best to use the UART
 	   XDD instead of this // rincewind */
 	{ "modem2",	&bios_tdevice,	 7,       O_TTY, &sccb_tty, NULL},
 	{ "serial1",	&bios_tdevice,	 8,       O_TTY, &ttmfp_tty, NULL},
 	{ "serial2",	&bios_tdevice,	 9,       O_TTY, &scca_tty, NULL},
-#endif
 #endif
 	{"", 0, 0, 0, 0, 0}
 };
@@ -297,7 +295,6 @@ rsvf_close (int f)
 
 	if (f != ENODEV)
 	{
-		//FORCE("rsvf_close: %d", f);
 		r = ROM_Fclose (f);
 		if (r) ALERT ("rsvf_close(%d): ROM_Fclose %x returned %lx", f, r);
 	}
@@ -312,7 +309,6 @@ rsvf_ioctl (int f, void *arg, int mode)
 		return ENOSYS;
 
 	TRACE(("rsvf_ioctl: passing ioctl %x (tosfd=0x%x)", mode, f));
-	//FORCE("rsvf_ioctl: passing ioctl %x (tosfd=0x%x)", mode, f);
 	/* is there a more direct way than this? */
 	return ROM_Fcntl (f, (long) arg, mode);
 }
@@ -1289,11 +1285,13 @@ bios_topen (FILEPTR *f)
 static long _cdecl
 bios_twrite (FILEPTR *f, const char *buf, long bytes)
 {
-	union { const char *b; long *l;} ptr = {buf};// ptr.b = buf;
 	long *r;
 	long ret = 0;
 	int bdev = f->fc.aux;
 	struct bios_file *b = (struct bios_file *) f->fc.index;
+	union { const char *b; long *l;} ptr;
+
+	ptr.b = buf;
 
 	r = ptr.l;// (long *) buf;
 
@@ -1567,7 +1565,10 @@ iwrite (int bdev, const char *buf, long bytes, int ndelay, struct bios_file *b)
 				if (t)
 				{
 					TRACE (("sleeping in iwrite"));
-					sleep (IO_Q|0x100, (long) &tty->state);
+					if (sleep (IO_Q|0x100, (long) &tty->state)) {
+						canceltimeout(t);
+						return EINTR;
+					}
 					canceltimeout (t);
 				}
 			}
@@ -1688,7 +1689,6 @@ iread (int bdev, char *buf, long bytes, int ndelay, struct bios_file *b)
 	ushort head, bsize, wrap;
 	long left;
 
-	//DEBUG(("iread:bdev=%d bytes=%ld ndelay=%d", bdev, bytes, ndelay));
 	if (bdev == 3 && tosvers >= 0x0102)
 	{
 		/* midi */
@@ -1731,9 +1731,10 @@ iread (int bdev, char *buf, long bytes, int ndelay, struct bios_file *b)
 			    (bdev == 3 ? ionread (ior) : btty_ionread (t)) < (long)t->tty->vmin)
 			 : !(int) callout1 (*cinstat, bdev))
 		{
-			if (t)
-				sleep (IO_Q, (long) t);
-			else
+			if (t) {
+				if (sleep (IO_Q, (long) t))
+					return EINTR;
+			} else
 				nap (60);
 		}
 	}
@@ -1845,7 +1846,6 @@ bios_nwrite (FILEPTR *f, const char *buf, long bytes)
 	int bdev = f->fc.aux;
 	int c;
 
-	//FORCE("bios_nwrite %ld bytes to %d", bytes, bdev);
 	while (bytes > 0)
 	{
 		if ((f->flags & O_NDELAY) && !bcostat (bdev))
@@ -2159,7 +2159,6 @@ bios_ioctl (FILEPTR *f, int mode, void *buf)
 	/* just resetting iorec pointers here can hang a flow controlled port,
 	 * iread can do better...
 	 */
-			//FORCE("bios_ioctl TIOCFLUSH: %lx", ior);
 			if ((flushtype & 1) &&
 			    iread (dev, (char *) NULL, 0, 1, b) == ENODEV) {
 				sr = spl7();
@@ -2171,7 +2170,6 @@ bios_ioctl (FILEPTR *f, int mode, void *buf)
 			    iwrite (dev, (char *) NULL, 0, 1, b) == ENODEV) {
 				ior++; /* output record */
 				sr = spl7();
-				//FORCE("bios_ioctl 2:reset %lx", ior);
 				ior->head = ior->tail = 0;
 				spl(sr);
 			}
@@ -2360,7 +2358,8 @@ bios_ioctl (FILEPTR *f, int mode, void *buf)
 		if (!tty)
 			return ENOSYS;
 		while (tty->state & TS_BLIND)
-			sleep (IO_Q, (long)&tty->state);
+			if (sleep (IO_Q, (long)&tty->state))
+				return EINTR;
 		return E_OK;
 	    }
 	case TCURSOFF:
@@ -2390,9 +2389,10 @@ bios_ioctl (FILEPTR *f, int mode, void *buf)
 
 		b = (struct bios_file *)f->fc.index;
 		while (b->lockpid && b->lockpid != get_curproc()->pid) {
-			if (mode == F_SETLKW && lck->l_type != F_UNLCK)
-				sleep(IO_Q, (long)b);
-			else
+			if (mode == F_SETLKW && lck->l_type != F_UNLCK) {
+				if (sleep(IO_Q, (long)b))
+					return EINTR;
+			} else
 				return ELOCKED;
 		}
 		if (lck->l_type == F_UNLCK) {
@@ -2536,7 +2536,6 @@ bios_close (FILEPTR *f, int pid)
 
 	if (tty && !tty->use_cnt && (NULL != (t = BTTY(f)) && t->tosfd != ENODEV))
 	{
-		//FORCE("bios_close:%d", t->tosfd);
 		rsvf_close (t->tosfd);
 		t->tosfd = ENODEV;
 	}
@@ -2612,7 +2611,8 @@ found_device:
 			tty->use_cnt++;
 			while (tty->hup_ospeed)
 			{
-				sleep (IO_Q, (long) &tty->state);
+				if (sleep (IO_Q, (long) &tty->state))
+					return EINTR;
 			}
 
 			/* first open for this device? */
@@ -2622,7 +2622,6 @@ found_device:
 				*tty = default_tty;
 				tty->state = s;
 				tty->use_cnt = 1;
-				//FORCE("tty_ioctl(%lx, TIOCSTART, 0);",f);
 				tty_ioctl(f, TIOCSTART, 0);
 			}
 

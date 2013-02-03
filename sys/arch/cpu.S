@@ -22,9 +22,15 @@
 
 _get_superscalar:
 #ifdef __mcoldfire__
+	tst.w	_coldfire_68k_emulation
+	bne.s	get_superscalar_68k
+	rts				// nothing to do
+get_superscalar_68k:
+#endif
+#ifdef __mcoldfire__
 	moveq	#60,d1
 	cmp.w	_mcpu+2,d1
-	bpl.s	ssret
+	bhi.s	ssret
 #else
 	cmp.w	#60,_mcpu+2
 	bmi.s	ssret
@@ -42,6 +48,10 @@ ssret:	rts
 
 _is_superscalar:
 	clr.w	d0
+#ifdef __mcoldfire__
+	tst.w	_coldfire_68k_emulation
+	beq.s	ssret			// not superscalar
+#endif
 #ifdef __mcoldfire__
 	moveq	#60,d1
 	cmp.w	_mcpu+2,d1
@@ -93,6 +103,18 @@ _init_cache:
 	movem.l	d0-d1/a0-a3,(sp)
 #else
 	movem.l	d0-d1/a0-a3,-(sp)
+#endif
+#ifdef __mcoldfire__
+	tst.w	_coldfire_68k_emulation
+	bne.s	init_cache_68k
+
+	lea	_cache_coldfire,a0
+	movea.l	a0,a3
+	lea	clq,a1
+	movea.l	a1,a2
+
+	bra.s	icset
+init_cache_68k:
 #endif
 	move.l	_mcpu,d0
 	beq	icquit
@@ -195,6 +217,10 @@ ccw_dmasks:
 // Set the CACR according to the Cache Control Word and Mask
 
 _ccw_set:
+#ifdef __mcoldfire__
+	tst.w	_coldfire_68k_emulation
+	beq	clq			// currently unsupported
+#endif
 	tst.w	hascaches
 #ifdef __mcoldfire__
 	beq	clq
@@ -266,6 +292,13 @@ clq:	clr.l	d0			// E_OK
 // Extract Cache Control Word from the CACR
 
 _ccw_get:
+#ifdef __mcoldfire__
+	tst.w	_coldfire_68k_emulation
+	bne.s	ccw_get_68k
+	moveq	#0x0007,d0		// rough approximation
+	rts
+ccw_get_68k:
+#endif
 	tst.w	hascaches
 	beq.s	clq
 #ifdef __mcoldfire__
@@ -296,6 +329,13 @@ _ccw_get:
 // get default Cache Control Mask for currently used CPU
 
 _ccw_getdmask:
+#ifdef __mcoldfire__
+	tst.w	_coldfire_68k_emulation
+	bne.s	ccw_getdmask_68k
+	moveq	#0x0007,d0		// rough approximation
+	rts
+ccw_getdmask_68k:
+#endif
 	move.l	_mcpu,d0		// high word assumed 0
 	divu.w	#5,d0
 	and.l	#0x0000ffff,d0		// better to be safe...
@@ -663,7 +703,7 @@ _c060rts:
 _cache060:
 	move.l	d0,d1			// If no bytes to push, exit
 	beq.s	_c060rts
-#ifndef COLDFIRE
+#ifndef __mcoldfire__
 	addq.l	#1,d1			// If was -1
 	beq.s	abc040			// then fulsh everything
 	move.l	a0,d1			// extract the position within the cacheline
@@ -735,7 +775,7 @@ _c060rtsi:
 _cache060_i:
 	move.l	d0,d1			// If no bytes to push, exit
 	beq.s	_c060rtsi
-#ifndef COLDFIRE
+#ifndef __mcoldfire__
 	addq.l	#1,d1			// If was -1
 	beq.s	abc040i			// then fulsh everything
 	move.l	a0,d1			// extract the position within the cacheline
@@ -749,6 +789,46 @@ _cache060_i:
 	dc.w	0xF478			// this is "cpusha dc"
 	dc.w	0xF498			// this is "cinva ic"
 	rts
+
+#ifdef __mcoldfire__
+_cache_coldfire:			// ColdFire cache
+        // This code comes from the MCF547x Reference Manual
+        // Section 7.11 Cache Management
+        //
+        // The ColdFire has no cinva instruction.
+        // Instead, cpushl writes the modified cache data to the RAM
+        // then invalidates the caches (data + instruction) except if
+        // the bits DDPI and IDPI have been set in the CACR.
+        //
+        // The ColdFire V4e core has a 32 kB instruction cache
+        // and a 32 kB data cache. Both caches have the same structure.
+        // The data is stored in "Line" elements of 16 bytes.
+        // The Lines are stored in a 2D array of 4 Ways * 512 Sets.
+        //
+        // The following changes have been made to the original code:
+        // - flush both caches with "cpushl bc" instead of "cpushl dc"
+        // - flush the 512 Sets (original code forgot the last one)
+
+	nop			// synchronize/flush store buffer
+	moveq.l #0,d0		// initialize way counter
+	moveq.l #0,d1		// initialize set counter
+	move.l  d0,a0		// initialize cpushl pointer
+
+setloop:
+	cpushl	bc,(a0) 	// push cache line a0 (both caches)
+	add.l	#0x0010,a0	// increment set index by 1
+	addq.l	#1,d1		// increment set counter
+	cmpi.l	#512,d1 	// are sets for this way done?
+	bne.s	setloop
+
+	moveq.l #0,d1		// set counter to zero again
+	addq.l	#1,d0		// increment to next way
+	move.l	d0,a0		// set = 0, way = d0
+	cmpi.l	#4,d0		// flushed all the ways?
+	bne.s	setloop
+	rts
+#endif
+
 // ---------------------------------------------------
 
 // log2phys

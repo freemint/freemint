@@ -123,7 +123,6 @@ long	_cdecl	trap_14_emu(short fnum, ...);
 # define ROM_Kbdvbase()					trap_14_emu(0x22)
 # define ROM_Vsync()				(void)	trap_14_emu(0x25)
 # define ROM_Bconmap(dev)				trap_14_emu(0x2c,(short)(dev))
-
 # define ROM_VsetScreen(lscrn,pscrn,rez,mode)	(void)	trap_14_emu(0x05,(long)(lscrn),(long)(pscrn),(short)(rez),(short)(mode))
 
 # define ROM_Kbrate(delay, rate)		(short) trap_14_emu(0x23,(short)(delay),(short)(rate))

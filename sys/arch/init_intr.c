@@ -96,30 +96,7 @@ init_intr (void)
 
 # ifndef NO_AKP_KEYBOARD
 	{
-
 # ifndef MILAN
-
-		//boot_printf("tosvers=%x\r\n", tosvers);
-# ifdef ARANYM
-		if (tosvers >= 0x200)
-		{
-			/* Send a key release to the TOS 2.x keyboard handler
-			 * to disable its key repetition routine
-			 * if a key is held at startup.
-			 */
-			//boot_print("disable repeat\r\n");
-			__asm__ volatile
-			(
-				"move.l	%0,a0\n\t"
-				"move.w	#0x80,d0\n\t"
-				"jsr	(a0)"
-			:					/* outputs */
-			: "g"(*(((long*)syskey)-1))		/* inputs  */
-			: "d0", "d1", "d2", "a0", "a1", "a2"    /* clobbered regs */
-			);
-		}
-# endif
-
 		savesr = splhigh();
 		syskey->ikbdsys = (long)ikbdsys_handler;
 #ifndef M68000

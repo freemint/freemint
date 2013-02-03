@@ -20,10 +20,8 @@
  *
  */
 
-#if __GNUC__ > 2
 #ifndef __mcoldfire__
 	.arch	68030
-#endif
 #endif
 
 // Test hardware registers for presence
@@ -205,56 +203,6 @@ _DataRegB:	dc.l 0xFFFF8C87
 
 	.globl	_detect_cpu
 
-#if 0
-
-// old routine
-
-_detect_cpu:
-	movem.l	a0-a2/d1-d2,-(sp)
-	move.l	(0x10).w,a1	// save the illegal instr. exception vector
-	move.l	(0xf4).w,a2	// save the unimplemented instr. exception vector
-	lea	exit.w(PC),a0
-	move.l	a0,(0x10).w	// set either vector
-	move.l	a0,(0xf4).w
-	move.l	sp,a0		// save the ssp
-	nop			// eventually flush pipelines
-
-// on 68000 we try out a `move from CCR'.
-
-	clr.l	d0              // assume 68000
-	move.w	ccr,d0		// legal on 68010+
-	moveq	#0x0a,d0
-
-// CACR is present only in 68020+
-
-	movec	cacr,d1		// get cache control register
-	move.l	d1,d2		// hold a copy for later
-	ori.w	#0x8100,d1	// enable '030 data and '040 instruction caches
-	movec	d1,cacr		// set new cache controls
-	movec	cacr,d1		// read it back to check the effects
-	movec	d2,cacr		// restore original CACR settings
-	tst.w	d1		// if 15th bit was set, this is a 68040+
-	bmi.s	x040
-	moveq	#0x14,d0	// assume 68020
-	btst	#0x08,d1	// check if 68030 data cache was enabled
-	beq.s	exit		// a zero here means no data cache, i.e. 68020
-	moveq	#0x1e,d0	// data cache enabled means 68030
-	bra.s	exit
-
-// 68040 or 68060. Quad word mulu test.
-
-x040:	moveq	#0x3c,d0	// assume 68060
-	dc.l	0x4c102401	// mulu.l (a0),d1-d2
-	moveq	#0x28,d0	// no fault -> this is 68040
-exit:	move.l	a2,(0xf4).w	// restore stuff and exit
-	move.l	a1,(0x10).w
-	move.l	a0,sp
-	nop			// flush pipelines
-	movem.l	(sp)+,a0-a2/d1-d2
-	rts
-
-#else
-
 // new routine, does not change the CPU state (esp. caches)
 // <draco@atari.org>
 //
@@ -263,8 +211,8 @@ exit:	move.l	a2,(0xf4).w	// restore stuff and exit
 //
 
 _detect_cpu:
-#ifdef COLDFIRE
-	moveq	#60,d0
+#ifdef __mcoldfire__
+	moveq	#60,d0		// only true when coldfire_68k_emulation = true
 #else
 	movem.l	a0-a2/d1-d2,-(sp)
 
@@ -350,8 +298,6 @@ exit:	move.l	a1,sp
 #endif
 	rts
 
-#endif
-
 // FPU type detection, experimental (draco@atari.org).
 //
 // This can only detect the hardware FPU, any software emulation
@@ -386,8 +332,8 @@ exit:	move.l	a1,sp
 	.globl	_mcpu
 
 _detect_fpu:
-#ifdef COLDFIRE
-	moveq	#0,d0
+#ifdef __mcoldfire__
+	moveq	#0,d0		// TODO ColdFire FPU
 #else
 	movem.l	a0-a2/d1,-(sp)
 	move.l	sp,a0		// save the ssp
@@ -442,5 +388,32 @@ fexit:	move.l	a1,(0x2c).w	// restore Line-F
 	nop			// flush pipelines
 	swap	d0
 	movem.l	(sp)+,a0-a2/d1
+#endif
+	rts
+
+	.globl	_detect_pmmu
+
+// PMMU detection
+//
+// A very basic routine. For 000-020 it assumes none,
+// for 030 always present and for 040/060 it checks TC's 'E' bit, what is not
+// an 100% correct thing to do according to the UM but it seems to work.
+
+_detect_pmmu:
+	moveq	#0,d0		// TODO ColdFire PMMU
+#ifndef __mcoldfire__
+	move.l	d1,-(sp)
+
+	move.l	_mcpu,d1	// check cpu
+	cmp.w	#30,d1
+	blt.b	pexit		// <030 => no pmmu
+	beq.b	pexit1		// 030 => always pmmu for Atari
+
+	dc.w	0x4e7a,0x1003	// movec tc,d1 (040/060)
+	and.w	#0x8000,d1	// check 'E' bit
+	beq.b	pexit
+
+pexit1:	moveq	#1,d0
+pexit:	move.l	(sp)+,d1
 #endif
 	rts

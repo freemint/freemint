@@ -42,7 +42,7 @@
  * 
  */
 
-#if defined(M68040) || defined(M68060)
+#if defined(WITH_MMU_SUPPORT) && (defined(M68040) || defined(M68060))
 
 // set_mmu
 //
@@ -51,21 +51,16 @@
 // Input:
 // 4(sp): New root pointer to write into URP and SRP
 
+	.arch   68040
 	.text
 
 	.globl	_set_mmu
 
 _set_mmu:
 	move.l	4(sp),d0
-#ifdef REAL040ASM
 	pflusha			// flush the ATCs
 	movec	d0,urp		// set user root pointer
 	movec	d0,srp		// set supervisor root pointer
-#else
-	dc.w	0xf518
-	dc.w	0x4e7b,0x0806
-	dc.w	0x4e7b,0x0807
-#endif
 	rts
 
 // save_mmu, restr_mmu: save and restore the root pointers that came from ROM
@@ -80,17 +75,9 @@ oldsrp:	dc.l	0
 	.globl	_save_mmu
 
 _save_mmu:
-#ifdef REAL040ASM
 	movec	urp,d0		// save user root pointer
-#else
-	dc.w	0x4e7a,0x0806
-#endif
 	move.l	d0,oldurp
-#ifdef REAL040ASM
 	movec	srp,d0		// and supervisor root pointer
-#else
-	dc.w	0x4e7a,0x0807
-#endif
 	move.l	d0,oldsrp
 	rts
 
@@ -98,24 +85,18 @@ _save_mmu:
 	.globl	_restr_mmu
 
 _restr_mmu:
-	dc.w	0xf518
+	pflusha			// flush the ATCs
 	move.l	oldurp,d0
 	move.l	oldsrp,d1
-#ifdef REAL040ASM
-	pflusha			// flush the ATCs
 	movec	d0,urp		// restore user root pointer
 	movec	d1,srp		// and supervisor root pointer
-#else
-	dc.w	0x4e7b,0x0806
-	dc.w	0x4e7b,0x1807
-#endif
 	rts
 
 
 	.globl	_flush_mmu
 
 _flush_mmu:
-	dc.w	0xf518		// 040's pflusha
+	pflusha
 	rts
 
 // get_mmuregs
@@ -130,47 +111,19 @@ _flush_mmu:
 
 _get_mmuregs:
 	move.l	4(sp),a0
-#ifdef REAL040ASM
 	movec	tc,d0
-#else
-	dc.w	0x4e7a,0x0003
-#endif
 	move.l	d0,(a0)+
-#ifdef REAL040ASM
 	movec	itt0,d0
-#else
-	dc.w	0x4e7a,0x0004
-#endif
 	move.l	d0,(a0)+
-#ifdef REAL040ASM
 	movec	itt1,d0
-#else
-	dc.w	0x4e7a,0x0005
-#endif
 	move.l	d0,(a0)+
-#ifdef REAL040ASM
 	movec	dtt0,d0
-#else
-	dc.w	0x4e7a,0x0006
-#endif
 	move.l	d0,(a0)+
-#ifdef REAL040ASM
 	movec	dtt1,d0
-#else
-	dc.w	0x4e7a,0x0007
-#endif
 	move.l	d0,(a0)+
-#ifdef REAL040ASM
 	movec	urp,d0
-#else
-	dc.w	0x4e7a,0x0806
-#endif
 	move.l	d0,(a0)+
-#ifdef REAL040ASM
 	movec	srp,d0
-#else
-	dc.w	0x4e7a,0x0807
-#endif
 	move.l	d0,(a0)+
 	rts
 
@@ -205,17 +158,10 @@ _read_phys:
 	move.l	#0x00ffe060,d0		// value for DTT0: transparently
 					// translate all data accesses, not using
 					// the cache
-#ifdef REAL040ASM
 	movec	dtt0,a1			// save DTT0
 	movec	d0,dtt0			// set new DTT0
 	move.l	(a0),d0			// read the physical longword
 	movec	a1,dtt0			// restore DTT0
-#else
-	dc.w	0x4e7a,0x9006
-	dc.w	0x4e7b,0x0006
-	move.l	(a0),d0
-	dc.w	0x4e7b,0x9006
-#endif
 	move	d1,sr			// restore interrupts
 	rts
 #endif

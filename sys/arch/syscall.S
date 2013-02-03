@@ -53,10 +53,8 @@
  *
  */
 
-#if __GNUC__ > 2
 #ifndef __mcoldfire__
 	.arch	68030
-#endif
 #endif
 
 #include "magic/magic.i"
@@ -226,6 +224,22 @@ _mint_xbios:
 	bra	reentrant_trap
 
 norm_xbios:
+#ifdef __mcoldfire__
+	tst.w	_coldfire_68k_emulation
+	bne.s	LX_68k
+
+	btst	#5,2(sp) 		// test for user/super mode
+	beq.s	LX_usr
+
+	move.w	(sp),d1			// format/vector word
+	andi.l	#0x3000,d1		// keep the filler size bits
+	beq.s	LX_stack_fixed
+	moveq	#2,d1			// assume 2-byte filler after the exception frame
+LX_stack_fixed:
+	lea	8(sp,d1.l),a1
+	bra.s	LX_check
+LX_68k:
+#endif
 	btst	#5,(sp) 		// test for user/super mode
 	beq.s	LX_usr
 #ifndef M68000
@@ -378,8 +392,19 @@ norm_bios:
 	tst.w	_bconbdev		// is BIOS buffering on?
 	bmi	L_bios			// no, skip all this
 
+#ifdef __mcoldfire__
+	tst.w	_coldfire_68k_emulation
+	bne.s	L_68k
+
+	btst	#5,2(sp) 		// test for user/super mode
+	bne	L_bios			// if super, goto L_bios
+
+	bra.s	L_user
+L_68k:
+#endif
 	btst	#5,(sp) 		// test for user/super mode
 	bne.s	L_bios			// if super, goto L_bios
+L_user:
 	tst.w	_proc_clock		// are we about to be preempted?
 	beq.s	L_bios
 
@@ -686,8 +711,10 @@ _mint_trap2:
 
 norm_trap2:
 #ifdef __mcoldfire__
+	move.l	a0,-(sp)		// backup a0
 	lea	_in_kernel,a0
 	bset	#0x07,(a0)
+	move.l	(sp)+,a0		// restore a0
 #else
 	bset	#0x07,_in_kernel
 #endif
@@ -787,6 +814,17 @@ rom_trap2:
 	.text
 
 _trap_1_emu:
+#ifdef __mcoldfire__
+	tst.w	_coldfire_68k_emulation
+	bne.s	TE_D_68K
+
+	move.w	sr,d0
+	move.w	d0,-(sp)	// return sr
+	move.w	#0x4000,-(sp)	// format/vector word
+
+	bra.s	TE_D_JMP_OLD
+TE_D_68K:
+#endif
 #ifdef M68000
 	tst.w	(0x059e).w		// test longframe
 	beq.s	TE_D
@@ -801,6 +839,7 @@ TE_D:
 #else
 	move.w	sr,-(sp)
 #endif
+TE_D_JMP_OLD:
 #if !(defined(M68000) || defined(__mcoldfire__))
 	jmp	([_old_dos])
 #else
@@ -811,6 +850,20 @@ TE_D:
 	// Ozk: we cannot use D0/D1 becaues the ugly VDI and AES
 	// passes paremters in these registers.
 _trap_2_emu:
+#ifdef __mcoldfire__
+	tst.w	_coldfire_68k_emulation
+	bne.s	TE_AV_68K
+
+	subq.l	#6,sp
+	move.w	d0,(sp)		// backup d0
+	move.w	#0x4000,2(sp)	// format/vector word
+	move.w	sr,d0
+	move.w	d0,4(sp)	// return sr
+	move.w	(sp)+,d0	// restore d0
+
+	bra.s	TE_AV_JMP_OLD
+TE_AV_68K:
+#endif
 #ifdef	M68000
 	tst.w	(0x059e).w
 	beq.s	TE_AV
@@ -828,6 +881,7 @@ TE_AV:
 #else
 	move.w	sr,-(sp)
 #endif
+TE_AV_JMP_OLD:
 #if !(defined(M68000) || defined(__mcoldfire__))
 	jmp	([_old_trap2])
 #else
@@ -836,6 +890,17 @@ TE_AV:
 #endif
 
 _trap_13_emu:
+#ifdef __mcoldfire__
+	tst.w	_coldfire_68k_emulation
+	bne.s	TE_B_68K
+
+	move.w	sr,d0
+	move.w	d0,-(sp)	// return sr
+	move.w	#0x4000,-(sp)	// format/vector word
+
+	bra.s	TE_B_JMP_OLD
+TE_B_68K:
+#endif
 #ifdef M68000
 	tst.w	(0x059e).w		// test longframe
 	beq.s	TE_B
@@ -850,6 +915,7 @@ TE_B:
 #else
 	move.w	sr,-(sp)
 #endif
+TE_B_JMP_OLD:
 #if !(defined(M68000) || defined(__mcoldfire__))
 	jmp	([_old_bios])
 #else
@@ -858,6 +924,17 @@ TE_B:
 #endif
 
 _trap_14_emu:
+#ifdef __mcoldfire__
+	tst.w	_coldfire_68k_emulation
+	bne.s	TE_X_68K
+
+	move.w	sr,d0
+	move.w	d0,-(sp)	// return sr
+	move.w	#0x4000,-(sp)	// format/vector word
+
+	bra.s	TE_X_JMP_OLD
+TE_X_68K:
+#endif
 #ifdef M68000
 	tst.w	(0x059e).w		// test longframe
 	beq.s	TE_X
@@ -872,6 +949,7 @@ TE_X:
 #else
 	move.w	sr,-(sp)
 #endif
+TE_X_JMP_OLD:
 #if !(defined(M68000) || defined(__mcoldfire__))
 	jmp	([_old_xbios])
 #else
@@ -1140,6 +1218,18 @@ ucret:	lea	24(sp),sp		// fix up stack
 // 68000 not tested (with M68000)
 //
 reentrant_trap:
+#ifdef __mcoldfire__
+	tst.w	_coldfire_68k_emulation
+	bne.s	reent_68k
+
+	move.w	(a0),d1			// format/vector word
+	addq.l	#2+2+4,a0		// skip format/vector word, sr and pc
+	andi.l	#0x3000,d1		// keep the filler size bits
+	beq.s	reent_fpu
+	addq.l	#2,a0			// assume 2-byte filler after the exception frame
+	bra.s	reent_fpu
+reent_68k:
+#endif
 #ifdef M68000
 	addq.l	#2+4,a0
 	tst.w	(0x59e).w
@@ -1149,6 +1239,7 @@ reent_shortframe:
 #else
 	addq.l	#2+4+2,a0
 #endif
+reent_fpu:
 	// Save hardware registers (CPU/FPU)
 	tst.w	_fpu
 	beq.s	reent_fpu_saved
@@ -1359,6 +1450,18 @@ reentrant_trap2:
 	// Since we're not interested in the stack now,
 	// we wont bother with it. VDI/AES passes args in D0/D1.
 #ifdef	TRAP2_STACK_PARAMS
+#ifdef __mcoldfire__
+	tst.w	_coldfire_68k_emulation
+	bne.s	reent2_68k
+
+	move.w	(a0),d1			// format/vector word
+	addq.l	#2+2+4,a0		// skip format/vector word, sr and pc
+	andi.l	#0x3000,d1		// keep the filler size bits
+	beq.s	reent2_fpu
+	addq.l	#2,a0			// assume 2-byte filler after the exception frame
+	bra.s	reent2_fpu
+reent2_68k:
+#endif
 #ifdef M68000
 	addq.l	#2+4,a0
 	tst.w	(0x59e).w
@@ -1369,6 +1472,7 @@ reent2_shortframe:
 	addq.l	#2+4+2,a0
 #endif
 #endif
+reent2_fpu:
 	// Save hardware registers (CPU/FPU)
 	tst.w	_fpu
 	beq.s	reent2_fpu_saved

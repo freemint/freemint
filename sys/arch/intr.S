@@ -18,10 +18,8 @@
 // Copyright 1993,1994 Atari Corporation
 // All rights reserved.
 
-#if __GNUC__ > 2
 #ifndef __mcoldfire__
 	.arch	68030
-#endif
 #endif
 
 #include "magic/magic.i"
@@ -84,13 +82,30 @@ L_novbl_0:
 	move.w	d0,vblcnt
 	bra.s	L_novbl
 L_vbl:
+	// set up an exception stack frame for VBL emulation
+	tst.w	_coldfire_68k_emulation
+	bne.s	L_frame060
+
+	// set up a ColdFire stack frame
 	subq.l	#8,sp
 	move.l	8(sp),(sp)	// move the d0 backup on the top of the stack
-	clr.w	10(sp)		// set up a jump to VBL emulation
-	move.l	#_mint_vbl,d0
-	move.l	d0,6(sp)
+	move.w	#0x4000,4(sp)	// format/vector word
 	move.w	sr,d0
-	move.w	d0,4(sp)
+	move.w	d0,6(sp)	// return sr
+	move.l	#_mint_vbl,d0
+	move.l	d0,8(sp)	// return pc
+	bra.s	L_novbl
+
+L_frame060:
+	// set up a 68060 stack frame
+	subq.l	#8,sp
+	move.l	8(sp),(sp)	// move the d0 backup on the top of the stack
+	move.w	sr,d0
+	move.w	d0,4(sp)	// return sr
+	move.l	#_mint_vbl,d0
+	move.l	d0,6(sp)	// return pc
+	clr.w	10(sp)		// format/vector word
+
 L_novbl:
 	move.l	(sp)+,d0		// restore register
 	move.l	_old_5ms.w(pc),-(sp)	// push old vector & save a bit of memory
@@ -278,8 +293,21 @@ skip:
 
 // "VBL" things go here (50 times per second at IPL 3)
 
-txit:	btst	#2,24(sp)		// don't perform if saved IPL is higher than 3 (bit 2 set)
+txit:
+#ifdef __mcoldfire__
+	tst.w	_coldfire_68k_emulation
+	bne.s	txit_68k
+
+	btst	#2,26(sp)		// don't perform if saved IPL is higher than 3 (bit 2 set)
 	bne.s	L_popnout
+
+	bra.s	L_vbl_emu
+txit_68k:
+#endif
+	btst	#2,24(sp)		// don't perform if saved IPL is higher than 3 (bit 2 set)
+	bne.s	L_popnout
+
+L_vbl_emu:
 	move.w	#0x2400,sr		// lower the current IPL
 
 // floppy stuff
@@ -356,8 +384,19 @@ L_popnout:
 // Process' time has expired, check if we can preempt
 
 L_expired:
+#ifdef __mcoldfire__
+	tst.w	_coldfire_68k_emulation
+	bne.s	L_expired_68k
+
+	btst	#5,2(sp) 		// user mode?
+	bne.s	L_out			// no -- switching is not possible
+
+	bra.s	L_expired2
+L_expired_68k:
+#endif
 	btst	#5,(sp) 		// user mode?
 	bne.s	L_out			// no -- switching is not possible
+L_expired2:
 	tst.w	(0x043e).w		// test floppy disk lock variable
 	bne.s	L_out			// if locked, can't switch
 #ifdef __mcoldfire__
@@ -719,7 +758,17 @@ Do_sig:
 	move.l	_curproc,a0
 	move.l	sp,P_EXCSSP(a0)
 	addq.l	#4,P_EXCSSP(a0)
+#ifdef __mcoldfire__
+	tst.w	_coldfire_68k_emulation
+	bne.s	do_sig_68k
+
+	move.l	8(sp),P_EXCPC(a0)
+	bra.s	do_sig_restore
+
+do_sig_68k:
+#endif
 	move.l	6(sp),P_EXCPC(a0)
+do_sig_restore:
 	move.l	(sp)+,a0
 
 	tst.w	_in_kernel		// are we already in the kernel?
@@ -782,6 +831,15 @@ _mmu_sigbus:
 	move.l	a2,-(sp)
 	move.l	_curproc,a0
 	move.l	P_EXCSSP(a0),a1 	// a1 is now exception_ssp
+#ifdef __mcoldfire__
+	tst.w	_coldfire_68k_emulation
+	bne.s	mmu_sigbus_68k
+
+	// TODO ColdFire MMU
+
+	bra.s	ms_goon
+mmu_sigbus_68k:
+#endif
 #if !defined(M68040) && !defined(M68060)
 	move.w	0xA(a1),d0		// d0 is SSW
 	btst	#6,d0			// read or write?
@@ -1206,26 +1264,33 @@ _old_trace:
 	dc.l	0
 _new_trace:
 #ifdef __mcoldfire__
+	move.l	a0,-(sp)
 	move.l	d0,-(sp)
-	btst	#5,4(sp) 		// only check when called from supervisor mode
+
+	tst.w	_coldfire_68k_emulation
+	bne.s	cf_68k_trace
+
+	lea	10(sp),a0		// native coldfire: sr, pc
+	bra.s	cf_trace
+
+cf_68k_trace:
+	lea	8(sp),a0		// 68K emulation: sr, pc
+
+cf_trace:
+	btst	#5,(a0) 		// only check when called from supervisor mode
 	beq.s	S_1
-	move.l	#_mint_dos,d0
-	cmp.l	6(sp),d0		// lets not trace the kernel !
+	move.l	2(a0),d0		// pc
+	cmp.l	#_mint_dos,d0		// lets not trace the kernel !
 	beq.s	S_2
-	move.l	#_mint_xbios,d0
-	cmp.l	6(sp),d0
+	cmp.l	#_mint_xbios,d0
 	beq.s	S_2
-	move.l	#_mint_bios,d0
-	cmp.l	6(sp),d0
+	cmp.l	#_mint_bios,d0
 	beq.s	S_2
-	move.l	#_new_divzero,d0
-	cmp.l	6(sp),d0
+	cmp.l	#_new_divzero,d0
 	beq.s	S_2
-	move.l	#_new_trapv,d0
-	cmp.l	6(sp),d0
+	cmp.l	#_new_trapv,d0
 	beq.s	S_2
-	move.l	#_new_chk,d0
-	cmp.l	6(sp),d0
+	cmp.l	#_new_chk,d0
 	beq.s	S_2
 
 // add any other non-traceable entities here...
@@ -1235,12 +1300,14 @@ S_1:	moveq	#0x24,d0
 	move.l	#_sigtrap,d0
 	move.l	d0,_sig_routine
 	move.l	(sp)+,d0
+	move.l	(sp)+,a0
 	bra	Do_sig
 
-S_2:	move.w	4(sp),d0
+S_2:	move.w	(a0),d0
 	and.l	#0x3fff,d0		// clear both trace bits
-	move.w	d0,4(sp)
+	move.w	d0,(a0)
 	move.l	(sp)+,d0
+	move.l	(sp)+,a0
 #else
 	btst	#5,(sp) 		// only check when called from supervisor mode
 	beq.s	S_1

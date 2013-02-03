@@ -47,10 +47,9 @@
  *	for a different process. Unlike restore_context, this one *does*
  *	flush the ATC.
  */
-#if __GNUC__ > 2
+
 #ifndef __mcoldfire__
 	.arch	68030
-#endif
 #endif
 
 #include "magic/magic.i"
@@ -94,6 +93,26 @@ noprot1:
 	lea	12(sp),a1		// start of the interesting stack area
 	move.w	(a1)+,d0		// 68000 fake frame format
 
+#ifdef __mcoldfire__
+	tst.w	_coldfire_68k_emulation
+	bne.s	build_68k
+
+	move.w	(a1)+,C_SFMT(a0)	// save format/vector word of context
+	move.w	(a1)+,d0		// get SR of context
+	move.w	d0,C_SR(a0)		// save it
+	move.l	(a1)+,C_PC(a0)		// save PC of context
+
+	move.w	C_SFMT(a0),d1
+	andi.l	#0x3000,d1		// keep the filler size bits
+	beq.s	build_stack_fixed
+	addq.l	#2,a1			// assume 2-byte filler after the exception frame
+build_stack_fixed:
+
+	// TODO FPU
+
+	bra.s	short1
+build_68k:
+#endif
 #ifdef M68000
 	move.w	(0x59e).w,d1		// get process frame flag
 	bne.s	nojunk			// we have some junk on the stack
@@ -254,7 +273,17 @@ nofpu2:
 // valid assumption, in which case the above FPU code is redundant, the
 // next line is not however!
 
+#ifdef __mcoldfire__
+	tst.w	_coldfire_68k_emulation
+	bne.s	save_68k
+
+	move.w	#0x4000,C_SFMT(a0)	// standard frame/vector word
+
+	bra.s	save_ptrace
+save_68k:
+#endif
 	clr.w	C_SFMT(a0)		// mark as a 4 word stack frame
+save_ptrace:
 	clr.b	C_PTRACE(a0)		// no pending traces, thanks!
 
 	lea	8(sp),a1
@@ -311,6 +340,22 @@ _restore_context:
 //	pmove	C_TC(a0),tc		// restore MMU control register
 //noprot3:
 
+#ifdef __mcoldfire__
+	tst.w	_coldfire_68k_emulation
+	bne.s	restore_68k
+
+	// TODO FPU
+
+	move.l	C_PC(a0),-(sp)		// push the PC
+	move.w	C_SR(a0),-(sp)		// push the status register
+	move.w	#0x4000,-(sp)		// push the frame/vector word
+	// Since we are just going to return using rte very soon,
+	// we can push a standard frame/vector word instead of C_SFMT(a0),
+	// so we don't have to add any extra filler byte.
+
+	bra.s	restore_check_trace
+restore_68k:
+#endif
 #ifdef M68000
 	tst.w	(0x59e).w		// test longframe (AKP)
 	beq.s	short3
@@ -392,6 +437,7 @@ short4:
 short3:
 	move.l	C_PC(a0),-(sp)		// push the PC
 	move.w	C_SR(a0),-(sp)		// push the status register
+restore_check_trace:
 	tst.b	C_PTRACE(a0)		// check for a pending trace
 	movem.l	(a0),d0-d7/a0-a6	// restore registers d0-d7/a0-a6
 	beq.s	notrace
@@ -446,6 +492,22 @@ _change_context:
 noprot4:
 #endif
 
+#ifdef __mcoldfire__
+	tst.w	_coldfire_68k_emulation
+	bne.s	change_68k
+
+	// TODO FPU
+
+	move.l	C_PC(a0),-(sp)		// push the PC
+	move.w	C_SR(a0),-(sp)		// push the status register
+	move.w	#0x4000,-(sp)		// push the frame/vector word
+	// Since we are just going to return using rte very soon,
+	// we can push a standard frame/vector word instead of C_SFMT(a0),
+	// so we don't have to add any extra filler byte.
+
+	bra.s	change_check_trace
+change_68k:
+#endif
 #ifdef M68000
 	tst.w	(0x59e).w		// test longframe (AKP)
 	beq.s	short6
@@ -529,6 +591,7 @@ short5:
 short6:
 	move.l	C_PC(a0),-(sp)		// push the PC
 	move.w	C_SR(a0),-(sp)		// push status register
+change_check_trace:
 	tst.b	C_PTRACE(a0)		// check for a pending trace
 	movem.l	(a0),d0-d7/a0-a6	// restore registers d0-d7/a0-a6
 	beq.s	notrace2

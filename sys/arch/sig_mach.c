@@ -60,7 +60,6 @@ sendsig(ushort sig)
 
 	assert(curproc->stack_magic == STACK_MAGIC);
 
-	//FORCE("sendsig %d", sig);
 	/* another kludge: there is one case in which the p_sigreturn
 	 * mechanism is invoked by the kernel, namely when the user
 	 * calls Supexec() or when s/he installs a handler for the
@@ -109,12 +108,12 @@ sendsig(ushort sig)
 		 * as function.
 		 */
 
-		//FORCE("sendsig:system process, calling signal handler 0x%lx (%d)(%s) directly", sigact->sa_handler, sig, curproc->name);
+		DEBUG(("system process, calling signal handler 0x%lx (%d)(%s) directly", sigact->sa_handler, sig, curproc->name));
 		((void (*)(short)) sigact->sa_handler)(sig);
 
 		if (sigact->sa_flags & SA_RESETHAND)
 		{
-			//FORCE("resetting sa_handler");
+			TRACE(("resetting sa_handler"));
 
 			sigact->sa_handler = SIG_DFL;
 			sigact->sa_flags &= ~SA_RESETHAND;
@@ -135,24 +134,16 @@ sendsig(ushort sig)
 
 	/* set a new system stack, with a bit of buffer space */
 	oldstack = curproc->sysstack;
-# ifdef COLDFIRE
 	newstack = ((unsigned long) &newcurrent) - 0x40UL - 12UL - 0x100UL;
-# else
-	newstack = ((unsigned long) &newcurrent) - 0x40UL - 12UL - 0x100UL;
-# endif
-	//TRACE(("sendsig(%d): new=%lx cur=%lx call=%lx newcur=%lx sr=%x ssp=%lx usp=%lx", sig, newstack, curproc->stack, call, &newcurrent, call->sr, call->ssp, call->usp));
 	if (newstack < (unsigned long) curproc->stack + ISTKSIZE + 256)
 	{
-		FORCE("sendsig(%d):stack overflow: new=%lx cur=%lx call=%lx newcur=%lx sr=%x ssp=%lx usp=%lx", sig, newstack, curproc->stack, call, &newcurrent, call->sr, call->ssp, call->usp);
-		ALERT("sendsig:stack overflow: new=%lx cur=%lx call=%lx newcur=%lx", newstack, curproc->stack, call, &newcurrent);
-		//FORCE("sendsig(%d):stack overflow: new=%lx cur=%lx call=%lx newcur=%lx", sig, newstack, curproc->stack, call, &newcurrent);
-		//return 1;
+		ALERT("stack overflow");
+		return 1;
 	}
 	else if ((unsigned long) curproc->stack + STKSIZE < newstack)
 	{
 		FATAL("system stack not in proc structure");
 	}
-	//FORCE("sendsig:stack:new=%lx,cur=%lx call=%lx,newcur=%lx", newstack, curproc->stack,call, &newcurrent);
 
 	oldsysctxt = *call;
 	stack = (unsigned long *)(call->sr & 0x2000 ? call->ssp : call->usp);
@@ -312,11 +303,7 @@ top:
 	else
 	{
 		unwound_stack = 0;
-# ifdef COLDFIRE
 		oldctxt = (CONTEXT *) (((long) &frame[2]) + 0x40 + 0x100);
-# else
-		oldctxt = (CONTEXT *) (((long) &frame[2]) + 0x40 + 0x100);
-# endif
 		if (oldctxt->regs[0] != CTXT_MAGIC)
 		{
 			FATAL ("p_sigreturn: corrupted context");

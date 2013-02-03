@@ -59,6 +59,13 @@ kern_get_cpuinfo (SIZEBUF **buffer)
 
 	clockfactor = 0;
 
+#ifdef __mcoldfire__
+	if (!coldfire_68k_emulation)
+	{
+		clockfactor = 2; // Experimentally almost accurate
+	}
+	else
+#endif
 	switch (mcpu)
 	{
 		case 20:

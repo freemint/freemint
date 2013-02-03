@@ -93,7 +93,9 @@ _getmch (void)
 {
 	enum special_hw add_info = none;
 	struct cookie *jar;
-
+#ifdef WITH_MMU_SUPPORT
+	int old_no_mem_prot = no_mem_prot;
+#endif
 	jar = *CJAR;
 	if (jar)
 	{
@@ -167,12 +169,21 @@ _getmch (void)
 # ifdef ARANYM
 				case COOKIE_NF:
 				{
-					kentry.vec_mch.nf_ops = kernelinfo.nf_ops = nf_init();
+					kernelinfo.nf_ops = nf_init();
+					kentry.vec_mch.nf_ops = nf_init();
 
 					add_info = aranym;
 					break;
 				}
 # endif
+
+#ifdef __mcoldfire__
+				case COOKIE__CPU:
+				{
+					coldfire_68k_emulation = true;
+					break;
+				}
+#endif
 			}
 
 			jar++;
@@ -187,7 +198,21 @@ _getmch (void)
 	if ((fputype >> 16) > 1)
 		fpu = 1;
 
-	boot_printf(" fputype=%ld, fpu=%d\r\n", fputype, fpu);
+#ifdef WITH_MMU_SUPPORT
+	if (add_info == ct60 && !old_no_mem_prot)
+	{
+		// HACK: PMMU cookie is for some reason set on CT60
+		// so make sure we set the old value as intended
+		no_mem_prot = 0;
+	}
+
+	pmmu = detect_pmmu ();
+	if (!no_mem_prot && !pmmu)
+	{
+		FORCE ("WARNING: PMMU is requested but not present, disabling.\r\n");
+		no_mem_prot = 1;
+	}
+#endif
 
 # ifndef M68000
 
@@ -296,7 +321,11 @@ identify (enum special_hw info)
 					machine = "Atari TT";
 					break;
 				case FALCON:
+#ifdef __mcoldfire__
+					machine = "FireBee";
+#else
 					machine = "Atari Falcon";
+#endif
 					break;
 				case MILAN_C:
 					machine = "Milan";
@@ -326,6 +355,14 @@ identify (enum special_hw info)
 
 	_fpu = " no ";
 
+#ifdef __mcoldfire__
+	if (!coldfire_68k_emulation)
+	{
+		fpu_type = "ColdFire V4e";
+		_fpu = "/";
+	}
+	else
+#endif
 	if (fpu)
 	{
 		switch (fputype >> 16)
@@ -353,6 +390,18 @@ identify (enum special_hw info)
 		}
 	}
 
+#ifdef __mcoldfire__
+	UNUSED(buf);
+
+	if (!coldfire_68k_emulation)
+	{
+		cpu_type = mmu_type = "ColdFire V4e";
+		_cpu = cpu_type;
+		_mmu = "/MMU";
+	}
+	else
+#endif
+	{
 	_cpu = "m68k";
 	_mmu = "";
 
@@ -361,27 +410,32 @@ identify (enum special_hw info)
 		case 0:
 			cpu_type = "68000";
 			_cpu = cpu_type;
-			_mmu = "";
 			break;
 		case 10:
 			cpu_type = "68010";
 			_cpu = cpu_type;
-			_mmu = "";
 			break;
 		case 20:
 			cpu_type = "68020";
 			_cpu = cpu_type;
-			_mmu = "";
 			break;
 		case 30:
-			cpu_type = mmu_type = "68030";
+				cpu_type = "68030";
 			_cpu = cpu_type;
+				if (pmmu)
+				{
+					mmu_type = cpu_type;
 			_mmu = "/MMU";
+				}
 			break;
 		case 40:
-			cpu_type = mmu_type = "68040";
+				cpu_type = "68040";
 			_cpu = cpu_type;
+				if (pmmu)
+				{
+					mmu_type = cpu_type;
 			_mmu = "/MMU";
+				}
 			break;
 		case 60:
 		{
@@ -400,11 +454,16 @@ identify (enum special_hw info)
 					pcr & 0x10000 ? "LC/EC" : "",
 					(pcr >> 8) & 0xff);
 
-			cpu_type = mmu_type = "68060";
+				cpu_type = "68060";
 			_cpu = buf;
+				if (pmmu)
+				{
+					mmu_type = cpu_type;
 			_mmu = "/MMU";
+				}
 			break;
 		}
+	}
 	}
 
 	ksprintf (cpu_model, sizeof (cpu_model), "%s (%s CPU%s%sFPU)",
