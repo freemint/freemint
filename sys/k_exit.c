@@ -43,7 +43,6 @@
 # include "dosdir.h"
 # include "filesys.h"
 # include "k_exec.h"	/* rts */
-# include "k_fds.h"	/* do_close */
 # include "k_prot.h"	/* free_cred */
 # include "kmemory.h"
 # include "memory.h"
@@ -399,7 +398,7 @@ pwaitpid(short pid, short nohang, long *rusage, short *retval)
 	int ourpid, ourpgrp;
 	int found;
 
-	
+
 	ourpid = get_curproc()->pid;
 	ourpgrp = get_curproc()->pgrp;
 
@@ -481,7 +480,7 @@ pwaitpid(short pid, short nohang, long *rusage, short *retval)
 	 * the possibly fatal signal that caused it to die.
 	 */
 	r = (((unsigned long)p->pid) << 16) | (p->wait_cond & 0x0000ffffUL);
-	
+
 	if (retval)
 		*retval = (unsigned short)r;
 
