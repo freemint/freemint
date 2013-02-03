@@ -74,7 +74,7 @@ fd_alloc (struct proc *p, short *fd, short min, const char *func)
 	}
 
 	DEBUG (("%s: process out of handles", func));
-# if 1
+# ifdef DEBUG_INFO
 	for (i = min; i < p->p_fd->nfiles; i++)
 	{
 		FILEPTR *f = p->p_fd->ofiles[i];
@@ -159,9 +159,12 @@ fp_get (struct proc **p, short *fd, FILEPTR **fp, const char *func)
 	}
 # endif
 
-	assert ((*p) && (*p)->p_fd);
+	assert ((*p));
+	if( !(*p)->p_fd )
+		FORCE("fp_get:ERROR:p_fd=0");
 
 	if ((*fd < MIN_HANDLE)
+			|| !(*p)->p_fd
 	    || (*fd >= (*p)->p_fd->nfiles)
 	    || !(*fp = (*p)->p_fd->ofiles[*fd])
 	    || (*fp == (FILEPTR *) 1))
@@ -176,9 +179,10 @@ fp_get (struct proc **p, short *fd, FILEPTR **fp, const char *func)
 long
 fp_get1 (struct proc *p, short fd, FILEPTR **fp, const char *func)
 {
-	assert (p && p->p_fd);
+	assert (p);
 
 	if ((fd < MIN_HANDLE)
+			|| !p->p_fd
 	    || (fd >= p->p_fd->nfiles)
 	    || !(*fp = p->p_fd->ofiles[fd])
 	    || (*fp == (FILEPTR *) 1))
