@@ -261,6 +261,16 @@ do_open (FILEPTR **f, const char *name, int rwmode, int attr, XATTR *x)
 	}
 
 	/*
+	 * If temp1 is a NULL string, then use the name again.
+	 *
+	 * This can occur when trying to open the ROOT directory of a
+	 * drive. i.e. /, or C:/ or D:/ etc.
+	 */
+	if (*temp1 == '\0') {
+		strncpy(temp1, name, PATH_MAX);
+	}
+
+	/*
 	 * second step: try to locate the file itself
 	 */
 	r = relpath2cookie (p, &dir, temp1, follow_links, &fc, 0);
