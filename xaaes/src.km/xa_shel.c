@@ -657,7 +657,6 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 								s->name, s->pid));
 						}
 					}
-					ret = -ret;
 				}
 			}
 
@@ -869,6 +868,8 @@ XA_shel_write(enum locks lock, struct xa_client *client, AESPB *pb)
 				       (char *)pb->addrin[1],
 				       client);
 
+		if( pb->intout[0] < 0 )
+			pb->intout[0] = 0;
 		Sema_Dn(envstr);
 
 		/* let the new process run */
