@@ -509,6 +509,8 @@ tty_write (FILEPTR *f, const void *buf, long nbytes)
 			return bytes_written;
 		if (mode)
 		{
+			long bytes_to_write;
+			unsigned const char *s;
 			c = (*f->dev->writeb)(f, buf, 0L);
 			if (c == ENODEV)
 			{
@@ -524,9 +526,9 @@ tty_write (FILEPTR *f, const void *buf, long nbytes)
 			 * lines if CRMODE (if we get here flow
 			 * control is taken care of by the device)
 			 */
-			long bytes_to_write = 0;
-			unsigned const char *s = ptr;
 
+			s = ptr;
+			bytes_to_write = 0;
 			while (nbytes-- > 0)
 			{
 				if (*ptr++ == '\n')
