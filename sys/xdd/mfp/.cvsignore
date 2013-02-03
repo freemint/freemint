@@ -11,3 +11,5 @@ lib*.a
 *.app
 *.prg
 __target.*
+*.o
+mfp_mil.c

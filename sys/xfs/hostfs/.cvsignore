@@ -1,3 +1,4 @@
 .deps
 .compile_ara
 hostfs.xfs
+*.o
