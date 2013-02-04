@@ -852,7 +852,7 @@ menu_pop(Tab *tab)
 
 	if( !(tab->ty == ROOT_MENU || p == k->p.wt->owner->p) )
 	{
-		BLOG((0, "menu_pop: ERROR:(%s,%s,%lx:%lx)", p->name, k->p.wt->owner->p->name ));
+		BLOG((0, "menu_pop: ERROR:(%s,%s)", p->name, k->p.wt->owner->p->name ));
 		return 0;
 	}
 	cancel_pop_timeouts();
@@ -1436,10 +1436,10 @@ CE_do_collapse(enum locks lock, struct c_event *ce, short cancel)
 		cancel_pop_timeouts();
 }
 
-void close_window_menu(Tab *tab);
 void close_window_menu(Tab *tab)
 {
-	post_cevent(tab->client, CE_do_collapse, tab, NULL, 0,0, NULL,NULL);
+	if( tab && tab->ty == MENU_BAR )
+		post_cevent(tab->client, CE_do_collapse, tab, NULL, 0,0, NULL,NULL);
 }
 
 static bool
