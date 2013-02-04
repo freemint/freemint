@@ -62,7 +62,7 @@
 
 
 #define VER_MAJOR	0
-#define VER_MINOR	1
+#define VER_MINOR	2
 #define VER_STATUS	
 
 #define MSG_VERSION	str (VER_MAJOR) "." str (VER_MINOR) str (VER_STATUS) 
@@ -80,6 +80,9 @@
 
 #define MSG_FAILURE	\
 	"\7\r\nSorry, failed!\r\n\r\n"
+
+char *drv_version = MSG_VERSION;
+
 /*
 #if defined(CONFIG_USB_UHCI) || defined(CONFIG_USB_OHCI) || defined(CONFIG_USB_EHCI) \
 			|| defined(CONFIG_USB_ISP116X_HCD) || defined(CONFIG_USB_ARANYM_HCD)
@@ -359,18 +362,9 @@ static struct usb_driver storage_driver =
 
 
 /*
- * Galvez: I don't know how to call kmalloc, OS functions
- * and XHDINewCookie from assembler(bios.S), this is a workaround 
+ * Galvez: I don't know how to call OS functions
+ * from assembler(bios.S), this is a workaround.
  */
-unsigned long
-kmalloc_from_S(unsigned long size)
-{
-	unsigned long r;
-
-	r = (unsigned long)kmalloc(size);
-	return r; 
-}
-
 void
 cconws_from_S(char *str)
 {
@@ -391,14 +385,6 @@ bconout_from_S(short c)
 	b_ubconout(dev, c);
 }
 
-long
-XHDINewCookie_from_S(void *newcookie)
-{
-	long r;
-	r = XHNewCookie(newcookie);
-	DEBUG((" XHNewCookie %d", r));
-	return r;
-}
 
 /* --- Inteface functions -------------------------------------------------- */
 

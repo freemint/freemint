@@ -4,13 +4,15 @@
 HEADER = \
 	part.h \
 	scsi.h \
-	vars.h
+	vars.h \
+	xhdi.h
 
 COBJS = \
-	usb_storage.c
+	usb_storage.c \
+	xhdi.c
 
-SOBJS = \
+SSOBJS = \
 	bios.S \
 	debug2.S
 
-SRCFILES = $(HEADER) $(COBJS) $(SOBJS)
+SRCFILES = $(HEADER) $(SSOBJS) $(COBJS)
