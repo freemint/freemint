@@ -2429,7 +2429,7 @@ handle_launcher(enum locks lock, struct fsel_data *fs, const char *path, const c
 	switch( (long)fs->data )
 	{
 		case HL_LAUNCH:
-			launch(lock, 0, 0, len, parms+1, p, C.Aes);
+			launch(lock, 0, 0, -len, parms+1, p, C.Aes);
 		break;
 #if WITH_GRADIENTS
 		case HL_LOAD_GRAD:
