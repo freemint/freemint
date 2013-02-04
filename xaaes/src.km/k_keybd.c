@@ -323,6 +323,14 @@ static void bus_error(void)
 }
 #endif
 
+static void close_menu_if_move(struct xa_window *wind)
+{
+	XA_WIDGET *widg = get_widget( wind, XAW_MENU );
+	if( widg && widg->stuff )
+		close_window_menu(TAB_LIST_START);
+}
+
+
 /******************************************************************************
  from "unofficial XaAES":
 
@@ -617,6 +625,7 @@ kernel_key(enum locks lock, struct rawkey *key)
 
 				if( !wind || wind == root_window || (wind->dial & created_for_POPUP) )
 					return true;
+				close_menu_if_move(wind);
 				client = wind->owner;
 				r = wind->r;
 				if( nk == NK_DOWN )
@@ -689,10 +698,10 @@ kernel_key(enum locks lock, struct rawkey *key)
 				short s = key->raw.conin.state & (K_RSHIFT|K_LSHIFT);
 				RECT r;
 
-				//if( !wind || wind == root_window )
-					//wind = menu_window;
 				if( !wind || wind == root_window || (wind->dial & created_for_POPUP) )
 					return true;
+
+				close_menu_if_move(wind);
 				client = wind->owner;
 				r = wind->r;
 
