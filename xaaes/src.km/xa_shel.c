@@ -310,7 +310,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 	short x_mode, real_mode;
 	const char *pcmd;
 	char *save_tail = NULL, *ext = NULL;
-	long longtail = wiscr, tailsize = 0;
+	long longtail = 0, tailsize = 0;
 	Path save_cmd;
 	char *tail = argvtail, *t;
 	int ret = 0;
@@ -393,7 +393,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 	if (p_tail)
 	{
 
-		if (p_tail[0] == 0x7f || (unsigned char)p_tail[0] == 0xff)
+		if (wiscr == 1 || p_tail[0] == 0x7f || (unsigned char)p_tail[0] == 0xff)
 		{
 			/* In this case the string CAN ONLY BE null terminated. */
 			longtail = strlen(p_tail + 1);
@@ -402,6 +402,11 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 			DIAG((D_shel, NULL, "ARGV!  longtail = %ld", longtail));
 		}
 
+		if( wiscr < 0 )
+		{
+			longtail = -wiscr;
+			wiscr = 1;
+		}
 		if (longtail)
 		{
 			DIAG((D_shel, NULL, " -- longtailsize=%ld", longtail));
@@ -417,7 +422,6 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 		}
 		else
 		{
-// 			(unsigned long)tailsize = (unsigned char)p_tail[0];
 			tailsize = (unsigned long)(unsigned char)p_tail[0];
 			DIAG((D_shel, NULL, " -- tailsize1 = %ld", tailsize));
 			tail = kmalloc(126); //tail = kmalloc(tailsize + 2);
