@@ -3155,11 +3155,8 @@ static bool join_redraws( short wlock, struct xa_window *wind, struct xa_rect_li
 		r.h = y12 > y22 ? y12 : y22;
 		r.h -= r.y;
 		r.x = x11 < x21 ? x11 : x21;
-		//r.w = x12 > x22 ? x12 : x22;
-		//r.w -= r.x;
 		r.w = newrl->r.w + newrl->next->r.w;
 
-		BLOG((0,"join_redraws:%s,y11=%d,y21=%d", wind->wname, y11, y21));
 		generate_redraws(wlock, wind, &r, flags );
 		return true;
 	}
