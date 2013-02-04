@@ -3008,12 +3008,20 @@ fs_msg_handler(
 		short dh, dw;
 		OBJECT *obtree = ((struct widget_tree *)get_widget(wind, XAW_TOOLBAR)->stuff)->tree;
 		struct xa_window *lwind;
+		static short fs_file_w = -1;
 
 		dw = msg[6] - wind->r.w; //root_window->wa.h - 7 * screen.c_max_h - form->ob_height;
 		dh = msg[7] - wind->r.h; //root_window->wa.w - (form->ob_width + (screen.c_max_w * 4));
-//		display("resize dw %d, dh %d", dw, dh);
 		obtree->ob_height += dh;
 		obtree->ob_width += dw;
+
+		/* temporary: set edit-field-width to max. window-width */
+		if( fs_file_w == -1 )
+			fs_file_w = obtree[FS_FILE ].ob_width;
+		obtree[FS_FILE ].ob_width = obtree->ob_width - 32;
+		if( obtree[FS_FILE ].ob_width > fs_file_w )
+			obtree[FS_FILE ].ob_width = fs_file_w;
+
 		obtree[FS_LIST ].ob_height += dh;
 		obtree[FS_LIST ].ob_width += dw;
 		obtree[FS_OK].ob_y += dh;
