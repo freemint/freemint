@@ -60,6 +60,7 @@ INLINE	XA_TREE *get_menu(void) { return root_window->widgets[XAW_MENU].stuff; }
 INLINE	short get_menu_height(void) { return C.Aes->std_menu->tree->ob_height; }
 INLINE	struct xa_client *menu_owner(void) { return get_menu()->owner; }
 
+void close_window_menu(Tab *tab);
 bool	keyboard_menu_widget(enum  locks lock, struct xa_window *wind, struct xa_widget *widg);
 bool	menu_keyboard(Tab *tab, const struct rawkey *key);
 
