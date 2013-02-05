@@ -211,8 +211,8 @@ strnupr(char *s, int n)
 
 struct xa_file{
 	struct file *k_fp;
-	char buf[1024];
-	char *p, *p1;
+	unsigned char buf[1024];
+	unsigned char *p, *p1;
 };
 
 XA_FILE *xa_fopen( char *fn, int rwmd )
@@ -312,9 +312,9 @@ char *xa_readline( char *buf, long size, XA_FILE *fp )
 		*fp->p = 0;
 
 		if( size > 0 && buf )
-			strncpy( buf, fp->p1, size );
+			strncpy( buf, (char*)fp->p1, size );
 
-		ret = fp->p1;	/* !! */
+		ret = (char*)fp->p1;	/* !! */
 
 
 		if( cr )
