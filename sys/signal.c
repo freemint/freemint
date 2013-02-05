@@ -324,12 +324,14 @@ top:
 					 */
 					p->p_sigmask |= SIGACTION(p, i).sa_mask;
 
-					if (!(SIGACTION(p, i).sa_flags & SA_NODEFER) || 
-					     (SIGACTION(p, i).sa_mask & sigm)) 
+					if ((SIGACTION(p, i).sa_flags & SA_NODEFER) &&
+					    !(SIGACTION(p, i).sa_mask & sigm))
+					{
+						p->p_sigmask &= ~sigm;
+					} 
+					else 
 					{
 						p->p_sigmask |= sigm;
-					} else {
-						p->p_sigmask &= ~sigm;
 					}
 
 					handle_sig (i);
