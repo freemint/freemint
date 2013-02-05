@@ -386,14 +386,14 @@ recalc_tabs(struct scroll_info *list)
 	x = 0;
 	totalw = 0;
 
+	w0 = 0;
 	if( tabs->v.h < 0 )
 	{
 		w0 = (-tabs->v.h + 8) * screen.c_max_w;
 		if( w0 > listw )
 			w0 = listw;
 	}
-	else
-		w0 = 0;
+
 	for (i = 0; i < ntabs; i++, tabs++)
 	{
 		tabs->r.x = x;
@@ -806,7 +806,7 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 				}
 				case SECONTENT_TEXT:
 				{
-					short x2, /*y2,*/ dx, dy, tw, th, f;
+					short x2, dx, dy, tw, th, f;
 					char t[512];
 
 					if (TOP || xa_rect_clip(clip, &r, &clp))
@@ -819,8 +819,6 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 						dx = r.x;
 						x2 = dx + r.w;
 						dy = r.y;
-						//y2 = dy + this->r.h - 1;
-						//UNUSED(y2);
 						tw = r.w;
 						if (c->c.text.icon.icon)
 						{
@@ -889,11 +887,12 @@ display_list_element(enum locks lock, SCROLL_INFO *list, SCROLL_ENTRY *this,
 							}
 
 							w = c->c.text.slen * list->char_width;
+							if( method == 1 && (list->flags & SIF_TREEVIEW) )
+								tw -= (this->level+1) * 16;
 
 							/* opt: const width for prop_... */
 							if( method >= 0 && w > tw )
 							{
-
 								strncpy( t, c->c.text.text, c->c.text.tblen);
 								t[c->c.text.tblen] = 0;
 								(*v->api->prop_clipped_name)(v, t, t, tw, &tw, &th, method);
