@@ -270,19 +270,20 @@ ikill (int pid, ushort sig)
 void
 check_sigs (void)
 {
+	struct proc *p = get_curproc();
 	ulong sigs, sigm;
 	int i;
 	short deliversig;
 
-	if (get_curproc()->pid == 0)
+	if (p->pid == 0)
 		return;
 top:
-	assert (get_curproc()->p_sigacts);
-	sigs = get_curproc()->sigpending;
+	assert (p->p_sigacts);
+	sigs = p->sigpending;
 
 	/* Always notify the tracer about signals sent */
-	if (!get_curproc()->ptracer || get_curproc()->sigpending & 1L)
-		sigs &= ~(get_curproc()->p_sigmask);
+	if (!p->ptracer || p->sigpending & 1L)
+		sigs &= ~(p->p_sigmask);
 
 	if (sigs)
 	{
@@ -293,15 +294,15 @@ top:
 		 * passes a SIGNULL to indicate that we should really deliver
 		 * the signal, hence its always safe to remove it from pending.
 		 */
-		deliversig = (get_curproc()->sigpending & 1L);
-		get_curproc()->sigpending &= ~1L;
+		deliversig = (p->sigpending & 1L);
+		p->sigpending &= ~1L;
 
 		for (i = 1; i < NSIG; i++)
 		{
 			if (sigs & sigm)
 			{
-				get_curproc()->sigpending &= ~sigm;
-				if (get_curproc()->ptracer && !deliversig
+				p->sigpending &= ~sigm;
+				if (p->ptracer && !deliversig
 					&& (i != SIGCONT) && (i != SIGKILL))
 				{
 					TRACE (("tracer being notified of signal %d", i));
@@ -316,12 +317,18 @@ top:
 				{
 					ulong omask;
 
-					omask = get_curproc()->p_sigmask;
+					omask = p->p_sigmask;
 
 					/* sigextra gives which extra signals
 					 * should also be masked
 					 */
-					get_curproc()->p_sigmask |= SIGACTION(get_curproc(), i).sa_mask | sigm;
+					p->p_sigmask |= SIGACTION(p, i).sa_mask;
+					if (!(SIGACTION(p,i).sa_flags & SA_NODEFER) || (SIGACTION(p, i).sa_mask & sigm)) {
+						p->p_sigmask |= sigm;
+					} else {
+						p->p_sigmask &= ~sigm;
+					}
+
 					handle_sig (i);
 
 /*
@@ -335,7 +342,7 @@ top:
  * one signal per kernel entry, so this shouldn't really be a problem.
  */
 					/* unmask signals */
-					get_curproc()->p_sigmask = omask;
+					p->p_sigmask = omask;
 				}
 			}
 
