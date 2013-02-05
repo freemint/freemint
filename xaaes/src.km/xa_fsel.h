@@ -57,7 +57,7 @@ struct fsel_data
 	char ofile [NAME_MAX + 2];
 	long fcase,trunc;
 	int drives;
-	int clear_on_folder_change;
+	int curr_longest;
 	int ok;
 #define FS_INIT           1
 #define FS_CREATE_FOLDER  2
