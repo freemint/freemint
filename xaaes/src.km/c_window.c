@@ -1122,7 +1122,7 @@ void _cdecl
 top_window(enum locks lock, bool snd_untopped, bool snd_ontop, struct xa_window *w)
 {
 	DIAG((D_wind, NULL, "top_window %d for %s",  w->handle, w == root_window ? get_desktop()->owner->proc_name : w->owner->proc_name));
-	if (w == root_window || (S.focus == w) )
+	if (w == NULL || w == root_window || (S.focus == w) )
 		return;
 
 	if (w->nolist)
@@ -2886,6 +2886,7 @@ update_windows_below(enum locks lock, const RECT *old, RECT *new, struct xa_wind
 				make_rect_list(wl, true, RECT_SYS);
 
 				rl = wl->rect_list.start;
+
 				while (rl)
 				{
 					if (xa_rect_clip(&rl->r, &clip, &d))
@@ -2894,6 +2895,9 @@ update_windows_below(enum locks lock, const RECT *old, RECT *new, struct xa_wind
 					}
 					rl = rl->next;
 				}
+				/* if XaAES-window wait to avoid redraw-error */
+				if( wl->owner == C.Hlp )
+					yield();
 			}
 			else if (new)
 			{
