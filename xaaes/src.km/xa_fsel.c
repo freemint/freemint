@@ -172,6 +172,7 @@ static struct{
 	bool treeview;
 	bool rtbuild;
 	short fs_height, fs_width, fs_x, fs_y;
+	short fs_file_w; /* max. width for edit-field */
 	short fs_point;
 	short fs_num;
 	short fs_sort;
@@ -1525,7 +1526,6 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 			 * try to adapt the 1st distance
 			 */
 
-			//if (!fs->treeview)
 			if( max_namlen )
 			{
 				short h = max_namlen;
@@ -2798,6 +2798,14 @@ fs_key_form_do(enum locks lock,
 	return true;
 }
 
+static void set_edit_width( OBJECT *obtree )
+{
+	/* temporary: set edit-field-width to max. window-width */
+	obtree[FS_FILE ].ob_width = obtree->ob_width - 32;
+	if( obtree[FS_FILE ].ob_width > fs_data.fs_file_w )
+		obtree[FS_FILE ].ob_width = fs_data.fs_file_w;
+}
+
 /* HR: make a start */
 /* dest_pid, msg, source_pid, mp3, mp4,  .... 	 */
 static void
@@ -2982,19 +2990,13 @@ fs_msg_handler(
 		short dh, dw;
 		OBJECT *obtree = ((struct widget_tree *)get_widget(wind, XAW_TOOLBAR)->stuff)->tree;
 		struct xa_window *lwind;
-		static short fs_file_w = -1;
 
 		dw = msg[6] - wind->r.w;
 		dh = msg[7] - wind->r.h;
 		obtree->ob_height += dh;
 		obtree->ob_width += dw;
 
-		/* temporary: set edit-field-width to max. window-width */
-		if( fs_file_w == -1 )
-			fs_file_w = obtree[FS_FILE ].ob_width;
-		obtree[FS_FILE ].ob_width = obtree->ob_width - 32;
-		if( obtree[FS_FILE ].ob_width > fs_file_w )
-			obtree[FS_FILE ].ob_width = fs_file_w;
+		set_edit_width( obtree );
 
 		obtree[FS_LIST ].ob_height += dh;
 		obtree[FS_LIST ].ob_width += dw;
@@ -3376,6 +3378,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 
 			if( fs_data.fs_width == 0 )
 			{
+				/* first open */
 				dh = screen.r.h - 7 * screen.c_max_h - form->ob_height - 18;
 				dw = root_window->wa.w - (form->ob_width + (screen.c_max_w * 4));
 				if ((dw + form->ob_width) > 560)
@@ -3384,7 +3387,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 				form->ob_width += dw;
 				form->ob_height += dh;
 				form[FS_LIST ].ob_height = (form[FS_LIST ].ob_height / screen.c_max_h) * screen.c_max_h - 8;
-
+				fs_data.fs_file_w = form[FS_FILE ].ob_width;
 			}
 			else
 			{
@@ -3400,6 +3403,8 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 				form->ob_x = fs_data.fs_x;
 				form->ob_y = fs_data.fs_y;
 			}
+
+			set_edit_width( form );
 
 			form[FS_LIST ].ob_height += dh;
 			form[FS_LIST ].ob_width += dw;
@@ -3608,6 +3613,7 @@ close_fileselector(enum locks lock, struct fsel_data *fs)
 	fs_data.fs_width = fs->form->tree->ob_width;
 	fs_data.fs_x = fs->form->tree->ob_x;
 	fs_data.fs_y = fs->form->tree->ob_y;
+
 	fs_data.fs_point = fs->point;
 	fs_data.fs_sort = fs->sort;
 	fs_data.fs_num--;
