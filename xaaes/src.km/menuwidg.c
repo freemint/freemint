@@ -853,6 +853,7 @@ menu_pop(Tab *tab)
 	if( !(tab->ty == ROOT_MENU || p == k->p.wt->owner->p) )
 	{
 		BLOG((0, "menu_pop: ERROR:(%s,%s)", p->name, k->p.wt->owner->p->name ));
+		/* todo: pop delayed? */
 		return 0;
 	}
 	cancel_pop_timeouts();
@@ -1218,9 +1219,8 @@ display_popup(Tab *tab, short rdx, short rdy)
 
 		DIAG((D_menu, tab->client, "drop: %d/%d,%d/%d", r));
 		set_popup_widget(tab, wind, pi->parent);
-
 		/* top menu-owner-window */
-		if( tab->wind != TOP_WINDOW && tab->wind != root_window )
+		if( tab->wind && tab->wind != TOP_WINDOW && tab->wind != root_window )
 			top_window(tab->lock, true, true, tab->wind);
 #if GENERATE_DIAGS
 		if (!cfg.menu_locking)
