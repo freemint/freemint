@@ -106,7 +106,7 @@ static char *months[] =
 	"Jul",
 	"Aug",
 	"Sep",
-	"Okt",
+	"Oct",
 	"Nov",
 	"Dec",
 };
@@ -3491,6 +3491,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 		if (!dialog_window)
 			goto memerr;
 
+		dialog_window->opts &= ~XAWO_WCOWORK;
 		fix_menu(client, fs->menu, dialog_window, false);
 		fs_init_menu(fs);
 
