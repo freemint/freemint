@@ -2077,7 +2077,7 @@ k_exit(int wait)
 	k_shutdown();
 	if (wait)
 	{
-		display("XaAES: press any key to continue ...");
+		display("XaAES: see %s - press any key to continue ...", C.bootlog_path);
 		_c_conin();
 	}
 
