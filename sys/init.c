@@ -1063,8 +1063,11 @@ mint_thread(void *arg)
 		stop_and_ask();
 	}
 
-	/* we default to U:\ before starting init */
-	sys_d_setdrv('u' - 'a');
+	/* If we are starting the GEM, default to the boot drive,
+	 * so it can properly load the accessories.
+	 * Otherwise, default to U:\ before starting INIT.
+	 */
+	sys_d_setdrv(init_is_gem ? sysdrv : 'u' - 'a');
  	sys_d_setpath("/");
 	stop_and_ask();
 
