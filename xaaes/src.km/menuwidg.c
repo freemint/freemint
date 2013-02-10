@@ -1247,6 +1247,7 @@ do_popup(Tab *tab, XA_TREE *wt, short item, short entry, TASK *click, short rdx,
 	//short x, y;
 
 	DIAG((D_menu, tab->client, "do_popup: tab=%lx for %s", tab, tab->client->name));
+	C.boot_focus = 0;
 	menu_spec(root, item);
 	k->stage = IN_DESK;
 	k->p.current = -1;
