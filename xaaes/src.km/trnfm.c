@@ -210,7 +210,6 @@ get_coldist(struct rgb_1000 *src, struct rgb_1000 *dst)
 		dst_grey = 1;
 	if( src_grey && dst_grey )	// prefer if both grey
 	{
-		//DBG((0,"get_coldist:src_grey:%d,dst=%d,return %ld", src->red, dst->red, r/8));
 		return r / 8;
 	}
 	if( src_grey != dst_grey )
@@ -227,7 +226,6 @@ get_coldist(struct rgb_1000 *src, struct rgb_1000 *dst)
 
 	r += (g + b);
 
-	//DBGif(r==0,(0,"get_coldist:0:src:%d/%d/%d,dst=%d/%d/%d", src->red, src->green, src->blue, dst->red, dst->green, dst->blue));
 	return r;
 }
 
@@ -601,7 +599,6 @@ build_pal_xref(struct rgb_1000 *src_palette, struct rgb_1000 *dst_palette, unsig
 	if( screen.planes <= 8 )
 		tpens = 1 << screen.planes;
 
-	//DBG((0,"build_pal_xref:%d pens, %d tpens", pens, tpens ));
 	if (pens > 256)
 		pens = 256;
 
@@ -639,9 +636,6 @@ build_pal_xref(struct rgb_1000 *src_palette, struct rgb_1000 *dst_palette, unsig
 
 		cref[i] = c;
 
-		//DBGif(pens <= 16 || i <= 2 || i == 10 || c == 124 || src[i].red==src[i].green&&src[i].green==src[i].blue, (0, "build_pal_xref:src=%d:%d:%d,dst=%d:%d:%d,closest=%ld,i=%d,c=%d,k=%d", src[i].red, src[i].green, src[i].blue, dst_palette[c].red, dst_palette[c].green, dst_palette[c].blue, closest, i, c, k));
-		//DBGif(c == 8 || c == 9 || i == 9 || c==205||i==205||src[i].red==src[i].green&&src[i].green==src[i].blue, (0, "build_pal_xref:grey=%d,dst=%d:%d:%d,closest=%ld,i=%d,c=%d,c1=%d", src[i].red, dst_palette[c].red, dst_palette[c].green, dst_palette[c].blue, closest, i, c, c1));
-		//DBGif(c < 16 || i < 16, (0, "build_pal_xref:grey=%d,dst=%d:%d:%d,closest=%ld,i=%d,c=%d,c1=%d", src[i].red, dst_palette[c].red, dst_palette[c].green, dst_palette[c].blue, closest, i, c, c1));
 	}
 }
 /*
@@ -667,7 +661,6 @@ remap_bitmap_colindexes(MFDB *map, unsigned char *cref, int md)
 	if( md && planes >= 4 )
 		lut = tovdilut[planes];
 
-	//DBG((0, "remap_bitmap_colindex: planes=%d, psize=%d, data=%lx,lut=%lx(%d),md=%d", planes, psize, data, lut, lut[15], md));
 	for (k = 0; k < psize; k++, data++)
 	{
 		for (i = 0; i < 8; i++)
@@ -688,7 +681,6 @@ remap_bitmap_colindexes(MFDB *map, unsigned char *cref, int md)
 			}
 			cref_ind >>= (16 - planes);
 
-			//DBGif(cref_ind > 0 && cref_ind != 255 && cr != crs,(0,"remap_bitmap_colindexes:cref_ind=%d", cref_ind ));
 
 			if( cref_ind >= md )
 			{
@@ -697,7 +689,6 @@ remap_bitmap_colindexes(MFDB *map, unsigned char *cref, int md)
 				cref_ind = cref[cref_ind];
 			}
 
-			//DBGif(cr > 0 && cr != crs,(0,"...%d", cref_ind ));
 
 			for (j = 0; j < planes; j++)
 			{
@@ -2016,7 +2007,6 @@ transform_gem_bitmap(short vdih, MFDB msrc, MFDB mdest, short planes, struct rgb
 	src_planes = planes;
 	dst_planes = mdest.fd_nplanes;
 
-	//DBG((0,"transform_gem_bitmap: addr=%lx, dst_planes=%d,src_planes=%d,is_init_icn_pal=%x", msrc.fd_addr, dst_planes,src_planes, C.is_init_icn_pal ));
 	if (src_planes <= 8 && dst_planes <= 8)
 	{
 #ifndef ST_ONLY
@@ -2037,7 +2027,6 @@ case_88:
 				{
 					short p;
 					p = 1 << src_planes;
-					//DBG((0,"build_pal_xref dst_planes=%d,src_planes=%d,cref[255]=%d", dst_planes,src_planes, cref4[255] ));
 					if( cref4[255] == 0 )
 						build_pal_xref(src_pal, sys_pal, cref4, 256 );
 					build_pal_xref(src_pal, sys_pal, crp, p );
@@ -2045,14 +2034,12 @@ case_88:
 					C.is_init_icn_pal &= ~src_planes;
 				}
 
-				//DBG_hex( crp, 1 << src_planes, 1, 1 );
 				remap_bitmap_colindexes(&msrc, crp, 4);
 			}
 		}
 #endif
 		if ((src_planes | dst_planes) != 1)
 		{
-			//DBG((0,"transform_gem_bitmap:src:w=%d,h=%d,wdwidth=%d,stand=%d,nplanes=%d,dst:w=%d,h=%d,wdwidth=%d,stand=%d,nplanes=%d", msrc.fd_w, msrc.fd_h, msrc.fd_wdwidth, msrc.fd_stand, msrc.fd_nplanes, mdest.fd_w, mdest.fd_h, mdest.fd_wdwidth, mdest.fd_stand, mdest.fd_nplanes));
 			vr_trnfm(vdih, &msrc, &mdest);
 		}
 		else
@@ -2076,7 +2063,6 @@ case_88:
 
 
 		DIAGS(("dst.planes %d src.fd_stand %d", dst_planes, msrc.fd_stand));
-		//DBG((0,"dst.planes %d src.fd_stand %d", dst_planes, msrc.fd_stand));
 		tmp = msrc;
 		tmp.fd_nplanes = 1;
 		tmp.fd_h = 1 << (src_planes);
@@ -2102,7 +2088,6 @@ case_88:
 		/* The above line crashes in Falcon TC (w/o NVDI) for some reason ?! */
 
 		DIAGS(("mdest planes %d", mdest.fd_nplanes));
-		//DBG((0,"mdest planes %d", mdest.fd_nplanes));
 		bzero(mdest.fd_addr, map_size(&mdest,3));
 
 		switch (src_planes)
@@ -2124,7 +2109,6 @@ case_8:
 						uchar pal_cref[256];
 						short lut[256];
 						short p = 256;
-						//DBG((0,"build_pal_xref dst_planes=%d,src_planes=%d", dst_planes,src_planes ));
 						build_pal_xref(src_pal, sys_pal, pal_cref, p);
 						memcpy( lut, colour_lut, p* sizeof(short) );
 						for( i = 0; i < p; i++ )
@@ -2195,11 +2179,9 @@ case_8:
 			 * (for the current line) */
 			pxy[5] = pxy[7] = y;
 			//static int dd = 0;
-			//DBG_hex( tmp.fd_addr, map_size(&tmp,8), !dd);
 			vr_trnfm( vdih, &tmp, &tmp2 );
 			//memcpy( tmp.fd_addr, tmp2.fd_addr, map_size(&tmp2, 9));
 
-			//DBG_hex( tmp2.fd_addr, map_size(&tmp2,7), !dd),dd=1;
 			/* for each color in src MFDB color depth */
 			for (i = 0; i < tmp.fd_h; i++)
 			{
@@ -2211,9 +2193,7 @@ case_8:
 
 					pxy[1] = pxy[3] = i;
 					/* project transparently to the mdest */
-					//DBG_hex( tmp2.fd_addr, map_size(&tmp2,6), 2, dd==3);
 					vrt_cpyfm( vdih, MD_TRANS, pxy, &tmp2, &mdest, colours );
-					//DBG_hex( mdest.fd_addr, map_size(&mdest,6), 2, dd==3);
 				}
 			}
 			//dd++;
@@ -2435,7 +2415,6 @@ int rw_syspalette( int md, struct rgb_1000 *palette, char *path, char *f )
 
 	palsz -= 4;
 	memcpy( palette, &buf[2], palsz );
-	//DBG((0,"rw_syspalette:pal[%d] = %d/%d/%d", pens, palette[pens].red, palette[pens].green, palette[pens].blue));
 	return 0;
 }
 

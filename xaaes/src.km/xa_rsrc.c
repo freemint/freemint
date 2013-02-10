@@ -288,7 +288,6 @@ transform_icon_bitmap(struct xa_client *client, struct xa_rscs *rscs, CICONBLK *
 				src_pal = C.icn_pal;
 			else
 				src_pal = 0;
-			//DBG((0,"%s:transform_gem_bitmap(), palette=%s, rscs->palette=%lx,icn_pal_name=%s:%s,cfg.palette=%s,cfg.remap_cicons=%d, C.is_init_icn_pal=%d,not_to_sys_pal=%d,src_pal=%lx, planes=%d", client->name, cfg.palette, rscs->palette, client->options.icn_pal_name ? client->options.icn_pal_name : "", icn_pal_name ? icn_pal_name : "", cfg.palette, cfg.remap_cicons, C.is_init_icn_pal, not_to_sys_pal, src_pal, planes ));
 		}
 		else
 			src_pal = 0;
