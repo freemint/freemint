@@ -243,10 +243,7 @@ free_icon_pos(enum locks lock, struct xa_window *ignore)
 		{
 			if (w != ignore && (is_iconified(w) || (w->window_status & XAWS_CHGICONIF)))
 			{
-				if (w->opts & XAWO_WCOWORK)
-					r = f2w(&w->delta, &ic, true);
-				else
-					r = ic;
+				r = ic;
 
 				if (w->t.x == r.x && w->t.y == r.y)
 					/* position occupied; advance with next position in grid. */
