@@ -302,7 +302,7 @@ transform_icon_bitmap(struct xa_client *client, struct xa_rscs *rscs, CICONBLK *
 	return new_data;
 }
 #endif
-#if 1	// debugging!
+#if 0	// debugging!
 void dump_hex( void *data, long len, int bpw, int doit );
 void dump_hex( void *data, long len, int bpw, int doit )
 {
