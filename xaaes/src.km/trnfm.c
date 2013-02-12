@@ -593,26 +593,25 @@ build_pal_xref(struct rgb_1000 *src_palette, struct rgb_1000 *dst_palette, unsig
 {
 	struct rgb_1000 *dst, *src;
 	unsigned long closest, this;
-	int i = 1, j, c, k;
+	int i, j, c;
 	short tpens = 256;
 
-	if( screen.planes <= 8 )
+	if( screen.planes < 8 )
 		tpens = 1 << screen.planes;
 
 	if (pens > 256)
 		pens = 256;
 
 	cref[0] = 0;
-	for (i = 0, src = src_palette; i < pens; i++)
+	for (i = 1, src = src_palette; i < pens; i++)
 	{
-		k = i;
 		dst = dst_palette + 1;
 		closest = 0xffffffffL;
 
 		c = 0;
 		for (j = 1; j < tpens; j++, dst++)
 		{
-			if (!(this = get_coldist(src+k, dst)))
+			if (!(this = get_coldist(src+i, dst)))
 			{
 				closest = this;
 				c = j;
@@ -624,8 +623,7 @@ build_pal_xref(struct rgb_1000 *src_palette, struct rgb_1000 *dst_palette, unsig
 				c = j;
 			}
 		}
-		//int c1 = c;
-		if( screen.planes <= 8 )
+		if( screen.planes == 8 )
 		{
 			/* ?? */
 			if (c == 9)
@@ -681,14 +679,12 @@ remap_bitmap_colindexes(MFDB *map, unsigned char *cref, int md)
 			}
 			cref_ind >>= (16 - planes);
 
-
 			if( cref_ind >= md )
 			{
 				if( lut )
 					cref_ind = lut[cref_ind];
 				cref_ind = cref[cref_ind];
 			}
-
 
 			for (j = 0; j < planes; j++)
 			{
@@ -2010,6 +2006,7 @@ transform_gem_bitmap(short vdih, MFDB msrc, MFDB mdest, short planes, struct rgb
 	if (src_planes <= 8 && dst_planes <= 8)
 	{
 #ifndef ST_ONLY
+		if(dst_planes == 8)	/* 4 does not work yet */
 		if (src_pal && sys_pal)
 		{
 			static uchar cref8[256] = {CREF_NI}, cref4[256] = {CREF_NI};
@@ -2022,15 +2019,14 @@ transform_gem_bitmap(short vdih, MFDB msrc, MFDB mdest, short planes, struct rgb
 			case 8:
 				crp = cref8;
 case_88:
-				//if( C.is_init_icn_pal != src_planes )
 				if( C.is_init_icn_pal & src_planes )
 				{
 					short p;
 					p = 1 << src_planes;
-					if( cref4[255] == 0 )
-						build_pal_xref(src_pal, sys_pal, cref4, 256 );
+					if( dst_planes == 8 && cref4[255] == 0 )
+						build_pal_xref(src_pal, sys_pal, cref4, 256);
 					build_pal_xref(src_pal, sys_pal, crp, p );
-					//C.is_init_icn_pal = src_planes;
+					//dump_hex( crp, p, 1, 1);
 					C.is_init_icn_pal &= ~src_planes;
 				}
 
