@@ -1072,7 +1072,7 @@ remove_from_iredraw_queue(enum locks lock, struct xa_window *wind)
 void
 iconify_window(enum locks lock, struct xa_window *wind, RECT *r)
 {
-	if ((r->w == -1 && r->h == -1) || (!r->w && !r->h))
+	if ((r->w == -1 && r->h == -1) || (!r->w && !r->h) || (r->y + r->h + cfg.icnfy_b_y != screen.r.h))
 		*r = free_icon_pos(lock, NULL);
 
 	move_window(lock, wind, true, XAWS_ICONIFIED, r->x, r->y, r->w, r->h);
@@ -1697,6 +1697,7 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 
 	if (is_iconified(wind))
 	{
+		//r = free_icon_pos(lock, NULL);
 		if (wind != root_window && !(wind->dial & created_for_POPUP))
 			inside_root(&r, wind->owner->options.noleft);
 
@@ -2428,7 +2429,7 @@ close_window(enum locks lock, struct xa_window *wind)
 	struct xa_client *client = wind->owner;
 	RECT r;
 	bool is_top, ignorefocus = false;
-// 	bool d = (!strnicmp(client->proc_name, "mintsett", 8)) ? true : false;
+	short dial;
 
 	if (wind == NULL)
 	{
@@ -2442,7 +2443,6 @@ close_window(enum locks lock, struct xa_window *wind)
 
 	if (!(wind->window_status & XAWS_OPEN))
 		return false;
-
 
 	if (wind == C.hover_wind)
 	{
@@ -2500,14 +2500,13 @@ close_window(enum locks lock, struct xa_window *wind)
 	is_top = is_topped(wind);
 	ignorefocus = (wind->window_status & XAWS_NOFOCUS) ? true : false;
 
-// 	if (d) display("is_top = %d", is_top);
-
 	wl = wind->next;
 
 	wi_remove(&S.open_windows, wind, true);
 	wi_put_first(&S.closed_windows, wind);
 	remove_from_iredraw_queue(lock, wind);
 	r = wind->r;
+	dial = wind->dial;
 
 	clear_wind_rectlist(wind);
 
@@ -2557,9 +2556,8 @@ close_window(enum locks lock, struct xa_window *wind)
 				w = NULL;
 		}
 
-// 	if (d) display("clwtna %d, w %lx, top_own %s", client->options.clwtna&0xff, w, window_list ? window_list->owner->name : "Noontop");
-
-		if (!ignorefocus && TOP_WINDOW && is_top && !w)
+		if (!ignorefocus && TOP_WINDOW && is_top && !w
+			&& !(dial & (created_for_AES|created_for_WDIAL|created_for_FORM_DO|created_for_FMD_START)) )
 		{
 			switch (client->options.clwtna)
 			{
