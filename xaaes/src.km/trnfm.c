@@ -1996,8 +1996,10 @@ void dump_hex( void *data, long len, int bpw, int doit );
 bool
 transform_gem_bitmap(short vdih, MFDB msrc, MFDB mdest, short planes, struct rgb_1000 *src_pal, struct rgb_1000 *sys_pal)
 {
+#ifndef ST_ONLY
 	static short clut8[256] = {CLUT_NI}, clut4[256] = {CLUT_NI};
 	short *clp;
+#endif
 	short src_planes, dst_planes;
 
 	src_planes = planes;
@@ -2088,6 +2090,7 @@ case_88:
 
 		switch (src_planes)
 		{
+#ifndef ST_ONLY
 			case 4:
 				clp = clut4;
 			goto case_8;
@@ -2095,7 +2098,6 @@ case_88:
 				clp = clut8;
 case_8:
 				colour_lut = tovdilut[src_planes];
-#ifndef ST_ONLY
 				/* convert 8bit-icon-palette to system-palette */
 				if( src_pal )
 				{
