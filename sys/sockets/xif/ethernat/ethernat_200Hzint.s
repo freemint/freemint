@@ -39,6 +39,8 @@
 	.globl _ethernat_int
 	.globl _set_old_int_lvl
 	.globl _set_int_lvl6
+	.globl _ethernat_probe_asm,
+	.globl _ethernat_probe_c
 
 	.text
 
@@ -91,3 +93,29 @@ _set_int_lvl6:
 	move.w	d0,sr
 	move.w	(sp)+,d0
 	rts
+
+
+| Change bus error exception handler
+| Call probe function
+| Enable again the old bus error handler
+_ethernat_probe_asm:
+	movem.l	a0-a7/d0-d7,-(sp)
+	move.w	sr,-(sp)
+	move.l	8,old_berr
+	lea	berr,a0
+	move.l	a0,8
+	move.l	sp,old_stack
+|	move.l	_ethernat_probe_c,a0
+|	jsr	(a0)
+	bsr	_ethernat_probe_c
+berr:
+	move.l	old_berr,8
+	move.l	old_stack,sp
+	move.w	(sp)+,sr
+	movem.l	(sp)+,d0-d7/a0-a7
+	rts
+
+old_stack:
+	ds.l	1
+old_berr:
+	ds.l	1
