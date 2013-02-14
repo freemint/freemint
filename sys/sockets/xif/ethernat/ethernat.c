@@ -343,6 +343,7 @@ ethernat_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, s
 {
 	BUF				*nbuf;
 	unsigned char	littlemem;
+	UNUSED(littlemem);
 //	static	uchar	message[100];
 
 //	unsigned long	timeval;
@@ -390,7 +391,6 @@ ethernat_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, s
 	// Check available memory in LAN91C111
 	Eth_set_bank(0);
 	littlemem = (*LAN_MIR) & 0x00ff;
-	UNUSED(littlemem);
 //	if (len == 0)
 //	{
 //		c_conws("Insufficient memory in LAN91C111!\n\r");
@@ -627,31 +627,37 @@ ethernat_config (struct netif *nif, struct ifopt *ifo)
 	
 	if (!STRNCMP ("hwaddr"))
 	{
+#ifdef DEBUG_INFO
 		uchar *cp;
+#endif
 		/*
 		 * Set hardware address
 		 */
 		if (ifo->valtype != IFO_HWADDR)
 			return ENOENT;
 		memcpy (nif->hwlocal.adr.bytes, ifo->ifou.v_string, ETH_ALEN);
+#ifdef DEBUG_INFO
 		cp = nif->hwlocal.adr.bytes;
-		UNUSED (cp);
 		DEBUG (("dummy: hwaddr is %x:%x:%x:%x:%x:%x",
 			cp[0], cp[1], cp[2], cp[3], cp[4], cp[5]));
+#endif
 	}
 	else if (!STRNCMP ("braddr"))
 	{
+#ifdef DEBUG_INFO
 		uchar *cp;
+#endif
 		/*
 		 * Set broadcast address
 		 */
 		if (ifo->valtype != IFO_HWADDR)
 			return ENOENT;
 		memcpy (nif->hwbrcst.adr.bytes, ifo->ifou.v_string, ETH_ALEN);
+#ifdef DEBUG_INFO
 		cp = nif->hwbrcst.adr.bytes;
-		UNUSED (cp);
 		DEBUG (("dummy: braddr is %x:%x:%x:%x:%x:%x",
 			cp[0], cp[1], cp[2], cp[3], cp[4], cp[5]));
+#endif
 	}
 	else if (!STRNCMP ("debug"))
 	{
