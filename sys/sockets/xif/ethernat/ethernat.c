@@ -53,6 +53,7 @@
 #include "mint/mdelay.h"
 #include "mint/sockio.h"
 #include "mint/endian.h"
+#include "mint/arch/asm_spl.h" /* spl() */
 
 #include "91c111.h"
 #include "ethernat_200Hzint.h"
@@ -146,6 +147,10 @@ short ch2i(char);
 // Convert long to hex ascii
 void hex2ascii(ulong l, uchar* c);
 
+/* To know if the EtherNat is present through a bus error*/
+extern void ethernat_probe_asm(void);
+void ethernat_probe_c(void);
+static int found = 0;
 
 // Variable for locking out interrupt when accessing the hardware
 static volatile int in_use = 0;
@@ -704,6 +709,7 @@ driver_init (void)
 	long	ferror;
 	short	fhandle;
 	char	macbuf[13];
+	short sr;
 
 //	c_conws("Driver init\n\r");
 
@@ -712,11 +718,13 @@ driver_init (void)
 	in_use = 1;
 
 	// First check that the Ethernat card can be found
-	if((*LAN_BANK & 0x00ff) != 0x0033)
-	{
-//		ksprintf (message, "EtherNat not found! \n\r");
-//		c_conws (message);
+	sr = spl7 ();
+	ethernat_probe_asm();
+	spl (sr);
 
+	if(!found)
+	{
+		c_conws ("\n\n\r\033pEtherNat not found!\033q\n\n\r");
 		return -1;
 	}
 
@@ -962,8 +970,14 @@ driver_init (void)
 	return 0;
 }
 
+void
+ethernat_probe_c (void)
+{
+	if((*LAN_BANK & 0x00ff) != 0x0033)
+		return;
 
-
+	found = 1;
+}
 
 static void
 ethernat_install_int (void)
