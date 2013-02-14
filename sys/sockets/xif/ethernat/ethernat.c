@@ -706,6 +706,8 @@ driver_init (void)
 	char	macbuf[13];
 
 
+	short sysdrv;
+	char ethernat_inf[] = "A:\\ETHERNAT.INF";
 
 //	c_conws("Driver init\n\r");
 
@@ -730,7 +732,11 @@ driver_init (void)
 	//c_conws("*********************************\n\r");
 
 	// Open ethernat.inf to read the MAC address
-	ferror = Fopen("ethernat.inf",0);
+	sysdrv = *((short *) 0x446);	/* get the boot drive number */
+	ethernat_inf[0] += sysdrv;
+
+	if((ferror = Fopen("ethernat.inf",0)) < 0) /* Try first in sysdir */
+		ferror = Fopen(ethernat_inf,0);/* otherwise in boot drive's root */
 //	c_conws("Efter FOPEN\n\r");
 	if(ferror >= 0)
 	{
