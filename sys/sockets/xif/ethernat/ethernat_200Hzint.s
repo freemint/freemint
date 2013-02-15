@@ -105,8 +105,6 @@ _ethernat_probe_asm:
 	lea	berr,a0
 	move.l	a0,8
 	move.l	sp,old_stack
-|	move.l	_ethernat_probe_c,a0
-|	jsr	(a0)
 	bsr	_ethernat_probe_c
 berr:
 	move.l	old_berr,8
