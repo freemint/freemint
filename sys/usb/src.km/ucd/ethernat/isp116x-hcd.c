@@ -63,6 +63,7 @@
 #include "mint/mint.h"
 #include "libkern/libkern.h"
 #include "mint/dcntl.h"
+#include "mint/arch/asm_spl.h" /* spl() */
 
 #include "../../config.h"
 #include "../../endian/io.h"
@@ -180,6 +181,7 @@ struct isp116x_platform_data isp116x_board;
 static long got_rhsc;		/* root hub status change */
 struct usb_device *devgone;	/* device which was disconnected */
 static long rh_devnum;		/* address of Root Hub endpoint */
+static int found = 0;
 
 /*
  * interrupt handling - bottom half
@@ -1927,16 +1929,38 @@ usb_lowlevel_stop(void)
 	return 0;
 }
 
+void
+ethernat_probe_c (void)
+{
+	if (!((*ETHERNAT_CPLD_CR) == (*ETHERNAT_CPLD_CR)))
+		return;
+
+	found = 1;
+}
+
 long _cdecl
 init (struct kentry *k, struct ucdinfo *uinfo, char **reason)
 {
 	long ret;
+	short sr;
 
 	kentry	= k;
 	uinf	= uinfo;
 
 	if (check_kentry_version())
 		return -1;
+
+	/* Check that the Ethernat card can be found */
+	sr = spl7 ();
+	ethernat_probe_asm();
+	spl (sr);
+
+	if(!found)
+	{
+		c_conws ("\n\r\033pEtherNat not found!\033q\n\n\r");
+		DEBUG (("EtherNat not found!"));
+		return -1;
+	}
 
 	c_conws (MSG_BOOT);
 	c_conws (MSG_GREET);
