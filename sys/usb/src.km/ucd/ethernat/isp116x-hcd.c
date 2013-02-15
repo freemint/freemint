@@ -1081,7 +1081,7 @@ isp116x_submit_rh_msg(struct usb_device *dev, unsigned long pipe,
 	unsigned short wValue;
 	unsigned short wIndex;
 	unsigned short wLength;
-	union { unsigned char *cp; unsigned char *sp; } up = {data_buf};
+	union { unsigned char *cp; unsigned short *sp; } up = {data_buf};
 
 	if (usb_pipeint(pipe))
 	{
