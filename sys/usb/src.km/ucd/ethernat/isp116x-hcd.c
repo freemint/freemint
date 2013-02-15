@@ -63,6 +63,7 @@
 #include "mint/mint.h"
 #include "libkern/libkern.h"
 #include "mint/dcntl.h"
+#include "mint/arch/asm_spl.h" /* spl() */
 
 #include "../../config.h"
 #include "../../endian/io.h"
@@ -72,9 +73,9 @@
 
 #define VER_MAJOR	0
 #define VER_MINOR	1
-#define VER_STATUS	
+#define VER_STATUS
 
-#define MSG_VERSION	str (VER_MAJOR) "." str (VER_MINOR) str (VER_STATUS) 
+#define MSG_VERSION	str (VER_MAJOR) "." str (VER_MINOR) str (VER_STATUS)
 #define MSG_BUILDDATE	__DATE__
 
 #define MSG_BOOT	\
@@ -136,7 +137,7 @@
 
 #ifdef DEV_DEBUG
 
-# define FORCE(x)	
+# define FORCE(x)
 # define ALERT(x)	KERNEL_ALERT x
 # define DEBUG(x)	KERNEL_DEBUG x
 # define TRACE(x)	KERNEL_TRACE x
@@ -144,10 +145,10 @@
 
 #else
 
-# define FORCE(x)	
+# define FORCE(x)
 # define ALERT(x)	KERNEL_ALERT x
-# define DEBUG(x)	
-# define TRACE(x)	
+# define DEBUG(x)
+# define TRACE(x)
 # define ASSERT(x)	assert x
 
 #endif
@@ -180,6 +181,7 @@ struct isp116x_platform_data isp116x_board;
 static long got_rhsc;		/* root hub status change */
 struct usb_device *devgone;	/* device which was disconnected */
 static long rh_devnum;		/* address of Root Hub endpoint */
+static int found = 0;
 
 /*
  * interrupt handling - bottom half
@@ -190,7 +192,7 @@ void _cdecl 	ethernat_int 	(void);
  */
 static void	int_handle_tophalf	(PROC *p, long arg);
 
-/* 
+/*
  *Function prototypes
  */
 long 		isp116x_check_id	(struct isp116x *);
@@ -212,7 +214,7 @@ static long _cdecl	ethernat_ioctl		(struct ucdif *, short, long);
 
 static char lname[] = "Ethernat USB controller driver for FreeMiNT\0";
 
-static struct ucdif ethernat_uif = 
+static struct ucdif ethernat_uif =
 {
 	0,			/* *next */
 	USB_CONTRLL,		/* class */
@@ -309,7 +311,7 @@ dump_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 	char buf[(len * 4) + 24 + 6];
 #endif
 	DEBUG(("%s URB:[%4lx] dev:%2ld,ep:%2ld-%c,type:%s,len:%ld stat:0x%lx",
-				str, isp116x_get_current_frame_number(dev), 
+				str, isp116x_get_current_frame_number(dev),
 				usb_pipedevice(pipe), usb_pipeendpoint(pipe),
 				usb_pipeout(pipe)  ? 'O' : 'I',
 				usb_pipetype(pipe) < 2 ?
@@ -327,7 +329,7 @@ dump_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 		{
 			sprintf(build_str, sizeof(build_str), " %02x", ((unsigned char *) buffer)[i]);
 			strcat(buf, build_str);
-		}	
+		}
 		sprintf(build_str, sizeof(build_str), "%s\r\n", i < len ? "..." : "");
 		strcat(buf, build_str);
 		DEBUG((buf));
@@ -381,7 +383,7 @@ dump_ptd_data(struct ptd *ptd, unsigned char * buffer, long type)
 	long k;
 	char build_str[64];
 	char buf[64 + 4 * PTD_GET_LEN(ptd)];
-	
+
 	sprintf(buf, sizeof(buf),"\0");
 	if (type == 0 /* 0ut data */ )
 	{
@@ -405,8 +407,8 @@ dump_ptd_data(struct ptd *ptd, unsigned char * buffer, long type)
 		}
 		DEBUG((buf));
 	}
-	
-	
+
+
 	if (PTD_GET_LAST(ptd))
 	{
 		DEBUG(("--- last PTD ---"));
@@ -570,7 +572,7 @@ write_ptddata_to_fifo(struct isp116x *isp116x, void *buf, long len)
 	unsigned short *dp2 = (unsigned short *) buf;
 	unsigned short w;
 	long quot = len % 4;
-	
+
 /* For EtherNat, take the raw_write out in write functions, here we don't
  * like that EtherNat swap the bytes for us, so we swap them before we send
  * them, then the bytes will arrive to the USB device with the correct positions
@@ -651,9 +653,9 @@ pack_fifo(struct isp116x *isp116x, struct usb_device *dev,
 	long i, done;
 
 	DEBUG(("--- pack buffer 0x%08lx - %ld bytes (fifo %ld) ---", data, len, buflen));
-	
+
 	isp116x_write_reg16(isp116x, HCuPINT, HCuPINT_AIIEOT);
-	
+
 	isp116x_write_reg16(isp116x, HCXFERCTR, buflen);
 	isp116x_write_addr(isp116x, HCATLPORT | ISP116x_WRITE_OFFSET);
 
@@ -705,14 +707,14 @@ unpack_fifo(struct isp116x *isp116x, struct usb_device *dev,
 //		DEBUG(("i=%d - done=%d - len=%d", i, done, PTD_GET_LEN(&ptd[i])));
 		DEBUG(("i=%ld n=%ld - done=%ld - len= %ld ptd_len=%d", i, n, done, len, PTD_GET_LEN(&ptd[i])));
 		/*****************/
-		
+
 		/* For EtherNAT, use raw_read to don't swap bytes */
 		ptd[i].count = isp116x_raw_read_data16(isp116x);
 		ptd[i].mps = isp116x_raw_read_data16(isp116x);
 		ptd[i].len = isp116x_raw_read_data16(isp116x);
 		ptd[i].faddr = isp116x_raw_read_data16(isp116x);
 		dump_ptd(&ptd[i]);
-		
+
 		/* when cc is 15 the data has not being touch by the HC
 		 * so we have to read all to empty completly the buffer
 		 */
@@ -728,9 +730,9 @@ unpack_fifo(struct isp116x *isp116x, struct usb_device *dev,
 		dump_ptd_data(&ptd[i], (unsigned char *) data + done, 1);
 
 		done += PTD_GET_LEN(&ptd[i]);
-	
+
 		cc = PTD_GET_CC(&ptd[i]);
-	
+
 		/* Data underrun means basically that we had more buffer space than
 		 * the function had data. It is perfectly normal but upper levels have
 		 * to know how much we actually transferred.
@@ -757,7 +759,7 @@ isp116x_interrupt(struct isp116x *isp116x)
 	irqstat = isp116x_read_reg16(isp116x, HCuPINT);
 	isp116x_write_reg16(isp116x, HCuPINT, irqstat);
 	DEBUG((">>>>>> irqstat %x <<<<<<", irqstat));
-	
+
 	if (irqstat & HCuPINT_ATL)
 	{
 		DEBUG((">>>>>> HCuPINT_ATL <<<<<<"));
@@ -817,7 +819,7 @@ static inline long
 max_transfer_len(struct usb_device *dev, unsigned long pipe)
 {
 	unsigned mpck = (*uinf->usb_maxpacket)(dev, pipe);
-	
+
 	/* One PTD can transfer 1023 bytes but try to always
 	 * transfer multiples of endpoint buffer size
 	 */
@@ -847,7 +849,7 @@ isp116x_submit_job(struct usb_device *dev, unsigned long pipe,
 	DEBUG(("------------------------------------------------"));
 	dump_msg(dev, pipe, buffer, len, "SUBMIT");
 	DEBUG(("------------------------------------------------"));
-	
+
 	if (len >= 1024)
 	{
 		ALERT(("Too big job"));
@@ -883,7 +885,7 @@ isp116x_submit_job(struct usb_device *dev, unsigned long pipe,
 		dev->status = USB_ST_CRC_ERR;
 		return -1;
 	}
-	
+
 	/* FIFO not empty? */
 	if (isp116x_read_reg16(isp116x, HCBUFSTAT) & HCBUFSTAT_ATL_FULL)
 	{
@@ -901,7 +903,7 @@ retry:
 	ptd->len = PTD_LEN(len) | PTD_DIR(dir);
 	ptd->faddr = PTD_FA(usb_pipedevice(pipe));
 
-	
+
 retry_same:
 
 	/* FIFO not empty? */
@@ -991,8 +993,8 @@ retry_same:
 	done += i;
 	buffer = (char *)buffer + i;
 	len -= i;
-	
-	
+
+
 	/* There was some kind of real problem; Prepare the PTD again
 	 * and retry from the failed transaction on
 	 */
@@ -1079,6 +1081,7 @@ isp116x_submit_rh_msg(struct usb_device *dev, unsigned long pipe,
 	unsigned short wValue;
 	unsigned short wIndex;
 	unsigned short wLength;
+	union { unsigned char *cp; unsigned char *sp; } up = {data_buf};
 
 	if (usb_pipeint(pipe))
 	{
@@ -1102,21 +1105,21 @@ isp116x_submit_rh_msg(struct usb_device *dev, unsigned long pipe,
 		case RH_GET_STATUS:
 			DEBUG(("RH_GET_STATUS"));
 
-			*(unsigned short *) data_buf = swap_16(1);
+			*up.sp = swap_16(1);
 			len = 2;
 			break;
 
 		case RH_GET_STATUS | RH_INTERFACE:
 			DEBUG(("RH_GET_STATUS | RH_INTERFACE"));
 
-			*(unsigned short *) data_buf = swap_16(0);
+			*up.sp = swap_16(0);
 			len = 2;
 			break;
 
 		case RH_GET_STATUS | RH_ENDPOINT:
 			DEBUG(("RH_GET_STATUS | RH_ENDPOINT"));
 
-			*(unsigned short *) data_buf = swap_16(0);
+			*up.sp = swap_16(0);
 			len = 2;
 			break;
 
@@ -1414,8 +1417,8 @@ submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 	long max = max_transfer_len(dev, pipe);
 	long dir_in = usb_pipein(pipe);
 	long done, ret;
-	
-	
+
+
 	/* Control message is for the HUB? */
 	if (devnum == rh_devnum)
 		return isp116x_submit_rh_msg(dev, pipe, buffer, len, setup);
@@ -1425,8 +1428,8 @@ submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 	/* Setup phase */
 	DEBUG(("--- SETUP PHASE --------------------------------"));
 	usb_settoggle(dev, epnum, 1, 0);
-	
-	
+
+
 	ret = isp116x_submit_job(dev, pipe,
 				PTD_DIR_SETUP,
 				 setup, sizeof(struct devrequest));
@@ -1482,7 +1485,7 @@ submit_bulk_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 	long dir_out = usb_pipeout(pipe);
 	long max = max_transfer_len(dev, pipe);
 	long done, ret;
-	
+
 	DEBUG(("--- BULK ---------------------------------------"));
 	DEBUG(("dev=%ld pipe=%ld buf=0x%lx size=%d dir_out=%d",
 	    usb_pipedevice(pipe), usb_pipeendpoint(pipe), buffer, len, dir_out));
@@ -1542,7 +1545,7 @@ isp116x_sw_reset(struct isp116x *isp116x)
 
 	isp116x_write_reg16(isp116x, HCSWRES, HCSWRES_MAGIC);
 	isp116x_write_reg32(isp116x, HCCMDSTAT, HCCMDSTAT_HCR);
-	
+
 	while (--retries)
 	{
 		/* It usually resets within 1 ms */
@@ -1551,7 +1554,7 @@ isp116x_sw_reset(struct isp116x *isp116x)
 		if (!(isp116x_read_reg32(isp116x, HCCMDSTAT) & HCCMDSTAT_HCR))
 			break;
 	}
-	
+
 	if (!retries)
 	{
 		DEBUG(("software reset timeout"));
@@ -1560,9 +1563,9 @@ isp116x_sw_reset(struct isp116x *isp116x)
 
 # if 0
 	/* GALVEZ: DEBUG SOFTWARE RESET */
-		
+
 	retries = 5000;
-	
+
 	while (--retries){
 		if ((isp116x_read_reg32(isp116x, HCCMDSTAT) & HCCMDSTAT_HCR)) {
 			INFO ("HCR: 1 retries: %d\n\r",retries);
@@ -1580,8 +1583,8 @@ isp116x_reset(struct isp116x *isp116x)
 	unsigned short clkrdy = 0;
 	long ret, timeout = 15;/* ms
 				* Galvez: 15 ms sometimes isn't enough,
-				* for EtherNat under TOS ??????? increased to 150 ms 
-				*/ 
+				* for EtherNat under TOS ??????? increased to 150 ms
+				*/
 
 	ret = isp116x_sw_reset(isp116x);
 
@@ -1606,7 +1609,7 @@ isp116x_reset(struct isp116x *isp116x)
 	return ret;
 }
 
-static void 
+static void
 isp116x_stop(struct isp116x *isp116x)
 {
 	unsigned long val;
@@ -1623,7 +1626,7 @@ isp116x_stop(struct isp116x *isp116x)
 	val &= ~(RH_A_NPS | RH_A_PSM);
 	isp116x_write_reg32(isp116x, HCRHDESCA, val);
 	isp116x_write_reg32(isp116x, HCRHSTATUS, RH_HS_LPS);
-	
+
 	isp116x_sw_reset(isp116x);
 }
 
@@ -1641,7 +1644,7 @@ int_handle_tophalf (PROC *process, long arg)
 	{
 		(*uinf->usb_rh_wakeup)();
 	}
-	
+
 }
 
 void _cdecl
@@ -1656,24 +1659,24 @@ ethernat_int(void)
 	isp116x_write_reg16(isp116x, HCuPINTENB, 0);
 	irqstat = isp116x_read_reg16(isp116x, HCuPINT);
 	isp116x_write_reg16(isp116x, HCuPINT, irqstat);
-	
+
 	set_old_int_lvl();
-	
+
 	if (irqstat & HCuPINT_OPR)
 	{
 		intstat = isp116x_read_reg32(isp116x, HCINTSTAT);
 		isp116x_write_reg32(isp116x, HCINTSTAT, intstat);
-                
-                if (intstat & HCINT_RHSC) 
+
+                if (intstat & HCINT_RHSC)
 		{
 			isp116x->rhstatus = isp116x_read_reg32(isp116x, HCRHSTATUS);
 			isp116x->rhport[0] = isp116x_read_reg32(isp116x, HCRHPORT1);
 			isp116x->rhport[1] = isp116x_read_reg32(isp116x, HCRHPORT2);
-                        
+
 			addroottimeout (0L, int_handle_tophalf, 0x1);
 		}
          }
-	
+
 	isp116x_write_reg16(isp116x, HCuPINTENB, HCuPINT_OPR);
 	set_int_lvl6();
 	/* Enable CPLD USB interrupt again */
@@ -1684,7 +1687,7 @@ ethernat_int(void)
 /*
  *  Configure the chip. The chip must be successfully reset by now.
  */
-static long 
+static long
 isp116x_start(struct isp116x *isp116x)
 {
 	struct isp116x_platform_data *board = isp116x->board;
@@ -1745,10 +1748,10 @@ isp116x_start(struct isp116x *isp116x)
 	/* Disable ports to avoid race in device enumeration */
 	isp116x_write_reg32(isp116x, HCRHPORT1, RH_PS_CCS);
 	isp116x_write_reg32(isp116x, HCRHPORT2, RH_PS_CCS);
-	
+
 	/* Set handler and interrupt for Root Hub Status Change */
 	old_int = Setexc (0xC3, (long)interrupt);
-	
+
 	isp116x->intenb = HCINT_MIE | HCINT_RHSC; /* HCINT_UE */
 	isp116x_write_reg32(isp116x, HCINTENB, isp116x->intenb);
 	isp116x->irqenb = HCuPINT_OPR; /* HCuPINT_ATL | HCuPINT_SUSP */
@@ -1760,7 +1763,7 @@ isp116x_start(struct isp116x *isp116x)
 #if 1
 	/* EtherNAT control register, enable interrupt for USB */
 	*ETHERNAT_CPLD_CR = (*ETHERNAT_CPLD_CR) | 0x04;
-#endif	
+#endif
 	isp116x_show_regs(isp116x);
 
 	isp116x->disabled = 0;
@@ -1807,9 +1810,9 @@ ethernat_ioctl (struct ucdif *u, short cmd, long arg)
 		case SUBMIT_CONTROL_MSG :
 		{
 			struct control_msg *ctrl_msg = (struct control_msg *)arg;
-			
+
 			ret = submit_control_msg (ctrl_msg->dev, ctrl_msg->pipe,
-			 		    ctrl_msg->data, ctrl_msg->size, ctrl_msg->setup);	
+			 		    ctrl_msg->data, ctrl_msg->size, ctrl_msg->setup);
 			break;
 		}
 		case SUBMIT_BULK_MSG :
@@ -1817,7 +1820,7 @@ ethernat_ioctl (struct ucdif *u, short cmd, long arg)
 			struct bulk_msg *bulk_msg = (struct bulk_msg *)arg;
 
 			ret = submit_bulk_msg (bulk_msg->dev, bulk_msg->pipe,
-				         bulk_msg->data, bulk_msg->len);			
+				         bulk_msg->data, bulk_msg->len);
 
 			break;
 		}
@@ -1826,7 +1829,7 @@ ethernat_ioctl (struct ucdif *u, short cmd, long arg)
 			struct int_msg *int_msg = (struct int_msg *)arg;
 
 			ret = submit_int_msg(int_msg->dev, int_msg->pipe,
-				       int_msg->buffer, int_msg->transfer_len, 
+				       int_msg->buffer, int_msg->transfer_len,
 				       int_msg->interval);
 
 			break;
@@ -1835,7 +1838,7 @@ ethernat_ioctl (struct ucdif *u, short cmd, long arg)
 		{
 			return ENOSYS;
 		}
-	}	
+	}
 	return ret;
 }
 
@@ -1861,7 +1864,7 @@ isp116x_check_id(struct isp116x *isp116x)
 }
 
 
-long 
+long
 usb_lowlevel_init(long dummy1, const struct pci_device_id *dummy2)
 {
 //	unsigned short val;
@@ -1898,7 +1901,7 @@ usb_lowlevel_init(long dummy1, const struct pci_device_id *dummy2)
 	/* Try to get ISP116x silicon chip ID */
 	if (isp116x_check_id(isp116x) < 0)
 		return (-1);
-		
+
 	isp116x->disabled = 1;
 	isp116x->sleeping = 0;
 
@@ -1915,7 +1918,7 @@ usb_lowlevel_init(long dummy1, const struct pci_device_id *dummy2)
 	return 0;
 }
 
-long 
+long
 usb_lowlevel_stop(void)
 {
 	struct isp116x *isp116x = &isp116x_dev;
@@ -1926,16 +1929,38 @@ usb_lowlevel_stop(void)
 	return 0;
 }
 
+void
+ethernat_probe_c (void)
+{
+	if (!((*ETHERNAT_CPLD_CR) == (*ETHERNAT_CPLD_CR)))
+		return;
+
+	found = 1;
+}
+
 long _cdecl
 init (struct kentry *k, struct ucdinfo *uinfo, char **reason)
 {
 	long ret;
+	short sr;
 
 	kentry	= k;
 	uinf	= uinfo;
 
 	if (check_kentry_version())
 		return -1;
+
+	/* Check that the Ethernat card can be found */
+	sr = spl7 ();
+	ethernat_probe_asm();
+	spl (sr);
+
+	if(!found)
+	{
+		c_conws ("\n\r\033pEtherNat not found!\033q\n\n\r");
+		DEBUG (("EtherNat not found!"));
+		return -1;
+	}
 
 	c_conws (MSG_BOOT);
 	c_conws (MSG_GREET);
