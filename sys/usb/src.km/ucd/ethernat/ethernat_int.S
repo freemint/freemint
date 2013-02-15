@@ -42,6 +42,8 @@
 	.globl _set_old_int_lvl
 	.globl _set_int_lvl6
 	.globl _hook_reset_vector
+	.globl _ethernat_probe_asm,
+	.globl _ethernat_probe_c
 
 	.text
 
@@ -102,7 +104,29 @@ newreset:
 	move.l	oldvalid,_resvalid
 	jmp	(a6)
 
-	.bss
 oldvalid:
 	.ds.l	1
+
+// Change bus error exception handler
+// Call probe function
+// Enable again the old bus error handler
+_ethernat_probe_asm:
+	movem.l	a0-a7/d0-d7,-(sp)
+	move.w	sr,-(sp)
+	move.l	8,old_berr
+	lea	berr,a0
+	move.l	a0,8
+	move.l	sp,old_stack
+	bsr	_ethernat_probe_c
+berr:
+	move.l	old_berr,8
+	move.l	old_stack,sp
+	move.w	(sp)+,sr
+	movem.l	(sp)+,d0-d7/a0-a7
+	rts
+
+old_stack:
+	ds.l	1
+old_berr:
+	ds.l	1
 
