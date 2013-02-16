@@ -442,7 +442,6 @@ static void file_to_list( SCROLL_INFO *list, char *fn, bool skip_hash, bool open
 	//sc.fnt = &norm_txt;
 	sc.fnt = 0;
 
-
 	PRINIT;
 	for( lineno = 1; lineno < VIEW_MAX_LINES && xa_readline( (char*)lbuf, sizeof(lbuf), xa_fp ); lineno++ )
 	{
@@ -596,9 +595,15 @@ open_about(enum locks lock, struct xa_client *client, bool open, char *fn)
 		{
 			(obtree + ABOUT_VERSION)->ob_spec.free_string = vversion;
 			/* Set version date */
+#if !XAAES_RELEASE
 			(obtree + ABOUT_DATE)->ob_spec.free_string = info_string;
+#else
+			(obtree + ABOUT_DATE)->ob_flags |= OF_HIDETREE;
+			(obtree + ABOUT_DATE-1)->ob_flags |= OF_HIDETREE;
+#endif
 			(obtree + ABOUT_TARGET)->ob_spec.free_string = arch_target;
 		}
+
 
 		wt = set_toolbar_widget(lock, wind, wind->owner, obtree, inv_aesobj(), 0/*WIP_NOTEXT*/, STW_ZEN, NULL, &or);
 		wt->exit_form = about_form_exit;

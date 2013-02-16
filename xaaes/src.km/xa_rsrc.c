@@ -182,6 +182,9 @@ transform_icon_bitmap(struct xa_client *client, struct xa_rscs *rscs, CICONBLK *
 		return new_data;
 }
 #else
+
+extern int init_pal_cref;
+#define RECALC_REMAP_LUT 127
 static short *
 transform_icon_bitmap(struct xa_client *client, struct xa_rscs *rscs, CICONBLK *icon, short *map, long len, int planes, short vdih)
 {
@@ -230,6 +233,10 @@ transform_icon_bitmap(struct xa_client *client, struct xa_rscs *rscs, CICONBLK *
 	tmp = kmalloc(new_len);
 	if (tmp)
 	{
+
+#ifndef ST_ONLY
+		static struct rgb_1000 *src_pal;
+#endif
 		src.fd_addr = tmp;
 		src.fd_w	= icon->monoblk.ib_wicon; /* Transform MFDB's */
 		src.fd_h	= icon->monoblk.ib_hicon;
@@ -246,12 +253,10 @@ transform_icon_bitmap(struct xa_client *client, struct xa_rscs *rscs, CICONBLK *
 
 		memcpy(tmp, new_data, new_len);
 #ifndef ST_ONLY
+		if( cfg.remap_cicons )
 		{
-		static char *icn_pal_name = 0;
-		int not_to_sys_pal = cfg.palette[0] && client->options.icn_pal_name && strcmp( cfg.palette, client->options.icn_pal_name );
-
-		if( cfg.remap_cicons || not_to_sys_pal )
-		{
+			static char *icn_pal_name = 0;
+			int not_to_sys_pal = cfg.palette[0] && client->options.icn_pal_name && strcmp( cfg.palette, client->options.icn_pal_name );
 			if( !rscs->palette && not_to_sys_pal )
 			{
 				if( C.is_init_icn_pal == 1 && strcmp( icn_pal_name, client->options.icn_pal_name) )
@@ -265,16 +270,29 @@ transform_icon_bitmap(struct xa_client *client, struct xa_rscs *rscs, CICONBLK *
 						if( icn_pal_name )
 							kfree(icn_pal_name);
 						icn_pal_name = xa_strdup( client->options.icn_pal_name );
-						C.is_init_icn_pal = 1;
+						C.is_init_icn_pal = RECALC_REMAP_LUT;
 					}
 					else
 						C.is_init_icn_pal = -1;
 				}
 			}
+			if( rscs->palette )
+			{
+				if( src_pal != rscs->palette )
+				{
+					C.is_init_icn_pal = RECALC_REMAP_LUT;
+					src_pal = rscs->palette;
+				}
+			}
+			else if( C.is_init_icn_pal >= 1 )
+				src_pal = C.icn_pal;
+			else
+				src_pal = 0;
 		}
+		else
+			src_pal = 0;
 
-		transform_gem_bitmap(vdih, src, dst, planes, cfg.remap_cicons ? rscs->palette ? rscs->palette : C.is_init_icn_pal == 1 ? C.icn_pal : 0 : 0, screen.palette);
-		}
+		transform_gem_bitmap(vdih, src, dst, planes, src_pal, screen.palette);
 #else
 		transform_gem_bitmap(vdih, src, dst, planes, 0, screen.palette);
 #endif

@@ -337,7 +337,6 @@ static void configure(void)
 {
 	C.Aes->type = APP_AESSYS;
 	C.Aes->cmd_tail = "\0";
-	//C.Aes->wt.e.obj = -1;
 
 	strcpy(C.Aes->cmd_name, "XaAES");
 	strcpy(C.Aes->name, Aes_display_name);
@@ -382,10 +381,7 @@ static void configure(void)
 	cfg.back_col = -1;
 	cfg.menu_bar = 2;	// always on
 	cfg.allow_setexc = -1;	/* dont change */
-	//cfg.backname = FAINT;
 	cfg.next_active = 0;
-// 	cfg.widg_w = ICON_W;
-// 	cfg.widg_h = ICON_H;
 
 	cfg.ver_wheel_id = 0;
 	cfg.ver_wheel_amount = 1;
@@ -404,11 +400,10 @@ static void configure(void)
 	/* default to live actions */
 	default_options.xa_nomove = true;
 	default_options.xa_nohide = true;
-	//default_options.xa_objced = true;
 	default_options.thinframe = 1;
 	default_options.wheel_mode = WHL_AROWWHEEL;
 
-	default_options.clwtna = 1;
+	default_options.clwtna = 0;
 	default_options.alt_shortcuts = 3;
 
 	C.Aes->options = default_options;

@@ -6036,6 +6036,7 @@ d_g_icon(struct widget_tree *wt, struct xa_vdi_settings *v)
 	done(OS_SELECTED|OS_DISABLED);
 }
 
+void dump_hex( void *data, long len, int bpw, int doit );
 /*
  * Draw a colour icon
  */
@@ -6084,9 +6085,6 @@ d_g_cicon(struct widget_tree *wt, struct xa_vdi_settings *v)
 	//have_sel = c->sel_data != NULL;
 	have_sel = best_cicon->sel_data ? true : false;
 
-	//DIAG((D_o, wt->owner, "cicon sel_mask 0x%lx col_mask 0x%lx", c->sel_mask, c->col_mask));
-
-
 	/* check existence of selection. */
 	if ((ob->ob_state & OS_SELECTED) && have_sel)
 	{
@@ -6108,6 +6106,7 @@ d_g_cicon(struct widget_tree *wt, struct xa_vdi_settings *v)
 		blitmode = S_ONLY;
 
 	Micon.fd_nplanes = screen->planes;
+
 
 	vro_cpyfm(RASTER_HDL, blitmode, pxy, &Micon, &Mscreen);
 	if( iconblk->ib_char || *iconblk->ib_ptext )

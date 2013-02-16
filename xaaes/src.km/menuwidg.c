@@ -850,9 +850,10 @@ menu_pop(Tab *tab)
 
 	DIAG((D_menu, tab->client, "menu_pop: tab=%lx for %s", tab, tab->client->name));
 
-	if( !(p == k->p.wt->owner->p /*|| p == C.Hlp->p || p == C.Aes->p*/) )
+	if( !(tab->ty == ROOT_MENU || p == k->p.wt->owner->p) )
 	{
 		BLOG((0, "menu_pop: ERROR:(%s,%s)", p->name, k->p.wt->owner->p->name ));
+		/* todo: pop delayed? */
 		return 0;
 	}
 	cancel_pop_timeouts();
@@ -1218,9 +1219,8 @@ display_popup(Tab *tab, short rdx, short rdy)
 
 		DIAG((D_menu, tab->client, "drop: %d/%d,%d/%d", r));
 		set_popup_widget(tab, wind, pi->parent);
-
 		/* top menu-owner-window */
-		if( tab->wind != TOP_WINDOW && tab->wind != root_window )
+		if( tab->wind && tab->wind != TOP_WINDOW && tab->wind != root_window )
 			top_window(tab->lock, true, true, tab->wind);
 #if GENERATE_DIAGS
 		if (!cfg.menu_locking)
@@ -1247,6 +1247,7 @@ do_popup(Tab *tab, XA_TREE *wt, short item, short entry, TASK *click, short rdx,
 	//short x, y;
 
 	DIAG((D_menu, tab->client, "do_popup: tab=%lx for %s", tab, tab->client->name));
+	C.boot_focus = 0;
 	menu_spec(root, item);
 	k->stage = IN_DESK;
 	k->p.current = -1;
@@ -1436,10 +1437,10 @@ CE_do_collapse(enum locks lock, struct c_event *ce, short cancel)
 		cancel_pop_timeouts();
 }
 
-void close_window_menu(Tab *tab);
 void close_window_menu(Tab *tab)
 {
-	post_cevent(tab->client, CE_do_collapse, tab, NULL, 0,0, NULL,NULL);
+	if( tab && tab->ty == MENU_BAR )
+		post_cevent(tab->client, CE_do_collapse, tab, NULL, 0,0, NULL,NULL);
 }
 
 static bool

@@ -255,7 +255,7 @@ again:
 	if (fh < 0)
 	{
 		ConsoleWrite("XaAES loader: No such file: \"");
-		ConsoleWrite(path);
+		ConsoleWrite(name);
 		ConsoleWrite("\"\r\n");
 		goto error;
 	}

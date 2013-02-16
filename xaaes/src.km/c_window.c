@@ -243,10 +243,7 @@ free_icon_pos(enum locks lock, struct xa_window *ignore)
 		{
 			if (w != ignore && (is_iconified(w) || (w->window_status & XAWS_CHGICONIF)))
 			{
-				if (w->opts & XAWO_WCOWORK)
-					r = f2w(&w->delta, &ic, true);
-				else
-					r = ic;
+				r = ic;
 
 				if (w->t.x == r.x && w->t.y == r.y)
 					/* position occupied; advance with next position in grid. */
@@ -1075,7 +1072,7 @@ remove_from_iredraw_queue(enum locks lock, struct xa_window *wind)
 void
 iconify_window(enum locks lock, struct xa_window *wind, RECT *r)
 {
-	if ((r->w == -1 && r->h == -1) || (!r->w && !r->h))
+	if ((r->w == -1 && r->h == -1) || (!r->w && !r->h) || (r->y + r->h + cfg.icnfy_b_y != screen.r.h))
 		*r = free_icon_pos(lock, NULL);
 
 	move_window(lock, wind, true, XAWS_ICONIFIED, r->x, r->y, r->w, r->h);
@@ -1122,7 +1119,7 @@ void _cdecl
 top_window(enum locks lock, bool snd_untopped, bool snd_ontop, struct xa_window *w)
 {
 	DIAG((D_wind, NULL, "top_window %d for %s",  w->handle, w == root_window ? get_desktop()->owner->proc_name : w->owner->proc_name));
-	if (w == root_window || (S.focus == w) )
+	if (w == NULL || w == root_window || (S.focus == w) )
 		return;
 
 	if (w->nolist)
@@ -2431,7 +2428,7 @@ close_window(enum locks lock, struct xa_window *wind)
 	struct xa_client *client = wind->owner;
 	RECT r;
 	bool is_top, ignorefocus = false;
-// 	bool d = (!strnicmp(client->proc_name, "mintsett", 8)) ? true : false;
+	short dial;
 
 	if (wind == NULL)
 	{
@@ -2445,7 +2442,6 @@ close_window(enum locks lock, struct xa_window *wind)
 
 	if (!(wind->window_status & XAWS_OPEN))
 		return false;
-
 
 	if (wind == C.hover_wind)
 	{
@@ -2503,14 +2499,13 @@ close_window(enum locks lock, struct xa_window *wind)
 	is_top = is_topped(wind);
 	ignorefocus = (wind->window_status & XAWS_NOFOCUS) ? true : false;
 
-// 	if (d) display("is_top = %d", is_top);
-
 	wl = wind->next;
 
 	wi_remove(&S.open_windows, wind, true);
 	wi_put_first(&S.closed_windows, wind);
 	remove_from_iredraw_queue(lock, wind);
 	r = wind->r;
+	dial = wind->dial;
 
 	clear_wind_rectlist(wind);
 
@@ -2560,9 +2555,8 @@ close_window(enum locks lock, struct xa_window *wind)
 				w = NULL;
 		}
 
-// 	if (d) display("clwtna %d, w %lx, top_own %s", client->options.clwtna&0xff, w, window_list ? window_list->owner->name : "Noontop");
-
-		if (!ignorefocus && TOP_WINDOW && is_top && !w)
+		if (!ignorefocus && TOP_WINDOW && is_top && !w
+			&& !(dial & (created_for_AES|created_for_WDIAL|created_for_FORM_DO|created_for_FMD_START)) )
 		{
 			switch (client->options.clwtna)
 			{
@@ -2886,6 +2880,7 @@ update_windows_below(enum locks lock, const RECT *old, RECT *new, struct xa_wind
 				make_rect_list(wl, true, RECT_SYS);
 
 				rl = wl->rect_list.start;
+
 				while (rl)
 				{
 					if (xa_rect_clip(&rl->r, &clip, &d))
@@ -2894,6 +2889,9 @@ update_windows_below(enum locks lock, const RECT *old, RECT *new, struct xa_wind
 					}
 					rl = rl->next;
 				}
+				/* if XaAES-window wait to avoid redraw-error */
+				if( wl->owner == C.Hlp )
+					yield();
 			}
 			else if (new)
 			{
@@ -3155,11 +3153,8 @@ static bool join_redraws( short wlock, struct xa_window *wind, struct xa_rect_li
 		r.h = y12 > y22 ? y12 : y22;
 		r.h -= r.y;
 		r.x = x11 < x21 ? x11 : x21;
-		//r.w = x12 > x22 ? x12 : x22;
-		//r.w -= r.x;
 		r.w = newrl->r.w + newrl->next->r.w;
 
-		BLOG((0,"join_redraws:%s,y11=%d,y21=%d", wind->wname, y11, y21));
 		generate_redraws(wlock, wind, &r, flags );
 		return true;
 	}

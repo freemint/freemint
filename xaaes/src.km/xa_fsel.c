@@ -106,7 +106,7 @@ static char *months[] =
 	"Jul",
 	"Aug",
 	"Sep",
-	"Okt",
+	"Oct",
 	"Nov",
 	"Dec",
 };
@@ -172,6 +172,7 @@ static struct{
 	bool treeview;
 	bool rtbuild;
 	short fs_height, fs_width, fs_x, fs_y;
+	short fs_file_w; /* max. width for edit-field */
 	short fs_point;
 	short fs_num;
 	short fs_sort;
@@ -277,14 +278,8 @@ strins(char *d, const char *s, long here)
 		here = dlen;
 
 	strncpy(t, d + here, sizeof(t));
-	strncpy(d + here, s, dlen - here - 1);
-	if( dlen > slen + here)
-		strncpy(d + here + slen, t, dlen-here-slen);
-	else
-	{
-		d[0] = '?';
-		d[0] = '0';
-	}
+	strncpy(d + here, s, slen );
+	strcpy(d + here + slen, t);
 }
 
 static struct scroll_entry *
@@ -407,7 +402,6 @@ static void set_tabs( struct scroll_info *list, struct fsel_data *fs, short wd)
 
 	list->set(list, NULL, SESET_TAB, (long)&tab, false);
 
-	//tab.r.x = 0;
 	tab.r.w = 0;
 	tab.flags |= SETAB_RJUST;
 	x = list->tabs[FSLIDX_NAME].r.w;
@@ -1531,25 +1525,30 @@ read_directory(struct fsel_data *fs, SCROLL_INFO *list, SCROLL_ENTRY *dir_ent)
 			/* this is not elaborated
 			 * try to adapt the 1st distance
 			 */
-			if (!fs->treeview)
+
+			if( max_namlen )
 			{
-				short h = max_namlen;	//((max_namlen + max_szlen)* w) + 10;
+				short h = max_namlen;
 				struct seset_tab tab;
-				tab.index = FSLIDX_NAME;
-				tab.flags = 0;
-				/*if( h < MINWIDTH )
-					h = MINWIDTH;
-				else */if( h > MAXWIDTH )
-					h = MAXWIDTH;
 
-				if( fs->rtbuild )
-					h += 10;
+				if (fs->treeview)
+					h += list->cur->level * 2;
+				if( !fs->treeview || fs->curr_longest < h )
+				{
+					fs->curr_longest = h;
+					tab.index = FSLIDX_NAME;
+					tab.flags = 0;
+					if( h > MAXWIDTH )
+						h = MAXWIDTH;
 
-				/*list->vdi_settings->api->text_extent(list->vdi_settings, "X", &fs_norm_txt.n, &w, &h);*/
+					if( fs->rtbuild )
+						h += 10;
 
-				tab.r = (RECT){0,0,0, -h};
-				//tab.r.x = 20 * screen.c_max_w;
-				list->set(list, NULL, SESET_TAB, (long)&tab, false);
+					/*list->vdi_settings->api->text_extent(list->vdi_settings, "X", &fs_norm_txt.n, &w, &h);*/
+
+					tab.r = (RECT){0,0,0, -h};
+					list->set(list, NULL, SESET_TAB, (long)&tab, false);
+				}
 			}
 			PROFILE(( "fsel: dir closed %d items", num ));
 		}
@@ -1844,9 +1843,6 @@ fs_closer(struct scroll_info *list, bool rdrw)
 {
 	struct fsel_data *fs = list->data;
 
-//	if ( /*fs->clear_on_folder_change &&*/ !fs->tfile)
-//		set_file(fs, "");
-
 	set_file(fs, fs->ofile, false);
 	fs_updir(list);
 }
@@ -1964,7 +1960,6 @@ fs_item_action(struct scroll_info *list, struct scroll_entry *this, const struct
 					fs->selected_file = NULL;
 					fs->tfile = false;
 					list->set(list, NULL, SESET_CURRENT, 0, NOREDRAW); //list->cur = NULL;
-//					fs->kbdnav = false;
 					set_file(fs, fs->ofile, false); //set_file(fs, "");
 				}
 				else if (!flags && (!md || md->clicks > 1))
@@ -1982,14 +1977,6 @@ fs_item_action(struct scroll_info *list, struct scroll_entry *this, const struct
 
 			if (list->get(list, this, SEGET_TEXTCMP, &p) && !p.ret.ret)
 			{
-			//	if (!md)
-			//		fs->tfile = false;
-			#if 0
-				if ( /*fs->clear_on_folder_change &&*/ !fs->tfile)
-					set_file(fs, "");
-
-				/* cur on double dot folder line */
-			#endif
 				if (md)
 					fs->kbdnav = false;
 
@@ -1998,7 +1985,6 @@ fs_item_action(struct scroll_info *list, struct scroll_entry *this, const struct
 				if (!md && !fs->kbdnav)
 				{
 					fs->tfile = false;
-//					set_file(fs, "");
 				}
 			}
 			else
@@ -2025,13 +2011,6 @@ fs_item_action(struct scroll_info *list, struct scroll_entry *this, const struct
 								else /*if (*fs->file)*/
 									fs_done = true;
 							}
-						#if 0
-
-							if ((xstate & OS_OPENED) && *fs->file)
-							{
-								fs_done = true;
-							}
-						#endif
 							else
 							{
 								if (flags)
@@ -2104,9 +2083,6 @@ fs_item_action(struct scroll_info *list, struct scroll_entry *this, const struct
 
 	if (fs_done)
 	{
-	//	if (!fs->selected_file && !fs->tfile)
-	//		fs->file[0] = '\0';
-
 		fs_cwd(list, fs->path, 2);
 
 		if( this && this->content )
@@ -2125,11 +2101,6 @@ fs_item_action(struct scroll_info *list, struct scroll_entry *this, const struct
 static int
 fs_click(struct scroll_info *list, struct scroll_entry *this, const struct moose_data *md)
 {
-	//struct fsel_data *fs = list->data;
-
-	/* since mouse click we should _not_ clear the file field */
-	/*fs->clear_on_folder_change = 0;*/
-
 	if (this)
 		fs_item_action(list, this, md, 0);
 	return true;
@@ -2556,13 +2527,12 @@ fs_slist_key(struct scroll_info *list, unsigned short keycode, unsigned short ks
 
 						if (!(uf & FLAG_DIR))
 						{
-							struct sesetget_params p; //seget_entrybyarg p;
+							struct sesetget_params p;
 
-							//if (this->up != fs->selected_dir)
-							{
-								fs->selected_dir = this->up;
-								//set_dir(list);
-							}
+							fs->selected_dir = this->up;
+							if( fs->treeview )
+								set_dir(list);
+
 							fs->selected_file = this;
 							p.idx = -1;
 							p.arg.txt = fs->file;
@@ -2576,7 +2546,8 @@ fs_slist_key(struct scroll_info *list, unsigned short keycode, unsigned short ks
 							{
 								fs->selected_dir = this;
 								fs->selected_file = NULL;
-								//set_dir(list);
+								if( fs->treeview )
+									set_dir(list);
 							}
 							set_file(fs, fs->ofile, false);
 						}
@@ -2630,8 +2601,13 @@ static void delete_item(struct scroll_info *list, struct fsel_data *fs)
 	if ( list->cur && list->get(list, list->cur, SEGET_TEXTCPY, &p))
 	{
 		long uf;
+		//short xsa;
 
 		list->get(list, list->cur, SEGET_USRFLAGS, &uf);
+		//list->get(list, list->cur, SEGET_STATE, &xsa);
+
+		if( fs->treeview && (uf & (FLAG_DIR|FLAG_SDIR)) && (uf & FLAG_FILLED) )
+			p.arg.txt = "";
 		sprintf( pt, sizeof(pt)-1, "%s%s", fs->path, p.arg.txt);
 
 		if( uf & (FLAG_DIR|FLAG_SDIR) )
@@ -2822,6 +2798,14 @@ fs_key_form_do(enum locks lock,
 	return true;
 }
 
+static void set_edit_width( OBJECT *obtree )
+{
+	/* temporary: set edit-field-width to max. window-width */
+	obtree[FS_FILE ].ob_width = obtree->ob_width - 32;
+	if( obtree[FS_FILE ].ob_width > fs_data.fs_file_w )
+		obtree[FS_FILE ].ob_width = fs_data.fs_file_w;
+}
+
 /* HR: make a start */
 /* dest_pid, msg, source_pid, mp3, mp4,  .... 	 */
 static void
@@ -2918,8 +2902,6 @@ fs_msg_handler(
 			else
 				strcpy(fs_data.fs_paths[drv], fs->root);
 			/* remove the name from the edit field on drive change */
-//			if ( !fs->tfile ) //fs->clear_on_folder_change )
-//				set_file(fs, "");
 			set_file(fs, fs->ofile, false);
 			fs->selected_dir = fs->selected_file = NULL;
 		}
@@ -3009,11 +2991,13 @@ fs_msg_handler(
 		OBJECT *obtree = ((struct widget_tree *)get_widget(wind, XAW_TOOLBAR)->stuff)->tree;
 		struct xa_window *lwind;
 
-		dw = msg[6] - wind->r.w; //root_window->wa.h - 7 * screen.c_max_h - form->ob_height;
-		dh = msg[7] - wind->r.h; //root_window->wa.w - (form->ob_width + (screen.c_max_w * 4));
-//		display("resize dw %d, dh %d", dw, dh);
+		dw = msg[6] - wind->r.w;
+		dh = msg[7] - wind->r.h;
 		obtree->ob_height += dh;
 		obtree->ob_width += dw;
+
+		set_edit_width( obtree );
+
 		obtree[FS_LIST ].ob_height += dh;
 		obtree[FS_LIST ].ob_width += dw;
 		obtree[FS_OK].ob_y += dh;
@@ -3394,6 +3378,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 
 			if( fs_data.fs_width == 0 )
 			{
+				/* first open */
 				dh = screen.r.h - 7 * screen.c_max_h - form->ob_height - 18;
 				dw = root_window->wa.w - (form->ob_width + (screen.c_max_w * 4));
 				if ((dw + form->ob_width) > 560)
@@ -3402,7 +3387,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 				form->ob_width += dw;
 				form->ob_height += dh;
 				form[FS_LIST ].ob_height = (form[FS_LIST ].ob_height / screen.c_max_h) * screen.c_max_h - 8;
-
+				fs_data.fs_file_w = form[FS_FILE ].ob_width;
 			}
 			else
 			{
@@ -3418,6 +3403,8 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 				form->ob_x = fs_data.fs_x;
 				form->ob_y = fs_data.fs_y;
 			}
+
+			set_edit_width( form );
 
 			form[FS_LIST ].ob_height += dh;
 			form[FS_LIST ].ob_width += dw;
@@ -3504,6 +3491,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 		if (!dialog_window)
 			goto memerr;
 
+		dialog_window->opts &= ~XAWO_WCOWORK;
 		fix_menu(client, fs->menu, dialog_window, false);
 		fs_init_menu(fs);
 
@@ -3519,7 +3507,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 
 		//fsel_filters(fs->menu->tree, fs->fs_pattern);
 
-		fs->clear_on_folder_change = 0;
+		fs->curr_longest = 0;
 
 		wt = set_toolbar_widget(lock, dialog_window, client, form, aesobj(form, FS_FILE), 0/*WIP_NOTEXT*/, STW_ZEN, NULL, &or);
 		obj_edit(fs->form, v, ED_SETPTEXT, aesobj(fs->form->tree, FS_FILE), sizeof(fs->file) - 1, 0, fs->file, false, NULL,NULL, NULL,NULL);
@@ -3535,7 +3523,7 @@ open_fileselector1(enum locks lock, struct xa_client *client, struct fsel_data *
 		 */
 		dialog_window->keypress = fs_key_form_do; //fs_key_handler;
 		dialog_window->min.h = 222;
-		dialog_window->min.w = fs->menu->area.x + fs->menu->area.w + 16;
+		dialog_window->min.w = fs->menu->area.x + fs->menu->area.w + 32;
 
 		/* HR: set a scroll list object */
 		list = set_slist_object(lock,
@@ -3626,6 +3614,7 @@ close_fileselector(enum locks lock, struct fsel_data *fs)
 	fs_data.fs_width = fs->form->tree->ob_width;
 	fs_data.fs_x = fs->form->tree->ob_x;
 	fs_data.fs_y = fs->form->tree->ob_y;
+
 	fs_data.fs_point = fs->point;
 	fs_data.fs_sort = fs->sort;
 	fs_data.fs_num--;

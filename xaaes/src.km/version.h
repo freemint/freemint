@@ -34,8 +34,9 @@
   */
 #define XAAES_MAJ_VERSION  1
 #define XAAES_MIN_VERSION  5
-#define XAAES_PATCH_LEVEL  0
+#define XAAES_PATCH_LEVEL  5
 
+/* set either of these */
 #define DEV_STATUS	AES_DEVSTATUS_BETA
 //#define DEV_STATUS	AES_DEVSTATUS_RELEASE
 

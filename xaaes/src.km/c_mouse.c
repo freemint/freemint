@@ -75,7 +75,7 @@ cXA_button_event(enum locks lock, struct c_event *ce, short cancel)
 	{
 		Tab *root_tab;
 
-		if ((root_tab = TAB_LIST_START) /*&& md->state*/ && root_tab->client == client)
+		if ((root_tab = TAB_LIST_START) && root_tab->client == client)
 		{
 			Tab *tab;
 			bool in_pop;

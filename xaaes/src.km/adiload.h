@@ -28,7 +28,6 @@
 #define _adiload_h
 
 #include "global.h"
-
 void adi_load(bool first);
 void xam_load(bool first);
 

@@ -2402,6 +2402,7 @@ static void
 handle_launcher(enum locks lock, struct fsel_data *fs, const char *path, const char *file)
 {
 	char parms[128], args[128], *p;
+	short len = 0;
 
 	close_fileselector(lock, fs);
 
@@ -2417,7 +2418,7 @@ handle_launcher(enum locks lock, struct fsel_data *fs, const char *path, const c
 	if( p )
 	{
 		strncpy(args+1, p, sizeof(args)-1);
-		args[0] = strlen(args+1);
+		len = args[0] = strlen(args+1);
 		p = args;
 	}
 	else
@@ -2428,7 +2429,7 @@ handle_launcher(enum locks lock, struct fsel_data *fs, const char *path, const c
 	switch( (long)fs->data )
 	{
 		case HL_LAUNCH:
-			launch(lock, 0, 0, 0, parms+1, p, C.Aes);
+			launch(lock, 0, 0, -len, parms+1, p, C.Aes);
 		break;
 #if WITH_GRADIENTS
 		case HL_LOAD_GRAD:

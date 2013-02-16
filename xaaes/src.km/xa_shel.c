@@ -49,9 +49,6 @@ static char *strings[STRINGS];
 
 const char ** get_raw_env(void) { return (const char **)(const void**)strings; }
 
-#if GENERATE_DIAGS
-static void display_env(char **env, int which);
-#endif
 static int copy_env(char *to, char *s[], const char *without, char **last);
 static long count_env(char *s[], const char *without);
 
@@ -63,6 +60,36 @@ static char *appex[16] = { ".prg", ".app", ".gtp", ".ovl", ".sys", NULL };
 #endif
 static char *tosex[ 8] = { ".tos", ".ttp", NULL };
 static char *accex[ 8] = { ".acc", NULL };
+
+#if GENERATE_DIAGS
+
+static void
+display_env(char **env, int which)
+{
+	//if (D.debug_level > 2 && D.point[D_shel])
+	{
+		if (which == 1)
+		{
+			const char *e = *env;
+			BLOG((0,"Environment as superstring:\n"));
+			while (*e)
+			{
+				BLOG((0," -- %lx='%s'", e, e));
+				e += strlen(e)+1;
+			}
+		}
+		else
+		{
+			BLOG((0,"Environment as row of pointers:"));
+			while (*env)
+			{
+				BLOG((0," -- %lx='%s'", *env, *env));
+				env++;
+			}
+		}
+	}
+}
+#endif
 
 static bool
 is_ext(char *s, char **app)
@@ -147,7 +174,6 @@ make_argv(char *p_tail, long tailsize, char *command, char *argvtail)
 
 		argvtail[0] = 0x7f;
 		DIAGS(("ARGV constructed"));
-		IFDIAG(display_env(strings, 0);)
 		//display_env(strings, 0);
 	}
 	else
@@ -367,7 +393,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 	if (p_tail)
 	{
 
-		if (p_tail[0] == 0x7f || (unsigned char)p_tail[0] == 0xff)
+		if (wiscr == 1 || p_tail[0] == 0x7f || (unsigned char)p_tail[0] == 0xff)
 		{
 			/* In this case the string CAN ONLY BE null terminated. */
 			longtail = strlen(p_tail + 1);
@@ -376,6 +402,11 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 			DIAG((D_shel, NULL, "ARGV!  longtail = %ld", longtail));
 		}
 
+		if( wiscr < 0 )
+		{
+			longtail = -wiscr;
+			wiscr = 1;
+		}
 		if (longtail)
 		{
 			DIAG((D_shel, NULL, " -- longtailsize=%ld", longtail));
@@ -391,7 +422,6 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 		}
 		else
 		{
-// 			(unsigned long)tailsize = (unsigned char)p_tail[0];
 			tailsize = (unsigned long)(unsigned char)p_tail[0];
 			DIAG((D_shel, NULL, " -- tailsize1 = %ld", tailsize));
 			tail = kmalloc(126); //tail = kmalloc(tailsize + 2);
@@ -570,7 +600,8 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 
 			follow = is_launch_path( cmd );
 
-			make_argv(tail, tailsize, name, argvtail);
+			if( longtail )
+				make_argv(tail, tailsize, name, argvtail);
 
 			if (wisgr != 0)
 			{
@@ -630,7 +661,6 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 								s->name, s->pid));
 						}
 					}
-					ret = -ret;
 				}
 			}
 
@@ -842,6 +872,8 @@ XA_shel_write(enum locks lock, struct xa_client *client, AESPB *pb)
 				       (char *)pb->addrin[1],
 				       client);
 
+		if( pb->intout[0] < 0 )
+			pb->intout[0] = 0;
 		Sema_Dn(envstr);
 
 		/* let the new process run */
@@ -1384,36 +1416,6 @@ XA_shel_find(enum locks lock, struct xa_client *client, AESPB *pb)
 
 	return XAC_DONE;
 }
-
-#if GENERATE_DIAGS
-
-static void
-display_env(char **env, int which)
-{
-	//if (D.debug_level > 2 && D.point[D_shel])
-	{
-		if (which == 1)
-		{
-			const char *e = *env;
-			DIAGS(("Environment as superstring:\n"));
-			while (*e)
-			{
-				DIAGS((" -- %lx='%s'\n", e, e));
-				e += strlen(e)+1;
-			}
-		}
-		else
-		{
-			DIAGS(("Environment as row of pointers:"));
-			while (*env)
-			{
-				DIAGS((" -- %lx='%s'\n", *env, *env));
-				env++;
-			}
-		}
-	}
-}
-#endif
 
 /* This version finds XX & XX= */
 const char *

@@ -1638,7 +1638,6 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 			if (wind->opts & XAWO_WCOWORK)
 				r = f2w(&wind->delta, &r, true);
 
-
 			if (move && size && (wind->opts & XAWO_SENDREPOS))
 				send_reposed(lock, wind, AMQ_NORM, &r);
 			else

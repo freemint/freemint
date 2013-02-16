@@ -265,7 +265,6 @@ init_client(enum locks lock, bool sysclient)
 
 	/* Individual option settings. */
 	get_app_options(client);
-// 	client->options.wind_opts |= XAWO_WCOWORK;
 
 	if (client->options.inhibit_hide)
 		client->swm_newmsg |= NM_INHIBIT_HIDE;
@@ -365,6 +364,7 @@ init_client(enum locks lock, bool sysclient)
 	if( C.is_init_icn_pal == -1 )
 		C.is_init_icn_pal = 0;
 #endif
+
 	return client;
 }
 
