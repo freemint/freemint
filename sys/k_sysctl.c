@@ -241,7 +241,7 @@ hw_sysctl (long *name, ulong namelen, void *oldp, ulong *oldlenp,
 	switch (name[0])
 	{
 		case HW_MACHINE:
-			return sysctl_rdstring (oldp, oldlenp, newp, machine);
+			return sysctl_rdstring (oldp, oldlenp, newp, machine_str ());
 
 		case HW_MACHINE_ARCH:
 			return sysctl_rdstring (oldp, oldlenp, newp, machine_arch);

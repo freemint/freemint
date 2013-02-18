@@ -622,7 +622,7 @@ parser(FILEPTR *f, long f_size,
 	kfree(buf);
 }
 
-void
+long
 parse_include(const char *path, struct parsinf *inf, struct parser_item *parser_tab)
 {
 	XATTR xattr;
@@ -630,7 +630,7 @@ parse_include(const char *path, struct parsinf *inf, struct parser_item *parser_
 	long ret;
 
 	ret = FP_ALLOC(rootproc, &fp);
-	if (ret) return;
+	if (ret) return -1;
 
 	ret = do_open(&fp, path, O_RDONLY, 0, &xattr);
 	if (!ret)
@@ -647,6 +647,8 @@ parse_include(const char *path, struct parsinf *inf, struct parser_item *parser_
 
 		parser(fp, xattr.size, &include, parser_tab);
 		do_close(rootproc, fp);
+
+		return 0;
 	}
 	else
 	{
@@ -656,10 +658,12 @@ parse_include(const char *path, struct parsinf *inf, struct parser_item *parser_
 		parser_msg(inf, NULL);
 		boot_printf(MSG_cnf_cannot_include, path);
 		parser_msg(NULL, NULL);
+
+		return -1;
 	}
 }
 
-void
+long
 parse_cnf(const char *path, struct parser_item *parser_tab, void *data)
 {
 	struct parsinf inf  = { 0ul, NULL, 1, NULL, NULL, data };
@@ -668,13 +672,15 @@ parse_cnf(const char *path, struct parser_item *parser_tab, void *data)
 	long ret;
 
 	ret = FP_ALLOC (rootproc, &fp);
-	if (ret) return;
+	if (ret) return -1;
 
 	ret = do_open(&fp, inf.file = path, O_RDONLY, 0, &xattr);
 	if (!ret)
 	{
 		parser(fp, xattr.size, &inf, parser_tab);
 		do_close(rootproc, fp);
+
+		return 0;
 	}
 	else
 	{
@@ -682,5 +688,7 @@ parse_cnf(const char *path, struct parser_item *parser_tab, void *data)
 		FP_FREE(fp);
 
 		ALERT(MSG_cnf_cant_open, path);
+
+		return -1;
 	}
 }
