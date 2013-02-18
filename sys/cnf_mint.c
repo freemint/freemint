@@ -275,8 +275,14 @@ load_config(void)
 
 	strcpy(cnf_path, sysdir);
 	strcat(cnf_path, "mint.cnf");
+	if (parse_cnf(cnf_path, parser_tab, &mydata) != 0)
+	{
+		/* sysdir/mint.cnf not found, try mchdir/mint.cnf */
+		strcpy(cnf_path, mchdir);
+		strcat(cnf_path, "mint.cnf");
 
-	parse_cnf(cnf_path, parser_tab, &mydata);
+		parse_cnf(cnf_path, parser_tab, &mydata);
+	}
 }
 
 /*============================================================================*/
@@ -414,8 +420,8 @@ pCB_exec(const char *path, const char *line, struct parsinf *inf)
 {
 	char cmdline[128];
 	int i;
-	union { const char *cc; char *c;} pathptr; 
-	
+	union { const char *cc; char *c;} pathptr;
+
 	pathptr.cc = path;
 
 	i = strlen(line);

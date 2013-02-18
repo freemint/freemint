@@ -406,7 +406,7 @@ biosfs_init (void)
 		/* SERIAL1(!) is not present on the Mega STe or Falcon,
 		 * device 8 is SCC channel A
 		 */
-		if (mch != TT && b->private == 8)
+		if (machine != machine_tt && b->private == 8)
 		{
 			b->name[6] = '2';	/* "serial2" */
 			b->tty = &scca_tty;
@@ -1289,8 +1289,8 @@ bios_twrite (FILEPTR *f, const char *buf, long bytes)
 	long ret = 0;
 	int bdev = f->fc.aux;
 	struct bios_file *b = (struct bios_file *) f->fc.index;
-	union { const char *b; long *l;} ptr; 
-	
+	union { const char *b; long *l;} ptr;
+
 	ptr.b = buf;
 
 	r = ptr.l;// (long *) buf;
