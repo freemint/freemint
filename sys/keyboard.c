@@ -70,7 +70,7 @@
 # include "dev-mouse.h"		/* mshift */
 # include "dos.h"		/* s_hutdown() */
 # include "dossig.h"		/* p_kill() */
-# include "global.h"		/* tosver, mch, *sysdir */
+# include "global.h"		/* tosver, machine, *sysdir */
 # include "init.h"		/* boot_printf() */
 # include "info.h"		/* messages */
 # include "k_exec.h"		/* sys_pexec() */
@@ -1682,7 +1682,7 @@ load_internal_table(void)
 		size += strlen((char *)tos_keytab->alt) + 1;
 		size += strlen((char *)tos_keytab->altshift) + 1;
 		size += strlen((char *)tos_keytab->altcaps) + 1;
-		if (mch == MILAN_C)
+		if (machine == machine_milan)
 			size += strlen((char *)tos_keytab->altgr) + 1;
 		else
 			size += 2;
@@ -1750,7 +1750,7 @@ load_internal_table(void)
 		quickmove(p, tos_keytab->altcaps, len);
 		p += len;
 
-		if (mch == MILAN_C)
+		if (machine == machine_milan)
 		{
 			len = strlen((char *)tos_keytab->altgr) + 1;
 			quickmove(p, tos_keytab->altgr, len);

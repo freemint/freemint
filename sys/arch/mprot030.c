@@ -1,30 +1,30 @@
 /*
  * $Id$
- * 
+ *
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
- * 
- * 
+ *
+ *
  * Copyright 1991,1992,1993,1994 Atari Corporation.
  * All rights reserved.
- * 
+ *
  *
  * page-table data structures
  *
  *
  * The root pointer points to a list of pointers to top-level pointer tables.
- * 
+ *
  * Each entry in a pointer table points to another pointer table or to
  * a page table, or is a page descriptor.
- * 
+ *
  * Since, initially, the logical address space is the physical address space,
  * we only need to worry about 26MB plus 32K for I/O space.
- * 
+ *
  * Since we want some pages to be supervisor-accessible, but we don't want
  * a whole separate table for that, we use long-format descriptors.
- * 
+ *
  * Initial memory map:
- * 
+ *
  * 0	 - membot: S (supervisor only)
  * membot	 - memtop: P (protected TPA)
  * memtop	 - phystop: G (screen)
@@ -36,52 +36,52 @@
  * ramtop	 - $7FFFFFFF: G (A32/D32 VME, supervisor only, cacheable)
  * $80000000- $FEFFFFFF: G (A32/D32 VME, supervisor only, non cacheable)
  * $FFxxxxxx	      just like $00xxxxxx.
- * 
+ *
  * Here's a final choice of layouts: IS=0, PS=13 (8K), TIA=4, TIB=4, TIC=4,
  * TID=7.  This lets us map out entire unused megabytes at level C, and gives
  * us an 8K page size, which is the largest the '040 can deal with.
- * 
+ *
  * This code implements 4+4+4+7, as follows:
- * 
+ *
  * tbl_a
  *     0 -> tbl_b0
  *     1-7 -> Cacheable direct (VME) page descriptors
  *     8-E -> Non-cacheable direct (VME) page descriptors
  *     F -> tbl_bf
- * 
+ *
  * tbl_b0 table: 16 entries (assumes only 16MB of TT RAM)
  *     0 -> tbl_c00 (16MB of ST RAM address space)
  *     1 -> tbl_c01 (16MB of TT RAM address space)
  *     2-F -> cacheable direct (VME) page descriptors
- * 
+ *
  * tbl_bF table: 16 entries (deals with $FF mapping to $00)
  *     0-E -> Non-cacheable direct (VME) page descriptors
  *     F -> tbl_c00 (16MB of ST RAM address space, repeated here as $FF)
- * 
+ *
  * tbl_c00 table: ST RAM address space (example assuming 4MB ST RAM)
  *     0-3 -> RAM page tables
  *     4-D -> invalid
  *     E -> direct map, cache enable (ROM)
  *     F -> direct map, cache inhibit (I/O)
- * 
+ *
  * For each 16MB containing any TT RAM, there's a tbl_c.  Within those,
  * for each MB that actually has TT RAM, there's another table, containing
  * 128 RAM page tables.  Where there isn't RAM, there are "global"
  * pages, to let the hardware bus error or not as it sees fit.
- * 
+ *
  * One RAM page table is allocated per megabyte of real RAM; each table has
  * 128 entries, which is 8K per page.  For a TT with 4MB ST RAM and 4MB TT RAM
  * that's 8K in page tables.  You can cut this down by not allocating page
  * tables for which the entire megabyte is not accessible (i.e. it's all
  * private memory and it's not YOUR private memory).
- * 
+ *
  * You have one of these per process.  When somebody loads into G or S memory
  * or leaves it, you have to go through the page tables of every process
  * updating S bits (for S) and DT (for G) bits.
- * 
+ *
  * The top levels are small & easy so replicating them once per process
  * doesn't really hurt us.
- * 
+ *
  */
 
 # include "mprot.h"
@@ -178,7 +178,7 @@ page_type *const proto_page_type[] =
  * constants here, but that's all.  The first new_proc call will set up the
  * page table for the root process and switch it in; from then on, we're
  * always under some process' control.
- * 
+ *
  * The master page-mode table is initialized here, and some constants like
  * the size needed for future page tables.
  *
@@ -192,13 +192,13 @@ page_type *const proto_page_type[] =
 
 void
 init_tables(void)
-{	
+{
 	if (no_mem_prot)
 	{
 		page_table_size = 0L;
 		return;
 	}
-	
+
 {
     struct cookie *cookie;
     int n_megabytes;
@@ -207,9 +207,9 @@ init_tables(void)
     TRACE(("init_tables"));
 
 #define phys_top_tt (*(ulong *)0x5a4L)
-    
+
     offset_tt_ram = 0;
-    
+
     if (phys_top_tt == 0x01000000L)
         mint_top_tt = 0;
     else
@@ -217,7 +217,7 @@ init_tables(void)
         int ct2 = 0;
         mint_top_tt = phys_top_tt;
         cookie = *CJAR;
-        
+
         if (cookie)
         {
             while (cookie->tag)
@@ -227,14 +227,14 @@ init_tables(void)
                 cookie++;
            }
        }
-       
-       if ((mch == FALCON) && ct2)
+
+       if ((machine == machine_falcon) && ct2)
        {
             offset_tt_ram = 0x03000000L;
             DEBUG (("init_tables: Falcon CT2 -> offset 0x%lx", offset_tt_ram));
        }
     }
-    
+
 #define phys_top_st (*(ulong *)0x42eL)
     mint_top_st = phys_top_st;
 
@@ -574,7 +574,7 @@ mark_region(MEMREGION *region, short mode, short cmode __attribute__((unused)))
     /* Don't do anything if init_tables() has not yet finished */
     if (global_mode_table == 0L)
 	return;
-    
+
 #if 0 /* this should not occur any more */
     if (mode == PROT_NOCHANGE) {
 	mode = global_mode_table[(start >> 13)];
@@ -784,7 +784,7 @@ init_page_table (PROC *proc, struct memspace *p_mem)
        offset = offset_tt_ram;
     else
        offset = 0;
-    
+
     tbl_a = tptr;
     tptr += TBL_SIZE;
     tbl_b0 = tptr;
@@ -850,7 +850,7 @@ init_page_table (PROC *proc, struct memspace *p_mem)
 
         /* Done with tbl_c for 0th 16MB; go on to TT RAM */
 
-/* 
+/*
     structure:
 
     for (i = each 16MB that has any TT RAM in it)
@@ -948,7 +948,7 @@ init_page_table (PROC *proc, struct memspace *p_mem)
     if (!mmu_is_set_up)
     {
         DEBUG (("init_page_table: call set_mmu"));
-        
+
         set_mmu(proc->ctxt[0].crp,proc->ctxt[0].tc);
         mmu_is_set_up = 1;
     }

@@ -1,45 +1,45 @@
 /*
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
- * 
- * 
+ *
+ *
  * Copyright 2000, 2001 Frank Naumann <fnaumann@freemint.de>
  * Copyright 1993, 1994, 1995, 1996 Kay Roemer
  * All rights reserved.
- * 
+ *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
  * any later version.
- * 
+ *
  * This file is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
- * 
+ *
+ *
  * begin:	2001-05-08
  * last change:	2001-05-08
- * 
+ *
  * Author:	Frank Naumann <fnaumann@freemint.de>
- * 
+ *
  * Please send suggestions, patches or bug reports to me or
  * the MiNT mailing list.
- * 
+ *
  */
 
 # include "init_mach.h"
 # include "libkern/libkern.h"
 
-# include "arch/aranym.h"
 # include "arch/detect.h"
 # include "arch/info_mach.h"
 # include "arch/mprot.h"
 # include "arch/tosbind.h"
+# include "arch/aranym.h"
 
 # include "cookie.h"
 # include "global.h"
@@ -51,9 +51,6 @@
 /*
  * _MCH cookie is not exact anymore
  * (special hades cookie, special ct60 cookie, special aranym cookie)
- *
- * XXX todo: we should replace the global mch variable with a more
- * accurate enum
  */
 enum special_hw
 {
@@ -67,7 +64,7 @@ enum special_hw
 };
 
 static long _getmch (void);
-static void identify (enum special_hw);
+static void identify (long mch, enum special_hw);
 
 
 long
@@ -83,7 +80,7 @@ getmch (void)
  * This must be done in a separate routine because the machine type and CPU
  * type are needed when initializing the system, whereas install_cookies is
  * not called until everything is practically up.
- * 
+ *
  * In fact, getmch() should be called before *anything* else is
  * initialized, so that if we find a MiNT cookie already in the
  * jar we can bail out early and painlessly.
@@ -92,6 +89,7 @@ static long
 _getmch (void)
 {
 	enum special_hw add_info = none;
+	long mch = 0;
 	struct cookie *jar;
 #ifdef WITH_MMU_SUPPORT
 	int old_no_mem_prot = no_mem_prot;
@@ -121,27 +119,27 @@ _getmch (void)
 # endif
 					break;
 				}
-				
+
 				case COOKIE__VDO:
 				{
 					FalconVideo = (jar->value == 0x00030000L);
 					ste_video = (jar->value == 0x00010000L);
 					break;
 				}
-				
+
 				case COOKIE_MiNT:
 				{
 					boot_print ("MiNT is already installed!!\r\n");
 					return -1;
 				}
-				
+
 				case COOKIE__AKP:
 				{
 					gl_kbd = (short)(jar->value & 0x00ffL);
 					gl_lang = (short)((jar->value >> 8) & 0x00ff);
 					break;
 				}
-				
+
 #ifdef WITH_MMU_SUPPORT
 				case COOKIE_PMMU:
 				{
@@ -153,19 +151,19 @@ _getmch (void)
 					break;
 				}
 #endif
-				
+
 				case COOKIE_HADES:
 				{
 					add_info = hades;
 					break;
 				}
-				
+
 				case COOKIE_CT60:
 				{
 					add_info = ct60;
 					break;
 				}
-				
+
 # ifdef ARANYM
 				case COOKIE_NF:
 				{
@@ -185,19 +183,19 @@ _getmch (void)
 				}
 #endif
 			}
-			
+
 			jar++;
 		}
 	}
-	
+
 	/* own CPU test */
 	mcpu = detect_cpu ();
 	/* own FPU test; this must be done after the CPU detection */
 	fputype = detect_fpu ();
-	
+
 	if ((fputype >> 16) > 1)
 		fpu = 1;
-	
+
 #ifdef WITH_MMU_SUPPORT
 	if (add_info == ct60 && !old_no_mem_prot)
 	{
@@ -228,7 +226,7 @@ _getmch (void)
 
 		return -1;
 	}
-	
+
 	/* Odd Skancke:
 	 *	If protect_page0 == 0, we check if we should tell the pmmu code
 	 *	to set SUPER on the first descriptor by placing a value of 1 here.
@@ -249,16 +247,16 @@ _getmch (void)
 		protect_page0 = 1;
 	}
 # endif /* !M68000 */
-	
+
 	/* initialize the info strings */
-	identify (add_info);
-	
+	identify (mch, add_info);
+
 	DEBUG (("detecting hardware ... "));
 	/* at the moment only detection of ST-ESCC */
 	if (mcpu < 40 && detect_hardware ())
 		boot_print ("ST-ESCC extension detected\r\n");
 	DEBUG (("ok!\r\n"));
-	
+
 	/*
 	 * if no preference found, look at the country code to decide
 	 */
@@ -266,12 +264,12 @@ _getmch (void)
 	{
 		long *sysbase;
 		int i;
-		
+
 		sysbase = *((long **)(0x4f2L)); /* gets the RAM OS header */
 		sysbase = (long *)sysbase[2];	/* gets the ROM one */
-		
+
 		i = (int) ((sysbase[7] & 0x7ffe0000L) >> 17L);
-		
+
 		switch (i)
 		{
 			case 1:		/* Germany */
@@ -287,7 +285,7 @@ _getmch (void)
 				break;
 		}
 	}
-	
+
 	if (gl_lang < 0)
 		gl_lang = 0;
 
@@ -295,13 +293,11 @@ _getmch (void)
 }
 
 static void
-identify (enum special_hw info)
+identify (long mch, enum special_hw info)
 {
 	char buf[64];
 	char *_cpu, *_mmu, *_fpu;
-	
-	machine = "Unknown clone";
-	
+
 	switch (info)
 	{
 		case none:
@@ -309,52 +305,45 @@ identify (enum special_hw info)
 			switch (mch)
 			{
 				case ST:
-					machine = "Atari ST";
+					machine = machine_st;
 					break;
 				case STE:
-					machine = "Atari STE";
+					machine = machine_ste;
 					break;
 				case MEGASTE:
-					machine = "Atari MegaSTE";
+					machine = machine_megaste;
 					break;
 				case TT:
-					machine = "Atari TT";
+					machine = machine_tt;
 					break;
 				case FALCON:
 #ifdef __mcoldfire__
-					machine = "FireBee";
+					machine = machine_firebee;
 #else
-					machine = "Atari Falcon";
+					machine = machine_falcon;
 #endif
 					break;
 				case MILAN_C:
-					machine = "Milan";
+					machine = machine_milan;
 					break;
 			}
 			break;
 		}
 		case hades:
-		{
-			machine = "Hades";
+			machine = machine_hades;
 			break;
-		}
 		case ct60:
-		{
-			machine = "Atari Falcon/CT60";
+			machine = machine_ct60;
 			break;
-		}
 # ifdef ARANYM
 		case aranym:
-		{
-			machine = nf_name();
+			machine = machine_aranym;
 			break;
-		}
 # endif
-		default:;
 	}
-	
+
 	_fpu = " no ";
-	
+
 #ifdef __mcoldfire__
 	if (!coldfire_68k_emulation)
 	{
@@ -389,7 +378,7 @@ identify (enum special_hw info)
 				break;
 		}
 	}
-	
+
 #ifdef __mcoldfire__
 	UNUSED(buf);
 
@@ -404,7 +393,7 @@ identify (enum special_hw info)
 	{
 		_cpu = "m68k";
 		_mmu = "";
-		
+
 		switch (mcpu)
 		{
 			case 0:
@@ -440,7 +429,7 @@ identify (enum special_hw info)
 			case 60:
 			{
 				ulong pcr;
-				
+
 				__asm__
 				(
 					".word 0x4e7a,0x0808;"
@@ -449,11 +438,11 @@ identify (enum special_hw info)
 					:
 					: "d0"
 				);
-				
+
 				ksprintf (buf, sizeof (buf), "68%s060 rev.%ld",
 						pcr & 0x10000 ? "LC/EC" : "",
 						(pcr >> 8) & 0xff);
-				
+
 				cpu_type = "68060";
 				_cpu = buf;
 				if (pmmu)
@@ -465,9 +454,9 @@ identify (enum special_hw info)
 			}
 		}
 	}
-	
+
 	ksprintf (cpu_model, sizeof (cpu_model), "%s (%s CPU%s%sFPU)",
-			machine, _cpu, _mmu, _fpu);
-	
+			machine_str(), _cpu, _mmu, _fpu);
+
 	boot_printf ("%s\r\n\r\n", cpu_model);
 }

@@ -408,7 +408,7 @@ init (void)
 		 */
 		if (has_bconmap)
 		{
-			if (mch == ST || mch == STE || mch == MEGASTE)
+			if (machine == machine_st || machine == machine_ste || machine == machine_megaste)
 				has_bconmap = 0;
 		}
 
@@ -648,6 +648,56 @@ init (void)
 		temp[3] = (char)(sysdrv + 'a');
 
 		strcpy(sysdir, temp);
+	}
+
+	/* create mchdir */
+	{
+		char *mch_str = NULL;
+
+		switch (machine)
+		{
+			case machine_st:
+				mch_str = "st";
+				break;
+			case machine_ste:
+				mch_str = "ste";
+				break;
+			case machine_megaste:
+				mch_str = "megaste";
+				break;
+			case machine_tt:
+				mch_str = "tt";
+				break;
+			case machine_falcon:
+				mch_str = "falcon";
+				break;
+			case machine_milan:
+				mch_str = "milan";
+				break;
+			case machine_hades:
+				mch_str = "hades";
+				break;
+			case machine_ct60:
+				mch_str = "ct60";
+				break;
+			case machine_firebee:
+				mch_str = "firebee";
+				break;
+#ifdef ARANYM
+			case machine_aranym:
+				mch_str = "aranym";
+				break;
+#endif
+			case machine_unknown:
+			default:
+				/* nothing to do */
+				break;
+		}
+
+		if (mch_str != NULL)
+		{
+			ksprintf (mchdir, sizeof(mchdir), "%s%s/", sysdir, mch_str);
+		}
 	}
 
 	/* print the warning message if MP is turned off */
