@@ -91,10 +91,9 @@ text_color:
 	move.w 0x3E86,D0         // number of planes
 	cmp.l #2,D0
 	bls.s .black_and_white
-	pea (A0)
-	move.w #9,-(SP)
+	move.l A0, -(SP)
 	jsr _cconws_from_S                  // Cconws
-	addq.l #6,SP
+	addq.l #4,SP
 .black_and_white:
 	rts
 
