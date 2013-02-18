@@ -792,7 +792,7 @@ check_kentry_version(void)
  * kentry_mch
  */
 
-# define mch			( KENTRY->vec_mch.global->mch)
+# define machine		( KENTRY->vec_mch.global->machine)
 # define fputype		( KENTRY->vec_mch.global->fputype)
 # define tosvers		( KENTRY->vec_mch.global->tosvers)
 # define gl_lang		( KENTRY->vec_mch.global->gl_lang)

@@ -155,7 +155,6 @@ kernel_close(struct file *f)
 	do_close(rootproc, f);
 }
 
-
 static long load_xfs (struct basepage *b, const char *name, short *class, short *subclass);
 static long load_xdd (struct basepage *b, const char *name, short *class, short *subclass);
 
@@ -175,6 +174,22 @@ void
 load_all_modules(unsigned long mask)
 {
 	int i;
+
+	if (strlen(mchdir) > 0)
+	{
+		for (i = 0; i < (sizeof(_types) / sizeof(*_types)); i++)
+		{
+			/* load machine depend external xdd */
+			if (mask & (1L << i))
+			{
+				DEBUG(("load_all_modules (machine): processing \"%s\"", _types [i]));
+				load_modules(mchdir, _types [i], _loads [i]);
+				DEBUG(("load_all_modules (machine): done with \"%s\"", _types [i]));
+
+				stop_and_ask();
+			}
+		}
+	}
 
 	for (i = 0; i < (sizeof(_types) / sizeof(*_types)); i++)
 	{
@@ -342,6 +357,8 @@ load_modules_old(const char *ext, long (*loader)(struct basepage *, const char *
 
 	l = (void *)loader;
 
+	if (strlen(mchdir) > 0)
+		load_modules(mchdir, ext, l);
 	load_modules(sysdir, ext, l);
 }
 

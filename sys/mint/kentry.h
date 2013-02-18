@@ -1,31 +1,31 @@
 /*
  * $Id$
- * 
+ *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution. See the file CHANGES for a detailed log of changes.
- * 
- * 
+ *
+ *
  * Copyright 2004 Frank Naumann <fnaumann@freemint.de>
  * All rights reserved.
- * 
+ *
  * Please send suggestions, patches or bug reports to me or
  * the MiNT mailing list
- * 
- * 
+ *
+ *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2, or (at your option)
  * any later version.
- * 
+ *
  * This file is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
- * 
+ *
  */
 
 # ifndef _mint_kentry_h
@@ -69,7 +69,7 @@ struct timeval;
 
 /* kentry - kernel entry vector
  * ----------------------------
- * 
+ *
  * New kernel entry interface. This is a replacement for the existing
  * kerinfo interface for xdd and xfs modules. It's better sorted and include
  * much, much more useful kernel routines that are exported to the new kernel
@@ -78,26 +78,26 @@ struct timeval;
  * It also have a seperate version number (major and minor version). A module
  * must check the major version and only if the major version match against
  * the major version the module was compiled the module can be loaded.
- * 
- * 
+ *
+ *
  * All functions should be called using the GCC calling conventions:
  * -----------------------------------------------------------------
- * 
+ *
  * (1) parameters are passed on the stack, aligned on 16 bit boundaries
  * (2) registers d0-d1 and a0-a1 are scratch registers and may be modified
  *     by the called functions
  * (3) if the function returns a value, it will be returned in register
  *     d0
- * 
+ *
  * data types:
  * -----------
  * int   is 16bit
- * 
+ *
  * short is 16bit
  * long  is 32bit
- * 
+ *
  * and unsigned
- * 
+ *
  */
 
 /* ATTENTION!
@@ -244,28 +244,28 @@ struct kentry_proc
 				      struct proc **pret, long stack,
 				      struct create_process_opts *);
 
-	/* 
+	/*
 	 * fork a kernel thread for process p
-	 * 
+	 *
 	 * arguments:
 	 * ----------
 	 * p    - the process context for which the kernel thread is created;
 	 *        can be NULL, in this case a kernel thread of rootproc is created
 	 *        NOTE: Anything except the signal handler is shared!
-	 * 
+	 *
 	 * func - the function where the thread starts
-	 * 
+	 *
 	 * arg  - additional argument passed to func
-	 * 
+	 *
 	 * fmt  - printf format string for the process name
-	 * 
+	 *
 	 * ...  - printf args
 	 */
 	long _cdecl (*kthread_create)(struct proc *p, void _cdecl (*func)(void *), void *arg,
 				      struct proc **np, const char *fmt, ...);
 	/*
 	 * leave kernel thread previously created by kthread_create
-	 * 
+	 *
 	 * NOTE: can only be called from INSIDE the thread
 	 */
 	void _cdecl (*kthread_exit)(short code);
@@ -343,7 +343,7 @@ struct kentry_mem
 	void *_cdecl (*kcore)(unsigned long size, const char *func);
 	void *_cdecl (*kmalloc)(unsigned long size, const char *func);
 	void  _cdecl (*kfree)(void *place, const char *func);
-	
+
 	void *_cdecl (*dmabuf_alloc)(unsigned long size, short cmode, const char *func);
 
 	void *_cdecl (*umalloc)(unsigned long size, const char *func);
@@ -508,15 +508,15 @@ struct kentry_module
 				    long _cdecl (*loader)(struct basepage *, const char *, short *, short *));
 
 	/* register VDI or AES trap handler
-	 * 
+	 *
 	 * mode = 0 -> install
 	 * mode = 1 -> remove
-	 * 
+	 *
 	 * flag = 0 -> AES dispatcher
 	 * flag = 1 -> VDI dispatcher
-	 * 
+	 *
 	 * return 0 on success
-	 * or error number for a failure 
+	 * or error number for a failure
 	 */
 	long _cdecl (*register_trap2)(long _cdecl (*dispatch)(void *), int mode, int flag, long extra);
 };
@@ -531,8 +531,8 @@ struct kentry_module
  */
 struct kentry_cnf
 {
-	void _cdecl (*parse_cnf)(const char *path, struct parser_item *, void *);
-	void _cdecl (*parse_include)(const char *path, struct parsinf *, struct parser_item *);
+	long _cdecl (*parse_cnf)(const char *path, struct parser_item *, void *);
+	long _cdecl (*parse_include)(const char *path, struct parsinf *, struct parser_item *);
 	void _cdecl (*parser_msg)(struct parsinf *, const char *msg);
 };
 #define DEFAULTS_kentry_cnf \
@@ -571,7 +571,7 @@ struct kentry_misc
 	 * function to install XHDI drivers
 	 */
 	long _cdecl (*XHNewCookie)(void *newcookie);
-#endif	
+#endif
 };
 #ifdef XHDI_MASS_STORAGE_SUPPORT
 #define DEFAULTS_kentry_misc \
@@ -619,7 +619,7 @@ struct kentry_debug
 	 * debug - error messages
 	 * alert - really serious errors
 	 * fatal - fatal errors
-	 * force - always prints, even with debug level 0	
+	 * force - always prints, even with debug level 0
 	 */
 	int *debug_level;
 	void	_cdecl (*trace)(const char *, ...);
@@ -911,11 +911,11 @@ struct kentry
 	unsigned char	minor;		/* FreeMiNT minor version */
 	unsigned char	patchlevel;	/* FreeMiNT patchlevel */
 	unsigned char	beta;		/* FreeMiNT beta ident */
-	
+
 	unsigned char	version_major;	/* kentry major version */
 	unsigned char	version_minor;	/* kentry minor version */
 	unsigned short	status;		/* FreeMiNT status */
-	
+
 	unsigned long	dos_version;	/* running GEMDOS version */
 
 	/* OS functions */
