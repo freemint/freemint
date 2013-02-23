@@ -551,14 +551,11 @@ kern_get_version (SIZEBUF **buffer)
 		return ENOMEM;
 
 	info->len = ksprintf (info->buf, len,
-			"FreeMiNT version %d.%d%s%s (%s@%s.%s) (%s) #%lu %s\n",
+			"FreeMiNT version %d.%d%s%s (%s) #%lu %s\n",
 			(int) MINT_MAJ_VERSION,
 			(int) MINT_MIN_VERSION,
 			revision,
 			beta_ident,
-			build_user,
-			build_host,
-			build_domain,
 			COMPILER_NAME,
 			build_serial,
 			build_ctime

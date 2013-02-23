@@ -46,9 +46,6 @@ extern const ulong MiNT_version;
 extern const ulong MiNT_date;
 extern const ulong MiNT_time;
 
-extern const char  build_user   [];
-extern const char  build_host   [];
-extern const char  build_domain [];
 extern const char  build_ctime  [];
 extern const ulong build_serial;
 
