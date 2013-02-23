@@ -557,7 +557,7 @@ foundtimer:
  * "which" specifies which aspect of the system configuration is to
  * be returned:
  *	-1	max. value of "which" allowed
- *	 0	max. number of memory regions per proc
+ *	 0	max. number of memory regions per proc	{MEMR_MAX}
  *	 1	max. length of Pexec() execution string {ARG_MAX}
  *	 2	max. number of open files per process	{OPEN_MAX}
  *	 3	number of supplementary group id's	{NGROUPS_MAX}
@@ -565,6 +565,8 @@ foundtimer:
  *	 5	HZ					{CLK_TCK}
  *	 6	pagesize				{PAGE_SIZE}
  *	 7	phys pages				{PHYS_PAGES}
+ *	 8      passwd buffer size			{GETPW_R_SIZE}
+ *	 9      group buffer size			{GETGR_R_SIZE}
  *
  * unlimited values (e.g. CHILD_MAX) are returned as 0x7fffffffL
  *
@@ -589,6 +591,8 @@ sys_s_ysconf (int which)
 		case  5:	return HZ;
 		case  6:	return PAGESIZE;
 		case  7:	return freephysmem() / PAGESIZE;
+		case  8:	return -1;
+		case  9:	return -1;
 		default:	return ENOSYS;
 	}
 }
