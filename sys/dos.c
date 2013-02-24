@@ -591,8 +591,8 @@ sys_s_ysconf (int which)
 		case  5:	return HZ;
 		case  6:	return PAGESIZE;
 		case  7:	return freephysmem() / PAGESIZE;
-		case  8:	return -1;
-		case  9:	return -1;
+		case  8:	return 1024;
+		case  9:	return 1024;
 		default:	return ENOSYS;
 	}
 }
