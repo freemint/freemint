@@ -1230,6 +1230,14 @@ static N_AESINFO naes_cookie =
 	0L,
 };
 
+#if MAGX_COOKIE
+#define C_MagX 0x4D616758L     /* MagX */
+static MAGX_COOKIE magx_cookie = {
+	1,
+	0, 0, 0, 0
+};
+static MAGX_COOKIE *c_magx = NULL;
+#endif
 
 #define SD_TIMEOUT	1000	// s/100
 
@@ -1660,6 +1668,17 @@ k_main(void *dummy)
 
 	if (cfg.naes_cookie)
 	{
+#if MAGX_COOKIE
+		MAGX_DOSVARS magx_dosvars;
+		MAGX_AESVARS magx_aesvars;
+		magx_cookie.dosvars = &magx_dosvars;
+		magx_cookie.aesvars = &magx_aesvars;
+		magx_aesvars.magic = 0x87654321;
+		magx_aesvars.magic2 = 0x4D414758;	/* MAGX */
+		magx_aesvars.version = 0x0403;
+		magx_aesvars.release = 3;
+		install_cookie( (void**)&c_magx, (void*)&magx_cookie, sizeof(*c_magx), C_MagX, true );
+#endif
 		install_cookie( (void**)&c_naes, (void*)&naes_cookie, sizeof(*c_naes), C_nAES, true );
 	}
 	C.reschange = NULL;
