@@ -265,7 +265,6 @@ init_client(enum locks lock, bool sysclient)
 
 	/* Individual option settings. */
 	get_app_options(client);
-// 	client->options.wind_opts |= XAWO_WCOWORK;
 
 	if (client->options.inhibit_hide)
 		client->swm_newmsg |= NM_INHIBIT_HIDE;
@@ -283,13 +282,6 @@ init_client(enum locks lock, bool sysclient)
 			DIAGS(("appl_init: type %i", info->type));
 			DIAGS(("appl_init: cmd_name '%s'", info->cmd_name));
 			DIAGS(("appl_init: home_path '%s'", info->home_path));
-			/*if (d) {
-				display("appl_init: shel_write started");
-				display("appl_init: type %i", info->type);
-				display("appl_init: cmd_name '%s'", info->cmd_name);
-				display("appl_init: home_path '%s'", info->home_path);
-			}
-			*/
 
 			client->type = info->type;
 			/*
@@ -365,6 +357,7 @@ init_client(enum locks lock, bool sysclient)
 	if( C.is_init_icn_pal == -1 )
 		C.is_init_icn_pal = 0;
 #endif
+
 	return client;
 }
 
@@ -592,6 +585,7 @@ CE_pwaitpid(enum locks lock, struct c_event *ce, short cancel)
 			{
 				BLOG((0,"continue %s(%d)", c->name, c->p->pid));
 				ikill(c->p->pid, SIGCONT);
+			 	yield();	// mouse ?
 			}
 		}
 		BLOG((0,"%s: leaving single-mode (k=%lx).", get_curproc()->name, k));
