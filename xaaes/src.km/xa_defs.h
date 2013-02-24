@@ -69,8 +69,6 @@
 
 #define DISPLAY_LOGO_IN_TITLE	0	/* Display the XaAES logo in the title bar of each window */
 
-#define POINT_TO_TYPE		0	/* if defined focus can be dynamically changed in the cfg (see parde*/
-
 #define ALT_CTRL_APP_OPS	1	/* Some ALT+CTRL+key combo's will perform functions relating to
                        			 * the XaAES system */
 
