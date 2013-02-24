@@ -111,7 +111,6 @@ XA_wind_open(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	RECT r; // = *((const RECT *)&pb->intin[1]);
 	struct xa_window *w;
-// 	bool d = (!strnicmp("cops", client->proc_name, 4));
 
 	CONTROL(5,1,0)
 
@@ -119,7 +118,6 @@ XA_wind_open(enum locks lock, struct xa_client *client, AESPB *pb)
 	w = get_wind_by_handle(lock, pb->intin[0]);
 	if (!w)
 	{
-// 		if (d) display(" wind %d doesnt exists!", pb->intin[0]);
 		pb->intout[0] = 0;
 	}
 	else
@@ -1039,18 +1037,10 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 	/* */
 	case WF_MENU:
 	{
-// 		bool d = (!strnicmp(client->proc_name, "ergo_hlp", 8));
-
 		if (w->handle != 0 && (w->active_widgets & XaMENU))
 		{
 			OBJECT *ob = ptr_from_shorts(pb->intin[2], pb->intin[3]);
 			XA_WIDGET *widg = get_widget(w, XAW_MENU);
-
-			DIAGS(("  wind_set(WF_MENU) obtree=%lx, current wt=%lxfor %s",
-				ob, widg->stuff, client->name));
-
-// 			if (d) display("  wind_set(WF_MENU) obtree=%lx, current wt=%lxfor %s",
-// 				ob, widg->stuff, client->name);
 
 			if (ob)
 			{
