@@ -61,8 +61,8 @@
 	"Redirect Daemon\r\n"
 
 # define MSG_GREET	\
-	"½ " MSG_BUILDDATE " Jens Heitmann.\r\n" \
-	"½ " MSG_BUILDDATE " Frank Naumann.\r\n\r\n"
+	"½ 2000-2010 Jens Heitmann.\r\n" \
+	"½ 2000-2010 Frank Naumann.\r\n\r\n"
 
 # define MSG_MINT	\
 	"\7This program requires FreeMiNT!\r\n"
