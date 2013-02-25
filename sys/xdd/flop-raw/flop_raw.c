@@ -36,7 +36,7 @@
 
 # define MSG_GREET	\
 	"½ 1992, 1993 by Dave Gymer, Stephane Boisson.\r\n" \
-	"½ " MSG_BUILDDATE " by Frank Naumann.\r\n"
+	"½ 2000-2010 by Frank Naumann.\r\n"
 
 # define MSG_MINT	\
 	"\033pMiNT too old!\033q\r\n"

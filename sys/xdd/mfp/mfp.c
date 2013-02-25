@@ -143,7 +143,7 @@
 
 # define MSG_GREET	\
 	"� 1998, 1999 by Rainer Mannigel.\r\n" \
-	"� " MSG_BUILDDATE " by Frank Naumann.\r\n\r\n"
+	"� 2000-2010 by Frank Naumann.\r\n\r\n"
 
 # define MSG_MINT	\
 	"\033pMiNT too old!\033q\r\n"
