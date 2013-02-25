@@ -760,7 +760,7 @@ __unlink (COOKIE *d, const char *name)
 
 short arafs_init(short dev)
 {
-	char initial [] = "dynamic ara-xfs � by [fn]";
+	char initial [] = "dynamic ara-xfs \275 by [fn]";
 	STAT *s;
 
 
