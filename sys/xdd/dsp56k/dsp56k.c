@@ -65,7 +65,7 @@
 /* MiNT definitions */
 
 # define BOOT_MSG	"\033p Motorola DSP 56001 device version " __DATE__ " \033q\r\n" \
-			" � 1996-99 F. Noring, L. Brinkhoff, T. Berndtsson\r\n\r\n"
+			" \275 1996-99 F. Noring, L. Brinkhoff, T. Berndtsson\r\n\r\n"
 
 # define MSG_FAILURE	"\7Not installed, Dcntl() failed!\r\n"
 
