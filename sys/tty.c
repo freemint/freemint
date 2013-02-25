@@ -481,7 +481,7 @@ tty_write (FILEPTR *f, const void *buf, long nbytes)
 	/*
 	 * "mode" can now be reduced to just T_CRMODE or not
 	 */
-	mode &= ~T_CRMOD;
+	mode &= T_CRMOD;
 	
 	if (nbytes == 0)
 		return bytes_written;
