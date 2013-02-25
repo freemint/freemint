@@ -38,7 +38,7 @@
 
 # define MSG_GREET	\
 	"\xbd 1998, 1999 by Axel Kaiser.\r\n" \
-	"\xbd " MSG_BUILDDATE " by Frank Naumann.\r\n"
+	"\xbd 2000-2010 by Frank Naumann.\r\n"
 
 # define MSG_ALPHA	\
 	"\033p WARNING: This is an unstable version - ALPHA! \033q\7\r\n"

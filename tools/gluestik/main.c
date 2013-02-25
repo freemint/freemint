@@ -56,7 +56,7 @@
 # define MSG_GREET	\
 	"Redirect Daemon\r\n" \
 	"\275 1996-98 Scott Bigham.\r\n" \
-	"\275 " MSG_BUILDDATE " Frank Naumann.\r\n"
+	"\275 2000-2010 Frank Naumann.\r\n"
 
 # define MSG_ALPHA	\
 	"\033p WARNING: This is an unstable version - alpha! \033q\7\r\n"

@@ -103,7 +103,7 @@ volatile long *hz_200 = _hz_200;
 
 # define MSG_GREET	\
 	"� 2000 by Vassilis Papathanassiou.\r\n" \
-	"� " MSG_BUILDDATE " by Frank Naumann.\r\n\r\n"
+	"� 2000-2010 by Frank Naumann.\r\n\r\n"
 
 # define MSG_MINT	\
 	"\033pMiNT too old!\033q\r\n"
