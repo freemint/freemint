@@ -102,8 +102,8 @@ volatile long *hz_200 = _hz_200;
 	"\033p RTL8012 ethernet romport driver version " MSG_VERSION " \033q\r\n"
 
 # define MSG_GREET	\
-	"� 2000 by Vassilis Papathanassiou.\r\n" \
-	"� 2000-2010 by Frank Naumann.\r\n\r\n"
+	"\275 2000 by Vassilis Papathanassiou.\r\n" \
+	"\275 2000-2010 by Frank Naumann.\r\n\r\n"
 
 # define MSG_MINT	\
 	"\033pMiNT too old!\033q\r\n"

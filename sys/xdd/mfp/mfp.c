@@ -142,8 +142,8 @@
 	"\033p MFP serial driver version " MSG_VERSION " \033q\r\n"
 
 # define MSG_GREET	\
-	"� 1998, 1999 by Rainer Mannigel.\r\n" \
-	"� 2000-2010 by Frank Naumann.\r\n\r\n"
+	"\275 1998, 1999 by Rainer Mannigel.\r\n" \
+	"\275 2000-2010 by Frank Naumann.\r\n\r\n"
 
 # define MSG_MINT	\
 	"\033pMiNT too old!\033q\r\n"
