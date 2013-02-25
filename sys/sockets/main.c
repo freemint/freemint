@@ -51,9 +51,9 @@
 	"\033p MiNT-Net TCP/IP " MSG_VERSION " PL " str (VER_PL) ", " VER_STATUS " \033q\r\n"
 
 # define MSG_GREET	\
-	" 1993-96 by Kay Roemer.\r\n" \
-	" 1997-99 by Torsten Lang.\r\n" \
-	" " MSG_BUILDDATE " by Frank Naumann.\r\n"
+	" 1993-1996 by Kay Roemer.\r\n" \
+	" 1997-1999 by Torsten Lang.\r\n" \
+	" 2000-2010 by Frank Naumann.\r\n"
 
 # define MSG_ALPHA	\
 	"\033p WARNING: This is an unstable version - ALPHA! \033q\7\r\n"

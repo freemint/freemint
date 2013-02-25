@@ -68,7 +68,7 @@
 	"\033p ISO filesystem driver version " MSG_VERSION " \033q\r\n"
 
 #define MSG_GREET	\
-	"\275 " MSG_BUILDDATE " by Frank Naumann <fnaumann@freemint.de>.\r\n" \
+	"\275 2000-2010 by Frank Naumann <fnaumann@freemint.de>.\r\n" \
 
 #define MSG_ALPHA	\
 	"\033p WARNING: This is an unstable version - ALPHA! \033q\7\r\n"
