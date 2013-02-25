@@ -27,7 +27,7 @@
 
 # define MSG_GREET	\
 	"\xbd 1993, 1994 by Ulrich K\x81hn.\r\n" \
-	"\xbd " MSG_BUILDDATE " by Frank Naumann.\r\n" \
+	"\xbd 2000-2010 by Frank Naumann.\r\n" \
 	"See the file COPYING for copying and using conditions.\r\n"
 
 # define MSG_ALPHA	\

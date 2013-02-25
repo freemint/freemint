@@ -83,7 +83,7 @@
 
 # define MSG_GREET	\
 	"½ Jan  1 1995 by TeSche <itschere@techfak.uni-bielefeld.de>\r\n" \
-	"½ " MSG_BUILDDATE " by Frank Naumann.\r\n\r\n"
+	"½ 2000-2010 by Frank Naumann.\r\n\r\n"
 
 # define MSG_MINT	\
 	"\033pMiNT too old!\033q\r\n"
