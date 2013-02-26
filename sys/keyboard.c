@@ -1750,7 +1750,7 @@ load_internal_table(void)
 		quickmovb(p, tos_keytab->altcaps, len);
 		p += len;
 
-		if (machine == machine_milan)
+		if (mch == MILAN_C)
 		{
 			len = strlen((char *)tos_keytab->altgr) + 1;
 			quickmovb(p, tos_keytab->altgr, len);
