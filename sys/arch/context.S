@@ -108,7 +108,10 @@ noprot1:
 	addq.l	#2,a1			// assume 2-byte filler after the exception frame
 build_stack_fixed:
 
-	// TODO FPU
+	// ColdFire FPU
+	fsave	C_FSTATE(a0)		// save internal state frame (including fpcr and fpsr)
+	fmovem.d fp0-fp7,C_FREGS(a0)	// save data registers
+	fmove.l	fpiar,C_FCTRL+8(a0)	// and control registers
 
 	bra.s	short1
 build_68k:
@@ -237,6 +240,19 @@ _save_context:
 noprot2:
 #endif
 
+#ifdef __mcoldfire__
+	tst.w	_coldfire_68k_emulation
+	bne.s	savefpu_68k
+
+	// ColdFire FPU
+	fsave	C_FSTATE(a0)		// save internal state frame (including fpcr and fpsr)
+	fmovem.d fp0-fp7,C_FREGS(a0)	// save data registers
+	fmove.l	fpiar,C_FCTRL+8(a0)	// and control registers
+
+	bra.s	nofpu2
+savefpu_68k:
+#endif
+
 // if running with a true coprocessor we need to save the FPU state
 
 	tst.w	_fpu			// is there a true FPU in the system
@@ -344,7 +360,10 @@ _restore_context:
 	tst.w	_coldfire_68k_emulation
 	bne.s	restore_68k
 
-	// TODO FPU
+	// ColdFire FPU
+	fmove.l	C_FCTRL+8(a0),fpiar	// restore control registers
+	fmovem.d C_FREGS(a0),fp0-fp7	// and data registers
+	frestore C_FSTATE(a0)		// finally the internal state (including fpcr and fpsr)
 
 	move.l	C_PC(a0),-(sp)		// push the PC
 	move.w	C_SR(a0),-(sp)		// push the status register
@@ -496,7 +515,10 @@ noprot4:
 	tst.w	_coldfire_68k_emulation
 	bne.s	change_68k
 
-	// TODO FPU
+	// ColdFire FPU
+	fmove.l	C_FCTRL+8(a0),fpiar	// restore control registers
+	fmovem.d C_FREGS(a0),fp0-fp7	// and data registers
+	frestore C_FSTATE(a0)		// finally the internal state (including fpcr and fpsr)
 
 	move.l	C_PC(a0),-(sp)		// push the PC
 	move.w	C_SR(a0),-(sp)		// push the status register
