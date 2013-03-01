@@ -1610,7 +1610,7 @@ static bool text_type(WINDOW *w, short code, short shift)
 		if (r > 0)
 		{
 			/* vt52 -> vt100 cursor/function key remapping */
-			if (t->vt_mode == MODE_VT100 && code >= 0x3b00 && code <= 0x5000 && ((code&0xFF00)<=0x20))
+			if (t->vt_mode == MODE_VT100 && code >= 0x3b00 && code <= 0x5000 && ((code&0xFF)<=0x20))
 			{
 				(void)Fputchar(t->fd, (long)(0x0001001bL | ((long)shift << 24L)), 0);	  /* 'ESC' */
 			  	switch (code)
