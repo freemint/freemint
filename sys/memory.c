@@ -13,6 +13,7 @@
 
 # include "memory.h"
 # include "global.h"
+# include "cookie.h"
 
 # include "libkern/libkern.h"
 # include "mint/basepage.h"
@@ -1622,7 +1623,18 @@ failed:
 		 * emulated via illegal instruction handler on ColdFire,
 		 * so they require to be dynamically patched.
 		 */
-		patch_memset_purec(b);
+		static void (*coldfire_purec_patcher)(BASEPAGE*) = NULL;
+
+		if (coldfire_purec_patcher == NULL)
+		{
+			ulong pexe = NULL;
+			if (get_toscookie(0x50455845L, &pexe) == 0 && pexe != NULL)
+				coldfire_purec_patcher = (void (*)(BASEPAGE*))pexe;  // Patcher exported from FireTOS.
+			else
+				coldfire_purec_patcher = patch_memset_purec; // Fallback to internal MiNT patcher.
+		}
+
+		coldfire_purec_patcher(b);
 	}
 #endif
 
