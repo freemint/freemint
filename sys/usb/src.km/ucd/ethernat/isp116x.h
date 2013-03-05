@@ -58,12 +58,23 @@
 
 #define ISP116x_WRITE_OFFSET	0x80
 
+/* --- Board settings -------------------------------------------------------*/
+
+#define ISP116X_HCD_INT_ACT_HIGH
+//#define ISP116X_HCD_INT_EDGE_TRIGGERED
+//#define ISP116X_HCD_SEL15kRES
+//#define ISP116X_HCD_OC_ENABLE
+//#define ISP116X_HCD_REMOTE_WAKEUP_ENABLE
+#define ISP116X_HCD_USE_UDELAY
+//#define ISP116X_HCD_USE_EXTRA_DELAY
+
 /* --- ISP116x address registers in EtherNAT --------------------------------*/
 
 #define ISP116X_HCD_ADDR	0x80000016
 #define ISP116X_HCD_DATA	0x80000012
 //#define ETHERNAT_CPLD_CR	0x80000023   /* 0x80000023 - 1 */
 volatile unsigned char* const ETHERNAT_CPLD_CR = (volatile unsigned char*) 0x80000023;
+
 /* --- ISP116x registers/bits ---------------------------------------------- */
 
 #define	HCREVISION	0x00
