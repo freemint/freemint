@@ -57,6 +57,16 @@
 
 #define ISP116x_WRITE_OFFSET	0x80
 
+/* --- Board settings -------------------------------------------------------*/
+
+#define ISP116X_HCD_INT_ACT_HIGH
+//#define ISP116X_HCD_INT_EDGE_TRIGGERED
+#define ISP116X_HCD_SEL15kRES
+#define ISP116X_HCD_OC_ENABLE
+//#define ISP116X_HCD_REMOTE_WAKEUP_ENABLE
+//#define ISP116X_HCD_USE_UDELAY
+#define ISP116X_HCD_USE_EXTRA_DELAY
+
 /* --- ISP116x address registers in Netusbee --------------------------------*/
 
 #define ISP116X_HCD_ADDR	0x00FBC000

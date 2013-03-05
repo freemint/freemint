@@ -20,23 +20,8 @@
 #ifndef _CONFIG_H
 #define _CONFIG_H
 
-//#define ARCH m68k
-//#define COLDFIRE      /* Besides change one(first) .chip in bios.S 68060 or 5200 */
-/* Change .chip in detxbios.S 68060 or 5200 */
-
 /*----- USB -----*/
 //#define CONFIG_LEGACY_USB_INIT_SEQ
 //#define CONFIG_USB_INTERRUPT_POLLING
-/*----- ISP116x-HCD ------*/
-#define ISP116X_HCD_USE_UDELAY
-//#define ISP116X_HCD_USE_EXTRA_DELAY
-//#define ISP116X_HCD_SEL15kRES
-//#define ISP116X_HCD_OC_ENABLE
-//#define ISP116X_HCD_REMOTE_WAKEUP_ENABLE
-//#define ISP116X_HCD_INT_EDGE_TRIGGERED
-#define ISP116X_HCD_INT_ACT_HIGH
-/*----- OHCI-HCI -----*/
-#define CONFIG_SYS_USB_OHCI_MAX_ROOT_PORTS	1
-//#define PCI_XBIOS
 
 # endif /* _CONFIG_H */
