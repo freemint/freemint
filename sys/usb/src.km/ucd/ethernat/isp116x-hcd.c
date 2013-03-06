@@ -92,42 +92,6 @@
 	"\7\r\nSorry, failed!\r\n\r\n"
 
 /*
- * ISP116x chips require certain delays between accesses to its
- * registers. The following timing options exist.
- *
- * 1. Configure your memory controller (the best)
- * 2. Use ndelay (easiest, poorest). For that, enable the following macro.
- *
- * Value is in microseconds.
- */
-#ifdef ISP116X_HCD_USE_UDELAY
-# define UDELAY		1
-#endif
-
-/*
- * On some (slowly?) machines an extra delay after data packing into
- * controller's FIFOs is required, * otherwise you may get the following
- * error:
- *
- *   uboot> usb start
- *   (Re)start USB...
- *   USB:   scanning bus for devices... isp116x: isp116x_submit_job: CTL:TIMEOUT
- *   isp116x: isp116x_submit_job: ****** FIFO not ready! ******
- *
- *         USB device not responding, giving up (status=4)
- *         isp116x: isp116x_submit_job: ****** FIFO not empty! ******
- *         isp116x: isp116x_submit_job: ****** FIFO not empty! ******
- *         isp116x: isp116x_submit_job: ****** FIFO not empty! ******
- *         3 USB Device(s) found
- *                scanning bus for storage devices... 0 Storage Device(s) found
- *
- * Value is in milliseconds.
- */
-#ifdef ISP116X_HCD_USE_EXTRA_DELAY
-# define EXTRA_DELAY	2	/* DEFAULT 2 */
-#endif
-
-/*
  * Debug section
  */
 
