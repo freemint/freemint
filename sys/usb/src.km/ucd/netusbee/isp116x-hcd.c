@@ -99,6 +99,7 @@
  *
  * Value is in microseconds.
  */
+#undef ISP116X_HCD_USE_UDELAY
 #ifdef ISP116X_HCD_USE_UDELAY
 # define UDELAY		1
 #endif
@@ -122,6 +123,7 @@
  *
  * Value is in milliseconds.
  */
+#define ISP116X_HCD_USE_EXTRA_DELAY
 #ifdef ISP116X_HCD_USE_EXTRA_DELAY
 # define EXTRA_DELAY	10	/* DEFAULT 2 */
 #endif
@@ -1919,9 +1921,11 @@ usb_lowlevel_init(long dummy1, const struct pci_device_id *dummy2)
 #ifdef ISP116X_HCD_INT_EDGE_TRIGGERED
 	isp116x_board.int_edge_triggered = 1;
 #endif
+#define ISP116X_HCD_SEL15kRES
 #ifdef ISP116X_HCD_SEL15kRES
 	isp116x_board.sel15Kres = 1;
 #endif
+#define ISP116X_HCD_OC_ENABLE
 #ifdef ISP116X_HCD_OC_ENABLE
 	isp116x_board.oc_enable = 1;
 #endif
