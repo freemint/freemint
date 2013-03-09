@@ -1624,6 +1624,12 @@ k_main(void *dummy)
 	int wait = 1, pferr, p_exc = -1;
 	unsigned long default_input_channels;
 	struct tty *tty;
+	uchar user_stack[100]; /* Stack to call the AES from supervisor mode */
+
+	/* The TOS AES saves the registers on USP inside trap #2 (56 bytes)
+	 * This hack is necessary to call the AES from supervisor mode.
+	 */
+	set_usp(user_stack + sizeof user_stack);
 
 #if CHECK_STACK
 	long stk = (long)get_sp();
