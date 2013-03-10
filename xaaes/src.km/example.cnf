@@ -634,7 +634,7 @@ redraw_timeout = 2000
 #     is very handy for applications like Taskbar, etc, that one
 #     regards like "system apps".
 #--------------------------------------------------------------------
-# clwtna = <value>         default: 1
+# clwtna = <value>         default: 0
 # (Close Last Window Tops Next App)
 #
 #     Selects what to do when the last window of a client on top is closed.
@@ -732,7 +732,7 @@ redraw_timeout = 2000
 # Taskbar needs this to prevent it from being hidden, and it closing
 # its only window should always top the previously topped app.
 #
-#app_options = taskbar, inhibit_hide = yes, clwtna = yes
+#app_options = taskbar, inhibit_hide = yes, clwtna = 1
 #
 #simple
 #app_options = default,xa_nomove = false
@@ -752,7 +752,6 @@ app_options = jaygrpii, alt_shortcuts = 0
 #app_options = jinnee, naesff = true
 #app_options = nwatch, thinwork = true, winframe_size = 0
 #app_options = popwatch, thinwork = true, winframe_size = 0
-#app_options = taskbar, inhibit_hide = yes, clwtna = true
 #app_options = amail, naesff = true
 #app_options = mymail, thinwork = true, winframe_size = 0
 #app_options = highwire, winframe_size = 0
