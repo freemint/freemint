@@ -93,7 +93,7 @@
 # debug-output to console and file
 #loglvl = 3
 # no debug-output
-#loglvl = 0
+loglvl = 0
 #
 #####################################################################
 #
@@ -105,6 +105,7 @@
 # and have the menu and top-window if any.
 # The special name 'shell' sets the focus to the desktop given by the
 # shell-directive.
+focus = shell
 #
 #####################################################################
 #
