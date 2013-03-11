@@ -338,6 +338,7 @@ deliver_button_event(struct xa_window *wind, struct xa_client *target, const str
 		DIAG((D_mouse, target, "deliver_button_event: Send cXA_deliver_button_event to %s", target->name));
 		post_cevent(target, cXA_deliver_button_event, wind,NULL, 0,0, NULL,md);
 	}
+	mainmd.clicks = 0;
 }
 
 static void
@@ -1033,7 +1034,6 @@ move_timeout(struct proc *p, long arg)
 			md = mainmd;
 			md.x = last_x;
 			md.y = last_y;
-			md.clicks = 0;
 			md.ty = MOOSE_MOVEMENT_PREFIX;
 			vq_key_s(C.P_handle, &md.kstate);
 			/*
