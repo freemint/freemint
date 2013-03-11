@@ -346,7 +346,6 @@ dispatch_button_event(enum locks lock, struct xa_window *wind, const struct moos
 {
 	struct xa_client *target = wind->owner;
 
-	C.boot_focus = 0;
 	/*
 	 * Right-button clicks or clicks on no-list windows or topped windows...
 	 */
@@ -1260,6 +1259,7 @@ adi_button(struct adif *a, struct moose_data *md)
 	 */
 	if (!b_to)
 		b_to = addroottimeout(0L, button_timeout, 1);
+	C.boot_focus = 0;
 }
 
 /*
