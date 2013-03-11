@@ -72,9 +72,9 @@
 
 #define VER_MAJOR	0
 #define VER_MINOR	1
-#define VER_STATUS	
+#define VER_STATUS
 
-#define MSG_VERSION	str (VER_MAJOR) "." str (VER_MINOR) str (VER_STATUS) 
+#define MSG_VERSION	str (VER_MAJOR) "." str (VER_MINOR) str (VER_STATUS)
 #define MSG_BUILDDATE	__DATE__
 
 #define MSG_BOOT	\
@@ -100,7 +100,7 @@
 
 #ifdef DEV_DEBUG
 
-# define FORCE(x)	
+# define FORCE(x)
 # define ALERT(x)	KERNEL_ALERT x
 # define DEBUG(x)	KERNEL_DEBUG x
 # define TRACE(x)	KERNEL_TRACE x
@@ -108,10 +108,10 @@
 
 #else
 
-# define FORCE(x)	
+# define FORCE(x)
 # define ALERT(x)	KERNEL_ALERT x
-# define DEBUG(x)	
-# define TRACE(x)	
+# define DEBUG(x)
+# define TRACE(x)
 # define ASSERT(x)	assert x
 
 #endif
@@ -148,17 +148,17 @@ static long rh_devnum;		/* address of Root Hub endpoint */
 /*
  * interrupt handling - bottom half
  */
-void _cdecl 	netusbee_int 	(void);
+void _cdecl	netusbee_int	(void);
 /*
  * interrupt handling - top half
  */
 static void	int_handle_tophalf	(PROC *p, long arg);
 
-/* 
+/*
  *Function prototypes
  */
 long 		isp116x_check_id	(struct isp116x *);
-static long 	isp116x_reset		(struct isp116x *);
+static long	isp116x_reset		(struct isp116x *);
 long		submit_bulk_msg		(struct usb_device *, unsigned long , void *, long);
 long		submit_control_msg	(struct usb_device *, unsigned long, void *,
 					 long, struct devrequest *);
@@ -176,7 +176,7 @@ static long _cdecl	netusbee_ioctl		(struct ucdif *, short, long);
 
 static char lname[] = "NetUSBee USB controller driver for FreeMiNT\0";
 
-static struct ucdif netusbee_uif = 
+static struct ucdif netusbee_uif =
 {
 	0,			/* *next */
 	USB_CONTRLL,		/* class */
@@ -254,7 +254,7 @@ static struct ucdif netusbee_uif =
 
 
 #if defined(TRACE_EXTRA)
-#if 0
+
 static long
 isp116x_get_current_frame_number(struct usb_device *usb_dev)
 {
@@ -262,7 +262,6 @@ isp116x_get_current_frame_number(struct usb_device *usb_dev)
 
 	return isp116x_read_reg32(isp116x, HCFMNUM);
 }
-#endif
 
 static void
 dump_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
@@ -274,7 +273,7 @@ dump_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 	char buf[(len * 4) + 24 + 6];
 #endif
 	DEBUG(("%s URB:[%4lx] dev:%2ld,ep:%2ld-%c,type:%s,len:%ld stat:0x%lx",
-				str, isp116x_get_current_frame_number(dev), 
+				str, isp116x_get_current_frame_number(dev),
 				usb_pipedevice(pipe), usb_pipeendpoint(pipe),
 				usb_pipeout(pipe)  ? 'O' : 'I',
 				usb_pipetype(pipe) < 2 ?
@@ -292,7 +291,7 @@ dump_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 		{
 			sprintf(build_str, sizeof(build_str), " %02x", ((unsigned char *) buffer)[i]);
 			strcat(buf, build_str);
-		}	
+		}
 		sprintf(build_str, sizeof(build_str), "%s\r\n", i < len ? "..." : "");
 		strcat(buf, build_str);
 		DEBUG((buf));
@@ -346,7 +345,7 @@ dump_ptd_data(struct ptd *ptd, unsigned char * buffer, long type)
 	long k;
 	char build_str[64];
 	char buf[64 + 4 * PTD_GET_LEN(ptd)];
-	
+
 	sprintf(buf, sizeof(buf),"\0");
 	if (type == 0 /* 0ut data */ )
 	{
@@ -370,8 +369,8 @@ dump_ptd_data(struct ptd *ptd, unsigned char * buffer, long type)
 		}
 		DEBUG((buf));
 	}
-	
-	
+
+
 	if (PTD_GET_LAST(ptd))
 	{
 		DEBUG(("--- last PTD ---"));
@@ -535,12 +534,12 @@ write_ptddata_to_fifo(struct isp116x *isp116x, void *buf, long len)
 	unsigned short *dp2 = (unsigned short *) buf;
 	unsigned short w;
 	long quot = len % 4;
-	
+
 /* For NetUSBee, take the raw_write out in write functions, here we don't
  * like that NetUSBee swap the bytes for us, so we swap them before we send
  * them, then the bytes will arrive to the USB device with the correct positions
  */
- 	if ((unsigned long)dp2 & 1)
+	if ((unsigned long)dp2 & 1)
 	{
 		/* not aligned */
 		for (; len > 1; len -= 2)
@@ -598,7 +597,6 @@ read_ptddata_from_fifo(struct isp116x *isp116x, void *buf, long len)
 			*dp2++ = isp116x_read_data16(isp116x);
 		if (len)
 			*(unsigned char *) dp2 = 0xff & isp116x_raw_read_data16(isp116x);
-			
 	}
 	if (quot == 1 || quot == 2)
 		isp116x_read_data16(isp116x);
@@ -616,9 +614,9 @@ pack_fifo(struct isp116x *isp116x, struct usb_device *dev,
 	long i, done;
 
 	DEBUG(("--- pack buffer 0x%08lx - %ld bytes (fifo %ld) ---", data, len, buflen));
-	
+
 	isp116x_write_reg16(isp116x, HCuPINT, HCuPINT_AIIEOT);
-	
+
 	isp116x_write_reg16(isp116x, HCXFERCTR, buflen);
 	set_int_lvl7();
 	isp116x_write_addr(isp116x, HCATLPORT | ISP116x_WRITE_OFFSET);
@@ -626,16 +624,16 @@ pack_fifo(struct isp116x *isp116x, struct usb_device *dev,
 	done = 0;
 	for (i = 0; i < n; i++)
 	{
-		//DEBUG(("i=%ld - done=%ld - len=%d", i, done, PTD_GET_LEN(&ptd[i])));
+		DEBUG(("i=%ld - done=%ld - len=%d", i, done, PTD_GET_LEN(&ptd[i])));
 
 		/* For NetUSBee, use raw_write to don't swap bytes */
-//		dump_ptd(&ptd[i]);
+		dump_ptd(&ptd[i]);
 		isp116x_raw_write_data16(isp116x, ptd[i].count);
 		isp116x_raw_write_data16(isp116x, ptd[i].mps);
 		isp116x_raw_write_data16(isp116x, ptd[i].len);
 		isp116x_raw_write_data16(isp116x, ptd[i].faddr);
 
-//		dump_ptd_data(&ptd[i], (unsigned char *) data + done, 0);
+		dump_ptd_data(&ptd[i], (unsigned char *) data + done, 0);
 
 		/* This part is critical, disamble interrupts */
 //		set_int_lvl7();
@@ -668,14 +666,14 @@ unpack_fifo(struct isp116x *isp116x, struct usb_device *dev,
 	ret = TD_CC_NOERROR;
 	done = 0;
 	for (i = 0; i < n; i++)
-	{		
+	{
 		/* For NetUSBee, use raw_read to don't swap bytes */
 		ptd[i].count = isp116x_raw_read_data16(isp116x);
 		ptd[i].mps = isp116x_raw_read_data16(isp116x);
 		ptd[i].len = isp116x_raw_read_data16(isp116x);
 		ptd[i].faddr = isp116x_raw_read_data16(isp116x);
-//		dump_ptd(&ptd[i]);
-		
+		dump_ptd(&ptd[i]);
+
 		/* when cc is 15 the data has not being touch by the HC
 		 * so we have to read all to empty completly the buffer
 		 */
@@ -693,7 +691,7 @@ unpack_fifo(struct isp116x *isp116x, struct usb_device *dev,
 		dump_ptd_data(&ptd[i], (unsigned char *) data + done, 1);
 
 		done += PTD_GET_LEN(&ptd[i]);
-	
+
 		cc = PTD_GET_CC(&ptd[i]);
 
 		/* Data underrun means basically that we had more buffer space than
@@ -724,7 +722,7 @@ isp116x_interrupt(struct isp116x *isp116x)
 	irqstat = isp116x_read_reg16(isp116x, HCuPINT);
 	isp116x_write_reg16(isp116x, HCuPINT, irqstat);
 	DEBUG((">>>>>> irqstat %x <<<<<<", irqstat));
-	
+
 	if (irqstat & HCuPINT_ATL)
 	{
 		DEBUG((">>>>>> HCuPINT_ATL <<<<<<"));
@@ -784,13 +782,12 @@ static inline long
 max_transfer_len(struct usb_device *dev, unsigned long pipe)
 {
 	unsigned mpck = (*uinf->usb_maxpacket)(dev, pipe);
-	
+
 	/* One PTD can transfer 1023 bytes but try to always
 	 * transfer multiples of endpoint buffer size
 	 */
 	return 1023 / mpck * mpck;
 }
-
 
 /* Do an USB transfer
  */
@@ -813,7 +810,7 @@ isp116x_submit_job(struct usb_device *dev, unsigned long pipe,
 	DEBUG(("------------------------------------------------"));
 	dump_msg(dev, pipe, buffer, len, "SUBMIT");
 	DEBUG(("------------------------------------------------"));
-	
+
 	if (len >= 1024)
 	{
 		ALERT(("Too big job"));
@@ -849,7 +846,7 @@ isp116x_submit_job(struct usb_device *dev, unsigned long pipe,
 		dev->status = USB_ST_CRC_ERR;
 		return -1;
 	}
-	
+
 	/* FIFO not empty? */
 	if (isp116x_read_reg16(isp116x, HCBUFSTAT) & HCBUFSTAT_ATL_FULL)
 	{
@@ -867,13 +864,12 @@ retry:
 	ptd->len = PTD_LEN(len) | PTD_DIR(dir);
 	ptd->faddr = PTD_FA(usb_pipedevice(pipe));
 
-	
 retry_same:
 
 	/* FIFO not empty? */
 	if (isp116x_read_reg16(isp116x, HCBUFSTAT) & HCBUFSTAT_ATL_FULL)
 	{
-		DEBUG(("****** FIFO not empty! 2 ******"));
+		DEBUG(("****** FIFO not empty! (2) ******"));
 		dev->status = USB_ST_BUF_ERR;
 		return -1;
 	}
@@ -942,7 +938,6 @@ retry_same:
 		}
 	}
 
-
 	/* Ok, now we can read transfer status */
 
 	/* FIFO not ready? */
@@ -960,8 +955,7 @@ retry_same:
 	done += i;
 	buffer = (char *)buffer + i;
 	len -= i;
-	
-	
+
 	/* There was some kind of real problem; Prepare the PTD again
 	 * and retry from the failed transaction on
 	 */
@@ -994,7 +988,6 @@ retry_same:
 				set_extra_delay = 1;
 				goto retry_same;
 			}
-			DEBUG(("cc == TD_NOTACCESSED || PTD_GET_ACTIVE(ptd) retry"));
 			usb_settoggle(dev, epnum, dir_out, PTD_GET_TOGGLE(ptd));
 			goto retry;
 		}
@@ -1026,7 +1019,6 @@ retry_same:
 	dump_msg(dev, pipe, buffer, len, "SUBMIT(ret)");
 
 	dev->status = 0;
-
 	return done;
 }
 
@@ -1145,19 +1137,19 @@ isp116x_submit_rh_msg(struct usb_device *dev, unsigned long pipe,
 			{
 				case RH_PORT_ENABLE:
 					isp116x_write_reg32(isp116x, HCRHPORT1 + wIndex - 1,
-						   		 RH_PS_CCS);
+							    RH_PS_CCS);
 					len = 0;
 					break;
 
 				case RH_PORT_SUSPEND:
 					isp116x_write_reg32(isp116x, HCRHPORT1 + wIndex - 1,
-						   		 RH_PS_POCI);
+							    RH_PS_POCI);
 					len = 0;
 					break;
 
 				case RH_PORT_POWER:
 					isp116x_write_reg32(isp116x, HCRHPORT1 + wIndex - 1,
-						   		RH_PS_LSDA);
+							    RH_PS_LSDA);
 					len = 0;
 					break;
 
@@ -1169,7 +1161,7 @@ isp116x_submit_rh_msg(struct usb_device *dev, unsigned long pipe,
 
 				case RH_C_PORT_ENABLE:
 					isp116x_write_reg32(isp116x, HCRHPORT1 + wIndex - 1,
-					   			RH_PS_PESC);
+							    RH_PS_PESC);
 					len = 0;
 					break;
 
@@ -1206,7 +1198,7 @@ isp116x_submit_rh_msg(struct usb_device *dev, unsigned long pipe,
 			{
 				case RH_PORT_SUSPEND:
 					isp116x_write_reg32(isp116x, HCRHPORT1 + wIndex - 1,
-					   			 RH_PS_PSS);
+							    RH_PS_PSS);
 					len = 0;
 					break;
 
@@ -1221,7 +1213,7 @@ isp116x_submit_rh_msg(struct usb_device *dev, unsigned long pipe,
 					mdelay(1);
 					}
 					isp116x_write_reg32(isp116x, HCRHPORT1 + wIndex - 1,
-					    			RH_PS_PRS);
+							    RH_PS_PRS);
 					mdelay(10);
 					len = 0;
 					break;
@@ -1234,7 +1226,7 @@ isp116x_submit_rh_msg(struct usb_device *dev, unsigned long pipe,
 
 				case RH_PORT_ENABLE:
 					isp116x_write_reg32(isp116x, HCRHPORT1 + wIndex - 1,
-					    RH_PS_PES);
+							    RH_PS_PES);
 					len = 0;
 					break;
 
@@ -1259,7 +1251,7 @@ isp116x_submit_rh_msg(struct usb_device *dev, unsigned long pipe,
 			{
 				case (USB_DT_DEVICE << 8):	/* device descriptor */
 					len = min1_t(unsigned long,
-				    			leni, min2_t(unsigned long,
+							leni, min2_t(unsigned long,
 							sizeof(root_hub_dev_des),
 							wLength));
 				data_buf = root_hub_dev_des;
@@ -1267,7 +1259,7 @@ isp116x_submit_rh_msg(struct usb_device *dev, unsigned long pipe,
 
 				case (USB_DT_CONFIG << 8):	/* configuration descriptor */
 					len = min1_t(unsigned long,
-				  	 		leni, min2_t(unsigned long,
+							leni, min2_t(unsigned long,
 							sizeof(root_hub_config_des),
 							wLength));
 					data_buf = root_hub_config_des;
@@ -1275,7 +1267,7 @@ isp116x_submit_rh_msg(struct usb_device *dev, unsigned long pipe,
 
 				case ((USB_DT_STRING << 8) | 0x00):	/* string 0 descriptors */
 					len = min1_t(unsigned long,
-				    			leni, min2_t(unsigned long,
+							leni, min2_t(unsigned long,
 							sizeof(root_hub_str_index0),
 							wLength));
 					data_buf = root_hub_str_index0;
@@ -1283,7 +1275,7 @@ isp116x_submit_rh_msg(struct usb_device *dev, unsigned long pipe,
 
 				case ((USB_DT_STRING << 8) | 0x01):	/* string 1 descriptors */
 					len = min1_t(unsigned long,
-				    			leni, min2_t(unsigned long,
+							leni, min2_t(unsigned long,
 							sizeof(root_hub_str_index1),
 							wLength));
 					data_buf = root_hub_str_index1;
@@ -1328,7 +1320,7 @@ isp116x_submit_rh_msg(struct usb_device *dev, unsigned long pipe,
 			}
 
 			len = min1_t(unsigned long, leni,
-			   		 min2_t(unsigned long, data_buf[0], wLength));
+					 min2_t(unsigned long, data_buf[0], wLength));
 			break;
 
 		case RH_GET_CONFIGURATION:
@@ -1367,7 +1359,7 @@ isp116x_submit_rh_msg(struct usb_device *dev, unsigned long pipe,
 
 long
 submit_int_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
-		   long len, long interval)
+		long len, long interval)
 {
 	DEBUG(("dev=0x%lx pipe=%lx buf=0x%lx size=%d int=%d",
 		dev, pipe, buffer, len, interval));
@@ -1377,15 +1369,15 @@ submit_int_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 
 long
 submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
-		       long len, struct devrequest *setup)
+		   long len, struct devrequest *setup)
 {
 	long devnum = usb_pipedevice(pipe);
 	long epnum = usb_pipeendpoint(pipe);
 	long max = max_transfer_len(dev, pipe);
 	long dir_in = usb_pipein(pipe);
 	long done, ret;
-	
-	
+
+
 	/* Control message is for the HUB? */
 	if (devnum == rh_devnum)
 		return isp116x_submit_rh_msg(dev, pipe, buffer, len, setup);
@@ -1395,8 +1387,8 @@ submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 	/* Setup phase */
 	DEBUG(("--- SETUP PHASE --------------------------------"));
 	usb_settoggle(dev, epnum, 1, 0);
-	
-	
+
+
 	ret = isp116x_submit_job(dev, pipe,
 				PTD_DIR_SETUP,
 				 setup, sizeof(struct devrequest));
@@ -1449,15 +1441,15 @@ short flagy = 0;
 
 long
 submit_bulk_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
-		    long len)
+		long len)
 {
 	long dir_out = usb_pipeout(pipe);
 	long max = max_transfer_len(dev, pipe);
 	long done, ret;
-	
+
 	DEBUG(("--- BULK ---------------------------------------"));
 	DEBUG(("dev=%ld pipe=%ld buf=0x%lx size=%d dir_out=%d",
-	      usb_pipedevice(pipe), usb_pipeendpoint(pipe), buffer, len, dir_out));
+		usb_pipedevice(pipe), usb_pipeendpoint(pipe), buffer, len, dir_out));
 	done = 0;
 	while (done < len)
 	{
@@ -1514,7 +1506,7 @@ isp116x_sw_reset(struct isp116x *isp116x)
 
 	isp116x_write_reg16(isp116x, HCSWRES, HCSWRES_MAGIC);
 	isp116x_write_reg32(isp116x, HCCMDSTAT, HCCMDSTAT_HCR);
-	
+
 	while (--retries)
 	{
 		/* It usually resets within 1 ms */
@@ -1523,7 +1515,7 @@ isp116x_sw_reset(struct isp116x *isp116x)
 		if (!(isp116x_read_reg32(isp116x, HCCMDSTAT) & HCCMDSTAT_HCR))
 			break;
 	}
-	
+
 	if (!retries)
 	{
 		DEBUG(("software reset timeout"));
@@ -1532,9 +1524,9 @@ isp116x_sw_reset(struct isp116x *isp116x)
 
 # if 0
 	/* GALVEZ: DEBUG SOFTWARE RESET */
-		
+
 	retries = 5000;
-	
+
 	while (--retries){
 		if ((isp116x_read_reg32(isp116x, HCCMDSTAT) & HCCMDSTAT_HCR)) {
 			INFO ("HCR: 1 retries: %d\n\r",retries);
@@ -1553,7 +1545,7 @@ isp116x_reset(struct isp116x *isp116x)
 	long ret, timeout = 1000;/* ms
 				* Galvez: 15 ms sometimes isn't enough,
 				* for NetUSBee under TOS ??????? increased to 150 ms 
-				*/ 
+				*/
 
 	ret = isp116x_sw_reset(isp116x);
 
@@ -1569,7 +1561,7 @@ isp116x_reset(struct isp116x *isp116x)
 	}
 	if (!clkrdy)
 	{
-		DEBUG(("clock not ready after %ldms", timeout));
+		ALERT(("clock not ready after %ldms", timeout));
 		/* After sw_reset the clock won't report to be ready, if
 		   H_WAKEUP pin is high. */
 		DEBUG(("please make sure that the H_WAKEUP pin is pulled low!"));
@@ -1578,7 +1570,7 @@ isp116x_reset(struct isp116x *isp116x)
 	return ret;
 }
 
-static void 
+static void
 isp116x_stop(struct isp116x *isp116x)
 {
 	unsigned long val;
@@ -1591,7 +1583,7 @@ isp116x_stop(struct isp116x *isp116x)
 	val &= ~(RH_A_NPS | RH_A_PSM);
 	isp116x_write_reg32(isp116x, HCRHDESCA, val);
 	isp116x_write_reg32(isp116x, HCRHSTATUS, RH_HS_LPS);
-	
+
 	isp116x_sw_reset(isp116x);
 }
 
@@ -1625,25 +1617,25 @@ netusbee_hub_events(void)
 	/* Shut out all further interrupts */
 	isp116x_write_reg16(isp116x, HCuPINTENB, 0);
 	irqstat = isp116x_read_reg16(isp116x, HCuPINT);
-	
+
 //	set_old_int_lvl();
-	
+
 	if (irqstat & HCuPINT_OPR)
 	{
 		intstat = isp116x_read_reg32(isp116x, HCINTSTAT);
 		isp116x_write_reg32(isp116x, HCINTSTAT, intstat);
 
-                if (intstat & HCINT_RHSC) 
+		if (intstat & HCINT_RHSC)
 		{
 			isp116x->rhstatus = isp116x_read_reg32(isp116x, HCRHSTATUS);
 			isp116x->rhport[0] = isp116x_read_reg32(isp116x, HCRHPORT1);
 			isp116x->rhport[1] = isp116x_read_reg32(isp116x, HCRHPORT2);
-                        
+
 			addroottimeout (0L, int_handle_tophalf, 0x1);
 		}
 		isp116x_write_reg16(isp116x, HCuPINT, HCuPINT_OPR);
-         }
-	
+	}
+
 	isp116x_write_reg16(isp116x, HCuPINTENB, isp116x->irqenb);
 //	set_int_lvl7();
 }
@@ -1679,7 +1671,7 @@ netusbee_hub_poll_thread(void *dummy)
 /*
  *  Configure the chip. The chip must be successfully reset by now.
  */
-static long 
+static long
 isp116x_start(struct isp116x *isp116x)
 {
 	struct isp116x_platform_data *board = isp116x->board;
@@ -1720,7 +1712,7 @@ isp116x_start(struct isp116x *isp116x)
 //	val |= RH_A_OCPM;
 	/* Overcurrent protection disable */
 	val |= RH_A_NOCP;
-	
+
 	isp116x_write_reg32(isp116x, HCRHDESCA, val);
 	isp116x->rhdesca = isp116x_read_reg32(isp116x, HCRHDESCA);
 
@@ -1745,7 +1737,7 @@ isp116x_start(struct isp116x *isp116x)
 	/* Disable ports to avoid race in device enumeration */
 	isp116x_write_reg32(isp116x, HCRHPORT1, RH_PS_CCS);
 	isp116x_write_reg32(isp116x, HCRHPORT2, RH_PS_CCS);
-	
+
 	isp116x->intenb = HCINT_MIE | HCINT_RHSC; /*  HCINT_UE */
 	isp116x_write_reg32(isp116x, HCINTENB, isp116x->intenb);
 //	isp116x->irqenb = HCuPINT_OPR; /* | HCuPINT_ATL;  | HCuPINT_SUSP */
@@ -1756,7 +1748,7 @@ isp116x_start(struct isp116x *isp116x)
 
 	long r;
 	r = kthread_create(NULL, netusbee_hub_poll_thread, NULL, NULL, "hubpoll");
-	
+
 	if (r)
 	{
 		/* XXX todo -> exit gracefully */
@@ -1809,9 +1801,10 @@ netusbee_ioctl(struct ucdif *u, short cmd, long arg)
 		case SUBMIT_CONTROL_MSG :
 		{
 			struct control_msg *ctrl_msg = (struct control_msg *)arg;
-			
+
 			ret = submit_control_msg (ctrl_msg->dev, ctrl_msg->pipe,
-			 		    ctrl_msg->data, ctrl_msg->size, ctrl_msg->setup);	
+						  ctrl_msg->data, ctrl_msg->size,
+						  ctrl_msg->setup);
 			break;
 		}
 		case SUBMIT_BULK_MSG :
@@ -1819,7 +1812,7 @@ netusbee_ioctl(struct ucdif *u, short cmd, long arg)
 			struct bulk_msg *bulk_msg = (struct bulk_msg *)arg;
 
 			ret = submit_bulk_msg (bulk_msg->dev, bulk_msg->pipe,
-				         bulk_msg->data, bulk_msg->len);			
+					       bulk_msg->data, bulk_msg->len);
 
 			break;
 		}
@@ -1828,8 +1821,8 @@ netusbee_ioctl(struct ucdif *u, short cmd, long arg)
 			struct int_msg *int_msg = (struct int_msg *)arg;
 
 			ret = submit_int_msg(int_msg->dev, int_msg->pipe,
-				       int_msg->buffer, int_msg->transfer_len, 
-				       int_msg->interval);
+					     int_msg->buffer, int_msg->transfer_len,
+					     int_msg->interval);
 
 			break;
 		}
@@ -1837,7 +1830,7 @@ netusbee_ioctl(struct ucdif *u, short cmd, long arg)
 		{
 			return ENOSYS;
 		}
-	}	
+	}
 	return ret;
 }
 
@@ -1862,8 +1855,7 @@ isp116x_check_id(struct isp116x *isp116x)
 	return 0;
 }
 
-
-long 
+long
 usb_lowlevel_init(long dummy1, const struct pci_device_id *dummy2)
 {
 //	unsigned short val;
@@ -1897,7 +1889,7 @@ usb_lowlevel_init(long dummy1, const struct pci_device_id *dummy2)
 	/* Try to get ISP116x silicon chip ID */
 	if (isp116x_check_id(isp116x) < 0)
 		return (-1);
-		
+
 	isp116x->disabled = 1;
 	isp116x->sleeping = 0;
 
@@ -1907,7 +1899,7 @@ usb_lowlevel_init(long dummy1, const struct pci_device_id *dummy2)
 	return 0;
 }
 
-long 
+long
 usb_lowlevel_stop(void)
 {
 	struct isp116x *isp116x = &isp116x_dev;
