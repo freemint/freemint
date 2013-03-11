@@ -261,6 +261,7 @@ textures = 0
 #load palette from file <xaaes-home-dir>/pal/<name>.pal
 #
 #palette = gem
+palette = nvdi
 
 #####################################################################
 # setenv name val ..... set up environment
