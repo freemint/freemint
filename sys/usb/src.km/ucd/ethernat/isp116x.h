@@ -455,7 +455,7 @@ static inline void isp116x_write_data32(struct isp116x *isp116x, unsigned long v
 }
 
 /*
- * Added for EtherNat, to write HC registers without swaping them
+ * Added for EtherNat, to write HC registers without swapping them
  * EtherNat already swap them by hardware (i suppose.....)
  */
 static inline void isp116x_raw_write_data32(struct isp116x *isp116x, unsigned long val)
@@ -480,7 +480,7 @@ static inline unsigned long isp116x_read_data32(struct isp116x *isp116x)
 }
 
 /*
- * Added for EtherNat, to read HC registers without swaping them
+ * Added for EtherNat, to read HC registers without swapping them
  * EtherNat already swap them by hardware (i suppose.....)
  */
 static inline unsigned long isp116x_raw_read_data32(struct isp116x *isp116x)
@@ -500,7 +500,7 @@ static inline unsigned long isp116x_raw_read_data32(struct isp116x *isp116x)
    we wait at least 150 ns at every access.
 */
 
-/* with EtherNat use raw_read to avoid swaping bytes*/
+/* with EtherNat use raw_read to avoid swapping bytes*/
 
 static unsigned short isp116x_read_reg16(struct isp116x *isp116x, unsigned reg)
 {
@@ -521,7 +521,7 @@ static void isp116x_write_reg16(struct isp116x *isp116x, unsigned reg,
 	isp116x_raw_write_data16(isp116x, (unsigned short) (val & 0xffff));
 }
 
-/* with Etehrnat used raw_write to avoid swaping bytes by software */
+/* with Etehrnat used raw_write to avoid swapping bytes by software */
 static void isp116x_write_reg32(struct isp116x *isp116x, unsigned long reg,
 				unsigned long val)
 {
