@@ -209,6 +209,7 @@ pending_md(void)
 static void
 buffer_moose_pkt(struct moose_data *md)
 {
+	//DBG((0,"buffer_moose_pkt:%lx", md));
 	if (md->ty == MOOSE_BUTTON_PREFIX)
 	{
 		md_buff[md_buff_head++] = *md;
@@ -328,6 +329,7 @@ deliver_button_event(struct xa_window *wind, struct xa_client *target, const str
 	if (wind && wind->owner != target)
 	{
 		DIAG((D_mouse, target, "deliver_button_event: Send cXA_button_event (rootwind) to %s", target->name));
+		DBG((0, "deliver_button_event: Send cXA_button_event (rootwind) to %s,md=%lx", target->name, md));
 		post_cevent(target, cXA_button_event, wind,NULL, 0,0, NULL,md);
 	}
 	else
@@ -336,8 +338,14 @@ deliver_button_event(struct xa_window *wind, struct xa_client *target, const str
 		 * And post a "deliver this button event" client event
 		 */
 		DIAG((D_mouse, target, "deliver_button_event: Send cXA_deliver_button_event to %s", target->name));
+		DBG((0, "deliver_button_event: Send cXA_deliver_button_event to %s,md=%lx", target->name, md));
 		post_cevent(target, cXA_deliver_button_event, wind,NULL, 0,0, NULL,md);
 	}
+	/*struct moose_data *m = (struct moose_data *)md;
+	m->clicks = 0;
+	*/
+	DBG((0, "deliver_button_event: return:md=%lx,clicks=%d,md_head=%lx", md, md->clicks, md_head));
+	//md_head->clicks = 0;
 }
 
 static void
@@ -364,7 +372,7 @@ dispatch_button_event(enum locks lock, struct xa_window *wind, const struct moos
 	}
 	else if (!is_topped(wind) && checkif_do_widgets(lock, wind, md->x, md->y, NULL))
 	{
-		DIAG((D_mouse, target, "XA_button_event: Send cXA_do_widgets (untopped widgets) to %s", target->name));
+		DIAG((D_mouse, target, "dispatch_button_event: Send cXA_do_widgets (untopped widgets) to %s", target->name));
 		post_cevent(target, cXA_do_widgets, wind,NULL, 0,0, NULL,md);
 	}
 	else if (wind->send_message && md->state)
@@ -601,6 +609,7 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 		menustruct_locked() ? menustruct_locked()->name : "NONE",
 		C.ce_open_menu ? C.ce_open_menu->name : "NONE",
 		TAB_LIST_START, widget_active.widg));
+	//DBG((0, "XA_move_event: menulocker = %s, ce_open_menu = %s, tablist = %lx, actwidg = %lx,lock=%lx", menustruct_locked() ? menustruct_locked()->name : "NONE",C.ce_open_menu ? C.ce_open_menu->name : "NONE",TAB_LIST_START, widget_active.widg, chlp_lock));
 
 
 	/* Ozk 040503: Moved the continuing handling of widgets actions here
@@ -648,15 +657,16 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 		/* Moving the mouse into the menu bar is outside
 		 * Tab handling, because the bar itself is not for popping.
 		 */
+		//DBG((0,"XA_move_event:menu_behave=%d,menustruct_locked=%lx,ce_open_menu=%lx", cfg.menu_behave, menustruct_locked(),C.ce_open_menu));
 		if (cfg.menu_behave != PUSH && !menustruct_locked() && !C.ce_open_menu)
 		{
 			/* HR: watch the menu bar as a whole */
 			struct xa_client *aesp = C.Aes;
 
 			DIAG((D_mouse, NULL, "xa_move_event: aes wating for %lx", aesp->waiting_for));
+			//DBG((0, "xa_move_event: aes wating for %lx,flags =%x,update_locked()=%lx, md->x=%d, md->y=%d,m1=%d/%d/%d/%d", aesp->waiting_for, aesp->em.flags, update_locked(), md->x, md->y, aesp->em.m1 ));
 
-			if (   (aesp->waiting_for & XAWAIT_MENU)
-			    && (aesp->em.flags & MU_M1))
+			if ( (aesp->waiting_for & XAWAIT_MENU) && (aesp->em.flags & MU_M1))
 			{
 				if (/*   cfg.menu_behave != PUSH && */
 				    !update_locked() &&
@@ -670,9 +680,11 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 
 					menu = (XA_TREE *)widg->stuff;
 					client = menu->owner;
+					//DBG((0, "xa_move_event: widg=%lx,menu=%lx,status=%lx", widg, menu, client->status ));
 					if (!(client->status & CS_EXITING))
 					{
 						DIAG((D_mouse, client, "post widgclick (menustart) to %s", client->name));
+						//DBG((0, "xa_move_event: post widgclick (menustart) to %s", client->name));
 						C.ce_open_menu = client;
 						post_cevent(client, cXA_open_menu, widg, menu, 0,0, NULL,md);
 					}
@@ -683,6 +695,7 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 	}
 
 	client = C.mouse_lock ? get_mouse_locker() : NULL;
+	//DBG((0, "xa_move_event: client=%lx", client));
 	if (client)
 	{
 		if (client->waiting_for & (MU_M1|MU_M2|MU_MX))
@@ -692,6 +705,7 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 	{
 		struct xa_window *wind = find_window(0, md->x, md->y, FNDW_NOLIST|FNDW_NORMAL);
 
+		//DBG((0, "xa_move_event: wind=%lx", wind));
 		wind_mshape(wind, md->x, md->y);
 
 		client = CLIENT_LIST_START;
@@ -813,8 +827,9 @@ chk_button_waiter(struct moose_data *md)
 static int
 new_moose_pkt(enum locks lock, int internal, struct moose_data *md /*imd*/)
 {
-	DIAGA(("new_moose_pkt: internal=%s, state %x, cstate %x, %d/%d - %d/%d",
-		internal ? "yes":"no", md->state, md->cstate, md->x, md->y, md->sx, md->sy));
+	DIAGA(("new_moose_pkt: internal=%s, state %x, cstate %x, %d/%d - %d/%d, ty=%d",
+		internal ? "yes":"no", md->state, md->cstate, md->x, md->y, md->sx, md->sy, md->ty));
+	//DBG((0,"new_moose_pkt: internal=%s, state %x, cstate %x, %d/%d - %d/%d, ty=%d,clicks=%d",internal ? "yes":"no", md->state, md->cstate, md->x, md->y, md->sx, md->sy, md->ty, md->clicks));
 	/*
 	 * Ozk: We cannot distpach anything while a client wants exclusive
 	 * right to mouse inputs. So, we need a flag. If this flag is set, it means
@@ -826,6 +841,7 @@ new_moose_pkt(enum locks lock, int internal, struct moose_data *md /*imd*/)
 	if (S.wm_count)
 	{
 		DIAGA(("new_moose_pkt: Got wm_count = %d", S.wm_count));
+		//DBG((0,"new_moose_pkt: Got wm_count = %d", S.wm_count));
 
 		/*
 		 * Check if a client is actually waiting. If not, buffer the packet.
@@ -840,6 +856,7 @@ new_moose_pkt(enum locks lock, int internal, struct moose_data *md /*imd*/)
 
 			if (C.button_waiter == S.wait_mouse && md->ty == MOOSE_BUTTON_PREFIX)
 			{
+				//DBG((0,"new_moose_pkt: add_client_md"));
 				add_client_md(C.button_waiter, md);
 				if (!(md->state && md->cstate))
 					C.button_waiter = NULL;
@@ -870,6 +887,7 @@ new_moose_pkt(enum locks lock, int internal, struct moose_data *md /*imd*/)
 	/*
 	 * Ozk: now go dispatch the mouse event....
 	 */
+	DBG((0,"new_moose_pkt:dispatch,md=%lx,ty=%x,clicks =%d", md, md->ty, md->clicks ));
 	switch (md->ty)
 	{
 		case MOOSE_BUTTON_PREFIX:
@@ -877,7 +895,9 @@ new_moose_pkt(enum locks lock, int internal, struct moose_data *md /*imd*/)
 			DIAGA(("new_moose_pkt: Button %d, cstate %d on: %d/%d",
 				md->state, md->cstate, md->x, md->y));
 
+			DBG((0,"new_moose_pkt:XA_button_event,md=%lx,ty=%x,clicks =%d", md, md->ty, md->clicks ));
 			XA_button_event(lock, md, true);
+			//md->clicks = 0;
 			break;
 		}
 		case MOOSE_MOVEMENT_PREFIX:
@@ -888,6 +908,7 @@ new_moose_pkt(enum locks lock, int internal, struct moose_data *md /*imd*/)
 			/*
 			 * Call the mouse movement event handler
 			*/
+			md->clicks &= 1;	/* cannot double-click & move (?) */
 			XA_move_event(lock, md);
 
 			break;
@@ -910,6 +931,7 @@ new_moose_pkt(enum locks lock, int internal, struct moose_data *md /*imd*/)
 			return false;
 		}
 	}
+	//DBG((0,"new_moose_pkt:return true;"));
 	return true;
 }
 
@@ -1032,6 +1054,7 @@ move_timeout(struct proc *p, long arg)
 			md = mainmd;
 			md.x = last_x;
 			md.y = last_y;
+			md.clicks = 0;
 			md.ty = MOOSE_MOVEMENT_PREFIX;
 			vq_key_s(C.P_handle, &md.kstate);
 			/*
@@ -1191,10 +1214,11 @@ button_timeout(struct proc *p, long arg)
 		{
 			struct moose_data md;
 
-			get_md(&md);
+			int r = get_md(&md);
 			DIAGA(("adi_button_event: type=%d, (%d/%d - %d/%d) state=%d, cstate=%d, clks=%d, l_clks=%d, r_clks=%d (%ld)",
 				md.ty, md.x, md.y, md.sx, md.sy, md.state, md.cstate, md.clicks,
 				md.iclicks.chars[0], md.iclicks.chars[1], sizeof(struct moose_data) ));
+			DBG((0,"adi_button_event: type=%d, (%d/%d - %d/%d) state=%d, cstate=%d, clks=%d, l_clks=%d, r_clks=%d (%ld),md_head=%lx, md_tail=%lx,r=%d",	md.ty, md.x, md.y, md.sx, md.sy, md.state, md.cstate, md.clicks, md.iclicks.chars[0], md.iclicks.chars[1], sizeof(struct moose_data), md_head, md_tail, r ));
 #if WITH_BBL_HELP
 			if( xa_bubble( 0, bbl_get_status, 0, 11 ) == bs_open )
 			{
@@ -1258,6 +1282,9 @@ adi_button(struct adif *a, struct moose_data *md)
 	 */
 	if (!b_to)
 		b_to = addroottimeout(0L, button_timeout, 1);
+
+	DBG((0,"adi_button:md=%lx,clicks=%d", md, md->clicks));
+	//md->clicks = 0;
 }
 
 /*
