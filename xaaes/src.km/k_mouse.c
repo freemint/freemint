@@ -888,6 +888,7 @@ new_moose_pkt(enum locks lock, int internal, struct moose_data *md /*imd*/)
 			/*
 			 * Call the mouse movement event handler
 			*/
+			md->clicks &= 1;  /* cannot double-click & move (?) */
 			XA_move_event(lock, md);
 
 			break;
