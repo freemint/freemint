@@ -1033,6 +1033,7 @@ move_timeout(struct proc *p, long arg)
 			md = mainmd;
 			md.x = last_x;
 			md.y = last_y;
+			md.clicks = 0;
 			md.ty = MOOSE_MOVEMENT_PREFIX;
 			vq_key_s(C.P_handle, &md.kstate);
 			/*
