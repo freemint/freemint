@@ -371,7 +371,6 @@ dispatch_button_event(enum locks lock, struct xa_window *wind, const struct moos
 	{
 		DIAG((D_mouse, target, "dispatch_button_event: Sending WM_TOPPED to %s", target->name));
 		wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP, WM_TOPPED, 0, 0, wind->handle, 0,0,0,0);
-		top_window( lock, true, true, wind );	/* ?? */
 	}
 }
 
