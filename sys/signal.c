@@ -387,10 +387,23 @@ _default:
 # endif
 		case SIGWINCH:
 		case SIGCHLD:
+			return;		/* do nothing */
+
 		/* SIGFPE is divide by 0
 		 * TOS ignores this, so we will too
 		 */
 		case SIGFPE:
+#ifdef __mcoldfire__
+			/* On ColdFire, an integer divide by zero exception
+			 * can't just be ignored, because it returns to the
+			 * offending instruction, instead of the next one.
+			 * Hence we have no other choice than to fail.
+			 * However, with proper 680x0 emulation, it can be
+			 * safely ignored, as usual.
+			 */
+			if (!coldfire_68k_emulation)
+				goto default_signal_handling;
+#endif
 			return;		/* do nothing */
 
 		case SIGSTOP:
@@ -422,6 +435,7 @@ _default:
 			}
 			/* otherwise, fall through */
 		default:
+		default_signal_handling:
 			/* Mark the process as being killed
 			 * by a signal.  Used by Pwaitpid.
 			 */
