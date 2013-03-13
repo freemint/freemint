@@ -435,7 +435,9 @@ _default:
 			}
 			/* otherwise, fall through */
 		default:
+#ifdef __mcoldfire__
 		default_signal_handling:
+#endif
 			/* Mark the process as being killed
 			 * by a signal.  Used by Pwaitpid.
 			 */
