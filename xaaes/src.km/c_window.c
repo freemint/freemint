@@ -1802,6 +1802,8 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 			S.focus = 0;
 			if( w )
 				top_window(lock, true, true, w);
+				if( w != wind )
+					wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP, WM_UNTOPPED, 0, 0, wind->handle, 0,0,0,0);
 		}
 	}
 	else
