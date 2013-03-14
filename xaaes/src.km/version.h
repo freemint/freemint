@@ -37,8 +37,8 @@
 #define XAAES_PATCH_LEVEL  5
 
 /* set either of these */
-#define DEV_STATUS	AES_DEVSTATUS_BETA
-//#define DEV_STATUS	AES_DEVSTATUS_RELEASE
+//#define DEV_STATUS	AES_DEVSTATUS_BETA
+#define DEV_STATUS	AES_DEVSTATUS_RELEASE
 
 /* This is only used in wind_get(WF_XAAES) which will be removed */
 #define HEX_VERSION	0x09
