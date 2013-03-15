@@ -1776,7 +1776,7 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 			wl = wl->next;
 		}
 
-		if( ignorefocus != 2 )
+		if( !C.boot_focus )
 			setnew_focus(wind, S.focus, true, true, false);
 
 		/* avoid second redraw (see setnew_focus) */
@@ -1794,19 +1794,10 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 		}
 		if( C.boot_focus )
 		{
-			struct xa_window *w;
 			if( ignorefocus == 2 )
-				w = S.focus;
+				wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP, WM_UNTOPPED, 0, 0, wind->handle, 0,0,0,0);
 			else
-				w = wind;
-			S.focus = 0;
-			if( w )
-			{
-				if( w != wind )
-					wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP, WM_UNTOPPED, 0, 0, wind->handle, 0,0,0,0);
-				else
-					top_window(lock, true, true, w);
-			}
+				top_window(lock, true, true, wind);
 		}
 	}
 	else
