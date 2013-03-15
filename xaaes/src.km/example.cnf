@@ -742,8 +742,16 @@ app_options = default,thinwork = true, winframe_size = 2, xa_nomove = false, nol
 app_options = xasys, thinwork = true, winframe_size = 3, xa_nomove = false, nolive = false
 app_options = aessys, thinwork = true, winframe_size = 3, xa_nomove = false, nolive = false, rsc_lang  = 1, icn_pal_name = nvdi
 #
-
-app_options = toswin2, nohide = true,noleft=true
+# TosWin2 requires a few specific settings.
+# If you frequently run many textmode programs from the desktop,
+# you may be interested by the second line below. That will reactivate
+# the desktop as soon as textmode programs exits, instead of staying
+# on the TosWin2 menu bar.
+app_options = toswin2, nohide = true, noleft = true
+#app_options = toswin2, nohide = true, noleft = true, clwtna = 1
+#
+# Other application specific settings
+#
 #app_options = pc_help, alt_shortcuts = 0
 app_options = diskus, alt_shortcuts = 0
 app_options = DESKTOP, alt_shortcuts = 1
