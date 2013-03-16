@@ -1679,10 +1679,10 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 	}
 
 	wi_remove(&S.closed_windows, wind, false);
-	if( (C.boot_focus && wind->owner->p != C.boot_focus))
-		ignorefocus = 2;
-	else if( (wind->window_status & XAWS_NOFOCUS))
+	if( (wind->window_status & XAWS_NOFOCUS))
 		ignorefocus = 1;
+	else if( (C.boot_focus && wind->owner->p != C.boot_focus))
+		ignorefocus = 2;
 
 	if (wind != root_window && (wind->window_status & XAWS_BINDFOCUS) && get_app_infront() != wind->owner)
 	{
@@ -1794,7 +1794,7 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 		}
 		if( C.boot_focus )
 		{
-			if( ignorefocus == 2 )
+			if( ignorefocus == 2 && wind->send_message )
 				wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP, WM_UNTOPPED, 0, 0, wind->handle, 0,0,0,0);
 			else
 				top_window(lock, true, true, wind);
