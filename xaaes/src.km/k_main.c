@@ -27,13 +27,15 @@
 
 
 #include "xaaes.h" /*RSCHNAME*/
-
 #define MX_STRAM
+#include "version.h"
+#include "xa_defs.h"
 #include "k_main.h"
 #undef MX_STRAM	/* sigh ...*/
 
 /* add time to alerts in syslog */
 #if ALERTTIME
+
 #ifdef trap_14_w
 #undef trap_14_w	/* "redefined" warning */
 #endif
@@ -41,6 +43,7 @@
 #define MAXALERTLEN	196
 
 #endif
+
 
 #include "xa_global.h"
 #include "xa_strings.h"
@@ -1625,14 +1628,16 @@ k_main(void *dummy)
 	unsigned long default_input_channels;
 	struct tty *tty;
 	uchar user_stack[100]; /* Stack to call the AES from supervisor mode */
-
+#if CHECK_STACK
+	long stk;
+#endif
 	/* The TOS AES saves the registers on USP inside trap #2 (56 bytes)
 	 * This hack is necessary to call the AES from supervisor mode.
 	 */
 	set_usp(user_stack + sizeof user_stack);
 
 #if CHECK_STACK
-	long stk = (long)get_sp();
+	stk = (long)get_sp();
 	stack_align |= (check_stack_alignment(stk) << 4);
 #endif
 	/* test if already running */
