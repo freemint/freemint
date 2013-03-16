@@ -185,9 +185,8 @@ setnew_focus(struct xa_window *wind, struct xa_window *unfocus, bool topowner, b
 		unfocus ? unfocus->handle : -2, unfocus ? unfocus->owner->name : "nowind"));
 
 
-	if( C.boot_focus && (unfocus || (wind && wind->owner->p != C.boot_focus)))
+	if( C.boot_focus && wind && wind->owner->p != C.boot_focus )
 		return;
-
 	if (!unfocus || unfocus == S.focus)
 	{
 		struct xa_client *owner;	//, *p_owner = 0;
