@@ -48,6 +48,14 @@
 
 #define LONG_NAME	"XaAES Ain't the AES, a free MultiTasking AES for FreeMiNT"
 
+#ifndef AES_DEVSTATUS_ALPHA
+/* appl_getinfo(AES_VERSION) return values */
+#define AES_DEVSTATUS_ALPHA	0
+#define AES_DEVSTATUS_BETA	1
+#define AES_DEVSTATUS_RELEASE	2
+#define AES_FDEVSTATUS_STABLE	0x100
+#endif
+
 #if ((DEV_STATUS & 0x000f) == AES_DEVSTATUS_ALPHA)
 #define ASCII_DEV_STATUS	"Alpha"
 #endif
