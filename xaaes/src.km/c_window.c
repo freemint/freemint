@@ -1601,14 +1601,6 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 		return 0;
 	}
 
-#if WITH_BBL_HELP
-	if( wind != bgem_window && wind->handle >= 0
-		&& !(wind->dial == (created_for_ALERT | created_for_AES | created_for_WDIAL))
-		&& !C.boot_focus )
-	{
-		xa_bubble( 0, bbl_close_bubble1, 0, 3 );
-	}
-#endif
 	if (wind->nolist || (wind->dial & created_for_SLIST))
 	{
 		DIAGS(("open_window: nolist window - SLIST wind? %s",
@@ -1684,6 +1676,13 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 	else if( (C.boot_focus && wind->owner->p != C.boot_focus))
 		ignorefocus = 2;
 
+#if WITH_BBL_HELP
+	if( wind != bgem_window && wind->handle >= 0 && !ignorefocus
+		&& !(wind->dial && (created_for_ALERT | created_for_AES | created_for_WDIAL)) )
+	{
+		xa_bubble( 0, bbl_close_bubble1, 0, 3 );
+	}
+#endif
 	if (wind != root_window && (wind->window_status & XAWS_BINDFOCUS) && get_app_infront() != wind->owner)
 	{
 		wi_put_blast(&S.open_windows, wind, false, true);
@@ -1794,10 +1793,10 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 		}
 		if( C.boot_focus )
 		{
-			if( ignorefocus == 2 && wind->send_message )
-				wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP, WM_UNTOPPED, 0, 0, wind->handle, 0,0,0,0);
-			else
+			if( ignorefocus == 0 )
 				top_window(lock, true, true, wind);
+			else if( ignorefocus == 2 && wind->send_message )
+				wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP, WM_UNTOPPED, 0, 0, wind->handle, 0,0,0,0);
 		}
 	}
 	else
@@ -2011,6 +2010,34 @@ get_wind_by_handle(enum locks lock, short h)
 	}
 
 	return w;
+}
+bool
+wind_exist(enum locks lock, struct xa_window *wind)
+{
+	struct xa_window *w;
+
+	w = window_list;
+	while (w)
+	{
+		if (w == wind)
+			break;
+
+		w = w->next;
+	}
+
+	if (!w)
+	{
+		w = S.closed_windows.first;
+		while (w)
+		{
+			if (w == wind)
+				break;
+
+			w = w->next;
+		}
+	}
+
+	return !!w;
 }
 /*
  * Pull this window to the head of the window list
@@ -2516,7 +2543,7 @@ close_window(enum locks lock, struct xa_window *wind)
 		if( !C.shutdown )
 			update_windows_below(lock, &r, NULL, wl, NULL);
 
-		if (is_top && !(wind->dial & created_for_AES))
+		if (is_top)
 		{
 			if (wind->active_widgets & STORE_BACK)
 			{
