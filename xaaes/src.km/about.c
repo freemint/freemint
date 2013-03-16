@@ -166,11 +166,11 @@ about_form_exit(struct xa_client *client,
 			if( list != alist )
 			{
 				list->destroy( list );
+				if( wind->parent && wind_exist( lock, wind->parent) && (wind->parent->dial & created_for_AES) )
+					top_window( lock, true, true, wind->parent );
 				delete_window(lock, wind);
 			}
 
-			if( wind->parent )
-				top_window( lock, true, true, wind->parent );
 			break;
 		}
 		case ABOUT_LIST:
