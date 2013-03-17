@@ -30,9 +30,9 @@
  * 
  * NOTE: only one of these defines must be nonzero
  */
-#define MINT_STATUS_CVS		1
+#define MINT_STATUS_CVS		0
 #define MINT_STATUS_BETA	0
-#define MINT_STATUS_RELEASE	0
+#define MINT_STATUS_RELEASE	1
 
 #if (MINT_STATUS_CVS + MINT_STATUS_BETA + MINT_STATUS_RELEASE) > 1
 # error only one of the MINT_STATUS_* macros can be 1
