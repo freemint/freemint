@@ -773,6 +773,7 @@ repos_iconified(struct proc *p, long arg)
 					else
 						r = ir;
 
+
 					if (w->t.x == r.x && w->t.y == r.y && !(w->window_status & XAWS_SEMA))
 					{
 						w->window_status |= XAWS_SEMA;
@@ -801,6 +802,18 @@ repos_iconified(struct proc *p, long arg)
 			{
 				if (cw->opts & XAWO_WCOWORK)
 					r = f2w(&cw->delta, &ir, true);
+				else
+				{
+					if( (cfg.icnfy_orient & 0xff) == 3 )
+					{
+						r.x = (( r.x + cfg.icnfy_w / 2 ) / cfg.icnfy_w) * cfg.icnfy_w;
+						r.y = cw->r.y;
+						r.w = cw->r.w;
+						r.h = cw->r.h;
+					}
+					/* else we loose .. */
+				}
+
 				send_moved(lock, cw, AMQ_NORM, &r);
 				w->t = r;
 			}
