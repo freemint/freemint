@@ -557,7 +557,8 @@ XA_wind_set(enum locks lock, struct xa_client *client, AESPB *pb)
 			DIAGS(("wind_set: WF_CURRXYWH - (%d/%d/%d/%d) blit=%s, ir=%lx",
 				*(const RECT *)(pb->intin + 2), blit ? "yes":"no", ir));
 
-			if( w->rc.y > root_window->wa.y )
+
+			if( !(cfg.menu_bar & 1) || w->rc.y >= root_window->wa.y )
 			{
 				blit = true;
 			}
