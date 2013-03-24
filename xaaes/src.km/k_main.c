@@ -29,6 +29,8 @@
 #include "xaaes.h" /*RSCHNAME*/
 
 #define MX_STRAM
+#include "version.h"
+#include "xa_defs.h"
 #include "k_main.h"
 #undef MX_STRAM	/* sigh ...*/
 
@@ -1041,7 +1043,7 @@ sigterm(void)
 {
 #if BOOTLOG
 	struct proc *p = get_curproc();
-	BLOG((false, "%s(%d:AES:%d): sigterm received", p->name, p->pid, C.AESpid ));
+	BLOG((true, "%s(%d:AES:%d): sigterm received", p->name, p->pid, C.AESpid ));
 #endif
 #if 1
 	BLOG((false, "(ignored)" ));
@@ -1632,9 +1634,19 @@ k_main(void *dummy)
 	int wait = 1, pferr, p_exc = -1;
 	unsigned long default_input_channels;
 	struct tty *tty;
-
+	struct file *fp = 0, *fo = 0 /* for gcc */;
+	struct proc *p = get_curproc();
+	uchar user_stack[100]; /* Stack to call the AES from supervisor mode */
 #if CHECK_STACK
-	long stk = (long)get_sp();
+	long stk;
+#endif
+
+	/* The TOS AES saves the registers on USP inside trap #2 (56 bytes)
+	 * This hack is necessary to call the AES from supervisor mode.
+	 */
+	set_usp(user_stack + sizeof user_stack);
+#if CHECK_STACK
+	stk = (long)get_sp();
 	stack_align |= (check_stack_alignment(stk) << 4);
 #endif
 	/* test if already running */
@@ -1772,6 +1784,20 @@ k_main(void *dummy)
 		display(/*00000013*/"ERROR: k_init failed!");
 		goto leave;
 	}
+	{
+	char *bl;
+	long r;
+	if( (r=s_system(S_GETBOOTLOG, (long)&bl, 0 )) >= 0 )
+	{
+		//fp = kernel_open("c:/mint/boot.log", O_RDWR|O_CREAT, NULL,NULL);
+		fp = kernel_open(bl, O_RDWR|O_CREAT, NULL,NULL);
+		kernel_lseek(fp, 0, SEEK_END);
+		fo = p->p_fd->ofiles[1];
+		p->p_fd->ofiles[1] = fp;	// f->links++;
+	}
+	}
+	read_inf();
+
 	/*
 	 * Initialization I/O
 	 */
@@ -1807,7 +1833,6 @@ k_main(void *dummy)
 		ferr = 3;
 		goto leave;
 	}
-
 
 	/*
 	 * Start AES thread
@@ -1846,8 +1871,6 @@ k_main(void *dummy)
 		yield();
 
 	xam_load(true);
-
-// 	display("C.HLP started OK");
 
 	if (cfg.opentaskman)
 		post_cevent(C.Hlp, ceExecfunc, open_taskmanager,NULL, 1,0, NULL,NULL);
@@ -1904,6 +1927,12 @@ k_main(void *dummy)
 		}
 		else
 			BLOG((0,"could not get SETEXC:%ld", r));
+	}
+
+	if( fp )
+	{
+		kernel_close(fp);
+		p->p_fd->ofiles[1] = fo;
 	}
 
 	/* redirect stderr (mintlib (main.c) assumes this to be done when argv[0] != 0, see launch()) */
@@ -2125,10 +2154,12 @@ k_exit(int wait)
 // 		G.adi_mouse = NULL;
 	}
 
+
 	if( my_global_aes[2] != -1 )
 	{
 		mt_appl_exit(my_global_aes);
 	}
+
 
 	/*
 	 * close profile
