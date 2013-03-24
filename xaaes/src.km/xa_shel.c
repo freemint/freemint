@@ -383,9 +383,14 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 		pcmd = parm;
 	}
 
-	defdir[0] = d_getdrv() + 'a';
-	defdir[1] = ':';
-	d_getpath(defdir + 2, 0);
+	if( *pcmd == '/' )
+		defdir[0] = 0;
+	else
+	{
+		defdir[0] = d_getdrv() + 'a';
+		defdir[1] = ':';
+		d_getpath(defdir + 2, 0);
+	}
 
 	argvtail[0] = 0;
 	argvtail[1] = 0;
@@ -459,10 +464,12 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 	strncpy(save_tail, tail, tailsize + 1);
 	save_tail[tailsize + 1] = '\0';
 
-	if (get_drv(pcmd) >= 0)
+	if ((ret=get_drv(pcmd)) >= 0)
 	{
 		strcpy(cmd, pcmd);
 		DIAG((D_shel, 0, "cmd complete: '%s'", cmd));
+		if( ret == 0 )
+			*path = 0;
 	}
 	else
 	{
@@ -594,7 +601,10 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 				}
 			}
 
-			drv = default_path(caller, cmd, path, name, defdir, &cpopts);
+			if( defdir[0] )
+				drv = default_path(caller, cmd, path, name, defdir, &cpopts);
+			else
+				drv = 'U' - 'A';
 
 			DIAG((D_shel, 0, "[2]drive_and_path %d,'%s','%s'", drv, path,name));
 
@@ -856,9 +866,6 @@ XA_shel_write(enum locks lock, struct xa_client *client, AESPB *pb)
 			wdoex, wisgr, wiscr, p_getpid()));
 	}
 #endif
-//	display("shel_write(0x%x,%d,%d) for %s",
-
-//		wdoex, wisgr, wiscr, client ? client->name : "no client");
 
 	if ((wdoex & 0xff) < SWM_SHUTDOWN) /* SWM_LANUCH, SWM_LAUNCHNOW or SWM_LAUNCACC */
 	{
@@ -1188,7 +1195,7 @@ wc_stat64(int mode, const char *node, char *fn, struct stat *st, char *result)
 	path = buf;
 	strcpy(buf, node);
 	len = strlen(buf);
-	if (buf[len] != '\\')
+	if (!(buf[len] == '\\' || buf[len] == '/') )
 		buf[len++] = '\\';
 
 	buf[len] = '\0';
@@ -1276,8 +1283,18 @@ shell_find(enum locks lock, struct xa_client *client, char *fn)
 				strcpy( fpath, fn );
 				fn = p+1;
 			}
+			else if( *client->home_path )
+			{
+				p = strrchr( client->home_path, '\\');
+				if( !p )
+				{
+					p = strrchr( client->home_path, '/');
+					c = '/';
+				}
+				else
+					c = '\\';
+			}
 
-			//DIAGS(("shell_find for %s '%s', PATH= '%s'", client->name, fn ? fn : "~", kp ? kp : "~"));
 			DIAGS(("shell_find for %s '%s',p='%s'", client->name, fn ? fn : "~", p));
 
 			/* check $HOME directory */
@@ -1295,7 +1312,7 @@ shell_find(enum locks lock, struct xa_client *client, char *fn)
 					DIAGS(("[2]  --   try: '%s\\%s' :: %ld", kh, fn, r));
 					if (r == 0)
 					{
-						sprintf(path, len, "%s\\%s", kh, result);
+						sprintf(path, len, "%s%c%s", kh, c, result);
 						return path;
 					}
 				}
@@ -1303,16 +1320,11 @@ shell_find(enum locks lock, struct xa_client *client, char *fn)
 
 			/* try the file spec in the apps' dir */
 			kh = client->home_path;
-			if( p )
-			{
-				sprintf( fpath, sizeof(fpath)-1, "%s%c%s", kh, c, pf );
-				kh = fpath;
-			}
-			r = wc_stat64(0, kh, fn, &st, result);
+			r = wc_stat64(0, kh, pf, &st, result);
 			DIAGS(("[0]  --    try: '%s' :: %ld", fn, r));
 			if (r == 0 )
 			{
-				sprintf(path, len, "%s\\%s", kh, result);
+				sprintf(path, len, "%s%c%s", kh, c, result);
 				return path;
 			}
 
