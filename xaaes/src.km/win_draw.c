@@ -4438,7 +4438,6 @@ init_module(const struct xa_module_api *xmapi, const struct xa_screen *screen, c
 	RSHDR *rsc;
 	struct module *m;
 
-// 	display("wind_draw: initmodule:");
 	use_gradients = grads;
 
 	api	= xmapi;
@@ -4613,7 +4612,6 @@ error:
 		api = NULL;
 	}
 
-// 	display(" -- module init done!");
 	return m;
 }
 
