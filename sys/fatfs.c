@@ -397,7 +397,7 @@
 	"\033p FAT/VFAT/FAT32 filesystem version " MSG_VERSION " \033q\r\n"
 
 # define MSG_GREET	\
-	"\275 " MSG_BUILDDATE " by Frank Naumann.\r\n"
+	"\275 2000-2010 by Frank Naumann.\r\n"
 
 
 /*

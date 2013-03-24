@@ -406,7 +406,7 @@ biosfs_init (void)
 		/* SERIAL1(!) is not present on the Mega STe or Falcon,
 		 * device 8 is SCC channel A
 		 */
-		if (mch != TT && b->private == 8)
+		if (machine != machine_tt && b->private == 8)
 		{
 			b->name[6] = '2';	/* "serial2" */
 			b->tty = &scca_tty;

@@ -33,9 +33,10 @@
  */
 
 # include "info_mach.h"
+# include "arch/aranym.h"
+# include "global.h"
+# include "mint/ktypes.h"
 
-
-char *machine      = "m68k";
 char *machine_arch = "m68k";
 
 char cpu_model[64];
@@ -43,3 +44,50 @@ char cpu_model[64];
 char *cpu_type     = "m68k";
 char *mmu_type     = "none";
 char *fpu_type     = "none";
+
+char *machine_str (void)
+{
+	static char *str = "Unknown clone";
+
+	switch (machine)
+	{
+		case machine_st:
+			str = "Atari ST";
+			break;
+		case machine_ste:
+			str = "Atari STE";
+			break;
+		case machine_megaste:
+			str = "Atari MegaSTE";
+			break;
+		case machine_tt:
+			str = "Atari TT";
+			break;
+		case machine_falcon:
+			str = "Atari Falcon";
+			break;
+		case machine_firebee:
+			str = "FireBee";
+			break;
+		case machine_milan:
+			str = "Milan";
+			break;
+		case machine_hades:
+			str = "Hades";
+			break;
+		case machine_ct60:
+			str = "Atari Falcon/CT60";
+			break;
+# ifdef ARANYM
+		case machine_aranym:
+			str = nf_name();
+			break;
+# endif
+		case machine_unknown:
+		default:
+			/* nothing to set */
+			break;
+	}
+
+	return str;
+}

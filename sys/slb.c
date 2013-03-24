@@ -164,6 +164,7 @@ has_opened (SHARED_LIB *sl, int pid)
 static long
 load_and_init_slb(char *name, char *path, long min_ver, SHARED_LIB **sl)
 {
+	union { char *c; long *l;} ptr;
 	int new_pid, prot_cookie;
 	long r, hitpa, oldsigint, oldsigquit, oldcmdlin, *exec_longs;
 	char *fullpath;
@@ -228,7 +229,12 @@ slb_error:
 
 	/* Test for the new program format */
 	exec_longs = (long *) b->p_tbase;
-	if (exec_longs[0] == 0x283a001aL && exec_longs[1] == 0x4efb48faL)
+	if (
+	     /* Original binutils */
+	     (exec_longs[0] == 0x283a001aL && exec_longs[1] == 0x4efb48faL)
+	     /* binutils >= 2.18-mint-20080209 */
+	     || (exec_longs[0] == 0x203a001aL && exec_longs[1] == 0x4efb08faL)
+	   )
 	{
 		(*sl)->slb_head = (SLB_HEAD *)(b->p_tbase + 228);
 	}
@@ -295,8 +301,6 @@ slb_error:
 	 * to be executed by a program with ordinary Pexec().
 	 */
 
-	{
-	union { char *c; long *l;} ptr;
 	ptr.c = b->p_cmdlin;
 
 	oldcmdlin = *ptr.l;
@@ -356,7 +360,6 @@ slb_error:
 	assert(prot_cookie < 0);
 	r = *ptr.l;
 	*ptr.l = oldcmdlin;
-	}
 	if (prot_cookie != -1)
 		prot_temp((ulong)b, sizeof(BASEPAGE), prot_cookie);
 	if (r < 0L)

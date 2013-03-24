@@ -110,9 +110,28 @@ typedef struct sizebuf		SIZEBUF;	/* sized buffer */
 
 
 /* global data */
+
+typedef enum
+{
+	machine_unknown,
+	machine_st,
+	machine_ste,
+	machine_megaste,
+	machine_tt,
+	machine_falcon,
+	machine_milan,
+	machine_hades,
+	machine_ct60,
+	machine_firebee
+#ifdef ARANYM
+	,
+	machine_aranym
+#endif
+} machine_type;
+
 struct global
 {
-	long  mch;		/* machine we are are running */
+	machine_type machine;	/* machine we are are running */
 	long  fputype;		/* fpu type, value for cookie jar */
 
 	short tosvers;		/* the underlying TOS version */
@@ -124,6 +143,7 @@ struct global
 	 */
 	short sysdrv;
 	char  sysdir[32];
+	char  mchdir[32];	/* sysdir/<machine>, derived from machine type */
 };
 
 /* BIOS device map */

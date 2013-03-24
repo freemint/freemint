@@ -227,8 +227,8 @@ init_tables(void)
                 cookie++;
            }
        }
-       
-       if ((mch == FALCON) && ct2)
+
+       if ((machine == machine_falcon) && ct2)
        {
             offset_tt_ram = 0x03000000L;
             DEBUG (("init_tables: Falcon CT2 -> offset 0x%lx", offset_tt_ram));

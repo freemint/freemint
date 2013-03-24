@@ -70,7 +70,7 @@
 # include "dev-mouse.h"		/* mshift */
 # include "dos.h"		/* s_hutdown() */
 # include "dossig.h"		/* p_kill() */
-# include "global.h"		/* tosver, mch, *sysdir */
+# include "global.h"		/* tosver, machine, *sysdir */
 # include "init.h"		/* boot_printf() */
 # include "info.h"		/* messages */
 # include "k_exec.h"		/* sys_pexec() */
@@ -222,6 +222,7 @@ mouse_up(PROC *p, long pixels)
 	mouse_packet[1] = 0;		/* X axis */
 	mouse_packet[2] = -pixels;	/* Y axis */
 
+	//DBG_FORCE(("mouse_up:mousevec=%lx,pixeld=%d", syskey->mousevec, pixels));
 	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 3);
 
 	if (keep_sending)
@@ -471,6 +472,7 @@ generate_mouse_event(uchar shift, ushort scan, ushort make)
 {
 	short delta = (shift & MM_ESHIFT) ? kbd_mpixels_fine : kbd_mpixels;
 
+	//DBG_FORCE(("generate_mouse_event:scan=%x,shift=%x,make=%x", shift, scan, make));
 	switch (scan)
 	{
 		case UP_ARROW:
@@ -1517,7 +1519,7 @@ sys_b_bioskeys(void)
 	assert(pointers);
 
 	/* Copy the master table over */
-	quickmove(tables, keytab_buffer, keytab_size);
+	quickmovb(tables, keytab_buffer, keytab_size);
 
 	/* Setup the standard vectors */
 	pointers->unshift = tables;
@@ -1629,7 +1631,7 @@ load_external_table(FILEPTR *fp, const char *name, long size)
 		{
 			case 0x2771:		/* magic word for std format */
 			{
-				quickmove(kbuf, kbuf + sizeof(short), size - sizeof(short) + 2);
+				quickmovb(kbuf, kbuf + sizeof(short), size - sizeof(short) + 2);
 				break;
 			}
 			case 0x2772:		/* magic word for ext format */
@@ -1645,7 +1647,7 @@ load_external_table(FILEPTR *fp, const char *name, long size)
 				if ((sbuf[1] >= 0) && (sbuf[1] <= MAXAKP))
 					gl_kbd = sbuf[1];
 
-				quickmove(kbuf, kbuf + sizeof(long), size - sizeof(long) + 2);
+				quickmovb(kbuf, kbuf + sizeof(long), size - sizeof(long) + 2);
 				break;
 			}
 			case 0x2773:		/* the ISO format (as of 30.VII.2004) */
@@ -1663,7 +1665,7 @@ load_external_table(FILEPTR *fp, const char *name, long size)
 				if ((sbuf[3] > 0) && (sbuf[3] <= 10))
 				{
 					iso_8859_code = (long)sbuf[3];
-					quickmove(kbuf, kbuf + (sizeof(long)*2), \
+					quickmovb(kbuf, kbuf + (sizeof(long)*2), \
 							size - (sizeof(long)*2) + 2);
 				}
 				else
@@ -1722,7 +1724,7 @@ load_internal_table(void)
 		size += strlen((char *)tos_keytab->alt) + 1;
 		size += strlen((char *)tos_keytab->altshift) + 1;
 		size += strlen((char *)tos_keytab->altcaps) + 1;
-		if (mch == MILAN_C)
+		if (machine == machine_milan)
 			size += strlen((char *)tos_keytab->altgr) + 1;
 		else
 			size += 2;
@@ -1765,13 +1767,13 @@ load_internal_table(void)
 	p = kbuf;
 	mint_bzero(p, size);
 
-	quickmove(p, tos_keytab->unshift, 128);
+	quickmovb(p, tos_keytab->unshift, 128);
 	p += 128;
 
-	quickmove(p, tos_keytab->shift, 128);
+	quickmovb(p, tos_keytab->shift, 128);
 	p += 128;
 
-	quickmove(p, tos_keytab->caps, 128);
+	quickmovb(p, tos_keytab->caps, 128);
 	p += 128;
 
 # ifndef WITHOUT_TOS
@@ -1779,21 +1781,21 @@ load_internal_table(void)
 	if (tosvers >= 0x0400)
 	{
 		len = strlen((char *)tos_keytab->alt) + 1;
-		quickmove(p, tos_keytab->alt, len);
+		quickmovb(p, tos_keytab->alt, len);
 		p += len;
 
 		len = strlen((char *)tos_keytab->altshift) + 1;
-		quickmove(p, tos_keytab->altshift, len);
+		quickmovb(p, tos_keytab->altshift, len);
 		p += len;
 
 		len = strlen((char *)tos_keytab->altcaps) + 1;
-		quickmove(p, tos_keytab->altcaps, len);
+		quickmovb(p, tos_keytab->altcaps, len);
 		p += len;
 
-		if (mch == MILAN_C)
+		if (machine == machine_milan)
 		{
 			len = strlen((char *)tos_keytab->altgr) + 1;
-			quickmove(p, tos_keytab->altgr, len);
+			quickmovb(p, tos_keytab->altgr, len);
 		}
 	}
 
@@ -1803,23 +1805,23 @@ load_internal_table(void)
 	 */
 
 	len = strlen((char *)tos_keytab->alt) + 1;
-	quickmove(p, tos_keytab->alt, len);
+	quickmovb(p, tos_keytab->alt, len);
 	p += len;
 
 	len = strlen((char *)tos_keytab->altshift) + 1;
-	quickmove(p, tos_keytab->altshift, len);
+	quickmovb(p, tos_keytab->altshift, len);
 	p += len;
 
 	len = strlen((char *)tos_keytab->altcaps) + 1;
-	quickmove(p, tos_keytab->altcaps, len);
+	quickmovb(p, tos_keytab->altcaps, len);
 	p += len;
 
 	len = strlen((char *)tos_keytab->altgr) + 1;
-	quickmove(p, tos_keytab->altgr, len);
+	quickmovb(p, tos_keytab->altgr, len);
 	p += len;
 
 	len = strlen((char *)tos_keytab->deadkeys) + 1;
-	quickmove(p, tos_keytab->deadkeys, len);
+	quickmovb(p, tos_keytab->deadkeys, len);
 
 	gl_kbd = default_akp;
 # endif

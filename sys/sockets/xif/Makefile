@@ -6,7 +6,7 @@ DRIVERS = rtl8012 rtl8012st dial slip plip dummy de600 lance pamsdma biodma \
 	rieblspc rieblspc_fast rieblmst rieblmst_fast rieblste riebltt
 
 SHELL = /bin/sh
-SUBDIRS = nfeth daynaport ethernat
+SUBDIRS = nfeth daynaport ethernat fec
 
 srcdir = .
 top_srcdir = ../..
@@ -31,6 +31,7 @@ CPU = 000
 
 # default definitions
 GENFILES = *.xif
+SGENFILES = rieblspc.c rieblspc_fast.c rieblmst.c rieblmst_fast.c rieblste.c riebltt.c rtl8012st.c
 
  
 OBJS = $(addsuffix .o, $(basename $(notdir $(COBJS))))

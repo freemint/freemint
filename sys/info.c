@@ -70,9 +70,6 @@ const ulong MiNT_time =
 	| ((ulong) BUILD_MIN << 8)
 	| ((ulong) BUILD_SEC);
 
-const char  build_user    [] = BUILD_USER;
-const char  build_host    [] = BUILD_HOST;
-const char  build_domain  [] = BUILD_DOMAIN;
 const char  build_ctime   [] = BUILD_CTIME;
 const ulong build_serial     = BUILD_SERIAL;
 

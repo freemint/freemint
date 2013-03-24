@@ -13,6 +13,7 @@
 
 # include "memory.h"
 # include "global.h"
+# include "cookie.h"
 
 # include "libkern/libkern.h"
 # include "mint/basepage.h"
@@ -37,7 +38,7 @@
 
 # include "proc.h"
 
-# ifdef COLDFIRE
+# ifdef __mcoldfire__
 extern void   patch_memset_purec(BASEPAGE *b);
 # endif
 
@@ -198,7 +199,7 @@ init_mem (void)
 	}
 
 	SANITY_CHECK_MAPS ();
-	boot_printf( "\r\nscrensize=%ld scrnplace=%lx newbase=%lx\r\n", scrnsize, scrnplace, newbase);
+	DEBUG(( "\r\nscrensize=%ld scrnplace=%lx newbase=%lx\r\n", scrnsize, scrnplace, newbase));
 }
 
 /*
@@ -1622,9 +1623,29 @@ failed:
 	DEBUG (("load_region: return region = %lx", reg));
 
 	SANITY_CHECK_MAPS ();
-#ifdef COLDFIRE
-   patch_memset_purec(b);
+
+#ifdef __mcoldfire__
+	if (coldfire_68k_emulation)
+	{
+		/* Unfortunately, a few 680x0 user instructions can't be
+		 * emulated via illegal instruction handler on ColdFire,
+		 * so they require to be dynamically patched.
+		 */
+		static void (*coldfire_purec_patcher)(BASEPAGE*) = NULL;
+
+		if (coldfire_purec_patcher == NULL)
+		{
+			ulong pexe = NULL;
+			if (get_toscookie(0x50455845L, &pexe) == 0 && pexe != NULL)
+				coldfire_purec_patcher = (void (*)(BASEPAGE*))pexe;  // Patcher exported from FireTOS.
+			else
+				coldfire_purec_patcher = patch_memset_purec; // Fallback to internal MiNT patcher.
+		}
+
+		coldfire_purec_patcher(b);
+	}
 #endif
+
 	return reg;
 }
 
@@ -1951,7 +1972,7 @@ realloc_region (MEMREGION *reg, long newsize)
 
 	SANITY_CHECK (map);
 
-	FORCE("realloc_region: reg = %lx, newsize %ld", (long)reg, newsize);
+	DEBUG(("realloc_region: reg = %lx, newsize %ld", (long)reg, newsize));
 
 // 	if (! (reg == NULL || (reg->mflags & M_CORE)) )
 // 		return 0;
@@ -1971,7 +1992,7 @@ realloc_region (MEMREGION *reg, long newsize)
 		MEMREGION *lastfit = 0;
 		MEMREGION *newm = kmr_get ();
 
-		FORCE("realloc_region: reg is NULL");
+		DEBUG(("realloc_region: reg is NULL"));
 
 		for (m = *map; m; m = m->next)
 		{
@@ -2054,8 +2075,8 @@ realloc_region (MEMREGION *reg, long newsize)
 		{
 			/* add this memory to the previous free region */
 
-			FORCE("reg = %lx", reg);
-			FORCE("loc = %lx", reg->loc);
+			DEBUG(("reg = %lx", reg));
+			DEBUG(("loc = %lx", reg->loc));
 
 			prevptr->len += oldsize - newsize;
 			reg->loc += oldsize - newsize;

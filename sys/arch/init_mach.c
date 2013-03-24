@@ -35,11 +35,11 @@
 # include "init_mach.h"
 # include "libkern/libkern.h"
 
-# include "arch/aranym.h"
 # include "arch/detect.h"
 # include "arch/info_mach.h"
 # include "arch/mprot.h"
 # include "arch/tosbind.h"
+# include "arch/aranym.h"
 
 # include "cookie.h"
 # include "global.h"
@@ -51,9 +51,6 @@
 /*
  * _MCH cookie is not exact anymore
  * (special hades cookie, special ct60 cookie, special aranym cookie)
- *
- * XXX todo: we should replace the global mch variable with a more
- * accurate enum
  */
 enum special_hw
 {
@@ -67,7 +64,7 @@ enum special_hw
 };
 
 static long _getmch (void);
-static void identify (enum special_hw);
+static void identify (long mch, enum special_hw);
 
 
 long
@@ -92,6 +89,7 @@ static long
 _getmch (void)
 {
 	enum special_hw add_info = none;
+	long mch = 0;
 	struct cookie *jar;
 #ifdef WITH_MMU_SUPPORT
 	int old_no_mem_prot = no_mem_prot;
@@ -251,7 +249,7 @@ _getmch (void)
 # endif /* !M68000 */
 
 	/* initialize the info strings */
-	identify (add_info);
+	identify (mch, add_info);
 
 	DEBUG (("detecting hardware ... "));
 	/* at the moment only detection of ST-ESCC */
@@ -295,12 +293,10 @@ _getmch (void)
 }
 
 static void
-identify (enum special_hw info)
+identify (long mch, enum special_hw info)
 {
 	char buf[64];
 	char *_cpu, *_mmu, *_fpu;
-
-	machine = "Unknown clone";
 
 	switch (info)
 	{
@@ -309,48 +305,41 @@ identify (enum special_hw info)
 			switch (mch)
 			{
 				case ST:
-					machine = "Atari ST";
+					machine = machine_st;
 					break;
 				case STE:
-					machine = "Atari STE";
+					machine = machine_ste;
 					break;
 				case MEGASTE:
-					machine = "Atari MegaSTE";
+					machine = machine_megaste;
 					break;
 				case TT:
-					machine = "Atari TT";
+					machine = machine_tt;
 					break;
 				case FALCON:
 #ifdef __mcoldfire__
-					machine = "FireBee";
+					machine = machine_firebee;
 #else
-					machine = "Atari Falcon";
+					machine = machine_falcon;
 #endif
 					break;
 				case MILAN_C:
-					machine = "Milan";
+					machine = machine_milan;
 					break;
 			}
 			break;
 		}
 		case hades:
-		{
-			machine = "Hades";
+			machine = machine_hades;
 			break;
-		}
 		case ct60:
-		{
-			machine = "Atari Falcon/CT60";
+			machine = machine_ct60;
 			break;
-		}
 # ifdef ARANYM
 		case aranym:
-		{
-			machine = nf_name();
+			machine = machine_aranym;
 			break;
-		}
 # endif
-		default:;
 	}
 
 	_fpu = " no ";
@@ -467,7 +456,7 @@ identify (enum special_hw info)
 	}
 
 	ksprintf (cpu_model, sizeof (cpu_model), "%s (%s CPU%s%sFPU)",
-			machine, _cpu, _mmu, _fpu);
+			machine_str(), _cpu, _mmu, _fpu);
 
 	boot_printf ("%s\r\n\r\n", cpu_model);
 }

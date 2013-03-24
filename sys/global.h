@@ -42,13 +42,14 @@
 
 extern struct global global;
 
-#define mch		global.mch
+#define machine		global.machine
 #define fputype		global.fputype
 #define tosvers		global.tosvers
 #define gl_lang		global.gl_lang
 #define gl_kbd		global.gl_kbd
 #define sysdrv		global.sysdrv
 #define sysdir		global.sysdir
+#define mchdir		global.mchdir
 
 extern BASEPAGE *_base;	/* pointer to kernel's basepage */
 

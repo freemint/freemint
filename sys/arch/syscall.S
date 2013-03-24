@@ -1241,22 +1241,23 @@ reent_shortframe:
 #endif
 reent_fpu:
 	// Save hardware registers (CPU/FPU)
-	tst.w	_fpu
-	beq.s	reent_fpu_saved
 #ifdef __mcoldfire__
 	lea	-16(sp),sp
-	fsave	(sp)
+	fsave	(sp)		// save internal state frame (including fpcr and fpsr)
+	tst.b	(sp)		// if NULL frame then the FPU is not in use
+	beq.s	reent_fpu_notused // skip programmer's model restore
+	lea	-64(sp),sp
+	fmovem.d fp0-fp7,(sp)	// save data registers
+	fmove.l	fpiar,-(sp)	// and control registers
+	move.w	#1,-(sp)	// data registers are saved
+	bra.s	reent_fpu_saved
 #else
+	tst.w	_fpu
+	beq.s	reent_fpu_saved
 	fsave	-(sp)
-#endif
 
 #ifndef M68000
-#ifdef __mcoldfire__
-	moveq	#60,d1
-	cmp.w	_mcpu+2,d1
-#else
 	cmp.w	#60,_mcpu+2
-#endif
 	bne.s	reent_no_060
 	tst.b	2(sp)
 	beq.s	reent_fpu_notused
@@ -1267,18 +1268,11 @@ reent_no_060:
 	tst.b	(sp)
 	beq.s	reent_fpu_notused
 reent_save_fpu:
-#ifdef __mcoldfire__
-	lea	-64(sp),sp
-	fmovem.d fp0-fp7,(sp)
-	fmove.l	fpiar,-(sp)
-	fmove.l	fpsr,-(sp)
-	fmove.l	fpcr,-(sp)
-#else
 	fmovem.x fp0-fp7,-(sp)
 	fmovem.l fpcr/fpsr/fpiar,-(sp)
-#endif
 	move.w	#1,-(sp)
 	bra.s	reent_fpu_saved
+#endif /* __mcoldfire__ */
 reent_fpu_notused:
 	clr.w	-(sp)
 reent_fpu_saved:
@@ -1379,27 +1373,25 @@ reent_out:
 	add.w	d5,sp		// Correct stack
 #endif
 	// Unstack all cpu/fpu registers...
+#ifdef __mcoldfire__
+	tst.w	(sp)+		// data registers saved?
+	beq.s	reent_no_fpu_saved
+	fmove.l	(sp)+,fpiar	// restore control registers
+	fmovem.d (sp),fp0-fp7	// and data registers
+	lea	64(sp),sp
+reent_no_fpu_saved:
+	frestore (sp)		// finally the internal state (including fpcr and fpsr)
+	lea	16(sp),sp
+#else
 	tst.w	_fpu
 	beq.s	reent_out_no_fpu
 	tst.w	(sp)+
 	beq.s	reent_no_fpu_saved
-#ifdef __mcoldfire__
-	fmove.l	(sp)+,fpcr
-	fmove.l	(sp)+,fpsr
-	fmove.l	(sp)+,fpiar
-	fmovem.d (sp),fp0-fp7
-	lea	64(sp),sp
-#else
 	fmovem.l (sp)+,fpcr/fpsr/fpiar
 	fmovem.x (sp)+,fp0-fp7
-#endif
 reent_no_fpu_saved:
-#ifdef __mcoldfire__
-	frestore (sp)
-	lea	16(sp),sp
-#else
 	frestore (sp)+
-#endif
+#endif /* __mcoldfire__ */
 reent_out_no_fpu:
 #ifdef __mcoldfire__
 	movem.l	(sp),d2-d7/a2-a6
@@ -1474,22 +1466,23 @@ reent2_shortframe:
 #endif
 reent2_fpu:
 	// Save hardware registers (CPU/FPU)
-	tst.w	_fpu
-	beq.s	reent2_fpu_saved
 #ifdef __mcoldfire__
 	lea	-16(sp),sp
-	fsave	(sp)
+	fsave	(sp)		// save internal state frame (including fpcr and fpsr)
+	tst.b	(sp)		// if NULL frame then the FPU is not in use
+	beq.s	reent2_fpu_notused // skip programmer's model restore
+	lea	-64(sp),sp
+	fmovem.d fp0-fp7,(sp)	// save data registers
+	fmove.l	fpiar,-(sp)	// and control registers
+	move.w	#1,-(sp)	// data registers are saved
+	bra.s	reent2_fpu_saved
 #else
+	tst.w	_fpu
+	beq.s	reent2_fpu_saved
 	fsave	-(sp)
-#endif
 
 #ifndef M68000
-#ifdef __mcoldfire__
-	moveq	#60,d1
-	cmp.w	_mcpu+2,d1
-#else
 	cmp.w	#60,_mcpu+2
-#endif
 	bne.s	reent2_no_060
 	tst.b	2(sp)
 	beq.s	reent2_fpu_notused
@@ -1500,18 +1493,11 @@ reent2_no_060:
 	tst.b	(sp)
 	beq.s	reent2_fpu_notused
 reent2_save_fpu:
-#ifdef __mcoldfire__
-	lea	-64(sp),sp
-	fmovem.d fp0-fp7,(sp)
-	fmove.l	fpiar,-(sp)
-	fmove.l	fpsr,-(sp)
-	fmove.l	fpcr,-(sp)
-#else
 	fmovem.x fp0-fp7,-(sp)
 	fmovem.l fpcr/fpsr/fpiar,-(sp)
-#endif
 	move.w	#1,-(sp)
 	bra.s	reent2_fpu_saved
+#endif /* __mcoldfire__ */
 reent2_fpu_notused:
 	clr.w	-(sp)
 reent2_fpu_saved:
@@ -1589,27 +1575,25 @@ reent2_old_trap2:
 	// If D2 is not NULL, we call the old trap2
 reent2_out:
 	// Unstack all cpu/fpu registers...
+#ifdef __mcoldfire__
+	tst.w	(sp)+		// data registers saved?
+	beq.s	reent2_no_fpu_saved
+	fmove.l	(sp)+,fpiar	// restore control registers
+	fmovem.d (sp),fp0-fp7	// and data registers
+	lea	64(sp),sp
+reent2_no_fpu_saved:
+	frestore (sp)		// finally the internal state (including fpcr and fpsr)
+	lea	16(sp),sp
+#else
 	tst.w	_fpu
 	beq.s	reent2_out_no_fpu
 	tst.w	(sp)+
 	beq.s	reent2_no_fpu_saved
-#ifdef __mcoldfire__
-	fmove.l	(sp)+,fpcr
-	fmove.l	(sp)+,fpsr
-	fmove.l	(sp)+,fpiar
-	fmovem.d (sp),fp0-fp7
-	lea	64(sp),sp
-#else
 	fmovem.l (sp)+,fpcr/fpsr/fpiar
 	fmovem.x (sp)+,fp0-fp7
-#endif
 reent2_no_fpu_saved:
-#ifdef __mcoldfire__
-	frestore (sp)
-	lea	16(sp),sp
-#else
 	frestore (sp)+
-#endif
+#endif /* __mcoldfire__ */
 reent2_out_no_fpu:
 	tst.l	d2
 	bne.s	reent2_call_old

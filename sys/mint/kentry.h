@@ -531,8 +531,8 @@ struct kentry_module
  */
 struct kentry_cnf
 {
-	void _cdecl (*parse_cnf)(const char *path, struct parser_item *, void *);
-	void _cdecl (*parse_include)(const char *path, struct parsinf *, struct parser_item *);
+	long _cdecl (*parse_cnf)(const char *path, struct parser_item *, void *);
+	long _cdecl (*parse_include)(const char *path, struct parsinf *, struct parser_item *);
 	void _cdecl (*parser_msg)(struct parsinf *, const char *msg);
 };
 #define DEFAULTS_kentry_cnf \

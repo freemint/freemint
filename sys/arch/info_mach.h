@@ -37,8 +37,7 @@
 
 # include "mint/mint.h"
 
-
-extern char *machine;
+extern char *machine_str (void);
 extern char *machine_arch;
 
 extern char cpu_model[64];

@@ -103,7 +103,7 @@
 	"\033p Dummy device driver version " MSG_VERSION " \033q\r\n"
 
 # define MSG_GREET	\
-	"� " MSG_BUILDDATE " by ???? ???????.\r\n\r\n"
+	"\275 " MSG_BUILDDATE " by ???? ???????.\r\n\r\n"
 
 # define MSG_MINT	\
 	"\033pMiNT too old!\033q\r\n"

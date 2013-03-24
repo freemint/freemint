@@ -114,8 +114,7 @@ static void
 tcbos_xmit (struct tcb *tcb, short event)
 {
 	long tmout, delay, inq = 0;
-	UNUSED(inq);
-	UNUSED(delay);
+
 	switch (event)
 	{
 		case TCBOE_SEND:
@@ -196,6 +195,9 @@ tcbos_xmit (struct tcb *tcb, short event)
 			break;
 		}
 	}
+
+	UNUSED (inq);
+	UNUSED (delay);
 }
 
 static void
