@@ -33,8 +33,8 @@
  * main version macros
   */
 #define XAAES_MAJ_VERSION  1
-#define XAAES_MIN_VERSION  5
-#define XAAES_PATCH_LEVEL  6
+#define XAAES_MIN_VERSION  6
+#define XAAES_PATCH_LEVEL  0
 
 #define DEV_STATUS	AES_DEVSTATUS_BETA
 //#define DEV_STATUS	AES_DEVSTATUS_RELEASE
@@ -46,6 +46,14 @@
 #define AES_ID		"   " SHORT_NAME
 
 #define LONG_NAME	"XaAES Ain't the AES, a free MultiTasking AES for FreeMiNT"
+
+#ifndef AES_DEVSTATUS_ALPHA
+/* appl_getinfo(AES_VERSION) return values */
+#define AES_DEVSTATUS_ALPHA	0
+#define AES_DEVSTATUS_BETA	1
+#define AES_DEVSTATUS_RELEASE	2
+#define AES_FDEVSTATUS_STABLE	0x100
+#endif
 
 #if ((DEV_STATUS & 0x000f) == AES_DEVSTATUS_ALPHA)
 #define ASCII_DEV_STATUS	"Alpha"
