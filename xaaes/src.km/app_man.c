@@ -185,9 +185,8 @@ setnew_focus(struct xa_window *wind, struct xa_window *unfocus, bool topowner, b
 		unfocus ? unfocus->handle : -2, unfocus ? unfocus->owner->name : "nowind"));
 
 
-	if( C.boot_focus && (unfocus || (wind && wind->owner->p != C.boot_focus)))
+	if( C.boot_focus && wind && wind->owner->p != C.boot_focus )
 		return;
-
 	if (!unfocus || unfocus == S.focus)
 	{
 		struct xa_client *owner;	//, *p_owner = 0;
@@ -471,7 +470,6 @@ recover(void)
 
 	if ((proc = C.update_lock))
 	{
-
 		DIAG((D_appl, NULL, "Killing owner of update lock"));
 		free_update_lock();
 		if (C.mouse_lock == proc)
@@ -803,6 +801,18 @@ repos_iconified(struct proc *p, long arg)
 			{
 				if (cw->opts & XAWO_WCOWORK)
 					r = f2w(&cw->delta, &ir, true);
+				else
+				{
+					if( (cfg.icnfy_orient & 0xff) == 3 )
+					{
+						r.x = (( r.x + cfg.icnfy_w / 2 ) / cfg.icnfy_w) * cfg.icnfy_w;
+						r.y = cw->r.y;
+						r.w = cw->r.w;
+						r.h = cw->r.h;
+					}
+					/* else we loose .. */
+				}
+
 				send_moved(lock, cw, AMQ_NORM, &r);
 				w->t = r;
 			}
