@@ -222,7 +222,6 @@ XA_keyboard_event(enum locks lock, const struct rawkey *key)
 
 	if (!(client = find_focus(true, &waiting, &locked_client, &keywind)))
 	{
-// 		display("no focus?!");
 		return;
 	}
 
@@ -780,6 +779,9 @@ kernel_key(enum locks lock, struct rawkey *key)
 		{
 			post_cevent(C.Hlp, ceExecfunc, open_launcher, NULL, HL_LAUNCH, 0, NULL, NULL);
 		}
+		return true;
+		case 'S':	/* save inf */
+			write_inf();
 		return true;
 		//case 'T':				/* ctrl+alt+T    Tidy screen */
 		case NK_HOME:				/*     "    Home       "     */

@@ -31,4 +31,7 @@
 
 void load_config(void *path);
 
+void write_inf(void);
+void read_inf(void);
+
 #endif /* _cnf_xaaes_h */
