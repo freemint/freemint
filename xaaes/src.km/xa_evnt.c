@@ -306,14 +306,6 @@ get_mbstate(struct xa_client *client, struct mbs *d)
 	DIAG((D_button, NULL, "get_mbstate:  md: clicks=%d, head=%lx, tail=%lx, end=%lx",
 		client->md_head->clicks, client->md_head, client->md_tail, client->md_end));
 
-#if 0
-	if (!strnicmp(client->proc_name, "wdlg_smp", 8))
-	{
-		display(" -=- md: clicks=%d, head=%lx, tail=%lx, end=%lx",
-			client->md_head->clicks, client->md_head, client->md_tail, client->md_end);
-	}
-#endif
-
 	md = client->md_head;
 	clicks = md->clicks;
 
