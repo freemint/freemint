@@ -788,7 +788,10 @@ k_init(unsigned long vm)
 	 * Setup the screen parameters
 	 */
 	if( C.P_handle == 0 && C.f_phys )
+	{
+		BLOG((false, "Guessing phys-handle is 1"));
 		C.P_handle = 1;	// HOPE it's 1 ..
+	}
 	screen.r.x = screen.r.y = 0;
 	screen.r.w = work_out[0] + 1;
 	screen.r.h = work_out[1] + 1;
@@ -1004,7 +1007,7 @@ k_init(unsigned long vm)
 	/* Create the root (desktop) window
 	 * - We don't want messages from it, so make it a NO_MESSAGES window
 	 */
-// 	display("creating root window");
+
 	root_window = create_window(
 				NOLOCKING,
 				NULL, //do_winmesag, //0,			/* No messages */
@@ -1089,10 +1092,6 @@ k_init(unsigned long vm)
 	/* Initial iconified window coords */
 	C.iconify = iconify_grid(0);
 // 	v_show_c(v->handle, 1); /* 0 = reset */
-
-// 	display("Open taskman -- perhaps");
-// 	if (cfg.opentaskman)
-// 		open_taskmanager(NOLOCKING);
 
 	set_standard_point( C.Aes );
 
