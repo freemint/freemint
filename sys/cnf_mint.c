@@ -275,8 +275,14 @@ load_config(void)
 
 	strcpy(cnf_path, sysdir);
 	strcat(cnf_path, "mint.cnf");
+	if (parse_cnf(cnf_path, parser_tab, &mydata) != 0)
+	{
+		/* sysdir/mint.cnf not found, try mchdir/mint.cnf */
+		strcpy(cnf_path, mchdir);
+		strcat(cnf_path, "mint.cnf");
 
 	parse_cnf(cnf_path, parser_tab, &mydata);
+}
 }
 
 /*============================================================================*/
