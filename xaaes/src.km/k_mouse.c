@@ -338,6 +338,7 @@ deliver_button_event(struct xa_window *wind, struct xa_client *target, const str
 		DIAG((D_mouse, target, "deliver_button_event: Send cXA_deliver_button_event to %s", target->name));
 		post_cevent(target, cXA_deliver_button_event, wind,NULL, 0,0, NULL,md);
 	}
+	mainmd.clicks = 0;
 }
 
 static void
@@ -345,7 +346,6 @@ dispatch_button_event(enum locks lock, struct xa_window *wind, const struct moos
 {
 	struct xa_client *target = wind->owner;
 
-	C.boot_focus = 0;
 	/*
 	 * Right-button clicks or clicks on no-list windows or topped windows...
 	 */
@@ -364,14 +364,13 @@ dispatch_button_event(enum locks lock, struct xa_window *wind, const struct moos
 	}
 	else if (!is_topped(wind) && checkif_do_widgets(lock, wind, md->x, md->y, NULL))
 	{
-		DIAG((D_mouse, target, "XA_button_event: Send cXA_do_widgets (untopped widgets) to %s", target->name));
+		DIAG((D_mouse, target, "dispatch_button_event: Send cXA_do_widgets (untopped widgets) to %s", target->name));
 		post_cevent(target, cXA_do_widgets, wind,NULL, 0,0, NULL,md);
 	}
 	else if (wind->send_message && md->state)
 	{
 		DIAG((D_mouse, target, "dispatch_button_event: Sending WM_TOPPED to %s", target->name));
 		wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP, WM_TOPPED, 0, 0, wind->handle, 0,0,0,0);
-		top_window( lock, true, true, wind );	/* ?? */
 	}
 }
 
@@ -655,8 +654,7 @@ XA_move_event(enum locks lock, const struct moose_data *md)
 
 			DIAG((D_mouse, NULL, "xa_move_event: aes wating for %lx", aesp->waiting_for));
 
-			if (   (aesp->waiting_for & XAWAIT_MENU)
-			    && (aesp->em.flags & MU_M1))
+			if ( (aesp->waiting_for & XAWAIT_MENU) && (aesp->em.flags & MU_M1))
 			{
 				if (/*   cfg.menu_behave != PUSH && */
 				    !update_locked() &&
@@ -813,8 +811,8 @@ chk_button_waiter(struct moose_data *md)
 static int
 new_moose_pkt(enum locks lock, int internal, struct moose_data *md /*imd*/)
 {
-	DIAGA(("new_moose_pkt: internal=%s, state %x, cstate %x, %d/%d - %d/%d",
-		internal ? "yes":"no", md->state, md->cstate, md->x, md->y, md->sx, md->sy));
+	DIAGA(("new_moose_pkt: internal=%s, state %x, cstate %x, %d/%d - %d/%d, ty=%d",
+		internal ? "yes":"no", md->state, md->cstate, md->x, md->y, md->sx, md->sy, md->ty));
 	/*
 	 * Ozk: We cannot distpach anything while a client wants exclusive
 	 * right to mouse inputs. So, we need a flag. If this flag is set, it means
@@ -888,6 +886,7 @@ new_moose_pkt(enum locks lock, int internal, struct moose_data *md /*imd*/)
 			/*
 			 * Call the mouse movement event handler
 			*/
+			md->clicks &= 1;	/* cannot double-click & move (?) */
 			XA_move_event(lock, md);
 
 			break;
@@ -1258,6 +1257,8 @@ adi_button(struct adif *a, struct moose_data *md)
 	 */
 	if (!b_to)
 		b_to = addroottimeout(0L, button_timeout, 1);
+
+	C.boot_focus = 0;
 }
 
 /*
