@@ -80,4 +80,16 @@ static __inline__ void* get_sp(void)
 }
 #endif
 
+/* Set the user stack pointer */
+static __inline__ void set_usp(void *p)
+{
+	__asm__ volatile
+	(
+		"move.l	%0,usp"
+	:		/* outputs */
+	: "a"(p)	/* inputs */
+	: "memory"	/* clobbered regs */
+	);
+}
+
 #endif /* _k_main_h */
