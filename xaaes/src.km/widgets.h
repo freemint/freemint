@@ -131,6 +131,6 @@ usertoolbar_installed(struct xa_window *wind)
 		return NULL;
 }
 
-#define BELOW_FOREIGN_MENU(y)	(cfg.menu_bar && !cfg.menu_ontop && desktop_owner() != C.Aes && y < get_menu_height() )
+#define BELOW_FOREIGN_MENU(y)	((cfg.menu_bar&1) && !cfg.menu_ontop && desktop_owner() != C.Aes && y < get_menu_height() )
 
 #endif /* _widgets_h */
