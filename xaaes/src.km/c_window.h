@@ -63,6 +63,7 @@ void wi_move_first(struct win_base *b, struct xa_window *w);
 //void wi_move_blast(struct win_base *b, struct xa_window *w);
 //void wi_move_belowroot(struct win_base *b, struct xa_window *w);
 
+bool wind_exist(enum locks lock, struct xa_window *wind);
 struct xa_window *find_window(enum locks lock, short x, short y, short flags);
 struct xa_window *get_wind_by_handle(enum locks lock, short h);
 struct xa_window *top_w(enum locks lock);

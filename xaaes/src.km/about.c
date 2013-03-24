@@ -100,7 +100,7 @@ about_destructor(enum locks lock, struct xa_window *wind)
 		htd->w_about = NULL;
 	return true;
 }
-static RECT wsiz = { 0, 0, 0, 0 };
+
 static SCROLL_INFO *alist = 0;
 static SCROLL_ENTRY *athis[1] = {0};
 static struct time xah_mtime = {0,0,0};
@@ -142,6 +142,13 @@ void add_keybd_switch(char *k)
 		athis[0] = p.e;
 	}
 }
+
+RECT about_r = { 0, 0, 0, 0 };
+RECT view_r = { 0, 0, 0, 0 };
+
+bool
+wind_exist(enum locks lock, struct xa_window *wind);
+
 static void
 about_form_exit(struct xa_client *client,
 		struct xa_window *wind,
@@ -151,8 +158,6 @@ about_form_exit(struct xa_client *client,
 	enum locks lock = 0;
 	OBJECT *obtree = wt->tree;
 
-// 	wt->current = fr->obj|fr->dblmask;
-
 	switch (aesobj_item(&fr->obj))
 	{
 		case ABOUT_OK:
@@ -161,16 +166,19 @@ about_form_exit(struct xa_client *client,
 			object_deselect(obtree + ABOUT_OK);
 			redraw_toolbar(lock, wind, ABOUT_OK);
 			close_window(lock, wind);
-			wsiz = wind->r;
 			list = object_get_slist(obtree + ABOUT_LIST);
 			if( list != alist )
 			{
+				struct helpthread_data *htd = lookup_xa_data_byname(&wind->owner->xa_data, HTDNAME);
 				list->destroy( list );
+				memcpy( &view_r, &wind->r, sizeof(RECT) );
+				if( htd )
+					htd->w_view = 0;
+				if( wind->parent && wind_exist( lock, wind->parent) && (wind->parent->dial & created_for_AES) )
+					top_window( lock, true, true, wind->parent );
 				delete_window(lock, wind);
 			}
 
-			if( wind->parent )
-				top_window( lock, true, true, wind->parent );
 			break;
 		}
 		case ABOUT_LIST:
@@ -442,7 +450,6 @@ static void file_to_list( SCROLL_INFO *list, char *fn, bool skip_hash, bool open
 	//sc.fnt = &norm_txt;
 	sc.fnt = 0;
 
-
 	PRINIT;
 	for( lineno = 1; lineno < VIEW_MAX_LINES && xa_readline( (char*)lbuf, sizeof(lbuf), xa_fp ); lineno++ )
 	{
@@ -513,6 +520,7 @@ open_about(enum locks lock, struct xa_client *client, bool open, char *fn)
 	XA_TREE *wt = NULL;
 	OBJECT *obtree = NULL;
 	RECT or;
+	RECT *rem;
 	SCROLL_INFO *list;
 	char ebuf[196];
 	bool view_file = false;
@@ -524,12 +532,18 @@ open_about(enum locks lock, struct xa_client *client, bool open, char *fn)
 	client = C.Hlp;
 
 	htd = get_helpthread_data(client);
+
 	if (!htd)
 		return;
 
+	if (view_file)
+		rem = &view_r;
+	else
+		rem = &about_r;
+
 	if (view_file || !htd->w_about)
 	{
-		RECT remember = { 0, 0, 0, 0 };
+		short minw, minh, dw = 0, dh = 0;
 
 		obtree = duplicate_obtree(client, ResourceTree(C.Aes_rsc, ABOUT_XAAES), 0);
 		if (!obtree) goto fail;
@@ -541,7 +555,7 @@ open_about(enum locks lock, struct xa_client *client, bool open, char *fn)
 			(obtree + ABOUT_LIST)->ob_y -= h * 6;
 			(obtree + ABOUT_LIST)->ob_height = h0 - h * 6;
 
-			(obtree + ABOUT_OK)->ob_y += h * 3 - 2;
+			(obtree + ABOUT_OK)->ob_y += h * 2;//3 - 2;
 			(obtree + ABOUT_OK)->ob_height -= h;
 			for( i = ABOUT_VERSION - 1; i <= RSC_VERSION; i++ )
 			{
@@ -555,19 +569,29 @@ open_about(enum locks lock, struct xa_client *client, bool open, char *fn)
 		if( client != C.Aes )
 			wt->flags |= WTF_TREE_CALLOC;
 
+		obj_rectangle(wt, aesobj(obtree, 0), &or);
+		minh = obtree->ob_height;	/* minimum height for this window */
+		minw = obtree->ob_width;	/* minimum width for this window */
+
 		obj_init_focus(wt, OB_IF_RESET);
 
-		obj_rectangle(wt, aesobj(obtree, 0), &or);
-
 		/* Work out sizing */
-		//if (!remember.w)
+		if (!rem->w)
 		{
 			center_rect(&or);
-			remember = calc_window(lock, C.Aes, WC_BORDER,
+			*rem = calc_window(lock, C.Aes, WC_BORDER,
 				BORDER|CLOSER|NAME|TOOLBAR|(C.Aes->options.xa_nomove ? 0 : MOVER),
 				created_for_AES,
 				C.Aes->options.thinframe,
 				C.Aes->options.thinwork, *(RECT *)&or);
+		}
+		else
+		{
+			//if( !view_file )
+			{
+				dw = rem->w - obtree->ob_width - 4;	/* !! */
+				dh = rem->h - obtree->ob_height - 32;	/* !! */
+			}
 		}
 
 		/* Create the window */
@@ -579,14 +603,27 @@ open_about(enum locks lock, struct xa_client *client, bool open, char *fn)
 					BACKDROP|BORDER|CLOSER|NAME|TOOLBAR|(C.Aes->options.xa_nomove ? 0 : MOVER),
 					created_for_AES,
 					C.Aes->options.thinframe, C.Aes->options.thinwork,
-					remember, 0, NULL);
+					*rem, 0, NULL);
 
-		wind->parent = TOP_WINDOW;
 		if (!wind) goto fail;
+		wind->parent = TOP_WINDOW;
+		if( view_file )
+			htd->w_view = wind;
 
-		wind->min.h = wind->r.h;	/* minimum height for this window */
-		wind->min.w = wind->r.w;	/* minimum width for this window */
-
+		wind->min.h = minh;
+		wind->min.w = minw;
+#if 1
+		obtree[ABOUT_LIST].ob_width += dw;
+		obtree[ABOUT_LIST].ob_height += dh;
+		obtree[ABOUT_VERSION-1].ob_y += dh;
+		obtree[ABOUT_VERSION].ob_y += dh;
+		obtree[ABOUT_TARGET-1].ob_y += dh;
+		obtree[ABOUT_TARGET].ob_y += dh;
+		obtree[ABOUT_DATE-1].ob_y += dh;
+		obtree[ABOUT_DATE].ob_y += dh;
+		obtree[ABOUT_OK].ob_y += dh;
+		obtree[ABOUT_OK].ob_x += dw;
+#endif
 		set_slist_object(0, wt, wind, ABOUT_LIST, SIF_AUTOSLIDERS | SIF_INLINE_EFFECTS | SIF_AUTOSELECT,
 				 NULL, NULL, NULL, NULL, NULL, NULL,
 				 NULL, NULL, NULL, NULL,
@@ -596,26 +633,24 @@ open_about(enum locks lock, struct xa_client *client, bool open, char *fn)
 		{
 			(obtree + ABOUT_VERSION)->ob_spec.free_string = vversion;
 			/* Set version date */
+#if !XAAES_RELEASE
 			(obtree + ABOUT_DATE)->ob_spec.free_string = info_string;
+#else
+			(obtree + ABOUT_DATE)->ob_flags |= OF_HIDETREE;
+			(obtree + ABOUT_DATE-1)->ob_flags |= OF_HIDETREE;
+#endif
 			(obtree + ABOUT_TARGET)->ob_spec.free_string = arch_target;
 		}
 
 		wt = set_toolbar_widget(lock, wind, wind->owner, obtree, inv_aesobj(), 0/*WIP_NOTEXT*/, STW_ZEN, NULL, &or);
 		wt->exit_form = about_form_exit;
-		//if( screen.c_max_h < 16 )
-		{
-			short d = 16 / screen.c_max_h;
-			if( wsiz.w == 0 )
-			{
-				wsiz.x = wind->r.x;
-				wsiz.y = wind->r.y - ( wind->r.h * ( d - 1 ) ) / 2;
-				wsiz.w = wind->r.w;
-				wsiz.h = wind->r.h * d;
-			}
-			/* WM_SIZED resizes list-window (though not open yet!)*/
-			wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
-					WM_SIZED, 0,0, wind->handle, wsiz.x, wsiz.y, wsiz.w, wsiz.h );
-		}
+
+		/* WM_SIZED resizes list-window (though not open yet!)*/
+
+		wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
+				WM_SIZED, 0,0, wind->handle, rem->x, rem->y, rem->w, rem->h );
+		if( !view_file )
+			htd->w_about = wind;
 	}
 	else{
 		if( !view_file )
@@ -639,7 +674,6 @@ open_about(enum locks lock, struct xa_client *client, bool open, char *fn)
 		set_window_title(wind, xa_strings[RS_ABOUT], true);
 		alist = list;
 	}
-
 
 	/* check if help-file has changed and if yes re-read */
 	if (list->start)

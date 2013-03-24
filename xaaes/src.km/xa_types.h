@@ -2556,6 +2556,7 @@ struct helpthread_data
 	struct xa_data_hdr h;
 
 	struct xa_window *w_about;
+	struct xa_window *w_view;
 	struct xa_window *w_taskman;
 	struct xa_window *w_sysalrt;
 	struct xa_window *w_reschg;
@@ -3005,6 +3006,7 @@ struct config
 	bool no_xa_fsel;
 	bool point_to_type;
 	bool fsel_cookie;
+	bool save_windows;
 #if EIFFEL_SUPPORT
 	bool eiffel_support;	/* generate wheel-events on special keys */
 #endif

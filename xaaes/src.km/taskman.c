@@ -1925,10 +1925,13 @@ static void add_meminfo( struct scroll_info *list, struct scroll_entry *this )
 	uinfo[3] = 0;
 	add_kerinfo( "u:/kern/meminfo", list, this, to, &sc, PROCINFLEN, 5, NORMREDRAW, uinfo, false, NULL, 0 );
 }
+
+RECT taskman_r = { 0, 0, 0, 0 };
+
 void
 open_taskmanager(enum locks lock, struct xa_client *client, short open)
 {
-	RECT remember = { 0,0,0,0 };
+	//RECT remember = { 0,0,0,0 };
 	struct helpthread_data *htd;
 	struct xa_window *wind;
 	XA_TREE *wt = NULL;
@@ -1947,6 +1950,7 @@ open_taskmanager(enum locks lock, struct xa_client *client, short open)
 	{
 		struct scroll_info *list;
 		int tm_ticks[] = {TM_TICK1, 25, 1, TM_TICK2, 50, 2, TM_TICK3, 75, 1, 0, 0, 0};
+		short minw, minh;
 
 		obtree = duplicate_obtree(client, ResourceTree(C.Aes_rsc, TASK_MANAGER), 0);
 		if (!obtree) goto fail;
@@ -1979,6 +1983,24 @@ open_taskmanager(enum locks lock, struct xa_client *client, short open)
 			}
 		}
 #endif
+		obj_rectangle(wt, aesobj(obtree, 0), &or);
+		minw = obtree[0].ob_width;//  * 2 / 3;
+		minh = obtree[0].ob_height;
+		if (taskman_r.w)
+		{
+			short dw = taskman_r.w - or.w - 8;	/* !! */
+			short dh = taskman_r.h - or.h - 30;	/* !! */
+			int i;
+			obtree[TM_LIST].ob_width += dw;
+			obtree[TM_LIST].ob_height += dh;
+			for( i = TM_QUITAPPS; i <= TM_RESCHG; i++ )
+			{
+				obtree[i].ob_x += dw;
+				obtree[i].ob_y += dh;
+			}
+			obtree[XAAES_32].ob_x += dw;
+			obtree[TM_CHART].ob_y += dh;
+		}
 		list = set_slist_object(0, wt, NULL, TM_LIST,
 				 SIF_SELECTABLE|SIF_AUTOSELECT|SIF_TREEVIEW|SIF_ICONINDENT|SIF_AUTOOPEN|SIF_AUTOSLIDERS,
 				 NULL, NULL, NULL, NULL, NULL, tm_slist_key,
@@ -1987,20 +2009,22 @@ open_taskmanager(enum locks lock, struct xa_client *client, short open)
 
 		if (!list) goto fail;
 
-		/*!obj_init_focus(wt, OB_IF_RESET);*/
-		obj_rectangle(wt, aesobj(obtree, 0), &or);
 		obtree[TM_ICONS].ob_flags |= OF_HIDETREE;
 
 		set_xa_fnt( cfg.xaw_point, wp, obtree, objs, list, 0, 0);
 		/* Work out sizing */
-		if (!remember.w)
+		if (!taskman_r.w)
 		{
 			center_rect(&or);
-			remember = calc_window(lock, client, WC_BORDER,
+			taskman_r = calc_window(lock, client, WC_BORDER,
 						BORDER|CLOSER|NAME|TOOLBAR, created_for_AES,
 						C.Aes->options.thinframe,
 						C.Aes->options.thinwork,
 						*(RECT *)&or);
+		}
+		else
+		{
+			or = taskman_r;
 		}
 
 		/* Create the window */
@@ -2012,13 +2036,14 @@ open_taskmanager(enum locks lock, struct xa_client *client, short open)
 					created_for_AES,
 					C.Aes->options.thinframe,
 					C.Aes->options.thinwork,
-					remember, NULL, NULL);
+					taskman_r, NULL, NULL);
 
 		if (!wind) goto fail;
 		/* minimum height for this window */
-		wind->min.h = remember.h * 2/3;
+		wind->min.h = minh;
 		/* minimum width for this window */
-		wind->min.w = remember.w;
+		wind->min.w = minw;
+
 		wind->sw = 3;	// border for moving objects when resizing
 		list->set(list, NULL, SESET_PRNTWIND, (long)wind, NOREDRAW);
 		wind->window_status |= XAWS_NODELETE;
@@ -2581,7 +2606,6 @@ sysalerts_form_exit(struct xa_client *Client,
 			object_deselect(wt->tree + item);
 			redraw_toolbar(lock, wind, item);
 			close_window(lock, wind);
-// 			delayed_delete_window(lock, wind);
 			break;
 		}
 	}
@@ -2593,7 +2617,6 @@ systemalerts_destructor(enum locks lock, struct xa_window *wind)
 	struct helpthread_data *htd = lookup_xa_data_byname(&wind->owner->xa_data, HTDNAME);
 	if (htd)
 		htd->w_sysalrt = NULL;
-// 	systemalerts_win = NULL;
 	return true;
 }
 
@@ -2865,6 +2888,8 @@ static void add_kerinfo(
 }
 
 
+RECT systemalerts_r = { 0, 0, 0, 0 };
+
 void
 open_systemalerts(enum locks lock, struct xa_client *client, short open)
 {
@@ -2872,7 +2897,6 @@ open_systemalerts(enum locks lock, struct xa_client *client, short open)
 	OBJECT *obtree = NULL;
 	struct widget_tree *wt = NULL;
 	struct xa_window *wind;
-	RECT remember = { 0, 0, 0, 0 };
 
 
 	if (!(htd = get_helpthread_data(client)))
@@ -2882,6 +2906,7 @@ open_systemalerts(enum locks lock, struct xa_client *client, short open)
 	{
 		struct scroll_info *list;
 		RECT or;
+		short minw, minh;
 		char *a = xa_strings[RS_ALERTS];
 		char *e = xa_strings[RS_ENV];
 		char *s = xa_strings[RS_SYSTEM];
@@ -2893,6 +2918,20 @@ open_systemalerts(enum locks lock, struct xa_client *client, short open)
 		if (!wt) goto fail;
 		wt->flags |= WTF_TREE_ALLOC | WTF_AUTOFREE;
 
+		obj_rectangle(wt, aesobj(obtree, 0), &or);
+		minw = obtree[SYSALERT_LIST].ob_width;//  * 2 / 3;
+		minh = obtree[SYSALERT_LIST].ob_height;
+		if (systemalerts_r.w)
+		{
+			short dw = systemalerts_r.w - or.w - 8;	/* !! */
+			short dh = systemalerts_r.h - or.h - 30;	/* !! */
+			obtree[SYSALERT_LIST].ob_width += dw;
+			obtree[SYSALERT_LIST].ob_height += dh;
+			obtree[SALERT_CLEAR].ob_x += dw;
+			obtree[SALERT_CLEAR].ob_y += dh;
+			obtree[SALERT_OK].ob_x += dw;
+			obtree[SALERT_OK].ob_y += dh;
+		}
 		list = set_slist_object(0, wt, NULL, SYSALERT_LIST,
 				 SIF_SELECTABLE|SIF_AUTOSELECT|SIF_TREEVIEW|SIF_AUTOOPEN|SIF_AUTOSLIDERS,
 				 NULL, NULL, NULL, NULL, NULL, NULL,
@@ -2907,7 +2946,6 @@ open_systemalerts(enum locks lock, struct xa_client *client, short open)
 		obj_init_focus(wt, OB_IF_RESET);
 
 		{
-// 			struct scroll_info *list = object_get_slist(obtree + SYSALERT_LIST);
 			struct scroll_content sc = {{ 0 }};
 
 			sc.t.text = a;
@@ -3004,15 +3042,19 @@ open_systemalerts(enum locks lock, struct xa_client *client, short open)
 		obtree[SALERT_ICONS].ob_flags |= OF_HIDETREE;
 
 		/* Work out sizing */
-		if (!remember.w)
+		if (!systemalerts_r.w)
 		{
 			center_rect(&or);
-			remember = calc_window(lock, client, WC_BORDER,
+			systemalerts_r = calc_window(lock, client, WC_BORDER,
 						BORDER|CLOSER|NAME|TOOLBAR|hide_move(&(C.Aes->options)),
 						created_for_AES,
 						C.Aes->options.thinframe,
 						C.Aes->options.thinwork,
 						*(RECT *)&or);
+		}
+		else
+		{
+			or = systemalerts_r;
 		}
 
 		/* Create the window */
@@ -3025,21 +3067,21 @@ open_systemalerts(enum locks lock, struct xa_client *client, short open)
 					created_for_AES,
 					C.Aes->options.thinframe,
 						C.Aes->options.thinwork,
-						remember,
+						systemalerts_r,
 					NULL, NULL);
 		if (!wind) goto fail;
 
 		/* minimum height for this window */
-		wind->min.h = remember.h * 2/3;
+		wind->min.h = minh;
 		/* minimum width for this window */
-		wind->min.w = remember.w;
+		wind->min.w = minw;
 
 		list->set(list, NULL, SESET_PRNTWIND, (long)wind, NOREDRAW);
 
 		/* Set the window title */
 		set_window_title(wind, xa_strings[RS_SYS], false);
 
-		wt = set_toolbar_widget(lock, wind, client, obtree, inv_aesobj(), 0/*WIP_NOTEXT*/, STW_ZEN, NULL, &or);
+		wt = set_toolbar_widget(lock, wind, client, obtree, inv_aesobj(), 0, STW_ZEN, NULL, &or);
 		wt->exit_form = sysalerts_form_exit;
 		wt->focus = aesobj( obtree, SYSALERT_LIST );	/*cursor on list */
 		/* Set the window destructor */
@@ -3052,7 +3094,7 @@ open_systemalerts(enum locks lock, struct xa_client *client, short open)
 			open_window(lock, wind, wind->r);
 		}
 
-		htd->w_sysalrt = wind; //systemalerts_win = dialog_window;
+		htd->w_sysalrt = wind;
 	}
 	else
 	{
