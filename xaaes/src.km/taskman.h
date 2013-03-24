@@ -41,6 +41,9 @@ extern struct xa_wtxt_inf sys_txt;
 extern struct xa_wtxt_inf sys_thrd;
 extern struct xa_wtxt_inf desk_txt;
 
+extern RECT systemalerts_r;
+extern RECT taskman_r;
+
 int xaaes_do_form_alert( enum locks lock, struct xa_client *client, int def_butt, char al_text[] );
 
 short	set_xa_fnt( int pt, struct xa_wtxt_inf *wp[], OBJECT *obtree, int objs[], SCROLL_INFO *list, short *wd, short *hd );
