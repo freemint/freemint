@@ -31,6 +31,8 @@
 int
 get_drv(const char *p)
 {
+	if( *p == '/' )
+		return 0;
 	if (*(p + 1) == ':')
 	{
 		int c = *p;
@@ -222,7 +224,7 @@ XA_FILE *xa_fopen( char *fn, int rwmd )
 	struct file *fp = kernel_open( fn, rwmd, &err, NULL );
 	if( !fp )
 	{
-		BLOG((0,"xa_fopen: cannot open '%s'", fn));
+		BLOG((0,"%s:xa_fopen: cannot open %s(%ld),rwmd=%x", get_curproc()->name, fn, err, rwmd));
 		return 0;
 	}
 	ret = kmalloc( sizeof( XA_FILE ) );
