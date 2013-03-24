@@ -26,6 +26,8 @@
 
 #include "xa_global.h"
 #include "xa_shel.h"
+#include "about.h"
+#include "xa_fsel.h"
 #include "taskman.h"
 #include "util.h"
 
@@ -57,14 +59,11 @@ struct cnfdata
 
 static PCB_TTx	pCB_setenv;		/* setenv name val	*/
 
-//static PCB_T	pCB_toppage;
 static PCB_T	pCB_next_active;
-//static PCB_T	pCB_close_lastwind;
 static PCB_A	pCB_app_options;
 static PCB_A    pCB_cancel;
 static PCB_A    pCB_filters;
 static PCB_A	pCB_ctlalta_survivors;
-//static PCB_A  pCB_ctrl_alt_run;
 static PCB_A	pCB_kill_without_question;
 static PCB_T    pCB_menu;
 static PCB_A    pCB_keyboards;
@@ -84,12 +83,13 @@ static PCB_TAx  pCB_run;
 static struct parser_item parser_tab[] =
 {
 	/* config variables */
-	{ "LAUNCHPATH",              PI_R_T,     cfg.launch_path       , { dat: sizeof(cfg.launch_path) } },
+	{ "LAUNCHPATH",            PI_R_T,     cfg.launch_path       , { dat: sizeof(cfg.launch_path) } },
 	{ "CLIPBOARD",             PI_R_T,     cfg.scrap_path          , { dat: sizeof(cfg.scrap_path)  } },
 	{ "SNAPSHOT",  	           PI_R_T,     cfg.snapper  		       , { dat: sizeof(cfg.snapper)  } },
 	{ "ACCPATH",               PI_R_T,     cfg.acc_path            , { dat: sizeof(cfg.acc_path)    } },
 	{ "LOGFILE",               PI_R_T,     C.bootlog_path          , { dat: sizeof(C.bootlog_path)    } },
 	{ "LOGLVL",                PI_R_S,   & C.loglvl   },
+	{ "SAVE_WINDOWS",          PI_R_B,   & cfg.save_windows},
 	{ "LANG",                  PI_R_T,     cfg.lang		             , { dat: sizeof(cfg.lang)   } },
 	{ "FOCUS",                 PI_R_T,     cfg.focus	             , { dat: sizeof(cfg.focus)   } },
 	{ "PALETTE",               PI_R_T,     cfg.palette             , { dat: sizeof(cfg.palette)   } },
@@ -124,28 +124,24 @@ static struct parser_item parser_tab[] =
 	{ "POPSCROLL",             PI_R_S,   & cfg.popscroll		},
 	{ "DC_TIME",               PI_R_S,   & cfg.double_click_time	},
 	{ "MP_TIMEGAP",            PI_R_S,   & cfg.mouse_packet_timegap },
-	{ "VIDEO",	           PI_R_US,   & cfg.videomode		},
-	{ "ALLOW_SETEXC",        PI_R_S,   & cfg.allow_setexc, Range(0, 2)	},
-	{ "ET4000_HACK",       PI_R_B,   & cfg.et4000_hack	},
+	{ "VIDEO",                 PI_R_US,   & cfg.videomode		},
+	{ "ALLOW_SETEXC",          PI_R_S,   & cfg.allow_setexc, Range(0, 2)	},
+	{ "ET4000_HACK",           PI_R_B,   & cfg.et4000_hack	},
 	{ "REDRAW_TIMEOUT",        PI_R_S,   & cfg.redraw_timeout, Range(0, 32000)	},
-	{ "POPUP_TIMEOUT",	   PI_R_S,   & cfg.popup_timeout, Range(0, 32000)	},
+	{ "POPUP_TIMEOUT",	       PI_R_S,   & cfg.popup_timeout, Range(0, 32000)	},
 	{ "POPOUT_TIMEOUT",        PI_R_S,   & cfg.popout_timeout, Range(0, 32000)	},
 
 	/* config settings */
 	{ "SETENV",                PI_C_TT,  pCB_setenv		},
 
-//	{ "TOPPAGE",               PI_V_T,   pCB_toppage		},
 	{ "NEXT_ACTIVE",           PI_V_T,   pCB_next_active		},
-//	{ "CLOSE_LASTWIND",        PI_V_T,   pCB_close_lastwind		},
 	{ "INCLUDE",               PI_C_T,		pCB_include	},
-	{ "FOCUS",                 PI_V_T,   pCB_point_to_type		},
 	{ "APP_OPTIONS",           PI_V_A,   pCB_app_options		},
-	//{ "CTRLALTRUN",            PI_C_A,   pCB_ctrl_alt_run},
 	{ "CANCEL",                PI_V_A,   pCB_cancel			},
 	{ "KEYBOARDS",             PI_V_A,		pCB_keyboards	},
 	{ "FILTERS",               PI_V_A,   pCB_filters		},
 	{ "CTLALTA_SURVIVORS",	   PI_V_A,   pCB_ctlalta_survivors	},
-	{ "KILL_WO_QUESTION",	   PI_V_A,   pCB_kill_without_question	},
+	{ "KILL_WO_QUESTION",	     PI_V_A,   pCB_kill_without_question	},
 	{ "MENU",                  PI_V_T,   pCB_menu			},
 	{ "HELPSERVER",            PI_V_A,   pCB_helpserver		},
 
@@ -513,18 +509,7 @@ pCB_close_lastwind(char *str)
 #endif
 
 /*----------------------------------------------------------------------------*/
-#if POINT_TO_TYPE
-static void
-pCB_point_to_type(const char *str)
-{
-	cfg.point_to_type = (stricmp(str, "point") == 0);
-	DIAGS(("pCB_point_to_type = %s", cfg.point_to_type ? "true" : "false"));
-}
-#endif
 
-/*----------------------------------------------------------------------------*/
-
-/*----------------------------------------------------------------------------*/
 /*
 static void
 pCB_ctrl_alt_run(char *line)
@@ -1040,10 +1025,6 @@ load_config(void *path )
 	char cpath[FILENAME_MAX];
 
 	struct cnfdata mydata;
-//	struct options *curopt = &default_options;	/* specify some options for some programs. */
-//	bool have_brace = false, have_opt = false;
-//	char *cnf = NULL;
-
 	if( !path || !*(char*)path )
 	{
 		strncpy(cpath, C.Aes->home_path, sizeof(cpath)-sizeof(CNF_NAME)-1);
@@ -1075,5 +1056,189 @@ load_config(void *path )
 		}
 	}
 #endif
+}
+
+
+static short screen_r[4] = {0};
+
+#define GROUP_BEG	PI_C__
+
+enum{
+	SCR_R,
+	FS_WIND_R,
+	SYS_WIND_R,
+	TM_WIND_R,
+	ABOUT_WIND_R,
+	VIEW_WIND_R,
+	NUL_R
+};
+
+static short *inr[] = {
+	screen_r,
+	&fs_data.fs_x,
+	(short*)&systemalerts_r,
+	(short*)&taskman_r,
+	(short*)&about_r,
+	(short*)&view_r
+};
+
+/* read rectangle-values into rect indicated by val
+   try to adjust to screen and ignore invalid values
+*/
+static void pVArect(const char *p, const char *line, long val)
+{
+	const char *cp;
+	int i;
+	short *r, ri[4];
+
+
+	if( val < 0 || val > sizeof(inr) / sizeof(short *) )	//>= NUL_R )
+	{
+		BLOG((1, "pVArect:invalid subcode: %ld", val));
+		return;
+	}
+	r = inr[val];
+	for( i = 0, cp = p; i < 4; i++ )
+	{
+		ri[i] = (short)atol( cp );
+		if( i > 1 && ri[i] <= 0 )
+			break;
+
+		cp = strchr( cp, ',' );
+		if( cp )
+			cp++;
+		else
+			break;
+	}
+	if( i < 3 )
+		return;
+	if( val != SCR_R && screen_r[2] && memcmp( &screen.r, screen_r, sizeof( screen_r ) ) )
+	{
+		for( i = 0; i < 4; i++ )
+			if( i & 1 )
+				ri[i] = (short)( (long)ri[i] * (long)screen.r.h / (long)screen_r[3]);
+			else
+				ri[i] = (short)( (long)ri[i] * (long)screen.r.w / (long)screen_r[2]);
+	}
+	if( ri[2] > 20 && ri[3] > 20 && ri[0] < screen.r.w && ri[1] < screen.r.h && ri[2] <= screen.r.w && ri[3] <= screen.r.h )
+		memcpy( r, ri, sizeof(ri) );
+}
+
+static struct parser_item inf_tab[] =
+{
+	{ "### Screen ###",          GROUP_BEG	,   0},
+	{ "SCR_XYWH",                PI_V_ATK, pVArect, {dat: SCR_R}    },
+	{ "### File-selector ###",   GROUP_BEG	,   0},
+	{ "FS_SORTDIR",	             PI_R_S,   & fs_data.SortDir },
+	{ "FS_SORT",   	             PI_R_S,   & fs_data.fs_sort},
+	{ "FS_TREEVIEW",             PI_R_S,   & fs_data.treeview},
+	{ "FS_RTBUILD",	             PI_R_S,   & fs_data.rtbuild},
+	{ "FS_POINT",                PI_R_S,   & fs_data.fs_point },
+	{ "FS_XYWH",                 PI_V_ATK, pVArect, {dat: FS_WIND_R}    },
+	{ "### System-Window ###",   GROUP_BEG	,   0},
+	{ "SYS_XYWH",                 PI_V_ATK, pVArect, {dat: SYS_WIND_R}    },
+	{ "### Taskmanger ###",      GROUP_BEG	,   0},
+	{ "TM_XYWH",                 PI_V_ATK, pVArect, {dat: TM_WIND_R}    },
+	{ "### About ###",           GROUP_BEG	,   0},
+	{ "ABOUT_XYWH",              PI_V_ATK, pVArect, {dat: ABOUT_WIND_R}    },
+	{ "### View ###",            GROUP_BEG	,   0},
+	{ "VIEW_XYWH",               PI_V_ATK, pVArect, {dat: VIEW_WIND_R}    },
+	{ NULL }
+};
+
+#define SYS_RECT( htd_w, sr ) (htd&&htd->htd_w) ? (short*)&htd->htd_w->r :(short*)&sr
+
+static char *inf_fname = "xaaes.inf";
+void write_inf(void)
+{
+	int i, l;
+	char buf[256];
+	XA_FILE *of;
+	struct helpthread_data *htd;
+
+	sprintf( buf, sizeof(buf), "%s\%s", C.start_path, inf_fname );
+	of = xa_fopen( buf, O_WRONLY|O_CREAT|O_TRUNC);
+
+	if( !of )
+		return;
+
+	fs_save(0);	/* update fs_data */
+
+	l = sprintf( buf, sizeof(buf), "### %s: written by %s ###", inf_fname, vversion );
+	if( xa_writeline( buf, l, of ) <= 0 )
+		goto Ret;
+
+	htd = lookup_xa_data_byname(&C.Hlp->xa_data, HTDNAME);
+
+	for( i = 0; inf_tab[i].key; i++ )
+	{
+		if( !(inf_tab[i].type & 0x000f) )	/* not a command */
+		{
+			switch( inf_tab[i].type )
+			{
+			case GROUP_BEG:
+				l = sprintf( buf, sizeof(buf), "%s", inf_tab[i].key );
+			break;
+			default:
+			continue;
+			}
+		}
+		else
+		{
+			l = sprintf( buf, sizeof(buf), "\t%s=", inf_tab[i].key );
+			switch( inf_tab[i].type )
+			{
+			case PI_R_S:
+				l += sprintf( buf+l, sizeof(buf)-l, "%d", *(short*)inf_tab[i].cb);
+			break;
+			case PI_V_ATK:
+			{
+				short *r;
+				switch( inf_tab[i].dat.dat )
+				{
+				case SCR_R:
+					r = (short*)&screen.r;
+				break;
+				case FS_WIND_R:
+					r = &fs_data.fs_x;
+				break;
+				case SYS_WIND_R:
+					r = SYS_RECT( w_sysalrt, systemalerts_r );
+				break;
+				case TM_WIND_R:
+					r = SYS_RECT( w_taskman, taskman_r);
+				break;
+				case ABOUT_WIND_R:
+					r = SYS_RECT( w_about, about_r);
+				break;
+				case VIEW_WIND_R:
+					//r = (short*)&view_r;
+					r = SYS_RECT( w_view, view_r);
+				break;
+				default:
+					BLOG((1, "write_inf:unknown subcode: %ld", inf_tab[i].dat.dat ));
+					continue;
+				}
+				l += sprintf( buf+l, sizeof(buf)-l, "%d,%d,%d,%d", r[0], r[1], r[2], r[3] );
+			}
+			break;
+			default:
+			continue;
+			}
+		}
+		if( xa_writeline( buf, l, of ) <= 0 )
+			break;
+	}
+Ret:
+	xa_fclose(of);
+}
+
+void read_inf(void)
+{
+	struct cnfdata mydata;
+	char buf[256];
+	sprintf( buf, sizeof(buf), "%s\%s", C.start_path, inf_fname );
+	BLOG((1,"%s:read_inf:%s", get_curproc()->name, buf));
+	parse_cnf(buf, inf_tab, &mydata);
 }
 

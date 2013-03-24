@@ -71,11 +71,33 @@ struct fsel_data
 	bool rtbuild;
 };
 
+struct fs_data{
+	short SortDir;
+	short fs_sort;
+	bool treeview;
+	bool rtbuild;
+	short fs_x, fs_y, fs_width, fs_height;
+	short fs_point;
+
+	char fs_paths[DRV_MAX][NAME_MAX+2];
+	char fs_patterns[FS_NPATTERNS][FS_PATLEN];
+
+	/* runtime only */
+	short fs_file_w; /* max. width for edit-field */
+	short fs_num;
+	int prover, provermin;
+/* fsel opened by launcher */
+	struct xa_client *aes_has_fsel;
+	void *fs;
+};
+
+extern struct fs_data fs_data;
 
 void open_fileselector(enum locks lock, struct xa_client *client, struct fsel_data *fs,
 		       char *path, const char *file, const char *title,
 		       fsel_handler *s, fsel_handler *c, void *data);
 
+void fs_save(struct fsel_data *fs);
 void close_fileselector(enum locks lock, struct fsel_data *fs);
 
 void init_fsel(void);
