@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
  */
@@ -125,8 +125,8 @@ struct parser_item
 
 void parser_msg(struct parsinf *, const char *msg);
 
-void parse_include(const char *path, struct parsinf *, struct parser_item *);
-void parse_cnf(const char *path, struct parser_item *, void *);
+long parse_include(const char *path, struct parsinf *, struct parser_item *);
+long parse_cnf(const char *path, struct parser_item *, void *);
 
 # endif
 
