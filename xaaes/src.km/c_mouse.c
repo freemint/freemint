@@ -293,82 +293,82 @@ cXA_open_menu(enum locks lock, struct c_event *ce, short cancel)
 static void
 menu_move(struct xa_client *client, struct moose_data *md, bool f)
 {
-		if (TAB_LIST_START->client == client && !C.move_block)
+	if (TAB_LIST_START->client == client && !C.move_block)
+	{
+		Tab *tab = TAB_LIST_START;
+		MENU_TASK *k;
+		short x = md->x;
+		short y = md->y;
+
+		DIAG((D_mouse, client, "menu_move for %s", client->name));
+
+		/*
+		 * Ozk: Cannot use FOREACH_TAB() here, since there may be additions to the top (start)
+		 *      of the list during our wander down towards the bottom of it.
+		 */
+		while (tab)
 		{
-			Tab *tab = TAB_LIST_START;
-			MENU_TASK *k;
-			short x = md->x;
-			short y = md->y;
+			k = &tab->task_data.menu;
 
-			DIAG((D_mouse, client, "cXA_menu_move for %s", client->name));
-
-			/*
-			 * Ozk: Cannot use FOREACH_TAB() here, since there may be additions to the top (start)
-			 *      of the list during our wander down towards the bottom of it.
-			 */
-			while (tab)
+			if (k->em.flags & MU_MX)
 			{
-				k = &tab->task_data.menu;
+				/* XaAES internal flag: report any mouse movement. */
 
-				if (k->em.flags & MU_MX)
+				k->em.flags &= ~MU_MX;
+				k->x = x;
+				k->y = y;
+				tab = k->em.t1(tab, -1);	/* call the function */
+				break;
+			}
+			if ((k->em.flags & MU_M1))
+			{
+				if (is_rect(x, y, k->em.m1_flag & 1, &k->em.m1))
 				{
-					/* XaAES internal flag: report any mouse movement. */
-
-					k->em.flags &= ~MU_MX;
+					k->em.flags &= ~MU_M1;
 					k->x = x;
 					k->y = y;
 					tab = k->em.t1(tab, -1);	/* call the function */
 					break;
 				}
-				if ((k->em.flags & MU_M1))
-				{
-					if (is_rect(x, y, k->em.m1_flag & 1, &k->em.m1))
-					{
-						k->em.flags &= ~MU_M1;
-						k->x = x;
-						k->y = y;
-						tab = k->em.t1(tab, -1);	/* call the function */
-						break;
-					}
-					if (m_inside(x, y, &k->bar))
-						break;
-				}
-				if ((k->em.flags & MU_M2))
-				{
-					if (f || (is_rect(x, y, k->em.m2_flag & 1, &k->em.m2)))
-					{
-						k->em.flags &= ~MU_M2;
-						k->x = x;
-						k->y = y;
-						tab = k->em.t2(tab, -1);
-						break;
-					}
-					if (m_inside(x, y, &k->drop))
-						break;
-				}
-
-				if (m_inside(x, y, &k->p.wind->r))
+				if (m_inside(x, y, &k->bar))
 					break;
-				tab = tab->tab_entry.next;
+			}
+			if ((k->em.flags & MU_M2))
+			{
+				if (f || (is_rect(x, y, k->em.m2_flag & 1, &k->em.m2)))
+				{
+					k->em.flags &= ~MU_M2;
+					k->x = x;
+					k->y = y;
+					tab = k->em.t2(tab, -1);
+					break;
+				}
+				if (m_inside(x, y, &k->drop))
+					break;
 			}
 
-			if (tab)
-			{
-				if (tab->task_data.menu.p.wind)
-					wind_mshape(tab->task_data.menu.p.wind, x, y);
-				tab = tab->tab_entry.next;
-			}
-			else
-				set_winmouse(x, y);
-
-			while (tab)
-			{
-				k = &tab->task_data.menu;
-				if (k->outof)
-					k->outof(tab, -1);
-				tab = tab->tab_entry.next;
-			}
+			if (m_inside(x, y, &k->p.wind->r))
+				break;
+			tab = tab->tab_entry.next;
 		}
+
+		if (tab)
+		{
+			if (tab->task_data.menu.p.wind)
+				wind_mshape(tab->task_data.menu.p.wind, x, y);
+			tab = tab->tab_entry.next;
+		}
+		else
+			set_winmouse(x, y);
+
+		while (tab)
+		{
+			k = &tab->task_data.menu;
+			if (k->outof)
+				k->outof(tab, -1);
+			tab = tab->tab_entry.next;
+		}
+	}
 
 }
 void
