@@ -37,7 +37,8 @@
 # define S_CTRLALTDEL		25	/* ctraltdel behavoiur */
 # define S_DELCOOKIE	26
 # define S_LOADKBD	27	/* reload the keyboard table */
-# define S_SETEXC	28	/* if 0 only kernel-processes may change sys-vectors via Setexc */
+# define S_SETEXC	28      /* if 0 only kernel-processes may change sys-vectors via Setexc */
+# define S_GETBOOTLOG 29  /* get path to bootlog-file (BOOTLOGFILE) */
 # define S_CLOCKUTC	100
 # define S_TIOCMGET	0x54f8	/* 21752 */
 
