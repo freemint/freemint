@@ -30,6 +30,7 @@
 #include "xa_global.h"
 
 #include "app_man.h"
+#include "cnf_xaaes.h"
 #include "k_main.h"
 #include "k_keybd.h"
 #include "c_window.h"
@@ -64,6 +65,8 @@ k_shutdown(void)
 {
 	struct xa_vdi_settings *v = C.Aes->vdi_settings;
 
+	if( cfg.save_windows )
+		write_inf();
 	_f_sync();
 	if( !(C.shutdown & (HALT_SYSTEM | REBOOT_SYSTEM | COLDSTART_SYSTEM)) )
 	{
