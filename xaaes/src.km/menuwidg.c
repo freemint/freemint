@@ -2607,8 +2607,7 @@ fix_menu(struct xa_client *client, XA_TREE *menu, struct xa_window *wind, bool d
 
 			/* client->mnu_clientlistname is umalloced area */
 			root[t_ob-1].ob_spec.free_string = client->mnu_clientlistname;
-			DIAG((D_menu, NULL, "menufix for %s - adding object at %lx",
-				client->name, client->mnu_clientlistname));
+			DIAG((D_menu, NULL, "menufix for %s - adding object at %lx", client->name, client->mnu_clientlistname));
 		}
 		else
 			t_ob = 0;
@@ -2626,7 +2625,7 @@ fix_menu(struct xa_client *client, XA_TREE *menu, struct xa_window *wind, bool d
 		}
 	}
 
- 	DIAG((D_menu, NULL, "done fix_menu()"));
+	DIAG((D_menu, NULL, "done fix_menu()"));
 }
 
 static void menu_scrld_to(struct proc *p, long arg);
