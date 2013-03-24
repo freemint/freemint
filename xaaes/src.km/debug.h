@@ -212,7 +212,7 @@ void _cdecl bootlog(short disp, const char *fmt, ...);
 #define BLOG(x)
 #define BLOGif(x)
 #define DBG(x)
-#define DBGif(x)
+#define DBGif(c,x)
 #define KDBG(x)
 #endif
 
