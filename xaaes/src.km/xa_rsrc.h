@@ -30,6 +30,8 @@
 #include "global.h"
 #include "xa_types.h"
 //void dump_ra_list(struct xa_rscs *);
+/* debug */
+void dump_hex( void *data, long len, int bpw, int doit );
 
 RSHDR * _cdecl LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designWidth, short designHeight, bool set_pal);
 void _cdecl FreeResources(struct xa_client *client, AESPB *pb, struct xa_rscs *rscs);

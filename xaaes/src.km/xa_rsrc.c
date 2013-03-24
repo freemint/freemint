@@ -302,7 +302,6 @@ transform_icon_bitmap(struct xa_client *client, struct xa_rscs *rscs, CICONBLK *
 }
 #endif
 #if 0	// debugging!
-void dump_hex( void *data, long len, int bpw, int doit );
 void dump_hex( void *data, long len, int bpw, int doit )
 {
 	union{
@@ -2025,11 +2024,9 @@ XA_rsrc_load(enum locks lock, struct xa_client *client, AESPB *pb)
 			DIAG((D_rsrc, client, "rsrc_load('%s')", path));
 
 			rsc = LoadResources(client, path, NULL, DU_RSX_CONV, DU_RSY_CONV, false);
-//			rsc = LoadResources(client, path, NULL, screen.c_max_w, screen.c_max_h, false);
 			if (rsc)
 			{
 				OBJECT **o;
-//				(unsigned long)o = (unsigned long)rsc + rsc->rsh_trindex;
 				o = (OBJECT **)((char *)rsc + rsc->rsh_trindex);
 				client->trees = o;
 
