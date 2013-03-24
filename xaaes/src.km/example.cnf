@@ -125,7 +125,7 @@
 #####################################################################
 # xa_bubble (default:0)
 # if you want to use the XaAES-builtin bubble-help (since 1.1.21) set
-# this.
+# this. You can deactivate any external bubble-app if you use xa_bubble.
 # 1: windows-tooltip-style
 # 2: apple-ballon-help-style
 #xa_bubble = 1
@@ -740,12 +740,20 @@ app_options = default,thinwork = true, winframe_size = 2, xa_nomove = false, nol
 app_options = xasys, thinwork = true, winframe_size = 3, xa_nomove = false, nolive = false
 app_options = aessys, thinwork = true, winframe_size = 3, xa_nomove = false, nolive = false, rsc_lang  = 1, icn_pal_name = nvdi
 #
-
-app_options = toswin2, nohide = true,noleft=true
+# TosWin2 requires a few specific settings.
+# If you frequently run many textmode programs from the desktop,
+# you may be interested by the second line below. That will reactivate
+# the desktop as soon as textmode programs exits, instead of staying
+# on the TosWin2 menu bar.
+app_options = toswin2, nohide = true, noleft = true
+#app_options = toswin2, nohide = true, noleft = true, clwtna = 1
+#
+# Other application specific settings
+#
 #app_options = pc_help, alt_shortcuts = 0
 app_options = diskus, alt_shortcuts = 0
 app_options = DESKTOP, alt_shortcuts = 1
-app_options = jaygrpii, alt_shortcuts = 0
+#app_options = jaygrpii, alt_shortcuts = 0
 #app_options = autos401,xa_nomove = true
 #app_options = ataricq,thinwork = true, winframe_size = 0
 #app_options = jinnee, naesff = true
@@ -923,7 +931,7 @@ filters = *.*, *.[atpg]*, *.[chs]*, *.l*, *.o*
 #run u:\opt\taskbar\taskbar.prg
 #run u:\c\system\strngsrv\strngsrv.prg
 
-run u:\usr\gem\toswin2.app
+run c:\tools\toswin2.app
 
 #####################################################################
 # system shell
