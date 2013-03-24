@@ -122,7 +122,8 @@ display(const char *fmt, ...)
 	}
 #endif
 #if BOOTLOG
-	write_bootlog(buf, l+1);
+	if( C.loglvl & 1 )
+		write_bootlog(buf, l+1);
 #endif
 #if 1
 	buf[l] = '\r';
@@ -152,7 +153,8 @@ ndisplay(const char *fmt, ...)
 	}
 #endif
 #if BOOTLOG
-	write_bootlog(buf, l);
+	if( C.loglvl & 1 )
+		write_bootlog(buf, l);
 #endif
 #if 1
 	buf[l] = '\0';
