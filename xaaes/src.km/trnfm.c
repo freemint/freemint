@@ -1986,7 +1986,6 @@ transform_bitmap(short vdih, MFDB *src, MFDB *dst, struct rgb_1000 *src_pal, str
 /* ************************************************* */
 }
 #else
-void dump_hex( void *data, long len, int bpw, int doit );
 #define DBG_hex dump_hex
 
 #define CLUT_NI 12312
