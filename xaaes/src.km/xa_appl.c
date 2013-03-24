@@ -304,9 +304,8 @@ init_client(enum locks lock, bool sysclient)
 	/* Get the client's home directory (where it was started)
 	 * - we use this later to load resource files, etc
 	 */
-	if (!*client->home_path)
+	if (!*client->home_path || (*client->home_path == 'u' && *(client->home_path+1) == ':' && *(client->home_path+2) == 0))
 	{
-//		int sl;
 		char hp[PATH_MAX], tmp[PATH_MAX];
 		fcookie fc;
 		long r;
@@ -1256,7 +1255,9 @@ XA_appl_write(enum locks lock, struct xa_client *client, AESPB *pb)
 				}
 			}
 			if (m)
+			{
 				send_a_message(lock, dest_clnt, amq, qmf, m);
+			}
 
 			if (dest_clnt != client)
 				yield();
