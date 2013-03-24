@@ -22,6 +22,7 @@
 
 # include "ssystem.h"
 # include "global.h"
+# include "init.h"
 
 # include "buildinfo/version.h"
 # include "libkern/libkern.h"
@@ -373,6 +374,19 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 			else if (arg1 > 2)	r = EBADARG;
 			else			secure_mode = arg1;
 
+			break;
+		}
+		case S_GETBOOTLOG:
+		{
+			if (isroot == 0)
+				r = EPERM;
+			else if (arg1)
+			{
+				*(char**)arg1 = BOOTLOGFILE;
+				r = 0;
+			}
+			else
+				r = EBADARG;
 			break;
 		}
 		case S_SETEXC:
