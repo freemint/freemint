@@ -1601,14 +1601,6 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 		return 0;
 	}
 
-#if WITH_BBL_HELP
-	if( wind != bgem_window && wind->handle >= 0
-		&& !(wind->dial == (created_for_ALERT | created_for_AES | created_for_WDIAL))
-		&& !C.boot_focus )
-	{
-		xa_bubble( 0, bbl_close_bubble1, 0, 3 );
-	}
-#endif
 	if (wind->nolist || (wind->dial & created_for_SLIST))
 	{
 		DIAGS(("open_window: nolist window - SLIST wind? %s",
@@ -1679,11 +1671,18 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 	}
 
 	wi_remove(&S.closed_windows, wind, false);
-	if( (C.boot_focus && wind->owner->p != C.boot_focus))
-		ignorefocus = 2;
-	else if( (wind->window_status & XAWS_NOFOCUS))
+	if( (wind->window_status & XAWS_NOFOCUS))
 		ignorefocus = 1;
+	else if( (C.boot_focus && wind->owner->p != C.boot_focus))
+		ignorefocus = 2;
 
+#if WITH_BBL_HELP
+	if( wind != bgem_window && wind->handle >= 0 && !ignorefocus
+		&& !(wind->dial && (created_for_ALERT | created_for_AES | created_for_WDIAL)) )
+	{
+		xa_bubble( 0, bbl_close_bubble1, 0, 3 );
+	}
+#endif
 	if (wind != root_window && (wind->window_status & XAWS_BINDFOCUS) && get_app_infront() != wind->owner)
 	{
 		wi_put_blast(&S.open_windows, wind, false, true);
@@ -1697,7 +1696,6 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 
 	if (is_iconified(wind))
 	{
-		//r = free_icon_pos(lock, NULL);
 		if (wind != root_window && !(wind->dial & created_for_POPUP))
 			inside_root(&r, wind->owner->options.noleft);
 
@@ -1777,7 +1775,7 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 			wl = wl->next;
 		}
 
-		if( ignorefocus != 2 )
+		if( !C.boot_focus )
 			setnew_focus(wind, S.focus, true, true, false);
 
 		/* avoid second redraw (see setnew_focus) */
@@ -1795,14 +1793,10 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 		}
 		if( C.boot_focus )
 		{
-			struct xa_window *w;
-			if( ignorefocus == 2 )
-				w = S.focus;
-			else
-				w = wind;
-			S.focus = 0;
-			if( w )
-				top_window(lock, true, true, w);
+			if( ignorefocus == 0 )
+				top_window(lock, true, true, wind);
+			else if( ignorefocus == 2 && wind->send_message )
+				wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP, WM_UNTOPPED, 0, 0, wind->handle, 0,0,0,0);
 		}
 	}
 	else
@@ -2016,6 +2010,35 @@ get_wind_by_handle(enum locks lock, short h)
 	}
 
 	return w;
+}
+
+bool
+wind_exist(enum locks lock, struct xa_window *wind)
+{
+	struct xa_window *w;
+
+	w = window_list;
+	while (w)
+	{
+		if (w == wind)
+			break;
+
+		w = w->next;
+	}
+
+	if (!w)
+	{
+		w = S.closed_windows.first;
+		while (w)
+		{
+			if (w == wind)
+				break;
+
+			w = w->next;
+		}
+	}
+
+	return !!w;
 }
 /*
  * Pull this window to the head of the window list
@@ -2296,6 +2319,7 @@ move_window(enum locks lock, struct xa_window *wind, bool blit, WINDOW_STATUS ne
 	      (wind->window_status & XAWS_OPEN) ? "open" : "closed",
 	      wind->handle, c_owner(client), wind->r.x,wind->r.y,wind->r.w,wind->r.h, X,Y,W,H));
 
+
 	if (wind->owner->status & CS_EXITING)
 		return;
 
@@ -2389,7 +2413,7 @@ move_window(enum locks lock, struct xa_window *wind, bool blit, WINDOW_STATUS ne
 
 	inside_root(&new, wind->owner->options.noleft);
 
-	if( !cfg.menu_ontop && cfg.menu_bar && old.y != wind->r.y && old.y < get_menu_height() )
+	if( !cfg.menu_ontop && (cfg.menu_bar&1) && old.y != wind->r.y && old.y < get_menu_height() )
 	{
 		blit = false;
 	}
@@ -2521,7 +2545,7 @@ close_window(enum locks lock, struct xa_window *wind)
 		if( !C.shutdown )
 			update_windows_below(lock, &r, NULL, wl, NULL);
 
-		if (is_top && !(wind->dial & created_for_AES))
+		if (is_top)
 		{
 			if (wind->active_widgets & STORE_BACK)
 			{
@@ -2533,7 +2557,8 @@ close_window(enum locks lock, struct xa_window *wind)
 
 			while (w && w != root_window)
 			{
-				if (w->owner == client && !(w->window_status & (XAWS_ICONIFIED|XAWS_HIDDEN|XAWS_NOFOCUS)))
+				if ((w->owner == client || (!(w->dial & created_for_AES) && (dial & created_for_AES)))
+					&& !(w->window_status & (XAWS_ICONIFIED|XAWS_HIDDEN|XAWS_NOFOCUS)))
 				{
 					if (w != TOP_WINDOW)
 					{
@@ -2542,8 +2567,6 @@ close_window(enum locks lock, struct xa_window *wind)
 					else
 					{
 						setnew_focus(w, NULL, true, true, true);
-// 						setwin_ontop(lock, true);
-// 						send_iredraw(lock, w, 0, NULL);
 						set_and_update_window(w, true, true, NULL);
 					}
 					wl = w->next;
@@ -2552,21 +2575,21 @@ close_window(enum locks lock, struct xa_window *wind)
 				w = w->next;
 			}
 
-			if (w && (w == root_window || (w->owner->status & CS_EXITING)))
+			if (w == root_window || (w->owner->status & CS_EXITING))
 				w = NULL;
 		}
 
-		if (!ignorefocus && TOP_WINDOW && is_top && !w
-			&& !(dial & (created_for_AES|created_for_WDIAL|created_for_FORM_DO|created_for_FMD_START)) )
+		if (!C.shutdown && !ignorefocus && TOP_WINDOW && is_top && !w
+			&& !(dial & (created_for_WDIAL|created_for_FORM_DO|created_for_FMD_START)) )
 		{
 			switch (client->options.clwtna)
 			{
-				case 0:		/* Keep active client ontop */
+				case 0: 	/* Keep active client ontop */
 				{
 					break;
 				}
 				default:
-				case 1:	/* Top app who owns window below closed one */
+				case 1: /* Top app who owns window below closed one */
 				{
 					if ((w = TOP_WINDOW) && w != root_window)
 					{
@@ -2578,24 +2601,20 @@ close_window(enum locks lock, struct xa_window *wind)
 					}
 					if (w && w != root_window)
 					{
-// 						if (d) display("topping win for %s", w->owner->name);
 						top_window(lock, true, true, w);
 					}
 					else if (w == root_window)
 					{
-// 						if (d) display("topping desktop! %s", desktop_owner()->name);
 						app_in_front(lock, desktop_owner(), true, true, true);
 					}
 					else
 					{
-// 						if (d) display("clwtna 1 last resort - top prev app");
 						app_in_front(lock, previous_client(lock, 1), true, true, false);
 					}
 					break;
 				}
 				case 2: /* Top the client previously topped */
 				{
-// 					if (d) display("topping prev client %s", previous_client(lock, 1)->name);
 					app_in_front(lock, previous_client(lock, 1), true, true, false);
 					break;
 				}
@@ -3265,6 +3284,7 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 	newrl = make_rect_list(wind, false, RECT_SYS);
 	wind->rect_list.start = newrl;
 
+	//blit = 1;
 	if (blit && oldrl && newrl)
 	{
 		//DIAGS(("old win=(%d/%d/%d/%d), new win=(%d/%d/%d/%d)",
@@ -3600,7 +3620,6 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 				nrl->r.w = newrl->r.w;
 				nrl->r.h = newrl->r.h;
 
-				//DIAGS(("NEWRECT (%lx) %d/%d/%d/%d (%d/%d/%d/%d)", nrl, nrl->r, newrl->r));
 
 				if (resize)
 				{
@@ -3792,6 +3811,7 @@ set_and_update_window(struct xa_window *wind, bool blit, bool only_wa, RECT *new
 					nrl->r.y += new->y;
 					//DIAGS(("redrawing area (%lx) %d/%d/%d/%d",
 					//	nrl, nrl->r));
+					DIAGS(("redrawing area (%lx) %d/%d/%d/%d",nrl, nrl->r));
 					/*
 					 * we only redraw window borders here if wind moves
 					 */
