@@ -1139,12 +1139,10 @@ iconify_grid(int i)
 			if ((cfg.icnfy_orient & 0x100))
 			{
 				ic.x = ((root_window->wa.x + root_window->wa.w) - cfg.icnfy_r_x - cfg.icnfy_w) - (column * cfg.icnfy_w);
-// 				ic.x -= (column * cfg.icnfy_w);
 			}
 			else
 			{
 				ic.x = root_window->wa.x + cfg.icnfy_l_x + (column * cfg.icnfy_w);
-// 				ic.x += (column * cfg.icnfy_w);
 			}
 
 			row = i / v_num;
@@ -1637,7 +1635,6 @@ size_window(enum locks lock, struct xa_window *wind, XA_WIDGET *widg, bool sizer
 		{
 			if (wind->opts & XAWO_WCOWORK)
 				r = f2w(&wind->delta, &r, true);
-
 
 			if (move && size && (wind->opts & XAWO_SENDREPOS))
 				send_reposed(lock, wind, AMQ_NORM, &r);
@@ -2703,7 +2700,37 @@ click_scroll(enum locks lock, struct xa_window *wind, struct xa_widget *widg, co
 	      && slider->stuff
 	      && ((XA_SLIDER_WIDGET *)slider->stuff)->position == (reverse ? widg->xlimit : widg->limit)))
 	{
-		if (md->kstate & 3)
+		XA_SLIDER_WIDGET *sl = slider->stuff;
+		int dir;
+		long pos;
+		long w, x, mp;
+
+		if( md->cstate == 1 ) /* mouse-button held down: don't move slider past mouse-position */
+		{
+			dir = widg == &wind->widgets[XAW_UPPAGE] ||  widg == &wind->widgets[XAW_DNPAGE] ? 1 :
+				widg == &wind->widgets[XAW_LFPAGE] || widg == &wind->widgets[XAW_RTPAGE] ? 2 : 0;
+			if( dir )
+			{
+				if( dir == 1 )
+				{
+					w = slider->ar.h;
+					x = slider->ar.y;
+					mp = my;
+				}
+				else //if( dir == 2 )
+				{
+					w = slider->ar.w;
+					x = slider->ar.x;
+					mp = mx;
+				}
+				pos = w * ((long)sl->position) / 1000L + x;
+				w = w * ((long)sl->length) / 1000L;
+				dir = mp >= pos - w && mp <= pos + w;	/* mouse-pointer inside slider */
+			}
+		}
+		else
+			dir = 0;
+		if ((md->kstate & (K_RSHIFT|K_LSHIFT)) || dir)
 		{
 			int inside;
 
@@ -2711,7 +2738,7 @@ click_scroll(enum locks lock, struct xa_window *wind, struct xa_widget *widg, co
 			 * Center sliders at the clicked position.
 			 * Wait for mousebutton release
 			 */
-			if (mb == md->cstate)
+			if ((md->kstate & 3) && mb == md->cstate)
 			{
 				xa_graf_mouse(XACRS_POINTSLIDE, NULL, NULL, false);
 				check_mouse(wind->owner, &mb, NULL, NULL);
@@ -2728,7 +2755,6 @@ click_scroll(enum locks lock, struct xa_window *wind, struct xa_widget *widg, co
 			inside = m_inside(mx, my, &slider->ar);
 			if (inside)
 			{
-				XA_SLIDER_WIDGET *sl = slider->stuff;
 				int offs;
 
 				if (widg->slider_type == XAW_VSLIDE)
