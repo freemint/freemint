@@ -400,7 +400,7 @@ xa_prop_clipped_name(struct xa_vdi_settings *v, const char *s, char *d, int w, s
 		case 2:
 		case 0:
 		{
-			while (*s)
+			for(; *s; s++)
 			{
 				tmp = vqt_width(v->handle, *s, &cw, &tmp, &tmp);
 				if (tmp != -1)
@@ -409,7 +409,7 @@ xa_prop_clipped_name(struct xa_vdi_settings *v, const char *s, char *d, int w, s
 
 					if (swidth > w)
 						break;
-					*dst++ = *s++;
+					*dst++ = *s;
 				}
 			}
 			*dst = '\0';
