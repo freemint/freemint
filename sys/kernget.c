@@ -42,6 +42,7 @@
  */
 
 # include "kernget.h"
+# include "init.h"
 # include "global.h"
 
 # if WITH_KERNFS
@@ -123,6 +124,23 @@ kern_get_buildinfo (SIZEBUF **buffer)
 	*buffer = info;
 	return 0;
 }
+
+long
+kern_get_bootlog (SIZEBUF **buffer)
+{
+	SIZEBUF *info;
+	ulong len = 512;
+
+	info = kmalloc (sizeof (*info) + len);
+	if (!info)
+		return ENOMEM;
+
+	info->len = ksprintf (info->buf, len, "%s", BOOTLOGFILE);
+
+	*buffer = info;
+	return 0;
+}
+
 
 long
 kern_get_cookiejar (SIZEBUF **buffer)
