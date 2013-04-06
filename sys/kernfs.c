@@ -213,6 +213,7 @@ struct ktab
 # define ROOTDIR_ROOT		0x00
 # define ROOTDIR_LOADAVG	0x02
 # define ROOTDIR_UPTIME		0x03
+# define ROOTDIR_BOOTLOG		0x04
 /* advice */
 /* help */
 # define ROOTDIR_SELF		0x06
@@ -235,6 +236,7 @@ static KENTRY __rootdir [] =
 {
 	{ ROOTDIR_ROOT,		S_IFDIR | 0555,	".",		kern_get_unimplemented	},
 	{ ROOTDIR_ROOT,		S_IFDIR | 0555,	"..",		kern_get_unimplemented	},
+	{ ROOTDIR_BOOTLOG,	S_IFREG | 0444,	"bootlog",	kern_get_bootlog},
 	{ ROOTDIR_BUILDINFO,	S_IFREG | 0444,	"buildinfo",	kern_get_buildinfo	},
 	{ ROOTDIR_COOKIEJAR,	S_IFREG | 0444,	"cookiejar",	kern_get_cookiejar	},
 	{ ROOTDIR_CPUINFO,	S_IFREG | 0444,	"cpuinfo",	kern_get_cpuinfo	},
