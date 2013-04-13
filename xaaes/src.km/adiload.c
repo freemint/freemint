@@ -77,7 +77,7 @@ load_adi(struct basepage *b, const char *name, short *class, short *subclass)
 	char *reason = no_reason;
 	long r;
 
-	display("load_adi: enter (0x%lx, 0x%lx, %s)", initfunc, b, name);
+	BLOG((0,"load_adi: enter (0x%lx, 0x%lx, %s)", initfunc, b, name));
 	DIAGS(("load_adi: enter (0x%lx, %s)", b, name));
 	DIAGS(("load_adi: init 0x%lx, size %li", initfunc, (b->p_tlen + b->p_dlen + b->p_blen)));
 // 	display("load_adi: '%s' - text=%lx, data=%lx, bss=%lx", name, b->p_tbase, b->p_dbase, b->p_bbase);
@@ -102,7 +102,7 @@ load_adi(struct basepage *b, const char *name, short *class, short *subclass)
 	}
 
 	ai.fname = NULL;
-	display("load_adi: return %ld", r);
+	BLOG((0,"load_adi: return %ld", r));
 	return r;
 }
 
@@ -110,10 +110,10 @@ void
 adi_load(bool first)
 {
 	if (first)
-		display("Loading AES Device Drivers:");
+		BLOG((0,"Loading AES Device Drivers:"));
 
 	load_modules(C.Aes->home_path, ".adi", load_adi);
-	display("adi_load: done");
+	BLOG((0,"adi_load: done"));
 }
 /* *************************************************************************************** */
 static long
