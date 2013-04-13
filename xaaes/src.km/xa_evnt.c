@@ -514,29 +514,6 @@ check_queued_events(struct xa_client *client)
 	}
 	if (events) {
 		cancel_mutimeout(client);
-// 		if (d) display("events %x - done", events);
-#if 0
-		if (!strnicmp(client->proc_name, "atarirc", 7))
-		{
-			if (1) //(events & (MU_BUTTON|MU_MESAG))
-			{
-				char evtxt[128];
-				show_bits(events, "evnt=", xev, evtxt);
-				display("check_queued_events for %s", client->name);
-				display(" %s clks=0x%x, msk=0x%x, bst=0x%x T:%d",
-					evtxt, pb->intin[1],pb->intin[2],pb->intin[3], (events&MU_TIMER) ? pb->intin[14] : -1);
-				display("status %lx, %lx, C.redraws %ld", client->status, client->rdrw_msg, C.redraws);
-				display(" -- %x, %x, %x, %x, %x, %x, %x",
-					events, mbs.x, mbs.y, mbs.b, mbs.ks, key, mbs.c);
-
-				if (events & MU_MESAG)
-				{
-					display(" --- deliver %s to %s", pmsg(m->m[0]), client->name);
-					display(" --- %04x, %04x, %04x, %04x, %04x, %04x, %04x, %04x", m->m[1], m->m[2], m->m[3], m->m[4], m->m[5], m->m[6], m->m[7]);
-				}
-			}
-		}
-#endif
 #if GENERATE_DIAGS
 		{
 			char evtxt[128];
@@ -657,13 +634,12 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 		if( events == 0x10023 && TOP_WINDOW->owner != client && !strcmp( client->name, "  Texel " ) )
 			client->timer_val = 0;	// fake for texel-demo
 #endif
-		//if (client->timer_val > 5)
+		if (client->timer_val > MIN_TIMERVAL )
 		{
 			client->timeout = addtimeout(client->timer_val, wakeme_timeout);
 			if (client->timeout)
 				client->timeout->arg = (long)client;
 		}
-#if 0
 		else {
 			/* Is this the cause of loosing the key's at regular intervals? */
 			DIAG((D_i,client, "Done timer for %d", client->p->pid));
@@ -675,7 +651,6 @@ XA_evnt_multi(enum locks lock, struct xa_client *client, AESPB *pb)
 			events |= XAWAIT_NTO;
 			client->timer_val = 0;
 		}
-#endif
 	}
 
 	client->waiting_for = events | XAWAIT_MULTI;
@@ -806,7 +781,7 @@ XA_evnt_timer(enum locks lock, struct xa_client *client, AESPB *pb)
 {
 	CONTROL(2,1,0)
 
-	if ((client->timer_val = ((long)pb->intin[1] << 16) | pb->intin[0]) <= 5) {
+	if ((client->timer_val = ((long)pb->intin[1] << 16) | pb->intin[0]) <= MIN_TIMERVAL	) {
 		client->timer_val = 0;
 		yield();
 	} else {
@@ -818,7 +793,7 @@ XA_evnt_timer(enum locks lock, struct xa_client *client, AESPB *pb)
 		if (client->timeout) {
 			client->timeout->arg = (long)client;
 		}
-		(*client->block)(client, 6); //Block(client, 1);
+		(*client->block)(client, MIN_TIMERVAL	+ 1);
 	}
 
 	return XAC_DONE;
