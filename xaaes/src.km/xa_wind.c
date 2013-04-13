@@ -143,8 +143,6 @@ XA_wind_open(enum locks lock, struct xa_client *client, AESPB *pb)
 		}
 #endif
 
-// 		if (w->opts & XAWO_WCOWORK)
-// 			r = w2f(&w->delta, &r, true);
 		pb->intout[0] = open_window(lock, w, r);
 	}
 
