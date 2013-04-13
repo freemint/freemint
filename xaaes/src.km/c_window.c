@@ -739,7 +739,6 @@ set_window_title(struct xa_window *wind, const char *title, bool redraw)
 	char *dst = wind->wname;
 	XA_WIDGET *widg;
 
-
 	if (title)
 	{
 		int i;
@@ -1791,12 +1790,15 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 				rl = rl->next;
 			}
 		}
-		if( C.boot_focus )
+		if( C.boot_focus && wind->send_message )
 		{
+			int m = 0;
 			if( ignorefocus == 0 )
-				top_window(lock, true, true, wind);
-			else if( ignorefocus == 2 && wind->send_message )
-				wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP, WM_UNTOPPED, 0, 0, wind->handle, 0,0,0,0);
+				m = WM_TOPPED;
+			else if( ignorefocus == 2 )
+				m = WM_UNTOPPED;
+			if( m )
+				wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP, m, 0, 0, wind->handle, 0,0,0,0);
 		}
 	}
 	else
@@ -2557,8 +2559,8 @@ close_window(enum locks lock, struct xa_window *wind)
 
 			while (w && w != root_window)
 			{
-				if ((w->owner == client || (!(w->dial & created_for_AES) && (dial & created_for_AES)))
-					&& !(w->window_status & (XAWS_ICONIFIED|XAWS_HIDDEN|XAWS_NOFOCUS)))
+				if ((w->owner == client || (!(w->dial & created_for_AES) && (client == C.Hlp)))
+					&& !(w->window_status & (XAWS_ICONIFIED|XAWS_HIDDEN|XAWS_NOFOCUS)) )
 				{
 					if (w != TOP_WINDOW)
 					{
