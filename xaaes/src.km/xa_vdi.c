@@ -338,7 +338,7 @@ xa_prop_clipped_name(struct xa_vdi_settings *v, const char *s, char *d, int w, s
 			if (s + 8 < e)
 			{
 				int i, chars = 0;
-				char c;
+				unsigned char c;
 				bool tog = false;
 
 				i = sizeof(end) - 1;
@@ -348,13 +348,8 @@ xa_prop_clipped_name(struct xa_vdi_settings *v, const char *s, char *d, int w, s
 					if (tog) c = *--e;
 					else	 c = *s++;
 
-					/* fvdi-bug #nn: if high-bit in c is set, vqt_width returns random values for cw */
-					if( C.fvdi_version > 0 && (c & 0x80) )
-						tmp = vqt_width(v->handle, 'a', &cw, &tmp, &tmp);
-					else
-						tmp = vqt_width(v->handle, c, &cw, &tmp, &tmp);
 
-					if (tmp != -1)
+					if (vqt_width(v->handle, c, &cw, &tmp, &tmp) != -1)
 					{
 						swidth += cw;
 						if (swidth > w)
@@ -402,8 +397,7 @@ xa_prop_clipped_name(struct xa_vdi_settings *v, const char *s, char *d, int w, s
 		{
 			for(; *s; s++)
 			{
-				tmp = vqt_width(v->handle, *s, &cw, &tmp, &tmp);
-				if (tmp != -1)
+				if (vqt_width(v->handle, (unsigned char)*s, &cw, &tmp, &tmp) != -1)
 				{
 					swidth += cw;
 
