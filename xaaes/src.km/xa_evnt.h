@@ -36,6 +36,8 @@ void get_mbstate(struct xa_client *client, struct mbs *mbs);
 bool check_queued_events(struct xa_client *client);
 void cancel_mutimeout(struct xa_client *client);
 
+#define MIN_TIMERVAL	5	/* ms */
+
 AES_function
 	XA_xevnt_multi,
 	XA_evnt_button,
