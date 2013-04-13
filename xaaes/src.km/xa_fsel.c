@@ -2905,11 +2905,15 @@ fs_key_form_do(enum locks lock,
 				list->get(list, e, SEGET_TEXTPTR, &p);
 				if( !(e->usr_flags & FLAG_DIR) )
 				{
-					/* complete selected */
-					strcpy( fs->file, p.ret.ptr );
-					set_file( fs, p.ret.ptr , false);
-					fs_prompt(list, p.ret.ptr , true);
-					return true;
+					if( fs->kbdnav == true && strcmp( fs->file, p.ret.ptr ) )
+					{
+						/* complete selected */
+						strcpy( fs->file, p.ret.ptr );
+						set_file( fs, p.ret.ptr , false);
+						fs_prompt(list, p.ret.ptr , true);
+						fs->kbdnav = false;
+						return true;
+					}
 				}
 				else
 				{
