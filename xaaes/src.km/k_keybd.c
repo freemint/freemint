@@ -512,11 +512,11 @@ kernel_key(enum locks lock, struct rawkey *key)
 		return true;
 		case '+':
 			C.loglvl++;
-		break;
+		return true;
 		case '-':
 			if( --C.loglvl < 0 )
 				C.loglvl = 0;
-		break;
+		return true;
 		case ' ':
 		{
 			struct xa_window *wind;
