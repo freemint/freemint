@@ -613,7 +613,7 @@ XA_handler(void *_pb)
 		}
 #endif
 #if DBG_CALLS
-		BLOGif(cmd!=25,(0, "%s[%d] made by %lx:%s(%s:%d),status=%lx",	aes_tab[cmd].descr, cmd, client, client ? client->name : "", get_curproc()->name, get_curproc()->pid, client->status));
+		BLOGif(cmd!=25,(0, "%s[%d:%x] made by %lx:%s(%s:%d),status=%lx",	aes_tab[cmd].descr, cmd, aes_tab[cmd].flags, client, client ? client->name : "", get_curproc()->name, get_curproc()->pid, client->status));
 #endif
 		cmd_routine = aes_tab[cmd].f;
 
