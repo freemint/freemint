@@ -32,7 +32,6 @@
 
 long loader_pid = 0;
 long loader_pgrp = 0;
-short usb_found = 0;
 
 struct usb_module_api usb_api;
 
@@ -138,7 +137,6 @@ setup_usb_module_api(void)
 	 * stuff out of the api.
 	 */
 //	usb_api.usb_get_hub_descriptor = &usb_get_hub_descriptor;
-//	usb_api.usb_clear_hub_feature = &usb_clear_hub_feature;
 //	usb_api.usb_clear_port_feature = &usb_clear_port_feature;
 //	usb_api.usb_get_hub_status = &usb_get_hub_status;
 //	usb_api.usb_set_port_feature = &usb_set_port_feature;

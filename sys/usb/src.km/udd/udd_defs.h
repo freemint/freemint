@@ -80,7 +80,7 @@ struct usb_module_api
 								void *data, long len, long *actual_length, long timeout);
 	long 			_cdecl	(*usb_submit_int_msg)	(struct usb_device *dev, unsigned long pipe,
 								void *buffer, long transfer_len, long interval);
-	void 			_cdecl	(*usb_disable_asynch)	(long disable);
+	long 			_cdecl	(*usb_disable_asynch)	(long disable);
 	long			_cdecl	(*usb_maxpacket)	(struct usb_device *dev, unsigned long pipe);
 	long			_cdecl	(*usb_get_configuration_no)	(struct usb_device *dev, unsigned char *buffer,
 									long cfgno);
@@ -100,12 +100,11 @@ struct usb_module_api
 	long 			_cdecl	(*usb_set_configuration)(struct usb_device *dev, long configuration);
 	long 			_cdecl	(*usb_get_string)	(struct usb_device *dev, unsigned short langid,
 			   					unsigned char idx, void *buf, long size);
-	struct usb_device *	_cdecl	(*usb_alloc_new_device)(void);
+	struct usb_device *	_cdecl	(*usb_alloc_new_device) (void *controller);
 	long 			_cdecl	(*usb_new_device)	(struct usb_device *dev);
 	
 	/* For now we leave this hub specific stuff out of the api */
 //	long 			_cdecl	(*usb_get_hub_descriptor)	(struct usb_device *dev, void *data, long size);
-//	long 			_cdecl	(*usb_clear_hub_feature)	(struct usb_device *dev, long feature);
 //	long 			_cdecl	(*usb_clear_port_feature)	(struct usb_device *dev, long port, long feature);
 //	long 			_cdecl	(*usb_get_hub_status)	(struct usb_device *dev, void *data);
 //	long 			_cdecl	(*usb_set_port_feature)	(struct usb_device *dev, long port, long feature);
