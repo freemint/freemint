@@ -1569,7 +1569,8 @@ retry_it:
 long
 usb_stor_probe(struct usb_device *dev, unsigned long ifnum, struct us_data *ss)
 {
-	struct usb_interface_descriptor *iface;
+	struct usb_interface *iface;
+	struct usb_endpoint_descriptor *ep_desc;
 	long i;
 	unsigned long flags = 0;
 	long protocol = 0;
@@ -1587,10 +1588,13 @@ usb_stor_probe(struct usb_device *dev, unsigned long ifnum, struct us_data *ss)
 		subclass = US_SC_UFI;	    /* an assumption */
 	}
 # endif
-	if(dev->descriptor.bDeviceClass != 0 || iface->bInterfaceClass != USB_CLASS_MASS_STORAGE
-	 || iface->bInterfaceSubClass < US_SC_MIN || iface->bInterfaceSubClass > US_SC_MAX)
+	if (dev->descriptor.bDeviceClass != 0 ||
+			iface->desc.bInterfaceClass != USB_CLASS_MASS_STORAGE ||
+			iface->desc.bInterfaceSubClass < US_SC_MIN ||
+			iface->desc.bInterfaceSubClass > US_SC_MAX) {
 		/* if it's not a mass storage, we go no further */
 		return 0;
+	}
 	memset(ss, 0, sizeof(struct us_data));
 	/* At this point, we know we've got a live one */
 	DEBUG(("USB Mass Storage device detected"));
@@ -1604,15 +1608,12 @@ usb_stor_probe(struct usb_device *dev, unsigned long ifnum, struct us_data *ss)
 	/* If the device has subclass and protocol, then use that.  Otherwise,
 	 * take data from the specific interface.
 	 */
-	if(subclass)
-	{
+	if(subclass) {
 		ss->subclass = subclass;
 		ss->protocol = protocol;
-	}
-	else
-	{
-		ss->subclass = iface->bInterfaceSubClass;
-		ss->protocol = iface->bInterfaceProtocol;
+	} else {
+		ss->subclass = iface->desc.bInterfaceSubClass;
+		ss->protocol = iface->desc.bInterfaceProtocol;
 	}
 	/* set the handler pointers based on the protocol */
 	DEBUG(("Transport: "));
@@ -1644,28 +1645,32 @@ usb_stor_probe(struct usb_device *dev, unsigned long ifnum, struct us_data *ss)
 	 * We will ignore any others.
 	 */
 	DEBUG(("Number of endpoints: %d", iface->bNumEndpoints));
-	for(i = 0; i < iface->bNumEndpoints; i++)
-	{
+	for (i = 0; i < iface->desc.bNumEndpoints; i++) {
+		ep_desc = &iface->ep_desc[i];
 		/* is it an BULK endpoint? */
-		if((iface->ep_desc[i].bmAttributes & USB_ENDPOINT_XFERTYPE_MASK) == USB_ENDPOINT_XFER_BULK)
-		{
-			if(iface->ep_desc[i].bEndpointAddress & USB_DIR_IN)
-				ss->ep_in = iface->ep_desc[i].bEndpointAddress & USB_ENDPOINT_NUMBER_MASK;
+		if ((ep_desc->bmAttributes &
+		     USB_ENDPOINT_XFERTYPE_MASK) == USB_ENDPOINT_XFER_BULK) {
+			if (ep_desc->bEndpointAddress & USB_DIR_IN)
+				ss->ep_in = ep_desc->bEndpointAddress &
+						USB_ENDPOINT_NUMBER_MASK;
 			else
-				ss->ep_out = iface->ep_desc[i].bEndpointAddress & USB_ENDPOINT_NUMBER_MASK;
+				ss->ep_out =
+					ep_desc->bEndpointAddress &
+					USB_ENDPOINT_NUMBER_MASK;
 		}
 		/* is it an interrupt endpoint? */
-		if((iface->ep_desc[i].bmAttributes & USB_ENDPOINT_XFERTYPE_MASK) == USB_ENDPOINT_XFER_INT)
-		{
-			ss->ep_int = iface->ep_desc[i].bEndpointAddress & USB_ENDPOINT_NUMBER_MASK;
-			ss->irqinterval = iface->ep_desc[i].bInterval;
+		if ((ep_desc->bmAttributes &
+		     USB_ENDPOINT_XFERTYPE_MASK) == USB_ENDPOINT_XFER_INT) {
+			ss->ep_int = ep_desc->bEndpointAddress &
+						USB_ENDPOINT_NUMBER_MASK;
+			ss->irqinterval = ep_desc->bInterval;
 		}
 	}
 	DEBUG(("Endpoints In %d Out %d Int %d", ss->ep_in, ss->ep_out, ss->ep_int));
 	/* Do some basic sanity checks, and bail if we find a problem */
-	if(usb_set_interface(dev, iface->bInterfaceNumber, 0) || !ss->ep_in || !ss->ep_out
-	 || (ss->protocol == US_PR_CBI && ss->ep_int == 0))
-	{
+	if (usb_set_interface(dev, iface->desc.bInterfaceNumber, 0) ||
+	    !ss->ep_in || !ss->ep_out ||
+	    (ss->protocol == US_PR_CBI && ss->ep_int == 0)) {
 		DEBUG(("Problems with device"));
 		return 0;
 	}

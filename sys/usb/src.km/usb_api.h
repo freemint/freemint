@@ -51,7 +51,6 @@
  * stuff out of the api.
  */	
 //#define	usb_get_hub_descriptor 	(*api->usb_get_hub_descriptor)
-//#define	usb_clear_hub_feature 	(*api->usb_clear_hub_feature)
 //#define	usb_clear_port_feature 	(*api->usb_clear_port_feature)
 //#define	usb_get_hub_status 	(*api->usb_get_hub_status)
 //#define	usb_set_port_feature 	(*api->usb_set_port_feature)
