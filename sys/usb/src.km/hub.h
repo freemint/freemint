@@ -67,7 +67,6 @@ struct usb_hub_device
 
 
 long 		usb_get_hub_descriptor	(struct usb_device *dev, void *data, long size);
-long 		usb_clear_hub_feature	(struct usb_device *dev, long feature);
 long 		usb_clear_port_feature	(struct usb_device *dev, long port, long feature);
 long 		usb_get_hub_status	(struct usb_device *dev, void *data);
 long 		usb_set_port_feature	(struct usb_device *dev, long port, long feature);

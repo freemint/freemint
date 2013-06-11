@@ -132,8 +132,8 @@ struct usb_endpoint_descriptor
 /* Interface descriptor */
 struct usb_interface_descriptor
 {
-	unsigned char	bLength;
-	unsigned char	bDescriptorType;
+	__u8	bLength;
+	__u8	bDescriptorType;
 	unsigned char	bInterfaceNumber;
 	unsigned char	bAlternateSetting;
 	unsigned char	bNumEndpoints;
@@ -141,25 +141,32 @@ struct usb_interface_descriptor
 	unsigned char	bInterfaceSubClass;
 	unsigned char	bInterfaceProtocol;
 	unsigned char	iInterface;
+} __attribute__ ((packed));
+
+/* USB_DT_SS_ENDPOINT_COMP: SuperSpeed Endpoint Companion descriptor */
+struct usb_ss_ep_comp_descriptor {
+	__u8  bLength;
+	__u8  bDescriptorType;
+
+	__u8  bMaxBurst;
+	__u8  bmAttributes;
+	unsigned short wBytesPerInterval;
+} __attribute__ ((packed));
+
+struct usb_interface {
+	struct usb_interface_descriptor desc;
 
 	unsigned char	no_of_ep;
 	unsigned char	num_altsetting;
 	unsigned char	act_altsetting;
 
 	struct usb_endpoint_descriptor ep_desc[USB_MAXENDPOINTS];
-} __attribute__ ((packed));
-
-
-struct usb_interface
-{
-	struct usb_interface_descriptor *altsetting;
-
-	int act_altsetting;		/* active alternate setting */
-	int num_altsetting;		/* number of alternate settings */
-	int max_altsetting;             /* total memory allocated */
- 
-	struct usb_driver *driver;	/* driver */
-	void *private_data;
+	/*
+	 * Super Speed Device will have Super Speed Endpoint
+	 * Companion Descriptor  (section 9.6.7 of usb 3.0 spec)
+	 * Revision 1.0 June 6th 2011
+	 */
+	struct usb_ss_ep_comp_descriptor ss_ep_comp_desc[USB_MAXENDPOINTS];
 };
 
 /* Configuration descriptor information.. */
@@ -173,9 +180,13 @@ struct usb_config_descriptor
 	unsigned char	iConfiguration;
 	unsigned char	bmAttributes;
 	unsigned char	MaxPower;
+} __attribute__ ((packed));
+
+struct usb_config {
+	struct usb_config_descriptor desc;
 
 	unsigned char	no_of_if;	/* number of interfaces */
-	struct usb_interface_descriptor if_desc[USB_MAXINTERFACES];
+	struct usb_interface if_desc[USB_MAXINTERFACES];
 } __attribute__ ((packed));
 
 enum {
@@ -218,7 +229,7 @@ struct usb_device
 
 	long configno;					/* selected config number */
 	struct usb_device_descriptor descriptor; 	/* Device Descriptor */
-	struct usb_config_descriptor config; 		/* config descriptor */
+	struct usb_config config; 		/* config descriptor */
 
 	long have_langid;		/* whether string_langid is valid yet */
 	long string_langid;		/* language ID for strings */
@@ -237,7 +248,9 @@ struct usb_device
 	struct usb_device *parent;
 	struct usb_device *children[USB_MAXCHILDREN];
 
-	struct usb_interface *interface;
+	struct usb_driver *driver;
+	void *controller; /* struct ucdif *controller */
+
 };
 
 
@@ -276,7 +289,7 @@ long 		usb_lowlevel_stop	(void);
 
 /* routines */
 void		usb_main		(void *dummy);
-long 		usb_init		(long handle, const struct pci_device_id *ent); /* initialize the USB Controller */
+long 		usb_init		(void); /* initialize the USB Controller */
 long 		usb_stop		(void); /* stop the USB Controller */
 
 
@@ -291,7 +304,7 @@ long 		usb_bulk_msg		(struct usb_device *dev, unsigned long pipe,
 					void *data, long len, long *actual_length, long timeout);
 long 		usb_submit_int_msg	(struct usb_device *dev, unsigned long pipe,
 					void *buffer, long transfer_len, long interval);
-void 		usb_disable_asynch	(long disable);
+long 		usb_disable_asynch	(long disable);
 long 		usb_maxpacket		(struct usb_device *dev, unsigned long pipe);
 long 		usb_get_configuration_no(struct usb_device *dev, unsigned char *buffer,
 					long cfgno);
@@ -312,7 +325,8 @@ long 		usb_set_address		(struct usb_device *dev);
 long 		usb_set_configuration	(struct usb_device *dev, long configuration);
 long 		usb_get_string		(struct usb_device *dev, unsigned short langid,
 		   			unsigned char idx, void *buf, long size);
-struct usb_device *	usb_alloc_new_device(void);
+struct usb_device *	usb_alloc_new_device(void *controller);
+void		usb_free_device		(void);
 long 		usb_new_device		(struct usb_device *dev);
 void 		usb_scan_devices	(void);
 void		usb_disconnect		(struct usb_device **pdev);
