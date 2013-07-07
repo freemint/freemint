@@ -77,6 +77,14 @@
 #
 #####################################################################
 #
+# save_windows  = <bool>          (default is 'no')
+#
+# save XaAES-windows-setting when exiting XaAES
+# windows are saved in <XaAES-home>/xaaes.inf
+#
+#####################################################################
+#
+#
 # loglvl <positive number> (default: 1 in snapshot, 0 in release)
 #
 # set verbosity of debug-output
