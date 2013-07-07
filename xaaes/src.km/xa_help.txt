@@ -52,6 +52,7 @@ Q             Quit XaAES (or execute $SDMASTER if set)
 R             Attempt to recover a system that has
               locked up
 HOME          Redraw screen
+S             Save current XaAES-windows-setting
 U             Close current window
 V             Unhide all applications
 W             Global window cycling
@@ -88,6 +89,8 @@ CTRL+S        Sort by size
 CTRL+E        Sort by extension
 CTRL+X        No sorting
 CTRL+SPACE    Reverse sort-order
+CTRL+I        Toggle case-sensitivity of search-pattern
+CTRL+/        Toggle unix/TOS-style path-usage
 
 CTRL+O        Open window menu (navigation with
               CURSOR keys and RETURN)
