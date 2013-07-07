@@ -352,7 +352,7 @@ do_winmesag(enum locks lock,
 
 			if (mp0 == WM_REDRAW)
 			{
-				//	DBG((0,"do_winmesag: WM_REDRAW %s %d/%d/%d/%d/%d/%d/%d/%d", wind->wname, mp0,mp1,mp2,mp3,mp4,mp5,mp6,mp7));
+				//	DBGif( mp3 < 50 && mp3 >= 0,(0,"do_winmesag: WM_REDRAW %s %d/%d/%d/%d/%d/%d/%d/%d", wind->wname, mp0,mp1,mp2,mp3,mp4,mp5,mp6,mp7));
 				C.redraws++, C.move_block = 3;
 			}
 
@@ -394,8 +394,6 @@ add_msg_2_queue(struct xa_aesmsg_list **queue, union msg_buf *msg, short qmflags
 		short *old;
 
 		DIAG((D_m, NULL, "WM_REDRAW for %s, rect %d/%d,%d/%d", client->name, new[4], new[5], new[6], new[7]));
-		//if (!new[3])
-			//display("WM_REDRAW on root-window???");
 
 		next = queue;
 
@@ -438,6 +436,7 @@ add_msg_2_queue(struct xa_aesmsg_list **queue, union msg_buf *msg, short qmflags
 				*next = new_msg;
 				new_msg->message = *msg;
 				new_msg->next = NULL;
+				//  DBGif( new[3] < 50 && new[3] >= 0, (0, "add_msg_2_queue:WM_REDRAW added for %d rect %d/%d,%d/%d", new_msg->message.m[3], new_msg->message.m[4], new_msg->message.m[5], new_msg->message.m[6], new[7]));
 				if (!(qmflags & QMF_NOCOUNT))
 				{
 					C.redraws++;
