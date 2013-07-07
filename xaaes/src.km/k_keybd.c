@@ -329,6 +329,28 @@ static void close_menu_if_move(struct xa_window *wind)
 		close_window_menu(TAB_LIST_START);
 }
 
+static void
+do_kbd_win( enum locks lock, struct xa_window *wind, RECT *r, int md)
+{
+	if (wind->opts & XAWO_WCOWORK)
+		*r = f2w(&wind->delta, r, true);
+	if( md == WM_SIZED )
+	{
+		if( (wind->opts & XAWO_SENDREPOS) )
+			send_reposed(lock, wind, AMQ_NORM, r);
+		else
+			send_sized(lock, wind, AMQ_NORM, r);
+	}
+	else
+		send_moved(lock, wind, AMQ_NORM, r);
+
+	/* resize wdialogs (todo) */
+	/*if( (wind->do_message == NULL || (wind->dial & created_for_WDIAL)) )
+	{
+		short msg[8] = {WM_SIZED, 0, 0, 0, r.x, r.y, r.w, r.h};
+		do_formwind_msg(wind, client, 0, 0, msg);
+	}*/
+}
 
 /******************************************************************************
  from "unofficial XaAES":
@@ -631,26 +653,40 @@ kernel_key(enum locks lock, struct rawkey *key)
 					g = -g;
 				g *= 2;
 				r.y -= g;
+
 				if( !s )
 				{
-					if( !wind->rect_list.start || wind->dial & (created_for_ALERT | created_for_FORM_DO | created_for_WDIAL) || (wind->window_status & (XAWS_ICONIFIED | XAWS_HIDDEN)) )
+					if( !wind->rect_list.start
+						|| (wind->dial & (created_for_ALERT | created_for_FORM_DO | created_for_WDIAL))
+						|| (wind->window_status & (XAWS_ICONIFIED | XAWS_HIDDEN)) )
 						return true;
 					r.x -= g;
 					r.w += g * 2;
 					r.h += g * 2;
+
 					if( nk == NK_UP )
 					{
+						if( wind->r.w >= wind->max.w && wind->r.h >= wind->max.h )
+							return true;
 						if (r.x < 0)
 							r.x = 0;
 						if (r.y < 0)
 							r.y = 0;
-						if( r.y + r.h > screen.r.h )
-							r.h = screen.r.h - r.y;
-						if( r.x + r.w > screen.r.w )
-							r.w = screen.r.w - r.x;
+
+						if( r.w > wind->max.w )
+							r.w = wind->max.w;
+
+						if( r.h > wind->max.h )
+							r.h = wind->max.h;
+
+						if( r.y < 0 && r.x < 0 )
+							return true;
 					}
-					else if( nk == NK_DOWN )
+					else	/* DOWN */
 					{
+						if( wind->r.w <= wind->min.w && wind->r.h <= wind->min.h )
+							return true;
+
 						if( r.w < WGROW * 8 )
 						{
 							r.x = wind->r.x;
@@ -661,6 +697,20 @@ kernel_key(enum locks lock, struct rawkey *key)
 							r.y = wind->r.y;
 							r.h = wind->r.h;
 						}
+
+						if( r.x >= screen.r.w )
+							r.x = screen.r.w + g;
+
+						if( r.w < wind->min.w )
+						{
+							r.x = wind->r.x;
+							r.w = wind->min.w;
+						}
+						if( r.h < wind->min.h )
+						{
+							r.y = wind->r.y;
+							r.h = wind->min.h;
+						}
 					}
 				}
 
@@ -668,25 +718,9 @@ kernel_key(enum locks lock, struct rawkey *key)
 					r.y = screen.r.h - WGROW;
 				if( !cfg.leave_top_border && r.y < root_window->wa.y )
 					r.y = root_window->wa.y;
-				if( !s && nk == NK_DOWN && wind->r.w <= wind->min.w && wind->r.h <= wind->min.h )
-					return true;
-				if( r.w < wind->min.w )
-					r.w = wind->min.w;
-				if( r.h < wind->min.h )
-					r.h = wind->min.h;
 
 				if( memcmp(&r, &wind->r, sizeof(RECT)) )
-				{
-					wind->send_message(lock, wind, NULL, AMQ_REDRAW/*NORM*/, QMF_CHKDUP,
-							   s ? WM_MOVED : WM_SIZED, 0, 0, wind->handle,
-							   r.x, r.y, r.w, r.h);
-					/* resize wdialogs */
-					/*if( !s && wind->do_message == NULL || (wind->dial & created_for_WDIAL) )
-					{
-						short msg[8] = {WM_SIZED, 0, 0, 0, r.x, r.y, r.w, r.h};
-						do_formwind_msg(wind, client, 0, 0, msg);
-					}*/
-				}
+					do_kbd_win( lock, wind, &r, s ? WM_MOVED : WM_SIZED);
 			}
 		return true;
 		case NK_RIGHT:
@@ -708,26 +742,36 @@ kernel_key(enum locks lock, struct rawkey *key)
 				{
 					short g = WGROW;
 
-					if( !wind->rect_list.start || (wind->dial & (created_for_ALERT | created_for_FORM_DO | created_for_WDIAL) || (wind->window_status & (XAWS_ICONIFIED | XAWS_HIDDEN))) )
+					if( !wind->rect_list.start
+						|| (wind->dial & (created_for_ALERT | created_for_FORM_DO | created_for_WDIAL)
+						|| (wind->window_status & (XAWS_ICONIFIED | XAWS_HIDDEN))) )
 						return true;
 					if( nk == NK_LEFT )
 						g = -g;
 					r.x -= g;
 					r.w += g * 2;
-					if( (nk == NK_LEFT && wind->r.w <= wind->min.w) || (inside_root( &r, client->options.noleft ) & 2) )
-						return true;
-					if( r.w < wind->min.w )
-						r.w = wind->min.w;
-					wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
-					   WM_SIZED, 0, 0, wind->handle,
-					   r.x, r.y, r.w, r.h);
-					/*if( (wind->do_message == NULL || (wind->dial & created_for_WDIAL)) )
+					if( nk == NK_LEFT )
 					{
-						short msg[8] = {WM_SIZED, 0, 0, 0, r.x, r.y, r.w, r.h};
-						do_formwind_msg(wind, client, 0, 0, msg);
-					}*/
+						if( wind->r.w <= wind->min.w )
+							return true;
+						if( r.w < wind->min.w )
+							r.w = wind->min.w;
+					}
+					else
+					{
+						if( wind->r.w >= wind->max.w )
+							return true;
+						if( inside_root( &r, true) & 2 )
+						{
+							r.w += g;	/* inside_root changes r */
+							if( r.w > screen.r.w )
+								r.w = screen.r.w;
+						}
+					}
+
+					do_kbd_win( lock, wind, &r, WM_SIZED );
 				}
-				else
+				else	/* shift */
 				{
 					if( nk == NK_RIGHT )
 					{
@@ -742,9 +786,9 @@ kernel_key(enum locks lock, struct rawkey *key)
 					}
 					if( inside_root( &r, client->options.noleft ) & 2 )
 						return true;
-					wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
-						   WM_MOVED, 0, 0, wind->handle,
-						   r.x, r.y, r.w, r.h);
+
+					do_kbd_win( lock, wind, &r, WM_MOVED );
+
 				}
 			}
 		return true;
@@ -762,7 +806,7 @@ kernel_key(enum locks lock, struct rawkey *key)
 			post_cevent(C.Hlp, CE_winctxt, TOP_WINDOW, NULL, 0,0, NULL, &md);
 		}
 		return true;
-		case 'B':	/* system-window ('S' eaten by MiNT?)*/
+		case 'B':	/* system-window */
 		if( !C.update_lock )
 		{
 			post_cevent(C.Hlp, ceExecfunc, open_systemalerts,NULL, 1, 0, NULL,NULL);
