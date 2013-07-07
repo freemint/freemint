@@ -52,6 +52,7 @@ Q,G           XaAES sofort beenden (oder $SDMASTER
               ausfÅhren, falls gesetzt)
 R             Versucht ein "hÑngendes" System
               wiederherzustellen
+S             Aktuelle XaAES-Fenster-Einstellung speichern
 HOME#T#       Bildschirm wiederherstellen (neuzeichnen)
 U             Oberstes Fenster schlieûen
 V             Alle versteckten Programme hervorholen
@@ -95,6 +96,8 @@ CTRL+S        Nach Gre sortiert
 CTRL+E        Nach Extension sortiert
 CTRL+X        Unsortiert
 CTRL+SPACE    Sortierung umkehren
+CTRL+I        Zeichengenaue Musterauswertung wechseln
+CTRL+/        Unix/TOS-Pfad
 
 CTRL+O        ôffnet das FenstermenÅ (Navigation mit
               Pfeiltasten und RETURN)
