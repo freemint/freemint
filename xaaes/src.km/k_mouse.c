@@ -938,7 +938,7 @@ m_not_move_timeout(struct proc *p, long arg)
 		return;
 
 	wind = find_window( 0, last_x, last_y, FNDW_NOLIST | FNDW_NORMAL );
-	if( wind )
+	if( wind && wind->owner && wind->owner->p)
 	{
 		bubble_request( wind->owner->p->pid, wind->handle, x_mouse, y_mouse );
 	}
