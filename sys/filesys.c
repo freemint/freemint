@@ -666,7 +666,7 @@ disk_changed (ushort d)
 		 * Note that ENODEV must be tested for drives A-C, or else
 		 * booting may not work properly.
 		 */
-		if (d > 2 && r == ENODEV)
+		if (d >= 2 && r == ENODEV)
 			return 0;	/* assume no change */
 		else
 			return r;
@@ -894,7 +894,7 @@ restart_mount:
 		if (r > 0)
 			r = ECHMEDIA;
 
-		PATH2COOKIE_DB (("relpath2cookie: returning %d", r));
+		PATH2COOKIE_DB (("relpath2cookie(1): returning %d", r));
 		return r;
 	}
 
@@ -957,7 +957,7 @@ restart_mount:
 			release_cookie (&dir);
 		}
 
-		PATH2COOKIE_DB (("relpath2cookie: returning %ld", r));
+		PATH2COOKIE_DB (("relpath2cookie(2): returning %ld", r));
 		return r;
 	}
 
@@ -1161,7 +1161,7 @@ restart_mount:
 		}
 	}
 
-	PATH2COOKIE_DB (("relpath2cookie: returning %ld", r));
+	PATH2COOKIE_DB (("relpath2cookie(3): returning %ld", r));
 	return r;
 }
 
