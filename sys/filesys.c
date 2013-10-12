@@ -653,6 +653,7 @@ disk_changed (ushort d)
 	TRACE (("calling mediach (%d)", d));
 	r = sys_b_mediach (d);
 	TRACE (("mediach (%d) == %li", d, r));
+	//DBG_FORCE(("disk_changed: mediach (%d) == %li", d, r));
 
 	if (r < 0)
 	{
@@ -666,7 +667,7 @@ disk_changed (ushort d)
 		 * Note that ENODEV must be tested for drives A-C, or else
 		 * booting may not work properly.
 		 */
-		if (d >= 2 && r == ENODEV)
+		if (d <= 2 && r == ENODEV)
 			return 0;	/* assume no change */
 		else
 			return r;
