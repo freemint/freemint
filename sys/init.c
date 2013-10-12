@@ -332,7 +332,6 @@ init (void)
 
 		usp = get_usp();
 		ssp = get_ssp();
-		ssp = 0;
 
 		DEBUG(("Kernel BASE: 0x%08lx", _base));
 		DEBUG(("Kernel TEXT: 0x%08lx (SIZE: %ld bytes)", _base->p_tbase, _base->p_tlen));
