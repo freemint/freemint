@@ -507,7 +507,6 @@ sys_d_getcwd (char *path, int drv, int size)
 			}
 		}
 	}
-	//FORCE( "Dgetcwd path=%s return %ld", path, r);
 
 	return r;
 }
@@ -1506,6 +1505,7 @@ sys_f_xattr (int flag, const char *name, XATTR *xattr)
 	}
 
 	release_cookie (&fc);
+	DEBUG (("Fxattr(%s): return %ld", name, r));
 	return r;
 }
 
