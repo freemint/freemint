@@ -44,7 +44,7 @@
 /*
  * use GEMDOS FS instead of real FAT XFS
  */
-# undef OLDTOSFS
+//# undef OLDTOSFS
 
 /*
  * include old style socket device emulation
@@ -66,7 +66,12 @@
 /*
  * add /dev/random and /dev/urandom
  */
+
+#ifdef NO_DEV_RANDOM
+# undef DEV_RANDOM
+#else
 # define DEV_RANDOM
+#endif
 
 /*
  * MAXPID is the maxium PID MiNT will generate
