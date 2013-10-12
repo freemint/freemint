@@ -444,7 +444,7 @@ sys_t_setitimer (int which, long *interval, long *value, long *ointerval, long *
 	PROC *p = get_curproc();
 	long oldtimer;
 	TIMEOUT *t;
-	void _cdecl (*handler)(PROC *p, long arg) = 0;
+	void _cdecl (*handler)(PROC *pr, long arg) = 0;
 	long tmpold;
 
 	if ((which != ITIMER_REAL)
@@ -772,6 +772,7 @@ shutdown(void)
 	delay_seconds(2);
 }
 
+extern int sys_err;
 /*
  * where restart is:
  *
@@ -795,9 +796,10 @@ sys_s_hutdown(long restart)
 	shutting_down = 1;
 
 	/* cursor home (vt52) */
+	if( !sys_err )
 	{
-	char h[3] = {0x1b,'E',0};
-	debug_ws(h);
+		char h[3] = {0x1b,'E',0};
+		debug_ws(h);
 	}
 
 	FORCE("sys_s_hutdown: %ld", restart);
