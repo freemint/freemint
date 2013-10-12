@@ -33,6 +33,7 @@
 # -DNO_FAKE_SUPER	disables the extended bus error handler
 # -DNO_AKP_KEYBOARD	disables the extended keyboard routines
 # -DQUANTUM_SMALLER	changes QUANTUM to 2k, experimental!
+# -DOLDTOSFS		use GEMDOS FS instead of real FAT XFS
 
 #
 # experimental; for developers only

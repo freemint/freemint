@@ -42,11 +42,6 @@
 # define SYSUPDATE_DAEMON
 
 /*
- * use GEMDOS FS instead of real FAT XFS
- */
-//# undef OLDTOSFS
-
-/*
  * include old style socket device emulation
  */
 # define OLDSOCKDEVEMU
