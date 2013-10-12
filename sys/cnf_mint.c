@@ -281,8 +281,8 @@ load_config(void)
 		strcpy(cnf_path, mchdir);
 		strcat(cnf_path, "mint.cnf");
 
-	parse_cnf(cnf_path, parser_tab, &mydata);
-}
+		parse_cnf(cnf_path, parser_tab, &mydata);
+	}
 }
 
 /*============================================================================*/
