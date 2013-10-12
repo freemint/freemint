@@ -1891,8 +1891,10 @@ new_setext(const char *t, OBJECT *icon, short type, short *sl, char **tp)
 
 	if( tp )
 	{
+		/* append new item-data to buffer (save malloc) */
 		new = (struct se_content *)*tp;
 		*tp += sizeof(struct se_content) + tblen + 1;
+		*tp += ((long)*tp & 1);	/* force even address! */
 	}
 	else
 	{
@@ -1971,6 +1973,8 @@ insert_strings(struct scroll_entry *this, struct sc_text *t, OBJECT *icon, short
 	for (i = 0; i < j && tp < ep; i++)
 	{
 		PROFRECs(this_sc =, new_setext,(s, icon, type, &slen, &tp));
+		if( !this_sc )
+			return 0;
 		s += slen + 1;
 		if (icon)
 			icon = NULL;
@@ -1990,6 +1994,7 @@ insert_strings(struct scroll_entry *this, struct sc_text *t, OBJECT *icon, short
 		for ( i = 1; i <= j; i++ )
 		{
 			struct se_content *next = (struct se_content *)((char*)this_sc + this_sc->c.text.tblen + sizeof(struct se_content) + 1);
+			next = (struct se_content *)((char*)next + ((long)next & 1));		/* force even address! (see new_setext) */
 			this_sc->c.text.text = this_sc->c.text.txtstr;
 			this_sc->index = i - 1;
 			if( i == j )
@@ -2003,7 +2008,7 @@ insert_strings(struct scroll_entry *this, struct sc_text *t, OBJECT *icon, short
 
 		}
 		//for( this_sc = ret; this_sc; this_sc = this_sc->next )
-		}
+	}
 
 	return ret;
 }
@@ -3262,10 +3267,9 @@ add_scroll_entry(SCROLL_INFO *list,
 			if( redraw != NOREDRAW )
 				PROFRECs(list->,slider,(list, redraw));
 		}
-// 		display("done!");
+
 		return 1;
 	}
-// 	display("Done failed");
 	return 0;
 }
 
