@@ -331,7 +331,11 @@ init (void)
 		long usp, ssp;
 
 		usp = get_usp();
+#ifndef M68000
 		ssp = get_ssp();
+#else
+		ssp = 0;
+#endif
 
 		DEBUG(("Kernel BASE: 0x%08lx", _base));
 		DEBUG(("Kernel TEXT: 0x%08lx (SIZE: %ld bytes)", _base->p_tbase, _base->p_tlen));
@@ -1004,6 +1008,8 @@ do_exec_os (long basepage)
 	TRAP_Pterm ((int)r);
 }
 
+int sys_err= 0;
+
 void
 mint_thread(void *arg)
 {
@@ -1071,7 +1077,8 @@ mint_thread(void *arg)
 	 */
 	{
 		unsigned short i;
-		char cwd[PATH_MAX] = "X:";
+		char cwd[PATH_MAX];
+		strcpy( cwd, "X:");
 
 		for (i = 0; i < NUM_DRIVES; i++)
 		{
@@ -1282,7 +1289,10 @@ mint_thread(void *arg)
 	}
 # ifndef DEBUG_INFO
 	else
+	{
+		sys_err |= 0x80;
 		sys_s_hutdown(SHUT_HALT);		/* Everything failed. Halt. */
+	}
 
 	/* If init program exited, reboot the system.
 	 * Never go back to TOS.
@@ -1293,6 +1303,7 @@ mint_thread(void *arg)
 	/* With debug kernels, always halt
 	 */
 	FORCE("init:sys_s_hutdown:HALT");
+	sys_err |= 0x80;
 	(void) sys_s_hutdown(SHUT_HALT);
 # endif
 
