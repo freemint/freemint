@@ -83,7 +83,7 @@ long gemdos_version;
  */
 #define NEWWAY
 
-#if 0
+#if 1
 #define COOKIE_DB(x) DEBUG(x)
 #else
 #define COOKIE_DB(x)
@@ -1122,7 +1122,12 @@ again:
 		namelen -= (int) sizeof(long);
 		if (namelen <= 0)
 			return EBADARG;
+#ifdef M68000
+		memcpy( name, &index, 4);
+		index++;
+#else
 		*((long *)name) = index++;
+#endif
 		name += sizeof(long);
 	}
 	if (strlen(DIR_NAME(dirh)) < namelen) {
