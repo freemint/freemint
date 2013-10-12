@@ -1,6 +1,6 @@
 /*
  * $Id$
- *
+ * 
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
  */
@@ -32,7 +32,6 @@ extern int debug_logging;
 # define TRACE_LEVEL	3
 # define LOW_LEVEL	4
 
-# define DBG FORCE
 
 # ifndef DEBUG_INFO
 
@@ -40,20 +39,15 @@ extern int debug_logging;
 # define TRACE(x)
 # define DEBUG(x)
 
-# define DBG_FORCE(x)
-
 # define FUNCTION __FUNCTION__
 
-# else /* DEBUG_INFO */
+# else
 
 # define TRACELOW(s)	Tracelow s
 
 # define TRACE(s)	Trace s
 
-# define DEBUG(s)	Debug s
-
-/* can be removed by sed */
-# define DBG_FORCE(x) FORCE x
+# define DEBUG(s)	Debug s 
 
 # ifndef str
 # define str(x)		_stringify(x)
