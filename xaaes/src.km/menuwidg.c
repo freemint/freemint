@@ -120,13 +120,13 @@ change_entry(Tab *tab, int state)
 {
 	MENU_TASK *k = &tab->task_data.menu;
 	XA_TREE *wt = k->p.wt; //k->wt;
-	OBJECT *obtree = wt->tree;
+	OBJECT *obtree = wt?wt->tree:0;
 	short t = k->p.current;
 
 	DIAGS(("change entry: tab=%lx, obtree=%lx, obj=%d, state=%d",
 		tab, obtree, k->p.current, state));
 
-	if (t < 0)
+	if (t < 0 || !obtree) /* || t > ?? */
 		return;
 
 	if (state)
