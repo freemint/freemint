@@ -331,11 +331,8 @@ init (void)
 		long usp, ssp;
 
 		usp = get_usp();
-#ifndef M68000
 		ssp = get_ssp();
-#else
 		ssp = 0;
-#endif
 
 		DEBUG(("Kernel BASE: 0x%08lx", _base));
 		DEBUG(("Kernel TEXT: 0x%08lx (SIZE: %ld bytes)", _base->p_tbase, _base->p_tlen));
