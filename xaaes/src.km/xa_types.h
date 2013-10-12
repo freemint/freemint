@@ -3073,6 +3073,7 @@ struct config
 	short popscroll;		/* number of lines of a popup above which it will be made scrollable. */
 
 	short allow_setexc;  /* 0: never, 1: no trap-vectors, 2: all */
+	bool write_boot;     /* write parse_cnf-output into MiNT-boot.log */
 	bool et4000_hack;	/* always try open virtual wk first */
 	short videomode;		/* ID of screen device opened by v_opnwk() */
 
