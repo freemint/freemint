@@ -113,7 +113,6 @@ ifeq ($(kernel),ara)
 MINT = mintara.prg
 CPU  = 040
 KERNELDEFS = -DARANYM -DM68040 -DWITH_HOSTFS -DBOOTSTRAPABLE -DC_ONLY
-KERNELDEFS += -DDEBUG_INFO
 MODULEDIRS = xfs/hostfs
 endif
 
