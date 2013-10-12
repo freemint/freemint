@@ -151,8 +151,10 @@ kern_get_cookiejar (SIZEBUF **buffer)
 	ulong used = 0;
 	ulong i;
 	char *crs;
-	uchar name[5];
-	ulong *tagid = (ulong *) name;
+	union{
+		ulong tagid;
+		uchar name[5];
+	}ut;
 	ulong value;
 
 	if (get_cookie (NULL, 0, &slots))
@@ -185,30 +187,30 @@ kern_get_cookiejar (SIZEBUF **buffer)
 		uchar *to;
 		int j;
 
-		get_cookie (NULL, i, (ulong *) name);
+		get_cookie (NULL, i, &ut.tagid );
 
 		to = pretty_print_name;
 		for (j = 0; j < 4; j++)
 		{
-			if (name[j] < ' ')
+			if (ut.name[j] < ' ')
 			{
 				*to++ = '^';
-				*to++ = ('@' + name[j]);
+				*to++ = ('@' + ut.name[j]);
 			}
 			else
 			{
-				*to++ = name[j];
+				*to++ = ut.name[j];
 			}
 		}
 
 		*to++ = '\0';
 
 		/* Now calculate the value of the cookie */
-		get_cookie (NULL, *tagid, &value);
+		get_cookie (NULL, ut.tagid, &value);
 
 		crs += ksprintf (crs, len - (crs - info->buf),
 				"0x%08lx (%s): 0x%08lx\n",
-				*tagid,
+				ut.tagid,
 				pretty_print_name,
 				value
 		);
