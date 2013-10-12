@@ -666,7 +666,7 @@ disk_changed (ushort d)
 		 * Note that ENODEV must be tested for drives A-C, or else
 		 * booting may not work properly.
 		 */
-		if (d >= 2 && r == ENODEV)
+		if (d > 2 && r == ENODEV)
 			return 0;	/* assume no change */
 		else
 			return r;
