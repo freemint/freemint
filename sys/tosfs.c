@@ -1,20 +1,20 @@
 /*
  * $Id$
- * 
+ *
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
- * 
- * 
+ *
+ *
  * Copyright 1991,1992 Eric R. Smith.
  * Copyright 1992,1993,1994 Atari Corporation.
  * All rights reserved.
- * 
- * 
- * a VERY simple tosfs.c 
- * 
+ *
+ *
+ * a VERY simple tosfs.c
+ *
  * this one is extremely brain-damaged, but will serve OK for a
  * skeleton in which to put a "real" tosfs.c
- * 
+ *
  */
 
 # include "tosfs.h"
@@ -157,13 +157,13 @@ DEVDRV tos_device =
 FILESYS tos_filesys =
 {
 	NULL,
-	
+
 	FS_KNOPARSE	|
 	FS_NOXBIT	|
 	FS_LONGPATH	|
 	FS_EXT_1	|
 	FS_EXT_2	,
-	
+
 	tos_root,
 	tos_lookup, tos_creat, tos_getdev, tos_getxattr,
 	tos_chattr, tos_chown, tos_chmode,
@@ -178,7 +178,7 @@ FILESYS tos_filesys =
 #endif
 	NULL,
 	tos_mknod, tos_unmount,
-	
+
 	0, 0, 0, 0, 0, 0,
 	NULL, NULL
 };
@@ -307,10 +307,10 @@ filename_crc (const char *filename)
 {
 	unsigned long s = 0;
 	unsigned int n = 0;
-	
+
 	/* skip x: */
 	filename += 2;
-	
+
 	while (*filename) {
 		s = UPDC32 (*filename++, s);
 		n++;
@@ -320,7 +320,7 @@ filename_crc (const char *filename)
 		s = UPDC32 (n & 0377, s);
 		n >>= 8;
 	}
-	
+
 	return s;
 }
 
@@ -377,21 +377,21 @@ is_exec (register const char *src)
 		ulong value;
 		char buf [3];
 	} data;
-	
+
 	data.buf [0] = *src++;
 	data.buf [1] = *src++;
 	data.buf [2] = *src;
-	
+
 	i = data.value;
 # else
 	i = *(const ulong *) src;
 # endif
 	i &= 0xdfdfdf00;		/* force uppercase */
-	
+
 	/* 0x544f5300L = TOS, 0x54545000L = TTP, 0x50524700L = PRG
 	 * 0x41505000L = APP, 0x47545000L = GTP, 0x41434300L = ACC
 	 */
-	
+
 	return (i == 0x544f5300L || i == 0x54545000L || i == 0x50524700L ||
 		i == 0x41505000L || i == 0x47545000L || i == 0x41434300L);
 }
@@ -406,7 +406,7 @@ executable_extension(char *s)
 			break;
 		s++;
 	}
-	
+
 	return is_exec (++s);
 }
 # endif
@@ -652,13 +652,13 @@ tfullpath(char *result, struct tindex *basei, const char *path)
 	return r;
 }
 
-static long _cdecl 
+static long _cdecl
 tos_root(int drv, fcookie *fc)
 {
 	struct tindex *ti;
-	
+
 	DEBUG (("tos_root [%c]: enter", 'A'+drv));
-	
+
 	if (fatfs_config (drv, FATFS_DRV, ASK))
 	{
 		DEBUG(("tos_root: NEWFATFS drive -> ENXIO"));
@@ -670,7 +670,7 @@ tos_root(int drv, fcookie *fc)
 		DEBUG(("tos_root: request for XHDI drv > 15 -> ENXIO"));
 		return ENXIO;
 	}
-	
+
 	ksprintf(tmpbuf, sizeof (tmpbuf), "%c:", drv+'A');
 	fc->fs = &tos_filesys;
 	fc->dev = drv;
@@ -679,7 +679,7 @@ tos_root(int drv, fcookie *fc)
 	ti->attr = FA_DIR;
 	ti->valid = 1;
 	fc->index = (long)ti;
-	
+
 	/* if the drive has changed, make sure GEMDOS knows it!
 	 */
 	if (drvchanged[drv])
@@ -692,7 +692,7 @@ tos_root(int drv, fcookie *fc)
 	return E_OK;
 }
 
-static long _cdecl 
+static long _cdecl
 tos_lookup(fcookie *dir, const char *name, fcookie *fc)
 {
 	long r;
@@ -706,7 +706,7 @@ tos_lookup(fcookie *dir, const char *name, fcookie *fc)
 #ifdef NEWWAY
 		ti->links++;
 		COOKIE_DB(("tos_lookup: %s now has %d links", ti->name, ti->links));
-#endif 
+#endif
 		return r;
 	}
 
@@ -755,7 +755,7 @@ tos_getxattr(fcookie *fc, XATTR *xattr)
 #endif
 #ifdef ROOTPERMS
 	struct tosrootperm *tp = NULL;
-	
+
 	if (fc->dev < ROOTPERMS) tp = &root_perms[fc->dev];
 #endif
 
@@ -792,7 +792,7 @@ tos_getxattr(fcookie *fc, XATTR *xattr)
 			ti->date = ti->time = 0;
 			goto around;
 		}
-	
+
 		r = ROM_Fsfirst(ti->name, FILEORDIR);
 		if (r) {
 			DEBUG(("tosfs: search error %ld on [%s]", r, ti->name));
@@ -818,11 +818,11 @@ around:
 	xattr->blksize = 1024;
 	if (fc->dev < NUM_DRIVES && clsizb[fc->dev])
 		xattr->blksize = clsizb[fc->dev];
-	
+
 	xattr->nblocks = (xattr->size + xattr->blksize - 1) / xattr->blksize;
 	if (!xattr->nblocks && (ti->attr & FA_DIR))
 		xattr->nblocks = 1;	/* no dir takes 0 blocks... */
-	
+
 	xattr->mdate = xattr->cdate = xattr->adate = ti->date;
 	xattr->mtime = xattr->ctime = xattr->atime = ti->time;
 	xattr->mode = (ti->attr & FA_DIR) ? (S_IFDIR | DEFAULT_DIRMODE) :
@@ -867,7 +867,7 @@ tos_chattr(fcookie *fc, int attrib)
 	return ROM_Fattrib(tmpbuf, 1, attrib);
 }
 
-static long _cdecl 
+static long _cdecl
 tos_chown(fcookie *dir, int uid, int gid)
 {
 #ifdef ROOTPERMS
@@ -885,16 +885,16 @@ tos_chown(fcookie *dir, int uid, int gid)
 		}
 		return (tp->uid==uid && tp->gid==gid) ? E_OK : ENOSYS;
 	}
-	
+
 	return ENOSYS;
-	
+
 #else
 	UNUSED(dir); UNUSED(uid); UNUSED(gid);
 	return ENOSYS;
 #endif
 }
 
-static long _cdecl 
+static long _cdecl
 tos_chmode(fcookie *fc, unsigned int mode)
 {
 	int oldattr, newattr;
@@ -935,7 +935,7 @@ tos_chmode(fcookie *fc, unsigned int mode)
 	return (r < E_OK) ? r : E_OK;
 }
 
-static long _cdecl 
+static long _cdecl
 tos_mkdir(fcookie *dir, const char *name, unsigned int mode)
 	              		/* ignored under TOS */
 {
@@ -947,7 +947,7 @@ tos_mkdir(fcookie *dir, const char *name, unsigned int mode)
 	return ROM_Dcreate(tmpbuf);
 }
 
-static long _cdecl 
+static long _cdecl
 tos_rmdir(fcookie *dir, const char *name)
 {
 	struct tindex *ti;
@@ -959,7 +959,7 @@ tos_rmdir(fcookie *dir, const char *name)
 	return ROM_Ddelete(tmpbuf);
 }
 
-static long _cdecl 
+static long _cdecl
 tos_remove(fcookie *dir, const char *name)
 {
 	struct tindex *ti;
@@ -978,7 +978,7 @@ tos_remove(fcookie *dir, const char *name)
 	return ROM_Fdelete(tmpbuf);
 }
 
-static long _cdecl 
+static long _cdecl
 tos_getname(fcookie *root, fcookie *dir, char *pathname, int size)
 {
 	char *rootnam = ((struct tindex *)root->index)->name;
@@ -1004,7 +1004,7 @@ tos_getname(fcookie *root, fcookie *dir, char *pathname, int size)
 	}
 }
 
-static long _cdecl 
+static long _cdecl
 tos_rename(fcookie *olddir, char *oldname, fcookie *newdir, const char *newname)
 {
 	char newbuf[PATH_MAX];
@@ -1041,7 +1041,7 @@ tos_rename(fcookie *olddir, char *oldname, fcookie *newdir, const char *newname)
  * subsequent readdir()'s have to do Fsnext
  */
 
-static long _cdecl 
+static long _cdecl
 tos_opendir(DIR *dirh, int flags)
 {
 	long r;
@@ -1071,7 +1071,7 @@ tos_opendir(DIR *dirh, int flags)
  	return r;
 }
 
-static long _cdecl 
+static long _cdecl
 tos_readdir(DIR *dirh, char *name, int namelen, fcookie *fc)
 {
 	static long index = 0;
@@ -1146,7 +1146,7 @@ again:
 	return E_OK;
 }
 
-static long _cdecl 
+static long _cdecl
 tos_rewinddir(DIR *dirh)
 {
 	struct tindex *ti = (struct tindex *)dirh->fc.index;
@@ -1167,7 +1167,7 @@ tos_rewinddir(DIR *dirh)
 	return r;
 }
 
-static long _cdecl 
+static long _cdecl
 tos_closedir(DIR *dirh)
 {
 	struct tindex *t = (struct tindex *)dirh->fc.index;
@@ -1180,7 +1180,7 @@ tos_closedir(DIR *dirh)
 	return E_OK;
 }
 
-static long _cdecl 
+static long _cdecl
 tos_pathconf(fcookie *dir, int which)
 {
 	switch(which) {
@@ -1213,7 +1213,7 @@ tos_pathconf(fcookie *dir, int which)
 	}
 }
 
-long _cdecl 
+long _cdecl
 tos_dfree(fcookie *dir, long *buf)
 {
 	return ROM_Dfree(buf, (dir->dev)+1);
@@ -1230,7 +1230,7 @@ tos_dfree(fcookie *dir, long *buf)
  * work with GEMDOS < 0.15 (TOS < 1.04).
  */
 
-long _cdecl 
+long _cdecl
 tos_writelabel(fcookie *dir, const char *name)
 {
 	long r;
@@ -1245,7 +1245,7 @@ tos_writelabel(fcookie *dir, const char *name)
 	return E_OK;
 }
 
-long _cdecl 
+long _cdecl
 tos_readlabel(fcookie *dir, char *name, int namelen)
 {
 	long r;
@@ -1303,10 +1303,10 @@ tos_creat(fcookie *dir, const char *name, unsigned int mode, int attrib, fcookie
 
 static long _cdecl
 tos_fscntl (fcookie *dir, const char *name, int cmd, long arg)
-{	
+{
 	UNUSED (dir);
 	UNUSED (name);
-	
+
 	switch (cmd)
 	{
 		case MX_KER_XFSNAME:
@@ -1320,33 +1320,33 @@ tos_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 			if (info)
 			{
 				char *dst = info->type_asc;
-				
+
 				strcpy (info->name, "tos-xfs");
 				info->version = (gemdos_version & 0xf) << 8;
 				info->version |= gemdos_version >> 8;
 				info->type = FS_OLDTOS;
-				
+
 				*dst++ = 't';
 				*dst++ = 'o';
 				*dst++ = 's';
 				*dst++ = '\0';
 			}
-			
+
 			return E_OK;
 		}
 		case FS_USAGE:
 		{
 			struct fs_usage *usage;
-			
+
 			usage = (struct fs_usage *) arg;
 			if (usage)
 			{
 				long buf [4];
 				long r;
-				
+
 				r = tos_dfree (dir, buf);
 				if (r) return r;
-				
+
 				usage->blocksize = buf [2] * buf [3];
 # ifdef __GNUC__
 				usage->blocks = buf [1];
@@ -1357,11 +1357,11 @@ tos_fscntl (fcookie *dir, const char *name, int cmd, long arg)
 # error 			/* FIXME: PureC doesn't know 'long long' */
 # endif
 			}
-			
+
 			return E_OK;
 		}
 	}
-	
+
 	return ENOSYS;
 }
 
@@ -1369,14 +1369,14 @@ tos_fscntl (fcookie *dir, const char *name, int cmd, long arg)
  * TOS device driver
  */
 
-static DEVDRV * _cdecl 
+static DEVDRV * _cdecl
 tos_getdev(fcookie *fc, long *devsp)
 {
 	UNUSED(fc); UNUSED(devsp);
 	return &tos_device;
 }
 
-static long _cdecl 
+static long _cdecl
 tos_open(FILEPTR *f)
 {
 	struct tindex *ti;
@@ -1454,7 +1454,7 @@ tos_open(FILEPTR *f)
 	return E_OK;
 }
 
-static long _cdecl 
+static long _cdecl
 tos_write (FILEPTR *f, const char *buf, long bytes)
 {
 	struct tindex *ti = (struct tindex *)f->fc.index;
@@ -1462,13 +1462,13 @@ tos_write (FILEPTR *f, const char *buf, long bytes)
 	return ROM_Fwrite((int)f->devinfo, bytes, buf);
 }
 
-static long _cdecl 
+static long _cdecl
 tos_read(FILEPTR *f, char *buf, long bytes)
 {
 	return ROM_Fread((int)f->devinfo, bytes, buf);
 }
 
-static long _cdecl 
+static long _cdecl
 tos_lseek(FILEPTR *f, long where, int whence)
 {
 	long r;
@@ -1477,7 +1477,7 @@ tos_lseek(FILEPTR *f, long where, int whence)
 	return r;
 }
 
-static long _cdecl 
+static long _cdecl
 tos_ioctl(FILEPTR *f, int mode, void *buf)
 {
 	LOCK t, *lck, **old;
@@ -1599,7 +1599,7 @@ tos_ioctl(FILEPTR *f, int mode, void *buf)
 	return ENOSYS;
 }
 
-static long _cdecl 
+static long _cdecl
 tos_datime(FILEPTR *f, ushort *timeptr, int rwflag)
 {
 	if (rwflag) {
@@ -1610,7 +1610,7 @@ tos_datime(FILEPTR *f, ushort *timeptr, int rwflag)
 	/* BUG: Fdatime() before GEMDOS 0.15 is void, so we should return E_OK. */
 }
 
-static long _cdecl 
+static long _cdecl
 tos_close(FILEPTR *f, int pid)
 {
 	LOCK *lck, **oldl;
@@ -1670,7 +1670,7 @@ tos_close(FILEPTR *f, int pid)
  * non-zero value
  */
 
-static long _cdecl 
+static long _cdecl
 tos_dskchng(int drv, int mode)
 {
 	char dlet;
@@ -1760,7 +1760,7 @@ static long _cdecl
 tos_unmount (int drv)
 {
 	tos_dskchng (drv, 1);
-	
+
 	return E_OK;
 }
 
@@ -1858,7 +1858,7 @@ MEDIA_DB(("forcing media change on %c", d+'A'));
 MEDIA_DB(("calling GEMDOS"));
 #ifdef FSFIRST_MEDIACH
 	(void)ROM_Fsfirst(fname, FA_LABEL);
-#else	
+#else
 	r = ROM_Fopen(fname, O_RDONLY);
 	if (r >= E_OK) ROM_Fclose((int)r);
 #endif
