@@ -1784,11 +1784,10 @@ k_main(void *dummy)
 		display(/*00000013*/"ERROR: k_init failed!");
 		goto leave;
 	}
-#if 1
 	{
 	char *bl;
 	long r;
-	if( cfg.write_boot && (r=s_system(S_GETBOOTLOG, (long)&bl, 0 )) >= 0 )
+	if( (r=s_system(S_GETBOOTLOG, (long)&bl, 0 )) >= 0 )
 	{
 		//fp = kernel_open("c:/mint/boot.log", O_RDWR|O_CREAT, NULL,NULL);
 		fp = kernel_open(bl, O_RDWR|O_CREAT, NULL,NULL);
@@ -1797,7 +1796,6 @@ k_main(void *dummy)
 		p->p_fd->ofiles[1] = fp;	// f->links++;
 	}
 	}
-#endif
 	read_inf();
 
 	/*
