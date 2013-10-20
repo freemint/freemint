@@ -674,9 +674,12 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 				}
 			}
 
-			/* restore cwd for XaAES */
-			d_setdrv(toupper(*C.Aes->home_path) - 'A' );
-			d_setpath(C.Aes->home_path);
+			if( caller == C.Aes )
+			{
+				/* restore cwd for XaAES */
+				d_setdrv(toupper(*C.Aes->home_path) - 'A' );
+				d_setpath(C.Aes->home_path);
+			}
 			break;
 		}
 		case 3:	/* ACC */
