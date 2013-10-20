@@ -1075,7 +1075,7 @@ k_init(unsigned long vm)
 	}
 //#define WITH_BBL_HELP 0
 #if WITH_BBL_HELP
-	if( cfg.xa_bubble || cfg.menu_bar != 2 )
+	if( cfg.xa_bubble || cfg.menu_bar != 2 || cfg.describe_widgets )
 	{
 		RECT r = {0,0,420,420};
 		bool nolist = false;
