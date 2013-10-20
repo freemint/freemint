@@ -227,9 +227,9 @@ static int IsKeyName( unsigned char **p, unsigned char *p1, long *lp, long l, in
 	{
 		*p = p1;
 		*lp = l + (shift ? 6 : 0);
-		if( i == 4 )
+		if( i == 4 )	/* SPACE */
 			i = ' ';
-		else if( i == 5 )
+		else if( i == 5 )	/* ESC */
 			i = 0x1b;	//NK_ESC;
 		else
 			i++;
@@ -508,7 +508,6 @@ static void file_to_list( SCROLL_INFO *list, char *fn, bool skip_hash, bool open
 	xa_fclose(xa_fp);
 	PRPRINT;
 	list->set(list, list->start, SESET_SELECTED, 0, NOREDRAW);
-
 }
 #endif
 
