@@ -445,12 +445,14 @@ BBL_STATUS xa_bubble( enum locks lock, BBL_MD md, union msg_buf *msg, short dest
 		case BUBBLEGEM_REQUEST:
 		break;
 		case BUBBLEGEM_SHOW:
+			if( !bgem_window )
+				goto xa_bubble_ret;	/* ERROR! */
 			if( Style == 3 )
 			{
 				close_window( lock, bgem_window );
 				XaBubble = bs_closed;
 			}
-			if( XaBubble == bs_closed )
+			if( XaBubble == bs_closed || XaBubble == bs_none )
 			{
 				unsigned char bbl_buf[BBL_MAXLEN+1], *bp = bbl_buf;
 				unsigned char *str = m.sb.p56;
@@ -596,7 +598,7 @@ static void do_bubble_show(enum locks lock, struct c_event *ce, short cancel)
 		status = xa_bubble( 0, bbl_close_bubble2, 0, 20 );
 	}
 	check_mouse( C.Aes, &b, &x, &y );
-	if( status != bs_closed || b )
+	if( !(status == bs_closed || status == bs_none) || b )
 	{
 		bbl_arg.str = 0;
 		return;
