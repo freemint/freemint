@@ -938,6 +938,7 @@ m_not_move_timeout(struct proc *p, long arg)
 		return;
 
 	wind = find_window( 0, last_x, last_y, FNDW_NOLIST | FNDW_NORMAL );
+
 	if( wind && wind->owner && wind->owner->p)
 	{
 		bubble_request( wind->owner->p->pid, wind->handle, x_mouse, y_mouse );
@@ -1096,7 +1097,7 @@ static void new_bbl_timeout(unsigned long to)
 		post_cevent(C.Aes, XA_bubble_event, NULL, NULL, BBL_EVNT_CLOSE1, 0, NULL, NULL);
 	}
 
-	if (cfg.xa_bubble)
+	if (cfg.xa_bubble || cfg.describe_widgets)
 	{
 		if (ms_to)
 		{
