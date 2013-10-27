@@ -304,6 +304,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
        const char *parm, char *p_tail, struct xa_client *caller)
 {
 	char cmd[260]; /* 2 full paths */
+	char *cwd;     /* current wd of caller */
 	char argvtail[4];
 	struct xshelw x_shell = {0};
 	struct create_process_opts cpopts;
@@ -338,6 +339,11 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 
 	x_mode = mode & 0xff00;
 	cpopts.mode = 0;
+
+	get_drive_and_path( cmd, sizeof(cmd) );
+	cwd = kmalloc( strlen(cmd) + 1 );
+	strcpy( cwd, cmd );
+
 	if (x_mode)
 	{
 		x_shell = *(const struct xshelw *)parm;
@@ -674,12 +680,8 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 				}
 			}
 
-			if( caller == C.Aes )
-			{
-				/* restore cwd for XaAES */
-				d_setdrv(toupper(*C.Aes->home_path) - 'A' );
-				d_setpath(C.Aes->home_path);
-			}
+			/* restore cwd */
+			set_drive_and_path( cwd );
 			break;
 		}
 		case 3:	/* ACC */
@@ -830,6 +832,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 	}
 
 out:
+	kfree( cwd );
 	if (tail != argvtail)
 		kfree(tail);
 
@@ -1270,32 +1273,21 @@ shell_find(enum locks lock, struct xa_client *client, char *fn)
 	path = kmalloc(len);
 	if (path)
 	{
-		char *p=0, *pf = fn, c=0;
+		char *p=0, *ps = 0, *pf = fn, c=0;
 
 		if ( !( ( isalpha(*fn) && *(fn + 1) == ':' )
 			|| *fn == '/' || *fn == '\\' ) )	/* no absolute path given */
 		{
 			char fpath[PATH_MAX];
-			p = strrchr( fn, '\\');
-			if( !p )
-				p = strrchr( fn, '/');
-			if( p )	/* filename contains directory */
+			ps = strrchr( fn, '\\');
+			if( !ps )
+				ps = strrchr( fn, '/');
+			if( ps )	/* filename contains directory */
 			{
-				c = *p;
-				*p = 0;
+				c = *ps;
+				*ps = 0;
 				strcpy( fpath, fn );
-				fn = p+1;
-			}
-			else if( *client->home_path )
-			{
-				p = strrchr( client->home_path, '\\');
-				if( !p )
-				{
-					p = strrchr( client->home_path, '/');
-					c = '/';
-				}
-				else
-					c = '\\';
+				fn = ps+1;
 			}
 
 			DIAGS(("shell_find for %s '%s',p='%s'", client->name, fn ? fn : "~", p));
@@ -1306,32 +1298,42 @@ shell_find(enum locks lock, struct xa_client *client, char *fn)
 				kh = get_env(lock, "HOME=");
 				if( kh )
 				{
-					if( p )	/* append path from filename */
+					if( ps )	/* append path from filename (if any) */
 					{
-						sprintf( fpath, sizeof(fpath)-1, "%s%c%s", kh, c, pf );
-						kh = fpath;
+						sprintf( cwd, sizeof(fpath)-1, "%s%c%s", kh, c, fpath );
+						kh = cwd;
 					}
 					r = wc_stat64(0, kh, fn, &st, result);
-					DIAGS(("[2]  --   try: '%s\\%s' :: %ld", kh, fn, r));
+					DIAGS(("[2]  --   try: '%s\\%s' :: %ld,", kh, fn, r));
 					if (r == 0)
 					{
-						sprintf(path, len, "%s%c%s", kh, c, result);
+						sprintf( path, len-1, "%s%c%s", kh, c?c:'\\', result);
 						return path;
 					}
 				}
 			}
-
+			if( *client->home_path )
+			{
+				c = '\\';
+				if( (p=strrchr( client->home_path, '/')) )
+					c = '/';
+				else
+					p = strrchr( client->home_path, '\\');
 			/* try the file spec in the apps' dir */
 			kh = client->home_path;
 			r = wc_stat64(0, kh, pf, &st, result);
 			DIAGS(("[0]  --    try: '%s' :: %ld", fn, r));
 			if (r == 0 )
 			{
-				sprintf(path, len, "%s%c%s", kh, c, result);
+				if( p && !*(p+1) )
+					sprintf(path, len, "%s%s", kh, result);
+				else
+					sprintf(path, len, "%s%c%s", kh, c, result);
 				return path;
 			}
 
-			if( !p )	/* only search PATH if fn does not contain pathsep */
+			}
+			if( !ps )	/* only search PATH if fn does not contain pathsep */
 			{
 				kh = get_env(lock, "PATH=");
 				/* the PATH env could be simply absent */
@@ -1397,6 +1399,12 @@ shell_find(enum locks lock, struct xa_client *client, char *fn)
 		/* Last ditch - try the file spec on its own */
 		r = wc_stat64(0, NULL, fn, &st, 0);
 		DIAGS(("[5]  --    try: '%s' :: %ld", fn, r));
+		if( r && *fn == '/' && *(fn+2) == '/' )
+		{	/* got /d/: try again with d:/ */
+			*fn = *(fn+1);
+			*(fn+1) = ':';
+			r = wc_stat64(0, NULL, fn, &st, 0);
+		}
 		if (r == 0)
 		{
 			strncpy(path, fn, len);
