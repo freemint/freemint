@@ -1046,6 +1046,8 @@ k_init(unsigned long vm)
 		(ob + DESKTOP_LOGO)->ob_y = (root_window->wa.h - (ob + DESKTOP_LOGO)->ob_height) / 2;
 		if( cfg.back_col != -1 )
 			(ob + DESKTOP)->ob_spec.obspec.interiorcol = cfg.back_col;
+		if( screen.planes < 4 && (ob + DESKTOP)->ob_spec.obspec.interiorcol != 0 )
+			(ob + DESKTOP_LOGO)->ob_state |= OS_WHITEBAK;
 		C.Aes->desktop = new_widget_tree(C.Aes, ob);
 
 		set_desktop_widget(root_window, C.Aes->desktop);
