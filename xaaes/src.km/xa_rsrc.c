@@ -1305,8 +1305,9 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 
 	RSHDR *hdr = NULL;
 	CICONBLK **cibh = NULL;
-	unsigned long osize = 0, size = 0, extra = 0;
+	unsigned long osize = 0, extra = 0;
 	unsigned long sz;
+	long size = 0;
 	char *base = NULL;	//, *end = NULL;
 	char *extra_ptr = NULL;
 	struct xa_rscs *rscs = NULL;
@@ -1373,10 +1374,10 @@ LoadResources(struct xa_client *client, char *fname, RSHDR *rshdr, short designW
 
 		sz = size = kernel_read(f, base, fsize);
 		kernel_close(f);
-		if (size != fsize)
+		if (size < 0 || size != fsize)
 		{
 			DIAG((D_rsrc, client, "LoadResource(): Error loading file (size mismatch)"));
-			BLOG((0, "LoadResource(): Error loading file (size mismatch)"));
+			BLOG((0, "LoadResource(): Error loading file '%s':(%s:%ld:%ld)", fname, size >= 0 ? "size mismatch" : "read-error", size, fsize));
 			if (client == C.Aes || client == C.Hlp)
 				kfree(base);
 			else
