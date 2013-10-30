@@ -2888,7 +2888,9 @@ update_windows_below(enum locks lock, const RECT *old, RECT *new, struct xa_wind
 	{
 		if (wend && wend == wl)
 			break;
-		if( C.SingleTaskPid > 0 && !(wl->owner->p->pid == C.SingleTaskPid || wl->owner == C.Hlp || wl->owner == C.Aes) )
+		if( C.SingleTaskPid > 0
+			&& !(wl->owner->p->pid == C.SingleTaskPid || wl->owner == C.Hlp
+				|| (wl->owner == C.Aes && get_desktop()->owner == C.Aes)) )
 			continue;
 
 		if (!(wl->owner->status & CS_EXITING) && (wl->window_status & XAWS_OPEN))
