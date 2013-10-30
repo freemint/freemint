@@ -220,7 +220,7 @@ print_x_shell(short x_mode, struct xshelw *x_shell)
 #endif
 
 static int
-default_path(struct xa_client *caller, char *cmd, char *path, char *name, char *defdir, struct create_process_opts *cpopts)
+default_path(struct xa_client *caller, char *cmd, char *path, char *name, char *defdir, struct create_process_opts *cpopts, bool use_targetdir)
 {
 	int drv;
 	/*
@@ -238,23 +238,18 @@ default_path(struct xa_client *caller, char *cmd, char *path, char *name, char *
 	 * 4.	If caller is AESSYS, we always take defaultdir out of cmd.
 	 * 5.	IF ANYONE KNOWS BETTER, I'M EXTREMELY INTERESTED IN KNOWING!!!
 	 */
-	drv = drive_and_path(cmd, path, name, true, caller == C.Aes ? true : false);
+	//drv = drive_and_path(cmd, path, name, true, caller == C.Aes ? true : false);
+	drv = drive_and_path(cmd, path, name, use_targetdir, true);
 	if (!(cpopts->mode & CREATE_PROCESS_OPTS_DEFDIR))
 	{
-	//	display("defdir '%s'", defdir);
-	//	display("apphom '%s'", caller->home_path);
-		if (caller == C.Aes || (drv >= 0 && !strcmp(caller->home_path, defdir)))
+		//if (caller == C.Aes || (drv >= 0 && !strcmp(caller->home_path, defdir)))
 		{
 			defdir[0] = drv + 'a';
 			defdir[1] = ':';
 			strcpy(defdir + 2, path);
-	//		display("use path in cmd as defdir '%s'", defdir);
 		}
-
 		cpopts->mode |= CREATE_PROCESS_OPTS_DEFDIR;
 		cpopts->defdir = defdir;
-	//	display("Set defdir to '%s' for %s", defdir, caller ? caller->name : "no caller");
-	//	display("defdir caller '%s'", caller ? caller->home_path : "no caller");
 	}
 	return drv;
 }
@@ -299,6 +294,8 @@ static bool is_launch_path( char *path )
 	return ret;
 }
 
+/*
+ */
 int
 launch(enum locks lock, short mode, short wisgr, short wiscr,
        const char *parm, char *p_tail, struct xa_client *caller)
@@ -317,6 +314,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 	int ret = 0;
 	int drv = 0;
 	Path path, name, defdir;//, cur;
+	bool use_targetdir = true;	/* change to dir of called app's binary */
 	struct proc *p = NULL;
 	int type = 0, follow = 0;
 
@@ -337,8 +335,20 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 	if (!parm)
 		return -1;
 
-	x_mode = mode & 0xff00;
+	defdir[0] = 0;
+	x_mode = mode & 0xff00;	/* toshyp says high byte?? */
 	cpopts.mode = 0;
+
+	if( wiscr >= 1000 )
+	{
+		use_targetdir = false;
+		wiscr -= 1000;
+	}
+	if( wiscr == SHW_SINGLE || ( C.SingleTaskPid > 0 && caller && caller->p->pid == C.SingleTaskPid ) )
+	{
+		cpopts.mode |= CREATE_PROCESS_OPTS_SINGLE;
+		wiscr = 	1;
+	}
 
 	get_drive_and_path( cmd, sizeof(cmd) );
 	cwd = kmalloc( strlen(cmd) + 1 );
@@ -387,15 +397,13 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 	}
 	else{
 		pcmd = parm;
-	}
 
-	if( *pcmd == '/' )
-		defdir[0] = 0;
-	else
+	if( *pcmd != '/' )
 	{
 		defdir[0] = d_getdrv() + 'a';
 		defdir[1] = ':';
 		d_getpath(defdir + 2, 0);
+	}
 	}
 
 	argvtail[0] = 0;
@@ -410,23 +418,31 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 			longtail = strlen(p_tail + 1);
 			if (longtail > 124)
 				longtail = 124;
+			if (longtail == 0)
+				longtail = -1;
 			DIAG((D_shel, NULL, "ARGV!  longtail = %ld", longtail));
 		}
 
-		if( wiscr < 0 )
-		{
-			longtail = -wiscr;
-			wiscr = 1;
-		}
 		if (longtail)
 		{
+			int f;
+			if(  longtail == -1 )
+			{
+				f = 1;
+				longtail = 1;
+			}
+			else
+				f = 0;
 			DIAG((D_shel, NULL, " -- longtailsize=%ld", longtail));
 			tailsize = longtail;
 			tail = kmalloc(tailsize + 2);
 			DIAG((D_shel, NULL, " -- ltail=%lx", tail));
 			if (!tail)
 				return 0;
-			strncpy(tail + 1, p_tail + 1, tailsize);
+			if( f )
+				tail[1] = 0;
+			else
+				strncpy(tail + 1, p_tail + 1, tailsize);
 			*tail = 0x7f;
 			tail[tailsize + 1] = '\0';
 			DIAG((D_shel, NULL, "long tailsize: %ld", tailsize));
@@ -446,6 +462,8 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 			DIAG((D_shel, NULL, "int tailsize: %ld", tailsize));
 		}
 	}
+	//else
+		//tail = 0;
 
 	DIAG((D_shel, NULL, "Launch(0x%x): wisgr:%d, wiscr:%d\r\n cmd='%s'\r\n tail=%d'%s'",
 		mode, wisgr, wiscr, pcmd, *tail, tail+1));
@@ -588,7 +606,8 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 					new_tailsize = strlen(new_tail + 1);
 					strncpy(new_tail + new_tailsize + 1, tail + 1, tailsize);
 					new_tailsize += tailsize;
-					kfree(tail);
+					if( p_tail )
+						kfree(tail);
 					tail = new_tail;
 					tail[new_tailsize + 1] = '\0';
 					tailsize = new_tailsize;
@@ -608,7 +627,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 			}
 
 			if( defdir[0] )
-				drv = default_path(caller, cmd, path, name, defdir, &cpopts);
+				drv = default_path(caller, cmd, path, name, defdir, &cpopts, use_targetdir );
 			else
 				drv = 'U' - 'A';
 
@@ -670,7 +689,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 				{
 					if( ret == EPERM )
 					{
-						if( C.SingleTaskPid > 0 )
+						if( C.SingleTaskPid > 0 && (!caller || C.SingleTaskPid != caller->p->pid) )
 						{
 							struct proc *s = pid2proc(C.SingleTaskPid);
 							ALERT((xa_strings[AL_STMD]/*"launch: cannot enter single-task-mode: already in single-task-mode: %s(%d)."*/,
@@ -691,7 +710,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 			struct basepage *b;
 			long size;
 
-			drv = default_path(caller, cmd, path, name, defdir, &cpopts);
+			drv = default_path(caller, cmd, path, name, defdir, &cpopts, use_targetdir );
 
 			DIAG((D_shel, 0, "[3]drive_and_path %d,'%s','%s'", drv, path, name));
 

@@ -962,7 +962,7 @@ CE_redraw_menu(enum locks lock, struct c_event *ce, short cancel)
 		mc = ((XA_TREE *)widg->stuff)->owner;
 
 		/* in single-mode display only menu of single-app */
-		if( C.SingleTaskPid > 0 && mc->p->pid != C.SingleTaskPid )
+		if( C.SingleTaskPid > 0 && mc && mc->p->pid != C.SingleTaskPid )
 			return;
 
 		if (ce->client == mc)

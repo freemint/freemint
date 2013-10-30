@@ -1130,8 +1130,8 @@ top_window(enum locks lock, bool snd_untopped, bool snd_ontop, struct xa_window 
 #if WITH_BBL_HELP
 		if( w != bgem_window && !(w->dial == (created_for_ALERT | created_for_AES)) )
 		{
-	if( !C.boot_focus )
-			xa_bubble( 0, bbl_close_bubble1, 0, 2 );
+			if( !C.boot_focus )
+				xa_bubble( 0, bbl_close_bubble1, 0, 2 );
 		}
 #endif
 		pull_wind_to_top(lock, w);
@@ -1688,7 +1688,10 @@ open_window(enum locks lock, struct xa_window *wind, RECT r)
 		wind->window_status |= XAWS_BELOWROOT;
 	}
 	else {
-		wi_put_first(&S.open_windows, wind);
+		if( ignorefocus != 2 )
+			wi_put_first(&S.open_windows, wind);
+		else
+			wi_put_blast(&S.open_windows, wind, false, false);
 	}
 	/* New top window - change the cursor to this client's choice */
 	xa_graf_mouse(wind->owner->mouse, wind->owner->mouse_form, wind->owner, false);
@@ -1895,11 +1898,6 @@ draw_window(enum locks lock, struct xa_window *wind, const RECT *clip)
 		{
 			widg = get_widget(wind, f);
 
-//  			if (f == XAW_TOOLBAR && wind != root_window && !(wind->dial & created_for_SLIST))
-//  				display("toolbar statusmask %x, properties %x, draw %lx",
-//  					widg->m.statusmask, widg->m.properties, widg->m.r.draw);
-
-
 			if ( (wind != root_window && f == XAW_TOOLBAR) ||
 			     (widg->m.properties & WIP_NOTEXT) ||
 			     (f == XAW_MENU && wind == root_window))
@@ -1932,7 +1930,7 @@ draw_window(enum locks lock, struct xa_window *wind, const RECT *clip)
 				}
 				else if( f == XAW_MENU && widg->r.w && widg->r.h )	/* draw a bar to avoid transparence */
 				{
-						(*v->api->gbar)(v, 0, &widg->ar);
+					(*v->api->gbar)(v, 0, &widg->ar);
 				}
 				//else if( wind->wname[0] )
 				// BLOG((0,"%s: widget %d not installed", wind->wname, f ));
@@ -2890,6 +2888,8 @@ update_windows_below(enum locks lock, const RECT *old, RECT *new, struct xa_wind
 	{
 		if (wend && wend == wl)
 			break;
+		if( C.SingleTaskPid > 0 && !(wl->owner->p->pid == C.SingleTaskPid || wl->owner == C.Hlp || wl->owner == C.Aes) )
+			continue;
 
 		if (!(wl->owner->status & CS_EXITING) && (wl->window_status & XAWS_OPEN))
 		{

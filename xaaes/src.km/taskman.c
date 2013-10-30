@@ -2427,34 +2427,40 @@ static void
 handle_launcher(enum locks lock, struct fsel_data *fs, const char *path, const char *file)
 {
 	char parms[128], args[128], *p;
-	short len = 0;
+	short wiscr = 1;
 
 	close_fileselector(lock, fs);
 
 	/* provide commandline-args for launched program (fails if prg-name contains blanks) */
-	if( (long)fs->data == HL_LAUNCH && (p = strchr( file, ' ' ) ) )
+	if( (long)fs->data == HL_LAUNCH )
 	{
-		*p++ = 0;
+		if( *file == '^' )
+		{
+			file++;
+			wiscr = SHW_SINGLE;
+		}
+		if( (p = strchr( file, ' ' )) )
+			*p++ = 0;
 	}
 	else
 		p = 0;
 	sprintf(parms+1, sizeof(parms)-1, "%s%s", path, file);
 	parms[0] = '\0';
-	if( p )
+	if( p )	/* has args */
 	{
 		strncpy(args+1, p, sizeof(args)-1);
-		len = args[0] = strlen(args+1);
-		p = args;
+		args[0] = strlen(args+1);
 	}
 	else
-		p = parms;
+		args[0] = args[1] = 0;
+	p = args;
 
 	DIAGS(("launch: \"%s\"", parms+1));
 
 	switch( (long)fs->data )
 	{
 		case HL_LAUNCH:
-			launch(lock, 0, 0, -len, parms+1, p, C.Aes);
+			launch(lock, 0, 1, wiscr, parms+1, p, C.Aes);
 		break;
 #if WITH_GRADIENTS
 		case HL_LOAD_GRAD:

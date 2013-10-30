@@ -572,29 +572,41 @@ CE_pwaitpid(enum locks lock, struct c_event *ce, short cancel)
 	if( ce->d0 && ce->d0 == C.SingleTaskPid )
 	{
 		struct proc *k = pid2proc(0);
+		struct proc *sp = pid2proc(C.SingleTaskPid);
 		struct xa_client *c;
 
-		while( !ikill( C.SingleTaskPid, 0 ) )
-		{
-		 	yield();
+		if( sp )
+		{	/* if parent is single-task: don't leave single-mode */
+			sp = pid2proc(sp->ppid);
+			if( sp && (sp->modeflags & M_SINGLE_TASK) && !ikill( sp->pid, 0) )
+				C.SingleTaskPid = sp->pid;
+			else
+				sp = 0;
 		}
-		FOREACH_CLIENT(c)
+		if( !sp )
 		{
-			if( c->p->pid && c != C.Aes && c != C.Hlp && !(c->status & (CS_EXITING | CS_SIGKILLED)) )
+			while( !ikill( C.SingleTaskPid, 0 ) )
 			{
-				BLOG((0,"continue %s(%d)", c->name, c->p->pid));
-				ikill(c->p->pid, SIGCONT);
-			 	yield();	// mouse ?
+			 	yield();
 			}
-		}
-		BLOG((0,"%s: leaving single-mode (k=%lx).", get_curproc()->name, k));
-		k->modeflags &= ~M_SINGLE_TASK;
-		C.SingleTaskPid = -1;
+			FOREACH_CLIENT(c)
+			{
+				if( c->p->pid && c != C.Aes && c != C.Hlp && !(c->status & (CS_EXITING | CS_SIGKILLED)) )
+				{
+					BLOG((0,"continue %s(%d)", c->name, c->p->pid));
+					ikill(c->p->pid, SIGCONT);
+				 	yield();	// mouse ?
+				}
+			}
+			BLOG((0,"%s: leaving single-mode (k=%lx).", get_curproc()->name, k));
+			k->modeflags &= ~M_SINGLE_TASK;
+			C.SingleTaskPid = -1;
 
-		/* menubar may be corrupted */
-		C.Aes->nxt_menu = C.Aes->std_menu;	/* kludge to run swap_menu() */
-		app_in_front( lock, C.Aes, 0, true, true);
-		C.Aes->nxt_menu = 0;
+			/* menubar may be corrupted */
+			C.Aes->nxt_menu = C.Aes->std_menu;	/* kludge to run swap_menu() */
+			app_in_front( lock, C.Aes, 0, true, true);
+			C.Aes->nxt_menu = 0;
+		}
 	}
 
 	if (ce->d0)

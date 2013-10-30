@@ -1491,7 +1491,7 @@ CE_start_apps(enum locks lock, struct c_event *ce, short cancel)
 				if (cfg.cnf_run_arg[i])
 					parms[0] = sprintf(parms+1, sizeof(parms)-2, "%s", cfg.cnf_run_arg[i]);
 
-				pid = launch(lock, 0, 0, 0, cfg.cnf_run[i], parms, C.Aes);
+				pid = launch(lock, 0, 1, 1, cfg.cnf_run[i], parms, C.Aes);
 				if( pid > 0 )
 				{
 					struct proc *p = pid2proc(pid);
@@ -1500,6 +1500,7 @@ CE_start_apps(enum locks lock, struct c_event *ce, short cancel)
 				}
 			}
 		}
+
 		if (cfg.cnf_shell)
 		{
 			parms[0] = '\0';
@@ -1610,7 +1611,7 @@ static void set_boot_focus(enum locks lock)
 
 		if( c )
 		{
-			set_active_client(lock, c);
+			app_in_front( lock, c, true, true, false );
 		}
 	}
 }
@@ -1975,7 +1976,6 @@ k_main(void *dummy)
 		if (fs_rtn > 0)
 		{
 			set_boot_focus(lock);
-			C.boot_focus = 0;
 			if (input_channels & (1UL << C.KBD_dev))
 			{
 				keyboard_input(lock);
@@ -2153,7 +2153,6 @@ k_exit(int wait)
 // 		adi_unregister(G.adi_mouse);
 // 		G.adi_mouse = NULL;
 	}
-
 
 	if( my_global_aes[2] != -1 )
 	{
