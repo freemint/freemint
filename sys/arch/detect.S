@@ -20,7 +20,7 @@
  *
  */
 
-#ifndef __mcoldfire__
+#if !defined(__mcoldfire__) && (__GNUC__ > 2)
 	.arch	68030
 #endif
 

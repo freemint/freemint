@@ -48,8 +48,10 @@
  *	flush the ATC.
  */
 
+#if __GNUC__ > 2
 #ifndef __mcoldfire__
 	.arch	68030
+#endif
 #endif
 
 #include "magic/magic.i"

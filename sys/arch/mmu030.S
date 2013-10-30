@@ -14,7 +14,9 @@
 
 #if defined(WITH_MMU_SUPPORT) && defined(M68030)
 
+#if (__GNUC__ > 2)
 	.arch	68030
+#endif
 	.data
 nulltc:
 	dc.l	0
