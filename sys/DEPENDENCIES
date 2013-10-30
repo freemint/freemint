@@ -7,6 +7,9 @@ include $(top_srcdir)/../DEPENDENCIES
 # private definitions
 #
 
+# everything depends on KERNELDEFS
+$(OBJS): $(top_srcdir)/KERNELDEFS
+
 #
 # libkern target
 #
