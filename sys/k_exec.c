@@ -907,7 +907,6 @@ create_process(const void *filename, const void *cmdline, const void *newenv,
 	b = (BASEPAGE *) base->loc;
 	if( opts && (opts->mode & CREATE_PROCESS_OPTS_SINGLE) )
 		b->p_flags |= F_SINGLE_TASK;
-	DBG_FORCE(("create_process: %s: p_flags=%lx.opts=%lx:%lx", filename, b->p_flags, opts, opts ? opts->mode : 0L));
 	DEBUG(("create_process: p_flags=%lx", b->p_flags));
 
 # ifdef WITH_SINGLE_TASK_SUPPORT
