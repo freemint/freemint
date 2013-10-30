@@ -233,7 +233,6 @@ typedef struct _osheader
 } OSHEADER;
 
 short write_boot_file = 0;
-
 void
 init (void)
 {
@@ -326,21 +325,7 @@ init (void)
 # endif
 	stop_and_ask();
 
-# ifdef DEBUG_INFO
-	{
-		long usp, ssp;
-
-		usp = get_usp();
-		ssp = get_ssp();
-
-		DEBUG(("Kernel BASE: 0x%08lx", _base));
-		DEBUG(("Kernel TEXT: 0x%08lx (SIZE: %ld bytes)", _base->p_tbase, _base->p_tlen));
-		DEBUG(("Kernel DATA: 0x%08lx (SIZE: %ld bytes)", _base->p_dbase, _base->p_dlen));
-		DEBUG(("Kernel BSS:  0x%08lx (SIZE: %ld bytes)", _base->p_bbase, _base->p_blen));
-		DEBUG(("Kernel USP:  0x%08lx (FREE: %ld bytes)", usp, usp - (_base->p_bbase + _base->p_blen)));
-		DEBUG(("Kernel SSP:  0x%08lx (FREE: %ld bytes)", ssp, ssp - (_base->p_bbase + _base->p_blen)));
-	}
-# endif
+	/*--+*/
 	sysdrv = *((short *) 0x446);	/* get the boot drive number */
 
 # ifdef VERBOSE_BOOT
@@ -543,9 +528,11 @@ init (void)
 
 		r = FP_ALLOC(rootproc, &fb);
 		if (r) FATAL("Can't allocate fp for bootlog!");
+		//boot_print("open "BOOTLOGFILE"\r\n" );
 		r = do_open( &fb, BOOTLOGFILE, O_RDWR|O_TRUNC|O_CREAT, 0, NULL);
 		if( !r )
 		{
+			//boot_print("open BOOTLOGFILE OK\r\n" );
 			rootproc->p_fd->ofiles[1] = fb;
 		}
 		else
@@ -554,9 +541,24 @@ init (void)
 			(void)TRAP_Cconin();
 			rootproc->p_fd->ofiles[1] = f;
 			f->links++;
+			write_boot_file = 0;
 		}
 	}
 
+# ifdef DEBUG_INFO
+	{
+		long usp, ssp;
+
+		usp = get_usp();
+		ssp = get_ssp();
+
+		boot_printf("Kernel TEXT: 0x%08lx (SIZE: %ld bytes)\n", _base->p_tbase, _base->p_tlen);
+		boot_printf("Kernel DATA: 0x%08lx (SIZE: %ld bytes)\n", _base->p_dbase, _base->p_dlen);
+		boot_printf("Kernel BSS:  0x%08lx (SIZE: %ld bytes)\n", _base->p_bbase, _base->p_blen);
+		boot_printf("Kernel USP:  0x%08lx (FREE: %ld bytes)\n", usp, usp - (_base->p_bbase + _base->p_blen));
+		boot_printf("Kernel SSP:  0x%08lx (FREE: %ld bytes)\n", ssp, ssp - (_base->p_bbase + _base->p_blen));
+	}
+# endif
 	r = FP_ALLOC(rootproc, &f);
 	if (r) FATAL("Can't allocate fp!");
 
@@ -1161,6 +1163,7 @@ mint_thread(void *arg)
 # endif
 		if (!init_is_gem)
 		{
+			boot_print( "e" );	/* cursor on */
 # if 1
 			r = sys_pexec(100, init_prg, init_tail, _base->p_env);
 			DEBUG(("%s(): exec(%s) returned %ld", __FUNCTION__, init_prg, r));
