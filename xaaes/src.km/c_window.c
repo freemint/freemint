@@ -981,7 +981,7 @@ send_iredraw(enum locks lock, struct xa_window *wind, short xaw, RECT *r)
 {
 	if (wind == root_window)
 	{
-		if (get_desktop()->owner == C.Aes) {
+		if (get_desktop()->owner == C.Aes || C.SingleTaskPid > 0) {
 			display_window(lock, 0, wind, r);
 		} else if (r) {
 			send_app_message(lock, wind, get_desktop()->owner, AMQ_IREDRAW, QMF_NORM,
@@ -2880,7 +2880,6 @@ update_windows_below(enum locks lock, const RECT *old, RECT *new, struct xa_wind
 	RECT clip;
 	enum locks wlock = lock | winlist;
 
-	DIAGS(("update_windows_below: ..."));
 
 	if (!wl)
 		return;
@@ -2888,12 +2887,8 @@ update_windows_below(enum locks lock, const RECT *old, RECT *new, struct xa_wind
 	{
 		if (wend && wend == wl)
 			break;
-		if( C.SingleTaskPid > 0
-			&& !(wl->owner->p->pid == C.SingleTaskPid || wl->owner == C.Hlp
-				|| (wl->owner == C.Aes && get_desktop()->owner == C.Aes)) )
-			continue;
 
-		if (!(wl->owner->status & CS_EXITING) && (wl->window_status & XAWS_OPEN))
+		if( (wl->window_status & (XAWS_HIDDEN|XAWS_OPEN)) == XAWS_OPEN && !(wl->owner->status & CS_EXITING) )
 		{
 			/* Check for newly exposed windows */
 			if (xa_rect_clip(old, &wl->r, &clip))

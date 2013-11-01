@@ -407,6 +407,7 @@ static void ikill_proc(enum locks lock, struct c_event *ce, short cancel)
 }
 
 struct file *xconout_dev = 0;
+static short redraw_timeout; /* saved value during single-task */
 /*
  * Application initialise - appl_init()
  */
@@ -492,7 +493,18 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 			if( k )
 			{
 				struct xa_client *c;
+				struct xa_window *wind;
+				/* hide_other(lock, client ); no standard_point ..? */
+				for (wind  = window_list; wind && wind != root_window; wind = wind->next )
+				{
+					if( !(wind->owner == C.Aes || wind->owner == C.Hlp) )
+						hide_window(lock, wind);
+				}
+				update_windows_below(lock, &screen.r, NULL, window_list, NULL);
+				nap(500);
 
+				redraw_timeout = cfg.redraw_timeout;
+				cfg.redraw_timeout = 2;
 				k->modeflags |= M_SINGLE_TASK;
 				C.SingleTaskPid = p->pid;
 
@@ -601,10 +613,11 @@ CE_pwaitpid(enum locks lock, struct c_event *ce, short cancel)
 			BLOG((0,"%s: leaving single-mode (k=%lx).", get_curproc()->name, k));
 			k->modeflags &= ~M_SINGLE_TASK;
 			C.SingleTaskPid = -1;
+			cfg.redraw_timeout = redraw_timeout;
 
 			/* menubar may be corrupted */
 			C.Aes->nxt_menu = C.Aes->std_menu;	/* kludge to run swap_menu() */
-			app_in_front( lock, C.Aes, 0, true, true);
+			unhide_all(lock, C.Aes );
 			C.Aes->nxt_menu = 0;
 		}
 	}
