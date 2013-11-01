@@ -223,34 +223,15 @@ static int
 default_path(struct xa_client *caller, char *cmd, char *path, char *name, char *defdir, struct create_process_opts *cpopts, bool use_targetdir)
 {
 	int drv;
-	/*
-	 * Ozk:
-	 * I am absolutely NOT SURE about this, but this is what I implemented;
-	 *
-	 * 1.	If x_shel is used to set default dir, we use that defaultdir,
-	 *	ofcourse.
-	 * 2.	If the caller's current working directory equeals its home-
-	 *	directory, we take the defaultpath for the new process out of
-	 *	the 'cmd', which is the path to process callers wants started.
-	 * 3.	If the callers current working directory is NOT the same as
-	 *	its homepath, we set the new processes default path to, yes,
-	 *	the current working directory
-	 * 4.	If caller is AESSYS, we always take defaultdir out of cmd.
-	 * 5.	IF ANYONE KNOWS BETTER, I'M EXTREMELY INTERESTED IN KNOWING!!!
-	 */
-	//drv = drive_and_path(cmd, path, name, true, caller == C.Aes ? true : false);
 	drv = drive_and_path(cmd, path, name, use_targetdir, true);
 	if (!(cpopts->mode & CREATE_PROCESS_OPTS_DEFDIR))
 	{
-		//if (caller == C.Aes || (drv >= 0 && !strcmp(caller->home_path, defdir)))
-		{
-			defdir[0] = drv + 'a';
-			defdir[1] = ':';
-			strcpy(defdir + 2, path);
-		}
-		cpopts->mode |= CREATE_PROCESS_OPTS_DEFDIR;
-		cpopts->defdir = defdir;
+		defdir[0] = drv + 'a';
+		defdir[1] = ':';
+		strcpy(defdir + 2, path);
 	}
+	cpopts->mode |= CREATE_PROCESS_OPTS_DEFDIR;
+	cpopts->defdir = defdir;
 	return drv;
 }
 
@@ -380,7 +361,6 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 		}
 		if (x_mode & SW_DEFDIR)
 		{
-		//	display("x_modedefdir '%s' for %s", x_shell.defdir, caller ? caller->name : "no caller");
 			cpopts.mode |= CREATE_PROCESS_OPTS_DEFDIR;
 			cpopts.defdir = x_shell.defdir;
 		}
@@ -395,7 +375,7 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 			cpopts.gid = x_shell.gid;
 		}
 	}
-	else{
+	else
 		pcmd = parm;
 
 	if( *pcmd != '/' )
@@ -403,7 +383,6 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 		defdir[0] = d_getdrv() + 'a';
 		defdir[1] = ':';
 		d_getpath(defdir + 2, 0);
-	}
 	}
 
 	argvtail[0] = 0;
@@ -462,8 +441,6 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 			DIAG((D_shel, NULL, "int tailsize: %ld", tailsize));
 		}
 	}
-	//else
-		//tail = 0;
 
 	DIAG((D_shel, NULL, "Launch(0x%x): wisgr:%d, wiscr:%d\r\n cmd='%s'\r\n tail=%d'%s'",
 		mode, wisgr, wiscr, pcmd, *tail, tail+1));
@@ -786,8 +763,6 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 		 * TODO: add XaAES extension that don't do this.
 		 */
 
-// 		p->ppid = C.Aes->p->pid;
-
 		if (x_mode & SW_PRENICE)
 		{
 			DIAGS((" -- p_renice"));
@@ -809,12 +784,6 @@ launch(enum locks lock, short mode, short wisgr, short wiscr,
 		DIAGS((" -- attaching extension"));
 		info = attach_extension(p, XAAES_MAGIC_SH, PEXT_COPYONSHARE | PEXT_SHAREONCE, sizeof(*info),
 					&info_cb); //xaaes_cb_vector_sh_info);
-
-// 		if (!(strnicmp(p->name, "qed", 3)))
-// 		{
-// 			struct module_callback *cb = &info_cb; //xaaes_cb_vector_sh_info;
-// 			disp_cb(cb);
-// 		}
 
 		if (info)
 		{
