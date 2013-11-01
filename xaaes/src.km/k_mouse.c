@@ -967,7 +967,6 @@ move_rtimeout(struct proc *p, long arg)
 			if (client->status & CS_LAGGING)
 			{
 				DIAGA(("%s lagging - cancelling all events", client->name));
-// 				display("%s lagging - cancelling all events", client->name);
 				cancel_aesmsgs(&client->rdrw_msg);
 				cancel_aesmsgs(&client->msg);
 				cancel_aesmsgs(&client->irdrw_msg);
@@ -976,7 +975,6 @@ move_rtimeout(struct proc *p, long arg)
 			else
 			{
 				DIAGA(("%s flagged as lagging", client->name));
-// 				display("%s flagged as lagging", client->name);
 				client->status |= CS_LAGGING;
 			}
 		}

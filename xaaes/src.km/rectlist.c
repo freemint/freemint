@@ -183,7 +183,7 @@ build_rect_list(struct build_rl_parms *p)
 						if( flag )
 						{
 #if 1
-							/* a_avoid spltting workarea because of menu */
+							/* avoid splitting workarea because of menu */
 							if( cfg.menu_bar == 1 && menu_window && rl_prev->r.y < menu_window->r.h
 								&& rl->r.x + rl->r.w == rl_prev->r.x && rl->r.y + rl->r.h == rl_prev->r.y + rl_prev->r.h )
 							{

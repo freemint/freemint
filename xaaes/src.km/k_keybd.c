@@ -229,11 +229,6 @@ XA_keyboard_event(enum locks lock, const struct rawkey *key)
 		waiting ? "waiting" : "", update_locked() ? update_locked()->pid : 0,
 		c_owner(client), keywind ? w_owner(keywind) : "no keywind"));
 
-
-// 	display("XA_keyboard_event: %s; update_lock:%d, focus: %s, window_list: %s, waiting_pb=%lx",
-// 		waiting ? "waiting" : "", update_locked() ? update_locked()->pid : 0,
-// 		client->name, keywind ? keywind->owner->name : "no keywind", client->waiting_pb);
-
 	/* Found either (MU_KEYBD|MU_NORM_KEYBD) or keypress handler. */
 	if (waiting)
 	{
@@ -285,7 +280,7 @@ XA_keyboard_event(enum locks lock, const struct rawkey *key)
 			queue_key(client, key);
 		else
 			cancel_keyqueue(client);
-			*/
+		*/
 	}
 }
 
@@ -1015,8 +1010,7 @@ keyboard_input(enum locks lock)
 
 		key.raw.bcon = f_getchar(C.KBD_dev, RAW);
 
- 		//DBG((0,"f_getchar: 0x%08lx, AES=%x, NORM=%x", key.raw.bcon, key.aes, key.norm));
-// 		display("f_getchar: 0x%08lx, AES=%x, NORM=%x", key.raw.bcon, key.aes, key.norm);
+ 		//DBG((0,"keyboard_input:f_getchar: 0x%08lx, AES=%x, NORM=%x: %s", key.raw.bcon, key.aes, key.norm, get_curproc()->name));
 
 	// this produces wheel-events on some F-keys (eg. S-F10)
 #if EIFFEL_SUPPORT
@@ -1031,8 +1025,6 @@ keyboard_input(enum locks lock)
 		/* Translate the BIOS raw data into AES format */
 		key.aes = (key.raw.conin.scan << 8) | key.raw.conin.code;
 		key.norm = 0;
-
-// 		display("f_getchar: 0x%08lx, AES=%x, NORM=%x", key.raw.bcon, key.aes, key.norm);
 
 		if (kernel_key(lock, &key) == false )
 		{
