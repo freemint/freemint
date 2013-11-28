@@ -1138,9 +1138,7 @@ static void ethernat_service	(struct netif * nif)
 /*			ksprintf(message, "Error in RCV packet: 0x%04hx\n\r", status);
 			f_write(loghandle, strlen(message)-1, message);*/
 		}
-		else if ((desttmp[0] == mac_addr[0] && desttmp[1] == mac_addr[1]) ||
-					(desttmp[0] == 0xFFFFFFFF && desttmp[1] == 0xFFFF0000)
-				  )
+		else
 		{
 			b = buf_alloc (bytecount+100, 50, BUF_NORMAL);
 			if(!b)
