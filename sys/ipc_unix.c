@@ -180,7 +180,7 @@ unix_bind (struct socket *so, struct sockaddr *addr, short addrlen)
 	if (!addr)
 		return EDESTADDRREQ;
 
-	if (addrlen <= UN_PATH_OFFSET || addrlen >= UN_ADDR_SIZE)
+	if (addrlen <= UN_PATH_OFFSET || addrlen > UN_ADDR_SIZE)
 	{
 		DEBUG (("unix: unix_bind: invalid addrlen %d", addrlen));
 		return EINVAL;
@@ -705,7 +705,7 @@ un_namei (struct sockaddr *addr, short addrlen, long *index)
 	if (!addr)
 		return EDESTADDRREQ;
 
-	if (addrlen <= UN_PATH_OFFSET || addrlen >= UN_ADDR_SIZE)
+	if (addrlen <= UN_PATH_OFFSET || addrlen > UN_ADDR_SIZE)
 	{
 		DEBUG (("unix: un_namei: invalid addrlen %d", addrlen));
 		return EINVAL;
