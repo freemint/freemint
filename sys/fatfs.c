@@ -8433,8 +8433,10 @@ fatfs_ioctl (FILEPTR *f, int mode, void *buf)
 				while (lck)
 				{
 					if (lck->l.l_pid == get_curproc()->pid
-						&& lck->l.l_start == t.l.l_start
-						&& lck->l.l_len == t.l.l_len)
+		                                && ((lck->l.l_start == t.l.l_start
+						     && lck->l.l_len == t.l.l_len) ||
+						    (lck->l.l_start >= t.l.l_start
+						     && t.l.l_len == 0)))
 					{
 						/* found it -- remove the lock */
 						*lckptr = lck->next;
