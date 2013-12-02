@@ -215,7 +215,8 @@ inet_bind (struct socket *so, struct sockaddr *addr, short addrlen)
 	saddr = inaddr->sin_addr.s_addr;
 	if (saddr != INADDR_ANY)
 	{
-		if (!ip_is_local_addr (saddr))
+		/* Allow bind to local broadcast address. Fixes samba's nmbd. */
+		if (!ip_is_local_addr (saddr) && !ip_is_brdcst_addr (saddr))
 		{
 			DEBUG (("inet_bind: %lx: no such local IP address",
 				saddr));
