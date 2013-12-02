@@ -375,9 +375,13 @@ out:
 	if (pos > c->i_size)
 	{
 		c->i_size = pos;
-		c->in.i_size = cpu2le32 (pos);
 	}
-	
+
+	if (pos > cpu2le32(c->in.i_size)) 
+	{
+		c->in.i_size = cpu2le32(pos);
+	}
+
 	c->in.i_ctime = c->in.i_mtime = cpu2le32 (CURRENT_TIME);
 	mark_inode_dirty (c);
 	
