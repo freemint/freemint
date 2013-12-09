@@ -38,7 +38,7 @@
 
 
 long un_cache_lookup (char *, long *);
-void un_cache_remove (char *);
+long un_cache_remove (char *);
 
 
 # endif /* _ipc_unix_cache_h */
