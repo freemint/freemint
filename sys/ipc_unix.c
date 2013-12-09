@@ -193,7 +193,7 @@ unix_bind (struct socket *so, struct sockaddr *addr, short addrlen)
 
 	memcpy (&undata->addr, addr, addrlen);
 	undata->addr.sun_path[
-		MIN(sizeof(sockaddr_un) - 1 - UN_PATH_OFFSET, addrlen - UN_PATH_OFFSET)] = '\0';
+		MIN(sizeof(struct sockaddr_un) - 1 - UN_PATH_OFFSET, addrlen - UN_PATH_OFFSET)] = '\0';
 
 	if (undata->addr.sun_family != AF_UNIX)
 	{
@@ -715,7 +715,7 @@ un_namei (struct sockaddr *addr, short addrlen, long *index)
 
 	memcpy (&un, addr, addrlen);
 	un.sun_path[
-		MIN(sizeof(sockaddr_un) - 1 - UN_PATH_OFFSET, addrlen - UN_PATH_OFFSET)] = '\0';
+		MIN(sizeof(struct sockaddr_un) - 1 - UN_PATH_OFFSET, addrlen - UN_PATH_OFFSET)] = '\0';
 
 	if (un.sun_family != AF_UNIX)
 	{
