@@ -151,14 +151,6 @@ fp_free (FILEPTR *fp, const char *func)
 long
 fp_get (struct proc **p, short *fd, FILEPTR **fp, const char *func)
 {
-# if O_GLOBAL
-	if (*fd >= 100)
-	{
-		*fd -= 100;
-		*p = rootproc;
-	}
-# endif
-
 	assert ((*p));
 	if( !(*p)->p_fd )
 		FORCE("fp_get:ERROR:p_fd=0");
