@@ -146,10 +146,6 @@ extern const char *ERR_dma_deblock_on_inv_handle;
 extern const char *ERR_dma_addroottimeout;
 
 /* dosfile.c */
-# if O_GLOBAL
-extern const char *MSG_oglobal_denied;
-extern const char *MSG_global_handle;
-# endif
 
 /* filesys.c */
 extern const char *ERR_fsys_inv_fdcwd;
