@@ -40,7 +40,7 @@
 
 struct file;
 
-# define NDFILE		32
+# define NDFILE		1024
 # define NDEXTENT	50
 
 struct filedesc
