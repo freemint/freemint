@@ -306,29 +306,17 @@ sys_c_auxos (void)
 	return -(!!file_outstat (get_curproc()->p_fd->ofiles[2]));
 }
 
-
 /* Extended GEMDOS routines
  */
 
 long _cdecl
-sys_f_instat (int h)
+sys_f_instat (int fh)
 {
-	PROC *proc;
-	int fh = h;
-
-# if O_GLOBAL
-	if (fh >= 100)
-	{
-		proc = rootproc;
-		fh -= 100;
-	}
-	else
-# endif
-		proc = get_curproc();
+	PROC *proc = get_curproc();
 
 	if (fh < MIN_HANDLE || fh >= proc->p_fd->nfiles)
 	{
-		DEBUG (("Finstat: bad handle %d", h));
+		DEBUG (("Finstat: bad handle %d", fh));
 		return EBADF;
 	}
 
@@ -338,18 +326,8 @@ sys_f_instat (int h)
 long _cdecl
 sys_f_outstat (int h)
 {
-	PROC *proc;
+	PROC *proc = get_curproc();
 	int fh = h;
-
-# if O_GLOBAL
-	if (fh >= 100)
-	{
-		proc = rootproc;
-		fh -= 100;
-	}
-	else
-# endif
-		proc = get_curproc();
 
 	if (fh < MIN_HANDLE || fh >= proc->p_fd->nfiles)
 	{
@@ -363,18 +341,8 @@ sys_f_outstat (int h)
 long _cdecl
 sys_f_getchar (int h, int mode)
 {
-	PROC *proc;
+	PROC *proc = get_curproc();
 	int fh = h;
-
-# if O_GLOBAL
-	if (fh >= 100)
-	{
-		proc = rootproc;
-		fh -= 100;
-	}
-	else
-# endif
-		proc = get_curproc();
 
 	if (fh < MIN_HANDLE || fh >= proc->p_fd->nfiles)
 	{
@@ -388,18 +356,8 @@ sys_f_getchar (int h, int mode)
 long _cdecl
 sys_f_putchar (int h, long c, int mode)
 {
-	PROC *proc;
+	PROC *proc = get_curproc();
 	int fh = h;
-
-# if O_GLOBAL
-	if (fh >= 100)
-	{
-		proc = rootproc;
-		fh -= 100;
-	}
-	else
-# endif
-		proc = get_curproc();
 
 	if (fh < MIN_HANDLE || fh >= proc->p_fd->nfiles)
 	{
