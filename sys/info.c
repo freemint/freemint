@@ -329,11 +329,6 @@ const char *ERR_dma_addroottimeout = "dma_block: addroottimeout failed!";
 
 /* --------- dosfile.c --------- */
 
-# if O_GLOBAL
-const char *MSG_oglobal_denied = "O_GLOBAL for sockets denied; update your network tools";
-const char *MSG_global_handle = "Opening global handle (%s)";
-# endif
-
 /* -------- filesys.c --------- */
 
 const char *ERR_fsys_inv_fdcwd = "In changedrv() called from %s, invalid fd/cwd";
