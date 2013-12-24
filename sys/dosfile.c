@@ -50,33 +50,14 @@ sys_f_open (const char *name, short mode)
 	struct proc *p = get_curproc();
 	FILEPTR *fp = NULL;
 	short fd = MIN_OPEN - 1;
-	int globl = 0;
 	long ret;
 
 	TRACE (("Fopen(%s, %x)", name, mode));
 
-# if O_GLOBAL
-	if (mode & O_GLOBAL)
-	{
-		if (p->p_cred->ucr->euid)
-		{
-			DEBUG (("Fopen(%s): O_GLOBAL denied for non root"));
-			return EPERM;
-		}
-
-		/* from now the sockets are clean */
-		if (!stricmp (name, "u:\\dev\\socket"))
-		{
-			ALERT (MSG_oglobal_denied);
-			return EINVAL;
-		}
-
-		ALERT (MSG_global_handle, name);
-
-		p = rootproc;
-		globl = 1;
-	}
-# endif
+	if (mode & O_GLOBAL) {
+	   ALERT("O_GLOBAL is obsolete, please update your driver (%s)",name);
+	   return EINVAL;
+        }
 
 	/* make sure the mode is legal */
 	mode &= O_USER;
@@ -101,12 +82,6 @@ sys_f_open (const char *name, short mode)
 	/* activate the fp, default is to close non-standard files on exec */
 	FP_DONE (p, fp, fd, FD_CLOEXEC);
 
-# if O_GLOBAL
-	if (globl)
-		/* we just opened a global handle */
-		fd += 100;
-# endif
-
 	TRACE (("Fopen: returning %d", fd));
 	return fd;
 
@@ -126,14 +101,6 @@ sys_f_create (const char *name, short attrib)
 	long ret;
 
 	TRACE (("Fcreate(%s, %x)", name, attrib));
-
-# if O_GLOBAL
-	if (attrib & O_GLOBAL)
-	{
-		DEBUG (("Fcreate(%s): O_GLOBAL denied"));
-		return EPERM;
-	}
-# endif
 
 	assert (p->p_fd && p->p_cwd);
 

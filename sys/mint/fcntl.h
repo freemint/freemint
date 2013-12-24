@@ -79,7 +79,7 @@
 
 # ifdef __KERNEL__
 # define O_USER		0x00000fff	/* isolates user-settable flag bits */
-# define O_GLOBAL	0x00001000	/* for opening a global file */
+# define O_GLOBAL	0x00001000	/* OBSOLETE, DONT USE! */
 # define O_TTY		0x00002000
 # define O_HEAD		0x00004000
 # define O_LOCK		0x00008000

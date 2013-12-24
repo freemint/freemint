@@ -2,7 +2,7 @@
 # Makefile for 
 #
 TARGET = 
-DRIVERS = rtl8012 rtl8012st dial slip plip dummy de600 lance pamsdma biodma \
+DRIVERS = rtl8012 rtl8012st dial plip dummy de600 lance pamsdma biodma \
 	rieblspc rieblspc_fast rieblmst rieblmst_fast rieblste riebltt
 
 SHELL = /bin/sh
