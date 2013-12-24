@@ -324,14 +324,13 @@ sys_f_instat (int fh)
 }
 
 long _cdecl
-sys_f_outstat (int h)
+sys_f_outstat (int fh)
 {
 	PROC *proc = get_curproc();
-	int fh = h;
 
 	if (fh < MIN_HANDLE || fh >= proc->p_fd->nfiles)
 	{
-		DEBUG (("Foutstat: bad handle %d", h));
+		DEBUG (("Foutstat: bad handle %d", fh));
 		return EBADF;
 	}
 
@@ -339,14 +338,13 @@ sys_f_outstat (int h)
 }
 
 long _cdecl
-sys_f_getchar (int h, int mode)
+sys_f_getchar (int fh, int mode)
 {
 	PROC *proc = get_curproc();
-	int fh = h;
 
 	if (fh < MIN_HANDLE || fh >= proc->p_fd->nfiles)
 	{
-		DEBUG (("Fgetchar: bad handle %d", h));
+		DEBUG (("Fgetchar: bad handle %d", fh));
 		return EBADF;
 	}
 
@@ -354,14 +352,13 @@ sys_f_getchar (int h, int mode)
 }
 
 long _cdecl
-sys_f_putchar (int h, long c, int mode)
+sys_f_putchar (int fh, long c, int mode)
 {
 	PROC *proc = get_curproc();
-	int fh = h;
 
 	if (fh < MIN_HANDLE || fh >= proc->p_fd->nfiles)
 	{
-		DEBUG (("Fputchar: bad handle %d", h));
+		DEBUG (("Fputchar: bad handle %d", fh));
 		return EBADF;
 	}
 
