@@ -313,6 +313,8 @@ neth_output (struct netif *nif, BUF *buf, const char *hwaddr, short hwlen, short
 		send_block (ethX, nbuf->dstart, len);
 	}
 
+	buf_deref (nbuf, BUF_NORMAL);
+
 	return 0;
 }
 
