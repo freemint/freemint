@@ -535,10 +535,7 @@ do_form_alert(enum locks lock, struct xa_client *client, int default_button, cha
 					     r, NULL, NULL);
 		if (alert_window)
 		{
-			alert_window->window_status |= XAWS_FLOAT;
-
-			//widg = get_widget(alert_window, XAW_TOOLBAR);
-			//UNUSED(widg);
+			alert_window->window_status |= XAWS_FLOAT | ((client == C.Aes||client==C.Hlp)?XAWS_STICKYFOCUS:0);
 
 			set_toolbar_widget(lock, alert_window, client, alert_form, inv_aesobj(), WIP_NOTEXT, STW_ZEN, NULL, &or);
 			wt->extra = alertxt;
