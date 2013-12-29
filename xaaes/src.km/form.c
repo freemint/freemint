@@ -814,9 +814,6 @@ Form_Keyboard(XA_TREE *wt,
 
 	ei = (wt->wind->dial & created_for_TOOLBAR) && wt->ei ? wt->ei : &wt->e;
 
-// 	display("Form_Keyboard:   wt=%lx, obtree=%lx, wt->owner=%lx(%lx), obj=%d, key=%x(%x), nrmkey=%x for %s",
-// 		ei->obj, wt, wt->tree, wt->owner, wt->owner, obj, keycode, key->aes, key->norm, wt->owner->name);
-
 	fr.no_exit = true;
 
 	if (!aesobj_item(&obj))
@@ -1002,10 +999,6 @@ done:
 
 	DIAG((D_keybd, NULL, "Form_Keyboard: no_exit=%s(%d), nxtobj=%d, obstate=%x, for %s",
 		fr.no_exit ? "true" : "false", fr.no_exit, aesobj_item(&next_obj), aesobj_state(&next_obj), client->name));
-
-
-// 	display("Form_Keyboard: no_exit=%s(%d), nxtobj=%d, nxteobj=%d, obstate=%x, for %s",
-// 		fr.no_exit ? "true" : "false", fr.no_exit, next_obj, new_eobj, wt->tree[next_obj].ob_state, wt->owner->name);
 
 	return fr.no_exit ? 1 : 0;
 }
@@ -1274,7 +1267,6 @@ Key_form_do(enum locks lock,
 	    struct xa_window *wind,
 	    struct widget_tree *wt,
 	    const struct rawkey *key,
-
 	    struct fmd_result *ret_fr)
 {
 	struct xa_vdi_settings *v;
@@ -1287,7 +1279,7 @@ Key_form_do(enum locks lock,
 
 	fr.no_exit = true;
 	fr.flags = 0;
-
+	fr.aeskey = 0;
 	DIAG((D_form, client, "Key_form_do: %s formdo for %s",
 		wind ? "windowed":"classic", client->name));
 
@@ -1323,7 +1315,8 @@ Key_form_do(enum locks lock,
 		fr.dblmask = 0;
 
 		if( ei->o.item >= 0
-			|| !(wt->wind->dial & created_for_TOOLBAR) || key->aes == SC_RETURN || (key->raw.conin.state & (K_CTRL|K_ALT)) == K_ALT )
+			|| !(wt->wind->dial & created_for_TOOLBAR)
+				|| key->aes == SC_RETURN || (key->raw.conin.state & (K_CTRL|K_ALT)) == K_ALT )
 			fr.no_exit = Form_Keyboard(wt,
 					   v,
 					   ei->o,
@@ -1353,7 +1346,6 @@ Key_form_do(enum locks lock,
 					  *rl,
 					  NULL,
 					  NULL);
-				fr.aeskey = 0;
 				fr.flags |= FMDF_EDIT;
 
 				DIAGS(("Key_form_do: obj_edit - edobj=%d, edpos=%d",
