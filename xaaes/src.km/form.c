@@ -1280,6 +1280,7 @@ Key_form_do(enum locks lock,
 	fr.no_exit = true;
 	fr.flags = 0;
 	fr.aeskey = 0;
+	fr.obj.item = -1;
 	DIAG((D_form, client, "Key_form_do: %s formdo for %s",
 		wind ? "windowed":"classic", client->name));
 
