@@ -118,7 +118,7 @@ long usb_init(void)
 		 * i.e. search HUBs and configure them 
 		 */
 		start_index = dev_index;
-		DEBUG(("scanning bus %d for devices... ", i));
+		DEBUG(("scanning bus %d for devices... ", a->unit));
 
 		dev = usb_alloc_new_device(a);
 		/*
@@ -131,7 +131,7 @@ long usb_init(void)
 		if (start_index == dev_index)
 			DEBUG(("No USB Device found"));
 		else
-			DEBUG(("%d USB Device(s) found",
+			DEBUG(("%ld USB Device(s) found",
 				dev_index - start_index));
 
 		usb_started = 1;
@@ -344,21 +344,21 @@ usb_set_maxpacket_ep(struct usb_device *dev, int if_idx, int ep_idx)
 		/* Control => bidirectional */
 		dev->epmaxpacketout[b] = ep->wMaxPacketSize;
 		dev->epmaxpacketin[b] = ep->wMaxPacketSize;
-		DEBUG(("##Control EP epmaxpacketout/in[%ld] = %ld",
+		DEBUG(("##Control EP epmaxpacketout/in[%d] = %ld",
 			   b, dev->epmaxpacketin[b]));
 	} else {
 		if ((ep->bEndpointAddress & 0x80) == 0) {
 			/* OUT Endpoint */
 			if (ep->wMaxPacketSize > dev->epmaxpacketout[b]) {
 				dev->epmaxpacketout[b] = ep->wMaxPacketSize;
-				DEBUG(("##EP epmaxpacketout[%ld] = %ld",
+				DEBUG(("##EP epmaxpacketout[%d] = %ld",
 					   b, dev->epmaxpacketout[b]));
 			}
 		} else {
 			/* IN Endpoint */
 			if (ep->wMaxPacketSize > dev->epmaxpacketin[b]) {
 				dev->epmaxpacketin[b] = ep->wMaxPacketSize;
-				DEBUG(("##EP epmaxpacketin[%ld] = %ld",
+				DEBUG(("##EP epmaxpacketin[%d] = %ld",
 					   b, dev->epmaxpacketin[b]));
 			}
 		} /* if out */
@@ -875,7 +875,7 @@ struct usb_device *usb_get_dev_index(long index)
 struct usb_device *usb_alloc_new_device(void *controller)
 {
 	long i = 0;
-	DEBUG(("New Device %d\n", dev_index));
+	DEBUG(("New Device %ld\n", dev_index));
 	if (dev_index == USB_MAX_DEVICE) {
 		ALERT(("ERROR, too many USB Devices, max=%d", USB_MAX_DEVICE));
 		return NULL;
@@ -901,7 +901,7 @@ struct usb_device *usb_alloc_new_device(void *controller)
 void usb_free_device(void)
 {
 	dev_index--;
-	DEBUG(("Freeing device node: %d\n", dev_index));
+	DEBUG(("Freeing device node: %ld\n", dev_index));
 	memset(&usb_dev[dev_index], 0, sizeof(struct usb_device));
 	usb_dev[dev_index].devnum = -1;
 }
