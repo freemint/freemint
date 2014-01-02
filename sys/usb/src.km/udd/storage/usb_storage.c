@@ -1598,8 +1598,8 @@ usb_stor_probe(struct usb_device *dev, unsigned long ifnum, struct us_data *ss)
 	memset(ss, 0, sizeof(struct us_data));
 	/* At this point, we know we've got a live one */
 	DEBUG(("USB Mass Storage device detected"));
-	DEBUG(("Protocol: %x SubClass: %x", iface->bInterfaceProtocol,       /* GALVEZ: DEBUG */
-					    iface->bInterfaceSubClass ));
+	DEBUG(("Protocol: %x SubClass: %x", iface->desc.bInterfaceProtocol,       /* GALVEZ: DEBUG */
+					    iface->desc.bInterfaceSubClass ));
 	/* Initialize the us_data structure with some useful info */
 	ss->flags = flags;
 	ss->ifnum = ifnum;
@@ -1644,7 +1644,7 @@ usb_stor_probe(struct usb_device *dev, unsigned long ifnum, struct us_data *ss)
 	 * An optional interrupt is OK (necessary for CBI protocol).
 	 * We will ignore any others.
 	 */
-	DEBUG(("Number of endpoints: %d", iface->bNumEndpoints));
+	DEBUG(("Number of endpoints: %d", iface->desc.bNumEndpoints));
 	for (i = 0; i < iface->desc.bNumEndpoints; i++) {
 		ep_desc = &iface->ep_desc[i];
 		/* is it an BULK endpoint? */
