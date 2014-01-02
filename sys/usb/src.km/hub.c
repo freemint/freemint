@@ -114,7 +114,7 @@ static void usb_hub_power_on(struct usb_hub_device *hub)
 	DEBUG(("enabling power on all ports\n"));
 	for (i = 0; i < dev->maxchild; i++) {
 		usb_clear_port_feature(dev, i + 1, USB_PORT_FEAT_POWER);
-		DEBUG(("port %d returns %lX\n", i + 1, dev->status));
+		DEBUG(("port %ld returns %lx\n", i + 1, dev->status));
 	}
 
 	/* Wait at least 2*bPwrOn2PwrGood for PP to change */
