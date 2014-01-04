@@ -46,7 +46,6 @@ reduce(char *addr, long plane_size, short _16to2)
 {
         __asm__ volatile
         (
-                "movem.l d0-d7/a0-a4,-(sp)\n\t"
                 "movea.l %0,a0\n\t"
                 "move.l %1,d0\n\t"
                 "move.w %2,d4\n\t"
@@ -64,10 +63,26 @@ reduce(char *addr, long plane_size, short _16to2)
                 "move.w (a1)+,d1\n\t"
                 "move.w (a2)+,d2\n\t"
                 "move.w (a3)+,d3\n\t"
-                                                        
+#ifdef __mcoldfire__
+                "swap d0\n\t"
+                "swap d1\n\t"
+                "swap d2\n\t"
+                "swap d3\n\t"
+#endif
+
                 "moveq.l #15,d6\n\t"
         "rt4pixloop:"
                 "moveq.l #0,d7\n\t"
+#ifdef __mcoldfire__
+                "add.l d3,d3\n\t"
+                "addx.l d7,d7\n\t"
+                "add.l d2,d2\n\t"
+                "addx.l d7,d7\n\t"
+                "add.l d1,d1\n\t"
+                "addx.l d7,d7\n\t"
+                "add.l d0,d0\n\t"
+                "addx.l d7,d7\n\t"
+#else
                 "add.w d3,d3\n\t"
                 "addx.w d7,d7\n\t"
                 "add.w d2,d2\n\t"
@@ -76,23 +91,36 @@ reduce(char *addr, long plane_size, short _16to2)
                 "addx.w d7,d7\n\t"
                 "add.w d0,d0\n\t"
                 "addx.w d7,d7\n\t"
+#endif
 
+#ifdef __mcoldfire__
+                "move.w d4,d5\n\t"
+                "swap d5\n\t"
+                "move.w d4,d5\n\t"
+                "lsr.l d7,d5\n\t"
+                "and.l #1,d5\n\t"
+                "add.l d5,d0\n\t"
+#else
                 "move.w d4,d5\n\t"
                 "ror.w d7,d5\n\t"
                 "and.w #1,d5\n\t"
                 "add.w d5,d0\n\t"
-                                                        
+#endif
+
+#ifdef __mcoldfire__
+                "subq.l #1,d6\n\t"
+                "bpl.s rt4pixloop\n\t"
+#else
                 "dbra d6,rt4pixloop\n\t"
+#endif
 
                 "move.w d0,(a0)+\n\t"
 
                 "cmpa.l a0,a4\n\t"
                 "blt rt4loop\n\t"
-
-                "movem.l (sp)+,d0-d7/a0-a4\n\t"
                 :
-                :"a"(addr),"d"(plane_size),"d"(_16to2)
-                :"d0","d1","d2","a0","a1","memory"              
+                :"g"(addr),"g"(plane_size),"g"(_16to2)
+                :"d0","d1","d2","d3","d4","d5","d6","d7","a0","a1","a2","a3","a4","memory"
         );
 }
 
@@ -114,7 +142,6 @@ mono_bitmap(void *src, void *dst, long planesize, short color)
 /* MODULE mono_bitmap */
         __asm__ volatile
         (
-                "movem.l a2-a5/d3-d7,-(sp)\n\t"
                 "move.l %0,a0\n\t"
                 "move.l %1,a1\n\t"
                 "move.l %2,d0\n\t"
@@ -134,10 +161,27 @@ mono_bitmap(void *src, void *dst, long planesize, short color)
                 "move.w (a1)+,d1\n\t"
                 "move.w (a2)+,d2\n\t"
                 "move.w (a3)+,d3\n\t"
+#ifdef __mcoldfire__
+                "swap d0\n\t"
+                "swap d1\n\t"
+                "swap d2\n\t"
+                "swap d3\n\t"
+#endif
                 "moveq.l #0,d6\n\t"
                 "moveq.l #15,d4\n\t"
         "2:"
                 "moveq.l #0,d5\n\t"
+#ifdef __mcoldfire__
+                "add.l d6,d6\n\t"
+                "add.l d3,d3\n\t"
+                "addx.l d5,d5\n\t"
+                "add.l d2,d2\n\t"
+                "addx.l d5,d5\n\t"
+                "add.l d1,d1\n\t"
+                "addx.l d5,d5\n\t"
+                "add.l d0,d0\n\t"
+                "addx.l d5,d5\n\t"
+#else
                 "add.w d6,d6\n\t"
                 "add.w d3,d3\n\t"
                 "addx.w d5,d5\n\t"
@@ -147,18 +191,27 @@ mono_bitmap(void *src, void *dst, long planesize, short color)
                 "addx.w d5,d5\n\t"
                 "add.w d0,d0\n\t"
                 "addx.w d5,d5\n\t"
+#endif
                 "cmp.w d5,d7\n\t"
                 "bne 3f\n\t"
+#ifdef __mcoldfire__
+                "addq.l #1,d6\n\t"
+#else
                 "addq.w #1,d6\n\t"
+#endif
         "3:"
+#ifdef __mcoldfire__
+                "subq.l #1,d4\n\t"
+                "bpl.s 2b\n\t"
+#else
                 "dbra d4,2b\n\t"
+#endif
                 "move.w d6,(a4)+\n\t"
                 "cmpa.l a5,a0\n\t"
                 "blt 1b\n\t"
-                "movem.l (sp)+,a2-a5/d3-d7\n\t"
                 :
-                :"a"(src), "a"(dst), "d"(planesize), "d"(color)
-                :"d0","d1","d2","a0","a1","memory"
+                :"g"(src), "g"(dst), "g"(planesize), "g"(color)
+                :"d0","d1","d2","d3","d4","d5","d6","d7","a0","a1","a2","a3","a4","a5","memory"
         );
 }
 #endif
