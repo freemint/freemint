@@ -954,7 +954,7 @@ static long sl811_rh_submit_urb(struct usb_device *usb_dev, unsigned long pipe,
 #define MSG_BUILDDATE	__DATE__
 
 #define MSG_BOOT	\
-	"\033p ACSI Uni-USB controller driver " MSG_VERSION " \033q\r\n"
+	"\033p Unicorn USB controller driver " MSG_VERSION " \033q\r\n"
 
 #define MSG_GREET	\
 	"Ported, mixed and shaken by Alan Hourihane.\r\n" \
@@ -969,7 +969,7 @@ static long sl811_open		(struct ucdif *);
 static long sl811_close		(struct ucdif *);
 static long sl811_ioctl		(struct ucdif *, short, long);
 
-static char lname[] = "ACSI Uni-USB controller driver for FreeMiNT\0";
+static char lname[] = "Unicorn USB controller driver for FreeMiNT\0";
 
 static struct ucdif sl811_uif = 
 {
