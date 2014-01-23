@@ -43,29 +43,9 @@ static struct ucdinfo ai =
 };
 
 static long
-module_init(void *initfunc, struct kentry *k, struct ucdinfo *a, long reason)
+module_init(long initfunc(struct kentry *, struct ucdinfo *a, long reason), struct kentry *k, struct ucdinfo *a, long reason)
 {
-	register long ret __asm__("d0");
-
-	__asm__ volatile
-	(
-		"lea     -45(sp),sp;"
-		"movem.l d3-d7/a3-a6,(sp);"
-		"move.l %4,-(sp);"
-		"move.l	%3,-(sp);"
-		"move.l	%2,-(sp);"
-		"move.l	%1,a0;"
-		"jsr	(a0);"
-		"lea	12(sp),sp;"
-		"movem.l (sp),d3-d7/a3-a6;"
-		"lea    45(sp),sp;"
-		: "=r"(ret)					/* outputs */
-		: "g"(initfunc), "r"(k), "r"(a), "g"(reason)	/* inputs  */
-		: __CLOBBER_RETURN("d0")
-		  "d1", "d2", "a0", "a1", "a2",			/* clobbered regs */
-		  "memory"
-	);
-	return ret;
+	return (*initfunc)(k,a,reason);
 }
 
 static long
