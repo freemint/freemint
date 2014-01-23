@@ -308,6 +308,8 @@ identify (long mch, enum special_hw info)
 					machine = machine_st;
 					break;
 				case STE:
+				case STBOOK: /* Classed as an STE machine */
+				case STEIDE: /* STE with IDE */
 					machine = machine_ste;
 					break;
 				case MEGASTE:
@@ -455,8 +457,8 @@ identify (long mch, enum special_hw info)
 		}
 	}
 
-	ksprintf (cpu_model, sizeof (cpu_model), "%s (%s CPU%s%sFPU)",
-			machine_str(), _cpu, _mmu, _fpu);
+	ksprintf (cpu_model, sizeof (cpu_model), "%s (%s CPU%s%sFPU) (_MCH 0x%lx)",
+			machine_str(), _cpu, _mmu, _fpu, mch);
 
 	boot_printf ("%s\r\n\r\n", cpu_model);
 }
