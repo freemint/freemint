@@ -87,6 +87,8 @@ long	del_rsvfentry	(char *name);
 /* values of MCH cookie */
 # define ST		0
 # define STE		0x00010000L
+# define STBOOK		0x00010001L
+# define STEIDE		0x00010008L
 # define MEGASTE	0x00010010L
 # define TT		0x00020000L
 # define FALCON		0x00030000L
