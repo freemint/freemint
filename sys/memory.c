@@ -39,7 +39,7 @@
 # include "proc.h"
 
 # ifdef __mcoldfire__
-extern void   patch_memset_purec(BASEPAGE *b);
+extern void patch_memset_purec(BASEPAGE *b);
 # endif
 
 struct screen
@@ -195,11 +195,10 @@ init_mem (void)
 		}
 
 		TRAP_Setscreen((void *)newbase, (void *)newbase, -1);
-		boot_print ("\r\nSetscreen()\r\n");
+		boot_print ("\r\n");
 	}
 
 	SANITY_CHECK_MAPS ();
-	DEBUG(( "\r\nscrensize=%ld scrnplace=%lx newbase=%lx\r\n", scrnsize, scrnplace, newbase));
 }
 
 /*
@@ -346,15 +345,6 @@ init_core (void)
 	 */
 	scrnplace = (long) TRAP_Physbase();
 
-	/* check for a graphics card with fixed screen location */
-# define phys_top_st (*(ulong *) 0x42eL)
-
-	if (scrnplace >= phys_top_st) {
-		/* screen isn't in ST RAM */
-		scrnsize = 0x7fffffffUL;
-		scrndone = 1;
-	}
-	else{
 # if 1
 	/* kludge: some broken graphics card drivers (notably, some versions of
 	 * NVDI's REDIRECT.PRG) return the base of the ST screen from Physbase(),
@@ -377,20 +367,25 @@ init_core (void)
 		/* otherwise, use the line A variables */
 		scrnsize = (vscreen->maxy+1)*(long)vscreen->linelen;
 	}
-#if 1
+
+	/* check for a graphics card with fixed screen location */
+# define phys_top_st (*(ulong *) 0x42eL)
+
+	if (scrnplace >= phys_top_st) {
+		/* screen isn't in ST RAM */
+		scrnsize = 0x7fffffffUL;
+		scrndone = 1;
+	} else {
 		temp = (ulong)core_malloc(scrnsize+256L, 0);
 		if (temp) {
 			TRAP_Setscreen((void *)-1L, (void *)((temp + 511) & (0xffffff00L)), -1);
 			if ((long)TRAP_Physbase() != ((temp + 511) & (0xffffff00L))) {
-#endif
-				scrnsize = 0x7fffffffUL;	//<-
+				scrnsize = 0x7fffffffUL;
 				scrndone = 1;
-#if 1
 			}
 			TRAP_Setscreen((void *)-1L, (void *)scrnplace, -1);
 			core_free(temp);
 		}
-#endif
 	}
 
 	/* initialize ST RAM */
@@ -400,11 +395,8 @@ init_core (void)
 	boot_printf (MSG_mem_core, size);
 # endif
 
- 	while ( size > 0) {
+	while (size > 0) {
 		place = (ulong) core_malloc (size, 0);
-# ifdef VERBOSE_BOOT
-		boot_printf ("place: %lu B ", place);
-# endif
 		if (!scrndone && (place + size == scrnplace)) {
 			size += scrnsize;
 			scrndone = 1;
@@ -1992,7 +1984,7 @@ realloc_region (MEMREGION *reg, long newsize)
 		MEMREGION *lastfit = 0;
 		MEMREGION *newm = kmr_get ();
 
-		DEBUG(("realloc_region: reg is NULL"));
+		FORCE("realloc_region: reg is NULL");
 
 		for (m = *map; m; m = m->next)
 		{
