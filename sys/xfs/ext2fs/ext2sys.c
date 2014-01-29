@@ -837,7 +837,7 @@ e_rmdir (fcookie *dir, const char *name)
 	}
 
 	if (le2cpu16 (inode->in.i_links_count) != 2)
-		ALERT (("Ext2-FS [%c]: e_rmdir: empty directory has nlink != 2 (%ld)", le2cpu16 (inode->in.i_links_count)));
+		ALERT (("Ext2-FS [%c]: e_rmdir: empty directory has nlink != 2 (%ld)", dir->dev+'A', le2cpu16 (inode->in.i_links_count)));
 
 	inode->in.i_version = cpu2le32 (++event);
 	inode->in.i_links_count = 0;
