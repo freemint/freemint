@@ -1119,12 +1119,12 @@ again:
 	fc->index = (long)ti;
 
 	if (giveindex) {
-		namelen -= (int) sizeof(long);
+		namelen -= (int) sizeof(index);
 		if (namelen <= 0)
 			return EBADARG;
-		memcpy( name, &index, 4);
+		memcpy( name, &index, sizeof(index));
 		index++;
-		name += sizeof(long);
+		name += sizeof(index);
 	}
 	if (strlen(DIR_NAME(dirh)) < namelen) {
 		strcpy(name, DIR_NAME(dirh));
