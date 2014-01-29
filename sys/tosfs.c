@@ -1122,7 +1122,8 @@ again:
 		namelen -= (int) sizeof(long);
 		if (namelen <= 0)
 			return EBADARG;
-		*((long *)name) = index++;
+		memcpy( name, &index, 4);
+		index++;
 		name += sizeof(long);
 	}
 	if (strlen(DIR_NAME(dirh)) < namelen) {
