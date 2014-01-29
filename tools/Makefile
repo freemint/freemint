@@ -14,6 +14,7 @@ SUBDIRS = \
 	lpflush \
 	mgw \
 	minix \
+	mintload \
 	mkfatfs \
 	mktbl \
 	net-tools \
