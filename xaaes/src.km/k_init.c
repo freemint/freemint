@@ -638,23 +638,10 @@ k_init(unsigned long vm)
 #ifndef ST_ONLY
 			else if (vdo == 0x00030000L)
 			{
-				short nvmode;
-
-				BLOG((false, "Falcon video: mode %d(%x)", cfg.videomode, cfg.videomode));
-
-				/* Ronald Andersson:
-				 * This should be the method for falcon!
-				 */
-				nvmode = vcheckmode(cfg.videomode);
-				if ((nvmode & (1 << 4)) &&	/* VGA_FALCON */
-				    (nvmode & 7) == 4)		/* is 16bit */
-				{
-					nvmode &= ~(1 << 3);		/* Set 320 pixels */
-				}
-				
-				work_out[45] = nvmode;
+				work_out[45] = vcheckmode(cfg.videomode);
 				mode = 5;
-// 				display("Falcon video: mode %x, %x", cfg.videomode, nvmode);
+				BLOG((false, "Falcon video: videomode %d(%x),mode=%d,nvmode=%x", cfg.videomode, cfg.videomode, mode, work_out[45]));
+// 				display("Falcon video: mode %x, %x", cfg.videomode, work_out[45]);
 			}
 			else
 #endif
