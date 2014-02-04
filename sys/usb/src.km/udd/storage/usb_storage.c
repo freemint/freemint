@@ -62,7 +62,7 @@
 
 
 #define VER_MAJOR	0
-#define VER_MINOR	2
+#define VER_MINOR	3
 #define VER_STATUS	
 
 #define MSG_VERSION	str (VER_MAJOR) "." str (VER_MINOR) str (VER_STATUS) 
@@ -331,6 +331,7 @@ long 		usb_stor_get_info	(struct usb_device *, struct us_data *, block_dev_desc_
 long 		usb_stor_probe		(struct usb_device *, unsigned long, struct us_data *);
 unsigned long 	usb_stor_read		(long, unsigned long, unsigned long, void *);
 unsigned long 	usb_stor_write		(long, unsigned long, unsigned long, const void *);
+void		usb_stor_eject		(long);
 //struct usb_device * 	usb_get_dev_index	(long index);
 long 		usb_stor_info		(void);
 block_dev_desc_t *	usb_stor_get_dev	(long);
@@ -1790,6 +1791,38 @@ usb_stor_get_info(struct usb_device *dev, struct us_data *ss, block_dev_desc_t *
 }
 
 
+void
+usb_stor_eject(long device)
+{
+	if (usb_stor[device].pusb_dev->devnum == usb_dev_desc[device].target)
+	{
+		memset(&usb_dev_desc[device], 0, sizeof(block_dev_desc_t));
+		usb_dev_desc[device].target = 0xff;
+		usb_dev_desc[device].if_type = IF_TYPE_USB;
+		usb_dev_desc[device].dev = device;
+		usb_dev_desc[device].part_type = PART_TYPE_UNKNOWN;
+		usb_dev_desc[device].block_read = usb_stor_read;
+		usb_dev_desc[device].block_write = usb_stor_write;
+		usb_max_devs--;
+	}
+	else
+	{
+		DEBUG(("USB mass storage device was already disconnected"));
+		return;
+	}
+
+	long idx;
+	for (idx = 1; idx <= bios_part[device].partnum; idx++)
+	{	
+		uninstall_usb_stor(bios_part[device].biosnum[idx - 1]);
+	}
+	bios_part[device].partnum = 0;
+
+	ALERT(("USB Storage Device disconnected: (%ld) %s", usb_stor[device].pusb_dev->devnum,
+							    usb_stor[device].pusb_dev->prod));
+}
+
+
 /*******************************************************************************
  * 
  * 
@@ -1797,11 +1830,7 @@ usb_stor_get_info(struct usb_device *dev, struct us_data *ss, block_dev_desc_t *
 void
 usb_storage_disconnect(struct usb_device *dev)
 {
-	long i, idx;
-	long biosdev;
-
-	ALERT(("USB Storage Device disconnected: (%ld) %s", dev->devnum, dev->prod));
-
+	long i;
 	for (i = 0; i <= USB_MAX_STOR_DEV; i++)
 	{
 		if (dev->devnum == usb_dev_desc[i].target)
@@ -1817,12 +1846,23 @@ usb_storage_disconnect(struct usb_device *dev)
 			break;
 		}
 	}
+
+	if (i > USB_MAX_STOR_DEV) 
+	{
+		/* Probably the device has been already disconnected by software (XHEject) */
+		DEBUG(("USB mass storage device was already disconnected"));
+		return;
+	}
+
+	long idx;
 	for (idx = 1; idx <= bios_part[i].partnum; idx++)
 	{	
-		biosdev = uninstall_usb_stor(bios_part[i].biosnum[idx - 1]);
-		changedrv((unsigned short)biosdev);
+		uninstall_usb_stor(bios_part[i].biosnum[idx - 1]);
 	}
 	bios_part[i].partnum = 0;
+
+	ALERT(("USB Storage Device disconnected: (%ld) %s", dev->devnum, dev->prod));
+
 }
 
 
@@ -1889,6 +1929,8 @@ usb_storage_probe(struct usb_device *dev)
 			c_conws("unable to install storage device\r\n");
 		else
 		{
+			/* inform the kernel about media change */
+			changedrv(r);
 			bios_part[dev_num].biosnum[part_num - 1] = r;
 			bios_part[dev_num].partnum = part_num;
 		}	
