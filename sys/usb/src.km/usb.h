@@ -301,7 +301,8 @@ long 		usb_control_msg		(struct usb_device *dev, unsigned long pipe,
 					unsigned short value, unsigned short idx,
 					void *data, unsigned short size, long timeout);
 long 		usb_bulk_msg		(struct usb_device *dev, unsigned long pipe,
-					void *data, long len, long *actual_length, long timeout);
+					void *data, long len, long *actual_length, long timeout,
+					long flags);
 long 		usb_submit_int_msg	(struct usb_device *dev, unsigned long pipe,
 					void *buffer, long transfer_len, long interval);
 long 		usb_disable_asynch	(long disable);

@@ -57,6 +57,7 @@ struct bulk_msg
 	unsigned long 		pipe;
 	void 			*data;
 	long 			len;
+	long                    flags;
 };
 
 struct control_msg
