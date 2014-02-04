@@ -110,7 +110,7 @@ void my_interrupt (void);
 /* interrupt handling - bottom half */
 void _cdecl 	nfusb_interrupt	(void);
 
-long		submit_bulk_msg		(struct usb_device *, unsigned long , void *, long);
+long		submit_bulk_msg		(struct usb_device *, unsigned long , void *, long, long);
 long		submit_control_msg	(struct usb_device *, unsigned long, void *,
 					 long, struct devrequest *);
 long		submit_int_msg		(struct usb_device *, unsigned long, void *, long, long);
@@ -198,7 +198,7 @@ submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 
 long
 submit_bulk_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
-		    long len)
+		    long len, long flags)
 {
 	int r;
 
@@ -285,7 +285,7 @@ aranym_ioctl (struct ucdif *u, short cmd, long arg)
 			struct bulk_msg *bulk_msg = (struct bulk_msg *)arg;
 
 			ret = submit_bulk_msg (bulk_msg->dev, bulk_msg->pipe,
-				         bulk_msg->data, bulk_msg->len);			
+				         bulk_msg->data, bulk_msg->len, bulk_msg->flags);			
 
 			break;
 		}

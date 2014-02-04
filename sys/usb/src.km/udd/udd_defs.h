@@ -77,7 +77,7 @@ struct usb_module_api
 								unsigned short value, unsigned short idx,
 								void *data, unsigned short size, long timeout);
 	long			_cdecl	(*usb_bulk_msg)		(struct usb_device *dev, unsigned long pipe,
-								void *data, long len, long *actual_length, long timeout);
+								void *data, long len, long *actual_length, long timeout, long flags);
 	long 			_cdecl	(*usb_submit_int_msg)	(struct usb_device *dev, unsigned long pipe,
 								void *buffer, long transfer_len, long interval);
 	long 			_cdecl	(*usb_disable_asynch)	(long disable);

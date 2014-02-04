@@ -273,7 +273,7 @@ long usb_control_msg(struct usb_device *dev, unsigned long pipe,
  * synchronous behavior
  */
 long usb_bulk_msg(struct usb_device *dev, unsigned long pipe,
-			void *data, long len, long *actual_length, long timeout)
+		  void *data, long len, long *actual_length, long timeout, long flags)
 {
 	struct bulk_msg arg;
 

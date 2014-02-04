@@ -719,7 +719,7 @@ us_one_transfer(struct us_data *us, long pipe, char *buf, long length)
 		{
 			/* transfer the data */
 			DEBUG(("Bulk xfer 0x%xl(%ld) try #%ld", (unsigned long)buf, this_xfer, 11 - maxtry));
-			result = usb_bulk_msg(us->pusb_dev, pipe, buf, this_xfer, &partial, USB_CNTL_TIMEOUT * 5);
+			result = usb_bulk_msg(us->pusb_dev, pipe, buf, this_xfer, &partial, USB_CNTL_TIMEOUT * 5, 0);
 			DEBUG(("bulk_msg returned %ld xferred %ld/%ld", result, partial, this_xfer));
 			if(us->pusb_dev->status != 0)
 			{
@@ -893,7 +893,7 @@ usb_stor_BBB_comdat(ccb *srb, struct us_data *us)
 	/* DST SRC LEN!!! */
 	memcpy(&cbw->CBWCDB, srb->cmd, srb->cmdlen);
 
-	result = usb_bulk_msg(us->pusb_dev, pipe, cbw, UMASS_BBB_CBW_SIZE, &actlen, USB_CNTL_TIMEOUT * 5);
+	result = usb_bulk_msg(us->pusb_dev, pipe, cbw, UMASS_BBB_CBW_SIZE, &actlen, USB_CNTL_TIMEOUT * 5, 0);
 	if(result < 0)
 	{
 		DEBUG(("usb_stor_BBB_comdat:usb_bulk_msg error"));
@@ -1053,7 +1053,7 @@ usb_stor_BBB_transport(ccb *srb, struct us_data *us)
 	else
 		pipe = pipeout;
 	
-	result = usb_bulk_msg(us->pusb_dev, pipe, srb->pdata, srb->datalen, &data_actlen, USB_CNTL_TIMEOUT * 5);
+	result = usb_bulk_msg(us->pusb_dev, pipe, srb->pdata, srb->datalen, &data_actlen, USB_CNTL_TIMEOUT * 5, 0);
 	
 	/* special handling of STALL in DATA phase */
 	if((result < 0) && (us->pusb_dev->status & USB_ST_STALLED))
@@ -1090,7 +1090,7 @@ st:
 	retry = 0;
 again:
 	DEBUG(("STATUS phase"));
-	result = usb_bulk_msg(us->pusb_dev, pipein, csw, UMASS_BBB_CSW_SIZE, &actlen, USB_CNTL_TIMEOUT*5);
+	result = usb_bulk_msg(us->pusb_dev, pipein, csw, UMASS_BBB_CSW_SIZE, &actlen, USB_CNTL_TIMEOUT*5, 0);
 	/* special handling of STALL in STATUS phase */
 
 	if((result < 0) && (retry < 1) && (us->pusb_dev->status & USB_ST_STALLED))
