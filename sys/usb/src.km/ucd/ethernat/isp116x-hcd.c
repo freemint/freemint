@@ -161,7 +161,7 @@ static void	int_handle_tophalf	(PROC *p, long arg);
  */
 long 		isp116x_check_id	(struct isp116x *);
 static long	isp116x_reset		(struct isp116x *);
-long		submit_bulk_msg		(struct usb_device *, unsigned long , void *, long);
+long		submit_bulk_msg		(struct usb_device *, unsigned long , void *, long, long);
 long		submit_control_msg	(struct usb_device *, unsigned long, void *,
 					 long, struct devrequest *);
 long		submit_int_msg		(struct usb_device *, unsigned long, void *, long, long);
@@ -1433,7 +1433,7 @@ submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 
 long
 submit_bulk_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
-		long len)
+		long len, long flags)
 {
 	long dir_out = usb_pipeout(pipe);
 	long max = max_transfer_len(dev, pipe);
@@ -1774,7 +1774,7 @@ ethernat_ioctl(struct ucdif *u, short cmd, long arg)
 			struct bulk_msg *bulk_msg = (struct bulk_msg *)arg;
 
 			ret = submit_bulk_msg (bulk_msg->dev, bulk_msg->pipe,
-					       bulk_msg->data, bulk_msg->len);
+					       bulk_msg->data, bulk_msg->len, bulk_msg->flags);
 
 			break;
 		}
