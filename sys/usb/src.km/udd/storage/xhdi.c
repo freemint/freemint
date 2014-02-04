@@ -72,6 +72,7 @@ extern short max_logical_drive;
 
 extern ulong usb_stor_read(long, ulong, ulong, void *);
 extern ulong usb_stor_write(long, ulong, ulong, const void *);
+extern void usb_stor_eject(long);
 
 /*--- Functions prototypes ---*/
 
@@ -278,7 +279,12 @@ XHEject(ushort major, ushort minor, ushort do_eject, ushort key)
 	if (major < PUN_USB || major > PUN_USB + PUN_DEV)
 		return ENODEV;
 
-	return ENOSYS;
+	/* device number in the USB bus */
+	short dev = pun_ptr_usb->dev_num[major & PUN_DEV];
+
+	usb_stor_eject(dev);
+
+	return E_OK;
 }
 
 static long
