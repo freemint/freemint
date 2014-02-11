@@ -38,7 +38,8 @@
 
 # define MSG_GREET	\
 	"\xbd 1998, 1999 by Axel Kaiser.\r\n" \
-	"\xbd 2000-2010 by Frank Naumann.\r\n"
+	"\xbd 2000-2010 by Frank Naumann.\r\n" \
+	"\xbd 2013 by Alan Hourihane.\r\n"
 
 # define MSG_ALPHA	\
 	"\033p WARNING: This is an unstable version - ALPHA! \033q\7\r\n"
@@ -48,12 +49,6 @@
 
 # define MSG_INCVERS	\
 	"\033pIncorrect MiNT kernel version!\033q\r\n"
-
-# define MSG_BIOVERSION	\
-	"\033pIncompatible FreeMiNT buffer cache version!\033q\r\n"
-
-# define MSG_BIOREVISION	\
-	"\033pFreeMiNT buffer cache revision too old!\033q\r\n"
 
 # define MSG_FAILURE	\
 	"\7Sorry, module NOT installed!\r\n\r\n"
@@ -88,24 +83,6 @@ init (struct kerinfo *k)
 		c_conws (MSG_FAILURE);
 		
 		return NULL;
-	}
-	
-	/* check buffer cache version */
-	if (bio.version != 3)
-	{
-		c_conws (MSG_BIOVERSION);
-		c_conws (MSG_FAILURE);
-		
-		return NULL;		
-	}
-	
-	/* check for revision 1 features */
-	if (bio.revision < 1)	
-	{
-		c_conws (MSG_BIOREVISION);
-		c_conws (MSG_FAILURE);
-		
-		return NULL;		
 	}
 	
 # if 1
