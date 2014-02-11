@@ -76,7 +76,7 @@ getxattr(FILESYS *fs, fcookie *fc, XATTR *xattr)
 		if (S_ISDIR(stat.mode))
 			xattr->attr = FA_DIR;
 		else if (!(stat.mode & 0222))
-			xattr->attr = FA_RDONLY;;
+			xattr->attr = FA_RDONLY;
 
 		xattr->reserved2 = 0;
 		xattr->reserved3[0] = 0;
@@ -629,8 +629,48 @@ long _cdecl
 xdd_write(FILEPTR *f, const char *buf, long bytes)
 {
 	long r;
-	
+	long newpos, pos, end;
+
 	xfs_lock(f->fc.fs, f->fc.dev, "xdd_write");
+	pos = (f->dev->lseek)(f, 0, SEEK_CUR);
+	end = (f->dev->lseek)(f, 0, SEEK_END);
+	if (pos > end) {
+		char zbuf[4096];
+		long pad = pos - end;
+		long done;
+		long prev = end;
+	
+		memset(zbuf, 0, sizeof(zbuf));
+
+		while (pad > 0) {
+			done = (pad >= sizeof(zbuf) ? sizeof(zbuf) : pad);
+
+			r = (f->dev->write)(f, zbuf, done);
+
+			newpos = (f->dev->lseek)(f, 0, SEEK_CUR);
+			if (newpos != prev + done) {
+				(f->dev->lseek)(f, pos, SEEK_SET);
+				xfs_unlock(f->fc.fs, f->fc.dev, "xdd_write");
+				return EINVAL;
+			}
+
+			if (r != done) {
+				(f->dev->lseek)(f, pos, SEEK_SET);
+				xfs_unlock(f->fc.fs, f->fc.dev, "xdd_write");
+				return EINVAL;
+			}
+
+			pad -= done;
+			prev += done;
+		}
+	}
+	newpos = (f->dev->lseek)(f, pos, SEEK_SET);
+	if (newpos != pos) {
+		/* ouch. */
+		xfs_unlock(f->fc.fs, f->fc.dev, "xdd_write");
+		return EINVAL;
+	}
+
 	r = (f->dev->write)(f, buf, bytes);
 	xfs_unlock(f->fc.fs, f->fc.dev, "xdd_write");
 	

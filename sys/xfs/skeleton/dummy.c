@@ -877,7 +877,7 @@ dummy_lseek (FILEPTR *f, long where, int whence)
 		default:	return EINVAL;
 	}
 	
-//	if ((where < 0) || (where > c->stat.size))
+	if (where < 0)
 	{
 		DEBUG (("dummy: dummy_lseek: leave failure EBADARG (where = %li)", where));
 		return EBADARG;
