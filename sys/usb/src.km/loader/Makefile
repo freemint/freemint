@@ -22,7 +22,9 @@ all-here: $(TARGETS)
 # default overwrites
 LD = $(CC) -nostdlib -Wl,--entry -Wl,__start
 LIBS = -lgcc
-CPU = 020-60
+ifndef CPU
+CPU = 000
+endif
 STRIPFLAGS =
 INCLUDES = 
 
