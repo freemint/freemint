@@ -243,16 +243,6 @@ e_write (FILEPTR *f, const char *buf, long bytes)
 	if (IS_APPEND (c))	pos = c->i_size;
 	else			pos = f->pos;
 	
-# if 0
-	/* Check for overflow.. */
-	if (pos > (__u32) (pos + count))
-	{
-		count = ~pos; /* == 0xFFFFFFFF - pos */
-		if (!count)
-			return EFBIG;
-	}
-# endif
-	
 	block = pos >> EXT2_BLOCK_SIZE_BITS (s);
 	offset = pos & EXT2_BLOCK_SIZE_MASK (s);
 	
@@ -408,7 +398,7 @@ e_read (FILEPTR *f, char *buf, long bytes)
 	if (EXT2_ISDIR (le2cpu16 (c->in.i_mode)))
 		return EISDIR;
 	
-	todo = MIN ((long)(c->i_size - f->pos), bytes);
+	todo = MAX(0, MIN ((long)(c->i_size - f->pos), bytes));
 	done = 0;
 	
 	if (todo == 0)
@@ -554,7 +544,7 @@ e_lseek (FILEPTR *f, long where, int whence)
 		default:	return EINVAL;
 	}
 	
-	if ((where < 0) || (where > c->i_size))
+	if (where < 0)
 	{
 		DEBUG (("Ext2-FS [%c]: e_lseek: EBADARG", f->fc.dev+'A'));
 		return EBADARG;

@@ -527,7 +527,7 @@ m_seek (FILEPTR *f, long where, int whence)
 		default:	return ENOSYS;
 	}
 	
-	if (where > rip.i_size || where < 0)
+	if (where < 0)
 	{
 		DEBUG (("Minix-FS: m_lseek: leave failure EBADARG (where = %li, size = %li)", where, rip.i_size));
 		return EBADARG;

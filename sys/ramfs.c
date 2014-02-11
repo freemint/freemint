@@ -2100,7 +2100,6 @@ ram_write (FILEPTR *f, const char *buf, long bytes)
 	long size = c->data.data.size;
 
 	long todo;
-	long temp = c->stat.size - f->pos;
 	long offset;
 
 	/* POSIX: mtime/ctime may not change for 0 count */
@@ -2141,7 +2140,8 @@ ram_write (FILEPTR *f, const char *buf, long bytes)
 
 	while (todo > 0)
 	{
-		temp = f->pos >> BLOCK_SHIFT;
+		long temp = f->pos >> BLOCK_SHIFT;
+
 		if (temp >= size)
 		{
 			RAM_DEBUG (("ramfs: ram_write: resize block array!"));
@@ -2413,7 +2413,7 @@ ram_lseek (FILEPTR *f, long where, int whence)
 		default:	return EINVAL;
 	}
 
-	if ((where < 0) || (where > c->stat.size))
+	if (where < 0)
 	{
 		RAM_DEBUG (("ramfs: ram_lseek: leave failure EBADARG (where = %li)", where));
 		return EBADARG;
@@ -2436,7 +2436,10 @@ ram_ioctl (FILEPTR *f, int mode, void *buf)
 	{
 		case FIONREAD:
 		{
-			*(long *) buf = c->stat.size - f->pos;
+			if (c->stat.size - f->pos < 0) 
+				*(long *) buf = 0;
+			else
+				*(long *) buf = c->stat.size - f->pos;
 			return E_OK;
 		}
 		case FIONWRITE:
