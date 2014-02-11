@@ -35,57 +35,17 @@ long loader_pgrp = 0;
 
 struct usb_module_api usb_api;
 
-//static char usb_display_name[32];
-
 void	setup_usb_module_api(void);
 
 static void
 bootmessage(void)
 {
 	c_conws("USB driver for MiNT\n\r");
-	c_conws("EXPERIMENTAL!!!!!!!\n\r");
-	c_conws("David Galvez. 2010\n\r");
+	c_conws("David Galvez. 2010-2014\n\r");
+	c_conws("Alan Hourihane. 2014\n\r");
 }
 
 struct kentry *kentry;
-#if 0
-static bool
-sysfile_exists(const char *sd, char *fn)
-{
-	struct file *check;
-	bool flag = false;
-	int o = 0;
-	char *buf, *tmp;
-
-	buf = kmalloc(strlen(sd)+16);
-	if (buf)
-	{
-		if (sd[0] == '/' || sd[0] == '\\')
-		{
-			buf[0] = 'u';
-			buf[1] = ':';
-			o += 2;
-		}
-		strcpy(buf + o, sd);
-		tmp = buf + strlen(buf) - 1;
-		if (*tmp != '/' && *tmp != '\\')
-		{
-			tmp[1] = '\\';
-			tmp[2] = '\0';
-		}
-		strcat(buf + o, fn);
-		display("sysfile_exits: '%s'", buf);
-		check = kernel_open(buf, O_RDONLY, NULL, NULL);
-		if (check)
-		{
-			kernel_close(check);
-			flag = true;
-		}
-		kfree(buf);
-	}
-	return flag;
-}
-#endif
 
 /*
  * Module initialisation
