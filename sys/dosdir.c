@@ -274,6 +274,11 @@ bailout:
 		DEBUG(("Ddelete: %s is not a directory", path));
 		r = ENOTDIR;
 	}
+	else if (strlen (temp1) == 1 && temp1[0] == '.')
+	{
+		DEBUG(("Ddelete: %s is not allowed to be deleted", path));
+		r = EINVAL;
+	}
 	else
 	{
 		struct proc *p;
