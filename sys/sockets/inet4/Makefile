@@ -21,8 +21,9 @@ all-here: $(TARGET)
 # default overwrites
 INCLUDES = -I.. -I$(top_srcdir)
 DEFINITIONS = -D__KERNEL_XDD__
-
+ifndef CPU
 CPU = 000
+endif
 
 # default definitions
 OBJS = $(COBJS:.c=.o)
