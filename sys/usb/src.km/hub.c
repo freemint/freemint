@@ -49,7 +49,6 @@
  */
 
 static struct usb_hub_device hub_dev[USB_MAX_HUB];
-static long usb_hub_index;
 extern struct usb_device usb_dev[USB_MAX_DEVICE];
 
 static void	sigterm			(void);
@@ -62,8 +61,8 @@ static void	setup_common		(void);
 long usb_get_hub_descriptor(struct usb_device *dev, void *data, long size)
 {
 	return usb_control_msg(dev, usb_rcvctrlpipe(dev, 0),
-		USB_REQ_GET_DESCRIPTOR, USB_DIR_IN | USB_RT_HUB,
-		USB_DT_HUB << 8, 0, data, size, USB_CNTL_TIMEOUT);
+			USB_REQ_GET_DESCRIPTOR, USB_DIR_IN | USB_RT_HUB,
+			USB_DT_HUB << 8, 0, data, size, USB_CNTL_TIMEOUT);
 }
 
 long usb_clear_port_feature(struct usb_device *dev, long port, long feature)
@@ -85,6 +84,13 @@ long usb_get_hub_status(struct usb_device *dev, void *data)
 	return usb_control_msg(dev, usb_rcvctrlpipe(dev, 0),
 			USB_REQ_GET_STATUS, USB_DIR_IN | USB_RT_HUB, 0, 0,
 			data, sizeof(struct usb_hub_status), USB_CNTL_TIMEOUT);
+}
+
+long usb_clear_hub_feature(struct usb_device *dev, long feature)
+{
+	return usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
+				USB_REQ_CLEAR_FEATURE, USB_RT_HUB, feature,
+				0, NULL, 0, USB_CNTL_TIMEOUT);
 }
 
 long usb_get_port_status(struct usb_device *dev, long port, void *data)
@@ -114,7 +120,7 @@ static void usb_hub_power_on(struct usb_hub_device *hub)
 	DEBUG(("enabling power on all ports\n"));
 	for (i = 0; i < dev->maxchild; i++) {
 		usb_clear_port_feature(dev, i + 1, USB_PORT_FEAT_POWER);
-		DEBUG(("port %ld returns %lx\n", i + 1, dev->status));
+		DEBUG(("port %d returns %lX\n", i + 1, dev->status));
 	}
 
 	/* Wait at least 2*bPwrOn2PwrGood for PP to change */
@@ -155,16 +161,33 @@ static void usb_hub_power_on(struct usb_hub_device *hub)
 
 void usb_hub_reset(void)
 {
-	usb_hub_index = 0;
+	memset(hub_dev, 0, sizeof(hub_dev));
 }
 
 struct usb_hub_device *usb_hub_allocate(void)
 {
-	if (usb_hub_index < USB_MAX_HUB)
-		return &hub_dev[usb_hub_index++];
+	long i;
+
+	for (i = 0; i < USB_MAX_HUB; i++) {
+		if (!hub_dev[i].pusb_dev)
+			return &hub_dev[i];
+	}
 
 	ALERT(("ERROR: USB_MAX_HUB (%d) reached", USB_MAX_HUB));
+
 	return NULL;
+}
+
+void usb_hub_disconnect(struct usb_device *dev)
+{
+	long i;
+
+	for (i = 0; i < USB_MAX_HUB; i++) {
+		if (dev == hub_dev[i].pusb_dev) {
+			memset(&hub_dev[i], 0, sizeof(struct usb_hub_device));
+			break;
+		}
+	}
 }
 
 #define MAX_TRIES 5
@@ -308,7 +331,7 @@ void usb_hub_port_connect_change(struct usb_device *dev, long port)
 	/* Run it through the hoops (find a driver, etc) */
 	if (usb_new_device(usb)) {
 		/* Woops, disable the port */
-		usb_free_device();
+		usb_free_device(dev->devnum);
 		dev->children[port] = NULL;
 		DEBUG(("hub: disabling port %ld", port + 1));
 		usb_clear_port_feature(dev, port + 1, USB_PORT_FEAT_ENABLE);
@@ -316,10 +339,10 @@ void usb_hub_port_connect_change(struct usb_device *dev, long port)
 }
 
 
-long
+struct usb_hub_device *
 usb_hub_configure(struct usb_device *dev)
 {
-	unsigned char buffer[USB_BUFSIZ], *bitmap;
+	unsigned char buffer[USB_BUFSIZ];
 	struct usb_hub_descriptor *descriptor;
 	struct usb_hub_status *hubsts;
 	long i;
@@ -328,13 +351,13 @@ usb_hub_configure(struct usb_device *dev)
 	/* "allocate" Hub device */
 	hub = usb_hub_allocate();
 	if (hub == NULL)
-		return -1;
-	hub->pusb_dev = dev;
+		return NULL;
+
 	/* Get the the hub descriptor */
 	if (usb_get_hub_descriptor(dev, buffer, 4) < 0) {
 		DEBUG(("usb_hub_configure: failed to get hub " \
 				   "descriptor, giving up %lx", dev->status));
-		return -1;
+		return NULL;
 	}
 	descriptor = (struct usb_hub_descriptor *)buffer;
 
@@ -344,31 +367,29 @@ usb_hub_configure(struct usb_device *dev)
 		DEBUG(("usb_hub_configure: failed to get hub " \
 				"descriptor - too long: %d",
 				descriptor->bLength));
-		return -1;
+		return NULL;
 	}
 
 	if (usb_get_hub_descriptor(dev, buffer, descriptor->bLength) < 0) {
 		DEBUG(("usb_hub_configure: failed to get hub " \
 				"descriptor 2nd giving up %lx", dev->status));
-		return -1;
+		return NULL;
 	}
 	memcpy((unsigned char *)&hub->desc, buffer, descriptor->bLength);
 	/* adjust 16bit values */
 	hub->desc.wHubCharacteristics =
 				le2cpu16(descriptor->wHubCharacteristics);
 
-	/* set the bitmap */
-	bitmap = (unsigned char *)&hub->desc.DeviceRemovable[0];
 	/* devices not removable by default */
-	memset(bitmap, 0xff, (USB_MAXCHILDREN+1+7)/8);
-	bitmap = (unsigned char *)&hub->desc.PortPowerCtrlMask[0];
-	memset(bitmap, 0xff, (USB_MAXCHILDREN+1+7)/8); /* PowerMask = 1B */
-
 	for (i = 0; i < ((hub->desc.bNbrPorts + 1 + 7)/8); i++)
 		hub->desc.DeviceRemovable[i] = descriptor->DeviceRemovable[i];
+	for (; i < ((USB_MAXCHILDREN + 1 + 7)/8); i++)
+		hub->desc.DeviceRemovable[i] = 0xff;
 
 	for (i = 0; i < ((hub->desc.bNbrPorts + 1 + 7)/8); i++)
 		hub->desc.PortPowerCtrlMask[i] = descriptor->PortPowerCtrlMask[i];
+	for (; i < ((USB_MAXCHILDREN + 1 + 7)/8); i++)
+		hub->desc.PortPowerCtrlMask[i] = 0xff;
 
 	dev->maxchild = descriptor->bNbrPorts;
 	DEBUG(("%ld ports detected", dev->maxchild));
@@ -418,13 +439,13 @@ usb_hub_configure(struct usb_device *dev)
 	if (sizeof(struct usb_hub_status) > USB_BUFSIZ) {
 		DEBUG(("usb_hub_configure: failed to get Status - " \
 				"too long: %d", descriptor->bLength));
-		return -1;
+		return NULL;
 	}
 
 	if (usb_get_hub_status(dev, buffer) < 0) {
 		DEBUG(("usb_hub_configure: failed to get Status %lx",
 				dev->status));
-		return -1;
+		return NULL;
 	}
 
 	hubsts = (struct usb_hub_status *)buffer;
@@ -438,9 +459,11 @@ usb_hub_configure(struct usb_device *dev)
 	DEBUG(("%sover-current condition exists",
 		(le2cpu16(hubsts->wHubStatus) & HUB_STATUS_OVERCURRENT) ? \
 		"" : "no "));
+
+	hub->pusb_dev = dev;
 	usb_hub_power_on(hub);
 	
-	return 0;
+	return hub; 
 }
 
 
@@ -449,6 +472,7 @@ usb_hub_events(struct usb_device *dev)
 {
 	long i;
 	struct usb_hub_device *hub;
+	struct usb_hub_status hubsts;
 
 	hub = dev->privptr;
 
@@ -519,7 +543,36 @@ usb_hub_events(struct usb_device *dev)
 						USB_PORT_FEAT_C_RESET);
 		}
 	} /* end for i all ports */
-	return;
+
+	/* now do hub status */
+	if (usb_get_hub_status(dev, &hubsts) < 0) {
+		DEBUG(("usb_hub_events: failed to get Status %lx",
+				dev->status));
+	} else {
+		unsigned short hubstatus, hubchange;
+
+		hubstatus = le2cpu16(hubsts.wHubStatus);
+		hubchange = le2cpu16(hubsts.wHubChange);
+
+		if (hubchange & HUB_CHANGE_LOCAL_POWER) {
+			usb_clear_hub_feature(dev, C_HUB_LOCAL_POWER);
+			mdelay(500);
+		}
+		if (hubchange & HUB_CHANGE_OVERCURRENT) {
+			usb_clear_hub_feature(dev, C_HUB_OVER_CURRENT);
+			mdelay(500);
+			usb_hub_power_on(hub);
+			mdelay(500);
+			usb_get_hub_status(dev, &hubsts);
+
+			hubstatus = le2cpu16(hubsts.wHubStatus);
+			hubchange = le2cpu16(hubsts.wHubChange);
+
+			if (hubstatus & HUB_STATUS_OVERCURRENT) {
+				ALERT(("usb_hub_events: Overcurrent on hub!"));
+			}
+		}
+	}
 }
 
 
@@ -527,35 +580,23 @@ void
 usb_hub_poll(PROC *p, long device)
 {
 	wake(WAIT_Q, (long)&usb_hub_poll_thread);
-#if 0
-	struct usb_device *dev = (struct usb_device *)device;
-
-	usb_hub_events(dev);
-
-	TIMEOUT *t;
-	t = addtimeout(2000L, usb_hub_poll);
-	if (t)
-	{
-		t->arg = device;
-	}
-#endif
 }
 
 
 void 
-usb_hub_poll_thread(void *dev)
+usb_hub_poll_thread(void *d)
 {
+	struct usb_device *dev = (struct usb_device *)d;
 
 	/* join process group of loader, 
 	 * otherwise doesn't ends when shutingdown
 	 */
 	p_setpgrp(0, loader_pgrp);
 
-	for (;;)
+	while (dev->maxchild)
 	{
-//		usb_hub_poll(get_curproc(), (long)dev);
 		usb_hub_events(dev);
-		addtimeout(2000L, usb_hub_poll);
+		addtimeout(1000L, usb_hub_poll);
 		sleep(WAIT_Q, (long)&usb_hub_poll_thread);
 	}
 
@@ -568,7 +609,6 @@ usb_hub_probe(struct usb_device *dev, long ifnum)
 	struct usb_interface *iface;
 	struct usb_endpoint_descriptor *ep;
 	long ret;
-	struct usb_hub_device *hub;
 
 	iface = &dev->config.if_desc[ifnum];
 	/* Is it a hub? */
@@ -592,17 +632,7 @@ usb_hub_probe(struct usb_device *dev, long ifnum)
 	/* We found a hub */
 	DEBUG(("USB hub found"));
 
-	if ((hub = kmalloc(sizeof(*hub))) == NULL)
-	{
-		DEBUG(("couldn't kmalloc hub struct\n"));
-		return -1;
-	}
-
-	memset(hub, 0, sizeof(*hub));
-
-	dev->privptr = hub;	
-
-	ret = usb_hub_configure(dev);
+	dev->privptr = usb_hub_configure(dev);
 
 	/* 
 	 * Galvez: While interrupt transfer in isp116x driver isn't supported,
@@ -732,11 +762,12 @@ usb_hub_thread(void *dummy)
 	 */
 	p_setpgrp(0, loader_pgrp);
 
-	while (!(0))
+	for (;;)
 	{
-		sleep(WAIT_Q, (long)usb_hub_thread);
 		/* only root hub is interupt driven */
 		usb_hub_events(&usb_dev[0]);
+
+		sleep(WAIT_Q, (long)usb_hub_thread);
 	}
 
 	kthread_exit(0);
