@@ -68,12 +68,14 @@ struct usb_hub_device
 
 long 		usb_get_hub_descriptor	(struct usb_device *dev, void *data, long size);
 long 		usb_clear_port_feature	(struct usb_device *dev, long port, long feature);
+long 		usb_clear_hub_feature	(struct usb_device *dev, long feature);
 long 		usb_get_hub_status	(struct usb_device *dev, void *data);
 long 		usb_set_port_feature	(struct usb_device *dev, long port, long feature);
 long 		usb_get_port_status	(struct usb_device *dev, long port, void *data);
 struct usb_hub_device *	usb_hub_allocate(void);
+void		usb_hub_disconnect	(struct usb_device *dev);
 void 		usb_hub_port_connect_change	(struct usb_device *dev, long port);
-long 		usb_hub_configure	(struct usb_device *dev);
+struct usb_hub_device *	usb_hub_configure	(struct usb_device *dev);
 long 		usb_hub_probe		(struct usb_device *dev, long ifnum);
 void 		usb_hub_reset		(void);
 long 		hub_port_reset		(struct usb_device *dev, long port,

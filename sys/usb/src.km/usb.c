@@ -58,9 +58,7 @@
 #endif
 
 /*static*/ struct usb_device usb_dev[USB_MAX_DEVICE];
-static long dev_index;
 static long asynch_allowed;
-static struct devrequest setup_packet;
 char usb_started; /* flag for the started/stopped USB status */
 
 static long 	usb_find_interface_driver	(struct usb_device *dev, unsigned ifnum);
@@ -87,13 +85,12 @@ long usb_init(void)
 {
 	struct ucdif *a;
 	struct usb_device *dev;
-	int i, start_index = 0;
+	int i;
 
 	DEBUG(("usb_init"));
 
 	long result;
 
-	dev_index = 0;
 	asynch_allowed = 1;
 	usb_hub_reset();
 
@@ -117,8 +114,6 @@ long usb_init(void)
 		/* if lowlevel init is OK, scan the bus for devices
 		 * i.e. search HUBs and configure them 
 		 */
-		start_index = dev_index;
-		DEBUG(("scanning bus %d for devices... ", a->unit));
 
 		dev = usb_alloc_new_device(a);
 		/*
@@ -127,12 +122,6 @@ long usb_init(void)
 		 */
 		if (dev)
 			usb_new_device(dev);
-
-		if (start_index == dev_index)
-			DEBUG(("No USB Device found"));
-		else
-			DEBUG(("%ld USB Device(s) found",
-				dev_index - start_index));
 
 		usb_started = 1;
 	}
@@ -219,6 +208,7 @@ long usb_control_msg(struct usb_device *dev, unsigned long pipe,
 			void *data, unsigned short size, long timeout)
 {
 	struct control_msg arg;
+	struct devrequest setup_packet;
 
 	if ((timeout == 0) && (!asynch_allowed)) {
 		/* request for a asynch control pipe is not allowed */
@@ -402,7 +392,11 @@ long usb_parse_config(struct usb_device *dev, unsigned char *buffer, long cfgno)
 			head->bDescriptorType));
 		return -1;
 	}
-	memcpy(&dev->config, buffer, buffer[0]);
+	if (head->bLength != USB_DT_CONFIG_SIZE) {
+		DEBUG(("ERROR: Invalid USB CFG length (%d)\n", head->bLength));
+		return -1;
+	}
+	memcpy(&dev->config, head, USB_DT_CONFIG_SIZE);
 	le16_to_cpus(&(dev->config.desc.wTotalLength));
 	dev->config.no_of_if = 0;
 
@@ -410,16 +404,16 @@ long usb_parse_config(struct usb_device *dev, unsigned char *buffer, long cfgno)
 	/* Ok the first entry must be a configuration entry,
 	 * now process the others */
 	head = (struct usb_descriptor_header *) &buffer[index];
-	while (index + 1 < dev->config.desc.wTotalLength) {
+	while (index + 1 < dev->config.desc.wTotalLength && head->bLength) {
 		switch (head->bDescriptorType) {
 		case USB_DT_INTERFACE:
 			if (((struct usb_interface_descriptor *) \
-			     &buffer[index])->bInterfaceNumber != curr_if_num) {
+			     head)->bInterfaceNumber != curr_if_num) {
 				/* this is a new interface, copy new desc */
 				ifno = dev->config.no_of_if;
 				if_desc = &dev->config.if_desc[ifno];
 				dev->config.no_of_if++;
-				memcpy(if_desc,	&buffer[index], buffer[index]);
+				memcpy(if_desc,	head, USB_DT_INTERFACE_SIZE);
 				if_desc->no_of_ep = 0;
 				if_desc->num_altsetting = 1;
 				curr_if_num =
@@ -438,15 +432,14 @@ long usb_parse_config(struct usb_device *dev, unsigned char *buffer, long cfgno)
 			if_desc = &dev->config.if_desc[ifno];
 			/* found an endpoint */
 			if_desc->no_of_ep++;
-			memcpy(&if_desc->ep_desc[epno],
-				&buffer[index], buffer[index]);
+			memcpy(&if_desc->ep_desc[epno], head, USB_DT_ENDPOINT_SIZE);
 			le16_to_cpus(&(if_desc->ep_desc[epno].wMaxPacketSize));
 			DEBUG(("if %ld, ep %ld", ifno, epno));
 			break;
 		case USB_DT_SS_ENDPOINT_COMP:
 			if_desc = &dev->config.if_desc[ifno];
-			memcpy(&if_desc->ss_ep_comp_desc[epno],
-				&buffer[index], buffer[index]);
+			memcpy(&if_desc->ss_ep_comp_desc[epno], head,
+				USB_DT_SS_EP_COMP_SIZE);
 			break;
 		default:
 			if (head->bLength == 0)
@@ -514,13 +507,10 @@ long usb_clear_halt(struct usb_device *dev, long pipe)
 long usb_get_descriptor(struct usb_device *dev, unsigned char type,
 			unsigned char index, void *buf, long size)
 {
-	long res;
-
-	res = usb_control_msg(dev, usb_rcvctrlpipe(dev, 0),
+	return usb_control_msg(dev, usb_rcvctrlpipe(dev, 0),
 			USB_REQ_GET_DESCRIPTOR, USB_DIR_IN,
 			(type << 8) + index, 0,
 			buf, size, USB_CNTL_TIMEOUT);
-	return res;
 }
 
 /**********************************************************************
@@ -564,14 +554,10 @@ long usb_get_configuration_no(struct usb_device *dev, unsigned char *buffer, lon
  */
 long usb_set_address(struct usb_device *dev)
 {
-	long res;
-
-	DEBUG(("set address %ld", dev->devnum));
-	res = usb_control_msg(dev, usb_snddefctrl(dev),
+	return usb_control_msg(dev, usb_snddefctrl(dev),
 				USB_REQ_SET_ADDRESS, 0,
 				(dev->devnum), 0,
 				NULL, 0, USB_CNTL_TIMEOUT);
-	return res;
 }
 
 /********************************************************************
@@ -834,28 +820,22 @@ usb_disconnect(struct usb_device **pdev)
 			dev->driver->disconnect(dev);
 
 		/* Free up all the children.. */
-		for (i = 0; i < USB_MAXCHILDREN; i++)
+		for (i = 0; i < dev->maxchild; i++)
 		{
-			if (dev->children[i] != NULL)
-			{
-				DEBUG(("Disconnect children %ld", dev->children[i]->devnum));
-				struct usb_device **child = &dev->children[i];
-				DEBUG(("child %lx", *child));
-				usb_disconnect(child);
-				dev->children[i] = NULL;
-			}
+			DEBUG(("Disconnect children %ld", dev->children[i]->devnum));
+			struct usb_device **child = &dev->children[i];
+			DEBUG(("child %lx", *child));
+			usb_disconnect(child);
+			dev->children[i] = NULL;
 		}
 
-		if (dev->devnum > 0)
-		{
-			memset(dev, 0, sizeof(struct usb_device));
-			dev->devnum = -1;
-			dev_index--;
+		if (dev->privptr) {
+			usb_hub_disconnect(dev);
 		}
-		
+
+		memset(dev, 0, sizeof(struct usb_device));
+		dev->devnum = -1;
 	}	
-	DEBUG(("Number of devices attached %ld", dev_index - 1));
-	DEBUG(("Number of devices in the bus %ld", dev_index));
 }
 
 
@@ -876,23 +856,26 @@ struct usb_device *usb_get_dev_index(long index)
  */
 struct usb_device *usb_alloc_new_device(void *controller)
 {
-	long i = 0;
-	DEBUG(("New Device %ld\n", dev_index));
-	if (dev_index == USB_MAX_DEVICE) {
+	long i,j;
+
+	for (i = 0; i < USB_MAX_DEVICE; i++) {
+		if (!usb_get_dev_index(i))
+			break;
+	}
+
+	if (i == USB_MAX_DEVICE) {
 		ALERT(("ERROR, too many USB Devices, max=%d", USB_MAX_DEVICE));
 		return NULL;
 	}
 
-	/* default Address is 0, real addresses start with 1 */
-	usb_dev[dev_index].devnum = dev_index + 1;
-	usb_dev[dev_index].maxchild = 0;
-	for (i = 0; i < USB_MAXCHILDREN; i++)
-		usb_dev[dev_index].children[i] = NULL;
-	usb_dev[dev_index].parent = NULL;
-	usb_dev[dev_index].controller = controller;
-	dev_index++;
+	usb_dev[i].devnum = i + 1;
+	usb_dev[i].maxchild = 0;
+	for (j = 0; j < USB_MAXCHILDREN; j++)
+		usb_dev[i].children[j] = NULL;
+	usb_dev[i].parent = NULL;
+	usb_dev[i].controller = controller;
 
-	return &usb_dev[dev_index - 1];
+	return &usb_dev[i];
 }
 
 /*
@@ -900,10 +883,10 @@ struct usb_device *usb_alloc_new_device(void *controller)
  * Called in error cases where configuring a newly attached
  * device fails for some reason.
  */
-void usb_free_device(void)
+void usb_free_device(long dev_index)
 {
-	dev_index--;
 	DEBUG(("Freeing device node: %ld\n", dev_index));
+	dev_index--;
 	memset(&usb_dev[dev_index], 0, sizeof(struct usb_device));
 	usb_dev[dev_index].devnum = -1;
 }
@@ -942,6 +925,7 @@ long usb_new_device(struct usb_device *dev)
 	if (err < 8) {
 		DEBUG(("\n      USB device not responding, " \
 		       "giving up (status=%lX)\n", dev->status));
+		dev->devnum = addr;
 		return 1;
 	}
 	memcpy(&dev->descriptor, tmpbuf, 8);
@@ -995,6 +979,7 @@ long usb_new_device(struct usb_device *dev)
 		}
 		if (port < 0) {
 			DEBUG(("usb_new_device:cannot locate device's port."));
+			dev->devnum = addr;
 			return 1;
 		}
 
@@ -1002,6 +987,7 @@ long usb_new_device(struct usb_device *dev)
 		err = hub_port_reset(dev->parent, port, &portstatus);
 		if (err < 0) {
 			DEBUG(("Couldn't reset port %li", port));
+			dev->devnum = addr;
 			return 1;
 		}
 	}
@@ -1011,7 +997,7 @@ long usb_new_device(struct usb_device *dev)
 	dev->epmaxpacketout[0] = dev->descriptor.bMaxPacketSize0;
 	switch (dev->descriptor.bMaxPacketSize0) {
 	case 8:
-		dev->maxpacketsize  = PACKET_SIZE_8;
+		dev->maxpacketsize = PACKET_SIZE_8;
 		break;
 	case 16:
 		dev->maxpacketsize = PACKET_SIZE_16;
@@ -1022,23 +1008,26 @@ long usb_new_device(struct usb_device *dev)
 	case 64:
 		dev->maxpacketsize = PACKET_SIZE_64;
 		break;
+	default:
+		DEBUG(("bad packet size"));
+		dev->devnum = addr;
+		return 1;
 	}
+
 	dev->devnum = addr;
 
 	err = usb_set_address(dev); /* set address */
-
 	if (err < 0) {
 		DEBUG(("USB device not accepting new address " \
 			"(error=%lx)", dev->status));
 		return 1;
 	}
 
-	mdelay(10);	/* Let the SET_ADDRESS settle */
+	mdelay(50);	/* Let the SET_ADDRESS settle */
 
 	tmp = sizeof(dev->descriptor);
 
-	err = usb_get_descriptor(dev, USB_DT_DEVICE, 0,
-				 tmpbuf, sizeof(dev->descriptor));
+	err = usb_get_descriptor(dev, USB_DT_DEVICE, 0, tmpbuf, tmp);
 	if (err < tmp) {
 		if (err < 0)
 			DEBUG(("unable to get device descriptor (error=%ld)",
@@ -1062,7 +1051,13 @@ long usb_new_device(struct usb_device *dev)
 		       dev->descriptor.idVendor, dev->descriptor.idProduct));
 		return -1;
 	}
-	usb_parse_config(dev, tmpbuf, 0);
+	err = usb_parse_config(dev, tmpbuf, 0);
+	if (err < 0) {
+		DEBUG(("usb_new_device: Cannot parse configuration, " \
+		       "skipping device %04x:%04x\n",
+		       dev->descriptor.idVendor, dev->descriptor.idProduct));
+		return -1;
+	}
 	usb_set_maxpacket(dev);
 	/* we set the default configuration here */
 	if (usb_set_configuration(dev, dev->config.desc.bConfigurationValue)) {
@@ -1089,12 +1084,12 @@ long usb_new_device(struct usb_device *dev)
 	DEBUG(("Product      %s", dev->prod));
 	DEBUG(("SerialNumber %s", dev->serial));
 	ALERT(("New USB device (%ld) %s", dev->devnum, dev->prod));
-	/* now probe if the device is a hub */
-	tmp = usb_hub_probe(dev, 0);
 
-	if (tmp < 1)
+	/* now probe if the device is a hub */
+	if (usb_hub_probe(dev, 0) == 0) {
 		/* assign driver if possible */
 		usb_find_interface_driver(dev, 0);
+	}
 
 	return 0;
 }
@@ -1121,34 +1116,29 @@ extern LIST_HEAD(,usb_driver) usb_driver_list;
 static long 
 usb_find_interface_driver(struct usb_device *dev, unsigned ifnum)
 {
-	struct usb_driver *tmp;
+	struct usb_driver *driver;
 
 	if ((!dev) || (ifnum >= dev->config.desc.bNumInterfaces)) {
 		DEBUG(("bad find_interface_driver params"));
 		return -1;
 	}
 	
+	/*
+	 * Already attached ?
+	 */
 	if (dev->driver)
 		return -1;
 
-	LIST_FOREACH (tmp, &usb_driver_list, chain)
+	LIST_FOREACH (driver, &usb_driver_list, chain)
 	{
-		struct usb_driver *driver = tmp;
-	
-		DEBUG(("LIST_FOREACH. tmp %lx", tmp ));
-
 		if (!driver->probe(dev))
 		{
-			DEBUG(("driver->probe(dev) = 0"));
-
 			dev->driver = driver;
 			
 			return 0;
 		}
-	
-		if (!(tmp = LIST_NEXT(tmp, chain)))
-			break;
 	}
+
 	return -1;
 }
 

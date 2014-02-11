@@ -66,7 +66,7 @@ extern long *tab_funcs_pci;
 #define USB_MAXCONFIG			8
 #define USB_MAXINTERFACES		8
 #define USB_MAXENDPOINTS		16
-#define USB_MAXCHILDREN		8	/* This is arbitrary */
+#define USB_MAXCHILDREN			8	/* This is arbitrary */
 #define USB_MAX_HUB			16
 
 #define USB_CNTL_TIMEOUT 		100	/* 100ms timeout */
@@ -153,6 +153,8 @@ struct usb_ss_ep_comp_descriptor {
 	unsigned short wBytesPerInterval;
 } __attribute__ ((packed));
 
+#define USB_DT_SS_EP_COMP_SIZE 		6
+
 struct usb_interface {
 	struct usb_interface_descriptor desc;
 
@@ -236,7 +238,7 @@ struct usb_device
 	long (*irq_handle)(struct usb_device *dev);
 	unsigned long irq_status;
 	long irq_act_len;		/* transfered bytes */
-	void *privptr;
+	void *privptr;			/* usually (and currently only) the hub pointer */
 	/*
 	 * Child devices -  if this is a hub device
 	 * Each instance needs its own set of data structures.
@@ -327,7 +329,7 @@ long 		usb_set_configuration	(struct usb_device *dev, long configuration);
 long 		usb_get_string		(struct usb_device *dev, unsigned short langid,
 		   			unsigned char idx, void *buf, long size);
 struct usb_device *	usb_alloc_new_device(void *controller);
-void		usb_free_device		(void);
+void		usb_free_device		(long idx);
 long 		usb_new_device		(struct usb_device *dev);
 void 		usb_scan_devices	(void);
 void		usb_disconnect		(struct usb_device **pdev);
