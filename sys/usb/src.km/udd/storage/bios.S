@@ -130,8 +130,15 @@ _install_usb_stor:
 	bne .no_pinfo
 .partition_ok:
 	lea _pun_usb,A3
+	move.l pinfo_cookie(A3),D0	// PUN_INFO already installed?
+	cmp.l #0x41484449,D0		// AHDI
+	beq.s .pinfo_ok
 	move.l A3,pun_ptr
 	clr.w pinfo_puns(A3)
+	move.l #0x41484449,D0		// AHDI
+	move.l D0,pinfo_cookie(A3)
+	move.w #0x0300,D0
+	move.w D0,pinfo_vernum(A3)
 	move.w #0x4000,D0
 	move.w D0,pinfo_maxsiz(A3)
 	lea pinfo_pun(A3),A0

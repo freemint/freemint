@@ -1947,7 +1947,7 @@ usb_storage_init(void)
 
 	usb_stor_curr_dev = -1;
 	usb_1st_disk_drive = 0;
-	max_logical_drive = 0;	
+	max_logical_drive = 32; /* max XHDI major numbers available for USB */
 
 	if(usb_stor_buf == NULL)
 		usb_stor_buf = (unsigned char *)kmalloc(512);
