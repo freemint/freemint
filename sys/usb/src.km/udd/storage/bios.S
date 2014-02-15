@@ -172,7 +172,9 @@ _install_usb_stor:
 	moveq #0,D0
 	bset #7,D0               // changed
 	lea pinfo_flags(A3),A0
-	move.l D0,(A0,D4.l*4)    // B15:swap, B7:change, B0:bootable
+	move.l D4,D2
+	add.l D2,D2
+	move.l D0,(A0,D2.l)		// B15:swap, B7:change, B0:bootable
 	lea pinfo_psize(A3),A0
 	move.l 40(SP),D2         // part_type
 	cmp.l #0x4,D2            // FAT16 up to 32M
@@ -185,24 +187,41 @@ _install_usb_stor:
 	beq.s .dos_partition
 	cmp.l #0xC,D2		// FAT32
 	beq.s .dos_partition
-	move.l D2,pinfo_ptype(A3,D4.l*4)
+	lea pinfo_ptype(A3),A2
+	move.l D4,D3
+	add.l D3,D3
+	add.l D3,D3
+	move.l D2,(A2,D3.l)
 	jmp .end_ptype
 .dos_partition:
 	clr.l D3
 	move.b D2,D3
-	move.w #0x0044,pinfo_ptype(A3,D4.l*4)          		// NULL+ 'D'
-	move.b D3,pinfo_ptype+2(A3,D4.l*4)
+	lea pinfo_ptype(A3),A2
+	move.l D4,D1
+	add.l D1,D1
+	add.l D1,D1
+	move #0x044,D0	// NULL+ 'D'
+	move.w D0,(A2,D1)
+	lea pinfo_ptype+2(A3),A2
+	move.l D4,D1
+	add.l D1,D1
+	add.l D1,D1
+	move.b D3,(A2,D1)
 .end_ptype:
 	move.l 48(SP),D3         // part_size
 	move.l 44(SP),D1         // part_offset
 	move.l 36(SP),D0         // dev_num
-	move.b D0,pinfo_devnum(A3,D4.l)
+	lea pinfo_devnum(A3),A2
+	move.b D0,(A2,D4.l)
 	move.l D4,D2
 	or.l #PUN_USB,D2
 	move.b D2,pinfo_pun(A3,D4.l)
 .ahdi_part_num_limit:			
-	move.l D3,(A0,D4.l*4)    // size
-	move.l D1,pinfo_pstart(A3,D4.l*4)	
+	move.l D4,D2
+	add.l D2,D2
+	add.l D2,D2
+	move.l D3,(A0,D2.l)	// size
+	move.l D1,pinfo_pstart(A3,D2.l)
 	move.l _dskbufp,A0 
 	move.l A0,-(SP)          // buffer
 	move.l #1,-(SP)          // blkcnt	
@@ -293,7 +312,10 @@ _install_usb_stor:
 	move.b 0x13(A0),D2       // NSECTS
 	bne.s .nsects_ok_usb
 	lea pinfo_psize(A3),A2
-	move.l (A2,D4.w*4),D2    // partition size in sectors 
+	move D4,D3
+	add.l D3,D3
+	add.l D3,D3
+	move.l (A2,D3.l),D2	// partition size in sectors
 	sub.l D0,D2              // - 1st data sector 
 .nsects_ok_usb:
 	divu D1,D2
@@ -317,7 +339,10 @@ _install_usb_stor:
 	move.l 36(SP),D0         // USB devnum
 	movem.l 52(SP),A1/A2/A3  // vendor / revision / product
 	lea _product_name,A0      // save product name pointer for XHDI
-	move.l A3,(A0,D4.l*4)
+	move.l D4,D3
+	add.l D3,D3
+	add.l D3,D3
+	move.l A3,(A0,D3.l)
 	bsr display_drive_usb
 	pea message2b(PC)
 	jsr _cconws_from_S       // Cconws 
@@ -409,7 +434,7 @@ _uninstall_usb_stor:
 	clr.l D0
 	move.l D0,pinfo_pstart(A3,D3.l)
 	move.w pinfo_puns(A3),D0
-	subq.w #1,D0
+	subq.l #1,D0
 	move.w D0,pinfo_puns(A3)
 	move.l _drvbits,D0
 	bclr D3,D0
@@ -446,7 +471,16 @@ det_hdv_bpb_usb:
 	rts
 .dhbu1:
 	move.l D1,-(SP)
-	move.l pinfo_ptype(A0,D0.l*4),D1
+	move.l A0,-(SP)
+	add.l pinfo_ptype,A0
+	move.l D2,-(SP)
+	move.l D0,D2
+	add.l D2,D2
+	add.l D2,D2
+	move.l (A0,D2.l),D1
+	move (SP)+,D2
+	move.l (SP)+,A0
+
 	and.l #0xFFFFFF,D1
 	cmp.l #0x524157,D1       // RAW
 	beq.s .dhbu4
@@ -572,8 +606,13 @@ det_hdv_rw_usb:
 	bmi .dhru2               // negative logical sector
 	move.l 6+28(SP),D1       // buffer
 	beq .dhru4               // no buffer
-	move.l pinfo_pstart(A0,D0.l*4),D3
-	move.l pinfo_devnum(A0,D0.l),D4	 // devnum in the USB bus
+	move.l D0,D4
+	add.l D4,D4
+	add.l D4,D4
+	move.l pinfo_pstart(A0,D4.l),D3
+	move.l A0,-(SP)
+	add.l pinfo_devnum,A0
+	move.l (A0,D0.l),D4	// devnum in the USB bus
 	lea pinfo_bpb(A0),A0
 	asl.l #5,D0              // * 32
 	add.l D0,A0
@@ -589,7 +628,11 @@ det_hdv_rw_usb:
 	move.w 10+28(SP),D1      // num sectors
 	beq .dhru4               // no sectors
 	mulu D0,D1
-	mulu.l D0,D2
+	move.l D0,-(SP)
+	move.l D2,-(SP)
+	jsr ___mulsi3
+	addq.l #8,(SP)
+	move D0,D2
 	add.l D3,D2              // start sector
 	move.l D1,D3             // count
 	btst #0,5+28(SP)         // rwflag
