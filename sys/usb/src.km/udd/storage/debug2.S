@@ -19,8 +19,7 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-	.chip 68040
-	
+
 	.global _bconout_from_S
 
 #include "vars.h"
@@ -36,37 +35,41 @@ hex_long:
 	move.l (SP)+,D0
 hex_word:
 	move.w D0,-(SP)
-	lsr.w #8,D0          
+	lsr.l #8,D0          
 	bsr.s hex_byte     
 	move.w (SP)+,D0
 hex_byte:
 	move.w D0,-(SP)
-	lsr.b #4,D0        
+	lsr.l #4,D0        
 	bsr.s hex_char      
 	move.w (SP)+,D0      
 hex_char:
-	and.b #0xF,D0      
-	or.b #0x30,D0      
+	and.l #0xF,D0      
+	or.l #0x30,D0      
 	cmp.b #0x3A,D0     
 	bcs.s display_char  
-	addq.b #7,D0   
+	addq.l #7,D0   
 	    
 display_char:
-	and.w #0xFF,D0  
-	movem.l D0-D2/A0-A2,-(SP)
+	and.l #0xFF,D0  
+	lea -24(SP),SP
+	movem.l D0-D2/A0-A2,(SP)
 	move.w D0,-(sp)
 	jsr _bconout_from_S       // Bconout
 	addq.l #2,SP
-	movem.l (SP)+,D0-D2/A0-A2
+	movem.l (SP),D0-D2/A0-A2
+	lea 24(SP),SP
 	rts
 	
 display_string:
-	movem.l D0/A0,-(SP)
+	lea -8(SP),SP
+	movem.l D0/A0,(SP)
 .os2:
 	move.b (A0)+,D0
 	beq.s .os1
 	bsr display_char
 	bra.s .os2
 .os1:
-	movem.l (SP)+,D0/A0
+	movem.l (SP),D0/A0
+	lea 8(SP),SP
 	rts
