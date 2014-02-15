@@ -10,11 +10,11 @@ CPU = 020-60
 USBDEFS += -DDEV_DEBUG
 endif
 
-#ifeq ($(usb),000)
-#TARGET = usb000.km
-#CPU = 000
-#USBDEFS +=
-#endif
+ifeq ($(usb),000)
+TARGET = usb000.km
+CPU = 000
+USBDEFS +=
+endif
 
 ifeq ($(usb),02060)
 TARGET = usb02060.km
@@ -40,13 +40,13 @@ CPU = 060
 USBDEFS +=
 endif
 
-#ifeq ($(usb),col)
-#TARGET = usbv4e.km
-#CPU  = v4e
-#USBDEFS += -DCOLDFIRE
-#endif
+ifeq ($(usb),col)
+TARGET = usbv4e.km
+CPU  = v4e
+USBDEFS += -DCOLDFIRE
+endif
 
 #
 # all default targets
 #
-usbtargets = 02060 030 040 060 deb #000 col
+usbtargets = 02060 030 040 060 deb 000 col
