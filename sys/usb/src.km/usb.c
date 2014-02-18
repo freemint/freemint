@@ -957,6 +957,7 @@ long usb_new_device(struct usb_device *dev)
 	err = usb_get_descriptor(dev, USB_DT_DEVICE, 0, desc, 64);
 	if (err < 0) {
 		DEBUG(("usb_new_device: usb_get_descriptor() failed"));
+		dev->devnum = addr;
 		return 1;
 	}
 
