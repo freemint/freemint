@@ -329,8 +329,9 @@ void usb_hub_port_connect_change(struct usb_device *dev, long port)
 	usb->parent = dev;
 	/* Run it through the hoops (find a driver, etc) */
 	if (usb_new_device(usb)) {
+		/* Ensure device is cleared. */
+		usb_free_device(usb->devnum);
 		/* Woops, disable the port */
-		usb_free_device(dev->devnum);
 		dev->children[port] = NULL;
 		DEBUG(("hub: disabling port %ld", port + 1));
 		usb_clear_port_feature(dev, port + 1, USB_PORT_FEAT_ENABLE);
