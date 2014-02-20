@@ -1428,7 +1428,7 @@ usb_stor_read(long device, unsigned long blknr, unsigned long blkcnt, void *buff
 	unsigned long start, blks, buf_addr;
 	unsigned short smallblks;
 	struct usb_device *dev;
-	long retry, i;
+	long retry;
 	ccb *srb = &usb_ccb;
 
 
@@ -1437,18 +1437,7 @@ usb_stor_read(long device, unsigned long blknr, unsigned long blkcnt, void *buff
 	device &= 0xff;	
 	/* Setup  device */
 	DEBUG(("usb_read: dev %ld ", device));
-	dev = NULL;
-		
-	for(i = 0; i < USB_MAX_DEVICE; i++)
-	{
-		dev = usb_get_dev_index(i);
-		if(dev == NULL)
-		{
-			return 0;
-		}
-		if(dev->devnum == usb_dev_desc[device].target)
-			break;
-	}
+        dev = usb_dev_desc[device].priv;
 	usb_disable_asynch(1); /* asynch transfer not allowed */
 	srb->lun = usb_dev_desc[device].lun;
 	buf_addr = (unsigned long)buffer;
@@ -1499,7 +1488,7 @@ usb_stor_write(long device, unsigned long blknr, unsigned long blkcnt, const voi
 	unsigned long start, blks, buf_addr;
 	unsigned short smallblks;
 	struct usb_device *dev;
-	long retry, i;
+	long retry;
 	ccb *srb = &usb_ccb;
 	
 	if(blkcnt == 0)
@@ -1507,18 +1496,7 @@ usb_stor_write(long device, unsigned long blknr, unsigned long blkcnt, const voi
 	device &= 0xff;
 	/* Setup  device */
 	DEBUG(("usb_write: dev %ld ", device));
-	
-	dev = NULL;
-	for(i = 0; i < USB_MAX_DEVICE; i++)
-	{
-		dev = usb_get_dev_index(i);
-		if(dev == NULL)
-		{
-			return 0;
-		}
-		if(dev->devnum == usb_dev_desc[device].target)
-			break;
-	}
+        dev = usb_dev_desc[device].priv;
 	usb_disable_asynch(1); /* asynch transfer not allowed */
 	srb->lun = usb_dev_desc[device].lun;
 	buf_addr = (unsigned long)buffer;
@@ -1726,6 +1704,7 @@ usb_stor_get_info(struct usb_device *dev, struct us_data *ss, block_dev_desc_t *
 		ss->transport_reset(ss);
 
 	pccb->pdata = usb_stor_buf;
+	dev_desc->priv = dev;
 	dev_desc->target = dev->devnum;
 	pccb->lun = dev_desc->lun;
 	DEBUG(("address %d", dev_desc->target));
