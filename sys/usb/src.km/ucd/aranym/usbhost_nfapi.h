@@ -1,7 +1,7 @@
 /*
  * Aranym USB (virtual) Controller Driver.
  *
- * Copyright (c) 2012 David Galvez.
+ * Copyright (c) 2012-2014 David Galvez.
  *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@
 /* if you change anything in the enum {} below you have to increase 
    this NFUSBHOST_NFAPI_VERSION!
 */
-#define USBHOST_NFAPI_VERSION	0x00000002
+#define USBHOST_NFAPI_VERSION	0x00000003
 
 enum {
 	GET_VERSION = 0,	/* no parameters, return NFAPI_VERSION in d0 */
