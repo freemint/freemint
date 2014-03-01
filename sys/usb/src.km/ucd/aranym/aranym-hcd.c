@@ -1,7 +1,7 @@
 /*
  * Aranym USB (virtual) Controller Driver.
  *
- * Copyright (c) 2012 David Galvez.
+ * Copyright (c) 2012-2014 David Galvez.
  *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,19 +35,19 @@
 
 
 #define VER_MAJOR	0
-#define VER_MINOR	1
+#define VER_MINOR	2
 #define VER_STATUS	
 
-#define DRIVER_VERSION	"16 Jan 2012"
+#define DRIVER_VERSION	"12 Feb 2014"
 
 #define MSG_VERSION	str (VER_MAJOR) "." str (VER_MINOR) str (VER_STATUS) 
 #define MSG_BUILDDATE	__DATE__
 
 #define MSG_BOOT	\
-	"\033p Aranym USB controller driver " MSG_VERSION " \033q\r\n"
+	"\033pAranym USB controller driver " MSG_VERSION " \033q\r\n"
 
 #define MSG_GREET	\
-	"(c) 2012 by David Galvez.\r\n" \
+	"(c) 2012-2014 by David Galvez.\r\n" \
 	"Compiled " MSG_BUILDDATE ".\r\n\r\n"
 
 #define MSG_MINT	\
@@ -176,11 +176,17 @@ submit_int_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 	DEBUG(("dev=0x%lx pipe=%lx buf=0x%lx size=%d int=%d",
 	    dev, pipe, buffer, len, interval));
 	
-	int r;
+	long r;
 
-	r = nf_call(USBHOST(USBHOST_SUBMIT_INT_MSG), dev, pipe, buffer, len, interval);
+	r = nf_call(USBHOST(USBHOST_SUBMIT_INT_MSG), pipe, buffer, len, interval);
 
-	return r;
+	if(r >= 0) {
+		dev->status = 0;
+		dev->act_len = r;
+		return 0;
+	}
+
+	return -1;
 }
 
 
@@ -188,11 +194,17 @@ long
 submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 		       long len, struct devrequest *setup)
 {
-	int r;
+	long r;
 
-	r = nf_call(USBHOST(USBHOST_SUBMIT_CONTROL_MSG), dev, pipe, buffer, len, setup);
+	r = nf_call(USBHOST(USBHOST_SUBMIT_CONTROL_MSG), pipe, buffer, len, setup);
 
-	return r;
+	if(r >= 0) {
+		dev->status = 0;
+		dev->act_len = r;
+		return 0;
+	}
+
+	return -1;
 }
 
 
@@ -200,11 +212,17 @@ long
 submit_bulk_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 		    long len, long flags)
 {
-	int r;
+	long r;
 
-	r = nf_call(USBHOST(USBHOST_SUBMIT_BULK_MSG), dev, pipe, buffer, len);
+	r = nf_call(USBHOST(USBHOST_SUBMIT_BULK_MSG), pipe, buffer, len);
 
-	return r;
+	if(r >= 0) {
+		dev->status = 0;
+		dev->act_len = r;
+		return 0;
+	}
+
+	return -1;
 }
 
 
@@ -318,9 +336,9 @@ usb_lowlevel_init(long dummy1, const struct pci_device_id *dummy2)
 	r = nf_call(USBHOST(USBHOST_LOWLEVEL_INIT));
 
 	if (!r) 
-		(void) Cconws(" Aranym USB Controller Driver init \r\n");
+		(void) Cconws("Aranym USB Controller Driver init \r\n");
 	else
-		(void) Cconws(" Couldn't init aranym host chip emulator \r\n");
+		(void) Cconws("Couldn't init aranym host chip emulator \r\n");
 
 	return 0;
 }
