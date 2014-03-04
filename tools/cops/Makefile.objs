@@ -23,7 +23,7 @@ NOCFLAGS-cops_rsc.c = -Wall
 
 # default definitions
 OBJS = $(COBJS:.c=.o) $(SOBJS:.s=.o)
-LIBS += -lgem -liio
+LIBS += -lgem
 GENFILES = $(TARGET)
 
 VPATH = ..

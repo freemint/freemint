@@ -26,7 +26,7 @@ CFLAGS += -g
 
 # default definitions
 OBJS = $(COBJS:.c=.o)
-LIBS += -Lplain -lplain -Lhyp -lhyp -Ldragdrop -ldgdp -liio -lgem
+LIBS += -Lplain -lplain -Lhyp -lhyp -Ldragdrop -ldgdp -lgem
 GENFILES = $(TARGET) pc.pdb
 
 $(TARGET): $(OBJS) hyp/libhyp.a plain/libplain.a
