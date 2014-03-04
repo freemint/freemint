@@ -123,7 +123,7 @@ main (int argc, char *argv[])
 		printf ("received %qd bytes (%qd kb) total in %li ticks\n",
 			nbytes, nbytes / 1024, (long)(end - start));
 		
-		bytes_per_second = nbytes * CLK_TCK / (end - start);
+		bytes_per_second = nbytes * CLOCKS_PER_SEC / (end - start);
 		printf ("%qd bytes per second (%qd kb/s)\n",
 			bytes_per_second, bytes_per_second / 1024);
 		

@@ -26,7 +26,6 @@ INCLUDES += -I/usr/GEM/include
 OBJS = $(COBJS:.c=.o)
 LIBS += $(LIBIO)
 LIBS += -L/usr/GEM/lib -lcflib -lgem
-LIBS += -liio
 GENFILES = $(TARGET)
 
 $(TARGET): $(OBJS) $(LIBIOSTMP)
