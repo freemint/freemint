@@ -1166,21 +1166,21 @@ sys_f_poll (POLLFD *fds, ulong nfds, ulong timeout)
 	/* validate */
 	for (i = 0; i < nfds; i++)
 	{
-		fds[i].revents = 0;
-
 # define LEGAL_INPUT_FLAGS \
 	(POLLIN | POLLPRI | POLLOUT | POLLRDNORM | POLLWRNORM | POLLRDBAND | POLLWRBAND)
-
 		if (((fds[i].events | LEGAL_INPUT_FLAGS) != LEGAL_INPUT_FLAGS) ||
 		   fds[i].fd >= NDFILE || 
 		   !p->p_fd->ofiles[fds[i].fd]) {
 			fds[i].revents |= POLLNVAL;
+		} else {
+			fds[i].revents = fds[i].events;
 		}
 	}
 
         assert (p->p_fd && p->p_cwd);
 
 retry_after_collision:
+	p->wait_cond = (long)wakeselect;                /* flag */
 	wait_cond = (long)wakeselect;
 	count = 0;
 
@@ -1191,7 +1191,7 @@ retry_after_collision:
 
 		f = p->p_fd->ofiles[fds[i].fd];
 
-		if (fds[i].events & (POLLIN | POLLRDNORM))
+		if (fds[i].revents & (POLLIN | POLLRDNORM))
 		{
 			if (is_terminal(f))
 				rsel = (int) tty_select(f, (long)p, O_RDONLY);
@@ -1203,15 +1203,15 @@ retry_after_collision:
 				fds[i].revents &= ~(fds[i].events & (POLLIN | POLLRDNORM));
 				break;
 			case 1:
-				count++;
 				fds[i].revents |= (fds[i].events & (POLLIN | POLLRDNORM));
+				count++;
 				break;
 			case 2:
 				wait_cond = (long)&select_coll;
 				break;
 			}
 		}
-		if (fds[i].events & (POLLOUT | POLLWRNORM))
+		if (fds[i].revents & (POLLOUT | POLLWRNORM))
 		{
 			if (is_terminal(f))
 				rsel = (int) tty_select(f, (long)p, O_WRONLY);
@@ -1231,7 +1231,7 @@ retry_after_collision:
 				break;
 			}
 		}
-		if (fds[i].events & POLLPRI)
+		if (fds[i].revents & POLLPRI)
 		{
 /* tesche: anybody worried about using O_RDWR for exceptional data? ;) */
 			rsel = (int) (*f->dev->select)(f, (long)p, O_RDWR);
@@ -1296,7 +1296,6 @@ retry_after_collision:
 		}
 		if (p->wait_cond == (long)&select_coll)
 		{
-			p->wait_cond = (long)wakeselect;
 			spl (sr);
 			goto retry_after_collision;
 		}
@@ -1308,13 +1307,11 @@ retry_after_collision:
 	/* OK, let's see what data arrived (if any) */
 		for (i = 0; i < nfds; i++)
 		{
-			ushort events = fds[i].revents;
+			ushort events = fds[i].events;
 	
 			if (fds[i].revents & POLLNVAL)
 				continue;
 
-			fds[i].revents = 0;
-		
 			f = p->p_fd->ofiles[fds[i].fd];
 			
 			if (events & (POLLIN | POLLRDNORM))
@@ -1377,22 +1374,30 @@ cancel:
 
 	for (i = 0; i < nfds; i++)
 	{
-		if (fds[i].revents & POLLNVAL) 
+#if 0
+		if (count == EINTR) {
+			fds[i].revents |= POLLHUP;
 			continue;
+		}
+#endif
+		if (fds[i].revents & POLLNVAL) {
+			count++; 
+			continue;
+		}
 
 		f = p->p_fd->ofiles[fds[i].fd];
 
-		if (fds[i].revents & (POLLIN | POLLRDNORM))
+		if (fds[i].events & (POLLIN | POLLRDNORM))
 		{
 			if (f)
 				(*f->dev->unselect)(f, (long)p, O_RDONLY);
 		}
-		if (fds[i].revents & (POLLOUT | POLLWRNORM))
+		if (fds[i].events & (POLLOUT | POLLWRNORM))
 		{
 			if (f)
 				(*f->dev->unselect)(f, (long)p, O_WRONLY);
 		}
-		if (fds[i].revents & POLLPRI)
+		if (fds[i].events & POLLPRI)
 		{
 			if (f)
 				(*f->dev->unselect)(f, (long)p, O_RDWR);
@@ -1400,15 +1405,7 @@ cancel:
 	}
 
 	/* wake other processes which got a collision */
-	if (count)
-		wake(SELECT_Q, (long)&select_coll);
-
-	/* now add count for POLLNVAL return values */
-	for (i = 0; i < nfds; i++)
-	{
-		if (fds[i].revents & POLLNVAL)
-			count++; 
-	}
+	wake(SELECT_Q, (long)&select_coll);
 
 	return count;
 }
