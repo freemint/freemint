@@ -32,7 +32,6 @@ WARN = 	-Wall \
 	-Wcast-qual
 
 
-LD = $(CC) -nostdlib -Wl,--entry -Wl,_init
 LIBS = $(LIBKERN) -lgcc
 STRIPFLAGS =
 
@@ -48,7 +47,7 @@ VPATH = ..
 build: $(TARGET)
 
 $(TARGET): $(OBJS) $(LIBKERNTARGET)
-	$(LD) -o $@ $(CFLAGS) $(OBJS) $(LIBS)
+	$(CC) $(LDEXTRA) -o $@ $(CFLAGS) $(OBJS) $(LIBS)
 
 $(OBJS): ../USBDEFS
 
