@@ -397,7 +397,7 @@ long usb_parse_config(struct usb_device *dev, unsigned char *buffer, long cfgno)
 		return -1;
 	}
 	memcpy(&dev->config, head, USB_DT_CONFIG_SIZE);
-	le16_to_cpus(&(dev->config.desc.wTotalLength));
+	le2cpu16(dev->config.desc.wTotalLength);
 	dev->config.no_of_if = 0;
 
 	index = dev->config.desc.bLength;
@@ -433,7 +433,7 @@ long usb_parse_config(struct usb_device *dev, unsigned char *buffer, long cfgno)
 			/* found an endpoint */
 			if_desc->no_of_ep++;
 			memcpy(&if_desc->ep_desc[epno], head, USB_DT_ENDPOINT_SIZE);
-			le16_to_cpus(&(if_desc->ep_desc[epno].wMaxPacketSize));
+			le2cpu16(if_desc->ep_desc[epno].wMaxPacketSize);
 			DEBUG(("if %ld, ep %ld", ifno, epno));
 			break;
 		case USB_DT_SS_ENDPOINT_COMP:
@@ -1040,10 +1040,10 @@ long usb_new_device(struct usb_device *dev)
 	}
 	memcpy(&dev->descriptor, tmpbuf, sizeof(dev->descriptor));
 	/* correct le values */
-	le16_to_cpus(&dev->descriptor.bcdUSB);
-	le16_to_cpus(&dev->descriptor.idVendor);
-	le16_to_cpus(&dev->descriptor.idProduct);
-	le16_to_cpus(&dev->descriptor.bcdDevice);
+	le2cpu16(dev->descriptor.bcdUSB);
+	le2cpu16(dev->descriptor.idVendor);
+	le2cpu16(dev->descriptor.idProduct);
+	le2cpu16(dev->descriptor.bcdDevice);
 	/* only support for one config for now */
 	err = usb_get_configuration_no(dev, tmpbuf, 0);
 	if (err < 0) {

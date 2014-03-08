@@ -507,8 +507,8 @@ get_partition_info_extended(block_dev_desc_t *dev_desc, long ext_part_sector, lo
 		{
 			info->type = (unsigned long)pt->sys_ind;
 			info->blksz = 512;
-			info->start = ext_part_sector + le32_to_cpu(pt->start4);
-			info->size = le32_to_cpu(pt->size4);
+			info->start = ext_part_sector + le2cpu32(pt->start4);
+			info->size = le2cpu32(pt->size4);
 			DEBUG(("DOS partition at offset 0x%lx, size 0x%lx, type 0x%x %s", 
 					info->start, info->size, pt->sys_ind, 
 					(is_extended(pt->sys_ind) ? " Extd" : "")));
@@ -525,7 +525,7 @@ get_partition_info_extended(block_dev_desc_t *dev_desc, long ext_part_sector, lo
 	{
 		if(is_extended(pt->sys_ind))
 		{
-			long lba_start = le32_to_cpu(pt->start4) + relative;
+			long lba_start = le2cpu32(pt->start4) + relative;
 			kfree(buffer);
 			return get_partition_info_extended(dev_desc, lba_start, ext_part_sector == 0 ? lba_start : relative, part_num, which_part, info);
 		}
@@ -883,9 +883,9 @@ usb_stor_BBB_comdat(ccb *srb, struct us_data *us)
 	}
 	/* always OUT to the ep */
 	pipe = usb_sndbulkpipe(us->pusb_dev, (long)us->ep_out);
-	cbw->dCBWSignature = cpu_to_le32(CBWSIGNATURE);
-	cbw->dCBWTag = cpu_to_le32(CBWTag++);
-	cbw->dCBWDataTransferLength = cpu_to_le32(srb->datalen);
+	cbw->dCBWSignature = cpu2le32(CBWSIGNATURE);
+	cbw->dCBWTag = cpu2le32(CBWTag++);
+	cbw->dCBWDataTransferLength = cpu2le32(srb->datalen);
 	cbw->bCBWFlags = (dir_in ? CBWFLAGS_IN : CBWFLAGS_OUT);
 	cbw->bCBWLUN = srb->lun;
 	cbw->bCDBLength = srb->cmdlen;
@@ -1123,17 +1123,17 @@ again:
 	DEBUG((buf));
 #endif
 	/* misuse pipe to get the residue */
-	pipe = le32_to_cpu(csw->dCSWDataResidue);
+	pipe = le2cpu32(csw->dCSWDataResidue);
 	if(pipe == 0 && srb->datalen != 0 && srb->datalen - data_actlen != 0)
 		pipe = srb->datalen - data_actlen;
-	if(CSWSIGNATURE != le32_to_cpu(csw->dCSWSignature))
+	if(CSWSIGNATURE != le2cpu32(csw->dCSWSignature))
 	{
 		DEBUG(("!CSWSIGNATURE"));
 		usb_stor_BBB_reset(us);
 		kfree(csw);
 		return USB_STOR_TRANSPORT_FAILED;
 	}
-	else if((CBWTag - 1) != le32_to_cpu(csw->dCSWTag))
+	else if((CBWTag - 1) != le2cpu32(csw->dCSWTag))
 	{
 		DEBUG(("!Tag"));
 		usb_stor_BBB_reset(us);
@@ -1752,8 +1752,8 @@ usb_stor_get_info(struct usb_device *dev, struct us_data *ss, block_dev_desc_t *
 	if(cap[0] > (0x200000 * 10)) /* greater than 10 GByte */
 		cap[0] >>= 16;
 # endif
-	cap[0] = cpu_to_be32(cap[0]);
-	cap[1] = cpu_to_be32(cap[1]);
+	cap[0] = cpu2be32(cap[0]);
+	cap[1] = cpu2be32(cap[1]);
 	/* this assumes bigendian! */
 	cap[0] += 1;
 	capacity = &cap[0];
