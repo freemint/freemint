@@ -124,30 +124,6 @@ static long sl811_rh_submit_urb(struct usb_device *usb_dev, unsigned long pipe,
  */
 #define ACSI 1
 
-
-/*
- * Lock USB functions.
- */
-unsigned char usb_lock = 0;
-
-#define LOCKUSB \
-	{	\
-		__asm__ volatile("1: tas.b %0" : : "d"(usb_lock)); \
-		__asm__ volatile("bne.b 1b"); 	\
-	}
-#define UNLOCKUSB  __asm__ volatile("clr.b %0" : : "d"(usb_lock));
-
-/*
- * Lock the ACSI port.
- */
-#define LOCK \
-        {   \
-                __asm__ volatile("1: tas.b 0x43e");        \
-                __asm__ volatile("bne.b 1b");        \
-        }
-
-#define UNLOCK  __asm__ volatile("clr.b 0x43e");
-
 /*
  * Macros for read/write access and interrupt handling.
  */
@@ -155,28 +131,32 @@ unsigned char usb_lock = 0;
 #define DACCESS (*(volatile unsigned short *)0xFFFF8604L)
 #define MFP_GPIP (*(volatile unsigned char *)0xFFFFFA01L)
 
+/*
+ * Lock the ACSI port using FLOCK.
+ */
+#define LOCKUSB \
+        {   \
+                __asm__ volatile("1: tas.b 0x43e");        \
+                __asm__ volatile("bne.b 1b");        \
+        } \
+	WRITEMODE = 0x88; \
+	DACCESS = (ACSI << 5); \
+	WRITEMODE = 0x8a;
+
+#define UNLOCKUSB  __asm__ volatile("clr.b 0x43e");
+
 static inline void sl811_write (__u8 index, __u8 data)
 {
-	LOCK;
-	WRITEMODE = 0x88;
-	DACCESS = (ACSI << 5);
-	WRITEMODE = 0x8a;
 	DACCESS = index;
 	DACCESS = data;
-	UNLOCK;
 }
 
 static inline __u8 sl811_read (__u8 index)
 {
 	register unsigned short data;
 
-	LOCK;
-	WRITEMODE = 0x88;
-	DACCESS = (ACSI << 5);
-	WRITEMODE = 0x8a;
 	DACCESS = index;
 	data = DACCESS;
-	UNLOCK;
 
 	return (__u8)data;
 }
@@ -186,10 +166,6 @@ static inline __u8 sl811_read (__u8 index)
  */
 static void inline sl811_read_buf(__u8 offset, __u8 *buf, __u8 size)
 {
-	LOCK;
-	WRITEMODE = 0x88;
-	DACCESS = (ACSI << 5);
-	WRITEMODE = 0x8a;
 	while (size--) {
 		/* Auto-increment would have been nice, but it's 
 		 * a hw bug of the SL811. So the workaround is baked
@@ -200,7 +176,6 @@ static void inline sl811_read_buf(__u8 offset, __u8 *buf, __u8 size)
 		DACCESS = offset++;
 		*buf++ = (__u8) DACCESS;
 	}
-	UNLOCK;
 }
 
 /*
@@ -208,10 +183,6 @@ static void inline sl811_read_buf(__u8 offset, __u8 *buf, __u8 size)
  */
 static void inline sl811_write_buf(__u8 offset, __u8 *buf, __u8 size)
 {
-	LOCK;
-	WRITEMODE = 0x88;
-	DACCESS = (ACSI << 5);
-	WRITEMODE = 0x8a;
 	while (size--) {
 		/* Auto-increment would have been nice, but it's 
 		 * a hw bug of the SL811. So the workaround is baked
@@ -222,7 +193,6 @@ static void inline sl811_write_buf(__u8 offset, __u8 *buf, __u8 size)
 		DACCESS = offset++;
 		DACCESS = *buf++;
 	}
-	UNLOCK;
 }
 
 static int usb_init_atari (void)
@@ -233,12 +203,14 @@ static int usb_init_atari (void)
 	for (i = 0; i < SL811_DATA_LIMIT; i++) {
 		buf[i] = i;
 	}
+	LOCKUSB;
 	sl811_write_buf(SL811_DATA_START, buf, SL811_DATA_LIMIT);
 	memset(buf, 0, SL811_DATA_LIMIT);
 	sl811_read_buf(SL811_DATA_START, buf, SL811_DATA_LIMIT);
+	UNLOCKUSB;
 	for (i = 0; i < SL811_DATA_LIMIT; i++) {
 		if (buf[i] != i) {
-			DEBUG(("SL811 compare error index=0x%02x read=0x%02x\n", i, tmp));
+			DEBUG(("SL811 compare error index=0x%02x read=0x%02x 0x%02x 0x%02x 0x%02x\n", i, buf[i], buf[i+1], buf[i+2], buf[i+3]));
 			ALERT(("SL811 not found at ACSI ID %d", ACSI));
 			return (-1);
 		}
@@ -258,11 +230,10 @@ static void sl811_write_intr(__u8 irq)
  *
  * Return: 0 = no device attached; 1 = USB device attached
  */
-static int sl811_hc_reset(void)
+static long sl811_hc_reset(void)
 {
-	__u8 status ;
+	__u8 status;
 
-	LOCKUSB;
 	sl811_write(SL811_CTRL2, SL811_CTL2_HOST | SL811_12M_HI);
 	sl811_write(SL811_CTRL1, SL811_CTRL1_RESET);
 
@@ -282,8 +253,6 @@ static int sl811_hc_reset(void)
 		intr = SL811_INTR_INSRMV;
 		sl811_write_intr(intr);
 	
-		UNLOCKUSB;
-
 		return 0;
 	}
 
@@ -323,7 +292,6 @@ static int sl811_hc_reset(void)
 	rh_status.wPortChange |= USB_PORT_STAT_C_CONNECTION;
 	intr = SL811_INTR_DETECT | SL811_INTR_INSRMV;
 	sl811_write_intr(intr);
-	UNLOCKUSB;
 
 	return 1;
 }
@@ -348,7 +316,10 @@ usb_lowlevel_init(long dummy1, const struct pci_device_id *dummy2)
 	/*
 	 * Initialize the chip.
 	 */
-        if (sl811_hc_reset())
+	LOCKUSB;
+        r = sl811_hc_reset();
+	UNLOCKUSB;
+        if (r)
 		(*uinf->usb_rh_wakeup)();
 	else
 		rh_status.wPortChange = 0;
@@ -370,8 +341,10 @@ usb_lowlevel_stop(void)
 {
 	DEBUG(("USB SL811 DISABLED DUE TO LOWLEVEL STOP!"));
 	
+	LOCKUSB;
 	sl811_write_intr(0);
 	sl811_write(SL811_INTRSTS, 0xff);
+	UNLOCKUSB;
 
 	return 0;
 }
@@ -1099,11 +1072,13 @@ unicorn_int (void)
 		LOCKUSB;
 		status = sl811_read(SL811_INTRSTS);
 		sl811_write(SL811_INTRSTS, 0xfe);
-		UNLOCKUSB;
 
 		if (status & (SL811_INTR_INSRMV | SL811_INTR_DETECT)) {
 			sl811_hc_reset();
+			UNLOCKUSB;
 			addroottimeout (0, int_handle_tophalf, 1);
+		} else {
+			UNLOCKUSB;
 		}
 	}
 }
@@ -1126,7 +1101,7 @@ sl811_hub_poll_thread(void *dummy)
 	for (;;)
 	{
 		unicorn_int();
-		addtimeout(500L, sl811_hub_poll);
+		addtimeout(1000L, sl811_hub_poll);
 		sleep(WAIT_Q, (long)&sl811_hub_poll_thread);
 	}
 
