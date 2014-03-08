@@ -40,7 +40,11 @@ void	setup_usb_module_api(void);
 static void
 bootmessage(void)
 {
+#ifdef TOSONLY
+	c_conws("USB driver for TOS\n\r");
+#else
 	c_conws("USB driver for MiNT\n\r");
+#endif
 	c_conws("David Galvez. 2010-2014\n\r");
 	c_conws("Alan Hourihane. 2014\n\r");
 }
@@ -54,7 +58,9 @@ struct kentry *kentry;
  */
 
 Path start_path;		/* The directory that the started binary lives */
+#ifndef TOSONLY
 static const struct kernel_module *self = NULL;
+#endif
 
 void usb_storage_init(void);	/* Prototype, this shouldn't be here */
 
@@ -106,13 +112,17 @@ setup_usb_module_api(void)
 //	usb_api.usb_hub_configure = &usb_hub_configure;	
 }
 
+#ifdef TOSONLY
+int
+main(void)
+#else
 long
-init(struct kentry *k, const struct kernel_module *km) //const char *path)
+init(struct kentry *k, const struct kernel_module *km)
+#endif
 {
 	long err = 0L;
-	bool first = true;
-//	struct proc *rootproc;
 
+#ifndef TOSONLY
 	/* setup kernel entry */
 	kentry = k;
 	self = km;
@@ -129,17 +139,9 @@ init(struct kentry *k, const struct kernel_module *km) //const char *path)
 
 	loader_pid = p_getpid();
 	loader_pgrp = p_getpgrp();
+#endif
 
-	/* do some sanity checks of the installation
-	 * that are a common source of user problems
-	 */
-	if (first)
-	{
-		
-	}
-
-	if (first)
-		bootmessage();
+	bootmessage();
 
 	usb_stop();
 
@@ -149,7 +151,9 @@ init(struct kentry *k, const struct kernel_module *km) //const char *path)
 
 	usb_hub_init();
 
+#ifndef TOSONLY
 error:
+#endif
 	return err;
 }
 
