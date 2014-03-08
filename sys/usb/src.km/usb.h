@@ -1,5 +1,5 @@
 /*
- * Modified for the FreeMiNT USB subsystem by David Galvez. 2010 - 2011
+ * Modified for the FreeMiNT USB subsystem by David Galvez. 2010 - 2014
  * Modified for Atari by Didier Mequignon 2009
  *	
  * (C) Copyright 2001
@@ -34,29 +34,6 @@
 #include "endian/byteorder.h"
 #include "usb_defs.h"
 #include "part.h"
-
-#ifdef PCI_XBIOS
-
-# define in8(addr)		fast_read_mem_byte(usb_handle,addr)
-# define in16r(addr)		fast_read_mem_word(usb_handle,addr)
-# define in32r(addr)		fast_read_mem_longword(usb_handle,addr)
-# define out8(addr,val)		write_mem_byte(usb_handle,addr,val)
-# define out16r(addr,val)	write_mem_word(usb_handle,addr,val)
-# define out32r(addr,val)	write_mem_longword(usb_handle,addr,val)
-
-#else /* !PCI_XBIOS */
-
-extern long *tab_funcs_pci;
-
-# define in8(addr)		Fast_read_mem_byte(usb_handle,addr)
-# define in16r(addr)		Fast_read_mem_word(usb_handle,addr)
-# define in32r(addr)		Fast_read_mem_longword(usb_handle,addr)
-# define out8(addr,val)		Write_mem_byte(usb_handle,addr,val)
-# define out16r(addr,val)	Write_mem_word(usb_handle,addr,val)
-# define out32r(addr,val)	Write_mem_longword(usb_handle,addr,val)
-
-#endif /* PCI_XBIOS */
-
 
 /* Everything is aribtrary */
 #define USB_ALTSETTINGALLOC		4
