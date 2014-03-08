@@ -109,6 +109,6 @@ __u32 ___arch__swab32(__u32 value)
 # if defined(__GNUC__) && !defined(__STRICT_ANSI__)
 # define __BYTEORDER_HAS_U64__
 # endif
-# include "byteorder/big_endian.h"
+//# include "byteorder/big_endian.h"
 
 # endif				/* _M68K_BYTEORDER_H */

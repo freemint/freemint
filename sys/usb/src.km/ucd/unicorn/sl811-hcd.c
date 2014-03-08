@@ -738,10 +738,10 @@ static long sl811_rh_submit_urb(struct usb_device *usb_dev, unsigned long pipe,
 	unsigned short len = 0;
 	long status = 0;
 	__u16 bmRType_bReq;
-	__u16 wValue  = le16_to_cpu (cmd->value);
-	__u16 wLength = le16_to_cpu (cmd->length);
+	__u16 wValue  = le2cpu16(cmd->value);
+	__u16 wLength = le2cpu16(cmd->length);
 #ifdef SL811_DEBUG
-	__u16 wIndex  = le16_to_cpu (cmd->index);
+	__u16 wIndex  = le2cpu16(cmd->index);
 #endif
 
 	if (usb_pipeint(pipe)) {
@@ -763,26 +763,26 @@ static long sl811_rh_submit_urb(struct usb_device *usb_dev, unsigned long pipe,
 	*/
 	switch (bmRType_bReq) {
 	case RH_GET_STATUS:
-		*(__u16 *)bufp = cpu_to_le16(1);
+		*(__u16 *)bufp = cpu2le16(1);
 		OK(2);
 
 	case RH_GET_STATUS | USB_RECIP_INTERFACE:
-		*(__u16 *)bufp = cpu_to_le16(0);
+		*(__u16 *)bufp = cpu2le16(0);
 		OK(2);
 
 	case RH_GET_STATUS | USB_RECIP_ENDPOINT:
-		*(__u16 *)bufp = cpu_to_le16(0);
+		*(__u16 *)bufp = cpu2le16(0);
 		OK(2);
 
 	case RH_GET_STATUS | USB_TYPE_CLASS:
-		*(__u32 *)bufp = cpu_to_le32(0);
+		*(__u32 *)bufp = cpu2le32(0);
 		OK(4);
 
 	case RH_GET_STATUS | USB_RECIP_OTHER | USB_TYPE_CLASS:
 		{
 		long tmp;
 		tmp = (long)rh_status.wPortChange<<16 | rh_status.wPortStatus;
-		*(__u32 *)bufp = cpu_to_le32(tmp);
+		*(__u32 *)bufp = cpu2le32(tmp);
 		OK(4);
 		}
 
