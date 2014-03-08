@@ -31,7 +31,6 @@
 #include "mint/endian.h"
 #include "mint/mdelay.h"
 #include "ucd/pci-ohci/mod_devicetable.h"
-#include "endian/byteorder.h"
 #include "usb_defs.h"
 #include "part.h"
 
