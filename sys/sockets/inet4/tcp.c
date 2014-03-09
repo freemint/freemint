@@ -822,6 +822,12 @@ tcp_getsockopt (struct in_data *data, short level, short optname, char *optval, 
 {
 	struct tcb *tcb = data->pcb;
 
+	if ((level == SOL_SOCKET) && (optname == SO_ACCEPTCONN)) {
+		*(long *)optval = (tcb->state == TCBS_LISTEN);
+		*optlen = sizeof(long);
+		return 0;
+	}
+
 	if (level != IPPROTO_TCP)
 		return EOPNOTSUPP;
 	

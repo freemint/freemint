@@ -8,6 +8,7 @@
 # include "ip.h"
 
 # include "icmp.h"
+# include "igmp.h"
 # include "in.h"
 # include "inet.h"
 # include "inetutil.h"
@@ -117,7 +118,7 @@ ip_chk_addr (ulong addr, struct route *rt)
 	{
 		if (addr == ifa->adr.in.sin_addr.s_addr)
 			return IPADDR_LOCAL;
-		
+
 		if (addr == ifa->net ||
 		    addr == ifa->subnet ||
 		    addr == ifa->net_broadaddr)
@@ -127,7 +128,10 @@ ip_chk_addr (ulong addr, struct route *rt)
 		    addr == ifa->ifu.broadadr.in.sin_addr.s_addr)
 			return IPADDR_BRDCST;
 	}
-	
+
+	if ((addr & 0xf0000000ul) == INADDR_MULTICAST)
+	 	return IPADDR_MULTICST;
+
 	if (!IN_CLASSA (addr) && !IN_CLASSB (addr) && !IN_CLASSC (addr))
 		return IPADDR_BADCLASS;
 
@@ -240,7 +244,8 @@ ip_register (struct in_ip_ops *proto)
 static BUF *
 ip_brdcst_copy (BUF *buf, struct netif *nif, struct route *rt, short addrtype)
 {
-	if (addrtype != IPADDR_BRDCST || nif == rt->nif)
+	if (addrtype != IPADDR_BRDCST || 
+	    nif == rt->nif)
 		return 0;
 	
 	return buf_clone (buf, BUF_NORMAL);
@@ -298,7 +303,7 @@ ip_output (BUF *buf)
 		ifa = if_af2ifaddr (rt->nif, AF_INET);
 		if (!ifa)
 		{
-			DEBUG (("if_output: chosen net if has no inet addr"));
+			DEBUG (("ip_output: chosen net if has no inet addr"));
 			buf_deref (buf, BUF_NORMAL);
 			route_deref (rt);
 			return EADDRNOTAVAIL;
@@ -311,7 +316,7 @@ ip_output (BUF *buf)
 	
 	r = ip_frag (buf, rt->nif,
 		rt->flags & RTF_GATEWAY ? rt->gway : iph->daddr,
-		addrtype == IPADDR_BRDCST);
+		addrtype);
 	
 	if (nbuf2)
 	{
@@ -319,7 +324,7 @@ ip_output (BUF *buf)
 		rt = route_get (((struct ip_dgram *)(nbuf2->dstart))->daddr = ip_local_addr(((struct ip_dgram *)(nbuf2->dstart))->daddr));
 		ip_frag (nbuf2, rt->nif,
 			((struct ip_dgram *)(nbuf2->dstart))->daddr,
-			0);
+			IPADDR_LOCAL);
 	}
 	
 	route_deref (rt);
@@ -407,7 +412,7 @@ ip_send (ulong saddr, ulong daddr, BUF *buf, short proto, short flags, struct ip
 		ifa = if_af2ifaddr (rt->nif, AF_INET);
 		if (!ifa)
 		{
-			DEBUG (("if_send: nif %s has no ifaddr", rt->nif->name));
+			DEBUG (("ip_send: nif %s has no ifaddr", rt->nif->name));
 			buf_deref (nbuf, BUF_NORMAL);
 			route_deref (rt);
 			return EADDRNOTAVAIL;
@@ -417,9 +422,12 @@ ip_send (ulong saddr, ulong daddr, BUF *buf, short proto, short flags, struct ip
 	}
 	
 	nbuf2 = ip_brdcst_copy (nbuf, rt->nif, rt, addrtype);
+	if (!nbuf2 && addrtype == IPADDR_MULTICST &&
+	    _opts->multicast_loop)
+		nbuf2 = buf_clone (buf, BUF_NORMAL);
 	
 	r = ip_frag (nbuf, rt->nif, rt->flags & RTF_GATEWAY ? rt->gway : daddr,
-		addrtype == IPADDR_BRDCST);
+		     addrtype);
 	
 	if (nbuf2)
 	{
@@ -427,7 +435,7 @@ ip_send (ulong saddr, ulong daddr, BUF *buf, short proto, short flags, struct ip
 		rt = route_get (((struct ip_dgram *)(nbuf2->dstart))->daddr = ip_local_addr(((struct ip_dgram *)(nbuf2->dstart))->daddr));
 		ip_frag (nbuf2, rt->nif,
 			((struct ip_dgram *)(nbuf2->dstart))->daddr,
-			0);
+			IPADDR_LOCAL);
 	}
 	
 	route_deref (rt);
@@ -505,7 +513,9 @@ ip_input (struct netif *nif, BUF *buf)
 	 * Check if the datagram is destined to this interface. If so send
 	 * the datagram to the local software.
 	 */
-	if (addrtype == IPADDR_LOCAL || addrtype == IPADDR_BRDCST)
+	if (addrtype == IPADDR_LOCAL || 
+	    addrtype == IPADDR_BRDCST ||
+	    addrtype == IPADDR_MULTICST)
 	{
 		struct in_ip_ops *p;
 		BUF *buf2;
@@ -600,7 +610,7 @@ ip_input (struct netif *nif, BUF *buf)
 	buf->info = ip_priority (0, iph->tos);
 	
 	ip_frag (buf, rt->nif, rt->flags & RTF_GATEWAY ? rt->gway : iph->daddr,
-		addrtype == IPADDR_BRDCST);
+		addrtype);
 	
 	route_deref (rt);
 # endif /* DONT_FORWARD */
@@ -653,7 +663,7 @@ done:
 }
 
 static long
-ip_frag (BUF *buf, struct netif *nif, ulong nexthop, short isbrcst)
+ip_frag (BUF *buf, struct netif *nif, ulong nexthop, short addrtype)
 {
 	struct ip_dgram *fragiph, *iph = (struct ip_dgram *)buf->dstart;
 	long fraglen, datalen, offset, fragoff, hdrlen, todo, r;
@@ -665,7 +675,7 @@ ip_frag (BUF *buf, struct netif *nif, ulong nexthop, short isbrcst)
 		iph->chksum = 0;
 		iph->chksum = chksum (iph, iph->hdrlen * sizeof (short));
 		DEBUG (("ip_frag: short enough -> if_send()"));
-		return if_send (nif, buf, nexthop, isbrcst);
+		return if_send (nif, buf, nexthop, addrtype);
 	}
 	
 	fragoff = iph->fragoff;
@@ -723,7 +733,7 @@ ip_frag (BUF *buf, struct netif *nif, ulong nexthop, short isbrcst)
 		
 		fragiph->chksum = 0;
 		fragiph->chksum = chksum (fragiph, hdrlen/2);
-		r = if_send (nif, fragbuf, nexthop, isbrcst);
+		r = if_send (nif, fragbuf, nexthop, addrtype);
 		if (r != 0)
 		{
 			DEBUG (("ip_frag: if_send failed with %ld", r));
@@ -952,6 +962,39 @@ ip_setsockopt (struct ip_options *opts, short level, short optname, char *optval
 		case IP_RECVDSTADDR:
 		case IP_RETOPTS:
 			break;
+
+		case IP_MULTICAST_TTL:
+			if (optlen != sizeof (long) || !optval)
+				return EINVAL;
+			opts->ttl = (char) *(long *) optval;
+			return 0;
+		case IP_MULTICAST_IF:
+		{
+			struct in_addr *addr = (struct in_addr *)optval;
+		 	opts->multicast_ip = ip_dst_addr(addr->s_addr);
+			return 0;
+		}
+		case IP_MULTICAST_LOOP:
+			if (optlen != sizeof (char) || !optval)
+				return EINVAL;
+			opts->multicast_loop = (char) *(long *)optval;
+			return 0;
+		case IP_ADD_MEMBERSHIP:
+		case IP_DROP_MEMBERSHIP:
+		{
+			struct ip_mreq *imr = (struct ip_mreq *)optval;
+			ulong if_addr;
+			ulong multi_addr;
+			if_addr = ip_dst_addr(imr->imr_interface.s_addr);
+			multi_addr = ip_dst_addr(imr->imr_multiaddr.s_addr);
+			if (optname == IP_ADD_MEMBERSHIP)
+				return igmp_joingroup(if_addr, multi_addr);
+			else
+				return igmp_leavegroup(if_addr, multi_addr);
+
+			/* shouldn't happen */
+			break;
+		}
 	}
 	
 	return EOPNOTSUPP;
@@ -994,6 +1037,25 @@ ip_getsockopt (struct ip_options *opts, short level, short optname, char *optval
 		case IP_RECVDSTADDR:
 		case IP_RETOPTS:
 			break;
+
+		case IP_MULTICAST_TTL:
+			if (!optval || !optlen || *optlen < sizeof (long))
+				return EINVAL;
+			*(long *) optval = (ulong) opts->ttl;
+			*optlen = sizeof (long);
+			return 0;
+		case IP_MULTICAST_IF:
+			if (!optval || !optlen || *optlen < sizeof (long))
+				return EINVAL;
+			*(long *) optval = (ulong) opts->multicast_ip;
+			*optlen = sizeof (long);
+			return 0;
+		case IP_MULTICAST_LOOP:
+			if (!optval || !optlen || *optlen < sizeof (char))
+				return EINVAL;
+			*(char *) optval = opts->multicast_loop;
+			*optlen = sizeof (char);
+			return 0;
 	}
 	
 	return EOPNOTSUPP;

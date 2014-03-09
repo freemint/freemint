@@ -743,6 +743,11 @@ inet_getsockopt (struct socket *so, short level, short optname, char *optval, lo
 			val = (data->flags & IN_CHECKSUM) ? 1 : 0;
 			break;
 		
+		case SO_ACCEPTCONN:
+			return (*data->proto->soops.getsockopt) (data, level, optname,
+				optval, optlen);
+			break;
+
 		default:
 			return EOPNOTSUPP;
 	}

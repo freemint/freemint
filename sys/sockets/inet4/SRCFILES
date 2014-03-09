@@ -9,6 +9,7 @@ HEADER = \
 	if.h \
 	ifeth.h \
 	ifload.h \
+	igmp.c \
 	in.h \
 	inet.h \
 	inetdev.h \
@@ -38,6 +39,7 @@ COBJS = \
 	if.c \
 	ifeth.c \
 	ifload.c \
+	igmp.c \
 	inet.c \
 	inetdev.c \
 	inetutil.c \
