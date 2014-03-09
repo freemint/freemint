@@ -111,7 +111,7 @@ route_get (ulong daddr)
 		return rt;
 	}
 
-	DEBUG (("route_get: no route found"));
+	DEBUG (("route_get: no route found 0x%lx",daddr));
 	return NULL;
 }
 

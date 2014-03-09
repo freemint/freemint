@@ -58,6 +58,8 @@ struct ip_options
 	uchar		ttl;
 	uchar		tos;
 	uchar		hdrincl:1;
+	ulong		multicast_ip;
+	uchar		multicast_loop;
 };
 
 /* IP Type Of Service */
@@ -89,6 +91,7 @@ struct ip_options
 # define IPADDR_LOCAL		1
 # define IPADDR_BRDCST		2
 # define IPADDR_BADCLASS	3
+# define IPADDR_MULTICST        4
 
 /*
  * Flags for ip_send()
