@@ -18,7 +18,7 @@ static struct netif if_loopback =
 {
 	name:		"lo",
 	unit:		0,
-	flags:		IFF_LOOPBACK | IFF_BROADCAST,
+	flags:		IFF_LOOPBACK | IFF_BROADCAST | IFF_IGMP,
 	metric:		0,
 	mtu:		2 * 8192,
 	timer:		0,
@@ -87,7 +87,7 @@ loop_ioctl (struct netif *nif, short cmd, long arg)
 			return 0;
 		
 		case SIOCSIFADDR:
-			nif->flags |= (IFF_UP|IFF_RUNNING);
+			nif->flags |= (IFF_UP|IFF_RUNNING|IFF_IGMP);
 			return 0;
 		
 		case SIOCSIFNETMASK:
