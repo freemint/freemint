@@ -11,6 +11,7 @@
 # include "ip.h"
 # include "loopback.h"
 # include "route.h"
+# include "igmp.h"
 
 # include "mint/asm.h"
 # include "mint/sockio.h"
@@ -398,6 +399,10 @@ if_open (struct netif *nif)
 	 * This is usefull to broadcast packets.
 	 */
 	rt_primary.nif = nif;
+
+	igmp_start(nif);
+	igmp_report_groups(nif);
+	nif->flags |= (IFF_IGMP);
 	
 	DEBUG (("if_open: primary_nif = %s", rt_primary.nif->name));
 
@@ -420,6 +425,7 @@ if_close (struct netif *nif)
 	if_flushq (&nif->snd);
 	if_flushq (&nif->rcv);
 	
+	igmp_stop (nif);
 	route_flush (nif);
 	arp_flush (nif);
 	
@@ -430,7 +436,7 @@ if_close (struct netif *nif)
 	if (nif->flags & IFF_LOOPBACK)
 		route_del (0x7f000000L, IN_CLASSA_NET);
 	
-	nif->flags &= ~(IFF_UP|IFF_RUNNING);
+	nif->flags &= ~(IFF_UP|IFF_IGMP|IFF_RUNNING);
 	
 	/*
 	 * Want a running primary interface
@@ -453,7 +459,7 @@ if_close (struct netif *nif)
 }
 
 long
-if_send (struct netif *nif, BUF *buf, ulong nexthop, short isbrcst)
+if_send (struct netif *nif, BUF *buf, ulong nexthop, short addrtype)
 {
 	struct arp_entry *are;
 	long ret;
@@ -482,15 +488,31 @@ if_send (struct netif *nif, BUF *buf, ulong nexthop, short isbrcst)
 	{
 		case HWTYPE_ETH:
 		{
-			DEBUG (("if_send(%s): HWTYPE_ETH (brcst=%d)",
-				nif->name, isbrcst));
+			DEBUG (("if_send(%s): HWTYPE_ETH (addrtype=%d)",
+				nif->name, addrtype));
 
 			/*
 			 * When broadcast then use interface's broadcast address
 			 */
-			if (isbrcst)
+			if (addrtype == IPADDR_BRDCST)
 				return (*nif->output) (nif, buf, (char *)nif->hwbrcst.adr.bytes,
 					nif->hwbrcst.len, PKTYPE_IP);
+			else if (addrtype == IPADDR_MULTICST) {
+				struct ip_dgram *iph = (struct ip_dgram *) buf->dstart;
+				struct hwaddr hwmcast;
+
+				hwmcast.adr.bytes[0] = 0x01;
+				hwmcast.adr.bytes[1] = 0x00;
+				hwmcast.adr.bytes[2] = 0x5e;
+				hwmcast.adr.bytes[3] = (iph->daddr & 0xFF0000) >> 16;
+				hwmcast.adr.bytes[4] = (iph->daddr & 0x00FF00) >> 8;
+				hwmcast.adr.bytes[5] = (iph->daddr & 0x0000FF) >> 0;
+				hwmcast.len = ETH_ALEN;
+
+				return (*nif->output) (nif, buf, (char *)hwmcast.adr.bytes,
+					hwmcast.len, PKTYPE_IP);
+			}
+
 			/*
 			 * Here we must first resolve the IP address into a hardware
 			 * address using ARP.
@@ -1135,6 +1157,7 @@ if_init (void)
 			if_lo = rt_primary.nif = nif;
 			break;
 		}
+		nif->igmp_mac_filter = NULL;
 	}
 	
 	if (!if_lo)

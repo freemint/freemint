@@ -45,6 +45,7 @@
 # include "route.h"
 # include "tcp.h"
 # include "udp.h"
+# include "igmp.h"
 
 
 void
@@ -71,6 +72,8 @@ inet4_init (void)
 	udp_init ();
 	/* initialize TCP protocol */
 	tcp_init ();
+	/* initialize IGMP protocol */
+	igmp_init ();
 	
 	/* initialize lo0 */
 	{

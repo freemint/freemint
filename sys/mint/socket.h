@@ -81,6 +81,7 @@ enum so_type
 # define SO_KEEPALIVE	9	/* periodically connection checking on/off*/
 # define SO_OOBINLINE	10	/* place oob-data in input queue on/off */
 # define SO_LINGER	11	/* what to do when closing a socket */
+# define SO_ACCEPTCONN  30
 # define SO_CHKSUM	40	/* switch checksum generation on/off */
 # define SO_DROPCONN	41	/* drop incoming conn. when accept() fails */
 

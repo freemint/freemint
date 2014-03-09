@@ -231,6 +231,9 @@ udp_send (struct in_data *data, const struct iovec *iov, short niov, short nonbl
 		srcaddr = data->src.addr;
 		if (srcaddr == INADDR_ANY)
 			srcaddr = ip_local_addr (dstaddr);
+		if ((dstaddr & 0xf0000000ul) == INADDR_MULTICAST) {
+			srcaddr = data->opts.multicast_ip;
+		}
 		uh->chksum = udp_checksum (uh, srcaddr, dstaddr);
 		if (!uh->chksum) uh->chksum = ~0;
 	}
