@@ -142,7 +142,9 @@ static long probe_valid_drivers(struct usb_device *dev)
 	devid = j;
 
 	for (j = 0; j < numDevices; j++) {
-		if (usbNetAPI->usbnet[j].before_probe)
+		if (!usbNetAPI->usbnet[j].before_probe ||
+		    !usbNetAPI->usbnet[j].probe ||
+		    !usbNetAPI->usbnet[j].get_info)
 			continue;
 
 		usbNetAPI->usbnet[j].before_probe(api);
