@@ -741,7 +741,7 @@ static long usb_string_sub(struct usb_device *dev, unsigned long langid,
  * Get string index and translate it to ascii.
  * returns string length (> 0) or error (< 0)
  */
-long usb_string(struct usb_device *dev, long index, char *buf, size_t size)
+long usb_string(struct usb_device *dev, long index, char *buf, long size)
 {
 	unsigned char mybuf[USB_BUFSIZ];
 	unsigned char *tbuf;
