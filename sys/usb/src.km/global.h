@@ -23,8 +23,6 @@
 #ifndef _global_h
 #define _global_h
 
-#include <stddef.h>
-
 #include "mint/module.h"
 #include "libkern/libkern.h"
 
