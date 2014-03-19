@@ -3,7 +3,7 @@
 #
 TARGET = 
 DRIVERS = rtl8012 rtl8012st dial plip dummy de600 lance pamsdma biodma \
-	rieblspc rieblspc_fast rieblmst rieblmst_fast rieblste riebltt
+	rieblspc rieblspc_fast rieblmst rieblmst_fast rieblste riebltt asix
 
 SHELL = /bin/sh
 SUBDIRS = nfeth daynaport ethernat fec
@@ -53,6 +53,7 @@ PAMSDMA_OBJS = $(addsuffix .o, $(basename $(notdir $(PAMSDMA_SRCS))))
 BIODMA_OBJS = $(addsuffix .o, $(basename $(notdir $(BIODMA_SRCS))))
 RTL8012_OBJS = $(addsuffix .o, $(basename $(notdir $(RTL8012_SRCS))))
 RTL8012ST_OBJS = $(addsuffix .o, $(basename $(notdir rtl8012st.c rtl8012_vblint.s)))
+ASIX_OBJS = $(addsuffix .o, $(basename $(notdir $(ASIX_SRCS))))
 
 # entry point
 entry: $(DRIVERS)
@@ -62,6 +63,11 @@ entry: $(DRIVERS)
 $(TARGET): $(XOBJS) $(LIBKERNSTMP)
 	$(LD) $(CFLAGS) -o $@ $(XOBJS) $(LIBS)
 
+
+asix:
+	$(MAKE) asix.xif \
+		"TARGET=asix.xif" \
+		"XOBJS=$(COMMON_OBJS) $(ASIX_OBJS)"
 
 dial:
 	$(MAKE) dial.xif \
