@@ -28,10 +28,12 @@ struct netinfo
 	const char *fname;
 	
 	long	(*_bpf_input) (struct netif *, BUF *);
-	
-	long	reserved[5];
-};
 
+	/* added for hotplug, i.e. USB */
+	long	(*_if_deregister) (struct netif *);
+
+	long	reserved[4];
+};
 
 # ifndef NETINFO
 # define NETINFO netinfo
@@ -56,6 +58,7 @@ extern struct netinfo *NETINFO;
 # define eth_remove_hdr	(*NETINFO->_eth_remove_hdr)
 
 # define bpf_input	(*NETINFO->_bpf_input)
+# define if_deregister	(*NETINFO->_if_deregister)
 # endif
 
 

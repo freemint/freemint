@@ -41,7 +41,9 @@ struct netinfo netinfo =
 	
 	fname:			NULL,
 	
-	_bpf_input:		bpf_input
+	_bpf_input:		bpf_input,
+
+	_if_deregister:         if_deregister
 };
 
 static long
