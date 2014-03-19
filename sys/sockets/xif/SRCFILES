@@ -30,6 +30,7 @@ RIEBL_TT_SRCS = riebltt.c lanceasm.s
 PAMSDMA_SRCS = pamsdma.c dmaasm.s
 BIODMA_SRCS = biodma.c dmaasm.s
 RTL8012_SRCS = rtl8012.c rtl8012_vblint.s
+ASIX_SRCS = asix.c
 
 COBJS = \
 	$(COMMON_SRCS) \
@@ -47,6 +48,7 @@ COBJS = \
 	$(RIEBL_TT_SRCS) \
 	$(PAMSDMA_SRCS) \
 	$(BIODMA_SRCS) \
-	$(RTL8012_SRCS)
+	$(RTL8012_SRCS) \
+	$(ASIX_SRCS)
 
 SRCFILES = $(HEADER) $(COBJS)
