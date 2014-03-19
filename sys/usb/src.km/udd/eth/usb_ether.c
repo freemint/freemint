@@ -21,7 +21,6 @@
  * MA 02111-1307 USA
  */
 
-#define size_t int
 #include "cookie.h"
 #include "usbnet.h"
 #include "libkern/libkern.h"

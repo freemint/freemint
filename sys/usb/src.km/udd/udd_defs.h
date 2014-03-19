@@ -90,7 +90,7 @@ struct usb_module_api
 									unsigned char type, unsigned char id, void *buf,
 									long size);
 	long 			_cdecl	(*usb_clear_halt)	(struct usb_device *dev, long pipe);
-	long 			_cdecl	(*usb_string)		(struct usb_device *dev, long idx, char *buf, size_t size);
+	long 			_cdecl	(*usb_string)		(struct usb_device *dev, long idx, char *buf, long size);
 	long 			_cdecl	(*usb_set_interface)	(struct usb_device *dev, long interface, long alternate);
 	long			_cdecl	(*usb_parse_config)	(struct usb_device *dev, unsigned char *buffer, long cfgno);
 	long 			_cdecl	(*usb_set_maxpacket)	(struct usb_device *dev);
