@@ -291,11 +291,33 @@ if_slowtimeout (PROC *proc, long arg)
 }
 
 long
+if_deregister (struct netif *nif)
+{
+	struct netif *ifp, *ifpb = NULL;
+
+	for (ifp = allinterfaces; ifp; ifp = ifp->next)
+	{
+		if (ifp == nif) {
+			/* HEAD REMOVAL */
+			if (ifpb == NULL) {
+				allinterfaces = ifp->next;
+			} else {
+				ifpb->next = ifp->next;
+			}
+			return 1; /* indicating removed */
+		}
+		ifpb = ifp;
+	}
+
+	return 0; /* not removed */
+}
+
+long
 if_register (struct netif *nif)
 {
 	static short have_timeout = 0;
 	short i;
-	
+
 	nif->addrlist = 0;
 	nif->snd.qlen = 0;
 	nif->rcv.qlen = 0;
