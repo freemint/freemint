@@ -240,6 +240,7 @@ short		if_putback	(struct ifq *, BUF *, short pri);
 BUF *		if_dequeue	(struct ifq *);
 void		if_flushq	(struct ifq *);
 long		if_register	(struct netif *);
+long		if_deregister	(struct netif *);
 long		if_init		(void);
 short		if_input	(struct netif *, BUF *, long, short);
 
