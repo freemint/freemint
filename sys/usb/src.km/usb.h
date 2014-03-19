@@ -293,7 +293,7 @@ long 		usb_get_class_descriptor(struct usb_device *dev, long ifnum,
 					unsigned char type, unsigned char id, void *buf,
 					long size);
 long 		usb_clear_halt		(struct usb_device *dev, long pipe);
-long 		usb_string		(struct usb_device *dev, long idx, char *buf, size_t size);
+long 		usb_string		(struct usb_device *dev, long idx, char *buf, long size);
 long 		usb_set_interface	(struct usb_device *dev, long interface, long alternate);
 struct usb_device *	usb_get_dev_index	(long idx);
 long 		usb_parse_config	(struct usb_device *dev, unsigned char *buffer, long cfgno);
