@@ -278,6 +278,10 @@ long 		usb_control_msg		(struct usb_device *dev, unsigned long pipe,
 					unsigned char request, unsigned char requesttype,
 					unsigned short value, unsigned short idx,
 					void *data, unsigned short size, long timeout);
+
+/* Used by drivers to early abort bulk messages. */
+#define USB_BULK_FLAG_EARLY_TIMEOUT	1
+
 long 		usb_bulk_msg		(struct usb_device *dev, unsigned long pipe,
 					void *data, long len, long *actual_length, long timeout,
 					long flags);
