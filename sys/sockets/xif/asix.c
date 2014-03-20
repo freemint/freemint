@@ -607,88 +607,85 @@ static int asix_recv(struct eth_device *eth)
 	long actual_len;
 	u32 packet_len;
 	BUF *buf;
-//	int i;
 
-//	DEBUG(("** %s()\n", __func__));
+	if (dev->pusb_dev == 0) {
+		err = -1;
+		goto out;
+	}
 
-	/* while (1) */ {
-		if (dev->pusb_dev == 0) {
+	err = usb_bulk_msg(dev->pusb_dev,
+				usb_rcvbulkpipe(dev->pusb_dev, (long)dev->ep_in),
+				(void *)recv_buf,
+				AX_RX_URB_SIZE,
+				&actual_len,
+				USB_BULK_RECV_TIMEOUT,
+				USB_BULK_FLAG_EARLY_TIMEOUT);
+	if (err < 0) {
+		DEBUG(("Rx: failed to receive\n"));
+		goto out;
+	}
+
+	if (actual_len > AX_RX_URB_SIZE) {
+		DEBUG(("Rx: received too many bytes %d\n", actual_len));
+		err = -1;
+		goto out;
+	}
+
+	buf_ptr = recv_buf;
+	while (actual_len > 0) {
+		/*
+		 * 1st 4 bytes contain the length of the actual data as two
+		 * complementary 16-bit words. Extract the length of the data.
+		 */
+		if (actual_len < sizeof(packet_len)) {
+			DEBUG(("Rx: incomplete packet length\n"));
 			err = -1;
 			goto out;
 		}
 
-		err = usb_bulk_msg(dev->pusb_dev,
-					usb_rcvbulkpipe(dev->pusb_dev, (long)dev->ep_in),
-					(void *)recv_buf,
-					AX_RX_URB_SIZE,
-					&actual_len,
-					USB_BULK_RECV_TIMEOUT, 1);
-		if (err < 0) {
-			DEBUG(("Rx: failed to receive\n"));
-			goto out;
-		}
-		if (actual_len > AX_RX_URB_SIZE) {
-			DEBUG(("Rx: received too many bytes %d\n", actual_len));
+		memcpy(&packet_len, buf_ptr, sizeof(packet_len));
+		packet_len = le2cpu32(packet_len);
+
+		if (((~packet_len >> 16) & 0x7ff) != (packet_len & 0x7ff)) {
+			DEBUG(("Rx: malformed packet length: %#x (%#x:%#x)\n",
+				packet_len, (~packet_len >> 16) & 0x7ff,
+				packet_len & 0x7ff));
 			err = -1;
 			goto out;
 		}
 
-		buf_ptr = recv_buf;
-		while (actual_len > 0) {
-			/*
-			 * 1st 4 bytes contain the length of the actual data as two
-			 * complementary 16-bit words. Extract the length of the data.
-			 */
-			if (actual_len < sizeof(packet_len)) {
-				DEBUG(("Rx: incomplete packet length\n"));
-				err = -1;
-				goto out;
-			}
-
-			memcpy(&packet_len, buf_ptr, sizeof(packet_len));
-			packet_len = le2cpu32(packet_len);
-
-			if (((~packet_len >> 16) & 0x7ff) != (packet_len & 0x7ff)) {
-				DEBUG(("Rx: malformed packet length: %#x (%#x:%#x)\n",
-					packet_len, (~packet_len >> 16) & 0x7ff,
-					packet_len & 0x7ff));
-				err = -1;
-				goto out;
-			}
-
-			packet_len = packet_len & 0x7ff;
-			if (packet_len > actual_len - sizeof(packet_len)) {
-				err = -1;
-				goto out;
-			}
-
-			buf = buf_alloc (packet_len, 0, BUF_ATOMIC);
-       			if (!buf)
-		        {
-				DEBUG (("asix_recv: out of mem (buf_alloc failed)"));
-				eth->in_errors++;
-				err = -1;
-				goto out;
-			}
-			memcpy(buf->dstart, buf_ptr + sizeof(packet_len), packet_len);
-			buf->dend = buf->dstart + packet_len;
-
-			if (eth->bpf)
-				bpf_input (eth, buf);
-
-			/* and enqueue packet */
-			if (!if_input (eth, buf, 0, eth_remove_hdr (buf)))
-				eth->in_packets++;
-			else
-				eth->in_errors++;
-
-			/* Adjust for next iteration. Packets are padded to 16-bits */
-			if (packet_len & 1)
-				packet_len++;
-
-			actual_len -= (sizeof(packet_len) + packet_len);
-			buf_ptr += (sizeof(packet_len) + packet_len);
+		packet_len = packet_len & 0x7ff;
+		if (packet_len > actual_len - sizeof(packet_len)) {
+			err = -1;
+			goto out;
 		}
+
+		buf = buf_alloc (packet_len, 0, BUF_ATOMIC);
+       		if (!buf)
+	        {
+			DEBUG (("asix_recv: out of mem (buf_alloc failed)"));
+			eth->in_errors++;
+			err = -1;
+			goto out;
+		}
+		memcpy(buf->dstart, buf_ptr + sizeof(packet_len), packet_len);
+		buf->dend = buf->dstart + packet_len;
+
+		if (eth->bpf)
+			bpf_input (eth, buf);
+
+		/* and enqueue packet */
+		if (!if_input (eth, buf, 0, eth_remove_hdr (buf)))
+			eth->in_packets++;
+		else
+			eth->in_errors++;
+
+		/* Adjust for next iteration. Packets are padded to 16-bits */
+		if (packet_len & 1)
+			packet_len++;
+
+		actual_len -= (sizeof(packet_len) + packet_len);
+		buf_ptr += (sizeof(packet_len) + packet_len);
 	}
 
 out:
