@@ -354,7 +354,7 @@ static int calc_needed_buswidth(long bytes, long need_preamble)
 	return !need_preamble ? bytes * 8 + 256 : 8 * 8 * bytes + 2048;
 }
 
-static long sl811_send_packet(struct usb_device *dev, unsigned long pipe, __u8 *buffer, long len)
+static long sl811_send_packet(struct usb_device *dev, unsigned long pipe, __u8 *buffer, long len, long flags)
 {
 	unsigned long time_start = get_hz_200();
 	__u8 ctrl = SL811_USB_CTRL_ARM | SL811_USB_CTRL_ENABLE;
@@ -483,7 +483,7 @@ submit_bulk_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 		long res;
 		long nlen = (max > (len - done)) ? (len - done) : max;
 
-		res = sl811_send_packet(dev, pipe, (__u8*)buffer+done, nlen);
+		res = sl811_send_packet(dev, pipe, (__u8*)buffer+done, nlen, flags);
 		if (res < 0) {
 			UNLOCKUSB;
 			dev->act_len = done;
@@ -538,7 +538,7 @@ submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 	/* setup phase */
 	usb_settoggle(dev, ep, 1, 0);
 	if (sl811_send_packet(dev, usb_sndctrlpipe(dev, ep),
-			      (__u8*)setup, sizeof(*setup)) == sizeof(*setup)) {
+			      (__u8*)setup, sizeof(*setup), 0) == sizeof(*setup)) {
 		int dir_in = usb_pipein(pipe);
 
 		/* data phase */
@@ -549,7 +549,7 @@ submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 		while (done < len) {
 			long res;
 			long nlen = (max > (len - done)) ? (len - done) : max;
-			res = sl811_send_packet(dev, pipe, (__u8*)buffer+done, nlen);
+			res = sl811_send_packet(dev, pipe, (__u8*)buffer+done, nlen, 0);
 			if (res < 0) {
 				UNLOCKUSB;
 				dev->status = -res;
@@ -569,7 +569,7 @@ submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 		if (sl811_send_packet(dev,
 				      !dir_in ? usb_rcvctrlpipe(dev, ep) :
 				      usb_sndctrlpipe(dev, ep),
-				      0, 0) < 0) {
+				      0, 0, 0) < 0) {
 			dev->status = -1;
 			done = 0;
 		}
