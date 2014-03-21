@@ -588,15 +588,10 @@ submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 		return 0;
 	}
 
-	LOCKUSB;
-
 	/* We use lock/unlock around this to preserve our internal
 	 * static variables */
 	if (devnum == root_hub_devnum) {
-		long ret;
-		ret = sl811_rh_submit_urb(dev, pipe, buffer, len, setup);
-		UNLOCKUSB;
-		return ret;
+		return sl811_rh_submit_urb(dev, pipe, buffer, len, setup);
 	}
 
 #if 0
