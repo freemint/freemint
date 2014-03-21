@@ -39,7 +39,7 @@
 
 	.global _install_usb_stor,_uninstall_usb_stor
 
-#if 1
+#if 0		
 #define DEBUG_BIOS_LAYER	/* Show extra debug info into the console */
 #endif
 #ifdef DEBUG_BIOS_LAYER
@@ -82,49 +82,10 @@ debug5:
 	.ascii "hdv_mediach"
 	.byte 13,10,0
 	.align 2
-debug6:	
-	.asciz "READ1"
-	.byte 13,10,0
-	.align 2
-debug7:	
-	.asciz "READ2"
-	.byte 13,10,0
-	.align 2
 #endif
 
 	.text
 
-install_xbra:	// A0: handler, D0: vector 
-
-	lea -28(SP),SP
-	movem.l D1-D3/A0-A3,(SP)
-	moveq #0,D3
-	move.w D0,D3             // vector
-	move.l A0,A3             // handler
-	move.w #3,-(SP)          // TT ram if possible
-	move.l #18,-(SP)         // size
-	move.w #0x44,-(SP)       // Mxalloc
-	trap #1 
-	addq.l #8,SP
-	tst.l D0
-	beq.s .error_xbra
-             move.l D0,A0
-             move.l #0x58425241,(A0)+ // XBRA
-	move.l #0x5F445256,(A0)+ // _DRV
-	clr.l (A0)+	
-	move.w #0x4EF9,(A0)+     // JMP
-	move.l A3,(A0)+          // handler
-	lea -10(A0),A0
-	//cpusha BC
-	move.l D3,A1
-	move.l (A1),D0
-	move.l D0,(A0)+          // old vector
-	move.l A0,(A1)           // JMP, new vector
-.error_xbra:
-	tst.l D0
-	movem.l (SP),D1-D3/A0-A3
-	lea 28(SP),SP
-	rts
 text_color:
 	moveq #0,D0
 	move.w 0x3E86,D0         // number of planes
@@ -261,10 +222,6 @@ _install_usb_stor:
 	add.l D2,D2
 	move.l D3,(A0,D2.l)	// size
 	move.l D1,pinfo_pstart(A3,D2.l)
-#ifdef DEBUG_BIOS_LAYER
-	lea debug6(PC),A0
-	jsr display_string	
-#endif
 	move.l _dskbufp,A0 
 	move.l A0,-(SP)          // buffer
 	move.l #1,-(SP)          // blkcnt	
@@ -281,22 +238,7 @@ _install_usb_stor:
 	move.w D0,-(SP)
 	or.l #0x700,D0           // mask interrupts
 	move.w D0,SR
-#if 0
-        lea det_hdv_bpb_usb(PC),A0
-	move.w #hdv_bpb,D0
-	bsr install_xbra
-	move.l D0,old_hdv_bpb_usb
-
-	lea det_hdv_rw_usb(PC),A0
-	move.w #hdv_rw,D0
-	bsr install_xbra
-	move.l D0,old_hdv_rw_usb
-
-	lea det_hdv_mediach_usb(PC),A0
-	move.w #hdv_mediach,D0
-	bsr install_xbra
-	move.l D0,old_hdv_mediach_usb
-#else
+	
 	move.l #hdv_bpb,A0
 	lea old_hdv_bpb_usb(PC),A1
 	move.l (A0),(A1)
@@ -314,7 +256,6 @@ _install_usb_stor:
 	move.l (A0),(A1)
 	lea det_hdv_mediach_usb(PC),A1
 	move.l A1,(A0)
-#endif
 
 	jsr _install_xhdi_driver
 	move.w (SP)+,D0
@@ -554,9 +495,8 @@ det_hdv_bpb_usb:
 	rts	
 .dhbu3:
 	lea pinfo_bpb(A0),A0
-	mulu #18,D0              // * 18
+	asl.l #5,D0              // * 32
 	add.l A0,D0
-	move.l D0,A0
 #ifdef DEBUG_BIOS_LAYER
 	move.l D0,-(SP)
 	moveq #0x30,D0
@@ -571,8 +511,6 @@ det_hdv_bpb_usb:
 	jsr display_string
 	move.l (SP)+,D0
 #endif
-	tst.w (A0)
-	beq.s .dhbu4
 	move.l (SP)+,D1
 	move.l (SP)+,A0
 	rts
@@ -644,16 +582,10 @@ det_hdv_rw_usb:
 	bcs.s .dhru8
 	cmp.l #MAX_LOGICAL_DRIVE,D0
 	bcc.s .dhru8
-//	moveq #0,D4
-//	move.b pinfo_pun(A0,D0.l),D4
-//	bpl.s .dhru1             // valid
+	moveq #0,D4
+	move.b pinfo_pun(A0,D0.l),D4
+	bpl.s .dhru1             // valid
 .dhru8:
-#ifdef DEBUG_BIOS_LAYER
-	lea debug6(PC),A0
-	jsr display_string	
-	move.l old_hdv_rw_usb,D0      // logical sector
-	jsr hex_long
-#endif
 	movem.l (SP),D1-D4/A0-A2
 	lea 28(SP),SP
 	moveq #0,D0
@@ -725,10 +657,6 @@ det_hdv_rw_usb:
 	move.l D3,-(SP)          // blkcnt	
 	move.l D2,-(SP)          // blknr
 	move.l D4,-(SP)          // USB devnum
-#ifdef DEBUG_BIOS_LAYER
-	lea debug7(PC),A0
-	jsr display_string	
-#endif
 	jsr _usb_stor_read
 .dhru5:
 	lea 16(SP),SP
