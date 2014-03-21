@@ -28,6 +28,7 @@
 
 #include "../../config.h"
 #include "../../usb.h"
+#include "../../ucd/ucd_defs.h"
 #include "../udd_defs.h"
 #include "../../usb_api.h"
 
@@ -167,7 +168,7 @@ static struct usb_driver eth_driver =
 	name:           "usb-eth",
 	probe:          usb_ethernet_probe,
 	disconnect:     usb_ethernet_disconnect,
-	chain:          {NULL, NULL}
+	next:		NULL,
 };
 
 static long _cdecl

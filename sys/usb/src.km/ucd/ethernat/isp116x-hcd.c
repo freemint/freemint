@@ -69,6 +69,9 @@
 #include "../../endian/io.h"
 #include "../../usb.h"
 #include "../ucd_defs.h"
+#include "../../udd/udd_defs.h"
+#include "../../usb_api.h"
+
 #include "ethernat_int.h"
 
 #define VER_MAJOR	0
@@ -134,7 +137,7 @@ static const char hcd_name[] = "isp116x-hcd";
 /* BEGIN kernel interface */
 
 struct kentry	*kentry;
-struct ucdinfo	*uinf;
+struct usb_module_api *api;
 
 /* END kernel interface */
 /****************************************************************************/
@@ -166,7 +169,7 @@ long		submit_control_msg	(struct usb_device *, unsigned long, void *,
 					 long, struct devrequest *);
 long		submit_int_msg		(struct usb_device *, unsigned long, void *, long, long);
 
-long _cdecl	init			(struct kentry *, struct ucdinfo *, char **);
+long _cdecl	init			(struct kentry *, struct usb_module_api *, char **);
 
 /*
  * USB controller interface
@@ -776,7 +779,7 @@ struct ptd ptd[1];
 static inline long
 max_transfer_len(struct usb_device *dev, unsigned long pipe)
 {
-	unsigned mpck = (*uinf->usb_maxpacket)(dev, pipe);
+	unsigned mpck = usb_maxpacket(dev, pipe);
 
 	/* One PTD can transfer 1023 bytes but try to always
 	 * transfer multiples of endpoint buffer size
@@ -793,7 +796,7 @@ isp116x_submit_job(struct usb_device *dev, unsigned long pipe,
 	struct isp116x *isp116x = &isp116x_dev;
 	long type = usb_pipetype(pipe);
 	long epnum = usb_pipeendpoint(pipe);
-	long max = (*uinf->usb_maxpacket)(dev, pipe);
+	long max = usb_maxpacket(dev, pipe);
 	long dir_out = usb_pipeout(pipe);
 	long speed_low = usb_pipeslow(pipe);
 	long i, done = 0, stat, timeout, cc;
@@ -1590,12 +1593,12 @@ int_handle_tophalf(PROC *process, long arg)
 
 	if (isp116x->rhport[0] & RH_PS_CSC)
 	{
-		(*uinf->usb_rh_wakeup)();
+		usb_rh_wakeup();
 	}
 
 	if (isp116x->rhport[1] & RH_PS_CSC)
 	{
-		(*uinf->usb_rh_wakeup)();
+		usb_rh_wakeup();
 	}
 
 }
@@ -1892,13 +1895,13 @@ ethernat_probe_c(void)
 }
 
 long _cdecl
-init(struct kentry *k, struct ucdinfo *uinfo, char **reason)
+init(struct kentry *k, struct usb_module_api *uapi, char **reason)
 {
 	long ret;
 	short sr;
 
 	kentry	= k;
-	uinf	= uinfo;
+	api     = uapi;
 
 	if (check_kentry_version())
 		return -1;
@@ -1919,7 +1922,7 @@ init(struct kentry *k, struct ucdinfo *uinfo, char **reason)
 	c_conws (MSG_GREET);
 	DEBUG (("%s: enter init", __FILE__));
 
-	ret = (*uinf->ucd_register)(&ethernat_uif);
+	ret = ucd_register(&ethernat_uif);
 	if (ret)
 	{
 		DEBUG (("%s: ucd register failed!", __FILE__));

@@ -20,6 +20,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#ifndef TOSONLY
 #include "util.h"
 //#include "debug.h"
 
@@ -189,4 +190,4 @@ strnupr(char *s, int n)
 	for (f = 0; f < n; f++)
 		s[f] = toupper(s[f]);
 }
-
+#endif

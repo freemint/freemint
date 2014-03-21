@@ -15,4 +15,11 @@ SSOBJS = \
 	bios.S \
 	debug2.S
 
-SRCFILES = $(HEADER) $(SSOBJS) $(COBJS)
+TOSCOBJS = \
+        crtinit.c
+
+TOSSSOBJS = \
+        entry.S \
+        setstack.S
+
+SRCFILES = $(HEADER) $(SSOBJS) $(COBJS) $(TOSCOBJS) $(TOSSSOBJS)

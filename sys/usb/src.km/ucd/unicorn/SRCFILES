@@ -7,4 +7,12 @@ HEADER = \
 COBJS = \
 	sl811-hcd.c
 
-SRCFILES = $(HEADER) $(COBJS) $(SSOBJS)
+TOSCOBJS = \
+        crtinit.c
+
+TOSSSOBJS = \
+        entry.S \
+        setstack.S \
+	unicorn_int.S
+
+SRCFILES = $(HEADER) $(SSOBJS) $(COBJS) $(TOSCOBJS) $(TOSSSOBJS)

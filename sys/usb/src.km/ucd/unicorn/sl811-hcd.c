@@ -41,12 +41,7 @@
  * The "Unicorn-USB" adapter driver !
  */
 
-#include <stddef.h>
-#include <mint/osbind.h> /* Setexc */
-#include "mint/mint.h"
-#include <mint/asm.h>
-#include "libkern/libkern.h"
-#include "mint/dcntl.h"
+#include "../../global.h"
 
 #include "../../config.h"
 #include "../../endian/io.h"
@@ -54,16 +49,19 @@
 #include "mint/time.h"
 #include "arch/timer.h"
 #include "../ucd_defs.h"
+#include "../../udd/udd_defs.h"
+#include "../../usb_api.h"
 
 #define CONFIG_SYS_HZ CLOCKS_PER_SEC
 
 #include "sl811.h"
 
+#ifndef TOSONLY
 #if 0
-# define SL811_DEBUG
+# define DEV_DEBUG
 #endif
 
-#ifdef SL811_DEBUG
+#ifdef DEV_DEBUG
 
 # define FORCE(x)       
 # define ALERT(x)       KERNEL_ALERT x
@@ -80,6 +78,7 @@
 # define ASSERT(x)      assert x
 
 #endif
+#endif
 
 unsigned long
 get_hz_200(void)
@@ -90,11 +89,22 @@ get_hz_200(void)
 /****************************************************************************/
 /* BEGIN kernel interface */
 
+#ifndef TOSONLY
 struct kentry	*kentry;
-struct ucdinfo	*uinf;
 void sl811_hub_poll_thread(void *);
 void sl811_hub_poll(PROC *proc, long dummy);
 void sl811_hub_events(void);
+#else
+/* old handler */
+extern void (*old_vbl_int)(void);
+
+/* interrupt wrapper routine */
+extern void interrupt_vbl (void);
+
+extern unsigned long _PgmSize;
+#endif
+struct usb_module_api   *api;
+
 
 /* interrupt wrapper routine */
 void unicorn_int (void);
@@ -138,12 +148,16 @@ static long sl811_rh_submit_urb(struct usb_device *usb_dev, unsigned long pipe,
         {   \
                 __asm__ volatile("1: tas.b 0x43e");        \
                 __asm__ volatile("bne.b 1b");        \
+                __asm__ volatile("2: tas.b 0x43f");        \
+                __asm__ volatile("bne.b 2b");        \
         } \
 	WRITEMODE = 0x88; \
 	DACCESS = (ACSI << 5); \
 	WRITEMODE = 0x8a;
 
-#define UNLOCKUSB  __asm__ volatile("clr.b 0x43e");
+#define UNLOCKUSB  \
+		__asm__ volatile("clr.w 0x43e");
+		
 
 static inline void sl811_write (__u8 index, __u8 data)
 {
@@ -199,19 +213,28 @@ static int usb_init_atari (void)
 {
 	unsigned char buf[SL811_DATA_LIMIT];
 	int i;
+#ifdef TOSONLY
+	long ret;
+#endif
 
 	for (i = 0; i < SL811_DATA_LIMIT; i++) {
 		buf[i] = i;
 	}
+#ifdef TOSONLY
+	ret = Super(0L);
+#endif
 	LOCKUSB;
 	sl811_write_buf(SL811_DATA_START, buf, SL811_DATA_LIMIT);
 	memset(buf, 0, SL811_DATA_LIMIT);
 	sl811_read_buf(SL811_DATA_START, buf, SL811_DATA_LIMIT);
 	UNLOCKUSB;
+#ifdef TOSONLY
+	SuperToUser(ret);
+#endif
 	for (i = 0; i < SL811_DATA_LIMIT; i++) {
 		if (buf[i] != i) {
-			DEBUG(("SL811 compare error index=0x%02x read=0x%02x 0x%02x 0x%02x 0x%02x\n", i, buf[i], buf[i+1], buf[i+2], buf[i+3]));
-			ALERT(("SL811 not found at ACSI ID %d", ACSI));
+			ALERT(("SL811 compare error index=0x%02x read=0x%02x 0x%02x 0x%02x 0x%02x\n", i, buf[i], buf[i+1], buf[i+2], buf[i+3]));
+			//ALERT(("SL811 not found at ACSI ID %d", ACSI));
 			return (-1);
 		}
 	}
@@ -299,13 +322,16 @@ static long sl811_hc_reset(void)
 static inline void
 int_handle_tophalf(PROC *process, long arg)
 {
-	(*uinf->usb_rh_wakeup)();
+	usb_rh_wakeup();
 }
 
 long
 usb_lowlevel_init(long dummy1, const struct pci_device_id *dummy2)
 {
 	long r;
+#ifdef TOSONLY
+	long sv;
+#endif
 
 	/*
 	 * Check the adapter is functional.
@@ -316,14 +342,23 @@ usb_lowlevel_init(long dummy1, const struct pci_device_id *dummy2)
 	/*
 	 * Initialize the chip.
 	 */
+#ifdef TOSONLY
+	sv = Super(0L);
+#endif
 	LOCKUSB;
         r = sl811_hc_reset();
 	UNLOCKUSB;
+#ifdef TOSONLY
+	SuperToUser(sv);
+#endif
         if (r)
-		(*uinf->usb_rh_wakeup)();
+		usb_rh_wakeup();
 	else
 		rh_status.wPortChange = 0;
 
+#ifdef TOSONLY
+	old_vbl_int = Setexc (0x70/4, (long) interrupt_vbl);
+#else
 	/*
 	 * Start the root hub thread.
 	 */
@@ -332,6 +367,7 @@ usb_lowlevel_init(long dummy1, const struct pci_device_id *dummy2)
 	{
 		return -1;
 	}
+#endif
 
 	return 0;
 }
@@ -339,19 +375,32 @@ usb_lowlevel_init(long dummy1, const struct pci_device_id *dummy2)
 long 
 usb_lowlevel_stop(void)
 {
+#ifdef TOSONLY
+	long r;
+#endif
+
 	DEBUG(("USB SL811 DISABLED DUE TO LOWLEVEL STOP!"));
 	
+#ifdef TOSONLY
+	r = Super(0L);
+#endif
 	LOCKUSB;
 	sl811_write_intr(0);
 	sl811_write(SL811_INTRSTS, 0xff);
 	UNLOCKUSB;
+#ifdef TOSONLY
+	SuperToUser(r);
+#endif
 
 	return 0;
 }
 
 static int calc_needed_buswidth(long bytes, long need_preamble)
 {
-	return !need_preamble ? bytes * 8 + 256 : 8 * 8 * bytes + 2048;
+                               /* high : low */
+	return !need_preamble ? bytes * 8 + 384 : 8 * 8 * bytes + 3072;
+//	return 64 * bytes;
+//	return !need_preamble ? bytes * 64 + 3072 : 8 * 8 * bytes + 3072;
 }
 
 static long sl811_send_packet(struct usb_device *dev, unsigned long pipe, __u8 *buffer, long len, long flags)
@@ -367,7 +416,7 @@ static long sl811_send_packet(struct usb_device *dev, unsigned long pipe, __u8 *
 	int sofcnt;
 
 	if (len > SL811_DATA_LIMIT) {
-		DEBUG(("Packet too large (%ldbytes)",len));
+		ALERT(("Packet too large (%ldbytes)",len));
 		return -1;
 	}
 
@@ -379,7 +428,7 @@ static long sl811_send_packet(struct usb_device *dev, unsigned long pipe, __u8 *
 		ctrl |= SL811_USB_CTRL_PREAMBLE;
 
 	sl811_write_intr(SL811_INTR_DONE_A);
-	sl811_write(SL811_INTRSTS, 0xff);
+	sl811_write(SL811_INTRSTS, SL811_INTR_DONE_A);
 	while (err < 3) {
 		unsigned char intrq;
 
@@ -400,8 +449,15 @@ static long sl811_send_packet(struct usb_device *dev, unsigned long pipe, __u8 *
 		{
 			if (5*CONFIG_SYS_HZ < (get_hz_200() - time_start)) {
 				DEBUG(("USB transmit timed out %d",sl811_read(SL811_INTR)));
-				sl811_write_intr(intr);
-				sl811_write(SL811_INTRSTS, 0xff);
+#ifndef TOSONLY
+		                if (intrq & (SL811_INTR_INSRMV | SL811_INTR_DETECT)) {
+		                        sl811_hc_reset();
+		                        addroottimeout (0, int_handle_tophalf, 1);
+		                } else {
+					sl811_write_intr(intr);
+					sl811_write(SL811_INTRSTS, SL811_INTR_DONE_A);
+				}
+#endif
 				return -USB_ST_CRC_ERR;
 			}
 		}
@@ -409,27 +465,29 @@ static long sl811_send_packet(struct usb_device *dev, unsigned long pipe, __u8 *
 		sl811_write(SL811_INTRSTS, SL811_INTR_DONE_A);
 		status = sl811_read(SL811_STS_A);
 
+
 		if (status & SL811_USB_STS_ACK) {
 			__u8 remainder = sl811_read(SL811_CNT_A);
 			if (remainder) {
-				DEBUG(("usb transfer remainder = %d", remainder));
+		//		DEBUG(("usb transfer remainder = %d", remainder));
 				len -= remainder;
 			}
 			if (usb_pipein(pipe) && len) {
 				sl811_read_buf(SL811_DATA_START, buffer, len);
 			}
 			sl811_write_intr(intr);
-			sl811_write(SL811_INTRSTS, 0xff);
+			sl811_write(SL811_INTRSTS, SL811_INTR_DONE_A);
 			return len;
 		}
 
 		if ((status & SL811_USB_STS_NAK) == SL811_USB_STS_NAK) {
 			DEBUG(("NAK!"));
 			nak++;
-			if (nak >= 10) {
-				nak = 0;
+		
+			if (flags & USB_BULK_FLAG_EARLY_TIMEOUT) {
 				err++;
 			}
+
 			continue;
 		}
 
@@ -447,10 +505,10 @@ static long sl811_send_packet(struct usb_device *dev, unsigned long pipe, __u8 *
 	if (status & SL811_USB_STS_STALL)
 		err |= USB_ST_STALLED;
 
-	DEBUG(("usb transfer error 0x%x", (int)status));
+	ALERT(("usb transfer error 0x%x", (int)status));
 
 	sl811_write_intr(intr);
-	sl811_write(SL811_INTRSTS, 0xff);
+	sl811_write(SL811_INTRSTS, SL811_INTR_DONE_A);
 
 	return -err;
 }
@@ -462,28 +520,37 @@ submit_bulk_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 	int devnum = usb_pipedevice(pipe);
 	int dir_out = usb_pipeout(pipe);
 	int ep = usb_pipeendpoint(pipe);
-	long max = (*uinf->usb_maxpacket)(dev, pipe);
+	long max = usb_maxpacket(dev, pipe);
 	long done = 0;
 
+#if 0
 	DEBUG(("dev = %ld pipe = %ld buf = 0x%lx size = 0x%lx dir_out = %d",
 	       usb_pipedevice(pipe), usb_pipeendpoint(pipe), buffer, len, dir_out));
-
+#endif
 	if (max == 0) {
-		DEBUG(("USBbulk max %ld len %ld",max,len));
 		return 0;
 	}
 
 	dev->status = 0;
+
+//	max = SL811_DATA_LIMIT;
 
 	LOCKUSB;
 	sl811_write(SL811_DEV_A, devnum);
 	sl811_write(SL811_PIDEP_A, PIDEP(!dir_out ? USB_PID_IN : USB_PID_OUT, ep));
 	usb_settoggle(dev, ep, !dir_out, 1);
 	while (done < len) {
+#if 0
+		__u8 bstatus = sl811_read(SL811_INTRSTS);
+		__u8 status;
+#endif
 		long res;
 		long nlen = (max > (len - done)) ? (len - done) : max;
 
 		res = sl811_send_packet(dev, pipe, (__u8*)buffer+done, nlen, flags);
+#if 0
+		status = sl811_read(SL811_INTRSTS);
+#endif
 		if (res < 0) {
 			UNLOCKUSB;
 			dev->act_len = done;
@@ -511,26 +578,32 @@ submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 	long done = 0;
 	int devnum = usb_pipedevice(pipe);
 	int ep = usb_pipeendpoint(pipe);
-	long max = (*uinf->usb_maxpacket)(dev, pipe);
+	long max = usb_maxpacket(dev, pipe);
 
 	dev->status = 0;
 
 	DEBUG(("control %d %d",devnum,root_hub_devnum));
 
 	if (max == 0) {
-		DEBUG(("USBcontrol max %ld len %ld",max,len));
 		return 0;
 	}
 
+	LOCKUSB;
+
+	/* We use lock/unlock around this to preserve our internal
+	 * static variables */
 	if (devnum == root_hub_devnum) {
-		return sl811_rh_submit_urb(dev, pipe, buffer, len, setup);
+		long ret;
+		ret = sl811_rh_submit_urb(dev, pipe, buffer, len, setup);
+		UNLOCKUSB;
+		return ret;
 	}
 
+#if 0
 	DEBUG(("dev = 0x%lx pipe = %ld buf = 0x%lx size = 0x%x rt = 0x%x req = 0x%x bus = %i",
 	       devnum, ep, buffer, len, setup->requesttype,
 	       setup->request, sl811_read(SL811_SOFCNTDIV)*64));
-
-	LOCKUSB;
+#endif
 
 	sl811_write(SL811_DEV_A, devnum);
 	sl811_write(SL811_PIDEP_A, PIDEP(USB_PID_SETUP, ep));
@@ -546,13 +619,16 @@ submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 			    PIDEP(dir_in ? USB_PID_IN : USB_PID_OUT, ep));
 		usb_settoggle(dev, ep, usb_pipeout(pipe), 1);
 	
+//		max = SL811_DATA_LIMIT;
+
 		while (done < len) {
 			long res;
 			long nlen = (max > (len - done)) ? (len - done) : max;
 			res = sl811_send_packet(dev, pipe, (__u8*)buffer+done, nlen, 0);
 			if (res < 0) {
-				UNLOCKUSB;
+				ALERT(("1status data failed!"));
 				dev->status = -res;
+				UNLOCKUSB;
 				dev->act_len = done;
 				return 0;
 			}
@@ -570,10 +646,12 @@ submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 				      !dir_in ? usb_rcvctrlpipe(dev, ep) :
 				      usb_sndctrlpipe(dev, ep),
 				      0, 0, 0) < 0) {
+			ALERT(("2status phase failed!"));
 			dev->status = -1;
 			done = 0;
 		}
 	} else {
+		ALERT(("3setup phase failed!"));
 		dev->status = -1;
 		done = 0;
 	}
@@ -589,10 +667,42 @@ long
 submit_int_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 		   long len, long interval)
 {
+	int devnum = usb_pipedevice(pipe);
+	int dir_out = usb_pipeout(pipe);
+	int ep = usb_pipeendpoint(pipe);
+	long max = usb_maxpacket(dev, pipe);
+	long done = 0;
+#if 0
 	DEBUG(("dev = 0x%lx pipe = %#lx buf = 0x%lx size = %ld int = %d", dev, pipe,
 	       buffer, len, interval));
+#endif
+	LOCKUSB;
+	sl811_write(SL811_DEV_A, devnum);
+	sl811_write(SL811_PIDEP_A, PIDEP(!dir_out ? USB_PID_IN : USB_PID_OUT, ep));
+	usb_settoggle(dev, ep, !dir_out, 1);
+	while (done < len) {
+		long res;
+		long nlen = (max > (len - done)) ? (len - done) : max;
 
-	return -1;
+		res = sl811_send_packet(dev, pipe, (__u8*)buffer+done, nlen, 0);
+		if (res < 0) {
+			UNLOCKUSB;
+			dev->act_len = done;
+			dev->status = -res;
+			return res;
+		}
+		done += res;
+		usb_dotoggle(dev, ep, dir_out);
+
+		if (!dir_out && res < nlen) /* short packet */
+			break;
+	}
+
+	dev->act_len = done;
+
+	UNLOCKUSB;
+
+	return done;
 }
 
 /*
@@ -691,7 +801,7 @@ static int ascii2utf (char *s, u8 *utf, int utfmax)
  * root_hub_string is used by each host controller's root hub code,
  * so that they're identified consistently throughout the system.
  */
-static int usb_root_hub_string (int id, int serial, char *type, __u8 *data, long len)
+static int usb_root_hub_string (int id, __u8 *data, long len)
 {
 	char buf [30];
 
@@ -706,11 +816,11 @@ static int usb_root_hub_string (int id, int serial, char *type, __u8 *data, long
 
 	/* serial number */
 	} else if (id == 1) {
-		sprintf (buf, sizeof(buf), "%#x", serial);
+		strcat (buf, "0");
 
 	/* product description */
 	} else if (id == 2) {
-		sprintf (buf, sizeof(buf), "USB %s Root Hub", type);
+		strcat (buf, "USB SL811 Root Hub");
 
 	/* id 3 == vendor description */
 
@@ -740,7 +850,7 @@ static long sl811_rh_submit_urb(struct usb_device *usb_dev, unsigned long pipe,
 	__u16 bmRType_bReq;
 	__u16 wValue  = le2cpu16(cmd->value);
 	__u16 wLength = le2cpu16(cmd->length);
-#ifdef SL811_DEBUG
+#ifdef DEV_DEBUG
 	__u16 wIndex  = le2cpu16(cmd->index);
 #endif
 
@@ -880,7 +990,7 @@ static long sl811_rh_submit_urb(struct usb_device *usb_dev, unsigned long pipe,
 			OK(len);
 
 		case USB_DT_STRING:
-			len = usb_root_hub_string(wValue & 0xff, (int)(long)0,	"SL811HS", data, wLength);
+			len = usb_root_hub_string(wValue & 0xff, data, wLength);
 			if (len > 0) {
 				bufp = data;
 				OK(len);
@@ -912,7 +1022,9 @@ static long sl811_rh_submit_urb(struct usb_device *usb_dev, unsigned long pipe,
 	if (data != bufp)
 		memcpy(data, bufp, len);
 
+#if 0
 	DEBUG(("len = %d, status = %d", len, status));
+#endif
 
 	usb_dev->status = status;
 	usb_dev->act_len = (long)len;
@@ -920,10 +1032,7 @@ static long sl811_rh_submit_urb(struct usb_device *usb_dev, unsigned long pipe,
 	return status == 0 ? usb_dev->act_len : usb_dev->status;
 }
 
-#define VER_MAJOR	0
-#define VER_MINOR	1
-#define VER_STATUS	
-#define MSG_VERSION	str (VER_MAJOR) "." str (VER_MINOR) str (VER_STATUS) 
+#define MSG_VERSION	"0.1.0"
 #define MSG_BUILDDATE	__DATE__
 
 #define MSG_BOOT	\
@@ -937,7 +1046,6 @@ static long sl811_rh_submit_urb(struct usb_device *usb_dev, unsigned long pipe,
  * USB controller interface
  */
 
-long init			(struct kentry *, struct ucdinfo *, char **);
 static long sl811_open		(struct ucdif *);
 static long sl811_close		(struct ucdif *);
 static long sl811_ioctl		(struct ucdif *, short, long);
@@ -986,11 +1094,6 @@ sl811_ioctl (struct ucdif *u, short cmd, long arg)
 
 	switch (cmd)
 	{
-		case FS_INFO:
-		{
-			*(long *)arg = (((long)VER_MAJOR << 16) | VER_MINOR);
-			break;
-		}
 		case LOWLEVEL_INIT :
 		{
 			ret = usb_lowlevel_init (0, NULL);
@@ -1036,22 +1139,77 @@ sl811_ioctl (struct ucdif *u, short cmd, long arg)
 	return ret;
 }
 
+#ifdef TOSONLY
+/* cookie jar definition
+ *  * */
+
+struct cookie
+{
+        long tag;
+        long value;
+};
+
+#define _USB 0x5f555342L
+# define CJAR           ((struct cookie **) 0x5a0)
+
+
+static long
+get_cookie (void)
+{
+	struct cookie *cjar = *CJAR;
+	api = NULL;
+
+	while (cjar->tag)
+	{
+		if (cjar->tag == _USB)
+		{
+			api = (struct usb_module_api *)cjar->value;
+
+			return 0;
+		}
+
+		cjar++;
+	}
+
+	return -1;
+}
+#endif
+
+#ifdef TOSONLY
+int init(int argc, char **argv, char **env);
+
+int
+init(int argc, char **argv, char **env)
+#else
+long init (struct kentry *, struct usb_module_api *, char **);
+
 long
-init (struct kentry *k, struct ucdinfo *uinfo, char **reason)
+init (struct kentry *k, struct usb_module_api *uapi, char **reason)
+#endif
 {
 	long ret;
 
+#ifndef TOSONLY
+	api	= uapi;
 	kentry	= k;
-	uinf	= uinfo;
 
 	if (check_kentry_version())
 		return -1;
+#endif
 
 	c_conws (MSG_BOOT);
 	c_conws (MSG_GREET);
 	DEBUG (("%s: enter init", __FILE__));
 
-	ret = (*uinf->ucd_register)(&sl811_uif);
+#ifdef TOSONLY
+	Supexec(get_cookie);
+	if (!api) {
+		(void)Cconws("UNICORN failed to get _USB cookie\r\n");
+		return -1;
+	}
+#endif
+
+	ret = ucd_register(&sl811_uif);
 	if (ret)
 	{
 		DEBUG (("%s: ucd register failed!", __FILE__));
@@ -1059,6 +1217,10 @@ init (struct kentry *k, struct ucdinfo *uinfo, char **reason)
 	}
 
 	DEBUG (("%s: ucd register ok", __FILE__));
+
+#ifdef TOSONLY
+	Ptermres(_PgmSize + 65536,0);
+#endif
 
 	return 0;
 }
@@ -1074,16 +1236,19 @@ unicorn_int (void)
 		sl811_write(SL811_INTRSTS, 0xfe);
 
 		if (status & (SL811_INTR_INSRMV | SL811_INTR_DETECT)) {
+			c_conws("RESET ??\n\r");
 			sl811_hc_reset();
 			UNLOCKUSB;
+#ifndef TOSONLY
 			addroottimeout (0, int_handle_tophalf, 1);
+#endif
 		} else {
 			UNLOCKUSB;
 		}
 	}
 }
 
-
+#ifndef TOSONLY
 void
 sl811_hub_poll(PROC *proc, long dummy)
 {
@@ -1107,3 +1272,4 @@ sl811_hub_poll_thread(void *dummy)
 
 	kthread_exit(0);
 }
+#endif

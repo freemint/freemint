@@ -32,8 +32,8 @@ INCLUDES =
 OBJS = $(COBJS:.c=.o) $(SOBJS:.s=.o) $(SSOBJS:.S=.o)
 GENFILES = $(TARGETS)
 
-COMMON		= crtinit.o $(SSOBJS:.S=.o)
-LOADER		= loader.o $(COMMON)
+#COMMON		= crtinit.o $(SSOBJS:.S=.o)
+#LOADER		= loader.o $(COMMON)
 #UNLOADER	= unloader.o $(COMMON)
 
 $(TARGETS): $(OBJS)

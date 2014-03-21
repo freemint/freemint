@@ -20,9 +20,12 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include <mint/osbind.h> /* Setexc */
+
 #include "global.h"
 #include "usb.h"
 #include "ucd.h"
+#include "hub.h"
 
 struct ucdif *allucdifs = NULL;
 
@@ -32,9 +35,51 @@ struct ucdif *allucdifs = NULL;
 long
 ucd_register(struct ucdif *a)
 {
+	struct usb_device *dev;
+	long result;
+
 	DEBUG(("ucd_register: Registered device %s (%s)", a->name, a->lname));
+
 	a->next = allucdifs;
 	allucdifs = a;
+
+	(void)Cconws("UCD REGISTER\n\r");
+	result = (*a->open)(a);
+	if (result)
+	{
+		DEBUG(("ucd_open: Cannot open USB host driver %s%d", a->name, a->unit));
+		return -1;
+	}
+
+	(void)Cconws("UCD LOWLEVEL\n\r");
+        result = (*a->ioctl)(a, LOWLEVEL_INIT, 0);
+        if (result)
+        {
+                DEBUG (("%s: ucd low level init failed!", __FILE__));
+                return -1;
+	}
+
+        /* if lowlevel init is OK, scan the bus for devices
+         * i.e. search HUBs and configure them 
+         */
+
+        (void)Cconws("USB ALLOC1\r\n");
+        dev = usb_alloc_new_device(a);
+        if (!dev) 
+	{
+       		(void)Cconws("FAILED TO ALLOC NEW DEVICE\r\n");
+		return -1;
+	}
+	
+        (void)Cconws("USB ALLOC2\r\n");
+	if (usb_new_device(dev)) 
+	{
+       		(void)Cconws("FAILED TO ALLOC MASTER HUB\r\n");
+		return -1;
+	}
+
+        (void)Cconws("USB HUB INIT\r\n");
+	usb_hub_init(dev);
 
 	return 0;
 }
@@ -48,6 +93,9 @@ ucd_unregister(struct ucdif *a)
 {
 	struct ucdif **list = &allucdifs;
 
+	(*a->close)(a);
+        (*a->ioctl)(a, LOWLEVEL_STOP, 0);
+
 	while (*list)
 	{
 		if (a == *list)
@@ -59,83 +107,6 @@ ucd_unregister(struct ucdif *a)
 	}
 	return -1L;
 }
-
-long
-ucd_open(struct ucdif *a)
-{
-	long error;
-
-	error = (*a->open)(a);
-	if (error)
-	{
-		DEBUG(("ucd_open: Cannot open USB host driver %s%d", a->name, a->unit));
-		return error;
-	}
-	a->flags |= UCD_OPEN;
-	return 0;
-}
-
-long
-ucd_close(struct ucdif *a)
-{
-	long error;
-
-	error = (*a->close)(a);
-	if (error)
-	{
-		DEBUG(("ucd_close: Cannot close USB host driver %s%d", a->name, a->unit));
-		return error;
-	}
-	a->flags &= ~UCD_OPEN;
-	return 0;
-}
-
-/*
- * Get an unused unit number for interface name 'name'
- */
-short
-ucd_getfreeunit (char *name)
-{
-	struct ucdif *ucdp;
-	short max = -1;
-
-	for (ucdp = allucdifs; ucdp; ucdp = ucdp->next)
-	{
-		if (!strncmp (ucdp->name, name, UCD_NAMSIZ) && ucdp->unit > max)
-			max = ucdp->unit;
-	}
-
-	return max+1;
-}
-
-struct ucdif *
-ucd_name2ucd (char *aname)
-{
-	char name[UCD_NAMSIZ+1], *cp;
-	short i;
-	long unit = 0;
-	struct ucdif *a;
-
-	for (i = 0, cp = aname; i < UCD_NAMSIZ && *cp; ++cp, ++i)
-	{
-		if (*cp >= '0' && *cp <= '9')
-		{
-			unit = atol (cp);
-			break;
-		}
-		name[i] = *cp;
-	}
-
-	name[i] = '\0';
-	for (a = allucdifs; a; a = a->next)
-	{
-		if (!stricmp (a->name, name) && a->unit == unit)
-			return a;
-	}
-
-	return NULL;
-}
-
 
 long
 ucd_ioctl(struct ucdif *u, short cmd, long arg)

@@ -24,21 +24,29 @@
  */
 
 #include "mint/mint.h"
-#include "libkern/libkern.h"
+#include "../../global.h"
 
 #include "xhdi.h"
 
 /*--- Defines ---*/
 
 #define XHDI_VERSION		0x120
-#define DRIVER_NAME		FreeMiNT USB
-#define DRIVER_COMPANY		FreeMiNT list
 #define MAX_IPL			5
 #define BLOCKSIZE		512
 #define XH_TARGET_REMOVABLE	0x02L
 #define STRINGLEN		32
 
+#ifdef TOSONLY
+char *DRIVER_NAME = "TOS USB";
+#else
+char *DRIVER_NAME = "FreeMiNT USB";
+#endif
+char *DRIVER_COMPANY = "FreeMiNT list";
+
+
 /*--- Debug section ---*/
+
+#ifndef TOSONLY
 
 #if 0
 # define DEV_DEBUG	1
@@ -60,6 +68,7 @@
 # define TRACE(x)	
 # define ASSERT(x)	assert x
 
+#endif
 #endif
 /*--- External variables ---*/
 
@@ -302,9 +311,9 @@ XHInqDriver(ushort dev, char *name, char *version, char *company,
 	    dev > usb_1st_disk_drive + MAX_LOGICAL_DRIVE)
 		return ENODEV;
 
-	name = str(DRIVER_NAME);
+	name = DRIVER_NAME;
 	version = drv_version;
-	company = str(DRIVER_COMPANY);
+	company = DRIVER_COMPANY;
 	memcpy(ahdi_version, &(pun_ptr_usb->version_num), sizeof(short));
 	*max_IPL = MAX_IPL;
 
@@ -510,6 +519,7 @@ XHReadWrite(ushort major, ushort minor, ushort rw,
 		DEBUG(("usb_stor_write() returned %ld", ret));
 	}
 	else {
+		c_conws("XHDI READ\r\n");
 		ret = usb_stor_read(dev, sector, (long)count, buf);
 
 		DEBUG(("usb_stor_read() returned %ld", ret));
@@ -527,6 +537,7 @@ xhdi_handler(ushort stack)
 	ushort opcode = stack;
 
 	DEBUG(("XHDI handler, opcode: %d", opcode));
+	c_conws("XHDI CALLED\r\n");
 
 	switch (opcode)
 	{
@@ -818,12 +829,65 @@ xhdi_handler(ushort stack)
 	}
 }
 
+#ifdef TOSONLY
+#define XHDIMAGIC 0x27011992L
+
+typedef long (*cookie_fun)(unsigned short opcode,...);
+
+static long
+getcookie (long cookie, long *p_value)
+{
+	long *cookiejar = *((long **)0x5a0);
+
+	if (!cookiejar) return 0;
+
+	do
+	{
+		if (cookiejar[0] == cookie)
+		{
+			if (p_value) *p_value = cookiejar[1];
+			return 1;
+		}
+		else
+			cookiejar = &(cookiejar[2]);
+	} while (cookiejar[-2]);
+
+	return 0;
+}
+
+static cookie_fun
+get_fun_ptr (void)
+{
+	static cookie_fun XHDI = NULL;
+	static char have_it = 0;
+	
+	if (!have_it)
+	{
+		long *magic_test;
+	
+		getcookie (*((long *)"XHDI"), (long *)&XHDI);
+		have_it = 1;
+
+		/* check magic */
+		
+		magic_test = (long *)XHDI;
+		if (magic_test && (magic_test[-1] != XHDIMAGIC))
+			XHDI = NULL;
+	}
+	
+	return XHDI;
+}
+#endif
+
 long
 install_xhdi_driver(void)
 {
-	long r;
+        long r = 0;
+#ifdef TOSONLY
+	cookie_fun XHDI = get_fun_ptr ();
+        r = XHDI (9, *xhdi_handler);
+#else
 	r = xhnewcookie(*xhdi_handler);
-	DEBUG(("XHNewCookie, return: %ld", r));
-	return r;
+#endif
+        return r;
 }
-

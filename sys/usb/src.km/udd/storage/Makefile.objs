@@ -1,17 +1,17 @@
 #
-# Makefile for usb
+# Makefile for storage
 #
 
 SHELL = /bin/sh
 SUBDIRS =
 
 srcdir = ..
-top_srcdir = ../../..
+top_srcdir = ../../../../..
 subdir = $(compile_dir)
 
 default: all
 
-include ../USBDEFS
+include ../STORAGEDEFS
 
 include $(top_srcdir)/CONFIGVARS
 include $(top_srcdir)/RULES
@@ -21,7 +21,7 @@ include $(top_srcdir)/PHONY
 all-here: build
 
 # default overwrites
-DEFINITIONS = -D__KERNEL_MODULE__ -DMODULE_NAME=usb $(USBDEFS)
+DEFINITIONS = -D__KERNEL_MODULE__ -DMODULE_NAME=storage $(USBDEFS)
 
 INCLUDES += -I$(top_srcdir)/../../sys
 WARN = 	-Wall \
@@ -38,7 +38,7 @@ STRIPFLAGS =
 # default definitions
 GENFILES = $(TARGET)
 OBJS = $(COBJS:.c=.o) $(SOBJS:.s=.o) $(SSOBJS:.S=.o)
-ifeq ($(TARGET),usb.prg)
+ifeq ($(TARGET),storage.prg)
 OBJS += $(TOSCOBJS:.c=.o) $(TOSSSOBJS:.S=.o)
 endif
 
@@ -52,7 +52,7 @@ build: $(TARGET)
 $(TARGET): $(OBJS) $(LIBKERNTARGET)
 	$(CC) $(LDEXTRA) -o $@ $(CFLAGS) $(OBJS) $(LIBS)
 	
-$(OBJS): ../USBDEFS
+$(OBJS): ../STORAGEDEFS
 
 
 # default dependencies

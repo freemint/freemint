@@ -20,11 +20,15 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#ifndef TOSONLY
 #include "global.h"
 #include "ucdload.h"
 #include "usb.h"
 #include "hub.h"
 #include "ucd.h"
+#include "udd.h"
+#include "ucd/ucd_defs.h"
+#include "udd/udd_defs.h"
 
 #include "mint/basepage.h"
 
@@ -32,21 +36,13 @@ extern Path start_path;
 
 static char no_reason[] = "Nothing";
 
-static struct ucdinfo ai =
-{
-	ucd_getfreeunit,
-	ucd_register,
-	ucd_unregister,
-	usb_maxpacket,
-	usb_rh_wakeup,
-	0,
-};
-
 static long
-module_init(long initfunc(struct kentry *, struct ucdinfo *a, long reason), struct kentry *k, struct ucdinfo *a, long reason)
+module_init(long initfunc(struct kentry *, struct usb_module_api *a, long reason), struct kentry *k, struct usb_module_api *a, long reason)
 {
 	return (*initfunc)(k,a,reason);
 }
+
+extern struct usb_module_api usb_api;
 
 static long
 load_ucd(struct basepage *b, const char *name, short *class, short *subclass)
@@ -60,23 +56,16 @@ load_ucd(struct basepage *b, const char *name, short *class, short *subclass)
 	DEBUG(("load_ucd: init 0x%lx, size %li", initfunc, (b->p_tlen + b->p_dlen + b->p_blen)));
 // 	display("load_ucd: '%s' - text=%lx, data=%lx, bss=%lx", name, b->p_tbase, b->p_dbase, b->p_bbase);
 
-	/* pass a pointer to the drivers file name on to the
-	 * driver.
-	 */
-	ai.fname = name;
-
 	*class = MODCLASS_KMDEF;
 	*subclass = 0;
 
-	r = module_init(initfunc, KENTRY, &ai, (long)&reason);
-
+	r = module_init(initfunc, KENTRY, &usb_api, (long)&reason);
 	if (r == -1L)
 	{
 		ALERT(("Module %s error, reason: %s", name, reason));
 // 		display("kentry updated, %s too old! Please update it", name);
 	}
 
-	ai.fname = NULL;
 	DEBUG(("load_ucd: return %ld", r));
 	return r;
 }
@@ -90,4 +79,4 @@ ucd_load(bool first)
 	load_modules(start_path, ".ucd", load_ucd);
 	DEBUG(("ucd_load: done"));
 }
-
+#endif

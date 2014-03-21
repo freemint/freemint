@@ -1,6 +1,6 @@
 /*
  * Modified for the FreeMiNT USB subsystem by David Galvez. 2010 - 2011
- *
+ * 
  * XaAES - XaAES Ain't the AES (c) 1992 - 1998 C.Graham
  *                                 1999 - 2003 H.Robbers
  *                                        2004 F.Naumann & O.Skancke
@@ -20,16 +20,22 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef _ucd_h
-#define _ucd_h
+/*
+ * _setstack - changes the stack pointer
+ *
+ * Prototype:
+ * void _setstack(void *newsp);
+ *
+ * WARNING: after this local variables may no longer be valid!
+ *          destroys a0 and a7 too
+ */
 
-#include "global.h"
-#include "ucd/ucd_defs.h"
+	.globl	__setstack
 
-extern struct 	ucdif *allucdifs;
+	.text
 
-long		ucd_register		(struct ucdif *u);
-long		ucd_unregister		(struct ucdif *u);
-long		ucd_ioctl		(struct ucdif *u, short cmd, long arg);
-
-#endif /* _ucd_h */
+__setstack:
+	movel	sp@+,a0		// save return
+	movel	sp@,sp		// new stack pointer
+	subql	#4,sp		// fixup
+	jmp	a0@		// and jump back

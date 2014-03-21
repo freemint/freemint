@@ -20,6 +20,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include <mint/osbind.h> /* Setexc */
+
 #include "global.h"
 #include "util.h"
 #include "init.h"
@@ -27,8 +29,10 @@
 #include "hub.h"
 #include "ucdload.h"
 #include "uddload.h"
-#include "udd.h"
+#include "ucd/ucd_defs.h"
 #include "udd/udd_defs.h"
+#include "ucd.h"
+#include "udd.h"
 
 long loader_pid = 0;
 long loader_pgrp = 0;
@@ -60,15 +64,58 @@ struct kentry *kentry;
 Path start_path;		/* The directory that the started binary lives */
 #ifndef TOSONLY
 static const struct kernel_module *self = NULL;
-#endif
+#else
+struct cookie
+{
+	long tag;
+	long value;
+};
 
-void usb_storage_init(void);	/* Prototype, this shouldn't be here */
+#define _USB 0x5f555342L
+#define CJAR ((struct cookie **) 0x5a0)
+
+static void
+set_cookie (void)
+{
+	struct cookie *cjar = *CJAR;
+	long n = 0;
+
+	while (cjar->tag)
+	{
+		n++;
+		if (cjar->tag == _USB)
+		{
+			cjar->value = (long)&usb_api;
+			return;
+		}
+		cjar++;
+	}
+
+	n++;
+	if (n < cjar->value)
+	{
+		n = cjar->value;
+		cjar->tag = _USB;
+		cjar->value = (long)&usb_api;
+
+		cjar++;
+		cjar->tag = 0L;
+		cjar->value = n;
+	}
+}
+
+extern unsigned long _PgmSize;
+#endif
 
 void
 setup_usb_module_api(void)
 {
 	usb_api.udd_register = &udd_register;
 	usb_api.udd_unregister = &udd_unregister;
+	usb_api.ucd_register = &ucd_register;
+	usb_api.ucd_unregister = &ucd_unregister;
+	usb_api.usb_rh_wakeup = &usb_rh_wakeup;
+
 //	usb_api.fname = &fname;
 
 
@@ -113,9 +160,13 @@ setup_usb_module_api(void)
 }
 
 #ifdef TOSONLY
+int init(int argc, char **argv, char **env);
+
 int
-main(void)
+init(int argc, char **argv, char **env)
 #else
+long init(struct kentry *k, const struct kernel_module *km);
+
 long
 init(struct kentry *k, const struct kernel_module *km)
 #endif
@@ -143,15 +194,26 @@ init(struct kentry *k, const struct kernel_module *km)
 
 	bootmessage();
 
-	usb_stop();
-
 	setup_usb_module_api();
 
-	usb_main(0);
+	(void)Cconws("INIT API\r\n");
+	usb_main();
+	(void)Cconws("GOCOOKIE\r\n");
 
-	usb_hub_init();
+#ifdef TOSONLY
+	{
+		/* set additional memory to 64KB */
+		unsigned long size = _PgmSize + 65536;
 
-#ifndef TOSONLY
+		/* Set the _USB API cookie */
+                Supexec(set_cookie);
+
+		/* terminate and stay resident */
+		Ptermres(size, 0);
+	}
+
+
+#else
 error:
 #endif
 	return err;

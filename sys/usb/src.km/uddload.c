@@ -20,9 +20,11 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#ifndef TOSONLY
 #include "global.h"
 #include "uddload.h"
 #include "usb.h"
+#include "ucd/ucd_defs.h"
 #include "udd.h"
 
 #include "mint/basepage.h"
@@ -71,3 +73,4 @@ udd_load(bool first)
 	load_modules(start_path, ".udd", load_udd);
 	DEBUG(("udd_load: done"));
 }
+#endif

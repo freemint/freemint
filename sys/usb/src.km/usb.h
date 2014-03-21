@@ -27,7 +27,6 @@
 #ifndef _USB_H_
 #define _USB_H_
 
-#include "mint/lists.h"
 #include "mint/endian.h"
 #include "mint/mdelay.h"
 #include "ucd/pci-ohci/mod_devicetable.h"
@@ -176,13 +175,14 @@ enum {
 };
 
 struct usb_device;
+struct usb_driver;
 
 struct usb_driver
 {
 	const char * 		name;
 	long 	(*probe)	(struct usb_device *);
 	void 	(*disconnect)	(struct usb_device *);
-	LIST_ENTRY(usb_driver) 	chain;
+	struct	usb_driver	*next;
 };
 
 
@@ -266,9 +266,9 @@ long 		usb_lowlevel_init	(long handle, const struct pci_device_id *ent);
 long 		usb_lowlevel_stop	(void);
 
 /* routines */
-void		usb_main		(void *dummy);
-long 		usb_init		(void); /* initialize the USB Controller */
-long 		usb_stop		(void); /* stop the USB Controller */
+void		usb_main		(void);
+void 		usb_init		(void); /* initialize the USB Controller */
+void 		usb_stop		(void); /* stop the USB Controller */
 
 
 long		usb_set_protocol	(struct usb_device *dev, long ifnum, long protocol);

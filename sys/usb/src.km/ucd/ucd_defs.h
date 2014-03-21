@@ -99,16 +99,4 @@ struct ucdif
 	long		reserved[24];
 };
 
-struct ucdinfo
-{
-	short		(*getfreeunit)			(char *);
-	long		(*ucd_register)			(struct ucdif *);
-	long		(*ucd_unregister)		(struct ucdif *);
-
-	long 		(*usb_maxpacket)		(struct usb_device *, unsigned long pipe);
-	void		(*usb_rh_wakeup)		(void);
-
-	const char	*fname;
-};
-
 #endif /* _ucd_defs_h */
