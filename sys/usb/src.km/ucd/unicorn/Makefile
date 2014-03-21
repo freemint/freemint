@@ -24,7 +24,7 @@ all-here: all-targets
 
 # default definitions
 compile_all_dirs = .compile_*
-GENFILES = $(compile_all_dirs) *.udd *.prg
+GENFILES = $(compile_all_dirs) *.ucd *.prg
 
 all-targets:
 	@set fnord $(MAKEFLAGS); amf=$$2; \

@@ -5,7 +5,7 @@
 
 
 ifeq ($(unicorn),deb)
-TARGET = unicorn.udd
+TARGET = unicorn.ucd
 CPU = 020-60
 USBDEFS += -DDEV_DEBUG
 LDEXTRA = -nostdlib -Wl,--entry -Wl,_init
@@ -19,42 +19,42 @@ LDEXTRA = -nostdlib -Wl,--entry -Wl,__start
 endif
 
 ifeq ($(unicorn),000)
-TARGET = unicorn.udd
+TARGET = unicorn.ucd
 CPU = 000
 USBDEFS +=
 LDEXTRA = -nostdlib -Wl,--entry -Wl,_init
 endif
 
 ifeq ($(unicorn),02060)
-TARGET = unicorn.udd
+TARGET = unicorn.ucd
 CPU = 020-60
 USBDEFS +=
 LDEXTRA = -nostdlib -Wl,--entry -Wl,_init
 endif
 
 ifeq ($(unicorn),030)
-TARGET = unicorn.udd
+TARGET = unicorn.ucd
 CPU = 030
 USBDEFS +=
 LDEXTRA = -nostdlib -Wl,--entry -Wl,_init
 endif
 
 ifeq ($(unicorn),040)
-TARGET = unicorn.udd
+TARGET = unicorn.ucd
 CPU = 040
 USBDEFS +=
 LDEXTRA = -nostdlib -Wl,--entry -Wl,_init
 endif
 
 ifeq ($(unicorn),060)
-TARGET = unicorn.udd
+TARGET = unicorn.ucd
 CPU = 060
 USBDEFS +=
 LDEXTRA = -nostdlib -Wl,--entry -Wl,_init
 endif
 
 ifeq ($(unicorn),col)
-TARGET = unicorn.udd
+TARGET = unicorn.ucd
 CPU  = v4e
 USBDEFS += -DCOLDFIRE
 LDEXTRA = -nostdlib -Wl,--entry -Wl,_init
