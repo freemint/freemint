@@ -1443,7 +1443,6 @@ usb_stor_read(long device, unsigned long blknr, unsigned long blkcnt, void *buff
 
 	do
 	{
-		c_conws("NOWREADING\r\n");
 		/* XXX need some comment here */
 		retry = 2;
 		srb.pdata = (unsigned char *)buf_addr;
@@ -1472,7 +1471,6 @@ retry_it:
 	ss->flags &= ~USB_READY;
 	DEBUG(("usb_read: end startblk %lx, blccnt %x buffer %lx", start, smallblks, buf_addr));
 	usb_disable_asynch(0); /* asynch transfer allowed */
-	c_conws("FINREAD\r\n");
 	return blkcnt;
 }
 
