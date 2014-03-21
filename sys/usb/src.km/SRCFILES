@@ -26,8 +26,16 @@ COBJS = \
 	usb.c \
 	util.c
 
-SOBJS = \
+TOSCOBJS = \
+	crtinit.c
 
-SSOBJS = \
+SOBJS =
 
-SRCFILES = $(HEADER) $(COBJS) $(SOBJS) $(SSOBJS)
+SSOBJS =
+
+TOSSSOBJS = \
+	usb_int.S \
+	entry.S \
+	setstack.S
+
+SRCFILES = $(HEADER) $(COBJS) $(SOBJS) $(SSOBJS) $(TOSCOBJS) $(TOSSSOBJS)

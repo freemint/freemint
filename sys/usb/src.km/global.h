@@ -24,6 +24,7 @@
 #define _global_h
 
 #include "mint/module.h"
+#ifndef TOSONLY
 #include "libkern/libkern.h"
 
 /* XXX -> kassert */
@@ -52,6 +53,93 @@
 # define ASSERT(x)      assert x
 
 #endif
+#else
+#include <mint/osbind.h> /* Setexc */
+#include <stdarg.h>
+
+#undef c_conws
+#define c_conws (void)Cconws
+
+# define ALERT(x)
+# define DEBUG(x)
+# define TRACE(x)
+# define ASSERT(x)
+
+/* library replacements */
+static inline void *memset(void *s, int c, long n)
+{
+	char *ptr = (char *)s;
+
+	while (n--) {
+		*ptr++ = c;
+	}
+
+	return s;
+}
+
+static inline void *memcpy(void *dest, const void *source, long n)
+{
+	char *dst = (char*)dest;
+	const char *src = (const char*)source;
+
+	while (n--) {
+		*dst++ = *src++;
+	}
+
+	return dest;
+}
+
+static inline long strncmp (const char *str1, const char *str2, long len)
+{
+	register char c1, c2;
+
+	do {
+		c1 = *str1++;
+		c2 = *str2++;
+	}
+	while (--len >= 0 && c1 && c1 == c2);
+	
+	if (len < 0)
+		return 0L;
+	
+	return (long) (c1 - c2);
+}
+
+static inline char *strncpy (char *dst, const char *src, long len)
+{
+	register char *_dst = dst;
+	
+	while (--len >= 0 && (*_dst++ = *src++) != 0)
+		continue;
+	
+	while (--len >= 0)
+		*_dst++ = 0;
+	
+	return dst;
+}
+
+static inline char *strcat (char *dst, const char *src)
+{
+	register char *_dscan;
+	
+	for (_dscan = dst; *_dscan; _dscan++) ;
+	while ((*_dscan++ = *src++) != 0) ;
+	
+	return dst;
+}
+
+static inline long strlen (const char *scan)
+{
+	register const char *start;
+	
+	start = scan + 1;
+	while (*scan++)
+		;
+	
+	return (long) (scan - start);
+}
+#endif
+
 
 typedef char Path[PATH_MAX];
 

@@ -42,6 +42,7 @@
 #include "ucd.h"
 #include "ucdload.h"
 #include "uddload.h"
+#include <mint/osbind.h> /* Setexc */
 #else
 #include <common.h>
 #include <command.h>
@@ -59,102 +60,59 @@
 
 /*static*/ struct usb_device usb_dev[USB_MAX_DEVICE];
 static long asynch_allowed;
-char usb_started; /* flag for the started/stopped USB status */
 
 static long 	usb_find_interface_driver	(struct usb_device *dev, unsigned ifnum);
 
 /***************************************************************************
  * Init USB Device
  */
+
 void
-usb_main(void *dummy)
+usb_main(void)
 {
+	usb_init();
+
+#ifndef TOSONLY
 	/* load driver for usb host controller */
 	ucd_load(1);
 
-	if (usb_init() >= 0)
-	{	
-		/* load device driver modules */
-		udd_load(1);
-		return;
-	}
-	DEBUG(("Failing with USB init"));
+	/* load device driver modules */
+	udd_load(1);
+#endif
 }
 
-long usb_init(void)
+void usb_init(void)
 {
-	struct ucdif *a;
-	struct usb_device *dev;
 	int i;
 
+	(void)Cconws("USB1\n\r");
 	DEBUG(("usb_init"));
 
-	long result;
-
+	(void)Cconws("USB2\n\r");
 	asynch_allowed = 1;
 	usb_hub_reset();
+	(void)Cconws("USB3\n\r");
 
         /* first make all devices unknown */
         for (i = 0; i < USB_MAX_DEVICE; i++) {
                 memset(&usb_dev[i], 0, sizeof(struct usb_device));
                 usb_dev[i].devnum = -1;
         }
-
-	/* init low_level USB */
-	for (a = allucdifs; a; a = a->next) {
-		ucd_open (a);
-	
-		result = ucd_ioctl(allucdifs, LOWLEVEL_INIT, 0);
-		if (result)
-		{
-			DEBUG (("%s: ucd low level init failed!", __FILE__));
-			return -1;
-		}
-
-		/* if lowlevel init is OK, scan the bus for devices
-		 * i.e. search HUBs and configure them 
-		 */
-
-		dev = usb_alloc_new_device(a);
-		/*
-		 * device 0 is always present
-		 * (root hub, so let it analyze)
-		 */
-		if (dev)
-			usb_new_device(dev);
-
-		usb_started = 1;
-	}
-
-	DEBUG(("scan end"));
-	/* if we were not able to find at least one working bus, bail out */
-	if (!usb_started) {
-		DEBUG(("USB error: all controllers failed lowlevel init"));
-		return -1;
-	}
-
-	return 0;
+	(void)Cconws("USB4\n\r");
 }
 
 /******************************************************************************
  * Stop USB this stops the LowLevel Part and deregisters USB devices.
  */
-long usb_stop(void)
+void usb_stop(void)
 {
 	struct ucdif *a;
 
-	if (usb_started)
-	{
-		asynch_allowed = 1;
-		usb_started = 0;
-		usb_hub_reset();
+	asynch_allowed = 1;
 
-		for (a = allucdifs; a; a = a->next) {
-			ucd_ioctl(allucdifs, LOWLEVEL_STOP, 0);
-		}
+	for (a = allucdifs; a; a = a->next) {
+		ucd_ioctl(allucdifs, LOWLEVEL_STOP, 0);
 	}
-
-	return 0;
 }
 
 /*
@@ -209,6 +167,7 @@ long usb_control_msg(struct usb_device *dev, unsigned long pipe,
 {
 	struct control_msg arg;
 	struct devrequest setup_packet;
+	long r;
 
 	if ((timeout == 0) && (!asynch_allowed)) {
 		/* request for a asynch control pipe is not allowed */
@@ -231,7 +190,7 @@ long usb_control_msg(struct usb_device *dev, unsigned long pipe,
 	arg.size = size;
 	arg.setup = &setup_packet;
 
-	ucd_ioctl(allucdifs, SUBMIT_CONTROL_MSG, (long)&arg);
+	r = ucd_ioctl(allucdifs, SUBMIT_CONTROL_MSG, (long)&arg);
 	if (timeout == 0)
 	{
 		DEBUG(("size %d \r", size));
@@ -266,6 +225,7 @@ long usb_bulk_msg(struct usb_device *dev, unsigned long pipe,
 		  void *data, long len, long *actual_length, long timeout, long flags)
 {
 	struct bulk_msg arg;
+	long r;
 
 	if (len < 0)
 		return -1;
@@ -278,7 +238,7 @@ long usb_bulk_msg(struct usb_device *dev, unsigned long pipe,
 	arg.len = len;
 	arg.flags = flags;
 
-	ucd_ioctl(allucdifs, SUBMIT_BULK_MSG, (long)&arg);
+	r = ucd_ioctl(allucdifs, SUBMIT_BULK_MSG, (long)&arg);
 
 	while (timeout--) {
 		if (!((volatile unsigned long)dev->status & USB_ST_NOT_PROC))
@@ -446,6 +406,7 @@ long usb_parse_config(struct usb_device *dev, unsigned char *buffer, long cfgno)
 				return 1;
 
 			DEBUG(("unknown Description Type : %x", head->bDescriptorType));
+#if 0 /* debug */
 			{
 				unsigned char *ch = (unsigned char *)head;
 				int i;
@@ -461,7 +422,7 @@ long usb_parse_config(struct usb_device *dev, unsigned char *buffer, long cfgno)
 				}
 				DEBUG((buf));
 			}
-
+#endif
 			break;
 		}
 		index += head->bLength;
@@ -941,6 +902,7 @@ long usb_new_device(struct usb_device *dev)
 	long port = -1;
 	struct usb_device *parent = dev->parent;
 	unsigned short portstatus;
+	int i;
 
 	/* send 64-byte GET-DEVICE-DESCRIPTOR request.  Since the descriptor is
 	 * only 18 bytes long, this will terminate with a short packet.  But if
@@ -948,20 +910,41 @@ long usb_new_device(struct usb_device *dev)
 	 * some more, or keeps on retransmitting the 8 byte header. */
 
 	desc = (struct usb_device_descriptor *)tmpbuf;
+
 	dev->descriptor.bMaxPacketSize0 = 64;	    /* Start off at 64 bytes  */
 	/* Default to 64 byte max packet size */
 	dev->maxpacketsize = PACKET_SIZE_64;
 	dev->epmaxpacketin[0] = 64;
 	dev->epmaxpacketout[0] = 64;
 
-	err = usb_get_descriptor(dev, USB_DT_DEVICE, 0, desc, 64);
+	i = 3;
+	while (i--) {
+		err = usb_get_descriptor(dev, USB_DT_DEVICE, 0, desc, 64);
+		if (err < 0) {
+			mdelay(200);
+			DEBUG(("usb_new_device: usb_get_descriptor() failed, retrying..."));
+		} else {
+			switch (desc->bMaxPacketSize0) {
+			case 8: case 16: case 32: case 64: case 255:
+				if (desc->bDescriptorType == USB_DT_DEVICE) {
+					goto out;
+				}
+				break;
+			default:
+				break;
+			}
+		}
+	}
+
+out:
 	if (err < 0) {
 		DEBUG(("usb_new_device: usb_get_descriptor() failed"));
 		dev->devnum = addr;
 		return 1;
 	}
-
+	
 	dev->descriptor.bMaxPacketSize0 = desc->bMaxPacketSize0;
+
 	/*
 	 * Fetch the device class, driver can use this info
 	 * to differentiate between HUB and DEVICE.
@@ -1100,7 +1083,6 @@ long usb_new_device(struct usb_device *dev)
  * 
  */
 
-extern LIST_HEAD(,usb_driver) usb_driver_list;
 
 /*
  * This entrypoint gets called for each new device.
@@ -1114,10 +1096,12 @@ extern LIST_HEAD(,usb_driver) usb_driver_list;
  *
  * Returns: 0 if a driver accepted the interface, -1 otherwise
  */
+extern struct usb_driver *alldrivers;
+
 static long 
 usb_find_interface_driver(struct usb_device *dev, unsigned ifnum)
 {
-	struct usb_driver *driver;
+	struct usb_driver *driver = alldrivers;
 
 	if ((!dev) || (ifnum >= dev->config.desc.bNumInterfaces)) {
 		DEBUG(("bad find_interface_driver params"));
@@ -1130,7 +1114,7 @@ usb_find_interface_driver(struct usb_device *dev, unsigned ifnum)
 	if (dev->driver)
 		return -1;
 
-	LIST_FOREACH (driver, &usb_driver_list, chain)
+	while (driver)
 	{
 		if (!driver->probe(dev))
 		{
@@ -1138,6 +1122,8 @@ usb_find_interface_driver(struct usb_device *dev, unsigned ifnum)
 			
 			return 0;
 		}
+
+		driver = driver->next;
 	}
 
 	return -1;

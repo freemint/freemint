@@ -22,11 +22,14 @@
 
 #include "global.h"
 #include "usb.h"
+#include "ucd/ucd_defs.h"
 #include "udd.h"
+#include <mint/osbind.h> /* Setexc */
+
 
 struct uddif *alluddifs = NULL;
 
-LIST_HEAD(,usb_driver) usb_driver_list = LIST_HEAD_INITIALIZER(usb_driver_list);
+struct usb_driver *alldrivers = NULL;
 
 
 /*
@@ -36,11 +39,12 @@ long
 udd_register(struct uddif *a, struct usb_driver *new_driver)
 {
 	DEBUG(("udd_register: Registered device %s (%s)", a->name, a->lname));
+
 	a->next = alluddifs;
 	alluddifs = a;
 
-	/* Add it to the list of known drivers */
-	LIST_INSERT_HEAD(&usb_driver_list, new_driver, chain);
+	new_driver->next = alldrivers;
+	alldrivers = new_driver;
 
 	return 0;
 }
@@ -53,15 +57,26 @@ long
 udd_unregister(struct uddif *a, struct usb_driver *driver)
 {
 	struct uddif **list = &alluddifs;
+	struct usb_driver **listdrv = &alldrivers;
 
 	while (*list)
 	{
 		if (a == *list)
 		{
 			*list = a->next;
-			return E_OK;
+			break;
 		}
 		list = &((*list)->next);
+	}
+
+	while (*listdrv)
+	{
+		if (driver == *listdrv)
+		{
+			*listdrv = driver->next;
+			return E_OK;
+		}
+		listdrv = &((*listdrv)->next);
 	}
 	return -1L;
 }
@@ -95,53 +110,6 @@ udd_close(struct uddif *a)
 	a->flags &= ~UDD_OPEN;
 	return 0;
 }
-
-/*
- * Get an unused unit number for interface name 'name'
- */
-short
-udd_getfreeunit (char *name)
-{
-	struct uddif *uddp;
-	short max = -1;
-
-	for (uddp = alluddifs; uddp; uddp = uddp->next)
-	{
-		if (!strncmp (uddp->name, name, UDD_NAMSIZ) && uddp->unit > max)
-			max = uddp->unit;
-	}
-
-	return max+1;
-}
-
-struct uddif *
-udd_name2udd (char *aname)
-{
-	char name[UDD_NAMSIZ+1], *cp;
-	short i;
-	long unit = 0;
-	struct uddif *a;
-
-	for (i = 0, cp = aname; i < UDD_NAMSIZ && *cp; ++cp, ++i)
-	{
-		if (*cp >= '0' && *cp <= '9')
-		{
-			unit = atol (cp);
-			break;
-		}
-		name[i] = *cp;
-	}
-
-	name[i] = '\0';
-	for (a = alluddifs; a; a = a->next)
-	{
-		if (!stricmp (a->name, name) && a->unit == unit)
-			return a;
-	}
-
-	return NULL;
-}
-
 
 long
 udd_ioctl(struct uddif *u, short cmd, long arg)

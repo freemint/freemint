@@ -19,10 +19,13 @@
 
 #define	udd_register 		(*api->udd_register)
 #define	udd_unregister 		(*api->udd_unregister)
+#define	ucd_register 		(*api->ucd_register)
+#define	ucd_unregister 		(*api->ucd_unregister)
 //#define	fname 			(*api->fname)
 
 //#define	usb_init 		(*api->usb_init)
 //#define	usb_stop 		(*api->usb_stop)
+#define usb_rh_wakeup		(*api->usb_rh_wakeup)
 
 #define	usb_set_protocol 	(*api->usb_set_protocol)
 #define	usb_set_idle 		(*api->usb_set_idle)
@@ -52,6 +55,7 @@
  */	
 //#define	usb_get_hub_descriptor 	(*api->usb_get_hub_descriptor)
 //#define	usb_clear_port_feature 	(*api->usb_clear_port_feature)
+//#define	usb_clear_hub_feature 	(*api->usb_clear_hub_feature)
 //#define	usb_get_hub_status 	(*api->usb_get_hub_status)
 //#define	usb_set_port_feature 	(*api->usb_set_port_feature)
 //#define	usb_get_port_status 	(*api->usb_get_port_status)
