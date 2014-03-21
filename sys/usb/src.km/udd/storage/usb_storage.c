@@ -1853,7 +1853,6 @@ usb_storage_probe(struct usb_device *dev)
 	long r;	
 	long i;
 	
-	return -1;
 	if(dev == NULL)
 		return -1;
 	
