@@ -284,14 +284,12 @@ void usb_hub_port_connect_change(struct usb_device *dev, long port)
 	struct usb_port_status portsts;
 	unsigned short portstatus;
 
-	c_conws("HUB1\n\r");
 	/* Check status */
 	if (usb_get_port_status(dev, port + 1, &portsts) < 0) {
 		DEBUG(("get_port_status failed"));
 		return;
 	}
 
-	c_conws("HUB2\n\r");
 	portstatus = le2cpu16(portsts.wPortStatus);
 	DEBUG(("portstatus %x, change %x, %s\n",
 	      portstatus,
@@ -300,7 +298,6 @@ void usb_hub_port_connect_change(struct usb_device *dev, long port)
 
 	/* Clear the connection change status */
 	usb_clear_port_feature(dev, port + 1, USB_PORT_FEAT_C_CONNECTION);
-	c_conws("HUB3\n\r");
 
 	/* Disconnect any existing devices under this port */
 	if (((!(portstatus & USB_PORT_STAT_CONNECTION)) &&
@@ -313,19 +310,15 @@ void usb_hub_port_connect_change(struct usb_device *dev, long port)
 			return;
 	}
 
-#if 0
 	mdelay(200);
-#endif
+
 	/* Reset the port */
 	if (hub_port_reset(dev, port, &portstatus) < 0) {
 		DEBUG(("cannot reset port %li!?", port + 1));
 		return;
 	}
 
-#if 0
 	mdelay(200);
-#endif
-	c_conws("HUB4\n\r");
 
 	/* Allocate a new device struct for it */
 	usb = usb_alloc_new_device(dev->controller);
@@ -345,7 +338,6 @@ void usb_hub_port_connect_change(struct usb_device *dev, long port)
 		break;
 	}
 
-	c_conws("HUB5\n\r");
 	dev->children[port] = usb;
 	usb->parent = dev;
 	/* Run it through the hoops (find a driver, etc) */
@@ -357,7 +349,6 @@ void usb_hub_port_connect_change(struct usb_device *dev, long port)
 		DEBUG(("hub: disabling port %ld", port + 1));
 		usb_clear_port_feature(dev, port + 1, USB_PORT_FEAT_ENABLE);
 	}
-	c_conws("HUB6\n\r");
 }
 
 
