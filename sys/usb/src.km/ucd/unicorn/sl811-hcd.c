@@ -1236,7 +1236,6 @@ unicorn_int (void)
 		sl811_write(SL811_INTRSTS, 0xfe);
 
 		if (status & (SL811_INTR_INSRMV | SL811_INTR_DETECT)) {
-			c_conws("RESET ??\n\r");
 			sl811_hc_reset();
 			UNLOCKUSB;
 #ifndef TOSONLY
