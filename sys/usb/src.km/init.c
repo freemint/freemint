@@ -196,9 +196,7 @@ init(struct kentry *k, const struct kernel_module *km)
 
 	setup_usb_module_api();
 
-	(void)Cconws("INIT API\r\n");
 	usb_main();
-	(void)Cconws("GOCOOKIE\r\n");
 
 #ifdef TOSONLY
 	{
