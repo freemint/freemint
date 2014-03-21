@@ -426,8 +426,7 @@ static long sl811_send_packet(struct usb_device *dev, unsigned long pipe, __u8 *
 		if ((status & SL811_USB_STS_NAK) == SL811_USB_STS_NAK) {
 			DEBUG(("NAK!"));
 			nak++;
-			if (nak >= 10) {
-				nak = 0;
+			if (flags & USB_BULK_FLAG_EARLY_TIMEOUT) {
 				err++;
 			}
 			continue;
