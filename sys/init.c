@@ -61,6 +61,7 @@
 # include "memory.h"		/* init_mem, get_region, attach_region, restr_screen */
 # include "mis.h"		/* startup_shell */
 # include "module.h"		/* load_all_modules */
+# include "pcibios.h"		/* pcibios_init() */
 # include "proc.h"		/* init_proc, add_q, rm_q */
 # include "signal.h"		/* post_sig */
 # include "syscall_vectors.h"
@@ -474,6 +475,12 @@ init (void)
 	init_keybd();
 	DEBUG (("init_keybd() ok!"));
 # endif
+
+	/* initalize PCI-BIOS interface */
+#ifdef PCI_BIOS
+	if (pcibios_init())
+		DEBUG (("No PCI-BIOS found"));
+#endif
 
 	/* Disable all CPU caches */
 # ifndef M68000

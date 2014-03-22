@@ -8,6 +8,7 @@
 # -DBUILTIN_SHELL	include the built-in minimal shell
 # -DC_ONLY		replace some assembly function by C compatible one
 # -DWITH_MMU_SUPPORT	include MMU support
+# -DPCI_BIOS		include PCI_BIOS interface emulation
 
 #
 # machine flags
@@ -99,7 +100,7 @@ endif
 ifeq ($(kernel),col)
 MINT = mintv4e.prg
 CPU  = v4e
-KERNELDEFS = -DM68040 -DNO_FAKE_SUPER -DC_ONLY
+KERNELDEFS = -DM68040 -DNO_FAKE_SUPER -DC_ONLY -DPCI_BIOS
 kernel_nocflags = -DWITH_MMU_SUPPORT
 endif
 
