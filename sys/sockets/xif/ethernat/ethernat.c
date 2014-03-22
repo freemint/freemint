@@ -1090,6 +1090,7 @@ static void ethernat_service	(struct netif * nif)
 
 //	long		timeval;
 
+	(void) desttmp;
 
 
 	/*
