@@ -528,14 +528,11 @@ static long asix_init(struct eth_device *eth)
 	int timeout = 0;
 #define TIMEOUT_RESOLUTION 50	/* ms */
 	int link_detected;
-	unsigned char rx_ctl;
 
 	DEBUG(("** %s()\n", __func__));
 
 	if (asix_write_rx_ctl(dev, AX_DEFAULT_RX_CTL) < 0)
 		goto out_err;
-
-	rx_ctl = asix_read_rx_ctl(dev);
 
 	do {
 		link_detected = asix_mdio_read(dev, dev->phy_id, MII_BMSR) &
