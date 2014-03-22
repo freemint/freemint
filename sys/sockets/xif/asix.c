@@ -456,6 +456,8 @@ static int asix_basic_reset_772(struct ueth_data *dev)
 	int embd_phy;
 	u16 rx_ctl;
 
+	(void) rx_ctl; /* because of DEBUG */
+
 	if (asix_write_gpio(dev,
 			AX_GPIO_RSE | AX_GPIO_GPO_2 | AX_GPIO_GPO2EN, 5) < 0)
 		return -1;
