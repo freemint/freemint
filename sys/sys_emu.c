@@ -46,6 +46,7 @@
 
 # include "scsidrv.h"
 # include "xhdi.h"
+# include "pcibios.h"
 
 
 long _cdecl
@@ -72,6 +73,13 @@ sys_emu (ushort which, ushort op,
 		{
 			return sys_scsidrv (op, a1, a2, a3, a4, a5, a6, a7);
 		}
+#ifdef PCI_BIOS
+		/* PCI-BIOS */
+		case 3:
+		{
+			return sys_pcibios (op, a1, a2, a3, a4, a5, a6, a7);
+		}
+#endif /* PCI-BIOS */
 	}
 	
 	return EBADARG;
