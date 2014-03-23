@@ -41,7 +41,7 @@ typedef struct pcibios	PCIBIOS;
 /* exported data
  */
 
-extern ushort pcibios_installed;
+extern ulong pcibios_installed;
 
 
 /* exported functions
