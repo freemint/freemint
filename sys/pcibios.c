@@ -91,7 +91,7 @@ static PCIBIOS_MINT pcibios_MiNT = { {
 # endif
 
 
-ushort pcibios_installed = 0;
+ulong pcibios_installed = 0;
 
 PCIBIOS *pcibios = NULL;
 void *tab_funcs_pci;
