@@ -119,7 +119,7 @@ static void usb_hub_power_on(struct usb_hub_device *hub)
 	unsigned pgood_delay = hub->desc.bPwrOn2PwrGood * 2;
 	struct usb_port_status portsts;
 	unsigned short portstatus;
-	int ret;
+	long ret;
 
 	dev = hub->pusb_dev;
 
@@ -480,7 +480,7 @@ usb_hub_configure(struct usb_device *dev)
 }
 
 
-static void
+void
 usb_hub_events(struct usb_device *dev)
 {
 	long i;
@@ -671,7 +671,7 @@ usb_hub_probe(struct usb_device *dev, long ifnum)
 	return 1;
 }
 
-void
+long
 usb_rh_wakeup(void)
 {
 #ifndef TOSONLY
@@ -679,6 +679,7 @@ usb_rh_wakeup(void)
 #else
 	/* maybe don't wait for interrupt and schedule immediately ?? */
 #endif
+	return 0;
 }
 
 #ifndef TOSONLY

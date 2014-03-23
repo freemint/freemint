@@ -30,8 +30,6 @@
 
 #define MAX_LOGICAL_DRIVE	_max_logical_drive
 
-//.chip 68040
-
 	.extern _usb_stor_read,_usb_stor_write 
 	.extern _cconws_from_S, _dsetdrive_from_S, _install_xhdi_driver
 	.extern _product_name, _pun_ptr_usb, _pun_usb
@@ -39,7 +37,7 @@
 
 	.global _install_usb_stor,_uninstall_usb_stor
 
-#if 0		
+#if 1
 #define DEBUG_BIOS_LAYER	/* Show extra debug info into the console */
 #endif
 #ifdef DEBUG_BIOS_LAYER
@@ -229,11 +227,18 @@ _install_usb_stor:
 	move.l D0,-(SP)          // devnum
 	jsr _usb_stor_read
 	lea 16(SP),SP
+#if 1
+	jsr hex_long
+#endif
 	tst.l D0
 	beq .end_usb_disk        // read error
 	tst.l _usb_1st_disk_drive
 	bne .usb_1st_drive_ok    // hdv vectors installed
 	move.l D4,_usb_1st_disk_drive
+#if 1
+	move.l D4,D0
+	jsr hex_long
+#endif
 	move.w SR,D0
 	move.w D0,-(SP)
 	or.l #0x700,D0           // mask interrupts
@@ -245,11 +250,13 @@ _install_usb_stor:
 	lea det_hdv_bpb_usb(PC),A1
 	move.l A1,(A0)
 	
+#if 0
 	move.l #hdv_rw,A0
 	lea old_hdv_rw_usb(PC),A1
 	move.l (A0),(A1)
 	lea det_hdv_rw_usb(PC),A1
 	move.l A1,(A0)
+#endif
 
 	move.l #hdv_mediach,A0
 	lea old_hdv_mediach_usb(PC),A1

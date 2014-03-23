@@ -144,12 +144,29 @@ static long sl811_rh_submit_urb(struct usb_device *usb_dev, unsigned long pipe,
 /*
  * Lock the ACSI port using FLOCK.
  */
+#ifdef TOSONLY
+#define LOCKUSB \
+	unsigned long ret = 0; \
+	if (!Super(1L)) { \
+		ret = Super(0L); \
+	} \
+        {   \
+                __asm__ volatile("1: tas.b 0x43e");        \
+                __asm__ volatile("bne.b 1b");        \
+        } \
+	WRITEMODE = 0x88; \
+	DACCESS = (ACSI << 5); \
+	WRITEMODE = 0x8a;
+
+#define UNLOCKUSB  \
+		__asm__ volatile("clr.w 0x43e"); \
+		if (ret) \
+  		SuperToUser(ret);
+#else
 #define LOCKUSB \
         {   \
                 __asm__ volatile("1: tas.b 0x43e");        \
                 __asm__ volatile("bne.b 1b");        \
-                __asm__ volatile("2: tas.b 0x43f");        \
-                __asm__ volatile("bne.b 2b");        \
         } \
 	WRITEMODE = 0x88; \
 	DACCESS = (ACSI << 5); \
@@ -157,6 +174,7 @@ static long sl811_rh_submit_urb(struct usb_device *usb_dev, unsigned long pipe,
 
 #define UNLOCKUSB  \
 		__asm__ volatile("clr.w 0x43e");
+#endif
 		
 
 static inline void sl811_write (__u8 index, __u8 data)
@@ -213,24 +231,15 @@ static int usb_init_atari (void)
 {
 	unsigned char buf[SL811_DATA_LIMIT];
 	int i;
-#ifdef TOSONLY
-	long ret;
-#endif
 
 	for (i = 0; i < SL811_DATA_LIMIT; i++) {
 		buf[i] = i;
 	}
-#ifdef TOSONLY
-	ret = Super(0L);
-#endif
 	LOCKUSB;
 	sl811_write_buf(SL811_DATA_START, buf, SL811_DATA_LIMIT);
 	memset(buf, 0, SL811_DATA_LIMIT);
 	sl811_read_buf(SL811_DATA_START, buf, SL811_DATA_LIMIT);
 	UNLOCKUSB;
-#ifdef TOSONLY
-	SuperToUser(ret);
-#endif
 	for (i = 0; i < SL811_DATA_LIMIT; i++) {
 		if (buf[i] != i) {
 			ALERT(("SL811 compare error index=0x%02x read=0x%02x 0x%02x 0x%02x 0x%02x\n", i, buf[i], buf[i+1], buf[i+2], buf[i+3]));
@@ -329,9 +338,6 @@ long
 usb_lowlevel_init(long dummy1, const struct pci_device_id *dummy2)
 {
 	long r;
-#ifdef TOSONLY
-	long sv;
-#endif
 
 	/*
 	 * Check the adapter is functional.
@@ -342,22 +348,17 @@ usb_lowlevel_init(long dummy1, const struct pci_device_id *dummy2)
 	/*
 	 * Initialize the chip.
 	 */
-#ifdef TOSONLY
-	sv = Super(0L);
-#endif
 	LOCKUSB;
         r = sl811_hc_reset();
 	UNLOCKUSB;
-#ifdef TOSONLY
-	SuperToUser(sv);
-#endif
         if (r)
 		usb_rh_wakeup();
 	else
 		rh_status.wPortChange = 0;
 
 #ifdef TOSONLY
-	old_vbl_int = Setexc (0x70/4, (long) interrupt_vbl);
+//	disabled for now.
+//	old_vbl_int = Setexc (0x70/4, (long) interrupt_vbl);
 #else
 	/*
 	 * Start the root hub thread.
@@ -375,22 +376,12 @@ usb_lowlevel_init(long dummy1, const struct pci_device_id *dummy2)
 long 
 usb_lowlevel_stop(void)
 {
-#ifdef TOSONLY
-	long r;
-#endif
-
 	DEBUG(("USB SL811 DISABLED DUE TO LOWLEVEL STOP!"));
 	
-#ifdef TOSONLY
-	r = Super(0L);
-#endif
 	LOCKUSB;
 	sl811_write_intr(0);
 	sl811_write(SL811_INTRSTS, 0xff);
 	UNLOCKUSB;
-#ifdef TOSONLY
-	SuperToUser(r);
-#endif
 
 	return 0;
 }
@@ -520,6 +511,7 @@ submit_bulk_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 	int devnum = usb_pipedevice(pipe);
 	int dir_out = usb_pipeout(pipe);
 	int ep = usb_pipeendpoint(pipe);
+
 	long max = usb_maxpacket(dev, pipe);
 	long done = 0;
 
@@ -836,7 +828,7 @@ static int usb_root_hub_string (int id, __u8 *data, long len)
 /*
  * This function handles all USB request to the the virtual root hub
  */
-static long sl811_rh_submit_urb(struct usb_device *usb_dev, unsigned long pipe,
+static inline long sl811_rh_submit_urb(struct usb_device *usb_dev, unsigned long pipe,
 	 		        void *data, unsigned short buf_len, struct devrequest *cmd)
 {
 	__u8 data_buf[16];

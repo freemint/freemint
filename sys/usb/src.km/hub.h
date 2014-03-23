@@ -80,10 +80,11 @@ long 		usb_hub_probe		(struct usb_device *dev, long ifnum);
 void 		usb_hub_reset		(void);
 long 		hub_port_reset		(struct usb_device *dev, long port,
 			  		 unsigned short *portstat);
-void		usb_rh_wakeup		(void);
+long		usb_rh_wakeup		(void);
 void		usb_hub_init		(struct usb_device *);
 void		usb_hub_thread		(void *);
 void		usb_hub_poll		(PROC *, long);
 void 		usb_hub_poll_thread	(void *);
+void		usb_hub_events		(struct usb_device *dev);
 
 #endif /*_HUB_H_ */

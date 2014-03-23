@@ -43,7 +43,6 @@ ucd_register(struct ucdif *a)
 	a->next = allucdifs;
 	allucdifs = a;
 
-	(void)Cconws("UCD REGISTER\n\r");
 	result = (*a->open)(a);
 	if (result)
 	{
@@ -51,7 +50,6 @@ ucd_register(struct ucdif *a)
 		return -1;
 	}
 
-	(void)Cconws("UCD LOWLEVEL\n\r");
         result = (*a->ioctl)(a, LOWLEVEL_INIT, 0);
         if (result)
         {
@@ -63,23 +61,21 @@ ucd_register(struct ucdif *a)
          * i.e. search HUBs and configure them 
          */
 
-        (void)Cconws("USB ALLOC1\r\n");
         dev = usb_alloc_new_device(a);
         if (!dev) 
 	{
-       		(void)Cconws("FAILED TO ALLOC NEW DEVICE\r\n");
 		return -1;
 	}
 	
-        (void)Cconws("USB ALLOC2\r\n");
 	if (usb_new_device(dev)) 
 	{
-       		(void)Cconws("FAILED TO ALLOC MASTER HUB\r\n");
 		return -1;
 	}
 
-        (void)Cconws("USB HUB INIT\r\n");
-	usb_hub_init(dev);
+	usb_hub_events(dev); /* let's look at the hub events immediately */
+
+// disabled for now.
+//	usb_hub_init(dev);
 
 	return 0;
 }

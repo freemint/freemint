@@ -275,7 +275,7 @@ static struct bios_partitions bios_part[USB_MAX_STOR_DEV];
 #define USB_STOR_TRANSPORT_FAILED -1
 #define USB_STOR_TRANSPORT_ERROR  -2
 
-#define DEFAULT_SECTOR_SIZE 512
+#define DEFAULT_SECTOR_SIZE 2048
 
 #define DOS_PART_TBL_OFFSET	0x1be
 #define DOS_PART_MAGIC_OFFSET	0x1fe
@@ -428,21 +428,10 @@ block_dev_desc_t *usb_stor_get_dev(long idx)
 void
 init_part(block_dev_desc_t *dev_desc)
 {
-#ifdef TOSONLY
-	unsigned char *buffer = (unsigned char *)Malloc(DEFAULT_SECTOR_SIZE);
-#else
-	unsigned char *buffer = (unsigned char *)kmalloc(DEFAULT_SECTOR_SIZE);
-#endif
-        if(buffer == NULL)
-                return;
+	unsigned char buffer[DEFAULT_SECTOR_SIZE];
 	if((dev_desc->block_read(dev_desc->dev, 0, 1, (unsigned long *)buffer) != 1)
 	 || (buffer[DOS_PART_MAGIC_OFFSET + 0] != 0x55) || (buffer[DOS_PART_MAGIC_OFFSET + 1] != 0xaa))
 	{
-#ifdef TOSONLY
-		Mfree(buffer);
-#else
-		kfree(buffer);
-#endif
 		return;
 	}
 	dev_desc->part_type = PART_TYPE_DOS;
@@ -484,11 +473,6 @@ init_part(block_dev_desc_t *dev_desc)
 		}
 	}			
 #endif	
-#ifdef TOSONLY
-	Mfree(buffer);
-#else
-	kfree(buffer);
-#endif
 }
 
 static inline long
@@ -646,7 +630,6 @@ usb_stor_irq(struct usb_device *dev)
 {
 	struct us_data *us;
 	us = (struct us_data *)dev->privptr;
-	c_conws("IRQ\r\n");
 	if(us->ip_wanted)
 		us->ip_wanted = 0;
 	return 0;
@@ -836,7 +819,7 @@ usb_stor_BBB_comdat(ccb *srb, struct us_data *us)
 	long actlen;
 	long dir_in;
 	unsigned long pipe;
-	umass_bbb_cbw_t cbw[sizeof(umass_bbb_cbw_t)];
+	umass_bbb_cbw_t cbw;
 	dir_in = US_DIRECTION(srb->cmd[0]);
 	DEBUG(("usb_stor_BBB_comdat: dir_in: %ld",dir_in));
 #ifdef BBB_COMDAT_TRACE
@@ -865,17 +848,17 @@ usb_stor_BBB_comdat(ccb *srb, struct us_data *us)
 	}
 	/* always OUT to the ep */
 	pipe = usb_sndbulkpipe(us->pusb_dev, (long)us->ep_out);
-	cbw->dCBWSignature = cpu2le32(CBWSIGNATURE);
-	cbw->dCBWTag = cpu2le32(CBWTag++);
-	cbw->dCBWDataTransferLength = cpu2le32(srb->datalen);
-	cbw->bCBWFlags = (dir_in ? CBWFLAGS_IN : CBWFLAGS_OUT);
-	cbw->bCBWLUN = srb->lun;
-	cbw->bCDBLength = srb->cmdlen;
+	cbw.dCBWSignature = cpu2le32(CBWSIGNATURE);
+	cbw.dCBWTag = cpu2le32(CBWTag++);
+	cbw.dCBWDataTransferLength = cpu2le32(srb->datalen);
+	cbw.bCBWFlags = (dir_in ? CBWFLAGS_IN : CBWFLAGS_OUT);
+	cbw.bCBWLUN = srb->lun;
+	cbw.bCDBLength = srb->cmdlen;
 	/* copy the command data into the CBW command data buffer */
 	/* DST SRC LEN!!! */
-	memcpy(&cbw->CBWCDB, srb->cmd, srb->cmdlen);
+	memcpy(&cbw.CBWCDB, srb->cmd, srb->cmdlen);
 
-	result = usb_bulk_msg(us->pusb_dev, pipe, cbw, UMASS_BBB_CBW_SIZE, &actlen, USB_CNTL_TIMEOUT * 5, 0);
+	result = usb_bulk_msg(us->pusb_dev, pipe, &cbw, UMASS_BBB_CBW_SIZE, &actlen, USB_CNTL_TIMEOUT * 5, 0);
 	if(result < 0)
 	{
 		DEBUG(("usb_stor_BBB_comdat:usb_bulk_msg error"));
@@ -1003,14 +986,13 @@ usb_stor_BBB_transport(ccb *srb, struct us_data *us)
 	unsigned char *ptr;
 	long idx;
 #endif
-	umass_bbb_csw_t csw[sizeof(umass_bbb_csw_t)];
+	umass_bbb_csw_t csw;
 	dir_in = US_DIRECTION(srb->cmd[0]);
 	/* COMMAND phase */
 	DEBUG(("COMMAND phase"));
 	result = usb_stor_BBB_comdat(srb, us);
 	if(result < 0)
 	{
-		c_conws("failed to send CBW\r\n");
 		DEBUG(("failed to send CBW status %ld", us->pusb_dev->status));
 		usb_stor_BBB_reset(us);
 		return USB_STOR_TRANSPORT_FAILED;
@@ -1044,7 +1026,6 @@ usb_stor_BBB_transport(ccb *srb, struct us_data *us)
 	}
 	if(result < 0)
 	{
-		c_conws("usb_bulk_msg error status\r\n");
 		DEBUG(("usb_bulk_msg error status %ld", us->pusb_dev->status));
 		usb_stor_BBB_reset(us);
 		return USB_STOR_TRANSPORT_FAILED;
@@ -1066,7 +1047,7 @@ st:
 	retry = 0;
 again:
 	DEBUG(("STATUS phase"));
-	result = usb_bulk_msg(us->pusb_dev, pipein, csw, UMASS_BBB_CSW_SIZE, &actlen, USB_CNTL_TIMEOUT*5, 0);
+	result = usb_bulk_msg(us->pusb_dev, pipein, &csw, UMASS_BBB_CSW_SIZE, &actlen, USB_CNTL_TIMEOUT*5, 0);
 	/* special handling of STALL in STATUS phase */
 
 	if((result < 0) && (retry < 1) && (us->pusb_dev->status & USB_ST_STALLED))
@@ -1081,7 +1062,6 @@ again:
 
 	if(result < 0)
 	{
-		c_conws("usb_bulk_msg error status2\r\n");
 		DEBUG(("usb_bulk_msg error status %ld", us->pusb_dev->status));
 		usb_stor_BBB_reset(us);
 		return USB_STOR_TRANSPORT_FAILED;
@@ -1090,7 +1070,7 @@ again:
 	unsigned char buf2[UMASS_BBB_CSW_SIZE * 16];
 
 	sprintf(buf2, sizeof(buf2),"\0");
-	ptr = (unsigned char *)csw;
+	ptr = (unsigned char *)&csw;
 	for(idx = 0; idx < UMASS_BBB_CSW_SIZE; idx++)
 	{
 		sprintf(build_str, sizeof(build_str), "ptr[%ld] 0x%x ", idx, ptr[idx]);
@@ -1099,46 +1079,40 @@ again:
 	DEBUG((buf2));
 #endif
 	/* misuse pipe to get the residue */
-	pipe = le2cpu32(csw->dCSWDataResidue);
+	pipe = le2cpu32(csw.dCSWDataResidue);
 	if(pipe == 0 && srb->datalen != 0 && srb->datalen - data_actlen != 0)
 		pipe = srb->datalen - data_actlen;
-	if(CSWSIGNATURE != le2cpu32(csw->dCSWSignature))
+	if(CSWSIGNATURE != le2cpu32(csw.dCSWSignature))
 	{
-		c_conws("bad signature\r\n");
 		DEBUG(("!CSWSIGNATURE"));
 		usb_stor_BBB_reset(us);
 		return USB_STOR_TRANSPORT_FAILED;
 	}
-	else if((CBWTag - 1) != le2cpu32(csw->dCSWTag))
+	else if((CBWTag - 1) != le2cpu32(csw.dCSWTag))
 	{
-		c_conws("bad tag\r\n");
 		DEBUG(("!Tag"));
 		usb_stor_BBB_reset(us);
 		return USB_STOR_TRANSPORT_FAILED;
 	}
-	else if(csw->bCSWStatus > CSWSTATUS_PHASE)
+	else if(csw.bCSWStatus > CSWSTATUS_PHASE)
 	{
-		c_conws("bad phase\r\n");
 		DEBUG((">PHASE"));
 		usb_stor_BBB_reset(us);
 		return USB_STOR_TRANSPORT_FAILED;
 	}
-	else if(csw->bCSWStatus == CSWSTATUS_PHASE)
+	else if(csw.bCSWStatus == CSWSTATUS_PHASE)
 	{
-		c_conws("bad phase2\r\n");
 		DEBUG(("=PHASE"));
 		usb_stor_BBB_reset(us);
 		return USB_STOR_TRANSPORT_FAILED;
 	}
 	else if(data_actlen > srb->datalen)
 	{
-		c_conws("bad transfer\r\n");
 		DEBUG(("transferred %dB instead of %ldB", data_actlen, srb->datalen));
 		return USB_STOR_TRANSPORT_FAILED;
 	}
-	else if(csw->bCSWStatus == CSWSTATUS_FAILED)
+	else if(csw.bCSWStatus == CSWSTATUS_FAILED)
 	{
-		c_conws("failure\r\n");
 		DEBUG(("FAILED"));
 		return USB_STOR_TRANSPORT_FAILED;
 	}
@@ -1162,12 +1136,10 @@ do_retry:
 	/* if this is an CBI Protocol, get IRQ */
 	if(us->protocol == US_PR_CBI)
 	{
-		c_conws("CBI GET IRQ\r\n");
 		status = usb_stor_CBI_get_status(srb, us);
 		/* if the status is error, report it */
 		if(status == USB_STOR_TRANSPORT_ERROR)
 		{
-			c_conws("CBI ERROR\r\n");
 			DEBUG((" USB CBI Command Error"));
 			return status;
 		}
@@ -1187,14 +1159,12 @@ do_retry:
 	/* HERE we have to check the result */
 	if((result < 0) && !(us->pusb_dev->status & USB_ST_STALLED))
 	{
-		c_conws("CBI STALLED\r\n");
 		DEBUG(("ERROR %lx", us->pusb_dev->status));
 		us->transport_reset(us);
 		return USB_STOR_TRANSPORT_ERROR;
 	}
 	if((us->protocol == US_PR_CBI) && ((srb->cmd[0] == SCSI_REQ_SENSE) || (srb->cmd[0] == SCSI_INQUIRY)))
 	{
-		c_conws("CBI NO REQ\r\n");
 		/* do not issue an autorequest after request sense */
 		DEBUG(("No auto request and good"));
 		return USB_STOR_TRANSPORT_GOOD;
@@ -1216,7 +1186,6 @@ do_retry:
 	if((result < 0) && !(us->pusb_dev->status & USB_ST_STALLED))
 	{
 		DEBUG((" AUTO REQUEST ERROR %ld", us->pusb_dev->status));
-		c_conws("CBI AUTO REQ ERROR\r\n");
 		return USB_STOR_TRANSPORT_ERROR;
 	}
 	DEBUG(("autorequest returned 0x%02x 0x%02x 0x%02x 0x%02x", srb->sense_buf[0], srb->sense_buf[2], srb->sense_buf[12], srb->sense_buf[13]));
@@ -1236,7 +1205,6 @@ do_retry:
 			if(notready++ > USB_TRANSPORT_NOT_READY_RETRY)
 			{
 				DEBUG(("cmd 0x%02x returned 0x%02x 0x%02x 0x%02x 0x%02x (NOT READY)", srb->cmd[0], srb->sense_buf[0], srb->sense_buf[2], srb->sense_buf[12], srb->sense_buf[13]));
-				c_conws("CBI NOT READY ERROR\r\n");
 				return USB_STOR_TRANSPORT_FAILED;
 			}
 			else
@@ -1251,14 +1219,12 @@ do_retry:
 				DEBUG(("cmd 0x%02x returned 0x%02x 0x%02x 0x%02x 0x%02x", 
 					       srb->cmd[0], srb->sense_buf[0], srb->sense_buf[2],
 					       srb->sense_buf[12], srb->sense_buf[13]));
-				c_conws("CBI NOT UNKNOWN ERROR\r\n");
 				return USB_STOR_TRANSPORT_FAILED;
 			}
 			else
 				goto do_retry;
 			break;
 	}
-	c_conws("CBI TRANSPORT FAILED\r\n");
 	return USB_STOR_TRANSPORT_FAILED;
 }
 
@@ -1419,7 +1385,6 @@ usb_stor_read(long device, unsigned long blknr, unsigned long blkcnt, void *buff
 	long retry;
 	ccb srb;
 
-	c_conws("READING\r\n");
 
 	if(blkcnt == 0)
 		return 0;
@@ -1438,7 +1403,6 @@ usb_stor_read(long device, unsigned long blknr, unsigned long blkcnt, void *buff
 	DEBUG(("usb_read: dev %ld startblk %lx, blccnt %lx buffer %lx", device, start, blks, buf_addr));
 
 	if (blks * usb_dev_desc[device].blksz > DEFAULT_SECTOR_SIZE) {
-		c_conws("OUCH!\r\n");
 	}
 
 	do
@@ -1455,7 +1419,6 @@ retry_it:
 		srb.pdata = (unsigned char *)buf_addr;
 		if(usb_read_10(&srb, ss, start, smallblks))
 		{
-			c_conws("READ ERROR\r\n");
 			DEBUG(("Read ERROR"));
 			usb_request_sense(&srb, ss);
 			if(retry--)
@@ -1484,7 +1447,6 @@ usb_stor_write(long device, unsigned long blknr, unsigned long blkcnt, const voi
 	long retry;
 	ccb srb;
 	
-	c_conws("WRITING\r\n");
 	if(blkcnt == 0)
 		return 0;
 	device &= 0xff;
@@ -1700,13 +1662,11 @@ usb_stor_get_info(struct usb_device *dev, struct us_data *ss, block_dev_desc_t *
 	pccb.lun = dev_desc->lun;
 	DEBUG(("address %d", dev_desc->target));
 	if(usb_inquiry(&pccb, ss)) {
-		c_conws("INQUIRY FAILED\n\r");
 		return -1;
 	}
 	perq = usb_stor_buf[0];
 	modi = usb_stor_buf[1];
 	if((perq & 0x1f) == 0x1f) {
-		c_conws("UNKNOWN DEVICE\n\r");
 		/* skip unknown devices */
 		return 0;
 	}
@@ -1727,10 +1687,8 @@ usb_stor_get_info(struct usb_device *dev, struct us_data *ss, block_dev_desc_t *
 	if(usb_test_unit_ready(&pccb, ss))
 	{
 		DEBUG(("Device NOT ready\r\n   Request Sense returned %02x %02x %02x", pccb.sense_buf[2], pccb.sense_buf[12], pccb.sense_buf[13]));
-		c_conws("DEVICE NOT READY\n\r");
 		if(dev_desc->removable == 1)
 		{
-			c_conws("DEVICE REMOVEABLE\n\r");
 			dev_desc->type = perq;
 			return 1;
 		}
@@ -1762,7 +1720,7 @@ usb_stor_get_info(struct usb_device *dev, struct us_data *ss, block_dev_desc_t *
 	dev_desc->type = perq;
 	DEBUG((" address %d", dev_desc->target));
 	DEBUG(("partype: %d", dev_desc->part_type));
-	//init_part(dev_desc);
+	init_part(dev_desc);
 	DEBUG(("partype: %d", dev_desc->part_type));
 	return 1;
 }
@@ -1854,7 +1812,6 @@ usb_storage_probe(struct usb_device *dev)
 	if(dev == NULL)
 		return -1;
 	
-	c_conws("PROBING STORAGE DEVICE\r\n");
 	for (i = 0; i < USB_MAX_STOR_DEV; i++)
 	{
 		if (usb_dev_desc[i].target == 0xff)
@@ -1862,7 +1819,6 @@ usb_storage_probe(struct usb_device *dev)
 			break;
 		}
 	}
-	c_conws("PROBING STORAGE DEVICE2\r\n");
 
 	/* if storage device */
 	if(i == USB_MAX_STOR_DEV)
@@ -1872,24 +1828,19 @@ usb_storage_probe(struct usb_device *dev)
 	}
 
 	usb_disable_asynch(1); /* asynch transfer not allowed */
-	c_conws("PROBING STORAGE DEVICE3\r\n");
 
 	if(!usb_stor_probe(dev, 0, &usb_stor[i])) {
 		usb_disable_asynch(0); /* asynch transfer allowed */
-		c_conws("NOT A STORAGE DEVICE\r\n");
 		return -1; /* It's not a storage device */
 	}
-	c_conws("PROBING STORAGE DEVICE4\r\n");
 
 	/* ok, it is a storage devices
 	 * get info and fill it in
 	 */
 	if(!usb_stor_get_info(dev, &usb_stor[i], &usb_dev_desc[i])) {
 		usb_disable_asynch(0); /* asynch transfer allowed */
-		c_conws("FAILED TO GET STORAGE INFO\r\n");
 		return -1;
 	}
-	c_conws("PROBING STORAGE DEVICE5\r\n");
 	
 	usb_disable_asynch(0); /* asynch transfer allowed */
 
@@ -1900,12 +1851,13 @@ usb_storage_probe(struct usb_device *dev)
 	long part_num = 1;
 	unsigned long part_type, part_offset, part_size;
 	
-	c_conws("REGISTERING FAT DEVICE\r\n");
 	/* Now find partitions in this storage device */	
 	while (!fat_register_device(stor_dev, part_num, &part_type, 
 				    &part_offset, &part_size))
 	{
-		c_conws("INSTALLING PARTITION\r\n");
+#ifdef TOSONLY
+		long ret = Super(0L);
+#endif
 		/* install partition */
 		r = install_usb_stor(dev_num, part_type, part_offset, 
 				     part_size, stor_dev->vendor, 
@@ -1915,7 +1867,6 @@ usb_storage_probe(struct usb_device *dev)
 		else
 		{
 			/* inform the kernel about media change */
-			c_conws("PARTITION INSTALL SUCCESS!\r\n");
 #ifdef TOSONLY
 			(void)Mediach(r);
 #else
@@ -1925,6 +1876,9 @@ usb_storage_probe(struct usb_device *dev)
 			bios_part[dev_num].partnum = part_num;
 		}	
 		part_num++;
+#ifdef TOSONLY
+		SuperToUser(ret);
+#endif
 	}
 	return 0;
 }
