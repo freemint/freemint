@@ -201,7 +201,7 @@ init(struct kentry *k, const struct kernel_module *km)
 #ifdef TOSONLY
 	{
 		/* set additional memory to 64KB */
-		unsigned long size = _PgmSize + 65536;
+		unsigned long size = _PgmSize + 131072;
 
 		/* Set the _USB API cookie */
                 Supexec(set_cookie);

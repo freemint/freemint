@@ -20,6 +20,7 @@ TOSCOBJS = \
 
 TOSSSOBJS = \
         entry.S \
-        setstack.S
+        setstack.S \
+	xhdiasm.S
 
 SRCFILES = $(HEADER) $(SSOBJS) $(COBJS) $(TOSCOBJS) $(TOSSSOBJS)

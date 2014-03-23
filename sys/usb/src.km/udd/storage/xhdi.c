@@ -86,6 +86,7 @@ extern void usb_stor_eject(long);
 /*--- Functions prototypes ---*/
 
 typedef long (*XHDI_HANDLER)(ushort opcode, ...);
+extern XHDI_HANDLER usbxhdi;
 static XHDI_HANDLER next_handler; /* Next handler installed by XHNewCookie() */
 
 long install_xhdi_driver(void);
@@ -859,23 +860,58 @@ static cookie_fun
 get_fun_ptr (void)
 {
 	static cookie_fun XHDI = NULL;
-	static char have_it = 0;
+	long *magic_test;
 	
-	if (!have_it)
-	{
-		long *magic_test;
-	
-		getcookie (*((long *)"XHDI"), (long *)&XHDI);
-		have_it = 1;
+	getcookie (*((long *)"XHDI"), (long *)&XHDI);
 
-		/* check magic */
+	/* check magic */
 		
-		magic_test = (long *)XHDI;
-		if (magic_test && (magic_test[-1] != XHDIMAGIC))
-			XHDI = NULL;
-	}
+	magic_test = (long *)XHDI;
+	if (magic_test && (magic_test[-1] != XHDIMAGIC))
+		XHDI = NULL;
 	
 	return XHDI;
+}
+#endif
+
+#ifdef TOSONLY
+struct cookie
+{
+	long tag;
+	long value;
+};
+
+#define XHDICOOKIE 0x58484449L
+# define CJAR           ((struct cookie **) 0x5a0)
+
+static void
+set_cookie (void)
+{
+	struct cookie *cjar = *CJAR;
+	int n = 0;
+
+	while (cjar->tag)
+	{
+		n++;
+		if (cjar->tag == XHDICOOKIE)
+		{
+			cjar->value = (long)&usbxhdi;
+			return;
+		}
+		cjar++;
+	}
+
+	n++;
+	if (n < cjar->value)
+	{
+		n = cjar->value;
+		cjar->tag = XHDICOOKIE;
+		cjar->value = (long)&usbxhdi;
+
+		cjar++;
+		cjar->tag = 0L;
+		cjar->value = n;
+	}
 }
 #endif
 
@@ -884,8 +920,16 @@ install_xhdi_driver(void)
 {
         long r = 0;
 #ifdef TOSONLY
+#if 0
 	cookie_fun XHDI = get_fun_ptr ();
         r = XHDI (9, *xhdi_handler);
+#else
+	cookie_fun XHDI = get_fun_ptr ();
+	next_handler = XHDI;
+	set_cookie();
+	XHDI = get_fun_ptr ();
+	r = XHDI(0);
+#endif
 #else
 	r = xhnewcookie(*xhdi_handler);
 #endif

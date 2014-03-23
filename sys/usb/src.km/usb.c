@@ -85,20 +85,16 @@ void usb_init(void)
 {
 	int i;
 
-	(void)Cconws("USB1\n\r");
 	DEBUG(("usb_init"));
 
-	(void)Cconws("USB2\n\r");
 	asynch_allowed = 1;
 	usb_hub_reset();
-	(void)Cconws("USB3\n\r");
 
         /* first make all devices unknown */
         for (i = 0; i < USB_MAX_DEVICE; i++) {
                 memset(&usb_dev[i], 0, sizeof(struct usb_device));
                 usb_dev[i].devnum = -1;
         }
-	(void)Cconws("USB4\n\r");
 }
 
 /******************************************************************************
@@ -149,7 +145,7 @@ long usb_submit_int_msg(struct usb_device *dev, unsigned long pipe,
 	arg.transfer_len = transfer_len;
 	arg.interval =  interval;
 	
-	return (*ucd->ioctl)(ucd, SUBMIT_INT_MSG, (long)&arg);
+	return ucd_ioctl(ucd, SUBMIT_INT_MSG, (long)&arg);
 }
 
 /*
@@ -192,7 +188,7 @@ long usb_control_msg(struct usb_device *dev, unsigned long pipe,
 	arg.size = size;
 	arg.setup = &setup_packet;
 
-	r = (*ucd->ioctl)(ucd, SUBMIT_CONTROL_MSG, (long)&arg);
+	r = ucd_ioctl(ucd, SUBMIT_CONTROL_MSG, (long)&arg);
 	if (timeout == 0)
 	{
 		DEBUG(("size %d \r", size));
@@ -241,7 +237,7 @@ long usb_bulk_msg(struct usb_device *dev, unsigned long pipe,
 	arg.len = len;
 	arg.flags = flags;
 
-	r = (*ucd->ioctl)(ucd, SUBMIT_BULK_MSG, (long)&arg);
+	r = ucd_ioctl(ucd, SUBMIT_BULK_MSG, (long)&arg);
 
 	while (timeout--) {
 		if (!((volatile unsigned long)dev->status & USB_ST_NOT_PROC))
