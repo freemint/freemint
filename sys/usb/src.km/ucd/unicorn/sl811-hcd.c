@@ -599,6 +599,7 @@ submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 	       devnum, ep, buffer, len, setup->requesttype,
 	       setup->request, sl811_read(SL811_SOFCNTDIV)*64));
 #endif
+	LOCKUSB;
 
 	sl811_write(SL811_DEV_A, devnum);
 	sl811_write(SL811_PIDEP_A, PIDEP(USB_PID_SETUP, ep));
