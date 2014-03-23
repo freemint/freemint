@@ -875,6 +875,7 @@ get_fun_ptr (void)
 #endif
 
 #ifdef TOSONLY
+#if 0
 struct cookie
 {
 	long tag;
@@ -914,13 +915,14 @@ set_cookie (void)
 	}
 }
 #endif
+#endif
 
 long
 install_xhdi_driver(void)
 {
         long r = 0;
 #ifdef TOSONLY
-#if 0
+#if 1
 	cookie_fun XHDI = get_fun_ptr ();
         r = XHDI (9, *xhdi_handler);
 #else
