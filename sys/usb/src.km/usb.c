@@ -111,7 +111,7 @@ void usb_stop(void)
 	asynch_allowed = 1;
 
 	for (a = allucdifs; a; a = a->next) {
-		ucd_ioctl(allucdifs, LOWLEVEL_STOP, 0);
+		(*a->ioctl)(a, LOWLEVEL_STOP, 0);
 	}
 }
 
@@ -122,7 +122,7 @@ void usb_stop(void)
  */
 long usb_disable_asynch(long disable)
 {
-	int old_value = asynch_allowed;
+	long old_value = asynch_allowed;
 
 	asynch_allowed = !disable;
 	return old_value;
@@ -141,6 +141,7 @@ long usb_submit_int_msg(struct usb_device *dev, unsigned long pipe,
 			void *buffer, long transfer_len, long interval)
 {
 	struct int_msg arg;
+	struct ucdif *ucd = dev->controller;
 	
 	arg.dev = dev;
 	arg.pipe = pipe;
@@ -148,7 +149,7 @@ long usb_submit_int_msg(struct usb_device *dev, unsigned long pipe,
 	arg.transfer_len = transfer_len;
 	arg.interval =  interval;
 	
-	return (ucd_ioctl(allucdifs, SUBMIT_INT_MSG, (long)&arg));
+	return (*ucd->ioctl)(ucd, SUBMIT_INT_MSG, (long)&arg);
 }
 
 /*
@@ -168,6 +169,7 @@ long usb_control_msg(struct usb_device *dev, unsigned long pipe,
 	struct control_msg arg;
 	struct devrequest setup_packet;
 	long r;
+	struct ucdif *ucd = dev->controller;
 
 	if ((timeout == 0) && (!asynch_allowed)) {
 		/* request for a asynch control pipe is not allowed */
@@ -190,7 +192,7 @@ long usb_control_msg(struct usb_device *dev, unsigned long pipe,
 	arg.size = size;
 	arg.setup = &setup_packet;
 
-	r = ucd_ioctl(allucdifs, SUBMIT_CONTROL_MSG, (long)&arg);
+	r = (*ucd->ioctl)(ucd, SUBMIT_CONTROL_MSG, (long)&arg);
 	if (timeout == 0)
 	{
 		DEBUG(("size %d \r", size));
@@ -226,6 +228,7 @@ long usb_bulk_msg(struct usb_device *dev, unsigned long pipe,
 {
 	struct bulk_msg arg;
 	long r;
+	struct ucdif *ucd = dev->controller;
 
 	if (len < 0)
 		return -1;
@@ -238,7 +241,7 @@ long usb_bulk_msg(struct usb_device *dev, unsigned long pipe,
 	arg.len = len;
 	arg.flags = flags;
 
-	r = ucd_ioctl(allucdifs, SUBMIT_BULK_MSG, (long)&arg);
+	r = (*ucd->ioctl)(ucd, SUBMIT_BULK_MSG, (long)&arg);
 
 	while (timeout--) {
 		if (!((volatile unsigned long)dev->status & USB_ST_NOT_PROC))
