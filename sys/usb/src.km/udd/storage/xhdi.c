@@ -74,7 +74,6 @@ char *DRIVER_COMPANY = "FreeMiNT list";
 
 extern char *drv_version;
 extern long usb_1st_disk_drive;
-extern short max_logical_drive;
 
 /* --- External functions ---*/
 
