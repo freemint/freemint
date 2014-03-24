@@ -166,6 +166,7 @@ long usb_control_msg(struct usb_device *dev, unsigned long pipe,
 	struct devrequest setup_packet;
 	long r;
 	struct ucdif *ucd = dev->controller;
+	(void) r;
 
 	if ((timeout == 0) && (!asynch_allowed)) {
 		/* request for a asynch control pipe is not allowed */
@@ -225,6 +226,7 @@ long usb_bulk_msg(struct usb_device *dev, unsigned long pipe,
 	struct bulk_msg arg;
 	long r;
 	struct ucdif *ucd = dev->controller;
+	(void) r;
 
 	if (len < 0)
 		return -1;

@@ -486,6 +486,7 @@ usb_hub_events(struct usb_device *dev)
 	long i;
 	struct usb_hub_device *hub;
 //	struct usb_hub_status hubsts;
+	(void) hub;
 
 	hub = dev->privptr;
 
@@ -493,6 +494,7 @@ usb_hub_events(struct usb_device *dev)
 	{
 		struct usb_port_status portsts;
 		unsigned short portstatus, portchange;
+		(void) portstatus;
 
 		if (usb_get_port_status(dev, i + 1, &portsts) < 0)
 		{
