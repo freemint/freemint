@@ -75,7 +75,6 @@ char *DRIVER_COMPANY = "FreeMiNT list";
 extern char *drv_version;
 extern long usb_1st_disk_drive;
 extern short max_logical_drive;
-#define MAX_LOGICAL_DRIVE	max_logical_drive
 
 /* --- External functions ---*/
 
@@ -97,7 +96,6 @@ long xhdi_handler(ushort stack);
 long my_drvbits;
 long product_name[32];
 PUN_INFO pun_usb;
-PUN_INFO *pun_ptr_usb;
 
 /*---Functions ---*/
 
@@ -141,11 +139,11 @@ static long
 XHInqDev2(ushort drv, ushort *major, ushort *minor, ulong *start, BPB *bpb,
 	  ulong *blocks, char *partid)
 {
-	long pstart = pun_ptr_usb->partition_start[drv];
+	long pstart = pun_usb.partition_start[drv];
 	BPB *myBPB;
 
 	DEBUG(("XHInqDev2(%c:) drv=%d pun %x",
-		'A' + drv, drv, pun_ptr_usb->pun[drv]));
+		'A' + drv, drv, pun_usb.pun[drv]));
 
 	if (next_handler) {
 		long ret = next_handler(XHINQDEV2, drv, major, minor, start,
@@ -159,7 +157,7 @@ XHInqDev2(ushort drv, ushort *major, ushort *minor, ulong *start, BPB *bpb,
 		return ENODEV;
 
 	if (major) {
-		*major = (PUN_DEV+PUN_USB) & pun_ptr_usb->pun[drv];
+		*major = (PUN_DEV+PUN_USB) & pun_usb.pun[drv];
 		DEBUG(("XHInqDev2() major: %d", *major));
 	}
 	if (minor)
@@ -175,7 +173,7 @@ XHInqDev2(ushort drv, ushort *major, ushort *minor, ulong *start, BPB *bpb,
 		DEBUG(("XHInqDev2() pstart: %lx", *start));
 	}
 
-	myBPB = (&pun_ptr_usb->bpb[drv]);
+	myBPB = (&pun_usb.bpb[drv]);
 
 	if (bpb) {
 		memcpy(bpb, myBPB, sizeof(BPB));
@@ -193,18 +191,18 @@ XHInqDev2(ushort drv, ushort *major, ushort *minor, ulong *start, BPB *bpb,
 	}
 
 	if (blocks) {
-		*blocks = pun_ptr_usb->psize[drv];
+		*blocks = pun_usb.psize[drv];
 		DEBUG(("XHInqDev2(%c:) blocks=%ld",
 			'A' + drv, *blocks));
 	}
 
 	if (partid) {
-		memcpy(partid, &pun_ptr_usb->ptype[drv], sizeof(long));
+		memcpy(partid, &pun_usb.ptype[drv], sizeof(long));
 
 		if (partid[0] == '\0') /* DOS partitiopn */
 			DEBUG(("XHInqDev2(%c:) major=%d, partid=%08lx",
 				'A' + drv, *major, *((long *)partid),
-				pun_ptr_usb->ptype[drv]));
+				pun_usb.ptype[drv]));
 		else
 			DEBUG(("XHInqDev2(%c:) major=%d, ID=%c%c%c",
 				'A' + drv, *major, partid[0], partid[1],
@@ -290,7 +288,7 @@ XHEject(ushort major, ushort minor, ushort do_eject, ushort key)
 		return ENODEV;
 
 	/* device number in the USB bus */
-	short dev = pun_ptr_usb->dev_num[major & PUN_DEV];
+	short dev = pun_usb.dev_num[major & PUN_DEV];
 
 	usb_stor_eject(dev);
 
@@ -315,7 +313,7 @@ XHInqDriver(ushort dev, char *name, char *version, char *company,
 	name = DRIVER_NAME;
 	version = drv_version;
 	company = DRIVER_COMPANY;
-	memcpy(ahdi_version, &(pun_ptr_usb->version_num), sizeof(short));
+	memcpy(ahdi_version, &(pun_usb.version_num), sizeof(short));
 	*max_IPL = MAX_IPL;
 
 	return ENOSYS;
@@ -512,7 +510,7 @@ XHReadWrite(ushort major, ushort minor, ushort rw,
 		return EERROR;
 
 	/* device number in the USB bus */
-	short dev = pun_ptr_usb->dev_num[major & PUN_DEV];
+	short dev = pun_usb.dev_num[major & PUN_DEV];
 
 	if (rw & 0x0001) {
 		ret = usb_stor_write(dev, sector, (long)count, buf);
@@ -921,6 +919,7 @@ long
 install_xhdi_driver(void)
 {
         long r = 0;
+	memset(&pun_usb, 0, sizeof(pun_usb));
 #ifdef TOSONLY
 #if 1
 	cookie_fun XHDI = get_fun_ptr ();
