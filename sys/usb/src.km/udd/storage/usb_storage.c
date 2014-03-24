@@ -155,18 +155,12 @@ static struct uddif storage_uif =
 /*
  * External prototypes
  */
-extern void ltoa		(char *buf, long n, unsigned long base);
 extern long install_usb_stor	(long dev_num, unsigned long part_type, 
 			     	 unsigned long part_offset, unsigned long part_size, 
 			     	 char *vendor, char *revision, char *product);
 extern long uninstall_usb_stor	(long dev_num);
 
-/* Both these used by bios.S */
-#ifdef TOSONLY
-unsigned long max_logical_drive = 16;
-#else
-unsigned long max_logical_drive = 32;
-#endif
+/* Used by bios.S */
 unsigned long usb_1st_disk_drive = 0;
 
 /* direction table -- this indicates the direction of the data
@@ -380,7 +374,6 @@ bconout_from_S(short c)
 	b_ubconout(2, c); /* Console */
 #endif
 }
-
 
 /* --- Inteface functions -------------------------------------------------- */
 

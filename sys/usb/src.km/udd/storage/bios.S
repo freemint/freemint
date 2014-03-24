@@ -23,16 +23,16 @@
 #include "../../config.h"
 #include "vars.h"
 
-#undef pun_ptr
-#define pun_ptr _pun_ptr_usb
-
-	.global	_max_logical_drive
-
-#define MAX_LOGICAL_DRIVE	_max_logical_drive
+// FixME - defined in xhdi.h as well
+#ifdef TOSONLY
+#define MAX_LOGICAL_DRIVE	16
+#else
+#define MAX_LOGICAL_DRIVE	32
+#endif
 
 	.extern _usb_stor_read,_usb_stor_write 
 	.extern _cconws_from_S, _dsetdrive_from_S, _install_xhdi_driver
-	.extern _product_name, _pun_ptr_usb, _pun_usb
+	.extern _product_name, _pun_usb
 	.extern _my_drvbits, _usb_1st_disk_drive
 
 	.global _install_usb_stor,_uninstall_usb_stor
@@ -55,20 +55,19 @@
 #define PUN_REMOVABLE     0x40 /* Removable media */
 #define PUN_VALID         0x80 /* zero if valid */
 
-#define pinfo_puns      0  // 2 bytes
-#define pinfo_pun       2  // 32 bytes
-#define pinfo_pstart   34  // 32 x 4 bytes
-#define pinfo_cookie  162  // 4 bytes
-#define pinfo_cookptr 166  // 4 bytes
-#define pinfo_vernum  170  // 2 bytes
-#define pinfo_maxsiz  172  // 2 bytes
-#define pinfo_ptype   174  // 32 x 4 bytes
-#define pinfo_psize   302  // 32 x 4 bytes
-#define pinfo_flags   430  // 32 x 2 bytes, internal use: B15:swap, B7:change, B0:bootable
-#define pinfo_bpb     494  // 32 x 18 bytes
-#define pinfo_devnum 1070  // 32 bytes 
-#define pinfo_size   1102
-
+#define pinfo_puns    0 // 2 bytes
+#define pinfo_pun     2 // MAX_LOGICAL_DRIVE bytes
+#define pinfo_pstart  (pinfo_pun+MAX_LOGICAL_DRIVE) // MAX_LOGICAL_DRIVE x 4 bytes
+#define pinfo_cookie  (pinfo_pstart+(MAX_LOGICAL_DRIVE*4)) // 4 bytes
+#define pinfo_cookptr (pinfo_cookie+4) // 4 bytes
+#define pinfo_vernum  (pinfo_cookptr+4) // 2 bytes
+#define pinfo_maxsiz  (pinfo_vernum+2) // 2 bytes
+// not inside AHDI
+#define pinfo_ptype   (pinfo_maxsiz+2) // MAX_LOGICAL_DRIVE x 4 bytes
+#define pinfo_psize   (pinfo_ptype+(MAX_LOGICAL_DRIVE*4)) // MAX_LOGICAL_DRIVE x 4 bytes
+#define pinfo_flags   (pinfo_psize+(MAX_LOGICAL_DRIVE*4)) // MAX_LOGICAL_DRIVE x 2 bytes, internal use: B15:swap, B14:stop, B7:change, B0:bootable
+#define pinfo_bpb     (pinfo_flags+(MAX_LOGICAL_DRIVE*2)) // MAX_LOGICAL_DRIVE x 18 bytes
+#define pinfo_devnum  (pinfo_bpb+(MAX_LOGICAL_DRIVE*18))
 
 #ifdef DEBUG_BIOS_LAYER
 debug3:	
@@ -128,13 +127,12 @@ _install_usb_stor:
 	bne .no_pinfo
 .partition_ok:
 	lea _pun_usb,A3
-	move.l pinfo_cookie(A3),D0	// PUN_INFO already installed?
+	lea pinfo_cookie(A3),A0	// PUN_INFO already installed?
+	move.l A0,D0
 	cmp.l #0x41484449,D0		// AHDI
 	beq.s .pinfo_ok
-	move.l A3,pun_ptr
 	clr.w pinfo_puns(A3)
-	move.l #0x41484449,D0		// AHDI
-	move.l D0,pinfo_cookie(A3)
+	move.l #0x41484449,(A0)		// AHDI
 	move.w #0x0300,D0
 	move.w D0,pinfo_vernum(A3)
 	move.w #0x4000,D0
@@ -425,8 +423,8 @@ _uninstall_usb_stor:
 	bhi .error            // error
 
 .ahdi_part_num_limit_2:	
-	move.l pun_ptr,D0
-	move.l D0,A3
+	lea _pun_usb,A3
+	move.l A3,D0
 	moveq #-1,D0
 	move.b D0, pinfo_pun(A3,D3.l)
 	clr.l D0
@@ -453,7 +451,7 @@ old_hdv_bpb_usb:
 
 det_hdv_bpb_usb:
 	move.l A0,-(SP)
-	move.l pun_ptr,A0
+	lea _pun_usb,A0
  	moveq #0,D0
 	move.w 4+4(SP),D0        // drive
 	cmp.l _usb_1st_disk_drive,D0
@@ -470,13 +468,13 @@ det_hdv_bpb_usb:
 .dhbu1:
 	move.l D1,-(SP)
 	move.l A0,-(SP)
-	add.l pinfo_ptype,A0
+	lea pinfo_ptype(A0),A0
 	move.l D2,-(SP)
 	move.l D0,D2
 	add.l D2,D2
 	add.l D2,D2
 	move.l (A0,D2.l),D1
-	move (SP)+,D2
+	move.l (SP)+,D2
 	move.l (SP)+,A0
 
 	and.l #0xFFFFFF,D1
@@ -493,8 +491,11 @@ det_hdv_bpb_usb:
 	rts	
 .dhbu3:
 	lea pinfo_bpb(A0),A0
-	asl.l #5,D0              // * 32
+	mulu #18,D0              // * 18
 	add.l A0,D0
+//	move.l D0,A0		// sector size
+//	tst.w (A0)
+//	beq.s .dhbu4
 #ifdef DEBUG_BIOS_LAYER
 	move.l D0,-(SP)
 	moveq #0x30,D0
@@ -573,7 +574,7 @@ det_hdv_rw_usb:
 #endif
 	btst #3,5+28(SP)         // rwflag
 	bne.s .dhru8             // physical
-	move.l pun_ptr,A0
+	lea _pun_usb,A0
  	moveq #0,D0
 	move.w 14+28(SP),D0      // drive
 	cmp.l _usb_1st_disk_drive,D0
@@ -675,7 +676,7 @@ old_hdv_mediach_usb:
 
 det_hdv_mediach_usb:
 	move.l A0,-(SP)
-	move.l pun_ptr,A0
+	lea _pun_usb,A0
  	moveq #0,D0
 	move.w 4+4(SP),D0        // drive
 	cmp.l _usb_1st_disk_drive,D0

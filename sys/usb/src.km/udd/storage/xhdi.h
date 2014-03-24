@@ -47,20 +47,26 @@ typedef struct bpb BPB;
 
 /* Extended pun struct for USB */
 
+#ifdef TOSONLY
+#define MAX_LOGICAL_DRIVE 16
+#else
+#define MAX_LOGICAL_DRIVE 32
+#endif
+
 struct pun_info
 {
 	ushort	puns;			/* Number of HD's */
-	uchar	pun [32];		/* AND with masks below: */
-	long	partition_start [32];
+	uchar	pun [MAX_LOGICAL_DRIVE];		/* AND with masks below: */
+	long	partition_start [MAX_LOGICAL_DRIVE];
 	long	cookie;			/* 'AHDI' if following valid */
 	long	*cookie_ptr;		/* Points to 'cookie' */
 	ushort	version_num;		/* AHDI version */
 	ushort	max_sect_siz;		/* Max logical sec size */
-	long	ptype[32];
-	long	psize[32];
-	short	flags[32];		/* B15:swap, B7:change, B0:bootable */
-	BPB	bpb[32];
-	uchar	dev_num[32];
+	long	ptype[MAX_LOGICAL_DRIVE];
+	long	psize[MAX_LOGICAL_DRIVE];
+	short	flags[MAX_LOGICAL_DRIVE];		/* B15:swap, B7:change, B0:bootable */
+	BPB	bpb[MAX_LOGICAL_DRIVE];
+	uchar	dev_num[MAX_LOGICAL_DRIVE];
 
 } __attribute__((packed));
 typedef struct pun_info PUN_INFO;
