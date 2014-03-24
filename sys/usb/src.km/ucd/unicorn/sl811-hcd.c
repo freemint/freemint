@@ -1207,7 +1207,9 @@ init (struct kentry *k, struct usb_module_api *uapi, char **reason)
 	DEBUG (("%s: ucd register ok", __FILE__));
 
 #ifdef TOSONLY
-	Ptermres(_PgmSize + 65536,0);
+	c_conws("Unicorn USB driver installed.\r\n");
+
+	Ptermres(_PgmSize + 32768,0);
 #endif
 
 	return 0;

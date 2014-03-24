@@ -1981,6 +1981,8 @@ init (struct kentry *k, struct usb_module_api *uapi, long arg, long reason)
 	DEBUG (("%s: udd register ok", __FILE__));
 
 #ifdef TOSONLY
+	c_conws("USB storage driver installed.\r\n");
+
 	Ptermres(_PgmSize + 65536,0);
 #endif
 
