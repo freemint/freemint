@@ -41,16 +41,28 @@ struct usb_module_api usb_api;
 
 void	setup_usb_module_api(void);
 
+
+#define MSG_VERSION     "0.1.0"
+#define MSG_BUILDDATE   __DATE__
+
+#ifdef TOSONLY
+#define MSG_BOOT        \
+        "\033p USB core API driver for TOS" MSG_VERSION " \033q\r\n"
+#else
+#define MSG_BOOT        \
+        "\033p USB core API driver for FreeMiNT" MSG_VERSION " \033q\r\n"
+#endif
+
+#define MSG_GREET       \
+	"David Galvez 2010-2014.\r\n" \
+	"Alan Hourihane 2013-2014.\r\n" \
+        "Compiled " MSG_BUILDDATE ".\r\n\r\n"
+
 static void
 bootmessage(void)
 {
-#ifdef TOSONLY
-	c_conws("USB driver for TOS\n\r");
-#else
-	c_conws("USB driver for MiNT\n\r");
-#endif
-	c_conws("David Galvez. 2010-2014\n\r");
-	c_conws("Alan Hourihane. 2014\n\r");
+	c_conws(MSG_BOOT);
+	c_conws(MSG_GREET);
 }
 
 struct kentry *kentry;
@@ -200,11 +212,13 @@ init(struct kentry *k, const struct kernel_module *km)
 
 #ifdef TOSONLY
 	{
-		/* set additional memory to 64KB */
-		unsigned long size = _PgmSize + 131072;
+		/* set additional memory to 32KB */
+		unsigned long size = _PgmSize + 32768;
 
 		/* Set the _USB API cookie */
                 Supexec(set_cookie);
+
+		c_conws("USB core installed.\r\n");
 
 		/* terminate and stay resident */
 		Ptermres(size, 0);
