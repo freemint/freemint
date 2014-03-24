@@ -513,7 +513,6 @@ usb_hub_events(struct usb_device *dev)
 			usb_hub_port_connect_change(dev, i);
 		}
 
-#if 0
 		if (portchange & USB_PORT_STAT_C_ENABLE)
 		{
 			DEBUG(("port %ld enable change, status %x",
@@ -555,10 +554,8 @@ usb_hub_events(struct usb_device *dev)
 			usb_clear_port_feature(dev, i + 1,
 						USB_PORT_FEAT_C_RESET);
 		}
-#endif
 	} /* end for i all ports */
 
-#if 0
 	/* now do hub status */
 	if (usb_get_hub_status(dev, &hubsts) < 0) {
 		DEBUG(("usb_hub_events: failed to get Status %lx",
@@ -588,7 +585,6 @@ usb_hub_events(struct usb_device *dev)
 			}
 		}
 	}
-#endif
 }
 
 #ifndef TOSONLY

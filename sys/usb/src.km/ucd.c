@@ -74,8 +74,10 @@ ucd_register(struct ucdif *a)
 
 	usb_hub_events(dev); /* let's look at the hub events immediately */
 
-// disabled for now.
-//	usb_hub_init(dev);
+#ifndef TOSONLY
+	// disabled for now.
+	usb_hub_init(dev);
+#endif
 
 	return 0;
 }
