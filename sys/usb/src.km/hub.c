@@ -485,7 +485,7 @@ usb_hub_events(struct usb_device *dev)
 {
 	long i;
 	struct usb_hub_device *hub;
-//	struct usb_hub_status hubsts;
+	struct usb_hub_status hubsts;
 	(void) hub;
 
 	hub = dev->privptr;
