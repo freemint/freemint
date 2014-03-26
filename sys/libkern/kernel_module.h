@@ -950,9 +950,7 @@ check_kentry_version(void)
 
 # define ROM_Setexc(vnum,vptr)	(void (*)(void))trap_13_emu(0x05,(short)(vnum),(long)(vptr))
 
-#ifdef XHDI_MASS_STORAGE_SUPPORT
 # define xhnewcookie		(*KENTRY->vec_misc.XHNewCookie)
-#endif
 
 /*
  * kentry_debug
