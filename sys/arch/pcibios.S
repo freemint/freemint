@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-#ifdef PCI_BIOS
+
 	.global _tab_funcs_pci
 	.global _Find_pci_device,_Find_pci_classcode,_Read_config_byte,_Read_config_word,_Read_config_longword
 	.global _Fast_read_config_byte,_Fast_read_config_word,_Fast_read_config_longword,_Write_config_byte,_Write_config_word,_Write_config_longword
@@ -28,6 +28,7 @@
 	.global _Write_io_byte,_Write_io_word,_Write_io_longword,_Get_machine_id
 	.global _Get_pagesize,_Virt_to_bus,_Bus_to_virt,_Virt_to_phys,_Phys_to_virt
 
+#ifdef PCI_BIOS
 _Find_pci_device:
 	move.l 4(SP),D0          // ID
 	move.l 8(SP),D1          // index
@@ -425,4 +426,54 @@ _Phys_to_virt:
 	jsr (A1)
 	move.l (SP)+,D2
 	rts
+#else /* Needed by kentry when PCI_BIOS is undefined */
+.global _pcibios_installed
+
+_Find_pci_device:
+_Find_pci_classcode:
+_Read_config_byte:
+_Read_config_word:
+_Read_config_longword:
+_Fast_read_config_byte:
+_Fast_read_config_word:
+_Fast_read_config_longword:
+_Write_config_byte:
+_Write_config_word:
+_Write_config_longword:
+_Hook_interrupt:
+_Unhook_interrupt:
+_Special_cycle:
+_Get_routing:
+_Set_interrupt:
+_Get_resource:
+_Get_card_used:
+_Set_card_used:
+_Read_mem_byte:
+_Read_mem_word:
+_Read_mem_longword:
+_Fast_read_mem_byte:
+_Fast_read_mem_word:
+_Fast_read_mem_longword:
+_Write_mem_byte:
+_Write_mem_word:
+_Write_mem_longword:
+_Read_io_byte:
+_Read_io_word:
+_Read_io_longword:
+_Fast_read_io_byte:
+_Fast_read_io_word:
+_Fast_read_io_longword:
+_Write_io_byte:
+_Write_io_word:
+_Write_io_longword:
+_Get_machine_id:
+_Get_pagesize:
+_Virt_to_bus:
+_Bus_to_virt:
+_Virt_to_phys:
+_Phys_to_virt:
+	move.l #0xfffff001, d0     // PCI_BIOS_NOT_INSTALLED
+	rts
+
+.lcomm _pcibios_installed	4
 #endif /* PCI-BIOS */

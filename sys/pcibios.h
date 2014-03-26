@@ -56,7 +56,7 @@ long	_cdecl sys_pcibios	(ushort op,
 /* the struct definitions
  */
 
-typedef struct				/* structure of address conversion */
+typedef struct pci_conv_adr		/* structure of address conversion */
 {
 	unsigned long adr;			/* calculated address (CPU<->PCI) */
 	unsigned long len;			/* length of memory range */

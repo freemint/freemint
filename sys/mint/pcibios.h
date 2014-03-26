@@ -149,6 +149,9 @@ typedef struct				/* structure of address conversion     */
  #define GET_DRIVER_ID		0        /* CB-Routine 0: Get Driver ID         */
  #define REMOVE_DRIVER		1        /* CB-Routine 1: Remove Driver         */
 
+#if __KERNEL == 1
+/* Functions prototypes. Only for drivers built in the kernel.
+ */
 long Find_pci_device(unsigned long id, unsigned short index);
 long Find_pci_classcode(unsigned long class, unsigned short index);
 long Read_config_byte(long handle, unsigned short reg, unsigned char *address);
@@ -192,5 +195,5 @@ long Virt_to_bus(long handle, unsigned long address, PCI_CONV_ADR *pointer);
 long Bus_to_virt(long handle, unsigned long address, PCI_CONV_ADR *pointer);
 long Virt_to_phys(unsigned long address, PCI_CONV_ADR *pointer);
 long Phys_to_virt(unsigned long address, PCI_CONV_ADR *pointer);
-
+#endif
 # endif /* _mint_pcibios_h */
