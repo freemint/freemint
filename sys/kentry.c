@@ -51,6 +51,7 @@
 # include "kmemory.h"		/* kmalloc, kfree */
 # include "memory.h"		/* addr2mem, attach_region, detach_region */
 # include "module.h"		/* load_modules */
+# include "pcibios.h"
 # include "proc.h"		/* sleep, wake, wakeselect, iwake */
 # include "proc_help.h"		/* proc_extensions */
 # include "proc_wakeup.h"	/* addprocwakeup */
