@@ -2557,12 +2557,6 @@ create_new_pdlg(struct xa_client *client, XA_WIND_ATTR tp) //, struct xa_window 
 
 	DIAG((D_pdlg, client, "create_new_pdlg"));
 
-	if (C.nvdi_version < 0x0410)
-	{
-		DIAGS((" -- VDI not capable of PRN_SETTINGS!"));
-		return (void *)-1L;
-	}
-
 	pdlg = kmalloc(sizeof(*pdlg));
 
 	if (pdlg)
