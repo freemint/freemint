@@ -47,7 +47,11 @@
  */
 
 /* if the user is holding down the magic shift key, we ask before booting */
-# define MAGIC_SHIFT	0x2		/* left shift */
+# ifdef ARANYM
+# define MAGIC_SHIFT    0x1                /* right shift (left does not work) */
+# else
+# define MAGIC_SHIFT    0x2                /* left shift */
+# endif
 
 # define MAX_CMD_LEN	32
 
