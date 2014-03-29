@@ -115,6 +115,7 @@ int
 loader_init(int argc, char **argv, char **env)
 {
 	char path[384];
+	char buf[64];
 	char *name;
 	long fh, r = 1;
 
@@ -179,7 +180,6 @@ again:
 			*name = '\0';
 
 			my_strlcpy(path, argv[1], sizeof(path));
-			//my_strlcat(path, "/", sizeof(path));
 			*name++ = c;
 		}
 		else
@@ -247,11 +247,9 @@ again:
 	ConsoleWrite(path);
 	ConsoleWrite("'\r\n");
 	/* append module name */
-	//my_strlcat(path, name, sizeof(path));
 
 	/* check if file exist */
 	fh = Fopen(name, O_RDONLY);
-	//fh = Fopen(path, O_RDONLY);
 	if (fh < 0)
 	{
 		ConsoleWrite("XaAES loader: No such file: \"");
@@ -263,7 +261,8 @@ again:
 
 	ConsoleWrite("Load kernel module: '");
 	ConsoleWrite(name);
-	//ConsoleWrite(path);
+	ConsoleWrite("'\r\n");
+	ConsoleWrite(path);
 	ConsoleWrite("'\r\n");
 
 	fh = Fopen("/dev/km", O_RDONLY);
@@ -280,12 +279,15 @@ again:
 	Psignal( SIGTERM, ignore );
 	//Psignal( SIGKILL, ignore );
 
-	//ConsoleWrite( "XaAES loader: KM_RUN \r\n");
-	//Cconin();
+	ConsoleWrite( "XaAES loader: KM_RUN \r\n");
 
 	r = Fcntl((int)fh, name, KM_RUN);
-	//r = Fcntl((int)fh, path, KM_RUN);
-	//ConsoleWrite( "XaAES loader: KM_RUN done()\r\n");
+	ConsoleWrite( "XaAES loader: KM_RUN done");
+	ConsoleWrite( ", r=");
+	buf[0] = (r < 0 ? -r : r) + '0';
+	buf[1] = 0;
+	ConsoleWrite( buf );
+	ConsoleWrite( "\r\n");
 
 	if( r < 0 )
 		r = -r;
@@ -302,14 +304,20 @@ again:
 	if( r != 64 && r != 36 )	// EBADARG,EACCES
 	{
 		long er;
-		ConsoleWrite( "XaAES loader: KM_FREE\r\n");
-		//Cconin();
+		ConsoleWrite( "XaAES loader: KM_FREE ");
+		ConsoleWrite( name );
+		ConsoleWrite( "\r\n" );
 
-		er = Fcntl((int)fh, path, KM_FREE);
+		er = Fcntl((int)fh, name, KM_FREE);
 		if( er )
 		{
 			char *p;
 			for( p = path; *p; p++ );
+			if( *(p-1) == '/' || *(p-1) == '\\' )
+			{
+				p--;
+				*p = 0;
+			}
 			for( --p; p > path && !(*p == '/' || *p == '\\'); p-- );
 			if( p > path )
 			{
@@ -333,10 +341,7 @@ again:
 		}
 
 	}
-	//ConsoleWrite( "XaAES loader: Fclose()\r\n");
 	Fclose((int)fh);
-	//ConsoleWrite( "XaAES loader: return\r\n");
-	//Cconin();
 	if( r )
 		goto error;
 	/* when xaloader has pid 1 it is the direct child of the kernel
