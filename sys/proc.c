@@ -612,7 +612,6 @@ sleep(int _que, long cond)
 			sr = splhigh();
 			p = rootproc;		/* pid 0 */
 			rm_q(p->wait_q, p);
-			//DEBUG(("sleep:add_q(READY_Q,root)"));
 			add_q(READY_Q, p);
 			spl(sr);
 		}
