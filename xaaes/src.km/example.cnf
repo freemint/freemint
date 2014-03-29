@@ -5,9 +5,44 @@
 # upper/lowercase don't matter for all keywords
 # bool values can be expressed as 1/0, y/n, yes/no, true/false
 #
-# Ozk: The values enabled resembles the xaaes.cnf file I use on my
-#      Milan 040.
 ######################################################################
+#
+# exec [-w] <path> [arg ...]
+#
+# like exec in mint.cnf, used to run a program before
+# a workstation is opened (in opposite to run below)
+# options:
+# -w: wait for key
+#
+# example:
+#exec c:\auto\nvdi
+######################################################################
+#
+# install [-P predicates] <path> [arg ...]
+#
+# run 'exec path' if predicates evaluate to true wich is the default.
+# predicates is a comma-separated list of tags that are looked up
+# in the aes/vdi-trap-chain using the XBRA-protocol.
+# If a tag is found in the chain the predicate evaluates true, if not found false.
+# If a tag starts with '!', and a tag is found the
+# predicate evaluates false, while the '!' is not used in the lookup.
+# If any predicate evaluates false install will abort.
+# A tag-name must be 4 characters long.
+#
+# example: run nvdi if neither MiNT or NVDI are found in the
+# aes/vdi-trap-chain (useful on aranym+fVDI):
+#
+#install -P !MiNT,!NVDI c:\auto\nvdi
+######################################################################
+#
+# getkey <string>
+#
+# print string and wait for a key
+#
+# example:
+#getkey "install done"
+######################################################################
+
 #  include <file>
 #
 # Example: Include any external file into configuration
