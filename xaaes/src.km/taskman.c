@@ -378,7 +378,9 @@ build_tasklist_string( int md, void *app, long pid)
 			pinfo[1] = 0;
 
 			if( ker_stat( p->pid, "stat", pinfo ) )
-				pinfo[0] = 0;
+			{
+				return NULL;
+			}
 		}
 		else
 			pinfo[0] = 0;	/* how to get size of kernel? */
@@ -2101,47 +2103,35 @@ open_taskmanager(enum locks lock, struct xa_client *client, short open)
 				}
 				/* add non-client-procs */
 				{
-					long i = d_opendir("u:/kern", 0);
-					if (i > 0)
+				struct proc *pr;
+				long pid;
+				update_tasklist_entry( NO_AES_CLIENT, 0, htd, 0, redraw );	/* kernel */
+
+				for( pid = 1; pid < TM_MAXPID; pid++ )
+				{
+					if( (pr = pid2proc( pid )) )
 					{
-						char nm[128];
-						struct proc *pr;
-						long pid;
-
-						update_tasklist_entry( NO_AES_CLIENT, 0, htd, 0, redraw );	/* kernel */
-
-						while( d_readdir(127, i, nm) == 0)
+						if( !is_aes_client(pr) )
 						{
-							if( isdigit( nm[4] ) )
-							{
-								pid = atol(nm+4);
-								pr = pid2proc( pid );	//copy?
-								if( pr )
-								{
-									if( !is_aes_client(pr) )
-									{
-										update_tasklist_entry( NO_AES_CLIENT, 0, htd, pid, redraw );
-									}
-								}
-							}
-						}
-						d_closedir(i);
-
-						add_meminfo( list, this );
-
-						/* delete exited entries */
-						{
-						struct scroll_entry *this_next;
-						for( this = list->start; this; this = this_next )
-						{
-							this_next = this->next;
-							if( !(this->usr_flags & (TM_MEMINFO|TM_UPDATED|TM_HEADER) ) )
-							{
-								list->del( list, this, redraw );
-							}
-						}
+							update_tasklist_entry( NO_AES_CLIENT, 0, htd, pid, redraw );
 						}
 					}
+				}
+				add_meminfo( list, this );
+
+				/* delete exited entries */
+				{
+				struct scroll_entry *this_next;
+				yield();
+				for( this = list->start; this; this = this_next )
+				{
+					this_next = this->next;
+					if( !(this->usr_flags & (TM_MEMINFO|TM_UPDATED|TM_HEADER) ) )
+					{
+						list->del( list, this, redraw );
+					}
+				}
+				}
 				}
 				if( first == 1 )
 				{
@@ -2152,7 +2142,6 @@ open_taskmanager(enum locks lock, struct xa_client *client, short open)
 
 			if( S.focus != wind )
 			{
-
 				open_window(lock, wind, wind->r);
 				force_window_top( lock, wind );
 			}
@@ -2168,22 +2157,6 @@ fail:
 	if (obtree)
 		free_object_tree(client, obtree);
 }
-
-/* ************************************************************ */
-/*     Common resolution mode change functions/stuff		*/
-/* ************************************************************ */
-// static struct xa_window *reschg_win = NULL;
-#if 0
-static int
-reschg_destructor(enum locks lock, struct xa_window *wind)
-{
-	struct helpthread_data *htd = lookup_xa_data_byname(&wind->owner->xa_data, HTDNAME);
-	if (htd)
-		htd->w_reschg = NULL;
-// 	reschg_win = NULL;
-	return true;
-}
-#endif
 
 struct xa_window * _cdecl
 create_dwind(enum locks lock, XA_WIND_ATTR tp, char *title, struct xa_client *client, struct widget_tree *wt, FormExit(*f), WindowDisplay(*d))
