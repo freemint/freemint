@@ -1721,9 +1721,9 @@ km_stat_dump(void)
 		km_s1_stat.req_alloc - km_s1_stat.req_free
 	));
 
-  ret = do_open(&fp, rootproc, KM_STAT_FILE, (O_RDWR | O_CREAT | O_TRUNC), 0, NULL);
-  if (!ret)
-  {
+	ret = do_open(&fp, rootproc, KM_STAT_FILE, (O_RDWR | O_CREAT | O_TRUNC), 0, NULL);
+	if (!ret)
+	{
 		long i;
 
 		ksprintf(line, sizeof(line), "/*\r\n * " __FILE__ ": used_mem = %li\r\n *\r\n"
@@ -1733,7 +1733,7 @@ km_stat_dump(void)
 			 kmr_stat.req_free,
 			 kmr_stat.req_alloc - kmr_stat.req_free
 		);
-                (*fp->dev->write)(fp, line, strlen(line));
+								(*fp->dev->write)(fp, line, strlen(line));
 
 		ksprintf(line, sizeof(line), "km_s1: alloc = %li, free = %li -> %li\r\n\rn",
 			 km_s1_stat.req_alloc,
@@ -1760,12 +1760,12 @@ km_stat_dump(void)
 		}
 
 		ksprintf(line, sizeof(line), "\r\n *\r\n */\r\n\r\n");
-                (*fp->dev->write)(fp, line, strlen(line));
+								(*fp->dev->write)(fp, line, strlen(line));
 
 		ksprintf(line, sizeof(line),
 			 "# include \"kmstat.h\"\r\n\r\n"
 			 "void\r\narray_init (void)\r\n{\r\n");
-                (*fp->dev->write)(fp, line, strlen(line));
+								(*fp->dev->write)(fp, line, strlen(line));
 
 		for (i = 0; i < PAGESIZE; i++)
 		{
@@ -1989,10 +1989,6 @@ init_kmemdebug (void)
 		long ret;
 
 		kmemdebug_initialized = 1;
-
-		/*ret = FP_ALLOC (rootproc, &fp);
-		if (ret) return;
-		*/
 
 		ret = do_open (&fp, rootproc, KM_DEBUG_FILE, (O_RDWR | O_CREAT | O_TRUNC), 0, NULL);
 		if (ret)
