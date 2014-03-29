@@ -43,6 +43,7 @@
 # include "kmemory.h"
 # include "memory.h"
 # include "k_prot.h"
+# include "module.h"	/* kernel_open */
 # include "proc.h"
 # include "time.h"
 # include "update.h"
@@ -54,6 +55,43 @@ short disallow_single = 0;
 # endif
 short allow_setexc = 2;		/* if 0 only kernel-processes may change sys-vectors */
 
+union s4
+{
+	char	s[4];
+	unsigned long l;
+};
+
+typedef struct sysredir
+{
+	long	flag;
+	union s4 Magic;
+	union s4 Name;
+	struct sysredir	*OldVector;
+}SYSREDIR;
+
+#define XBRAMAGIC	0x58425241L	/* 'XBRA' */
+static int
+xbra_lookup( SYSREDIR **sysv, unsigned long Tag )
+{
+	SYSREDIR *vecp = *sysv;
+	DEBUG(("xbra_lookup: vecp=%lx", vecp ));
+	if( !vecp )
+		return 2;
+	vecp--;
+	for( ; vecp; vecp = vecp->OldVector - 1 )
+	{
+		DEBUG(("xbra_lookup %lx: magic=%lx", vecp, vecp->Magic.l ));
+		if( vecp->Magic.l == XBRAMAGIC )
+		{
+			DEBUG(("xbra_lookup: Name=%lx:%lx", vecp->Name.l, Tag ));
+			if( vecp->Name.l == Tag )
+				return 0;	/* found */
+		}
+		else break;
+	}
+	DEBUG(("xbra_lookup: return 1" ));
+	return 1;
+}
 
 long _cdecl
 sys_s_system (int mode, ulong arg1, ulong arg2)
@@ -357,6 +395,10 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 # endif
 			break;
 		}
+		/* look for XBRA-tag arg2 in vector arg1 */
+		case S_XBRALOOKUP:
+			r = xbra_lookup( (SYSREDIR **)arg1, arg2 );
+		break;
 
 		/* Hack (dirty one) for MiNTLibs */
 		case S_TIOCMGET:
@@ -376,7 +418,7 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 
 			break;
 		}
-		case S_GETBOOTLOG:
+		case S_GETBOOTLOG:	/* return path of boot-log */
 		{
 			if (isroot == 0)
 				r = EPERM;
@@ -389,6 +431,26 @@ sys_s_system (int mode, ulong arg1, ulong arg2)
 				r = EBADARG;
 			break;
 		}
+		case S_SETDEBUGFP:	/* set file-ptr for debug-output, use BOOTLOGFILE if arg1=1 (close with arg1=0) */
+			if (isroot == 0)
+				r = EPERM;
+			else
+			{
+				static bool do_close_fp = 0;
+				extern FILEPTR *debug_fp;	/* debug.c */
+				if( arg1 == 1 && debug_fp == 0 )
+				{
+					do_close_fp = 1;
+					debug_fp = kernel_open(BOOTLOGFILE, O_RDWR|O_CREAT, NULL,NULL);
+				}
+				else
+				{
+					if( arg1 == 0 && do_close_fp && debug_fp )
+						kernel_close( debug_fp );
+					debug_fp = (FILEPTR *)arg1;
+				}
+			}
+		break;
 		case S_SETEXC:
 		{
 			if (isroot == 0)	r = EPERM;

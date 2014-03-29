@@ -39,8 +39,12 @@
 # define S_LOADKBD	27	/* reload the keyboard table */
 # define S_SETEXC	28      /* if 0 only kernel-processes may change sys-vectors via Setexc */
 # define S_GETBOOTLOG 29  /* get path to bootlog-file (BOOTLOGFILE) */
+# define S_XBRALOOKUP 30   /* look for arg2 in arg1-vector */
+# define S_SETDEBUGFP 31   /* set file-ptr for debug-output */
 # define S_CLOCKUTC	100
 # define S_TIOCMGET	0x54f8	/* 21752 */
+
+# define TRAP2 0x88L /* trap #2, GEM */
 
 /* additional informations about the kernel
  * reserved 900 - 999
