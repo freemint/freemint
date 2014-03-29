@@ -449,7 +449,6 @@ XA_appl_init(enum locks lock, struct xa_client *client, AESPB *pb)
 #endif
 		return XAC_DONE;
 	}
-// 	if (d) display("appl_init: client = %lx, globl = %lx for %d", client, globl, p->pid);
 
 	if (client) {
 		if (client->forced_init_client) {
@@ -619,6 +618,7 @@ CE_pwaitpid(enum locks lock, struct c_event *ce, short cancel)
 			C.Aes->nxt_menu = C.Aes->std_menu;	/* kludge to run swap_menu() */
 			unhide_all(lock, C.Aes );
 			C.Aes->nxt_menu = 0;
+			update_windows_below(lock, &screen.r, NULL, window_list, NULL);
 		}
 	}
 
