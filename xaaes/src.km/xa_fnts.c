@@ -478,7 +478,7 @@ xvqt_name(struct xa_fnts_info *fnts, XVDIPB *vpb, short index, struct xa_fnts_it
 	/*
 	 * Get family/style names -- only possible when vqt_xfntinfo() is available.
 	 */
-	if (C.nvdi_version >= 0x0302)
+	if (C.nvdi_version >= 0x0302 || C.fvdi_version != 0)
 	{
 		XFNT_INFO *x;
 
@@ -636,7 +636,6 @@ get_font_items(struct xa_fnts_info *fnts)
 		if (C.gdos_version)
 		{
 			fnts->fnts_loaded += xvst_load_fonts(vpb, 0, fnts->vdi_handle);
-// 			fnts->fnts_loaded += vst_load_fonts(fnts->vdi_handle, 0);
 		}
 		DIAGS(("get_font_items: loaded %d fonts", fnts->fnts_loaded));
 	}
