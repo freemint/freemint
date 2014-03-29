@@ -92,10 +92,7 @@ sys_f_open (const char *name, short mode)
 	ret = FD_ALLOC (p, &fd, MIN_OPEN);
 	if (ret) goto error;
 
-	ret = FP_ALLOC (p, &fp);
-	if (ret) goto error;
-
-	ret = do_open (&fp, name, mode, 0, NULL);
+	ret = do_open (&fp, p, name, mode, 0, NULL);
 	if (ret) goto error;
 
 	/* activate the fp, default is to close non-standard files on exec */
@@ -112,7 +109,8 @@ sys_f_open (const char *name, short mode)
 
 error:
 	if (fd >= MIN_OPEN) FD_REMOVE (p, fd);
-	if (fp) { fp->links--; FP_FREE (fp); }
+	if (fp)
+		fp->links--;
 
 	return ret;
 }
@@ -140,9 +138,6 @@ sys_f_create (const char *name, short attrib)
 	ret = FD_ALLOC (p, &fd, MIN_OPEN);
 	if (ret) goto error;
 
-	ret = FP_ALLOC (p, &fp);
-	if (ret) goto error;
-
 	if (attrib == FA_LABEL)
 	{
 		char temp1[PATH_MAX];
@@ -151,7 +146,7 @@ sys_f_create (const char *name, short attrib)
 		/* just in case the caller tries to do something with this handle,
 		 * make it point to u:\dev\null
 		 */
-		ret = do_open (&fp, "u:\\dev\\null", O_RDWR|O_CREAT|O_TRUNC, 0, NULL);
+		ret = do_open (&fp, p, "u:\\dev\\null", O_RDWR|O_CREAT|O_TRUNC, 0, NULL);
 		if (ret) goto error;
 
 		ret = path2cookie (p, name, temp1, &dir);
@@ -169,7 +164,7 @@ sys_f_create (const char *name, short attrib)
 	}
 	else
 	{
-		ret = do_open (&fp, name, O_RDWR|O_CREAT|O_TRUNC, attrib, NULL);
+		ret = do_open (&fp, p, name, O_RDWR|O_CREAT|O_TRUNC, attrib, NULL);
 		if (ret)
 		{
 			DEBUG (("Fcreate(%s) failed, error %d", name, ret));
@@ -185,7 +180,8 @@ sys_f_create (const char *name, short attrib)
 
 error:
 	if (fd >= MIN_OPEN) FD_REMOVE (p, fd);
-	if (fp) { fp->links--; FP_FREE (fp); }
+	if (fp)
+		fp->links--;
 	return ret;
 }
 

@@ -2676,11 +2676,8 @@ bio_debug (const char *fmt, ...)
 		FILEPTR *fp;
 		long ret;
 
-		ret = FP_ALLOC (rootproc, &fp);
-		if (ret) return;
-
 		va_start (args, fmt);
-		ret = do_open (&fp, BIO_LOGFILE, (O_WRONLY|O_CREAT|O_APPEND), 0, NULL);
+		ret = do_open (&fp, rootproc, BIO_LOGFILE, (O_WRONLY|O_CREAT|O_APPEND), 0, NULL);
 		if (!ret)
 		{
 			(*fp->dev->lseek)(fp, 0, 2);
@@ -2693,8 +2690,6 @@ bio_debug (const char *fmt, ...)
 		}
 		else
 		{
-			FP_FREE (fp);
-
 			kvsprintf (buf, buflen, fmt, args);
 			BIO_FORCE ((buf));
 		}
@@ -2710,10 +2705,7 @@ bio_dump_cache (void)
 	FILEPTR *fp;
 	long ret;
 
-	ret = FP_ALLOC (rootproc, &fp);
-	if (ret) return;
-
-	ret = do_open (&fp, BIO_DUMPFILE, (O_WRONLY|O_CREAT|O_TRUNC), 0, NULL);
+	ret = do_open (&fp, rootproc, BIO_DUMPFILE, (O_WRONLY|O_CREAT|O_TRUNC), 0, NULL);
 	if (!ret)
 	{
 		CBL *b = cache.blocks;
@@ -2761,8 +2753,8 @@ bio_dump_cache (void)
 		}
 		do_close (rootproc, fp);
 	}
-	else
-		FP_FREE (fp);
+	//else
+		//FP_FREE (fp);
 }
 # endif
 

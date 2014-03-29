@@ -53,6 +53,7 @@
 # include "mint/dcntl.h"
 # include "mint/filedesc.h"
 # include "mint/ioctl.h"
+# include "mint/net.h"
 # include "mint/pathconf.h"
 # include "mint/stat.h"
 
@@ -452,21 +453,21 @@ kern_fddir_lookup (fcookie *dir, const char *name, fcookie *fc)
 	fc->fs = &kern_filesys;
 	fc->aux = 0;
 
-	if (name[0] == '.' && name[1] == '\0')
+	if (name[0]== 0 || (name[0] == '.' && name[1] == '\0'))
 		*fc = *dir;
 	else if (name[0] == '.' && name[1] == '.' && name[2] == '\0')
 		fc->index = (dir->index & 0xffff0000) | PROCDIR_DIR;
-	else if (strtonumber (name, &desc, 0, 0) == 0)
+	else if (strtonumber (name, &desc, 1, 0) == 0)
 	{
 		char cdesc;
 
-		if (desc < 0 || desc > 255)
+		if (desc < MIN_HANDLE || desc > 255)
 		{
-			DEBUG (("kern_fd_lookup: pid %d, invalid descriptor name: %d", pid, (int) desc));
+			DEBUG (("kern_fddir_lookup : pid %d, invalid descriptor name: %d", pid, (int) desc));
 			return ENOENT;
 		}
 
-		cdesc = (desc & 0xff);
+		cdesc = (desc & 0xffff);
 
 		if (!p->p_fd)
 		{
@@ -474,7 +475,7 @@ kern_fddir_lookup (fcookie *dir, const char *name, fcookie *fc)
 			return ENOENT;
 		}
 
-		if (cdesc < -5 || cdesc >= p->p_fd->nfiles
+		if (cdesc < MIN_HANDLE || cdesc >= p->p_fd->nfiles
 			|| p->p_fd->ofiles[(int) (cdesc)] == NULL)
 		{
 			DEBUG (("kern_fddir_lookup: pid %d, invalid descriptor: %d", pid, (int) cdesc));
@@ -485,7 +486,7 @@ kern_fddir_lookup (fcookie *dir, const char *name, fcookie *fc)
 	}
 	else
 	{
-		DEBUG (("kern_fddir_lookup: /sys/fd/%d/%s: No such file or directory", (int) pid, name));
+		DEBUG (("kern_fddir_lookup: /kern/%d/fd/%s: No such file or directory", (int) pid, name));
 		return ENOENT;
 	}
 
@@ -878,7 +879,7 @@ kern_proc_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 		return EBADARG;
 	}
 
-	TRACE (("kern_pr_readdir, dirh->index: %d, name: %s", dirh->index, name));
+	TRACE (("kern_proc_readdir, dirh->index: %d, name: %s", dirh->index, name));
 	dirh->index++;
 
 	return E_OK;
@@ -951,7 +952,7 @@ kern_fddir_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 				long desc = ((long) (dirh->index)) - 7;
 				if (p->p_fd->ofiles[desc] != NULL)
 				{
-					ksprintf (buf, sizeof (buf), "%lu", (ulong) (desc & 0xff));
+					ksprintf (buf, sizeof (buf), "%ld", (desc));
 					fc->index =
 						(dirh->fc.index & 0xffff0000) |
 						0x100 | (desc & 0xff);
@@ -1049,8 +1050,10 @@ kern_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 			/* Don't be smart and put that into the for condition
 			 * as "dirh->index <= LAST_PROCDIR_INDEX".  You will
 			 * run into an endless loop.
+			 * Compare to LAST_PROCDIR_INDEX + 1 to get EMFILES if pid 999 exists
+			 * to avoid the caller loopping endlessly ...
 			 */
-			if (p || dirh->index == LAST_PROCDIR_INDEX)
+			if (p || dirh->index == (ushort)LAST_PROCDIR_INDEX + 1)
 				break;
 
 			dirh->index++;
@@ -1085,7 +1088,7 @@ kern_readdir (DIR *dirh, char *name, int namelen, fcookie *fc)
 		return EBADARG;
 	}
 
-	TRACE (("kern_readdir, dirh->index: %d, name: %s", dirh->index, name));
+	TRACE (("kern_readdir, dirh->index: %d, name: %s", dirh->index, name+4));
 	dirh->index++;
 
 	return E_OK;
@@ -1183,6 +1186,79 @@ kern_readlabel (fcookie *dir, char *name, int namelen)
 	return E_OK;
 }
 
+static void
+kern_get_linkname( struct proc *p, struct file *f, char *name, int namelen )
+{
+	extern FILESYS bios_filesys, pipe_filesys;
+	extern struct devdrv sockdev;
+# ifndef NO_RAMFS
+	extern FILESYS ramfs_filesys;
+#endif
+	int foffs = 4;
+	char devname[8];
+	char fname[64];
+	fcookie fp = f->fc;
+	FILESYS *fs = fp.fs;
+	long rv = -1;
+
+	if( f->dev == &sockdev )
+	{
+		/* todo */
+		struct socket *s = (struct socket *)f->devinfo;
+		ksprintf( name, namelen, "pipe:[%d,%d,%x,%d,%x]", s->type, s->state, s->flags, s->ops->domain, f->flags );
+		return;
+	}
+	if( fs )
+	{
+		devname[0] = 0;
+		if( fs == &pipe_filesys)
+			strcpy( devname, "pipe" );
+		else if( fs == &bios_filesys )
+			strcpy( devname, "dev" );
+# ifndef NO_RAMFS
+		else if( fs == &ramfs_filesys )
+			strcpy( devname, "ram" );
+# endif
+		if( fs == &pipe_filesys || fs == &bios_filesys )
+		{
+			DIR dirh = {{0}};
+			fcookie fc;
+
+			memset( &fc, 0, sizeof( fc ) );
+			rv = xfs_opendir (fs, &dirh, 0);
+			if( !rv )
+			{
+				do
+				{
+					rv = xfs_readdir( fs, &dirh, fname, sizeof fname, &fc );
+				}while( rv == 0 && !(fc.index == fp.index) );
+				fs->closedir( &dirh );
+			}
+		}
+#if STORE_FILENAMES
+		else
+		{
+			if( f->fname )
+			{
+				strncpy( name, f->fname, namelen );
+				return;
+			}
+		}
+#endif
+	}
+	if( !devname[0] )
+	{
+		devname[0] = fp.dev + 'a';
+		devname[1] = 0;
+	}
+	if( rv != 0 )
+	{
+		ksprintf( name, namelen, "/%s/[%lu]", devname, fp.index );
+	}
+	else
+		ksprintf (name, namelen, "/%s/%s", devname, fname+foffs );
+}
+
 INLINE long
 kern_proc_readlink (fcookie *dir, char *name, int namelen)
 {
@@ -1207,11 +1283,17 @@ kern_proc_readlink (fcookie *dir, char *name, int namelen)
 	{
 		case PROCDIR_CWD:
 		{
-			if (follow_link_denied (p, __FUNCTION__))
+			if ( !cwd || follow_link_denied (p, __FUNCTION__))
 				return EACCES;
+#if STORE_FILENAMES
+			strcpy( buf, cwd->fullpath );
+			if( *buf )
+				*(strchr( buf, 0 ) -1) = 0;	/* trailing / */
+#else
 			ksprintf (buf, sizeof (buf), "[%04u]:%lu",
 				cwd->curdir[cwd->curdrv].dev,
 				(ulong) cwd->curdir[cwd->curdrv].index);
+#endif
 			break;
 		}
 		case PROCDIR_EXE:
@@ -1289,10 +1371,7 @@ kern_fddir_readlink (fcookie *file, char *name, int namelen)
 		return ENOENT;
 	}
 
-	ksprintf (buf, sizeof (buf), "[%04u]:%lu",
-			(unsigned) fd->ofiles[desc]->fc.dev,
-			(ulong) fd->ofiles[desc]->fc.index);
-
+	kern_get_linkname( p, fd->ofiles[desc], buf, sizeof buf );
 	strncpy_f (name, buf, namelen);
 
 	len = strlen (buf);
@@ -1677,7 +1756,7 @@ kern_follow_link (fcookie *fc, int depth)
 
 		if (desc < -5 || desc >= fd->nfiles || *(fd->ofiles + desc) == NULL)
 		{
-		    	DEBUG (("kern_follow_link: pid %ld has closed descriptor %d", pid, (int) desc));
+    	DEBUG (("kern_follow_link: pid %ld has closed descriptor %d", pid, (int) desc));
 			return ENOENT;
 		}
 

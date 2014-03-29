@@ -639,7 +639,9 @@ copy_cwd (struct proc *p)
 		dup_cookie (&cwd->root[i], &org_cwd->root[i]);
 		dup_cookie (&cwd->curdir[i], &org_cwd->curdir[i]);
 	}
-
+#if STORE_FILENAMES
+	strcpy( cwd->fullpath, org_cwd->fullpath );
+#endif
 	TRACE (("copy_cwd: ok (%lx)", cwd));
 	return cwd;
 }
@@ -902,7 +904,6 @@ free_ext(struct proc *p)
 				/* release callback */
 				if (ext->cb_vector && ext->cb_vector->release)
 				{
-					//FORCE("free_ext:release %lx flags=%lx", ext->data, ext->flags);
 					//if( !(ext->flags & PEXT_NOSHARE) )	// hack: when this flag is set data (probably) has been copied
 						(*ext->cb_vector->release)(ext->data);
 				}

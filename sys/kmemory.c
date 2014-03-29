@@ -1709,9 +1709,6 @@ km_stat_dump(void)
 	FILEPTR *fp;
 	long ret;
 
-	ret = FP_ALLOC(rootproc, &fp);
-	if (ret) return;
-
 	KM_FORCE((__FILE__ ": used_mem = %li", used_mem));
 	KM_FORCE((__FILE__ ": kmr: alloc = %li, free = %li -> %li",
 		kmr_stat.req_alloc,
@@ -1724,9 +1721,9 @@ km_stat_dump(void)
 		km_s1_stat.req_alloc - km_s1_stat.req_free
 	));
 
-        ret = do_open(&fp, KM_STAT_FILE, (O_RDWR | O_CREAT | O_TRUNC), 0, NULL);
-        if (!ret)
-        {
+  ret = do_open(&fp, rootproc, KM_STAT_FILE, (O_RDWR | O_CREAT | O_TRUNC), 0, NULL);
+  if (!ret)
+  {
 		long i;
 
 		ksprintf(line, sizeof(line), "/*\r\n * " __FILE__ ": used_mem = %li\r\n *\r\n"
@@ -1790,8 +1787,6 @@ km_stat_dump(void)
 
 		do_close(rootproc, fp);
 	}
-	else
-		FP_FREE(fp);
 }
 # else
 
@@ -1898,12 +1893,9 @@ km_trace_dump(void)
 	FILEPTR *fp;
 	long ret;
 
-	ret = FP_ALLOC(rootproc, &fp);
-	if (ret) return;
-
-        ret = do_open(&fp, KM_TRACE_FILE, (O_RDWR | O_CREAT | O_TRUNC), 0, NULL);
-        if (!ret)
-        {
+  ret = do_open(&fp, rootproc, KM_TRACE_FILE, (O_RDWR | O_CREAT | O_TRUNC), 0, NULL);
+  if (!ret)
+  {
 		long i;
 
 		ksprintf(line, sizeof(line),
@@ -1937,8 +1929,6 @@ km_trace_dump(void)
 
 		do_close(rootproc, fp);
 	}
-	else
-		FP_FREE(fp);
 }
 
 # endif
@@ -2000,14 +1990,14 @@ init_kmemdebug (void)
 
 		kmemdebug_initialized = 1;
 
-		ret = FP_ALLOC (rootproc, &fp);
+		/*ret = FP_ALLOC (rootproc, &fp);
 		if (ret) return;
+		*/
 
-		ret = do_open (&fp, KM_DEBUG_FILE, (O_RDWR | O_CREAT | O_TRUNC), 0, NULL);
+		ret = do_open (&fp, rootproc, KM_DEBUG_FILE, (O_RDWR | O_CREAT | O_TRUNC), 0, NULL);
 		if (ret)
 		{
 			kmemdebug_initialized = 0;
-			FP_FREE (fp);
 		}
 		else
 			kmemdebug_fp = fp;

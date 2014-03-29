@@ -141,6 +141,8 @@ safe_Kbshift(short data)
 	return TRAP_Kbshift(data);
 }
 
+FILEPTR *debug_fp = 0;
+
 /*
  * The inner loop does this: at each newline, the keyboard is polled. If
  * you've hit a key, then it's checked: if it's ctl-alt, do_func_key is
@@ -165,6 +167,16 @@ debug_ws(const char *s)
 	long key;
 	int scan;
 	int stopped;
+
+	if( debug_fp )	/* write to boot.log */
+	{
+		int logging = debug_logging, level = debug_level;
+		debug_logging = debug_level = 0;
+		debug_fp->dev->write( debug_fp, s, strlen(s) );
+		debug_logging = logging;
+		debug_level = level;
+		return;
+	}
 
 # ifdef ARANYM
 	if (nf_debug(s))
@@ -247,10 +259,7 @@ _ALERT(char *s)
 	debug_level = 0;
 	debug_logging = 0;
 
-	ret = FP_ALLOC(rootproc, &fp);
-	if (!ret){
-		ret = do_open(&fp, "u:\\pipe\\alert", (O_WRONLY | O_NDELAY), 0, NULL);
-	}
+	ret = do_open(&fp, rootproc, "u:\\pipe\\alert", (O_WRONLY | O_NDELAY), 0, NULL);
 
 	debug_level = olddebug;
 	debug_logging = oldlogging;
@@ -515,10 +524,10 @@ DUMPLOG(void)
 			start = logbuf[0];
 			timeptr = &logtime[0];
 		}
-        }
-        while (start != end);
+	}
+	while (start != end);
 
-        logptr = 0;
+	logptr = 0;
 }
 
 EXITING _cdecl

@@ -508,10 +508,7 @@ init (void)
 	 * so that AHDI doesn't get upset by references to drive U:
 	 */
 
-	r = FP_ALLOC(rootproc, &f);
-	if (r) FATAL("Can't allocate fp!");
-
-	r = do_open(&f, "u:/dev/console", O_RDWR, 0, NULL);
+	r = do_open(&f, rootproc, "u:/dev/console", O_RDWR, 0, NULL);
 	if (r)
 		FATAL("unable to open CONSOLE device");
 
@@ -526,10 +523,7 @@ init (void)
 	{
 		FILEPTR *fb;
 
-		r = FP_ALLOC(rootproc, &fb);
-		if (r) FATAL("Can't allocate fp for bootlog!");
-		//boot_print("open "BOOTLOGFILE"\r\n" );
-		r = do_open( &fb, BOOTLOGFILE, O_RDWR|O_TRUNC|O_CREAT, 0, NULL);
+		r = do_open( &fb, rootproc, BOOTLOGFILE, O_RDWR|O_TRUNC|O_CREAT, 0, NULL);
 		if( !r )
 		{
 			//boot_print("open BOOTLOGFILE OK\r\n" );
@@ -559,10 +553,8 @@ init (void)
 		boot_printf("Kernel SSP:  0x%08lx (FREE: %ld bytes)\n", ssp, ssp - (_base->p_bbase + _base->p_blen));
 	}
 # endif
-	r = FP_ALLOC(rootproc, &f);
-	if (r) FATAL("Can't allocate fp!");
 
-	r = do_open(&f, "u:/dev/modem1", O_RDWR, 0, NULL);
+	r = do_open(&f, rootproc, "u:/dev/modem1", O_RDWR, 0, NULL);
 	if (r)
 		FATAL("unable to open MODEM1 device");
 
@@ -585,10 +577,7 @@ init (void)
 		f->links++;
 	}
 
-	r = FP_ALLOC(rootproc, &f);
-	if (r) FATAL("Can't allocate fp!");
-
-	r = do_open(&f, "u:/dev/centr", O_RDWR, 0, NULL);
+	r = do_open(&f, rootproc, "u:/dev/centr", O_RDWR, 0, NULL);
 	if (!r)
 	{
 		rootproc->p_fd->ofiles[3] = f;
@@ -596,10 +585,7 @@ init (void)
 		f->links++;
 	}
 
-	r = FP_ALLOC(rootproc, &f);
-	if (r) FATAL("Can't allocate fp!");
-
-	r = do_open(&f, "u:/dev/midi", O_RDWR, 0, NULL);
+	r = do_open(&f, rootproc, "u:/dev/midi", O_RDWR, 0, NULL);
 	if (!r)
 	{
 		rootproc->p_fd->midiin = f;
@@ -1194,13 +1180,11 @@ mint_thread(void *arg)
 	  	if (init_is_gem)
 	  	{
 	  		BASEPAGE *bp;
-				long entry;
 # ifdef VERBOSE_BOOT
 				boot_print(MSG_init_rom_AES);
 # endif
-				entry = *((long *) EXEC_OS);
 				bp = (BASEPAGE *) sys_pexec(7, (char *) GEM_memflags, (char *) "\0", _base->p_env);
-				bp->p_tbase = entry;
+				bp->p_tbase = *((long *) EXEC_OS);
 
 				r = sys_pexec(106, (char *) "GEM", bp, 0L);
 				DEBUG(("%s(): exec ROM AES returned %ld", __FUNCTION__, r));

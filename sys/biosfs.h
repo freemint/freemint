@@ -1,6 +1,6 @@
 /*
  * $Id$
- * 
+ *
  * This file has been modified as part of the FreeMiNT project. See
  * the file Changes.MH for details and dates.
  */
@@ -25,16 +25,16 @@ struct bios_tty
 	IOREC_T		*irec;		/* From XBIOS ... */
 	long		*rsel;		/* pointer to field in tty struct */
 	IOREC_T		*orec;		/* Same, for output... */
-	long		*wsel;		
-	long		ispeed;		
+	long		*wsel;
+	long		ispeed;
 	long		ospeed;		/* last speeds set */
-	long		*baudmap;	
+	long		*baudmap;
 	long		maxbaud;	/* Rsconf baud word <-> bps table */
-	short		*baudx;		
-	struct tty	*tty;		
+	short		*baudx;
+	struct tty	*tty;
 	long		bticks;		/* when to take a break for real */
 	long		vticks;		/* ..check read buf next (vmin/speed) */
-	char		clocal;		
+	char		clocal;
 	char		brkint;		/* flags: local mode, break == ^C */
 	short		tosfd;		/* if != EUNDEV: fd to pass Fcntl()s */
 	short		bdev;
@@ -48,6 +48,7 @@ struct bios_file
 {
 	char 	name[BNAME_MAX+1];	/* device name */
 	DEVDRV *device;			/* device driver for device */
+#define DEVFD_MAGIC (S_IFDIR|0x46)
 	short	private;		/* extra info for device driver */
 	ushort	flags;			/* flags for device open */
 	struct tty *tty;		/* tty structure (if appropriate) */
@@ -57,6 +58,9 @@ struct bios_file
 	XATTR	xattr;			/* guess what... */
 	long	drvsize;		/* size of DEVDRV struct */
 };
+
+/* Does the fcookie fc refer to the \dev\fd directory? */
+#define IS_FD_DIR(fc) ((fc)->aux == DEVFD_MAGIC)
 
 #define	MAX_BTTY	4	/* 4 bios_tty structs */
 

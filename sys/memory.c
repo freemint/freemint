@@ -1515,23 +1515,20 @@ load_region (const char *filename, MEMREGION *env, const char *cmdlin, XATTR *xp
 	long size, start;
 	FILEHEAD fh;
 
-	*err = FP_ALLOC (get_curproc(), &f);
-	if (*err) return NULL;
-
 	/* bug: this should be O_DENYW mode, not O_DENYNONE
 	 * we must use O_DENYNONE because of the desktop and because of the
 	 * TOS file system brain-damage
 	 */
 # if 0
- 	*err = do_open (&f, filename, O_DENYNONE | O_EXEC, 0, xp);
+ 	*err = do_open (&f, get_curproc(), filename, O_DENYNONE | O_EXEC, 0, xp);
 # else
-	*err = do_open (&f, filename, O_DENYW | O_EXEC, 0, xp);
+	*err = do_open (&f, get_curproc(), filename, O_DENYW | O_EXEC, 0, xp);
 # endif
 
 	if (*err)
 	{
-		f->links--;
-		FP_FREE (f);
+		if( f )
+			f->links--;
 		return NULL;
 	}
 

@@ -819,12 +819,9 @@ init_unicode(void)
 	XATTR xa;
 	long ret;
 
-	ret = FP_ALLOC(rootproc, &fp);
-	if (ret) return;
-
 	ksprintf(name, sizeof(name), "%sunicode.tbl", sysdir);
 
-	ret = do_open(&fp, name, O_RDONLY, 0, &xa);
+	ret = do_open(&fp, rootproc, name, O_RDONLY, 0, &xa);
 	if (ret == 0)
 	{
 # ifdef VERBOSE_BOOT
@@ -844,8 +841,8 @@ init_unicode(void)
 	}
 	else
 	{
-		fp->links = 0;		/* suppress complaints */
-		FP_FREE(fp);
+		if( fp )
+			fp->links = 0;		/* suppress complaints */
 	}
 }
 

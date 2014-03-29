@@ -539,7 +539,8 @@ uni_getname (fcookie *root, fcookie *dir, char *pathname, int size)
 			return EBADARG;
 		}
 	}
-	return xfs_getname (fs, &get_curproc()->p_cwd->root[dir->dev], dir, pathname, size);
+	r = xfs_getname (fs, &get_curproc()->p_cwd->root[dir->dev], dir, pathname, size);
+	return r;
 }
 
 static long _cdecl

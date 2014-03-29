@@ -58,6 +58,16 @@
 # define WITH_KERNFS 1
 
 /*
+ * store file-names in file-struct.
+ * define to 0 to exclude
+ */
+#if WITH_KERNFS
+# ifndef STORE_FILENAMES
+#  define STORE_FILENAMES 1
+# endif
+#endif
+
+/*
  * activating non blocking xfs extension
  * highly alpha at the moment!!!
  */

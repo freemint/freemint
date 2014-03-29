@@ -154,7 +154,7 @@ static struct bios_file BDEV [] =
 	{ "stdin",	&fakedev,	 0,       0,     NULL, NULL}, /* stdin  */
 	{ "stdout",	&fakedev,	 1,       0,     NULL, NULL}, /* stdout */
 	{ "stderr",	&fakedev,	 2,       0,     NULL, NULL}, /* stderr */
-	{ "fd",		&fakedev,	 S_IFDIR, 0,     NULL, NULL}, /* file descriptor directory */
+	{ "fd",		&fakedev,	 DEVFD_MAGIC, 0,     NULL, NULL}, /* file descriptor directory */
 
 	/* other miscellaneous devices
 	 */
@@ -312,9 +312,6 @@ rsvf_ioctl (int f, void *arg, int mode)
 	/* is there a more direct way than this? */
 	return ROM_Fcntl (f, (long) arg, mode);
 }
-
-/* Does the fcookie fc refer to the \dev\fd directory? */
-#define IS_FD_DIR(fc) ((fc)->aux == S_IFDIR)
 
 /* Does the fcookie fc refer to a file in the \dev\fd directory? */
 #define IS_FD_ENTRY(fc, p) \
@@ -536,7 +533,16 @@ bios_lookup(fcookie *dir, const char *name, fcookie *fc)
 		}
 		if (isdigit(*name) || *name == '-')
 		{
-			int fd = (int) atol(name);
+			long fd;
+			int minus = 0;
+			if( *name == '-' )
+			{
+				minus = 1;
+				name++;
+			}
+			fd = atol(name);
+			if( minus )
+				fd = -fd;
 			if (fd >= MIN_HANDLE && fd < get_curproc()->p_fd->nfiles)
 			{
 				fc->fs = &bios_filesys;

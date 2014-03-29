@@ -629,10 +629,7 @@ parse_include(const char *path, struct parsinf *inf, struct parser_item *parser_
 	FILEPTR *fp;
 	long ret;
 
-	ret = FP_ALLOC(rootproc, &fp);
-	if (ret) return ret;
-
-	ret = do_open(&fp, path, O_RDONLY, 0, &xattr);
+	ret = do_open(&fp, rootproc, path, O_RDONLY, 0, &xattr);
 	if (!ret)
 	{
 		struct parsinf include =
@@ -651,7 +648,6 @@ parse_include(const char *path, struct parsinf *inf, struct parser_item *parser_
 	else
 	{
 		fp->links = 0;
-		FP_FREE(fp);
 
 		parser_msg(inf, NULL);
 		boot_printf(MSG_cnf_cannot_include, path);
@@ -668,10 +664,7 @@ parse_cnf(const char *path, struct parser_item *parser_tab, void *data)
 	FILEPTR *fp;
 	long ret;
 
-	ret = FP_ALLOC (rootproc, &fp);
-	if (ret) return ret;
-
-	ret = do_open(&fp, inf.file = path, O_RDONLY, 0, &xattr);
+	ret = do_open(&fp, rootproc, inf.file = path, O_RDONLY, 0, &xattr);
 	if (!ret)
 	{
 		parser(fp, xattr.size, &inf, parser_tab);
@@ -680,8 +673,6 @@ parse_cnf(const char *path, struct parser_item *parser_tab, void *data)
 	else
 	{
 		fp->links = 0;
-		FP_FREE(fp);
-
 		ALERT(MSG_cnf_cant_open, path);
 	}
 	return ret;

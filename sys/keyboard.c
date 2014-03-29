@@ -222,7 +222,7 @@ mouse_up(PROC *p, long pixels)
 	mouse_packet[1] = 0;		/* X axis */
 	mouse_packet[2] = -pixels;	/* Y axis */
 
-	//DBG_FORCE(("mouse_up:mousevec=%lx,pixeld=%d", syskey->mousevec, pixels));
+
 	send_packet(syskey->mousevec, mouse_packet, mouse_packet + 3);
 
 	if (keep_sending)
@@ -472,7 +472,6 @@ generate_mouse_event(uchar shift, ushort scan, ushort make)
 {
 	short delta = (shift & MM_ESHIFT) ? kbd_mpixels_fine : kbd_mpixels;
 
-	//DBG_FORCE(("generate_mouse_event:scan=%x,shift=%x,make=%x", shift, scan, make));
 	switch (scan)
 	{
 		case UP_ARROW:
@@ -970,7 +969,6 @@ ikbd_scan(ushort scancode, IOREC_T *rec)
 	}
 	else
 # endif
-
 	if (!ikbd_to)
 	{
 		ikbd_to = addroottimeout(0L, IkbdScan, 1);
@@ -1863,12 +1861,9 @@ load_keyboard_table(const char *path, short flag)
 
 	TRACE(("%s(): path `%s'", __FUNCTION__, name));
 
-	ret = FP_ALLOC(rootproc, &fp);
-	if (ret == 0)
-	{
 		XATTR xattr;
 
-		ret = do_open(&fp, name, O_RDONLY, 0, &xattr);
+		ret = do_open(&fp, rootproc, name, O_RDONLY, 0, &xattr);
 		if (ret == 0)
 		{
 # ifdef VERBOSE_BOOT
@@ -1889,11 +1884,7 @@ load_keyboard_table(const char *path, short flag)
 			do_close(rootproc, fp);
 		}
 		else
-		{
 			fp->links = 0;	/* XXX suppress complaints */
-			FP_FREE(fp);
-		}
-	}
 
 	return ret;
 }

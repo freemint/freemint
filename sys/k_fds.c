@@ -98,11 +98,11 @@ fd_remove (struct proc *p, short fd, const char *func)
 
 
 long
-fp_alloc (struct proc *p, FILEPTR **resultfp, const char *func)
+fp_alloc (struct proc *p, FILEPTR **resultfp, int len, const char *func)
 {
 	FILEPTR *fp;
 
-	fp = kmalloc (sizeof (*fp));
+	fp = kmalloc (sizeof (*fp) + len);
 	if (!fp)
 	{
 		DEBUG (("%s: out of memory for FP_ALLOC", func));
@@ -210,7 +210,9 @@ do_dup (short fd, short min, int cmd)
 	assert (p->p_fd);
 
 	ret = FD_ALLOC (get_curproc(), &newfd, min);
-	if (ret) return ret;
+	if (ret){
+		return ret;
+	}
 
 	ret = GETFILEPTR (&p, &fd, &fp);
 	if (ret)
@@ -234,7 +236,7 @@ do_dup (short fd, short min, int cmd)
  * x      - filled in with attributes of opened file (can be NULL)
  */
 long
-do_open (FILEPTR **f, const char *name, int rwmode, int attr, XATTR *x)
+do_open (FILEPTR **f, struct proc *op, const char *name, int rwmode, int attr, XATTR *x)
 {
 	struct proc *p = get_curproc();
 
@@ -247,9 +249,12 @@ do_open (FILEPTR **f, const char *name, int rwmode, int attr, XATTR *x)
 	int creating, exec_check;
 	char temp1[PATH_MAX];
 	short cur_gid, cur_egid;
-
+#if STORE_FILENAMES
+	int l, fullp = 0;
+#endif
 	TRACE (("do_open(%s) mode=%x", name, rwmode));
 
+	*f = 0;
 	/*
 	 * first step: get a cookie for the directory
 	 */
@@ -467,8 +472,26 @@ do_open (FILEPTR **f, const char *name, int rwmode, int attr, XATTR *x)
 		release_cookie (&fc);
 		return devsp ? devsp : EINTERNAL;
 	}
-
-	assert (f && *f);
+#if STORE_FILENAMES
+	{
+	if( fc.fs == &bios_filesys || fc.fs == &pipe_filesys )
+		l = 0;
+	else
+	{
+		if( !(name[0] == '/' || name[0] == '\\' || name[1] == ':') )
+			l = strlen( p->p_cwd->fullpath ) + strlen( name ) + 1;
+		else
+		{
+			fullp = 1;
+			l = strlen( name ) + 1;
+		}
+	}
+	r = FP_ALLOCN (op, f, l);
+	}
+#else
+	r = FP_ALLOC (op, f );
+#endif
+	if (r) return r;
 
 	if (dev == &fakedev)
 	{
@@ -478,11 +501,10 @@ do_open (FILEPTR **f, const char *name, int rwmode, int attr, XATTR *x)
 		assert (p->p_fd);
 
 		fp = p->p_fd->ofiles[devsp];
+		(*f)->links--;
+		FP_FREE( *f );
 		if (!fp || fp == (FILEPTR *) 1)
 			return EBADF;
-
-		(*f)->links--;
-		FP_FREE (*f);
 
 		*f = fp;
 		if( rwmode & O_NDELAY )
@@ -505,6 +527,18 @@ do_open (FILEPTR **f, const char *name, int rwmode, int attr, XATTR *x)
 	(*f)->devinfo = devsp;
 	(*f)->fc = fc;
 	(*f)->dev = dev;
+#if STORE_FILENAMES
+	if( l )
+	{
+		if( fullp )
+			strcpy( (*f)->fname, name);
+		else
+		{
+			strcpy( (*f)->fname, p->p_cwd->fullpath );
+			strcat( (*f)->fname, name );
+		}
+	}
+#endif
 	release_cookie (&dir);
 
 	r = xdd_open (*f);
@@ -512,6 +546,7 @@ do_open (FILEPTR **f, const char *name, int rwmode, int attr, XATTR *x)
 	{
 		DEBUG(("do_open(%s): device open failed with error %ld", name, r));
 		release_cookie (&fc);
+		FP_FREE(*f);
 		return r;
 	}
 
@@ -561,7 +596,7 @@ do_open (FILEPTR **f, const char *name, int rwmode, int attr, XATTR *x)
 	}
 
 	DEBUG(("do_open(%s) -> 0", name));
-	return 0;
+	return r;
 }
 
 /* 2500 ms after hangup: close device, ready for use again

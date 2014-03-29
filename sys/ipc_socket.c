@@ -60,9 +60,6 @@ f_pipe (short *usrh)
 
 	TRACE (("Fpipe(%lx)", usrh));
 
-	r = FP_ALLOC (p, &out);
-	if (r) return r;
-
 	/* BUG: more than 999 open pipes hangs the system
 	 */
 	do {
@@ -78,32 +75,24 @@ f_pipe (short *usrh)
 		 * hidden attribute means check for broken pipes
 		 * changed attribute means act like Unix fifos
 		 */
-		r = do_open (&out, pipename, O_WRONLY|O_CREAT|O_EXCL, FA_RDONLY|FA_HIDDEN|FA_CHANGED, NULL);
+		r = do_open (&out, p, pipename, O_WRONLY|O_CREAT|O_EXCL, FA_RDONLY|FA_HIDDEN|FA_CHANGED, NULL);
 	}
 	while (r != 0 && r == EACCES);
 
 	if (r)
 	{
 		out->links--;
-		FP_FREE (out);
+		//FP_FREE (out);
 
 		DEBUG (("Fpipe: error %d", r));
 		return r;
 	}
 
-	r = FP_ALLOC (p, &in);
-	if (r)
-	{
-		do_close (p, out);
-		return r;
-	}
-
-	r = do_open (&in, pipename, O_RDONLY, 0, NULL);
+	r = do_open (&in, p, pipename, O_RDONLY, 0, NULL);
 	if (r)
 	{
 		do_close (p, out);
 		in->links--;
-		FP_FREE (in);
 
 		DEBUG (("Fpipe: in side of pipe not opened (error %d)", r));
 		return r;

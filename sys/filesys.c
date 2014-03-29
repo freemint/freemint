@@ -458,7 +458,7 @@ _changedrv (ushort d, const char *function)
 			continue;
 
 		if (!fd || !cwd)
-			FATAL (ERR_fsys_inv_fdcwd, function);
+			FATAL (ERR_fsys_inv_fdcwd, d, function);
 
 		/* invalidate all open files on this device */
 		for (i = MIN_HANDLE; i < fd->nfiles; i++)
@@ -502,20 +502,11 @@ _changedrv (ushort d, const char *function)
 
 			fd->ofiles[i] = (FILEPTR *) 1;
 
-			r = FP_ALLOC (p, &f);
-			if (!r)
-			{
-				r = do_open (&f, "U:\\DEV\\NULL", O_RDWR, 0, NULL);
-				if (r)
-				{
-					fd->ofiles[i] = NULL;
-					FP_FREE (f);
-				}
-				else
-					fd->ofiles[i] = f;
-			}
-			else
+			r = do_open (&f, p, "U:\\DEV\\NULL", O_RDWR, 0, NULL);
+			if (r)
 				fd->ofiles[i] = NULL;
+			else
+				fd->ofiles[i] = f;
 		}
 
 		/* terminate any active directory searches on the drive */
@@ -653,7 +644,6 @@ disk_changed (ushort d)
 	TRACE (("calling mediach (%d)", d));
 	r = sys_b_mediach (d);
 	TRACE (("mediach (%d) == %li", d, r));
-	//DBG_FORCE(("disk_changed: mediach (%d) == %li", d, r));
 
 	if (r < 0)
 	{
@@ -1159,8 +1149,23 @@ restart_mount:
 			release_cookie (&dir);
 			dir = *res;
 		}
-	}
 
+# if WITH_KERNFS
+	if( res->fs == &bios_filesys && IS_FD_DIR(res) )	/* /dev/fd */
+	{
+		char tmp[128];
+		ksprintf( tmp, sizeof tmp, "u:/kern/%d/fd", p->pid);
+		r = relpath2cookie(p, &dir, tmp, 0, res, 0);
+		if( r )
+		{
+			DEBUG (("error following /dev/fd: %s, %ld", path, dir.index));
+			break;
+		}
+		if( dolast == 1 )
+			dir = *res;
+	}
+#endif
+	}
 	PATH2COOKIE_DB (("relpath2cookie(3): returning %ld", r));
 	return r;
 }

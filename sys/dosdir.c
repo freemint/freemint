@@ -393,6 +393,20 @@ sys_d_setpath0 (struct proc *p, const char *path)
 	 * "cd c:\foo" should also change the drive to d:
 	 */
 	drv = cwd->curdrv;
+#if STORE_FILENAMES
+	if( *path == '/' || *path == '\\' || (*path && path[1] == ':') )
+		strncpy( cwd->fullpath, path, PATH_MAX );
+	else
+	{
+		char ppath[PATH_MAX+1];
+		fcookie *pdir = &cwd->curdir[dir.dev],
+			*proot = &cwd->root[dir.dev];
+		r = xfs_getname (dir.fs, proot, pdir, ppath, PATH_MAX );
+		strcpy( cwd->fullpath, ppath );
+		strcat( cwd->fullpath, path );
+	}
+	strcat( cwd->fullpath, "/" );
+#endif
 	if (drv != UNIDRV && dir.dev != cwd->root[drv].dev)
 	{
 		int i;
@@ -413,7 +427,6 @@ sys_d_setpath0 (struct proc *p, const char *path)
 
 	release_cookie (&cwd->curdir[drv]);
 	cwd->curdir[drv] = dir;
-
 	return E_OK;
 }
 
@@ -453,8 +466,6 @@ sys_d_getcwd (char *path, int drv, int size)
 	drv = (drv == 0) ? cwd->curdrv : drv - 1;
 
 	root = &cwd->root[drv];
-	//FORCE("Dgetcwd:drv=%d,root=%lx", drv, root);
-	//FORCE("root->fs=%lx",root->fs);
 	if (!root->fs)
 	{
 		/* maybe not initialized yet? */
@@ -2200,6 +2211,9 @@ sys_f_chdir (short fd)
 	 * "cd c:\foo" should also change the drive to d:
 	 */
 	drv = cwd->curdrv;
+#if STORE_FILENAMES
+	strcpy( cwd->fullpath, f->fname );
+#endif
 	if (drv != UNIDRV && f->fc.dev != cwd->root[drv].dev)
 	{
 		int i;

@@ -336,7 +336,7 @@ const char *MSG_global_handle = "Opening global handle (%s)";
 
 /* -------- filesys.c --------- */
 
-const char *ERR_fsys_inv_fdcwd = "In changedrv() called from %s, invalid fd/cwd";
+const char *ERR_fsys_inv_fdcwd = "In changedrv(%d) called from %s, invalid fd/cwd";
 const char *MSG_fsys_files_were_open = "Files were open on the changed drive (0x%x, %s)!";
 const char *MSG_fsys_syncing = "Syncing filesystems ...";
 const char *MSG_fsys_syncing_done = "Syncing done";

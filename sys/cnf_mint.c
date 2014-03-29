@@ -332,10 +332,7 @@ pCB_aux(char *path)
 	FILEPTR *fp;
 	long ret;
 
-	ret = FP_ALLOC(rootproc, &fp);
-	if (ret) return;
-
-	ret = do_open(&fp, path, O_RDWR|O_CREAT|O_TRUNC, 0, NULL);
+	ret = do_open(&fp, rootproc, path, O_RDWR|O_CREAT|O_TRUNC, 0, NULL);
 	if (!ret)
 	{
 		do_close(get_curproc(), get_curproc()->p_fd->ofiles[2]);
@@ -387,10 +384,7 @@ pCB_con(char *path)
 	FILEPTR *fp;
 	long ret;
 
-	ret = FP_ALLOC(rootproc, &fp);
-	if (ret) return;
-
-	ret = do_open(&fp, path, O_RDWR|O_CREAT|O_TRUNC, 0, NULL);
+	ret = do_open(&fp, rootproc, path, O_RDWR|O_CREAT|O_TRUNC, 0, NULL);
 	if (!ret)
 	{
 		int i;
@@ -418,7 +412,7 @@ pCB_echo(char *line)
 static void
 pCB_exec(const char *path, const char *line, struct parsinf *inf)
 {
-	union { const char *cc; char *c;} pathptr = {path};	// pathptr.cc = path;
+	union { const char *cc; char *c;} pathptr = {path};
 	char cmdline[128];
 	int i;
 
@@ -535,10 +529,11 @@ pCB_prn(char *path)
 	FILEPTR *fp;
 	long ret;
 
-	ret = FP_ALLOC(rootproc, &fp);
+	/*ret = FP_ALLOC(rootproc, &fp);
 	if (ret) return;
+	*/
 
-	ret = do_open(&fp, path, O_RDWR|O_CREAT|O_TRUNC, 0, NULL);
+	ret = do_open(&fp, rootproc, path, O_RDWR|O_CREAT|O_TRUNC, 0, NULL);
 	if (!ret)
 	{
 		do_close(get_curproc(), get_curproc()->p_fd->ofiles[3]);

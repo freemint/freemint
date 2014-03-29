@@ -42,8 +42,11 @@
 # include "mint/ioctl.h"
 # include "mint/mem.h"
 # include "mint/proc.h"
+# include "mint/ssystem.h"
 # include "mint/arch/asm.h"
 
+# include "cookie.h"
+# include "ssystem.h"
 # include "dosdir.h"
 # include "filesys.h"
 # include "global.h"
@@ -110,23 +113,13 @@ kernel_open(const char *path, int rwmode, long *err, XATTR *x)
 	struct file *f;
 	long r;
 
-	r = FP_ALLOC(rootproc, &f);
+	r = do_open(&f, rootproc, path, rwmode, 0, x);
 	if (r)
 	{
-		f = NULL;
-		goto leave;
+		if( f )
+			f->links--;
 	}
 
-	r = do_open(&f, path, rwmode, 0, x);
-	if (r)
-	{
-		f->links--;
-		FP_FREE(f);
-
-		f = NULL;
-	}
-
-leave:
 	if (err) *err = r;
 	return f;
 }
@@ -256,7 +249,6 @@ load_module(const char *path, const char *filename, long *err)
 	b->p_blen = fh.fbss;
 
 	*err = load_and_reloc(f, &fh, (char *)b + 256, 0, fh.ftext + fh.fdata, b);
-
 	/* close file */
 // 	kernel_close(f);
 
@@ -303,12 +295,14 @@ load_module(const char *path, const char *filename, long *err)
 			strcpy(km->name, sa);
 			*sa = '\0';
 		}
+		else
+			strcpy(km->name, filename);
 	}
 	loaded_modules = km;
 	kernel_close(f);
 
 	DEBUG(("load_module: name '%s', path '%s'", km->name, km->path));
-	DEBUG(("load_module: basepage = %lx", b));
+	DEBUG(("load_module: basepage = %lx,km=%lx", b, km));
 	return km;
 failed:
 	kernel_close(f);
@@ -370,12 +364,12 @@ load_modules(const char *path, const char *ext, long (*loader)(struct basepage *
 	len = sizeof(buf) - len;
 
 	r = kernel_opendir(&dirh, buf);
-	DEBUG(("load_modules: d_opendir (%s) = %li", buf, r));
+	DEBUG(("load_modules: kernel_opendir (%s) = %li", buf, r));
 
 	if (r == 0)
 	{
 		r = kernel_readdir(&dirh, name, len);
-		DEBUG(("load_modules: d_readdir = %li (%s)", r, name+4));
+		DEBUG(("load_modules: kernel_readdir = %li (%s)", r, name+4));
 
 		while (r == 0)
 		{
@@ -412,13 +406,11 @@ load_modules(const char *path, const char *ext, long (*loader)(struct basepage *
 						free_km(km);
 				}
 				else
-					DEBUG(("load_module of \"%s\" failed (%li)", buf, r));
+					DEBUG (("load_module of \"%s\" failed (%li)", buf, r));
 			}
 
 			r = kernel_readdir(&dirh, name, len);
-			DEBUG(("load_modules: d_readdir = %li (%s)", r, name+4));
-// 			DEBUG((" Press key"));
-// 			sys_c_conin();
+			DEBUG(("load_modules: kernel_readdir = %li (%s)", r, name+4));
 		}
 		kernel_closedir(&dirh);
 	}
@@ -550,7 +542,6 @@ load_xdd(struct basepage *b, const char *name, short *class, short *subclass)
 
 	DEBUG(("load_xdd: enter (0x%lx, %s)", b, name));
 	DEBUG(("load_xdd: init 0x%lx, size %li", initfunc, (b->p_tlen + b->p_dlen + b->p_blen)));
-
 	dev = module_init(initfunc, &kernelinfo);
 	if (dev)
 	{
@@ -615,6 +606,7 @@ register_trap2(long _cdecl (*dispatch)(void *), int mode, int flag, long extra)
 	{
 		/* install */
 
+		DEBUG(("register_trap2: *handler=%lx,old_trap2=%lx", *handler, old_trap2 ));
 		if (*handler == NULL)
 		{
 			DEBUG(("register_trap2: installing handler at 0x%lx", dispatch));
@@ -625,8 +617,9 @@ register_trap2(long _cdecl (*dispatch)(void *), int mode, int flag, long extra)
 			ret = 0;
 
 			/* if trap #2 is not active install it now */
-			if (old_trap2 == 0)
-				new_xbra_install(&old_trap2, 0x88L, mint_trap2); /* trap #2, GEM */
+			/* in case someone unhooked the MiNT-trap, install again */
+			if (old_trap2 == 0 || sys_s_system( S_XBRALOOKUP, TRAP2, COOKIE_MiNT ) )
+				new_xbra_install(&old_trap2, TRAP2, mint_trap2);
 		}
 	}
 	else if (mode == 1)
@@ -638,6 +631,7 @@ register_trap2(long _cdecl (*dispatch)(void *), int mode, int flag, long extra)
 			DEBUG(("register_trap2: removing handler at 0x%lx", dispatch));
 
 			*handler = NULL;
+
 			if (x)
 				*x = 0;
 			ret = 0;
@@ -723,12 +717,9 @@ run_km(const char *path)
 	{
 		long _cdecl (*run)(struct kentry *, const struct kernel_module *);
 
-//		sys_c_conin();
-// 		run = (long _cdecl(*)(struct kentry *, const char *))km->b->p_tbase;
 		run = (long _cdecl(*)(struct kentry *, const struct kernel_module *))km->b->p_tbase;
 		km->caller = curproc;	/* save caller for KM_FREE */
-		//FORCE("run_km run(%lx,%lx)", &kentry, km );
-		err = (*run)(&kentry, km); //km->path);
+		err = (*run)(&kentry, km);
 	}
 	else
 		err = EBADARG;

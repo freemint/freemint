@@ -8651,11 +8651,8 @@ fatfs_debug (const char *fmt, ...)
 	FILEPTR *fp;
 	long ret;
 
-	ret = FP_ALLOC (rootproc, &fp);
-	if (ret) return;
-
 	va_start (args, fmt);
-	ret = do_open (&fp, FS_LOGFILE, (O_WRONLY | O_CREAT | O_APPEND), 0, NULL);
+	ret = do_open (&fp, rootproc, FS_LOGFILE, (O_WRONLY | O_CREAT | O_APPEND), 0, NULL);
 	if (!ret)
 	{
 		(*fp->dev->lseek)(fp, 0, SEEK_END);
@@ -8668,8 +8665,6 @@ fatfs_debug (const char *fmt, ...)
 	}
 	else
 	{
-		FP_FREE (fp);
-
 		kvsprintf (buf, buflen, fmt, args);
 		DEBUG ((buf));
 	}
@@ -8751,12 +8746,9 @@ fatfs_dump_hashtable (void)
 	FILEPTR *fp;
 	long ret;
 
-	ret = FP_ALLOC (rootproc, &fp);
-	if (ret) return;
-
 	FAT_FORCE (("fatfs.c: dynamic used memory = %li bytes", fatfs_dynamic_mem));
 
-	ret = do_open (&fp, FS_DUMPFILE, (O_WRONLY | O_CREAT | O_TRUNC), 0, NULL);
+	ret = do_open (&fp, rootproc, FS_DUMPFILE, (O_WRONLY | O_CREAT | O_TRUNC), 0, NULL);
 	if (!ret)
 	{
 		long i;
@@ -8816,8 +8808,6 @@ fatfs_dump_hashtable (void)
 
 		do_close (rootproc, fp);
 	}
-	else
-		FP_FREE (fp);
 }
 
 # if FS_DEBUG_COOKIE
@@ -8835,4 +8825,5 @@ fatfs_print_cookie (COOKIE *c)
 # endif /* FS_DEBUG */
 
 /* END debug infos */
+
 /****************************************************************************/
