@@ -597,7 +597,7 @@ pipe_creat (fcookie *dir, const char *name, unsigned int mode, int attrib, fcook
 
 		tty->use_cnt = 0;
 		tty->rsel = tty->wsel = 0;
-		   /* do_open does the rest of tty initialization */
+   /* do_open does the rest of tty initialization */
 	}
 	else
 		tty = NULL;
