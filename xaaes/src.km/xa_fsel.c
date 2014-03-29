@@ -1136,8 +1136,21 @@ inq_xfs(struct fsel_data *fs, char *p, char *dsep)
 {
 	long c, t;
 
-	c = d_pathconf(p, DP_CASE);
-	t = fs->trunc = d_pathconf(p, DP_TRUNC);
+	char *p1;
+	if( p[1] == ':' )
+		p1 = &p[2];
+	else
+		p1 = p;
+	if( !strncmp( p1, "\\kern\\", 6 ) || !strncmp( p1, "\\dev\\", 5 ) )
+	{
+		c = DP_CASEINSENS;
+		t = fs->trunc = 1;
+	}
+	else
+	{
+		c = d_pathconf(p, DP_CASE);
+		t = fs->trunc = d_pathconf(p, DP_TRUNC);
+	}
 
 	DIAG((D_fsel, NULL, "inq_xfs '%s': case = %ld, trunc = %ld", p, c, t));
 
