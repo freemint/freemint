@@ -1477,7 +1477,7 @@ get_env(enum locks lock, const char *name)
 static int
 copy_env(char *to, char *s[], const char *without, char **last)
 {
-	int i = 0, j = 0, l = 0;
+	int i = 0, j = 0, l = 0, sl;
 
 	if (without)
 		while (without[l] != '=')
@@ -1491,7 +1491,9 @@ copy_env(char *to, char *s[], const char *without, char **last)
 			break;
 		}
 
-		if (!l || strncmp(s[i], without, l))
+		for( sl = 0; s[i][sl] != '='; sl++ )
+		;
+		if ((sl != l || strncmp(s[i], without, l)))
 		{
 			strcpy(to, s[i]);
 			s[j++] = to;
@@ -1513,7 +1515,7 @@ static long
 count_env(char *s[], const char *without)
 {
 	long ct = 0;
-	int i = 0, l = 0;
+	int i = 0, l = 0, sl = 0;
 
 	if (without)
 		while (without[l] != '=')
@@ -1526,32 +1528,39 @@ count_env(char *s[], const char *without)
 			DIAGS(("count_env ARGV: skipped remainder of environment"));
 			break;
 		}
-		if (l == 0 || (l != 0 && strncmp(s[i], without, l) != 0) )
+		for( sl = 0; s[i][sl] != '='; sl++ )
+		;
+		if (/*l == 0 ||*/ (sl != l || strncmp(s[i], without, l)))
 			ct += strlen(s[i]) + 1;
 		i++;
 	}
 	return ct + 1;
 }
 
+/*
+ * todo: remember ct, use grain for C.env?
+ */
 long
 put_env(enum locks lock, const char *cmd)
 {
-	long ret = 0;
 
 	Sema_Up(envstr);
 
 	if (cmd)
 	{
 		long ct;
-		char *newenv;
+		char *newenv, *p;
 
 		DIAG((D_shel, NULL, " -- change; '%s'", cmd ? cmd : "~~"));
 		/* count without */
 		ct = count_env(strings, cmd);
 		/* ct is including the extra \0 at the end! */
 
-		/* ends with '=': remove */
-		if (*(cmd + strlen(cmd) - 1) == '=')
+		p = strchr( cmd, '=' );
+		if( p == cmd )
+			return 1;
+		/* no '=' or ends with '=': remove */
+		if ( !p || !*(p+1) )
 		{
 			newenv = kmalloc(ct);
 			if (newenv)
@@ -1584,7 +1593,7 @@ put_env(enum locks lock, const char *cmd)
 		IFDIAG(display_env(strings, 0);)
 	}
 	Sema_Dn(envstr);
-	return ret;
+	return 0;
 }
 
 void
