@@ -1,15 +1,15 @@
 /*
  * $Id$
- * 
+ *
  * This file belongs to FreeMiNT. It's not in the original MiNT 1.12
  * distribution.
- * 
+ *
  * Modified for FreeMiNT by Frank Naumann <fnaumann@freemint.de>
- * 
- * 
+ *
+ *
  * Copyright (c) 1983, 1992, 1993
  *      The Regents of the University of California.  All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
  * are met:
@@ -25,7 +25,7 @@
  * 4. Neither the name of the University nor the names of its contributors
  *    may be used to endorse or promote products derived from this software
  *    without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
@@ -37,7 +37,7 @@
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
- * 
+ *
  */
 
 # ifdef PROFILING
@@ -87,11 +87,11 @@ void
 moncontrol (long mode)
 {
 	struct gmonparam *p = &_gmonparam;
-	
+
 	/* Don't change the state if we ran into an error.  */
 	if (p->state == GMON_PROF_ERROR)
 		return;
-	
+
 	if (mode)
 	{
 		/* start */
@@ -113,7 +113,7 @@ monstartup (ulong lowpc, ulong highpc)
 	register long o;
 	char *cp;
 	struct gmonparam *p = &_gmonparam;
-	
+
 	/*
 	 * round lowpc and highpc to multiples of the density we're using
 	 * so the rest of the scaling (here and in gprof) stays in ints.
@@ -124,7 +124,7 @@ monstartup (ulong lowpc, ulong highpc)
 	p->kcountsize = p->textsize / HISTFRACTION;
 	p->hashfraction = HASHFRACTION;
 	p->log_hashfraction = -1;
-	
+
 	/* The following test must be kept in sync with the corresponding
 	 * test in mcount.c.
 	 */
@@ -140,14 +140,14 @@ monstartup (ulong lowpc, ulong highpc)
 #endif
 	p->fromssize = p->textsize / HASHFRACTION;
 	p->tolimit = p->textsize * ARCDENSITY / 100;
-	
+
 	if (p->tolimit < MINARCS)
 		p->tolimit = MINARCS;
 	else if (p->tolimit > MAXARCS)
 		p->tolimit = MAXARCS;
-	
+
 	p->tossize = p->tolimit * sizeof (struct tostruct);
-	
+
 	cp = kmalloc (p->kcountsize + p->fromssize + p->tossize);
 	if (!cp)
 	{
@@ -156,15 +156,15 @@ monstartup (ulong lowpc, ulong highpc)
 		p->state = GMON_PROF_ERROR;
 		return;
 	}
-	
+
 	p->tos = (struct tostruct *) cp;
 	cp += p->tossize;
 	p->kcount = (ushort *)cp;
 	cp += p->kcountsize;
 	p->froms = (ushort *)cp;
-	
+
 	p->tos[0].link = 0;
-	
+
 	o = p->highpc - p->lowpc;
 	if (p->kcountsize < (ulong) o)
 	{
@@ -173,7 +173,7 @@ monstartup (ulong lowpc, ulong highpc)
 # else
 		/* avoid floating point operations */
 		long quot = o / p->kcountsize;
-		
+
 		if (quot >= 0x10000)
 			s_scale = 1;
 		else if (quot >= 0x100)
@@ -186,7 +186,7 @@ monstartup (ulong lowpc, ulong highpc)
 	}
 	else
 		s_scale = SCALE_1_TO_1;
-	
+
 	moncontrol (1);
 }
 
@@ -194,7 +194,7 @@ void
 mcleanup (void)
 {
 	moncontrol (0);
-	
+
 	if (_gmonparam.state != GMON_PROF_ERROR)
 		write_gmon ();
 }
@@ -203,7 +203,7 @@ static void
 gmon_writev (FILEPTR *f, const struct iovec *iov, long niov)
 {
 	long i;
-	
+
 	for (i = 0; i < niov; i++)
 	{
 		if (iov[i].iov_len >= 0)
@@ -218,7 +218,7 @@ write_hist (FILEPTR *f)
 {
 	uchar tag = GMON_TAG_TIME_HIST;
 	struct gmon_hist_hdr thdr __attribute__ ((aligned (__alignof__ (char *))));
-	
+
 	if (_gmonparam.kcountsize > 0)
 	{
 		ulong offset = (ulong) _base + 0x100;
@@ -228,15 +228,15 @@ write_hist (FILEPTR *f)
 			{ &thdr, sizeof (struct gmon_hist_hdr) },
 			{ _gmonparam.kcount, _gmonparam.kcountsize }
 		};
-		
+
 		thdr.low_pc.p = (char *) _gmonparam.lowpc - offset;
 		thdr.high_pc.p = (char *) _gmonparam.highpc - offset;
 		thdr.hist_size.s32 = (_gmonparam.kcountsize / sizeof (HISTCOUNTER));
 		thdr.prof_rate.s32 = profile_frequency ();
-		
+
 		strncpy (thdr.dimen, "seconds", sizeof (thdr.dimen));
 		thdr.dimen_abbrev = 's';
-		
+
 		gmon_writev (f, iov, 3);
 	}
 }
@@ -251,28 +251,28 @@ write_call_graph (FILEPTR *f)
 	ulong frompc;
 	struct iovec iov[2 * NARCS_PER_WRITEV];
 	long nfilled;
-	
+
 	ulong offset = (ulong) _base + 0x100;
-	
+
 	for (nfilled = 0; nfilled < NARCS_PER_WRITEV; ++nfilled)
 	{
 		iov[2 * nfilled].iov_base = &tag;
 		iov[2 * nfilled].iov_len = sizeof (tag);
-		
+
 		iov[2 * nfilled + 1].iov_base = &raw_arc[nfilled];
 		iov[2 * nfilled + 1].iov_len = sizeof (struct gmon_cg_arc_record);
 	}
-	
+
 	nfilled = 0;
 	from_len = _gmonparam.fromssize / sizeof (*_gmonparam.froms);
 	for (from_index = 0; from_index < from_len; ++from_index)
 	{
 		if (_gmonparam.froms[from_index] == 0)
 			continue;
-		
+
 		frompc = _gmonparam.lowpc;
 		frompc += (from_index * _gmonparam.hashfraction * sizeof (*_gmonparam.froms));
-		
+
 		for (to_index = _gmonparam.froms[from_index];
 			to_index != 0;
 			to_index = _gmonparam.tos[to_index].link)
@@ -280,7 +280,7 @@ write_call_graph (FILEPTR *f)
 			raw_arc[nfilled].from_pc.p = (char *) frompc - offset;
 			raw_arc[nfilled].self_pc.p = (char *) _gmonparam.tos[to_index].selfpc - offset;
 			raw_arc[nfilled].count.l = _gmonparam.tos[to_index].count;
-			
+
 			if (++nfilled == NARCS_PER_WRITEV)
 			{
 				gmon_writev (f, iov, 2 * nfilled);
@@ -288,7 +288,7 @@ write_call_graph (FILEPTR *f)
 			}
 		}
 	}
-	
+
 	if (nfilled > 0)
 		gmon_writev (f, iov, 2 * nfilled);
 }
@@ -303,7 +303,7 @@ write_bb_counts (FILEPTR *f)
 	uchar tag = GMON_TAG_BB_COUNT;
 	long ncounts;
 	long i;
-	
+
 	struct iovec bbhead[2] =
 	{
 		{ &tag, sizeof (tag) },
@@ -311,13 +311,13 @@ write_bb_counts (FILEPTR *f)
 	};
 	struct iovec bbbody[8];
 	long nfilled;
-	
+
 	for (i = 0; i < (sizeof (bbbody) / sizeof (bbbody[0])); i += 2)
 	{
 		bbbody[i].iov_len = sizeof (grp->addresses[0]);
 		bbbody[i + 1].iov_len = sizeof (grp->counts[0]);
 	}
-	
+
 	/* Write each group of basic-block info (all basic-blocks in a
 	 * compilation unit form a single group).
 	 */
@@ -325,7 +325,7 @@ write_bb_counts (FILEPTR *f)
 	{
 		ncounts = grp->ncounts;
 		gmon_writev (f, bbhead, 2);
-		
+
 		for (nfilled = i = 0; i < ncounts; ++i)
 		{
 			if (nfilled > (sizeof (bbbody) / sizeof (bbbody[0])) - 2)
@@ -333,11 +333,11 @@ write_bb_counts (FILEPTR *f)
 				gmon_writev (f, bbbody, nfilled);
 				nfilled = 0;
 			}
-			
+
 			bbbody[nfilled++].iov_base = ( void *) &grp->addresses[i];
 			bbbody[nfilled++].iov_base = &grp->counts[i];
 		}
-		
+
 		if (nfilled > 0)
 			gmon_writev (f, bbbody, nfilled);
 	}
@@ -348,41 +348,31 @@ write_gmon (void)
 {
 	FILEPTR *f;
 	long ret;
-	
-	ret = FP_ALLOC (rootproc, &f);
-	if (ret)
-	{
-		ALERT (MSG_gmon_fptr_fail);
-		return;
-	}
-	
-	ret = do_open (&f, "u:\\ram\\gmon.out", (O_WRONLY | O_CREAT | O_TRUNC), 0, NULL);
+
+	ret = do_open (&f, rootproc, "u:\\ram\\gmon.out", (O_WRONLY | O_CREAT | O_TRUNC), 0, NULL);
 	if (ret == 0)
 	{
 		struct gmon_hdr ghdr __attribute__ ((aligned (__alignof__ (long))));
-		
+
 		/* write gmon.out header: */
 		mint_bzero (&ghdr, sizeof (struct gmon_hdr));
 		memcpy (&ghdr.cookie[0], GMON_MAGIC, sizeof (ghdr.cookie));
 		ghdr.version.l = GMON_VERSION;
 		(*f->dev->write)(f, (const char *) &ghdr, sizeof (struct gmon_hdr));
-		
+
 		/* write PC histogram: */
 		write_hist (f);
-		
+
 		/* write call-graph: */
 		write_call_graph (f);
-		
+
 		/* write basic-block execution counts: */
 		write_bb_counts (f);
-		
+
 		do_close (rootproc, f);
 	}
 	else
-	{
-		FP_FREE (f);
 		ALERT (MSG_gmon_out_fail);
-	}
 }
 
 void
@@ -390,14 +380,14 @@ write_profiling (void)
 {
 	struct gmonparam *p = &_gmonparam;
 	long save = p->state;
-	
+
 	p->state = GMON_PROF_OFF;
 	if (save == GMON_PROF_ON)
 	{
 		ALERT (MSG_gmon_out_written);
 		write_gmon ();
 	}
-	
+
 	p->state = save;
 }
 
@@ -405,7 +395,7 @@ void
 toogle_profiling (void)
 {
 	struct gmonparam *p = &_gmonparam;
-	
+
 	if (p->state == GMON_PROF_OFF)
 	{
 		moncontrol (1);
