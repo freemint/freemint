@@ -27,6 +27,48 @@
 #include "mint/fcntl.h"	//SEEK_SET
 #include "util.h"
 #include "debug.h"
+#include "mint/proc.h"
+#include "mint/ssystem.h"
+#include "mint/filedesc.h"
+
+/*
+ * md=1: open bootlog and redirect kernel-debug-tty to it
+ * md=0: close bootlog and restore kernel-debug-tty
+ */
+void
+redir_debug( struct proc *p, int md )
+{
+	char *bl;
+	long r;
+	static struct file *fp = 0;
+	static struct file *fo = 0;
+
+	if( md == 1 && fp )
+		return; /* already open */
+	if( md == 0 )
+	{
+		if( fp && fo )
+		{
+			s_system( 31, 0, 0 );
+			kernel_close(fp);
+			p->p_fd->ofiles[1] = fo;
+			fp = fo = 0;
+		}
+		return;
+	}
+	if( md == 1 && (r=s_system( S_GETBOOTLOG, (long)&bl, 0 )) >= 0 )
+	{
+		fp = kernel_open(bl, O_RDWR|O_CREAT, NULL,NULL);
+		if( fp )
+		{
+			kernel_lseek(fp, 0, SEEK_END);
+			fo = p->p_fd->ofiles[1];
+			p->p_fd->ofiles[1] = fp;
+			r = s_system( S_SETDEBUGFP, (long)fp, 0 );
+		}
+	}
+	return;
+}
 
 int
 get_drv(const char *p)
@@ -270,14 +312,12 @@ char *xa_readline( char *buf, long size, XA_FILE *fp )
 	int cr = 0, offs;
 	char *ret = 0;
 
-
 	if( fp->k_fp )
 	{
 
 		if( !fp->p )
 		{
 			err = kernel_read( fp->k_fp, fp->buf, sizeof(fp->buf)-1 );
-
 			if( err <= 0 || fp->buf[0] < '\t' )
 			{
 				return 0;

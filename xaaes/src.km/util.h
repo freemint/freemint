@@ -29,6 +29,7 @@
 
 #include "global.h"
 
+void redir_debug( struct proc *p, int md );
 int get_drv(const char *p);
 void fix_path(char *path);
 void strip_fname(const char *filename, char *pn, char *fn);
