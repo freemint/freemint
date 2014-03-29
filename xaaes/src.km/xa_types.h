@@ -2951,6 +2951,17 @@ struct helpserver
 	char *path; /* optional */
 };
 
+struct remote
+{
+	//struct remote *next;
+	union
+	{
+		char *fn;
+		int fd;
+	}u;
+	unsigned long flags, bytes;
+};
+
 struct cfg_name_list;
 struct cfg_name_list
 {
@@ -3077,6 +3088,7 @@ struct config
 	short videomode;		/* ID of screen device opened by v_opnwk() */
 
 	struct helpserver *helpservers;	/* configured helpservers */
+	struct remote *remote_inp;
 	struct cfg_name_list *ctlalta;
 	struct cfg_name_list *kwq;	/* Apps listed here are killed without question upon shutdowns */
 

@@ -84,6 +84,23 @@
 #define EIFFEL_SUPPORT 1
 #endif
 
+/* if 1 enable remote-keyboard */
+#ifndef REMOTE_KBD
+#ifdef ST_ONLY
+#define REMOTE_KBD 0
+#else
+#define REMOTE_KBD 1
+#endif
+#endif
+/* if 1 enable extended cnf (exec, install, getkey) */
+#ifndef XT_CNF
+#ifdef ST_ONLY
+#define XT_CNF 0
+#else
+#define XT_CNF 1
+#endif
+#endif
+
 /* enable gradients */
 #ifndef WITH_GRADIENTS
 #ifdef ST_ONLY

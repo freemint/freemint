@@ -69,6 +69,7 @@
 #include "render_obj.h"
 #include "taskman.h"
 #include "trnfm.h"
+#include "util.h"
 
 #include "xa_appl.h"
 #include "xa_evnt.h"
@@ -86,6 +87,7 @@
 #include "mint/ioctl.h"
 #include "mint/signal.h"
 #include "mint/ssystem.h"
+#include "mint/stat.h"
 #include "cookie.h"
 
 #if CHECK_STACK
@@ -1414,6 +1416,7 @@ ce_dispatch_shutdown(enum locks lock, struct xa_client *client, short b)
 	char *s;
 	if( in_ce_dispatch_shutdown )	// no clue why this happens ..
 	{
+		app_in_front( lock, C.Hlp, true, true, false );
 		return;
 	}
 	in_ce_dispatch_shutdown = 1;
@@ -1633,9 +1636,9 @@ void
 k_main(void *dummy)
 {
 	int wait = 1, pferr, p_exc = -1;
+	long r;
 	unsigned long default_input_channels;
 	struct tty *tty;
-	struct file *fp = 0, *fo = 0 /* for gcc */;
 	struct proc *p = get_curproc();
 	uchar user_stack[100]; /* Stack to call the AES from supervisor mode */
 #if CHECK_STACK
@@ -1759,17 +1762,7 @@ k_main(void *dummy)
 	}
 	else mt_appl_exit(my_global_aes);
 	}
-	BLOG((0,"apid=%d,P_handle=%d", my_global_aes[2], C.P_handle));
-
-	/*
-	 * register trap#2 handler
-	 */
-
-	if (register_trap2(XA_handler, 0, 0, 0))
-	{
-		display(/*00000012*/"ERROR: register_trap2 failed!");
-		goto leave;
-	}
+	BLOG((0,"apid=%d,P_handle=%d,next_res=%d", my_global_aes[2], C.P_handle, next_res));
 
 	C.Aes->options.app_opts |= XAAO_OBJC_EDIT;
 	/*
@@ -1782,21 +1775,20 @@ k_main(void *dummy)
 
 	if ((ferr = k_init(next_res)) != 0)
 	{
-		display(/*00000013*/"ERROR: k_init failed!");
+		BLOG((1, "ERROR: k_init failed!"));
 		goto leave;
 	}
+	/*
+	 * register trap#2 handler
+	 */
+
+	if (register_trap2(XA_handler, 0, 0, 0))
 	{
-	char *bl;
-	long r;
-	if( (r=s_system(S_GETBOOTLOG, (long)&bl, 0 )) >= 0 )
-	{
-		//fp = kernel_open("c:/mint/boot.log", O_RDWR|O_CREAT, NULL,NULL);
-		fp = kernel_open(bl, O_RDWR|O_CREAT, NULL,NULL);
-		kernel_lseek(fp, 0, SEEK_END);
-		fo = p->p_fd->ofiles[1];
-		p->p_fd->ofiles[1] = fp;	// f->links++;
+		BLOG((1, "ERROR: register_trap2 failed!"));
+		goto leave;
 	}
-	}
+
+	redir_debug( p, 1 );
 	read_inf();
 
 	/*
@@ -1908,6 +1900,72 @@ k_main(void *dummy)
 
 	default_input_channels = 1UL << C.KBD_dev;	/* We are waiting on all these channels */
 	default_input_channels |= 1UL << C.alert_pipe;	/* Monitor the system alert pipe */
+
+#if REMOTE_KBD
+	/* todo: fifo, keep-open */
+	if( cfg.remote_inp )
+	{
+		struct stat st;
+		int fd = -1;
+		r = f_stat64( 0, cfg.remote_inp->u.fn, &st );
+		if (r != 0 )
+		{
+			fd = f_open(cfg.remote_inp->u.fn, O_CREAT|O_RDWR );
+			r = f_stat64( 0, cfg.remote_inp->u.fn, &st );
+		}
+		else
+			fd = f_open(cfg.remote_inp->u.fn, O_RDWR );
+		if (r == 0 && fd >= 0)
+		{
+			if( S_ISFIFO(st.mode) )
+			{
+				if( fd >= 0 )
+				{
+					default_input_channels |= 1UL << fd;
+					kfree( cfg.remote_inp->u.fn );
+					cfg.remote_inp->u.fd = fd;
+					cfg.remote_inp->flags |= S_IFIFO;
+				}
+			}
+			else if( S_ISREG( st.mode ) )
+			{
+				f_close( fd );
+				fd = f_open(cfg.remote_inp->u.fn, O_TRUNC|O_CREAT|O_RDWR );
+				if( fd >= 0 )
+					f_close( fd );
+				else
+					cfg.remote_inp = 0;
+			}
+			if( cfg.remote_inp )
+			{
+				KEYTAB *kt = Keytbl( -1, -1, -1 );
+				int i;
+				unsigned char *us = kt->unshift, *s = kt->shift;
+				unsigned char *aus = kt->altunshift, *as = kt->altshift;
+				scantab = kmalloc( sizeof( SCANTAB ) );
+				if( scantab )
+				{
+					memset( scantab, 0, sizeof( SCANTAB ) );
+					for( i = 0; i < 128; i++ )
+					{
+						if( !scantab->unshift[us[i]] )
+							scantab->unshift[us[i]] = i;
+						if( !scantab->shift[s[i]] )
+							scantab->shift[s[i]] = i;
+					}
+					memcpy( scantab->alt, aus, NALTCODES*2 );
+					memcpy( scantab->altshift, as, NALTCODES*2 );
+					if( !(cfg.remote_inp->flags & S_IFIFO) )
+						aessys_timeout = 500;
+				}
+				else
+					cfg.remote_inp = 0;
+			}
+		}
+		else
+			cfg.remote_inp = 0;
+	}
+#endif
 	tty = (struct tty *)C.Aes->p->p_fd->ofiles[C.KBD_dev]->devinfo;
 
 	if( pferr )
@@ -1919,7 +1977,6 @@ k_main(void *dummy)
 	if (cfg.allow_setexc != -1 )
 	{
 		/* don't want anyone to change system-vectors */
-		long r;
 		if( (r=s_system(S_SETEXC, -1, 0 )) >= 0 )
 		{
 			p_exc = r;
@@ -1930,11 +1987,7 @@ k_main(void *dummy)
 			BLOG((0,"could not get SETEXC:%ld", r));
 	}
 
-	if( fp )
-	{
-		kernel_close(fp);
-		p->p_fd->ofiles[1] = fo;
-	}
+	redir_debug( p, 0 );
 
 	/* redirect stderr (mintlib (main.c) assumes this to be done when argv[0] != 0, see launch()) */
 	(void)_f_force(2,1);
@@ -1978,16 +2031,57 @@ k_main(void *dummy)
 			set_boot_focus(lock);
 			if (input_channels & (1UL << C.KBD_dev))
 			{
-				keyboard_input(lock);
+				keyboard_input(lock, C.KBD_dev, false);
 			}
 
 			if (input_channels & (1UL << C.alert_pipe))
 			{
 				alert_input(lock);
 			}
+			if( cfg.remote_inp && (cfg.remote_inp->flags & S_IFIFO) && (input_channels & (1UL << cfg.remote_inp->u.fd)) )
+			{
+				keyboard_input(lock, cfg.remote_inp->u.fd, true);
+			}
 		}
 		else if( aessys_timeout > 1 )
 		{
+#if REMOTE_KBD
+			if ( cfg.remote_inp && !(cfg.remote_inp->flags & S_IFIFO) )
+			{
+				struct stat st;
+				r = f_stat64( 0, cfg.remote_inp->u.fn, &st );
+				if( st.size < cfg.remote_inp->bytes )
+					cfg.remote_inp->bytes = st.size;	/* file shrunk */
+				if( !r && st.size > cfg.remote_inp->bytes )
+				{
+					int fd = f_open(cfg.remote_inp->u.fn, O_RDWR );
+					if( fd >= 0 )
+					{
+						struct xa_window *curr = TOP_WINDOW;
+						_f_seek( cfg.remote_inp->bytes, fd, 0 );
+						for( ; ; cfg.remote_inp->bytes++ )
+						{
+							if( cfg.remote_inp->bytes < st.size )
+							{
+								keyboard_input(lock, fd, true);
+								input_channels = default_input_channels;
+								/* window untopped or other input: skip remainder */
+								if( TOP_WINDOW != curr ||
+									(fs_rtn = f_select(10, (long *) &input_channels, 0L, 0L)) > 0 )
+								{
+									for( ; cfg.remote_inp->bytes < st.size; cfg.remote_inp->bytes++ )
+										f_getchar(cfg.remote_inp->u.fd, RAW);
+									break;
+								}
+							}
+							else
+								break;
+						}
+						f_close( fd );
+					}
+				}
+			}
+#endif
 			tty->state &= ~TS_COOKED;	/* we are kernel ... */
 			if( C.rdm )
 			{
@@ -2024,7 +2118,6 @@ k_main(void *dummy)
 
 leave:
 	{
-		int r;
 		/* delete semaphore */
 		r = p_semaphore( SEMDESTROY, XA_SEM, 0 );
 		if( r )
@@ -2159,7 +2252,6 @@ k_exit(int wait)
 		mt_appl_exit(my_global_aes);
 	}
 
-
 	/*
 	 * close profile
 	 */
@@ -2174,6 +2266,12 @@ k_exit(int wait)
 	{
 		f_close(C.alert_pipe);
 	}
+#if REMOTE_KBD
+	if( cfg.remote_inp && (cfg.remote_inp->flags & S_IFIFO) )
+	{
+		f_close( cfg.remote_inp->u.fd );
+	}
+#endif
 	BLOG((1,"wake loader: %lx;shutdown=%x", (long)&loader_pid, C.shutdown));
 	wake(WAIT_Q, (long)&loader_pid);
 

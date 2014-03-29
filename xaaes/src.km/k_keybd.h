@@ -58,6 +58,35 @@ void queue_key		(struct xa_client *client, const struct rawkey *key);
 bool unqueue_key	(struct xa_client *client, struct rawkey *key);
 
 int switch_keyboard( char *tbname );
-void keyboard_input	(enum locks lock);
+
+#if REMOTE_KBD
+
+typedef struct
+{
+	unsigned char *unshift; 		/* Table of 'normal' key presses	*/
+	unsigned char *shift; 		/* Table of Shift key presses 	*/
+	unsigned char *capslock;		/* Table of Capslock key presses	*/
+	unsigned char *altunshift;		/* From TOS 4.00, undocumented! */
+	unsigned char *altshift;		/* From TOS 4.00, undocumented! */
+	unsigned char *altcapslock; 	/* From TOS 4.00, undocumented! */
+	unsigned char *altgr; 		/* From TOS 4.00, undocumented! */
+} KEYTAB;
+
+#define NKEYCODES 256
+#define NALTCODES 16
+
+typedef struct
+{
+	unsigned char unshift[NKEYCODES];
+	unsigned char shift[NKEYCODES];
+	unsigned char alt[NALTCODES*2];
+	unsigned char altshift[NALTCODES*2];
+} SCANTAB;
+
+extern SCANTAB *scantab;
+#define CTRL_Z 0x1A
+#endif
+
+void keyboard_input	(enum locks lock, int dev, bool remote);
 
 #endif /* _k_keybd_h */

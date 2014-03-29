@@ -36,6 +36,7 @@
 #include "init.h"
 
 #include "mint/fcntl.h"
+#include "mint/ssystem.h"
 #include "cnf.h"
 
 struct cnfdata
@@ -70,9 +71,19 @@ static PCB_A    pCB_keyboards;
 static PCB_Tx    pCB_include;
 static PCB_A    pCB_helpserver;
 
+#if REMOTE_KBD
+static PCB_A    pCB_remote_inp;
+#endif
+
 static PCB_ATK  pCB_shell;
 static PCB_TAx  pCB_run;
 
+#if XT_CNF
+static PCB_TAx  pCB_exec;
+static PCB_TAx  pCB_install;
+
+static PCB_A    pCB_getkey;
+#endif
 
 /* The item table, note the 'NULL' entry at the end. */
 
@@ -124,7 +135,7 @@ static struct parser_item parser_tab[] =
 	{ "POPSCROLL",             PI_R_S,   & cfg.popscroll		},
 	{ "DC_TIME",               PI_R_S,   & cfg.double_click_time	},
 	{ "MP_TIMEGAP",            PI_R_S,   & cfg.mouse_packet_timegap },
-	{ "VIDEO",                 PI_R_US,   & cfg.videomode		},
+	{ "VIDEO",                 PI_R_US,  & cfg.videomode		},
 	{ "ALLOW_SETEXC",          PI_R_S,   & cfg.allow_setexc, Range(0, 2)	},
 	{ "ET4000_HACK",           PI_R_B,   & cfg.et4000_hack	},
 	{ "REDRAW_TIMEOUT",        PI_R_S,   & cfg.redraw_timeout, Range(0, 32000)	},
@@ -135,16 +146,19 @@ static struct parser_item parser_tab[] =
 	{ "SETENV",                PI_C_TT,  pCB_setenv		},
 
 	{ "NEXT_ACTIVE",           PI_V_T,   pCB_next_active		},
-	{ "INCLUDE",               PI_C_T,		pCB_include	},
+	{ "INCLUDE",               PI_C_T,	 pCB_include	},
 	{ "APP_OPTIONS",           PI_V_A,   pCB_app_options		},
 	{ "CANCEL",                PI_V_A,   pCB_cancel			},
-	{ "KEYBOARDS",             PI_V_A,		pCB_keyboards	},
+	{ "KEYBOARDS",             PI_V_A,   pCB_keyboards	},
 	{ "FILTERS",               PI_V_A,   pCB_filters		},
 	{ "CTLALTA_SURVIVORS",	   PI_V_A,   pCB_ctlalta_survivors	},
 	{ "KILL_WO_QUESTION",	     PI_V_A,   pCB_kill_without_question	},
 	{ "MENU",                  PI_V_T,   pCB_menu			},
 	{ "HELPSERVER",            PI_V_A,   pCB_helpserver		},
 
+#if REMOTE_KBD
+	{ "REMOTE_INP",            PI_V_A,   pCB_remote_inp  },
+#endif
 	/* Mouse wheel settings */
 	{ "VERTICAL_WHEEL_ID",       PI_R_S,   & cfg.ver_wheel_id         },
 	{ "HORIZONTAL_WHEEL_ID",     PI_R_S,   & cfg.hor_wheel_id         },
@@ -167,8 +181,13 @@ static struct parser_item parser_tab[] =
 	{ "TEXTURES", 		PI_R_T, cfg.textures,       { dat: sizeof(cfg.textures) } },
 	/* startup things */
 	{ "SHELL",                 PI_V_ATK, pCB_shell			},
-	{ "RUN",                   PI_C_TA,  pCB_run			},
+	{ "RUN",                   PI_C_TA,  pCB_run      },
+#if XT_CNF
+	{ "EXEC",                  PI_C_TA,  pCB_exec     },
+	{ "INSTALL",               PI_C_TA,  pCB_install  },
 
+	{ "GETKEY",                PI_C_A,   pCB_getkey  },
+#endif
 	/* debug */
 
 	{ NULL }
@@ -909,6 +928,26 @@ pCB_helpserver(char *line)
 	}
 }
 
+#if REMOTE_KBD
+static void
+pCB_remote_inp(char *line)
+{
+	struct remote *rm;
+
+	char *fn = line;
+	//char *opts = get_delim_string(&line);
+	if (!fn || !*fn)
+	{
+		return;
+	}
+	rm = kmalloc( sizeof(struct remote) );
+	if( !rm )
+		return;
+	rm->u.fn = xa_strdup( fn );
+	rm->flags = rm->bytes = 0;
+	cfg.remote_inp = rm;
+}
+#endif
 /*----------------------------------------------------------------------------*/
 static void
 pCB_shell(const char *path, const char *line, long data)
@@ -988,6 +1027,205 @@ pCB_run(const char *path, const char *line, struct parsinf *inf)
 		}
 	}
 }
+/*----------------------------------------------------------------------------*/
+#if XT_CNF
+static int
+getkey(char *s, int md)
+{
+	if( s )
+		_c_conws( s );
+	if( !md )
+		_c_conws( " -hit any key-\r\n" );
+	return _c_conin();
+}
+static void
+pCB_getkey(char *s)
+{
+	getkey(s, 0);
+}
+/*----------------------------------------------------------------------------*/
+static unsigned long
+cnf_getopt( char *cmd, char **line, const char *optstr, char *optarg[], struct parsinf *inf )
+{
+	unsigned long ret = 0;
+	char *lp = cmd;
+
+	while( *lp == '-' && lp[1] )
+	{
+		unsigned long mask;
+		int opti;
+		const char *op;
+		char c = lp[1];
+
+		lp += 2;
+		for( opti = 0, mask = 1, op = optstr; *op; opti++, op++, mask <<= 1 )
+		{
+			if( *op == c )
+			{
+				ret |= mask;
+				if( optarg && op[1] == ':' )
+				{
+					if( !*lp )
+					{
+						BLOG((1,"%s: %d: option %c requires an argument", inf->file, inf->line, c ));
+						*line = 0;
+						return 0;
+					}
+					while( *lp && *++lp <= ' ' );
+					optarg[opti] = lp++;
+					while( *++lp > ' ' );
+					if( *lp )
+						*lp++ = 0;
+					op++;
+				}
+				break;
+			}
+			if( op[1] == ':' )
+				op++;
+		}
+		if( !*op )
+		{
+			BLOG((1,"%s: %d: invalid option: %c", inf->file, inf->line, c ));
+			*line = 0;
+			return 0;
+		}
+		while( *lp && *lp <= ' ' )
+			lp++;
+	}
+
+	while( *lp && *lp <= ' ' )
+		lp++;
+
+	*line = lp;
+	return ret;
+}
+
+static char *
+get_cmdline( char *lp, char *cmdline )
+{
+	while( *++lp > ' ' )
+		;
+	if( *lp )
+	{
+		int i;
+		*lp++ = 0;
+		i = strlen(lp);
+		if (i > 126) i = 126;
+		cmdline[0] = i;
+		strncpy(cmdline+1, lp, i);
+		cmdline[i+1] = 0;
+	}
+	else cmdline[0] = cmdline[1] = 0;
+	return lp;
+}
+
+static void
+do_exec( const char *path, char *cmdline )
+{
+	long i = _sys_pexec(0,  path, cmdline, 0 );
+	if (i < 0)
+		BLOG((1, "error executing %s:%ld", path, i ));
+}
+/*----------------------------------------------------------------------------*/
+/* exec [-w] <path> [arg ...] */
+static void
+pCB_exec(const char *path, const char *line, struct parsinf *inf)
+{
+	char cmdline[128], cmd[256], *lp;
+	char *optarg[4] = {0};
+	//long i;
+	unsigned long opts = 0;
+
+	if( line )
+		sprintf( cmd, sizeof(cmd), "%s %s", path, line );
+	else
+		strcpy( cmd, path );
+	opts = cnf_getopt( cmd, &lp, "w", optarg, inf );
+	if( !lp )
+		return;
+
+	path = lp;
+	get_cmdline( lp, cmdline );
+	BLOG((0,"exec %s, %s", path, cmdline+1 ));
+	do_exec( path, cmdline );
+	if( opts & 1 )
+	{
+		pCB_getkey(0);
+	}
+}
+/*----------------------------------------------------------------------------*/
+/* install [-P predicates] <path> [arg...] */
+static void
+pCB_install(const char *path, const char *line, struct parsinf *inf)
+{
+	char cmdline[128], cmd[256], *lp;
+	char *optarg[4] = {0};
+	unsigned long opts = 0;
+
+	if( line )
+		sprintf( cmd, sizeof(cmd), "%s %s", path, line );
+	else
+		strcpy( cmd, path );
+	opts = cnf_getopt( cmd, &lp, "P:wq:", optarg, inf );
+	if( !lp )
+		return;
+
+	path = lp;
+
+	if( (opts & 1) )
+	{
+		char *tags = optarg[0];
+		while( *tags )
+		{
+			union {	char s[4];	long l;} tag;
+			char s[6];
+			int not, i;
+			long r;
+
+			if( *tags == '!' )
+			{
+				tags++;
+				not = 1;
+			}
+			else
+				not = 0;
+			for( i = 0; i < 4 && *tags; i++ )
+				tag.s[i] = *tags++;
+			if( i < 4 || (*tags && *tags != ',') )
+			{
+				BLOG(( 0,"install: %s: %d: error: tag-name too %s: %s", inf->file, inf->line, i<4?"short":"long", optarg[0] ));
+				goto inst_ret;	/* don't install */
+			}
+			r = s_system(S_XBRALOOKUP, TRAP2, tag.l );
+			memcpy( s, tag.s, 4 );
+			s[5] = 0;
+			BLOG(( 1,"install: %s(%lx) %sfound,not=%d", s, tag.l, r?"not ":"", not));
+			r = r == 0;
+			if( r == not )
+			{
+				BLOG((1,"did not run %s ", path ));
+				goto inst_ret;	/* don't install */
+			}
+			if( *tags )
+				tags++;
+		}
+	}
+	if( opts & 4 )
+	{
+		int c = getkey( optarg[2], 1 );
+		if( !strchr( "yYjJ", c ) )
+			return;
+	}
+	get_cmdline( lp, cmdline );
+	BLOG((0,"exec %s, %s", path, cmdline+1 ));
+	do_exec( path, cmdline );
+inst_ret:
+	if( opts & 2 )
+	{
+		pCB_getkey(0);
+	}
+}
+#endif /* XT_CNF */
 
 /*============================================================================*/
 

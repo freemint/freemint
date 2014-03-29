@@ -308,12 +308,10 @@ int switch_keyboard( char *tbname )
 #if TST_BE
 static void bus_error(void)
 {
-	long *sp = (long*)get_sp();
-	 DBG((1,"%s:BUS-ERROR at bus_error:%lx,sp=%lx:%lx", get_curproc()->name, bus_error, sp, *sp));
+	//long *sp = (long*)get_sp();
 	 KDBG(("BUS-ERROR at bus_error:%lx", bus_error));
 	*(long*)-3L = 44;
 	 KDBG(("BUS-ERROR OK"));
-	 DBG((1,"BUS-ERROR at bus_error OK"));
 }
 #endif
 
@@ -998,25 +996,92 @@ kernel_key(enum locks lock, struct rawkey *key)
 	return false;
 }
 
+SCANTAB *scantab;
+
 void
-keyboard_input(enum locks lock)
+keyboard_input(enum locks lock, int dev, bool remote)
 {
-	/* Did we get some keyboard input? */
-#if EIFFEL_SUPPORT
+#if REMOTE_KBD
+	int cr = 0;
+#endif
+#if EIFFEL_SUPPORT || REMOTE_KBD
 	while (1)
 #endif
 	{
 		struct rawkey key;
 
-		key.raw.bcon = f_getchar(C.KBD_dev, RAW);
-
- 		//DBG((0,"keyboard_input:f_getchar: 0x%08lx, AES=%x, NORM=%x: %s", key.raw.bcon, key.aes, key.norm, get_curproc()->name));
+		key.raw.bcon = f_getchar(dev, RAW);
+#if REMOTE_KBD
+		if( remote )
+		{
+			/* get scancode and state */
+			int ctrl = 0;
+			if( key.raw.conin.code == CTRL_Z && key.raw.conin.dum == 0xFF )	/* should not happen */
+				return;
+			if( key.raw.conin.code < ESC && key.raw.conin.code != '\t' )	/* ctrl */
+			{
+				if( key.raw.conin.code == '\r' || key.raw.conin.code == '\n' )
+				{
+					/* '\n': Ctrl-Return, '\r': Return (ignored) */
+					key.raw.conin.state = 0;	/* no shift-return, ctrl-return! */
+					if( cr && key.raw.conin.code == '\n' )	/* \r\n -> \r */
+						return;
+					if( key.raw.conin.code == '\r' )
+						cr = 1;
+					else
+						key.raw.conin.code = '\r' ;
+					key.raw.conin.scan = SC_RETURN >> 8;
+				}
+				else
+				{
+					key.raw.conin.state |= K_CTRL;
+					ctrl = 'z' - CTRL_Z;
+				}
+			}
+			else
+			{
+				int sc1 = scantab->unshift[key.raw.conin.code + ctrl],
+					sc2 = scantab->shift[key.raw.conin.code + ctrl];
+				if( !sc1 )
+					sc1 = 256;
+				if( !sc2 )
+					sc2 = 256;
+				/* numpad not possible! */
+				if( sc1 < sc2 )
+					key.raw.conin.scan = sc1;
+				else if( sc2 < 256 )
+				{
+					key.raw.conin.scan = sc2;
+					key.raw.conin.state |= K_RSHIFT;
+				}
+				else
+				{
+					int i;
+					for( i = 0; i < NALTCODES*2; i += 2 )
+					{
+						if( scantab->alt[i] && key.raw.conin.code == scantab->alt[i+1] )
+						{
+							key.raw.conin.scan = scantab->alt[i];
+							key.raw.conin.state |= K_ALT;
+							break;
+						}
+						if( scantab->altshift[i] && key.raw.conin.code == scantab->altshift[i+1] )
+						{
+							key.raw.conin.scan = scantab->altshift[i];
+							key.raw.conin.state |= K_ALT|K_RSHIFT;
+							break;
+						}
+					}
+				}
+			}
+		}
+#endif	/* REMOTE_KBD */
 
 	// this produces wheel-events on some F-keys (eg. S-F10)
 #if EIFFEL_SUPPORT
 		if ( !key.raw.conin.state && cfg.eiffel_support && eiffel_wheel((unsigned short)key.raw.conin.scan & 0xff))
 		{
-			if( f_instat(C.KBD_dev) )
+			if( f_instat(dev) )
 				continue;
 			else
 				break;
@@ -1033,7 +1098,11 @@ keyboard_input(enum locks lock)
 #endif
 			XA_keyboard_event(lock, &key);
 		}
-#if EIFFEL_SUPPORT
+#if REMOTE_KBD
+		if( cr && f_instat(dev) )
+			continue;
+#endif
+#if EIFFEL_SUPPORT || REMOTE_KBD
 		break;
 #endif
 	}
