@@ -502,8 +502,6 @@ XA_button_event(enum locks lock, const struct moose_data *md, bool widgets)
 		return;
 	}
 
-// 	locker = C.mouse_lock ? get_mouse_locker() : NULL;
-
 	/*
 	 * check for rootwindow widgets, like the menu-bar, clicks
 	 */
