@@ -281,8 +281,6 @@ k_shutdown(void)
 #if SAVE_CACHE_WK
 				unsigned long sc = 0, cm = 0;
 #endif
-				int odbl;
-
 				BLOG((false, "Closing down physical vdi workstation %d", C.P_handle));
 			/*
 			 * Ozk: We switch off instruction, data and branch caches (where available)
@@ -295,19 +293,14 @@ k_shutdown(void)
 				BLOG((false, "Get current cpu cache settings... cm = %lx, sc = %lx", cm, sc));
 				s_system(S_CTRLCACHE, sc & ~7, cm);
 #endif
-				//v_enter_cur(C.P_handle);	/* Ozk: Lets enter cursor mode */
 				BLOG((false, "Closing VDI workstation %d", C.P_handle));
-				odbl = DEBUG_LEVEL;
-				DEBUG_LEVEL = 4;
 				v_clswk(C.P_handle);		/* Auto version must close the physical workstation */
-				BLOG((false, "VDI workstation closed"));
 #if SAVE_CACHE_WK
 				BLOG((0,"Restore CPU caches:%lx,%lx",sc,cm));
 				s_system(S_CTRLCACHE, sc, cm);
 #endif
-				DEBUG_LEVEL = odbl;
 				BLOG((false, "Done shutting down VDI"));
-#else
+#else /* ST_ONLY */
 				v_enter_cur(C.P_handle);
 				v_clswk(C.P_handle);
 #endif
