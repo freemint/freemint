@@ -834,6 +834,13 @@ send_topped(enum locks lock, struct xa_window *wind)
 {
 	struct xa_client *client = wind->owner;
 
+
+	if( S.focus && (S.focus->dial & created_for_ALERT) )
+	{
+		S.focus->window_status &= ~(XAWS_STICKYFOCUS/*|XAWS_FLOAT*/);
+		pull_wind_to_top(lock, wind);
+		setnew_focus(wind, NULL, true, true, true);
+	}
 	if (wind->send_message && (!client->fmd.wind || client->fmd.wind == wind))
 		wind->send_message(lock, wind, NULL, AMQ_NORM, QMF_CHKDUP,
 				   WM_TOPPED, 0, 0, wind->handle,
@@ -2557,10 +2564,11 @@ close_window(enum locks lock, struct xa_window *wind)
 
 			while (w && w != root_window)
 			{
-				if ((w->owner == client || (!(w->dial & created_for_AES) && (client == C.Hlp)))
+				if ( (w->owner == client
+					|| ((w->dial & (/*created_for_ALERT|*/created_for_AES)) != created_for_AES && (client == C.Hlp)))
 					&& !(w->window_status & (XAWS_ICONIFIED|XAWS_HIDDEN|XAWS_NOFOCUS)) )
 				{
-					if (w != TOP_WINDOW)
+					if (w != TOP_WINDOW || (w->dial & created_for_ALERT))
 					{
 						top_window(lock|winlist, true, true, w);
 					}
