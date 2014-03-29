@@ -62,8 +62,8 @@ bootlog(short disp, const char *fmt, ...)
 	va_list args;
 	long l;
 	int lvl;
-	short dlvl = disp >> 1, llvl = C.loglvl;	// >> 1;
-	disp = (disp & 1) | (C.loglvl & 2);
+	short dlvl = disp >> 1, llvl = C.loglvl;
+	disp = (disp & 1) || (C.loglvl > 2);
 
 	if( !disp && llvl <= dlvl )
 		return;

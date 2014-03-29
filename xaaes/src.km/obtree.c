@@ -4373,7 +4373,6 @@ obj_edit(XA_TREE *wt,
 					{
 						if (redraw)
 						{
- 							//DBG((0,"ED_CHAR:obj_draw,ei=%d", editfocus(ei).item));
 							obj_draw(wt, v, editfocus(ei), -1, clip, rl, 0);
 						}
 					}

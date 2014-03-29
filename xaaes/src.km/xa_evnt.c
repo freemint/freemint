@@ -444,9 +444,7 @@ check_queued_events(struct xa_client *client)
 				key = keys.aes;
 
 			DIAGS((" -- kbstate=%x", mbs.ks));
-// 			if (d) display(" -- kbstate=%x", mbs.ks);
 			mbs.ks = keys.raw.conin.state;
-// 			if (d) display(" -- kbstate=%x, key = %x", mbs.ks, key);
 
 			if (multi)
 				events |= (wevents & (MU_NORM_KEYBD|MU_KEYBD));

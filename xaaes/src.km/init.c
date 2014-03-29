@@ -804,9 +804,6 @@ again:
 			goto again;
 		}
 
-
-// 		display("AESSYS kthread exited - C.shutdown = %x", C.shutdown);
-
 #if GENERATE_DIAGS
 		/* Close the debug output file */
 		if (D.debug_file)

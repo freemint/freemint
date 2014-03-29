@@ -340,7 +340,6 @@ rp2ap_obtree(struct xa_window *wind, struct xa_widget *widg, RECT *r)
 	{
  		if (!(widg->m.properties & WIP_NOTEXT))
  		{
- 			//DBGif(widg->m.r.xaw_idx == XAW_MENU,(0,"rp2ap_obtree:w=%d:%d,%d,wind=%lx,root=%lx", widg->r.w, wind->r.w, wind->wa.w, wind, root_window ));
 			if( wind != root_window || (cfg.menu_layout == 0 && widg->m.r.xaw_idx == XAW_MENU) )
  				widg->r.w = wind->r.w;
  		}
