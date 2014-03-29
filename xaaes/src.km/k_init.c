@@ -539,6 +539,7 @@ calc_average_fontsize(struct xa_vdi_settings *v, short *maxw, short *maxh, short
 
 	return dev;
 }
+
 int
 k_init(unsigned long vm)
 {
@@ -557,8 +558,8 @@ k_init(unsigned long vm)
 			*t++ = -1;
 	}
 
+	BLOG((0,"k_init: videomode=%d.vm=%ld",cfg.videomode, vm ));
 	cfg.videomode = (short)vm;
-	BLOG((0,"k_init: videomode=%d",cfg.videomode ));
 
 	xa_vdiapi = v->api = init_xavdi_module();
 	{
@@ -745,6 +746,7 @@ k_init(unsigned long vm)
 #endif
 			set_wrkin(work_in, mode);
 			BLOG((0,"k_init: v_opnwk() mode=%d", mode ));
+			_f_sync();
 			v_opnwk(work_in, &(C.P_handle), work_out);
 			BLOG((0,"k_init: v_opnwk() handle=%d", C.P_handle ));
 #if SAVE_CACHE_WK
@@ -814,11 +816,6 @@ k_init(unsigned long vm)
 
 	(*v->api->f_perimeter)(v, 0);
 
-// 	v_show_c(C.P_handle, 0);
-// 	hidem();
-// 	xa_graf_mouse(ARROW, NULL, NULL, false);
-// 	showm();
-
 	objc_rend.dial_colours = MONO ? bw_default_colours : default_colours;
 
 	BLOG((0,"lookup-support:%d, planes:%d", work_out[5], work_out[4] ));
@@ -840,14 +837,9 @@ k_init(unsigned long vm)
 	}
 
 	screen.pixel_fmt = detect_pixel_format(v);
-	BLOG((false, "Video info: width(%d/%d), planes :%d, colours %d pixel-format %d",
+	BLOG((false, "Video info: (%d/%d),%d, colours %d pixel-format %d",
 		screen.r.w, screen.r.h, screen.planes, screen.colours, screen.pixel_fmt));
 
-// 	display("Video info: width(%d/%d), planes :%d, colours %d, pixelfmt = %d",
-// 		screen.r.w, screen.r.h, screen.planes, screen.colours, screen.pixel_fmt);
-
-// 	if (screen.planes > 8)
-// 		set_defaultpalette(v->handle);
 	if( cfg.palette[0] && !rw_syspalette( READ, screen.palette, C.Aes->home_path, cfg.palette ) )
 	{
 		set_syspalette(v->handle, screen.palette);
