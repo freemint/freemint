@@ -996,7 +996,9 @@ kernel_key(enum locks lock, struct rawkey *key)
 	return false;
 }
 
+#if REMOTE_KBD
 SCANTAB *scantab;
+#endif
 
 void
 keyboard_input(enum locks lock, int dev, bool remote)

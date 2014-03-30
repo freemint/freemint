@@ -1378,7 +1378,6 @@ create_gradient(XAMFDB *pm, struct rgb_1000 *c, short method, short n_steps, sho
 			size = (long)scanlen * h;
 // 			display("size1 %ld, scanlen = %ld", size, scanlen);
 
- 			//DBG((0,"size = %ld, scanlen = %ld, w=%d, h=%d", size, scanlen, w, h));
 			if (!to || !(data = kmalloc(size)))
 				return;
 // 			display("data %lx, size %ld, to = %lx", data, size, to);
@@ -2115,8 +2114,8 @@ case_8:
 					}
 					colour_lut = clp;
 				}
-#endif
 			break;
+#endif
 			case 2:	colour_lut = devtovdi2;	break;
 			case 1: colour_lut = devtovdi1;	break;
 			default:
