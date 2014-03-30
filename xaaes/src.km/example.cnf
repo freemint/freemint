@@ -7,6 +7,18 @@
 #
 ######################################################################
 #
+# remote-keyboard-control:
+# - mode 1: interface is a regular file (created by XaAES), characters have to be appended
+# - mode 2: interface is a fifo (not created by XaAES)
+#
+# only 1-byte ascii-characters are understood, XaAES tries to contruct the
+# scancode for GEM-apps.
+#
+#remote_inp=v:\tmp\xa_remote.inp
+#remote_inp=\pipe\xa_fifo.inp
+#
+######################################################################
+#
 # exec [-w] <path> [arg ...]
 #
 # like exec in mint.cnf, used to run a program before
