@@ -34,7 +34,6 @@
  *
  */
 
-#ifdef __MINT__
 #include "global.h"
 #include "config.h" 
 #include "usb.h"
@@ -42,20 +41,6 @@
 #include "ucd.h"
 #include "ucdload.h"
 #include "uddload.h"
-#else
-#include <common.h>
-#include <command.h>
-#include <asm/processor.h>
-#include <linux/compiler.h>
-#include <linux/ctype.h>
-#include <asm/byteorder.h>
-#include <asm/unaligned.h>
-
-#include <usb.h>
-#ifdef CONFIG_4xx
-#include <asm/4xx_pci.h>
-#endif
-#endif
 
 /*static*/ struct usb_device usb_dev[USB_MAX_DEVICE];
 static long asynch_allowed;
