@@ -128,7 +128,7 @@ _install_usb_stor:
 .partition_ok:
 	lea _pun_usb,A3
 	lea pinfo_cookie(A3),A0	// PUN_INFO already installed?
-	move.l A0,D0
+	move.l (A0),D0
 	cmp.l #0x41484449,D0		// AHDI
 	beq.s .pinfo_ok
 	clr.w pinfo_puns(A3)
