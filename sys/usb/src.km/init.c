@@ -62,8 +62,6 @@ Path start_path;		/* The directory that the started binary lives */
 static const struct kernel_module *self = NULL;
 #endif
 
-void usb_storage_init(void);	/* Prototype, this shouldn't be here */
-
 void
 setup_usb_module_api(void)
 {
