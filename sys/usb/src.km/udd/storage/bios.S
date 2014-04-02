@@ -127,12 +127,12 @@ _install_usb_stor:
 	bne .no_pinfo
 .partition_ok:
 	lea _pun_usb,A3
-	lea pinfo_cookie(A3),A0	// PUN_INFO already installed?
-	move.l (A0),D0
+	move.l pinfo_cookie(A3),D0      // PUN_INFO already installed?
 	cmp.l #0x41484449,D0		// AHDI
 	beq.s .pinfo_ok
 	clr.w pinfo_puns(A3)
-	move.l #0x41484449,(A0)		// AHDI
+	move.l #0x41484449,D0           // AHDI
+	move.l D0,pinfo_cookie(A3)
 	move.w #0x0300,D0
 	move.w D0,pinfo_vernum(A3)
 	move.w #0x4000,D0
@@ -424,7 +424,6 @@ _uninstall_usb_stor:
 
 .ahdi_part_num_limit_2:	
 	lea _pun_usb,A3
-	move.l A3,D0
 	moveq #-1,D0
 	move.b D0, pinfo_pun(A3,D3.l)
 	clr.l D0
@@ -468,7 +467,7 @@ det_hdv_bpb_usb:
 .dhbu1:
 	move.l D1,-(SP)
 	move.l A0,-(SP)
-	lea pinfo_ptype(A0),A0
+	add.l pinfo_ptype,A0
 	move.l D2,-(SP)
 	move.l D0,D2
 	add.l D2,D2
@@ -493,9 +492,6 @@ det_hdv_bpb_usb:
 	lea pinfo_bpb(A0),A0
 	mulu #18,D0              // * 18
 	add.l A0,D0
-//	move.l D0,A0		// sector size
-//	tst.w (A0)
-//	beq.s .dhbu4
 #ifdef DEBUG_BIOS_LAYER
 	move.l D0,-(SP)
 	moveq #0x30,D0
