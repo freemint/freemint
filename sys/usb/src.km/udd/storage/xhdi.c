@@ -918,7 +918,6 @@ long
 install_xhdi_driver(void)
 {
         long r = 0;
-	memset(&pun_usb, 0, sizeof(pun_usb));
 #ifdef TOSONLY
 #if 1
 	cookie_fun XHDI = get_fun_ptr ();
