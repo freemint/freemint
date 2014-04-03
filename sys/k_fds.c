@@ -546,7 +546,8 @@ do_open (FILEPTR **f, struct proc *op, const char *name, int rwmode, int attr, X
 	{
 		DEBUG(("do_open(%s): device open failed with error %ld", name, r));
 		release_cookie (&fc);
-		FP_FREE(*f);
+		kfree(*f);
+		*f = 0;
 		return r;
 	}
 
