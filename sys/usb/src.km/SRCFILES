@@ -6,7 +6,6 @@ HEADER = \
 	global.h \
 	hub.h \
 	init.h \
-	part.h \
 	ucd.h \
 	ucdload.h \
 	udd.h \
