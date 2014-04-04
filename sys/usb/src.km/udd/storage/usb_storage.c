@@ -53,6 +53,7 @@
 #include "libkern/libkern.h"
 #include "mint/dcntl.h"
 
+#include "part.h"
 #include "scsi.h"
 
 #include "../../config.h"
