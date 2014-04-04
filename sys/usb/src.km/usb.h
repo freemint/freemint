@@ -32,7 +32,6 @@
 #include "mint/mdelay.h"
 #include "ucd/pci-ohci/mod_devicetable.h"
 #include "usb_defs.h"
-#include "part.h"
 
 /* Everything is aribtrary */
 #define USB_ALTSETTINGALLOC		4
