@@ -1752,12 +1752,12 @@ ethernat_ioctl(struct ucdif *u, short cmd, long arg)
 		}
 		case LOWLEVEL_INIT :
 		{
-			ret = usb_lowlevel_init (0, NULL);
+			ret = usb_lowlevel_init (u->ucd_priv);
 			break;
 		}
 		case LOWLEVEL_STOP :
 		{
-			ret = usb_lowlevel_stop ();
+			ret = usb_lowlevel_stop (u->ucd_priv);
 			break;
 		}
 		case SUBMIT_CONTROL_MSG :
@@ -1818,7 +1818,7 @@ isp116x_check_id(struct isp116x *isp116x)
 }
 
 long
-usb_lowlevel_init(long dummy1, const struct pci_device_id *dummy2)
+usb_lowlevel_init(void *dummy)
 {
 //	unsigned short val;
 
@@ -1872,7 +1872,7 @@ usb_lowlevel_init(long dummy1, const struct pci_device_id *dummy2)
 }
 
 long
-usb_lowlevel_stop(void)
+usb_lowlevel_stop(void *dummy)
 {
 	struct isp116x *isp116x = &isp116x_dev;
 
