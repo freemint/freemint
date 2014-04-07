@@ -26,7 +26,7 @@
 #define PUN_SCSI          0x08 /* 1=SCSI 0=ACSI */
 #define PUN_IDE           0x10 /* Falcon IDE */
 #define PUN_USB           0x20 /* USB */
-#define PUN_REMOVABLE     0x40 /* Removable media */
+//#define PUN_REMOVABLE     0x40 /* Removable media */
 #define PUN_VALID         0x80 /* zero if valid */
 
 /* BIOS parameter block */
@@ -66,10 +66,11 @@ struct pun_info
 	long	psize[MAX_LOGICAL_DRIVE];
 	short	flags[MAX_LOGICAL_DRIVE];		/* B15:swap, B7:change, B0:bootable */
 	BPB	bpb[MAX_LOGICAL_DRIVE];
-	uchar	dev_num[MAX_LOGICAL_DRIVE];
-
 } __attribute__((packed));
 typedef struct pun_info PUN_INFO;
+
+/* flags in PUN_INFO */
+#define CHANGE_FLAG		(1<<7)
 
 /* XHDI opcodes */
 #define XHGETVERSION    0

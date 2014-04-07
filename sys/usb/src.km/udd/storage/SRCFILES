@@ -8,12 +8,12 @@ HEADER = \
 	xhdi.h
 
 COBJS = \
+	install.c \
 	usb_storage.c \
 	xhdi.c
 
 SSOBJS = \
-	bios.S \
-	debug2.S
+	vectors.S
 
 TOSCOBJS = \
         crtinit.c
