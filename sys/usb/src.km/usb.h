@@ -30,7 +30,6 @@
 #include "mint/lists.h"
 #include "mint/endian.h"
 #include "mint/mdelay.h"
-#include "ucd/pci-ohci/mod_devicetable.h"
 #include "usb_defs.h"
 
 /* Everything is aribtrary */
