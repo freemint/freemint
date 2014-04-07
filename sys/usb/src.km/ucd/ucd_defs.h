@@ -45,12 +45,6 @@
 #define SUBMIT_INT_MSG		(('U'<< 8) | 4)
 
 
-struct lowlevel_init
-{
-	long handle;
-	struct pci_device_id *ent;
-};
-
 struct bulk_msg
 {
 	struct usb_device 	*dev;
@@ -95,8 +89,9 @@ struct ucdif
 	long		resrvd1;	/* (*output)  */
 	long		(*ioctl)	(struct ucdif *, short cmd, long arg);
 	long		resrvd2;	/* (*timeout) */
+	void		*ucd_priv;	/* host controller driver private data */
 
-	long		reserved[24];
+	long		reserved[20];
 };
 
 struct ucdinfo

@@ -118,9 +118,9 @@ typedef struct {
 /*--- Low level API functions that need to be supported ---*/
 /*
 
-	int usb_lowlevel_init(void)
+	int usb_lowlevel_init(void *ucd_priv)
 
-	int usb_lowlevel_stop(void)
+	int usb_lowlevel_stop(void *ucd_priv)
 
 	int submit_int_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 				int len, int interval)
