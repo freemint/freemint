@@ -21,9 +21,6 @@
 #define	udd_unregister 		(*api->udd_unregister)
 //#define	fname 			(*api->fname)
 
-//#define	usb_init 		(*api->usb_init)
-//#define	usb_stop 		(*api->usb_stop)
-
 #define	usb_set_protocol 	(*api->usb_set_protocol)
 #define	usb_set_idle 		(*api->usb_set_idle)
 #define	usb_get_dev_index 	(*api->usb_get_dev_index)
