@@ -57,8 +57,12 @@
 #include <mint/osbind.h> /* Setexc */
 #include <stdarg.h>
 
+#undef c_conout
+#define c_conout (void)Cconout
 #undef c_conws
 #define c_conws (void)Cconws
+#undef d_setdrv
+#define d_setdrv (void)Dsetdrv
 
 # define ALERT(x)
 # define DEBUG(x)

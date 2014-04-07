@@ -160,8 +160,6 @@ extern long install_usb_stor	(long dev_num, unsigned long part_type,
 			     	 char *vendor, char *revision, char *product);
 extern long uninstall_usb_stor	(long dev_num);
 
-/* Used by bios.S */
-unsigned long usb_1st_disk_drive = 0;
 
 /* direction table -- this indicates the direction of the data
  * transfer for each command code -- a 1 indicates input
