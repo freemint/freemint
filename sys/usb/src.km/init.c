@@ -69,11 +69,6 @@ setup_usb_module_api(void)
 	usb_api.udd_unregister = &udd_unregister;
 //	usb_api.fname = &fname;
 
-
-//	usb_api.usb_init = &usb_init;
-//	usb_api.usb_stop = &usb_stop;
-
-
 	usb_api.usb_set_protocol = &usb_set_protocol;
 	usb_api.usb_set_idle = &usb_set_idle;
 	usb_api.usb_get_dev_index = &usb_get_dev_index;
