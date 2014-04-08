@@ -11,13 +11,13 @@
 #define	SL811_DEV_A		0x04	/* write */
 #define	SL811_CTRL1		0x05
 #define	SL811_INTR		0x06
-#define	SL811_CTRL_B		0x08
-#define	SL811_ADDR_B		0x09
-#define	SL811_LEN_B		0x0A
-#define	SL811_STS_B		0x0B	/* read	*/
-#define	SL811_PIDEP_B		0x0B	/* write */
-#define	SL811_CNT_B		0x0C	/* read	*/
-#define	SL811_DEV_B		0x0C	/* write */
+#define	SL811_CTRL_B		0x08 | SL811_CTRL_A
+#define	SL811_ADDR_B		0x01 | SL811_ADDR_A
+#define	SL811_LEN_B		0x02 | SL811_LEN_A
+#define	SL811_STS_B		0x03 | SL811_STS_A
+#define	SL811_PIDEP_B		0x03 | SL811_PIDEP_A
+#define	SL811_CNT_B		0x04 | SL811_CNT_A
+#define	SL811_DEV_B		0x04 | SL811_DEV_A
 #define	SL811_INTRSTS		0x0D	/* write clears	bitwise	*/
 #define	SL811_HWREV		0x0E	/* read	*/
 #define	SL811_SOFLOW		0x0E	/* write */

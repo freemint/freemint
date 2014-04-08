@@ -65,12 +65,15 @@ struct usb_module_api
 	long			_cdecl	(*ucd_unregister)	(struct ucdif *);
 //	const char			*fname;
 
+<<<<<<< udd_defs.h
 
 	long			_cdecl	(*usb_init)		(long handle, const struct pci_device_id *ent); /* initialize the USB Controller */
 	long 			_cdecl	(*usb_stop)		(void); /* stop the USB Controller */
         long			_cdecl	(*usb_rh_wakeup)	(void);
 
 
+=======
+>>>>>>> 1.5
 	long			_cdecl	(*usb_set_protocol)	(struct usb_device *dev, long ifnum, long protocol);
 	long			_cdecl	(*usb_set_idle)		(struct usb_device *dev, long ifnum, long duration,
 								long report_id);

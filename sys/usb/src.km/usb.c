@@ -34,34 +34,18 @@
  *
  */
 
-#ifdef __MINT__
 #include "global.h"
-#include "config.h" 
 #include "usb.h"
 #include "hub.h"
-#include "ucd.h"
+#include "usb_api.h"
 #include "ucdload.h"
 #include "uddload.h"
+#include "mint/mdelay.h"
+#include "mint/endian.h"
 #include <mint/osbind.h> /* Setexc */
-#else
-#include <common.h>
-#include <command.h>
-#include <asm/processor.h>
-#include <linux/compiler.h>
-#include <linux/ctype.h>
-#include <asm/byteorder.h>
-#include <asm/unaligned.h>
-
-#include <usb.h>
-#ifdef CONFIG_4xx
-#include <asm/4xx_pci.h>
-#endif
-#endif
 
 /*static*/ struct usb_device usb_dev[USB_MAX_DEVICE];
 static long asynch_allowed;
-
-static long 	usb_find_interface_driver	(struct usb_device *dev, unsigned ifnum);
 
 /***************************************************************************
  * Init USB Device
@@ -100,6 +84,8 @@ void usb_init(void)
 /******************************************************************************
  * Stop USB this stops the LowLevel Part and deregisters USB devices.
  */
+extern struct ucdif *allucdifs;
+extern long ucd_unregister(struct ucdif *a);
 void usb_stop(void)
 {
 	struct ucdif *a;
@@ -107,7 +93,7 @@ void usb_stop(void)
 	asynch_allowed = 1;
 
 	for (a = allucdifs; a; a = a->next) {
-		(*a->ioctl)(a, LOWLEVEL_STOP, 0);
+		ucd_unregister(a);
 	}
 }
 
@@ -145,7 +131,7 @@ long usb_submit_int_msg(struct usb_device *dev, unsigned long pipe,
 	arg.transfer_len = transfer_len;
 	arg.interval =  interval;
 	
-	return ucd_ioctl(ucd, SUBMIT_INT_MSG, (long)&arg);
+	return (*ucd->ioctl)(ucd, SUBMIT_INT_MSG, (long)&arg);
 }
 
 /*
@@ -189,7 +175,7 @@ long usb_control_msg(struct usb_device *dev, unsigned long pipe,
 	arg.size = size;
 	arg.setup = &setup_packet;
 
-	r = ucd_ioctl(ucd, SUBMIT_CONTROL_MSG, (long)&arg);
+	r = (*ucd->ioctl)(ucd, SUBMIT_CONTROL_MSG, (long)&arg);
 	if (timeout == 0)
 	{
 		DEBUG(("size %d \r", size));
@@ -239,7 +225,7 @@ long usb_bulk_msg(struct usb_device *dev, unsigned long pipe,
 	arg.len = len;
 	arg.flags = flags;
 
-	r = ucd_ioctl(ucd, SUBMIT_BULK_MSG, (long)&arg);
+	r = (*ucd->ioctl)(ucd, SUBMIT_BULK_MSG, (long)&arg);
 
 	while (timeout--) {
 		if (!((volatile unsigned long)dev->status & USB_ST_NOT_PROC))
@@ -863,47 +849,19 @@ void usb_free_device(long dev_index)
  */
 long usb_new_device(struct usb_device *dev)
 {
-	DEBUG(("usb_new_device: "));
 	long addr, err;
-	long tmp;
 	unsigned char tmpbuf[USB_BUFSIZ];
- 
-	/* We still haven't set the Address yet */
-	addr = dev->devnum;
-	dev->devnum = 0;
-
-#ifdef CONFIG_LEGACY_USB_INIT_SEQ
-	/* this is the old and known way of initializing devices, it is
-	 * different than what Windows and Linux are doing. Windows and Linux
-	 * both retrieve 64 bytes while reading the device descriptor
-	 * Several USB stick devices report ERR: CTL_TIMEOUT, caused by an
-	 * invalid header while reading 8 bytes as device descriptor. */
-	dev->descriptor.bMaxPacketSize0 = 8;	    /* Start off at 8 bytes  */
-	dev->maxpacketsize = PACKET_SIZE_8;
-	dev->epmaxpacketin[0] = 8;
-	dev->epmaxpacketout[0] = 8;
-
-	err = usb_get_descriptor(dev, USB_DT_DEVICE, 0, tmpbuf, 8);
-	if (err < 8) {
-		DEBUG(("\n      USB device not responding, " \
-		       "giving up (status=%lX)\n", dev->status));
-		dev->devnum = addr;
-		return 1;
-	}
-	memcpy(&dev->descriptor, tmpbuf, 8);
-#else
-	/* This is a Windows scheme of initialization sequence, with double
-	 * reset of the device (Linux uses the same sequence)
-	 * Some equipment is said to work only with such init sequence; this
-	 * patch is based on the work by Alan Stern:
-	 * http://sourceforge.net/mailarchive/forum.php?
-	 * thread_id=5729457&forum_id=5398
-	 */
+	long tmp;
 	struct usb_device_descriptor *desc;
 	long port = -1;
 	struct usb_device *parent = dev->parent;
 	unsigned short portstatus;
-	int i;
+
+	DEBUG(("usb_new_device: "));
+ 
+	/* We still haven't set the Address yet */
+	addr = dev->devnum;
+	dev->devnum = 0;
 
 	/* send 64-byte GET-DEVICE-DESCRIPTOR request.  Since the descriptor is
 	 * only 18 bytes long, this will terminate with a short packet.  But if
@@ -913,31 +871,13 @@ long usb_new_device(struct usb_device *dev)
 	desc = (struct usb_device_descriptor *)tmpbuf;
 
 	dev->descriptor.bMaxPacketSize0 = 64;	    /* Start off at 64 bytes  */
+
 	/* Default to 64 byte max packet size */
 	dev->maxpacketsize = PACKET_SIZE_64;
 	dev->epmaxpacketin[0] = 64;
 	dev->epmaxpacketout[0] = 64;
 
-	i = 3;
-	while (i--) {
-		err = usb_get_descriptor(dev, USB_DT_DEVICE, 0, desc, 64);
-		if (err < 0) {
-			mdelay(200);
-			DEBUG(("usb_new_device: usb_get_descriptor() failed, retrying..."));
-		} else {
-			switch (desc->bMaxPacketSize0) {
-			case 8: case 16: case 32: case 64: case 255:
-				if (desc->bDescriptorType == USB_DT_DEVICE) {
-					goto out;
-				}
-				break;
-			default:
-				break;
-			}
-		}
-	}
-
-out:
+	err = usb_get_descriptor(dev, USB_DT_DEVICE, 0, desc, 64);
 	if (err < 0) {
 		DEBUG(("usb_new_device: usb_get_descriptor() failed"));
 		dev->devnum = addr;
@@ -976,7 +916,6 @@ out:
 			return 1;
 		}
 	}
-#endif
 
 	dev->epmaxpacketin[0] = dev->descriptor.bMaxPacketSize0;
 	dev->epmaxpacketout[0] = dev->descriptor.bMaxPacketSize0;
@@ -1008,7 +947,7 @@ out:
 		return 1;
 	}
 
-	mdelay(50);	/* Let the SET_ADDRESS settle */
+	mdelay(200);	/* Let the SET_ADDRESS settle */
 
 	tmp = sizeof(dev->descriptor);
 
@@ -1079,6 +1018,7 @@ out:
 	return 0;
 }
 
+
 /********************************************************************
  * USB device driver handling:
  * 
@@ -1097,12 +1037,12 @@ out:
  *
  * Returns: 0 if a driver accepted the interface, -1 otherwise
  */
-extern struct usb_driver *alldrivers;
+extern struct uddif *alluddifs;
 
-static long 
+long 
 usb_find_interface_driver(struct usb_device *dev, unsigned ifnum)
 {
-	struct usb_driver *driver = alldrivers;
+	struct uddif *driver = alluddifs;
 
 	if ((!dev) || (ifnum >= dev->config.desc.bNumInterfaces)) {
 		DEBUG(("bad find_interface_driver params"));

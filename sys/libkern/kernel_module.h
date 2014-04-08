@@ -953,9 +953,7 @@ check_kentry_version(void)
 
 # define ROM_Setexc(vnum,vptr)	(void (*)(void))trap_13_emu(0x05,(short)(vnum),(long)(vptr))
 
-#ifdef XHDI_MASS_STORAGE_SUPPORT
 # define xhnewcookie		(*KENTRY->vec_misc.XHNewCookie)
-#endif
 
 /*
  * kentry_debug
@@ -1064,5 +1062,98 @@ check_kentry_version(void)
 # define xdd_ioctl		(*KENTRY->vec_xdd.ioctl)
 # define xdd_datime		(*KENTRY->vec_xdd.datime)
 # define xdd_close		(*KENTRY->vec_xdd.close)
+
+/*
+ * kentry_pcibios
+ */
+
+#define pcibios_installed		(*KENTRY->vec_pcibios.pcibios_installed)
+#define _Find_pci_device		(*KENTRY->vec_pcibios.Find_pci_device)
+#define _Find_pci_classcode		(*KENTRY->vec_pcibios.Find_pci_classcode)
+#define _Read_config_byte		(*KENTRY->vec_pcibios.Read_config_byte)
+#define _Read_config_word		(*KENTRY->vec_pcibios.Read_config_word)
+#define _Read_config_longword		(*KENTRY->vec_pcibios.Read_config_longword)
+#define _Fast_read_config_byte		(*KENTRY->vec_pcibios.Fast_read_config_byte)
+#define _Fast_read_config_word		(*KENTRY->vec_pcibios.Fast_read_config_word)
+#define _Fast_read_config_longword	(*KENTRY->vec_pcibios.Fast_read_config_longword)
+#define Write_config_byte		(*KENTRY->vec_pcibios.Write_config_byte)
+#define Write_config_word		(*KENTRY->vec_pcibios.Write_config_longword)
+#define Write_config_longword		(*KENTRY->vec_pcibios.Write_config_longword)
+#define Hook_interrupt			(*KENTRY->vec_pcibios.Hook_interrupt)
+#define Unhook_interrupt		(*KENTRY->vec_pcibios.Unhook_interrupt)
+#define _Special_cycle			(*KENTRY->vec_pcibios.Special_cycle)
+#define Get_routing			(*KENTRY->vec_pcibios.Get_routing)
+#define Set_interrupt			(*KENTRY->vec_pcibios.Set_interrupt)
+#define Get_resource			(*KENTRY->vec_pcibios.Get_resource)
+#define Get_card_used			(*KENTRY->vec_pcibios.Get_card_used)
+#define Set_card_used			(*KENTRY->vec_pcibios.Set_card_used)
+#define Read_mem_byte			(*KENTRY->vec_pcibios.Read_mem_byte)
+#define Read_mem_word			(*KENTRY->vec_pcibios.Read_mem_word)
+#define Read_mem_longword		(*KENTRY->vec_pcibios.Read_mem_longword)
+#define Fast_read_mem_byte		(*KENTRY->vec_pcibios.Fast_read_mem_byte)
+#define Fast_read_mem_word		(*KENTRY->vec_pcibios.Fast_read_mem_word)
+#define Fast_read_mem_longword		(*KENTRY->vec_pcibios.Fast_read_mem_longword)
+#define _Write_mem_byte			(*KENTRY->vec_pcibios.Write_mem_byte)
+#define _Write_mem_word			(*KENTRY->vec_pcibios.Write_mem_word)
+#define Write_mem_longword		(*KENTRY->vec_pcibios.Write_mem_longword)
+#define Read_io_byte			(*KENTRY->vec_pcibios.Read_io_byte)
+#define Read_io_word			(*KENTRY->vec_pcibios.Read_io_word)
+#define Read_io_longword		(*KENTRY->vec_pcibios.Read_io_longword)
+#define Fast_read_io_byte		(*KENTRY->vec_pcibios.Fast_read_io_byte)
+#define Fast_read_io_word		(*KENTRY->vec_pcibios.Fast_read_io_word)
+#define Fast_read_io_longword		(*KENTRY->vec_pcibios.Fast_read_io_longword)
+#define _Write_io_byte			(*KENTRY->vec_pcibios.Write_io_byte)
+#define _Write_io_word			(*KENTRY->vec_pcibios.Write_io_word)
+#define Write_io_longword		(*KENTRY->vec_pcibios.Write_io_longword)
+#define Get_machine_id			(*KENTRY->vec_pcibios.Get_machine_id)
+#define Get_pagesize			(*KENTRY->vec_pcibios.Get_pagesize)
+#define Virt_to_bus			(*KENTRY->vec_pcibios.Virt_to_bus)
+#define Bus_to_virt			(*KENTRY->vec_pcibios.Bus_to_virt)
+#define Virt_to_phys			(*KENTRY->vec_pcibios.Virt_to_phys)
+#define Phys_to_virt			(*KENTRY->vec_pcibios.Phys_to_virt)
+
+typedef long (*wrap0)();
+typedef long (*wrap1)(long);
+typedef long (*wrap2)(long, long);
+typedef long (*wrap3)(long, long, long);
+
+INLINE long Find_pci_device(unsigned long id, unsigned short index)
+{ wrap2 f = (wrap2) _Find_pci_device; return (*f)(id, index); }
+
+INLINE long Find_pci_classcode(unsigned long class, unsigned short index)
+{ wrap2 f = (wrap2) _Find_pci_classcode; return (*f)(class, index); }
+
+INLINE long Read_config_byte(long handle, unsigned short reg, unsigned char *address)
+{ wrap3 f = (wrap3)_Read_config_byte; return (*f)(handle, reg, (long)address); }
+
+INLINE long Read_config_word(long handle, unsigned short reg, unsigned short *address)
+{ wrap3 f = (wrap3)_Read_config_word; return (*f)(handle, reg, (long)address); }
+
+INLINE long Read_config_longword(long handle, unsigned short reg, unsigned long *address)
+{ wrap3 f = (wrap3)_Read_config_longword; return (*f)(handle, reg, (long)address); }
+
+INLINE unsigned char Fast_read_config_byte(long handle, unsigned short reg)
+{ wrap2 f = (wrap2) _Fast_read_config_byte; return (*f)(handle, reg); }
+
+INLINE unsigned short Fast_read_config_word(long handle, unsigned short reg)
+{ wrap2 f = (wrap2) _Fast_read_config_word; return (*f)(handle, reg); }
+
+INLINE unsigned long Fast_read_config_longword(long handle, unsigned short reg)
+{ wrap2 f = (wrap2) _Fast_read_config_longword; return (*f)(handle, reg); }
+
+INLINE long Special_cycle(unsigned short bus, unsigned long data)
+{ wrap2 f = (wrap2) _Special_cycle; return (*f)(bus, data); }
+
+INLINE long Write_mem_byte(long handle, unsigned long offset, unsigned short val)
+{ wrap3 f = (wrap3)_Write_mem_byte; return (*f)(handle, offset, val); }
+
+INLINE long Write_mem_word(long handle, unsigned long offset, unsigned short val)
+{ wrap3 f = (wrap3)_Write_mem_word; return (*f)(handle, offset, val); }
+
+INLINE long Write_io_byte(long handle, unsigned long offset, unsigned short val)
+{ wrap3 f = (wrap3)_Write_io_byte; return (*f)(handle, offset, val); }
+
+INLINE long Write_io_word(long handle, unsigned long offset, unsigned short val)
+{ wrap3 f = (wrap3)_Write_io_word; return (*f)(handle, offset, val); }
 
 # endif /* _libkern_kernel_module_h */

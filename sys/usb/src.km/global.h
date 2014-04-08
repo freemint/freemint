@@ -53,16 +53,21 @@
 # define ASSERT(x)      assert x
 
 #endif
-#else
+
+#else /* TOSONLY */
 #include <mint/osbind.h> /* Setexc */
 #include <stdarg.h>
 
-#undef c_conout
-#define c_conout (void)Cconout
 #undef c_conws
 #define c_conws (void)Cconws
+#undef c_conout
+#define c_conout (void)Cconout
 #undef d_setdrv
 #define d_setdrv (void)Dsetdrv
+#undef kmalloc
+#define kmalloc Malloc
+#undef kfree
+#define kfree Mfree
 
 # define ALERT(x)
 # define DEBUG(x)
@@ -142,9 +147,49 @@ static inline long strlen (const char *scan)
 	
 	return (long) (scan - start);
 }
+
+/* cookie jar definition
+ */
+
+struct cookie
+{
+        long tag;
+        long value;
+};
+
+#define _USB 0x5f555342L
+#define CJAR ((struct cookie **) 0x5a0)
+
+static inline struct usb_module_api *
+get_usb_cookie (void)
+{
+	struct usb_module_api *api;
+	long ret;
+	struct cookie *cjar;
+
+	ret = Super(0L);
+
+	api = NULL;
+	cjar = *CJAR;
+
+	while (cjar->tag)
+	{
+		if (cjar->tag == _USB)
+		{
+			api = (struct usb_module_api *)cjar->value;
+	
+			SuperToUser(ret);
+
+			return api;
+		}
+
+		cjar++;
+	}
+
+	SuperToUser(ret);
+
+	return NULL;
+}
 #endif
-
-
-typedef char Path[PATH_MAX];
 
 #endif /* _global_h */

@@ -36,7 +36,6 @@
  *
  * Do not remove unless you know what you are doing.
  */
-# define XHDI_MASS_STORAGE_SUPPORT
 
 # ifndef __KERNEL__
 # error not a KERNEL source
@@ -62,6 +61,7 @@ struct module_callback;
 struct nf_ops;
 struct parser_item;
 struct parsinf;
+struct pci_conv_adr;
 struct semaphore;
 struct timeout;
 struct timeval;
@@ -109,11 +109,8 @@ struct timeval;
  * versions are enough :-)
  */
 #define KENTRY_MAJ_VERSION	0
-#ifdef XHDI_MASS_STORAGE_SUPPORT
-#define KENTRY_MIN_VERSION	18
-#else
-#define KENTRY_MIN_VERSION	17
-#endif
+#define KENTRY_MIN_VERSION	19
+
 /* hardware dependant vector
  */
 struct kentry_mch
@@ -566,14 +563,12 @@ struct kentry_misc
 	long _cdecl (*trap_1_emu)(short fnum, ...);
 	long _cdecl (*trap_13_emu)(short fnum, ...);
 	long _cdecl (*trap_14_emu)(short fnum, ...);
-#ifdef XHDI_MASS_STORAGE_SUPPORT
+
 	/*
 	 * function to install XHDI drivers
 	 */
 	long _cdecl (*XHNewCookie)(void *newcookie);
-#endif
 };
-#ifdef XHDI_MASS_STORAGE_SUPPORT
 #define DEFAULTS_kentry_misc \
 { \
 	&dma, \
@@ -590,23 +585,6 @@ struct kentry_misc
 	trap_14_emu, \
 	XHNewCookie, \
 }
-#else
-#define DEFAULTS_kentry_misc \
-{ \
-	&dma, \
-	\
-	get_toscookie, \
-	\
-	add_rsvfentry, \
-	del_rsvfentry, \
-	\
-	remaining_proc_time, \
-	\
-	trap_1_emu, \
-	trap_13_emu, \
-	trap_14_emu, \
-}
-#endif
 
 /* debug support
  */
@@ -902,6 +880,100 @@ struct kentry_xdd
 	xdd_close, \
 }
 
+struct kentry_pcibios
+{
+	unsigned long *pcibios_installed;
+	long _cdecl (*Find_pci_device)	(unsigned long id, unsigned short index);
+	long _cdecl (*Find_pci_classcode)	(unsigned long class, unsigned short index);
+	long _cdecl (*Read_config_byte)	(long handle, unsigned short reg, unsigned char *address);
+	long _cdecl (*Read_config_word)	(long handle, unsigned short reg, unsigned short *address);
+	long _cdecl (*Read_config_longword)	(long handle, unsigned short reg, unsigned long *address);
+	unsigned char _cdecl (*Fast_read_config_byte)	(long handle, unsigned short reg);
+	unsigned short _cdecl (*Fast_read_config_word)	(long handle, unsigned short reg);
+	unsigned long _cdecl (*Fast_read_config_longword)	(long handle, unsigned short reg);
+	long _cdecl (*Write_config_byte)	(long handle, unsigned short reg, unsigned short val);
+	long _cdecl (*Write_config_word)	(long handle, unsigned short reg, unsigned short val);
+	long _cdecl (*Write_config_longword)	(long handle, unsigned short reg, unsigned long val);
+	long _cdecl (*Hook_interrupt)	(long handle, unsigned long *routine, unsigned long *parameter);
+	long _cdecl (*Unhook_interrupt)	(long handle);
+	long _cdecl (*Special_cycle)	(unsigned short bus, unsigned long data);
+	long _cdecl (*Get_routing)	(long handle);
+	long _cdecl (*Set_interrupt)	(long handle);
+	long _cdecl (*Get_resource)	(long handle);
+	long _cdecl (*Get_card_used)	(long handle, unsigned long *address);
+	long _cdecl (*Set_card_used)	(long handle, unsigned long *callback);
+	long _cdecl (*Read_mem_byte)	(long handle, unsigned long offset, unsigned char *address);
+	long _cdecl (*Read_mem_word)	(long handle, unsigned long offset, unsigned short *address);
+	long _cdecl (*Read_mem_longword)	(long handle, unsigned long offset, unsigned long *address);
+	unsigned char _cdecl (*Fast_read_mem_byte)	(long handle, unsigned long offset);
+	unsigned short _cdecl (*Fast_read_mem_word)	(long handle, unsigned long offset);
+	unsigned long _cdecl (*Fast_read_mem_longword)	(long handle, unsigned long offset);
+	long _cdecl (*Write_mem_byte)	(long handle, unsigned long offset, unsigned short val);
+	long _cdecl (*Write_mem_word)	(long handle, unsigned long offset, unsigned short val);
+	long _cdecl (*Write_mem_longword)	(long handle, unsigned long offset, unsigned long val);
+	long _cdecl (*Read_io_byte)	(long handle, unsigned long offset, unsigned char *address);
+	long _cdecl (*Read_io_word)	(long handle, unsigned long offset, unsigned short *address);
+	long _cdecl (*Read_io_longword)	(long handle, unsigned long offset, unsigned long *address);
+	unsigned char _cdecl (*Fast_read_io_byte)	(long handle, unsigned long offset);
+	unsigned short _cdecl (*Fast_read_io_word)	(long handle, unsigned long offset);
+	unsigned long _cdecl (*Fast_read_io_longword)	(long handle, unsigned long offset);
+	long _cdecl (*Write_io_byte)	(long handle, unsigned long offset, unsigned short val);
+	long _cdecl (*Write_io_word)	(long handle, unsigned long offset, unsigned short val);
+	long _cdecl (*Write_io_longword)	(long handle, unsigned long offset, unsigned long val);
+	long _cdecl (*Get_machine_id)	(void);
+	long _cdecl (*Get_pagesize)	(void);
+	long _cdecl (*Virt_to_bus)	(long handle, unsigned long address, struct pci_conv_adr *pointer);
+	long _cdecl (*Bus_to_virt)	(long handle, unsigned long address, struct pci_conv_adr *pointer);
+	long _cdecl (*Virt_to_phys)	(unsigned long address, struct pci_conv_adr *pointer);
+	long _cdecl (*Phys_to_virt)	(unsigned long address, struct pci_conv_adr *pointer);
+};
+#define DEFAULTS_kentry_pcibios \
+{ \
+	&pcibios_installed, \
+	Find_pci_device, \
+	Find_pci_classcode, \
+	Read_config_byte, \
+	Read_config_word, \
+	Read_config_longword, \
+	Fast_read_config_byte, \
+	Fast_read_config_word, \
+	Fast_read_config_longword, \
+	Write_config_byte, \
+	Write_config_word, \
+	Write_config_longword, \
+	Hook_interrupt, \
+	Unhook_interrupt, \
+	Special_cycle, \
+	Get_routing, \
+	Set_interrupt, \
+	Get_resource, \
+	Get_card_used, \
+	Set_card_used, \
+	Read_mem_byte, \
+	Read_mem_word, \
+	Read_mem_longword, \
+	Fast_read_mem_byte, \
+	Fast_read_mem_word, \
+	Fast_read_mem_longword, \
+	Write_mem_byte, \
+	Write_mem_word, \
+	Write_mem_longword, \
+	Read_io_byte, \
+	Read_io_word, \
+	Read_io_longword, \
+	Fast_read_io_byte, \
+	Fast_read_io_word, \
+	Fast_read_io_longword, \
+	Write_io_byte, \
+	Write_io_word, \
+	Write_io_longword, \
+	Get_machine_id, \
+	Get_pagesize, \
+	Virt_to_bus, \
+	Bus_to_virt, \
+	Virt_to_phys, \
+	Phys_to_virt, \
+}
 
 /* the complete kernel entry
  */
@@ -937,6 +1009,8 @@ struct kentry
 
 	struct kentry_xfs vec_xfs;
 	struct kentry_xdd vec_xdd;
+
+	struct kentry_pcibios vec_pcibios;
 };
 # define DEFAULTS_kentry \
 { \
@@ -966,7 +1040,8 @@ struct kentry
 	DEFAULTS_kentry_debug, \
 	DEFAULTS_kentry_libkern, \
 	DEFAULTS_kentry_xfs, \
-	DEFAULTS_kentry_xdd \
+	DEFAULTS_kentry_xdd, \
+	DEFAULTS_kentry_pcibios \
 }
 
 # endif /* _mint_kentry_h */

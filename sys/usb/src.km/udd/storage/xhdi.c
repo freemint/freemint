@@ -864,64 +864,13 @@ get_fun_ptr (void)
 }
 #endif
 
-#ifdef TOSONLY
-#if 0
-struct cookie
-{
-	long tag;
-	long value;
-};
-
-#define XHDICOOKIE 0x58484449L
-# define CJAR           ((struct cookie **) 0x5a0)
-
-static void
-set_cookie (void)
-{
-	struct cookie *cjar = *CJAR;
-	int n = 0;
-
-	while (cjar->tag)
-	{
-		n++;
-		if (cjar->tag == XHDICOOKIE)
-		{
-			cjar->value = (long)&usbxhdi;
-			return;
-		}
-		cjar++;
-	}
-
-	n++;
-	if (n < cjar->value)
-	{
-		n = cjar->value;
-		cjar->tag = XHDICOOKIE;
-		cjar->value = (long)&usbxhdi;
-
-		cjar++;
-		cjar->tag = 0L;
-		cjar->value = n;
-	}
-}
-#endif
-#endif
-
 long
 install_xhdi_driver(void)
 {
         long r = 0;
 #ifdef TOSONLY
-#if 1
 	cookie_fun XHDI = get_fun_ptr ();
         r = XHDI (9, *xhdi_handler);
-#else
-	cookie_fun XHDI = get_fun_ptr ();
-	next_handler = XHDI;
-	set_cookie();
-	XHDI = get_fun_ptr ();
-	r = XHDI(0);
-#endif
 #else
 	r = xhnewcookie(*xhdi_handler);
 #endif

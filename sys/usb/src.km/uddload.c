@@ -24,13 +24,11 @@
 #include "global.h"
 #include "uddload.h"
 #include "usb.h"
-#include "ucd/ucd_defs.h"
-#include "udd.h"
+#include "usb_api.h"
 
 #include "mint/basepage.h"
 
-extern Path start_path;
-
+extern char *start_path;
 static char no_reason[] = "Nothing";
 
 static long

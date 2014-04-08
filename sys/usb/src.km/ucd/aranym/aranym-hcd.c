@@ -31,8 +31,6 @@
 #include "usbhost_nfapi.h"
 
 #include "../../usb.h"
-#include "../ucd_defs.h"
-#include "../../udd/udd_defs.h"
 #include "../../usb_api.h"
 
 
@@ -96,6 +94,7 @@ struct usb_module_api *api;
 
 /* END kernel interface */
 
+static struct usb_device *root_hub_dev = NULL;
 unsigned long rh_port_status[NUMBER_OF_PORTS]; 
 
 
@@ -284,12 +283,12 @@ aranym_ioctl (struct ucdif *u, short cmd, long arg)
 		}
 		case LOWLEVEL_INIT :
 		{
-			ret = usb_lowlevel_init (0, NULL);
+			ret = usb_lowlevel_init (u->ucd_priv);
 			break;
 		}
 		case LOWLEVEL_STOP :
 		{
-			ret = usb_lowlevel_stop ();
+			ret = usb_lowlevel_stop (u->ucd_priv);
 			break;
 		}
 		case SUBMIT_CONTROL_MSG :
@@ -331,7 +330,7 @@ aranym_ioctl (struct ucdif *u, short cmd, long arg)
 /* --- Init functions ------------------------------------------------------ */
 
 long 
-usb_lowlevel_init(long dummy1, const struct pci_device_id *dummy2)
+usb_lowlevel_init(void *dummy)
 {
 	int r;
 	
@@ -347,7 +346,7 @@ usb_lowlevel_init(long dummy1, const struct pci_device_id *dummy2)
 
 
 long 
-usb_lowlevel_stop(void)
+usb_lowlevel_stop(void *dummy)
 {
 	int r;
 
@@ -362,7 +361,6 @@ long _cdecl
 init (struct kentry *k, struct usb_module_api *uapi, char **reason)
 {
 	long ret;
-
 	char message[100];
 	
 	kentry	= k;
@@ -399,7 +397,7 @@ init (struct kentry *k, struct usb_module_api *uapi, char **reason)
 	c_conws (MSG_GREET);
 	DEBUG (("%s: enter init", __FILE__));
 
-	ret = ucd_register(&aranym_uif);
+	ret = ucd_register(&aranym_uif, &root_hub_dev);
 	if (ret)
 	{
 		DEBUG (("%s: ucd register failed!", __FILE__));

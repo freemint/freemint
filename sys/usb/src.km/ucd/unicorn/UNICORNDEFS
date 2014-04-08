@@ -63,4 +63,4 @@ endif
 #
 # all default targets
 #
-unicorntargets = 02060 030 040 060 deb 000 col prg
+unicorntargets = 02060 030 040 060 deb 000 prg

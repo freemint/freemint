@@ -4,7 +4,7 @@
 	.globl _old_vbl_int
 	.globl _interrupt_vbl
 	.globl _unicorn_int
-	.globl _set_old_int_lvl
+	.globl _check_flock
 
 	.text
 
@@ -21,15 +21,13 @@ _interrupt_vbl:
 	move.l	_old_vbl_int(PC),-(sp)
 	rts
 
-| Sets interrupt level to what was in the SR
-_set_old_int_lvl:
-	move.w	(sp),oldSR
-	andi.w	#0x0f00,oldSR		|just keep the int lvl
-	move.l	d0,-(sp)
-	move.w	sr,d0
-	andi.w	#0xf0ff,d0
-	or.w	oldSR,d0
-	move.w	d0,sr
-	move.l	(sp)+,d0
+| Checks & Sets FLOCK
+_check_flock:
+	tas.b 0x43e
+	bne.b done
+	move.b #0, D0
+	rts
+done:
+	move.b #0xFF, D0
 	rts
 

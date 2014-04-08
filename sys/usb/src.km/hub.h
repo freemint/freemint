@@ -34,13 +34,13 @@ struct usb_port_status
 {
 	unsigned short wPortStatus;
 	unsigned short wPortChange;
-} __attribute__ ((packed));
+};
 
 struct usb_hub_status
 {
 	unsigned short wHubStatus;
 	unsigned short wHubChange;
-} __attribute__ ((packed));
+};
 
 
 /* Hub descriptor */
@@ -56,13 +56,18 @@ struct usb_hub_descriptor
 	unsigned char  PortPowerCtrlMask[(USB_MAXCHILDREN+1+7)/8];
 	/* DeviceRemovable and PortPwrCtrlMask want to be variable-length
 	   bitmaps that hold max 255 entries. (bit0 is ignored) */
-} __attribute__ ((packed));
+};
 
 
 struct usb_hub_device
 {
 	struct usb_device *pusb_dev;
 	struct usb_hub_descriptor desc;
+
+#ifdef TOSONLY
+	struct usb_port_status ps[USB_MAXCHILDREN];
+	struct usb_hub_status hs[USB_MAXCHILDREN];
+#endif
 };
 
 
@@ -80,7 +85,7 @@ long 		usb_hub_probe		(struct usb_device *dev, long ifnum);
 void 		usb_hub_reset		(void);
 long 		hub_port_reset		(struct usb_device *dev, long port,
 			  		 unsigned short *portstat);
-long		usb_rh_wakeup		(void);
+void		usb_rh_wakeup		(void);
 void		usb_hub_init		(struct usb_device *);
 void		usb_hub_thread		(void *);
 void		usb_hub_poll		(PROC *, long);

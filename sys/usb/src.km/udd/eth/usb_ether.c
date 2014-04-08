@@ -26,10 +26,7 @@
 #include "libkern/libkern.h"
 #include "mint/dcntl.h"
 
-#include "../../config.h"
 #include "../../usb.h"
-#include "../../ucd/ucd_defs.h"
-#include "../udd_defs.h"
 #include "../../usb_api.h"
 
 
@@ -87,9 +84,9 @@ char *drv_version = MSG_VERSION;
  * USB device interface
  */
 
-static long _cdecl	eth_open		(struct uddif *);
-static long _cdecl	eth_close		(struct uddif *);
-static long _cdecl	eth_ioctl		(struct uddif *, short, long);
+static long ethernet_probe		(struct usb_device *dev);
+static long ethernet_disconnect		(struct usb_device *dev);
+static long ethernet_ioctl		(struct uddif *, short, long);
 
 static char lname[] = "USB ethernet class driver\0";
 
@@ -101,10 +98,10 @@ static struct uddif eth_uif =
 	"eth",			/* name */
 	0,			/* unit */
 	0,			/* flags */
-	eth_open,		/* open */
-	eth_close,		/* close */
+	ethernet_probe,		/* probe */
+	ethernet_disconnect,	/* disconnect */
 	0,			/* resrvd1 */
-	eth_ioctl,		/* ioctl */
+	ethernet_ioctl,		/* ioctl */
 	0,			/* resrvd2 */
 };
 
@@ -118,9 +115,6 @@ long _cdecl init (struct kentry *, struct usb_module_api *, long, long);
 
 /* END kernel interface */
 /****************************************************************************/
-
-void usb_ethernet_disconnect(struct usb_device *dev);
-long usb_ethernet_probe(struct usb_device *dev);
 
 #include "usb_ether.h"
 
@@ -163,34 +157,14 @@ static long probe_valid_drivers(struct usb_device *dev)
 	return -1;
 }
 
-static struct usb_driver eth_driver =
-{
-	name:           "usb-eth",
-	probe:          usb_ethernet_probe,
-	disconnect:     usb_ethernet_disconnect,
-	next:		NULL,
-};
-
 static long _cdecl
-eth_open (struct uddif *u)
+ethernet_ioctl (struct uddif *u, short cmd, long arg)
 {
 	return E_OK;
 }
 
-static long _cdecl
-eth_close (struct uddif *u)
-{
-	return E_OK;
-}
-
-static long _cdecl
-eth_ioctl (struct uddif *u, short cmd, long arg)
-{
-	return E_OK;
-}
-
-long
-usb_ethernet_probe(struct usb_device *dev)
+static long
+ethernet_probe(struct usb_device *dev)
 {
 	int old_async;
 	long r;
@@ -210,8 +184,8 @@ usb_ethernet_probe(struct usb_device *dev)
 	return r;
 }
 
-void
-usb_ethernet_disconnect(struct usb_device *dev)
+static long
+ethernet_disconnect(struct usb_device *dev)
 {
 	long i;
 
@@ -224,6 +198,8 @@ usb_ethernet_disconnect(struct usb_device *dev)
 			break;
 		};
 	}
+
+	return 0;
 }
 
 long _cdecl
@@ -270,7 +246,7 @@ init (struct kentry *k, struct usb_module_api *uapi, long arg, long reason)
 
 	memset(usb_eth, 0, sizeof(usb_eth));
 
-	ret = udd_register(&eth_uif, &eth_driver);
+	ret = udd_register(&eth_uif);
 	if (ret)
 	{
 		c_conws (MSG_FAILURE);
