@@ -66,7 +66,7 @@ struct pun_info
 	long	psize[MAX_LOGICAL_DRIVE];
 	short	flags[MAX_LOGICAL_DRIVE];		/* B15:swap, B7:change, B0:bootable */
 	BPB	bpb[MAX_LOGICAL_DRIVE];
-} __attribute__((packed));
+};
 typedef struct pun_info PUN_INFO;
 
 /* flags in PUN_INFO */

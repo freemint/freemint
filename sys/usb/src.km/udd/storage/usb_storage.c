@@ -47,15 +47,22 @@
  * only been tested with USB memory sticks.
  */
 
+#ifndef TOSONLY
+#include "mint/mint.h"
+#include "libkern/libkern.h"
+#endif
 #include "../../global.h"
 
+#include "part.h"
 #include "scsi.h"
+#include "part.h"
+#include "mint/endian.h"
+#include "mint/mdelay.h"
 
-#include "../../config.h"
 #include "../../usb.h"
-#include "../../ucd/ucd_defs.h"
-#include "../udd_defs.h"
 #include "../../usb_api.h"
+
+extern void hex_long(ulong n);
 
 #define MSG_VERSION "0.3.0"
 char *drv_version = MSG_VERSION;
@@ -68,12 +75,6 @@ char *drv_version = MSG_VERSION;
 #define MSG_GREET	\
 	"Ported, mixed and shaken by David Galvez.\r\n" \
 	"Compiled " MSG_BUILDDATE ".\r\n\r\n"
-
-/*
-#if defined(CONFIG_USB_UHCI) || defined(CONFIG_USB_OHCI) || defined(CONFIG_USB_EHCI) \
-			|| defined(CONFIG_USB_ISP116X_HCD) || defined(CONFIG_USB_ARANYM_HCD)
-#ifdef CONFIG_USB_STORAGE
-*/
 
 /*
  * Debug section
@@ -130,9 +131,9 @@ struct usb_module_api	*api;
  * USB device interface
  */
 
-static long _cdecl	storage_open		(struct uddif *);
-static long _cdecl	storage_close		(struct uddif *);
-static long _cdecl	storage_ioctl		(struct uddif *, short, long);
+static long	storage_ioctl		(struct uddif *, short, long);
+static long	storage_probe		(struct usb_device *);
+static long	storage_disconnect	(struct usb_device *);
 
 static char lname[] = "USB mass storage class driver\0";
 
@@ -144,8 +145,8 @@ static struct uddif storage_uif =
 	"storage",		/* name */
 	0,			/* unit */
 	0,			/* flags */
-	storage_open,		/* open */
-	storage_close,		/* close */
+	storage_probe,		/* probe */
+	storage_disconnect, 	/* disconnect */
 	0,			/* resrvd1 */
 	storage_ioctl,		/* ioctl */
 	0,			/* resrvd2 */
@@ -260,6 +261,27 @@ struct bios_partitions
 	short partnum;				/* Total number of partitions this device has */
 };
 
+/* atari */
+struct partition_info
+{
+  unsigned char flg;                       /* bit 0: active; bit 7: bootable */
+  char id[3];                   /* "GEM", "BGM", "XGM", or other */
+  unsigned long st;                       /* start of partition */
+  unsigned long siz;                      /* length of partition */
+};
+
+typedef struct
+{
+  unsigned char unused[0x156];                   /* room for boot code */
+  struct partition_info icdpart[8];     /* info for ICD-partitions 5..12 */
+  unsigned char unused2[0xc];
+  unsigned long hd_siz;                           /* size of disk in blocks */
+  struct partition_info part[4];
+  unsigned long bsl_st;                           /* start of bad sector list */
+  unsigned long bsl_cnt;                          /* length of bad sector list */
+  unsigned short checksum;                         /* checksum for bootable disks */
+} __attribute__ ((__packed__)) rootsector;
+
 static struct us_data usb_stor[USB_MAX_STOR_DEV];
 static struct bios_partitions bios_part[USB_MAX_STOR_DEV];
 
@@ -276,12 +298,6 @@ static struct bios_partitions bios_part[USB_MAX_STOR_DEV];
 #define DOS_MBR	0
 #define DOS_PBR	1
 #define DOS_FS_TYPE_OFFSET 0x36
-
-//typedef union 
-//{				/* Galvez: To avoid strict aliasing warnings */
-//	unsigned long u32;
-//	unsigned char u8[4];
-//} U32;
 
 typedef struct dos_partition
 {
@@ -305,19 +321,13 @@ typedef struct disk_partition
 	unsigned long	blksz; /* block size in bytes			*/
 } disk_partition_t;
 
-
-//extern unsigned long swap_long(unsigned long val);
-//#define le32_to_int(a) swap_32(*(unsigned long *)a)
-
 /* Functions prototypes */
 long 		usb_stor_get_info	(struct usb_device *, struct us_data *, block_dev_desc_t *);
 long 		usb_stor_probe		(struct usb_device *, unsigned long, struct us_data *);
 unsigned long 	usb_stor_read		(long, unsigned long, unsigned long, void *);
-unsigned long 	usb_stor_write		(long, unsigned long, unsigned long, const void *);
+unsigned long 	usb_stor_write		(long, unsigned long, unsigned long, void *);
 void		usb_stor_eject		(long);
-//struct usb_device * 	usb_get_dev_index	(long index);
 block_dev_desc_t *	usb_stor_get_dev	(long);
-void 		uhci_show_temp_int_td	(void);
 long 		usb_stor_BBB_comdat	(ccb *, struct us_data *);
 long 		usb_stor_CB_comdat	(ccb *, struct us_data *);
 long 		usb_stor_CBI_get_status	(ccb *, struct us_data *);
@@ -325,67 +335,9 @@ long 		usb_stor_BBB_clear_endpt_stall	(struct us_data *, unsigned char);
 long 		usb_stor_BBB_transport	(ccb *, struct us_data *);
 long 		usb_stor_CB_transport	(ccb *, struct us_data *);
 void 		usb_storage_init	(void);
-long		usb_storage_probe	(struct usb_device *);
-void		usb_storage_disconnect	(struct usb_device *);
-void 		cconws_from_S		(char *);
-void 		dsetdrv_from_S		(short);
-void 		bconout_from_S		(short);
-long 		XHDINewCookie_from_S	(void *);
 
-
-
-static struct usb_driver storage_driver =
-{
-	name:		"usb-storage",
-	probe:		usb_storage_probe,
-	disconnect:	usb_storage_disconnect,
-	next:		NULL,
-};
-
-
-/*
- * Galvez: I don't know how to call OS functions
- * from assembler(bios.S), this is a workaround.
- */
-void
-cconws_from_S(char *str)
-{
-	c_conws(str);
-}
-
-void
-dsetdrv_from_S(short drv)
-{
-#ifdef TOSONLY
-	Dsetdrv(drv);
-#else
-	d_setdrv(drv);
-#endif
-}
-
-void
-bconout_from_S(short c)
-{
-#ifdef TOSONLY
-	Bconout(2, c);
-#else
-	b_ubconout(2, c); /* Console */
-#endif
-}
 
 /* --- Inteface functions -------------------------------------------------- */
-
-static long _cdecl
-storage_open (struct uddif *u)
-{
-	return E_OK;
-}
-
-static long _cdecl
-storage_close (struct uddif *u)
-{
-	return E_OK;
-}
 
 static long _cdecl
 storage_ioctl (struct uddif *u, short cmd, long arg)
@@ -419,10 +371,13 @@ block_dev_desc_t *usb_stor_get_dev(long idx)
 void
 init_part(block_dev_desc_t *dev_desc)
 {
-	unsigned char buffer[DEFAULT_SECTOR_SIZE];
+	unsigned char *buffer;
+	buffer = (unsigned char *)kmalloc(DEFAULT_SECTOR_SIZE);
+	if (!buffer) return;
 	if((dev_desc->block_read(dev_desc->dev, 0, 1, (unsigned long *)buffer) != 1)
 	 || (buffer[DOS_PART_MAGIC_OFFSET + 0] != 0x55) || (buffer[DOS_PART_MAGIC_OFFSET + 1] != 0xaa))
 	{
+		kfree(buffer);
 		return;
 	}
 	dev_desc->part_type = PART_TYPE_DOS;
@@ -464,6 +419,7 @@ init_part(block_dev_desc_t *dev_desc)
 		}
 	}			
 #endif	
+	kfree(buffer);
 }
 
 static inline long
@@ -479,17 +435,21 @@ get_partition_info_extended(block_dev_desc_t *dev_desc, long ext_part_sector, lo
 {
 	dos_partition_t *pt;
 	long i;
-	unsigned char buffer[DEFAULT_SECTOR_SIZE];
+	unsigned char *buffer;
+	buffer = (unsigned char *)kmalloc(DEFAULT_SECTOR_SIZE);
+	if (!buffer) return -1;
 
 	if(dev_desc->block_read(dev_desc->dev, ext_part_sector, 1, (unsigned long *)buffer) != 1)
 	{
 		DEBUG(("Can't read partition table on %ld:%ld", dev_desc->dev, ext_part_sector));
+		kfree(buffer);
 		return -1;
 	}
 	
 	if(buffer[DOS_PART_MAGIC_OFFSET] != 0x55 || buffer[DOS_PART_MAGIC_OFFSET + 1] != 0xaa)
 	{
 		DEBUG(("bad MBR sector signature 0x%02x%02x", buffer[DOS_PART_MAGIC_OFFSET], buffer[DOS_PART_MAGIC_OFFSET + 1]));
+		kfree(buffer);
 		return -1;
 	}
 	/* Print all primary/logical partitions */
@@ -506,6 +466,7 @@ get_partition_info_extended(block_dev_desc_t *dev_desc, long ext_part_sector, lo
 			DEBUG(("DOS partition at offset 0x%lx, size 0x%lx, type 0x%x %s", 
 					info->start, info->size, pt->sys_ind, 
 					(is_extended(pt->sys_ind) ? " Extd" : "")));
+			kfree(buffer);
 			return 0;
 		}
 		/* Reverse engr the fdisk part# assignment rule! */
@@ -522,28 +483,55 @@ get_partition_info_extended(block_dev_desc_t *dev_desc, long ext_part_sector, lo
 			return get_partition_info_extended(dev_desc, lba_start, ext_part_sector == 0 ? lba_start : relative, part_num, which_part, info);
 		}
 	}
+
+	/* check atari partitioning */
+	for(i = 0; i < 4; i++)
+	{
+		rootsector *r_sector = (rootsector *)buffer;
+		info->type = (long)r_sector->part[i].id[2] | (long)r_sector->part[i].id[1] << 8 | (long)r_sector->part[i].id[0] << 16;
+		info->blksz = 512;
+		info->start = ntohl(r_sector->part[i].st) * 512;
+		info->size = ntohl(r_sector->part[i].siz) * 512;
+		if (info->type == 0) {
+			kfree(buffer);
+			return -1;
+		}
+		if (part_num == which_part) {
+			kfree(buffer);
+			return 0;
+		}
+		part_num++;
+	}
+	kfree(buffer);
+
 	return -1;
 }
 
 long
 fat_register_device(block_dev_desc_t *dev_desc, long part_no, unsigned long *part_type, unsigned long *part_offset, unsigned long *part_size)
 {
-	unsigned char buffer[DEFAULT_SECTOR_SIZE];
 	disk_partition_t info;
+	unsigned char *buffer;
+	buffer = (unsigned char *)kmalloc(DEFAULT_SECTOR_SIZE);
+	if (!buffer) return -1;
 
-	if(!dev_desc->block_read)
+	if(!dev_desc->block_read) {
+		kfree(buffer);
 		return -1;
+	}
 		
 	/* check if we have a MBR (on floppies we have only a PBR) */
 	if(dev_desc->block_read(dev_desc->dev, 0, 1, (unsigned long *)buffer) != 1)
 	{
 		DEBUG(("Can't read from device %ld", dev_desc->dev));
+		kfree(buffer);
 		return -1;
 	}
 	
 	if(buffer[DOS_PART_MAGIC_OFFSET] != 0x55 || buffer[DOS_PART_MAGIC_OFFSET + 1] != 0xaa)
 	{
 		/* no signature found */
+		kfree(buffer);
 		return -1;
 	}
 	
@@ -564,8 +552,10 @@ fat_register_device(block_dev_desc_t *dev_desc, long part_no, unsigned long *par
 	else
 	{
 		DEBUG(("Partition %ld not valid on device %ld", part_no, dev_desc->dev));
+		kfree(buffer);
 		return -1;
 	}
+	kfree(buffer);
 	return 0;
 }
 
@@ -1252,12 +1242,12 @@ usb_request_sense(ccb *srb, struct us_data *ss)
 	DEBUG(("usb_request_sense()"));  /* GALVEZ: DEBUG */
 	char *ptr;
 	ptr = (char *)srb->pdata;
-	memset(&srb->cmd[0], 0, /*12*/6);	/* GALVEZ: DEBUG: DEFAULT 12 */
+	memset(&srb->cmd[0], 0, 12);
 	srb->cmd[0] = SCSI_REQ_SENSE;
 	srb->cmd[4] = 18;
 	srb->datalen = 18;
 	srb->pdata = &srb->sense_buf[0];
-	srb->cmdlen = /*12*/6;		/* GALVEZ: DEBUG: DEFAULT 12 */
+	srb->cmdlen = 12;
 	ss->transport(srb, ss);
 	DEBUG(("Request Sense returned %02x %02x %02x", srb->sense_buf[2], srb->sense_buf[12], srb->sense_buf[13]));
 	srb->pdata = (unsigned char *)ptr;
@@ -1369,8 +1359,9 @@ usb_bin_fixup(struct usb_device_descriptor descriptor, unsigned char vendor[], u
 unsigned long
 usb_stor_read(long device, unsigned long blknr, unsigned long blkcnt, void *buffer)
 {
-	unsigned long start, blks, buf_addr;
+	unsigned long start, blks;
 	unsigned short smallblks;
+	unsigned char *buf_addr = buffer;
 	struct us_data *ss;
 	struct usb_device *dev;
 	long retry;
@@ -1387,33 +1378,30 @@ usb_stor_read(long device, unsigned long blknr, unsigned long blkcnt, void *buff
 	ss = (struct us_data *)dev->privptr;
 	usb_disable_asynch(1); /* asynch transfer not allowed */
 	srb.lun = usb_dev_desc[device].lun;
-	buf_addr = (unsigned long)buffer;
 	start = blknr;
 	blks = blkcnt;
 
-	DEBUG(("usb_read: dev %ld startblk %lx, blccnt %lx buffer %lx", device, start, blks, buf_addr));
-
-	if (blks * usb_dev_desc[device].blksz > DEFAULT_SECTOR_SIZE) {
-	}
+	DEBUG(("usb_read: dev %ld startblk %lx, blccnt %lx buffer %lx", device, start, blks, (long)buf_addr));
 
 	do
 	{
 		/* XXX need some comment here */
 		retry = 2;
-		srb.pdata = (unsigned char *)buf_addr;
 		if(blks > USB_MAX_READ_BLK)
 			smallblks = USB_MAX_READ_BLK;
 		else
 			smallblks = (unsigned short) blks;
 retry_it:
 		srb.datalen = usb_dev_desc[device].blksz * smallblks;
-		srb.pdata = (unsigned char *)buf_addr;
+		srb.pdata = buf_addr;
 		if(usb_read_10(&srb, ss, start, smallblks))
 		{
 			DEBUG(("Read ERROR"));
 			usb_request_sense(&srb, ss);
 			if(retry--)
 				goto retry_it;
+			memset(srb.pdata, 0xaa, srb.datalen);
+			c_conws("READERROR!\r\n");
 			blkcnt -= blks;
 			break;
 		}
@@ -1423,16 +1411,17 @@ retry_it:
 	}
 	while(blks != 0);
 	ss->flags &= ~USB_READY;
-	DEBUG(("usb_read: end startblk %lx, blccnt %x buffer %lx", start, smallblks, buf_addr));
+	DEBUG(("usb_read: end startblk %lx, blccnt %x buffer %lx", start, smallblks, (long)buf_addr));
 	usb_disable_asynch(0); /* asynch transfer allowed */
 	return blkcnt;
 }
 
 unsigned long
-usb_stor_write(long device, unsigned long blknr, unsigned long blkcnt, const void *buffer)
+usb_stor_write(long device, unsigned long blknr, unsigned long blkcnt, void *buffer)
 {
-	unsigned long start, blks, buf_addr;
+	unsigned long start, blks;
 	unsigned short smallblks;
+	unsigned char *buf_addr = buffer;
 	struct us_data *ss;
 	struct usb_device *dev;
 	long retry;
@@ -1447,24 +1436,22 @@ usb_stor_write(long device, unsigned long blknr, unsigned long blkcnt, const voi
 	ss = (struct us_data *)dev->privptr;
 	usb_disable_asynch(1); /* asynch transfer not allowed */
 	srb.lun = usb_dev_desc[device].lun;
-	buf_addr = (unsigned long)buffer;
 	start = blknr;
 	blks = blkcnt;
 
-	DEBUG(("usb_write: dev %ld startblk %lx, blccnt %lx buffer %lx", device, start, blks, buf_addr));
+	DEBUG(("usb_write: dev %ld startblk %lx, blccnt %lx buffer %lx", device, start, blks, (long)buf_addr));
 
 	do
 	{
 		/* XXX need some comment here */
 		retry = 2;
-		srb.pdata = (unsigned char *)buf_addr;
 		if(blks > USB_MAX_READ_BLK)
 			smallblks = USB_MAX_READ_BLK;
 		else
 			smallblks = (unsigned short)blks;
 retry_it:
 		srb.datalen = usb_dev_desc[device].blksz * smallblks;
-		srb.pdata = (unsigned char *)buf_addr;
+		srb.pdata = buf_addr;
 		
 		if(usb_write_10(&srb, ss, start, smallblks))
 		{
@@ -1472,6 +1459,8 @@ retry_it:
 			usb_request_sense(&srb, ss);
 			if(retry--)
 				goto retry_it;
+			memset(srb.pdata, 0xaa, srb.datalen);
+			c_conws("WRITEERROR!\r\n");
 			blkcnt -= blks;
 			break;
 		}
@@ -1481,7 +1470,7 @@ retry_it:
 	}
 	while(blks != 0);
 	ss->flags &= ~USB_READY;
-	DEBUG(("usb_write: end startblk %lx, blccnt %x buffer %lx", start, smallblks, buf_addr));
+	DEBUG(("usb_write: end startblk %lx, blccnt %x buffer %lx", start, smallblks, (long)buf_addr));
 	usb_disable_asynch(0); /* asynch transfer allowed */
 
 	return blkcnt;
@@ -1737,10 +1726,21 @@ usb_stor_eject(long device)
 	}
 
 	long idx;
+#ifdef TOSONLY
+	long ret = Super(0L);
+#endif
 	for (idx = 1; idx <= bios_part[device].partnum; idx++)
 	{	
 		uninstall_usb_stor(bios_part[device].biosnum[idx - 1]);
+#ifdef TOSONLY
+		(void)Mediach(bios_part[device].biosnum[idx - 1]);
+#else
+		changedrv(bios_part[device].biosnum[idx - 1]);
+#endif
 	}
+#ifdef TOSONLY
+	SuperToUser(ret);
+#endif
 	bios_part[device].partnum = 0;
 
 	ALERT(("USB Storage Device disconnected: (%ld) %s", usb_stor[device].pusb_dev->devnum,
@@ -1752,8 +1752,8 @@ usb_stor_eject(long device)
  * 
  * 
  */
-void
-usb_storage_disconnect(struct usb_device *dev)
+static long
+storage_disconnect(struct usb_device *dev)
 {
 	long i;
 	for (i = 0; i < USB_MAX_STOR_DEV; i++)
@@ -1775,18 +1775,30 @@ usb_storage_disconnect(struct usb_device *dev)
 	{
 		/* Probably the device has been already disconnected by software (XHEject) */
 		DEBUG(("USB mass storage device was already disconnected"));
-		return;
+		return -1;
 	}
 
 	long idx;
+#ifdef TOSONLY
+	long ret = Super(0L);
+#endif
 	for (idx = 1; idx <= bios_part[i].partnum; idx++)
 	{	
 		uninstall_usb_stor(bios_part[i].biosnum[idx - 1]);
+#ifdef TOSONLY
+		(void)Mediach(bios_part[i].biosnum[idx - 1]);
+#else
+		changedrv(bios_part[i].biosnum[idx - 1]);
+#endif
 	}
+#ifdef TOSONLY
+	SuperToUser(ret);
+#endif
 	bios_part[i].partnum = 0;
 
 	ALERT(("USB Storage Device disconnected: (%ld) %s", dev->devnum, dev->prod));
 
+	return 0;
 }
 
 
@@ -1794,8 +1806,8 @@ usb_storage_disconnect(struct usb_device *dev)
  * 
  * 
  */
-long
-usb_storage_probe(struct usb_device *dev)
+static long
+storage_probe(struct usb_device *dev)
 {
 	long r;	
 	long i;
@@ -1892,41 +1904,6 @@ usb_storage_init(void)
 }
 
 #ifdef TOSONLY
-/* cookie jar definition
- */
-
-struct cookie
-{
-        long tag;
-        long value;
-};
-
-#define _USB 0x5f555342L
-#define CJAR ((struct cookie **) 0x5a0)
-
-static long
-get_cookie (void)
-{
-	struct cookie *cjar = *CJAR;
-	api = NULL;
-
-	while (cjar->tag)
-	{
-		if (cjar->tag == _USB)
-		{
-			api = (struct usb_module_api *)cjar->value;
-
-			return 0;
-		}
-
-		cjar++;
-	}
-
-	return -1;
-}
-#endif
-
-#ifdef TOSONLY
 int init(void);
 int
 init (void)
@@ -1952,7 +1929,7 @@ init (struct kentry *k, struct usb_module_api *uapi, long arg, long reason)
 
 #ifdef TOSONLY
 	/* GET _USB COOKIE to REGISTER */
-	Supexec(get_cookie);
+	api = get_usb_cookie();
 	if (!api) {
 		(void)Cconws("STORAGE failed to get _USB cookie\r\n");
 		return -1;
@@ -1961,12 +1938,11 @@ init (struct kentry *k, struct usb_module_api *uapi, long arg, long reason)
 
 	usb_storage_init();
 
-	ret = udd_register(&storage_uif, &storage_driver);
-	
+	ret = udd_register(&storage_uif);
 	if (ret)
 	{
 		DEBUG (("%s: udd register failed!", __FILE__));
-		return 1;
+		return -1;
 	}
 
 	DEBUG (("%s: udd register ok", __FILE__));
@@ -1979,4 +1955,3 @@ init (struct kentry *k, struct usb_module_api *uapi, long arg, long reason)
 
 	return 0;
 }
-

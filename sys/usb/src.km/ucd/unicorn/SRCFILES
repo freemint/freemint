@@ -10,9 +10,11 @@ COBJS = \
 TOSCOBJS = \
         crtinit.c
 
+SSOBJS = \
+	unicorn_int.S
+
 TOSSSOBJS = \
         entry.S \
-        setstack.S \
-	unicorn_int.S
+        setstack.S
 
 SRCFILES = $(HEADER) $(SSOBJS) $(COBJS) $(TOSCOBJS) $(TOSSSOBJS)

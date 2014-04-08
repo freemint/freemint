@@ -26,7 +26,6 @@ DEFINITIONS = -D__KERNEL_MODULE__ -DMODULE_NAME=storage $(USBDEFS)
 INCLUDES += -I$(top_srcdir)/../../sys
 WARN = 	-Wall \
 	-Wmissing-prototypes \
-	-Winline \
 	-Wshadow \
 	-Wpointer-arith \
 	-Wcast-qual

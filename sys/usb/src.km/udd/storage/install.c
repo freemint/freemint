@@ -22,7 +22,6 @@
  *      Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *      MA 02110-1301, USA.
  */
-#include "../../config.h"
 #include "../../global.h"
 #include "xhdi.h"					/* for PUN_XXX */
 
@@ -74,24 +73,24 @@ typedef struct {
   /*   0 */	uchar bra[2];
   /*   2 */	uchar loader[6];
   /*   8 */	uchar serial[3];
-  /*   b */	uchar bps[2];			/* bytes per sector */
-  /*   d */	uchar spc;				/* sectors per cluster */
-  /*   e */	uchar res[2];			/* number of reserved sectors */
-  /*  10 */	uchar fat;				/* number of FATs */
-  /*  11 */	uchar dir[2];			/* number of DIR root entries */
-  /*  13 */	uchar sec[2];			/* total number of sectors */
-  /*  15 */	uchar media;			/* media descriptor */
-  /*  16 */	uchar spf[2];			/* sectors per FAT */
-  /*  18 */	uchar spt[2];			/* sectors per track */
-  /*  1a */	uchar sides[2];			/* number of sides */
-  /*  1c */	uchar hid[4];			/* number of hidden sectors (earlier: 2 bytes) */
-  /*  20 */	uchar sec2[4];			/* total number of sectors (if not in sec) */
-  /*  24 */	uchar ldn;				/* logical drive number */
-  /*  25 */	uchar dirty;			/* dirty filesystem flags */
-  /*  26 */	uchar ext;				/* extended signature */
-  /*  27 */	uchar serial2[4];		/* extended serial number */
-  /*  2b */	uchar label[11];		/* volume label */
-  /*  36 */	uchar fstype[8];		/* file system type */
+  /*   b */	uchar bps[2];		/* bytes per sector */
+  /*   d */	uchar spc;		/* sectors per cluster */
+  /*   e */	uchar res[2];		/* number of reserved sectors */
+  /*  10 */	uchar fat;		/* number of FATs */
+  /*  11 */	uchar dir[2];		/* number of DIR root entries */
+  /*  13 */	uchar sec[2];		/* total number of sectors */
+  /*  15 */	uchar media;		/* media descriptor */
+  /*  16 */	uchar spf[2];		/* sectors per FAT */
+  /*  18 */	uchar spt[2];		/* sectors per track */
+  /*  1a */	uchar sides[2];		/* number of sides */
+  /*  1c */	uchar hid[4];		/* number of hidden sectors (earlier: 2 bytes) */
+  /*  20 */	uchar sec2[4];		/* total number of sectors (if not in sec) */
+  /*  24 */	uchar ldn;		/* logical drive number */
+  /*  25 */	uchar dirty;		/* dirty filesystem flags */
+  /*  26 */	uchar ext;		/* extended signature */
+  /*  27 */	uchar serial2[4];	/* extended serial number */
+  /*  2b */	uchar label[11];	/* volume label */
+  /*  36 */	uchar fstype[8];	/* file system type */
   /*  3e */	uchar data[0x1c0];
   /* 1fe */	uchar cksum[2];
 } FAT16_BS;
@@ -100,14 +99,14 @@ typedef struct {
  * various text values access as longs
  */
 #define AHDI		0x41484449L		/* 'AHDI' */
-#define GEM			0x0047454dL		/* '\0GEM' */
-#define BGM			0x0042474dL		/* '\0BGM' */
-#define RAW			0x00524157L		/* '\0RAW' */
+#define GEM		0x0047454dL		/* '\0GEM' */
+#define BGM		0x0042474dL		/* '\0BGM' */
+#define RAW		0x00524157L		/* '\0RAW' */
 #define MINIX		0x00004481L
-#define LNX			0x00004483L
+#define LNX		0x00004483L
 
 /*
- * DOS partition ids that we support
+ * DOS & Linux partition ids that we support
  */
 static const unsigned long valid_dos[] = { 0x04, 0x06, 0x0e, 0x0b, 0x0c, 0x81, 0x83, 0 };
 
@@ -117,7 +116,7 @@ char boot_sector[DEFAULT_SECTOR_SIZE];
 /*
  *	local function prototypes
  */
-static void build_bpb(BPB *bpbptr,FAT16_BS *bs);
+static void build_bpb(BPB *bpbptr,void *bs);
 static void display_error(long dev_num,char *vendor,char *revision,char *product,char *msg);
 static void display_installed(long dev_num,char *vendor,char *revision,char *product,int logdrv);
 static void display_usb(long dev_num,char *vendor,char *revision,char *product);
@@ -125,6 +124,7 @@ static unsigned long getilong(uchar *byte);
 static unsigned short getiword(uchar *byte);
 static long valid_drive(long logdrv);
 
+#define DEBUGGING_ROUTINES
 #ifdef DEBUGGING_ROUTINES
 void hex_nybble(int n);
 void hex_byte(uchar n);
@@ -194,8 +194,9 @@ static unsigned long getilong(uchar *byte)
  *
  *	if it is neither FAT12 nor FAT16, we set 'recsiz' to zero
  */
-static void build_bpb(BPB *bpbptr,FAT16_BS *bs)
+static void build_bpb(BPB *bpbptr, void *bs)
 {
+	FAT16_BS *dosbs = (FAT16_BS*)bs;
 	unsigned short bps, spf;
 	unsigned long res, sectors, clusters;
 
@@ -204,29 +205,27 @@ static void build_bpb(BPB *bpbptr,FAT16_BS *bs)
 	/*
 	 * check for valid FAT16
 	 */
-	if (bs->spc == 0)
-		return;
-	bps = getiword(bs->bps);				/* bytes per sector */
+	bps = getiword(dosbs->bps);				/* bytes per sector */
 	if (bps == 0)
 		return;
 
 	bpbptr->recsiz = bps;
-	bpbptr->clsiz = bs->spc;				/* sectors per cluster */
-	bpbptr->clsizb = bs->spc * bps;
-	bpbptr->rdlen = (32L*getiword(bs->dir)+bps-1) / bps;/* root dir len, rounded up */
+	bpbptr->clsiz = dosbs->spc;				/* sectors per cluster */
+	bpbptr->clsizb = dosbs->spc * bps;
+	bpbptr->rdlen = (32L*getiword(dosbs->dir)+bps-1) / bps;/* root dir len, rounded up */
 
-	res = getiword(bs->res);				/* reserved sectors */
+	res = getiword(dosbs->res);				/* reserved sectors */
 	if (res == 0)							/* shouldn't happen:          */
 		res = 1;							/*  we use the TOS assumption */
-	spf = getiword(bs->spf);				/* sectors per fat */
+	spf = getiword(dosbs->spf);				/* sectors per fat */
 	bpbptr->fsiz = spf;
 	bpbptr->fatrec = res + spf;				/* start of fat #2 */
-	bpbptr->datrec = res + bs->fat*spf + bpbptr->rdlen;	/* start of data */
+	bpbptr->datrec = res + dosbs->fat*spf + bpbptr->rdlen;	/* start of data */
 
-	sectors = getiword(bs->sec);			/* old sector count */
+	sectors = getiword(dosbs->sec);			/* old sector count */
 	if (!sectors) 							/* zero => more than 65535, */
-		sectors = getilong(bs->sec2);		/*  so use new sector count */
-	clusters = (sectors - bpbptr->datrec) / bs->spc;	/* number of clusters */
+		sectors = getilong(dosbs->sec2);		/*  so use new sector count */
+	clusters = (sectors - bpbptr->datrec) / dosbs->spc;	/* number of clusters */
 	if (clusters > MAX_FAT16_CLUSTERS) {
 		bpbptr->recsiz = 0;
 		return;
@@ -458,20 +457,23 @@ BPB *usb_getbpb(long logdrv)
  */
 long usb_rwabs(long logdrv,long start,long count,void *buffer,long mode)
 {
-	long rc;
-	long physdev;					/* physical device */
+	unsigned long rc;
+	long physdev;				/* physical device */
+
+	if (count == 0L)
+		return 0;
 
 	if ((start < 0L) || (count < 0L) || !buffer)
-		return EBADR;				/* same as EBADRQ */
+		return EBADR;			/* same as EBADRQ */
 
 	if (mode & NOTRANSLATE) {		/* if physical mode, the rwabs intercept */
 		physdev = logdrv & PUN_DEV;	/*  has already allowed for floppies     */
 	} else {
 		BPB *bpbptr;
-		unsigned short phys_per_log;/* physical sectors per logical sector */
+		unsigned short phys_per_log;	/* physical sectors per logical sector */
 
 		if (!valid_drive(logdrv))
-			return ENXIO;			/* same as EDRIVE */
+			return ENXIO;		/* same as EDRIVE */
 
 		bpbptr = &pun_usb.bpb[logdrv];
 		if (!bpbptr->recsiz)
@@ -487,16 +489,14 @@ long usb_rwabs(long logdrv,long start,long count,void *buffer,long mode)
 		physdev = pun_usb.pun[logdrv] & PUN_DEV;
 	}
 
-	if (count == 0L)
-		return 0;
-
 	/*
 	 * set up for read or write
 	 */
 
 	if (mode&RWFLAG)
 		rc = usb_stor_write(physdev,start,count,buffer);
-	else rc = usb_stor_read(physdev,start,count,buffer);
+	else 
+		rc = usb_stor_read(physdev,start,count,buffer);
 
 	return (rc==count) ? 0 : EIO;
 }

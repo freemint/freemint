@@ -3,7 +3,7 @@
 #
 
 SHELL = /bin/sh
-SUBDIRS = storage eth
+SUBDIRS = storage eth mouse
 
 srcdir = .
 top_srcdir = ../../..

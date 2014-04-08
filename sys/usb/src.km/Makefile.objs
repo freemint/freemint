@@ -24,9 +24,9 @@ all-here: build
 DEFINITIONS = -D__KERNEL_MODULE__ -DMODULE_NAME=usb $(USBDEFS)
 
 INCLUDES += -I$(top_srcdir)/../../sys
+CFLAGS += -DMAINUSB
 WARN = 	-Wall \
 	-Wmissing-prototypes \
-	-Winline \
 	-Wshadow \
 	-Wpointer-arith \
 	-Wcast-qual

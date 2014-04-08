@@ -51,6 +51,7 @@
 # include "kmemory.h"		/* kmalloc, kfree */
 # include "memory.h"		/* addr2mem, attach_region, detach_region */
 # include "module.h"		/* load_modules */
+# include "pcibios.h"
 # include "proc.h"		/* sleep, wake, wakeselect, iwake */
 # include "proc_help.h"		/* proc_extensions */
 # include "proc_wakeup.h"	/* addprocwakeup */
@@ -62,10 +63,8 @@
 # include "umemory.h"		/* umalloc, ufree */
 # include "util.h"		/* pid2proc */
 # include "xfs_xdd.h"
-
-# ifdef XHDI_MASS_STORAGE_SUPPORT
 # include "xhdi.h"		/* XHNewCookie */
-# endif
+
 
 # undef DEFAULT_MODE
 # undef DEFAULT_DIRMODE

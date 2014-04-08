@@ -22,29 +22,33 @@
 
 #include "global.h"
 #include "usb.h"
-#include "ucd/ucd_defs.h"
-#include "udd.h"
+#include "usb_api.h"
 #include <mint/osbind.h> /* Setexc */
 
 
 struct uddif *alluddifs = NULL;
 
-struct usb_driver *alldrivers = NULL;
+extern struct usb_device usb_dev[USB_MAX_DEVICE];
 
+long udd_register(struct uddif *a);
+long udd_unregister(struct uddif *a);
 
 /*
  * Called by udd upon init to register itself
  */
 long
-udd_register(struct uddif *a, struct usb_driver *new_driver)
+udd_register(struct uddif *a)
 {
+	long i;
+
 	DEBUG(("udd_register: Registered device %s (%s)", a->name, a->lname));
 
 	a->next = alluddifs;
 	alluddifs = a;
 
-	new_driver->next = alldrivers;
-	alldrivers = new_driver;
+	for (i = 0; i < USB_MAX_DEVICE; i++) {
+        	usb_find_interface_driver(&usb_dev[i], 0);
+	}
 
 	return 0;
 }
@@ -54,10 +58,9 @@ udd_register(struct uddif *a, struct usb_driver *new_driver)
  */
 
 long
-udd_unregister(struct uddif *a, struct usb_driver *driver)
+udd_unregister(struct uddif *a)
 {
 	struct uddif **list = &alluddifs;
-	struct usb_driver **listdrv = &alldrivers;
 
 	while (*list)
 	{
@@ -69,51 +72,5 @@ udd_unregister(struct uddif *a, struct usb_driver *driver)
 		list = &((*list)->next);
 	}
 
-	while (*listdrv)
-	{
-		if (driver == *listdrv)
-		{
-			*listdrv = driver->next;
-			return E_OK;
-		}
-		listdrv = &((*listdrv)->next);
-	}
 	return -1L;
 }
-
-long
-udd_open(struct uddif *a)
-{
-	long error;
-
-	error = (*a->open)(a);
-	if (error)
-	{
-		DEBUG(("udd_open: Cannot open USB host driver %s%d", a->name, a->unit));
-		return error;
-	}
-	a->flags |= UDD_OPEN;
-	return 0;
-}
-
-long
-udd_close(struct uddif *a)
-{
-	long error;
-
-	error = (*a->close)(a);
-	if (error)
-	{
-		DEBUG(("udd_close: Cannot close USB host driver %s%d", a->name, a->unit));
-		return error;
-	}
-	a->flags &= ~UDD_OPEN;
-	return 0;
-}
-
-long
-udd_ioctl(struct uddif *u, short cmd, long arg)
-{
-	return (*u->ioctl)(u, cmd, arg);
-}
-

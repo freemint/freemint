@@ -20,8 +20,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include <mint/osbind.h> /* Setexc */
-
 #include "global.h"
 #include "util.h"
 #include "init.h"
@@ -29,18 +27,12 @@
 #include "hub.h"
 #include "ucdload.h"
 #include "uddload.h"
-#include "ucd/ucd_defs.h"
-#include "udd/udd_defs.h"
-#include "ucd.h"
-#include "udd.h"
+#include "usb_api.h"
 
 long loader_pid = 0;
 long loader_pgrp = 0;
 
 struct usb_module_api usb_api;
-
-void	setup_usb_module_api(void);
-
 
 #define MSG_VERSION     "0.1.0"
 #define MSG_BUILDDATE   __DATE__
@@ -73,19 +65,10 @@ struct kentry *kentry;
  * - start main kernel thread
  */
 
-Path start_path;		/* The directory that the started binary lives */
 #ifndef TOSONLY
+char start_path[PATH_MAX];
 static const struct kernel_module *self = NULL;
 #else
-struct cookie
-{
-	long tag;
-	long value;
-};
-
-#define _USB 0x5f555342L
-#define CJAR ((struct cookie **) 0x5a0)
-
 static void
 set_cookie (void)
 {
@@ -119,7 +102,12 @@ set_cookie (void)
 extern unsigned long _PgmSize;
 #endif
 
-void
+long            udd_register            (struct uddif *u);
+long            udd_unregister          (struct uddif *u);
+extern long	ucd_register		(struct ucdif *u, struct usb_device **dev);
+extern long	ucd_unregister		(struct ucdif *u);
+
+static void
 setup_usb_module_api(void)
 {
 	usb_api.udd_register = &udd_register;
@@ -129,11 +117,6 @@ setup_usb_module_api(void)
 	usb_api.usb_rh_wakeup = &usb_rh_wakeup;
 
 //	usb_api.fname = &fname;
-
-
-//	usb_api.usb_init = &usb_init;
-//	usb_api.usb_stop = &usb_stop;
-
 
 	usb_api.usb_set_protocol = &usb_set_protocol;
 	usb_api.usb_set_idle = &usb_set_idle;
@@ -190,6 +173,8 @@ init(struct kentry *k, const struct kernel_module *km)
 	kentry = k;
 	self = km;
 
+	bootmessage();
+
 	get_drive_and_path(start_path, sizeof(start_path));
 
 	if (check_kentry_version())
@@ -202,9 +187,19 @@ init(struct kentry *k, const struct kernel_module *km)
 
 	loader_pid = p_getpid();
 	loader_pgrp = p_getpgrp();
-#endif
-
+#else
 	bootmessage();
+
+	{
+		struct usb_module_api *checkapi;
+
+		checkapi = get_usb_cookie();
+		if (checkapi != NULL) {
+			c_conws("USB core already installed.\r\n");
+			return 0;
+		}
+	}
+#endif
 
 	setup_usb_module_api();
 

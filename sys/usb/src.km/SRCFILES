@@ -2,14 +2,10 @@
 # the files that should go only into source distributions.
 
 HEADER = \
-	config.h \
 	global.h \
 	hub.h \
 	init.h \
-	part.h \
-	ucd.h \
 	ucdload.h \
-	udd.h \
 	uddload.h \
 	usb.h \
 	usb_defs.h \
@@ -34,7 +30,6 @@ SOBJS =
 SSOBJS =
 
 TOSSSOBJS = \
-	usb_int.S \
 	entry.S \
 	setstack.S
 

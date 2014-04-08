@@ -44,6 +44,8 @@
 
 #include "mint/signal.h"
 #include "mint/proc.h"
+#include "mint/endian.h"
+#include "mint/mdelay.h"
 
 /****************************************************************************
  * HUB "Driver"
@@ -112,16 +114,12 @@ long usb_get_port_status(struct usb_device *dev, long port, void *data)
 }
 
 
-static void usb_hub_power_on(struct usb_hub_device *hub)
+static void usb_hub_power_on(struct usb_device *dev, unsigned pgood_delay)
 {
 	long i;
-	struct usb_device *dev;
-	unsigned pgood_delay = hub->desc.bPwrOn2PwrGood * 2;
 	struct usb_port_status portsts;
 	unsigned short portstatus;
 	long ret;
-
-	dev = hub->pusb_dev;
 
 	/*
 	 * Enable power to the ports:
@@ -163,7 +161,7 @@ static void usb_hub_power_on(struct usb_hub_device *hub)
 	for (i = 0; i < dev->maxchild; i++) {
 		usb_set_port_feature(dev, i + 1, USB_PORT_FEAT_POWER);
 		DEBUG(("port %ld returns %lx", i + 1, dev->status));
-		mdelay(hub->desc.bPwrOn2PwrGood * 2);
+		mdelay(pgood_delay);
 	}
 
 	/* Wait at least 100 msec for power to become stable */
@@ -196,6 +194,7 @@ void usb_hub_disconnect(struct usb_device *dev)
 	for (i = 0; i < USB_MAX_HUB; i++) {
 		if (dev == hub_dev[i].pusb_dev) {
 			memset(&hub_dev[i], 0, sizeof(struct usb_hub_device));
+			hub_dev[i].pusb_dev = NULL;
 			break;
 		}
 	}
@@ -310,15 +309,11 @@ void usb_hub_port_connect_change(struct usb_device *dev, long port)
 			return;
 	}
 
-	mdelay(200);
-
 	/* Reset the port */
 	if (hub_port_reset(dev, port, &portstatus) < 0) {
 		DEBUG(("cannot reset port %li!?", port + 1));
 		return;
 	}
-
-	mdelay(200);
 
 	/* Allocate a new device struct for it */
 	usb = usb_alloc_new_device(dev->controller);
@@ -473,12 +468,12 @@ usb_hub_configure(struct usb_device *dev)
 		(le2cpu16(hubsts->wHubStatus) & HUB_STATUS_OVERCURRENT) ? \
 		"" : "no "));
 
+	usb_hub_power_on(dev, hub->desc.bPwrOn2PwrGood * 2);
+
 	hub->pusb_dev = dev;
-	usb_hub_power_on(hub);
 	
 	return hub; 
 }
-
 
 void
 usb_hub_events(struct usb_device *dev)
@@ -545,7 +540,7 @@ usb_hub_events(struct usb_device *dev)
 			DEBUG(("port %ld over-current change", i + 1));
 			usb_clear_port_feature(dev, i + 1,
 						USB_PORT_FEAT_C_OVER_CURRENT);
-			usb_hub_power_on(hub);
+			usb_hub_power_on(hub->pusb_dev, hub->desc.bPwrOn2PwrGood * 2);
 		}
 
 		if (portchange & USB_PORT_STAT_C_RESET)
@@ -573,7 +568,7 @@ usb_hub_events(struct usb_device *dev)
 		if (hubchange & HUB_CHANGE_OVERCURRENT) {
 			usb_clear_hub_feature(dev, C_HUB_OVER_CURRENT);
 			mdelay(500);
-			usb_hub_power_on(hub);
+			usb_hub_power_on(hub->pusb_dev, hub->desc.bPwrOn2PwrGood * 2);
 			mdelay(500);
 			usb_get_hub_status(dev, &hubsts);
 
@@ -593,7 +588,6 @@ usb_hub_poll(PROC *p, long device)
 {
 	wake(WAIT_Q, (long)&usb_hub_poll_thread);
 }
-
 
 void 
 usb_hub_poll_thread(void *ptr)
@@ -669,15 +663,20 @@ usb_hub_probe(struct usb_device *dev, long ifnum)
 	return 1;
 }
 
-long
+void
 usb_rh_wakeup(void)
 {
 #ifndef TOSONLY
 	wake(WAIT_Q, (long)usb_hub_thread);
 #else
-	/* maybe don't wait for interrupt and schedule immediately ?? */
+	long i;
+
+	for (i = 0; i < USB_MAX_HUB; i++) {
+		struct usb_device *dev = hub_dev[i].pusb_dev;
+		if (dev && dev->devnum != -1 && dev->devnum != 0)
+			usb_hub_events(dev);
+	}
 #endif
-	return 0;
 }
 
 #ifndef TOSONLY
@@ -792,6 +791,7 @@ usb_hub_thread(void *ptr)
 
 	kthread_exit(0);
 }
+#endif
 
 /*
  * This should be may be a separate module.
@@ -799,6 +799,9 @@ usb_hub_thread(void *ptr)
 void
 usb_hub_init(struct usb_device *dev)
 {
+#ifdef TOSONLY
+	/* nothing to do here as the desk accessory takes this job. */
+#else
 	DEBUG(("Creating USB hub kernel thread"));
 	long r;
 
@@ -809,63 +812,5 @@ usb_hub_init(struct usb_device *dev)
 		/* XXX todo -> exit gracefully */
 		DEBUG((/*0000000a*/"can't create USB hub kernel thread"));
 	}
-		
-}
-#else
-#define HZVEC 50
-static long trigger = HZVEC / USB_MAX_HUB;
-static long installed = 0;
-
-void
-usb_hub_init(struct usb_device *dev)
-{
-	/* Only install the hub handler once */
-	if (installed == 0) {
-		old_vbl_int = Setexc (0x70/4, (long) interrupt_vbl);
-		installed = 1;
-	}
-}
-
-/*
- * Once a second we'll poll up to USB_MAX_HUB's.
- */
-
-static long hz = 0;
-static long dousb = 0;
-extern struct usb_device usb_dev[USB_MAX_DEVICE];
-static long reported = 1;
-
-void
-usb_int (void)
-{
-	long i;
-
-	if (dousb) {
-		if (reported) {
-			(void)Cconws("HUH ? STILL IN USB!\r\n");
-			reported = 0;
-		}
-		return;
-	}
-
-	dousb = 1;
-
-	for (i = 0; i < USB_MAX_HUB; i++) 
-	{
-		if (hz == (i * trigger)) 
-		{
-			if (hub_dev[i].pusb_dev && hub_dev[i].pusb_dev->maxchild) {
-				usb_hub_events(hub_dev[i].pusb_dev);
-			}
-			goto out;
-		}
-	}
-
-
-out:
-	hz++;
-	if (hz == HZVEC) hz = 0;
-
-	dousb = 0;
-}
 #endif
+}

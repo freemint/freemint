@@ -62,14 +62,12 @@
 
 #include "mint/mint.h"
 #include "libkern/libkern.h"
+#include "mint/mdelay.h"
 #include "mint/dcntl.h"
 #include "mint/arch/asm_spl.h" /* spl() */
 
-#include "../../config.h"
 #include "../../endian/io.h"
 #include "../../usb.h"
-#include "../ucd_defs.h"
-#include "../../udd/udd_defs.h"
 #include "../../usb_api.h"
 
 #include "ethernat_int.h"
@@ -143,6 +141,7 @@ struct usb_module_api *api;
 /****************************************************************************/
 
 
+static struct usb_device *root_hub_dev = NULL;
 struct isp116x isp116x_dev;
 struct isp116x_platform_data isp116x_board;
 static long got_rhsc;		/* root hub status change */
@@ -1755,12 +1754,12 @@ ethernat_ioctl(struct ucdif *u, short cmd, long arg)
 		}
 		case LOWLEVEL_INIT :
 		{
-			ret = usb_lowlevel_init (0, NULL);
+			ret = usb_lowlevel_init (u->ucd_priv);
 			break;
 		}
 		case LOWLEVEL_STOP :
 		{
-			ret = usb_lowlevel_stop ();
+			ret = usb_lowlevel_stop (u->ucd_priv);
 			break;
 		}
 		case SUBMIT_CONTROL_MSG :
@@ -1821,7 +1820,7 @@ isp116x_check_id(struct isp116x *isp116x)
 }
 
 long
-usb_lowlevel_init(long dummy1, const struct pci_device_id *dummy2)
+usb_lowlevel_init(void *dummy)
 {
 //	unsigned short val;
 
@@ -1875,7 +1874,7 @@ usb_lowlevel_init(long dummy1, const struct pci_device_id *dummy2)
 }
 
 long
-usb_lowlevel_stop(void)
+usb_lowlevel_stop(void *dummy)
 {
 	struct isp116x *isp116x = &isp116x_dev;
 
@@ -1922,7 +1921,7 @@ init(struct kentry *k, struct usb_module_api *uapi, char **reason)
 	c_conws (MSG_GREET);
 	DEBUG (("%s: enter init", __FILE__));
 
-	ret = ucd_register(&ethernat_uif);
+	ret = ucd_register(&ethernat_uif, &root_hub_dev);
 	if (ret)
 	{
 		DEBUG (("%s: ucd register failed!", __FILE__));

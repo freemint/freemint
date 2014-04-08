@@ -24,24 +24,36 @@
 
 #include "global.h"
 #include "usb.h"
-#include "ucd.h"
 #include "hub.h"
+#include "usb_api.h"
 
 struct ucdif *allucdifs = NULL;
+
+long ucd_register(struct ucdif *a, struct usb_device **dev);
+long ucd_unregister(struct ucdif *a);
 
 /*
  * Called by ucd upon init to register itself
  */
 long
-ucd_register(struct ucdif *a)
+ucd_register(struct ucdif *a, struct usb_device **dev)
 {
-	struct usb_device *dev;
+	struct ucdif *list = allucdifs;
+	struct usb_device *hub;
 	long result;
 
-	DEBUG(("ucd_register: Registered device %s (%s)", a->name, a->lname));
+	while (list)
+	{
+		if (!strncmp(a->name, list->name, UCD_NAMSIZ))
+		{
+			/* already installed */
+			/* FIXME - more than one controller ??? */
+			return -1;
+		}
+		list = list->next;
+	}
 
-	a->next = allucdifs;
-	allucdifs = a;
+	DEBUG(("ucd_register: Registered device %s (%s)", a->name, a->lname));
 
 	result = (*a->open)(a);
 	if (result)
@@ -57,28 +69,25 @@ ucd_register(struct ucdif *a)
                 return -1;
 	}
 
-        /* if lowlevel init is OK, scan the bus for devices
-         * i.e. search HUBs and configure them 
-         */
-
-        dev = usb_alloc_new_device(a);
-        if (!dev) 
+        hub = usb_alloc_new_device(a);
+        if (!hub) 
 	{
 		return -1;
 	}
+
+	/* Give the host controller driver it's USB device struct */
+	*dev = hub;
 	
-	if (usb_new_device(dev)) 
+	if (usb_new_device(hub)) 
 	{
 		return -1;
 	}
 
-#ifndef TOSONLY
-	// disabled for now.
-	usb_hub_init(dev);
-#else
-	usb_hub_events(dev); /* let's look at the hub events immediately */
-#endif
+	a->next = allucdifs;
+	allucdifs = a;
 
+	usb_hub_init(hub);
+ 	
 	return 0;
 }
 
@@ -91,8 +100,8 @@ ucd_unregister(struct ucdif *a)
 {
 	struct ucdif **list = &allucdifs;
 
-	(*a->close)(a);
         (*a->ioctl)(a, LOWLEVEL_STOP, 0);
+	(*a->close)(a);
 
 	while (*list)
 	{
@@ -105,10 +114,3 @@ ucd_unregister(struct ucdif *a)
 	}
 	return -1L;
 }
-
-long
-ucd_ioctl(struct ucdif *u, short cmd, long arg)
-{
-	return (*u->ioctl)(u, cmd, arg);
-}
-

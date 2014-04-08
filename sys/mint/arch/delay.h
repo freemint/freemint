@@ -53,7 +53,7 @@ extern ulong loops_per_sec;
 # endif
 
 
-static inline void
+INLINE void
 __delay (register ulong loops)
 {
 	__asm__ __volatile__
@@ -66,7 +66,7 @@ __delay (register ulong loops)
 
 # ifdef __M68020__
 
-static inline void
+INLINE void
 udelay (register ulong usecs)
 {
 	register ulong tmp;
