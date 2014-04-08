@@ -465,7 +465,7 @@ long usb_rwabs(long logdrv,long start,long count,void *buffer,long mode)
 		return EBADR;				/* same as EBADRQ */
 
 	if (mode & NOTRANSLATE) {		/* if physical mode, the rwabs intercept */
-		physdev = logdrv;			/*  has already allowed for floppies     */
+		physdev = logdrv & PUN_DEV;	/*  has already allowed for floppies     */
 	} else {
 		BPB *bpbptr;
 		unsigned short phys_per_log;/* physical sectors per logical sector */
