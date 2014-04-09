@@ -264,7 +264,6 @@ long 		usb_lowlevel_init		(void *ucd_priv);
 long 		usb_lowlevel_stop		(void *ucd_priv);
 
 /* routines */
-void		usb_main		(void *dummy);
 long 		usb_init		(void); /* initialize the USB Controller */
 long 		usb_stop		(void); /* stop the USB Controller */
 
