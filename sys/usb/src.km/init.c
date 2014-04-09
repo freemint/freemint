@@ -140,13 +140,12 @@ init(struct kentry *k, const struct kernel_module *km)
 
 	setup_usb_module_api();
 
-	usb_main(0);
+	if ((err = usb_main(0)))
+		goto error;
 
 	usb_hub_init();
 
-#ifndef TOSONLY
 error:
-#endif
 	return err;
 }
 

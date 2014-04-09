@@ -51,19 +51,20 @@ static long 	usb_find_interface_driver	(struct usb_device *dev, unsigned ifnum);
 /***************************************************************************
  * Init USB Device
  */
-void
-usb_main(void *dummy)
+
+long usb_main(void *dummy)
 {
 	/* load driver for usb host controller */
 	ucd_load(1);
 
-	if (usb_init() >= 0)
+	if (!usb_init())
 	{	
 		/* load device driver modules */
 		udd_load(1);
-		return;
+		return 0;
 	}
 	DEBUG(("Failing with USB init"));
+	return -1;
 }
 
 long usb_init(void)
