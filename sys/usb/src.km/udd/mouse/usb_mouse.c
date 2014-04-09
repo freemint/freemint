@@ -199,6 +199,7 @@ mouse_int (void)
 	if(change)
 	{
 		char wheel = 0, buttons, old_buttons;
+		(void)wheel; (void)buttons; (void)old_buttons;
 		if((actlen >= 6) && (mse_data.new[0] == 1)) /* report-ID */
 		{
 			buttons = mse_data.new[1];
