@@ -99,6 +99,7 @@ static char lname[] = "USB mouse class driver\0";
 static struct uddif mouse_uif = 
 {
 	0,			/* *next */
+	USB_API_VERSION,	/* API */
 	USB_DEVICE,		/* class */
 	lname,			/* lname */
 	"mouse",		/* name */

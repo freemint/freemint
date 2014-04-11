@@ -29,6 +29,7 @@
 struct uddif *alluddifs = NULL;
 
 extern struct usb_device usb_dev[USB_MAX_DEVICE];
+extern struct usb_module_api usb_api;
 
 long udd_register(struct uddif *a);
 long udd_unregister(struct uddif *a);
@@ -42,6 +43,11 @@ udd_register(struct uddif *a)
 	long i;
 
 	DEBUG(("udd_register: Registered device %s (%s)", a->name, a->lname));
+
+	if (a->api_version != usb_api.api_version) {
+		c_conws("API Mismatch\r\n");
+		return -1;
+	}
 
 	a->next = alluddifs;
 	alluddifs = a;

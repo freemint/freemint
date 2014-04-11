@@ -85,12 +85,6 @@
 	"Ported, mixed and shaken by David Galvez.\r\n" \
 	"Compiled " MSG_BUILDDATE ".\r\n\r\n"
 
-#define MSG_MINT	\
-	"\033pMiNT too old!\033q\r\n"
-
-#define MSG_FAILURE	\
-	"\7\r\nSorry, failed!\r\n\r\n"
-
 /*
  * Debug section
  */
@@ -181,6 +175,7 @@ static char lname[] = "NetUSBee USB controller driver for FreeMiNT\0";
 static struct ucdif netusbee_uif =
 {
 	0,			/* *next */
+	USB_API_VERSION,	/* API */
 	USB_CONTRLL,		/* class */
 	lname,			/* lname */
 	"netusbee",		/* name */
@@ -191,10 +186,6 @@ static struct ucdif netusbee_uif =
 	0,			/* resrvd1 */
 	netusbee_ioctl,		/* ioctl */
 	0,			/* resrvd2 */
-//	submit_bulk_msg,
-//	submit_control_msg,
-//	submit_int_msg,
-//	{ NULL },
 };
 
 /* ------------------------------------------------------------------------- */

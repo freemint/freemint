@@ -50,13 +50,6 @@
 	"(c) 2012-2014 by David Galvez.\r\n" \
 	"Compiled " MSG_BUILDDATE ".\r\n\r\n"
 
-#define MSG_MINT	\
-	"\033pMiNT too old!\033q\r\n"
-
-#define MSG_FAILURE	\
-	"\7\r\nSorry, failed!\r\n\r\n"
-
-
 /*--- Debug section ---*/
 
 #if 0
@@ -127,6 +120,7 @@ static long _cdecl	aranym_ioctl		(struct ucdif *, short, long);
 static struct ucdif aranym_uif = 
 {
 	0,			/* *next */
+	USB_API_VERSION,	/* API */
 	USB_CONTRLL,		/* class */
 	lname,			/* lname */
 	"aranym",		/* name */

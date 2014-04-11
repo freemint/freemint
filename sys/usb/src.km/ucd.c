@@ -28,6 +28,7 @@
 #include "usb_api.h"
 
 struct ucdif *allucdifs = NULL;
+extern struct usb_module_api usb_api;
 
 long ucd_register(struct ucdif *a, struct usb_device **dev);
 long ucd_unregister(struct ucdif *a);
@@ -41,6 +42,11 @@ ucd_register(struct ucdif *a, struct usb_device **dev)
 	struct ucdif *list = allucdifs;
 	struct usb_device *hub;
 	long result;
+
+	if (a->api_version != usb_api.api_version) {
+		c_conws("API Mismatch\r\n");
+		return -1;
+	}
 
 	while (list)
 	{

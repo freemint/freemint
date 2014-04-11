@@ -28,7 +28,7 @@
 
 #include "mint/basepage.h"
 
-extern char *start_path;
+extern Path start_path;
 static char no_reason[] = "Nothing";
 
 static long

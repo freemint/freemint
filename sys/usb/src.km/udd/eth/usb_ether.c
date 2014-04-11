@@ -93,6 +93,7 @@ static char lname[] = "USB ethernet class driver\0";
 static struct uddif eth_uif = 
 {
 	0,			/* *next */
+	USB_API_VERSION,	/* API */
 	USB_DEVICE,		/* class */
 	lname,			/* lname */
 	"eth",			/* name */
