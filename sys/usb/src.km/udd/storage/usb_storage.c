@@ -1726,7 +1726,9 @@ usb_stor_eject(long device)
 
 	long idx;
 #ifdef TOSONLY
-	long ret = Super(0L);
+	long ret = 0;
+	if (!Super(1L)) 
+		ret = Super(0L);
 #endif
 	for (idx = 1; idx <= bios_part[device].partnum; idx++)
 	{	
@@ -1738,7 +1740,7 @@ usb_stor_eject(long device)
 #endif
 	}
 #ifdef TOSONLY
-	SuperToUser(ret);
+	if (ret) SuperToUser(ret);
 #endif
 	bios_part[device].partnum = 0;
 
@@ -1779,7 +1781,9 @@ storage_disconnect(struct usb_device *dev)
 
 	long idx;
 #ifdef TOSONLY
-	long ret = Super(0L);
+	long ret = 0;
+	if (!Super(1L)) 
+		ret = Super(0L);
 #endif
 	for (idx = 1; idx <= bios_part[i].partnum; idx++)
 	{	
@@ -1791,7 +1795,7 @@ storage_disconnect(struct usb_device *dev)
 #endif
 	}
 #ifdef TOSONLY
-	SuperToUser(ret);
+	if (ret) SuperToUser(ret);
 #endif
 	bios_part[i].partnum = 0;
 
@@ -1858,7 +1862,9 @@ storage_probe(struct usb_device *dev)
 				    &part_offset, &part_size))
 	{
 #ifdef TOSONLY
-		long ret = Super(0L);
+		long ret = 0;
+		if (!Super(1L)) 
+			ret = Super(0L);
 #endif
 		/* install partition */
 		r = install_usb_stor(dev_num, part_type, part_offset, 
@@ -1879,7 +1885,7 @@ storage_probe(struct usb_device *dev)
 		}	
 		part_num++;
 #ifdef TOSONLY
-		SuperToUser(ret);
+		if (ret) SuperToUser(ret);
 #endif
 	}
 	return 0;
