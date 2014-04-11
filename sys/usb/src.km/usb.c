@@ -57,11 +57,11 @@ usb_main(void)
 	usb_init();
 
 #ifndef TOSONLY
-	/* load driver for usb host controller */
-	ucd_load(1);
-
 	/* load device driver modules */
 	udd_load(1);
+
+	/* load driver for usb host controller */
+	ucd_load(1);
 #endif
 }
 

@@ -205,6 +205,8 @@ static void build_bpb(BPB *bpbptr, void *bs)
 	/*
 	 * check for valid FAT16
 	 */
+	if (dosbs->spc == 0)
+		return;
 	bps = getiword(dosbs->bps);				/* bytes per sector */
 	if (bps == 0)
 		return;

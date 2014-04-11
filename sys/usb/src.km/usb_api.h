@@ -20,6 +20,10 @@
 #ifndef _usb_api_h
 #define _usb_api_h
 
+/*
+ * USB API VERSION. ALL MODULES COMPILED WITH THIS, SO MUST MATCH !
+ */
+#define USB_API_VERSION 0
 
 /*
  * UCD - USB Controller Driver.
@@ -37,13 +41,6 @@
 #define SUBMIT_CONTROL_MSG	(('U'<< 8) | 2)
 #define SUBMIT_BULK_MSG		(('U'<< 8) | 3)
 #define SUBMIT_INT_MSG		(('U'<< 8) | 4)
-
-
-struct lowlevel_init
-{
-	long handle;
-	struct pci_device_id *ent;
-};
 
 struct bulk_msg
 {
@@ -77,6 +74,8 @@ struct ucdif
 {
 	struct ucdif	*next;
 
+	long		api_version;
+
 	long		class;
 	char		*lname;
 	char		name[UCD_NAMSIZ];
@@ -90,8 +89,6 @@ struct ucdif
 	long		(*ioctl)	(struct ucdif *, short cmd, long arg);
 	long		resrvd2;	/* (*timeout) */
 	long		*ucd_priv;	/* host controller driver private data */
-
-	long		reserved[24];
 };
 
 
@@ -107,6 +104,8 @@ struct uddif
 {
 	struct uddif	*next;
 
+	long		api_version;
+
 	long		class;
 	char		*lname;
 	char		name[UDD_NAMSIZ];
@@ -119,15 +118,12 @@ struct uddif
 	long		resrvd1;	/* (*output)  */
 	long		(*ioctl)	(struct uddif *, short cmd, long arg);
 	long		resrvd2;	/* (*timeout) */
-
-	long		reserved[24];
 };
 
 struct usb_module_api
 {
 	/* versioning */
-	long 				major;
-	long				minor;
+	long 				api_version;
 
 //	short				(*getfreeunit)		(char *);
 	long			_cdecl	(*udd_register)		(struct uddif *);
@@ -137,8 +133,6 @@ struct usb_module_api
 //	const char			*fname;
 
 
-	long			_cdecl	(*usb_init)		(long handle, const struct pci_device_id *ent); /* initialize the USB Controller */
-	long 			_cdecl	(*usb_stop)		(void); /* stop the USB Controller */
         void			_cdecl	(*usb_rh_wakeup)	(void);
 
 

@@ -333,6 +333,7 @@ void usb_hub_port_connect_change(struct usb_device *dev, long port)
 		break;
 	}
 
+	dev->portnr = port; /* let the device know which parent port its on */
 	dev->children[port] = usb;
 	usb->parent = dev;
 	/* Run it through the hoops (find a driver, etc) */

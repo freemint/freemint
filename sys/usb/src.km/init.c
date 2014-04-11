@@ -39,10 +39,10 @@ struct usb_module_api usb_api;
 
 #ifdef TOSONLY
 #define MSG_BOOT        \
-        "\033p USB core API driver for TOS" MSG_VERSION " \033q\r\n"
+        "\033p USB core API driver for TOS " MSG_VERSION " \033q\r\n"
 #else
 #define MSG_BOOT        \
-        "\033p USB core API driver for FreeMiNT" MSG_VERSION " \033q\r\n"
+        "\033p USB core API driver for FreeMiNT " MSG_VERSION " \033q\r\n"
 #endif
 
 #define MSG_GREET       \
@@ -66,7 +66,7 @@ struct kentry *kentry;
  */
 
 #ifndef TOSONLY
-char start_path[PATH_MAX];
+Path start_path;
 static const struct kernel_module *self = NULL;
 #else
 static void
@@ -110,6 +110,8 @@ extern long	ucd_unregister		(struct ucdif *u);
 static void
 setup_usb_module_api(void)
 {
+	usb_api.api_version = USB_API_VERSION;
+
 	usb_api.udd_register = &udd_register;
 	usb_api.udd_unregister = &udd_unregister;
 	usb_api.ucd_register = &ucd_register;

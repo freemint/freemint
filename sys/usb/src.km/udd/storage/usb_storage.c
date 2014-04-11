@@ -140,6 +140,7 @@ static char lname[] = "USB mass storage class driver\0";
 static struct uddif storage_uif = 
 {
 	0,			/* *next */
+	USB_API_VERSION,	/* API */
 	USB_DEVICE,		/* class */
 	lname,			/* lname */
 	"storage",		/* name */
@@ -1401,7 +1402,6 @@ retry_it:
 			if(retry--)
 				goto retry_it;
 			memset(srb.pdata, 0xaa, srb.datalen);
-			c_conws("READERROR!\r\n");
 			blkcnt -= blks;
 			break;
 		}
@@ -1460,7 +1460,6 @@ retry_it:
 			if(retry--)
 				goto retry_it;
 			memset(srb.pdata, 0xaa, srb.datalen);
-			c_conws("WRITEERROR!\r\n");
 			blkcnt -= blks;
 			break;
 		}

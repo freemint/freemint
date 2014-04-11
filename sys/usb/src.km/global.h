@@ -27,6 +27,8 @@
 #ifndef TOSONLY
 #include "libkern/libkern.h"
 
+typedef char Path[PATH_MAX];
+
 /* XXX -> kassert */
 #define FATAL KERNEL_FATAL
 

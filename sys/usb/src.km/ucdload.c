@@ -29,7 +29,7 @@
 
 #include "mint/basepage.h"
 
-extern char *start_path;
+extern Path start_path;
 static char no_reason[] = "Nothing";
 
 static long
@@ -47,10 +47,8 @@ load_ucd(struct basepage *b, const char *name, short *class, short *subclass)
 	char *reason = no_reason;
 	long r;
 
-//	display("load_ucd: enter (0x%lx, 0x%lx, %s)", initfunc, b, name);
 	DEBUG(("load_ucd: enter (0x%lx, %s)", b, name));
 	DEBUG(("load_ucd: init 0x%lx, size %li", initfunc, (b->p_tlen + b->p_dlen + b->p_blen)));
-// 	display("load_ucd: '%s' - text=%lx, data=%lx, bss=%lx", name, b->p_tbase, b->p_dbase, b->p_bbase);
 
 	*class = MODCLASS_KMDEF;
 	*subclass = 0;
@@ -59,7 +57,6 @@ load_ucd(struct basepage *b, const char *name, short *class, short *subclass)
 	if (r == -1L)
 	{
 		ALERT(("Module %s error, reason: %s", name, reason));
-// 		display("kentry updated, %s too old! Please update it", name);
 	}
 
 	DEBUG(("load_ucd: return %ld", r));

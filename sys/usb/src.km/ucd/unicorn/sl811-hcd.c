@@ -93,6 +93,39 @@ get_hz_200(void)
 /****************************************************************************/
 /* BEGIN kernel interface */
 
+#define DEBUGGING_ROUTINES
+#ifdef DEBUGGING_ROUTINES
+void hex_nybble(int n);
+void hex_byte(uchar n);
+void hex_word(ushort n);
+void hex_long(ulong n);
+
+void hex_nybble(int n)
+{
+	char c;
+
+	c = (n > 9) ? 'A'+n-10 : '0'+n;
+	c_conout(c);
+}
+
+void hex_byte(uchar n)
+{
+	hex_nybble(n>>4);
+	hex_nybble(n&0x0f);
+}
+
+void hex_word(ushort n)
+{
+	hex_byte(n>>8);
+	hex_byte(n&0xff);
+}
+
+void hex_long(ulong n)
+{
+	hex_word(n>>16);
+	hex_word(n&0xffff);
+};
+#endif
 #ifndef TOSONLY
 struct kentry	*kentry;
 void sl811_hub_poll_thread(void *);
@@ -235,7 +268,7 @@ static inline __u8 sl811_read (__u8 index)
  */
 static void inline sl811_read_buf(__u8 offset, __u8 *buf, __u8 size)
 {
-#if 1
+#if 0
 	while (size >= 16) {
                 __asm__ volatile
 		(
@@ -523,7 +556,7 @@ usb_lowlevel_stop(void *dummy)
 static int calc_needed_buswidth(long bytes, long need_preamble)
 {
                                /* high : low */
-	return !need_preamble ? bytes * 8 + 384 : 8 * 8 * bytes + 3072;
+	return !need_preamble ? bytes * 8 + 2048 : 8 * 8 * bytes + 3072;
 //	return 64 * bytes;
 //	return !need_preamble ? bytes * 64 + 3072 : 8 * 8 * bytes + 3072;
 }
@@ -574,22 +607,23 @@ static long sl811_send_packet(struct usb_device *dev, unsigned long pipe, __u8 *
 		{
 			if (5*CONFIG_SYS_HZ < (get_hz_200() - time_start)) {
 				DEBUG(("USB transmit timed out %d",sl811_read(SL811_INTR)));
-#ifndef TOSONLY
 		                if (intrq & (SL811_INTR_INSRMV | SL811_INTR_DETECT)) {
+#ifndef TOSONLY
 		                        sl811_hc_reset();
 		                        addroottimeout (0, int_handle_tophalf, 1);
+#else
+					reset_stage = 1;
+#endif
 		                } else {
 					sl811_write_intr(intr);
 					sl811_write(SL811_INTRSTS, SL811_INTR_DONE_A);
 				}
-#endif
 				return -USB_ST_CRC_ERR;
 			}
 		}
 
 		sl811_write(SL811_INTRSTS, SL811_INTR_DONE_A);
 		status = sl811_read(SL811_STS_A);
-
 
 		if (status & SL811_USB_STS_ACK) {
 			__u8 remainder = sl811_read(SL811_CNT_A);
@@ -620,6 +654,14 @@ static long sl811_send_packet(struct usb_device *dev, unsigned long pipe, __u8 *
 
 	err = 0;
 
+#if 0
+if (status) {
+	c_conws("ERROR\n\r");
+	hex_long(len);
+	hex_long(status);
+	c_conws("\r\n");
+}
+#endif
 	if (status & SL811_USB_STS_NAK)
 		err |= USB_ST_NAK_REC;
 	if (status & SL811_USB_STS_ERROR)
@@ -653,6 +695,7 @@ submit_bulk_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 	       usb_pipedevice(pipe), usb_pipeendpoint(pipe), buffer, len, dir_out));
 #endif
 	dev->status = 0;
+	dev->act_len = 0;
 
 	if (dev->devnum == -1) {
 		c_conws("BAD DEVNUM, POSSIBLE DEVICE REMOVAL!\n\rn");
@@ -726,6 +769,7 @@ submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 	long max = usb_maxpacket(dev, pipe);
 
 	dev->status = 0;
+	dev->act_len = 0;
 
 	if (dev->devnum == -1) {
 		c_conws("BAD DEVNUM, POSSIBLE DEVICE REMOVAL!\n\rn");
@@ -795,6 +839,7 @@ submit_control_msg(struct usb_device *dev, unsigned long pipe, void *buffer,
 			}
 			done += res;
 			usb_dotoggle(dev, ep, usb_pipeout(pipe));
+
 			if (dir_in && res < max) /* short packet */
 				break;
 		}
@@ -1219,6 +1264,7 @@ static char lname[] = "Unicorn USB controller driver for FreeMiNT\0";
 static struct ucdif sl811_uif = 
 {
 	0,			/* *next */
+	USB_API_VERSION,	/* API */
 	USB_CONTRLL,		/* class */
 	lname,			/* lname */
 	"sl811",		/* name */
@@ -1229,10 +1275,6 @@ static struct ucdif sl811_uif =
 	0,			/* resrvd1 */
 	sl811_ioctl,		/* ioctl */
 	0,			/* resrvd2 */
-//	submit_bulk_msg,
-//	submit_control_msg,
-//	submit_int_msg,
-//	{ NULL },
 };
 
 
