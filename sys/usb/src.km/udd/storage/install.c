@@ -22,6 +22,9 @@
  *      Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  *      MA 02110-1301, USA.
  */
+#ifdef TOSONLY
+#include <gem.h>
+#endif
 #include "../../global.h"
 #include "xhdi.h"					/* for PUN_XXX */
 
@@ -259,10 +262,29 @@ static void display_error(long dev_num,char *vendor,char *revision,char *product
 
 static void display_installed(long dev_num,char *vendor,char *revision,char *product,int logdrv)
 {
+#ifdef TOSONLY
+	char string[128];
+	char drv[2];
+
+	memset(string, 0, 128);
+
+	drv[0] = ('A' + logdrv);
+	drv[1] = 0;
+
+	strcat(string, "[1][Installed|");
+	strcat(string, vendor);
+	strcat(string, " ");
+	strcat(string, product);
+	strcat(string, "|as drive ");
+	strcat(string, drv);
+	strcat(string, ":][OK]");
+	form_alert(1, string);
+#else
 	display_usb(dev_num,vendor,revision,product);
 	c_conws(": installed as drive ");
 	c_conout('A'+logdrv);
 	c_conws("\r\n");
+#endif
 }
 
 /*
@@ -320,6 +342,13 @@ long install_usb_stor(long dev_num,unsigned long part_type,unsigned long part_of
 		memset(pun_usb.pun,0xff,MAX_LOGICAL_DRIVE);	/* mark all puns invalid */
 	}
 
+#ifdef TOSONLY
+	/* goto supervisor mode because of drvbits & handlers */
+        long ret = 0;
+        if (!Super(1L))
+                ret = Super(0L);
+#endif
+
 	/*
 	 * find first free non-floppy drive
 	 */
@@ -327,6 +356,9 @@ long install_usb_stor(long dev_num,unsigned long part_type,unsigned long part_of
 		if (!(drvbits&mask))
 			break;
 	if (logdrv >= MAX_LOGICAL_DRIVE) {
+#ifdef TOSONLY
+        if (ret) SuperToUser(ret);
+#endif
 		display_error(dev_num,vendor,revision,product,"no drives available");
 		return -1L;
 	}
@@ -335,6 +367,9 @@ long install_usb_stor(long dev_num,unsigned long part_type,unsigned long part_of
 	 * read in the first sector, which we'll get BPB info from
 	 */
 	if (usb_stor_read(dev_num,part_offset,1,boot_sector) != 1) {
+#ifdef TOSONLY
+        if (ret) SuperToUser(ret);
+#endif
 		display_error(dev_num,vendor,revision,product,"boot sector not readable");
 		return -1L;
 	}
@@ -382,6 +417,10 @@ long install_usb_stor(long dev_num,unsigned long part_type,unsigned long part_of
 	 */
 	product_name[dev_num] = product;
 
+#ifdef TOSONLY
+        if (ret) SuperToUser(ret);
+#endif
+
 	display_installed(dev_num,vendor,revision,product,logdrv);
 
 	return logdrv;
@@ -396,8 +435,18 @@ long uninstall_usb_stor(long logdrv)
 	pun_usb.pun[logdrv] = 0xff;
 	pun_usb.partition_start[logdrv] = 0L;	/* probably unnecessary */
 
+#ifdef TOSONLY
+	/* goto supervisor mode because of drvbits & handlers */
+        long ret = 0;
+        if (!Super(1L))
+                ret = Super(0L);
+#endif
 	drvbits &= ~(1L<<logdrv);
 	my_drvbits &= ~(1L<<logdrv);
+#ifdef TOSONLY
+        if (ret) SuperToUser(ret);
+#endif
+
 
 	return 0L;
 }

@@ -111,18 +111,19 @@ static void
 setup_usb_module_api(void)
 {
 	usb_api.api_version = USB_API_VERSION;
+	usb_api.max_devices = USB_MAX_DEVICE;
+	usb_api.max_hubs = USB_MAX_HUB;
 
 	usb_api.udd_register = &udd_register;
 	usb_api.udd_unregister = &udd_unregister;
 	usb_api.ucd_register = &ucd_register;
 	usb_api.ucd_unregister = &ucd_unregister;
 	usb_api.usb_rh_wakeup = &usb_rh_wakeup;
-
-//	usb_api.fname = &fname;
-
+	usb_api.usb_hub_events = &usb_hub_events;
 	usb_api.usb_set_protocol = &usb_set_protocol;
 	usb_api.usb_set_idle = &usb_set_idle;
 	usb_api.usb_get_dev_index = &usb_get_dev_index;
+	usb_api.usb_get_hub_index = &usb_get_hub_index;
 	usb_api.usb_control_msg = &usb_control_msg;
 	usb_api.usb_bulk_msg = &usb_bulk_msg;
 	usb_api.usb_submit_int_msg = &usb_submit_int_msg;

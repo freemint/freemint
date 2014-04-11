@@ -63,11 +63,6 @@ struct usb_hub_device
 {
 	struct usb_device *pusb_dev;
 	struct usb_hub_descriptor desc;
-
-#ifdef TOSONLY
-	struct usb_port_status ps[USB_MAXCHILDREN];
-	struct usb_hub_status hs[USB_MAXCHILDREN];
-#endif
 };
 
 
@@ -77,9 +72,11 @@ long 		usb_clear_hub_feature	(struct usb_device *dev, long feature);
 long 		usb_get_hub_status	(struct usb_device *dev, void *data);
 long 		usb_set_port_feature	(struct usb_device *dev, long port, long feature);
 long 		usb_get_port_status	(struct usb_device *dev, long port, void *data);
+struct usb_hub_device * usb_get_hub_index       (long idx);
 struct usb_hub_device *	usb_hub_allocate(void);
+long		usb_hub_events		(struct usb_hub_device *);
 void		usb_hub_disconnect	(struct usb_device *dev);
-void 		usb_hub_port_connect_change	(struct usb_device *dev, long port);
+long 		usb_hub_port_connect_change	(struct usb_device *dev, long port);
 struct usb_hub_device *	usb_hub_configure	(struct usb_device *dev);
 long 		usb_hub_probe		(struct usb_device *dev, long ifnum);
 void 		usb_hub_reset		(void);
@@ -90,6 +87,5 @@ void		usb_hub_init		(struct usb_device *);
 void		usb_hub_thread		(void *);
 void		usb_hub_poll		(PROC *, long);
 void 		usb_hub_poll_thread	(void *);
-void		usb_hub_events		(struct usb_device *dev);
 
 #endif /*_HUB_H_ */

@@ -49,7 +49,7 @@ VPATH = ..
 build: $(TARGET)
 
 $(TARGET): $(OBJS) $(LIBKERNTARGET)
-	$(CC) $(LDEXTRA) -o $@ $(CFLAGS) $(OBJS) $(LIBS)
+	$(CC) -o $@ $(CFLAGS) $(OBJS) $(LIBS) $(LDEXTRA)
 	
 $(OBJS): ../STORAGEDEFS
 

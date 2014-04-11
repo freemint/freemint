@@ -777,6 +777,7 @@ usb_disconnect(struct usb_device **pdev)
 			dev->children[i] = NULL;
 		}
 
+		/* See if it's a hub */
 		if (dev->privptr) {
 			usb_hub_disconnect(dev);
 		}

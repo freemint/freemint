@@ -158,11 +158,6 @@ long		submit_control_msg	(struct usb_device *, unsigned long, void *,
 					 unsigned short, struct devrequest *);
 long		submit_int_msg		(struct usb_device *, unsigned long, void *, long, long);
 
-struct usb_port_status {
-	unsigned short wPortStatus;
-	unsigned short wPortChange;
-};
-
 static struct usb_port_status rh_status = { 0, 0 };
 static struct usb_device *root_hub_dev = NULL;
 static int intr = 0;
