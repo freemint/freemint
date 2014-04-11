@@ -297,12 +297,10 @@ mouse_probe(struct usb_device *dev)
 
 	/* Only one mouse at time */
 	if (mse_data.pusb_dev == dev) {
-		c_conws("MOUSE FAIL1\r\n");
 		return -1;
 	}
 
 	if(dev == NULL) {
-		c_conws("MOUSE FAIL2\r\n");
 		return -1;
 	}
 	
@@ -311,17 +309,14 @@ mouse_probe(struct usb_device *dev)
 	/* let's examine the device now */
 	iface = &dev->config.if_desc[0];
 	if (!iface) {
-		c_conws("MOUSE FAIL3\r\n");
 		return -1;
 	}
 
 	if (iface->desc.bInterfaceClass != USB_CLASS_HID) {
-		c_conws("MOUSE FAIL4\r\n");
 		return -1;
 	}
 	
 	if (iface->desc.bInterfaceSubClass != USB_SUB_HID_BOOT) {
-		c_conws("MOUSE FAIL5\r\n");
 		return -1;
 	}
 
@@ -330,13 +325,11 @@ mouse_probe(struct usb_device *dev)
 	}
 
 	if (iface->desc.bNumEndpoints != 1) {
-		c_conws("MOUSE FAIL6\r\n");
 		return -1;
 	}
 
 	ep_desc = &iface->ep_desc[0];
 	if (!ep_desc) {
-		c_conws("MOUSE FAIL7\r\n");
 		return -1;
 	}
 
@@ -346,7 +339,6 @@ mouse_probe(struct usb_device *dev)
 					USB_ENDPOINT_NUMBER_MASK;
 		mse_data.irqinterval = ep_desc->bInterval;
 	} else {
-		c_conws("MOUSE FAIL8\r\n");
 		return -1;
 	}
 
