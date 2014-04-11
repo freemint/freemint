@@ -173,6 +173,16 @@ void usb_hub_reset(void)
 	memset(hub_dev, 0, sizeof(hub_dev));
 }
 
+struct usb_hub_device *usb_get_hub_index(long index)
+{
+	struct usb_device *dev = hub_dev[index].pusb_dev;
+
+	if (dev && dev->devnum != -1 && dev->devnum != 0)
+		return &hub_dev[index];
+	else
+		return NULL;
+}
+
 struct usb_hub_device *usb_hub_allocate(void)
 {
 	long i;
@@ -194,7 +204,6 @@ void usb_hub_disconnect(struct usb_device *dev)
 	for (i = 0; i < USB_MAX_HUB; i++) {
 		if (dev == hub_dev[i].pusb_dev) {
 			memset(&hub_dev[i], 0, sizeof(struct usb_hub_device));
-			hub_dev[i].pusb_dev = NULL;
 			break;
 		}
 	}
@@ -277,7 +286,7 @@ long hub_port_reset(struct usb_device *dev, long port,
 }
 
 
-void usb_hub_port_connect_change(struct usb_device *dev, long port)
+long usb_hub_port_connect_change(struct usb_device *dev, long port)
 {
 	struct usb_device *usb;
 	struct usb_port_status portsts;
@@ -286,7 +295,7 @@ void usb_hub_port_connect_change(struct usb_device *dev, long port)
 	/* Check status */
 	if (usb_get_port_status(dev, port + 1, &portsts) < 0) {
 		DEBUG(("get_port_status failed"));
-		return;
+		return -1;
 	}
 
 	portstatus = le2cpu16(portsts.wPortStatus);
@@ -306,13 +315,13 @@ void usb_hub_port_connect_change(struct usb_device *dev, long port)
 		dev->children[port] = NULL;
 		/* Return now if nothing is connected */
 		if (!(portstatus & USB_PORT_STAT_CONNECTION))
-			return;
+			return 0;
 	}
 
 	/* Reset the port */
 	if (hub_port_reset(dev, port, &portstatus) < 0) {
 		DEBUG(("cannot reset port %li!?", port + 1));
-		return;
+		return -1;
 	}
 
 	/* Allocate a new device struct for it */
@@ -345,6 +354,8 @@ void usb_hub_port_connect_change(struct usb_device *dev, long port)
 		DEBUG(("hub: disabling port %ld", port + 1));
 		usb_clear_port_feature(dev, port + 1, USB_PORT_FEAT_ENABLE);
 	}
+
+	return 1;
 }
 
 
@@ -476,15 +487,13 @@ usb_hub_configure(struct usb_device *dev)
 	return hub; 
 }
 
-void
-usb_hub_events(struct usb_device *dev)
+long 
+usb_hub_events(struct usb_hub_device *hub)
 {
 	long i;
-	struct usb_hub_device *hub;
+	struct usb_device *dev = hub->pusb_dev;
 	struct usb_hub_status hubsts;
-	(void) hub;
-
-	hub = dev->privptr;
+	long changed = 0;
 
 	for (i = 0; i < dev->maxchild; i++)
 	{
@@ -505,12 +514,21 @@ usb_hub_events(struct usb_device *dev)
 
 		if (portchange & USB_PORT_STAT_C_CONNECTION)
 		{
+			changed |= USB_PORT_STAT_C_CONNECTION;
 			DEBUG(("port %ld connection change", i + 1));
-			usb_hub_port_connect_change(dev, i);
+
+			/* If something disconnect, return now, as it
+			 * could have been our hub.
+			 */
+			if (usb_hub_port_connect_change(dev, i) == 0) 
+			{
+				return changed;
+			}
 		}
 
 		if (portchange & USB_PORT_STAT_C_ENABLE)
 		{
+			changed |= USB_PORT_STAT_C_ENABLE;
 			DEBUG(("port %ld enable change, status %x",
 					i + 1, portstatus));
 			usb_clear_port_feature(dev, i + 1,
@@ -525,12 +543,20 @@ usb_hub_events(struct usb_device *dev)
 			{
 				DEBUG(("already running port %i "  \
 						"disabled by hub (EMI?), " \
-						"re-enabling...", i + 1);
-				usb_hub_port_connect_change(dev, i));
+						"re-enabling...", i + 1));
+
+				/* If something disconnect, return now, as it
+				 * could have been our hub.
+				 */
+				if (usb_hub_port_connect_change(dev, i) == 0)
+				{
+					return changed;
+				}
 			}
 		}
 		if (portstatus & USB_PORT_STAT_SUSPEND)
 		{
+			changed |= USB_PORT_STAT_SUSPEND;
 			DEBUG(("port %ld suspend change", i + 1);
 			usb_clear_port_feature(dev, i + 1,
 						USB_PORT_FEAT_SUSPEND));
@@ -538,6 +564,7 @@ usb_hub_events(struct usb_device *dev)
 
 		if (portchange & USB_PORT_STAT_C_OVERCURRENT)
 		{
+			changed |= USB_PORT_STAT_C_OVERCURRENT;
 			DEBUG(("port %ld over-current change", i + 1));
 			usb_clear_port_feature(dev, i + 1,
 						USB_PORT_FEAT_C_OVER_CURRENT);
@@ -546,6 +573,7 @@ usb_hub_events(struct usb_device *dev)
 
 		if (portchange & USB_PORT_STAT_C_RESET)
 		{
+			changed |= USB_PORT_STAT_C_RESET;
 			DEBUG(("port %ld reset change", i + 1));
 			usb_clear_port_feature(dev, i + 1,
 						USB_PORT_FEAT_C_RESET);
@@ -581,6 +609,8 @@ usb_hub_events(struct usb_device *dev)
 			}
 		}
 	}
+
+	return changed;
 }
 
 #ifndef TOSONLY
@@ -602,7 +632,7 @@ usb_hub_poll_thread(void *ptr)
 
 	while (dev->maxchild)
 	{
-		usb_hub_events(dev);
+		(void)usb_hub_events(dev->privptr);
 		addtimeout(1000L, usb_hub_poll);
 		sleep(WAIT_Q, (long)&usb_hub_poll_thread);
 	}
@@ -670,13 +700,7 @@ usb_rh_wakeup(void)
 #ifndef TOSONLY
 	wake(WAIT_Q, (long)usb_hub_thread);
 #else
-	long i;
-
-	for (i = 0; i < USB_MAX_HUB; i++) {
-		struct usb_device *dev = hub_dev[i].pusb_dev;
-		if (dev && dev->devnum != -1 && dev->devnum != 0)
-			usb_hub_events(dev);
-	}
+	/* nothing */
 #endif
 }
 
@@ -785,7 +809,7 @@ usb_hub_thread(void *ptr)
 	for (;;)
 	{
 		/* only root hub is interupt driven */
-		usb_hub_events(dev);
+		usb_hub_events(dev->privptr);
 
 		sleep(WAIT_Q, (long)usb_hub_thread);
 	}

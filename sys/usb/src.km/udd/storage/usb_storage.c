@@ -1725,23 +1725,11 @@ usb_stor_eject(long device)
 	}
 
 	long idx;
-#ifdef TOSONLY
-	long ret = 0;
-	if (!Super(1L)) 
-		ret = Super(0L);
-#endif
 	for (idx = 1; idx <= bios_part[device].partnum; idx++)
 	{	
 		uninstall_usb_stor(bios_part[device].biosnum[idx - 1]);
-#ifdef TOSONLY
-		(void)Mediach(bios_part[device].biosnum[idx - 1]);
-#else
 		changedrv(bios_part[device].biosnum[idx - 1]);
-#endif
 	}
-#ifdef TOSONLY
-	if (ret) SuperToUser(ret);
-#endif
 	bios_part[device].partnum = 0;
 
 	ALERT(("USB Storage Device disconnected: (%ld) %s", usb_stor[device].pusb_dev->devnum,
@@ -1780,23 +1768,11 @@ storage_disconnect(struct usb_device *dev)
 	}
 
 	long idx;
-#ifdef TOSONLY
-	long ret = 0;
-	if (!Super(1L)) 
-		ret = Super(0L);
-#endif
 	for (idx = 1; idx <= bios_part[i].partnum; idx++)
 	{	
 		uninstall_usb_stor(bios_part[i].biosnum[idx - 1]);
-#ifdef TOSONLY
-		(void)Mediach(bios_part[i].biosnum[idx - 1]);
-#else
 		changedrv(bios_part[i].biosnum[idx - 1]);
-#endif
 	}
-#ifdef TOSONLY
-	if (ret) SuperToUser(ret);
-#endif
 	bios_part[i].partnum = 0;
 
 	ALERT(("USB Storage Device disconnected: (%ld) %s", dev->devnum, dev->prod));
@@ -1861,11 +1837,6 @@ storage_probe(struct usb_device *dev)
 	while (!fat_register_device(stor_dev, part_num, &part_type, 
 				    &part_offset, &part_size))
 	{
-#ifdef TOSONLY
-		long ret = 0;
-		if (!Super(1L)) 
-			ret = Super(0L);
-#endif
 		/* install partition */
 		r = install_usb_stor(dev_num, part_type, part_offset, 
 				     part_size, stor_dev->vendor, 
@@ -1875,18 +1846,11 @@ storage_probe(struct usb_device *dev)
 		else
 		{
 			/* inform the kernel about media change */
-#ifdef TOSONLY
-			(void)Mediach(r);
-#else
 			changedrv(r);
-#endif
 			bios_part[dev_num].biosnum[part_num - 1] = r;
 			bios_part[dev_num].partnum = part_num;
 		}	
 		part_num++;
-#ifdef TOSONLY
-		if (ret) SuperToUser(ret);
-#endif
 	}
 	return 0;
 }

@@ -20,6 +20,9 @@
 #ifndef _usb_api_h
 #define _usb_api_h
 
+#include "usb.h"
+#include "hub.h"
+
 /*
  * USB API VERSION. ALL MODULES COMPILED WITH THIS, SO MUST MATCH !
  */
@@ -124,22 +127,22 @@ struct usb_module_api
 {
 	/* versioning */
 	long 				api_version;
+	long				max_devices;
+	long				max_hubs;
 
 //	short				(*getfreeunit)		(char *);
 	long			_cdecl	(*udd_register)		(struct uddif *);
 	long			_cdecl	(*udd_unregister)	(struct uddif *);
 	long			_cdecl	(*ucd_register)		(struct ucdif *, struct usb_device **);
 	long			_cdecl	(*ucd_unregister)	(struct ucdif *);
-//	const char			*fname;
-
 
         void			_cdecl	(*usb_rh_wakeup)	(void);
-
-
+	long			_cdecl	(*usb_hub_events)	(struct usb_hub_device *dev);
 	long			_cdecl	(*usb_set_protocol)	(struct usb_device *dev, long ifnum, long protocol);
 	long			_cdecl	(*usb_set_idle)		(struct usb_device *dev, long ifnum, long duration,
 								long report_id);
 	struct usb_device *	_cdecl	(*usb_get_dev_index)	(long idx);
+	struct usb_hub_device *	_cdecl	(*usb_get_hub_index)	(long idx);
 	long 			_cdecl	(*usb_control_msg)	(struct usb_device *dev, unsigned long pipe,
 								unsigned char request, unsigned char requesttype,
 								unsigned short value, unsigned short idx,
@@ -190,9 +193,11 @@ struct usb_module_api
 //#define	fname 			(*api->fname)
 
 #define usb_rh_wakeup		(*api->usb_rh_wakeup)
+#define usb_hub_events		(*api->usb_hub_events)
 #define	usb_set_protocol 	(*api->usb_set_protocol)
 #define	usb_set_idle 		(*api->usb_set_idle)
 #define	usb_get_dev_index 	(*api->usb_get_dev_index)
+#define	usb_get_hub_index 	(*api->usb_get_hub_index)
 #define	usb_control_msg 	(*api->usb_control_msg)
 #define	usb_bulk_msg 		(*api->usb_bulk_msg)
 #define	usb_submit_int_msg 	(*api->usb_submit_int_msg)

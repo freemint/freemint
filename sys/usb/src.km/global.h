@@ -60,6 +60,8 @@ typedef char Path[PATH_MAX];
 #include <mint/osbind.h> /* Setexc */
 #include <stdarg.h>
 
+#undef changedrv
+#define changedrv (void)Mediach
 #undef c_conws
 #define c_conws (void)Cconws
 #undef c_conout
