@@ -52,7 +52,6 @@ unsigned long usb_stor_write(long device,unsigned long blknr,
 long install_xhdi_driver(void);							//xhdi.c
 extern PUN_INFO pun_usb;								//xhdi.c
 extern unsigned long my_drvbits;						//xhdi.c
-extern char *product_name[MAX_LOGICAL_DRIVE];			//xhdi.c
 /*
  * end of stuff for other headers
  */
@@ -409,13 +408,6 @@ long install_usb_stor(long dev_num,unsigned long part_type,unsigned long part_of
 		install_xhdi_driver();
 		vectors_installed = 1;
 	}
-
-	/*
-	 * save product name ptr for XHDI
-	 *
-	 * FIXME: assumes ptr points to a static area - is this valid?
-	 */
-	product_name[dev_num] = product;
 
 #ifdef TOSONLY
         if (ret) SuperToUser(ret);

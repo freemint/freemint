@@ -26,6 +26,7 @@
 #include "mint/mint.h"
 #include "../../global.h"
 
+#include "part.h"
 #include "xhdi.h"
 
 /*--- Defines ---*/
@@ -76,6 +77,7 @@ extern char *drv_version;
 
 /* --- External functions ---*/
 
+extern block_dev_desc_t *usb_stor_get_dev(long);
 extern ulong usb_stor_read(long, ulong, ulong, void *);
 extern ulong usb_stor_write(long, ulong, ulong, const void *);
 extern void usb_stor_eject(long);
@@ -92,7 +94,6 @@ long xhdi_handler(ushort stack);
 /*--- Global variables ---*/
 
 ulong my_drvbits;
-char *product_name[32];	/* indexed by device number */
 PUN_INFO pun_usb;
 
 /*---Functions ---*/
@@ -355,7 +356,7 @@ XHMiNTInfo(void *data)
 }
 
 /* The kernel handles this call */
-#if 0
+#ifdef TOSONLY
 static long
 XHDOSLimits(ushort which, ulong limit)
 {
@@ -430,12 +431,16 @@ XHInqTarget2(ushort major, ushort minor, ulong *blocksize, ulong *deviceflags,
 
 	if (productname) {
 		short dev = major & PUN_DEV;
+		block_dev_desc_t *dev_desc = usb_stor_get_dev(dev);
+		char devName[64];
 
 		DEBUG(("XHInqTarget2(%d.%d) %d", major, minor, dev));
 				
-		strncpy(productname, product_name[dev], stringlen - 1);
-		DEBUG(("XHInqTarget2. %d product_name %s %s stringlen %d",
-			dev, product_name[dev], productname, stringlen));
+		memset(devName, 0, 64);
+		strcat(devName, dev_desc->vendor);
+		strcat(devName, " ");
+		strcat(devName, dev_desc->product);
+		strncpy(productname, devName, stringlen - 1);
 	}
 
 	return E_OK;
@@ -773,8 +778,7 @@ xhdi_handler(ushort stack)
 			return XHMiNTInfo(args->data);
 		}
 
-/* We'll never get this call, it's handle by the kernel */
-#if 0
+#ifdef TOSONLY
 		case XHDOSLIMITS:
 		{
 			struct XHDOSLIMITS_args
