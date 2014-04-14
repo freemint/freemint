@@ -296,7 +296,7 @@ mouse_probe(struct usb_device *dev)
 	
 
 	/* Only one mouse at time */
-	if (mse_data.pusb_dev == dev) {
+	if (mse_data.pusb_dev) {
 		return -1;
 	}
 
