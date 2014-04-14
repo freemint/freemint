@@ -38,6 +38,7 @@ OBJECT  tree[] = {
 #endif
 
 struct usb_module_api *api = 0;
+static int first_time = 1;
 
 /* cookie jar definition
  */
@@ -118,6 +119,10 @@ events(short menuID)
 			} else {
 				long i;
 
+                if (first_time) {
+					openWindow(&wind);
+                }
+
 				for (i = 0; i < api->max_hubs; i++) {
 					struct usb_hub_device *hub = usb_get_hub_index(i);
 					if (hub) {
@@ -128,6 +133,11 @@ events(short menuID)
 						}
 					}
 				}
+
+                if (first_time) {
+                    first_time = 0;
+                    closeWindow(&wind);
+                }
 			}
 		}
 	}
@@ -146,6 +156,9 @@ Window	*wp;
 	/* currently only the first 6 USB devices displayed. */
 	for (i = 0; i < 6; i++) {
 		memset(usbname[i], 0, 64);
+        if (first_time) {
+            strcat(usbname[i], "Initializing....");
+        }
 	}
 
 	if (api) {
