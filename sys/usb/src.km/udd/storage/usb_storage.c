@@ -262,27 +262,6 @@ struct bios_partitions
 	short partnum;				/* Total number of partitions this device has */
 };
 
-/* atari */
-struct partition_info
-{
-  unsigned char flg;                       /* bit 0: active; bit 7: bootable */
-  char id[3];                   /* "GEM", "BGM", "XGM", or other */
-  unsigned long st;                       /* start of partition */
-  unsigned long siz;                      /* length of partition */
-};
-
-typedef struct
-{
-  unsigned char unused[0x156];                   /* room for boot code */
-  struct partition_info icdpart[8];     /* info for ICD-partitions 5..12 */
-  unsigned char unused2[0xc];
-  unsigned long hd_siz;                           /* size of disk in blocks */
-  struct partition_info part[4];
-  unsigned long bsl_st;                           /* start of bad sector list */
-  unsigned long bsl_cnt;                          /* length of bad sector list */
-  unsigned short checksum;                         /* checksum for bootable disks */
-} __attribute__ ((__packed__)) rootsector;
-
 static struct us_data usb_stor[USB_MAX_STOR_DEV];
 static struct bios_partitions bios_part[USB_MAX_STOR_DEV];
 
@@ -291,6 +270,18 @@ static struct bios_partitions bios_part[USB_MAX_STOR_DEV];
 #define USB_STOR_TRANSPORT_ERROR  -2
 
 #define DEFAULT_SECTOR_SIZE 2048
+
+static unsigned char readbuf[DEFAULT_SECTOR_SIZE];
+
+#define ATARI_PART_TBL_OFFSET   0x1c6
+#define XGM                     0x0058474dL     /* '\0XGM' */
+
+typedef struct {
+    unsigned long id;           /* really 1-byte flag followed by GEM, BGM, or XGM */
+    unsigned long start;        /* starting sector */
+    unsigned long size;         /* size in sectors */
+} atari_partition_t;
+
 
 #define DOS_PART_TBL_OFFSET	0x1be
 #define DOS_PART_MAGIC_OFFSET	0x1fe
@@ -372,13 +363,11 @@ block_dev_desc_t *usb_stor_get_dev(long idx)
 void
 init_part(block_dev_desc_t *dev_desc)
 {
-	unsigned char *buffer;
-	buffer = (unsigned char *)kmalloc(DEFAULT_SECTOR_SIZE);
-	if (!buffer) return;
+	unsigned char *buffer = readbuf;
+
 	if((dev_desc->block_read(dev_desc->dev, 0, 1, (unsigned long *)buffer) != 1)
 	 || (buffer[DOS_PART_MAGIC_OFFSET + 0] != 0x55) || (buffer[DOS_PART_MAGIC_OFFSET + 1] != 0xaa))
 	{
-		kfree(buffer);
 		return;
 	}
 	dev_desc->part_type = PART_TYPE_DOS;
@@ -420,45 +409,176 @@ init_part(block_dev_desc_t *dev_desc)
 		}
 	}			
 #endif	
-	kfree(buffer);
 }
 
 static inline long
-is_extended(long part_type)
+is_active_atari(long part_type)
+{
+    return (part_type & 0x01000000L);
+}
+
+static inline long
+is_extended_atari(long part_type)
+{
+    return ((part_type&0x00ffffffL) == XGM);
+}
+
+/*
+ * update info structure with data from partition entry
+ */
+static void
+update_atari_info(long offset,atari_partition_t *pt, disk_partition_t *info)
+{
+	info->type = pt->id & 0x00ffffffL;
+	info->blksz = 512;
+	info->start = offset + be2cpu32(pt->start);
+	info->size = be2cpu32(pt->size);
+	DEBUG(("Atari partition at offset 0x%lx, size 0x%lx, type 0x%x %s", 
+			info->start, info->size, pt->id, is_extended_atari(pt->id)?" Extd":""));
+}
+
+/*
+ *	extract partition info from chain of subpartitions within an XGM partition
+ *
+ *	on entry:	xgm_start = starting sector number of XGM partition
+ *				part_num = number of first subpartition in XGM partition
+ *				which_part = desired partition number
+ *	returns:	-1	error (read failed)
+ *				0	partition found, info has been filled in
+ *				N	partition not found, next partition to process is N
+ */
+static long
+get_partinfo_atari_extended(block_dev_desc_t *dev_desc, long xgm_start, long part_num, long which_part, disk_partition_t *info)
+{
+	unsigned char *buffer = readbuf;
+	atari_partition_t part[4], *pt;
+	long i, offset = 0L;
+
+	while(1)
+	{
+		if (dev_desc->block_read(dev_desc->dev, xgm_start+offset, 1, (unsigned long *)buffer) != 1)
+		{
+			DEBUG(("Can't read subpartition table on %ld:%ld", dev_desc->dev, xgm_start+offset));
+			return -1;
+		}
+
+		memcpy(part,buffer+ATARI_PART_TBL_OFFSET,4*sizeof(atari_partition_t));
+
+		for (i = 0, pt = part; i < 4; i++, pt++) {
+			if (!is_active_atari(pt->id))
+				continue;
+			/*
+			 * links always follow the partition description, so if we get a link,
+			 * we know we're finished with this subpartition.
+			 */
+			if (is_extended_atari(pt->id))
+			{
+				offset = be2cpu32(pt->start);
+				break;
+			}
+			if (part_num == which_part)
+			{
+				update_atari_info(xgm_start+offset,pt,info);
+				return 0;
+			}
+			part_num++;
+		}
+		if (i >= 4)				/* no more subdivisions */
+			break;
+	}
+
+	return part_num;
+}
+
+/*
+ * 	extract partition info for specified Atari-style partition
+ *
+ *  note that subpartitions of an extended partition are processed as they
+ *  are encountered, rather than after all primary partitions as in MSDOS
+ */
+static long
+get_partinfo_atari(block_dev_desc_t *dev_desc, long part_num, long which_part, disk_partition_t *info)
+{
+	unsigned char *buffer = readbuf;
+	atari_partition_t part[4], *pt;
+	long i, rc;
+
+	if (dev_desc->block_read(dev_desc->dev, 0, 1, (unsigned long *)buffer) != 1)
+	{
+		DEBUG(("Can't read partition table on %ld:0", dev_desc->dev));
+		return -1;
+	}
+
+	pt = (atari_partition_t *)(buffer + ATARI_PART_TBL_OFFSET);
+	if (is_active_atari(pt->id) && is_extended_atari(pt->id))
+	{
+		DEBUG(("Error: extended partition in slot0 of partition table on %ld:0", dev_desc->dev));
+		return -1;
+	}
+
+	/* Process all partitions */
+	memcpy(part,buffer+ATARI_PART_TBL_OFFSET,4*sizeof(atari_partition_t));
+
+	for (i = 0, pt = part; i < 4; i++, pt++)
+	{
+		if (!is_active_atari(pt->id))
+			continue;
+
+		if (is_extended_atari(pt->id))
+		{
+			rc = get_partinfo_atari_extended(dev_desc, be2cpu32(pt->start), part_num, which_part, info);
+			if (rc <= 0)
+				return rc;
+			part_num = rc;
+			continue;
+		}
+
+		if (part_num == which_part)
+		{
+			update_atari_info(0L,pt,info);
+			return 0;
+		}
+		part_num++;
+	}
+
+	return -1;
+}
+
+static inline long
+is_extended_dos(long part_type)
 {
 	return(part_type == 0x5 || part_type == 0xf || part_type == 0x85);
 }
 
-/*  Print a partition that is relative to its Extended partition table
+/*
+ * 	extract partition info for specified DOS-style partition
  */
 static long
-get_partition_info_extended(block_dev_desc_t *dev_desc, long ext_part_sector, long relative, long part_num, long which_part, disk_partition_t *info)
+get_partinfo_dos(block_dev_desc_t *dev_desc, long ext_part_sector, long relative, long part_num, long which_part, disk_partition_t *info)
 {
-	dos_partition_t *pt;
+	unsigned char *buffer = readbuf;
+	dos_partition_t part[4], *pt;
 	long i;
-	unsigned char *buffer;
-	buffer = (unsigned char *)kmalloc(DEFAULT_SECTOR_SIZE);
-	if (!buffer) return -1;
 
 	if(dev_desc->block_read(dev_desc->dev, ext_part_sector, 1, (unsigned long *)buffer) != 1)
 	{
 		DEBUG(("Can't read partition table on %ld:%ld", dev_desc->dev, ext_part_sector));
-		kfree(buffer);
 		return -1;
 	}
 	
 	if(buffer[DOS_PART_MAGIC_OFFSET] != 0x55 || buffer[DOS_PART_MAGIC_OFFSET + 1] != 0xaa)
 	{
 		DEBUG(("bad MBR sector signature 0x%02x%02x", buffer[DOS_PART_MAGIC_OFFSET], buffer[DOS_PART_MAGIC_OFFSET + 1]));
-		kfree(buffer);
 		return -1;
 	}
-	/* Print all primary/logical partitions */
-	pt = (dos_partition_t *)(buffer + DOS_PART_TBL_OFFSET);
-	for(i = 0; i < 4; i++, pt++)
+
+	/* Process all primary/logical partitions */
+	memcpy(part,buffer+DOS_PART_TBL_OFFSET,4*sizeof(dos_partition_t));
+
+	for(i = 0, pt = part; i < 4; i++, pt++)
 	{
 		/* fdisk does not show the extended partitions that are not in the MBR */
-		if((pt->sys_ind != 0) && (part_num == which_part) && (is_extended(pt->sys_ind) == 0))
+		if((pt->sys_ind != 0) && (part_num == which_part) && !is_extended_dos(pt->sys_ind))
 		{
 			info->type = (unsigned long)pt->sys_ind;
 			info->blksz = 512;
@@ -466,98 +586,89 @@ get_partition_info_extended(block_dev_desc_t *dev_desc, long ext_part_sector, lo
 			info->size = le2cpu32(pt->size4);
 			DEBUG(("DOS partition at offset 0x%lx, size 0x%lx, type 0x%x %s", 
 					info->start, info->size, pt->sys_ind, 
-					(is_extended(pt->sys_ind) ? " Extd" : "")));
-			kfree(buffer);
+					(is_extended_dos(pt->sys_ind) ? " Extd" : "")));
 			return 0;
 		}
 		/* Reverse engr the fdisk part# assignment rule! */
-		if((ext_part_sector == 0) || (pt->sys_ind != 0 && !is_extended (pt->sys_ind)))
+		if((ext_part_sector == 0) || (pt->sys_ind != 0 && !is_extended_dos(pt->sys_ind)))
 			part_num++;
 	}
-	/* Follows the extended partitions */
-	pt = (dos_partition_t *)(buffer + DOS_PART_TBL_OFFSET);
-	for(i = 0; i < 4; i++, pt++)
+
+	/* Process the extended partitions */
+	for(i = 0, pt = part; i < 4; i++, pt++)
 	{
-		if(is_extended(pt->sys_ind))
+		if(is_extended_dos(pt->sys_ind))
 		{
 			long lba_start = le2cpu32(pt->start4) + relative;
-			return get_partition_info_extended(dev_desc, lba_start, ext_part_sector == 0 ? lba_start : relative, part_num, which_part, info);
+			return get_partinfo_dos(dev_desc, lba_start, ext_part_sector == 0 ? lba_start : relative, part_num, which_part, info);
 		}
 	}
-
-	/* check atari partitioning */
-	for(i = 0; i < 4; i++)
-	{
-		rootsector *r_sector = (rootsector *)buffer;
-		info->type = (long)r_sector->part[i].id[2] | (long)r_sector->part[i].id[1] << 8 | (long)r_sector->part[i].id[0] << 16;
-		info->blksz = 512;
-		info->start = ntohl(r_sector->part[i].st) * 512;
-		info->size = ntohl(r_sector->part[i].siz) * 512;
-		if (info->type == 0) {
-			kfree(buffer);
-			return -1;
-		}
-		if (part_num == which_part) {
-			kfree(buffer);
-			return 0;
-		}
-		part_num++;
-	}
-	kfree(buffer);
-
 	return -1;
+}
+
+/*
+ * 	extract partition info for specified partition
+ *
+ *  Note: the first partition is numbered as 1, not zero
+ */
+static long
+get_partition_info_extended(block_dev_desc_t *dev_desc, long ext_part_sector, long relative, long part_num, long which_part, disk_partition_t *info)
+{
+	unsigned char *buffer = readbuf;
+
+	if(dev_desc->block_read(dev_desc->dev, 0, 1, (unsigned long *)buffer) != 1)
+	{
+		DEBUG(("Can't read boot sector from device %ld", dev_desc->dev));
+		return -1;
+	}
+
+	if(buffer[DOS_PART_MAGIC_OFFSET] == 0x55 && buffer[DOS_PART_MAGIC_OFFSET+1] == 0xaa)
+	{
+		DEBUG(("found DOS MBR sector"));
+		return get_partinfo_dos(dev_desc,ext_part_sector,relative,part_num,which_part,info);
+	}
+
+	DEBUG(("assuming Atari MBR sector"));
+	return get_partinfo_atari(dev_desc,part_num,which_part,info);
 }
 
 long
 fat_register_device(block_dev_desc_t *dev_desc, long part_no, unsigned long *part_type, unsigned long *part_offset, unsigned long *part_size)
 {
-	disk_partition_t info;
-	unsigned char *buffer;
-	buffer = (unsigned char *)kmalloc(DEFAULT_SECTOR_SIZE);
-	if (!buffer) return -1;
+	unsigned char *buffer = readbuf;
+	disk_partition_t info = { 0L, 0L, 0L, 0L };
 
 	if(!dev_desc->block_read) {
-		kfree(buffer);
 		return -1;
 	}
-		
-	/* check if we have a MBR (on floppies we have only a PBR) */
-	if(dev_desc->block_read(dev_desc->dev, 0, 1, (unsigned long *)buffer) != 1)
-	{
-		DEBUG(("Can't read from device %ld", dev_desc->dev));
-		kfree(buffer);
-		return -1;
-	}
-	
-	if(buffer[DOS_PART_MAGIC_OFFSET] != 0x55 || buffer[DOS_PART_MAGIC_OFFSET + 1] != 0xaa)
-	{
-		/* no signature found */
-		kfree(buffer);
-		return -1;
-	}
-	
+
 	/* First we assume, there is a MBR */
 	if(!get_partition_info_extended(dev_desc, 0, 0, 1, part_no, &info))
 	{
 		*part_type = info.type;
 		*part_offset = info.start;
 		*part_size = info.size;
+		return 0;
 	}
-	else if(!strncmp((char *)&buffer[DOS_FS_TYPE_OFFSET], "FAT", 3))
+
+	/* no MBR, check for PBR */
+	if(dev_desc->block_read(dev_desc->dev, 0, 1, (unsigned long *)buffer) != 1)
+	{
+		DEBUG(("Can't read boot sector from device %ld", dev_desc->dev));
+		return -1;
+	}
+
+	if(!strncmp((char *)&buffer[DOS_FS_TYPE_OFFSET], "FAT", 3))
 	{
 		/* ok, we assume we are on a PBR only */
 		*part_type = 0;
 		*part_offset = 0;
 		*part_size = 0;
+		return 0;
 	}
-	else
-	{
-		DEBUG(("Partition %ld not valid on device %ld", part_no, dev_desc->dev));
-		kfree(buffer);
-		return -1;
-	}
-	kfree(buffer);
-	return 0;
+
+	DEBUG(("Partition %ld not valid on device %ld", part_no, dev_desc->dev));
+	return -1;
 }
 
 
