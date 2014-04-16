@@ -281,7 +281,7 @@ static void display_installed(long dev_num,char *vendor,char *revision,char *pro
 #else
 	display_usb(dev_num,vendor,revision,product);
 	c_conws(": installed as drive ");
-	c_conout('A'+logdrv);
+	c_conout(logdrv<26?'A'+logdrv:'1'+(logdrv-26));	/* drives are A:->Z:, 1:->6: */
 	c_conws("\r\n");
 #endif
 }
