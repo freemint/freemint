@@ -480,7 +480,15 @@ XHGetCapacity(ushort major, ushort minor, ulong *blocks,
 	if ((major & PUN_USB) == 0)
 		return ENODEV;
 
-	return ENOSYS;
+    {
+		short dev = major & PUN_DEV;
+        block_dev_desc_t *dev_desc = usb_stor_get_dev(dev);
+
+        *blocks = dev_desc->lba;
+        *blocksize = dev_desc->blksz;
+    }
+
+	return E_OK;
 }
 
 static long
