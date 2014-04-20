@@ -294,9 +294,11 @@ static int valid_partition(unsigned long type)
 {
 	const unsigned long *valid;
 
+#ifndef TOSONLY
 	for (valid = valid_dos; *valid; valid++)
 		if (type == *valid)
 			return 1;
+#endif
 
 	type &= 0x00ffffffL;
 
