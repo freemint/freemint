@@ -874,17 +874,46 @@ get_fun_ptr (void)
 	
 	return XHDI;
 }
+
+static void
+set_cookie (void)
+{
+	struct cookie *cjar = *CJAR;
+	long n = 0;
+
+	while (cjar->tag)
+	{
+		n++;
+		cjar++;
+	}
+
+	n++;
+	if (n < cjar->value)
+	{
+		n = cjar->value;
+		cjar->tag = *((long *)"XHDI");
+		cjar->value = (long)&usbxhdi;
+
+		cjar++;
+		cjar->tag = 0L;
+		cjar->value = n;
+	}
+}
 #endif
 
 long
 install_xhdi_driver(void)
 {
-        long r = 0;
+    long r = 0;
 #ifdef TOSONLY
-	cookie_fun XHDI = get_fun_ptr ();
+  	cookie_fun XHDI = get_fun_ptr ();
+    if (XHDI) {     
         r = XHDI (9, *xhdi_handler);
+    } else {
+        set_cookie();
+    }
 #else
 	r = xhnewcookie(*xhdi_handler);
 #endif
-        return r;
+    return r;
 }
