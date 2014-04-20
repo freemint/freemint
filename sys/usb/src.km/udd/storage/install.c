@@ -292,9 +292,9 @@ static void display_installed(long dev_num,char *vendor,char *revision,char *pro
  */
 static int valid_partition(unsigned long type)
 {
+#ifndef TOSONLY
 	const unsigned long *valid;
 
-#ifndef TOSONLY
 	for (valid = valid_dos; *valid; valid++)
 		if (type == *valid)
 			return 1;
